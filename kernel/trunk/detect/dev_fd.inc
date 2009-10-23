@@ -24,7 +24,7 @@ $Revision$
       mov  cx,0xff
 wait_cmos:
       dec  cx
-      cmp cx,0
-      jne wait_cmos
+      test cx,cx
+      jnz wait_cmos
       in  al,0x71
       mov [DRIVE_DATA],al

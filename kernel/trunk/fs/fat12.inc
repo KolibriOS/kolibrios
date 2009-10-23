@@ -88,26 +88,29 @@ fr_do_1:
     shl    ecx,9
     cld
     rep    movsb
-    mov    eax,0 ; ok read
-    mov    ebx,0
-    mov   [flp_status],0
+	xor	eax,eax
+	xor	ebx,ebx
+;    mov    eax,0 ; ok read
+;    mov    ebx,0
+    mov   [flp_status],eax
     ret
 fdc_status_error_1:
-    mov   [flp_status],0
+	xor	eax,eax
+    mov   [flp_status],eax
     mov    eax,10
-    mov    ebx,-1
+    or    ebx,-1
     ret
 
 fr_noroot_1:
     sub    esp,32
     call   expand_filename
 frfloppy_1:
-    cmp    ebx,0
-    jne    frfl5_1
+    test   ebx,ebx
+    jnz    frfl5_1
     mov    ebx,1
 frfl5_1:
-    cmp    ecx,0
-    jne    frfl6_1
+    test   ecx,ecx
+    jnz    frfl6_1
     mov    ecx,1
 frfl6_1:
     dec    ebx
@@ -137,14 +140,14 @@ l.21_1:
     add    ecx,21
     add    edi, ecx         ;Advance to next entry
     dec    dl
-    cmp    dl,0
-    jne    l.21_1
+    test   dl,dl
+    jnz    l.21_1
     dec    dh
-    cmp    dh,0
-    jne    l.20_1
+    test   dh,dh
+    jnz    l.20_1
 fdc_status_error_3:
     mov    eax,5            ; file not found ?
-    mov    ebx,-1
+    or     ebx,-1
     add    esp,32+28
     mov   [flp_status],0
     ret
@@ -232,8 +235,8 @@ frnoread_1:
     add    esp,4
     pop    ebx     ; ebx <- eax : size of file
     add    esp,36
-    mov    eax,0
-    mov    [flp_status],0
+    xor    eax,eax
+    mov    [flp_status],eax
     ret
 
 fdc_status_error_5:
@@ -499,8 +502,8 @@ calculate_chs:
     div    ebx
     mov    [FDD_Track],al
     mov    [FDD_Head],0
-    cmp    edx,0
-    je     no_head_2
+    test   edx,edx
+    jz     no_head_2
     inc    [FDD_Head]
 no_head_2:
     mov     dl,[old_track]

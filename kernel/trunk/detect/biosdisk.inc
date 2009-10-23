@@ -55,7 +55,8 @@ bdds:
         inc     ax
         cmp     word [si], 170h
         jz      @f
-        mov     ax, -1
+	or	ax,-1
+;        mov     ax, -1
 @@:
         stosw
         pop     ds
@@ -63,10 +64,14 @@ bdds:
 bddl:
         mov     al, dl
         stosb
-        mov     al, 0
-        stosb
-        mov     ax, -1
-        stosw
+	xor	ax,ax
+	stosb
+	dec	ax
+	stosw
+;        mov     al, 0
+;        stosb
+;        mov     ax, -1
+;        stosw
 bddc2:
         cmp     cl, [es:0x475]
         jae     bdde
