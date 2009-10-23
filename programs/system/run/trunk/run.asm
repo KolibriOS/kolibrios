@@ -45,6 +45,7 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
         mcall   40,EVM_MOUSE+EVM_BUTTON+EVM_KEY+EVM_REDRAW
 red:
         mcall   48,3,sc,40
+        edit_boxes_set_sys_color input_fn,input_fn_end,sc
         set_sys_colors_txt_button run_but,sc
         push    dword [sc.work_graph]
         pop     [input_fn.focus_border_color]
@@ -240,7 +241,7 @@ ret
 run_but txt_button 0,5,15,25,2,0,0,run_but_text,
 input_fn edit_box 0,5,5,0xffffff,0x6a9480,0,0xaaaaaa,0,511,fn,mouse_dd,ed_focus+ed_always_focus
 ;mouse_flag: dd 0x0
-
+input_fn_end:
 if lang eq ru
 hello db 'Введите полный путь к файлу и нажмите Enter',0
 bad_file_sys db 'Неизвестная файловая система',0 ; 3
@@ -307,7 +308,7 @@ file_info:
 dd 0,0
 .name rb 512
 
-flags dw ?
+flags rw 1
 
 sc system_colors
 

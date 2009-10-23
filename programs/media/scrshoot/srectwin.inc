@@ -260,17 +260,14 @@ aOption_box_draw  db 'option_box_draw',0
 aOption_box_mouse db 'option_box_mouse',0
 aVersion_op       db 'version_op',0
 
-
+;width,left,top,color,shift_color,focus_border_color,\
+;       blur_border_color,text_color,max,text,mouse_variable,flags,size,pos
 
 rect_input:
-.left   edit_box 35,95,5,cl_white,0,0,0,5,rect_input_buffer.left,\
-mouse_dd1,ed_figure_only+ed_focus
-.top    edit_box 35,95,25,cl_white,0,0,0,5,rect_input_buffer.top,\
-mouse_dd1,ed_figure_only
-.width  edit_box 35,95,45,cl_white,0,0,0,5,rect_input_buffer.width,\
-mouse_dd1,ed_figure_only
-.height edit_box 35,95,65,cl_white,0,0,0,5,rect_input_buffer.height,\
-mouse_dd1,ed_figure_only
+.left   edit_box 35,95,5, cl_white,0,0,0,5,rect_input_buffer.left,mouse_dd1,ed_figure_only+ed_focus
+.top    edit_box 35,95,25,cl_white,0,0,0,5,rect_input_buffer.top,mouse_dd1,ed_figure_only
+.width  edit_box 35,95,45,cl_white,0,0,0,5,rect_input_buffer.width,mouse_dd1,ed_figure_only
+.height edit_box 35,95,65,cl_white,0,0,0,5,rect_input_buffer.height,mouse_dd1,ed_figure_only
 rect_input_end:
 mouse_dd1	rd 1
 rect_input_labels:

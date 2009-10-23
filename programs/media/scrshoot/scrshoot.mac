@@ -127,34 +127,6 @@ macro get_key
         pop     eax
         mcall
 }
-macro edit_boxes_set_sys_color start,end,color_table
-{
-
-ed_focus_border_color   equ [edi+20]    ;цвет рамки компонента
-ed_blur_border_color    equ [edi+24]    ;цвет не активного компонента
-        mov     edi,start
-        mov     ecx,((end-start)/ed_struc_size)
-        mov     esi,color_table
-@@:
-        mov     eax,[esi+36]
-        mov     ebx,[esi+20]
-        mov     dword ed_focus_border_color,eax
-        shr     bh,1
-        shr     bl,1
-        shr     ah,1
-        shr     al,1
-        add     ah,bh
-        add     al,bl
-        ror     eax,16
-        ror     ebx,16
-        shr     bl,1
-        shr     al,1
-        add     al,bl
-        ror     eax,16
-        mov     dword ed_blur_border_color,eax
-        add     edi,ed_struc_size
-        loop    @b
-}
 ;--- получить код нажатой кнопки ---
 macro get_pressed_button
 {
@@ -186,22 +158,6 @@ else
         push    slot_num
         pop     ecx
 end if
-        mcall
-}
-macro get_sys_colors col_buf
-{
-        ;mov     eax,48
-        push    48
-        pop     eax
-        ;mov     ebx,3
-        push    3
-        pop     ebx
-        ;mov     ecx,col_buf
-        push    col_buf
-        pop     ecx
-        ;mov     edx,40
-        push    40
-        pop     edx
         mcall
 }
 macro get_screen_prop  struc_ptr

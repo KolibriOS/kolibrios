@@ -4,15 +4,15 @@
 ; 01.02.07 - обновлён editbox
 ; 31.01.07 - всё теперь рисуется относительно клиентской области
 
-title equ 'Screenshooter v 0.91' ; Заголовок окна
+title equ 'Screenshooter v 0.92' ; Заголовок окна
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/asm/trunk/editbox_ex.mac'
 ;include '../../develop/examples/editbox/trunk/editbox.inc'
 include '../../macros.inc'
-include 'scrshoot.mac'
 include 'txtbut.inc'
 include 'label.inc'
 include 'textwork.inc'
+include 'scrshoot.mac'
 
 ;include 'macros.inc'  ; вставляем макросы
 ;        meos_header  cmdstr ; вставляем заголовок программы
@@ -28,13 +28,13 @@ use32
     dd cur_dir_path
 
 align 4
-include 'scrwin.inc'  ; вставляем код окна прдпросмотра
-include 'scrsavef.inc'; вставляем процедуру сохранения файла
-
         @use_library
         use_txt_button                          ;  |
         use_label                               ;  |-- GUI компоненты и некоторые процедуры
         use_text_work                           ; /
+include 'scrwin.inc'  ; вставляем код окна прдпросмотра
+include 'scrsavef.inc'; вставляем процедуру сохранения файла
+
 include 'gp.inc'
 include 'srectwin.inc'
 include 'lang.inc'
@@ -556,7 +556,7 @@ show_set_rect_window:
 ret
 
 @@:
-        mov    eax,18
+        mov     eax,18
         mov     ebx,eax
         mov     ecx,[set_rect_window_pid]
         mcall
@@ -602,10 +602,10 @@ status label 5,201,0,no_shoot
 labels_end:
 
 editboxes:
-edit1 edit_box 300,5,35,cl_white,0xaabbcc,0,0,0,300,ed_buffer.1,mouse_dd,ed_focus,10,10        ; путь к файлу
-edit2 edit_box 35,75,134,cl_white,0xaabbcc,0,0,0,9,ed_buffer.2,mouse_dd,ed_figure_only,3,3         ; задержка
-edit3 edit_box 35,165,164,cl_white,0xaabbcc,0,0,0,9,ed_buffer.3,mouse_dd,ed_figure_only    ; автонумерация
-edit4 edit_box 16,165,181,cl_white,0xaabbcc,0,0,0,1,sign_n_input,mouse_dd,ed_figure_only,1
+edit1 edit_box 300,5,35,cl_white,0,0,0,0,300,ed_buffer.1,mouse_dd,ed_focus,10,10        ; путь к файлу
+edit2 edit_box 35,75,134,cl_white,0,0,0,0,9,ed_buffer.2,mouse_dd,ed_figure_only,3,3         ; задержка
+edit3 edit_box 35,165,164,cl_white,0,0,0,0,9,ed_buffer.3,mouse_dd,ed_figure_only    ; автонумерация
+edit4 edit_box 16,165,181,cl_white,0,0,0,0,1,sign_n_input,mouse_dd,ed_figure_only,1
 editboxes_end:
 
 buttons:

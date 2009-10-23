@@ -31,8 +31,8 @@ include '../../../develop/libraries/box_lib/asm/trunk/editbox_ex.mac'
 	@use_library
 
 ;use_edit_box
-al equ eax      ; \ decrease kpack'ed size
-purge mov       ; /
+;al equ eax      ; \ decrease kpack'ed size
+;purge mov       ; /
 
 ;---------------------------------------------------------------------
 ;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
@@ -44,10 +44,17 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
         cmp     eax,-1
         jz      close
 
+
    mov eax, 40
    mov ebx, 100111b
    mcall
 red:                    ; перерисовать окно
+   mov  eax,48
+   mov  ebx,3
+   mov  ecx,sc
+   mov  edx,sizeof.system_colors
+   mcall
+        edit_boxes_set_sys_color editbox,editbox_end,sc
     call draw_window    ; вызываем процедуру отрисовки окна
 
 ;---------------------------------------------------------------------
@@ -166,12 +173,6 @@ clear_err:
 ;---------------------------------------------------------------------
 
 draw_window:
-
-   mov  eax,48
-   mov  ebx,3
-   mov  ecx,sc
-   mov  edx,sizeof.system_colors
-   mcall
 
    mov eax,12                            ; функция 12: сообщить ОС об отрисовке окна
    mov bl,1                              ; 1 - начинаем рисовать
@@ -343,7 +344,7 @@ myimport:
 edit_box_draw   dd      aEdit_box_draw
 edit_box_key    dd      aEdit_box_key
 edit_box_mouse  dd      aEdit_box_mouse
-version_ed      dd      aVersion_ed
+;version_ed      dd      aVersion_ed
 
                 dd      0
                 dd      0
@@ -351,7 +352,7 @@ version_ed      dd      aVersion_ed
 aEdit_box_draw  db 'edit_box',0
 aEdit_box_key   db 'edit_box_key',0
 aEdit_box_mouse db 'edit_box_mouse',0
-aVersion_ed     db 'version_ed',0
+;aVersion_ed     db 'version_ed',0
 
 
 ;mouse_flag: dd 0x0
@@ -367,8 +368,8 @@ rb 514
 
 sc     system_colors
 mouse_dd	rd 1
-cur_dir_path    rb 4096
-library_path    rb 4096
+cur_dir_path    rb 1096
+library_path    rb 1096
 align 4
 rb 0x100        ; for stack
 I_END:                             ; метка конца программы

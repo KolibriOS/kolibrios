@@ -38,6 +38,8 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
     
 ;main loop when process name isn't edited.    
 red:    
+        mcall   48,3,sc,40
+        edit_boxes_set_sys_color edit1,edit1_end,sc
 	xor	ebp,ebp
 	inc	ebp
 ;    mov  ebp,1
@@ -659,7 +661,7 @@ aEdit_box_mouse db 'edit_box_mouse',0
 ;aVersion_op       db 'version_op',0
 
 edit1 edit_box 350,(64-offset_x),(398-offset_y),0xffffff,0x6f9480,0,0xAABBCC,0,start_application_c,start_application,mouse_dd,ed_focus,start_application_e,start_application_e
-
+edit1_end:
 list_start  dd 0
 
 sys_reboot:
@@ -722,6 +724,7 @@ rb	60
 start_application_c=$-start_application-1
 
 I_END:
+sc system_colors
 winxpos  rd 1
 winypos  rd 1
 mouse_dd	rd 1
