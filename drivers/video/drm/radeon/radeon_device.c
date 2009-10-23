@@ -47,6 +47,8 @@ int radeon_benchmarking = 0;
 int radeon_connector_table = 0;
 int radeon_tv = 0;
 
+int pre_init_display(struct radeon_device *rdev);
+int post_init_display(struct radeon_device *rdev);
 
 /*
  * Clear GPU surface registers.
@@ -696,6 +698,7 @@ int radeon_driver_load_kms(struct drm_device *dev, unsigned long flags)
     return 0;
 }
 
+
 int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
     struct drm_device *dev;
@@ -748,7 +751,9 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
  //        driver->name, driver->major, driver->minor, driver->patchlevel,
  //        driver->date, pci_name(pdev), dev->primary->index);
 
+    pre_init_display(dev->dev_private);
     set_mode(dev, 1280, 1024);
+    post_init_display(dev->dev_private);
 
     LEAVE();
 

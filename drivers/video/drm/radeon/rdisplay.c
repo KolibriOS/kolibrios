@@ -34,6 +34,11 @@ typedef struct
     struct radeon_object *robj;
 }cursor_t;
 
+int        init_cursor(cursor_t *cursor);
+cursor_t*  __stdcall select_cursor(cursor_t *cursor);
+void       __stdcall move_cursor(cursor_t *cursor, int x, int y);
+void       __stdcall restore_cursor(int x, int y);
+
 struct tag_display
 {
     int  x;
@@ -52,13 +57,23 @@ struct tag_display
 
     cursor_t   *cursor;
     int       (*init_cursor)(cursor_t*);
-    cursor_t* (*select_cursor)(display_t*, cursor_t*);
+    cursor_t* (__stdcall *select_cursor)(cursor_t*);
     void      (*show_cursor)(int show);
-    void      (*move_cursor)(int x, int y);
+    void      (__stdcall *move_cursor)(cursor_t *cursor, int x, int y);
+    void      (__stdcall *restore_cursor)(int x, int y);
+
 };
 
 
-display_t *rdisplay;
+static display_t *rdisplay;
+
+
+void set_crtc(struct drm_crtc *crtc)
+{
+    ENTER();
+    rdisplay->crtc = crtc;
+    LEAVE();
+}
 
 int init_cursor(cursor_t *cursor)
 {
@@ -94,7 +109,7 @@ int init_cursor(cursor_t *cursor)
     {
         for(j = 0; j < 32; j++)
             *bits++ = *src++;
-        for(j = 0; j < CURSOR_WIDTH-32; j++)
+        for(j = 32; j < CURSOR_WIDTH; j++)
             *bits++ = 0;
     }
     for(i = 0; i < CURSOR_WIDTH*(CURSOR_HEIGHT-32); i++)
@@ -105,11 +120,40 @@ int init_cursor(cursor_t *cursor)
     return 0;
 };
 
-int init_display(struct radeon_device *rdev)
+static void radeon_show_cursor(struct drm_crtc *crtc)
+{
+    struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
+    struct radeon_device *rdev = crtc->dev->dev_private;
+
+    if (ASIC_IS_AVIVO(rdev)) {
+        WREG32(RADEON_MM_INDEX, AVIVO_D1CUR_CONTROL + radeon_crtc->crtc_offset);
+        WREG32(RADEON_MM_DATA, AVIVO_D1CURSOR_EN |
+                 (AVIVO_D1CURSOR_MODE_24BPP << AVIVO_D1CURSOR_MODE_SHIFT));
+    } else {
+        switch (radeon_crtc->crtc_id) {
+        case 0:
+            WREG32(RADEON_MM_INDEX, RADEON_CRTC_GEN_CNTL);
+            break;
+        case 1:
+            WREG32(RADEON_MM_INDEX, RADEON_CRTC2_GEN_CNTL);
+            break;
+        default:
+            return;
+        }
+
+        WREG32_P(RADEON_MM_DATA, (RADEON_CRTC_CUR_EN |
+                      (RADEON_CRTC_CUR_MODE_24BPP << RADEON_CRTC_CUR_MODE_SHIFT)),
+             ~(RADEON_CRTC_CUR_EN | RADEON_CRTC_CUR_MODE_MASK));
+    }
+}
+
+int pre_init_display(struct radeon_device *rdev)
 {
     cursor_t  *cursor;
 
-//    rdisplay = get_display();
+    ENTER();
+
+    rdisplay = GetDisplay();
 
     rdisplay->ddev = rdev->ddev;
 
@@ -117,6 +161,30 @@ int init_display(struct radeon_device *rdev)
     {
         init_cursor(cursor);
     };
+
+    LEAVE();
+
+    return 1;
+};
+
+int post_init_display(struct radeon_device *rdev)
+{
+    cursor_t  *cursor;
+
+    ENTER();
+
+    select_cursor(rdisplay->cursor);
+
+    radeon_show_cursor(rdisplay->crtc);
+
+    rdisplay->init_cursor   = init_cursor;
+    rdisplay->select_cursor = select_cursor;
+    rdisplay->show_cursor   = NULL;
+    rdisplay->move_cursor   = move_cursor;
+    rdisplay->restore_cursor = restore_cursor;
+
+    LEAVE();
+
     return 1;
 };
 
@@ -143,7 +211,7 @@ static void radeon_lock_cursor(struct drm_crtc *crtc, bool lock)
     }
 }
 
-cursor_t* select_cursor(display_t *display, cursor_t *cursor)
+cursor_t* __stdcall select_cursor(cursor_t *cursor)
 {
     struct radeon_device *rdev;
     struct radeon_crtc   *radeon_crtc;
@@ -153,9 +221,9 @@ cursor_t* select_cursor(display_t *display, cursor_t *cursor)
     rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
     radeon_crtc = to_radeon_crtc(rdisplay->crtc);
 
-    old = display->cursor;
+    old = rdisplay->cursor;
 
-    display->cursor = cursor;
+    rdisplay->cursor = cursor;
     gpu_addr = cursor->robj->gpu_addr;
 
     if (ASIC_IS_AVIVO(rdev))
@@ -165,18 +233,20 @@ cursor_t* select_cursor(display_t *display, cursor_t *cursor)
         /* offset is from DISP(2)_BASE_ADDRESS */
         WREG32(RADEON_CUR_OFFSET + radeon_crtc->crtc_offset, radeon_crtc->legacy_cursor_offset);
     }
+
     return old;
 };
 
 
-int radeon_cursor_move(display_t *display, int x, int y)
+void __stdcall move_cursor(cursor_t *cursor, int x, int y)
 {
+    struct radeon_device *rdev;
+    rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
     struct drm_crtc *crtc = rdisplay->crtc;
     struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
-    struct radeon_device *rdev = crtc->dev->dev_private;
 
-    int hot_x = rdisplay->cursor->hot_x - 1;
-    int hot_y = rdisplay->cursor->hot_y - 1;
+    int hot_x = cursor->hot_x;
+    int hot_y = cursor->hot_y;
 
     radeon_lock_cursor(crtc, true);
     if (ASIC_IS_AVIVO(rdev))
@@ -186,8 +256,8 @@ int radeon_cursor_move(display_t *display, int x, int y)
         struct drm_crtc *crtc_p;
 
         /* avivo cursor are offset into the total surface */
-        x += crtc->x;
-        y += crtc->y;
+//        x += crtc->x;
+//        y += crtc->y;
 
 //        DRM_DEBUG("x %d y %d c->x %d c->y %d\n", x, y, crtc->x, crtc->y);
 #if 0
@@ -215,11 +285,10 @@ int radeon_cursor_move(display_t *display, int x, int y)
                 w = 1;
         }
 #endif
-
         WREG32(AVIVO_D1CUR_POSITION + radeon_crtc->crtc_offset,
                (x << 16) | y);
         WREG32(AVIVO_D1CUR_HOT_SPOT + radeon_crtc->crtc_offset,
-               (hot_x << 16) | hot_y-1);
+               (hot_x << 16) | hot_y);
         WREG32(AVIVO_D1CUR_SIZE + radeon_crtc->crtc_offset,
                ((w - 1) << 16) | 31);
     } else {
@@ -236,8 +305,9 @@ int radeon_cursor_move(display_t *display, int x, int y)
          (radeon_crtc->legacy_cursor_offset + (hot_y * 256)));
     }
     radeon_lock_cursor(crtc, false);
-
-    return 0;
 }
 
+void __stdcall restore_cursor(int x, int y)
+{
+};
 

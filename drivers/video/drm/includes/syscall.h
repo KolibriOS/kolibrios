@@ -49,6 +49,9 @@ void*  STDCALL KernelFree(void *mem)__asm__("KernelFree");
 void*  STDCALL UserAlloc(size_t size)__asm__("UserAlloc");
 int    STDCALL UserFree(void *mem)__asm__("UserFree");
 
+void*  STDCALL GetDisplay()__asm__("GetDisplay");
+
+
 addr_t STDCALL AllocPages(count_t count)__asm__("AllocPages");
 
 void* STDCALL CreateRingBuffer(size_t size, u32_t map)__asm__("CreateRingBuffer");
