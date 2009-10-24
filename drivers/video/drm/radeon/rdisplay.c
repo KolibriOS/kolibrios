@@ -64,6 +64,7 @@ struct tag_display
 
 };
 
+int radeon_align_pitch(struct radeon_device *rdev, int width, int bpp, bool tiled);
 
 static display_t *rdisplay;
 
@@ -147,46 +148,6 @@ static void radeon_show_cursor(struct drm_crtc *crtc)
     }
 }
 
-int pre_init_display(struct radeon_device *rdev)
-{
-    cursor_t  *cursor;
-
-    ENTER();
-
-    rdisplay = GetDisplay();
-
-    rdisplay->ddev = rdev->ddev;
-
-    list_for_each_entry(cursor, &rdisplay->cursors, list)
-    {
-        init_cursor(cursor);
-    };
-
-    LEAVE();
-
-    return 1;
-};
-
-int post_init_display(struct radeon_device *rdev)
-{
-    cursor_t  *cursor;
-
-    ENTER();
-
-    select_cursor(rdisplay->cursor);
-
-    radeon_show_cursor(rdisplay->crtc);
-
-    rdisplay->init_cursor   = init_cursor;
-    rdisplay->select_cursor = select_cursor;
-    rdisplay->show_cursor   = NULL;
-    rdisplay->move_cursor   = move_cursor;
-    rdisplay->restore_cursor = restore_cursor;
-
-    LEAVE();
-
-    return 1;
-};
 
 static void radeon_lock_cursor(struct drm_crtc *crtc, bool lock)
 {
@@ -309,5 +270,223 @@ void __stdcall move_cursor(cursor_t *cursor, int x, int y)
 
 void __stdcall restore_cursor(int x, int y)
 {
+};
+
+static char *manufacturer_name(unsigned char *x)
+{
+    static char name[4];
+
+    name[0] = ((x[0] & 0x7C) >> 2) + '@';
+    name[1] = ((x[0] & 0x03) << 3) + ((x[1] & 0xE0) >> 5) + '@';
+    name[2] = (x[1] & 0x1F) + '@';
+    name[3] = 0;
+
+    return name;
+}
+
+bool set_mode(struct drm_device *dev, int width, int height)
+{
+    struct drm_connector *connector;
+
+    bool ret = false;
+
+    ENTER();
+
+    list_for_each_entry(connector, &dev->mode_config.connector_list, head)
+    {
+        struct drm_display_mode *mode;
+
+        struct drm_encoder  *encoder;
+        struct drm_crtc     *crtc;
+
+        if( connector->status != connector_status_connected)
+            continue;
+
+        encoder = connector->encoder;
+        if( encoder == NULL)
+            continue;
+
+        crtc = encoder->crtc;
+
+        if(crtc == NULL)
+            continue;
+
+        list_for_each_entry(mode, &connector->modes, head)
+        {
+            char *con_name, *enc_name;
+
+            struct drm_framebuffer *fb;
+
+            if (drm_mode_width(mode) == width &&
+                drm_mode_height(mode) == height)
+            {
+                char con_edid[128];
+
+                fb = list_first_entry(&dev->mode_config.fb_kernel_list,
+                                      struct drm_framebuffer, filp_head);
+
+                memcpy(con_edid, connector->edid_blob_ptr->data, 128);
+
+                dbgprintf("Manufacturer: %s Model %x Serial Number %u\n",
+                manufacturer_name(con_edid + 0x08),
+                (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
+                (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
+                    + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
+
+
+                con_name = drm_get_connector_name(connector);
+                enc_name = drm_get_encoder_name(encoder);
+
+                dbgprintf("set mode %d %d connector %s encoder %s\n",
+                           width, height, con_name, enc_name);
+
+                fb->width = width;
+                fb->height = height;
+                fb->pitch = radeon_align_pitch(dev->dev_private, width, 32, false) * ((32 + 1) / 8);
+
+                crtc->fb = fb;
+                crtc->enabled = true;
+                rdisplay->crtc = crtc;
+
+                ret = drm_crtc_helper_set_mode(crtc, mode, 0, 0, fb);
+
+                rdisplay->width  = fb->width;
+                rdisplay->height = fb->height;
+                rdisplay->pitch  = fb->pitch;
+
+                sysSetScreen(fb->width, fb->height, fb->pitch);
+
+                if (ret == true)
+                {
+                    dbgprintf("new mode %d %d pitch %d\n",fb->width, fb->height, fb->pitch);
+                }
+                else
+                {
+                    DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
+                               fb->width, fb->height, crtc);
+                };
+
+                LEAVE();
+
+                return ret;
+            };
+        }
+    };
+    LEAVE();
+    return ret;
+};
+
+
+int init_display(struct radeon_device *rdev, mode_t *usermode)
+{
+    cursor_t  *cursor;
+
+    ENTER();
+
+    rdisplay = GetDisplay();
+
+    rdisplay->ddev = rdev->ddev;
+
+    list_for_each_entry(cursor, &rdisplay->cursors, list)
+    {
+        init_cursor(cursor);
+    };
+
+    if( (usermode->width != 0) &&
+        (usermode->height != 0) )
+    {
+        set_mode(rdev->ddev, usermode->width, usermode->height);
+    }
+    else
+        set_mode(rdev->ddev, 800, 600);
+
+    select_cursor(rdisplay->cursor);
+    radeon_show_cursor(rdisplay->crtc);
+
+    rdisplay->init_cursor   = init_cursor;
+    rdisplay->select_cursor = select_cursor;
+    rdisplay->show_cursor   = NULL;
+    rdisplay->move_cursor   = move_cursor;
+    rdisplay->restore_cursor = restore_cursor;
+
+    LEAVE();
+
+    return 1;
+};
+
+static int my_atoi(char **cmd)
+{
+    char* p = *cmd;
+    int val = 0;
+
+    for (;; *p++) {
+        switch (*p) {
+        case '0' ... '9':
+            val = 10*val+(*p-'0');
+            break;
+        default:
+            *cmd = p;
+            return val;
+        }
+    }
+}
+
+char* parse_mode(char *p, mode_t *mode)
+{
+    char c;
+
+    while( (c = *p++) == ' ');
+
+    if( c )
+    {
+        p--;
+
+        mode->width = my_atoi(&p);
+        p++;
+
+        mode->height = my_atoi(&p);
+        p++;
+
+        mode->freq = my_atoi(&p);
+    }
+
+    return p;
+};
+
+char* parse_path(char *p, char *log)
+{
+    char  c;
+
+    while( (c = *p++) == ' ');
+    p--;
+    while( (c = *log++ = *p++) && (c != ' '));
+    *log = 0;
+
+    return p;
+};
+
+void parse_cmdline(char *cmdline, mode_t *mode, char *log)
+{
+    char *p = cmdline;
+
+    char c = *p++;
+
+    while( c )
+    {
+        if( c == '-')
+        {
+            switch(*p++)
+            {
+                case 'm':
+                    p = parse_mode(p, mode);
+                    break;
+
+                case 'l':
+                    p = parse_path(p, log);
+                    break;
+            };
+        };
+        c = *p++;
+    };
 };
 

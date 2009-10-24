@@ -428,7 +428,7 @@ static void radeon_connector_destroy(struct drm_connector *connector)
 	if (radeon_connector->ddc_bus)
 		radeon_i2c_destroy(radeon_connector->ddc_bus);
 	kfree(radeon_connector->con_priv);
-  // drm_sysfs_connector_remove(connector);
+	drm_sysfs_connector_remove(connector);
 	drm_connector_cleanup(connector);
 	kfree(connector);
 }
@@ -941,7 +941,7 @@ radeon_add_atom_connector(struct drm_device *dev,
 	}
 
 	connector->display_info.subpixel_order = subpixel_order;
- //  drm_sysfs_connector_add(connector);
+	drm_sysfs_connector_add(connector);
 	return;
 
 failed:
@@ -1065,7 +1065,7 @@ radeon_add_legacy_connector(struct drm_device *dev,
 	}
 
 	connector->display_info.subpixel_order = subpixel_order;
-  // drm_sysfs_connector_add(connector);
+	drm_sysfs_connector_add(connector);
 	return;
 
 failed:

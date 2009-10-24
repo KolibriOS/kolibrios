@@ -1153,18 +1153,6 @@ int drm_helper_mode_fill_fb_struct(struct drm_framebuffer *fb,
 }
 EXPORT_SYMBOL(drm_helper_mode_fill_fb_struct);
 
-void sysSetScreen(int width, int height, int pitch)
-{
-  asm __volatile__
-  (
-    "call *__imp__SetScreen"
-    :
-    :"a" (width-1),"d"(height-1), "c"(pitch)
-    :"memory","cc"
-  );
-}
-
-
 int drm_helper_resume_force_mode(struct drm_device *dev)
 {
 	struct drm_crtc *crtc;

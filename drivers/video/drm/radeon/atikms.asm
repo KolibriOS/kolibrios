@@ -21,7 +21,7 @@ start:
 	   int 0x40
 
 sz_kms   db '/rd/1/drivers/atikms.dll',0
-sz_mode  db '1024x768',0
+sz_mode  db '-m 1024x768  -l/hd0/2/atikms.log',0
 
 align 4
 i_end:

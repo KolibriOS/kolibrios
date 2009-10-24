@@ -52,6 +52,7 @@ int    STDCALL UserFree(void *mem)__asm__("UserFree");
 void*  STDCALL GetDisplay()__asm__("GetDisplay");
 
 
+addr_t STDCALL AllocPage()__asm__("AllocPage");
 addr_t STDCALL AllocPages(count_t count)__asm__("AllocPages");
 
 void* STDCALL CreateRingBuffer(size_t size, u32_t map)__asm__("CreateRingBuffer");
@@ -346,6 +347,28 @@ static inline void change_task()
      "call *__imp__ChangeTask");
 }
 
+static inline sysSetScreen(int width, int height, int pitch)
+{
+    __asm__ __volatile__
+    (
+        "call *__imp__SetScreen"
+        :
+        :"a" (width-1),"d"(height-1), "c"(pitch)
+    );
+    __asm__ __volatile__
+    ("" :::"eax","ecx","edx");
+}
+
 int drm_order(unsigned long size);
+
+static inline void __iomem *ioremap(uint32_t offset, size_t size)
+{
+    return (void __iomem*) MapIoMem(offset, size, 3);
+}
+
+static inline void iounmap(void *addr)
+{
+    FreeKernelSpace(addr);
+}
 
 #endif

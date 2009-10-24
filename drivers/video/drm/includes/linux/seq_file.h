@@ -1,1 +1,3 @@
 /* stub */
+
+#include <errno.h>

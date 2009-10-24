@@ -94,6 +94,13 @@ extern int radeon_testing;
 extern int radeon_connector_table;
 extern int radeon_tv;
 
+typedef struct
+{
+  int width;
+  int height;
+  int bpp;
+  int freq;
+}mode_t;
 
 static inline uint8_t __raw_readb(const volatile void __iomem *addr)
 {
@@ -1122,12 +1129,6 @@ extern int r600_blit_init(struct radeon_device *rdev);
 extern void r600_blit_fini(struct radeon_device *rdev);
 extern int r600_cp_init_microcode(struct radeon_device *rdev);
 extern int r600_gpu_reset(struct radeon_device *rdev);
-
-
-
-
-
-
 
 
 

@@ -416,5 +416,90 @@ void r600_cp_commit(struct radeon_device *rdev);
 void r600_pcie_gart_tlb_flush(struct radeon_device *rdev);
 uint32_t r600_pciep_rreg(struct radeon_device *rdev, uint32_t reg);
 void r600_pciep_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v);
+int r600_cs_parse(struct radeon_cs_parser *p);
+void r600_fence_ring_emit(struct radeon_device *rdev,
+			  struct radeon_fence *fence);
+int r600_copy_dma(struct radeon_device *rdev,
+		  uint64_t src_offset,
+		  uint64_t dst_offset,
+		  unsigned num_pages,
+		  struct radeon_fence *fence);
+int r600_irq_process(struct radeon_device *rdev);
+int r600_irq_set(struct radeon_device *rdev);
+int r600_gpu_reset(struct radeon_device *rdev);
+int r600_set_surface_reg(struct radeon_device *rdev, int reg,
+			 uint32_t tiling_flags, uint32_t pitch,
+			 uint32_t offset, uint32_t obj_size);
+int r600_clear_surface_reg(struct radeon_device *rdev, int reg);
+void r600_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib);
+int r600_ring_test(struct radeon_device *rdev);
+int r600_copy_blit(struct radeon_device *rdev,
+		   uint64_t src_offset, uint64_t dst_offset,
+		   unsigned num_pages, struct radeon_fence *fence);
+
+static struct radeon_asic r600_asic = {
+	.init = &r600_init,
+//	.fini = &r600_fini,
+//	.suspend = &r600_suspend,
+//	.resume = &r600_resume,
+//	.cp_commit = &r600_cp_commit,
+	.vga_set_state = &r600_vga_set_state,
+	.gpu_reset = &r600_gpu_reset,
+	.gart_tlb_flush = &r600_pcie_gart_tlb_flush,
+	.gart_set_page = &rs600_gart_set_page,
+//	.ring_test = &r600_ring_test,
+//	.ring_ib_execute = &r600_ring_ib_execute,
+//	.irq_set = &r600_irq_set,
+//	.irq_process = &r600_irq_process,
+//	.fence_ring_emit = &r600_fence_ring_emit,
+//	.cs_parse = &r600_cs_parse,
+//	.copy_blit = &r600_copy_blit,
+//	.copy_dma = &r600_copy_blit,
+//	.copy = &r600_copy_blit,
+	.set_engine_clock = &radeon_atom_set_engine_clock,
+	.set_memory_clock = &radeon_atom_set_memory_clock,
+	.set_pcie_lanes = NULL,
+	.set_clock_gating = &radeon_atom_set_clock_gating,
+	.set_surface_reg = r600_set_surface_reg,
+	.clear_surface_reg = r600_clear_surface_reg,
+	.bandwidth_update = &rv515_bandwidth_update,
+};
+
+/*
+ * rv770,rv730,rv710,rv740
+ */
+int rv770_init(struct radeon_device *rdev);
+void rv770_fini(struct radeon_device *rdev);
+int rv770_suspend(struct radeon_device *rdev);
+int rv770_resume(struct radeon_device *rdev);
+int rv770_gpu_reset(struct radeon_device *rdev);
+
+static struct radeon_asic rv770_asic = {
+	.init = &rv770_init,
+//	.fini = &rv770_fini,
+//	.suspend = &rv770_suspend,
+//	.resume = &rv770_resume,
+//	.cp_commit = &r600_cp_commit,
+	.gpu_reset = &rv770_gpu_reset,
+	.vga_set_state = &r600_vga_set_state,
+	.gart_tlb_flush = &r600_pcie_gart_tlb_flush,
+	.gart_set_page = &rs600_gart_set_page,
+//	.ring_test = &r600_ring_test,
+//	.ring_ib_execute = &r600_ring_ib_execute,
+//	.irq_set = &r600_irq_set,
+//	.irq_process = &r600_irq_process,
+//	.fence_ring_emit = &r600_fence_ring_emit,
+//	.cs_parse = &r600_cs_parse,
+//	.copy_blit = &r600_copy_blit,
+//	.copy_dma = &r600_copy_blit,
+//	.copy = &r600_copy_blit,
+	.set_engine_clock = &radeon_atom_set_engine_clock,
+	.set_memory_clock = &radeon_atom_set_memory_clock,
+	.set_pcie_lanes = NULL,
+	.set_clock_gating = &radeon_atom_set_clock_gating,
+	.set_surface_reg = r600_set_surface_reg,
+	.clear_surface_reg = r600_clear_surface_reg,
+	.bandwidth_update = &rv515_bandwidth_update,
+};
 
 #endif

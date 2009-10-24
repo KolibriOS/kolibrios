@@ -25,7 +25,7 @@
  *          Alex Deucher
  *          Jerome Glisse
  */
-#include <errno.h>
+#include <linux/seq_file.h>
 #include <linux/firmware.h>
 #include "drmP.h"
 #include "radeon_drm.h"
@@ -207,8 +207,8 @@ void r600_pcie_gart_disable(struct radeon_device *rdev)
 	WREG32(MC_VM_L1_TLB_MCB_RD_HDP_CNTL, tmp);
 	WREG32(MC_VM_L1_TLB_MCB_WR_HDP_CNTL, tmp);
 	if (rdev->gart.table.vram.robj) {
-		radeon_object_kunmap(rdev->gart.table.vram.robj);
-		radeon_object_unpin(rdev->gart.table.vram.robj);
+//       radeon_object_kunmap(rdev->gart.table.vram.robj);
+//       radeon_object_unpin(rdev->gart.table.vram.robj);
 	}
 }
 
@@ -1137,7 +1137,31 @@ void r600_cp_commit(struct radeon_device *rdev)
 	(void)RREG32(CP_RB_WPTR);
 }
 
+void r600_ring_init(struct radeon_device *rdev, unsigned ring_size)
+{
+	u32 rb_bufsz;
 
+	/* Align ring size */
+	rb_bufsz = drm_order(ring_size / 8);
+	ring_size = (1 << (rb_bufsz + 1)) * 4;
+	rdev->cp.ring_size = ring_size;
+	rdev->cp.align_mask = 16 - 1;
+}
+
+
+/*
+ * GPU scratch registers helpers function.
+ */
+void r600_scratch_init(struct radeon_device *rdev)
+{
+	int i;
+
+	rdev->scratch.num_reg = 7;
+	for (i = 0; i < rdev->scratch.num_reg; i++) {
+		rdev->scratch.free[i] = true;
+		rdev->scratch.reg[i] = SCRATCH_REG0 + (i * 4);
+	}
+}
 int r600_set_surface_reg(struct radeon_device *rdev, int reg,
 			 uint32_t tiling_flags, uint32_t pitch,
 			 uint32_t offset, uint32_t obj_size)
@@ -1183,24 +1207,24 @@ int r600_startup(struct radeon_device *rdev)
 	}
 	r600_gpu_init(rdev);
 
-	r = radeon_object_pin(rdev->r600_blit.shader_obj, RADEON_GEM_DOMAIN_VRAM,
-			      &rdev->r600_blit.shader_gpu_addr);
-	if (r) {
-		DRM_ERROR("failed to pin blit object %d\n", r);
-		return r;
-	}
+//	r = radeon_object_pin(rdev->r600_blit.shader_obj, RADEON_GEM_DOMAIN_VRAM,
+//			      &rdev->r600_blit.shader_gpu_addr);
+//	if (r) {
+//		DRM_ERROR("failed to pin blit object %d\n", r);
+//		return r;
+//	}
 
-	r = radeon_ring_init(rdev, rdev->cp.ring_size);
-	if (r)
-		return r;
-	r = r600_cp_load_microcode(rdev);
-	if (r)
-		return r;
-	r = r600_cp_resume(rdev);
-	if (r)
-		return r;
+//	r = radeon_ring_init(rdev, rdev->cp.ring_size);
+//	if (r)
+//		return r;
+//	r = r600_cp_load_microcode(rdev);
+//	if (r)
+//		return r;
+//	r = r600_cp_resume(rdev);
+//	if (r)
+//		return r;
 	/* write back buffer are not vital so don't worry about failure */
-	r600_wb_enable(rdev);
+//	r600_wb_enable(rdev);
 	return 0;
 }
 
@@ -1279,27 +1303,27 @@ int r600_init(struct radeon_device *rdev)
 	r = radeon_object_init(rdev);
 	if (r)
 		return r;
-	rdev->cp.ring_obj = NULL;
-	r600_ring_init(rdev, 1024 * 1024);
+//	rdev->cp.ring_obj = NULL;
+//	r600_ring_init(rdev, 1024 * 1024);
 
-	if (!rdev->me_fw || !rdev->pfp_fw) {
-		r = r600_cp_init_microcode(rdev);
-		if (r) {
-			DRM_ERROR("Failed to load firmware!\n");
-			return r;
-		}
-	}
+//	if (!rdev->me_fw || !rdev->pfp_fw) {
+//		r = r600_cp_init_microcode(rdev);
+//		if (r) {
+//			DRM_ERROR("Failed to load firmware!\n");
+//			return r;
+//		}
+//	}
 
 	r = r600_pcie_gart_init(rdev);
 	if (r)
 		return r;
 
 	rdev->accel_working = true;
-	r = r600_blit_init(rdev);
-	if (r) {
-		DRM_ERROR("radeon: failled blitter (%d).\n", r);
-		return r;
-	}
+//	r = r600_blit_init(rdev);
+//	if (r) {
+//		DRM_ERROR("radeon: failled blitter (%d).\n", r);
+//		return r;
+//	}
 
 	r = r600_startup(rdev);
 	if (r) {

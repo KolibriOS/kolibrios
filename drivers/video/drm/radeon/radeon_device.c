@@ -37,7 +37,6 @@
 
 #include <drm/drm_pciids.h>
 
-#include <syscall.h>
 
 int radeon_dynclks = -1;
 int radeon_r4xx_atom = 0;
@@ -47,8 +46,19 @@ int radeon_benchmarking = 0;
 int radeon_connector_table = 0;
 int radeon_tv = 0;
 
-int pre_init_display(struct radeon_device *rdev);
-int post_init_display(struct radeon_device *rdev);
+void parse_cmdline(char *cmdline, mode_t *mode, char *log);
+int init_display(struct radeon_device *rdev, mode_t *mode);
+
+ /* Legacy VGA regions */
+#define VGA_RSRC_NONE          0x00
+#define VGA_RSRC_LEGACY_IO     0x01
+#define VGA_RSRC_LEGACY_MEM    0x02
+#define VGA_RSRC_LEGACY_MASK   (VGA_RSRC_LEGACY_IO | VGA_RSRC_LEGACY_MEM)
+/* Non-legacy access */
+#define VGA_RSRC_NORMAL_IO     0x04
+#define VGA_RSRC_NORMAL_MEM    0x08
+
+
 
 /*
  * Clear GPU surface registers.
@@ -227,6 +237,28 @@ bool radeon_card_posted(struct radeon_device *rdev)
 
 }
 
+int radeon_dummy_page_init(struct radeon_device *rdev)
+{
+    rdev->dummy_page.page = AllocPage();
+	if (rdev->dummy_page.page == NULL)
+		return -ENOMEM;
+    rdev->dummy_page.addr = MapIoMem(rdev->dummy_page.page, 4096, 5);
+	if (!rdev->dummy_page.addr) {
+//       __free_page(rdev->dummy_page.page);
+		rdev->dummy_page.page = NULL;
+		return -ENOMEM;
+	}
+	return 0;
+}
+
+void radeon_dummy_page_fini(struct radeon_device *rdev)
+{
+	if (rdev->dummy_page.page == NULL)
+		return;
+    KernelFree(rdev->dummy_page.addr);
+	rdev->dummy_page.page = NULL;
+}
+
 
 /*
  * Registers accessors functions.
@@ -285,10 +317,10 @@ void radeon_register_accessor_init(struct radeon_device *rdev)
         rdev->mc_rreg = &rs600_mc_rreg;
         rdev->mc_wreg = &rs600_mc_wreg;
     }
-//    if (rdev->family >= CHIP_R600) {
-//        rdev->pciep_rreg = &r600_pciep_rreg;
-//        rdev->pciep_wreg = &r600_pciep_wreg;
-//    }
+	if (rdev->family >= CHIP_R600) {
+		rdev->pciep_rreg = &r600_pciep_rreg;
+		rdev->pciep_wreg = &r600_pciep_wreg;
+	}
 }
 
 
@@ -354,13 +386,13 @@ int radeon_asic_init(struct radeon_device *rdev)
 	case CHIP_RV670:
 	case CHIP_RS780:
 	case CHIP_RS880:
-//		rdev->asic = &r600_asic;
+		rdev->asic = &r600_asic;
 		break;
 	case CHIP_RV770:
 	case CHIP_RV730:
 	case CHIP_RV710:
 	case CHIP_RV740:
-//		rdev->asic = &rv770_asic;
+		rdev->asic = &rv770_asic;
 		break;
 	default:
 		/* FIXME: not supported yet */
@@ -475,8 +507,17 @@ void radeon_combios_fini(struct radeon_device *rdev)
 {
 }
 
-int radeon_modeset_init(struct radeon_device *rdev);
-void radeon_modeset_fini(struct radeon_device *rdev);
+/* if we get transitioned to only one device, tak VGA back */
+static unsigned int radeon_vga_set_decode(void *cookie, bool state)
+{
+	struct radeon_device *rdev = cookie;
+	radeon_vga_set_state(rdev, state);
+	if (state)
+		return VGA_RSRC_LEGACY_IO | VGA_RSRC_LEGACY_MEM |
+		       VGA_RSRC_NORMAL_IO | VGA_RSRC_NORMAL_MEM;
+	else
+		return VGA_RSRC_NORMAL_IO | VGA_RSRC_NORMAL_MEM;
+}
 
 void radeon_agp_disable(struct radeon_device *rdev)
 {
@@ -609,6 +650,8 @@ static struct pci_device_id pciidlist[] = {
     radeon_PCI_IDS
 };
 
+mode_t usermode;
+char   log[256];
 
 u32_t drvEntry(int action, char *cmdline)
 {
@@ -621,14 +664,19 @@ u32_t drvEntry(int action, char *cmdline)
     if(action != 1)
         return 0;
 
-    if(!dbg_open("/hd0/2/atikms.log"))
-    {
-        printf("Can't open /hd0/2/atikms.log\nExit\n");
-        return 0;
-    }
+    if( cmdline && *cmdline )
+        parse_cmdline(cmdline, &usermode, log);
 
-    if(cmdline)
-        dbgprintf("cmdline: %s\n", cmdline);
+    if(!dbg_open(log))
+    {
+        strcpy(log, "/rd/1/drivers/atikms.log");
+
+        if(!dbg_open(log))
+    {
+            printf("Can't open %s\nExit\n", log);
+        return 0;
+        };
+    }
 
     enum_pci_devices();
 
@@ -725,22 +773,6 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     dev->pci_device = pdev->device;
     dev->pci_vendor = pdev->vendor;
 
- //   if (drm_core_check_feature(dev, DRIVER_MODESET)) {
- //       pci_set_drvdata(pdev, dev);
- //       ret = drm_get_minor(dev, &dev->control, DRM_MINOR_CONTROL);
- //       if (ret)
- //           goto err_g2;
- //   }
-
- //   if ((ret = drm_get_minor(dev, &dev->primary, DRM_MINOR_LEGACY)))
- //       goto err_g3;
-
- //   if (dev->driver->load) {
- //       ret = dev->driver->load(dev, ent->driver_data);
- //       if (ret)
- //           goto err_g4;
- //   }
-
     ret = radeon_driver_load_kms(dev, ent->driver_data );
     if (ret)
         goto err_g4;
@@ -751,9 +783,7 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
  //        driver->name, driver->major, driver->minor, driver->patchlevel,
  //        driver->date, pci_name(pdev), dev->primary->index);
 
-    pre_init_display(dev->dev_private);
-    set_mode(dev, 1280, 1024);
-    post_init_display(dev->dev_private);
+    init_display(dev->dev_private, &usermode);
 
     LEAVE();
 

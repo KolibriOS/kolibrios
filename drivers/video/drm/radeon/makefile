@@ -64,9 +64,11 @@ NAME_SRC=							\
 			r420.c					\
 			rv515.c					\
 			r520.c					\
+			r600.c					\
 			rs400.c					\
 			rs600.c					\
 			rs690.c					\
+			rv770.c					\
 			radeon_fb.c				\
 			rdisplay.c
 
