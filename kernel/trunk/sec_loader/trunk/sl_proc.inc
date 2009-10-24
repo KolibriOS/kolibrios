@@ -65,19 +65,19 @@ putchar:
 
 printplain:
 ; in: si->string
-        pusha
+        pushad
         lodsb
 @@:
         call    putchar
         lodsb
-        cmp     al, 0
+        test    al,al
         jnz     @b
         mov     al,13 
         call    putchar
 
         mov     al,10 
         call    putchar
-        popa
+        popad
         ret
 getkey:
 ; get number in range [bl,bh] (bl,bh in ['0'..'9'])

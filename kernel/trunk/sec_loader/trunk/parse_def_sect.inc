@@ -1662,7 +1662,7 @@ local 	.loop_size_root_dir
         test    ax,ax
         jnz     .exit
 
-        mov     si,shot_name_fat
+        lea     si,[shot_name_fat]	; desination name of file
 
 ;вычислим указатель на корневую директорию
         mov     di,firstDataSect
@@ -1672,7 +1672,6 @@ local 	.loop_size_root_dir
 ;di= Это смещение от начала буфера до рут директории. в пределах 64 кб.
 ;загрузим значение - т.е. кол-во элементов, которые мы можем просматривать.
         mov     dx,root_dir_entry_count
-        mov     si,point_to_dest_file_name
         
         mov     ax,info_real_mode_size
         add     ax,0x1000
@@ -1680,52 +1679,73 @@ local 	.loop_size_root_dir
 
         mov     gs,ax
 .loop_size_root_dir:
+DEBUG1 equ 0
+if DEBUG1        
+        pushad
+	push	di
+        mov	eax,dword[gs:di]
+        lea	si,[check_root_fat_+14]
+        mov     dword [ds:si],'----'
+	mov     dword [ds:si+4],'----'
+	mov     dword [ds:si+8],'----'
+        mov	dword[ds:si],eax
+        mov	eax,dword[gs:di+4]
+        mov	dword[ds:si+4],eax
+        mov	eax,dword[gs:di+8]
+        mov	dword[ds:si+8],eax
 
-if DEBUG        
-;        pushad
-;	push	di
-;        mov	eax,dword[gs:di]
-;        mov	si,(check_root_fat_+14)
-;        mov     dword [ds:si],'____'
-;	mov     dword [ds:si+4],'____'
-;        mov	dword[ds:si],eax
-;        mov	eax,dword[gs:di+4]
-;        mov	dword[ds:si+4],eax
 ;
-;
-;	xor	eax,eax
-;        mov     ax,gs;point_next_fat_str
-;        mov     cx,0x0a
-;        mov     di,check_root_fat_
-;        mov     dword [di],'    '
-;        mov     word  [di+4],'  '
-;        call    decode
-;	xor	eax,eax
-;	pop	ax
-;	mov	di,(check_root_fat_+7)
-;        mov     dword [di],'    '
-;        mov     word  [di+4],'  '
-;        call    decode
+	xor	eax,eax
+        mov     ax,gs;point_next_fat_str
+        mov     cx,0x0a
+        mov     di,check_root_fat_
+        mov     dword [di],'    '
+        mov     word  [di+4],'  '
+        call    decode
+	xor	eax,eax
+	pop	ax
+	mov	di,(check_root_fat_+7)
+        mov     dword [di],'    '
+        mov     word  [di+4],'  '
+        call    decode
 
 ;Show size
-;        mov     si,check_root_fat_
-;        call    printplain
+        lea     si,[check_root_fat_]
+        call    printplain
 
-;	xor	ax,ax
-;	int	0x16
-;        popad
+        lea     si,[shot_name_fat]
+        call    printplain
+
+	xor	ax,ax
+	int	0x16
+        popad
 end if  
 
 	xor	bx,bx
         mov     cx,11   ;size of name in struct FAT
 
 @@:     
-        mov     al,byte [es:si+bx]
+        mov     al,byte [ds:si+bx]	;ds:si - point to name of convertion variable.
         mov     ah,byte [gs:di+bx]      ;gs:di - point to name in fat struct
         inc     bx
 
-        cmp     ah,al
-        jnz     .no_equal
+if DEBUG
+;        pushad
+;        lea	si,[check_root_fat_+14]
+;        mov     dword [ds:si],'----'
+;        mov	word [ds:si],ax
+;	call    printplain
+
+;	xor	ax,ax
+;	int	0x16
+
+;        popad
+end if
+
+
+
+        cmp    ah,al
+        jnz    .no_equal
 
 ;       dec     cx
 ;       jnz     @b
@@ -1750,10 +1770,12 @@ end if
 if DEBUG        
         pushad
 ;Show size
-        mov     si,check_name_fat_msg_n
+        lea     si,[check_name_fat_msg_n]
 	test	ax,ax
 	jz	@f
-        mov     si,check_name_fat_msg_y
+        lea     si,[check_name_fat_msg_y]
+	call    printplain
+	lea     si,[alarm_msg]
 @@:     call    printplain
         popad
 end if  

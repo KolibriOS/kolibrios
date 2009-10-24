@@ -58,12 +58,13 @@ firstDataSect_msg  db '       -first data sector, offset to data in sectors',0
 size_root_dir_msg  db '       -size root dir in sectrors',0
 DataClasters_msg   db '       -size data in Clasters',0
 first_entry_in_fat db '       -data segment in FIRST entry FAT',0
-check_root_fat_    db '      :     _______________',0
+check_root_fat_    db '      :     --------------',0
 check_name_fat_msg_y db 'Name is present that is BAD',0
 check_name_fat_msg_n db 'Name is not present that is GOOD',0
 name_of_seg_get_64 db '       -name of seg where we get 64 Kb of data',0
-convertion_file_name_msg_y db 'Destination name of file is GOOD',0
-convertion_file_name_msg_n db 'Destination name of file is BAD',0
+convertion_file_name_msg_y db '->Destination name of file is GOOD',0
+convertion_file_name_msg_n db '->Destination name of file is BAD',0
+alarm_msg 	db '%%%%%%%% WARNING: MISS THE FILE %%%%%%%%%%%',0
 start_making_FAT12_msg db '>>>>>> Begin make a RAMDISK and FS after 1 Mb <<<<<<<',0
 make_fat12_RFS_msg db '-Make FAT12 Ram FS',0
 get_type_FS_msg    db '-End make RamDisk',0
