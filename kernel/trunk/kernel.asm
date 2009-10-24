@@ -1152,19 +1152,6 @@ set_variables:
 
         ret
 
-;* mouse centered - start code- Mario79
-mouse_centered:
-        push  eax
-        mov   eax,[Screen_Max_X]
-        shr   eax,1
-        mov   [MOUSE_X],ax
-        mov   eax,[Screen_Max_Y]
-        shr   eax,1
-        mov   [MOUSE_Y],ax
-        pop   eax
-        ret
-;* mouse centered - end code- Mario79
-
 align 4
 
 sys_outport:
@@ -2067,7 +2054,7 @@ sysfn_getcpuclock:              ; 18.5 = GET TSC/SEC
 ;!!!!!!!!!!!!!!!!!!!!!!!!
    include 'blkdev/rdsave.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!
-
+align 4
 sysfn_getactive:        ; 18.7 = get active window
      mov  eax, [TASK_COUNT]
    movzx  eax, word [WIN_POS + eax*2]
@@ -2075,13 +2062,15 @@ sysfn_getactive:        ; 18.7 = get active window
      ret
 
 sysfn_sound_flag:       ; 18.8 = get/set sound_flag
-     cmp  ecx,1
-     jne  nogetsoundflag
+;     cmp  ecx,1
+     dec  ecx
+     jnz  nogetsoundflag
      movzx  eax,byte [sound_flag] ; get sound_flag
      mov  [esp+32],eax
      ret
  nogetsoundflag:
-     cmp  ecx,2
+;     cmp  ecx,2
+     dec  ecx
      jnz  nosoundflag
      xor  byte [sound_flag], 1
  nosoundflag:
@@ -2090,9 +2079,10 @@ sysfn_sound_flag:       ; 18.8 = get/set sound_flag
 sysfn_minimize:         ; 18.10 = minimize window
      mov   [window_minimize],1
      ret
-
+align 4
 sysfn_getdiskinfo:      ; 18.11 = get disk info table
-     cmp  ecx,1
+;     cmp  ecx,1
+     dec  ecx
      jnz  full_table
   small_table:
      call for_all_tables
@@ -2105,7 +2095,8 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
      mov esi,DRIVE_DATA
      ret
   full_table:
-     cmp  ecx,2
+;     cmp  ecx,2
+     dec  ecx
      jnz  exit_for_anyone
      call for_all_tables
      mov ecx,16384
@@ -2135,36 +2126,56 @@ sysfn_waitretrace:     ; 18.14 = sys wait retrace
      and [esp+32],dword 0
      ret
 
+align 4
 sysfn_centermouse:      ; 18.15 = mouse centered
-     call  mouse_centered
-     and [esp+32],dword 0
-     ret
+; removed here by <Lrz>
+;     call  mouse_centered
+;* mouse centered - start code- Mario79
+;mouse_centered:
+;        push  eax
+        mov   eax,[Screen_Max_X]
+        shr   eax,1
+        mov   [MOUSE_X],ax
+        mov   eax,[Screen_Max_Y]
+        shr   eax,1
+        mov   [MOUSE_Y],ax
+;        ret
+;* mouse centered - end code- Mario79
+	xor   eax,eax
+        and   [esp+32],eax
+;        pop   eax
 
+     ret
+align 4
 sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
-     cmp  ecx,0  ; get mouse speed factor
+     test ecx,ecx  ; get mouse speed factor
      jnz  .set_mouse_acceleration
      xor  eax,eax
      mov  ax,[mouse_speed_factor]
      mov  [esp+32],eax
      ret
  .set_mouse_acceleration:
-     cmp  ecx,1  ; set mouse speed factor
+;     cmp  ecx,1  ; set mouse speed factor
+     dec  ecx
      jnz  .get_mouse_delay
      mov  [mouse_speed_factor],dx
      ret
  .get_mouse_delay:
-     cmp  ecx,2  ; get mouse delay
+;     cmp  ecx,2  ; get mouse delay
+     dec  ecx
      jnz  .set_mouse_delay
      mov  eax,[mouse_delay]
      mov  [esp+32],eax
      ret
  .set_mouse_delay:
-     cmp  ecx,3  ; set mouse delay
+;     cmp  ecx,3  ; set mouse delay
+     dec  ecx
      jnz  .set_pointer_position
      mov  [mouse_delay],edx
      ret
  .set_pointer_position:
-     cmp  ecx,4  ; set mouse pointer position
+;     cmp  ecx,4  ; set mouse pointer position
+     dec   ecx
      jnz  .set_mouse_button
      mov   [MOUSE_Y],dx    ;y
      ror   edx,16
@@ -2172,7 +2183,8 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
      rol   edx,16
      ret
  .set_mouse_button:
-     cmp   ecx,5  ; set mouse button features
+;     cmp   ecx,5  ; set mouse button features
+     dec   ecx
      jnz  .end
      mov   [BTN_DOWN],dl
      mov   [mouse_active],1
@@ -2280,10 +2292,12 @@ sys_background:
 
     cmp   ebx,1                            ; BACKGROUND SIZE
     jnz   nosb1
-    cmp   ecx,0
-    je    sbgrr
-    cmp   edx,0
-    je    sbgrr
+    test  ecx,ecx
+;    cmp   ecx,0
+    jz    sbgrr
+    test  edx,edx
+;    cmp   edx,0
+    jz    sbgrr
 @@:
 ;;Maxis use atomic bts for mutexes  4.4.2009
         bts     dword [bgrlock], 0
@@ -3962,8 +3976,9 @@ set_io_access_rights:
 ;     mov   ebx,1
 ;     shl   ebx,cl
 
-     cmp   ebp,0                ; enable access - ebp = 0
-     jne   siar1
+     test  ebp,ebp
+;     cmp   ebp,0                ; enable access - ebp = 0
+     jnz   siar1
 
 ;     not   ebx
 ;     and   [edi],byte bl
