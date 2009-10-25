@@ -1,5 +1,7 @@
 ;;================================================================================================;;
-;;//// libini.asm //// (c) mike.dld, 2006-2008 ///////////////////////////////////////////////////;;
+;;//// libini.asm ////////////////////////////////////////////////////////////////////////////////;;
+;;////  (c) mike.dld, 2006-2008    ///////////////////////////////////////////////////////////////;;
+;;////  (c) Vasiliy Kosenko, 2009  ///////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -17,6 +19,9 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
+;; 2009-10-25 (vkos)                                                                              ;;
+;;   new features:                                                                                ;;
+;;     - new function: ini.get_option_str                                                         ;;
 ;; 2009-03-08 (mike.dld)                                                                          ;;
 ;;   bug-fixes:                                                                                   ;;
 ;;     - moved buffer bound check in libini._.low.read_value up (reported by Insolor)             ;;
@@ -71,6 +76,10 @@ include 'libini_p.inc'
 section '.flat' code readable align 16
 
 include 'libini_p.asm'
+
+;; For ini.get_option_str
+str_find_in_array fix libini._.find_string
+include 'find_str.asm'
 
 ;;================================================================================================;;
 proc ini.enum_sections _f_name, _callback ;///////////////////////////////////////////////////////;;
@@ -657,6 +666,49 @@ endl
 	ret
 endp
 
+;;================================================================================================;;
+proc ini.get_option_str _f_name, _sec_name, _key_name, _option_list, _length, _def_val ;//////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Read string, compare with list of possible & return its' number                                ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _f_name = ini filename <asciiz>                                                                ;;
+;> _sec_name = section name <asciiz>                                                              ;;
+;> _key_name = key name <asciiz>                                                                  ;;
+;> _option_list = list of options <pointer to zero-ended archive of asciiz-pointers>              ;;
+;> _length = maximum length of string                                                             ;;
+;> _def_val = default value to return if no key, section or file found <dword>                    ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = [_def_val] (error) / number of option string in _option_list <dword>                     ;;
+;;================================================================================================;;
+locals
+  buff rb ini.MAX_VALUE_LEN
+endl
+	
+	lea eax, [buff]
+	stdcall ini.get_str, [_f_name], [_sec_name], [_key_name], eax, ini.MAX_VALUE_LEN
+	
+	inc eax
+	test eax, eax
+	je .default
+	
+	;; Now convert option from string to number
+	lea eax, [buff]
+	sub esp, 4
+	stdcall libini._.find_string, [_option_list], eax
+	add esp, 4
+	
+	inc eax
+	test eax, eax
+	je .default
+	dec eax
+	
+.default:
+	mov eax, dword [_def_val]
+	
+.exit:
+; 	leave
+	ret
+endp
 
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
@@ -697,8 +749,7 @@ import	libio			    , \
 align 16
 @EXPORT:
 
-export						  \
-	libini._.init	  , 'lib_init'		, \
+export	libini._.init	  , 'lib_init'		, \
 	0x00080008	  , 'version'		, \
 	ini.enum_sections , 'ini_enum_sections' , \
 	ini.enum_keys	  , 'ini_enum_keys'	, \
@@ -707,4 +758,5 @@ export						  \
 	ini.get_color	  , 'ini_get_color'	, \
 	ini.set_str	  , 'ini_set_str'	, \
 	ini.set_int	  , 'ini_set_int'	, \
-	ini.set_color	  , 'ini_set_color'
+	ini.set_color	  , 'ini_set_color'	, \
+	ini.get_option_str, 'ini_get_option_str';, \
