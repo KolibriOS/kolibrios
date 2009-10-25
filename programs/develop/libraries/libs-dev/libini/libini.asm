@@ -701,6 +701,7 @@ endl
 	test eax, eax
 	je .default
 	dec eax
+	jmp .exit
 	
 .default:
 	mov eax, dword [_def_val]
