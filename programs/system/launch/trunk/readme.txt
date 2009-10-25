@@ -1,5 +1,5 @@
 ==================== Русский ====================
-Версия: 0.1.4
+Версия: 0.1.5
 Launch - программа для запуска приложения из директорий поиска.
 При запуске читает файл launch.cfg в /sys/etc, затем в директории запуска.
 После этого смотрит параметры командной строки. Приоритет параметров - по
@@ -10,10 +10,10 @@ main.path - путь к директориям поиска
 debug.debug - опции отладки (no - нет отладки или console - вывод через консоль)
 debug.level - уровень отладки (0 - только сообщение удачно/неудачно, 1 - выводить сообщение для каждой директории)
 ПРЕДУПРЕЖДЕНИЕ:
-для вывода в консоль нужна изменённая библиотека console.obj!
+для работы нужна libini не старее ревизии #1235.
 
 ==================== English ====================
-Version: 0.1.4
+Version: 0.1.5
 Launch is a programme that launches applications from search dirictories.
 On the start it reads file launch.cfg in /sys/etc and in current dirictory.
 Than it reads command line arguments. Priority of arguments is as reading.
@@ -23,4 +23,4 @@ main.path - path to search dirictories
 debug.debug - debug options (no or console)
 debug.level - debug level (0 - show only ok/error messages, 1 - show for each directory)
 ATTENTION:
-to use console output you need new console.obj library!
+you need libini from at least #1235 revision.

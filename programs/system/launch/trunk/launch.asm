@@ -17,8 +17,10 @@
 ;;  For more details see readme.txt                                                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+format binary
+
 APP_NAME fix 'Launch'
-APP_VERSION fix '0.1.4'
+APP_VERSION fix '0.1.5'
 
 use32
 org 0x0
@@ -32,17 +34,23 @@ dd APP_STACK
 dd args
 dd path
 
+define DEBUG_NO 0
+define DEBUG_CONSOLE 1
+define DEBUG_BOARD 2			;; Not used now
+
 define PATH_MAX_LEN 1024
 define DEBUG_MAX_LEN 8
-define DEBUG_DEFAULT debug_no_num
+define DEBUG_DEFAULT 0
 define BUFF_SIZE 1024
 
-include 'macros.inc'
-include 'proc32.inc'
+include '../../../proc32.inc'
+include '../../../macros.inc'
 include 'libio.inc'
 include 'mem.inc'
 include 'dll.inc'
 
+;;--------------------------------------------------------------------------------------------------
+;; Basic initialization
 START:
 	;; Initialize process heap
 	mcall 68,11
@@ -54,7 +62,9 @@ START:
 	test eax, eax
 	jnz exit
 
-read_ini:
+;;--------------------------------------------------------------------------------------------------
+;; Reading config
+read_ini_path:													;; Read search path
 	;; First read config in /sys/etc
 	invoke ini.get_str, etc_cfg, cfg_main, cfg_path, search_path, PATH_MAX_LEN, empty_str
 
@@ -89,64 +99,26 @@ read_ini:
 	;; Read ini
 	invoke ini.get_str, path, cfg_main, cfg_path, edi, PATH_MAX_LEN, empty_str
 
-read_ini_debug:
+read_ini_debug:												;; Read debug options
 	;; Read debug options from config files
-	invoke ini.get_str, etc_cfg, cfg_debug, cfg_debug, debug_option, DEBUG_MAX_LEN, DEBUG_DEFAULT
-	invoke ini.get_str, path, cfg_debug, cfg_debug, debug_option, DEBUG_MAX_LEN, debug_option
-
-	;; Now convert debug_option from string to number of debug mode
-	mov ebx, modes-4
-.convert:
-	mov al, byte [debug_option]
-	cmp al, 10
-	jbe .converted
-
-.convert_nxt:
-	add ebx, 4
-	mov esi, dword [ebx]
-	test esi, esi
-	je .set_default 			;; String is incorrect, so set default
-	mov edi, debug_option
-.conv_loop:
-	mov al, byte [esi]
-	cmp al, byte [edi]
-	jne .convert_nxt			;; Not equal, so try next
-	test al, al
-	je .found				;; Equal, end of loop
-	inc esi
-	inc edi
-	jmp .conv_loop
-
-.set_default:
-	mov al, byte [DEBUG_DEFAULT]
-	mov byte [debug_option], al
-	jmp .converted
-
-.found:
-	sub ebx, modes
-	shr ebx, 2
-	add ebx, modes_nums
-	mov al, byte [ebx]
-	mov byte [debug_option], al
-
-.converted:
-	dec al
-	test al, al
+	invoke ini.get_option_str, etc_cfg, cfg_debug, cfg_debug, debug_strings, DEBUG_MAX_LEN, DEBUG_DEFAULT
+	invoke ini.get_option_str, path, cfg_debug, cfg_debug, debug_strings, DEBUG_MAX_LEN, eax
+	mov [debug_option], eax
+	
+	test eax, eax				;; No console
 	je .ok
-	dec al
-	test al, al
-	je .con_init
+	
+	jmp .con_init
 
-.noconsole:
-	mov al, 1
-	mov byte [debug_option], al
+.console_err:
+	mov dword [debug_option], 0
 	jmp .ok
 
 .con_init:
 	stdcall dll.Load, consoleImport
 	test eax, eax
-	jnz .noconsole
-	invoke con.init, -1, -1, -1, -1, WinTitle
+	jnz .console_err
+	invoke con.init, -1, -1, -1, -1, window_title
 
 .read_level:
 	invoke ini.get_int, etc_cfg, cfg_debug, cfg_level, 0
@@ -154,10 +126,19 @@ read_ini_debug:
 	mov dword [debug_level], eax
 .ok:
 
+; read_ini_kobra:
+; 	invoke ini.get_str, etc_cfg, cfg_kobra, cfg_use, kobra_use, KOBRA_USE_MAX_LEN, KOBRA_USE_DEFAULT
+; 	invoke ini.get_str, path, cfg_kobra, cfg_use, kobra_use, KOBRA_USE_MAX_LEN, kobra_use
+; 	
+; 	;; Now convert string option to acceptable type
+	
+
+;;--------------------------------------------------------------------------------------------------
+;; Parse command line options
 parse_args:
 	;; Now parse command line arguments
 	;; TODO: use optparse library
-	;; Currently the only argument to parse is program name
+	;; Currently the only argument to parse is program name with its' arguments
 
 .skip_spaces:
 	mov ecx, -1
@@ -184,7 +165,8 @@ parse_args:
 	dec edi
 	;; Now edi = program name
 
-	;; End of preparations! Now we can find file and launch it.
+;;--------------------------------------------------------------------------------------------------
+;; Finding file
 search_file:
 	push edi
 	mov esi, search_path
@@ -197,7 +179,7 @@ search_file:
 .prn_dbg:
 	push eax
 	mov al, byte [debug_option]
-	dec al
+;	dec al
 	test al, al
 	je .prn_stp
 	mov eax, dword [debug_level]
@@ -253,15 +235,14 @@ search_file:
 	cmp eax, 0
 	jl .loop
 
+;;--------------------------------------------------------------------------------------------------
+;; Exit
 exit:
 	push eax
 	;; If console is present we should write some info
 	mov al, byte [debug_option]
-	cmp al, 2
-	je .write_console
-
-.close:
-	mcall -1
+	cmp al, DEBUG_CONSOLE
+	jne .close
 
 .write_console:
 	pop eax
@@ -275,52 +256,60 @@ exit:
 	cinvoke con.printf, message_error, edi
 .wr_end:
 	invoke con.exit, 0
-	jmp .close
+
+.close:
+	mcall -1
+
+;; End of code
+;;--------------------------------------------------------------------------------------------------
 
 align 16
 importTable:
-library 						\
-	libini, 'libini.obj';,                           \
+
+library libini, 'libini.obj' ;,                           \
 ;        libio, 'libio.obj',                            \
 
 import	libini, \
-	ini.get_str  ,'ini.get_str', \
-\;        ini.set_str  ,'ini.set_str', \
-	ini.get_int  ,'ini.get_int';, \
-\;        ini.set_int  ,'ini.set_int', \
-;        ini.get_color,'ini.get_color', \
-;        ini.set_color,'ini.set_color'
+	ini.get_str        ,'ini_get_str', \
+\;        ini.set_str      ,'ini_set_str', \
+	ini.get_int        ,'ini_get_int', \
+\;        ini.set_int      ,'ini_set_int', \
+\;        ini.get_color    ,'ini_get_color', \
+\;        ini.set_color    ,'ini_set_color', \
+	ini.get_option_str ,'ini_get_option_str';, \
 
 ;import  libio, \
-;        file.find_first,'file.find_first', \
-;        file.find_next ,'file.find_next', \
-;        file.find_close,'file.find_close', \
-;        file.size      ,'file.size', \
-;        file.open      ,'file.open', \
-;        file.read      ,'file.read', \
-;        file.write     ,'file.write', \
-;        file.seek      ,'file.seek', \
-;        file.tell      ,'file.tell', \
-;        file.eof?      ,'file.eof?', \
-;        file.truncate  ,'file.truncate', \
-;        file.close     ,'file.close'
+;        file_find_first,'file_find_first', \
+;        file_find_next ,'file_find_next', \
+;        file_find_close,'file_find_close', \
+;        file_size      ,'file_size', \
+;        file_open      ,'file_open', \
+;        file_read      ,'file_read', \
+;        file_write     ,'file_write', \
+;        file_seek      ,'file_seek', \
+;        file_tell      ,'file_tell', \
+;        file_eof?      ,'file_eof?', \
+;        file_truncate  ,'file_truncate', \
+;        file_close     ,'file_close'
 
 consoleImport:
 library 						\
 	conlib, 'console.obj'
 
-import conlib, \
-	con.init,	  'con.init',\
-	con.exit,	  'con.exit',\
-	con.printf,	  'con.printf';,\
-;        con.write_asciiz, 'con.write_asciiz'
+import conlib,\
+	con.init,	  'con_init',\
+	con.exit,	  'con_exit',\
+	con.printf,	  'con_printf' ;,\
+;        con.write_asciiz, 'con_write_asciiz'
 
 align 16
 APP_DATA:
 
-WinTitle:
+;; Window title
+window_title:
 	db APP_NAME, ' ', APP_VERSION, 0
 
+;; Messages
 message_dbg_not_found:
 	db '%s not found', 10, 0
 
@@ -330,8 +319,11 @@ message_error:
 message_ok:
 	db '%s loaded succesfully. PID: %d (0x%X)'
 
+;; Empty string
 empty_str:
 	db 0
+
+;; Configuration path
 etc_cfg:
 	db '/sys/etc/'
 cfg_name:
@@ -339,6 +331,7 @@ cfg_name:
 cfg_ext:
 	db '.cfg', 0
 
+;; String in config file
 cfg_main:
 	db 'main', 0
 cfg_path:
@@ -348,7 +341,8 @@ cfg_debug:
 cfg_level:
 	db 'level', 0
 
-modes:
+;; List of debug modes for parsing debug option
+debug_strings:
 	dd debug_no
 	dd debug_console
 	dd 0
@@ -358,15 +352,18 @@ debug_no:
 debug_console:
 	db 'console', 0
 
-modes_nums:
-debug_no_num:
-	db 1
-
-debug_console_num:
-	db 2
+; modes_nums:
+; debug_no_num:
+; 	db 1
+; 
+; debug_console_num:
+; 	db 2
 
 debug_level:
 	dd 0
+
+debug_kobra:
+	db 0
 
 LaunchStruct FileInfoRun
 
@@ -379,12 +376,15 @@ prog_args:
 path:
 	rb 1024
 
+;; Search path will be here
 search_path:
 	rb PATH_MAX_LEN
 
+;; debug option as number
 debug_option:
-	rb DEBUG_MAX_LEN
+	dd 0
 
+;; Buffer
 buff:
 	rb BUFF_SIZE
 
