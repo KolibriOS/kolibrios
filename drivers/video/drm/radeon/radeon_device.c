@@ -48,6 +48,9 @@ int radeon_tv = 0;
 
 void parse_cmdline(char *cmdline, mode_t *mode, char *log);
 int init_display(struct radeon_device *rdev, mode_t *mode);
+int get_modes(mode_t *mode, int *count);
+int set_user_mode(mode_t *mode);
+
 
  /* Legacy VGA regions */
 #define VGA_RSRC_NONE          0x00
@@ -646,58 +649,6 @@ int radeon_device_init(struct radeon_device *rdev,
 }
 
 
-static struct pci_device_id pciidlist[] = {
-    radeon_PCI_IDS
-};
-
-mode_t usermode;
-char   log[256];
-
-u32_t drvEntry(int action, char *cmdline)
-{
-    struct pci_device_id  *ent;
-
-    dev_t   device;
-    int     err;
-    u32_t   retval = 0;
-
-    if(action != 1)
-        return 0;
-
-    if( cmdline && *cmdline )
-        parse_cmdline(cmdline, &usermode, log);
-
-    if(!dbg_open(log))
-    {
-        strcpy(log, "/rd/1/drivers/atikms.log");
-
-        if(!dbg_open(log))
-    {
-            printf("Can't open %s\nExit\n", log);
-        return 0;
-        };
-    }
-
-    enum_pci_devices();
-
-    ent = find_pci_device(&device, pciidlist);
-
-    if( unlikely(ent == NULL) )
-    {
-        dbgprintf("device not found\n");
-        return 0;
-    };
-
-    dbgprintf("device %x:%x\n", device.pci_dev.vendor,
-                                device.pci_dev.device);
-
-    err = drm_get_dev(&device.pci_dev, ent);
-
-    return retval;
-};
-
-
-
 /*
  * Driver load/unload
  */
@@ -716,13 +667,13 @@ int radeon_driver_load_kms(struct drm_device *dev, unsigned long flags)
     dev->dev_private = (void *)rdev;
 
     /* update BUS flag */
-//    if (drm_device_is_agp(dev)) {
+    if (drm_device_is_agp(dev)) {
         flags |= RADEON_IS_AGP;
-//    } else if (drm_device_is_pcie(dev)) {
-//        flags |= RADEON_IS_PCIE;
-//    } else {
-//        flags |= RADEON_IS_PCI;
-//    }
+    } else if (drm_device_is_pcie(dev)) {
+        flags |= RADEON_IS_PCIE;
+    } else {
+        flags |= RADEON_IS_PCI;
+    }
 
     /* radeon_device_init should report only fatal error
      * like memory allocation failure or iomapping failure,
@@ -745,6 +696,8 @@ int radeon_driver_load_kms(struct drm_device *dev, unsigned long flags)
     }
     return 0;
 }
+
+mode_t usermode;
 
 
 int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
@@ -848,3 +801,106 @@ uint32_t __div64_32(uint64_t *n, uint32_t base)
         return rem;
 }
 
+
+static struct pci_device_id pciidlist[] = {
+    radeon_PCI_IDS
+};
+
+
+#define API_VERSION     0x01000100
+
+#define SRV_GETVERSION  0
+#define SRV_ENUM_MODES  1
+#define SRV_SET_MODE    2
+
+int _stdcall display_handler(ioctl_t *io)
+{
+    int    retval = -1;
+    u32_t *inp;
+    u32_t *outp;
+
+    inp = io->input;
+    outp = io->output;
+
+    switch(io->io_code)
+    {
+        case SRV_GETVERSION:
+            if(io->out_size==4)
+            {
+                *outp  = API_VERSION;
+                retval = 0;
+            }
+            break;
+
+        case SRV_ENUM_MODES:
+            dbgprintf("SRV_ENUM_MODES inp %x inp_size %x out_size %x\n",
+                       inp, io->inp_size, io->out_size );
+
+            if( (outp != NULL) && (io->out_size == 4) &&
+                (io->inp_size == *outp * sizeof(mode_t)) )
+                {
+                retval = get_modes((mode_t*)inp, outp);
+            };
+            break;
+
+        case SRV_SET_MODE:
+            if( (inp != NULL) &&
+                (io->inp_size == sizeof(mode_t)) )
+            {
+                retval = set_user_mode((mode_t*)inp);
+            };
+            break;
+
+    };
+
+    return retval;
+}
+
+u32_t drvEntry(int action, char *cmdline)
+{
+    static char log[256];
+
+    struct pci_device_id  *ent;
+
+    dev_t   device;
+    int     err;
+    u32_t   retval = 0;
+
+    if(action != 1)
+        return 0;
+
+    if( GetService("DISPLAY") != 0 )
+        return 0;
+
+    if( cmdline && *cmdline )
+        parse_cmdline(cmdline, &usermode, log);
+
+    if(!dbg_open(log))
+    {
+        strcpy(log, "/rd/1/drivers/atikms.log");
+
+        if(!dbg_open(log))
+        {
+            printf("Can't open %s\nExit\n", log);
+            return 0;
+        };
+    }
+
+    enum_pci_devices();
+
+    ent = find_pci_device(&device, pciidlist);
+
+    if( unlikely(ent == NULL) )
+    {
+        dbgprintf("device not found\n");
+        return 0;
+    };
+
+    dbgprintf("device %x:%x\n", device.pci_dev.vendor,
+                                device.pci_dev.device);
+
+    err = drm_get_dev(&device.pci_dev, ent);
+
+    return RegService("DISPLAY", display_handler);
+
+};

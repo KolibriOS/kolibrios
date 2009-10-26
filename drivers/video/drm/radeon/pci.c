@@ -445,6 +445,71 @@ int enum_pci_devices()
     return 0;
 }
 
+#define PCI_FIND_CAP_TTL    48
+
+static int __pci_find_next_cap_ttl(unsigned int bus, unsigned int devfn,
+                   u8 pos, int cap, int *ttl)
+{
+    u8 id;
+
+    while ((*ttl)--) {
+        pos = PciRead8(bus, devfn, pos);
+        if (pos < 0x40)
+            break;
+        pos &= ~3;
+        id = PciRead8(bus, devfn, pos + PCI_CAP_LIST_ID);
+        if (id == 0xff)
+            break;
+        if (id == cap)
+            return pos;
+        pos += PCI_CAP_LIST_NEXT;
+    }
+    return 0;
+}
+
+static int __pci_find_next_cap(unsigned int bus, unsigned int devfn,
+                   u8 pos, int cap)
+{
+    int ttl = PCI_FIND_CAP_TTL;
+
+    return __pci_find_next_cap_ttl(bus, devfn, pos, cap, &ttl);
+}
+
+static int __pci_bus_find_cap_start(unsigned int bus,
+                    unsigned int devfn, u8 hdr_type)
+{
+    u16 status;
+
+    status = PciRead16(bus, devfn, PCI_STATUS);
+    if (!(status & PCI_STATUS_CAP_LIST))
+        return 0;
+
+    switch (hdr_type) {
+    case PCI_HEADER_TYPE_NORMAL:
+    case PCI_HEADER_TYPE_BRIDGE:
+        return PCI_CAPABILITY_LIST;
+    case PCI_HEADER_TYPE_CARDBUS:
+        return PCI_CB_CAPABILITY_LIST;
+    default:
+        return 0;
+    }
+
+    return 0;
+}
+
+
+int pci_find_capability(struct pci_dev *dev, int cap)
+{
+    int pos;
+
+    pos = __pci_bus_find_cap_start(dev->bus, dev->devfn, dev->hdr_type);
+    if (pos)
+        pos = __pci_find_next_cap(dev->bus, dev->devfn, pos, cap);
+
+    return pos;
+}
+
+
 #if 0
 /**
  * pci_set_power_state - Set the power state of a PCI device

@@ -7,23 +7,40 @@ dd start
 dd i_end
 dd mem
 dd mem
-dd 0
-dd 0
+dd cmdline
+dd path
 
 start:
+           mov eax, 68
+           mov ebx, 16
+           mov ecx, sz_display
+           int 0x40
+           test eax, eax
+           jnz .done             ; FIXME parse command line and
+                                 ;       call service
+
+	   xor eax, eax
+	   mov ecx, 1024
+	   mov edi, path
+	   cld
+	   repne scasb
+	   dec edi
+	   mov [edi], dword '.dll'
+	   mov [edi+4], al
 	   mov eax, 68
 	   mov ebx, 21
-           mov ecx, sz_kms
-           mov edx, sz_mode
+	   mov ecx, path
+	   mov edx, cmdline
 	   int 0x40
-
+.done:
 	   mov eax, -1
 	   int 0x40
 
-sz_kms   db '/rd/1/drivers/atikms.dll',0
-sz_mode  db '-m 1024x768  -l/hd0/2/atikms.log',0
+sz_display db 'DISPLAY',0
 
 align 4
 i_end:
-rb 16
+cmdline  rb 256
+path	 rb 1024
+	 rb 16	   ; stack
 mem:

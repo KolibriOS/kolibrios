@@ -1139,8 +1139,8 @@ drm_get_resource_start(struct drm_device *dev, unsigned int resource);
 resource_size_t
 drm_get_resource_len(struct drm_device *dev, unsigned int resource);
 
-bool set_mode(struct drm_device *dev, int width, int height);
-
+bool set_mode(struct drm_device *dev, struct drm_connector *connector,
+              mode_t *mode, bool strict);
 
 
 #endif

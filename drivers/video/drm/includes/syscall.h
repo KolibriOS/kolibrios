@@ -103,7 +103,7 @@ int dbgprintf(const char* format, ...);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-extern inline int GetScreenSize()
+static inline int GetScreenSize()
 {
   int retval;
 
@@ -113,7 +113,7 @@ extern inline int GetScreenSize()
   return retval;
 }
 
-extern inline int GetScreenBpp()
+static inline int GetScreenBpp()
 {
   int retval;
 
@@ -123,7 +123,7 @@ extern inline int GetScreenBpp()
   return retval;
 }
 
-extern inline int GetScreenPitch()
+static inline int GetScreenPitch()
 {
   int retval;
 
@@ -133,7 +133,7 @@ extern inline int GetScreenPitch()
   return retval;
 }
 
-extern inline u32_t GetPgAddr(void *mem)
+static inline u32_t GetPgAddr(void *mem)
 {
      u32_t retval;
 
@@ -144,7 +144,7 @@ extern inline u32_t GetPgAddr(void *mem)
      return retval;
 };
 
-extern inline void CommitPages(void *mem, u32_t page, u32_t size)
+static inline void CommitPages(void *mem, u32_t page, u32_t size)
 {
      size = (size+4095) & ~4095;
      __asm__ __volatile__ (
@@ -154,7 +154,7 @@ extern inline void CommitPages(void *mem, u32_t page, u32_t size)
      __asm__ __volatile__ ("":::"eax","ebx","ecx");
 };
 
-extern inline void UnmapPages(void *mem, size_t size)
+static inline void UnmapPages(void *mem, size_t size)
 {
      size = (size+4095) & ~4095;
      __asm__ __volatile__ (
@@ -164,7 +164,7 @@ extern inline void UnmapPages(void *mem, size_t size)
      __asm__ __volatile__ ("":::"eax","ecx");
 };
 
-extern inline void usleep(u32_t delay)
+static inline void usleep(u32_t delay)
 {
      if( !delay )
         delay++;
@@ -256,6 +256,22 @@ u32 __RegService(char *name, srv_proc_t proc)
   return retval;
 };
 */
+
+
+static inline u32_t GetService(const char *name)
+{
+    u32_t handle;
+
+    __asm__ __volatile__
+    (
+     "pushl %%eax \n\t"
+     "call *__imp__GetService"
+     :"=eax" (handle)
+     :"a" (name)
+     :"ebx","ecx","edx","esi", "edi"
+  );
+  return handle;
+};
 
 static inline u32_t safe_cli(void)
 {
