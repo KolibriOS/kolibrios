@@ -20,6 +20,7 @@
 
 ini.MAX_NAME_LEN  = 1024
 ini.MAX_VALUE_LEN = 4096
+ini.MAX_BOOL_LEN  = 9
 ini.MEM_SIZE	  = 4096
 ini.BLOCK_SIZE	  = ini.MEM_SIZE / 2
 

@@ -19,6 +19,9 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
+;; 2009-10-27 (vkos)                                                                              ;;
+;;   new features:                                                                                ;;
+;;     - new function: ini.get_bool                                                               ;;
 ;; 2009-10-25 (vkos)                                                                              ;;
 ;;   new features:                                                                                ;;
 ;;     - new function: ini.get_option_str                                                         ;;
@@ -676,7 +679,7 @@ proc ini.get_option_str _f_name, _sec_name, _key_name, _option_list, _length, _d
 ;> _key_name = key name <asciiz>                                                                  ;;
 ;> _option_list = list of options <pointer to zero-ended archive of asciiz-pointers>              ;;
 ;> _length = maximum length of string                                                             ;;
-;> _def_val = default value to return if no key, section or file found <dword>                    ;;
+;> _def_val = default value to return if no key, section, file found or incorrect string <dword>  ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = [_def_val] (error) / number of option string in _option_list <dword>                     ;;
 ;;================================================================================================;;
@@ -707,7 +710,40 @@ endl
 	mov eax, dword [_def_val]
 	
 .exit:
-; 	leave
+	ret
+endp
+
+;; Note that order of following array should be: false-true-false-true-...-0
+_bool_strings_list:
+	dd _bool_no
+	dd _bool_yes
+	dd _bool_disabled
+	dd _bool_enabled
+	dd _bool_false
+	dd _bool_true
+	dd 0
+
+_bool_no:	db "no", 0
+_bool_false:	db "false", 0
+_bool_disabled:	db "disabled", 0
+_bool_yes:	db "yes", 0
+_bool_true:	db "true", 0
+_bool_enabled:	db "enabled", 0
+
+;;================================================================================================;;
+proc ini.get_bool _f_name, _sec_name, _key_name, _def_val ;///////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Read boolean value                                                                             ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _f_name = ini filename <asciiz>                                                                ;;
+;> _sec_name = section name <asciiz>                                                              ;;
+;> _key_name = key name <asciiz>                                                                  ;;
+;> _def_val = default value to return if no key, section, file found or incorrect string <dword>  ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = [_def_val] (error) / number of option string in _option_list <dword>                     ;;
+;;================================================================================================;;
+	stdcall ini.get_option_str, [_f_name], [_sec_name], [_key_name], _bool_strings_list, ini.MAX_BOOL_LEN, [_def_val]
+	and eax, 0x1
 	ret
 endp
 
@@ -757,7 +793,8 @@ export	libini._.init	  , 'lib_init'		, \
 	ini.get_str	  , 'ini_get_str'	, \
 	ini.get_int	  , 'ini_get_int'	, \
 	ini.get_color	  , 'ini_get_color'	, \
+	ini.get_option_str, 'ini_get_option_str', \
+	ini.get_bool	  , 'ini_get_bool'	, \
 	ini.set_str	  , 'ini_set_str'	, \
 	ini.set_int	  , 'ini_set_int'	, \
-	ini.set_color	  , 'ini_set_color'	, \
-	ini.get_option_str, 'ini_get_option_str';, \
+	ini.set_color	  , 'ini_set_color'	;, \
