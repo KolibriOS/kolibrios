@@ -477,7 +477,7 @@ ETH_API:
 .bytes_tx:
 	add	eax, ETH_DRV_LIST
 	mov	eax, dword [eax]
-	mov	eax, dword [eax + ETH_DEVICE.bytes_tx + 4]
+	mov	ebx, dword [eax + ETH_DEVICE.bytes_tx + 4]
 	mov	eax, dword [eax + ETH_DEVICE.bytes_tx]
 	mov	[esp+20+4], ebx 			; TODO: fix this ugly code
 	ret
