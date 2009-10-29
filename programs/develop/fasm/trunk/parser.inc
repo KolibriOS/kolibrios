@@ -126,6 +126,7 @@ parser:
 	dec	esi
 	cmp	al,3Bh
 	je	skip_rest_of_line
+	mov	[parenthesis_stack],0
 	call	parse_argument
 	jmp	parse_next_line
       empty_line:

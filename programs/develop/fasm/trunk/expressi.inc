@@ -162,6 +162,8 @@ convert_number:
 	ret
       preprocessor_value:
 	dec	edi
+	cmp	[hash_tree],0
+	je	invalid_value
 	lods	byte [esi]
 	cmp	al,1Ah
 	jne	invalid_value

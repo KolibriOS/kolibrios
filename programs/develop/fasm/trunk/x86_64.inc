@@ -5969,6 +5969,7 @@ extrq_instruction:
 	cmp	al,'('
 	jne	invalid_operand
 	xor	bl,bl
+	xchg	bl,[postbyte_register]
 	call	store_nomem_instruction
 	call	get_byte_value
 	stosb
@@ -6989,15 +6990,16 @@ store_instruction:
 	stos	dword [edi]
 	ret
       address_immediate_sib:
-	test	ch,not 44h
+	test	ch,44h
+	jnz	address_immediate_sib_32bit
+	test	ch,not 88h
 	jnz	invalid_address_size
-	test	ecx,0FF0000h
-	jnz	address_immediate_sib_nosignextend
-	test	edx,80000000h
-	jz	address_immediate_sib_prefix_ok
-      address_immediate_sib_nosignextend:
-	call	address_32bit_prefix
-      address_immediate_sib_prefix_ok:
+	xor	eax,eax
+	bt	edx,31
+	sbb	eax,0
+	cmp	eax,[address_high]
+	jne	value_out_of_range
+      address_immediate_sib_store:
 	call	store_instruction_code
 	mov	al,100b
 	mov	ah,100101b
@@ -7006,6 +7008,14 @@ store_instruction:
 	or	al,cl
 	stos	word [edi]
 	jmp	store_address_32bit_value
+      address_immediate_sib_32bit:
+	test	ecx,0FF0000h
+	jnz	address_immediate_sib_nosignextend
+	test	edx,80000000h
+	jz	address_immediate_sib_store
+      address_immediate_sib_nosignextend:
+	call	address_32bit_prefix
+	jmp	address_immediate_sib_store
       address_eip_based:
 	mov	al,67h
 	stos	byte [edi]

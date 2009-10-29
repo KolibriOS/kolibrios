@@ -4077,7 +4077,7 @@ dump_symbols:
 	je	prepare_string
 	add	edx,0Ch
 	cmp	al,0C0h
-	jne	prepare_strings_table
+	jb	prepare_strings_table
 	add	edx,4
 	jmp	prepare_strings_table
       prepare_string:
