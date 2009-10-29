@@ -936,6 +936,11 @@ fb_mouse:
 	add	cx,fb_size_y
 	cmp	ax,cx
 	ja	.exit_fb
+
+	cmp	fb_mouse_keys,0
+	jz	@f
+	mov	fb_select_flag,1
+@@:
 ;------------------------------------------------------- 	
 	cmp	fb_mouse_keys_delta,1
 	je	.enter_1
