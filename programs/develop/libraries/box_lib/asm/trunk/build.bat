@@ -4,8 +4,8 @@ if not exist bin mkdir bin
 @fasm.exe  -m 16384 ctrldemo.asm bin\ctrldemo.kex
 @kpack bin\ctrldemo.kex
 
-@fasm.exe  -m 16384 OpenDial.asm bin\OpenDial.kex
-@kpack bin\OpenDial.kex
+@fasm.exe  -m 16384 OpenDial.asm bin\OpenDial
+@kpack bin\OpenDial
 
 @copy reload_16x16_8b.png bin\reload_16x16_8b.png
 @copy cnv_png.obj bin\cnv_png.obj

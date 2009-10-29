@@ -40,6 +40,7 @@ dd	path
 
 include '../../../../../macros.inc'
 include '../../load_lib.mac'
+include 'editbox_ex.mac'
 ;include 'macros.inc'
 ;include 'load_lib.mac'
 @use_library
@@ -119,6 +120,9 @@ control_minimal_window_size:
 	ret
 ;---------------------------------------------------------------------
 key:
+	mov	al,[focus_pointer]
+	test	al,al
+	jne	key_ASCII
 	mcall	2
 	xor	ebx,ebx
 	cmp	[extended_key],1
@@ -172,6 +176,8 @@ key:
 	je	NumPad_invert_Up
 	cmp	ah,158
 	je	symbol_a_up
+	cmp	ah,15 ;143 ; Tab
+	je	change_focus_area
 	jmp	still
 .extended_key:
 	mov	[extended_key],0
@@ -262,6 +268,62 @@ key:
 	mov	[file_browser_data_1.draw_scroll_bar],0
 @@:
 	ret
+;---------------------------------------------------------------------
+change_focus_area:
+	mov	al,[focus_pointer]
+	inc	al
+	and	al,1
+	mov	[focus_pointer],al
+.1:
+	mov	edi,edit1
+	test	al,al
+	jne	@f
+	mov	[file_browser_data_1.select_panel_counter],1
+	and	[edi+44],dword 0xFFFFFFFD ; ed_focus
+	mov [edi+12],dword 0xffffff; color white
+	call	draw_draw_file_browser1
+    mcall	66, 1, 1
+	jmp	still
+@@:
+	mov	[file_browser_data_1.select_panel_counter],0
+	or	[edi+44],dword ed_focus
+	mov [edi+12],dword 0xffffb0 ; color yellow
+	call	draw_draw_file_browser1
+    mcall	66, 1, 0
+	jmp	still
+;---------------------------------------------------------------------
+key_ASCII:
+	mcall	2
+	cmp	ah,9
+	je	change_focus_area
+	cmp	ah,13
+	je	.load_dir
+	cmp	ah,27
+	je	button.exit
+	push    dword name_editboxes
+	call    [edit_box_key]
+	jmp	still
+.load_dir:
+	mov	[file_browser_data_1.select_panel_counter],1
+	xor	eax,eax
+	mov	[focus_pointer],al
+    	mcall	66, 1, 1
+
+	xor	eax,eax
+	mov	esi,dir_pach
+	cld
+@@:
+	lodsb
+	test	al,al
+	jne	@r
+	sub	esi,2
+	cmp	[esi],byte '/'
+	jne	@f
+	xor	eax,eax
+	mov	[esi],al
+@@:
+	call	load_next_dir.1
+	jmp	still
 ;---------------------------------------------------------------------
 select_disk:
 	call	check_alt
@@ -564,16 +626,29 @@ mouse:
 	cmp	[scroll_bar_data_vertical.delta2],0
 	jne	.scrollbar
 
+	mov	[file_browser_data_1.select_flag],0
+
 	push	dword file_browser_data_1
 	call	[FileBrowser_mouse]
 
 	mov	eax,file_browser_data_1.mouse_keys_delta
 	cmp	[eax],dword 3
-	jne	.scrollbar
+	jne	.check_focus ;.scrollbar
 	mov	[eax],dword 0
 	call	load_next_dir
 	jmp	still
-	
+;---------------------------------------------------
+.check_focus:
+	mov	ebx,[file_browser_data_1.select_flag]
+	test	ebx,ebx
+	jz	.scrollbar  ;@f
+	mov	al,[focus_pointer]
+	test	al,al
+	jz	.scrollbar
+	xor	eax,eax
+	mov	[focus_pointer],al
+	jmp	change_focus_area.1
+;---------------------------------------------------
 .scrollbar:
 	mov	eax,[scroll_bar_data_vertical.max_area]
 	cmp	eax,[scroll_bar_data_vertical.cur_area]
@@ -623,11 +698,31 @@ mouse:
 	call	[menu_bar_mouse]
 
 	cmp	[menu_data_3.click],dword 1
-	jne	.check_scroll_event
+	jne	.check_editboxes
 
 	cmp	[menu_data_3.cursor_out],dword 0
 	jne	analyse_out_menu_3
 	jmp	.menu_bar_1
+;---------------------------------------------------
+.check_editboxes:
+	mov	eax,[edit1+44]
+	and	eax,10b
+	push    dword name_editboxes
+	call    [edit_box_mouse]
+	mov	ebx,[edit1+44]
+	and	ebx,10b
+	cmp	eax,ebx
+	je	.check_scroll_event
+	mov	al,[focus_pointer]
+	test	al,al
+	jnz	.check_scroll_event
+	xor	eax,eax
+	test	ebx,10b
+	jz	@f
+	inc	eax
+@@:
+	mov	[focus_pointer],al
+	jmp	change_focus_area.1
 ;---------------------------------------------------
 .check_scroll_event:
 	mov  eax,[mouse_position]
@@ -818,7 +913,10 @@ load_next_dir:
 	mov	ecx,[scroll_bar_data_vertical.y]
 	inc	ecx
 	mcall	13,,,0xcccccc
-
+	mov	edi,edit1
+	xor	eax,eax
+	mov	[edi+44],eax
+	mov [edi+12],dword 0xffffff ; color white
 	call	draw_draw_file_browser1
 	ret
 .exit_dir:
@@ -1199,6 +1297,32 @@ draw_for_fs_errors:
 	ret
 ;---------------------------------------------------------------------
 draw_dir_pach:
+	mov	esi,dir_pach
+	cld
+@@:
+	lodsb
+	test	al,al
+	jne	@r
+	sub	esi,dir_pach
+	mov	eax,esi
+	dec	eax
+	mov	edi, edit1
+	mov	[edi+48], eax  ;ed_size
+	mov	[edi+52], eax  ;ed_pos
+
+	mov	eax,[file_browser_data_1.x]
+	mov	ebx,eax
+	shr	ebx,16
+	and	eax,0xffff
+
+	mov	[edi],eax
+	mov	[edi+4],ebx
+
+	push    dword name_editboxes
+	call    [edit_box_draw]
+	ret
+	
+draw_dir_pach_1:
 	mov	ebx,[file_browser_data_1.x]
 	mcall	13,,<7,15>,0xffffb0
 	mov	bx,10
@@ -1427,10 +1551,18 @@ load_icons:
 	jmp	button.exit
 ;---------------------------------------------------------------------
 sort_directory:
-	push	dword [sort_type] 	; sort mode
 	mov	eax,[file_browser_data_1.folder_data]
-	push	dword [eax+4] ; number of files
+	mov	ebx,[eax+4] ; number of files
 	add	eax,32
+	cmp	[eax+40],word '..'
+	jne	@f
+	cmp	[eax+40+2],byte 0
+	jne	@f
+	dec	ebx
+	add	eax,304
+@@:
+	push	dword [sort_type] 	; sort mode
+	push	ebx ; number of files
 	push	eax ; 	data files
 	call	[sort_dir]
 	ret
@@ -2176,6 +2308,8 @@ error_window	db 0
 
 filter_flag	db 1
 
+focus_pointer	db 0
+;---------------------------------------------------------------------
 start_pach:
 	db '/rd/1',0
 
@@ -2447,6 +2581,16 @@ file_browser_data_1:
 .draw_panel_selection_flag	dd 0 ;+192
 .mouse_pos_old			dd 0 ;+196
 .marked_counter			dd 0 ;+200
+;---------------------------------------------------------------------
+; for EDITBOX
+align 4
+name_editboxes:
+edit1 edit_box 200,10,7,0xffffff,0xbbddff,0,0,0,4095,dir_pach,mouse_dd,,0
+name_editboxes_end:
+
+;mouse_flag: dd 0x0
+
+mouse_dd	rd 1
 ;---------------------------------------------------------------------
 ;---------------------------------------------------------------------
 features_table:
