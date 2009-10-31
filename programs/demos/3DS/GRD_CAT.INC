@@ -1,6 +1,7 @@
 ROUND equ 8
 CATMULL_SHIFT equ 8
 gouraud_triangle_z:
+
 ;----procedure drawing gouraud triangle with z coordinate
 ;----interpolation ( Catmull alghoritm )-----------------
 ;------------------in - eax - x1 shl 16 + y1 ------------
@@ -50,14 +51,30 @@ gouraud_triangle_z:
 .dc23g equ dword[ebp-68]
 .dc23b equ dword[ebp-72]
 
-.c1r   equ dword[ebp-76]
-.c1g   equ dword[ebp-80]
-.c1b   equ dword[ebp-84]
-.c2r   equ dword[ebp-88]
-.c2g   equ dword[ebp-92]
-.c2b   equ dword[ebp-96]
-.zz1   equ dword[ebp-100]
-.zz2   equ dword[ebp-104]
+.zz1   equ dword[ebp-76]
+.c1r   equ dword[ebp-80]
+.c1g   equ dword[ebp-84]
+.c1b   equ dword[ebp-88]
+.zz2   equ dword[ebp-92]
+.c2r   equ dword[ebp-96]
+.c2g   equ dword[ebp-100]
+.c2b   equ dword[ebp-104]
+;.zz1   equ dword[ebp-100]
+;.zz2   equ dword[ebp-104]
+
+.c1bM equ [ebp-88]
+.c2bM equ [ebp-104]
+.c1rM equ [ebp-80]
+.c2rM equ [ebp-96]
+.dc23bM equ [ebp-72]
+.dc13bM equ [ebp-52]
+.dc12bM equ [ebp-32]
+.dc12rM equ [ebp-24]
+.dc13rM equ [ebp-44]
+.dc23rM equ [ebp-64]
+if Ext=MMX
+      emms
+end if
 
        mov     ebp,esp
      ;  sub     esp,84
@@ -141,7 +158,7 @@ gouraud_triangle_z:
        idiv	ebx
      ;  mov .dc12g,eax
        push	eax
-       mov	ax,word[.col2b]
+       mov	ax,word[.col2b]        ;;---
        sub	ax,word[.col1b]
        cwde
        shl	eax,ROUND
@@ -323,7 +340,21 @@ gouraud_triangle_z:
        call	gouraud_line_z
 
        popad
+if Ext >= MMX
+       movq	mm0,.c1bM
+       paddd	mm0,qword .dc13bM
+       movq	.c1bM,mm0
+       movq	mm1,.c2bM
+       paddd	mm1,qword .dc12bM
+       movq	.c2bM,mm1
 
+       movq	mm0,.c1rM
+       paddd	mm0,qword .dc13rM
+       movq	.c1rM,mm0
+       movq	mm1,.c2rM
+       paddd	mm1,qword .dc12rM
+       movq	.c2rM,mm1
+else
        mov	edx,.dc13r
        add	.c1r,edx
        mov	edx,.dc13g
@@ -336,11 +367,12 @@ gouraud_triangle_z:
        add	.c2g,edx
        mov	edx,.dc12b
        add	.c2b,edx
+
        mov	edx,.dz13
        add	.zz1,edx
        mov	edx,.dz12
        add	.zz2,edx
-
+end if
        add	eax,.dx13
        add	ebx,.dx12
        inc	cx
@@ -400,6 +432,21 @@ gouraud_triangle_z:
 
        popad
 
+if Ext >= MMX
+       movq	mm0,.c1bM
+       paddd	mm0,qword .dc13bM
+       movq	.c1bM,mm0
+       movq	mm1,.c2bM
+       paddd	mm1,qword .dc23bM
+       movq	.c2bM,mm1
+
+       movq	mm0,.c1rM
+       paddd	mm0,qword .dc13rM
+       movq	.c1rM,mm0
+       movq	mm1,.c2rM
+       paddd	mm1,qword .dc23rM
+       movq	.c2rM,mm1
+else
        mov	edx,.dc13r
        add	.c1r,edx
        mov	edx,.dc13g
@@ -416,7 +463,7 @@ gouraud_triangle_z:
        add	.zz1,edx
        mov	edx,.dz23
        add	.zz2,edx
-
+end if
        add	eax,.dx13
        add	ebx,.dx23
        inc	cx
@@ -443,13 +490,25 @@ gouraud_line_z:
 .c2b equ ebp+24
 .c2g equ ebp+26
 .c2r equ ebp+28
+
 .dz   equ dword[ebp-4]
-.dc_r equ dword[ebp-8]
+.dc_b equ dword[ebp-8]
 .dc_g equ dword[ebp-12]
-.dc_b equ dword[ebp-14]
-.cr   equ dword[ebp-18]
-.cg   equ dword[ebp-22]
-.cb   equ dword[ebp-26]
+.dc_r equ dword[ebp-16]
+.c_z  equ dword[ebp-20]
+.cb   equ dword[ebp-24]
+.cg   equ dword[ebp-28]
+.cr   equ dword[ebp-32]
+;.cg2  equ dword[ebp-36]
+
+
+.crM  equ ebp-32
+.cgM  equ ebp-28
+.cbM  equ ebp-24
+
+.dc_rM equ ebp-16
+.dc_gM equ ebp-12
+.dc_bM equ ebp-8
 	mov	  ebp,esp
 
 	mov	ax,.y
@@ -486,10 +545,10 @@ gouraud_line_z:
 	idiv	ebx
 	push	eax
 
-	mov	ax,word[.c2r]
-	sub	ax,word[.c1r]
+	mov	ax,word[.c2b]
+	sub	ax,word[.c1b]
 	cwde
-	shl	eax,ROUND	  ; dc_r = c2r-c1r/x2-x1
+	shl	eax,ROUND
 	cdq
 	idiv	ebx
 	push	eax
@@ -502,15 +561,15 @@ gouraud_line_z:
 	idiv	ebx
 	push	eax
 
-	mov	ax,word[.c2b]
-	sub	ax,word[.c1b]
+	mov	ax,word[.c2r]
+	sub	ax,word[.c1r]
 	cwde
-	shl	eax,ROUND
+	shl	eax,ROUND	  ; dc_r = c2r-c1r/x2-x1
 	cdq
 	idiv	ebx
 	push	eax
 
-	cmp	word[.x1],0
+	cmp	word[.x1],0	; clipping on function
 	jg	@f
 	mov	eax,.dz
 	movsx	ebx,word[.x1]
@@ -539,7 +598,7 @@ gouraud_line_z:
 	jl	@f
 	mov	word[.x2],SIZE_X
      @@:
-	sub	esp,12	    ; calculate memory begin
+	sub	esp,16	    ; calculate memory begin
 	mov	edx,SIZE_X	 ; in buffers
 	movzx	eax,.y
 	mul	edx
@@ -556,6 +615,9 @@ gouraud_line_z:
 	sub	cx,word[.x1]
 	movzx	ecx,cx
 	mov	ebx,.z1 	 ; ebx - currrent z shl CATMULL_SIFT
+;if Ext >= SSE
+;        mov     .cz,edx
+;end if
 	mov	edx,.dz 	 ; edx - delta z
 	movzx	eax,word[.c1r]
 	shl	eax,ROUND
@@ -566,9 +628,37 @@ gouraud_line_z:
 	movzx	eax,word[.c1b]
 	shl	eax,ROUND
 	mov	.cb,eax
+if Ext = MMX
+;        mov     .c_z,edx
+	movd	mm2,[.dc_bM]	     ; delta color blue MMX
+	movd	mm3,[.cbM]	     ; current blue MMX
+	movq	mm5,[.dc_rM]
+	movq	mm4,[.crM]
+	pxor	mm6,mm6
+end if
+
+
       .ddraw:
-	cmp	ebx,dword[esi]
-	jge	.skip
+;if Ext = MMX
+;        movq    mm0,mm3
+;        psrsq   mm0,32
+;        movd    ebx,mm0
+;end if
+	cmp	ebx,dword[esi]	 ; esi - z_buffer
+	jge	@f		 ; edi - Screen buffer
+if Ext = MMX
+	movq	mm0,mm3 	 ; mm0, mm1 - temp registers
+	psrld	mm0,ROUND
+	movq	mm1,mm4
+	psrld	mm1,ROUND
+	packssdw  mm1,mm0
+	packuswb  mm1,mm6
+;        movd     [edi],mm1
+	movd	  eax,mm1
+	stosw
+	shr	  eax,16
+	stosb
+else
 	mov	eax,.cr
 	sar	eax,ROUND
 	stosb
@@ -578,19 +668,29 @@ gouraud_line_z:
 	mov	eax,.cb
 	sar	eax,ROUND
 	stosb
+end if
 	mov	dword[esi],ebx
+;if Ext = NON
 	jmp	.no_skip
-      .skip:
+;end if
+      @@:
 	add	edi,3
       .no_skip:
 	add	esi,4
+;if Ext=NON
 	add	ebx,edx
-	mov	eax,.dc_r
-	add	.cr,eax
+;end if
+if Ext=MMX
+	paddd	mm3,mm2
+	paddd	mm4,mm5
+else
 	mov	eax,.dc_g
 	add	.cg,eax
 	mov	eax,.dc_b
 	add	.cb,eax
+	mov	eax,.dc_r
+	add	.cr,eax
+end if
 	loop	.ddraw
 
    .gl_quit:

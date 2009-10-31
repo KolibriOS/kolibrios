@@ -1,6 +1,7 @@
 ;---------------------------------------------------------------------
 ;--------------------textured triangle procedure----------------------
 ;---------------------------------------------------------------------
+
 tex_triangle:
 ;----------in - eax - x1 shl 16 + y1
 ;-------------- ebx - x2 shl 16 + y2
@@ -15,8 +16,34 @@ tex_triangle:
 .tex_y2 equ  ebp+10
 .tex_x3 equ  ebp+12
 .tex_y3 equ  ebp+14
-  mov ebp,esp
 
+.x1 equ ebp-2 ;dw ?
+.y1 equ ebp-4 ;dw ?
+.x2 equ ebp-6 ;dw ?
+.y2 equ ebp-8 ;dw ?
+.x3 equ ebp-10 ;dw ?
+.y3 equ ebp-12 ;dw ?
+.dx12 equ ebp-16 ;dd ?
+.dx13 equ ebp-20 ;dd ?
+.dx23 equ ebp-24 ;dd ?
+.tex_dx12 equ ebp-28 ;dd ?
+.tex_dy12 equ ebp-32 ;dd ?
+.tex_dx13 equ ebp-36 ;dd ?
+.tex_dy13 equ ebp-40 ;dd ?
+.tex_dx23 equ ebp-44 ;dd ?
+.tex_dy23 equ ebp-48 ;dd ?
+.tex_ptr equ ebp-52 ;dd ?
+
+.scan_x2 equ ebp-56 ;dd ?
+.scan_y2 equ ebp-60 ;dd ?
+.scan_x1 equ ebp-64 ;dd ?
+.scan_y1 equ ebp-68 ;dd ?
+
+  mov ebp,esp
+  sub esp,68
+;if  Ext = MMX
+;  emms
+;end if
   mov edx,dword[.tex_x1]		  ; check all parameters
   or dx,dx
   jl .tt_end
@@ -125,9 +152,9 @@ tex_triangle:
   sub bx,[.y1]
   jnz .tt_dx12_make
 
-  mov [.dx12],0
-  mov [.tex_dx12],0
-  mov [.tex_dy12],0
+  mov dword[.dx12],0
+  mov dword[.tex_dx12],0
+  mov dword[.tex_dy12],0
   jmp .tt_dx12_done
 .tt_dx12_make:
   mov ax,[.x2]
@@ -155,13 +182,13 @@ tex_triangle:
   mov [.tex_dy12],eax			  ; tex_dy12 = (tex_y2-tex_y1)/(y2-y1)
 .tt_dx12_done:
 
-  movsx ebx,[.y3]
-  sub bx,[.y1]
+  movsx ebx,word[.y3]
+  sub bx,word[.y1]
   jnz .tt_dx13_make
 
-  mov [.dx13],0
-  mov [.tex_dx13],0
-  mov [.tex_dy13],0
+  mov dword [.dx13],0
+  mov dword [.tex_dx13],0
+  mov dword [.tex_dy13],0
   jmp .tt_dx13_done
 .tt_dx13_make:
   mov ax,[.x3]
@@ -189,13 +216,13 @@ tex_triangle:
   mov [.tex_dy13],eax			    ; tex_dy13 = (tex_y3-tex_y1)/(y3-y1)
 .tt_dx13_done:
 
-  movsx ebx,[.y3]
-  sub bx,[.y2]
+  movsx ebx,word[.y3]
+  sub bx,word[.y2]
   jnz .tt_dx23_make
 
-  mov [.dx23],0
-  mov [.tex_dx23],0
-  mov [.tex_dy23],0
+  mov dword [.dx23],0
+  mov dword [.tex_dx23],0
+  mov dword [.tex_dy23],0
   jmp .tt_dx23_done
 .tt_dx23_make:
   mov ax,[.x3]
@@ -223,7 +250,7 @@ tex_triangle:
   mov [.tex_dy23],eax			; tex_dy23 = (tex_y3-tex_y2)/(y3-y2)
 .tt_dx23_done:
 
-  movsx eax,[.x1]
+  movsx eax,word[.x1]
   shl eax,ROUND
   mov ebx,eax
 
@@ -245,143 +272,142 @@ tex_triangle:
   push ebx
   push cx
   push ebp
+;; Madis
+;if Ext=MMX                          ; With MMX enabled it reverse light vectors ????
+;  mov   dword[esp-8],ROUND
+;  mov   dword[esp-4],0 ; Is this a bug? Explanation down 3 lines
+;  movq  mm0,qword[.scan_y1]
+;  movq  mm1,qword[.scan_y2]
+;  psrad mm0,[esp-8] ;This instr. won't allow modifiers BYTE, WORD, etc.
+;  psrad mm1,[esp-8] ;It always defaults to QWORD
+;  packssdw mm0,mm1
+;  movq  [esp-8],mm0
+;  sub   esp,8
+;else
 
-  mov edx, [.scan_y2]
-  sar edx, ROUND
-  push dx
-  mov edx, [.scan_x2]
-  sar edx, ROUND
-  push dx
-  mov edx, [.scan_y1]
-  sar edx, ROUND
-  push dx
-  mov edx, [.scan_x1]
-  sar edx, ROUND
-  push dx
-  push [.tex_ptr]
+   push     dword[.scan_y2]  ; now I push variables on stack without shifting
+   push     dword[.scan_x2]
+   push     dword[.scan_y1]
+   push     dword[.scan_x1]
 
-  push cx
-  mov edx,ebx
-  sar edx,ROUND
-  push dx
-  mov edx,eax
-  sar edx,ROUND
-  push dx
-  call textured_line
+;end if
 
-  pop ebp
-  pop cx
-  pop ebx
-  pop eax
-  pop edi
 
-  mov edx, [.tex_dx13]
-  add [.scan_x1], edx
-  mov edx, [.tex_dx12]
-  add [.scan_x2], edx
-  mov edx, [.tex_dy13]
-  add [.scan_y1], edx
-  mov edx, [.tex_dy12]
-  add [.scan_y2], edx
 
-  add eax, [.dx13]
-  add ebx, [.dx12]
-  inc cx
-  cmp cx,[.y2]
-  jl .tt_loop1
+  push	dword[.tex_ptr]
+
+  push	cx
+  mov	edx,ebx
+  sar	edx,ROUND
+  push	dx
+  mov	edx,eax
+  sar	edx,ROUND
+  push	dx
+  call	textured_line
+
+  pop	ebp
+  pop	cx
+  pop	ebx
+  pop	eax
+  pop	edi
+
+  mov	edx, [.tex_dx13]
+  add	[.scan_x1], edx
+  mov	edx, [.tex_dx12]
+  add	[.scan_x2], edx
+  mov	edx, [.tex_dy13]
+  add	[.scan_y1], edx
+  mov	edx, [.tex_dy12]
+  add	[.scan_y2], edx
+
+  add	eax, [.dx13]
+  add	ebx, [.dx12]
+  inc	cx
+  cmp	cx,[.y2]
+  jl	.tt_loop1
+
 .tt_loop1_end:
 
 
-  mov cx,[.y2]
-  cmp cx, [.y3]
-  jge .tt_loop2_end
+  mov	cx, [.y2]
+  cmp	cx, [.y3]
+  jge	.tt_loop2_end
 
-  movsx ebx,[.x2]
-  shl ebx,ROUND
+  movsx ebx,word[.x2]
+  shl	ebx,ROUND
 
   movsx edx, word[.tex_x2]
-  shl edx,ROUND
-  mov [.scan_x2],edx
+  shl	edx,ROUND
+  mov	[.scan_x2],edx
   movsx edx, word[.tex_y2]
-  shl edx,ROUND
-  mov [.scan_y2],edx
+  shl	edx,ROUND
+  mov	[.scan_y2],edx
 
 .tt_loop2:
-  push edi
-  push eax
-  push ebx
-  push cx
-  push ebp
+  push	edi
+  push	eax
+  push	ebx
+  push	cx
+  push	ebp
+;; Madis
+;if Ext=MMX
+;  mov   dword[esp-8],ROUND
+;  mov   dword[esp-4],0 ; Is this a bug? Explanation down 3 lines
+;  movq  mm0,qword[.scan_y1]
+;  movq  mm1,qword[.scan_y2]
+;  psrad mm0,[esp-8] ;This instr. won't allow modifiers BYTE, WORD, etc.
+;  psrad mm1,[esp-8] ;It always defaults to QWORD
+;  packssdw mm0,mm1
+;  movq  [esp-8],mm0
+;  sub   esp,8
+;else
 
-  mov edx, [.scan_y2]
-  sar edx, ROUND
-  push dx
-  mov edx, [.scan_x2]
-  sar edx, ROUND
-  push dx
-  mov edx, [.scan_y1]
-  sar edx, ROUND
-  push dx
-  mov edx, [.scan_x1]
-  sar edx, ROUND
-  push dx
-  push [.tex_ptr]
+;end if
+  push	dword[.scan_y2]
+  push	dword[.scan_x2]
+  push	dword[.scan_y1]
+  push	dword[.scan_x1]
 
-  push cx
-  mov edx,ebx
-  sar edx,ROUND
-  push dx
-  mov edx,eax
-  sar edx,ROUND
-  push dx
-  call textured_line
 
-  pop ebp
-  pop cx
-  pop ebx
-  pop eax
-  pop edi
 
-  mov edx, [.tex_dx13]
-  add [.scan_x1], edx
-  mov edx, [.tex_dx23]
-  add [.scan_x2], edx
-  mov edx, [.tex_dy13]
-  add [.scan_y1], edx
-  mov edx, [.tex_dy23]
-  add [.scan_y2], edx
+  push	dword[.tex_ptr]
 
-  add eax, [.dx13]
-  add ebx, [.dx23]
-  inc cx
-  cmp cx,[.y3]
-  jl .tt_loop2
+  push	cx
+  mov	edx,ebx
+  sar	edx,ROUND
+  push	dx
+  mov	edx,eax
+  sar	edx,ROUND
+  push	dx
+  call	textured_line
+
+  pop	ebp
+  pop	cx
+  pop	ebx
+  pop	eax
+  pop	edi
+
+  mov	edx, [.tex_dx13]
+  add	[.scan_x1], edx
+  mov	edx, [.tex_dx23]
+  add	[.scan_x2], edx
+  mov	edx, [.tex_dy13]
+  add	[.scan_y1], edx
+  mov	edx, [.tex_dy23]
+  add	[.scan_y2], edx
+
+  add	eax, [.dx13]
+  add	ebx, [.dx23]
+  inc	cx
+  cmp	cx,[.y3]
+  jl	.tt_loop2
+
 .tt_loop2_end:
 
 .tt_end:
- mov esp,ebp
-ret 12
-.x1 dw ?
-.y1 dw ?
-.x2 dw ?
-.y2 dw ?
-.x3 dw ?
-.y3 dw ?
-.dx12 dd ?
-.dx13 dd ?
-.dx23 dd ?
-.tex_dx12 dd ?
-.tex_dy12 dd ?
-.tex_dx13 dd ?
-.tex_dy13 dd ?
-.tex_dx23 dd ?
-.tex_dy23 dd ?
-.tex_ptr dd ?
+ mov	esp,ebp
 
-.scan_x1 dd ?
-.scan_y1 dd ?
-.scan_x2 dd ?
-.scan_y2 dd ?
+ret 12
 
 
 textured_line:
@@ -392,91 +418,100 @@ textured_line:
   .y  equ word [ebp+8]
 
   .tex_ptr equ dword [ebp+10]
-  .tex_x1 equ word [ebp+14]
-  .tex_y1 equ word [ebp+16]
-  .tex_x2 equ word [ebp+18]
-  .tex_y2 equ word [ebp+20]
+  .tex_x1  equ	[ebp+14]
+  .tex_y1  equ	[ebp+18]
+  .tex_x2  equ	[ebp+22]
+  .tex_y2  equ	[ebp+26]
 
-  mov ebp,esp
+  .tex_dx equ ebp-4 ;dd ?
+  .tex_dy equ ebp-8 ;dd ?
 
-  mov ax,.y
-  or ax,ax
-  jl .tl_quit
-  cmp ax,SIZE_Y
-  jg .tl_quit
+  mov	ebp,esp
+  sub	esp,8
 
-  mov ax,.x1
-  cmp ax,.x2
-  je .tl_quit
-  jl .tl_ok
+  mov	ax,.y
+  or	ax,ax
+  jl	.tl_quit
+  cmp	ax,SIZE_Y
+  jg	.tl_quit
 
-  xchg ax,.x2
-  mov .x1,ax
+  mov	ax,.x1
+  cmp	ax,.x2
+  je	.tl_quit
+  jl	.tl_ok
 
-  mov ax,.tex_x1
-  xchg ax,.tex_x2
-  mov .tex_x1,ax
+  xchg	ax,.x2
+  mov	.x1,ax
 
-  mov ax,.tex_y1
-  xchg ax,.tex_y2
-  mov .tex_y1,ax
+if Ext >= MMX
+  movq	  mm0,.tex_x1
+  movq	  mm1,.tex_x2
+  movq	  .tex_x2,mm0
+  movq	  .tex_x1,mm1
+
+else
+
+  mov	eax,.tex_x1
+  xchg	eax,.tex_x2
+  mov	.tex_x1,eax
+
+  mov	eax,.tex_y1
+  xchg	eax,.tex_y2
+  mov	.tex_y1,eax
+
+end if
 
  .tl_ok:
-  mov ebx,edi
-  movsx edi,.y
-  mov eax,SIZE_X*3
-  mul edi
-  mov edi,eax
-  movsx eax,.x1
-  add edi,eax
-  shl eax,1
-  add edi,eax
-  add edi,ebx
 
-  mov cx,.x2
-  sub cx,.x1
+  mov	ebx,edi
+  movsx edi,.y
+  mov	eax,SIZE_X*3
+  mul	edi
+  mov	edi,eax
+  movsx eax,.x1
+  add	edi,eax
+  shl	eax,1
+  add	edi,eax
+  add	edi,ebx
+
+  mov	cx,.x2
+  sub	cx,.x1
   movsx ecx,cx
 
-  mov ax,.tex_x2
-  sub ax,.tex_x1
-  cwde
-  shl eax,ROUND
+  mov	eax,.tex_x2
+  sub	eax,.tex_x1
   cdq
-  idiv ecx
-  mov [.tex_dx],eax	      ; tex_dx=(tex_x2-tex_x1)/(x2-x1)
+  idiv	ecx
+  mov	[.tex_dx],eax		; tex_dx=(tex_x2-tex_x1)/(x2-x1)
 
-  mov ax,.tex_y2
-  sub ax,.tex_y1
-  cwde
-  shl eax,ROUND
+  mov	eax,.tex_y2
+  sub	eax,.tex_y1
   cdq
-  idiv ecx
-  mov [.tex_dy],eax		     ; tex_dy = (tex_y2-tex_y1)/(x2-x1)
+  idiv	ecx
+  mov	[.tex_dy],eax		       ; tex_dy = (tex_y2-tex_y1)/(x2-x1)
 
-  movsx eax,.tex_x1
-  shl eax,ROUND
-  movsx ebx,.tex_y1
-  shl ebx,ROUND
+  mov	eax,.tex_x1
+  mov	ebx,.tex_y1
   cld
  .tl_loop:
-  mov edx,eax
-  mov esi,ebx
-  sar edx,ROUND
-  sar esi,ROUND
+  mov	edx,eax    ; eax - cur x
+  mov	esi,ebx    ; ebx - cur y
+  shr	edx,ROUND
+  shr	esi,ROUND
  macro .fluent
  {
-  push eax
-  push edx
-  mov eax,TEX_X*3
-  mul esi
-  mov esi,eax
-  pop edx
-  pop eax
+  push	eax
+  push	edx
+  mov	eax,TEX_X*3
+  mul	esi
+  mov	esi,eax
+  pop	edx
+  pop	eax
  }
  macro .shift
  {
-  shl esi,TEX_SHIFT
-  lea esi,[esi*3]
+  shl	esi,TEX_SHIFT
+  lea	esi,[esi*3]
   ;push edx
   ;mov edx,esi
   ;shl esi,1
@@ -489,19 +524,20 @@ textured_line:
   if TEX = SHIFTING
     .shift
   end if
-  lea edx,[edx*3]
-  add esi,edx
+  lea	edx,[edx*3]
+  add	esi,edx
  ; shl edx,1
  ; add esi,edx
-  add esi,.tex_ptr
+  add	esi,.tex_ptr
   movsd
-  dec edi
-  add eax,[.tex_dx]
-  add ebx,[.tex_dy]
+  dec	edi
+  add	eax,[.tex_dx]
+  add	ebx,[.tex_dy]
   loop .tl_loop
 
  .tl_quit:
   mov esp,ebp
-ret 18
-  .tex_dx dd ?
-  .tex_dy dd ?
+
+ret 18+8
+;  .tex_dx dd ?
+;  .tex_dy dd ?

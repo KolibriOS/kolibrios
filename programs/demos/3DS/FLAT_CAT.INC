@@ -1,10 +1,6 @@
 CATMULL_SHIFT equ 16
-fill_Z_buffer:
-	mov	eax,0x70000000
-	mov	edi,Z_buffer
-	mov	ecx,SIZE_X*SIZE_Y
-	rep	stosd
-ret
+
+
 flat_triangle_z:
 ;  procedure drawing triangle with Z cordinate interpolation ------
 ;  (Catmull  alghoritm)--------------------------------------------
@@ -30,15 +26,24 @@ flat_triangle_z:
 .y3	equ word[ebp-16]
 
 .dx12	equ dword[ebp-20]
-.dz12	equ dword[ebp-24]
-.dx13	equ dword[ebp-28]
-.dz13	equ dword[ebp-32]
+;.dz12   equ dword[ebp-24]
+.dx13	equ dword[ebp-24]
+.dz13	equ dword[ebp-28]
+.dz12	equ dword[ebp-32]
+;.dz13   equ dword[ebp-32]
 .dx23	equ dword[ebp-36]
-.dz23	equ dword[ebp-40]
-.zz1	equ dword[ebp-44]
-.zz2	equ dword[ebp-48]
-
+.dz13M	equ	 [ebp-40]
+.dz23	equ dword[ebp-44]
+.zz1	equ dword[ebp-48]
+.zz2	equ dword[ebp-52]
+.zz2M	equ qword[ebp-52]
+.dz12M	equ qword[ebp-32]
+.dz23M	equ qword[ebp-44]
+;if Ext>=MMX
+;        emms
+;end if
 	mov	ebp,esp
+
 	push	edx	       ; store edx in variable .col
       .sort2:
 	cmp	ax,bx
@@ -82,7 +87,7 @@ flat_triangle_z:
        ;  jle      @f
        ;  jmp      .ft_loop2_end
        ;@@:
-	sub	esp,32
+	sub	esp,52-12
 
 	mov	bx,.y2	     ; calc delta 12
 	sub	bx,.y1
@@ -113,6 +118,7 @@ flat_triangle_z:
 	jnz	.ft_dx13_make
 	mov	.dx13,0
 	mov	.dz13,0
+	mov	dword .dz13M,0
 	jmp	.ft_dx13_done
    .ft_dx13_make:
 	mov	ax,.x3
@@ -131,6 +137,7 @@ flat_triangle_z:
 	cdq
 	idiv	ebx
 	mov	.dz13,eax
+	mov	dword .dz13M,eax
     .ft_dx13_done:
 	mov	bx,.y3	     ; calc delta 23
 	sub	bx,.y2
@@ -164,6 +171,9 @@ flat_triangle_z:
 	movsx	eax,.x1
 	shl	eax,ROUND    ; eax - x1
 	mov	ebx,eax      ; ebx - x2
+;if Ext>=MMX
+;        movq    mm0,.zz2M
+;end if
 	mov	cx,.y1
 	cmp	cx,.y2
 	jge	.ft_loop1_end
@@ -177,18 +187,28 @@ flat_triangle_z:
 	push	bx	    ; x2
 	sar	eax,ROUND
 	push	ax	    ; x1
+;if Ext>=MMX
+;        sub     esp,8
+;        movq    [esp],mm0
+;else
 	push	.zz2	    ; z2 shl CATMULL_SHIFT
 	push	.zz1	    ; z1 shl CATMULL_SHIFT
+;end if
 	call	flat_line_z
 
 	popad
 
 	add	eax,.dx13
 	add	ebx,.dx12
+;if  Ext>=MMX
+;        paddd   mm0,.dz12M
+;else
+
 	mov	edx,.dz13
 	add	.zz1,edx
 	mov	edx,.dz12
 	add	.zz2,edx
+;end if
 	inc	cx
 	cmp	cx,.y2
 	jl	.ft_loop1
@@ -199,6 +219,13 @@ flat_triangle_z:
 	mov	.zz2,edx
 	movsx	ebx,.x2
 	shl	ebx,ROUND
+;if Ext>=MMX
+;        movq    mm0,.zz2M
+;;        push    .dz13    ; exchange
+;;        pop     .dz12
+;;        push    .dz23    ; exchange
+;;        pop     .dz13
+;end if
 	mov	cx,.y2
 	cmp	cx,.y3
 	jge	.ft_loop2_end
@@ -211,18 +238,32 @@ flat_triangle_z:
 	push	bx
 	sar	eax,ROUND
 	push	ax	    ; x1
+;if Ext>=MMX
+;        sub     esp,8
+;        movq    [esp],mm0
+;else
 	push	.zz2	    ; z2 shl CATMULL_SHIFT
 	push	.zz1	    ; z1 shl CATMULL_SHIFT
+;end if
 	call	flat_line_z
 
 	popad
 
 	add	eax,.dx13
 	add	ebx,.dx23
+;if  Ext>=MMX
+;        paddd   mm0,.dz23M
+;else
 	mov	edx,.dz13
 	add	.zz1,edx
 	mov	edx,.dz23
 	add	.zz2,edx
+
+;        mov     edx,.dz13
+;        add     .zz1,edx
+;        mov     edx,.dz12
+;        add     .zz2,edx
+;end if
 	inc	cx
 	cmp	cx,.y3
 	jl	.ft_loop2
@@ -250,6 +291,9 @@ flat_line_z:
      mov	ax,.y
      or 	ax,ax
      jl 	.fl_quit
+;;     mov        bx,[size_y]
+;;     dec        bx
+     cmp	ax,[size_y]
      cmp	ax,SIZE_Y-1
      jg 	.fl_quit
 
@@ -274,6 +318,8 @@ flat_line_z:
      xchg	edx,.z2
      mov	.z1,edx
    .fl_ok:
+   ;;  mov        bx,[size_x]
+   ;;  dec        bx
      cmp	.x1,SIZE_X-1
      jg 	.fl_quit
      cmp	.x2,0
@@ -320,23 +366,31 @@ flat_line_z:
      mov	eax,.col
      mov	ebx,.z1  ; ebx : curr. z
      mov	edx,.dz
+     dec	ecx
+     jecxz	.draw_last
    .ddraw:
-     ;pushad
-     ;show
-     ;popad
      cmp	ebx,dword[esi]
-     jge	.skip
+     jge	@f
      stosd
      dec	edi
      mov	dword[esi],ebx
      jmp	.no_skip
-   .skip:
+   @@:
      add	edi,3
    .no_skip:
      add	esi,4
      add	ebx,edx
      loop	.ddraw
 
+   .draw_last:
+     cmp	ebx,dword[esi]
+     jge	.fl_quit
+     stosw
+     shr	eax,16
+     stosb
+     mov	dword[esi],ebx
+
    .fl_quit:
+
      mov   esp,ebp
 ret 18
