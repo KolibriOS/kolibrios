@@ -552,6 +552,7 @@ int rv515_init(struct radeon_device *rdev)
 	rv515_vram_info(rdev);
 	/* Initialize memory controller (also test AGP) */
 	r = r420_mc_init(rdev);
+    dbgprintf("mc vram location %x\n", rdev->mc.vram_location);
 	if (r)
 		return r;
 	rv515_debugfs(rdev);

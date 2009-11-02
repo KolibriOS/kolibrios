@@ -1297,6 +1297,7 @@ int r600_init(struct radeon_device *rdev)
 //	if (r)
 //		return r;
 	r = r600_mc_init(rdev);
+    dbgprintf("mc vram location %x\n", rdev->mc.vram_location);
 	if (r)
 		return r;
 	/* Memory manager */

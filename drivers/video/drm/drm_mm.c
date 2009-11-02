@@ -82,7 +82,7 @@ static struct drm_mm_node *drm_mm_kmalloc(struct drm_mm *mm, int atomic)
 {
 	struct drm_mm_node *child;
 
-    child = malloc(sizeof(*child));
+    child = kzalloc(sizeof(*child), 0);
 
 	if (unlikely(child == NULL)) {
        spin_lock(&mm->unused_lock);

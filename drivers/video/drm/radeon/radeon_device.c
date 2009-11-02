@@ -45,9 +45,12 @@ int radeon_gart_size = 512; /* default gart size */
 int radeon_benchmarking = 0;
 int radeon_connector_table = 0;
 int radeon_tv = 0;
+int radeon_modeset          = 1;
 
 void parse_cmdline(char *cmdline, mode_t *mode, char *log);
 int init_display(struct radeon_device *rdev, mode_t *mode);
+int init_display_kms(struct radeon_device *rdev, mode_t *mode);
+
 int get_modes(mode_t *mode, int *count);
 int set_user_mode(mode_t *mode);
 
@@ -690,10 +693,13 @@ int radeon_driver_load_kms(struct drm_device *dev, unsigned long flags)
      * otherwise it should provide enough functionalities
      * for shadowfb to run
      */
+    if( radeon_modeset )
+    {
     r = radeon_modeset_init(rdev);
     if (r) {
         return r;
     }
+    };
     return 0;
 }
 
@@ -702,12 +708,12 @@ mode_t usermode;
 
 int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
-    struct drm_device *dev;
+    static struct drm_device *dev;
     int ret;
 
     ENTER();
 
-    dev = malloc(sizeof(*dev));
+    dev = kzalloc(sizeof(*dev), 0);
     if (!dev)
         return -ENOMEM;
 
@@ -736,6 +742,9 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
  //        driver->name, driver->major, driver->minor, driver->patchlevel,
  //        driver->date, pci_name(pdev), dev->primary->index);
 
+    if( radeon_modeset )
+        init_display_kms(dev->dev_private, &usermode);
+    else
     init_display(dev->dev_private, &usermode);
 
     LEAVE();
@@ -836,7 +845,8 @@ int _stdcall display_handler(ioctl_t *io)
             dbgprintf("SRV_ENUM_MODES inp %x inp_size %x out_size %x\n",
                        inp, io->inp_size, io->out_size );
 
-            if( (outp != NULL) && (io->out_size == 4) &&
+            if( radeon_modeset &&
+                (outp != NULL) && (io->out_size == 4) &&
                 (io->inp_size == *outp * sizeof(mode_t)) )
                 {
                 retval = get_modes((mode_t*)inp, outp);
@@ -844,25 +854,28 @@ int _stdcall display_handler(ioctl_t *io)
             break;
 
         case SRV_SET_MODE:
-            if( (inp != NULL) &&
+            dbgprintf("SRV_SET_MODE inp %x inp_size %x\n",
+                       inp, io->inp_size);
+
+            if(  radeon_modeset   &&
+                (inp != NULL) &&
                 (io->inp_size == sizeof(mode_t)) )
             {
                 retval = set_user_mode((mode_t*)inp);
             };
             break;
-
     };
 
     return retval;
 }
 
+static char  log[256];
+static dev_t device;
+
 u32_t drvEntry(int action, char *cmdline)
 {
-    static char log[256];
-
     struct pci_device_id  *ent;
 
-    dev_t   device;
     int     err;
     u32_t   retval = 0;
 
@@ -885,6 +898,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
+    dbgprintf("Radeon RC05 cmdline %s\n", cmdline);
 
     enum_pci_devices();
 
@@ -901,6 +915,10 @@ u32_t drvEntry(int action, char *cmdline)
 
     err = drm_get_dev(&device.pci_dev, ent);
 
-    return RegService("DISPLAY", display_handler);
+    err = RegService("DISPLAY", display_handler);
 
+    if( err != 0)
+        dbgprintf("Set DISPLAY handler\n");
+
+    return err;
 };

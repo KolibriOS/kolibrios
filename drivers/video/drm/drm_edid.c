@@ -626,6 +626,12 @@ static struct drm_display_mode *drm_mode_detailed(struct drm_device *dev,
 		return NULL;
 	}
 
+	/* it is incorrect if hsync/vsync width is zero */
+	if (!hsync_pulse_width || !vsync_pulse_width) {
+		DRM_DEBUG_KMS("Incorrect Detailed timing. "
+				"Wrong Hsync/Vsync pulse width\n");
+		return NULL;
+	}
 	mode = drm_mode_create(dev);
 	if (!mode)
 		return NULL;
@@ -646,6 +652,15 @@ static struct drm_display_mode *drm_mode_detailed(struct drm_device *dev,
 	mode->vsync_start = mode->vdisplay + vsync_offset;
 	mode->vsync_end = mode->vsync_start + vsync_pulse_width;
 	mode->vtotal = mode->vdisplay + vblank;
+
+	/* perform the basic check for the detailed timing */
+	if (mode->hsync_end > mode->htotal ||
+		mode->vsync_end > mode->vtotal) {
+		drm_mode_destroy(dev, mode);
+		DRM_DEBUG_KMS("Incorrect detailed timing. "
+				"Sync is beyond the blank.\n");
+		return NULL;
+	}
 
 	drm_mode_set_name(mode);
 
@@ -1052,8 +1067,8 @@ static int drm_ddc_read_edid(struct drm_connector *connector,
 		goto end;
 	}
 	if (!edid_is_valid((struct edid *)buf)) {
-//       dev_warn(&connector->dev->pdev->dev, "%s: EDID invalid.\n",
-//            drm_get_connector_name(connector));
+		dev_warn(&connector->dev->pdev->dev, "%s: EDID invalid.\n",
+			 drm_get_connector_name(connector));
 		ret = -1;
 	}
 end:
@@ -1078,8 +1093,8 @@ struct edid *drm_get_edid(struct drm_connector *connector,
 	edid = kmalloc(EDID_LENGTH * (MAX_EDID_EXT_NUM + 1),
 		       GFP_KERNEL);
 	if (edid == NULL) {
-//       dev_warn(&connector->dev->pdev->dev,
-//            "Failed to allocate EDID\n");
+		dev_warn(&connector->dev->pdev->dev,
+			 "Failed to allocate EDID\n");
 		goto end;
 	}
 
@@ -1094,11 +1109,11 @@ struct edid *drm_get_edid(struct drm_connector *connector,
 		int edid_ext_num = edid->extensions;
 
 		if (edid_ext_num > MAX_EDID_EXT_NUM) {
- //          dev_warn(&connector->dev->pdev->dev,
-//                "The number of extension(%d) is "
-//                "over max (%d), actually read number (%d)\n",
-//                edid_ext_num, MAX_EDID_EXT_NUM,
-//                MAX_EDID_EXT_NUM);
+			dev_warn(&connector->dev->pdev->dev,
+				 "The number of extension(%d) is "
+				 "over max (%d), actually read number (%d)\n",
+				 edid_ext_num, MAX_EDID_EXT_NUM,
+				 MAX_EDID_EXT_NUM);
 			/* Reset EDID extension number to be read */
 			edid_ext_num = MAX_EDID_EXT_NUM;
 		}
@@ -1202,8 +1217,8 @@ int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
 		return 0;
 	}
 	if (!edid_is_valid(edid)) {
-//       dev_warn(&connector->dev->pdev->dev, "%s: EDID invalid.\n",
-//            drm_get_connector_name(connector));
+		dev_warn(&connector->dev->pdev->dev, "%s: EDID invalid.\n",
+			 drm_get_connector_name(connector));
 		return 0;
 	}
 

@@ -344,7 +344,7 @@ static dev_t* pci_scan_device(u32_t bus, int devfn)
 
     hdr = PciRead8(bus, devfn, PCI_HEADER_TYPE);
 
-    dev = (dev_t*)malloc(sizeof(dev_t));
+    dev = (dev_t*)kzalloc(sizeof(dev_t), 0);
 
     INIT_LIST_HEAD(&dev->link);
 

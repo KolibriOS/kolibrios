@@ -70,7 +70,9 @@ NAME_SRC=							\
 			rs690.c					\
 			rv770.c					\
 			radeon_fb.c				\
-			rdisplay.c
+			rdisplay.c				\
+			rdisplay_kms.c				\
+			cmdline.c
 
 
 SRC_DEP:=    

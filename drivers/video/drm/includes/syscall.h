@@ -168,7 +168,7 @@ static inline void usleep(u32_t delay)
 {
      if( !delay )
         delay++;
-     delay*= 256;
+     delay*= 500;
 
      while(delay--)
         __asm__ __volatile__(
@@ -180,7 +180,7 @@ static inline void usleep(u32_t delay)
 static inline void udelay(u32_t delay)
 {
     if(!delay) delay++;
-    delay*= 256;
+    delay*= 500;
 
     while(delay--)
     {
@@ -385,6 +385,14 @@ static inline void __iomem *ioremap(uint32_t offset, size_t size)
 static inline void iounmap(void *addr)
 {
     FreeKernelSpace(addr);
+}
+
+static inline void *
+pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
+                      addr_t *dma_handle)
+{
+    *dma_handle = AllocPages(size >> 12);
+    return (void*)MapIoMem(*dma_handle, size, PG_SW+PG_NOCACHE);
 }
 
 #endif

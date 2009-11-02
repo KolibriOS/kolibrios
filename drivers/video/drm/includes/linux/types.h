@@ -146,8 +146,6 @@ char *strcpy(char *s1, const char *s2);
 char *strncpy (char *dst, const char *src, size_t len);
 
 void *malloc(size_t size);
-
-#define kmalloc(s,f) malloc((s))
 #define kfree free
 
 static inline void *kzalloc(size_t size, u32_t flags)
@@ -156,6 +154,8 @@ static inline void *kzalloc(size_t size, u32_t flags)
     memset(ret, 0, size);
     return ret;
 }
+
+#define kmalloc(s,f) kzalloc((s), (f))
 
 struct drm_file;
 

@@ -1,0 +1,92 @@
+
+#include <stdint.h>
+#include <drm/drmP.h>
+#include <drm.h>
+#include <drm_mm.h>
+#include "radeon_drm.h"
+#include "radeon.h"
+#include "radeon_object.h"
+
+static int my_atoi(char **cmd)
+{
+    char* p = *cmd;
+    int val = 0;
+
+    for (;; *p++) {
+        switch (*p) {
+        case '0' ... '9':
+            val = 10*val+(*p-'0');
+            break;
+        default:
+            *cmd = p;
+            return val;
+        }
+    }
+}
+
+char* parse_mode(char *p, mode_t *mode)
+{
+    char c;
+
+    while( (c = *p++) == ' ');
+
+    if( c )
+    {
+        p--;
+
+        mode->width = my_atoi(&p);
+        if(*p == 'x') p++;
+
+        mode->height = my_atoi(&p);
+        if(*p == 'x') p++;
+
+        mode->bpp = 32;
+
+        mode->freq = my_atoi(&p);
+
+        if( mode->freq == 0 )
+            mode->freq = 60;
+    }
+
+    return p;
+};
+
+char* parse_path(char *p, char *log)
+{
+    char  c;
+
+    while( (c = *p++) == ' ');
+    p--;
+    while( (c = *log++ = *p++) && (c != ' '));
+    *log = 0;
+
+    return p;
+};
+
+void parse_cmdline(char *cmdline, mode_t *mode, char *log, int *kms)
+{
+    char *p = cmdline;
+
+    char c = *p++;
+
+    while( c )
+    {
+        if( c == '-')
+        {
+            switch(*p++)
+            {
+                case 'm':
+                    p = parse_mode(p, mode);
+                    break;
+
+                case 'l':
+                    p = parse_path(p, log);
+                    break;
+
+                case 'n':
+                    *kms = 0;
+            };
+        };
+        c = *p++;
+    };
+};

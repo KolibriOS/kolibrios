@@ -2784,6 +2784,7 @@ int r100_init(struct radeon_device *rdev)
 	r100_vram_info(rdev);
 	/* Initialize memory controller (also test AGP) */
 	r = r100_mc_init(rdev);
+    dbgprintf("mc vram location %x\n", rdev->mc.vram_location);
 	if (r)
 		return r;
 	/* Fence driver */

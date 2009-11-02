@@ -874,7 +874,7 @@ int ida_pre_get(struct ida *ida, gfp_t gfp_mask)
 	if (!ida->free_bitmap) {
 		struct ida_bitmap *bitmap;
 
-		bitmap = kmalloc(sizeof(struct ida_bitmap), gfp_mask);
+		bitmap = kzalloc(sizeof(struct ida_bitmap), gfp_mask);
 		if (!bitmap)
 			return 0;
 

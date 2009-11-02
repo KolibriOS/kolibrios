@@ -964,6 +964,10 @@ radeon_add_legacy_connector(struct drm_device *dev,
 	uint32_t subpixel_order = SubPixelNone;
 	int ret;
 
+    ENTER();
+
+    dbgprintf("id %d device %x type %x i2c %x\n",
+               connector_id, supported_device, connector_type, i2c_bus);
 	/* fixme - tv/cv/din */
 	if (connector_type == DRM_MODE_CONNECTOR_Unknown)
 		return;
@@ -973,6 +977,7 @@ radeon_add_legacy_connector(struct drm_device *dev,
 		radeon_connector = to_radeon_connector(connector);
 		if (radeon_connector->connector_id == connector_id) {
 			radeon_connector->devices |= supported_device;
+            LEAVE();
 			return;
 		}
 	}
@@ -1066,6 +1071,7 @@ radeon_add_legacy_connector(struct drm_device *dev,
 
 	connector->display_info.subpixel_order = subpixel_order;
 	drm_sysfs_connector_add(connector);
+    LEAVE();
 	return;
 
 failed:
@@ -1073,4 +1079,5 @@ failed:
 		radeon_i2c_destroy(radeon_connector->ddc_bus);
 	drm_connector_cleanup(connector);
 	kfree(connector);
+    LEAVE();
 }

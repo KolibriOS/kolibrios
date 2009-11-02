@@ -37,8 +37,8 @@ int radeon_gart_table_ram_alloc(struct radeon_device *rdev)
 {
 	void *ptr;
 
-//   ptr = pci_alloc_consistent(rdev->pdev, rdev->gart.table_size,
-//                  &rdev->gart.table_addr);
+    ptr = pci_alloc_consistent(rdev->pdev, rdev->gart.table_size,
+                  &rdev->gart.table_addr);
 	if (ptr == NULL) {
 		return -ENOMEM;
 	}

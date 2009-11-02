@@ -466,6 +466,8 @@ void atombios_crtc_set_pll(struct drm_crtc *crtc, struct drm_display_mode *mode)
 int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 			   struct drm_framebuffer *old_fb)
 {
+    ENTER();
+
 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
 	struct drm_device *dev = crtc->dev;
 	struct radeon_device *rdev = dev->dev_private;
@@ -487,8 +489,7 @@ int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 //		return -EINVAL;
 //	}
 
-    fb_location = 0; //rdev->mc.vram_location;
-
+    fb_location = rdev->mc.vram_location;
 
 	switch (crtc->fb->bits_per_pixel) {
 	case 8:
@@ -562,10 +563,13 @@ int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 	else
 		WREG32(AVIVO_D1MODE_DATA_FORMAT + radeon_crtc->crtc_offset, 0);
 
-	if (old_fb && old_fb != crtc->fb) {
+//   if (old_fb && old_fb != crtc->fb) {
 //       radeon_fb = to_radeon_framebuffer(old_fb);
 //       radeon_gem_object_unpin(radeon_fb->obj);
-	}
+//   }
+
+    LEAVE();
+
 	return 0;
 }
 

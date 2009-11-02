@@ -860,54 +860,6 @@ static inline void rv370_pcie_wreg(struct radeon_device *rdev, uint32_t reg, uin
 void r100_pll_errata_after_index(struct radeon_device *rdev);
 
 
-
-enum chipset_type {
-    NOT_SUPPORTED,
-    SUPPORTED,
-};
-
-struct agp_version {
-    u16_t major;
-    u16_t minor;
-};
-
-struct agp_bridge_data;
-
-struct agp_kern_info {
-    struct agp_version version;
-    struct pci_dev *device;
-    enum chipset_type chipset;
-    unsigned long mode;
-    unsigned long aper_base;
-    size_t aper_size;
-    int max_memory;     /* In pages */
-    int current_memory;
-    bool cant_use_aperture;
-    unsigned long page_mask;
-//    struct vm_operations_struct *vm_ops;
-};
-
-
-/**
- * AGP data.
- *
- * \sa drm_agp_init() and drm_device::agp.
- */
-struct drm_agp_head {
-    struct agp_kern_info agp_info;      /**< AGP device information */
-//    struct list_head memory;
-    unsigned long mode;     /**< AGP mode */
-    struct agp_bridge_data *bridge;
-    int enabled;            /**< whether the AGP bus as been enabled */
-    int acquired;           /**< whether the AGP device has been acquired */
-    unsigned long base;
-    int agp_mtrr;
-    int cant_use_aperture;
-    unsigned long page_mask;
-};
-
-
-
 /*
  * ASICs helpers.
  */
