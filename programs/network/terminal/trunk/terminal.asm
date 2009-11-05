@@ -41,13 +41,14 @@ still:
    
    
 read_input:
-   
-    push ecx
-    mov  eax,42
-    mov  ebx,4
-    mcall
-    pop  ecx
-   
+    mcall 42,4,text+120*80
+    test eax, eax
+    jle  still
+
+read_input_loop:
+    mov  bl,[ecx]
+    inc  ecx
+    push eax ecx
     cmp  bl,27				; ESCAPE COMMAND
     jne  no_esc
     call esc_command
@@ -120,10 +121,9 @@ read_input:
   noeaxz:
     mov  [pos],eax
   newdata:
-    mov  eax,11
-    mcall
-    cmp  eax,16+4
-    je	 read_input
+    pop  ecx eax
+    dec  eax
+    jnz  read_input_loop
     call draw_text
     jmp  still
    
@@ -161,10 +161,8 @@ read_input:
     jmp  still
   noaleft:
   modem_out:
-    mov  ecx,0x3f8
-    mov  bl,al
-    mov  eax,43
-    mcall
+    mov  dx,0x3f8
+    out  dx,al
     jmp  still
    
   button:			; BUTTON
@@ -205,10 +203,8 @@ to_modem:
    
     pusha
    
-    mov  ecx,0x3f8
-    mov  ebx,eax
-    mov  eax,43
-    mcall
+    mov  dx,0x3f8
+    out  dx,al
     mov  eax,5
     mov  ebx,5
     mcall
@@ -281,35 +277,29 @@ set_variables:
    
 ;    jmp  noportint
    
-    mov  cx,0x3f8+3
-    mov  bl,0x80
-    mov  eax,43
-    mcall
+    mov  dx,0x3f8+3
+    mov  al,0x80
+    out  dx,al
    
-    mov  cx,0x3f8+1
-    mov  bl,0
-    mov  eax,43
-    mcall
+    mov  dx,0x3f8+1
+    mov  al,0
+    out  dx,al
    
-    mov  cx,0x3f8+0
-    mov  bl,0x30 / 16
-    mov  eax,43
-    mcall
+    mov  dx,0x3f8+0
+    mov  al,0x30 / 16
+    out  dx,al
    
-    mov  cx,0x3f8+3
-    mov  bl,3
-    mov  eax,43
-    mcall
+    mov  dx,0x3f8+3
+    mov  al,3
+    out  dx,al
    
-    mov  cx,0x3f8+4
-    mov  bl,0xB
-    mov  eax,43
-    mcall
+    mov  dx,0x3f8+4
+    mov  al,0xB
+    out  dx,al
    
-    mov  cx,0x3f8+1
-    mov  bl,1
-    mov  eax,43
-    mcall
+    mov  dx,0x3f8+1
+    mov  al,1
+    out  dx,al
    
   noportint:
    
@@ -735,4 +725,3 @@ db '                                                                   '
 db '             '
    
 I_END:
-  
