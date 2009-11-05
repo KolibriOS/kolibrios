@@ -1014,9 +1014,9 @@ fb_mouse:
 	mov	fb_mouse_keys_delta,edx
 	jmp	.exit_fb
 .enter_1:
-	mov	eax,fb_mouse_keys_old
-	cmp	fb_mouse_keys,eax
-	jz	.exit_fb
+;	mov	eax,fb_mouse_keys_old
+;	cmp	fb_mouse_keys,eax
+;	jz	.exit_fb
 	test	fb_mouse_keys,10b
 	jne	.mark_mouse
 	mov	edx,2

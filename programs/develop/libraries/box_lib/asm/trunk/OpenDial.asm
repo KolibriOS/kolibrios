@@ -176,8 +176,10 @@ key:
 	je	NumPad_invert_Up
 	cmp	ah,158
 	je	symbol_a_up
-	cmp	ah,15 ;143 ; Tab
-	je	change_focus_area
+	cmp	ah,15 ; Tab down
+	je	change_focus_area_press_Tab_key
+	cmp	ah,143 ; Tab up
+	je	change_focus_area_check_Tab_key
 	jmp	still
 .extended_key:
 	mov	[extended_key],0
@@ -269,6 +271,30 @@ key:
 @@:
 	ret
 ;---------------------------------------------------------------------
+change_focus_area_Tab_key_ASCII:
+	xor	eax,eax
+	inc	eax
+	mov	[Tab_key_block],al
+	jmp	change_focus_area
+;---------------------------------------------------------------------
+change_focus_area_press_Tab_key:
+	mov	al,[Tab_key_block]
+	test	al,al
+	jnz	still
+	xor	eax,eax
+	inc	eax
+	mov	[Tab_key],al
+	jmp	still
+;---------------------------------------------------------------------
+change_focus_area_check_Tab_key:
+	xor	eax,eax
+	mov	[Tab_key_block],al
+	mov	al,[Tab_key]
+	test	al,al
+	jz	still
+	xor	eax,eax
+	mov	[Tab_key],al
+;---------------------------------------------------------------------
 change_focus_area:
 	mov	al,[focus_pointer]
 	inc	al
@@ -295,7 +321,7 @@ change_focus_area:
 key_ASCII:
 	mcall	2
 	cmp	ah,9
-	je	change_focus_area
+	je	change_focus_area_Tab_key_ASCII
 	cmp	ah,13
 	je	.load_dir
 	cmp	ah,27
@@ -2305,6 +2331,9 @@ ctrl_flag	db 0
 alt_flag	db 0
 
 error_window	db 0
+
+Tab_key		db 0
+Tab_key_block	db 0
 
 filter_flag	db 1
 
