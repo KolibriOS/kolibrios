@@ -15,88 +15,97 @@
 $Revision$
 
 struct	queue
-	.size		dd ?
-	.w_ptr		dd ?
-	.r_ptr		dd ?
+	.size		dd ?	; number of queued packets in thsi queue
+	.w_ptr		dd ?	; current writing pointer in queue
+	.r_ptr		dd ?	; current reading pointer
 	.data:
 ends
 
-struct	queue_entry
+struct	eth_queue_entry
 	.owner		dd ?
 	.data_ptr	dd ?
 	.data_size	dd ?
 	.size:
 ends
 
+struct	tcp_in_queue_entry
+	.data_ptr	dd ?
+	.data_size	dd ?
+	.offset 	dd ?
+	.size:
+ends
 
-macro add_to_queue ptr, size, returnaddr {
+struct	tcp_out_queue_entry
+	.data_ptr	dd ?
+	.data_size	dd ?
+	.ttl		dd ?
+	.retries	dd ?
+	.owner		dd ?
+	.sendproc	dd ?
+	.ack_num	dd ?
+	.size:
+ends
 
-	cmp	dword [ptr + queue.size], size	; Check if queue isnt full
-	jge	.fail
+struct	socket_queue_entry
+	.data_ptr	dd ?
+	.data_size	dd ?
+	.offset 	dd ?
+	.size:
+ends
 
-	DEBUGF	1,"Queuing packet for device %x\n",ebx
+macro add_to_queue ptr, size, entry_size, failaddr {
 
-	inc	dword [ptr + queue.size]
+	cmp	[ptr + queue.size], size  ; Check if queue isnt full
+	jge	failaddr
 
-	mov	edi, dword [ptr + queue.w_ptr]	; Current write pointer (FIFO!)
+	inc	[ptr + queue.size]
 
-	mov	eax, ebx
-	stosd
-	pop	eax
-	stosd
-	pop	eax
-	stosd
+	mov	edi, [ptr + queue.w_ptr]  ; Current write pointer (FIFO!)
+	mov	ecx, entry_size/4		; Write the queue entry
+	rep	movsd				;
 
-	cmp	edi, size*queue_entry.size+ptr+queue.data     ; entry size
+	lea	ecx, [size*entry_size+ptr+queue.data]
+	cmp	edi, ecx     ; entry size
 	jl	.no_wrap
 
-	sub	edi, size*queue_entry.size
+	sub	edi, size*entry_size
 
   .no_wrap:
-	mov	dword [ptr + queue.w_ptr], edi
-	jmp	returnaddr
-
-  .fail:
-	DEBUGF	1,"queuing failed\n"
-
-	call	kernel_free
-	add	esp, 4
-	ret
+	mov	[ptr + queue.w_ptr], edi
 
 }
 
 
-macro get_from_queue ptr, size, returnaddr {
 
-  .start_of_code:
-	cmp	dword [ptr + queue.size], 0		; any packets queued?
-	je	returnaddr
+macro get_from_queue ptr, size, entry_size,  failaddr {
 
-	DEBUGF	1,"Dequeuing packet"
+	cmp	[ptr + queue.size], 0		  ; any packets queued?
+	je	failaddr
 
-	dec	dword [ptr + queue.size]
-
-	push	dword .start_of_code			; return address for call's
+	dec	[ptr + queue.size]
 
 	mov	esi, [ptr + queue.r_ptr]
-	lodsd
-	mov	ebx, eax
-	lodsd
-	mov	ecx, eax
-	lodsd
-	push	eax
-	push	ecx
-	xchg	eax, ecx
+	push	esi
 
-	DEBUGF	1," for device %x\n", ebx
+	add	esi, entry_size
 
-	cmp	esi, size*queue_entry.size+ptr+queue.data	   ; entry size
+	lea	ecx, [size*entry_size+ptr+queue.data]
+	cmp	esi, ecx	  ; entry size
 	jl	.no_wrap
 
-	sub	esi, size*queue_entry.size
+	sub	esi, size*entry_size
 
   .no_wrap:
 	mov	dword [ptr + queue.r_ptr], esi
 
+	pop	esi
+
 }
 
+macro init_queue queue_ptr {
+
+	mov	[queue_ptr + queue.size] , 0
+	lea	esi, [queue_ptr + queue.data]
+	mov	[queue_ptr + queue.w_ptr], esi
+	mov	[queue_ptr + queue.r_ptr], esi
+}

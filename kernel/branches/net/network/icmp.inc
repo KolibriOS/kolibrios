@@ -133,8 +133,8 @@ ICMP_init:
 ;
 ; ICMP_Handler:
 ;
-;  Called by IP_handler,
-;  this procedure will send reply's to ICMP echo's etc               ;;; TODO: update this to work with fragmented packets too!
+;  this procedure will send reply's to ICMP echo's
+;  and insert packets into sockets when needed                         ;;; TODO: update this to work with fragmented packets too!
 ;
 ;  IN:  Pointer to buffer in [esp]
 ;       size of buffer in [esp+4]
@@ -181,33 +181,31 @@ ICMP_handler:	;TODO: works only on pure ethernet right now !
 	mov	dword [esi + ETH_FRAME.Data + IPv4_Packet.SourceAddress], ecx
 
 ; Recalculate ip header checksum
-;        mov     esi, [esp]
 	add	esi, ETH_FRAME.Data					    ; Point esi to start of IP Packet
-	movzx	eax, byte [esi + IPv4_Packet.VersionAndIHL]		      ; Calculate IP Header length by using IHL field
-	and	eax, 0x0000000F 					    ;
-	shl	eax, 2							    ;
-	push	ebx edx esi
-	stdcall checksum_jb, esi, eax					    ; calculate the checksum
-	pop	esi edx ebx
-	xchg	al, ah							    ; convert to intel byte order
-;        mov     esi, [esp]
-	mov	word [esi + IPv4_Packet.HeaderChecksum], ax  ; Store it in the IP Packet header
+	movzx	ecx, byte [esi + IPv4_Packet.VersionAndIHL]		    ; Calculate IP Header length by using IHL field
+	and	ecx, 0x0000000F 					    ;
+	shl	cx , 2
+	push	ebx edx ecx esi
+	xor	edx, edx
+	call	checksum_1
+	call	checksum_2
+	pop	esi
+	mov	word [esi + IPv4_Packet.HeaderChecksum], dx		    ; Store it in the IP Packet header
 
 ; Recalculate ICMP CheckSum
-;        mov     esi, [esp]                                                 ; Find length of IP Packet
-	movzx	eax, word[esi + IPv4_Packet.TotalLength]     ;
+	movzx	eax, word[esi + IPv4_Packet.TotalLength]		    ; Find length of IP Packet
 	xchg	ah , al 						    ;
-	movzx	edi, byte [esi + IPv4_Packet.VersionAndIHL]  ; Calculate IP Header length by using IHL field
-	and	edi, 0x0000000F 					    ;
-	shl	edi, 2							    ;
-	sub	ax , di 						    ; Now we know the length of ICMP data in eax
-	push	ebx edx
-	stdcall checksum_jb,edx,eax					    ; Calculate the checksum of icmp data
-	pop	edx ebx
-	xchg	al, ah							    ; Convert to intel byte order
+	sub	eax, [esp]						     ; Now we know the length of ICMP data in eax
+	mov	ecx, eax
+	mov	esi, [esp + 4]
+	xor	edx, edx
+	call	checksum_1
+	call	checksum_2
+	mov	ax , dx
+	pop	ecx edx ebx
 	mov	word [edx + ICMP_Packet.Checksum], ax
 
-	jmp	ETH_Sender						    ; Send the reply
+	jmp	ETH_sender						    ; Send the reply
 
 
 
@@ -222,19 +220,13 @@ ICMP_handler:	;TODO: works only on pure ethernet right now !
   .try_more:
 	mov	ax , [edx + ICMP_Packet.Identifier]
   .next_socket:
-	mov	esi, [esi + SOCKET.NextPtr]
+	mov	esi, [esi + SOCKET_head.NextPtr]
 	or	esi, esi
 	jz	.dump
-	cmp	[esi + SOCKET.Type], IP_PROTO_ICMP
+	cmp	[esi + SOCKET_head.Type], IP_PROTO_ICMP
 	jne	.next_socket
-	cmp	[esi + SOCKET.LocalPort], ax
+	cmp	[esi + SOCKET_head.end + IPv4_SOCKET.end + ICMP_SOCKET.Identifier], ax
 	jne	.next_socket
-
-	cmp	[esi + SOCKET.rxDataCount],0	      ; get # of bytes already in buffer
-	jnz	.dump				      ; only one packet at a time may be in the buffer!
-
-	cmp	ecx, SOCKETBUFFSIZE - SOCKETHEADERSIZE; TODO: fix this problem !
-	jg	.dump
 
 	call	IPv4_dest_to_dev
 	cmp	edi,-1
@@ -243,60 +235,25 @@ ICMP_handler:	;TODO: works only on pure ethernet right now !
 
 	DEBUGF 1,"Found valid ICMP packet for socket %x\n", esi
 
-	lea	ebx, [esi + SOCKET.lock]
+	lea	ebx, [esi + SOCKET_head.lock]
 	call	wait_mutex
 
-	; Now, copy data to socket. We have socket address in esi.
+	; Now, assign data to socket. We have socket address in esi.
 	; We have ICMP Packet in edx
 	; number of bytes in ecx
 
-	; note: we do not strip the header!
-
-	DEBUGF 1,"bytes: %u\n", ecx
-
-	mov	[esi + SOCKET.rxDataCount], ecx
-
-	lea	edi, [esi + SOCKETHEADERSIZE]
-	push	esi
-	push	ecx
-	mov	esi, edx
-	shr	ecx, 2
-	rep	movsd	       ; copy the data across
-	pop	ecx
-	and	ecx, 3
-	rep	movsb
+	mov	eax, esi
 	pop	esi
-
-	DEBUGF 1,"ICMP socket updated\n"
-
-	mov	[esi + SOCKET.lock], 0
-
-	; flag an event to the application
-	mov	eax, [esi + SOCKET.PID] 		; get socket owner PID
-	mov	ecx, 1
-	mov	esi, TASK_DATA + TASKDATA.pid
-
-       .next_pid:
-	cmp	[esi], eax
-	je	.found_pid
-	inc	ecx
-	add	esi, 0x20
-	cmp	ecx, [TASK_COUNT]
-	jbe	.next_pid
-
-	jmp	.dump
-
-       .found_pid:
-	shl	ecx, 8
-	or	[ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK ; stack event
-
-	mov	[check_idle_semaphore], 200
+	add	esp, 4
+	sub	edx, esi
+	mov	edi, edx
+	jmp	socket_internal_receiver
 
        .dump:
 	DEBUGF	1,"ICMP_Handler - dumping\n"
 
 	call	kernel_free
-	add	esp, 8 ; pop (balance stack)
+	add	esp, 4 ; pop (balance stack)
 
 	ret
 
@@ -351,7 +308,7 @@ ICMP_handler_fragments:   ; works only on pure ethernet right now !
 	DEBUGF	1,"ICMP_Handler_fragments - end\n"
 
 	call	kernel_free
-	add	esp, 8 ; pop (balance stack)
+	add	esp, 4 ; pop (balance stack)
 	ret
 
 ;-----------------------------------------------------------------
@@ -397,11 +354,14 @@ ICMP_create_packet:
 	mov	[edi + ICMP_Packet.Identifier], ax
 	mov	[edi + ICMP_Packet.Checksum], 0
 
-	stdcall checksum_jb, edi , ecx
-	xchg	al, ah
-	mov	[edi + ICMP_Packet.Checksum], ax
+	push	eax ebx ecx edx
+	mov	esi, edi
+	xor	edx, edx
+	call	checksum_1
+	call	checksum_2
+	mov	[edi + ICMP_Packet.Checksum], dx
+	pop	edx ecx ebx eax esi
 
-	pop	esi
 	sub	ecx, ICMP_Packet.Data
 	add	edi, ICMP_Packet.Data
 	push	cx

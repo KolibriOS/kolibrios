@@ -3,7 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  IP.INC                                                         ;;
+;;  IPv4.INC                                                       ;;
 ;;                                                                 ;;
 ;;  Part of the tcp/ip network stack for KolibriOS                 ;;
 ;;                                                                 ;;
@@ -52,7 +52,7 @@ struct	FRAGMENT_entry		       ; This structure will replace the ethernet header 
 	.PrevPtr		dd  ?  ; Pointer to previous fragment entry  (-1 for first packet)
 	.NextPtr		dd  ?  ; Pointer to next fragment entry (-1 for last packet)
 	.Owner			dd  ?  ; Pointer to structure of driver
-				rb  2  ; to match ethernet header size
+				rb  2  ; to match ethernet header size          ; TODO: fix this hack
 	.Data:			       ; Ip header begins here (we will need the IP header to re-construct the complete packet)
 ends
 
@@ -99,10 +99,9 @@ IPv4_init:
 
 ;-----------------------------------------------------------------
 ;
-; IP_Handler:
+; IPv4_Handler:
 ;
-;  Called by eth_handler,
-;  will check if IP Packet isnt damaged
+;  Will check if IP Packet isnt damaged
 ;  and call appropriate handler. (TCP/UDP/ICMP/..)
 ;
 ;  It will also re-construct fragmented packets
@@ -119,20 +118,27 @@ align 4
 IPv4_handler:
 
 	DEBUGF	1,"IP_Handler - start\n"
-	mov	cx , [edx + IPv4_Packet.HeaderChecksum]
-	xchg	ch , cl 					; Get the checksum in intel format
-  
-	mov	word [edx + IPv4_Packet.HeaderChecksum], 0	; Clear checksum field to recalculating checksum
 
-	movzx	eax, byte [edx + IPv4_Packet.VersionAndIHL]	; Calculate Header length by using IHL field
-	and	eax, 0x0000000F  ;
-	shl	eax, 2		 ;
+	push	edx ebx
 
-	push	edx
-	stdcall checksum_jb, edx, eax				; buf_ptr, buf_size
-	pop	edx
-	cmp	cx , ax
-	jnz	.dump						; if CHECKSUM isn't valid then dump Packet
+	; save checksum, and clear it in original packet
+	mov	di , [edx + IPv4_Packet.HeaderChecksum]
+	DEBUGF	1,"checksum: %x\n",di
+	mov	word [edx + IPv4_Packet.HeaderChecksum], 0
+
+	; Re-calculate checksum
+	movzx	ecx, byte [edx + IPv4_Packet.VersionAndIHL]	; Calculate Header length by using IHL field
+	and	ecx, 0x0000000F  ;
+	shl	cx , 2		 ;
+	mov	esi, edx
+	xor	edx, edx
+	call	checksum_1
+	call	checksum_2
+
+	; now compare the two..
+	cmp	dx, di
+	pop	ebx edx
+	jne	.dump						; if checksum isn't valid then dump packet
 
 	mov	eax, [edx + IPv4_Packet.DestinationAddress]
 	mov	edi, BROADCAST
@@ -183,10 +189,14 @@ IPv4_handler:
 	add	eax, edx
 	push	eax
 	mov	al , [edx + IPv4_Packet.Protocol]
+;----------------------- experimental
+	mov	esi, [edx + IPv4_Packet.SourceAddress]
+	mov	edi, [edx + IPv4_Packet.DestinationAddress]
+;-----------------------
 	pop	edx						; Offset to data (tcp/udp/icmp/.. Packet)
 
 	cmp	al , IP_PROTO_TCP
-;        je      TCP_handler
+	je	TCP_handler
 
 	cmp	al , IP_PROTO_UDP
 	je	UDP_handler
@@ -385,14 +395,21 @@ IPv4_handler:
 	movzx	eax, byte [edx + IPv4_Packet.VersionAndIHL]	; Calculate Header length by using IHL field
 	and	ax, 0x000F					;
 	shl	ax, 2						;
-	sub	ecx, eax					;
+
+	sub	ecx, eax
+
+
 	add	eax, edx
 	push	eax
 	mov	al , [edx + IPv4_Packet.Protocol]
+;----------------------- experimental
+	mov	esi, [edx + IPv4_Packet.SourceAddress]
+	mov	edi, [edx + IPv4_Packet.DestinationAddress]
+;-----------------------
 	pop	edx						; Offset to data (tcp/udp/icmp/.. Packet)
 
 	cmp	al , IP_PROTO_TCP
-;        je      TCP_handler
+	je	TCP_handler
 
 	cmp	al , IP_PROTO_UDP
 	je	UDP_handler
@@ -493,12 +510,12 @@ IPv4_decrease_fragment_ttls:
 ;     dx  = fragment id
 ;     di  = protocol
 ;
-; OUT: eax points to buffer start
-;      ebx is size of complete buffer
-;      edi = pointer to start of data (-1 on error)
+; OUT: eax = pointer to buffer start
+;      ebx = pointer to device struct (needed for sending procedure)
 ;      ecx = unchanged (packet size of embedded data)
-;      edx = pointer to device struct (needed for sending procedure)
+;      edx = size of complete buffer
 ;      esi = pointer to sending procedure
+;      edi = pointer to start of data (-1 on error)
 ;
 ;-----------------------------------------------------------------
 
@@ -550,7 +567,7 @@ IPv4_create_packet:
 	mov	ecx, [esp+18]	 ;; 18 or  22 ??
 	add	ecx, IPv4_Packet.DataOrOptional
 	mov	di , ETHER_IPv4
-	call	ETH_create_Packet		   ; TODO: figure out a way to make this work with other protocols too
+	call	ETH_create_packet		   ; TODO: figure out a way to make this work with other protocols too
 	add	esp, 6
 	cmp	edi, -1
 	je	.exit
@@ -571,21 +588,25 @@ IPv4_create_packet:
 	pop	ecx
 	mov	[edi + IPv4_Packet.DestinationAddress], ecx
 
-	push	eax
-	stdcall checksum_jb, edi, IPv4_Packet.DataOrOptional ; buf_ptr, buf_size
-	xchg	al, ah
-	mov	[edi + IPv4_Packet.HeaderChecksum], ax
-	pop	eax ecx
+	push	eax ebx edx
+	; calculate checksum
+	xor	edx, edx
+	mov	esi, edi
+	mov	ecx, IPv4_Packet.DataOrOptional
+	call	checksum_1
+	call	checksum_2
+	mov	[edi + IPv4_Packet.HeaderChecksum], dx
+	pop	edx ebx eax ecx
 	add	edi, IPv4_Packet.DataOrOptional
 
-	DEBUGF 1,"IPv4 Packet for device %x created successfully\n", edx
+	DEBUGF 1,"IPv4 Packet for device %x created successfully\n", ebx
 
 	ret
 
 
   .not_found:
 	DEBUGF 1,"Create IPv4 Packet - ARP entry not found!\n"
-	; TODO: QUEUE!
+	; TODO: QUEUE the packet to resend later!
   .exit:
 	add	esp, 16
   .exit_:

@@ -33,7 +33,7 @@ ETHER		equ 1337
 ETHER_ARP	equ 0x0608
 
 ;AF_UNSPEC       equ 0
-;AF_UNIX         equ 1
+AF_UNIX 	equ 1
 AF_INET4	equ 2
 ;AF_AX25         equ 3
 ;AF_IPX          equ 4
@@ -64,7 +64,7 @@ include "ARP.inc"
 include "IPv4.inc"
 include "ethernet.inc"
 include "socket.inc"
-;include "tcp.inc"
+include "tcp.inc"
 include "udp.inc"
 include "icmp.inc"
 
@@ -86,6 +86,7 @@ stack_init:
 	call	IPv4_init
 	call	ARP_init
 	call	UDP_init
+	call	TCP_init
 	call	ICMP_init
 	call	socket_init
 
@@ -115,20 +116,20 @@ stack_handler:
     cmp     [ETH_RUNNING], 0
     je	    .exit
 
-    call    ETH_handler 		; handle all queued ethernet packets
-    call    ETH_send_queued
-
-    ; Test for 10ms tick, call tcp timer
+    ; Test for 10ms tick
     mov     eax, [timer_ticks]
     cmp     eax, [last_1hsTick]
     je	    .exit
 
     mov     [last_1hsTick], eax
-;    call    tcp_tx_handler
+
+    call    ETH_handler 		; handle all queued ethernet packets
+    call    ETH_send_queued
+    call    TCP_send_queued
 
   .sec_tick:
 
-    ; Test for 1 second event, call 1s timer functions
+    ; Test for 1 second event
     mov     al, 0x0   ;second
     out     0x70, al
     in	    al, 0x71
@@ -139,48 +140,84 @@ stack_handler:
 
     call    ARP_decrease_entry_ttls
     call    IPv4_decrease_fragment_ttls
-;    call    tcp_tcb_handler
+    call    TCP_decrease_socket_ttls
 
   .exit:
     ret
 
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Checksum [by Johnny_B]
-;;  IN:
-;;    buf_ptr=POINTER to buffer
-;;    buf_size=SIZE of buffer
-;;  OUT:
-;;    AX=16-bit checksum
-;;              Saves all used registers
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-proc checksum_jb stdcall uses ebx esi ecx,\
-     buf_ptr:DWORD, buf_size:DWORD
 
-    xor     eax, eax
-    xor     ebx, ebx  ;accumulator
-    mov     esi, dword[buf_ptr]
-    mov     ecx, dword[buf_size]
-    shr     ecx, 1  ; ecx=ecx/2
-    jnc     @f	    ; if CF==0 then size is even number
-    mov     bh, byte[esi + ecx*2]
-  @@:
-    cld
 
-  .loop:
-    lodsw		;eax=word[esi],esi=esi+2
-    xchg    ah,al	;cause must be a net byte-order
-    add     ebx, eax
-    loop    .loop
+;-----------------------------------------------------------------
+;
+; checksum_1
+;
+;  This is the first of two functions needed to calculate the TCP checksum.
+;
+;  IN:  edx = start offeset for semi-checksum
+;       esi = pointer to data
+;       ecx = data size
+;  OUT: edx = semi-checksum
+;
+;-----------------------------------------------------------------
 
-    mov     eax, ebx
-    shr     eax, 16
-    add     ax, bx
-    not     ax
+align 4
+checksum_1:
 
-    ret
-endp
+	xor	eax, eax
+	shr	ecx, 1
+	pushf
+.loop:
+	lodsw
+	xchg	al, ah
+	add	edx, eax
+	loop	.loop
+
+	popf
+	jnc	.end
+
+	lodsb
+	shl	ax, 8
+	add	edx, eax
+
+.end:
+
+	ret
+
+
+
+;-----------------------------------------------------------------
+;
+; checksum_2
+;
+;  This function calculates the final ip/tcp/udp checksum for you
+;
+;  IN:  edx = semi-checksum
+;  OUT: dx = checksum (in INET byte order)
+;
+;-----------------------------------------------------------------
+
+align 4
+checksum_2:
+
+	mov	ecx, edx
+	shr	ecx, 16
+	and	edx, 0xffff
+	add	edx, ecx
+	mov	eax, edx
+	shr	eax, 16
+	add	edx, eax
+
+	not	dx
+	jnz	.not_zero
+	dec	dx
+  .not_zero:
+	xchg	dl, dh
+
+	DEBUGF 1,"Checksum: %x\n",dx
+
+	ret
 
 
 
@@ -250,6 +287,14 @@ sys_network:
 	jmp	.return
 
   @@:
+	dec	bl			; 4 = Get driver pointer
+	jnz	@f
+
+	; ..;
+
+
+  @@:
+;  ...                                   ; 5 Get driver name
 
   .doesnt_exist:
 	DEBUGF	1,"sys_network: invalid device/function specified!\n"

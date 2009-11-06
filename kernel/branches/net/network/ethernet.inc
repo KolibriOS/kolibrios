@@ -80,13 +80,8 @@ ETH_init:
 	mov	ecx, (1+MAX_ETH_DEVICES)
 	rep	stosd
 
-	mov	dword [ETH_IN_QUEUE], ETH_QUEUE_SIZE
-	mov	dword [ETH_IN_QUEUE+4], ETH_IN_QUEUE + queue.data
-	mov	dword [ETH_IN_QUEUE+8], ETH_IN_QUEUE + queue.data
-
-	mov	dword [ETH_OUT_QUEUE], ETH_QUEUE_SIZE
-	mov	dword [ETH_OUT_QUEUE+4], ETH_OUT_QUEUE + queue.data
-	mov	dword [ETH_OUT_QUEUE+8], ETH_OUT_QUEUE + queue.data
+	init_queue ETH_IN_QUEUE
+	init_queue ETH_OUT_QUEUE
 
 	ret
 
@@ -104,7 +99,7 @@ ETH_init:
 ;---------------------------------------------------------
 
 align 4
-ETH_Add_Device:
+ETH_add_device:
 
 	DEBUGF	1,"ETH_Add_Device: %x ", ebx
 
@@ -122,7 +117,6 @@ ETH_Add_Device:
 	mov	ecx, MAX_ETH_DEVICES	  ; We need to check whole list because a device may be removed without re-organizing list
 	mov	edi, ETH_DRV_LIST
 
-	cld
 	repne	scasd			  ; See if device is already in the list
 	jz	.error
 
@@ -167,7 +161,7 @@ ETH_Add_Device:
 ;--------------------------------
 
 align 4
-ETH_Remove_Device:
+ETH_remove_device:
 
 	cmp	[ETH_RUNNING], 0
 	je	.error
@@ -212,12 +206,21 @@ ETH_Remove_Device:
 ;-------------------------------------------------------------
 
 align 4
-ETH_Receiver:
-	DEBUGF	1,"ETH_Receiver \n"
+ETH_receiver:
+	DEBUGF	1,"ETH_Receiver: "
 
-	add_to_queue ETH_IN_QUEUE, ETH_QUEUE_SIZE, .gohome
+	push	ebx
+	mov	esi, esp
+	add_to_queue ETH_IN_QUEUE, ETH_QUEUE_SIZE, eth_queue_entry.size, .fail
+	DEBUGF	1,"Queued packet successfully\n"
+	add	esp, 4*3
+	ret
 
-  .gohome:
+  .fail:
+	DEBUGF	1,"ETH_IN_QUEUE is full!\n"
+	add	esp, 4
+	call	kernel_free
+	add	esp, 4
 	ret
 
 
@@ -238,7 +241,18 @@ ETH_Receiver:
 align 4
 ETH_handler:
 
-	get_from_queue ETH_IN_QUEUE, ETH_QUEUE_SIZE, .gohome
+	get_from_queue ETH_IN_QUEUE, ETH_QUEUE_SIZE, eth_queue_entry.size, .gohome
+
+	push	ETH_handler
+
+	lodsd
+	mov	ebx, eax
+	lodsd
+	mov	ecx, eax
+	lodsd
+	xchg	eax, ecx
+	push	ecx
+	push	eax
 
 	DEBUGF	1,"ETH_Handler - size: %u\n", ecx
 	cmp	ecx, 60    ; check packet length
@@ -262,13 +276,13 @@ ETH_handler:
 	add	esp, 4
 
   .gohome:
-	ret				; return 1. to get more from queue / 2. to caller
+	ret				; return to get more from queue / to caller
 
 
 
 ;-----------------------------------------------------------------
 ;
-; ETH_Sender:
+; ETH_sender:
 ;
 ;  This function sends an ethernet packet to the correct driver.
 ;
@@ -280,34 +294,65 @@ ETH_handler:
 ;-----------------------------------------------------------------
 
 align 4
-ETH_Sender:
-	DEBUGF	1,"ETH_Sender \n"
+ETH_sender:
+	DEBUGF	1,"ETH_Sender: queuing for device: %x, %u bytes\n", [esp], [esp + 4]
 
-	add_to_queue ETH_OUT_QUEUE, ETH_QUEUE_SIZE, .gohome
-
-  .gohome:
+	push	ebx
+	mov	esi, esp
+	add_to_queue ETH_OUT_QUEUE, ETH_QUEUE_SIZE, eth_queue_entry.size, .fail
+	DEBUGF	1,"Queued packet successfully\n"
+	add	esp, 3*4
 	ret
 
+  .fail:
+	DEBUGF	1,"ETH_OUT_QUEUE is full!\n"
+	add	esp, 4
+	call	kernel_free
+	add	esp, 4
+	ret
+
+
+
+;-----------------------------------------------------------------
+;
+; ETH_send_queued:
+;
+;  IN:  /
+;  OUT: /
+;
+;-----------------------------------------------------------------
 
 align 4
 ETH_send_queued:
 
-	get_from_queue ETH_OUT_QUEUE, ETH_QUEUE_SIZE, .gohome
+	get_from_queue ETH_OUT_QUEUE, ETH_QUEUE_SIZE, eth_queue_entry.size, .gohome
 
-	call	ETH_struc2dev		 ; convert struct ptr to device num (this way we know if driver is still mounted)
+	push	ETH_send_queued
+
+	lodsd
+	mov	ebx, eax
+
+	sub	esp, 8
+	mov	edi, esp
+	movsd
+	movsd
+
+	DEBUGF	1,"dequeued packet for device %x\n", ebx
+
+	call	ETH_struc2dev			; convert struct ptr to device num (this way we know if driver is still mounted)
 	cmp	edi, -1
 	je	.fail
 
-	DEBUGF 1,"ETH_Sender - device: %u\n", edi
-
-	jmp	[ebx+ETH_DEVICE.transmit]
+	jmp	[ebx+ETH_DEVICE.transmit]	; we will return to get_from_queue macro after transmitting packet
 
      .fail:
 	call	kernel_free
 	add	esp, 4 ; pop (balance stack)
 	DEBUGF 1,"ETH_Sender - fail\n"
+
      .gohome:
 	ret
+
 
 ;---------------------------------------------------------------------------
 ;
@@ -362,7 +407,7 @@ ETH_struc2dev:
 ;---------------------------------------------------------------------------
 
 align 4
-ETH_create_Packet:
+ETH_create_packet:
 
 	DEBUGF 1,"Creating Ethernet Packet (size=%u): \n", ecx
 
@@ -394,7 +439,7 @@ ETH_create_Packet:
 	lea	eax, [edi - ETH_FRAME.Data]  ; Set eax to buffer start
 	mov	edx, ecx		     ; Set ebx to complete buffer size
 	pop	ecx
-	mov	esi, ETH_Sender
+	mov	esi, ETH_sender
 
 	xor	ebx, ebx			;;;; TODO: Fixme
 	mov	ebx, [ETH_DRV_LIST + ebx]

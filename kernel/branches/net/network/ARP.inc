@@ -221,7 +221,7 @@ ARP_create_request:
 	mov	ecx, 60 ; minimum packet size
 	mov	edx, edi ;;;
 	mov	di , ETHER_ARP
-	call	ETH_create_Packet
+	call	ETH_create_packet
 	cmp	edi, -1
 	je	.exit
 
@@ -248,7 +248,7 @@ ARP_create_request:
 	DEBUGF 1,"ARP Packet for device %x created successfully\n", ebx
 
 	push	edx ecx
-	jmp	ETH_Sender
+	jmp	ETH_sender
 
   .exit:
 	add	esp, 8
@@ -555,7 +555,7 @@ ARP_handler:
 
 	DEBUGF	1,"ARP_Handler - Sending reply \n"
 
-	jmp	ETH_Sender					; And send it!
+	jmp	ETH_sender					; And send it!
 
      .exit:
 	call	kernel_free
