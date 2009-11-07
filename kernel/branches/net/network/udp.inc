@@ -210,8 +210,6 @@ UDP_socket_send:
 ; Create the pseudoheader in stack,
 ; (now that we still have all the variables that are needed.)
 	push	dword IP_PROTO_UDP shl 8
-	push	eax
-	push	ebx
 
 	add	ecx, UDP_Packet.Data
 
@@ -222,12 +220,12 @@ UDP_socket_send:
 	cmp	edi, -1
 	je	.fail
 
-	mov	[esp + 8 + 12], eax				; pointer to buffer start
-	mov	[esp + 8 + 12 + 4], edx 			; buffer size
+	mov	[esp + 8 + 4], eax				; pointer to buffer start
+	mov	[esp + 8 + 4 + 4], edx 				; buffer size
 
 	rol	cx, 8
 	mov	[edi + UDP_Packet.Length], cx
-	mov	[esp + 8 + 10], cx
+	mov	[esp + 8 + 2], cx
 	ror	cx, 8
 
 	pop	esi
@@ -237,7 +235,7 @@ UDP_socket_send:
 	shr	ecx, 2
 	rep	movsd
 	mov	ecx, [esp]
-	and	cx , 3
+	and	ecx, 3
 	rep	movsb
 	pop	ecx edi
 
@@ -249,6 +247,8 @@ UDP_socket_send:
 	mov	esi, edi
 	call	checksum_1
 ; Checksum for pseudoheader
+	pushd	[edi-4]	; destination address
+	pushd	[edi-8]	; source address
 	mov	ecx, 12
 	mov	esi, esp
 	call	checksum_1

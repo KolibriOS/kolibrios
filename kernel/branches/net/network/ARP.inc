@@ -345,8 +345,8 @@ ARP_add_entry:
 	test	ecx, ecx
 	jz	.add
 
-	mov	eax, dword[esp + ARP_ENTRY.MAC]
-	mov	bx , word[esp + ARP_ENTRY.MAC + 4]
+	mov	eax, dword[esp + 4 + ARP_ENTRY.MAC]
+	mov	bx , word[esp + 4 + ARP_ENTRY.MAC + 4]
 	mov	esi, ARPTable
 
 .loop:
@@ -357,7 +357,7 @@ ARP_add_entry:
 
 	cmp	dword[esi + ARP_ENTRY.TTL], 0xFFFF ; static entry
 	jne	.notstatic
-	cmp	dword[esp + ARP_ENTRY.TTL], 0xFFFF
+	cmp	dword[esp + 4 + ARP_ENTRY.TTL], 0xFFFF
 	jne	.error
 .notstatic:
 
@@ -386,10 +386,8 @@ ARP_add_entry:
 	pop	eax
 
 .exit:
-	pop	ebx    ; return addr
-	add	esp, ARP_ENTRY.size
 	DEBUGF 1,"Exiting\n"
-	jmp	ebx
+	ret	ARP_ENTRY.size
 
 .error:
 
@@ -639,7 +637,8 @@ ARP_API:
 	mov	edi, esp
 	mov	ecx, ARP_ENTRY.size/2
 	rep	movsw
-	jmp	ARP_add_entry	     ;out: eax = entry number, -1 on error
+	call	ARP_add_entry	     ;out: eax = entry number, -1 on error
+	ret
 
 .remove:
 	; ecx = # entry

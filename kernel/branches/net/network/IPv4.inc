@@ -529,7 +529,7 @@ IPv4_create_packet:
 	cmp	ecx, 1480
 	jg	.exit_
 
-	cmp	ebx, ebx	      ; if dest ip = 0
+	test	ebx, ebx	      ; if dest ip = 0
 	jnz	.ip_ok		      ; and local ip is valid
 				      ; use local ip instead
 	cmp	[IP_LIST],0xffffffff  ;

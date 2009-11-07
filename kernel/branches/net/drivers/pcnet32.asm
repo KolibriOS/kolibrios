@@ -10,7 +10,7 @@
 ;;                                                                  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+; $Revision$
 
 format MS COFF
 
@@ -1258,6 +1258,7 @@ int_handler:
 	test	ax, PCNET_CSR_RINT
 	jz	@f
 
+.receiver_test_loop:
 	movzx	eax, [ebx + device.cur_rx]
 ;        and     eax, PCNET_RX_RING_MOD_MASK
 	mov	edi, eax
@@ -1288,6 +1289,7 @@ int_handler:
 	test	eax, eax			; Test if we allocated succesfully
 	jz	.abort				;
 
+	push	.receiver_test_loop		;
 	push	ecx				; for eth_receiver
 	push	eax				;
 

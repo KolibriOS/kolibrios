@@ -177,9 +177,8 @@ checksum_1:
 	popf
 	jnc	.end
 
-	lodsb
-	shl	ax, 8
-	add	edx, eax
+	add	dh, [esi]
+	adc	edx, 0
 
 .end:
 
