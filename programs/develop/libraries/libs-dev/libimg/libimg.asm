@@ -1495,12 +1495,19 @@ proc img.draw _img, _x, _y, _width, _height, _xpos, _ypos ;/////////////////////
 	call	img._.get_scanline_len
 	shl	ecx, 16
 	add	ecx, edx
+	push	eax
+	mov	eax, [ebx + Image.Width]
+	imul	eax, [_ypos]
+	add	eax, [_xpos]
+	call	img._.get_scanline_len
+	add	eax, [ebx + Image.Data]
 	mov	edx, [_x - 2]
 	mov	dx, word [_y]
 	mov	esi, [ebx + Image.Type]
 	mov	esi, [type2bpp + (esi-1)*4]
 	mov	edi, [ebx + Image.Palette]
-	mov	ebx, [ebx + Image.Data]
+	xchg	eax, ebx
+	pop	eax
 	push	ebp
 	push	65
 	pop	ebp
@@ -1717,7 +1724,7 @@ align 4
 
 export					      \
 	lib_init	, 'lib_init'	    , \
-	0x00050006	, 'version'	    , \
+	0x00050007	, 'version'	    , \
 	img.is_img	, 'img_is_img'	    , \
 	img.info	, 'img_info'	    , \
 	img.from_file	, 'img_from_file'   , \
