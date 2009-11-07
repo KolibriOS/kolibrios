@@ -1,9 +1,47 @@
-include '../macros.inc'
-MEOS_APP_START
+;
+; Netcfg v1.02
+;
+; Application to load network drivers in KolibriOS
+;
+; By hidnplayr
+;
+
+use32
+	       org    0x0
+
+	       db     'MENUET01'	    ; 8 byte id
+	       dd     0x01		    ; header version
+	       dd     START		    ; start of code
+	       dd     IM_END		    ; size of image
+	       dd     (I_END+0x100)	    ; memory for app
+	       dd     (I_END+0x100)	    ; esp
+	       dd     param, 0x0	   ; I_Param , I_Icon
 
 type_ethernet equ 1
 
-CODE
+include '../macros.inc'
+include 'proc32.inc'
+include 'struct.inc'
+
+START:
+	; first, check boot parameters
+
+	cmp	byte[param], 0
+	je	.noparams
+
+	mcall 40, 0
+
+
+	push	exit
+	cmp	byte[param], 'A'	; A for All
+	je	Get_PCI_Info
+
+	cmp	byte[param], 'F'	; F for First
+	je	Get_PCI_Info
+
+	ret
+
+.noparams:
 	call draw_window
 
 still:	mcall	10			; wait here for event
@@ -36,7 +74,7 @@ button: 				; button
 
 	cmp	ah, 1			; button id = 1 ?
 	jne	@f
-	mcall	-1			; close this program
+exit:	mcall	-1			; close this program
        @@:
 	cmp	eax,0x0000ff00
 	jg	load_drv
@@ -150,6 +188,9 @@ draw_window:
 	ret
 
 
+
+
+
 ;------------------------------------------------------------------
 ;* Gets the PCI Version and Last Bus
 Get_PCI_Info:
@@ -206,7 +247,11 @@ Start_Enum:
 	cmp	byte [PCI_Class],2
 	jne	nextDev
 
+	cmp	byte[param], 0
+	jne	load_and_start
+
 	call	Print_New_Device	; print device info to screen
+
 nextDev:
 	add	byte [V_Dev], 8 	; lower 3 bits are the function number
 
@@ -217,6 +262,40 @@ nextDev:
 	cmp	byte [V_Bus], al	; was it last bus
 	jbe	Start_Enum		; if not jump to keep searching
 	ret
+
+
+
+load_and_start:
+
+	call	get_drv_ptr
+	cmp	eax, lbl_none
+	je	.next
+
+	mov	ecx, eax
+	mcall	68, 16
+	test	eax, eax
+	jz	.next
+	mov	[IOCTL.handle], eax
+
+	mov	al, [V_Dev]
+	mov	[hardwareinfo.pci_dev], al
+	mov	al, [V_Bus]
+	mov	[hardwareinfo.pci_bus], al
+
+	mov	[IOCTL.io_code], 1 ; SRV_HOOK
+	mov	[IOCTL.inp_size], 3
+	mov	[IOCTL.input], hardwareinfo
+	mov	[IOCTL.out_size], 0
+	mov	[IOCTL.output], 0
+
+	mcall	68, 17, IOCTL
+
+       .next:
+	cmp	byte[param], 'A'
+	je	nextDev
+	jmp	exit
+
+
 
 ;------------------------------------------------------------------
 ;* Print device info to screen
@@ -380,8 +459,12 @@ get_drv_ptr:
 
 include 'vendors.inc'
 include 'drivers.inc'
+
+
 ;------------------------------------------------------------------
 ; DATA AREA
+
+
 DATA
 
 
@@ -393,21 +476,27 @@ Form:	dw 800 ; window width (no more, special for 800x600)
 title	db 'Network Driver Control Center', 0
 
 caption db 'Vendor Device Bus  Dev  Rev  IRQ   Company                                         Description         DRIVER',0
-;lbl_1 db 'Hardware control',0
 nonefound db 'No compatible devices were found!',0
 btn_start db 'Start device',0
 btn_reset db 'Reset device',0
 btn_stop db 'Stop device',0
-;lbl_hdw_addr db 'hardware address:',0
-;lbl_type db 'type:',0
 lbl_none db 'none',0
-;lbl_unknown db 'unknown',0
-;lbl_ethernet db 'ethernet',0
 load_error db 'Could not load driver!',0
 
 devicename     db 'test'
 rb 64
 		db 0
+
+hardwareinfo:
+   .type	db 1 ; pci
+   .pci_bus	db ?
+   .pci_dev	db ?
+
+
+IM_END:
+
+;------------------------------------------------------------------
+; UNINITIALIZED DATA AREA
 
 
 IOCTL:
@@ -421,15 +510,6 @@ IOCTL:
 drivernumber	db ?
 MAC		dp ?
 
-hardwareinfo:
-   .type	db 1 ; pci
-   .pci_bus	db ?
-   .pci_dev	db ?
-
-
-;------------------------------------------------------------------
-; UNINITIALIZED DATA AREA
-UDATA
 
 type		db ?
 selected	dw ?
@@ -450,5 +530,7 @@ PCI_IRQ 	db ?
 
 Proc_Info	process_information
 
+param		rb 1024
 
-MEOS_APP_END
+
+I_END:
