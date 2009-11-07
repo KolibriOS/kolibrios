@@ -9,57 +9,57 @@ $Revision$
 
 
 iglobal
-  szKernel            db 'KERNEL', 0
-  szVersion           db 'version',0
+  szKernel	      db 'KERNEL', 0
+  szVersion	      db 'version',0
 
-  szRegService        db 'RegService',0
-  szGetService        db 'GetService',0
+  szRegService	      db 'RegService',0
+  szGetService	      db 'GetService',0
   szServiceHandler    db 'ServiceHandler',0
   szAttachIntHandler  db 'AttachIntHandler',0
   szGetIntHandler     db 'GetIntHandler', 0
-  szFpuSave           db 'FpuSave',0
-  szFpuRestore        db 'FpuRestore',0
+  szFpuSave	      db 'FpuSave',0
+  szFpuRestore	      db 'FpuRestore',0
   szReservePortArea   db 'ReservePortArea',0
-  szBoot_Log          db 'Boot_Log',0
+  szBoot_Log	      db 'Boot_Log',0
 
-  szPciApi            db 'PciApi', 0
-  szPciRead32         db 'PciRead32', 0
-  szPciRead16         db 'PciRead16', 0
-  szPciRead8          db 'PciRead8', 0
-  szPciWrite8         db 'PciWrite8',0
-  szPciWrite16        db 'PciWrite16',0
-  szPciWrite32        db 'PciWrite32',0
+  szPciApi	      db 'PciApi', 0
+  szPciRead32	      db 'PciRead32', 0
+  szPciRead16	      db 'PciRead16', 0
+  szPciRead8	      db 'PciRead8', 0
+  szPciWrite8	      db 'PciWrite8',0
+  szPciWrite16	      db 'PciWrite16',0
+  szPciWrite32	      db 'PciWrite32',0
 
-  szAllocPage         db 'AllocPage',0
-  szAllocPages        db 'AllocPages',0
-  szFreePage          db 'FreePage',0
-  szGetPgAddr         db 'GetPgAddr',0
-  szMapPage           db 'MapPage',0
-  szMapSpace          db 'MapSpace',0
-  szMapIoMem          db 'MapIoMem',0
+  szAllocPage	      db 'AllocPage',0
+  szAllocPages	      db 'AllocPages',0
+  szFreePage	      db 'FreePage',0
+  szGetPgAddr	      db 'GetPgAddr',0
+  szMapPage	      db 'MapPage',0
+  szMapSpace	      db 'MapSpace',0
+  szMapIoMem	      db 'MapIoMem',0
   szCommitPages       db 'CommitPages',0
   szReleasePages      db 'ReleasePages',0
 
   szAllocKernelSpace  db 'AllocKernelSpace',0
   szFreeKernelSpace   db 'FreeKernelSpace',0
   szKernelAlloc       db 'KernelAlloc',0
-  szKernelFree        db 'KernelFree',0
-  szUserAlloc         db 'UserAlloc',0
-  szUserFree          db 'UserFree',0
-  szKmalloc           db 'Kmalloc',0
-  szKfree             db 'Kfree',0
+  szKernelFree	      db 'KernelFree',0
+  szUserAlloc	      db 'UserAlloc',0
+  szUserFree	      db 'UserFree',0
+  szKmalloc	      db 'Kmalloc',0
+  szKfree	      db 'Kfree',0
   szCreateRingBuffer  db 'CreateRingBuffer',0
 
-  szGetPid            db 'GetPid',0
+  szGetPid	      db 'GetPid',0
   szCreateObject      db 'CreateObject',0
   szDestroyObject     db 'DestroyObject',0
   szCreateEvent       db 'CreateEvent',0
-  szRaiseEvent        db 'RaiseEvent',0
-  szWaitEvent         db 'WaitEvent',0
+  szRaiseEvent	      db 'RaiseEvent',0
+  szWaitEvent	      db 'WaitEvent',0
   szDestroyEvent      db 'DestroyEvent',0
-  szClearEvent        db 'ClearEvent',0
+  szClearEvent	      db 'ClearEvent',0
 
-  szLoadCursor        db 'LoadCursor',0
+  szLoadCursor	      db 'LoadCursor',0
   szSelectHwCursor    db 'SelectHwCursor',0
   szSetHwCursor       db 'SetHwCursor',0
   szHwCursorRestore   db 'HwCursorRestore', 0
@@ -68,19 +68,19 @@ iglobal
   szSysMsgBoardStr    db 'SysMsgBoardStr', 0
   szSysMsgBoardChar   db 'SysMsgBoardChar', 0
   szGetCurrentTask    db 'GetCurrentTask',0
-  szLFBAddress        db 'LFBAddress',0
-  szLoadFile          db 'LoadFile',0
-  szSendEvent         db 'SendEvent',0
+  szLFBAddress	      db 'LFBAddress',0
+  szLoadFile	      db 'LoadFile',0
+  szSendEvent	      db 'SendEvent',0
   szSetMouseData      db 'SetMouseData',0
   szSleep	      db 'Sleep',0
   szGetTimerTicks     db 'GetTimerTicks',0
 
-  szStrncat           db 'strncat',0
-  szStrncpy           db 'strncpy',0
-  szstrncmp           db 'strncmp',0
-  szStrnlen           db 'strnlen',0
-  szStrchr            db 'strchr',0
-  szStrrchr           db 'strrchr',0
+  szStrncat	      db 'strncat',0
+  szStrncpy	      db 'strncpy',0
+  szstrncmp	      db 'strncmp',0
+  szStrnlen	      db 'strnlen',0
+  szStrchr	      db 'strchr',0
+  szStrrchr	      db 'strrchr',0
 
   szEthReceiver       db 'EthReceiver',0
   szEthRegDev	      db 'EthRegDev',0
@@ -95,12 +95,12 @@ kernel_export:
   dd szServiceHandler  , srv_handler
   dd szAttachIntHandler, attach_int_handler
   dd szGetIntHandler   , get_int_handler
-  dd szFpuSave         , fpu_save
+  dd szFpuSave	       , fpu_save
   dd szFpuRestore      , fpu_restore
   dd szReservePortArea , r_f_port_area
   dd szBoot_Log        , boot_log
 
-  dd szPciApi          , pci_api
+  dd szPciApi	       , pci_api
   dd szPciRead32       , pci_read32
   dd szPciRead16       , pci_read16
   dd szPciRead8        , pci_read8
@@ -131,11 +131,11 @@ kernel_export:
   dd szGetPid	       , get_pid
   dd szCreateObject    , create_kernel_object
   dd szDestroyObject   , destroy_kernel_object
-  dd szCreateEvent     , create_event          ;see EVENT.inc for specification
-  dd szRaiseEvent      , raise_event           ;see EVENT.inc for specification
-  dd szWaitEvent       , wait_event            ;see EVENT.inc for specification
-  dd szDestroyEvent    , destroy_event         ;see EVENT.inc for specification
-  dd szClearEvent      , clear_event           ;see EVENT.inc for specification
+  dd szCreateEvent     , create_event	       ;see EVENT.inc for specification
+  dd szRaiseEvent      , raise_event	       ;see EVENT.inc for specification
+  dd szWaitEvent       , wait_event	       ;see EVENT.inc for specification
+  dd szDestroyEvent    , destroy_event	       ;see EVENT.inc for specification
+  dd szClearEvent      , clear_event	       ;see EVENT.inc for specification
 
   dd szLoadCursor      , load_cursor	       ;stdcall
 
@@ -148,25 +148,25 @@ kernel_export:
   dd szSysMsgBoardChar , sys_msg_board
   dd szGetCurrentTask  , get_curr_task
   dd szLoadFile        , load_file	       ;retval eax, ebx
-  dd szSendEvent       , send_event            ;see EVENT.inc for specification
+  dd szSendEvent       , send_event	       ;see EVENT.inc for specification
   dd szSetMouseData    , set_mouse_data        ;stdcall
-  dd szSleep           , delay_ms
+  dd szSleep	       , delay_ms
   dd szGetTimerTicks   , get_timer_ticks
 
-  dd szStrncat         , strncat
-  dd szStrncpy         , strncpy
-  dd szstrncmp         , strncmp
-  dd szStrnlen         , strnlen
-  dd szStrchr          , strchr
-  dd szStrrchr         , strrchr
+  dd szStrncat	       , strncat
+  dd szStrncpy	       , strncpy
+  dd szstrncmp	       , strncmp
+  dd szStrnlen	       , strnlen
+  dd szStrchr	       , strchr
+  dd szStrrchr	       , strrchr
 
-  dd szEthReceiver     , ETH_Receiver
-  dd szEthRegDev       , ETH_Add_Device
-  dd szEthUnRegDev     , ETH_Remove_Device
+  dd szEthReceiver     , ETH_receiver
+  dd szEthRegDev       , ETH_add_device
+  dd szEthUnRegDev     , ETH_remove_device
   dd szEthStruc2Dev    , ETH_struc2dev
 
 exp_lfb:
   dd szLFBAddress      , 0
-  dd 0                      ;terminator, must be zero
+  dd 0			    ;terminator, must be zero
 
 endg
