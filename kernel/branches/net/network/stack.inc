@@ -32,7 +32,7 @@ MAX_EPHEMERAL_PORT equ 61000
 ETHER		equ 1337
 ETHER_ARP	equ 0x0608
 
-;AF_UNSPEC       equ 0
+AF_UNSPEC	equ 0
 AF_UNIX 	equ 1
 AF_INET4	equ 2
 ;AF_AX25         equ 3
@@ -55,9 +55,46 @@ SOCK_STREAM	= 1
 SOCK_DGRAM	= 2
 SOCK_RAW	= 3
 
-; TCP opening modes
-SOCKET_PASSIVE	equ 0
-SOCKET_ACTIVE	equ 1
+TCB_LISTEN		equ 1
+TCB_SYN_SENT		equ 2
+TCB_SYN_RECEIVED	equ 3
+TCB_ESTABLISHED 	equ 4
+TCB_FIN_WAIT_1		equ 5
+TCB_FIN_WAIT_2		equ 6
+TCB_CLOSE_WAIT		equ 7
+TCB_CLOSING		equ 8
+TCB_LAST_ACK		equ 9
+TCB_TIMED_WAIT		equ 10
+TCB_CLOSED		equ 11
+
+TH_FIN			equ 1 shl 0
+TH_SYN			equ 1 shl 1
+TH_RST			equ 1 shl 2
+TH_PUSH 		equ 1 shl 3
+TH_ACK			equ 1 shl 4
+TH_URG			equ 1 shl 5
+
+
+macro inc_INET reg {
+
+	inc	byte [reg + 3]
+	adc	byte [reg + 2], 0
+	adc	byte [reg + 1], 0
+	adc	byte [reg + 0], 0
+
+}
+
+
+macro add_INET reg {
+
+	rol	ecx, 16
+	adc	byte [reg + 3], ch
+	adc	byte [reg + 2], cl
+	rol	ecx, 16
+	adc	byte [reg + 1], ch
+	adc	byte [reg + 0], cl
+
+}
 
 include "queue.inc"
 include "ARP.inc"
@@ -90,7 +127,7 @@ stack_init:
 	call	ICMP_init
 	call	socket_init
 
-	mov	al, 0x0 		; set up 1s timer
+	mov	al, 0		      ; set up 1s timer
 	out	0x70, al
 	in	al, 0x71
 	mov	[last_1sTick], al
@@ -116,7 +153,7 @@ stack_handler:
     cmp     [ETH_RUNNING], 0
     je	    .exit
 
-    ; Test for 10ms tick
+    ; Test for 1/100 s (10ms) tick
     mov     eax, [timer_ticks]
     cmp     eax, [last_1hsTick]
     je	    .exit
@@ -129,8 +166,8 @@ stack_handler:
 
   .sec_tick:
 
-    ; Test for 1 second event
-    mov     al, 0x0   ;second
+    ; Test for 1 second tick
+    mov     al, 0
     out     0x70, al
     in	    al, 0x71
     cmp     al, [last_1sTick]
@@ -336,7 +373,7 @@ sys_protocols:
 	je	UDP_API
 
 	cmp	ax , IP_PROTO_TCP
-;        je      TCP_API
+	je	TCP_API
 
 	cmp	ax , ETHER_ARP
 	je	ARP_API

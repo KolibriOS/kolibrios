@@ -1138,8 +1138,8 @@ reset:
 ;;                                         ;;
 ;; Transmit                                ;;
 ;;                                         ;;
-;; In: buffer pointer in [esp]             ;;
-;;     size of buffer in [esp+4]           ;;
+;; In: buffer pointer in [esp+4]             ;;
+;;     size of buffer in [esp+8]           ;;
 ;;     pointer to device structure in ebx  ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1147,15 +1147,15 @@ reset:
 align 4
 transmit:
 	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n",[esp],[esp+4]
-	mov	eax, [esp]
+	mov	eax, [esp+4]
 	DEBUGF	1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
 	[eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
 	[eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
 	[eax+13]:2,[eax+12]:2
 
-	cmp	dword [esp+4], 1514
+	cmp	dword [esp+8], 1514
 	jg	.finish 			; packet is too long
-	cmp	dword [esp+4], 60
+	cmp	dword [esp+8], 60
 	jl	.finish 			; packet is too short
 
 ; check descriptor
@@ -1167,8 +1167,8 @@ transmit:
 	test	byte [eax + buf_head.status + 1], 80h
 	jnz	.nospace
 ; descriptor is free, copy data
-	mov	esi, [esp]
-	mov	ecx, [esp+4]
+	mov	esi, [esp+4]
+	mov	ecx, [esp+8]
 	mov	edx, ecx
 	shr	ecx, 2
 	and	edx, 3
@@ -1176,7 +1176,7 @@ transmit:
 	mov	ecx, edx
 	rep	movsb
 ; set length
-	mov	ecx, [esp+4]
+	mov	ecx, [esp+8]
 	neg	ecx
 	mov	[eax + buf_head.length], cx
 ; put to transfer queue
@@ -1195,15 +1195,11 @@ transmit:
 
 .finish:
 	DEBUGF	2," - Done!\n"
- ;;;       call    KernelFree
-	add	esp, 4+4 ; pop (balance stack)
-
 	ret
 
 .nospace:
 	DEBUGF	1, 'ERROR: no free transmit descriptors\n'
 ; todo: maybe somehow notify the kernel about the error?
-	add	esp, 4+4
 	ret
 
 

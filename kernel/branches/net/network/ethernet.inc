@@ -327,28 +327,18 @@ ETH_send_queued:
 
 	get_from_queue ETH_OUT_QUEUE, ETH_QUEUE_SIZE, eth_queue_entry.size, .gohome
 
-	push	ETH_send_queued
+	push	ETH_send_queued 		; this will cause the procedure to check for more packets
+						; when a single packet is handled
 
-	lodsd
-	mov	ebx, eax
-
-	sub	esp, 8
-	mov	edi, esp
-	movsd
-	movsd
+	mov	ebx, [esi]
+	pushd	[esi + 8]
+	pushd	[esi + 4]
 
 	DEBUGF	1,"dequeued packet for device %x\n", ebx
 
-	call	ETH_struc2dev			; convert struct ptr to device num (this way we know if driver is still mounted)
-	cmp	edi, -1
-	je	.fail
-
-	jmp	[ebx+ETH_DEVICE.transmit]	; we will return to get_from_queue macro after transmitting packet
-
-     .fail:
+	call	[ebx+ETH_DEVICE.transmit]	; we will return to get_from_queue macro after transmitting packet
 	call	kernel_free
 	add	esp, 4 ; pop (balance stack)
-	DEBUGF 1,"ETH_Sender - fail\n"
 
      .gohome:
 	ret

@@ -43,12 +43,15 @@ struct	TCP_SOCKET
 	 .RemotePort		dw ? ; In INET byte order
 
 	 .backlog		dw ? ; Backlog
-	 .OrigRemoteIP		dd ? ; original remote IP address (used to reset to LISTEN state)
-	 .OrigRemotePort	dw ? ; original remote port (used to reset to LISTEN state)
-	 .TCBState		dd ? ; TCB state
-	 .TCBTimer		dd ? ; TCB timer (seconds)
-	 .ISS			dd ? ; initial send sequence
-	 .IRS			dd ? ; initial receive sequence
+;         .OrigRemoteIP          dd ? ; original remote IP address (used to reset to LISTEN state)
+;         .OrigRemotePort        dw ? ; original remote port (used to reset to LISTEN state)
+	 .wndsizeTimer		dd ? ; window size timer
+
+	; Transmission control block
+	 .state 		dd ? ; TCB state
+	 .timer 		dd ? ; TCB timer (seconds)
+	 .ISS			dd ? ; initial send sequence number
+	 .IRS			dd ? ; initial receive sequence number
 	 .SND_UNA		dd ? ; sequence number of unack'ed sent Packets
 	 .SND_NXT		dd ? ; next send sequence number to use
 	 .SND_WND		dd ? ; send window
@@ -56,7 +59,6 @@ struct	TCP_SOCKET
 	 .RCV_WND		dd ? ; receive window
 	 .SEG_LEN		dd ? ; segment length
 	 .SEG_WND		dd ? ; segment window
-	 .wndsizeTimer		dd ? ; window size timer
 
 	 .flags 		db ? ; packet flags
 
@@ -121,42 +123,37 @@ socket_init:
 	ret
 
 
-;-----------------------------------------------------------------------------
+;-----------------------------------------------
 ;
 ; Socket API (function 74)
 ;
-;-----------------------------------------------------------------------------
+;-----------------------------------------------
 
 align 4
 sys_socket:
+	and	ebx, 0x000000FF ; should i remove this line ?
+	cmp	bl , 7		; highest possible number
+	jg	s_error
+	lea	ebx, [.table + 4*ebx]
+	jmp	dword [ebx]
 
-	test	bl, bl
-	jz	socket_open	; 0
-	dec	bl
-	jz	socket_close	; 1
-	dec	bl
-	jz	socket_bind	; 2
-	dec	bl
-	jz	socket_listen	; 3
-	dec	bl
-	jz	socket_connect	; 4
-	dec	bl
-	jz	socket_accept	; 5
-	dec	bl
-	jz	socket_send	; 6
-	dec	bl
-	jz	socket_recv	; 7
-	dec	bl
-;        jz      socket_get_opt  ; 8
-	dec	bl
-;        jz      socket_set_opt  ; 9
+.table:
+	dd	socket_open	; 0
+	dd	socket_close	; 1
+	dd	socket_bind	; 2
+	dd	socket_listen	; 3
+	dd	socket_connect	; 4
+	dd	socket_accept	; 5
+	dd	socket_send	; 6
+	dd	socket_recv	; 7
+;        dd      socket_get_opt  ; 8
+;        dd      socket_set_opt  ; 9
+
 
 s_error:
 	mov	dword [esp+32],-1
 
 	ret
-
-
 
 
 ;-----------------------------------------------
@@ -185,6 +182,8 @@ socket_open:
 
 	stdcall net_socket_addr_to_num, eax
 	DEBUGF	1,", socketnumber: %u\n", eax
+
+	; TODO: if it is txcp socket, set state to TCB_CLOSED
 
 	mov	[esp+32], eax
 
@@ -230,7 +229,6 @@ socket_bind:
   .af_unix:
 
 	; TODO: write code here
-
 
 	mov	dword [esp+32],0
 	ret
@@ -295,7 +293,7 @@ socket_connect:
 	cmp	eax, -1
 	jz	s_error
 
-	cmp	esi, 2
+	cmp	esi, 8
 	jl	s_error
 
 	cmp	word [edx], AF_INET4
@@ -305,21 +303,15 @@ socket_connect:
 
   .af_inet4:
 
-	cmp	esi, 8
-	jl	s_error
-
 	cmp	[eax + SOCKET_head.Type], IP_PROTO_UDP
 	je	.udp
-
-	cmp	[eax + SOCKET_head.Type], IP_PROTO_ICMP
-	je	.icmp
 
 	cmp	[eax + SOCKET_head.Type], IP_PROTO_TCP
 	je	.tcp
 
 	jmp	s_error
 
-    .udp:
+  .udp:
 
 	mov	bx , word [edx + 2]
 	mov	word [eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], bx
@@ -332,92 +324,49 @@ socket_connect:
 	mov	dword [esp+32],0
 	ret
 
-    .icmp:
-
-	; TODO: write code here
-
-	ret
-
-
 
   .tcp:
+	; TODO: set sequence number to random value
 
-;local sockAddr dd ?
 
-;        cmp     esi, SOCKET_PASSIVE
-;        jne     .skip_port_check
-;
-;        push    ebx
-;        mov     eax, ebx
-;        xchg    al, ah
-;        mov     ebx, net_sockets
-;
-;  .next_socket:
-;        mov     ebx, [ebx + SOCKET.NextPtr]
-;        or      ebx, ebx
-;        jz      .last_socket
-;        cmp     [ebx + SOCKET.TCBState], TCB_LISTEN
-;        jne     .next_socket
-;        cmp     [ebx + SOCKET.LocalPort], ax
-;        jne     .next_socket
-;
-;        xchg    al, ah
-;        DEBUGF  1, "K : error: port %u is listened by 0x%x\n", ax, ebx
-;        pop     ebx
-;        jmp     .error
-;
-;  .last_socket:
-;        pop     ebx
-;
-;  .skip_port_check:
+	; fill in remote port and IP
 
-;        mov     [eax + SOCKET.wndsizeTimer], 0     ; Reset the window timer.
-;
-;        xchg    bh, bl
-;        mov     [eax + SOCKET.LocalPort], bx
-;        xchg    ch, cl
-;        mov     [eax + SOCKET.RemotePort], cx
-;        mov     [eax + SOCKET.OrigRemotePort], cx
-;        mov     ebx, [IP_LIST]
-;        mov     [eax + SOCKET.LocalIP], ebx
-;        mov     [eax + SOCKET.RemoteIP], edx
-;        mov     [eax + SOCKET.OrigRemoteIP], edx
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.wndsizeTimer], 0	   ; Reset the window timer.
+											   ; TODO: figure out WTF this is
+	mov	bx , word [edx + 2]
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RemotePort], bx
+	DEBUGF	1,"remote port: %x ",bx
 
-;        mov     ebx, TCB_LISTEN
-;        cmp     esi, SOCKET_PASSIVE
-;        je      @f
-;        mov     ebx, TCB_SYN_SENT
-;    @@: mov     [eax + SOCKET.TCBState], ebx            ; Indicate the state of the TCB
+	mov	ebx, dword [edx + 4]
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], ebx
 
-;        cmp     ebx, TCB_LISTEN
-;        je      .exit
+	; check if local port and IP is ok
 
-	; Now, if we are in active mode, then we have to send a SYN to the specified remote port
-;        mov     eax, EMPTY_QUEUE
-;        call    dequeue
-;        cmp     ax, NO_BUFFER
-;        je      .exit
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.LocalIP], 0
+	jne	@f
+	push	[IP_LIST]	    ; device zero = default
+	pop	[eax + SOCKET_head.end + IPv4_SOCKET.LocalIP]
+       @@:
 
-;        push    eax
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.LocalPort], 0
+	jne	@f
 
-;        mov     bl, TH_SYN
-;        xor     ecx, ecx
-;        stdcall build_tcp_Packet, [sockAddr]
+	mov	ecx, [eax + SOCKET_head.Type]
+	call	socket_find_port
+	test	bx, bx
+	jz	s_error
 
-;        mov     eax, NET1OUT_QUEUE
-;        mov     edx, [IP_LIST]
-;        mov     ecx, [sockAddr]
-;        cmp     edx, [ecx + SOCKET.RemoteIP]
-;        jne     .not_local
-;        mov     eax, IPIN_QUEUE
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.LocalPort], bx
+       @@:
 
-;  .not_local:
-	; Send it.
-;        pop     ebx
-;        call    queue
 
-  .exit:
-	xor	eax, eax
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_SYN_SENT
+	; now say hello to the remote tcp socket
+
+	mov	bl, TH_SYN
+	call	TCP_send_ack
+
+	mov	dword [esp+32],0
 	ret
 
 
@@ -442,14 +391,19 @@ socket_listen:
 	cmp	eax, -1
 	jz	s_error
 
+	cmp	word [eax + SOCKET_head.Domain], AF_INET4
+	jne	s_error
+
+	cmp	[eax + SOCKET_head.Type], IP_PROTO_TCP
+	jne	s_error
+
 	cmp	edx, MAX_backlog
 	jl	.ok
 	mov	dx , 20
   .ok:
 
 	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog], dx
-
-	; TODO: insert code for active connections like TCP
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_LISTEN
 
 	mov	dword [esp+32], 0
 	ret
@@ -569,98 +523,44 @@ socket_close:
 	ret
 
   .tcp:
+	; first, remove all resend entries for this socket
 
-if 1 = 0
-;local sockAddr dd ?
-
-;        DEBUGF  1, "K : socket_close_tcp (0x%x)\n", ebx
-	; first, remove any resend entries
-	pusha
-
-	mov	esi, resendQ
-	mov	ecx, 0
-
-  .next_resendq:
-	cmp	ecx, NUMRESENDENTRIES
-	je	.last_resendq	    ; None left
-	cmp	[esi + 4], ebx
-	je	@f		    ; found one
-	inc	ecx
-	add	esi, 8
-	jmp	.next_resendq
-
-    @@: mov	dword[esi + 4], 0
-	inc	ecx
-	add	esi, 8
-	jmp	.next_resendq
-
-  .last_resendq:
-	popa
-
-	mov	ebx, eax
-;        mov     [sockAddr], eax
-
-	cmp	[eax + SOCKET.TCBState], TCB_LISTEN
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_LISTEN
 	je	.destroy_tcb
-	cmp	[eax + SOCKET.TCBState], TCB_SYN_SENT
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_SYN_SENT
 	je	.destroy_tcb
 
-; Now construct the response, and queue for sending by IP
-	mov	eax, EMPTY_QUEUE
-	call	dequeue
-	cmp	ax, NO_BUFFER
-	je	.error
-
-	push	eax
+	; Now construct the response, and queue for sending by IP
 
 	mov	bl, TH_FIN
-	xor	ecx, ecx
-	xor	esi, esi
-	stdcall build_tcp_Packet, [sockAddr]
+	call	TCP_send_ack
 
-	mov	 ebx, [sockAddr]
 	; increament SND.NXT in socket
-	lea	esi, [ebx + SOCKET.SND_NXT]
-	call	inc_inet_esi
+	lea	esi, [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
+	inc_INET esi
 
 	; Get the socket state
-	mov	eax, [ebx + SOCKET.TCBState]
-	cmp	eax, TCB_SYN_RECEIVED
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_SYN_RECEIVED
 	je	.fin_wait_1
-	cmp	eax, TCB_ESTABLISHED
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_ESTABLISHED
 	je	.fin_wait_1
 
 	; assume CLOSE WAIT
 	; Send a fin, then enter last-ack state
-	mov	[ebx + SOCKET.TCBState], TCB_LAST_ACK
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_LAST_ACK
 	jmp	.send
 
   .fin_wait_1:
 	; Send a fin, then enter finwait2 state
-	mov	[ebx + SOCKET.TCBState], TCB_FIN_WAIT_1
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_FIN_WAIT_1
 
   .send:
-	mov	eax, NET1OUT_QUEUE
-	mov	edx, [IP_LIST]
-;        mov     ecx, [sockAddr]
-	cmp	edx, [ecx + SOCKET.RemoteIP]
-	jne	.not_local
-	mov	eax, IPIN_QUEUE
 
-  .not_local:
-	; Send it.
-	pop	ebx
-	call	queue
-	jmp	.exit
-
+	;;;;;
 
   .destroy_tcb:
 
 	stdcall net_socket_free, eax
-
-end if
-
-  .exit:
 	mov	dword [esp+32],0
 	ret
 
@@ -735,6 +635,7 @@ socket_recv:
 ;  OUT: -1 on error
 ;
 ;-----------------------------------------------
+
 align 4
 socket_send:
 
@@ -749,7 +650,6 @@ socket_send:
 
 	jmp	s_error
 
-;---------
   .af_inet4:
 	DEBUGF	1,"Socket type:%u\n", [eax + SOCKET_head.Type]:4
 
@@ -763,7 +663,6 @@ socket_send:
 	je	.raw
 
 	jmp	s_error
-;--------
 
   .udp:
 
@@ -792,10 +691,27 @@ socket_send:
 
   .tcp:
 
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.LocalPort],0
+	jne	@f
+
+	push	esi
+	mov	ecx, [eax + SOCKET_head.Type]
+	call	socket_find_port
+	test	bx, bx
+	pop	esi
+	je	s_error
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.LocalPort], bx
+
+     @@:
+
+	mov	ecx, esi
+	mov	esi, edx
+
+	call	TCP_socket_send
+
 	mov	[esp+32], eax
 	ret
 
-;--------
   .raw:
 	cmp	[eax + SOCKET_head.Protocol], IP_PROTO_IP
 	je	.raw_ip
@@ -804,10 +720,11 @@ socket_send:
 	je	.raw_icmp
 
 	jmp	s_error
-;--------
 
 
   .raw_ip:
+
+	;;;;;;
 
 	mov	[esp+32], eax
 	ret

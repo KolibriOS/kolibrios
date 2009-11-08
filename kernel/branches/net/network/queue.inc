@@ -42,7 +42,7 @@ struct	tcp_out_queue_entry
 	.retries	dd ?
 	.owner		dd ?
 	.sendproc	dd ?
-	.ack_num	dd ?
+	.seq_num	dd ?
 	.size:
 ends
 

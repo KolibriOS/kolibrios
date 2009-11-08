@@ -123,7 +123,6 @@ IPv4_handler:
 
 	; save checksum, and clear it in original packet
 	mov	di , [edx + IPv4_Packet.HeaderChecksum]
-	DEBUGF	1,"checksum: %x\n",di
 	mov	word [edx + IPv4_Packet.HeaderChecksum], 0
 
 	; Re-calculate checksum
@@ -139,6 +138,8 @@ IPv4_handler:
 	cmp	dx, di
 	pop	ebx edx
 	jne	.dump						; if checksum isn't valid then dump packet
+
+	DEBUGF	1,"IPv4 Checksum is correct\n",di
 
 	mov	eax, [edx + IPv4_Packet.DestinationAddress]
 	mov	edi, BROADCAST
@@ -157,7 +158,7 @@ IPv4_handler:
   .ip_ok:
 	call	ETH_struc2dev					; TODO: make this work on other protocols too!
 	inc	[IP_PACKETS_RX+4*edi]
-	DEBUGF	1,"IP_Handler - packet from %u.%u.%u.%u\n",\
+	DEBUGF	1,"packet comes from %u.%u.%u.%u\n",\
 	[edx + IPv4_Packet.SourceAddress]:1,[edx + IPv4_Packet.SourceAddress + 1]:1,[edx + IPv4_Packet.SourceAddress + 2]:1,[edx + IPv4_Packet.SourceAddress + 3]:1
 
 	mov	al , [edx + IPv4_Packet.VersionAndIHL]
@@ -189,10 +190,8 @@ IPv4_handler:
 	add	eax, edx
 	push	eax
 	mov	al , [edx + IPv4_Packet.Protocol]
-;----------------------- experimental
 	mov	esi, [edx + IPv4_Packet.SourceAddress]
 	mov	edi, [edx + IPv4_Packet.DestinationAddress]
-;-----------------------
 	pop	edx						; Offset to data (tcp/udp/icmp/.. Packet)
 
 	cmp	al , IP_PROTO_TCP
@@ -204,7 +203,7 @@ IPv4_handler:
 	cmp	al , IP_PROTO_ICMP
 	je	ICMP_handler
 
-	DEBUGF	1,"IP_Handler - unknown protocol:%u\n",al
+	DEBUGF	1,"unknown protocol: %u\n",al
 
   .dump:
 	DEBUGF	1,"IP_Handler - done\n"
@@ -402,10 +401,8 @@ IPv4_handler:
 	add	eax, edx
 	push	eax
 	mov	al , [edx + IPv4_Packet.Protocol]
-;----------------------- experimental
 	mov	esi, [edx + IPv4_Packet.SourceAddress]
 	mov	edi, [edx + IPv4_Packet.DestinationAddress]
-;-----------------------
 	pop	edx						; Offset to data (tcp/udp/icmp/.. Packet)
 
 	cmp	al , IP_PROTO_TCP

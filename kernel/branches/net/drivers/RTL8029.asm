@@ -758,21 +758,21 @@ nsr_002:
 ;***************************************************************************
 ;   Function
 ;      transmit
-; buffer in [esp], size in [esp+4], pointer to device struct in ebx
+; buffer in [esp+4], size in [esp+8], pointer to device struct in ebx
 ;***************************************************************************
 
 align 4
 transmit:
 	mov	ebp, ebx
 
-	mov	esi, [esp]
-	mov	ecx, [esp + 4]
+	mov	esi, [esp + 4]
+	mov	ecx, [esp + 8]
 	DEBUGF	2,"Transmitting packet, buffer:%x, size:%u\n",esi, ecx
 	DEBUGF	2,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",[esi+0]:2,[esi+1]:2,[esi+2]:2,[esi+3]:2,[esi+4]:2,[esi+5]:2,[esi+6]:2,[esi+7]:2,[esi+8]:2,[esi+9]:2,[esi+10]:2,[esi+11]:2,[esi+13]:2,[esi+12]:2
 
-	cmp	dword [esp+4], ETH_FRAME_LEN
+	cmp	dword [esp + 8], ETH_FRAME_LEN
 	jg	.finish ; packet is too long
-	cmp	dword [esp+4], 60
+	cmp	dword [esp + 8], 60
 	jl	.finish ; packet is too short
 
 	xor	bl, bl
@@ -804,15 +804,12 @@ transmit:
 	DEBUGF	2," - Packet Sent!\n"
 
 	inc	[ebp+device.packets_tx] 	 ;
-	mov	eax, [esp+4]			 ; Get packet size in eax
+	mov	eax, [esp + 8]			 ; Get packet size in eax
 
 	add	dword [ebp + device.bytes_tx], eax
 	adc	dword [ebp + device.bytes_tx + 4], 0
 .finish:
 	mov	ebx, ebp
-
-	call	KernelFree
-	add	esp, 4 ; pop (balance stack)
 	xor	eax, eax
 
 	ret

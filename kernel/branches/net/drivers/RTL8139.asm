@@ -7,14 +7,13 @@
 ;;                                                                 ;;
 ;;    Written by hidnplayr@kolibrios.org                           ;;
 ;;                                                                 ;;
-;;    v0.1 - march 2009                                            ;;
+;;     0.1 - x march 2009                                          ;;
+;;     0.2 - 8 november 2009                                       ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 format MS COFF
 
@@ -766,24 +765,24 @@ reset:
 ;;                                         ;;
 ;; Transmit                                ;;
 ;;                                         ;;
-;; In: buffer pointer in [esp]             ;;
-;;     size of buffer in [esp+4]           ;;
+;; In: buffer pointer in [esp+4]           ;;
+;;     size of buffer in [esp+8]           ;;
 ;;     pointer to device structure in ebx  ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 align 4
 transmit:
-	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n",[esp],[esp+4]
-	mov	eax, [esp]
+	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n",[esp+4],[esp+8]
+	mov	eax, [esp+4]
 	DEBUGF	1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
 	[eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
 	[eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
 	[eax+13]:2,[eax+12]:2
 
-	cmp	dword [esp+4], MAX_ETH_FRAME_SIZE
+	cmp	dword [esp+8], MAX_ETH_FRAME_SIZE
 	jg	.finish 			; packet is too long
-	cmp	dword [esp+4], 60
+	cmp	dword [esp+8], 60
 	jl	.finish 			; packet is too short
 
 ; check descriptor
@@ -822,16 +821,16 @@ transmit:
 	add	edi, eax			 ; Store it in edi
 	pop	edx
 
-	mov	esi, [esp]			 ; Copy data to that address
-	mov	ecx, [esp+4]			 ;
+	mov	esi, [esp+4]			 ; Copy data to that address
+	mov	ecx, [esp+8]			 ;
 	shr	ecx, 2				 ;
 	rep	movsd				 ;
-	mov	ecx, [esp+4]			 ;
+	mov	ecx, [esp+8]			 ;
 	and	ecx, 3				 ;
 	rep	movsb				 ;
 
 	inc	[ebx+device.packets_tx] 	 ;
-	mov	eax, [esp+4]			 ; Get packet size in eax
+	mov	eax, [esp+8]			 ; Get packet size in eax
 
 	add	dword [ebx + device.bytes_tx], eax
 	adc	dword [ebx + device.bytes_tx + 4], 0
@@ -846,9 +845,6 @@ transmit:
 	DEBUGF	2," - Packet Sent! "
 .finish:
 	DEBUGF	2," - Done!\n"
-	call	KernelFree
-	add	esp, 4 ; pop (balance stack)
-
 	ret
 
 

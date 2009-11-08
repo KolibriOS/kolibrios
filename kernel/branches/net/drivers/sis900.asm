@@ -53,10 +53,10 @@ virtual at 0
   IOCTL IOCTL
 end virtual
 
-NUM_RX_DESC    equ    4               ;* Number of RX descriptors *
-NUM_TX_DESC    equ    1               ;* Number of TX descriptors *
-RX_BUFF_SZ          equ    1520            ;* Buffer size for each Rx buffer *
-TX_BUFF_SZ          equ    1516            ;* Buffer size for each Tx buffer *
+NUM_RX_DESC    equ    4 	      ;* Number of RX descriptors *
+NUM_TX_DESC    equ    1 	      ;* Number of TX descriptors *
+RX_BUFF_SZ	    equ    1520 	   ;* Buffer size for each Rx buffer *
+TX_BUFF_SZ	    equ    1516 	   ;* Buffer size for each Tx buffer *
 MAX_ETH_FRAME_SIZE  equ    1516
 
 TOTAL_BUFFERS_SIZE equ NUM_RX_DESC*RX_BUFF_SZ + NUM_TX_DESC*TX_BUFF_SZ
@@ -84,10 +84,10 @@ struc ETH_DEVICE {
       .pci_dev		db ?
       .irq_line 	db ?
       .cur_rx		db ?
-      .pci_revision     db ?
-      .table_entries:   db ?
+      .pci_revision	db ?
+      .table_entries:	db ?
 align 4
-      .special_func:    dd 0
+      .special_func:	dd 0
       .txd: times (3 * NUM_TX_DESC) dd 0
       .rxd: times (3 * NUM_RX_DESC) dd 0
       .size:
@@ -120,7 +120,7 @@ section '.flat' code readable align 16
 START:
 	cmp	dword [esp+4], 1
 	jne	.exit
-	stdcall	RegService, my_service, service_proc
+	stdcall RegService, my_service, service_proc
 	ret	4
 .exit:
 	xor	eax, eax
@@ -130,7 +130,7 @@ START:
 ; Currently handled requests are: SRV_GETVERSION = 0 and SRV_HOOK = 1.
 service_proc:
 ; 1. Get parameter from the stack: [esp+4] is the first parameter,
-;	pointer to IOCTL structure.
+;       pointer to IOCTL structure.
 	mov	edx, [esp+4]	; edx -> IOCTL
 ; 2. Get request code and select a handler for the code.
 	mov	eax, [ebx+IOCTL.io_code]
@@ -151,7 +151,7 @@ service_proc:
 	jnz	.fail
 ; 4. This is SRV_HOOK request, input defines the device to hook, no output.
 ; 4a. The driver works only with PCI devices,
-;	so input must be at least 3 bytes long.
+;       so input must be at least 3 bytes long.
 	cmp	[edx + IOCTL.inp_size], 3
 	jl	.fail
 ; 4b. First byte of input is bus type, 1 stands for PCI.
@@ -159,10 +159,10 @@ service_proc:
 	cmp	byte [eax], 1
 	jne	.fail
 ; 4c. Second and third bytes of the input define the device: bus and dev.
-;	Word in bx holds both bytes.
+;       Word in bx holds both bytes.
 	mov	bx, [eax+1]
 ; 4d. Check if the device was already hooked,
-;	scan through the list of known devices.
+;       scan through the list of known devices.
 	mov	esi, DEV_LIST
 	mov	ecx, [NUM_DEV]
 	test	ecx, ecx
@@ -195,7 +195,7 @@ service_proc:
 ; Note that get_MAC pointer is filled in initialization by SIS900_probe.
 	mov	dword [ebx+device.reset], sis900_init
 	mov	dword [ebx+device.transmit], transmit
-;	mov	dword [ebx+device.get_MAC], read_mac
+;       mov     dword [ebx+device.get_MAC], read_mac
 	mov	dword [ebx+device.set_MAC], write_mac
 	mov	dword [ebx+device.unload], unload
 	mov	dword [ebx+device.name], my_service
@@ -206,7 +206,7 @@ service_proc:
 	mov	edx, PCI_BASE_ADDRESS_0
 .reg_check:
 	push	edx
-	stdcall	PciRead16, dword [ebx+device.pci_bus], dword [ebx+device.pci_dev], edx
+	stdcall PciRead16, dword [ebx+device.pci_bus], dword [ebx+device.pci_dev], edx
 	pop	edx
 	test	al, PCI_BASE_ADDRESS_SPACE_IO
 	jz	.inc_reg
@@ -223,7 +223,7 @@ service_proc:
 	mov	[ebx+device.io_addr], eax
 
 ; 4l. We've found the io address, find IRQ now
-	stdcall	PciRead8, dword [ebx+device.pci_bus], dword [ebx+device.pci_dev], 0x3c
+	stdcall PciRead8, dword [ebx+device.pci_bus], dword [ebx+device.pci_dev], 0x3c
 	mov	byte [ebx+device.irq_line], al
 
 ; 4m. Add new device to the list (required for int_handler).
@@ -320,21 +320,21 @@ ret
 ; so it's worth to comment it out.
 ;        SIS900_DEBUG equ 1
 
-SIS900_ETH_ALEN equ     6       ;* Size of Ethernet address *
-SIS900_ETH_HLEN equ     14      ;* Size of ethernet header *
-SIS900_ETH_ZLEN equ     60      ;* Minimum packet length *
+SIS900_ETH_ALEN equ	6	;* Size of Ethernet address *
+SIS900_ETH_HLEN equ	14	;* Size of ethernet header *
+SIS900_ETH_ZLEN equ	60	;* Minimum packet length *
 SIS900_DSIZE equ 0x00000fff
 SIS900_CRC_SIZE equ 4
 SIS900_RFADDR_shift equ 16
 ;SIS900 Symbolic offsets to registers.
-    SIS900_cr           equ     0x0               ; Command Register
-    SIS900_cfg          equ     0x4       ; Configuration Register
+    SIS900_cr		equ	0x0		  ; Command Register
+    SIS900_cfg		equ	0x4	  ; Configuration Register
     SIS900_mear     equ     0x8       ; EEPROM Access Register
     SIS900_ptscr    equ     0xc       ; PCI Test Control Register
-    SIS900_isr          equ     0x10      ; Interrupt Status Register
-    SIS900_imr          equ     0x14      ; Interrupt Mask Register
-    SIS900_ier          equ     0x18      ; Interrupt Enable Register
-    SIS900_epar         equ     0x18      ; Enhanced PHY Access Register
+    SIS900_isr		equ	0x10	  ; Interrupt Status Register
+    SIS900_imr		equ	0x14	  ; Interrupt Mask Register
+    SIS900_ier		equ	0x18	  ; Interrupt Enable Register
+    SIS900_epar 	equ	0x18	  ; Enhanced PHY Access Register
     SIS900_txdp     equ     0x20      ; Transmit Descriptor Pointer Register
     SIS900_txcfg    equ     0x24      ; Transmit Configuration Register
     SIS900_rxdp     equ     0x30      ; Receive Descriptor Pointer Register
@@ -344,32 +344,32 @@ SIS900_RFADDR_shift equ 16
     SIS900_rfcr     equ     0x48      ; Receive Filter Control Register
     SIS900_rfdr     equ     0x4C      ; Receive Filter Data Register
     SIS900_pmctrl   equ     0xB0      ; Power Management Control Register
-    SIS900_pmer         equ     0xB4      ; Power Management Wake-up Event Register
+    SIS900_pmer 	equ	0xB4	  ; Power Management Wake-up Event Register
 ;SIS900 Command Register Bits
-    SIS900_RELOAD       equ      0x00000400
-    SIS900_ACCESSMODE   equ      0x00000200
-    SIS900_RESET        equ      0x00000100
-    SIS900_SWI          equ      0x00000080
-    SIS900_RxRESET      equ      0x00000020
-    SIS900_TxRESET      equ      0x00000010
-    SIS900_RxDIS        equ      0x00000008
-    SIS900_RxENA        equ      0x00000004
-    SIS900_TxDIS        equ      0x00000002
-    SIS900_TxENA        equ      0x00000001
+    SIS900_RELOAD	equ	 0x00000400
+    SIS900_ACCESSMODE	equ	 0x00000200
+    SIS900_RESET	equ	 0x00000100
+    SIS900_SWI		equ	 0x00000080
+    SIS900_RxRESET	equ	 0x00000020
+    SIS900_TxRESET	equ	 0x00000010
+    SIS900_RxDIS	equ	 0x00000008
+    SIS900_RxENA	equ	 0x00000004
+    SIS900_TxDIS	equ	 0x00000002
+    SIS900_TxENA	equ	 0x00000001
 ;SIS900 Configuration Register Bits
-    SIS900_DESCRFMT      equ    0x00000100 ; 7016 specific
-    SIS900_REQALG        equ    0x00000080
-    SIS900_SB            equ    0x00000040
-    SIS900_POW           equ    0x00000020
-    SIS900_EXD           equ    0x00000010
-    SIS900_PESEL         equ    0x00000008
-    SIS900_LPM           equ    0x00000004
-    SIS900_BEM           equ    0x00000001
-    SIS900_RND_CNT       equ    0x00000400
-    SIS900_FAIR_BACKOFF  equ    0x00000200
-    SIS900_EDB_MASTER_EN equ    0x00002000
+    SIS900_DESCRFMT	 equ	0x00000100 ; 7016 specific
+    SIS900_REQALG	 equ	0x00000080
+    SIS900_SB		 equ	0x00000040
+    SIS900_POW		 equ	0x00000020
+    SIS900_EXD		 equ	0x00000010
+    SIS900_PESEL	 equ	0x00000008
+    SIS900_LPM		 equ	0x00000004
+    SIS900_BEM		 equ	0x00000001
+    SIS900_RND_CNT	 equ	0x00000400
+    SIS900_FAIR_BACKOFF  equ	0x00000200
+    SIS900_EDB_MASTER_EN equ	0x00002000
 ;SIS900 Eeprom Access Reigster Bits
-    SIS900_MDC        equ      0x00000040
+    SIS900_MDC	      equ      0x00000040
     SIS900_MDDIR      equ      0x00000020
     SIS900_MDIO       equ      0x00000010  ; 7016 specific
     SIS900_EECS       equ      0x00000008
@@ -377,56 +377,56 @@ SIS900_RFADDR_shift equ 16
     SIS900_EEDO       equ      0x00000002
     SIS900_EEDI       equ      0x00000001
 ;SIS900 TX Configuration Register Bits
-    SIS900_ATP        equ      0x10000000 ;Automatic Transmit Padding
-    SIS900_MLB        equ      0x20000000 ;Mac Loopback Enable
-    SIS900_HBI        equ      0x40000000 ;HeartBeat Ignore (Req for full-dup)
-    SIS900_CSI        equ      0x80000000 ;CarrierSenseIgnore (Req for full-du
+    SIS900_ATP	      equ      0x10000000 ;Automatic Transmit Padding
+    SIS900_MLB	      equ      0x20000000 ;Mac Loopback Enable
+    SIS900_HBI	      equ      0x40000000 ;HeartBeat Ignore (Req for full-dup)
+    SIS900_CSI	      equ      0x80000000 ;CarrierSenseIgnore (Req for full-du
 ;SIS900 RX Configuration Register Bits
     SIS900_AJAB       equ      0x08000000 ;
-    SIS900_ATX        equ      0x10000000 ;Accept Transmit Packets
-    SIS900_ARP        equ      0x40000000 ;accept runt packets (<64bytes)
-    SIS900_AEP        equ      0x80000000 ;accept error packets
+    SIS900_ATX	      equ      0x10000000 ;Accept Transmit Packets
+    SIS900_ARP	      equ      0x40000000 ;accept runt packets (<64bytes)
+    SIS900_AEP	      equ      0x80000000 ;accept error packets
 ;SIS900 Interrupt Reigster Bits
-    SIS900_WKEVT           equ      0x10000000
-    SIS900_TxPAUSEEND      equ      0x08000000
-    SIS900_TxPAUSE         equ      0x04000000
-    SIS900_TxRCMP          equ      0x02000000
-    SIS900_RxRCMP          equ      0x01000000
-    SIS900_DPERR           equ      0x00800000
-    SIS900_SSERR           equ      0x00400000
-    SIS900_RMABT           equ      0x00200000
-    SIS900_RTABT           equ      0x00100000
-    SIS900_RxSOVR          equ      0x00010000
-    SIS900_HIBERR          equ      0x00008000
-    SIS900_SWINT           equ      0x00001000
-    SIS900_MIBINT          equ      0x00000800
-    SIS900_TxURN           equ      0x00000400
-    SIS900_TxIDLE          equ      0x00000200
-    SIS900_TxERR           equ      0x00000100
-    SIS900_TxDESC          equ      0x00000080
-    SIS900_TxOK            equ      0x00000040
-    SIS900_RxORN           equ      0x00000020
-    SIS900_RxIDLE          equ      0x00000010
-    SIS900_RxEARLY         equ      0x00000008
-    SIS900_RxERR           equ      0x00000004
-    SIS900_RxDESC          equ      0x00000002
-    SIS900_RxOK            equ      0x00000001
+    SIS900_WKEVT	   equ	    0x10000000
+    SIS900_TxPAUSEEND	   equ	    0x08000000
+    SIS900_TxPAUSE	   equ	    0x04000000
+    SIS900_TxRCMP	   equ	    0x02000000
+    SIS900_RxRCMP	   equ	    0x01000000
+    SIS900_DPERR	   equ	    0x00800000
+    SIS900_SSERR	   equ	    0x00400000
+    SIS900_RMABT	   equ	    0x00200000
+    SIS900_RTABT	   equ	    0x00100000
+    SIS900_RxSOVR	   equ	    0x00010000
+    SIS900_HIBERR	   equ	    0x00008000
+    SIS900_SWINT	   equ	    0x00001000
+    SIS900_MIBINT	   equ	    0x00000800
+    SIS900_TxURN	   equ	    0x00000400
+    SIS900_TxIDLE	   equ	    0x00000200
+    SIS900_TxERR	   equ	    0x00000100
+    SIS900_TxDESC	   equ	    0x00000080
+    SIS900_TxOK 	   equ	    0x00000040
+    SIS900_RxORN	   equ	    0x00000020
+    SIS900_RxIDLE	   equ	    0x00000010
+    SIS900_RxEARLY	   equ	    0x00000008
+    SIS900_RxERR	   equ	    0x00000004
+    SIS900_RxDESC	   equ	    0x00000002
+    SIS900_RxOK 	   equ	    0x00000001
 ;SIS900 Interrupt Enable Reigster Bits
-    SIS900_IE      equ      0x00000001
+    SIS900_IE	   equ	    0x00000001
 ;SIS900 Revision ID
-        SIS900B_900_REV       equ      0x03
-        SIS630A_900_REV       equ      0x80
-        SIS630E_900_REV       equ      0x81
-        SIS630S_900_REV       equ      0x82
-        SIS630EA1_900_REV     equ      0x83
-        SIS630ET_900_REV      equ      0x84
-        SIS635A_900_REV       equ      0x90
-        SIS900_960_REV        equ      0x91
+	SIS900B_900_REV       equ      0x03
+	SIS630A_900_REV       equ      0x80
+	SIS630E_900_REV       equ      0x81
+	SIS630S_900_REV       equ      0x82
+	SIS630EA1_900_REV     equ      0x83
+	SIS630ET_900_REV      equ      0x84
+	SIS635A_900_REV       equ      0x90
+	SIS900_960_REV	      equ      0x91
 ;SIS900 Receive Filter Control Register Bits
-    SIS900_RFEN          equ 0x80000000
-    SIS900_RFAAB         equ 0x40000000
-    SIS900_RFAAM         equ 0x20000000
-    SIS900_RFAAP         equ 0x10000000
+    SIS900_RFEN 	 equ 0x80000000
+    SIS900_RFAAB	 equ 0x40000000
+    SIS900_RFAAM	 equ 0x20000000
+    SIS900_RFAAP	 equ 0x10000000
     SIS900_RFPromiscuous equ 0x70000000
 ;SIS900 Reveive Filter Data Mask
     SIS900_RFDAT equ  0x0000FFFF
@@ -438,19 +438,19 @@ SIS900_RFADDR_shift equ 16
     SIS900_EEPROMChecksum  equ 0x0b
 ;The EEPROM commands include the alway-set leading bit.
 ;SIS900 Eeprom Command
-    SIS900_EEread          equ 0x0180
-    SIS900_EEwrite         equ 0x0140
-    SIS900_EEerase         equ 0x01C0
+    SIS900_EEread	   equ 0x0180
+    SIS900_EEwrite	   equ 0x0140
+    SIS900_EEerase	   equ 0x01C0
     SIS900_EEwriteEnable   equ 0x0130
     SIS900_EEwriteDisable  equ 0x0100
-    SIS900_EEeraseAll      equ 0x0120
-    SIS900_EEwriteAll      equ 0x0110
-    SIS900_EEaddrMask      equ 0x013F
-    SIS900_EEcmdShift      equ 16
+    SIS900_EEeraseAll	   equ 0x0120
+    SIS900_EEwriteAll	   equ 0x0110
+    SIS900_EEaddrMask	   equ 0x013F
+    SIS900_EEcmdShift	   equ 16
 ;For SiS962 or SiS963, request the eeprom software access
-        SIS900_EEREQ    equ 0x00000400
-        SIS900_EEDONE   equ 0x00000200
-        SIS900_EEGNT    equ 0x00000100
+	SIS900_EEREQ	equ 0x00000400
+	SIS900_EEDONE	equ 0x00000200
+	SIS900_EEGNT	equ 0x00000100
 
 SIS900_pci_revision equ ebx+device.pci_revision
 sis900_get_mac_func equ ebx+device.get_MAC
@@ -476,41 +476,41 @@ SIS900_probe:
    call    SIS900_adjust_pci_device
 ;*****Get Card Revision******
    stdcall PciRead8, dword [ebx+device.pci_bus], dword [ebx+device.pci_dev], 0x08
-   mov [SIS900_pci_revision], al        ;save the revision for later use
+   mov [SIS900_pci_revision], al	;save the revision for later use
 ;****** Look up through the sis900_specific_table
-   mov     esi,sis900_specific_table
+   mov	   esi,sis900_specific_table
 .probe_loop:
-   cmp     dword [esi],0                ; Check if we reached end of the list
-   je      .probe_loop_failed
-   cmp     al,[esi]                     ; Check if revision is OK
-   je      .probe_loop_ok
-   add     esi,12                       ; Advance to next entry
-   jmp     .probe_loop
+   cmp	   dword [esi],0		; Check if we reached end of the list
+   je	   .probe_loop_failed
+   cmp	   al,[esi]			; Check if revision is OK
+   je	   .probe_loop_ok
+   add	   esi,12			; Advance to next entry
+   jmp	   .probe_loop
 .probe_loop_failed:
-   jmp     SIS900_Probe_Unsupported
+   jmp	   SIS900_Probe_Unsupported
 ;*********Find Get Mac Function*********
 .probe_loop_ok:
-   mov      eax,[esi+4]         ; Get pointer to "get MAC" function
-   mov      [sis900_get_mac_func],eax
-   mov      eax,[esi+8]         ; Get pointer to special initialization fn
-   mov      [sis900_special_func],eax
+   mov	    eax,[esi+4] 	; Get pointer to "get MAC" function
+   mov	    [sis900_get_mac_func],eax
+   mov	    eax,[esi+8] 	; Get pointer to special initialization fn
+   mov	    [sis900_special_func],eax
 ;******** Get MAC ********
    call     dword [sis900_get_mac_func]
 ;******** Call special initialization fn if requested ********
-   cmp      dword [sis900_special_func],0
-   je       .no_special_init
+   cmp	    dword [sis900_special_func],0
+   je	    .no_special_init
    call     dword [sis900_special_func]
 .no_special_init:
 ;******** Set table entries ********
-   mov      al,[SIS900_pci_revision]
-   cmp      al,SIS635A_900_REV
-   jae      .ent16
-   cmp      al,SIS900B_900_REV
-   je       .ent16
-   mov      byte [sis900_table_entries],8
-   jmp      .ent8
+   mov	    al,[SIS900_pci_revision]
+   cmp	    al,SIS635A_900_REV
+   jae	    .ent16
+   cmp	    al,SIS900B_900_REV
+   je	    .ent16
+   mov	    byte [sis900_table_entries],8
+   jmp	    .ent8
 .ent16:
-   mov      byte [sis900_table_entries],16
+   mov	    byte [sis900_table_entries],16
 .ent8:
 ;*******Probe for mii transceiver*******
 ;TODO!!*********************
@@ -520,10 +520,10 @@ SIS900_probe:
 
 SIS900_Probe_Unsupported:
 if defined SIS900_DEBUG
-   mov     esi, SIS900_Debug_Str_Unsupported
+   mov	   esi, SIS900_Debug_Str_Unsupported
    call    sys_msg_board_str
 end if
-   or      eax, -1
+   or	   eax, -1
    ret
 ;***************************************************************************
 ; Function: sis900_init
@@ -537,10 +537,10 @@ end if
 ;not done
 ;***************************************************************************
 sis900_init:
-   call SIS900_reset               ;Done
+   call SIS900_reset		   ;Done
    call SIS900_init_rxfilter   ;Done
    call SIS900_init_txd        ;Done
-   call SIS900_init_rxd            ;Done
+   call SIS900_init_rxd 	   ;Done
    call SIS900_set_rx_mode     ;done
    call SIS900_set_tx_mode
    ;call SIS900_check_mode
@@ -552,7 +552,7 @@ sis900_init:
 	out	dx, eax
 ; globally enable interrupts
 	add	edx, SIS900_ier-SIS900_imr
-	out	dx, eax	; eax is still 1
+	out	dx, eax ; eax is still 1
 	xor	eax, eax
    ret
 
@@ -569,60 +569,60 @@ if defined SIS900_DEBUG
 end if
 SIS900_reset:
 	movzx	eax, [ebx+device.irq_line]
-	stdcall	AttachIntHandler, eax, int_handler, 0
+	stdcall AttachIntHandler, eax, int_handler, 0
    push     ebp
-   mov      ebp, [ebx+device.io_addr] ; base address
+   mov	    ebp, [ebx+device.io_addr] ; base address
    ;******Disable Interrupts and reset Receive Filter*******
-   xor      eax, eax            ; 0 to initialize
-   lea      edx,[ebp+SIS900_ier]
-   out      dx, eax                     ; Write 0 to location
-   lea      edx,[ebp+SIS900_imr]
-   out      dx, eax                     ; Write 0 to location
-   lea      edx,[ebp+SIS900_rfcr]
-   out      dx, eax                     ; Write 0 to location
+   xor	    eax, eax		; 0 to initialize
+   lea	    edx,[ebp+SIS900_ier]
+   out	    dx, eax			; Write 0 to location
+   lea	    edx,[ebp+SIS900_imr]
+   out	    dx, eax			; Write 0 to location
+   lea	    edx,[ebp+SIS900_rfcr]
+   out	    dx, eax			; Write 0 to location
    ;*******Reset Card***********************************************
-   lea      edx,[ebp+SIS900_cr]
-   in       eax, dx                             ; Get current Command Register
-   or       eax, SIS900_RESET           ; set flags
-   or       eax, SIS900_RxRESET     ;
-   or           eax, SIS900_TxRESET         ;
-   out      dx, eax                             ; Write new Command Register
+   lea	    edx,[ebp+SIS900_cr]
+   in	    eax, dx				; Get current Command Register
+   or	    eax, SIS900_RESET		; set flags
+   or	    eax, SIS900_RxRESET     ;
+   or		eax, SIS900_TxRESET	    ;
+   out	    dx, eax				; Write new Command Register
    ;*******Wait Loop************************************************
    push     ebx
-   lea      edx,[ebp+SIS900_isr]
-   mov      ecx, 0x03000000         ; Status we would like to see from card
-   mov      ebx, 2001               ; only loop 1000 times
+   lea	    edx,[ebp+SIS900_isr]
+   mov	    ecx, 0x03000000	    ; Status we would like to see from card
+   mov	    ebx, 2001		    ; only loop 1000 times
 SIS900_Wait:
-   dec      ebx                                     ; 1 less loop
-   jz       SIS900_DoneWait_e           ; 1000 times yet?
-   in       eax, dx                                 ; move interrup status to eax
-   and      eax, ecx
-   xor      ecx, eax
-   jz       SIS900_DoneWait
-   jmp      SIS900_Wait
+   dec	    ebx 				    ; 1 less loop
+   jz	    SIS900_DoneWait_e		; 1000 times yet?
+   in	    eax, dx				    ; move interrup status to eax
+   and	    eax, ecx
+   xor	    ecx, eax
+   jz	    SIS900_DoneWait
+   jmp	    SIS900_Wait
 SIS900_DoneWait_e:
 if defined SIS900_DEBUG
    mov esi, SIS900_Debug_Reset_Failed
    call sys_msg_board_str
 end if
 SIS900_DoneWait:
-   pop      ebx
+   pop	    ebx
    ;*******Set Configuration Register depending on Card Revision********
-   lea      edx,[ebp+SIS900_cfg]
-   mov      eax, SIS900_PESEL               ; Configuration Register Bit
-   mov      cl, [SIS900_pci_revision]   ; card revision
-   cmp      cl, SIS635A_900_REV
-   je       SIS900_RevMatch
-   cmp      cl, SIS900B_900_REV         ; Check card revision
-   je       SIS900_RevMatch
-   out      dx, eax                                 ; no revision match
-   jmp      SIS900_Reset_Complete
-SIS900_RevMatch:                                        ; Revision match
-   or       eax, SIS900_RND_CNT         ; Configuration Register Bit
-   out      dx, eax
+   lea	    edx,[ebp+SIS900_cfg]
+   mov	    eax, SIS900_PESEL		    ; Configuration Register Bit
+   mov	    cl, [SIS900_pci_revision]	; card revision
+   cmp	    cl, SIS635A_900_REV
+   je	    SIS900_RevMatch
+   cmp	    cl, SIS900B_900_REV 	; Check card revision
+   je	    SIS900_RevMatch
+   out	    dx, eax				    ; no revision match
+   jmp	    SIS900_Reset_Complete
+SIS900_RevMatch:					; Revision match
+   or	    eax, SIS900_RND_CNT 	; Configuration Register Bit
+   out	    dx, eax
 SIS900_Reset_Complete:
-   xor      eax, eax
-   pop      ebp
+   xor	    eax, eax
+   pop	    ebp
    ret
 
 ;***************************************************************************
@@ -637,36 +637,36 @@ SIS900_Reset_Complete:
 ;***************************************************************************
 SIS900_init_rxfilter:
    push     ebp
-   mov      ebp, [ebx+device.io_addr]   ; base address
+   mov	    ebp, [ebx+device.io_addr]	; base address
    ;****Get Receive Filter Control Register ********
-   lea      edx,[ebp+SIS900_rfcr]
-   in       eax, dx                         ; get register
+   lea	    edx,[ebp+SIS900_rfcr]
+   in	    eax, dx			    ; get register
    push     eax
    ;****disable packet filtering before setting filter*******
-   mov      eax, SIS900_RFEN    ;move receive filter enable flag
-   not      eax                         ;1s complement
-   and      eax, [esp]                  ;disable receiver
-   out      dx, eax                     ;set receive disabled
+   mov	    eax, SIS900_RFEN	;move receive filter enable flag
+   not	    eax 			;1s complement
+   and	    eax, [esp]			;disable receiver
+   out	    dx, eax			;set receive disabled
    ;********load MAC addr to filter data register*********
-   xor      ecx, ecx
+   xor	    ecx, ecx
 SIS900_RXINT_Mac_Write:
    ;high word of eax tells card which mac byte to write
-   mov      eax, ecx
-   lea      edx,[ebp+SIS900_rfcr]
-   shl      eax, 16                                             ;
-   out      dx, eax                                             ;
-   lea      edx,[ebp+SIS900_rfdr]
-   mov      ax,  word [ebx+device.mac+ecx*2] ; Get Mac ID word
-   out      dx, ax                                              ; Send Mac ID
-   inc      cl                                                  ; send next word
-   cmp      cl, 3                                               ; more to send?
-   jne      SIS900_RXINT_Mac_Write
+   mov	    eax, ecx
+   lea	    edx,[ebp+SIS900_rfcr]
+   shl	    eax, 16						;
+   out	    dx, eax						;
+   lea	    edx,[ebp+SIS900_rfdr]
+   mov	    ax,  word [ebx+device.mac+ecx*2] ; Get Mac ID word
+   out	    dx, ax						; Send Mac ID
+   inc	    cl							; send next word
+   cmp	    cl, 3						; more to send?
+   jne	    SIS900_RXINT_Mac_Write
    ;********enable packet filitering *****
-   pop      eax                             ;old register value
-   lea      edx,[ebp+SIS900_rfcr]
-   or       eax, SIS900_RFEN    ;enable filtering
-   out      dx, eax             ;set register
-   pop      ebp
+   pop	    eax 			    ;old register value
+   lea	    edx,[ebp+SIS900_rfcr]
+   or	    eax, SIS900_RFEN	;enable filtering
+   out	    dx, eax		;set register
+   pop	    ebp
    ret
 
 ;***************************************************************************
@@ -682,16 +682,16 @@ SIS900_RXINT_Mac_Write:
 ;***************************************************************************
 SIS900_init_txd:
    ;********** initialize TX descriptor **************
-   mov     [ebx+device.txd], dword 0       ;put link to next descriptor in link field
-   mov     [ebx+device.txd+4],dword 0      ;clear status field
-   lea     eax, [ebx+0x1000]
+   mov	   [ebx+device.txd], dword 0	   ;put link to next descriptor in link field
+   mov	   [ebx+device.txd+4],dword 0	   ;clear status field
+   lea	   eax, [ebx+0x1000]
    call    GetPgAddr
-   mov     [ebx+device.txd+8], eax   ;save address to buffer ptr field
+   mov	   [ebx+device.txd+8], eax   ;save address to buffer ptr field
    ;*************** load Transmit Descriptor Register ***************
-   mov     edx, [ebx+device.io_addr]        ; base address
-   add     edx, SIS900_txdp      ; TX Descriptor Pointer
-   add     eax, device.txd - 0x1000        ; First Descriptor
-   out     dx, eax                             ; move the pointer
+   mov	   edx, [ebx+device.io_addr]	    ; base address
+   add	   edx, SIS900_txdp	 ; TX Descriptor Pointer
+   add	   eax, device.txd - 0x1000	   ; First Descriptor
+   out	   dx, eax			       ; move the pointer
    ret
 
 ;***************************************************************************
@@ -705,32 +705,32 @@ SIS900_init_txd:
 ;*done
 ;***************************************************************************
 SIS900_init_rxd:
-   xor      ecx,ecx
-   mov      [cur_rx], cl                                        ;Set cuurent rx discriptor to 0
-   mov      eax, ebx
+   xor	    ecx,ecx
+   mov	    [cur_rx], cl					;Set cuurent rx discriptor to 0
+   mov	    eax, ebx
    call     GetPgAddr
-   mov      esi, eax
+   mov	    esi, eax
    ;******** init RX descriptors ********
 SIS900_init_rxd_Loop:
-    mov     edx, ecx                                        ;current descriptor
-    imul    edx, 12                         ;
-    mov     eax, ecx                                        ;determine next link descriptor
-    inc     eax                             ;
-    cmp     eax, NUM_RX_DESC                ;
-    jne     SIS900_init_rxd_Loop_0          ;
-    xor     eax, eax                        ;
-SIS900_init_rxd_Loop_0:                    ;
-    imul    eax, 12                         ;
+    mov     edx, ecx					    ;current descriptor
+    imul    edx, 12			    ;
+    mov     eax, ecx					    ;determine next link descriptor
+    inc     eax 			    ;
+    cmp     eax, NUM_RX_DESC		    ;
+    jne     SIS900_init_rxd_Loop_0	    ;
+    xor     eax, eax			    ;
+SIS900_init_rxd_Loop_0: 		   ;
+    imul    eax, 12			    ;
     lea     eax, [eax+esi+device.rxd]
-    mov     [ebx+device.rxd+edx], eax                                      ;save link to next descriptor
-    mov     [ebx+device.rxd+edx+4],dword RX_BUFF_SZ        ;status bits init to buf size
-    mov     eax, ecx                                            ;find where the buf is located
-    imul    eax,RX_BUFF_SZ                  ;
+    mov     [ebx+device.rxd+edx], eax					   ;save link to next descriptor
+    mov     [ebx+device.rxd+edx+4],dword RX_BUFF_SZ	   ;status bits init to buf size
+    mov     eax, ecx						;find where the buf is located
+    imul    eax,RX_BUFF_SZ		    ;
     lea     eax, [eax+esi+0x1000+NUM_TX_DESC*TX_BUFF_SZ]
-    mov     [ebx+device.rxd+edx+8], eax                            ;save buffer pointer
-    inc     ecx                                                     ;next descriptor
-    cmp     ecx, NUM_RX_DESC                ;
-    jne     SIS900_init_rxd_Loop            ;
+    mov     [ebx+device.rxd+edx+8], eax 			   ;save buffer pointer
+    inc     ecx 						    ;next descriptor
+    cmp     ecx, NUM_RX_DESC		    ;
+    jne     SIS900_init_rxd_Loop	    ;
     ;********* load Receive Descriptor Register with address of first
     ; descriptor*********
     mov     edx, [ebx+device.io_addr]
@@ -764,20 +764,20 @@ SIS900_init_rxd_Loop_0:                    ;
 ;***************************************************************************
 SIS900_set_tx_mode:
    push     ebp
-   mov      ebp,[ebx+device.io_addr]
-   lea      edx,[ebp+SIS900_cr]
-   in       eax, dx                         ; Get current Command Register
-   or       eax, SIS900_TxENA   ;Enable Receive
-   out      dx, eax
-   lea      edx,[ebp+SIS900_txcfg]; Transmit config Register offset
-   mov      eax, SIS900_ATP             ;allow automatic padding
-   or       eax, SIS900_HBI             ;allow heartbeat ignore
-   or       eax, SIS900_CSI             ;allow carrier sense ignore
-   or       eax, 0x00600000     ;Max DMA Burst
-   or       eax, 0x00000100     ;TX Fill Threshold
-   or       eax, 0x00000020     ;TX Drain Threshold
-   out      dx, eax
-   pop      ebp
+   mov	    ebp,[ebx+device.io_addr]
+   lea	    edx,[ebp+SIS900_cr]
+   in	    eax, dx			    ; Get current Command Register
+   or	    eax, SIS900_TxENA	;Enable Receive
+   out	    dx, eax
+   lea	    edx,[ebp+SIS900_txcfg]; Transmit config Register offset
+   mov	    eax, SIS900_ATP		;allow automatic padding
+   or	    eax, SIS900_HBI		;allow heartbeat ignore
+   or	    eax, SIS900_CSI		;allow carrier sense ignore
+   or	    eax, 0x00600000	;Max DMA Burst
+   or	    eax, 0x00000100	;TX Fill Threshold
+   or	    eax, 0x00000020	;TX Drain Threshold
+   out	    dx, eax
+   pop	    ebp
    ret
 
 ;***************************************************************************
@@ -806,43 +806,43 @@ SIS900_set_tx_mode:
 ;***************************************************************************
 SIS900_set_rx_mode:
    push     ebp
-   mov      ebp,[ebx+device.io_addr]
+   mov	    ebp,[ebx+device.io_addr]
     ;**************update Multicast Hash Table in Receive Filter
-   xor      cl, cl
+   xor	    cl, cl
 SIS900_set_rx_mode_Loop:
-   mov      eax, ecx
-   shl      eax, 1
-   lea      edx,[ebp+SIS900_rfcr]           ; Receive Filter Control Reg offset
-   mov      eax, 4                                          ;determine table entry
-   add      al, cl
-   shl      eax, 16
-   out      dx, eax                                         ;tell card which entry to modify
-   lea      edx,[ebp+SIS900_rfdr]           ; Receive Filter Control Reg offset
-   mov      eax, 0xffff                             ;entry value
-   out      dx, ax                                          ;write value to table in card
-   inc      cl                                              ;next entry
-   cmp      cl,[sis900_table_entries]   ;
-   jl       SIS900_set_rx_mode_Loop
+   mov	    eax, ecx
+   shl	    eax, 1
+   lea	    edx,[ebp+SIS900_rfcr]	    ; Receive Filter Control Reg offset
+   mov	    eax, 4					    ;determine table entry
+   add	    al, cl
+   shl	    eax, 16
+   out	    dx, eax					    ;tell card which entry to modify
+   lea	    edx,[ebp+SIS900_rfdr]	    ; Receive Filter Control Reg offset
+   mov	    eax, 0xffff 			    ;entry value
+   out	    dx, ax					    ;write value to table in card
+   inc	    cl						    ;next entry
+   cmp	    cl,[sis900_table_entries]	;
+   jl	    SIS900_set_rx_mode_Loop
    ;*******Set Receive Filter Control Register*************
-   lea      edx,[ebp+SIS900_rfcr]       ; Receive Filter Control Register offset
-   mov      eax, SIS900_RFAAB           ;accecpt all broadcast packets
-   or       eax, SIS900_RFAAM           ;accept all multicast packets
-   or       eax, SIS900_RFAAP           ;Accept all packets
-   or       eax, SIS900_RFEN            ;enable receiver filter
-   out      dx, eax
+   lea	    edx,[ebp+SIS900_rfcr]	; Receive Filter Control Register offset
+   mov	    eax, SIS900_RFAAB		;accecpt all broadcast packets
+   or	    eax, SIS900_RFAAM		;accept all multicast packets
+   or	    eax, SIS900_RFAAP		;Accept all packets
+   or	    eax, SIS900_RFEN		;enable receiver filter
+   out	    dx, eax
    ;******Enable Receiver************
-   lea      edx,[ebp+SIS900_cr] ; Command Register offset
-   in       eax, dx                         ; Get current Command Register
-   or       eax, SIS900_RxENA   ;Enable Receive
-   out      dx, eax
+   lea	    edx,[ebp+SIS900_cr] ; Command Register offset
+   in	    eax, dx			    ; Get current Command Register
+   or	    eax, SIS900_RxENA	;Enable Receive
+   out	    dx, eax
    ;*********Set
-   lea      edx,[ebp+SIS900_rxcfg]      ; Receive Config Register offset
-   mov      eax, SIS900_ATX                     ;Accept Transmit Packets
-                                    ; (Req for full-duplex and PMD Loopback)
-   or       eax, 0x00600000                     ;Max DMA Burst
-   or       eax, 0x00000002                     ;RX Drain Threshold, 8X8 bytes or 64bytes
-   out      dx, eax                                     ;
-   pop      ebp
+   lea	    edx,[ebp+SIS900_rxcfg]	; Receive Config Register offset
+   mov	    eax, SIS900_ATX			;Accept Transmit Packets
+				    ; (Req for full-duplex and PMD Loopback)
+   or	    eax, 0x00600000			;Max DMA Burst
+   or	    eax, 0x00000002			;RX Drain Threshold, 8X8 bytes or 64bytes
+   out	    dx, eax					;
+   pop	    ebp
    ret
 
 ;***************************************************************************
@@ -872,21 +872,21 @@ SIS900_Debug_Str_GetMac_Address2 db 'Your SIS96x Mac ID is: ',0
 end if
 SIS960_get_mac_addr:
    push     ebp
-   mov      ebp,[ebx+device.io_addr]
+   mov	    ebp,[ebx+device.io_addr]
    ;**********Send Request for eeprom access*********************
-   lea      edx,[ebp+SIS900_mear]               ; Eeprom access register
-   mov      eax, SIS900_EEREQ                   ; Request access to eeprom
-   out      dx, eax                                             ; Send request
-   xor      ecx,ecx                                             ;
+   lea	    edx,[ebp+SIS900_mear]		; Eeprom access register
+   mov	    eax, SIS900_EEREQ			; Request access to eeprom
+   out	    dx, eax						; Send request
+   xor	    ecx,ecx						;
    ;******Loop 4000 times and if access not granted error out*****
 SIS96X_Get_Mac_Wait:
-   in       eax, dx                                     ;get eeprom status
-   and      eax, SIS900_EEGNT       ;see if eeprom access granted flag is set
-   jnz      SIS900_Got_EEP_Access       ;if it is, go access the eeprom
-   inc      ecx                                         ;else keep waiting
-   cmp      ecx, 4000                           ;have we tried 4000 times yet?
-   jl       SIS96X_Get_Mac_Wait     ;if not ask again
-   xor      eax, eax                ;return zero in eax indicating failure
+   in	    eax, dx					;get eeprom status
+   and	    eax, SIS900_EEGNT	    ;see if eeprom access granted flag is set
+   jnz	    SIS900_Got_EEP_Access	;if it is, go access the eeprom
+   inc	    ecx 					;else keep waiting
+   cmp	    ecx, 4000				;have we tried 4000 times yet?
+   jl	    SIS96X_Get_Mac_Wait     ;if not ask again
+   xor	    eax, eax		    ;return zero in eax indicating failure
    ;*******Debug **********************
 if defined SIS900_DEBUG
    mov esi,SIS900_Debug_Str_GetMac_Failed
@@ -896,17 +896,17 @@ end if
    ;**********EEprom access granted, read MAC from card*************
 SIS900_Got_EEP_Access:
     ; zero based so 3-16 bit reads will take place
-   mov      ecx, 2
+   mov	    ecx, 2
 SIS96x_mac_read_loop:
-   mov      eax, SIS900_EEPROMMACAddr    ;Base Mac Address
-   add      eax, ecx                                 ;Current Mac Byte Offset
+   mov	    eax, SIS900_EEPROMMACAddr	 ;Base Mac Address
+   add	    eax, ecx				     ;Current Mac Byte Offset
    push     ecx
-   call     sis900_read_eeprom           ;try to read 16 bits
-   pop      ecx
-   mov      word [ebx+device.mac+ecx*2], ax        ;save 16 bits to the MAC ID varible
-   dec      ecx                          ;one less word to read
-   jns      SIS96x_mac_read_loop         ;if more read more
-   mov      eax, 1                       ;return non-zero indicating success
+   call     sis900_read_eeprom		 ;try to read 16 bits
+   pop	    ecx
+   mov	    word [ebx+device.mac+ecx*2], ax	   ;save 16 bits to the MAC ID varible
+   dec	    ecx 			 ;one less word to read
+   jns	    SIS96x_mac_read_loop	 ;if more read more
+   mov	    eax, 1			 ;return non-zero indicating success
    ;*******Debug Print MAC ID to debug window**********************
 if defined SIS900_DEBUG
    mov esi,SIS900_Debug_Str_GetMac_Address2
@@ -916,10 +916,10 @@ if defined SIS900_DEBUG
 end if
    ;**********Tell EEPROM We are Done Accessing It*********************
 SIS960_get_mac_addr_done:
-   lea      edx,[ebp+SIS900_mear]               ; Eeprom access register
-   mov      eax, SIS900_EEDONE           ;tell eeprom we are done
-   out      dx,eax
-   pop      ebp
+   lea	    edx,[ebp+SIS900_mear]		; Eeprom access register
+   mov	    eax, SIS900_EEDONE		 ;tell eeprom we are done
+   out	    dx,eax
+   pop	    ebp
    ret
 ;***************************************************************************
 ;*      sis900_get_mac_addr: - Get MAC address for stand alone SiS900 model
@@ -937,25 +937,25 @@ if defined SIS900_DEBUG
    call sys_msg_board_str
 end if
    ;******** check to see if we have sane EEPROM *******
-   mov      eax, SIS900_EEPROMSignature  ;Base Eeprom Signature
-   call     sis900_read_eeprom           ;try to read 16 bits
+   mov	    eax, SIS900_EEPROMSignature  ;Base Eeprom Signature
+   call     sis900_read_eeprom		 ;try to read 16 bits
    cmp ax, 0xffff
    je SIS900_Bad_Eeprom
    cmp ax, 0
    je SIS900_Bad_Eeprom
    ;**************Read MacID**************
    ; zero based so 3-16 bit reads will take place
-   mov      ecx, 2
+   mov	    ecx, 2
 SIS900_mac_read_loop:
-   mov      eax, SIS900_EEPROMMACAddr    ;Base Mac Address
-   add      eax, ecx                                 ;Current Mac Byte Offset
+   mov	    eax, SIS900_EEPROMMACAddr	 ;Base Mac Address
+   add	    eax, ecx				     ;Current Mac Byte Offset
    push     ecx
-   call     sis900_read_eeprom           ;try to read 16 bits
-   pop      ecx
-   mov      word [ebx+device.mac+ecx*2], ax        ;save 16 bits to the MAC ID storage
-   dec      ecx                          ;one less word to read
-   jns      SIS900_mac_read_loop         ;if more read more
-   mov      eax, 1                       ;return non-zero indicating success
+   call     sis900_read_eeprom		 ;try to read 16 bits
+   pop	    ecx
+   mov	    word [ebx+device.mac+ecx*2], ax	   ;save 16 bits to the MAC ID storage
+   dec	    ecx 			 ;one less word to read
+   jns	    SIS900_mac_read_loop	 ;if more read more
+   mov	    eax, 1			 ;return non-zero indicating success
    ;*******Debug Print MAC ID to debug window**********************
 if defined SIS900_DEBUG
    mov esi,SIS900_Debug_Str_GetMac_Address
@@ -986,10 +986,10 @@ end if
     push    ebp
     mov     ebp,[ebx+device.io_addr]
     lea     edx,[ebp+SIS900_rfcr]
-    in      eax,dx
+    in	    eax,dx
     mov     edi,eax ; EDI=rfcrSave
     lea     edx,[ebp+SIS900_cr]
-    or      eax,SIS900_RELOAD
+    or	    eax,SIS900_RELOAD
     out     dx,eax
     xor     eax,eax
     out     dx,eax
@@ -1007,7 +1007,7 @@ end if
     shl     eax,SIS900_RFADDR_shift
     out     dx,eax
     lea     edx,[ebp+SIS900_rfdr]
-    in      eax,dx
+    in	    eax,dx
     mov     [esi],ax
     add     esi,2
     inc     ecx
@@ -1046,72 +1046,72 @@ sis900_read_eeprom:
    push      ecx
    push      ebx
    push      ebp
-   mov       ebp,[ebx+device.io_addr]
-   mov       ebx, eax              ;location of Mac byte to read
-   or        ebx, SIS900_EEread    ;
-   lea       edx,[ebp+SIS900_mear] ; Eeprom access register
-   xor       eax, eax              ; start send
-   out       dx,eax
+   mov	     ebp,[ebx+device.io_addr]
+   mov	     ebx, eax		   ;location of Mac byte to read
+   or	     ebx, SIS900_EEread    ;
+   lea	     edx,[ebp+SIS900_mear] ; Eeprom access register
+   xor	     eax, eax		   ; start send
+   out	     dx,eax
    call      SIS900_Eeprom_Delay_1
-   mov       eax, SIS900_EECLK
-   out       dx, eax
+   mov	     eax, SIS900_EECLK
+   out	     dx, eax
    call      SIS900_Eeprom_Delay_1
     ;************ Shift the read command (9) bits out. *********
-   mov       cl, 8                                      ;
+   mov	     cl, 8					;
 sis900_read_eeprom_Send:
-   mov       eax, 1
-   shl       eax, cl
-   and       eax, ebx
+   mov	     eax, 1
+   shl	     eax, cl
+   and	     eax, ebx
    jz SIS900_Read_Eeprom_8
-   mov       eax, 9
-   jmp       SIS900_Read_Eeprom_9
+   mov	     eax, 9
+   jmp	     SIS900_Read_Eeprom_9
 SIS900_Read_Eeprom_8:
-   mov       eax, 8
+   mov	     eax, 8
 SIS900_Read_Eeprom_9:
-   out       dx, eax
+   out	     dx, eax
    call      SIS900_Eeprom_Delay_1
-   or        eax, SIS900_EECLK
-   out       dx, eax
+   or	     eax, SIS900_EECLK
+   out	     dx, eax
    call      SIS900_Eeprom_Delay_1
-   cmp       cl, 0
-   je        sis900_read_eeprom_Send_Done
-   dec       cl
-   jmp       sis900_read_eeprom_Send
+   cmp	     cl, 0
+   je	     sis900_read_eeprom_Send_Done
+   dec	     cl
+   jmp	     sis900_read_eeprom_Send
    ;*********************
 sis900_read_eeprom_Send_Done:
-   mov       eax, SIS900_EECS           ;
-   out       dx, eax
+   mov	     eax, SIS900_EECS		;
+   out	     dx, eax
    call      SIS900_Eeprom_Delay_1
     ;********** Read 16-bits of data in ***************
-    mov      cx, 16                             ;16 bits to read
+    mov      cx, 16				;16 bits to read
 sis900_read_eeprom_Send2:
     mov      eax, SIS900_EECS
     out      dx, eax
     call     SIS900_Eeprom_Delay_1
-    or       eax, SIS900_EECLK
+    or	     eax, SIS900_EECLK
     out      dx, eax
     call     SIS900_Eeprom_Delay_1
-    in       eax, dx
+    in	     eax, dx
     shl      ebx, 1
     and      eax, SIS900_EEDO
-    jz       SIS900_Read_Eeprom_0
-    or       ebx, 1
+    jz	     SIS900_Read_Eeprom_0
+    or	     ebx, 1
 SIS900_Read_Eeprom_0:
-   dec       cx
-   jnz       sis900_read_eeprom_Send2
+   dec	     cx
+   jnz	     sis900_read_eeprom_Send2
    ;************** Terminate the EEPROM access. **************
-   xor       eax, eax
-   out       dx, eax
+   xor	     eax, eax
+   out	     dx, eax
    call      SIS900_Eeprom_Delay_1
-   mov       eax, SIS900_EECLK
-   out       dx, eax
-   mov       eax, ebx
-   and       eax, 0x0000ffff                    ;return only 16 bits
-   pop       ebp
-   pop       ebx
-   pop       ecx
-   pop       edx
-   pop       esi
+   mov	     eax, SIS900_EECLK
+   out	     dx, eax
+   mov	     eax, ebx
+   and	     eax, 0x0000ffff			;return only 16 bits
+   pop	     ebp
+   pop	     ebx
+   pop	     ecx
+   pop	     edx
+   pop	     esi
    ret
 ;***************************************************************************
 ;   Function
@@ -1157,7 +1157,7 @@ int_handler:
 	mov	ebx, [esi]
 	mov	edx, [ebx+device.io_addr]
 	add	edx, SIS900_isr
-	in	eax, dx	; note that this clears all interrupts
+	in	eax, dx ; note that this clears all interrupts
 	test	al, SIS900_RxOK
 	jnz	.got_it
 	loop	.nextdevice
@@ -1165,9 +1165,9 @@ int_handler:
 	ret
 .got_it:
     ;**************Get Status **************
-    movzx     eax, [ebx+device.cur_rx]          ;find current discriptor
-    imul      eax, 12               ;
-    mov       ecx, [ebx+device.rxd+eax+4]          ; get receive status
+    movzx     eax, [ebx+device.cur_rx]		;find current discriptor
+    imul      eax, 12		    ;
+    mov       ecx, [ebx+device.rxd+eax+4]	   ; get receive status
     ;**************Check Status **************
     ;Check RX_Status to see if packet is waiting
     test      ecx, 0x80000000
@@ -1175,82 +1175,82 @@ int_handler:
     ret
    ;**********There is a packet waiting check it for errors**************
 SIS900_poll_IS_packet:
-    test      ecx, 0x67C0000            ;see if there are any errors
+    test      ecx, 0x67C0000		;see if there are any errors
     jnz       SIS900_Poll_Error_Status
    ;**************Check size of packet*************
-   and       ecx, SIS900_DSIZE                                  ;get packet size minus CRC
-   cmp       ecx, SIS900_CRC_SIZE
+   and	     ecx, SIS900_DSIZE					;get packet size minus CRC
+   cmp	     ecx, SIS900_CRC_SIZE
    ;make sure packet contains data
-   jle       SIS900_Poll_Error_Size
+   jle	     SIS900_Poll_Error_Size
    ;*******Copy Good Packet to receive buffer******
-   sub      ecx, SIS900_CRC_SIZE                             ;dont want crc
+   sub	    ecx, SIS900_CRC_SIZE			     ;dont want crc
    ; update statistics
-   inc      dword [ebx+device.packets_rx]
-   add      dword [ebx+device.bytes_rx], ecx
-   adc      dword [ebx+device.bytes_rx+4], 0
+   inc	    dword [ebx+device.packets_rx]
+   add	    dword [ebx+device.bytes_rx], ecx
+   adc	    dword [ebx+device.bytes_rx+4], 0
    push     ecx
    stdcall  KernelAlloc, ecx
-   pop      ecx
+   pop	    ecx
    test     eax, eax
-   jz       int_handler.nothing
+   jz	    int_handler.nothing
    push     ebx
    push     .return ; return address for EthReceiver
    ;**********Continue copying packet****************
    push     ecx eax ; save buffer pointer and size for EthReceiver
-   mov      edi, eax
+   mov	    edi, eax
    movzx    esi, byte [ebx+device.cur_rx]
    imul     esi, RX_BUFF_SZ
-   lea      esi, [esi+ebx+0x1000+NUM_TX_DESC*TX_BUFF_SZ]
+   lea	    esi, [esi+ebx+0x1000+NUM_TX_DESC*TX_BUFF_SZ]
    ; first copy dword-wise, divide size by 4
-   shr      ecx, 2
-   rep      movsd                                                       ; copy the dwords
-   mov      ecx, [esp+4]
-   and      ecx, 3                                                  ;
-   rep      movsb
+   shr	    ecx, 2
+   rep	    movsd							; copy the dwords
+   mov	    ecx, [esp+4]
+   and	    ecx, 3						    ;
+   rep	    movsb
    ;********Debug, tell user we have a good packet*************
 if defined SIS900_DEBUG
-   mov      esi, SIS900_Debug_Pull_Packet_good
+   mov	    esi, SIS900_Debug_Pull_Packet_good
    call     sys_msg_board_str
 end if
-   jmp      EthReceiver
+   jmp	    EthReceiver
 .return:
-   pop      ebx
-   jmp      SIS900_Poll_Cnt
+   pop	    ebx
+   jmp	    SIS900_Poll_Cnt
    ;*************Error occured let user know through debug window***********
 SIS900_Poll_Error_Status:
 if defined SIS900_DEBUG
-                mov      esi, SIS900_Debug_Pull_Bad_Packet_Status
-                call     sys_msg_board_str
+		mov	 esi, SIS900_Debug_Pull_Bad_Packet_Status
+		call	 sys_msg_board_str
 end if
-                jmp      SIS900_Poll_Cnt
+		jmp	 SIS900_Poll_Cnt
 SIS900_Poll_Error_Size:
 if defined SIS900_DEBUG
-                mov      esi, SIS900_Debug_Pull_Bad_Packet_Size
-                call     sys_msg_board_str
+		mov	 esi, SIS900_Debug_Pull_Bad_Packet_Size
+		call	 sys_msg_board_str
 end if
    ;*************Increment to next available descriptor**************
 SIS900_Poll_Cnt:
     ;Reset status, allow ethernet card access to descriptor
    movzx    eax, [ebx+device.cur_rx]
-   lea      eax, [eax*3]
-   mov      ecx, RX_BUFF_SZ
-   mov      [ebx+device.rxd+eax*4+4], ecx                ;
-   inc      [ebx+device.cur_rx]                          ;get next descriptor
-   and      [ebx+device.cur_rx],NUM_RX_DESC-1            ;only 4 descriptors 0-3
+   lea	    eax, [eax*3]
+   mov	    ecx, RX_BUFF_SZ
+   mov	    [ebx+device.rxd+eax*4+4], ecx		 ;
+   inc	    [ebx+device.cur_rx] 			 ;get next descriptor
+   and	    [ebx+device.cur_rx],NUM_RX_DESC-1		 ;only 4 descriptors 0-3
    ;******Enable Receiver************
-   mov      edx, [ebx+device.io_addr]
-   add      edx, SIS900_cr ; Command Register offset
-   in       eax, dx                         ; Get current Command Register
-   or       eax, SIS900_RxENA   ;Enable Receive
-   out      dx, eax
+   mov	    edx, [ebx+device.io_addr]
+   add	    edx, SIS900_cr ; Command Register offset
+   in	    eax, dx			    ; Get current Command Register
+   or	    eax, SIS900_RxENA	;Enable Receive
+   out	    dx, eax
    ret
 ;***************************************************************************
 ;   Function
 ;      transmit
 ;   Description
 ;      Transmits a packet of data via the ethernet card
-;         buffer pointer in [esp]
-;         size of buffer in [esp+4]
+;         buffer pointer in [esp+4]
+;         size of buffer in [esp+8]
 ;         pointer to device structure in ebx
 ;
 ;      only one transmit descriptor is used
@@ -1263,39 +1263,39 @@ end if
 str1 db 'Transmitting packet:',13,10,0
 str2 db ' ',0
 transmit:
-   cmp      dword [esp+4], MAX_ETH_FRAME_SIZE
-   jg       transmit_finish
-   cmp      dword [esp+4], 60
-   jl       transmit_finish
+   cmp	    dword [esp+8], MAX_ETH_FRAME_SIZE
+   jg	    transmit_finish
+   cmp	    dword [esp+8], 60
+   jl	    transmit_finish
    push     ebp
-   mov      ebp, [ebx+device.io_addr] ; Base Address
+   mov	    ebp, [ebx+device.io_addr] ; Base Address
    ;******** Stop the transmitter ********
-   lea      edx,[ebp+SIS900_cr] ; Command Register offset
-   in       eax, dx                         ; Get current Command Register
-   or       eax, SIS900_TxDIS   ; Disable Transmitter
-   out      dx, eax
+   lea	    edx,[ebp+SIS900_cr] ; Command Register offset
+   in	    eax, dx			    ; Get current Command Register
+   or	    eax, SIS900_TxDIS	; Disable Transmitter
+   out	    dx, eax
    ;*******load Transmit Descriptor Register *******
-   lea      edx,[ebp+SIS900_txdp]
-   mov      eax, ebx
+   lea	    edx,[ebp+SIS900_txdp]
+   mov	    eax, ebx
    call     GetPgAddr
-   add      eax, device.txd
-   out      dx, eax
+   add	    eax, device.txd
+   out	    dx, eax
    ;******* copy packet to descriptor*******
-   mov     esi, [esp+4]
-   lea     edi, [ebx+0x1000]
-   mov     ecx, [esp+8]
-   mov     edx, ecx
-   shr     ecx, 2
-   and     edx, 3
-   rep     movsd
-   mov     ecx, edx
-   rep     movsb
+   mov	   esi, [esp+8]
+   lea	   edi, [ebx+0x1000]
+   mov	   ecx, [esp+12]
+   mov	   edx, ecx
+   shr	   ecx, 2
+   and	   edx, 3
+   rep	   movsd
+   mov	   ecx, edx
+   rep	   movsb
    ;**************set length tag**************
-   mov     ecx, [esp+8]                  ;restore packet size
-   and     ecx, SIS900_DSIZE     ;
-   inc      [ebx+device.packets_tx]
-   add      dword [ebx+device.bytes_tx], ecx
-   adc      dword [ebx+device.bytes_tx+4], 0
+   mov	   ecx, [esp+12]		  ;restore packet size
+   and	   ecx, SIS900_DSIZE	 ;
+   inc	    [ebx+device.packets_tx]
+   add	    dword [ebx+device.bytes_tx], ecx
+   adc	    dword [ebx+device.bytes_tx+4], 0
    ;**************pad to minimum packet size **************not needed
    ;cmp       ecx, SIS900_ETH_ZLEN
    ;jge       SIS900_transmit_Size_Ok
@@ -1306,33 +1306,31 @@ transmit:
    ;rep       movsb
    ;pop       ecx
 SIS900_transmit_Size_Ok:
-   or       ecx, 0x80000000                             ;card owns descriptor
-   mov      [ebx+device.txd+4], ecx
+   or	    ecx, 0x80000000				;card owns descriptor
+   mov	    [ebx+device.txd+4], ecx
 if defined SIS900_DEBUG
-   mov      esi, SIS900_Debug_Transmit_Packet
+   mov	    esi, SIS900_Debug_Transmit_Packet
    call     sys_msg_board_str
 end if
    ;***************restart the transmitter ********
-   lea      edx,[ebp+SIS900_cr]
-   in       eax, dx                         ; Get current Command Register
-   or       eax, SIS900_TxENA   ; Enable Transmitter
-   out      dx, eax
+   lea	    edx,[ebp+SIS900_cr]
+   in	    eax, dx			    ; Get current Command Register
+   or	    eax, SIS900_TxENA	; Enable Transmitter
+   out	    dx, eax
    ;****make sure packet transmitted successfully****
 ;   mov      esi,10
 ;   call     delay_ms
-   mov      eax, [ebx+device.txd+4]
-   and      eax, 0x6200000
-   jz       SIS900_transmit_OK
+   mov	    eax, [ebx+device.txd+4]
+   and	    eax, 0x6200000
+   jz	    SIS900_transmit_OK
    ;**************Tell user there was an error through debug window
 if defined SIS900_DEBUG
-   mov      esi, SIS900_Debug_Transmit_Packet_Err
+   mov	    esi, SIS900_Debug_Transmit_Packet_Err
    call     sys_msg_board_str
 end if
 SIS900_transmit_OK:
-   pop      ebp
+   pop	    ebp
 transmit_finish:
-   call     KernelFree
-   add      esp, 4
    ret
 
 ;***************************************************************************
@@ -1352,7 +1350,7 @@ transmit_finish:
 if defined SIS900_DEBUG
 
 SIS900_Char_String    db '0','1','2','3','4','5','6','7','8','9'
-                      db 'A','B','C','D','E','F'
+		      db 'A','B','C','D','E','F'
 Mac_str_build: times 20 db 0
 Create_Mac_String:
    pusha
@@ -1374,12 +1372,12 @@ Create_Mac_String_loop:
    mov [Mac_str_build+2+ecx*3], bl
    inc ecx
    jmp Create_Mac_String_loop
-Create_Mac_String_done:                                 ;Insert CR and Zero Terminate
+Create_Mac_String_done: 				;Insert CR and Zero Terminate
    mov [Mac_str_build+2+ecx*3],byte 13
    mov [Mac_str_build+3+ecx*3],byte 10
    mov [Mac_str_build+4+ecx*3],byte 0
    mov esi, Mac_str_build
-   call sys_msg_board_str                               ;Print String to message board
+   call sys_msg_board_str				;Print String to message board
    popa
    ret
 end if
@@ -1391,21 +1389,21 @@ SIS900_adjust_pci_device:
    ;*******Get current setting************************
    stdcall PciRead16, dword [ebx+device.pci_bus], dword [ebx+device.pci_dev], 0x04
    ;******see if its already set as bus master********
-   mov      cx, ax
-   and      cx,5
-   cmp      cx,5
-   je       SIS900_adjust_pci_device_Latency
+   mov	    cx, ax
+   and	    cx,5
+   cmp	    cx,5
+   je	    SIS900_adjust_pci_device_Latency
    ;******Make card a bus master*******
-   mov      cx, ax                              ;value to write
-   or       cx,5
+   mov	    cx, ax				;value to write
+   or	    cx,5
    stdcall PciWrite16, dword [ebx+device.pci_bus], dword [ebx+device.pci_dev], 0x04, ecx
    ;******Check latency setting***********
 SIS900_adjust_pci_device_Latency:
    ;*******Get current latency setting************************
    stdcall PciRead8, dword [ebx+device.pci_bus], dword [ebx+device.pci_dev], 0x0D
    ;******see if its aat least 64 clocks********
-   cmp      al,64
-   jge      SIS900_adjust_pci_device_Done
+   cmp	    al,64
+   jge	    SIS900_adjust_pci_device_Done
    ;******Set latency to 32 clocks*******
    stdcall PciWrite8, dword [ebx+device.pci_bus], dword [ebx+device.pci_dev], 0x0D, 64
    ;******Check latency setting***********
@@ -1436,5 +1434,5 @@ include_debug_strings				; All data wich FDO uses will be included here
 
 section '.data' data readable writable align 16 ; place all uninitialized data place here
 
-DEV_LIST rd MAX_DEVICES			; This list contains all pointers to device structures the driver is handling
+DEV_LIST rd MAX_DEVICES 		; This list contains all pointers to device structures the driver is handling
 

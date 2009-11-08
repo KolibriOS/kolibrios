@@ -77,9 +77,6 @@ UDP_handler:
 	DEBUGF 1,"UDP_Handler\n"
 	; First validate, checksum:
 
-	DEBUGF 1,"Real UDP checksum: %x\n", [edx + UDP_Packet.Checksum]:4
-	mov    [edx + UDP_Packet.Checksum], 0
-
 	pusha
 
 	rol	cx, 8
@@ -89,19 +86,23 @@ UDP_handler:
 	push	edi
 	push	esi
 
+	mov	di, [edx + UDP_Packet.Checksum]
+	mov    [edx + UDP_Packet.Checksum], 0
+
 	mov	esi, edx
 	xor	edx, edx
 	call	checksum_1
-; Checksum for pseudoheader
 	mov	ecx, 12
 	mov	esi, esp
 	call	checksum_1
 	add	esp, 12
 	call	checksum_2
 
+	cmp	di, dx
 	popa
+	jne	.dump
 
-
+	DEBUGF 1,"UDP Checksum is correct\n"
 
 	; Look for a socket where
 	; IP Packet UDP Destination Port = local Port
@@ -207,8 +208,7 @@ UDP_socket_send:
 
 	sub	esp, 8						; reserve some place in stack for later
 
-; Create the pseudoheader in stack,
-; (now that we still have all the variables that are needed.)
+; Create a part pseudoheader in stack,
 	push	dword IP_PROTO_UDP shl 8
 
 	add	ecx, UDP_Packet.Data
@@ -221,7 +221,7 @@ UDP_socket_send:
 	je	.fail
 
 	mov	[esp + 8 + 4], eax				; pointer to buffer start
-	mov	[esp + 8 + 4 + 4], edx 				; buffer size
+	mov	[esp + 8 + 4 + 4], edx				; buffer size
 
 	rol	cx, 8
 	mov	[edi + UDP_Packet.Length], cx
@@ -239,7 +239,7 @@ UDP_socket_send:
 	rep	movsb
 	pop	ecx edi
 
-	pop	dword [edi + UDP_Packet.SourcePort]		      ; fill in both portnumbers
+	pop	dword [edi + UDP_Packet.SourcePort]		; fill in both portnumbers
 	mov	[edi + UDP_Packet.Checksum], 0			; set it to zero, to calculate checksum
 
 ; Checksum for UDP header + data
@@ -247,8 +247,8 @@ UDP_socket_send:
 	mov	esi, edi
 	call	checksum_1
 ; Checksum for pseudoheader
-	pushd	[edi-4]	; destination address
-	pushd	[edi-8]	; source address
+	pushd	[edi-4] ; destination address
+	pushd	[edi-8] ; source address
 	mov	ecx, 12
 	mov	esi, esp
 	call	checksum_1
