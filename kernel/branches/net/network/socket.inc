@@ -866,7 +866,7 @@ socket_check_port:
 align 4
 socket_internal_receiver:
 
-	DEBUGF 1,"Internal socket receiver: buffer %x, offset: %x\n", esi, edi
+	DEBUGF 1,"Internal socket receiver: buffer %x, offset: %x size=%u socket: %x\n", esi, edi, ecx, eax
 
 	push	edi	; offset
 	push	ecx	; size

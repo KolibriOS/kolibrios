@@ -563,8 +563,8 @@ TCP_send_ack:
 
 	push	edx eax
 
-	lea	esi, [esi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
-	inc_INET esi
+;        lea     esi, [esi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
+;        inc_INET esi
 
 ; Now, calculate the checksum
 	pushw	TCP_Packet.Options shl 8
@@ -594,6 +594,11 @@ TCP_send_ack:
 	add	esp, 2+4
 	ret
 
+
+
+
+
+;---------- TCB state handlers start here
 
 
 
@@ -676,6 +681,9 @@ stateTCB_SYN_SENT:
 	mov	[ebx +	SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT], eax	      ; Update our recv.nxt field
 	mov	[ebx + SOCKET_head.lock], 0
 
+	lea	esi, [ebx +  SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
+	inc_INET esi
+
 	; Send an ACK
 	mov	eax, ebx
 	pop	ebx
@@ -726,6 +734,10 @@ stateTCB_ESTABLISHED:
 
 	DEBUGF	1,"TCBStateHandler: Established\n"
 
+	mov	eax, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT]
+	cmp	eax, [edx + TCP_Packet.SequenceNumber]
+	jne	.exit
+
 	; Here we are expecting data, or a request to close
 	; OR both...
 
@@ -749,32 +761,20 @@ stateTCB_ESTABLISHED:
 	; First, look at the incoming window. If this is less than or equal to 1024,
 	; Set the socket window timer to 1. This will stop an additional Packets being queued.
 	; ** I may need to tweak this value, since I do not know how many Packets are already queued
+	push	ecx
 	mov	cx, [edx + TCP_Packet.Window]
 	xchg	cl, ch
 	cmp	cx, 1024
 	ja	@f
-
 	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.wndsizeTimer], 1
-
-    @@: ; OK, here is the deal
-	; My recv.nct field holds the seq of the expected next rec byte
-	; if the recevied sequence number is not equal to this, do not
-	; increment the recv.nxt field, do not copy data - just send a
-	; repeat ack.
-
-	; recv.nxt is in dword [edx+24], in inet format
-	; recv seq is in [sktAddr]+56, in inet format
-	; just do a comparision
-	mov	ecx, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT]
-	cmp	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_CLOSE_WAIT
-	jne	@f
-	mov	ecx, eax
-
-    @@: cmp	ecx, [edx + TCP_Packet.SequenceNumber]
-	jne	.ack
+      @@:
+	pop	ecx
 
 	test	ecx, ecx
-	jnz	.data
+	jnz	.data			   ; Read data, if any
+
+	lea	esi, [ebx +  SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
+	inc_INET esi
 
 	; If we had received a fin, we need to ACK it.
 	cmp	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_CLOSE_WAIT
@@ -782,10 +782,15 @@ stateTCB_ESTABLISHED:
 	jmp	.exit
 
   .data:
+	     ;;;
+	lea	esi, [ebx +  SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
+	add_INET esi
+
 	DEBUGF	1,"Got data!\n"
 	mov	esi, [esp + 4]
 	sub	edx, esi
 	mov	edi, edx
+	mov	eax, ebx
 	call	socket_internal_receiver
 
   .ack:
