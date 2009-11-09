@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  Copyright (C) Vasiliy Kosenko (vkos), 2009                                                    ;;
 ;;  Launch is free software: you can redistribute it and/or modify it under the terms of the GNU  ;;
-;;  General Public License as published by the Free Software Foundation, either version 2         ;;
+;;  General Public License as published by the Free Software Foundation, either version 3         ;;
 ;;  of the License, or (at your option) any later version.                                        ;;
 ;;                                                                                                ;;
 ;;  Launch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without   ;;
@@ -20,7 +20,7 @@
 format binary
 
 APP_NAME fix 'Launch'
-APP_VERSION fix '0.1.5'
+APP_VERSION fix '0.1.60'
 
 use32
 org 0x0
@@ -43,11 +43,17 @@ define DEBUG_MAX_LEN 8
 define DEBUG_DEFAULT 0
 define BUFF_SIZE 1024
 
-include '../../../proc32.inc'
-include '../../../macros.inc'
+include 'proc32.inc'
+include 'macros.inc'
 include 'libio.inc'
 include 'mem.inc'
 include 'dll.inc'
+
+purge mov
+
+include 'thread.inc'
+include 'ipc.inc'
+include 'kobra.inc'
 
 ;;--------------------------------------------------------------------------------------------------
 ;; Basic initialization
@@ -111,7 +117,7 @@ read_ini_debug:												;; Read debug options
 	jmp .con_init
 
 .console_err:
-	mov dword [debug_option], 0
+	mov byte [debug_option], 0
 	jmp .ok
 
 .con_init:
@@ -123,15 +129,14 @@ read_ini_debug:												;; Read debug options
 .read_level:
 	invoke ini.get_int, etc_cfg, cfg_debug, cfg_level, 0
 	invoke ini.get_int, path, cfg_debug, cfg_level, eax
-	mov dword [debug_level], eax
+	mov byte [debug_level], al
 .ok:
 
-; read_ini_kobra:
-; 	invoke ini.get_str, etc_cfg, cfg_kobra, cfg_use, kobra_use, KOBRA_USE_MAX_LEN, KOBRA_USE_DEFAULT
-; 	invoke ini.get_str, path, cfg_kobra, cfg_use, kobra_use, KOBRA_USE_MAX_LEN, kobra_use
-; 	
-; 	;; Now convert string option to acceptable type
+read_ini_kobra:
+	invoke ini.get_bool, etc_cfg, cfg_kobra, cfg_use, 0
+	invoke ini.get_bool, path, cfg_kobra, cfg_use, eax
 	
+	mov byte [kobra_use], al
 
 ;;--------------------------------------------------------------------------------------------------
 ;; Parse command line options
@@ -182,11 +187,11 @@ search_file:
 ;	dec al
 	test al, al
 	je .prn_stp
-	mov eax, dword [debug_level]
-	or eax, eax
+	mov al, byte [debug_level]
+	or al, al
 	je .prn_stp
-	dec eax
-	or eax, eax
+	dec al
+	or al, al
 	je .prn_1
 .prn_1:
 	cinvoke con.printf, message_dbg_not_found, buff
@@ -238,14 +243,14 @@ search_file:
 ;;--------------------------------------------------------------------------------------------------
 ;; Exit
 exit:
-	push eax
+	mov dword [tid], eax
 	;; If console is present we should write some info
 	mov al, byte [debug_option]
 	cmp al, DEBUG_CONSOLE
-	jne .close
+	jne .kobra
 
 .write_console:
-	pop eax
+	mov eax, dword [tid]
 	test eax, eax
 	jz .write_error
 .write_launched:
@@ -257,12 +262,40 @@ exit:
 .wr_end:
 	invoke con.exit, 0
 
+.kobra:
+	mov al, byte [kobra_use]
+	test al, al
+	je .close
+	
+.register:
+	mov dword [IPC_area], buff
+	call IPC_init
+; 	jnz .close
+	
+	mov dword [thread_find_buff], another_buff
+	
+	call kobra_register
+	
+	test eax, eax
+	jnz .close
+	
+	;; Prepare message
+	mov dword [kobra_message], KOBRA_MESSAGE_LAUNCH_STATE
+	
+	mov eax, dword [tid]
+	mov dword [kobra_message+4], eax
+	
+.kobra_send:
+	stdcall kobra_send_message, kobra_group_launch_reactive, kobra_message, 8
+
 .close:
 	mcall -1
 
 ;; End of code
 ;;--------------------------------------------------------------------------------------------------
 
+;;--------------------------------------------------------------------------------------------------
+;; Imports
 align 16
 importTable:
 
@@ -276,7 +309,8 @@ import	libini, \
 \;        ini.set_int      ,'ini_set_int', \
 \;        ini.get_color    ,'ini_get_color', \
 \;        ini.set_color    ,'ini_set_color', \
-	ini.get_option_str ,'ini_get_option_str';, \
+	ini.get_option_str ,'ini_get_option_str', \
+	ini.get_bool       ,'ini_get_bool';,\
 
 ;import  libio, \
 ;        file_find_first,'file_find_first', \
@@ -302,6 +336,8 @@ import conlib,\
 	con.printf,	  'con_printf' ;,\
 ;        con.write_asciiz, 'con_write_asciiz'
 
+;;--------------------------------------------------------------------------------------------------
+;; Data
 align 16
 APP_DATA:
 
@@ -317,11 +353,7 @@ message_error:
 	db 'File (%s) not found!', 0
 
 message_ok:
-	db '%s loaded succesfully. PID: %d (0x%X)'
-
-;; Empty string
-empty_str:
-	db 0
+	db '%s loaded succesfully. PID: %d (0x%X)', 0
 
 ;; Configuration path
 etc_cfg:
@@ -331,7 +363,7 @@ cfg_name:
 cfg_ext:
 	db '.cfg', 0
 
-;; String in config file
+;; Strings in config file
 cfg_main:
 	db 'main', 0
 cfg_path:
@@ -340,6 +372,10 @@ cfg_debug:
 	db 'debug', 0
 cfg_level:
 	db 'level', 0
+cfg_kobra:
+	db 'kobra', 0
+cfg_use:
+	db 'use', 0
 
 ;; List of debug modes for parsing debug option
 debug_strings:
@@ -352,18 +388,31 @@ debug_no:
 debug_console:
 	db 'console', 0
 
-; modes_nums:
-; debug_no_num:
-; 	db 1
-; 
-; debug_console_num:
-; 	db 2
-
-debug_level:
-	dd 0
-
-debug_kobra:
+;; Empty string
+empty_str:
 	db 0
+
+kobra_group_launch_reactive:
+	db 'launch_reactive', 0
+
+;;--------------------------------------------------------------------------------------------------
+;; Configuration options
+debug_level:
+	db 0
+
+; debug_kobra:
+; 	db 0
+
+;; debug option (bool)
+debug_option:
+	db 0
+
+kobra_use:
+	db 0
+
+;;--------------------------------------------------------------------------------------------------
+tid:
+	dd 0
 
 LaunchStruct FileInfoRun
 
@@ -380,13 +429,15 @@ path:
 search_path:
 	rb PATH_MAX_LEN
 
-;; debug option as number
-debug_option:
-	dd 0
-
 ;; Buffer
 buff:
 	rb BUFF_SIZE
+
+another_buff:
+	rb 0x1000
+
+kobra_message:
+	rb 0x100
 
 rb 0x1000	;; 4 Kb stack
 APP_STACK:
