@@ -151,8 +151,8 @@ proc fs_execute
 .get_lock:
        mov eax, 1
        xchg eax, [application_table_status]
-       cmp eax, 0
-       jne .wait_lock
+       test eax, eax
+       jnz .wait_lock
 
        call set_application_table_status
 

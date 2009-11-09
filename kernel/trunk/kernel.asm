@@ -831,16 +831,18 @@ no_lib_load:
         mov     ebp, vrr_m
         call    fs_execute_from_sysdir
 
-        cmp   eax,2                  ; if vrr_m app found (PID=2)
-        je    first_app_found
+;        cmp   eax,2                  ; if vrr_m app found (PID=2)
+	sub   eax,2
+        jz    first_app_found
 
 no_load_vrr_m:
 
         mov     ebp, firstapp
         call    fs_execute_from_sysdir
 
-        cmp   eax,2                  ; continue if a process has been loaded
-        je    first_app_found
+;        cmp   eax,2                  ; continue if a process has been loaded
+	sub   eax,2
+        jz    first_app_found
 
         mov     esi, boot_failed
         call    boot_log
@@ -1428,9 +1430,11 @@ endg
 
    nsyse1:
 
-     cmp  eax,2                      ; KEYBOARD
+;     cmp  eax,2                      ; KEYBOARD
+     sub  eax,2
      jnz  nsyse2
-     cmp  ebx,1
+;     cmp  ebx,1
+     dec  ebx
      jnz  kbnobase
      mov  edi,[TASK_BASE]
      add  ecx,[edi+TASKDATA.mem_start]
@@ -1440,7 +1444,8 @@ endg
      call memmove
      ret
    kbnobase:
-     cmp  ebx,2
+;     cmp  ebx,2
+     dec  ebx
      jnz  kbnoshift
      mov  edi,[TASK_BASE]
      add  ecx,[edi+TASKDATA.mem_start]
@@ -1450,8 +1455,9 @@ endg
      call memmove
      ret
    kbnoshift:
-     cmp  ebx,3
-     jne  kbnoalt
+;     cmp  ebx,3
+     dec  ebx
+     jnz  kbnoalt
      mov  edi,[TASK_BASE]
      add  ecx,[edi+TASKDATA.mem_start]
      mov  eax,ecx
@@ -1460,7 +1466,8 @@ endg
      call memmove
      ret
    kbnoalt:
-     cmp  ebx,9
+;     cmp  ebx,9
+     sub  ebx,6
      jnz  kbnocountry
      mov  word [keyboard],cx
      ret
@@ -1468,7 +1475,8 @@ endg
      mov  [esp+36],dword 1
      ret
    nsyse2:
-     cmp  eax,3                      ; CD
+;     cmp  eax,3                      ; CD
+     dec  eax
      jnz  nsyse4
      test ebx,ebx
      jz   nosesl
@@ -1501,14 +1509,16 @@ cd_base db 0
 
    nsyse4:
 
-     cmp  eax,5                      ; SYSTEM LANGUAGE
+;     cmp  eax,5                      ; SYSTEM LANGUAGE
+     sub  eax,2
      jnz  nsyse5
      mov  [syslang],ebx
      ret
    nsyse5:
 
-     cmp  eax,7                      ; HD BASE
-     jne  nsyse7
+;     cmp  eax,7                      ; HD BASE
+     sub  eax,2
+     jnz  nsyse7
      test ebx,ebx
      jz   nosethd
      cmp  ebx,4
@@ -1555,8 +1565,9 @@ endg
 
 nsyse7:
 
-     cmp  eax,8                      ; HD PARTITION
-     jne  nsyse8
+;     cmp  eax,8                      ; HD PARTITION
+     dec  eax
+     jnz  nsyse8
      mov  [fat32part],ebx
 ;     call set_FAT32_variables
     call  reserve_hd1
@@ -1569,15 +1580,17 @@ nsyse7:
      ret
 
 nsyse8:
-     cmp  eax,11                     ; ENABLE LBA READ
-     jne  no_set_lba_read
+;     cmp  eax,11                     ; ENABLE LBA READ
+     sub  eax,3
+     jnz  no_set_lba_read
      and  ebx,1
      mov  [lba_read_enabled],ebx
      ret
 
 no_set_lba_read:
-     cmp  eax,12                     ; ENABLE PCI ACCESS
-     jne  no_set_pci_access
+;     cmp  eax,12                     ; ENABLE PCI ACCESS
+     dec  eax
+     jnz  no_set_pci_access
      and  ebx,1
      mov  [pci_access_enabled],ebx
      ret
