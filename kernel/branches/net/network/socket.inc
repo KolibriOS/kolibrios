@@ -43,6 +43,11 @@ struct	TCP_SOCKET
 	 .RemotePort		dw ? ; In INET byte order
 
 	 .backlog		dw ? ; Backlog
+	 .backlog_cur		dw ? ; current size of queue for un-accept-ed connections
+	 .last_ack_number	dd ? ; used only to let application know that ACK has been received
+					; todo: may be use SND_UNA instead
+					; todo: may be use events which allow additional information instead
+					; todo: may be count acknowledged bytes (at least it has obvious sense)
 ;         .OrigRemoteIP          dd ? ; original remote IP address (used to reset to LISTEN state)
 ;         .OrigRemotePort        dw ? ; original remote port (used to reset to LISTEN state)
 	 .wndsizeTimer		dd ? ; window size timer
@@ -132,7 +137,7 @@ socket_init:
 align 4
 sys_socket:
 	and	ebx, 0x000000FF ; should i remove this line ?
-	cmp	bl , 7		; highest possible number
+	cmp	bl , 8		; highest possible number
 	jg	s_error
 	lea	ebx, [.table + 4*ebx]
 	jmp	dword [ebx]
@@ -146,7 +151,7 @@ sys_socket:
 	dd	socket_accept	; 5
 	dd	socket_send	; 6
 	dd	socket_recv	; 7
-;        dd      socket_get_opt  ; 8
+        dd      socket_get_opt  ; 8
 ;        dd      socket_set_opt  ; 9
 
 
@@ -398,8 +403,8 @@ socket_listen:
 	jne	s_error
 
 	cmp	edx, MAX_backlog
-	jl	.ok
-	mov	dx , 20
+	jb	.ok
+	mov	dx , MAX_backlog
   .ok:
 
 	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog], dx
@@ -448,33 +453,20 @@ socket_accept:
 
   .tcp:
 
-	cmp	[esi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog], 0
-	jz	s_error
-
-	call	net_socket_alloc
-	or	eax, eax
-	jz	s_error
-	mov	edi, eax
-
-	dec	[esi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog]
-
-	mov	ecx, (SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.end+3)/4
-	push	esi edi
-	rep	movsd
-	pop	edi esi
-
-	mov	[edi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog], 0
-
-	; TODO: fill in structure in ecx
-
-	mov	[esi + SOCKET_head.end + IPv4_SOCKET.RemoteIP], 0
-	mov	[esi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RemotePort], 0
-
-	stdcall net_socket_addr_to_num, edi
+	lea	ebx, [esi + SOCKET_head.lock]
+	call	wait_mutex
+	movzx	eax, [esi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog_cur]
+	test	eax, eax
+	jz	.unlock_err
+	dec	[esi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog_cur]
+	mov	eax, [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.end + (eax-1)*4]
+	mov	[esi + SOCKET_head.lock], 0
+	stdcall	net_socket_addr_to_num, eax
 	mov	[esp+32], eax
-
 	ret
-
+  .unlock_err:
+	mov	[esi + SOCKET_head.lock], 0
+	jmp	s_error
 
 
 ;-----------------------------------------------
@@ -753,6 +745,47 @@ socket_send:
 	mov	[esp+32], eax
 	ret
 
+;-----------------------------------------------
+;
+; SOCKET_send
+;
+;
+;  IN:  socket number in ecx
+;       edx points to the options:
+;       	dd	level, optname, optval, optlen
+;  OUT: -1 on error
+;
+; At moment, uses only pseudo-optname -2 for get last_ack_number for TCP.
+; TODO: find best way to notify that send()'ed data were acknowledged
+;
+;-----------------------------------------------
+socket_get_opt:
+	cmp	dword [edx], IP_PROTO_TCP
+	jnz	.unknown
+	cmp	dword [edx+4], -2
+	jnz	.unknown
+	mov	eax, [edx+12]
+	test	eax, eax
+	jz	.fail
+	cmp	dword [eax], 4
+	mov	dword [eax], 4
+	jb	.fail
+	stdcall	net_socket_num_to_addr, ecx
+	test	eax, eax
+	jz	.fail
+	; todo: check that eax is really TCP socket
+	mov	ecx, [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.last_ack_number]
+	mov	eax, [edx+8]
+	test	eax, eax
+	jz	@f
+	mov	[eax], ecx
+@@:
+	xor	eax, eax
+	ret
+.fail:
+.unknown:
+	or	eax, -1
+	ret
 
 
 ;-----------------------------------------------
@@ -872,12 +905,13 @@ socket_internal_receiver:
 	push	ecx	; size
 	push	esi	; data_ptr
 	mov	esi, esp
-	add_to_queue (eax + 2048), SOCKET_QUEUE_SIZE, 3*4, .full
+	add_to_queue (eax + 2048), SOCKET_QUEUE_SIZE, 3*4, notify_network_event.full
 	DEBUGF	1,"Queued packet successfully\n"
 	add	esp, 4*3
 
 	mov	[eax + SOCKET_head.lock], 0
 
+notify_network_event:
 	; flag an event to the application
 	mov	edx, [eax + SOCKET_head.PID]				; get socket owner PID
 	mov	ecx, 1
@@ -904,7 +938,6 @@ socket_internal_receiver:
 	call	kernel_free
 	add	esp, 8
 	ret
-
 
 
 

@@ -360,6 +360,7 @@ TCP_handler :
 ;        add     eax, ecx                                        ;
 
 	mov	eax, [edx + TCP_Packet.AckNumber]
+	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.last_ack_number], eax
 	;---------
 
 	cmp	[TCP_OUT_QUEUE], 0
@@ -615,32 +616,58 @@ stateTCB_LISTEN:
 	; Look at control flags
 	test	[edx + TCP_Packet.Flags], TH_SYN
 	jz	.exit
+	; Exit if backlog queue is full
+	mov	ax, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog_cur]
+	cmp	ax, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog]
+	jae	.exit
+	; Allocate new socket
+	push	esi
+	call	net_socket_alloc
+	pop	esi
+	test	eax, eax
+	jz	.exit
+	; Copy structure from current socket to new, including lock
+	push	esi edi
+	lea	esi, [ebx + SOCKET_head.PID]	; yes, PID must also be copied
+	lea	edi, [eax + SOCKET_head.PID]
+	mov	ecx, ((SOCKET_head.end - SOCKET_head.PID) + IPv4_SOCKET.end + TCP_SOCKET.end + 3)/4
+	rep	movsd
+	pop	edi esi
+	; Push pointer to new socket to queue
+	movzx	ecx, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog_cur]
+	inc	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog_cur]
+	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.end + ecx*4], eax
 
 	; We have a SYN. update the socket with this IP Packets details,
 	; And send a response
 
-	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.RemoteIP], esi ; IP source address
-	mov	ax, [edx + TCP_Packet.SourcePort]
-	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RemotePort], ax
-	mov	eax, [edx + TCP_Packet.SequenceNumber]
-	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.IRS], eax
-	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT], eax
-	lea	esi, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT]
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], esi ; IP source address
+	mov	cx, [edx + TCP_Packet.SourcePort]
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RemotePort], cx
+	mov	ecx, [edx + TCP_Packet.SequenceNumber]
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.IRS], ecx
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT], ecx
+	lea	esi, [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT]
 	inc_INET esi ; RCV.NXT
-	mov	eax, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.ISS]
-	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT], eax
+	mov	ecx, [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.ISS]
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT], ecx
 
+	mov	[eax + SOCKET_head.lock], 0
 	mov	[ebx + SOCKET_head.lock], 0
 
+	push	eax
 	; Now construct the response
 	mov	bl, TH_SYN + TH_ACK
 	call	TCP_send_ack
+	pop	eax
 
-	mov	[ebx +	SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_SYN_RECEIVED
+	mov	[eax +	SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_SYN_RECEIVED
+	call	notify_network_event
 
 	; increment SND.NXT in socket
-	lea	esi, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
+	lea	esi, [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
 	inc_INET esi
+	ret
 
   .exit:
 	mov	[ebx + SOCKET_head.lock], 0
@@ -721,6 +748,8 @@ stateTCB_SYN_RECEIVED:
 	jz	.exit
 
 	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_ESTABLISHED
+	mov	eax, ebx
+	call	notify_network_event
 
   .exit:
 	mov	[ebx + SOCKET_head.lock], 0

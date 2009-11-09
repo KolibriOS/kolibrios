@@ -77,23 +77,23 @@ TH_URG			equ 1 shl 5
 
 macro inc_INET reg {
 
-	inc	byte [reg + 3]
+	add	byte [reg + 3], 1
 	adc	byte [reg + 2], 0
 	adc	byte [reg + 1], 0
-	adc	byte [reg + 0], 0
+	adc	byte [reg], 0
 
 }
 
 
 macro add_INET reg {
-
+	add	byte [reg + 3], cl
+	adc	byte [reg + 2], ch
+	adc	byte [reg + 1], 0
+	adc	byte [reg], 0
 	rol	ecx, 16
-	adc	byte [reg + 3], ch
-	adc	byte [reg + 2], cl
+	add	byte [reg + 1], cl
+	adc	byte [reg], ch
 	rol	ecx, 16
-	adc	byte [reg + 1], ch
-	adc	byte [reg + 0], cl
-
 }
 
 include "queue.inc"
