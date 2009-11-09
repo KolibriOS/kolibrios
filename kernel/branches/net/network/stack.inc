@@ -24,7 +24,8 @@ uglobal
 	last_1hsTick	dd ?
 endg
 
-MAX_NET_DEVICES equ 16
+MAX_NET_DEVICES 	equ 16
+QUEUE_BEFORE_SENDING	equ 1 ; 1 or 0 (enable or disable) currently only affects ethernet
 
 MIN_EPHEMERAL_PORT equ 49152
 MAX_EPHEMERAL_PORT equ 61000
@@ -159,7 +160,9 @@ stack_handler:
 	mov	[last_1hsTick], eax
 
 	call	ETH_handler		    ; handle all queued ethernet packets
+if QUEUE_BEFORE_SENDING
 	call	ETH_send_queued
+end if
 	call	TCP_send_queued
 
   .sec_tick:

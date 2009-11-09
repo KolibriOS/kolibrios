@@ -57,7 +57,9 @@ uglobal
 	ETH_RUNNING	dd  ?
 	ETH_DRV_LIST	rd  MAX_ETH_DEVICES
 	ETH_IN_QUEUE	rd  3*ETH_QUEUE_SIZE+3
+if QUEUE_BEFORE_SENDING
 	ETH_OUT_QUEUE	rd  3*ETH_QUEUE_SIZE+3
+end if
 endg
 
 
@@ -80,7 +82,10 @@ ETH_init:
 	rep	stosd
 
 	init_queue ETH_IN_QUEUE
+
+if QUEUE_BEFORE_SENDING
 	init_queue ETH_OUT_QUEUE
+end if
 
 	ret
 
@@ -108,7 +113,9 @@ ETH_add_device:
 	test	eax, eax
 	jnz	.notfirst
 	mov	dword [ETH_IN_QUEUE], eax
+if QUEUE_BEFORE_SENDING
 	mov	dword [ETH_OUT_QUEUE], eax
+end if
       .notfirst:
 
 	mov	eax, ebx
@@ -176,7 +183,9 @@ ETH_remove_device:
 	jnz	.notlast
 
 	mov	dword [ETH_IN_QUEUE], ETH_QUEUE_SIZE
+if QUEUE_BEFORE_SENDING
 	mov	dword [ETH_OUT_QUEUE], ETH_QUEUE_SIZE
+end if
 
   .notlast:
 	ret
@@ -288,7 +297,7 @@ ETH_handler:
 ;-----------------------------------------------------------------
 align 4
 ETH_sender:
-
+if QUEUE_BEFORE_SENDING
 	DEBUGF	1,"ETH_Sender: queuing for device: %x, %u bytes\n", [esp], [esp + 4]
 
 	push	ebx
@@ -330,7 +339,7 @@ ETH_send_queued:
 	pushd	[esi + 4]
 
 	DEBUGF	1,"dequeued packet for device %x\n", ebx
-
+end if
 	call	[ebx+ETH_DEVICE.transmit]	; we will return to get_from_queue macro after transmitting packet
 	call	kernel_free
 	add	esp, 4 ; pop (balance stack)
@@ -544,6 +553,10 @@ ETH_API:
 	ret
 
 .out_queue:
+if QUEUE_BEFORE_SENDING
 	add	eax, ETH_OUT_QUEUE
 	mov	eax, [eax + queue.size]
+else
+	mov	eax, -1
+end if
 	ret
