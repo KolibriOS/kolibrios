@@ -79,7 +79,6 @@ endg
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
-
 align 4
 IPv4_init:
 
@@ -113,9 +112,10 @@ IPv4_init:
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
-
 align 4
-IPv4_handler:
+IPv4_handler:	 ; TODO: clean up this mess
+		 ; for instance, there should be only one piece of code wich make the jump to an underlying protocol, and not two..
+		 ; TODO2: add code for IPv4 sockets (raw sockets)
 
 	DEBUGF	1,"IP_Handler - start\n"
 
@@ -475,7 +475,6 @@ IPv4_handler:
 ; OUT: /
 ;
 ;-----------------------------------------------------------------
-
 align 4
 IPv4_decrease_fragment_ttls:
 
@@ -514,10 +513,7 @@ IPv4_decrease_fragment_ttls:
 ;      esi = pointer to sending procedure
 ;      edi = pointer to start of data (-1 on error)
 ;
-;-----------------------------------------------------------------
-
-;;; TODO: create fragmented packets
-
+;----------------------------------------------------------------- ;;; TODO: create fragmented packets
 align 4
 IPv4_create_packet:
 
@@ -622,7 +618,6 @@ IPv4_create_packet:
 ; OUT: device id in edi
 ;
 ;---------------------------------------------------------------------------
-
 align 4
 IPv4_dest_to_dev:
 
@@ -663,7 +658,6 @@ IPv4_dest_to_dev:
 ; OUT: fragment number in ax
 ;
 ;---------------------------------------------------------------------------
-
 align 4
 IPv4_get_frgmnt_num:
 	xor	ax, ax	;;; TODO: replace this with real code
@@ -684,7 +678,6 @@ IPv4_get_frgmnt_num:
 ; OUT:
 ;
 ;---------------------------------------------------------------------------
-
 align 4
 IPv4_API:
 

@@ -115,7 +115,6 @@ endg
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
-
 align 4
 ICMP_init:
 
@@ -129,7 +128,7 @@ ICMP_init:
 													     
 
 
-;--------------------------------
+;-----------------------------------------------------------------
 ;
 ; ICMP_Handler:
 ;
@@ -143,8 +142,7 @@ ICMP_init:
 ;       pointer to ICMP Packet data in edx
 ;  OUT: /
 ;
-;--------------------------------
-
+;-----------------------------------------------------------------
 align 4
 ICMP_handler:	;TODO: works only on pure ethernet right now !
 
@@ -258,7 +256,7 @@ ICMP_handler:	;TODO: works only on pure ethernet right now !
 	ret
 
 
-;--------------------------------
+;-----------------------------------------------------------------
 ;
 ; ICMP_Handler_fragments:
 ;
@@ -272,8 +270,7 @@ ICMP_handler:	;TODO: works only on pure ethernet right now !
 ;       pointer to ICMP Packet data in edx
 ;  OUT: /
 ;
-;--------------------------------
-
+;-----------------------------------------------------------------
 align 4
 ICMP_handler_fragments:   ; works only on pure ethernet right now !
 
@@ -311,6 +308,7 @@ ICMP_handler_fragments:   ; works only on pure ethernet right now !
 	add	esp, 4 ; pop (balance stack)
 	ret
 
+
 ;-----------------------------------------------------------------
 ;
 ; Note: ICMP only works on top of IP protocol :)
@@ -327,7 +325,6 @@ ICMP_handler_fragments:   ; works only on pure ethernet right now !
 ; edi = identifier shl 16 + sequence number
 ;
 ;-----------------------------------------------------------------
-
 align 4
 ICMP_create_packet:
 
@@ -385,7 +382,7 @@ ICMP_create_packet:
 
 
 
-;---------------------------------------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; ICMP_API
 ;
@@ -397,8 +394,7 @@ ICMP_create_packet:
 ;
 ; OUT:
 ;
-;---------------------------------------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 ICMP_API:
 

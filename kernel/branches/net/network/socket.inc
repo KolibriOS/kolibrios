@@ -97,6 +97,7 @@ ends
 MAX_backlog		equ 20	     ; backlog for stream sockets
 SOCKETBUFFSIZE		equ 4096     ; in bytes
 SOCKET_QUEUE_SIZE	equ 10	     ; maximum number ofincoming packets queued for 1 socket
+SOCKET_QUEUE_LOCATION	equ 2048     ; the incoming packet queue for sockets is placed in the socket struct itself, at this location from start
 
 uglobal
 	net_sockets	rd 2
@@ -105,7 +106,7 @@ uglobal
 endg
 
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; SOCKET_init
 ;
@@ -114,8 +115,7 @@ endg
 ;  IN:  /
 ;  OUT: /
 ;
-;-----------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 socket_init:
 
@@ -128,12 +128,11 @@ socket_init:
 	ret
 
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; Socket API (function 74)
 ;
-;-----------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 sys_socket:
 	and	ebx, 0x000000FF ; should i remove this line ?
@@ -151,7 +150,7 @@ sys_socket:
 	dd	socket_accept	; 5
 	dd	socket_send	; 6
 	dd	socket_recv	; 7
-        dd      socket_get_opt  ; 8
+	dd	socket_get_opt	; 8
 ;        dd      socket_set_opt  ; 9
 
 
@@ -161,7 +160,7 @@ s_error:
 	ret
 
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; SOCKET_open
 ;
@@ -171,7 +170,7 @@ s_error:
 ;       protocol in esi
 ;  OUT: eax is socket num, -1 on error
 ;
-;-----------------------------------------------
+;-----------------------------------------------------------------
 align 4
 socket_open:
 
@@ -188,7 +187,7 @@ socket_open:
 	stdcall net_socket_addr_to_num, eax
 	DEBUGF	1,", socketnumber: %u\n", eax
 
-	; TODO: if it is txcp socket, set state to TCB_CLOSED
+	; TODO: if it is a tcp socket, set state to TCB_CLOSED
 
 	mov	[esp+32], eax
 
@@ -196,12 +195,7 @@ socket_open:
 
 
 
-
-
-
-
-
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; SOCKET_bind
 ;
@@ -210,7 +204,7 @@ socket_open:
 ;       length of that struct in esi
 ;  OUT: 0 on success
 ;
-;-----------------------------------------------
+;-----------------------------------------------------------------
 align 4
 socket_bind:
 
@@ -278,7 +272,7 @@ socket_bind:
 
 
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; SOCKET_connect
 ;
@@ -288,7 +282,7 @@ socket_bind:
 ;       length of that struct in esi
 ;  OUT: 0 on success
 ;
-;-----------------------------------------------
+;-----------------------------------------------------------------
 align 4
 socket_connect:
 
@@ -375,9 +369,7 @@ socket_connect:
 	ret
 
 
-
-
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; SOCKET_listen
 ;
@@ -386,7 +378,7 @@ socket_connect:
 ;       backlog in edx
 ;  OUT: eax is socket num, -1 on error
 ;
-;-----------------------------------------------
+;-----------------------------------------------------------------
 align 4
 socket_listen:
 
@@ -414,11 +406,7 @@ socket_listen:
 	ret
 
 
-
-
-
-
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; SOCKET_accept
 ;
@@ -428,7 +416,7 @@ socket_listen:
 ;       addrlen in esi
 ;  OUT: eax is socket num, -1 on error
 ;
-;-----------------------------------------------
+;-----------------------------------------------------------------
 align 4
 socket_accept:
 
@@ -461,7 +449,7 @@ socket_accept:
 	dec	[esi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.backlog_cur]
 	mov	eax, [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.end + (eax-1)*4]
 	mov	[esi + SOCKET_head.lock], 0
-	stdcall	net_socket_addr_to_num, eax
+	stdcall net_socket_addr_to_num, eax
 	mov	[esp+32], eax
 	ret
   .unlock_err:
@@ -469,7 +457,7 @@ socket_accept:
 	jmp	s_error
 
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; SOCKET_close
 ;
@@ -477,7 +465,7 @@ socket_accept:
 ;  IN:  socket number in ecx
 ;  OUT: eax is socket num, -1 on error
 ;
-;-----------------------------------------------
+;-----------------------------------------------------------------
 align 4
 socket_close:
 
@@ -559,7 +547,7 @@ socket_close:
 
 
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; SOCKET_receive
 ;
@@ -570,7 +558,7 @@ socket_close:
 ;       flags in edi
 ;  OUT: eax is number of bytes copied, -1 on error
 ;
-;-----------------------------------------------
+;-----------------------------------------------------------------
 align 4
 socket_recv:
 
@@ -582,7 +570,7 @@ socket_recv:
 
 	DEBUGF	1,"Socket pointer: %x\n", eax
 
-	get_from_queue (eax + 2048), SOCKET_QUEUE_SIZE, 4*3, s_error
+	get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, socket_queue_entry.size, s_error
 
 	mov	edi, edx
 	mov	ecx, [esi + socket_queue_entry.data_size]
@@ -615,7 +603,7 @@ socket_recv:
 	ret
 
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; SOCKET_send
 ;
@@ -626,8 +614,7 @@ socket_recv:
 ;       flags in edi
 ;  OUT: -1 on error
 ;
-;-----------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 socket_send:
 
@@ -745,21 +732,23 @@ socket_send:
 	mov	[esp+32], eax
 	ret
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
-; SOCKET_send
+; SOCKET_get_options
 ;
 ;
 ;  IN:  socket number in ecx
 ;       edx points to the options:
-;       	dd	level, optname, optval, optlen
+;               dd      level, optname, optval, optlen
 ;  OUT: -1 on error
 ;
 ; At moment, uses only pseudo-optname -2 for get last_ack_number for TCP.
 ; TODO: find best way to notify that send()'ed data were acknowledged
 ;
-;-----------------------------------------------
+;-----------------------------------------------------------------
+align 4
 socket_get_opt:
+
 	cmp	dword [edx], IP_PROTO_TCP
 	jnz	.unknown
 	cmp	dword [edx+4], -2
@@ -770,7 +759,7 @@ socket_get_opt:
 	cmp	dword [eax], 4
 	mov	dword [eax], 4
 	jb	.fail
-	stdcall	net_socket_num_to_addr, ecx
+	stdcall net_socket_num_to_addr, ecx
 	test	eax, eax
 	jz	.fail
 	; todo: check that eax is really TCP socket
@@ -780,15 +769,15 @@ socket_get_opt:
 	jz	@f
 	mov	[eax], ecx
 @@:
-	xor	eax, eax
+	mov	dword [esp+32], 0
 	ret
 .fail:
 .unknown:
-	or	eax, -1
+	mov	dword [esp+32], -1
 	ret
 
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; SOCKET_find_free_port (local port)
 ;
@@ -797,7 +786,7 @@ socket_get_opt:
 ;  IN:  type in ecx (TCP/UDP)
 ;  OUT: bx = 0 on error, portnumber otherwise
 ;
-;-----------------------------------------------
+;-----------------------------------------------------------------
 align 4
 socket_find_port:
 
@@ -848,7 +837,9 @@ socket_find_port:
 	rol	bx, 8
 	ret
 
-;-----------------------------------------------
+
+
+;-----------------------------------------------------------------
 ;
 ; SOCKET_check_port (local port)
 ;
@@ -858,7 +849,7 @@ socket_find_port:
 ;       port to check in bx
 ;  OUT: bx = 0 on error, unchanged otherwise
 ;
-;-----------------------------------------------
+;-----------------------------------------------------------------
 align 4
 socket_check_port:
 	mov	esi, net_sockets
@@ -880,7 +871,8 @@ socket_check_port:
 	ret
 
 
-;-----------------------------------------------
+
+;-----------------------------------------------------------------
 ;
 ; SOCKET_internal_receiver
 ;
@@ -895,7 +887,7 @@ socket_check_port:
 ;
 ;  OUT: xxx
 ;
-;-----------------------------------------------
+;-----------------------------------------------------------------
 align 4
 socket_internal_receiver:
 
@@ -905,9 +897,9 @@ socket_internal_receiver:
 	push	ecx	; size
 	push	esi	; data_ptr
 	mov	esi, esp
-	add_to_queue (eax + 2048), SOCKET_QUEUE_SIZE, 3*4, notify_network_event.full
+	add_to_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, socket_queue_entry.size, notify_network_event.full
 	DEBUGF	1,"Queued packet successfully\n"
-	add	esp, 4*3
+	add	esp, socket_queue_entry.size
 
 	mov	[eax + SOCKET_head.lock], 0
 
@@ -964,7 +956,7 @@ proc net_socket_alloc stdcall uses ebx ecx edx edi
 	rep	stosd
 	pop	eax
 
-	init_queue (eax + 2048)
+	init_queue (eax + SOCKET_QUEUE_LOCATION)
 
 	; add socket to the list by changing pointers
 	mov	ebx, net_sockets

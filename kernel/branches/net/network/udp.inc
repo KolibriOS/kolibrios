@@ -247,7 +247,7 @@ UDP_socket_send:
 	mov	esi, edi
 	call	checksum_1
 ; Checksum for pseudoheader
-	pushd	[edi-4] ; destination address
+	pushd	[edi-4] ; destination address        ; TODO: fix this, IPv4 packet could have options..
 	pushd	[edi-8] ; source address
 	mov	ecx, 12
 	mov	esi, esp

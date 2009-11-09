@@ -61,7 +61,7 @@ uglobal
 endg
 
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; ETH_init
 ;
@@ -70,8 +70,7 @@ endg
 ;  IN:  /
 ;  OUT: /
 ;
-;-----------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 ETH_init:
 
@@ -86,7 +85,7 @@ ETH_init:
 	ret
 
 
-;---------------------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; ETH_Add_Device:
 ;
@@ -96,8 +95,7 @@ ETH_init:
 ;  IN:  Pointer to device structure in ebx
 ;  OUT: Device num in eax, -1 on error
 ;
-;---------------------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 ETH_add_device:
 
@@ -142,13 +140,12 @@ ETH_add_device:
        .error:
 	or	eax, -1
 	DEBUGF	1,"- fail\n"
-
 	ret
 
 
 
 
-;--------------------------------
+;-----------------------------------------------------------------
 ;
 ; ETH_Remove_Device:
 ;
@@ -158,8 +155,7 @@ ETH_add_device:
 ;  IN:  Pointer to device structure in ebx
 ;  OUT: eax: -1 on error
 ;
-;--------------------------------
-
+;-----------------------------------------------------------------
 align 4
 ETH_remove_device:
 
@@ -182,38 +178,38 @@ ETH_remove_device:
 	mov	dword [ETH_IN_QUEUE], ETH_QUEUE_SIZE
 	mov	dword [ETH_OUT_QUEUE], ETH_QUEUE_SIZE
 
-       .notlast:
-
+  .notlast:
 	ret
 
-       .error:
+  .error:
 	or	eax, -1
-
 	ret
 
 
 
-;-------------------------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; ETH_Receiver:
 ;
 ;  This function is called by ethernet drivers,
 ;  It pushes the received ethernet packets onto the eth_in_queue
 ;
-;  IN:  Pointer to buffer in [esp], size of buffer in [esp-4], pointer to eth_device in ebx
+;  IN:  [esp]   = Pointer to buffer
+;       [esp-4] = size of buffer
+;       ebx     = pointer to eth_device
 ;  OUT: /
 ;
-;-------------------------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 ETH_receiver:
-	DEBUGF	1,"ETH_Receiver: "
 
+	DEBUGF	1,"ETH_Receiver: "
 	push	ebx
 	mov	esi, esp
 	add_to_queue ETH_IN_QUEUE, ETH_QUEUE_SIZE, eth_queue_entry.size, .fail
 	DEBUGF	1,"Queued packet successfully\n"
 	add	esp, 4*3
+
 	ret
 
   .fail:
@@ -221,13 +217,12 @@ ETH_receiver:
 	add	esp, 4
 	call	kernel_free
 	add	esp, 4
+
 	ret
 
 
 
-
-
-;-------------------------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; ETH_Handler:
 ;
@@ -236,8 +231,7 @@ ETH_receiver:
 ;  IN:  /
 ;  OUT: /
 ;
-;-------------------------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 ETH_handler:
 
@@ -292,9 +286,9 @@ ETH_handler:
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
-
 align 4
 ETH_sender:
+
 	DEBUGF	1,"ETH_Sender: queuing for device: %x, %u bytes\n", [esp], [esp + 4]
 
 	push	ebx
@@ -302,6 +296,7 @@ ETH_sender:
 	add_to_queue ETH_OUT_QUEUE, ETH_QUEUE_SIZE, eth_queue_entry.size, .fail
 	DEBUGF	1,"Queued packet successfully\n"
 	add	esp, 3*4
+
 	ret
 
   .fail:
@@ -309,6 +304,7 @@ ETH_sender:
 	add	esp, 4
 	call	kernel_free
 	add	esp, 4
+
 	ret
 
 
@@ -321,7 +317,6 @@ ETH_sender:
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
-
 align 4
 ETH_send_queued:
 
@@ -340,11 +335,11 @@ ETH_send_queued:
 	call	kernel_free
 	add	esp, 4 ; pop (balance stack)
 
-     .gohome:
+  .gohome:
 	ret
 
 
-;---------------------------------------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; ETH_struc2dev
 ;
@@ -352,8 +347,7 @@ ETH_send_queued:
 ;
 ; OUT: edi is -1 on error, device number otherwise
 ;
-;---------------------------------------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 ETH_struc2dev:
 	push	eax ecx
@@ -377,9 +371,9 @@ ETH_struc2dev:
 	ret
 
 
-;---------------------------------------------------------------------------
+;-----------------------------------------------------------------
 ;
-; ETH_create_Packet
+; ETH_create_packet
 ;
 ; IN: pointer to source mac in eax
 ;     pointer to destination mac in ebx
@@ -394,8 +388,7 @@ ETH_struc2dev:
 ;      edx is size of complete buffer
 ;      esi points to procedure wich needs to be called to send packet
 ;
-;---------------------------------------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 ETH_create_packet:
 
@@ -455,7 +448,7 @@ ETH_create_packet:
 
 
 
-;---------------------------------------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; ETH_API
 ;
@@ -467,8 +460,7 @@ ETH_create_packet:
 ;
 ; OUT:
 ;
-;---------------------------------------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 ETH_API:
 

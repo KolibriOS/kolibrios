@@ -29,7 +29,7 @@ MAX_NET_DEVICES equ 16
 MIN_EPHEMERAL_PORT equ 49152
 MAX_EPHEMERAL_PORT equ 61000
 
-ETHER		equ 1337
+ETHER		equ 1337     ; TODO: find another value for this (how does it work in posix ?)
 ETHER_ARP	equ 0x0608
 
 AF_UNSPEC	equ 0
@@ -105,7 +105,7 @@ include "tcp.inc"
 include "udp.inc"
 include "icmp.inc"
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; stack_init
 ;
@@ -114,8 +114,7 @@ include "icmp.inc"
 ;  IN:  /
 ;  OUT: /
 ;
-;-----------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 stack_init:
 
@@ -136,7 +135,7 @@ stack_init:
 
 
 
-;-----------------------------------------------
+;-----------------------------------------------------------------
 ;
 ; stack_handler
 ;
@@ -145,45 +144,41 @@ stack_init:
 ;  IN:  /
 ;  OUT: /
 ;
-;-----------------------------------------------
-
+;-----------------------------------------------------------------
 align 4
 stack_handler:
 
-    cmp     [ETH_RUNNING], 0
-    je	    .exit
+	cmp	[ETH_RUNNING], 0
+	je	.exit
 
-    ; Test for 1/100 s (10ms) tick
-    mov     eax, [timer_ticks]
-    cmp     eax, [last_1hsTick]
-    je	    .exit
+	; Test for 1/100 s (10ms) tick
+	mov	eax, [timer_ticks]
+	cmp	eax, [last_1hsTick]
+	je	.exit
 
-    mov     [last_1hsTick], eax
+	mov	[last_1hsTick], eax
 
-    call    ETH_handler 		; handle all queued ethernet packets
-    call    ETH_send_queued
-    call    TCP_send_queued
+	call	ETH_handler		    ; handle all queued ethernet packets
+	call	ETH_send_queued
+	call	TCP_send_queued
 
   .sec_tick:
 
-    ; Test for 1 second tick
-    mov     al, 0
-    out     0x70, al
-    in	    al, 0x71
-    cmp     al, [last_1sTick]
-    je	    .exit
+	; Test for 1 second tick
+	mov	al, 0
+	out	0x70, al
+	in	al, 0x71
+	cmp	al, [last_1sTick]
+	je	.exit
 
-    mov     [last_1sTick], al
+	mov	[last_1sTick], al
 
-    call    ARP_decrease_entry_ttls
-    call    IPv4_decrease_fragment_ttls
-    call    TCP_decrease_socket_ttls
+	call	ARP_decrease_entry_ttls
+	call	IPv4_decrease_fragment_ttls
+	call	TCP_decrease_socket_ttls
 
   .exit:
-    ret
-
-
-
+	ret
 
 
 ;-----------------------------------------------------------------
@@ -198,7 +193,6 @@ stack_handler:
 ;  OUT: edx = semi-checksum
 ;
 ;-----------------------------------------------------------------
-
 align 4
 checksum_1:
 
@@ -222,7 +216,6 @@ checksum_1:
 	ret
 
 
-
 ;-----------------------------------------------------------------
 ;
 ; checksum_2
@@ -233,7 +226,6 @@ checksum_1:
 ;  OUT: dx = checksum (in INET byte order)
 ;
 ;-----------------------------------------------------------------
-
 align 4
 checksum_2:
 
@@ -262,7 +254,6 @@ checksum_2:
 ;  System function to work with network devices (73)
 ;
 ;----------------------------------------------------------------
-
 align 4
 sys_network:
 
@@ -346,7 +337,6 @@ sys_network:
 ;  System Function To work with Protocols  (75)
 ;
 ;----------------------------------------------------------------
-
 align 4
 sys_protocols:
 	cmp	bh, MAX_NET_DEVICES		; Check if device number exists

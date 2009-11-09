@@ -20,7 +20,6 @@ $Revision$
 TCP_RETRIES		equ 5		; Number of times to resend a Packet
 TCP_PACKET_TTL		equ 50		; resend if not replied to in 1/100 s
 TCP_SOCKET_TTL		equ 10		; # of secs to wait before closing socket
-
 TCP_QUEUE_SIZE		equ 16
 
 
@@ -51,7 +50,6 @@ endg
 
 align 4
 iglobal
-
 stateHandler:
 
   dd  stateTCB_LISTEN
@@ -79,7 +77,6 @@ endg
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
-
 align 4
 TCP_init:
 
@@ -90,7 +87,12 @@ TCP_init:
 
 	init_queue TCP_IN_QUEUE
 
-	; tcp_out_queue is a special type of queue
+	; tcp_out_queue is a special type of queue:
+	; The first dword is a counter of total packets queued.
+	; The remaining bytes are socket 'slots' wich use tcp_out_queue_entry data structure.
+	; An empty slot is know by the fact that tcp_out_queue_entry.data_ptr (first dword of the slot) is set to 0
+	; There are TCP_OUT_QUEUE_SIZE number of slots
+
 	xor	eax, eax
 	mov	esi, TCP_OUT_QUEUE
 	mov	ecx, TCP_QUEUE_SIZE*tcp_out_queue_entry/4+1
@@ -107,7 +109,6 @@ TCP_init:
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
-
 align 4
 TCP_decrease_socket_ttls:
 	; scan through all the sockets, decrementing active timers
@@ -168,7 +169,6 @@ TCP_decrease_socket_ttls:
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
-
 align 4
 TCP_send_queued:
 
@@ -205,6 +205,7 @@ TCP_send_queued:
 	push	[esi + tcp_out_queue_entry.data_size]
 	push	[esi + tcp_out_queue_entry.data_ptr]
 	DEBUGF 1,"Now sending TCP packet %x, size: %u, owner: %x, sendproc %x\n", [esp], [esp+4], ebx, [esi + tcp_out_queue_entry.sendproc]
+	inc	[TCP_PACKETS_TX]
 	call	[esi + tcp_out_queue_entry.sendproc]
 	add	esp, 8
 	pop	esi ecx eax
@@ -237,7 +238,6 @@ TCP_send_queued:
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
-
 align 4
 TCP_add_to_queue:
 
@@ -298,7 +298,6 @@ TCP_add_to_queue:
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
-
 align 4
 TCP_handler :
 
@@ -337,6 +336,8 @@ TCP_handler :
   .change_state:
 
        DEBUGF 1,"Found valid socket for packet\n"
+
+	inc	[TCP_PACKETS_RX]
 
 	push	ebx
 	lea	ebx, [ebx + SOCKET_head.lock]
@@ -425,7 +426,6 @@ TCP_handler :
 ;     esi = pointer to data
 ;
 ;-----------------------------------------------------------------
-
 align 4
 TCP_socket_send:
 
@@ -523,7 +523,6 @@ TCP_socket_send:
 ;      bl = flags
 ;
 ;-----------------------------------------------------------------
-
 align 4
 TCP_send_ack:
 
@@ -570,7 +569,7 @@ TCP_send_ack:
 ; Now, calculate the checksum
 	pushw	TCP_Packet.Options shl 8
 	pushw	IP_PROTO_TCP shl 8
-	pushd	[edi-4] ; destination address
+	pushd	[edi-4] ; destination address  ; TODO: fix this, IPv4 packet could have options..
 	pushd	[edi-8] ; source address
 
 	xor	edx, edx
@@ -979,7 +978,6 @@ stateTCB_CLOSED:
 ; OUT:
 ;
 ;---------------------------------------------------------------------------
-
 align 4
 TCP_API:
 
