@@ -71,6 +71,7 @@ align 4
 uglobal
 
 	NumARP		dd ?
+
 	ARPTable	rb ARP_ENTRY.size * ARP_TABLE_SIZE
 
 	ARP_PACKETS_TX	rd  MAX_NET_DEVICES
@@ -162,27 +163,50 @@ ARP_IP_to_MAC:
 
 	push	eax
 
-	push	word ARP_REQUEST_TTL
-	push	word ARP_AWAITING_RESPONSE
-	push	dword 0
-	push	word 0
-	push	eax
+	pushw	ARP_REQUEST_TTL
+	pushw	ARP_AWAITING_RESPONSE
+	pushd	0
+	pushw	0
+	pushd	eax
 	call	ARP_add_entry
-
 	cmp	eax, -1
 	je	.full
 
+	; <Some dirty test code>
+
+	; This piece of code waits for an ARP reply
+
+	mov	ebx, eax
 	pop	eax
+	push	ebx
 	call	ARP_create_request
 
+	push	[timer_ticks]
+	add	dword[esp], 100*ARP_REQUEST_TTL
+	DEBUGF 1,"Waiting for ARP reply, time: %x, entry:%u\n",[timer_ticks], [esp + 4]
+   .dirty_loop:
+
+	call	change_task	; The ARP reply hasnt been received yet, tell the processor to do some other stuff first
+
+	mov	eax, [esp + 4]
+	imul	eax, ARP_ENTRY.size
+	add	eax, ARPTable
+	cmp	[eax + ARP_ENTRY.Status], ARP_VALID_MAPPING
+	je	.gogogo
+
+	mov	eax, [esp]	; Check if the reply hasnt timed-out yet
+	cmp	[timer_ticks], eax
+	jl	.dirty_loop
+
+	; </Some dirty test code>
+	or	eax, -1
+	add	esp, 8
 	ret
 
   .found_it:
-	add    esi, ARP_ENTRY.MAC
-	DEBUGF 1,"Found MAC! (%x-%x-%x-%x-%x-%x)\n",[esi+0]:2,[esi+1]:2,[esi+2]:2,[esi+3]:2,[esi+4]:2,[esi+5]:2
-	movzx  eax, word [esi]
-	mov    ebx, [esi+2]
-
+	DEBUGF 1,"found MAC in ARPTable\n"
+	movzx  eax, word [esi+ARP_ENTRY.MAC]
+	mov    ebx, dword[esi+ARP_ENTRY.MAC+2]
 	ret
 
   .full:
@@ -190,10 +214,17 @@ ARP_IP_to_MAC:
 	mov	eax, -1
 	ret
 
+  .gogogo:
+	DEBUGF 1,"got ARP reply, time: %x\n",[timer_ticks]
+	mov    ebx, dword[eax+ARP_ENTRY.MAC+2]
+	movzx  eax, word [eax+ARP_ENTRY.MAC]
+	add    esp, 8
+	ret
+
 
 ;---------------------------------------------------------------------------
 ;
-; ARP_create_packet
+; ARP_create_request
 ;
 ; IN:  ip in eax
 ;
@@ -376,7 +407,7 @@ ARP_add_entry:
 
 	inc	[NumARP]
 	pop	eax
-
+	DEBUGF 1,"New entry created: %u\n", eax
 .exit:
 	DEBUGF 1,"Exiting\n"
 	ret	ARP_ENTRY.size
