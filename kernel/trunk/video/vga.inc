@@ -175,8 +175,8 @@ checkVga_N13:
         cld
      m13pix:
         lodsd
-        cmp    eax,0
-        je    .save_pixel
+        test    eax,eax
+        jz    .save_pixel
         push   eax
         mov    ebx,eax
         and    eax,(128+64+32)      ; blue
@@ -259,8 +259,8 @@ VGA_draw_32_pixels:
         mov    cl,8
     .convert_pixels_to_VGA:
         lodsd   ; eax = 24bit colour
-        cmp    eax,0
-        je     .end
+        test    eax,eax
+        jz     .end
         rol    eax,8
         mov    al,ch
         ror    eax,8
@@ -335,8 +335,8 @@ VGA_putpixel:
         pushfd
         ; edi = address, eax = 24bit colour, ecx = bit no. (modulo 8)
         xor    edx,edx
-        cmp    eax,0
-        je     .p13cont
+        test   eax,eax
+        jz     .p13cont
         cmp    al,85
         jbe    .p13green
         or     dl,0x01
