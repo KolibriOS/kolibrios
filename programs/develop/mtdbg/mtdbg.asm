@@ -2982,7 +2982,7 @@ compare2:
 @@:
 	cmpsb
 	jnz	@f
-	cmp	byte [esi], 0
+	cmp	byte [esi-1], 0
 	jnz	@b
 	cmp	esi, edi
 @@:
