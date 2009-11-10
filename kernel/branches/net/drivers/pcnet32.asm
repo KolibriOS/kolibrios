@@ -634,6 +634,8 @@ proc service_proc stdcall, ioctl:dword
 	mov	[edi + buf_head.base], eax
 	mov	[edi + buf_head.length], PCNET_PKT_BUF_SZ_NEG
 	mov	[edi + buf_head.status], 0x8000
+	and	dword [edi + buf_head.msg_length], 0
+	and	dword [edi + buf_head.reserved], 0
 	add	eax, PCNET_PKT_BUF_SZ
 ;        inc     eax
 	add	 edi, buf_head.size
@@ -645,6 +647,9 @@ proc service_proc stdcall, ioctl:dword
 	call	GetPgAddr
   .tx_init:
 	mov	[edi + buf_head.base], eax
+	and	dword [edi + buf_head.length], 0
+	and	dword [edi + buf_head.msg_length], 0
+	and	dword [edi + buf_head.reserved], 0
 	add	eax, PCNET_PKT_BUF_SZ
 	add	edi, buf_head.size
 	loop	.tx_init
@@ -1138,7 +1143,7 @@ reset:
 ;;                                         ;;
 ;; Transmit                                ;;
 ;;                                         ;;
-;; In: buffer pointer in [esp+4]             ;;
+;; In: buffer pointer in [esp+4]           ;;
 ;;     size of buffer in [esp+8]           ;;
 ;;     pointer to device structure in ebx  ;;
 ;;                                         ;;
@@ -1146,7 +1151,7 @@ reset:
 
 align 4
 transmit:
-	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n",[esp],[esp+4]
+	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n",[esp+4],[esp+8]
 	mov	eax, [esp+4]
 	DEBUGF	1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
 	[eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\

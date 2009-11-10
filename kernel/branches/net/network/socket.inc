@@ -665,7 +665,7 @@ socket_send:
 
 	call	UDP_socket_send
 
-	mov	[esp+32], eax
+	and	dword [esp+32], 0
 	ret
 
   .tcp:
