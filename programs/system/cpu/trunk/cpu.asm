@@ -9,9 +9,9 @@
 
   use32
   org    0x0
-STACK_SIZE=1024
-offset_y=22
-offset_x=5
+	STACK_SIZE=1024
+	offset_y=22		; Correction for skin
+	offset_x=5
   db     'MENUET01'              ; 8 byte id
   dd     0x01                    ; header version
   dd     START                   ; start of code
@@ -34,20 +34,21 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
         jz      close
 ; calculate window position
 ; at the center of the screen
+    mcall 40,0x27	;set event
     call calculate_window_pos
     
 ;main loop when process name isn't edited.    
 red:    
         mcall   48,3,sc,40
-        edit_boxes_set_sys_color edit1,edit1_end,sc
+        edit_boxes_set_sys_color edit1,edit1_end,sc	;set color
+        check_boxes_set_sys_color check1,check1_end,sc  ;set color
 	xor	ebp,ebp
 	inc	ebp
 ;    mov  ebp,1
     call draw_window            ; redraw all window
-align 16
 still:
     mov  eax,23                 ; wait here for event
-    mov  ebx,100                ; 2 sec.
+    mov  ebx,100                ; 1 sec.
     mcall
 
     dec  eax                  ; redraw request ?
@@ -57,9 +58,13 @@ still:
     dec  eax                  ; button in buffer ?
     jz   button
 
+    sub eax,3                 ; If not use mouse - show 
+    jnz still_end
         push    dword edit1
         call    [edit_box_mouse]
-
+	push	dword check1
+	call	[check_box_mouse]
+    jmp still	
 
 still_end:    
     xor  ebp,ebp                ; draw new state of processes
@@ -72,16 +77,22 @@ still_end:
     mcall
 
     cmp  ah,184                 ; PageUp
-    je   pgdn
+    jz   pgdn
     cmp  ah,183
-    je   pgup                   ; PageDown
+    jz   pgup                   ; PageDown
     cmp  ah,27
-    je   close                  ; Esc
+    jz   close                  ; Esc
 
         push    dword edit1
         call    [edit_box_key]
+				; Check ENTER with ed_focus edit_box
+    lea  edi,[edit1]
+    test word ed_flags,ed_focus
+    jz   still_end 
+    sub  ah,13                  ; ENTER?
+    jz   program_start          ; RUN a program
 
-    jmp  still_end
+    jmp  still
 
   button:                       
 ; get button id  
@@ -212,6 +223,7 @@ draw_next_process:
     jl    .ret
     
 ;find process
+.return_1:
     inc   edi
 ;more comfortable register for next loop    
     mov   ecx,edi
@@ -246,7 +258,21 @@ draw_next_process:
     ret
     
 .process_found:
-    mov  edi,ecx
+;check on/off check box
+    push edi
+    lea  edi,[check1]
+    test dword ch_flags,ch_flag_en
+    pop  edi
+    jnz   @f
+    cmp   dword [process_info_buffer+10],'ICON'
+    jz    .return_1 
+    cmp   dword [process_info_buffer+10],'OS/I'
+    jz    .return_1
+    cmp   byte [process_info_buffer+10],'@'
+    jz    .return_1
+
+
+@@: mov  edi,ecx
     mov  [list_add],ecx
     
 ;get processor cpeed    
@@ -257,7 +283,7 @@ draw_next_process:
     
     xor  edx,edx
     mov  ebx,100
-    div ebx
+    div  ebx
     
 ;eax = number of operation for 1% now
 ;calculate process cpu usage percent
@@ -275,7 +301,7 @@ draw_next_process:
 ;1-80%   : green
 ;81-100% : red
     test eax,eax
-    jg   .no_black
+    jnz  .no_black
     mov  [tcolor],eax
     jmp  .color_set
 
@@ -535,6 +561,8 @@ draw_window:
 
         push    dword edit1
         call    [edit_box_draw]
+        push    dword check1
+	call	[check_box_draw]
 
 align 16
 .show_process_info:
@@ -636,8 +664,8 @@ edit_box_key    dd      aEdit_box_key
 edit_box_mouse  dd      aEdit_box_mouse
 ;version_ed      dd      aVersion_ed
 
-;check_box_draw  dd      aCheck_box_draw
-;check_box_mouse dd      aCheck_box_mouse
+check_box_draw  dd      aCheck_box_draw
+check_box_mouse dd      aCheck_box_mouse
 ;version_ch      dd      aVersion_ch
 
 ;option_box_draw  dd      aOption_box_draw
@@ -652,15 +680,16 @@ aEdit_box_key   db 'edit_box_key',0
 aEdit_box_mouse db 'edit_box_mouse',0
 ;aVersion_ed     db 'version_ed',0
 
-;aCheck_box_draw  db 'check_box_draw',0
-;aCheck_box_mouse db 'check_box_mouse',0
+aCheck_box_draw  db 'check_box_draw',0
+aCheck_box_mouse db 'check_box_mouse',0
 ;aVersion_ch      db 'version_ch',0
 
 ;aOption_box_draw  db 'option_box_draw',0
 ;aOption_box_mouse db 'option_box_mouse',0
 ;aVersion_op       db 'version_op',0
-
-edit1 edit_box 350,(64-offset_x),(398-offset_y),0xffffff,0x6f9480,0,0xAABBCC,0,start_application_c,start_application,mouse_dd,ed_focus,start_application_e,start_application_e
+check1 check_box 10,(400-offset_y),6,11,0x80AABBCC,0,0,check_text,check_t_e,ch_flag_en
+check1_end:
+edit1 edit_box 350,(100-offset_x),(398-offset_y),0xffffff,0x6f9480,0,0xAABBCC,0,start_application_c,start_application,mouse_dd,ed_focus,start_application_e,start_application_e
 edit1_end:
 list_start  dd 0
 
@@ -683,7 +712,8 @@ tbte:
 ;tbts_2  db  '>'
 tbts_3  db  'START'
 tbte_2:
-
+check_text db '@ gehoren/aus'
+check_t_e=$-check_text
 title  db   'Prozesse  - Ctrl/Alt/Del',0
 
 else if lang eq et
@@ -697,8 +727,9 @@ tbte:
 ;tbts_2	db  '>'
 tbts_3	db  'START'
 tbte_2:
-
-title  db   'Protsessid - Ctrl/Alt/Del',0
+check_text db '@ on/off'
+check_t_e=$-check_text
+title  db   'Protsessid - Ctrl/Alt/Del'
 
 else
 text:
@@ -711,7 +742,8 @@ tbte:
 ;tbts_2  db  '>'
 tbts_3  db  'RUN'
 tbte_2:
-
+check_text db '@ on/off'
+check_t_e=$-check_text
 title  db   'Processes - Ctrl/Alt/Del',0
 
 end if
