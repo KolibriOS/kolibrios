@@ -235,7 +235,7 @@ B32:
 
 ; SAVE & CLEAR 0-0xffff
 
-           xor esi, esi
+           xor   esi, esi
            mov   edi,0x2F0000
            mov   ecx,0x10000 / 4
            rep   movsd
@@ -540,14 +540,16 @@ high_code:
         mov     [graph_data_l+4],al
         mov     [graph_data_l+7],ah
 
-        mov [CURRENT_TASK],dword 1
-        mov [TASK_COUNT],dword 1
+        xor  eax,eax
+        inc  eax
+        mov [CURRENT_TASK],eax		;dword 1
+        mov [TASK_COUNT],eax		;dword 1
         mov [TASK_BASE],dword TASK_DATA
         mov [current_slot], SLOT_BASE+256
 
 ; set background
-        xor  eax,eax
-        inc  eax
+;        xor  eax,eax
+;        inc  eax
         mov   [BgrDrawMode],eax
         mov   [BgrDataWidth],eax
         mov   [BgrDataHeight],eax
@@ -1072,45 +1074,59 @@ include "kernel32.inc"
 
 reserve_irqs_ports:
 
-        pushad
-
-        mov  [irq_owner+4*0], 1    ; timer
+        push eax
+        xor	eax,eax
+	inc	eax
+        mov  byte [irq_owner+4*0],al		;1    ; timer
         ;mov  [irq_owner+4*1], 1    ; keyboard
-        mov  [irq_owner+4*6], 1    ; floppy diskette
-        mov  [irq_owner+4*13], 1   ; math co-pros
-        mov  [irq_owner+4*14], 1   ; ide I
-        mov  [irq_owner+4*15], 1   ; ide II
-
+        mov  byte [irq_owner+4*6],al		;1    ; floppy diskette
+        mov  byte [irq_owner+4*13],al	;1   ; math co-pros
+        mov  byte [irq_owner+4*14],al	;1   ; ide I
+        mov  byte [irq_owner+4*15],al	;1   ; ide II
+        pop  eax
         ; RESERVE PORTS
-        mov   edi,1                    ; 0x00-0x2d
-        mov   [RESERVED_PORTS],edi
-        shl   edi,4
-        mov   [RESERVED_PORTS+edi+0],dword 1
-        mov   [RESERVED_PORTS+edi+4],dword 0x0
-        mov   [RESERVED_PORTS+edi+8],dword 0x2d
+;        mov   edi,1                    ; 0x00-0x2d
+	push  dword 4
+        pop   dword [RESERVED_PORTS]	;,edi
+;        shl   edi,4
+	push  dword 1
+        pop   dword [RESERVED_PORTS+16+0]	;,dword 1
+	push  dword 0
+        pop   dword [RESERVED_PORTS+16+4]	;,dword 0x0
+	push  dword 0x2d                        
+        pop   dword [RESERVED_PORTS+16+8]	;,dword 0x2d
 
-        inc   dword [RESERVED_PORTS]          ; 0x30-0x4d
-        mov   edi,[RESERVED_PORTS]
-        shl   edi,4
-        mov   [RESERVED_PORTS+edi+0],dword 1
-        mov   [RESERVED_PORTS+edi+4],dword 0x30
-        mov   [RESERVED_PORTS+edi+8],dword 0x4d
+;        inc   dword [RESERVED_PORTS]          	; 0x30-0x4d
+;        mov   edi,[RESERVED_PORTS]
+;        shl   edi,4
+	push  dword 1
+        pop   dword [RESERVED_PORTS+32+0]	;,dword 1
+	push  dword 0x30
+        pop   dword [RESERVED_PORTS+32+4]	;,dword 0x30
+	push  dword 0x4d
+        pop   dword [RESERVED_PORTS+32+8]	;,dword 0x4d
 
-        inc   dword [RESERVED_PORTS]          ; 0x50-0xdf
-        mov   edi,[RESERVED_PORTS]
-        shl   edi,4
-        mov   [RESERVED_PORTS+edi+0],dword 1
-        mov   [RESERVED_PORTS+edi+4],dword 0x50
-        mov   [RESERVED_PORTS+edi+8],dword 0xdf
+;        inc   dword [RESERVED_PORTS]          ; 0x50-0xdf
+;        mov   edi,[RESERVED_PORTS]
+;        shl   edi,4
+	push  dword 1
+        pop   dword [RESERVED_PORTS+48+0]	;,dword 1
+	push  dword 0x50
+        pop   dword [RESERVED_PORTS+48+4]	;,dword 0x50
+	push  dword 0xdf
+        pop   dword [RESERVED_PORTS+48+8]	;,dword 0xdf
 
-        inc   dword [RESERVED_PORTS]          ; 0xe5-0xff
-        mov   edi,[RESERVED_PORTS]
-        shl   edi,4
-        mov   [RESERVED_PORTS+edi+0],dword 1
-        mov   [RESERVED_PORTS+edi+4],dword 0xe5
-        mov   [RESERVED_PORTS+edi+8],dword 0xff
+;        inc   dword [RESERVED_PORTS]          ; 0xe5-0xff
+;        mov   edi,[RESERVED_PORTS]
+;        shl   edi,4
+	push  dword 1
+        pop   dword [RESERVED_PORTS+64+0]	;,dword 1
+	push  dword 0xe5
+        pop   dword [RESERVED_PORTS+64+4]	;,dword 0xe5
+	push  0xff
+        pop   dword [RESERVED_PORTS+64+8]	;,dword 0xff
 
-        popad
+;        popad
         ret
 
 setirqreadports:
@@ -1133,25 +1149,26 @@ set_variables:
         mov   ecx,0x100                       ; flush port 0x60
 .fl60:  in    al,0x60
         loop  .fl60
-        mov   [MOUSE_BUFF_COUNT],byte 0                 ; mouse buffer
-        mov   [KEY_COUNT],byte 0                 ; keyboard buffer
-        mov   [BTN_COUNT],byte 0                 ; button buffer
-;        mov   [MOUSE_X],dword 100*65536+100    ; mouse x/y
-
         push  eax
+
         mov   ax,[BOOT_VAR+0x900c]
         shr   ax,1
         shl   eax,16
         mov   ax,[BOOT_VAR+0x900A]
         shr   ax,1
         mov   [MOUSE_X],eax
-        pop   eax
 
+        xor   eax,eax
         mov   [BTN_ADDR],dword BUTTON_INFO    ; address of button list
 
-     ;!! IP 04.02.2005:
-        mov   byte [DONT_SWITCH], 0 ; change task if possible
+        mov   byte [MOUSE_BUFF_COUNT],al                 ; mouse buffer
+        mov   byte [KEY_COUNT],al                 ; keyboard buffer
+        mov   byte [BTN_COUNT],al                 ; button buffer
+;        mov   [MOUSE_X],dword 100*65536+100    ; mouse x/y
 
+     ;!! IP 04.02.2005:
+        mov   byte [DONT_SWITCH],al ; change task if possible
+        pop   eax
         ret
 
 align 4
