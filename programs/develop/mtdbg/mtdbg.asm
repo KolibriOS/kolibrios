@@ -820,7 +820,18 @@ draw_disasm:
 	jc	.nosymb
 	mov	ebx, [disasm_cur_str]
 	imul	ebx, 10
-	add	ebx, (data_x_pos+6*2)*10000h + disasm_y_pos
+	push	ebx
+	lea	ecx, [ebx+disasm_y_pos-1]
+	shl	ecx, 16
+	mov	cl, 11
+	mov	edx, 0xFFFFFF
+	mov	ebx, data_x_pos*10000h + data_x_size
+	push	13
+	pop	eax
+	mcall
+	pop	ebx
+	mov	edi, edx
+	add	ebx, (data_x_pos+6*2)*10000h+disasm_y_pos
 	mov	edx, esi
 @@:	lodsb
 	test	al, al
@@ -828,9 +839,7 @@ draw_disasm:
 	mov	byte [esi-1], ':'
 	sub	esi, edx
 	mov	ecx, 40000000h
-	mov	edi, 0xFFFFFF
-	push	4
-	pop	eax
+	mov	al, 4
 	mcall
 	mov	byte [esi+edx-1], 0
 	lea	esi, [esi*3]
@@ -943,6 +952,7 @@ draw_disasm:
 	sub	ecx, [disasm_cur_str]
 	jz	@f
 	imul	ecx, 10
+	inc	ecx
 	mov	eax, disasm_y_pos + disasm_y_size
 	sub	eax, ecx
 	shl	eax, 16
@@ -1039,7 +1049,7 @@ draw_window:
 	mcall
 	mov	ecx, (dump_y_pos+dump_y_size)*10000h + (disasm_y_pos-dump_y_pos-dump_y_size)
 	mcall
-	mov	ecx, (disasm_y_pos+disasm_y_size)*10000h + (messages_y_pos-disasm_y_pos-disasm_y_size)
+	mov	ecx, (disasm_y_pos-1+disasm_y_size)*10000h + (messages_y_pos-disasm_y_pos+1-disasm_y_size)
 	mcall
 	mov	ecx, (messages_y_pos+messages_y_size)*10000h + (wnd_y_size-messages_y_pos-messages_y_size-4)
 	mcall
