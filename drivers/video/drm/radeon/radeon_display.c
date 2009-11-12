@@ -137,9 +137,6 @@ static void radeon_crtc_gamma_set(struct drm_crtc *crtc, u16 *red, u16 *green,
 	if (size != 256) {
 		return;
 	}
-	if (crtc->fb == NULL) {
-		return;
-	}
 
 	/* userspace palettes are always correct as is */
 		for (i = 0; i < 256; i++) {
@@ -147,7 +144,6 @@ static void radeon_crtc_gamma_set(struct drm_crtc *crtc, u16 *red, u16 *green,
 			radeon_crtc->lut_g[i] = green[i] >> 6;
 			radeon_crtc->lut_b[i] = blue[i] >> 6;
 		}
-
 	radeon_crtc_load_lut(crtc);
 }
 
@@ -338,27 +334,19 @@ static bool radeon_setup_enc_conn(struct drm_device *dev)
 
 int radeon_ddc_get_modes(struct radeon_connector *radeon_connector)
 {
-	struct edid *edid;
 	int ret = 0;
 
 	if (!radeon_connector->ddc_bus)
 		return -1;
 	if (!radeon_connector->edid) {
 	radeon_i2c_do_lock(radeon_connector, 1);
-	edid = drm_get_edid(&radeon_connector->base, &radeon_connector->ddc_bus->adapter);
+		radeon_connector->edid = drm_get_edid(&radeon_connector->base, &radeon_connector->ddc_bus->adapter);
 	radeon_i2c_do_lock(radeon_connector, 0);
-	} else
-		edid = radeon_connector->edid;
+	}
 
-	if (edid) {
-		/* update digital bits here */
-		if (edid->input & DRM_EDID_INPUT_DIGITAL)
-			radeon_connector->use_digital = 1;
-		else
-			radeon_connector->use_digital = 0;
-		drm_mode_connector_update_edid_property(&radeon_connector->base, edid);
-		ret = drm_add_edid_modes(&radeon_connector->base, edid);
-		kfree(edid);
+	if (radeon_connector->edid) {
+		drm_mode_connector_update_edid_property(&radeon_connector->base, radeon_connector->edid);
+		ret = drm_add_edid_modes(&radeon_connector->base, radeon_connector->edid);
 		return ret;
 	}
 	drm_mode_connector_update_edid_property(&radeon_connector->base, NULL);
@@ -760,8 +748,6 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 	struct radeon_encoder *radeon_encoder;
 	bool first = true;
 
-    ENTER();
-
 	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
 		radeon_encoder = to_radeon_encoder(encoder);
 		if (encoder->crtc != crtc)
@@ -770,7 +756,7 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 			radeon_crtc->rmx_type = radeon_encoder->rmx_type;
 			memcpy(&radeon_crtc->native_mode,
 				&radeon_encoder->native_mode,
-				sizeof(struct radeon_native_mode));
+				sizeof(struct drm_display_mode));
 			first = false;
 		} else {
 			if (radeon_crtc->rmx_type != radeon_encoder->rmx_type) {
@@ -786,24 +772,16 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 		}
 	}
 	if (radeon_crtc->rmx_type != RMX_OFF) {
-
-        dbgprintf("\nset scaler panel_xres %d panel_yres %d\n",
-                  radeon_crtc->native_mode.panel_xres,
-                  radeon_crtc->native_mode.panel_yres);
-
         fixed20_12 a, b;
 		a.full = rfixed_const(crtc->mode.vdisplay);
-		b.full = rfixed_const(radeon_crtc->native_mode.panel_xres);
+		b.full = rfixed_const(radeon_crtc->native_mode.hdisplay);
 		radeon_crtc->vsc.full = rfixed_div(a, b);
 		a.full = rfixed_const(crtc->mode.hdisplay);
-		b.full = rfixed_const(radeon_crtc->native_mode.panel_yres);
+		b.full = rfixed_const(radeon_crtc->native_mode.vdisplay);
 		radeon_crtc->hsc.full = rfixed_div(a, b);
 	} else {
 		radeon_crtc->vsc.full = rfixed_const(1);
 		radeon_crtc->hsc.full = rfixed_const(1);
 	}
-
-    LEAVE();
-
 	return true;
 }

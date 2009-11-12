@@ -72,6 +72,7 @@ NAME_SRC=							\
 			radeon_fb.c				\
 			rdisplay.c				\
 			rdisplay_kms.c				\
+			radeon_pm.c				\
 			cmdline.c
 
 

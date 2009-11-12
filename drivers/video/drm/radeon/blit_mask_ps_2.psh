@@ -1,0 +1,20 @@
+
+ps_2_0
+
+dcl_2d s0
+dcl_2d s1
+
+dcl v0
+dcl t0
+dcl t1
+
+texld r0, t0, s0
+
+sub r0.x, r0.x, v0.x
+abs r0.x, r0.x
+mov r0.xyzw, -r0.x
+texkill r0 
+texld r0, t1, s1
+mov oC0, r0
+
+

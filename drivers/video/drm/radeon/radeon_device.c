@@ -38,16 +38,16 @@
 #include <drm/drm_pciids.h>
 
 
-int radeon_dynclks = -1;
-int radeon_r4xx_atom = 0;
-int radeon_agpmode   = -1;
-int radeon_gart_size = 512; /* default gart size */
-int radeon_benchmarking = 0;
-int radeon_connector_table = 0;
-int radeon_tv = 0;
+int radeon_dynclks          = -1;
+int radeon_r4xx_atom        = 0;
+int radeon_agpmode          = -1;
+int radeon_gart_size        = 512; /* default gart size */
+int radeon_benchmarking     = 0;
+int radeon_connector_table  = 0;
+int radeon_tv               = 0;
 int radeon_modeset          = 1;
 
-void parse_cmdline(char *cmdline, mode_t *mode, char *log);
+void parse_cmdline(char *cmdline, mode_t *mode, char *log, int *kms);
 int init_display(struct radeon_device *rdev, mode_t *mode);
 int init_display_kms(struct radeon_device *rdev, mode_t *mode);
 
@@ -478,22 +478,24 @@ static uint32_t cail_reg_read(struct card_info *info, uint32_t reg)
     return r;
 }
 
-static struct card_info atom_card_info = {
-    .dev = NULL,
-    .reg_read = cail_reg_read,
-    .reg_write = cail_reg_write,
-    .mc_read = cail_mc_read,
-    .mc_write = cail_mc_write,
-    .pll_read = cail_pll_read,
-    .pll_write = cail_pll_write,
-};
-
 int radeon_atombios_init(struct radeon_device *rdev)
 {
-    ENTER();
+	struct card_info *atom_card_info =
+	    kzalloc(sizeof(struct card_info), GFP_KERNEL);
 
-    atom_card_info.dev = rdev->ddev;
-    rdev->mode_info.atom_context = atom_parse(&atom_card_info, rdev->bios);
+	if (!atom_card_info)
+		return -ENOMEM;
+
+	rdev->mode_info.atom_card_info = atom_card_info;
+	atom_card_info->dev = rdev->ddev;
+	atom_card_info->reg_read = cail_reg_read;
+	atom_card_info->reg_write = cail_reg_write;
+	atom_card_info->mc_read = cail_mc_read;
+	atom_card_info->mc_write = cail_mc_write;
+	atom_card_info->pll_read = cail_pll_read;
+	atom_card_info->pll_write = cail_pll_write;
+
+	rdev->mode_info.atom_context = atom_parse(atom_card_info, rdev->bios);
     radeon_atom_initialize_bios_scratch_regs(rdev->ddev);
     return 0;
 }
@@ -501,6 +503,7 @@ int radeon_atombios_init(struct radeon_device *rdev)
 void radeon_atombios_fini(struct radeon_device *rdev)
 {
 	kfree(rdev->mode_info.atom_context);
+	kfree(rdev->mode_info.atom_card_info);
 }
 
 int radeon_combios_init(struct radeon_device *rdev)
@@ -695,10 +698,10 @@ int radeon_driver_load_kms(struct drm_device *dev, unsigned long flags)
      */
     if( radeon_modeset )
     {
-    r = radeon_modeset_init(rdev);
-    if (r) {
-        return r;
-    }
+        r = radeon_modeset_init(rdev);
+        if (r) {
+            return r;
+        }
     };
     return 0;
 }
@@ -745,7 +748,7 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     if( radeon_modeset )
         init_display_kms(dev->dev_private, &usermode);
     else
-    init_display(dev->dev_private, &usermode);
+        init_display(dev->dev_private, &usermode);
 
     LEAVE();
 
@@ -848,7 +851,7 @@ int _stdcall display_handler(ioctl_t *io)
             if( radeon_modeset &&
                 (outp != NULL) && (io->out_size == 4) &&
                 (io->inp_size == *outp * sizeof(mode_t)) )
-                {
+            {
                 retval = get_modes((mode_t*)inp, outp);
             };
             break;
@@ -886,7 +889,7 @@ u32_t drvEntry(int action, char *cmdline)
         return 0;
 
     if( cmdline && *cmdline )
-        parse_cmdline(cmdline, &usermode, log);
+        parse_cmdline(cmdline, &usermode, log, &radeon_modeset);
 
     if(!dbg_open(log))
     {
@@ -898,7 +901,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("Radeon RC05 cmdline %s\n", cmdline);
+    dbgprintf("Radeon RC06 cmdline %s\n", cmdline);
 
     enum_pci_devices();
 

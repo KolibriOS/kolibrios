@@ -338,11 +338,10 @@ int r600_mc_init(struct radeon_device *rdev)
 {
 	fixed20_12 a;
 	u32 tmp;
-	int chansize;
+	int chansize, numchan;
 	int r;
 
 	/* Get VRAM informations */
-	rdev->mc.vram_width = 128;
 	rdev->mc.vram_is_ddr = true;
 	tmp = RREG32(RAMCFG);
 	if (tmp & CHANSIZE_OVERRIDE) {
@@ -352,17 +351,23 @@ int r600_mc_init(struct radeon_device *rdev)
 	} else {
 		chansize = 32;
 	}
-	if (rdev->family == CHIP_R600) {
-		rdev->mc.vram_width = 8 * chansize;
-	} else if (rdev->family == CHIP_RV670) {
-		rdev->mc.vram_width = 4 * chansize;
-	} else if ((rdev->family == CHIP_RV610) ||
-			(rdev->family == CHIP_RV620)) {
-		rdev->mc.vram_width = chansize;
-	} else if ((rdev->family == CHIP_RV630) ||
-			(rdev->family == CHIP_RV635)) {
-		rdev->mc.vram_width = 2 * chansize;
+	tmp = RREG32(CHMAP);
+	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
+	case 0:
+	default:
+		numchan = 1;
+		break;
+	case 1:
+		numchan = 2;
+		break;
+	case 2:
+		numchan = 4;
+		break;
+	case 3:
+		numchan = 8;
+		break;
 	}
+	rdev->mc.vram_width = numchan * chansize;
 	/* Could aper size report 0 ? */
 	rdev->mc.aper_base = drm_get_resource_start(rdev->ddev, 0);
 	rdev->mc.aper_size = drm_get_resource_len(rdev->ddev, 0);
@@ -403,10 +408,9 @@ int r600_mc_init(struct radeon_device *rdev)
 			rdev->mc.gtt_location = rdev->mc.mc_vram_size;
 		}
 	} else {
-		if (rdev->family == CHIP_RS780 || rdev->family == CHIP_RS880) {
+		rdev->mc.gtt_size = radeon_gart_size * 1024 * 1024;
 			rdev->mc.vram_location = (RREG32(MC_VM_FB_LOCATION) &
 								0xFFFF) << 24;
-			rdev->mc.gtt_size = radeon_gart_size * 1024 * 1024;
 			tmp = rdev->mc.vram_location + rdev->mc.mc_vram_size;
 			if ((0xFFFFFFFFUL - tmp) >= rdev->mc.gtt_size) {
 				/* Enough place after vram */
@@ -427,11 +431,6 @@ int r600_mc_init(struct radeon_device *rdev)
 				}
 			}
 			rdev->mc.gtt_location = rdev->mc.mc_vram_size;
-		} else {
-			rdev->mc.vram_location = 0x00000000UL;
-			rdev->mc.gtt_location = rdev->mc.mc_vram_size;
-			rdev->mc.gtt_size = radeon_gart_size * 1024 * 1024;
-		}
 	}
 	rdev->mc.vram_start = rdev->mc.vram_location;
 	rdev->mc.vram_end = rdev->mc.vram_location + rdev->mc.mc_vram_size - 1;
@@ -858,7 +857,8 @@ void r600_gpu_init(struct radeon_device *rdev)
 	    ((rdev->family) == CHIP_RV630) ||
 	    ((rdev->family) == CHIP_RV610) ||
 	    ((rdev->family) == CHIP_RV620) ||
-	    ((rdev->family) == CHIP_RS780)) {
+	    ((rdev->family) == CHIP_RS780) ||
+	    ((rdev->family) == CHIP_RS880)) {
 		WREG32(DB_DEBUG, PREZ_MUST_WAIT_FOR_POSTZ_DONE);
 	} else {
 		WREG32(DB_DEBUG, 0);
@@ -875,7 +875,8 @@ void r600_gpu_init(struct radeon_device *rdev)
 	tmp = RREG32(SQ_MS_FIFO_SIZES);
 	if (((rdev->family) == CHIP_RV610) ||
 	    ((rdev->family) == CHIP_RV620) ||
-	    ((rdev->family) == CHIP_RS780)) {
+	    ((rdev->family) == CHIP_RS780) ||
+	    ((rdev->family) == CHIP_RS880)) {
 		tmp = (CACHE_FIFO_SIZE(0xa) |
 		       FETCH_FIFO_HIWATER(0xa) |
 		       DONE_FIFO_HIWATER(0xe0) |
@@ -918,7 +919,8 @@ void r600_gpu_init(struct radeon_device *rdev)
 					    NUM_ES_STACK_ENTRIES(0));
 	} else if (((rdev->family) == CHIP_RV610) ||
 		   ((rdev->family) == CHIP_RV620) ||
-		   ((rdev->family) == CHIP_RS780)) {
+		   ((rdev->family) == CHIP_RS780) ||
+		   ((rdev->family) == CHIP_RS880)) {
 		/* no vertex cache */
 		sq_config &= ~VC_ENABLE;
 
@@ -975,7 +977,8 @@ void r600_gpu_init(struct radeon_device *rdev)
 
 	if (((rdev->family) == CHIP_RV610) ||
 	    ((rdev->family) == CHIP_RV620) ||
-	    ((rdev->family) == CHIP_RS780)) {
+	    ((rdev->family) == CHIP_RS780) ||
+	    ((rdev->family) == CHIP_RS880)) {
 		WREG32(VGT_CACHE_INVALIDATION, CACHE_INVALIDATION(TC_ONLY));
 	} else {
 		WREG32(VGT_CACHE_INVALIDATION, CACHE_INVALIDATION(VC_AND_TC));
@@ -1001,8 +1004,9 @@ void r600_gpu_init(struct radeon_device *rdev)
 	tmp = rdev->config.r600.max_pipes * 16;
 	switch (rdev->family) {
 	case CHIP_RV610:
-	case CHIP_RS780:
 	case CHIP_RV620:
+	case CHIP_RS780:
+	case CHIP_RS880:
 		tmp += 32;
 		break;
 	case CHIP_RV670:
@@ -1043,8 +1047,9 @@ void r600_gpu_init(struct radeon_device *rdev)
 
 	switch (rdev->family) {
 	case CHIP_RV610:
-	case CHIP_RS780:
 	case CHIP_RV620:
+	case CHIP_RS780:
+	case CHIP_RS880:
 		tmp = TC_L2_SIZE(8);
 		break;
 	case CHIP_RV630:
@@ -1288,10 +1293,13 @@ int r600_init(struct radeon_device *rdev)
 	r600_scratch_init(rdev);
 	/* Initialize surface registers */
 	radeon_surface_init(rdev);
+	/* Initialize clocks */
 	radeon_get_clock_info(rdev->ddev);
 	r = radeon_clocks_init(rdev);
 	if (r)
 		return r;
+	/* Initialize power management */
+	radeon_pm_init(rdev);
 	/* Fence driver */
 //	r = radeon_fence_driver_init(rdev);
 //	if (r)

@@ -152,8 +152,8 @@ retry_pre_get:
 
         robj->vm_addr = ((uint32_t)robj->mm_node->start);
 
-        dbgprintf("alloc vram: base %x size %x\n",
-                   robj->vm_addr << PAGE_SHIFT, num_pages  << PAGE_SHIFT);
+//        dbgprintf("alloc vram: base %x size %x\n",
+//                   robj->vm_addr << PAGE_SHIFT, num_pages  << PAGE_SHIFT);
 
     };
 
@@ -190,8 +190,8 @@ retry_pre_get1:
 
         robj->vm_addr = ((uint32_t)robj->mm_node->start) ;
 
-        dbgprintf("alloc gtt: base %x size %x\n",
-                   robj->vm_addr << PAGE_SHIFT, num_pages  << PAGE_SHIFT);
+//        dbgprintf("alloc gtt: base %x size %x\n",
+//                   robj->vm_addr << PAGE_SHIFT, num_pages  << PAGE_SHIFT);
     };
 
 //   r = ttm_buffer_object_init(&rdev->mman.bdev, &robj->tobj, size, type, flags,
@@ -297,7 +297,7 @@ int radeon_object_kmap(struct radeon_object *robj, void **ptr)
                          (robj->vm_addr << PAGE_SHIFT);
         robj->kptr = (void*)MapIoMem(robj->cpu_addr,
                            robj->mm_node->size << 12, PG_SW);
-        dbgprintf("map io mem %x at %x\n", robj->cpu_addr, robj->kptr);
+//        dbgprintf("map io mem %x at %x\n", robj->cpu_addr, robj->kptr);
 
     }
     else

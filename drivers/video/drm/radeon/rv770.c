@@ -531,11 +531,11 @@ static void rv770_gpu_init(struct radeon_device *rdev)
 	if (rdev->family == CHIP_RV770)
 		gb_tiling_config |= BANK_TILING(1);
 	else
-		gb_tiling_config |= BANK_TILING((mc_arb_ramcfg & NOOFBANK_SHIFT) >> NOOFBANK_MASK);
+		gb_tiling_config |= BANK_TILING((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT);
 
 	gb_tiling_config |= GROUP_SIZE(0);
 
-	if (((mc_arb_ramcfg & NOOFROWS_MASK) & NOOFROWS_SHIFT) > 3) {
+	if (((mc_arb_ramcfg & NOOFROWS_MASK) >> NOOFROWS_SHIFT) > 3) {
 		gb_tiling_config |= ROW_TILING(3);
 		gb_tiling_config |= SAMPLE_SPLIT(3);
 	} else {
@@ -776,14 +776,36 @@ int rv770_mc_init(struct radeon_device *rdev)
 {
 	fixed20_12 a;
 	u32 tmp;
+	int chansize, numchan;
 	int r;
 
 	/* Get VRAM informations */
-	/* FIXME: Don't know how to determine vram width, need to check
-	 * vram_width usage
-	 */
-	rdev->mc.vram_width = 128;
 	rdev->mc.vram_is_ddr = true;
+	tmp = RREG32(MC_ARB_RAMCFG);
+	if (tmp & CHANSIZE_OVERRIDE) {
+		chansize = 16;
+	} else if (tmp & CHANSIZE_MASK) {
+		chansize = 64;
+	} else {
+		chansize = 32;
+	}
+	tmp = RREG32(MC_SHARED_CHMAP);
+	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
+	case 0:
+	default:
+		numchan = 1;
+		break;
+	case 1:
+		numchan = 2;
+		break;
+	case 2:
+		numchan = 4;
+		break;
+	case 3:
+		numchan = 8;
+		break;
+	}
+	rdev->mc.vram_width = numchan * chansize;
 	/* Could aper size report 0 ? */
 	rdev->mc.aper_base = drm_get_resource_start(rdev->ddev, 0);
 	rdev->mc.aper_size = drm_get_resource_len(rdev->ddev, 0);
@@ -921,10 +943,13 @@ int rv770_init(struct radeon_device *rdev)
 	r600_scratch_init(rdev);
 	/* Initialize surface registers */
 	radeon_surface_init(rdev);
+	/* Initialize clocks */
 	radeon_get_clock_info(rdev->ddev);
 	r = radeon_clocks_init(rdev);
 	if (r)
 		return r;
+	/* Initialize power management */
+	radeon_pm_init(rdev);
 	/* Fence driver */
 //   r = radeon_fence_driver_init(rdev);
 //   if (r)

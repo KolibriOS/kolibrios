@@ -1,0 +1,21 @@
+
+ps_3_0
+
+dcl_2d s0
+dcl_2d s1
+dcl_2d s2
+
+dcl_color         v1
+
+dcl_texcoord0 v0.xy
+dcl_texcoord1 v0.zw
+
+texld r0.x, v0.xy, s0
+
+sub r0.x, r0.x, v1.x
+abs r0.x, r0.x
+mov r0.xyzw, -r0.x
+texkill r0.x 
+texld oC0, v0.zw, s1
+
+

@@ -166,7 +166,7 @@ bool init_display(struct radeon_device *rdev, mode_t *usermode)
     struct drm_device  *dev;
 
     cursor_t  *cursor;
-    bool                retval = false;
+    bool                 retval = true;
     u32_t                ifl;
 
     ENTER();
@@ -181,12 +181,8 @@ bool init_display(struct radeon_device *rdev, mode_t *usermode)
     {
         init_cursor(cursor);
     };
-    };
-    safe_sti(ifl);
 
-    ifl = safe_cli();
-    {
-        rdisplay->restore_cursor(0,0);
+    rdisplay->restore_cursor(0,0);
     rdisplay->init_cursor   = init_cursor;
     rdisplay->select_cursor = select_cursor;
     rdisplay->show_cursor   = NULL;

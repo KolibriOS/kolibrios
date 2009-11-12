@@ -344,8 +344,12 @@ bool init_display_kms(struct radeon_device *rdev, mode_t *usermode)
     };
 
     rdisplay->crtc = rdisplay->connector->encoder->crtc;
-
     rdisplay->supported_modes = count_connector_modes(rdisplay->connector);
+
+    dbgprintf("current mode %d x %d x %d\n",
+              rdisplay->width, rdisplay->height, rdisplay->vrefresh);
+    dbgprintf("user mode mode %d x %d x %d\n",
+              usermode->width, usermode->height, usermode->freq);
 
     if( (usermode->width  != 0) &&
         (usermode->height != 0) &&
@@ -365,6 +369,8 @@ bool init_display_kms(struct radeon_device *rdev, mode_t *usermode)
         rdisplay->show_cursor    = NULL;
         rdisplay->move_cursor    = move_cursor_kms;
         rdisplay->restore_cursor = restore_cursor;
+
+        select_cursor_kms(rdisplay->cursor);
         radeon_show_cursor_kms(rdisplay->crtc);
     };
     safe_sti(ifl);

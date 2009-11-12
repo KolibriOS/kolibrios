@@ -86,7 +86,7 @@ int r100_pci_gart_init(struct radeon_device *rdev)
 	r = radeon_gart_init(rdev);
 	if (r)
 		return r;
-		rdev->gart.table_size = rdev->gart.num_gpu_pages * 4;
+    rdev->gart.table_size = rdev->gart.num_gpu_pages * 4;
 	rdev->asic->gart_tlb_flush = &r100_pci_gart_tlb_flush;
 	rdev->asic->gart_set_page = &r100_pci_gart_set_page;
 	return radeon_gart_table_ram_alloc(rdev);
@@ -192,7 +192,7 @@ int r100_wb_init(struct radeon_device *rdev)
 	int r;
 
 	if (rdev->wb.wb_obj == NULL) {
-		r = radeon_object_create(rdev, NULL, 4096,
+		r = radeon_object_create(rdev, NULL, RADEON_GPU_PAGE_SIZE,
 					 true,
 					 RADEON_GEM_DOMAIN_GTT,
 					 false, &rdev->wb.wb_obj);
@@ -532,19 +532,19 @@ int r100_cp_init(struct radeon_device *rdev, unsigned ring_size)
 	indirect1_start = 16;
 	/* cp setup */
 	WREG32(0x718, pre_write_timer | (pre_write_limit << 28));
-	WREG32(RADEON_CP_RB_CNTL,
-#ifdef __BIG_ENDIAN
-	       RADEON_BUF_SWAP_32BIT |
-#endif
-	       REG_SET(RADEON_RB_BUFSZ, rb_bufsz) |
+	tmp = (REG_SET(RADEON_RB_BUFSZ, rb_bufsz) |
 	       REG_SET(RADEON_RB_BLKSZ, rb_blksz) |
 	       REG_SET(RADEON_MAX_FETCH, max_fetch) |
 	       RADEON_RB_NO_UPDATE);
+#ifdef __BIG_ENDIAN
+	tmp |= RADEON_BUF_SWAP_32BIT;
+#endif
+	WREG32(RADEON_CP_RB_CNTL, tmp);
+
 	/* Set ring address */
 	DRM_INFO("radeon: ring at 0x%016lX\n", (unsigned long)rdev->cp.gpu_addr);
 	WREG32(RADEON_CP_RB_BASE, rdev->cp.gpu_addr);
 	/* Force read & write ptr to 0 */
-	tmp = RREG32(RADEON_CP_RB_CNTL);
 	WREG32(RADEON_CP_RB_CNTL, tmp | RADEON_RB_RPTR_WR_ENA);
 	WREG32(RADEON_CP_RB_RPTR_WR, 0);
 	WREG32(RADEON_CP_RB_WPTR, 0);
@@ -2341,7 +2341,7 @@ void r100_bandwidth_update(struct radeon_device *rdev)
 	/*
 	  Find the total latency for the display data.
 	*/
-	disp_latency_overhead.full = rfixed_const(80);
+	disp_latency_overhead.full = rfixed_const(8);
 	disp_latency_overhead.full = rfixed_div(disp_latency_overhead, sclk_ff);
 	mc_latency_mclk.full += disp_latency_overhead.full + cur_latency_mclk.full;
 	mc_latency_sclk.full += disp_latency_overhead.full + cur_latency_sclk.full;

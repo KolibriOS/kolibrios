@@ -1,0 +1,8 @@
+ps_1_2
+def c1, -1.0, -1.0, -1.0, -1.0
+tex t0
+tex t1
+tex t2
+sub r0 , t0, v0
+dp3 r1, r0, r0
+cmp r0, -r1, t1, t2
