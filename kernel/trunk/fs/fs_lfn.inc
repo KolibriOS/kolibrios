@@ -372,7 +372,7 @@ file_system_lfn:
         mov     edi, fs_additional_handlers
 @@:
         cmp     dword [edi], 0
-        jz      @f
+        jz      .notfound
         call    dword [edi]
         scasd
         scasd
