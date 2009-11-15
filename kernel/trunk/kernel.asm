@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -18,6 +18,7 @@
 ;; Johnny_B
 ;; SPraid (simba)
 ;; Hidnplayr
+;; Alexey Teplov (<Lrz>)
 ;;
 ;; Data in this file was originally part of MenuetOS project which is
 ;; distributed under the terms of GNU GPL. It is modified and redistributed as
@@ -1084,55 +1085,42 @@ reserve_irqs_ports:
         mov  byte [irq_owner+4*14],al	;1   ; ide I
         mov  byte [irq_owner+4*15],al	;1   ; ide II
         pop  eax
-        ; RESERVE PORTS
-;        mov   edi,1                    ; 0x00-0x2d
-	push  dword 4
-        pop   dword [RESERVED_PORTS]	;,edi
-;        shl   edi,4
-	push  dword 1
-        pop   dword [RESERVED_PORTS+16+0]	;,dword 1
-	push  dword 0
-        pop   dword [RESERVED_PORTS+16+4]	;,dword 0x0
-	push  dword 0x2d                        
-        pop   dword [RESERVED_PORTS+16+8]	;,dword 0x2d
 
-;        inc   dword [RESERVED_PORTS]          	; 0x30-0x4d
-;        mov   edi,[RESERVED_PORTS]
-;        shl   edi,4
-	push  dword 1
+; RESERVE PORTS
+	push  4
+        pop   dword [RESERVED_PORTS]	;,edi
+
+	push  1
+        pop   dword [RESERVED_PORTS+16+0]	;,dword 1
+        and   dword [RESERVED_PORTS+16+4],0	;,dword 0x0
+        mov   dword [RESERVED_PORTS+16+8],0x2d	;,dword 0x2d
+
+	push  1
         pop   dword [RESERVED_PORTS+32+0]	;,dword 1
-	push  dword 0x30
+        push  0x30
         pop   dword [RESERVED_PORTS+32+4]	;,dword 0x30
-	push  dword 0x4d
+	push  0x4d
         pop   dword [RESERVED_PORTS+32+8]	;,dword 0x4d
 
-;        inc   dword [RESERVED_PORTS]          ; 0x50-0xdf
-;        mov   edi,[RESERVED_PORTS]
-;        shl   edi,4
-	push  dword 1
+	push  1
         pop   dword [RESERVED_PORTS+48+0]	;,dword 1
-	push  dword 0x50
+	push  0x50
         pop   dword [RESERVED_PORTS+48+4]	;,dword 0x50
-	push  dword 0xdf
-        pop   dword [RESERVED_PORTS+48+8]	;,dword 0xdf
+        mov   dword [RESERVED_PORTS+48+8],0xdf	;,dword 0xdf
 
-;        inc   dword [RESERVED_PORTS]          ; 0xe5-0xff
-;        mov   edi,[RESERVED_PORTS]
-;        shl   edi,4
-	push  dword 1
+	push  1
         pop   dword [RESERVED_PORTS+64+0]	;,dword 1
-	push  dword 0xe5
-        pop   dword [RESERVED_PORTS+64+4]	;,dword 0xe5
-	push  0xff
-        pop   dword [RESERVED_PORTS+64+8]	;,dword 0xff
 
-;        popad
+        mov   dword [RESERVED_PORTS+64+4],0xe5	;,dword 0xe5
+        mov   dword [RESERVED_PORTS+64+8],0xff	;,dword 0xff
+
         ret
 
 setirqreadports:
 
         mov   [irq12read+0],dword 0x60 + 0x01000000  ; read port 0x60 , byte
-        mov   [irq12read+4],dword 0                  ; end of port list
+	and   dword [irq12read+4],0                   ; end of port list
+;        mov   [irq12read+4],dword 0                  ; end of port list
         ;mov   [irq04read+0],dword 0x3f8 + 0x01000000 ; read port 0x3f8 , byte
         ;mov   [irq04read+4],dword 0                  ; end of port list
         ;mov   [irq03read+0],dword 0x2f8 + 0x01000000 ; read port 0x2f8 , byte
@@ -3380,54 +3368,38 @@ endg
 ;3 - rdmsr. Counter in edx. (edx:eax) [esi:edi, edx] => [edx:esi, ecx]. Ret in ebx:eax. Block. ok.
 ;4 - wrmsr. Counter in edx. (edx:eax) [esi:edi, edx] => [edx:esi, ecx]. Ret in ebx:eax. Block. ok.
 ;---------------------------------------------------------------------------------------------
-sys_sheduler: ;noname & halyavin
-    cmp eax,0
-    je shed_counter
-    cmp eax,2
-    je perf_control
-    cmp eax,3
-    je rdmsr_instr
-    cmp eax,4
-    je wrmsr_instr
-    cmp eax,1
-    jne not_supported
-    call change_task ;delay,0
-ret
-shed_counter:
-    mov eax,[context_counter]
-    mov [esp+36],eax
-not_supported:
-ret
-perf_control:
-    inc eax ;now eax=3
-    cmp ebx,eax
-    je cache_disable
-    dec eax
-    cmp ebx,eax
-    je cache_enable
-    dec eax
-    cmp ebx,eax
-    je is_cache_enabled
-    dec eax
-    cmp ebx,eax
-    je modify_pce
-ret
+sys_sheduler:   
+; old sys_sheduler ;noname & halyavin
+;    cmp eax,0
+;    je shed_counter
+;    cmp eax,2
+;    je perf_control
+;    cmp eax,3
+;    je rdmsr_instr
+;    cmp eax,4
+;    je wrmsr_instr
+;    cmp eax,1
+;    jne not_supported
+;    call change_task ;delay,0
 
-rdmsr_instr:
-;now counter in ecx
-;(edx:eax) esi:edi => edx:esi
-mov eax,esi
-rdmsr
-mov [esp+36],eax
-mov [esp+24],edx ;ret in ebx?
-ret
-
-wrmsr_instr:
+;rewritten by <Lrz>  15.11.2009
+     test	eax,eax		
+     jz         .shed_counter    ;eax=0
+     dec	eax             
+     jz         change_task	 ;eax=1
+     dec	eax
+     jz         .perf_control    ;eax=2
+     dec	eax
+     jz		.rdmsr_instr     ;eax=3
+     dec	eax
+     jnz	@f
+;wrmsr_instr     ;eax=4
+;.wrmsr_instr:
 ;now counter in ecx
 ;(edx:eax) esi:edi => edx:esi
         ; Fast Call MSR can't be destroy
-        ; Íî MSR_AMD_EFER ìîæíî èçìåíÿòü, ò.ê. â ýòîì ðåãèñòðå ëèø
-        ; âêëþ÷àþòñÿ/âûêëþ÷àþòñÿ ðàñøèðåííûå âîçìîæíîñòè
+        ; ® MSR_AMD_EFER ¬®¦­® ¨§¬¥­ïâì, â.ª. ¢ íâ®¬ à¥£¨áâà¥ «¨è
+        ; ¢ª«îç îâáï/¢ëª«îç îâáï à áè¨à¥­­ë¥ ¢®§¬®¦­®áâ¨
         cmp     ecx, MSR_SYSENTER_CS
         je      @f
         cmp     ecx, MSR_SYSENTER_ESP
@@ -3442,6 +3414,35 @@ wrmsr_instr:
         ; mov   [esp + 36], eax
         ; mov   [esp + 24], edx ;ret in ebx?
 @@:
+ret
+
+.shed_counter:
+    mov eax,[context_counter]
+    mov [esp+36],eax
+ret
+.perf_control:
+;    inc eax ;now eax=3
+    add eax,3		;restore eax=3
+    cmp ebx,eax
+    je cache_disable
+    dec eax
+    cmp ebx,eax
+    je cache_enable
+    dec eax
+    cmp ebx,eax
+    je is_cache_enabled
+    dec eax
+    cmp ebx,eax
+    je modify_pce
+ret
+
+.rdmsr_instr:
+;now counter in ecx
+;(edx:eax) esi:edi => edx:esi
+mov eax,esi
+rdmsr
+mov [esp+36],eax
+mov [esp+24],edx ;ret in ebx?
 ret
 
 cache_disable:
