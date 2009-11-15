@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -18,6 +18,7 @@
 ;; Johnny_B
 ;; SPraid (simba)
 ;; Hidnplayr
+;; Alexey Teplov (<Lrz>)
 ;;
 ;; Data in this file was originally part of MenuetOS project which is
 ;; distributed under the terms of GNU GPL. It is modified and redistributed as
@@ -3380,26 +3381,40 @@ endg
 ;3 - rdmsr. Counter in edx. (edx:eax) [esi:edi, edx] => [edx:esi, ecx]. Ret in ebx:eax. Block. ok.
 ;4 - wrmsr. Counter in edx. (edx:eax) [esi:edi, edx] => [edx:esi, ecx]. Ret in ebx:eax. Block. ok.
 ;---------------------------------------------------------------------------------------------
-sys_sheduler: ;noname & halyavin
-    cmp eax,0
-    je shed_counter
-    cmp eax,2
-    je perf_control
-    cmp eax,3
-    je rdmsr_instr
-    cmp eax,4
-    je wrmsr_instr
-    cmp eax,1
-    jne not_supported
-    call change_task ;delay,0
+sys_sheduler:   
+;rewroterd by <Lrz>  15.11.2009
+     test	eax,eax		
+     jz         shed_counter    ;eax=0
+     dec	eax             
+     jz         not_supported   ;eax=1
+     dec	eax
+     jz         perf_control    ;eax=2
+     dec	eax
+     jz		rdmsr_instr     ;eax=3
+     dec	eax
+     jz		wrmsr_instr     ;eax=4
+; old sys_sheduler ;noname & halyavin
+;    cmp eax,0
+;    je shed_counter
+;    cmp eax,2
+;    je perf_control
+;    cmp eax,3
+;    je rdmsr_instr
+;    cmp eax,4
+;    je wrmsr_instr
+;    cmp eax,1
+;    jne not_supported
+;    call change_task ;delay,0
+not_supported:
 ret
 shed_counter:
     mov eax,[context_counter]
     mov [esp+36],eax
-not_supported:
+;not_supported:
 ret
 perf_control:
-    inc eax ;now eax=3
+;    inc eax ;now eax=3
+    add eax,3		;
     cmp ebx,eax
     je cache_disable
     dec eax
