@@ -30,38 +30,6 @@ struct	queue
 	.data:
 ends
 
-struct	eth_queue_entry
-	.owner		dd ?
-	.data_ptr	dd ?
-	.data_size	dd ?
-	.size:
-ends
-
-struct	tcp_in_queue_entry
-	.data_ptr	dd ?
-	.data_size	dd ?
-	.offset 	dd ?
-	.size:
-ends
-
-struct	tcp_out_queue_entry
-	.data_ptr	dd ?
-	.data_size	dd ?
-	.ttl		dd ?
-	.retries	dd ?
-	.owner		dd ?
-	.sendproc	dd ?
-	.seq_num	dd ?
-	.size:
-ends
-
-struct	socket_queue_entry
-	.data_ptr	dd ?
-	.data_size	dd ?
-	.offset 	dd ?
-	.size:
-ends
-
 ; The following macros share these inputs:
 
 ; ptr           = pointer to where the queue data is located

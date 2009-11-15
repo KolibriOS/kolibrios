@@ -48,8 +48,8 @@ struct	TCP_SOCKET
 					; todo: may be use SND_UNA instead
 					; todo: may be use events which allow additional information instead
 					; todo: may be count acknowledged bytes (at least it has obvious sense)
-;         .OrigRemoteIP          dd ? ; original remote IP address (used to reset to LISTEN state)
-;         .OrigRemotePort        dw ? ; original remote port (used to reset to LISTEN state)
+	 .OrigRemoteIP		dd ? ; original remote IP address (used to reset to LISTEN state)
+	 .OrigRemotePort	dw ? ; original remote port (used to reset to LISTEN state)
 	 .wndsizeTimer		dd ? ; window size timer
 
 	; Transmission control block
@@ -92,6 +92,13 @@ struct	IPC_SOCKET
 
 	.end:
 
+ends
+
+struct	socket_queue_entry
+	.data_ptr	dd ?
+	.data_size	dd ?
+	.offset 	dd ?
+	.size:
 ends
 
 MAX_backlog		equ 20	     ; backlog for stream sockets
@@ -363,7 +370,8 @@ socket_connect:
 	; now say hello to the remote tcp socket
 
 	mov	bl, TH_SYN
-	call	TCP_send_ack
+	xor	ecx, ecx
+	call	TCP_send
 
 	mov	dword [esp+32],0
 	ret
@@ -513,7 +521,8 @@ socket_close:
 	; Now construct the response, and queue for sending by IP
 
 	mov	bl, TH_FIN
-	call	TCP_send_ack
+	xor	ecx, ecx
+	call	TCP_send
 
 	; increament SND.NXT in socket
 	lea	esi, [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
@@ -563,7 +572,6 @@ align 4
 socket_recv:
 
 	DEBUGF	1,"Socket_receive: socknum: %u bufferaddress: %x, length: %u, flags: %x\n",ecx,edx,esi,edi
-
 	stdcall net_socket_num_to_addr, ecx		   ; get real socket address
 	or	eax, eax
 	jz	s_error
@@ -596,7 +604,10 @@ socket_recv:
 .nb:	shr	ecx, 1
 	jnc	.nw
 	movsw
-.nw:	rep	movsd
+.nw:	test	ecx, ecx
+	jz	.nd
+	rep	movsd
+.nd:
 
 	call	kernel_free
 
@@ -685,8 +696,9 @@ socket_send:
 
 	mov	ecx, esi
 	mov	esi, edx
+	xor	bl , bl
 
-	call	TCP_socket_send
+	call	TCP_send
 
 	mov	[esp+32], eax
 	ret

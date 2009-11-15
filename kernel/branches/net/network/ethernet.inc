@@ -44,6 +44,13 @@ struct	ETH_DEVICE
 	.mac		dp ?
 ends			      ; the rest of the device struct depends on the type of device
 
+struct	eth_queue_entry
+	.owner		dd ?
+	.data_ptr	dd ?
+	.data_size	dd ?
+	.size:
+ends
+
 
 align 4
 iglobal
