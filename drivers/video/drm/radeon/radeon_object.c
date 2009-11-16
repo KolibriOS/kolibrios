@@ -53,7 +53,7 @@ int radeon_object_init(struct radeon_device *rdev)
     ENTER();
 
     r = drm_mm_init(&mm_vram, 0x800000 >> PAGE_SHIFT,
-               ((rdev->mc.aper_size - 0x800000) >> PAGE_SHIFT));
+               ((rdev->mc.real_vram_size - 0x800000) >> PAGE_SHIFT));
     if (r) {
         DRM_ERROR("Failed initializing VRAM heap.\n");
         return r;

@@ -329,6 +329,8 @@ os_stack_seg      rd 1
 srv.fd            rd 1
 srv.bk            rd 1
 
+_display          display_t
+
 scr_width         rd 1
 scr_height        rd 1
 

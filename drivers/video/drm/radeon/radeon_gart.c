@@ -77,8 +77,6 @@ int radeon_gart_table_vram_alloc(struct radeon_device *rdev)
 {
     int r;
 
-    ENTER();
-
     if (rdev->gart.table.vram.robj == NULL) {
         r = radeon_object_create(rdev, NULL,
                      rdev->gart.table_size,
@@ -214,17 +212,11 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
     }
     mb();
     radeon_gart_tlb_flush(rdev);
-
-    LEAVE();
-
     return 0;
 }
 
 int radeon_gart_init(struct radeon_device *rdev)
 {
-
-    ENTER();
-
     if (rdev->gart.pages) {
         return 0;
     }

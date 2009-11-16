@@ -82,7 +82,7 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     if (ASIC_IS_AVIVO(rdev))
         WREG32(AVIVO_D1CUR_SURFACE_ADDRESS + radeon_crtc->crtc_offset, gpu_addr);
     else {
-        radeon_crtc->legacy_cursor_offset = gpu_addr - radeon_crtc->legacy_display_base_addr;
+        radeon_crtc->legacy_cursor_offset = gpu_addr - rdev->mc.vram_location;
         /* offset is from DISP(2)_BASE_ADDRESS */
         WREG32(RADEON_CUR_OFFSET + radeon_crtc->crtc_offset, radeon_crtc->legacy_cursor_offset);
     }
@@ -148,7 +148,7 @@ void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
             y *= 2;
 
         WREG32(RADEON_CUR_HORZ_VERT_OFF + radeon_crtc->crtc_offset,
-               (RADEON_CUR_LOCK | (hot_x << 16) | (hot_y << 16)));
+               (RADEON_CUR_LOCK | (hot_x << 16) | hot_y ));
         WREG32(RADEON_CUR_HORZ_VERT_POSN + radeon_crtc->crtc_offset,
                (RADEON_CUR_LOCK | (x << 16) | y));
 

@@ -213,8 +213,6 @@ bool radeon_card_posted(struct radeon_device *rdev)
 {
 	uint32_t reg;
 
-    ENTER();
-
 	/* first check CRTCs */
 	if (ASIC_IS_AVIVO(rdev)) {
 		reg = RREG32(AVIVO_D1CRTC_CONTROL) |
@@ -415,8 +413,6 @@ int radeon_clocks_init(struct radeon_device *rdev)
 {
 	int r;
 
-    ENTER();
-
     r = radeon_static_clocks_init(rdev->ddev);
 	if (r) {
 		return r;
@@ -560,8 +556,6 @@ int radeon_device_init(struct radeon_device *rdev,
 {
 	int r;
 	int dma_bits;
-
-    ENTER();
 
     DRM_INFO("radeon: Initializing kernel modesetting.\n");
     rdev->shutdown = false;
@@ -901,7 +895,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("Radeon RC06 cmdline %s\n", cmdline);
+    dbgprintf("Radeon RC07 cmdline %s\n", cmdline);
 
     enum_pci_devices();
 

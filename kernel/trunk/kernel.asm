@@ -349,14 +349,19 @@ high_code:
 ;        mov   [0xF604],byte 1  ;al
         mov     al, [BOOT_VAR+0x901F]   ; DMA access
         mov     [allow_dma_access], al
-        mov   al,[BOOT_VAR+0x9000]        ; bpp
+        movzx eax, byte [BOOT_VAR+0x9000]        ; bpp
         mov   [ScreenBPP],al
 
+        mov [_display.bpp], eax
+        mov [_display.vrefresh], 60
+
         movzx eax,word [BOOT_VAR+0x900A]  ; X max
+        mov [_display.width], eax
         dec   eax
         mov   [Screen_Max_X],eax
         mov   [screen_workarea.right],eax
         movzx eax,word [BOOT_VAR+0x900C]  ; Y max
+        mov [_display.height], eax
         dec   eax
         mov   [Screen_Max_Y],eax
         mov   [screen_workarea.bottom],eax
@@ -369,8 +374,9 @@ high_code:
         je    @f
         cmp   [SCR_MODE],word 0x12          ; VGA 640x480
         je    @f
-        mov   ax,[BOOT_VAR+0x9001]        ; for other modes
+        movzx eax, word[BOOT_VAR+0x9001]        ; for other modes
         mov   [BytesPerScanLine],ax
+        mov [_display.pitch], eax
 @@:
         mov     esi, BOOT_VAR+0x9080
         movzx   ecx, byte [esi-1]

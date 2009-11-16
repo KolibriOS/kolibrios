@@ -453,6 +453,8 @@ int radeon_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 
 //	radeon_object_get_tiling_flags(obj->driver_private,
 //				       &tiling_flags, NULL);
+    tiling_flags = 0;
+
 	if (tiling_flags & RADEON_TILING_MICRO)
 		DRM_ERROR("trying to scanout microtiled buffer\n");
 
@@ -530,10 +532,10 @@ int radeon_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 	WREG32(RADEON_CRTC_OFFSET + radeon_crtc->crtc_offset, crtc_offset);
 	WREG32(RADEON_CRTC_PITCH + radeon_crtc->crtc_offset, crtc_pitch);
 
-	if (old_fb && old_fb != crtc->fb) {
-		radeon_fb = to_radeon_framebuffer(old_fb);
+//   if (old_fb && old_fb != crtc->fb) {
+//       radeon_fb = to_radeon_framebuffer(old_fb);
 //       radeon_gem_object_unpin(radeon_fb->obj);
-	}
+//   }
 
 	/* Bytes per pixel may have changed */
 	radeon_bandwidth_update(rdev);

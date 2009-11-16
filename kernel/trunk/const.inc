@@ -439,7 +439,8 @@ APP_OBJ_OFFSET  equ 48
 APP_EV_OFFSET   equ 40
 
 struc CURSOR
-{;common object header
+{
+;common object header
    .magic       dd ?   ;'CURS'
    .destroy     dd ?   ;internal destructor
    .fd          dd ?   ;next object in list
@@ -450,6 +451,7 @@ struc CURSOR
    .base        dd ?   ;allocated memory
    .hot_x       dd ?   ;hotspot coords
    .hot_y       dd ?
+   .sizeof:
 }
 virtual at 0
   CURSOR CURSOR
@@ -511,6 +513,37 @@ virtual at 0
   SMAP SMAP
 end virtual
 
+struc display_t
+{
+    .x              dd ?
+    .y              dd ?
+    .width          dd ?
+    .height         dd ?
+    .bpp            dd ?
+    .vrefresh       dd ?
+    .pitch          dd ?
+    .lfb            dd ?
+
+    .modes          dd ?
+    .ddev           dd ?
+    .connector      dd ?
+    .crtc           dd ?
+
+    .cr_list.next   dd ?
+    .cr_list.prev   dd ?
+
+    .cursor         dd ?
+
+    .init_cursor    dd ?
+    .select_cursor  dd ?
+    .show_cursor    dd ?
+    .move_cursor    dd ?
+    .restore_cursor dd ?
+}
+
+virtual at 0
+  display_t display_t
+end virtual
 
 struc HEAP_DATA
 {
@@ -595,7 +628,8 @@ struc PG_DATA
 ;}
 
 struc SRV
-{ .srv_name          rb 16           ;ASCIIZ string
+{
+ .srv_name          rb 16           ;ASCIIZ string
   .magic             dd ?     ;+0x10 ;'SRV '
   .size              dd ?     ;+0x14 ;size of structure SRV
   .fd                dd ?     ;+0x18 ;next SRV descriptor
@@ -603,10 +637,10 @@ struc SRV
   .base              dd ?     ;+0x20 ;service base address
   .entry             dd ?     ;+0x24 ;service START function
   .srv_proc          dd ?     ;+0x28 ;main service handler
+  .sizeof:
 }
 
 SRV_FD_OFFSET  equ 0x18
-SRV_SIZE       equ 44
 
 DRV_ENTRY    equ  1
 DRV_EXIT     equ -1

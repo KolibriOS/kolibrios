@@ -67,7 +67,7 @@ static void radeon_show_cursor()
         WREG32(RADEON_MM_DATA, AVIVO_D1CURSOR_EN |
                  (AVIVO_D1CURSOR_MODE_24BPP << AVIVO_D1CURSOR_MODE_SHIFT));
     } else {
-            WREG32(RADEON_MM_INDEX, RADEON_CRTC_GEN_CNTL);
+        WREG32(RADEON_MM_INDEX, RADEON_CRTC_GEN_CNTL);
         WREG32_P(RADEON_MM_DATA, (RADEON_CRTC_CUR_EN |
                       (RADEON_CRTC_CUR_MODE_24BPP << RADEON_CRTC_CUR_MODE_SHIFT)),
              ~(RADEON_CRTC_CUR_EN | RADEON_CRTC_CUR_MODE_MASK));
@@ -139,11 +139,11 @@ void __stdcall move_cursor(cursor_t *cursor, int x, int y)
         WREG32(AVIVO_D1CUR_POSITION, (x << 16) | y);
         WREG32(AVIVO_D1CUR_HOT_SPOT, (hot_x << 16) | hot_y);
         WREG32(AVIVO_D1CUR_SIZE, ((w - 1) << 16) | 31);
-            } else {
+    } else {
         uint32_t  gpu_addr;
 
         WREG32(RADEON_CUR_HORZ_VERT_OFF,
-               (RADEON_CUR_LOCK | (hot_x << 16) | (hot_y << 16)));
+               (RADEON_CUR_LOCK | (hot_x << 16) | hot_y ));
         WREG32(RADEON_CUR_HORZ_VERT_POSN,
                (RADEON_CUR_LOCK | (x << 16) | y));
 
@@ -163,9 +163,9 @@ void __stdcall restore_cursor(int x, int y)
 
 bool init_display(struct radeon_device *rdev, mode_t *usermode)
 {
-    struct drm_device  *dev;
+    struct drm_device   *dev;
 
-    cursor_t  *cursor;
+    cursor_t            *cursor;
     bool                 retval = true;
     u32_t                ifl;
 
@@ -177,17 +177,17 @@ bool init_display(struct radeon_device *rdev, mode_t *usermode)
 
     ifl = safe_cli();
     {
-    list_for_each_entry(cursor, &rdisplay->cursors, list)
-    {
-        init_cursor(cursor);
-    };
+        list_for_each_entry(cursor, &rdisplay->cursors, list)
+        {
+            init_cursor(cursor);
+        };
 
-    rdisplay->restore_cursor(0,0);
-    rdisplay->init_cursor   = init_cursor;
-    rdisplay->select_cursor = select_cursor;
-    rdisplay->show_cursor   = NULL;
-    rdisplay->move_cursor   = move_cursor;
-    rdisplay->restore_cursor = restore_cursor;
+        rdisplay->restore_cursor(0,0);
+        rdisplay->init_cursor    = init_cursor;
+        rdisplay->select_cursor  = select_cursor;
+        rdisplay->show_cursor    = NULL;
+        rdisplay->move_cursor    = move_cursor;
+        rdisplay->restore_cursor = restore_cursor;
 
         select_cursor(rdisplay->cursor);
         radeon_show_cursor();

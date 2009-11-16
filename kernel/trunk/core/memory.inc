@@ -167,7 +167,7 @@ proc map_io_mem stdcall, base:dword, size:dword, flags:dword
 @@:
            mov [page_tabs+eax*4], edx
           ; push eax
-          ; invlpg [ebx]
+           invlpg [ebx]
           ; pop eax
            inc eax
            add ebx, edi
@@ -205,7 +205,7 @@ commit_pages:
 @@:
            mov [page_tabs+ebx*4], eax
           ; push eax
-          ; invlpg [edi]
+           invlpg [edi]
           ; pop eax
            add edi, edx
            add eax, edx
@@ -991,19 +991,19 @@ sysfn_meminfo:
 
 align 4
 f68call:
-           dd f68.11
-           dd f68.12
-           dd f68.13
-           dd f68.14
+           dd f68.11   ; init_heap
+           dd f68.12   ; user_alloc
+           dd f68.13   ; user_free
+           dd f68.14   ; get_event_ex
            dd f68.fail ;moved to f68.24
-           dd f68.16
-           dd f68.17
+           dd f68.16   ; get_service
+           dd f68.17   ; call_service
            dd f68.fail ;moved to f68.25
-           dd f68.19
-           dd f68.20
-           dd f68.21
-           dd f68.22
-           dd f68.23
+           dd f68.19   ; load_dll
+           dd f68.20   ; user_realloc
+           dd f68.21   ; load_driver
+           dd f68.22   ; shmem_open
+           dd f68.23   ; shmem_close
            dd f68.24
            dd f68.25
 
@@ -1038,13 +1038,6 @@ f68:
            call get_event_ex
            mov [esp+36], eax
            ret
-.24:
-           mov  eax, [current_slot]
-           xchg ebx, [eax+APPDATA.exc_handler]
-           xchg ecx, [eax+APPDATA.except_mask]
-           mov  [esp+36], ebx ; reg_eax+8
-           mov  [esp+24], ecx ; reg_ebx+8
-           ret
 .16:
            test ebx, ebx
            jz .fail
@@ -1057,15 +1050,6 @@ f68:
            call srv_handlerEx   ;ebx
            mov [esp+36], eax
            ret
-.25:
-           cmp ebx,32
-           jae .fail
-           mov  eax, [current_slot]
-           btr  [eax+APPDATA.except_mask],ebx
-           setc byte[esp+36]
-           jecxz @f
-           bts  [eax+APPDATA.except_mask],ebx
-     @@:   ret
 .19:
            cmp ebx, OS_BASE
            jae .fail
@@ -1112,6 +1096,23 @@ f68:
 
            stdcall shmem_close, ebx
            mov [esp+36], eax
+           ret
+.24:
+           mov  eax, [current_slot]
+           xchg ebx, [eax+APPDATA.exc_handler]
+           xchg ecx, [eax+APPDATA.except_mask]
+           mov  [esp+36], ebx ; reg_eax+8
+           mov  [esp+24], ecx ; reg_ebx+8
+           ret
+.25:
+           cmp ebx,32
+           jae .fail
+           mov  eax, [current_slot]
+           btr  [eax+APPDATA.except_mask],ebx
+           setc byte[esp+36]
+           jecxz @f
+           bts  [eax+APPDATA.except_mask],ebx
+@@:
            ret
 
 .fail:

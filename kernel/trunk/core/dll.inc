@@ -315,7 +315,7 @@ proc srv_handler stdcall, ioctl:dword
 	   cmp [edi+SRV.magic], ' SRV'
 	   jne .fail
 
-	   cmp [edi+SRV.size], SRV_SIZE
+       cmp [edi+SRV.size], SRV.sizeof
 	   jne .fail
 
 	   stdcall [edi+SRV.srv_proc], esi
@@ -347,7 +347,7 @@ srv_handlerEx:
 	   cmp [eax+SRV.magic], ' SRV'
 	   jne .fail
 
-	   cmp [eax+SRV.size], SRV_SIZE
+       cmp [eax+SRV.size], SRV.sizeof
 	   jne .fail
 
 	   stdcall [eax+SRV.srv_proc], ebx
@@ -402,8 +402,8 @@ proc reg_service stdcall, name:dword, handler:dword
 	   cmp [handler], eax
 	   je .fail
 
-	   mov eax, SRV_SIZE
-	   call malloc		 ;call alloc_service
+       mov eax, SRV.sizeof
+       call malloc
 	   test eax, eax
 	   jz .fail
 
@@ -411,13 +411,15 @@ proc reg_service stdcall, name:dword, handler:dword
 	   push edi
 	   mov edi, eax
 	   mov esi, [name]
-	   mov ecx, 16/4
-	   rep movsd
+       movsd
+       movsd
+       movsd
+       movsd
 	   pop edi
 	   pop esi
 
 	   mov [eax+SRV.magic], ' SRV'
-	   mov [eax+SRV.size], SRV_SIZE
+       mov [eax+SRV.size], SRV.sizeof
 
 	   mov ebx, srv.fd-SRV_FD_OFFSET
 	   mov edx, [ebx+SRV.fd]
@@ -611,7 +613,10 @@ proc load_file stdcall, file_name:dword
 	   jz .cleanup
 
 	   mov [file2], eax
+       pushfd
+       cli
 	   stdcall unpack, [file], eax
+       popfd
 	   stdcall kernel_free, [file]
 	   mov eax, [file2]
 	   mov ebx, [file_size]
@@ -1084,15 +1089,15 @@ proc load_library stdcall, file_name:dword
 endp
 
 align 4
-proc stop_all_services
-
+stop_all_services:
+       push ebp
 	   mov edx, [srv.fd]
 .next:
 	   cmp edx,  srv.fd-SRV_FD_OFFSET
 	   je .done
 	   cmp [edx+SRV.magic], ' SRV'
 	   jne .next
-	   cmp [edx+SRV.size], SRV_SIZE
+       cmp [edx+SRV.size], SRV.sizeof
 	   jne .next
 
 	   mov ebx, [edx+SRV.entry]
@@ -1105,8 +1110,8 @@ proc stop_all_services
 	   pop edx
 	   jmp .next
 .done:
+       pop ebp
 	   ret
-endp
 
 ; param
 ;  eax= size
