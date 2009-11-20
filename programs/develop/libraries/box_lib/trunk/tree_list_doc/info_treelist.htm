@@ -1,0 +1,175 @@
+<html>
+<head>
+<title>элемент Tree List</title>
+<meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251">
+<style>
+body
+{
+  font-size: 15px;
+  font-family: "Bookman Old Style";
+  color: black;
+  text-align: justify;
+}
+h1 { color: green; font-size: 23px; }
+h2 { color: green; font-size: 21px; }
+h3 { color: green; font-size: 19px; }
+h4 { color: #803f00; font-size: 17px; }
+i { color: #0099cc; }
+b { color: #0099cc; }
+p {
+  text-indent: 1em;
+  margin-top: 3px;
+  margin-bottom: 2px;
+  margin-left: 0px;
+  margin-right: 0px;
+}
+ol, ul, dl{
+  margin-top: 3px;
+  margin-bottom: 2px;
+}
+pre
+{
+  padding: 2px;
+  padding-left: 20px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  margin-left: 0px;
+  margin-right: 0px;
+  font-family: "Courier New";
+  font-size: 15px;
+  color: #004000;
+  background-color: #ffd0ff;
+}
+table { font-size: 15px; }
+</style>
+</head>
+<body>
+<h1>Оглавление</h1>
+<p>Введение</p>
+<p>Функции</p>
+<ul>
+<li>tl_data_init</li>
+<li>tl_data_clear</li>
+<li>tl_info_clear</li>
+<li>tl_key</li>
+<li>tl_mouse</li>
+<li>tl_draw</li>
+<li>tl_info_undo</li>
+<li>tl_info_redo</li>
+<li>tl_node_add</li>
+<li>tl_node_set_data</li>
+<li>tl_node_get_data</li>
+<li>tl_node_delete</li>
+<li>tl_cur_beg</li>
+<li>tl_cur_next</li>
+<li>tl_cur_perv</li>
+<li>tl_node_close_open</li>
+<li>tl_node_lev_inc</li>
+<li>tl_node_lev_dec</li>
+<li>tl_node_poi_get_info</li>
+<li>tl_node_poi_get_next_info</li>
+<li>tl_node_poi_get_data</li>
+<li>version_tree_list</li>
+</ul>
+<p>Стили элемента</p>
+
+<h1>Введение</h1>
+<p>Внешний вид элемента управления TreeList:</p>
+<p><img src="window_tree_list.png"></p>
+
+<h1>Функции</h1>
+
+<h2>tl_data_init</h2>
+<p>Конструктор элемента, нужно вызывать перед использованием элемента для выделения памяти и других настроек.</p>
+<h2>tl_data_clear</h2>
+<p>Деструктор элемента.</p>
+<h2>tl_info_clear</h2>
+<p>Очистка списка от всех узлов.</p>
+<h2>tl_key</h2>
+<p>Функция которую нужно вызывать при нажатии на клавиатуру.</p>
+<h2>tl_mouse</h2>
+<p>Функция для событий от мыши.</p>
+<h2>tl_draw</h2>
+<p>Полная перерисовка окна элемента.</p>
+<h2>tl_info_undo</h2>
+<p>Отменяет добавление узлов. Действует только на весь узел целиком, не учитывая изменения внутри узлов. Т. е. нельзя отменить действия выполненные например функциями: <b>tl_node_set_data</b>, <b>tl_node_lev_inc</b> и им подобным.</p>
+<h2>tl_info_redo</h2>
+<p></p>
+<h2>tl_node_add</h2>
+<p>Добавляет узел, в позицию указанную курсором.</p>
+<h2>tl_node_set_data</h2>
+<p>Устанавливает новые данные (пользовательские и подпись) в узел под курсором.</p>
+<h2>tl_node_get_data</h2>
+<p>Берет указатель на данные (пользовательские и подпись) из узла под курсором.</p>
+<h2>tl_node_delete</h2>
+<p>Удаляет узел, но не окончательно, при необходимости узел можно вернуть функцией <b>tl_info_undo</b>.</p>
+<h2>tl_cur_beg</h2>
+<p>Ставит курсор в начало списка, перематывает скроллинг если нужно.</p>
+<h2>tl_cur_next</h2>
+<p>Переносит курсор ниже.</p>
+<h2>tl_cur_perv</h2>
+<p>Переносит курсор выше.</p>
+<h2>tl_node_close_open</h2>
+<p>Открывает или закрывает родительский узел. Если у узла нет дочерних элементов,
+ то ничего не делает. Автоматически перерисовывает окно если состояние узла изменилось.</p>
+<h2>tl_node_lev_inc</h2>
+<p>Добавить уровень узла под курсором. Делает узел дочерним.</p>
+<h2>tl_node_lev_dec</h2>
+<p>Уменьшает уровень узла под курсором. Делает узел родительским.</p>
+<h2>tl_node_poi_get_info</h2>
+<p>Берет внутренний указатель на структуру описывающую узел.</p>
+<h2>tl_node_poi_get_next_info</h2>
+<p></p>
+<h2>tl_node_poi_get_data</h2>
+<p>Берет указатель на данные (пользовательские и подпись) из узла указанного в указателе.</p>
+<h2>version_tree_list</h2>
+<p>Версия элемента</p>
+
+<h1>Структура tree_list</h1>
+<pre>struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
+    col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
+    el_focus, p_scrol,p_sb_draw,fun_enter {
+  .data_info  dd 0
+  .info_size  dw info_size
+  .info_max_count dd info_max_count
+  .style      dd style
+  .data_nodes dd 0
+  .data_img   dd 0
+  .img_cx     dw img_cx
+  .img_cy     dw img_cy
+  .data_img_sys dd 0
+  .ch_tim     dd 0
+  .ls_tim     dd 0
+  .tim_undo   dd 0
+  .cur_pos    dd 0
+  .col_bkg    dd col_bkg
+  .col_zag    dd col_zag
+  .col_txt    dd col_txt
+  .box_lert   dd box_l
+  .box_top    dd box_t
+  .box_width  dd box_w
+  .box_height dd box_h
+  .capt_cy    dw capt_cy
+  .info_capt_offs dd info_capt_offs
+  .el_focus   dd el_focus
+  .p_scrol    dd p_scrol
+  .p_sb_draw  dd p_sb_draw
+  .on_activate dd 0
+  .on_press    dd fun_enter
+}</pre>
+<p><b>data_img</b> - указатель на изображения с иконками узлов.</p>
+<p><b>data_img_sys</b> - указатель на системные изображения (курсор, плюсики, линии, ... все кроме иконок узлов).</p>
+<p><b>p_scrol</b> - указатель на структуру скроллинга, связанного с данным элементом.</p>
+<p><b>p_sb_draw</b> - указатель на функцию перерисовки вертикального скроллинга (<i>scrollbar_ver_draw</i>).</p>
+<p><b>fun_enter</b> - указатель на функцию, которая будет вызвана при нажитии <b>[Enter]</b>. Если указатель равен 0 то ничего не будет вызыватся.</p>
+
+<h1>Стили элемента</h1>
+<h2>tl_key_no_edit</h2>
+<p>Элемент нельзя редактировать на клавиатуре (изменять уровни, удалять). Ставьте этот стиль если нужно создать элемент только для просмотра данных.</p>
+<h2>tl_draw_par_line</h2>
+<p>Рисовать линии к родительскому узлу.</p>
+<h2>tl_list_box_mode</h2>
+<p>Стиль не отображает уровни (как в ListBox все узлы одного уровня).</p>
+
+</body>
+</html>
