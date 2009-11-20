@@ -1444,8 +1444,8 @@ endg
 	dec	ebx				 ; KEYBOARD
 	jnz  nsyse2
 	mov  edi,[TASK_BASE]
-	add  edi,[edi+TASKDATA.mem_start]
-	mov  eax,edi
+	mov  eax,[edi+TASKDATA.mem_start]
+	add  eax,edx
 
 	dec	ecx
 	jnz  kbnobase
@@ -1638,8 +1638,8 @@ ngsyse1:
      	jnz  ngsyse2
 
      	mov  edi,[TASK_BASE]
-     	add  edi,[edi+TASKDATA.mem_start]
-     	mov  ebx,edi
+     	mov  ebx,[edi+TASKDATA.mem_start]
+     	add  ebx,edx
 
 ;     cmp  ebx,1
 	dec	ecx
@@ -1661,8 +1661,6 @@ kbnoshiftret:
 ;     cmp  ebx,3
 	dec	ecx
      	jne  kbnoaltret
-
-
 
      	mov  eax,keymap_alt
      	mov  ecx,128
