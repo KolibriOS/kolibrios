@@ -125,7 +125,7 @@ iglobal
       dd 0
       dd 0
       dd 0
-      dd sys_settime
+      dd 0
       dd 0
       dd syscall_cdaudio         ; 24-PlayCdTrack,StopCd and GetCdPlaylist
       dd 0                       ; 25
@@ -204,7 +204,7 @@ iglobal
       dd paleholder              ; 19-reserved
       dd sys_midi                ; 20-ResetMidi and OutputMidi
       dd sys_setup               ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
-      dd cross_order 	         ; 22-setting date,time,clock and alarm-clock
+      dd sys_settime 	         ; 22-setting date,time,clock and alarm-clock
       dd sys_wait_event_timeout  ; 23-TimeOutWaitForEvent
       dd cross_order             ; 24-PlayCdTrack,StopCd and GetCdPlaylist
       dd undefined_syscall       ; 25-reserved
