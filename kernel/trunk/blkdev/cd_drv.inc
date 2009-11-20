@@ -12,7 +12,7 @@ $Revision$
 ;  Непосредственная работа с устройством СD (ATAPI)
 ;**********************************************************
 ; Автор части исходного текста Кулаков Владимир Геннадьевич
-; Адаптация, доработка и разработка Mario79
+; Адаптация, доработка и разработка Mario79,<Lrz>
 
 ; Максимальное количество повторений операции чтения
 MaxRetr equ 10
@@ -20,46 +20,7 @@ MaxRetr equ 10
 ; (в тиках)
 BSYWaitTime equ 1000  ;2
 NoTickWaitTime equ 0xfffff
-
-;*************************************************
-;*      ПОЛНОЕ ЧТЕНИЕ СЕКТОРА КОМПАКТ-ДИСКА      *
-;* Считываются данные пользователя, информация   *
-;* субканала и контрольная информация            *
-;* Входные параметры передаются через глобальные *
-;* перменные:                                    *
-;* ChannelNumber - номер канала;                 *
-;* DiskNumber - номер диска на канале;           *
-;* CDSectorAddress - адрес считываемого сектора. *
-;* Данные считывается в массив CDDataBuf.        *
-;*************************************************
-ReadCD:
-        pusha
-; Задать размер сектора
-        mov       [CDBlockSize],2048 ;2352
-; Очистить буфер пакетной команды
-        call  clear_packet_buffer
-; Сформировать пакетную команду для считывания
-; сектора данных
-        ; Задать код команды Read CD
-        mov       [PacketCommand],byte 0x28  ;0xBE
-        ; Задать адрес сектора
-        mov   AX,word [CDSectorAddress+2]
-        xchg  AL,AH
-        mov   word [PacketCommand+2],AX
-        mov   AX,word [CDSectorAddress]
-        xchg  AL,AH
-        mov   word [PacketCommand+4],AX
-;        mov   eax,[CDSectorAddress]
-;        mov   [PacketCommand+2],eax
-        ; Задать количество считываемых секторов
-        mov       [PacketCommand+8],byte 1
-        ; Задать считывание данных в полном объеме
-;        mov     [PacketCommand+9],byte 0xF8
-; Подать команду
-        call  SendPacketDatCommand
-        popa
-        ret
-
+CDBlockSize equ 2048
 ;********************************************
 ;*        ЧТЕНИЕ СЕКТОРА С ПОВТОРАМИ        *
 ;* Многократное повторение чтения при сбоях *
@@ -73,8 +34,9 @@ ReadCDWRetr:
     mov   eax,[CDSectorAddress]
     mov   ebx,[CDDataBuf_pointer]
     call  cd_calculate_cache
+    xor   edi,edi
     add   esi,8
-    mov   edi,1
+    inc   edi
 .hdreadcache:
 ;    cmp   dword [esi+4],0       ; empty
 ;    je    .nohdcache
@@ -128,9 +90,49 @@ ReadCDWRetr_1:
         mov       ECX,MaxRetr
 @@NextRetr:
 ; Подать команду
-        call  ReadCD
-        cmp       [DevErrorCode],0
-        je        @@End_4
+;*************************************************
+;*      ПОЛНОЕ ЧТЕНИЕ СЕКТОРА КОМПАКТ-ДИСКА      *
+;* Считываются данные пользователя, информация   *
+;* субканала и контрольная информация            *
+;* Входные параметры передаются через глобальные *
+;* перменные:                                    *
+;* ChannelNumber - номер канала;                 *
+;* DiskNumber - номер диска на канале;           *
+;* CDSectorAddress - адрес считываемого сектора. *
+;* Данные считывается в массив CDDataBuf.        *
+;*************************************************
+;ReadCD:
+	push	ecx
+;        pusha
+; Задать размер сектора
+;        mov       [CDBlockSize],2048 ;2352
+; Очистить буфер пакетной команды
+        call  clear_packet_buffer
+; Сформировать пакетную команду для считывания
+; сектора данных
+; Задать код команды Read CD
+        mov   [PacketCommand],byte 0x28  ;0xBE
+; Задать адрес сектора
+        mov   AX,word [CDSectorAddress+2]
+        xchg  AL,AH
+        mov   word [PacketCommand+2],AX
+        mov   AX,word [CDSectorAddress]
+        xchg  AL,AH
+        mov   word [PacketCommand+4],AX
+;        mov   eax,[CDSectorAddress]
+;        mov   [PacketCommand+2],eax
+; Задать количество считываемых секторов
+        mov   [PacketCommand+8],byte 1
+; Задать считывание данных в полном объеме
+;        mov     [PacketCommand+9],byte 0xF8
+; Подать команду
+        call  SendPacketDatCommand
+        pop   ecx
+;        ret
+
+;        cmp       [DevErrorCode],0
+	test  eax,eax
+        jz    @@End_4
 
         or    ecx,ecx           ;{SPraid.simba} (for cd load)
         jz    @@End_4
@@ -141,8 +143,8 @@ ReadCDWRetr_1:
         mov   eax,NoTickWaitTime
 .wait:
         dec   eax
-        cmp   eax,0
-        je    @@NextRetr
+;        test  eax,eax
+        jz    @@NextRetr
         jmp       .wait
 @@:
 ; Задержка на 2,5 секунды
@@ -154,23 +156,25 @@ ReadCDWRetr_1:
 ;       ja      @@Wait
         loop  @@NextRetr
 @@End_4:
+	mov	dword [DevErrorCode],eax
         popad
         ret
 
 
-;   Универсальные процедуры, обеспечивающие выполнение
+; Универсальные процедуры, обеспечивающие выполнение
 ;             пакетных команд в режиме PIO
 
 ; Максимально допустимое время ожидания реакции
 ; устройства на пакетную команду (в тиках)
-MaxCDWaitTime equ 1000 ;200 ;10 секунд
 
+MaxCDWaitTime equ 1000 ;200 ;10 секунд
+uglobal
 ; Область памяти для формирования пакетной команды
 PacketCommand:   rb 12  ;DB 12 DUP (?)
 ; Область памяти для приема данных от дисковода
 ;CDDataBuf       DB 4096 DUP (0)
 ; Размер принимаемого блока данных в байтах
-CDBlockSize     DW ?
+;CDBlockSize     DW ?
 ; Адрес считываемого сектора данных
 CDSectorAddress: DD ?
 ; Время начала очередной операции с диском
@@ -179,7 +183,7 @@ TickCounter_1 DD 0
 WURStartTime DD 0
 ; указатель буфера для считывания
 CDDataBuf_pointer dd 0
-
+endg
 ;****************************************************
 ;*    ПОСЛАТЬ УСТРОЙСТВУ ATAPI ПАКЕТНУЮ КОМАНДУ,    *
 ;* ПРЕДУСМАТРИВАЮЩУЮ ПЕРЕДАЧУ ОДНОГО СЕКТОРА ДАННЫХ *
@@ -190,24 +194,26 @@ CDDataBuf_pointer dd 0
 ;* DiskNumber - номер диска на канале;              *
 ;* PacketCommand - 12-байтный командный пакет;      *
 ;* CDBlockSize - размер принимаемого блока данных.  *
+; return eax DevErrorCode
 ;****************************************************
 SendPacketDatCommand:
-        pushad
-        mov   [DevErrorCode],0
+	xor	eax,eax
+;        mov	byte [DevErrorCode],al
 ; Задать режим CHS
-        mov     [ATAAddressMode],0
+        mov     byte [ATAAddressMode],al
 ; Послать ATA-команду передачи пакетной команды
-        mov     [ATAFeatures],0
-        mov     [ATASectorCount],0
-        mov     [ATASectorNumber],0
+        mov     byte [ATAFeatures],al
+        mov     byte [ATASectorCount],al
+        mov     byte [ATASectorNumber],al
         ; Загрузить размер передаваемого блока
-        mov     AX,[CDBlockSize]
-        mov     [ATACylinder],AX
-        mov     [ATAHead],0
+        mov     [ATAHead],al
+;        mov     AX,[CDBlockSize]
+        mov     [ATACylinder],CDBlockSize
         mov     [ATACommand],0A0h
         call    SendCommandToHDD_1
-        cmp     [DevErrorCode],0 ;проверить код ошибки
-        jne     @@End_8    ;закончить, сохранив код ошибки
+	test	eax,eax
+;        cmp     [DevErrorCode],0 ;проверить код ошибки
+        jnz     @@End_8    ;закончить, сохранив код ошибки
 
 ; Ожидание готовности дисковода к приему
 ; пакетной команды
@@ -218,8 +224,8 @@ SendPacketDatCommand:
         cmp     [timer_ticks_enable],0
         jne     @f
         dec     ecx
-        cmp     ecx,0
-        je      @@Err1_1
+;        test    ecx,ecx
+        jz      @@Err1_1
         jmp     .test
 @@:
         call    change_task
@@ -261,8 +267,8 @@ SendPacketDatCommand:
         cmp     [timer_ticks_enable],0
         jne     @f
         dec     ecx
-        cmp     ecx,0
-        je      @@Err1_1
+;        test    ecx,ecx
+        jz      @@Err1_1
         jmp     .test_1
 @@:
         call    change_task
@@ -286,7 +292,7 @@ SendPacketDatCommand:
         mov     DX,[ATABasePortAddr] ;порт 1x0h
         ; Загрузить в счетчик размер блока в байтах
         xor     ecx,ecx
-        mov     CX,[CDBlockSize]
+        mov     CX,CDBlockSize
         ; Вычислить размер блока в 16-разрядных словах
         shr     CX,1 ;разделить размер блока на 2
         ; Принять блок данных
@@ -294,21 +300,29 @@ SendPacketDatCommand:
         cld
         rep     insw
         sti
-        ; Успешное завершение приема данных
-        jmp @@End_8
+; Успешное завершение приема данных
+@@End_8:
+	xor	eax,eax
+        ret
 
 ; Записать код ошибки
 @@Err1_1:
-        mov     [DevErrorCode],1
-        jmp @@End_8
+	xor	eax,eax
+	inc	eax
+	ret
+;        mov     [DevErrorCode],1
+;	ret
 @@Err6_temp:
-        mov     [DevErrorCode],7
-        jmp @@End_8
+	mov	eax,7
+	ret
+;        mov     [DevErrorCode],7
+;	ret
 @@Err6:
-        mov     [DevErrorCode],6
-@@End_8:
-        popad
-        ret
+	mov	eax,6
+	ret
+;        mov     [DevErrorCode],6
+;@@End_8:
+;        ret
 
 
 
@@ -323,19 +337,21 @@ SendPacketDatCommand:
 ;***********************************************
 SendPacketNoDatCommand:
         pushad
-    mov   [DevErrorCode],0
+	xor	eax,eax
+;        mov     byte [DevErrorCode],al
 ; Задать режим CHS
-        mov     [ATAAddressMode],0
+        mov     byte [ATAAddressMode],al
 ; Послать ATA-команду передачи пакетной команды
-        mov     [ATAFeatures],0
-        mov     [ATASectorCount],0
-        mov     [ATASectorNumber],0
-        mov     [ATACylinder],0
-        mov     [ATAHead],0
+        mov     byte [ATAFeatures],al
+        mov     byte [ATASectorCount],al
+        mov     byte [ATASectorNumber],al
+        mov     word [ATACylinder],ax
+        mov     byte [ATAHead],al
         mov     [ATACommand],0A0h
         call    SendCommandToHDD_1
-        cmp     [DevErrorCode],0 ;проверить код ошибки
-        jne     @@End_9  ;закончить, сохранив код ошибки
+;        cmp     [DevErrorCode],0 ;проверить код ошибки
+	test	eax,eax
+        jnz     @@End_9  ;закончить, сохранив код ошибки
 ; Ожидание готовности дисковода к приему
 ; пакетной команды
         mov     DX,[ATABasePortAddr]
@@ -371,8 +387,8 @@ SendPacketNoDatCommand:
         mov     AX,word [PacketCommand+10]
         out     DX,AX
 ;        sti
-    cmp [ignore_CD_eject_wait],1
-    je  @@End_9
+	cmp [ignore_CD_eject_wait],1
+	je  @@clear_DEC
 ; Ожидание подтверждения приема команды
         mov     DX,[ATABasePortAddr]
         add     DX,7   ;порт 1х7h
@@ -391,15 +407,19 @@ SendPacketNoDatCommand:
         jnz     @@Err6_1
         test    AL,40h   ;состояние сигнала DRDY
         jz      @@WaitDevice1_1
-        jmp @@End_9
-
+@@clear_DEC:
+	and     [DevErrorCode],0
+        popad
+        ret
 ; Записать код ошибки
 @@Err1_3:
-        mov     [DevErrorCode],1
+        xor	eax,eax
+	inc	eax
         jmp @@End_9
 @@Err6_1:
-        mov     [DevErrorCode],6
+        mov     eax,6
 @@End_9:
+	mov     [DevErrorCode],eax
         popad
         ret
 
@@ -420,11 +440,11 @@ SendPacketNoDatCommand:
 ;* в ATABasePortAddr - базовый адрес HDD;           *
 ;* в DevErrorCode - ноль.                           *
 ;* При возникновении ошибки в DevErrorCode будет    *
-;* возвращен код ошибки.                            *
+;* возвращен код ошибки в eax                       *
 ;****************************************************
 SendCommandToHDD_1:
-        pushad
-    mov   [DevErrorCode],0
+;        pushad
+;        mov   	[DevErrorCode],0	not need 
 ; Проверить значение кода режима
         cmp     [ATAAddressMode],1
         ja      @@Err2_4
@@ -459,8 +479,8 @@ SendCommandToHDD_1:
         cmp    [timer_ticks_enable],0
         jne    @f
         dec    ecx
-        cmp    ecx,0
-        je     @@Err1_4
+;        test   ecx,ecx
+        jz     @@Err1_4
         jmp    .test
 @@:
         call    change_task
@@ -514,28 +534,35 @@ SendCommandToHDD_1:
         out     DX,AL
         sti
 ; Сбросить признак ошибки
-        mov     [DevErrorCode],0
-        jmp @@End_10
+;        mov     [DevErrorCode],0
+@@End_10:
+	xor	eax,eax
+	ret
 ; Записать код ошибки
 @@Err1_4:
-        mov     [DevErrorCode],1
-        jmp @@End_10
+	xor	eax,eax
+	inc	eax
+;        mov     [DevErrorCode],1
+	ret
 @@Err2_4:
-        mov     [DevErrorCode],2
-        jmp @@End_10
+	mov	eax,2
+;        mov     [DevErrorCode],2
+	ret
 @@Err3_4:
-        mov     [DevErrorCode],3
-        jmp @@End_10
+	mov	eax,3
+;        mov     [DevErrorCode],3
+	ret
 @@Err4_4:
-        mov     [DevErrorCode],4
-        jmp @@End_10
+	mov	eax,4
+;        mov     [DevErrorCode],4
+	ret
 @@Err5_4:
-        mov     [DevErrorCode],5
+	mov	eax,5
+;        mov     [DevErrorCode],5
 ; Завершение работы программы
-@@End_10:
+	ret
 ;        sti
-        popad
-        ret
+;        popad
 
 ;*************************************************
 ;*    ОЖИДАНИЕ ГОТОВНОСТИ УСТРОЙСТВА К РАБОТЕ    *
@@ -563,8 +590,8 @@ WaitUnitReady:
         cmp     [DevErrorCode],0
         je      @@End_11
         dec     ecx
-        cmp     ecx,0
-        je      .Error
+;        cmp     ecx,0
+        jz      .Error
         jmp     @@SendCommand
 @@:
         call    change_task
@@ -815,14 +842,14 @@ check_ATAPI_device_event:
         call EjectMedium
         mov  [ignore_CD_eject_wait],0
         ret
-
+iglobal
 timer_ATAPI_check dd 0
 ATAPI_IDE0_lock db 0
 ATAPI_IDE1_lock db 0
 ATAPI_IDE2_lock db 0
 ATAPI_IDE3_lock db 0
 ignore_CD_eject_wait db 0
-
+endg
 ;*************************************************
 ;* Получить сообщение о событии или состоянии    *
 ;*                  устройства                   *
@@ -896,7 +923,7 @@ Read_TOC:
 
 clear_packet_buffer:
 ; Очистить буфер пакетной команды
-        mov     [PacketCommand],dword 0
-        mov     [PacketCommand+4],dword 0
-        mov     [PacketCommand+8],dword 0
+        and     [PacketCommand],dword 0
+        and     [PacketCommand+4],dword 0
+        and     [PacketCommand+8],dword 0
         ret

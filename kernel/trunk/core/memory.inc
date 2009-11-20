@@ -986,9 +986,9 @@ sysfn_meminfo:
            mov [ecx+24], eax
            ret
 .fail:
-           mov dword [esp+32], -1
+           or dword [esp+32], -1
            ret
-
+iglobal
 align 4
 f68call:
            dd f68.11   ; init_heap
@@ -1006,7 +1006,7 @@ f68call:
            dd f68.23   ; shmem_close
            dd f68.24
            dd f68.25
-
+endg
 align 4
 f68:
            cmp  eax,4

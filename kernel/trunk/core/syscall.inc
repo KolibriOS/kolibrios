@@ -123,13 +123,13 @@ iglobal
       dd 0
       dd 0
       dd 0
-      dd sys_midi                ; 20-ResetMidi and OutputMidi
-      dd sys_setup               ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
-      dd sys_settime             ; 22-setting date,time,clock and alarm-clock
+      dd 0
+      dd 0
+      dd sys_settime
       dd 0
       dd syscall_cdaudio         ; 24-PlayCdTrack,StopCd and GetCdPlaylist
-      dd 0                       ;
-      dd sys_getsetup            ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
+      dd 0                       ; 25
+      dd 0			 ; 26
       dd 0
       dd 0                       ;
       dd 0
@@ -202,13 +202,13 @@ iglobal
       dd sys_getbutton           ; 17-GetButton
       dd sys_system              ; 18-System Services
       dd paleholder              ; 19-reserved
-      dd cross_order             ; 20-ResetMidi and OutputMidi
-      dd cross_order             ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
-      dd cross_order             ; 22-setting date,time,clock and alarm-clock
+      dd sys_midi                ; 20-ResetMidi and OutputMidi
+      dd sys_setup               ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
+      dd cross_order 	         ; 22-setting date,time,clock and alarm-clock
       dd sys_wait_event_timeout  ; 23-TimeOutWaitForEvent
       dd cross_order             ; 24-PlayCdTrack,StopCd and GetCdPlaylist
       dd undefined_syscall       ; 25-reserved
-      dd cross_order             ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
+      dd sys_getsetup            ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
       dd undefined_syscall       ; 27-reserved
       dd undefined_syscall       ; 28-reserved
       dd sys_date                ; 29-GetDate

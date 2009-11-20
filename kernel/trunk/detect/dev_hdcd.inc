@@ -72,8 +72,9 @@ FindHDD_3:
 
 
 ; Адрес считываемого сектора в режиме LBA
+uglobal
 SectorAddress   DD ?
-
+endg
 ;*************************************************
 ;*     ЧТЕНИЕ ИДЕНТИФИКАТОРА ЖЕСТКОГО ДИСКА      *
 ;* Входные параметры передаются через глобальные *
@@ -99,8 +100,8 @@ ReadHDD_ID:
 @@WaitCompleet:
         ; Проверить время выполнения команды
         dec  ecx
-        cmp  ecx,0
-        je     @@Error1   ;ошибка тайм-аута
+;        cmp  ecx,0
+        jz     @@Error1   ;ошибка тайм-аута
         ; Проверить готовность
         in      AL,DX
         test    AL,80h   ;состояние сигнала BSY
@@ -116,19 +117,21 @@ ReadHDD_ID:
         mov     DX,[ATABasePortAddr] ;регистр данных
         mov     CX,256   ;число считываемых слов
         rep     insw     ;принять блок данных
-        jmp @@End
+	ret
 ; Записать код ошибки
 @@Error1:
         mov     [DevErrorCode],1
-        jmp @@End
+	ret
 @@Error6:
         mov     [DevErrorCode],6
 @@End:  ret
 
 
-
+iglobal
 ; Стандартные базовые адреса каналов 1 и 2
 StandardATABases DW 1F0h, 170h
+endg
+uglobal
 ; Номер канала
 ChannelNumber   DW ?
 ; Номер диска
@@ -148,8 +151,8 @@ ATACommand      DB ? ;код команды, подлежащей выполнению
 ; 3 - неверный номер канала, 4 - неверный номер диска,
 ; 5 - неверный номер головки, 6 - ошибка при выполнении
 ; команды)
-DevErrorCode DB ?
-
+DevErrorCode dd ?
+endg
 ;****************************************************
 ;*          ПОСЛАТЬ КОМАНДУ ЗАДАННОМУ ДИСКУ         *
 ;* Входные параметры передаются через глобальные    *
@@ -203,8 +206,8 @@ SendCommandToHDD:
 @@WaitHDReady:
         ; Проверить время ожидани
         dec  ecx
-        cmp  ecx,0
-        je     @@Err1
+;        cmp  ecx,0
+        jz     @@Err1
 ;        mov     eax,[timer_ticks]
 ;        sub     eax,[TickCounter_1]
 ;        cmp     eax,300    ;ожидать 300 тиков
@@ -253,19 +256,18 @@ SendCommandToHDD:
         sti
 ; Сбросить признак ошибки
         mov     [DevErrorCode],0
-        jmp @@End_2
+        ret
 ; Записать код ошибки
 @@Err1: mov     [DevErrorCode],1
-        jmp @@End_2
+        ret
 @@Err2: mov     [DevErrorCode],2
-        jmp @@End_2
+        ret
 @@Err3: mov     [DevErrorCode],3
-        jmp @@End_2
+        ret
 @@Err4: mov     [DevErrorCode],4
-        jmp @@End_2
+        ret
 @@Err5: mov     [DevErrorCode],5
 ; Завершение работы программы
-@@End_2:
         ret
 
 ;*************************************************
@@ -293,12 +295,12 @@ ReadCD_ID:
 ; Ожидать готовность данных HDD
         mov     DX,[ATABasePortAddr]
         add     DX,7   ;порт 1х7h
-        mov  ecx,0xffff
+        mov  	ecx,0xffff
 @@WaitCompleet_1:
         ; Проверить врем
-        dec  ecx
-        cmp  ecx,0
-        je     @@Error1_1  ;ошибка тайм-аута
+        dec  	ecx
+;        cmp  	ecx,0
+        jz     @@Error1_1  ;ошибка тайм-аута
         ; Проверить готовность
         in      AL,DX
         test    AL,80h   ;состояние сигнала BSY
@@ -314,11 +316,11 @@ ReadCD_ID:
         mov     DX,[ATABasePortAddr] ;порт 1x0h
         mov     CX,256 ;число считываемых слов
         rep     insw
-        jmp @@End_1
+        ret
 ; Записать код ошибки
 @@Error1_1:
         mov     [DevErrorCode],1
-        jmp @@End_1
+        ret
 @@Error6_1:
         mov     [DevErrorCode],6
 @@End_1:
@@ -360,7 +362,7 @@ DeviceReset:
 @@WaitHDReady_1:
         ; Проверить время ожидани
         dec     ecx
-        cmp     ecx,0
+;        cmp     ecx,0
         je      @@Err1_2 ;ошибка тайм-аута
         ; Прочитать регистр состояни
         in      AL,DX
@@ -369,15 +371,14 @@ DeviceReset:
         jnz     @@WaitHDReady_1
 ; Сбросить признак ошибки
         mov     [DevErrorCode],0
-        jmp @@End_3
+        ret
 ; Обработка ошибок
 @@Err1_2: mov     [DevErrorCode],1
-        jmp @@End_3
+        ret
 @@Err3_2: mov     [DevErrorCode],3
-        jmp @@End_3
+        ret
 @@Err4_2: mov     [DevErrorCode],4
 ; Записать код ошибки
-@@End_3:
         ret
 
 EndFindHDD:

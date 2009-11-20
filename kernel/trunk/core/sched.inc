@@ -226,6 +226,7 @@ struc TIMER
   .arg       dd ?
 }
 
+
 MAX_PROIRITY         0   ; highest, used for kernel tasks
 MAX_USER_PRIORITY    0   ; highest priority for user processes
 USER_PRIORITY        7   ; default (should correspond to nice 0)
@@ -233,7 +234,9 @@ MIN_USER_PRIORITY   14   ; minimum priority for user processes
 IDLE_PRIORITY       15   ; lowest, only IDLE process goes here
 NR_SCHED_QUEUES     16   ; MUST equal IDLE_PRIORYTY + 1
 
+uglobal
 rdy_head   rd 16
+endg
 
 align 4
 pick_task:

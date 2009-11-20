@@ -12,11 +12,11 @@
 
 $Revision$
 
-
+iglobal
 conf_path_sect: db 'path',0
 
 conf_fname db '/sys/sys.conf',0
-
+endg
 ; set soke kernel configuration
 proc set_kernel_conf
         locals
@@ -64,7 +64,7 @@ proc set_kernel_conf
         popad
         ret
 endp
-
+iglobal
 ugui db 'gui',0
 ugui_mouse_speed db 'mouse_speed',0
 ugui_mouse_speed_def db '2',0
@@ -74,7 +74,7 @@ ugui_mouse_delay_def db '0x00A',0
 udev db 'dev',0
 udev_midibase db 'midibase',0
 udev_midibase_def db '0x320',0
-
+endg
 ;set up netvork configuration
 proc set_network_conf
 locals
@@ -123,14 +123,14 @@ endl
 
 
 endp
-
+iglobal
 unet db 'net',0
 unet_active db 'active',0
 unet_addr db 'addr',0
 unet_mask db 'mask',0
 unet_gate db 'gate',0
 unet_def db 0
-
+endg
 ; convert string to DWord
 proc strtoint stdcall,strs
   pushad

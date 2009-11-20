@@ -316,13 +316,13 @@ high_code:
 ; --------------- APM ---------------------
 
 ; init selectors
-    mov ebx,    [BOOT_VAR+0x9040]              ; offset of APM entry point
-    movzx eax, word [BOOT_VAR+0x9050] ; real-mode segment base address of
-                                      ; protected-mode 32-bit code segment
-    movzx ecx, word [BOOT_VAR+0x9052] ; real-mode segment base address of
-                                      ; protected-mode 16-bit code segment
-    movzx edx, word [BOOT_VAR+0x9054] ; real-mode segment base address of
-                                      ; protected-mode 16-bit data segment
+    mov ebx,[BOOT_VAR+0x9040]			; offset of APM entry point
+    movzx eax,word [BOOT_VAR+0x9050] 	; real-mode segment base address of
+										; protected-mode 32-bit code segment
+    movzx ecx,word [BOOT_VAR+0x9052] 	; real-mode segment base address of
+										; protected-mode 16-bit code segment
+    movzx edx,word [BOOT_VAR+0x9054] 	; real-mode segment base address of
+										; protected-mode 16-bit data segment
 
     shl    eax, 4
     mov    [dword apm_code_32 + 2], ax
@@ -345,23 +345,18 @@ high_code:
     mov    eax, [BOOT_VAR + 0x9044]    ; version & flags
     mov    [apm_vf], eax
 ; -----------------------------------------
-;        movzx eax,byte [BOOT_VAR+0x9010]  ; mouse port
+;        movzx eax,byte [BOOT_VAR+0x9010]	; mouse port
 ;        mov   [0xF604],byte 1  ;al
-        mov     al, [BOOT_VAR+0x901F]   ; DMA access
-        mov     [allow_dma_access], al
-        movzx eax, byte [BOOT_VAR+0x9000]        ; bpp
-        mov   [ScreenBPP],al
-
-        mov [_display.bpp], eax
-        mov [_display.vrefresh], 60
+		mov	al, [BOOT_VAR+0x901F]   	; DMA access
+        mov	[allow_dma_access], al
+        mov al,[BOOT_VAR+0x9000]        ; bpp
+        mov [ScreenBPP],al
 
         movzx eax,word [BOOT_VAR+0x900A]  ; X max
-        mov [_display.width], eax
         dec   eax
         mov   [Screen_Max_X],eax
         mov   [screen_workarea.right],eax
         movzx eax,word [BOOT_VAR+0x900C]  ; Y max
-        mov [_display.height], eax
         dec   eax
         mov   [Screen_Max_Y],eax
         mov   [screen_workarea.bottom],eax
@@ -374,9 +369,8 @@ high_code:
         je    @f
         cmp   [SCR_MODE],word 0x12          ; VGA 640x480
         je    @f
-        movzx eax, word[BOOT_VAR+0x9001]        ; for other modes
+        mov   ax,[BOOT_VAR+0x9001]        ; for other modes
         mov   [BytesPerScanLine],ax
-        mov [_display.pitch], eax
 @@:
         mov     esi, BOOT_VAR+0x9080
         movzx   ecx, byte [esi-1]
@@ -386,7 +380,7 @@ high_code:
 
 ; GRAPHICS ADDRESSES
 
-        mov     byte [BOOT_VAR+0x901e],0x0
+        and     byte [BOOT_VAR+0x901e],0x0
         mov     eax,[BOOT_VAR+0x9018]
         mov     [LFBAddress],eax
 
@@ -646,8 +640,9 @@ no_lib_load:
         mov     edx, 0xFFFFFF
         mov     ebx, [MEM_AMOUNT]
         shr     ebx, 20
-        mov     edi, 1
+        xor     edi,edi
         mov     eax, 0x00040000
+		inc		edi
         call    display_number_force
 
 ; BUILD SCHEDULER
@@ -725,13 +720,15 @@ no_lib_load:
         mov dword [SLOT_BASE+256+APPDATA.tls_base], eax
 
         ; task list
-        mov  [CURRENT_TASK],dword 1
-        mov  [TASK_COUNT],dword 1
+        mov  dword [TASK_DATA+TASKDATA.mem_start],eax	; process base address
+	inc  eax
+        mov  dword [CURRENT_TASK],eax
+        mov  dword [TASK_COUNT],eax
         mov  [current_slot], SLOT_BASE+256
         mov  [TASK_BASE],dword TASK_DATA
-        mov  [TASK_DATA+TASKDATA.wnd_number], 1 ; on screen number
-        mov  [TASK_DATA+TASKDATA.pid], 1        ; process id number
-        mov  [TASK_DATA+TASKDATA.mem_start], 0  ; process base address
+        mov  byte[TASK_DATA+TASKDATA.wnd_number],al	; on screen number
+        mov  dword [TASK_DATA+TASKDATA.pid], eax        ; process id number
+
 
         call init_cursors
         mov eax, [def_cursor]
@@ -769,8 +766,9 @@ no_lib_load:
         movzx   ecx, word [boot_y]
         add     ecx, (10+17*6) shl 16 - 10 ; 'CPU frequency is '
         mov     edx, 0xFFFFFF
-        mov     edi, 1
+        xor     edi,edi
         mov     eax, 0x00040000
+		inc		edi
         call    display_number_force
 
 ; SET VARIABLES
@@ -864,7 +862,8 @@ first_app_found:
         cli
 
         ;mov   [TASK_COUNT],dword 2
-        mov   [CURRENT_TASK],dword 1       ; set OS task fisrt
+	push  1
+        pop   dword [CURRENT_TASK]      ; set OS task fisrt
 
 ; SET KEYBOARD PARAMETERS
         mov   al, 0xf6         ; reset keyboard, scan enabled
@@ -991,21 +990,21 @@ align 4
 boot_log:
          pushad
 
-         mov   ebx,10*65536
-         mov   bx,word [boot_y]
-         add   [boot_y],dword 10
-         mov   ecx,0x80ffffff   ; ASCIIZ string with white color
-         mov   edx,esi
-         mov   edi,1
-         call  dtext
+        mov   ebx,10*65536
+        mov   bx,word [boot_y]
+        add   [boot_y],dword 10
+        mov   ecx,0x80ffffff   ; ASCIIZ string with white color
+		xor	  edi,edi
+        mov   edx,esi
+		inc	  edi
+        call  dtext
 
-         mov   [novesachecksum],1000
-         call  checkVga_N13
+        mov   [novesachecksum],1000
+        call  checkVga_N13
 
-         popad
+        popad
 
-         ret
-
+        ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                    ;
@@ -1083,7 +1082,7 @@ reserve_irqs_ports:
 
         push eax
         xor	eax,eax
-	inc	eax
+		inc	eax
         mov  byte [irq_owner+4*0],al		;1    ; timer
         ;mov  [irq_owner+4*1], 1    ; keyboard
         mov  byte [irq_owner+4*6],al		;1    ; floppy diskette
@@ -1125,7 +1124,7 @@ reserve_irqs_ports:
 setirqreadports:
 
         mov   [irq12read+0],dword 0x60 + 0x01000000  ; read port 0x60 , byte
-	and   dword [irq12read+4],0                   ; end of port list
+	    and   dword [irq12read+4],0                   ; end of port list
 ;        mov   [irq12read+4],dword 0                  ; end of port list
         ;mov   [irq04read+0],dword 0x3f8 + 0x01000000 ; read port 0x3f8 , byte
         ;mov   [irq04read+4],dword 0                  ; end of port list
@@ -1210,7 +1209,7 @@ sys_outport:
 
     mov   dx,bx          ; write
     out   dx,al
-    mov   [esp+36],dword 0
+    and   [esp+36],dword 0
     ret
 
   sopl4:
@@ -1218,7 +1217,7 @@ sys_outport:
     mov   dx,bx          ; read
     in    al,dx
     and   eax,0xff
-    mov   [esp+36],dword 0
+    and   [esp+36],dword 0
     mov   [esp+24],eax
     ret
 
@@ -1235,14 +1234,14 @@ display_number:
 ; ebx = number or pointer
 ; ecx = x shl 16 + y
 ; edx = color
-        xor     edi, edi
+    xor     edi, edi
 display_number_force:
-     push  eax
-     and   eax,0x3fffffff
-     cmp   eax,0xffff            ; length > 0 ?
-     pop   eax
-     jge   cont_displ
-     ret
+    push  eax
+    and   eax,0x3fffffff
+    cmp   eax,0xffff            ; length > 0 ?
+    pop   eax
+    jge   cont_displ
+    ret
    cont_displ:
      push  eax
      and   eax,0x3fffffff
@@ -1260,22 +1259,22 @@ display_number_force:
      add   ebp,4
      mov   ebp,[ebp+std_application_base_address]
      mov   ebx,[ebx+std_application_base_address]
-   displnl1:
+ displnl1:
      sub   esp,64
 
-     cmp   ah,0                  ; DECIMAL
-     jne   no_display_desnum
-     shr   eax,16
-     and   eax,0xC03f
+    test   ah,ah                  ; DECIMAL
+    jnz   no_display_desnum
+    shr   eax,16
+    and   eax,0xC03f
 ;     and   eax,0x3f
-     push  eax
-     and   eax,0x3f
-     mov   edi,esp
-     add   edi,4+64-1
-     mov   ecx,eax
-     mov   eax,ebx
-     mov   ebx,10
-   d_desnum:
+    push  eax
+    and   eax,0x3f
+    mov   edi,esp
+    add   edi,4+64-1
+    mov   ecx,eax
+    mov   eax,ebx
+    mov   ebx,10
+ d_desnum:
      xor   edx,edx
      call  division_64_bits
      div   ebx
@@ -1421,154 +1420,155 @@ sys_setup:
 ; 12 = enable pci access
 
 
-     mov  [esp+36],dword 0
-     cmp  eax,1                      ; MIDI
-     jnz  nsyse1
-     cmp  ebx,0x100
-     jb   nsyse1
-     mov  edx,65535
-     cmp  edx,ebx
-     jb   nsyse1
-     mov  [midi_base],bx
-     mov  word [mididp],bx
-     inc  bx
-     mov  word [midisp],bx
-     ret
+     	and  [esp+32],dword 0
+	dec	ebx				; MIDI
+	jnz  nsyse1
+	cmp  ecx,0x100
+
+	jb   nsyse1
+	mov	esi,65535
+	cmp	esi,ecx
+
+	jb   nsyse1
+	mov  [midi_base],cx	;bx
+	mov  word [mididp],cx	;bx
+	inc  cx		    	;bx
+	mov  word [midisp],cx	;bx
+	ret
 
 iglobal
 midi_base dw 0
 endg
 
    nsyse1:
+	dec	ebx				 ; KEYBOARD
+	jnz  nsyse2
+	mov  edi,[TASK_BASE]
+	add  edi,[edi+TASKDATA.mem_start]
+	mov  eax,edi
 
-;     cmp  eax,2                      ; KEYBOARD
-     sub  eax,2
-     jnz  nsyse2
-;     cmp  ebx,1
-     dec  ebx
-     jnz  kbnobase
-     mov  edi,[TASK_BASE]
-     add  ecx,[edi+TASKDATA.mem_start]
-     mov  eax,ecx
-     mov  ebx,keymap
-     mov  ecx,128
-     call memmove
-     ret
+	dec	ecx
+	jnz  kbnobase
+	mov  ebx,keymap
+	mov  ecx,128
+	call memmove
+	ret
    kbnobase:
-;     cmp  ebx,2
-     dec  ebx
-     jnz  kbnoshift
-     mov  edi,[TASK_BASE]
-     add  ecx,[edi+TASKDATA.mem_start]
-     mov  eax,ecx
-     mov  ebx,keymap_shift
-     mov  ecx,128
-     call memmove
-     ret
-   kbnoshift:
-;     cmp  ebx,3
-     dec  ebx
-     jnz  kbnoalt
-     mov  edi,[TASK_BASE]
-     add  ecx,[edi+TASKDATA.mem_start]
-     mov  eax,ecx
-     mov  ebx,keymap_alt
-     mov  ecx,128
-     call memmove
-     ret
-   kbnoalt:
-;     cmp  ebx,9
-     sub  ebx,6
-     jnz  kbnocountry
-     mov  word [keyboard],cx
-     ret
-   kbnocountry:
-     mov  [esp+36],dword 1
-     ret
-   nsyse2:
-;     cmp  eax,3                      ; CD
-     dec  eax
-     jnz  nsyse4
-     test ebx,ebx
-     jz   nosesl
-     cmp  ebx, 4
-     ja   nosesl
-     mov  [cd_base],bl
-     cmp  ebx,1
-     jnz  noprma
-     mov  [cdbase],0x1f0
-     mov  [cdid],0xa0
-   noprma:
-     cmp  ebx,2
-     jnz  noprsl
-     mov  [cdbase],0x1f0
-     mov  [cdid],0xb0
-   noprsl:
-     cmp  ebx,3
-     jnz  nosema
-     mov  [cdbase],0x170
-     mov  [cdid],0xa0
-   nosema:
-     cmp  ebx,4
-     jnz  nosesl
-     mov  [cdbase],0x170
-     mov  [cdid],0xb0
-   nosesl:
-     ret
+	dec  ecx
+	jnz  kbnoshift
 
+	mov  ebx,keymap_shift
+	mov  ecx,128
+	call memmove
+	ret
+   kbnoshift:
+	dec  ecx
+	jnz  kbnoalt
+	mov  ebx,keymap_alt
+	mov  ecx,128
+	call memmove
+	ret
+   kbnoalt:
+	sub  ecx,6
+	jnz  kbnocountry
+	mov  word [keyboard],dx
+	ret
+   kbnocountry:
+	mov  [esp+32],dword 1
+	ret
+   nsyse2:
+	dec  ebx			    ; CD
+	jnz  nsyse4
+
+	test ecx,ecx
+	jz   nosesl
+
+	cmp  ecx, 4
+	ja   nosesl
+	mov  [cd_base],cl
+
+	dec	ecx
+	jnz  noprma
+	mov  [cdbase],0x1f0
+	mov  [cdid],0xa0
+   noprma:
+
+	dec	ecx
+	jnz  noprsl
+	mov  [cdbase],0x1f0
+	mov  [cdid],0xb0
+   noprsl:
+	dec	ecx
+     	jnz  nosema
+     	mov  [cdbase],0x170
+     	mov  [cdid],0xa0
+   nosema:
+	dec	ecx
+     	jnz  nosesl
+     	mov  [cdbase],0x170
+     	mov  [cdid],0xb0
+   nosesl:
+     	ret
+
+iglobal
 cd_base db 0
 
+endg
    nsyse4:
-
-;     cmp  eax,5                      ; SYSTEM LANGUAGE
-     sub  eax,2
-     jnz  nsyse5
-     mov  [syslang],ebx
-     ret
+                 
+     	sub  ebx,2		 ; SYSTEM LANGUAGE
+     	jnz  nsyse5
+     	mov  [syslang],ecx
+     	ret
    nsyse5:
+         
+     	sub  ebx,2		; HD BASE
+     	jnz  nsyse7
 
-;     cmp  eax,7                      ; HD BASE
-     sub  eax,2
-     jnz  nsyse7
-     test ebx,ebx
-     jz   nosethd
-     cmp  ebx,4
-     ja   nosethd
-     mov  [hd_base],bl
-     cmp  ebx,1
-     jnz  noprmahd
-     mov  [hdbase],0x1f0
-     mov  [hdid],0x0
-     mov  [hdpos],1
+     	test ecx,ecx
+     	jz   nosethd
+
+     	cmp  ecx,4
+     	ja   nosethd
+     	mov  [hd_base],cl
+
+     	cmp  ecx,1
+     	jnz  noprmahd
+     	mov  [hdbase],0x1f0
+     	and  dword [hdid],0x0
+     	mov  dword [hdpos],ecx
 ;     call set_FAT32_variables
    noprmahd:
-     cmp  ebx,2
-     jnz  noprslhd
-     mov  [hdbase],0x1f0
-     mov  [hdid],0x10
-     mov  [hdpos],2
+
+     	cmp  ecx,2
+     	jnz  noprslhd
+     	mov  [hdbase],0x1f0
+     	mov  [hdid],0x10
+     	mov  dword [hdpos],ecx
 ;     call set_FAT32_variables
    noprslhd:
-     cmp  ebx,3
-     jnz  nosemahd
-     mov  [hdbase],0x170
-     mov  [hdid],0x0
-     mov  [hdpos],3
+
+     	cmp  ecx,3
+     	jnz  nosemahd
+     	mov  [hdbase],0x170
+     	and  dword [hdid],0x0
+     	mov  dword [hdpos],ecx
 ;     call set_FAT32_variables
    nosemahd:
-     cmp  ebx,4
-     jnz  noseslhd
-     mov  [hdbase],0x170
-     mov  [hdid],0x10
-     mov  [hdpos],4
+
+     	cmp  ecx,4
+     	jnz  noseslhd
+     	mov  [hdbase],0x170
+     	mov  [hdid],0x10
+     	mov  dword [hdpos],ecx
 ;     call set_FAT32_variables
    noseslhd:
-    call  reserve_hd1
-    call  reserve_hd_channel
-    call  free_hd_channel
-    mov   [hd1_status],0        ; free
+    	call  reserve_hd1
+    	call  reserve_hd_channel
+    	call  free_hd_channel
+    	and   dword [hd1_status],0        ; free
    nosethd:
-     ret
+     	ret
 
 iglobal
 hd_base db 0
@@ -1577,43 +1577,42 @@ endg
 nsyse7:
 
 ;     cmp  eax,8                      ; HD PARTITION
-     dec  eax
-     jnz  nsyse8
-     mov  [fat32part],ebx
+     	dec  ebx
+     	jnz  nsyse8
+     	mov  [fat32part],ecx
 ;     call set_FAT32_variables
-    call  reserve_hd1
-    call  reserve_hd_channel
-    call  free_hd_channel
-     pusha
-     call  choice_necessity_partition_1
-     popa
-    mov   [hd1_status],0        ; free
-     ret
+    	call  reserve_hd1
+    	call  reserve_hd_channel
+    	call  free_hd_channel
+;     	pusha
+     	call  choice_necessity_partition_1
+;     	popa
+    	and dword [hd1_status],0        ; free
+     	ret
 
 nsyse8:
 ;     cmp  eax,11                     ; ENABLE LBA READ
-     sub  eax,3
-     jnz  no_set_lba_read
-     and  ebx,1
-     mov  [lba_read_enabled],ebx
-     ret
+    	and  ecx,1
+	sub  ebx,3
+    	jnz  no_set_lba_read
+    	mov  [lba_read_enabled],ecx
+    	ret
 
 no_set_lba_read:
 ;     cmp  eax,12                     ; ENABLE PCI ACCESS
-     dec  eax
-     jnz  no_set_pci_access
-     and  ebx,1
-     mov  [pci_access_enabled],ebx
-     ret
-   no_set_pci_access:
+    	dec  ebx
+    	jnz  no_set_pci_access
+    	mov  [pci_access_enabled],ecx
+    	ret
+no_set_pci_access:
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'vmodeint.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 sys_setup_err:
-     mov  [esp+36],dword -1
-     ret
+     	or  [esp+32],dword -1
+     	ret
 
 align 4
 
@@ -1627,100 +1626,114 @@ sys_getsetup:
 ; 8=fat32 partition in hd
 ; 9=get hs timer tic
 
-     cmp  eax,1
-     jne  ngsyse1
-     movzx eax,[midi_base]
-     mov  [esp+36],eax
-     ret
+;     cmp  eax,1
+	dec	ebx
+     	jnz  ngsyse1
+     	movzx eax,[midi_base]
+     	mov  [esp+32],eax
+     	ret
 ngsyse1:
+;     cmp  eax,2
+	dec	ebx
+     	jnz  ngsyse2
 
-     cmp  eax,2
-     jne  ngsyse2
-     cmp  ebx,1
-     jnz  kbnobaseret
-     mov  edi,[TASK_BASE]
-     add  ecx,[edi+TASKDATA.mem_start]
-     mov  ebx,ecx
-     mov  eax,keymap
-     mov  ecx,128
-     call memmove
-     ret
+     	mov  edi,[TASK_BASE]
+     	add  edi,[edi+TASKDATA.mem_start]
+     	mov  ebx,edi
+
+;     cmp  ebx,1
+	dec	ecx
+     	jnz  kbnobaseret
+     	mov  eax,keymap
+     	mov  ecx,128
+     	call memmove
+     	ret
 kbnobaseret:
-     cmp  ebx,2
-     jnz  kbnoshiftret
-     mov  edi,[TASK_BASE]
-     add  ecx,[edi+TASKDATA.mem_start]
-     mov  ebx,ecx
-     mov  eax,keymap_shift
-     mov  ecx,128
-     call memmove
-     ret
+;     cmp  ebx,2
+	dec	ecx
+     	jnz  kbnoshiftret
+
+     	mov  eax,keymap_shift
+     	mov  ecx,128
+     	call memmove
+     	ret
 kbnoshiftret:
-     cmp  ebx,3
-     jne  kbnoaltret
-     mov  edi,[TASK_BASE]
-     add  ecx,[edi+TASKDATA.mem_start]
-     mov  ebx,ecx
-     mov  eax,keymap_alt
-     mov  ecx,128
-     call memmove
-     ret
+;     cmp  ebx,3
+	dec	ecx
+     	jne  kbnoaltret
+
+
+
+     	mov  eax,keymap_alt
+     	mov  ecx,128
+     	call memmove
+     	ret
 kbnoaltret:
-     cmp  ebx,9
-     jnz  ngsyse2
-     movzx eax,word [keyboard]
-     mov  [esp+36],eax
-     ret
+;     cmp  ebx,9
+	sub	ecx,6
+     	jnz  ngsyse2
+     	movzx eax,word [keyboard]
+     	mov  [esp+32],eax
+     	ret
+
+
 ngsyse2:
-
-         cmp  eax,3
-         jnz  ngsyse3
-         movzx eax,[cd_base]
-         mov  [esp+36],eax
-         ret
+;         cmp  eax,3
+	dec	ebx
+        jnz  ngsyse3
+        movzx eax,[cd_base]
+        mov  [esp+32],eax
+        ret
 ngsyse3:
-         cmp  eax,5
-         jnz  ngsyse5
-         mov  eax,[syslang]
-         mov  [esp+36],eax
-         ret
+;         cmp  eax,5
+	sub	ebx,2
+        jnz  ngsyse5
+        mov  eax,[syslang]
+        mov  [esp+32],eax
+        ret
 ngsyse5:
-     cmp  eax,7
-     jnz  ngsyse7
-     movzx eax,[hd_base]
-     mov  [esp+36],eax
-     ret
+;     cmp  eax,7
+	sub	ebx,2
+     	jnz  ngsyse7
+     	movzx eax,[hd_base]
+     	mov  [esp+32],eax
+     	ret
 ngsyse7:
-     cmp  eax,8
-     jnz  ngsyse8
-     mov eax,[fat32part]
-     mov  [esp+36],eax
-     ret
+;     cmp  eax,8
+	dec	ebx
+     	jnz  ngsyse8
+     	mov eax,[fat32part]
+     	mov  [esp+32],eax
+     	ret
 ngsyse8:
-     cmp  eax,9
-     jne  ngsyse9
-     mov  eax,[timer_ticks] ;[0xfdf0]
-     mov  [esp+36],eax
-     ret
+;     cmp  eax,9
+	dec	ebx
+     	jnz  ngsyse9
+     	mov  eax,[timer_ticks] ;[0xfdf0]
+     	mov  [esp+32],eax
+     	ret
 ngsyse9:
-     cmp  eax,11
-     jnz  ngsyse11
-     mov eax,[lba_read_enabled]
-     mov  [esp+36],eax
-     ret
+;     cmp  eax,11
+	sub	ebx,2
+     	jnz  ngsyse11
+     	mov eax,[lba_read_enabled]
+     	mov  [esp+32],eax
+     	ret
 ngsyse11:
-     cmp  eax,12
-     jnz  ngsyse12
-     mov eax,[pci_access_enabled]
-     mov  [esp+36],eax
-     ret
+;     cmp  eax,12
+	dec	ebx
+     	jnz  ngsyse12
+     	mov eax,[pci_access_enabled]
+     	mov  [esp+32],eax
+     	ret
 ngsyse12:
-     mov  [esp+36],dword 1
-     ret
+     	mov  [esp+32],dword 1
+     	ret
 
+	
 get_timer_ticks:
-    mov eax,[timer_ticks]
-    ret
+    	mov eax,[timer_ticks]
+    	ret
 
 iglobal
 align 4
@@ -1782,12 +1795,12 @@ msz:
            shl   eax,16
            mov   ax,[MOUSE_SCROLL_V]
            mov   [esp+36],eax
-           mov   [MOUSE_SCROLL_H],word 0
-           mov   [MOUSE_SCROLL_V],word 0
+           and   [MOUSE_SCROLL_H],word 0
+           and   [MOUSE_SCROLL_V],word 0
            ret
        @@:
-           mov  [esp+36],dword 0
-           ret
+           and  [esp+36],dword 0
+;           ret
 msset:
            ret
 
@@ -1846,67 +1859,56 @@ put_mpu_out:
    ret
 
 
-setuart:
-
- su1:
-   call is_output
-   cmp  al,0
-   jnz  su1
-   mov  dx,word [midisp]
-   mov  al,0xff
-   out  dx,al
- su2:
-   mov  dx,word [midisp]
-   mov  al,0xff
-   out  dx,al
-   call is_input
-   cmp  al,0
-   jnz  su2
-   call get_mpu_in
-   cmp  al,0xfe
-   jnz  su2
- su3:
-   call is_output
-   cmp  al,0
-   jnz  su3
-   mov  dx,word [midisp]
-   mov  al,0x3f
-   out  dx,al
-
-   ret
-
 
 align 4
 
 sys_midi:
-
-     cmp  [mididp],0
-     jnz  sm0
-     mov  [esp+36],dword 1
-     ret
-   sm0:
-
-     cmp  eax,1
-     mov  [esp+36],dword 0
-     jnz  smn1
-     call setuart
-     ret
-   smn1:
-
-     cmp  eax,2
-     jnz  smn2
-   sm10:
-     call get_mpu_in
-     call is_output
-     test al,al
-     jnz  sm10
-     mov  al,bl
-     call put_mpu_out
-     ret
-   smn2:
-
-     ret
-
+	cmp  [mididp],0
+	jnz  sm0
+	mov  [esp+36],dword 1
+	ret
+sm0:
+	and  [esp+36],dword 0
+	dec  ebx
+	jnz  smn1
+ ;    call setuart
+su1:
+	call is_output
+	test al,al
+	jnz  su1
+	mov  dx,word [midisp]
+	mov  al,0xff
+	out  dx,al
+su2:
+	mov  dx,word [midisp]
+	mov  al,0xff
+	out  dx,al
+	call is_input
+	test al,al
+	jnz  su2
+	call get_mpu_in
+	cmp  al,0xfe
+	jnz  su2
+su3:
+	call is_output
+	test  al,al
+	jnz  su3
+	mov  dx,word [midisp]
+	mov  al,0x3f
+	out  dx,al
+	ret
+smn1:
+	dec  ebx
+	jnz  smn2
+sm10:
+	call get_mpu_in
+	call is_output
+	test al,al
+	jnz  sm10
+	mov  al,bl
+	call put_mpu_out
+	smn2:
+	ret
 
 detect_devices:
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1917,7 +1919,6 @@ detect_devices:
 ;include 'detect/sear_par.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ret
-
 
 sys_end:
 
@@ -2531,8 +2532,8 @@ nosb7:
     ret
 
 force_redraw_background:
-    mov   [draw_data+32 + RECT.left],dword 0
-    mov   [draw_data+32 + RECT.top],dword 0
+    and   [draw_data+32 + RECT.left],dword 0
+    and   [draw_data+32 + RECT.top],dword 0
     push  eax ebx
     mov   eax,[Screen_Max_X]
     mov   ebx,[Screen_Max_Y]
@@ -3819,7 +3820,7 @@ delay_hs:     ; delay in 1/100 secs
 
         ret
 
-
+align 16	;very often call this subrutine
 memmove:       ; memory move in bytes
 
 ; eax = from
@@ -3827,7 +3828,6 @@ memmove:       ; memory move in bytes
 ; ecx = no of bytes
     test ecx, ecx
     jle  .ret
-
 
     push esi edi ecx
 
@@ -5065,7 +5065,7 @@ sys_gs:                         ; direct screen access
      ret
    no_gs3:
 
-     mov  [esp+36],dword -1
+     or  [esp+36],dword -1
      ret
 
 
