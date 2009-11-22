@@ -41,7 +41,7 @@ ends
 struct	tcp_in_queue_entry
 	.data_ptr	dd ?
 	.data_size	dd ?
-	.offset 	dd ?
+	.offset 	dd ?	; TODO: replace this in code by absolute address isntead of relative offset
 	.size:
 ends
 
@@ -238,6 +238,7 @@ TCP_send_queued:
 	push	[esi + tcp_out_queue_entry.data_ptr]
 	mov	[esi + tcp_out_queue_entry.data_ptr], 0
 	call	kernel_free
+	dec	[TCP_OUT_QUEUE]
 	jmp	.find_next
 
 
@@ -391,7 +392,7 @@ TCP_handler :
 ;
 ; IN: eax = socket pointer
 ;      bl = flags
-;      ecx = number of bytes to send, may be set to 0
+;      ecx = number of bytes to send, may be set to 0  (single ACK)
 ;      esi = pointer to data
 ;
 ;-----------------------------------------------------------------
@@ -403,7 +404,7 @@ TCP_send:
 	mov	di , IP_PROTO_TCP
 	add	ecx, TCP_Packet.Data
 
-	push	bx eax esi
+	push	ecx bx eax esi
 ; Create an IPv4 Packet of the correct size
 	mov	ebx, [eax + SOCKET_head.end + IPv4_SOCKET.LocalIP]
 	mov	eax, [eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP]
@@ -436,7 +437,6 @@ TCP_send:
 ; fill in tcp sequence number
 	push	[esi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
 	pop	[edi + TCP_Packet.SequenceNumber]
-	inc_INET (ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT) ;;;;;;;;
 
 ; Fill in local and remote ports
 	push	dword [esi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.LocalPort]
@@ -454,37 +454,61 @@ TCP_send:
 	mov	[edi + TCP_Packet.DataOffset], 0x50
 	mov	[edi + TCP_Packet.Checksum], 0
 
+; Get size of total packet back in ecx
+	pop	ecx
 ; Push pointer to and size of total packet (needed for send procedure)
 	push	edx eax
-
 ; push socket number (for TCP_add_to_queue)
 	push	esi
 
-; Now, calculate the checksum                  ; TODO: calculate correct checksum for packets with data
-	pushw	TCP_Packet.Data shl 8
+; Now, calculate the checksum
+	xchg	cl, ch
+	pushw	cx
+	xchg	cl, ch
+;;        pushw   TCP_Packet.Data shl 8
 	pushw	IP_PROTO_TCP shl 8
 	pushd	[edi-4] ; destination address  ; TODO: fix this, IPv4 packet could have options..
 	pushd	[edi-8] ; source address
 
 	xor	edx, edx
-	mov	ecx, TCP_Packet.Data
+;        mov     ecx, TCP_Packet.Data
 	mov	esi, edi
 	call	checksum_1
 	mov	ecx, 12
 	mov	esi, esp
 	call	checksum_1
-	add	esp, 12 				   ; remove the pseudoheader from stack
 ; and store it in TCP header
 	call	checksum_2
 	mov	[edi + TCP_Packet.Checksum], dx
+	add	esp, 10 				   ; remove the pseudoheader from stack
 
-; At last send the packet!
 	DEBUGF 1,"Sending TCP Packet to device %x\n", ebx
 	mov	edx, [edi + TCP_Packet.SequenceNumber]
 	bswap	edx
 	mov	esi, [ebx + ETH_DEVICE.transmit]
+
+	pop	cx					   ; get the length from packet, back from pseudoheader
 	pop	edi
-	jmp	TCP_queue
+
+	cmp	cx, TCP_Packet.Data shl 8		   ; if the packet has no data
+	je	.only_one				   ; send it only once
+
+	and	ecx, 0x0000ffff
+	xchg	cl, ch
+	sub	cx, TCP_Packet.Data
+	add_INET (edi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT)
+
+	mov	ecx, TCP_RETRIES
+
+	jmp	.go_for_it
+
+  .only_one:
+;        inc_INET (edi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT)
+	mov	ecx, 1
+  .go_for_it:
+
+	mov	[edi + SOCKET_head.lock], 0
+	jmp	TCP_queue				; At last send the packet!
 
   .fail:
 	add	esp, 2+4
@@ -502,6 +526,7 @@ TCP_send:
 ;       esi = sender proc
 ;       edx = sequence number of this packet in normal byte order
 ;       edi = socket number
+;       ecx = retries
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
@@ -515,6 +540,7 @@ TCP_queue:
 	cmp	[TCP_OUT_QUEUE], TCP_QUEUE_SIZE
 	jge	.full
 
+	push	ecx
 	mov	ecx, TCP_QUEUE_SIZE
 	mov	eax, TCP_OUT_QUEUE+4
 
@@ -527,6 +553,7 @@ TCP_queue:
   .full:			; silently discard the packet
 	DEBUGF 1,"TCP queue is full!\n"
 
+	add	esp, 4
 	call	kernel_free
 	add	esp, 4
 
@@ -534,10 +561,10 @@ TCP_queue:
 
   .found_it:			; eax points to empty queue entry
 
+	pop	[eax + tcp_out_queue_entry.retries]
 	pop	[eax + tcp_out_queue_entry.data_ptr]
 	pop	[eax + tcp_out_queue_entry.data_size]
 	mov	[eax + tcp_out_queue_entry.ttl], 1			; send immediately
-	mov	[eax + tcp_out_queue_entry.retries], TCP_RETRIES
 	mov	[eax + tcp_out_queue_entry.owner], ebx
 	mov	[eax + tcp_out_queue_entry.sendproc], esi
 	mov	[eax + tcp_out_queue_entry.seq_num], edx
@@ -724,13 +751,13 @@ stateTCB_ESTABLISHED:
 	jne	.exit
 
 ; Calculate next sequencenumber
-	test	ecx, ecx
-	jnz	@f
-	inc	ecx
-       @@:
+;;        test    ecx, ecx
+;;        jnz     @f
+;;        inc     ecx
+;;       @@:
 	add_INET (ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT)
 
-	test	[edx + TCP_Packet.Flags], TH_FIN
+	test	[edx + TCP_Packet.Flags], TH_FIN + TH_RST ;;;
 	jnz	.fin
 
   .check_ack:
@@ -752,7 +779,7 @@ stateTCB_ESTABLISHED:
 
 ; Now, see if we received any data
 	test	ecx, ecx
-	jz	.ack
+	jz	.exit
 
 	DEBUGF	1,"Got %u bytes data!\n", ecx
 ; calculate header length
@@ -760,14 +787,21 @@ stateTCB_ESTABLISHED:
 	and	eax, 11110000b
 	shr	eax, 2
        DEBUGF 1,"TCP header size: %u\n", eax
-	add	edx, eax
+	add	edx, eax	; now edx points to data
+
 	add	esp, 4
-	pop	esi
+	pop	esi		; pointer to buffer
 	add	esp, 4
+
 	sub	edx, esi
-	mov	edi, edx
-	mov	eax, ebx
-	jmp	socket_internal_receiver	; Place the data from packet into socket
+	mov	edi, edx	; offset
+	mov	eax, ebx	; socket ptr
+
+	call	socket_internal_receiver	; Place the data from packet into socket
+
+	lea	ebx, [eax + SOCKET_head.lock]  ;;;;;
+	call	wait_mutex			 ;;;;;
+	mov	ebx, eax			   ;;;;
 
   .ack:
 	mov	eax, ebx

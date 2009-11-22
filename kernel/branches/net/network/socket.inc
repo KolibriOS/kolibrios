@@ -334,6 +334,8 @@ socket_connect:
   .tcp:
 	; TODO: set sequence number to random value
 
+	lea	ebx, [eax + SOCKET_head.lock]
+	call	wait_mutex
 
 	; fill in remote port and IP
 
@@ -518,34 +520,15 @@ socket_close:
 	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_SYN_SENT
 	je	.destroy_tcb
 
-	; Now construct the response, and queue for sending by IP
-
-	mov	bl, TH_FIN
-	xor	ecx, ecx
-	call	TCP_send
-
-	; increament SND.NXT in socket
-	lea	esi, [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
-	inc_INET esi
-
-	; Get the socket state
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_SYN_RECEIVED
-	je	.fin_wait_1
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_ESTABLISHED
-	je	.fin_wait_1
-
-	; assume CLOSE WAIT
-	; Send a fin, then enter last-ack state
-	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_LAST_ACK
-	jmp	.send
-
-  .fin_wait_1:
 	; Send a fin, then enter finwait2 state
 	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_FIN_WAIT_1
 
-  .send:
+	mov	bl, TH_FIN
+	xor	ecx, ecx
+;        call    TCP_send
 
 	;;;;;
+
 
   .destroy_tcb:
 
@@ -571,32 +554,34 @@ socket_close:
 align 4
 socket_recv:
 
-	DEBUGF	1,"Socket_receive: socknum: %u bufferaddress: %x, length: %u, flags: %x\n",ecx,edx,esi,edi
+	DEBUGF	1,"Socket_receive: socknum: %u bufaddr: %x, buflength: %u, flags: %x\n",ecx,edx,esi,edi
 	stdcall net_socket_num_to_addr, ecx		   ; get real socket address
 	or	eax, eax
 	jz	s_error
 
+	mov	ebx, esi
+
 	DEBUGF	1,"Socket pointer: %x\n", eax
 
-	get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, socket_queue_entry.size, s_error
+	get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, socket_queue_entry.size, s_error	; destroys esi and ecx
 
-	mov	edi, edx
+	mov	edi, edx					; addr to buffer
 	mov	ecx, [esi + socket_queue_entry.data_size]
 
 	DEBUGF	1,"Got %u bytes of data\n", ecx
 
-	cmp	ecx, edx
+	cmp	ecx, ebx
 	jle	.large_enough
 	DEBUGF	1,"Buffer too small...\n"
 	jmp	s_error
   .large_enough:
 
-	push	[esi + socket_queue_entry.data_ptr]
+	push	[esi + socket_queue_entry.data_ptr]		; save the buffer addr so we can clear it later
 	mov	esi, [esi + socket_queue_entry.offset]
-	add	esi, [esp]
+	add	esi, [esp]					; calculate the real data offset
 	DEBUGF	1,"Source buffer: %x, real addr: %x\n", [esp], esi
 
-	mov	dword[esp+32+4], ecx			     ; return number of bytes copied
+	mov	dword[esp+32+4], ecx				; return number of bytes copied
 
 	shr	ecx, 1
 	jnc	.nb
@@ -609,7 +594,7 @@ socket_recv:
 	rep	movsd
 .nd:
 
-	call	kernel_free
+	call	kernel_free					; todo: check if ALL applications had the chance to receive data
 
 	ret
 
@@ -696,7 +681,7 @@ socket_send:
 
 	mov	ecx, esi
 	mov	esi, edx
-	xor	bl , bl
+	mov	bl, TH_PUSH + TH_ACK
 
 	call	TCP_send
 
