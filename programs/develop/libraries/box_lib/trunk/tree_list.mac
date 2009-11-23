@@ -1,12 +1,23 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 20.11.2009 IgorA
+; файл последний раз изменялся 23.11.2009 IgorA
 ; на код применена GPL2 лицензия
 
 
 sizeof.TreeList equ 20
+;struct TreeList
+;  type dw ? ;+ 0 тип элемента, или индекс иконки для узла
+;  lev db ?  ;+ 2 уровень элемента
+;  clo db ?  ;+ 3 флаг закрытия, или открытия (имеет смысл для родительского узла)
+;  perv dd ? ;+ 4 индекс предыдущего элемента
+;  next dd ? ;+ 8 индекс последующего элемента
+;  tc dd ?   ;+12 врем. создания
+;  td dd ?   ;+16 врем. удаления
+;ends
 
+tl_info_size  equ  word[edi +4] ;размер данных выделяемых для каждого узла (пользовательськие данные + текст для подписи)
 tl_style      equ dword[edi+10] ;стили элемента
+tl_data_nodes equ dword[edi+14] ;указатель на структуры узлов
 tl_img_cx     equ  word[edi+22] ;ширина иконок
 tl_img_cy     equ  word[edi+24] ;высота иконок
 tl_data_img_sys equ dword[edi+26] ;указатель на системные изображения (стрелки, плюсики)
@@ -21,7 +32,7 @@ tl_box_top    equ dword[edi+62]
 tl_box_width  equ dword[edi+66]
 tl_box_height equ dword[edi+70]
 tl_capt_cy    equ  word[edi+74] ;высота подписи
-tl_info_capt_offs equ dword[edi+76]
+tl_info_capt_offs equ dword[edi+76] ;сдвиг для начала текста (подписи узла)
 tl_el_focus   equ dword[edi+80] ;указатель на структуру элемента в фокусе
 tl_p_scrol    equ dword[edi+84] ;указатель на структуру скроллинга
 tl_sb_draw    equ dword[edi+88] ;указатель на функцию перерисовывающую скроллинг
@@ -32,49 +43,15 @@ tl_key_no_edit   equ   1b ;элемент нельзя редактировать на клавиатуре (изменять 
 tl_draw_par_line equ  10b ;рисовать линии к родительскому узлу
 tl_list_box_mode equ 100b ;стиль не отображает уровни (как в ListBox все одного уровня)
 
-macro use_tree_list_structs
-{
-struct TreeInfo
-  data_info	 dd ? ;+ 0 указатель на основные даные
-  info_size	 dw ? ;+ 4 размер информационной структуры (пользовательськие данные + текст для подписи)
-  info_max_count dd ? ;+ 6 максимальное колличество структур
-  style 	 dd ? ;+10 стили элемента
-  data_nodes	 dd ? ;+14 указатель на структуры узлов
-  data_img	 dd ? ;+18 указатель на изображения
-  img_cx	 dw ? ;+22 ширина иконок
-  img_cy	 dw ? ;+24 высота иконок
-  data_img_sys dd ? ;+26 указатель на системные изображения (стрелки, плюсики)
-  ch_tim		dd ? ;+30 количество изменений в файле
-  ls_tim		dd ? ;+34 время последнего сохранения
-  tim_undo	 dd ? ;+38 количество отмененных действий
-  cur_pos	 dd ? ;+42 позиция курсора
-  col_bkg	 dd ? ;+46 цвет фона
-  col_zag	 dd ? ;+50 цвет заголовка
-  col_txt	 dd ? ;+54 цвет текста
-  wndMain	BOX ? ;+58 размер окна для вывода
-  capt_cy	 dw ? ;+74 высота подписи
-  info_capt_offs dd ? ;+76 сдвиг для начала текста (подписи узла)
-  el_focus dd ? ;+80 указатель на структуру элемента в фокусе
-  p_scrol dd ?  ;+84 указатель на структуру скроллинга
-  sb_draw dd ?  ;+88 указатель на функцию перерисовывающую скроллинг
-  on_activate dd ? ;+92 указатель на функцию при активировании узла
-  on_press dd ? ;+96 указатель на функцию при нажатии Enter
-ends
-
-struct TreeList
-  type dw ? ;+ 0 тип элемента, или индекс иконки для узла
-  lev db ?  ;+ 2 уровень элемента
-  clo db ?  ;+ 3 флаг закрытия, или открытия (имеет смысл для родительского узла)
-  perv dd ? ;+ 4 индекс предыдущего элемента
-  next dd ? ;+ 8 индекс последующего элемента
-  tc dd ?   ;+12 врем. создания
-  td dd ?   ;+16 врем. удаления
-ends
-}
+;data_info	 dd ? ;+ 0 указатель на основные даные
+;info_max_count dd ? ;+ 6 максимальное колличество структур
+;data_img	 dd ? ;+18 указатель на изображения
+;ls_tim		dd ? ;+34 время последнего сохранения
+;on_activate dd ? ;+92 указатель на функцию при активировании узла
 
 struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
     col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
-    el_focus, p_scrol,p_sb_draw,fun_enter {
+    el_focus, p_scrol,p_sb_draw,on_press {
   .data_info	dd 0
   .info_size	dw info_size
   .info_max_count dd info_max_count
@@ -101,7 +78,7 @@ struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
   .p_scrol  dd p_scrol
   .p_sb_draw dd p_sb_draw
   .on_activate dd 0
-  .on_press dd fun_enter
+  .on_press dd on_press
 }
 
 ;-----------------------------------------------------------------------------
@@ -144,7 +121,7 @@ tl_data_init: ;выделние памяти для структур списка и основной информации (констр
     mov edi,dword[ebp+8]
 
     xor ecx,ecx
-    mov cx,word[edi+4]
+    mov cx,tl_info_size
     imul ecx,dword[edi+6]
     call mem_Alloc
     mov dword[edi],eax ;копируем указатель на полученую память в структуру
@@ -154,7 +131,7 @@ tl_data_init: ;выделние памяти для структур списка и основной информации (констр
     mov ecx,sizeof.TreeList
     imul ecx,dword[edi+6]
     call mem_Alloc
-    mov dword[edi+14],eax ;копируем указатель на полученую память в структуру
+    mov tl_data_nodes,eax ;копируем указатель на полученую память в структуру
 
     push dword edi
     call tl_info_clear
@@ -202,7 +179,7 @@ tl_data_clear: ;очистка памяти элемента (деструктор)
     mov ecx,dword[edi]
     call mem_Free
 
-    mov ecx,dword[edi+14]
+    mov ecx,tl_data_nodes
     call mem_Free
     pop edi ecx
   pop ebp
@@ -221,13 +198,13 @@ tl_info_clear: ;очистка списка (информации)
     ;xor ecx,ecx
     mov ecx,sizeof.TreeList
     imul ecx,dword[edi+6]
-    mov eax,dword[edi+14]
+    mov eax,tl_data_nodes
     @@:
       mov byte[eax],0 ;чистим узлы 0-ми
       inc eax
       loop @b
-    mov eax,dword[edi+14] ;указатель на 1-й узел
-    mov dword[eax+8],1 ;указатель next в 1-м узле приравниваем к 1
+    mov eax,tl_data_nodes ;указатель на 0-й узел
+    mov dword[eax+8],1 ;указатель next в 0-м узле приравниваем к 1
     call tb_scrol_resize ;обработка скроллинга
     pop edi ecx eax
   pop ebp
@@ -314,9 +291,6 @@ tl_mouse: ;реакция на мышь
     bt eax,0 ;left mouse button press
     jae .no_draw
 
-    mov ebx,tl_el_focus
-    mov dword[ebx],edi ;set focus
-
     mov eax,37
     mov ebx,1
     int 0x40
@@ -342,6 +316,9 @@ tl_mouse: ;реакция на мышь
     cmp ax,bx ;верхняя граница окна + высота подписи
     jl .no_in_wnd
 
+    mov esi,tl_el_focus
+    mov dword[esi],edi ;set focus
+
     ; if '+' or '-' press
     mov esi,eax
     shr esi,16
@@ -366,10 +343,13 @@ tl_mouse: ;реакция на мышь
       mov eax,ecx ;если курсор не вышел за пределы узлов, восстанавливаем старое значение eax
     @@:
 
-    mov ebx,0x80000000 ;ставим флаг для выхода без обновления
     cmp eax,tl_cur_pos ;если новое значение курсора совпало с предыдущим
-    je @f	       ;то можем выйти без обновления окна
-      xor ebx,ebx
+    je @f ;то не стираем курсор
+    push esi
+      mov esi,tl_box_top
+      add esi,tl_box_height ;esi = coord bottom border
+      call tl_draw_null_cursor ;стираем курсор
+    pop esi
     @@:
 
     mov tl_cur_pos,eax
@@ -379,7 +359,7 @@ tl_mouse: ;реакция на мышь
     cmp eax,2
     jl .no_open_close ;курсор стоит на пустом месте, без узлов
     imul eax,sizeof.TreeList
-    add eax,dword[edi+14] ;+14 указатель на структуры узлов
+    add eax,tl_data_nodes
     xor bx,bx
     mov bl,byte[eax+2] ;+2 lev сохраняем уровень текущего узла
     inc bx ;+ поле для курсора
@@ -399,14 +379,15 @@ tl_mouse: ;реакция на мышь
       call tl_node_close_open
     .no_open_close:
 
-    bt ebx,31
-    jc .no_draw
-      push dword edi
-      call tl_draw
+      mov esi,tl_box_top
+      add esi,tl_box_height ;esi = coord bottom border
+      call tl_draw_cursor ;перерисовка курсора
       jmp .no_draw
-    .no_in_wnd: ;не попали в окно - потеря фокуса
+    .no_in_wnd: ;не попали в окно - потеря фокуса (при условии что фокус был на данном эелементе)
       mov ebx,tl_el_focus
-      mov dword[ebx],0 ;reset focus
+      cmp dword[ebx],edi
+      jne .no_draw ;элемент не в фокусе
+        mov dword[ebx],0 ;reset focus
     .no_draw:
 
     pop esi edi edx ecx ebx eax
@@ -456,10 +437,10 @@ tl_info_set_undo: ;удаление отмененных действий
   jl .no_work
 
   push eax ebx ecx edx
-  mov edx,dword[edi+14]
+  mov edx,tl_data_nodes
   mov ecx,edx
   add ecx,sizeof.TreeList
-  call tl_move_next ;long i=tex[0].next;
+  call tl_move_next ;long i=node[0].next;
   mov eax,tl_tim_undo
   sub tl_ch_tim,eax ;ch_tim-=tim_undo;
   mov eax,tl_ch_tim
@@ -470,7 +451,7 @@ tl_info_set_undo: ;удаление отмененных действий
     cmp edx,ecx
     jle @f
 
-    ;if(tex[i].tc>ch_tim){ // если создание символа было отменено
+    ;if(node[i].tc>ch_tim){ // если создание символа было отменено
     cmp dword[edx+12],eax
     jle .no_u1
       mov dword[edx+12],0
@@ -478,19 +459,19 @@ tl_info_set_undo: ;удаление отмененных действий
 
       mov ebx, dword[edx+4]
       imul ebx,sizeof.TreeList
-      add ebx, dword[edi+14] ;.next
-      push dword[edx+8] ;tex[tex[i].perv].next=tex[i].next;
+      add ebx, tl_data_nodes ;.next
+      push dword[edx+8] ;node[node[i].perv].next=node[i].next;
       pop dword[ebx+8]
 
       mov ebx, dword[edx+8]
       imul ebx,sizeof.TreeList
-      add ebx, dword[edi+14] ;.perv
-      push dword[edx+4] ;tex[tex[i].next].perv=tex[i].perv;
+      add ebx, tl_data_nodes ;.perv
+      push dword[edx+4] ;node[node[i].next].perv=node[i].perv;
       pop dword[ebx+4]
 
     .no_u1:
 
-    ;else if(tex[i].td>ch_tim) tex[i].td=0; // если удаление символа было отменено
+    ;else if(node[i].td>ch_tim) node[i].td=0; // если удаление символа было отменено
     cmp dword[edx+16],eax
     jle .no_u2
       mov dword[edx+16],0
@@ -588,7 +569,7 @@ tl_draw: ;вывод списка на экран
 
     ;cycle to nodes
     xor eax,eax
-    mov edx,dword[edi+14] ;+14 указатель на структуры узлов
+    mov edx,tl_data_nodes
     mov ecx,edx
     add ecx,sizeof.TreeList
 
@@ -750,7 +731,7 @@ align 4
 tl_move_next:
   mov edx,dword[edx+8]
   imul edx,sizeof.TreeList
-  add edx,dword[edi+14]
+  add edx,tl_data_nodes
   ret
 
 ;input:
@@ -762,7 +743,7 @@ align 4
 tl_move_perv:
   mov edx,dword[edx+4]
   imul edx,sizeof.TreeList
-  add edx,dword[edi+14]
+  add edx,tl_data_nodes
   ret
 
 ;input:
@@ -770,12 +751,12 @@ tl_move_perv:
 ; edi = pointer to 'TreeList' struct
 ;output:
 ; al = 1 if sumbol not visible
-; (tex[i].td+tim_Undo<=ch_tim && tex[i].td) || (tex[i].tc>ch_tim-tim_Undo)
+; (node[i].td+tim_Undo<=ch_tim && node[i].td) || (node[i].tc>ch_tim-tim_Undo)
 align 4
 tl_node_not_vis:
   cmp dword[edx+16],0
   je @f
-  mov eax,dword[edx+16] ;eax=tex[i].td
+  mov eax,dword[edx+16] ;eax=node[i].td
   add eax,tl_tim_undo
   cmp eax,tl_ch_tim
   jg @f
@@ -986,7 +967,7 @@ tl_draw_node:
     @@:
 
     mov al,byte[edx+2] ;draw minus '-'
-    mov ecx,dword[edi+14]
+    mov ecx,tl_data_nodes
     add ecx,sizeof.TreeList
 
     mov ah,10 ;get icon index '+' or '-' ?
@@ -1128,7 +1109,7 @@ tl_draw_node_caption:
     push ebx ecx edx esi
 
     xor esi,esi
-    mov si,word[edi+4];info_size
+    mov si,tl_info_size
     cmp esi,tl_info_capt_offs
     jle @f ;if caption size <= 0
 
@@ -1220,19 +1201,19 @@ tl_node_add: ;добавить узел
 
     mov ebx,sizeof.TreeList
     imul ebx,dword[edi+6] ;+6 макс. количество узлов
-    add ebx,dword[edi+14] ;+14 указатель на структуры узлов
+    add ebx,tl_data_nodes
 ;--
     call tl_get_cur_node_index ;eax=po_t
     imul eax,sizeof.TreeList
-    add eax,dword[edi+14] ;+14 указатель на структуры узлов
+    add eax,tl_data_nodes
     mov edx,eax
     call tl_move_perv
     call tl_get_node_index ;eax = index of pointer [edx]
 ;--
     mov edx,sizeof.TreeList
     shl edx,1
-    add edx,dword[edi+14] ;+14 указатель на структуры узлов
-    @@: ;for(i=2;i<texMax;i++)
+    add edx,tl_data_nodes
+    @@: ;for(i=2;i<nodeMax;i++)
       cmp dword [edx+12],0
       jne .u0
       cmp dword [edx+16],0
@@ -1242,13 +1223,18 @@ tl_node_add: ;добавить узел
 	push  word[ebp+14] ;get type
 	pop   word[edx]
 	mov   byte[edx+2], 0 ;node[i].lev=0
+  bt tl_style,2 ;tl_list_box_mode
+  jc .l_box_m
+    mov cl,byte[ebp+12]
+    mov byte[edx+2],cl  ;node[i].lev
+  .l_box_m:
 	push tl_ch_tim       ;node[i].tc=ch_tim;
 	pop  dword[edx+12]
 	mov  dword[edx+4], eax ;node[i].perv=po_t;
 	;*** copy node data ***
 	push esi
 	xor ecx,ecx
-	mov cx,word[edi+4];info_size
+	mov cx,tl_info_size
 	mov esi,ecx
 
 	push eax
@@ -1263,7 +1249,7 @@ tl_node_add: ;добавить узел
 	mov esi,edi
 	mov edi,dword[ebp+16] ;restore edi
 	mov ecx,tl_info_capt_offs
-	cmp cx,word[edi+4] ;+4 info_size
+	cmp cx,tl_info_size
 	jge .no_text_data
 	  dec esi
 	  mov byte[esi],0
@@ -1272,20 +1258,20 @@ tl_node_add: ;добавить узел
 
 	mov ecx,eax
 	imul ecx,sizeof.TreeList
-	add ecx,dword[edi+14] ; *** ecx = tex[po_t] ***
-	add ecx,8   ; *** ecx = tex[po_t].next ***
-	push dword [ecx] ;tex[i].next=tex[po_t].next;
+	add ecx,tl_data_nodes ; *** ecx = node[po_t] ***
+	add ecx,8   ; *** ecx = node[po_t].next ***
+	push dword [ecx] ;node[i].next=node[po_t].next;
 	pop dword [edx+8]
 
 	call tl_get_node_index ;*** eax = i ***
 	cmp eax,dword[edi+6] ;info_max_count
 	jge .u0
 
-	mov [ecx],eax ;tex[po_t].next=i; // ссылки перенаправляем
-	mov ecx,[edx+8] ; *** ecx = tex[i].next ***
+	mov [ecx],eax ;node[po_t].next=i; // ссылки перенаправляем
+	mov ecx,[edx+8] ; *** ecx = node[i].next ***
 	imul ecx,sizeof.TreeList
-	add ecx,dword[edi+14] ; *** ecx = tex[tex[i].next] ***
-	mov [ecx+4],eax ;tex[tex[i].next].perv=i;
+	add ecx,tl_data_nodes ; *** ecx = node[node[i].next] ***
+	mov [ecx+4],eax ;node[node[i].next].perv=i;
 
 	call tb_scrol_resize ;обработка скроллинга
     jmp @f
@@ -1336,7 +1322,7 @@ tl_node_set_data:
     cmp eax,2
     jl @f
       xor ecx,ecx
-      mov cx,word[edi+4];info_size
+      mov cx,tl_info_size
       imul eax,ecx
       add eax,dword[edi]
       mov edi,eax
@@ -1346,7 +1332,7 @@ tl_node_set_data:
       mov esi,edi
       mov edi,dword[ebp+12] ;restore edi
       mov ecx,tl_info_capt_offs
-      cmp cx,word[edi+4] ;+4 info_size
+      cmp cx,tl_info_size
       jge .no_text_data
 	dec esi
 	mov byte[esi],0
@@ -1370,7 +1356,7 @@ tl_node_get_data: ;взять указатель на данные узла под курсором
     cmp eax,2
     jl @f
       xor ecx,ecx
-      mov cx,word[edi+4];info_size
+      mov cx,tl_info_size
       imul eax,ecx
       add eax,dword[edi]
       mov dword[ebp+8],eax ;return node data pointer
@@ -1391,7 +1377,7 @@ tl_node_poi_get_info: ;взять указатель на структуру узла в указанной позиции
     mov eax,dword[ebp+8]
 
     ;cycle to nodes
-    mov edx,dword[edi+14] ;+14 указатель на структуры узлов
+    mov edx,tl_data_nodes
     mov ecx,edx
     add ecx,sizeof.TreeList
     @@:
@@ -1421,7 +1407,7 @@ tl_node_poi_get_next_info: ;взять указатель на следущую структуру узла
     mov edi,dword[ebp+12]
     mov edx,dword[ebp+8]
 
-    mov ecx,dword[edi+14] ;+14 указатель на структуры узлов
+    mov ecx,tl_data_nodes
     add ecx,sizeof.TreeList
 
     call tl_iterat_next_all
@@ -1451,7 +1437,7 @@ tl_node_poi_get_data: ;взять указатель на данные узла
     cmp eax,2
     jl @f
       xor ecx,ecx
-      mov cx,word[edi+4];info_size
+      mov cx,tl_info_size
       imul eax,ecx
       add eax,dword[edi]
       mov dword[ebp+12],eax ;return node data pointer
@@ -1469,7 +1455,7 @@ tl_get_cur_node_index: ;берет позицию под курсором
   push ecx edx
     ;cycle to nodes
     xor eax,eax
-    mov edx,dword[edi+14] ;+14 указатель на структуры узлов
+    mov edx,tl_data_nodes
     mov ecx,edx
     add ecx,sizeof.TreeList
     @@:
@@ -1482,7 +1468,7 @@ tl_get_cur_node_index: ;берет позицию под курсором
       jmp @b
     @@:
   mov eax,edx
-  sub eax,dword[edi+14] ;+14 указатель на структуры узлов
+  sub eax,tl_data_nodes
   xor edx,edx
   mov ecx,sizeof.TreeList
   div ecx
@@ -1498,7 +1484,7 @@ align 4
 tl_get_node_index: ;берет позицию указанного символа
   push ecx edx
   mov eax,edx
-  sub eax,dword[edi+14] ;+14 указатель на структуры узлов
+  sub eax,tl_data_nodes
   xor edx,edx
   mov ecx,sizeof.TreeList
   div ecx
@@ -1515,7 +1501,7 @@ tl_node_delete: ;удалить узел
     cmp eax,2
     jl @f
       imul eax,sizeof.TreeList
-      add eax,dword[edi+14] ;+14 указатель на структуры узлов
+      add eax,tl_data_nodes
       mov edx,eax
       inc tl_ch_tim
       mov eax,tl_ch_tim
@@ -1596,7 +1582,7 @@ tl_get_node_count: ;берет число всех видимых узлов (не считая закрытых дочерних)
   push ecx edx
     ;cycle to nodes
     xor eax,eax
-    mov edx,dword[edi+14] ;+14 указатель на структуры узлов
+    mov edx,tl_data_nodes
     mov ecx,edx
     add ecx,sizeof.TreeList
     @@:
@@ -1659,7 +1645,7 @@ tl_node_close_open: ;открыть/закрыть узел (работает с узлами которые имеют дочер
     cmp eax,2 ;курсор стоит на узле ?
     jl @f
       imul eax,sizeof.TreeList
-      add eax,dword[edi+14] ;+14 указатель на структуры узлов
+      add eax,tl_data_nodes
       ;eax = указатель на структуру узла выбранного курсором
       push dword edi
       push dword eax
@@ -1692,7 +1678,7 @@ tl_node_lev_inc: ;увеличить уровень
     cmp eax,2
     jl @f
       imul eax,sizeof.TreeList
-      add eax,dword[edi+14] ;+14 указатель на структуры узлов
+      add eax,tl_data_nodes
       mov edx,eax
       inc word[edx+2]
     @@:
@@ -1710,7 +1696,7 @@ tl_node_lev_dec: ;уменьшить уровень
     cmp eax,2
     jl @f
       imul eax,sizeof.TreeList
-      add eax,dword[edi+14] ;+14 указатель на структуры узлов
+      add eax,tl_data_nodes
       mov edx,eax
       cmp word[edx+2],0
       je @f
