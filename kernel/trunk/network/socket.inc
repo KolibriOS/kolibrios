@@ -593,7 +593,7 @@ local sockAddr dd ?
 
 	push	eax
 
-	mov	bl, TH_FIN
+	mov	bl, TH_FIN+TH_ACK
 	xor	ecx, ecx
 	xor	esi, esi
 	stdcall build_tcp_packet, [sockAddr]
