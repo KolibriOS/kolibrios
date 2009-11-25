@@ -80,10 +80,12 @@ use_menu_bar
 ;--------------------------------------------------
 align 16
 use_file_browser
+
 ;--------------------------------------------------
-;align 16
-init:
-ret
+;tree list
+;--------------------------------------------------
+align 16
+use_tree_list
 
 ;;;;;;;;;;;
 ;;Data
@@ -92,11 +94,9 @@ ret
 ;mouse_flag dd 0x0
 
 ;--------------------------------------------------
-;tree list
-;--------------------------------------------------
-align 16
-use_tree_list
-
+;align 16
+init:
+ret
 
 
 align 16
@@ -157,6 +157,8 @@ EXPORTS:
   dd sz_tl_node_close_open,tl_node_close_open
   dd sz_tl_node_lev_inc,tl_node_lev_inc
   dd sz_tl_node_lev_dec,tl_node_lev_dec
+  dd sz_tl_node_move_up,tl_node_move_up
+  dd sz_tl_node_move_down,    tl_node_move_down
   dd sz_tl_node_poi_get_info,	tl_node_poi_get_info
   dd sz_tl_node_poi_get_next_info,tl_node_poi_get_next_info
   dd sz_tl_node_poi_get_data,	tl_node_poi_get_data
@@ -219,6 +221,8 @@ szVersion_FileBrowser		db 'version_FileBrowser',0
   sz_tl_node_close_open db 'tl_node_close_open',0
   sz_tl_node_lev_inc db 'tl_node_lev_inc',0
   sz_tl_node_lev_dec db 'tl_node_lev_dec',0
+  sz_tl_node_move_up db 'tl_node_move_up',0
+  sz_tl_node_move_down db 'tl_node_move_down',0
   sz_tl_node_poi_get_info db 'tl_node_poi_get_info',0
   sz_tl_node_poi_get_next_info db 'tl_node_poi_get_next_info',0
   sz_tl_node_poi_get_data db 'tl_node_poi_get_data',0

@@ -48,15 +48,15 @@ table { font-size: 15px; }
 <p><a href="#vveden">Введение</a></p>
 <p><a href="#funct">Функции</a></p>
 <ul>
-<li>tl_data_init</li>
-<li>tl_data_clear</li>
-<li>tl_info_clear</li>
-<li>tl_key</li>
-<li>tl_mouse</li>
-<li>tl_draw</li>
-<li>tl_info_undo</li>
-<li>tl_info_redo</li>
-<li>tl_node_add</li>
+<li><a href="#fun_init">tl_data_init</a></li>
+<li><a href="#fun_clear1">tl_data_clear</a></li>
+<li><a href="#fun_clear2">tl_info_clear</a></li>
+<li><a href="#fun_key">tl_key</a></li>
+<li><a href="#fun_mouse">tl_mouse</a></li>
+<li><a href="#fun_draw">tl_draw</a></li>
+<li><a href="#fun_undo">tl_info_undo</a></li>
+<li><a href="#fun_redo">tl_info_redo</a></li>
+<li><a href="#fun_add">tl_node_add</a></li>
 <li>tl_node_set_data</li>
 <li>tl_node_get_data</li>
 <li>tl_node_delete</li>
@@ -66,6 +66,8 @@ table { font-size: 15px; }
 <li>tl_node_close_open</li>
 <li>tl_node_lev_inc</li>
 <li>tl_node_lev_dec</li>
+<li>tl_node_move_up</li>
+<li>tl_node_move_down</li>
 <li>tl_node_poi_get_info</li>
 <li>tl_node_poi_get_next_info</li>
 <li>tl_node_poi_get_data</li>
@@ -74,30 +76,36 @@ table { font-size: 15px; }
 <p><a href="#struc_tree_list">Структура tree_list</a></p>
 <p><a href="#tree_list_styles">Стили элемента</a></p>
 
-<h1><a name="#vveden">Введение</a></h1>
+<h1><a name="vveden">Введение</a></h1>
 <p>Внешний вид элемента управления TreeList:</p>
 <p><img src="window_tree_list.png"></p>
 
 <h1><a name="funct">Функции</a></h1>
 
-<h2>tl_data_init</h2>
+<h2><a name="fun_init">tl_data_init</a></h2>
 <p>Конструктор элемента, нужно вызывать перед использованием элемента для выделения памяти и других настроек.</p>
-<h2>tl_data_clear</h2>
+<h2><a name="fun_clear1">tl_data_clear</a></h2>
 <p>Деструктор элемента, чистит память по указателям: <b>data_info</b>, <b>data_nodes</b>, <b>data_img</b> и <b>data_img_sys</b>. Если в программе используется <i>несколько элементов с одинаковыми иконками</i>, то указатели data_img и data_img_sys нужно приравнять к 0 в других элементах, так что-бы при вызове деструкторов не было повторного удаления одних и тех же иконок.</p>
-<h2>tl_info_clear</h2>
-<p>Очистка списка от всех узлов. Это действие нельзя отменить функцией <b>tl_info_undo</b>.</p>
-<h2>tl_key</h2>
-<p>Функция которую нужно вызывать при нажатии на клавиатуру.</p>
-<h2>tl_mouse</h2>
-<p>Функция для событий от мыши.</p>
-<h2>tl_draw</h2>
-<p>Полная перерисовка окна элемента.</p>
-<h2>tl_info_undo</h2>
-<p>Отменяет добавление узлов. Действует только на весь узел целиком, не учитывая изменения внутри узлов. Т. е. нельзя отменить действия выполненные например функциями: <b>tl_node_set_data</b>, <b>tl_node_lev_inc</b> и им подобным.</p>
-<h2>tl_info_redo</h2>
-<p></p>
 
-<h2>tl_node_add</h2>
+<h2><a name="fun_clear2">tl_info_clear</a></h2>
+<p>Очистка списка от всех узлов. Это действие нельзя отменить функцией <b>tl_info_undo</b>.</p>
+
+<h2><a name="fun_key">tl_key</a></h2>
+<p>Функция которую нужно вызывать при нажатии на клавиатуру.</p>
+
+<h2><a name="fun_mouse">tl_mouse</a></h2>
+<p>Функция для событий от мыши.</p>
+
+<h2><a name="fun_draw">tl_draw</a></h2>
+<p>Полная перерисовка окна элемента.</p>
+
+<h2><a name="fun_undo">tl_info_undo</a></h2>
+<p>Отменяет добавление узлов. Действует только на весь узел целиком, не учитывая изменения внутри узлов. Т. е. нельзя отменить действия выполненные например функциями: <b>tl_node_set_data</b>, <b>tl_node_lev_inc</b> и им подобным.</p>
+
+<h2><a name="fun_redo">tl_info_redo</a></h2>
+<p>Повтор отмененных действий. Обратная функция по отношению к <b>tl_info_undo</b>.</p>
+
+<h2><a name="fun_add">tl_node_add</a></h2>
 <p>Добавляет узел, в позицию указанную курсором. Пример добавления узла:</p>
 <pre>  push dword tree1
   push dword 0x10002
@@ -125,6 +133,18 @@ table { font-size: 15px; }
 <h2>tl_node_lev_dec</h2>
 <p>Уменьшает уровень узла под курсором. Делает узел родительским.</p>
 
+<h2>tl_node_move_up</h2>
+<p>Перемещает вверх узел под курсором. Вместе с узлом двигается также и курсор. Пример использования функции:</p>
+<pre>  push dword tree1
+  call dword[tl_node_move_up] ;переместить узел</pre>
+<p>где: <b>tree1</b> - структура tree_list</p>
+
+<h2>tl_node_move_down</h2>
+<p>Перемещает вниз узел под курсором. Вместе с узлом двигается также и курсор. Пример использования функции:</p>
+<pre>  push dword tree1
+  call dword[tl_node_move_down] ;переместить узел</pre>
+<p>где: <b>tree1</b> - структура tree_list</p>
+
 <h2>tl_node_poi_get_info</h2>
 <p>Берет внутренний указатель на структуру описывающую узел.</p>
 <h2>tl_node_poi_get_next_info</h2>
@@ -132,7 +152,7 @@ table { font-size: 15px; }
 <h2>tl_node_poi_get_data</h2>
 <p>Берет указатель на данные (пользовательские и подпись) из узла указанного в указателе.</p>
 
-<p>Функциями tl_node_poi_get_info, tl_node_poi_get_next_info и tl_node_poi_get_data можно считывать информацию о узлах элемента, при этом не меняя текущего положения курсора.</p>
+<p>Функциями tl_node_poi_get_info, tl_node_poi_get_next_info и tl_node_poi_get_data можно считывать информацию о узлах элемента, при этом не меняя текущего положения курсора. Т. е. можно организовать доступ к даным элемента в &quot;фоновом режиме&quot;.</p>
 
 <h2>version_tree_list</h2>
 <p>Версия элемента</p>
@@ -194,6 +214,6 @@ table { font-size: 15px; }
 <p>Стиль не отображает уровни (как в ListBox все узлы одного уровня).</p>
 
 <hr>
-<p>Документация обновлялась последний раз 23.11.09.</p>
+<p>Документация обновлялась последний раз 25.11.09.</p>
 </body>
 </html>

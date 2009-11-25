@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 23.11.2009 IgorA
+; файл последний раз изменялся 24.11.2009 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -382,6 +382,7 @@ tl_mouse: ;реакция на мышь
       mov esi,tl_box_top
       add esi,tl_box_height ;esi = coord bottom border
       call tl_draw_cursor ;перерисовка курсора
+      call tl_draw_caption_cur_pos
       jmp .no_draw
     .no_in_wnd: ;не попали в окно - потеря фокуса (при условии что фокус был на данном эелементе)
       mov ebx,tl_el_focus
@@ -611,6 +612,8 @@ tl_draw: ;вывод списка на экран
 ; ecx = pointer to 1 node struct
 ; edx = pointer to some node struct
 ; edi = pointer to 'TreeList' struct
+;output:
+; edx = pointer to next node struct
 align 4
 tl_iterat_next:
   push bx
@@ -989,7 +992,7 @@ tl_draw_node:
 ; ecx = pointer to 1 node struct
 ;...
 align 4
-tl_draw_node_icon_opn_clo:
+tl_draw_node_icon_opn_clo: ;рисует иконки открытого или закрытого узла (обычно + или -)
   push eax ebx ecx edx esi
     inc al
     call tl_iterat_next_all ;get next visible item
@@ -1567,6 +1570,7 @@ tl_cur_next: ;перенести курсор на 1 позицию ниже
     @@:
       mov edi,dword[ebp+8] ;restore edi
       call tl_draw_cursor ;перерисовка курсора
+      call tl_draw_caption_cur_pos
     .no_redraw:
   pop esi edi ebx eax
   pop ebp
@@ -1630,6 +1634,7 @@ tl_cur_perv: ;перенести курсор на 1 позицию выше
       ;mov esi,tl_box_top
       ;add esi,tl_box_height ;esi = coord bottom border
       call tl_draw_cursor ;перерисовка курсора
+      call tl_draw_caption_cur_pos
     .no_redraw:
   pop esi edi eax
   pop ebp
@@ -1705,6 +1710,169 @@ tl_node_lev_dec: ;уменьшить уровень
   pop edi edx eax
   pop ebp
   ret 4
+
+align 4
+tl_node_move_up: ;перемещаем узел вверх
+  push ebp
+  mov ebp,esp
+  push eax ebx ecx edx edi esi
+    mov edi,dword[ebp+8]
+    call tl_get_cur_node_index ;eax=po_t
+    cmp eax,2
+    jl @f
+      mov ebx,eax ;copy index of node struct
+      mov edx,tl_data_nodes
+      mov ecx,edx
+      add ecx,sizeof.TreeList
+      imul eax,sizeof.TreeList
+      add eax,edx ;eax = pointer to 2 node struct
+      mov edx,eax ;edx = pointer to 2 node struct
+      mov esi,eax ;esi = pointer to 2 node struct
+      call tl_iterat_perv ;edx = pointer to 1 node struct
+      call tl_get_node_index ;eax = index of 1 node struct
+      cmp edx,ecx
+      jle @f
+        cmp dword[edx+8],ebx ;+8 next
+        jne .po8
+          call tl_node_move_po6 ;узлы идут подряд меняем 6 ссылок
+          jmp .cur_mov
+        .po8:
+          call tl_node_move_po8 ;узлы идут не подряд меняем 8 ссылок
+        .cur_mov:
+          push dword edi
+          call tl_cur_perv
+          push dword edi
+          call tl_draw
+    @@:
+  pop esi edi edx ecx ebx eax
+  pop ebp
+  ret 4
+
+align 4
+tl_node_move_down: ;перемещаем узел вниз
+  push ebp
+  mov ebp,esp
+  push eax ebx ecx edx edi esi
+    mov edi,dword[ebp+8]
+    call tl_get_cur_node_index ;eax=po_t
+    cmp eax,2
+    jl @f
+      mov ebx,eax ;copy index of node struct
+      mov edx,tl_data_nodes
+      mov ecx,edx
+      add ecx,sizeof.TreeList
+      imul eax,sizeof.TreeList
+      add eax,edx ;eax = pointer to 1 node struct
+      mov edx,eax ;edx = pointer to 1 node struct
+      mov esi,eax ;esi = pointer to 1 node struct
+      call tl_iterat_next ;edx = pointer to 2 node struct
+      call tl_get_node_index ;eax = index of 2 node struct
+      cmp edx,ecx
+      jle @f
+        cmp dword[esi+8],eax ;+8 next
+        jne .po8
+          xchg eax,ebx ;меняе порядок следования заменяемых узлов
+          xchg edx,esi
+          call tl_node_move_po6 ;узлы идут подряд меняем 6 ссылок
+          jmp .cur_mov
+        .po8: ;а тут порядок следования узлов не меняем
+          call tl_node_move_po8 ;узлы идут не подряд меняем 8 ссылок
+        .cur_mov:
+          push dword edi
+          call tl_cur_next
+          push dword edi
+          call tl_draw
+    @@:
+  pop esi edi edx ecx ebx eax
+  pop ebp
+  ret 4
+
+align 4
+tl_node_move_po6:
+  mov ecx,edx ;save node pointer
+  call tl_move_perv
+  mov dword[edx+8],ebx
+
+  mov edx,esi
+  call tl_move_next
+  mov dword[edx+4],eax
+  mov edx,ecx ;restore node pointer
+
+  ;+4 perv
+  mov ecx,dword[edx+4]
+  mov dword[esi+4],ecx
+  ;+8 next
+  mov ecx,dword[esi+8]
+  mov dword[edx+8],ecx
+
+  mov dword[edx+4],ebx
+  mov dword[esi+8],eax
+  ret
+
+;input
+;eax = index 1 node struct
+;ebx = index 2 node struct
+;edx = pointer 1 node struct
+;esi = pointer 2 node struct
+;edi = pointer to 'TreeList' struct
+;output:
+;eax = ?
+;ebx = ?
+;ecx = ?
+align 4
+tl_node_move_po8:
+;  push ecx
+  mov ecx,edx ;save node pointer
+  call tl_move_perv
+  mov dword[edx+8],ebx
+  mov edx,ecx
+  call tl_move_next
+  mov dword[edx+4],ebx
+  mov edx,esi
+  call tl_move_perv
+  mov dword[edx+8],eax
+  mov edx,esi
+  call tl_move_next
+  mov dword[edx+4],eax
+  mov edx,ecx ;restore node pointer
+;  pop ecx
+
+  ;+4 perv
+  mov eax,dword[edx+4]
+  mov ebx,dword[esi+4]
+  xchg eax,ebx
+  mov dword[edx+4],eax
+  mov dword[esi+4],ebx
+  ;+8 next
+  mov eax,dword[edx+8]
+  mov ebx,dword[esi+8]
+  xchg eax,ebx
+  mov dword[edx+8],eax
+  mov dword[esi+8],ebx
+  ret
+
+;input:
+; edi = pointer to 'TreeList' struct
+align 4
+tl_draw_caption_cur_pos:
+  cmp tl_capt_cy,9 ;9 - minimum caption height
+  jl @f
+  push eax ebx ecx edx edi esi
+    mov eax,47 ;draw
+    mov ebx,0x40000
+    mov ecx,tl_cur_pos
+    inc ecx
+    mov edx,tl_box_left
+    shl edx,16
+    add edx,50*65536+3
+    add edx,tl_box_top
+    mov esi,tl_col_txt
+    or  esi,0x40000000 ;закрашивать фон цветом edi
+    mov edi,tl_col_zag
+    int 0x40
+  pop esi edi edx ecx ebx eax
+  @@:
+  ret
 
 txt_capt_cur db '‘ва®Є ',0
 txt_capt_otm db 'Ћв¬Ґ­л',0
