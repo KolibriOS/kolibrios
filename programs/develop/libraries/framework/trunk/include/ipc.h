@@ -12,96 +12,83 @@
  *  If not, see <http://www.gnu.org/licenses/>.                                                    *
  ***************************************************************************************************/
 
-#ifndef _KOLIBRI_H_
-#define _KOLIBRI_H_
+#ifndef _IPC_H_
+#define _IPC_H_
 
-#define KOLIBRI_ACCESS_READ 0x0
-#define KOLIBRI_CREATE 0x8
+#include "defs.h"
 
-#define KOLIBRI_IPC_EVENT_MASK 0x40
-#define KOLIBRI_IPC_EVENT 0x7
+#define IPC_BUFFER_SIZE 0x1000
+
+#define IPC_MAX_ERRORS 10
+
+#define IPC_NO_MEMORY 1
+#define IPC_CANNOT_SET_MASK 2
+
+#define IPC_NO_AREA 1
+#define IPC_BUFFER_LOCKED 2
+#define IPC_OVERFLOW 3
+#define IPC_NO_TID 4
 
 /*
- * IPC structures, functions & data
+ * Data types
  */
 
 //
-struct kolibri_IPC_area {
+typedef struct kolibri_IPC_area {
 	unsigned long lock;
 	unsigned long size;
-};
+} IPCArea;
 
 typedef struct kolibri_IPC_area kolibri_IPC_area_t;
 
 //
-struct kolibri_IPC_message {
+typedef struct kolibri_IPC_message {
 	unsigned long tid;
 	unsigned long length;
-};
+} Message;
 
 typedef struct kolibri_IPC_message kolibri_IPC_message_t;
 
-//
-struct kolibri_memarea {
-	void *addr;
-	int error;		// or size
-	char *name;
-};
+/*
+ * High level IPC functions
+ */
 
-typedef struct kolibri_memarea kolibri_memarea_t;
+extern IPCArea *ipc_area;
 
-//
-#pragma pack(push,1)
-struct kolibri_process_info {
-	long cpu_using;				// +0
-	short window_position;			// +4
-	short window_position_slot;		// +6
-	short reserved_0;			// +8
-	char name[11];				// +10
-	char reserved_const_0;			// +21
-	unsigned long addr;			// +22
-	long mem_using;				// +26
-	long tid;				// +30
-	long window_x;
-	long window_y;
-	long window_width;
-	long window_height;
-	short state;
-	short reserved_const_1;
-	long window_client_x;
-	long window_client_y;
-	long window_client_width;
-	long window_client_height;
-	char window_state;
-};
-#pragma pack(pop)
+int IPCInit(void);
 
-typedef struct kolibri_process_info kolibri_process_info_t;
+int IPCSend(int tid, void *message, int length);
 
-//
+bool IPCCheck(void);
+
+bool IPCCheckWait(int time);
+
+Message *IPCGetNextMessage(void);
+
+Message *IPCWaitMessage(int time);
+
+void IPCLock(void);
+
+void IPCUnlock(void);
+
+/*
+ * Kolibri IPC functions & data
+ */
+
 extern kolibri_IPC_area_t *kolibri_IPC_area;
 
-//
 int kolibri_IPC_set_area(void *area, int size);
+
 int kolibri_IPC_send(int tid, void *msg, int length);
+
 void kolibri_IPC_unlock();
+
 void kolibri_IPC_lock();
+
 int kolibri_IPC_init(void *area, int size);
+
 kolibri_IPC_message_t *kolibri_IPC_get_next_message();
-void kolibri_IPC_clear_buff();
-int kolibri_event_wait();
 
-/*
- * Memory functions
- */
-
-kolibri_memarea_t kolibri_new_named_memory(char *name, int size, int flags);
-int kolibri_heap_init();
-void *kolibri_malloc(int nbytes);
-
-/*
- * Events functions
- */
-void kolibri_set_event_mask(int mask);
+// void kolibri_IPC_clear_buff();
 
 #endif

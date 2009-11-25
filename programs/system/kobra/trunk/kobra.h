@@ -21,7 +21,8 @@
 #ifndef _KOBRA_H_
 #define _KOBRA_H_
 
-#include "kolibri.h"
+#include <kolibri.h>
+#include <ipc.h>
 
 #define KOBRA_CMD_REGISTER		'R'
 #define KOBRA_CMD_JOIN			'J'

@@ -18,11 +18,12 @@
  ***************************************************************************************************/
 
 #include "kobra.h"
-#include "heap.h"
-#include "malloc.h"
-#include "kolibri.h"
-#include "defs.h"
-#include "stdlib.h"
+#include <heap.h>
+#include <malloc.h>
+#include <kolibri.h>
+#include <defs.h>
+#include <stdlib.h>
+#include <ipc.h>
 
 group_list_t *main_group_list;
 thread_list_t *main_thread_list;
@@ -55,19 +56,20 @@ void main(){
 	main_group_list->thread_list = main_thread_list = new_thread_list(kolibri_get_my_tid());
 	main_thread_list->next = main_thread_list->previos = main_thread_list;
 	
-	kolibri_IPC_init(malloc(0x1000), 0x1000);
-	kolibri_IPC_unlock();
+	IPCInit();
+// 	kolibri_IPC_unlock();
 	
 	// Set event mask
-	kolibri_set_event_mask(KOLIBRI_IPC_EVENT_MASK);
+// 	kolibri_event_set_mask(KOLIBRI_IPC_EVENT_MASK);
 	
 	while (1) {
-		if (kolibri_event_wait() != KOLIBRI_IPC_EVENT) {		// Just ignore this error
-			continue;
-		}
-		
-		message_handle(kolibri_IPC_get_next_message());
-		kolibri_IPC_clear_buff();
+		Message *msg = IPCWaitMessage(-1);
+// 		if (kolibri_event_wait() != KOLIBRI_IPC_EVENT) {		// Just ignore this error
+// 			continue;
+// 		}
+		message_handle(msg);
+		free(msg);
+// 		kolibri_IPC_clear_buff();
 	}
 }
 
@@ -208,7 +210,7 @@ void send_group_message(group_list_t *group, int tid, char *message, int length)
 	memcpy(msg+4, message, length);
 	
 	do {
-		kolibri_IPC_send(thread->tid, msg, length+sizeof(int));
+		IPCSend(thread->tid, msg, length+sizeof(int));		// Here may be some errror handler
 		thread = thread->next;
 	} while (thread != thread_list);
 }

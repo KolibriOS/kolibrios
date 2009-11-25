@@ -1,5 +1,9 @@
+ROOT=../../../develop/libraries/framework/trunk
+
+include ../../../develop/libraries/framework/trunk/config.mk
+
 # Note that kobra_st.o MUST be first and kobra.o last.
-OBJECTS=kobra_st.o heap.o malloc.o stdlib.o kolibri.o kobra.o
+OBJECTS=kobra_st.o $(ROOT)/stdlib/heap.o $(ROOT)/stdlib/malloc.o $(ROOT)/stdlib/stdlib.o $(ROOT)/kolibri/kolibri.o $(ROOT)/libIPC/ipc.o kobra.o
 
 # Set real path to kolibri.img if you want to use install option
 KOLIBRI_IMG=../../../../../../0.7.x-night/kolibri.img
@@ -7,26 +11,26 @@ KOLIBRI_IMG=../../../../../../0.7.x-night/kolibri.img
 # Path to kobra.kex on floppy (directory should be created before installing)
 DESTDIR=kobra/
 
-CC=gcc
-AS=gcc
-LD=ld
-OBJCOPY=objcopy
-READELF=readelf
-MCOPY=mcopy
-RM=rm -rf
+# CC=gcc
+# AS=gcc
+# LD=ld
+# OBJCOPY=objcopy
+# READELF=readelf
+# MCOPY=mcopy
+# RM=rm -rf
 
-CFLAGS=-c -m32 -O2
-ASFLAGS=-c -m32
-LDFLAGS=-nostdlib -T kolibri.ld -melf_i386
+# CFLAGS=-c -m32 -O2
+# ASFLAGS=-c -m32
+# LDFLAGS=-nostdlib -T kolibri.ld -melf_i386
 OBJCOPYFLAGS=-O binary
 READELFFLAGS=--syms
 MCOPYFLAGS=-D o
 
-.c.o:
-	$(CC) $(CFLAGS) $<
-
-.s.o:
-	$(AS) $(ASFLAGS) $<
+# .c.o:
+# 	$(CC) $(CFLAGS) $<
+# 
+# .s.o:
+# 	$(AS) $(ASFLAGS) $<
 
 all: $(OBJECTS)
 	$(LD) $(LDFLAGS) -o kobra.elf $(OBJECTS)

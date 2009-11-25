@@ -20,53 +20,6 @@
 #include "malloc.h"
 
 /*
- * IPC functions & data
- */
-
-kolibri_IPC_area_t *kolibri_IPC_area;
-
-int kolibri_IPC_set_area(void *area, int size){
-	int result;
-	
-	asm("int $0x40":"=a"(result):"a"(60),"b"(1),"c"(area),"d"(size));
-	
-	return result;
-}
-
-int kolibri_IPC_send(int tid, void *msg, int length){
-	int result;
-	
-	asm("movl %5, %%esi\nint $0x40":"=a"(result):"a"(60),"b"(2),"c"(tid),"d"(msg),"g"(length));
-	
-	return result;
-}
-
-void kolibri_IPC_unlock(){
-	kolibri_IPC_area->lock = 0;
-}
-
-void kolibri_IPC_lock(){
-	kolibri_IPC_area->lock = 1;
-}
-
-int kolibri_IPC_init(void *area, int size){
-	kolibri_IPC_area = (kolibri_IPC_area_t *)area;
-	kolibri_IPC_area->size = 8;
-	
-	return kolibri_IPC_set_area(area, size);
-}
-
-kolibri_IPC_message_t *kolibri_IPC_get_next_message(){
-	kolibri_IPC_lock();
-	return (kolibri_IPC_message_t *)((char *)kolibri_IPC_area+sizeof(kolibri_IPC_area_t));
-}
-
-void kolibri_IPC_clear_buff(){
-	kolibri_IPC_area->size = 8;
-	kolibri_IPC_unlock();
-}
-
-/*
  * Other process/thread functions
  */
 
@@ -120,12 +73,35 @@ void *kolibri_malloc(int nbytes){
 /*
  * Events functions
  */
-void kolibri_set_event_mask(int mask){
-	asm("int $0x40"::"a"(40),"b"(mask));
+
+int kolibri_event_mask;
+
+int kolibri_event_set_mask(int mask){
+	kolibri_event_mask = mask;
+	asm("int $0x40"::"a"(40),"b"(kolibri_event_mask));
+	return 0;
 }
 
-int kolibri_event_wait(){
+int kolibri_event_get_mask(int mask){
+	return kolibri_event_mask;
+}
+
+void kolibri_event_add_mask(int amask){
+	kolibri_event_set_mask(kolibri_event_mask | amask);
+}
+
+void kolibri_event_sub_mask(int amask){
+	kolibri_event_set_mask(kolibri_event_mask & ~amask);
+}
+
+int kolibri_event_wait(int time){
 	int event;
-	asm("int $0x40":"=a"(event):"a"(10));
+	if (!time) {
+		asm("int $0x40":"=a"(event):"a"(11));
+	} else if (time == -1) {
+		asm("int $0x40":"=a"(event):"a"(10));
+	} else {
+		asm("int $0x40":"=a"(event):"a"(23),"b"(time));
+	}
 	return event;
 }

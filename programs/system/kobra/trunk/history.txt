@@ -1,7 +1,11 @@
 ==================== Русский ====================
+0.1.1 - 25.11.2009 - vkos
+	* Переход на libIPC, перенос вспомогательных файлов в framework
 0.1 - 26.10.2009 - vkos
 	+ Реализованы базовые функции: регистрация, вступление/выход из группы, рассылка сообщений
 
 ==================== English ====================
+0.1.1 - 25.11.2009 - vkos
+	* Moved to libIPC, some files moved to framework
 0.1 - 26.10.2009 - vkos
 	+ Base functions are realised: registration, joining/leaving group, message distribution

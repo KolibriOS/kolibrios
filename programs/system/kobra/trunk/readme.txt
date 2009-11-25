@@ -1,5 +1,5 @@
 ==================== Русский ====================
-Версия: 0.1
+Версия: 0.1.1
 Kobra (Kolibri Bus for Reaching Applications) - демон (сервер), позволяющий приложениям проще общаться друг с другом.
 Для работы с Kobra необходимо зарегистрироваться на сервере (через IPC). После регистрации приложению доступны следующие функции:
 -Вступить в группу потоков (если нет - создаётся)
@@ -11,7 +11,7 @@ Kobra (Kolibri Bus for Reaching Applications) - демон (сервер), позволяющий прил
 Примеров работы пока нет, однако в ближайшее время использование Kobra будет реализовано в Launch и в новом хранителе экрана.
 
 ==================== English ====================
-Version: 0.1
+Version: 0.1.1
 Kobra (Kolibri Bus for Reaching Applications) is a daemon (server), which allows applications to easier communicate with each other.
 For working with Kobra application should register on server (via IPC). After registration following functions are available for application:
 -Join thread group (if there is no such group, it will be created)
