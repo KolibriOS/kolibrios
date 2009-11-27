@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -511,6 +511,47 @@ end virtual
 
 virtual at 0
   SMAP SMAP
+end virtual
+
+struc DLLDESCR
+{
+    .bk         dd ?
+    .fd         dd ?    ;+4
+    .data       dd ?    ;+8
+    .size       dd ?    ;+12
+    .timestamp  dq ?
+    .refcount   dd ?
+    .defaultbase dd ?
+    .coff_hdr    dd ?
+    .symbols_ptr dd ?
+    .symbols_num dd ?
+    .symbols_lim dd ?
+    .exports     dd ?   ;export table
+    .name:
+    .sizeof:
+}
+
+struc HDLL
+{
+    .magic       dd ?   ; HDLL
+    .destroy     dd ?   ;internal destructor
+    .fd          dd ?   ;next object in list
+    .bk          dd ?   ;prev object in list
+    .pid         dd ?   ;owner id
+
+    .base        dd ?   ;mapped base
+    .size        dd ?   ;mapped size
+    .refcount    dd ?   ;reference counter for this process and this lib
+    .parent      dd ?   ;DLLDESCR
+    .sizeof:
+}
+
+virtual at 0
+  DLLDESCR DLLDESCR
+end virtual
+
+virtual at 0
+  HDLL HDLL
 end virtual
 
 struc display_t

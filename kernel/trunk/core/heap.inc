@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -749,6 +749,102 @@ m_next:
            jmp l_0
 m_exit:
            xor eax, eax
+           pop edi
+           pop esi
+           pop ebx
+           ret
+endp
+
+align 4
+proc user_alloc_at stdcall, address:dword, alloc_size:dword
+
+           push ebx
+           push esi
+           push edi
+
+           mov ebx, [current_slot]
+           mov edx, [address]
+           and edx, not 0xFFF
+           mov [address], edx
+           sub edx, 0x1000
+           jb  .error
+           mov esi, [ebx+APPDATA.heap_base]
+           mov edi, [ebx+APPDATA.heap_top]
+           cmp edx, esi
+           jb  .error
+.scan:
+           cmp esi, edi
+           jae .error
+           mov ebx, esi
+           shr ebx, 12
+           mov eax, [page_tabs+ebx*4]
+           mov ecx, eax
+           and ecx, 0xFFFFF000
+           add ecx, esi
+           cmp edx, ecx
+           jb  .found
+           mov esi, ecx
+           jmp .scan
+.error:
+           xor eax, eax
+           pop edi
+           pop esi
+           pop ebx
+           ret
+.found:
+           test al, FREE_BLOCK
+           jz  .error
+           mov eax, ecx
+           sub eax, edx
+           sub eax, 0x1000
+           cmp eax, [alloc_size]
+           jb  .error
+
+; Here we have 1 big free block which includes requested area.
+; In general, 3 other blocks must be created instead:
+; free at [esi, edx);
+; busy at [edx, edx+0x1000+ALIGN_UP(alloc_size,0x1000));
+; free at [edx+0x1000+ALIGN_UP(alloc_size,0x1000), ecx)
+; First or third block (or both) may be absent.
+           mov eax, edx
+           sub eax, esi
+           jz  .nofirst
+           or  al, FREE_BLOCK
+           mov [page_tabs+ebx*4], eax
+.nofirst:
+           mov eax, [alloc_size]
+           add eax, 0x1FFF
+           and eax, not 0xFFF
+           mov ebx, edx
+           add edx, eax
+           shr ebx, 12
+           or  al, USED_BLOCK
+           mov [page_tabs+ebx*4], eax
+           shr eax, 12
+           dec eax
+           jz  .second_nofill
+           inc ebx
+.fill:
+           mov dword [page_tabs+ebx*4], 2
+           inc ebx
+           dec eax
+           jnz .fill
+.second_nofill:
+           sub ecx, edx
+           jz  .nothird
+           or  cl, FREE_BLOCK
+           mov [page_tabs+ebx*4], ecx
+.nothird:
+
+           mov     edx, [current_slot]
+           mov     ebx, [alloc_size]
+           add     ebx, 0xFFF
+           and     ebx, not 0xFFF
+           add     ebx, [edx+APPDATA.mem_size]
+           call    update_mem_size
+
+           mov eax, [address]
+
            pop edi
            pop esi
            pop ebx

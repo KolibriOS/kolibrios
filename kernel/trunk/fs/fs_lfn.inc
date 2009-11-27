@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1004,6 +1004,19 @@ sys_current_directory:
 .set:
 ; sysfunction 30.1: [for app] eax=30,ebx=1,ecx->string
 ; for our code: ebx->string to set
+; use generic resolver with APPDATA.cur_dir as destination
+	push	0x1000
+	push	edx
+	call	get_full_file_name
+	ret
+
+; in: ebx = file name, [esp+4] = destination, [esp+8] = sizeof destination
+; destroys all registers except ebp,esp
+get_full_file_name:
+	push	ebp
+	mov	esi, [current_slot]
+	mov	esi, [esi+APPDATA.cur_dir]
+	mov	edx, esi
 @@:
 	inc	esi
 	cmp	byte [esi-1], 0
@@ -1012,6 +1025,7 @@ sys_current_directory:
 	cmp	byte [ebx], '/'
 	jz	.set_absolute
 ; string gives relative path
+	mov	edi, [esp+8]	; destination
 .relative:
 	cmp	byte [ebx], 0
 	jz	.set_ok
@@ -1032,33 +1046,67 @@ sys_current_directory:
 	dec	esi
 	cmp	byte [esi], '/'
 	jnz	@b
-	mov	byte [esi], 0
 	add	ebx, 3
 	jmp	.relative
+.set_ok:
+	cmp	edx, edi	; is destination equal to APPDATA.cur_dir?
+	jz	.set_ok.cur_dir
+	sub	esi, edx
+	cmp	esi, [esp+12]
+	jb	.set_ok.copy
+.fail:
+	mov	byte [edi], 0
+	xor	eax, eax	; fail
+	pop	ebp
+	ret	8
+.set_ok.copy:
+	mov	ecx, esi
+	mov	esi, edx
+	rep	movsb
+	mov	byte [edi], 0
+.ret.ok:
+	mov	al, 1	; ok
+	pop	ebp
+	ret	8
+.set_ok.cur_dir:
+	mov	byte [esi], 0
+	jmp	.ret.ok
 .doset_relative:
-	add	edx, 0x1000
-	mov	byte [esi], '/'
-	inc	esi
-	cmp	esi, edx
-	jae	.overflow_esi
+	cmp	edx, edi
+	jz	.doset_relative.cur_dir
+	sub	esi, edx
+	cmp	esi, [esp+12]
+	jae	.fail
+	mov	ecx, esi
+	mov	esi, edx
+	mov	edx, edi
+	rep	movsb
+	jmp	.doset_relative.copy
+.doset_relative.cur_dir:
+	mov	edi, esi
+.doset_relative.copy:
+	add	edx, [esp+12]
+	mov	byte [edi], '/'
+	inc	edi
+	cmp	edi, edx
+	jae	.overflow
 @@:
 	mov	al, [ebx]
 	inc	ebx
-	mov	[esi], al
-	inc	esi
+	stosb
 	test	al, al
-	jz	.set_ok
-	cmp	esi, edx
+	jz	.ret.ok
+	cmp	edi, edx
 	jb	@b
-.overflow_esi:
-	mov	byte [esi-1], 0 	; force null-terminated string
-.set_ok:
-	ret
+.overflow:
+	dec	edi
+	jmp	.fail
 .set_absolute:
 	lea	esi, [ebx+1]
 	call	process_replace_file_name
-	mov	edi, edx
-	add	edx, 0x1000
+	mov	edi, [esp+8]
+	mov	edx, [esp+12]
+	add	edx, edi
 .set_copy:
 	lodsb
 	stosb
@@ -1067,13 +1115,11 @@ sys_current_directory:
 .set_copy_cont:
 	cmp	edi, edx
 	jb	.set_copy
-.overflow_edi:
-	mov	byte [edi-1], 0
-	ret
+	jmp	.overflow
 .set_part2:
 	mov	esi, ebp
 	xor	ebp, ebp
 	test	esi, esi
-	jz	.set_ok
+	jz	.ret.ok
 	mov	byte [edi-1], '/'
 	jmp	.set_copy_cont

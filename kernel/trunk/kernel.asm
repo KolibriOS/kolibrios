@@ -613,6 +613,7 @@ include 'boot/rdload.inc'
 include 'vmodeld.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
 
+if 0
   mov ax,[OS_BASE+0x10000+bx_from_load]
   cmp ax,'r1'           ; if using not ram disk, then load librares and parameters {SPraid.simba}
   je  no_lib_load
@@ -621,6 +622,7 @@ include 'vmodeld.inc'
    call load_file_parse_table               ; prepare file parse table
    call set_kernel_conf                     ; configure devices and gui
 no_lib_load:
+end if
 
 ; LOAD FONTS I and II
 

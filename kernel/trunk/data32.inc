@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -118,6 +118,14 @@ align 4
 shmem_list:
  .bk           dd shmem_list
  .fd           dd shmem_list
+
+dll_list:
+ .bk           dd dll_list
+ .fd           dd dll_list
+
+MAX_DEFAULT_DLL_ADDR = 0x20000000
+MIN_DEFAULT_DLL_ADDR = 0x10000000
+dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 ; supported videomodes
 

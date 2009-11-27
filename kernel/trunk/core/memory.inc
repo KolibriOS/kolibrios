@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -614,7 +614,7 @@ end if
         test    eax, eax
         jz      .fail
 
-        stdcall map_page,[.err_addr],eax,dword PG_UW
+        stdcall map_page,[.err_addr],eax,PG_UW
 
         mov     edi, [.err_addr]
         and     edi, 0xFFFFF000
@@ -627,9 +627,40 @@ end if
         restore_ring3_context
         iretd
 
-.err_access  =  .fail
-;никогда не происходит
-       ;jmp     .fail
+.err_access:
+; access denied? this may be a result of copy-on-write protection for DLL
+; check list of HDLLs
+        and     ebx, not 0xFFF
+        mov     eax, [CURRENT_TASK]
+        shl     eax, 8
+        lea     eax, [SLOT_BASE+eax+APP_OBJ_OFFSET]
+        mov     esi, [eax+APPOBJ.fd]
+.scan_hdll:
+        cmp     esi, eax
+        jz      .fail
+        cmp     [esi+APPOBJ.magic], 'HDLL'
+        jnz     .scan_hdll.next
+        mov     edx, ebx
+        sub     edx, [esi+HDLL.base]
+        cmp     edx, [esi+HDLL.size]
+        jb      .fault_in_hdll
+.scan_hdll.next:
+        mov     esi, [esi+APPOBJ.fd]
+        jmp     .scan_hdll
+.fault_in_hdll:
+; allocate new page, map it as rw and copy data
+        call    alloc_page
+        test    eax, eax
+        jz      .fail
+        stdcall map_page,ebx,eax,PG_UW
+        mov     edi, ebx
+        mov     ecx, 1024
+        sub     ebx, [esi+HDLL.base]
+        mov     esi, [esi+HDLL.parent]
+        mov     esi, [esi+DLLDESCR.data]
+        add     esi, ebx
+        rep     movsd
+        jmp     .exit
 
 .kernel_space:
         test    eax, PG_MAP
