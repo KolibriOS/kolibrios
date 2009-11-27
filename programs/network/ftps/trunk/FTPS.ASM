@@ -601,7 +601,7 @@ disconnectData:
     ; to wait for all data to pass through the stack before closing
     pusha
     mov     eax,5
-    mov     ebx,200                 ; Delay for 2s
+    mov     ebx,10          ; Delay for 100ms
     mcall
     popa
 
@@ -661,7 +661,7 @@ connectData:
     mov     ebx, 5      ; Open TCP socket
     mov     esi, [DataIP]      ; remote IP address
     mov     edx, [DataPort]    ; remote port
-    mov     ecx, 20     ; ftp data port id
+    mov     ecx, 0      ; ftp data port id
     mov     edi, 1      ; active open
     mcall
     mov     [DataSocket], eax
