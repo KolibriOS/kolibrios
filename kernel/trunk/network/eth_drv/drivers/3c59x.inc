@@ -2134,10 +2134,10 @@ e3c59x_boomerang_transmit:
 @@:
 ; calculate
 	mov	ebx, ecx
-	test	byte [e3c59x_has_hwcksm], 0xff
-	jz	@f
-;;;        or      ebx, (1 shl 26) ; set AddTcpChecksum
-@@:
+	;test	byte [e3c59x_has_hwcksm], 0xff
+	;jz	@f
+	;or      ebx, (1 shl 26) ; set AddTcpChecksum
+;@@:
 	or	ebx, 0x8000 ; transmission complete notification
 	or	ecx, 0x80000000 ; last fragment
 ; program DPD

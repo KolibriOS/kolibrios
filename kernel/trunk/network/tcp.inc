@@ -888,7 +888,7 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	jne	.exit
 
 	; Did we receive a FIN or RST?
-	test	[edx + 20 + TCP_PACKET.Flags], TH_FIN
+	test	[edx + 20 + TCP_PACKET.Flags], TH_FIN+TH_RST
 	jz	.check_ack
 
 	; It was a fin or reset.
@@ -922,6 +922,10 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
     @@: ; Send an ACK to that fin, and enter closewait state
 
 	mov	[ebx + SOCKET.TCBState], TCB_CLOSE_WAIT
+	test	[edx + 20 + TCP_PACKET.Flags], TH_RST
+	je      @f
+	mov	[ebx + SOCKET.TCBState], TCB_CLOSED
+    @@:	
 	call	signal_network_event
 	lea	esi, [ebx + SOCKET.RCV_NXT]
 	mov	eax, [esi]		; save original

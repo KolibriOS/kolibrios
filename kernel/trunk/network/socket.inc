@@ -584,6 +584,8 @@ local sockAddr dd ?
 	je	.destroy_tcb
 	cmp	[ebx + SOCKET.TCBState], TCB_SYN_SENT
 	je	.destroy_tcb
+	cmp	[ebx + SOCKET.TCBState], TCB_CLOSED
+	je	.destroy_tcb
 
 	; Now construct the response, and queue for sending by IP
 	mov	eax, EMPTY_QUEUE
