@@ -1018,6 +1018,29 @@ proc load_driver stdcall, driver_name:dword
 	   ret
 endp
 
+; in: edx -> COFF_SECTION struct
+; out: eax = alignment as mask for bits to drop
+coff_get_align:
+; Rules:
+; - if alignment is not given, use default = 4K;
+; - if alignment is given and is no more than 4K, use it;
+; - if alignment is more than 4K, revert to 4K.
+	push	ecx
+	mov	cl, byte [edx+CFS.Characteristics+2]
+	mov	eax, 1
+	shr	cl, 4
+	dec	cl
+	js	.default
+	cmp	cl, 12
+	jbe	@f
+.default:
+	mov	cl, 12
+@@:
+	shl	eax, cl
+	pop	ecx
+	dec	eax
+	ret
+
 align 4
 proc load_library stdcall, file_name:dword
 	   locals
@@ -1136,9 +1159,11 @@ proc load_library stdcall, file_name:dword
 
 	   add edx, 20
 @@:
+	   call coff_get_align
+	   add ebx, eax
+	   not eax
+	   and ebx, eax
 	   add ebx, [edx+CFS.SizeOfRawData]
-	   add ebx, 15
-	   and ebx, not 15
 	   add edx, COFF_SECTION_SIZE
 	   dec ecx
 	   jnz @B
@@ -1172,9 +1197,14 @@ proc load_library stdcall, file_name:dword
 	   movzx ebx, [edx+CFH.nSections]
 	   mov edi, eax
 	   add edx, 20
-	   xor eax, eax
 	   cld
 @@:
+	   call coff_get_align
+	   add ecx, eax
+	   add edi, eax
+	   not eax
+	   and ecx, eax
+	   and edi, eax
 	   mov [edx+CFS.VirtualAddress], ecx
 	   add ecx, [edx+CFS.SizeOfRawData]
 	   mov esi, [edx+CFS.PtrRawData]
@@ -1182,6 +1212,7 @@ proc load_library stdcall, file_name:dword
 	   mov ecx, [edx+CFS.SizeOfRawData]
 	   test esi, esi
 	   jnz .copy
+	   xor eax, eax
 	   rep stosb
 	   jmp .next
 .copy:
@@ -1189,10 +1220,6 @@ proc load_library stdcall, file_name:dword
 	   rep movsb
 .next:
            pop ecx
-	   add edi, 15 ;-new_app_base
-	   add ecx, 15
-	   and edi, -16
-	   and ecx, -16
 	   add edx, COFF_SECTION_SIZE
 	   dec ebx
 	   jnz @B
