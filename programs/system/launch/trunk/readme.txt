@@ -1,5 +1,5 @@
 ==================== Русский ====================
-Версия: 0.1.80 (0.2 beta)
+Версия: 0.1.80.1 (0.2 beta)
 Launch - программа для запуска приложения из директорий поиска.
 При запуске читает файл launch.cfg в /sys/etc, затем в директории запуска.
 После этого смотрит параметры командной строки. Приоритет параметров - по
@@ -14,10 +14,10 @@ debug.level - уровень отладки (0 - только сообщение удачно/неудачно, 1 - выводит
 kobra.use - использование Kobra
 
 ПРЕДУПРЕЖДЕНИЕ:
-для работы нужна libini не старее ревизии #1235.
+для работы нужна libconfig.
 
 ==================== English ====================
-Version: 0.1.80 (0.2 beta)
+Version: 0.1.80.1 (0.2 beta)
 Launch is a programme that launches applications from search dirictories.
 On the start it reads file launch.cfg in /sys/etc and in current dirictory.
 Than it reads command line arguments. Priority of arguments is as reading.
@@ -30,4 +30,4 @@ debug.debug - debug options (no or console)
 debug.level - debug level (0 - show only ok/error messages, 1 - show for each directory)
 kobra.use - using of Kobra
 ATTENTION:
-you need libini from at least #1235 revision.
+you need libconfig to use launch.

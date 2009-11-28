@@ -20,7 +20,7 @@
 format binary
 
 APP_NAME fix 'Launch'
-APP_VERSION fix '0.1.60'
+APP_VERSION fix '0.1.80.1'
 
 use32
 org 0x0
@@ -299,7 +299,7 @@ exit:
 align 16
 importTable:
 
-library libini, 'libini.obj' ;,                           \
+library libini, 'libconfig.obj' ;,                      \
 ;        libio, 'libio.obj',                            \
 
 import	libini, \

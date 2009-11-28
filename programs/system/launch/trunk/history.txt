@@ -1,4 +1,6 @@
 ==================== Русский ====================
+0.1.80.1 - vkos
+	* В связи с переименовыванием новой версии libini в libconfig, переход на новое имя.
 0.1.80 (0.2 beta) - vkos
 	+ Оповещение всех заинтересованных (входящих в группу launch_reactive) приложений через Kobra
 0.1.5 - 25.10.2009 - vkos
@@ -19,6 +21,8 @@
 	+ Реализовано чтение конфигурации и запуск программы (без аргументов)
 
 ==================== English ====================
+0.1.80.1 - vkos
+	* Moved to libconfig from libini because of renaming last version.
 0.1.80 (0.2 beta) - vkos
 	+ notification all intrested (members of launch_reactive group) applications via Kobra
 0.1.5 - 25.10.2009 - vkos
