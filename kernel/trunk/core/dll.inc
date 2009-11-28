@@ -1310,7 +1310,7 @@ proc load_library stdcall, file_name:dword
 	   mov [img_base], eax
 	   mov ebx, [CURRENT_TASK]
 	   shl ebx, 5
-	   add ebx, [CURRENT_TASK+ebx+TASKDATA.pid]
+	   mov ebx, [CURRENT_TASK+ebx+TASKDATA.pid]
 	   mov eax, HDLL.sizeof
 	   call create_kernel_object
 	   test eax, eax
@@ -1384,7 +1384,7 @@ dereference_dll:
 	mov	edx, [esi+DLLDESCR.bk]
 	mov	[eax+DLLDESCR.bk], edx
 	mov	[edx+DLLDESCR.fd], eax
-	stdcall	kernel_free, [esi+DLLDESCR.symbols_ptr]
+	stdcall	kernel_free, [esi+DLLDESCR.coff_hdr]
 	stdcall	kernel_free, [esi+DLLDESCR.data]
 	mov	eax, esi
 	call	free
@@ -1395,10 +1395,28 @@ destroy_hdll:
 	push	ebx esi edi
 	push	eax
 	mov	ebx, [eax+HDLL.base]
-	push	ebx	; argument for user_free
-	push	eax
 	mov	esi, [eax+HDLL.parent]
 	mov	edx, [esi+DLLDESCR.size]
+; The following actions require the context of application where HDLL is mapped.
+; However, destroy_hdll can be called in the context of OS thread when
+; cleaning up objects created by the application which is destroyed.
+; So remember current cr3 and set it to page table of target.
+	mov	eax, [eax+HDLL.pid]
+	call	pid_to_slot
+	shl	eax, 8
+	add	eax, SLOT_BASE
+	mov	ecx, [eax+APPDATA.dir_table]
+; Because we cheat with cr3, disable interrupts: task switch would restore
+; page table from APPDATA of current thread.
+; Also set [current_slot] because it is used by user_free.
+	pushf
+	cli
+	push	[current_slot]
+	mov	[current_slot], eax
+	mov	eax, cr3
+	push	eax
+	mov	cr3, ecx
+	push	ebx	; argument for user_free
 	mov	eax, ebx
 	shr	ebx, 12
 	push	ebx
@@ -1408,8 +1426,11 @@ destroy_hdll:
 	push	eax
 	mov	eax, 2
 	xchg	eax, [page_tabs+ebx*4]
-	cmp	eax, [page_tabs+esi*4]
-	jnz	@f
+	mov	ecx, [page_tabs+esi*4]
+	and	eax, not 0xFFF
+	and	ecx, not 0xFFF
+	cmp	eax, ecx
+	jz	@f
 	call	free_page
 @@:
 	pop	eax
@@ -1419,12 +1440,20 @@ destroy_hdll:
 	inc	esi
 	sub	edx, 0x1000
 	ja	.unmap_loop
-	pop	ebx eax
+	pop	ebx
 	and	dword [page_tabs+(ebx-1)*4], not DONT_FREE_BLOCK
+	call	user_free
+; Restore context.
+	pop	eax
+	mov	cr3, eax
+	pop	[current_slot]
+	popf
+; Ok, cheating is done.
+	pop	eax
+	push	eax
 	mov	esi, [eax+HDLL.parent]
 	mov	eax, [eax+HDLL.refcount]
 	call	dereference_dll
-	call	user_free
 	pop	eax
 	call	destroy_kernel_object
 	pop	edi esi ebx
