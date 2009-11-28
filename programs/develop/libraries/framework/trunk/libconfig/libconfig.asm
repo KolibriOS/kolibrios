@@ -1,22 +1,30 @@
 ;;================================================================================================;;
-;;//// libini.asm //// (c) mike.dld, 2006-2008 ///////////////////////////////////////////////////;;
+;;//// libconfig.asm /////////////////////////////////////////////////////////////////////////////;;
+;;////  (c) mike.dld, 2006-2008    ///////////////////////////////////////////////////////////////;;
+;;////  (c) Vasiliy Kosenko, 2009  ///////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
-;; This file is part of Common development libraries (Libs-Dev).                                  ;;
+;; This file is part of libconfig (based on Libs-Dev's libini)                                    ;;
 ;;                                                                                                ;;
-;; Libs-Dev is free software: you can redistribute it and/or modify it under the terms of the GNU ;;
-;; Lesser General Public License as published by the Free Software Foundation, either version 2.1 ;;
-;; of the License, or (at your option) any later version.                                         ;;
+;; Libconfig is free software: you can redistribute it and/or modify it under the terms of the    ;;
+;; GNU General Public License as published by the Free Software Foundation, either version 3 of   ;;
+;; the License, or (at your option) any later version.                                            ;;
 ;;                                                                                                ;;
-;; Libs-Dev is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without  ;;
+;; Libconfig is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without ;;
 ;; even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU  ;;
 ;; Lesser General Public License for more details.                                                ;;
 ;;                                                                                                ;;
-;; You should have received a copy of the GNU Lesser General Public License along with Libs-Dev.  ;;
+;; You should have received a copy of the GNU General Public License along with Libconfig         ;;
 ;; If not, see <http://www.gnu.org/licenses/>.                                                    ;;
 ;;                                                                                                ;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
+;; 2009-10-27 (vkos)                                                                              ;;
+;;   new features:                                                                                ;;
+;;     - new function: ini.get_bool                                                               ;;
+;; 2009-10-25 (vkos)                                                                              ;;
+;;   new features:                                                                                ;;
+;;     - new function: ini.get_option_str                                                         ;;
 ;; 2009-03-08 (mike.dld)                                                                          ;;
 ;;   bug-fixes:                                                                                   ;;
 ;;     - moved buffer bound check in libini._.low.read_value up (reported by Insolor)             ;;
@@ -71,6 +79,10 @@ include 'libini_p.inc'
 section '.flat' code readable align 16
 
 include 'libini_p.asm'
+
+;; For ini.get_option_str
+str_find_in_array fix libini._.find_string
+include 'find_str.asm'
 
 ;;================================================================================================;;
 proc ini.enum_sections _f_name, _callback ;///////////////////////////////////////////////////////;;
@@ -657,6 +669,83 @@ endl
 	ret
 endp
 
+;;================================================================================================;;
+proc ini.get_option_str _f_name, _sec_name, _key_name, _option_list, _length, _def_val ;//////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Read string, compare with list of possible & return its' number                                ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _f_name = ini filename <asciiz>                                                                ;;
+;> _sec_name = section name <asciiz>                                                              ;;
+;> _key_name = key name <asciiz>                                                                  ;;
+;> _option_list = list of options <pointer to zero-ended archive of asciiz-pointers>              ;;
+;> _length = maximum length of string                                                             ;;
+;> _def_val = default value to return if no key, section, file found or incorrect string <dword>  ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = [_def_val] (error) / number of option string in _option_list <dword>                     ;;
+;;================================================================================================;;
+locals
+  buff rb ini.MAX_VALUE_LEN
+endl
+	
+	lea eax, [buff]
+	stdcall ini.get_str, [_f_name], [_sec_name], [_key_name], eax, ini.MAX_VALUE_LEN
+	
+	inc eax
+	test eax, eax
+	je .default
+	
+	;; Now convert option from string to number
+	lea eax, [buff]
+	sub esp, 4
+	stdcall libini._.find_string, [_option_list], eax
+	add esp, 4
+	
+	inc eax
+	test eax, eax
+	je .default
+	dec eax
+	jmp .exit
+	
+.default:
+	mov eax, dword [_def_val]
+	
+.exit:
+	ret
+endp
+
+;; Note that order of following array should be: false-true-false-true-...-0
+_bool_strings_list:
+	dd _bool_no
+	dd _bool_yes
+	dd _bool_disabled
+	dd _bool_enabled
+	dd _bool_false
+	dd _bool_true
+	dd 0
+
+_bool_no:	db "no", 0
+_bool_false:	db "false", 0
+_bool_disabled:	db "disabled", 0
+_bool_yes:	db "yes", 0
+_bool_true:	db "true", 0
+_bool_enabled:	db "enabled", 0
+
+;;================================================================================================;;
+proc ini.get_bool _f_name, _sec_name, _key_name, _def_val ;///////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Read boolean value                                                                             ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _f_name = ini filename <asciiz>                                                                ;;
+;> _sec_name = section name <asciiz>                                                              ;;
+;> _key_name = key name <asciiz>                                                                  ;;
+;> _def_val = default value to return if no key, section, file found or incorrect string <dword>  ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = [_def_val] (error) / number of option string in _option_list <dword>                     ;;
+;;================================================================================================;;
+	stdcall ini.get_option_str, [_f_name], [_sec_name], [_key_name], _bool_strings_list, ini.MAX_BOOL_LEN, [_def_val]
+	and eax, 0x1
+	ret
+endp
 
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
@@ -697,14 +786,15 @@ import	libio			    , \
 align 16
 @EXPORT:
 
-export						  \
-	libini._.init	  , 'lib_init'		, \
+export	libini._.init	  , 'lib_init'		, \
 	0x00080008	  , 'version'		, \
 	ini.enum_sections , 'ini_enum_sections' , \
 	ini.enum_keys	  , 'ini_enum_keys'	, \
 	ini.get_str	  , 'ini_get_str'	, \
 	ini.get_int	  , 'ini_get_int'	, \
 	ini.get_color	  , 'ini_get_color'	, \
+	ini.get_option_str, 'ini_get_option_str', \
+	ini.get_bool	  , 'ini_get_bool'	, \
 	ini.set_str	  , 'ini_set_str'	, \
 	ini.set_int	  , 'ini_set_int'	, \
-	ini.set_color	  , 'ini_set_color'
+	ini.set_color	  , 'ini_set_color'	;, \
