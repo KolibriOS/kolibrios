@@ -87,6 +87,9 @@ con:
     ; Need to call disconnect, since a remote close does not fully
     ; close the socket
     call    disconnect
+    mov     eax,5
+    mov     ebx,10          ; Delay for 100ms
+    mcall
     call    connect
     jmp     noc
 
