@@ -1755,14 +1755,14 @@ readmousepos:
 ; eax=6 delete cursor   ; reserved
 ; eax=7 get mouse_z
 
-           cmp eax, 7
+           cmp ebx, 7
            ja msset
-           jmp [mousefn+eax*4]
+           jmp [mousefn+ebx*4]
 msscreen:
            mov  eax,[MOUSE_X]
            shl  eax,16
            mov  ax,[MOUSE_Y]
-           mov  [esp+36],eax
+           mov  [esp+36-4],eax
            ret
 mswin:
            mov  eax,[MOUSE_X]
@@ -1780,11 +1780,11 @@ mswin:
            rol  eax,16
            sub  ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
            rol  eax,16
-           mov  [esp+36],eax
+           mov  [esp+36-4],eax
            ret
 msbutton:
            movzx eax,byte [BTN_DOWN]
-           mov  [esp+36],eax
+           mov  [esp+36-4],eax
            ret
 msz:
            mov   edi, [TASK_COUNT]
@@ -1794,32 +1794,32 @@ msz:
            mov   ax,[MOUSE_SCROLL_H]
            shl   eax,16
            mov   ax,[MOUSE_SCROLL_V]
-           mov   [esp+36],eax
+           mov   [esp+36-4],eax
            and   [MOUSE_SCROLL_H],word 0
            and   [MOUSE_SCROLL_V],word 0
            ret
        @@:
-           and  [esp+36],dword 0
+           and  [esp+36-4],dword 0
 ;           ret
 msset:
            ret
 
 app_load_cursor:
       ;     add ebx, new_app_base
-           cmp ebx, OS_BASE
+           cmp ecx, OS_BASE
            jae msset
-           stdcall load_cursor, ebx, ecx
-           mov [esp+36], eax
+           stdcall load_cursor, ecx, edx
+           mov [esp+36-4], eax
            ret
 
 app_set_cursor:
-           stdcall set_cursor, ebx
-           mov [esp+36], eax
+           stdcall set_cursor, ecx
+           mov [esp+36-4], eax
            ret
 
 app_delete_cursor:
-           stdcall delete_cursor, ebx
-           mov [esp+36], eax
+           stdcall delete_cursor, ecx
+           mov [esp+36-4], eax
            ret
 
 is_input:
@@ -5167,37 +5167,39 @@ align 4
 
 syscall_cdaudio:                        ; CD
 
-        cmp     eax, 4
+        cmp     ebx, 4
         jb      .audio
         jz      .eject
-        cmp     eax, 5
+        cmp     ebx, 5
         jnz     .ret
 .load:
         call    .reserve
         call    LoadMedium
-        call    .free
-        ret
+        ;call    .free
+		jmp		.free
+;        ret
 .eject:
         call    .reserve
         call    clear_CD_cache
         call    allow_medium_removal
         call    EjectMedium
-        call    .free
-        ret
+;        call    .free
+		jmp		.free
+;        ret
 .audio:
      call  sys_cd_audio
-     mov   [esp+36],eax
+     mov   [esp+36-4],eax
 .ret:
      ret
 
 .reserve:
         call    reserve_cd
-        mov     eax, ebx
+        mov     eax, ecx
         shr     eax, 1
         and     eax, 1
         inc     eax
         mov     [ChannelNumber], ax
-        mov     eax, ebx
+        mov     eax, ecx
         and     eax, 1
         mov     [DiskNumber], al
         call    reserve_cd_channel
@@ -5210,7 +5212,7 @@ syscall_cdaudio:                        ; CD
         mov     al, [DRIVE_DATA+1]
         shr     al, cl
         test    al, 2
-        jz      .err
+        jz      .free;.err
         ret
 .free:
         call    free_cd_channel
@@ -5218,7 +5220,7 @@ syscall_cdaudio:                        ; CD
         ret
 .err:
         call    .free
-        pop     eax
+;        pop     eax
         ret
 
 align 4

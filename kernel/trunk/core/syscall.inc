@@ -127,7 +127,7 @@ iglobal
       dd 0
       dd 0
       dd 0
-      dd syscall_cdaudio         ; 24-PlayCdTrack,StopCd and GetCdPlaylist
+      dd 0                       ; 24-PlayCdTrack,StopCd and GetCdPlaylist
       dd 0                       ; 25
       dd 0			 ; 26
       dd 0
@@ -140,7 +140,7 @@ iglobal
       dd 0
       dd 0
       dd 0
-      dd readmousepos            ; 37-GetMousePosition_ScreenRelative,.
+      dd 0                       ; 37-GetMousePosition_ScreenRelative,.
       dd 0                       ; 38-DrawLine
       dd sys_getbackground       ; 39-GetBackgroundSize,ReadBgrData,.
       dd 0
@@ -206,7 +206,7 @@ iglobal
       dd sys_setup               ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
       dd sys_settime 	         ; 22-setting date,time,clock and alarm-clock
       dd sys_wait_event_timeout  ; 23-TimeOutWaitForEvent
-      dd cross_order             ; 24-PlayCdTrack,StopCd and GetCdPlaylist
+      dd syscall_cdaudio         ; 24-PlayCdTrack,StopCd and GetCdPlaylist
       dd undefined_syscall       ; 25-reserved
       dd sys_getsetup            ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
       dd undefined_syscall       ; 27-reserved
@@ -219,7 +219,7 @@ iglobal
       dd undefined_syscall       ; 34-reserved
       dd syscall_getpixel        ; 35-GetPixel
       dd syscall_getarea         ; 36-GetArea
-      dd cross_order             ; 37-GetMousePosition_ScreenRelative,.
+      dd readmousepos            ; 37-GetMousePosition_ScreenRelative,.
       dd syscall_drawline        ; 38-DrawLine
       dd cross_order             ; 39-GetBackgroundSize,ReadBgrData,.
       dd set_app_param           ; 40-WantEvents
