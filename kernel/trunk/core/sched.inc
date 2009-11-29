@@ -190,7 +190,7 @@ do_change_task:
 
         mov dx, app_tls
         mov fs, dx
-@:
+@@:
 ; set gs selector unconditionally
         Mov     gs,ax,graph_data
       ; set CR0.TS
