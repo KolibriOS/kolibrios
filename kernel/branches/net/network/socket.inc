@@ -741,6 +741,7 @@ socket_send:
 ;
 ; At moment, uses only pseudo-optname -2 for get last_ack_number for TCP.
 ; TODO: find best way to notify that send()'ed data were acknowledged
+; Also pseudo-optname -3 is valid and returns socket state, one of TCB_*.
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -749,7 +750,10 @@ socket_get_opt:
 	cmp	dword [edx], IP_PROTO_TCP
 	jnz	.unknown
 	cmp	dword [edx+4], -2
+	jz	@f
+	cmp	dword [edx+4], -3
 	jnz	.unknown
+@@:
 	mov	eax, [edx+12]
 	test	eax, eax
 	jz	.fail
@@ -761,6 +765,10 @@ socket_get_opt:
 	jz	.fail
 	; todo: check that eax is really TCP socket
 	mov	ecx, [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.last_ack_number]
+	cmp	dword [edx+4], -2
+	jz	@f
+	mov	ecx, [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state]
+@@:
 	mov	eax, [edx+8]
 	test	eax, eax
 	jz	@f
