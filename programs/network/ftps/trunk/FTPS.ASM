@@ -444,7 +444,7 @@ outputStr:
     ; The TCP/IP transmit queue is full; Wait a bit, then retry
     pusha
     mov     eax,5
-    mov     ebx,1                 ; Delay for up 100ms
+    mov     ebx,1                 ; Delay for up 10ms
     mcall
     popa
     jmp     outputStr
@@ -481,7 +481,7 @@ outputDataStr:
     ; The TCP/IP transmit queue is full; Wait a bit, then retry
     pusha
     mov     eax,5
-    mov     ebx,20           ; Delay for upto 200ms
+    mov     ebx,1                 ; Delay for up 10ms
     mcall
     popa
     jmp     outputDataStr
@@ -1066,6 +1066,7 @@ sendFile:
     mov     ebx, fileinfoblock
     and     dword [ebx], 0 ; read cmd
     and     dword [ebx+4], 0 ; first block
+    mov     dword [ebx+12], 0x400 ; block size
 
 sf002a:
     ; now read the file..
@@ -1085,7 +1086,7 @@ sf002a:
     jnz     sf_exit
 ; wait a bit
     mov     eax, 5
-    mov     ebx, 10
+    mov     ebx, 1
     mcall
     mov     ebx, fileinfoblock
     add     dword [ebx+4], edx
@@ -1140,17 +1141,12 @@ gf000:
     je      gf_sleep
 
     mov     eax, 53
-    mov     ebx, 3                  ; Get a byte from socket in bl
+    mov     ebx, 11                 ; Get a bytes from socket
     mov     ecx, [DataSocket]
-    mcall                    ; returned data in bl
-
-    mov     esi, text + 0x1300
-    add     esi, dword [fsize]
-    mov     [esi], bl
-    inc     dword [fsize]
-
-    ; dummy, write to screen
-    ;call    printChar
+    mov     edx, text + 0x1300
+    add     edx, dword [fsize]
+    mcall                           ; returned data len in eax
+    add     dword [fsize], eax
 
     jmp     gf000
 
@@ -1176,7 +1172,7 @@ gf_sleep:
 gf001:
     ; wait a bit
     mov     eax,5
-    mov     ebx,10              ; Delay for up 100ms
+    mov     ebx,1               ; Delay for up 10ms
     mcall
     jmp     gf000               ; try for more data
 
