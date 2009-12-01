@@ -1289,6 +1289,7 @@ cmdDELE:
     and     dword [ebx+16], 0
     mov     eax, 70
     mcall
+    mov     ebx, fileinfoblock
     pop     dword [ebx+16]
     pop     dword [ebx+12]
 
