@@ -33,7 +33,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
 .1:
 ; } \\ Alver \\
         pushad
-        call    [disable_mouse]
+        call    [_display.disable_mouse]
 
         movsx   eax, bx         ; eax=y
         sar     ebx, 16         ; ebx=x

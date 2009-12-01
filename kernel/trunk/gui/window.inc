@@ -184,7 +184,7 @@ pushad
 	inc   edi
 	imul  edi, ebx
 	add   edi, eax
-	add   edi, WinMapAddress
+    add   edi, [_WinMapAddress]
 
   .new_y:
 	push  ecx ; sx
@@ -245,7 +245,7 @@ pushad
 	inc   eax
 	imul  eax, ebx
 	add   eax, [esp]
-	add   eax, WinMapAddress
+    add   eax, [_WinMapAddress]
 	mov   ebp, eax
 
 	mov   edi, [edi+APPDATA.wnd_shape]

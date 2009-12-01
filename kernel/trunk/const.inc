@@ -309,14 +309,12 @@ draw_data           equ (OS_BASE+0x0338000);
 BgrDrawMode         equ (OS_BASE+0x033BFF4)
 BgrDataWidth        equ (OS_BASE+0x033BFF8)
 BgrDataHeight       equ (OS_BASE+0x033BFFC)
-WinMapAddress       equ (OS_BASE+0x033C000)
-display_data        equ (OS_BASE+0x033C000) ;1024*1280=0x140000
 
-virtual at              (OS_BASE+0x047CF80)
+virtual at              (OS_BASE+0x033CF80)
   tss  TSS
 end virtual
 
-sys_pgmap           equ (OS_BASE+0x047F000)
+sys_pgmap           equ (OS_BASE+0x033F000)
 
 HEAP_BASE           equ (OS_BASE+0x0800000)
 HEAP_MIN_SIZE       equ 0x01000000
@@ -580,6 +578,7 @@ struc display_t
     .show_cursor    dd ?
     .move_cursor    dd ?
     .restore_cursor dd ?
+    .disable_mouse  dd ?
 }
 
 virtual at 0
@@ -677,7 +676,8 @@ struc SRV
   .bk                dd ?     ;+0x1C ;prev SRV descriptor
   .base              dd ?     ;+0x20 ;service base address
   .entry             dd ?     ;+0x24 ;service START function
-  .srv_proc          dd ?     ;+0x28 ;main service handler
+  .srv_proc          dd ?     ;+0x28 ;user mode service handler
+  .srv_proc_ex       dd ?     ;+0x2C ;kernel mode service handler
   .sizeof:
 }
 

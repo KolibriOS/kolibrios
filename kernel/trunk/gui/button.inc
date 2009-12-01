@@ -372,7 +372,7 @@ negativebutton:
         push  edx
         push  edi
 
-        call  [disable_mouse]
+        call  [_display.disable_mouse]
 
       bdbnewline:
         mov   edi,1    ; force
@@ -389,7 +389,6 @@ negativebutton:
 
       bneg:
 
-        ;;;call  [disable_mouse]
         call  [putpixel]
 
       nbneg:

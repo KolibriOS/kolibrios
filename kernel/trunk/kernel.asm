@@ -349,14 +349,20 @@ high_code:
 ;        mov   [0xF604],byte 1  ;al
 		mov	al, [BOOT_VAR+0x901F]   	; DMA access
         mov	[allow_dma_access], al
-        mov al,[BOOT_VAR+0x9000]        ; bpp
+        movzx eax, byte [BOOT_VAR+0x9000]        ; bpp
         mov [ScreenBPP],al
 
+        mov [_display.bpp], eax
+        mov [_display.vrefresh], 60
+        mov [_display.disable_mouse],  __sys_disable_mouse
+
         movzx eax,word [BOOT_VAR+0x900A]  ; X max
+        mov [_display.width], eax
         dec   eax
         mov   [Screen_Max_X],eax
         mov   [screen_workarea.right],eax
         movzx eax,word [BOOT_VAR+0x900C]  ; Y max
+        mov [_display.height], eax
         dec   eax
         mov   [Screen_Max_Y],eax
         mov   [screen_workarea.bottom],eax
@@ -369,9 +375,14 @@ high_code:
         je    @f
         cmp   [SCR_MODE],word 0x12          ; VGA 640x480
         je    @f
-        mov   ax,[BOOT_VAR+0x9001]        ; for other modes
+        movzx eax, word[BOOT_VAR+0x9001]        ; for other modes
         mov   [BytesPerScanLine],ax
+        mov [_display.pitch], eax
 @@:
+        mov eax, [_display.width]
+        mul [_display.height]
+        mov [_WinMapSize], eax
+
         mov     esi, BOOT_VAR+0x9080
         movzx   ecx, byte [esi-1]
         mov     [NumBiosDisks], ecx
@@ -541,6 +552,9 @@ high_code:
         mov     [graph_data_l+4],al
         mov     [graph_data_l+7],ah
 
+        stdcall kernel_alloc, [_WinMapSize]
+        mov [_WinMapAddress], eax
+
         xor  eax,eax
         inc  eax
         mov [CURRENT_TASK],eax		;dword 1
@@ -549,8 +563,7 @@ high_code:
         mov [current_slot], SLOT_BASE+256
 
 ; set background
-;        xor  eax,eax
-;        inc  eax
+
         mov   [BgrDrawMode],eax
         mov   [BgrDataWidth],eax
         mov   [BgrDataHeight],eax
@@ -1805,7 +1818,6 @@ msset:
            ret
 
 app_load_cursor:
-      ;     add ebx, new_app_base
            cmp ecx, OS_BASE
            jae msset
            stdcall load_cursor, ecx, edx
@@ -2894,9 +2906,9 @@ sys_drawwindow:
 ;    cmp   eax,0   ; type I    - original style
     jne   nosyswI
     inc   [mouse_pause]
-    call  [disable_mouse]
+    call  [_display.disable_mouse]
     call  sys_set_window
-    call  [disable_mouse]
+    call  [_display.disable_mouse]
     call  drawwindow_I
     ;dec   [mouse_pause]
     ;call   [draw_pointer]
@@ -2907,9 +2919,9 @@ sys_drawwindow:
     cmp   al,1    ; type II   - only reserve area, no draw
     jne   nosyswII
     inc   [mouse_pause]
-    call  [disable_mouse]
+    call  [_display.disable_mouse]
     call  sys_set_window
-    call  [disable_mouse]
+    call  [_display.disable_mouse]
     call  sys_window_mouse
     dec   [mouse_pause]
     call   [draw_pointer]
@@ -2919,9 +2931,9 @@ sys_drawwindow:
     cmp   al,2    ; type III  - new style
     jne   nosyswIII
     inc   [mouse_pause]
-    call  [disable_mouse]
+    call  [_display.disable_mouse]
     call  sys_set_window
-    call  [disable_mouse]
+    call  [_display.disable_mouse]
     call  drawwindow_III
     ;dec   [mouse_pause]
     ;call   [draw_pointer]
@@ -2936,9 +2948,9 @@ sys_drawwindow:
   draw_skin_window:
 
     inc   [mouse_pause]
-    call  [disable_mouse]
+    call  [_display.disable_mouse]
     call  sys_set_window
-    call  [disable_mouse]
+    call  [_display.disable_mouse]
     mov   eax, [TASK_COUNT]
     movzx eax, word [WIN_POS + eax*2]
     cmp   eax, [CURRENT_TASK]
@@ -2957,7 +2969,7 @@ sys_drawwindow:
 
 draw_window_caption:
         inc     [mouse_pause]
-        call    [disable_mouse]
+        call    [_display.disable_mouse]
 
         xor     eax,eax
         mov     edx,[TASK_COUNT]
@@ -3495,7 +3507,8 @@ checkpixel:
         mov  edx,[Screen_Max_X]     ; screen x size
         inc  edx
         imul edx, ebx
-        mov  dl, [eax+edx+display_data] ; lea eax, [...]
+        add  eax, [_WinMapAddress]
+        mov  dl, [eax+edx] ; lea eax, [...]
 
         xor  ecx, ecx
         mov  eax, [CURRENT_TASK]
@@ -3584,7 +3597,7 @@ markz:
 
   no_mark_system_shutdown:
 
-    call [disable_mouse]
+    call [_display.disable_mouse]
 
     dec  byte [SYS_SHUTDOWN]
     je   system_shutdown
@@ -3742,9 +3755,10 @@ redrawscreen:
 
 calculatebackground:   ; background
 
-        mov   edi,display_data              ; set os to use all pixels
+        mov   edi, [_WinMapAddress]                ; set os to use all pixels
         mov   eax,0x01010101
-        mov   ecx,1280*1024 / 4
+        mov   ecx, [_WinMapSize]
+        shr   ecx, 2
         rep   stosd
 
         mov   byte [REDRAW_BACKGROUND], 0              ; do not draw background!
@@ -5093,7 +5107,7 @@ syscall_setpixel:                       ; SetPixel
         add     ebx, [edi+APPDATA.wnd_clientbox.top]
         xor     edi, edi ; no force
 ;       mov     edi, 1
-        call    [disable_mouse]
+        call    [_display.disable_mouse]
         jmp     [putpixel]
 
 align 4
@@ -5247,7 +5261,7 @@ syscall_getarea:
      pushad
          inc   [mouse_pause]
 ; Check of use of the hardware cursor.
-      cmp  [disable_mouse],__sys_disable_mouse
+      cmp  [_display.disable_mouse],__sys_disable_mouse
           jne  @f
 ; Since the test for the coordinates of the mouse should not be used,
 ; then use the call [disable_mouse] is not possible!
@@ -5311,7 +5325,7 @@ syscall_getarea:
      jnz   .start_y
      dec        [mouse_pause]
 ; Check of use of the hardware cursor.
-      cmp  [disable_mouse],__sys_disable_mouse
+      cmp  [_display.disable_mouse],__sys_disable_mouse
           jne  @f
          call  [draw_pointer]
 @@:
@@ -5433,18 +5447,33 @@ set_screen:
 
         mov [Screen_Max_X], eax
         mov [Screen_Max_Y], edx
+        mov [BytesPerScanLine], ecx
 
         mov [screen_workarea.right],eax
         mov [screen_workarea.bottom], edx
-        inc eax
-        shl eax, 2                      ;32 bpp
-        mov [BytesPerScanLine], eax
+
         push ebx
         push esi
         push edi
+
+        pushad
+
+        stdcall kernel_free, [_WinMapAddress]
+
+        mov eax, [_display.width]
+        mul [_display.height]
+        mov [_WinMapSize], eax
+
+        stdcall kernel_alloc, eax
+        mov [_WinMapAddress], eax
+        test eax, eax
+        jz .epic_fail
+
+        popad
+
         call    repos_windows
-        mov     eax, 0
-        mov     ebx, 0
+        xor eax, eax
+        xor ebx, ebx
         mov     ecx, [Screen_Max_X]
         mov     edx, [Screen_Max_Y]
         call    calculatescreen
@@ -5454,6 +5483,9 @@ set_screen:
 
         popfd
         ret
+
+.epic_fail:
+        hlt                     ; Houston, we've had a problem
 
 ; --------------- APM ---------------------
 apm_entry    dp    0

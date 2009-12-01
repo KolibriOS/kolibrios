@@ -321,8 +321,17 @@ proc init_LFB
            cmp dword [LFBAddress], -1
            jne @f
            mov [BOOT_VAR+0x901c],byte 2
-           stdcall kernel_alloc, 0x280000
-           mov [LFBAddress], eax
+           stdcall alloc_pages, (0x280000 / 4096)
+
+           push eax
+           call alloc_page
+           stdcall map_page_table, LFB_BASE, eax
+           pop eax
+           or eax, PG_UW
+           mov ebx, LFB_BASE
+           mov ecx, 0x280000 / 4096
+           call commit_pages
+           mov [LFBAddress], dword LFB_BASE
            ret
 @@:
            test [SCR_MODE],word 0100000000000000b
@@ -334,7 +343,7 @@ proc init_LFB
 
            mov edx, LFB_BASE
            mov esi, [LFBAddress]
-           mov edi, 0x00800000
+           mov edi, 0x00C00000
            mov dword [exp_lfb+4], edx
 
            shr edi, 12
@@ -558,14 +567,6 @@ proc page_fault_handler
         push    ebx               ;that is locals: .err_addr = cr2
         inc     [pg_data.pages_faults]
 
-;     push eax
-;     push edx
-;     mov edx, 0x400   ;bochs
-;     mov al,0xff      ;bochs
-;     out dx, al       ;bochs
-;     pop edx
-;     pop eax
-
         mov     eax, [pf_err_code]
 
         cmp     ebx, OS_BASE      ;ebx == .err_addr
@@ -591,6 +592,11 @@ end if
         mov     esp, ebp
         pop     ebx               ;restore exception number (#PF)
         ret
+
+;        xchg bx, bx
+;        add     esp,12 ;clear in stack: locals(.err_addr) + #PF + ret_to_caller
+;        restore_ring3_context
+;        iretd
 
 .user_space:
         test    eax, PG_MAP

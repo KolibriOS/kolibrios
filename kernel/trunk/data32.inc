@@ -129,32 +129,11 @@ dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 ; supported videomodes
 
-;mode_1280_1024_32:
-;  dw 1280,1024,32,60
-;mode_1280_1024_24:
-;  dw 1280,1024,24,60
-;mode_1024_768_32:
-;  dw 1024,768,32,60
-;mode_1024_768_24:
-;  dw 1024,768,24,60
-;mode_800_600_32:
-;  dw 800,600,32,60
-;mode_800_600_24:
-;  dw 800,600,24,60
-;mode_640_480_32:
-;  dw 640,480,32,60
-;mode_640_480_24:
-;  dw 640,480,24,60
-;mode_640_480_16:
-;  dw 640,480,16,60
-;mode_320_240_8:
-;  dw 320,240,8,60
 
 ; mike.dld {
 db 0
 dd servetable-0x10000
 draw_line       dd __sys_draw_line
-disable_mouse   dd __sys_disable_mouse
 draw_pointer    dd __sys_draw_pointer
 ;//mike.dld, 2006-08-02 [
 ;drawbar         dd __sys_drawbar
@@ -337,7 +316,14 @@ os_stack_seg      rd 1
 srv.fd            rd 1
 srv.bk            rd 1
 
+
+align 16
+
 _display          display_t
+
+_WinMapAddress    rd 1
+_WinMapSize       rd 1
+
 
 scr_width         rd 1
 scr_height        rd 1
