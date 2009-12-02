@@ -1180,60 +1180,62 @@ set_variables:
         ret
 
 align 4
-
+;input  eax=43,bl-byte of output, ecx - number of port
 sys_outport:
 
-    mov   edi,ebx          ; separate flag for read / write
-    and   ebx,65535
+    mov   edi,ecx          ; separate flag for read / write
+    and   ecx,65535
 
-    mov   ecx,[RESERVED_PORTS]
-    test  ecx,ecx
-    jne   sopl8
-    mov   [esp+36],dword 1
+    mov   eax,[RESERVED_PORTS]
+    test  eax,eax
+    jnz   .sopl8
+    inc	  eax
+	mov   [esp+32],eax
     ret
 
-  sopl8:
+  .sopl8:
     mov   edx,[TASK_BASE]
     mov   edx,[edx+0x4]
-    and   ebx,65535
-    cld
-  sopl1:
+    ;and   ecx,65535
+    ;cld - set on interrupt 0x40
+  .sopl1:
 
-    mov   esi,ecx
+    mov   esi,eax
     shl   esi,4
     add   esi,RESERVED_PORTS
     cmp   edx,[esi+0]
-    jne   sopl2
-    cmp   ebx,[esi+4]
-    jb    sopl2
-    cmp   ebx,[esi+8]
-    jg    sopl2
-    jmp   sopl3
-
-  sopl2:
-
-    dec   ecx
-    jnz   sopl1
-    mov   [esp+36],dword 1
-    ret
-
-  sopl3:
+    jne   .sopl2
+    cmp   ecx,[esi+4]
+    jb    .sopl2
+    cmp   ecx,[esi+8]
+    jg    .sopl2
+.sopl3:
 
     test  edi,0x80000000 ; read ?
-    jnz   sopl4
+    jnz   .sopl4
 
-    mov   dx,bx          ; write
+	mov	  eax,ebx
+    mov   dx,cx          ; write
     out   dx,al
-    and   [esp+36],dword 0
+    and   [esp+32],dword 0
     ret
 
-  sopl4:
+	.sopl2:
 
-    mov   dx,bx          ; read
+    dec   eax
+    jnz   .sopl1
+	inc	  eax
+    mov   [esp+32],eax
+    ret
+
+  
+  .sopl4:
+
+    mov   dx,cx          ; read
     in    al,dx
     and   eax,0xff
-    and   [esp+36],dword 0
-    mov   [esp+24],eax
+    and   [esp+32],dword 0
+    mov   [esp+20],eax
     ret
 
 display_number:
@@ -2558,48 +2560,48 @@ force_redraw_background:
 align 4
 
 sys_getbackground:
-
-    cmp   eax,1                                  ; SIZE
+;    cmp   eax,1                                  ; SIZE
+    dec	  ebx
     jnz   nogb1
     mov   eax,[BgrDataWidth]
     shl   eax,16
     mov   ax,[BgrDataHeight]
-    mov   [esp+36],eax
+    mov   [esp+32],eax
     ret
 
 nogb1:
-
-    cmp   eax,2                                  ; PIXEL
+;    cmp   eax,2                                  ; PIXEL
+    dec	  ebx
     jnz   nogb2
 
         mov     eax, [img_background]
-        test    ebx, ebx
+        test    ecx, ecx
         jz      @f
         cmp     eax, static_background_data
         jz      .ret
 @@:
-    mov ecx, [mem_BACKGROUND]
-    add ecx, 4095
-    and ecx, -4096
-    sub ecx, 4
-    cmp ebx, ecx
+    mov ebx, [mem_BACKGROUND]
+    add ebx, 4095
+    and ebx, -4096
+    sub ebx, 4
+    cmp ecx, ebx
     ja  .ret
 
-    mov   eax,[ebx+eax]
+    mov   eax,[ecx+eax]
 
     and   eax, 0xFFFFFF
-    mov   [esp+36],eax
+    mov   [esp+32],eax
 .ret:
     ret
   nogb2:
 
-    cmp   eax,4                                  ; TILED / STRETCHED
+;    cmp   eax,4                                  ; TILED / STRETCHED
+    dec   ebx
     jnz   nogb4
     mov   eax,[BgrDrawMode]
   nogb4:
-    mov   [esp+36],eax
+    mov   [esp+32],eax
     ret
-
 
 align 4
 

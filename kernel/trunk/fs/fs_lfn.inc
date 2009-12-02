@@ -967,46 +967,67 @@ process_replace_file_name:
 	ret
 
 sys_current_directory:
-	mov	esi, [current_slot]
-	mov	esi, [esi+APPDATA.cur_dir]
-	mov	edx, esi
-	dec	eax
+;	mov	esi, [current_slot]
+;	mov	esi, [esi+APPDATA.cur_dir]
+;	mov	edx, esi
+
+;get lenght string of appdata.cur_dir
+;	mov	eax, [current_slot]
+;	mov	edi, [eax+APPDATA.cur_dir]
+
+	dec	ebx
 	jz	.set
-	dec	eax
+	dec	ebx
 	jz	.get
 	ret
 .get:
 ; sysfunction 30.2: [for app] eax=30,ebx=2,ecx->buffer,edx=len
 ; for our code: ebx->buffer,ecx=len
-@@:
-	lodsb
-	test	al, al
-	jnz	@b
-	sub	esi, edx
-	inc	esi
-	mov	[esp+36], esi
-	cmp	ecx, esi
-	jbe	@f
-	mov	ecx, esi
-@@:
-	cmp	ecx, 1
-	jbe	.ret
-	mov	esi, edx
-	mov	edi, ebx
-	mov	al, '/'
+max_cur_dir	equ	0x1000
+;get lenght string of appdata.cur_dir
+	mov	eax, [current_slot]
+	mov	edi, [eax+APPDATA.cur_dir]
+
+	mov	ebx,edi
+
+	push	ecx
+	push	edi
+
+	xor	eax,eax
+	mov	ecx,max_cur_dir
+
+	repne	scasb		;find zerro at and string
+	jcxz    .error		;ecx=0 and destination buffer is too small.
+
+	sub	edi,ebx		;lenght for copy
+	inc	edi
+        mov	[esp+32+8],edi	;return in eax
+
+	cmp	edx,edi		;edi must have more than 2 (for / and 0x0)  
+;sourse string
+	pop	esi
+;destination string
+	pop	edi
+	jb	.ret
+
+	mov	al,'/'		;start string with '/'
 	stosb
-	dec	ecx
-	dec	ecx
-	rep	movsb
-	mov	byte [edi], 0
-.ret:
+	mov	ecx,edx
+	rep	movsb           ;copy string
+	xor	eax,eax
+	mov	byte [edi],al   ;set zerro
+.ret:	ret
+
+.error: add	esp,8
+	or	dword [esp+32],-1	;error not found zerro at string ->[eax+APPDATA.cur_dir]
 	ret
 .set:
 ; sysfunction 30.1: [for app] eax=30,ebx=1,ecx->string
 ; for our code: ebx->string to set
 ; use generic resolver with APPDATA.cur_dir as destination
-	push	0x1000
-	push	edx
+	push	max_cur_dir	;0x1000
+	push	edi	;destination
+	mov	ebx,ecx
 	call	get_full_file_name
 	ret
 

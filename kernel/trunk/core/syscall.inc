@@ -133,7 +133,7 @@ iglobal
       dd 0
       dd 0                       ;
       dd 0
-      dd sys_current_directory   ; 30-Get/SetCurrentDirectory
+      dd 0		  	 ; 30-Get/SetCurrentDirectory
       dd 0
       dd 0
       dd 0
@@ -142,11 +142,11 @@ iglobal
       dd 0
       dd 0                       ; 37-GetMousePosition_ScreenRelative,.
       dd 0                       ; 38-DrawLine
-      dd sys_getbackground       ; 39-GetBackgroundSize,ReadBgrData,.
+      dd 0		         ; 39-GetBackgroundSize,ReadBgrData,.
       dd 0
       dd 0
       dd 0
-      dd sys_outport             ; 43-SendDeviceData
+      dd 0	                 ; 43-SendDeviceData
       dd 0
       dd 0
       dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
@@ -212,7 +212,7 @@ iglobal
       dd undefined_syscall       ; 27-reserved
       dd undefined_syscall       ; 28-reserved
       dd sys_date                ; 29-GetDate
-      dd cross_order             ; 30-Get/SetCurrentDirectory
+      dd sys_current_directory   ; 30-Get/SetCurrentDirectory
       dd undefined_syscall       ; 31-reserved
       dd undefined_syscall       ; 32-reserved
       dd undefined_syscall       ; 33-reserved
@@ -221,11 +221,11 @@ iglobal
       dd syscall_getarea         ; 36-GetArea
       dd readmousepos            ; 37-GetMousePosition_ScreenRelative,.
       dd syscall_drawline        ; 38-DrawLine
-      dd cross_order             ; 39-GetBackgroundSize,ReadBgrData,.
+      dd sys_getbackground       ; 39-GetBackgroundSize,ReadBgrData,.
       dd set_app_param           ; 40-WantEvents
       dd syscall_getirqowner     ; 41-GetIrqOwner
       dd get_irq_data            ; 42-ReadIrqData
-      dd cross_order             ; 43-SendDeviceData
+      dd sys_outport             ; 43-SendDeviceData
       dd sys_programirq          ; 44-ProgramIrqs
       dd reserve_free_irq        ; 45-ReserveIrq and FreeIrq
       dd cross_order             ; 46-ReservePortArea and FreePortArea
