@@ -71,6 +71,8 @@ table { font-size: 15px; }
 <li>tl_node_poi_get_info</li>
 <li>tl_node_poi_get_next_info</li>
 <li>tl_node_poi_get_data</li>
+<li><a href="#fun_sme">tl_save_mem</a></li>
+<li><a href="#fun_lme">tl_load_mem</a></li>
 <li>version_tree_list</li>
 </ul>
 <p><a href="#struc_tree_list">Структура tree_list</a></p>
@@ -91,7 +93,10 @@ table { font-size: 15px; }
 <p>Очистка списка от всех узлов. Это действие нельзя отменить функцией <b>tl_info_undo</b>.</p>
 
 <h2><a name="fun_key">tl_key</a></h2>
-<p>Функция которую нужно вызывать при нажатии на клавиатуру.</p>
+<p>Функция которую нужно вызывать при нажатии на клавиатуру.
+ Кнопки, которые не доступны если есть стиль <i>tl_key_no_edit</i>: [<b>Enter</b>], [<b>Delete</b>], [<b>&larr;</b>], [<b>&rarr;</b>].
+ Всегда доступны: [<b>&uarr;</b>], [<b>&darr;</b>], [<b>Page Up</b>], [<b>Page Dn</b>], [<b>Space</b>].
+ Функция проверяет включен ли режим scan кодов, и в случае необходимости сама преобразует коды.</p>
 
 <h2><a name="fun_mouse">tl_mouse</a></h2>
 <p>Функция для событий от мыши.</p>
@@ -111,7 +116,8 @@ table { font-size: 15px; }
   push dword 0x10002
   push dword data_buffer
   call dword[tl_node_add]</pre>
-<p>где: <b>tree1</b> - структура tree_list; <b>0x10002</b> - параметры узла (старшие байты 0x0001 - индекс иконки, отображаемой возле узла; меньший байт 0x02 - уровень вложености узла); <b>data_buffer</b> - указатель на дынные, добавляемые в узел.</p>
+<p>где: <b>tree1</b> - структура tree_list;
+ <b>0x10002</b> - параметры узла (старшие байты 0x0001 - индекс иконки, отображаемой возле узла; меньший байт 0x02 - уровень вложености узла); <b>data_buffer</b> - указатель на дынные, добавляемые в узел.</p>
 
 <h2>tl_node_set_data</h2>
 <p>Устанавливает новые данные (пользовательские и подпись) в узел под курсором.</p>
@@ -154,13 +160,47 @@ table { font-size: 15px; }
 
 <p>Функциями tl_node_poi_get_info, tl_node_poi_get_next_info и tl_node_poi_get_data можно считывать информацию о узлах элемента, при этом не меняя текущего положения курсора. Т. е. можно организовать доступ к даным элемента в &quot;фоновом режиме&quot;.</p>
 
+<h2><a name="fun_sme">tl_save_mem</a></h2>
+<p>Сохраняет информацию об узлах элемента в память. Пример использования функции:</p>
+<pre>  MEM_SIZE equ 5000
+  node_data rb MEM_SIZE
+.........
+  push dword tree1
+  push dword 0
+  push dword node_data
+  push dword MEM_SIZE
+  call dword[tl_save_mem]
+  pop eax</pre>
+<p>где: <b>tree1</b> - структура tree_list;
+ <b>0</b> - опция сохранения в начало блока памяти (если = 1, то добавляет элемент после других сохраненных ранее);
+ <b>node_data</b> - указатель на блок памяти;
+ <b>MEM_SIZE</b> - размер блока памяти для сохранения.
+В регистр <b>eax</b> пишется значение 0 или записываются коды ошибок сохранения.</p>
+
+<h2><a name="fun_lme">tl_load_mem</a></h2>
+<p>Загружает информацию об узлах элемента из памяти. Пример использования функции:</p>
+<pre>  MEM_SIZE equ 5000
+  node_data rb MEM_SIZE
+.........
+  push dword tree1
+  push dword 0
+  push dword node_data
+  push dword MEM_SIZE
+  call dword[tl_load_mem]
+  pop eax</pre>
+<p>где: <b>tree1</b> - структура tree_list;
+ <b>0</b> - индекс считываемого элемента;
+ <b>node_data</b> - указатель на блок памяти;
+ <b>MEM_SIZE</b> - размер блока памяти для сохранения.
+В регистр <b>eax</b> пишется значение 0 или записываются коды ошибок считывания.</p>
+
 <h2>version_tree_list</h2>
 <p>Версия элемента</p>
 
 <h1><a name="struc_tree_list">Структура tree_list</a></h1>
 <pre>struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
     col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
-    el_focus, p_scrol,p_sb_draw,on_press {
+    info_capt_len,el_focus, p_scrol,p_sb_draw,on_press {
   .data_info  dd 0
   .info_size  dw info_size
   .info_max_count dd info_max_count
@@ -177,33 +217,35 @@ table { font-size: 15px; }
   .col_bkg    dd col_bkg
   .col_zag    dd col_zag
   .col_txt    dd col_txt
-  .box_lert   dd box_l
+  .box_left   dd box_l
   .box_top    dd box_t
   .box_width  dd box_w
   .box_height dd box_h
   .capt_cy    dw capt_cy
-  .info_capt_offs dd info_capt_offs
-  .el_focus   dd el_focus
-  .p_scrol    dd p_scrol
-  .p_sb_draw  dd p_sb_draw
+  .info_capt_offs dw info_capt_offs
+  .info_capt_len  dw info_capt_len
+  .el_focus    dd el_focus
+  .p_scrol     dd p_scrol
+  .p_sb_draw   dd p_sb_draw
   .on_activate dd 0
   .on_press    dd on_press
 }</pre>
-<p><b>info_size</b> - количество байт, которое будет выделено для каждого узла. Часть этой памяти пользователь может использовать для своих целей (регулируется через <i>info_capt_offs</i>) а остальная часть будет использована как подпись узла.</p>
+<p><b>info_size</b> - количество байт, которое будет выделено для каждого узла. Часть этой памяти пользователь может использовать для своих целей (регулируется через <i>info_capt_offs</i> и <i>info_capt_len</i>) а остальная часть будет использована как подпись узла.</p>
 <p><b>info_max_count</b> - максимальное количество узлов, которые можно добавить в элемент.</p>
 <p><b>style</b> - стили элемента.</p>
 <p><b>data_nodes</b> - указатель на внутренние структуры узлов (<i>TreeList</i>).</p>
 <p><b>data_img</b> - указатель на изображения с иконками узлов.</p>
 <p><b>data_img_sys</b> - указатель на системные изображения (курсор, плюсики, линии, ... все кроме иконок узлов).</p>
 <p><b>capt_cy</b> - высота строки для подписи вверху элемента, если меньше 9 подпись не выводится.</p>
+<p><b>info_capt_len</b> - длинна текста для подписи. Если равно 0, то длинна считается так: <i>info_size - info_capt_offs</i>.</p>
 <p><b>p_scrol</b> - указатель на структуру скроллинга, связанного с данным элементом.</p>
 <p><b>p_sb_draw</b> - указатель на функцию перерисовки вертикального скроллинга (<i>scrollbar_ver_draw</i>).</p>
-<p><b>on_press</b> - указатель на функцию, которая будет вызвана при нажитии <b>[Enter]</b>. Если указатель равен 0 то ничего не будет вызыватся.</p>
+<p><b>on_press</b> - указатель на функцию, которая будет вызвана при нажитии [<b>Enter</b>]. Если указатель равен 0 то ничего не будет вызыватся.</p>
 
 <p>Пример создания структуры:</p>
 <pre>tree1 tree_list 24,500, tl_draw_par_line+tl_list_box_mode, 16,16,\
     0x8080ff,0x0000ff,0xffffff, 10,35,200-16,285, 14,4,\
-    el_focus, wScr,scrollbar_ver_draw,fun_on_enter</pre>
+    0,el_focus, wScr,scrollbar_ver_draw,fun_on_enter</pre>
 
 <h1><a name="tree_list_styles">Стили элемента</a></h1>
 <h2>tl_key_no_edit</h2>
@@ -214,6 +256,6 @@ table { font-size: 15px; }
 <p>Стиль не отображает уровни (как в ListBox все узлы одного уровня).</p>
 
 <hr>
-<p>Документация обновлялась последний раз 25.11.09.</p>
+<p>Документация обновлялась последний раз 2.12.09.</p>
 </body>
 </html>

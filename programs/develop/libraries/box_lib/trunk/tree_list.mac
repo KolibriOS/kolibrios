@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 24.11.2009 IgorA
+; файл последний раз изменялся 2.12.2009 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -32,7 +32,8 @@ tl_box_top    equ dword[edi+62]
 tl_box_width  equ dword[edi+66]
 tl_box_height equ dword[edi+70]
 tl_capt_cy    equ  word[edi+74] ;высота подписи
-tl_info_capt_offs equ dword[edi+76] ;сдвиг для начала текста (подписи узла)
+tl_info_capt_offs equ word[edi+76] ;сдвиг для начала текста (подписи узла)
+tl_info_capt_len equ word[edi+78] ;длинна текста подписи узла (если = 0 то до конца структуры)
 tl_el_focus   equ dword[edi+80] ;указатель на структуру элемента в фокусе
 tl_p_scrol    equ dword[edi+84] ;указатель на структуру скроллинга
 tl_sb_draw    equ dword[edi+88] ;указатель на функцию перерисовывающую скроллинг
@@ -43,6 +44,13 @@ tl_key_no_edit   equ   1b ;элемент нельзя редактировать на клавиатуре (изменять 
 tl_draw_par_line equ  10b ;рисовать линии к родительскому узлу
 tl_list_box_mode equ 100b ;стиль не отображает уровни (как в ListBox все одного уровня)
 
+;константы для функций
+tl_err_save_memory_size equ  10b ;не хватает памяти для сохранения элемента
+tl_err_load_caption     equ   1b ;в памяти нет заголовка 'tree'
+tl_err_load_info_size   equ 100b ;не совпадает размер информационной структуры при открытии
+tl_load_mode_add        equ 0x20000 ;опция считывания в режиме добавления информации
+tl_save_load_heder_size equ 26 ;размер заголовка для записи/чтения элементов
+
 ;data_info	 dd ? ;+ 0 указатель на основные даные
 ;info_max_count dd ? ;+ 6 максимальное колличество структур
 ;data_img	 dd ? ;+18 указатель на изображения
@@ -51,7 +59,7 @@ tl_list_box_mode equ 100b ;стиль не отображает уровни (как в ListBox все одного 
 
 struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
     col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
-    el_focus, p_scrol,p_sb_draw,on_press {
+    info_capt_len,el_focus, p_scrol,p_sb_draw,on_press {
   .data_info	dd 0
   .info_size	dw info_size
   .info_max_count dd info_max_count
@@ -68,12 +76,13 @@ struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
   .col_bkg	  dd col_bkg
   .col_zag	  dd col_zag
   .col_txt	  dd col_txt
-  .box_lert   dd box_l
+  .box_left   dd box_l
   .box_top    dd box_t
   .box_width  dd box_w
   .box_height dd box_h
   .capt_cy	   dw capt_cy
-  .info_capt_offs dd info_capt_offs
+  .info_capt_offs dw info_capt_offs
+  .info_capt_len dw info_capt_len
   .el_focus dd el_focus
   .p_scrol  dd p_scrol
   .p_sb_draw dd p_sb_draw
@@ -205,7 +214,13 @@ tl_info_clear: ;очистка списка (информации)
       loop @b
     mov eax,tl_data_nodes ;указатель на 0-й узел
     mov dword[eax+8],1 ;указатель next в 0-м узле приравниваем к 1
-    call tb_scrol_resize ;обработка скроллинга
+
+    cmp tl_p_scrol,0 ;обработка скроллинга
+    je @f
+      mov eax,tl_p_scrol
+      mov dword[eax+24],0 ;+24 .position
+      call tb_scrol_resize
+    @@:
     pop edi ecx eax
   pop ebp
   ret 4
@@ -215,51 +230,73 @@ align 4
 tl_key: ;реакция на клавиатуру
   push ebp
   mov ebp,esp
-    push ebx edi
+    push ebx ecx edi
     mov edi,dword[ebp+8]
 
     mov ebx,tl_el_focus
     cmp dword[ebx],edi
     jne .no_focus ;элемент не в фокусе
 
+    push eax
+    mov eax,66
+    mov ebx,2
+    int 0x40  ;получить режим ввода с клавиатуры
+
+    lea ecx,[tl_key_scan]
+    cmp eax,1 ;1 = сканкоды
+    je @f
+      lea ecx,[tl_key_ascii]
+    @@:
+    pop eax
+
     xor bx,bx
-    cmp ah,13 ;Enter
+    cmp ah,byte[ecx] ;Enter
     jne @f
       cmp tl_on_press,0
       je @f
         call tl_on_press
     @@:
-    cmp ah,32 ;Space
+    cmp ah,byte[ecx+1] ;Space
     jne @f
       push dword edi
       call tl_node_close_open
     @@:
-    cmp ah,178 ;Up
+    cmp ah,byte[ecx+2] ;Up
     jne @f
       push dword edi
       call tl_cur_perv
     @@:
-    cmp ah,177 ;Down
+    cmp ah,byte[ecx+3] ;Down
     jne @f
       push dword edi
       call tl_cur_next
     @@:
+    cmp ah,byte[ecx+7] ;Page Up
+    jne @f
+      push dword edi
+      call tl_cur_page_up
+    @@:
+    cmp ah,byte[ecx+8] ;Page Down
+    jne @f
+      push dword edi
+      call tl_cur_page_down
+    @@:
 
     bt tl_style,0 ;tl_key_no_edit
     jc .no_edit
-      cmp ah,176 ;Left
+      cmp ah,byte[ecx+4] ;Left
       jne @f
 	push dword edi
 	call tl_node_lev_dec
 	mov bx,1
       @@:
-      cmp ah,179 ;Right
+      cmp ah,byte[ecx+5] ;Right
       jne @f
 	push dword edi
 	call tl_node_lev_inc
 	mov bx,1
       @@:
-      cmp ah,182 ;Delete
+      cmp ah,byte[ecx+6] ;Delete
       jne @f
 	push dword edi
 	call tl_node_delete
@@ -273,7 +310,7 @@ tl_key: ;реакция на клавиатуру
       call tl_draw
     .no_focus:
 
-    pop edi ebx
+    pop edi ecx ebx
   pop ebp
   ret 4
 
@@ -1113,15 +1150,15 @@ tl_draw_node_caption:
 
     xor esi,esi
     mov si,tl_info_size
-    cmp esi,tl_info_capt_offs
+    cmp si,tl_info_capt_offs
     jle @f ;if caption size <= 0
 
     push eax
       call tl_get_node_index ;eax = node index
       imul esi,eax
     pop eax
+      add si,tl_info_capt_offs
       add esi,dword[edi]
-      add esi,tl_info_capt_offs
       mov edx,esi
 
       shr ebx,16
@@ -1223,8 +1260,10 @@ tl_node_add: ;добавить узел
       jne .u0
 
 	inc  tl_ch_tim
-	push  word[ebp+14] ;get type
-	pop   word[edx]
+	mov cx,word[ebp+14] ;get type
+	mov word[edx],cx
+ mov cl,byte[ebp+13]
+ mov byte[edx+3],cl  ;node[i].clo
 	mov   byte[edx+2], 0 ;node[i].lev=0
   bt tl_style,2 ;tl_list_box_mode
   jc .l_box_m
@@ -1251,9 +1290,17 @@ tl_node_add: ;добавить узел
 
 	mov esi,edi
 	mov edi,dword[ebp+16] ;restore edi
-	mov ecx,tl_info_capt_offs
+	mov cx,tl_info_capt_offs
 	cmp cx,tl_info_size
 	jge .no_text_data
+ cmp tl_info_capt_len,0 ;проверяем есть ли ограничение на длинну строки
+ je .no_len_ogran
+   add cx,tl_info_capt_len
+   and ecx,0xffff
+   add esi,ecx
+   mov cx,tl_info_size
+   sub esi,ecx
+ .no_len_ogran:
 	  dec esi
 	  mov byte[esi],0
 	.no_text_data:
@@ -1334,11 +1381,23 @@ tl_node_set_data:
 
       mov esi,edi
       mov edi,dword[ebp+12] ;restore edi
-      mov ecx,tl_info_capt_offs
+      mov cx,tl_info_capt_offs
       cmp cx,tl_info_size
       jge .no_text_data
-	dec esi
-	mov byte[esi],0
+        mov ax,tl_info_capt_len ;проверяем есть ли ограничение на длинну текста
+        cmp ax,0
+        je .no_limit
+        add cx,ax ;cx = tl_info_capt_offs + tl_info_capt_len
+        and ecx,0xffff
+        xor eax,eax
+        mov ax,tl_info_size
+        cmp eax,ecx
+        jl .no_limit ;пользователь задал слишком большую длинну текста
+        add esi,ecx
+        sub esi,eax
+        .no_limit:
+          dec esi
+          mov byte[esi],0 ;обнуляем последний символ подписи, что-бы не глючило если пользователь задал неправильную структуру
       .no_text_data:
 
     @@:
@@ -1599,6 +1658,28 @@ tl_get_node_count: ;берет число всех видимых узлов (не считая закрытых дочерних)
   pop edx ecx
   ret
 
+;input:
+; edi = pointer 'tl' struct
+;output:
+; eax = struct index of current node
+align 4
+tl_get_node_count_all: ;берет число всех видимых узлов (считая закрытые дочерние)
+  push ecx edx
+    ;cycle to nodes
+    xor eax,eax
+    mov edx,tl_data_nodes
+    mov ecx,edx
+    add ecx,sizeof.TreeList
+    @@:
+      call tl_iterat_next_all
+      cmp edx,ecx
+      jle @f
+      inc eax
+      jmp @b
+    @@:
+  pop edx ecx
+  ret
+
 align 4
 tl_cur_perv: ;перенести курсор на 1 позицию выше
   push ebp
@@ -1637,6 +1718,110 @@ tl_cur_perv: ;перенести курсор на 1 позицию выше
       call tl_draw_caption_cur_pos
     .no_redraw:
   pop esi edi eax
+  pop ebp
+  ret 4
+
+align 4
+tl_cur_page_up: ;перенести курсор на 1 страницу выше
+  push ebp
+  mov ebp,esp
+  push eax edi esi
+    mov edi,dword[ebp+8]
+
+    cmp tl_p_scrol,0 ;если есть указатель на скроллинг
+    je .no_redraw
+
+    mov esi,tl_p_scrol
+    call tl_get_rows_count ;eax = rows count
+
+    cmp tl_cur_pos,0
+    jne @f
+    cmp dword[esi+24],0 ;если скроллинг на верху, выходим
+    jne @f
+      jmp .no_redraw
+    @@:
+      cmp tl_cur_pos,eax ;проверяем позицию курсора и кол-во сток на странице
+      jl @f ;если меньше, то приравниваем к 0, что-бы не отнять больше чем надо
+        sub tl_cur_pos,eax
+        jmp .cursor
+      @@:
+        mov tl_cur_pos,0
+      .cursor:
+      cmp dword[esi+24],eax
+      jl @f
+        sub dword[esi+24],eax
+        jmp .scroll
+      @@:
+        mov dword[esi+24],0
+      .scroll:
+      ;перерисовки окна и скроллинга
+      push dword edi
+      call tl_draw ;draw window
+      push dword esi
+      mov eax,dword[ebp+8]
+      mov eax,tl_sb_draw ;.redraw
+      call dword[eax]
+    .no_redraw:
+  pop esi edi eax
+  pop ebp
+  ret 4
+
+align 4
+tl_cur_page_down: ;перенести курсор на 1 страницу ниже
+  push ebp
+  mov ebp,esp
+  push eax ebx ecx edi esi
+;eax - кол-во строк на странице
+;ebx - макс. позиция курсора
+;ecx - макс. позиция скроллинга
+    mov edi,dword[ebp+8]
+
+    cmp tl_p_scrol,0 ;если есть указатель на скроллинг
+    je .no_redraw
+
+    mov esi,tl_p_scrol
+    call tl_get_node_count ;eax = node count
+    mov ebx,eax
+    call tl_get_rows_count ;eax = rows count
+
+    mov ecx,ebx
+    inc ecx ;если нижний узел виден на половину
+    cmp ecx,eax ;if (ecx>eax) { ecx=ecx-eax } else { ecx=0 }
+    jl @f
+      sub ecx,eax ;уменьшаем максимальную позицию скроллинга, так что-бы были видны последние узлы
+      jmp .control
+    @@:
+      xor ecx,ecx ;ecx=0 - все узлы влазят в экран, скроллинг не нужен
+    .control:
+
+    cmp tl_cur_pos,ebx ;курсор внизу ?
+    jl @f
+    cmp dword[esi+24],ecx ;скроллинг внизу ?
+    jl @f
+      jmp .no_redraw
+    @@:
+
+      add tl_cur_pos,eax ;перемещаем курсор
+      cmp tl_cur_pos,ebx
+      jl @f
+        mov tl_cur_pos,ebx
+      @@:
+
+      add dword[esi+24],eax ;перемещаем скроллинг
+      cmp dword[esi+24],ecx
+      jl @f
+        mov dword[esi+24],ecx
+      @@:
+
+      ;перерисовки окна и скроллинга
+      push dword edi
+      call tl_draw ;draw window
+      push dword esi
+      mov eax,dword[ebp+8]
+      mov eax,tl_sb_draw ;.redraw
+      call dword[eax]
+    .no_redraw:
+  pop esi edi ecx ebx eax
   pop ebp
   ret 4
 
@@ -1873,6 +2058,205 @@ tl_draw_caption_cur_pos:
   pop esi edi edx ecx ebx eax
   @@:
   ret
+
+;input:
+;dword[ebp+ 8] - memory size
+;dword[ebp+12] - pointer to memory
+;dword[ebp+16] - options: 0 - first element, 1 - add next element
+;dword[ebp+20] - pointer to 'TreeList' struct
+;output:
+;dword[ebp+ 8] - error code
+align 4
+tl_save_mem:
+  push ebp
+  mov ebp,esp
+    push eax ebx ecx edx edi esi
+    mov esi,dword[ebp+12]
+    mov edi,dword[ebp+20]
+
+    cmp dword[ebp+16],0 ;add mode
+    je @f
+      .beg_cycle:
+      cmp dword[esi],0x65657274 ;0x65657274 = 'tree'
+      jne @f
+      xor ebx,ebx
+      mov bx,word[esi+4]
+      imul ebx,dword[esi+6]
+      add ebx,tl_save_load_heder_size
+      add esi,ebx
+      jmp .beg_cycle
+    @@:
+
+    xor ebx,ebx
+    mov bx,tl_info_size
+
+    call tl_get_node_count_all ;eax = all node count
+
+    mov ecx,eax  ;вычисляем сколько памяти должно быть заполнено
+    imul ecx,ebx ;умножаем на размер структуры узла
+    add ecx,tl_save_load_heder_size+1 ;element header +1 end element sumbol
+    add ecx,esi  ;добавляем указатель на начало памяти (с учетом ранее записанных структур)
+    sub ecx,dword[ebp+12] ;отнимаем указатель на начало памяти (без ранее записанных структур)
+    cmp ecx,dword[ebp+8]  ;ecx = element memory size
+    jg .err_mem_size
+
+    ;save tree params
+    mov dword[esi],0x65657274 ;0x65657274 = 'tree'
+    mov word[esi+4],bx
+    mov dword[esi+6],eax ;element count
+    add esi,10
+
+    mov eax,tl_style
+    mov dword[esi],eax
+    add esi,4
+
+    mov eax,tl_cur_pos
+    mov dword[esi],eax
+    add esi,4
+
+    mov ax,tl_info_capt_offs
+    mov word[esi],ax
+    add esi,2
+
+    mov ax,tl_info_capt_len
+    mov word[esi],ax
+    add esi,2+4
+
+    ;cycle to nodes
+    mov edx,tl_data_nodes
+    mov ecx,edx
+    add ecx,sizeof.TreeList
+    @@:
+      call tl_iterat_next_all
+      cmp edx,ecx
+      jle @f
+;save node params
+call tl_get_node_index ;eax = index of pointer [edx]
+mov dword[esi],eax
+
+add esi,4
+mov eax,dword[edx] ;eax = (type; lev; clo)
+mov dword[esi],eax
+add esi,4
+
+;push dword edi
+;call tl_node_get_data
+;pop eax
+push dword edi
+push dword edx
+call tl_node_poi_get_data
+pop dword eax
+
+;call tl_node_copy_data
+push ecx edi
+  mov edi,eax
+  mov ecx,ebx
+  xchg esi,edi
+  rep movsb
+  mov esi,edi
+pop edi ecx
+;add esi,ebx
+      jmp @b
+    @@:
+    mov byte[esi],0 ;end of 'treelist'
+    mov dword[ebp+20],0 ;return error code
+    jmp @f
+      .err_mem_size:
+      or dword[ebp+20],tl_err_save_memory_size
+    @@:
+    pop esi edi edx ecx ebx eax
+  pop ebp
+  ret 12
+
+;input:
+;dword[ebp+ 8] - memory size
+;dword[ebp+12] - pointer to memory
+;word[ebp+16] - options: element index
+;word[ebp+18] - options: 2*(add mode)+(init mode)
+;dword[ebp+20] - pointer to 'TreeList' struct
+;output:
+;dword[ebp+ 8] - error code
+align 4
+tl_load_mem:
+  push ebp
+  mov ebp,esp
+    push eax ebx ecx edx edi esi
+    mov esi,dword[ebp+12]
+    mov edi,dword[ebp+20]
+
+    mov dword[ebp+20],0 ;return error code
+
+    xor ecx,ecx
+    mov cx,word[ebp+16]
+    cmp cx,0 ;load in array mode
+    je @f
+      .beg_cycle:
+      cmp dword[esi],0x65657274 ;0x65657274 = 'tree'
+      jne .no_tree
+      xor ebx,ebx
+      mov bx,word[esi+4]
+      imul ebx,dword[esi+6]
+      add ebx,tl_save_load_heder_size
+      add esi,ebx
+      loop .beg_cycle
+    @@:
+
+    cmp dword[esi],0x65657274 ;0x65657274 = 'tree'
+    jne .no_tree
+      bt word[ebp+18],1 ;load in add mode
+      jc @f
+        push dword edi
+        call tl_info_clear
+      @@:
+
+      xor ebx,ebx
+      mov bx,word[esi+4] ;info_size
+      cmp bx,tl_info_size
+      je @f
+        or dword[ebp+20],tl_err_load_info_size
+      @@:
+      mov ecx,dword[esi+6] ;count nodes
+      cmp ecx,1
+      jl .end_f
+      add esi,tl_save_load_heder_size
+
+      @@:
+;load node params
+push dword edi
+mov eax,dword[esi+4]
+ror eax,16
+push dword eax ;options (type; lev; clo)
+add esi,8
+push dword esi
+call tl_node_add
+
+push dword edi
+call tl_cur_next
+;...
+add esi,ebx
+        loop @b
+
+      jmp .end_f
+    .no_tree:
+      mov dword[ebp+20],tl_err_load_caption
+    .end_f:
+    pop esi edi edx ecx ebx eax
+  pop ebp
+  ret 12
+
+;ascii scan key
+;  13    28 Enter
+;  32    57 Space
+; 178    72 Up
+; 177    80 Down
+; 176    75 Left
+; 179    77 Right
+; 182    83 Delete
+; 184    73 Pg Up
+; 183    81 Pg Dn
+
+tl_key_ascii db 13,32,178,177,176,179,182,184,183
+tl_key_scan  db 28,57, 72, 80, 75, 77, 83, 73, 81
 
 txt_capt_cur db '‘ва®Є ',0
 txt_capt_otm db 'Ћв¬Ґ­л',0

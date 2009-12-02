@@ -162,6 +162,8 @@ EXPORTS:
   dd sz_tl_node_poi_get_info,	tl_node_poi_get_info
   dd sz_tl_node_poi_get_next_info,tl_node_poi_get_next_info
   dd sz_tl_node_poi_get_data,	tl_node_poi_get_data
+  dd sz_tl_save_mem,   tl_save_mem
+  dd sz_tl_load_mem,   tl_load_mem
   dd sz_tl_version_tree_list,	0x00000001
 
 	dd	0,0
@@ -226,4 +228,6 @@ szVersion_FileBrowser		db 'version_FileBrowser',0
   sz_tl_node_poi_get_info db 'tl_node_poi_get_info',0
   sz_tl_node_poi_get_next_info db 'tl_node_poi_get_next_info',0
   sz_tl_node_poi_get_data db 'tl_node_poi_get_data',0
+  sz_tl_save_mem db 'tl_save_mem',0
+  sz_tl_load_mem db 'tl_load_mem',0
   sz_tl_version_tree_list db 'version_tree_list',0
