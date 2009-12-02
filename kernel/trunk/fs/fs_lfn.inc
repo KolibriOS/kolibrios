@@ -971,9 +971,9 @@ sys_current_directory:
 ;	mov	esi, [esi+APPDATA.cur_dir]
 ;	mov	edx, esi
 
-;get lenght string of appdata.cur_dir
-;	mov	eax, [current_slot]
-;	mov	edi, [eax+APPDATA.cur_dir]
+;get length string of appdata.cur_dir
+	mov	eax, [current_slot]
+	mov	edi, [eax+APPDATA.cur_dir]
 
 	dec	ebx
 	jz	.set
@@ -984,9 +984,6 @@ sys_current_directory:
 ; sysfunction 30.2: [for app] eax=30,ebx=2,ecx->buffer,edx=len
 ; for our code: ebx->buffer,ecx=len
 max_cur_dir	equ	0x1000
-;get lenght string of appdata.cur_dir
-	mov	eax, [current_slot]
-	mov	edi, [eax+APPDATA.cur_dir]
 
 	mov	ebx,edi
 
@@ -997,25 +994,27 @@ max_cur_dir	equ	0x1000
 	mov	ecx,max_cur_dir
 
 	repne	scasb		;find zerro at and string
-	jcxz    .error		;ecx=0 and destination buffer is too small.
+	jnz     .error		; no zero in cur_dir: internal error, should not happen
 
 	sub	edi,ebx		;lenght for copy
 	inc	edi
         mov	[esp+32+8],edi	;return in eax
 
-	cmp	edx,edi		;edi must have more than 2 (for / and 0x0)  
-;sourse string
+	cmp	edx, edi
+	jbe     @f
+	mov     edx, edi
+@@:
+;source string
 	pop	esi
 ;destination string
 	pop	edi
-	jb	.ret
+	cmp	edx, 1
+	jbe	.ret
 
 	mov	al,'/'		;start string with '/'
 	stosb
 	mov	ecx,edx
 	rep	movsb           ;copy string
-	xor	eax,eax
-	mov	byte [edi],al   ;set zerro
 .ret:	ret
 
 .error: add	esp,8
