@@ -279,21 +279,27 @@ p_irq15:
         iret
 
 ready_for_next_irq:
-        mov     [check_idle_semaphore],5
+	mov	eax,5
+        mov     [check_idle_semaphore],eax
+;        mov     al, 0x20
+	add 	eax,(0x20-0x5)
+
         mov     al, 0x20
         out     0x20, al
         ret
-
+;destroy eax
 ready_for_next_irq_1:
-        mov     [check_idle_semaphore],5
-        mov     al, 0x20
+	mov	eax,5
+        mov     [check_idle_semaphore],eax
+;        mov     al, 0x20
+	add 	eax,(0x20-0x5)
         out     0xa0,al
         out     0x20, al
         ret
 
 irqD:
         push  eax
-        mov   al,0
+	xor   eax,eax
         out   0xf0,al
         mov   al,0x20
         out   0xa0,al
@@ -396,24 +402,32 @@ clear_application_table_status:
 
         cmp  eax,[application_table_status]
         jne  apptsl1
-        mov  [application_table_status],0
+	xor  eax,eax
+        mov  [application_table_status],eax
       apptsl1:
 
         pop  eax
 
         ret
 
+;  * eax = 64 - номер функции
+;  * ebx = 1 - единственная подфункция
+;  * ecx = новый размер памяти
+;Возвращаемое значение:
+;  * eax = 0 - успешно
+;  * eax = 1 - недостаточно памяти
+
 sys_resize_app_memory:
-        ; eax = 1 - resize
-        ;     ebx = new amount of memory
+        ; ebx = 1 - resize
+        ; ecx = new amount of memory
 
-        cmp    eax,1
-        jne    .no_application_mem_resize
-
+;        cmp    eax,1
+	dec	ebx
+        jnz    .no_application_mem_resize
+;fix it! 
+        mov	ebx,ecx
         stdcall new_mem_resize, ebx
-        mov [esp+36], eax
-        ret
-
+        mov [esp+32], eax
 .no_application_mem_resize:
         ret
 
@@ -689,22 +703,22 @@ term9:
         cmp     [hd1_status], esi
         jnz     @f
         call    free_hd_channel
-        mov     [hd1_status], 0
+        and     [hd1_status], 0
 @@:
         cmp     [cd_status], esi
         jnz     @f
         call    free_cd_channel
-        mov     [cd_status], 0
+        and     [cd_status], 0
 @@:
         cmp     [flp_status], esi
         jnz     @f
-        mov     [flp_status], 0
+        and     [flp_status], 0
 @@:
         pop     esi
         cmp     [bgrlockpid], esi
         jnz     @f
         and     [bgrlockpid], 0
-        mov     [bgrlock], 0
+        and     [bgrlock], 0
 @@:
 
     pusha ; remove all irq reservations
@@ -736,8 +750,8 @@ term9:
 
     mov   esi,[RESERVED_PORTS]
 
-    cmp   esi,0
-    je    rmpr9
+    test  esi,esi
+    jz    rmpr9
 
   rmpr3:
 
@@ -808,7 +822,7 @@ term9:
     mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
     mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
 
-    mov   [application_table_status],0
+    and   [application_table_status],0
     ;mov   esi,process_terminated
     ;call  sys_msg_board_str
     add esp, 4

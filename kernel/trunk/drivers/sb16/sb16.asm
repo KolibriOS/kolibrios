@@ -66,9 +66,13 @@ if DEBUG
 	   mov esi,msgDSPFound
 	   call SysMsgBoardStr
 end if
-	   xor	eax,eax
-	   mov	ebx,[sb_base_port]
-	   lea	ecx,[ebx+0xF]
+;	   xor	eax,eax
+;	   mov	ebx,[sb_base_port]
+;	   lea	ecx,[ebx+0xF]
+	   xor	ebx,ebx
+	   mov	ecx,[sb_base_port]
+	   lea	edx,[ebx+0xF]
+
 	   call ReservePortArea  ;these ports must be my!
 if DEBUG
 	   dec	eax

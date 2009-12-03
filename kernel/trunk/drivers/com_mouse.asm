@@ -5,6 +5,7 @@
 ;;                                                              ;;
 ;; Includes source code by Kulakov Vladimir Gennadievich.       ;;
 ;; Modified by Mario79 and Rus.                                 ;;
+;; 02.12.2009 <Lrz>						;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;driver sceletone
@@ -67,16 +68,19 @@ end if
 
 	stdcall AttachIntHandler, 4, irq4_handler, dword 0
 if DEBUG
-	cmp	eax, 0
+	test	eax, eax
 	jne	.label1
 
 	mov	esi, msg_error_attach_int_handler
 	call	Boot_Log
 end if
      .label1:
-	mov	eax, 0
-	mov	ebx, 0x3F8
-	mov	ecx, 0x3FF
+;	mov	eax, 0
+;	mov	ebx, 0x3F8
+;	mov	ecx, 0x3FF
+	xor	ebx,ebx
+	mov	ecx, 0x3F8
+	mov	edx, 0x3FF
 	call	ReservePortArea
 
 if DEBUG
@@ -100,9 +104,13 @@ end if
 
 	stdcall AttachIntHandler, 3, irq3_handler, dword 0
 
-	mov	eax, 0
-	mov	ebx, 0x2F8
-	mov	ecx, 0x3F8
+;	mov	eax, 0
+;	mov	ebx, 0x2F8
+;	mov	ecx, 0x3F8
+	xor	ebx,ebx
+	mov	ecx, 0x2F8
+	mov	edx, 0x3F8
+
 	call	ReservePortArea
 if DEBUG
 	cmp	eax, 1
@@ -119,7 +127,7 @@ end if
 
 	   stdcall RegService, my_service, service_proc
 if DEBUG
-	   cmp	eax, 0
+	   test	eax, eax
 	   jne	@f
 
 	   mov	esi, msg_exit
@@ -219,8 +227,8 @@ MouseSearch:
 WaitData:
 	; Ожидать еще 10 "тиков"
 	 dec  ecx
-	 cmp  ecx,0
-	 je	NoMouse
+;	 cmp  ecx,0
+	 jz	NoMouse
 	; Проверить наличие идентификационного байта
 	mov	DX, bx
 	add	DX,5

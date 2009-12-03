@@ -4015,193 +4015,173 @@ get_irq_data:
 
 
 set_io_access_rights:
-
-     pushad
-
-     mov edi, tss._io_map_0
-
+      push edi eax
+      mov edi, tss._io_map_0
 ;     mov   ecx,eax
 ;     and   ecx,7    ; offset in byte
-
 ;     shr   eax,3    ; number of byte
 ;     add   edi,eax
-
 ;     mov   ebx,1
 ;     shl   ebx,cl
-
      test  ebp,ebp
 ;     cmp   ebp,0                ; enable access - ebp = 0
      jnz   siar1
-
 ;     not   ebx
 ;     and   [edi],byte bl
      btr [edi], eax
-
-     popad
-
+     pop eax edi
      ret
-
 siar1:
-
      bts [edi], eax
   ;  or    [edi],byte bl        ; disable access - ebp = 1
-
-     popad
-
+     pop eax edi
      ret
-
+;reserve/free group of ports
+;  * eax = 46 - number function
+;  * ebx = 0 - reserve, 1 - free
+;  * ecx = number start arrea of ports
+;  * edx = number end arrea of ports (include last number of port)
+;Return value:
+;  * eax = 0 - succesful 
+;  * eax = 1 - error
+;  * The system has reserve this ports:
+;    0..0x2d, 0x30..0x4d, 0x50..0xdf, 0xe5..0xff (include last number of port).
+;destroys eax,ebx, ebp
 r_f_port_area:
 
-     test  eax, eax
+     test  ebx, ebx
      jnz   free_port_area
 ;     je    r_port_area
 ;     jmp   free_port_area
 
 ;   r_port_area:
 
-     pushad
+;     pushad
 
-     cmp   ebx,ecx            ; beginning > end ?
+     cmp   ecx,edx            ; beginning > end ?
      ja    rpal1
-     cmp   ecx,65536
+     cmp   edx,65536
      jae   rpal1
-     mov   esi,[RESERVED_PORTS]
-     test  esi,esi            ; no reserved areas ?
+     mov   eax,[RESERVED_PORTS]
+     test  eax,eax            ; no reserved areas ?
      je    rpal2
-     cmp   esi,255            ; max reserved
+     cmp   eax,255            ; max reserved
      jae   rpal1
  rpal3:
-     mov   edi,esi
-     shl   edi,4
-     add   edi,RESERVED_PORTS
-     cmp   ebx,[edi+8]
+     mov   ebx,eax
+     shl   ebx,4
+     add   ebx,RESERVED_PORTS
+     cmp   ecx,[ebx+8]
      ja    rpal4
-     cmp   ecx,[edi+4]
+     cmp   edx,[ebx+4]
      jae   rpal1
 ;     jb    rpal4
 ;     jmp   rpal1
  rpal4:
-
-     dec   esi
+     dec   eax
      jnz   rpal3
      jmp   rpal2
    rpal1:
-     popad
-     mov   eax,1
+;     popad
+;     mov   eax,1
+     xor    eax,eax
+     inc    eax
      ret
-
    rpal2:
-     popad
-
-
+;     popad
      ; enable port access at port IO map
-     cli
-     pushad                        ; start enable io map
+	cli
+	pushad                        ; start enable io map
 
-     cmp   ecx,65536 ;16384
-     jae   no_unmask_io ; jge
-
-     mov   eax,ebx
-
-   new_port_access:
-
-     pushad
-
-     xor   ebp,ebp                ; enable - eax = port
-     call  set_io_access_rights
-
-     popad
-
+	cmp   edx,65536 ;16384
+	jae   no_unmask_io ; jge
+	mov   eax,ecx
+;	push	ebp
+	xor	ebp,ebp                ; enable - eax = port
+new_port_access:
+;     pushad
+	call	set_io_access_rights
+;     popad
      inc   eax
-     cmp   eax,ecx
+     cmp   eax,edx
      jbe   new_port_access
-
-   no_unmask_io:
-
-     popad                         ; end enable io map
+;	pop	ebp
+no_unmask_io:
+	popad                         ; end enable io map
      sti
 
-     mov   edi,[RESERVED_PORTS]
-     add   edi,1
-     mov   [RESERVED_PORTS],edi
-     shl   edi,4
-     add   edi,RESERVED_PORTS
-     mov   esi,[TASK_BASE]
-     mov   esi,[esi+TASKDATA.pid]
-     mov   [edi],esi
-     mov   [edi+4],ebx
-     mov   [edi+8],ecx
+     mov   eax,[RESERVED_PORTS]
+     add   eax,1
+     mov   [RESERVED_PORTS],eax
+     shl   eax,4
+     add   eax,RESERVED_PORTS
+     mov   ebx,[TASK_BASE]
+     mov   ebx,[ebx+TASKDATA.pid]
+     mov   [eax],ebx
+     mov   [eax+4],ecx
+     mov   [eax+8],edx
 
      xor   eax, eax
      ret
 
 free_port_area:
 
-     pushad
-
-     mov   esi,[RESERVED_PORTS]     ; no reserved areas ?
-     test  esi,esi
-     je    frpal2
-     mov   edx,[TASK_BASE]
-     mov   edx,[edx+TASKDATA.pid]
+;     pushad
+     mov   eax,[RESERVED_PORTS]     ; no reserved areas ?
+     test  eax,eax
+     jz    frpal2
+     mov   ebx,[TASK_BASE]
+     mov   ebx,[ebx+TASKDATA.pid]
    frpal3:
-     mov   edi,esi
+     mov   edi,eax
      shl   edi,4
      add   edi,RESERVED_PORTS
-     cmp   edx,[edi]
+     cmp   ebx,[edi]
      jne   frpal4
-     cmp   ebx,[edi+4]
+     cmp   ecx,[edi+4]
      jne   frpal4
-     cmp   ecx,[edi+8]
+     cmp   edx,[edi+8]
      jne   frpal4
      jmp   frpal1
    frpal4:
-     dec   esi
+     dec   eax
      jnz   frpal3
    frpal2:
-     popad
-     mov   eax,1
+;     popad
+     inc   eax
      ret
    frpal1:
-     mov   ecx,256
-     sub   ecx,esi
-     shl   ecx,4
-     mov   esi,edi
-     add   esi,16
-     cld
-     rep   movsb
+	push	ecx
+	mov   ecx,256
+	sub   ecx,eax
+	shl   ecx,4
+	mov   esi,edi
+	add   esi,16
+	cld
+	rep   movsb
 
-     dec   dword [RESERVED_PORTS]
+	dec   dword [RESERVED_PORTS]
+;popad
+;disable port access at port IO map
 
-     popad
-
-
-     ; disable port access at port IO map
-
-     pushad                        ; start disable io map
-
-     cmp   ecx,65536 ;16384
+;     pushad                        ; start disable io map
+     pop	eax	;start port
+     cmp   edx,65536 ;16384
      jge   no_mask_io
 
-     mov   eax,ebx
-
-   new_port_access_disable:
-
-     pushad
-
-     mov   ebp,1                  ; disable - eax = port
+;     mov   eax,ecx
+	xor	ebp,ebp
+	inc	ebp
+new_port_access_disable:
+;     pushad
+;     mov   ebp,1                  ; disable - eax = port
      call  set_io_access_rights
-
-     popad
-
+;     popad
      inc   eax
-     cmp   eax,ecx
+     cmp   eax,edx
      jbe   new_port_access_disable
-
-   no_mask_io:
-
-     popad                         ; end disable io map
-
+no_mask_io:
+;     popad                         ; end disable io map
      xor   eax, eax
      ret
 
@@ -5381,7 +5361,7 @@ align 4
 syscall_reserveportarea:                ; ReservePortArea and FreePortArea
 
      call  r_f_port_area
-     mov   [esp+36],eax
+     mov   [esp+32],eax
      ret
 
 align 4

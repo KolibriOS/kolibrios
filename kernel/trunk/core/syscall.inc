@@ -149,7 +149,7 @@ iglobal
       dd 0	                 ; 43-SendDeviceData
       dd 0
       dd 0
-      dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
+      dd 0			 ; 46-ReservePortArea and FreePortArea
       dd display_number          ; 47-WriteNum
       dd display_settings        ; 48-SetRedrawType and SetButtonType
       dd sys_apm                 ; 49-Advanced Power Management (APM)
@@ -167,7 +167,7 @@ iglobal
       dd sys_gs                  ; 61-Direct graphics access
       dd sys_pci                 ; 62-PCI functions
       dd sys_msg_board           ; 63-System message board
-      dd sys_resize_app_memory   ; 64-Resize application memory usage
+      dd 0			 ; 64-Resize application memory usage
       dd syscall_putimage_palette; 65-PutImagePalette
       dd sys_process_def         ; 66-Process definitions - keyboard
       dd sys_window_move         ; 67-Window move or resize
@@ -228,7 +228,7 @@ iglobal
       dd sys_outport             ; 43-SendDeviceData
       dd sys_programirq          ; 44-ProgramIrqs
       dd reserve_free_irq        ; 45-ReserveIrq and FreeIrq
-      dd cross_order             ; 46-ReservePortArea and FreePortArea
+      dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
       dd cross_order             ; 47-WriteNum
       dd cross_order             ; 48-SetRedrawType and SetButtonType
       dd cross_order             ; 49-Advanced Power Management (APM)
@@ -246,7 +246,7 @@ iglobal
       dd cross_order             ; 61-Direct graphics access
       dd cross_order             ; 62-PCI functions
       dd cross_order             ; 63-System message board
-      dd cross_order             ; 64-Resize application memory usage
+      dd sys_resize_app_memory   ; 64-Resize application memory usage
       dd cross_order             ; 65-PutImagePalette
       dd cross_order             ; 66-Process definitions - keyboard
       dd cross_order             ; 67-Window move or resize
