@@ -284,7 +284,6 @@ ready_for_next_irq:
 ;        mov     al, 0x20
 	add 	eax,(0x20-0x5)
 
-        mov     al, 0x20
         out     0x20, al
         ret
 ;destroy eax
@@ -424,9 +423,7 @@ sys_resize_app_memory:
 ;        cmp    eax,1
 	dec	ebx
         jnz    .no_application_mem_resize
-;fix it! 
-        mov	ebx,ecx
-        stdcall new_mem_resize, ebx
+        stdcall new_mem_resize, ecx
         mov [esp+32], eax
 .no_application_mem_resize:
         ret
