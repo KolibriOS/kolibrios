@@ -200,7 +200,7 @@ table { font-size: 15px; }
 <h1><a name="struc_tree_list">Структура tree_list</a></h1>
 <pre>struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
     col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
-    info_capt_len,el_focus, p_scrol,p_sb_draw,on_press {
+    info_capt_len,el_focus, p_scrol,on_press {
   .data_info  dd 0
   .info_size  dw info_size
   .info_max_count dd info_max_count
@@ -226,7 +226,7 @@ table { font-size: 15px; }
   .info_capt_len  dw info_capt_len
   .el_focus    dd el_focus
   .p_scrol     dd p_scrol
-  .p_sb_draw   dd p_sb_draw
+  rb 4
   .on_activate dd 0
   .on_press    dd on_press
 }</pre>
@@ -239,13 +239,12 @@ table { font-size: 15px; }
 <p><b>capt_cy</b> - высота строки для подписи вверху элемента, если меньше 9 подпись не выводится.</p>
 <p><b>info_capt_len</b> - длинна текста для подписи. Если равно 0, то длинна считается так: <i>info_size - info_capt_offs</i>.</p>
 <p><b>p_scrol</b> - указатель на структуру скроллинга, связанного с данным элементом.</p>
-<p><b>p_sb_draw</b> - указатель на функцию перерисовки вертикального скроллинга (<i>scrollbar_ver_draw</i>).</p>
 <p><b>on_press</b> - указатель на функцию, которая будет вызвана при нажитии [<b>Enter</b>]. Если указатель равен 0 то ничего не будет вызыватся.</p>
 
 <p>Пример создания структуры:</p>
 <pre>tree1 tree_list 24,500, tl_draw_par_line+tl_list_box_mode, 16,16,\
-    0x8080ff,0x0000ff,0xffffff, 10,35,200-16,285, 14,4,\
-    0,el_focus, wScr,scrollbar_ver_draw,fun_on_enter</pre>
+    0x8080ff,0x0000ff,0xffffff, 10,35,200-16,285, 14,4,0,\
+    el_focus, wScr,fun_on_enter</pre>
 
 <h1><a name="tree_list_styles">Стили элемента</a></h1>
 <h2>tl_key_no_edit</h2>
@@ -256,6 +255,6 @@ table { font-size: 15px; }
 <p>Стиль не отображает уровни (как в ListBox все узлы одного уровня).</p>
 
 <hr>
-<p>Документация обновлялась последний раз 2.12.09.</p>
+<p>Документация обновлялась последний раз 5.12.09.</p>
 </body>
 </html>
