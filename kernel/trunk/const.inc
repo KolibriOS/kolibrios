@@ -310,11 +310,11 @@ BgrDrawMode         equ (OS_BASE+0x033BFF4)
 BgrDataWidth        equ (OS_BASE+0x033BFF8)
 BgrDataHeight       equ (OS_BASE+0x033BFFC)
 
-virtual at              (OS_BASE+0x033CF80)
+sys_pgmap           equ (OS_BASE+0x033C000)
+
+virtual at              (OS_BASE+0x05FFF80)
   tss  TSS
 end virtual
-
-sys_pgmap           equ (OS_BASE+0x033F000)
 
 HEAP_BASE           equ (OS_BASE+0x0800000)
 HEAP_MIN_SIZE       equ 0x01000000

@@ -465,6 +465,16 @@ high_code:
            wrmsr
 .noSYSCALL:
 ; -----------------------------------------
+        stdcall alloc_page
+        stdcall map_page, tss-0xF80, eax, PG_SW
+        stdcall alloc_page
+        inc     eax
+        mov     [SLOT_BASE+256+APPDATA.io_map], eax
+        stdcall map_page, tss+0x80, eax, PG_SW
+        stdcall alloc_page
+        inc     eax
+        mov     dword [SLOT_BASE+256+APPDATA.io_map+4], eax
+        stdcall map_page, tss+0x1080, eax, PG_SW
 
 ; LOAD IDT
 
@@ -714,10 +724,7 @@ end if
         add edi, 0x2000-512
         mov dword [SLOT_BASE+256+APPDATA.fpu_state], edi
         mov dword [SLOT_BASE+256+APPDATA.saved_esp0], edi ; just for case
-        mov dword [SLOT_BASE+256+APPDATA.io_map],\
-                  (tss._io_map_0-OS_BASE+PG_MAP)
-        mov dword [SLOT_BASE+256+APPDATA.io_map+4],\
-                  (tss._io_map_1-OS_BASE+PG_MAP)
+	; [SLOT_BASE+256+APPDATA.io_map] was set earlier
 
         mov esi, fpu_data
         mov ecx, 512/4
@@ -829,14 +836,14 @@ end if
 ;protect io permission map
 
            mov esi, [default_io_map]
-           stdcall map_page,esi,(tss._io_map_0-OS_BASE), PG_MAP
+           stdcall map_page,esi,[SLOT_BASE+256+APPDATA.io_map], PG_MAP
            add esi, 0x1000
-           stdcall map_page,esi,(tss._io_map_1-OS_BASE), PG_MAP
+           stdcall map_page,esi,[SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
 
            stdcall map_page,tss._io_map_0,\
-                   (tss._io_map_0-OS_BASE), PG_MAP
+                   [SLOT_BASE+256+APPDATA.io_map], PG_MAP
            stdcall map_page,tss._io_map_1,\
-                   (tss._io_map_1-OS_BASE), PG_MAP
+                   [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
 
   mov ax,[OS_BASE+0x10000+bx_from_load]
   cmp ax,'r1'           ; if not rused ram disk - load network configuration from files {SPraid.simba}
