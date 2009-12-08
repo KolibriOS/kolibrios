@@ -531,8 +531,6 @@ struc DLLDESCR
 
 struc HDLL
 {
-    .magic       dd ?   ; HDLL
-    .destroy     dd ?   ;internal destructor
     .fd          dd ?   ;next object in list
     .bk          dd ?   ;prev object in list
     .pid         dd ?   ;owner id

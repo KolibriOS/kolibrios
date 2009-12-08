@@ -639,19 +639,19 @@ end if
         and     ebx, not 0xFFF
         mov     eax, [CURRENT_TASK]
         shl     eax, 8
-        lea     eax, [SLOT_BASE+eax+APP_OBJ_OFFSET]
-        mov     esi, [eax+APPOBJ.fd]
+        mov     eax, [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
+        test    eax, eax
+        jz      .fail
+        mov     esi, [eax+HDLL.fd]
 .scan_hdll:
         cmp     esi, eax
         jz      .fail
-        cmp     [esi+APPOBJ.magic], 'HDLL'
-        jnz     .scan_hdll.next
         mov     edx, ebx
         sub     edx, [esi+HDLL.base]
         cmp     edx, [esi+HDLL.size]
         jb      .fault_in_hdll
 .scan_hdll.next:
-        mov     esi, [esi+APPOBJ.fd]
+        mov     esi, [esi+HDLL.fd]
         jmp     .scan_hdll
 .fault_in_hdll:
 ; allocate new page, map it as rw and copy data

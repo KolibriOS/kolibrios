@@ -486,7 +486,7 @@ end if
        dec [pg_data.pg_mutex]
        cmp [dir_addr], 0
        je @f
-       stdcall destroy_app_space, [dir_addr]
+       stdcall destroy_app_space, [dir_addr], 0
 @@:
        xor eax, eax
        ret
@@ -523,12 +523,10 @@ proc destroy_page_table stdcall, pg_tab:dword
 endp
 
 align 4
-proc destroy_app_space stdcall, pg_dir:dword
-
-       mov ebx, pg_data.pg_mutex
-       call wait_mutex   ;ebx
+proc destroy_app_space stdcall, pg_dir:dword, dlls_list:dword
 
        xor   edx,edx
+       push  edx
        mov   eax,0x2
        mov ebx, [pg_dir]
 .loop:
@@ -538,8 +536,10 @@ proc destroy_app_space stdcall, pg_dir:dword
        cmp   byte [CURRENT_TASK+ecx+0xa],9  ;if process running?
        jz    @f              ;skip empty slots
        shl   ecx,3
-       cmp   [SLOT_BASE+ecx+0xB8],ebx   ;compare page directory addresses
+       add   ecx,SLOT_BASE
+       cmp   [ecx+APPDATA.dir_table],ebx   ;compare page directory addresses
        jnz   @f
+       mov   [ebp-4],ecx
        inc   edx                ;thread found
 @@:
        inc   eax
@@ -548,13 +548,19 @@ proc destroy_app_space stdcall, pg_dir:dword
 
 ;edx = number of threads
 ;our process is zombi so it isn't counted
+       pop   ecx
        cmp   edx,1
-       jg    .exit
+       jg    .ret
 ;if there isn't threads then clear memory.
+       mov esi, [dlls_list]
+       call destroy_all_hdlls
+
+       mov ebx, pg_data.pg_mutex
+       call wait_mutex   ;ebx
 
        mov eax, [pg_dir]
        and eax, not 0xFFF
-       stdcall map_page,[tmp_task_pdir],eax,dword PG_SW
+       stdcall map_page,[tmp_task_pdir],eax,PG_SW
        mov esi, [tmp_task_pdir]
        mov edi, (OS_BASE shr 20)/4
 .destroy:
@@ -562,7 +568,7 @@ proc destroy_app_space stdcall, pg_dir:dword
        test eax, 1
        jz .next
        and eax, not 0xFFF
-       stdcall map_page,[tmp_task_ptab],eax,dword PG_SW
+       stdcall map_page,[tmp_task_ptab],eax,PG_SW
        stdcall destroy_page_table, [tmp_task_ptab]
        mov eax, [esi]
        call free_page
@@ -574,9 +580,10 @@ proc destroy_app_space stdcall, pg_dir:dword
        mov eax, [pg_dir]
        call free_page
 .exit:
-       stdcall map_page,[tmp_task_ptab],dword 0,dword PG_UNMAP
-       stdcall map_page,[tmp_task_pdir],dword 0,dword PG_UNMAP
+       stdcall map_page,[tmp_task_ptab],0,PG_UNMAP
+       stdcall map_page,[tmp_task_pdir],0,PG_UNMAP
        dec [pg_data.pg_mutex]
+.ret:
        ret
 endp
 
@@ -907,6 +914,9 @@ proc new_sys_threads
 
        mov ecx,[ebx+APPDATA.dir_table]
        mov [edx+APPDATA.dir_table],ecx      ;copy page directory
+
+       mov eax,[ebx+APPDATA.dlls_list_ptr]
+       mov [edx+APPDATA.dlls_list_ptr],eax
 
        mov eax, [ebx+APPDATA.tls_base]
        test eax, eax

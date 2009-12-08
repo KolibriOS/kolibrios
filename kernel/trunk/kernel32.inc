@@ -142,7 +142,8 @@ struc APPDATA
   .wait_test       dd ?            ;+96   +++
   .wait_param      dd ?            ;+100  +++
   .tls_base        dd ?            ;+104
-                   db 20 dup(?)    ;+108
+  .dlls_list_ptr   dd ?            ;+108
+                   db 16 dup(?)    ;+112
 
   .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?            ;+132

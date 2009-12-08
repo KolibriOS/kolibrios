@@ -1064,14 +1064,14 @@ proc load_library stdcall, file_name:dword
 ; ignore timestamp
 	   mov esi, [CURRENT_TASK]
 	   shl esi, 8
-	   lea ebx, [esi+SLOT_BASE+APP_OBJ_OFFSET]
-	   mov esi, [ebx+APPOBJ.fd]
 	   lea edi, [fullname]
+	   mov ebx, [esi+SLOT_BASE+APPDATA.dlls_list_ptr]
+	   test ebx, ebx
+	   jz  .not_in_process
+	   mov esi, [ebx+HDLL.fd]
 .scan_in_process:
 	   cmp esi, ebx
 	   jz .not_in_process
-	   cmp dword [esi+APPOBJ.magic], 'HDLL'
-	   jnz .next_in_process
 	   mov eax, [esi+HDLL.parent]
 	   add eax, DLLDESCR.name
 	   stdcall strncmp, eax, edi, -1
@@ -1087,7 +1087,7 @@ proc load_library stdcall, file_name:dword
 	   add eax, [esi+HDLL.base]
 	   ret
 .next_in_process:
-	   mov esi, [esi+APPOBJ.fd]
+	   mov esi, [esi+HDLL.fd]
 	   jmp .scan_in_process
 .not_in_process:
 
@@ -1335,15 +1335,25 @@ proc load_library stdcall, file_name:dword
 	   jz  .fail_and_dereference
 @@:
 	   mov [img_base], eax
+	   mov eax, HDLL.sizeof
+	   call malloc
+	   test eax, eax
+	   jz  .fail_and_free_user
 	   mov ebx, [CURRENT_TASK]
 	   shl ebx, 5
-	   mov ebx, [CURRENT_TASK+ebx+TASKDATA.pid]
-	   mov eax, HDLL.sizeof
-	   call create_kernel_object
+	   mov edx, [CURRENT_TASK+ebx+TASKDATA.pid]
+	   mov [eax+HDLL.pid], edx
+	   push eax
+	   call init_dlls_in_thread
+	   pop  ebx
 	   test eax, eax
-	   jz .fail_and_free_user
-	   mov [eax+APPOBJ.magic], 'HDLL'
-	   mov [eax+APPOBJ.destroy], destroy_hdll
+	   jz  .fail_and_free_user
+	   mov edx, [eax+HDLL.fd]
+	   mov [ebx+HDLL.fd], edx
+	   mov [ebx+HDLL.bk], eax
+	   mov [eax+HDLL.fd], ebx
+	   mov [edx+HDLL.bk], ebx
+	   mov eax, ebx
 	   mov ebx, [img_base]
 	   mov [eax+HDLL.base], ebx
 	   mov [eax+HDLL.size], edi
@@ -1374,7 +1384,6 @@ proc load_library stdcall, file_name:dword
 	   jb .map_pages_loop
 
 ; if real user-mode base is not equal to preferred base, relocate image
-	   mov ebx, [img_base]
 	   sub ebx, [esi+DLLDESCR.defaultbase]
 	   jz @f
 	   stdcall rebase_coff, [esi+DLLDESCR.coff_hdr], [esi+DLLDESCR.symbols_ptr], ebx
@@ -1403,6 +1412,37 @@ proc load_library stdcall, file_name:dword
 	   ret
 endp
 
+; initialize [APPDATA.dlls_list_ptr] for given thread
+; DLL is per-process object, so APPDATA.dlls_list_ptr must be
+; kept in sync for all threads of one process.
+; out: eax = APPDATA.dlls_list_ptr if all is OK,
+; NULL if memory allocation failed
+init_dlls_in_thread:
+	mov	ebx, [current_slot]
+	mov	eax, [ebx+APPDATA.dlls_list_ptr]
+	test	eax, eax
+	jnz	.ret
+	push	[ebx+APPDATA.dir_table]
+	mov	eax, 8
+	call	malloc
+	pop	edx
+	test	eax, eax
+	jz	.ret
+	mov	[eax], eax
+	mov	[eax+4], eax
+	mov	ecx, [TASK_COUNT]
+	mov	ebx, SLOT_BASE+256
+.set:
+	cmp	[ebx+APPDATA.dir_table], edx
+	jnz	@f
+	mov	[ebx+APPDATA.dlls_list_ptr], eax
+@@:
+	add	ebx, 256
+	dec	ecx
+	jnz	.set
+.ret:
+	ret
+
 ; in: eax = number of references to delete, esi -> DLLDESCR struc
 dereference_dll:
 	sub	[esi+DLLDESCR.refcount], eax
@@ -1419,7 +1459,7 @@ dereference_dll:
 	ret
 
 destroy_hdll:
-	push	ebx esi edi
+	push	ebx ecx esi edi
 	push	eax
 	mov	ebx, [eax+HDLL.base]
 	mov	esi, [eax+HDLL.parent]
@@ -1428,21 +1468,17 @@ destroy_hdll:
 ; However, destroy_hdll can be called in the context of OS thread when
 ; cleaning up objects created by the application which is destroyed.
 ; So remember current cr3 and set it to page table of target.
-	mov	eax, [eax+HDLL.pid]
-	call	pid_to_slot
-	shl	eax, 8
-	add	eax, SLOT_BASE
-	mov	ecx, [eax+APPDATA.dir_table]
+	mov	eax, [ecx+APPDATA.dir_table]
 ; Because we cheat with cr3, disable interrupts: task switch would restore
 ; page table from APPDATA of current thread.
 ; Also set [current_slot] because it is used by user_free.
 	pushf
 	cli
 	push	[current_slot]
-	mov	[current_slot], eax
-	mov	eax, cr3
-	push	eax
-	mov	cr3, ecx
+	mov	[current_slot], ecx
+	mov	ecx, cr3
+	push	ecx
+	mov	cr3, eax
 	push	ebx	; argument for user_free
 	mov	eax, ebx
 	shr	ebx, 12
@@ -1482,8 +1518,25 @@ destroy_hdll:
 	mov	eax, [eax+HDLL.refcount]
 	call	dereference_dll
 	pop	eax
-	call	destroy_kernel_object
-	pop	edi esi ebx
+	mov	edx, [eax+HDLL.bk]
+	mov	ebx, [eax+HDLL.fd]
+	mov	[ebx+HDLL.bk], edx
+	mov	[edx+HDLL.fd], ebx
+	call	free
+	pop	edi esi ecx ebx
+	ret
+
+; ecx -> APPDATA for slot, esi = dlls_list_ptr
+destroy_all_hdlls:
+	test	esi, esi
+	jz	.ret
+.loop:
+	mov	eax, [esi+HDLL.fd]
+	cmp	eax, esi
+	jz	free
+	call	destroy_hdll
+	jmp	.loop
+.ret:
 	ret
 
 align 4

@@ -508,10 +508,10 @@ term9:
            pop esi
            jmp @B
 @@:
+
            mov eax, [.slot]
            shl eax, 8
-           mov eax,[SLOT_BASE+eax+APPDATA.dir_table]
-           stdcall destroy_app_space, eax
+           stdcall destroy_app_space, [SLOT_BASE+eax+APPDATA.dir_table], [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
 
            mov esi, [.slot]
            cmp [fpu_owner],esi   ; if user fpu last -> fpu user = 1
