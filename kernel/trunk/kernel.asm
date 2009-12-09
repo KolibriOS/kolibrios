@@ -2529,6 +2529,7 @@ nosb6:
         jnp     .err
         push    eax
         shr     ecx, 12
+        dec     ecx
 @@:
         and     dword [page_tabs+eax*4], 0
         mov     edx, eax
