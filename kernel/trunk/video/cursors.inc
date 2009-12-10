@@ -300,7 +300,7 @@ vesa_cursor:
            push ebx
 
            mov ebx, eax
-           mov eax, CURSOR_SIZE
+           mov eax, CURSOR.sizeof
            call create_kernel_object
            test eax, eax
            jz .fail

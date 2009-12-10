@@ -397,7 +397,7 @@ int radeon_gem_fb_object_create(struct radeon_device *rdev, int size,
     vm_node = kzalloc(sizeof(*vm_node),0);
 
     vm_node->free = 0;
-    vm_node->size = 0x800000 >> 12;
+    vm_node->size = 0xC00000 >> 12;
     vm_node->start = 0;
     vm_node->mm = NULL;
 

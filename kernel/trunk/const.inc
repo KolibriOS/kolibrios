@@ -449,13 +449,17 @@ struc CURSOR
    .base        dd ?   ;allocated memory
    .hot_x       dd ?   ;hotspot coords
    .hot_y       dd ?
+
+   .list_next   dd ?   ;next cursor in cursor list
+   .list_prev   dd ?   ;prev cursor in cursor list
+   .dev_obj     dd ?   ;device depended data
+
    .sizeof:
 }
 virtual at 0
   CURSOR CURSOR
 end virtual
 
-CURSOR_SIZE     equ 32
 
 struc EVENT
 {

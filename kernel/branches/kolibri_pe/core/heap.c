@@ -338,37 +338,58 @@ addr_t  __fastcall mem_alloc(size_t size, u32_t flags)
             addr_t  *pte = &((addr_t*)page_tabs)[heap >> PAGE_WIDTH];
             addr_t  *mpte = &map->pte[0];
 
-#if 0
+            mem = heap;
+
             if( flags & PG_MAP )
+            {
+
+#ifdef  ALLOC_IMM
+
+                while( pages )
+                {
+                    u32_t   order;
+                    addr_t  page_frame;
+
+                    asm volatile ("bsr %0, %1":"=&r"(order):"r"(tmp):"cc");
+                    asm volatile ("btr %0, %1" :"=r"(tmp):"r"(order):"cc");
+
+                    page_frame = frame_alloc(1 << order) | (flags & 0xFFF);
+
+                    for(i = 0; i < 1 << order; i++)
+                    {
+                        *pte++  = 0; //page;
+                        *mpte++ = page;
+
+                        asm volatile ( "invlpg (%0)" ::"r" (mem) );
+                        mem+=  4096;
+                    };
+                }
+#else
+
                 page = PG_DEMAND | (flags & 0xFFF);
 
-            mem = heap;
-            while(pages--)
-            {
-                *pte++  = 0; //page;
-                *mpte++ = page;
-
-                asm volatile ( "invlpg (%0)" ::"r" (mem) );
-                mem+=  4096;
-            };
-#else
-            mem = heap;
-
-            while(pages--)
-            {
-                if( flags & PG_MAP )
-                    page = alloc_page();
-
-                page |= flags & 0xFFF;
-
-                *pte++  = 0;
-                *mpte++ = page;
-
-                asm volatile ( "invlpg (%0)" ::"r" (mem) );
-                mem+=  4096;
-            };
+                while(pages--)
+                {
+                    *pte++  = 0;
+                    *mpte++ = page;
+                    asm volatile ( "invlpg (%0)" ::"r" (mem) );
+                    mem+=  4096;
+                };
 #endif
+            }
+            else
+            {
+                while(pages--)
+                {
+                    *pte++  = 0; //page;
+                    *mpte++ = 0;
 
+                    asm volatile ( "invlpg (%0)" ::"r" (mem) );
+                    mem+=  4096;
+                };
+            }
+
+#endif
             DBG("%s %x size %d order %d\n", __FUNCTION__, heap, size, order);
 
             return heap;
@@ -429,8 +450,10 @@ void __fastcall mem_free(addr_t addr)
         spinlock_unlock(&z_heap.lock);
         safe_sti(efl);
 
-        for( i = 0; i < (map->size >> PAGE_WIDTH); i++)
-            frame_free(map->pte[i]);
+        for( i = 0; i < (map->size >> PAGE_WIDTH); )
+        {
+           i+= frame_free(map->pte[i]);
+        }
 
         frame_free( KA2PA(map) );
     }
@@ -440,7 +463,6 @@ void __fastcall mem_free(addr_t addr)
         safe_sti(efl);
     };
 };
-
 
 void __fastcall heap_fault(addr_t faddr, u32_t code)
 {
@@ -466,7 +488,6 @@ void __fastcall heap_fault(addr_t faddr, u32_t code)
 
         if( page != 0)
         {
-#if 0
             if( page & PG_DEMAND)
             {
                 page &= ~PG_DEMAND;
@@ -474,7 +495,6 @@ void __fastcall heap_fault(addr_t faddr, u32_t code)
 
                 map->pte[idx] = page;
             };
-#endif
             ((addr_t*)page_tabs)[faddr >> PAGE_WIDTH] = page;
         };
     };

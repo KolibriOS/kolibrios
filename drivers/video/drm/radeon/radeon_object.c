@@ -52,8 +52,8 @@ int radeon_object_init(struct radeon_device *rdev)
 
     ENTER();
 
-    r = drm_mm_init(&mm_vram, 0x800000 >> PAGE_SHIFT,
-               ((rdev->mc.real_vram_size - 0x800000) >> PAGE_SHIFT));
+    r = drm_mm_init(&mm_vram, 0xC00000 >> PAGE_SHIFT,
+               ((rdev->mc.real_vram_size - 0xC00000) >> PAGE_SHIFT));
     if (r) {
         DRM_ERROR("Failed initializing VRAM heap.\n");
         return r;
@@ -297,8 +297,6 @@ int radeon_object_kmap(struct radeon_object *robj, void **ptr)
                          (robj->vm_addr << PAGE_SHIFT);
         robj->kptr = (void*)MapIoMem(robj->cpu_addr,
                            robj->mm_node->size << 12, PG_SW);
-//        dbgprintf("map io mem %x at %x\n", robj->cpu_addr, robj->kptr);
-
     }
     else
     {
@@ -328,7 +326,6 @@ void radeon_object_kunmap(struct radeon_object *robj)
 //   spin_unlock(&robj->tobj.lock);
 }
 
-#if 0
 
 void radeon_object_unpin(struct radeon_object *robj)
 {
@@ -347,24 +344,14 @@ void radeon_object_unpin(struct radeon_object *robj)
         return;
     }
 //   spin_unlock(&robj->tobj.lock);
-    r = radeon_object_reserve(robj, false);
-    if (unlikely(r != 0)) {
-        DRM_ERROR("radeon: failed to reserve object for unpinning it.\n");
-        return;
-    }
-    flags = robj->tobj.mem.placement;
-    robj->tobj.proposed_placement = flags & ~TTM_PL_FLAG_NO_EVICT;
-    r = ttm_buffer_object_validate(&robj->tobj,
-                       robj->tobj.proposed_placement,
-                       false, false);
-    if (unlikely(r != 0)) {
-        DRM_ERROR("radeon: failed to unpin buffer.\n");
-    }
-    radeon_object_unreserve(robj);
+
+    drm_mm_put_block(robj->mm_node);
+
+    kfree(robj);
 }
 
 
-
+#if 0
 
 
 /*

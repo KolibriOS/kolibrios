@@ -50,7 +50,7 @@ struct tag_display
     void      (*show_cursor)(int show);
     void      (__stdcall *move_cursor)(cursor_t *cursor, int x, int y);
     void      (__stdcall *restore_cursor)(int x, int y);
-
+    void      (*disable_mouse)(void);
 };
 
 extern display_t *rdisplay;

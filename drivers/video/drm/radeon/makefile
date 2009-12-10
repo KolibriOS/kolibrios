@@ -73,13 +73,14 @@ NAME_SRC=							\
 			rdisplay.c				\
 			rdisplay_kms.c				\
 			radeon_pm.c				\
-			cmdline.c
+			cmdline.c				\
+			cursor.S
 
 
 SRC_DEP:=    
 
 
-NAME_OBJS =  $(patsubst %.s, %.o, $(patsubst %.asm, %.o,\
+NAME_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
             $(patsubst %.c, %.o, $(NAME_SRC))))
 
 
@@ -92,3 +93,6 @@ $(NAME).dll: $(NAME_OBJS) $(SRC_DEP) $(HFILES) atikms.lds Makefile
 
 %.o : %.c $(HFILES) Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ -c $<
+
+%.o : %.S $(HFILES) Makefile
+	as -o $@ $<

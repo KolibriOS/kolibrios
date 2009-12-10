@@ -14,6 +14,8 @@ static void       __stdcall move_cursor_kms(cursor_t *cursor, int x, int y);
 
 int radeon_align_pitch(struct radeon_device *rdev, int width, int bpp, bool tiled);
 
+void disable_mouse(void);
+
 static void radeon_show_cursor_kms(struct drm_crtc *crtc)
 {
     struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
@@ -369,6 +371,7 @@ bool init_display_kms(struct radeon_device *rdev, mode_t *usermode)
         rdisplay->show_cursor    = NULL;
         rdisplay->move_cursor    = move_cursor_kms;
         rdisplay->restore_cursor = restore_cursor;
+        rdisplay->disable_mouse  = disable_mouse;
 
         select_cursor_kms(rdisplay->cursor);
         radeon_show_cursor_kms(rdisplay->crtc);

@@ -895,7 +895,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("Radeon RC07 cmdline %s\n", cmdline);
+    dbgprintf("Radeon RC08 cmdline %s\n", cmdline);
 
     enum_pci_devices();
 

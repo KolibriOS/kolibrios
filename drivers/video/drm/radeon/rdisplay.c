@@ -13,6 +13,11 @@ display_t *rdisplay;
 static cursor_t*  __stdcall select_cursor(cursor_t *cursor);
 static void       __stdcall move_cursor(cursor_t *cursor, int x, int y);
 
+extern void destroy_cursor(void);
+
+void disable_mouse(void)
+{};
+
 int init_cursor(cursor_t *cursor)
 {
     struct radeon_device *rdev;
@@ -55,8 +60,19 @@ int init_cursor(cursor_t *cursor)
 
     radeon_object_kunmap(cursor->robj);
 
+    cursor->header.destroy = destroy_cursor;
+
     return 0;
 };
+
+void fini_cursor(cursor_t *cursor)
+{
+    list_del(&cursor->list);
+    radeon_object_unpin(cursor->robj);
+    KernelFree(cursor->data);
+    __DestroyObject(cursor);
+};
+
 
 static void radeon_show_cursor()
 {
@@ -188,6 +204,7 @@ bool init_display(struct radeon_device *rdev, mode_t *usermode)
         rdisplay->show_cursor    = NULL;
         rdisplay->move_cursor    = move_cursor;
         rdisplay->restore_cursor = restore_cursor;
+        rdisplay->disable_mouse  = disable_mouse;
 
         select_cursor(rdisplay->cursor);
         radeon_show_cursor();

@@ -229,13 +229,15 @@ static inline void* __CreateObject(u32_t pid, size_t size)
      return retval;
 }
 
-static inline void *__DestroyObject(void *obj)
+static inline void __DestroyObject(void *obj)
 {
      __asm__ __volatile__ (
      "call *__imp__DestroyObject"
      :
-     :"a" (obj)
-     :"ebx","edx","esi","edi", "memory");
+     :"a" (obj));
+     __asm__ __volatile__ (
+     ""
+     :::"eax","ebx","ecx","edx","esi","edi","cc","memory");
 }
 
 
