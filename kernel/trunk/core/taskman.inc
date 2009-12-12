@@ -751,18 +751,22 @@ proc read_process_memory
        jna @F
        mov ecx, 0x8000
 @@:
-       mov eax, [slot]
-       shl  eax,8
        mov ebx, [offset]
 
        push ecx
        stdcall map_memEx, [proc_mem_map],\
-                  [SLOT_BASE+eax+0xB8],\
-                  ebx, ecx
+                  [slot], ebx, ecx, PG_MAP
        pop ecx
 
        mov esi, [offset]
        and esi, 0xfff
+       sub eax, esi
+       jbe .ret
+       cmp ecx, eax
+       jbe @f
+       mov ecx, eax
+       mov [tmp_r_cnt], eax
+@@:
        add esi, [proc_mem_map]
        mov edi, [buff]
        mov edx, ecx
@@ -772,7 +776,7 @@ proc read_process_memory
        add [offset], edx
        sub [tmp_r_cnt], edx
        jnz .read_mem
-
+.ret:
        popad
        mov eax, [r_count]
        ret
@@ -818,18 +822,22 @@ proc write_process_memory
        jna @F
        mov ecx, 0x8000
 @@:
-       mov eax, [slot]
-       shl  eax,8
        mov ebx, [offset]
       ;     add ebx, new_app_base
        push ecx
        stdcall map_memEx, [proc_mem_map],\
-                  [SLOT_BASE+eax+0xB8],\
-                  ebx, ecx
+                  [slot], ebx, ecx, PG_SW
        pop ecx
 
        mov edi, [offset]
        and edi, 0xfff
+       sub eax, edi
+       jbe .ret
+       cmp ecx, eax
+       jbe @f
+       mov ecx, eax
+       mov [tmp_w_cnt], eax
+@@:
        add edi, [proc_mem_map]
        mov esi, [buff]
        mov edx, ecx
@@ -839,7 +847,7 @@ proc write_process_memory
        add [offset], edx
        sub [tmp_w_cnt], edx
        jnz .read_mem
-
+.ret:
        popad
        mov eax, [w_count]
        ret

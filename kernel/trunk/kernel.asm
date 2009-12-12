@@ -2605,6 +2605,7 @@ nogb1:
 
 ;    cmp   eax,4                                  ; TILED / STRETCHED
     dec   ebx
+    dec   ebx
     jnz   nogb4
     mov   eax,[BgrDrawMode]
   nogb4:

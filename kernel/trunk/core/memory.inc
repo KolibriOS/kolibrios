@@ -714,14 +714,17 @@ end if
         jmp     .exit
 endp
 
-align 4
-proc map_mem stdcall, lin_addr:dword,pdir:dword,\
-                      ofs:dword,buf_size:dword
-           mov eax, [buf_size]
-           test eax, eax
+; returns number of mapped bytes
+proc map_mem stdcall, lin_addr:dword,slot:dword,\
+                      ofs:dword,buf_size:dword,req_access:dword
+           push 0 ; initialize number of mapped bytes
+
+           cmp [buf_size], 0
            jz .exit
 
-           mov eax, [pdir]
+           mov eax, [slot]
+           shl eax, 8
+           mov eax, [SLOT_BASE+eax+APPDATA.dir_table]
            and eax, 0xFFFFF000
 
            stdcall map_page,[ipc_pdir],eax,PG_UW
@@ -753,10 +756,11 @@ proc map_mem stdcall, lin_addr:dword,pdir:dword,\
            and edx, 0x3FF
            mov esi, [ipc_ptab]
 
-.map:      mov eax, [esi+edx*4]
-           and eax, 0xFFFFF000
-           jz  .exit
-           stdcall map_page,edi,eax,PG_UW
+.map:
+           stdcall safe_map_page,[slot],[req_access],[ofs]
+           jnc .exit
+           add dword [ebp-4], 4096
+           add [ofs], 4096
            dec ecx
            jz  .exit
            add edi, 0x1000
@@ -773,20 +777,23 @@ proc map_mem stdcall, lin_addr:dword,pdir:dword,\
            jmp .map
 
 .exit:
+           pop eax
            ret
 endp
 
-align 4
-proc map_memEx stdcall, lin_addr:dword,pdir:dword,\
-                        ofs:dword,buf_size:dword
-           mov eax, [buf_size]
-           test eax, eax
+proc map_memEx stdcall, lin_addr:dword,slot:dword,\
+                        ofs:dword,buf_size:dword,req_access:dword
+           push 0 ; initialize number of mapped bytes
+
+           cmp [buf_size], 0
            jz .exit
 
-           mov eax, [pdir]
+           mov eax, [slot]
+           shl eax, 8
+           mov eax, [SLOT_BASE+eax+APPDATA.dir_table]
            and eax, 0xFFFFF000
 
-           stdcall map_page,[proc_mem_pdir],eax,dword PG_UW
+           stdcall map_page,[proc_mem_pdir],eax,PG_UW
            mov ebx, [ofs]
            shr ebx, 22
            mov esi, [proc_mem_pdir]
@@ -795,7 +802,7 @@ proc map_memEx stdcall, lin_addr:dword,pdir:dword,\
            and eax, 0xFFFFF000
            test eax, eax
            jz .exit
-           stdcall map_page,edi,eax,dword PG_UW
+           stdcall map_page,edi,eax,PG_UW
 
 @@:        mov edi, [lin_addr]
            and edi, 0xFFFFF000
@@ -809,21 +816,101 @@ proc map_memEx stdcall, lin_addr:dword,pdir:dword,\
            and edx, 0x3FF
            mov esi, [proc_mem_tab]
 
-.map:      mov eax, [esi+edx*4]
-;           and eax, 0xFFFFF000
-;           test eax, eax
-;           jz .exit
-           stdcall map_page,edi,eax,dword PG_UW
+.map:
+           stdcall safe_map_page,[slot],[req_access],[ofs]
+           jnc .exit
+           add dword [ebp-4], 0x1000
            add edi, 0x1000
+           add [ofs], 0x1000
            inc edx
            dec ecx
            jnz .map
 .exit:
+           pop eax
            ret
 endp
 
-
-
+; in: esi+edx*4 = pointer to page table entry
+; in: [slot], [req_access], [ofs] on the stack
+; in: edi = linear address to map
+; out: CF cleared <=> failed
+; destroys: only eax
+proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
+	mov	eax, [esi+edx*4]
+	test	al, PG_MAP
+	jz	.not_present
+	test	al, PG_WRITE
+	jz	.resolve_readonly
+; normal case: writable page, just map with requested access
+.map:
+	stdcall	map_page, edi, eax, [req_access]
+	stc
+.fail:
+	ret
+.not_present:
+; check for alloc-on-demand page
+	test	al, 2
+	jz	.fail
+; allocate new page, save it to source page table
+	push	ecx
+	call	alloc_page
+	pop	ecx
+	test	eax, eax
+	jz	.fail
+	or	al, PG_UW
+	mov	[esi+edx*4], eax
+	jmp	.map
+.resolve_readonly:
+; readonly page, probably copy-on-write
+; check: readonly request of readonly page is ok
+	test	[req_access], PG_WRITE
+	jz	.map
+; find control structure for this page
+	pushf
+	cli
+	cld
+	push	ebx ecx
+	mov	eax, [slot]
+	shl	eax, 8
+	mov	eax, [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
+	test	eax, eax
+	jz	.no_hdll
+	mov	ecx, [eax+HDLL.fd]
+.scan_hdll:
+	cmp	ecx, eax
+	jz	.no_hdll
+	mov	ebx, [ofs]
+	and	ebx, not 0xFFF
+	sub	ebx, [ecx+HDLL.base]
+	cmp	ebx, [ecx+HDLL.size]
+	jb	.hdll_found
+	mov	ecx, [ecx+HDLL.fd]
+	jmp	.scan_hdll
+.no_hdll:
+	pop	ecx ebx
+	popf
+	clc
+	ret
+.hdll_found:
+; allocate page, save it in page table, map it, copy contents from base
+	mov	eax, [ecx+HDLL.parent]
+	add	ebx, [eax+DLLDESCR.data]
+	call	alloc_page
+	test	eax, eax
+	jz	.no_hdll
+	or	al, PG_UW
+	mov	[esi+edx*4], eax
+	stdcall	map_page, edi, eax, [req_access]
+	push	esi edi
+	mov	esi, ebx
+	mov	ecx, 4096/4
+	rep	movsd
+	pop	edi esi
+	pop	ecx ebx
+	popf
+	stc
+	ret
+endp
 
 sys_IPC:
 ;input:
@@ -907,15 +994,15 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            mov ecx, [ipc_tmp]
            cmp esi, 0x40000-0x1000 ; size of [ipc_tmp] minus one page
            jbe @f
-           push eax esi edi
+           push esi edi
            add esi,0x1000
            stdcall alloc_kernel_space,esi
            mov ecx, eax
-           pop edi esi eax
+           pop edi esi
 @@:
            mov [used_buf], ecx
-           stdcall map_mem, ecx, [SLOT_BASE+eax+0xB8],\
-                             edi, esi
+           stdcall map_mem, ecx, [dst_slot],\
+                             edi, esi, PG_SW
 
            mov edi, [dst_offset]
            add edi, [used_buf]
