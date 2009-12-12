@@ -1547,6 +1547,136 @@ analyze_command:
     cmp  [irc_command],'NICK'	   ; nick change
     jne  no_nick_change
 
+	add	[command_position], 6
+; test for change of my nick
+	mov	esi, command+1
+	mov	edi, user_nick+4
+	mov	ecx, [edi-4]
+	repz	cmpsb
+	jnz	.notmy
+	cmp	byte [esi], '!'
+	jnz	.notmy
+; yes, this is my nick, set to new
+	mov	esi, [command_position]
+	or	ecx, -1
+	mov	edi, esi
+	xor	eax, eax
+	repnz	scasb
+	not	ecx
+	dec	ecx
+	cmp	ecx, user_nick_max
+	jb	@f
+	mov	ecx, user_nick_max
+@@:
+	mov	edi, user_nick+4
+	mov	[edi-4], ecx
+	rep	movsb
+
+	mov	edi, text+70*1+15
+	mov	al, ' '
+	mov	cl, 15
+	push	edi
+	rep	stosb
+	pop	edi
+	mov	esi, user_nick+4
+	mov	ecx, [esi-4]
+	cmp	ecx, 15
+	jb	@f
+	mov	ecx, 15
+@@:
+	rep	movsb
+	mov	[xpos], 0
+	call	draw_window
+.notmy:
+; replace nick in all lists of users
+	mov	ebx, I_END + 120*70
+.channels:
+	mov	esi, ebx
+	mov	edx, [esi-4]
+	add	edx, esi
+.nicks:
+	mov	edi, command+1
+	cmp	byte [esi], '@'
+	jnz	@f
+	inc	esi
+@@:
+	cmp	esi, edx
+	jae	.srcdone
+	lodsb
+	cmp	al, ' '
+	jz	.srcdone
+	scasb
+	jz	@b
+@@:
+	cmp	esi, edx
+	jae	.nextchannel
+	lodsb
+	cmp	al, ' '
+	jnz	@b
+.nextnick:
+	cmp	esi, edx
+	jae	.nextchannel
+	lodsb
+	cmp	al, ' '
+	jz	.nextnick
+	dec	esi
+	jmp	.nicks
+.srcdone:
+	cmp	byte [edi], '!'
+	jnz	.nextnick
+; here we have esi -> end of nick which must be replaced to [command_position]+6
+	lea	edx, [edi-command-1]
+	sub	esi, edx
+	or	ecx, -1
+	xor	eax, eax
+	mov	edi, [command_position]
+	repnz	scasb
+	not	ecx
+	dec	ecx
+	push	ecx
+	cmp	ecx, edx
+	jb	.decrease
+	jz	.copy
+.increase:
+; new nick is longer than the old
+	push	esi
+	lea	edi, [ebx+120*10]
+	lea	esi, [edi+edx]
+	sub	esi, ecx
+	mov	ecx, esi
+	sub	ecx, [esp]
+	dec	esi
+	dec	edi
+	std
+	rep	movsb
+	cld
+	pop	esi
+	jmp	.copy
+.decrease:
+; new nick is shorter than the old
+	push	esi
+	lea	edi, [esi+ecx]
+	add	esi, edx
+	lea	ecx, [ebx+120*10]
+	sub	ecx, edi
+	rep	movsb
+	pop	esi
+.copy:
+; copy nick
+	mov	edi, esi
+	dec	edi
+	mov	esi, [command_position]
+	pop	ecx
+	sub	edx, ecx
+	sub	[ebx-4], edx
+	rep	movsb
+	mov	al, ' '
+	stosb
+.nextchannel:
+	add	ebx, 120*80
+	cmp	ebx, I_END + 120*70 + 120*80*19
+	jb	.channels
+
     mov  [text_start],I_END
     add  [text_start],120*80
 
@@ -1562,7 +1692,6 @@ analyze_command:
     mov  dl,0
     call print_text
     mov  eax,[command_position]
-    add  eax,6
     mov  dl,0
     call print_text
     call notify_channel_thread
