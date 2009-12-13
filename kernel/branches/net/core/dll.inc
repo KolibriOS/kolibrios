@@ -17,39 +17,39 @@ PID_KERNEL  equ 1    ;os_idle thread
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
 
-         push ebx
+	 push ebx
 
-         mov  ebx, [irq]                   ;irq num
-         test ebx, ebx
-         jz   .err
-         cmp  ebx, 15                      ; hidnplayr says: we only have 16 IRQ's
-         ja   .err
-         mov  eax, [handler]
-         test eax, eax
-         jz   .err
-         cmp  [irq_owner + 4 * ebx], 0
-         je   @f
+	 mov  ebx, [irq]		   ;irq num
+	 test ebx, ebx
+	 jz   .err
+	 cmp  ebx, 15			   ; hidnplayr says: we only have 16 IRQ's
+	 ja   .err
+	 mov  eax, [handler]
+	 test eax, eax
+	 jz   .err
+	 cmp  [irq_owner + 4 * ebx], 0
+	 je   @f
 
-         mov  ecx, [irq_rights + 4 * ebx]  ; Rights : 0 - full access, 1 - read only, 2 - forbidden
-         test ecx, ecx
-         jnz  .err
+	 mov  ecx, [irq_rights + 4 * ebx]  ; Rights : 0 - full access, 1 - read only, 2 - forbidden
+	 test ecx, ecx
+	 jnz  .err
 
 @@:
-         mov  [irq_tab+ebx*4], eax
+	 mov  [irq_tab+ebx*4], eax
 
-         mov  eax, [access_rights]
-         mov  [irq_rights + 4 * ebx], eax
+	 mov  eax, [access_rights]
+	 mov  [irq_rights + 4 * ebx], eax
 
-         mov  [irq_owner + 4 * ebx], PID_KERNEL  ; all handlers belong to a kernel
+	 mov  [irq_owner + 4 * ebx], PID_KERNEL  ; all handlers belong to a kernel
 
-         stdcall enable_irq, [irq]
-         pop ebx
-         mov eax, 1
-         ret
+	 stdcall enable_irq, [irq]
+	 pop ebx
+	 mov eax, 1
+	 ret
 .err:
-         pop ebx
-         xor eax, eax
-         ret
+	 pop ebx
+	 xor eax, eax
+	 ret
 endp
 
 uglobal
@@ -121,8 +121,8 @@ align 4
 	   jmp .main
 ; align 4
 ; .irq_6:
-;	   push 6
-;	   jmp .main
+;          push 6
+;          jmp .main
 align 4
 .irq_7:
 	   push 7
@@ -149,16 +149,16 @@ align 4
 	   jmp .main
 ; align 4
 ; .irq_13:
-;	   push 13
-;	   jmp .main
+;          push 13
+;          jmp .main
 ; align 4
 ; .irq_14:
-;	   push 14
-;	   jmp .main
+;          push 14
+;          jmp .main
 ; align 4
 ; .irq_15:
-;	   push 15
-;	   jmp .main
+;          push 15
+;          jmp .main
 
 align 16
 .main:
@@ -212,7 +212,7 @@ endp
 
 align 4
 proc pci_read32 stdcall, bus:dword, devfn:dword, reg:dword
-	   push ebx
+	   push ebx edx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -220,13 +220,13 @@ proc pci_read32 stdcall, bus:dword, devfn:dword, reg:dword
 	   mov bh, byte [devfn]
 	   mov bl, byte [reg]
 	   call pci_read_reg
-	   pop ebx
+	   pop edx ebx
 	   ret
 endp
 
 align 4
 proc pci_read16 stdcall, bus:dword, devfn:dword, reg:dword
-	   push ebx
+	   push ebx edx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -234,13 +234,13 @@ proc pci_read16 stdcall, bus:dword, devfn:dword, reg:dword
 	   mov bh, byte [devfn]
 	   mov bl, byte [reg]
 	   call pci_read_reg
-	   pop ebx
+	   pop edx ebx
 	   ret
 endp
 
 align 4
 proc pci_read8 stdcall, bus:dword, devfn:dword, reg:dword
-	   push ebx
+	   push ebx edx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -248,13 +248,13 @@ proc pci_read8 stdcall, bus:dword, devfn:dword, reg:dword
 	   mov bh, byte [devfn]
 	   mov bl, byte [reg]
 	   call pci_read_reg
-	   pop ebx
+	   pop edx ebx
 	   ret
 endp
 
 align 4
 proc pci_write8 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-	   push ebx
+	   push ebx edx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -263,13 +263,13 @@ proc pci_write8 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 	   mov bl, byte [reg]
 	   mov ecx, [val]
 	   call pci_write_reg
-	   pop ebx
+	   pop edx ebx
 	   ret
 endp
 
 align 4
 proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-	   push ebx
+	   push ebx edx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -278,13 +278,13 @@ proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 	   mov bl, byte [reg]
 	   mov ecx, [val]
 	   call pci_write_reg
-	   pop ebx
+	   pop edx ebx
 	   ret
 endp
 
 align 4
 proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-	   push ebx
+	   push ebx edx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -293,7 +293,7 @@ proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 	   mov bl, byte [reg]
 	   mov ecx, [val]
 	   call pci_write_reg
-	   pop ebx
+	   pop edx ebx
 	   ret
 endp
 
@@ -394,7 +394,7 @@ proc reg_service stdcall, name:dword, handler:dword
 
 	   push ebx
 
-           xor eax, eax
+	   xor eax, eax
 
 	   cmp [name], eax
 	   je .fail
@@ -432,7 +432,7 @@ proc reg_service stdcall, name:dword, handler:dword
 	   ret
 .fail:
 	   xor eax, eax
-           pop ebx
+	   pop ebx
 	   ret
 endp
 
@@ -811,7 +811,7 @@ proc load_driver stdcall, driver_name:dword
 	   mov	   byte [edx+12], '/'
 	   mov	   esi, [driver_name]
 .redo:
-           lea     edx, [file_name]
+	   lea	   edx, [file_name]
 	   lea	   edi, [edx+13]
 	   mov	   ecx, 16
 @@:
@@ -928,14 +928,14 @@ proc load_driver stdcall, driver_name:dword
 	   jnz .ok
 
 	   stdcall kernel_free, [img_base]
-           cmp     dword [file_name+13], 'SOUN'
-           jnz     @f
-           cmp     dword [file_name+17], 'D.ob'
-           jnz     @f
-           cmp     word [file_name+21], 'j'
-           jnz     @f
-           mov     esi, aSis
-           jmp     .redo
+	   cmp	   dword [file_name+13], 'SOUN'
+	   jnz	   @f
+	   cmp	   dword [file_name+17], 'D.ob'
+	   jnz	   @f
+	   cmp	   word [file_name+21], 'j'
+	   jnz	   @f
+	   mov	   esi, aSis
+	   jmp	   .redo
 @@:
 	   xor eax, eax
 	   ret

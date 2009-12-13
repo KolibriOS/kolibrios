@@ -61,11 +61,11 @@ macro DEBUGS_N _sign,_num,[_str] {
    jmp ..label
    ..str db _str,0
    ..label:
-   add  esp,4*8+4
-   mov  edx,..str
-   sub  esp,4*8+4
+   add	esp,4*8+4
+   mov	edx,..str
+   sub	esp,4*8+4
   else
-   mov  edx,_str
+   mov	edx,_str
   end if
   if ~_num eq
    if _num eqtype eax
@@ -235,74 +235,75 @@ macro DEBUGH_N _sign,_num,_hex {
 
 debug_func fdo_debug_outchar
 debug_beginf
-        pushad
-        movzx   ebx,al
-        mov     eax,1
-        mov     ecx,sys_msg_board
-        call    ecx ; sys_msg_board
-        popad
-        ret
+	pushad
+	movzx	ebx,al
+	mov	eax,1
+	mov	ecx,sys_msg_board
+	call	ecx ; sys_msg_board
+	popad
+	ret
 debug_endf
 
 debug_func fdo_debug_outstr
 debug_beginf
-        mov     eax,1
-  .l1:  dec     esi
-        js      .l2
-        movzx   ebx,byte[edx]
-        or      bl,bl
-        jz      .l2
-        mov     ecx,sys_msg_board
-        call    ecx ; sys_msg_board
-        inc     edx
-        jmp     .l1
-  .l2:  ret
+	mov	eax,1
+  .l1:	dec	esi
+	js	.l2
+	movzx	ebx,byte[edx]
+	or	bl,bl
+	jz	.l2
+	mov	ecx,sys_msg_board
+	call	ecx ; sys_msg_board
+	inc	edx
+	jmp	.l1
+  .l2:	ret
 debug_endf
 
 debug_func fdo_debug_outdec
 debug_beginf
-        or      cl,cl
-        jz      @f
-        or      eax,eax
-        jns     @f
-        neg     eax
-        push    eax
-        mov     al,'-'
-        call    fdo_debug_outchar
-        pop     eax
-    @@: push    10
-        pop     ecx
-        push    -'0'
-  .l1:  xor     edx,edx
-        div     ecx
-        push    edx
-        test    eax,eax
-        jnz     .l1
-  .l2:  pop     eax
-        add     al,'0'
-        jz      .l3
-        call    fdo_debug_outchar
-        jmp     .l2
-  .l3:  ret
+	or	cl,cl
+	jz	@f
+	or	eax,eax
+	jns	@f
+	neg	eax
+	push	eax
+	mov	al,'-'
+	call	fdo_debug_outchar
+	pop	eax
+    @@: push	10
+	pop	ecx
+	push	-'0'
+  .l1:	xor	edx,edx
+	div	ecx
+	push	edx
+	test	eax,eax
+	jnz	.l1
+  .l2:	pop	eax
+	add	al,'0'
+	jz	.l3
+	call	fdo_debug_outchar
+	jmp	.l2
+  .l3:	ret
 debug_endf
 
-debug_func fdo_debug_outhex
   __fdo_hexdigits db '0123456789ABCDEF'
+debug_func fdo_debug_outhex
+
 debug_beginf
-        mov     cl,dl
-        neg     cl
-        add     cl,8
-        shl     cl,2
-        rol     eax,cl
-  .l1:  rol     eax,4
-        push    eax
-        and     eax,0x0000000F
-        mov     al,[__fdo_hexdigits+eax]
-        call    fdo_debug_outchar
-        pop     eax
-        dec     edx
-        jnz     .l1
-        ret
+	mov	cl,dl
+	neg	cl
+	add	cl,8
+	shl	cl,2
+	rol	eax,cl
+  .l1:	rol	eax,4
+	push	eax
+	and	eax,0x0000000F
+	mov	al,[__fdo_hexdigits+eax]
+	call	fdo_debug_outchar
+	pop	eax
+	dec	edx
+	jnz	.l1
+	ret
 debug_endf
 
 ;-----------------------------------------------------------------------------

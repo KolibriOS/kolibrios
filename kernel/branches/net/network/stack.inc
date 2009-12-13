@@ -97,6 +97,23 @@ macro add_INET reg {
 	rol	ecx, 16
 }
 
+
+macro pseudo_random reg {
+
+	add	reg, [esp]
+	rol	reg, 5
+	xor	reg, [timer_ticks]
+	imul	reg, 214013
+	xor	reg, 0xdeadbeef
+	rol	reg, 9
+
+	pushd	reg
+	mov	word [esp], 0x8080 ; kernel heap start addr      (os_stack)
+	xor	reg, [esp]
+	add	esp, 4
+
+}
+
 include "queue.inc"
 include "ARP.inc"
 include "IPv4.inc"
@@ -152,7 +169,7 @@ stack_handler:
 	cmp	[ETH_RUNNING], 0
 	je	.exit
 
-	; Test for 1/100 s (10ms) tick
+	; Test for 10ms tick
 	mov	eax, [timer_ticks]
 	cmp	eax, [last_1hsTick]
 	je	.exit

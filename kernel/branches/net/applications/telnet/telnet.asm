@@ -29,10 +29,10 @@ start:
 	push	1
 	call	[con_start]
 	push	title
-	push	-1
-	push	-1
-	push	-1
-	push	-1
+	push	25
+	push	80
+	push	25
+	push	80
 	call	[con_init]
 ; main loop
 	push	str1
@@ -102,7 +102,11 @@ main:
 	mcall	40, 1 shl 7 ; + 7
 	call	[con_cls]
 
+	mcall	18, 7
+	push	eax
 	mcall	51, 1, thread, mem - 2048
+	pop	ecx
+	mcall	18, 3
 
 mainloop:
 	mcall	10
@@ -115,12 +119,24 @@ mainloop:
 	mov	byte [esi + eax], 0
 
        @@:
-	cmp	byte [esi], 0xff	; 'IAC' = Interpret As Command
+	cmp	byte [esi], 0xff	; Interpret As Command
 	jne	@f
 	; TODO: parse options, for now, we will reply with 'WONT' to everything
 	mov	byte [esi + 1], 252	; WONT
 	add	esi, 3			; a command is always 3 bytes
 	jmp	@r
+
+
+       @@:
+	cmp	byte [esi], 0x1b	; escape character
+	jne	@f
+	cmp	word [esi+1], 0x485b	; move cursor to beginning
+	jne	@f
+	push	0
+	push	0
+	call	[con_set_cursor_pos]
+	add	esi, 3
+
 
        @@:
 	push	esi
@@ -160,14 +176,15 @@ exit:
 
 thread:
 	mcall	40, 0
+  .loop:
 	call	[con_getch2]
 	mov	byte [send_data], al
 	mcall	send, [socketnum], send_data, 1
-	jmp	thread
+	jmp	.loop
 
 ; data
 title	db	'Telnet',0
-str1	db	'Telnet v0.1',10,' for KolibriOS # 1250 or later. ',10,10,0
+str1	db	'Telnet v0.1',10,' for KolibriOS # 1281 or later. ',10,10,'If you dont know where to connect to, try towel.blinkenlights.nl',10,10,0
 str2	db	'> ',0
 str3	db	'Connecting to: ',0
 str4	db	10,0
@@ -199,7 +216,8 @@ import	console,	\
 	con_exit,	'con_exit',	\
 	con_gets,	'con_gets',\
 	con_cls,	'con_cls',\
-	con_getch2,	'con_getch2'
+	con_getch2,	'con_getch2',\
+	con_set_cursor_pos, 'con_set_cursor_pos'
 i_end:
 
 socketnum	dd ?

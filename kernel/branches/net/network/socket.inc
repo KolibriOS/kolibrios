@@ -24,6 +24,7 @@ struct	SOCKET_head
 	 .Type			dd ? ; RAW/UDP/TCP/...
 	 .Protocol		dd ? ; ICMP/IPv4/ARP/
 	 .lock			dd ? ; lock mutex
+	 .errorcode		dd ?
 	 .end:
 ends
 
@@ -55,6 +56,7 @@ struct	TCP_SOCKET
 	; Transmission control block
 	 .state 		dd ? ; TCB state
 	 .timer 		dd ? ; TCB timer (seconds)
+
 	 .ISS			dd ? ; initial send sequence number
 	 .IRS			dd ? ; initial receive sequence number
 	 .SND_UNA		dd ? ; sequence number of unack'ed sent Packets
@@ -191,10 +193,30 @@ socket_open:
 	mov	[eax + SOCKET_head.Type], edx
 	mov	[eax + SOCKET_head.Protocol], esi
 
+	cmp	ecx, AF_INET4
+	je	.af_inet4
+
+	jmp	.done
+
+
+  .af_inet4:
+
+	cmp	edx, IP_PROTO_TCP
+	je	.tcp
+
+	jmp	.done
+
+  .tcp:
+
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_CLOSED
+
+	pseudo_random ebx
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.ISS], ebx
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT], ebx
+
+  .done:
 	stdcall net_socket_addr_to_num, eax
 	DEBUGF	1,", socketnumber: %u\n", eax
-
-	; TODO: if it is a tcp socket, set state to TCB_CLOSED
 
 	mov	[esp+32], eax
 
@@ -513,27 +535,42 @@ socket_close:
 	ret
 
   .tcp:
+	mov	dword [esp+32],0
+
 	; first, remove all resend entries for this socket
 
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_LISTEN
-	je	.destroy_tcb
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_SYN_SENT
-	je	.destroy_tcb
+	call	TCP_remove_socket
 
-	; Send a fin, then enter finwait2 state
+;        cmp     [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_LISTEN
+;        je      .destroy_tcb
+;        cmp     [eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_SYN_SENT
+;        je      .destroy_tcb
+;        cmp     [eac + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_CLOSED
+;        je      .destroy_tcb
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_SYN_RECEIVED
+	je	.fin_wait
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_ESTABLISHED
+	je	.fin_wait
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_CLOSE_WAIT
+	je	.last_ack
+
+	stdcall net_socket_free, ebx
+
+	ret
+
+
+  .last_ack:
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_LAST_ACK
+	jmp	.send_fin
+
+  .fin_wait:
 	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_FIN_WAIT_1
 
-	mov	bl, TH_FIN
+  .send_fin:
+	mov	bl, TH_FIN + TH_ACK
 	xor	ecx, ecx
-;        call    TCP_send
+	call	TCP_send
 
-	;;;;;
-
-
-  .destroy_tcb:
-
-	stdcall net_socket_free, eax
-	mov	dword [esp+32],0
 	ret
 
 

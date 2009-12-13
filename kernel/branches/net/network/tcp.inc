@@ -8,6 +8,7 @@
 ;;  Part of the tcp/ip network stack for KolibriOS                 ;;
 ;;                                                                 ;;
 ;;    Written by hidnplayr@kolibrios.org                           ;;
+;;    Inspired by the TCP code of Mike Hibbit for MenuetOS         ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
@@ -21,6 +22,8 @@ TCP_RETRIES		equ 5		; Number of times to resend a Packet
 TCP_PACKET_TTL		equ 50		; resend if not replied to in 1/100 s
 TCP_SOCKET_TTL		equ 10		; # of secs to wait before closing socket
 TCP_QUEUE_SIZE		equ 16
+
+TCP_MAX_ACKS		equ 16
 
 
 struct	TCP_Packet
@@ -63,13 +66,16 @@ uglobal
 	TCP_PACKETS_RX		rd  MAX_IP
 
 	TCP_IN_QUEUE		rd  (tcp_in_queue_entry.size*TCP_QUEUE_SIZE+queue.data)/4
-	TCP_OUT_QUEUE		dd  ?
+	TCP_OUT_QUEUE		dd  ?, ?
 				rd  (tcp_out_queue_entry.size*TCP_QUEUE_SIZE)/4
+
+	TCP_ACKS		dd  ?
+	TCP_ACK_LIST		rd  3*TCP_MAX_ACKS
 endg
 
 align 4
 iglobal
-stateHandler:
+TCPstateHandler:
 
   dd  stateTCB_LISTEN
   dd  stateTCB_SYN_SENT
@@ -114,7 +120,7 @@ TCP_init:
 
 	xor	eax, eax
 	mov	esi, TCP_OUT_QUEUE
-	mov	ecx, TCP_QUEUE_SIZE*tcp_out_queue_entry/4+1
+	mov	ecx, TCP_QUEUE_SIZE*tcp_out_queue_entry/4+2+2+3*TCP_MAX_ACKS
 	rep	stosd
 
 	ret
@@ -193,9 +199,12 @@ TCP_send_queued:
 	cmp	[TCP_OUT_QUEUE], 0
 	je	.exit
 
+	mov	ebx, TCP_OUT_QUEUE+4
+	call	wait_mutex
+
 	mov	eax, TCP_QUEUE_SIZE
 	mov	ecx, [TCP_OUT_QUEUE]
-	mov	esi, TCP_OUT_QUEUE+4
+	mov	esi, TCP_OUT_QUEUE+8
 
   .loop:
 	cmp	[esi + tcp_out_queue_entry.data_ptr], 0
@@ -203,30 +212,33 @@ TCP_send_queued:
 	add	esi, tcp_out_queue_entry.size
 	loop	.loop
   .exit:
+	mov	[TCP_OUT_QUEUE+4], 0
 	ret
 
   .found_one:
 	dec	[esi + tcp_out_queue_entry.ttl]
 	jz	.send_it
+	cmp	[esi + tcp_out_queue_entry.data_ptr], -1
+	jz	.is_ack
   .find_next:
 	add	esi, tcp_out_queue_entry.size
 	dec	eax
 	jz	.exit
 	test	ecx, ecx
 	jnz	.loop
+	mov	[TCP_OUT_QUEUE+4], 0
 	ret
 
   .send_it:
-	push	eax ecx esi
-
+	pusha
 	mov	ebx, [esi + tcp_out_queue_entry.owner]
-	push	[esi + tcp_out_queue_entry.data_size]
-	push	[esi + tcp_out_queue_entry.data_ptr]
+	pushd	[esi + tcp_out_queue_entry.data_size]
+	pushd	[esi + tcp_out_queue_entry.data_ptr]
 	DEBUGF 1,"Now sending TCP packet %x, size: %u, owner: %x, sendproc %x\n", [esp], [esp+4], ebx, [esi + tcp_out_queue_entry.sendproc]
 	inc	[TCP_PACKETS_TX]
 	call	[esi + tcp_out_queue_entry.sendproc]
 	add	esp, 8
-	pop	esi ecx eax
+	popa
 
 	dec	[esi + tcp_out_queue_entry.retries]
 	jz	.remove_it
@@ -238,6 +250,17 @@ TCP_send_queued:
 	push	[esi + tcp_out_queue_entry.data_ptr]
 	mov	[esi + tcp_out_queue_entry.data_ptr], 0
 	call	kernel_free
+	dec	[TCP_OUT_QUEUE]
+	jmp	.find_next
+
+  .is_ack:
+	pusha
+	mov	eax, [esi + tcp_out_queue_entry.socket]
+	mov	ebx, [esi + tcp_out_queue_entry.owner]
+	mov	ecx, [esi + tcp_out_queue_entry.size]
+	call	TCP_send_ack
+	popa
+	mov	[esi + tcp_out_queue_entry.data_ptr], 0
 	dec	[TCP_OUT_QUEUE]
 	jmp	.find_next
 
@@ -266,9 +289,11 @@ TCP_handler :
 
 ; TODO: validate checksum
 
+; Find a matching socket for received packet, all following expressions must be valid:
+;
 ; IP Packet TCP Destination Port = local Port
-; IP Packet SA = Remote IP  OR = 0
-; IP Packet TCP Source Port = remote Port  OR = 0
+; (IP Packet SA = Remote IP)  OR  (Remote IP = 0)
+; (IP Packet TCP Source Port = remote Port)  OR (remote Port = 0)
 
 	mov	ebx, net_sockets
 
@@ -318,27 +343,30 @@ TCP_handler :
 ; ecx is size of tcp data
 
 ; as a Packet has been received, update the TCB timer
-	mov	[ebx +	SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.timer], TCP_SOCKET_TTL
 
 ; If the received Packet has an ACK bit set, remove any Packets in the resend queue that this received Packet acknowledges
 	test	[edx + TCP_Packet.Flags], TH_ACK
 	jz	.no_ack 				 ; No ACK, so no data yet
 
-; Calculate ACK number
+; Calculate ACK number, in intel byte order
 	mov	edi, [edx + TCP_Packet.AckNumber]
 	bswap	edi
 	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.last_ack_number], edi
-       DEBUGF 1,"Setting last_ack_number to %u\n", edi
-	bswap	edi
+	DEBUGF 1,"Setting last_ack_number to %u\n", edi
 
 ; Dequeue all acknowledged packets
 	cmp	[TCP_OUT_QUEUE], 0		; first, check if any packets are queued at all
 	je	.no_ack
 
+	push	ebx
+	mov	ebx, TCP_OUT_QUEUE+4
+	call	wait_mutex
+	pop	ebx
+
 	push	ecx
-       DEBUGF 1,"Removing all queued packets with smaller ACK\n"
+	DEBUGF 1,"Removing all queued packets with smaller ACK\n"
 	mov	ecx, TCP_QUEUE_SIZE
-	mov	esi, TCP_OUT_QUEUE+4
+	mov	esi, TCP_OUT_QUEUE+8
   .loop:
 	cmp	[esi + tcp_out_queue_entry.data_ptr], 0
 	je	.maybe_next
@@ -349,7 +377,7 @@ TCP_handler :
 	cmp	[esi + tcp_out_queue_entry.seq_num], edi
 	jg	.maybe_next
 
-       DEBUGF 1,"Removing a queued packet\n"
+	DEBUGF 1,"Removing a queued packet\n"
 
 	push	[esi + tcp_out_queue_entry.data_ptr]
 	mov	[esi + tcp_out_queue_entry.data_ptr], 0
@@ -359,8 +387,9 @@ TCP_handler :
   .maybe_next:
 	add	esi, tcp_out_queue_entry.size
 	loop	.loop
-	pop	ecx
 
+	mov	[TCP_OUT_QUEUE+4], 0
+	pop	ecx
 
 ; Now call the correct handler, depending on the socket state
   .no_ack:
@@ -371,11 +400,7 @@ TCP_handler :
 	cmp	eax, TCB_CLOSED
 	ja	.dump
 
-	dec	eax
-	shl	eax, 2
-	add	eax, stateHandler
-
-	call	dword[eax]
+	call	dword [TCPstateHandler+eax*4-4]
 
   .dump:
 	DEBUGF 1,"Dumping TCP packet\n"
@@ -465,13 +490,11 @@ TCP_send:
 	xchg	cl, ch
 	pushw	cx
 	xchg	cl, ch
-;;        pushw   TCP_Packet.Data shl 8
 	pushw	IP_PROTO_TCP shl 8
-	pushd	[edi-4] ; destination address  ; TODO: fix this, IPv4 packet could have options..
+	pushd	[edi-4] ; destination address           ; TODO: fix this, IPv4 packet could have options..
 	pushd	[edi-8] ; source address
 
 	xor	edx, edx
-;        mov     ecx, TCP_Packet.Data
 	mov	esi, edi
 	call	checksum_1
 	mov	ecx, 12
@@ -496,14 +519,13 @@ TCP_send:
 	and	ecx, 0x0000ffff
 	xchg	cl, ch
 	sub	cx, TCP_Packet.Data
-	add_INET (edi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT)
 
+	add_INET (edi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT)     ; todo: this should only happen when packet was queued successful
 	mov	ecx, TCP_RETRIES
 
 	jmp	.go_for_it
 
   .only_one:
-;        inc_INET (edi + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT)
 	mov	ecx, 1
   .go_for_it:
 
@@ -523,37 +545,37 @@ TCP_send:
 ;  IN:  [esp] pointer to buffer
 ;       [esp + 4] size of buffer
 ;       ebx = driver struct
+;       edx = sequence number of this packet in intel byte order
 ;       esi = sender proc
-;       edx = sequence number of this packet in normal byte order
 ;       edi = socket number
-;       ecx = retries
+
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
 align 4
 TCP_queue:
 
-	bswap	edx
 	DEBUGF 1,"Adding packet to TCP queue, buffer: %x, size: %u, driver: %x, acknum: %u\n", [esp], [esp+4], ebx, edx
-	bswap	edx
 
 	cmp	[TCP_OUT_QUEUE], TCP_QUEUE_SIZE
 	jge	.full
 
-	push	ecx
-	mov	ecx, TCP_QUEUE_SIZE
-	mov	eax, TCP_OUT_QUEUE+4
+	push	ebx
+	mov	ebx, TCP_OUT_QUEUE+4
+	call	wait_mutex
+	pop	ebx
 
+	mov	ecx, TCP_QUEUE_SIZE
+	mov	eax, TCP_OUT_QUEUE+8
   .loop:
 	cmp	[eax + tcp_out_queue_entry.data_ptr], 0
 	je	.found_it
 	add	eax, tcp_out_queue_entry.size
 	loop	.loop
 
+	add	esp, 4
   .full:			; silently discard the packet
 	DEBUGF 1,"TCP queue is full!\n"
-
-	add	esp, 4
 	call	kernel_free
 	add	esp, 4
 
@@ -561,7 +583,7 @@ TCP_queue:
 
   .found_it:			; eax points to empty queue entry
 
-	pop	[eax + tcp_out_queue_entry.retries]
+	mov	[eax + tcp_out_queue_entry.retries], TCP_RETRIES
 	pop	[eax + tcp_out_queue_entry.data_ptr]
 	pop	[eax + tcp_out_queue_entry.data_size]
 	mov	[eax + tcp_out_queue_entry.ttl], 1			; send immediately
@@ -572,9 +594,179 @@ TCP_queue:
 
 	inc	[TCP_OUT_QUEUE]
 
-	sub	eax, TCP_OUT_QUEUE+4
-	DEBUGF 1,"Added to queue in pos %u\n", eax
+	sub	eax, TCP_OUT_QUEUE+8
+	shr	eax, 5
+	DEBUGF 1,"Added to queue in pos %u, total queued packets: %u\n", eax, [TCP_OUT_QUEUE+8]
 
+	mov	[TCP_OUT_QUEUE+4], 0
+
+	ret
+
+
+;-----------------------------------------------------------------
+;
+;  IN:  ebx = socket
+;       ecx = ack number
+;
+;  OUT: /
+;
+;-----------------------------------------------------------------
+align 4
+TCP_queue_ack:
+
+	DEBUGF 1,"Adding ACK to TCP queue, socket: %x, acknum: %u\n", ebx, ecx
+
+	cmp	[TCP_OUT_QUEUE], TCP_QUEUE_SIZE
+	jge	.full
+
+	push	ebx ecx
+	mov	ebx, TCP_OUT_QUEUE+4
+	call	wait_mutex
+
+	mov	ecx, TCP_QUEUE_SIZE
+	mov	eax, TCP_OUT_QUEUE+8
+  .loop:
+	cmp	[eax + tcp_out_queue_entry.data_ptr], 0
+	je	.found_it
+	add	eax, tcp_out_queue_entry.size
+	loop	.loop
+
+	add	esp, 8
+  .full:			; silently discard the packet
+	DEBUGF 1,"TCP queue is full!\n"
+	ret
+
+  .found_it:			; eax points to empty queue entry
+
+	pop	[eax + tcp_out_queue_entry.data_size]			; ACK number
+	mov	[eax + tcp_out_queue_entry.data_ptr], -1		; ACK packet
+	pop	[eax + tcp_out_queue_entry.socket]
+	mov	[eax + tcp_out_queue_entry.retries], 1
+	mov	[eax + tcp_out_queue_entry.ttl], 20			; 200 ms
+
+	inc	[TCP_OUT_QUEUE]
+
+	sub	eax, TCP_OUT_QUEUE+8
+	shr	eax, 5
+	DEBUGF 1,"Added to queue in pos %u, total queued packets: %u\n", eax, [TCP_OUT_QUEUE+8]
+
+	mov	[TCP_OUT_QUEUE+4], 0
+
+	ret
+
+
+; IN: eax = socket pointer
+;     ebx = device structure
+;     ecx = ack number
+
+align 4
+TCP_send_ack:
+
+	DEBUGF 1,"Creating TCP ACK packet, socket: %x, acknum: %x\n", eax, ecx
+
+	push	ecx eax
+
+	mov	di , IP_PROTO_TCP
+	mov	ecx, TCP_Packet.Data
+; Create an IPv4 Packet of the correct size
+	mov	ebx, [eax + SOCKET_head.end + IPv4_SOCKET.LocalIP]
+	mov	eax, [eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP]
+
+	call	IPv4_create_packet
+	cmp	edi, -1
+	je	.fail
+
+	pop	ecx
+
+; fill in tcp sequence number
+	push	[ecx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.SND_NXT]
+	pop	[edi + TCP_Packet.SequenceNumber]
+
+; Fill in local and remote ports
+	push	dword [ecx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.LocalPort]
+	pop	dword [edi + TCP_Packet.SourcePort]
+
+; Acknumber
+	pop	[edi + TCP_Packet.AckNumber]
+
+; Fill  in other tcp options
+	mov	[edi + TCP_Packet.Flags], TH_ACK
+	mov	[edi + TCP_Packet.Window], 0x0005	   ; 1280 bytes
+	mov	[edi + TCP_Packet.UrgentPointer], 0
+	mov	[edi + TCP_Packet.DataOffset], 0x50
+	mov	[edi + TCP_Packet.Checksum], 0
+
+; Push pointer to and size of total packet (needed for send procedure)
+	push	edx eax esi
+
+; Now, calculate the checksum
+	pushw	TCP_Packet.Data shl 8
+	pushw	IP_PROTO_TCP shl 8
+	pushd	[edi-4] ; destination address           ; TODO: fix this, IPv4 packet could have options..
+	pushd	[edi-8] ; source address
+
+	xor	edx, edx
+	mov	ecx, 12
+	mov	esi, esp
+	call	checksum_1
+	call	checksum_2
+	mov	[edi + TCP_Packet.Checksum], dx
+	add	esp, 12 				; remove the pseudoheader from stack
+
+	pop	eax
+	call	eax
+	call	kernel_free
+	add	esp, 4 ; pop (balance stack)
+	ret
+
+  .fail:
+	add	esp, 8
+	ret
+
+
+
+
+;-----------------------------------------------------------------
+;
+; Remove all queued TCP packets for a specified socket
+;
+; IN: eax = socket number
+; OUT: /
+;
+; destoys esi and ecx
+;
+;-----------------------------------------------------------------
+
+align 4
+TCP_remove_socket:
+
+	cmp	[TCP_OUT_QUEUE], 0
+	je	.skip
+
+	mov	ebx, TCP_OUT_QUEUE+4
+	call	wait_mutex
+
+	mov	eax, TCP_QUEUE_SIZE
+	mov	ecx, [TCP_OUT_QUEUE]
+	mov	esi, TCP_OUT_QUEUE+8
+
+  .loop:
+	cmp	[esi + tcp_out_queue_entry.data_ptr], 0
+	jz	.maybenext
+	cmp	[esi + tcp_out_queue_entry.socket], eax
+	jnz	.maybenext
+
+	push	[esi + tcp_out_queue_entry.data_ptr]
+	mov	[esi + tcp_out_queue_entry.data_ptr], 0
+	dec	[TCP_OUT_QUEUE]
+	call	kernel_free
+
+  .maybenext:
+	add	esi, tcp_out_queue_entry.size
+	loop	.loop
+
+	mov	[TCP_OUT_QUEUE+4], 0
+  .skip:
 	ret
 
 
@@ -737,6 +929,90 @@ stateTCB_SYN_RECEIVED:
 	ret
 
 
+if 0
+
+
+align 4
+stateTCB_ESTABLISHED:
+
+	DEBUGF	1,"TCBStateHandler: Established\n"
+
+	mov	eax, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT]
+	bswap	eax
+	DEBUGF	1,"RCV_NXT is set to:%u\n", eax
+	bswap	eax
+	cmp	eax, [edx + TCP_Packet.SequenceNumber]
+	jne	.exit					;;;;;;
+
+; check if we received an ACK
+	test	[edx + TCP_Packet.Flags], TH_ACK
+	jz	.no_ack
+
+	mov	ax, [edx + TCP_Packet.Window]
+	xchg	al, ah
+	cmp	ax, 1024
+	ja	@f
+	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.wndsizeTimer], 1
+      @@:
+  .no_ack:
+
+; Now, see if we received any data
+	test	ecx, ecx
+	jz	.nodata
+
+; Calculate next sequencenumber
+	add_INET (ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT)
+
+	push	edx
+	DEBUGF	1,"Got %u bytes data!\n", ecx
+; calculate header length
+	movzx	eax, [edx + TCP_Packet.DataOffset]
+	and	eax, 11110000b
+	shr	eax, 2
+	DEBUGF	1,"TCP header size: %u\n", eax
+	add	edx, eax	; now edx points to data
+
+	add	esp, 4
+	pop	esi		; pointer to buffer
+	add	esp, 4
+
+	sub	edx, esi
+	mov	edi, edx	; offset
+	mov	eax, ebx	; socket ptr
+
+	call	socket_internal_receiver	; Place the data from packet into socket
+
+;        lea     ebx, [eax + SOCKET_head.lock]
+;        call    wait_mutex
+	mov	ebx, eax
+	pop	edx
+
+	test	[edx + TCP_Packet.Flags], TH_FIN + TH_RST
+	jz	.ack
+
+  .nodata:
+	test	[edx + TCP_Packet.Flags], TH_FIN + TH_RST
+	jz	.exit
+
+; Send an ACK to that fin, and enter closewait state
+	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_CLOSE_WAIT
+; Remove all resend entries from the queue
+	mov	eax, ebx
+	call	TCP_remove_socket
+
+  .ack:
+	push	ebx
+	mov	ecx, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT]
+	call	TCP_queue_ack
+	pop	ebx
+
+  .exit:
+	mov	[ebx + SOCKET_head.lock], 0
+	ret
+
+
+end if
+
 
 align 4
 stateTCB_ESTABLISHED:
@@ -751,13 +1027,9 @@ stateTCB_ESTABLISHED:
 	jne	.exit
 
 ; Calculate next sequencenumber
-;;        test    ecx, ecx
-;;        jnz     @f
-;;        inc     ecx
-;;       @@:
 	add_INET (ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT)
 
-	test	[edx + TCP_Packet.Flags], TH_FIN + TH_RST ;;;
+	test	[edx + TCP_Packet.Flags], TH_FIN + TH_RST
 	jnz	.fin
 
   .check_ack:
@@ -799,9 +1071,9 @@ stateTCB_ESTABLISHED:
 
 	call	socket_internal_receiver	; Place the data from packet into socket
 
-	lea	ebx, [eax + SOCKET_head.lock]  ;;;;;
-	call	wait_mutex			 ;;;;;
-	mov	ebx, eax			   ;;;;
+	lea	ebx, [eax + SOCKET_head.lock]
+	call	wait_mutex
+	mov	ebx, eax
 
   .ack:
 	mov	eax, ebx
@@ -814,7 +1086,7 @@ stateTCB_ESTABLISHED:
 	mov	[ebx + SOCKET_head.lock], 0
 	ret
 
-  .fin:
+  .fin:        ; we received a FIN or RESET
 ; Remove all resend entries from the queue
 	mov	ecx, TCP_QUEUE_SIZE
 	mov	esi, TCP_OUT_QUEUE+4
@@ -837,9 +1109,8 @@ stateTCB_ESTABLISHED:
 	loop	.removeloop
 
 ; Send an ACK to that fin, and enter closewait state
-	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_CLOSE_WAIT
+	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_CLOSING
 	jmp	.check_ack
-
 
 
 align 4
@@ -864,10 +1135,6 @@ stateTCB_FIN_WAIT_1:
 	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_TIMED_WAIT
 
     @@:
-
-;        lea     esi, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT]
-;        inc_INET esi
-
 	; Send an ACK
 	mov	eax, ebx
 	mov	bl, TH_ACK
@@ -892,11 +1159,6 @@ stateTCB_FIN_WAIT_2:
 
 	; Change state, as we have a fin
 	mov	[ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.state], TCB_TIMED_WAIT
-
-	lea	esi, [ebx + SOCKET_head.end + IPv4_SOCKET.end + TCP_SOCKET.RCV_NXT]
-	inc_INET esi
-
-	mov	[ebx + SOCKET_head.lock], 0
 
 	; Send an ACK
 	mov	eax, ebx
