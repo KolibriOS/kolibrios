@@ -119,7 +119,7 @@ use16
                   org   0x0
                   jmp   start_of_code
 
-version db    'Kolibri OS  version 0.7.5.0      ',13,10,13,10,0
+version db    'Kolibri OS  version 0.7.7.0      ',13,10,13,10,0
 
 include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
@@ -2297,7 +2297,7 @@ endg
 
 iglobal
 version_inf:
-  db 0,7,5,0  ; version 0.7.5.0
+  db 0,7,7,0  ; version 0.7.7.0
   db UID_KOLIBRI
   dd __REV__
 version_end:
