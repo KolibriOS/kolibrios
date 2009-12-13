@@ -80,7 +80,7 @@ void __F_NAME(__NTMain,__wNTMain)( void )
     __process_fini = &__FiniRtns;
    __InitRtns( 255 );
    __CommonInit();
-
+   __initPOSIXHandles();
    __appcwdlen = strrchr(_LpPgmName, '/') - _LpPgmName + 1;
    __appcwdlen = __appcwdlen > 512 ? 512 : __appcwdlen;
    __appcwd= (char*)malloc(__appcwdlen);

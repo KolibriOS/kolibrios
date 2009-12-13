@@ -324,23 +324,18 @@ _display          display_t
 _WinMapAddress    rd 1
 _WinMapSize       rd 1
 
-
-scr_width         rd 1
-scr_height        rd 1
-
-create_cursor     rd 1
-select_hw_cursor  rd 1
-set_hw_cursor     rd 1
-hw_restore        rd 1
-
 def_cursor        rd 1
 current_cursor    rd 1
 hw_cursor         rd 1
-cur_def_interl    rd 1
 cur_saved_base    rd 1
-cur_saved_interl  rd 1
-cur_saved_w       rd 1
-cur_saved_h       rd 1
+
+cur.lock          rd 1   ;1 - lock update, 2- hide
+cur.left          rd 1   ;cursor clip box
+cur.top           rd 1
+cur.right         rd 1
+cur.bottom        rd 1
+cur.w             rd 1
+cur.h             rd 1
 
 ipc_tmp           rd 1
 ipc_pdir          rd 1

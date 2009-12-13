@@ -32,7 +32,7 @@ virtual at 0
 end virtual
 
 align 4
-proc vesa_init_cursor stdcall, dst:dword, src:dword
+proc init_cursor stdcall, dst:dword, src:dword
            locals
              rBase    dd ?
              pQuad    dd ?
@@ -290,7 +290,7 @@ endp
 ;  ebx= src
 ;  ecx= flags
 
-vesa_cursor:
+create_cursor:
 .src     equ esp
 .flags   equ esp+4
 .hcursor equ esp+8
@@ -330,7 +330,32 @@ vesa_cursor:
            mov [edi+CURSOR.hot_x], ecx
            mov [edi+CURSOR.hot_y], edx
 
-           stdcall vesa_init_cursor, eax, esi
+           stdcall init_cursor, eax, esi
+
+           mov eax, [.hcursor]
+           lea eax, [eax+CURSOR.list_next]
+           lea edx, [_display.cr_list.next]
+
+           pushfd
+           cli
+           mov ecx, [edx]
+
+           mov [eax], ecx
+           mov [eax+4], edx
+
+           mov [ecx+4], eax
+           mov [edx], eax
+           popfd
+
+           mov eax, [.hcursor]
+.check_hw:
+           cmp [_display.init_cursor], 0
+           je .fail
+
+           push eax
+           call [_display.init_cursor]
+           add esp, 4
+
            mov eax, [.hcursor]
 .fail:
            add esp, 12
@@ -346,8 +371,7 @@ vesa_cursor:
            mov ecx, 1024
            cld
            rep movsd
-           add esp, 12
-           ret
+           jmp .check_hw
 
 align 4
 proc load_cursor stdcall, src:dword, flags:dword
@@ -377,7 +401,7 @@ proc load_cursor stdcall, src:dword, flags:dword
            mov eax, [CURRENT_TASK+eax+4]
            mov ebx, [src]
            mov ecx, [flags]
-           call [create_cursor]    ;eax, ebx, ecx
+           call create_cursor    ;eax, ebx, ecx
            mov [handle], eax
 
            cmp word [flags], LOAD_FROM_FILE
@@ -407,8 +431,6 @@ proc delete_cursor stdcall, hcursor:dword
            mov esi, [hcursor]
            cmp [esi+CURSOR.magic], 'CURS'
            jne .fail
-;           cmp [esi+CURSOR.size], CURSOR_SIZE
-;           jne .fail
 
            mov ebx, [CURRENT_TASK]
            shl ebx, 5
@@ -443,127 +465,78 @@ destroy_cursor:
 
 align 4
 select_cursor:
-
+           mov eax, [esp+4]
+           mov [_display.cursor], eax
            ret 4
 
 align 4
-proc init_cursors
-
-           cmp [SCR_MODE],word 0x13
-           jbe .fail
-
-           test word [SCR_MODE], 0x4000
-           jz .fail
-
-           movzx eax, byte [ScreenBPP]
-           mov ebx, [BytesPerScanLine]
-           cmp eax, 32
-           jne @F
-           sub ebx, 128
-           jmp .init
-@@:
-           cmp eax, 24
-           jne .fail
-           sub ebx, 96
-.init:
-           mov [cur_def_interl], ebx
-
-           stdcall load_driver, szHwMouse
-           mov [hw_cursor], eax
-           test eax, eax
-           jz .sw_mouse
-
-           stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
-           mov [def_cursor], eax
-           ret
-.sw_mouse:
-           mov [create_cursor], vesa_cursor
-
-           stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
-           mov [def_cursor], eax
-
-           mov ecx, [Screen_Max_X]
-           mov edx, [Screen_Max_Y]
-           inc ecx
-           inc edx
-           mov [scr_width], ecx
-           mov [scr_height], edx
-
-           movzx ebx, byte [ScreenBPP]
-           cmp ebx, 32
-           jne @F
-
-
-           mov dword [select_hw_cursor], select_cursor
-           mov dword [set_hw_cursor], cursor_32
-           mov dword [hw_restore], restore_32
-           ret
-@@:
-           mov dword [select_hw_cursor], select_cursor
-           mov dword [set_hw_cursor], cursor_24
-           mov dword [hw_restore], restore_24
-           ret
-.fail:
-           xor eax, eax
-           mov dword [select_hw_cursor], eax
-           mov dword [set_hw_cursor], eax
-           mov dword [hw_restore], eax
-           ret
-endp
-
-align 4
 proc restore_24 stdcall, x:dword, y:dword
-           locals
-             w  dd ?
-           endl
 
-           mov edi, [cur_saved_base]
-           mov edx, [cur_saved_h]
-           mov ebx, [cur_saved_interl]
+           push ebx
+
+           mov ebx, [cur_saved_base]
+           mov edx, [cur.h]
            test edx, edx
            jz  .ret
 
+           push esi
+           push edi
+
            mov esi, cur_saved_data
-@@:
-           mov ecx, [cur_saved_w]
+           mov ecx, [cur.w]
            lea ecx, [ecx+ecx*2]
+           push ecx
+@@:
+           mov edi, ebx
+           add ebx, [BytesPerScanLine]
+
+           mov ecx, [esp]
            rep movsb
-           add edi, ebx
            dec edx
            jnz @B
+
+           pop ecx
+           pop edi
+           pop esi
 .ret:
+           pop ebx
            ret
 endp
 
 align 4
 proc restore_32 stdcall, x:dword, y:dword
-           locals
-             w  dd ?
-           endl
 
-           mov edi, [cur_saved_base]
-           mov edx, [cur_saved_h]
-           mov ebx, [cur_saved_interl]
+           push ebx
+
+           mov ebx, [cur_saved_base]
+           mov edx, [cur.h]
            test edx, edx
            jz  .ret
 
+           push esi
+           push edi
+
            mov esi, cur_saved_data
 @@:
-           mov ecx, [cur_saved_w]
+           mov edi, ebx
+           add ebx, [BytesPerScanLine]
+
+           mov ecx, [cur.w]
            rep movsd
-           add edi, ebx
            dec edx
            jnz @B
+
+           pop edi
 .ret:
+           pop esi
+           pop ebx
            ret
 endp
 
 align 4
-proc cursor_24 stdcall, hcursor:dword, x:dword, y:dword
+proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
            locals
-             w      dd ?
              h      dd ?
-             st     dd ?
              _dx     dd ?
              _dy     dd ?
            endl
@@ -575,87 +548,84 @@ proc cursor_24 stdcall, hcursor:dword, x:dword, y:dword
 
            xor edx, edx
            sub ecx, [esi+CURSOR.hot_x]
+           lea ebx, [ecx+32-1]
            mov [x], ecx
            sets dl
            dec edx
            and ecx, edx       ;clip x to 0<=x
+           mov [cur.left], ecx
            mov edi, ecx
            sub edi, [x]
            mov [_dx], edi
 
            xor edx, edx
            sub eax, [esi+CURSOR.hot_y]
+           lea edi, [eax+32-1]
            mov [y], eax
            sets dl
            dec edx
            and eax, edx       ;clip y to 0<=y
-           mov edi, eax
-           sub edi, [y]
-           mov [_dy], edi
-
-           mul ebx
-           lea esi, [ecx+ecx*2]
-           add esi, [LFBAddress]
-           add esi, eax
-           mov [cur_saved_base],esi
-
-           mov edi, [scr_width]
-           mov edx, [scr_height]
-           mov eax, 32
-
-           sub edi, ecx
-           cmp edi, eax
-           jng @F
-           mov edi, eax
-@@:
-           sub edi, [_dx]
-
-           sub edx, [y]
-           cmp edx, eax
-           jng @F
+           mov [cur.top], eax
            mov edx, eax
+           sub edx, [y]
+           mov [_dy], edx
+
+           mul dword [BytesPerScanLine]
+           lea edx, [LFB_BASE+ecx*3]
+           add edx, eax
+           mov [cur_saved_base],edx
+
+           cmp ebx, [Screen_Max_X]
+           jbe @F
+           mov ebx, [Screen_Max_X]
 @@:
-           sub edx, [_dy]
+           cmp edi, [Screen_Max_Y]
+           jbe @F
+           mov edi, [Screen_Max_Y]
+@@:
+           mov [cur.right],  ebx
+           mov [cur.bottom], edi
 
-           mov [w], edi
-           mov [h], edx
-           mov [cur_saved_w], edi
-           mov [cur_saved_h], edx
+           sub ebx, [x]
+           sub edi, [y]
+           inc ebx
+           inc edi
 
-           sub eax, edi
-           shl eax, 2       ;lea eax, [eax+eax*2]
-           lea edi, [edi+edi*2]
-           sub ebx, edi
-           mov [cur_saved_interl], ebx
+           mov [cur.w], ebx
+           mov [cur.h], edi
+           mov [h], edi
 
+           mov eax, edi
            mov edi, cur_saved_data
 @@:
-           mov ecx, [w]
+           mov esi, edx
+           add edx, [BytesPerScanLine]
+           mov ecx, [cur.w]
            lea ecx, [ecx+ecx*2]
            rep movsb
-           add esi, ebx
-           dec edx
+           dec eax
            jnz @B
 
 ;draw cursor
-           mov edx, eax
-           mov edi, [cur_saved_base]
+           mov ebx, [cur_saved_base]
            mov eax, [_dy]
            shl eax, 5
            add eax, [_dx]
-           shl eax, 2
 
            mov esi, [hcursor]
            mov esi, [esi+CURSOR.base]
-           add esi, eax
+           lea edx, [esi+eax*4]
 .row:
-           mov ecx, [w]
+           mov ecx, [cur.w]
+           mov esi, edx
+           mov edi, ebx
+           add edx, 32*4
+           add ebx, [BytesPerScanLine]
 .pix:
            lodsd
            test eax, 0xFF000000
            jz @F
-
-           mov word [edi], ax
+           mov [edi], ax
            shr eax, 16
            mov [edi+2],al
 @@:
@@ -663,19 +633,16 @@ proc cursor_24 stdcall, hcursor:dword, x:dword, y:dword
            dec ecx
            jnz .pix
 
-           add esi, edx
-           add edi, ebx
            dec [h]
            jnz .row
            ret
 endp
 
+
 align 4
-proc cursor_32 stdcall, hcursor:dword, x:dword, y:dword
+proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
            locals
-             w      dd ?
              h      dd ?
-             st     dd ?
              _dx     dd ?
              _dy     dd ?
            endl
@@ -683,83 +650,80 @@ proc cursor_32 stdcall, hcursor:dword, x:dword, y:dword
            mov esi, [hcursor]
            mov ecx, [x]
            mov eax, [y]
-           mov ebx, [BytesPerScanLine]
 
            xor edx, edx
            sub ecx, [esi+CURSOR.hot_x]
+           lea ebx, [ecx+32-1]
            mov [x], ecx
            sets dl
            dec edx
            and ecx, edx       ;clip x to 0<=x
+           mov [cur.left], ecx
            mov edi, ecx
            sub edi, [x]
            mov [_dx], edi
 
            xor edx, edx
            sub eax, [esi+CURSOR.hot_y]
+           lea edi, [eax+32-1]
            mov [y], eax
            sets dl
            dec edx
            and eax, edx       ;clip y to 0<=y
-           mov edi, eax
-           sub edi, [y]
-           mov [_dy], edi
-
-           mul ebx
-           lea esi, [eax+ecx*4]
-           add esi, [LFBAddress]
-           mov [cur_saved_base],esi
-
-           mov edi, [scr_width]
-           mov edx, [scr_height]
-           mov eax, 32
-
-           sub edi, ecx
-           cmp edi, eax
-           jng @F
-           mov edi, eax
-@@:
-           sub edi, [_dx]
-
-           sub edx, [y]
-           cmp edx, eax
-           jng @F
+           mov [cur.top], eax
            mov edx, eax
+           sub edx, [y]
+           mov [_dy], edx
+
+           mul dword [BytesPerScanLine]
+           lea edx, [LFB_BASE+eax+ecx*4]
+           mov [cur_saved_base],edx
+
+           cmp ebx, [Screen_Max_X]
+           jbe @F
+           mov ebx, [Screen_Max_X]
 @@:
-           sub edx, [_dy]
+           cmp edi, [Screen_Max_Y]
+           jbe @F
+           mov edi, [Screen_Max_Y]
+@@:
+           mov [cur.right],  ebx
+           mov [cur.bottom], edi
 
-           mov [w], edi
-           mov [h], edx
-           mov [cur_saved_w], edi
-           mov [cur_saved_h], edx
+           sub ebx, [x]
+           sub edi, [y]
+           inc ebx
+           inc edi
 
-           sub eax, edi
-           shl eax, 2
-           shl edi, 2
-           sub ebx, edi
-           mov [cur_saved_interl], ebx
+           mov [cur.w], ebx
+           mov [cur.h], edi
+           mov [h], edi
 
+           mov eax, edi
            mov edi, cur_saved_data
 @@:
-           mov ecx, [w]
+           mov esi, edx
+           add edx, [BytesPerScanLine]
+           mov ecx, [cur.w]
            rep movsd
-           add esi, ebx
-           dec edx
+           dec eax
            jnz @B
 
 ;draw cursor
-           mov edx, eax
-           mov edi, [cur_saved_base]
+           mov ebx, [cur_saved_base]
            mov eax, [_dy]
            shl eax, 5
            add eax, [_dx]
-           shl eax, 2
 
            mov esi, [hcursor]
            mov esi, [esi+CURSOR.base]
-           add esi, eax
+           lea edx, [esi+eax*4]
 .row:
-           mov ecx, [w]
+           mov ecx, [cur.w]
+           mov esi, edx
+           mov edi, ebx
+           add edx, 32*4
+           add ebx, [BytesPerScanLine]
 .pix:
            lodsd
            test eax, 0xFF000000
@@ -769,12 +733,72 @@ proc cursor_32 stdcall, hcursor:dword, x:dword, y:dword
            add edi, 4
            dec ecx
            jnz .pix
-           add esi, edx
-           add edi, ebx
+
            dec [h]
            jnz .row
            ret
 endp
+
+
+align 4
+get_display:
+           mov eax, _display
+           ret
+
+align 4
+init_display:
+
+           xor eax, eax
+           mov edi, _display
+
+           mov [edi+display_t.init_cursor],    eax
+           mov [edi+display_t.select_cursor],  eax
+           mov [edi+display_t.show_cursor],    eax
+           mov [edi+display_t.move_cursor],    eax
+           mov [edi+display_t.restore_cursor], eax
+
+           lea ecx, [edi+display_t.cr_list.next]
+           mov [edi+display_t.cr_list.next], ecx
+           mov [edi+display_t.cr_list.prev], ecx
+
+           cmp [SCR_MODE],word 0x13
+           jbe .fail
+
+           test word [SCR_MODE], 0x4000
+           jz .fail
+
+           mov ebx, restore_32
+           mov ecx, move_cursor_32
+           movzx eax, byte [ScreenBPP]
+           cmp eax, 32
+           je @F
+
+           mov ebx, restore_24
+           mov ecx, move_cursor_24
+           cmp eax, 24
+           jne .fail
+@@:
+           mov [_display.select_cursor],  select_cursor
+           mov [_display.move_cursor],    ecx
+           mov [_display.restore_cursor], ebx
+
+           stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
+           mov [def_cursor], eax
+           ret
+.fail:
+           xor eax, eax
+           mov [_display.select_cursor], eax
+           mov [_display.move_cursor],   eax
+           ret
+
+
+
+
+
+
+
+
+
 
 align 4
 def_arrow:

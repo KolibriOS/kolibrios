@@ -1557,7 +1557,11 @@ stop_all_services:
 	   jz .next
 
 	   push edx
-	   stdcall ebx, dword -1
+       mov ebp, esp
+       push  0
+       push -1
+       call ebx
+       mov esp, ebp
 	   pop edx
 	   jmp .next
 .done:

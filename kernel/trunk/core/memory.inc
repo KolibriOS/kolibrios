@@ -1189,14 +1189,19 @@ f68:
            cmp ebx, OS_BASE
            jae .fail
 
-           stdcall load_PE, ebx
+           cmp ecx, OS_BASE
+           jae .fail
 
+           mov edi, ecx
+           stdcall load_PE, ebx
+           mov esi, eax
            test eax, eax
            jz @F
 
-           mov esi, eax
-           stdcall eax, DRV_ENTRY
-
+           push edi
+           push DRV_ENTRY
+           call eax
+           add esp, 8
            test eax, eax
            jz @F
 

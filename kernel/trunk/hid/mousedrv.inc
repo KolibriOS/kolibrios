@@ -51,12 +51,13 @@ endg
 draw_mouse_under:
 	; return old picture
 
-	cmp [set_hw_cursor], 0
-	jz @F
+    cmp [_display.restore_cursor], 0
+    je @F
+
 	pushad
 	movzx  eax,word [X_UNDER]
 	movzx  ebx,word [Y_UNDER]
-	stdcall [hw_restore], eax, ebx
+    stdcall [_display.restore_cursor], eax, ebx
 	popad
 	ret
 @@:
@@ -97,7 +98,7 @@ mres:
 
 save_draw_mouse:
 
-	cmp [set_hw_cursor], 0
+    cmp [_display.move_cursor], 0
 	je .no_hw_cursor
 	pushad
 
@@ -120,16 +121,16 @@ save_draw_mouse:
 	je .draw
 
         push esi
-	call [select_hw_cursor]
+    call [_display.select_cursor]
         mov [current_cursor], esi
 .draw:
-        stdcall [set_hw_cursor], esi
+    stdcall [_display.move_cursor], esi
 	popad
 	ret
 .fail:
 	mov ecx, [def_cursor]
 	mov [edx+SLOT_BASE+APPDATA.cursor], ecx
-        stdcall [set_hw_cursor], ecx            ; stdcall: [esp]=ebx,eax
+    stdcall [_display.move_cursor], ecx            ; stdcall: [esp]=ebx,eax
 	popad
 	ret
 

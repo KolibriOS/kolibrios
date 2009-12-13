@@ -294,11 +294,7 @@ __exports:
           map_io_mem,            'MapIoMem',           \      ; stdcall
           get_pg_addr,           'GetPgAddr',          \      ; eax
 \
-          select_hw_cursor,      'SelectHwCursor',     \      ; stdcall
-          set_hw_cursor,         'SetHwCursor',        \      ; stdcall
-          hw_restore,            'HwCursorRestore',    \      ;
-          create_cursor,         'HwCursorCreate',     \      ;
-\
+          get_display,           'GetDisplay',         \
           set_screen,            'SetScreen',          \
           pci_api,               'PciApi',             \
           pci_read8,             'PciRead8',           \      ; stdcall

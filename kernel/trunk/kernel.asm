@@ -751,8 +751,7 @@ end if
         mov  byte[TASK_DATA+TASKDATA.wnd_number],al	; on screen number
         mov  dword [TASK_DATA+TASKDATA.pid], eax        ; process id number
 
-
-        call init_cursors
+        call init_display
         mov eax, [def_cursor]
         mov [SLOT_BASE+APPDATA.cursor],eax
         mov [SLOT_BASE+APPDATA.cursor+256],eax

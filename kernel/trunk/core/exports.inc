@@ -60,10 +60,6 @@ iglobal
   szClearEvent        db 'ClearEvent',0
 
   szLoadCursor        db 'LoadCursor',0
-  szSelectHwCursor    db 'SelectHwCursor',0
-  szSetHwCursor       db 'SetHwCursor',0
-  szHwCursorRestore   db 'HwCursorRestore', 0
-  szHwCursorCreate    db 'HwCursorCreate', 0
 
   szSysMsgBoardStr    db 'SysMsgBoardStr', 0
   szSysMsgBoardChar   db 'SysMsgBoardChar', 0
@@ -133,11 +129,6 @@ kernel_export:
   dd szClearEvent      , clear_event           ;see EVENT.inc for specification
 
   dd szLoadCursor      , load_cursor           ;stdcall
-
-  dd szSelectHwCursor  , select_hw_cursor      ;import    stdcall
-  dd szSetHwCursor     , set_hw_cursor         ;import    stdcall
-  dd szHwCursorRestore , hw_restore            ;import
-  dd szHwCursorCreate  , create_cursor         ;import
 
   dd szSysMsgBoardStr  , sys_msg_board_str
   dd szSysMsgBoardChar , sys_msg_board
