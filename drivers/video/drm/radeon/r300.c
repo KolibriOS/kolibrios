@@ -137,7 +137,8 @@ int rv370_pcie_gart_enable(struct radeon_device *rdev)
 
 void rv370_pcie_gart_disable(struct radeon_device *rdev)
 {
-	uint32_t tmp;
+	u32 tmp;
+	int r;
 
 	tmp = RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
 	tmp |= RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD;
@@ -1192,6 +1193,9 @@ static int r300_startup(struct radeon_device *rdev)
 {
 	int r;
 
+	/* set common regs */
+	r100_set_common_regs(rdev);
+	/* program mc */
 	r300_mc_program(rdev);
 	/* Resume clock */
 	r300_clock_startup(rdev);
@@ -1204,13 +1208,18 @@ static int r300_startup(struct radeon_device *rdev)
 		if (r)
 			return r;
 	}
+
+	if (rdev->family == CHIP_R300 ||
+	    rdev->family == CHIP_R350 ||
+	    rdev->family == CHIP_RV350)
+		r100_enable_bm(rdev);
+
 	if (rdev->flags & RADEON_IS_PCI) {
 		r = r100_pci_gart_enable(rdev);
 		if (r)
 			return r;
 	}
 	/* Enable IRQ */
-//	rdev->irq.sw_int = true;
 //	r100_irq_set(rdev);
 	/* 1M ring buffer */
 //   r = r100_cp_init(rdev, 1024 * 1024);
@@ -1265,10 +1274,8 @@ int r300_init(struct radeon_device *rdev)
 			RREG32(R_0007C0_CP_STAT));
 	}
 	/* check if cards are posted or not */
-	if (!radeon_card_posted(rdev) && rdev->bios) {
-		DRM_INFO("GPU not posted. posting now...\n");
-		radeon_combios_asic_init(rdev->ddev);
-	}
+	if (radeon_boot_test_post_card(rdev) == false)
+		return -EINVAL;
 	/* Set asic errata */
 	r300_errata(rdev);
 	/* Initialize clocks */

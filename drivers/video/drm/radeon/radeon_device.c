@@ -77,10 +77,11 @@ void radeon_surface_init(struct radeon_device *rdev)
     if (rdev->family < CHIP_R600) {
         int i;
 
-        for (i = 0; i < 8; i++) {
-            WREG32(RADEON_SURFACE0_INFO +
-                   i * (RADEON_SURFACE1_INFO - RADEON_SURFACE0_INFO),
-                   0);
+		for (i = 0; i < RADEON_GEM_MAX_SURFACES; i++) {
+			if (rdev->surface_regs[i].bo)
+				radeon_bo_get_surface_reg(rdev->surface_regs[i].bo);
+			else
+				radeon_clear_surface_reg(rdev, i);
         }
 		/* enable surfaces */
 		WREG32(RADEON_SURFACE_CNTL, 0);
@@ -239,6 +240,24 @@ bool radeon_card_posted(struct radeon_device *rdev)
 
 	return false;
 
+}
+
+bool radeon_boot_test_post_card(struct radeon_device *rdev)
+{
+	if (radeon_card_posted(rdev))
+		return true;
+
+	if (rdev->bios) {
+		DRM_INFO("GPU not posted. posting now...\n");
+		if (rdev->is_atom_bios)
+			atom_asic_init(rdev->mode_info.atom_context);
+		else
+			radeon_combios_asic_init(rdev->ddev);
+		return true;
+	} else {
+		dev_err(rdev->dev, "Card not posted and no BIOS - ignoring\n");
+		return false;
+	}
 }
 
 int radeon_dummy_page_init(struct radeon_device *rdev)
@@ -493,12 +512,16 @@ int radeon_atombios_init(struct radeon_device *rdev)
 
 	rdev->mode_info.atom_context = atom_parse(atom_card_info, rdev->bios);
     radeon_atom_initialize_bios_scratch_regs(rdev->ddev);
+	atom_allocate_fb_scratch(rdev->mode_info.atom_context);
     return 0;
 }
 
 void radeon_atombios_fini(struct radeon_device *rdev)
 {
+	if (rdev->mode_info.atom_context) {
+		kfree(rdev->mode_info.atom_context->scratch);
 	kfree(rdev->mode_info.atom_context);
+	}
 	kfree(rdev->mode_info.atom_card_info);
 }
 
@@ -581,7 +604,7 @@ int radeon_device_init(struct radeon_device *rdev,
 		return r;
 	}
 
-    if (radeon_agpmode == -1) {
+	if (rdev->flags & RADEON_IS_AGP && radeon_agpmode == -1) {
 		radeon_agp_disable(rdev);
     }
 
@@ -895,7 +918,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("Radeon RC08 cmdline %s\n", cmdline);
+    dbgprintf("Radeon RC09 cmdline %s\n", cmdline);
 
     enum_pci_devices();
 

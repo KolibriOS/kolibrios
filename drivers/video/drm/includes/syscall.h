@@ -232,7 +232,7 @@ static inline void* __CreateObject(u32_t pid, size_t size)
 static inline void __DestroyObject(void *obj)
 {
      __asm__ __volatile__ (
-     "call *__imp__DestroyObject"
+     "call *__imp__DestroyObject \n\t"
      :
      :"a" (obj));
      __asm__ __volatile__ (

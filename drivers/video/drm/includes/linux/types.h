@@ -1,68 +1,229 @@
+#ifndef _LINUX_TYPES_H
+#define _LINUX_TYPES_H
 
-#ifndef __TYPES_H__
-#define __TYPES_H__
+#include <asm/types.h>
 
-# define __iomem
-# define __force
-# define __user
+#ifndef __ASSEMBLY__
+#ifdef	__KERNEL__
 
-# define WARN(condition, format...)
+#define DECLARE_BITMAP(name,bits) \
+        unsigned long name[BITS_TO_LONGS(bits)]
 
-typedef int                  bool;
+#endif
 
-#define false                0
-#define true                 1
+#include <linux/posix_types.h>
 
-typedef int                  ssize_t;
-typedef long long            loff_t;
+#ifdef __KERNEL__
 
-typedef unsigned int         size_t;
-typedef unsigned int         count_t;
-typedef unsigned int         addr_t;
+typedef __u32 __kernel_dev_t;
 
-typedef unsigned char        u8;
-typedef unsigned short       u16;
-typedef unsigned int         u32;
-typedef unsigned long long   u64;
+typedef __kernel_fd_set		fd_set;
+typedef __kernel_dev_t		dev_t;
+typedef __kernel_ino_t		ino_t;
+typedef __kernel_mode_t		mode_t;
+typedef __kernel_nlink_t	nlink_t;
+typedef __kernel_off_t		off_t;
+typedef __kernel_pid_t		pid_t;
+typedef __kernel_daddr_t	daddr_t;
+typedef __kernel_key_t		key_t;
+typedef __kernel_suseconds_t	suseconds_t;
+typedef __kernel_timer_t	timer_t;
+typedef __kernel_clockid_t	clockid_t;
+typedef __kernel_mqd_t		mqd_t;
 
-typedef unsigned char        __u8;
-typedef unsigned short       __u16;
-typedef unsigned int         __u32;
-typedef unsigned long long   __u64;
+typedef _Bool			bool;
 
-typedef signed char         __s8;
-typedef signed short        __s16;
-typedef signed int          __s32;
-typedef signed long long    __s64;
+typedef __kernel_uid32_t	uid_t;
+typedef __kernel_gid32_t	gid_t;
+typedef __kernel_uid16_t        uid16_t;
+typedef __kernel_gid16_t        gid16_t;
 
-typedef __u32 __be32;
+typedef unsigned long		uintptr_t;
 
-typedef unsigned char        uint8_t;
-typedef unsigned short       uint16_t;
-typedef unsigned int         uint32_t;
-typedef unsigned long long   uint64_t;
+#ifdef CONFIG_UID16
+/* This is defined by include/asm-{arch}/posix_types.h */
+typedef __kernel_old_uid_t	old_uid_t;
+typedef __kernel_old_gid_t	old_gid_t;
+#endif /* CONFIG_UID16 */
+
+#if defined(__GNUC__)
+typedef __kernel_loff_t		loff_t;
+#endif
+
+/*
+ * The following typedefs are also protected by individual ifdefs for
+ * historical reasons:
+ */
+#ifndef _SIZE_T
+#define _SIZE_T
+typedef __kernel_size_t		size_t;
+#endif
+
+#ifndef _SSIZE_T
+#define _SSIZE_T
+typedef __kernel_ssize_t	ssize_t;
+#endif
+
+#ifndef _PTRDIFF_T
+#define _PTRDIFF_T
+typedef __kernel_ptrdiff_t	ptrdiff_t;
+#endif
+
+#ifndef _TIME_T
+#define _TIME_T
+typedef __kernel_time_t		time_t;
+#endif
+
+#ifndef _CLOCK_T
+#define _CLOCK_T
+typedef __kernel_clock_t	clock_t;
+#endif
+
+#ifndef _CADDR_T
+#define _CADDR_T
+typedef __kernel_caddr_t	caddr_t;
+#endif
+
+/* bsd */
+typedef unsigned char		u_char;
+typedef unsigned short		u_short;
+typedef unsigned int		u_int;
+typedef unsigned long		u_long;
+
+/* sysv */
+typedef unsigned char		unchar;
+typedef unsigned short		ushort;
+typedef unsigned int		uint;
+typedef unsigned long		ulong;
+
+#ifndef __BIT_TYPES_DEFINED__
+#define __BIT_TYPES_DEFINED__
+
+typedef		__u8		u_int8_t;
+typedef		__s8		int8_t;
+typedef		__u16		u_int16_t;
+typedef		__s16		int16_t;
+typedef		__u32		u_int32_t;
+typedef		__s32		int32_t;
+
+#endif /* !(__BIT_TYPES_DEFINED__) */
+
+typedef		__u8		uint8_t;
+typedef		__u16		uint16_t;
+typedef		__u32		uint32_t;
+
+#if defined(__GNUC__)
+typedef		__u64		uint64_t;
+typedef		__u64		u_int64_t;
+typedef		__s64		int64_t;
+#endif
+
+/* this is a special 64bit data type that is 8-byte aligned */
+#define aligned_u64 __u64 __attribute__((aligned(8)))
+#define aligned_be64 __be64 __attribute__((aligned(8)))
+#define aligned_le64 __le64 __attribute__((aligned(8)))
+
+/**
+ * The type used for indexing onto a disc or disc partition.
+ *
+ * Linux always considers sectors to be 512 bytes long independently
+ * of the devices real block size.
+ *
+ * blkcnt_t is the type of the inode's block count.
+ */
+#ifdef CONFIG_LBDAF
+typedef u64 sector_t;
+typedef u64 blkcnt_t;
+#else
+typedef unsigned long sector_t;
+typedef unsigned long blkcnt_t;
+#endif
+
+/*
+ * The type of an index into the pagecache.  Use a #define so asm/types.h
+ * can override it.
+ */
+#ifndef pgoff_t
+#define pgoff_t unsigned long
+#endif
+
+#endif /* __KERNEL__ */
+
+/*
+ * Below are truly Linux-specific types that should never collide with
+ * any application/library that wants linux/types.h.
+ */
+
+#ifdef __CHECKER__
+#define __bitwise__ __attribute__((bitwise))
+#else
+#define __bitwise__
+#endif
+#ifdef __CHECK_ENDIAN__
+#define __bitwise __bitwise__
+#else
+#define __bitwise
+#endif
+
+typedef __u16 __bitwise __le16;
+typedef __u16 __bitwise __be16;
+typedef __u32 __bitwise __le32;
+typedef __u32 __bitwise __be32;
+typedef __u64 __bitwise __le64;
+typedef __u64 __bitwise __be64;
+
+typedef __u16 __bitwise __sum16;
+typedef __u32 __bitwise __wsum;
+
+#ifdef __KERNEL__
+typedef unsigned __bitwise__ gfp_t;
+typedef unsigned __bitwise__ fmode_t;
+
+#ifdef CONFIG_PHYS_ADDR_T_64BIT
+typedef u64 phys_addr_t;
+#else
+typedef u32 phys_addr_t;
+#endif
+
+typedef phys_addr_t resource_size_t;
+
+typedef struct {
+	volatile int counter;
+} atomic_t;
+
+#ifdef CONFIG_64BIT
+typedef struct {
+	volatile long counter;
+} atomic64_t;
+#endif
+
+struct ustat {
+	__kernel_daddr_t	f_tfree;
+	__kernel_ino_t		f_tinode;
+	char			f_fname[6];
+	char			f_fpack[6];
+};
+
+#endif	/* __KERNEL__ */
+#endif /*  __ASSEMBLY__ */
+
+
+
 
 typedef unsigned char        u8_t;
 typedef unsigned short       u16_t;
 typedef unsigned int         u32_t;
 typedef unsigned long long   u64_t;
 
-typedef signed char          int8_t;
-typedef signed int           int32_t;
-typedef signed long long     int64_t;
+typedef unsigned int         addr_t;
+typedef unsigned int         count_t;
 
-#define  NULL     (void*)0
-
-typedef uint32_t             dma_addr_t;
-typedef uint32_t             resource_size_t;
+# define WARN(condition, format...)
 
 
-#define cpu_to_le16(v16) (v16)
-#define cpu_to_le32(v32) (v32)
-#define cpu_to_le64(v64) (v64)
-#define le16_to_cpu(v16) (v16)
-#define le32_to_cpu(v32) (v32)
-#define le64_to_cpu(v64) (v64)
+#define false                0
+#define true                 1
+
 
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
@@ -71,24 +232,6 @@ typedef uint32_t             resource_size_t;
 
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 
-#define BITS_TO_LONGS(nr)   DIV_ROUND_UP(nr, BITS_PER_LONG)
-
-#define DECLARE_BITMAP(name,bits) \
-        unsigned long name[BITS_TO_LONGS(bits)]
-
-
-#define KERN_EMERG      "<0>"   /* system is unusable                   */
-#define KERN_ALERT      "<1>"   /* action must be taken immediately     */
-#define KERN_CRIT       "<2>"   /* critical conditions                  */
-#define KERN_ERR        "<3>"   /* error conditions                     */
-#define KERN_WARNING    "<4>"   /* warning conditions                   */
-#define KERN_NOTICE     "<5>"   /* normal but significant condition     */
-#define KERN_INFO       "<6>"   /* informational                        */
-#define KERN_DEBUG      "<7>"   /* debug-level messages                 */
-
-//int printk(const char *fmt, ...);
-
-#define printk(fmt, arg...)    dbgprintf(fmt , ##arg)
 
 
 #define DRM_NAME    "drm"     /**< Name in kernel, /dev, and /proc */
@@ -148,7 +291,7 @@ char *strncpy (char *dst, const char *src, size_t len);
 void *malloc(size_t size);
 #define kfree free
 
-static inline void *kzalloc(size_t size, u32_t flags)
+static inline void *kzalloc(size_t size, uint32_t flags)
 {
     void *ret = malloc(size);
     memset(ret, 0, size);
@@ -159,13 +302,6 @@ static inline void *kzalloc(size_t size, u32_t flags)
 
 struct drm_file;
 
-#define offsetof(TYPE,MEMBER) __builtin_offsetof(TYPE,MEMBER)
-
-#define container_of(ptr, type, member) ({                      \
-        const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
-        (type *)( (char *)__mptr - offsetof(type,member) );})
-
-
 
 #define DRM_MEMORYBARRIER() __asm__ __volatile__("lock; addl $0,0(%esp)")
 #define mb() __asm__ __volatile__("lock; addl $0,0(%esp)")
@@ -175,31 +311,6 @@ struct drm_file;
 #define PAGE_SIZE       (1UL << PAGE_SHIFT)
 #define PAGE_MASK       (~(PAGE_SIZE-1))
 
-#define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
-
-static inline void bitmap_zero(unsigned long *dst, int nbits)
-{
-        if (nbits <= BITS_PER_LONG)
-                *dst = 0UL;
-        else {
-                int len = BITS_TO_LONGS(nbits) * sizeof(unsigned long);
-                memset(dst, 0, len);
-        }
-}
-
-#define EXPORT_SYMBOL(x)
-
-#define min(x,y) ({ \
-        typeof(x) _x = (x);     \
-        typeof(y) _y = (y);     \
-        (void) (&_x == &_y);            \
-        _x < _y ? _x : _y; })
-
-#define max(x,y) ({ \
-        typeof(x) _x = (x);     \
-        typeof(y) _y = (y);     \
-        (void) (&_x == &_y);            \
-        _x > _y ? _x : _y; })
 
 #define do_div(n, base)                     \
 ({                              \
@@ -218,33 +329,17 @@ static inline void bitmap_zero(unsigned long *dst, int nbits)
 })
 
 
-#define lower_32_bits(n) ((u32)(n))
-
-#define INT_MAX         ((int)(~0U>>1))
-#define INT_MIN         (-INT_MAX - 1)
-#define UINT_MAX        (~0U)
-#define LONG_MAX        ((long)(~0UL>>1))
-#define LONG_MIN        (-LONG_MAX - 1)
-#define ULONG_MAX       (~0UL)
-#define LLONG_MAX       ((long long)(~0ULL>>1))
-#define LLONG_MIN       (-LLONG_MAX - 1)
-#define ULLONG_MAX      (~0ULL)
-
-
-static inline void *kcalloc(size_t n, size_t size, u32_t flags)
-{
-        if (n != 0 && size > ULONG_MAX / n)
-                return NULL;
-        return kzalloc(n * size, 0);
-}
 
 #define ENTER()   dbgprintf("enter %s\n",__FUNCTION__)
 #define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
 
-#define ALIGN(x,a)              __ALIGN_MASK(x,(typeof(x))(a)-1)
-#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
+
 
 #define PCI_DEVICE_ID_ATI_RADEON_QY 0x5159
 
+#endif /* _LINUX_TYPES_H */
 
-#endif  //__TYPES_H__
+
+
+
+

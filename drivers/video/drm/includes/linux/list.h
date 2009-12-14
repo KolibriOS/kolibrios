@@ -1,7 +1,7 @@
 #ifndef _LINUX_LIST_H
 #define _LINUX_LIST_H
 
-//#include <linux/stddef.h>
+#include <linux/stddef.h>
 //#include <linux/poison.h>
 //#include <linux/prefetch.h>
 //#include <asm/system.h>
@@ -542,7 +542,6 @@ static inline void list_splice_tail_init(struct list_head *list,
  * You lose the ability to access the tail in O(1).
  */
 
-#if 0
 struct hlist_head {
 	struct hlist_node *first;
 };
@@ -697,7 +696,5 @@ static inline void hlist_move_list(struct hlist_head *old,
 	     pos && ({ n = pos->next; 1; }) && 				 \
 		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
 	     pos = n)
-
-#endif
 
 #endif

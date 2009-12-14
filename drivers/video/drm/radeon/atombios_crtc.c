@@ -241,6 +241,7 @@ void atombios_crtc_dpms(struct drm_crtc *crtc, int mode)
 {
 	struct drm_device *dev = crtc->dev;
 	struct radeon_device *rdev = dev->dev_private;
+	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
 
 	switch (mode) {
 	case DRM_MODE_DPMS_ON:
@@ -248,6 +249,7 @@ void atombios_crtc_dpms(struct drm_crtc *crtc, int mode)
 		if (ASIC_IS_DCE3(rdev))
 			atombios_enable_crtc_memreq(crtc, 1);
 		atombios_blank_crtc(crtc, 0);
+		radeon_crtc_load_lut(crtc);
 		break;
 	case DRM_MODE_DPMS_STANDBY:
 	case DRM_MODE_DPMS_SUSPEND:
@@ -257,10 +259,6 @@ void atombios_crtc_dpms(struct drm_crtc *crtc, int mode)
 			atombios_enable_crtc_memreq(crtc, 0);
 		atombios_enable_crtc(crtc, 0);
 		break;
-	}
-
-	if (mode != DRM_MODE_DPMS_OFF) {
-         radeon_crtc_load_lut(crtc);
 	}
 }
 
@@ -457,9 +455,8 @@ void atombios_crtc_set_pll(struct drm_crtc *crtc, struct drm_display_mode *mode)
 				if (encoder->encoder_type !=
 				    DRM_MODE_ENCODER_DAC)
 					pll_flags |= RADEON_PLL_NO_ODD_POST_DIV;
-				if (!ASIC_IS_AVIVO(rdev)
-				    && (encoder->encoder_type ==
-					DRM_MODE_ENCODER_LVDS))
+				if (encoder->encoder_type ==
+					DRM_MODE_ENCODER_LVDS)
 					pll_flags |= RADEON_PLL_USE_REF_DIV;
 			}
 			radeon_encoder = to_radeon_encoder(encoder);
@@ -500,6 +497,16 @@ void atombios_crtc_set_pll(struct drm_crtc *crtc, struct drm_display_mode *mode)
 	else
 		pll = &rdev->clock.p2pll;
 
+	if (ASIC_IS_AVIVO(rdev)) {
+		if (radeon_new_pll)
+			radeon_compute_pll_avivo(pll, adjusted_clock, &pll_clock,
+						 &fb_div, &frac_fb_div,
+						 &ref_div, &post_div, pll_flags);
+		else
+			radeon_compute_pll(pll, adjusted_clock, &pll_clock,
+					   &fb_div, &frac_fb_div,
+					   &ref_div, &post_div, pll_flags);
+	} else
 	radeon_compute_pll(pll, adjusted_clock, &pll_clock, &fb_div, &frac_fb_div,
 			   &ref_div, &post_div, pll_flags);
 
@@ -576,15 +583,20 @@ int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 	struct radeon_device *rdev = dev->dev_private;
 	struct radeon_framebuffer *radeon_fb;
 	struct drm_gem_object *obj;
-	struct drm_radeon_gem_object *obj_priv;
+	struct radeon_bo *rbo;
 	uint64_t fb_location;
 	uint32_t fb_format, fb_pitch_pixels, tiling_flags;
+	int r;
 
-	if (!crtc->fb)
-		return -EINVAL;
+	/* no fb bound */
+	if (!crtc->fb) {
+		DRM_DEBUG("No FB bound\n");
+		return 0;
+	}
 
 	radeon_fb = to_radeon_framebuffer(crtc->fb);
 
+	/* Pin framebuffer & get tilling informations */
 	obj = radeon_fb->obj;
 	obj_priv = obj->driver_private;
 
@@ -593,6 +605,7 @@ int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 //	}
 
     fb_location = rdev->mc.vram_location;
+    tiling_flags = 0;
 
 	switch (crtc->fb->bits_per_pixel) {
 	case 8:
@@ -622,13 +635,11 @@ int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 		return -EINVAL;
 	}
 
-//	radeon_object_get_tiling_flags(obj->driver_private,
-//				       &tiling_flags, NULL);
-//	if (tiling_flags & RADEON_TILING_MACRO)
-//		fb_format |= AVIVO_D1GRPH_MACRO_ADDRESS_MODE;
+	if (tiling_flags & RADEON_TILING_MACRO)
+		fb_format |= AVIVO_D1GRPH_MACRO_ADDRESS_MODE;
 
-//	if (tiling_flags & RADEON_TILING_MICRO)
-//		fb_format |= AVIVO_D1GRPH_TILED;
+	if (tiling_flags & RADEON_TILING_MICRO)
+		fb_format |= AVIVO_D1GRPH_TILED;
 
 	if (radeon_crtc->crtc_id == 0)
 		WREG32(AVIVO_D1VGA_CONTROL, 0);

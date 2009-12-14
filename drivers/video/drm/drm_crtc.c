@@ -125,6 +125,15 @@ static struct drm_prop_enum_list drm_tv_subconnector_enum_list[] =
 DRM_ENUM_NAME_FN(drm_get_tv_subconnector_name,
 		 drm_tv_subconnector_enum_list)
 
+static struct drm_prop_enum_list drm_dirty_info_enum_list[] = {
+	{ DRM_MODE_DIRTY_OFF,      "Off"      },
+	{ DRM_MODE_DIRTY_ON,       "On"       },
+	{ DRM_MODE_DIRTY_ANNOTATE, "Annotate" },
+};
+
+DRM_ENUM_NAME_FN(drm_get_dirty_info_name,
+		 drm_dirty_info_enum_list)
+
 struct drm_conn_prop_enum_list {
 	int type;
 	char *name;
@@ -247,7 +256,8 @@ static void drm_mode_object_put(struct drm_device *dev,
 	mutex_unlock(&dev->mode_config.idr_mutex);
 }
 
-void *drm_mode_object_find(struct drm_device *dev, uint32_t id, uint32_t type)
+struct drm_mode_object *drm_mode_object_find(struct drm_device *dev,
+		uint32_t id, uint32_t type)
 {
 	struct drm_mode_object *obj = NULL;
 
@@ -272,7 +282,7 @@ EXPORT_SYMBOL(drm_mode_object_find);
  * functions & device file and adds it to the master fd list.
  *
  * RETURNS:
- * Zero on success, error code on falure.
+ * Zero on success, error code on failure.
  */
 int drm_framebuffer_init(struct drm_device *dev, struct drm_framebuffer *fb,
 			 const struct drm_framebuffer_funcs *funcs)
@@ -800,6 +810,36 @@ int drm_mode_create_dithering_property(struct drm_device *dev)
 	return 0;
 }
 EXPORT_SYMBOL(drm_mode_create_dithering_property);
+
+/**
+ * drm_mode_create_dirty_property - create dirty property
+ * @dev: DRM device
+ *
+ * Called by a driver the first time it's needed, must be attached to desired
+ * connectors.
+ */
+int drm_mode_create_dirty_info_property(struct drm_device *dev)
+{
+	struct drm_property *dirty_info;
+	int i;
+
+	if (dev->mode_config.dirty_info_property)
+		return 0;
+
+	dirty_info =
+		drm_property_create(dev, DRM_MODE_PROP_ENUM |
+				    DRM_MODE_PROP_IMMUTABLE,
+				    "dirty",
+				    ARRAY_SIZE(drm_dirty_info_enum_list));
+	for (i = 0; i < ARRAY_SIZE(drm_dirty_info_enum_list); i++)
+		drm_property_add_enum(dirty_info, i,
+				      drm_dirty_info_enum_list[i].type,
+				      drm_dirty_info_enum_list[i].name);
+	dev->mode_config.dirty_info_property = dirty_info;
+
+	return 0;
+}
+EXPORT_SYMBOL(drm_mode_create_dirty_info_property);
 
 /**
  * drm_mode_config_init - initialize DRM mode_configuration structure
@@ -2339,7 +2379,7 @@ int drm_mode_connector_property_set_ioctl(struct drm_device *dev,
 	} else if (connector->funcs->set_property)
 		ret = connector->funcs->set_property(connector, property, out_resp->value);
 
-	/* store the property value if succesful */
+	/* store the property value if successful */
 	if (!ret)
 		drm_connector_property_set_value(connector, property, out_resp->value);
 out:
