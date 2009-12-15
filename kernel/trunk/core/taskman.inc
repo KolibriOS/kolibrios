@@ -884,8 +884,8 @@ proc new_sys_threads
 .get_lock:
        mov eax, 1
        xchg eax, [application_table_status]
-       cmp eax, 0
-       jne .wait_lock
+       test eax, eax
+       jnz .wait_lock
 
        call   set_application_table_status
 
@@ -934,7 +934,7 @@ proc new_sys_threads
        stdcall user_alloc, 4096
        pop edx
        test eax, eax
-       jz .failed
+       jz .failed1	;eax=0
 @@:
        mov [edx+APPDATA.tls_base], eax
 
@@ -943,14 +943,16 @@ proc new_sys_threads
                      dword 0,dword 0
 
        ;mov    esi,new_process_running
-       ;call   sys_msg_board_str            ;output information about succefull startup
-
-       mov    [application_table_status],0  ;unlock application_table_status mutex
-       mov    eax,[process_number]          ;set result
+       ;call   sys_msg_board_str            	;output information about succefull startup
+       xor    eax,eax
+       mov    [application_table_status],eax	;unlock application_table_status mutex
+       mov    eax,[process_number]          	;set result
        ret
 .failed:
-       mov    [application_table_status],0
-       mov    eax,-1
+       xor    eax,eax
+.failed1:
+       mov    [application_table_status],eax
+       dec    eax	;-1
        ret
 endp
 
@@ -1114,9 +1116,9 @@ proc set_app_params stdcall,slot:dword, params:dword,\
        mov    [ebx+4],eax       ;set PID
 
 ;set draw data to full screen
-
-       mov    [ecx+0],dword 0
-       mov    [ecx+4],dword 0
+       xor    eax,eax
+       mov    [ecx+0],dword eax
+       mov    [ecx+4],dword eax
        mov    eax,[Screen_Max_X]
        mov    [ecx+8],eax
        mov    eax,[Screen_Max_Y]

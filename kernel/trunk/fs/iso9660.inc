@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision:1322 $
 
 
 uglobal
@@ -625,8 +625,8 @@ cd_get_name:
 	mov   ebp,[cd_current_pointer_of_input_2]
 	mov   [cd_current_pointer_of_input],ebp
 	mov   eax,[ebp]
-	cmp   eax,0   ; входы закончились?
-	je    .next_sector
+	test   eax,eax   ; входы закончились?
+	jz    .next_sector
 	cmp   ebp,CDDataBuf+2048     ; буфер закончился?
 	jae   .next_sector
 	movzx eax, byte [ebp]

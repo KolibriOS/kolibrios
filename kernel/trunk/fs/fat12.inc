@@ -65,13 +65,13 @@ floppy_fileread:
 
     mov    [save_flag],0
     mov    [path_pointer_flp],edi
-    cmp    esi,0           ; return ramdisk root
-    jne    fr_noroot_1
+    test   esi,esi           ; return ramdisk root
+    jnz    fr_noroot_1
     cmp    ebx,224/16
     jbe    fr_do_1
     mov    eax,5
-    mov    ebx,0
-    mov   [flp_status],0
+    xor    ebx,ebx
+    mov   [flp_status],ebx
     ret
 
 fr_do_1:
@@ -2134,7 +2134,7 @@ fs_FloppySetFileInfo:
         popa
         pop     edi
         xor     eax, eax
-        cmp     [FDC_Status], 0
+        cmp     [FDC_Status], al
         jz      @f
         mov     al, 11
 @@:
