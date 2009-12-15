@@ -851,6 +851,8 @@ pps002:
 ;
 ;***************************************************************************
 sendDir:
+        mov     eax, text+0x4000
+        mov     [fsize], eax
         mov     ebx, dirinfoblock
         and     dword [ebx+4], 0        ; start from zero block
 sd001:
@@ -974,10 +976,24 @@ terminate:
         stosb
 ; Send the completed line to the user over data socket
         push    esi
+        push    edi
         mov     esi, dirStr
-        mov     edx, edi
+        mov     ecx, edi
+        sub     ecx, esi
+        mov     edi, [fsize]
+        cld
+        rep     movsb
+        mov     [fsize], edi
+        cmp     edi, text+0x4400
+        jb      @f
+        mov     esi, text+0x4000
+        mov     edx, [fsize]
         sub     edx, esi
+        mov     [fsize], esi
         call    outputDataStr
+
+@@:
+        pop     edi
         pop     esi
 
 sd003:                  ; Move to next entry in the block
@@ -990,6 +1006,10 @@ sd004:
         jmp     sd001
 
 sd_exit:
+        mov     esi, text+0x4000
+        mov     edx, [fsize]
+        sub     edx, esi
+        call    outputDataStr
         ret
 
 
@@ -1145,6 +1165,7 @@ gf000:
     mov     ecx, [DataSocket]
     mov     edx, text + 0x1300
     add     edx, dword [fsize]
+    xor     esi, esi
     mcall                           ; returned data len in eax
     add     dword [fsize], eax
 
