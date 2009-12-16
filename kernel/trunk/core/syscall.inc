@@ -151,7 +151,7 @@ iglobal
       dd 0
       dd 0			 ; 46-ReservePortArea and FreePortArea
       dd display_number          ; 47-WriteNum
-      dd display_settings        ; 48-SetRedrawType and SetButtonType
+      dd 0		         ; 48-SetRedrawType and SetButtonType
       dd sys_apm                 ; 49-Advanced Power Management (APM)
       dd random_shaped_window    ; 50-Window shape & scale
       dd syscall_threads         ; 51-Threads
@@ -230,7 +230,7 @@ iglobal
       dd reserve_free_irq        ; 45-ReserveIrq and FreeIrq
       dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
       dd cross_order             ; 47-WriteNum
-      dd cross_order             ; 48-SetRedrawType and SetButtonType
+      dd display_settings        ; 48-SetRedrawType and SetButtonType
       dd cross_order             ; 49-Advanced Power Management (APM)
       dd cross_order             ; 50-Window shape & scale
       dd cross_order             ; 51-Threads

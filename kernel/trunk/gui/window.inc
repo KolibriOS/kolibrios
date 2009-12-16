@@ -314,128 +314,137 @@ popad
 ret
 
 
+iglobal
+align 4
+f48call:
+		dd	display_settings.00
+		dd	display_settings.01
+		dd	display_settings.02
+		dd	display_settings.03
+		dd	display_settings.04
+		dd	display_settings.05
+		dd	display_settings.06
+		dd	display_settings.07
+		dd	display_settings.08
+endg
+
 display_settings:
 
-;    eax = 0         ; DISPLAY redraw
+;    ebx = 0         ; DISPLAY redraw
 ;          ebx = 0   ; all
 ;
-;    eax = 1         ; BUTTON type
+;    ebx = 1         ; BUTTON type
 ;          ebx = 0   ; flat
 ;          ebx = 1   ; 3D
-;    eax = 2         ; set WINDOW colours
+;    ebx = 2         ; set WINDOW colours
 ;          ebx = pointer to table
 ;          ecx = number of bytes define
-;    eax = 3         ; get WINDOW colours
+;    ebx = 3         ; get WINDOW colours
 ;          ebx = pointer to table
 ;          ecx = number of bytes wanted
-;    eax = 4         ; get skin height
+;    ebx = 4         ; get skin height
 ;          input  : nothing
 ;          output : eax = skin height in pixel
-;    eax = 5         ; get screen workarea
+;    ebx = 5         ; get screen workarea
 ;          input  : nothing
 ;          output : eax = [left]*65536+[right]
 ;                   ebx = [top]*65536+[bottom]
-;    eax = 6         ; set screen workarea
+;    ebx = 6         ; set screen workarea
 ;          input  : ecx = [left]*65536+[right]
 ;                   edx = [top]*65536+[bottom]
 ;          output : nothing
-;    eax = 7         ; get skin margins
+;    ebx = 7         ; get skin margins
 ;          input  : nothing
 ;          output : eax = [left]*65536+[right]
 ;                   ebx = [top]*65536+[bottom]
-;    eax = 8         ; set window skin
+;    ebx = 8         ; set window skin
 ;          input  : ecx = pointer to file info block
 ;          output : eax = FS error code
+	cmp ebx,8
+        ja .fail
+        jmp dword [f48call+ebx*4]
+.00:
 
-
-     pushad
-
-     test eax, eax	; redraw display
-     jnz  dspl0
-     test ebx, ebx
-     jnz  dspl0
-     cmp  [windowtypechanged],dword 1
-     jne  dspl00
-     mov  [windowtypechanged],dword 0
-  redraw_screen_direct:
-     mov  [dlx],dword 0
-     mov  [dly],dword 0
+; redraw display
+     test ecx, ecx
+     jnz  .01
+     inc  ecx
+     cmp  [windowtypechanged],dword ecx	;ebx=1
+     jne  .fail
+     mov  [windowtypechanged],dword ebx ;eax=0
+  .redraw_screen_direct:
+     xor  eax,eax
+     mov  [dlx],dword eax
+     mov  [dly],dword eax
      mov  eax,[Screen_Max_X]
      mov  [dlxe],eax
      mov  eax,[Screen_Max_Y]
      mov  [dlye],eax
      mov  eax,window_data
-     call redrawscreen
-   dspl00:
-     popad
+;maybe use jmp?
+;     call redrawscreen
+      jmp  redrawscreen
+.fail:
      ret
-   dspl0:
-
-     cmp  eax,1       ; button type
-     jne  dspl1
-     and  ebx,1
-     cmp  ebx,[buttontype]
-     je   dspl9
-     mov  [buttontype],ebx
-     mov  [windowtypechanged],dword 1
-    dspl9:
-     popad
+.01:
+; button type
+     and  ecx,1
+     cmp  ecx,[buttontype]
+     je   .01_ex
+     mov  [buttontype],ecx
+     mov  [windowtypechanged],dword ebx	;eax=1
+.01_ex:
      ret
-   dspl1:
 
-     cmp  eax,2       ; set common window colours
-     jne  no_com_colours
-     mov  [windowtypechanged],dword 1
+.02:
+; set common window colours
+     dec  ebx
+     mov  [windowtypechanged],dword ebx	;eax=1
      mov  esi,[TASK_BASE]
      add  esi,TASKDATA.mem_start
-     add  ebx,[esi]
-     mov  esi,ebx
+     add  ecx,[esi]
+     mov  esi,ecx
+     and  edx,127
      mov  edi,common_colours
-     and  ecx,127
-     cld
+     mov  ecx,edx
+;     cld	not need because cld is set previous call
      rep  movsb
-     popad
      ret
-   no_com_colours:
 
-     cmp  eax,3       ; get common window colours
-     jne  no_get_com
+.03:
+; get common window colours
      mov  esi,[TASK_BASE]
      add  esi,TASKDATA.mem_start
-     add  ebx,[esi]
-     mov  edi,ebx
+     add  ecx,[esi]
+     mov  edi,ecx
+     and  edx,127
      mov  esi,common_colours
-     and  ecx,127
-     cld
+     mov  ecx,edx
+;     cld	not need because cld is set previous call
      rep  movsb
-     popad
      ret
-   no_get_com:
 
-     cmp  eax,4       ; get skin height
-     jne  no_skin_height
-     popad
+.04:
+; get skin height
      mov  eax,[_skinh]
-     mov  [esp+36],eax
+     mov  [esp+32],eax
      ret
-   no_skin_height:
 
-	cmp	eax,5	    ; get screen workarea
-	jne	no_get_workarea
-	popad
+.05:
+; get screen workarea
 	mov	eax,[screen_workarea.left-2]
 	mov	ax,word[screen_workarea.right]
-	mov	[esp+36],eax
+	mov	[esp+32],eax
 	mov	eax,[screen_workarea.top-2]
 	mov	ax,word[screen_workarea.bottom]
-	mov	[esp+24],eax
+	mov	[esp+20],eax
 	ret
-   no_get_workarea:
 
-	cmp	eax,6	    ; set screen workarea
-	jne	no_set_workarea
-	movsx	eax,word[esp+16+2]
-	movsx	ebx,word[esp+16]
+.06:
+; set screen workarea
+;	pushad
+	movsx	eax,word[esp+16+2+12]	;ecx in the stack
+	movsx	ebx,word[esp+16+12]
 	cmp	eax,ebx
 	jge	.lp1
         or      eax,eax;[Screen_Max_X]
@@ -444,7 +453,7 @@ display_settings:
     @@: cmp     ebx,[Screen_Max_X]
 	jg	.lp1
 	mov	[screen_workarea.right],ebx
-  .lp1: movsx	eax,word[esp+24+2]
+  .lp1: movsx	eax,word[esp+24+2]  ;edx in the stack
 	movsx	ebx,word[esp+24]
 	cmp	eax,ebx
 	jge	.lp2
@@ -455,31 +464,31 @@ display_settings:
 	jg	.lp2
 	mov	[screen_workarea.bottom],ebx
   .lp2: call	repos_windows
-	mov	eax, 0
-	mov	ebx, 0
+	xor	eax, eax
+	xor	ebx, ebx
         mov     ecx, [Screen_Max_X]
         mov     edx, [Screen_Max_Y]
-    call    calculatescreen
+;    call    calculatescreen
+        jmp 	calculatescreen
 ;    jmp    redraw_screen_direct
-    .exit:
-	popad
-	ret
-   no_set_workarea:
+;    .exit:
+;	popad
+;	ret
 
-	cmp	eax,7	    ; get skin margins
-	jne	no_get_skinmargins
-	popad
+.07:
+; get skin margins
 	mov	eax,dword[_skinmargins+0]
-	mov	[esp+36],eax
+	mov	[esp+32],eax
 	mov	eax,dword[_skinmargins+4]
-	mov	[esp+24],eax
+	mov	[esp+20],eax
 	ret
-   no_get_skinmargins:
 
-	cmp	eax,8	    ; set window skin
-	jne	no_set_skin
+.08:
+; set window skin
+        mov     ebx, ecx
         call    read_skin_file
-        mov     [esp+32+36], eax
+
+        mov     [esp+32], eax
         test    eax, eax
         jnz     .ret
         xor     eax, eax
@@ -487,14 +496,9 @@ display_settings:
         mov     ecx, [Screen_Max_X]
         mov     edx, [Screen_Max_Y]
         call    calculatescreen
-	jmp	redraw_screen_direct
+	jmp	.redraw_screen_direct
 .ret:
-        popad
         ret
-   no_set_skin:
-
-     popad
-     ret
 
 
 repos_windows:
