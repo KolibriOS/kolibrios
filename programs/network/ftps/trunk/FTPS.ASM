@@ -17,7 +17,7 @@ use32
     dd      START                   ; program start
     dd      I_END                   ; program image size
     dd      0x170000                ; required amount of memory
-    dd      0x7FFF0                 ; esp = 0x7FFF0
+    dd      0x16FFF0                ; esp = 0x16FFF0
     dd      0, 0                    ; no params, no path
 
 include 'macros.inc'
@@ -1043,18 +1043,23 @@ sfp001:
     je      sfp001
 
     ; esi points to start of filename.
-
+    cld
+    push    esi
 
     ; Copy across the directory path '/'
     ; into the fileinfoblock
+    mov     esi, dirpath
     mov     edi, filename
-    mov     dword [edi], '/RD/'
-    mov     word [edi+4], '1/'
-    add     edi, 6
+sfp003:
+    movsb
+    cmp     [esi], byte 0
+    jne     sfp003
+    mov     al, '/'
+    stosb
+    pop     esi
 
     ; Copy across the filename
 sfp002:
-    cld
     movsb
     cmp     [esi], byte 0x0d
     jne     sfp002
@@ -1161,7 +1166,7 @@ gf000:
     je      gf_sleep
 
     mov     eax, 53
-    mov     ebx, 11                 ; Get a bytes from socket
+    mov     ebx, 11                 ; Get bytes from socket
     mov     ecx, [DataSocket]
     mov     edx, text + 0x1300
     add     edx, dword [fsize]
@@ -1209,27 +1214,98 @@ gf001:
 ;***************************************************************************
 
 cmdPWD:
-    ; OK, show the directory name text
-    mov     esi, ramdir
-    mov     edx, ramdir_end - ramdir
-    call    outputStr
+    cld
+    mov     edi, text+0x1300
 
-    ; TODO give real directory
+    mov     esi, curdir_1
+    mov     ecx, curdir_2-curdir_1
+    rep     movsb
+
+    mov     esi, [curdirptr]
+    cmp     [esi], byte 0
+    jne     cpwd_000
+    mov     al, '/'
+    stosb
+    jmp     cpwd_001
+
+cpwd_000:
+    movsb
+    cmp     [esi], byte 0
+    jne     cpwd_000
+
+cpwd_001:
+    mov     esi, curdir_2
+    mov     ecx, curdir_end-curdir_2
+    rep     movsb
+
+    ; OK, show the directory name text
+    mov     esi, text+0x1300
+    mov     edx, edi
+    sub     edx, esi
+    call    outputStr
 
     ret
 
 
 cmdCWD:
-    ; Only / is valid for the ramdisk
-    cmp     [buff+5], byte 0x0d
+    lea     esi, [buff+4]
+    mov     edi, [curdirptr]
+    mov     ecx, -1
+    xor     eax, eax
+    repne   scasb
+    dec     edi
+    cmp     [esi], word '..'
+    je      ccwd_002
+    test    [esi], byte 0xE0
+    je      ccwd_000
+    push    edi
+    mov     al, '/'
+    stosb
+@@:
+    movsb
+    cmp     [esi], byte 0xD
+    jne     @b
+    xor     al, al
+    stosb
+
+    mov     eax, 70
+    mov     ebx, dirinfoblock
+    and     dword [ebx+4], 0
+    mcall
+    pop     edi
+    test    eax, eax
+    je      @f
+    cmp     eax, 6
+    jne     ccwd_000
+@@:
+    test    ebx, ebx
+    je      ccwd_000
+    mov     esi, text + 0x1300 + 0x20
+
+    mov     al, byte [esi]
+    and     al, 0x18
+    cmp     al, 0x10
     jne     ccwd_000
 
+ccwd_ok:
     ; OK, show the directory name text
     mov     esi, chdir
     mov     edx, chdir_end - chdir
     jmp     ccwd_001
 
+ccwd_002:
+    dec     edi
+    cmp     byte [edi], '/'
+    je      ccwd_003
+    cmp     edi, [curdirptr]
+    ja      ccwd_002
+    jmp     ccwd_ok
+ccwd_003:
+    mov    byte [edi], 0
+    jmp     ccwd_ok
+
 ccwd_000:
+    mov    byte [edi], 0
     ; Tell user there is no such directory
     mov     esi, noFileStr
     mov     edx, noFileStr_end - noFileStr
@@ -1576,10 +1652,11 @@ byeStr_end:
 systStr:            db  '215 UNIX system type',0x0d,0x0a
 systStr_end:
 
-ramdir:             db  '257 "/"',0x0d,0x0a
-ramdir_end:
+curdir_1:           db  '257 "'
+curdir_2:           db  '"',0x0d,0x0a
+curdir_end:
 
-chdir:              db  '200 directory changed to /',0x0d,0x0a
+chdir:              db  '250 CWD command successful',0x0d,0x0a
 chdir_end:
 
 unsupStr:           db  '500 Unsupported command',0x0d,0x0a
@@ -1630,7 +1707,9 @@ dirinfoblock:
                     dd      DirBlocksPerCall
                     dd      text + 0x1300   ; data area
 ; The 'filename' for a directory listing
-dirpath             db      '/sys',0
+dirpath:            db      '/sys'
+                    times 252 db 0
+curdirptr:          dd      dirpath+4
 
 fsize:              dd      0
 
