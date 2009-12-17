@@ -366,12 +366,11 @@ display_settings:
 .00:
 
 ; redraw display
-     test ecx, ecx
-     jnz  .01
-     inc  ecx
-     cmp  [windowtypechanged],dword ecx	;ebx=1
+     xor  eax,eax
+     inc  ebx
+     cmp  [windowtypechanged],dword ebx	;ebx=1
      jne  .fail
-     mov  [windowtypechanged],dword ebx ;eax=0
+     mov  [windowtypechanged],dword eax ;eax=0
   .redraw_screen_direct:
      xor  eax,eax
      mov  [dlx],dword eax
@@ -381,8 +380,6 @@ display_settings:
      mov  eax,[Screen_Max_Y]
      mov  [dlye],eax
      mov  eax,window_data
-;maybe use jmp?
-;     call redrawscreen
       jmp  redrawscreen
 .fail:
      ret
@@ -400,9 +397,6 @@ display_settings:
 ; set common window colours
      dec  ebx
      mov  [windowtypechanged],dword ebx	;eax=1
-     mov  esi,[TASK_BASE]
-     add  esi,TASKDATA.mem_start
-     add  ecx,[esi]
      mov  esi,ecx
      and  edx,127
      mov  edi,common_colours
@@ -413,9 +407,6 @@ display_settings:
 
 .03:
 ; get common window colours
-     mov  esi,[TASK_BASE]
-     add  esi,TASKDATA.mem_start
-     add  ecx,[esi]
      mov  edi,ecx
      and  edx,127
      mov  esi,common_colours
@@ -442,25 +433,25 @@ display_settings:
 
 .06:
 ; set screen workarea
-;	pushad
-	movsx	eax,word[esp+16+2+12]	;ecx in the stack
-	movsx	ebx,word[esp+16+12]
+	mov	edi,dword[Screen_Max_X]
+	movsx	eax,word[esp+28+2]	;ecx in the stack
+	movsx	ebx,word[esp+28]
 	cmp	eax,ebx
 	jge	.lp1
         or      eax,eax;[Screen_Max_X]
 	jl	@f
 	mov	[screen_workarea.left],eax
-    @@: cmp     ebx,[Screen_Max_X]
+    @@: cmp     ebx,edi	;[Screen_Max_X]
 	jg	.lp1
 	mov	[screen_workarea.right],ebx
-  .lp1: movsx	eax,word[esp+24+2]  ;edx in the stack
+  .lp1: movsx	eax,word[esp+24+2]	;edx in the stack
 	movsx	ebx,word[esp+24]
 	cmp	eax,ebx
 	jge	.lp2
 	or	eax,eax;[0xFE04]
 	jl	@f
 	mov	[screen_workarea.top],eax
-    @@: cmp     ebx,[Screen_Max_Y]
+    @@: cmp     ebx,edi	;[Screen_Max_Y]
 	jg	.lp2
 	mov	[screen_workarea.bottom],ebx
   .lp2: call	repos_windows
@@ -468,12 +459,7 @@ display_settings:
 	xor	ebx, ebx
         mov     ecx, [Screen_Max_X]
         mov     edx, [Screen_Max_Y]
-;    call    calculatescreen
         jmp 	calculatescreen
-;    jmp    redraw_screen_direct
-;    .exit:
-;	popad
-;	ret
 
 .07:
 ; get skin margins
