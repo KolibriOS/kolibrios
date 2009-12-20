@@ -621,3 +621,61 @@ proc libini._.int_to_str ;//////////////////////////////////////////////////////
 	stosb
 	retn
 endp
+
+;;================================================================================================;;
+proc libini._.ascii_to_scan ;_ascii_code ;////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Translate ASCII code of key to scancode using standard mapping from keymap.key                 ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _ascii_code = [esp+4] = ASCII code to convert                                                  ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = 0 (error) / scancode (success)                                                           ;;
+;;================================================================================================;;
+; /sys/keymap.key
+	sub	esp, 256
+	mov	eax, esp
+	push	ebx
+	push	'key'
+	push	'map.'
+	push	'/key'
+	push	'/sys'
+	push	eax	; buffer in the stack
+	push	0x100	; read 0x100 bytes
+	push	0
+	push	0	; from position zero
+	push	0	; subfunction: read
+	mov	ebx, esp
+	push	70
+	pop	eax
+	mcall
+	add	esp, 36
+	pop	ebx
+	test	eax, eax
+	jnz	.die
+	mov	al, [esp+256+4]	; get ASCII code
+	push	edi
+; first keytable - no modifiers pressed
+; check scancodes from 1 to 36h (inclusive)
+	lea	edi, [esp+4+1]
+	mov	edx, edi
+	mov	ecx, 36h
+	repnz	scasb
+	jz	.found
+; second keytable - Shift pressed
+	lea	edi, [esp+4+128+1]
+	mov	edx, edi
+	mov	ecx, 36h
+	repnz	scasb
+	jz	.found
+	pop	edi
+.die:
+	xor	eax, eax
+	jmp	.ret
+.found:
+	mov	eax, edi
+	sub	eax, edx
+	pop	edi
+.ret:
+	add	esp, 256
+	ret	4
+endp

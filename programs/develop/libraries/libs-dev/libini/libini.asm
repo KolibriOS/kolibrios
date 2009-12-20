@@ -64,7 +64,7 @@ public @EXPORT as 'EXPORTS'
 include '../../../../proc32.inc'
 include '../../../../macros.inc'
 include '../libio/libio.inc'
-purge section ; mov,add,sub
+purge section,mov,add,sub
 
 include 'libini_p.inc'
 
@@ -657,6 +657,211 @@ endl
 	ret
 endp
 
+;;================================================================================================;;
+proc ini.get_shortcut _f_name, _sec_name, _key_name, _def_val, _modifiers ;///////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Read shortcut key                                                                              ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _f_name = ini filename <asciiz>                                                                ;;
+;> _sec_name = section name <asciiz>                                                              ;;
+;> _key_name = key name <asciiz>                                                                  ;;
+;> _def_val = default value to return if no key, section or file found <dword>                    ;;
+;> _modifiers = pointer to dword variable which receives modifiers state as in 66.4 <dword*>      ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = [_def_val] (error) / shortcut key value as scancode <int>                                ;;
+;< [[_modifiers]] = unchanged (error) / modifiers state for this shortcut <int>                   ;;
+;;================================================================================================;;
+locals
+  buf rb 64
+endl
+
+	push	ebx esi edi
+
+	lea	esi, [buf]
+	stdcall ini.get_str, [_f_name], [_sec_name], [_key_name], esi, 64, 0
+	cmp	byte[esi],0
+	je	.exit_error
+
+	xor	ebx, ebx	; ebx holds the value of modifiers
+.loop:
+; test for end
+	xor	eax, eax
+	cmp	byte [esi], al
+	jz	.exit_ok	; exit with scancode zero
+; skip all '+'s
+	cmp	byte [esi], '+'
+	jnz	@f
+	inc	esi
+	jmp	.loop
+@@:
+; test for names
+	mov	edi, .names_table
+	xor	edx, edx
+.names_loop:
+	movzx	ecx, byte [edi]
+	inc	edi
+	push	esi
+@@:
+	lodsb
+	or	al, 20h
+	scasb
+	loopz	@b
+	jz	.name_found
+	pop	esi
+	lea	edi, [edi+ecx+4]
+	inc	edx
+	cmp	byte [edi], 0
+	jnz	.names_loop
+; special test: functional keys F<number>
+	cmp	byte [esi], 'f'
+	jz	@f
+	cmp	byte [esi], 'F'
+	jnz	.no_fx
+@@:
+	mov	edi, esi
+	inc	esi
+	call	libini._.str_to_int
+	test	eax, eax
+	jz	.fx
+	mov	esi, edi
+.no_fx:
+; name not found, that must be usual key
+	movzx	eax, byte [esi]
+	stdcall	libini._.ascii_to_scan, eax
+	test	eax, eax
+	jz	.exit_error
+; all is ok
+.exit_ok:
+	mov	ecx, [_modifiers]
+	test	ecx, ecx
+	jz	@f
+	mov	[ecx], ebx
+
+@@:
+
+	pop	edi esi ebx
+	ret
+
+.exit_error:
+	mov	eax, [_def_val]
+	pop	edi esi ebx
+	ret
+; handler for Fx
+; eax = number
+.fx:
+	cmp	eax, 10
+	ja	@f
+	add	eax, 3Bh-1
+	jmp	.exit_ok
+@@:
+	add	eax, 57h-11
+	jmp	.exit_ok
+; handlers for names
+.name_found:
+	pop	eax	; ignore saved esi
+	call	dword [edi]
+	cmp	edx, .num_modifiers
+	jae	.exit_ok
+	jmp	.loop
+; modifiers
+; syntax of value for each modifier:
+; 0 = none, 1 = exactly one of L+R, 2 = both L+R, 3 = L, 4 = R
+; Logic for switching: LShift+RShift=LShift+Shift=Shift+Shift, LShift+LShift=LShift
+; generic modifier: 0->1->2->2, 3->2, 4->2
+; left modifier: 0->3->3, 1->2->2, 4->2
+; right modifier: 0->4->4, 1->2->2, 3->2
+; Shift corresponds to first hex digit, Ctrl - second, Alt - third
+macro shortcut_handle_modifiers name,reg,shift
+{
+local .set2,.set3,.set4
+.#name#_handler:	; generic modifier
+	test	reg, 0xF
+	jnz	.set2
+if shift
+	or	reg, 1 shl shift
+else
+	inc	reg
+end if
+	retn
+.set2:
+	and	reg, not (0xF shl shift)
+	or	reg, 2 shl shift
+	retn
+.l#name#_handler:
+	mov	al, reg
+	and	al, 0xF shl shift
+	jz	.set3
+	cmp	al, 3 shl shift
+	jnz	.set2
+	retn
+.set3:
+	add	reg, 3 shl shift
+	retn
+.r#name#_handler:
+	mov	al, reg
+	and	al, 0xF shl shift
+	jz	.set4
+	cmp	al, 4 shl shift
+	jnz	.set2
+	retn
+.set4:
+	add	reg, 4 shl shift
+	retn
+}
+shortcut_handle_modifiers shift,bl,0
+shortcut_handle_modifiers ctrl,bl,4
+shortcut_handle_modifiers alt,bh,0
+; names of keys
+.name_handler:
+	movzx	eax, byte [.names_scancodes+edx-.num_modifiers]
+	retn
+endp
+
+; note: comparison ignores case, so this table keeps lowercase names
+; macro does this
+macro shortcut_name_with_handler name,handler
+{
+local .start, .end
+	db	.end - .start
+.start:
+	db	name
+.end:
+repeat .end - .start
+	load .a byte from .start + % - 1
+	store byte .a or 0x20 at .start + % - 1
+end repeat
+	dd	handler
+}
+macro shortcut_name [name]
+{
+	shortcut_name_with_handler name, .name_handler
+}
+; all names here must be in english
+; ... or modify lowercasing in macro and in comparison
+.names_table:
+; generic modifiers
+	shortcut_name_with_handler 'Ctrl', .ctrl_handler
+	shortcut_name_with_handler 'Alt', .alt_handler
+	shortcut_name_with_handler 'Shift', .shift_handler
+; concrete modifiers
+	shortcut_name_with_handler 'LCtrl', .lctrl_handler
+	shortcut_name_with_handler 'RCtrl', .rctrl_handler
+	shortcut_name_with_handler 'LAlt', .lalt_handler
+	shortcut_name_with_handler 'RAlt', .ralt_handler
+	shortcut_name_with_handler 'LShift', .lshift_handler
+	shortcut_name_with_handler 'RShift', .rshift_handler
+.num_modifiers = 9
+; symbolic names of keys
+	shortcut_name 'Home', 'End', 'PgUp', 'PgDn', 'Ins', 'Insert', 'Del', 'Delete'
+	shortcut_name 'Tab', 'Plus', 'Esc', 'Enter', 'Backspace', 'Space', 'Left', 'Right'
+	shortcut_name 'Up', 'Down'
+; end of table
+	db	0
+ini.get_shortcut.names_scancodes:
+; scancodes for 'Home' ... 'Down'
+	db	47h, 4Fh, 49h, 51h, 52h, 52h, 53h, 53h
+	db	0Fh, 4Eh, 01h, 1Ch, 0Eh, 39h, 4Bh, 4Dh
+	db	48h, 50h
 
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
@@ -699,7 +904,7 @@ align 16
 
 export						  \
 	libini._.init	  , 'lib_init'		, \
-	0x00080008	  , 'version'		, \
+	0x00080009	  , 'version'		, \
 	ini.enum_sections , 'ini_enum_sections' , \
 	ini.enum_keys	  , 'ini_enum_keys'	, \
 	ini.get_str	  , 'ini_get_str'	, \
@@ -707,4 +912,5 @@ export						  \
 	ini.get_color	  , 'ini_get_color'	, \
 	ini.set_str	  , 'ini_set_str'	, \
 	ini.set_int	  , 'ini_set_int'	, \
-	ini.set_color	  , 'ini_set_color'
+	ini.set_color	  , 'ini_set_color'	, \
+	ini.get_shortcut  , 'ini_get_shortcut'
