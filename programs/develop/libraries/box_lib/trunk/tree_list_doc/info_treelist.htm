@@ -57,9 +57,9 @@ table { font-size: 15px; }
 <li><a href="#fun_undo">tl_info_undo</a></li>
 <li><a href="#fun_redo">tl_info_redo</a></li>
 <li><a href="#fun_add">tl_node_add</a></li>
-<li>tl_node_set_data</li>
-<li>tl_node_get_data</li>
-<li>tl_node_delete</li>
+<li><a href="#fun_set_d">tl_node_set_data</a></li>
+<li><a href="#fun_get_d">tl_node_get_data</a></li>
+<li><a href="#fun_delete">tl_node_delete</a></li>
 <li>tl_cur_beg</li>
 <li>tl_cur_next</li>
 <li>tl_cur_perv</li>
@@ -73,7 +73,8 @@ table { font-size: 15px; }
 <li>tl_node_poi_get_data</li>
 <li><a href="#fun_sme">tl_save_mem</a></li>
 <li><a href="#fun_lme">tl_load_mem</a></li>
-<li>version_tree_list</li>
+<li><a href="#fun_gme">tl_get_mem_size</a></li>
+<li><a href="#version">version_tree_list</a></li>
 </ul>
 <p><a href="#struc_tree_list">Структура tree_list</a></p>
 <p><a href="#tree_list_styles">Стили элемента</a></p>
@@ -81,6 +82,7 @@ table { font-size: 15px; }
 <h1><a name="vveden">Введение</a></h1>
 <p>Внешний вид элемента управления TreeList:</p>
 <p><img src="window_tree_list.png"></p>
+<p>Рис. 1. Окно программы с элементом TreeList</p>
 
 <h1><a name="funct">Функции</a></h1>
 
@@ -119,12 +121,15 @@ table { font-size: 15px; }
 <p>где: <b>tree1</b> - структура tree_list;
  <b>0x10002</b> - параметры узла (старшие байты 0x0001 - индекс иконки, отображаемой возле узла; меньший байт 0x02 - уровень вложености узла); <b>data_buffer</b> - указатель на дынные, добавляемые в узел.</p>
 
-<h2>tl_node_set_data</h2>
+<h2><a name="fun_set_d">tl_node_set_data</a></h2>
 <p>Устанавливает новые данные (пользовательские и подпись) в узел под курсором.</p>
-<h2>tl_node_get_data</h2>
+
+<h2><a name="fun_get_d">tl_node_get_data</a></h2>
 <p>Берет указатель на данные (пользовательские и подпись) из узла под курсором.</p>
-<h2>tl_node_delete</h2>
+
+<h2><a name="fun_delete">tl_node_delete</a></h2>
 <p>Удаляет узел, но не окончательно, при необходимости узел можно вернуть функцией <b>tl_info_undo</b>.</p>
+
 <h2>tl_cur_beg</h2>
 <p>Ставит курсор в начало списка, перематывает скроллинг если нужно.</p>
 <h2>tl_cur_next</h2>
@@ -194,7 +199,10 @@ table { font-size: 15px; }
  <b>MEM_SIZE</b> - размер блока памяти для сохранения.
 В регистр <b>eax</b> пишется значение 0 или записываются коды ошибок считывания.</p>
 
-<h2>version_tree_list</h2>
+<h2><a name="fun_gme">tl_get_mem_size</a></h2>
+<p>Вычисляет размер блока памяти (в который были раньше сохранены элементы).</p>
+
+<h2><a name="version">version_tree_list</a></h2>
 <p>Версия элемента</p>
 
 <h1><a name="struc_tree_list">Структура tree_list</a></h1>
@@ -230,7 +238,7 @@ table { font-size: 15px; }
   .on_activate dd 0
   .on_press    dd on_press
 }</pre>
-<p><b>info_size</b> - количество байт, которое будет выделено для каждого узла. Часть этой памяти пользователь может использовать для своих целей (регулируется через <i>info_capt_offs</i> и <i>info_capt_len</i>) а остальная часть будет использована как подпись узла.</p>
+<p><b>info_size</b> - количество байт, которое будет выделено для каждого узла. Часть этой памяти пользователь может использовать для своих целей (регулируется через <i>info_capt_offs</i> и <i>info_capt_len</i> см. рис. 2) а остальная часть будет использована как подпись узла.</p>
 <p><b>info_max_count</b> - максимальное количество узлов, которые можно добавить в элемент.</p>
 <p><b>style</b> - стили элемента.</p>
 <p><b>data_nodes</b> - указатель на внутренние структуры узлов (<i>TreeList</i>).</p>
@@ -240,6 +248,9 @@ table { font-size: 15px; }
 <p><b>info_capt_len</b> - длинна текста для подписи. Если равно 0, то длинна считается так: <i>info_size - info_capt_offs</i>.</p>
 <p><b>p_scrol</b> - указатель на структуру скроллинга, связанного с данным элементом.</p>
 <p><b>on_press</b> - указатель на функцию, которая будет вызвана при нажитии [<b>Enter</b>]. Если указатель равен 0 то ничего не будет вызыватся.</p>
+
+<p><img src="info_size.png"></p>
+<p>Рис. 2. Параметры <i>info_size</i>, <i>info_capt_offs</i> и <i>info_capt_len</i> в узле</p>
 
 <p>Пример создания структуры:</p>
 <pre>tree1 tree_list 24,500, tl_draw_par_line+tl_list_box_mode, 16,16,\
@@ -255,6 +266,6 @@ table { font-size: 15px; }
 <p>Стиль не отображает уровни (как в ListBox все узлы одного уровня).</p>
 
 <hr>
-<p>Документация обновлялась последний раз 5.12.09.</p>
+<p>Документация обновлялась последний раз 23.12.09.</p>
 </body>
 </html>

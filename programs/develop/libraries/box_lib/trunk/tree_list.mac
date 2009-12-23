@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 8.12.2009 IgorA
+; файл последний раз изменялся 23.12.2009 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -2215,15 +2215,11 @@ tl_save_mem:
 
     cmp dword[ebp+16],0 ;add mode
     je @f
-      .beg_cycle:
-      cmp dword[esi],0x65657274 ;0x65657274 = 'tree'
-      jne @f
-      xor ebx,ebx
-      mov bx,word[esi+4]
-      imul ebx,dword[esi+6]
-      add ebx,tl_save_load_heder_size
+      push dword edi
+      push dword esi
+      call tl_get_mem_size ;берем размер ранее сохранённых данных
+      pop ebx
       add esi,ebx
-      jmp .beg_cycle
     @@:
 
     xor ebx,ebx
@@ -2328,11 +2324,17 @@ tl_load_mem:
     mov cx,word[ebp+16]
     cmp cx,0 ;load in array mode
     je @f
+;      push dword edi
+;      push dword esi
+;      call tl_get_mem_size ;берем размер ранее сохранённых данных
+;      pop ebx
+;      add esi,ebx
       .beg_cycle:
       cmp dword[esi],0x65657274 ;0x65657274 = 'tree'
       jne .no_tree
       xor ebx,ebx
       mov bx,word[esi+4]
+      add bx,8
       imul ebx,dword[esi+6]
       add ebx,tl_save_load_heder_size
       add esi,ebx
@@ -2394,6 +2396,36 @@ add esi,ebx
     pop esi edi edx ecx ebx eax
   pop ebp
   ret 12
+
+;input:
+;dword[ebp+ 8] - pointer to memory
+;dword[ebp+12] - pointer to 'TreeList' struct
+;output:
+;dword[ebp+ 8] - error code
+align 4
+tl_get_mem_size: ;берет размер памяти занятой функцией tl_save_mem при сохранении элементов
+  push ebp
+  mov ebp,esp
+    push ebx edi esi
+    mov esi,dword[ebp+ 8]
+    mov edi,dword[ebp+12]
+    @@:
+      cmp dword[esi],0x65657274 ;0x65657274 = 'tree'
+      jne @f
+      xor ebx,ebx
+      mov bx,word[esi+4]
+      add bx,8 ;размер дополнительной информации об узле (индекс записи; индекс иконки, уровень, ...)
+      imul ebx,dword[esi+6]
+      add ebx,tl_save_load_heder_size
+      add esi,ebx
+      jmp @b
+    @@:
+    sub esi,dword[ebp+ 8]
+    mov dword[ebp+12],esi ;возвращаем размер блока памяти
+    pop esi edi edx
+  pop ebp
+  ret 4
+
 
 ;ascii scan key
 ;  13    28 Enter
