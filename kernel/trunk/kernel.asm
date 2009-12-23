@@ -2032,7 +2032,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 
      cmp  edx,[application_table_status]    ; clear app table stat
      jne  noatsc
-     mov  [application_table_status],0
+     and  [application_table_status],0
    noatsc:
    noprocessterminate:
      ret
@@ -2055,7 +2055,7 @@ sysfn_terminate2:
     mov    ecx,eax
     cli
     call   sysfn_terminate
-    mov    [application_table_status],0
+    and    [application_table_status],0
     sti
     and    dword [esp+32],0
     ret
@@ -3243,8 +3243,8 @@ sys_set_window:
 syscall_windowsettings:
 
   .set_window_caption:
-        dec     eax     ; subfunction #1 - set window caption
-        jnz     .get_window_caption
+        dec     ebx     ; subfunction #1 - set window caption
+        jnz     .exit_fail
 
         ; NOTE: only window owner thread can set its caption,
         ;       so there's no parameter for PID/TID
@@ -3262,7 +3262,7 @@ syscall_windowsettings:
 ;        cmp     ebx,ecx
 ;        ja      .exit_fail
 
-        mov     [edi*8+SLOT_BASE+APPDATA.wnd_caption],ebx
+        mov     [edi*8+SLOT_BASE+APPDATA.wnd_caption],ecx
         or      [edi+window_data+WDATA.fl_wstyle],WSTYLE_HASCAPTION
 
         call    draw_window_caption
@@ -3270,9 +3270,9 @@ syscall_windowsettings:
         xor     eax,eax ; eax = 0 (success)
         ret
 
-  .get_window_caption:
-        dec     eax     ; subfunction #2 - get window caption
-        jnz     .exit_fail
+;  .get_window_caption:
+;        dec     eax     ; subfunction #2 - get window caption
+;        jnz     .exit_fail
 
         ; not implemented yet
 

@@ -10,10 +10,12 @@ $Revision$
 
 ; diamond, 2006
 sys_debug_services:
-        cmp     eax, 9
+        cmp     ebx, 9
         ja      @f
-        jmp     dword [sys_debug_services_table+eax*4]
+        jmp     dword [sys_debug_services_table+ebx*4]
 @@:     ret
+iglobal
+align 4
 sys_debug_services_table:
         dd      debug_set_event_data
         dd      debug_getcontext
@@ -25,21 +27,21 @@ sys_debug_services_table:
         dd      debug_write_process_memory
         dd      debug_terminate
         dd      debug_set_drx
-
+endg
 debug_set_event_data:
-; in: ebx = pointer
+; in: ecx = pointer
 ; destroys eax
         mov     eax, [current_slot]
-        mov     [eax+APPDATA.dbg_event_mem], ebx
+        mov     [eax+APPDATA.dbg_event_mem], ecx
         ret
 
 get_debuggee_slot:
-; in: ebx=PID
+; in: ecx=PID
 ; out: CF=1 if error
 ;      CF=0 and eax=slot*0x20 if ok
 ; out: interrupts disabled
         cli
-        mov     eax, ebx
+        mov     eax, ecx
         call    pid_to_slot
         test    eax, eax
         jz      .ret_bad
@@ -56,7 +58,7 @@ get_debuggee_slot:
         ret
 
 debug_detach:
-; in: ebx=pid
+; in: ecx=pid
 ; destroys eax,ebx
         call    get_debuggee_slot
         jc      .ret
@@ -67,54 +69,55 @@ debug_detach:
         ret
 
 debug_terminate:
-; in: ebx=pid
+; in: ecx=pid
         call    get_debuggee_slot
         jc      debug_detach.ret
         mov     ecx, eax
         shr     ecx, 5
-        push    2
-        pop     ebx
-        jmp     sys_system
+;        push    2
+;        pop     ebx
+        mov	edx,esi
+        jmp     sysfn_terminate
 
 debug_suspend:
-; in: ebx=pid
-; destroys eax,ebx
+; in: ecx=pid
+; destroys eax,ecx
         cli
-        mov     eax, ebx
+        mov     eax, ecx
         call    pid_to_slot
         shl     eax, 5
         jz      .ret
-        mov     bl, [CURRENT_TASK+eax+TASKDATA.state] ; process state
-        test    bl, bl
+        mov     cl, [CURRENT_TASK+eax+TASKDATA.state] ; process state
+        test    cl, cl
         jz      .1
-        cmp     bl, 5
+        cmp     cl, 5
         jnz     .ret
-        mov     bl, 2
-.2:     mov     [CURRENT_TASK+eax+TASKDATA.state], bl
+        mov     cl, 2
+.2:     mov     [CURRENT_TASK+eax+TASKDATA.state], cl
 .ret:
         sti
         ret
 .1:
-        inc     ebx
+        inc     ecx
         jmp     .2
 
 do_resume:
-        mov     bl, [CURRENT_TASK+eax+TASKDATA.state]
-        cmp     bl, 1
+        mov     cl, [CURRENT_TASK+eax+TASKDATA.state]
+        cmp     cl, 1
         jz      .1
-        cmp     bl, 2
+        cmp     cl, 2
         jnz     .ret
-        mov     bl, 5
-.2:     mov     [CURRENT_TASK+eax+TASKDATA.state], bl
+        mov     cl, 5
+.2:     mov     [CURRENT_TASK+eax+TASKDATA.state], cl
 .ret:   ret
-.1:     dec     ebx
+.1:     dec     ecx
         jmp     .2
 
 debug_resume:
-; in: ebx=pid
+; in: ecx=pid
 ; destroys eax,ebx
         cli
-        mov     eax, ebx
+        mov     eax, ecx
         call    pid_to_slot
         shl     eax, 5
         jz      .ret
@@ -124,23 +127,24 @@ debug_resume:
 
 debug_getcontext:
 ; in:
-; ebx=pid
-; ecx=sizeof(CONTEXT)
-; edx->CONTEXT
+; ecx=pid
+; edx=sizeof(CONTEXT)
+; esi->CONTEXT
 ; destroys eax,ecx,edx,esi,edi
-        cmp     ecx, 28h
+        cmp     edx, 28h
         jnz     .ret
-        push    ebx
-        mov     ebx, edx
+;        push    ecx
+;        mov     ecx, esi
         call    check_region
-        pop     ebx
+;        pop     ecx
         dec     eax
         jnz     .ret
         call    get_debuggee_slot
         jc      .ret
+        mov     edi, esi
         mov eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
         lea esi, [eax+RING0_STACK_SIZE]
-        mov     edi, edx
+
 .ring0:
 ; note that following code assumes that all interrupt/exception handlers
 ; saves ring-3 context by pushad in this order
@@ -174,23 +178,24 @@ debug_getcontext:
 
 debug_setcontext:
 ; in:
-; ebx=pid
-; ecx=sizeof(CONTEXT)
-; edx->CONTEXT
+; ecx=pid
+; edx=sizeof(CONTEXT)
+; esi->CONTEXT
 ; destroys eax,ecx,edx,esi,edi
-        cmp     ecx, 28h
+        cmp     edx, 28h
         jnz     .ret
-        push    ebx
-        mov     ebx, edx
+;        push    ebx
+;        mov     ebx, edx
         call    check_region
-        pop     ebx
+;        pop     ebx
         dec     eax
         jnz     .ret
         call    get_debuggee_slot
         jc      .stiret
+;        mov     esi, edx
         mov eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
         lea edi, [eax+RING0_STACK_SIZE]
-        mov     esi, edx
+
 .ring0:
         sub     edi, 8+12+20h
         mov     eax, [esi+24h]    ;edi
@@ -227,67 +232,75 @@ debug_set_drx:
         lea     eax, [eax*8+SLOT_BASE+APPDATA.dbg_regs]
 ; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
 ; [eax+10]=dr7
-        cmp     edx, OS_BASE
+        cmp     esi, OS_BASE
         jae      .errret
-        cmp     cl, 3
+        cmp     dl, 3
         ja      .errret
-        mov     ebx, dr7
-        shr     ebx, cl
-        shr     ebx, cl
-        test    ebx, 2          ; bit 1+2*index = G0..G3, global break enable
+        mov     ecx, dr7
+;fix me
+	xchg	ecx,edx
+        shr     edx, cl
+        shr     edx, cl
+	xchg	ecx,edx
+
+        test    ecx, 2          ; bit 1+2*index = G0..G3, global break enable
         jnz     .errret2
-        test    ch, ch
+        test    dh, dh
         jns     .new
 ; clear breakpoint
-        movzx   ecx, cl
-        add     ecx, ecx
-        and     dword [eax+ecx*2], 0    ; clear DR<i>
-        btr     dword [eax+10h], ecx    ; clear L<i> bit
+        movzx   edx, dl
+        add     edx, edx
+        and     dword [eax+edx*2], 0    ; clear DR<i>
+        btr     dword [eax+10h], edx    ; clear L<i> bit
         test    byte [eax+10h], 55h
         jnz     .okret
 ;        imul    eax, ebp, tss_step/32
 ;        and     byte [eax + tss_data + TSS._trap], not 1
         and [ebp*8 + SLOT_BASE+APPDATA.dbg_state], not 1
 .okret:
-        and     dword [esp+36], 0
+        and     dword [esp+32], 0
         sti
         ret
 .errret:
         sti
-        mov     dword [esp+36], 1
+        mov     dword [esp+32], 1
         ret
 .errret2:
         sti
-        mov     dword [esp+36], 2
+        mov     dword [esp+32], 2
         ret
 .new:
 ; add new breakpoint
-; cl=index; ch=flags; edx=address
-        test    ch, 0xF0
+; dl=index; dh=flags; esi=address
+        test    dh, 0xF0
         jnz     .errret
-        mov     bl, ch
-        and     bl, 3
-        cmp     bl, 2
+        mov     cl, dh
+        and     cl, 3
+        cmp     cl, 2
         jz      .errret
-        mov     bl, ch
-        shr     bl, 2
-        cmp     bl, 2
+        mov     cl, dh
+        shr     cl, 2
+        cmp     cl, 2
         jz      .errret
-        test    dl, bl
+
+        mov	ebx,esi
+        test    bl, dl
+
         jnz     .errret
         or      byte [eax+10h+1], 3     ; set GE and LE flags
-        movzx   ebx, ch
-        movzx   ecx, cl
+
+        movzx   edx, dh
+        movzx   ecx, dl
         add     ecx, ecx
         bts     dword [eax+10h], ecx    ; set L<i> flag
         add     ecx, ecx
-        mov     [eax+ecx], edx          ; set DR<i>
-        shl     ebx, cl
-        mov     edx, 0xF
+        mov     [eax+ecx], ebx;esi      ; set DR<i>
         shl     edx, cl
-        not     edx
-        and     [eax+10h+2], dx
-        or      [eax+10h+2], bx         ; set R/W and LEN fields
+        mov     ebx, 0xF
+        shl     ebx, cl
+        not     ebx
+        and     [eax+10h+2], bx
+        or      [eax+10h+2], dx         ; set R/W and LEN fields
 ;        imul    eax, ebp, tss_step/32
 ;        or      byte [eax + tss_data + TSS._trap], 1
         or [ebp*8 + SLOT_BASE+APPDATA.dbg_state], 1
@@ -295,51 +308,51 @@ debug_set_drx:
 
 debug_read_process_memory:
 ; in:
-; ebx=pid
-; ecx=length
-; esi->buffer in debugger
-; edx=address in debuggee
+; ecx=pid
+; edx=length
+; edi->buffer in debugger
+; esi=address in debuggee
 ; out: [esp+36]=sizeof(read)
 ; destroys all
-        push    ebx
-        mov     ebx, esi
+;        push    ebx
+;        mov     ebx, esi
         call    check_region
-        pop     ebx
+;        pop     ebx
         dec     eax
         jnz     .err
         call    get_debuggee_slot
         jc      .err
         shr     eax, 5
-        mov     ebx, esi
+;        mov     ebx, esi
         call    read_process_memory
         sti
-        mov     dword [esp+36], eax
+        mov     dword [esp+32], eax
         ret
 .err:
-        or      dword [esp+36], -1
+        or      dword [esp+32], -1
         ret
 
 debug_write_process_memory:
 ; in:
-; ebx=pid
-; ecx=length
-; esi->buffer in debugger
-; edx=address in debuggee
+; ecx=pid
+; edx=length
+; edi->buffer in debugger
+; esi=address in debuggee
 ; out: [esp+36]=sizeof(write)
 ; destroys all
-        push    ebx
-        mov     ebx, esi
+;        push    ebx
+;        mov     ebx, esi
         call    check_region
-        pop     ebx
+;        pop     ebx
         dec     eax
         jnz     debug_read_process_memory.err
         call    get_debuggee_slot
         jc      debug_read_process_memory.err
         shr     eax, 5
-        mov     ebx, esi
+;        mov     ebx, esi
         call    write_process_memory
         sti
-        mov     [esp+36], eax
+        mov     [esp+32], eax
         ret
 
 debugger_notify:

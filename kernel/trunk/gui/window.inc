@@ -212,17 +212,19 @@ pushad
    ;eax - address
    ;esi - slot
 	push  eax
-	push  ebx
 	push  ecx
 	push  edx
-	mov   edx,eax
-	mov   eax,esi
-	lea   ebx,[esp+12]
-	mov   ecx,1
+	push  esi
+
+;	mov   edx,eax
+;	mov   eax,esi
+	xchg  eax,esi
+	lea   ecx,[esp+12]
+	mov   edx,1
 	call  read_process_memory
+	pop   esi
 	pop   edx
 	pop   ecx
-	pop   ebx
 	pop   eax
 	ret
   .free_form:

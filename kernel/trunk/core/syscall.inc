@@ -172,9 +172,9 @@ iglobal
       dd sys_process_def         ; 66-Process definitions - keyboard
       dd sys_window_move         ; 67-Window move or resize
       dd f68                     ; 68-Some internal services
-      dd sys_debug_services      ; 69-Debug
+      dd 0		         ; 69-Debug
       dd file_system_lfn         ; 70-Common file system interface, version 2
-      dd syscall_windowsettings  ; 71-Window settings
+;      dd 0			 ; 71-Window settings
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; NEW SYSTEM FUNCTIONS TABLE ;;
@@ -251,9 +251,9 @@ iglobal
       dd cross_order             ; 66-Process definitions - keyboard
       dd cross_order             ; 67-Window move or resize
       dd cross_order             ; 68-Some internal services
-      dd cross_order             ; 69-Debug
+      dd sys_debug_services      ; 69-Debug
       dd cross_order             ; 70-Common file system interface, version 2
-      dd cross_order             ; 71-Window settings
+      dd syscall_windowsettings  ; 71-Window settings
       dd sys_sendwindowmsg       ; 72-Send window message
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application

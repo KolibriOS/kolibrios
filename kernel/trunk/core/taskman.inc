@@ -631,24 +631,24 @@ pid_to_slot:
 
 check_region:
 ;input:
-;  ebx - start of buffer
-;  ecx - size of buffer
+;  esi - start of buffer
+;  edx - size of buffer
 ;result:
 ;  eax = 1 region lays in app memory
 ;  eax = 0 region don't lays in app memory
      mov  eax,[CURRENT_TASK]
-     jmp  check_process_region
+;     jmp  check_process_region
 ;-----------------------------------------------------------------------------
-check_process_region:
+;check_process_region:
 ;input:
 ;  eax - slot
-;  ebx - start of buffer
-;  ecx - size of buffer
+;  esi - start of buffer
+;  edx - size of buffer
 ;result:
 ;  eax = 1 region lays in app memory
 ;  eax = 0 region don't lays in app memory
 
-     test ecx,ecx
+     test edx,edx
      jle  .ok
      shl  eax,5
      cmp  word [CURRENT_TASK+eax+0xa],0
@@ -716,9 +716,9 @@ align 4
 proc read_process_memory
 ;Input:
 ;  eax - process slot
-;  ebx - buffer address
-;  ecx - buffer size
-;  edx - start address in other process
+;  ecx - buffer address
+;  edx - buffer size
+;  esi - start address in other process
 ;Output:
 ;  eax - number of bytes read.
        locals
@@ -730,10 +730,10 @@ proc read_process_memory
        endl
 
        mov [slot], eax
-       mov [buff], ebx
+       mov [buff], ecx
        and [r_count], 0
-       mov [tmp_r_cnt], ecx
-       mov [offset], edx
+       mov [tmp_r_cnt], edx
+       mov [offset], esi
 
        pushad
 .read_mem:
@@ -786,9 +786,9 @@ align 4
 proc write_process_memory
 ;Input:
 ;  eax - process slot
-;  ebx - buffer address
-;  ecx - buffer size
-;  edx - start address in other process
+;  ecx - buffer address
+;  edx - buffer size
+;  esi - start address in other process
 ;Output:
 ;  eax - number of bytes written
 
@@ -801,10 +801,10 @@ proc write_process_memory
        endl
 
        mov [slot], eax
-       mov [buff], ebx
+       mov [buff], ecx
        and [w_count], 0
-       mov [tmp_w_cnt], ecx
-       mov [offset], edx
+       mov [tmp_w_cnt], edx
+       mov [offset], esi
 
        pushad
 .read_mem:
