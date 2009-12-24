@@ -5478,57 +5478,61 @@ set_screen:
         hlt                     ; Houston, we've had a problem
 
 ; --------------- APM ---------------------
-apm_entry    dp    0
-apm_vf        dd    0
+uglobal
+apm_entry	dp	0
+apm_vf		dd	0
+endg
+
 align 4
 sys_apm:
-    cmp    word [apm_vf], 0    ; Check APM BIOS enable
-    jne    @f
-    or     [esp + 48], byte 1    ; error
-    mov    [esp + 36], dword 8    ; 32-bit protected-mode interface not supported
-    ret
+	xor	eax,eax
+	cmp	word [apm_vf], ax	; Check APM BIOS enable
+	jne	@f
+	inc	eax
+	or	dword [esp + 44], eax	; error
+	add	eax,7
+	mov	dword [esp + 32], eax   ; 32-bit protected-mode interface not supported
+	ret
 
 @@:
-    xchg    eax, ecx
-    xchg    ebx, ecx
+;	xchg    eax, ecx
+;	xchg    ebx, ecx
 
-    cmp    al, 3
-    ja    @f
-    and    [esp + 48], byte 0xfe    ; emulate func 0..3 as func 0
-    mov    eax, [apm_vf]
-    mov    [esp + 36], eax
-    shr    eax, 16
-    mov    [esp + 32], eax
-    ret
+	cmp	dx, 3
+	ja	@f
+	and	[esp + 44], byte 0xfe    ; emulate func 0..3 as func 0
+	mov	eax,[apm_vf]
+	mov	[esp + 32], eax
+	shr	eax, 16
+	mov	[esp + 28], eax
+	ret
 
 @@:
 
-    mov esi, [master_tab+(OS_BASE shr 20)]
-    xchg [master_tab], esi
-    push esi
-    mov edi, cr3
-    mov cr3, edi                 ;flush TLB
+	mov	esi,[master_tab+(OS_BASE shr 20)]
+	xchg	[master_tab], esi
+	push	esi
+	mov 	edi, cr3
+	mov 	cr3, edi		;flush TLB
 
-    call    pword [apm_entry]    ; call APM BIOS
+	call    pword [apm_entry]	;call APM BIOS
 
-    xchg eax, [esp]
-    mov [master_tab], eax
-    mov eax, cr3
-    mov cr3, eax
-    pop eax
+	xchg 	eax, [esp]
+	mov 	[master_tab], eax
+	mov 	eax, cr3
+	mov 	cr3, eax
+	pop eax
 
-    mov    [esp + 8 ], edi
-    mov    [esp + 12], esi
-    mov    [esp + 24], ebx
-    mov    [esp + 28], edx
-    mov    [esp + 32], ecx
-    mov    [esp + 36], eax
-    setc   al
-    and    [esp + 48], byte 0xfe
-    or     [esp + 48], al
-
-
-    ret
+	mov	[esp + 4 ], edi
+	mov	[esp + 8], esi
+	mov	[esp + 20], ebx
+	mov	[esp + 24], edx
+	mov	[esp + 28], ecx
+	mov	[esp + 32], eax
+	setc	al
+	and	[esp + 44], byte 0xfe
+	or	[esp + 44], al
+	ret
 ; -----------------------------------------
 
 align 4

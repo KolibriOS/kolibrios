@@ -152,7 +152,7 @@ iglobal
       dd 0			 ; 46-ReservePortArea and FreePortArea
       dd display_number          ; 47-WriteNum
       dd 0		         ; 48-SetRedrawType and SetButtonType
-      dd sys_apm                 ; 49-Advanced Power Management (APM)
+      dd 0	                 ; 49-Advanced Power Management (APM)
       dd random_shaped_window    ; 50-Window shape & scale
       dd syscall_threads         ; 51-Threads
       dd stack_driver_stat       ; 52-Stack driver status
@@ -231,7 +231,7 @@ iglobal
       dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
       dd cross_order             ; 47-WriteNum
       dd display_settings        ; 48-SetRedrawType and SetButtonType
-      dd cross_order             ; 49-Advanced Power Management (APM)
+      dd sys_apm		 ; 49-Advanced Power Management (APM)
       dd cross_order             ; 50-Window shape & scale
       dd cross_order             ; 51-Threads
       dd cross_order             ; 52-Stack driver status
