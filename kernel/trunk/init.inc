@@ -205,19 +205,18 @@ proc init_page_map
            mov edi, [ebx]
            shr edi, 12 ; edi = first page
            mov eax, edi
-           neg eax
            shr edi, 5
+           shl edi, 2
            add edi, sys_pgmap-OS_BASE
            and eax, 31
            jz .startok
-           sub ecx, eax
+           add ecx, eax
+           sub ecx, 32
            jbe .onedword
            push ecx
            mov ecx, eax
-           xor eax, eax
-           inc eax
+           or eax, -1
            shl eax, cl
-           dec eax
            or [edi], eax
            add edi, 4
            pop ecx
@@ -228,15 +227,17 @@ proc init_page_map
            rep stosd
            pop ecx
            and ecx, 31
-           not eax
+           neg eax
            shl eax, cl
+           dec eax
            or [edi], eax
            jmp .next
 .onedword:
-           add ecx, eax
+           add ecx, 32
+           sub ecx, eax
 @@:
-           dec eax
            bts [edi], eax
+           inc eax
            loop @b
 .next:
            add ebx, 20
