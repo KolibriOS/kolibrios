@@ -250,7 +250,7 @@ free:
            shr ecx, 3
            cmp eax, edx
            jne @F
-           and [mst.smallmap], ecx
+           btr [mst.smallmap], ecx
 @@:
            mov [eax+12], edx           ;F->bk = B;
            mov [edx+8], eax            ;B->fd = F
@@ -764,6 +764,7 @@ malloc_large:
 .rst equ esp
 
            push ebp
+           push esi
            push edi
            sub esp, 8
 ; v = 0;
@@ -970,6 +971,7 @@ malloc_large:
            lea eax, [ebp+8]
            add esp, 8
            pop edi
+           pop esi
            pop ebp
            ret
  
@@ -995,12 +997,14 @@ malloc_large:
            lea eax, [ebp+8]
            add esp, 8
            pop edi
+           pop esi
            pop ebp
            ret
  
 .done:
            add esp, 8
            pop edi
+           pop esi
            pop ebp
            xor eax, eax
            ret
