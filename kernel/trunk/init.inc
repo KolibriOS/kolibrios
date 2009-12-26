@@ -114,9 +114,9 @@ proc init_mem
            mov edx, (OS_BASE/4096)
            jmp .set
 @@:
-           cmp edx, (HEAP_BASE+HEAP_MIN_SIZE)/4096
+           cmp edx, (HEAP_BASE-OS_BASE+HEAP_MIN_SIZE)/4096
            jae .set
-           mov edx, (HEAP_BASE+HEAP_MIN_SIZE)/4096
+           mov edx, (HEAP_BASE-OS_BASE+HEAP_MIN_SIZE)/4096
 .set:
            mov [pg_data.kernel_pages-OS_BASE], edx
            shr edx, 10
