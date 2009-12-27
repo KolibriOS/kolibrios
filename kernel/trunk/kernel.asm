@@ -1035,7 +1035,7 @@ boot_log:
 align 32
 osloop:
         call   [draw_pointer]
-        call   checkbuttons
+        call   check_buttons
         call   checkwindows
 ;       call   check_window_move_request
         call   checkmisc

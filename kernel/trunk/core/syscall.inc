@@ -190,7 +190,7 @@ iglobal
       dd delay_hs                ; 5-DelayHs
       dd syscall_openramdiskfile ; 6-OpenRamdiskFile
       dd syscall_putimage        ; 7-PutImage
-      dd sys_button              ; 8-DefineButton
+      dd syscall_button          ; 8-DefineButton
       dd sys_cpuusage            ; 9-GetProcessInfo
       dd sys_waitforevent        ; 10-WaitForEvent
       dd sys_getevent            ; 11-CheckForEvent
