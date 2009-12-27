@@ -140,11 +140,13 @@ UDP_handler:
 	DEBUGF 1,"Remote Ip matches\n"
   .ok1:
 
-	mov	bx, [edx + UDP_Packet.SourcePort]		      ; Remote port must be 0, or equal to sourceport of packet
+	lea	ebx, [eax + SOCKET_head.lock]
+	call	wait_mutex
 
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], 0
-	je	.ok2
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.firstpacket], 0
+	jz	.updateport
 
+	mov	bx, [edx + UDP_Packet.SourcePort]
 	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], bx
 	jne	.dump
 
@@ -155,13 +157,7 @@ UDP_handler:
 	movzx	ecx, [edx + UDP_Packet.Length]
 	rol	cx , 8
 	sub	cx , UDP_Packet.Data
-	mov	dx , bx
 
-
-	lea	ebx, [eax + SOCKET_head.lock]
-	call	wait_mutex
-	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], dx	       ; update remote port number
-	mov	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], edi
 	inc	[UDP_PACKETS_RX]
 
 	pop	edi
@@ -171,6 +167,15 @@ UDP_handler:
 	xchg	esi, edi
 	jmp	socket_internal_receiver
 
+
+  .updateport:
+
+	mov	bx, [edx + UDP_Packet.SourcePort]
+	DEBUGF 1,"Changing remote port to: %x\n", bx
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], bx
+	inc	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.firstpacket]
+
+	jmp	.ok2
 
   .dump:
 	DEBUGF 1,"Dumping UDP packet\n"
@@ -247,7 +252,7 @@ UDP_socket_send:
 	mov	esi, edi
 	call	checksum_1
 ; Checksum for pseudoheader
-	pushd	[edi-4] ; destination address        ; TODO: fix this, IPv4 packet could have options..
+	pushd	[edi-4] ; destination address           ; TODO: fix this, IPv4 packet could have options..
 	pushd	[edi-8] ; source address
 	mov	ecx, 12
 	mov	esi, esp

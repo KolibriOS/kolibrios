@@ -76,6 +76,7 @@ struct	UDP_SOCKET
 
 	 .LocalPort		dw ? ; In INET byte order
 	 .RemotePort		dw ? ; In INET byte order
+	 .firstpacket		db ?
 
 	 .end:
 ends
@@ -343,6 +344,7 @@ socket_connect:
 
 	mov	bx , word [edx + 2]
 	mov	word [eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], bx
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.firstpacket], 0
 	DEBUGF	1,"remote port: %x ",bx
 
 	mov	ebx, dword [edx + 4]
