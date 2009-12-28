@@ -140,15 +140,15 @@ UDP_handler:
 	DEBUGF 1,"Remote Ip matches\n"
   .ok1:
 
-	lea	ebx, [eax + SOCKET_head.lock]
-	call	wait_mutex
-
 	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.firstpacket], 0
 	jz	.updateport
 
 	mov	bx, [edx + UDP_Packet.SourcePort]
 	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], bx
 	jne	.dump
+
+	lea	ebx, [eax + SOCKET_head.lock]
+	call	wait_mutex
 
   .ok2:
 
@@ -169,6 +169,9 @@ UDP_handler:
 
 
   .updateport:
+
+	lea	ebx, [eax + SOCKET_head.lock]
+	call	wait_mutex
 
 	mov	bx, [edx + UDP_Packet.SourcePort]
 	DEBUGF 1,"Changing remote port to: %x\n", bx
