@@ -24,7 +24,7 @@ include '../../macros.inc'
 ;include '../../develop/libraries/box_lib/load_lib.mac'
 include 'load_lib.mac' ;include old file
 include '../../develop/libraries/box_lib/trunk/tree_list.mac'
-include '../../develop/libraries/box_lib/trunk/editbox_ex.mac'
+include '../../develop/libraries/box_lib/trunk/editbox.mac'
 
 include 't_data.inc'
 include 'strlen.inc'
