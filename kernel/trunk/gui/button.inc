@@ -248,11 +248,13 @@ syscall_button.remove_button:
         jne     .next_button
 
         ; okay, undefine it
+        push    ebx
         mov     ebx, esi
         lea     eax, [esi + SYS_BUTTON.sizeof]
         call    memmove
         dec     dword[edi]
         add     ecx, -SYS_BUTTON.sizeof
+        pop     ebx
         jmp     .next_button
 
   .exit:
