@@ -2949,6 +2949,7 @@ jmp_instruction:
       jmp_reg_32bit:
 	cmp	[code_type],64
 	je	illegal_instruction
+	call	operand_32bit
 	jmp	nomem_instruction_ready
       jmp_reg_16bit:
 	call	operand_16bit
@@ -4397,7 +4398,12 @@ pmovmskb_instruction:
 	lods	byte [esi]
 	call	convert_register
 	cmp	ah,4
+	je	pmovmskb_reg_size_ok
+	cmp	[code_type],64
+	jne	invalid_operand_size
+	cmp	ah,8
 	jnz	invalid_operand_size
+      pmovmskb_reg_size_ok:
 	mov	[postbyte_register],al
 	mov	[operand_size],0
 	lods	byte [esi]
@@ -5581,6 +5587,8 @@ pextrb_instruction:
 	ja	pextrq_reg
 	cmp	ah,4
 	je	pextr_reg_size_ok
+	cmp	[code_type],64
+	jne	pextr_invalid_size
 	cmp	ah,8
 	je	pextr_reg_size_ok
       pextr_invalid_size:
