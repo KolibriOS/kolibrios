@@ -63,14 +63,12 @@ tim_Undo dd ? ; количество отмененных действий
 gpOpt db 0
 mode_colored db 1 ; режим выделения слов цветом (0-выкл. 1-вкл.)
 
-txtBuf db 'ЃгдҐа: '
-buf db BUF_SIZE dup(0)
 key_new db 0 ; символ, который будет добавлятся с клавиатуры
-tex dd 0
-tex_1 dd 0
-tex_end dd 0
+tex     dd 0 ;text memory pointer
+tex_1   dd 0 ;text first symbol pointer
+tex_end dd 0 ;text end memory pointer
 
-hed db 'TextEditor 29.12.09',0 ;подпись окна
+hed db 'TextEditor 30.12.09',0 ;подпись окна
 sc system_colors
 
 wndMain BOX 0,50,440,150
@@ -186,6 +184,7 @@ SelStart:
   pop ecx
   ret
 
+align 4
 SelMove:
   push ecx
     mov ecx,[cur_x]
@@ -196,6 +195,7 @@ SelMove:
     add ecx,[wScr.position]
     mov [sel.y1],ecx
   pop ecx
+  call draw_but_toolbar ;redraw toolbar (need to button Copy)
   ret
 
 ;input:

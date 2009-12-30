@@ -26,6 +26,7 @@ include 'load_lib.mac' ;include old file
 include '../../develop/libraries/box_lib/trunk/tree_list.mac'
 include '../../develop/libraries/box_lib/trunk/editbox.mac'
 
+include 'lang.inc'
 include 't_data.inc'
 include 'strlen.inc'
 include 't_work.inc' ;text work functions
@@ -135,13 +136,13 @@ load_libraries l_libs_start,load_lib_end
   call mem_Alloc
   mov dword[tree1.data_img_sys],eax
 
-  mov [run_file_70.func_n], 0
-  mov [run_file_70.param1], 54
-  mov [run_file_70.param2], 0
+  ;mov [run_file_70.func_n], 0
+  ;mov [run_file_70.param1], 54
+  ;mov [run_file_70.param2], 0
   mov [run_file_70.param3], 3*256*13
   mov [run_file_70.param4], eax
-  mov [run_file_70.rezerv], 0
-  mov [run_file_70.name], file_name
+  ;mov [run_file_70.rezerv], 0
+  ;mov [run_file_70.name], file_name
 
   mov eax,70 ;load icon file
   mov ebx,run_file_70
@@ -220,9 +221,7 @@ mov ecx,ebx
 
 
 red_win:
-  mov eax,12
-  mov ebx,1
-  mcall
+  mcall 12,1
 
   xor eax,eax
   mov ebx,10*65536+485
@@ -284,9 +283,7 @@ red_win:
     mcall
   @@:
 
-  mov eax,12
-  mov ebx,2
-  mcall
+  mcall 12,2
 
 still:
   mov eax,10
@@ -842,14 +839,23 @@ edit2 edit_box TE_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080
 buf_cmd_lin db 302 dup(0)
 buf_find db 302 dup(0)
 
-err_message_found_lib0	 db 'Sorry I cannot found library box_lib.obj',0
-head_f_i0:
-head_f_l0	  db 'System error',0
-err_message_import0	 db 'Error on load import library box_lib.obj',0
-err_message_found_lib1	db 'Sorry I cannot found library msgbox.obj',0
-;head_f_i1:
-;head_f_l1      db 'System error',0
-err_message_import1	db 'Error on load import library msgbox.obj',0
+if lang eq ru
+  err_message_found_lib0 db 'Извините не удалось найти библиотеку box_lib.obj',0
+  head_f_i0:
+  head_f_l0  db 'Системная ошибка',0
+  err_message_import0 db 'Ошибка при импорте библиотеки box_lib.obj',0
+  err_message_found_lib1 db 'Извините не удалось найти библиотеку msgbox.obj',0
+  err_message_import1 db 'Ошибка при импорте библиотеки msgbox.obj',0
+else
+  err_message_found_lib0 db 'Sorry I cannot found library box_lib.obj',0
+  head_f_i0:
+  head_f_l0  db 'System error',0
+  err_message_import0 db 'Error on load import library box_lib.obj',0
+  err_message_found_lib1 db 'Sorry I cannot found library msgbox.obj',0
+  ;head_f_i1:
+  ;head_f_l1 db 'System error',0
+  err_message_import1 db 'Error on load import library msgbox.obj',0
+end if
 
 ;library structures
 l_libs_start:

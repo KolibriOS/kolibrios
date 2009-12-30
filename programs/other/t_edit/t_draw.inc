@@ -870,10 +870,6 @@ OptDrawLineRight:
   call GetSymbColor
   ret
 
-txtRow db 'Строка',0
-txtCol db 'Знак',0
-txtOtm db 'Отмены',0
-
 draw_main_cursor:
   push eax ebx ecx edx edi esi
 
@@ -1008,11 +1004,19 @@ draw_bufer:
     mov edx,txtBuf
     mov esi,buf
     call strlen
+if lang eq ru
     cmp eax,15
     jle .crop_buf
       mov eax,15
     .crop_buf:
-    mov esi,7
+    mov esi,7 ;7=len(txtBuf)
+else
+    cmp eax,14
+    jle .crop_buf
+      mov eax,14
+    .crop_buf:
+    mov esi,8 ;8=len(txtBuf)
+end if
     add esi,eax
 
     mov eax,4
