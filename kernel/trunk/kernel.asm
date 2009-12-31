@@ -3397,82 +3397,67 @@ endg
 ;3 - rdmsr. Counter in edx. (edx:eax) [esi:edi, edx] => [edx:esi, ecx]. Ret in ebx:eax. Block. ok.
 ;4 - wrmsr. Counter in edx. (edx:eax) [esi:edi, edx] => [edx:esi, ecx]. Ret in ebx:eax. Block. ok.
 ;---------------------------------------------------------------------------------------------
+iglobal
+align 4
+sheduler:
+	dd	sys_sheduler.00
+	dd	change_task
+	dd	sys_sheduler.02
+	dd	sys_sheduler.03
+	dd	sys_sheduler.04
+endg
 sys_sheduler:   
-; old sys_sheduler ;noname & halyavin
-;    cmp eax,0
-;    je shed_counter
-;    cmp eax,2
-;    je perf_control
-;    cmp eax,3
-;    je rdmsr_instr
-;    cmp eax,4
-;    je wrmsr_instr
-;    cmp eax,1
-;    jne not_supported
-;    call change_task ;delay,0
+;rewritten by <Lrz>  29.12.2009
+	jmp	dword [sheduler+eax*4]
+;.shed_counter:
+.00:
+	mov eax,[context_counter]
+	mov [esp+36],eax
+	ret
 
-;rewritten by <Lrz>  15.11.2009
-     test	eax,eax		
-     jz         .shed_counter    ;eax=0
-     dec	eax             
-     jz         change_task	 ;eax=1
-     dec	eax
-     jz         .perf_control    ;eax=2
-     dec	eax
-     jz		.rdmsr_instr     ;eax=3
-     dec	eax
-     jnz	@f
-;wrmsr_instr     ;eax=4
+.02:
+;.perf_control:
+	test	ebx,ebx
+	jz 	modify_pce		;if ecx=0
+	dec	ebx
+	jz      is_cache_enabled	;if ecx=1
+	dec	ebx
+	jz	cache_enable		;if ecx=2
+	ret
+.03:	
+;.rdmsr_instr:
+;now counter in ecx
+;(edx:eax) esi:edi => edx:esi
+	mov 	eax,esi
+;	mov	ecx,edx
+	rdmsr
+	mov 	[esp+36],eax
+	mov 	[esp+24],edx 		;ret in ebx?
+	ret
+
+.04:
 ;.wrmsr_instr:
 ;now counter in ecx
 ;(edx:eax) esi:edi => edx:esi
         ; Fast Call MSR can't be destroy
         ; Но MSR_AMD_EFER можно изменять, т.к. в этом регистре лиш
         ; включаются/выключаются расширенные возможности
-        cmp     ecx, MSR_SYSENTER_CS
+        cmp     ecx,MSR_SYSENTER_CS
         je      @f
-        cmp     ecx, MSR_SYSENTER_ESP
+        cmp     ecx,MSR_SYSENTER_ESP
         je      @f
-        cmp     ecx, MSR_SYSENTER_EIP
+        cmp     ecx,MSR_SYSENTER_EIP
         je      @f
-        cmp     ecx, MSR_AMD_STAR
+        cmp     ecx,MSR_AMD_STAR
         je      @f
 
-        mov     eax, esi
+        mov     eax,esi
+;	mov	ecx,edx
         wrmsr
-        ; mov   [esp + 36], eax
-        ; mov   [esp + 24], edx ;ret in ebx?
+        ; mov   [esp + 32], eax
+        ; mov   [esp + 20], edx ;ret in ebx?
 @@:
-ret
-
-.shed_counter:
-    mov eax,[context_counter]
-    mov [esp+36],eax
-ret
-.perf_control:
-;    inc eax ;now eax=3
-    add eax,3		;restore eax=3
-    cmp ebx,eax
-    je cache_disable
-    dec eax
-    cmp ebx,eax
-    je cache_enable
-    dec eax
-    cmp ebx,eax
-    je is_cache_enabled
-    dec eax
-    cmp ebx,eax
-    je modify_pce
-ret
-
-.rdmsr_instr:
-;now counter in ecx
-;(edx:eax) esi:edi => edx:esi
-mov eax,esi
-rdmsr
-mov [esp+36],eax
-mov [esp+24],edx ;ret in ebx?
-ret
+	ret
 
 cache_disable:
        mov eax,cr0
