@@ -3408,31 +3408,43 @@ sheduler:
 endg
 sys_sheduler:   
 ;rewritten by <Lrz>  29.12.2009
-	jmp	dword [sheduler+eax*4]
+;	jmp	dword [sheduler+eax*4]
+	jmp	dword [sheduler+ebx*4]
 ;.shed_counter:
 .00:
 	mov eax,[context_counter]
-	mov [esp+36],eax
+	mov [esp+32],eax
 	ret
 
 .02:
 ;.perf_control:
-	test	ebx,ebx
+;	test	ebx,ebx
+;	jz 	modify_pce		;if ecx=0
+;	dec	ebx
+;	jz      is_cache_enabled	;if ecx=1
+;	dec	ebx
+;	jz	cache_enable		;if ecx=2
+;	ret
+;;;;;;;;
+	test	ecx,ecx
 	jz 	modify_pce		;if ecx=0
-	dec	ebx
+	dec	ecx
 	jz      is_cache_enabled	;if ecx=1
-	dec	ebx
+	dec	ecx
 	jz	cache_enable		;if ecx=2
 	ret
+
+
+
 .03:	
 ;.rdmsr_instr:
 ;now counter in ecx
 ;(edx:eax) esi:edi => edx:esi
 	mov 	eax,esi
-;	mov	ecx,edx
+	mov	ecx,edx
 	rdmsr
-	mov 	[esp+36],eax
-	mov 	[esp+24],edx 		;ret in ebx?
+	mov 	[esp+32],eax
+	mov 	[esp+20],edx 		;ret in ebx?
 	ret
 
 .04:
@@ -3442,17 +3454,17 @@ sys_sheduler:
         ; Fast Call MSR can't be destroy
         ; Но MSR_AMD_EFER можно изменять, т.к. в этом регистре лиш
         ; включаются/выключаются расширенные возможности
-        cmp     ecx,MSR_SYSENTER_CS
+        cmp     edx,MSR_SYSENTER_CS
         je      @f
-        cmp     ecx,MSR_SYSENTER_ESP
+        cmp     edx,MSR_SYSENTER_ESP
         je      @f
-        cmp     ecx,MSR_SYSENTER_EIP
+        cmp     edx,MSR_SYSENTER_EIP
         je      @f
-        cmp     ecx,MSR_AMD_STAR
+        cmp     edx,MSR_AMD_STAR
         je      @f
 
         mov     eax,esi
-;	mov	ecx,edx
+	mov	ecx,edx
         wrmsr
         ; mov   [esp + 32], eax
         ; mov   [esp + 20], edx ;ret in ebx?
@@ -3477,9 +3489,9 @@ is_cache_enabled:
        mov ebx,eax
        and eax,01100000000000000000000000000000b
        jz cache_disabled
-       mov [esp+36],ebx
+       mov [esp+32],ebx
 cache_disabled:
-       mov dword [esp+36],eax ;0
+       mov dword [esp+32],eax ;0
 ret
 
 modify_pce:
@@ -3489,7 +3501,7 @@ modify_pce:
 ;       xor eax,ebx ;invert pce
        bts eax,8 ;pce=cr4[8]
        mov cr4,eax
-       mov [esp+36],eax
+       mov [esp+32],eax
 ret
 ;---------------------------------------------------------------------------------------------
 

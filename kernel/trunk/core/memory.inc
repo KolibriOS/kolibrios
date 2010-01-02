@@ -1133,67 +1133,68 @@ f68call:
 endg
 align 4
 f68:
-           cmp  eax,4
+           cmp  ebx,4
            jle  sys_sheduler
 
-           cmp eax, 11
+           cmp ebx, 11
            jb .fail
 
-           cmp eax, 25
+           cmp ebx, 25
            ja .fail
 
-           jmp dword [f68call+eax*4-11*4]
+           jmp dword [f68call+ebx*4-11*4]
 .11:
            call init_heap
-           mov [esp+36], eax
+           mov [esp+32], eax
            ret
 .12:
-           stdcall user_alloc, ebx
-           mov [esp+36], eax
+           stdcall user_alloc, ecx
+           mov [esp+32], eax
            ret
 .13:
-           stdcall user_free, ebx
-           mov [esp+36], eax
+           stdcall user_free, ecx
+           mov [esp+32], eax
            ret
 .14:
-           cmp ebx, OS_BASE
+           cmp ecx, OS_BASE
            jae .fail
-           mov edi,ebx
+           mov edi,ecx
            call get_event_ex
-           mov [esp+36], eax
+           mov [esp+32], eax
            ret
 .16:
-           test ebx, ebx
+           test ecx, ecx
            jz .fail
-           cmp ebx, OS_BASE
+           cmp ecx, OS_BASE
            jae .fail
-           stdcall get_service, ebx
-           mov [esp+36], eax
+           stdcall get_service, ecx
+           mov [esp+32], eax
            ret
 .17:
-           call srv_handlerEx   ;ebx
-           mov [esp+36], eax
+           call srv_handlerEx   ;ecx
+           mov [esp+32], eax
            ret
 .19:
-           cmp ebx, OS_BASE
+           cmp ecx, OS_BASE
            jae .fail
-           stdcall load_library, ebx
-           mov [esp+36], eax
+           stdcall load_library, ecx
+           mov [esp+32], eax
            ret
 .20:
-           mov     eax, ecx
-           call    user_realloc
-           mov     [esp+36], eax
+           mov     eax, edx
+	   mov	   ebx, ecx
+           call    user_realloc		;in: eax = pointer, ebx = new size
+           mov     [esp+32], eax
            ret
 .21:
-           cmp ebx, OS_BASE
-           jae .fail
-
            cmp ecx, OS_BASE
            jae .fail
 
-           mov edi, ecx
-           stdcall load_PE, ebx
+           cmp ebx, OS_BASE
+           jae .fail
+
+           mov edi, edx
+           stdcall load_PE, ecx
            mov esi, eax
            test eax, eax
            jz @F
@@ -1208,45 +1209,45 @@ f68:
            mov [eax+SRV.entry], esi
 
 @@:
-           mov [esp+36], eax
+           mov [esp+32], eax
            ret
 .22:
-           cmp ebx, OS_BASE
+           cmp ecx, OS_BASE
            jae .fail
 
-           stdcall shmem_open, ebx, ecx, edx
-           mov [esp+28], edx
-           mov [esp+36], eax
+           stdcall shmem_open, ecx, edx, esi
+           mov [esp+24], edx
+           mov [esp+32], eax
            ret
 
 .23:
-           cmp ebx, OS_BASE
+           cmp ecx, OS_BASE
            jae .fail
 
-           stdcall shmem_close, ebx
-           mov [esp+36], eax
+           stdcall shmem_close, ecx
+           mov [esp+32], eax
            ret
 .24:
            mov  eax, [current_slot]
-           xchg ebx, [eax+APPDATA.exc_handler]
-           xchg ecx, [eax+APPDATA.except_mask]
-           mov  [esp+36], ebx ; reg_eax+8
-           mov  [esp+24], ecx ; reg_ebx+8
+           xchg ecx, [eax+APPDATA.exc_handler]
+           xchg edx, [eax+APPDATA.except_mask]
+           mov  [esp+32], ecx ; reg_eax+8
+           mov  [esp+20], edx ; reg_ebx+8
            ret
 .25:
-           cmp ebx,32
+           cmp ecx,32
            jae .fail
            mov  eax, [current_slot]
-           btr  [eax+APPDATA.except_mask],ebx
-           setc byte[esp+36]
+           btr  [eax+APPDATA.except_mask],ecx
+           setc byte[esp+32]
            jecxz @f
-           bts  [eax+APPDATA.except_mask],ebx
+           bts  [eax+APPDATA.except_mask],ecx
 @@:
            ret
 
 .fail:
            xor eax, eax
-           mov [esp+36], eax
+           mov [esp+32], eax
            ret
 
 align 4

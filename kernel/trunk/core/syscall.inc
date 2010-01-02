@@ -20,7 +20,6 @@ cross_order:
         call    dword [servetable+edi*4]
         ret
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                            ;;
 ;;                     SYSENTER ENTRY                         ;;
@@ -171,7 +170,7 @@ iglobal
       dd syscall_putimage_palette; 65-PutImagePalette
       dd sys_process_def         ; 66-Process definitions - keyboard
       dd sys_window_move         ; 67-Window move or resize
-      dd f68                     ; 68-Some internal services
+      dd 0			 ; 68-Some internal services
       dd 0		         ; 69-Debug
       dd file_system_lfn         ; 70-Common file system interface, version 2
 ;      dd 0			 ; 71-Window settings
@@ -250,7 +249,7 @@ iglobal
       dd cross_order             ; 65-PutImagePalette
       dd cross_order             ; 66-Process definitions - keyboard
       dd cross_order             ; 67-Window move or resize
-      dd cross_order             ; 68-Some internal services
+      dd f68			 ; 68-Some internal services
       dd sys_debug_services      ; 69-Debug
       dd cross_order             ; 70-Common file system interface, version 2
       dd syscall_windowsettings  ; 71-Window settings

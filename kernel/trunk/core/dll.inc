@@ -333,24 +333,24 @@ proc srv_handler stdcall, ioctl:dword
 endp
 
 ; param
-;  ebx= io_control
+;  ecx= io_control
 ;
 ; retval
 ;  eax= error code
 
 align 4
 srv_handlerEx:
-	   cmp ebx, OS_BASE
+	   cmp ecx, OS_BASE
 	   jae .fail
 
-	   mov eax, [ebx+handle]
+	   mov eax, [ecx+handle]
 	   cmp [eax+SRV.magic], ' SRV'
 	   jne .fail
 
        cmp [eax+SRV.size], SRV.sizeof
 	   jne .fail
 
-	   stdcall [eax+SRV.srv_proc], ebx
+	   stdcall [eax+SRV.srv_proc], ecx
 	   ret
 .fail:
 	   or eax, -1
