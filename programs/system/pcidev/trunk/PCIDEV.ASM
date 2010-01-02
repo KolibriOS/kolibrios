@@ -1,12 +1,13 @@
-;***************************************************************
+﻿;***************************************************************
 ; project name:    PCI Device Enumeration
 ; target platform: KolibriOS
-; compiler:        flat assmebler 1.66
-; version:         2.1
-; last update:     April 2007
+; compiler:        flat assembler 1.68
+; version:         2.2
+; last update:     December 2007
 ; maintained by:   Jason Delozier (cordata51@hotmail.com)
 ;                  Sergey Kuzmin (kuzmin_serg@list.ru)
 ;                  Mihailov Ilia (ghost.nsk@gmail.com)
+;                  Artem Jerdev  (art_zh@yahoo.com)
 ; project site:    http://www.coolthemes.narod.ru/pcidev.html
 ;***************************************************************
 ;Summary: This program will attempt to scan the PCI Bus
@@ -25,11 +26,22 @@
 ; Full device detection (like "ATI Radeon 9200") will increase app
 ; size a lot and probably it is function of particular drivers
 ;----------------------------------------------------------------
+;2.2: PCIDEV   31/12/2009
+;Author:    Artem Jerdev <art_zh@yahoo.com>
+;Features:
+;           fixed
+;                 * English in some comments ;)
+;           added
+;                 * ! user-accessible PCI memory channels detection
+;                 * ! ASCII-dump as PCI memory access demonstration
+;           optimization
+;                 * (yet needed)
+;----------------------------------------------------------------
 ;2.1: PCIDEV   ??/04/2007
 ;Author:    Mihailov Ilia aka Ghost <ghost.nsk@gmail.com>
 ;Features:
 ;           fixed
-;                 * Same little bugs
+;                 * Some little bugs
 ;                 * Source code formating
 ;                 * PCI version normalized 0210 -> 2.10
 ;           added
@@ -136,7 +148,9 @@
 ;                 * detect Revision, Class and Subclass of Device,
 ;                 * and make Description based on Class
 ;-------------------------------------------------------------
-include	'..\..\..\macros.inc'
+;include '..\..\macros.inc'
+include 'macros.inc'
+
 MEOS_APP_START
 CODE
 	call draw_window
@@ -166,7 +180,7 @@ red:					; redraw
 key:					; key
 	mcall	2			; just read it and ignore
 	jmp	still
-button:					; button
+button: 				; button
 	mcall	17			; get id
 	cmp	ah, 1			; button id = 1 ?
 	jne	still
@@ -178,22 +192,22 @@ draw_window:
 	; DRAW WINDOW
 	mcall	0, dword [Form], dword [Form + 4], 0x13ffffff, 0x805080d0, title
 	; Insert horizontal bars  in list area
-	mov	eax, 13			; draw bar system function
-	mov	ebx, 18			; set Xstart position of bar
-	shl	ebx, 16			;
-	mov	bx, word [Form]	; get width of window
+	mov	eax, 13 		; draw bar system function
+	mov	ebx, 18 		; set Xstart position of bar
+	shl	ebx, 16 		;
+	mov	bx, word [Form] ; get width of window
 	sub	bx, 32			; bar is 32 pixels shorter then window width
 	mov	ecx, 119 * 65536 + 10	; set Ystart(109) and Height(10) of bar   109
 	mov	edx, 0xC0C0C0		; set color of bar
 again:	;begin draw bar loop
 	mcall				; draw bar to window area
-	shr	ecx, 16			; move the Ystart position to working area
-	add	ecx, 34			; add 34 pixels to Y Start (moves bar down)
+	shr	ecx, 16 		; move the Ystart position to working area
+	add	ecx, 34 		; add 34 pixels to Y Start (moves bar down)
 	cmp	cx, word [Form + 4]	; is the Ystart position outside of window area
 	jae	nomo			; if so stop drawing bars
-	sub	ecx, 14			; if not, we only need 20 pixels between bar tops
-	shl	ecx, 16			; set that values as Ystart
-	add	ecx, 10			; Bar Height is always 10 pixels
+	sub	ecx, 14 		; if not, we only need 20 pixels between bar tops
+	shl	ecx, 16 		; set that values as Ystart
+	add	ecx, 10 		; Bar Height is always 10 pixels
 	jmp	again			; draw another bar
 nomo:					;done drawing bars here
 	; start PCI stuff
@@ -202,16 +216,16 @@ nomo:					;done drawing bars here
 	; Window inteface
 	mov	cx, [PCI_Version]
 	add	ch, '0'
-	mov	[PCIWin + 85], ch	; 0xBADCODE but it work !
+	mov	[PCIWin + 85], ch	; 0xBADCODE but it works !
 	mov	ch, cl
 	shr	cl, 4
 	and	ch, 0x0f
 	add	cx, '00'
 	mov	[PCIWin + 87], cx
-	mov	cl, [PCI_LastBus]
+	mov	cl, [PCI_LastBus]	; will only work if [PCI_LastBus] < 10
 	add	cl, '0'
-	mov	[PCIWin + 105], cl
-	
+	mov	[PCIWin + 106], cl
+
 	mov	edx, PCIWin
 	mov	ebx, 20 * 65536 + 25	; x start, ystart of text
 	mov	ecx, 0x224466		; color of text
@@ -227,6 +241,7 @@ nomo:					;done drawing bars here
 	movzx	ecx, byte [total]	; number to draw
 	mcall	47, 0x00020000,,150 * 65536 + 65, 0x224466
 
+	call	Try_MMIO
 	mcall	12, 2			; end of draw
 	ret
 
@@ -243,8 +258,8 @@ Get_PCI_Info:
 	jne	Pci_Exists		;
 	ret				; if no bus then leave
 Pci_Exists:
-	mov	byte [V_Bus], 0		; reset varibles
-	mov	byte [V_Dev], 0		;
+	mov	byte [V_Bus], 0 	; reset varibles
+	mov	byte [V_Dev], 0 	;
 	mov	edx,  20 * 65536 + 110	; set start write position
 Start_Enum:
 	mov	bl, 6			; get a dword
@@ -254,12 +269,12 @@ Start_Enum:
 	mcall	62			; get ID's
 
 	cmp	ax, 0			; Vendor ID should not be 0 or 0xFFFF
-	je	nextDev			; check next device if nothing exists here
+	je	nextDev 		; check next device if nothing exists here
 	cmp	ax, 0xffff		;
-	je	nextDev			;
+	je	nextDev 		;
 
 	mov	word [PCI_Vendor], ax	; There is a device here, save the ID's
-	shr	eax, 16			;
+	shr	eax, 16 		;
 	mov	word [PCI_Device], ax	;
 	mov	bl, 4			; Read config byte
 	mov	bh, byte [V_Bus]	; Bus #
@@ -269,17 +284,17 @@ Start_Enum:
 	mov	byte [PCI_Rev], al	; Save it
 	mov	cl, 0x0b		; Register to read (Get class)
 	mcall	62			; Read it
-	
+
 	mov	byte [PCI_Class], al	; Save it
 	mov	cl, 0x0a		; Register to read (Get Subclass)
 	mcall	62			; Read it
 	mov	byte [PCI_SubClass], al; Save it
-; from Mario79 august 2006
+; by Mario79 august 2006
 	mov	cl, 0x09		; Register to read (Get Interface)
 	mcall	62			; Read it
 	mov  [PCI_Interface], al	; Save it
 ;
-; from Ghost april 2007
+; by Ghost april 2007
 	mov	cl, 0x3c		; Register to read (Get IRQ)
 @@:	mcall	62			; Read it
 	mov	[PCI_IRQ], al		; Save it
@@ -290,7 +305,7 @@ nextDev:
 	inc	byte [V_Dev]		; next device on this bus
 	jnz	Start_Enum		; jump until we reach zero
 	;(used to be JNO which caused bug!!! 30-4-2006, JMD)
-	mov	byte [V_Dev], 0		; reset device number
+	mov	byte [V_Dev], 0 	; reset device number
 	inc	byte [V_Bus]		; next bus
 	mov	al, byte [PCI_LastBus]	; get last bus
 	cmp	byte [V_Bus], al	; was it last bus
@@ -300,15 +315,39 @@ nextDev:
 ;------------------------------------------------------------------
 ;* Print device info to screen
 Print_New_Device:
-	xor	esi, esi		; Color of text
+	xor esi, esi	    ; default text color
+; by art_zh December 2009
+	mov ch, byte [V_Bus]
+	mov cl, byte [V_Dev]
+	mcall	62, 11		; detect uMMIO
+	cmp eax, -2
+	je no_ummio_here
+	mov esi, 0x990033   ; highlighted text color
+	mov bh, byte [V_Bus]
+	mov bl, byte [V_Dev]
+	mov byte [MMIO_Bus], bh
+	mov byte [MMIO_Dev], bl
+	add bh,'0'
+	mov [PCIWin + 129], bh	; uMMIO bus
+	mov al, bl
+	shr al, 1
+	shr al, 1
+	shr al, 1
+	add al,'0'
+	mov [PCIWin + 131], al	; uMMIO device
+	and bl, 7
+	add bl, '0'
+	mov [PCIWin + 133], bl	; uMMIO function
+
+no_ummio_here:
 	movzx	ecx,word [PCI_Vendor]	; Pointer to number to be written
 	mcall	47, 0x00040100		; Write Vendor ID
 	and	edx, 0xFFFF		;*****************************************
-	or	edx, 54 * 65536	; X start becomes 54
+	or	edx, 54 * 65536 ; X start becomes 54
 	movzx	ecx, word [PCI_Device]	; get Vendor ID
 	mcall				; Draw Vendor ID to Window
 	and	edx, 0xFFFF		;*****************************************
-	or	edx, 98 * 65536	; X start becomes 98
+	or	edx, 98 * 65536 ; X start becomes 98
 	movzx	ecx, byte [V_Bus]	; get bus number
 	mcall	,0x00020100		; draw bus number to screen
 	and	edx, 0xFFFF		;*****************************************
@@ -316,7 +355,7 @@ Print_New_Device:
 	movzx	ecx, byte [V_Dev]	; get device number
 	shr	ecx, 3			; device number is bits 3-7
 	mcall				; Draw device Number To Window
-	
+
 	and	edx, 0xFFFF		;*****************************************
 	or	edx, 155 * 65536	; X start becomes 155
 	movzx	ecx, byte [V_Dev]	; get Function number
@@ -340,7 +379,7 @@ Print_New_Device:
 	movzx	ecx, [PCI_Interface]	; get Interface
 	mcall
 ;
-; from Ghost april 2007			;*****************************************
+; from Ghost april 2007                 ;*****************************************
 	movzx	ecx, [PCI_IRQ]		; get Interface
 	cmp	cl, 0x0f		; IRQ between 0..15
 	ja	@f
@@ -350,7 +389,7 @@ Print_New_Device:
 @@:
 ;
 	;Write Names
-	movzx	ebx, dx		; Set y position
+	movzx	ebx, dx 	; Set y position
 	or	ebx, 340 * 65536	; set Xposition to 340
 
 ;------------------------------------------------------------------
@@ -360,7 +399,7 @@ Print_New_Device:
 ;------------------------------------------------------------------
 	mov	edx, VendorsTab
 	mov	cx, word[PCI_Vendor]
-	
+
 .fn:	mov	ax, [edx]
 	add	edx, 6
 	test	ax, ax
@@ -392,18 +431,78 @@ Print_New_Device:
 @@:	cmp	eax, ecx
 	jne	.fnc
 	xor	edx, edx
-.endfc:	test	edx, edx
+.endfc: test	edx, edx
 	jnz	@f
 	mov	edx, [Classes + esi * 8 - 4]
-@@:	
-	and	ebx, 0x0000FFFF		; clear X position
+@@:
+	and	ebx, 0x0000FFFF 	; clear X position
 	or	ebx, 0x24E0000		; set X position to 590 pixels
 	mcall	4,, 0x80000000,, 32	; draw the text
-	movzx	edx, bx		; get y coordinate
-	add	edx, 0x0014000A		; add 10 to y coordinate and set x coordinate to 20
+	movzx	edx, bx 	; get y coordinate
+	add	edx, 0x0014000A 	; add 10 to y coordinate and set x coordinate to 20
+	mov	[gr_pos], edx
+	ret
+;------------------------------------------------------------------
+; Get the user-MMIO related info
+;
+; Added on ??-12-2009 by art_zh
+;------------------------------------------------------------------
+Try_MMIO:
+	xor	ebx, ebx
+	mov	edx, ebx
+	mov	bh, byte [MMIO_BAR]
+	or	bx, 12			; function 12
+	mov	ecx, 4096		; =1 page to map
+	mcall	62
+	mov	ecx, 0x80990022 	; print color : red
+	mov	bh, byte [MMIO_BAR]
+	add	bh, '0'
+	cmp	eax, -3
+	jne	@f
+	mov	[bar_um+3], bh
+	mov	ebx, [gr_pos]
+	mov	edx, bar_um
+	mcall	4
+	jmp	mmio_next_bar
+@@:
+	cmp	eax, -4
+	jne	@f
+	mov	[bar_io+3], bh
+	mov	ebx, [gr_pos]
+	mov	edx, bar_io
+	mcall	4
+	jmp	mmio_next_bar
+@@:
+	mov	[bar_ram+3], bh
+	mov	ebx, [gr_pos]
+	mov	edx, bar_ram
+	mcall	4
+
+	mov	edx, eax
+	mov	esi, 64
+	mov	ecx, 0x099		; dump color : blue
+	add	ebx, 10
+	mov	[gr_pos], ebx
+	mcall	4
+	mov	ecx, eax		; release the tried page
+	mcall	62,13
+
+mmio_next_bar:
+	mov	bh, [MMIO_BAR]
+	inc	bh
+	cmp	bh,6
+	je	@f
+	mov	[MMIO_BAR], bh
+	add	[gr_pos], 10
+	jmp	Try_MMIO
+
+@@:
+	xor	bh,bh
+	mov	[MMIO_BAR], bh
 	ret
 
-include	'VENDORS.INC'
+
+include 'VENDORS.INC'
 ;------------------------------------------------------------------
 ; DATA AREA
 DATA
@@ -414,18 +513,23 @@ Form:	dw 800 ; window width (no more, special for 800x600)
 	dw 420 ; window height
 	dw 100 ; window y start
 
-title	db 'PCI Device Enumeration v 2.1 by J. Delozier, S. Kuzmin, V. Hanla, M. Zakiyanov', 0
+title	db 'PCI Device Enumerator v 2.2 by J.Delozier, S.Kuzmin, V.Hanla, M.Zakiyanov, A.Jerdev', 0
 
 PCIWin mls \
-	'Please remember to enable PCI Access to Applications in Setup Menu.',\
+	'   Don`t forget to enable PCI Access to Applications in Setup Menu.',\
 	'',\
-	'PCI Version  = x.xx',\
-	'Last PCI Bus = x',\
-	'Quantity of devices =',\
+	'PCI Version  = x.xx; Last PCI Bus = x',\
+	'User MMIO channel = 0F.F:F ',\
+	'Number of PCI units =',\
 	'',\
 	'VenID DevID Bus# Dev# Fnc Rev  Class  Subclass/ IRQ                 Company                      Description',\
 	'                                      Interface',\
 	'----- ----- ---- ---- --- ---  -----  --------- --- ------------------------------------------ ----------------'
+
+bar_ram db 'BARx: MMIO block', 0
+bar_io	db 'BARx: IO ports',0
+bar_um	db 'BARx: unmapped',0
+bar_rom db 'BAR6: Onboard ROM', 0  ; << no ROM test yet
 
 ;------------------------------------------------------------------
 ; UNINITIALIZED DATA AREA
@@ -438,14 +542,24 @@ PCI_Version	dw ?
 PCI_LastBus	db ?
 PCI_Device	dw ?
 PCI_Vendor	dw ?
-PCI_Bus		db ?
-PCI_Dev		db ?
-PCI_Rev		db ?
+PCI_Bus 	db ?
+PCI_Dev 	db ?
+PCI_Rev 	db ?
 ; don`t change order!!!
 PCI_Class	db ?
 PCI_SubClass	db ?
 PCI_Interface	db ?
-PCI_IRQ		db ?
+PCI_IRQ 	db ?
+
+align 4
+MMIO_Bus	db ?
+MMIO_Dev	db ?
+MMIO_BAR	db 0
+MMIO_Blk	db 0
+MMIO_Map	rd 8
+
+gr_pos		dd ?
 
 Proc_Info	process_information
 MEOS_APP_END
+
