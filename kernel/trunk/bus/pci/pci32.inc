@@ -431,18 +431,21 @@ align 4
 pci_mmio_map:
     and     edx,0x0ffff
     cmp     ah,6
-    jc	    @f
+    jc     .bar_0_5
+    jz     .bar_rom
     mov     eax,-2
     ret
-@@:
+.bar_rom:
+    mov    ah, 8	; bar6 = Expansion ROM base address
+.bar_0_5:
     push    ecx
     add     ebx, 4095
     and     ebx,-4096
     push    ebx
-    mov     bl, ah	; bl = BAR# (0..5)
+    mov     bl, ah	; bl = BAR# (0..5), however bl=8 for BAR6
     shl     bl, 1
     shl     bl, 1
-    add     bl, 0x10	; bl = BARs offset in PCI config. space
+    add     bl, 0x10	; now bl = BAR offset in PCI config. space
     mov     ax,word [mmio_pci_addr]
     mov     bh, al	; bh = dddddfff
     mov     al, 2	; al : DW to read

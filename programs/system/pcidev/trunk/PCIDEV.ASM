@@ -473,11 +473,19 @@ Try_MMIO:
 	mcall	4
 	jmp	mmio_next_bar
 @@:
+                cmp         bh, '6'	; expansion ROM ?
+                je             @f
 	mov	[bar_ram+3], bh
 	mov	ebx, [gr_pos]
 	mov	edx, bar_ram
 	mcall	4
+                jump        mmio_dump
+@@:
+	mov	ebx, [gr_pos]
+	mov	edx, bar_rom
+	mcall	4
 
+mmio_dump:
 	mov	edx, eax
 	mov	esi, 64
 	mov	ecx, 0x099		; dump color : blue
@@ -490,7 +498,7 @@ Try_MMIO:
 mmio_next_bar:
 	mov	bh, [MMIO_BAR]
 	inc	bh
-	cmp	bh,6
+	cmp	bh,7
 	je	@f
 	mov	[MMIO_BAR], bh
 	add	[gr_pos], 10
@@ -529,7 +537,7 @@ PCIWin mls \
 bar_ram db 'BARx: MMIO block', 0
 bar_io	db 'BARx: IO ports',0
 bar_um	db 'BARx: unmapped',0
-bar_rom db 'BAR6: Onboard ROM', 0  ; << no ROM test yet
+bar_rom db 'BAR6: Expansion ROM', 0  
 
 ;------------------------------------------------------------------
 ; UNINITIALIZED DATA AREA

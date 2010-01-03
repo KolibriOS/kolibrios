@@ -3261,6 +3261,59 @@ Remarks:
     in the device documentation.
 
 ======================================================================
+===================== Function 62, subfunction 11 ====================
+==              Initialize user-accessible MMIO channel             ==
+======================================================================
+Parameters:
+  * eax = 62 - function
+  * bl  = 11 - subfunction
+  * cx  = PCI-address (bbbbbbbb dddddfff) 
+Returns:
+  * eax = -1 - PCI access not granted; 
+  * eax = -2 - no user MMIO access to this PCI address; 
+  * eax = -3 - memory allocation error; otherwise
+  * eax = available user heap size.
+Remarks:
+  * Low-level PCI access must be allowed (fn21:12)
+  * PCI-address should correspond the system var [mmio_pci_addr]
+
+======================================================================
+===================== Function 62, subfunction 12 ====================
+==            Request user-accessible MMIO address space            ==
+======================================================================
+Parameters:
+  * eax = 62 - function
+  * bl  = 12 - subfunction
+  * bh  = BAR number in PCI configuration space
+  * ecx = MMIO-block size needed (bytes)
+  * edx = MMIO-offset (number of whole 4Kb-pages!)
+Returns:
+  * eax = -1 - user PCI access denied; 
+  * eax = -2 - invalid BAR number; 
+  * eax = -3 - BAR contains no valid IO addres;
+  * eax = -4 - BAR addresses IO ports;
+  * eax = -5 - dynamic allocation error; otherwise
+  * eax = MMIO start address (in application's linear space).
+Remarks:
+  * Low-level PCI access must be allowed (fn21:12)
+  * The system var [mmio_pci_addr] sets the actual PCI-address
+  * The granted MMIO addresses should be released after use (fn62:13)
+
+======================================================================
+===================== Function 62, subfunction 13 ====================
+==              Release a block of user MMIO addresses              ==
+======================================================================
+Параметры:
+  * eax = 62 - function
+  * bl  = 12 - subfunction
+  * ecx = MMIO start address (in application's linear space).
+Returns:
+  * eax = 1 if the block is successfully released; 
+  * eax = 0 in case of reallocation error; 
+Remarks:
+  * A valid uMMIO block should exist at this address (fn62:12)
+
+======================================================================
 ============== Function 63 - work with the debug board. ==============
 ======================================================================
 The debug board is the global system buffer (with the size
