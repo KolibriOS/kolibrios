@@ -479,7 +479,7 @@ Try_MMIO:
 	mov	ebx, [gr_pos]
 	mov	edx, bar_ram
 	mcall	4
-                jump        mmio_dump
+                jmp        mmio_dump
 @@:
 	mov	ebx, [gr_pos]
 	mov	edx, bar_rom
