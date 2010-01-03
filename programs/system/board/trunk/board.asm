@@ -36,12 +36,13 @@ START:                          ; start of execution
      mcall 60,1,ipcbuff,IPC_BUF+20
      mcall 40,1000111b
      mov  [ipcbuff+4],8
-     mov  ecx,4096
-    flush:
-     mov  eax,63
-     mov  ebx,2
-     mcall
-     loop flush
+; allow user to see messages written before start
+;     mov  ecx,4096
+;    flush:
+;     mov  eax,63
+;     mov  ebx,2
+;     mcall
+;     loop flush
 
      mov  ecx, TMP
      xor  eax, eax
