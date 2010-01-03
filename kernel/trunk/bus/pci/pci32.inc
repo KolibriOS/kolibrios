@@ -74,13 +74,14 @@ pci_fn_3:
 	cmp al,10
 	jz pci_write_reg  ;dword
 
+if defined mmio_pci_addr
 	cmp al,11	    ; <<< user-level MMIO functions <<< NEW!
 	jz pci_mmio_init
 	cmp al,12
 	jz pci_mmio_map
 	cmp al,13
 	jz pci_mmio_unmap
-
+end if
 
       no_pci_access_for_applications:
 
@@ -374,6 +375,7 @@ pci_write_reg_err:
 	dec	eax
 	ret
 
+if defined mmio_pci_addr
 ;***************************************************************************
 ;   Function
 ;      pci_mmio_init ; NEW!
@@ -386,9 +388,8 @@ pci_write_reg_err:
 ;       eax = -2 : device not registered for uMMIO service
 ;       eax = -3 : user heap initialization failure
 ;***************************************************************************
-align 4
 pci_mmio_init:
-    cmp     bx, word [mmio_pci_addr]	; must be set in kernel/data32.inc
+    cmp     bx, mmio_pci_addr	; must be set in kernel/data32.inc
     jz	    @f
     mov     eax,-2
     ret
@@ -427,7 +428,6 @@ pci_mmio_init:
 ;       eax = -5 : dynamic userspace allocation problem
 ;***************************************************************************
 
-align 4
 pci_mmio_map:
     and     edx,0x0ffff
     cmp     ah,6
@@ -446,7 +446,7 @@ pci_mmio_map:
     shl     bl, 1
     shl     bl, 1
     add     bl, 0x10	; now bl = BAR offset in PCI config. space
-    mov     ax,word [mmio_pci_addr]
+    mov     ax, mmio_pci_addr
     mov     bh, al	; bh = dddddfff
     mov     al, 2	; al : DW to read
     call    pci_read_reg
@@ -504,11 +504,11 @@ mmio_map_over:
 ;       eax =  0 if unmapping failed
 ;***************************************************************************
 
-align 4
 pci_mmio_unmap:
     stdcall user_free, ebx
     ret
 
+end if
 
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 

@@ -7,6 +7,8 @@
 
 $Revision$
 
+;mmio_pci_addr	=	-1; set actual PCI address (word) here to activate user-MMIO
+
 keymap:
 
      db   '6',27
@@ -462,7 +464,5 @@ NumBiosDisks    rd 1
 BiosDisksData   rb 200h
 BiosDiskCaches  rb 80h*(cache_ide1-cache_ide0)
 BiosDiskPartitions rd 80h
-
-mmio_pci_addr	dw	-1; set actual PCI address here to activate user-MMIO
 
 IncludeUGlobals
