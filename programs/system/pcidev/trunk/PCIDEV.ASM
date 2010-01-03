@@ -1,4 +1,4 @@
-﻿;***************************************************************
+;***************************************************************
 ; project name:    PCI Device Enumeration
 ; target platform: KolibriOS
 ; compiler:        flat assembler 1.68
