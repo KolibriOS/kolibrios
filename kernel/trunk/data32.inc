@@ -7,7 +7,6 @@
 
 $Revision$
 
-;mmio_pci_addr	=	-1; set actual PCI address (word) here to activate user-MMIO
 
 keymap:
 
@@ -47,6 +46,7 @@ keymap_alt:
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
+mmio_pci_addr	dw  -1		 ; set actual PCI address here to activate user-MMIO
 
 
   boot_memdetect    db   'Determining amount of memory',0

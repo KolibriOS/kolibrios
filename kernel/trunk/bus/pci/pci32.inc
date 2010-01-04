@@ -382,7 +382,7 @@ if defined mmio_pci_addr
 ;
 ;   Description
 ;       IN:  bx = device's PCI bus address (bbbbbbbbdddddfff)
-;       returns ax = user heap space available (bytes)
+;   Returns  eax = user heap space available (bytes)
 ;   Error codes
 ;       eax = -1 : PCI user access blocked,
 ;       eax = -2 : device not registered for uMMIO service

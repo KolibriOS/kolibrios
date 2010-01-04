@@ -450,12 +450,12 @@ no_ummio_here:
 Try_MMIO:
 	xor	ebx, ebx
 	mov	edx, ebx
-	mov	bh, byte [MMIO_BAR]
+	mov	bh, [MMIO_BAR]
 	or	bx, 12			; function 12
 	mov	ecx, 4096		; =1 page to map
 	mcall	62
+	mov	[MMIO_Map], eax 	; store MMIO lin.addr.
 	mov	ecx, 0x80990022 	; print color : red
-	mov	bh, byte [MMIO_BAR]
 	add	bh, '0'
 	cmp	eax, -3
 	jne	@f
@@ -473,26 +473,26 @@ Try_MMIO:
 	mcall	4
 	jmp	mmio_next_bar
 @@:
-                cmp         bh, '6'	; expansion ROM ?
-                je             @f
+	cmp	bh, '6' 	; expansion ROM ?
+	je	@f
 	mov	[bar_ram+3], bh
 	mov	ebx, [gr_pos]
 	mov	edx, bar_ram
 	mcall	4
-                jmp        mmio_dump
+	jmp	mmio_dump
 @@:
 	mov	ebx, [gr_pos]
 	mov	edx, bar_rom
 	mcall	4
 
 mmio_dump:
-	mov	edx, eax
+	mov	edx, [MMIO_Map]
 	mov	esi, 64
 	mov	ecx, 0x099		; dump color : blue
 	add	ebx, 10
 	mov	[gr_pos], ebx
 	mcall	4
-	mov	ecx, eax		; release the tried page
+	mov	ecx, [MMIO_Map] 	; release the tried page
 	mcall	62,13
 
 mmio_next_bar:
@@ -518,8 +518,8 @@ DATA
 
 Form:	dw 800 ; window width (no more, special for 800x600)
 	dw 100 ; window x start
-	dw 420 ; window height
-	dw 100 ; window y start
+	dw 620 ; window height
+	dw 20 ; window y start
 
 title	db 'PCI Device Enumerator v 2.2 by J.Delozier, S.Kuzmin, V.Hanla, M.Zakiyanov, A.Jerdev', 0
 
@@ -537,7 +537,7 @@ PCIWin mls \
 bar_ram db 'BARx: MMIO block', 0
 bar_io	db 'BARx: IO ports',0
 bar_um	db 'BARx: unmapped',0
-bar_rom db 'BAR6: Expansion ROM', 0  
+bar_rom db 'BAR6: Expansion ROM', 0
 
 ;------------------------------------------------------------------
 ; UNINITIALIZED DATA AREA
