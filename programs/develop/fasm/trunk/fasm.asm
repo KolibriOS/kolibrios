@@ -11,7 +11,7 @@
 NORMAL_MODE    = 8
 CONSOLE_MODE   = 32
 
-MAGIC1         = 6*(text.line_size-1)+14
+MAGIC1	       = 6*(text.line_size-1)+14
 MAX_PATH       = 100
 
 APP_MEMORY     = 0x00800000
@@ -24,88 +24,115 @@ use32
 
   org 0x0
   db 'MENUET01'  ; 8 byte id
-  dd 0x01        ; header version
-  dd START       ; program start
+  dd 0x01	 ; header version
+  dd START	 ; program start
   dd program_end ; program image size
-  dd stacktop    ; required amount of memory
-  dd stacktop    ; stack
-  dd params,0x0  ; parameters,icon
+  dd stacktop	 ; required amount of memory
+  dd stacktop	 ; stack
+  dd params,cur_dir_path  ; parameters,icon
 
 include 'lang.inc'
 include '..\..\..\macros.inc'
-purge add,sub    ; macros.inc does incorrect substitution
+purge add,sub	 ; macros.inc does incorrect substitution
 include 'fasm.inc'
+
+include '..\..\..\develop\libraries\box_lib\trunk\editbox.mac'
+include '..\..\..\develop\libraries\box_lib\load_lib.mac'
+  @use_library
+
+
 
 center fix true
 
 START:	    ; Start of execution
-        mov     edi, fileinfos
-        mov     ecx, (fileinfos_end-fileinfos)/4
-        or      eax, -1
-        rep     stosd
-        push    68
-        pop     eax
-        push    11
-        pop     ebx
-        mcall
+sys_load_library  library_name, cur_dir_path, library_path, system_path, \
+  err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
 
-   cmp    [params],0
+  cmp eax,-1
+  jne @f
+    mcall -1 ;exit if not open box_lib.obj
+  @@:
+  mcall 40,0x27 ;маска системных событий
+
+	mov	edi, fileinfos
+	mov	ecx, (fileinfos_end-fileinfos)/4
+	or	eax, -1
+	rep	stosd
+	push	68
+	pop	eax
+	push	11
+	pop	ebx
+	mcall
+
+   cmp	  [params],0
    jz	    red
 
-   mov    ecx,10
-   mov    eax,'    '
-   mov    edi,infile
+   mov	  ecx,10
+   mov	  eax,'    '
+   mov	  edi,infile
    push   ecx
    cld
-   rep    stosd
-   mov    ecx,[esp]
-   mov    edi,outfile
-   rep    stosd
-   pop    ecx
-   mov    edi,path
-   rep    stosd
+   rep	  stosd
+   mov	  ecx,[esp]
+   mov	  edi,outfile
+   rep	  stosd
+   pop	  ecx
+   mov	  edi,path
+   rep	  stosd
 
-   mov     esi,params
+   mov	   esi,params
 ;  DEBUGF  "params: %s\n",esi
-   mov     edi,infile
+   mov	   edi,infile
    call    mov_param_str
 ;  mov     edi,infile
 ;  DEBUGF  " input: %s\n",edi
-   inc     esi
-   mov     edi,outfile
+   inc	   esi
+   mov	   edi,outfile
    call    mov_param_str
 ;  mov     edi,outfile
 ;  DEBUGF  "output: %s\n",edi
-   inc     esi
-   mov     edi,path
+   inc	   esi
+   mov	   edi,path
    call    mov_param_str
 ;  mov     edi,path
 ;  DEBUGF  "  path: %s\n",edi
 
-   cmp     [esi], dword ',run'
-   jne     @f
-   mov     [_run_outfile],1
+   cmp	   [esi], dword ',run'
+   jne	   @f
+   mov	   [_run_outfile],1
   @@:
 
-   mov     [_mode],CONSOLE_MODE
-   jmp     start
+   mov	   [_mode],CONSOLE_MODE
+   jmp	   start
 
 
 red:	; Redraw
     call draw_window
 
-still:  
-    push 10          ; Wait here for event
+still:	
+    push 10	     ; Wait here for event
     pop eax 
-    mcall 
-    dec eax 
-    je  red          ; Redraw request
-    dec eax 
-    jne button       ; Button in buffer
-
-key:                 ; Key
-    mov  al,2        ; Read it and ignore
     mcall
+    cmp al,6
+    jne @f
+      call mouse
+    @@:
+    dec eax 
+    je	red	     ; Redraw request
+    dec eax 
+    jne button	     ; Button in buffer
+
+key:		     ; Key
+    mov  al,2	     ; Read it and ignore
+    mcall
+
+    push dword edit1
+    call [edit_box_key]
+    push dword edit2
+    call [edit_box_key]
+    push dword edit3
+    call [edit_box_key]
+
     jmp  still
 
 button:    ; Button in Window
@@ -115,13 +142,13 @@ button:    ; Button in Window
 
     cmp     ah,1
     jne     noclose
-    or      eax,-1
+    or	    eax,-1
     mcall
 
 noclose:    
-    cmp  ah,2         ; Start compiling
-    je   start
-    cmp  ah,3         ; Start compiled file
+    cmp  ah,2	      ; Start compiling
+    je	 start
+    cmp  ah,3	      ; Start compiled file
     jnz  norunout
 
     mov  edx,outfile
@@ -142,37 +169,39 @@ noclose:
     mov  ecx,5
     mov  [ya],ecx
 
-    cmp  ah,11	   ; Infile
-    je   f1
-    cmp  ah,12	   ; Outfile
-    je   f2
-    cmp  ah,13	   ; Path
-    je   f3
     cmp  ah,14
-    je   f4
+    je	 f4
 
     jmp  still
 
 f4:
-        xor     [bGenerateDebugInfo], 1
-        mcall   8,,,0x8000000E
-        call    draw_checkbox
-        jmp     still
+	xor	[bGenerateDebugInfo], 1
+	mcall	8,,,0x8000000E
+	call	draw_checkbox
+	jmp	still
+
+mouse:
+  push dword edit1
+  call [edit_box_mouse]
+  push dword edit2
+  call [edit_box_mouse]
+  push dword edit3
+  call [edit_box_mouse]
+  ret
 
 draw_window:
-
     pusha
 
     mcall  12,1 ; Start of draw
 
     get_sys_colors 1,0
 
-    xor  eax,eax                     
+    xor  eax,eax		     
     mov  ebx,100*65536+280
     mov  ecx,90*65536+260
     mov  edx,[sc.work]
-    or   edx,0x33000000
-    mov  edi,title             ; Draw Window Label Text
+    or	 edx,0x33000000
+    mov  edi,title	       ; Draw Window Label Text
     mcall
 
     mcall 9,PROCESSINFO,-1	    
@@ -181,35 +210,12 @@ draw_window:
     mov   ebx,[pinfo.box.width]
     sub   ebx,10
 
-    push  ecx
-    madd  ecx, 14*3+16+2, 14*3+16+2
-    mcall 38,,,[sc.work_graph]
-    pop   ecx
-
-    sub   ebx,MAGIC1+3
-    mcall
-    madd  ecx, 14, 14
-    mcall
-    madd  ecx, 14, 14
-    mcall
-    madd  ecx, 14, 14
-    mcall
-    push  ebx
-    mpack ebx,MAGIC1,MAGIC1
-    sub   ecx, 14*3
-    mcall
-    mov   ebx,[esp-2]
-    pop   bx
-    mcall
-    add   esp,2
-
-    mpack ebx,0,MAGIC1-1
-    mpack ecx,1+1, 14-2
-    mcall 8,,,0x4000000B       ; Button: Enter Infile
+mov eax,8
+mov edx,0x4000000B
     madd  ecx, 14,0
-    mcall  ,,,0x4000000C       ; Button: Enter Outfile
+;    mcall  ,,,0x4000000C       ; Button: Enter Outfile
     madd  ecx, 14,0
-    mcall  ,,,0x4000000D       ; Button: Enter Path
+;    mcall  ,,,0x4000000D       ; Button: Enter Path
 
     mpack ebx,[pinfo.box.width],MAGIC1
     msub  ebx,MAGIC1+10+1,0
@@ -229,7 +235,7 @@ draw_window:
     mov  eax,4
    newline:
     mcall
-    add  ebx, 14
+    add  ebx, 16 ;14
     add  edx,text.line_size
     cmp  byte[edx],'x'
     jne  newline
@@ -255,15 +261,16 @@ draw_window:
     jbe   @f
     mov   al,MAX_PATH
 @@: movzx esi,al
-    mcall 4,,[sc.work_text],infile
-    add   ebx,14
-    mcall ,,,outfile
-    add   ebx,14
-    mcall ,,,path
 
-        call    draw_checkbox
+    call draw_checkbox
+    call draw_messages
 
-    call  draw_messages
+    push dword edit1
+    call [edit_box_draw]
+    push dword edit2
+    call [edit_box_draw]
+    push dword edit3
+    call [edit_box_draw]
 
     mcall  12,2 ; End of Draw
 
@@ -273,17 +280,17 @@ draw_window:
 bottom_right dd ?
 
 draw_checkbox:
-        mcall   8,<5,10>,<14*3+5,10>,14,[sc.work_button]
-        cmp     [bGenerateDebugInfo], 0
-        jz      @f
-        mov     edx, [sc.work_button_text]
-        mcall   38,<7,13>,<14*3+7,14*3+13>
-        mcall   38,,<14*3+13,14*3+7>
+	mcall	8,<5,10>,<14*3+5,10>,14,[sc.work_button]
+	cmp	[bGenerateDebugInfo], 0
+	jz	@f
+	mov	edx, [sc.work_button_text]
+	mcall	38,<7,13>,<14*3+7,14*3+13>
+	mcall	38,,<14*3+13,14*3+7>
 @@:
-        mov     ecx, [sc.work_text]
-        or      ecx, 0x80000000
-        mcall   4,<20,14*3+7>,,s_dbgdescr
-        ret
+	mov	ecx, [sc.work_text]
+	or	ecx, 0x80000000
+	mcall	4,<20,14*3+7>,,s_dbgdescr
+	ret
 
 draw_messages:
     mov    eax,13      ; clear work area
@@ -328,101 +335,29 @@ _sx = 6
     pop    ecx ebx
     ret
 
-; read string
-
-f1: mov  [addr],infile
-    add  [ya], 14*0
-    jmp  rk
-f2: mov  [addr],outfile
-    add  [ya], 14*1
-    jmp  rk
-f3: mov  [addr],path
-    add  [ya], 14*2
-rk:
-
-    mov  edi,[addr]
-    mov  al,0
-    mov  ecx,MAX_PATH
-    add  edi,ecx
-    dec  edi
-    std
-    repe scasb
-    sub  ecx,MAX_PATH
-    neg  ecx
-    mov  al,$1C ; ''
-    add  edi,2
-    push  edi
-    cld
-    rep  stosb
-    call print_text
-    pop edi
-f11:mcall  10
-    cmp    eax,2
-    jne read_done
-    mcall; 2
-    shr    eax,8
-    cmp    al,13
-    je	  read_done
-    cmp    al,8
-    jne nobs
-    cmp    edi,[addr]
-    je	  f11
-    sub    edi,1
-    mov    byte[edi],$1C ; '_'
-    call   print_text
-    jmp    f11
-   nobs:
-    movzx  ebx,al
-    sub    ebx,$20
-    jle    f11
-    sub    al,[sub_table+ebx]
-   keyok:
-    mov    ecx,[addr]
-    add    ecx,MAX_PATH
-    cmp    edi,ecx
-    jae    f11
-    mov    [edi],al
-
-    call   print_text
-    inc    edi
-    jmp f11
-
-  read_done:
-
-    mov    ecx,[addr]
-    add    ecx,MAX_PATH
-    sub    ecx,edi
-    mov    al,0;' '
-    cld
-    rep    stosb
-    call   print_text
-
-    jmp    still
-
-print_text:
-
-    mpack ebx,MAGIC1+6,[pinfo.box.width]
-    sub   ebx,MAGIC1*2+19
-    movzx esi,bx
-    mov   ecx,[ya-2]
-    mov   cx,8
-    mcall 13,,,[sc.work]
-
-    mpack ebx,MAGIC1+6,[ya]
-    mov   eax,esi
-    mov   cl,6
-    div   cl
-    cmp   al,MAX_PATH
-    jbe   @f
-    mov   al,MAX_PATH
-@@: movzx esi,al
-    mcall 4,,[sc.work_text],[addr]
-
-    ret
-
 
 ; DATA
 
+if lang eq ru
+text:
+  db ' ВхФайл:'
+.line_size = $-text
+  db 'ВыхФайл:'
+  db '   Путь:'
+  db 'x'
+
+  s_compile db 'Компил.'
+  s_run     db ' Пуск  '
+  s_debug   db 'Отладка'
+  s_dbgdescr	  db	  'Создавать отладочную информацию',0
+
+  err_message_import db 'Ошибка при импорте box_lib.obj',0
+  err_message_found_lib db 'Ошибка при поиске box_lib.obj',0 ;строка, которая будет в сформированном окне, если библиотека не будет найдена
+  head_f_i: 
+  head_f_l db 'Системная ошибка',0 ;заголовок окна, при возникновении ошибки
+  system_path db '/sys/lib/'
+  library_name db 'box_lib.obj',0
+else
 text:
   db ' INFILE:'
 .line_size = $-text
@@ -430,11 +365,45 @@ text:
   db '   PATH:'
   db 'x'
 
-s_compile db 'COMPILE'
-s_run     db '  RUN  '
-s_debug   db ' DEBUG '
+  s_compile db 'COMPILE'
+  s_run     db '  RUN  '
+  s_debug   db ' DEBUG '
+  s_dbgdescr	  db	  'Generate debug information',0
 
-s_dbgdescr      db      'Generate debug information',0
+  err_message_import db 'Error on load import library box_lib.obj',0
+  err_message_found_lib db 'Sorry I cannot found library box_lib.obj',0 ;строка, которая будет в сформированном окне, если библиотека не будет найдена
+  head_f_i: 
+  head_f_l db 'System error',0 ;заголовок окна, при возникновении ошибки
+  system_path db '/sys/lib/'
+  library_name db 'box_lib.obj',0
+end if
+
+myimport:
+  edit_box_draw  dd aEdit_box_draw
+  edit_box_key	 dd aEdit_box_key
+  edit_box_mouse dd aEdit_box_mouse
+  ;version_ed     dd aVersion_ed
+
+  ;check_box_draw  dd aCheck_box_draw
+  ;check_box_mouse dd aCheck_box_mouse
+  ;version_ch      dd aVersion_ch
+
+  dd 0,0
+
+  aEdit_box_draw  db 'edit_box',0
+  aEdit_box_key   db 'edit_box_key',0
+  aEdit_box_mouse db 'edit_box_mouse',0
+  ;aVersion_ed     db 'version_ed',0
+
+  ;aCheck_box_draw  db 'check_box_draw',0
+  ;aCheck_box_mouse db 'check_box_mouse',0
+  ;aVersion_ch      db 'version_ch',0
+
+edit1 edit_box 153, 56, 1, 0xe0ffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, infile, mouse_dd, 0, 11,11
+edit2 edit_box 153, 56, 17, 0xe0ffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, outfile, mouse_dd, 0, 7,7
+edit3 edit_box 153, 56, 33, 0xe0ffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, path, mouse_dd, 0, 6,6
+
+mouse_dd dd 0 ;эєцэю фы  Shift-р т editbox
 
 infile	  db 'example.asm'
   times MAX_PATH+$-infile  db 0
@@ -490,7 +459,7 @@ start:
     call   parser
     call   assembler
     cmp    [bGenerateDebugInfo], 0
-    jz     @f
+    jz	   @f
     call   symbol_dump
 @@:
     call   formatter
@@ -527,7 +496,7 @@ start:
     xor    al,al
 
     cmp    [_run_outfile],0
-    je     @f
+    je	   @f
     mov    edx,outfile
     call   make_fullpaths
     mov    eax,70
@@ -579,10 +548,13 @@ times $08 db $00
 
 ;include_debug_strings
 
-params db 0 ; 'TINYPAD.ASM,TINYPAD,/HD/1/TPAD4/',
-program_end:
-rb 1000h
+  params db 0 ; 'TINYPAD.ASM,TINYPAD,/HD/1/TPAD4/',
+  cur_dir_path rb 4096
+  library_path rb 4096
 
+program_end:
+
+rb 1000h
 align 4
 
 include 'variable.inc'
@@ -595,7 +567,7 @@ memblock	dd	?
 
 predefinitions rb 1000h
 
-dbgfilename     rb      MAX_PATH+4
+dbgfilename	rb	MAX_PATH+4
 
 sc    system_colors
 max_handles = 8
