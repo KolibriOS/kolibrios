@@ -46,7 +46,7 @@ keymap_alt:
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-mmio_pci_addr	dw  -1		 ; set actual PCI address here to activate user-MMIO
+;mmio_pci_addr	equ  -1		 ; set actual PCI address here to activate user-MMIO
 
 
   boot_memdetect    db   'Determining amount of memory',0
