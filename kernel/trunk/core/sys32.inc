@@ -597,13 +597,13 @@ term9:
     shl   esi,5
     add   esi,window_data
     mov   eax,[esi+WDATA.box.left]
-    mov   [dlx],eax
+    mov   [draw_limits.left],eax
     add   eax,[esi+WDATA.box.width]
-    mov   [dlxe],eax
+    mov   [draw_limits.right],eax
     mov   eax,[esi+WDATA.box.top]
-    mov   [dly],eax
+    mov   [draw_limits.top],eax
     add   eax,[esi+WDATA.box.height]
-    mov   [dlye],eax
+    mov   [draw_limits.bottom],eax
 
     xor   eax, eax
     mov   [esi+WDATA.box.left],eax
@@ -807,10 +807,10 @@ term9:
 ;    call  systest
     sti  ; .. and life goes on
 
-    mov   eax, [dlx]
-    mov   ebx, [dly]
-    mov   ecx, [dlxe]
-    mov   edx, [dlye]
+    mov   eax, [draw_limits.left]
+    mov   ebx, [draw_limits.top]
+    mov   ecx, [draw_limits.right]
+    mov   edx, [draw_limits.bottom]
     call  calculatescreen
     xor   eax, eax
     xor   esi, esi

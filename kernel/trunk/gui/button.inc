@@ -42,22 +42,22 @@ align 4
 ;------------------------------------------------------------------------------
 syscall_button: ;///// system function 8 //////////////////////////////////////
 ;------------------------------------------------------------------------------
-; Define/undefine GUI button object
+;? Define/undefine GUI button object
 ;------------------------------------------------------------------------------
-; Define button arguments:
-; ebx = pack[16(x), 16(width)]
-; ecx = pack[16(y), 16(height)]
-; edx = pack[8(flags), 24(button identifier)]
-;       flags bits:
-;          7 (31) = 0
-;          6 (30) = don't draw button
-;          5 (29) = don't draw button frame when pressed
-; esi = button color
+;; Define button:
+;> ebx = pack[16(x), 16(width)]
+;> ecx = pack[16(y), 16(height)]
+;> edx = pack[8(flags), 24(button identifier)]
+;>       flags bits:
+;>          7 (31) = 0
+;>          6 (30) = don't draw button
+;>          5 (29) = don't draw button frame when pressed
+;> esi = button color
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-; Undefine button arguments:
-; edx = pack[8(flags), 24(button identifier)]
-;       flags bits:
-;          7 (31) = 1
+;; Undefine button:
+;> edx = pack[8(flags), 24(button identifier)]
+;>       flags bits:
+;>          7 (31) = 1
 ;------------------------------------------------------------------------------
         ; do we actually need to undefine the button?
         test    edx, 0x80000000
@@ -264,7 +264,7 @@ align 4
 ;------------------------------------------------------------------------------
 check_buttons: ;///////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
-; <description>
+;? <description>
 ;------------------------------------------------------------------------------
         cmp     byte[BTN_DOWN], 0    ; mouse buttons pressed
         jnz     @f
@@ -460,7 +460,7 @@ check_buttons: ;///////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 button._.dececx: ;/////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
-; <description>
+;? <description>
 ;------------------------------------------------------------------------------
         sub     cl, 0x20
         jnc     @f
@@ -478,7 +478,7 @@ button._.dececx: ;/////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 button._.incecx: ;/////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
-; <description>
+;? <description>
 ;------------------------------------------------------------------------------
         add     cl, 0x20
         jnc     @f
@@ -496,7 +496,7 @@ button._.incecx: ;/////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 button._.incecx2: ;////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
-; <description>
+;? <description>
 ;------------------------------------------------------------------------------
         add     cl, 0x14
         jnc     @f
@@ -514,7 +514,7 @@ button._.incecx2: ;////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 button._.button_dececx: ;//////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
-; <description>
+;? <description>
 ;------------------------------------------------------------------------------
         cmp     [buttontype], 1
         jne     .finish
@@ -545,76 +545,35 @@ button._.button_dececx: ;//////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 button._.negative_button: ;////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
-; <description>
+;? <description>
 ;------------------------------------------------------------------------------
-        ; If requested, do not display button border on press.
+        ; if requested, do not display button border on press.
         test    ebx, 0x20000000
-        jz      .draw_negative_button
-        ret
+        jnz     .exit
 
-  .draw_negative_button:
         pushad
 
-        mov     ebx, dword[eax + SYS_BUTTON.left]
-        mov     ecx, dword[eax + SYS_BUTTON.top]
+        xchg    esi, eax
+
+        movzx   ecx, [esi + SYS_BUTTON.pslot]
+        shl     ecx, 5
+        add     ecx, window_data
+
+        mov     eax, dword[esi + SYS_BUTTON.left]
+        mov     ebx, dword[esi + SYS_BUTTON.top]
+        add     eax, [ecx + WDATA.box.left]
+        add     ebx, [ecx + WDATA.box.top]
+        push    eax ebx
+        pop     edx ecx
+        rol     eax, 16
         rol     ebx, 16
-        rol     ecx, 16
-        push    ebx ecx
+        add     ax, cx
+        add     bx, dx
 
-        ; calculate window-relative coordinates
-        shr     ebx, 16
-        shr     ecx, 16
-        movzx   eax, word[eax + SYS_BUTTON.pslot]
-        shl     eax, 5
-        add     eax, window_data
-        add     ebx, [eax + WDATA.box.left]
-        add     ecx, [eax + WDATA.box.top]
-
-        xor     edi, edi
-        inc     edi
-
-        ; top border
-        mov     eax, ebx
-        shl     eax, 16
-        mov     ax, bx
-        add     ax, [esp + 4]
-        mov     ebx, ecx
-        shl     ebx, 16
-        mov     bx, cx
-        push    ebx
-        mov     ecx, 0x01000000
-        call    [draw_line]
-
-        ; bottom border
-        movzx   edx, word[esp + 4 + 0]
-        add     ebx, edx
-        shl     edx, 16
-        add     ebx, edx
-        call    [draw_line]
-
-        ; left border
-        pop     ebx
-        push    edx
-        mov     edx, eax
-        shr     edx, 16
-        mov     ax, dx
-        mov     edx, ebx
-        shr     edx, 16
-        mov     bx, dx
-        add     bx, [esp + 4 + 0]
-        pop     edx
-        add     ebx, 0x00010000
-        dec     bx
-        call    [draw_line]
-
-        ; right border
-        mov     dx, [esp + 4]
-        add     ax, dx
-        shl     edx, 16
-        add     eax, edx
-        call    [draw_line]
-
-        pop     ecx ebx
+        mov     esi, 0x01000000
+        call    draw_rectangle.forced
 
         popad
+
+  .exit:
         ret

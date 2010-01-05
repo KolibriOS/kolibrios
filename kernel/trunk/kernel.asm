@@ -684,7 +684,7 @@ end if
 
         mov   esi,boot_windefs
         call  boot_log
-        call  setwindowdefaults
+        call  set_window_defaults
 
 ; SET BACKGROUND DEFAULTS
 
@@ -3348,10 +3348,10 @@ sys_window_move:
         pop   eax
         add   ecx,eax
         add   edx,ebx
-        mov   [dlx],eax             ; save for drawlimits
-        mov   [dly],ebx
-        mov   [dlxe],ecx
-        mov   [dlye],edx
+        mov   [draw_limits.left],eax             ; save for drawlimits
+        mov   [draw_limits.top],ebx
+        mov   [draw_limits.right],ecx
+        mov   [draw_limits.bottom],edx
         call  calculatescreen
 
         mov   [edi + WDATA.fl_redraw], 1 ; flag the process as redraw
@@ -3667,11 +3667,11 @@ redrawscreen:
          add   ecx,eax
          add   edx,ebx
 
-         mov   ecx,[dlye]   ; ecx = area y end     ebx = window y start
+         mov   ecx,[draw_limits.bottom]   ; ecx = area y end     ebx = window y start
          cmp   ecx,ebx
          jb    ricino
 
-         mov   ecx,[dlxe]   ; ecx = area x end     eax = window x start
+         mov   ecx,[draw_limits.right]   ; ecx = area x end     eax = window x start
          cmp   ecx,eax
          jb    ricino
 
@@ -3682,11 +3682,11 @@ redrawscreen:
          add   ecx, eax
          add   edx, ebx
 
-         mov   eax,[dly]    ; eax = area y start     edx = window y end
+         mov   eax,[draw_limits.top]    ; eax = area y start     edx = window y end
          cmp   edx,eax
          jb    ricino
 
-         mov   eax,[dlx]    ; eax = area x start     ecx = window x end
+         mov   eax,[draw_limits.left]    ; eax = area x start     ecx = window x end
          cmp   ecx,eax
          jb    ricino
 
@@ -3700,22 +3700,22 @@ redrawscreen:
          test  al,al
          jz    .az
          lea   eax,[edi+draw_data-window_data]
-         mov   ebx,[dlx]
+         mov   ebx,[draw_limits.left]
          cmp   ebx,[eax+RECT.left]
          jae   @f
          mov   [eax+RECT.left],ebx
         @@:
-         mov   ebx,[dly]
+         mov   ebx,[draw_limits.top]
          cmp   ebx,[eax+RECT.top]
          jae   @f
          mov   [eax+RECT.top],ebx
         @@:
-         mov   ebx,[dlxe]
+         mov   ebx,[draw_limits.right]
          cmp   ebx,[eax+RECT.right]
          jbe   @f
          mov   [eax+RECT.right],ebx
         @@:
-         mov   ebx,[dlye]
+         mov   ebx,[draw_limits.bottom]
          cmp   ebx,[eax+RECT.bottom]
          jbe   @f
          mov   [eax+RECT.bottom],ebx
@@ -3726,13 +3726,13 @@ redrawscreen:
          mov   eax,edi
          add   eax,draw_data-window_data
 
-         mov   ebx,[dlx]          ; set limits
+         mov   ebx,[draw_limits.left]          ; set limits
          mov   [eax + RECT.left], ebx
-         mov   ebx,[dly]
+         mov   ebx,[draw_limits.top]
          mov   [eax + RECT.top], ebx
-         mov   ebx,[dlxe]
+         mov   ebx,[draw_limits.right]
          mov   [eax + RECT.right], ebx
-         mov   ebx,[dlye]
+         mov   ebx,[draw_limits.bottom]
          mov   [eax + RECT.bottom], ebx
 
          sub   eax,draw_data-window_data
