@@ -148,7 +148,7 @@
 ;                 * detect Revision, Class and Subclass of Device,
 ;                 * and make Description based on Class
 ;-------------------------------------------------------------
-include '..\..\macros.inc'
+include '../../../macros.inc'
 ;include 'macros.inc'
 
 MEOS_APP_START
