@@ -265,6 +265,16 @@ mov edx,0x4000000B
     call draw_checkbox
     call draw_messages
 
+    mov eax,dword[pinfo.box.width]
+    cmp eax,250
+    jge @f
+      mov eax,250
+    @@:
+    sub eax,127
+    mov dword[edit1.width],eax
+    mov dword[edit2.width],eax
+    mov dword[edit3.width],eax
+
     push dword edit1
     call [edit_box_draw]
     push dword edit2
@@ -399,9 +409,9 @@ myimport:
   ;aCheck_box_mouse db 'check_box_mouse',0
   ;aVersion_ch      db 'version_ch',0
 
-edit1 edit_box 153, 56, 1, 0xe0ffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, infile, mouse_dd, 0, 11,11
-edit2 edit_box 153, 56, 17, 0xe0ffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, outfile, mouse_dd, 0, 7,7
-edit3 edit_box 153, 56, 33, 0xe0ffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, path, mouse_dd, 0, 6,6
+edit1 edit_box 153, 56, 1, 0xffffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, infile, mouse_dd, 0, 11,11
+edit2 edit_box 153, 56, 17, 0xffffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, outfile, mouse_dd, 0, 7,7
+edit3 edit_box 153, 56, 33, 0xffffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, path, mouse_dd, 0, 6,6
 
 mouse_dd dd 0 ;нужно для Shift-а в editbox
 

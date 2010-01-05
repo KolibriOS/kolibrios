@@ -2,6 +2,36 @@
 Visit http://flatassembler.net/ for more information.
 
 
+version 1.69.11 (Dec 19, 2009)
+
+[+] Allowed syntax of "pmovmskb" with 64-bit register destination in long mode.
+
+[-] The code generated for "call eax" instruction was missing prefix in 16-bit
+    mode - fixed.
+
+
+version 1.69.10 (Oct 28, 2009)
+
+[-] Fixed long mode opcode generator to allow absolute addresses to be
+    generated with "qword" keyword inside square brackets.
+
+
+version 1.69.09 (Oct 20, 2009)
+
+[-] Fixed a crash during the symbolic information generation when a "static"
+    symbol was encountered.
+
+
+version 1.69.08 (Oct 04, 2009)
+
+[-] Minor bugfixes.
+
+
+version 1.69.07 (Oct 03, 2009)
+
+[-] Corrected encoding of "extrq" intruction for some cases.
+
+
 version 1.69.06 (Sep 29, 2009)
 
 [-] The prefix 67h for "jecxz" and "loopd" instructions in 64-bit mode wasn't
