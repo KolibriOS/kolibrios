@@ -3408,7 +3408,6 @@ sheduler:
 endg
 sys_sheduler:   
 ;rewritten by <Lrz>  29.12.2009
-;	jmp	dword [sheduler+eax*4]
 	jmp	dword [sheduler+ebx*4]
 ;.shed_counter:
 .00:
@@ -3418,23 +3417,23 @@ sys_sheduler:
 
 .02:
 ;.perf_control:
-;	test	ebx,ebx
-;	jz 	modify_pce		;if ecx=0
-;	dec	ebx
-;	jz      is_cache_enabled	;if ecx=1
-;	dec	ebx
-;	jz	cache_enable		;if ecx=2
-;	ret
-;;;;;;;;
-	test	ecx,ecx
+	inc	ebx			;before ebx=2, ebx=3
+        cmp	ebx,ecx			;if ecx=3, ebx=3
+        jz 	cache_disable		
+
+	dec	ebx                     ;ebx=2
+	cmp	ebx,ecx                 ;
+	jz	cache_enable		;if ecx=2 and ebx=2
+
+	dec	ebx                     ;ebx=1
+	cmp	ebx,ecx
+	jz      is_cache_enabled	;if ecx=1 and ebx=1
+
+	dec	ebx
+	test	ebx,ecx                 ;ebx=0 and ecx=0
 	jz 	modify_pce		;if ecx=0
-	dec	ecx
-	jz      is_cache_enabled	;if ecx=1
-	dec	ecx
-	jz	cache_enable		;if ecx=2
+
 	ret
-
-
 
 .03:	
 ;.rdmsr_instr:
