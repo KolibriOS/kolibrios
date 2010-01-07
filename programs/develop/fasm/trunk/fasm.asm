@@ -409,9 +409,9 @@ myimport:
   ;aCheck_box_mouse db 'check_box_mouse',0
   ;aVersion_ch      db 'version_ch',0
 
-edit1 edit_box 153, 56, 1, 0xffffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, infile, mouse_dd, 0, 11,11
-edit2 edit_box 153, 56, 17, 0xffffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, outfile, mouse_dd, 0, 7,7
-edit3 edit_box 153, 56, 33, 0xffffff, 0xff, 0x80ff, 0, 0xa000, MAX_PATH+$, path, mouse_dd, 0, 6,6
+edit1 edit_box 153, 56, 1, 0xffffff, 0xff, 0x80ff, 0, 0xa000, (outfile-infile-1), infile, mouse_dd, 0, 11,11
+edit2 edit_box 153, 56, 17, 0xffffff, 0xff, 0x80ff, 0, 0xa000,(path-outfile-1), outfile, mouse_dd, 0, 7,7
+edit3 edit_box 153, 56, 33, 0xffffff, 0xff, 0x80ff, 0, 0xa000,(path_end-path-1), path, mouse_dd, 0, 6,6
 
 mouse_dd dd 0 ;нужно для Shift-а в editbox
 
@@ -421,7 +421,7 @@ outfile db 'example'
   times MAX_PATH+$-outfile db 0
 path	db '/rd/1/'
   times MAX_PATH+$-path    db 0
-
+path_end:
 lf db 13,10,0
 
 addr dd 0x0
