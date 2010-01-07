@@ -1134,7 +1134,7 @@ endg
 align 4
 f68:
            cmp  ebx,4
-           jle  sys_sheduler
+           jbe  sys_sheduler
 
            cmp ebx, 11
            jb .fail
