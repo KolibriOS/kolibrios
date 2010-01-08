@@ -37,6 +37,8 @@ purge add,sub	 ; macros.inc does incorrect substitution
 include 'fasm.inc'
 
 include '..\..\..\develop\libraries\box_lib\trunk\editbox.mac'
+include '..\..\..\develop\libraries\box_lib\trunk\checkbox.mac'
+;include '..\..\..\develop\libraries\box_lib\asm\trunk\editbox_ex.mac'
 include '..\..\..\develop\libraries\box_lib\load_lib.mac'
   @use_library
 
@@ -166,19 +168,9 @@ noclose:
     jmp  still
 
    norundebug:
-    mov  ecx,5
-    mov  [ya],ecx
-
-    cmp  ah,14
-    je	 f4
 
     jmp  still
 
-f4:
-	xor	[bGenerateDebugInfo], 1
-	mcall	8,,,0x8000000E
-	call	draw_checkbox
-	jmp	still
 
 mouse:
   push dword edit1
@@ -187,6 +179,8 @@ mouse:
   call [edit_box_mouse]
   push dword edit3
   call [edit_box_mouse]
+  push dword ch1_dbg
+  call [check_box_mouse]
   ret
 
 draw_window:
@@ -206,17 +200,17 @@ draw_window:
 
     mcall 9,PROCESSINFO,-1	    
 
+    cmp dword[pinfo.box.width],230 ; яЁютхЁ хь °шЁшэє юъэр
+    jge @f
+      mov dword[pinfo.box.width],230 ; хёыш юъэю юўхэ№ єчъюх, єтхышўштрхь °шЁшэє фы  шчсхцрэш  уы■ъют
+    @@:
+
     mpack ecx,1,1
     mov   ebx,[pinfo.box.width]
     sub   ebx,10
 
-mov eax,8
-mov edx,0x4000000B
-    madd  ecx, 14,0
-;    mcall  ,,,0x4000000C       ; Button: Enter Outfile
-    madd  ecx, 14,0
-;    mcall  ,,,0x4000000D       ; Button: Enter Path
-
+    mov eax,8
+    mov edx,0x4000000B
     mpack ebx,[pinfo.box.width],MAGIC1
     msub  ebx,MAGIC1+10+1,0
     mpack ecx,0, (14*3+16)/3-1
@@ -262,16 +256,11 @@ mov edx,0x4000000B
     mov   al,MAX_PATH
 @@: movzx esi,al
 
-    call draw_checkbox
     call draw_messages
 
     mov eax,dword[pinfo.box.width]
-    cmp eax,250
-    jge @f
-      mov eax,250
-    @@:
     sub eax,127
-    mov dword[edit1.width],eax
+    mov dword[edit1.width],eax ; єёЄрэртыштрхь °шЁшэє ЄхъёЄют√ї яюыхщ
     mov dword[edit2.width],eax
     mov dword[edit3.width],eax
 
@@ -281,6 +270,8 @@ mov edx,0x4000000B
     call [edit_box_draw]
     push dword edit3
     call [edit_box_draw]
+    push dword ch1_dbg
+    call [check_box_draw]
 
     mcall  12,2 ; End of Draw
 
@@ -288,19 +279,6 @@ mov edx,0x4000000B
     ret
 
 bottom_right dd ?
-
-draw_checkbox:
-	mcall	8,<5,10>,<14*3+5,10>,14,[sc.work_button]
-	cmp	[bGenerateDebugInfo], 0
-	jz	@f
-	mov	edx, [sc.work_button_text]
-	mcall	38,<7,13>,<14*3+7,14*3+13>
-	mcall	38,,<14*3+13,14*3+7>
-@@:
-	mov	ecx, [sc.work_text]
-	or	ecx, 0x80000000
-	mcall	4,<20,14*3+7>,,s_dbgdescr
-	ret
 
 draw_messages:
     mov    eax,13      ; clear work area
@@ -359,7 +337,8 @@ text:
   s_compile db 'Компил.'
   s_run     db ' Пуск  '
   s_debug   db 'Отладка'
-  s_dbgdescr	  db	  'Создавать отладочную информацию',0
+  s_dbgdescr db 'Создавать отладочную информацию',0
+  s_dbgdescr_end:
 
   err_message_import db 'Ошибка при импорте box_lib.obj',0
   err_message_found_lib db 'Ошибка при поиске box_lib.obj',0 ;строка, которая будет в сформированном окне, если библиотека не будет найдена
@@ -378,7 +357,8 @@ text:
   s_compile db 'COMPILE'
   s_run     db '  RUN  '
   s_debug   db ' DEBUG '
-  s_dbgdescr	  db	  'Generate debug information',0
+  s_dbgdescr db 'Generate debug information',0
+  s_dbgdescr_end:
 
   err_message_import db 'Error on load import library box_lib.obj',0
   err_message_found_lib db 'Sorry I cannot found library box_lib.obj',0 ;строка, которая будет в сформированном окне, если библиотека не будет найдена
@@ -394,8 +374,8 @@ myimport:
   edit_box_mouse dd aEdit_box_mouse
   ;version_ed     dd aVersion_ed
 
-  ;check_box_draw  dd aCheck_box_draw
-  ;check_box_mouse dd aCheck_box_mouse
+  check_box_draw  dd aCheck_box_draw
+  check_box_mouse dd aCheck_box_mouse
   ;version_ch      dd aVersion_ch
 
   dd 0,0
@@ -405,28 +385,37 @@ myimport:
   aEdit_box_mouse db 'edit_box_mouse',0
   ;aVersion_ed     db 'version_ed',0
 
-  ;aCheck_box_draw  db 'check_box_draw',0
-  ;aCheck_box_mouse db 'check_box_mouse',0
+  aCheck_box_draw  db 'check_box_draw',0
+  aCheck_box_mouse db 'check_box_mouse',0
   ;aVersion_ch      db 'version_ch',0
 
-edit1 edit_box 153, 56, 1, 0xffffff, 0xff, 0x80ff, 0, 0xa000, (outfile-infile-1), infile, mouse_dd, 0, 11,11
-edit2 edit_box 153, 56, 17, 0xffffff, 0xff, 0x80ff, 0, 0xa000,(path-outfile-1), outfile, mouse_dd, 0, 7,7
-edit3 edit_box 153, 56, 33, 0xffffff, 0xff, 0x80ff, 0, 0xa000,(path_end-path-1), path, mouse_dd, 0, 6,6
+edit1 edit_box 153, 56, 1, 0xffffff, 0xff, 0x80ff, 0, 0x8000, (outfile-infile-1), infile, mouse_dd, 0, 11,11
+edit2 edit_box 153, 56, 17, 0xffffff, 0xff, 0x80ff, 0, 0x8000,(path-outfile-1), outfile, mouse_dd, 0, 7,7
+edit3 edit_box 153, 56, 33, 0xffffff, 0xff, 0x80ff, 0, 0x8000,(path_end-path-1), path, mouse_dd, 0, 6,6
+;ch1_dbg check_box 5, 49, 6, 12, 0xffffff, 0x80ff, 0, s_dbgdescr,(s_dbgdescr_end-s_dbgdescr)
+ch1_dbg:
+  .left:	   dw  5
+  .top: 	   dw 49
+  .ch_text_margin: dd 6
+  .ch_size:	   dd 12
+  .color:	   dd 0xffffff
+  .border_color:   dd 0x80ff
+  .text_color:	   dd 0
+  .text:	   dd s_dbgdescr
+  .ch_text_length: dd (s_dbgdescr_end-s_dbgdescr)
+  .flags:	   dd 0
 
 mouse_dd dd 0 ;эєцэю фы  Shift-р т editbox
 
 infile	  db 'example.asm'
-  times MAX_PATH+$-infile  db 0
+  times MAX_PATH-$+infile  db 0
 outfile db 'example'
-  times MAX_PATH+$-outfile db 0
+  times MAX_PATH-$+outfile db 0
 path	db '/rd/1/'
-  times MAX_PATH+$-path    db 0
+  times MAX_PATH-$+path    db 0
 path_end:
 lf db 13,10,0
 
-addr dd 0x0
-ya   dd 0x0
-zero db 0x0
 
 mov_param_str:
   @@:
@@ -468,8 +457,8 @@ start:
     call   preprocessor
     call   parser
     call   assembler
-    cmp    [bGenerateDebugInfo], 0
-    jz	   @f
+    bt	   dword[ch1_dbg.flags],1 ;cmp [bGenerateDebugInfo], 0
+    jae    @f			  ;jz @f
     call   symbol_dump
 @@:
     call   formatter
@@ -544,7 +533,7 @@ _counter db 4,'0000'
 
 _mode	       dd NORMAL_MODE
 _run_outfile  dd 0
-bGenerateDebugInfo db 0
+;bGenerateDebugInfo db 0
 
 sub_table:
 times $41 db $00
