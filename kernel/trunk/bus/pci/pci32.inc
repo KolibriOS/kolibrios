@@ -30,6 +30,8 @@ $Revision$
 ;   Description
 ;       entry point for system PCI calls
 ;***************************************************************************
+;mmio_pci_addr	equ  0x400		 ; set actual PCI address here to activate user-MMIO
+
 
 align 4
 
@@ -75,7 +77,7 @@ pci_fn_3:
 	jz pci_write_reg  ;dword
 
 if defined mmio_pci_addr
-	cmp al,11	    ; <<< user-level MMIO functions <<< NEW!
+	cmp al,11	    ;  user-level MMIO functions 
 	jz pci_mmio_init
 	cmp al,12
 	jz pci_mmio_map
@@ -375,10 +377,10 @@ pci_write_reg_err:
 	dec	eax
 	ret
 
-if defined mmio_pci_addr
+if defined mmio_pci_addr	; must be set above
 ;***************************************************************************
 ;   Function
-;      pci_mmio_init ; NEW!
+;      pci_mmio_init 
 ;
 ;   Description
 ;       IN:  bx = device's PCI bus address (bbbbbbbbdddddfff)
@@ -389,7 +391,7 @@ if defined mmio_pci_addr
 ;       eax = -3 : user heap initialization failure
 ;***************************************************************************
 pci_mmio_init:
-    cmp     bx, mmio_pci_addr	; must be set in kernel/data32.inc
+    cmp     bx, mmio_pci_addr	
     jz	    @f
     mov     eax,-2
     ret
@@ -405,7 +407,7 @@ pci_mmio_init:
 
 ;***************************************************************************
 ;   Function
-;      pci_mmio_map ; NEW!
+;      pci_mmio_map 
 ;
 ;   Description
 ;       maps a block of PCI memory to user-accessible linear address
@@ -491,7 +493,7 @@ mmio_map_over:
 
 ;***************************************************************************
 ;   Function
-;      pci_mmio_unmap_page ; NEW!
+;      pci_mmio_unmap_page 
 ;
 ;   Description
 ;       unmaps the linear space previously tied to a PCI memory block
