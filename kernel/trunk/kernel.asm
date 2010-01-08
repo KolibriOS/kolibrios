@@ -1245,7 +1245,12 @@ sys_outport:
     ret
 
 display_number:
-
+;It is not optimization
+        mov     eax, ebx
+        mov     ebx, ecx
+        mov     ecx, edx
+        mov     edx, esi
+        mov     esi, edi
 ; eax = print type, al=0 -> ebx is number
 ;                   al=1 -> ebx is pointer
 ;                   ah=0 -> display decimal
@@ -5371,9 +5376,16 @@ syscall_reserveportarea:                ; ReservePortArea and FreePortArea
 align 4
 
 syscall_threads:                        ; CreateThreads
+; eax=1 create thread
+;
+;   ebx=thread start
+;   ecx=thread stack value
+;
+; on return : eax = pid
 
-     call  sys_threads
-     mov   [esp+36],eax
+     call  new_sys_threads
+
+     mov   [esp+32],eax
      ret
 
 align 4
@@ -5385,7 +5397,7 @@ stack_driver_stat:
 ;     mov   [check_idle_semaphore],5    ; enable these for zero delay
 ;     call  change_task                 ; between sent packet
 
-     mov   [esp+36],eax
+     mov   [esp+32],eax
      ret
 
 align 4

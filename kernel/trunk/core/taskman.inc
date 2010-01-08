@@ -864,15 +864,14 @@ proc new_sys_threads
          app_mem       dd ? ;0x10
        endl
 
-       cmp eax,1
+       cmp ebx,1
        jne .failed          ;other subfunctions
 
        xor  eax,eax
+       mov [app_eip], ecx
        mov [app_cmdline], eax
+       mov [app_esp], edx
        mov [app_path], eax
-       mov [app_eip], ebx
-       mov [app_esp], ecx
-
        ;mov    esi,new_process_loading
        ;call   sys_msg_board_str
 .wait_lock:

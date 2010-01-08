@@ -361,184 +361,140 @@ cs_exit:
 ;       It provides application access to the network interface layer
 ;
 ;***************************************************************************
+iglobal
+align 4
+f52call:
+	dd	app_stack_handler.00
+	dd	app_stack_handler.01
+	dd	app_stack_handler.02
+	dd	app_stack_handler.03
+	dd	app_stack_handler.fail	;04
+	dd	app_stack_handler.fail	;05
+	dd	stack_insert_packet	;app_stack_handler.06
+	dd	app_stack_handler.fail	;07
+	dd	stack_get_packet	;app_stack_handler.08
+	dd	app_stack_handler.09
+	dd	app_stack_handler.10
+	dd	app_stack_handler.11
+	dd	app_stack_handler.12
+	dd	app_stack_handler.13
+	dd	app_stack_handler.14
+	dd	app_stack_handler.15
+endg
 app_stack_handler:
-    cmp     eax, 0
-    jnz     not0
-    ; Read the configuration word
-    mov     eax, [stack_config]
-    ret
+;in ebx,ecx
+;out eax
+	cmp	ebx,15
+	ja	.fail			;if more than 15 then exit
 
-not0:
-    cmp     eax, 1
-    jnz     not1
-    ; read the IP address
+	jmp	dword [f52call+ebx*4]
 
-    mov     eax, [stack_ip]
-    ret
 
-not1:
-    cmp     eax, 2
-    jnz     not2
+.00:
+; Read the configuration word
+	mov	eax, [stack_config]
+	ret
 
-    ; write the configuration word
-    mov     [stack_config], ebx
+.01:
+; read the IP address
+	mov     eax, [stack_ip]
+	ret
 
-    ; <Slip shouldn't be active anyway - thats an operational issue.>
-    ; If ethernet now enabled, probe for the card, reset it and empty
-    ; the packet buffer
-    ; If all successfull, enable the card.
-    ; If ethernet now disabled, set it as disabled. Should really
-    ; empty the tcpip data area too.
+.02:
+; write the configuration word
+	mov     [stack_config], ecx
 
-    ; ethernet interface is '3' in ls 7 bits
-    and     bl, 0x7f
-    cmp     bl, 3
+; <Slip shouldn't be active anyway - thats an operational issue.>
+; If ethernet now enabled, probe for the card, reset it and empty
+; the packet buffer
+; If all successfull, enable the card.
+; If ethernet now disabled, set it as disabled. Should really
+; empty the tcpip data area too.
 
-    je       ash_eth_enable
-    ; Ethernet isn't enabled, so make sure that the card is disabled
-    mov     [ethernet_active], byte 0
+; ethernet interface is '3' in ls 7 bits
+	and     cl, 0x7f
+	cmp     cl, 3
+	je      ash_eth_enable
+; Ethernet isn't enabled, so make sure that the card is disabled
+	mov     [ethernet_active], byte 0
+	ret
 
-    ret
-
-ash_eth_enable:
-    ; Probe for the card. This will reset it and enable the interface
-    ; if found
-    call    eth_probe
-    cmp     eax, 0
-    je      ash_eth_done            ; Abort if no hardware found
-
-    mov     [ethernet_active], byte 1
-
-ash_eth_done:
-    ret
-
-not2:
-    cmp     eax, 3
-    jnz     not3
-    ; write the IP Address
-    mov     [stack_ip], ebx
-    ret
-
+.03:
+; write the IP Address
+	mov     [stack_ip], ecx
+	ret
 ;old functions was deleted
+;.06:
+; Insert an IP packet into the stacks received packet queue
+;	call    stack_insert_packet
+;	ret
 
-not3:
-    cmp     eax, 6
-    jnz     not6
+; Test for any packets queued for transmission over the network
 
-    ; Insert an IP packet into the stacks received packet queue
-    call    stack_insert_packet
-    ret
+;.08:
+;	call    stack_get_packet
+; Extract a packet queued for transmission by the network
+;	ret
 
-not6:
-    cmp     eax, 7
-    jnz     not7
+.09:
+; read the gateway IP address
+	mov     eax, [gateway_ip]
+	ret
 
-    ; Test for any packets queued for transmission over the network
+.10:
+; read the subnet mask
+	mov     eax, [subnet_mask]
+	ret
+.11:
+; write the gateway IP Address
+	mov     [gateway_ip], ecx
+	ret
 
-not7:
-    cmp     eax, 8
-    jnz     not8
+.12:
+; write the subnet mask
+	mov     [subnet_mask], ecx
+	ret
 
-    call    stack_get_packet
-    ; Extract a packet queued for transmission by the network
-    ret
+.13:
+; read the dns
+	mov     eax, [dns_ip]
+	ret
 
-not8:
-    cmp     eax, 9
-    jnz     not9
+.14:
+; write the dns IP Address
+	mov     [dns_ip], ecx
+	ret
 
-    ; read the gateway IP address
-
-    mov     eax, [gateway_ip]
-    ret
-
-not9:
-    cmp     eax, 10
-    jnz     not10
-
-    ; read the subnet mask
-
-    mov     eax, [subnet_mask]
-    ret
-
-not10:
-    cmp     eax, 11
-    jnz     not11
-
-    ; write the gateway IP Address
-    mov     [gateway_ip], ebx
-
-    ret
-
-not11:
-    cmp     eax, 12
-    jnz     not12
-
-    ; write the subnet mask
-    mov     [subnet_mask], ebx
-
-
-not12:
-    cmp     eax, 13
-    jnz     not13
-
-    ; read the dns
-
-    mov     eax, [dns_ip]
-    ret
-
-not13:
-    cmp     eax, 14
-    jnz     not14
-
-    ; write the dns IP Address
-    mov     [dns_ip], ebx
-
-    ret
-
+.15:
 ;<added by Frank Sommer>
-not14:
-        cmp     eax, 15
-        jnz     not15
+; in ecx we need 4 to read the last 2 bytes
+; or we need 0 to read the first 4 bytes
+	cmp     ecx,4
+        ja	.param_error
 
-    ; in ebx we need 4 to read the last 2 bytes
-        cmp     ebx, dword 4
-        je      read
-
-    ; or we need 0 to read the first 4 bytes
-        cmp     ebx, dword 0
-        jnz     param_error
-
-    ; read MAC, returned (in mirrored byte order) in eax
-read:
-        mov     eax, [node_addr + ebx]
-        jmp     @f
-
-param_error:
-        mov     eax, -1     ; params not accepted
-@@:
+; read MAC, returned (in mirrored byte order) in eax
+        mov     eax, [node_addr + ecx]
         ret
 
+.param_error:
+        or     	eax, -1		; params not accepted
+        ret
 
+.16:
 ; 0 -> arp_probe
 ; 1 -> arp_announce
 ; 2 -> arp_responce (not supported yet)
-
-not15:                                  ; ARP stuff
-        cmp     eax, 16
-        jnz     not16
-
-        cmp     ebx, 0
+        test    ecx,ecx
         je      a_probe
 
-        cmp     ebx, 1
-        je      a_ann                   ; arp announce
+        dec     ebx
+        jz      a_ann                   ; arp announce
+.fail:
+        or	eax, -1
+        ret
 
 ;       cmp     ebx,2
 ;       jne     a_resp                  ; arp response
-
-        jmp     param15_error
-
 
 ; arp probe, sender IP must be set to 0.0.0.0, target IP is set to address being probed
 ; ecx: pointer to target MAC, MAC should set to 0 by application
@@ -547,12 +503,12 @@ a_probe:
         push    dword [stack_ip]
 
         mov     edx, [stack_ip]
-        mov     [stack_ip], dword 0
+        and     [stack_ip], dword 0
         mov     esi, ecx                ; pointer to target MAC address
         call    arp_request
 
         pop     dword [stack_ip]
-        jmp     @f
+        ret
 
 ; arp announce, sender IP must be set to target IP
 ; ecx: pointer to target MAC
@@ -560,33 +516,30 @@ a_ann:
         mov     edx, [stack_ip]
         mov     esi, ecx                ; pointer to target MAC address
         call    arp_request
-        jmp     @f
-
-param15_error:
-        mov     eax, -1
-
-@@:
         ret
+
+.17:
 ;</added by Frank Sommer>
 ; modified by [smb]
 
 ;<added by Johnny_B>
 ; ARPTable manager interface
-not16:
-    cmp     eax, 17
-    jnz     stack_driver_end
-
     ;see "proc arp_table_manager" for more details
-    stdcall arp_table_manager,ebx,ecx,edx  ;Opcode,Index,Extra
-
+    stdcall arp_table_manager,ecx,edx,esi  ;Opcode,Index,Extra
     ret
 ;</added by Johnny_B>
 
-stack_driver_end:
-        ret
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ash_eth_enable:
+; Probe for the card. This will reset it and enable the interface
+; if found
+	call	eth_probe
+	test	eax,eax
+	jz	ash_eth_done            ; Abort if no hardware found
 
-
-
+	mov     [ethernet_active], byte 1
+ash_eth_done:
+	ret
 ;***************************************************************************
 ;   Function
 ;      app_socket_handler
@@ -597,139 +550,46 @@ stack_driver_end:
 ;       such as opening sockets
 ;
 ;***************************************************************************
+iglobal
+align 4
+f53call:
+	dd	socket_open			;00
+	dd	socket_close			;01
+	dd	socket_poll			;02
+	dd	socket_read			;03
+	dd	socket_write			;04
+	dd	socket_open_tcp			;05
+	dd	socket_status			;06
+	dd	socket_write_tcp		;07
+	dd	socket_close_tcp		;08
+	dd	is_localport_unused		;09
+	dd	app_socket_handler.10
+	dd	socket_read_packet		;11
+endg
+
 app_socket_handler:
-    cmp     eax, 0
-    jnz     nots0
+;in ebx,ecx,edx,wsi
+;out eax
+	cmp	eax,255
+	je	stack_internal_status
 
-    call    socket_open
-    ret
+	cmp	eax,11
+	ja	.fail			;if more than 15 then exit
 
-nots0:
-    cmp     eax, 1
-    jnz     nots1
+	jmp	dword [f53call+eax*4]
 
-    call    socket_close
-    ret
+.10:
+	mov     eax,dword[drvr_cable]
+	test    eax,eax
+	jnz     @f                	; if function is not implented, return -1
+	or      al,-1
+	ret
+@@:
+	jmp    dword[drvr_cable]
 
-nots1:
-    cmp     eax, 2
-    jnz     nots2
-
-    call    socket_poll
-    ret
-
-nots2:
-    cmp     eax, 3
-    jnz     nots3
-
-    call    socket_read
-    ret
-
-nots3:
-    cmp     eax, 4
-    jnz     nots4
-
-    call    socket_write
-    ret
-
-nots4:
-    cmp     eax, 5
-    jnz     nots5
-
-    call    socket_open_tcp
-    ret
-
-nots5:
-    cmp     eax, 6
-    jnz     nots6
-
-    call    socket_status
-    ret
-
-nots6:
-    cmp     eax, 7
-    jnz     nots7
-
-    call    socket_write_tcp
-    ret
-
-nots7:
-    cmp     eax, 8
-    jnz     nots8
-
-    call    socket_close_tcp
-    ret
-
-nots8:
-    cmp     eax, 9
-    jnz     nots9
-
-    call    is_localport_unused
-    ret
-
-nots9:
-    cmp     eax, 10
-    jnz     nots10
-
-    mov     eax,dword[drvr_cable]
-    test    eax,eax
-    jnz     @f                ; if function is not implented, return -1
-    mov     al,-1
-    ret
-
-   @@:
-    call    dword[drvr_cable]
-    ret
-
-
-nots10:
-    cmp     eax, 11
-    jnz     nots11
-
-    call    socket_read_packet
-    ret
-
-nots11:
-    cmp     eax, 254
-    jnz     notdump
-
-    ret
-
-notdump:
-    cmp     eax, 255
-    jnz     notsdebug
-
-    ; This sub function allows access to debugging information on the stack
-    ; ebx holds the request:
-    ;  100 : return length of empty queue
-    ;  101 : return length of IPOUT QUEUE
-    ;  102 : return length of IPIN QUEUE
-    ;  103 : return length of NET1OUT QUEUE
-    ; 200 : return # of ARP entries
-    ; 201 : return size of ARP table ( max # entries )
-    ; 202 : select ARP table entry #
-    ; 203 : return IP of selected table entry
-    ; 204 : return High 4 bytes of MAC address of selected table entry
-    ; 205 : return low  2 bytes of MAC address of selected table entry
-    ; 206 : return status word of selected table entry
-    ; 207 : return Time to live of selected table entry
-
-
-    ;  2 : return number of IP packets received
-    ;  3 : return number of packets transmitted
-    ;  4 : return number of received packets dumped
-    ;  5 : return number of arp packets received
-    ;  6 : return status of packet driver
-    ;      ( 0 == not active, FFFFFFFF = successful )
-
-    call    stack_internal_status
-    ret
-
-notsdebug:
-    ; Invalid Option
-    ret
-
-
+.fail:
+	or	eax,-1
+	ret
 uglobal
   ARPTmp:
   times 14 db 0
@@ -747,6 +607,30 @@ endg
 ;       return requested data in eax
 ;
 ;***************************************************************************
+; This sub function allows access to debugging information on the stack
+; ecx holds the request:
+; 100 : return length of empty queue
+; 101 : return length of IPOUT QUEUE
+; 102 : return length of IPIN QUEUE
+; 103 : return length of NET1OUT QUEUE
+; 200 : return # of ARP entries
+; 201 : return size of ARP table ( max # entries )
+; 202 : select ARP table entry #
+; 203 : return IP of selected table entry
+; 204 : return High 4 bytes of MAC address of selected table entry
+; 205 : return low  2 bytes of MAC address of selected table entry
+; 206 : return status word of selected table entry
+; 207 : return Time to live of selected table entry
+
+
+;  2 : return number of IP packets received
+;  3 : return number of packets transmitted
+;  4 : return number of received packets dumped
+;  5 : return number of arp packets received
+;  6 : return status of packet driver
+;  ( 0 == not active, FFFFFFFF = successful )
+
+
 stack_internal_status:
     cmp     ebx, 100
     jnz     notsis100
@@ -762,7 +646,7 @@ notsis100:
 
     ;  101 : return length of IPOUT QUEUE
     mov     ebx, IPOUT_QUEUE
-    call    queueSize
+    call    queueSize                       
     ret
 
 notsis101:

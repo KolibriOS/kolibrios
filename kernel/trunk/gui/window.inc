@@ -246,23 +246,23 @@ align 4
 syscall_set_window_shape: ;///// system function 50 ///////////////////////////
 ;------------------------------------------------------------------------------
 ;; Set window shape address:
-;> eax = 0
-;> ebx = shape data address
+;> ebx = 0
+;> ecx = shape data address
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;; Set window shape scale:
-;> eax = 1
-;> ebx = scale power (resulting scale is 2^ebx)
+;> ebx = 1
+;> ecx = scale power (resulting scale is 2^ebx)
 ;------------------------------------------------------------------------------
         mov     edi, [current_slot]
 
-        test    eax, eax
+        test    ebx, ebx
         jne     .shape_scale
-        mov     [edi + APPDATA.wnd_shape], ebx
+        mov     [edi + APPDATA.wnd_shape], ecx
 
   .shape_scale:
-        dec     eax
+        dec     ebx
         jnz     .exit
-        mov     [edi + APPDATA.wnd_shape_scale], ebx
+        mov     [edi + APPDATA.wnd_shape_scale], ecx
 
   .exit:
         ret

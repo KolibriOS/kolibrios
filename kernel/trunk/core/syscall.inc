@@ -126,35 +126,35 @@ iglobal
       dd 0
       dd 0
       dd 0
-      dd 0                       ; 24-PlayCdTrack,StopCd and GetCdPlaylist
-      dd 0                       ; 25
-      dd 0			 ; 26
-      dd 0
-      dd 0                       ;
-      dd 0
-      dd 0		  	 ; 30-Get/SetCurrentDirectory
       dd 0
       dd 0
       dd 0
       dd 0
       dd 0
       dd 0
-      dd 0                       ; 37-GetMousePosition_ScreenRelative,.
-      dd 0                       ; 38-DrawLine
-      dd 0		         ; 39-GetBackgroundSize,ReadBgrData,.
       dd 0
       dd 0
       dd 0
-      dd 0	                 ; 43-SendDeviceData
       dd 0
       dd 0
-      dd 0			 ; 46-ReservePortArea and FreePortArea
-      dd display_number          ; 47-WriteNum
-      dd 0		         ; 48-SetRedrawType and SetButtonType
-      dd 0	                 ; 49-Advanced Power Management (APM)
-      dd syscall_set_window_shape ; 50-Window shape & scale
-      dd syscall_threads         ; 51-Threads
-      dd stack_driver_stat       ; 52-Stack driver status
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
       dd socket                  ; 53-Socket interface
       dd 0
       dd sound_interface         ; 55-Sound interface
@@ -166,14 +166,13 @@ iglobal
       dd sys_gs                  ; 61-Direct graphics access
       dd sys_pci                 ; 62-PCI functions
       dd sys_msg_board           ; 63-System message board
-      dd 0			 ; 64-Resize application memory usage
+      dd 0
       dd syscall_putimage_palette; 65-PutImagePalette
       dd sys_process_def         ; 66-Process definitions - keyboard
       dd sys_window_move         ; 67-Window move or resize
-      dd 0			 ; 68-Some internal services
-      dd 0		         ; 69-Debug
+      dd 0
+      dd 0
       dd file_system_lfn         ; 70-Common file system interface, version 2
-;      dd 0			 ; 71-Window settings
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; NEW SYSTEM FUNCTIONS TABLE ;;
@@ -228,12 +227,12 @@ iglobal
       dd sys_programirq          ; 44-ProgramIrqs
       dd reserve_free_irq        ; 45-ReserveIrq and FreeIrq
       dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
-      dd cross_order             ; 47-WriteNum
+      dd display_number          ; 47-WriteNum
       dd syscall_display_settings ; 48-SetRedrawType and SetButtonType
       dd sys_apm		 ; 49-Advanced Power Management (APM)
-      dd cross_order             ; 50-Window shape & scale
-      dd cross_order             ; 51-Threads
-      dd cross_order             ; 52-Stack driver status
+      dd syscall_set_window_shape ; 50-Window shape & scale
+      dd syscall_threads         ; 51-Threads
+      dd stack_driver_stat       ; 52-Stack driver status
       dd cross_order             ; 53-Socket interface
       dd undefined_syscall       ; 54-reserved
       dd cross_order             ; 55-Sound interface

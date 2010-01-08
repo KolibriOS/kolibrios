@@ -428,16 +428,6 @@ sys_resize_app_memory:
 .no_application_mem_resize:
         ret
 
-sys_threads:
-
-; eax=1 create thread
-;
-;   ebx=thread start
-;   ecx=thread stack value
-;
-; on return : eax = pid
-jmp new_sys_threads
-
 iglobal
 ;  process_terminating  db 'K : Process - terminating',13,10,0
 ;  process_terminated   db 'K : Process - done',13,10,0
