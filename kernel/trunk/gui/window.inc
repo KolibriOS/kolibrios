@@ -327,18 +327,18 @@ calculatescreen: ;/////////////////////////////////////////////////////////////
 
         mov     eax, [edi + WDATA.box.left]
         cmp     eax, [esp + RECT.right]
-        ja      .skip_window
+        jg      .skip_window
         mov     ebx, [edi + WDATA.box.top]
         cmp     ebx, [esp + RECT.bottom]
-        ja      .skip_window
+        jg      .skip_window
         mov     ecx, [edi + WDATA.box.width]
         add     ecx, eax
         cmp     ecx, [esp + RECT.left]
-        jb      .skip_window
+        jl      .skip_window
         mov     edx, [edi + WDATA.box.height]
         add     edx, ebx
         cmp     edx, [esp + RECT.top]
-        jb      .skip_window
+        jl      .skip_window
 
         cmp     eax, [esp + RECT.left]
         jae     @f
@@ -454,48 +454,62 @@ check_window_position: ;///////////////////////////////////////////////////////
 
         mov     esi, [Screen_Max_X]
         cmp     ecx, esi
-        jbe     .check_left
-        mov     ecx, esi
-        mov     [edi + WDATA.box.width], esi
+        ja      .fix_width
 
   .check_left:
         or      eax, eax
-        jg      @f
-        xor     eax, eax
-        jmp     .fix_left
-    @@: add     eax, ecx
+        jl      .fix_left_low
+        add     eax, ecx
         cmp     eax, esi
-        jle     .check_height
-        mov     eax, esi
-        sub     eax, ecx
-
-  .fix_left:
-        mov     [edi + WDATA.box.left], eax
+        jg      .fix_left_high
 
   .check_height:
         mov     esi, [Screen_Max_Y]
         cmp     edx, esi
-        jbe     .check_top
-        mov     edx, esi
-        mov     [edi + WDATA.box.height], esi
+        ja      .fix_height
 
   .check_top:
         or      ebx, ebx
-        jg      @f
-        xor     ebx, ebx
-        jmp     .fix_top
-    @@: add     ebx, edx
+        jl      .fix_top_low
+        add     ebx, edx
         cmp     ebx, esi
-        jle     .exit
-        mov     ebx, esi
-        sub     ebx, edx
-
-  .fix_top:
-        mov     [edi + WDATA.box.top], ebx
+        jg      .fix_top_high
 
   .exit:
         pop     esi edx ecx ebx eax
         ret
+
+  .fix_width:
+        mov     ecx, esi
+        mov     [edi + WDATA.box.width], esi
+        jmp     .check_left
+
+  .fix_left_low:
+        xor     eax, eax
+        mov     [edi + WDATA.box.left], eax
+        jmp     .check_height
+
+  .fix_left_high:
+        mov     eax, esi
+        sub     eax, ecx
+        mov     [edi + WDATA.box.left], eax
+        jmp     .check_height
+
+  .fix_height:
+        mov     edx, esi
+        mov     [edi + WDATA.box.height], esi
+        jmp     .check_top
+
+  .fix_top_low:
+        xor     ebx, ebx
+        mov     [edi + WDATA.box.top], ebx
+        jmp     .exit
+
+  .fix_top_high:
+        mov     ebx, esi
+        sub     ebx, edx
+        mov     [edi + WDATA.box.top], ebx
+        jmp     .exit
 
 align 4
 ;------------------------------------------------------------------------------
@@ -1510,19 +1524,28 @@ end virtual
         inc     edx
 
         ; get WinMap start
+        push    esi
         mov     edi, [Screen_Max_X]
         inc     edi
+        mov     esi, edi
         imul    edi, ebx
         add     edi, eax
         add     edi, [_WinMapAddress]
-        mov     eax, esi
+        pop     eax
+        mov     ah, al
+        push    ax
+        shl     eax, 16
+        pop     ax
 
   .next_line:
         push    ecx
+        shr     ecx, 2
+        rep     stosd
+        mov     ecx, [esp]
+        and     ecx, 3
         rep     stosb
         pop     ecx
-        add     edi, [Screen_Max_X]
-        inc     edi
+        add     edi, esi
         sub     edi, ecx
         dec     edx
         jnz     .next_line
@@ -1640,55 +1663,54 @@ window._.window_activate: ;////////////////////////////////////////////////////
         push    eax ebx
 
         ; if type of current active window is 3 or 4, it must be redrawn
-        mov     eax, [TASK_COUNT]
-        movzx   eax, word[WIN_POS + eax * 2]
-        shl     eax, 5
+        mov     ebx, [TASK_COUNT]
+        movzx   ebx, word[WIN_POS + ebx * 2]
+        shl     ebx, 5
         add     eax, window_data
-        mov     bl, [eax + WDATA.fl_wstyle]
-        and     bl, 0x0f
-        cmp     bl, 0x03
+        mov     al, [window_data + ebx + WDATA.fl_wstyle]
+        and     al, 0x0f
+        cmp     al, 0x03
         je      .set_window_redraw_flag
-        cmp     bl, 0x04
-        je      .set_window_redraw_flag
-        jmp     .move_others_down
+        cmp     al, 0x04
+        jne     .move_others_down
 
   .set_window_redraw_flag:
-        mov     [eax + WDATA.fl_redraw], 1
+        mov     [window_data + ebx + WDATA.fl_redraw], 1
 
   .move_others_down:
         ; ax <- process no
-        movzx   eax, word[esi]
+        movzx   ebx, word[esi]
         ; ax <- position in window stack
-        movzx   eax, word[WIN_STACK + eax * 2]
+        movzx   ebx, word[WIN_STACK + ebx * 2]
 
         ; drop others
-        xor     ebx, ebx
+        xor     eax, eax
 
   .next_stack_window:
-        cmp     ebx, [TASK_COUNT]
+        cmp     eax, [TASK_COUNT]
         jae     .move_self_up
-        inc     ebx
-        cmp     [WIN_STACK + ebx * 2], ax
+        inc     eax
+        cmp     [WIN_STACK + eax * 2], bx
         jbe     .next_stack_window
-        dec     word[WIN_STACK + ebx * 2]
+        dec     word[WIN_STACK + eax * 2]
         jmp     .next_stack_window
 
   .move_self_up:
-        movzx   eax, word[esi]
+        movzx   ebx, word[esi]
         ; number of processes
-        mov     bx, [TASK_COUNT]
+        mov     ax, [TASK_COUNT]
         ; this is the last (and the upper)
-        mov     [WIN_STACK + eax * 2], bx
+        mov     [WIN_STACK + ebx * 2], ax
 
         ; update on screen - window stack
-        xor     ebx, ebx
+        xor     eax, eax
 
   .next_window_pos:
-        cmp     ebx, [TASK_COUNT]
+        cmp     eax, [TASK_COUNT]
         jae     .reset_vars
-        inc     ebx
-        movzx   eax, word[WIN_STACK + ebx * 2]
-        mov     [WIN_POS + eax * 2], bx
+        inc     eax
+        movzx   ebx, word[WIN_STACK + eax * 2]
+        mov     [WIN_POS + ebx * 2], ax
         jmp     .next_window_pos
 
   .reset_vars:
