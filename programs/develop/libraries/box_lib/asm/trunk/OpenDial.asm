@@ -5,14 +5,14 @@
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are met:
-;	 * Redistributions of source code must retain the above copyright
-;	   notice, this list of conditions and the following disclaimer.
-;	 * Redistributions in binary form must reproduce the above copyright
-;	   notice, this list of conditions and the following disclaimer in the
-;	   documentation and/or other materials provided with the distribution.
-;	 * Neither the name of the <organization> nor the
-;	   names of its contributors may be used to endorse or promote products
-;	   derived from this software without specific prior written permission.
+;        * Redistributions of source code must retain the above copyright
+;          notice, this list of conditions and the following disclaimer.
+;        * Redistributions in binary form must reproduce the above copyright
+;          notice, this list of conditions and the following disclaimer in the
+;          documentation and/or other materials provided with the distribution.
+;        * Neither the name of the <organization> nor the
+;          names of its contributors may be used to endorse or promote products
+;          derived from this software without specific prior written permission.
 ;
 ; THIS SOFTWARE IS PROVIDED BY Marat Zakiyanov ''AS IS'' AND ANY
 ; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -40,7 +40,7 @@ dd	path
 
 include '../../../../../macros.inc'
 include '../../load_lib.mac'
-include 'editbox_ex.mac'
+include '../../trunk/box_lib.mac'
 ;include 'macros.inc'
 ;include 'load_lib.mac'
 @use_library
@@ -150,7 +150,7 @@ key:
 	je	select_sort
 	cmp	ah,189	; F3
 	je	select_filter
-	cmp	ah,19   ; R
+	cmp	ah,19	; R
 	je	button.reload_dir
 	cmp	ah,42
 	je	key_shift_up
@@ -197,7 +197,7 @@ key:
 	je	.6
 	cmp	ah,28	; Enter
 	je	.7
-	cmp	ah,82   ; Insert
+	cmp	ah,82	; Insert
 	je	.8
 	
 	cmp	ah,29
@@ -245,10 +245,10 @@ key:
 ;---------------------------------
 	call	.key_action
 	
-;	movzx	ecx,word [file_browser_data_1.start_draw_cursor_line]
-;	mcall	47,0x80000,,<50,0>,0x40000000,0xffffff
-;	movzx	ecx,word [file_browser_data_1.size_y]
-;	mcall	47,0x80000,,<150,0>,0x40000000,0xffffff
+;       movzx   ecx,word [file_browser_data_1.start_draw_cursor_line]
+;       mcall   47,0x80000,,<50,0>,0x40000000,0xffffff
+;       movzx   ecx,word [file_browser_data_1.size_y]
+;       mcall   47,0x80000,,<150,0>,0x40000000,0xffffff
 
 	mov	eax,file_browser_data_1.mouse_keys_delta
 	cmp	[eax],dword 3
@@ -326,14 +326,14 @@ key_ASCII:
 	je	.load_dir
 	cmp	ah,27
 	je	button.exit
-	push    dword name_editboxes
-	call    [edit_box_key]
+	push	dword name_editboxes
+	call	[edit_box_key]
 	jmp	still
 .load_dir:
 	mov	[file_browser_data_1.select_panel_counter],1
 	xor	eax,eax
 	mov	[focus_pointer],al
-    	mcall	66, 1, 1
+	mcall	66, 1, 1
 
 	xor	eax,eax
 	mov	esi,dir_pach
@@ -443,7 +443,7 @@ NumPad_minus_Up:
 NumPad_invert_Up:
 	call	check_ctrl
 	jmp	key.11
-;---------------------------------------	
+;---------------------------------------        
 check_alt:
 	xor	eax,eax
 	mov	al,[alt_flag]
@@ -454,7 +454,7 @@ check_alt:
 @@:
 	add	esp,4
 	jmp	still
-;---------------------------------------	
+;---------------------------------------        
 check_ctrl:
 	xor	eax,eax
 	mov	al,[ctrl_flag]
@@ -733,8 +733,8 @@ mouse:
 .check_editboxes:
 	mov	eax,[edit1+44]
 	and	eax,10b
-	push    dword name_editboxes
-	call    [edit_box_mouse]
+	push	dword name_editboxes
+	call	[edit_box_mouse]
 	mov	ebx,[edit1+44]
 	and	ebx,10b
 	cmp	eax,ebx
@@ -1134,8 +1134,8 @@ draw_window:
 
 	mcall	0,<10,420>,<10,320>,0x63AABBCC,
 
-;	mov	ecx,[communication_area]
-;	add	ecx,4096+4+4
+;       mov     ecx,[communication_area]
+;       add     ecx,4096+4+4
 
 	mcall	71,1,  title ;;param  ;file_name   ;dir_pach
 
@@ -1180,12 +1180,12 @@ draw_window:
 @@:
 	call	draw_draw_file_browser1
 .1:
-	push    dword menu_data_1
-	call    [menu_bar_draw]
-	push    dword menu_data_2
-	call    [menu_bar_draw]
-	push    dword menu_data_3
-	call    [menu_bar_draw]
+	push	dword menu_data_1
+	call	[menu_bar_draw]
+	push	dword menu_data_2
+	call	[menu_bar_draw]
+	push	dword menu_data_3
+	call	[menu_bar_draw]
 
 	mov	ebx,[file_browser_data_1.x]
 	mov	ax,bx
@@ -1257,8 +1257,8 @@ draw_window:
 	mcall	4,,0x90000000,message_cancel_button
 
 
-;	mcall	47,0x80000,[file_browser_data_1.ini_file_start],<250, 0>,0x0
-;	mcall	4, <3, 420>, 0, fb_extension_start, 3
+;       mcall   47,0x80000,[file_browser_data_1.ini_file_start],<250, 0>,0x0
+;       mcall   4, <3, 420>, 0, fb_extension_start, 3
 	mcall	12,2
 
 	ret
@@ -1344,8 +1344,8 @@ draw_dir_pach:
 	mov	[edi],eax
 	mov	[edi+4],ebx
 
-	push    dword name_editboxes
-	call    [edit_box_draw]
+	push	dword name_editboxes
+	call	[edit_box_draw]
 	ret
 	
 draw_dir_pach_1:
@@ -1454,7 +1454,7 @@ convert_icons:
 
 	mov	ecx,[image_file]
 	mcall	68, 13,
- 	test	eax,eax
+	test	eax,eax
 	jz	memory_free_error
 
 	cmp	[return_code],dword 0
@@ -1587,9 +1587,9 @@ sort_directory:
 	dec	ebx
 	add	eax,304
 @@:
-	push	dword [sort_type] 	; sort mode
+	push	dword [sort_type]	; sort mode
 	push	ebx ; number of files
-	push	eax ; 	data files
+	push	eax ;   data files
 	call	[sort_dir]
 	ret
 ;--------------------------------------------------------------------
@@ -1645,7 +1645,7 @@ clear_data_fb_and_sb:
 	xor	eax,eax
 	mov	[file_browser_data_1.start_draw_cursor_line],ax
 	mov	[file_browser_data_1.start_draw_line],eax
-	mov	[scroll_bar_data_vertical.position],eax	
+	mov	[scroll_bar_data_vertical.position],eax 
 	ret
 ;---------------------------------------------------------------------
 check_filter:
@@ -2022,15 +2022,15 @@ copy_dir_name:
 ;---------------------------------------------------------------------
 
 ;plugins_directory               db 'plugins/',0
-plugins_directory               db 0
+plugins_directory		db 0
 
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_CnvPNG	db '/sys/lib/cnv_png.obj',0
-system_dir_Sort		db '/sys/lib/sort.obj',0
+system_dir_Sort 	db '/sys/lib/sort.obj',0
 system_dir_UNPACK	db '/sys/lib/archiver.obj',0
 
 ihead_f_i:
-ihead_f_l        db 'System error',0
+ihead_f_l	 db 'System error',0
 
 er_message_found_lib	db 'box_lib.obj - Not found!',0
 er_message_import	db 'box_lib.obj - Wrong import!',0
@@ -2063,23 +2063,23 @@ end_l_libs:
 ;---------------------------------------------------------------------
 align 4
 UNPACK_import:
-;unpack_Version				dd aUnpack_Version
-;unpack_PluginLoad			dd aUnpack_PluginLoad 
-;unpack_OpenFilePlugin		dd aUnpack_OpenFilePlugin
-;unpack_ClosePlugin			dd aUnpack_ClosePlugin
-;unpack_ReadFolder			dd aUnpack_ReadFolder 
-;unpack_SetFolder			dd aUnpack_SetFolder
-;unpack_GetFiles				dd aUnpack_GetFiles
-;unpack_GetOpenPluginInfo	dd aUnpack_GetOpenPluginInfo
-;unpack_Getattr				dd aUnpack_Getattr
-;unpack_Open					dd aUnpack_Open
-;unpack_Read					dd aUnpack_Read
-;unpack_Setpos				dd aUnpack_Setpos
-;unpack_Close				dd aUnpack_Close
-;unpack_DeflateUnpack		dd aUnpack_DeflateUnpack
+;unpack_Version                         dd aUnpack_Version
+;unpack_PluginLoad                      dd aUnpack_PluginLoad 
+;unpack_OpenFilePlugin          dd aUnpack_OpenFilePlugin
+;unpack_ClosePlugin                     dd aUnpack_ClosePlugin
+;unpack_ReadFolder                      dd aUnpack_ReadFolder 
+;unpack_SetFolder                       dd aUnpack_SetFolder
+;unpack_GetFiles                                dd aUnpack_GetFiles
+;unpack_GetOpenPluginInfo       dd aUnpack_GetOpenPluginInfo
+;unpack_Getattr                         dd aUnpack_Getattr
+;unpack_Open                                    dd aUnpack_Open
+;unpack_Read                                    dd aUnpack_Read
+;unpack_Setpos                          dd aUnpack_Setpos
+;unpack_Close                           dd aUnpack_Close
+;unpack_DeflateUnpack           dd aUnpack_DeflateUnpack
 unpack_DeflateUnpack2		dd aUnpack_DeflateUnpack2
-        dd      0
-        dd      0
+	dd	0
+	dd	0
 
 ;aUnpack_Version        db      'version',0
 ;aUnpack_PluginLoad     db      'plugin_load',0
@@ -2120,8 +2120,8 @@ cnv_png_import:
 .Version		dd aCP_Version
 .Check			dd aCP_Check
 .Assoc			dd aCP_Assoc
-        dd      0
-        dd      0
+	dd	0
+	dd	0
 aCP_Start		db 'START',0
 aCP_Version		db 'version',0
 aCP_Check		db 'Check_Header',0
@@ -2133,46 +2133,46 @@ Box_lib_import:
 ;version_lib         dd      a_version
 
 
-edit_box_draw   dd      aEdit_box_draw
-edit_box_key    dd      aEdit_box_key
-edit_box_mouse  dd      aEdit_box_mouse
+edit_box_draw	dd	aEdit_box_draw
+edit_box_key	dd	aEdit_box_key
+edit_box_mouse	dd	aEdit_box_mouse
 ;version_ed      dd      aVersion_ed
 
-check_box_draw  dd      aCheck_box_draw
-check_box_mouse dd      aCheck_box_mouse
+check_box_draw	dd	aCheck_box_draw
+check_box_mouse dd	aCheck_box_mouse
 ;version_ch      dd      aVersion_ch
 
-option_box_draw  dd      aOption_box_draw
-option_box_mouse dd      aOption_box_mouse
+option_box_draw  dd	 aOption_box_draw
+option_box_mouse dd	 aOption_box_mouse
 ;version_op       dd      aVersion_op
 
-scrollbar_ver_draw              dd aScrollbar_ver_draw
-scrollbar_ver_mouse             dd aScrollbar_ver_mouse
-scrollbar_hor_draw              dd aScrollbar_hor_draw
-scrollbar_hor_mouse             dd aScrollbar_hor_mouse
+scrollbar_ver_draw		dd aScrollbar_ver_draw
+scrollbar_ver_mouse		dd aScrollbar_ver_mouse
+scrollbar_hor_draw		dd aScrollbar_hor_draw
+scrollbar_hor_mouse		dd aScrollbar_hor_mouse
 ;version_scrollbar               dd aVersion_scrollbar
 
-dinamic_button_draw             dd      aDbutton_draw
-dinamic_button_mouse            dd      aDbutton_mouse
+dinamic_button_draw		dd	aDbutton_draw
+dinamic_button_mouse		dd	aDbutton_mouse
 ;version_dbutton                 dd      aVersion_dbutton
 
-menu_bar_draw                   dd      aMenu_bar_draw
-menu_bar_mouse                  dd      aMenu_bar_mouse
-menu_bar_activate               dd      aMenu_bar_activate
+menu_bar_draw			dd	aMenu_bar_draw
+menu_bar_mouse			dd	aMenu_bar_mouse
+menu_bar_activate		dd	aMenu_bar_activate
 ;version_menu_bar                dd      aVersion_menu_bar
 
-FileBrowser_draw                dd      aFileBrowser_draw
-FileBrowser_mouse               dd      aFileBrowser_mouse
-FileBrowser_key                 dd      aFileBrowser_key
+FileBrowser_draw		dd	aFileBrowser_draw
+FileBrowser_mouse		dd	aFileBrowser_mouse
+FileBrowser_key 		dd	aFileBrowser_key
 ;Version_FileBrowser             dd      aVersion_FileBrowser
-                dd      0
-                dd      0
+		dd	0
+		dd	0
 
 ;a_init          db 'lib_init',0
 ;a_version       db 'version',0
 
-aEdit_box_draw  db 'edit_box',0
-aEdit_box_key   db 'edit_box_key',0
+aEdit_box_draw	db 'edit_box',0
+aEdit_box_key	db 'edit_box_key',0
 aEdit_box_mouse db 'edit_box_mouse',0
 ;aVersion_ed     db 'version_ed',0
 
@@ -2184,24 +2184,24 @@ aOption_box_draw  db 'option_box_draw',0
 aOption_box_mouse db 'option_box_mouse',0
 ;aVersion_op       db 'version_op',0
 
-aScrollbar_ver_draw             db 'scrollbar_v_draw',0
-aScrollbar_ver_mouse            db 'scrollbar_v_mouse',0
-aScrollbar_hor_draw             db 'scrollbar_h_draw',0
-aScrollbar_hor_mouse            db 'scrollbar_h_mouse',0
+aScrollbar_ver_draw		db 'scrollbar_v_draw',0
+aScrollbar_ver_mouse		db 'scrollbar_v_mouse',0
+aScrollbar_hor_draw		db 'scrollbar_h_draw',0
+aScrollbar_hor_mouse		db 'scrollbar_h_mouse',0
 ;aVersion_scrollbar              db 'version_scrollbar',0
 
-aDbutton_draw                   db 'dbutton_draw',0
-aDbutton_mouse                  db 'dbutton_mouse',0
+aDbutton_draw			db 'dbutton_draw',0
+aDbutton_mouse			db 'dbutton_mouse',0
 ;aVersion_dbutton                db 'version_dbutton',0
 
-aMenu_bar_draw                  db 'menu_bar_draw',0
-aMenu_bar_mouse                 db 'menu_bar_mouse',0
-aMenu_bar_activate              db 'menu_bar_activate',0
+aMenu_bar_draw			db 'menu_bar_draw',0
+aMenu_bar_mouse 		db 'menu_bar_mouse',0
+aMenu_bar_activate		db 'menu_bar_activate',0
 ;aVersion_menu_bar               db 'version_menu_bar',0
 
-aFileBrowser_draw             db 'FileBrowser_draw',0
-aFileBrowser_mouse            db 'FileBrowser_mouse',0
-aFileBrowser_key              db 'FileBrowser_key',0
+aFileBrowser_draw	      db 'FileBrowser_draw',0
+aFileBrowser_mouse	      db 'FileBrowser_mouse',0
+aFileBrowser_key	      db 'FileBrowser_key',0
 ;aVersion_FileBrowser          db 'version_FileBrowser',0
 ;---------------------------------------------------------------------
 ;---------------------------------------------------------------------
@@ -2218,12 +2218,12 @@ root_folder_block	dd 0
 root1_folder_area	dd 0
 root1_folder_block	dd 0
 temp_counter_1		dd 0
-retrieved_devices_table_counter	dd 0
+retrieved_devices_table_counter dd 0
 communication_area	dd 0
 ;---------------------------------------------------------------------
-expansion_length        dd      0
+expansion_length	dd	0
 ;---------------------------------------------------------------------
-N_error			dd 0
+N_error 		dd 0
 error_type		dd 0
 error_path		dd 0
 error_window_x: dd 100 shl 16 + 250
@@ -2253,10 +2253,10 @@ raw_pointer_2	dd 0 ;+20
 align 4
 fileinfo:
 .subfunction	dd 5
-.Offset		dd 0
+.Offset 	dd 0
 .Offset_1	dd 0
 .size		dd 0
-.return		dd file_info
+.return 	dd file_info
 		db 0
 .name:		dd file_name
 ;---------------------------------------------------------------------
@@ -2266,7 +2266,7 @@ dirinfo:
 .start		dd 0
 .flags		dd 0
 .size		dd 0
-.return		dd 0
+.return 	dd 0
 		db 0
 .name:		dd dir_pach
 ;---------------------------------------------------------------------
@@ -2310,18 +2310,18 @@ error_fs_text_pointers:
   dd  error_fs_text_10
   dd  error_fs_text_11
 
-error_fs_text_0:        db '0 - Success full',0
-error_fs_text_1:        db '1 - Base and/or partition of a hard disk is not defined',0
-error_fs_text_2:        db '2 - Function is not supported for the given file system',0
-error_fs_text_3:        db '3 - Unknown file system',0
-error_fs_text_4:        db '4 - Reserved, is never returned in the current implementation',0
-error_fs_text_5:        db '5 - File not found',0
-error_fs_text_6:        db '6 - End of file, EOF',0
-error_fs_text_7:        db '7 - Pointer lies outside of application memory',0
-error_fs_text_8:        db '8 - Disk is full',0
-error_fs_text_9:        db '9 - FAT table is destroyed',0
-error_fs_text_10:       db '10 - Access denied',0
-error_fs_text_11:       db '11 - Device error',0
+error_fs_text_0:	db '0 - Success full',0
+error_fs_text_1:	db '1 - Base and/or partition of a hard disk is not defined',0
+error_fs_text_2:	db '2 - Function is not supported for the given file system',0
+error_fs_text_3:	db '3 - Unknown file system',0
+error_fs_text_4:	db '4 - Reserved, is never returned in the current implementation',0
+error_fs_text_5:	db '5 - File not found',0
+error_fs_text_6:	db '6 - End of file, EOF',0
+error_fs_text_7:	db '7 - Pointer lies outside of application memory',0
+error_fs_text_8:	db '8 - Disk is full',0
+error_fs_text_9:	db '9 - FAT table is destroyed',0
+error_fs_text_10:	db '10 - Access denied',0
+error_fs_text_11:	db '11 - Device error',0
 ;---------------------------------------------------------------------
 
 extended_key db 0
@@ -2332,7 +2332,7 @@ alt_flag	db 0
 
 error_window	db 0
 
-Tab_key		db 0
+Tab_key 	db 0
 Tab_key_block	db 0
 
 filter_flag	db 1
@@ -2346,7 +2346,7 @@ root_pach:
 	db '/',0
 
 icons_file_name_2	db 'buttons/'
-icons_file_name		db 'z_icons.png',0
+icons_file_name 	db 'z_icons.png',0
 ini_file_name		db 'icons.ini',0
 ;---------------------------------------------------------------------
 
@@ -2372,10 +2372,10 @@ align 4
 menu_data_1:
 .type:		dd 0   ;+0
 .x:
-.size_x		dw 80  ;+4
-.start_x	dw 10   ;+6
+.size_x 	dw 80  ;+4
+.start_x	dw 10	;+6
 .y:
-.size_y		dw 15   ;+8
+.size_y 	dw 15	;+8
 .start_y	dw 26  ;+10
 .text_pointer:	dd menu_text_area_1  ;0 ;+12
 .pos_pointer:	dd menu_text_area_1_1 ;0 ;+16
@@ -2384,19 +2384,19 @@ menu_data_1:
 .mouse_keys	dd 0  ;+28
 .x1:
 .size_x1	dw 80  ;+32
-.start_x1	dw 10   ;+34
+.start_x1	dw 10	;+34
 .y1:
-.size_y1	dw 100   ;+36
+.size_y1	dw 100	 ;+36
 .start_y1	dw 41  ;+38
 .bckg_col	dd 0xffffff  ;0xe5e5e5 ;+40
 .frnt_col	dd 0xff ;+44
 .menu_col	dd 0xeef0ff ;0xffffff ;+48
-.select		dd 0 ;+52
+.select 	dd 0 ;+52
 .out_select	dd 0 ;+56
 .buf_adress	dd 0 ;+60
 .procinfo	dd procinfo ;+64
 .click		dd 0 ;+68
-.cursor		dd 0 ;+72
+.cursor 	dd 0 ;+72
 .cursor_old	dd 0 ;+76
 .interval	dd 16 ;+80
 .cursor_max	dd 0 ;+84
@@ -2404,10 +2404,10 @@ menu_data_1:
 .menu_sel_col	dd 0x00cc00 ;+92
 .bckg_text_col	dd 0 ; +96
 .frnt_text_col	dd 0xffffff ;+100
-.mouse_keys_old	dd 0 ;+104
+.mouse_keys_old dd 0 ;+104
 .font_height	dd 8 ;+108
 .cursor_out	dd 0 ;+112
-.get_mouse_flag	dd 0 ;+116
+.get_mouse_flag dd 0 ;+116
 ;---------------------------------------------------------------------
 menu_text_area_1:
 db 'Select Disk',0
@@ -2416,10 +2416,10 @@ align 4
 menu_data_2:
 .type:		dd 0   ;+0
 .x:
-.size_x		dw 30  ;+4
-.start_x	dw 95   ;+6
+.size_x 	dw 30  ;+4
+.start_x	dw 95	;+6
 .y:
-.size_y		dw 15   ;+8
+.size_y 	dw 15	;+8
 .start_y	dw 26  ;+10
 .text_pointer:	dd menu_text_area_2  ;0 ;+12
 .pos_pointer:	dd menu_text_area_2.1 ;0 ;+16
@@ -2428,19 +2428,19 @@ menu_data_2:
 .mouse_keys	dd 0  ;+28
 .x1:
 .size_x1	dw 30  ;+32
-.start_x1	dw 95   ;+34
+.start_x1	dw 95	;+34
 .y1:
-.size_y1	dw 100   ;+36
+.size_y1	dw 100	 ;+36
 .start_y1	dw 41  ;+38
 .bckg_col	dd 0xffffff ; 0xe5e5e5 ;+40
 .frnt_col	dd 0xff ;+44
 .menu_col	dd 0xeef0ff  ;0xffffff ;+48
-.select		dd 0 ;+52
+.select 	dd 0 ;+52
 .out_select	dd 0 ;+56
 .buf_adress	dd 0 ;+60
 .procinfo	dd procinfo ;+64
 .click		dd 0 ;+68
-.cursor		dd 0 ;+72
+.cursor 	dd 0 ;+72
 .cursor_old	dd 0 ;+76
 .interval	dd 16 ;+80
 .cursor_max	dd 0 ;+84
@@ -2448,10 +2448,10 @@ menu_data_2:
 .menu_sel_col	dd 0x00cc00 ;+92
 .bckg_text_col	dd 0 ; +96
 .frnt_text_col	dd 0xffffff ;+100
-.mouse_keys_old	dd 0 ;+104
+.mouse_keys_old dd 0 ;+104
 .font_height	dd 8 ;+108
 .cursor_out	dd 0 ;+112
-.get_mouse_flag	dd 0 ;+116
+.get_mouse_flag dd 0 ;+116
 ;---------------------------------------------------------------------
 menu_text_area_2:
 db 'Sort',0
@@ -2467,10 +2467,10 @@ align 4
 menu_data_3:
 .type:		dd 0   ;+0
 .x:
-.size_x		dw 45  ;+4
-.start_x	dw 130   ;+6
+.size_x 	dw 45  ;+4
+.start_x	dw 130	 ;+6
 .y:
-.size_y		dw 15   ;+8
+.size_y 	dw 15	;+8
 .start_y	dw 26  ;+10
 .text_pointer:	dd menu_text_area_3  ;0 ;+12
 .pos_pointer:	dd menu_text_area_3.1 ;0 ;+16
@@ -2479,19 +2479,19 @@ menu_data_3:
 .mouse_keys	dd 0  ;+28
 .x1:
 .size_x1	dw 95  ;+32
-.start_x1	dw 130   ;+34
+.start_x1	dw 130	 ;+34
 .y1:
-.size_y1	dw 100   ;+36
+.size_y1	dw 100	 ;+36
 .start_y1	dw 41  ;+38
 .bckg_col	dd 0xffffff ; 0xe5e5e5 ;+40
 .frnt_col	dd 0xff ;+44
 .menu_col	dd 0xeef0ff  ;0xffffff ;+48
-.select		dd 0 ;+52
+.select 	dd 0 ;+52
 .out_select	dd 0 ;+56
 .buf_adress	dd 0 ;+60
 .procinfo	dd procinfo ;+64
 .click		dd 0 ;+68
-.cursor		dd 0 ;+72
+.cursor 	dd 0 ;+72
 .cursor_old	dd 0 ;+76
 .interval	dd 16 ;+80
 .cursor_max	dd 0 ;+84
@@ -2499,10 +2499,10 @@ menu_data_3:
 .menu_sel_col	dd 0x00cc00 ;+92
 .bckg_text_col	dd 0 ; +96
 .frnt_text_col	dd 0xffffff ;+100
-.mouse_keys_old	dd 0 ;+104
+.mouse_keys_old dd 0 ;+104
 .font_height	dd 8 ;+108
 .cursor_out	dd 0 ;+112
-.get_mouse_flag	dd 0 ;+116
+.get_mouse_flag dd 0 ;+116
 ;---------------------------------------------------------------------
 menu_text_area_3:
 db 'Filter',0
@@ -2516,10 +2516,10 @@ db 0
 align 4
 scroll_bar_data_vertical:
 .x:
-.size_x		dw 15 ;+0
+.size_x 	dw 15 ;+0
 .start_x	dw 500 ;+2
 .y:
-.size_y		dw 300 ;+4
+.size_y 	dw 300 ;+4
 .start_y	dw 45 ;+6
 .btn_high	dd 15 ;+8
 .type		dd 1  ;+12
@@ -2529,9 +2529,9 @@ scroll_bar_data_vertical:
 .bckg_col	dd 0xeeeeee ;+28
 .frnt_col	dd 0xbbddff ;+32 ;0x8aeaa0
 .line_col	dd 0  ;+36
-.redraw		dd 0  ;+40
+.redraw 	dd 0  ;+40
 .delta		dw 0  ;+44
-.delta2		dw 0  ;+46
+.delta2 	dw 0  ;+46
 .run_x:
 .r_size_x	dw 0  ;+48
 .r_start_x	dw 0  ;+50
@@ -2540,7 +2540,7 @@ scroll_bar_data_vertical:
 .r_start_y	dw 0 ;+54
 .m_pos		dd 0 ;+56
 .m_pos_2	dd 0 ;+60
-.m_keys		dd 0 ;+64
+.m_keys 	dd 0 ;+64
 .run_size	dd 0 ;+68
 .position2	dd 0 ;+72
 .work_size	dd 0 ;+76
@@ -2551,10 +2551,10 @@ align 4
 file_browser_data_1:
 .type				dd 0 ;+0
 .x:
-.size_x				dw 400 ;+4
+.size_x 			dw 400 ;+4
 .start_x			dw 10 ;+6
 .y:
-.size_y				dw 550 ;+8
+.size_y 			dw 550 ;+8
 .start_y			dw 45 ;+10
 .icon_size_y			dw 16 ; +12
 .icon_size_x			dw 16 ; +14
@@ -2566,10 +2566,10 @@ file_browser_data_1:
 .attributes_size_x		dw 0 ; +26
 .icon_assoc_area		dd 0 ; +28
 .icon_raw_area			dd 0 ; +32
-.resolution_raw			dd 0 ; +36
+.resolution_raw 		dd 0 ; +36
 .palette_raw			dd 0 ; +40
 .directory_path_area		dd 0 ; +44
-.file_name_area			dd 0 ; +48
+.file_name_area 		dd 0 ; +48
 .select_flag			dd 0 ; +52
 .background_color		dd 0xffffff ; +56
 .select_color			dd 0xbbddff ; +60
@@ -2577,25 +2577,25 @@ file_browser_data_1:
 .text_color			dd 0 ; +68
 .reduct_text_color		dd 0xff0000 ; +72
 .marked_text_color		dd 0 ; +76
-.max_panel_line			dd 0 ; +80
+.max_panel_line 		dd 0 ; +80
 .select_panel_counter		dd 1 ; +84
 .folder_block			dd 0 ; +88
 .start_draw_line		dd 0 ; +92
-.start_draw_cursor_line		dw 0 ; +96 ; pixels
+.start_draw_cursor_line 	dw 0 ; +96 ; pixels
 .folder_data			dd 0 ; +98
 .temp_counter			dd 0 ; +102
 .file_name_length		dd 0 ; +106
 .marked_file			dd 0 ; +110
-.extension_size			dd 0 ; +114
+.extension_size 		dd 0 ; +114
 .extension_start		dd 0 ; +118
 .type_table			dd features_table ; +122
-.ini_file_start			dd 0 ; +126
+.ini_file_start 		dd 0 ; +126
 .ini_file_end			dd 0 ; +130
 .draw_scroll_bar		dd 0 ; +134
 .font_size_y			dw 9 ; +138
 .font_size_x			dw 6 ; +140
 .mouse_keys			dd 0 ; +142
-.mouse_keys_old			dd 0 ; +146
+.mouse_keys_old 		dd 0 ; +146
 .mouse_pos			dd 0 ; +150
 .mouse_keys_delta		dd 0 ; +154
 .mouse_key_delay		dd 50 ; +158
@@ -2604,12 +2604,12 @@ file_browser_data_1:
 .all_redraw			dd 0 ;+168
 .selected_BDVK_adress		dd 0 ;+172
 .key_action			dd 0 ;+176
-.name_temp_area			dd name_temp_area ;+180
+.name_temp_area 		dd name_temp_area ;+180
 .max_name_temp_size		dd 0 ;+184
 .display_name_max_length	dd 0 ;+188
 .draw_panel_selection_flag	dd 0 ;+192
 .mouse_pos_old			dd 0 ;+196
-.marked_counter			dd 0 ;+200
+.marked_counter 		dd 0 ;+200
 ;---------------------------------------------------------------------
 ; for EDITBOX
 align 4
@@ -2662,7 +2662,7 @@ file_name:
 	rb 4096
 ;---------------------------------------------------------------------
 dir_pach:
- 	rb 4096
+	rb 4096
 ;---------------------------------------------------------------------
 procinfo:
 process_info:

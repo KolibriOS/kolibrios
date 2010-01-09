@@ -9,7 +9,7 @@ include '../proc32.inc'
 include '../macros.inc'
 include '../dll.inc'
 include '../libio.inc'
-include 'editbox_ex.mac'
+include '../../../../../programs/develop/libraries/box_lib/trunk/box_lib.mac'
 
 include '../network.inc'
 

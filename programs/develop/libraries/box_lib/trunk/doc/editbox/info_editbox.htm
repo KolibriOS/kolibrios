@@ -1,0 +1,109 @@
+<html>
+<head>
+<title>элемент Edit Box</title>
+<meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251">
+<style>
+body
+{
+  font-size: 15px;
+  font-family: "Bookman Old Style";
+  color: black;
+  text-align: justify;
+}
+h1 { color: green; font-size: 23px; }
+h2 { color: green; font-size: 21px; }
+h3 { color: green; font-size: 19px; }
+h4 { color: #803f00; font-size: 17px; }
+i { color: #0099cc; }
+b { color: #0099cc; }
+p {
+  text-indent: 1em;
+  margin-top: 3px;
+  margin-bottom: 2px;
+  margin-left: 0px;
+  margin-right: 0px;
+}
+ol, ul, dl{
+  margin-top: 3px;
+  margin-bottom: 2px;
+}
+pre
+{
+  padding: 2px;
+  padding-left: 20px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  margin-left: 0px;
+  margin-right: 0px;
+  font-family: "Courier New";
+  font-size: 15px;
+  color: #004000;
+  background-color: #ffd0ff;
+}
+table { font-size: 15px; }
+</style>
+</head>
+<body>
+<h1>Оглавление</h1>
+<p><a href="#vveden">Введение</a></p>
+<p><a href="#funct">Функции</a></p>
+<ul>
+<li><a href="#fun_key">edit_box_key</a></li>
+<li><a href="#fun_mouse">edit_box_mouse</a></li>
+<li><a href="#version">version_ed</a></li>
+</ul>
+<p><a href="#struc_editbox">Структура editbox</a></p>
+<p><a href="#editbox_styles">Стили элемента</a></p>
+
+<h1><a name="vveden">Введение</a></h1>
+<p>Текстовое поле, используется при вводе текстовой/числовой информации.</p>
+
+<h1><a name="funct">Функции</a></h1>
+
+<h2><a name="fun_key">edit_box_key</a></h2>
+<p>Эта функция должна вызыватся при вводе информации с клавиатуры.</p>
+
+<h2><a name="fun_mouse">edit_box_mouse</a></h2>
+<p>Эта функция должна вызыватся при вводе информации с мыши.</p>
+
+<h2><a name="version">version_ed</a></h2>
+<p>Версия элемента</p>
+
+<h1><a name="struc_editbox">Структура editbox</a></h1>
+<pre>struc  edit_box width,left,top,color,shift_color,focus_border_color,\
+       blur_border_color,text_color,max,text,mouse_variable,flags,size,pos
+{
+.width dd width
+.left  dd left
+.top   dd top
+.color dd color
+.shift_color dd shift_color
+.focus_border_color dd focus_border_color
+.blur_border_color  dd blur_border_color
+.text_color dd text_color
+.max  dd max
+.text dd text
+.mouse_variable dd mouse_variable
+.flags  dd flags+0
+.size   dd size+0
+.pos    dd pos+0
+.offset dd 0
+.cl_curs_x dd 0
+.cl_curs_y dd 0
+.shift     dd 0
+.shift_old dd 0
+}</pre>
+<p><b>width</b> - ширина элемента.</p>
+<p><b>left</b> - отступ слева.</p>
+
+<h1><a name="editbox_styles">Стили элемента</a></h1>
+
+<h2>ed_figure_only</h2>
+<p>Разрешается ввод чисел от 0 до 9.</p>
+<h2>ed_focus</h2>
+<p>Текстовое поле в фокусе.</p>
+
+<hr>
+<p>Документация обновлялась последний раз 09.01.10.</p>
+</body>
+</html>

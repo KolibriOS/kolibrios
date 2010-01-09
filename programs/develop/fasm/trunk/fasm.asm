@@ -36,9 +36,9 @@ include '..\..\..\macros.inc'
 purge add,sub	 ; macros.inc does incorrect substitution
 include 'fasm.inc'
 
-include '..\..\..\develop\libraries\box_lib\trunk\editbox.mac'
-include '..\..\..\develop\libraries\box_lib\trunk\checkbox.mac'
-;include '..\..\..\develop\libraries\box_lib\asm\trunk\editbox_ex.mac'
+include '..\..\..\develop\libraries\box_lib\trunk\box_lib.mac'
+;include '..\..\..\develop\libraries\box_lib\trunk\editbox.mac'
+;include '..\..\..\develop\libraries\box_lib\trunk\checkbox.mac'
 include '..\..\..\develop\libraries\box_lib\load_lib.mac'
   @use_library
 

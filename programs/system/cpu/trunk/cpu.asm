@@ -8,103 +8,103 @@
 ;
 
   use32
-  org    0x0
+  org	 0x0
 	STACK_SIZE=1024
 	offset_y=22		; Correction for skin
 	offset_x=5
-  db     'MENUET01'              ; 8 byte id
-  dd     0x01                    ; header version
-  dd     START                   ; start of code
-  dd     I_END                   ; size of image
-  dd     U_END+STACK_SIZE        ; memory for app
-  dd     U_END+STACK_SIZE        ; esp
-  dd     0x0 , 0x0               ; I_Param , I_Icon
+  db	 'MENUET01'		 ; 8 byte id
+  dd	 0x01			 ; header version
+  dd	 START			 ; start of code
+  dd	 I_END			 ; size of image
+  dd	 U_END+STACK_SIZE	 ; memory for app
+  dd	 U_END+STACK_SIZE	 ; esp
+  dd	 0x0 , 0x0		 ; I_Param , I_Icon
 
 include 'lang.inc'
 include '../../../macros.inc'
-include '../../../develop/libraries/box_lib/asm/trunk/editbox_ex.mac'
+include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/libraries/box_lib/load_lib.mac'
-display_processes=32            ; number of processes to show
+display_processes=32		; number of processes to show
 @use_library	;use load lib macros
-START:                          ; start of execution
+START:				; start of execution
 
 sys_load_library  library_name, cur_dir_path, library_path, system_path, \
 err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
-        inc     eax
-        jz      close
+	inc	eax
+	jz	close
 ; calculate window position
 ; at the center of the screen
     mcall 40,0x27	;set event
     call calculate_window_pos
     
 ;main loop when process name isn't edited.    
-red:    
-        mcall   48,3,sc,40
-        edit_boxes_set_sys_color edit1,edit1_end,sc	;set color
-        check_boxes_set_sys_color check1,check1_end,sc  ;set color
+red:	
+	mcall	48,3,sc,40
+	edit_boxes_set_sys_color edit1,edit1_end,sc	;set color
+	check_boxes_set_sys_color check1,check1_end,sc	;set color
 	xor	ebp,ebp
 	inc	ebp
 ;    mov  ebp,1
-    call draw_window            ; redraw all window
+    call draw_window		; redraw all window
 still:
-    mov  eax,23                 ; wait here for event
-    mov  ebx,100                ; 1 sec.
+    mov  eax,23 		; wait here for event
+    mov  ebx,100		; 1 sec.
     mcall
 
-    dec  eax                  ; redraw request ?
-    jz   red
-    dec  eax                  ; key in buffer ?
-    jz   key
-    dec  eax                  ; button in buffer ?
-    jz   button
+    dec  eax		      ; redraw request ?
+    jz	 red
+    dec  eax		      ; key in buffer ?
+    jz	 key
+    dec  eax		      ; button in buffer ?
+    jz	 button
 
-    sub eax,3                 ; If not use mouse - show 
+    sub eax,3		      ; If not use mouse - show 
     jnz still_end
-        push    dword edit1
-        call    [edit_box_mouse]
+	push	dword edit1
+	call	[edit_box_mouse]
 	push	dword check1
 	call	[check_box_mouse]
     jmp still	
 
 still_end:    
-    xor  ebp,ebp                ; draw new state of processes
+    xor  ebp,ebp		; draw new state of processes
     call draw_window
     jmp  still
 
 
-  key:                          ; key
-    mov  eax,2                  
+  key:				; key
+    mov  eax,2			
     mcall
 
-    cmp  ah,184                 ; PageUp
-    jz   pgdn
+    cmp  ah,184 		; PageUp
+    jz	 pgdn
     cmp  ah,183
-    jz   pgup                   ; PageDown
+    jz	 pgup			; PageDown
     cmp  ah,27
-    jz   close                  ; Esc
+    jz	 close			; Esc
 
-        push    dword edit1
-        call    [edit_box_key]
+	push	dword edit1
+	call	[edit_box_key]
 				; Check ENTER with ed_focus edit_box
     lea  edi,[edit1]
     test word ed_flags,ed_focus
-    jz   still_end 
-    sub  ah,13                  ; ENTER?
-    jz   program_start          ; RUN a program
+    jz	 still_end 
+    sub  ah,13			; ENTER?
+    jz	 program_start		; RUN a program
 
     jmp  still
 
-  button:                       
+  button:			
 ; get button id  
-    mov  eax,17                 
+    mov  eax,17 		
     mcall
-    shr  eax,8                  
+    shr  eax,8			
 
 ;id in [10,50] corresponds to terminate buttons.
     cmp  eax,10
-    jb   noterm                 
+    jb	 noterm 		
     cmp  eax,50
-    jg   noterm
+    jg	 noterm
 
 ;calculate button index        
     sub  eax,11
@@ -125,18 +125,18 @@ still_end:
 
 ;special buttons
     dec  eax
-    jz   close
+    jz	 close
 
     sub  eax,50
-    jz   pgdn     ;51
+    jz	 pgdn	  ;51
     dec  eax
-    jz   pgup     ;52
+    jz	 pgup	  ;52
 ;    dec  eax
 ;    jz   read_string
     dec  eax
-    jz   program_start  ;53
+    jz	 program_start	;53
     dec  eax
-    jz   reboot         ;54
+    jz	 reboot 	;54
     jmp  still_end
     
 ;buttons handlers    
@@ -166,7 +166,7 @@ still_end:
 ;close program if we going to reboot
 
   close:
-    or   eax,-1                 ; close this program
+    or	 eax,-1 		; close this program
     mcall
 
 draw_next_process:
@@ -198,7 +198,7 @@ draw_next_process:
     mov   esi,0xaabbcc
 ;contrast    
     test  dword [index],1
-    jz    .change_color_button
+    jz	  .change_color_button
     mov   esi,0x8899aa
 
 .change_color_button:
@@ -211,7 +211,7 @@ draw_next_process:
     mov   edx,0x88ff88
 ;contrast
     test  dword [index],1
-    jz    .change_color_info
+    jz	  .change_color_info
     mov   edx,0xddffdd
 
 .change_color_info:
@@ -220,7 +220,7 @@ draw_next_process:
 ;nothing else should be done
 ;if there is no process for this button    
     test  edi,edi
-    jl    .ret
+    jl	  .ret
     
 ;find process
 .return_1:
@@ -244,7 +244,7 @@ draw_next_process:
 ;if current slot greater than maximal slot,
 ;there is no more proccesses.    
     cmp   ecx,eax
-    jg    .no_processes
+    jg	  .no_processes
     
 ;if slot state is equal to 9, it is empty.    
     cmp   [process_info_buffer+process_information.slot_state],9
@@ -254,7 +254,7 @@ draw_next_process:
     jmp   .find_loop
     
 .no_processes:
-    or   edi,-1
+    or	 edi,-1
     ret
     
 .process_found:
@@ -265,11 +265,11 @@ draw_next_process:
     pop  edi
     jnz   @f
     cmp   dword [process_info_buffer+10],'ICON'
-    jz    .return_1 
+    jz	  .return_1 
     cmp   dword [process_info_buffer+10],'OS/I'
-    jz    .return_1
+    jz	  .return_1
     cmp   byte [process_info_buffer+10],'@'
-    jz    .return_1
+    jz	  .return_1
 
 
 @@: mov  edi,ecx
@@ -307,7 +307,7 @@ draw_next_process:
 
 .no_black:   
     cmp  eax,80
-    ja   .no_green
+    ja	 .no_green
     mov  dword [tcolor],0x107a30
     jmp  .color_set
 
@@ -316,7 +316,7 @@ draw_next_process:
 .color_set:
 
 ;show slot number
-    mov  eax,47                
+    mov  eax,47 	       
     mov  ebx,2*65536+1*256
 ;ecx haven't changed since .process_found    
 ;    mov  ecx,edi
@@ -377,11 +377,11 @@ draw_next_process:
     add  ecx,[process_info_buffer.box.top]
     add  edx,60*65536
     mcall    
-            
+	    
 .ret:
 ;build index->slot map for terminating processes.
     mov  eax,[index]
-    mov  [tasklist+4*eax],edi        
+    mov  [tasklist+4*eax],edi	     
     ret
 
 ;read_string:
@@ -535,33 +535,33 @@ draw_window:
 ;ebp=0 - redraw only process information
 
     test ebp,ebp
-    jz   .show_process_info
+    jz	 .show_process_info
     
-    mov  eax,12                    ; function 12:tell os about windowdraw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
 ;    mov  ebx,1                     ; 1, start of draw
-    xor	 ebx,ebx
+    xor  ebx,ebx
     inc  ebx
-    mcall                      
+    mcall		       
 
-                                   ; DRAW WINDOW
-    xor  eax,eax                   ; function 0 : define and draw window
-    mov  ebx,[winxpos]             ; [x start] *65536 + [x size]
-    mov  ecx,[winypos]             ; [y start] *65536 + [y size]
+				   ; DRAW WINDOW
+    xor  eax,eax		   ; function 0 : define and draw window
+    mov  ebx,[winxpos]		   ; [x start] *65536 + [x size]
+    mov  ecx,[winypos]		   ; [y start] *65536 + [y size]
     mov  edx,0x34ddffdd  ;ffffff   ; color of work area RRGGBB,8->color
-    mov  edi,title                ; WINDOW CAPTION;
+    mov  edi,title		  ; WINDOW CAPTION;
     mcall
 
-                                   
-    add  eax,4                     ; function 4 : write text to window
-    mov  ebx,(22-offset_x)*65536+35-offset_y           ; draw info text with function 4
+				   
+    add  eax,4			   ; function 4 : write text to window
+    mov  ebx,(22-offset_x)*65536+35-offset_y	       ; draw info text with function 4
     xor  ecx,ecx
     mov  edx,text
     mov  esi,text_len
     mcall
 
-        push    dword edit1
-        call    [edit_box_draw]
-        push    dword check1
+	push	dword edit1
+	call	[edit_box_draw]
+	push	dword check1
 	call	[check_box_draw]
 
 align 16
@@ -576,37 +576,37 @@ align 16
     inc  dword [index]
     add  dword [curposy],10
     cmp  [index],display_processes
-    jl   .loop_draw
+    jl	 .loop_draw
     
     test ebp,ebp
-    jz   .end_redraw
+    jz	 .end_redraw
     mov  eax,8
     mov  esi,0xaabbcc
-                                    
+				    
 ; previous page button
     mov  ebx,(30-offset_x)*65536+96
     mov  ecx,(380-offset_y)*65536+10
     mov  edx,51
     mcall
-                                    
+				    
 ; next page button  52
     mov  ebx,(130-offset_x)*65536+96
     inc  edx
     mcall
-                              
+			      
 ; ">" (text enter) button
 ;    mov  ebx,30*65536+20
     add  ecx,20 shl 16
 ;    inc  edx
 ;    mcall
-                                    
+				    
 ; run button 53
     mov  ebx,(456-offset_x)*65536+50
     inc  edx
     mcall
 
 ; reboot button    
-    sub  ebx,120*65536              
+    sub  ebx,120*65536		    
     add  ebx,60
     sub  ecx,20 shl 16
     inc  edx
@@ -639,8 +639,8 @@ align 16
 ;print application name in text box
 ;    call print_text
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,2			   ; 2, end of draw
     mcall
     
 .end_redraw:
@@ -648,35 +648,35 @@ align 16
 
 
 ; DATA AREA
-system_path      db '/sys/lib/'
-library_name     db 'box_lib.obj',0
+system_path	 db '/sys/lib/'
+library_name	 db 'box_lib.obj',0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-err_message_found_lib   db 'Sorry I cannot load library box_lib.obj',0
+err_message_found_lib	db 'Sorry I cannot load library box_lib.obj',0
 head_f_i:
-head_f_l        db 'System error',0
-err_message_import      db 'Error on load import library box_lib.obj',0
+head_f_l	db 'System error',0
+err_message_import	db 'Error on load import library box_lib.obj',0
 
 myimport:   
 
-edit_box_draw   dd      aEdit_box_draw
-edit_box_key    dd      aEdit_box_key
-edit_box_mouse  dd      aEdit_box_mouse
+edit_box_draw	dd	aEdit_box_draw
+edit_box_key	dd	aEdit_box_key
+edit_box_mouse	dd	aEdit_box_mouse
 ;version_ed      dd      aVersion_ed
 
-check_box_draw  dd      aCheck_box_draw
-check_box_mouse dd      aCheck_box_mouse
+check_box_draw	dd	aCheck_box_draw
+check_box_mouse dd	aCheck_box_mouse
 ;version_ch      dd      aVersion_ch
 
 ;option_box_draw  dd      aOption_box_draw
 ;option_box_mouse dd      aOption_box_mouse
 ;version_op       dd      aVersion_op
 
-                dd      0
-                dd      0
+		dd	0
+		dd	0
 
-aEdit_box_draw  db 'edit_box',0
-aEdit_box_key   db 'edit_box_key',0
+aEdit_box_draw	db 'edit_box',0
+aEdit_box_key	db 'edit_box_key',0
 aEdit_box_mouse db 'edit_box_mouse',0
 ;aVersion_ed     db 'version_ed',0
 
@@ -694,12 +694,12 @@ edit1_end:
 list_start  dd 0
 
 sys_reboot:
-            dd 7
-            dd 0
-            dd 0
-            dd 0
-            dd 0
-            db '/sys/end',0
+	    dd 7
+	    dd 0
+	    dd 0
+	    dd 0
+	    dd 0
+	    db '/sys/end',0
 
 if lang eq de
 text:
@@ -707,10 +707,10 @@ text:
   db 'SPEICHER START/NUTZUNG  W-STACK  W-SIZE'
 text_len = $-text
 
-tbts:   db  'SEITE ZURUECK       SEITE VOR                      REBOOT SYSTEM'
+tbts:	db  'SEITE ZURUECK       SEITE VOR                      REBOOT SYSTEM'
 tbte:
 ;tbts_2  db  '>'
-tbts_3  db  'START'
+tbts_3	db  'START'
 tbte_2:
 check_text db '@ gehoren/aus'
 check_t_e=$-check_text
@@ -724,7 +724,7 @@ text_len = $-text
 
 tbts:	db  'EELMINE LEHT   JÄRGMINE LEHT                     REBOODI SÜSTEEM'
 tbte:
-;tbts_2	db  '>'
+;tbts_2 db  '>'
 tbts_3	db  'START'
 tbte_2:
 check_text db '@ on/off'
@@ -737,10 +737,10 @@ text:
   db 'MEMORY START/USAGE  W-STACK   W-SIZE'
 text_len = $-text
 
-tbts:   db  'PREV PAGE       NEXT PAGE                         REBOOT SYSTEM'
+tbts:	db  'PREV PAGE       NEXT PAGE                         REBOOT SYSTEM'
 tbte:
 ;tbts_2  db  '>'
-tbts_3  db  'RUN'
+tbts_3	db  'RUN'
 tbte_2:
 check_text db '@ on/off'
 check_t_e=$-check_text
@@ -748,7 +748,7 @@ title  db   'Processes - Ctrl/Alt/Del',0
 
 end if
 file_start: dd 7
-            dd 0,0,0,0
+	    dd 0,0,0,0
 start_application: db '/sys/LAUNCHER',0
 start_application_e=$-start_application-1
 ;                   times 60 db 0
@@ -761,13 +761,13 @@ winxpos  rd 1
 winypos  rd 1
 mouse_dd	rd 1
 cpu_percent rd 1
-tcolor      rd 1
+tcolor	    rd 1
 list_add    rd 1
 curposy     rd 1
-index       rd 1
+index	    rd 1
 tasklist    rd display_processes
 process_info_buffer process_information
-cur_dir_path    rb 1024
-library_path    rb 1024
+cur_dir_path	rb 1024
+library_path	rb 1024
 
 U_END:

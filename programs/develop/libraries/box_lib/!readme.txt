@@ -221,7 +221,7 @@ use32                ; транслятор, использующий 32 разрядных команды
     dd 0x0              ; указатель на строку с параметрами.
     dd cur_dir_path
 include 'macros.inc'
-include 'editbox_ex.mac'
+include 'box_lib.mac'
 include 'load_lib.mac'
         @use_library    ;use load lib macros
 start:
