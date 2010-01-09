@@ -1,3 +1,5 @@
+ed_struc_size=76
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Basic macros for use editbox                             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -23,6 +25,9 @@ cl_curs_y       equ [edi+64]            ;предыдущее координата курсора по у
 ed_shift_pos    equ [edi+68]            ;положение курсора
 ed_shift_pos_old equ [edi+72]           ;старое положение курсора
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Bit mask from editbox 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ed_figure_only= 1000000000000000b   ;одни символы
 ed_always_focus= 100000000000000b
 ed_focus=                     10b   ;фокус приложения
@@ -45,7 +50,56 @@ ed_mous_adn_b=         100011000b
 ed_mouse_on_off=1111111011111111b
 ed_height=14 ; высота
 
-
+struc  edit_box width,left,top,color,shift_color,focus_border_color,\
+       blur_border_color,text_color,max,text,mouse_variable,flags,size,pos
+{
+.width dd width
+.left  dd left
+.top   dd top
+.color dd color
+.shift_color dd shift_color
+.focus_border_color dd focus_border_color
+.blur_border_color  dd blur_border_color
+.text_color dd text_color
+.max  dd max
+.text dd text
+.mouse_variable dd mouse_variable
+.flags  dd flags+0
+.size   dd size+0
+.pos    dd pos+0
+.offset dd 0
+.cl_curs_x dd 0
+.cl_curs_y dd 0
+.shift     dd 0
+.shift_old dd 0
+}
+macro edit_boxes_set_sys_color start,end,color_table
+{
+        mov     edi,start
+        mov     ecx,((end-start)/ed_struc_size)
+        mov     esi,color_table
+@@:
+        mov     eax,dword [esi+36]
+        mov     ebx,dword [esi+20]
+        push	dword eax
+	pop     dword ed_focus_border_color
+        shr     bh,1
+        shr     bl,1
+        shr     ah,1
+        shr     al,1
+        add     ah,bh
+        add     al,bl
+        ror     eax,16
+        ror     ebx,16
+        shr     bl,1
+        shr     al,1
+        add     al,bl
+        ror     eax,16
+	mov	dword ed_blur_border_color,eax
+	mov	dword shift_color,eax
+        add     edi,ed_struc_size
+        loop    @b
+}
 
 macro init_editbox
 {

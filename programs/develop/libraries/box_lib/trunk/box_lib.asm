@@ -16,14 +16,8 @@ public EXPORTS
 
 section '.flat' code readable align 16
 include '../../../../macros.inc'
-include 'editbox.mac'	;macro which should make life easier :) specially for editbox
-include 'checkbox.mac'	;macro implements checkbox
-include 'optionbox.mac' ;macro implements optionbox
-include 'scrollbar.mac' ;macro implements scrollbar
-include 'd_button.mac' ;macro implements dinamic_button
-include 'menubar.mac' ;macro implements menubar
-include 'filebrowser.mac' ;macro implements filebrowser
-include 'tree_list.mac' ;macro implements tree_list, image_list, list_box
+include 'box_lib.mac' ;macro which should make life easier :)
+
 ;----------------------------------------------------
 ;EditBox
 ;----------------------------------------------------

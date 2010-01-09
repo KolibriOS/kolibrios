@@ -56,6 +56,10 @@ sys_load_library  library_name, cur_dir_path, library_path, system_path, \
   @@:
   mcall 40,0x27 ;маска системных событий
 
+  get_sys_colors 1,0
+  edit_boxes_set_sys_color edit1,editboxes_end,sc
+  check_boxes_set_sys_color ch1_dbg,ch1_dbg+ch_struc_size,sc
+
 	mov	edi, fileinfos
 	mov	ecx, (fileinfos_end-fileinfos)/4
 	or	eax, -1
@@ -188,7 +192,7 @@ draw_window:
 
     mcall  12,1 ; Start of draw
 
-    get_sys_colors 1,0
+    ;get_sys_colors 1,0
 
     xor  eax,eax		     
     mov  ebx,100*65536+280
@@ -392,18 +396,8 @@ myimport:
 edit1 edit_box 153, 56, 1, 0xffffff, 0xff, 0x80ff, 0, 0x8000, (outfile-infile-1), infile, mouse_dd, 0, 11,11
 edit2 edit_box 153, 56, 17, 0xffffff, 0xff, 0x80ff, 0, 0x8000,(path-outfile-1), outfile, mouse_dd, 0, 7,7
 edit3 edit_box 153, 56, 33, 0xffffff, 0xff, 0x80ff, 0, 0x8000,(path_end-path-1), path, mouse_dd, 0, 6,6
-;ch1_dbg check_box 5, 49, 6, 12, 0xffffff, 0x80ff, 0, s_dbgdescr,(s_dbgdescr_end-s_dbgdescr)
-ch1_dbg:
-  .left:	   dw  5
-  .top: 	   dw 49
-  .ch_text_margin: dd 6
-  .ch_size:	   dd 12
-  .color:	   dd 0xffffff
-  .border_color:   dd 0x80ff
-  .text_color:	   dd 0
-  .text:	   dd s_dbgdescr
-  .ch_text_length: dd (s_dbgdescr_end-s_dbgdescr)
-  .flags:	   dd 0
+editboxes_end:
+ch1_dbg check_box 5, 49, 6, 12, 0xffffff, 0x80ff, 0, s_dbgdescr,(s_dbgdescr_end-s_dbgdescr)
 
 mouse_dd dd 0 ;эєцэю фы  Shift-р т editbox
 
