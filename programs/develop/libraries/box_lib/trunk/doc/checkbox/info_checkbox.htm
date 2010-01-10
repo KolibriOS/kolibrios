@@ -1,0 +1,62 @@
+<html>
+<head>
+<title>элемент Check Box</title>
+<meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251">
+<link href="../style.css" type=text/css rel=stylesheet>
+</head>
+<body>
+<p><a href="../box_lib.htm">На главную &uarr;</a></p>
+<h1>Оглавление</h1>
+<p><a href="#vveden">Введение</a></p>
+<p><a href="#funct">Функции</a></p>
+<ul>
+<li><a href="#fun_draw">check_box_draw</a></li>
+<li><a href="#fun_mouse">check_box_mouse</a></li>
+<li><a href="#version">version_ch</a></li>
+</ul>
+<p><a href="#struc_checkbox">Структура checkbox</a></p>
+<p><a href="#checkbox_styles">Стили элемента</a></p>
+
+<h1><a name="vveden">Введение</a></h1>
+<p>Флажок, используется при вводе логической информации.</p>
+
+<h1><a name="funct">Функции</a></h1>
+
+<h2><a name="fun_draw">check_box_draw</a></h2>
+<p>Эта функция должна вызыватся при вводе информации с клавиатуры.</p>
+
+<h2><a name="fun_mouse">check_box_mouse</a></h2>
+<p>Эта функция должна вызыватся при вводе информации с мыши.</p>
+
+<h2><a name="version">version_ch</a></h2>
+<p>Версия элемента</p>
+
+<h1><a name="struc_checkbox">Структура checkbox</a></h1>
+<pre>struc check_box left,top,ch_text_margin,ch_size,color,border_color,text_color,text,ch_text_length,flags
+{        ;структура параметров для чек бокса
+.left:    dw left    ;+0
+.top:     dw top     ;+2
+.ch_text_margin: dd ch_text_margin ;+4
+.ch_size: dd ch_size ;+8
+.color:   dd color   ;+12
+.border_color: dd border_color ;цвет рамки
+.text_color:   dd text_color   ;цвет надписи
+.text:         dd text         ;адрес в коде программы где расположен текст
+.ch_text_length: dd ch_text_length ;длинна строки с символами
+.flags: dd flags+0   ;флаги
+}</pre>
+<p><b>left</b> - отступ слева (положение по x).</p>
+<p><b>top</b> - отступ сверху (положение по y).</p>
+<p><b>ch_text_margin</b> - расстояние от прямоугольника чек бокса до надписи.</p>
+<p><b>ch_size</b> - размер квадрата чек бокса, как стандартное значение было принято 12.</p>
+<p><b>color</b> - цвет внутри чекбокса.</p>
+
+<h1><a name="checkbox_styles">Стили элемента</a></h1>
+
+<h2>ch_flag_en</h2>
+<p>Флажок выбран.</p>
+
+<hr>
+<p>Документация обновлялась последний раз 10.01.10.</p>
+</body>
+</html>

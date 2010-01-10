@@ -2,48 +2,10 @@
 <head>
 <title>элемент Edit Box</title>
 <meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251">
-<style>
-body
-{
-  font-size: 15px;
-  font-family: "Bookman Old Style";
-  color: black;
-  text-align: justify;
-}
-h1 { color: green; font-size: 23px; }
-h2 { color: green; font-size: 21px; }
-h3 { color: green; font-size: 19px; }
-h4 { color: #803f00; font-size: 17px; }
-i { color: #0099cc; }
-b { color: #0099cc; }
-p {
-  text-indent: 1em;
-  margin-top: 3px;
-  margin-bottom: 2px;
-  margin-left: 0px;
-  margin-right: 0px;
-}
-ol, ul, dl{
-  margin-top: 3px;
-  margin-bottom: 2px;
-}
-pre
-{
-  padding: 2px;
-  padding-left: 20px;
-  margin-top: 5px;
-  margin-bottom: 5px;
-  margin-left: 0px;
-  margin-right: 0px;
-  font-family: "Courier New";
-  font-size: 15px;
-  color: #004000;
-  background-color: #ffd0ff;
-}
-table { font-size: 15px; }
-</style>
+<link href="../style.css" type=text/css rel=stylesheet>
 </head>
 <body>
+<p><a href="../box_lib.htm">На главную &uarr;</a></p>
 <h1>Оглавление</h1>
 <p><a href="#vveden">Введение</a></p>
 <p><a href="#funct">Функции</a></p>
@@ -57,6 +19,8 @@ table { font-size: 15px; }
 
 <h1><a name="vveden">Введение</a></h1>
 <p>Текстовое поле, используется при вводе текстовой/числовой информации.</p>
+<p><img src="window_fasm.png"></p>
+<p>Рис. 1. Окно программы fasm с 3-мя элементами EditBox</p>
 
 <h1><a name="funct">Функции</a></h1>
 
@@ -94,7 +58,13 @@ table { font-size: 15px; }
 .shift_old dd 0
 }</pre>
 <p><b>width</b> - ширина элемента.</p>
-<p><b>left</b> - отступ слева.</p>
+<p><b>left</b> - отступ слева (положение по x).</p>
+<p><b>top</b> - отступ сверху (положение по y).</p>
+<p><b>color</b> - цвет фона.</p>
+<p><b>shift_color</b> - цвет выделения при удерживании [<b>Shift</b>] или мышкой.</p>
+<p><b>focus_border_color</b> - цвет рамки когда поле в фокусе.</p>
+<p><b>blur_border_color</b> - цвет рамки когда поле не в фокусе.</p>
+<p><b>text_color</b> - цвет текста.</p>
 
 <h1><a name="editbox_styles">Стили элемента</a></h1>
 
@@ -104,6 +74,6 @@ table { font-size: 15px; }
 <p>Текстовое поле в фокусе.</p>
 
 <hr>
-<p>Документация обновлялась последний раз 09.01.10.</p>
+<p>Документация обновлялась последний раз 10.01.10.</p>
 </body>
 </html>

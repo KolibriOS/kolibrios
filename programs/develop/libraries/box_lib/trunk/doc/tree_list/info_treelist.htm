@@ -1,0 +1,240 @@
+<html>
+<head>
+<title>элемент Tree List</title>
+<meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251">
+<link href="../style.css" type=text/css rel=stylesheet>
+</head>
+<body>
+<p><a href="../box_lib.htm">На главную &uarr;</a></p>
+<h1>Оглавление</h1>
+<p><a href="#vveden">Введение</a></p>
+<p><a href="#funct">Функции</a></p>
+<ul>
+<li><a href="#fun_init">tl_data_init</a></li>
+<li><a href="#fun_clear1">tl_data_clear</a></li>
+<li><a href="#fun_clear2">tl_info_clear</a></li>
+<li><a href="#fun_key">tl_key</a></li>
+<li><a href="#fun_mouse">tl_mouse</a></li>
+<li><a href="#fun_draw">tl_draw</a></li>
+<li><a href="#fun_undo">tl_info_undo</a></li>
+<li><a href="#fun_redo">tl_info_redo</a></li>
+<li><a href="#fun_add">tl_node_add</a></li>
+<li><a href="#fun_set_d">tl_node_set_data</a></li>
+<li><a href="#fun_get_d">tl_node_get_data</a></li>
+<li><a href="#fun_delete">tl_node_delete</a></li>
+<li><a href="#fun_cur_b">tl_cur_beg</a></li>
+<li><a href="#fun_cur_n">tl_cur_next</a></li>
+<li><a href="#fun_cur_p">tl_cur_perv</a></li>
+<li><a href="#fun_clo_opn">tl_node_close_open</a></li>
+<li><a href="#fun_lev_i">tl_node_lev_inc</a></li>
+<li><a href="#fun_lev_d">tl_node_lev_dec</a></li>
+<li><a href="#fun_mov_u">tl_node_move_up</a></li>
+<li><a href="#fun_mov_d">tl_node_move_down</a></li>
+<li>tl_node_poi_get_info</li>
+<li>tl_node_poi_get_next_info</li>
+<li>tl_node_poi_get_data</li>
+<li><a href="#fun_sme">tl_save_mem</a></li>
+<li><a href="#fun_lme">tl_load_mem</a></li>
+<li><a href="#fun_gme">tl_get_mem_size</a></li>
+<li><a href="#version">version_tree_list</a></li>
+</ul>
+<p><a href="#struc_tree_list">Структура tree_list</a></p>
+<p><a href="#tree_list_styles">Стили элемента</a></p>
+
+<h1><a name="vveden">Введение</a></h1>
+<p>Внешний вид элемента управления TreeList:</p>
+<p><img src="window_tree_list.png"></p>
+<p>Рис. 1. Окно программы с элементом TreeList</p>
+
+<h1><a name="funct">Функции</a></h1>
+
+<h2><a name="fun_init">tl_data_init</a></h2>
+<p>Конструктор элемента, нужно вызывать перед использованием элемента для выделения памяти и других настроек.</p>
+<h2><a name="fun_clear1">tl_data_clear</a></h2>
+<p>Деструктор элемента, чистит память по указателям: <b>data_info</b>, <b>data_nodes</b>, <b>data_img</b> и <b>data_img_sys</b>. Если в программе используется <i>несколько элементов с одинаковыми иконками</i>, то указатели data_img и data_img_sys нужно приравнять к 0 в других элементах, так что-бы при вызове деструкторов не было повторного удаления одних и тех же иконок.</p>
+
+<h2><a name="fun_clear2">tl_info_clear</a></h2>
+<p>Очистка списка от всех узлов. Это действие нельзя отменить функцией <b>tl_info_undo</b>.</p>
+
+<h2><a name="fun_key">tl_key</a></h2>
+<p>Функция которую нужно вызывать при нажатии на клавиатуру.
+ Кнопки, которые не доступны если есть стиль <i>tl_key_no_edit</i>: [<b>Enter</b>], [<b>Delete</b>], [<b>&larr;</b>], [<b>&rarr;</b>].
+ Всегда доступны: [<b>&uarr;</b>], [<b>&darr;</b>], [<b>Page Up</b>], [<b>Page Dn</b>], [<b>Space</b>].
+ Функция проверяет включен ли режим scan кодов, и в случае необходимости сама преобразует коды.</p>
+
+<h2><a name="fun_mouse">tl_mouse</a></h2>
+<p>Функция для событий от мыши.</p>
+
+<h2><a name="fun_draw">tl_draw</a></h2>
+<p>Полная перерисовка окна элемента.</p>
+
+<h2><a name="fun_undo">tl_info_undo</a></h2>
+<p>Отменяет добавление узлов. Действует только на весь узел целиком, не учитывая изменения внутри узлов. Т. е. нельзя отменить действия выполненные например функциями: <b>tl_node_set_data</b>, <b>tl_node_lev_inc</b> и им подобным.</p>
+
+<h2><a name="fun_redo">tl_info_redo</a></h2>
+<p>Повтор отмененных действий. Обратная функция по отношению к <b>tl_info_undo</b>.</p>
+
+<h2><a name="fun_add">tl_node_add</a></h2>
+<p>Добавляет узел, в позицию указанную курсором. Пример добавления узла:</p>
+<pre>  push dword tree1
+  push dword 0x10002
+  push dword data_buffer
+  call dword[tl_node_add]</pre>
+<p>где: <b>tree1</b> - структура tree_list;
+ <b>0x10002</b> - параметры узла (старшие байты 0x0001 - индекс иконки, отображаемой возле узла; меньший байт 0x02 - уровень вложености узла); <b>data_buffer</b> - указатель на дынные, добавляемые в узел.</p>
+
+<h2><a name="fun_set_d">tl_node_set_data</a></h2>
+<p>Устанавливает новые данные (пользовательские и подпись) в узел под курсором.</p>
+
+<h2><a name="fun_get_d">tl_node_get_data</a></h2>
+<p>Берет указатель на данные (пользовательские и подпись) из узла под курсором.</p>
+
+<h2><a name="fun_delete">tl_node_delete</a></h2>
+<p>Удаляет узел, но не окончательно, при необходимости узел можно вернуть функцией <b>tl_info_undo</b>.</p>
+
+<h2><a name="fun_cur_b">tl_cur_beg</a></h2>
+<p>Ставит курсор в начало списка, перематывает скроллинг если нужно.</p>
+
+<h2><a name="fun_cur_n">tl_cur_next</a></h2>
+<p>Переносит курсор на одну позицию ниже.</p>
+
+<h2><a name="fun_cur_p">tl_cur_perv</a></h2>
+<p>Переносит курсор на одну позицию выше.</p>
+
+<h2><a name="fun_clo_opn">tl_node_close_open</a></h2>
+<p>Открывает или закрывает родительский узел. Если у узла нет дочерних элементов,
+ то ничего не делает. Автоматически перерисовывает окно если состояние узла изменилось.</p>
+
+<h2><a name="fun_lev_i">tl_node_lev_inc</a></h2>
+<p>Добавить уровень узла под курсором. Делает узел дочерним.</p>
+
+<h2><a name="fun_lev_d">tl_node_lev_dec</a></h2>
+<p>Уменьшает уровень узла под курсором. Делает узел родительским.</p>
+
+<h2><a name="fun_mov_u">tl_node_move_up</a></h2>
+<p>Перемещает вверх узел под курсором. Вместе с узлом двигается также и курсор. Пример использования функции:</p>
+<pre>  push dword tree1
+  call dword[tl_node_move_up] ;переместить узел</pre>
+<p>где: <b>tree1</b> - структура tree_list</p>
+
+<h2><a name="fun_mov_d">tl_node_move_down</a></h2>
+<p>Перемещает вниз узел под курсором. Вместе с узлом двигается также и курсор. Пример использования функции:</p>
+<pre>  push dword tree1
+  call dword[tl_node_move_down] ;переместить узел</pre>
+<p>где: <b>tree1</b> - структура tree_list</p>
+
+<h2>tl_node_poi_get_info</h2>
+<p>Берет внутренний указатель на структуру описывающую узел.</p>
+<h2>tl_node_poi_get_next_info</h2>
+<p>Берет указатель на следующий элемент в цепи, без учета открытия/закрытия дочерних узлов.</p>
+<h2>tl_node_poi_get_data</h2>
+<p>Берет указатель на данные (пользовательские и подпись) из узла указанного в указателе.</p>
+
+<p>Функциями tl_node_poi_get_info, tl_node_poi_get_next_info и tl_node_poi_get_data можно считывать информацию о узлах элемента, при этом не меняя текущего положения курсора. Т. е. можно организовать доступ к даным элемента в &quot;фоновом режиме&quot;.</p>
+
+<h2><a name="fun_sme">tl_save_mem</a></h2>
+<p>Сохраняет информацию об узлах элемента в память. Пример использования функции:</p>
+<pre>  MEM_SIZE equ 5000
+  node_data rb MEM_SIZE
+.........
+  push dword tree1
+  push dword 0
+  push dword node_data
+  push dword MEM_SIZE
+  call dword[tl_save_mem]
+  pop eax</pre>
+<p>где: <b>tree1</b> - структура tree_list;
+ <b>0</b> - опция сохранения в начало блока памяти (если = 1, то добавляет элемент после других сохраненных ранее);
+ <b>node_data</b> - указатель на блок памяти;
+ <b>MEM_SIZE</b> - размер блока памяти для сохранения.
+В регистр <b>eax</b> пишется значение 0 или записываются коды ошибок сохранения.</p>
+
+<h2><a name="fun_lme">tl_load_mem</a></h2>
+<p>Загружает информацию об узлах элемента из памяти. Пример использования функции:</p>
+<pre>  MEM_SIZE equ 5000
+  node_data rb MEM_SIZE
+.........
+  push dword tree1
+  push dword 0
+  push dword node_data
+  push dword MEM_SIZE
+  call dword[tl_load_mem]
+  pop eax</pre>
+<p>где: <b>tree1</b> - структура tree_list;
+ <b>0</b> - индекс считываемого элемента;
+ <b>node_data</b> - указатель на блок памяти;
+ <b>MEM_SIZE</b> - размер блока памяти для сохранения.
+В регистр <b>eax</b> пишется значение 0 или записываются коды ошибок считывания.</p>
+
+<h2><a name="fun_gme">tl_get_mem_size</a></h2>
+<p>Вычисляет размер блока памяти (в который были раньше сохранены элементы).
+ Эту функцию можно использовать перед сохранением на диск, для получения точного
+ размера сохраняемых данных.</p>
+
+<h2><a name="version">version_tree_list</a></h2>
+<p>Версия элемента</p>
+
+<h1><a name="struc_tree_list">Структура tree_list</a></h1>
+<pre>struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
+    col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
+    info_capt_len,el_focus, p_scrol,on_press {
+  .data_info  dd 0
+  .info_size  dw info_size
+  .info_max_count dd info_max_count
+  .style      dd style
+  .data_nodes dd 0
+  .data_img   dd 0
+  .img_cx     dw img_cx
+  .img_cy     dw img_cy
+  .data_img_sys dd 0
+  .ch_tim     dd 0
+  .ls_tim     dd 0
+  .tim_undo   dd 0
+  .cur_pos    dd 0
+  .col_bkg    dd col_bkg
+  .col_zag    dd col_zag
+  .col_txt    dd col_txt
+  .box_left   dd box_l
+  .box_top    dd box_t
+  .box_width  dd box_w
+  .box_height dd box_h
+  .capt_cy    dw capt_cy
+  .info_capt_offs dw info_capt_offs
+  .info_capt_len  dw info_capt_len
+  .el_focus    dd el_focus
+  .p_scrol     dd p_scrol
+  rb 4
+  .on_activate dd 0
+  .on_press    dd on_press
+}</pre>
+<p><b>info_size</b> - количество байт, которое будет выделено для каждого узла. Часть этой памяти пользователь может использовать для своих целей (регулируется через <i>info_capt_offs</i> и <i>info_capt_len</i> см. рис. 2) а остальная часть будет использована как подпись узла.</p>
+<p><b>info_max_count</b> - максимальное количество узлов, которые можно добавить в элемент.</p>
+<p><b>style</b> - стили элемента.</p>
+<p><b>data_nodes</b> - указатель на внутренние структуры узлов (<i>TreeList</i>).</p>
+<p><b>data_img</b> - указатель на изображения с иконками узлов.</p>
+<p><b>data_img_sys</b> - указатель на системные изображения (курсор, плюсики, линии, ... все кроме иконок узлов).</p>
+<p><b>capt_cy</b> - высота строки для подписи вверху элемента, если меньше 9 подпись не выводится.</p>
+<p><b>info_capt_len</b> - длинна текста для подписи. Если равно 0, то длинна считается так: <i>info_size - info_capt_offs</i>.</p>
+<p><b>p_scrol</b> - указатель на структуру скроллинга, связанного с данным элементом.</p>
+<p><b>on_press</b> - указатель на функцию, которая будет вызвана при нажитии [<b>Enter</b>]. Если указатель равен 0 то ничего не будет вызыватся.</p>
+
+<p><img src="info_size.png"></p>
+<p>Рис. 2. Параметры <i>info_size</i>, <i>info_capt_offs</i> и <i>info_capt_len</i> в узле</p>
+
+<p>Пример создания структуры:</p>
+<pre>tree1 tree_list 24,500, tl_draw_par_line+tl_list_box_mode, 16,16,\
+    0x8080ff,0x0000ff,0xffffff, 10,35,200-16,285, 14,4,0,\
+    el_focus, wScr,fun_on_enter</pre>
+
+<h1><a name="tree_list_styles">Стили элемента</a></h1>
+<h2>tl_key_no_edit</h2>
+<p>Элемент нельзя редактировать на клавиатуре (изменять уровни, удалять). Ставьте этот стиль если нужно создать элемент только для просмотра данных.</p>
+<h2>tl_draw_par_line</h2>
+<p>Рисовать линии к родительскому узлу.</p>
+<h2>tl_list_box_mode</h2>
+<p>Стиль не отображает уровни (как в ListBox все узлы одного уровня).</p>
+
+<hr>
+<p>Документация обновлялась последний раз 10.01.10.</p>
+</body>
+</html>
