@@ -159,7 +159,7 @@ iglobal
       dd 0
       dd sound_interface         ; 55-Sound interface
       dd 0
-      dd sys_pcibios             ; 57-PCI BIOS32
+      dd 0
       dd file_system             ; 58-Common file system interface
       dd 0
       dd sys_IPC                 ; 60-Inter Process Communication
@@ -237,7 +237,7 @@ iglobal
       dd undefined_syscall       ; 54-reserved
       dd cross_order             ; 55-Sound interface
       dd undefined_syscall       ; 56-reserved
-      dd cross_order             ; 57-PCI BIOS32
+      dd sys_pcibios             ; 57-PCI BIOS32
       dd cross_order             ; 58-Common file system interface
       dd undefined_syscall       ; 59-reserved
       dd cross_order             ; 60-Inter Process Communication

@@ -87,7 +87,7 @@ end if
 
       no_pci_access_for_applications:
 
-	mov eax,-1
+	or eax,-1
 
 	ret
 
@@ -513,18 +513,14 @@ pci_mmio_unmap:
 end if
 
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
+uglobal
+align 4
 ; VendID (2), DevID (2), Revision = 0 (1), Class Code (3), FNum (1), Bus (1)
 pci_emu_dat:	times	30*10 db 0
-
+endg
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 align 4
 sys_pcibios:
-	xchg	ebx, eax
-	xchg	ecx, eax
-	xchg	edx, eax
-	xchg	esi, eax
-	xchg	edi, eax
 	cmp	[pci_access_enabled], 1
 	jne	.unsupported_func
 	cmp	[pci_bios_entry], 0
@@ -616,14 +612,14 @@ sys_pcibios:
 .not_WRITE_CONFIG:
 .unsupported_func:
 	mov	ah, 0x81		; FUNC_NOT_SUPPORTED
-.return:mov	dword[esp + 8 ], edi
-	mov	dword[esp + 12], esi
+.return:mov	dword[esp + 4 ], edi
+	mov	dword[esp + 8], esi
 .return_abcd:
-	mov	dword[esp + 28], edx
+	mov	dword[esp + 24], edx
 .return_abc:
-	mov	dword[esp + 32], ecx
+	mov	dword[esp + 28], ecx
 .return_ab:
-	mov	dword[esp + 24], ebx
+	mov	dword[esp + 20], ebx
 .return_a:
-	mov	dword[esp + 36], eax
+	mov	dword[esp + 32], eax
 	ret
