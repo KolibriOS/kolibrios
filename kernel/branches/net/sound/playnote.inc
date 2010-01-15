@@ -143,22 +143,24 @@ ReadNoteByte:
 ;result:
 ;  al - note
       push  eax
-      push  ebx
       push  ecx
       push  edx
+      push  esi
+
       mov   eax,[pidProcessNote]
       call  pid_to_slot
       test  eax,eax
       jz    .failed
-      lea   ebx,[esp+12]
-      mov   ecx,1
-      mov   edx,[memAdrNote]
+      lea   ecx,[esp+12]
+      mov   edx,1
+      mov   esi,[memAdrNote]
       inc   [memAdrNote]
+
       call  read_process_memory
 .failed:
+      pop   esi
       pop   edx
       pop   ecx
-      pop   ebx
       pop   eax
       ret
 ;-------------------  END CODE  -------------------

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -45,7 +45,6 @@ keymap_alt:
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
 
 
   boot_memdetect    db   'Determining amount of memory',0
@@ -119,34 +118,21 @@ shmem_list:
  .bk           dd shmem_list
  .fd           dd shmem_list
 
+dll_list:
+ .bk           dd dll_list
+ .fd           dd dll_list
+
+MAX_DEFAULT_DLL_ADDR = 0x20000000
+MIN_DEFAULT_DLL_ADDR = 0x10000000
+dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
+
 ; supported videomodes
 
-mode_1280_1024_32:
-  dw 1280,1024,32,60
-mode_1280_1024_24:
-  dw 1280,1024,24,60
-mode_1024_768_32:
-  dw 1024,768,32,60
-mode_1024_768_24:
-  dw 1024,768,24,60
-mode_800_600_32:
-  dw 800,600,32,60
-mode_800_600_24:
-  dw 800,600,24,60
-mode_640_480_32:
-  dw 640,480,32,60
-mode_640_480_24:
-  dw 640,480,24,60
-mode_640_480_16:
-  dw 640,480,16,60
-mode_320_240_8:
-  dw 320,240,8,60
 
 ; mike.dld {
 db 0
 dd servetable-0x10000
 draw_line       dd __sys_draw_line
-disable_mouse   dd __sys_disable_mouse
 draw_pointer    dd __sys_draw_pointer
 ;//mike.dld, 2006-08-02 [
 ;drawbar         dd __sys_drawbar
@@ -202,14 +188,14 @@ app_code_l:
         dw 0
         db 0
         db cpl3
-        dw G32+D32+(new_app_base shr 16)+0xF;
+        dw G32+D32+0xF;
 
 app_data_l:
         dw 0xFFFF
         dw 0
         db 0
         db drw3
-        dw G32+D32+(new_app_base shr 16)+0xF;
+        dw G32+D32+0xF;
 
 ; ------------- PCI BIOS ------------------
 
@@ -260,6 +246,14 @@ tss0_l:
         db     (tss shr 16) and 0xFF
         db     10001001b
         dw     (tss shr 16) and 0xFF00
+
+tls_data_l:
+        dw 0x0FFF
+        dw 0
+        db 0
+        db drw3
+        dw D32
+
 endofcode:
 gdte:
 
@@ -321,22 +315,26 @@ os_stack_seg      rd 1
 srv.fd            rd 1
 srv.bk            rd 1
 
-scr_width         rd 1
-scr_height        rd 1
 
-create_cursor     rd 1
-select_hw_cursor  rd 1
-set_hw_cursor     rd 1
-hw_restore        rd 1
+align 16
+
+_display          display_t
+
+_WinMapAddress    rd 1
+_WinMapSize       rd 1
 
 def_cursor        rd 1
 current_cursor    rd 1
 hw_cursor         rd 1
-cur_def_interl    rd 1
 cur_saved_base    rd 1
-cur_saved_interl  rd 1
-cur_saved_w       rd 1
-cur_saved_h       rd 1
+
+cur.lock          rd 1   ;1 - lock update, 2- hide
+cur.left          rd 1   ;cursor clip box
+cur.top           rd 1
+cur.right         rd 1
+cur.bottom        rd 1
+cur.w             rd 1
+cur.h             rd 1
 
 ipc_tmp           rd 1
 ipc_pdir          rd 1

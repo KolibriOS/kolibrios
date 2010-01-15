@@ -169,6 +169,7 @@ reserve_hd_channel:
         call    clear_hd_cache
 @@:
 	pop     eax
+	sti
 .ret:
         ret
 

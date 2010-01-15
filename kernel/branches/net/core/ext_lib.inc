@@ -13,7 +13,9 @@
 
 $Revision$
 
-
+if 0
+; The code currently does not work. Kill "if 0/end if" only after correcting
+; to current kernel (dll.inc).
 macro library [name,fname]
 {
   forward
@@ -315,3 +317,4 @@ endp
 uglobal
 s_libname  db 64 dup (0)
 endg
+end if

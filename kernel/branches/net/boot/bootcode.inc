@@ -42,7 +42,7 @@ printplain:
 @@:
         call    putchar
         lodsb
-        cmp     al, 0
+        test    al,al
         jnz     @b
         popa
         ret

@@ -99,6 +99,14 @@ virtual at 0
  TASKDATA TASKDATA
 end virtual
 
+TSTATE_RUNNING        = 0
+TSTATE_RUN_SUSPENDED  = 1
+TSTATE_WAIT_SUSPENDED = 2
+TSTATE_ZOMBIE         = 3
+TSTATE_TERMINATING    = 4
+TSTATE_WAITING        = 5
+TSTATE_FREE           = 9
+
 ; structures definition
 struc WDATA {
   .box             BOX
@@ -109,11 +117,12 @@ struc WDATA {
   .fl_wstate       db ?
   .fl_wdrawn       db ?
   .fl_redraw       db ?
+  .sizeof:
 }
 virtual at 0
  WDATA WDATA
 end virtual
-label WDATA.fl_wstyle byte at 0x13
+label WDATA.fl_wstyle byte at WDATA.cl_workarea + 3
 
 struc APPDATA
 {
@@ -141,7 +150,9 @@ struc APPDATA
   .wait_begin      dd ?            ;+92   +++
   .wait_test       dd ?            ;+96   +++
   .wait_param      dd ?            ;+100  +++
-                   db 24 dup(?)    ;+104
+  .tls_base        dd ?            ;+104
+  .dlls_list_ptr   dd ?            ;+108
+                   db 16 dup(?)    ;+112
 
   .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?            ;+132

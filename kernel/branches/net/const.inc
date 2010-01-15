@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -309,14 +309,12 @@ draw_data           equ (OS_BASE+0x0338000);
 BgrDrawMode         equ (OS_BASE+0x033BFF4)
 BgrDataWidth        equ (OS_BASE+0x033BFF8)
 BgrDataHeight       equ (OS_BASE+0x033BFFC)
-WinMapAddress       equ (OS_BASE+0x033C000)
-display_data        equ (OS_BASE+0x033C000) ;1024*1280=0x140000
 
-virtual at              (OS_BASE+0x047CF80)
+sys_pgmap           equ (OS_BASE+0x033C000)
+
+virtual at              (OS_BASE+0x05FFF80)
   tss  TSS
 end virtual
-
-sys_pgmap           equ (OS_BASE+0x047F000)
 
 HEAP_BASE           equ (OS_BASE+0x0800000)
 HEAP_MIN_SIZE       equ 0x01000000
@@ -439,7 +437,8 @@ APP_OBJ_OFFSET  equ 48
 APP_EV_OFFSET   equ 40
 
 struc CURSOR
-{;common object header
+{
+;common object header
    .magic       dd ?   ;'CURS'
    .destroy     dd ?   ;internal destructor
    .fd          dd ?   ;next object in list
@@ -450,12 +449,17 @@ struc CURSOR
    .base        dd ?   ;allocated memory
    .hot_x       dd ?   ;hotspot coords
    .hot_y       dd ?
+
+   .list_next   dd ?   ;next cursor in cursor list
+   .list_prev   dd ?   ;prev cursor in cursor list
+   .dev_obj     dd ?   ;device depended data
+
+   .sizeof:
 }
 virtual at 0
   CURSOR CURSOR
 end virtual
 
-CURSOR_SIZE     equ 32
 
 struc EVENT
 {
@@ -511,6 +515,77 @@ virtual at 0
   SMAP SMAP
 end virtual
 
+struc DLLDESCR
+{
+    .bk         dd ?
+    .fd         dd ?    ;+4
+    .data       dd ?    ;+8
+    .size       dd ?    ;+12
+    .timestamp  dq ?
+    .refcount   dd ?
+    .defaultbase dd ?
+    .coff_hdr    dd ?
+    .symbols_ptr dd ?
+    .symbols_num dd ?
+    .symbols_lim dd ?
+    .exports     dd ?   ;export table
+    .name:
+    .sizeof:
+}
+
+struc HDLL
+{
+    .fd          dd ?   ;next object in list
+    .bk          dd ?   ;prev object in list
+    .pid         dd ?   ;owner id
+
+    .base        dd ?   ;mapped base
+    .size        dd ?   ;mapped size
+    .refcount    dd ?   ;reference counter for this process and this lib
+    .parent      dd ?   ;DLLDESCR
+    .sizeof:
+}
+
+virtual at 0
+  DLLDESCR DLLDESCR
+end virtual
+
+virtual at 0
+  HDLL HDLL
+end virtual
+
+struc display_t
+{
+    .x              dd ?
+    .y              dd ?
+    .width          dd ?
+    .height         dd ?
+    .bpp            dd ?
+    .vrefresh       dd ?
+    .pitch          dd ?
+    .lfb            dd ?
+
+    .modes          dd ?
+    .ddev           dd ?
+    .connector      dd ?
+    .crtc           dd ?
+
+    .cr_list.next   dd ?
+    .cr_list.prev   dd ?
+
+    .cursor         dd ?
+
+    .init_cursor    dd ?
+    .select_cursor  dd ?
+    .show_cursor    dd ?
+    .move_cursor    dd ?
+    .restore_cursor dd ?
+    .disable_mouse  dd ?
+}
+
+virtual at 0
+  display_t display_t
+end virtual
 
 struc HEAP_DATA
 {
@@ -595,18 +670,20 @@ struc PG_DATA
 ;}
 
 struc SRV
-{ .srv_name          rb 16           ;ASCIIZ string
+{
+ .srv_name          rb 16           ;ASCIIZ string
   .magic             dd ?     ;+0x10 ;'SRV '
   .size              dd ?     ;+0x14 ;size of structure SRV
   .fd                dd ?     ;+0x18 ;next SRV descriptor
   .bk                dd ?     ;+0x1C ;prev SRV descriptor
   .base              dd ?     ;+0x20 ;service base address
   .entry             dd ?     ;+0x24 ;service START function
-  .srv_proc          dd ?     ;+0x28 ;main service handler
+  .srv_proc          dd ?     ;+0x28 ;user mode service handler
+  .srv_proc_ex       dd ?     ;+0x2C ;kernel mode service handler
+  .sizeof:
 }
 
 SRV_FD_OFFSET  equ 0x18
-SRV_SIZE       equ 44
 
 DRV_ENTRY    equ  1
 DRV_EXIT     equ -1

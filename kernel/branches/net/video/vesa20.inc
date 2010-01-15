@@ -28,7 +28,6 @@ $Revision$
 ;BytesPerScanLine        equ     0xfe08
 ;LFBAddress              equ     0xfe80
 ;ScreenBPP               equ     0xfbf1
-;WinMapAddress           equ     0x460000
 
 
 
@@ -54,16 +53,14 @@ Vesa20_getpixel24:
      imul    ebx, [BytesPerScanLine]    ; ebx = y * y multiplier
      lea     edi, [eax+eax*2] ; edi = x*3
      add     edi, ebx         ; edi = x*3+(y*y multiplier)
-     add     edi, [LFBAddress]    ; ebx = where pixel is in memory
-     mov     ecx, [edi]
+     mov     ecx, [LFB_BASE+edi]
      and     ecx, 0xffffff
      ret
 
 Vesa20_getpixel32:
      imul    ebx, [BytesPerScanLine]    ; ebx = y * y multiplier
      lea     edi, [ebx+eax*4] ; edi = x*4+(y*y multiplier)
-     add     edi, [LFBAddress]    ; ebx = where pixel is in memory
-     mov     ecx, [edi]
+     mov     ecx, [LFB_BASE+edi]
      and     ecx, 0xffffff
      ret
 
@@ -106,7 +103,7 @@ align 16
 
 vesa20_putimage:
      pushad
-     call    [disable_mouse]
+     call    [_display.disable_mouse]
      sub     esp, putimg.stack_data
 ; save pointer to image
      mov     [putimg.pti], ebx
@@ -194,13 +191,12 @@ vesa20_putimage:
      shr     ebx, 3
      imul    eax, ebx
      add     edx, eax
-     add     edx, [LFBAddress]
 ; pointer to pixel map
      mov     eax, [putimg.abs_cy]
      imul    eax, [Screen_Max_X]
      add     eax, [putimg.abs_cy]
      add     eax, [putimg.abs_cx]
-     add     eax, WinMapAddress
+     add     eax, [_WinMapAddress]
      xchg    eax, ebp
 ; get process number
      mov     ebx, [CURRENT_TASK]
@@ -220,9 +216,9 @@ align   4
      cmp     [ebp], bl
      jne     .skip
 ;     mov     eax, [esi]        ; eax = RRBBGGRR
-     mov     [edx], ax
+     mov     [LFB_BASE+edx], ax
      shr     eax, 16
-     mov     [edx+2], al
+     mov     [LFB_BASE+edx+2], al
 .skip:
 ;     add     esi, 3 ;[putimg.source_bpp]
      add     edx, 3
@@ -265,7 +261,7 @@ align   4
      cmp     [ebp], bl
      jne     .skip
 ;     mov     eax, [esi]        ; ecx = RRBBGGRR
-     mov     [edx], eax
+     mov     [LFB_BASE+edx], eax
 .skip:
 ;     add     esi, [putimg.source_bpp]
      add     edx, 4
@@ -308,20 +304,25 @@ __sys_putpixel:
 
 ;;;        mov  [novesachecksum], dword 0
      pushad
-     test  edi,1                 ; force ?
-     jnz   .forced
-; not forced:
-     push  ecx               ; save 24th bit in case negative pixel wanted
-     call  checkpixel
-     test  ecx,ecx
-     pop   ecx
-     jnz   .exit
-.forced:
      cmp   [Screen_Max_X], eax
      jb    .exit
      cmp   [Screen_Max_Y], ebx
      jb    .exit
-.ok:
+     test  edi,1                 ; force ?
+     jnz   .forced
+
+; not forced:
+
+     push eax
+     mov  edx,[_display.width]     ; screen x size
+     imul edx, ebx
+     add  eax, [_WinMapAddress]
+     movzx  edx, byte [eax+edx]
+     cmp edx, [CURRENT_TASK]
+     pop eax
+     jne .exit
+
+.forced:
 ; check if negation
      test  ecx,0x01000000
      jz    .noneg
@@ -342,11 +343,9 @@ Vesa20_putpixel24:
      imul    ebx, [BytesPerScanLine]     ; ebx = y * y multiplier
      lea     edi, [eax+eax*2]  ; edi = x*3
      mov     eax, [esp+32-8+4]
-     add     edi, [LFBAddress]
-     add     edi, ebx          ; ebx = where to put pixel in memory
-     mov     [edi], ax
+     mov     [LFB_BASE+ebx+edi], ax
      shr     eax, 16
-     mov     [edi+2], al
+     mov     [LFB_BASE+ebx+edi+2], al
      ret
 
 
@@ -357,8 +356,7 @@ Vesa20_putpixel32:
      imul    ebx, [BytesPerScanLine]     ; ebx = y * y multiplier
      lea     edi, [ebx+eax*4]  ; edi = x*4+(y*y multiplier)
      mov     eax, [esp+32-8+4] ; eax = color
-     add     edi, [LFBAddress]     ; ebx = where to put pixel in memory
-     mov     [edi], eax
+     mov     [LFB_BASE+edi], eax
      ret
 
 ;*************************************************
@@ -378,7 +376,7 @@ calculate_edi:
 align 4
 __sys_draw_line:
 ;     inc   [mouse_pause]
-     call    [disable_mouse]
+     call    [_display.disable_mouse]
 
 ; draw a line
 ; eax = HIWORD = x1
@@ -568,7 +566,7 @@ align 4
 ; edi   color
 vesa20_drawbar:
      pushad
-     call    [disable_mouse]
+     call    [_display.disable_mouse]
      sub     esp, drbar.stack_data
      mov     [drbar.color], edi
      sub     edx, ebx
@@ -643,13 +641,12 @@ vesa20_drawbar:
 ;     shr     ebx, 3
      imul    eax, ebx
      add     edx, eax
-     add     edx, [LFBAddress]
 ; pointer to pixel map
      mov     eax, [drbar.abs_cy]
      imul    eax, [Screen_Max_X]
      add     eax, [drbar.abs_cy]
      add     eax, [drbar.abs_cx]
-     add     eax, WinMapAddress
+     add     eax, [_WinMapAddress]
      xchg    eax, ebp
 ; get process number
      mov     ebx, [CURRENT_TASK]
@@ -674,8 +671,9 @@ align   4
 .new_x:
      cmp     byte [ebp], bl
      jne     .skip
-     mov     [edx], bh
-     mov     [edx + 1], ax
+
+     mov     [LFB_BASE+edx], bh
+     mov     [LFB_BASE+edx + 1], ax
 .skip:
 ; add pixel
      add     edx, 3
@@ -710,7 +708,8 @@ align   4
 .new_x:
      cmp     byte [ebp], bl
      jne     .skip
-     mov     [edx], eax
+
+     mov     [LFB_BASE+edx], eax
 .skip:
 ; add pixel
      add     edx, 4
@@ -737,62 +736,9 @@ align   4
      mov     [EGA_counter],1
      ret
 
-;voodoodbcplimit:
-
-; ebp:=(y+Ywin)*(ScreenXSize+1)+(x+Xwin)+AddrBuffer
-
-
-;     pusha
-
-;     xor edx,edx
-;     mov eax,ebp
-;     mov ebx,[Screen_Max_X] ; Screen_X_size
-;     inc ebx   ; +1
-;     sub eax,WinMapAddress ; -AddrBuffer
-;     div ebx ;
-;     mov ebx,eax ; ebx:=Y
-;     mov eax,edx ; eax:=X
-;     call cplimit
-
-;     test ecx,ecx
-;     jne  dbcpl12
-;     popa
-;     clc
-;     ret
-;   dbcpl12:
-;     popa
-;     stc
-;     ret
-
-
-
-
-;dbcplimit:
-
-;        pusha
-
-;        xor  edx,edx
-;        mov  ebx,[Screen_Max_X]
-;        inc  ebx
-;        sub  eax,WinMapAddress
-;        div  ebx
-;        mov  ebx,eax
-;        mov  eax,edx
-;        call cplimit
-
-;        test ecx,ecx
-;        jne  dbcpl1
-;        popa
-;        clc
-;        ret
-;     dbcpl1:
-;        popa
-;        stc
-;        ret
-
-
+align 4
 vesa20_drawbackground_tiled:
-        call    [disable_mouse]
+        call    [_display.disable_mouse]
         pushad
 ; External loop for all y from start to end
         mov     ebx, [draw_data+32+RECT.top]    ; y start
@@ -810,10 +756,11 @@ dp2:
         jz      @f
         add     ebp, eax
 @@:
-        add     ebp, [LFBAddress]
+        add     ebp, LFB_BASE
 ; ebp:=Y*BytesPerScanLine+X*BytesPerPixel+AddrLFB
         call    calculate_edi
         xchg    edi, ebp
+        add ebp, [_WinMapAddress]
 ; Now eax=x, ebx=y, edi->output, ebp=offset in WinMapAddress
 ; 2) Calculate offset in background memory block
         push    eax
@@ -842,7 +789,7 @@ dp2:
 ; esi -> bgr memory, edi -> output
 ; ebp = offset in WinMapAddress
 dp3:
-        cmp     [ebp+WinMapAddress], dl
+        cmp     [ebp], dl
         jnz     nbgp
         movsb
         movsb
@@ -881,7 +828,7 @@ dp4:
 
 
 vesa20_drawbackground_stretch:
-        call    [disable_mouse]
+        call    [_display.disable_mouse]
         pushad
 ; Helper variables
 ; calculate 2^32*(BgrDataWidth-1) mod (ScreenWidth-1)
@@ -917,7 +864,6 @@ vesa20_drawbackground_stretch:
         jz      @f
         add     ebp, eax
 @@:
-        add     ebp, [LFBAddress]
 ; ebp:=Y*BytesPerScanLine+X*BytesPerPixel+AddrLFB
         call    calculate_edi
         xchg    edi, ebp
@@ -985,7 +931,8 @@ sdp3:
 ; qword [esp+28] = 2^32*(BgrDataHeight-1)/(ScreenHeight-1)
 ; qword [esp+36] = 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
 sdp3a:
-        cmp     [ebp+WinMapAddress], byte 1
+        mov eax, [_WinMapAddress]
+        cmp     [ebp+eax], byte 1
         jnz     snbgp
         mov     eax, [bgr_cur_line+esi]
         test    ecx, ecx
@@ -993,9 +940,11 @@ sdp3a:
         mov     ebx, [bgr_next_line+esi]
         call    [overlapping_of_points_ptr]
 .novert:
-        mov     [edi], ax
+
+        mov     [LFB_BASE+edi], ax
         shr     eax, 16
-        mov     [edi+2], al
+
+        mov     [LFB_BASE+edi+2], al
 snbgp:
         cmp     [ScreenBPP], byte 25
         sbb     edi, -4

@@ -279,21 +279,26 @@ p_irq15:
         iret
 
 ready_for_next_irq:
-        mov     [check_idle_semaphore],5
-        mov     al, 0x20
+	mov	eax,5
+        mov     [check_idle_semaphore],eax
+;        mov     al, 0x20
+	add 	eax,(0x20-0x5)
+
         out     0x20, al
         ret
-
+;destroy eax
 ready_for_next_irq_1:
-        mov     [check_idle_semaphore],5
-        mov     al, 0x20
+	mov	eax,5
+        mov     [check_idle_semaphore],eax
+;        mov     al, 0x20
+	add 	eax,(0x20-0x5)
         out     0xa0,al
         out     0x20, al
         ret
 
 irqD:
         push  eax
-        mov   al,0
+	xor   eax,eax
         out   0xf0,al
         mov   al,0x20
         out   0xa0,al
@@ -396,36 +401,32 @@ clear_application_table_status:
 
         cmp  eax,[application_table_status]
         jne  apptsl1
-        mov  [application_table_status],0
+	xor  eax,eax
+        mov  [application_table_status],eax
       apptsl1:
 
         pop  eax
 
         ret
 
+;  * eax = 64 - номер функции
+;  * ebx = 1 - единственная подфункция
+;  * ecx = новый размер памяти
+;Возвращаемое значение:
+;  * eax = 0 - успешно
+;  * eax = 1 - недостаточно памяти
+
 sys_resize_app_memory:
-        ; eax = 1 - resize
-        ;     ebx = new amount of memory
+        ; ebx = 1 - resize
+        ; ecx = new amount of memory
 
-        cmp    eax,1
-        jne    .no_application_mem_resize
-
-        stdcall new_mem_resize, ebx
-        mov [esp+36], eax
-        ret
-
+;        cmp    eax,1
+	dec	ebx
+        jnz    .no_application_mem_resize
+        stdcall new_mem_resize, ecx
+        mov [esp+32], eax
 .no_application_mem_resize:
         ret
-
-sys_threads:
-
-; eax=1 create thread
-;
-;   ebx=thread start
-;   ecx=thread stack value
-;
-; on return : eax = pid
-jmp new_sys_threads
 
 iglobal
 ;  process_terminating  db 'K : Process - terminating',13,10,0
@@ -497,10 +498,10 @@ term9:
            pop esi
            jmp @B
 @@:
+
            mov eax, [.slot]
            shl eax, 8
-           mov eax,[SLOT_BASE+eax+APPDATA.dir_table]
-           stdcall destroy_app_space, eax
+           stdcall destroy_app_space, [SLOT_BASE+eax+APPDATA.dir_table], [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
 
            mov esi, [.slot]
            cmp [fpu_owner],esi   ; if user fpu last -> fpu user = 1
@@ -586,13 +587,13 @@ term9:
     shl   esi,5
     add   esi,window_data
     mov   eax,[esi+WDATA.box.left]
-    mov   [dlx],eax
+    mov   [draw_limits.left],eax
     add   eax,[esi+WDATA.box.width]
-    mov   [dlxe],eax
+    mov   [draw_limits.right],eax
     mov   eax,[esi+WDATA.box.top]
-    mov   [dly],eax
+    mov   [draw_limits.top],eax
     add   eax,[esi+WDATA.box.height]
-    mov   [dlye],eax
+    mov   [draw_limits.bottom],eax
 
     xor   eax, eax
     mov   [esi+WDATA.box.left],eax
@@ -641,12 +642,12 @@ term9:
            add edi,SLOT_BASE
 
            mov eax, [edi+APPDATA.io_map]
-           cmp eax, (tss._io_map_0-OS_BASE+PG_MAP)
+           cmp eax, [SLOT_BASE+256+APPDATA.io_map]
            je @F
            call free_page
 @@:
            mov eax, [edi+APPDATA.io_map+4]
-           cmp eax, (tss._io_map_1-OS_BASE+PG_MAP)
+           cmp eax, [SLOT_BASE+256+APPDATA.io_map+4]
            je @F
            call free_page
 @@:
@@ -689,22 +690,22 @@ term9:
         cmp     [hd1_status], esi
         jnz     @f
         call    free_hd_channel
-        mov     [hd1_status], 0
+        and     [hd1_status], 0
 @@:
         cmp     [cd_status], esi
         jnz     @f
         call    free_cd_channel
-        mov     [cd_status], 0
+        and     [cd_status], 0
 @@:
         cmp     [flp_status], esi
         jnz     @f
-        mov     [flp_status], 0
+        and     [flp_status], 0
 @@:
         pop     esi
         cmp     [bgrlockpid], esi
         jnz     @f
         and     [bgrlockpid], 0
-        mov     [bgrlock], 0
+        and     [bgrlock], 0
 @@:
 
     pusha ; remove all irq reservations
@@ -736,8 +737,8 @@ term9:
 
     mov   esi,[RESERVED_PORTS]
 
-    cmp   esi,0
-    je    rmpr9
+    test  esi,esi
+    jz    rmpr9
 
   rmpr3:
 
@@ -796,10 +797,10 @@ term9:
 ;    call  systest
     sti  ; .. and life goes on
 
-    mov   eax, [dlx]
-    mov   ebx, [dly]
-    mov   ecx, [dlxe]
-    mov   edx, [dlye]
+    mov   eax, [draw_limits.left]
+    mov   ebx, [draw_limits.top]
+    mov   ecx, [draw_limits.right]
+    mov   edx, [draw_limits.bottom]
     call  calculatescreen
     xor   eax, eax
     xor   esi, esi
@@ -808,7 +809,7 @@ term9:
     mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
     mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
 
-    mov   [application_table_status],0
+    and   [application_table_status],0
     ;mov   esi,process_terminated
     ;call  sys_msg_board_str
     add esp, 4
