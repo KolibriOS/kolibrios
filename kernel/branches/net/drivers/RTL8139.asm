@@ -302,7 +302,7 @@ align 4
 proc service_proc stdcall, ioctl:dword
 
 	mov	edx, [ioctl]
-	mov	eax, [ebx+IOCTL.io_code]
+	mov	eax, [edx+IOCTL.io_code]
 
 ;------------------------------------------------------
 

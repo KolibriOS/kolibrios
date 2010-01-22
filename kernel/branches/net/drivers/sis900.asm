@@ -133,7 +133,7 @@ service_proc:
 ;       pointer to IOCTL structure.
 	mov	edx, [esp+4]	; edx -> IOCTL
 ; 2. Get request code and select a handler for the code.
-	mov	eax, [ebx+IOCTL.io_code]
+	mov	eax, [edx+IOCTL.io_code]
 	test	eax, eax	; check for SRV_GETVERSION
 	jnz	@f
 ; 3. This is SRV_GETVERSION request, no input, 4 bytes output, API_VERSION.
