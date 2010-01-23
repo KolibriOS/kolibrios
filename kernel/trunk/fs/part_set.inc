@@ -126,7 +126,7 @@ iglobal
     db    0xd4                  ; Old Multiuser DOS secured: fat16 <32M
     db    0xd6                  ; Old Multiuser DOS secured: fat16 >32M
     db    0x07                  ; NTFS
-    db    0x17                  ; NTFS, hidden
+    db    0x27                  ; NTFS, hidden
     db    0x83                  ; Linux native file system (ext2fs)
   partition_types_end:
 
@@ -506,4 +506,3 @@ fat16_partition:
     call  free_hd_channel
     mov   [hd1_status],0        ; free
     ret
-

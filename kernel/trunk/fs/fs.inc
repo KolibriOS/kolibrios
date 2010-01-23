@@ -795,4 +795,3 @@ error:
 
 partition_string: dd 0
                   db 32
-

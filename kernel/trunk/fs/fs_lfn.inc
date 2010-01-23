@@ -105,11 +105,6 @@ file_system_lfn:
 ; 9 : create directory
 
 ; parse file name
-	cmp	dword [eax], 1
-	jne	@F
-	;xchg	bx,bx
-@@:
-	;up to file_system_lfn - TEMP!!!
 	xchg	ebx, eax
 	lea	esi, [ebx+20]
 	lodsb
@@ -187,7 +182,7 @@ file_system_lfn:
 	pop     ecx
 	mov	byte [edx], 1	; version
 .maindir_loop:
-	call	esi		;!!!!!!!!!!!!!!!!!!
+	call	esi
 	jc	.maindir_done
 	inc	dword [edx+8]
 	dec	dword [esp]
@@ -1148,4 +1143,3 @@ get_full_file_name:
 	jz	.ret.ok
 	mov	byte [edi-1], '/'
 	jmp	.set_copy_cont
-

@@ -95,7 +95,7 @@ ntfs_test_bootsec:
 
 ntfs_setup:             ; CODE XREF: part_set.inc
 ; By given bootsector, initialize some NTFS variables
-;        call    ntfs_test_bootsec
+;        call    ntfs_test_bootsec			; checking boot sector was already
 ;        jc      problem_fat_dec_count
         movzx   eax, byte [ebx+13]
         mov     [ntfs_data.sectors_per_cluster], eax
@@ -1268,7 +1268,6 @@ ntfs_HdRead:
 ;
 ;--------------------------------------------------------------
 ntfs_HdReadFolder:
-	xchg	bx, bx
         mov     eax, 5          ; root cluster
         cmp     byte [esi], 0
         jz      .doit
@@ -1814,4 +1813,3 @@ ntfs_HdGetFileInfo:
         pop     edi esi
         xor     eax, eax
         ret
-
