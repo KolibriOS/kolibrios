@@ -26,7 +26,7 @@ align 4
 ;******************************************************
 PARTITION_START      dd 0x3f
 PARTITION_END        dd 0
-fs_type              db 0       ; 0=none, 1=NTFS, 16=FAT16, 32=FAT32
+fs_type              db 0       ; 0=none, 1=NTFS, 2=EXT2/3, 16=FAT16, 32=FAT32
 align 4
 
 fs_dependent_data_start:
@@ -78,6 +78,28 @@ ERROR: increase sizeof(fs_dependent_data)!
 end if
 end virtual
 
+virtual at fs_dependent_data_start
+; EXT2 data
+ext2_data:
+    .log_block_size                 dd ?
+    .block_size                     dd ?
+    .count_block_in_block           dd ?
+    .blocks_per_group               dd ?
+    .inodes_per_group               dd ?
+    .global_desc_table              dd ?
+    .root_inode                     dd ?	; pointer to root inode in memory
+    .inode_size                     dd ?
+    .count_pointer_in_block         dd ?	;  block_size / 4
+    .count_pointer_in_block_square  dd ?	; (block_size / 4)**2
+    .ext2_save_block                dd ?    ; блок на глобальную 1 процедуру
+    .ext2_temp_block                dd ?    ; блок для мелких процедур
+    .ext2_save_inode                dd ?    ; inode на глобальную процедуру
+    .ext2_temp_inode                dd ?    ; inode для мелких процедур
+if $ > fs_dependent_data_end
+ERROR: increase sizeof(fs_dependent_data)!
+end if
+end virtual
+
 ;***************************************************************************
 ; End place
 ; Mario79
@@ -104,7 +126,8 @@ iglobal
     db    0xd4                  ; Old Multiuser DOS secured: fat16 <32M
     db    0xd6                  ; Old Multiuser DOS secured: fat16 >32M
     db    0x07                  ; NTFS
-    db    0x27                  ; NTFS, hidden
+    db    0x17                  ; NTFS, hidden
+    db    0x83                  ; Linux native file system (ext2fs)
   partition_types_end:
 
 
@@ -118,17 +141,15 @@ iglobal
 endg
 
 ; Partition chain used:
-; MBR        ;   PARTITION2 ;   PARTITION3 ;   PARTITION4
-;==========================================================
-; fat16/32   +-- fat16/32   +-- fat16/32   +-- fat16/32   +--
-; extended --+   extended --+   extended --+   extended --+
-; 0              0              0              0
-; 0              0              0              0
-; Notes:
-; - extended partition need to be in second entry on table
-; - it will skip over removed partitions
+; MBR <---------------------
+; |                         |
+; |-> PARTITION1          |
+; |-> EXTENDED PARTITION -        ;not need be second partition
+; |-> PARTITION3
+; |-> PARTITION4
 
-set_FAT32_variables:
+set_PARTITION_variables:
+set_FAT32_variables:        ;deprecated
     mov   [problem_partition],0
     call  reserve_hd1
     call  reserve_hd_channel
@@ -139,12 +160,12 @@ set_FAT32_variables:
     je    problem_hd
 
     xor   ecx,ecx               ; partition count
-    mov   edx,-1                ; flag for partition
-    xor   eax,eax               ; read MBR
+    or    edx,-1                ; flag for partition
+    xor   eax,eax               ; address MBR
     xor   ebp,ebp               ; extended partition start
 
-new_partition:
-    test  ebp,ebp               ; is there extended partition?
+new_mbr:
+    test  ebp,ebp               ; is there extended partition? (MBR or EMBR)
     jnz   extended_already_set  ; yes
     xchg  ebp,eax               ; no. set it now
 
@@ -158,26 +179,25 @@ extended_already_set:
     cmp   word [ebx+0x1fe],0xaa55 ; is it valid boot sector?
     jnz   end_partition_chain
     cmp   dword [ebx+0x1be+0xc],0 ; skip over empty partition
-;    jz    next_partition
-    jnz    .next_primary_partition
+    jnz    test_primary_partition_0
     cmp   dword [ebx+0x1be+0xc+16],0
-    jnz    next_primary_partition
+    jnz    test_primary_partition_1
     cmp   dword [ebx+0x1be+0xc+16+16],0
-    jnz    next_primary_partition_1
+    jnz    test_primary_partition_2
     cmp   dword [ebx+0x1be+0xc+16+16+16],0
-    jnz    next_primary_partition_2
-    jmp   next_partition
-    
-.next_primary_partition:
+    jnz    test_primary_partition_3
+    jmp   end_partition_chain
+
+test_primary_partition_0:
     push  eax
     mov   al,[ebx+0x1be+4]      ; get primary partition type
     call  scan_partition_types
     pop   eax
-    jnz   next_primary_partition        ; no. skip over
+    jnz   test_primary_partition_1      ; no. skip over
 
     inc   ecx
-    cmp   ecx,[fat32part]       ; is it wanted partition?
-    jnz   next_primary_partition        ; no
+    cmp   ecx,[known_part]       ; is it wanted partition?
+    jnz   test_primary_partition_1      ; no
 
         mov     edx, eax                ; start sector
         add     edx, [ebx+0x1be+8]      ; add relative start
@@ -190,16 +210,16 @@ extended_already_set:
         mov     [fs_type], dl           ; save for FS recognizer (separate FAT vs NTFS)
         pop     edx
 
-next_primary_partition:
+test_primary_partition_1:
     push  eax
     mov   al,[ebx+0x1be+4+16]      ; get primary partition type
     call  scan_partition_types
     pop   eax
-    jnz   next_primary_partition_1        ; no. skip over
+    jnz   test_primary_partition_2        ; no. skip over
 
     inc   ecx
-    cmp   ecx,[fat32part]       ; is it wanted partition?
-    jnz   next_primary_partition_1        ; no
+    cmp   ecx,[known_part]       ; is it wanted partition?
+    jnz   test_primary_partition_2        ; no
 
         mov     edx, eax
         add     edx, [ebx+0x1be+8+16]
@@ -211,16 +231,16 @@ next_primary_partition:
         mov     [fs_type], dl
         pop     edx
 
-next_primary_partition_1:
+test_primary_partition_2:
     push  eax
     mov   al,[ebx+0x1be+4+16+16]      ; get primary partition type
     call  scan_partition_types
     pop   eax
-    jnz   next_primary_partition_2        ; no. skip over
+    jnz   test_primary_partition_3        ; no. skip over
 
     inc   ecx
-    cmp   ecx,[fat32part]       ; is it wanted partition?
-    jnz   next_primary_partition_2        ; no
+    cmp   ecx,[known_part]       ; is it wanted partition?
+    jnz   test_primary_partition_3        ; no
 
         mov     edx, eax
         add     edx, [ebx+0x1be+8+16+16]
@@ -232,16 +252,16 @@ next_primary_partition_1:
         mov     [fs_type], dl
         pop     edx
 
-next_primary_partition_2:
+test_primary_partition_3:
     push  eax
     mov   al,[ebx+0x1be+4+16+16+16]      ; get primary partition type
     call  scan_partition_types
     pop   eax
-    jnz   next_partition        ; no. skip over
+    jnz   test_ext_partition_0        ; no. skip over
 
     inc   ecx
-    cmp   ecx,[fat32part]       ; is it wanted partition?
-    jnz   next_partition        ; no
+    cmp   ecx,[known_part]       ; is it wanted partition?
+    jnz   test_ext_partition_0  ; no
 
         mov     edx, eax
         add     edx, [ebx+0x1be+8+16+16+16]
@@ -253,40 +273,40 @@ next_primary_partition_2:
         mov     [fs_type], dl
         pop     edx
 
-next_partition:
+test_ext_partition_0:
     push  eax
     mov   al,[ebx+0x1be+4]   ; get extended partition type
     call  scan_extended_types
     pop   eax
-    jnz   next_partition_1
+    jnz   test_ext_partition_1
 
     mov   eax,[ebx+0x1be+8]     ; add relative start
     test  eax,eax               ; is there extended partition?
-    jnz   new_partition         ; yes. read it
+    jnz   new_mbr               ; yes. read it
 
-next_partition_1:
+test_ext_partition_1:
     push  eax
     mov   al,[ebx+0x1be+4+16]   ; get extended partition type
     call  scan_extended_types
     pop   eax
-    jnz   next_partition_2
+    jnz   test_ext_partition_2
 
-    mov   eax,[ebx+0x1be+8+16]     ; add relative start
+    mov   eax,[ebx+0x1be+8+16]  ; add relative start
     test  eax,eax               ; is there extended partition?
-    jnz   new_partition         ; yes. read it
+    jnz   new_mbr               ; yes. read it
 
-next_partition_2:
+test_ext_partition_2:
     push  eax
     mov   al,[ebx+0x1be+4+16+16]   ; get extended partition type
     call  scan_extended_types
     pop   eax
-    jnz   next_partition_3
+    jnz   test_ext_partition_3
 
     mov   eax,[ebx+0x1be+8+16+16]     ; add relative start
     test  eax,eax               ; is there extended partition?
-    jnz   new_partition         ; yes. read it
-    
-next_partition_3:
+    jnz   new_mbr               ; yes. read it
+
+test_ext_partition_3:
     push  eax
     mov   al,[ebx+0x1be+4+16+16+16]   ; get extended partition type
     call  scan_extended_types
@@ -295,8 +315,8 @@ next_partition_3:
 
     mov   eax,[ebx+0x1be+8+16+16+16]  ; get start of extended partition
     test  eax,eax               ; is there extended partition?
-    jnz   new_partition         ; yes. read it
-    
+    jnz   new_mbr               ; yes. read it
+
 end_partition_chain:
     mov   [partition_count],ecx
 
@@ -366,14 +386,21 @@ hd_and_partition_ok:
         add     eax, [PARTITION_START]
         call    hd_read
         cmp     [hd_error], 0
-        jnz     problem_fat_dec_count   ; не судьба...
+        jnz     problem_fat_dec_count   ; no chance...
 boot_read_ok:
-;        mov     [hd_setup], 0
+
 ; if we are running on NTFS, check bootsector
-;        cmp     [fs_type], 7
-;        jz      ntfs_setup
-        call    ntfs_test_bootsec
+
+        call    ntfs_test_bootsec      ; test ntfs
         jnc     ntfs_setup
+
+        call    ext2_test_superblock   ; test ext2fs
+        jnc	ext2_setup
+
+        mov	eax, [PARTITION_START]	;ext2 test changes [buffer]
+        call	hd_read
+        cmp     [hd_error], 0
+        jnz	problem_fat_dec_count
 
     cmp   word [ebx+0x1fe],0xaa55 ; is it valid boot sector?
     jnz   problem_fat_dec_count
@@ -479,3 +506,4 @@ fat16_partition:
     call  free_hd_channel
     mov   [hd1_status],0        ; free
     ret
+

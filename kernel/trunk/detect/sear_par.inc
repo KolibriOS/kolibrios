@@ -20,15 +20,15 @@ $Revision$
         mov   [hdbase],0x1f0
         mov   [hdid],0x0
         mov   [hdpos],1
-      mov  [fat32part],1
+      mov  [known_part],1
  search_partitions_ide0_1:
-      call  set_FAT32_variables
+      call  set_PARTITION_variables
       cmp   [problem_partition],0
       jne   search_partitions_ide1
       inc   byte [DRIVE_DATA+2]
       call  partition_data_transfer
       add   [transfer_adress],100
-      inc   [fat32part]
+      inc   [known_part]
       jmp   search_partitions_ide0_1
 
  search_partitions_ide1:
@@ -37,15 +37,15 @@ $Revision$
         mov   [hdbase],0x1f0
         mov   [hdid],0x10
         mov   [hdpos],2
-      mov  [fat32part],1
+      mov  [known_part],1
  search_partitions_ide1_1:
-      call  set_FAT32_variables
+      call  set_PARTITION_variables
       cmp   [problem_partition],0
       jne   search_partitions_ide2
       inc   byte [DRIVE_DATA+3]
       call  partition_data_transfer
       add   [transfer_adress],100
-      inc   [fat32part]
+      inc   [known_part]
       jmp   search_partitions_ide1_1
 
  search_partitions_ide2:
@@ -54,15 +54,15 @@ $Revision$
         mov   [hdbase],0x170
         mov   [hdid],0x0
         mov   [hdpos],3
-      mov  [fat32part],1
+      mov  [known_part],1
  search_partitions_ide2_1:
-      call  set_FAT32_variables
+      call  set_PARTITION_variables
       cmp   [problem_partition],0
       jne   search_partitions_ide3
       inc   byte [DRIVE_DATA+4]
       call  partition_data_transfer
       add   [transfer_adress],100
-      inc   [fat32part]
+      inc   [known_part]
       jmp   search_partitions_ide2_1
 
  search_partitions_ide3:
@@ -71,15 +71,15 @@ $Revision$
         mov   [hdbase],0x170
         mov   [hdid],0x10
         mov   [hdpos],4
-      mov  [fat32part],1
+      mov  [known_part],1
  search_partitions_ide3_1:
-      call  set_FAT32_variables
+      call  set_PARTITION_variables
       cmp   [problem_partition],0
       jne   end_search_partitions_ide
       inc   byte [DRIVE_DATA+5]
       call  partition_data_transfer
       add   [transfer_adress],100
-      inc   [fat32part]
+      inc   [known_part]
       jmp   search_partitions_ide3_1
 
 end_search_partitions_ide:
@@ -91,16 +91,16 @@ start_search_partitions_bd:
         push    ecx
         mov     eax, [hdpos]
         and     [BiosDiskPartitions+(eax-80h)*4], 0
-        mov     [fat32part], 1
+        mov     [known_part], 1
 search_partitions_bd:
-        call    set_FAT32_variables
+        call    set_PARTITION_variables
         cmp     [problem_partition], 0
         jne     end_search_partitions_bd
         mov     eax, [hdpos]
         inc     [BiosDiskPartitions+(eax-80h)*4]
         call    partition_data_transfer
         add     [transfer_adress], 100
-        inc     [fat32part]
+        inc     [known_part]
         jmp     search_partitions_bd
 end_search_partitions_bd:
         pop     ecx
@@ -110,7 +110,7 @@ end_search_partitions_bd:
 
 partition_data_transfer:
      mov edi,[transfer_adress]
-     mov esi,PARTITION_START
+     mov esi,PARTITION_START			;start of file_system_data
      mov ecx,(file_system_data_size+3)/4
      rep movsd
      ret

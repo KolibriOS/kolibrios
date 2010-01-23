@@ -105,6 +105,11 @@ file_system_lfn:
 ; 9 : create directory
 
 ; parse file name
+	cmp	dword [eax], 1
+	jne	@F
+	;xchg	bx,bx
+@@:
+	;up to file_system_lfn - TEMP!!!
 	xchg	ebx, eax
 	lea	esi, [ebx+20]
 	lodsb
@@ -169,8 +174,8 @@ file_system_lfn:
 	cmp	dword [ebx], 1
 	jnz	.access_denied
 	xor	eax, eax
-	mov	ebp, [ebx+12]
-	mov	edx, [ebx+16]
+	mov	ebp, [ebx+12]			;количество блоков для считывания
+	mov	edx, [ebx+16]			;куда записывать рузельтат
     ;    add     edx, std_application_base_address
 	push	dword [ebx+4]	; first block
 	mov	ebx, [ebx+8]	; flags
@@ -182,7 +187,7 @@ file_system_lfn:
 	pop     ecx
 	mov	byte [edx], 1	; version
 .maindir_loop:
-	call	esi
+	call	esi		;!!!!!!!!!!!!!!!!!!
 	jc	.maindir_done
 	inc	dword [edx+8]
 	dec	dword [esp]
@@ -537,7 +542,7 @@ fs_OnHdAndBd:
 	mov	dword [image_of_eax], 5       ; not found
 	ret
 @@:
-	mov	[fat32part], ecx
+	mov	[known_part], ecx ;	mov	[fat32part], ecx
 	push	ebx esi
 	call	choice_necessity_partition_1
 	pop	esi ebx
@@ -1143,3 +1148,4 @@ get_full_file_name:
 	jz	.ret.ok
 	mov	byte [edi-1], '/'
 	jmp	.set_copy_cont
+

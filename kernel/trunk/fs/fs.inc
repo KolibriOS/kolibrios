@@ -388,7 +388,7 @@ choice_necessity_partition_1:
  .s:
     sub   eax,ebx
  .f:
-    add   eax,[fat32part]
+    add   eax, [known_part] ;   add   eax,[fat32part]
     dec   eax
     xor   edx,edx
     imul  eax,100
@@ -795,3 +795,4 @@ error:
 
 partition_string: dd 0
                   db 32
+

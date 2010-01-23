@@ -217,6 +217,7 @@ include "fs/fat12.inc"    ; read / write for fat12 filesystem
 include "blkdev/rd.inc"   ; ramdisk read /write
 include "fs/fs_lfn.inc"    ; syscall, version 2
 include "fs/iso9660.inc"  ; read for iso9660 filesystem CD
+include "fs/ext2.inc"     ; read / write for ext2 filesystem
 
 ; sound
 
@@ -286,3 +287,4 @@ include "core/ext_lib.inc"
 
 ; list of external functions
 include "imports.inc"
+

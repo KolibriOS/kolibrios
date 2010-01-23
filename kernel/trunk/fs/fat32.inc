@@ -169,7 +169,6 @@ reserve_hd_channel:
         call    clear_hd_cache
 @@:
 	pop     eax
-	sti
 .ret:
         ret
 
@@ -1049,6 +1048,8 @@ fs_HdRead:
         jz      @f
         cmp     [fs_type], 1
         jz      ntfs_HdRead
+        cmp     [fs_type], 2
+        jz      ext2_HdRead
         or      ebx, -1
         mov     eax, ERROR_UNKNOWN_FS
         ret
@@ -1200,6 +1201,8 @@ fs_HdRead:
 fs_HdReadFolder:
         cmp     [fs_type], 1
         jz      ntfs_HdReadFolder
+        cmp     [fs_type], 2
+        jz      ext2_HdReadFolder
         cmp     [fs_type], 16
         jz      @f
         cmp     [fs_type], 32
@@ -1586,6 +1589,8 @@ fs_HdRewrite:
 .common:
         cmp     [fs_type], 1
         jz      ntfs_HdRewrite
+        cmp		[fs_type], 2
+        jz		ext2_HdRewrite
         cmp     [fs_type], 16
         jz      @f
         cmp     [fs_type], 32
@@ -2120,6 +2125,8 @@ fs_HdWrite.ret11:
 fs_HdWrite:
         cmp     [fs_type], 1
         jz      ntfs_HdWrite
+        cmp		[fs_type], 2
+        jz		ext2_HdWrite
         cmp     [fs_type], 16
         jz      @f
         cmp     [fs_type], 32
@@ -2463,6 +2470,8 @@ hd_extend_file:
 fs_HdSetFileEnd:
         cmp     [fs_type], 1
         jz      ntfs_HdSetFileEnd
+        cmp		[fs_type], 2
+        jz		ext2_HdSetFileEnd
         cmp     [fs_type], 16
         jz      @f
         cmp     [fs_type], 32
@@ -2695,6 +2704,8 @@ fs_HdSetFileEnd:
 fs_HdGetFileInfo:
         cmp     [fs_type], 1
         jz      ntfs_HdGetFileInfo
+        cmp		[fs_type], 2
+        jz		ext2_HdGetFileInfo
         cmp     [fs_type], 16
         jz      @f
         cmp     [fs_type], 32
@@ -2723,6 +2734,8 @@ fs_HdGetFileInfo:
 fs_HdSetFileInfo:
         cmp     [fs_type], 1
         jz      ntfs_HdSetFileInfo
+        cmp     [fs_type], 2
+        jz      ext2_HdSetFileInfo
         cmp     [fs_type], 16
         jz      @f
         cmp     [fs_type], 32
@@ -2773,6 +2786,8 @@ fs_HdSetFileInfo:
 fs_HdDelete:
         cmp     [fs_type], 1
         jz      ntfs_HdDelete
+        cmp     [fs_type], 1
+        jz      ext2_HdDelete
         cmp     [fs_type], 16
         jz      @f
         cmp     [fs_type], 32
@@ -2916,3 +2931,4 @@ fs_HdDelete:
         ret
 
 ; \end{diamond}
+
