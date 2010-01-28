@@ -701,8 +701,8 @@ end if
 
 ; SET PORTS FOR IRQ HANDLERS
 
-        mov  esi,boot_setrports
-        call boot_log
+        ;mov  esi,boot_setrports
+        ;call boot_log
         ;call setirqreadports
 
 ; SET UP OS TASK
@@ -970,25 +970,25 @@ end if
 
 ; UNMASK ALL IRQ'S
 
-        mov   esi,boot_allirqs
-        call  boot_log
+;        mov   esi,boot_allirqs
+;        call  boot_log
+;
+;        cli                          ;guarantee forbidance of interrupts.
+;        mov   al,0                   ; unmask all irq's
+;        out   0xA1,al
+;        out   0x21,al
+;
+;        mov   ecx,32
+;
+;     ready_for_irqs:
+;
+;        mov   al,0x20                ; ready for irqs
+;        out   0x20,al
+;        out   0xa0,al
+;
+;        loop  ready_for_irqs         ; flush the queue
 
-        cli                          ;guarantee forbidance of interrupts.
-        mov   al,0                   ; unmask all irq's
-        out   0xA1,al
-        out   0x21,al
-
-        mov   ecx,32
-
-     ready_for_irqs:
-
-        mov   al,0x20                ; ready for irqs
-        out   0x20,al
-        out   0xa0,al
-
-        loop  ready_for_irqs         ; flush the queue
-
-        stdcall attach_int_handler, dword 1, irq1, dword 0
+        stdcall attach_int_handler, 1, irq1, 0
 
 ;        mov    [dma_hdd],1
         cmp     [IDEContrRegsBaseAddr], 0
