@@ -89,6 +89,8 @@ struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
   .on_press dd on_press
 }
 
+macro use_tree_list
+{
 ;-----------------------------------------------------------------------------
 ;функция для выделения памяти
 ;input:
@@ -119,8 +121,6 @@ mem_Free:
   pop ebx eax
   ret
 
-macro use_tree_list
-{
 align 4
 tl_data_init: ;выделние памяти для структур списка и основной информации (конструктор)
   push ebp
