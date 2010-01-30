@@ -25,6 +25,7 @@ struc SYS_BUTTON
   .top    dw ?
   .height dw ?
   .id_hi  dw ?
+  .align  dw ?
   .sizeof:
 }
 virtual at 0
