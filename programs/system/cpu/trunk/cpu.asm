@@ -687,7 +687,7 @@ aCheck_box_mouse db 'check_box_mouse',0
 ;aOption_box_draw  db 'option_box_draw',0
 ;aOption_box_mouse db 'option_box_mouse',0
 ;aVersion_op       db 'version_op',0
-check1 check_box 10,(400-offset_y),6,11,0x80AABBCC,0,0,check_text,check_t_e,ch_flag_en
+check1 check_box 10,(400-offset_y),6,11,0x80AABBCC,0,0,check_text,check_t_e,0;ch_flag_en
 check1_end:
 edit1 edit_box 350,(100-offset_x),(398-offset_y),0xffffff,0x6f9480,0,0xAABBCC,0,start_application_c,start_application,mouse_dd,ed_focus,start_application_e,start_application_e
 edit1_end:
