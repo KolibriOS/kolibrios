@@ -2,8 +2,8 @@
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
-;;                                                              ;;
-;;   23.01.2010  turbanoff  - read from ext2fs                  ;;
+;;   02.02.2010  turbanoff  - support 70.5                      ;;
+;;   23.01.2010  turbanoff  - support 70.0 70.1                 ;;
 ;;                                                              ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -18,8 +18,8 @@ EXT2_BOOT_LOADER_INO= 5
 EXT2_UNDEL_DIR_INO    = 6
 
 ;type inode
-EXT2_S_IFREG            = 0x8000
-EXT2_S_IFDIR            = 0x4000
+EXT2_S_IFREG        = 0x8000
+EXT2_S_IFDIR        = 0x4000
 ;user inode right's
 EXT2_S_IRUSR        = 0x0100
 EXT2_S_IWUSR        = 0x0080
@@ -122,7 +122,7 @@ ext2_setup:
         call    kernel_alloc
         mov     [ext2_data.ext2_temp_block], eax        ; and for get_inode proc
 
-        mov     ebp, [ebx+88]
+        movzx   ebp, word [ebx+88]
         mov     ecx, [ebx+32]
         mov     edx, [ebx+40]
         mov     eax, [ebx+20]                           ; first_data_block
@@ -328,7 +328,7 @@ ext2_test_block_by_name:
             movzx   eax, [ebx + EXT2_DIR_STRUC.rec_len]
             add     ebx, eax                                ;к след. записи
             cmp     ebx, edx                                ;проверим конец ли
-            jne     .start_rec
+            jb      .start_rec
             jmp     .ret
 
     .test_find:
@@ -418,8 +418,8 @@ ext2_HdReadFolder:
         and     [EXT2_read_in_folder], 0
         and     [EXT2_files_in_folder], 0
 
-        mov     esi, [ebp + EXT2_INODE_STRUC.i_blocks]
-        mov     [EXT2_counter_blocks], esi
+        mov     eax, [ebp + EXT2_INODE_STRUC.i_blocks]
+        mov     [EXT2_counter_blocks], eax
 
         add     edx, 32                         ;заголовок будем заполнять в конце (адрес - в стеке) edx = current mem for return
         xor     esi, esi                        ;esi = номер блока по порядку
@@ -449,7 +449,7 @@ ext2_HdReadFolder:
             movzx   ebx, [eax+EXT2_DIR_STRUC.rec_len]
             add     eax, ebx                            ; к следующей записи
             cmp     eax, [EXT2_end_block]              ; проверяем "конец"
-            je      .end_block_find_wanted
+            jae      .end_block_find_wanted
             loop    .find_wanted_cycle
     .find_wanted_end:
 
@@ -462,8 +462,15 @@ ext2_HdReadFolder:
             inc     [EXT2_files_in_folder]
             inc     [EXT2_read_in_folder]
 
-            test    [eax + EXT2_DIR_STRUC.file_type], EXT2_FT_DIR   ;папка или нет
-            jnz      @F
+            mov     edi, edx
+            push    eax ecx
+            xor     eax, eax
+            mov     ecx, 40 / 4
+            rep     stosd
+            pop     ecx eax
+
+            cmp     [eax + EXT2_DIR_STRUC.file_type], EXT2_FT_DIR   ;папка или нет
+            jz      @F
 
             push    eax                                             ;получим размер, если это файл
             mov     eax, [eax + EXT2_DIR_STRUC.inode]
@@ -477,7 +484,7 @@ ext2_HdReadFolder:
             pop     eax
           @@:
             xor     dword [edx], FS_FT_DIR
-            mov     dword [edx+4], FS_FT_ASCII      ; symbol type in name
+            or      dword [edx+4], FS_FT_ASCII      ; symbol type in name
 
             push    ecx esi                         ;copy name
             movzx   ecx, [eax + EXT2_DIR_STRUC.name_len]
@@ -493,7 +500,7 @@ ext2_HdReadFolder:
             movzx   ebx, [eax + EXT2_DIR_STRUC.rec_len]
             add     eax, ebx
             cmp     eax, [EXT2_end_block]
-            je      .end_block_wanted
+            jae     .end_block_wanted                   ;по хорошему должно быть =, но ччнш
             loop    .wanted_cycle
 
     .wanted_end:                        ;теперь дойдем до конца чтобы узнать сколько файлов в папке
@@ -570,7 +577,7 @@ ext2_HdReadFolder:
 ext2_HdRead:
         mov     ebp, [ext2_data.root_inode]
 
-	push	ecx edx ebx
+        push    ecx edx ebx
     .next_folder:
         push    esi
     @@:
@@ -617,10 +624,11 @@ ext2_HdRead:
         cmp     [ebx + EXT2_DIR_STRUC.file_type], EXT2_FT_REG_FILE
         je      .test_file
         cmp     [ebx + EXT2_DIR_STRUC.file_type], EXT2_FT_DIR
-        jne     .not_found
-    .test_dir:
+        jne     .this_is_nofile
+
+    ;.test_dir:
         cmp     edi, 0
-        jne     .this_is_folder
+        jne     .this_is_nofile
 
         mov     eax, [ebx + EXT2_DIR_STRUC.inode]
         mov     ebx, [ext2_data.ext2_save_inode]                ;все же папка.
@@ -642,7 +650,7 @@ ext2_HdRead:
         or      ebx, -1
         mov     eax, ERROR_FILE_NOT_FOUND
         ret
-    .this_is_folder:
+    .this_is_nofile:
         pop     edx ecx ebx
         or      ebx, -1
         mov     eax, ERROR_ACCESS_DENIED
@@ -651,7 +659,6 @@ ext2_HdRead:
 
     ;-----------------------------------------------------------------------------final step
     .get_file:
-        xchg    bx, bx
         mov     ebp ,ebx
 
         ;pop     eax edi ecx         ; первый_блок память кол-во_байт
@@ -781,7 +788,58 @@ ext2_HdRead:
         xor     eax, eax
         ret
 ;========================
+;in : esi -> name           not save register
+;out: ebp -> inode cf=0
+;     ebp -> trash cf=1
+ext2_find_lfn:
+        mov     ebp, [ext2_data.root_inode]
+    .next_folder:
+        or      [EXT2_counter_blocks], -1               ;счетчик блоков папки    cur block of inode
+        mov     eax, [ebp + EXT2_INODE_STRUC.i_blocks]  ;убывающий счетчик блоков
+        add     eax, [ext2_data.count_block_in_block]
+        mov     [EXT2_end_block], eax
+    .next_block_folder:
+        mov     eax, [ext2_data.count_block_in_block]
+        sub     [EXT2_end_block], eax
+        jz      .not_found
+        inc     [EXT2_counter_blocks]
+        mov     ecx, [EXT2_counter_blocks]
+        call    ext2_get_inode_block
 
+        mov     eax, ecx
+        mov     ebx, [ext2_data.ext2_save_block]        ;ebx = cur dir record
+        call    ext2_get_block
+
+        mov     eax, esi
+        call    ext2_test_block_by_name
+        cmp     eax, esi                                ;нашли имя?
+        jz      .next_block_folder
+
+        cmp     byte [esi],0
+        jz      .get_inode_ret
+
+        cmp     [ebx + EXT2_DIR_STRUC.file_type], EXT2_FT_DIR
+        jne     .not_found                                      ;нашли, но это не папка
+        mov     eax, [ebx + EXT2_DIR_STRUC.inode]
+        mov     ebx, [ext2_data.ext2_save_inode]                ;все же папка.
+        call    ext2_get_inode
+        mov     ebp, ebx
+        jmp     .next_folder
+
+    .not_found:
+        stc
+        ret
+    .get_inode_ret:
+        mov     eax, [ebx + EXT2_DIR_STRUC.inode]
+        mov     ebx, [ext2_data.ext2_save_inode]
+        call    ext2_get_inode
+        mov     ebp, ebx
+    .ret:
+        clc
+        ret
+
+
+;========================
 ext2_HdRewrite:
 ;    xchg    bx, bx
         xor     ebx, ebx
@@ -798,11 +856,38 @@ ext2_HdSetFileEnd:
         xor     ebx, ebx
         mov     eax, ERROR_UNSUPPORTED_FS
         ret
+
 ext2_HdGetFileInfo:
-;    xchg    bx, bx
-        xor     ebx, ebx
-        mov     eax, ERROR_UNSUPPORTED_FS
+        cmp     byte [esi], 0
+        jz      .doit
+
+        call    ext2_find_lfn
+        jnc     .doit2
+    ;.not_found:
+        mov     eax, ERROR_FILE_NOT_FOUND
         ret
+
+    .doit:
+        mov     ebp, [ext2_data.root_inode]
+    .doit2:
+        xor     eax, eax
+        mov     edi, edx
+        mov     ecx, 40/4
+        rep stosd               ; fill zero
+
+        test    [ebp + EXT2_INODE_STRUC.i_mode], EXT2_S_IFDIR
+        jz      @F
+        or      dword [edx], FS_FT_DIR
+    @@:
+        mov     byte [edx+1], FS_FT_ASCII
+        mov     eax, [ebp + EXT2_INODE_STRUC.i_size]            ;low size
+        mov     ebx, [ebp + EXT2_INODE_STRUC.i_dir_acl]         ;high size
+        mov     dword [edx+32], eax
+        mov     dword [edx+36], ebx
+
+        xor     eax, eax
+        ret
+
 ext2_HdSetFileInfo:
 ;    xchg    bx, bx
         xor     ebx, ebx
