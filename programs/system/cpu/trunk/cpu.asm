@@ -62,8 +62,12 @@ still:
     jnz still_end
 	push	dword edit1
 	call	[edit_box_mouse]
+	push	dword[check1+32]
 	push	dword check1
 	call	[check_box_mouse]
+	pop	eax
+	cmp	eax, dword[check1+32]
+	jnz	still_end
     jmp still	
 
 still_end:    
