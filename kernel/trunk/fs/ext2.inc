@@ -109,14 +109,14 @@ ext2_setup:
         shl     eax, 2
         mov     [ext2_data.block_size], eax
 
-        push    eax eax eax                             ;3 kernel_alloc
+        push    eax eax eax                             ; 3 kernel_alloc
 
         mov     eax, edx
         mul     edx
         mov     [ext2_data.count_pointer_in_block_square], eax
 
         call    kernel_alloc
-        mov     [ext2_data.global_desc_table],eax       ;reserve mem for gdt
+        mov     [ext2_data.global_desc_table],eax       ; reserve mem for gdt
         call    kernel_alloc
         mov     [ext2_data.ext2_save_block], eax        ; and for temp block
         call    kernel_alloc
@@ -168,21 +168,22 @@ ext2_get_block:
         pop     ecx ebx eax
         ret
 ;===================================================================
-; in:  ecx = номер блока
+; in:  ecx = номер блока в inode (0..)
 ;      ebp = адрес inode
 ; out: ecx = адрес очередного блока
 ext2_get_inode_block:
-        cmp     ecx, 12
-        jbe     .get_direct_block
+        cmp     ecx, 12                                         ; 0..11 - direct block address
+        jb      .get_direct_block
 
         sub     ecx, 12
-        cmp     ecx, [ext2_data.count_pointer_in_block]
-        jbe     .get_indirect_block
+        cmp     ecx, [ext2_data.count_pointer_in_block]         ; 12.. - indirect block
+        jb      .get_indirect_block
 
         sub     ecx, [ext2_data.count_pointer_in_block]
         cmp     ecx, [ext2_data.count_pointer_in_block_square]
-        jbe     .get_double_indirect_block
+        jb      .get_double_indirect_block
 
+        sub     ecx, [ext2_data.count_pointer_in_block_square]
     ;.get_triple_indirect_block:
         push    eax edx ebx
 
@@ -196,7 +197,7 @@ ext2_get_inode_block:
 
     ;eax - номер в полученном блоке   edx - номер дальше
         mov    eax, [ebx + eax*4]
-        call    ext2_get_block
+        call   ext2_get_block
 
         mov    eax, edx
         jmp    @F
@@ -223,7 +224,7 @@ ext2_get_inode_block:
     .get_indirect_block:
         push    eax ebx
         mov     eax, [ebp + EXT2_INODE_STRUC.i_block + 12*4]
-        mov    ebx, [ext2_data.ext2_temp_block]
+        mov     ebx, [ext2_data.ext2_temp_block]
         call    ext2_get_block
 
         mov     ecx, [ebx + ecx*4]
@@ -367,62 +368,44 @@ uglobal
 endg
 
 ext2_HdReadFolder:
-        mov     ebp, [ext2_data.root_inode]
-        mov     [EXT2_read_in_folder], ebx
-        mov     [EXT2_files_in_folder], ecx     ;сохраним регистры
-
-    .next_folder:
         cmp     byte [esi], 0
-        jz      .get_folder
+        jz      .doit
 
-        or      [EXT2_counter_blocks], -1               ;счетчик блоков папки    cur block of inode
-        mov     eax, [ebp + EXT2_INODE_STRUC.i_blocks]  ;убывающий счетчик блоков
-        add     eax, [ext2_data.count_block_in_block]
-        mov     [EXT2_end_block], eax
-    .next_block_folder:
-        mov     eax, [ext2_data.count_block_in_block]
-        sub     [EXT2_end_block], eax
-        jz      .not_found
-        inc     [EXT2_counter_blocks]
-        mov     ecx, [EXT2_counter_blocks]
-        call    ext2_get_inode_block
-
-        mov     eax, ecx
-        mov     ebx, [ext2_data.ext2_save_block]        ;ebx = cur dir record
-        call    ext2_get_block
-
-        mov     eax, esi
-        call    ext2_test_block_by_name
-        cmp     eax, esi                                ;нашли имя?
-        je      .next_block_folder
-
-        cmp     [ebx + EXT2_DIR_STRUC.file_type], EXT2_FT_DIR
-        jne     .not_found                                      ;нашли, но это не папка
-        mov     eax, [ebx + EXT2_DIR_STRUC.inode]
-        mov     ebx, [ext2_data.ext2_save_inode]                ;все же папка.
-        call    ext2_get_inode
-        mov     ebp, ebx
-        jmp     .next_folder
-
+        push    ecx ebx
+        call    ext2_find_lfn
+        jnc     .doit2
+        pop     ebx
     .not_found:
+        pop     ecx
         or      ebx, -1
         mov     eax, ERROR_FILE_NOT_FOUND
         ret
-     ;--------------------------------------------- final step
-        ; in ebp - pointer to final inode (folder).
-    .get_folder:
-        push    edx                             ;заголовок будем заполнять в конце (адрес - в стеке) edx
-        push    [EXT2_read_in_folder]           ;сохраненный регистр тоже в стек
 
-        mov     edi, [EXT2_files_in_folder]     ;edi = число блоков для чтения
+    .doit:
+        mov     ebp, [ext2_data.root_inode]
+        push    ecx
+        jmp     @F
+    .doit2:
+        pop     ebx
+        test    [ebp + EXT2_INODE_STRUC.i_mode], EXT2_S_IFDIR
+        jz      .not_found
+    @@:
+        xor     eax, eax
+        mov     edi, edx
+        mov     ecx, 32/4
+        rep     stosd                           ; fill header zero
+        pop     edi                             ; edi = число блоков для чтения
+        push    edx ebx
+
+     ;--------------------------------------------- final step
         and     [EXT2_read_in_folder], 0
         and     [EXT2_files_in_folder], 0
 
         mov     eax, [ebp + EXT2_INODE_STRUC.i_blocks]
         mov     [EXT2_counter_blocks], eax
 
-        add     edx, 32                         ;заголовок будем заполнять в конце (адрес - в стеке) edx = current mem for return
-        xor     esi, esi                        ;esi = номер блока по порядку
+        add     edx, 32                         ; заголовок будем заполнять в конце (адрес - в стеке) edx = current mem for return
+        xor     esi, esi                        ; esi = номер блока по порядку
 
     .new_block_folder:              ;reserved label
         mov     ecx, esi                        ; получим номер блока
