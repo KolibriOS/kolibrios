@@ -26,13 +26,13 @@
 ; Full device detection (like "ATI Radeon 9200") will increase app
 ; size a lot and probably it is function of particular drivers
 ;----------------------------------------------------------------
-;2.2: PCIDEV   31/12/2009
+;2.2: PCIDEV   03/01/2010
 ;Author:    Artem Jerdev <art_zh@yahoo.com>
 ;Features:
 ;           fixed
 ;                 * English in some comments ;)
 ;           added
-;                 * ! user-accessible PCI memory channels detection
+;                 * ! user-accessible MMIO channels detection
 ;                 * ! ASCII-dump as PCI memory access demonstration
 ;           optimization
 ;                 * (yet needed)
@@ -240,8 +240,16 @@ nomo:					;done drawing bars here
 	; Quantity of devices...
 	movzx	ecx, byte [total]	; number to draw
 	mcall	47, 0x00020000,,150 * 65536 + 65, 0x224466
-
+	
+	mov	ah, [MMIO_allowed]
+	or 	ah, ah
+	jz 	@f
+	mov	ah, [MMIO_Bus]	; =255 if MMIO disabled / not found
+	and	ah, 0x7f
+	inc	ah
+	jo	@f	
 	call	Try_MMIO
+@@:
 	mcall	12, 2			; end of draw
 	ret
 
@@ -312,32 +320,43 @@ nextDev:
 	jbe	Start_Enum		; if not jump to keep searching
 	ret
 
+no_ummio_allowed:
+	xor 	al,al
+	mov 	[MMIO_allowed],al		; re-enter the subroutine
 ;------------------------------------------------------------------
 ;* Print device info to screen
+
 Print_New_Device:
-	xor esi, esi	    ; default text color
-; by art_zh December 2009
-	mov ch, byte [V_Bus]
-	mov cl, byte [V_Dev]
+	xor 	esi, esi	    	; default text color
+	mov 	cl, [MMIO_allowed]
+	or	cl,cl
+	jz	no_ummio_here
+	mov 	ch, byte [V_Bus]
+	mov 	cl, byte [V_Dev]
 	mcall	62, 11		; detect uMMIO
-	cmp eax, -2
-	je no_ummio_here
-	mov esi, 0x990033   ; highlighted text color
-	mov bh, byte [V_Bus]
-	mov bl, byte [V_Dev]
-	mov byte [MMIO_Bus], bh
-	mov byte [MMIO_Dev], bl
-	add bh,'0'
-	mov [PCIWin + 129], bh	; uMMIO bus
-	mov al, bl
-	shr al, 1
-	shr al, 1
-	shr al, 1
-	add al,'0'
-	mov [PCIWin + 131], al	; uMMIO device
-	and bl, 7
-	add bl, '0'
-	mov [PCIWin + 133], bl	; uMMIO function
+	and	ax,0x7fff
+	inc 	ax			; -1 returned?
+	jo 	no_ummio_allowed
+	inc 	ax			; -2 returned?
+	jo 	no_ummio_here
+	inc 	ax			; -3 returned?
+	jo 	no_ummio_here
+	mov 	esi, 0x990033   ; highlighted text color
+	mov 	bh, byte [V_Bus]
+	mov 	bl, byte [V_Dev]
+	mov 	byte [MMIO_Bus], bh
+	mov 	byte [MMIO_Dev], bl
+	add 	bh,'0'
+	mov 	[PCIWin + 129], bh	; uMMIO bus
+	mov 	al, bl
+	shr 	al, 1
+	shr 	al, 1
+	shr 	al, 1
+	add 	al,'0'
+	mov 	[PCIWin + 131], al	; uMMIO device
+	and 	bl, 7
+	add 	bl, '0'
+	mov 	[PCIWin + 133], bl	; uMMIO function
 
 no_ummio_here:
 	movzx	ecx,word [PCI_Vendor]	; Pointer to number to be written
@@ -560,10 +579,10 @@ PCI_Interface	db ?
 PCI_IRQ 	db ?
 
 align 4
-MMIO_Bus	db ?
-MMIO_Dev	db ?
+MMIO_Bus	db 255
+MMIO_Dev	db 255
 MMIO_BAR	db 0
-MMIO_Blk	db 0
+MMIO_allowed	db 1
 MMIO_Map	rd 8
 
 gr_pos		dd ?
