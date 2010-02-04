@@ -247,15 +247,15 @@ ScreenBPP           equ (OS_BASE+0x000FBF1)
 ;unused ? only one reference
 MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
 
-LFBAddress          equ (OS_BASE+0x000FE80)
-MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
-
 Screen_Max_X        equ (OS_BASE+0x000FE00)
 Screen_Max_Y        equ (OS_BASE+0x000FE04)
 BytesPerScanLine    equ (OS_BASE+0x000FE08)
 SCR_MODE            equ (OS_BASE+0x000FE0C)
 
+LFBAddress          equ (OS_BASE+0x000FE80)
 BTN_ADDR            equ (OS_BASE+0x000FE88)
+MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
+
 SYS_SHUTDOWN        equ (OS_BASE+0x000FF00)
 TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
 

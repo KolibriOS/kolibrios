@@ -62,33 +62,36 @@
 ;         3c   dword  cpu usage in cpu timer tics
 ;
 ;
-;   5000  ->   68FF   free
-;   6900  ->   6EFF   saved picture under mouse pointer
+;   5000  ->   68FF   free (6k6)
+;   6900  ->   6EFF   saved picture under mouse pointer (1k5)
 ;
-;   6F00  ->   6FFF   free
+;   6F00  ->   6FFF   free (256)
 ;
 ;   7000  ->   7FFF   used CD driver
 ;
 ;   8000  ->   A3FF   used FLOPPY driver
 ;
-;   A400  ->   B0FF   free
+;   A400  ->   B0FF   free (3k3), unused ACTIVE_PROC_STACK
 
 ;   B100  ->   B307   IDT for int_0x00..int_0x40
 
-;   B308  ->   BFFF   free
+;   B308  ->   BFFF   free (3k3)
 
 ;   C000  ->   C3FF   window stack C000 no of windows - all in words
 ;   C402  ->   C7FF   window position in stack
 ;   D000  ->   D1FF   FDC controller
 ;   D200  ->   D3FF   FDC controller for Fat12
-;   D400  ->   DFFF   free
+;   D400  ->   DFFF   free (3k)
 ;   E000  byte        multitasking started
 ;   E020  dword       putpixel address
 ;   E024  dword       getpixel address
 ;   E030  dword       Vesa 1.2 pm bank switch address
+;   E034  ->   F1FF   free (4k5)
 ;   F200  dword       mousepicture -pointer
 ;   F204  dword       mouse appearance counter
+;   F208  ->   F2FF   free (248)
 ;   F300  dword       x & y temp for windowmove
+;   F304  ->   F3FF   free (252)
 ;   F400  byte        no of keys in buffer
 ;   F401  byte        'buffer'
 ;   F402  ->   F4FF   reserved for keys
@@ -96,8 +99,13 @@
 ;   F501  dword       'buffer'
 ;   F502  ->   F5FF   reserved for buttons
 ;   F600  dword       tsc / second
-;   F604  byte        mouse port: 1 ps2, 2 com1, 3 com2
-;   FB00  ->   FB0F   mouse memory 00 chunk count - FB0A-B x - FB0C-D y
+;   F604  byte        (unused?) mouse port: 1 ps2, 2 com1, 3 com2
+;   F605  ->   FAFF   free (1k2)
+;   FB00  ->   FB0F   mouse memory 00 chunk count, that includes:
+;   FB08 word	    -- mouse H-scroll
+;   FB0A word	    -- mouse x 
+;   FB0C word         -- mouse y
+;   FB0E word	    -- mouse V-scroll
 ;   FB10  ->   FB17   mouse color mem
 ;   FB21              x move
 ;   FB22              y move
@@ -109,16 +117,19 @@
 ;   FBF1  byte        bits per pixel
 ;   FC00  ->   FCFE   com1/ps2 buffer
 ;   FCFF              com1/ps2 buffer count starting from FC00
-;   FE00  dword       screen x size
-;   FE04  dword       screen y size
-;   FE08  dword       screen y multiplier
-;   FE0C  dword       screen mode
+;   FD00  ->   FDFF   free (256)
+;   FE00  dword       screen x size		
+;   FE04  dword       screen y size		
+;   FE08  dword       screen y multiplier	
+;   FE0C  dword       screen mode	
+;   FE10  ->   FE7F   free (112)
 ;   FE80  dword       address of LFB in physical
-;   FE84  dword       address of applications memory start in physical
+;   FE84  dword       address of applications memory start in physical	?
 ;   FE88  dword       address of button list
-;   FE8C  dword       memory to use
+;   FE8C  dword       memory to use 
+;   FE90  ->   FEFF   free (112)
 ;   FF00  byte        1 = system shutdown request
-;   FF01  dword       free
+;   FF01  byte        task activation request?
 ;   FFF0  byte        1 = redraw background request from app
 ;   FFF1  byte        1 = diskette int occur
 ;   FFF2              write and read bank in screen
@@ -177,20 +188,22 @@
 ;         BC dword  address of debug event memory
 ;         C0  5 dd  thread debug registers: DR0,DR1,DR2,DR3,DR7
 ;
-; 0x80090000 ->  9FFFF   tmp
+; 0x80090000 ->  9FFFF   tmp (64k) - unused?
 ; 0x800A0000 ->  AFFFF   screen access area
-; 0x800B0000 ->  FFFFF   bios rest in peace -area
-; 0x80100000 -> 27FFFF   diskette image
-; 0x80280000 -> 281FFF   ramdisk fat
-; 0x80282000 -> 283FFF   floppy  fat
+; 0x800B0000 ->  FFFFF   bios rest in peace -area (320k)	?
+; 0x80100000 -> 27FFFF   diskette image	(1m5)
+; 0x80280000 -> 281FFF   ramdisk fat	(8k)
+; 0x80282000 -> 283FFF   floppy  fat	(8k)
 ;
-; 0x80284000 -> 28BFFF   HDD DMA AREA
-; 0x8028C000 -> 297FFF   free (48 Kb)
+; 0x80284000 -> 28BFFF   HDD DMA AREA	(32k)
+; 0x8028C000 -> 297FFF   free (48k)
 ;
-; 0x80298000 -> 29ffff   auxiliary table for background smoothing code
+; 0x80298000 -> 29ffff   auxiliary table for background smoothing code (32k)
 ;
-; 0x802A0000 -> 2B00ff   wav device data
-; 0x802C0000 -> 2C3fff   button info
+; 0x802A0000 -> 2B00ff   wav device buffer (64k)
+; 0x802A0000 -> 2B00ff   wav device status (256)
+; 0x802B0100 -> 2Bffff   free (63k8)
+; 0x802C0000 -> 2C3fff   button info (8k)
 ;
 ;       0000 word    number of buttons
 ;        first button entry at 0x10
@@ -202,9 +215,9 @@
 ;       +000A word   y size
 ;       +000C word   button id number : bits 16-31
 ;
-; 0x802C4000 -> 2CFFFF   free (48Kb)
+; 0x802C4000 -> 2CFFFF   free (48k)
 ;
-; 0x802D0000 -> 2DFFFF   reserved port area
+; 0x802D0000 -> 2DFFFF   reserved port area (64k)
 ;
 ;       0000 dword   no of port areas reserved
 ;       0010 dword   process id
@@ -212,32 +225,31 @@
 ;            dword   end port
 ;            dword   0
 ;
-; 0x802E0000 -> 2EFFFF   irq data area
-; 0x802F0000 -> 2FFFFF   low memory save
+; 0x802E0000 -> 2EFFFF   irq data area	(64k)
+; 0x802F0000 -> 2FFFFF   low memory save	(64k)
 ;
-; 0x80300000 -> 31FFFF   tcp memory       128 Kb
-; 0x80320000 -> 327FFF   tcp memory        32 Kb
+; 0x80300000 -> 31FFFF   tcp memory       (128k)
+; 0x80320000 -> 327FFF   tcp memory       (32k)
 ;
-; 0x80328000 -> 32FFFF   !vrr driver       32 Kb
+; 0x80328000 -> 32FFFF   !vrr driver      (32k)
 
-; 0x80330000 -> 377FFF   skin data
+; 0x80330000 -> 377FFF   skin data		(32k)
 
-; 0x80338000 -> 33AFFF draw data     - 256 entries
+; 0x80338000 -> 338FFF draw data     - 256 entries (4k)
 ;         00   dword  draw limit - x start
 ;         04   dword  draw limit - y start
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
-
-; 0x8033C000 -> 47BFFF   display info
-
-; 0x8047CF80 -> 47CFFF TSS            128 bytes
-; 0x8047D000 -> 47EFFF IO map for (8192*8)=65536 ports
-
-; 0x8047F000 -> 48FFFF   page map     max 128 Kb
-;
-
-; 0x80800000 ->       kernel heap
-; 0x81FFFFFF          heap min limit
+; 0x80339000 -> 3BFFF3   free (12k)
+; 0x8033BFF4 -> 33BFFF   background info 
+; 0x8033C000 -> 35BFFF   page map     (128k)
+; =====================================
+; 0x8035C000 -> 5FFF7F   free (2M7)
+; 0x805FFF80 -> 5FFFFF   TSS  (128)
+; 0x80600000 -> 7FFFFF   free (2M)
+; =====================================
+; 0x80000000 ->       kernel heap
+; 0x80FFFFFF          heap min limit
 ; 0xFDBFFFFF          heap max limit
 
 ; 0xFDC00000 -> 0xFDFFFFFF  page tables 4Mb
