@@ -558,6 +558,7 @@ ext2_HdReadFolder:
 ;
 ;--------------------------------------------------------------
 ext2_HdRead:
+        xchg    bx, bx
         mov     ebp, [ext2_data.root_inode]
 
         push    ecx edx ebx
@@ -637,7 +638,6 @@ ext2_HdRead:
         pop     edx ecx ebx
         or      ebx, -1
         mov     eax, ERROR_ACCESS_DENIED
-    .end_read:
         ret
 
     ;-----------------------------------------------------------------------------final step
@@ -722,13 +722,16 @@ ext2_HdRead:
 
         mov     esi, ebx
         rep     movsb                           ;кусок 1-го блока
+        jmp     @F
 
     .zero_start:
+        mov     eax, ecx
         mov     ebx, edi                        ;чтение блока прям в ebx
         ;теперь в eax кол-во оставшихся байт для чтения
+    @@:
         xor     edx, edx
-        div     [ext2_data.block_size]
-        mov     [EXT2_end_block], eax          ;кол-во целых блоков
+        div     [ext2_data.block_size]          ;кол-во байт в последнем блоке (остаток) в edx
+        mov     [EXT2_end_block], eax           ;кол-во целых блоков в EXT2_end_block
     @@:
         cmp     [EXT2_end_block], 0
         jz      .finish_block
@@ -760,7 +763,8 @@ ext2_HdRead:
 
     .only_one_block:
         mov     esi, ebx
-        rep     movsb                           ;кусок 1-го блока (последнего)
+        rep     movsb                           ;кусок last блока
+    .end_read:
         pop     ebx
         cmp     [EXT2_files_in_folder], 0
         jz      @F
