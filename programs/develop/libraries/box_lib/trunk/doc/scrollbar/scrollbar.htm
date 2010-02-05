@@ -1,0 +1,93 @@
+<html>
+<head>
+<title>элемент Scroll Bar</title>
+<meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251">
+<link href="../style.css" type=text/css rel=stylesheet>
+</head>
+<body>
+<p><a href="../box_lib.htm">На главную &uarr;</a></p>
+<h1>Оглавление</h1>
+<p><a href="#vveden">Введение</a></p>
+<p><a href="#funct">Функции</a></p>
+<ul>
+<li><a href="#fun_v_draw">scrollbar_v_draw</a></li>
+<li><a href="#fun_v_mouse">scrollbar_v_mouse</a></li>
+<li><a href="#fun_h_draw">scrollbar_h_draw</a></li>
+<li><a href="#fun_h_mouse">scrollbar_h_mouse</a></li>
+<li><a href="#version">version_ch</a></li>
+</ul>
+<p><a href="#struc_scrollbar">Структура scrollbar</a></p>
+
+<h1><a name="vveden">Введение</a></h1>
+<p>Скроллбар, используется при выводе информации, не помещающейся в окно. Может быть вертикальным и горизонтальным.</p>
+
+<h1><a name="funct">Функции</a></h1>
+
+<h2><a name="fun_v_draw">scrollbar_v_draw</a></h2>
+<p>Рисование вертикального скроллинга.</p>
+
+<h2><a name="fun_v_mouse">scrollbar_v_mouse</a></h2>
+<p>Эта функция должна вызыватся для вертикального скроллинга при движении мышей.</p>
+
+<h2><a name="fun_h_draw">scrollbar_h_draw</a></h2>
+<p>Рисование горизонтального скроллинга.</p>
+
+<h2><a name="fun_h_mouse">scrollbar_h_mouse</a></h2>
+<p>Эта функция должна вызыватся для горизонтального скроллинга при движении мышей.</p>
+
+<h2><a name="version">version_ch</a></h2>
+<p>Версия элемента</p>
+
+<h1><a name="struc_scrollbar">Структура scrollbar</a></h1>
+<p>Макроса для создания структуры для скроллбара нет. Потому данные для нее задаются вручную.
+Есть макрос use_scroll_bar он дает возможность понять какие данные нужны для скроллинга.</p>
+<pre>macro use_scroll_bar
+{
+scroll_bar:
+sb_size_x     equ [edi]
+sb_start_x    equ [edi+ 2]
+sb_size_y     equ [edi+ 4]
+sb_start_y    equ [edi+ 6]
+sb_btn_high   equ [edi+ 8]
+sb_type       equ [edi+12]
+sb_max_area   equ [edi+16]
+sb_cur_area   equ [edi+20]
+sb_position   equ [edi+24]
+sb_bckg_col   equ [edi+28]
+sb_frnt_col   equ [edi+32]
+sb_line_col   equ [edi+36]
+sb_redraw     equ [edi+40]
+sb_delta      equ [edi+44]
+sb_delta2     equ [edi+46]
+sb_r_size_x   equ [edi+48]
+sb_r_start_x  equ [edi+50]
+sb_r_size_y   equ [edi+52]
+sb_r_start_y  equ [edi+54]
+sb_m_pos      equ [edi+56]
+sb_m_pos_2    equ [edi+60]
+sb_m_keys     equ [edi+64]
+sb_run_size   equ [edi+68]
+sb_position2  equ [edi+72]
+sb_work_size  equ [edi+76]
+sb_all_redraw equ [edi+80]
+sb_ar_offset  equ [edi+84]
+}</pre>
+
+<p><b>sb_btn_high</b> - высота боковых кнопок (левая и правая для гориз. и верхняя и нижняя для верт.)</p>
+<p><b>sb_type</b> - зарезервировано для будущих типов, если скроллбар будет дорабатываться.</p>
+<p><b>sb_max_area</b> - область максимальная, актуально когда не влазит в
+  отображаемую область, т.е. случай активности компонента (весь максимальный размер документа)</p>
+<p><b>sb_cur_area</b> - область отображаемая (какая часть документа влазит в экран)</p>
+<p><b>sb_position</b> - позиция бегунка изменяемая от 0 до значения (sb_max_area-sb_cur_area)</p>
+<p><b>sb_bckg_col</b> - цвет внутренний, применяется для областей между бегунком и кноками</p>
+<p><b>sb_frnt_col</b> - цвет наружный, применяется для областей отличных от применяемых в sb_bckg_col</p>
+<p><b>sb_line_col</b> - цвет линий и стрелок на кнопках</p>
+<p><b>sb_redraw</b> - индикатор необходимости перерисовки управляемой области учитывая изменение sb_position и sb_cur_area</p>
+<p><b>sb_delta2</b> - индикатор захвата фокуса скроллбаром (удержание бегунка)</p>
+<p><b>sb_all_redraw</b> - флаг устанавливаемый в 1 для перерисовки всего компонента, если поставить 0, то перерисовка происходит только для области бегунка. Введено для ускорения отрисовки, поскольку не во всех случаях требуется принудитеьно отрисовывать все части компонента. Когда вызывается по событию мыши всегда отрисовывается самим компонентом со значением 0.</p>
+<p><b>sb_ar_offset</b> - величина смещения при однократном нажатии боковой кнопки.</p>
+
+<hr>
+<p>Документация обновлялась последний раз 05.02.10.</p>
+</body>
+</html>

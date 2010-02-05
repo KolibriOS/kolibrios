@@ -64,11 +64,11 @@ gpOpt db 0
 mode_colored db 1 ; режим выделения слов цветом (0-выкл. 1-вкл.)
 
 key_new db 0 ; символ, который будет добавлятся с клавиатуры
-tex     dd 0 ;text memory pointer
-tex_1   dd 0 ;text first symbol pointer
+tex	dd 0 ;text memory pointer
+tex_1	dd 0 ;text first symbol pointer
 tex_end dd 0 ;text end memory pointer
 
-hed db 'TextEditor 30.12.09',0 ;подпись окна
+hed db 'TextEditor 05.02.10',0 ;подпись окна
 sc system_colors
 
 wndMain BOX 0,50,440,150
@@ -250,12 +250,9 @@ macro ColToIndexOffset ind_reg,out_reg {
 InitColText:
   push eax ebx ecx esi edi
 
-;  mov  ebx,fn_col_option
-;  mov  esi,sys_path
-;  mov  edi,file_name
   mov  ebx,dword[fn_col_option]
-  copy_path ebx,fn_syntax_dir,file_name_rez
-  copy_path file_name_rez,sys_path,file_name
+  copy_path ebx,fn_syntax_dir,file_name_rez,0x0
+  copy_path file_name_rez,sys_path,file_name,0x0
 
   mov eax,70
   mov [run_file_70.func_n], 0
@@ -276,7 +273,6 @@ InitColText:
     mov dword[edi],-1
     add edi,4
   loop @b
-
 
   ;init: ColColor, ColWords, ...
   mov dword[ColColor],1
@@ -339,13 +335,6 @@ InitColText:
   add ecx,dword[Col]
   mov dword[tex_help_f1],ecx
 
-  ;copy new colors in dir_list
-;  m2m dword[eax+28],dword[WND_WORK_COLOR]
-;  m2m dword[eax+32],dword[SELECT_COLOR]
-;  m2m dword[eax+36],dword[WND_CAPT_COLOR]
-;  m2m dword[eax+40],dword[WND_TEXT_COLOR]
-;  m2m dword[eax+44],dword[CUR_TEXT_COLOR]
-  
   .no_colors:
   pop edi esi ecx ebx eax
   ret
@@ -1757,3 +1746,32 @@ FindHelpId:
   pop ecx ebx
   ret
 
+;-----------------------------------------------------------------------------
+;функция для выделения памяти
+;input:
+; ecx = size data
+;otput:
+; eax = pointer to memory
+align 4
+mem_Alloc:
+  push ebx
+  mov eax,68
+  mov ebx,12
+  int 0x40
+  pop ebx
+  ret
+;-----------------------------------------------------------------------------
+;функция для освобождения памяти
+;input:
+; ecx = pointer to memory
+align 4
+mem_Free:
+  push eax ebx
+  cmp ecx,0
+  jz @f
+    mov eax,68
+    mov ebx,13
+    int 0x40
+  @@:
+  pop ebx eax
+  ret

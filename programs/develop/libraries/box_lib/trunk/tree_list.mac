@@ -1,6 +1,6 @@
 ; макрос дл€ системной библиотеки box_lib.obj
 ; элемент TreeList дл€ Kolibri OS
-; файл последний раз измен€лс€ 23.12.2009 IgorA
+; файл последний раз измен€лс€ 05.02.2010 IgorA
 ; на код применена GPL2 лицензи€
 
 
@@ -317,15 +317,8 @@ align 4
 tl_mouse: ;реакци€ на мышь
   push ebp
   mov ebp,esp
-    push eax ebx ecx edx edi esi
+    pushad
     mov edi,dword[ebp+8]
-
-    mov eax,37
-    mov ebx,2
-    int 0x40
-
-    bt eax,0 ;left mouse button press
-    jae .no_draw
 
     mov eax,37
     mov ebx,1
@@ -334,23 +327,33 @@ tl_mouse: ;реакци€ на мышь
     mov ebx,tl_box_left
     shl ebx,16
     cmp eax,ebx ;лева€ граница окна
-    jl .no_in_wnd
+    jl .test_scroll
 
     mov ebx,tl_box_left
     add ebx,tl_box_width
     shl ebx,16
     cmp eax,ebx ;права€ граница окна
-    jg .test_scroll ;.no_in_wnd
+    jg .test_scroll
 
     mov ebx,tl_box_top
     add ebx,tl_box_height
     cmp ax,bx ;нижн€€ граница окна
-    jg .no_in_wnd
+    jg .test_scroll
 
     sub ebx,tl_box_height
     add bx,tl_capt_cy
     cmp ax,bx ;верхн€€ граница окна + высота подписи
-    jl .no_in_wnd
+    jl .test_scroll
+
+    push eax ebx
+      mov eax,37
+      mov ebx,2
+      int 0x40
+
+      bt eax,0 ;left mouse button press
+    pop ebx eax
+      jae .no_draw
+
 
     mov esi,tl_el_focus
     mov dword[esi],edi ;set focus
@@ -446,7 +449,13 @@ tl_mouse: ;реакци€ на мышь
       cmp dword[edx+46],0 ;+46 .delta2
       jne .no_draw ;попали на скроллинг - не снимаем фокус с TreeList
 ;-------------------------------------------------------------------------------
-    .no_in_wnd: ;не попали в окно - потер€ фокуса (при условии что фокус был на данном эелементе)
+    .no_in_wnd:  ;не попали в окно - потер€ фокуса (при условии что фокус был на данном эелементе)
+      mov eax,37 ;провер€ем нажатость любых кнопок
+      mov ebx,2
+      int 0x40
+      cmp eax,0  ;ниче не нажали eax=0
+      je .no_draw
+
       mov ebx,tl_el_focus
       cmp dword[ebx],edi
       jne .no_draw ;элемент не в фокусе
@@ -456,7 +465,7 @@ tl_mouse: ;реакци€ на мышь
         call tl_draw_cursor ;рисуем курсор с потер€ным фокусом
     .no_draw:
 
-    pop esi edi edx ecx ebx eax
+    popad
   pop ebp
   ret 4
 
@@ -653,6 +662,13 @@ tl_draw: ;вывод списка на экран
     @@:
 
     call tl_draw_cursor
+
+    mov edi,tl_p_scrol ;рисуем дочерний скроллинг
+    cmp edi,0          ;дл€ того что-бы его не пришлось рисовать в пользовательской программе
+    je .end_draw       ;если нет скроллинга выходим
+    push dword edi
+    call scroll_bar_vertical.draw
+
     .end_draw:
     pop esi edi edx ecx ebx eax
   pop ebp
@@ -2330,7 +2346,7 @@ tl_load_mem:
 ;      pop ebx
 ;      add esi,ebx
       .beg_cycle:
-      cmp dword[esi],0x65657274 ;0x65657274 = 'tree'
+      cmp dword[esi],'tree'
       jne .no_tree
       xor ebx,ebx
       mov bx,word[esi+4]
@@ -2341,7 +2357,7 @@ tl_load_mem:
       loop .beg_cycle
     @@:
 
-    cmp dword[esi],0x65657274 ;0x65657274 = 'tree'
+    cmp dword[esi],'tree'
     jne .no_tree
       bt word[ebp+18],1 ;load in add mode
       jc @f
@@ -2410,7 +2426,7 @@ tl_get_mem_size: ;берет размер пам€ти зан€той функцией tl_save_mem при сохранени
     mov esi,dword[ebp+ 8]
     mov edi,dword[ebp+12]
     @@:
-      cmp dword[esi],0x65657274 ;0x65657274 = 'tree'
+      cmp dword[esi],'tree'
       jne @f
       xor ebx,ebx
       mov bx,word[esi+4]

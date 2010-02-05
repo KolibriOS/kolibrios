@@ -21,8 +21,7 @@ maxColWords equ 10000
 
 
 include '../../macros.inc'
-;include '../../develop/libraries/box_lib/load_lib.mac'
-include 'load_lib.mac' ;include old file
+include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/tree_list.mac'
 include '../../develop/libraries/box_lib/trunk/editbox.mac'
 
@@ -71,8 +70,8 @@ start:
   call Clear
 
 ;-------------------------------------------------
-  mov ecx,maxColWords*sizeof.TexColViv
-  add ecx,40
+  mov ecx,maxColWords*sizeof.TexColViv+40
+  ;add ecx,40
   call mem_Alloc
   mov [options_file],eax
   mov [options_file_end],eax
@@ -91,7 +90,7 @@ start:
   mov edi,buf_cmd_lin
   rep movsb
 
-  copy_path fn_icon,sys_path,file_name
+  copy_path fn_icon,sys_path,file_name,0x0
 
   mov eax,70 ;load icon file
   mov [run_file_70.func_n], 0
@@ -130,7 +129,7 @@ load_libraries l_libs_start,load_lib_end
   call dword[tl_data_init]
 ;---------------------------------------------------------------------
 ; читаем bmp файл с курсорами и линиями
-  copy_path fn_icon_tl_sys,sys_path,file_name
+  copy_path fn_icon_tl_sys,sys_path,file_name,0x0
 
   mov ecx,3*256*13
   call mem_Alloc
@@ -153,7 +152,7 @@ load_libraries l_libs_start,load_lib_end
   @@:
 ;---------------------------------------------------------------------
 ; читаем bmp файл с иконками узлов
-  copy_path fn_icon_tl_nod,sys_path,file_name
+  copy_path fn_icon_tl_nod,sys_path,file_name,0x0
 
   mov ecx,3*256*2
   call mem_Alloc
@@ -175,7 +174,7 @@ load_libraries l_libs_start,load_lib_end
     mov dword[tree1.data_img],0
   @@:
 ;------------------------------------------------------------------------------
-  copy_path fn_syntax_dir,sys_path,file_name ;берем путь к папке с файлами синтаксиса
+  copy_path fn_syntax_dir,sys_path,file_name,0x0 ;берем путь к папке с файлами синтаксиса
   mov eax,70
   mov ebx,tree_file_struct
   int 0x40
