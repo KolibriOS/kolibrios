@@ -169,7 +169,7 @@ iglobal
       dd 0
       dd syscall_putimage_palette; 65-PutImagePalette
       dd sys_process_def         ; 66-Process definitions - keyboard
-      dd sys_window_move         ; 67-Window move or resize
+      dd 0
       dd 0
       dd 0
       dd file_system_lfn         ; 70-Common file system interface, version 2
@@ -180,7 +180,7 @@ iglobal
   align 4
   servetable2:
 
-      dd sys_drawwindow          ; 0-DrawWindow
+      dd syscall_draw_window     ; 0-DrawWindow
       dd syscall_setpixel        ; 1-SetPixel
       dd sys_getkey              ; 2-GetKey
       dd sys_clock               ; 3-GetTime
@@ -247,11 +247,11 @@ iglobal
       dd sys_resize_app_memory   ; 64-Resize application memory usage
       dd cross_order             ; 65-PutImagePalette
       dd cross_order             ; 66-Process definitions - keyboard
-      dd cross_order             ; 67-Window move or resize
+      dd syscall_move_window     ; 67-Window move or resize
       dd f68			 ; 68-Some internal services
       dd sys_debug_services      ; 69-Debug
       dd cross_order             ; 70-Common file system interface, version 2
-      dd syscall_windowsettings  ; 71-Window settings
+      dd syscall_window_settings ; 71-Window settings
       dd sys_sendwindowmsg       ; 72-Send window message
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application

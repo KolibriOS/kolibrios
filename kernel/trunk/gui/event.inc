@@ -368,11 +368,13 @@ sys_sendwindowmsg:                                 ;; f72
         cli
         sub     ecx,2
         je      .sendkey
-        loop    .retf
+        dec     ecx
+        jnz     .retf
 .sendbtn:
         cmp     byte[BTN_COUNT],1
         jae     .result ;overflow
         inc     byte[BTN_COUNT]
+        shl     edx, 8
         mov     [BTN_BUFF],edx
         jmp     .result
 .sendkey:
@@ -467,7 +469,9 @@ get_event_for_app:                                 ;; used from f10,f11,f23
         je      .loop          ; empty ???
         cmp     edx,[TASK_COUNT]
         jne     .loop          ; not Top ???
-        cmp     dword[BTN_BUFF],0xFFFF ;-ID for Minimize-Button of Form
+        mov     edx, [BTN_BUFF]
+        shr     edx, 8
+        cmp     edx, 0xFFFF    ;-ID for Minimize-Button of Form
         jne     .result
         mov     [window_minimize],1
         dec     byte[BTN_COUNT]

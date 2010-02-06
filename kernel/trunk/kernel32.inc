@@ -41,11 +41,21 @@ $Revision$
 ;    display 'not used dt: ',`.,13,10
 ;  end if }
 
+struc POINT {
+  .x dd ?
+  .y dd ?
+  .sizeof:
+}
+virtual at 0
+ POINT POINT
+end virtual
+
 struc RECT {
   .left   dd ?
   .top    dd ?
   .right  dd ?
   .bottom dd ?
+  .sizeof:
 }
 virtual at 0
  RECT RECT
@@ -56,6 +66,7 @@ struc BOX {
   .top    dd ?
   .width  dd ?
   .height dd ?
+  .sizeof:
 }
 virtual at 0
  BOX BOX
