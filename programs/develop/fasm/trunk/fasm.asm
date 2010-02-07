@@ -47,19 +47,6 @@ include '..\..\..\develop\libraries\box_lib\load_lib.mac'
 center fix true
 
 START:	    ; Start of execution
-sys_load_library  library_name, cur_dir_path, library_path, system_path, \
-  err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
-
-  cmp eax,-1
-  jne @f
-    mcall -1 ;exit if not open box_lib.obj
-  @@:
-  mcall 40,0x27 ;маска системных событий
-
-  get_sys_colors 1,0
-  edit_boxes_set_sys_color edit1,editboxes_end,sc
-  check_boxes_set_sys_color ch1_dbg,ch1_dbg+ch_struc_size,sc
-
 	mov	edi, fileinfos
 	mov	ecx, (fileinfos_end-fileinfos)/4
 	or	eax, -1
@@ -71,7 +58,7 @@ sys_load_library  library_name, cur_dir_path, library_path, system_path, \
 	mcall
 
    cmp	  [params],0
-   jz	    red
+   jz	    start_1
 
    mov	  ecx,10
    mov	  eax,'    '
@@ -92,17 +79,15 @@ sys_load_library  library_name, cur_dir_path, library_path, system_path, \
    call    mov_param_str
 ;  mov     edi,infile
 ;  DEBUGF  " input: %s\n",edi
-   inc	   esi
    mov	   edi,outfile
    call    mov_param_str
 ;  mov     edi,outfile
 ;  DEBUGF  "output: %s\n",edi
-   inc	   esi
    mov	   edi,path
    call    mov_param_str
 ;  mov     edi,path
 ;  DEBUGF  "  path: %s\n",edi
-
+   dec     esi
    cmp	   [esi], dword ',run'
    jne	   @f
    mov	   [_run_outfile],1
@@ -111,6 +96,19 @@ sys_load_library  library_name, cur_dir_path, library_path, system_path, \
    mov	   [_mode],CONSOLE_MODE
    jmp	   start
 
+start_1:
+sys_load_library  library_name, cur_dir_path, library_path, system_path, \
+  err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+
+  cmp eax,-1
+  jne @f
+    mcall -1 ;exit if not open box_lib.obj
+  @@:
+  mcall 40,0x27 ;маска системных событий
+
+  get_sys_colors 1,0
+  edit_boxes_set_sys_color edit1,editboxes_end,sc
+  check_boxes_set_sys_color ch1_dbg,ch1_dbg+ch_struc_size,sc
 
 red:	; Redraw
     call draw_window
@@ -412,20 +410,20 @@ lf db 13,10,0
 
 
 mov_param_str:
-  @@:
-    mov    al,[esi]
+    cld
+@@:
+    lodsb
     cmp    al,','
-    je	     @f
-    cmp    al,0
-    je	     @f
-    mov    [edi],al
-    inc    esi
-    inc    edi
-    jmp    @b
-  @@:
-    mov    al,0
+    je     @f
     stosb
-ret
+    test   al,al
+    jnz    @b
+@@:
+    xor    al,al
+    stosb
+    ret
+
+
 
 start:
     cmp    [_mode],NORMAL_MODE
@@ -540,14 +538,12 @@ times $04 db $00,$01
 times $08 db $00
 
 ;include_debug_strings
-
-  params db 0 ; 'TINYPAD.ASM,TINYPAD,/HD/1/TPAD4/',
-  cur_dir_path rb 4096
-  library_path rb 4096
-
 program_end:
+;  params db 0 ; 'TINYPAD.ASM,TINYPAD,/HD/1/TPAD4/',
+params	rb 4096
+cur_dir_path rb 4096
+library_path rb 4096
 
-rb 1000h
 align 4
 
 include 'variable.inc'
