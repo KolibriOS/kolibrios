@@ -2436,8 +2436,8 @@ draw_background_temp:
 ;draw_background_temp:
 ;    mov   [bgrchanged],1 ;0
     mov    [background_defined], 1
+    mov    byte[BACKGROUND_CHANGED], 1
     call  force_redraw_background
-    mov    [REDRAW_BACKGROUND], byte 2
    nosb31:
     ret
   nosb3:
@@ -2557,15 +2557,15 @@ nosb7:
     ret
 
 force_redraw_background:
-    and   [draw_data+32 + RECT.left],dword 0
-    and   [draw_data+32 + RECT.top],dword 0
+    and   [draw_data+32 + RECT.left], 0
+    and   [draw_data+32 + RECT.top], 0
     push  eax ebx
     mov   eax,[Screen_Max_X]
     mov   ebx,[Screen_Max_Y]
     mov   [draw_data+32 + RECT.right],eax
     mov   [draw_data+32 + RECT.bottom],ebx
     pop   ebx eax
-    mov   byte [REDRAW_BACKGROUND], 1
+    inc   byte[REDRAW_BACKGROUND]
     ret
 
 align 4
@@ -3083,27 +3083,36 @@ set_mouse_event:
     loop  set_mouse_event
 
 mouse_not_active:
-    cmp   [REDRAW_BACKGROUND],byte 0               ; background update ?
-    jz    nobackgr
-    cmp    [background_defined], 0
-    jz    nobackgr
-    cmp   [REDRAW_BACKGROUND], byte 2
-    jnz   no_set_bgr_event
+    cmp   byte[BACKGROUND_CHANGED], 0
+    jz    no_set_bgr_event
     xor   edi, edi
-    mov   ecx,  [TASK_COUNT]
+    mov   ecx, [TASK_COUNT]
 set_bgr_event:
     add   edi, 256
     or    [edi+SLOT_BASE+APPDATA.event_mask], 16
     loop  set_bgr_event
+    mov   byte[BACKGROUND_CHANGED], 0
 no_set_bgr_event:
+    cmp   byte[REDRAW_BACKGROUND], 0               ; background update ?
+    jz    nobackgr
+    cmp    [background_defined], 0
+    jz    nobackgr
 ;    mov   [draw_data+32 + RECT.left],dword 0
 ;    mov   [draw_data+32 + RECT.top],dword 0
 ;    mov   eax,[Screen_Max_X]
 ;    mov   ebx,[Screen_Max_Y]
 ;    mov   [draw_data+32 + RECT.right],eax
 ;    mov   [draw_data+32 + RECT.bottom],ebx
+@@:
     call  drawbackground
-    mov   [REDRAW_BACKGROUND],byte 0
+    xor   eax, eax
+    xchg  al, [REDRAW_BACKGROUND]
+    test  al, al                                   ; got new update request?
+    jnz   @b
+    mov   [draw_data+32 + RECT.left], eax
+    mov   [draw_data+32 + RECT.top], eax
+    mov   [draw_data+32 + RECT.right], eax
+    mov   [draw_data+32 + RECT.bottom], eax
     mov   [MOUSE_BACKGROUND],byte 0
 
 nobackgr:
@@ -3219,32 +3228,37 @@ redrawscreen:
 
          cmp   ecx,1
          jnz   .az
-         mov   al,[REDRAW_BACKGROUND]
-         cmp   al,2
-         jz    newdw8
-         test  al,al
+;         cmp   byte[BACKGROUND_CHANGED], 0
+;         jnz   newdw8
+         cmp   byte[REDRAW_BACKGROUND], 0
          jz    .az
+         mov   dl, 0
          lea   eax,[edi+draw_data-window_data]
          mov   ebx,[draw_limits.left]
          cmp   ebx,[eax+RECT.left]
          jae   @f
          mov   [eax+RECT.left],ebx
+         mov   dl, 1
         @@:
          mov   ebx,[draw_limits.top]
          cmp   ebx,[eax+RECT.top]
          jae   @f
          mov   [eax+RECT.top],ebx
+         mov   dl, 1
         @@:
          mov   ebx,[draw_limits.right]
          cmp   ebx,[eax+RECT.right]
          jbe   @f
          mov   [eax+RECT.right],ebx
+         mov   dl, 1
         @@:
          mov   ebx,[draw_limits.bottom]
          cmp   ebx,[eax+RECT.bottom]
          jbe   @f
          mov   [eax+RECT.bottom],ebx
+         mov   dl, 1
         @@:
+         add   byte[REDRAW_BACKGROUND], dl
          jmp   newdw8
         .az:
 
@@ -3264,7 +3278,7 @@ redrawscreen:
 
          cmp   dword [esp],1
          jne   nobgrd
-         mov   byte [REDRAW_BACKGROUND], 1
+         inc   byte[REDRAW_BACKGROUND]
 
        newdw8:
        nobgrd:
@@ -3293,7 +3307,8 @@ calculatebackground:   ; background
         shr   ecx, 2
         rep   stosd
 
-        mov   byte [REDRAW_BACKGROUND], 0              ; do not draw background!
+        mov   byte[REDRAW_BACKGROUND], 0              ; do not draw background!
+        mov   byte[BACKGROUND_CHANGED], 0
 
         ret
 
