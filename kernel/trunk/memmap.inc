@@ -130,8 +130,8 @@
 ;   FE90  ->   FEFF   free (112)
 ;   FF00  byte        1 = system shutdown request
 ;   FF01  byte        task activation request?
-;   FFF0  byte        1 = redraw background request from app
-;   FFF1  byte        1 = diskette int occur
+;   FFF0  byte        >0 if redraw background request from app
+;   FFF1  byte        >0 if background changed
 ;   FFF2              write and read bank in screen
 ;   FFF4  byte        0 if first mouse draw & do not return picture under
 ;   FFF5  byte        1 do not draw pointer
@@ -248,7 +248,7 @@
 ; 0x805FFF80 -> 5FFFFF   TSS  (128)
 ; 0x80600000 -> 7FFFFF   free (2M)
 ; =====================================
-; 0x80000000 ->       kernel heap
+; 0x80800000 ->       kernel heap
 ; 0x80FFFFFF          heap min limit
 ; 0xFDBFFFFF          heap max limit
 
