@@ -323,7 +323,7 @@ debug_read_process_memory:
         call    get_debuggee_slot
         jc      .err
         shr     eax, 5
-;        mov     ebx, esi
+        mov     ecx, edi
         call    read_process_memory
         sti
         mov     dword [esp+32], eax
@@ -349,7 +349,7 @@ debug_write_process_memory:
         call    get_debuggee_slot
         jc      debug_read_process_memory.err
         shr     eax, 5
-;        mov     ebx, esi
+        mov     ecx, edi
         call    write_process_memory
         sti
         mov     [esp+32], eax
@@ -368,23 +368,23 @@ debugger_notify:
 .1:
         mov     eax, ebp
         shl     eax, 8
-        mov     edx, [SLOT_BASE+eax+APPDATA.dbg_event_mem]
-        test    edx, edx
+        mov     esi, [SLOT_BASE+eax+APPDATA.dbg_event_mem]
+        test    esi, esi
         jz      .ret
 ; read buffer header
         push    ecx
         push    eax
         push    eax
         mov     eax, ebp
-        mov     ebx, esp
-        mov     ecx, 8
+        mov     ecx, esp
+        mov     edx, 8
         call    read_process_memory
-        cmp     eax, ecx
+        cmp     eax, edx
         jz      @f
         add     esp, 12
         jmp     .ret
 @@:
-        cmp     dword [ebx], 0
+        cmp     dword [ecx], 0
         jg      @f
 .2:
         pop     ecx
@@ -400,26 +400,26 @@ debugger_notify:
         cli
         jmp     .1
 @@:
-        mov     ecx, [ebx+8]
-        add     ecx, [ebx+4]
-        cmp     ecx, [ebx]
+        mov     edx, [ecx+8]
+        add     edx, [ecx+4]
+        cmp     edx, [ecx]
         ja      .2
 ; advance buffer position
-        push    ecx
-        mov     ecx, 4
-        sub     ebx, ecx
+        push    edx
+        mov     edx, 4
+        sub     ecx, edx
         mov     eax, ebp
-        add     edx, ecx
+        add     esi, edx
         call    write_process_memory
         pop     eax
 ; write message
         mov     eax, ebp
-        add     edx, ecx
-        add     edx, [ebx+8]
-        add     ebx, 20
-        pop     ecx
-        pop     ecx
-        pop     ecx
+        add     esi, edx
+        add     esi, [ecx+8]
+        add     ecx, 20
+        pop     edx
+        pop     edx
+        pop     edx
         call    write_process_memory
 ; new debug event
         mov     eax, ebp
