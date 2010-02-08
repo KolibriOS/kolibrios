@@ -40,6 +40,14 @@ FS_FT_DIR               = 0x10  ;это папка
 FS_FT_ASCII             = 0     ;имя в ascii
 FS_FT_UNICODE           = 1     ;имя в unicode
 
+uglobal
+    EXT2_files_in_folder    dd ?   ;всего файлов в папке
+    EXT2_read_in_folder     dd ?   ;сколько файлов "считали"
+    EXT2_end_block          dd ?   ;конец очередного блока папки
+    EXT2_counter_blocks     dd ?
+    EXT2_filename           db 256 dup ?
+endg
+
 struct EXT2_INODE_STRUC
     .i_mode         dw ?
     .i_uid          dw ?
@@ -281,15 +289,6 @@ ext2_get_inode:
         ret
 
 ;----------------------------------------------------------------
-ext2_upcase:
-        cmp     al, 'a'
-        jb      .ret
-        cmp     al, 'z'
-        ja      .ret
-        and     al, 0xDF        ; upcase = clear 0010 0000
-    .ret:
-        ret
-;----------------------------------------------------------------
 ; in:  esi -> children
 ;      ebx -> pointer to dir block
 ; out: esi -> name without parent or not_changed
@@ -303,24 +302,29 @@ ext2_test_block_by_name:
         .start_rec:
             cmp     [ebx + EXT2_DIR_STRUC.inode], 0
             jz      .next_rec
-;            test    [ebx + EXT2_DIR_STRUC.file_type], EXT2_FT_DIR
-;            jz      .next_rec
 
             push    esi
             movzx   ecx, [ebx + EXT2_DIR_STRUC.name_len]
-            lea     edi, [ebx + EXT2_DIR_STRUC.name]
-            inc     ecx
+            mov     edi, EXT2_filename
+            lea     esi, [ebx + EXT2_DIR_STRUC.name]
 
+            call    utf8toansi_str
+            mov     ecx, edi
+            sub     ecx, EXT2_filename      ;кол-во байт в получившейся строке
+
+            mov     edi, EXT2_filename
+            mov     esi, [esp]
           @@:
-                dec     ecx
                 jecxz   .test_find
+                dec     ecx
+
                 lodsb
+                call    char_toupper
+
                 mov     ah, [edi]
                 inc     edi
-
-                call    ext2_upcase
                 xchg    al, ah
-                call    ext2_upcase
+                call    char_toupper
                 cmp     al, ah
                 je      @B
           @@:                           ;не подошло
@@ -340,7 +344,6 @@ ext2_test_block_by_name:
         inc     esi
     .find:
         pop eax         ;удаляем из стека сохраненое значение
-       ; mov ebx, [ebx + EXT2_DIR_STRUC.inode]
     .ret:
         pop edi edx ecx eax
         ret
@@ -360,13 +363,6 @@ ext2_test_block_by_name:
 ;      eax = 0 ok read or other = errormsg
 ;
 ;--------------------------------------------------------------
-uglobal
-    EXT2_files_in_folder    dd ?   ;всего файлов в папке
-    EXT2_read_in_folder     dd ?   ;сколько файлов "считали"
-    EXT2_end_block          dd ?   ;конец очередного блока папки
-    EXT2_counter_blocks     dd ?
-endg
-
 ext2_HdReadFolder:
         cmp     byte [esi], 0
         jz      .doit
@@ -404,7 +400,7 @@ ext2_HdReadFolder:
         mov     eax, [ebp + EXT2_INODE_STRUC.i_blocks]
         mov     [EXT2_counter_blocks], eax
 
-        add     edx, 32                         ; заголовок будем заполнять в конце (адрес - в стеке) edx = current mem for return
+        add     edx, 32                         ; (header pointer in stack) edx = current mem for return
         xor     esi, esi                        ; esi = номер блока по порядку
 
     .new_block_folder:              ;reserved label
@@ -426,7 +422,7 @@ ext2_HdReadFolder:
         jecxz   .find_wanted_end
     .find_wanted_cycle:
             cmp     [eax + EXT2_DIR_STRUC.inode], 0     ; if (inode = 0) => not used
-            je      @F
+            jz      @F
             inc     [EXT2_files_in_folder]
           @@:
             movzx   ebx, [eax+EXT2_DIR_STRUC.rec_len]
@@ -438,8 +434,7 @@ ext2_HdReadFolder:
 
         mov     ecx, edi
     .wanted_start:                                      ; ищем first_wanted+count
-        jecxz   .wanted_end
-    .wanted_cycle:
+            jecxz   .find_wanted_cycle                  ; ecx=0 => огромный цикл до конца папки
             cmp     [eax + EXT2_DIR_STRUC.inode], 0     ; if (inode = 0) => not used
             jz      .empty_rec
             inc     [EXT2_files_in_folder]
@@ -469,26 +464,43 @@ ext2_HdReadFolder:
             xor     dword [edx], FS_FT_DIR
             or      dword [edx+4], FS_FT_ASCII      ; symbol type in name
 
-            push    ecx esi                         ;copy name
+            ;теперь скопируем название, сконвертировав из UTF-8 в CP866
+            push    eax ecx esi
             movzx   ecx, [eax + EXT2_DIR_STRUC.name_len]
-            mov     edi, edx
-            add     edi, 40
+            lea     edi, [edx + 40]
             lea     esi, [eax + EXT2_DIR_STRUC.name]
-            rep     movsb
-            pop     esi ecx
+            call    utf8toansi_str
+            ;rep     movsb
+            pop     esi ecx eax
             and     byte [edi], 0
 
             add     edx, 40 + 264                       ; go to next record
+
+            dec     ecx                                 ; если запись пустая ecx не надо уменьшать
         .empty_rec:
             movzx   ebx, [eax + EXT2_DIR_STRUC.rec_len]
             add     eax, ebx
             cmp     eax, [EXT2_end_block]
-            jae     .end_block_wanted                   ;по хорошему должно быть =, но ччнш
-            loop    .wanted_cycle
+            jb      .wanted_start
 
-    .wanted_end:                        ;теперь дойдем до конца чтобы узнать сколько файлов в папке
-        or      ecx, -1                 ;цикл уже есть, просто поставим ему огромный счетчик
-        jmp     .find_wanted_cycle
+    .end_block_wanted:                                      ;вылетели из цикла wanted
+        mov     ebx, [ext2_data.count_block_in_block]
+        sub     [EXT2_counter_blocks], ebx
+        jz      .end_dir
+
+        inc     esi
+        push    ecx
+        mov     ecx, esi
+        call    ext2_get_inode_block
+        mov     eax, ecx
+        mov     ebx, [ext2_data.ext2_save_block]
+        call    ext2_get_block
+        pop     ecx
+        dec     ecx
+        mov     eax, ebx
+        add     ebx, [ext2_data.block_size]
+        mov     [EXT2_end_block], ebx
+        jmp     .wanted_start
 
     .end_block_find_wanted:                                   ;вылетили из цикла find_wanted
         mov     ebx, [ext2_data.count_block_in_block]
@@ -510,25 +522,6 @@ ext2_HdReadFolder:
         mov     [EXT2_end_block], ebx
         jmp     .find_wanted_start
 
-    .end_block_wanted:                                      ;вылетели из цикла wanted
-        mov     ebx, [ext2_data.count_block_in_block]
-        sub     [EXT2_counter_blocks], ebx
-        jz      .end_dir
-
-        inc     esi
-        push    ecx
-        mov     ecx, esi
-        call    ext2_get_inode_block
-        mov     eax, ecx
-        mov     ebx, [ext2_data.ext2_save_block]
-        call    ext2_get_block
-        pop     ecx
-        dec     ecx
-        mov     eax, ebx
-        add     ebx, [ext2_data.block_size]
-        mov     [EXT2_end_block], ebx
-        jmp     .wanted_start
-
     .end_dir:
         pop     edx
         mov     ebx, [EXT2_read_in_folder]
@@ -542,6 +535,54 @@ ext2_HdReadFolder:
         rep     stosd
         ret
 ;====================== end ext2_HdReadFolder
+utf8toansi_str:
+; convert UTF-8 string to ASCII-string (codepage 866)
+; in: ecx=length source, esi->source, edi->buffer
+; destroys: eax,esi,edi
+        jecxz   .ret
+    .start:
+        lodsw
+        cmp     al, 0x80
+        jb      .ascii
+
+        xchg    al, ah
+        cmp     ax, 0xd080
+        jz      .yo1
+        cmp     ax, 0xd191
+        jz      .yo2
+        cmp     ax, 0xd090
+        jb      .unk
+        cmp     ax, 0xd180
+        jb      .rus1
+        cmp     ax, 0xd190
+        jb      .rus2
+    .unk:
+        mov     al, '_'
+        jmp     .doit
+    .yo1:
+        mov     al, 0xf0    ; Ё capital
+        jmp     .doit
+    .yo2:
+        mov     al, 0xf1    ; ё small
+        jmp     .doit
+    .rus1:
+        sub     ax, 0xd090 - 0x80
+        jmp     .doit
+    .rus2:
+        sub     ax, 0xd18f - 0xEF
+    .doit:
+        stosb
+        sub     ecx, 2
+        ja      .start
+        ret
+
+    .ascii:
+        stosb
+        dec     esi
+        dec     ecx
+        jnz     .start
+    .ret:
+        ret
 
 ;----------------------------------------------------------------
 ;
@@ -558,146 +599,79 @@ ext2_HdReadFolder:
 ;
 ;--------------------------------------------------------------
 ext2_HdRead:
-        xchg    bx, bx
-        mov     ebp, [ext2_data.root_inode]
-
-        push    ecx edx ebx
-    .next_folder:
-        push    esi
-    @@:
-            lodsb
-            test    al, al
-            jz      .find_end
-            cmp     al, '/'
-            jz      .find_folder
-            jmp     @B
-
-    .find_end:
-        ;установим флаг что ищем файл или очередную папку
-        mov     edi, 1
-        jmp     .find_any
-    .find_folder:
-        xor     edi, edi
-    .find_any:
-        pop     esi
-
         cmp     byte [esi], 0
-        jz      .not_found
+        jnz     @F
 
-        or      [EXT2_counter_blocks], -1               ;счетчик блоков папки    cur block of inode
-        mov     eax, [ebp + EXT2_INODE_STRUC.i_blocks]  ;убывающий счетчик блоков
-        add     eax, [ext2_data.count_block_in_block]
-        mov     [EXT2_end_block], eax
-    .next_block_folder:
-        mov     eax, [ext2_data.count_block_in_block]
-        sub     [EXT2_end_block], eax
-        jz      .not_found
-        inc     [EXT2_counter_blocks]
-        mov     ecx, [EXT2_counter_blocks]
-        call    ext2_get_inode_block
-
-        mov     eax, ecx
-        mov     ebx, [ext2_data.ext2_save_block]        ;ebx = cur dir record
-        call    ext2_get_block
-
-        mov     eax, esi
-        call    ext2_test_block_by_name
-        cmp     eax, esi                                ;нашли имя?
-        je      .next_block_folder
-
-        cmp     [ebx + EXT2_DIR_STRUC.file_type], EXT2_FT_REG_FILE
-        je      .test_file
-        cmp     [ebx + EXT2_DIR_STRUC.file_type], EXT2_FT_DIR
-        jne     .this_is_nofile
-
-    ;.test_dir:
-        cmp     edi, 0
-        jne     .this_is_nofile
-
-        mov     eax, [ebx + EXT2_DIR_STRUC.inode]
-        mov     ebx, [ext2_data.ext2_save_inode]                ;все же папка.
-        call    ext2_get_inode
-        mov     ebp, ebx
-        jmp     .next_folder
-
-    .test_file:
-        cmp     edi, 0
-        je      .not_found
-
-        mov     eax, [ebx + EXT2_DIR_STRUC.inode]
-        mov     ebx, [ext2_data.ext2_save_inode]
-        call    ext2_get_inode
-        jmp     .get_file
-
-    .not_found:
-    	pop     edx ecx ebx
-        or      ebx, -1
-        mov     eax, ERROR_FILE_NOT_FOUND
-        ret
     .this_is_nofile:
-        pop     edx ecx ebx
         or      ebx, -1
         mov     eax, ERROR_ACCESS_DENIED
         ret
 
-    ;-----------------------------------------------------------------------------final step
-    .get_file:
-        mov     ebp ,ebx
+    @@:
+        push    ecx ebx
+        call    ext2_find_lfn
+        pop     ebx ecx
+        jnc     .doit
+    ;.not_found:
+        or      ebx, -1
+        mov     eax, ERROR_FILE_NOT_FOUND
+        ret
 
-        ;pop     eax edi ecx         ; первый_блок память кол-во_байт
-        mov     esi, [esp]
-        mov     edi, [esp + 8]      ;edi = нужно считать байт
+    .doit:
+        test    [ebp + EXT2_INODE_STRUC.i_mode], EXT2_S_IFREG
+        jz      .this_is_nofile
+
+    ;-----------------------------------------------------------------------------final step
+
+        mov     edi, edx            ; edi = pointer to return mem
+        mov     esi, ebx            ; esi = pointer to first_wanted
 
         ;///// сравним хватит ли нам файла или нет
         mov     ebx, [esi+4]
         mov     eax, [esi]          ; ebx : eax - стартовый номер байта
 
-        mov     edx, [ebp + EXT2_INODE_STRUC.i_dir_acl]
-        mov     ecx, [ebp + EXT2_INODE_STRUC.i_size]        ;edx : ecx - размер файла
+   ;    mov     edx, [ebp + EXT2_INODE_STRUC.i_dir_acl]
+   ;    mov     ecx, [ebp + EXT2_INODE_STRUC.i_size]        ;edx : ecx - размер файла
 
-        cmp     edx, ebx
+        cmp     [ebp + EXT2_INODE_STRUC.i_dir_acl], ebx
         ja      .size_great
         jb      .size_less
 
-        cmp     ecx, eax
+        cmp     [ebp + EXT2_INODE_STRUC.i_size], eax
         ja      .size_great
 
     .size_less:
-        add     esp, 12
-        mov     ebx, 0
+        pop     ecx
+        xor     ebx, ebx
         mov     eax, 6      ;EOF
         ret
     .size_great:
-        ;прибавим к старту кол-во байт для чтения
-        add     eax, edi
-        jnc     @F
-        inc     ebx
-    @@:
-        cmp     edx, ebx
+        add     eax, ecx                  ;add to first_wanted кол-во байт для чтения
+        adc     ebx, 0
+
+        cmp     [ebp + EXT2_INODE_STRUC.i_dir_acl], ebx
         ja      .size_great_great
         jb      .size_great_less
-        cmp     ecx, eax
-        jae     .size_great_great
-        ;jmp      .size_great_less
-                                                ; а если равно, то не важно куда
+        cmp     [ebp + EXT2_INODE_STRUC.i_size], eax
+        jae     .size_great_great               ; а если равно, то не важно куда
+
     .size_great_less:
         or      [EXT2_files_in_folder], 1       ;читаем по границе размера
-        sub     ecx, [esi]
-        pop     eax edi edx                     ;ecx - не меняем
+        mov     ecx, [ebp + EXT2_INODE_STRUC.i_size]
+        sub     ecx, [esi]                      ;(размер - старт)
         jmp     @F
 
     .size_great_great:
-        and     [EXT2_files_in_folder], 0       ;читаем нормально
-        pop     eax edi ecx
+        and     [EXT2_files_in_folder], 0       ;читаем столько сколько запросили
 
     @@:
-        push    ecx                             ;сохраним размер считанных байт в стеке
-        test    eax, eax
-        je      .zero_start
+        push    ecx                             ;save for return
+        test    esi, esi
+        jz      .zero_start
 
         ;пока делаем п..ц криво =)
-        mov     edx, [eax+4]
-        mov     eax, [eax]
+        mov     edx, [esi+4]
+        mov     eax, [esi]
         div     [ext2_data.block_size]
 
         mov     [EXT2_counter_blocks], eax       ;номер блока запоминаем
@@ -705,14 +679,14 @@ ext2_HdRead:
         push    ecx
         mov     ecx, eax
         call    ext2_get_inode_block
-        mov     ebx , [ext2_data.ext2_save_block]
+        mov     ebx, [ext2_data.ext2_save_block]
         mov     eax, ecx
         call    ext2_get_block
         pop     ecx
         add     ebx, edx
 
         neg     edx
-        add     edx,[ext2_data.block_size]      ;block_size - стартоый блок = сколько байт 1-го блока
+        add     edx,[ext2_data.block_size]      ;block_size - стартовый байт = сколько байт 1-го блока
         cmp     ecx, edx
         jbe     .only_one_block
 
@@ -726,29 +700,29 @@ ext2_HdRead:
 
     .zero_start:
         mov     eax, ecx
-        mov     ebx, edi                        ;чтение блока прям в ebx
         ;теперь в eax кол-во оставшихся байт для чтения
     @@:
+        mov     ebx, edi                        ;чтение блока прям в ->ebx
         xor     edx, edx
         div     [ext2_data.block_size]          ;кол-во байт в последнем блоке (остаток) в edx
-        mov     [EXT2_end_block], eax           ;кол-во целых блоков в EXT2_end_block
+        mov     edi, eax                        ;кол-во целых блоков в edi
     @@:
-        cmp     [EXT2_end_block], 0
+        test     edi, edi
         jz      .finish_block
         inc     [EXT2_counter_blocks]
         mov     ecx, [EXT2_counter_blocks]
         call    ext2_get_inode_block
 
-        mov     eax, ecx            ;а ebx уже забит нужным значением
+        mov     eax, ecx                        ;а ebx уже забит нужным значением
         call    ext2_get_block
         add     ebx, [ext2_data.block_size]
 
-        dec     [EXT2_end_block]
+        dec     edi
         jmp     @B
 
     .finish_block:          ;в edx - кол-во байт в последнем блоке
-        cmp     edx, 0
-        je      .end_read
+        test    edx, edx
+        jz      .end_read
 
         mov     ecx, [EXT2_counter_blocks]
         inc     ecx
@@ -821,7 +795,6 @@ ext2_find_lfn:
         mov     ebx, [ext2_data.ext2_save_inode]
         call    ext2_get_inode
         mov     ebp, ebx
-    .ret:
         clc
         ret
 
