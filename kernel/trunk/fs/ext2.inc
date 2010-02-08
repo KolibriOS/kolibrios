@@ -419,20 +419,41 @@ ext2_HdReadFolder:
         mov     ecx, [ecx]                      ; ecx = first wanted (flags ommited)
 
     .find_wanted_start:
-        jecxz   .find_wanted_end
+            jecxz   .find_wanted_end
     .find_wanted_cycle:
             cmp     [eax + EXT2_DIR_STRUC.inode], 0     ; if (inode = 0) => not used
             jz      @F
             inc     [EXT2_files_in_folder]
+            dec     ecx
           @@:
             movzx   ebx, [eax+EXT2_DIR_STRUC.rec_len]
             add     eax, ebx                            ; к следующей записи
             cmp     eax, [EXT2_end_block]              ; проверяем "конец"
-            jae      .end_block_find_wanted
-            loop    .find_wanted_cycle
-    .find_wanted_end:
+            jb      .find_wanted_start
 
+   .end_block_find_wanted:                                   ;вылетили из цикла find_wanted
+        mov     ebx, [ext2_data.count_block_in_block]
+        sub     [EXT2_counter_blocks], ebx
+        jz      .end_dir
+
+        ;получаем новый блок
+        inc     esi
+        push    ecx
+        mov     ecx, esi
+        call    ext2_get_inode_block
+        mov     eax, ecx
+        mov     ebx, [ext2_data.ext2_save_block]
+        call    ext2_get_block
+        pop     ecx
+        dec     ecx
+        mov     eax, ebx
+        add     ebx, [ext2_data.block_size]
+        mov     [EXT2_end_block], ebx
+        jmp     .find_wanted_start
+
+    .find_wanted_end:
         mov     ecx, edi
+
     .wanted_start:                                      ; ищем first_wanted+count
             jecxz   .find_wanted_cycle                  ; ecx=0 => огромный цикл до конца папки
             cmp     [eax + EXT2_DIR_STRUC.inode], 0     ; if (inode = 0) => not used
@@ -470,7 +491,6 @@ ext2_HdReadFolder:
             lea     edi, [edx + 40]
             lea     esi, [eax + EXT2_DIR_STRUC.name]
             call    utf8toansi_str
-            ;rep     movsb
             pop     esi ecx eax
             and     byte [edi], 0
 
@@ -502,25 +522,9 @@ ext2_HdReadFolder:
         mov     [EXT2_end_block], ebx
         jmp     .wanted_start
 
-    .end_block_find_wanted:                                   ;вылетили из цикла find_wanted
-        mov     ebx, [ext2_data.count_block_in_block]
-        sub     [EXT2_counter_blocks], ebx
-        jz      .end_dir
-
-        ;получаем новый блок
-        inc     esi
-        push    ecx
-        mov     ecx, esi
-        call    ext2_get_inode_block
-        mov     eax, ecx
-        mov     ebx, [ext2_data.ext2_save_block]
-        call    ext2_get_block
-        pop     ecx
-        dec     ecx
-        mov     eax, ebx
-        add     ebx, [ext2_data.block_size]
-        mov     [EXT2_end_block], ebx
-        jmp     .find_wanted_start
+    .wanted_end:
+    	dec     ecx
+    	jmp     .find_wanted_cycle
 
     .end_dir:
         pop     edx
