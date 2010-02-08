@@ -62,13 +62,11 @@ macro DEBUGS_N _sign,_num,[_str] {
    jmp ..label
    ..str db _str,0
    ..label:
-;   add  esp,4*8+4
-esp equ esp+4*8+4
    mov  edx,..str
-esp equ _esp
-;   sub  esp,4*8+4
   else
+esp equ esp+4*8+4
    mov  edx,_str
+esp equ _esp
   end if
   if ~_num eq
    if _num eqtype eax
