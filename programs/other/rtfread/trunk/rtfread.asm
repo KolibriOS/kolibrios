@@ -498,7 +498,7 @@ title:
   db 'RTF Reader v1.    (     ):'
 titlesize:
 btn_text:
-    db 'Load Aligment Color Help     <      >'
+    db 'Load Aligment Color Help    <      >'
 if RENDER eq FREE
     db '    Zoom+ Zoom- '
   end if 
