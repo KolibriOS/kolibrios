@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 05.02.2010 IgorA
+; файл последний раз изменялся 09.02.2010 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -16,8 +16,10 @@ sizeof.TreeList equ 20
 ;ends
 
 tl_info_size  equ  word[edi +4] ;размер данных выделяемых для каждого узла (пользовательськие данные + текст для подписи)
+tl_info_max_count equ dword[edi+6] ;максимальное количество узлов, которые можно добавить в элемент
 tl_style      equ dword[edi+10] ;стили элемента
 tl_data_nodes equ dword[edi+14] ;указатель на структуры узлов
+tl_data_img   equ dword[edi+18] ;указатель на изображения с иконками узлов
 tl_img_cx     equ  word[edi+22] ;ширина иконок
 tl_img_cy     equ  word[edi+24] ;высота иконок
 tl_data_img_sys equ dword[edi+26] ;указатель на системные изображения (стрелки, плюсики)
@@ -51,8 +53,6 @@ tl_load_mode_add        equ 0x20000 ;опция считывания в режиме добавления информ
 tl_save_load_heder_size equ 26 ;размер заголовка для записи/чтения элементов
 
 ;data_info	 dd ? ;+ 0 указатель на основные даные
-;info_max_count dd ? ;+ 6 максимальное колличество структур
-;data_img	 dd ? ;+18 указатель на изображения
 ;ls_tim		dd ? ;+34 время последнего сохранения
 ;on_activate dd ? ;+92 указатель на функцию при активировании узла
 
@@ -133,7 +133,7 @@ tl_data_init: ;выделние памяти для структур списка и основной информации (констр
     imul ecx,dword[edi+6]
     call mem_Alloc
     mov dword[edi],eax ;копируем указатель на полученую память в структуру
-    mov dword[edi+18],0 ;обнуляем указатель 'data_img'
+    mov tl_data_img,0  ;обнуляем указатель 'data_img'
     mov tl_data_img_sys,0 ;обнуляем указатель 'data_img_sys'
 
     mov ecx,sizeof.TreeList
@@ -174,7 +174,7 @@ tl_data_clear: ;очистка памяти элемента (деструктор)
   mov ebp,esp
     push ecx edi
     mov edi,dword[ebp+8]
-    cmp dword[edi+18],0 ;data_img
+    cmp tl_data_img,0
     je @f
       mov ecx,dword[edi+18]
       call mem_Free ;чистка системных иконок
@@ -327,7 +327,7 @@ tl_mouse: ;реакция на мышь
     mov ebx,tl_box_left
     shl ebx,16
     cmp eax,ebx ;левая граница окна
-    jl .test_scroll
+    jl .no_in_wnd ;.test_scroll
 
     mov ebx,tl_box_left
     add ebx,tl_box_width
@@ -573,7 +573,7 @@ align 4
 tl_draw: ;вывод списка на экран
   push ebp
   mov ebp,esp
-    push eax ebx ecx edx edi esi
+    pushad
     ;draw dir_list main rect
     mov edi,dword[ebp+8]
     mov ebx,tl_box_left
@@ -670,7 +670,7 @@ tl_draw: ;вывод списка на экран
     call scroll_bar_vertical.draw
 
     .end_draw:
-    pop esi edi edx ecx ebx eax
+    popad
   pop ebp
   ret 4
 
@@ -755,13 +755,9 @@ tl_iterat_next_all:
 align 4
 tl_iterat_perv:
   push eax
-
-;  mov bl,byte[edx+2]
-
   cmp tl_tim_undo,0
   je .beg1
 
-  push eax
   .beg0:
     call tl_move_perv
     cmp edx,ecx
@@ -1028,7 +1024,7 @@ tl_get_display_cur_pos: ;берет позицию курсора, относительно экрана
 ;input:
 ; eax = node position
 ; edx = pointer to some node struct
-; edi = pointer to TreeInfo struct
+; edi = pointer to 'TreeList' struct
 ; esi = coord of bottom border
 align 4
 tl_draw_node:
@@ -1067,7 +1063,7 @@ tl_draw_node:
     .crop:
     mov esi,ecx ;save ecx
 
-    cmp dword[edi+18],0 ;data_img
+    cmp tl_data_img,0
     jne .draw_img_n
     push edx
       mov edx,tl_col_txt
@@ -1088,7 +1084,7 @@ tl_draw_node:
       imul bx,tl_img_cx
       imul bx,tl_img_cy
       imul ebx,esi ;esi = icon index
-      add ebx,dword[edi+18] ;data_img
+      add ebx,tl_data_img
 
       mov eax,7
       int 0x40 ;draw node icon '-'
@@ -1116,6 +1112,7 @@ tl_draw_node:
 
 ;input:
 ; ecx = pointer to 1 node struct
+; edx = pointer to some node struct
 ;...
 align 4
 tl_draw_node_icon_opn_clo: ;рисует иконки открытого или закрытого узла (обычно + или -)
@@ -1158,6 +1155,8 @@ tl_draw_node_icon_opn_clo: ;рисует иконки открытого или закрытого узла (обычно +
 
 ;input:
 ; al = уровень элемента
+; ecx = pointer to 1 node struct
+; edx = pointer to some node struct
 ;...
 align 4
 tl_draw_node_icon_par_lin:
@@ -1213,30 +1212,32 @@ tl_draw_node_icon_par_lin:
   ret
 
 
-
-;icon:
+;input:
 ; al = уровень элемента
-;...
+; ecx = pointer to 1 node struct
+; edx = pointer to some node struct
+; edi = pointer to 'TreeList' struct
 align 4
 tl_draw_node_icon_par_lin_up:
-  push eax ebx ecx edx esi
+  push eax ebx ecx edx
+  push esi
     cmp tl_data_img_sys,0 ;if not image
     je @f
     cmp al,0
     je @f
 
-;---------
     xor esi,esi ;в si будем насчитывать кол-во иконок, нужных для прорисовки линии
+;--- цикл для вычисления колличества вертикальных линий ---
     .cycle0:
       call tl_iterat_perv ;get perv visible item
       cmp edx,ecx
       jle .cycle1 ;if begin of list
 
       cmp byte[edx+2],al
-      jle .cycle1 ;уровень верхнего элемента не требует прорисовки
+      jle .cycle0end ;уровень верхнего элемента не требует прорисовки
       inc si
       jmp .cycle0
-    .cycle1:
+    .cycle0end:
       cmp si,0 ;si = кол-во иконок линии которые нужно нарисовать сверху
       je @f
       shl esi,16
@@ -1257,25 +1258,24 @@ tl_draw_node_icon_par_lin_up:
       mov ebx,3 ;rgb = 3 bytes
       imul bx,tl_img_cx
       imul bx,tl_img_cy
-      ;imul ebx,1
       add ebx,tl_data_img_sys
 
       add esi,tl_box_top
       add si,tl_capt_cy ;si = верхняя граница окна
       mov eax,7
-;---------
-      .cycle2:
+;--- цикл для рисования вертикальной линии ---
+      .cycle1:
       sub dx,tl_img_cy ;поднимаем координату y вверх
       cmp dx,si
       jl @f
-;        int 0x40 ;draw line icon
         cmp esi,0x10000
         jl @f
         int 0x40 ;draw line icon
         sub esi,0x10000 ;уменьшаем счетчик иконок
-      jmp .cycle2
+      jmp .cycle1
     @@:
-  pop esi edx ecx ebx eax
+  pop esi
+  pop edx ecx ebx eax
   ret
 
 ;input:
@@ -1470,7 +1470,7 @@ tl_node_add: ;добавить узел
 	pop dword [edx+8]
 
 	call tl_get_node_index ;*** eax = i ***
-	cmp eax,dword[edi+6] ;info_max_count
+	cmp eax,tl_info_max_count
 	jge .u0
 
 	mov [ecx],eax ;node[po_t].next=i; // ссылки перенаправляем
@@ -2008,19 +2008,26 @@ align 4
 tl_node_lev_inc: ;увеличить уровень
   push ebp
   mov ebp,esp
-  push eax edx edi
+  push eax ecx edx edi
     mov edi,dword[ebp+8]
     bt tl_style,2 ;tl_list_box_mode
     jc @f
     call tl_get_cur_node_index ;eax=po_t
     cmp eax,2
     jl @f
+      mov ecx,tl_data_nodes
       imul eax,sizeof.TreeList
-      add eax,tl_data_nodes
+      add eax,ecx ;eax = pointer to some node struct
+      add ecx,sizeof.TreeList ;ecx = pointer to 1 node struct
+
       mov edx,eax
-      inc word[edx+2]
+      call tl_iterat_perv ;проверяем есть ли верхний узел
+      cmp edx,ecx
+      jle @f ;если верхнего узла не то текущий узел не двигаем
+
+      inc word[eax+2]
     @@:
-  pop edi edx eax
+  pop edi edx ecx eax
   pop ebp
   ret 4
 
@@ -2028,19 +2035,18 @@ align 4
 tl_node_lev_dec: ;уменьшить уровень
   push ebp
   mov ebp,esp
-  push eax edx edi
+  push eax edi
     mov edi,dword[ebp+8]
     call tl_get_cur_node_index ;eax=po_t
     cmp eax,2
     jl @f
       imul eax,sizeof.TreeList
       add eax,tl_data_nodes
-      mov edx,eax
-      cmp word[edx+2],0
+      cmp word[eax+2],0
       je @f
-      dec word[edx+2]
+      dec word[eax+2]
     @@:
-  pop edi edx eax
+  pop edi eax
   pop ebp
   ret 4
 
@@ -2464,8 +2470,6 @@ txt_capt_otm db 'Ћв¬Ґ­л      ',0
 ;input:
 ; eax = value
 ; edi = string buffer
-;output:
-; edi =
 align 4
 tl_convert_to_str:
   pushad
