@@ -1641,6 +1641,7 @@ ntfs_datetime_to_bdfe:
         xchg    eax, [esp]
         div     [_10000000]
         pop     edx
+    .sec:
 ; edx:eax = number of seconds since January 1, 1601
         push    eax
         mov     eax, edx
@@ -1813,3 +1814,4 @@ ntfs_HdGetFileInfo:
         pop     edi esi
         xor     eax, eax
         ret
+

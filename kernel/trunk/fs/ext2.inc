@@ -36,6 +36,7 @@ EXT2_S_IROTH        = 0x0001
 EXT2_FT_REG_FILE        = 1     ;это файл, запись в родительском каталоге
 EXT2_FT_DIR             = 2     ;это папка
 
+FS_FT_HIDDEN            = 2
 FS_FT_DIR               = 0x10  ;это папка
 FS_FT_ASCII             = 0     ;имя в ascii
 FS_FT_UNICODE           = 1     ;имя в unicode
@@ -431,13 +432,13 @@ ext2_HdReadFolder:
             cmp     eax, [EXT2_end_block]              ; проверяем "конец"
             jb      .find_wanted_start
 
-   .end_block_find_wanted:                                   ;вылетили из цикла find_wanted
+		push	.find_wanted_start
+   .end_block:                                   		;вылетили из цикла
         mov     ebx, [ext2_data.count_block_in_block]
         sub     [EXT2_counter_blocks], ebx
-        jz      .end_dir
+        jbe      .end_dir
 
-        ;получаем новый блок
-        inc     esi
+        inc     esi										;получаем новый блок
         push    ecx
         mov     ecx, esi
         call    ext2_get_inode_block
@@ -445,17 +446,18 @@ ext2_HdReadFolder:
         mov     ebx, [ext2_data.ext2_save_block]
         call    ext2_get_block
         pop     ecx
-        dec     ecx
         mov     eax, ebx
         add     ebx, [ext2_data.block_size]
         mov     [EXT2_end_block], ebx
-        jmp     .find_wanted_start
+        ret												; опять в цикл
+
+    .wanted_end:
+    	loop	.find_wanted_cycle                      ; ecx = -1
 
     .find_wanted_end:
         mov     ecx, edi
-
     .wanted_start:                                      ; ищем first_wanted+count
-            jecxz   .find_wanted_cycle                  ; ecx=0 => огромный цикл до конца папки
+            jecxz   .wanted_end
             cmp     [eax + EXT2_DIR_STRUC.inode], 0     ; if (inode = 0) => not used
             jz      .empty_rec
             inc     [EXT2_files_in_folder]
@@ -468,24 +470,47 @@ ext2_HdReadFolder:
             rep     stosd
             pop     ecx eax
 
-            cmp     [eax + EXT2_DIR_STRUC.file_type], EXT2_FT_DIR   ;папка или нет
-            jz      @F
-
-            push    eax                                             ;получим размер, если это файл
+            push    eax esi edx                                        ;получим inode
             mov     eax, [eax + EXT2_DIR_STRUC.inode]
             mov     ebx, [ext2_data.ext2_temp_inode]
             call    ext2_get_inode
+
+            lea     edi, [edx + 8]
+
+            mov     eax, [ebx + EXT2_INODE_STRUC.i_ctime]           ; переведем время в ntfs формат
+            xor     edx, edx
+            add     eax, 3054539008                                 ;(369 * 365 + 89) * 24 * 3600
+            adc     edx, 2
+            call    ntfs_datetime_to_bdfe.sec
+
+            mov     eax, [ebx + EXT2_INODE_STRUC.i_atime]
+            xor     edx, edx
+            add     eax, 3054539008
+            adc     edx, 2
+            call    ntfs_datetime_to_bdfe.sec
+
+            mov     eax, [ebx + EXT2_INODE_STRUC.i_mtime]
+            xor     edx, edx
+            add     eax, 3054539008
+            adc     edx, 2
+            call    ntfs_datetime_to_bdfe.sec
+
+            pop     edx                                             ; пока достаем только буфер
+            test    [ebx + EXT2_INODE_STRUC.i_mode], EXT2_S_IFDIR   ; для папки размер
+            jnz     @F                                              ; не возвращаем
+
             mov     eax, [ebx + EXT2_INODE_STRUC.i_size]            ;low size
-            mov     ebx, [ebx + EXT2_INODE_STRUC.i_dir_acl]         ;high size
-            mov     dword [edx+32], eax
-            mov     dword [edx+36], ebx
-            xor     dword [edx], FS_FT_DIR          ; для файлов xor - 2 раза
-            pop     eax
-          @@:
+            stosd
+            mov     eax, [ebx + EXT2_INODE_STRUC.i_dir_acl]         ;high size
+            stosd
             xor     dword [edx], FS_FT_DIR
+        @@:
+            xor     dword [edx], FS_FT_DIR
+            pop     esi eax
+
             or      dword [edx+4], FS_FT_ASCII      ; symbol type in name
 
-            ;теперь скопируем название, сконвертировав из UTF-8 в CP866
+            ;теперь скопируем имя, сконвертировав из UTF-8 в CP866
             push    eax ecx esi
             movzx   ecx, [eax + EXT2_DIR_STRUC.name_len]
             lea     edi, [edx + 40]
@@ -494,8 +519,12 @@ ext2_HdReadFolder:
             pop     esi ecx eax
             and     byte [edi], 0
 
-            add     edx, 40 + 264                       ; go to next record
+            cmp     byte [edx + 40], '.'
+            jne     @F
+            or      dword [edx], FS_FT_HIDDEN
+        @@:
 
+            add     edx, 40 + 264                       ; go to next record
             dec     ecx                                 ; если запись пустая ecx не надо уменьшать
         .empty_rec:
             movzx   ebx, [eax + EXT2_DIR_STRUC.rec_len]
@@ -503,30 +532,11 @@ ext2_HdReadFolder:
             cmp     eax, [EXT2_end_block]
             jb      .wanted_start
 
-    .end_block_wanted:                                      ;вылетели из цикла wanted
-        mov     ebx, [ext2_data.count_block_in_block]
-        sub     [EXT2_counter_blocks], ebx
-        jz      .end_dir
-
-        inc     esi
-        push    ecx
-        mov     ecx, esi
-        call    ext2_get_inode_block
-        mov     eax, ecx
-        mov     ebx, [ext2_data.ext2_save_block]
-        call    ext2_get_block
-        pop     ecx
-        dec     ecx
-        mov     eax, ebx
-        add     ebx, [ext2_data.block_size]
-        mov     [EXT2_end_block], ebx
-        jmp     .wanted_start
-
-    .wanted_end:
-    	dec     ecx
-    	jmp     .find_wanted_cycle
+        push    .wanted_start                           ; дошли до конца очередного блока
+        jmp     .end_block
 
     .end_dir:
+    	pop     eax		; мусор (адрес возврата в цикл)
         pop     edx
         mov     ebx, [EXT2_read_in_folder]
         mov     ecx, [EXT2_files_in_folder]
@@ -549,7 +559,7 @@ utf8toansi_str:
         cmp     al, 0x80
         jb      .ascii
 
-        xchg    al, ah
+        xchg    al, ah              ; big-endian
         cmp     ax, 0xd080
         jz      .yo1
         cmp     ax, 0xd191
@@ -626,16 +636,12 @@ ext2_HdRead:
         jz      .this_is_nofile
 
     ;-----------------------------------------------------------------------------final step
-
         mov     edi, edx            ; edi = pointer to return mem
         mov     esi, ebx            ; esi = pointer to first_wanted
 
         ;///// сравним хватит ли нам файла или нет
         mov     ebx, [esi+4]
         mov     eax, [esi]          ; ebx : eax - стартовый номер байта
-
-   ;    mov     edx, [ebp + EXT2_INODE_STRUC.i_dir_acl]
-   ;    mov     ecx, [ebp + EXT2_INODE_STRUC.i_size]        ;edx : ecx - размер файла
 
         cmp     [ebp + EXT2_INODE_STRUC.i_dir_acl], ebx
         ja      .size_great
@@ -645,7 +651,6 @@ ext2_HdRead:
         ja      .size_great
 
     .size_less:
-        pop     ecx
         xor     ebx, ebx
         mov     eax, 6      ;EOF
         ret
@@ -753,7 +758,7 @@ ext2_HdRead:
         xor     eax, eax
         ret
 ;========================
-;in : esi -> name           not save register
+;in : esi -> name           not save: eax ebx ecx
 ;out: ebp -> inode cf=0
 ;     ebp -> trash cf=1
 ext2_find_lfn:
@@ -795,6 +800,7 @@ ext2_find_lfn:
         stc
         ret
     .get_inode_ret:
+        mov     [EXT2_end_block], ebx                           ; сохраняем указатеть на dir_rec
         mov     eax, [ebx + EXT2_DIR_STRUC.inode]
         mov     ebx, [ext2_data.ext2_save_inode]
         call    ext2_get_inode
@@ -833,21 +839,50 @@ ext2_HdGetFileInfo:
 
     .doit:
         mov     ebp, [ext2_data.root_inode]
+        mov     ebx, .doit                        ;неважно что лишь бы этому адресу не '.'
+        jmp     @F
     .doit2:
+        mov     ebx, [EXT2_end_block]
+        add     ebx, EXT2_DIR_STRUC.name
+    @@:
         xor     eax, eax
         mov     edi, edx
         mov     ecx, 40/4
-        rep stosd               ; fill zero
+        rep     stosd               ; fill zero
+
+        cmp     byte [ebx], '.'
+        jnz     @F
+        or      dword [edx], FS_FT_HIDDEN
+    @@:
 
         test    [ebp + EXT2_INODE_STRUC.i_mode], EXT2_S_IFDIR
-        jz      @F
-        or      dword [edx], FS_FT_DIR
-    @@:
-        mov     byte [edx+1], FS_FT_ASCII
+        jnz      @F
         mov     eax, [ebp + EXT2_INODE_STRUC.i_size]            ;low size
         mov     ebx, [ebp + EXT2_INODE_STRUC.i_dir_acl]         ;high size
         mov     dword [edx+32], eax
         mov     dword [edx+36], ebx
+        xor     dword [edx], FS_FT_DIR
+    @@:
+        xor     dword [edx], FS_FT_DIR
+
+        lea     edi, [edx + 8]
+        mov     eax, [ebx + EXT2_INODE_STRUC.i_ctime]
+        xor     edx, edx
+        add     eax, 3054539008
+        adc     edx, 2
+        call    ntfs_datetime_to_bdfe.sec
+
+        mov     eax, [ebx + EXT2_INODE_STRUC.i_atime]
+        xor     edx, edx
+        add     eax, 3054539008
+        adc     edx, 2
+        call    ntfs_datetime_to_bdfe.sec
+
+        mov     eax, [ebx + EXT2_INODE_STRUC.i_mtime]
+        xor     edx, edx
+        add     eax, 3054539008
+        adc     edx, 2
+        call    ntfs_datetime_to_bdfe.sec
 
         xor     eax, eax
         ret
