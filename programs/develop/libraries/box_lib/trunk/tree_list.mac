@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 09.02.2010 IgorA
+; файл последний раз изменялся 10.02.2010 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -681,7 +681,7 @@ tl_draw: ;вывод списка на экран
 ;output:
 ; edx = pointer to next node struct
 align 4
-tl_iterat_next:
+tl_iterat_next: ;переход на следущий видимый узел (пропуская закрытые)
   push bx
   mov bl,0x7f
   cmp byte[edx+3],1
@@ -724,7 +724,7 @@ tl_iterat_next:
 ; edx = pointer to some node struct
 ; edi = pointer to 'TreeList' struct
 align 4
-tl_iterat_next_all:
+tl_iterat_next_all: ;переход на следущий видимый узел (и на закрытые тоже)
   cmp tl_tim_undo,0
   je .else
 
@@ -753,7 +753,7 @@ tl_iterat_next_all:
 ; edx = pointer to some node struct
 ; edi = pointer to 'TreeList' struct
 align 4
-tl_iterat_perv:
+tl_iterat_perv: ;переход на предыдущий видимый узел (пропуская закрытые)
   push eax
   cmp tl_tim_undo,0
   je .beg1
@@ -865,7 +865,7 @@ tl_move_par: ;передвигаемся на родительский узел, если такого нет, то оставляем 
 ; al = 1 if sumbol not visible
 ; (node[i].td+tim_Undo<=ch_tim && node[i].td) || (node[i].tc>ch_tim-tim_Undo)
 align 4
-tl_node_not_vis:
+tl_node_not_vis: ;проверяет видимый ли указанный узел с учетом: добавлений, удалений, отмен действий
   cmp dword[edx+16],0
   je @f
   mov eax,dword[edx+16] ;eax=node[i].td
@@ -1027,7 +1027,7 @@ tl_get_display_cur_pos: ;берет позицию курсора, относительно экрана
 ; edi = pointer to 'TreeList' struct
 ; esi = coord of bottom border
 align 4
-tl_draw_node:
+tl_draw_node: ;рисует узел с: картинкой, подписью, иконкой открытия/закрытия и линиями к родит. узлу
   push eax ebx ecx edx esi
 
     mov ebx,1 ;1 - место под курсор и под знак +,-
@@ -1101,11 +1101,11 @@ tl_draw_node:
       dec ah
     .close:
 
-    call tl_draw_node_icon_opn_clo
+    call tl_draw_node_icon_opn_clo ;рисование иконки открытого или закрытого узла
     bt tl_style,1
     jae .end_draw
-      call tl_draw_node_icon_par_lin
-      call tl_draw_node_icon_par_lin_up
+      call tl_draw_node_icon_par_lin ;рисование линии к родительскому элементу
+      call tl_draw_node_icon_par_lin_up ;рисование вертикальной линии к родительскому элементу
     .end_draw:
   pop esi edx ecx ebx eax
   ret
@@ -1159,7 +1159,7 @@ tl_draw_node_icon_opn_clo: ;рисует иконки открытого или закрытого узла (обычно +
 ; edx = pointer to some node struct
 ;...
 align 4
-tl_draw_node_icon_par_lin:
+tl_draw_node_icon_par_lin: ;рисование линии к родительскому элементу
   cmp byte[edx+3],1
   je .close
   push eax ebx ecx edx esi
@@ -2023,9 +2023,12 @@ tl_node_lev_inc: ;увеличить уровень
       mov edx,eax
       call tl_iterat_perv ;проверяем есть ли верхний узел
       cmp edx,ecx
-      jle @f ;если верхнего узла не то текущий узел не двигаем
-
-      inc word[eax+2]
+      jle @f ;если верхнего узла нет то текущий узел не двигаем
+      mov cl,byte[edx+2] ;берем уровень родительского узла
+      inc cl ;добавляем 1 и получаем максимальное значение
+      cmp byte[eax+2],cl
+      jge @f
+        inc byte[eax+2] ;увеличиваем значение узла
     @@:
   pop edi edx ecx eax
   pop ebp
@@ -2042,9 +2045,9 @@ tl_node_lev_dec: ;уменьшить уровень
     jl @f
       imul eax,sizeof.TreeList
       add eax,tl_data_nodes
-      cmp word[eax+2],0
+      cmp byte[eax+2],0
       je @f
-      dec word[eax+2]
+      dec byte[eax+2]
     @@:
   pop edi eax
   pop ebp
@@ -2258,7 +2261,7 @@ tl_save_mem:
     jg .err_mem_size
 
     ;save tree params (in header)
-    mov dword[esi],0x65657274 ;0x65657274 = 'tree'
+    mov dword[esi],'tree'
     mov word[esi+4],bx
     mov dword[esi+6],eax ;element count
 
