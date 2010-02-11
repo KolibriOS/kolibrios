@@ -23,6 +23,7 @@
 
 #include <types.h>
 #include <list.h>
+#include <linux/kernel.h>
 #include <syscall.h>
 #include <errno.h>
 #include <linux/i2c.h>

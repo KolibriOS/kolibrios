@@ -26,112 +26,13 @@
  * with the slab allocator.
  */
 
+#include <linux/kernel.h>
+
 #include <linux/idr.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 #include "drm.h"
 #include "drmP.h"
 #include "drm_crtc.h"
-
-#define ADDR "=m" (*(volatile long *) addr)
-
-static inline void __set_bit(int nr, volatile void *addr)
-{
-        asm volatile("bts %1,%0"
-                     : ADDR
-                     : "Ir" (nr) : "memory");
-}
-
-static inline void __clear_bit(int nr, volatile void *addr)
-{
-        asm volatile("btr %1,%0" : ADDR : "Ir" (nr));
-}
-
-static inline int constant_test_bit(int nr, const volatile void *addr)
-{
-        return ((1UL << (nr % 32)) &
-                (((unsigned long *)addr)[nr / 32])) != 0;
-}
-
-static inline int variable_test_bit(int nr, volatile const void *addr)
-{
-        int oldbit;
-
-        asm volatile("bt %2,%1\n\t"
-                     "sbb %0,%0"
-                     : "=r" (oldbit)
-                     : "m" (*(unsigned long *)addr), "Ir" (nr));
-
-        return oldbit;
-};
-
-
-#define test_bit(nr,addr)                       \
-        (__builtin_constant_p(nr) ?             \
-         constant_test_bit((nr),(addr)) :       \
-         variable_test_bit((nr),(addr)))
-
-
-static inline int fls(int x)
-{
-        int r;
-
-        __asm__("bsrl %1,%0\n\t"
-                "jnz 1f\n\t"
-                "movl $-1,%0\n"
-                "1:" : "=r" (r) : "rm" (x));
-        return r+1;
-}
-
-static inline unsigned long __ffs(unsigned long word)
-{
-        __asm__("bsfl %1,%0"
-                :"=r" (word)
-                :"rm" (word));
-        return word;
-}
-
-
-static inline unsigned find_first_bit(const unsigned long *addr, unsigned size)
-{
-        unsigned x = 0;
-
-        while (x < size) {
-                unsigned long val = *addr++;
-                if (val)
-                        return __ffs(val) + x;
-                x += (sizeof(*addr)<<3);
-        }
-        return x;
-}
-
-
-int find_next_bit(const unsigned long *addr, int size, int offset)
-{
-    const unsigned long *p = addr + (offset >> 5);
-    int set = 0, bit = offset & 31, res;
-
-    if (bit)
-    {
-        /*
-         * Look for nonzero in the first 32 bits:
-         */
-        __asm__("bsfl %1,%0\n\t"
-                "jne 1f\n\t"
-                "movl $32, %0\n"
-                "1:"
-                : "=r" (set)
-                : "r" (*p >> bit));
-        if (set < (32 - bit))
-                return set + offset;
-        set = 32 - bit;
-        p++;
-    }
-    /*
-     * No set bit yet, search remaining full words for a bit
-     */
-    res = find_first_bit (p, size - 32 * (p - addr));
-    return (offset + set + res);
-}
 
 
 #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))

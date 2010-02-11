@@ -25,6 +25,7 @@
  *          Alex Deucher
  *          Jerome Glisse
  */
+//#include <linux/firmware.h>
 //#include <linux/platform_device.h>
 #include "drmP.h"
 #include "radeon.h"
@@ -32,9 +33,6 @@
 #include "rv770d.h"
 #include "atom.h"
 #include "avivod.h"
-
-#include <linux/firmware.h>
-
 
 #define R700_PFP_UCODE_SIZE 848
 #define R700_PM4_UCODE_SIZE 1360
@@ -94,7 +92,7 @@ int rv770_pcie_gart_enable(struct radeon_device *rdev)
 void rv770_pcie_gart_disable(struct radeon_device *rdev)
 {
 	u32 tmp;
-	int i;
+	int i, r;
 
 	/* Disable all tables */
 	for (i = 0; i < 7; i++)
@@ -232,7 +230,7 @@ void r700_cp_stop(struct radeon_device *rdev)
 	WREG32(CP_ME_CNTL, (CP_ME_HALT | CP_PFP_HALT));
 }
 
-
+#if 0
 static int rv770_cp_load_microcode(struct radeon_device *rdev)
 {
 	const __be32 *fw_data;
@@ -267,6 +265,7 @@ static int rv770_cp_load_microcode(struct radeon_device *rdev)
 	return 0;
 }
 
+#endif
 
 /*
  * Core functions
@@ -777,7 +776,6 @@ int rv770_mc_init(struct radeon_device *rdev)
 	fixed20_12 a;
 	u32 tmp;
 	int chansize, numchan;
-	int r;
 
 	/* Get VRAM informations */
 	rdev->mc.vram_is_ddr = true;
@@ -820,9 +818,6 @@ int rv770_mc_init(struct radeon_device *rdev)
 		rdev->mc.real_vram_size = rdev->mc.aper_size;
 
 	if (rdev->flags & RADEON_IS_AGP) {
-		r = radeon_agp_init(rdev);
-		if (r)
-			return r;
 		/* gtt_size is setup by radeon_agp_init */
 		rdev->mc.gtt_location = rdev->mc.agp_base;
 		tmp = 0xFFFFFFFFUL - rdev->mc.agp_base - rdev->mc.gtt_size;
@@ -935,7 +930,11 @@ int rv770_init(struct radeon_device *rdev)
 	if (r)
 		return r;
 	/* Post card if necessary */
-	if (!r600_card_posted(rdev) && rdev->bios) {
+	if (!r600_card_posted(rdev)) {
+		if (!rdev->bios) {
+			dev_err(rdev->dev, "Card not posted and no BIOS - ignoring\n");
+			return -EINVAL;
+		}
 		DRM_INFO("GPU not posted. posting now...\n");
 		atom_asic_init(rdev->mode_info.atom_context);
 	}
@@ -954,15 +953,18 @@ int rv770_init(struct radeon_device *rdev)
 //   r = radeon_fence_driver_init(rdev);
 //   if (r)
 //       return r;
+	if (rdev->flags & RADEON_IS_AGP) {
+		r = radeon_agp_init(rdev);
+		if (r)
+			radeon_agp_disable(rdev);
+	}
 	r = rv770_mc_init(rdev);
 	if (r)
 		return r;
 	/* Memory manager */
-	r = radeon_object_init(rdev);
+	r = radeon_bo_init(rdev);
 	if (r)
 		return r;
-//   rdev->cp.ring_obj = NULL;
-//   r600_ring_init(rdev, 1024 * 1024);
 
 //   if (!rdev->me_fw || !rdev->pfp_fw) {
 //       r = r600_cp_init_microcode(rdev);

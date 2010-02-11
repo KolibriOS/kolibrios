@@ -236,28 +236,28 @@ void r600_hpd_init(struct radeon_device *rdev)
 			switch (radeon_connector->hpd.hpd) {
 			case RADEON_HPD_1:
 				WREG32(DC_HPD1_CONTROL, tmp);
-				rdev->irq.hpd[0] = true;
+//               rdev->irq.hpd[0] = true;
 				break;
 			case RADEON_HPD_2:
 				WREG32(DC_HPD2_CONTROL, tmp);
-				rdev->irq.hpd[1] = true;
+//               rdev->irq.hpd[1] = true;
 				break;
 			case RADEON_HPD_3:
 				WREG32(DC_HPD3_CONTROL, tmp);
-				rdev->irq.hpd[2] = true;
+//               rdev->irq.hpd[2] = true;
 				break;
 			case RADEON_HPD_4:
 				WREG32(DC_HPD4_CONTROL, tmp);
-				rdev->irq.hpd[3] = true;
+//               rdev->irq.hpd[3] = true;
 				break;
 				/* DCE 3.2 */
 			case RADEON_HPD_5:
 				WREG32(DC_HPD5_CONTROL, tmp);
-				rdev->irq.hpd[4] = true;
+//               rdev->irq.hpd[4] = true;
 				break;
 			case RADEON_HPD_6:
 				WREG32(DC_HPD6_CONTROL, tmp);
-				rdev->irq.hpd[5] = true;
+//               rdev->irq.hpd[5] = true;
 				break;
 			default:
 				break;
@@ -269,22 +269,23 @@ void r600_hpd_init(struct radeon_device *rdev)
 			switch (radeon_connector->hpd.hpd) {
 			case RADEON_HPD_1:
 				WREG32(DC_HOT_PLUG_DETECT1_CONTROL, DC_HOT_PLUG_DETECTx_EN);
-				rdev->irq.hpd[0] = true;
+//               rdev->irq.hpd[0] = true;
 				break;
 			case RADEON_HPD_2:
 				WREG32(DC_HOT_PLUG_DETECT2_CONTROL, DC_HOT_PLUG_DETECTx_EN);
-				rdev->irq.hpd[1] = true;
+//               rdev->irq.hpd[1] = true;
 				break;
 			case RADEON_HPD_3:
 				WREG32(DC_HOT_PLUG_DETECT3_CONTROL, DC_HOT_PLUG_DETECTx_EN);
-				rdev->irq.hpd[2] = true;
+//               rdev->irq.hpd[2] = true;
 				break;
 			default:
 				break;
 			}
 		}
 	}
-	r600_irq_set(rdev);
+//   if (rdev->irq.installed)
+//   r600_irq_set(rdev);
 }
 
 void r600_hpd_fini(struct radeon_device *rdev)
@@ -298,28 +299,28 @@ void r600_hpd_fini(struct radeon_device *rdev)
 			switch (radeon_connector->hpd.hpd) {
 			case RADEON_HPD_1:
 				WREG32(DC_HPD1_CONTROL, 0);
-				rdev->irq.hpd[0] = false;
+//               rdev->irq.hpd[0] = false;
 				break;
 			case RADEON_HPD_2:
 				WREG32(DC_HPD2_CONTROL, 0);
-				rdev->irq.hpd[1] = false;
+//               rdev->irq.hpd[1] = false;
 				break;
 			case RADEON_HPD_3:
 				WREG32(DC_HPD3_CONTROL, 0);
-				rdev->irq.hpd[2] = false;
+//               rdev->irq.hpd[2] = false;
 				break;
 			case RADEON_HPD_4:
 				WREG32(DC_HPD4_CONTROL, 0);
-				rdev->irq.hpd[3] = false;
+//               rdev->irq.hpd[3] = false;
 				break;
 				/* DCE 3.2 */
 			case RADEON_HPD_5:
 				WREG32(DC_HPD5_CONTROL, 0);
-				rdev->irq.hpd[4] = false;
+//               rdev->irq.hpd[4] = false;
 				break;
 			case RADEON_HPD_6:
 				WREG32(DC_HPD6_CONTROL, 0);
-				rdev->irq.hpd[5] = false;
+//               rdev->irq.hpd[5] = false;
 				break;
 			default:
 				break;
@@ -331,15 +332,15 @@ void r600_hpd_fini(struct radeon_device *rdev)
 			switch (radeon_connector->hpd.hpd) {
 			case RADEON_HPD_1:
 				WREG32(DC_HOT_PLUG_DETECT1_CONTROL, 0);
-				rdev->irq.hpd[0] = false;
+//               rdev->irq.hpd[0] = false;
 				break;
 			case RADEON_HPD_2:
 				WREG32(DC_HOT_PLUG_DETECT2_CONTROL, 0);
-				rdev->irq.hpd[1] = false;
+//               rdev->irq.hpd[1] = false;
 				break;
 			case RADEON_HPD_3:
 				WREG32(DC_HOT_PLUG_DETECT3_CONTROL, 0);
-				rdev->irq.hpd[2] = false;
+//               rdev->irq.hpd[2] = false;
 				break;
 			default:
 				break;
@@ -486,8 +487,12 @@ void r600_pcie_gart_disable(struct radeon_device *rdev)
 	WREG32(MC_VM_L1_TLB_MCB_RD_HDP_CNTL, tmp);
 	WREG32(MC_VM_L1_TLB_MCB_WR_HDP_CNTL, tmp);
 	if (rdev->gart.table.vram.robj) {
-//       radeon_object_kunmap(rdev->gart.table.vram.robj);
-//       radeon_object_unpin(rdev->gart.table.vram.robj);
+		r = radeon_bo_reserve(rdev->gart.table.vram.robj, false);
+		if (likely(r == 0)) {
+			radeon_bo_kunmap(rdev->gart.table.vram.robj);
+			radeon_bo_unpin(rdev->gart.table.vram.robj);
+			radeon_bo_unreserve(rdev->gart.table.vram.robj);
+		}
 	}
 }
 
@@ -618,7 +623,6 @@ int r600_mc_init(struct radeon_device *rdev)
 	fixed20_12 a;
 	u32 tmp;
 	int chansize, numchan;
-	int r;
 
 	/* Get VRAM informations */
 	rdev->mc.vram_is_ddr = true;
@@ -661,9 +665,6 @@ int r600_mc_init(struct radeon_device *rdev)
 		rdev->mc.real_vram_size = rdev->mc.aper_size;
 
 	if (rdev->flags & RADEON_IS_AGP) {
-		r = radeon_agp_init(rdev);
-		if (r)
-			return r;
 		/* gtt_size is setup by radeon_agp_init */
 		rdev->mc.gtt_location = rdev->mc.agp_base;
 		tmp = 0xFFFFFFFFUL - rdev->mc.agp_base - rdev->mc.gtt_size;
@@ -721,6 +722,10 @@ int r600_mc_init(struct radeon_device *rdev)
 	a.full = rfixed_const(100);
 	rdev->pm.sclk.full = rfixed_const(rdev->clock.default_sclk);
 	rdev->pm.sclk.full = rfixed_div(rdev->pm.sclk, a);
+
+	if (rdev->flags & RADEON_IS_IGP)
+		rdev->mc.igp_sideport_enabled = radeon_atombios_sideport_present(rdev);
+
 	return 0;
 }
 
@@ -1379,11 +1384,6 @@ void r600_pciep_wreg(struct radeon_device *rdev, u32 reg, u32 v)
 	(void)RREG32(PCIE_PORT_DATA);
 }
 
-void r600_hdp_flush(struct radeon_device *rdev)
-{
-	WREG32(R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL, 0x1);
-}
-
 /*
  * CP & Ring
  */
@@ -1591,6 +1591,11 @@ int r600_init(struct radeon_device *rdev)
 //	r = radeon_fence_driver_init(rdev);
 //	if (r)
 //		return r;
+	if (rdev->flags & RADEON_IS_AGP) {
+		r = radeon_agp_init(rdev);
+		if (r)
+			radeon_agp_disable(rdev);
+	}
 	r = r600_mc_init(rdev);
     dbgprintf("mc vram location %x\n", rdev->mc.vram_location);
 	if (r)

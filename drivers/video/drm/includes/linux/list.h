@@ -581,8 +581,8 @@ static inline void __hlist_del(struct hlist_node *n)
 static inline void hlist_del(struct hlist_node *n)
 {
 	__hlist_del(n);
-	n->next = LIST_POISON1;
-	n->pprev = LIST_POISON2;
+    n->next = (struct hlist_node*)LIST_POISON1;
+    n->pprev = (struct hlist_node**)LIST_POISON2;
 }
 
 static inline void hlist_del_init(struct hlist_node *n)

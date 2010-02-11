@@ -120,16 +120,17 @@ void r100_hpd_init(struct radeon_device *rdev)
 		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
 		switch (radeon_connector->hpd.hpd) {
 		case RADEON_HPD_1:
-			rdev->irq.hpd[0] = true;
+//           rdev->irq.hpd[0] = true;
 			break;
 		case RADEON_HPD_2:
-			rdev->irq.hpd[1] = true;
+//           rdev->irq.hpd[1] = true;
 			break;
 		default:
 			break;
 		}
 	}
-	r100_irq_set(rdev);
+//   if (rdev->irq.installed)
+//   r100_irq_set(rdev);
 }
 
 void r100_hpd_fini(struct radeon_device *rdev)
@@ -141,10 +142,10 @@ void r100_hpd_fini(struct radeon_device *rdev)
 		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
 		switch (radeon_connector->hpd.hpd) {
 		case RADEON_HPD_1:
-			rdev->irq.hpd[0] = false;
+//           rdev->irq.hpd[0] = false;
 			break;
 		case RADEON_HPD_2:
-			rdev->irq.hpd[1] = false;
+//           rdev->irq.hpd[1] = false;
 			break;
 		default:
 			break;
@@ -263,6 +264,13 @@ static inline uint32_t r100_irq_ack(struct radeon_device *rdev)
 }
 
 
+u32 r100_get_vblank_counter(struct radeon_device *rdev, int crtc)
+{
+	if (crtc == 0)
+		return RREG32(RADEON_CRTC_CRNT_FRAME);
+	else
+		return RREG32(RADEON_CRTC2_CRNT_FRAME);
+}
 
 void r100_fence_ring_emit(struct radeon_device *rdev,
 			  struct radeon_fence *fence)
@@ -272,6 +280,11 @@ void r100_fence_ring_emit(struct radeon_device *rdev,
 	/* Wait until IDLE & CLEAN */
 	radeon_ring_write(rdev, PACKET0(0x1720, 0));
 	radeon_ring_write(rdev, (1 << 16) | (1 << 17));
+	radeon_ring_write(rdev, PACKET0(RADEON_HOST_PATH_CNTL, 0));
+	radeon_ring_write(rdev, rdev->config.r100.hdp_cntl |
+				RADEON_HDP_READ_BUFFER_INVALIDATE);
+	radeon_ring_write(rdev, PACKET0(RADEON_HOST_PATH_CNTL, 0));
+	radeon_ring_write(rdev, rdev->config.r100.hdp_cntl);
 	/* Emit fence sequence & fire IRQ */
 	radeon_ring_write(rdev, PACKET0(rdev->fence_drv.scratch_reg, 0));
 	radeon_ring_write(rdev, fence->seq);
@@ -517,19 +530,6 @@ static int r100_cp_init_microcode(struct radeon_device *rdev)
 		rdev->me_fw = NULL;
 	}
 	return err;
-}
-
-static inline __u32 __swab32(__u32 x)
-{
-         asm("bswapl %0" :
-         "=&r" (x)
-         :"r" (x));
-         return x;
-}
-
-static inline __u32 be32_to_cpup(const __be32 *p)
-{
-         return __swab32(*(__u32 *)p);
 }
 
 
@@ -1308,7 +1308,6 @@ static int r100_packet0_check(struct radeon_cs_parser *p,
 		case RADEON_TXFORMAT_ARGB4444:
 		case RADEON_TXFORMAT_VYUY422:
 		case RADEON_TXFORMAT_YVYU422:
-		case RADEON_TXFORMAT_DXT1:
 		case RADEON_TXFORMAT_SHADOW16:
 		case RADEON_TXFORMAT_LDUDV655:
 		case RADEON_TXFORMAT_DUDV88:
@@ -1316,11 +1315,18 @@ static int r100_packet0_check(struct radeon_cs_parser *p,
 			break;
 		case RADEON_TXFORMAT_ARGB8888:
 		case RADEON_TXFORMAT_RGBA8888:
-		case RADEON_TXFORMAT_DXT23:
-		case RADEON_TXFORMAT_DXT45:
 		case RADEON_TXFORMAT_SHADOW32:
 		case RADEON_TXFORMAT_LDUDUV8888:
 			track->textures[i].cpp = 4;
+			break;
+		case RADEON_TXFORMAT_DXT1:
+			track->textures[i].cpp = 1;
+			track->textures[i].compress_format = R100_TRACK_COMP_DXT1;
+			break;
+		case RADEON_TXFORMAT_DXT23:
+		case RADEON_TXFORMAT_DXT45:
+			track->textures[i].cpp = 1;
+			track->textures[i].compress_format = R100_TRACK_COMP_DXT35;
 			break;
 		}
 		track->textures[i].cube_info[4].width = 1 << ((idx_value >> 16) & 0xf);
@@ -1421,6 +1427,7 @@ static int r100_packet3_check(struct radeon_cs_parser *p,
 			DRM_ERROR("PRIM_WALK must be 3 for IMMD draw\n");
 			return -EINVAL;
 		}
+		track->vtx_size = r100_get_vtx_size(radeon_get_ib_value(p, idx + 0));
 		track->vap_vf_cntl = radeon_get_ib_value(p, idx + 1);
 		track->immd_dwords = pkt->count - 1;
 		r = r100_cs_track_check(p->rdev, track);
@@ -1640,14 +1647,6 @@ void r100_gpu_init(struct radeon_device *rdev)
 {
 	/* TODO: anythings to do here ? pipes ? */
 	r100_hdp_reset(rdev);
-}
-
-void r100_hdp_flush(struct radeon_device *rdev)
-{
-	u32 tmp;
-	tmp = RREG32(RADEON_HOST_PATH_CNTL);
-	tmp |= RADEON_HDP_READ_BUFFER_INVALIDATE;
-	WREG32(RADEON_HOST_PATH_CNTL, tmp);
 }
 
 void r100_hdp_reset(struct radeon_device *rdev)
@@ -2848,9 +2847,7 @@ int r100_mc_init(struct radeon_device *rdev)
 	if (rdev->flags & RADEON_IS_AGP) {
 		r = radeon_agp_init(rdev);
 		if (r) {
-			printk(KERN_WARNING "[drm] Disabling AGP\n");
-			rdev->flags &= ~RADEON_IS_AGP;
-			rdev->mc.gtt_size = radeon_gart_size * 1024 * 1024;
+			radeon_agp_disable(rdev);
 		} else {
 			rdev->mc.gtt_location = rdev->mc.agp_base;
 		}
@@ -2901,6 +2898,8 @@ int r100_init(struct radeon_device *rdev)
 	r100_errata(rdev);
 	/* Initialize clocks */
 	radeon_get_clock_info(rdev->ddev);
+	/* Initialize power management */
+	radeon_pm_init(rdev);
 	/* Get vram informations */
 	r100_vram_info(rdev);
 	/* Initialize memory controller (also test AGP) */

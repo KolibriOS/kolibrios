@@ -27,7 +27,7 @@
 #define _LINUX_I2C_H
 
 #include <types.h>
-
+#include <list.h>
 
 
 #define I2C_NAME_SIZE   20

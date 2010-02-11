@@ -1,5 +1,4 @@
 
-#include <stdint.h>
 #include <drm/drmP.h>
 #include <drm.h>
 #include <drm_mm.h>
@@ -60,7 +59,7 @@ int init_cursor(cursor_t *cursor)
 
     radeon_object_kunmap(cursor->robj);
 
-    cursor->header.destroy = destroy_cursor;
+ //   cursor->header.destroy = destroy_cursor;
 
     return 0;
 };
@@ -101,7 +100,7 @@ cursor_t* __stdcall select_cursor(cursor_t *cursor)
     old = rdisplay->cursor;
 
     rdisplay->cursor = cursor;
-    gpu_addr = cursor->robj->gpu_addr;
+ //   gpu_addr = cursor->robj->gpu_addr;
 
     if (ASIC_IS_AVIVO(rdev))
         WREG32(AVIVO_D1CUR_SURFACE_ADDRESS,  gpu_addr);
@@ -163,7 +162,7 @@ void __stdcall move_cursor(cursor_t *cursor, int x, int y)
         WREG32(RADEON_CUR_HORZ_VERT_POSN,
                (RADEON_CUR_LOCK | (x << 16) | y));
 
-        gpu_addr = cursor->robj->gpu_addr;
+//        gpu_addr = cursor->robj->gpu_addr;
 
         /* offset is from DISP(2)_BASE_ADDRESS */
         WREG32(RADEON_CUR_OFFSET,

@@ -107,5 +107,18 @@ struct file {};
 struct vm_area_struct {};
 struct address_space {};
 
+#define preempt_disable()       do { } while (0)
+#define preempt_enable_no_resched() do { } while (0)
+#define preempt_enable()        do { } while (0)
+#define preempt_check_resched()     do { } while (0)
+
+#define preempt_disable_notrace()       do { } while (0)
+#define preempt_enable_no_resched_notrace() do { } while (0)
+#define preempt_enable_notrace()        do { } while (0)
+
+
+
+void free (void *ptr);
+
 #endif
 

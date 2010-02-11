@@ -1,5 +1,4 @@
 
-#include <stdint.h>
 #include <drm/drmP.h>
 #include <drm.h>
 #include <drm_mm.h>
@@ -79,7 +78,7 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     old = rdisplay->cursor;
 
     rdisplay->cursor = cursor;
-    gpu_addr = cursor->robj->gpu_addr;
+//    gpu_addr = cursor->robj->gpu_addr;
 
     if (ASIC_IS_AVIVO(rdev))
         WREG32(AVIVO_D1CUR_SURFACE_ADDRESS + radeon_crtc->crtc_offset, gpu_addr);
@@ -174,7 +173,7 @@ static char *manufacturer_name(unsigned char *x)
 }
 
 bool set_mode(struct drm_device *dev, struct drm_connector *connector,
-              mode_t *reqmode, bool strict)
+              videomode_t *reqmode, bool strict)
 {
     struct drm_display_mode  *mode = NULL, *tmpmode;
 
@@ -315,7 +314,7 @@ static struct drm_connector* get_def_connector(struct drm_device *dev)
     return def_connector;
 };
 
-bool init_display_kms(struct radeon_device *rdev, mode_t *usermode)
+bool init_display_kms(struct radeon_device *rdev, videomode_t *usermode)
 {
     struct drm_device   *dev;
 
@@ -383,7 +382,7 @@ bool init_display_kms(struct radeon_device *rdev, mode_t *usermode)
     return retval;
 };
 
-int get_modes(mode_t *mode, int *count)
+int get_modes(videomode_t *mode, int *count)
 {
     int err = -1;
 
@@ -424,7 +423,7 @@ int get_modes(mode_t *mode, int *count)
     return err;
 }
 
-int set_user_mode(mode_t *mode)
+int set_user_mode(videomode_t *mode)
 {
     int err = -1;
 

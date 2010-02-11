@@ -65,7 +65,7 @@ static struct fb_ops radeonfb_ops = {
 };
 
 /**
- * Curretly it is assumed that the old framebuffer is reused.
+ * Currently it is assumed that the old framebuffer is reused.
  *
  * LOCKING
  * caller should hold the mode config lock.

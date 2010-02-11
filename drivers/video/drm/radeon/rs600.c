@@ -56,6 +56,7 @@ int rs600_mc_init(struct radeon_device *rdev)
 	rdev->mc.vram_location = G_000004_MC_FB_START(tmp) << 16;
 	rdev->mc.gtt_location = 0xffffffffUL;
 	r = radeon_mc_setup(rdev);
+	rdev->mc.igp_sideport_enabled = radeon_atombios_sideport_present(rdev);
 	if (r)
 		return r;
 	return 0;
@@ -123,18 +124,19 @@ void rs600_hpd_init(struct radeon_device *rdev)
 		case RADEON_HPD_1:
 			WREG32(R_007D00_DC_HOT_PLUG_DETECT1_CONTROL,
 			       S_007D00_DC_HOT_PLUG_DETECT1_EN(1));
-			rdev->irq.hpd[0] = true;
+//           rdev->irq.hpd[0] = true;
 			break;
 		case RADEON_HPD_2:
 			WREG32(R_007D10_DC_HOT_PLUG_DETECT2_CONTROL,
 			       S_007D10_DC_HOT_PLUG_DETECT2_EN(1));
-			rdev->irq.hpd[1] = true;
+//           rdev->irq.hpd[1] = true;
 			break;
 		default:
 			break;
 		}
 	}
-	rs600_irq_set(rdev);
+//   if (rdev->irq.installed)
+//   rs600_irq_set(rdev);
 }
 
 void rs600_hpd_fini(struct radeon_device *rdev)
@@ -148,12 +150,12 @@ void rs600_hpd_fini(struct radeon_device *rdev)
 		case RADEON_HPD_1:
 			WREG32(R_007D00_DC_HOT_PLUG_DETECT1_CONTROL,
 			       S_007D00_DC_HOT_PLUG_DETECT1_EN(0));
-			rdev->irq.hpd[0] = false;
+//           rdev->irq.hpd[0] = false;
 			break;
 		case RADEON_HPD_2:
 			WREG32(R_007D10_DC_HOT_PLUG_DETECT2_CONTROL,
 			       S_007D10_DC_HOT_PLUG_DETECT2_EN(0));
-			rdev->irq.hpd[1] = false;
+//           rdev->irq.hpd[1] = false;
 			break;
 		default:
 			break;
@@ -302,6 +304,7 @@ int rs600_gart_set_page(struct radeon_device *rdev, int i, uint64_t addr)
 	return 0;
 }
 
+/*
 int rs600_irq_set(struct radeon_device *rdev)
 {
 	uint32_t tmp = 0;
@@ -311,6 +314,11 @@ int rs600_irq_set(struct radeon_device *rdev)
 	u32 hpd2 = RREG32(R_007D18_DC_HOT_PLUG_DETECT2_INT_CONTROL) &
 		~S_007D18_DC_HOT_PLUG_DETECT2_INT_EN(1);
 
+   if (!rdev->irq.installed) {
+		WARN(1, "Can't enable IRQ/MSI because no handler is installed.\n");
+		WREG32(R_000040_GEN_INT_CNTL, 0);
+		return -EINVAL;
+	}
 	if (rdev->irq.sw_int) {
 		tmp |= S_000040_SW_INT_EN(1);
 	}
@@ -332,6 +340,7 @@ int rs600_irq_set(struct radeon_device *rdev)
 	WREG32(R_007D18_DC_HOT_PLUG_DETECT2_INT_CONTROL, hpd2);
 	return 0;
 }
+*/
 
 static inline uint32_t rs600_irq_ack(struct radeon_device *rdev, u32 *r500_disp_int)
 {
@@ -500,6 +509,7 @@ static int rs600_startup(struct radeon_device *rdev)
 	return r;
 	/* Enable IRQ */
 //	rs600_irq_set(rdev);
+	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
 //	r = r100_cp_init(rdev, 1024 * 1024);
 //	if (r) {

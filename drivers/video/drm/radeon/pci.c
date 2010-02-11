@@ -1,11 +1,12 @@
 
+#include <linux/kernel.h>
 #include <pci.h>
 #include <errno-base.h>
 #include <syscall.h>
 
 static LIST_HEAD(devices);
 
-static dev_t* pci_scan_device(u32_t bus, int devfn);
+static pci_dev_t* pci_scan_device(u32_t bus, int devfn);
 
 
 /* PCI control bits.  Shares IORESOURCE_BITS with above PCI ROM.  */
@@ -309,9 +310,9 @@ static int pci_setup_device(struct pci_dev *dev)
     return 0;
 };
 
-static dev_t* pci_scan_device(u32_t bus, int devfn)
+static pci_dev_t* pci_scan_device(u32_t bus, int devfn)
 {
-    dev_t  *dev;
+    pci_dev_t  *dev;
 
     u32_t   id;
     u8_t    hdr;
@@ -344,7 +345,7 @@ static dev_t* pci_scan_device(u32_t bus, int devfn)
 
     hdr = PciRead8(bus, devfn, PCI_HEADER_TYPE);
 
-    dev = (dev_t*)kzalloc(sizeof(dev_t), 0);
+    dev = (pci_dev_t*)kzalloc(sizeof(dev_t), 0);
 
     INIT_LIST_HEAD(&dev->link);
 
@@ -370,7 +371,7 @@ int pci_scan_slot(u32_t bus, int devfn)
 
     for (func = 0; func < 8; func++, devfn++)
     {
-        dev_t  *dev;
+        pci_dev_t  *dev;
 
         dev = pci_scan_device(bus, devfn);
         if( dev )
@@ -416,9 +417,9 @@ void pci_scan_bus(u32_t bus)
 
 int enum_pci_devices()
 {
-    dev_t  *dev;
-    u32_t   last_bus;
-    u32_t   bus = 0 , devfn = 0;
+    pci_dev_t  *dev;
+    u32_t       last_bus;
+    u32_t       bus = 0 , devfn = 0;
 
   //  list_initialize(&devices);
 
@@ -744,14 +745,14 @@ int pci_enable_device(struct pci_dev *dev)
 
 
 
-struct pci_device_id* find_pci_device(dev_t* pdev, struct pci_device_id *idlist)
+struct pci_device_id* find_pci_device(pci_dev_t* pdev, struct pci_device_id *idlist)
 {
-    dev_t *dev;
+    pci_dev_t *dev;
     struct pci_device_id *ent;
 
-    for(dev = (dev_t*)devices.next;
+    for(dev = (pci_dev_t*)devices.next;
         &dev->link != &devices;
-        dev = (dev_t*)dev->link.next)
+        dev = (pci_dev_t*)dev->link.next)
     {
         if( dev->pci_dev.vendor != idlist->vendor )
             continue;

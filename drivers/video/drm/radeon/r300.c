@@ -36,7 +36,15 @@
 #include "rv350d.h"
 #include "r300_reg_safe.h"
 
-/* This files gather functions specifics to: r300,r350,rv350,rv370,rv380 */
+/* This files gather functions specifics to: r300,r350,rv350,rv370,rv380
+ *
+ * GPU Errata:
+ * - HOST_PATH_CNTL: r300 family seems to dislike write to HOST_PATH_CNTL
+ *   using MMIO to flush host path read cache, this lead to HARDLOCKUP.
+ *   However, scheduling such write to the ring seems harmless, i suspect
+ *   the CP read collide with the flush somehow, or maybe the MC, hard to
+ *   tell. (Jerome Glisse)
+ */
 
 /*
  * rv370,rv380 PCIE GART
@@ -174,6 +182,11 @@ void r300_fence_ring_emit(struct radeon_device *rdev,
 	/* Wait until IDLE & CLEAN */
 	radeon_ring_write(rdev, PACKET0(0x1720, 0));
 	radeon_ring_write(rdev, (1 << 17) | (1 << 16)  | (1 << 9));
+	radeon_ring_write(rdev, PACKET0(RADEON_HOST_PATH_CNTL, 0));
+	radeon_ring_write(rdev, rdev->config.r300.hdp_cntl |
+				RADEON_HDP_READ_BUFFER_INVALIDATE);
+	radeon_ring_write(rdev, PACKET0(RADEON_HOST_PATH_CNTL, 0));
+	radeon_ring_write(rdev, rdev->config.r300.hdp_cntl);
 	/* Emit fence sequence & fire IRQ */
 	radeon_ring_write(rdev, PACKET0(rdev->fence_drv.scratch_reg, 0));
 	radeon_ring_write(rdev, fence->seq);
@@ -691,7 +704,15 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 			r100_cs_dump_packet(p, pkt);
 			return r;
 		}
-		ib[idx] = idx_value + ((u32)reloc->lobj.gpu_offset);
+
+		if (reloc->lobj.tiling_flags & RADEON_TILING_MACRO)
+			tile_flags |= R300_TXO_MACRO_TILE;
+		if (reloc->lobj.tiling_flags & RADEON_TILING_MICRO)
+			tile_flags |= R300_TXO_MICRO_TILE;
+
+		tmp = idx_value + ((u32)reloc->lobj.gpu_offset);
+		tmp |= tile_flags;
+		ib[idx] = tmp;
 		track->textures[i].robj = reloc->robj;
 		break;
 	/* Tracked registers */
@@ -857,7 +878,6 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		case R300_TX_FORMAT_Z6Y5X5:
 		case R300_TX_FORMAT_W4Z4Y4X4:
 		case R300_TX_FORMAT_W1Z5Y5X5:
-		case R300_TX_FORMAT_DXT1:
 		case R300_TX_FORMAT_D3DMFT_CxV8U8:
 		case R300_TX_FORMAT_B8G8_B8G8:
 		case R300_TX_FORMAT_G8R8_G8B8:
@@ -871,8 +891,6 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		case 0x17:
 		case R300_TX_FORMAT_FL_I32:
 		case 0x1e:
-		case R300_TX_FORMAT_DXT3:
-		case R300_TX_FORMAT_DXT5:
 			track->textures[i].cpp = 4;
 			break;
 		case R300_TX_FORMAT_W16Z16Y16X16:
@@ -882,6 +900,23 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 			break;
 		case R300_TX_FORMAT_FL_R32G32B32A32:
 			track->textures[i].cpp = 16;
+			break;
+		case R300_TX_FORMAT_DXT1:
+			track->textures[i].cpp = 1;
+			track->textures[i].compress_format = R100_TRACK_COMP_DXT1;
+			break;
+		case R300_TX_FORMAT_ATI2N:
+			if (p->rdev->family < CHIP_R420) {
+				DRM_ERROR("Invalid texture format %u\n",
+					  (idx_value & 0x1F));
+				return -EINVAL;
+			}
+			/* The same rules apply as for DXT3/5. */
+			/* Pass through. */
+		case R300_TX_FORMAT_DXT3:
+		case R300_TX_FORMAT_DXT5:
+			track->textures[i].cpp = 1;
+			track->textures[i].compress_format = R100_TRACK_COMP_DXT35;
 			break;
 		default:
 			DRM_ERROR("Invalid texture format %u\n",
@@ -942,6 +977,16 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 			track->textures[i].width_11 = tmp;
 			tmp = ((idx_value >> 16) & 1) << 11;
 			track->textures[i].height_11 = tmp;
+
+			/* ATI1N */
+			if (idx_value & (1 << 14)) {
+				/* The same rules apply as for DXT1. */
+				track->textures[i].compress_format =
+					R100_TRACK_COMP_DXT1;
+			}
+		} else if (idx_value & (1 << 14)) {
+			DRM_ERROR("Forbidden bit TXFORMAT_MSB\n");
+			return -EINVAL;
 		}
 		break;
 	case 0x4480:
@@ -982,6 +1027,18 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 			return r;
 		}
 		ib[idx] = idx_value + ((u32)reloc->lobj.gpu_offset);
+		break;
+	case 0x4e0c:
+		/* RB3D_COLOR_CHANNEL_MASK */
+		track->color_channel_mask = idx_value;
+		break;
+	case 0x4d1c:
+		/* ZB_BW_CNTL */
+		track->fastfill = !!(idx_value & (1 << 2));
+		break;
+	case 0x4e04:
+		/* RB3D_BLENDCNTL */
+		track->blend_read_enable = !!(idx_value & (1 << 2));
 		break;
 	case 0x4be8:
 		/* valid register only on RV530 */
@@ -1221,6 +1278,7 @@ static int r300_startup(struct radeon_device *rdev)
 	}
 	/* Enable IRQ */
 //	r100_irq_set(rdev);
+	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
 //   r = r100_cp_init(rdev, 1024 * 1024);
 //   if (r) {
@@ -1280,6 +1338,8 @@ int r300_init(struct radeon_device *rdev)
 	r300_errata(rdev);
 	/* Initialize clocks */
 	radeon_get_clock_info(rdev->ddev);
+	/* Initialize power management */
+	radeon_pm_init(rdev);
 	/* Get vram informations */
 	r300_vram_info(rdev);
 	/* Initialize memory controller (also test AGP) */
