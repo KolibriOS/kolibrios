@@ -1,4 +1,8 @@
 
+#ifndef __SYSCALL_H__
+#define __SYSCALL_H__
+
+
 #define OS_BASE   0x80000000
 
 typedef struct
@@ -17,7 +21,7 @@ typedef int (__stdcall *srv_proc_t)(ioctl_t *);
 #define ERR_PARAM   -1
 
 
-u32_t __stdcall drvEntry(int)__asm__("_drvEntry");
+u32_t drvEntry(int, char *)__asm__("_drvEntry");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -38,11 +42,17 @@ u32_t __stdcall drvEntry(int)__asm__("_drvEntry");
 #define PG_NOCACHE  0x018
 
 void*  STDCALL AllocKernelSpace(size_t size)__asm__("AllocKernelSpace");
+void   STDCALL FreeKernelSpace(void *mem)__asm__("FreeKernelSpace");
+addr_t STDCALL MapIoMem(addr_t base, size_t size, u32_t flags)__asm__("MapIoMem");
 void*  STDCALL KernelAlloc(size_t size)__asm__("KernelAlloc");
 void*  STDCALL KernelFree(void *mem)__asm__("KernelFree");
 void*  STDCALL UserAlloc(size_t size)__asm__("UserAlloc");
 int    STDCALL UserFree(void *mem)__asm__("UserFree");
 
+void*  STDCALL GetDisplay()__asm__("GetDisplay");
+
+
+addr_t STDCALL AllocPage()__asm__("AllocPage");
 addr_t STDCALL AllocPages(count_t count)__asm__("AllocPages");
 
 void* STDCALL CreateRingBuffer(size_t size, u32_t map)__asm__("CreateRingBuffer");
@@ -51,11 +61,6 @@ u32_t STDCALL RegService(char *name, srv_proc_t proc)__asm__("RegService");
 
 int   STDCALL AttachIntHandler(int irq, void *handler, u32_t access) __asm__("AttachIntHandler");
 
-
-//void *CreateObject(u32 pid, size_t size);
-//void *DestroyObject(void *obj);
-
-addr_t STDCALL MapIoMem(addr_t base, size_t size, u32_t flags)__asm__("MapIoMem");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -98,7 +103,7 @@ int dbgprintf(const char* format, ...);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-extern inline int GetScreenSize()
+static inline int GetScreenSize()
 {
   int retval;
 
@@ -108,7 +113,7 @@ extern inline int GetScreenSize()
   return retval;
 }
 
-extern inline int GetScreenBpp()
+static inline int GetScreenBpp()
 {
   int retval;
 
@@ -118,7 +123,7 @@ extern inline int GetScreenBpp()
   return retval;
 }
 
-extern inline int GetScreenPitch()
+static inline int GetScreenPitch()
 {
   int retval;
 
@@ -128,7 +133,7 @@ extern inline int GetScreenPitch()
   return retval;
 }
 
-extern inline u32_t GetPgAddr(void *mem)
+static inline u32_t GetPgAddr(void *mem)
 {
      u32_t retval;
 
@@ -139,7 +144,7 @@ extern inline u32_t GetPgAddr(void *mem)
      return retval;
 };
 
-extern inline void CommitPages(void *mem, u32_t page, u32_t size)
+static inline void CommitPages(void *mem, u32_t page, u32_t size)
 {
      size = (size+4095) & ~4095;
      __asm__ __volatile__ (
@@ -149,7 +154,7 @@ extern inline void CommitPages(void *mem, u32_t page, u32_t size)
      __asm__ __volatile__ ("":::"eax","ebx","ecx");
 };
 
-extern inline void UnmapPages(void *mem, size_t size)
+static inline void UnmapPages(void *mem, size_t size)
 {
      size = (size+4095) & ~4095;
      __asm__ __volatile__ (
@@ -159,20 +164,48 @@ extern inline void UnmapPages(void *mem, size_t size)
      __asm__ __volatile__ ("":::"eax","ecx");
 };
 
-extern inline void usleep(u32_t delay)
+static inline void usleep(u32_t delay)
 {
      if( !delay )
         delay++;
-     delay*=1000;
+     delay*= 500;
 
      while(delay--)
-     __asm__ __volatile__ (
-     "xorl %%eax, %%eax \n\t"
-     "cpuid \n\t"
+        __asm__ __volatile__(
+        "xorl %%eax, %%eax \n\t"
+        "cpuid \n\t"
         :::"eax","ebx","ecx","edx");
+     };
+
+static inline void udelay(u32_t delay)
+{
+    if(!delay) delay++;
+    delay*= 500;
+
+    while(delay--)
+    {
+        __asm__ __volatile__(
+        "xorl %%eax, %%eax \n\t"
+        "cpuid"
+        :::"eax","ebx","ecx","edx" );
+    }
+}
+
+static inline void mdelay(u32_t time)
+{
+    time /= 10;
+    if(!time) time = 1;
+
+     __asm__ __volatile__ (
+     "call *__imp__Delay"
+     ::"b" (time));
+     __asm__ __volatile__ (
+     "":::"ebx");
+
 };
 
-extern inline u32_t __PciApi(int cmd)
+
+static inline u32_t __PciApi(int cmd)
 {
      u32_t retval;
 
@@ -184,7 +217,7 @@ extern inline u32_t __PciApi(int cmd)
      return retval;
 };
 
-extern inline void* __CreateObject(u32_t pid, size_t size)
+static inline void* __CreateObject(u32_t pid, size_t size)
 {
      void *retval;
 
@@ -196,13 +229,15 @@ extern inline void* __CreateObject(u32_t pid, size_t size)
      return retval;
 }
 
-extern inline void *__DestroyObject(void *obj)
+static inline void __DestroyObject(void *obj)
 {
      __asm__ __volatile__ (
-     "call *__imp__DestroyObject"
+     "call *__imp__DestroyObject \n\t"
      :
-     :"a" (obj)
-     :"ebx","edx","esi","edi", "memory");
+     :"a" (obj));
+     __asm__ __volatile__ (
+     ""
+     :::"eax","ebx","ecx","edx","esi","edi","cc","memory");
 }
 
 
@@ -224,7 +259,23 @@ u32 __RegService(char *name, srv_proc_t proc)
 };
 */
 
-extern inline u32_t safe_cli(void)
+
+static inline u32_t GetService(const char *name)
+{
+    u32_t handle;
+
+    __asm__ __volatile__
+    (
+     "pushl %%eax \n\t"
+     "call *__imp__GetService"
+     :"=eax" (handle)
+     :"a" (name)
+     :"ebx","ecx","edx","esi", "edi"
+  );
+  return handle;
+};
+
+static inline u32_t safe_cli(void)
 {
      u32_t ifl;
      __asm__ __volatile__ (
@@ -235,7 +286,7 @@ extern inline u32_t safe_cli(void)
     return ifl;
 }
 
-extern inline void safe_sti(u32_t ifl)
+static inline void safe_sti(u32_t ifl)
 {
      __asm__ __volatile__ (
      "pushl %0\n\t"
@@ -244,7 +295,7 @@ extern inline void safe_sti(u32_t ifl)
 	);
 }
 
-extern inline void __clear (void * dst, unsigned len)
+static inline void __clear (void * dst, unsigned len)
 {
      u32_t tmp;
      __asm__ __volatile__ (
@@ -256,25 +307,25 @@ extern inline void __clear (void * dst, unsigned len)
      __asm__ __volatile__ ("":::"ecx","edi");
 };
 
-extern inline void out8(const u16_t port, const u8_t val)
+static inline void out8(const u16_t port, const u8_t val)
 {
     __asm__ __volatile__
     ("outb  %1, %0\n" : : "dN"(port), "a"(val));
 }
 
-extern inline void out16(const u16_t port, const u16_t val)
+static inline void out16(const u16_t port, const u16_t val)
 {
     __asm__ __volatile__
     ("outw  %1, %0\n" : : "dN"(port), "a"(val));
 }
 
-extern inline void out32(const u16_t port, const u32_t val)
+static inline void out32(const u16_t port, const u32_t val)
 {
     __asm__ __volatile__
     ("outl  %1, %0\n" : : "dN"(port), "a"(val));
 }
 
-extern inline u8_t in8(const u16_t port)
+static inline u8_t in8(const u16_t port)
 {
     u8_t tmp;
     __asm__ __volatile__
@@ -282,7 +333,7 @@ extern inline u8_t in8(const u16_t port)
     return tmp;
 };
 
-extern inline u16_t in16(const u16_t port)
+static inline u16_t in16(const u16_t port)
 {
     u16_t tmp;
     __asm__ __volatile__
@@ -290,7 +341,7 @@ extern inline u16_t in16(const u16_t port)
     return tmp;
 };
 
-extern inline u32_t in32(const u16_t port)
+static inline u32_t in32(const u16_t port)
 {
     u32_t tmp;
     __asm__ __volatile__
@@ -298,7 +349,7 @@ extern inline u32_t in32(const u16_t port)
     return tmp;
 };
 
-extern inline void delay(int time)
+static inline void delay(int time)
 {
      __asm__ __volatile__ (
      "call *__imp__Delay"
@@ -308,9 +359,49 @@ extern inline void delay(int time)
 
 }
 
-extern inline void change_task()
+static inline void change_task()
 {
      __asm__ __volatile__ (
      "call *__imp__ChangeTask");
 }
 
+static inline sysSetScreen(int width, int height, int pitch)
+{
+    __asm__ __volatile__
+    (
+        "call *__imp__SetScreen"
+        :
+        :"a" (width-1),"d"(height-1), "c"(pitch)
+    );
+    __asm__ __volatile__
+    ("" :::"eax","ecx","edx");
+}
+
+int drm_order(unsigned long size);
+
+static inline void __iomem *ioremap(uint32_t offset, size_t size)
+{
+    return (void __iomem*) MapIoMem(offset, size, 3);
+}
+
+static inline void iounmap(void *addr)
+{
+    FreeKernelSpace(addr);
+}
+
+static inline void *
+pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
+                      addr_t *dma_handle)
+{
+    *dma_handle = AllocPages(size >> 12);
+    return (void*)MapIoMem(*dma_handle, size, PG_SW+PG_NOCACHE);
+}
+
+static inline void __SysMsgBoardStr(char *text)
+{
+    __asm__ __volatile__(
+    "call *__imp__SysMsgBoardStr"
+    ::"S" (text));
+};
+
+#endif

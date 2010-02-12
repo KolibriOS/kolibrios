@@ -4,15 +4,17 @@ FASM = e:/fasm/fasm.exe
 
 DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 
 
+DRV_TOPDIR   = $(CURDIR)/../../..
 DRM_TOPDIR   = $(CURDIR)/..
-DRM_INCLUDES = $(DRM_TOPDIR)/includes
 
-INCLUDES = 	-I$(DRM_INCLUDES) -I$(DRM_INCLUDES)/drm	\
-		-I$(DRM_INCLUDES)/linux -I$(DRM_INCLUDES)/asm
+DRV_INCLUDES = $(DRV_TOPDIR)/include
+
+INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/drm	\
+		-I$(DRV_INCLUDES)/linux
 
 CFLAGS   = -c -O2 $(INCLUDES) $(DEFINES) -march=i686 -fomit-frame-pointer -fno-builtin-printf
 
-LIBPATH:= .
+LIBPATH:= $(DRV_TOPDIR)/ddk
 
 LIBS:=    -ldrv -lcore 
 
@@ -22,15 +24,15 @@ LDFLAGS = -nostdlib -shared -s -Map atikms.map --image-base 0\
 
 NAME:=	  atikms
 
-HFILES:=     		$(DRM_INCLUDES)/linux/types.h		\
-			$(DRM_INCLUDES)/linux/list.h		\
-			$(DRM_INCLUDES)/linux/pci.h		\
-			$(DRM_INCLUDES)/drm/drm.h			\
-			$(DRM_INCLUDES)/drm/drmP.h		\
-			$(DRM_INCLUDES)/drm/drm_edid.h		\
-			$(DRM_INCLUDES)/drm/drm_crtc.h		\
-			$(DRM_INCLUDES)/drm/drm_mode.h		\
-			$(DRM_INCLUDES)/drm/drm_mm.h		\
+HFILES:=     		$(DRV_INCLUDES)/linux/types.h		\
+			$(DRV_INCLUDES)/linux/list.h		\
+			$(DRV_INCLUDES)/linux/pci.h		\
+			$(DRV_INCLUDES)/drm/drm.h		\
+			$(DRV_INCLUDES)/drm/drmP.h		\
+			$(DRV_INCLUDES)/drm/drm_edid.h		\
+			$(DRV_INCLUDES)/drm/drm_crtc.h		\
+			$(DRV_INCLUDES)/drm/drm_mode.h		\
+			$(DRV_INCLUDES)/drm/drm_mm.h		\
 			atom.h					\
 			radeon.h				\
 			radeon_asic.h
@@ -100,7 +102,7 @@ NAME_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
 all: $(NAME).dll
 
 $(NAME).dll: $(NAME_OBJS) $(SRC_DEP) $(HFILES) atikms.lds Makefile
-	ld -L$(LIBPATH) $(LDFLAGS) -T atikms.lds -o $@ $(NAME_OBJS) vsprintf.obj icompute.obj $(LIBS)  
+	ld -L$(LIBPATH) $(LDFLAGS) -T atikms.lds -o $@ $(NAME_OBJS) $(LIBS)  
 
 
 %.o : %.c $(HFILES) Makefile
