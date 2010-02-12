@@ -146,8 +146,8 @@ int radeonfb_create(struct drm_device *dev,
 	struct radeon_framebuffer *rfb;
 	struct drm_mode_fb_cmd mode_cmd;
 	struct drm_gem_object *gobj = NULL;
-	struct radeon_object *robj = NULL;
-    void   *device = NULL; //&rdev->pdev->dev;
+	struct radeon_bo *rbo = NULL;
+  //  struct device *device = &rdev->pdev->dev;
 	int size, aligned_size, ret;
 	u64 fb_gpuaddr;
 	void *fbptr = NULL;
@@ -163,7 +163,7 @@ int radeonfb_create(struct drm_device *dev,
 	if ((surface_bpp == 24) && ASIC_IS_AVIVO(rdev))
 		surface_bpp = 32;
 
-	mode_cmd.bpp = 32;
+	mode_cmd.bpp = surface_bpp;
 	/* need to align pitch with crtc limits */
 	mode_cmd.pitch = radeon_align_pitch(rdev, mode_cmd.width, mode_cmd.bpp, fb_tiled) * ((mode_cmd.bpp + 1) / 8);
 	mode_cmd.depth = surface_depth;
@@ -171,18 +171,40 @@ int radeonfb_create(struct drm_device *dev,
 	size = mode_cmd.pitch * mode_cmd.height;
 	aligned_size = ALIGN(size, PAGE_SIZE);
 
-    ret = radeon_gem_fb_object_create(rdev, aligned_size, 0,
+	ret = radeon_gem_object_create(rdev, aligned_size, 0,
 			RADEON_GEM_DOMAIN_VRAM,
-            false, 0,
-			false, &gobj);
+			false, ttm_bo_type_kernel,
+			&gobj);
 	if (ret) {
 		printk(KERN_ERR "failed to allocate framebuffer (%d %d)\n",
 		       surface_width, surface_height);
 		ret = -ENOMEM;
 		goto out;
 	}
-	robj = gobj->driver_private;
+	rbo = gobj->driver_private;
 
+	if (fb_tiled)
+		tiling_flags = RADEON_TILING_MACRO;
+
+#ifdef __BIG_ENDIAN
+	switch (mode_cmd.bpp) {
+	case 32:
+		tiling_flags |= RADEON_TILING_SWAP_32BIT;
+		break;
+	case 16:
+		tiling_flags |= RADEON_TILING_SWAP_16BIT;
+	default:
+		break;
+	}
+#endif
+
+	if (tiling_flags) {
+		ret = radeon_bo_set_tiling_flags(rbo,
+					tiling_flags | RADEON_TILING_SURFACE,
+					mode_cmd.pitch);
+		if (ret)
+			dev_err(rdev->dev, "FB failed to set tiling flags\n");
+	}
 	mutex_lock(&rdev->ddev->struct_mutex);
 	fb = radeon_framebuffer_create(rdev->ddev, &mode_cmd, gobj);
 	if (fb == NULL) {
@@ -190,10 +212,19 @@ int radeonfb_create(struct drm_device *dev,
 		ret = -ENOMEM;
 		goto out_unref;
 	}
-	ret = radeon_object_pin(robj, RADEON_GEM_DOMAIN_VRAM, &fb_gpuaddr);
+	ret = radeon_bo_reserve(rbo, false);
+	if (unlikely(ret != 0))
+		goto out_unref;
+	ret = radeon_bo_pin(rbo, RADEON_GEM_DOMAIN_VRAM, &fb_gpuaddr);
 	if (ret) {
-		printk(KERN_ERR "failed to pin framebuffer\n");
-		ret = -ENOMEM;
+		radeon_bo_unreserve(rbo);
+		goto out_unref;
+	}
+	if (fb_tiled)
+		radeon_bo_check_tiling(rbo, 0, 0);
+	ret = radeon_bo_kmap(rbo, &fbptr);
+	radeon_bo_unreserve(rbo);
+	if (ret) {
 		goto out_unref;
 	}
 
@@ -202,9 +233,9 @@ int radeonfb_create(struct drm_device *dev,
 	*fb_p = fb;
 	rfb = to_radeon_framebuffer(fb);
 	rdev->fbdev_rfb = rfb;
-	rdev->fbdev_robj = robj;
+	rdev->fbdev_rbo = rbo;
 
-	info = framebuffer_alloc(sizeof(struct radeon_fb_device), device);
+    info = framebuffer_alloc(sizeof(struct radeon_fb_device), NULL);
 	if (info == NULL) {
 		ret = -ENOMEM;
 		goto out_unref;
@@ -223,14 +254,7 @@ int radeonfb_create(struct drm_device *dev,
 	if (ret)
 		goto out_unref;
 
-//   ret = radeon_object_kmap(robj, &fbptr);
-//   if (ret) {
-//       goto out_unref;
-//   }
-
-
-    fbptr = (void*)0xFE000000; // LFB_BASE
-
+    
 	strcpy(info->fix.id, "radeondrmfb");
 
 	drm_fb_helper_fill_fix(info, fb->pitch, fb->depth);
@@ -277,12 +301,16 @@ int radeonfb_create(struct drm_device *dev,
 	return 0;
 
 out_unref:
-	if (robj) {
-//       radeon_object_kunmap(robj);
+	if (rbo) {
+		ret = radeon_bo_reserve(rbo, false);
+		if (likely(ret == 0)) {
+			radeon_bo_kunmap(rbo);
+			radeon_bo_unreserve(rbo);
+		}
 	}
 	if (fb && ret) {
 		list_del(&fb->filp_head);
- //      drm_gem_object_unreference(gobj);
+//      drm_gem_object_unreference(gobj);
 //       drm_framebuffer_cleanup(fb);
 		kfree(fb);
 	}
@@ -294,6 +322,13 @@ out:
 
 int radeonfb_probe(struct drm_device *dev)
 {
+	struct radeon_device *rdev = dev->dev_private;
+	int bpp_sel = 32;
+
+	/* select 8 bpp console on RN50 or 16MB cards */
+	if (ASIC_IS_RN50(rdev) || rdev->mc.real_vram_size <= (32*1024*1024))
+		bpp_sel = 8;
+
 	return drm_fb_helper_single_fb_probe(dev, 32, &radeonfb_create);
 }
 
@@ -301,7 +336,8 @@ int radeonfb_remove(struct drm_device *dev, struct drm_framebuffer *fb)
 {
 	struct fb_info *info;
 	struct radeon_framebuffer *rfb = to_radeon_framebuffer(fb);
-	struct radeon_object *robj;
+	struct radeon_bo *rbo;
+	int r;
 
 	if (!fb) {
 		return -EINVAL;
@@ -309,11 +345,16 @@ int radeonfb_remove(struct drm_device *dev, struct drm_framebuffer *fb)
 	info = fb->fbdev;
 	if (info) {
 		struct radeon_fb_device *rfbdev = info->par;
-		robj = rfb->obj->driver_private;
+		rbo = rfb->obj->driver_private;
 //       unregister_framebuffer(info);
-//       radeon_object_kunmap(robj);
-//       radeon_object_unpin(robj);
-//       framebuffer_release(info);
+		r = radeon_bo_reserve(rbo, false);
+		if (likely(r == 0)) {
+			radeon_bo_kunmap(rbo);
+			radeon_bo_unpin(rbo);
+			radeon_bo_unreserve(rbo);
+		}
+		drm_fb_helper_free(&rfbdev->helper);
+		framebuffer_release(info);
 	}
 
 	printk(KERN_INFO "unregistered panic notifier\n");
@@ -321,122 +362,6 @@ int radeonfb_remove(struct drm_device *dev, struct drm_framebuffer *fb)
 	return 0;
 }
 EXPORT_SYMBOL(radeonfb_remove);
-
-
-/**
- * Allocate a GEM object of the specified size with shmfs backing store
- */
-struct drm_gem_object *
-drm_gem_object_alloc(struct drm_device *dev, size_t size)
-{
-    struct drm_gem_object *obj;
-
-    BUG_ON((size & (PAGE_SIZE - 1)) != 0);
-
-    obj = kzalloc(sizeof(*obj), GFP_KERNEL);
-
-    obj->dev = dev;
-//    obj->filp = shmem_file_setup("drm mm object", size, VM_NORESERVE);
-//    if (IS_ERR(obj->filp)) {
-//        kfree(obj);
-//        return NULL;
-//    }
-
-//    kref_init(&obj->refcount);
-//    kref_init(&obj->handlecount);
-    obj->size = size;
-
-//    if (dev->driver->gem_init_object != NULL &&
-//        dev->driver->gem_init_object(obj) != 0) {
-//        fput(obj->filp);
-//        kfree(obj);
-//        return NULL;
-//    }
-//    atomic_inc(&dev->object_count);
-//    atomic_add(obj->size, &dev->object_memory);
-    return obj;
-}
-
-
-int radeon_gem_fb_object_create(struct radeon_device *rdev, int size,
-                 int alignment, int initial_domain,
-                 bool discardable, bool kernel,
-                 bool interruptible,
-                 struct drm_gem_object **obj)
-{
-    struct drm_gem_object *gobj;
-    struct radeon_object *robj;
-
-    *obj = NULL;
-    gobj = drm_gem_object_alloc(rdev->ddev, size);
-    if (!gobj) {
-        return -ENOMEM;
-    }
-    /* At least align on page size */
-    if (alignment < PAGE_SIZE) {
-        alignment = PAGE_SIZE;
-    }
-
-    robj = kzalloc(sizeof(struct radeon_object), GFP_KERNEL);
-    if (!robj) {
-        DRM_ERROR("Failed to allocate GEM object (%d, %d, %u)\n",
-              size, initial_domain, alignment);
-//       mutex_lock(&rdev->ddev->struct_mutex);
-//       drm_gem_object_unreference(gobj);
-//       mutex_unlock(&rdev->ddev->struct_mutex);
-        return -ENOMEM;;
-    }
-    robj->rdev = rdev;
-    robj->gobj = gobj;
-    INIT_LIST_HEAD(&robj->list);
-
-    robj->flags = TTM_PL_FLAG_VRAM;
-
-    struct drm_mm_node *vm_node;
-
-    vm_node = kzalloc(sizeof(*vm_node),0);
-
-    vm_node->free = 0;
-    vm_node->size = 0xC00000 >> 12;
-    vm_node->start = 0;
-    vm_node->mm = NULL;
-
-    robj->mm_node = vm_node;
-
-    robj->vm_addr = ((uint32_t)robj->mm_node->start);
-
-    gobj->driver_private = robj;
-    *obj = gobj;
-    return 0;
-}
-
-
-struct fb_info *framebuffer_alloc(size_t size, void *dev)
-{
-#define BYTES_PER_LONG (BITS_PER_LONG/8)
-#define PADDING (BYTES_PER_LONG - (sizeof(struct fb_info) % BYTES_PER_LONG))
-        int fb_info_size = sizeof(struct fb_info);
-        struct fb_info *info;
-        char *p;
-
-        if (size)
-                fb_info_size += PADDING;
-
-        p = kzalloc(fb_info_size + size, GFP_KERNEL);
-
-        if (!p)
-                return NULL;
-
-        info = (struct fb_info *) p;
-
-        if (size)
-                info->par = p + fb_info_size;
-
-        return info;
-#undef PADDING
-#undef BYTES_PER_LONG
-}
-
 
 
 

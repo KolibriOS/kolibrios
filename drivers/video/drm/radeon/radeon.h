@@ -279,14 +279,16 @@ struct radeon_bo {
 	struct ttm_placement		placement;
 	struct ttm_buffer_object	tbo;
 	struct ttm_bo_kmap_obj		kmap;
-	unsigned			pin_count;
-	void				*kptr;
-	u32				tiling_flags;
-	u32				pitch;
-	int				surface_reg;
+    unsigned                    pin_count;
+    void                       *kptr;
+    u32                         cpu_addr;
+    u32                         tiling_flags;
+    u32                         pitch;
+    int                         surface_reg;
 	/* Constant after initialization */
 	struct radeon_device		*rdev;
 	struct drm_gem_object		*gobj;
+    u32                          domain;
 };
 
 struct radeon_bo_list {
@@ -697,6 +699,13 @@ struct radeon_asic {
 	void (*hpd_fini)(struct radeon_device *rdev);
 	bool (*hpd_sense)(struct radeon_device *rdev, enum radeon_hpd_id hpd);
 	void (*hpd_set_polarity)(struct radeon_device *rdev, enum radeon_hpd_id hpd);
+	/* ioctl hw specific callback. Some hw might want to perform special
+	 * operation on specific ioctl. For instance on wait idle some hw
+	 * might want to perform and HDP flush through MMIO as it seems that
+	 * some R6XX/R7XX hw doesn't take HDP flush into account if programmed
+	 * through ring.
+	 */
+	void (*ioctl_wait_idle)(struct radeon_device *rdev, struct radeon_bo *bo);
 };
 
 /*
@@ -1149,6 +1158,7 @@ extern bool r600_card_posted(struct radeon_device *rdev);
 extern void r600_cp_stop(struct radeon_device *rdev);
 extern void r600_ring_init(struct radeon_device *rdev, unsigned ring_size);
 extern int r600_cp_resume(struct radeon_device *rdev);
+extern void r600_cp_fini(struct radeon_device *rdev);
 extern int r600_count_pipe_bits(uint32_t val);
 extern int r600_gart_clear_page(struct radeon_device *rdev, int i);
 extern int r600_mc_wait_for_idle(struct radeon_device *rdev);

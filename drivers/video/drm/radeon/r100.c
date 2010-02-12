@@ -272,11 +272,17 @@ u32 r100_get_vblank_counter(struct radeon_device *rdev, int crtc)
 		return RREG32(RADEON_CRTC2_CRNT_FRAME);
 }
 
+/* Who ever call radeon_fence_emit should call ring_lock and ask
+ * for enough space (today caller are ib schedule and buffer move) */
 void r100_fence_ring_emit(struct radeon_device *rdev,
 			  struct radeon_fence *fence)
 {
-	/* Who ever call radeon_fence_emit should call ring_lock and ask
-	 * for enough space (today caller are ib schedule and buffer move) */
+	/* We have to make sure that caches are flushed before
+	 * CPU might read something from VRAM. */
+	radeon_ring_write(rdev, PACKET0(RADEON_RB3D_DSTCACHE_CTLSTAT, 0));
+	radeon_ring_write(rdev, RADEON_RB3D_DC_FLUSH_ALL);
+	radeon_ring_write(rdev, PACKET0(RADEON_RB3D_ZCACHE_CTLSTAT, 0));
+	radeon_ring_write(rdev, RADEON_RB3D_ZC_FLUSH_ALL);
 	/* Wait until IDLE & CLEAN */
 	radeon_ring_write(rdev, PACKET0(0x1720, 0));
 	radeon_ring_write(rdev, (1 << 16) | (1 << 17));
@@ -343,9 +349,15 @@ void r100_wb_fini(struct radeon_device *rdev)
 
 	r100_wb_disable(rdev);
 	if (rdev->wb.wb_obj) {
-//       radeon_object_kunmap(rdev->wb.wb_obj);
-//       radeon_object_unpin(rdev->wb.wb_obj);
-//       radeon_object_unref(&rdev->wb.wb_obj);
+		r = radeon_bo_reserve(rdev->wb.wb_obj, false);
+		if (unlikely(r != 0)) {
+			dev_err(rdev->dev, "(%d) can't finish WB\n", r);
+			return;
+		}
+		radeon_bo_kunmap(rdev->wb.wb_obj);
+		radeon_bo_unpin(rdev->wb.wb_obj);
+		radeon_bo_unreserve(rdev->wb.wb_obj);
+		radeon_bo_unref(&rdev->wb.wb_obj);
 		rdev->wb.wb = NULL;
 		rdev->wb.wb_obj = NULL;
 	}
@@ -531,7 +543,6 @@ static int r100_cp_init_microcode(struct radeon_device *rdev)
 	}
 	return err;
 }
-
 
 static void r100_cp_load_microcode(struct radeon_device *rdev)
 {
@@ -2814,6 +2825,7 @@ static int r100_startup(struct radeon_device *rdev)
 	}
 	/* Enable IRQ */
 //   r100_irq_set(rdev);
+	rdev->config.r100.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
 //   r = r100_cp_init(rdev, 1024 * 1024);
 //   if (r) {

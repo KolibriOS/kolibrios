@@ -46,13 +46,17 @@ int radeon_benchmarking     = 0;
 int radeon_connector_table  = 0;
 int radeon_tv               = 0;
 int radeon_modeset          = 1;
+int radeon_new_pll          = 1;
+int radeon_vram_limit       = 0;
+int radeon_audio            = 0;
 
-void parse_cmdline(char *cmdline, mode_t *mode, char *log, int *kms);
-int init_display(struct radeon_device *rdev, mode_t *mode);
-int init_display_kms(struct radeon_device *rdev, mode_t *mode);
 
-int get_modes(mode_t *mode, int *count);
-int set_user_mode(mode_t *mode);
+void parse_cmdline(char *cmdline, videomode_t *mode, char *log, int *kms);
+int init_display(struct radeon_device *rdev, videomode_t *mode);
+int init_display_kms(struct radeon_device *rdev, videomode_t *mode);
+
+int get_modes(videomode_t *mode, int *count);
+int set_user_mode(videomode_t *mode);
 
 
  /* Legacy VGA regions */
@@ -71,17 +75,12 @@ int set_user_mode(mode_t *mode);
  */
 void radeon_surface_init(struct radeon_device *rdev)
 {
-    ENTER();
-
     /* FIXME: check this out */
     if (rdev->family < CHIP_R600) {
         int i;
 
 		for (i = 0; i < RADEON_GEM_MAX_SURFACES; i++) {
-			if (rdev->surface_regs[i].bo)
-				radeon_bo_get_surface_reg(rdev->surface_regs[i].bo);
-			else
-				radeon_clear_surface_reg(rdev, i);
+           radeon_clear_surface_reg(rdev, i);
         }
 		/* enable surfaces */
 		WREG32(RADEON_SURFACE_CNTL, 0);
@@ -421,6 +420,12 @@ int radeon_asic_init(struct radeon_device *rdev)
 		/* FIXME: not supported yet */
 		return -EINVAL;
 	}
+
+	if (rdev->flags & RADEON_IS_IGP) {
+		rdev->asic->get_memory_clock = NULL;
+		rdev->asic->set_memory_clock = NULL;
+	}
+
 	return 0;
 }
 
@@ -567,11 +572,75 @@ void radeon_agp_disable(struct radeon_device *rdev)
 		rdev->asic->gart_tlb_flush = &r100_pci_gart_tlb_flush;
 		rdev->asic->gart_set_page = &r100_pci_gart_set_page;
 	}
+	rdev->mc.gtt_size = radeon_gart_size * 1024 * 1024;
 }
 
-/*
- * Radeon device.
- */
+void radeon_check_arguments(struct radeon_device *rdev)
+{
+	/* vramlimit must be a power of two */
+	switch (radeon_vram_limit) {
+	case 0:
+	case 4:
+	case 8:
+	case 16:
+	case 32:
+	case 64:
+	case 128:
+	case 256:
+	case 512:
+	case 1024:
+	case 2048:
+	case 4096:
+		break;
+	default:
+		dev_warn(rdev->dev, "vram limit (%d) must be a power of 2\n",
+				radeon_vram_limit);
+		radeon_vram_limit = 0;
+		break;
+	}
+	radeon_vram_limit = radeon_vram_limit << 20;
+	/* gtt size must be power of two and greater or equal to 32M */
+	switch (radeon_gart_size) {
+	case 4:
+	case 8:
+	case 16:
+		dev_warn(rdev->dev, "gart size (%d) too small forcing to 512M\n",
+				radeon_gart_size);
+		radeon_gart_size = 512;
+		break;
+	case 32:
+	case 64:
+	case 128:
+	case 256:
+	case 512:
+	case 1024:
+	case 2048:
+	case 4096:
+		break;
+	default:
+		dev_warn(rdev->dev, "gart size (%d) must be a power of 2\n",
+				radeon_gart_size);
+		radeon_gart_size = 512;
+		break;
+	}
+	rdev->mc.gtt_size = radeon_gart_size * 1024 * 1024;
+	/* AGP mode can only be -1, 1, 2, 4, 8 */
+	switch (radeon_agpmode) {
+	case -1:
+	case 0:
+	case 1:
+	case 2:
+	case 4:
+	case 8:
+		break;
+	default:
+		dev_warn(rdev->dev, "invalid AGP mode %d (valid mode: "
+				"-1, 0, 1, 2, 4, 8)\n", radeon_agpmode);
+		radeon_agpmode = 0;
+		break;
+	}
+}
+
 int radeon_device_init(struct radeon_device *rdev,
                struct drm_device *ddev,
                struct pci_dev *pdev,
@@ -600,9 +669,9 @@ int radeon_device_init(struct radeon_device *rdev,
 
 	/* Set asic functions */
 	r = radeon_asic_init(rdev);
-	if (r) {
+	if (r)
 		return r;
-	}
+	radeon_check_arguments(rdev);
 
 	if (rdev->flags & RADEON_IS_AGP && radeon_agpmode == -1) {
 		radeon_agp_disable(rdev);
@@ -723,7 +792,7 @@ int radeon_driver_load_kms(struct drm_device *dev, unsigned long flags)
     return 0;
 }
 
-mode_t usermode;
+videomode_t usermode;
 
 
 int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
@@ -867,9 +936,9 @@ int _stdcall display_handler(ioctl_t *io)
 
             if( radeon_modeset &&
                 (outp != NULL) && (io->out_size == 4) &&
-                (io->inp_size == *outp * sizeof(mode_t)) )
+                (io->inp_size == *outp * sizeof(videomode_t)) )
             {
-                retval = get_modes((mode_t*)inp, outp);
+                retval = get_modes((videomode_t*)inp, outp);
             };
             break;
 
@@ -879,9 +948,9 @@ int _stdcall display_handler(ioctl_t *io)
 
             if(  radeon_modeset   &&
                 (inp != NULL) &&
-                (io->inp_size == sizeof(mode_t)) )
+                (io->inp_size == sizeof(videomode_t)) )
             {
-                retval = set_user_mode((mode_t*)inp);
+                retval = set_user_mode((videomode_t*)inp);
             };
             break;
     };
@@ -890,7 +959,7 @@ int _stdcall display_handler(ioctl_t *io)
 }
 
 static char  log[256];
-static dev_t device;
+static pci_dev_t device;
 
 u32_t drvEntry(int action, char *cmdline)
 {
@@ -918,7 +987,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("Radeon RC09 cmdline %s\n", cmdline);
+    dbgprintf("Radeon RC9 cmdline %s\n", cmdline);
 
     enum_pci_devices();
 

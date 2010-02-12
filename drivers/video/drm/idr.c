@@ -34,6 +34,55 @@
 #include "drmP.h"
 #include "drm_crtc.h"
 
+unsigned long find_first_bit(const unsigned long *addr, unsigned long size)
+{
+    const unsigned long *p = addr;
+    unsigned long result = 0;
+    unsigned long tmp;
+
+    while (size & ~(BITS_PER_LONG-1)) {
+        if ((tmp = *(p++)))
+            goto found;
+        result += BITS_PER_LONG;
+        size -= BITS_PER_LONG;
+    }
+    if (!size)
+        return result;
+
+    tmp = (*p) & (~0UL >> (BITS_PER_LONG - size));
+    if (tmp == 0UL)     /* Are any bits set? */
+        return result + size;   /* Nope. */
+found:
+    return result + __ffs(tmp);
+}
+
+int find_next_bit(const unsigned long *addr, int size, int offset)
+{
+    const unsigned long *p = addr + (offset >> 5);
+    int set = 0, bit = offset & 31, res;
+
+    if (bit)
+    {
+        /*
+         * Look for nonzero in the first 32 bits:
+         */
+        __asm__("bsfl %1,%0\n\t"
+                "jne 1f\n\t"
+                "movl $32, %0\n"
+                "1:"
+                : "=r" (set)
+                : "r" (*p >> bit));
+        if (set < (32 - bit))
+                return set + offset;
+        set = 32 - bit;
+        p++;
+    }
+    /*
+     * No set bit yet, search remaining full words for a bit
+     */
+    res = find_first_bit (p, size - 32 * (p - addr));
+    return (offset + set + res);
+}
 
 #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
 

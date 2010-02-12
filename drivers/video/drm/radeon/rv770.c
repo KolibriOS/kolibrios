@@ -113,15 +113,19 @@ void rv770_pcie_gart_disable(struct radeon_device *rdev)
 	WREG32(MC_VM_MB_L1_TLB2_CNTL, tmp);
 	WREG32(MC_VM_MB_L1_TLB3_CNTL, tmp);
 	if (rdev->gart.table.vram.robj) {
-//       radeon_object_kunmap(rdev->gart.table.vram.robj);
-//       radeon_object_unpin(rdev->gart.table.vram.robj);
+		r = radeon_bo_reserve(rdev->gart.table.vram.robj, false);
+		if (likely(r == 0)) {
+			radeon_bo_kunmap(rdev->gart.table.vram.robj);
+			radeon_bo_unpin(rdev->gart.table.vram.robj);
+			radeon_bo_unreserve(rdev->gart.table.vram.robj);
+		}
 	}
 }
 
 void rv770_pcie_gart_fini(struct radeon_device *rdev)
 {
 	rv770_pcie_gart_disable(rdev);
-//   radeon_gart_table_vram_free(rdev);
+	radeon_gart_table_vram_free(rdev);
     radeon_gart_fini(rdev);
 }
 
@@ -876,6 +880,7 @@ static int rv770_startup(struct radeon_device *rdev)
 			return r;
 	}
 	rv770_gpu_init(rdev);
+
 
 //  r = radeon_object_pin(rdev->r600_blit.shader_obj, RADEON_GEM_DOMAIN_VRAM,
 //                 &rdev->r600_blit.shader_gpu_addr);

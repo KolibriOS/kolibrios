@@ -345,7 +345,7 @@ static pci_dev_t* pci_scan_device(u32_t bus, int devfn)
 
     hdr = PciRead8(bus, devfn, PCI_HEADER_TYPE);
 
-    dev = (pci_dev_t*)kzalloc(sizeof(dev_t), 0);
+    dev = (pci_dev_t*)kzalloc(sizeof(pci_dev_t), 0);
 
     INIT_LIST_HEAD(&dev->link);
 
@@ -407,7 +407,7 @@ int pci_scan_slot(u32_t bus, int devfn)
 void pci_scan_bus(u32_t bus)
 {
     u32_t devfn;
-    dev_t *dev;
+    pci_dev_t *dev;
 
 
     for (devfn = 0; devfn < 0x100; devfn += 8)

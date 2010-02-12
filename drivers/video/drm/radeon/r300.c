@@ -152,8 +152,12 @@ void rv370_pcie_gart_disable(struct radeon_device *rdev)
 	tmp |= RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD;
 	WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp & ~RADEON_PCIE_TX_GART_EN);
 	if (rdev->gart.table.vram.robj) {
-//       radeon_object_kunmap(rdev->gart.table.vram.robj);
-//       radeon_object_unpin(rdev->gart.table.vram.robj);
+		r = radeon_bo_reserve(rdev->gart.table.vram.robj, false);
+		if (likely(r == 0)) {
+			radeon_bo_kunmap(rdev->gart.table.vram.robj);
+			radeon_bo_unpin(rdev->gart.table.vram.robj);
+			radeon_bo_unreserve(rdev->gart.table.vram.robj);
+		}
 	}
 }
 
@@ -508,11 +512,14 @@ void r300_vram_info(struct radeon_device *rdev)
 
 	/* DDR for all card after R300 & IGP */
 	rdev->mc.vram_is_ddr = true;
+
 	tmp = RREG32(RADEON_MEM_CNTL);
-	if (tmp & R300_MEM_NUM_CHANNELS_MASK) {
-		rdev->mc.vram_width = 128;
-	} else {
-		rdev->mc.vram_width = 64;
+	tmp &= R300_MEM_NUM_CHANNELS_MASK;
+	switch (tmp) {
+	case 0: rdev->mc.vram_width = 64; break;
+	case 1: rdev->mc.vram_width = 128; break;
+	case 2: rdev->mc.vram_width = 256; break;
+	default:  rdev->mc.vram_width = 128; break;
 	}
 
 	r100_vram_init_sizes(rdev);
@@ -1355,7 +1362,7 @@ int r300_init(struct radeon_device *rdev)
 //	if (r)
 //		return r;
 	/* Memory manager */
-	r = radeon_object_init(rdev);
+	r = radeon_bo_init(rdev);
 	if (r)
 		return r;
 	if (rdev->flags & RADEON_IS_PCIE) {
@@ -1382,7 +1389,7 @@ int r300_init(struct radeon_device *rdev)
 			rv370_pcie_gart_fini(rdev);
 		if (rdev->flags & RADEON_IS_PCI)
 			r100_pci_gart_fini(rdev);
-//       radeon_irq_kms_fini(rdev);
+//		radeon_agp_fini(rdev);
 		rdev->accel_working = false;
 	}
 	return 0;

@@ -78,7 +78,7 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     old = rdisplay->cursor;
 
     rdisplay->cursor = cursor;
-//    gpu_addr = cursor->robj->gpu_addr;
+    gpu_addr = radeon_bo_gpu_offset(cursor->robj);
 
     if (ASIC_IS_AVIVO(rdev))
         WREG32(AVIVO_D1CUR_SURFACE_ADDRESS + radeon_crtc->crtc_offset, gpu_addr);
@@ -148,14 +148,34 @@ void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
         if (crtc->mode.flags & DRM_MODE_FLAG_DBLSCAN)
             y *= 2;
 
-        WREG32(RADEON_CUR_HORZ_VERT_OFF + radeon_crtc->crtc_offset,
-               (RADEON_CUR_LOCK | (hot_x << 16) | hot_y ));
-        WREG32(RADEON_CUR_HORZ_VERT_POSN + radeon_crtc->crtc_offset,
+        uint32_t  gpu_addr;
+        int       xorg =0, yorg=0;
+
+        x = x - hot_x;
+        y = y - hot_y;
+
+        if( x < 0 )
+        {
+            xorg = -x + 1;
+            x = 0;
+        }
+
+        if( y < 0 )
+        {
+            yorg = -hot_y + 1;
+            y = 0;
+        };
+
+        WREG32(RADEON_CUR_HORZ_VERT_OFF,
+               (RADEON_CUR_LOCK | (xorg << 16) | yorg ));
+        WREG32(RADEON_CUR_HORZ_VERT_POSN,
                (RADEON_CUR_LOCK | (x << 16) | y));
 
+        gpu_addr = radeon_bo_gpu_offset(cursor->robj);
+
         /* offset is from DISP(2)_BASE_ADDRESS */
-        WREG32(RADEON_CUR_OFFSET + radeon_crtc->crtc_offset,
-         (radeon_crtc->legacy_cursor_offset + (hot_y * 256)));
+        WREG32(RADEON_CUR_OFFSET,
+         (gpu_addr - rdev->mc.vram_location + (yorg * 256)));
     }
     radeon_lock_cursor_kms(crtc, false);
 }
@@ -447,3 +467,40 @@ int set_user_mode(videomode_t *mode)
     return err;
 };
 
+#if 0
+void drm_helper_disable_unused_functions(struct drm_device *dev)
+{
+    struct drm_encoder *encoder;
+    struct drm_connector *connector;
+    struct drm_encoder_helper_funcs *encoder_funcs;
+    struct drm_crtc *crtc;
+
+    list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+        if (!connector->encoder)
+            continue;
+        if (connector->status == connector_status_disconnected)
+            connector->encoder = NULL;
+    }
+
+    list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
+        encoder_funcs = encoder->helper_private;
+        if (!drm_helper_encoder_in_use(encoder)) {
+            if (encoder_funcs->disable)
+                (*encoder_funcs->disable)(encoder);
+            else
+            (*encoder_funcs->dpms)(encoder, DRM_MODE_DPMS_OFF);
+            /* disconnector encoder from any connector */
+            encoder->crtc = NULL;
+        }
+    }
+
+    list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
+        struct drm_crtc_helper_funcs *crtc_funcs = crtc->helper_private;
+        crtc->enabled = drm_helper_crtc_in_use(crtc);
+        if (!crtc->enabled) {
+            crtc_funcs->dpms(crtc, DRM_MODE_DPMS_OFF);
+            crtc->fb = NULL;
+        }
+    }
+}
+#endif

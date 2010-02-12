@@ -348,7 +348,7 @@ int r420_init(struct radeon_device *rdev)
 		if (r)
 			return r;
 	}
-	r300_set_reg_safe(rdev);
+	r420_set_reg_safe(rdev);
 	rdev->accel_working = true;
 	r = r420_startup(rdev);
 	if (r) {
@@ -363,7 +363,6 @@ int r420_init(struct radeon_device *rdev)
 		if (rdev->flags & RADEON_IS_PCI)
 			r100_pci_gart_fini(rdev);
 //		radeon_agp_fini(rdev);
-//		radeon_irq_kms_fini(rdev);
 		rdev->accel_working = false;
 	}
 	return 0;

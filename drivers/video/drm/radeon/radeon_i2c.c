@@ -216,7 +216,7 @@ struct radeon_i2c_chan *radeon_i2c_create_dp(struct drm_device *dev,
 		return NULL;
 
 	i2c->rec = *rec;
-	i2c->adapter.owner = THIS_MODULE;
+//   i2c->adapter.owner = THIS_MODULE;
 	i2c->dev = dev;
 	i2c->adapter.algo_data = &i2c->algo.dp;
 	i2c->algo.dp.aux_ch = radeon_dp_i2c_aux_ch;

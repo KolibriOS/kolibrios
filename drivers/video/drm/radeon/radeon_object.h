@@ -59,23 +59,9 @@ static inline unsigned radeon_mem_type_to_domain(u32 mem_type)
  *
  * Returns:
  * -EBUSY: buffer is busy and @no_wait is true
- * -ERESTART: A wait for the buffer to become unreserved was interrupted by
+ * -ERESTARTSYS: A wait for the buffer to become unreserved was interrupted by
  * a signal. Release all buffer reservations and return to user-space.
-     */
-static inline int radeon_bo_reserve(struct radeon_bo *bo, bool no_wait)
-{
-	int r;
-
-retry:
-	r = ttm_bo_reserve(&bo->tbo, true, no_wait, false, 0);
-	if (unlikely(r != 0)) {
-		if (r == -ERESTART)
-			goto retry;
-		dev_err(bo->rdev->dev, "%p reserve failed\n", bo);
-		return r;
-	}
-	return 0;
-}
+ */
 
 static inline void radeon_bo_unreserve(struct radeon_bo *bo)
 {
@@ -85,12 +71,12 @@ static inline void radeon_bo_unreserve(struct radeon_bo *bo)
 /**
  * radeon_bo_gpu_offset - return GPU offset of bo
  * @bo:	radeon object for which we query the offset
-     *
+ *
  * Returns current GPU offset of the object.
-     *
+ *
  * Note: object should either be pinned or reserved when calling this
  * function, it might be usefull to add check for this for debugging.
-     */
+ */
 static inline u64 radeon_bo_gpu_offset(struct radeon_bo *bo)
 {
 	return bo->tbo.offset;
@@ -109,12 +95,12 @@ static inline bool radeon_bo_is_reserved(struct radeon_bo *bo)
 /**
  * radeon_bo_mmap_offset - return mmap offset of bo
  * @bo:	radeon object for which we query the offset
-     *
+ *
  * Returns mmap offset of the object.
-     *
+ *
  * Note: addr_space_offset is constant after ttm bo init thus isn't protected
  * by any lock.
-     */
+ */
 static inline u64 radeon_bo_mmap_offset(struct radeon_bo *bo)
 {
 	return bo->tbo.addr_space_offset;
@@ -125,11 +111,9 @@ static inline int radeon_bo_wait(struct radeon_bo *bo, u32 *mem_type,
 {
 	int r;
 
-retry:
 	r = ttm_bo_reserve(&bo->tbo, true, no_wait, false, 0);
 	if (unlikely(r != 0)) {
-		if (r == -ERESTART)
-			goto retry;
+		if (r != -ERESTARTSYS)
 		dev_err(bo->rdev->dev, "%p reserve failed for wait\n", bo);
 		return r;
 	}
@@ -140,8 +124,6 @@ retry:
 		r = ttm_bo_wait(&bo->tbo, true, true, no_wait);
 	spin_unlock(&bo->tbo.lock);
 	ttm_bo_unreserve(&bo->tbo);
-	if (unlikely(r == -ERESTART))
-		goto retry;
 	return r;
 }
 

@@ -19,8 +19,8 @@ typedef struct
     uint32_t   hot_x;
     uint32_t   hot_y;
 
-    struct list_head      list;
-    struct radeon_object *robj;
+    struct list_head   list;
+    struct radeon_bo  *robj;
 }cursor_t;
 
 #define CURSOR_WIDTH 64

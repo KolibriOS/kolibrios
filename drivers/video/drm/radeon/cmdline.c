@@ -1,5 +1,4 @@
 
-#include <stdint.h>
 #include <drm/drmP.h>
 #include <drm.h>
 #include <drm_mm.h>
@@ -24,7 +23,7 @@ static int my_atoi(char **cmd)
     }
 }
 
-char* parse_mode(char *p, mode_t *mode)
+char* parse_mode(char *p, videomode_t *mode)
 {
     char c;
 
@@ -63,7 +62,7 @@ char* parse_path(char *p, char *log)
     return p;
 };
 
-void parse_cmdline(char *cmdline, mode_t *mode, char *log, int *kms)
+void parse_cmdline(char *cmdline, videomode_t *mode, char *log, int *kms)
 {
     char *p = cmdline;
 
