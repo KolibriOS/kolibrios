@@ -128,13 +128,11 @@ _doprnt(register const char *fmt, va_list ap, FILE *stream)
 
 	while (c = *fmt++) {
 		if (c != '%') {
-#ifdef	CPM
 			if (c == '\n') {
 				if (putc('\r', stream) == EOF)
 					return nrchars ? -nrchars : -1;
 				nrchars++;
 			}
-#endif
 			if (putc(c, stream) == EOF)
 				return nrchars ? -nrchars : -1;
 			nrchars++;
@@ -184,13 +182,11 @@ _doprnt(register const char *fmt, va_list ap, FILE *stream)
 
 		switch (c = *fmt++) {
 		default:
-#ifdef	CPM
 			if (c == '\n') {
 				if (putc('\r', stream) == EOF)
 					return nrchars ? -nrchars : -1;
 				nrchars++;
 			}
-#endif
 			if (putc(c, stream) == EOF)
 				return nrchars ? -nrchars : -1;
 			nrchars++;
