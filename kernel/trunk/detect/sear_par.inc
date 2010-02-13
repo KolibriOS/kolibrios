@@ -23,11 +23,16 @@ $Revision$
       mov  [known_part],1
  search_partitions_ide0_1:
       call  set_PARTITION_variables
-      cmp   [problem_partition],0
-      jne   search_partitions_ide1
+      test  [problem_partition],2
+      jnz   search_partitions_ide1      ; not found part
+      test  [problem_partition],1
+      jnz   @F                          ; not found known_part
+      ;cmp   [problem_partition],0
+      ;jne   search_partitions_ide1
       inc   byte [DRIVE_DATA+2]
       call  partition_data_transfer
       add   [transfer_adress],100
+    @@:
       inc   [known_part]
       jmp   search_partitions_ide0_1
 
@@ -40,11 +45,16 @@ $Revision$
       mov  [known_part],1
  search_partitions_ide1_1:
       call  set_PARTITION_variables
-      cmp   [problem_partition],0
-      jne   search_partitions_ide2
+      test  [problem_partition],2
+      jnz   search_partitions_ide2
+      test  [problem_partition],1
+      jnz   @F
+      ;cmp   [problem_partition],0
+      ;jne   search_partitions_ide2
       inc   byte [DRIVE_DATA+3]
       call  partition_data_transfer
       add   [transfer_adress],100
+    @@:
       inc   [known_part]
       jmp   search_partitions_ide1_1
 
@@ -57,11 +67,16 @@ $Revision$
       mov  [known_part],1
  search_partitions_ide2_1:
       call  set_PARTITION_variables
-      cmp   [problem_partition],0
-      jne   search_partitions_ide3
+      test  [problem_partition],2
+      jnz   search_partitions_ide3
+      test  [problem_partition],1
+      jnz   @F
+      ;cmp   [problem_partition],0
+      ;jne   search_partitions_ide3
       inc   byte [DRIVE_DATA+4]
       call  partition_data_transfer
       add   [transfer_adress],100
+    @@:
       inc   [known_part]
       jmp   search_partitions_ide2_1
 
@@ -74,11 +89,16 @@ $Revision$
       mov  [known_part],1
  search_partitions_ide3_1:
       call  set_PARTITION_variables
-      cmp   [problem_partition],0
-      jne   end_search_partitions_ide
+      test  [problem_partition],2
+      jnz   end_search_partitions_ide
+      test  [problem_partition],1
+      jnz   @F
+      ;cmp   [problem_partition],0
+      ;jne   end_search_partitions_ide
       inc   byte [DRIVE_DATA+5]
       call  partition_data_transfer
       add   [transfer_adress],100
+    @@:
       inc   [known_part]
       jmp   search_partitions_ide3_1
 
@@ -94,12 +114,17 @@ start_search_partitions_bd:
         mov     [known_part], 1
 search_partitions_bd:
         call    set_PARTITION_variables
-        cmp     [problem_partition], 0
-        jne     end_search_partitions_bd
+        test    [problem_partition],2
+        jnz     end_search_partitions_bd
+        test    [problem_partition],1
+        jnz     @F
+        ;cmp     [problem_partition], 0
+        ;jne     end_search_partitions_bd
         mov     eax, [hdpos]
         inc     [BiosDiskPartitions+(eax-80h)*4]
         call    partition_data_transfer
         add     [transfer_adress], 100
+    @@:
         inc     [known_part]
         jmp     search_partitions_bd
 end_search_partitions_bd:
@@ -129,25 +154,4 @@ partition_data_transfer_1:
      ret
 
  end_search_partitions:
-
-;PARTITION_START      dd 0x3f
-;PARTITION_END        dd 0
-;SECTORS_PER_FAT      dd 0x1f3a
-;NUMBER_OF_FATS       dd 0x2
-;SECTORS_PER_CLUSTER  dd 0x8
-;BYTES_PER_SECTOR     dd 0x200   ; Note: if BPS <> 512 need lots of changes
-;ROOT_CLUSTER         dd 2       ; first rootdir cluster
-;FAT_START            dd 0       ; start of fat table
-;ROOT_START           dd 0       ; start of rootdir (only fat16)
-;ROOT_SECTORS         dd 0       ; count of rootdir sectors (only fat16)
-;DATA_START           dd 0       ; start of data area (=first cluster 2)
-;LAST_CLUSTER         dd 0       ; last availabe cluster
-;ADR_FSINFO           dd 0       ; used only by fat32
-;
-;fatRESERVED          dd 0x0FFFFFF6
-;fatBAD               dd 0x0FFFFFF7
-;fatEND               dd 0x0FFFFFF8
-;fatMASK              dd 0x0FFFFFFF
-;
-;fat_type             db 0       ; 0=none, 16=fat16, 32=fat32
 

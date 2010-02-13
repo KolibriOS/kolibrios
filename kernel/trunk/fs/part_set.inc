@@ -9,6 +9,7 @@ $Revision$
 
 
 ;*************************************************************
+;* 13.02.2010 Find all partition and check supported FS
 ;* 12.07.2007 Check all 4 entry of MBR and EMBR
 ;* 29.04.2006 Elimination of hangup after the
 ;*             expiration hd_wait_timeout -  Mario79
@@ -26,7 +27,7 @@ align 4
 ;******************************************************
 PARTITION_START      dd 0x3f
 PARTITION_END        dd 0
-fs_type              db 0       ; 0=none, 1=NTFS, 2=EXT2/3, 16=FAT16, 32=FAT32
+fs_type              db 0       ; 1=NTFS, 2=EXT2/3, 16=FAT16, 32=FAT32
 align 4
 
 fs_dependent_data_start:
@@ -150,7 +151,7 @@ endg
 
 set_PARTITION_variables:
 set_FAT32_variables:        ;deprecated
-    mov   [problem_partition],0
+    and   [problem_partition], 0
     call  reserve_hd1
     call  reserve_hd_channel
 
@@ -160,7 +161,7 @@ set_FAT32_variables:        ;deprecated
     je    problem_hd
 
     xor   ecx,ecx               ; partition count
-    or    edx,-1                ; flag for partition
+    ;or    edx,-1                ; flag for partition
     xor   eax,eax               ; address MBR
     xor   ebp,ebp               ; extended partition start
 
@@ -178,6 +179,7 @@ extended_already_set:
 
     cmp   word [ebx+0x1fe],0xaa55 ; is it valid boot sector?
     jnz   end_partition_chain
+    push  eax                      ; push only one time
     cmp   dword [ebx+0x1be+0xc],0 ; skip over empty partition
     jnz    test_primary_partition_0
     cmp   dword [ebx+0x1be+0xc+16],0
@@ -186,98 +188,111 @@ extended_already_set:
     jnz    test_primary_partition_2
     cmp   dword [ebx+0x1be+0xc+16+16+16],0
     jnz    test_primary_partition_3
+    pop   eax
     jmp   end_partition_chain
 
 test_primary_partition_0:
-    push  eax
     mov   al,[ebx+0x1be+4]      ; get primary partition type
     call  scan_partition_types
-    pop   eax
     jnz   test_primary_partition_1      ; no. skip over
 
     inc   ecx
     cmp   ecx,[known_part]       ; is it wanted partition?
     jnz   test_primary_partition_1      ; no
 
-        mov     edx, eax                ; start sector
-        add     edx, [ebx+0x1be+8]      ; add relative start
-        push    edx
-        add     edx, [ebx+0x1be+12]     ; add length
-        dec     edx                     ; PARTITION_END is inclusive
-        mov     [PARTITION_END], edx    ; note that this can be changed
+        pop     eax
+        ;mov     edx, eax                ; start sector
+        add     eax, [ebx+0x1be+8]      ; add relative start
+        ;mov     [PARTITON_START],edx
+        ;push    edx
+        mov     edx, [ebx+0x1be+12]     ; length
+        ;add     edx, eax                ; add length
+        ;dec     edx                     ; PARTITION_END is inclusive
+        ;mov     [PARTITION_END], edx    ; note that this can be changed
                                         ; when file system data will be available
-        mov     dl, [ebx+0x1be+4]
-        mov     [fs_type], dl           ; save for FS recognizer (separate FAT vs NTFS)
-        pop     edx
+        mov     cl, [ebx+0x1be+4]       ; fs_type
+        ;mov     [fs_type], dl           ; save for FS recognizer (separate FAT vs NTFS)
+        ;pop     edx
+        jmp     hd_and_partition_ok
 
 test_primary_partition_1:
-    push  eax
     mov   al,[ebx+0x1be+4+16]      ; get primary partition type
     call  scan_partition_types
-    pop   eax
     jnz   test_primary_partition_2        ; no. skip over
 
     inc   ecx
     cmp   ecx,[known_part]       ; is it wanted partition?
     jnz   test_primary_partition_2        ; no
 
-        mov     edx, eax
-        add     edx, [ebx+0x1be+8+16]
-        push    edx
-        add     edx, [ebx+0x1be+12+16]
-        dec     edx
-        mov     [PARTITION_END], edx
-        mov     dl, [ebx+0x1be+4+16]
-        mov     [fs_type], dl
-        pop     edx
+        pop     eax
+        add     eax, [ebx+0x1be+8+16]
+        mov     edx, [ebx+0x1be+12+16]
+        mov     cl, [ebx+0x1be+4+16]
+        jmp     hd_and_partition_ok
+
+        ;mov     edx, eax
+        ;add     edx, [ebx+0x1be+8+16]
+        ;push    edx
+        ;add     edx, [ebx+0x1be+12+16]
+        ;dec     edx
+        ;mov     [PARTITION_END], edx
+        ;mov     al, [ebx+0x1be+4+16]
+        ;mov     [fs_type], dl
+        ;pop     edx
 
 test_primary_partition_2:
-    push  eax
     mov   al,[ebx+0x1be+4+16+16]      ; get primary partition type
     call  scan_partition_types
-    pop   eax
     jnz   test_primary_partition_3        ; no. skip over
 
     inc   ecx
     cmp   ecx,[known_part]       ; is it wanted partition?
     jnz   test_primary_partition_3        ; no
 
-        mov     edx, eax
-        add     edx, [ebx+0x1be+8+16+16]
-        push    edx
-        add     edx, [ebx+0x1be+12+16+16]
-        dec     edx
-        mov     [PARTITION_END], edx
-        mov     dl, [ebx+0x1be+4+16+16]
-        mov     [fs_type], dl
-        pop     edx
+        pop     eax
+        add     eax, [ebx+0x1be+8+16+16]
+        mov     edx, [ebx+0x1be+12+16+16]
+        mov     cl, [ebx+0x1be+4+16+16]
+        jmp     hd_and_partition_ok
+        ;mov     edx, eax
+        ;add     edx, [ebx+0x1be+8+16+16]
+        ;push    edx
+        ;add     edx, [ebx+0x1be+12+16+16]
+        ;dec     edx
+        ;mov     [PARTITION_END], edx
+        ;mov     al, [ebx+0x1be+4+16+16]
+        ;mov     [fs_type], dl
+        ;pop     edx
 
 test_primary_partition_3:
-    push  eax
     mov   al,[ebx+0x1be+4+16+16+16]      ; get primary partition type
     call  scan_partition_types
-    pop   eax
     jnz   test_ext_partition_0        ; no. skip over
 
     inc   ecx
     cmp   ecx,[known_part]       ; is it wanted partition?
     jnz   test_ext_partition_0  ; no
 
-        mov     edx, eax
-        add     edx, [ebx+0x1be+8+16+16+16]
-        push    edx
-        add     edx, [ebx+0x1be+12+16+16+16]
-        dec     edx
-        mov     [PARTITION_END], edx
-        mov     dl, [ebx+0x1be+4+16+16+16]
-        mov     [fs_type], dl
-        pop     edx
+        pop     eax
+        add     eax, [ebx+0x1be+8+16+16+16]
+        mov     edx, [ebx+0x1be+12+16+16+16]
+        mov     cl, [ebx+0x1be+4+16+16+16]
+        jmp     hd_and_partition_ok
+
+        ;mov     edx, eax
+        ;add     edx, [ebx+0x1be+8+16+16+16]
+        ;push    edx
+        ;add     edx, [ebx+0x1be+12+16+16+16]
+        ;dec     edx
+        ;mov     [PARTITION_END], edx
+        ;mov     al, [ebx+0x1be+4+16+16+16]
+        ;mov     [fs_type], dl
+        ;pop     edx
 
 test_ext_partition_0:
-    push  eax
+    pop   eax               ; просто выкидываем из стека
     mov   al,[ebx+0x1be+4]   ; get extended partition type
     call  scan_extended_types
-    pop   eax
     jnz   test_ext_partition_1
 
     mov   eax,[ebx+0x1be+8]     ; add relative start
@@ -285,10 +300,8 @@ test_ext_partition_0:
     jnz   new_mbr               ; yes. read it
 
 test_ext_partition_1:
-    push  eax
     mov   al,[ebx+0x1be+4+16]   ; get extended partition type
     call  scan_extended_types
-    pop   eax
     jnz   test_ext_partition_2
 
     mov   eax,[ebx+0x1be+8+16]  ; add relative start
@@ -296,10 +309,8 @@ test_ext_partition_1:
     jnz   new_mbr               ; yes. read it
 
 test_ext_partition_2:
-    push  eax
     mov   al,[ebx+0x1be+4+16+16]   ; get extended partition type
     call  scan_extended_types
-    pop   eax
     jnz   test_ext_partition_3
 
     mov   eax,[ebx+0x1be+8+16+16]     ; add relative start
@@ -307,10 +318,8 @@ test_ext_partition_2:
     jnz   new_mbr               ; yes. read it
 
 test_ext_partition_3:
-    push  eax
     mov   al,[ebx+0x1be+4+16+16+16]   ; get extended partition type
     call  scan_extended_types
-    pop   eax
     jnz   end_partition_chain   ; no. end chain
 
     mov   eax,[ebx+0x1be+8+16+16+16]  ; get start of extended partition
@@ -318,11 +327,15 @@ test_ext_partition_3:
     jnz   new_mbr               ; yes. read it
 
 end_partition_chain:
-    mov   [partition_count],ecx
+    ;mov   [partition_count],ecx
 
-    cmp   edx,-1                ; found wanted partition?
-    jnz   hd_and_partition_ok   ; yes. install it
-    jmp   problem_partition_or_fat
+    ;cmp   edx,-1                ; found wanted partition?
+    ;jnz   hd_and_partition_ok   ; yes. install it
+    ;jmp   problem_partition_or_fat
+problem_hd:
+    or    [problem_partition], 2
+    jmp   return_from_part_set
+
 
 scan_partition_types:
     push  ecx
@@ -343,24 +356,31 @@ scan_extended_types:
     ret
 
 problem_fat_dec_count:          ; bootsector is missing or another problem
-    dec   [partition_count]     ; remove it from partition_count
+;    dec   [partition_count]     ; remove it from partition_count
 
 problem_partition_or_fat:
-problem_hd:
-    popad
+    or    [problem_partition],1
 
-    mov   [fs_type],0
+return_from_part_set:
+    popad
+    ;mov   [fs_type],0
     call  free_hd_channel
     mov   [hd1_status],0        ; free
-    mov   [problem_partition],1
     ret
 
 hd_and_partition_ok:
-    mov   eax,edx
+
+;eax = PARTITION_START edx=PARTITION_LENGTH cl=fs_type
+    mov   [fs_type], cl
+    ;mov   eax,edx
     mov   [PARTITION_START],eax
-        mov     edx, [PARTITION_END]
-        sub     edx, eax
-        inc     edx     ; edx = length of partition
+    add   edx, eax
+    dec   edx
+    mov   [PARTITION_END], edx
+
+   ;     mov     edx, [PARTITION_END]
+   ;     sub     edx, eax
+   ;     inc     edx     ; edx = length of partition зачем оно нам??
 
 ;    mov   [hd_setup],1
     mov   ebx,buffer
@@ -395,12 +415,12 @@ boot_read_ok:
         jnc     ntfs_setup
 
         call    ext2_test_superblock   ; test ext2fs
-        jnc	ext2_setup
+        jnc     ext2_setup
 
-        mov	eax, [PARTITION_START]	;ext2 test changes [buffer]
-        call	hd_read
+        mov     eax, [PARTITION_START]	;ext2 test changes [buffer]
+        call    hd_read
         cmp     [hd_error], 0
-        jnz	problem_fat_dec_count
+        jnz     problem_fat_dec_count
 
     cmp   word [ebx+0x1fe],0xaa55 ; is it valid boot sector?
     jnz   problem_fat_dec_count
@@ -506,3 +526,4 @@ fat16_partition:
     call  free_hd_channel
     mov   [hd1_status],0        ; free
     ret
+

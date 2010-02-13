@@ -41,6 +41,8 @@ FS_FT_DIR               = 0x10  ;это папка
 FS_FT_ASCII             = 0     ;имя в ascii
 FS_FT_UNICODE           = 1     ;имя в unicode
 
+EXT2_FEATURE_INCOMPAT_FILETYPE = 0x0002
+
 uglobal
     EXT2_files_in_folder    dd ?   ;всего файлов в папке
     EXT2_read_in_folder     dd ?   ;сколько файлов "считали"
@@ -80,18 +82,24 @@ ends
 
 
 ext2_test_superblock:
+        cmp     [fs_type], 0x83
+        jne     .no
+
         mov     eax, [PARTITION_START]
         add     eax, 2                  ;superblock start at 1024b
         call    hd_read
 
-        cmp     [fs_type], 0x83
-        jne     .no
         cmp     dword [ebx+24], 3       ;s_block_size 0,1,2,3
         ja      .no
         cmp     word [ebx+56], 0xEF53   ;s_magic
         jne     .no
         cmp     word [ebx+58], 1        ;s_state (EXT_VALID_FS=1)
         jne     .no
+        mov     eax, [ebx+96]
+        test    eax, EXT2_FEATURE_INCOMPAT_FILETYPE
+        jz      .no
+        test    eax, not EXT2_FEATURE_INCOMPAT_FILETYPE
+        jnz     .no
 
     ; OK, this is correct EXT2 superblock
         clc
@@ -155,11 +163,8 @@ ext2_setup:
         mov     ebx, eax
         mov     eax, EXT2_ROOT_INO
         call    ext2_get_inode                          ; read root inode
+	jmp	return_from_part_set
 
-        popad
-        call    free_hd_channel
-        and     [hd1_status], 0
-        ret
 ;==================================================================
 ;in: eax = i_block
 ;    ebx = pointer to return memory
@@ -270,21 +275,22 @@ ext2_get_inode:
         add     eax, [PARTITION_START]          ; а старт раздела - в терминах hdd (512)
 
         ;eax - указывает на таблицу inode-ов на hdd
-        mov     ecx, eax                        ;сохраним его пока в ecx
+        mov     esi, eax                        ;сохраним его пока в esi
 
         ; прибавим локальный адрес inode-а
         pop     eax                             ; index
-        mul     [ext2_data.inode_size]        ; (index * inode_size)
+        mov     ecx, [ext2_data.inode_size]
+        mul     ecx                             ; (index * inode_size)
         mov     ebp, 512
         div     ebp                             ;поделим на размер блока
 
-        add     eax, ecx                        ;нашли адрес блока для чтения
+        add     eax, esi                        ;нашли адрес блока для чтения
         mov     ebx, [ext2_data.ext2_temp_block]
         call    hd_read
 
         mov     esi, edx                        ;добавим "остаток"
         add     esi, ebx                        ;к адресу
-        mov     ecx, [ext2_data.inode_size]
+       ; mov     ecx, [ext2_data.inode_size]
         rep     movsb                           ;копируем inode
         popad
         ret
