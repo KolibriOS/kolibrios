@@ -172,10 +172,28 @@ mouse:		  ; когда пользователь нажмёт кнопку мыши, закроемся
   mov	eax,37
   mov	ebx,2	  ; какие кнопки нажаты?
   mcall
-  test	eax,eax   ; никакие? - тогда прекрасно! вернёмся в гланый цикл
+  test	eax,eax   ; никакие? - тогда прекрасно! вернёмся в главный цикл
   jz	still2
-  jmp	exit_menu ; а если всё-таки нажаты - закроем окно
 
+        mcall   37, 0
+        mov     esi, eax
+        shr     esi, 16
+        movzx   edi, ax
+        mcall   9, procinfo2, -1
+        mov     eax, [procinfo2.box.left]
+        cmp     esi, eax
+        jl      exit_menu
+        add     eax, [procinfo2.box.width]
+        cmp     esi, eax
+        jge     exit_menu
+        mov     eax, [procinfo2.box.top]
+        cmp     edi, eax
+        jl      exit_menu
+        add     eax, [procinfo2.box.height]
+        cmp     edi, eax
+        jge     exit_menu
+
+        jmp     still2
 
 ; НАЖАТА КНОПКА
 button:
@@ -392,6 +410,7 @@ start_info.path rb 256
 
   sc	   system_colors	; системные цвета
   procinfo process_information	; информация о процессе
+  procinfo2 process_information
 
   rb 1024			; стэк для окна меню - хватит и 1 Кб
   align 32
