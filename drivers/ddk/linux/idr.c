@@ -27,12 +27,10 @@
  */
 
 #include <linux/kernel.h>
-
+#include <linux/string.h>
+#include <linux/bitops.h>
 #include <linux/idr.h>
 //#include <stdlib.h>
-#include "drm.h"
-#include "drmP.h"
-#include "drm_crtc.h"
 
 unsigned long find_first_bit(const unsigned long *addr, unsigned long size)
 {
@@ -201,8 +199,6 @@ int idr_pre_get(struct idr *idp, u32_t gfp_mask)
    }
    return 1;
 }
-EXPORT_SYMBOL(idr_pre_get);
-
 
 static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa)
 {
@@ -385,7 +381,6 @@ int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id)
 	*id = rv;
     return 0;
 }
-EXPORT_SYMBOL(idr_get_new_above);
 
 /**
  * idr_get_new - allocate new idr entry
@@ -416,7 +411,6 @@ int idr_get_new(struct idr *idp, void *ptr, int *id)
 	*id = rv;
 	return 0;
 }
-EXPORT_SYMBOL(idr_get_new);
 
 static void idr_remove_warning(int id)
 {
@@ -502,7 +496,6 @@ void idr_remove(struct idr *idp, int id)
 	}
 	return;
 }
-EXPORT_SYMBOL(idr_remove);
 
 
 /**
@@ -548,7 +541,6 @@ void idr_remove_all(struct idr *idp)
 	}
 	idp->layers = 0;
 }
-EXPORT_SYMBOL(idr_remove_all);
 
 /**
  * idr_destroy - release all cached layers within an idr tree
@@ -561,7 +553,6 @@ void idr_destroy(struct idr *idp)
         kfree(p);
 	}
 }
-EXPORT_SYMBOL(idr_destroy);
 
 
 /**
@@ -600,7 +591,6 @@ void *idr_find(struct idr *idp, int id)
 	}
 	return((void *)p);
 }
-EXPORT_SYMBOL(idr_find);
 
 #if 0
 /**
@@ -771,7 +761,6 @@ void idr_init(struct idr *idp)
 	memset(idp, 0, sizeof(struct idr));
  //  spin_lock_init(&idp->lock);
 }
-EXPORT_SYMBOL(idr_init);
 
 #if 0
 

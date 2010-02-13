@@ -48,8 +48,6 @@ NAME_SRC=							\
 			$(DRM_TOPDIR)/drm_dp_i2c_helper.c	\
 			$(DRM_TOPDIR)/i2c/i2c-core.c		\
 			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
-			$(DRM_TOPDIR)/idr.c			\
-			$(DRM_TOPDIR)/list_sort.c		\
 			radeon_device.c				\
 			radeon_clocks.c				\
 			radeon_i2c.c				\
@@ -88,7 +86,17 @@ NAME_SRC=							\
 			rdisplay_kms.c				\
 			radeon_pm.c				\
 			cmdline.c				\
-			cursor.S
+			cursor.S				\
+			fwblob.asm
+
+FW_SRCS=							\
+			firmware/R100_cp.bin.ihex		\
+			firmware/R200_cp.bin.ihex		\
+			firmware/R300_cp.bin.ihex		\
+			firmware/R420_cp.bin.ihex		\
+			firmware/RS690_cp.bin.ihex		\
+			firmware/RS600_cp.bin.ihex		\
+			firmware/R520_cp.bin.ihex		\
 
 
 SRC_DEP:=    
@@ -96,6 +104,9 @@ SRC_DEP:=
 
 NAME_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
             $(patsubst %.c, %.o, $(NAME_SRC))))
+
+
+FW_BINS = $(patsubst %.bin.ihex, %.bin, $(FW_SRCS))
 
 
 
@@ -110,3 +121,7 @@ $(NAME).dll: $(NAME_OBJS) $(SRC_DEP) $(HFILES) atikms.lds Makefile
 
 %.o : %.S $(HFILES) Makefile
 	as -o $@ $<
+
+fwblob.o:  fwblob.asm $(FW_BINS) Makefile
+	$(FASM) $< $@
+

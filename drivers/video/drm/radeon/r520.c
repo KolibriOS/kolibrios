@@ -189,11 +189,11 @@ static int r520_startup(struct radeon_device *rdev)
 	/* Enable IRQ */
 //   rs600_irq_set(rdev);
 	/* 1M ring buffer */
-//   r = r100_cp_init(rdev, 1024 * 1024);
-//   if (r) {
-//       dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
-//       return r;
-//   }
+    r = r100_cp_init(rdev, 1024 * 1024);
+    if (r) {
+        dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
+        return r;
+    }
 //	r = r100_wb_init(rdev);
 //	if (r)
 //		dev_err(rdev->dev, "failled initializing WB (%d).\n", r);

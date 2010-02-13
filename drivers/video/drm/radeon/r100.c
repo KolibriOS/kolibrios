@@ -481,12 +481,12 @@ static int r100_cp_init_microcode(struct radeon_device *rdev)
 
 	DRM_DEBUG("\n");
 
-//   pdev = platform_device_register_simple("radeon_cp", 0, NULL, 0);
-//   err = IS_ERR(pdev);
-//   if (err) {
-//       printk(KERN_ERR "radeon_cp: Failed to register firmware\n");
-//       return -EINVAL;
-//   }
+    pdev = platform_device_register_simple("radeon_cp", 0, NULL, 0);
+    err = IS_ERR(pdev);
+    if (err) {
+        printk(KERN_ERR "radeon_cp: Failed to register firmware\n");
+        return -EINVAL;
+    }
 	if ((rdev->family == CHIP_R100) || (rdev->family == CHIP_RV100) ||
 	    (rdev->family == CHIP_RV200) || (rdev->family == CHIP_RS100) ||
 	    (rdev->family == CHIP_RS200)) {
@@ -528,8 +528,8 @@ static int r100_cp_init_microcode(struct radeon_device *rdev)
 		fw_name = FIRMWARE_R520;
 		}
 
-//   err = request_firmware(&rdev->me_fw, fw_name, &pdev->dev);
-//   platform_device_unregister(pdev);
+   err = request_firmware(&rdev->me_fw, fw_name, &pdev->dev);
+   platform_device_unregister(pdev);
    if (err) {
        printk(KERN_ERR "radeon_cp: Failed to load firmware \"%s\"\n",
               fw_name);
@@ -2668,6 +2668,45 @@ void r100_bandwidth_update(struct radeon_device *rdev)
 
 
 
+int r100_ring_test(struct radeon_device *rdev)
+{
+	uint32_t scratch;
+	uint32_t tmp = 0;
+	unsigned i;
+	int r;
+
+	r = radeon_scratch_get(rdev, &scratch);
+	if (r) {
+		DRM_ERROR("radeon: cp failed to get scratch reg (%d).\n", r);
+		return r;
+	}
+	WREG32(scratch, 0xCAFEDEAD);
+	r = radeon_ring_lock(rdev, 2);
+	if (r) {
+		DRM_ERROR("radeon: cp failed to lock ring (%d).\n", r);
+		radeon_scratch_free(rdev, scratch);
+		return r;
+	}
+	radeon_ring_write(rdev, PACKET0(scratch, 0));
+	radeon_ring_write(rdev, 0xDEADBEEF);
+	radeon_ring_unlock_commit(rdev);
+	for (i = 0; i < rdev->usec_timeout; i++) {
+		tmp = RREG32(scratch);
+		if (tmp == 0xDEADBEEF) {
+			break;
+		}
+		DRM_UDELAY(1);
+	}
+	if (i < rdev->usec_timeout) {
+		DRM_INFO("ring test succeeded in %d usecs\n", i);
+	} else {
+		DRM_ERROR("radeon: ring test failed (sracth(0x%04X)=0x%08X)\n",
+			  scratch, tmp);
+		r = -EINVAL;
+	}
+	radeon_scratch_free(rdev, scratch);
+	return r;
+}
 
 void r100_mc_stop(struct radeon_device *rdev, struct r100_mc_save *save)
 {
@@ -2827,11 +2866,11 @@ static int r100_startup(struct radeon_device *rdev)
 //   r100_irq_set(rdev);
 	rdev->config.r100.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
-//   r = r100_cp_init(rdev, 1024 * 1024);
-//   if (r) {
-//       dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
-//       return r;
-//   }
+   r = r100_cp_init(rdev, 1024 * 1024);
+   if (r) {
+       dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
+       return r;
+   }
 //   r = r100_wb_init(rdev);
 //   if (r)
 //       dev_err(rdev->dev, "failled initializing WB (%d).\n", r);

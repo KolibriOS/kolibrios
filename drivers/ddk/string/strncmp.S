@@ -7,9 +7,16 @@
 .intel_syntax
 
 .globl _strncmp
+.globl _strcmp
 
 .text
            .align  16
 _strncmp:
            mov     ecx, [esp+12]    # Maximum length
+           jmp     __strncmp        # Common code
+
+
+           .align  16
+_strcmp:
+           mov     ecx, -1          # Maximum length
            jmp     __strncmp        # Common code

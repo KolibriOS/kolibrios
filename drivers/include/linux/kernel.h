@@ -113,6 +113,8 @@ static inline void *kcalloc(size_t n, size_t size, uint32_t flags)
         return kzalloc(n * size, 0);
 }
 
+void free (void *ptr);
+
 #endif /* __KERNEL__ */
 
 typedef unsigned long   pgprotval_t;
@@ -122,6 +124,7 @@ typedef struct pgprot { pgprotval_t pgprot; } pgprot_t;
 struct file {};
 struct vm_area_struct {};
 struct address_space {};
+struct device {};        
 
 #define preempt_disable()       do { } while (0)
 #define preempt_enable_no_resched() do { } while (0)
@@ -132,9 +135,6 @@ struct address_space {};
 #define preempt_enable_no_resched_notrace() do { } while (0)
 #define preempt_enable_notrace()        do { } while (0)
 
-
-
-void free (void *ptr);
 
 #endif
 

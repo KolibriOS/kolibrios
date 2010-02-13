@@ -693,8 +693,6 @@ int drm_fb_helper_single_fb_probe(struct drm_device *dev,
 
 	if (new_fb) {
 		info->var.pixclock = 0;
-//       if (register_framebuffer(info) < 0)
-//           return -EINVAL;
 	} else {
 		drm_fb_helper_set_par(info);
 	}

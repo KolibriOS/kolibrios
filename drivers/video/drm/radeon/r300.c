@@ -1287,11 +1287,11 @@ static int r300_startup(struct radeon_device *rdev)
 //	r100_irq_set(rdev);
 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
-//   r = r100_cp_init(rdev, 1024 * 1024);
-//   if (r) {
-//       dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
-//       return r;
-//   }
+    r = r100_cp_init(rdev, 1024 * 1024);
+    if (r) {
+       dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
+       return r;
+    }
 //   r = r100_wb_init(rdev);
 //   if (r)
 //       dev_err(rdev->dev, "failled initializing WB (%d).\n", r);

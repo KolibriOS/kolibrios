@@ -1,19 +1,26 @@
 #ifndef _LINUX_FIRMWARE_H
 #define _LINUX_FIRMWARE_H
 
-#include <linux/module.h>
 #include <linux/types.h>
-//#include <linux/compiler.h>
+#include <linux/compiler.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
 
 #define FW_ACTION_NOHOTPLUG 0
 #define FW_ACTION_HOTPLUG 1
+
+struct device;
+
+struct platform_device
+{
+	struct device dev;
+};
 
 struct firmware {
 	size_t size;
 	const u8 *data;
 };
 
-struct device;
 
 struct builtin_fw {
 	char *name;
@@ -33,7 +40,6 @@ struct builtin_fw {
 	static const struct builtin_fw __fw_concat(__builtin_fw,__COUNTER__) \
 	__used __section(.builtin_fw) = { name, blob, size }
 
-#if defined(CONFIG_FW_LOADER) || (defined(CONFIG_FW_LOADER_MODULE) && defined(MODULE))
 int request_firmware(const struct firmware **fw, const char *name,
 		     struct device *device);
 int request_firmware_nowait(
@@ -42,24 +48,20 @@ int request_firmware_nowait(
 	void (*cont)(const struct firmware *fw, void *context));
 
 void release_firmware(const struct firmware *fw);
-#else
-static inline int request_firmware(const struct firmware **fw,
-				   const char *name,
-				   struct device *device)
-{
-	return -EINVAL;
-}
-static inline int request_firmware_nowait(
-	struct module *module, int uevent,
-	const char *name, struct device *device, void *context,
-	void (*cont)(const struct firmware *fw, void *context))
-{
-	return -EINVAL;
-}
 
-static inline void release_firmware(const struct firmware *fw)
+
+#define platform_device_unregister(x)
+
+struct platform_device
+       *platform_device_register_simple(const char*, int, void*, unsigned int);
+
+#define MAX_ERRNO   4095
+
+#define IS_ERR_VALUE(x) unlikely((x) >= (unsigned long)-MAX_ERRNO)
+
+static inline long IS_ERR(const void *ptr)
 {
+    return IS_ERR_VALUE((unsigned long)ptr);
 }
-#endif
 
 #endif

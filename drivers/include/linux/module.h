@@ -10,6 +10,7 @@
 
 #define MODULE_FIRMWARE(x)
 
+struct module {};
 
 #endif /* _LINUX_MODULE_H */
 

@@ -1,5 +1,6 @@
 
 
+
 CC = gcc
 AS = as
 
@@ -21,6 +22,9 @@ NAME_SRCS:=  				\
            	io/finfo.c		\
            	io/ssize.c		\
            	io/write.c		\
+		linux/idr.c		\
+		linux/firmware.c	\
+		linux/list_sort.c	\
 		malloc/malloc.c		\
 		stdio/icompute.c	\
 		stdio/vsprintf.c	\
