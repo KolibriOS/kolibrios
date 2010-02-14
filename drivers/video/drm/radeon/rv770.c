@@ -25,7 +25,7 @@
  *          Alex Deucher
  *          Jerome Glisse
  */
-//#include <linux/firmware.h>
+#include <linux/firmware.h>
 //#include <linux/platform_device.h>
 #include "drmP.h"
 #include "radeon.h"
@@ -234,7 +234,7 @@ void r700_cp_stop(struct radeon_device *rdev)
 	WREG32(CP_ME_CNTL, (CP_ME_HALT | CP_PFP_HALT));
 }
 
-#if 0
+
 static int rv770_cp_load_microcode(struct radeon_device *rdev)
 {
 	const __be32 *fw_data;
@@ -269,7 +269,6 @@ static int rv770_cp_load_microcode(struct radeon_device *rdev)
 	return 0;
 }
 
-#endif
 
 /*
  * Core functions
@@ -871,6 +870,14 @@ static int rv770_startup(struct radeon_device *rdev)
 {
 	int r;
 
+	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+		r = r600_init_microcode(rdev);
+		if (r) {
+			DRM_ERROR("Failed to load firmware!\n");
+			return r;
+		}
+	}
+
 	rv770_mc_program(rdev);
 	if (rdev->flags & RADEON_IS_AGP) {
 		rv770_agp_enable(rdev);
@@ -880,28 +887,24 @@ static int rv770_startup(struct radeon_device *rdev)
 			return r;
 	}
 	rv770_gpu_init(rdev);
-
-
-//  r = radeon_object_pin(rdev->r600_blit.shader_obj, RADEON_GEM_DOMAIN_VRAM,
-//                 &rdev->r600_blit.shader_gpu_addr);
-//   if (r) {
-//       DRM_ERROR("failed to pin blit object %d\n", r);
-//       return r;
-//   }
-
-//   r = radeon_ring_init(rdev, rdev->cp.ring_size);
-//   if (r)
-//       return r;
-//   r = rv770_cp_load_microcode(rdev);
-//   if (r)
-//       return r;
-//   r = r600_cp_resume(rdev);
-//   if (r)
-//       return r;
+	r = radeon_ring_init(rdev, rdev->cp.ring_size);
+	if (r)
+		return r;
+	r = rv770_cp_load_microcode(rdev);
+	if (r)
+		return r;
+	r = r600_cp_resume(rdev);
+	if (r)
+		return r;
 	/* write back buffer are not vital so don't worry about failure */
-//   r600_wb_enable(rdev);
+//	r600_wb_enable(rdev);
 	return 0;
 }
+
+
+
+
+
 
 
 /* Plan is to move initialization in that function and use
@@ -971,30 +974,20 @@ int rv770_init(struct radeon_device *rdev)
 	if (r)
 		return r;
 
-//   if (!rdev->me_fw || !rdev->pfp_fw) {
-//       r = r600_cp_init_microcode(rdev);
-//       if (r) {
-//           DRM_ERROR("Failed to load firmware!\n");
-//           return r;
-//       }
-//   }
+
+	rdev->cp.ring_obj = NULL;
+	r600_ring_init(rdev, 1024 * 1024);
+
 
 	r = r600_pcie_gart_init(rdev);
 	if (r)
 		return r;
 
 	rdev->accel_working = true;
-//   r = r600_blit_init(rdev);
-//   if (r) {
-//       DRM_ERROR("radeon: failled blitter (%d).\n", r);
-//       rdev->accel_working = false;
-//   }
-
 	r = rv770_startup(rdev);
 	if (r) {
-//       rv770_suspend(rdev);
-//       r600_wb_fini(rdev);
-//       radeon_ring_fini(rdev);
+		dev_err(rdev->dev, "disabling GPU acceleration\n");
+
 		rv770_pcie_gart_fini(rdev);
         rdev->accel_working = false;
 	}

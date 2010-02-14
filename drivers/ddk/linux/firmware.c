@@ -56,7 +56,7 @@ request_firmware(const struct firmware **firmware_p, const char *name,
             continue;
         dbgprintf("firmware: using built-in firmware %s\n", name);
 
-
+#if 0
         size = 0;
         for (rec = (const struct ihex_binrec *)builtin->data;
              rec; rec = ihex_next_binrec(rec))
@@ -86,6 +86,12 @@ request_firmware(const struct firmware **firmware_p, const char *name,
             memcpy(pfw, rec->data, src_size);
             pfw+= src_size;
         };
+#else
+        dbgprintf("firmware size %d\n", builtin->size);
+
+        firmware->size = builtin->size;
+        firmware->data = builtin->data;
+#endif
         return 0;
     }
 

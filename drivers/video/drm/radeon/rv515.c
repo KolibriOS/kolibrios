@@ -491,11 +491,11 @@ static int rv515_startup(struct radeon_device *rdev)
 //	rs600_irq_set(rdev);
 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
-//	r = r100_cp_init(rdev, 1024 * 1024);
-//	if (r) {
-//		dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
-//		return r;
-//	}
+	r = r100_cp_init(rdev, 1024 * 1024);
+	if (r) {
+		dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
+		return r;
+	}
 //	r = r100_wb_init(rdev);
 //	if (r)
 //		dev_err(rdev->dev, "failled initializing WB (%d).\n", r);
@@ -578,13 +578,11 @@ int rv515_init(struct radeon_device *rdev)
 	if (r) {
 		/* Somethings want wront with the accel init stop accel */
 		dev_err(rdev->dev, "Disabling GPU acceleration\n");
-//		rv515_suspend(rdev);
 //		r100_cp_fini(rdev);
 //		r100_wb_fini(rdev);
 //		r100_ib_fini(rdev);
 		rv370_pcie_gart_fini(rdev);
 //		radeon_agp_fini(rdev);
-//		radeon_irq_kms_fini(rdev);
 		rdev->accel_working = false;
 	}
 	return 0;

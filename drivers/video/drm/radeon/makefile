@@ -89,14 +89,38 @@ NAME_SRC=							\
 			cursor.S				\
 			fwblob.asm
 
-FW_SRCS=							\
-			firmware/R100_cp.bin.ihex		\
-			firmware/R200_cp.bin.ihex		\
-			firmware/R300_cp.bin.ihex		\
-			firmware/R420_cp.bin.ihex		\
-			firmware/RS690_cp.bin.ihex		\
-			firmware/RS600_cp.bin.ihex		\
-			firmware/R520_cp.bin.ihex		\
+FW_BINS=							\
+			firmware/R100_cp.bin			\
+			firmware/R200_cp.bin			\
+			firmware/R300_cp.bin			\
+			firmware/R420_cp.bin			\
+			firmware/R520_cp.bin			\
+								\
+			firmware/RS690_cp.bin			\
+			firmware/RS600_cp.bin			\
+			firmware/RS780_me.bin			\
+			firmware/RS780_pfp.bin			\
+								\
+			firmware/RV610_me.bin			\
+			firmware/RV620_me.bin			\
+			firmware/RV630_me.bin			\
+			firmware/RV635_me.bin			\
+			firmware/RV670_me.bin			\
+			firmware/RV710_me.bin			\
+			firmware/RV730_me.bin			\
+			firmware/RV770_me.bin			\
+								\
+			firmware/RV610_pfp.bin			\
+			firmware/RV620_pfp.bin			\
+			firmware/RV630_pfp.bin			\
+			firmware/RV635_pfp.bin			\
+			firmware/RV670_pfp.bin			\
+			firmware/RV710_pfp.bin			\
+			firmware/RV730_pfp.bin			\
+			firmware/RV770_pfp.bin			\
+								\
+			firmware/R600_rlc.bin			\
+			firmware/R700_rlc.bin
 
 
 SRC_DEP:=    
@@ -106,13 +130,10 @@ NAME_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
             $(patsubst %.c, %.o, $(NAME_SRC))))
 
 
-FW_BINS = $(patsubst %.bin.ihex, %.bin, $(FW_SRCS))
-
-
 
 all: $(NAME).dll
 
-$(NAME).dll: $(NAME_OBJS) $(SRC_DEP) $(HFILES) atikms.lds Makefile
+$(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(HFILES) atikms.lds Makefile
 	ld -L$(LIBPATH) $(LDFLAGS) -T atikms.lds -o $@ $(NAME_OBJS) $(LIBS)  
 
 

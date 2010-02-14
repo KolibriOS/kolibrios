@@ -625,15 +625,14 @@ static int rs690_startup(struct radeon_device *rdev)
 	if (r)
 		return r;
 	/* Enable IRQ */
-//	rdev->irq.sw_int = true;
 //	rs600_irq_set(rdev);
 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
-//	r = r100_cp_init(rdev, 1024 * 1024);
-//	if (r) {
-//		dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
-//		return r;
-//	}
+	r = r100_cp_init(rdev, 1024 * 1024);
+	if (r) {
+		dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
+		return r;
+	}
 //	r = r100_wb_init(rdev);
 //	if (r)
 //		dev_err(rdev->dev, "failled initializing WB (%d).\n", r);
@@ -714,7 +713,6 @@ int rs690_init(struct radeon_device *rdev)
 	if (r) {
 		/* Somethings want wront with the accel init stop accel */
 		dev_err(rdev->dev, "Disabling GPU acceleration\n");
-//		rs690_suspend(rdev);
 //		r100_cp_fini(rdev);
 //		r100_wb_fini(rdev);
 //		r100_ib_fini(rdev);

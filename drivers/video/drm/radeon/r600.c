@@ -1391,6 +1391,173 @@ void r600_cp_stop(struct radeon_device *rdev)
 {
 	WREG32(R_0086D8_CP_ME_CNTL, S_0086D8_CP_ME_HALT(1));
 }
+
+int r600_init_microcode(struct radeon_device *rdev)
+{
+	struct platform_device *pdev;
+	const char *chip_name;
+	const char *rlc_chip_name;
+	size_t pfp_req_size, me_req_size, rlc_req_size;
+	char fw_name[30];
+	int err;
+
+	DRM_DEBUG("\n");
+
+	pdev = platform_device_register_simple("radeon_cp", 0, NULL, 0);
+	err = IS_ERR(pdev);
+	if (err) {
+		printk(KERN_ERR "radeon_cp: Failed to register firmware\n");
+		return -EINVAL;
+	}
+
+	switch (rdev->family) {
+	case CHIP_R600:
+		chip_name = "R600";
+		rlc_chip_name = "R600";
+		break;
+	case CHIP_RV610:
+		chip_name = "RV610";
+		rlc_chip_name = "R600";
+		break;
+	case CHIP_RV630:
+		chip_name = "RV630";
+		rlc_chip_name = "R600";
+		break;
+	case CHIP_RV620:
+		chip_name = "RV620";
+		rlc_chip_name = "R600";
+		break;
+	case CHIP_RV635:
+		chip_name = "RV635";
+		rlc_chip_name = "R600";
+		break;
+	case CHIP_RV670:
+		chip_name = "RV670";
+		rlc_chip_name = "R600";
+		break;
+	case CHIP_RS780:
+	case CHIP_RS880:
+		chip_name = "RS780";
+		rlc_chip_name = "R600";
+		break;
+	case CHIP_RV770:
+		chip_name = "RV770";
+		rlc_chip_name = "R700";
+		break;
+	case CHIP_RV730:
+	case CHIP_RV740:
+		chip_name = "RV730";
+		rlc_chip_name = "R700";
+		break;
+	case CHIP_RV710:
+		chip_name = "RV710";
+		rlc_chip_name = "R700";
+		break;
+	default: BUG();
+	}
+
+	if (rdev->family >= CHIP_RV770) {
+		pfp_req_size = R700_PFP_UCODE_SIZE * 4;
+		me_req_size = R700_PM4_UCODE_SIZE * 4;
+		rlc_req_size = R700_RLC_UCODE_SIZE * 4;
+	} else {
+		pfp_req_size = PFP_UCODE_SIZE * 4;
+		me_req_size = PM4_UCODE_SIZE * 12;
+		rlc_req_size = RLC_UCODE_SIZE * 4;
+	}
+
+	DRM_INFO("Loading %s Microcode\n", chip_name);
+
+	snprintf(fw_name, sizeof(fw_name), "radeon/%s_pfp.bin", chip_name);
+	err = request_firmware(&rdev->pfp_fw, fw_name, &pdev->dev);
+	if (err)
+		goto out;
+	if (rdev->pfp_fw->size != pfp_req_size) {
+		printk(KERN_ERR
+		       "r600_cp: Bogus length %zu in firmware \"%s\"\n",
+		       rdev->pfp_fw->size, fw_name);
+		err = -EINVAL;
+		goto out;
+	}
+
+	snprintf(fw_name, sizeof(fw_name), "radeon/%s_me.bin", chip_name);
+	err = request_firmware(&rdev->me_fw, fw_name, &pdev->dev);
+	if (err)
+		goto out;
+	if (rdev->me_fw->size != me_req_size) {
+		printk(KERN_ERR
+		       "r600_cp: Bogus length %zu in firmware \"%s\"\n",
+		       rdev->me_fw->size, fw_name);
+		err = -EINVAL;
+	}
+
+	snprintf(fw_name, sizeof(fw_name), "radeon/%s_rlc.bin", rlc_chip_name);
+	err = request_firmware(&rdev->rlc_fw, fw_name, &pdev->dev);
+	if (err)
+		goto out;
+	if (rdev->rlc_fw->size != rlc_req_size) {
+		printk(KERN_ERR
+		       "r600_rlc: Bogus length %zu in firmware \"%s\"\n",
+		       rdev->rlc_fw->size, fw_name);
+		err = -EINVAL;
+	}
+
+out:
+	platform_device_unregister(pdev);
+
+	if (err) {
+		if (err != -EINVAL)
+			printk(KERN_ERR
+			       "r600_cp: Failed to load firmware \"%s\"\n",
+			       fw_name);
+		release_firmware(rdev->pfp_fw);
+		rdev->pfp_fw = NULL;
+		release_firmware(rdev->me_fw);
+		rdev->me_fw = NULL;
+		release_firmware(rdev->rlc_fw);
+		rdev->rlc_fw = NULL;
+	}
+	return err;
+}
+
+static int r600_cp_load_microcode(struct radeon_device *rdev)
+{
+	const __be32 *fw_data;
+	int i;
+
+	if (!rdev->me_fw || !rdev->pfp_fw)
+		return -EINVAL;
+
+	r600_cp_stop(rdev);
+
+	WREG32(CP_RB_CNTL, RB_NO_UPDATE | RB_BLKSZ(15) | RB_BUFSZ(3));
+
+	/* Reset cp */
+	WREG32(GRBM_SOFT_RESET, SOFT_RESET_CP);
+	RREG32(GRBM_SOFT_RESET);
+	mdelay(15);
+	WREG32(GRBM_SOFT_RESET, 0);
+
+	WREG32(CP_ME_RAM_WADDR, 0);
+
+	fw_data = (const __be32 *)rdev->me_fw->data;
+	WREG32(CP_ME_RAM_WADDR, 0);
+	for (i = 0; i < PM4_UCODE_SIZE * 3; i++)
+		WREG32(CP_ME_RAM_DATA,
+		       be32_to_cpup(fw_data++));
+
+	fw_data = (const __be32 *)rdev->pfp_fw->data;
+	WREG32(CP_PFP_UCODE_ADDR, 0);
+	for (i = 0; i < PFP_UCODE_SIZE; i++)
+		WREG32(CP_PFP_UCODE_DATA,
+		       be32_to_cpup(fw_data++));
+
+	WREG32(CP_PFP_UCODE_ADDR, 0);
+	WREG32(CP_ME_RAM_WADDR, 0);
+	WREG32(CP_ME_RAM_RADDR, 0);
+	return 0;
+}
+
 int r600_cp_start(struct radeon_device *rdev)
 {
 	int r;
@@ -1419,6 +1586,56 @@ int r600_cp_start(struct radeon_device *rdev)
 	WREG32(R_0086D8_CP_ME_CNTL, cp_me);
 	return 0;
 }
+
+int r600_cp_resume(struct radeon_device *rdev)
+{
+	u32 tmp;
+	u32 rb_bufsz;
+	int r;
+
+	/* Reset cp */
+	WREG32(GRBM_SOFT_RESET, SOFT_RESET_CP);
+	RREG32(GRBM_SOFT_RESET);
+	mdelay(15);
+	WREG32(GRBM_SOFT_RESET, 0);
+
+	/* Set ring buffer size */
+	rb_bufsz = drm_order(rdev->cp.ring_size / 8);
+	tmp = RB_NO_UPDATE | (drm_order(RADEON_GPU_PAGE_SIZE/8) << 8) | rb_bufsz;
+#ifdef __BIG_ENDIAN
+	tmp |= BUF_SWAP_32BIT;
+#endif
+	WREG32(CP_RB_CNTL, tmp);
+	WREG32(CP_SEM_WAIT_TIMER, 0x4);
+
+	/* Set the write pointer delay */
+	WREG32(CP_RB_WPTR_DELAY, 0);
+
+	/* Initialize the ring buffer's read and write pointers */
+	WREG32(CP_RB_CNTL, tmp | RB_RPTR_WR_ENA);
+	WREG32(CP_RB_RPTR_WR, 0);
+	WREG32(CP_RB_WPTR, 0);
+	WREG32(CP_RB_RPTR_ADDR, rdev->cp.gpu_addr & 0xFFFFFFFF);
+	WREG32(CP_RB_RPTR_ADDR_HI, upper_32_bits(rdev->cp.gpu_addr));
+	mdelay(1);
+	WREG32(CP_RB_CNTL, tmp);
+
+	WREG32(CP_RB_BASE, rdev->cp.gpu_addr >> 8);
+	WREG32(CP_DEBUG, (1 << 27) | (1 << 28));
+
+	rdev->cp.rptr = RREG32(CP_RB_RPTR);
+	rdev->cp.wptr = RREG32(CP_RB_WPTR);
+
+	r600_cp_start(rdev);
+	rdev->cp.ready = true;
+	r = radeon_ring_test(rdev);
+	if (r) {
+		rdev->cp.ready = false;
+		return r;
+	}
+	return 0;
+}
+
 void r600_cp_commit(struct radeon_device *rdev)
 {
 	WREG32(CP_RB_WPTR, rdev->cp.wptr);
@@ -1449,6 +1666,60 @@ void r600_scratch_init(struct radeon_device *rdev)
 		rdev->scratch.free[i] = true;
 		rdev->scratch.reg[i] = SCRATCH_REG0 + (i * 4);
 	}
+}
+
+int r600_ring_test(struct radeon_device *rdev)
+{
+	uint32_t scratch;
+	uint32_t tmp = 0;
+	unsigned i;
+	int r;
+
+	r = radeon_scratch_get(rdev, &scratch);
+	if (r) {
+		DRM_ERROR("radeon: cp failed to get scratch reg (%d).\n", r);
+		return r;
+	}
+	WREG32(scratch, 0xCAFEDEAD);
+	r = radeon_ring_lock(rdev, 3);
+	if (r) {
+		DRM_ERROR("radeon: cp failed to lock ring (%d).\n", r);
+		radeon_scratch_free(rdev, scratch);
+		return r;
+	}
+	radeon_ring_write(rdev, PACKET3(PACKET3_SET_CONFIG_REG, 1));
+	radeon_ring_write(rdev, ((scratch - PACKET3_SET_CONFIG_REG_OFFSET) >> 2));
+	radeon_ring_write(rdev, 0xDEADBEEF);
+	radeon_ring_unlock_commit(rdev);
+	for (i = 0; i < rdev->usec_timeout; i++) {
+		tmp = RREG32(scratch);
+		if (tmp == 0xDEADBEEF)
+			break;
+		DRM_UDELAY(1);
+	}
+	if (i < rdev->usec_timeout) {
+		DRM_INFO("ring test succeeded in %d usecs\n", i);
+	} else {
+		DRM_ERROR("radeon: ring test failed (scratch(0x%04X)=0x%08X)\n",
+			  scratch, tmp);
+		r = -EINVAL;
+	}
+	radeon_scratch_free(rdev, scratch);
+	return r;
+}
+void r600_fence_ring_emit(struct radeon_device *rdev,
+			  struct radeon_fence *fence)
+{
+	/* Also consider EVENT_WRITE_EOP.  it handles the interrupts + timestamps + events */
+	/* Emit fence sequence & fire IRQ */
+	radeon_ring_write(rdev, PACKET3(PACKET3_SET_CONFIG_REG, 1));
+	radeon_ring_write(rdev, ((rdev->fence_drv.scratch_reg - PACKET3_SET_CONFIG_REG_OFFSET) >> 2));
+	radeon_ring_write(rdev, fence->seq);
+	radeon_ring_write(rdev, PACKET0(R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL, 0));
+	radeon_ring_write(rdev, 1);
+	/* CP_INTERRUPT packet 3 no longer exists, use packet 0 */
+	radeon_ring_write(rdev, PACKET0(CP_INT_STATUS, 0));
+	radeon_ring_write(rdev, RB_INT_STAT);
 }
 int r600_set_surface_reg(struct radeon_device *rdev, int reg,
 			 uint32_t tiling_flags, uint32_t pitch,
@@ -1485,6 +1756,14 @@ int r600_startup(struct radeon_device *rdev)
 {
 	int r;
 
+	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+		r = r600_init_microcode(rdev);
+		if (r) {
+			DRM_ERROR("Failed to load firmware!\n");
+			return r;
+		}
+	}
+
 	r600_mc_program(rdev);
 	if (rdev->flags & RADEON_IS_AGP) {
 		r600_agp_enable(rdev);
@@ -1495,22 +1774,15 @@ int r600_startup(struct radeon_device *rdev)
 	}
 	r600_gpu_init(rdev);
 
-//	r = radeon_object_pin(rdev->r600_blit.shader_obj, RADEON_GEM_DOMAIN_VRAM,
-//			      &rdev->r600_blit.shader_gpu_addr);
-//	if (r) {
-//		DRM_ERROR("failed to pin blit object %d\n", r);
-//		return r;
-//	}
-
-//	r = radeon_ring_init(rdev, rdev->cp.ring_size);
-//	if (r)
-//		return r;
-//	r = r600_cp_load_microcode(rdev);
-//	if (r)
-//		return r;
-//	r = r600_cp_resume(rdev);
-//	if (r)
-//		return r;
+	r = radeon_ring_init(rdev, rdev->cp.ring_size);
+	if (r)
+		return r;
+	r = r600_cp_load_microcode(rdev);
+	if (r)
+		return r;
+	r = r600_cp_resume(rdev);
+	if (r)
+		return r;
 	/* write back buffer are not vital so don't worry about failure */
 //	r600_wb_enable(rdev);
 	return 0;
@@ -1609,8 +1881,8 @@ int r600_init(struct radeon_device *rdev)
 //	if (r)
 //		return r;
 
-//	rdev->cp.ring_obj = NULL;
-//	r600_ring_init(rdev, 1024 * 1024);
+	rdev->cp.ring_obj = NULL;
+	r600_ring_init(rdev, 1024 * 1024);
 
 //	rdev->ih.ring_obj = NULL;
 //	r600_ih_ring_init(rdev, 64 * 1024);
@@ -1618,12 +1890,6 @@ int r600_init(struct radeon_device *rdev)
 	r = r600_pcie_gart_init(rdev);
 	if (r)
 		return r;
-
-//	r = r600_blit_init(rdev);
-//	if (r) {
-//		DRM_ERROR("radeon: failled blitter (%d).\n", r);
-//		return r;
-//	}
 
 	rdev->accel_working = true;
 	r = r600_startup(rdev);

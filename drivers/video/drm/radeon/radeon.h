@@ -780,7 +780,7 @@ typedef uint32_t (*radeon_rreg_t)(struct radeon_device*, uint32_t);
 typedef void (*radeon_wreg_t)(struct radeon_device*, uint32_t, uint32_t);
 
 struct radeon_device {
-	void            		   *dev;
+	struct device			*dev;
     struct drm_device          *ddev;
     struct pci_dev             *pdev;
     /* ASIC */
@@ -790,15 +790,15 @@ struct radeon_device {
     int                         usec_timeout;
     enum radeon_pll_errata      pll_errata;
     int                         num_gb_pipes;
-	int				num_z_pipes;
+	int				            num_z_pipes;
     int                         disp_priority;
     /* BIOS */
     uint8_t                     *bios;
     bool                        is_atom_bios;
     uint16_t                    bios_header_start;
-	struct radeon_bo		*stollen_vga_memory;
+	struct radeon_bo		    *stollen_vga_memory;
     struct fb_info              *fbdev_info;
-	struct radeon_bo		*fbdev_rbo;
+	struct radeon_bo		    *fbdev_rbo;
     struct radeon_framebuffer   *fbdev_rfb;
     /* Register mmio */
     unsigned long               rmmio_base;
