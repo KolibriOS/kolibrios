@@ -825,12 +825,6 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     if (ret)
         goto err_g4;
 
- //   list_add_tail(&dev->driver_item, &driver->device_list);
-
- //   DRM_INFO("Initialized %s %d.%d.%d %s for %s on minor %d\n",
- //        driver->name, driver->major, driver->minor, driver->patchlevel,
- //        driver->date, pci_name(pdev), dev->primary->index);
-
     if( radeon_modeset )
         init_display_kms(dev->dev_private, &usermode);
     else

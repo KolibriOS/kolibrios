@@ -44,6 +44,10 @@ ___start_builtin_fw:
         dd RS690CP_START
         dd (RS690CP_END - RS690CP_START)
 
+        dd FIRMWARE_R600_ME
+        dd R600ME_START
+        dd (R600ME_END - R600ME_START)
+
         dd FIRMWARE_RS780_ME
         dd RS780ME_START
         dd (RS780ME_END - RS780ME_START)
@@ -142,6 +146,7 @@ FIRMWARE_RS690_CP       db 'radeon/RS690_cp.bin',0
 FIRMWARE_RS780_ME       db 'radeon/RS780_me.bin',0
 FIRMWARE_RS780_PFP      db 'radeon/RS780_pfp.bin',0
 
+FIRMWARE_R600_ME        db 'radeon/RV600_me.bin',0
 FIRMWARE_RV610_ME       db 'radeon/RV610_me.bin',0
 FIRMWARE_RV620_ME       db 'radeon/RV620_me.bin',0
 FIRMWARE_RV630_ME       db 'radeon/RV630_me.bin',0
@@ -151,6 +156,7 @@ FIRMWARE_RV710_ME       db 'radeon/RV710_me.bin',0
 FIRMWARE_RV730_ME       db 'radeon/RV730_me.bin',0
 FIRMWARE_RV770_ME       db 'radeon/RV770_me.bin',0
 
+FIRMWARE_R600_PFP       db 'radeon/R600_pfp.bin',0
 FIRMWARE_RV610_PFP      db 'radeon/RV610_pfp.bin',0
 FIRMWARE_RV620_PFP      db 'radeon/RV620_pfp.bin',0
 FIRMWARE_RV630_PFP      db 'radeon/RV630_pfp.bin',0
@@ -208,6 +214,11 @@ align 16
 RS780PFP_START:
         file 'firmware/rs780_pfp.bin'
 RS780PFP_END:
+
+align 16
+R600ME_START:
+        file 'firmware/r600_me.bin'
+R600ME_END:
 
 align 16
 RV610ME_START:
