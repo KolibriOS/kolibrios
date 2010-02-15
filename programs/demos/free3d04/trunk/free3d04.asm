@@ -12,6 +12,7 @@
 ;
 ;   Heavyiron - new 0-function of drawing window from kolibri (do not work correctly with menuet)
 
+
 TEX_SIZE equ 64*64*4
 ceil = sinus+16*1024
 wall = ceil+TEX_SIZE*1
@@ -301,8 +302,8 @@ draw_window:
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,50*65536+649         ; [x start] *65536 + [x size]
-    mov  ecx,50*65536+504         ; [y start] *65536 + [y size]
-    mov  edx,0x34ffffff            ; color of work area RRGGBB,8->color gl
+    mov  ecx,50*65536+506         ; [y start] *65536 + [y size]
+    mov  edx,0x74ffffff            ; color of work area RRGGBB,8->color gl
     mov  edi,title
     mcall
 
