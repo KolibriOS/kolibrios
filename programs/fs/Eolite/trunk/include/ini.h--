@@ -1,5 +1,5 @@
 //INI parser in C--, GPL licence.
-//Copyright 2008 by Leency
+//Leency - 2008
 
 #define COMMENT	0
 #define SECTION	1
@@ -39,7 +39,10 @@ void GetIni(dword inipath)
 			case 0x0d:
 				InfType=PARAM;
 				//IF (strcmp(#parametr,"select_color")==0) videlenie=StrToCol(#option);
-				IF (parametr) && (!strcmp(#file_name+find_symbol(#file_name,'.'),#parametr)) {RunProgram(#option,#file_path); return;}
+				IF (parametr) && (!strcmp(#file_name+find_symbol(#file_name,'.'),#parametr)) {
+					RunProgram(#option,#file_path);
+					return;
+				}
 				parametr=option='';
 				break;
 			default:
@@ -51,16 +54,3 @@ void GetIni(dword inipath)
 	INI_END: 
 	IF (file_path) RunProgram(#file_path,''); 
 }
-
-
-/*inline fastcall void OpenFile(ESI)
-{
-	byte ext_n_progs="ext|tinypad|ext2|Eolite|"; //=ESI
-	byte str;
-	do{
-		$lodsb
-		IF(AL=='|') str='';
-		copystr(ESBYTE[AL],str);
-	} while(AL!=0);
-	//RunProgram(fpath, #fparam); //запуск!	
-}*/

@@ -1,3 +1,6 @@
+//Leency - 2008
+//GPL licence.
+
 void IconFairing(int filenum, y)
 {
 	switch(filenum)

@@ -1,7 +1,5 @@
-REM ..\C--\c-- Eolite.c--
-@c-- Eolite.c--
+@..\C--\c-- Eolite.c--
 del Eolite
 rename Eolite.com Eolite
-REM ..\C--\kpack Eolite
-@kpack Eolite
+@..\C--\kpack Eolite
 pause

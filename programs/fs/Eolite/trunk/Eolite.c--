@@ -1,7 +1,5 @@
-//Leency & Veliant -=- KolibriOS Team -=- 2008
-
-//строка 258, кейап!
-//DrawBar(sort_num[1],45,6,9,0xE4DFE1);
+//Leency & Veliant -=- KolibriOS Team -=- 2010
+//GNU GPL licence.
 
 #codesize  
 #include "lib\kolibri.h--"
@@ -12,7 +10,7 @@
 #include "imgs\left_p.txt"
 
 //переменные
-#define title "Eolite File Manager v0.98.5"
+#define title "Eolite File Manager v0.98.7"
 #define videlenie 0x94AECE //0xFEA4B7,0x8BCDFF,0xB8C9B8}; //цвет выделенного элемента из списка файлов
 byte toolbar_buttons_x[6]={9,46,85,134,167,203};
 //
@@ -28,13 +26,13 @@ byte show_actions=1,
      show_preview=0,
      sort_num=2,
      isdir;
-byte path[256]="/rd/1/",
-     edit_path[256],
-     file_path[256],
-     file_name[256],
-     copy_file[256],
-     temp[256];
-byte PathHistory[2560];
+char path[4096]="/rd/1/",
+     edit_path[4096],
+     file_path[4096],
+     file_name[4096],
+     copy_file[4096],
+     temp[4096];
+byte PathHistory[4096];
 
 dword file_mas[6898];
 int j, i, mouse_dd;
@@ -194,11 +192,13 @@ int pressed_y;
                 IF (edit2.flags<>64) && (key<>13) && (key<>27) {EAX=key<<8; edit_box_key stdcall (#edit2); break;}
 				switch (key)
 				{
-						case 209...217: id=key-109; GOTO DEVICE_MARK;
-						case 8: GoBack(); break; //Назад
+						case 209...217:
+								id=key-110;
+								IF (id-100>=dev_num) break;
+								GOTO DEVICE_MARK;
+						case   8: GoBack(); break; //Назад
 						case 014: MoveSize(80,80,OLD,OLD); RunProgram("/sys/File Managers/Eolite", #path); break; //новое окно
 						case 024: //Ctrl+X cut
-						case 089: //Ctrl+Ins copy
 						case 003: //Ctrl+C copy
 								CTRLC_MARK:
 								IF (isdir) break; //папки пока что копировать не умеем
@@ -295,7 +295,7 @@ inline fastcall void draw_window()
 	//прямоугольники внутри
 	DrawRegion_3D(1,40,Form.width-12,onTop(46,0),0x94AECE,0x94AECE); //синий ободок
 	DrawRegion_3D(0,39,Form.width-10,onTop(44,0),0xE4DFE1,0xE4DFE1); //фон
-    Devices(); //панель слева на синем фоне
+	Devices(); //панель слева на синем фоне
 	//SortButtons
 	DrawFlatButton(192,40,onLeft(192,168),16,31,0xE4DFE1,"File");
 	DrawFlatButton(onLeft(168,0),40,73,16,32,0xE4DFE1,"Type");
@@ -416,7 +416,6 @@ void Line_ReDraw(dword color, filenum){
 	DrawBar(onLeft(95,0),y,1,18,0xE4DFE1); //полоса серая вертикальная 2
 }
 
-
 void Open_Dir(dword temp_, redraw){
 	byte path_[256], somelen=strlen(temp_)-1;
 	if (redraw<>ONLY_SHOW)
@@ -425,10 +424,18 @@ void Open_Dir(dword temp_, redraw){
 		IF (somelen) path_[somelen]=0x00;
 		//
 		IF (buf) free(buf);
-    	buf = malloc(32);
+    		buf = malloc(32);
 		ReadDir(0, buf, #path_);
-    	count = ESDWORD[buf+8];
-    	buf = realloc(count * 304 + 32, buf);
+		$push eax;
+		IF (EAX==0)
+			WriteDebug("Eolite: folder readed well");
+		ELSE {
+			WriteDebug("Eolite: filesystem ERROR number");
+			$pop eax;
+			WriteDebug(IntToStr(EAX));
+		}
+    		count = ESDWORD[buf+8];
+    		buf = realloc(count * 304 + 32, buf);
 		ReadDir(count, buf, #path_);
 		IF (EBX>6897) && (EBX<>-1) EBX=6897; //1 на удачу ;)
 		count=EBX;

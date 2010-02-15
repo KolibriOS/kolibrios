@@ -1,16 +1,4 @@
-#define ac97snd "AC97SND"
-#define desktop "desktop"
-#define fce "/sys/games/fce"
-#define graph "graph"
-#define htmlv "/sys/network/HTMLv"
-#define jpegview "jpegview"
-#define life2 "/sys/demos/life2"
-#define midamp "/sys/multimedia/midamp"
-#define mv "MV"
-//#define mv "/sys/multimedia/imgview"
-#define pngview "/sys/multimedia/pngview"
-#define tinypad "TinyPad"
-
+//CODED by Veliant, Leency. GNU GPL licence.
 
 struct f70{
 	dword	func;
@@ -38,7 +26,7 @@ struct BDVK{
 };
 
 ////////////////////////////
-//     Прочитать файл     //
+//     ірочитать файл     //
 ////////////////////////////
 f70 read_file_70;
 void ReadFile(dword pos, file_size, read_buffer, file_path)
@@ -56,7 +44,7 @@ void ReadFile(dword pos, file_size, read_buffer, file_path)
 }    
 
 ///////////////////////////
-//    Прочитать папку    //
+//    ірочитать папку    //
 ///////////////////////////
 f70 read_dir_70;
 void ReadDir(dword file_count, read_buffer, read_dir_path)
@@ -74,7 +62,7 @@ void ReadDir(dword file_count, read_buffer, read_dir_path)
 }  
 
 ///////////////////////////
-//   Запуск программы    //
+//   іапуск программv    //
 ///////////////////////////
 f70 run_file_70;
 void RunProgram(dword run_path, run_param)
@@ -92,7 +80,7 @@ void RunProgram(dword run_path, run_param)
 }
 
 ///////////////////////////
-//    Создание папки     //
+//    Tоздание папки     //
 ///////////////////////////
 f70 create_dir_70;
 void CreateFolder(dword new_folder_path)
@@ -110,7 +98,7 @@ void CreateFolder(dword new_folder_path)
 }
 
 ////////////////////////////
-//  Удаление файла/папки  //
+//  Lдаление файла/папки  //
 ////////////////////////////
 f70 del_file_70;	
 void DeleleFile(dword del_file_path)
@@ -128,7 +116,7 @@ void DeleleFile(dword del_file_path)
 }  
 
 ///////////////////////////
-//   Скопировать файл    //
+//   Tкопировать файл    //
 ///////////////////////////
 f70	CopyFile_f;
 inline fastcall dword CopyFile(dword EBX,ECX)

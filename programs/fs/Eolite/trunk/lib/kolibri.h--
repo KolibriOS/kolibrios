@@ -163,11 +163,15 @@ inline fastcall void MoveSize(dword EBX,ECX,EDX,ESI){
 
 //------------------------------------------------------------------------------
 
-inline fastcall dword strlen(dword EDI){
-	EAX=0;
-	ECX=-1;
-	$REPNE $SCASB
-	EAX-=2+ECX;
+inline fastcall dword strlen(EDI){
+	asm {
+	  xor ecx, ecx
+	  xor eax, eax
+	  dec ecx
+	  repne scasb
+	  sub eax, 2
+	  sub eax, ecx
+	}
 }
 
 
@@ -180,7 +184,6 @@ l1:
 	$test al,al
 	$jnz l1
 }
-
 
 byte fastcall TestBit(EAX, CL)
 {
@@ -256,37 +259,6 @@ inline fastcall unsigned int find_symbol(ESI,BL)
 		IF(AL==BL) last=jj;
 	} while(AL!=0);
 	return last;
-}
-
-
-inline fastcall memmov( EDI, ESI, ECX)
-{
-  asm {
-    MOV EAX, ECX
-    CMP EDI, ESI
-    JG L1
-    JE L2
-    SAR ECX, 2
-    JS L2
-    REP MOVSD
-    MOV ECX, EAX
-    AND ECX, 3
-    REP MOVSB
-    JMP SHORT L2
-L1: LEA ESI, DSDWORD[ ESI+ECX-4]
-    LEA EDI, DSDWORD[ EDI+ECX-4]
-    SAR ECX, 2
-    JS L2
-    STD
-    REP MOVSD
-    MOV ECX, EAX
-    AND ECX, 3
-    ADD ESI, 3
-    ADD EDI, 3
-    REP MOVSB
-    CLD
-L2:
-  }
 }
 
 
@@ -380,10 +352,8 @@ void PutPaletteImage(dword EBX,w,h,x,y, EDI)
 }  
 
 //------------------------------------------------------------------------------
-inline fastcall dword WriteDebug(dword EDX)
+void WriteDebug(dword EDX)
 {
-	$push ebx
-	$push ecx
 	$mov eax, 63
 	$mov ebx, 1
 next_char:
@@ -398,6 +368,4 @@ done:
 	$int 0x40
 	$mov cl, 10
 	$int 0x40
-	$pop ecx
-	$pop ebx
 }

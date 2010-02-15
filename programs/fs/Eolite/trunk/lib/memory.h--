@@ -34,3 +34,34 @@ inline fastcall dword realloc(dword ECX, EDX){
 	$int	0x40;
 	#codesize
 }
+
+
+inline fastcall memmov( EDI, ESI, ECX)
+{
+  asm {
+    MOV EAX, ECX
+    CMP EDI, ESI
+    JG L1
+    JE L2
+    SAR ECX, 2
+    JS L2
+    REP MOVSD
+    MOV ECX, EAX
+    AND ECX, 3
+    REP MOVSB
+    JMP SHORT L2
+L1: LEA ESI, DSDWORD[ ESI+ECX-4]
+    LEA EDI, DSDWORD[ EDI+ECX-4]
+    SAR ECX, 2
+    JS L2
+    STD
+    REP MOVSD
+    MOV ECX, EAX
+    AND ECX, 3
+    ADD ESI, 3
+    ADD EDI, 3
+    REP MOVSB
+    CLD
+L2:
+  }
+}
