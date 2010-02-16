@@ -259,10 +259,14 @@ analyse_out_menu_1:
 ; analyse result of Menu 1
 	mov	eax,[menu_data_1.cursor_out]
 	cmp	eax,dword 1
-	je	OpenDialog_start
-        cmp	eax,dword 3
-        je      button.exit     
-        jmp     still
+	je	OpenDialog_start_0
+	cmp	eax,dword 2
+	je	OpenDialog_start_1
+	cmp	eax,dword 3
+	je	OpenDialog_start_2
+    cmp	eax,dword 4
+    je      button.exit     
+    jmp     still
         
 analyse_out_menu_2:
 ; analyse result of Menu 2
@@ -274,6 +278,14 @@ analyse_out_menu_2:
         mcall 51,1,thread3,thread
         jmp     still
 ;---------------------------------------------------------------------
+OpenDialog_start_0:
+	mov	[OpenDialog_data.type],0
+	jmp	OpenDialog_start
+OpenDialog_start_1:
+	mov	[OpenDialog_data.type],1
+	jmp	OpenDialog_start
+OpenDialog_start_2:
+	mov	[OpenDialog_data.type],2
 OpenDialog_start:
 ;	mov	ebx,open_dialog_name
 ;	mov	esi,path

@@ -316,8 +316,9 @@ menu_data_1:
 menu_text_area:
 db 'File',0
 .1:
-db 'OpenDialog',0
-db 'Test1',0
+db 'Open file',0
+db 'Save file',0
+db 'Select dir',0
 db 'Exit',0
 .end:
 db 0

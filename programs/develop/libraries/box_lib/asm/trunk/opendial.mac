@@ -1,6 +1,6 @@
 ;*****************************************************************************
 ; Macro for use Open Dialog - for Kolibri OS
-; Copyright (c) 2009, Marat Zakiyanov aka Mario79, aka Mario
+; Copyright (c) 2009 2010, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -35,16 +35,16 @@ ret
 macro	use_OpenDialog
 {
 OpenDialog:
-od_type			equ dword [ebp]
-od_procinfo		equ dword [ebp+4]
-od_com_area_name	equ dword [ebp+8]
-od_com_area		equ dword [ebp+12]
-od_opendir_pach		equ dword [ebp+16]
-od_dir_default_pach	equ dword [ebp+20]
-od_start_path		equ dword [ebp+24]
-od_draw_window		equ dword [ebp+28]
-od_status		equ dword [ebp+32]
-od_openfile_pach	equ dword [ebp+36]
+od_type			equ dword [ebp] ; 0-Open, 1-Save, 2-Dir
+od_procinfo		equ dword [ebp+4] ; Process info area for function 9
+od_com_area_name	equ dword [ebp+8] ; Name for shared area
+od_com_area		equ dword [ebp+12] ; Adress of shared area
+od_opendir_pach		equ dword [ebp+16] ; Temp area the directory for show
+od_dir_default_pach	equ dword [ebp+20] ; Default path of directory, 
+od_start_path		equ dword [ebp+24] ; Location path to OpenDialog
+od_draw_window		equ dword [ebp+28] ; Adress of  procedure - draw_window
+od_status		equ dword [ebp+32] ; 0-Cancel, 1-Get path OK, 2-Use alternatives
+od_openfile_pach	equ dword [ebp+36] ; Getting path to file
 ;*****************************************************************************
 .init:
 	pusha
@@ -52,7 +52,6 @@ od_openfile_pach	equ dword [ebp+36]
 	mov	ebx,[ebx+30]
 	mov	edi,od_com_area_name
 	add	edi,7
-;	mov	edi,communication_area_name+7
 	std
 	mov	ecx,4
 @@:
@@ -80,7 +79,10 @@ OpenDialog_exit
 	mov	eax,od_com_area
 	test	eax,eax
 	jz	.1
-	mov	[eax],dword 2 ; folder for open
+	mov ebx,od_type
+	mov [eax+2],bx
+	
+	mov	[eax],word 2 ; folder for open
 	mov	edi,eax
 	add	edi,4
 
@@ -113,7 +115,7 @@ OpenDialog_exit
 	cmp	eax,1
 	je	.red
 	mov	eax,od_com_area
-	mov	ebx,[eax]
+	movzx	ebx,word [eax]
 	test	ebx,ebx
 	jz	.still
 	cmp	ebx,3

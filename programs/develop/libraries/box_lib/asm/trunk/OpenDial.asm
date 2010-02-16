@@ -1,6 +1,6 @@
 ;*****************************************************************************
 ; Open Dialog - for Kolibri OS
-; Copyright (c) 2009, Marat Zakiyanov aka Mario79, aka Mario
+; Copyright (c) 2009, 2010, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -43,6 +43,7 @@ include '../../load_lib.mac'
 include '../../trunk/box_lib.mac'
 ;include 'macros.inc'
 ;include 'load_lib.mac'
+;include 'box_lib.mac'
 @use_library
 ;---------------------------------------------------------------------
 ;---------------------------------------------------------------------
@@ -323,12 +324,19 @@ key_ASCII:
 	cmp	ah,9
 	je	change_focus_area_Tab_key_ASCII
 	cmp	ah,13
-	je	.load_dir
+	je	.13
 	cmp	ah,27
 	je	button.exit
 	push	dword name_editboxes
 	call	[edit_box_key]
 	jmp	still
+.13:
+	cmp	[open_dialog_type],2 ; Select dir
+	je	file_no_folder
+	cmp	[open_dialog_type],1 ; Save file
+	jne .load_dir
+	inc	[open_dialog_type]
+	jmp file_no_folder	
 .load_dir:
 	mov	[file_browser_data_1.select_panel_counter],1
 	xor	eax,eax
@@ -513,9 +521,9 @@ button:
 	mov	eax,[communication_area]
 	test	eax,eax
 	jz	@f
-	cmp	[eax],dword 1
+	cmp	[eax],word 1
 	je	@f
-	mov	[eax],dword 3
+	mov	[eax],word 3
 @@:
 	mov	eax,[N_error]
 	test	eax,eax
@@ -535,6 +543,10 @@ button:
 	jmp	still
 ;---------------------------------------------------------------------
 .open_dir_or_file:
+	cmp	[open_dialog_type],2 ;Select dir
+	je	file_no_folder
+;	cmp	[open_dialog_type],1 ;Save file
+;	je	file_no_folder	
 	xor	ebx,ebx
 	jmp	key.7
 ;---------------------------------------------------------------------
@@ -608,7 +620,7 @@ thread_start:
 draw_error_window:
 	mcall	12, 1
 	mcall	0,[error_window_x] ,[error_window_y], 0x03ff0000
-	mcall	71,1,title 
+	call	type_title
 	mcall	4,<10,30>,0x90ffffff,[N_error]
 	mov	eax,[error_path]
 	test	eax,eax
@@ -886,6 +898,8 @@ get_communication_area:
 	jz	@f
 	mcall	68,22,param,,0x01
 	mov	[communication_area],eax
+	movzx eax,word [eax+2]
+	mov [open_dialog_type],eax
 @@:
 	ret
 ;---------------------------------------------------------------------
@@ -893,7 +907,7 @@ load_start_directory:
 	mov	eax,[communication_area]	
 	test	eax,eax
 	jz	@f
-	mov	ebx,[eax]
+	movzx	ebx,word [eax]
 	test	eax,eax
 	jz	@f
 	add	eax,4
@@ -1013,9 +1027,11 @@ file_no_folder:
 	mov	edi,file_name
 	call	copy_dir_name
 
+	cmp	[open_dialog_type],2
+	je	@f
 	mov	esi,file_name
 	call	copy_dir_path
-
+@@:
 	mov	eax,[communication_area]
 	test	eax,eax
 	jnz	@f
@@ -1028,7 +1044,7 @@ file_no_folder:
 	mov	esi,file_name	
 	call	copy_dir_name
 	mov	eax,[communication_area]
-	mov	[eax],dword 1
+	mov	[eax],word 1
 	jmp	button.exit
 ;---------------------------------------------------------------------
 load_root_directory:
@@ -1128,6 +1144,17 @@ memory_get_error:
 	mov	[N_error],4
 	jmp	button.exit
 ;---------------------------------------------------------------------
+type_title:
+	mov	ecx,[open_dialog_type]
+	shl ecx,2
+	add ecx,open_dialog_title_pointer
+	mov ecx,[ecx]
+	test	ecx,ecx
+	jz	@f
+	mcall	71,1,  ; title ;;param  ;file_name   ;dir_pach
+@@:
+	ret
+;---------------------------------------------------------------------
 draw_window:
 
 	mcall	12,1
@@ -1136,9 +1163,7 @@ draw_window:
 
 ;       mov     ecx,[communication_area]
 ;       add     ecx,4096+4+4
-
-	mcall	71,1,  title ;;param  ;file_name   ;dir_pach
-
+	call	type_title
 	call	get_window_param
 
 	mov	eax,[window_high]
@@ -1244,7 +1269,18 @@ draw_window:
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,12 shl 16+ 4
-	mcall	4,,0x90000000,message_open_button
+	
+	mov	edx,[open_dialog_type]
+	shl edx,2
+	add edx,message_open_dialog_button
+	mov edx,[edx]
+	
+	cmp	[open_dialog_type],2 ; Select dir
+	jne	@f
+	sub	ebx,5 shl 16
+@@:
+	
+	mcall	4,,0x90000000    ;message_open_button
 	popa
 
 
@@ -1686,7 +1722,10 @@ delete_unsupported_BDFE:
 @@:
 	test	[eax-40],byte 0x10
 	jnz	.start
-
+	
+	cmp	[open_dialog_type],2 ; Select dir
+	je	.delete
+	
 	push	eax ebx
 	mov	esi,eax
 	call	search_expansion
@@ -2220,6 +2259,18 @@ root1_folder_block	dd 0
 temp_counter_1		dd 0
 retrieved_devices_table_counter dd 0
 communication_area	dd 0
+open_dialog_type	dd 0
+open_dialog_title_pointer:
+	dd	title_0
+	dd	title_1
+	dd	title_2
+	dd	0
+	
+message_open_dialog_button:
+	dd	message_0
+	dd	message_1
+	dd	message_2
+	dd	0
 ;---------------------------------------------------------------------
 expansion_length	dd	0
 ;---------------------------------------------------------------------
@@ -2356,17 +2407,26 @@ message:
 message_cancel_button:
 	db 'Cancel',0
 
-message_open_button:
-	db 'Open',0
-
 message_ReloadDir_button:
 	db 'Refresh',0
 
 message_ExitDir_button:
 	db '^',0
 
-title:
+message_0:
+	db 'Open',0
+message_1:
+	db 'Save',0
+message_2:
+	db 'Select',0
+	
+	
+title_0:
 	db 'Open Dialog',0
+title_1:
+	db 'Save Dialog',0
+title_2:
+	db 'Select Dir',0
 ;---------------------------------------------------------------------
 align 4
 menu_data_1:
