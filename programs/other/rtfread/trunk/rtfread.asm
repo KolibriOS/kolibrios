@@ -53,7 +53,16 @@ syms equ 12
   dd     0x0         ; зарезервировано
 
 include '..\..\..\MACROS.INC' ; макросы облегчают жизнь ассемблерщиков!
+include '..\..\..\develop\libraries\box_lib\load_lib.mac'
+include '..\..\..\develop\libraries\box_lib\asm\trunk\opendial.mac'
+
+;include 'MACROS.INC'
+;include 'load_lib.mac'
+;include 'opendial.mac'
+
 include 'debug.inc'
+
+	use_OpenDialog
 if ~ RENDER eq PIX
   TOP=TOP+4
   include 'bgifont.inc'
@@ -68,6 +77,10 @@ file  'reader.rtf'
 help_end:
 
 START:
+        mcall 68, 11
+;OpenDialog initialisation
+init_OpenDialog	OpenDialog_data
+
     mov  [pitch],2
   if ~ RENDER eq PIX
     mov  edx,FONT_NAME
@@ -246,6 +259,31 @@ still:
     cmp  ah,108         ; L - load
     jne  stilld
   .file_open:
+;---------------------------------------------------------------------
+;OpenDialog_start:
+	call	get_filter_data
+;	copy_path	open_dialog_name,path,library_path,0
+	
+	start_OpenDialog	OpenDialog_data
+
+	cmp	[OpenDialog_data.status],2 ; OpenDialog does not start
+	je	.sysxtree  ; 	some kind of alternative, instead OpenDialog
+	cmp	[OpenDialog_data.status],1
+;	jne	still ; OpenDialog user say cancel
+;	copy path
+;	call	draw_window
+	je	prep_load
+	
+;.copy_dir_path:
+;    mov   esi,fname_buf
+;    mov   edi,temp_dir_pach
+;	call  copy_dir_path
+	
+	jmp	still ; OpenDialog user selected the target file
+	; [OpenDialog_data.openfile_pach] pointer of area the target file  
+  
+;---------------------------------------------------------------------  
+.sysxtree:
     or   [mode],RTF_OPENING
     opendialog draw_window, prep_load, st_1, fname_buf
   st_1:
@@ -253,7 +291,23 @@ still:
     jmp  still;red
   stilld:
     jmp  still
-
+;---------------------------------------------------------------------
+get_filter_data:
+	mov	edi,[OpenDialog_data.com_area]
+	test	edi,edi
+	jnz	@f
+	add	esp,4
+	jmp	still
+@@:
+	add	edi,4096+4
+	mov	esi,Filter
+	mov	ecx,[esi]
+	inc	ecx
+	cld
+	rep	movsb
+	mov	edi,[OpenDialog_data.com_area]
+	mov	[edi+4096],dword 1
+	ret
 ;---------------------------------------------------------------------
 
   button:
@@ -503,7 +557,32 @@ if RENDER eq FREE
     db '    Zoom+ Zoom- '
   end if 
 btn_end:
+;---------------------------------------------------------------------
+OpenDialog_data:
+.type			dd 0
+.procinfo		dd procinfo ;+4
+.com_area_name		dd communication_area_name ;+8
+.com_area		dd 0 ;+12
+.opendir_pach		dd temp_dir_pach ;+16
+.dir_default_pach	dd communication_area_default_pach ;+20
+.start_path		dd open_dialog_path ;+24
+.draw_window		dd draw_window ;+28
+.status			dd 0 ;+32
+.openfile_pach		dd fname_buf ;+36
 
+communication_area_name:
+	db 'FFFFFFFF_open_dialog',0
+open_dialog_path:
+	db '/sys/File Managers/opendial',0
+communication_area_default_pach:
+	db '/rd/1',0
+
+Filter:
+dd  Filter.end - Filter
+db 'RTF',0
+.end:
+db 0
+;---------------------------------------------------------------------
 attrinfo:
         dd      5
         dd      0
@@ -623,4 +702,8 @@ esp1:
 rb ESPSIZE
 sys_mem:
 rb ESPSIZE
+;---------------------------------------------------------------------
+temp_dir_pach:
+        rb 4096
+;---------------------------------------------------------------------
 esp_end:

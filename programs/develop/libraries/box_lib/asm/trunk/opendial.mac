@@ -71,6 +71,11 @@ od_openfile_pach	equ dword [ebp+36] ; Getting path to file
 	
 	mcall	68,22,od_com_area_name,8192,0x09
 	mov	od_com_area,eax
+	
+    mov   esi,od_openfile_pach
+    mov   edi,od_opendir_pach
+	call	.copy_dir_path
+	
 OpenDialog_exit
 ;*****************************************************************************
 ;*****************************************************************************
@@ -128,6 +133,9 @@ OpenDialog_exit
 	mov	edi,od_openfile_pach ;string
 	call	.copy
 	mov	od_status,1
+    mov   esi,od_openfile_pach
+    mov   edi,od_opendir_pach
+	call	.copy_dir_path
 	jmp	.3  ;kopen_1
 .2:
 	mov	od_status,0
@@ -145,6 +153,46 @@ OpenDialog_exit
 	stosb
 	test	eax,eax
 	jnz	@b
+	ret
+;----------------------------------------------
+.copy_dir_path:
+    xor   eax,eax
+	cmp  [esi],al
+	jne  @f
+	mov  [edi],al
+	mov  [ebx],al
+	xor  ebx,ebx
+	inc  ebx
+	ret
+@@:
+    cld
+    lodsb
+    stosb
+    test  eax,eax
+    jnz   @b
+    mov   esi,edi
+	dec   esi
+@@:
+    std
+    lodsb
+    cmp   al,'/'
+    jnz   @b
+	
+;	push  esi
+;	add  esi,2
+;;	mov  edi,ebx  ;file_name
+;;	xor  ebx,ebx
+;@@:
+;    cld
+;    lodsb
+;;   stosb
+;	inc   ebx
+;    test  eax,eax
+;    jnz   @b
+;	pop   esi
+	
+    mov  [esi+1], byte 0
+    cld
 	ret
 ;----------------------------------------------
 align 4
