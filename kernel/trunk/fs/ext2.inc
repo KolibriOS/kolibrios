@@ -30,8 +30,11 @@ EXT2_S_IWGRP        = 0x0010
 EXT2_S_IXGRP        = 0x0008
 ;other inode right's
 EXT2_S_IROTH        = 0x0004
-EXT2_S_IROTH        = 0x0002
-EXT2_S_IROTH        = 0x0001
+EXT2_S_IWOTH        = 0x0002
+EXT2_S_IXOTH        = 0x0001
+EXT2_777_MODE       = EXT2_S_IROTH or EXT2_S_IWOTH or EXT2_S_IXOTH or \
+                      EXT2_S_IRGRP or EXT2_S_IWGRP or EXT2_S_IXGRP or \
+                      EXT2_S_IRUSR or EXT2_S_IWUSR or EXT2_S_IXUSR
 
 EXT2_FT_REG_FILE        = 1     ;это файл, запись в родительском каталоге
 EXT2_FT_DIR             = 2     ;это папка
@@ -49,6 +52,8 @@ uglobal
     EXT2_end_block          dd ?   ;конец очередного блока папки
     EXT2_counter_blocks     dd ?
     EXT2_filename           db 256 dup ?
+    EXT2_parent_name        db 256 dup ?
+    EXT2_name_len           dd ?
 endg
 
 struct EXT2_INODE_STRUC
@@ -80,6 +85,64 @@ struct EXT2_DIR_STRUC
     .name           db ? ; 0..255
 ends
 
+struct EXT2_BLOCK_GROUP_DESC
+    .block_bitmap       dd ?
+    .inode_bitmap       dd ?
+    .inode_table        dd ?
+    .free_blocks_count  dw ?
+    .free_inodes_count  dw ?
+    .used_dirs_count    dw ?
+ends
+
+struct EXT2_SB_STRUC
+    .inodes_count       dd ? ;+0
+    .blocks_count       dd ? ;+4
+    .r_block_count      dd ? ;+8
+    .free_block_count   dd ? ;+12
+    .free_inodes_count  dd ? ;+16
+    .first_data_block   dd ? ;+20
+    .log_block_size     dd ? ;+24
+    .log_frag_size      dd ? ;+28
+    .blocks_per_group   dd ? ;+32
+    .frags_per_group    dd ? ;+36
+    .inodes_per_group   dd ? ;+40
+    .mtime              dd ? ;+44
+    .wtime              dd ? ;+48
+    .mnt_count          dw ? ;+52
+    .max_mnt_count      dw ? ;+54
+    .magic              dw ? ;+56
+    .state              dw ? ;+58
+    .errors             dw ? ;+60
+    .minor_rev_level    dw ? ;+62
+    .lastcheck          dd ? ;+64
+    .check_intervals    dd ? ;+68
+    .creator_os         dd ? ;+72
+    .rev_level          dd ? ;+76
+    .def_resuid         dw ? ;+80
+    .def_resgid         dw ? ;+82
+    .first_ino          dd ? ;+84
+    .inode_size         dw ? ;+88
+    .block_group_nr     dw ? ;+90
+    .feature_compat     dd ? ;+92
+    .feature_incompat   dd ? ;+96
+    .feature_ro_compat  dd ? ;+100
+    .uuid               db 16 dup ? ;+104
+    .volume_name        db 16 dup ? ;+120
+    .last_mounted       db 64 dup ? ;+136
+    .algo_bitmap        dd ? ;+200
+    .prealloc_blocks    db ? ;+204
+  .preallock_dir_blocks db ? ;+205
+                        dw ? ;+206 alignment
+    .journal_uuid       db 16 dup ? ;+208
+    .journal_inum       dd ? ;+224
+    .journal_dev        dd ? ;+228
+    .last_orphan        dd ? ;+232
+    .hash_seed          dd 4 dup ?  ;+236
+    .def_hash_version   db ? ;+252
+                        db 3 dup ?  ;+253 reserved
+ .default_mount_options dd ? ;+256
+    .first_meta_bg      dd ? ;+260
+ends
 
 ext2_test_superblock:
         cmp     [fs_type], 0x83
@@ -111,6 +174,24 @@ ext2_test_superblock:
 
 ext2_setup:
         mov     [fs_type], 2
+
+        push    512
+        call    kernel_alloc                            ; mem for superblock
+        mov     esi, ebx
+        mov     edi, eax
+        mov     ecx, 512/4
+        rep     movsd                                   ; copy sb to reserved mem
+        mov     ebx, eax
+        mov     [ext2_data.sb],eax
+
+        mov     eax, [ebx + EXT2_SB_STRUC.blocks_count]
+        sub     eax, [ebx + EXT2_SB_STRUC.first_data_block]
+        dec     eax
+        xor     edx, edx
+        div     [ebx + EXT2_SB_STRUC.blocks_per_group]
+        inc     eax
+        mov     [ext2_data.groups_count], eax
+
         mov     ecx, [ebx+24]
         inc     ecx
         mov     [ext2_data.log_block_size], ecx    ; 1, 2, 3, 4   equ 1kb, 2kb, 4kb, 8kb
@@ -126,14 +207,12 @@ ext2_setup:
         shl     eax, 2
         mov     [ext2_data.block_size], eax
 
-        push    eax eax eax                             ; 3 kernel_alloc
+        push    eax eax                                 ; 2 kernel_alloc
 
         mov     eax, edx
         mul     edx
         mov     [ext2_data.count_pointer_in_block_square], eax
 
-        call    kernel_alloc
-        mov     [ext2_data.global_desc_table],eax       ; reserve mem for gdt
         call    kernel_alloc
         mov     [ext2_data.ext2_save_block], eax        ; and for temp block
         call    kernel_alloc
@@ -142,15 +221,10 @@ ext2_setup:
         movzx   ebp, word [ebx+88]
         mov     ecx, [ebx+32]
         mov     edx, [ebx+40]
-        mov     eax, [ebx+20]                           ; first_data_block
 
         mov     [ext2_data.inode_size], ebp
         mov     [ext2_data.blocks_per_group], ecx
         mov     [ext2_data.inodes_per_group], edx
-
-        mov     ebx, [ext2_data.global_desc_table]
-        inc     eax                                     ; first_data_block + 1 = gdt
-        call    ext2_get_block                          ; read gtd
 
         push    ebp ebp ebp                             ;3 kernel_alloc
         call    kernel_alloc
@@ -163,6 +237,7 @@ ext2_setup:
         mov     ebx, eax
         mov     eax, EXT2_ROOT_INO
         call    ext2_get_inode                          ; read root inode
+
 	jmp	return_from_part_set
 
 ;==================================================================
@@ -249,7 +324,6 @@ ext2_get_inode_block:
         mov     ecx, dword [ebp + EXT2_INODE_STRUC.i_block + ecx*4]
         ret
 
-
 ;===================================================================
 ;get content inode by num
 ;in:   eax = inode_num
@@ -257,18 +331,28 @@ ext2_get_inode_block:
 ext2_get_inode:
 
     pushad
-    mov     edi, ebx        ;сохраним адрес inode
+    mov    edi, ebx        ;сохраним адрес inode
     dec    eax
     xor    edx, edx
     div    [ext2_data.inodes_per_group]
 
-        push    edx                             ;locale num
+        push    edx                             ;locale num in group
 
         mov     edx, 32
         mul     edx                             ; address block_group in global_desc_table
 
-        add     eax, [ext2_data.global_desc_table]
-        mov     eax, [eax+8]                    ; номер блока - в терминах ext2
+        ; в eax - смещение группы с inode-ом относительно начала глобальной дескрипторной таблицы
+        ; найдем блок в котором он находится
+
+        div     [ext2_data.block_size]
+        mov     ecx, [ext2_data.sb]
+        add     eax, [ecx + EXT2_SB_STRUC.first_data_block]
+        inc     eax
+        mov     ebx, [ext2_data.ext2_temp_block]
+        call    ext2_get_block
+
+        add     ebx, edx                        ; локальный номер в блоке
+        mov     eax, [ebx+8]                    ; номер блока - в терминах ext2
 
         mov     ecx, [ext2_data.log_block_size]
         shl     eax, cl
@@ -434,11 +518,17 @@ ext2_HdReadFolder:
             dec     ecx
           @@:
             movzx   ebx, [eax+EXT2_DIR_STRUC.rec_len]
+
+            cmp     ebx, 12                             ; минимальная длина записи
+            jb      .end_error
+            test    ebx, 0x3                            ; длина записи должна делиться на 4
+            jnz     .end_error
+
             add     eax, ebx                            ; к следующей записи
             cmp     eax, [EXT2_end_block]              ; проверяем "конец"
             jb      .find_wanted_start
 
-		push	.find_wanted_start
+        push    .find_wanted_start
    .end_block:                                   		;вылетили из цикла
         mov     ebx, [ext2_data.count_block_in_block]
         sub     [EXT2_counter_blocks], ebx
@@ -534,6 +624,11 @@ ext2_HdReadFolder:
             dec     ecx                                 ; если запись пустая ecx не надо уменьшать
         .empty_rec:
             movzx   ebx, [eax + EXT2_DIR_STRUC.rec_len]
+            cmp     ebx, 12                             ; минимальная длина записи
+            jb      .end_error
+            test    ebx, 0x3                            ; длина записи должна делиться на 4
+            jnz     .end_error
+
             add     eax, ebx
             cmp     eax, [EXT2_end_block]
             jb      .wanted_start
@@ -543,6 +638,7 @@ ext2_HdReadFolder:
 
     .end_dir:
     	pop     eax		; мусор (адрес возврата в цикл)
+    .end_error:
         pop     edx
         mov     ebx, [EXT2_read_in_folder]
         mov     ecx, [EXT2_files_in_folder]
@@ -658,7 +754,7 @@ ext2_HdRead:
 
     .size_less:
         xor     ebx, ebx
-        mov     eax, 6      ;EOF
+        mov     eax, ERROR_END_OF_FILE
         ret
     .size_great:
         add     eax, ecx                  ;add to first_wanted кол-во байт для чтения
@@ -758,7 +854,7 @@ ext2_HdRead:
         cmp     [EXT2_files_in_folder], 0
         jz      @F
 
-        mov     eax, 6      ;EOF
+        mov     eax, ERROR_END_OF_FILE
         ret
     @@:
         xor     eax, eax
@@ -816,22 +912,6 @@ ext2_find_lfn:
 
 
 ;========================
-ext2_HdRewrite:
-;    xchg    bx, bx
-        xor     ebx, ebx
-        mov     eax, ERROR_UNSUPPORTED_FS
-        ret
-
-ext2_HdWrite:
-;    xchg    bx, bx
-        xor     ebx, ebx
-        mov     eax, ERROR_UNSUPPORTED_FS
-        ret
-ext2_HdSetFileEnd:
-;    xchg    bx, bx
-        xor     ebx, ebx
-        mov     eax, ERROR_UNSUPPORTED_FS
-        ret
 
 ext2_HdGetFileInfo:
         cmp     byte [esi], 0
@@ -893,14 +973,346 @@ ext2_HdGetFileInfo:
         xor     eax, eax
         ret
 
+ext2_HdRewrite:
+ext2_HdWrite:
+ext2_HdSetFileEnd:
 ext2_HdSetFileInfo:
-;    xchg    bx, bx
+ext2_HdDelete:
+ext2_HdCreateFolder:
         xor     ebx, ebx
         mov     eax, ERROR_UNSUPPORTED_FS
         ret
-ext2_HdDelete:
-;    xchg    bx, bx
+;----------------------------------------------------------------
+;
+;  ext2_HdCreateFolder - create new folder
+;
+;  esi  points to filename
+;
+;  ret  eax = 0 ok read or other = errormsg
+;
+;--------------------------------------------------------------
+        cmp     byte [esi], 0
+        jz      .not_found
+        cmp     byte [esi], '/'
+        jz      .not_found
+
+        mov     ebx, esi            ; save source pointer
+        xor     edi, edi            ; slah pointer
+    @@:
+        lodsb
+        cmp     al, 0
+        jz      .zero
+        cmp     al, '/'
+        jz      .slash
+        jmp     @B
+
+    .slash:
+        lodsb
+        cmp     al, 0
+        jz      .zero               ; уберем слеш из имени
+        cmp     al, '/'
+        jz      .not_found
+        mov     edi, esi            ; edi -> next symbol after '/'
+        dec     edi
+        jmp     @B
+
+    .zero:
+        dec     esi
+        test    edi, edi
+        jz      .doit
+
+        ;слеш был
+        mov     eax, esi
+        sub     eax, edi
+        mov     [EXT2_name_len], eax
+
+        mov     ecx, edi
+        sub     ecx, ebx
+        dec     ecx                     ;выкинули '/' из имени ролителя
+        mov     esi, ebx
+        mov     edi, EXT2_parent_name
+        rep     movsb
+        ; esi - pointer to last slash
+
+        mov     edx, esi
+        mov     esi, EXT2_parent_name
+        call    ext2_find_lfn
+        jnc     .doit2
+    .not_found:
+        or      ebx, -1
+        mov     eax, ERROR_FILE_NOT_FOUND
+        ret
+
+    .doit:
+        mov     ebp, [ext2_data.root_inode]
+        mov     edx, ebx                        ; имя создаваемой папки
+        sub     esi, ebx
+        mov     [EXT2_name_len], esi
+    .doit2:
+        ;ebp -> parent_inode    ebx->name_new_folder   [EXT2_name_len]=length of name
+; стратегия выбора группы для нового inode: (так делает линукс)
+; 1) Ищем группу в которой меньше всего папок и в есть свободное место
+; 2) Если такая группа не нашлась, то берем группу в которой больше свободного места
+
+
+
+
+        call    ext2_balloc
+        jmp     ext2_HdDelete
+
+        push    ebx
+        push    ebp
+
+        mov     ecx, [ext2_data.sb]
+        cmp     [ecx + EXT2_SB_STRUC.free_inodes_count],0       ; есть ли место для inode
+        jz      .no_space
+        mov     eax, [ecx + EXT2_SB_STRUC.free_block_count]
+        sub     eax, [ecx + EXT2_SB_STRUC.r_block_count]
+        cmp     eax, 2                                          ; и как минимум на 2 блока
+        jb      .no_space
+
+        mov     ecx, [ext2_data.groups_count]
+        mov     esi, [ext2_data.global_desc_table]
+        mov     edi, -1                         ;указатель на лучшую группу
+        mov     edx, 0
+    .find_group_dir:
+        jecxz   .end_find_group_dir
+        movzx   eax, [esi + EXT2_BLOCK_GROUP_DESC.free_inodes_count]
+        cmp     eax, edx
+        jbe     @F
+        cmp     [esi + EXT2_BLOCK_GROUP_DESC.free_blocks_count], 0
+        jz      @F
+        mov     edi, esi
+        movzx   edx, [esi + EXT2_BLOCK_GROUP_DESC.free_inodes_count]
+    @@:
+        dec     ecx
+        add     esi, 32                         ;размер структуры
+        jmp     .find_group_dir
+    .end_find_group_dir:
+        cmp     edx, 0
+        jz      .no_space
+
+        ;нашли группу, получим битовую карту inode-ов (найдем locale number)
+        mov     eax, [edi + EXT2_BLOCK_GROUP_DESC.inode_bitmap]
+        mov     ebx, [ext2_data.ext2_save_block]
+        call    ext2_get_block
+
+        ;теперь цикл по всем битам
+        mov     esi, ebx
+        mov     ecx, [ext2_data.inodes_per_group]
+        shr     ecx, 5                              ;делим на 32
+        mov     ebp, ecx                            ; всего сохраним в ebp
+        or      eax, -1                             ; ищем первый свободный inode (!= -1)
+        repne   scasd
+        jnz     .test_last_dword                    ;нашли или нет
+        mov     eax, [esi-4]
+
+        sub     ebp, ecx
+        dec     ebp
+        shl     ebp, 5                              ; глобальный номер локального номера
+
+        mov     ecx, 32
+    @@:
+        test    eax, 1
+        jz      @F
+        shr     eax, 1
+        loop    @B
+    @@:
+        mov     eax, 32
+        sub     eax, ecx
+
+        add     ebp, eax                            ; locale num of inode
+
+        mov     eax, [esi-4]
+    ;устанавливаем в eax крайний справа нулевой бит в 1
+        mov     ecx, eax
+        inc     ecx
+        or      eax, ecx        ; x | (x+1)
+        mov     [esi-4], eax
+        mov     ebx, [ext2_data.ext2_save_block]
+        mov     eax, [edi + EXT2_BLOCK_GROUP_DESC.inode_bitmap]
+        call    ext2_set_block
+    ;считаем таблицу inode
+        sub     edi, [ext2_data.global_desc_table]
+        shr     edi, 5
+
+        mov     eax, edi
+        mul     [ext2_data.inodes_per_group]
+        add     eax, ebp
+        inc     eax                                     ; теперь в eax (ebp) номер inode-а
+        mov     ebp, eax
+        ;call    ext2_get_inode_address
+
+        mov     ebx, [ext2_data.ext2_save_block]
+        call    hd_read
+        add     edx, ebx                                ; в edx адрес нужного inode
+
+        ;забьем 0 для начала
+        mov     edi, edx
+        mov     ecx, [ext2_data.inode_size]
+        shr     ecx, 2
+        xor     eax, eax
+        rep     stosd
+
+        mov     edi, edx
+        mov     eax, EXT2_S_IFDIR or EXT2_777_MODE
+        stosd                                           ; i_mode
+        xor     eax, eax
+        stosd                                           ; i_uid
+        mov     eax, [ext2_data.block_size]
+        stosd                                           ; i_size
+        xor     eax, eax
+        stosd                                           ; i_atime
+        stosd                                           ; i_ctime
+        stosd                                           ; i_mtime
+        stosd                                           ; i_dtime
+        stosd                                           ; i_gid
+        inc     eax
+        stosd                                           ; i_links_count
+        mov     eax, [ext2_data.count_block_in_block]
+        stosd                                           ; i_blocks
+
+
+
+
+.test_last_dword:
+
         xor     ebx, ebx
         mov     eax, ERROR_UNSUPPORTED_FS
+        ret
+
+
+
+    .no_space:
+        or      ebx, -1
+        mov     eax, ERROR_DISK_FULL
+        ret
+
+;выделяет новый блок, если это можно
+;иначе возвращает eax=0
+ext2_balloc:
+        mov     ecx, [ext2_data.sb]
+        mov     eax, [ecx + EXT2_SB_STRUC.free_block_count]
+        sub     eax, [ecx + EXT2_SB_STRUC.r_block_count]
+        jbe     .no_space
+
+        mov     ecx, [ext2_data.groups_count]
+        mov     edi, [ext2_data.global_desc_table]
+        ;mov     esi, -1                         ;указатель на лучшую группу
+        mov     edx, 0
+    .find_group:
+        jecxz   .end_find_group
+        movzx   eax, [edi + EXT2_BLOCK_GROUP_DESC.free_blocks_count]
+        cmp     eax, edx
+        jbe     @F
+        mov     esi, edi
+        mov     edx, eax
+    @@:
+        dec     ecx
+        add     edi, 32                         ;размер структуры
+        jmp     .find_group
+    .end_find_group:
+        cmp     edx, 0
+        jz      .no_space
+
+        ;нашли группу, получим битовую карту block-ов
+        mov     eax, [esi + EXT2_BLOCK_GROUP_DESC.block_bitmap]
+        mov     ebx, [ext2_data.ext2_save_block]
+        call    ext2_get_block
+
+        ;теперь цикл по всем битам
+        mov     edi, ebx
+        mov     ecx, [ext2_data.blocks_per_group]
+        shr     ecx, 5                              ;делим на 32
+        mov     ebp, ecx                            ;всего сохраним в ebp
+        or      eax, -1                             ;ищем первый свободный inode (!= -1)
+        repe    scasd
+        jz     .test_last_dword                     ;нашли или нет
+
+        mov     eax, [edi-4]
+        sub     ebp, ecx
+        dec     ebp
+        shl     ebp, 5                              ; ebp = 32*(номер div 32). Теперь найдем (номер mod 32)
+
+        mov     ecx, 32
+    @@:
+        test    eax, 1
+        jz      @F
+        shr     eax, 1
+        loop    @B
+    @@:
+        mov     eax, 32
+        sub     eax, ecx
+
+        add     ebp, eax                            ; ebp = номер блока в группе
+
+        mov     eax, [edi-4]
+        mov     ecx, eax
+        inc     ecx
+        or      eax, ecx        ; x | (x+1) - устанавливает в 1 крайний справа нулевой бит (block used)
+        mov     [edi-4], eax
+
+        mov     ebx, [ext2_data.ext2_save_block]
+        mov     eax, [esi + EXT2_BLOCK_GROUP_DESC.inode_bitmap]
+       ; call    ext2_set_block                      ; и пишем на hdd новую битовую маску
+
+        ;============== тут получаем номер блока
+        mov     eax, [ext2_data.blocks_per_group]
+        sub     esi, [ext2_data.global_desc_table]
+        shr     esi, 5                                  ;esi - номер группы
+        mul     esi
+        add     ebp, eax                                ;(номер_группы) * (blocks_per_group) + локальный номер в группе
+        mov     eax, [ext2_data.sb]
+        add     ebp, [eax + EXT2_SB_STRUC.first_data_block]
+
+        ;теперь поправим глобальную дескрипторную таблицу и суперблок
+        mov     ebx, [ext2_data.sb]
+        dec     [ebx + EXT2_SB_STRUC.free_block_count]
+        mov     eax, 2
+        add     eax, [PARTITION_START]
+        call    hd_write
+        mov     eax, [ebx + EXT2_SB_STRUC.first_data_block]
+        inc     eax
+        dec     [esi + EXT2_BLOCK_GROUP_DESC.free_blocks_count];edi все еще указывает на группу в которой мы выделил блок
+        call    ext2_set_block
+
+        mov     eax, ebx
+        ret
+
+    .test_last_dword:
+        lodsd
+        mov     ecx, [ext2_data.blocks_per_group]
+        and     ecx, not (32-1)                     ;обнуляем все кроме последних 5 бит
+        mov     edx, ecx
+        mov     ebx, 1
+    @@:
+        jecxz   .no_space
+        mov     edx, ebx
+        or      edx, eax                            ; тестируем очередной бит
+        shl     ebx, 1
+        jmp     @B
+    @@:
+        sub     edx, ecx
+        dec     edx                                 ;номер в последнем блоке
+
+
+    .no_space:
+        xor     eax, eax
+        ret
+
+;in: eax = i_block
+;    ebx = pointer to memory
+ext2_set_block:
+        push    eax ebx ecx
+        mov     ecx, [ext2_data.log_block_size]
+        shl     eax, cl
+        add     eax, [PARTITION_START]
+        mov     ecx, [ext2_data.count_block_in_block]
+    @@:
+        call    hd_write
+        inc     eax
+        add     ebx, 512
+        loop    @B
+        pop     ecx ebx eax
         ret
 

@@ -96,6 +96,8 @@ ext2_data:
     .ext2_temp_block                dd ?    ; блок для мелких процедур
     .ext2_save_inode                dd ?    ; inode на глобальную процедуру
     .ext2_temp_inode                dd ?    ; inode для мелких процедур
+    .sb                             dd ?    ; superblock
+    .groups_count                   dd ?
 if $ > fs_dependent_data_end
 ERROR: increase sizeof(fs_dependent_data)!
 end if
