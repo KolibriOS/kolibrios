@@ -1008,8 +1008,8 @@ sdpdone:
 
 uglobal
 align 4
-bgr_cur_line    rd      1280    ; maximum width of screen
-bgr_next_line   rd      1280
+bgr_cur_line    rd      1920    ; maximum width of screen
+bgr_next_line   rd      1920
 endg
 
 smooth_line:
