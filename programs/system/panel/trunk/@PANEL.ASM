@@ -73,10 +73,12 @@ prod:
 	jz	start_menu_application
 	cmp	al, 62
 	jz	kill_active_application
-	cmp	al, 71
-	jz	page_list_next
-	cmp	al, 72
-	jz	page_list_prev
+;	cmp	al, 71
+;	jz	page_list_next
+;	cmp	al, 72
+;	jz	page_list_prev
+	cmp	al, 69
+	jz	start_mousemul_application
 	cmp	[current_alt_tab_app], -1
 	jz	@f
 	test	ah, 0x30
@@ -110,8 +112,11 @@ begin_1:
   start_end_application:
 	mov	dword [ebx+21], end_name
 	mcall	70
-     mcall 5 ,50
-     jmp   begin_1.ret
+	ret
+  start_mousemul_application:
+	mov	dword [ebx+21], mousemul_name
+	mcall	70
+	ret
 
    kill_active_application:
 ;     mcall  18, 7
@@ -154,21 +159,21 @@ begin_1:
      mcall 5,50
      jmp   begin_1.ret
 
-page_list_next:
-    cmp  [page_list],15
-    je	   @f
-    inc  [page_list]
-    mov  [draw_window_1],1
-  @@:
-    jmp  begin_1.ret
-
-page_list_prev:
-    cmp  [page_list],0
-    je	   @f
-    dec  [page_list]
-    mov  [draw_window_1],1
-  @@:
-    jmp  begin_1.ret
+;page_list_next:
+;    cmp  [page_list],15
+;    je	   @f
+;    inc  [page_list]
+;    mov  [draw_window_1],1
+;  @@:
+;    jmp  begin_1.ret
+;
+;page_list_prev:
+;    cmp  [page_list],0
+;    je	   @f
+;    dec  [page_list]
+;    mov  [draw_window_1],1
+;  @@:
+;    jmp  begin_1.ret
 
 alt_tab_pressed:
 ; handle Alt+Tab and Alt+Shift+Tab
@@ -343,12 +348,12 @@ START:
 	mcall 66, , ,11h	; Ctrl+Shift
 	mcall 66,,88,110h	; Alt+Ctrl+F12
 	mcall 66,,91,0h 	; LWin
-	mcall 66,,92,0h 	; RWin
-	mcall 66,,91,100h	; Alt+LWin
-	mcall 66,,92		; Alt+RWin
-	mcall 66,,62		; Alt+F4
-	mcall 66,,71		; Alt+Home
-	mcall 66,,72		; Alt+Up
+	mcall 66,,92 		; RWin
+;	mcall 66,,91,100h	; Alt+LWin
+;	mcall 66,,92		; Alt+RWin
+	mcall 66,,62,100h	; Alt+F4
+;	mcall 66,,71		; Alt+Home
+;	mcall 66,,72		; Alt+Up
 	mcall 66,,15		; Alt+Tab
 	mcall 66,,2		; Alt+1
 	mcall 66,,3		; Alt+2
@@ -358,6 +363,7 @@ START:
 	mcall 66,,7		; Alt+6
 	mcall 66,,8		; Alt+7
 	mcall 66,,,101h 	; Alt+Shift+Tab
+	mcall 66,,69		; Alt+Shift+NumLock
 
     mcall 18, 8, 1
     test eax, eax
@@ -859,11 +865,19 @@ redraw_window_tabs:
 	int	0x40
 
 	mov	edx, [wcolor]	; barsuk
-	cmp	ebp, [esp]	; [esp]=saved ecx=active slot number
+	pop	ecx
+	cmp	ebp, ecx	; ecx=active slot number
 	jnz	@f
 	mov	edx, [system_colours.work_button]
 @@:
-	pop	ecx
+	mov	esi, [current_alt_tab_app]
+	cmp	esi, -1
+	jz	@f
+	cmp	ecx, [alt_tab_list+esi*8]
+	jnz	@f
+;	xor	edx, 0xFFFFFF
+	mov	edx, 0xFF8000
+@@:
 	sub	ebx, 55*10000h - 53
 	mov	ecx, 4*10000h + 12
 	int	0x40
@@ -2371,6 +2385,7 @@ end_name	db	'/sys/END',0
 menu_name	db	'/sys/@MENU',0
 calendar_name	db	'/sys/CALENDAR',0
 sysmeter_name	db	'/sys/GMON',0
+mousemul_name	db	'/sys/MOUSEMUL',0
 
 dat_fileinfo:
 	dd	0
