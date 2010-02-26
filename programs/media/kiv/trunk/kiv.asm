@@ -619,7 +619,7 @@ draw_window:
 	__mov	ebx, 100, 0
 	add	ebx, [wnd_width]
 	lea	ecx, [100*65536 + eax]
-	mcall	0, , , 0x73FFFFFF, , s_header
+	mcall	0, , , 0x73FFFFFF, 0, s_header
 
 	mcall	9, procinfo, -1
 	mov	[bFirstDraw], 1
