@@ -10,14 +10,11 @@
 
         xor     cx, cx
         mov     es, cx
-        inc     cx
         mov     di, 0x9080
         mov     byte [es:di-1], cl
-        mov     byte [es:di], 80h
-        inc     di
         cmp     [preboot_biosdisk], 1
         jnz     bdde
-        mov     dl, 81h
+        mov     dl, 80h
 bdds:
         mov     ah, 15h
         push    cx dx di
