@@ -34,6 +34,13 @@ START:
 	cmp	word [@PARAMS], '\S'
 	jz	set_bgr
 
+; initialize keyboard handling
+	invoke	ini_get_shortcut, inifilename, aShortcuts, aNext, -1, next_mod
+	mov	[next_key], eax
+	invoke	ini_get_shortcut, inifilename, aShortcuts, aPrev, -1, prev_mod
+	mov	[prev_key], eax
+	mcall	66, 1, 1	; set kbd mode to scancodes
+
 	cmp	byte [@PARAMS], 0
 	jnz	params_given
 
@@ -57,9 +64,14 @@ set_bgr:
 
 params_given:
 
-	mov	eax, @PARAMS
+	mov	esi, @PARAMS
+	push	esi
+	call	find_last_name_component
+
+	pop	eax
 	call	load_image
 	jc	exit
+	call	generate_header
 
 ;-----------------------------------------------------------------------------
 
@@ -92,8 +104,32 @@ still:
 	jnz	button
 
 key:
+	xor	esi, esi
+keyloop:
 	mcall	2
-	jmp	still
+	test	al, al
+	jnz	keyloopdone
+	shr	eax, 8
+	mov	ecx, eax
+	mcall	66, 3
+	mov	edx, next_mod
+	call	check_shortcut
+	jz	.next
+	add	edx, prev_mod - next_mod
+	call	check_shortcut
+	jnz	keyloop
+.prev:
+	dec	esi
+	jmp	keyloop
+.next:
+	inc	esi
+	jmp	keyloop
+keyloopdone:
+	test	esi, esi
+	jz	still
+next_or_prev_handler:
+	call	next_or_prev_image
+	jmp	red
 
 red_update_frame:
 	mov	eax, [cur_frame]
@@ -186,16 +222,12 @@ button:
 
     @@:
 
+	or	esi, -1
 	cmp	eax, 'bck'
-	jnz	@f
-	call	prev_image
-	jmp	red
-    @@:
+	jz	next_or_prev_handler
+	neg	esi
 	cmp	eax, 'fwd'
-	jnz	@f
-	call	next_image
-	jmp	red
-    @@:
+	jz	next_or_prev_handler
 
 	cmp	eax, 1
 	jne	still
@@ -307,28 +339,40 @@ set_as_bgr:
 	mcall	15, 3
 	ret
 
-prev_image:
+; seek to ESI image files
+; esi>0 means next file, esi<0 - prev file
+next_or_prev_image:
+	push	esi
 	call	load_directory
-	cmp	[directory_ptr], 0
-	jz	.ret
+	pop	esi
 	mov	ebx, [directory_ptr]
+	test	ebx, ebx
+	jz	.ret
+	cmp	dword[ebx+4], 0
+	jz	.ret
 	mov	eax, [cur_file_idx]
 	cmp	eax, -1
 	jnz	@f
+	test	esi, esi
+	jns	@f
 	mov	eax, [ebx+4]
 @@:
 	push	[image]
-.scanloop:
-	dec	eax
-	jns	@f
-	mov	eax, [ebx+4]
-	dec	eax
-	cmp	[cur_file_idx], -1
-	jz	.notfound
+	add	eax, esi
 @@:
-	cmp	eax, [cur_file_idx]
-	jz	.notfound
-	push	eax ebx
+	test	eax, eax
+	jns	@f
+	add	eax, [ebx+4]
+	jmp	@b
+@@:
+	cmp	eax, [ebx+4]
+	jb	@f
+	sub	eax, [ebx+4]
+	jmp	@b
+@@:
+	push	eax
+.scanloop:
+	push	eax ebx esi
 	imul	esi, eax, 304
 	add	esi, [directory_ptr]
 	add	esi, 32 + 40
@@ -363,76 +407,36 @@ prev_image:
 	jnz	@b
 	mov	byte [esi], 0
 	popf
-	pop	ebx eax
-	jc	.scanloop
-	mov	[cur_file_idx], eax
-	invoke	img.destroy
-.ret:
-	ret
-.notfound:
-	pop	[image]
-	call	init_frame
-	ret
-
-next_image:
-	call	load_directory
-	cmp	[directory_ptr], 0
-	jz	.ret
-	mov	ebx, [directory_ptr]
-	mov	eax, [cur_file_idx]
-	push	[image]
-.scanloop:
+	pop	esi ebx eax
+	jnc	.loadedok
+	test	esi, esi
+	js	.try_prev
+.try_next:
 	inc	eax
 	cmp	eax, [ebx+4]
 	jb	@f
 	xor	eax, eax
-	cmp	[cur_file_idx], -1
+@@:
+.try_common:
+	cmp	eax, [esp]
 	jz	.notfound
+	jmp	.scanloop
+.try_prev:
+	dec	eax
+	jns	@f
+	mov	eax, [ebx+4]
+	dec	eax
 @@:
-	cmp	eax, [cur_file_idx]
-	jz	.notfound
-	push	eax ebx
-	imul	esi, eax, 304
-	add	esi, [directory_ptr]
-	add	esi, 32 + 40
-	mov	edi, curdir
-@@:
-	inc	edi
-	cmp	byte [edi-1], 0
-	jnz	@b
-	mov	byte [edi-1], '/'
-@@:
-	lodsb
-	stosb
-	test	al, al
-	jnz	@b
-	mov	eax, curdir
-	call	load_image
-	pushf
-	mov	esi, curdir
-	push	esi
-	mov	edi, @PARAMS
-	mov	ecx, 512/4
-	rep	movsd
-	mov	byte [edi-1], 0
-	pop	esi
-@@:
-	lodsb
-	test	al, al
-	jnz	@b
-@@:
-	dec	esi
-	cmp	byte [esi], '/'
-	jnz	@b
-	mov	byte [esi], 0
-	popf
-	pop	ebx eax
-	jc	.scanloop
+	jmp	.try_common
+.loadedok:
 	mov	[cur_file_idx], eax
+	pop	eax
 	invoke	img.destroy
+	call	generate_header
 .ret:
 	ret
 .notfound:
+	pop	eax
 	pop	[image]
 	call	init_frame
 	ret
@@ -441,20 +445,13 @@ load_directory:
 	cmp	[directory_ptr], 0
 	jnz	.ret
 	mov	esi, @PARAMS
-	mov	ecx, esi
-@@:
-	lodsb
-	test	al, al
-	jnz	@b
-@@:
-	dec	esi
-	cmp	byte [esi], '/'
-	jnz	@b
-	mov	[last_name_component], esi
-	sub	esi, ecx
-	xchg	ecx, esi
 	mov	edi, curdir
+	mov	ecx, [last_name_component]
+	sub	ecx, esi
+	dec	ecx
+	js	@f
 	rep	movsb
+@@:
 	mov	byte [edi], 0
 	mcall	68, 12, 0x1000
 	test	eax, eax
@@ -550,7 +547,6 @@ load_directory:
 	add	edi, 32 + 40
 .scan:
 	mov	esi, [last_name_component]
-	inc	esi
 	push	edi
 	invoke	strcmpi
 	pop	edi
@@ -568,6 +564,25 @@ load_directory:
 free_directory:
 	mcall	68, 13, [directory_ptr]
 	and	[directory_ptr], 0
+	ret
+
+; in: esi->full name (e.g. /path/to/file.png)
+; out: [last_name_component]->last component (e.g. file.png)
+find_last_name_component:
+	mov	ecx, esi
+@@:
+	lodsb
+	test	al, al
+	jnz	@b
+@@:
+	dec	esi
+	cmp	esi, ecx
+	jb	@f
+	cmp	byte [esi], '/'
+	jnz	@b
+@@:
+	inc	esi
+	mov	[last_name_component], esi
 	ret
 
 init_frame:
@@ -619,7 +634,7 @@ draw_window:
 	__mov	ebx, 100, 0
 	add	ebx, [wnd_width]
 	lea	ecx, [100*65536 + eax]
-	mcall	0, , , 0x73FFFFFF, 0, s_header
+	mcall	0, , , 0x73FFFFFF, 0, real_header
 
 	mcall	9, procinfo, -1
 	mov	[bFirstDraw], 1
@@ -788,9 +803,95 @@ mem.Free:
 	pop	ecx ebx
 	ret	4
 
+check_shortcut:
+; in:	cl = scancode (from sysfn 2),
+;	eax = state of modifiers (from sysfn 66.3),
+;	edx -> shortcut descriptor
+; out:	ZF set <=> fail
+	cmp	cl, [edx+4]
+	jnz	.not
+	push	eax
+	mov	esi, [edx]
+	and	esi, 0xF
+	and	al, 3
+	call	dword [check_modifier_table+esi*4]
+	test	al, al
+	pop	eax
+	jnz	.not
+	push	eax
+	mov	esi, [edx]
+	shr	esi, 4
+	and	esi, 0xF
+	shr	al, 2
+	and	al, 3
+	call	dword [check_modifier_table+esi*4]
+	test	al, al
+	pop	eax
+	jnz	.not
+	push	eax
+	mov	esi, [edx]
+	shr	esi, 8
+	and	esi, 0xF
+	shr	al, 4
+	and	al, 3
+	call	dword [check_modifier_table+esi*4]
+	test	al, al
+	pop	eax
+;	jnz	.not
+.not:
+	ret
+
+check_modifier_0:
+	setnz	al
+	ret
+check_modifier_1:
+	setp	al
+	ret
+check_modifier_2:
+	cmp	al, 3
+	setnz	al
+	ret
+check_modifier_3:
+	cmp	al, 1
+	setnz	al
+	ret
+check_modifier_4:
+	cmp	al, 2
+	setnz	al
+	ret
+
+; fills real_header with window title
+; window title is generated as '<filename> - Kolibri Image Viewer'
+generate_header:
+	push	eax
+	mov	esi, [last_name_component]
+	mov	edi, real_header
+@@:
+	lodsb
+	test	al, al
+	jz	@f
+	stosb
+	cmp	edi, real_header+256
+	jb	@b
+.overflow:
+	mov	dword [edi-4], '...'
+.ret:
+	pop	eax
+	ret
+@@:
+	mov	esi, s_header
+@@:
+	lodsb
+	stosb
+	test	al, al
+	jz	.ret
+	cmp	edi, real_header+256
+	jb	@b
+	jmp	.overflow
+
 ;-----------------------------------------------------------------------------
 
-s_header db 'Kolibri Image Viewer', 0
+s_header db ' - Kolibri Image Viewer', 0
 
 ;-----------------------------------------------------------------------------
 
@@ -996,6 +1097,7 @@ library 			\
 	libio  , 'libio.obj'  , \
 	libgfx , 'libgfx.obj' , \
 	libimg , 'libimg.obj' , \
+	libini , 'libini.obj' , \
 	sort   , 'sort.obj'
 
 import	libio			  , \
@@ -1021,6 +1123,9 @@ import	libimg			   , \
 	img.rotate  , 'img_rotate' , \
 	img.destroy , 'img_destroy', \
 	img.draw    , 'img_draw'
+
+import	libini, \
+	ini_get_shortcut, 'ini_get_shortcut'
 
 import  sort, sort.START, 'START', SortDir, 'SortDir', strcmpi, 'strcmpi'
 
@@ -1056,6 +1161,19 @@ store dword a at $ - numimages*20*20 + numimages*20*z + (%-1)*4
 store dword b at $ - numimages*20*20 + numimages*20*y + (%-1)*4
 end repeat
 end repeat
+
+inifilename	db	'/sys/media/kiv.ini',0
+aShortcuts	db	'Shortcuts',0
+aNext		db	'Next',0
+aPrev		db	'Prev',0
+
+align 4
+check_modifier_table:
+	dd	check_modifier_0
+	dd	check_modifier_1
+	dd	check_modifier_2
+	dd	check_modifier_3
+	dd	check_modifier_4
 
 ; DATA AREA
 get_loops   dd 0
@@ -1102,9 +1220,13 @@ cur_file_idx	dd	?
 cur_frame_time	dd	?
 cur_frame	dd	?
 
-ctx dd ?
+next_mod	dd	?
+next_key	dd	?
+prev_mod	dd	?
+prev_key	dd	?
 
 procinfo:	rb	1024
 path:		rb	1024+16
+real_header	rb	256
 
 @PARAMS rb 512
