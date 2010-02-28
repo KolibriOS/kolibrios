@@ -1290,14 +1290,19 @@ window._.set_window_box: ;/////////////////////////////////////////////////////
         add     esp, -BOX.sizeof
 
         mov     ebx, esp
+if WDATA.box
         lea     esi, [edi + WDATA.box]
+else
+	mov	esi, edi ; optimization for WDATA.box = 0
+end if
         xchg    eax, esi
         mov     ecx, BOX.sizeof
         call    memmove
         xchg    eax, esi
         xchg    ebx, esi
         call    memmove
-        xchg    ebx, esi
+        mov     eax, ebx
+        mov     ebx, esi
 
         call    window._.check_window_position
         call    window._.set_window_clientbox
