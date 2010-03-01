@@ -109,9 +109,6 @@ int radeon_gart_table_vram_pin(struct radeon_device *rdev)
 	radeon_bo_unreserve(rdev->gart.table.vram.robj);
 	rdev->gart.table_addr = gpu_addr;
     return r;
-
-    dbgprintf("alloc gart vram:  gpu_base %x lin_addr %x\n",
-               rdev->gart.table_addr, rdev->gart.table.vram.ptr);
 }
 
 void radeon_gart_table_vram_free(struct radeon_device *rdev)

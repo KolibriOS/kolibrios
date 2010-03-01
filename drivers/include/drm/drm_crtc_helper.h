@@ -35,7 +35,7 @@
 
 //#include <linux/spinlock.h>
 #include <linux/types.h>
-//#include <linux/idr.h>
+#include <linux/idr.h>
 
 #include <linux/fb.h>
 

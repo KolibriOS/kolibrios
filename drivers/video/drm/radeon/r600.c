@@ -1894,6 +1894,7 @@ int r600_init(struct radeon_device *rdev)
 	rdev->accel_working = true;
 	r = r600_startup(rdev);
 	if (r) {
+		dev_err(rdev->dev, "disabling GPU acceleration\n");
 //		r600_suspend(rdev);
 //		r600_wb_fini(rdev);
 //		radeon_ring_fini(rdev);

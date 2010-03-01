@@ -34,6 +34,7 @@
 #include "radeon.h"
 #include "radeon_asic.h"
 #include "atom.h"
+#include "display.h"
 
 #include <drm/drm_pciids.h>
 
@@ -50,6 +51,7 @@ int radeon_new_pll          = 1;
 int radeon_vram_limit       = 0;
 int radeon_audio            = 0;
 
+extern display_t *rdisplay;
 
 void parse_cmdline(char *cmdline, videomode_t *mode, char *log, int *kms);
 int init_display(struct radeon_device *rdev, videomode_t *mode);
@@ -57,6 +59,7 @@ int init_display_kms(struct radeon_device *rdev, videomode_t *mode);
 
 int get_modes(videomode_t *mode, int *count);
 int set_user_mode(videomode_t *mode);
+int r100_2D_test(struct radeon_device *rdev);
 
 
  /* Legacy VGA regions */
@@ -957,6 +960,8 @@ static pci_dev_t device;
 
 u32_t drvEntry(int action, char *cmdline)
 {
+    struct radeon_device *rdev = NULL;
+
     struct pci_device_id  *ent;
 
     int     err;
@@ -997,6 +1002,14 @@ u32_t drvEntry(int action, char *cmdline)
                                 device.pci_dev.device);
 
     err = drm_get_dev(&device.pci_dev, ent);
+
+    rdev = rdisplay->ddev->dev_private;
+
+    if( (rdev->asic == &r600_asic) ||
+        (rdev->asic == &rv770_asic))
+        r600_2D_test(rdev);
+    else
+        r100_2D_test(rdev);
 
     err = RegService("DISPLAY", display_handler);
 
