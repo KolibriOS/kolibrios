@@ -28,6 +28,8 @@
 
 #include <types.h>
 #include <list.h>
+#include <linux/module.h>
+#include <linux/i2c-id.h>
 
 
 #define I2C_NAME_SIZE   20
@@ -43,6 +45,84 @@ union i2c_smbus_data;
  */
 extern int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
 			int num);
+
+/**
+ * struct i2c_driver - represent an I2C device driver
+ * @class: What kind of i2c device we instantiate (for detect)
+ * @attach_adapter: Callback for bus addition (for legacy drivers)
+ * @detach_adapter: Callback for bus removal (for legacy drivers)
+ * @probe: Callback for device binding
+ * @remove: Callback for device unbinding
+ * @shutdown: Callback for device shutdown
+ * @suspend: Callback for device suspend
+ * @resume: Callback for device resume
+ * @command: Callback for bus-wide signaling (optional)
+ * @driver: Device driver model driver
+ * @id_table: List of I2C devices supported by this driver
+ * @detect: Callback for device detection
+ * @address_list: The I2C addresses to probe (for detect)
+ * @clients: List of detected clients we created (for i2c-core use only)
+ *
+ * The driver.owner field should be set to the module owner of this driver.
+ * The driver.name field should be set to the name of this driver.
+ *
+ * For automatic device detection, both @detect and @address_data must
+ * be defined. @class should also be set, otherwise only devices forced
+ * with module parameters will be created. The detect function must
+ * fill at least the name field of the i2c_board_info structure it is
+ * handed upon successful detection, and possibly also the flags field.
+ *
+ * If @detect is missing, the driver will still work fine for enumerated
+ * devices. Detected devices simply won't be supported. This is expected
+ * for the many I2C/SMBus devices which can't be detected reliably, and
+ * the ones which can always be enumerated in practice.
+ *
+ * The i2c_client structure which is handed to the @detect callback is
+ * not a real i2c_client. It is initialized just enough so that you can
+ * call i2c_smbus_read_byte_data and friends on it. Don't do anything
+ * else with it. In particular, calling dev_dbg and friends on it is
+ * not allowed.
+ */
+struct i2c_driver {
+	unsigned int class;
+
+	/* Notifies the driver that a new bus has appeared or is about to be
+	 * removed. You should avoid using this if you can, it will probably
+	 * be removed in a near future.
+	 */
+	int (*attach_adapter)(struct i2c_adapter *);
+	int (*detach_adapter)(struct i2c_adapter *);
+
+	/* Standard driver model interfaces */
+	int (*probe)(struct i2c_client *, const struct i2c_device_id *);
+	int (*remove)(struct i2c_client *);
+
+	/* driver model interfaces that don't relate to enumeration  */
+	void (*shutdown)(struct i2c_client *);
+//	int (*suspend)(struct i2c_client *, pm_message_t mesg);
+	int (*resume)(struct i2c_client *);
+
+	/* Alert callback, for example for the SMBus alert protocol.
+	 * The format and meaning of the data value depends on the protocol.
+	 * For the SMBus alert protocol, there is a single bit of data passed
+	 * as the alert response's low bit ("event flag").
+	 */
+	void (*alert)(struct i2c_client *, unsigned int data);
+
+	/* a ioctl like command that can be used to perform specific functions
+	 * with the device.
+	 */
+	int (*command)(struct i2c_client *client, unsigned int cmd, void *arg);
+
+//	struct device_driver driver;
+	const struct i2c_device_id *id_table;
+
+	/* Device detection callback for automatic device creation */
+//	int (*detect)(struct i2c_client *, struct i2c_board_info *);
+	const unsigned short *address_list;
+	struct list_head clients;
+};
+#define to_i2c_driver(d) container_of(d, struct i2c_driver, driver)
 
 /**
  * struct i2c_client - represent an I2C slave device
@@ -69,13 +149,14 @@ struct i2c_client {
 					/* _LOWER_ 7 bits		*/
 	char name[I2C_NAME_SIZE];
 	struct i2c_adapter *adapter;	/* the adapter we sit on	*/
-//        struct i2c_driver *driver;      /* and our access routines      */
+    struct i2c_driver *driver;      /* and our access routines      */
 //        struct device dev;              /* the device structure         */
-        int irq;                        /* irq issued by device (or -1) */
+    int irq;                        /* irq issued by device (or -1) */
 	struct list_head detected;
 };
 #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
 
+extern struct i2c_client *i2c_verify_client(struct device *dev);
 
 /*
  * The following structs are for those who like to implement new bus drivers:
@@ -111,17 +192,26 @@ struct i2c_adapter {
 	void *algo_data;
 
         /* data fields that are valid for all devices   */
-	u8 level; 			/* nesting level for lockdep */
+//	struct rt_mutex bus_lock;
 
 	int timeout;			/* in jiffies */
     int retries;
- //  struct device dev;      /* the adapter device */
+    struct device dev;      /* the adapter device */
 
     int nr;
     char name[48];
 };
 #define to_i2c_adapter(d) container_of(d, struct i2c_adapter, dev)
 
+static inline void *i2c_get_adapdata(const struct i2c_adapter *dev)
+{
+	return dev_get_drvdata(&dev->dev);
+}
+
+static inline void i2c_set_adapdata(struct i2c_adapter *dev, void *data)
+{
+	dev_set_drvdata(&dev->dev, data);
+}
 
 /*flags for the client struct: */
 #define I2C_CLIENT_PEC	0x04		/* Use Packet Error Checking */
@@ -135,17 +225,6 @@ struct i2c_adapter {
 #define I2C_CLASS_TV_DIGITAL	(1<<2)	/* dvb cards */
 #define I2C_CLASS_DDC		(1<<3)	/* DDC bus on graphics adapters */
 #define I2C_CLASS_SPD		(1<<7)	/* SPD EEPROMs and similar */
-
-/* i2c_client_address_data is the struct for holding default client
- * addresses for a driver and for the parameters supplied on the
- * command line
- */
-struct i2c_client_address_data {
-	const unsigned short *normal_i2c;
-	const unsigned short *probe;
-	const unsigned short *ignore;
-	const unsigned short * const *forces;
-};
 
 /* Internal numbers to terminate lists */
 #define I2C_CLIENT_END		0xfffeU
@@ -275,25 +354,4 @@ union i2c_smbus_data {
 #define I2C_SMBUS_BLOCK_PROC_CALL   7		/* SMBus 2.0 */
 #define I2C_SMBUS_I2C_BLOCK_DATA    8
 
-
-
-
-
-
-
-
 #endif /* _LINUX_I2C_H */
-
-
-
-
-
-
-
-
-
-
-
-
-
-

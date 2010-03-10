@@ -1,6 +1,6 @@
 
 
-static Bool FindPciDevice()
+Bool FindPciDevice()
 {
     Bool retval = FALSE;
     u32_t bus, last_bus;
@@ -20,11 +20,15 @@ static Bool FindPciDevice()
             u32_t id;
             u16_t pcicmd;
             u16_t devclass;
+            u8_t  interface;
             int i;
 
+            interface = PciRead8(bus,devfn, 0x09);
             devclass = PciRead16(bus,devfn, 0x0A);
-
             if( devclass != 0x0C03)
+                continue;
+
+            if( interface != 0)
                 continue;
 
             pcicmd = PciRead16(bus,devfn, PCI_COMMAND);

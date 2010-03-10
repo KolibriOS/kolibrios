@@ -124,7 +124,22 @@ typedef struct pgprot { pgprotval_t pgprot; } pgprot_t;
 struct file {};
 struct vm_area_struct {};
 struct address_space {};
-struct device {};        
+
+struct device
+{
+    struct device   *parent;
+    void            *driver_data;
+};
+
+static inline void dev_set_drvdata(struct device *dev, void *data)
+{
+    dev->driver_data = data;
+}
+
+static inline void *dev_get_drvdata(struct device *dev)
+{
+    return dev->driver_data;
+}
 
 #define preempt_disable()       do { } while (0)
 #define preempt_enable_no_resched() do { } while (0)

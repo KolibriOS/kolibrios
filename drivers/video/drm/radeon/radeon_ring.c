@@ -84,7 +84,7 @@ int radeon_ib_get(struct radeon_device *rdev, struct radeon_ib **ib)
 			mutex_unlock(&rdev->ib_pool.mutex);
 			radeon_fence_unref(&fence);
 			return r;
-	}
+		}
 		mutex_lock(&rdev->ib_pool.mutex);
 	}
 	radeon_fence_unref(&nib->fence);
@@ -146,6 +146,7 @@ int radeon_ib_pool_init(struct radeon_device *rdev)
 
 	if (rdev->ib_pool.robj)
 		return 0;
+	INIT_LIST_HEAD(&rdev->ib_pool.bogus_ib);
 	/* Allocate 1M object buffer */
 	r = radeon_bo_create(rdev, NULL,  RADEON_IB_POOL_SIZE*64*1024,
 				 true, RADEON_GEM_DOMAIN_GTT,
@@ -278,8 +279,6 @@ int radeon_ring_init(struct radeon_device *rdev, unsigned ring_size)
 {
 	int r;
 
-    ENTER();
-
 	rdev->cp.ring_size = ring_size;
     /* Allocate ring buffer */
 	if (rdev->cp.ring_obj == NULL) {
@@ -310,9 +309,6 @@ int radeon_ring_init(struct radeon_device *rdev, unsigned ring_size)
 	}
 	rdev->cp.ptr_mask = (rdev->cp.ring_size / 4) - 1;
 	rdev->cp.ring_free_dw = rdev->cp.ring_size / 4;
-
-    LEAVE();
-
 	return 0;
 }
 
@@ -366,7 +362,12 @@ int radeon_debugfs_ib_init(struct radeon_device *rdev)
 {
 #if defined(CONFIG_DEBUG_FS)
 	unsigned i;
+	int r;
 
+	radeon_debugfs_ib_bogus_info_list[0].data = rdev;
+	r = radeon_debugfs_add_files(rdev, radeon_debugfs_ib_bogus_info_list, 1);
+	if (r)
+		return r;
 	for (i = 0; i < RADEON_IB_POOL_SIZE; i++) {
 		sprintf(radeon_debugfs_ib_names[i], "radeon_ib_%04u", i);
 		radeon_debugfs_ib_list[i].name = radeon_debugfs_ib_names[i];

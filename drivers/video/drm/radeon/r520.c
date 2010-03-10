@@ -51,7 +51,6 @@ static int r520_mc_wait_for_idle(struct radeon_device *rdev)
 static void r520_gpu_init(struct radeon_device *rdev)
 {
 	unsigned pipe_select_current, gb_pipe_select, tmp;
-    ENTER();
 
 	r100_hdp_reset(rdev);
 	rv515_vga_render_disable(rdev);
@@ -95,7 +94,6 @@ static void r520_gpu_init(struct radeon_device *rdev)
 static void r520_vram_get_type(struct radeon_device *rdev)
 {
 	uint32_t tmp;
-    ENTER();
 
 	rdev->mc.vram_width = 128;
 	rdev->mc.vram_is_ddr = true;
@@ -121,13 +119,15 @@ static void r520_vram_get_type(struct radeon_device *rdev)
 		rdev->mc.vram_width *= 2;
 }
 
-void r520_vram_info(struct radeon_device *rdev)
+void r520_mc_init(struct radeon_device *rdev)
 {
 	fixed20_12 a;
 
 	r520_vram_get_type(rdev);
-
 	r100_vram_init_sizes(rdev);
+	radeon_vram_location(rdev, &rdev->mc, 0);
+	if (!(rdev->flags & RADEON_IS_AGP))
+		radeon_gtt_location(rdev, &rdev->mc);
 	/* FIXME: we should enforce default clock in case GPU is not in
 	 * default setup
 	 */
@@ -251,13 +251,15 @@ int r520_init(struct radeon_device *rdev)
 	radeon_get_clock_info(rdev->ddev);
 	/* Initialize power management */
 	radeon_pm_init(rdev);
-	/* Get vram informations */
-	r520_vram_info(rdev);
-	/* Initialize memory controller (also test AGP) */
-	r = r420_mc_init(rdev);
-    dbgprintf("mc vram location %x\n", rdev->mc.vram_location);
-	if (r)
-		return r;
+	/* initialize AGP */
+	if (rdev->flags & RADEON_IS_AGP) {
+		r = radeon_agp_init(rdev);
+		if (r) {
+			radeon_agp_disable(rdev);
+		}
+	}
+	/* initialize memory controller */
+	r520_mc_init(rdev);
 	rv515_debugfs(rdev);
 	/* Fence driver */
 //   r = radeon_fence_driver_init(rdev);
@@ -284,7 +286,6 @@ int r520_init(struct radeon_device *rdev)
 //       r100_ib_fini(rdev);
 		rv370_pcie_gart_fini(rdev);
 //       radeon_agp_fini(rdev);
-//       radeon_irq_kms_fini(rdev);
 		rdev->accel_working = false;
 	}
 

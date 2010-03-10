@@ -1,4 +1,5 @@
 
+
 CC = gcc
 FASM = e:/fasm/fasm.exe
 
@@ -48,6 +49,7 @@ NAME_SRC=							\
 			$(DRM_TOPDIR)/drm_dp_i2c_helper.c	\
 			$(DRM_TOPDIR)/i2c/i2c-core.c		\
 			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
+			evergreen.c				\
 			radeon_device.c				\
 			radeon_clocks.c				\
 			radeon_i2c.c				\

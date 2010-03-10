@@ -27,6 +27,7 @@
  *      Dave Airlie <airlied@linux.ie>
  *      Jesse Barnes <jesse.barnes@intel.com>
  */
+#include <linux/kernel.h>
 //#include <linux/sysrq.h>
 #include <linux/fb.h>
 #include "drmP.h"
@@ -34,9 +35,9 @@
 #include "drm_fb_helper.h"
 #include "drm_crtc_helper.h"
 
-//MODULE_AUTHOR("David Airlie, Jesse Barnes");
-//MODULE_DESCRIPTION("DRM KMS helper");
-//MODULE_LICENSE("GPL and additional rights");
+MODULE_AUTHOR("David Airlie, Jesse Barnes");
+MODULE_DESCRIPTION("DRM KMS helper");
+MODULE_LICENSE("GPL and additional rights");
 
 static LIST_HEAD(kernel_fb_helper_list);
 
@@ -480,7 +481,7 @@ int drm_fb_helper_set_par(struct fb_info *info)
 	int i;
 
 	if (var->pixclock != 0) {
-		DRM_ERROR("PIXEL CLCOK SET\n");
+		DRM_ERROR("PIXEL CLOCK SET\n");
 		return -EINVAL;
 	}
 

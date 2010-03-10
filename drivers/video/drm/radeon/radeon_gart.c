@@ -139,6 +139,7 @@ void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
 	unsigned t;
 	unsigned p;
 	int i, j;
+	u64 page_base;
 
 	if (!rdev->gart.ready) {
 		WARN(1, "trying to unbind memory to unitialized GART !\n");
@@ -151,9 +152,11 @@ void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
 //           pci_unmap_page(rdev->pdev, rdev->gart.pages_addr[p],
 //                      PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
 			rdev->gart.pages[p] = NULL;
-			rdev->gart.pages_addr[p] = 0;
+			rdev->gart.pages_addr[p] = rdev->dummy_page.addr;
+			page_base = rdev->gart.pages_addr[p];
 			for (j = 0; j < (PAGE_SIZE / RADEON_GPU_PAGE_SIZE); j++, t++) {
-				radeon_gart_set_page(rdev, t, 0);
+				radeon_gart_set_page(rdev, t, page_base);
+				page_base += RADEON_GPU_PAGE_SIZE;
 			}
 		}
 	}
@@ -187,11 +190,7 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
 
         rdev->gart.pages_addr[p] = pagelist[i] & ~4095;
 
-        //if (pci_dma_mapping_error(rdev->pdev, rdev->gart.pages_addr[p])) {
-        //    /* FIXME: failed to map page (return -ENOMEM?) */
-        //    radeon_gart_unbind(rdev, offset, pages);
-        //    return -ENOMEM;
-        //}
+
         rdev->gart.pages[p] = pagelist[i];
 		page_base = rdev->gart.pages_addr[p];
 		for (j = 0; j < (PAGE_SIZE / RADEON_GPU_PAGE_SIZE); j++, t++) {
@@ -204,8 +203,26 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
     return 0;
 }
 
+void radeon_gart_restore(struct radeon_device *rdev)
+{
+	int i, j, t;
+	u64 page_base;
+
+	for (i = 0, t = 0; i < rdev->gart.num_cpu_pages; i++) {
+		page_base = rdev->gart.pages_addr[i];
+		for (j = 0; j < (PAGE_SIZE / RADEON_GPU_PAGE_SIZE); j++, t++) {
+			radeon_gart_set_page(rdev, t, page_base);
+			page_base += RADEON_GPU_PAGE_SIZE;
+		}
+	}
+	mb();
+	radeon_gart_tlb_flush(rdev);
+}
+
 int radeon_gart_init(struct radeon_device *rdev)
 {
+	int r, i;
+
     if (rdev->gart.pages) {
         return 0;
     }
@@ -214,6 +231,9 @@ int radeon_gart_init(struct radeon_device *rdev)
         DRM_ERROR("Page size is smaller than GPU page size!\n");
         return -EINVAL;
     }
+	r = radeon_dummy_page_init(rdev);
+	if (r)
+		return r;
     /* Compute table size */
     rdev->gart.num_cpu_pages = rdev->mc.gtt_size / PAGE_SIZE;
 	rdev->gart.num_gpu_pages = rdev->mc.gtt_size / RADEON_GPU_PAGE_SIZE;
@@ -232,6 +252,10 @@ int radeon_gart_init(struct radeon_device *rdev)
 		radeon_gart_fini(rdev);
         return -ENOMEM;
     }
+	/* set GART entry to point to the dummy page by default */
+	for (i = 0; i < rdev->gart.num_cpu_pages; i++) {
+		rdev->gart.pages_addr[i] = rdev->dummy_page.addr;
+	}
     return 0;
 }
 

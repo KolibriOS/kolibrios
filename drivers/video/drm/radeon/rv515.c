@@ -55,8 +55,6 @@ void rv515_ring_start(struct radeon_device *rdev)
 {
 	int r;
 
-    ENTER();
-
 	r = radeon_ring_lock(rdev, 64);
 	if (r) {
 		return;
@@ -119,9 +117,6 @@ void rv515_ring_start(struct radeon_device *rdev)
 	radeon_ring_write(rdev, PACKET0(0x20C8, 0));
 	radeon_ring_write(rdev, 0);
 	radeon_ring_unlock_commit(rdev);
-
-    LEAVE();
-
 }
 
 int rv515_mc_wait_for_idle(struct radeon_device *rdev)
@@ -183,8 +178,6 @@ int rv515_ga_reset(struct radeon_device *rdev)
 	bool reinit_cp;
 	int i;
 
-    ENTER();
-
 	reinit_cp = rdev->cp.ready;
 	rdev->cp.ready = false;
 	for (i = 0; i < rdev->usec_timeout; i++) {
@@ -237,8 +230,6 @@ int rv515_gpu_reset(struct radeon_device *rdev)
 {
 	uint32_t status;
 
-    ENTER();
-
 	/* reset order likely matter */
 	status = RREG32(RBBM_STATUS);
 	/* reset HDP */
@@ -286,13 +277,15 @@ static void rv515_vram_get_type(struct radeon_device *rdev)
 	}
 }
 
-void rv515_vram_info(struct radeon_device *rdev)
+void rv515_mc_init(struct radeon_device *rdev)
 {
 	fixed20_12 a;
 
 	rv515_vram_get_type(rdev);
-
 	r100_vram_init_sizes(rdev);
+	radeon_vram_location(rdev, &rdev->mc, 0);
+	if (!(rdev->flags & RADEON_IS_AGP))
+		radeon_gtt_location(rdev, &rdev->mc);
 	/* FIXME: we should enforce default clock in case GPU is not in
 	 * default setup
 	 */
@@ -549,13 +542,15 @@ int rv515_init(struct radeon_device *rdev)
 	radeon_get_clock_info(rdev->ddev);
 	/* Initialize power management */
 	radeon_pm_init(rdev);
-	/* Get vram informations */
-	rv515_vram_info(rdev);
-	/* Initialize memory controller (also test AGP) */
-	r = r420_mc_init(rdev);
-    dbgprintf("mc vram location %x\n", rdev->mc.vram_location);
-	if (r)
-		return r;
+	/* initialize AGP */
+	if (rdev->flags & RADEON_IS_AGP) {
+		r = radeon_agp_init(rdev);
+		if (r) {
+			radeon_agp_disable(rdev);
+		}
+	}
+	/* initialize memory controller */
+	rv515_mc_init(rdev);
 	rv515_debugfs(rdev);
 	/* Fence driver */
 //   r = radeon_fence_driver_init(rdev);

@@ -12,7 +12,6 @@
 #include "syscall.h"
 #include "usb.h"
 
-static Bool FindPciDevice();
 
 int __stdcall srv_usb(ioctl_t *io);
 

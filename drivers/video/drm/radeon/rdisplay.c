@@ -112,7 +112,7 @@ cursor_t* __stdcall select_cursor(cursor_t *cursor)
     if (ASIC_IS_AVIVO(rdev))
         WREG32(AVIVO_D1CUR_SURFACE_ADDRESS,  gpu_addr);
     else {
-        WREG32(RADEON_CUR_OFFSET, gpu_addr - rdev->mc.vram_location);
+        WREG32(RADEON_CUR_OFFSET, gpu_addr - rdev->mc.vram_start);
     }
 
     return old;
@@ -189,7 +189,7 @@ void __stdcall move_cursor(cursor_t *cursor, int x, int y)
 
         /* offset is from DISP(2)_BASE_ADDRESS */
         WREG32(RADEON_CUR_OFFSET,
-         (gpu_addr - rdev->mc.vram_location + (yorg * 256)));
+         (gpu_addr - rdev->mc.vram_start + (yorg * 256)));
     }
     radeon_lock_cursor(false);
 }
@@ -296,7 +296,7 @@ int r100_2D_test(struct radeon_device *rdev)
     ENTER();
 
     pitch  = (1024*4)/64;
-    offset = rdev->mc.vram_location;
+    offset = rdev->mc.vram_start;
 
     r = radeon_ring_lock(rdev, 16);
     if (r) {
@@ -2211,8 +2211,7 @@ int r600_2D_test(struct radeon_device *rdev)
     ENTER();
 
     pitch  = (1024*4)/64;
-    offset = rdev->mc.vram_location;
-
+    offset = rdev->mc.vram_start;
     ps_size = R600_solid_ps(rdev, ps_shader);
     vs_size = R600_solid_vs(rdev, vs_shader);
 
@@ -2355,7 +2354,7 @@ int r600_2D_test(struct radeon_device *rdev)
 
 
     set_render_target(rdev, COLOR_8_8_8_8, 1024, 768,  /* FIXME */
-                      rdev->mc.vram_location);
+                      rdev->mc.vram_start);
 
     set_scissors(rdev, 0, 0, 1024, 768);
 

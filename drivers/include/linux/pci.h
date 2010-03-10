@@ -484,7 +484,7 @@ struct pci_dev {
     unsigned int    no_d1d2:1;  /* Only allow D0 and D3 */
 
 //    pci_channel_state_t error_state;    /* current connectivity state */
-//    struct  device  dev;        /* Generic device interface */
+    struct  device  dev;        /* Generic device interface */
 
 //    int     cfg_size;   /* Size of configuration space */
 

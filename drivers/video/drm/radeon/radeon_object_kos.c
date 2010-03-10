@@ -179,7 +179,7 @@ int radeon_bo_pin(struct radeon_bo *bo, u32 domain, u64 *gpu_addr)
 
     if(bo->domain & RADEON_GEM_DOMAIN_VRAM)
     {
-        bo->tbo.offset += (u64)bo->rdev->mc.vram_location;
+        bo->tbo.offset += (u64)bo->rdev->mc.vram_start;
     }
     else if (bo->domain & RADEON_GEM_DOMAIN_GTT)
     {
@@ -191,7 +191,7 @@ int radeon_bo_pin(struct radeon_bo *bo, u32 domain, u64 *gpu_addr)
         dbgprintf("pagelist %x\n", pagelist);
         radeon_gart_bind(bo->rdev, bo->tbo.offset,
                          bo->tbo.vm_node->size,  pagelist);
-        bo->tbo.offset += (u64)bo->rdev->mc.gtt_location;
+        bo->tbo.offset += (u64)bo->rdev->mc.gtt_start;
     }
     else
     {
@@ -378,7 +378,7 @@ int radeon_fb_bo_create(struct radeon_device *rdev, struct drm_gem_object *gobj,
 
     bo->tbo.vm_node = vm_node;
     bo->tbo.offset  = bo->tbo.vm_node->start << PAGE_SHIFT;
-    bo->tbo.offset += (u64)bo->rdev->mc.vram_location;
+    bo->tbo.offset += (u64)bo->rdev->mc.vram_start;
     bo->kptr        = (void*)0xFE000000;
     bo->pin_count   = 1;
 

@@ -31,6 +31,7 @@
 #include "radeon_reg.h"
 #include "radeon.h"
 
+#include "r100d.h"
 #include "r200_reg_safe.h"
 
 //#include "r100_track.h"
