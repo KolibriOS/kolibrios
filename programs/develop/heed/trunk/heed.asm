@@ -186,9 +186,9 @@ key:
 	cmp	ah,8
 	je	BackSpace
 	cmp	ah,15
-	je	open_dialog	;open_file ;Ctrl+O
+	je	open_dialog ;open_file ;Ctrl+O
 	cmp	ah,19
-	je	save_file	;Ctrl+S
+	je	open_dialog_save ;save_file ;Ctrl+S
 	cmp	ah,22
 	je	Ctrl_V	;paste
 	cmp	ah,24
