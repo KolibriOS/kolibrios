@@ -56,39 +56,6 @@ tl_save_load_heder_size equ 26 ;размер заголовка для записи/чтения элементов
 ;ls_tim		dd ? ;+34 время последнего сохранения
 ;on_activate dd ? ;+92 указатель на функцию при активировании узла
 
-struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
-    col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
-    info_capt_len,el_focus, p_scrol,on_press {
-  .data_info	dd 0
-  .info_size	dw info_size
-  .info_max_count dd info_max_count
-  .style	    dd style
-  .data_nodes	dd 0
-  .data_img	 dd 0
-  .img_cx	   dw img_cx
-  .img_cy	   dw img_cy
-  .data_img_sys	 dd 0
-  .ch_tim		  dd 0
-  .ls_tim		  dd 0
-  .tim_undo	 dd 0
-  .cur_pos	  dd 0
-  .col_bkg	  dd col_bkg
-  .col_zag	  dd col_zag
-  .col_txt	  dd col_txt
-  .box_left   dd box_l
-  .box_top    dd box_t
-  .box_width  dd box_w
-  .box_height dd box_h
-  .capt_cy	   dw capt_cy
-  .info_capt_offs dw info_capt_offs
-  .info_capt_len dw info_capt_len
-  .el_focus dd el_focus
-  .p_scrol  dd p_scrol
-  rb 4
-  .on_activate dd 0
-  .on_press dd on_press
-}
-
 macro use_tree_list
 {
 ;-----------------------------------------------------------------------------

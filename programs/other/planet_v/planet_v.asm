@@ -18,9 +18,7 @@ include 'mem.inc'
 include 'dll.inc'
 
 include '../../develop/libraries/box_lib/load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/tree_list.mac'
-include '../../develop/libraries/box_lib/trunk/editbox.mac'
-include '../../develop/libraries/box_lib/trunk/checkbox.mac'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 
 min_window_w equ 485 ;минимальная ширина окна
 min_window_h equ 325 ;минимальная высота окна

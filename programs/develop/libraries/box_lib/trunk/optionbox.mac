@@ -1,24 +1,8 @@
-;Їрщы ёючфрэ 13.02.2009 <Lrz> ═р ъюф яЁшьхэхэр GPL2 ышЎхэчш 
-;╠ръЁюё фы  ёшёЄхьэющ сшсышюЄхъш box_lib.obj
+;файл создан 13.02.2009 <Lrz> На код применена GPL2 лицензия
+;Макрос для системной библиотеки box_lib.obj
 ;Optionbox
 
-struc option_box point_gr,left,top,op_text_margin,op_size,color,border_color,text_color,text,op_text_length,flags
-{        ;структура параметров для чек бокса
-op_flag_en=10b
-.option_group: dd point_gr
-.left: dw left       ;+0 ;положение по х
-.top:  dw top        ;положение по у
-.ch_text_margin:  dd op_text_margin ;расстояние от прямоугольника чек бокса до надписи
-.ch_size: dd op_size ;размер квадрата чек бокса, для примера 12
-.color:   dd color   ;цвет внутри чекбокса
-.border_color: dd border_color ;цвет рамки
-.text_color:   dd text_color   ;цвет надписи
-.text: dd text                 ;адрес в коде программы где расположен текст
-.ch_text_length: dd op_text_length ;длинна строки с символами
-.flags: dd flags+0   ; флаги
-}
-
-macro use_optionbox_driver	;ьръЁюё√ ъюЄюЁ√х єяЁрты ■Є ЁрсюЄющ сюъёр )
+macro use_optionbox_driver	;макросы которые управляют работой бокса )
 {
 option_box_draw:
         pusha
@@ -58,7 +42,7 @@ option_check:
 
 @@:     popa
         ret 4 
-        ; exit тююс∙х :)
+        ; exit вообще :)
 
 
 option_box_mouse:
@@ -82,18 +66,18 @@ macro use_optionbox_draw
 {
 option_box_draw_box:
 option_group equ [edi]
-op_left equ [edi+4]    ;ъююЁфшэрЄр эрўрыр Ёшёютрэш  яю ї
-op_top equ [edi+6]     ;ъююЁфшэрЄр эрўрыр Ёшёютрэш  яю є
-op_text_margin equ [edi+8]      ;=4 ЁрёёЄю эшх юЄ яЁ ьюєуюы№эшър ўхъ сюъёр фю эрфяшёш 
-op_size equ [edi+12]             ;12 ЁрчьхЁ ътрфЁрЄр ўхъ сюъёр 
+op_left equ [edi+4]    ;координата начала рисования по х
+op_top equ [edi+6]     ;координата начала рисования по у
+op_text_margin equ [edi+8]      ;=4 расстояние от прямоугольника чек бокса до надписи 
+op_size equ [edi+12]             ;12 размер квадрата чек бокса 
 op_color equ [edi+16]
-op_border_color equ [edi+20] ; or [edi+4] ;ЎтхЄ Ёрьъш checkbox хх ьюцэю чрфрЄ№ ёрьюёЄю Єхы№эю
-op_text_color equ   [edi+24];[edi+4]  ;ЎтхЄ ЄхъёЄр
-op_text_ptr equ [edi+28]    ;єърчрЄхы№ эр эрўрыю ЄхъёЄютющ ёЄЁюъш 
+op_border_color equ [edi+20] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
+op_text_color equ   [edi+24];[edi+4]  ;цвет текста
+op_text_ptr equ [edi+28]    ;указатель на начало текстовой строки 
 op_text_length equ [edi+32]
-op_flags equ [edi+36]       ;Їыруш
+op_flags equ [edi+36]       ;флаги
 
-        pusha   ;ёюїЁрэшь тёх ЁхушёЄЁ√
+        pusha   ;сохраним все регистры
 
         movzx ebx,word op_left 
         shl ebx,16 
@@ -103,49 +87,49 @@ op_flags equ [edi+36]       ;Їыруш
         add ecx,dword op_size 
         mov edx,dword op_border_color 
         mov eax,13 
-        mcall ;Ёшёєхь Ёрьъє 
+        mcall ;рисуем рамку 
   
         mov edx,dword op_color 
         add ebx,1 shl 16 - 2 
         add ecx,1 shl 16 - 2 
-        mcall ;чръЁр°штрхь тэєЄЁхээюёЄш ўхъсюъёр 
+        mcall ;закрашиваем внутренности чекбокса 
 
 ;        mov     eax,dword option_group
 ;        mov     dword eax,[eax]
 ;        cmp     eax,edi
 ;        jne     @f
-;        call    option_box_draw_op  ;эрЁшёютрЄ№ тъы■ўхээ√щ ўхъ сюъё
+;        call    option_box_draw_op  ;нарисовать включенный чек бокс
 
 
 ;----------------------------
-;ЁрёўхЄ ъєфр сєфхЄ яЁюшчтхфхэ т√тюф ЄхъёЄр
+;расчет куда будет произведен вывод текста
 ;----------------------------
-@@:     movzx ebx,word op_left        ;чруЁєчшЄ№ чэрўхэшх ї фы  ўхъ сюъёр
+@@:     movzx ebx,word op_left        ;загрузить значение х для чек бокса
         add   ebx,dword op_size
-        add   ebx,dword op_text_margin;фюсртшЄ№ ЁрчьхЁ ёЄюЁюэ√ ш ЁрёёЄю эшх эр ъюЄюЁюь эрўэхЄё  т√тюф ЄхъёЄр
-        shl   ebx,16                ;ёфтшэхь эр 16 ЁрчЁ фют т ыхтю (єьэюцшь эр 65536)
-        mov   bx,word op_top        ;чруЁєчшь чэрўхэшх яю y
+        add   ebx,dword op_text_margin;добавить размер стороны и расстояние на котором начнется вывод текста
+        shl   ebx,16                ;сдвинем на 16 разрядов в лево (умножим на 65536)
+        mov   bx,word op_top        ;загрузим значение по y
         add   ebx,op_size
-        mov   ecx,dword op_text_color        ;чруЁєчшь ЎтхЄ эрфяшёш + flags
-        sub   ebx,7        ;фюсртшь чэрўхэшх фышэ√ ёЄюЁюэ√ -9+2
+        mov   ecx,dword op_text_color        ;загрузим цвет надписи + flags
+        sub   ebx,7        ;добавим значение длины стороны -9+2
         
-        mov   edx,dword op_text_ptr                ;єърцхь рфЁхё юЄ ъєфр эєцэю т√тюфшЄ№ ёЄЁюъє
+        mov   edx,dword op_text_ptr                ;укажем адрес от куда нужно выводить строку
         mov   esi,dword op_text_length
-        ;тэхёхь т eax чэрўхэшх т√тюфр эрфяшёш эр ърэтє
+        ;внесем в eax значение вывода надписи на канву
         mov   eax,4
-        mcall                  ;┬√тюф 
-popa                           ;тюёёЄрэютшЄ№ чэрўхэш  ЁхушёЄЁют шч ёЄхър
-ret                            ;т√щфхь шч яЁюЎхфєЁ√
+        mcall                  ;Вывод 
+popa                           ;восстановить значения регистров из стека
+ret                            ;выйдем из процедуры
 
-option_box_clear_op:                      ;юўшёЄър ўхъ сюъёр
-        mov     edx,dword op_color    ;ЎтхЄ тэєЄЁш ўхъ сюъёр
-        jmp     @f              ;схчєёыютэ√щ яЁ√цюъ эр эшцэ■■ ьхЄъє @@
+option_box_clear_op:                      ;очистка чек бокса
+        mov     edx,dword op_color    ;цвет внутри чек бокса
+        jmp     @f              ;безусловный прыжок на нижнюю метку @@
 
 
-option_box_draw_op:            ;эрЁшёютрЄ№ тъы■ўхээ√щ ўхъ сюъё
-        mov   edx,dword op_border_color        ;чруЁєчшЄ№ ЎтхЄ
+option_box_draw_op:            ;нарисовать включенный чек бокс
+        mov   edx,dword op_border_color        ;загрузить цвет
 @@:
-        movzx ebx,word op_left  ;чруЁєчшЄ№ ъююЁфшэрЄє яю ї
+        movzx ebx,word op_left  ;загрузить координату по х
         mov   eax,dword op_size
         mov   bp,ax
         shr   eax,2
@@ -153,62 +137,62 @@ option_box_draw_op:            ;эрЁшёютрЄ№ тъы■ўхээ√щ ўхъ сюъё
  
         push  ax
         add   ebx,eax           
-        shl   ebx,16            ;ёфтшэхь эр 16 ЁрчЁ фют т ыхтю (єьэюцшь эр 65536)
+        shl   ebx,16            ;сдвинем на 16 разрядов в лево (умножим на 65536)
         pop   ax
         lea   eax,[eax*2]
-        sub   bp,ax             ;ёюїЁрэшь ЁхушёЄЁ bx т ЁхушёЄЁх єърчрЄхы  срч√
+        sub   bp,ax             ;сохраним регистр bx в регистре указателя базы
         mov   bx,bp
 
-        movzx ecx,word op_top ;чруЁєчшЄ№ ъююЁфшэрЄє яю є
+        movzx ecx,word op_top ;загрузить координату по у
         pop   ax
         add   cx,ax         
-        shl   ecx,16          ;ёфтшэхь эр 16 ЁрчЁ фют т ыхтю (єьэюцшь эр 65536)
-        mov   cx,bp           ;чруЁєчшь чэрўхэш  ЁхушёЄЁр єърчрЄхы  срч√ т cx
-        mov   eax,13          ;т eax - чэрўхэш  ЇєэъЎшш фы  т√тюфр яюыюё√ Є.х. яю ёєЄш яЁ ьюєуюы№эшър, ъюЄюЁ√щ юЄюсЁрцрхЄ тъы■ўхээ√щ ъюьяюэхэЄ ўхъ сюъё
-        mcall            ;т√тюф
-ret                                ;т√щЄш шч яЁюЎхфєЁ√
+        shl   ecx,16          ;сдвинем на 16 разрядов в лево (умножим на 65536)
+        mov   cx,bp           ;загрузим значения регистра указателя базы в cx
+        mov   eax,13          ;в eax - значения функции для вывода полосы т.е. по сути прямоугольника, который отображает включенный компонент чек бокс
+        mcall            ;вывод
+ret                                ;выйти из процедуры
 }
 
 
 macro use_optionbox_mouse
 {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;╬сЁрсюЄўшъ mouse
+;Обработчик mouse
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-option_box_mouse_op:                 ;юсЁрсюЄър ь√°ш 
+option_box_mouse_op:                 ;обработка мыши 
 pusha
-        mov     esi,dword op_text_length ;чруЁєчшЄ№ ъюы-тю ёшьтюыют т ЄхъёЄютющ ёЄЁюъх
-        ;╙ьэюцхэшх эр 6 ┴√ёЄЁюх єьэюцхэшх ьюцэю тюёяюы№чютрЄ№ё  ы■с√ь ьч ьхЄюфют, эю эр ёЄрЁ√ї ╧ЁюЎхёёюЁрї (386,486,P1)с√ёЄЁхх сєфхЄ ё шэёЄЁєъЎшхщ Lea
+        mov     esi,dword op_text_length ;загрузить кол-во символов в текстовой строке
+        ;Умножение на 6 Быстрое умножение можно воспользоваться любым мз методов, но на старых Процессорах (386,486,P1)быстрее будет с инструкцией Lea
 ;        lea    esi,[eax*2+eax]
 ;        shl    eax,1
-        imul    esi,6               ; шыш ьюцэю ш Єръ єьэюцшЄ№ эр 6
+        imul    esi,6               ; или можно и так умножить на 6
         xor     ebx,ebx
-        add     esi,dword op_text_margin   ;фюсртшЄ№ 3 - ЁрёёЄю эшх юЄ ўхъ сюъёр фю эрфяшёш
+        add     esi,dword op_text_margin   ;добавить 3 - расстояние от чек бокса до надписи
         
-        mov     eax,37          ;яюыєўшь ъююЁфшэрЄ√ ь√°ъш 
-        inc     ebx             ;фюсртшЄ№ 1
-        mcall                ;яюыєўшЄ№ ъююЁфшэрЄ√ ъєЁёюЁр юЄэюёшЄхы№эю юъэр 
+        mov     eax,37          ;получим координаты мышки 
+        inc     ebx             ;добавить 1
+        mcall                ;получить координаты курсора относительно окна 
 
-        movzx   ebx,word op_top           ;чруЁєчшЄ№ т bx чэрўхэшх ъююЁфшэрЄ√ є
-        cmp     ax,bx               ;ёЁртэшЄ№ ё ё ъююЁфшэрЄющ ъєЁёюЁр
-        jl      option_box_mouse_end          ;SF <> OF хёыш ьхэ№°х 
-        add     ebx,dword op_size          ;фюсртшЄ№ ЁрчьхЁ 
-        cmp     ax,bx               ;ёЁртэшЄ№
-        jg      option_box_mouse_end          ;ZF = 0 ш SF = OF хёыш сюы№°х 
+        movzx   ebx,word op_top           ;загрузить в bx значение координаты у
+        cmp     ax,bx               ;сравнить с с координатой курсора
+        jl      option_box_mouse_end          ;SF <> OF если меньше 
+        add     ebx,dword op_size          ;добавить размер 
+        cmp     ax,bx               ;сравнить
+        jg      option_box_mouse_end          ;ZF = 0 и SF = OF если больше 
         
-        shr     eax,16              ;Ёрчфхышь эр 65536 шыш яЁюёЄю ёфтшэхь сшЄ√ эр 16 чэрўхэшщ
-        movzx   ebx,word op_left          ;яЁюшчтхфхь рэрыюушўэюх ёЁртэхэшх
-        cmp     ax,bx                ;ёЁртэшЄ№ ЁхушёЄЁ√
-        jl      option_box_mouse_end           ;хёыш ьхэ№°х
-        add     ebx,dword op_size          ;фюсртшЄ№ фышэє ёЄюЁюэ√ яЁ ьюєуюы№эшър
-        add     ebx,esi              ;╙ўхёЄ№ т чэрўхэшш яю ї х∙х ш фышэє эрфяшёш ъ ўхъсюъёє
-        cmp     ax,bx                ;ёЄЁртэшЄ№ ЁхушёЄЁ√
-        jg      option_box_mouse_end           ;хёыш сюы№°х 
+        shr     eax,16              ;разделим на 65536 или просто сдвинем биты на 16 значений
+        movzx   ebx,word op_left          ;произведем аналогичное сравнение
+        cmp     ax,bx                ;сравнить регистры
+        jl      option_box_mouse_end           ;если меньше
+        add     ebx,dword op_size          ;добавить длину стороны прямоугольника
+        add     ebx,esi              ;Учесть в значении по х еще и длину надписи к чекбоксу
+        cmp     ax,bx                ;стравнить регистры
+        jg      option_box_mouse_end           ;если больше 
         mov     eax,dword option_group
         mov     [eax],edi
 
 option_box_mouse_end:
-popa                              ;тюёёЄрэютшЄ№ ЁхушёЄЁ√ шч ёЄхър
-ret                               ;т√щЄш
+popa                              ;восстановить регистры из стека
+ret                               ;выйти
 
 }
