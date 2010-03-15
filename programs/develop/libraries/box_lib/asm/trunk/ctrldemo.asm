@@ -303,6 +303,10 @@ start_OpenDialog	OpenDialog_data
 	cmp	[OpenDialog_data.status],1
 	jne	still ; OpenDialog user say cancel
 ;	copy path
+;	prepare path - PathShow
+	push    dword PathShow_data_1
+	call    [PathShow_prepare]
+	
 	call	draw_window
 	jmp	still ; OpenDialog user selected the target file
 	; [OpenDialog_data.openfile_pach] pointer of area the target file
@@ -344,9 +348,12 @@ draw_window:
         call    [dinamic_button_draw]
 ;---------------------------------------------
 	mcall	13,<170,200>,<25,15>,0xffffb0
-	mov	bx,28
-	add	ebx,2 shl 16
-	mcall	4,,0xC0000000,openfile_pach,,0xffffb0
+;	mov	bx,28
+;	add	ebx,2 shl 16
+;	mcall	4,,0xC0000000,text_work_area,,0xffffb0
+; draw for PathShow
+        push    dword PathShow_data_1
+        call    [PathShow_draw] 
 ;---------------------------------------------
 ; set all_redraw flag for draw all ScrollBar
 ; In some cases it is necessity to draw only the area
@@ -406,6 +413,9 @@ library_path:
         rb 4096
 ;---------------------------------------------------------------------
 plugin_pach:
+        rb 4096
+;---------------------------------------------------------------------
+text_work_area:
         rb 4096
 ;---------------------------------------------------------------------
 file_info:
