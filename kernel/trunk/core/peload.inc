@@ -294,6 +294,10 @@ __exports:
           map_io_mem,            'MapIoMem',           \      ; stdcall
           get_pg_addr,           'GetPgAddr',          \      ; eax
 \
+          mutex_init,            'MutexInit',          \      ; gcc fastcall
+          mutex_lock,            'MutexLock',          \      ; gcc fastcall
+          mutex_unlock,          'MutexUnlock',        \      ; gcc fastcall
+\
           get_display,           'GetDisplay',         \
           set_screen,            'SetScreen',          \
           pci_api,               'PciApi',             \

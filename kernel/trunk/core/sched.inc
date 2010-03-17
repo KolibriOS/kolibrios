@@ -217,7 +217,108 @@ do_change_task:
   @@:   ret
 ;end.
 
+
+
+struc MUTEX_WAITER
+{
+    .next   rd 1
+    .prev   rd 1
+    .task   rd 1
+    .sizeof:
+};
+
+virtual at 0
+ MUTEX_WAITER MUTEX_WAITER
+end virtual
+
+;void  __fastcall mutex_init(struct mutex *lock)
+
+align 4
+mutex_init:
+        lea eax, [ecx+MUTEX.next]
+        mov [ecx+MUTEX.count],1
+        mov [ecx+MUTEX.next], eax
+        mov [ecx+MUTEX.prev], eax
+        ret
+
+
+;void  __fastcall mutex_lock(struct mutex *lock)
+
+align 4
+mutex_lock:
+
+        dec [ecx+MUTEX.count]
+        jns .done
+
+        pushfd
+        cli
+
+        push esi
+        sub esp, MUTEX_WAITER.sizeof
+
+        mov eax, [ecx+MUTEX.prev]
+        lea esi, [ecx+MUTEX.next]
+
+        mov [ecx+MUTEX.prev], esp
+        mov [esp+MUTEX_WAITER.next],  esi
+        mov [esp+MUTEX_WAITER.prev],  eax
+        mov [eax], esp
+
+        mov edx, [TASK_BASE]
+        mov [esp+MUTEX_WAITER.task], edx
+
+.forever:
+
+        mov eax, -1
+        xchg eax, [ecx+MUTEX.count]
+        dec eax
+        jz @F
+
+        mov [edx+TASKDATA.state], 1
+        call change_task
+        jmp .forever
+@@:
+        mov edx, [esp+MUTEX_WAITER.next]
+        mov eax, [esp+MUTEX_WAITER.prev]
+
+        mov [eax+MUTEX_WAITER.next], edx
+        cmp [ecx+MUTEX.next], esi
+        mov [edx+MUTEX_WAITER.prev], eax
+        jne @F
+
+        mov [ecx+MUTEX.count], 0
+@@:
+        add  esp, MUTEX_WAITER.sizeof
+
+        pop esi
+        popfd
+.done:
+        ret
+
+;void  __fastcall mutex_unlock(struct mutex *lock)
+
+align 4
+mutex_unlock:
+
+        pushfd
+        cli
+
+        lea eax, [ecx+MUTEX.next]
+        cmp eax, [ecx+MUTEX.next]
+        mov [ecx+MUTEX.count], 1
+        je @F
+
+        mov eax, [eax+MUTEX_WAITER.task]
+        mov [eax+TASKDATA.state], 0
+@@:
+        popfd
+        ret
+
+
+purge MUTEX_WAITER
+
 if 0
+
 struc TIMER
 {
   .next      dd ?

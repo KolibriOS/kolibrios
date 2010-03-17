@@ -22,6 +22,10 @@
 
     .global _MapIoMem
 
+    .global _MutexInit
+    .global _MutexLock
+    .global _MutexUnlock
+
     .global _PciApi
     .global _PciRead16
     .global _PciRead32
@@ -32,6 +36,7 @@
 
     .global _RegService
 
+    .global _SetMouseData
     .global _SetScreen
     .global _SysMsgBoardStr
 
@@ -55,6 +60,10 @@
 
     .def  _MapIoMem;          .scl  2;  .type 32; .endef
 
+    .def  _MutexInit;         .scl  2;  .type 32; .endef
+    .def  _MutexLock;         .scl  2;  .type 32; .endef
+    .def  _MutexUnlock;       .scl  2;  .type 32; .endef
+
     .def  _PciApi;            .scl  2;  .type 32; .endef
     .def  _PciRead16;         .scl  2;  .type 32; .endef
     .def  _PciRead32;         .scl  2;  .type 32; .endef
@@ -66,6 +75,7 @@
     .def  _RegService;        .scl  2;  .type 32; .endef
 
     .def  _SetScreen;         .scl  2;  .type 32; .endef
+    .def  _SetMouseData;      .scl  2;  .type 32; .endef
     .def  _SysMsgBoardStr;    .scl  2;  .type 32; .endef
 
 
@@ -89,6 +99,10 @@ _KernelFree:
 
 _MapIoMem:
 
+_MutexInit:
+_MutexLock:
+_MutexUnlock:
+
 _PciApi:
 _PciRead16:
 _PciRead32:
@@ -99,6 +113,7 @@ _PciWrite8:
 
 _RegService:
 
+_SetMouseData:
 _SetScreen:
 _SysMsgBoardStr:
         ret
@@ -125,6 +140,10 @@ _SysMsgBoardStr:
 
         .ascii " -export:MapIoMem"             # stdcall
 
+        .ascii " -export:MutexInit"            # fastcall
+        .ascii " -export:MutexLock"            # fastcall
+        .ascii " -export:MutexUnlock"          # fastcall
+
         .ascii " -export:PciApi"               #
         .ascii " -export:PciRead16"            # stdcall
         .ascii " -export:PciRead32"            # stdcall
@@ -135,6 +154,7 @@ _SysMsgBoardStr:
 
         .ascii " -export:RegService"           # stdcall
 
+        .ascii " -export:SetMouseData"         # stdcall
         .ascii " -export:SetScreen"            # stdcall
         .ascii " -export:SysMsgBoardStr"       # stdcall
 

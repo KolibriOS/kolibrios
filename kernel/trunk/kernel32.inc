@@ -194,6 +194,17 @@ end virtual
 
 ;// mike.dld, 2006-29-01 ]
 
+struc MUTEX
+{
+    .count  rd 1
+    .next   rd 1
+    .prev   rd 1
+}
+
+virtual at 0
+ MUTEX MUTEX
+end virtual
+
 
 ; Core functions
 include "core/sync.inc"     ; macros for synhronization objects

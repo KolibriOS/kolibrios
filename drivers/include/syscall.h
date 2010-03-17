@@ -25,8 +25,10 @@ u32_t drvEntry(int, char *)__asm__("_drvEntry");
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define STDCALL __attribute__ ((stdcall)) __attribute__ ((dllimport))
-#define IMPORT __attribute__ ((dllimport))
+#define STDCALL  __attribute__ ((stdcall)) __attribute__ ((dllimport))
+#define FASTCALL __attribute__ ((fastcall)) __attribute__ ((dllimport))
+
+#define IMPORT   __attribute__ ((dllimport))
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -61,6 +63,9 @@ u32_t STDCALL RegService(char *name, srv_proc_t proc)__asm__("RegService");
 
 int   STDCALL AttachIntHandler(int irq, void *handler, u32_t access) __asm__("AttachIntHandler");
 
+void  FASTCALL MutexInit(struct mutex*)__asm__("MutexInit");
+void  FASTCALL MutexLock(struct mutex*)__asm__("MutexLock");
+void  FASTCALL MutexUnlock(struct mutex*)__asm__("MutexUnlock");
 
 ///////////////////////////////////////////////////////////////////////////////
 
