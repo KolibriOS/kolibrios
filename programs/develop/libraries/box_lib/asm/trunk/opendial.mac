@@ -26,29 +26,31 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
 ;*****************************************************************************
-macro OpenDialog_exit
+macro	OpenDialog_exit
 {
-popa         
+popa
 ret
 }
 ;*****************************************************************************
 macro	use_OpenDialog
 {
 OpenDialog:
-od_type			equ dword [ebp] ; 0-Open, 1-Save, 2-Dir
+od_type			equ dword [ebp]	; 0-Open, 1-Save, 2-Dir
 od_procinfo		equ dword [ebp+4] ; Process info area for function 9
 od_com_area_name	equ dword [ebp+8] ; Name for shared area
 od_com_area		equ dword [ebp+12] ; Adress of shared area
 od_opendir_pach		equ dword [ebp+16] ; Temp area the directory for show
-od_dir_default_pach	equ dword [ebp+20] ; Default path of directory, 
+od_dir_default_pach	equ dword [ebp+20] ; Default path of directory,
 od_start_path		equ dword [ebp+24] ; Location path to OpenDialog
-od_draw_window		equ dword [ebp+28] ; Adress of  procedure - draw_window
+od_draw_window		equ dword [ebp+28] ; Adress of procedure - draw_window
 od_status		equ dword [ebp+32] ; 0-Cancel, 1-Get path OK, 2-Use alternatives
 od_openfile_pach	equ dword [ebp+36] ; Getting path to file
+od_filename_area	equ dword [ebp+40] ; Adress of file name area
+od_filter_area		equ dword [ebp+44] ; Adress of filter area
 ;*****************************************************************************
 .init:
 	pusha
-	mcall	9, od_procinfo, -1
+	mcall	9,od_procinfo,-1
 	mov	ebx,[ebx+30]
 	mov	edi,od_com_area_name
 	add	edi,7
@@ -72,8 +74,8 @@ od_openfile_pach	equ dword [ebp+36] ; Getting path to file
 	mcall	68,22,od_com_area_name,8192,0x09
 	mov	od_com_area,eax
 	
-    mov   esi,od_openfile_pach
-    mov   edi,od_opendir_pach
+	mov	esi,od_openfile_pach
+	mov	edi,od_opendir_pach
 	call	.copy_dir_path
 	
 OpenDialog_exit
@@ -84,10 +86,10 @@ OpenDialog_exit
 	mov	eax,od_com_area
 	test	eax,eax
 	jz	.1
-	mov ebx,od_type
-	mov [eax+2],bx
+	mov	ebx,od_type
+	mov	[eax+2],bx
 	
-	mov	[eax],word 2 ; folder for open
+	mov	[eax],word 2	; folder for open
 	mov	edi,eax
 	add	edi,4
 
@@ -96,17 +98,39 @@ OpenDialog_exit
 	mov	al,[esi]
 	test	eax,eax
 	jnz	@f
-	mov	esi,od_dir_default_pach ;communication_area_default_pach
+	mov	esi,od_dir_default_pach	;communication_area_default_pach
 @@:
 	call	.copy
+;----------------------------------------------
+; copy file name to shared area
+	cmp	od_type,dword 1
+	jne	.4
+	mov	edi,od_com_area
+	add	edi,4096-256
 
+	mov	esi,od_filename_area
+;	xor	eax,eax
+;	mov	al,[esi]
+;	test	eax,eax
+	test	esi,esi
+	jnz	@f
+	mov	esi,.null
+@@:
+	call	.copy
+.4:
+;----------------------------------------------
+	cmp	od_type,dword 2
+	je	@f
+	call	.get_filter_data
+@@:
+;----------------------------------------------
 	mov	eax,od_com_area_name
 	mov	[start_open_dialog.parameter],eax
 
 	mov	eax,od_start_path
 	mov	[start_open_dialog.name],eax
 
-	mcall	70, start_open_dialog
+	mcall	70,start_open_dialog
 	shr	eax,31
 	test	eax,eax
 	jnz	.1
@@ -116,7 +140,7 @@ OpenDialog_exit
 	call	od_draw_window
 	popa
 .still:
-	mcall	23, 50
+	mcall	23,50
 	cmp	eax,1
 	je	.red
 	mov	eax,od_com_area
@@ -124,26 +148,68 @@ OpenDialog_exit
 	test	ebx,ebx
 	jz	.still
 	cmp	ebx,3
-	je	.2 ;still
+	je	.2
 	cmp	ebx,1
 	jne	.still
 
 	mov	esi,od_com_area
 	add	esi,4
-	mov	edi,od_openfile_pach ;string
+	mov	edi,od_openfile_pach
 	call	.copy
 	mov	od_status,1
-    mov   esi,od_openfile_pach
-    mov   edi,od_opendir_pach
+	mov	esi,od_openfile_pach
+	mov	edi,od_opendir_pach
 	call	.copy_dir_path
-	jmp	.3  ;kopen_1
+;----------------------------------------------
+; copy file name from shared area
+	cmp	od_type,dword 1
+	jne	@f
+	mov	esi,od_com_area
+	add	esi,4096-256
+	mov	edi,od_filename_area
+;	xor	eax,eax
+;	mov	al,[edi]
+;	test	eax,eax
+	test	edi,edi
+	jz	@f
+	call	.copy
+@@:
+;----------------------------------------------
+	jmp	.3
 .2:
 	mov	od_status,0
-	jmp	.3 ; still
+	jmp	.3
 .1:
-	mov	od_status,2 ; thread1
+	mov	od_status,2
 .3:
 OpenDialog_exit
+;----------------------------------------------
+.null:
+	dd 0
+;----------------------------------------------
+.get_filter_data:
+	mov	edi,od_com_area
+	test	edi,edi
+	jnz	@f
+;	add	esp,4
+;	jmp	still
+	ret
+@@:
+	add	edi,4096+4
+	mov	esi,od_filter_area
+	mov	ecx,[esi]
+	test	ecx,ecx
+	jnz	@f
+	mov	edi,od_com_area
+	mov	[edi+4096],dword 0
+	ret
+@@:
+	inc	ecx
+	cld
+	rep	movsb
+	mov	edi,od_com_area
+	mov	[edi+4096],dword 1
+	ret
 ;----------------------------------------------
 .copy:
 	xor	eax,eax
@@ -156,54 +222,45 @@ OpenDialog_exit
 	ret
 ;----------------------------------------------
 .copy_dir_path:
-    xor   eax,eax
-	cmp  [esi],al
-	jne  @f
-	mov  [edi],al
-	mov  [ebx],al
-	xor  ebx,ebx
-	inc  ebx
+	xor	eax,eax
+	cmp	[esi],al
+	jne	@f
+	mov	[edi],al
+	mov	[ebx],al
+	xor	ebx,ebx
+	inc	ebx
 	ret
 @@:
-    cld
-    lodsb
-    stosb
-    test  eax,eax
-    jnz   @b
-    mov   esi,edi
-	dec   esi
+	cld
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+	cmp	od_type,dword 2
+	jne	@f
+	ret
 @@:
-    std
-    lodsb
-    cmp   al,'/'
-    jnz   @b
+	mov	esi,edi
+	dec	esi
+@@:
+	std
+	lodsb
+	cmp	al,'/'
+	jnz	@b
 	
-;	push  esi
-;	add  esi,2
-;;	mov  edi,ebx  ;file_name
-;;	xor  ebx,ebx
-;@@:
-;    cld
-;    lodsb
-;;   stosb
-;	inc   ebx
-;    test  eax,eax
-;    jnz   @b
-;	pop   esi
-	
-    mov  [esi+1], byte 0
-    cld
+	mov	[esi+1],byte 0
+	cld
 	ret
 ;----------------------------------------------
-align 4
+align	4
 start_open_dialog:
 .subfunction	dd 7
 .flags		dd 0
-.parameter	dd 0 ;od_com_area_name
+.parameter	dd 0	;od_com_area_name
 .reserved1	dd 0
 .reserved2	dd 0
 		db 0
-.name:		dd 0 ;od_start_path
+.name:		dd 0	;od_start_path
 }
 ;*****************************************************************************
 macro	init_OpenDialog od_ptr

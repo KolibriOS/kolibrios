@@ -7,6 +7,7 @@ ok_btn		db 'Ok',0
 	
 labelt3		db 'About program',0
 ;---------------------------------------------------------------------
+start_temp_file_name:	db 'ctrldemo_test',0
 icons_file_name:	db 'reload_16x16_8b.png',0
 system_dir1		db '/sys/lib/'
 plugin_BMP_name		db 'cnv_bmp.obj',0
@@ -166,8 +167,8 @@ menu_bar_activate	dd aMenu_bar_activate
 ;Version_FileBrowser	dd aVersion_FileBrowser
 
 PathShow_prepare	dd sz_PathShow_prepare
-PathShow_draw		dd	sz_PathShow_draw
-
+PathShow_draw		dd sz_PathShow_draw
+;Version_path_show	dd szVersion_path_show
 			dd 0
 			dd 0
 
@@ -435,6 +436,8 @@ OpenDialog_data:
 .draw_window		dd draw_window	;+28
 .status			dd 0	;+32
 .openfile_pach		dd openfile_pach	;+36
+.filename_area		dd filename_area	;+40
+.filter_area		dd Filter
 
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
@@ -444,7 +447,8 @@ communication_area_default_pach:
 	db '/rd/1',0
 
 Filter:
-dd Filter.end - Filter
+dd Filter.end - Filter.1
+.1:
 db 'JPEG',0
 db 'JPG',0
 db 'JPE',0
@@ -452,6 +456,8 @@ db 'PNG',0
 db 'GIF',0
 db 'BMP',0
 db 'KEX',0
+db 'DAT',0
+db 'INI',0
 .end:
 db 0
 ;---------------------------------------------------------------------
