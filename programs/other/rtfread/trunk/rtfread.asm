@@ -261,7 +261,6 @@ still:
   .file_open:
 ;---------------------------------------------------------------------
 ;OpenDialog_start:
-	call	get_filter_data
 ;	copy_path	open_dialog_name,path,library_path,0
 	
 	start_OpenDialog	OpenDialog_data
@@ -269,19 +268,8 @@ still:
 	cmp	[OpenDialog_data.status],2 ; OpenDialog does not start
 	je	.sysxtree  ; 	some kind of alternative, instead OpenDialog
 	cmp	[OpenDialog_data.status],1
-;	jne	still ; OpenDialog user say cancel
-;	copy path
-;	call	draw_window
 	je	prep_load
-	
-;.copy_dir_path:
-;    mov   esi,fname_buf
-;    mov   edi,temp_dir_pach
-;	call  copy_dir_path
-	
-	jmp	still ; OpenDialog user selected the target file
-	; [OpenDialog_data.openfile_pach] pointer of area the target file  
-  
+	jmp	still
 ;---------------------------------------------------------------------  
 .sysxtree:
     or   [mode],RTF_OPENING
@@ -569,6 +557,8 @@ OpenDialog_data:
 .draw_window		dd draw_window ;+28
 .status			dd 0 ;+32
 .openfile_pach		dd fname_buf ;+36
+.filename_area		dd 0	;+40
+.filter_area		dd Filter
 
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
@@ -578,7 +568,8 @@ communication_area_default_pach:
 	db '/rd/1',0
 
 Filter:
-dd  Filter.end - Filter
+dd Filter.end - Filter
+.1:
 db 'RTF',0
 .end:
 db 0
