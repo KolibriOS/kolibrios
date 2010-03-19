@@ -97,6 +97,16 @@ START:
 ;OpenDialog	initialisation
 init_OpenDialog	OpenDialog_data
 
+	mov	edi,filename_area
+	mov	esi,start_temp_file_name
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+
 	load_library	boxlib_name,cur_dir_path,buf_cmd_lin,system_path,\
 	err_message_found_lib,head_f_l,myimport,err_message_import,head_f_i
 
@@ -1749,7 +1759,6 @@ open_file:
 	jmp	redraw_all
 ;-------------------------------------------------------------------------------
 open_dialog_save:
-	call	get_filter_data
 	mov	[OpenDialog_data.type],1	; Save
 	start_OpenDialog	OpenDialog_data
 	cmp	[OpenDialog_data.status],2	; OpenDialog does not start
@@ -2749,7 +2758,6 @@ Ctrl_X:
 
 ;---------------------------------------------------------------------
 open_dialog:
-	call	get_filter_data
 	mov	[OpenDialog_data.type],0	; Open
 	start_OpenDialog	OpenDialog_data
 	cmp	[OpenDialog_data.status],2	; OpenDialog does not start
@@ -2776,23 +2784,6 @@ open_dialog:
 	mov	[edit1.size],esi
 	mov	[edit1.pos],esi
 	jmp	open_file.0
-;---------------------------------------------------------------------
-get_filter_data:
-	mov	edi,[OpenDialog_data.com_area]
-	test	edi,edi
-	jnz	@f
-	add	esp,4
-	jmp	still
-@@:
-	add	edi,4096+4
-	mov	esi,Filter
-	mov	ecx,[esi]
-	inc	ecx
-	cld
-	rep	movsb
-	mov	edi,[OpenDialog_data.com_area]
-	mov	[edi+4096],dword 1
-	ret
 ;---------------------------------------------------------------------
 ;##################################
 opendialog:
@@ -3429,6 +3420,8 @@ OpenDialog_data:
 .draw_window		dd draw_window_1	;+28
 .status			dd 0	;+32
 .openfile_pach 		dd fname_buf	;+36
+.filename_area		dd filename_area	;+40
+.filter_area		dd Filter
 
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
@@ -3438,11 +3431,14 @@ communication_area_default_pach:
 	db '/rd/1',0
 
 Filter:
-dd	Filter.end - Filter
-db	'BIN',0
-db	'DAT',0
+dd	Filter.end - Filter.1
+.1:
+;db	'BIN',0
+;db	'DAT',0
 .end:
 db	0
+
+start_temp_file_name:	db 'temp.bin',0
 ;---------------------------------------------------------------------
 
 I_END:
@@ -3494,7 +3490,11 @@ func_70	f70
 ;---------------------------------------------------------------------
 fname_buf:
 	rb 4096
+;---------------------------------------------------------------------
 temp_dir_pach:
 	rb 4096
+;---------------------------------------------------------------------
+filename_area:
+	rb 256
 ;---------------------------------------------------------------------
 D_END:
