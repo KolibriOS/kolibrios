@@ -103,8 +103,8 @@ OpenDialog_exit
 	call	.copy
 ;----------------------------------------------
 ; copy file name to shared area
-	cmp	od_type,dword 1
-	jne	.4
+	cmp	od_type,dword 2
+	je	.4
 	mov	edi,od_com_area
 	add	edi,4096-256
 
@@ -162,8 +162,8 @@ OpenDialog_exit
 	call	.copy_dir_path
 ;----------------------------------------------
 ; copy file name from shared area
-	cmp	od_type,dword 1
-	jne	@f
+	cmp	od_type,dword 2
+	je	@f
 	mov	esi,od_com_area
 	add	esi,4096-256
 	mov	edi,od_filename_area
