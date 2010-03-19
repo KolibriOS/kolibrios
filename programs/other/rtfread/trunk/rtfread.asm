@@ -280,23 +280,6 @@ still:
   stilld:
     jmp  still
 ;---------------------------------------------------------------------
-get_filter_data:
-	mov	edi,[OpenDialog_data.com_area]
-	test	edi,edi
-	jnz	@f
-	add	esp,4
-	jmp	still
-@@:
-	add	edi,4096+4
-	mov	esi,Filter
-	mov	ecx,[esi]
-	inc	ecx
-	cld
-	rep	movsb
-	mov	edi,[OpenDialog_data.com_area]
-	mov	[edi+4096],dword 1
-	ret
-;---------------------------------------------------------------------
 
   button:
     mcall 17            ; 17 - получить идентификатор нажатой кнопки
