@@ -18,6 +18,8 @@ include 'lang.inc'
 include '..\..\..\macros.inc'
 include 'moi.inc'   ;раскладки клавиатуры
 
+time_bgr_color = 0x66cc
+
 width		dd  305
 buttons 	dd    1  ;  0 no frames  ; 1 frames
 soften_up	dd    1  ;  0 no         ; 1 yes
@@ -1318,7 +1320,7 @@ label_2:
     add  ebx,1 shl 16
     sub  ebx,2
     mov  ecx,4 shl 16+12
-    mov  edx,0x66cc
+    mov  edx,time_bgr_color
     int  0x40
 
     popa
@@ -1867,9 +1869,9 @@ draw_info:    ; draw cpu usage, time, date
     shr  ecx,16
     and  ecx,1
     mov  edx,[bte]
-    sub  edx,[wcolor]
+    sub  edx,time_bgr_color;[wcolor]
     imul ecx,edx
-    add  ecx,[wcolor]
+    add  ecx,time_bgr_color;[wcolor]
     mov  edx,sec
     mov  eax,4
     mov  esi,1
