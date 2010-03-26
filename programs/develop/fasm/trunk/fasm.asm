@@ -32,14 +32,12 @@ use32
   dd params,cur_dir_path  ; parameters,icon
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include '../../../macros.inc'
 purge add,sub	 ; macros.inc does incorrect substitution
 include 'fasm.inc'
 
-include '..\..\..\develop\libraries\box_lib\trunk\box_lib.mac'
-;include '..\..\..\develop\libraries\box_lib\trunk\editbox.mac'
-;include '..\..\..\develop\libraries\box_lib\trunk\checkbox.mac'
-include '..\..\..\develop\libraries\box_lib\load_lib.mac'
+include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../../develop/libraries/box_lib/load_lib.mac'
   @use_library
 
 
@@ -118,9 +116,7 @@ still:
     pop eax 
     mcall
     cmp al,6
-    jne @f
-      call mouse
-    @@:
+    je  call_mouse
     dec eax 
     je	red	     ; Redraw request
     dec eax 
@@ -137,6 +133,10 @@ key:		     ; Key
     push dword edit3
     call [edit_box_key]
 
+    jmp  still
+
+call_mouse:
+    call mouse
     jmp  still
 
 button:    ; Button in Window

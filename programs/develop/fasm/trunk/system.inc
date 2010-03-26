@@ -57,13 +57,21 @@ filepos 	 dd 0x0
 
 init_memory:
 
-        mov ecx, 16*1024*1024
-
- allocate_memory:
+;        mov ecx, 16*1024*1024
+;
+; allocate_memory:
+	mcall	18, 16
+	cmp	eax, 0x38000000 shr 9
+	jbe	@f
+	mov	eax, 0x38000000 shr 9
+@@:
+	shl	eax, 9
+	xchg	eax, ecx
 	mov	[memory_setting],ecx
 	mcall	68, 12
 	or	eax,eax
 	jz	out_of_memory
+	mov	[memblock], eax
 	mov	[additional_memory],eax
 	add	eax,[memory_setting]
 	mov	[memory_end],eax
