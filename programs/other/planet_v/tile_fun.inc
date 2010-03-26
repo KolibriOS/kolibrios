@@ -46,7 +46,7 @@ tile_delta_x	equ  byte[edi+30] ;сдвиг тайла относительно курсора по оси x
 tile_delta_y	equ  byte[edi+31] ;сдвиг тайла относительно курсора по оси y
 
 
-; *** порядок вызова функций при загрузки тайлов ***
+; *** порядок вызова функций при загрузке тайлов ***
 ;load_tile
 ;	get_tile_path
 ;	load_new_tile (текущая картинка)
@@ -635,6 +635,8 @@ proc load_tile, tile:dword
   stdcall load_new_tile,edi
   cmp tile_err_f,0
   je @f ;если удачно открыли текущий файл то остальные действия пропускаем
+;  cmp tile_err_f,6
+;  je @f
     mov tile_drobn,0
     mov eax,ch2 ;проверяем опцию 'брать снизу'
     bt dword[eax+32],1 ;ch_flags equ [edi+32] ;флаги
@@ -809,10 +811,14 @@ proc load_new_tile, tile:dword
   mov ebx,run_file_70
   int 0x40
   mov edi,[tile]
-  mov tile_err_f,al
 ;  cmp ebx,0xffffffff
 ;  je .no_load
-  cmp eax,0
+  cmp al,6 ;ошибка 6 - когда файл закончился раньше чем буфер
+  jne @f
+    xor al,al ;нам эта ошибка не страшна, потому ставим код равным 0, как при обычном открытии
+  @@:
+  mov tile_err_f,al
+  cmp al,0
   jne .no_load
 
   stdcall dword[img_decode], dword[bmp_icon],ebx,0
@@ -822,11 +828,17 @@ proc load_new_tile, tile:dword
     jmp @f
   .no_load:
 
-;  mov edi,[tile]
   mov al,byte[map.zoom]
   cmp tile_zoom,al
   jne @f
-    stdcall mem_copy, file_name,tile_rgb_icon,250
+    mov eax,tile_rgb_icon
+    mov bl,tile_err_f
+    add bl,'0' ;bl - код ошибки открытия
+    mov byte[eax],bl
+    inc eax
+    mov byte[eax],' '
+    inc eax
+    stdcall mem_copy, file_name,eax,250 ;копируем путь к файлу при ошибочном открытии
   @@:
   popad
   ret
