@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 10.02.2010 IgorA
+; файл последний раз изменялся 26.03.2010 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -97,14 +97,14 @@ tl_data_init: ;выделние памяти для структур списка и основной информации (констр
 
     xor ecx,ecx
     mov cx,tl_info_size
-    imul ecx,dword[edi+6]
+    imul ecx,tl_info_max_count
     call mem_Alloc
     mov dword[edi],eax ;копируем указатель на полученую память в структуру
     mov tl_data_img,0  ;обнуляем указатель 'data_img'
     mov tl_data_img_sys,0 ;обнуляем указатель 'data_img_sys'
 
     mov ecx,sizeof.TreeList
-    imul ecx,dword[edi+6]
+    imul ecx,tl_info_max_count
     call mem_Alloc
     mov tl_data_nodes,eax ;копируем указатель на полученую память в структуру
 
@@ -143,7 +143,7 @@ tl_data_clear: ;очистка памяти элемента (деструктор)
     mov edi,dword[ebp+8]
     cmp tl_data_img,0
     je @f
-      mov ecx,dword[edi+18]
+      mov ecx,tl_data_img
       call mem_Free ;чистка системных иконок
     @@:
     cmp tl_data_img_sys,0
@@ -172,7 +172,7 @@ tl_info_clear: ;очистка списка (информации)
     mov tl_cur_pos,0
     ;xor ecx,ecx
     mov ecx,sizeof.TreeList
-    imul ecx,dword[edi+6]
+    imul ecx,tl_info_max_count
     mov eax,tl_data_nodes
     @@:
       mov byte[eax],0 ;чистим узлы 0-ми
@@ -1363,7 +1363,7 @@ tl_node_add: ;добавить узел
     call tl_info_set_undo
 
     mov ebx,sizeof.TreeList
-    imul ebx,dword[edi+6] ;+6 макс. количество узлов
+    imul ebx,tl_info_max_count
     add ebx,tl_data_nodes
 ;--
     call tl_get_cur_node_index ;eax=po_t

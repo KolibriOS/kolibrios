@@ -46,6 +46,23 @@ tile_delta_x	equ  byte[edi+30] ;сдвиг тайла относительно курсора по оси x
 tile_delta_y	equ  byte[edi+31] ;сдвиг тайла относительно курсора по оси y
 
 
+; *** порядок вызова функций при загрузки тайлов ***
+;load_tile
+;	get_tile_path
+;	load_new_tile (текущая картинка)
+;	get_tile_path
+;	load_new_tile (нижняя картинка)
+;	get_tile_path
+;	load_new_tile (нижняя картинка)
+;	get_tile_path
+;	load_new_tile (нижняя картинка)
+;	get_tile_path
+;	load_new_tile (нижняя картинка)
+;	get_parent_tiles (циклический просмотр родительских тайлов)
+;		get_tile_path
+;		load_new_tile (верхняя картинка)
+
+
 ;???
 align 4
 CursorMoveRight: ;передвигаем координату курсора вправо
@@ -390,6 +407,7 @@ jl @f
     jmp .end_f
   .info: ;вывод информации, при не удачном открытии картинок
 
+;;;jmp .end_f ;test
   bt tile_drobn,SCALE_0BIT_USE
   jc .end_f
   bt tile_drobn,SCALE_1BIT_USE
@@ -398,6 +416,7 @@ jl @f
     mov ebx,edx
     add ebx,0x30003
     mov edx,tile_rgb_icon ;при неудачном открытии в tile_rgb_icon путь к файлу
+;;;    mov dword[edx+RGB_TILE_SIZE_1N4],0 ;ставим нули, на случай если в строке с именем файла мусор
     stdcall [str_len],tile_rgb_icon,RGB_TILE_SIZE_1N4
     mov edi,eax
 
@@ -614,8 +633,8 @@ proc load_tile, tile:dword
   ;mov tile_drobn,0
   mov tile_drobn,SCALE_0_USE ;ставим флаг открытия картинки текущего уровня
   stdcall load_new_tile,edi
-  cmp tile_err_f,5
-  jne @f
+  cmp tile_err_f,0
+  je @f ;если удачно открыли текущий файл то остальные действия пропускаем
     mov tile_drobn,0
     mov eax,ch2 ;проверяем опцию 'брать снизу'
     bt dword[eax+32],1 ;ch_flags equ [edi+32] ;флаги
@@ -628,8 +647,8 @@ proc load_tile, tile:dword
     stdcall get_tile_path,edi
     stdcall load_new_tile,edi
 
-    cmp tile_err_f,5
-    je .no_tile_00
+    cmp tile_err_f,0
+    jne .no_tile_00 ;если неудачно открыли то не уменьшаем изображение
       or tile_drobn,FRACT_TILE_00
 ; 1 сжатие картинки по высоте
       stdcall img_rgb_hdiv2, tile_rgb_icon, TILE_LEN*TILE_LEN, TILE_LEN
@@ -644,8 +663,8 @@ proc load_tile, tile:dword
     stdcall get_tile_path,edi
     stdcall load_new_tile,edi
 
-    cmp tile_err_f,5
-    je .no_tile_01
+    cmp tile_err_f,0
+    jne .no_tile_01 ;если неудачно открыли то не уменьшаем изображение
 ;      mov byte[map.drobn],0
       or tile_drobn,FRACT_TILE_01
 ; 1 сжатие картинки по высоте
@@ -664,8 +683,8 @@ proc load_tile, tile:dword
     stdcall get_tile_path,edi
     stdcall load_new_tile,edi
 
-    cmp tile_err_f,5
-    je .no_tile_10
+    cmp tile_err_f,0
+    jne .no_tile_10 ;если неудачно открыли то не уменьшаем изображение
 ;      mov byte[map.drobn],0
       or tile_drobn,FRACT_TILE_10
 ; 1 сжатие картинки по высоте
@@ -683,8 +702,8 @@ proc load_tile, tile:dword
     stdcall get_tile_path,edi
     stdcall load_new_tile,edi
 
-    cmp tile_err_f,5
-    je .no_tile_11
+    cmp tile_err_f,0
+    jne .no_tile_11 ;если неудачно открыли то не уменьшаем изображение
 ;      mov byte[map.drobn],0
       or tile_drobn,FRACT_TILE_11
 ; 1 сжатие картинки по высоте
@@ -744,8 +763,8 @@ proc get_parent_tiles
 
   stdcall get_tile_path,edi ;берем путь к тайлу
   stdcall load_new_tile,edi
-  cmp tile_err_f,5
-  je @f
+  cmp tile_err_f,0
+  jne @f ;если неудачно открыли то не растягиваем изображение
     or tile_drobn,SCALE_1_USE
     mov ebx,ecx
   .zoom_cycle:
@@ -791,8 +810,10 @@ proc load_new_tile, tile:dword
   int 0x40
   mov edi,[tile]
   mov tile_err_f,al
-  cmp ebx,0xffffffff
-  je .no_load
+;  cmp ebx,0xffffffff
+;  je .no_load
+  cmp eax,0
+  jne .no_load
 
   stdcall dword[img_decode], dword[bmp_icon],ebx,0
   mov dword[data_icon],eax
@@ -805,7 +826,7 @@ proc load_new_tile, tile:dword
   mov al,byte[map.zoom]
   cmp tile_zoom,al
   jne @f
-    stdcall mem_copy, file_name,tile_rgb_icon,150
+    stdcall mem_copy, file_name,tile_rgb_icon,250
   @@:
   popad
   ret
