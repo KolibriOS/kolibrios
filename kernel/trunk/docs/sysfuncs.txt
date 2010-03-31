@@ -376,8 +376,8 @@ Remarks:
       and idle time in waiting for interrupt (which can be got by call
       to subfunction 4 of function 18).
   * Beginning from slot 2, the normal applications are placed.
-  * The normal applications are placed in memory at the address
-    0x60400000 (kernel constant 'std_application_base_address').
+  * Applications are placed in memory at the address   0x0 
+    (kernel constant 'std_application_base_address').
     There is no intersection, as each process has its own page table.
   * At creation of the thread it is assigned the slot
     in the system table and identifier (Process/Thread IDentifier =
