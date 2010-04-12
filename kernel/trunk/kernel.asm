@@ -2158,7 +2158,7 @@ sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)
         ret
 
 sysfn_getversion:       ; 18.13 = get kernel ID and version
-     mov edi,ebx
+     mov edi,ecx
      mov esi,version_inf
      mov ecx,version_end-version_inf
      rep movsb
