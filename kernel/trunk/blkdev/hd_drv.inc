@@ -882,11 +882,11 @@ int13_call:
 ; Because this code uses fixed addresses,
 ; it can not be run simultaniously by many threads.
 ; In current implementation it is protected by common mutex 'hd1_status'
-        mov     word [BOOT_VAR + 510h], 10h             ; packet length
-        mov     word [BOOT_VAR + 512h], cx              ; number of sectors
-        mov     dword [BOOT_VAR + 514h], 9A000000h      ; buffer 9A00:0000
-        mov     dword [BOOT_VAR + 518h], eax
-        and     dword [BOOT_VAR + 51Ch], 0
+        mov     word [OS_BASE + 510h], 10h             ; packet length
+        mov     word [OS_BASE + 512h], cx              ; number of sectors
+        mov     dword [OS_BASE + 514h], 9A000000h      ; buffer 9A00:0000
+        mov     dword [OS_BASE + 518h], eax
+        and     dword [OS_BASE + 51Ch], 0
         push    ebx ecx esi edi
         mov     ebx, int13_regs_in
         mov     edi, ebx
@@ -919,7 +919,7 @@ int13_call:
         call    v86_start
         and     [bios_hdpos], 0
         pop     edi esi ecx ebx
-        movzx   edx, byte [BOOT_VAR + 512h]
+        movzx   edx, byte [OS_BASE + 512h]
         test    byte [int13_regs_out+v86_regs.eflags], 1
         jnz     @f
         mov     edx, ecx

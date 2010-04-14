@@ -91,10 +91,10 @@ v86_create:
 ; now V86 specific: initialize known addresses in first Mb
         pop     eax
 ; first page - BIOS data (shared between all machines!)
-; physical address = 0x2f0000
-; linear address = BOOT_VAR = OS_BASE + 0x2f0000
-        mov     dword [eax], (BOOT_VAR - OS_BASE) or 111b
-        mov     dword [eax+800h], BOOT_VAR
+; physical address = 0
+; linear address = OS_BASE
+        mov     dword [eax], 111b
+        mov     dword [eax+800h], OS_BASE
 ; page before 0xA0000 - Extended BIOS Data Area (shared between all machines!)
 ; physical address = 0x9C000
 ; linear address = 0x8009C000
@@ -219,12 +219,12 @@ init_sys_v86:
         mov     [sys_v86_machine], eax
         test    eax, eax
         jz      .ret
-        mov     byte [BOOT_VAR + 0x500], 0xCD
-        mov     byte [BOOT_VAR + 0x501], 0x13
-        mov     byte [BOOT_VAR + 0x502], 0xF4
-        mov     byte [BOOT_VAR + 0x503], 0xCD
-        mov     byte [BOOT_VAR + 0x504], 0x10
-        mov     byte [BOOT_VAR + 0x505], 0xF4
+        mov     byte [OS_BASE + 0x500], 0xCD
+        mov     byte [OS_BASE + 0x501], 0x13
+        mov     byte [OS_BASE + 0x502], 0xF4
+        mov     byte [OS_BASE + 0x503], 0xCD
+        mov     byte [OS_BASE + 0x504], 0x10
+        mov     byte [OS_BASE + 0x505], 0xF4
         mov     esi, eax
         mov     ebx, [eax+V86_machine.pagedir]
 ; one page for stack, two pages for results (0x2000 bytes = 16 sectors)
