@@ -1,17 +1,17 @@
-;╬уЁюьэр  сыруюфрЁэюёЄ№ Maxxxx32, Diamond, Heavyiron
-;ш фЁєушь яЁюуЁрььшёЄрь, р Єръцх
-;╥хяыютє └ыхъёх■ (<Lrz> www.lrz.land.ru)
+;Огромная благодарность Maxxxx32, Diamond, Heavyiron
+;и другим программистам, а также
+;Теплову Алексею (<Lrz> www.lrz.land.ru)
 
 
 use32
   org 0x0
-  db 'MENUET01' ;шфхэЄшЇ. шёяюыэ хьюую Їрщыр тёхуфр 8 срщЄ
+  db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
   dd 0x01
   dd start
-  dd i_end ; ЁрчьхЁ яЁшыюцхэш 
+  dd i_end ; размер приложения
   dd mem
   dd stacktop
-  dd file_name;buf_cmd_lin
+  dd file_name ; command line
   dd sys_path
 
 MAX_COLOR_WORD_LEN equ 40
@@ -19,11 +19,10 @@ maxChars equ 100002 ;(...+2)
 BUF_SIZE equ 1000 ;bufer for copy|paste
 maxColWords equ 10000
 
-
+include '../../proc32.inc'
 include '../../macros.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/tree_list.mac'
-include '../../develop/libraries/box_lib/trunk/editbox.mac'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 
 include 'lang.inc'
 include 't_data.inc'
@@ -128,7 +127,7 @@ load_libraries l_libs_start,load_lib_end
   push dword tree1
   call dword[tl_data_init]
 ;---------------------------------------------------------------------
-; ўшЄрхь bmp Їрщы ё ъєЁёюЁрьш ш ышэш ьш
+; читаем bmp файл с курсорами и линиями
   copy_path fn_icon_tl_sys,sys_path,file_name,0x0
 
   mov ecx,3*256*13
@@ -151,7 +150,7 @@ load_libraries l_libs_start,load_lib_end
     mov dword[tree1.data_img_sys],0
   @@:
 ;---------------------------------------------------------------------
-; ўшЄрхь bmp Їрщы ё шъюэърьш єчыют
+; читаем bmp файл с иконками узлов
   copy_path fn_icon_tl_nod,sys_path,file_name,0x0
 
   mov ecx,3*256*2
@@ -174,7 +173,7 @@ load_libraries l_libs_start,load_lib_end
     mov dword[tree1.data_img],0
   @@:
 ;------------------------------------------------------------------------------
-  copy_path fn_syntax_dir,sys_path,file_name,0x0 ;схЁхь яєЄ№ ъ яряъх ё Їрщырьш ёшэЄръёшёр
+  copy_path fn_syntax_dir,sys_path,file_name,0x0 ;берем путь к папке с файлами синтаксиса
   mov eax,70
   mov ebx,tree_file_struct
   int 0x40
@@ -186,10 +185,10 @@ je .end_dir_init
   add eax,32+4+1+3+4*6+8
 mov ecx,ebx
 @@:
-  cmp byte[eax],'.' ;Їшы№ЄЁєхь Їрщы√ ё шьхэрьш '.' ш '..'
+  cmp byte[eax],'.' ;фильтруем файлы с именами '.' и '..'
   je .filter
     push dword tree1
-    push dword 0x10000 ;1*2^16 - уфх 1 эюьхЁ шъюэъш ё ъэшующ
+    push dword 0x10000 ;1*2^16 - где 1 номер иконки с книгой
     push dword eax
     call dword[tl_node_add]
 
@@ -228,36 +227,33 @@ red_win:
   mov edx,[sc.work]
   or  edx,0x73000000
   mov edi,hed
-  mcall
+  int 0x40
+
+  mov edi,tedit0
 
   mcall 9,procinfo,-1
-  call EvSize
+  stdcall EvSize,edi
 
-  mov eax,13 ;rect
+  mov eax,13 ;тхЁїэшщ яЁ ьюєуюы№эшъ, фы  юўшёЄъш тхЁїэхщ ярэхыш
   xor ebx,ebx
-  xor ecx,ecx
+  mov ecx,ted_wnd_t
   mov bx,word [procinfo.client_box.width]
   inc bx
-  mov cx,word [wndMain.top]
-  mcall
+  int 0x40
 
-  push dword edit1
-  call [edit_box_draw]
-
-; draw for Menu 1
-  push dword menu_data_1
-  call [menu_bar_draw] 
+  stdcall [edit_box_draw], dword edit1
+  stdcall [menu_bar_draw], dword menu_data_1
 
   call draw_but_toolbar
 
   cmp [err_ini0],1
   jne @f
     mov eax,4
-    mov ebx,[wndMain.left]
-    add ebx,[recMain.left]
+    mov ebx,ted_wnd_l
+    add ebx,ted_rec_l
     shl ebx,16
-    add ebx,[wndMain.top]
-    add ebx,[recMain.top]
+    add ebx,ted_wnd_t
+    add ebx,ted_rec_t
     mov ecx,0x80ff0000
     mov edx,txtErrIni0
     int 0x40
@@ -270,16 +266,7 @@ red_win:
 
   cmp [err_ini0],1
   je @f
-    call draw_main_win
-  @@:
-
-  cmp [err_opn],1
-  jne @f
-    ;mov eax,4
-    mov ebx,10*65536+35
-    mov ecx,0x80ff0000
-    mov edx,txtErrOpen
-    mcall
+    stdcall draw_main_win, tedit0
   @@:
 
   mcall 12,2
@@ -288,7 +275,7 @@ still:
   mov eax,10
   mcall
 
-  cmp al,1 ;шчь. яюыюцхэшх юъэр
+  cmp al,1 ;изм. положение окна
   jz red_win
   cmp al,2
   jz key
@@ -302,8 +289,7 @@ still:
 
 
 mouse:
-  push dword edit1
-  call [edit_box_mouse]
+  stdcall [edit_box_mouse], dword edit1
 
   test word [edit1.flags],10b;ed_focus ; если не в фокусе, выходим
   jne still
@@ -316,16 +302,14 @@ mouse:
   cmp eax,[wScr.cur_area]
   jbe .horizontal
 ; mouse event for Vertical ScrollBar
-  push dword wScr
-  call [scrollbar_ver_mouse]
+  stdcall [scrollbar_ver_mouse], dword wScr
   mov eax,wScr.redraw
   xor ebx,ebx
   cmp [eax],ebx
   je @f
   mov [eax],ebx
 
-  call draw_main_win
-  ;call mouse_wnd_main
+  stdcall draw_main_win, tedit0
   jmp still
 @@:
   cmp [wScr.delta2],0
@@ -342,7 +326,7 @@ mouse:
 	cmp [eax],ebx
 	je .other
 	mov [eax],ebx
-  call draw_main_win
+  stdcall draw_main_win, tedit0
   jmp still
 .other:
   cmp [wScr.delta2],0
@@ -350,7 +334,7 @@ mouse:
   cmp [hScr.delta2],0
   jne still
 
-  call mouse_wnd_main
+  stdcall mouse_wnd_main, tedit0
 
   cmp byte[panel_id],TE_PANEL_FIND ;if not panel
   jne @f
@@ -468,8 +452,7 @@ key:
 ;    jne still
 
     call KeyConvertToASCII
-    push dword edit2
-    call [edit_box_key]
+    stdcall [edit_box_key], dword edit2
     jmp still
   @@:
 
@@ -495,7 +478,7 @@ key:
     jne @f
     cmp byte[panel_id],TE_PANEL_FIND
     je @f
-      call but_find
+      stdcall but_find, tedit0
     @@:
     cmp ah,44 ;Ctrl+Z
     je but_undo
@@ -534,105 +517,105 @@ key:
     jne @f
       call sel_KeyDown
     @@:
-    ;mov [dragk],1 ;эрўшэрхь т√фхыхэшх юЄ ъыртшрЄєЁ√
+    ;mov [dragk],1 ;начинаем выделение от клавиатуры
     jmp .key_MoveCur
   .key_Shift:
 ;-------------------------------------------------
   cmp ah,72 ;178 ;Up
   jne @f
     push dx
-    call draw_cursor_sumb
+    stdcall draw_cursor_sumb, tedit0
     call CurMoveUp
     cmp dl,8
     jne .no_red_0
       call OnInitialUpdate
-      call draw_main_win
+      stdcall draw_main_win, tedit0
       pop dx
       jmp @f
     .no_red_0:
-    call draw_main_cursor
+    stdcall draw_main_cursor, tedit0
     pop dx
-    mov [dragk],0 ;чрърэўштрхь т√фхыхэшх юЄ ъыртшрЄєЁ√
+    mov [dragk],0 ;заканчиваем выделение от клавиатуры
   @@:
   cmp ah,80 ;177 ;Down
   jne @f
     push dx
-    call draw_cursor_sumb
+    stdcall draw_cursor_sumb, tedit0
     call CurMoveDown
     cmp dl,8
     jne .no_red_1
       call OnInitialUpdate
-      call draw_main_win
+      stdcall draw_main_win, tedit0
       pop dx
       jmp @f
     .no_red_1:
-    call draw_main_cursor
+    stdcall draw_main_cursor, tedit0
     pop dx
-    mov [dragk],0 ;чрърэўштрхь т√фхыхэшх юЄ ъыртшрЄєЁ√
+    mov [dragk],0 ;заканчиваем выделение от клавиатуры
   @@:
   cmp ah,75 ;176 ;Left
   jne @f
     push dx
-    call draw_cursor_sumb
+    stdcall draw_cursor_sumb, tedit0
     call CurMoveLeft
     cmp dl,8
     jne .no_red_2
       call OnInitialUpdate
-      call draw_main_win
+      stdcall draw_main_win, tedit0
       pop dx
       jmp @f
     .no_red_2:
-    call draw_main_cursor
+    stdcall draw_main_cursor, tedit0
     pop dx
-    mov [dragk],0 ;чрърэўштрхь т√фхыхэшх юЄ ъыртшрЄєЁ√
+    mov [dragk],0 ;заканчиваем выделение от клавиатуры
   @@:
   cmp ah,77 ;179 ;Right
   jne @f
     push dx
-    call draw_cursor_sumb
+    stdcall draw_cursor_sumb, tedit0
     call CurMoveRight
     cmp dl,8
     jne .no_red_3
       call OnInitialUpdate
-      call draw_main_win
+      stdcall draw_main_win, tedit0
       pop dx
       jmp @f
     .no_red_3:
-    call draw_main_cursor
+    stdcall draw_main_cursor, tedit0
     pop dx
-    mov [dragk],0 ;чрърэўштрхь т√фхыхэшх юЄ ъыртшрЄєЁ√
+    mov [dragk],0 ;заканчиваем выделение от клавиатуры
   @@:
   cmp ah,71 ;180 ;Home
   jne @f
     push dx
-    call draw_cursor_sumb
+    stdcall draw_cursor_sumb, tedit0
     call CurMoveX_FirstChar
     cmp dl,8
     jne .no_red_4
       call OnInitialUpdate
-      call draw_main_win
+      stdcall draw_main_win, tedit0
       pop dx
       jmp @f
     .no_red_4:
-    call draw_main_cursor
+    stdcall draw_main_cursor, tedit0
     pop dx
-    mov [dragk],0 ;чрърэўштрхь т√фхыхэшх юЄ ъыртшрЄєЁ√
+    mov [dragk],0 ;заканчиваем выделение от клавиатуры
   @@:
   cmp ah,79 ;181 ;End
   jne @f
     push dx
-    call draw_cursor_sumb
+    stdcall draw_cursor_sumb, tedit0
     call CurMoveX_LastChar
     cmp dl,8
     jne .no_red_5
       call OnInitialUpdate
-      call draw_main_win
+      stdcall draw_main_win, tedit0
       pop dx
       jmp @f
     .no_red_5:
-    call draw_main_cursor
+    stdcall draw_main_cursor, tedit0
     pop dx
-    mov [dragk],0 ;чрърэўштрхь т√фхыхэшх юЄ ъыртшрЄєЁ√
+    mov [dragk],0 ;заканчиваем выделение от клавиатуры
   @@:
   cmp ah,73 ;184 ;PageUp
   jne @f
@@ -642,7 +625,7 @@ key:
     pop dx
     je @f
     call OnInitialUpdate
-    call draw_main_win
+    stdcall draw_main_win, tedit0
   @@:
   cmp ah,81 ;183 ;PageDown
   jne @f
@@ -652,8 +635,8 @@ key:
     pop dx
     je @f
     call OnInitialUpdate
-    call draw_main_win
-    mov [dragk],0 ;чрърэўштрхь т√фхыхэшх юЄ ъыртшрЄєЁ√
+    stdcall draw_main_win, tedit0
+    mov [dragk],0 ;заканчиваем выделение от клавиатуры
   @@:
 ;-------------------------------------------------
     cmp [keyUpr],0
@@ -668,7 +651,7 @@ key:
   ja still
   call KeyConvertToASCII
 
-  ;mov [dragk],0 ;чрърэўштрхь т√фхыхэшх юЄ ъыртшрЄєЁ√
+  ;mov [dragk],0 ;заканчиваем выделение от клавиатуры
 
   push ebx
   xor ebx,ebx
@@ -692,10 +675,10 @@ key:
     call draw_but_toolbar
     cmp byte [key_new],13
     jne .dr_m_win
-      call draw_main_win
+      stdcall draw_main_win, tedit0
       jmp .dr_cur_l
     .dr_m_win:
-      call draw_cur_line
+      stdcall draw_cur_line, tedit0
     .dr_cur_l:
     pop edi esi
   @@:
@@ -713,7 +696,7 @@ key:
       call TextDel
     .del_one_b:
     call draw_but_toolbar
-    call draw_main_win
+    stdcall draw_main_win, tedit0
     pop bx ax
   @@:
 
@@ -729,27 +712,27 @@ key:
       call TextDel
     .del_one_d:
     call draw_but_toolbar
-    call draw_main_win
+    stdcall draw_main_win, tedit0
     pop bx ax
   @@:
 
   cmp ah,185 ;Ins
   jne @f
-    call draw_cursor_sumb
+    stdcall draw_cursor_sumb, tedit0
     xor [curMod],1
-    call draw_main_cursor
+    stdcall draw_main_cursor, tedit0
   @@:
 
   jmp still
 
 button:
-;  cmp [menu_active],1 ;хёыш эрцрыш ьхэ■, Єю ёэрўрыр ЁхръЎш  эр ьхэ■
+;  cmp [menu_active],1 ;если нажали меню, то сначала реакция на меню
 ;  jne @f ;mouse.menu_bar_1
 ;    mov [menu_active],0
 ;    jmp still
 ;  @@:
 
-  mcall 17 ;яюыєўшЄ№ ъюф эрцрЄющ ъэюяъш
+  mcall 17 ;получить код нажатой кнопки
   cmp ah,3
   jne @f
     call but_NewFile
@@ -773,7 +756,9 @@ button:
   cmp ah,9
   jz  but_paste
   cmp ah,10
-  jz  but_find
+  jne @f
+    stdcall but_find, tedit0
+  @@:
   cmp ah,11
   jz  but_replace
   cmp ah,12
@@ -793,7 +778,9 @@ button:
   cmp ah,19
   jz  but_k_words_show
   cmp ah,20
-  jz  but_synt_show
+  jne @f
+    stdcall but_synt_show, tedit0
+  @@:
 
   cmp ah,200
   jne @f
@@ -824,11 +811,10 @@ button:
   call mem_Free
   push dword tree1
   call dword[tl_data_clear]
-  mcall -1 ;т√їюф шч яЁюуЁрьь√
+  mcall -1 ;выход из программы
 
 
 
-txtErrOpen db 'Не найден файл, проверьте правильность имени',0
 txtErrIni0 db 'Не открылся файл с иконками',0
 err_ini0 db 0
 

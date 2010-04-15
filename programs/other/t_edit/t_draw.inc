@@ -1,60 +1,65 @@
-mouse_wnd_main:
-  push eax ebx ecx
+proc mouse_wnd_main, edit:dword
+  push eax ebx ecx edi
   mcall 37,2 ;get mouse buttons
+
+  mov edi,dword[edit]
 
   cmp al,1
   jne @f
     mcall 37,1 ;get mouse coords
-    mov ebx,[wndMain.top]
-    add ebx,[recMain.top]
+    mov ebx,ted_wnd_t
+    add ebx,ted_rec_t
     cmp ax,bx
     jl @f ;y_mouse<y_wnd
 
-    sub ebx,[recMain.top]
-    add ebx,[wndMain.height]
+    sub ebx,ted_rec_t
+    add ebx,ted_wnd_h
     cmp bx,ax
     jl @f ;y_mouse>y_wnd
 
-    mov ebx,[wndMain.left]
-    add ebx,[recMain.left]
+    mov ebx,ted_wnd_l
+    add ebx,ted_rec_l
     mov ecx,eax
     shr ecx,16
     cmp cx,bx
     jl @f ;x_mouse<x_wnd
 
-    sub ebx,[recMain.left]
-    add ebx,[wndMain.width]
+    sub ebx,ted_rec_l
+    add ebx,ted_wnd_w
     cmp bx,cx
     jl @f ;x_mouse>x_wnd
 
-    call draw_cursor_sumb
+    stdcall draw_cursor_sumb, tedit0
     call wnd_main_click
-    ;call draw_main_cursor ;???
     jmp .no_in_wnd
   @@:
     call wnd_main_mouse_scroll
-    cmp [dragm],0
+    cmp ted_drag_m,0
     je .no_in_wnd
-      mov [dragm],0
+      mov ted_drag_m,0
       call draw_but_toolbar
-      call draw_main_win
+      stdcall draw_main_win, tedit0
   .no_in_wnd:
-  pop ecx ebx eax
+  pop edi ecx ebx eax
   ret
+endp
 
-; input:
-;  eax->(x,y)
+;input:
+; eax -> (x,y)
+; edi -> указатель на структуру tedit
+;description:
+; функция вызывется при нажатии кнопкой мыши и попадении курсором в окно редактора
 wnd_main_click:
   push ecx edx
 
   push eax
     shr eax,16
     and eax,0xffff
-    sub eax,[wndMain.left]
-    sub eax,[recMain.left]
+    sub eax,ted_wnd_l
+    sub eax,ted_rec_l
 
     xor edx,edx
-    mov ecx,[recMain.width]
+    mov ecx,ted_rec_w
     div cx
     ;inc eax
     cmp eax,[hScr.cur_area]
@@ -67,11 +72,11 @@ wnd_main_click:
 
   push eax
     and eax,0xffff
-    sub eax,[wndMain.top]
-    sub eax,[recMain.top]
+    sub eax,ted_wnd_t
+    sub eax,ted_rec_t
 
     xor edx,edx
-    mov ecx,[recMain.height]
+    mov ecx,ted_rec_h
     div cx
     inc eax
     cmp eax,[wScr.cur_area]
@@ -82,12 +87,12 @@ wnd_main_click:
     mov [cur_y],eax
   pop eax
 
-  cmp [dragm],0
+  cmp ted_drag_m,0
   je @f
     call SelMove
     jmp .sel_move
   @@:
-    mov [dragm],1
+    mov ted_drag_m,1
     call SelStart
   .sel_move:
   pop edx ecx
@@ -112,7 +117,7 @@ wnd_main_mouse_scroll:
       mov dword[wScr.position],ebx ;if scroll position out of range
       jmp .no_scroll
     @@:
-    call draw_main_win
+    stdcall draw_main_win, tedit0
   .no_scroll:
   pop ebx eax
   ret
@@ -145,7 +150,7 @@ or ecx,0x40000000
   mov edx,85*65536+25
   call draw_but_icon
 
-call IsSel
+stdcall IsSel, tedit0
 cmp al,0
 jne @f
 and ecx,0xffff
@@ -226,26 +231,28 @@ or ecx,0x40000000
   pop edx ecx ebx
   ret
 
-
 ;input:
-; ebx = x*2^16+y coords to left up point clear line
-; esi = 0 clear all rows
-; edi - number text line
-clear_line_before_draw:
-  push eax ebx ecx edx
+;  clear_o - если =1 очистить одну строку, =0 очистить все строки окна до низу
+proc clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_lin:dword
+  pushad
+    mov edi,dword[edit]
+    mov ebx,dword[coords]   ;ebx = x*2^16+y coords to left up point clear line
+    mov esi,dword[numb_lin] ;esi - number text line
+
     sub ebx,0x10001 ;отнимаем отступы для выравнивания буквы по центру
-    cmp esi,0
+    cmp dword[clear_o],0
     jne @f
-      add bx,word[recMain.height]
-      inc edi ; ???
+      add ebx,ted_rec_h
+      inc esi
       ror ebx,16
-      mov bx,word[wndMain.left]
-      add bx,word[recMain.left]
+	  xor bx,bx
+      add ebx,ted_wnd_l
+      add ebx,ted_rec_l ;bx = ted_wnd_l+ted_rec_l
       ror ebx,16
     @@:
 
-    mov ax,word[wndMain.height]
-    add ax,word[wndMain.top]
+    mov eax,ted_wnd_h
+    add eax,ted_wnd_t
     cmp ax,bx
     jl .no_clear
     sub ax,bx
@@ -253,12 +260,14 @@ clear_line_before_draw:
     mov cx,bx
     shl ecx,16
 
-    mov bx,word[wndMain.width]
-    sub bx,word[recMain.left]
-    mov cx,word[recMain.height]
+    xor bx,bx
+    add ebx,ted_wnd_w
+    sub ebx,ted_rec_l
+	xor cx,cx
+    add ecx,ted_rec_h
     mov edx,[WND_WORK_COLOR]
 
-    cmp esi,0
+    cmp dword[clear_o],0
     je .pusto
     cmp ax,cx
     jge @f
@@ -266,12 +275,12 @@ clear_line_before_draw:
       mov cx,ax
     @@:
 
-    call IsSel
+    stdcall IsSel,edi
     cmp al,0
     je @f
-    cmp [seln.y0],edi
+    cmp [seln.y0],esi
     jg @f
-    cmp [seln.y1],edi
+    cmp [seln.y1],esi
     jl @f
       mov edx,[SELECT_COLOR] ;draw selected line
     @@:
@@ -279,20 +288,21 @@ clear_line_before_draw:
     mov eax,13 ;rect
     int 0x40
 
-    call IsSel
+    stdcall IsSel,edi
     cmp al,0
     je .no_clear
 
     mov al,13 ;rect
-    mov cx,word[recMain.height]
-    cmp [seln.y0],edi
+	xor cx,cx
+    add ecx,ted_rec_h
+    cmp [seln.y0],esi
     jne @f
       push bx
       mov edx,[seln.x0] ; верхняя полоса (затирает слева)
       cmp edx,[hScr.position]
       jle .in_wnd
 	sub edx,[hScr.position]
-	imul edx,[recMain.width]
+	imul edx,ted_rec_w
 	mov bx,dx
 	jmp .no_wnd
       .in_wnd:
@@ -302,13 +312,13 @@ clear_line_before_draw:
       int 0x40
       pop bx
     @@:
-    cmp [seln.y1],edi
+    cmp [seln.y1],esi
     jne @f
       mov edx,[seln.x1] ; нижняя полоса (затирает справа)
       cmp edx,[hScr.position]
       jle .in_wnd2
 	sub edx,[hScr.position]
-	imul edx,[recMain.width]
+	imul edx,ted_rec_w
 	sub bx,dx
 	shl edx,16
 	add ebx,edx
@@ -319,54 +329,43 @@ clear_line_before_draw:
     @@:
 
   .no_clear:
-  pop edx ecx ebx eax
+  popad
   ret
+endp
 
-;include 't_debug.inc'
-draw_main_win:
-  push eax ebx ecx edx edi esi
-;---debug---
-;mov ecx,0
-;@@:
-;call DebugSymb
-;inc ecx
-;cmp ecx,10
-;jge @f
-;jmp @b
-;@@:
-;ret
-;---debug---
+
+proc draw_main_win, edit:dword
+  locals
+    line_num dd ?
+  endl
+  pushad
+  mov edi,dword[edit]
 
   mov eax,4 ;draw text
-  mov esi,1
   mov ecx,[tex_colors]
   push dword[ecx]
   pop ecx
 
-  mov ebx,[wndMain.left]
-  add ebx,[recMain.left]
-  inc ebx
+  mov ebx,ted_wnd_l
+  add ebx,ted_rec_l
   shl ebx,16
-  add ebx,[wndMain.top]
-  add ebx,[recMain.top]
-  inc ebx
+  add ebx,ted_wnd_t
+  add ebx,ted_rec_t
+  add ebx,0x10001 ;добавляем отступы для выравнивания буквы по центру
 
   call SelNormalize ;need before draw select
-  mov edi,[wScr.position]
+  mov esi,[wScr.position]
+  mov dword[line_num],esi
 
-  call clear_line_before_draw
+  stdcall clear_line_before_draw, tedit0,ebx,1,esi
   call GetFirstVisiblePos
   cmp edx,0
   je .no_draw_text
+  mov esi,1 ;длинна выводимого текста по 1-му символу
   @@:
     call IteratNext
     cmp edx,[tex_1]
     jle .no_draw_text
-
-;--- debug
-;cmp dword[edx+6],maxChars
-;jge .no_draw_text
-;--- debug
 
     ; *** цветовая разметка
     cmp byte[mode_colored],0
@@ -385,65 +384,43 @@ draw_main_win:
 	int 0x40
 	pop edx
       .no_invis:
-      add bx,word [recMain.height]
+      add ebx,ted_rec_h
       ;optimized output \/
-      mov ax,word [wndMain.height]
-      add ax,word [wndMain.top]
+      mov eax,ted_wnd_h
+      add eax,ted_wnd_t
       cmp bx,ax
       jg .no_draw_text
-      mov ax,4
-      ;optimized output /\
+      mov eax,4
+      ;optimized output /\	  
+	  and ebx,0xffff
       ror ebx,16
-      mov bx,word [wndMain.left]
-      add bx,word [recMain.left]
+      add ebx,ted_wnd_l
+      add ebx,ted_rec_l
       inc ebx
       ror ebx,16
-      inc edi ;increment line number
-      call clear_line_before_draw
+      inc dword[line_num] ;increment line number
+      stdcall clear_line_before_draw, tedit0,ebx,1,dword[line_num]
       call OptDrawLineLeft
       jmp @b
     .no_13:
 
     int 0x40
     ror ebx,16
-    add bx,word [recMain.width]
-    mov si,word [wndMain.left]
-    add si,word [wndMain.width]
+    add ebx,ted_rec_w
+    mov esi,ted_wnd_l
+    add esi,ted_wnd_w
     cmp bx,si
     jl .no_opt
       call OptDrawLineRight
     .no_opt:
-    mov si,1
+	mov si,1
     ror ebx,16
     jmp @b
   .no_draw_text:
-  xor esi,esi
-  call clear_line_before_draw
 
-
-  mov eax,13
-  ;top panel with caption
-  mov ebx,[wndMain.left]
-;  add ebx,[recMain.left]
-  shl ebx,16
-  add ebx,[wndMain.width]
-;  sub ebx,[recMain.left]
-  mov edx,[WND_WORK_COLOR]
-  mov ecx,[wndMain.top] ;draw caption
-  shl ecx,16
-  add ecx,[recMain.top]
-  mov edx,[WND_CAPT_COLOR]
-  int 0x40
-  ;left panel with numbers
-;  mov ebx,[wndMain.left]
-;  shl ebx,16
-;  add ebx,[recMain.left]
-  ;mov cx,word[wndMain.height]
-;  mov cx,word[recMain.top]
-;  int 0x40
-
-  call draw_line_numbers
-  call draw_main_cursor
+  stdcall clear_line_before_draw, tedit0,ebx,0,dword[line_num]
+  stdcall draw_line_numbers, tedit0
+  stdcall draw_main_cursor, tedit0
 
 ;---------------------------------------------
 ; set all_redraw flag for draw all ScrollBar
@@ -456,10 +433,8 @@ draw_main_win:
 	mov	[hScr.all_redraw],eax	
 
 ; draw for Vertical ScrollBar
-	push	 dword wScr
-	call	 [scrollbar_ver_draw]
-	push	 dword hScr
-	call	 [scrollbar_hor_draw]
+	stdcall [scrollbar_ver_draw], dword wScr
+	stdcall [scrollbar_hor_draw], dword hScr
 ; reset all_redraw flag 
 	xor	eax,eax
 	mov	[wScr.all_redraw],eax
@@ -468,11 +443,11 @@ draw_main_win:
 
   mov eax,13
   ;left-bottom square
-  mov bx,word[wndMain.left]
+  mov ebx,ted_wnd_l
   shl ebx,16
-  mov bx,word[recMain.left]
-  mov ecx,[wndMain.top]
-  add ecx,[wndMain.height]
+  add ebx,ted_rec_l
+  mov ecx,ted_wnd_t
+  add ecx,ted_wnd_h
   shl ecx,16
   mov cx,word[hScr.size_y]
   inc cx
@@ -480,30 +455,34 @@ draw_main_win:
   int 0x40
 
   ;right-bottom square
-  mov ebx,[wndMain.left]
-  add ebx,[wndMain.width]
+  mov ebx,ted_wnd_l
+  add ebx,ted_wnd_w
   shl ebx,16
   mov bx,word[wScr.size_x]
   inc bx
   int 0x40
 
-  pop esi edi edx ecx ebx eax
-  call draw_panel_find
-  call draw_panel_syntax
+  stdcall draw_panel_find, edi
+  stdcall draw_panel_syntax, edi
+  popad
   ret
+endp
 
 ;txtBUp db 24
 ;txtBDn db 25
 ;txtBRi db 26
 ;txtBLe db 27
-draw_panel_find:
+proc draw_panel_find, edit:dword
+  push edi
+  mov edi,dword[edit]
+
   cmp byte[panel_id],TE_PANEL_FIND ;if not panel
   jne @f
   push eax ebx ecx edx
 
   mov eax,13 ;рисование прямоугольника
   mov ebx,TE_PANEL_WIDTH
-  mov cx,word[wndMain.top]
+  mov ecx,ted_wnd_t
   shl ecx,16
   mov cx,20
   mov edx,[sc.work]
@@ -511,7 +490,7 @@ draw_panel_find:
 
   mov eax,4 ;рисование текста
   mov ebx,30*65536+5
-  add bx,word[wndMain.top]
+  add ebx,ted_wnd_t
   mov ecx,[sc.work_text]
   or ecx,0x80000000
   mov edx,txtFindCapt
@@ -522,10 +501,10 @@ draw_panel_find:
 
   mov eax,13 ;рисование прямоугольника
   mov ebx,TE_PANEL_WIDTH
-  mov cx,word[wndMain.top]
+  mov ecx,ted_wnd_t
   add cx,20+15 ; 15 - height text box
   shl ecx,16
-  mov cx,word[wndMain.height]
+  add ecx,ted_wnd_h
   add cx,word[hScr.size_y]
   sub cx,20+15-1 ; 15 - height text box
   mov edx,[sc.work]
@@ -533,7 +512,7 @@ draw_panel_find:
 
   mov eax,8 ;кнопка
   mov ebx,5*65536+85
-  mov cx,word[wndMain.top]
+  mov ecx,ted_wnd_t
   add cx,20+15+5
   shl ecx,16
   mov cx,20
@@ -543,14 +522,14 @@ draw_panel_find:
 
   mov eax,4 ;рисование текста
   mov ebx,15*65536+(20+15+10)
-  add bx,word[wndMain.top]
+  add ebx,ted_wnd_t
   mov ecx,[sc.work_text]
   or ecx,0x80000000
   mov edx,txtFindNext
   int 0x40
 
   pop edx ecx ebx eax
-  ret
+  jmp .end_f
   @@:
   push eax edx
     mov eax,8
@@ -558,43 +537,47 @@ draw_panel_find:
     or edx,0x80000000
     int 0x40
   pop edx eax
+  .end_f:
+  pop edi
   ret
+endp
 
-draw_panel_syntax:
+proc draw_panel_syntax, edit:dword
+  push edi
+  mov edi,dword[edit]
+
   cmp byte[panel_id],TE_PANEL_SYNTAX ;if not panel
   jne @f
   push eax ebx ecx edx
 
   mov eax,13 ;рисование прямоугольника
   mov ebx,TE_PANEL_WIDTH
-  mov cx,word[wndMain.top]
+  mov ecx,ted_wnd_t
   shl ecx,16
   mov cx,20
   mov edx,[sc.work]
-  int 0x40
+  int 0x40 ;рисование верхнего фонового прямоугольника
 
-  push dword tree1
-  call dword[tl_draw]
-
-  mov	[ws_dir_lbox.all_redraw],1
-  push dword ws_dir_lbox
-  call dword[scrollbar_ver_draw]
+  stdcall dword[tl_draw], dword tree1
+  mov [ws_dir_lbox.all_redraw],1 ;для полной перерисовки дочернего скроллинга
+  stdcall dword[scrollbar_ver_draw], dword ws_dir_lbox
 
   ror ecx,16
   add ecx,dword[tree1.box_height]
   add ecx,20
+  and ecx,0xffff
   ror ecx,16
-  mov cx,word[wndMain.height]
+  add ecx,ted_wnd_h
   add cx,word[hScr.size_y]
   sub cx,20
   sub ecx,dword[tree1.box_height]
   inc cx
-  int 0x40
+  int 0x40 ;рисование нижнего фонового прямоугольника
 
   mov eax,8 ;кнопка
   mov ebx,5*65536+65
-  mov cx,word[wndMain.top]
-  add cx,25
+  mov ecx,ted_wnd_t
+  add ecx,25
   add ecx,dword[tree1.box_height]
   shl ecx,16
   mov cx,20
@@ -604,7 +587,7 @@ draw_panel_syntax:
 
   mov eax,4 ;рисование текста
   mov ebx,30*65536+5
-  add bx,word[wndMain.top]
+  add ebx,ted_wnd_t
   mov ecx,[sc.work_text]
   or ecx,0x80000000
   mov edx,txtFormatCapt
@@ -612,43 +595,44 @@ draw_panel_syntax:
 
   mov ebx,10*65536+30
   add ebx,dword[tree1.box_height]
-  add bx,word[wndMain.top]
+  add ebx,ted_wnd_t
   mov edx,txtFormatApply
   int 0x40
 
   pop edx ecx ebx eax
-  ret
+  jmp .end_f
   @@:
-  push eax edx
-    mov eax,8
-    mov edx,200
-    or edx,0x80000000
-    int 0x40
-  pop edx eax
+    push eax edx
+      mov eax,8
+      mov edx,200
+      or edx,0x80000000
+      int 0x40 ;если нет панели то удаляем кнопку
+    pop edx eax
+  .end_f:
+  pop edi
   ret
+endp
 
-draw_cur_line:
-  push eax ebx ecx edx esi edi
+proc draw_cur_line, edit:dword
+  pushad
+    mov edi,dword[edit]
 
-    mov edi,[cur_y]
-
-    mov ebx,[wndMain.left]
-    add ebx,[recMain.left]
-    inc ebx
+    mov ebx,ted_wnd_l
+    add ebx,ted_rec_l
     shl ebx,16
-    add ebx,edi
-    imul bx,word[recMain.height]
-    add ebx,[wndMain.top]
-    add ebx,[recMain.top]
-    inc ebx
+    mov eax,[cur_y]
+    imul eax,ted_rec_h
+	mov bx,ax
+    add ebx,ted_wnd_t
+    add ebx,ted_rec_t ;ebx - координаты для прямоугольника очистки линии
+	add ebx,0x10001   ;добавляем отступы для выравнивания буквы по центру
 
-    add edi,[wScr.position]
-    mov esi,1
     call SelNormalize ;need before draw select
-    call clear_line_before_draw
+	mov ecx,[cur_y]
+    add ecx,[wScr.position]
+    stdcall clear_line_before_draw, tedit0, ebx,1,ecx
 
     mov esi,[hScr.position]
-    mov ecx,edi
     call GetPosByParam
 
   cmp [gpOpt],2
@@ -683,10 +667,9 @@ draw_cur_line:
 
     int 0x40
     ror ebx,16
-    add bx,word[recMain.width]
-;    cmp bx,word[wndMain.width]
-    mov ax,word[wndMain.width]
-    add ax,word[wndMain.left] ;ax = отступ по оси x
+    add ebx,ted_rec_w
+    mov eax,ted_wnd_w
+    add eax,ted_wnd_l ;ax = отступ по оси x
     cmp bx,ax
     jge .no_draw_text ;Opt
     ror ebx,16
@@ -694,49 +677,56 @@ draw_cur_line:
     jmp @b
   .no_draw_text:
 
-  pop edi esi edx ecx ebx eax
-  call draw_main_cursor
+  stdcall draw_main_cursor, tedit0
+  popad
   ret
+endp
 
 MIN_M_WND_H equ 100
 MIN_W_SCRL_ARE equ 3
 MIN_H_SCRL_ARE equ 3
-EvSize:
+proc EvSize, edit:dword
   push eax ecx edx edi
-  m2m [wndMain.width],[procinfo.client_box.width]
-  mov ax,word[wndMain.left]
-  sub word[wndMain.width],ax
-  mov eax,[wScr] ;+0 size_x
-  sub word[wndMain.width],ax
+  mov edi,dword[edit]
 
-  m2m [wndMain.height],[procinfo.client_box.height]
-  cmp [wndMain.height],MIN_M_WND_H
+  m2m ted_wnd_w,[procinfo.client_box.width] ;ставим ширину окна редактора равной ширине всего окна
+  mov eax,ted_wnd_l
+  sub ted_wnd_w,eax ;отнимаем отступ слева
+  mov eax,[wScr]    ;+0 size_x
+  and eax,0xffff
+  sub ted_wnd_w,eax ;отнимаем ширину верт. скроллинга
+
+  m2m ted_wnd_h,[procinfo.client_box.height] ;ставим высоту окна редактора равной высоте всего окна
+  cmp ted_wnd_h,MIN_M_WND_H
   jg @f
-    mov [wndMain.height],MIN_M_WND_H
+    mov ted_wnd_h,MIN_M_WND_H
   @@:
 
   mov ax,word[hScr.size_y]
-  sub word[wndMain.height],ax
-    mov eax,[wndMain.height] ;.height = .top+.height
-    mov word[hScr.start_y],ax
-  mov eax,[wndMain.top]
-  sub word[wndMain.height],ax
+  and eax,0xffff
+  sub ted_wnd_h,eax	      ;отнимаем высоту гориз. скроллинга
+    mov eax,ted_wnd_h	      ;eax = высота окна - высота гориз. скроллинга
+    mov word[hScr.start_y],ax ;передвигаем гориз. скроллинг
+  mov eax,ted_wnd_t
+  sub ted_wnd_h,eax	      ;отнимаем отступ сверху
 
-  m2m word[wScr.start_x],word[wndMain.width]
-  mov ax,word[wndMain.left]
-  add [wScr.start_x],ax
-  m2m word[wScr.size_y],word[wndMain.height]
+  mov eax,ted_wnd_w
+  mov ecx,ted_wnd_l
+  add eax,ecx
+  mov word[wScr.start_x],ax   ;передвигаем верт. скроллинг
+  mov eax,ted_wnd_h
+  mov word[wScr.size_y],ax    ;задаем высоту верт. скроллинга
 
-  m2m word[hScr.start_x],word[recMain.left]
-  add [hScr.start_x],ax ;ax=[wndMain.left]
-  mov eax,[wndMain.width]
-  sub ax,word[recMain.left]
-  mov word[hScr.size_x],ax
+  add ecx,ted_rec_l	;ecx=ted_wnd_l+ted_rec_l
+  mov [hScr.start_x],cx ;сдвигаем гориз. скроллинг по размеру левого отступа для цифр
+  mov eax,ted_wnd_w
+  sub eax,ted_rec_l
+  mov word[hScr.size_x],ax ;задаем ширину гориз. скроллинга
 
-  mov eax,[wndMain.height] ;calculate lines in page
-  sub eax,[recMain.top]
+  mov eax,ted_wnd_h ;calculate lines in page
+  sub eax,ted_rec_t
   xor edx,edx
-  mov ecx,[recMain.height]
+  mov ecx,ted_rec_h
   div ecx
   cmp eax,MIN_W_SCRL_ARE
   jg @f
@@ -744,10 +734,10 @@ EvSize:
   @@:
   mov [wScr.cur_area],eax
 
-  mov eax,[wndMain.width] ;calculate cols in page
-  sub eax,[recMain.left]
+  mov eax,ted_wnd_w ;calculate cols in page
+  sub eax,ted_rec_l
   xor edx,edx
-  mov ecx,[recMain.width]
+  mov ecx,ted_rec_w
   div ecx
   cmp eax,MIN_H_SCRL_ARE
   jg @f
@@ -756,16 +746,18 @@ EvSize:
   dec eax ; ???
   mov [hScr.cur_area],eax
 
+  mov eax,ted_wnd_t
   mov edi,dword tree1
-  m2m tl_box_top,dword[wndMain.top]
+  mov tl_box_top,eax ;=ted_wnd_t
   add tl_box_top,20
 
-  m2m dword[edit2.top],dword[wndMain.top]
+  mov dword[edit2.top],eax ;=ted_wnd_t
   add dword[edit2.top],20
 
   pop edi edx ecx eax
   call OnInitialUpdate
   ret
+endp
 
 OnInitialUpdate:
   mov [wScr.redraw],1
@@ -870,40 +862,41 @@ OptDrawLineRight:
   call GetSymbColor
   ret
 
-draw_main_cursor:
-  push eax ebx ecx edx edi esi
+proc draw_main_cursor, edit:dword
+  pushad
+  mov edi,dword[edit]
 
   mov eax,13 ;draw cursor
-  mov ecx,[wndMain.top] ;calc rect -> y0,y1
-  add ecx,[recMain.top]
+  mov ecx,ted_wnd_t ;calc rect -> y0,y1
+  add ecx,ted_rec_t
   mov edx,[cur_y]
-  imul edx,[recMain.height]
+  imul edx,ted_rec_h
   add ecx,edx
 
-  cmp [curMod],1
+  cmp [curMod],1 ;проверка режима работы курсора (обычный или вставка)
   jne @f
-    mov edx,[recMain.height]
-    inc edx ; 1->1, 3->2, 5->3, ...
-    shr edx,1
+    mov edx,ted_rec_h
+    inc edx   ;1->1, 3->2, 5->3, ...
+    shr edx,1 ;edx = высота строки деленная на 2 (когда курсор не полный)
     add ecx,edx
   @@:
   shl ecx,16
-  add ecx,[recMain.height]
+  add ecx,ted_rec_h
   cmp [curMod],1
   jne @f
-    shr cx,1
+    shr cx,1 ;делим высоту курсора на 2
   @@:
 
-  mov ebx,[wndMain.left] ;calc rect -> x0,x1
-  add ebx,[recMain.left]
+  mov ebx,ted_wnd_l ;calc rect -> x0,x1
+  add ebx,ted_rec_l
   mov edx,[cur_x]
-  imul edx,[recMain.width]
+  imul edx,ted_rec_w
   add ebx,edx
   shl ebx,16
-  add ebx,[recMain.width]
+  add ebx,ted_rec_w
 
   mov edx,[CURSOR_COLOR]
-  int 0x40
+  int 0x40 ;вывод курсора
 
   call GetPos
   cmp [gpOpt],2
@@ -915,7 +908,7 @@ draw_main_cursor:
     add ebx,0x10001
     cmp [curMod],1
     jne .no_up_tetx
-      mov cx,word[recMain.height]
+      mov ecx,ted_rec_h
       inc cx ; 1->1, 3->2, 5->3, ...
       shr cx,1
       sub bx,cx
@@ -925,22 +918,20 @@ draw_main_cursor:
     int 0x40
   @@:
 
-
-
   mov eax,4
-  mov ebx,[wndMain.left]
-  add ebx,[recMain.left]
+  mov ebx,ted_wnd_l
+  add ebx,ted_rec_l
   shl ebx,16
-  add ebx,[wndMain.top]
+  add ebx,ted_wnd_t
   add ebx,3
   mov ecx,[WND_BORD_COLOR]
   or  ecx,0x80000000
   mov edx,txtRow
-  int 0x40
+  int 0x40 ;вывод подписи 'Строка'
 
   add ebx,0x500000
   mov edx,txtCol
-  int 0x40
+  int 0x40 ;вывод подписи 'Знак'
 
   cmp [tim_Undo],0
   je @f
@@ -950,13 +941,12 @@ draw_main_cursor:
     sub ebx,0x500000
   @@:
 
-  call draw_bufer
-  call draw_help_f1
+  stdcall draw_bufer, edi
+  stdcall draw_help_f1, edi
 
   mov eax,47 ;draw cursor coords
   mov esi,[WND_BORD_COLOR]
   or  esi,0x40000000
-  mov edi,[WND_WORK_COLOR]
 
   mov edx,ebx
   ror edx,16
@@ -967,6 +957,8 @@ draw_main_cursor:
   mov ecx,[cur_y]
   inc ecx
   add ecx,[wScr.position]
+; edi <> tedit ----------------------------------------------------------------
+  mov edi,[WND_WORK_COLOR]
   int 0x40
 
   ;mov ebx,0x40000 ;Col=...
@@ -983,19 +975,21 @@ draw_main_cursor:
     int 0x40
   @@:
 
-  pop esi edi edx ecx ebx eax
+  popad
   ret
+endp
 
+proc draw_bufer, edit:dword
+  pushad
+  mov edi,dword[edit]
 
-draw_bufer:
-  push eax ebx ecx edx esi edi
   cmp byte[buf],0
   je @f
-    mov ebx,[wndMain.left]
-    add ebx,[recMain.left]
+    mov ebx,ted_wnd_l
+    add ebx,ted_rec_l
   add bx,250
     shl ebx,16
-    add ebx,[wndMain.top]
+    add ebx,ted_wnd_t
     add ebx,3
     mov ecx,[WND_BORD_COLOR]
     or	ecx,0x40000000
@@ -1022,34 +1016,37 @@ end if
     mov eax,4
     int 0x40
   @@:
-  pop edi esi edx ecx ebx eax
+  popad
   ret
+endp
 
-draw_help_f1:
-  push eax ebx ecx edx edi
+proc draw_help_f1, edit:dword
+  pushad
+  mov edi,dword[edit]
+
   mov eax,13 ;clear place before draw help
-  mov ebx,[wndMain.left]
-  add ebx,[recMain.left]
+  mov ebx,ted_wnd_l
+  add ebx,ted_rec_l
   shl ebx,16
-  add ebx,[wndMain.width]
-  sub ebx,[recMain.left]
-  mov ecx,[wndMain.top]
+  add ebx,ted_wnd_w
+  sub ebx,ted_rec_l
+  mov ecx,ted_wnd_t
   add ecx,13
   shl ecx,16
-  add ecx,[recMain.height]
+  add ecx,ted_rec_h
   mov edx,[WND_CAPT_COLOR]
   int 0x40
 
   cmp [help_id],-1
-  je @f;.no_help
+  je @f
     mov eax,[help_id]
     ColToIndexOffset eax,edx
 
     ;SetCoordinates
-    mov ebx,[wndMain.left]
-    add ebx,[recMain.left]
+    mov ebx,ted_wnd_l
+    add ebx,ted_rec_l
     shl ebx,16
-    add ebx,[wndMain.top]
+    add ebx,ted_wnd_t
     add ebx,13 ;=3+10
 
     ;SetTextColor
@@ -1062,7 +1059,7 @@ draw_help_f1:
     pop ecx
     or	ecx,0xc0000000 ;SetTextStyles
     mov edi,[WND_WORK_COLOR]
-
+; edi <> edit -----------------------------------------------------------------
     mov eax,4
     int 0x40
 
@@ -1076,76 +1073,93 @@ draw_help_f1:
       mov edx,edi
       add ebx,0x500000
       int 0x40
-    @@:
-  ;.no_help:
-  pop edi edx ecx ebx eax
-  ret
-
-draw_line_numbers:
-  push eax ebx ecx edx esi ;edi
-  ;line numbers
-  mov eax,47
-  mov esi,[WND_BORD_COLOR]
-  ;or esi,0x40000000
-  ;mov edi,[WND_WORK_COLOR]
-  mov ebx,0x40000 ;format
-
-  mov ecx,[wScr.position]
-  inc ecx
-  mov dx,3
-  add dx,word[wndMain.left]
-  shl edx,16
-  mov dx,word[wndMain.top]
-  add dx,word[recMain.top]
   @@:
+  popad
+  ret
+endp
 
-push eax ebx ecx edx
-  mov eax,13
-  ;left panel with numbers
-  mov ebx,[wndMain.left]
+proc draw_line_numbers, edit:dword
+  pushad
+  mov edi,dword[edit]
+
+  ;top panel with caption
+  mov ebx,ted_wnd_l
+;  add ebx,ted_rec_l
   shl ebx,16
-  add ebx,[recMain.left]
-  mov cx,dx
-;  mov ecx,[wndMain.top] ;draw caption
-;  add ecx,[recMain.top]
+  add ebx,ted_wnd_w
+;  sub ebx,ted_rec_l
+  mov edx,[WND_WORK_COLOR]
+  mov ecx,ted_wnd_t
   shl ecx,16
-  mov cx,word [recMain.height]
+  add ecx,ted_rec_t
+  mov eax,13
   mov edx,[WND_CAPT_COLOR]
   int 0x40
-pop edx ecx ebx eax
 
-    int 0x40
+  ;line numbers
+  mov ebx,0x40000 ;format
+  mov ecx,[wScr.position]
+  inc ecx
+  mov edx,3
+  add edx,ted_wnd_l
+  rol edx,16
+  add edx,ted_wnd_t
+  add edx,ted_rec_t
+  @@:
+
+push ebx ecx edx
+  ;left panel with numbers
+  mov ebx,ted_wnd_l
+  shl ebx,16
+  add ebx,ted_rec_l
+  mov ecx,ted_rec_h
+  rol ecx,16
+  mov cx,dx
+  rol ecx,16
+  mov eax,13
+  mov edx,[WND_CAPT_COLOR]
+  int 0x40 ;рисуем прямоугольник под номером строки
+pop edx ecx ebx
+
+    mov eax,47
+    mov esi,[WND_BORD_COLOR]
+    int 0x40 ;рисуем номер строки
     inc ecx
-    add dx,word[recMain.height]
-    sub dx,word[wndMain.top]
-    cmp dx,word[wndMain.height]
+    add edx,ted_rec_h
+    sub edx,ted_wnd_t
+	mov esi,edx
+	and esi,0xffff
+    cmp esi,ted_wnd_h
     jge @f
-    add dx,word[wndMain.top]
+    add edx,ted_wnd_t
     jmp @b
   @@:
 
-  pop esi edx ecx ebx eax
+  popad
   ret
+endp
+  
+;this function need to optimize output
+proc draw_cursor_sumb, edit:dword
+  push eax ecx edx edi
+  mov edi,dword[edit]
 
-
-draw_cursor_sumb: ;this function need to optimize output
-  push eax ecx edx
   mov eax,13 ;rect
-  mov ebx,[wndMain.left]
-  add ebx,[recMain.left]
+  mov ebx,ted_wnd_l
+  add ebx,ted_rec_l
   mov edx,[cur_x]
-  imul edx,[recMain.width]
+  imul edx,ted_rec_w
   add ebx,edx
   shl ebx,16
-  add ebx,[recMain.width]
+  add ebx,ted_rec_w
 
-  mov ecx,[wndMain.top] ;calc rect -> y0,y1
-  add ecx,[recMain.top]
+  mov ecx,ted_wnd_t ;calc rect -> y0,y1
+  add ecx,ted_rec_t
   mov edx,[cur_y]
-  imul edx,[recMain.height]
+  imul edx,ted_rec_h
   add ecx,edx
   shl ecx,16
-  add ecx,[recMain.height]
+  add ecx,ted_rec_h
 
   mov edx,[WND_WORK_COLOR]
   push ecx
@@ -1200,9 +1214,9 @@ draw_cursor_sumb: ;this function need to optimize output
     pop esi
   @@:
 
-  pop edx ecx eax
+  pop edi edx ecx eax
   ret
-
+endp
 
 
 ;input:

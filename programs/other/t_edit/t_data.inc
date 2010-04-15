@@ -282,6 +282,35 @@ TE_PANEL_WIDTH equ 150 ;°шЁшэр ярэхыш
 
 count_of_dir_list_files equ 15
 
+;------------------------------------------------------------------------------
+struct TexSelect
+  x0 dd ?
+  y0 dd ?
+  x1 dd ?
+  y1 dd ?
+ends
+;------------------------------------------------------------------------------
+ted_wnd_l equ dword[edi+ 0] ;окно редактора: отступ слева
+ted_wnd_t equ dword[edi+ 4] ;окно редактора: отступ сверху
+ted_wnd_w equ dword[edi+ 8] ;окно редактора: ширина
+ted_wnd_h equ dword[edi+12] ;окно редактора: высота
+ted_rec_l equ dword[edi+16] ;ширина панели в окне
+ted_rec_t equ dword[edi+20] ;высота панели в окне
+ted_rec_w equ dword[edi+24] ;ширина символа (знакоместа) в окне
+ted_rec_h equ dword[edi+28] ;высота символа (знакоместа) в окне
+ted_drag_m equ byte[edi+32] ;выделение от мыши
+ted_drag_k equ byte[edi+33] ;выделение от клавиатуры
+;------------------------------------------------------------------------------
+align 4
+tedit0: ;структура текстового редактора
+	.wnd BOX 0,50,440,150 ;+ 0
+	.rec BOX 30,23,7,10   ;+16
+	.dragm db 0 ;+32 выделение от мыши
+	dragk db 0 ;+33 выделение от клавиатуры
+	sel TexSelect 0,0,0,0 ;+34 структура выделения
+	seln TexSelect ;+50 дополнительная структура выделения
+;------------------------------------------------------------------------------
+
 el_focus dd 0
 mouse_dd dd 0
 tree1 tree_list 264,count_of_dir_list_files+2, tl_key_no_edit+tl_draw_par_line+tl_list_box_mode,\

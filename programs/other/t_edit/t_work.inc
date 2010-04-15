@@ -8,13 +8,6 @@ struct f70
   name dd ?
 ends
 
-struct TexSelect
-  x0 dd ?
-  y0 dd ?
-  x1 dd ?
-  y1 dd ?
-ends
-
 struct TexColViv
   Text rb MAX_COLOR_WORD_LEN; // слово
   f1 dd 0
@@ -52,7 +45,7 @@ Col dd 0 ;указатель на структуры ключевых слов TexColViv
 
 conv_tabl rb 128 ; таблица для конвертирования scan-кода в ascii-код
 keyUpr dd 0
-err_opn db 0 ;ошибка открытия файла
+
 err_sav db 0 ;ошибка сохранения файла
 panel_id db 0 ;номер открытой панели
 
@@ -68,22 +61,15 @@ tex	dd 0 ;text memory pointer
 tex_1	dd 0 ;text first symbol pointer
 tex_end dd 0 ;text end memory pointer
 
-hed db 'TextEditor 05.02.10',0 ;подпись окна
-sc system_colors
-
-wndMain BOX 0,50,440,150
-recMain BOX 30,23,7,10
-
 curMod db 1
 cur_x dd 0
 cur_y dd 0
 invis db 0 ;режим показа непечатаемых символов
 symbol_new_line db 20 ;символ завершения строки
-dragm db 0 ;выделение от мыши
-dragk db 0 ;выделение от клавиатуры
-sel TexSelect 0,0,0,0 ;структура выделения
-seln TexSelect ;дополнительная структура выделения
 help_id dd -1  ;идентификатор для справки
+
+hed db 'TextEditor 15.04.10',0 ;подпись окна
+sc system_colors
 
 fn_icon db 'te_icon.bmp',0
 bmp_icon dd 0
@@ -117,10 +103,11 @@ CanSave:
 
 ;output:
 ; al = 1 - selected
-IsSel:
-  push ebx
+proc IsSel, edit:dword
+  push ebx edi
+  mov edi,dword[edit]
   xor al,al
-  cmp [dragm],1
+  cmp ted_drag_m,1
   je @f
     mov al,1
     mov ebx,[sel.x0]
@@ -131,8 +118,9 @@ IsSel:
     jne @f
     xor al,al
   @@:
-  pop ebx
+  pop edi ebx
   ret
+endp
 
 SelNormalize:
   push ecx esi edi
@@ -343,7 +331,6 @@ InitColText:
 ;input:
 ; ebx = file size
 OpenFile:
-  mov [err_opn],0
   push eax ;destination
   push ecx ;for cycle
   push edx ;source
@@ -729,7 +716,7 @@ CharAdd:
 ConvertSelText:
   xor edi,edi
   push eax ebx ecx edx esi
-  call IsSel
+  stdcall IsSel, tedit0
   cmp al,0
   je .end_f
     call SetUndo
@@ -1329,7 +1316,7 @@ GoToPos:
 ;output:
 ; al = 1 if delete
 SelTextDel:
-  call IsSel
+  stdcall IsSel, tedit0
   cmp al,0
   jne @f
   ret
@@ -1664,8 +1651,8 @@ ShowHelpF1:
     call FindHelpId
   @@:
   pop edx eax
-  ;call draw_main_cursor
-  call draw_help_f1
+  ;stdcall draw_main_cursor, tedit0
+  stdcall draw_help_f1, tedit0
   ret 
 
 ;input:

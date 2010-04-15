@@ -205,6 +205,35 @@ struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
 ;Basic macros for use TreeList                           ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+tl_info_size  equ  word[edi +4] ;размер данных выделяемых для каждого узла (пользовательськие данные + текст для подписи)
+tl_info_max_count equ dword[edi+6] ;максимальное количество узлов, которые можно добавить в элемент
+tl_style      equ dword[edi+10] ;стили элемента
+tl_data_nodes equ dword[edi+14] ;указатель на структуры узлов
+tl_data_img   equ dword[edi+18] ;указатель на изображения с иконками узлов
+tl_img_cx     equ  word[edi+22] ;ширина иконок
+tl_img_cy     equ  word[edi+24] ;высота иконок
+tl_data_img_sys equ dword[edi+26] ;указатель на системные изображения (стрелки, плюсики)
+tl_ch_tim     equ dword[edi+30] ;количество изменений в файле
+tl_tim_undo   equ dword[edi+38] ;количество отмененных действий
+tl_cur_pos    equ dword[edi+42] ;позиция курсора
+tl_col_bkg    equ dword[edi+46] ;цвет фона
+tl_col_zag    equ dword[edi+50] ;цвет заголовка
+tl_col_txt    equ dword[edi+54] ;цвет текста
+tl_box_left   equ dword[edi+58]
+tl_box_top    equ dword[edi+62]
+tl_box_width  equ dword[edi+66]
+tl_box_height equ dword[edi+70]
+tl_capt_cy    equ  word[edi+74] ;высота подписи
+tl_info_capt_offs equ word[edi+76] ;сдвиг для начала текста (подписи узла)
+tl_info_capt_len equ word[edi+78] ;длинна текста подписи узла (если = 0 то до конца структуры)
+tl_el_focus   equ dword[edi+80] ;указатель на структуру элемента в фокусе
+tl_p_scrol    equ dword[edi+84] ;указатель на структуру скроллинга
+tl_on_press   equ dword[edi+96] ;указатель на функцию, которая вызывается при нажатии Enter
+
+;data_info	 dd ? ;+ 0 указатель на основные даные
+;ls_tim		dd ? ;+34 время последнего сохранения
+;on_activate dd ? ;+92 указатель на функцию при активировании узла
+
 ;константы стиля
 tl_key_no_edit   equ   1b ;элемент нельзя редактировать на клавиатуре (изменять уровни, удалять)
 tl_draw_par_line equ  10b ;рисовать линии к родительскому узлу

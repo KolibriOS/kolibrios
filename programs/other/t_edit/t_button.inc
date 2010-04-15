@@ -23,7 +23,7 @@ On_NewFile:
   mov al,1
   call Clear
   call draw_but_toolbar
-  call draw_main_win
+  stdcall draw_main_win, tedit0
   pop eax
   ret
 
@@ -83,13 +83,12 @@ On_OpenFile:
     call [mb_create] ;message: Can-t open text file!
     jmp .ret_f
   @@:
-  mov [err_opn],1
   cmp ebx,-1
   je .ret_f
     ;if open file
     call OpenFile
     call draw_but_toolbar
-    call draw_main_win
+    stdcall draw_main_win, tedit0
     cmp ebx,maxChars-2
     jl .ret_f
     push thread
@@ -194,7 +193,7 @@ but_FindText:
       call GetTexCoords
       mov [sel.x0],ebx
       mov [sel.y0],eax
-      call draw_main_win
+      stdcall draw_main_win, tedit0
       jmp .end_find
     @@:
       push thread
@@ -241,12 +240,11 @@ GetFindRezult:
 but_OpenSyntax:
   cmp byte[panel_id],TE_PANEL_SYNTAX
   jne @f
-    push dword tree1
-    call dword [tl_node_get_data]
-    pop  dword [fn_col_option]
+    stdcall dword[tl_node_get_data], dword tree1
+    pop dword[fn_col_option]
     call InitColText
     call CmColored
-    call draw_main_win
+    stdcall draw_main_win, tedit0
   @@:
   ret
 
@@ -272,7 +270,7 @@ but_select_word:
     @@:
   pop edx ecx ebx eax
   call draw_but_toolbar
-  call draw_main_win
+  stdcall draw_main_win, tedit0
   jmp still
 
 but_cut:
@@ -285,7 +283,7 @@ but_cut:
   cmp al,1
   jne @f
     call draw_but_toolbar
-    call draw_main_win
+    stdcall draw_main_win, tedit0
   @@:
   jmp still
 
@@ -293,7 +291,7 @@ but_cut:
 ; al = 1 if copy text
 but_Copy:
   push ax
-  call IsSel
+  stdcall IsSel, tedit0
   cmp al,0
   jne @f
     pop ax
@@ -336,7 +334,7 @@ but_Copy:
   cmp ecx,0
   je @f
     call draw_but_toolbar
-    call draw_bufer
+    stdcall draw_bufer, tedit0
   @@:
   pop esi edx ecx ebx ax
   ret
@@ -354,24 +352,29 @@ but_paste:
       mov edi,buf
       call TextAdd
       call draw_but_toolbar
-      call draw_main_win
+      stdcall draw_main_win, tedit0
     @@:
   pop edi esi bx eax
   jmp still
 
-but_find:
+proc but_find, edit:dword ;вызов/скрытие панели поиска
+  push edi
+  mov edi,[edit]
+
   cmp byte[panel_id],TE_PANEL_NULL
   je @f
     mov byte[panel_id],TE_PANEL_NULL
-    mov word[wndMain.left],0
+    mov ted_wnd_l,0
     jmp .e_if
   @@:
     mov byte[panel_id],TE_PANEL_FIND
-    mov word[wndMain.left],TE_PANEL_WIDTH
+    mov ted_wnd_l,TE_PANEL_WIDTH
   .e_if:
-  call EvSize
-  call draw_main_win
-  jmp still
+  stdcall EvSize,edi
+  stdcall draw_main_win,edi
+  pop edi
+  ret
+endp
 
 but_replace:
   jmp still
@@ -385,7 +388,7 @@ but_sumb_upper:
   call ConvertSelText
   cmp edi,0
   je @f
-    call draw_main_win
+    stdcall draw_main_win, tedit0
   @@:
   pop edi
   jmp still
@@ -396,14 +399,14 @@ but_sumb_lover:
   call ConvertSelText
   cmp edi,0
   je @f
-    call draw_main_win
+    stdcall draw_main_win, tedit0
   @@:
   pop edi
   jmp still
 
 but_reverse:
   push eax ebx
-  call IsSel
+  stdcall IsSel, tedit0
   cmp al,0
   je @f
     call SelNormalize
@@ -427,7 +430,7 @@ but_reverse:
     call Revers
   @@:
   pop ebx eax
-  call draw_main_win
+  stdcall draw_main_win, tedit0
   jmp still
 
 but_undo:
@@ -501,22 +504,27 @@ but_CtrlHome:
   mov [hScr.position],0
 
   call draw_but_toolbar
-  call draw_main_win
+  stdcall draw_main_win, tedit0
   ret
 
-but_synt_show:
+proc but_synt_show, edit:dword
+  push edi
+  mov edi,[edit]
+
   cmp byte[panel_id],TE_PANEL_NULL
   je @f
     mov byte[panel_id],TE_PANEL_NULL
-    mov word[wndMain.left],0
+    mov ted_wnd_l,0
     jmp .e_if
   @@:
     mov byte[panel_id],TE_PANEL_SYNTAX
-    mov word[wndMain.left],TE_PANEL_WIDTH
+    mov ted_wnd_l,TE_PANEL_WIDTH
   .e_if:
-  call EvSize
-  call draw_main_win
-  jmp still
+  stdcall EvSize,edi
+  stdcall draw_main_win,edi
+  pop edi
+  ret
+endp
 
 sel_KeyUp:
   cmp [dragk],1
@@ -532,7 +540,7 @@ sel_KeyUp:
     @@:
   pop dx
   call SelMove
-  call draw_main_win
+  stdcall draw_main_win, tedit0
   ret
 
 sel_KeyDown:
@@ -549,7 +557,7 @@ sel_KeyDown:
     @@:
   pop dx
   call SelMove
-  call draw_main_win
+  stdcall draw_main_win, tedit0
   ret
 
 sel_KeyLeft:
@@ -568,10 +576,10 @@ sel_KeyLeft:
     cmp dl,8
     jne @f
       call OnInitialUpdate
-      call draw_main_win
+      stdcall draw_main_win, tedit0
       jmp .end_f
     @@:
-      call draw_cur_line
+      stdcall draw_cur_line, tedit0
     .end_f:
   pop dx
   ret
@@ -592,10 +600,10 @@ sel_KeyRight:
     cmp dl,8
     jne @f
       call OnInitialUpdate
-      call draw_main_win
+      stdcall draw_main_win, tedit0
       jmp .end_f
     @@:
-      call draw_cur_line
+      stdcall draw_cur_line, tedit0
     .end_f:
   pop dx
   ret
