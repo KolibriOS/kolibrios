@@ -139,14 +139,10 @@ proc init_mem
            dec [pg_data.kernel_tables-OS_BASE]
 
            mov [edx], eax
-           add eax, 0x00400000
            add edx, 4
 
-           mov eax, 0x400000+PG_SW
-           mov ecx, [tmp_page_tabs]
-           sub ecx, 0x400000
-           shr ecx, 12          ;ecx/=4096
-           jmp .map_low
+           mov edi, [tmp_page_tabs] 
+           jmp .map_kernel_heap		; new kernel fits to the first 4Mb - nothing to do with ".map_low"
 .no_PSE:
            mov eax, PG_SW
            mov ecx, [tmp_page_tabs]
@@ -159,6 +155,7 @@ proc init_mem
            dec ecx
            jnz @B
 
+.map_kernel_heap:
            mov ecx, [pg_data.kernel_tables-OS_BASE]
            shl ecx, 10
            xor eax, eax
@@ -166,11 +163,10 @@ proc init_mem
 
            mov ecx, [pg_data.kernel_tables-OS_BASE]
            mov eax, [tmp_page_tabs]
-           or eax, PG_SW
+           or  eax, PG_SW
            mov edi, edx
 
 .map_kernel_tabs:
-
            stosd
            add eax, 0x1000
            dec ecx
