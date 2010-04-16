@@ -21,7 +21,7 @@ unpack:
         push    eax
         add     esi, 12
         and     al, not 0xC0
-        dec     eax
+        dec     al
         jz      .lzma
 .failed:
         pop     eax
