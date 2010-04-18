@@ -597,6 +597,8 @@ proc load_file stdcall, file_name:dword
 
 	   stdcall kernel_alloc, [file_size]
 	   mov [file], eax
+       test eax, eax
+       jz .fail
 
 	   stdcall read_file, [file_name], eax, dword 0, [file_size]
 	   cmp ebx, [file_size]
