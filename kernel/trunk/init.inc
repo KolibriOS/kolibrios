@@ -129,8 +129,8 @@ proc init_mem
            rep stosd
 
            mov edx, (sys_pgdir-OS_BASE)+ 0x800; (OS_BASE shr 20)
-           bt [cpu_caps-OS_BASE], CAPS_PSE
-           jnc .no_PSE
+;           bt [cpu_caps-OS_BASE], CAPS_PSE
+;           jnc .no_PSE
 
            mov ebx, cr4
            or ebx, CR4_PSE
@@ -142,20 +142,6 @@ proc init_mem
            add edx, 4
 
            mov edi, [tmp_page_tabs] 
-           jmp .map_kernel_heap		; new kernel fits to the first 4Mb - nothing to do with ".map_low"
-.no_PSE:
-           mov eax, PG_SW
-           mov ecx, [tmp_page_tabs]
-           shr ecx, 12
-.map_low:
-           mov edi, [tmp_page_tabs]
-@@:                                   ;
-           stosd
-           add eax, 0x1000
-           dec ecx
-           jnz @B
-
-.map_kernel_heap:
            mov ecx, [pg_data.kernel_tables-OS_BASE]
            shl ecx, 10
            xor eax, eax
