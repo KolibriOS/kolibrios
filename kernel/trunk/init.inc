@@ -227,10 +227,8 @@ proc init_page_map
            jnz .scanmap
 
 ; mark kernel memory as allocated (unavailable)
-           mov ecx, [tmp_page_tabs]
+           mov ecx, (UPPER_KERNEL_PAGES-OS_BASE)/4096
            mov edx, [pg_data.pages_count-OS_BASE]
-           shr ecx, 12
-           add ecx, [pg_data.kernel_tables-OS_BASE]
            sub edx, ecx
            mov [pg_data.pages_free-OS_BASE], edx
 

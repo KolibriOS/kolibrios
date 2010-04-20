@@ -313,6 +313,8 @@ BgrDataHeight       equ (OS_BASE+0x033BFFC)
 
 sys_pgmap           equ (OS_BASE+0x033C000)
 
+UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
+
 virtual at              (OS_BASE+0x05FFF80)
   tss  TSS
 end virtual
