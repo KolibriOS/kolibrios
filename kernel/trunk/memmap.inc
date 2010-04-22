@@ -242,11 +242,11 @@
 ;         0C   dword  draw limit - y end
 ; 0x80339000 -> 3BFFF3   free (12k)
 ; 0x8033BFF4 -> 33BFFF   background info 
-; 0x8033C000 -> 35BFFF   page map     (128k)
+; 0x8033C000 -> 3??FFF   page map: 1bit per page; size = mem_size>>15 (max: 128k)
+; 0x003??000 -> 3??FFF	 phys. location of system PTE head (12kb min); 
 ; =====================================
-; 0x8035C000 -> 5FFF7F   free (2M7)
 ; 0x805FFF80 -> 5FFFFF   TSS  (128)
-; 0x80600000 -> 7FFFFF   free (2M)
+; 0x80600000 -> 7FFFFF   extra kernel data structutes(2M max)
 ; =====================================
 ; 0x80800000 ->       kernel heap
 ; 0x80FFFFFF          heap min limit
