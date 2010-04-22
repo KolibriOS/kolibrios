@@ -300,16 +300,115 @@ ted_rec_w equ dword[edi+24] ;ширина символа (знакоместа) в окне
 ted_rec_h equ dword[edi+28] ;высота символа (знакоместа) в окне
 ted_drag_m equ byte[edi+32] ;выделение от мыши
 ted_drag_k equ byte[edi+33] ;выделение от клавиатуры
+ted_sel_x0 equ dword[edi+34] ;координата выделения x0
+ted_sel_y0 equ dword[edi+38] ;координата выделения y0
+ted_sel_x1 equ dword[edi+42] ;координата выделения x1
+ted_sel_y1 equ dword[edi+46] ;координата выделения y1
+;запасные координаты выделения
+ted_seln_x0 equ dword[edi+50]
+ted_seln_y0 equ dword[edi+54]
+ted_seln_x1 equ dword[edi+58]
+ted_seln_y1 equ dword[edi+62]
+
+ted_tex     equ dword[edi+66] ;указатель на память для хранения текста
+ted_tex_1   equ dword[edi+70] ;указатель на 1-ю стркутру символа
+ted_tex_end equ dword[edi+74] ;указатель на последнюю структуру символа
+ted_cur_x   equ dword[edi+78] ;координата x курсора
+ted_cur_y   equ dword[edi+82] ;координата y курсора
+ted_cur_ins equ  byte[edi+86] ;режим работы курсора (обычный или замена)
+ted_mode_color equ byte[edi+87] ;режим выделения слов цветом (0-выкл. 1-вкл.)
+ted_mode_invis equ byte[edi+88] ;режим показа непечатаемых символов
+ted_gp_opt     equ byte[edi+89] ;опции возвращаемые функцией GetPos
+ted_colors_text_count equ dword[edi+90] ;колличество цветов текста
+ted_key_words_count   equ dword[edi+94] ;колличество ключевых слов
+ted_color_cursor   equ dword[edi+98] ;цвет курсора
+ted_color_wnd_capt equ dword[edi+102] ;цвет полей вокруг окна
+ted_color_wnd_work equ dword[edi+106] ;цвет фона окна
+ted_color_wnd_bord equ dword[edi+110] ;цвет текста на полях
+ted_color_select   equ dword[edi+114] ;цвет выделения
+ted_color_cur_text equ dword[edi+118] ;цвет символа под курсором
+ted_color_wnd_text equ dword[edi+122] ;цвет текста в окне
+ted_syntax_file    equ dword[edi+126] ;указатель на начало файла синтаксиса
+ted_syntax_file_end equ dword[edi+130] ;указатель на конец файла синтаксиса
+ted_text_colors     equ dword[edi+134] ;указатель на массив цветов текста
+ted_help_text_f1    equ dword[edi+138] ;указатель на текст справки (по нажатии F1)
+ted_help_id         equ dword[edi+142] ;идентификатор для справки
+ted_key_words_data  equ dword[edi+146] ;указатель на структуры ключевых слов TexColViv
+ted_tim_ch          equ dword[edi+150] ;колличество изменений в файле
+ted_tim_undo        equ dword[edi+154] ;колличество отмененных действий
+ted_tim_ls          equ dword[edi+158] ;время последнего сохранения
+ted_tim_co          equ dword[edi+162] ;время последней цветовой разметки
+ted_el_focus        equ dword[edi+166] ;указатель на переменную элемента в фокусе
+ted_err_save        equ  word[edi+170] ;ошибка сохранения файла
+ted_key_new         equ  byte[edi+172] ;символ, который будет добавлятся с клавиатуры
+ted_symbol_new_line equ  byte[edi+173] ;символ завершения строки
+ted_scr_w           equ dword[edi+174] ;вертикальный скроллинг
+ted_scr_h           equ dword[edi+178] ;горизонтальный скроллинг
+ted_panel_id        equ  byte[edi+182] ;номер открытой панели
+;------------------------------------------------------------------------------
+sb_offs_max_area equ 16
+sb_offs_cur_area equ 20
+sb_offs_position equ 24
+sb_offs_redraw   equ 40
+;------------------------------------------------------------------------------
+ted_opt_ed_move_cursor equ 1 ;двигать курсор после добавления текста
+ted_opt_ed_change_time equ 2 ;добавлять изменения при редактировании текста
+ted_offs_sel  equ 34 ;смещение структуры sel
+ted_offs_seln equ 50 ;смещение структуры seln
+ted_offs_count_colors equ 90 ;смещение переменной колличества цветов
+ted_offs_key_new equ 172
+ted_offs_symbol_new_line equ 173 ;смещение символа новой строки
 ;------------------------------------------------------------------------------
 align 4
 tedit0: ;структура текстового редактора
 	.wnd BOX 0,50,440,150 ;+ 0
 	.rec BOX 30,23,7,10   ;+16
-	.dragm db 0 ;+32 выделение от мыши
-	dragk db 0 ;+33 выделение от клавиатуры
-	sel TexSelect 0,0,0,0 ;+34 структура выделения
-	seln TexSelect ;+50 дополнительная структура выделения
+	.drag_m db 0 ;+32 выделение от мыши
+	.drag_k db 0 ;+33 выделение от клавиатуры
+	.sel  TexSelect 0,0,0,0 ;+34 структура выделения
+	.seln TexSelect ;+50 дополнительная структура выделения
+	.tex     dd 0 ;+66 text memory pointer
+	.tex_1   dd 0 ;+70 text first symbol pointer
+	.tex_end dd 0 ;+74 text end memory pointer
+	.cur_x   dd 0 ;+78
+	.cur_y   dd 0 ;+82
+	.cur_ins db 1 ;+86
+	.mode_color db 1 ;+87 режим выделения слов цветом (0-выкл. 1-вкл.)
+	.mode_invis db 0 ;+88 режим показа непечатаемых символов
+	.gp_opt     db 0 ;+89 опции возвращаемые функцией GetPos
+; \/ не разрывать следующие переменные:
+	.count_colors_text dd 1 ;+90 колличество цветов текста
+	.count_key_words   dd 0 ;+94 колличество ключевых слов
+	.color_cursor    dd 0x808080 ;+98 цвет курсора
+	.color_wnd_capt  dd     0x80 ;+102 цвет полей вокруг окна
+	.color_wnd_work  dd      0x0 ;+106 цвет фона окна
+	.color_wnd_bord  dd 0xd0d0d0 ;+110 цвет текста на полях
+	.color_select    dd 0x208080 ;+114 цвет выделения
+	.color_cur_text  dd 0xff0000 ;+118 цвет символа под курсором
+	.color_wnd_text  dd 0xffff00 ;+122 цвет текста в окне
+; /\ другие, идущие ниже можно разрывать.
+	.syntax_file     dd 0 ;+126 указатель на начало файла синтаксиса
+	.syntax_file_end dd 0 ;+130 указатель на конец файла синтаксиса
+	.text_colors     dd 0 ;+134 указатель на массив цветов текста
+	.help_text_f1    dd 0 ;+138 указатель на текст справки (по нажатии F1)
+	.help_id         dd -1 ;+142 идентификатор для справки
+	.key_words_data  dd 0 ;+146 указатель на структуры ключевых слов TexColViv
+	.tim_ch   dd ? ;+150 количество изменений в файле
+	.tim_undo dd ? ;+154 количество отмененных действий
+	.tim_ls   dd ? ;+158 время последнего сохранения
+	.tim_co   dd ? ;+162 время последней цветовой разметки
+	.el_focus dd el_focus ;+166 указатель на переменную элемента в фокусе
+	.err_save    dw 0 ;+170 ошибка сохранения файла
+	.key_new     db 0 ;+172 символ, который будет добавлятся с клавиатуры
+	.symbol_new_line db 20 ;+173 символ завершения строки
+	.scr_w dd wScr ;+174 вертикальный скроллинг
+	.scr_h dd hScr ;+178 горизонтальный скроллинг
+	.panel_id db 0 ;+182 номер открытой панели
 ;------------------------------------------------------------------------------
+
+FkPos: rd 256
+conv_tabl rb 128 ; таблица для конвертирования scan-кода в ascii-код
+
 
 el_focus dd 0
 mouse_dd dd 0
@@ -392,8 +491,7 @@ msgbox_5:
   db 'Отмена',0
   db 0
 msgbox_5_funct:
-;  dd but_SaveFile
-  dd On_OpenFile
+  dd but_no_msg_OpenFile
   dd 0
 
 msgbox_6:
@@ -497,8 +595,7 @@ msgbox_5:
   db 'Cancel',0
   db 0
 msgbox_5_funct:
-;  dd but_SaveFile
-  dd On_OpenFile
+  dd but_no_msg_OpenFile
   dd 0
 
 msgbox_6:

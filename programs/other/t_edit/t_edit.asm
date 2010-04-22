@@ -33,12 +33,9 @@ include 't_button.inc'
 
 @use_library
 
+align 4
 start:
-  mov eax,48
-  mov ebx,3
-  mov ecx,sc
-  mov edx,sizeof.system_colors
-  mcall
+  mcall 48,3,sc,sizeof.system_colors
 
   m2m [wScr.bckg_col],[sc.work]
   m2m [wScr.frnt_col],[sc.work_button]
@@ -55,39 +52,37 @@ start:
 
   mcall 66,1,1 ;scan code
   ;mcall 26,2,1,conv_tabl
-
-  mov ecx,sizeof.symbol*maxChars
-  call mem_Alloc
-  mov [tex],eax
-  mov [tex_1],eax
-  add [tex_1],sizeof.symbol
-  mov [tex_end],eax
-  add [tex_end],sizeof.symbol*maxChars
-
   mcall 40,0x27
-
-  call Clear
-
-;-------------------------------------------------
-  mov ecx,maxColWords*sizeof.TexColViv+40
-  ;add ecx,40
-  call mem_Alloc
-  mov [options_file],eax
-  mov [options_file_end],eax
-  add [options_file_end],maxColWords*sizeof.TexColViv
-  add [options_file_end],40
-
-;-------------------------------------------------
-; init bmp file
-  mov ecx,1200*18
-  call mem_Alloc
-  mov [bmp_icon],eax
 
   mov esi,file_name
   call strlen
   mov ecx,eax
   mov edi,buf_cmd_lin
-  rep movsb
+  rep movsb ;копируем имя файла в буфер edit1
+
+load_libraries l_libs_start,load_lib_end
+
+;проверка на сколько удачно загузилась наша либа
+	mov	ebp,lib0
+	cmp	dword [ebp+ll_struc_size-4],0
+	jz	@f
+	mcall -1 ;exit not correct
+@@:
+	mov	ebp,lib1 ;
+	cmp	dword [ebp+ll_struc_size-4],0
+	jz	@f
+	mcall -1 ;exit not correct
+@@:
+
+;---------------------------------------------------------------------
+  stdcall ted_init, tedit0
+  stdcall dword[tl_data_init], tree1
+;---------------------------------------------------------------------
+
+; init bmp file
+  mov ecx,1200*18
+  call mem_Alloc
+  mov [bmp_icon],eax
 
   copy_path fn_icon,sys_path,file_name,0x0
 
@@ -108,24 +103,6 @@ start:
     mov [err_ini0],0
   @@:
 
-load_libraries l_libs_start,load_lib_end
-
-;проверка на сколько удачно загузилась наша либа
-	mov	ebp,lib0
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
-	mcall	-1	;exit not correct
-@@:
-	mov	ebp,lib1 ;
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
-	mcall	-1	;exit not correct
-@@:
-
-
-;---------------------------------------------------------------------
-  push dword tree1
-  call dword[tl_data_init]
 ;---------------------------------------------------------------------
 ; читаем bmp файл с курсорами и линиями
   copy_path fn_icon_tl_sys,sys_path,file_name,0x0
@@ -187,26 +164,17 @@ mov ecx,ebx
 @@:
   cmp byte[eax],'.' ;фильтруем файлы с именами '.' и '..'
   je .filter
-    push dword tree1
-    push dword 0x10000 ;1*2^16 - где 1 номер иконки с книгой
-    push dword eax
-    call dword[tl_node_add]
+    ;0x10000 ;1*2^16 - где 1 номер иконки с книгой
+    stdcall dword[tl_node_add], eax,0x10000, tree1
 
-    push dword tree1
-    call dword[tl_cur_next]
+    stdcall dword[tl_cur_next], tree1
   .filter:
   add eax,304
   loop @b
 .end_dir_init:
 
-;  push dword tree1
-;  push dword 0
-;  push dword file_name
-;  call dword[tl_node_add]
-
-
 ;--- load color option file ---
-  call InitColText
+  stdcall InitColText, tedit0
 
 ;--- get cmd line ---
   cmp byte[buf_cmd_lin+3],0 ;buf_cmd_lin
@@ -214,10 +182,10 @@ mov ecx,ebx
     mov esi,buf_cmd_lin
     call strlen ;eax=strlen
     mov [edit1.size],eax
-    call but_OpenFile
+    call but_no_msg_OpenFile
   @@:
 
-
+align 4
 red_win:
   mcall 12,1
 
@@ -271,6 +239,7 @@ red_win:
 
   mcall 12,2
 
+align 4
 still:
   mov eax,10
   mcall
@@ -287,7 +256,7 @@ still:
   jmp still
 
 
-
+align 4
 mouse:
   stdcall [edit_box_mouse], dword edit1
 
@@ -336,15 +305,13 @@ mouse:
 
   stdcall mouse_wnd_main, tedit0
 
-  cmp byte[panel_id],TE_PANEL_FIND ;if not panel
+  cmp byte[tedit0.panel_id],TE_PANEL_FIND ;if not panel
   jne @f
-    push dword edit2
-    call [edit_box_mouse]
+    stdcall [edit_box_mouse], dword edit2
   @@:
-  cmp byte[panel_id],TE_PANEL_SYNTAX ;if not panel
+  cmp byte[tedit0.panel_id],TE_PANEL_SYNTAX ;if not panel
   jne .menu_bar_1 ;@f
-  push dword tree1
-  call [tl_mouse]
+  stdcall [tl_mouse], tree1
 ;-----------------------------------------------
 .menu_bar_1:
   mov [menu_data_1.get_mouse_flag],1
@@ -357,7 +324,7 @@ mouse:
   je	button.exit	
   cmp [menu_data_1.cursor_out],dword 3
   jne	@f
-    call but_SaveFile
+    stdcall but_SaveFile, tedit0
   @@:
   cmp [menu_data_1.cursor_out],dword 2
   jne	@f
@@ -373,21 +340,28 @@ mouse:
   jmp still
 ;---------------------------------------------------------------------
 
-KeyConvertToASCII:
-  mov ebx,conv_tabl ;convert scan to ascii
+;output:
+; ah = symbol
+align 4
+proc KeyConvertToASCII, table:dword
+  push ebx
+  mov ebx,dword[table] ;convert scan to ascii
   ror ax,8
   xor ah,ah
   add bx,ax
   mov ah,byte[ebx]
+  pop ebx
   ret
+endp
 
+align 4
 key:
-  mov ecx,1
-  mcall 66,3
+  mcall 66,3 ;66.3 получить состояние управляющих клавиш
   xor ebx,ebx
+  mov ecx,1
   test al,0x03 ;[Shift]
   jz @f
-    inc cl
+    mov cl,2
     or ebx,KM_SHIFT
   @@:
   test al,0x0c ;[Ctrl]
@@ -396,19 +370,16 @@ key:
   @@:
   test al,0x30 ;[Alt]
   jz @f
+    mov cl,3
     or ebx,KM_ALT
   @@:
   test al,0x80 ;[NumLock]
   jz @f
     or ebx,KM_NUMLOCK
   @@:
-
-  mov [keyUpr],ebx
-  mcall 26,2,,conv_tabl
-  mcall 2
-
-;  push dword tree1 ;???
-;  call [tl_key]    ;???
+  mcall 26,2,,conv_tabl ;26.2 получить раскладку клавиатуры
+  mcall 2 ;получаем код нажатой клавиши
+  ;stdcall [tl_key], tree1 ;???
 
   test word [edit1.flags],10b;ed_focus ; если не в фокусе, выходим
   je @f
@@ -424,13 +395,9 @@ key:
     je still
     cmp ah,69 ;[Pause Break]
     je still
-;    cmp [keyUpr],0
-;    jne still
 
-    call KeyConvertToASCII
-
-    push dword edit1
-    call [edit_box_key]
+    stdcall KeyConvertToASCII, dword conv_tabl
+    stdcall [edit_box_key], dword edit1
     jmp still
   @@:
 
@@ -448,281 +415,13 @@ key:
     je still
     cmp ah,69 ;[Pause Break]
     je still
-;    cmp [keyUpr],0
-;    jne still
 
-    call KeyConvertToASCII
+    stdcall KeyConvertToASCII, dword conv_tabl
     stdcall [edit_box_key], dword edit2
     jmp still
   @@:
 
-  cmp ah,KEY_F1 ;[F1]
-  jne @f
-    call ShowHelpF1
-    jmp still
-  @@:
-  cmp ah,KEY_F3 ;[F3]
-  jne @f
-    call but_FindText
-    jmp still
-  @@:
-
-  test [keyUpr],KM_CTRL ;Ctrl+...
-  jz .key_Ctrl
-
-    cmp ah,24 ;Ctrl+O
-    jne @f
-      call but_OpenFile
-    @@:
-    cmp ah,33 ;Ctrl+F
-    jne @f
-    cmp byte[panel_id],TE_PANEL_FIND
-    je @f
-      stdcall but_find, tedit0
-    @@:
-    cmp ah,44 ;Ctrl+Z
-    je but_undo
-    cmp ah,46 ;Ctrl+C
-    jne @f
-      call but_Copy
-    @@:
-    cmp ah,47 ;Ctrl+V
-    je but_paste
-    cmp ah,49 ;Ctrl+N
-    jne @f
-      call but_NewFile
-    @@:
-    cmp ah,199 ;Ctrl+Home
-    jne @f
-      call but_CtrlHome
-    @@:
-    ;jmp still
-  .key_Ctrl:
-
-  test [keyUpr],KM_SHIFT ;Shift+...
-  jz .key_Shift
-    cmp ah,72 ;Shift+Up
-    jne @f
-      call sel_KeyUp
-    @@:
-    cmp ah,75 ;Shift+Left
-    jne @f
-      call sel_KeyLeft
-    @@:
-    cmp ah,77 ;Shift+Right
-    jne @f
-      call sel_KeyRight
-    @@:
-    cmp ah,80 ;Shift+Down
-    jne @f
-      call sel_KeyDown
-    @@:
-    ;mov [dragk],1 ;начинаем выделение от клавиатуры
-    jmp .key_MoveCur
-  .key_Shift:
-;-------------------------------------------------
-  cmp ah,72 ;178 ;Up
-  jne @f
-    push dx
-    stdcall draw_cursor_sumb, tedit0
-    call CurMoveUp
-    cmp dl,8
-    jne .no_red_0
-      call OnInitialUpdate
-      stdcall draw_main_win, tedit0
-      pop dx
-      jmp @f
-    .no_red_0:
-    stdcall draw_main_cursor, tedit0
-    pop dx
-    mov [dragk],0 ;заканчиваем выделение от клавиатуры
-  @@:
-  cmp ah,80 ;177 ;Down
-  jne @f
-    push dx
-    stdcall draw_cursor_sumb, tedit0
-    call CurMoveDown
-    cmp dl,8
-    jne .no_red_1
-      call OnInitialUpdate
-      stdcall draw_main_win, tedit0
-      pop dx
-      jmp @f
-    .no_red_1:
-    stdcall draw_main_cursor, tedit0
-    pop dx
-    mov [dragk],0 ;заканчиваем выделение от клавиатуры
-  @@:
-  cmp ah,75 ;176 ;Left
-  jne @f
-    push dx
-    stdcall draw_cursor_sumb, tedit0
-    call CurMoveLeft
-    cmp dl,8
-    jne .no_red_2
-      call OnInitialUpdate
-      stdcall draw_main_win, tedit0
-      pop dx
-      jmp @f
-    .no_red_2:
-    stdcall draw_main_cursor, tedit0
-    pop dx
-    mov [dragk],0 ;заканчиваем выделение от клавиатуры
-  @@:
-  cmp ah,77 ;179 ;Right
-  jne @f
-    push dx
-    stdcall draw_cursor_sumb, tedit0
-    call CurMoveRight
-    cmp dl,8
-    jne .no_red_3
-      call OnInitialUpdate
-      stdcall draw_main_win, tedit0
-      pop dx
-      jmp @f
-    .no_red_3:
-    stdcall draw_main_cursor, tedit0
-    pop dx
-    mov [dragk],0 ;заканчиваем выделение от клавиатуры
-  @@:
-  cmp ah,71 ;180 ;Home
-  jne @f
-    push dx
-    stdcall draw_cursor_sumb, tedit0
-    call CurMoveX_FirstChar
-    cmp dl,8
-    jne .no_red_4
-      call OnInitialUpdate
-      stdcall draw_main_win, tedit0
-      pop dx
-      jmp @f
-    .no_red_4:
-    stdcall draw_main_cursor, tedit0
-    pop dx
-    mov [dragk],0 ;заканчиваем выделение от клавиатуры
-  @@:
-  cmp ah,79 ;181 ;End
-  jne @f
-    push dx
-    stdcall draw_cursor_sumb, tedit0
-    call CurMoveX_LastChar
-    cmp dl,8
-    jne .no_red_5
-      call OnInitialUpdate
-      stdcall draw_main_win, tedit0
-      pop dx
-      jmp @f
-    .no_red_5:
-    stdcall draw_main_cursor, tedit0
-    pop dx
-    mov [dragk],0 ;заканчиваем выделение от клавиатуры
-  @@:
-  cmp ah,73 ;184 ;PageUp
-  jne @f
-    push dx
-    call CurMovePageUp
-    cmp dl,0
-    pop dx
-    je @f
-    call OnInitialUpdate
-    stdcall draw_main_win, tedit0
-  @@:
-  cmp ah,81 ;183 ;PageDown
-  jne @f
-    push dx
-    call CurMovePageDown
-    cmp dl,0
-    pop dx
-    je @f
-    call OnInitialUpdate
-    stdcall draw_main_win, tedit0
-    mov [dragk],0 ;заканчиваем выделение от клавиатуры
-  @@:
-;-------------------------------------------------
-    cmp [keyUpr],0
-    jne still
-  .key_MoveCur:
-
-  cmp ah,69 ;[Pause Break]
-  je still
-  cmp ah,120 ;[Fn]
-  je still
-  cmp ah,0x80 ;if key up
-  ja still
-  call KeyConvertToASCII
-
-  ;mov [dragk],0 ;заканчиваем выделение от клавиатуры
-
-  push ebx
-  xor ebx,ebx
-  mov bl,ah
-  add ebx,EvChar ;add char to text
-  cmp byte [ebx],1
-  jne @f
-    push esi edi
-    call SetUndo
-    mov bx,0x0101
-    call SelTextDel
-    mov esi,1
-    mov byte [key_new],ah
-    mov edi,dword key_new
-    cmp [curMod],1
-    je .no_ins_mod
-      call TextDel
-      xor bl,1
-    .no_ins_mod:
-    call TextAdd
-    call draw_but_toolbar
-    cmp byte [key_new],13
-    jne .dr_m_win
-      stdcall draw_main_win, tedit0
-      jmp .dr_cur_l
-    .dr_m_win:
-      stdcall draw_cur_line, tedit0
-    .dr_cur_l:
-    pop edi esi
-  @@:
-  pop ebx
-
-  cmp ah,8 ;[<-]
-  jne @f
-    push ax bx
-    call SetUndo
-
-    mov bx,0x0001
-    call SelTextDel
-    cmp al,1
-    je .del_one_b
-      call TextDel
-    .del_one_b:
-    call draw_but_toolbar
-    stdcall draw_main_win, tedit0
-    pop bx ax
-  @@:
-
-  cmp ah,182 ;Delete
-  jne @f
-    push ax bx
-    call SetUndo
-
-    mov bx,0x0101
-    call SelTextDel
-    cmp al,1
-    je .del_one_d
-      call TextDel
-    .del_one_d:
-    call draw_but_toolbar
-    stdcall draw_main_win, tedit0
-    pop bx ax
-  @@:
-
-  cmp ah,185 ;Ins
-  jne @f
-    stdcall draw_cursor_sumb, tedit0
-    xor [curMod],1
-    stdcall draw_main_cursor, tedit0
-  @@:
-
+  stdcall ted_key, tedit0, conv_tabl
   jmp still
 
 button:
@@ -743,40 +442,64 @@ button:
   @@:
   cmp ah,5
   jne @f
-    call but_SaveFile
+    stdcall but_SaveFile, tedit0
   @@:
   cmp ah,6
-  jz  but_select_word
+  jne @f
+    stdcall ted_but_select_word, tedit0
+  @@:
   cmp ah,7
-  jz  but_cut
+  jne @f
+    stdcall ted_but_cut, tedit0
+  @@:
   cmp ah,8
   jne @f
-    call but_Copy
+    stdcall ted_but_copy, tedit0
   @@:
   cmp ah,9
-  jz  but_paste
+  jne @f
+    stdcall ted_but_paste, tedit0
+  @@:
   cmp ah,10
   jne @f
     stdcall but_find, tedit0
   @@:
   cmp ah,11
-  jz  but_replace
+  jne @f
+    call but_replace
+  @@:
   cmp ah,12
-  jz  but_find_key_w
+  jne @f
+    call but_find_key_w
+  @@:
   cmp ah,13
-  jz  but_sumb_upper
+  jne @f
+    stdcall but_sumb_upper, tedit0
+  @@:
   cmp ah,14
-  jz  but_sumb_lover
+  jne @f
+    stdcall but_sumb_lover, tedit0
+  @@:
   cmp ah,15
-  jz  but_reverse
+  jne @f
+    stdcall but_reverse, tedit0
+  @@:
   cmp ah,16
-  jz  but_undo
+  jne @f
+    stdcall ted_but_undo, tedit0
+  @@:
   cmp ah,17
-  jz  but_redo
+  jne @f
+    stdcall ted_but_redo, tedit0
+  @@:
   cmp ah,18
-  jz  but_sumb_invis
+  jne @f
+    stdcall but_sumb_invis, tedit0
+  @@:
   cmp ah,19
-  jz  but_k_words_show
+  jne @f
+    stdcall but_k_words_show, tedit0
+  @@:
   cmp ah,20
   jne @f
     stdcall but_synt_show, tedit0
@@ -784,33 +507,27 @@ button:
 
   cmp ah,200
   jne @f
-    call but_OpenSyntax
+    stdcall ted_but_open_syntax, tedit0
   @@:
   cmp ah,201
   jne @f
-    call but_FindText
+    stdcall but_FindText, tedit0
   @@:
 
   cmp ah,1
   jne still
 .exit:
-  ;push eax
-  call CanSave
+  stdcall ted_can_save, tedit0
   cmp al,1
   jne @f
-    push thread
-    push msgbox_8
-    call [mb_create] ;message: save changes in file?
+    stdcall [mb_create],msgbox_8,thread ;message: save changes in file?
     jmp still
   @@:
-  mov ecx,[tex]
-  call mem_Free
   mov ecx,[bmp_icon]
   call mem_Free
-  mov ecx,[options_file]
-  call mem_Free
-  push dword tree1
-  call dword[tl_data_clear]
+
+  stdcall ted_delete, tedit0
+  stdcall dword[tl_data_clear], tree1
   mcall -1 ;выход из программы
 
 

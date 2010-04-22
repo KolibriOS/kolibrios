@@ -1,3 +1,4 @@
+align 4
 proc mouse_wnd_main, edit:dword
   push eax ebx ecx edi
   mcall 37,2 ;get mouse buttons
@@ -49,6 +50,7 @@ endp
 ; edi -> указатель на структуру tedit
 ;description:
 ; функци€ вызыветс€ при нажатии кнопкой мыши и попадении курсором в окно редактора
+align 4
 wnd_main_click:
   push ecx edx
 
@@ -67,7 +69,7 @@ wnd_main_click:
       mov eax,[hScr.cur_area]
     @@:
     ;dec eax
-    mov [cur_x],eax
+    mov ted_cur_x,eax
   pop eax
 
   push eax
@@ -84,20 +86,21 @@ wnd_main_click:
       mov eax,[wScr.cur_area]
     @@:
     dec eax
-    mov [cur_y],eax
+    mov ted_cur_y,eax
   pop eax
 
   cmp ted_drag_m,0
   je @f
-    call SelMove
+    stdcall SelMove,edi
     jmp .sel_move
   @@:
     mov ted_drag_m,1
-    call SelStart
+    stdcall SelStart,edi
   .sel_move:
   pop edx ecx
   ret
 
+align 4
 wnd_main_mouse_scroll:
   push eax ebx
   mcall 37,7
@@ -122,9 +125,11 @@ wnd_main_mouse_scroll:
   pop ebx eax
   ret
 
-draw_but_toolbar:
+align 4
+draw_but_toolbar: ;внешн€€ функци€ дл€ рисовани€ панели инструментов
+  push ebx ecx edx edi
+  mov edi,tedit0
 
-  push ebx ecx edx
   mov ecx,0x40000000
 ;  mov edx,5*65536+25
   mov edx,85*65536+2
@@ -135,7 +140,7 @@ draw_but_toolbar:
   mov edx,110*65536+2
   call draw_but_icon
 
-call CanSave
+stdcall ted_can_save,edi
 cmp al,1
 je @f
 and ecx,0xffff
@@ -150,7 +155,7 @@ or ecx,0x40000000
   mov edx,85*65536+25
   call draw_but_icon
 
-stdcall IsSel, tedit0
+stdcall IsSel,edi
 cmp al,0
 jne @f
 and ecx,0xffff
@@ -197,8 +202,8 @@ or ecx,0x40000000
   mov edx,235*65536+25
   call draw_but_icon
 
-mov ebx,[tim_Undo]
-cmp [ch_tim],ebx
+mov ebx,ted_tim_undo
+cmp ted_tim_ch,ebx
 jg @f
 and ecx,0xffff
 @@:
@@ -207,7 +212,7 @@ and ecx,0xffff
   call draw_but_icon
 or ecx,0x40000000
 
-cmp [tim_Undo],1
+cmp ted_tim_undo,1
 jge @f
 and ecx,0xffff
 @@:
@@ -228,11 +233,12 @@ or ecx,0x40000000
   mov edx,450*65536+25
   call draw_but_icon
 
-  pop edx ecx ebx
+  pop edi edx ecx ebx
   ret
 
 ;input:
 ;  clear_o - если =1 очистить одну строку, =0 очистить все строки окна до низу
+align 4
 proc clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_lin:dword
   pushad
     mov edi,dword[edit]
@@ -265,7 +271,7 @@ proc clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_lin:d
     sub ebx,ted_rec_l
 	xor cx,cx
     add ecx,ted_rec_h
-    mov edx,[WND_WORK_COLOR]
+    mov edx,ted_color_wnd_work
 
     cmp dword[clear_o],0
     je .pusto
@@ -278,11 +284,11 @@ proc clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_lin:d
     stdcall IsSel,edi
     cmp al,0
     je @f
-    cmp [seln.y0],esi
+    cmp ted_seln_y0,esi
     jg @f
-    cmp [seln.y1],esi
+    cmp ted_seln_y1,esi
     jl @f
-      mov edx,[SELECT_COLOR] ;draw selected line
+      mov edx,ted_color_select ;draw selected line
     @@:
 
     mov eax,13 ;rect
@@ -295,10 +301,10 @@ proc clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_lin:d
     mov al,13 ;rect
 	xor cx,cx
     add ecx,ted_rec_h
-    cmp [seln.y0],esi
+    cmp ted_seln_y0,esi
     jne @f
       push bx
-      mov edx,[seln.x0] ; верхн€€ полоса (затирает слева)
+      mov edx,ted_seln_x0 ; верхн€€ полоса (затирает слева)
       cmp edx,[hScr.position]
       jle .in_wnd
 	sub edx,[hScr.position]
@@ -308,13 +314,13 @@ proc clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_lin:d
       .in_wnd:
 	mov bx,0
       .no_wnd:
-      mov edx,[WND_WORK_COLOR]
+      mov edx,ted_color_wnd_work
       int 0x40
       pop bx
     @@:
-    cmp [seln.y1],esi
+    cmp ted_seln_y1,esi
     jne @f
-      mov edx,[seln.x1] ; нижн€€ полоса (затирает справа)
+      mov edx,ted_seln_x1 ; нижн€€ полоса (затирает справа)
       cmp edx,[hScr.position]
       jle .in_wnd2
 	sub edx,[hScr.position]
@@ -324,7 +330,7 @@ proc clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_lin:d
 	add ebx,edx
       .in_wnd2:
 
-      mov edx,[WND_WORK_COLOR]
+      mov edx,ted_color_wnd_work
       int 0x40
     @@:
 
@@ -333,7 +339,7 @@ proc clear_line_before_draw, edit:dword, coords:dword, clear_o:dword, numb_lin:d
   ret
 endp
 
-
+align 4
 proc draw_main_win, edit:dword
   locals
     line_num dd ?
@@ -342,9 +348,8 @@ proc draw_main_win, edit:dword
   mov edi,dword[edit]
 
   mov eax,4 ;draw text
-  mov ecx,[tex_colors]
-  push dword[ecx]
-  pop ecx
+  mov ecx,ted_text_colors
+  mov ecx,dword[ecx]
 
   mov ebx,ted_wnd_l
   add ebx,ted_rec_l
@@ -353,22 +358,22 @@ proc draw_main_win, edit:dword
   add ebx,ted_rec_t
   add ebx,0x10001 ;добавл€ем отступы дл€ выравнивани€ буквы по центру
 
-  call SelNormalize ;need before draw select
+  stdcall SelNormalize,edi ;need before draw select
   mov esi,[wScr.position]
   mov dword[line_num],esi
 
-  stdcall clear_line_before_draw, tedit0,ebx,1,esi
+  stdcall clear_line_before_draw, edi,ebx,1,esi
   call GetFirstVisiblePos
   cmp edx,0
   je .no_draw_text
   mov esi,1 ;длинна выводимого текста по 1-му символу
   @@:
     call IteratNext
-    cmp edx,[tex_1]
+    cmp edx,ted_tex_1
     jle .no_draw_text
 
     ; *** цветова€ разметка
-    cmp byte[mode_colored],0
+    cmp ted_mode_color,0
     je .no_col_change
     cmp byte[edx+1],0
     je .no_col_change
@@ -377,10 +382,11 @@ proc draw_main_win, edit:dword
 
     cmp byte [edx],13
     jne .no_13
-      cmp [invis],1
+      cmp ted_mode_invis,1
       jne .no_invis
 	push edx
-	mov edx,symbol_new_line
+	mov edx,edi
+	add edx,ted_offs_symbol_new_line
 	int 0x40
 	pop edx
       .no_invis:
@@ -391,7 +397,7 @@ proc draw_main_win, edit:dword
       cmp bx,ax
       jg .no_draw_text
       mov eax,4
-      ;optimized output /\	  
+      ;optimized output /\        
 	  and ebx,0xffff
       ror ebx,16
       add ebx,ted_wnd_l
@@ -399,7 +405,7 @@ proc draw_main_win, edit:dword
       inc ebx
       ror ebx,16
       inc dword[line_num] ;increment line number
-      stdcall clear_line_before_draw, tedit0,ebx,1,dword[line_num]
+      stdcall clear_line_before_draw,edi,ebx,1,dword[line_num]
       call OptDrawLineLeft
       jmp @b
     .no_13:
@@ -418,9 +424,9 @@ proc draw_main_win, edit:dword
     jmp @b
   .no_draw_text:
 
-  stdcall clear_line_before_draw, tedit0,ebx,0,dword[line_num]
-  stdcall draw_line_numbers, tedit0
-  stdcall draw_main_cursor, tedit0
+  stdcall clear_line_before_draw,edi,ebx,0,dword[line_num]
+  stdcall draw_line_numbers,edi
+  stdcall draw_main_cursor,edi
 
 ;---------------------------------------------
 ; set all_redraw flag for draw all ScrollBar
@@ -472,11 +478,12 @@ endp
 ;txtBDn db 25
 ;txtBRi db 26
 ;txtBLe db 27
+align 4
 proc draw_panel_find, edit:dword
   push edi
   mov edi,dword[edit]
 
-  cmp byte[panel_id],TE_PANEL_FIND ;if not panel
+  cmp ted_panel_id,TE_PANEL_FIND ;if not panel
   jne @f
   push eax ebx ecx edx
 
@@ -496,8 +503,7 @@ proc draw_panel_find, edit:dword
   mov edx,txtFindCapt
   int 0x40
 
-  push dword edit2
-  call [edit_box_draw]
+  stdcall [edit_box_draw], dword edit2
 
   mov eax,13 ;рисование пр€моугольника
   mov ebx,TE_PANEL_WIDTH
@@ -542,11 +548,13 @@ proc draw_panel_find, edit:dword
   ret
 endp
 
+
+align 4
 proc draw_panel_syntax, edit:dword
   push edi
   mov edi,dword[edit]
 
-  cmp byte[panel_id],TE_PANEL_SYNTAX ;if not panel
+  cmp ted_panel_id,TE_PANEL_SYNTAX ;if not panel
   jne @f
   push eax ebx ecx edx
 
@@ -558,7 +566,7 @@ proc draw_panel_syntax, edit:dword
   mov edx,[sc.work]
   int 0x40 ;рисование верхнего фонового пр€моугольника
 
-  stdcall dword[tl_draw], dword tree1
+  stdcall dword[tl_draw], tree1
   mov [ws_dir_lbox.all_redraw],1 ;дл€ полной перерисовки дочернего скроллинга
   stdcall dword[scrollbar_ver_draw], dword ws_dir_lbox
 
@@ -613,6 +621,8 @@ proc draw_panel_syntax, edit:dword
   ret
 endp
 
+
+align 4
 proc draw_cur_line, edit:dword
   pushad
     mov edi,dword[edit]
@@ -620,33 +630,33 @@ proc draw_cur_line, edit:dword
     mov ebx,ted_wnd_l
     add ebx,ted_rec_l
     shl ebx,16
-    mov eax,[cur_y]
+    mov eax,ted_cur_y
     imul eax,ted_rec_h
 	mov bx,ax
     add ebx,ted_wnd_t
     add ebx,ted_rec_t ;ebx - координаты дл€ пр€моугольника очистки линии
 	add ebx,0x10001   ;добавл€ем отступы дл€ выравнивани€ буквы по центру
 
-    call SelNormalize ;need before draw select
-	mov ecx,[cur_y]
+    stdcall SelNormalize,edi ;need before draw select
+	mov ecx,ted_cur_y
     add ecx,[wScr.position]
     stdcall clear_line_before_draw, tedit0, ebx,1,ecx
 
     mov esi,[hScr.position]
     call GetPosByParam
 
-  cmp [gpOpt],2
+  cmp ted_gp_opt,2
   jne .no_draw_text
 ;  mov eax,4 ;draw text
   call GetSymbColor
   mov esi,1 ;draw 1 symbol
   @@:
     ;call IteratNext
-    cmp edx,[tex_1]
+    cmp edx,ted_tex_1
     jle .no_draw_text
 
     ; *** цветова€ разметка
-    cmp byte[mode_colored],0
+    cmp ted_mode_color,0
     je .no_col_change
     cmp byte[edx+1],0
     je .no_col_change
@@ -656,10 +666,11 @@ proc draw_cur_line, edit:dword
     mov eax,4 ;draw text
     cmp byte [edx],13
     jne .no_13
-      cmp [invis],1
+      cmp ted_mode_invis,1
       jne .no_draw_text
  push edx
- mov edx,symbol_new_line
+ mov edx,edi
+ add edx,ted_offs_symbol_new_line
  int 0x40
  pop edx
       jmp .no_draw_text
@@ -677,7 +688,7 @@ proc draw_cur_line, edit:dword
     jmp @b
   .no_draw_text:
 
-  stdcall draw_main_cursor, tedit0
+  stdcall draw_main_cursor,edi
   popad
   ret
 endp
@@ -685,6 +696,7 @@ endp
 MIN_M_WND_H equ 100
 MIN_W_SCRL_ARE equ 3
 MIN_H_SCRL_ARE equ 3
+align 4
 proc EvSize, edit:dword
   push eax ecx edx edi
   mov edi,dword[edit]
@@ -759,23 +771,28 @@ proc EvSize, edit:dword
   ret
 endp
 
+align 4
 OnInitialUpdate:
   mov [wScr.redraw],1
   mov [hScr.redraw],1
   ret
 
+;input:
+; edi = pointer to tedit struct
 ;output:
+; ecx = новый цвет символа
 ; edx = pointer to symbol
 ; edx = 0 if text not in screen
+align 4
 GetFirstVisiblePos:
   push ecx
-  mov edx,[tex]
+  mov edx,ted_tex
   xor ecx,ecx
   @@:
     cmp ecx,[wScr.position]
     je @f
     call IteratNext
-    cmp edx,[tex_1]
+    cmp edx,ted_tex_1
     jle @f
     cmp byte [edx],13
     jne @b
@@ -799,23 +816,27 @@ GetFirstVisiblePos:
 
 ;input:
 ; edx = pointer to symbol
+; edi = pointer to tedit struct
 ;output:
-; edx = pointer to first left symbol
-OptDrawLineLeft:
-  push ecx
-  mov ecx,[hScr.position]
-  cmp ecx,0
+; ecx = новый цвет символа
+; edx = указатель на первый левый символ
+align 4
+proc OptDrawLineLeft
+  push ebx
+
+  mov ebx,[hScr.position]
+  cmp ebx,0
   je .ret_f
   push eax
   mov eax,edx
 
-  cmp edx,[tex]
+  cmp edx,ted_tex
   jne @f
     call IteratNext
     jmp .beg_cycle
   @@:
 
-  cmp ecx,0
+  cmp ebx,0
   je @f
 
   cmp byte[edx],13
@@ -823,33 +844,50 @@ OptDrawLineLeft:
     call IteratNext
     .beg_cycle:
   @@:
-    cmp edx,[tex_1]
+    cmp edx,ted_tex_1
     jle @f
     cmp byte[edx],13
     je @f
-    cmp ecx,0
+    cmp ebx,0
     je @f
+;--------------------------------------
+xor eax,eax ;eax будет мен€тьс€
+mov al,byte[edx+1]
+cmp al,0
+je .no_color
+cmp eax,ted_colors_text_count
+jge .no_color
+  xor ecx,ecx
+  mov cl,byte[edx+1]
+  shl cx,2
+  add ecx,ted_text_colors
+  mov ecx,dword[ecx]
+.no_color:
+;--------------------------------------
     mov eax,edx
     call IteratNext
-    dec ecx
+    dec ebx
     jmp @b
   @@:
     mov edx,eax
   pop eax
   .ret_f:
-  pop ecx
   call GetSymbColor
+  pop ebx
   ret
+endp
 
 ;input:
 ; edx = pointer to symbol
+; edi = pointer to tedit struct
 ;output:
 ; edx = pointer to 13 symbol
-OptDrawLineRight:
+align 4
+proc OptDrawLineRight
   push eax
   mov eax,edx
   @@:
-    cmp edx,[tex_1]
+    cmp edx,ted_tex_1
     jle @f
     cmp byte[edx],13
     je @f
@@ -858,10 +896,13 @@ OptDrawLineRight:
     jmp @b
   @@:
   mov edx,eax ;perv sumbol
-  pop eax
   call GetSymbColor
-  ret
 
+  pop eax
+  ret
+endp
+
+align 4
 proc draw_main_cursor, edit:dword
   pushad
   mov edi,dword[edit]
@@ -869,11 +910,11 @@ proc draw_main_cursor, edit:dword
   mov eax,13 ;draw cursor
   mov ecx,ted_wnd_t ;calc rect -> y0,y1
   add ecx,ted_rec_t
-  mov edx,[cur_y]
+  mov edx,ted_cur_y
   imul edx,ted_rec_h
   add ecx,edx
 
-  cmp [curMod],1 ;проверка режима работы курсора (обычный или вставка)
+  cmp ted_cur_ins,1 ;проверка режима работы курсора (обычный или вставка)
   jne @f
     mov edx,ted_rec_h
     inc edx   ;1->1, 3->2, 5->3, ...
@@ -882,38 +923,38 @@ proc draw_main_cursor, edit:dword
   @@:
   shl ecx,16
   add ecx,ted_rec_h
-  cmp [curMod],1
+  cmp ted_cur_ins,1
   jne @f
     shr cx,1 ;делим высоту курсора на 2
   @@:
 
   mov ebx,ted_wnd_l ;calc rect -> x0,x1
   add ebx,ted_rec_l
-  mov edx,[cur_x]
+  mov edx,ted_cur_x
   imul edx,ted_rec_w
   add ebx,edx
   shl ebx,16
   add ebx,ted_rec_w
 
-  mov edx,[CURSOR_COLOR]
+  mov edx,ted_color_cursor
   int 0x40 ;вывод курсора
 
   call GetPos
-  cmp [gpOpt],2
+  cmp ted_gp_opt,2
   jne @f
     mov eax,4 ;draw text
     mov esi,1
     ror ecx,16
     mov bx,cx
     add ebx,0x10001
-    cmp [curMod],1
+    cmp ted_cur_ins,1
     jne .no_up_tetx
       mov ecx,ted_rec_h
       inc cx ; 1->1, 3->2, 5->3, ...
       shr cx,1
       sub bx,cx
     .no_up_tetx:
-    mov ecx,[CUR_TEXT_COLOR]
+    mov ecx,ted_color_cur_text
     call ConvertInvisSymb
     int 0x40
   @@:
@@ -924,7 +965,7 @@ proc draw_main_cursor, edit:dword
   shl ebx,16
   add ebx,ted_wnd_t
   add ebx,3
-  mov ecx,[WND_BORD_COLOR]
+  mov ecx,ted_color_wnd_bord
   or  ecx,0x80000000
   mov edx,txtRow
   int 0x40 ;вывод подписи '—трока'
@@ -933,7 +974,7 @@ proc draw_main_cursor, edit:dword
   mov edx,txtCol
   int 0x40 ;вывод подписи '«нак'
 
-  cmp [tim_Undo],0
+  cmp ted_tim_undo,0
   je @f
     add ebx,0x500000
     mov edx,txtOtm
@@ -941,11 +982,11 @@ proc draw_main_cursor, edit:dword
     sub ebx,0x500000
   @@:
 
-  stdcall draw_bufer, edi
-  stdcall draw_help_f1, edi
+  stdcall draw_bufer,edi
+  stdcall draw_help_f1
 
   mov eax,47 ;draw cursor coords
-  mov esi,[WND_BORD_COLOR]
+  mov esi,ted_color_wnd_bord
   or  esi,0x40000000
 
   mov edx,ebx
@@ -954,23 +995,28 @@ proc draw_main_cursor, edit:dword
   ror edx,16
   ;add edx,3
   mov ebx,0x40000 ;Row=...
-  mov ecx,[cur_y]
+  mov ecx,ted_cur_y
   inc ecx
   add ecx,[wScr.position]
-; edi <> tedit ----------------------------------------------------------------
-  mov edi,[WND_WORK_COLOR]
-  int 0x40
+
+push edi
+  mov edi,ted_color_wnd_work
+  int 0x40 ;вывод числа текущей строки
+pop edi
 
   ;mov ebx,0x40000 ;Col=...
-  mov ecx,[cur_x]
+  mov ecx,ted_cur_x
   inc ecx
   add ecx,[hScr.position]
   add edx,0x500000
-  int 0x40
+push edi
+  mov edi,ted_color_wnd_work
+  int 0x40 ;вывод числа знаков
+pop edi
 
-  cmp [tim_Undo],0
+  cmp ted_tim_undo,0
   je @f
-    mov ecx,[tim_Undo]
+    mov ecx,ted_tim_undo
     add edx,0x500000
     int 0x40
   @@:
@@ -979,6 +1025,7 @@ proc draw_main_cursor, edit:dword
   ret
 endp
 
+align 4
 proc draw_bufer, edit:dword
   pushad
   mov edi,dword[edit]
@@ -991,9 +1038,9 @@ proc draw_bufer, edit:dword
     shl ebx,16
     add ebx,ted_wnd_t
     add ebx,3
-    mov ecx,[WND_BORD_COLOR]
+    mov ecx,ted_color_wnd_bord
     or	ecx,0x40000000
-    mov edi,[WND_WORK_COLOR]
+    mov edi,ted_color_wnd_work
     
     mov edx,txtBuf
     mov esi,buf
@@ -1020,9 +1067,11 @@ end if
   ret
 endp
 
-proc draw_help_f1, edit:dword
+;input:
+; edi = pointer to tedit struct
+align 4
+proc draw_help_f1
   pushad
-  mov edi,dword[edit]
 
   mov eax,13 ;clear place before draw help
   mov ebx,ted_wnd_l
@@ -1034,12 +1083,12 @@ proc draw_help_f1, edit:dword
   add ecx,13
   shl ecx,16
   add ecx,ted_rec_h
-  mov edx,[WND_CAPT_COLOR]
+  mov edx,ted_color_wnd_capt
   int 0x40
 
-  cmp [help_id],-1
+  cmp ted_help_id,-1
   je @f
-    mov eax,[help_id]
+    mov eax,ted_help_id
     ColToIndexOffset eax,edx
 
     ;SetCoordinates
@@ -1053,24 +1102,23 @@ proc draw_help_f1, edit:dword
     xor eax,eax
     mov al,byte[edx+MAX_COLOR_WORD_LEN+6]
     shl ax,2
-    mov ecx,[tex_colors]
+    mov ecx,ted_text_colors
     add ecx,eax
-    push dword[ecx]
-    pop ecx
+    mov ecx,dword[ecx]
     or	ecx,0xc0000000 ;SetTextStyles
-    mov edi,[WND_WORK_COLOR]
-; edi <> edit -----------------------------------------------------------------
-    mov eax,4
-    int 0x40
+	mov esi,edi
+      mov edi,ted_color_wnd_work
+      mov eax,4
+      int 0x40
+    mov edi,esi
 
     ;*** draw help string ***
-    mov ecx,[WND_BORD_COLOR]
+    mov ecx,ted_color_wnd_bord
     or ecx,0x80000000
-    mov edi,dword[edx+MAX_COLOR_WORD_LEN]
-    cmp edi,0
+    mov edx,dword[edx+MAX_COLOR_WORD_LEN]
+    cmp edx,0
     je @f
-      add edi,dword[tex_help_f1]
-      mov edx,edi
+      add edx,ted_help_text_f1
       add ebx,0x500000
       int 0x40
   @@:
@@ -1078,6 +1126,7 @@ proc draw_help_f1, edit:dword
   ret
 endp
 
+align 4
 proc draw_line_numbers, edit:dword
   pushad
   mov edi,dword[edit]
@@ -1088,12 +1137,12 @@ proc draw_line_numbers, edit:dword
   shl ebx,16
   add ebx,ted_wnd_w
 ;  sub ebx,ted_rec_l
-  mov edx,[WND_WORK_COLOR]
+  mov edx,ted_color_wnd_work
   mov ecx,ted_wnd_t
   shl ecx,16
   add ecx,ted_rec_t
   mov eax,13
-  mov edx,[WND_CAPT_COLOR]
+  mov edx,ted_color_wnd_capt
   int 0x40
 
   ;line numbers
@@ -1117,12 +1166,12 @@ push ebx ecx edx
   mov cx,dx
   rol ecx,16
   mov eax,13
-  mov edx,[WND_CAPT_COLOR]
+  mov edx,ted_color_wnd_capt
   int 0x40 ;рисуем пр€моугольник под номером строки
 pop edx ecx ebx
 
     mov eax,47
-    mov esi,[WND_BORD_COLOR]
+    mov esi,ted_color_wnd_bord
     int 0x40 ;рисуем номер строки
     inc ecx
     add edx,ted_rec_h
@@ -1140,6 +1189,7 @@ pop edx ecx ebx
 endp
   
 ;this function need to optimize output
+align 4
 proc draw_cursor_sumb, edit:dword
   push eax ecx edx edi
   mov edi,dword[edit]
@@ -1147,7 +1197,7 @@ proc draw_cursor_sumb, edit:dword
   mov eax,13 ;rect
   mov ebx,ted_wnd_l
   add ebx,ted_rec_l
-  mov edx,[cur_x]
+  mov edx,ted_cur_x
   imul edx,ted_rec_w
   add ebx,edx
   shl ebx,16
@@ -1155,51 +1205,51 @@ proc draw_cursor_sumb, edit:dword
 
   mov ecx,ted_wnd_t ;calc rect -> y0,y1
   add ecx,ted_rec_t
-  mov edx,[cur_y]
+  mov edx,ted_cur_y
   imul edx,ted_rec_h
   add ecx,edx
   shl ecx,16
   add ecx,ted_rec_h
 
-  mov edx,[WND_WORK_COLOR]
+  mov edx,ted_color_wnd_work
   push ecx
-    call SelNormalize
+    stdcall SelNormalize,edi
 
     mov ecx,[wScr.position]
-    sub [seln.y0],ecx
-    sub [seln.y1],ecx
+    sub ted_seln_y0,ecx
+    sub ted_seln_y1,ecx
 
-    mov ecx,[cur_y]
-    cmp ecx,[seln.y0]
+    mov ecx,ted_cur_y
+    cmp ecx,ted_seln_y0
     jl .no_cur_sel
-    cmp ecx,[seln.y1]
+    cmp ecx,ted_seln_y1
     jg .no_cur_sel
-    mov edx,[SELECT_COLOR]
+    mov edx,ted_color_select
     
-    cmp ecx,[seln.y0]
+    cmp ecx,ted_seln_y0
     jne @f
-      mov ecx,[cur_x]
+      mov ecx,ted_cur_x
       add ecx,[hScr.position]
-      cmp ecx,[seln.x0]
+      cmp ecx,ted_seln_x0
       jge @f
-	mov edx,[WND_WORK_COLOR]
+	mov edx,ted_color_wnd_work
     @@:
 
-    mov ecx,[cur_y]
-    cmp ecx,[seln.y1]
+    mov ecx,ted_cur_y
+    cmp ecx,ted_seln_y1
     jne .no_cur_sel
-      mov ecx,[cur_x]
+      mov ecx,ted_cur_x
       add ecx,[hScr.position]
-      cmp ecx,[seln.x1]
+      cmp ecx,ted_seln_x1
       jl .no_cur_sel
-      mov edx,[WND_WORK_COLOR]
+      mov edx,ted_color_wnd_work
 
     .no_cur_sel:
   pop ecx
   int 0x40
 
   call GetPos
-  cmp [gpOpt],2
+  cmp ted_gp_opt,2
   jne @f
     push esi
     mov eax,4 ;draw text
@@ -1207,7 +1257,6 @@ proc draw_cursor_sumb, edit:dword
     ror ecx,16
     mov bx,cx
     add ebx,0x10001
-    ;mov ecx,[WND_TEXT_COLOR]
     call GetSymbColor
     call ConvertInvisSymb
     int 0x40
@@ -1220,49 +1269,51 @@ endp
 
 
 ;input:
-; edx = pointer to text
+; edx -> pointer to text
+; edi -> указатель на структуру tedit
 ;output:
 ; ecx = color
-; if mode_colored=0 then ecx=WND_TEXT_COLOR
+; if ted_mode_color=0 then ecx=ted_color_wnd_text
+align 4
 GetSymbColor:
-  mov ecx,[WND_TEXT_COLOR]
+  mov ecx,ted_color_wnd_text ;задаем цвет текста по умолчанию
 
   push eax edx
-  cmp byte[mode_colored],0
+  cmp ted_mode_color,0
   je .exit
     jmp .on_first
     @@:
       call IteratPerv
-      cmp edx,[tex_1]
+      cmp edx,ted_tex_1
       jle .exit
     .on_first:
       xor eax,eax
       mov al,byte[edx+1]
-      cmp al,0
+      cmp al,0 ;если al=0 то цвет не мен€етс€
     je @b
 
-    ;cmp al,0xff
-    ;je .exit
-    cmp eax,[ColColor]
+    cmp eax,ted_colors_text_count
     jge .exit
 
-    shl ax,2 ;*4
-    mov ecx,[tex_colors]
+    shl ax,2 ;умножаем индекс цвета на 4 байта
+    mov ecx,ted_text_colors ;прибавл€ем смещение 1-го цвета
     add ecx,eax
-    push dword[ecx]
-    pop ecx
+    mov ecx,dword[ecx] ;устанавливаем текущий цвет текста по смещению
   .exit:
   pop edx eax
   ret
 
 ;input:
 ; edx = pointer to text
+; edi = pointer to tedit struct
+align 4
 ConvertInvisSymb:
-  cmp [invis],1
+  cmp ted_mode_invis,1
   jne @f
   cmp byte [edx],13
   jne @f
-    mov edx,symbol_new_line
+    mov edx,edi
+	add edx,ted_offs_symbol_new_line
   @@:
   ret
 
@@ -1270,6 +1321,7 @@ ConvertInvisSymb:
 ;  ecx = 0x4000____
 ;   cx = icon index
 ;  edx = x*2^16+y
+align 4
 draw_but_icon:
   push eax ebx
 
