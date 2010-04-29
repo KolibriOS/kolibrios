@@ -36,16 +36,6 @@ pre{
   color: #004000;
   background: #ffd0ff;
 }
-pre font.f0 { color: #ffff00; }
-pre font.f1 { color: #ffffff; }
-pre font.f2 { color: #00ff00; }
-pre font.f3 { color: #00ffff; }
-pre font.f4 { color: #808080; }
-pre font.f5 { color: #ff40ff; }
-pre font.f6 { color: #4080ff; }
-pre font.f7 { color: #ff0000; }
-pre font.f8 { color: #ffcc00; }
-pre font.f9 { color: #00ccff; }
 
 caption
 {
@@ -57,15 +47,12 @@ caption
 }
 table
 {
-  font-size: 10px;
   border-collapse: collapse;
   border: #000000 1px solid;
-  background-color: #c0e7fb;
 }
 table td
 {
   border: none;
-  text-align: center;
 }
 table th
 {

@@ -16,8 +16,8 @@ use32
 
 MAX_COLOR_WORD_LEN equ 40
 maxChars equ 100002 ;(...+2)
-BUF_SIZE equ 1000 ;bufer for copy|paste
-maxColWords equ 10000
+BUF_SIZE equ 1000 ;buffer for copy|paste
+maxSyntaxFileSize equ 410000
 
 include '../../proc32.inc'
 include '../../macros.inc'
@@ -27,9 +27,8 @@ include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'lang.inc'
 include 't_data.inc'
 include 'strlen.inc'
-include 't_work.inc' ;text work functions
 include 't_draw.inc' ;draw main window functions
-include 't_button.inc'
+include 't_button.inc' ;text work functions
 
 @use_library
 
@@ -37,14 +36,15 @@ align 4
 start:
   mcall 48,3,sc,sizeof.system_colors
 
-  m2m [wScr.bckg_col],[sc.work]
-  m2m [wScr.frnt_col],[sc.work_button]
-  m2m [wScr.line_col],[sc.work_button_text]
-
-  m2m [hScr.bckg_col],[sc.work]
-  m2m [hScr.frnt_col],[sc.work_button]
-  m2m [hScr.line_col],[sc.work_button_text]
-
+  mov eax,[sc.work]
+  mov [wScr.bckg_col],eax
+  mov [hScr.bckg_col],eax
+  mov eax,[sc.work_button]
+  mov [wScr.frnt_col],eax
+  mov [hScr.frnt_col],eax
+  mov eax,[sc.work_button_text]
+  mov [wScr.line_col],eax
+  mov [hScr.line_col],eax
 
   mcall 68,11
   or eax,eax
@@ -75,7 +75,7 @@ load_libraries l_libs_start,load_lib_end
 @@:
 
 ;---------------------------------------------------------------------
-  stdcall ted_init, tedit0
+  stdcall [ted_init], tedit0
   stdcall dword[tl_data_init], tree1
 ;---------------------------------------------------------------------
 
@@ -174,7 +174,10 @@ mov ecx,ebx
 .end_dir_init:
 
 ;--- load color option file ---
-  stdcall InitColText, tedit0
+	mov ebx,dword[fn_col_option]
+	copy_path ebx,fn_syntax_dir,file_name_rez,0x0
+	copy_path file_name_rez,sys_path,file_name,0x0
+	stdcall [ted_init_syntax_file], tedit0,run_file_70,file_name
 
 ;--- get cmd line ---
   cmp byte[buf_cmd_lin+3],0 ;buf_cmd_lin
@@ -202,7 +205,7 @@ red_win:
   mcall 9,procinfo,-1
   stdcall EvSize,edi
 
-  mov eax,13 ;тхЁїэшщ яЁ ьюєуюы№эшъ, фы  юўшёЄъш тхЁїэхщ ярэхыш
+  mov eax,13 ;верхний прямоугольник, для очистки верхней панели
   xor ebx,ebx
   mov ecx,ted_wnd_t
   mov bx,word [procinfo.client_box.width]
@@ -234,7 +237,7 @@ red_win:
 
   cmp [err_ini0],1
   je @f
-    stdcall draw_main_win, tedit0
+    stdcall [ted_draw], tedit0
   @@:
 
   mcall 12,2
@@ -263,53 +266,13 @@ mouse:
   test word [edit1.flags],10b;ed_focus ; если не в фокусе, выходим
   jne still
 
-;-----------------------------------------------
-  cmp [hScr.delta2],0
-  jne .horizontal
-.vertical:
-  mov eax,[wScr.max_area]
-  cmp eax,[wScr.cur_area]
-  jbe .horizontal
-; mouse event for Vertical ScrollBar
-  stdcall [scrollbar_ver_mouse], dword wScr
-  mov eax,wScr.redraw
-  xor ebx,ebx
-  cmp [eax],ebx
-  je @f
-  mov [eax],ebx
+  stdcall [ted_mouse], tedit0
 
-  stdcall draw_main_win, tedit0
-  jmp still
-@@:
-  cmp [wScr.delta2],0
-  jne still
-.horizontal:
-    mov   eax,[hScr.max_area]
-    cmp   eax,[hScr.cur_area]
-    jbe   .other
-; mouse event for Horizontal ScrollBar
-	push dword hScr
-	call [scrollbar_hor_mouse]
-	mov eax,hScr.redraw
-	xor ebx,ebx
-	cmp [eax],ebx
-	je .other
-	mov [eax],ebx
-  stdcall draw_main_win, tedit0
-  jmp still
-.other:
-  cmp [wScr.delta2],0
-  jne still
-  cmp [hScr.delta2],0
-  jne still
-
-  stdcall mouse_wnd_main, tedit0
-
-  cmp byte[tedit0.panel_id],TE_PANEL_FIND ;if not panel
+  cmp byte[tedit0.panel_id],TED_PANEL_FIND ;if not panel
   jne @f
     stdcall [edit_box_mouse], dword edit2
   @@:
-  cmp byte[tedit0.panel_id],TE_PANEL_SYNTAX ;if not panel
+  cmp byte[tedit0.panel_id],TED_PANEL_SYNTAX ;if not panel
   jne .menu_bar_1 ;@f
   stdcall [tl_mouse], tree1
 ;-----------------------------------------------
@@ -324,15 +287,15 @@ mouse:
   je	button.exit	
   cmp [menu_data_1.cursor_out],dword 3
   jne	@f
-    stdcall but_SaveFile, tedit0
+    stdcall [ted_but_save_file], tedit0,run_file_70,[edit1.text]
   @@:
   cmp [menu_data_1.cursor_out],dword 2
   jne	@f
-    call but_OpenFile
+    call ted_but_open_file
   @@:
   cmp [menu_data_1.cursor_out],dword 1
   jne	@f
-    call but_NewFile
+    call ted_but_new_file
   @@:
   ;cmp [menu_data_1.cursor_out],dword 0
   ;jne @f
@@ -357,29 +320,30 @@ endp
 align 4
 key:
   mcall 66,3 ;66.3 получить состояние управляющих клавиш
-  xor ebx,ebx
+  xor esi,esi
   mov ecx,1
   test al,0x03 ;[Shift]
   jz @f
     mov cl,2
-    or ebx,KM_SHIFT
+    or esi,KM_SHIFT
   @@:
   test al,0x0c ;[Ctrl]
   jz @f
-    or ebx,KM_CTRL
+    or esi,KM_CTRL
   @@:
   test al,0x30 ;[Alt]
   jz @f
     mov cl,3
-    or ebx,KM_ALT
+    or esi,KM_ALT
   @@:
   test al,0x80 ;[NumLock]
   jz @f
-    or ebx,KM_NUMLOCK
+    or esi,KM_NUMLOCK
   @@:
+
   mcall 26,2,,conv_tabl ;26.2 получить раскладку клавиатуры
   mcall 2 ;получаем код нажатой клавиши
-  ;stdcall [tl_key], tree1 ;???
+  ;stdcall [tl_key], tree1
 
   test word [edit1.flags],10b;ed_focus ; если не в фокусе, выходим
   je @f
@@ -421,9 +385,10 @@ key:
     jmp still
   @@:
 
-  stdcall ted_key, tedit0, conv_tabl
+  stdcall [ted_key], tedit0, conv_tabl,esi
   jmp still
 
+align 4
 button:
 ;  cmp [menu_active],1 ;если нажали меню, то сначала реакция на меню
 ;  jne @f ;mouse.menu_bar_1
@@ -434,35 +399,35 @@ button:
   mcall 17 ;получить код нажатой кнопки
   cmp ah,3
   jne @f
-    call but_NewFile
+    call ted_but_new_file
   @@:
   cmp ah,4
   jne @f
-    call but_OpenFile
+    call ted_but_open_file
   @@:
   cmp ah,5
   jne @f
-    stdcall but_SaveFile, tedit0
+    stdcall [ted_but_save_file], tedit0,run_file_70,[edit1.text]
   @@:
   cmp ah,6
   jne @f
-    stdcall ted_but_select_word, tedit0
+    stdcall [ted_but_select_word], tedit0
   @@:
   cmp ah,7
   jne @f
-    stdcall ted_but_cut, tedit0
+    stdcall [ted_but_cut], tedit0
   @@:
   cmp ah,8
   jne @f
-    stdcall ted_but_copy, tedit0
+    stdcall [ted_but_copy], tedit0
   @@:
   cmp ah,9
   jne @f
-    stdcall ted_but_paste, tedit0
+    stdcall [ted_but_paste], tedit0
   @@:
   cmp ah,10
   jne @f
-    stdcall but_find, tedit0
+    call ted_but_find
   @@:
   cmp ah,11
   jne @f
@@ -474,23 +439,23 @@ button:
   @@:
   cmp ah,13
   jne @f
-    stdcall but_sumb_upper, tedit0
+    stdcall [ted_but_sumb_upper], tedit0
   @@:
   cmp ah,14
   jne @f
-    stdcall but_sumb_lover, tedit0
+    stdcall [ted_but_sumb_lover], tedit0
   @@:
   cmp ah,15
   jne @f
-    stdcall but_reverse, tedit0
+    stdcall [ted_but_reverse], tedit0
   @@:
   cmp ah,16
   jne @f
-    stdcall ted_but_undo, tedit0
+    stdcall [ted_but_undo], tedit0
   @@:
   cmp ah,17
   jne @f
-    stdcall ted_but_redo, tedit0
+    stdcall [ted_but_redo], tedit0
   @@:
   cmp ah,18
   jne @f
@@ -511,13 +476,13 @@ button:
   @@:
   cmp ah,201
   jne @f
-    stdcall but_FindText, tedit0
+    stdcall [ted_but_find_next], tedit0
   @@:
 
   cmp ah,1
   jne still
 .exit:
-  stdcall ted_can_save, tedit0
+  stdcall [ted_can_save], tedit0
   cmp al,1
   jne @f
     stdcall [mb_create],msgbox_8,thread ;message: save changes in file?
@@ -526,7 +491,7 @@ button:
   mov ecx,[bmp_icon]
   call mem_Free
 
-  stdcall ted_delete, tedit0
+  stdcall [ted_delete], tedit0
   stdcall dword[tl_data_clear], tree1
   mcall -1 ;выход из программы
 
@@ -536,7 +501,7 @@ txtErrIni0 db 'Не открылся файл с иконками',0
 err_ini0 db 0
 
 edit1 edit_box 250, 220, 5, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_cmd_lin, mouse_dd, 0
-edit2 edit_box TE_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
+edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
 
 buf_cmd_lin db 302 dup(0)
 buf_find db 302 dup(0)

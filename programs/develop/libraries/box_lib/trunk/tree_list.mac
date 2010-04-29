@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 14.04.2010 IgorA
+; файл последний раз изменялся 29.04.2010 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -1303,7 +1303,7 @@ tl_strlen:
     cmp byte[eax],0
     je @f
     inc eax
-    loop @b
+    jmp @b
   @@:
   sub eax,esi
   ret

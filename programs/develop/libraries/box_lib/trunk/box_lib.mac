@@ -168,6 +168,10 @@ op_flag_en=10b
 .flags: dd flags+0   ; флаги
 }
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Basic macros for use TreeList                            ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
     col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
     info_capt_len,el_focus, p_scrol,on_press {
@@ -200,10 +204,6 @@ struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
   .on_activate dd 0
   .on_press dd on_press
 }
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Basic macros for use TreeList                           ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 tl_info_size  equ  word[edi +4] ;размер данных выделяемых для каждого узла (пользовательськие данные + текст для подписи)
 tl_info_max_count equ dword[edi+6] ;максимальное количество узлов, которые можно добавить в элемент
@@ -245,3 +245,102 @@ tl_err_load_caption     equ   1b ;в памяти нет заголовка 'tree'
 tl_err_load_info_size   equ 100b ;не совпадает размер информационной структуры при открытии
 tl_load_mode_add        equ 0x20000 ;опция считывания в режиме добавления информации
 tl_save_load_heder_size equ 26 ;размер заголовка для записи/чтения элементов
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Basic macros for use TextEditor                          ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ted_wnd_l equ dword[edi+ 0] ;окно редактора: отступ слева
+ted_wnd_t equ dword[edi+ 4] ;окно редактора: отступ сверху
+ted_wnd_w equ dword[edi+ 8] ;окно редактора: ширина
+ted_wnd_h equ dword[edi+12] ;окно редактора: высота
+ted_rec_l equ dword[edi+16] ;ширина панели в окне
+ted_rec_t equ dword[edi+20] ;высота панели в окне
+ted_rec_w equ dword[edi+24] ;ширина символа (знакоместа) в окне
+ted_rec_h equ dword[edi+28] ;высота символа (знакоместа) в окне
+ted_drag_m equ byte[edi+32] ;выделение от мыши
+ted_drag_k equ byte[edi+33] ;выделение от клавиатуры
+ted_sel_x0 equ dword[edi+34] ;координата выделения x0
+ted_sel_y0 equ dword[edi+38] ;координата выделения y0
+ted_sel_x1 equ dword[edi+42] ;координата выделения x1
+ted_sel_y1 equ dword[edi+46] ;координата выделения y1
+;запасные координаты выделения
+ted_seln_x0 equ dword[edi+50]
+ted_seln_y0 equ dword[edi+54]
+ted_seln_x1 equ dword[edi+58]
+ted_seln_y1 equ dword[edi+62]
+
+ted_tex     equ dword[edi+66] ;указатель на память для хранения текста
+ted_tex_1   equ dword[edi+70] ;указатель на 1-ю стркутру символа
+ted_tex_end equ dword[edi+74] ;указатель на последнюю структуру символа
+ted_cur_x   equ dword[edi+78] ;координата x курсора
+ted_cur_y   equ dword[edi+82] ;координата y курсора
+ted_max_chars equ dword[edi+86] ;максимальное число символов в одном документе
+ted_colors_text_count equ dword[edi+90] ;колличество цветов текста
+ted_key_words_count   equ dword[edi+94] ;колличество ключевых слов
+ted_color_cursor   equ dword[edi+98] ;цвет курсора
+ted_color_wnd_capt equ dword[edi+102] ;цвет полей вокруг окна
+ted_color_wnd_work equ dword[edi+106] ;цвет фона окна
+ted_color_wnd_bord equ dword[edi+110] ;цвет текста на полях
+ted_color_select   equ dword[edi+114] ;цвет выделения
+ted_color_cur_text equ dword[edi+118] ;цвет символа под курсором
+ted_color_wnd_text equ dword[edi+122] ;цвет текста в окне
+ted_syntax_file    equ dword[edi+126] ;указатель на начало файла синтаксиса
+ted_syntax_file_size equ dword[edi+130] ;максимальный размер файла синтаксиса
+ted_text_colors     equ dword[edi+134] ;указатель на массив цветов текста
+ted_help_text_f1    equ dword[edi+138] ;указатель на текст справки (по нажатии F1)
+ted_help_id         equ dword[edi+142] ;идентификатор для справки
+ted_key_words_data  equ dword[edi+146] ;указатель на структуры ключевых слов TexColViv
+ted_tim_ch          equ dword[edi+150] ;колличество изменений в файле
+ted_tim_undo        equ dword[edi+154] ;колличество отмененных действий
+ted_tim_ls          equ dword[edi+158] ;время последнего сохранения
+ted_tim_co          equ dword[edi+162] ;время последней цветовой разметки
+ted_el_focus        equ dword[edi+166] ;указатель на переменную элемента в фокусе
+ted_err_save        equ  byte[edi+170] ;ошибка сохранения файла
+ted_panel_id        equ  byte[edi+171] ;номер открытой панели
+ted_key_new         equ  byte[edi+172] ;символ, который будет добавлятся с клавиатуры
+ted_symbol_new_line equ  byte[edi+173] ;символ завершения строки
+ted_scr_w           equ dword[edi+174] ;вертикальный скроллинг
+ted_scr_h           equ dword[edi+178] ;горизонтальный скроллинг
+ted_arr_key_pos     equ dword[edi+182] ;указатель на массив позиций ключевых слов
+ted_buffer          equ dword[edi+186] ;указатель на буфер копирования/вставки
+ted_buffer_find     equ dword[edi+190] ;указатель на буфер для поиска
+ted_cur_ins         equ  byte[edi+194] ;режим работы курсора (обычный или замена)
+ted_mode_color      equ  byte[edi+195] ;режим выделения слов цветом (0-выкл. 1-вкл.)
+ted_mode_invis      equ  byte[edi+196] ;режим показа непечатаемых символов
+ted_gp_opt          equ  byte[edi+197] ;опции возвращаемые функцией ted_get_pos_by_cursor
+ted_fun_on_key_ctrl_o equ dword[edi+198] ;указатель на функцию вызываемую при нажатии Ctrl+O (открытие файла)
+ted_fun_on_key_ctrl_f equ dword[edi+202] ;... Ctrl+F (вызова/скрытия панели поиска)
+ted_fun_on_key_ctrl_n equ dword[edi+206] ;... Ctrl+N (создание нового документа)
+ted_fun_on_key_ctrl_s equ dword[edi+210] ;... Ctrl+S
+ted_buffer_size       equ dword[edi+214] ;размер буфера копирования/вставки
+ted_fun_find_err      equ dword[edi+218] ;указатель на функцию вызываемую если поиск закончился неудачно
+ted_fun_init_synt_err equ dword[edi+222] ;указатель на функцию вызываемую при ошибочном открытии файла синтаксиса
+ted_fun_draw_panel_buttons equ dword[edi+226] ;указатель на функцию рисования панели с кнопками
+ted_fun_draw_panel_find    equ dword[edi+230] ;указатель на функцию рисования панели поиска
+ted_fun_draw_panel_syntax  equ dword[edi+234] ;указатель на функцию рисования панели синтаксиса
+ted_fun_save_err      equ dword[edi+238] ;указатель на функцию вызываемую если сохранение файла закончилось неудачно
+;------------------------------------------------------------------------------
+ted_opt_ed_move_cursor equ 1 ;двигать курсор после добавления текста
+ted_opt_ed_change_time equ 2 ;добавлять изменения при редактировании текста
+ted_offs_sel  equ 34 ;смещение структуры sel
+ted_offs_seln equ 50 ;смещение структуры seln
+ted_offs_count_colors equ 90 ;смещение переменной колличества цветов
+ted_offs_key_new equ 172
+ted_offs_symbol_new_line equ 173 ;смещение символа новой строки
+;------------------------------------------------------------------------------
+
+
+
+; *** scroll bar constant ***
+sb_offs_size_x   equ  0
+sb_offs_start_x  equ  2
+sb_offs_size_y   equ  4
+sb_offs_start_y  equ  6
+sb_offs_max_area equ 16
+sb_offs_cur_area equ 20
+sb_offs_position equ 24
+sb_offs_redraw   equ 40
+sb_offs_delta2   equ 46
+sb_offs_all_redraw equ 80
+;------------------------------------------------------------------------------

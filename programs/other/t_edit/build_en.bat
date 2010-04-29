@@ -6,7 +6,7 @@ if not exist bin\te_icon.bmp   @copy te_icon.bmp bin\te_icon.bmp
 if not exist bin\info mkdir bin\info
 copy info\* bin\info\*
 
-@fasm.exe  -m 16384 ..\..\develop\libraries\box_lib\trunk\box_lib.asm bin\box_lib.obj
+if not exist bin\box_lib.obj @fasm.exe -m 16384 ..\..\develop\libraries\box_lib\trunk\box_lib.asm bin\box_lib.obj
 @kpack bin\box_lib.obj
 
 @erase lang.inc

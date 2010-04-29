@@ -72,6 +72,32 @@ menu_bar_mouse	 dd aMenu_bar_mouse
   tl_node_close_open dd sz_tl_node_close_open
   tl_node_lev_inc dd sz_tl_node_lev_inc
   tl_node_lev_dec dd sz_tl_node_lev_dec
+
+ted_but_save_file dd sz_ted_but_save_file
+ted_but_sumb_upper dd sz_ted_but_sumb_upper
+ted_but_sumb_lover dd sz_ted_but_sumb_lover
+ted_can_save dd sz_ted_can_save
+ted_clear dd sz_ted_clear
+ted_delete dd sz_ted_delete
+ted_draw dd sz_ted_draw
+ted_init dd sz_ted_init
+ted_init_syntax_file dd sz_ted_init_syntax_file
+ted_is_select dd sz_ted_is_select
+ted_key dd sz_ted_key
+ted_mouse dd sz_ted_mouse
+ted_open_file dd sz_ted_open_file
+ted_text_add dd sz_ted_text_add
+ted_but_select_word dd sz_ted_but_select_word
+ted_but_cut dd sz_ted_but_cut
+ted_but_copy dd sz_ted_but_copy
+ted_but_paste dd sz_ted_but_paste
+ted_but_undo dd sz_ted_but_undo
+ted_but_redo dd sz_ted_but_redo
+ted_but_reverse dd sz_ted_but_reverse
+ted_but_find_next dd sz_ted_but_find_next
+ted_text_colored dd sz_ted_text_colored
+;;;version_text_edit dd sz_ted_version
+
 dd 0,0
 
 aEdit_box_draw	db 'edit_box',0
@@ -119,6 +145,31 @@ aMenu_bar_mouse   db 'menu_bar_mouse',0
   sz_tl_node_close_open db 'tl_node_close_open',0
   sz_tl_node_lev_inc db 'tl_node_lev_inc',0
   sz_tl_node_lev_dec db 'tl_node_lev_dec',0
+
+sz_ted_but_save_file	db 'ted_but_save_file',0
+sz_ted_but_sumb_upper	db 'ted_but_sumb_upper',0
+sz_ted_but_sumb_lover	db 'ted_but_sumb_lover',0
+sz_ted_can_save 		db 'ted_can_save',0
+sz_ted_clear			db 'ted_clear',0
+sz_ted_delete			db 'ted_delete',0
+sz_ted_draw				db 'ted_draw',0
+sz_ted_init				db 'ted_init',0
+sz_ted_init_syntax_file db 'ted_init_syntax_file',0
+sz_ted_is_select		db 'ted_is_select',0
+sz_ted_key				db 'ted_key',0
+sz_ted_mouse			db 'ted_mouse',0
+sz_ted_open_file		db 'ted_open_file',0
+sz_ted_text_add 		db 'ted_text_add',0
+sz_ted_but_select_word	db 'ted_but_select_word',0
+sz_ted_but_cut			db 'ted_but_cut',0
+sz_ted_but_copy 		db 'ted_but_copy',0
+sz_ted_but_paste		db 'ted_but_paste',0
+sz_ted_but_undo 		db 'ted_but_undo',0
+sz_ted_but_redo 		db 'ted_but_redo',0
+sz_ted_but_reverse		db 'ted_but_reverse',0
+sz_ted_but_find_next	db 'ted_but_find_next',0
+sz_ted_text_colored		db 'ted_text_colored',0
+;;;sz_ted_version			db 'version_text_edit',0
 ;--------------------------------------------------
 align 4
 msgbox_lib_import:
@@ -275,10 +326,10 @@ menu_data_1:
 .get_mouse_flag dd 0 ;+116
 ;-------------------------
 
-TE_PANEL_NULL equ 0
-TE_PANEL_FIND equ 1
-TE_PANEL_SYNTAX equ 2
-TE_PANEL_WIDTH equ 150 ;°шЁшэр ярэхыш
+TED_PANEL_NULL   equ 0 ;нет открытой панели
+TED_PANEL_FIND   equ 1 ;панель поиска
+TED_PANEL_SYNTAX equ 2 ;панель выбора файлов подсветки
+TED_PANEL_WIDTH  equ 150 ;ширина панели
 
 count_of_dir_list_files equ 15
 
@@ -290,75 +341,6 @@ struct TexSelect
   y1 dd ?
 ends
 ;------------------------------------------------------------------------------
-ted_wnd_l equ dword[edi+ 0] ;окно редактора: отступ слева
-ted_wnd_t equ dword[edi+ 4] ;окно редактора: отступ сверху
-ted_wnd_w equ dword[edi+ 8] ;окно редактора: ширина
-ted_wnd_h equ dword[edi+12] ;окно редактора: высота
-ted_rec_l equ dword[edi+16] ;ширина панели в окне
-ted_rec_t equ dword[edi+20] ;высота панели в окне
-ted_rec_w equ dword[edi+24] ;ширина символа (знакоместа) в окне
-ted_rec_h equ dword[edi+28] ;высота символа (знакоместа) в окне
-ted_drag_m equ byte[edi+32] ;выделение от мыши
-ted_drag_k equ byte[edi+33] ;выделение от клавиатуры
-ted_sel_x0 equ dword[edi+34] ;координата выделения x0
-ted_sel_y0 equ dword[edi+38] ;координата выделения y0
-ted_sel_x1 equ dword[edi+42] ;координата выделения x1
-ted_sel_y1 equ dword[edi+46] ;координата выделения y1
-;запасные координаты выделения
-ted_seln_x0 equ dword[edi+50]
-ted_seln_y0 equ dword[edi+54]
-ted_seln_x1 equ dword[edi+58]
-ted_seln_y1 equ dword[edi+62]
-
-ted_tex     equ dword[edi+66] ;указатель на память для хранения текста
-ted_tex_1   equ dword[edi+70] ;указатель на 1-ю стркутру символа
-ted_tex_end equ dword[edi+74] ;указатель на последнюю структуру символа
-ted_cur_x   equ dword[edi+78] ;координата x курсора
-ted_cur_y   equ dword[edi+82] ;координата y курсора
-ted_cur_ins equ  byte[edi+86] ;режим работы курсора (обычный или замена)
-ted_mode_color equ byte[edi+87] ;режим выделения слов цветом (0-выкл. 1-вкл.)
-ted_mode_invis equ byte[edi+88] ;режим показа непечатаемых символов
-ted_gp_opt     equ byte[edi+89] ;опции возвращаемые функцией GetPos
-ted_colors_text_count equ dword[edi+90] ;колличество цветов текста
-ted_key_words_count   equ dword[edi+94] ;колличество ключевых слов
-ted_color_cursor   equ dword[edi+98] ;цвет курсора
-ted_color_wnd_capt equ dword[edi+102] ;цвет полей вокруг окна
-ted_color_wnd_work equ dword[edi+106] ;цвет фона окна
-ted_color_wnd_bord equ dword[edi+110] ;цвет текста на полях
-ted_color_select   equ dword[edi+114] ;цвет выделения
-ted_color_cur_text equ dword[edi+118] ;цвет символа под курсором
-ted_color_wnd_text equ dword[edi+122] ;цвет текста в окне
-ted_syntax_file    equ dword[edi+126] ;указатель на начало файла синтаксиса
-ted_syntax_file_end equ dword[edi+130] ;указатель на конец файла синтаксиса
-ted_text_colors     equ dword[edi+134] ;указатель на массив цветов текста
-ted_help_text_f1    equ dword[edi+138] ;указатель на текст справки (по нажатии F1)
-ted_help_id         equ dword[edi+142] ;идентификатор для справки
-ted_key_words_data  equ dword[edi+146] ;указатель на структуры ключевых слов TexColViv
-ted_tim_ch          equ dword[edi+150] ;колличество изменений в файле
-ted_tim_undo        equ dword[edi+154] ;колличество отмененных действий
-ted_tim_ls          equ dword[edi+158] ;время последнего сохранения
-ted_tim_co          equ dword[edi+162] ;время последней цветовой разметки
-ted_el_focus        equ dword[edi+166] ;указатель на переменную элемента в фокусе
-ted_err_save        equ  word[edi+170] ;ошибка сохранения файла
-ted_key_new         equ  byte[edi+172] ;символ, который будет добавлятся с клавиатуры
-ted_symbol_new_line equ  byte[edi+173] ;символ завершения строки
-ted_scr_w           equ dword[edi+174] ;вертикальный скроллинг
-ted_scr_h           equ dword[edi+178] ;горизонтальный скроллинг
-ted_panel_id        equ  byte[edi+182] ;номер открытой панели
-;------------------------------------------------------------------------------
-sb_offs_max_area equ 16
-sb_offs_cur_area equ 20
-sb_offs_position equ 24
-sb_offs_redraw   equ 40
-;------------------------------------------------------------------------------
-ted_opt_ed_move_cursor equ 1 ;двигать курсор после добавления текста
-ted_opt_ed_change_time equ 2 ;добавлять изменения при редактировании текста
-ted_offs_sel  equ 34 ;смещение структуры sel
-ted_offs_seln equ 50 ;смещение структуры seln
-ted_offs_count_colors equ 90 ;смещение переменной колличества цветов
-ted_offs_key_new equ 172
-ted_offs_symbol_new_line equ 173 ;смещение символа новой строки
-;------------------------------------------------------------------------------
 align 4
 tedit0: ;структура текстового редактора
 	.wnd BOX 0,50,440,150 ;+ 0
@@ -367,53 +349,67 @@ tedit0: ;структура текстового редактора
 	.drag_k db 0 ;+33 выделение от клавиатуры
 	.sel  TexSelect 0,0,0,0 ;+34 структура выделения
 	.seln TexSelect ;+50 дополнительная структура выделения
-	.tex     dd 0 ;+66 text memory pointer
-	.tex_1   dd 0 ;+70 text first symbol pointer
-	.tex_end dd 0 ;+74 text end memory pointer
-	.cur_x   dd 0 ;+78
-	.cur_y   dd 0 ;+82
-	.cur_ins db 1 ;+86
-	.mode_color db 1 ;+87 режим выделения слов цветом (0-выкл. 1-вкл.)
-	.mode_invis db 0 ;+88 режим показа непечатаемых символов
-	.gp_opt     db 0 ;+89 опции возвращаемые функцией GetPos
+	.tex      dd 0 ;+66 text memory pointer
+	.tex_1    dd 0 ;+70 text first symbol pointer
+	.tex_end  dd 0 ;+74 text end memory pointer
+	.cur_x    dd 0 ;+78 координата x курсора
+	.cur_y    dd 0 ;+82 координата y курсора
+	.max_chars dd maxChars ;+86 максимальное число символов в одном документе
 ; \/ не разрывать следующие переменные:
 	.count_colors_text dd 1 ;+90 колличество цветов текста
 	.count_key_words   dd 0 ;+94 колличество ключевых слов
-	.color_cursor    dd 0x808080 ;+98 цвет курсора
-	.color_wnd_capt  dd     0x80 ;+102 цвет полей вокруг окна
-	.color_wnd_work  dd      0x0 ;+106 цвет фона окна
-	.color_wnd_bord  dd 0xd0d0d0 ;+110 цвет текста на полях
-	.color_select    dd 0x208080 ;+114 цвет выделения
-	.color_cur_text  dd 0xff0000 ;+118 цвет символа под курсором
-	.color_wnd_text  dd 0xffff00 ;+122 цвет текста в окне
+	.color_cursor      dd 0x808080 ;+98 цвет курсора
+	.color_wnd_capt    dd     0x80 ;+102 цвет полей вокруг окна
+	.color_wnd_work    dd      0x0 ;+106 цвет фона окна
+	.color_wnd_bord    dd 0xd0d0d0 ;+110 цвет текста на полях
+	.color_select      dd 0x208080 ;+114 цвет выделения
+	.color_cur_text    dd 0xff0000 ;+118 цвет символа под курсором
+	.color_wnd_text    dd 0xffff00 ;+122 цвет текста в окне
 ; /\ другие, идущие ниже можно разрывать.
-	.syntax_file     dd 0 ;+126 указатель на начало файла синтаксиса
-	.syntax_file_end dd 0 ;+130 указатель на конец файла синтаксиса
-	.text_colors     dd 0 ;+134 указатель на массив цветов текста
-	.help_text_f1    dd 0 ;+138 указатель на текст справки (по нажатии F1)
-	.help_id         dd -1 ;+142 идентификатор для справки
-	.key_words_data  dd 0 ;+146 указатель на структуры ключевых слов TexColViv
-	.tim_ch   dd ? ;+150 количество изменений в файле
-	.tim_undo dd ? ;+154 количество отмененных действий
-	.tim_ls   dd ? ;+158 время последнего сохранения
-	.tim_co   dd ? ;+162 время последней цветовой разметки
-	.el_focus dd el_focus ;+166 указатель на переменную элемента в фокусе
-	.err_save    dw 0 ;+170 ошибка сохранения файла
+	.syntax_file       dd 0 ;+126 указатель на начало файла синтаксиса
+	.syntax_file_size  dd maxSyntaxFileSize ;+130 максимальный размер файла синтаксиса
+	.text_colors       dd 0 ;+134 указатель на массив цветов текста
+	.help_text_f1      dd 0 ;+138 указатель на текст справки (по нажатии F1)
+	.help_id           dd -1 ;+142 идентификатор для справки
+	.key_words_data    dd 0 ;+146 указатель на структуры ключевых слов TexColViv
+	.tim_ch      dd ? ;+150 количество изменений в файле
+	.tim_undo    dd ? ;+154 количество отмененных действий
+	.tim_ls      dd ? ;+158 время последнего сохранения
+	.tim_co      dd ? ;+162 время последней цветовой разметки
+	.el_focus    dd el_focus ;+166 указатель на переменную элемента в фокусе
+	.err_save    db 0 ;+170 ошибка сохранения файла
+	.panel_id    db 0 ;+171 номер открытой панели
 	.key_new     db 0 ;+172 символ, который будет добавлятся с клавиатуры
 	.symbol_new_line db 20 ;+173 символ завершения строки
-	.scr_w dd wScr ;+174 вертикальный скроллинг
-	.scr_h dd hScr ;+178 горизонтальный скроллинг
-	.panel_id db 0 ;+182 номер открытой панели
+	.scr_w       dd wScr ;+174 вертикальный скроллинг
+	.scr_h       dd hScr ;+178 горизонтальный скроллинг
+	.arr_key_pos dd 0 ;+182 указатель на массив позиций ключевых слов
+	.buffer      dd buf ;+186 указатель на буфер копирования/вставки
+	.buffer_find dd buf_find ;+190 указатель на буфер для поиска
+	.cur_ins     db 1 ;+194 режим работы курсора (обычный или замена)
+	.mode_color  db 1 ;+195 режим выделения слов цветом (0-выкл. 1-вкл.)
+	.mode_invis  db 0 ;+196 режим показа непечатаемых символов
+	.gp_opt      db 0 ;+197 опции возвращаемые функцией ted_get_pos_by_cursor
+	.fun_on_key_ctrl_o dd ted_but_open_file ;+198 указатель на функцию вызываемую при нажатии Ctrl+O (открытие файла)
+	.fun_on_key_ctrl_f dd ted_but_find      ;+202 ... Ctrl+F (вызова/скрытия панели поиска)
+	.fun_on_key_ctrl_n dd ted_but_new_file  ;+206 ... Ctrl+N (создание нового документа)
+	.fun_on_key_ctrl_s dd 0 ;+210 ... Ctrl+S
+	.buffer_size       dd BUF_SIZE ;+214 размер буфера копирования/вставки
+	.fun_find_err      dd ted_on_find_err ;+218 указатель на функцию вызываемую если поиск закончился неудачно
+	.fun_init_synt_err dd ted_on_init_synt_err   ;+222 указатель на функцию вызываемую при ошибочном открытии файла синтаксиса
+	.fun_draw_panel_buttons dd draw_but_toolbar  ;+226 указатель на функцию рисования панели с кнопками
+	.fun_draw_panel_find    dd draw_panel_find   ;+230 указатель на функцию рисования панели поиска
+	.fun_draw_panel_syntax  dd draw_panel_syntax ;+234 указатель на функцию рисования панели синтаксиса
+	.fun_save_err           dd ted_save_err_msg  ;+238 указатель на функцию вызываемую если сохранение файла закончилось неудачно
 ;------------------------------------------------------------------------------
 
-FkPos: rd 256
 conv_tabl rb 128 ; таблица для конвертирования scan-кода в ascii-код
-
+buf db BUF_SIZE dup(0)
 
 el_focus dd 0
 mouse_dd dd 0
 tree1 tree_list 264,count_of_dir_list_files+2, tl_key_no_edit+tl_draw_par_line+tl_list_box_mode,\
-    16,16, 0x8080ff,0x0000ff,0xffffff, 0,70,TE_PANEL_WIDTH-17,120, 0,0,0, el_focus,\
+    16,16, 0x8080ff,0x0000ff,0xffffff, 0,70,TED_PANEL_WIDTH-17,120, 0,0,0, el_focus,\
     ws_dir_lbox,0
 
 ;dir_list memory
@@ -425,7 +421,6 @@ tree_file_struct:
   dd file_name ;sys_path
 
 dir_mem rb 32+304*count_of_dir_list_files
-
 
 if lang eq ru
 
@@ -525,11 +520,6 @@ txtFindCapt db 'Поиск',0
 txtFindNext db 'Найти далее',0
 txtFormatCapt db 'Формат',0
 txtFormatApply db 'Применить',0
-txtRow db 'Строка',0
-txtCol db 'Знак',0
-txtOtm db 'Отмены',0
-txtBuf db 'Буфер: '
-buf db BUF_SIZE dup(0) ;buf тёхуфр яюёых txtBuf
 
 else
 
@@ -629,66 +619,9 @@ txtFindCapt db 'Search',0
 txtFindNext db 'Find next',0
 txtFormatCapt db 'Format',0
 txtFormatApply db 'Apply',0
-txtRow db 'Rows',0
-txtCol db 'Cols',0
-txtOtm db 'Undo',0
-txtBuf db 'Buffer: '
-buf db BUF_SIZE dup(0) ;buf always after txtBuf
 
 end if
 ;------
-align 4
-EvChar db 0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-    db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-    db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-    db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-    db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-    db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0
-    db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-    db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-    db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-
-EvUpper db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79
-    db 80,81,82,83,84,85,86,87,88,89,90,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-EvLover db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111
-    db 112,113,114,115,116,117,118,119,120,121,122,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-conv_table dd 0
-
 
 KM_SHIFT equ 0x00010000
 KM_CTRL equ 0x00020000
