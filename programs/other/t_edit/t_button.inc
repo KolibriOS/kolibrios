@@ -26,7 +26,7 @@ struct symbol
 ends
 
 
-hed db 'TextEditor 29.04.10',0 ;подпись окна
+hed db 'TextEditor 03.05.10',0 ;подпись окна
 sc system_colors
 
 fn_icon db 'te_icon.bmp',0

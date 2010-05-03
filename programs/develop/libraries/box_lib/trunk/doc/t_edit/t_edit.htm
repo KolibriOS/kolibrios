@@ -13,7 +13,31 @@
 <p><a href="#funct">Функции</a></p>
 <ul>
 <li><a href="#fun_but_copy">ted_but_copy</a></li>
+<li><a href="#fun_but_cut">ted_but_cut</a></li>
+<li><a href="#fun_but_find_next">ted_but_find_next</a></li>
+<li><a href="#fun_but_paste">ted_but_paste</a></li>
+<li><a href="#fun_but_redo">ted_but_redo</a></li>
+<li><a href="#fun_but_reverse">ted_but_reverse</a></li>
+<li><a href="#fun_but_save_file">ted_but_save_file</a></li>
+<li><a href="#fun_but_select_word">ted_but_select_word</a></li>
+<li><a href="#fun_but_sumb_lover">ted_but_sumb_lover</a></li>
+<li><a href="#fun_but_sumb_upper">ted_but_sumb_upper</a></li>
+<li><a href="#fun_but_undo">ted_but_undo</a></li>
+<li><a href="#fun_can_save">ted_can_save</a></li>
+<li><a href="#fun_clear">ted_clear</a></li>
+<li><a href="#fun_delete">ted_delete</a></li>
+<li><a href="#fun_draw">ted_draw</a></li>
+<li><a href="#fun_init">ted_init</a></li>
+<li><a href="#fun_init_scroll_bars">ted_init_scroll_bars</a></li>
+<li><a href="#fun_init_syntax_file">ted_init_syntax_file</a></li>
+<li><a href="#fun_is_select">ted_is_select</a></li>
+<li><a href="#fun_key">ted_key</a></li>
+<li><a href="#fun_mouse">ted_mouse</a></li>
+<li><a href="#fun_open_file">ted_open_file</a></li>
+<li><a href="#fun_text_add">ted_text_add</a></li>
+<li><a href="#fun_text_colored">ted_text_colored</a></li>
 </ul>
+<p><a href="#syn_file">Формат файла подсветки *.syn</a></p>
 
 <h1><a name="vveden">Введение</a></h1>
 <p>Элемент text_editor позволяет работать с текстовыми файлами, содержит много функция для редактирования текста.</p>
@@ -62,33 +86,184 @@ ends</pre>
 <p>Функции на экспорт:</p>
 
 <h4><a name="fun_but_copy">ted_but_copy</a></h4>
-
-<p>Функция которая будет вызываться при нажатии на кнопку копирования в буфер или на <b>Ctrl+C</b>.</p>
+<p>Функция которая будет вызываться при нажатии на кнопку копирования в буфер или на <b>Ctrl+C</b>. Текст копируется в буфер <b>ted_buffer</b>, максимальный размер буфера указывается в <b>ted_buffer_size</b>.</p>
 <p>Пример использования:</p>
 <pre>stdcall [ted_but_copy], tedit0</pre>
 
-<h4>ted_but_cut</h4><p></p>
-<h4>ted_but_find_next</h4><p></p>
-<h4>ted_but_paste</h4><p></p>
-<h4>ted_but_redo</h4><p></p>
-<h4>ted_but_reverse</h4><p></p>
-<h4>ted_but_save_file</h4><p></p>
-<h4>ted_but_select_word</h4><p></p>
-<h4>ted_but_sumb_lover</h4><p></p>
-<h4>ted_but_sumb_upper</h4><p></p>
-<h4>ted_but_undo</h4><p></p>
-<h4>ted_can_save</h4><p></p>
-<h4>ted_clear</h4><p></p>
-<h4>ted_delete</h4><p></p>
-<h4>ted_draw</h4><p></p>
-<h4>ted_init</h4><p></p>
-<h4>ted_init_syntax_file</h4><p></p>
-<h4>ted_is_select</h4><p></p>
-<h4>ted_key</h4><p></p>
-<h4>ted_mouse</h4><p></p>
-<h4>ted_open_file</h4><p></p>
-<h4>ted_text_add</h4><p></p>
-<h4>ted_text_colored</h4><p></p>
+<h4><a name="fun_but_cut">ted_but_cut</a></h4>
+<p>Функция вырезает выделенный текст и копирует его в буфер.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_but_cut], tedit0</pre>
+
+<h4><a name="fun_but_find_next">ted_but_find_next</a></h4>
+<p>Функция для поиска текста. Ищет текст из буфера <b>ted_buffer_find</b>, при нахождении перемещает курсор к найденому тексту и выделяет его.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_but_find_next], tedit0</pre>
+
+<h4><a name="fun_but_paste">ted_but_paste</a></h4><p></p>
+<p>Функция вставляет текст из буфера <b>ted_buffer</b>.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_but_paste], tedit0</pre>
+
+<h4><a name="fun_but_redo">ted_but_redo</a></h4>
+<p>Повторяет отмененные действия по редактированию текста.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_but_redo], tedit0</pre>
+
+<h4><a name="fun_but_reverse">ted_but_reverse</a></h4>
+<p>Меняет порядок следования символов в выделенном тексте.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_but_reverse], tedit0</pre>
+
+<h4><a name="fun_but_save_file">ted_but_save_file</a></h4>
+<p>Функция для сохранения файла. Принимает 3 параметра:</p>
+<p>1) структура tedit,</p>
+<p>2) структура для работы 70-й функции (до вызова функции заполнения не требует),</p>
+<p>3) строка с путем и именем файла.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_but_save_file], tedit0,run_file_70,[edit1.text]</pre>
+
+<h4><a name="fun_but_select_word">ted_but_select_word</a></h4>
+<p>Функция для выделения ключевого слова под курсором. Если ключевые слова не используются, тогда будет выделен весь текст.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_but_select_word], tedit0</pre>
+
+<h4><a name="fun_but_sumb_lover">ted_but_sumb_lover</a></h4>
+<p>Переводит выделенные символы к нижнему регистру.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_but_sumb_lover], tedit0</pre>
+
+<h4><a name="fun_but_sumb_upper">ted_but_sumb_upper</a></h4>
+<p>Переводит выделенные символы к верхнему регистру.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_but_sumb_upper], tedit0</pre>
+
+<h4><a name="fun_but_undo">ted_but_undo</a></h4>
+<p>Отменяет действия по редактированию текста. Действия функции <b>ted_but_reverse</b> не отменяются.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_but_undo], tedit0</pre>
+
+<h4><a name="fun_can_save">ted_can_save</a></h4>
+<p>Функция которая проверяет были ли не сохраненные изменения в тексте. Результат возвращается в регистр <b>al</b>, если изменения были то возвращает 1 иначе 0.</p>
+<p>Пример использования:</p>
+<pre>push eax
+	stdcall [ted_can_save], tedit0
+	cmp al,1
+.........
+pop eax</pre>
+
+<h4><a name="fun_clear">ted_clear</a></h4>
+<p>Очистка текста в окне редактора. Принимает 2 параметра:</p>
+<p>1) структура tedit,</p>
+<p>2) параметр определяет будет ли очистка памяти полной.</p>
+<p>Если 2-й параметр равен 1, то очистка будет полной, при 0 нет. Пользователю нужно вызывать функцию с параметром 1, параметр 0 для внутреннего использования.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_clear], tedit0,1</pre>
+
+<h4><a name="fun_delete">ted_delete</a></h4>
+<p>Деструктор элемента, освобождает память занятую элементом.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_delete], tedit0</pre>
+
+<h4><a name="fun_draw">ted_draw</a></h4>
+<p>Перерисовка всего окна редактора, включая дочерние скроллинги.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_draw], tedit0</pre>
+
+<h4><a name="fun_init">ted_init</a></h4>
+<p>Конструктор элемента, выделяет память необходимую для работы текстового редактора.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_init], tedit0</pre>
+
+<h4><a name="fun_init_scroll_bars">ted_init_scroll_bars</a></h4>
+<p>Устанавливает цвет скроллингов и настраивает их размеры в зависимости от размеров окна. Можно вызывать эту функцию при изменении размеров окна в пользовательской программе. Принимает 2 параметра:</p>
+<p>1) структура tedit,</p>
+<p>2) опции, если 1 то изменять цвета скроллингов если 2 то изменять размер, можно давать комбинацию опций с помощью или.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_init_scroll_bars], tedit0,2</pre>
+
+<h4><a name="fun_init_syntax_file">ted_init_syntax_file</a></h4>
+<p>Функция для загрузки цветов интерфейса и ключевых слов из файла синтаксиса. Принимает 3 параметра:</p>
+<p>1) структура tedit,</p>
+<p>2) структура для работы 70-й функции (до вызова функции заполнения не требует),</p>
+<p>3) строка с путем и именем файла синтаксиса.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_init_syntax_file], tedit0,run_file_70,file_name</pre>
+
+<h4><a name="fun_is_select">ted_is_select</a></h4>
+<p>Определяет есть в окне редактора выделенный текст. Если есть в регистр <b>al</b> записывается 1 иначе 0. Функция необходима для создания панелей инстрементов, в которых в зависимости от выделения будут доступны или заблокированы определенные кнопки (действия). Например кнопку для копирования в буфер можно заблокировать если нет выбранного текста.</p>
+<p>Пример использования:</p>
+<pre>push eax edi
+	mov edi,tedit0
+	call [ted_is_select]
+	cmp al,0
+.........
+pop edi eax</pre>
+
+<h4><a name="fun_key">ted_key</a></h4>
+<p>Функция вызываемая для реакции на клавиатуру. В регистре <b>eax</b> должен быть код нажатой клавиши. Принимает 3 параметра:</p>
+<p>1) структура tedit,</p>
+<p>2) таблица для конвертации scan кодов в ascii,</p>
+<p>3) управляющие символы.</p>
+<p>Пример использования:</p>
+<pre>mcall 66,3 ;66.3 получить состояние управляющих клавиш
+xor esi,esi
+mov ecx,1
+test al,0x03 ;[Shift]
+jz @f
+	mov cl,2
+	or esi,KM_SHIFT
+@@:
+test al,0x0c ;[Ctrl]
+jz @f
+	or esi,KM_CTRL
+@@:
+test al,0x30 ;[Alt]
+jz @f
+mov cl,3
+	or esi,KM_ALT
+@@:
+test al,0x80 ;[NumLock]
+jz @f
+	or esi,KM_NUMLOCK
+@@:
+
+mcall 26,2,,conv_tabl ;26.2 получить раскладку клавиатуры
+mcall 2 ;получаем код нажатой клавиши
+stdcall [ted_key], tedit0, conv_tabl,esi</pre>
+
+<h4><a name="fun_mouse">ted_mouse</a></h4>
+<p>Функция на перемещение или нажатие мыши.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_mouse], tedit0</pre>
+
+<h4><a name="fun_open_file">ted_open_file</a></h4>
+<p>Функция для открытия файла. Принимает 3 параметра:</p>
+<p>1) структура tedit,</p>
+<p>2) структура для работы 70-й функции (до вызова функции заполнения не требует),</p>
+<p>3) строка с путем и именем файла.</p>
+<p>Пример использования:</p>
+<pre>stdcall [ted_open_file], tedit0,run_file_70,[edit1.text]</pre>
+
+<h4><a name="fun_text_add">ted_text_add</a></h4>
+<p>Функция для добавления текста. Принимает 4 параметра:</p>
+<p>1) структура tedit,</p>
+<p>2) указатель на буфер с текстом,</p>
+<p>3) длина текста,</p>
+<p>4) опции вставки.</p>
+<p>Пример использования:</p>
+<pre>mov ebx,ted_opt_ed_change_time+ted_opt_ed_move_cursor
+stdcall [ted_text_add], tedit0,ted_buffer,30,ebx</pre>
+<p><b>ted_opt_ed_change_time</b> - фиксировать изменения документа, что-бы их можно было отменить. Например если нужно сделать несколько изменений текста, которые будут отменяться за один раз, то 1-е изменение идет с этой константой а остальные нет.</p>
+<p><b>ted_opt_ed_move_cursor</b> - константа которая определяет сдвиг курсора после добавления текста.</p>
+
+<h4><a name="fun_text_colored">ted_text_colored</a></h4>
+<p>Функция для разметки текста цветом. Обычно вызывается внутри самой библиотеки, при изменениях текста. В некоторых случаях может понадобиться вызвать принудительно из внешней программы.</p>
+<p>Пример использования:</p>
+<pre>push edi
+	mov edi,tedit0
+	call [ted_text_colored]
+pop edi</pre>
 
 <p>Внутренние функции:</p>
 <p><b>ted_get_text_perv_pos</b> - переход на предыдущий символ в цепи (через указатель 'perv')</p>
@@ -106,8 +281,7 @@ ends</pre>
 <p><b>ted_go_to_pos</b> - переставляет курсор в указанную позицию, если указанная позиция
       находится вне экрана, то также переставляются скролинги (ecx->коорд. x, знак; edx->коорд. y, строка)</p>
 
-
-<h1>Формат файла подсветки *.syn</h1>
+<h1><a name="syn_file">Формат файла подсветки *.syn</a></h1>
 <table>
 <tr><th>Элемент</th><th>Размер (байт)</th></tr>
 <tr><td>Количество цветов текста</td>
@@ -132,7 +306,7 @@ ends</pre>
 </ul>
 
 <hr>
-<p>Документация обновлялась последний раз 29.04.10.</p>
+<p>Документация обновлялась последний раз 03.05.10.</p>
 
 </body>
 </html>

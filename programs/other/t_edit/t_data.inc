@@ -81,6 +81,7 @@ ted_clear dd sz_ted_clear
 ted_delete dd sz_ted_delete
 ted_draw dd sz_ted_draw
 ted_init dd sz_ted_init
+ted_init_scroll_bars dd sz_ted_init_scroll_bars
 ted_init_syntax_file dd sz_ted_init_syntax_file
 ted_is_select dd sz_ted_is_select
 ted_key dd sz_ted_key
@@ -154,6 +155,7 @@ sz_ted_clear			db 'ted_clear',0
 sz_ted_delete			db 'ted_delete',0
 sz_ted_draw				db 'ted_draw',0
 sz_ted_init				db 'ted_init',0
+sz_ted_init_scroll_bars	db 'ted_init_scroll_bars',0
 sz_ted_init_syntax_file db 'ted_init_syntax_file',0
 sz_ted_is_select		db 'ted_is_select',0
 sz_ted_key				db 'ted_key',0

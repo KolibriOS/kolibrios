@@ -261,8 +261,6 @@ proc draw_panel_syntax
 endp
 
 MIN_M_WND_H equ 100
-MIN_W_SCRL_ARE equ 3
-MIN_H_SCRL_ARE equ 3
 align 4
 proc EvSize, edit:dword
   pushad
@@ -286,46 +284,10 @@ proc EvSize, edit:dword
   mov ax,word[ebx+sb_offs_size_y]
   and eax,0xffff
   sub ted_wnd_h,eax	      ;отнимаем высоту гориз. скроллинга
-    mov eax,ted_wnd_h	  ;eax = высота окна - высота гориз. скроллинга
-    mov word[ebx+sb_offs_start_y],ax ;передвигаем гориз. скроллинг
   mov eax,ted_wnd_t
   sub ted_wnd_h,eax	      ;отнимаем отступ сверху
 
-  mov eax,ted_wnd_w
-  mov ecx,ted_wnd_l
-  add eax,ecx
-  mov word[esi+sb_offs_start_x],ax   ;передвигаем верт. скроллинг
-  mov eax,ted_wnd_h
-  mov word[esi+sb_offs_size_y],ax    ;задаем высоту верт. скроллинга
-
-  add ecx,ted_rec_l	;ecx=ted_wnd_l+ted_rec_l
-  mov word[ebx+sb_offs_start_x],cx ;сдвигаем гориз. скроллинг по размеру левого отступа для цифр
-  mov eax,ted_wnd_w
-  sub eax,ted_rec_l
-  mov word[ebx+sb_offs_size_x],ax ;задаем ширину гориз. скроллинга
-
-  mov eax,ted_wnd_h ;calculate lines in page
-  sub eax,ted_rec_t
-  xor edx,edx
-  mov ecx,ted_rec_h
-  div ecx
-  cmp eax,MIN_W_SCRL_ARE
-  jg @f
-    mov eax,MIN_W_SCRL_ARE
-  @@:
-  mov dword[esi+sb_offs_cur_area],eax
-
-  mov eax,ted_wnd_w ;calculate cols in page
-  sub eax,ted_rec_l
-  xor edx,edx
-  mov ecx,ted_rec_w
-  div ecx
-  cmp eax,MIN_H_SCRL_ARE
-  jg @f
-    mov eax,MIN_H_SCRL_ARE
-  @@:
-  dec eax ; ???
-  mov dword[ebx+sb_offs_cur_area],eax
+  stdcall [ted_init_scroll_bars], tedit0,2
 
   mov eax,ted_wnd_t
   mov edi,dword tree1

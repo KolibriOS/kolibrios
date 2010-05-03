@@ -36,16 +36,6 @@ align 4
 start:
   mcall 48,3,sc,sizeof.system_colors
 
-  mov eax,[sc.work]
-  mov [wScr.bckg_col],eax
-  mov [hScr.bckg_col],eax
-  mov eax,[sc.work_button]
-  mov [wScr.frnt_col],eax
-  mov [hScr.frnt_col],eax
-  mov eax,[sc.work_button_text]
-  mov [wScr.line_col],eax
-  mov [hScr.line_col],eax
-
   mcall 68,11
   or eax,eax
   jz button.exit
@@ -343,7 +333,7 @@ key:
 
   mcall 26,2,,conv_tabl ;26.2 получить раскладку клавиатуры
   mcall 2 ;получаем код нажатой клавиши
-  ;stdcall [tl_key], tree1
+  stdcall [tl_key], tree1
 
   test word [edit1.flags],10b;ed_focus ; если не в фокусе, выходим
   je @f

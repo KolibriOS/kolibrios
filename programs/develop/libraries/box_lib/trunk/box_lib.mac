@@ -340,6 +340,9 @@ sb_offs_start_y  equ  6
 sb_offs_max_area equ 16
 sb_offs_cur_area equ 20
 sb_offs_position equ 24
+sb_offs_bckg_col equ 28
+sb_offs_frnt_col equ 32
+sb_offs_line_col equ 36
 sb_offs_redraw   equ 40
 sb_offs_delta2   equ 46
 sb_offs_all_redraw equ 80
