@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 03.05.2010 IgorA
+; файл последний раз изменялся 05.05.2010 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -178,10 +178,12 @@ endp
 MIN_W_SCRL_ARE equ 3 ;минимальная отображаемая область для верт. скроллинга
 MIN_H_SCRL_ARE equ 3 ;минимальная отображаемая область для гориз. скроллинга
 ;input:
-; opt = 1 - менять цвет скроллингов, 2 - менять внешние размеры
+; opt = 1 - менять цвет скроллингов, 2 - изменились размеры окна,
+;  4 - изменились размеры документа
 align 4
 proc ted_init_scroll_bars, edit:dword, opt:dword
 	pushad
+	mov edi,dword[edit]
 	mov esi,ted_scr_w
 	mov ebx,ted_scr_h
 	bt dword[opt],0
@@ -196,7 +198,16 @@ proc ted_init_scroll_bars, edit:dword, opt:dword
 		mov dword[esi+sb_offs_line_col],ecx
 		mov dword[ebx+sb_offs_line_col],ecx
 	@@:
-	bt dword[opt],1
+	bt dword[opt],2 ; изменились размеры документа ?
+	jae .doc_resize
+		call ted_get_num_lines
+		cmp eax,100
+		jge @f
+			mov eax,100
+		@@:
+		mov dword[esi+sb_offs_max_area],eax
+	.doc_resize:
+	bt dword[opt],1 ; изменились размеры окна ?
 	jae .no_size
 			mov edx,ted_wnd_l
 			add edx,ted_rec_l
