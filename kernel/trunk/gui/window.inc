@@ -856,11 +856,12 @@ waredraw: ;////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? Activate window, redrawing if necessary
 ;------------------------------------------------------------------------------
-        push    -1
+;        push    -1
         mov     eax, [TASK_COUNT]
         lea     eax, [WIN_POS + eax * 2]
         cmp     eax, esi
-        pop     eax
+;        pop     eax
+	or	eax,-1
         je      .exit
 
         ; is it overlapped by another window now?
@@ -901,9 +902,10 @@ waredraw: ;////////////////////////////////////////////////////////////////////
   .do_not_draw:
         ; no it's not, just activate the window
         call    window._.window_activate
-        mov     byte[MOUSE_BACKGROUND], 0
-        mov     byte[DONT_DRAW_MOUSE], 0
         xor     eax, eax
+        mov     byte[MOUSE_BACKGROUND], al
+        mov     byte[DONT_DRAW_MOUSE], al
+
 
   .exit:
         mov     byte[MOUSE_DOWN], 0
