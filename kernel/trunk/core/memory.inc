@@ -14,6 +14,11 @@ proc alloc_page
            pushfd
            cli
            push ebx
+;//-
+	   cmp [pg_data.pages_free], 1
+	   jle .out_of_memory
+;//-
+
            mov ebx, [page_start]
            mov ecx, [page_end]
 .l1:
@@ -27,15 +32,27 @@ proc alloc_page
            xor eax,eax
            ret
 .found:
+;//-              
+	   dec [pg_data.pages_free]
+	   jz .out_of_memory
+;//-
            btr [ebx], eax
            mov [page_start],ebx
            sub ebx, sys_pgmap
            lea eax, [eax+ebx*8]
            shl eax, 12
-           dec [pg_data.pages_free]
+;//-       dec [pg_data.pages_free]
            pop ebx
            popfd
            ret
+;//-
+.out_of_memory:
+ 	   mov [pg_data.pages_free], 1
+	   xor eax, eax
+	   pop ebx
+	   popfd
+	   ret
+;//-
 endp
 
 align 4
@@ -48,9 +65,14 @@ proc alloc_pages stdcall, count:dword
            add eax, 7
            shr eax, 3
            mov [count], eax
-           cmp eax, [pg_data.pages_free]
-           ja .fail
-
+;//-
+           mov ebx, [pg_data.pages_free]
+           sub  ebx, 9
+           js .out_of_memory
+           shr   ebx, 3
+           cmp eax, ebx
+           jg .out_of_memory
+;//-
            mov ecx, [page_start]
            mov ebx, [page_end]
 .find:
@@ -64,6 +86,7 @@ proc alloc_pages stdcall, count:dword
            inc ecx
            cmp ecx,ebx
            jb .match
+.out_of_memory:
 .fail:
            xor eax, eax
            pop edi
@@ -479,6 +502,15 @@ proc new_mem_resize stdcall, new_size:dword
            cmp edi, esi
            jb @B
 .grow:
+;//-
+	   pop edi
+	   push edi
+	   mov esi, [pg_data.pages_free]
+	   sub esi, 1
+	   shr edi, 12
+	   cmp esi, edi
+	   jle .out_of_memory
+;//-
            pop edi
            pop esi
 @@:
@@ -500,7 +532,10 @@ proc new_mem_resize stdcall, new_size:dword
            jb  @B
 
            jmp .update_size
+;//-
 .exit_pop:
+.out_of_memory:
+;//-
            pop edi
            pop esi
 .exit:
