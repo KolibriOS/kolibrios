@@ -464,7 +464,8 @@ pci_mmio_map:
 @@:
     pop     ecx 	; ecx = block size, bytes (expanded to whole page)
     mov     ebx, ecx	; user_alloc destroys eax, ecx, edx, but saves ebx
-    push    eax 	; store MMIO physical address + keep 2DWords in the stack
+    and     eax, 0xFFFFFFF0
+    push    eax 	      ; store MMIO physical address + keep 2DWords in the stack
     stdcall user_alloc, ecx
     or	    eax, eax
     jnz     mmio_map_over
