@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 05.05.2010 IgorA
+; файл последний раз изменялся 17.05.2010 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -54,7 +54,7 @@ struct symbol
 ends
 ;------------------------------------------------------------------------------
 
-ted_symbol_tab db 26
+ted_symbol_tab db 26 ;ascii код стрелки вправо, используется для рисования табуляции в режиме показа невидимых символов
 
 if lang eq ru
 
@@ -80,7 +80,7 @@ txtBuf db 'Buffer:',0
 
 end if
 
-;------
+;EvChar - таблица для фильтрования добавляемых символов, что-бы не попали лишние знаки
 align 4
 EvChar db 0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -98,7 +98,7 @@ EvChar db 0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-
+;EvUpper - таблица для преобразования символов к верхнему регистру
 EvUpper db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -113,8 +113,9 @@ EvUpper db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    db 144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159
+    db 0,240,0,242,0,244,0,246,0,0,0,0,0,0,0,0
+;EvLover - таблица для преобразования символов к нижнему регистру
 EvLover db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -124,13 +125,13 @@ EvLover db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175
+    db 224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    db 241,0,243,0,245,0,247,0,0,0,0,0,0,0,0,0
 conv_table dd 0
 
 
@@ -252,16 +253,12 @@ endp
 
 align 4
 proc ted_delete, edit:dword
-  push ecx edi
-  mov edi,dword[edit]
-
-  mov ecx,ted_tex
-  call mem_Free
-  mov ecx,ted_arr_key_pos ;ted_syntax_file
-  call mem_Free
-
-  pop edi ecx
-  ret
+	push edi
+	mov edi,dword[edit]
+	stdcall mem_Free,ted_tex
+	stdcall mem_Free,ted_arr_key_pos ;ted_syntax_file
+	pop edi
+	ret
 endp
 
 
@@ -369,19 +366,19 @@ proc ted_key, edit:dword, table:dword, control:dword
 		call ted_draw_main_cursor
 		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
 	@@:
-  cmp ah,80 ;177 ;Down
-  jne @f
-    call ted_draw_cursor_sumb
-    call ted_cur_move_down
-    cmp dl,8
-    jne .no_red_1
-      call ted_scroll_set_redraw
-      stdcall ted_draw,edi
-      jmp @f
-    .no_red_1:
-    call ted_draw_main_cursor
-    mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
-  @@:
+	cmp ah,80 ;177 ;Down
+	jne @f
+		call ted_draw_cursor_sumb
+		call ted_cur_move_down
+		cmp dl,8
+		jne .no_red_1
+			call ted_scroll_set_redraw
+			stdcall ted_draw,edi
+			jmp @f
+		.no_red_1:
+		call ted_draw_main_cursor
+		mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+	@@:
   cmp ah,75 ;176 ;Left
   jne @f
     call ted_draw_cursor_sumb
@@ -681,48 +678,52 @@ endp
 ; cl_al_mem = 1 - clear all memory
 align 4
 proc ted_clear, edit:dword, cl_al_mem:dword
-  push ecx edi
-  mov edi,dword[edit]
+	push ecx edi
+	mov edi,dword[edit]
 
-  mov ted_cur_x,0
-  mov ted_cur_y,0
-  mov ted_tim_ch,0
-  mov ted_tim_ls,0
-  mov ted_tim_co,0
-  mov ted_tim_undo,0
-  mov ted_help_id,-1
+	mov ted_cur_x,0
+	mov ted_cur_y,0
+	mov ted_tim_ch,0
+	mov ted_tim_ls,0
+	mov ted_tim_co,0
+	mov ted_tim_undo,0
+	mov ted_help_id,-1
+	mov ecx,sizeof.symbol
+	shl ecx,1
+	add ecx,ted_tex
+	mov ted_ptr_free_symb,ecx
 
-  mov ecx,ted_scr_w
-  mov dword[ecx+sb_offs_position],0
-  mov dword[ecx+sb_offs_max_area],100 ;число строк видимых в новом документе
-  mov dword[ecx+sb_offs_redraw],1
-  mov ecx,ted_scr_h
-  mov dword[ecx+sb_offs_position],0
-  mov dword[ecx+sb_offs_max_area],100 ;число символов видимых в новом документе
+	mov ecx,ted_scr_w
+	mov dword[ecx+sb_offs_position],0
+	mov dword[ecx+sb_offs_max_area],100 ;число строк видимых в новом документе
+	mov dword[ecx+sb_offs_redraw],1
+	mov ecx,ted_scr_h
+	mov dword[ecx+sb_offs_position],0
+	mov dword[ecx+sb_offs_max_area],100 ;число символов видимых в новом документе
 
-  mov ted_sel_x0,0
-  mov ted_sel_y0,0
-  mov ted_sel_x1,0
-  mov ted_sel_y1,0
+	mov ted_sel_x0,0
+	mov ted_sel_y0,0
+	mov ted_sel_x1,0
+	mov ted_sel_y1,0
 
-  cmp dword[cl_al_mem],0
-  je .exit
+	cmp dword[cl_al_mem],0
+	je .exit
 
-  push edx
-  mov ecx,sizeof.symbol
-  imul ecx,ted_max_chars
-  mov edx,ted_tex
-  @@:
-    mov byte [edx],0
-    inc edx
-  loop @b
-  mov edx,ted_tex
-  mov dword [edx+6],1
-  pop edx
+	push edx
+	mov ecx,sizeof.symbol
+	imul ecx,ted_max_chars
+	mov edx,ted_tex
+	@@:
+		mov byte [edx],0
+		inc edx
+	loop @b
+	mov edx,ted_tex
+	mov dword [edx+6],1
+	pop edx
 
-  .exit:
-  pop edi ecx
-  ret
+	.exit:
+	pop edi ecx
+	ret
 endp
 
 
@@ -1108,81 +1109,114 @@ proc ted_text_add, edit:dword, text:dword, t_len:dword, add_opt:dword
 		pop eax
 	@@:
 
-  mov edx,sizeof.symbol
-  shl edx,1
-  add edx,ted_tex
-  @@: ;for(i=2;i<texMax;i++)
-    cmp dword [edx+10],0 ;if(!tex[i].tc && !tex[i].td)
-    jne .u1f
-    cmp dword [edx+14],0
-    jne .u1f
-      test dword[add_opt],ted_opt_ed_change_time ;if(n_tim) ted_tim_ch++;
-      jz .no_tim
-	inc ted_tim_ch
-      .no_tim:
-      test dword[add_opt],ted_opt_ed_move_cursor
-      jz .no_cur_mov
-      cmp dword[new_lin],0 ;если есть добавочные строки, то курсор еще не двигаем
-      jg .no_cur_mov
-      cmp dword[new_spc],0 ;если нет добавочных пробелов, то курсор тоже не двигаем
-      jg .no_cur_mov
-	inc ted_cur_x ;move cursor
-	;call ted_go_to_pos
-	cmp byte [esi],13
-	jne .no_cur_mov
-	  mov ted_cur_x,0
-	  inc ted_cur_y
-      .no_cur_mov:
+	mov edx,ted_ptr_free_symb
+	.beg_cycle: ;for(i=...;i<ted_max_chars;i++)
+		cmp dword [edx+10],0 ;if(!tex[i].tc && !tex[i].td)
+		jne .u1f
+		cmp dword [edx+14],0
+		jne .u1f
+			test dword[add_opt],ted_opt_ed_change_time ;if(n_tim) ted_tim_ch++;
+			jz .no_tim
+				inc ted_tim_ch
+			.no_tim:
+			test dword[add_opt],ted_opt_ed_move_cursor
+			jz .no_cur_mov
+			cmp dword[new_lin],0 ;если есть добавочные строки, то курсор еще не двигаем
+			jg .no_cur_mov
+			cmp dword[new_spc],0 ;если нет добавочных пробелов, то курсор тоже не двигаем
+			jg .no_cur_mov
+				inc ted_cur_x ;move cursor
+				;call ted_go_to_pos
+				cmp byte [esi],13
+				jne .no_cur_mov
+					mov ted_cur_x,0
+					inc ted_cur_y
+			.no_cur_mov:
 
-      mov ecx,ted_opt_ed_change_time
-	  not ecx
-	  and dword[add_opt],ecx ;n_tim=false;
+			mov ecx,ted_opt_ed_change_time
+			not ecx
+			and dword[add_opt],ecx ;n_tim=false;
 
-      mov cl,byte [esi] ;tex[i].c=ta[ns];
-      mov byte [edx],cl
-      m2m dword [edx+10],ted_tim_ch ;tex[i].tc=ted_tim_ch;
-      mov [edx+2],eax ;tex[i].perv=po_t;
+			mov cl,byte [esi] ;tex[i].c=ta[ns];
+			mov byte [edx],cl
+			m2m dword [edx+10],ted_tim_ch ;tex[i].tc=ted_tim_ch;
+			mov [edx+2],eax ;tex[i].perv=po_t;
 
-      mov ecx,eax
-      imul ecx,sizeof.symbol
-      add ecx,ted_tex ; *** ecx = tex[po_t] ***
-      add ecx,6   ; *** ecx = tex[po_t].next ***
-      m2m dword [edx+6],dword [ecx] ;tex[i].next=tex[po_t].next;
+			mov ecx,eax
+			imul ecx,sizeof.symbol
+			add ecx,ted_tex ; *** ecx = tex[po_t] ***
+			add ecx,6   ; *** ecx = tex[po_t].next ***
+			m2m dword [edx+6],dword [ecx] ;tex[i].next=tex[po_t].next;
 
-      call ted_get_text_arr_index ;*** eax = i ***
-      cmp eax,ted_max_chars
-      jge @f
-      mov [ecx],eax ;tex[po_t].next=i; // ссылки перенаправляем
-      mov ecx,[edx+6] ; *** ecx = tex[i].next ***
-      imul ecx,sizeof.symbol
-      add ecx,ted_tex ; *** ecx = tex[tex[i].next] ***
-      mov [ecx+2],eax ;tex[tex[i].next].perv=i;
+			call ted_get_text_arr_index ;*** eax = i ***
+			mov [ecx],eax ;tex[po_t].next=i; // ссылки перенаправляем
+			mov ecx,[edx+6] ; *** ecx = tex[i].next ***
+			imul ecx,sizeof.symbol
+			add ecx,ted_tex ; *** ecx = tex[tex[i].next] ***
+			mov [ecx+2],eax ;tex[tex[i].next].perv=i;
 
-      cmp dword[new_lin],0 ;add lines or text
-      jle .spc_add
-	dec dword[new_lin]
-	mov byte [edx],13
-	jmp .u1f
-      .spc_add:
-      cmp dword[new_spc],0 ;add spaces or text
-      jle .tex_add
-	dec dword[new_spc]
-	mov byte [edx],' '
-	jmp .u1f
-      .tex_add:
-      inc esi
-      dec ebx
-    .u1f:
-    add edx,sizeof.symbol
-    cmp edx,ted_tex_end
-    jge @f ;out of memory
-    cmp ebx,0
-    jne @b
-  @@:
+			cmp dword[new_lin],0 ;add lines or text
+			jle .spc_add
+				dec dword[new_lin]
+				mov byte [edx],13
+				jmp .u1f
+			.spc_add:
+			cmp dword[new_spc],0 ;add spaces or text
+			jle .tex_add
+				dec dword[new_spc]
+				mov byte [edx],' '
+				jmp .u1f
+			.tex_add:
+			inc esi
+			dec ebx
+		.u1f:
+		add edx,sizeof.symbol
+		cmp edx,ted_tex_end
+		jge @f ;out of memory
+		cmp ebx,0
+		jne .beg_cycle
+		mov ted_ptr_free_symb,edx ;меняем указатель на свободный символ, для более быстрого поиска памяти
+		jmp .add_all
+	@@:
+	cmp ted_increase_size,0
+	je .add_all
+		call ted_memory_increase
+		cmp ebx,0
+		jne .beg_cycle
+	.add_all: ;все символы добавлены
 
-  call ted_text_colored
-  popad
-  ret
+	call ted_text_colored
+	popad
+	ret
+endp
+
+;input:
+;  edx = pointer to sumbol, when insert
+;  edi = pointer to tedit struct
+;output:
+;  edx = new pointer to sumbol, when insert
+align 4
+proc ted_memory_increase
+	cmp ted_increase_size,0
+	je @f
+		push eax ebx ecx
+		mov ecx,ted_increase_size
+		add ecx,ted_max_chars
+		mov ted_max_chars,ecx
+		imul ecx,sizeof.symbol
+		stdcall mem_ReAlloc, ted_tex,ecx
+		mov ebx,ted_tex
+		mov ted_tex,eax
+		mov ted_tex_1,eax
+		add ted_tex_1,sizeof.symbol
+			sub edx,ebx
+			add edx,eax
+			mov ted_ptr_free_symb,edx
+		add eax,ecx
+		mov ted_tex_end,eax
+		pop ecx ebx eax
+	@@:
+	ret
 endp
 
 ;input:
@@ -1269,8 +1303,7 @@ proc ted_convert_sel_text
 
     inc ted_tim_ch
     mov edx,eax ;i=p0;
-    mov ecx,2
-    ConvertIndexToPointer ecx
+    mov ecx,ted_ptr_free_symb
     @@:
       mov esi,[edx]
       and esi,0xff
@@ -1926,6 +1959,9 @@ proc ted_set_undo
       add ebx,ted_tex;.perv
       m2m dword [ebx+2],dword [edx+2] ;tex[tex[i].next].perv=tex[i].perv;
 
+cmp ted_ptr_free_symb,edx
+jle .no_u1
+  mov ted_ptr_free_symb,edx ;меняем указатель на свободный символ, для более быстрого поиска памяти
     .no_u1:
 
     ;else if(tex[i].td>ted_tim_ch) tex[i].td=0; // если удаление символа было отменено
@@ -3362,14 +3398,14 @@ endp
 ; ah = symbol
 align 4
 proc KeyConvertToASCII, table:dword
-  push ebx
-  mov ebx,dword[table] ;convert scan to ascii
-  ror ax,8
-  xor ah,ah
-  add bx,ax
-  mov ah,byte[ebx]
-  pop ebx
-  ret
+	push ebx
+	mov ebx,dword[table] ;convert scan to ascii
+	ror ax,8
+	xor ah,ah
+	add bx,ax ;? ebx,eax
+	mov ah,byte[ebx]
+	pop ebx
+	ret
 endp
 
 align 4
@@ -3963,7 +3999,7 @@ call ted_fun_save_err
   @@:
 
   pop ecx ;записываем указатель на выделенную память
-  call mem_Free
+  stdcall mem_Free,ecx
   .no_save:
   popad
   ret

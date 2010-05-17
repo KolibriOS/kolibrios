@@ -48,19 +48,19 @@ tile_delta_y	equ  byte[edi+31] ;сдвиг тайла относительно курсора по оси y
 
 ; *** порядок вызова функций при загрузке тайлов ***
 ;load_tile
-;	get_tile_path
-;	load_new_tile (текущая картинка)
-;	get_tile_path
-;	load_new_tile (нижняя картинка)
-;	get_tile_path
-;	load_new_tile (нижняя картинка)
-;	get_tile_path
-;	load_new_tile (нижняя картинка)
-;	get_tile_path
-;	load_new_tile (нижняя картинка)
-;	get_parent_tiles (циклический просмотр родительских тайлов)
-;		get_tile_path
-;		load_new_tile (верхняя картинка)
+;       get_tile_path
+;       load_new_tile (текущая картинка)
+;       get_tile_path
+;       load_new_tile (нижняя картинка)
+;       get_tile_path
+;       load_new_tile (нижняя картинка)
+;       get_tile_path
+;       load_new_tile (нижняя картинка)
+;       get_tile_path
+;       load_new_tile (нижняя картинка)
+;       get_parent_tiles (циклический просмотр родительских тайлов)
+;               get_tile_path
+;               load_new_tile (верхняя картинка)
 
 
 ;???
@@ -479,13 +479,13 @@ but_MetSave: ;сохранение файла с метками
     inc ecx ;для записи в файл завершающего нуля
 
     mov eax,70
-    m2m [run_file_70.param4], [bmp_icon]
-    mov [run_file_70.func_n], 2
-    mov [run_file_70.param1], 0
-    mov [run_file_70.param2], 0
-    mov [run_file_70.param3], ecx
-    mov [run_file_70.rezerv], 0
-    mov [run_file_70.name], file_name
+    m2m [run_file_70.Buffer], [bmp_icon]
+    mov [run_file_70.Function], 2
+    mov [run_file_70.Position], 0
+    mov [run_file_70.Flags], 0
+    mov [run_file_70.Count], ecx
+    mov byte[run_file_70+20], 0
+    mov [run_file_70.FileName], file_name
     mov ebx,run_file_70
     int 0x40
   pop edi ecx ebx eax
@@ -500,13 +500,13 @@ but_MetLoad: ;считываем файл с метками
     mov byte[met_fr_opn],1
     copy_path fn_metki,sys_path,file_name,0x0
     mov eax,70 ;load icon file
-    mov [run_file_70.func_n], 0
-    mov [run_file_70.param1], 0
-    mov [run_file_70.param2], 0
-    mov [run_file_70.param3], TREE_ICON_SYS16_BMP_SIZE
-    mov [run_file_70.rezerv], 0
-    mov [run_file_70.name], file_name
-    m2m [run_file_70.param4], [bmp_icon]
+    mov [run_file_70.Function], 0
+    mov [run_file_70.Position], 0
+    mov [run_file_70.Flags], 0
+    mov [run_file_70.Count], TREE_ICON_SYS16_BMP_SIZE
+    mov byte[run_file_70+20], 0
+    mov [run_file_70.FileName], file_name
+    m2m [run_file_70.Buffer], [bmp_icon]
     mov eax,70
     mov ebx,run_file_70
     int 0x40
@@ -801,13 +801,13 @@ proc load_new_tile, tile:dword
   pushad
 
   mov eax,70 ;load icon file
-  mov [run_file_70.func_n], 0
-  mov [run_file_70.param1], 0
-  mov [run_file_70.param2], 0
-  mov [run_file_70.param3], RGB_TILE_SIZE+300 ;+54
-  m2m [run_file_70.param4], [bmp_icon]
-  mov [run_file_70.rezerv], 0
-  mov [run_file_70.name], file_name
+  mov [run_file_70.Function], 0
+  mov [run_file_70.Position], 0
+  mov [run_file_70.Flags], 0
+  mov [run_file_70.Count], RGB_TILE_SIZE+300 ;+54
+  m2m [run_file_70.Buffer], [bmp_icon]
+  mov byte[run_file_70+20], 0
+  mov [run_file_70.FileName], file_name
   mov ebx,run_file_70
   int 0x40
   mov edi,[tile]

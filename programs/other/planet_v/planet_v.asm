@@ -29,14 +29,14 @@ include 'pl_import.inc'
 
   @use_library
 
-struct f70
-  func_n dd ?
-  param1 dd ?
-  param2 dd ?
-  param3 dd ?
-  param4 dd ?
-  rezerv db ?
-  name dd ?
+struct FileInfoBlock
+	Function dd ?
+	Position dd ?
+	Flags	 dd ?
+	Count	 dd ?
+	Buffer	 dd ?
+		db ?
+	FileName dd ?
 ends
 
 fn_metki db 'pl_metki.lst',0
@@ -126,13 +126,13 @@ start:
 
   copy_path fn_icon1,sys_path,file_name,0x0
   mov eax,70 ;load icon file
-  mov [run_file_70.func_n], 0
-  mov [run_file_70.param1], 0
-  mov [run_file_70.param2], 0
-  mov [run_file_70.param3], TREE_ICON_SYS16_BMP_SIZE
-  m2m [run_file_70.param4], [tree_sys_icon]
-  mov [run_file_70.rezerv], 0
-  mov [run_file_70.name], file_name
+  mov [run_file_70.Function], 0
+  mov [run_file_70.Position], 0
+  mov [run_file_70.Flags], 0
+  mov [run_file_70.Count], TREE_ICON_SYS16_BMP_SIZE
+  m2m [run_file_70.Buffer], [tree_sys_icon]
+  mov byte[run_file_70+20], 0
+  mov [run_file_70.FileName], file_name
   mov ebx,run_file_70
   int 0x40
   cmp ebx,0xffffffff
@@ -149,8 +149,8 @@ start:
 
   copy_path fn_icon2,sys_path,file_name,0x0
   mov eax,70 ;load icon file
-  mov [run_file_70.param3], TREE_ICON_NOD16_BMP_SIZE
-  m2m [run_file_70.param4], [tree_nod_icon]
+  mov [run_file_70.Count], TREE_ICON_NOD16_BMP_SIZE
+  m2m [run_file_70.Buffer], [tree_nod_icon]
   mov ebx,run_file_70
   int 0x40
   cmp ebx,0xffffffff
@@ -912,7 +912,7 @@ tree_nod_icon dd 0
 bmp_icon   dd 0 ;память для загрузки изображения
 data_icon  dd 0 ;память для преобразования картинки функциями libimg
 
-run_file_70 f70
+run_file_70 FileInfoBlock
 
 
 txt_tile_path db 'tile path',0

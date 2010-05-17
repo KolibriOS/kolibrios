@@ -1,11 +1,11 @@
-struct f70
-  func_n dd ?
-  param1 dd ?
-  param2 dd ?
-  param3 dd ?
-  param4 dd ?
-  rezerv db ?
-  name dd ?
+struct FileInfoBlock
+	Function dd ?
+	Position dd ?
+	Flags	 dd ?
+	Count	 dd ?
+	Buffer	 dd ?
+		db ?
+	FileName dd ?
 ends
 
 struct TexColViv
@@ -26,12 +26,12 @@ struct symbol
 ends
 
 
-hed db 'TextEditor 03.05.10',0 ;подпись окна
+hed db 'TextEditor 17.05.10',0 ;подпись окна
 sc system_colors
 
 fn_icon db 'te_icon.bmp',0
 bmp_icon dd 0
-run_file_70 f70 	  
+run_file_70 FileInfoBlock 	  
 
 
 ;input:

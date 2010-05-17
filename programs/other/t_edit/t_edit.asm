@@ -77,13 +77,13 @@ load_libraries l_libs_start,load_lib_end
   copy_path fn_icon,sys_path,file_name,0x0
 
   mov eax,70 ;load icon file
-  mov [run_file_70.func_n], 0
-  mov [run_file_70.param1], 54
-  mov [run_file_70.param2], 0
-  mov [run_file_70.param3], 1200*18
-  m2m [run_file_70.param4], [bmp_icon]
-  mov [run_file_70.rezerv], 0
-  mov [run_file_70.name], file_name
+  mov [run_file_70.Function], 0
+  mov [run_file_70.Position], 54
+  mov [run_file_70.Flags], 0
+  mov [run_file_70.Count], 1200*18
+  m2m [run_file_70.Buffer], [bmp_icon]
+  mov byte[run_file_70+20], 0
+  mov [run_file_70.FileName], file_name
   mov ebx,run_file_70
   int 0x40
 
@@ -101,13 +101,13 @@ load_libraries l_libs_start,load_lib_end
   call mem_Alloc
   mov dword[tree1.data_img_sys],eax
 
-  ;mov [run_file_70.func_n], 0
-  ;mov [run_file_70.param1], 54
-  ;mov [run_file_70.param2], 0
-  mov [run_file_70.param3], 3*256*13
-  mov [run_file_70.param4], eax
-  ;mov [run_file_70.rezerv], 0
-  ;mov [run_file_70.name], file_name
+  ;mov [run_file_70.Function], 0
+  ;mov [run_file_70.Position], 54
+  ;mov [run_file_70.Flags], 0
+  mov [run_file_70.Count], 3*256*13
+  mov [run_file_70.Buffer], eax
+  ;mov byte[run_file_70+20], 0
+  ;mov [run_file_70.FileName], file_name
 
   mov eax,70 ;load icon file
   mov ebx,run_file_70
@@ -124,13 +124,13 @@ load_libraries l_libs_start,load_lib_end
   call mem_Alloc
   mov dword[tree1.data_img],eax
 
-;  mov [run_file_70.func_n], 0
-;  mov [run_file_70.param1], 54
-;  mov [run_file_70.param2], 0
-  mov [run_file_70.param3], 3*256*2
-  mov [run_file_70.param4], eax
-;  mov [run_file_70.rezerv], 0
-;  mov [run_file_70.name], file_name
+;  mov [run_file_70.Function], 0
+;  mov [run_file_70.Position], 54
+;  mov [run_file_70.Flags], 0
+  mov [run_file_70.Count], 3*256*2
+  mov [run_file_70.Buffer], eax
+;  mov byte[run_file_70+20], 0
+;  mov [run_file_70.FileName], file_name
 
   mov eax,70 ;load icon file
   mov ebx,run_file_70

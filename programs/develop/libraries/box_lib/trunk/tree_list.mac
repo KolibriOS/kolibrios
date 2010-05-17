@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 29.04.2010 IgorA
+; файл последний раз изменялся 15.05.2010 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -17,36 +17,6 @@ sizeof.TreeList equ 20
 
 macro use_tree_list
 {
-;-----------------------------------------------------------------------------
-;функция для выделения памяти
-;input:
-; ecx = size data
-;otput:
-; eax = pointer to memory
-align 4
-mem_Alloc:
-  push ebx
-  mov eax,68
-  mov ebx,12
-  int 0x40
-  pop ebx
-  ret
-;-----------------------------------------------------------------------------
-;функция для освобождения памяти
-;input:
-; ecx = pointer to memory
-align 4
-mem_Free:
-  push eax ebx
-  cmp ecx,0
-  jz @f
-    mov eax,68
-    mov ebx,13
-    int 0x40
-  @@:
-  pop ebx eax
-  ret
-
 align 4
 tl_data_init: ;выделние памяти для структур списка и основной информации (конструктор)
   push ebp
@@ -95,29 +65,23 @@ tl_data_init: ;выделние памяти для структур списка и основной информации (констр
   ret 4
 
 align 4
-tl_data_clear: ;очистка памяти элемента (деструктор)
-  push ebp
-  mov ebp,esp
-    push ecx edi
-    mov edi,dword[ebp+8]
-    cmp tl_data_img,0
-    je @f
-      mov ecx,tl_data_img
-      call mem_Free ;чистка системных иконок
-    @@:
-    cmp tl_data_img_sys,0
-    je @f
-      mov ecx,tl_data_img_sys
-      call mem_Free ;чистка системных иконок
-    @@:
-    mov ecx,dword[edi]
-    call mem_Free
+proc tl_data_clear, tlist:dword ;очистка памяти элемента (деструктор)
+	push edi
+	mov edi,dword[tlist]
+	cmp tl_data_img,0
+	je @f
+		stdcall mem_Free,tl_data_img ;чистка системных иконок
+	@@:
+	cmp tl_data_img_sys,0
+	je @f
+		stdcall mem_Free,tl_data_img_sys ;чистка системных иконок
+	@@:
+	stdcall mem_Free,dword[edi]
 
-    mov ecx,tl_data_nodes
-    call mem_Free
-    pop edi ecx
-  pop ebp
-  ret 4
+	stdcall mem_Free,tl_data_nodes
+	pop edi
+	ret
+endp
 
 align 4
 tl_info_clear: ;очистка списка (информации)
