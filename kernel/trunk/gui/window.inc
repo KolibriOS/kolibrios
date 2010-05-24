@@ -856,12 +856,11 @@ waredraw: ;////////////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? Activate window, redrawing if necessary
 ;------------------------------------------------------------------------------
-;        push    -1
+        push    -1
         mov     eax, [TASK_COUNT]
         lea     eax, [WIN_POS + eax * 2]
         cmp     eax, esi
-;        pop     eax
-	or	eax,-1
+        pop     eax
         je      .exit
 
         ; is it overlapped by another window now?
