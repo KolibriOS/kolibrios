@@ -335,7 +335,7 @@ communication_area_name:
 open_dialog_name:
 	db 'opendial',0
 communication_area_default_path:
-	db '/rd/1',0
+	db '/rd/1/File managers/',0
 
 Filter:
 dd Filter.end - Filter.1
@@ -542,7 +542,10 @@ msgbox_8:
 msgbox_9:
   db 3,0
   db 'Внимание',0
-  db 'Не открылся ',39,'диалог открытия файла.',39,0
+  db 'Не открылся ',39,'диалог открытия файла',39,'.',13
+  .fdp:
+  rb 100
+  db 0
   db 'Закрыть',0
   db 0
 
@@ -647,7 +650,10 @@ msgbox_8:
 msgbox_9:
   db 3,0
   db 'Warning',0
-  db 'Error run ',39,'open file dialog',39,0
+  db 'Error run ',39,'open file dialog',39,'.',13
+  .fdp:
+  rb 100
+  db 0
   db 'Close',0
   db 0
 

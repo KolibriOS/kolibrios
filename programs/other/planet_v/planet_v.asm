@@ -848,7 +848,7 @@ endp
 align 4
 fun_opn_dlg: ;функция для вызова OpenFile диалога
 	pushad
-	copy_path open_dialog_name,sys_path,file_name,0
+	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	mov [OpenDialog_data.type],2
 	mov dword[plugin_path],0 ;что-бы при открытии диалогового окна путь всегда брался из OpenDialog_data.dir_default_path
 	start_OpenDialog OpenDialog_data
@@ -969,7 +969,7 @@ communication_area_name:
 open_dialog_name:
 	db 'opendial',0
 communication_area_default_path:
-	db '/rd/1',0
+	db '/rd/1/File managers/',0
 
 Filter:
 dd Filter.end - Filter.1

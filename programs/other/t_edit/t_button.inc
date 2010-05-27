@@ -136,11 +136,19 @@ ted_but_open_file:
 		jmp .ret_f
 	@@:
 
-	copy_path open_dialog_name,sys_path,file_name,0
+	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	mov [OpenDialog_data.type],0
 	start_OpenDialog OpenDialog_data
 	cmp [OpenDialog_data.status],2
 	jne @f
+		stdcall mem_spac, msgbox_9.fdp,100
+		mov esi,file_name
+		call strlen
+		cmp eax,100
+		jle .no_crop
+			mov eax,100
+		.no_crop:
+		stdcall mem_copy, esi,msgbox_9.fdp,eax
 		stdcall [mb_create],msgbox_9,thread ;message: error run 'open file dialog'
 		jmp .ret_f
 	@@:
@@ -154,6 +162,30 @@ ted_but_open_file:
 	.ret_f:
 	popad
 	ret
+
+align 4
+proc mem_copy, source:dword, destination:dword, len:dword
+  push ecx esi edi
+    cld
+    mov esi, dword[source]
+    mov edi, dword[destination]
+    mov ecx, dword[len]
+    rep movsb
+  pop edi esi ecx
+  ret
+endp
+
+align 4
+proc mem_spac, mem:dword, len:dword
+  push eax ecx edi
+    cld
+    mov al,' '
+    mov edi, dword[mem]
+    mov ecx, dword[len]
+    repne stosb
+  pop edi ecx eax
+  ret
+endp
 
 ;input:
 ; eax = код ошибки
