@@ -26,7 +26,7 @@ struct symbol
 ends
 
 
-hed db 'TextEditor 17.05.10',0 ;подпись окна
+hed db 'TextEditor 27.05.10',0 ;подпись окна
 sc system_colors
 
 fn_icon db 'te_icon.bmp',0
@@ -126,7 +126,8 @@ but_no_msg_OpenFile:
 ; функция открытия файла с возможным окном сообщения (о возможности отменить открытие)
 align 4
 ted_but_open_file:
-	push eax ebx
+	pushad
+
 	stdcall [ted_can_save], tedit0
 	cmp al,1
 	jne @f
@@ -134,10 +135,24 @@ ted_but_open_file:
 		stdcall [mb_setfunctions],msgbox_5_funct
 		jmp .ret_f
 	@@:
+
+	copy_path open_dialog_name,sys_path,file_name,0
+	mov [OpenDialog_data.type],0
+	start_OpenDialog OpenDialog_data
+	cmp [OpenDialog_data.status],2
+	jne @f
+		stdcall [mb_create],msgbox_9,thread ;message: error run 'open file dialog'
+		jmp .ret_f
+	@@:
+	mov esi,[OpenDialog_data.openfile_path]
+	call strlen
+	mov [edit1.size],eax
+	mov [edit1.pos],eax
+	stdcall [edit_box_draw], edit1
 	stdcall [ted_open_file], tedit0,run_file_70,[edit1.text]
 	call ted_messages_after_open_file
 	.ret_f:
-	pop ebx eax
+	popad
 	ret
 
 ;input:

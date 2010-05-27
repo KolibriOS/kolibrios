@@ -19,6 +19,8 @@ include 'dll.inc'
 
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/asm/trunk/opendial.mac'
+use_OpenDialog
 
 min_window_w equ 485 ;минимальная ширина окна
 min_window_h equ 325 ;минимальная высота окна
@@ -109,19 +111,16 @@ start:
   stdcall dword[tl_node_add], txt_tile_type_0, 0, tree1
 
 ; init bmp file
-  push dword RGB_TILE_SIZE+300 ;300 - запасные байты с учетом заголовка bmp файла
-  call mem.Alloc
+  stdcall mem.Alloc, dword RGB_TILE_SIZE+300 ;300 - запасные байты с учетом заголовка bmp файла
   mov [bmp_icon],eax
 
   stdcall array_tile_function, tile_00,max_tiles_count,tile_init
   stdcall tiles_init_grid, tile_00,max_tiles_count,max_tiles_cols
 
-  push dword TREE_ICON_SYS16_BMP_SIZE
-  call mem.Alloc
+  stdcall mem.Alloc, dword TREE_ICON_SYS16_BMP_SIZE
   mov [tree_sys_icon],eax
 
-  push dword TREE_ICON_NOD16_BMP_SIZE
-  call mem.Alloc
+  stdcall mem.Alloc, dword TREE_ICON_NOD16_BMP_SIZE
   mov [tree_nod_icon],eax
 
   copy_path fn_icon1,sys_path,file_name,0x0
@@ -173,10 +172,15 @@ start:
 
   mov byte[file_name],0
 
+  ; OpenDialog initialisation
+  init_OpenDialog OpenDialog_data
+
+align 4
 red_win:
-  call draw_win
+  call draw_window
   call but_MetLoad
 
+align 4
 still:
   mov eax,10
   mcall
@@ -201,6 +205,7 @@ still:
 
   jmp still
 
+align 4
 key:
   push eax ebx
   mcall 2
@@ -212,13 +217,13 @@ key:
   push dword tree2
   call [tl_key]
 
-  mov ebx,dword[el_focus] ;ўЄю-с√ ърЁЄр эх фтшурырё№ хёыш юъэр treelist т Їюъєёх
+  mov ebx,dword[el_focus] ;что-бы карта не двигалась если окна treelist в фокусе
   cmp ebx, dword tree1
   je .end_f
   cmp ebx, dword tree2
   je .end_f
 
-  ;ўЄю-с√ ърЁЄр эх фтшурырё№ хёыш ЄхъёЄют√х яюы  т Їюъєёх
+  ;что-бы карта не двигалась если текстовые поля в фокусе
   test word[edit1.flags],10b ;ed_focus
   jne .end_f
   test word[edit2.flags],10b ;ed_focus
@@ -266,7 +271,7 @@ key:
 
 
 align 4
-draw_win:
+draw_window:
 pushad
   mcall 12,1
 
@@ -301,8 +306,7 @@ pushad
   stdcall dword[tl_draw],dword tree1
   stdcall dword[tl_draw],dword tree2
   mov dword[wScrMetki.all_redraw],1
-  push dword wScrMetki
-  call [scrollbar_ver_draw]
+  stdcall [scrollbar_ver_draw], dword wScrMetki
 
   mov eax,8 ;кнопка
   mov ebx,145*65536+20
@@ -314,6 +318,11 @@ pushad
   mov ebx,100*65536+20
   mov ecx,5*65536+25
   mov edx,5
+  int 0x40
+
+  mov ebx,170*65536+40 ;кнопка вызова диалога OpenDial
+  ;mov ecx,5*65536+25
+  mov edx,13
   int 0x40
 
   mov bx,di
@@ -351,7 +360,7 @@ pushad
   shl ebx,16
   mov bx,30
   ;mov ebx,405*65536+30
-  mov ecx,265*65536+25
+  ;mov ecx,265*65536+25
   mov edx,11
   int 0x40
 
@@ -360,7 +369,7 @@ pushad
   shl ebx,16
   mov bx,30
   ;mov ebx,370*65536+30
-  mov ecx,265*65536+25
+  ;mov ecx,265*65536+25
   mov edx,10
   int 0x40
 
@@ -446,11 +455,8 @@ pushad
 
   call draw_tiles
 
-  push dword ch2
-  call [check_box_draw]
-  push dword ch1
-  call [check_box_draw]
-
+  stdcall [check_box_draw], dword ch1
+  stdcall [check_box_draw], dword ch2
   stdcall [edit_box_draw], edit1
   stdcall [edit_box_draw], edit2
 
@@ -522,6 +528,10 @@ button:
   jne @f
     call fun_goto_met
   @@:
+  cmp ah,13 ;диалог OpenDialog для поиска папки
+  jne @f
+    call fun_opn_dlg
+  @@:
   cmp ah,1
   jne still
 
@@ -531,10 +541,10 @@ button:
   stdcall array_tile_function, tile_00,max_tiles_count,tile_destroy
 
   stdcall dword[tl_data_clear], tree1
-  mov dword[tree2.data_img_sys],0 ;ўшёЄшь єърчрЄхы№ эр ёшёЄхьэ√х шъюэъш,
-    ;Є. ъ. юэш с√ыш єфрыхэ√ тхЁїэхщ ЇєэъЎшхщ tl_data_clear
-    ;яютЄюЁэ√щ т√чют tl_data_clear схч ўшёЄъш єърчрЄхы  т√чтхЄ ю°шсъє
-  mov dword[tree2.data_img],0 ;ўшёЄшь єърчрЄхы№ эр шъюэъш єчыют
+  mov dword[tree2.data_img_sys],0 ;чистим указатель на системные иконки,
+    ;т. к. они были удалены верхней функцией tl_data_clear
+    ;повторный вызов tl_data_clear без чистки указателя вызвет ошибку
+  mov dword[tree2.data_img],0 ;чистим указатель на иконки узлов
   stdcall dword[tl_data_clear], tree2
 
 ;  stdcall dword[img_destroy], dword[data_icon]
@@ -550,7 +560,7 @@ proc img_rgb_wdiv2 data_rgb:dword, size:dword
   mov eax,dword[data_rgb]
   mov ecx,dword[size] ;ecx = size
   imul ecx,3
-  @@: ;чрЄхьэхэшх ЎтхЄр яшъёхыхщ
+  @@: ;затемнение цвета пикселей
     shr byte[eax],1
     and byte[eax],0x7f
     inc eax
@@ -559,8 +569,8 @@ proc img_rgb_wdiv2 data_rgb:dword, size:dword
   mov eax,dword[data_rgb]
   mov ecx,dword[size] ;ecx = size
   shr ecx,1
-  @@: ;ёыюцхэшх ЎтхЄют яшъёхыхщ
-    mov ebx,dword[eax+3] ;ъюяшЁєхь ЎтхЄ ёюёхфэхую яшъёхы 
+  @@: ;сложение цветов пикселей
+    mov ebx,dword[eax+3] ;копируем цвет соседнего пикселя
     add word[eax],bx
     shr ebx,16
     add byte[eax+2],bl
@@ -574,8 +584,8 @@ proc img_rgb_wdiv2 data_rgb:dword, size:dword
   add ebx,3
   mov ecx,dword[size] ;ecx = size
   shr ecx,1
-  dec ecx ;ыш°эшщ яшъёхы№
-  @@: ;яюфцрЄшх яшъёхыхщ
+  dec ecx ;лишний пиксель
+  @@: ;поджатие пикселей
     mov edx,dword[ebx]
     mov word[eax],dx
     shr edx,16
@@ -600,7 +610,7 @@ proc img_rgb_hdiv2, data_rgb:dword, size:dword, size_w:dword
   mov eax,dword[data_rgb] ;eax =
   mov ecx,dword[size]	  ;ecx = size
   imul ecx,3
-  @@: ;чрЄхьэхэшх ЎтхЄр яшъёхыхщ
+  @@: ;затемнение цвета пикселей
     shr byte[eax],1
     and byte[eax],0x7f
     inc eax
@@ -614,8 +624,8 @@ proc img_rgb_hdiv2, data_rgb:dword, size:dword, size_w:dword
   mov ecx,dword[size]  ;ecx = size
   shr ecx,1
   xor edi,edi
-  @@: ;ёыюцхэшх ЎтхЄют яшъёхыхщ
-    mov edx,dword[ebx] ;ъюяшЁєхь ЎтхЄ эшцэхую яшъёхы 
+  @@: ;сложение цветов пикселей
+    mov edx,dword[ebx] ;копируем цвет нижнего пикселя
     add word[eax],dx
     shr edx,16
     add byte[eax+2],dl
@@ -636,12 +646,12 @@ proc img_rgb_hdiv2, data_rgb:dword, size:dword, size_w:dword
   add eax,esi ;esi = width*3(rgb)
   mov ebx,esi
   add ebx,eax
-  mov ecx,dword[size]  ;ecx = size
+  mov ecx,dword[size] ;ecx = size
   shr ecx,1
-  sub ecx,dword[size_w] ;ыш°э   ёЄЁюър яшъёхыхщ
+  sub ecx,dword[size_w] ;лишняя строка пикселей
   xor edi,edi
-  @@: ;яюфцрЄшх яшъёхыхщ
-    mov edx,dword[ebx] ;ъюяшЁєхь ЎтхЄ эшцэхую яшъёхы 
+  @@: ;поджатие пикселей
+    mov edx,dword[ebx] ;копируем цвет нижнего пикселя
     mov word[eax],dx
     shr edx,16
     mov byte[eax+2],dl
@@ -835,6 +845,24 @@ proc mem_clear, mem:dword, len:dword
   ret
 endp
 
+align 4
+fun_opn_dlg: ;функция для вызова OpenFile диалога
+	pushad
+	copy_path open_dialog_name,sys_path,file_name,0
+	mov [OpenDialog_data.type],2
+	mov dword[plugin_path],0 ;что-бы при открытии диалогового окна путь всегда брался из OpenDialog_data.dir_default_path
+	start_OpenDialog OpenDialog_data
+	cmp [OpenDialog_data.status],2
+	je @f
+		mov esi,[OpenDialog_data.openfile_path]
+		stdcall [str_len],dword[edit1.text],dword[edit1.max]
+		mov [edit1.size],eax
+		mov [edit1.pos],eax
+		stdcall [edit_box_draw], edit1
+	@@:
+	popad
+	ret
+
   txt_met_up db 24,0
   txt_met_dn db 25,0
   txt_met_sh db '*',0
@@ -855,7 +883,7 @@ checkboxes_end:
 ch_text1 db 'брать сверху'
 ch_text2 db 'брать снизу'
 
-edit1 edit_box 190, 215,  10, 0xd0ffff, 0xff, 0x80ff, 0, 0xa000, 500, ed_buffer.1, mouse_dd, 0
+edit1 edit_box 190, 215,  10, 0xd0ffff, 0xff, 0x80ff, 0, 0xa000, 4090, openfile_path, mouse_dd, 0
 edit2 edit_box 100, 370, 240, 0xd0ffff, 0xff, 0x80ff, 0, 0xa000,  30, ed_buffer.2, mouse_dd, 0
 editboxes_end:
 
@@ -901,7 +929,6 @@ wScrMetki:
 .ar_offset  dd 1 ;+84
 
 ed_buffer: ;ЄхъёЄ фы  edit
-  .1: rb 502
   .2: rb 32
 
 el_focus dd tree1
@@ -917,20 +944,50 @@ run_file_70 FileInfoBlock
 
 txt_tile_path db 'tile path',0
   rb 300
-txt_tile_type dd txt_tile_type_0 ;єърчрЄхы№ эр т√сЁрээ√щ Єшя Їрщыют
+txt_tile_type dd txt_tile_type_0 ;указатель на выбранный тип файлов
 txt_tile_type_0 db 0
   rb 10
 
+;---------------------------------------------------------------------
 align 4
-map: ;ъююЁфшэрЄ√ ърЁЄ√
-  .coord_x dd 0 ;ъююЁфшэрЄр x
-  .coord_y dd 0 ;ъююЁфшэрЄр y
-  .zoom    db 1 ;ьрё°Єрс
+OpenDialog_data:
+.type			dd 2
+.procinfo		dd procinfo	;+4
+.com_area_name		dd communication_area_name	;+8
+.com_area		dd 0	;+12
+.opendir_path		dd plugin_path	;+16
+.dir_default_path	dd openfile_path ;+20
+.start_path		dd file_name ;+24 путь к диалогу открытия файлов
+.draw_window		dd draw_window	;+28
+.status 		dd 0	;+32
+.openfile_path		dd openfile_path	;+36 путь к открываемому файлу
+.filename_area		dd filename_area	;+40
+.filter_area		dd Filter
+
+communication_area_name:
+	db 'FFFFFFFF_open_dialog',0
+open_dialog_name:
+	db 'opendial',0
+communication_area_default_path:
+	db '/rd/1',0
+
+Filter:
+dd Filter.end - Filter.1
+.1:
+db 'TXT',0
+.end:
+db 0
+
+align 4
+map: ;координаты карты
+  .coord_x dd 0 ;координата x
+  .coord_y dd 0 ;координата y
+  .zoom    db 1 ;масштаб
 
 align 4
 tile_00 rb size_tile_struc * max_tiles_count
 
-;¤ЄюЄ ъюф эх ьющ, юэ яЁхюсЁрчєхЄ ўшёыю т ёЄЁюъє
+;этот код не мой, он преобразует число в строку
 ;input:
 ; eax = value
 ; edi = string buffer
@@ -946,32 +1003,39 @@ tl_convert_to_str:
 
 align 4
 .str:
-  mov ecx,0x0a ;чрфрхЄё  ёшёЄхьр ёўшёыхэш  шчьхэ ■Єё  ЁхушёЄЁ√ ebx,eax,ecx,edx тїюфэ√х ярЁрьхЄЁ√ eax - ўшёыю
-    ;яЁхЁхтюф ўшёыр т ASCII ёЄЁюъє тчюфэ√х фрээ√х ecx=ёшёЄхьр ёўшёыхэ  edi рфЁхё ъєфр чряшё√трЄ№, сєфхь ёЄЁюъє, яЁшўхь ъюэхЎ яхЁхьхээющ 
-  cmp eax,ecx  ;ёЁртэшЄ№ хёыш т eax ьхэ№°х ўхь т ecx Єю яхЁхщЄш эр @@-1 Є.х. эр pop eax
+  mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
+    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
+  cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
   jb @f
-  xor edx,edx  ;юўшёЄшЄ№ edx
-  div ecx      ;ЁрчфхышЄ№ - юёЄрЄюъ т edx
-  push edx     ;яюыюцшЄ№ т ёЄхъ
-  ;dec edi             ;ёьх∙хэшх эхюсїюфшьюх фы  чряшёш ё ъюэЎр ёЄЁюъш
-  call .str;яхЁхщЄш эр ёрьє ёхс  Є.х. т√чтрЄ№ ёрьє ёхс  ш Єръ фю Єюую ьюьхэЄр яюър т eax эх ёЄрэхЄ ьхэ№°х ўхь т ecx
+  xor edx,edx  ;очистить edx
+  div ecx      ;разделить - остаток в edx
+  push edx     ;положить в стек
+  ;dec edi             ;смещение необходимое для записи с конца строки
+  call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
   pop eax
-  @@: ;cmp al,10 ;яЁютхЁшЄ№ эх ьхэ№°х ыш чэрўхэшх т al ўхь 10 (фы  ёшёЄхь√ ёўшёыхэ  10 фрээр  ъюьрэфр - ыш°эр ))
-  or al,0x30  ;фрээр  ъюьрэфр ъюЁюўх  ўхь фтх т√°х
-  stosb       ;чряшёрЄ№ ¤ыхьхэЄ шч ЁхушёЄЁр al т  ўхъє ярь Єш es:edi
-  ret	      ;тхЁэєЄ№ё  ўхэ№ шэЄхЁхёэ√щ їюф Є.ъ. яюър т ёЄхъх їЁрэшЄ№ё  ъюы-тю т√чютют Єю ёЄюы№ъю Ёрч ь√ ш сєфхь т√ч√трЄ№ё 
+  @@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
+  or al,0x30  ;данная команда короче  чем две выше
+  stosb       ;записать элемент из регистра al в ячеку памяти es:edi
+  ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 
-hed db 'Planet viewer 26.03.10',0 ;подпись окна
+hed db 'Planet viewer 27.05.10',0 ;подпись окна
 
 sc system_colors  ;системные цвета
 mouse_dd dd 0 ;нужно для Shift-а в editbox
-  sys_path rb 4096
-  file_name:
-    rb 4096
 i_end:
-  procinfo process_information
-  rb 1024
+	rb 1024
+	align 16
+	procinfo process_information
 stacktop:
+	sys_path rb 4096
+	file_name:
+		rb 4096
+	plugin_path:
+		rb 4096
+	openfile_path:
+		rb 4096
+	filename_area:
+		rb 256
 mem:
 

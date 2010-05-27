@@ -25,6 +25,9 @@ include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 
 include 'lang.inc'
+include '../../develop/libraries/box_lib/asm/trunk/opendial.mac'
+use_OpenDialog
+
 include 't_data.inc'
 include 'strlen.inc'
 include 't_draw.inc' ;draw main window functions
@@ -47,7 +50,7 @@ start:
   mov esi,file_name
   call strlen
   mov ecx,eax
-  mov edi,buf_cmd_lin
+  mov edi,openfile_path
   rep movsb ;копируем имя файла в буфер edit1
 
 load_libraries l_libs_start,load_lib_end
@@ -67,7 +70,9 @@ load_libraries l_libs_start,load_lib_end
 ;---------------------------------------------------------------------
   stdcall [ted_init], tedit0
   stdcall dword[tl_data_init], tree1
-;---------------------------------------------------------------------
+
+; OpenDialog initialisation
+init_OpenDialog OpenDialog_data
 
 ; init bmp file
   mov ecx,1200*18
@@ -170,9 +175,9 @@ mov ecx,ebx
 	stdcall [ted_init_syntax_file], tedit0,run_file_70,file_name
 
 ;--- get cmd line ---
-  cmp byte[buf_cmd_lin+3],0 ;buf_cmd_lin
+  cmp byte[openfile_path+3],0 ;openfile_path
   je @f ;if file names exist
-    mov esi,buf_cmd_lin
+    mov esi,openfile_path
     call strlen ;eax=strlen
     mov [edit1.size],eax
     call but_no_msg_OpenFile
@@ -180,11 +185,31 @@ mov ecx,ebx
 
 align 4
 red_win:
+  call draw_window
+
+align 4
+still:
+  mov eax,10
+  mcall
+
+  cmp al,1 ;изм. положение окна
+  jz red_win
+  cmp al,2
+  jz key
+  cmp al,3
+  jz button
+  cmp al,6
+  jz mouse
+
+  jmp still
+
+align 4
+draw_window:
   mcall 12,1
 
   xor eax,eax
   mov ebx,10*65536+485
-  mov ecx,10*65536+280
+  mov ecx,10*65536+320
   mov edx,[sc.work]
   or  edx,0x73000000
   mov edi,hed
@@ -201,6 +226,13 @@ red_win:
   mov bx,word [procinfo.client_box.width]
   inc bx
   int 0x40
+
+	mov eax,4
+	mov ebx,185*65536+9
+	mov ecx,[sc.work_text]
+	or  ecx,0x80000000
+	mov edx,txtFile
+	int 0x40
 
   stdcall [edit_box_draw], dword edit1
   stdcall [menu_bar_draw], dword menu_data_1
@@ -231,23 +263,7 @@ red_win:
   @@:
 
   mcall 12,2
-
-align 4
-still:
-  mov eax,10
-  mcall
-
-  cmp al,1 ;изм. положение окна
-  jz red_win
-  cmp al,2
-  jz key
-  cmp al,3
-  jz button
-  cmp al,6
-  jz mouse
-
-  jmp still
-
+  ret
 
 align 4
 mouse:
@@ -490,10 +506,9 @@ button:
 txtErrIni0 db 'Не открылся файл с иконками',0
 err_ini0 db 0
 
-edit1 edit_box 250, 220, 5, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_cmd_lin, mouse_dd, 0
+edit1 edit_box 250, 220, 5, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 4090, openfile_path, mouse_dd, 0
 edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
 
-buf_cmd_lin db 302 dup(0)
 buf_find db 302 dup(0)
 
 if lang eq ru
@@ -522,10 +537,11 @@ load_lib_end:
 
 
 i_end:
-  align 16
-  procinfo process_information
-  thread:
-    rb 1024
+	rb 1024
+	align 16
+	procinfo process_information
+	thread:
+		rb 1024
 stacktop:
   sys_path:
     rb 4096
@@ -533,6 +549,12 @@ stacktop:
     rb 4096
   file_name_rez:
     rb 4096
+  plugin_path:
+    rb 4096
+  openfile_path:
+    rb 4096
+  filename_area:
+    rb 256
   file_info:
     rb 40
 mem:

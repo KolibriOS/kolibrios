@@ -28,8 +28,7 @@
 ;       destroys        :       nothing
 ;********************************************************************
 strlen:
-	push	ecx
-	push	edi
+	push	ecx edi
 	pushfd
 	cld				; !
 	mov	ecx,-1
@@ -40,8 +39,7 @@ strlen:
 	sub	eax,esi
 	dec	eax
 	popfd
-	pop	edi
-	pop	ecx
+	pop	edi ecx
 	ret
 
 
@@ -51,8 +49,7 @@ strlen:
 ; Copyright (c) 2009 Igor Afanasiev
 
 linlen:
-	push	ecx
-	push	edi
+	push	ecx edi
 	pushfd
 	cld				; !
 	mov	ecx,eax
@@ -64,8 +61,7 @@ linlen:
 	sub	eax,esi
 	dec	eax
 	popfd
-	pop	edi
-	pop	ecx
+	pop	edi ecx
 	ret
 ;%endif
 
