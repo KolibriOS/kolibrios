@@ -109,9 +109,6 @@ OpenDialog_exit
 	add	edi,4096-256
 
 	mov	esi,od_filename_area
-;	xor	eax,eax
-;	mov	al,[esi]
-;	test	eax,eax
 	test	esi,esi
 	jnz	@f
 	mov	esi,.null
@@ -134,15 +131,14 @@ OpenDialog_exit
 	shr	eax,31
 	test	eax,eax
 	jnz	.1
-	jmp	.still
-.red:
-	pusha
-	call	od_draw_window
-	popa
 .still:
 	mcall	23,50
 	cmp	eax,1
-	je	.red
+	jne	@f
+	pusha
+	call	od_draw_window
+	popa
+@@:
 	mov	eax,od_com_area
 	movzx	ebx,word [eax]
 	test	ebx,ebx
