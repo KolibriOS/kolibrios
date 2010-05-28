@@ -2,7 +2,7 @@ use32
 org 0x0
 
 db 'MENUET01'
-dd 0x01, START, I_END, 0x4000, 0x4000, @PARAMS, 0x0
+dd 0x01, START, I_END, F_END, stacktop, @PARAMS, 0x0
 
 ;-----------------------------------------------------------------------------
 
@@ -16,11 +16,16 @@ include 'dll.inc'
 include '../../../develop/libraries/libs-dev/libio/libio.inc'
 include '../../../develop/libraries/libs-dev/libimg/libimg.inc'
 
+include '../../../develop/libraries/box_lib/asm/trunk/opendial.mac'
+use_OpenDialog
 ;-----------------------------------------------------------------------------
 
 START:
 	mcall	68, 11
 
+; OpenDialog initialisation
+init_OpenDialog	OpenDialog_data
+	
 	stdcall dll.Load, @IMPORT
 	or	eax, eax
 	jnz	exit
@@ -44,8 +49,15 @@ START:
 	cmp	byte [@PARAMS], 0
 	jnz	params_given
 
-	call	opendialog
-	jc	exit
+	mov	[OpenDialog_data.draw_window],draw_window_fake
+	
+	start_OpenDialog	OpenDialog_data
+
+	cmp	[OpenDialog_data.status],1
+	jne	exit
+
+	mov	[OpenDialog_data.draw_window],draw_window
+
 	mov	esi, path
 	mov	edi, @PARAMS
 	mov	ecx, 512/4
@@ -193,20 +205,32 @@ button:
     @@: cmp	eax, 'opn'
 	jne	@f
 	
-	call	opendialog
-	jc	still
-	push	[image]
-	mov	eax, path
-	call	load_image
-	jc	.restore_old
+	start_OpenDialog	OpenDialog_data
+	
+	cmp	[OpenDialog_data.status],1
+	jne	still
+	
 	mov	esi, path
 	mov	edi, @PARAMS
 	mov	ecx, 512/4
 	rep	movsd
 	mov	byte [edi-1], 0
+	
+	mov	esi, @PARAMS
+	push	esi
+	call	find_last_name_component
+	
+	push	[image]
+	mov	eax, path
+	call	load_image
+	jc	.restore_old
+	call	generate_header
+	
 	invoke	img.destroy
 	call	free_directory
+	pop	eax ; pop for [image]
 	jmp	red
+	
     .restore_old:
 	pop	[image]
 	call	init_frame
@@ -888,206 +912,11 @@ generate_header:
 	cmp	edi, real_header+256
 	jb	@b
 	jmp	.overflow
-
 ;-----------------------------------------------------------------------------
 
 s_header db ' - Kolibri Image Viewer', 0
 
 ;-----------------------------------------------------------------------------
-
-opendialog:
-;
-; STEP 1 Run SYSXTREE with parametrs MYPID 4 bytes in dec,
-; 1 byte space, 1 byte type of dialog (O - Open ,S - Save)
-;
-
-;;    mov esi,path
-    mov edi,path
-    xor eax,eax
-    mov ecx,(1024+16)/4
-    rep stosd
-
-;mov [get_loops],0
-mov [dlg_pid_get],0
-
-; Get my PID in dec format 4 bytes
-    mov eax,9
-    mov ebx,procinfo
-    or  ecx,-1
-    mcall
-
-; convert eax bin to param dec
-    mov eax,dword [procinfo+30]  ;offset of myPID
-    mov edi,param+4-1		 ;offset to 4 bytes
-    mov ecx,4
-    mov ebx,10
-new_d:
-    xor edx,edx
-    div ebx
-    add dl,'0'
-    mov [edi],dl
-    dec edi
-    loop new_d
-
-; wirite 1 byte space to param
-    mov [param+4],byte 32    ;Space for next parametr
-; and 1 byte type of dialog to param
-    mov [param+5],byte 'O'   ;Get Open dialog (Use 'S' for Save dialog)
-
-;
-; STEP2 prepare IPC area for get messages
-;
-
-; prepare IPC area
-    mov [path],dword 0
-    mov [path+4],dword 8
-
-; define IPC memory
-    mov eax,60
-    mov ebx,1	     ; define IPC
-    mov ecx,path     ; offset of area
-    mov edx,1024+16  ; size
-    mcall
-
-; change wanted events list 7-bit IPC event
-    mov eax,40
-    mov ebx,01000111b
-	cmp	[image], 0
-	jnz	@f
-	mov	bl, 01000110b
-@@:
-    mcall
-
-;
-; STEP 3 run SYSTEM XTREE with parameters
-;
-
-    mov eax,70
-    mov ebx,run_fileinfo
-    mcall
-
-    mov [get_loops],0
-getmesloop:
-    mov eax,23
-    mov ebx,50	   ;0.5 sec
-    mcall
-        dec     eax
-        jz      mred
-        dec     eax
-        jz      mkey
-        dec     eax
-        jz      mbutton
-        cmp     al, 7-3
-        jz      mgetmes
-
-; Get number of procces
-    mov ebx,procinfo
-    mov ecx,-1
-    mov eax,9
-    mcall
-    mov ebp,eax
-
-loox:
-    mov eax,9
-    mov ebx,procinfo
-    mov ecx,ebp
-    mcall
-    mov eax,[DLGPID]
-    cmp [procinfo+30],eax    ;IF Dialog find
-    je	dlg_is_work	     ;jmp to dlg_is_work
-    dec ebp
-    jnz loox
-
-    jmp erroff
-
-dlg_is_work:
-    cmp [procinfo+50],word 9 ;If slot state 9 - dialog is terminated
-    je	erroff		       ;TESTODP2 terminated too
-
-    cmp [dlg_pid_get],dword 1
-    je	getmesloop
-    inc [get_loops]
-    cmp [get_loops],4  ;2 sec if DLG_PID not get, TESTOP2  terminated
-    jae erroff
-    jmp getmesloop
-
-mred:
-	cmp	[image], 0
-	jz	getmesloop
-    call draw_window
-    jmp  getmesloop
-mkey:
-    mov  eax,2
-    mcall			; read (eax=2)
-    jmp  getmesloop
-mbutton:
-    mov  eax,17 		; get id
-    mcall
-    cmp  ah,1			; button id=1 ?
-    jne  getmesloop
-    mov  eax,-1 		; close this program
-    mcall
-mgetmes:
-
-; If dlg_pid_get then second message get jmp to still
-    cmp  [dlg_pid_get],dword 1
-    je	 ready
-
-; First message is number of PID SYSXTREE dialog
-
-; convert PID dec to PID bin
-    movzx eax,byte [path+16]
-    sub eax,48
-    imul eax,10
-    movzx ebx,byte [path+16+1]
-    add eax,ebx
-    sub eax,48
-    imul eax,10
-    movzx ebx,byte [path+16+2]
-    add eax,ebx
-    sub eax,48
-    imul eax,10
-    movzx ebx,byte [path+16+3]
-    add eax,ebx
-    sub eax,48
-    mov [DLGPID],eax
-
-; Claear and prepare IPC area for next message
-    mov [path],dword 0
-    mov [path+4],dword 8
-    mov [path+8],dword 0
-    mov [path+12],dword 0
-    mov [path+16],dword 0
-
-; Set dlg_pid_get for get next message
-    mov [dlg_pid_get],dword 1
-	cmp	[image], 0
-	jz	getmesloop
-    call draw_window
-    jmp  getmesloop
-
-ready:
-;
-; The second message get
-; Second message is 100 bytes path to SAVE/OPEN file
-; shl path string on 16 bytes
-;
-    mov esi,path+16
-    mov edi,path
-    mov ecx,1024/4
-    rep movsd
-    mov [edi],byte 0
-
-openoff:
-	mcall	40, 7
-	clc
-	ret
-
-erroff:
-	mcall	40, 7
-	stc
-	ret
-
 ;-----------------------------------------------------------------------------
 
 align 4
@@ -1175,35 +1004,54 @@ check_modifier_table:
 	dd	check_modifier_3
 	dd	check_modifier_4
 
-; DATA AREA
-get_loops   dd 0
-dlg_pid_get dd 0
-DLGPID	    dd 0
+;---------------------------------------------------------------------
+align 4
+OpenDialog_data:
+.type			dd 0
+.procinfo		dd procinfo ;+4
+.com_area_name		dd communication_area_name ;+8
+.com_area		dd 0 ;+12
+.opendir_pach		dd temp_dir_pach ;+16
+.dir_default_pach	dd communication_area_default_pach ;+20
+.start_path		dd open_dialog_path ;+24
+.draw_window		dd draw_window ;+28
+.status			dd 0 ;+32
+.openfile_pach		dd path  ;openfile_pach ;+36
+.filename_area		dd 0	;+40
+.filter_area		dd Filter
 
-param:
-   dd 0    ; My dec PID
-   dd 0,0  ; Type of dialog
+communication_area_name:
+	db 'FFFFFFFF_open_dialog',0
+open_dialog_path:
+	db '/sys/File Managers/opendial',0
+communication_area_default_pach:
+	db '/rd/1',0
 
-run_fileinfo:
- dd 7
- dd 0
- dd param
- dd 0
- dd 0
-;run_filepath
- db '/sys/SYSXTREE',0
+Filter:
+dd Filter.end - Filter
+.1:
+db 'BMP',0
+db 'GIF',0
+db 'JPG',0
+db 'JPEG',0
+db 'JPE',0
+db 'PNG',0
+db 'ICO',0
+db 'CUR',0
+.end:
+db 0
 
+draw_window_fake:
+	ret
+;------------------------------------------------------------------------------
 readdir_fileinfo:
 	dd	1
 	dd	0
 	dd	0
 readblocks dd	0
 directory_ptr	dd	0
-
-;-----------------------------------------------------------------------------
-
+;------------------------------------------------------------------------------
 I_END:
-
 curdir		rb	1024
 
 align 4
@@ -1226,7 +1074,14 @@ prev_mod	dd	?
 prev_key	dd	?
 
 procinfo:	rb	1024
-path:		rb	1024+16
+path:		rb	4096  ;1024+16
 real_header	rb	256
-
-@PARAMS rb 512
+@PARAMS rb 4096  ;512
+;---------------------------------------------------------------------
+temp_dir_pach:
+        rb 4096
+;---------------------------------------------------------------------
+	rb 4096
+stacktop:
+;---------------------------------------------------------------------
+F_END:
