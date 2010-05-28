@@ -19,18 +19,21 @@
 
 $Revision$
 
+__DEBUG_LEVEL_OLD__  equ __DEBUG_LEVEL__
+__DEBUG_LEVEL__ equ 1			; this sets the debug level for network part of kernel
+
 uglobal
 	last_1sTick	db ?
 	last_1hsTick	dd ?
 endg
 
 MAX_NET_DEVICES 	equ 16
-QUEUE_BEFORE_SENDING	equ 1 ; 1 or 0 (enable or disable) currently only affects ethernet
+QUEUE_BEFORE_SENDING	equ 0		; 1 or 0 (enable or disable) currently only affects ethernet
 
 MIN_EPHEMERAL_PORT equ 49152
 MAX_EPHEMERAL_PORT equ 61000
 
-ETHER		equ 1337     ; TODO: find another value for this (how does it work in posix ?)
+ETHER		equ 1337		; TODO: find another value for this (how does it work in posix ?)
 ETHER_ARP	equ 0x0608
 
 AF_UNSPEC	equ 0
@@ -207,33 +210,228 @@ end if
 ;
 ;  This is the first of two functions needed to calculate the TCP checksum.
 ;
-;  IN:  edx = start offeset for semi-checksum
+;  IN:  edx = start offset for semi-checksum
 ;       esi = pointer to data
 ;       ecx = data size
 ;  OUT: edx = semi-checksum
+;
+;
+; Code was optimized by diamond
 ;
 ;-----------------------------------------------------------------
 align 4
 checksum_1:
 
-	xor	eax, eax
 	shr	ecx, 1
 	pushf
-.loop:
-	lodsw
-	xchg	al, ah
-	add	edx, eax
-	loop	.loop
+	jz	.no_2
 
+	shr	ecx, 1
+	pushf
+	jz	.no_4
+
+	shr	ecx, 1
+	pushf
+	jz	.no_8
+
+  .loop:
+	add	dl, [esi+1]
+	adc	dh, [esi+0]
+
+	adc	dl, [esi+3]
+	adc	dh, [esi+2]
+
+	adc	dl, [esi+5]
+	adc	dh, [esi+4]
+
+	adc	dl, [esi+7]
+	adc	dh, [esi+6]
+
+	adc	edx, 0
+	add	esi, 8
+
+	dec	ecx
+	jnz	.loop
+
+	adc	edx, 0
+
+  .no_8:
+	popf
+	jnc	.no_4
+
+	add	dl, [esi+1]
+	adc	dh, [esi+0]
+
+	adc	dl, [esi+3]
+	adc	dh, [esi+2]
+
+	adc	edx, 0
+	add	esi, 4
+
+  .no_4:
+	popf
+	jnc	.no_2
+
+	add	dl, [esi+1]
+	adc	dh, [esi+0]
+
+	adc	edx, 0
+
+	inc	ecx
+	inc	ecx
+
+  .no_2:
 	popf
 	jnc	.end
 
-	add	dh, [esi]
+	add	dh, [esi+0]
+	adc	edx, 0
+  .end:
+	ret
+
+
+
+
+
+;IN: 12 bytes of pseudoheader pushed onto the stack
+;    edx = start offset
+;
+; OUT: pseudochecksum in edx
+
+
+align 4
+checksum_pseudoheader:
+
+	add	dl, [esp+5]
+	adc	dh, [esp+4]
+
+	adc	dl, [esp+7]
+	adc	dh, [esp+6]
+
+	adc	dl, [esp+9]
+	adc	dh, [esp+8]
+
+	adc	dl, [esp+11]
+	adc	dh, [esp+10]
+
+	adc	dl, [esp+13]
+	adc	dh, [esp+12]
+
+	adc	dl, [esp+15]
+	adc	dh, [esp+14]
+
+	adc	edx,0
+	ret	12
+
+
+
+
+
+align 4
+checksum_ip_header:
+
+; This is the fast procedure to create or check a IP header without options
+;
+; To create a new checksum, the checksum field must be set to 0 before computation
+;
+; To check an existing checksum, leave the checksum as is, and it will be 0 after this procedure, if it was correct
+
+	xor	edx, edx
+
+	add	dl, [esi+1]
+	adc	dh, [esi+0]
+
+	adc	dl, [esi+3]
+	adc	dh, [esi+2]
+
+	adc	dl, [esi+5]
+	adc	dh, [esi+4]
+
+	adc	dl, [esi+7]
+	adc	dh, [esi+6]
+
+	adc	dl, [esi+9]
+	adc	dh, [esi+8]
+
+; we skip 11th and 12th byte, they are the checksum bytes and should be 0 for re-calculation
+
+	adc	dl, [esi+13]
+	adc	dh, [esi+12]
+
+	adc	dl, [esi+15]
+	adc	dh, [esi+14]
+
+	adc	dl, [esi+17]
+	adc	dh, [esi+16]
+
+	adc	dl, [esi+19]
+	adc	dh, [esi+18]
+
 	adc	edx, 0
 
-.end:
+	call	checksum_2
+
+	neg	word [esi+10]		; zero will stay zero so we jsut get the checksum
+	add	word [esi+10], dx	;  , else we will get (new checksum - old checksum) in the end, wich should be 0 :)
 
 	ret
+
+
+
+
+
+
+
+
+align 4
+checksum_udp:
+
+; This is the fast procedure to create or check a IP header without options
+;
+; To create a new checksum, the checksum field must be set to 0 before computation
+;
+; To check an existing checksum, leave the checksum as is, and it will be 0 after this procedure, if it was correct
+
+	xor	edx, edx
+
+	add	dl, [esi+1]
+	adc	dh, [esi+0]
+
+	adc	dl, [esi+3]
+	adc	dh, [esi+2]
+
+	adc	dl, [esi+5]
+	adc	dh, [esi+4]
+
+	adc	dl, [esi+7]
+	adc	dh, [esi+6]
+
+	adc	dl, [esi+9]
+	adc	dh, [esi+8]
+
+; we skip 11th and 12th byte, they are the checksum bytes and should be 0 for re-calculation
+
+	adc	dl, [esi+13]
+	adc	dh, [esi+12]
+
+	adc	dl, [esi+15]
+	adc	dh, [esi+14]
+
+	adc	dl, [esi+17]
+	adc	dh, [esi+16]
+
+	adc	dl, [esi+19]
+	adc	dh, [esi+18]
+
+	adc	edx, 0
+
+	call	checksum_2
+
+	neg	word [esi+10]		; zero will stay zero so we jsut get the checksum
+	add	word [esi+10], dx	;  , else we will get (new checksum - old checksum) in the end, wich should be 0 :)
+
+	ret
+
 
 
 ;-----------------------------------------------------------------
@@ -400,3 +598,6 @@ sys_protocols:
   .return:
 	mov	[esp+28+4], eax
 	ret
+
+
+__DEBUG_LEVEL__ equ __DEBUG_LEVEL_OLD__

@@ -153,7 +153,7 @@ end if
 
        .error:
 	or	eax, -1
-	DEBUGF	1,"- fail\n"
+	DEBUGF	2,"Adding ETH device failed\n"
 	ret
 
 
@@ -219,50 +219,56 @@ end if
 align 4
 ETH_receiver:
 
-	DEBUGF	1,"ETH_Receiver: "
-	push	ebx
-	mov	esi, esp
-	add_to_queue ETH_IN_QUEUE, ETH_QUEUE_SIZE, eth_queue_entry.size, .fail
-	DEBUGF	1,"Queued packet successfully\n"
-	add	esp, 4*3
-
-	ret
-
-  .fail:
-	DEBUGF	1,"ETH_IN_QUEUE is full!\n"
-	add	esp, 4
-	call	kernel_free
-	add	esp, 4
-
-	ret
-
-
-
-;-----------------------------------------------------------------
+;        DEBUGF  1,"ETH_Receiver: "
+;        push    ebx
+;        mov     esi, esp
+;        add_to_queue ETH_IN_QUEUE, ETH_QUEUE_SIZE, eth_queue_entry.size, .fail
+;        DEBUGF  1,"Queued packet successfully\n"
+;        add     esp, 4*3
 ;
-; ETH_Handler:
+;        ret
 ;
-;  Handles all queued eth packets (called from kernel's main_loop)
+;  .fail:
+;        DEBUGF  1,"ETH_IN_QUEUE is full!\n"
+;        add     esp, 4
+;        call    kernel_free
+;        add     esp, 4
 ;
-;  IN:  /
-;  OUT: /
+;        ret
 ;
-;-----------------------------------------------------------------
-align 4
-ETH_handler:
+;
+;
+;;-----------------------------------------------------------------
+;;
+;; ETH_Handler:
+;;
+;;  Handles all queued eth packets (called from kernel's main_loop)
+;;
+;;  IN:  /
+;;  OUT: /
+;;
+;;-----------------------------------------------------------------
+;align 4
+;ETH_handler:
+;
+;        get_from_queue ETH_IN_QUEUE, ETH_QUEUE_SIZE, eth_queue_entry.size, .gohome
+;
+;        push    ETH_handler
+;
+;        lodsd
+;        mov     ebx, eax
+;        lodsd
+;        mov     ecx, eax
+;        lodsd
+;        xchg    eax, ecx
+;        push    ecx
+;        push    eax
 
-	get_from_queue ETH_IN_QUEUE, ETH_QUEUE_SIZE, eth_queue_entry.size, .gohome
 
-	push	ETH_handler
-
-	lodsd
-	mov	ebx, eax
-	lodsd
-	mov	ecx, eax
-	lodsd
-	xchg	eax, ecx
-	push	ecx
-	push	eax
+;-----------------------------
+	mov	eax, [esp]
+	mov	ecx, [esp+4]
+;-----------------------------
 
 	DEBUGF	1,"ETH_Handler - size: %u\n", ecx
 	cmp	ecx, 60    ; check packet length
@@ -278,16 +284,22 @@ ETH_handler:
 	cmp	ax, ETHER_ARP
 	je	ARP_handler
 
-	DEBUGF	1,"Unknown ethernet packet type %x\n", ax
+	DEBUGF	2,"Unknown ethernet packet type %x\n", ax
 
   .dump:
-	DEBUGF	1,"Dumping packet\n"
+	DEBUGF	2,"ETH_Handler - dumping\n"
 	call	kernel_free
 	add	esp, 4
 
   .gohome:
 	ret				; return to get more from queue / to caller
 
+
+
+
+align 4
+ETH_handler:
+ret
 
 
 ;-----------------------------------------------------------------
@@ -366,24 +378,29 @@ end if
 ;-----------------------------------------------------------------
 align 4
 ETH_struc2dev:
-	push	eax ecx
+	push	ecx
 
-	mov	eax, ebx
 	mov	ecx, MAX_ETH_DEVICES
 	mov	edi, ETH_DRV_LIST
 
-	repne	scasd
-	jnz	.error
 
-	sub	edi, ETH_DRV_LIST+4
+  .loop:
+	cmp	ebx, [edi]
+	jz	.found
+	add	edi, 4
+	dec	ecx
+	jnz	.loop
+
+	or	edi, -1
+
+	pop	ecx
+	ret
+
+  .found:
+	sub	edi, ETH_DRV_LIST
 	shr	edi, 2
 
-	pop	ecx eax
-	ret
-  .error:
-	or	edi, -1
-	pop	ecx eax
-
+	pop	ecx
 	ret
 
 
@@ -408,7 +425,7 @@ ETH_struc2dev:
 align 4
 ETH_create_packet:
 
-	DEBUGF 1,"Creating Ethernet Packet (size=%u): \n", ecx
+	DEBUGF	1,"Creating Ethernet Packet (size=%u): \n", ecx
 
 	cmp	ecx, 1500
 	jg	.exit
@@ -448,17 +465,17 @@ ETH_create_packet:
 	mov	edx, 46 + ETH_FRAME.Data
        .continue:
 
-	DEBUGF 1,"done: %x size:%u device:%x\n", eax, edx, ebx
+	DEBUGF	1,"done: %x size:%u device:%x\n", eax, edx, ebx
 	ret
 
   .pop_exit:
-	DEBUGF 1,"Out of ram space!!\n"
+	DEBUGF	2,"Out of ram space!!\n"
 	add	esp, 18
 	or	edi,-1
 	ret
 
   .exit:
-	DEBUGF 1,"Packet too large!\n"
+	DEBUGF	2,"Packet too large!\n"
 	or	edi, -1
 	ret
 

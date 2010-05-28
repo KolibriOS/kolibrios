@@ -16,8 +16,8 @@
 $Revision$
 
 struct	SOCKET_head
-	 .PrevPtr		dd ? ; pointer to previous socket in list
 	 .NextPtr		dd ? ; pointer to next socket in list
+	 .PrevPtr		dd ? ; pointer to previous socket in list
 	 .Number		dd ? ; socket number (unique within single process)
 	 .PID			dd ? ; application process id
 	 .Domain		dd ? ; INET/UNIX/..
@@ -935,7 +935,7 @@ socket_check_port:
 align 4
 socket_internal_receiver:
 
-	DEBUGF 1,"Internal socket receiver: buffer %x, offset: %x size=%u socket: %x\n", esi, edi, ecx, eax
+	DEBUGF	1,"Internal socket receiver: buffer %x, offset: %x size=%u socket: %x\n", esi, edi, ecx, eax
 
 	push	edi	; offset
 	push	ecx	; size
@@ -969,7 +969,7 @@ notify_network_event:
 	ret
 
   .full:
-	DEBUGF 1,"Socket %x is full!\n",eax
+	DEBUGF	2,"Socket %x is full!\n",eax
 	mov	[eax + SOCKET_head.lock], 0
 	call	kernel_free
 	add	esp, 8

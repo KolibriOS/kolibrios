@@ -74,35 +74,37 @@ UDP_init:
 align 4
 UDP_handler:
 
-	DEBUGF 1,"UDP_Handler\n"
+	DEBUGF	1,"UDP_Handler\n"
+
+	cmp	[edx + UDP_Packet.Checksum], 0
+	jz	.no_checksum
 	; First validate, checksum:
 
 	pusha
 
-	rol	cx, 8
 	push	cx
-	rol	cx, 8
+	rol	word [esp], 8
 	push	word IP_PROTO_UDP shl 8
 	push	edi
 	push	esi
 
 	mov	di, [edx + UDP_Packet.Checksum]
-	mov    [edx + UDP_Packet.Checksum], 0
+	mov	[edx + UDP_Packet.Checksum], 0
 
 	mov	esi, edx
 	xor	edx, edx
 	call	checksum_1
-	mov	ecx, 12
-	mov	esi, esp
-	call	checksum_1
-	add	esp, 12
+	call	checksum_pseudoheader
 	call	checksum_2
 
 	cmp	di, dx
 	popa
-	jne	.dump
+	jne	.checksum_mismatch ;dump
 
-	DEBUGF 1,"UDP Checksum is correct\n"
+
+  .no_checksum:
+
+	DEBUGF	1,"UDP Checksum is correct\n"
 
 	; Look for a socket where
 	; IP Packet UDP Destination Port = local Port
@@ -110,7 +112,7 @@ UDP_handler:
 
 	mov	eax, net_sockets
   .try_more:
-	mov	bx , [edx + UDP_Packet.DestinationPort]   ; get the local port from the IP Packet's UDP header
+	mov	si , [edx + UDP_Packet.DestinationPort]   ; get the local port from the IP Packet's UDP header
   .next_socket:
 	mov	eax, [eax + SOCKET_head.NextPtr]
 	or	eax, eax
@@ -119,10 +121,10 @@ UDP_handler:
 	jne	.next_socket
 	cmp	[eax + SOCKET_head.Type], IP_PROTO_UDP
 	jne	.next_socket
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.LocalPort], bx
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.LocalPort], si
 	jne	.next_socket
 
-	DEBUGF 1,"found socket with matching domain, type and localport\n"
+	DEBUGF	1,"found socket with matching domain, type and localport\n"
 
 	; For dhcp, we must allow any remote server to respond.
 	; I will accept the first incoming response to be the one
@@ -131,28 +133,30 @@ UDP_handler:
 	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], 0xffffffff
 	je	.ok1
 
-	mov	ebx, [esp]
-	mov	ebx, [ebx + ETH_FRAME.Data + IPv4_Packet.SourceAddress] ; get the Source address from the IP Packet   FIXME
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], ebx
+	mov	esi, [esp]
+	mov	esi, [ebx + ETH_FRAME.Data + IPv4_Packet.SourceAddress] ; get the Source address from the IP Packet   FIXME
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], esi
 	jne	.try_more					      ; Quit if the source IP is not valid, check for more sockets with this IP/PORT combination
 
 
-	DEBUGF 1,"Remote Ip matches\n"
+	DEBUGF	1,"Remote Ip matches\n"
   .ok1:
 
 	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.firstpacket], 0
 	jz	.updateport
 
-	mov	bx, [edx + UDP_Packet.SourcePort]
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], bx
+	mov	si, [edx + UDP_Packet.SourcePort]
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], si
 	jne	.dump
 
+	push	ebx
 	lea	ebx, [eax + SOCKET_head.lock]
 	call	wait_mutex
+	pop	ebx
 
   .ok2:
 
-	DEBUGF 1,"Found valid UDP packet for socket %x\n", eax
+	DEBUGF	1,"Found valid UDP packet for socket %x\n", eax
 	lea	esi, [edx + UDP_Packet.Data]
 	movzx	ecx, [edx + UDP_Packet.Length]
 	rol	cx , 8
@@ -170,20 +174,33 @@ UDP_handler:
 
   .updateport:
 
+	push	ebx
 	lea	ebx, [eax + SOCKET_head.lock]
 	call	wait_mutex
+	pop	ebx
 
-	mov	bx, [edx + UDP_Packet.SourcePort]
-	DEBUGF 1,"Changing remote port to: %x\n", bx
-	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], bx
+	mov	si, [edx + UDP_Packet.SourcePort]
+	DEBUGF	1,"Changing remote port to: %x\n", si
+	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], si
 	inc	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.firstpacket]
 
 	jmp	.ok2
 
+  .checksum_mismatch:
+
+	DEBUGF	2,"UDP_Handler - checksum mismatch\n"
+
+	mov	esi, [esp]
+	mov	ecx, [esp + 4]
+       @@:			   ;
+	lodsb			   ;
+	DEBUGF	2,"%x ", eax:2	   ;
+	loop	@r		   ;
+
   .dump:
-	DEBUGF 1,"Dumping UDP packet\n"
 	call	kernel_free
 	add	esp, 4 ; pop (balance stack)
+	DEBUGF	2,"UDP_Handler - dumping\n"
 
 	ret
 
@@ -210,15 +227,12 @@ UDP_socket_send:
 	mov	ebx, [eax + SOCKET_head.end + IPv4_SOCKET.LocalIP]
 	mov	eax, [eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP]
 
-	DEBUGF 1,"Create UDP Packet (size=%u)\n",ecx
+	DEBUGF	1,"Create UDP Packet (size=%u)\n",ecx
 
 	mov	di , IP_PROTO_UDP
-
 	sub	esp, 8						; reserve some place in stack for later
-
-; Create a part pseudoheader in stack,
+								; Create a part of the pseudoheader in stack,
 	push	dword IP_PROTO_UDP shl 8
-
 	add	ecx, UDP_Packet.Data
 
 ; TODO: fill in:   dx  = fragment id
@@ -257,17 +271,14 @@ UDP_socket_send:
 ; Checksum for pseudoheader
 	pushd	[edi-4] ; destination address           ; TODO: fix this, IPv4 packet could have options..
 	pushd	[edi-8] ; source address
-	mov	ecx, 12
-	mov	esi, esp
-	call	checksum_1
-	add	esp, 12 					; remove the pseudoheader from stack
+	call	checksum_pseudoheader
 ; Now create the final checksum and store it in UDP header
 	call	checksum_2
 	mov	[edi + UDP_Packet.Checksum], dx
 
 	inc	[UDP_PACKETS_TX]
 
-	DEBUGF 1,"Sending UDP Packet to device %x\n", ebx      ;
+	DEBUGF	1,"Sending UDP Packet to device %x\n", ebx	;
 	jmp	ETH_sender				       ;
 
   .fail:

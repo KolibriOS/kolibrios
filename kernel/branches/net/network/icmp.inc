@@ -146,9 +146,13 @@ ICMP_init:
 align 4
 ICMP_handler:	;TODO: works only on pure ethernet right now !
 
-	DEBUGF	1,"ICMP_Handler - start\n"
+	DEBUGF	1,"ICMP_Handler - buf:%x size:%x dev:%x, size:%x, buf:%x\n", [esp], [esp+4], ebx, ecx, edx
 	cmp	byte [edx + ICMP_Packet.Type], ICMP_ECHO		    ; Is this an echo request?
 	jne	.check_sockets
+
+;;; TODO: check checksum!
+
+	DEBUGF	1,"ICMP_Handler - is echo request, through device:%x\n", ebx
 
 	mov	byte [edx + ICMP_Packet.Type], ICMP_ECHOREPLY		    ; Change Packet type to reply
 	mov	word [edx + ICMP_Packet.Checksum], 0			    ; Set checksum to 0, needed to calculate new checksum

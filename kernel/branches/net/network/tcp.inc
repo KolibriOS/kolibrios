@@ -139,10 +139,8 @@ TCP_decrease_socket_ttls:
 ; scan through all the sockets, decrementing active timers
 
 	mov	ebx, net_sockets
-
 	cmp	[ebx + SOCKET_head.NextPtr], 0
 	je	.exit
-
   .next_socket:
 	mov	ebx, [ebx + SOCKET_head.NextPtr]
 	or	ebx, ebx
