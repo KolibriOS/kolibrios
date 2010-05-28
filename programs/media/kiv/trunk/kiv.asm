@@ -60,7 +60,7 @@ init_OpenDialog	OpenDialog_data
 
 	mov	esi, path
 	mov	edi, @PARAMS
-	mov	ecx, 512/4
+	mov	ecx, 4096/4
 	rep	movsd
 	mov	byte [edi-1], 0
 	jmp	params_given
@@ -212,7 +212,7 @@ button:
 	
 	mov	esi, path
 	mov	edi, @PARAMS
-	mov	ecx, 512/4
+	mov	ecx, 4096/4
 	rep	movsd
 	mov	byte [edi-1], 0
 	
@@ -417,7 +417,7 @@ next_or_prev_image:
 	mov	esi, curdir
 	push	esi
 	mov	edi, @PARAMS
-	mov	ecx, 512/4
+	mov	ecx, 4096/4
 	rep	movsd
 	mov	byte [edi-1], 0
 	pop	esi
