@@ -3226,7 +3226,7 @@ redrawscreen:
 
         bgli:
 
-         cmp   ecx,1
+         cmp   dword[esp], 1
          jnz   .az
 ;         cmp   byte[BACKGROUND_CHANGED], 0
 ;         jnz   newdw8

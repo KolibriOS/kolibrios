@@ -1288,6 +1288,20 @@ window._.set_window_box: ;/////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
         push    eax ebx esi
 
+; don't do anything if the new box is identical to the old
+	cmp	bl, [edi + WDATA.fl_wstate]
+	jnz	@f
+	mov	esi, eax
+	push	edi
+if WDATA.box
+	add	edi, WDATA.box
+end if
+	mov	ecx, 4
+	repz	cmpsd
+	pop	edi
+	jz	.exit
+@@:
+
         add     esp, -BOX.sizeof
 
         mov     ebx, esp
