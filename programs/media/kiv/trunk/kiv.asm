@@ -212,23 +212,23 @@ button:
 	
 	mov	esi, path
 	mov	edi, @PARAMS
+	push	edi
 	mov	ecx, 4096/4
 	rep	movsd
 	mov	byte [edi-1], 0
 	
-	mov	esi, @PARAMS
+	pop	esi
 	push	esi
 	call	find_last_name_component
-	
+
+	pop	eax	
 	push	[image]
-	mov	eax, path
 	call	load_image
 	jc	.restore_old
 	call	generate_header
 	
 	invoke	img.destroy
 	call	free_directory
-	pop	eax ; pop for [image]
 	jmp	red
 	
     .restore_old:
