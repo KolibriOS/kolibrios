@@ -65,18 +65,6 @@ option_box_mouse:
 macro use_optionbox_draw
 {
 option_box_draw_box:
-option_group equ [edi]
-op_left equ [edi+4]    ;координата начала рисования по х
-op_top equ [edi+6]     ;координата начала рисования по у
-op_text_margin equ [edi+8]      ;=4 расстояние от прямоугольника чек бокса до надписи 
-op_size equ [edi+12]             ;12 размер квадрата чек бокса 
-op_color equ [edi+16]
-op_border_color equ [edi+20] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
-op_text_color equ   [edi+24];[edi+4]  ;цвет текста
-op_text_ptr equ [edi+28]    ;указатель на начало текстовой строки 
-op_text_length equ [edi+32]
-op_flags equ [edi+36]       ;флаги
-
         pusha   ;сохраним все регистры
 
         movzx ebx,word op_left 

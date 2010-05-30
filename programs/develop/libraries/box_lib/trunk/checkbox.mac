@@ -2,20 +2,6 @@
 ;Макрос для системной библиотеки box_lib.obj
 ;Checkbox
 
-ch_struc_size=36
-ch_flag_en=10b ;элемент выбран
-
-ch_left  equ [edi]         ;координата начала рисования по х
-ch_top   equ [edi+2]       ;координата начала рисования по у
-ch_text_margin equ [edi+4] ;=4 расстояние от прямоугольника чек бокса до надписи 
-ch_size  equ [edi+8]       ;12 размер квадрата чек бокса 
-ch_color equ [edi+12]      ;цвет внутри checkbox
-ch_border_color equ [edi+16] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
-ch_text_color   equ [edi+20] ;[edi+4]  ;цвет текста
-ch_text_ptr     equ [edi+24] ;указатель на начало текстовой строки 
-ch_text_length  equ [edi+28]
-ch_flags equ [edi+32]      ;флаги 
-
 macro use_checkbox_draw
 {
 check_box_draw:
