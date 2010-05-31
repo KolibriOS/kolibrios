@@ -1792,13 +1792,19 @@ load_directory:
 	mcall	70,dirinfo
 	test	eax,eax
 	jnz	.error
-
+	
+; test for empty directory
+	mov	eax,[dirinfo.return]
+	mov	eax,[eax+4]
+	test	eax,eax
+	jz	@f
+	
 	call	delete_point_dir
 	call	files_name_normalize
 	call	check_filter
 	call	prepare_extension_and_mark
 	call	clear_data_fb_and_sb
-
+@@:
 	ret
 
 .error:
