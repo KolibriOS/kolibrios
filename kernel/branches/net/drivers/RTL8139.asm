@@ -283,11 +283,7 @@ align 4
 proc service_proc stdcall, ioctl:dword
 
 	mov	edx, [ioctl]
-<<<<<<< .mine
 	mov	eax, [IOCTL.io_code]
-=======
-	mov	eax, [edx+IOCTL.io_code]
->>>>>>> .r1471
 
 ;------------------------------------------------------
 
