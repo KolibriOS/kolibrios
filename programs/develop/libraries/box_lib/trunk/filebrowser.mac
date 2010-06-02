@@ -811,6 +811,7 @@ fb_get_icon_number:
 	jz	@f
 	call	fb_char_toupper
 	shl	ax,8
+.search_start_of_line:
 	mov	al,[ebx]
 	inc	ebx
 	call	fb_char_toupper
@@ -819,12 +820,18 @@ fb_get_icon_number:
 	mov	eax,ecx
 	jmp	.search_association
 @@:
-	mov	eax,ecx
-	mov	esi,eax
+	mov	esi,ecx
 	add	esi,ebp
-	cmp	[esi],byte '='
-	jne	.search_association
-	inc	esi
+	lodsb
+	cmp	al,byte '='
+	jne	.end
+	mov	eax,ecx
+	cmp	eax,fb_ini_file_start
+	je	@f
+	dec	eax
+	cmp [eax],byte 15
+	ja	.end
+@@:
 	xor	ebx,ebx
 	xor	eax,eax
 	mov	ecx,9
