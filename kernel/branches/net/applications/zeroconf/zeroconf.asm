@@ -204,12 +204,12 @@ START:					    ; start of execution
     invoke ini.get_str, path, str_ipconfig, str_dns, inibuf, 16, 0
     mov    edx, inibuf
     call   Ip2dword
-    mcall  75, 7, edx
+    mcall  75, 5, edx
 
     invoke ini.get_str, path, str_ipconfig, str_subnet, inibuf, 16, 0
     mov    edx, inibuf
     call   Ip2dword
-    mcall  75, 5, edx
+    mcall  75, 7, edx
 
 
     mcall  -1

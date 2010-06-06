@@ -827,6 +827,11 @@ reset:
 	out	dx, ax
 
 	xor	eax, eax
+; clear packet/byte counters
+
+	lea	edi, [device.bytes_tx]
+	mov	ecx, 6
+	rep	stosd
 
 	ret
 
@@ -2308,9 +2313,15 @@ boomerang_transmit:
 	DEBUGF	1,"Found place in TX buffer: %x\n", edi
 	push	edi		;<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+; update statistics
+	inc	[device.packets_tx]
+
+	mov	ecx, [esp+8+8]
+	add	dword [device.bytes_tx], ecx
+	adc	dword [device.bytes_tx + 4], 0
+
 ; copy packet data
 	mov	esi, [esp+4+8]
-	mov	ecx, [esp+8+8]
 	DEBUGF	1,"Copying %u bytes from %x to %x\n", ecx, esi, edi
 	shr	cx , 1
 	jnc	.nb
@@ -2774,6 +2785,12 @@ int_boomerang:
 	mov	edi, eax
 
 	DEBUGF	1, " copying %u bytes from %x to %x\n", ecx, esi, edi
+
+; update statistics
+	inc	[device.packets_rx]
+
+	add	dword [device.bytes_rx], ecx
+	adc	dword [device.bytes_rx + 4], 0
 
 ; copy packet data
 	shr	cx , 1
