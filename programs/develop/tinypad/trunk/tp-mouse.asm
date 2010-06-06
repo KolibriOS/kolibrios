@@ -65,7 +65,7 @@ mouse:
 	mov	ah,al
 	mov	al,4
 	call	[bot_dlg_handler]
-	jmp	still
+	jmp	still.skip_write
     @@: cmp	al,MEV_MOVE
 	jne	.no_move
 	cmp	[popup_active],1

@@ -11,7 +11,7 @@ button:
 	mov	ebx,eax
 	mov	al,3
 	call	[bot_dlg_handler]
-	jmp	still
+	jmp	still.skip_write
 
     @@: mov	esi,accel_table2
   .acc: cmp	eax,[esi]

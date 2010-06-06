@@ -72,7 +72,7 @@ key:
 	mov	ebx,eax
 	mov	al,2
 	call	[bot_dlg_handler]
-	jmp	still
+	jmp	still.skip_write
     @@:
 
 	mov	esi,accel_table_main
