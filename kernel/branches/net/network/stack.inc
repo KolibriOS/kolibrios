@@ -208,7 +208,7 @@ end if
 ;
 ; checksum_1
 ;
-;  This is the first of two functions needed to calculate the TCP checksum.
+;  This is the first of two functions needed to calculate a checksum.
 ;
 ;  IN:  edx = start offset for semi-checksum
 ;       esi = pointer to data
@@ -289,151 +289,6 @@ checksum_1:
   .end:
 	ret
 
-
-
-
-
-;IN: 12 bytes of pseudoheader pushed onto the stack
-;    edx = start offset
-;
-; OUT: pseudochecksum in edx
-
-
-align 4
-checksum_pseudoheader:
-
-	add	dl, [esp+5]
-	adc	dh, [esp+4]
-
-	adc	dl, [esp+7]
-	adc	dh, [esp+6]
-
-	adc	dl, [esp+9]
-	adc	dh, [esp+8]
-
-	adc	dl, [esp+11]
-	adc	dh, [esp+10]
-
-	adc	dl, [esp+13]
-	adc	dh, [esp+12]
-
-	adc	dl, [esp+15]
-	adc	dh, [esp+14]
-
-	adc	edx,0
-	ret	12
-
-
-
-
-
-align 4
-checksum_ip_header:
-
-; This is the fast procedure to create or check a IP header without options
-;
-; To create a new checksum, the checksum field must be set to 0 before computation
-;
-; To check an existing checksum, leave the checksum as is, and it will be 0 after this procedure, if it was correct
-
-	xor	edx, edx
-
-	add	dl, [esi+1]
-	adc	dh, [esi+0]
-
-	adc	dl, [esi+3]
-	adc	dh, [esi+2]
-
-	adc	dl, [esi+5]
-	adc	dh, [esi+4]
-
-	adc	dl, [esi+7]
-	adc	dh, [esi+6]
-
-	adc	dl, [esi+9]
-	adc	dh, [esi+8]
-
-; we skip 11th and 12th byte, they are the checksum bytes and should be 0 for re-calculation
-
-	adc	dl, [esi+13]
-	adc	dh, [esi+12]
-
-	adc	dl, [esi+15]
-	adc	dh, [esi+14]
-
-	adc	dl, [esi+17]
-	adc	dh, [esi+16]
-
-	adc	dl, [esi+19]
-	adc	dh, [esi+18]
-
-	adc	edx, 0
-
-	call	checksum_2
-
-	neg	word [esi+10]		; zero will stay zero so we jsut get the checksum
-	add	word [esi+10], dx	;  , else we will get (new checksum - old checksum) in the end, wich should be 0 :)
-
-	ret
-
-
-
-
-
-
-
-
-align 4
-checksum_udp:
-
-; This is the fast procedure to create or check a IP header without options
-;
-; To create a new checksum, the checksum field must be set to 0 before computation
-;
-; To check an existing checksum, leave the checksum as is, and it will be 0 after this procedure, if it was correct
-
-	xor	edx, edx
-
-	add	dl, [esi+1]
-	adc	dh, [esi+0]
-
-	adc	dl, [esi+3]
-	adc	dh, [esi+2]
-
-	adc	dl, [esi+5]
-	adc	dh, [esi+4]
-
-	adc	dl, [esi+7]
-	adc	dh, [esi+6]
-
-	adc	dl, [esi+9]
-	adc	dh, [esi+8]
-
-; we skip 11th and 12th byte, they are the checksum bytes and should be 0 for re-calculation
-
-	adc	dl, [esi+13]
-	adc	dh, [esi+12]
-
-	adc	dl, [esi+15]
-	adc	dh, [esi+14]
-
-	adc	dl, [esi+17]
-	adc	dh, [esi+16]
-
-	adc	dl, [esi+19]
-	adc	dh, [esi+18]
-
-	adc	edx, 0
-
-	call	checksum_2
-
-	neg	word [esi+10]		; zero will stay zero so we jsut get the checksum
-	add	word [esi+10], dx	;  , else we will get (new checksum - old checksum) in the end, wich should be 0 :)
-
-	ret
-
-
-
 ;-----------------------------------------------------------------
 ;
 ; checksum_2
@@ -451,9 +306,10 @@ checksum_2:
 	shr	ecx, 16
 	and	edx, 0xffff
 	add	edx, ecx
-	mov	eax, edx
-	shr	eax, 16
-	add	edx, eax
+
+	mov	ecx, edx
+	shr	ecx, 16
+	add	edx, ecx
 
 	not	dx
 	jnz	.not_zero

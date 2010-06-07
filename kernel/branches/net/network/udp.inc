@@ -67,43 +67,32 @@ UDP_init:
 ;       size of buffer in [esp+4]
 ;       pointer to device struct in ebx
 ;       UDP Packet size in ecx
-;       pointer to UDP Packet data in edx
+;       pointer to UDP Packet in edx
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
 align 4
 UDP_handler:
 
-	DEBUGF	1,"UDP_Handler\n"
+	DEBUGF	1,"UDP_Handler, checksum:%x\n", [edx+UDP_Packet.Checksum]:4
 
-	cmp	[edx + UDP_Packet.Checksum], 0
-	jz	.no_checksum
-	; First validate, checksum:
+; First validate, checksum:
+	cmp    [edx + UDP_Packet.Checksum], 0
+	jz     .no_checksum
 
-	pusha
+	push	ecx edx
 
-	push	cx
-	rol	word [esp], 8
-	push	word IP_PROTO_UDP shl 8
-	push	edi
 	push	esi
-
-	mov	di, [edx + UDP_Packet.Checksum]
-	mov	[edx + UDP_Packet.Checksum], 0
-
+	push	edi
 	mov	esi, edx
-	xor	edx, edx
-	call	checksum_1
-	call	checksum_pseudoheader
-	call	checksum_2
+	call	UDP_checksum
 
-	cmp	di, dx
-	popa
-	jne	.checksum_mismatch ;dump
+	pop	edx ecx
 
+	cmp    [edx + UDP_Packet.Checksum], 0
+	jnz    .checksum_mismatch
 
   .no_checksum:
-
 	DEBUGF	1,"UDP Checksum is correct\n"
 
 	; Look for a socket where
@@ -190,12 +179,11 @@ UDP_handler:
 
 	DEBUGF	2,"UDP_Handler - checksum mismatch\n"
 
-	mov	esi, [esp]
-	mov	ecx, [esp + 4]
-       @@:			   ;
-	lodsb			   ;
-	DEBUGF	2,"%x ", eax:2	   ;
-	loop	@r		   ;
+;        mov     esi, edx
+;       @@:                         ;
+;        lodsb                      ;
+;        DEBUGF  2,"%x ", eax:2     ;
+;        loop    @r                 ;
 
   .dump:
 	call	kernel_free
@@ -230,9 +218,7 @@ UDP_socket_send:
 	DEBUGF	1,"Create UDP Packet (size=%u)\n",ecx
 
 	mov	di , IP_PROTO_UDP
-	sub	esp, 8						; reserve some place in stack for later
-								; Create a part of the pseudoheader in stack,
-	push	dword IP_PROTO_UDP shl 8
+	sub	esp, 8						; Data ptr and data size will be placed here
 	add	ecx, UDP_Packet.Data
 
 ; TODO: fill in:   dx  = fragment id
@@ -242,12 +228,11 @@ UDP_socket_send:
 	cmp	edi, -1
 	je	.fail
 
-	mov	[esp + 8 + 4], eax				; pointer to buffer start
-	mov	[esp + 8 + 4 + 4], edx				; buffer size
+	mov	[esp + 8], eax					; pointer to buffer start
+	mov	[esp + 8 + 4], edx				; buffer size
 
 	rol	cx, 8
 	mov	[edi + UDP_Packet.Length], cx
-	mov	[esp + 8 + 2], cx
 	ror	cx, 8
 
 	pop	esi
@@ -264,27 +249,88 @@ UDP_socket_send:
 	pop	dword [edi + UDP_Packet.SourcePort]		; fill in both portnumbers
 	mov	[edi + UDP_Packet.Checksum], 0			; set it to zero, to calculate checksum
 
-; Checksum for UDP header + data
-	xor	edx, edx
+; Checksum
 	mov	esi, edi
-	call	checksum_1
-; Checksum for pseudoheader
 	pushd	[edi-4] ; destination address           ; TODO: fix this, IPv4 packet could have options..
 	pushd	[edi-8] ; source address
-	call	checksum_pseudoheader
-; Now create the final checksum and store it in UDP header
-	call	checksum_2
-	mov	[edi + UDP_Packet.Checksum], dx
+	call	UDP_checksum
 
 	inc	[UDP_PACKETS_TX]
 
-	DEBUGF	1,"Sending UDP Packet to device %x\n", ebx	;
-	jmp	ETH_sender				       ;
+	DEBUGF	1,"Sending UDP Packet to device %x\n", ebx
+	jmp	ETH_sender
 
   .fail:
 	; todo: queue the packet
 	add	esp, 8+12+8
 	ret
+
+
+
+
+;-----------------------------------------------------------------
+;
+; checksum_udp
+;
+; This is the fast procedure to create or check a UDP header
+;  - To create a new checksum, the checksum field must be set to 0 before computation
+;  - To check an existing checksum, leave the checksum as is,
+;     and it will be 0 after this procedure, if it was correct
+;
+;  IN:  push source ip
+;       push dest ip
+;       esi = packet ptr
+;
+;  OUT: checksum is filled in in packet! (but also in dx)
+;
+;-----------------------------------------------------------------
+
+align 4
+UDP_checksum:
+
+; Pseudoheader
+	mov	edx, IP_PROTO_UDP		; NO shl 8 here ! (it took me ages to figure this one out)
+
+	add	dl, [esp+1+4]
+	adc	dh, [esp+0+4]
+	adc	dl, [esp+3+4]
+	adc	dh, [esp+2+4]
+
+	adc	dl, [esp+1+8]
+	adc	dh, [esp+0+8]
+	adc	dl, [esp+3+8]
+	adc	dh, [esp+2+8]
+
+	adc	dl, byte[esi+UDP_Packet.Length+1]
+	adc	dh, byte[esi+UDP_Packet.Length+0]
+
+; Done with pseudoheader, now do real header
+	adc	dl, byte[esi+UDP_Packet.SourcePort+1]
+	adc	dh, byte[esi+UDP_Packet.SourcePort+0]
+
+	adc	dl, byte[esi+UDP_Packet.DestinationPort+1]
+	adc	dh, byte[esi+UDP_Packet.DestinationPort+0]
+
+	adc	dl, byte[esi+UDP_Packet.Length+1]
+	adc	dh, byte[esi+UDP_Packet.Length+0]
+
+	adc	edx, 0
+
+; Done with header, now do data
+	push	esi
+	movzx	ecx, [esi+UDP_Packet.Length]
+	rol	cx , 8
+	sub	cx , UDP_Packet.Data
+	add	esi, UDP_Packet.Data
+
+	call	checksum_1
+	call	checksum_2
+	pop	esi
+
+	neg	[esi+UDP_Packet.Checksum]	    ; zero will stay zero so we just get the checksum
+	add	[esi+UDP_Packet.Checksum], dx	    ;  , else we will get (new checksum - old checksum) in the end, wich should be 0 :)
+
+	ret	8
 
 
 

@@ -140,7 +140,7 @@ IPv4_handler:	 ; TODO: implement handler for IP options
 	; Re-calculate checksum
 	push	edx ebx
 	mov	esi, edx
-	call	checksum_ip_header
+	call	IPv4_checksum
 	pop	ebx edx
 
 	; now see if it was correct
@@ -611,7 +611,7 @@ IPv4_create_packet:
 
 	push	eax edx esi
 	mov	esi, edi
-	call	checksum_ip_header
+	call	IPv4_checksum
 	pop	esi edx eax ecx
 	add	edi, IPv4_Packet.DataOrOptional
 
@@ -629,6 +629,58 @@ IPv4_create_packet:
 	DEBUGF 1,"Create IPv4 Packet - failed\n"
 	or	edi, -1
 	ret
+
+
+
+align 4
+IPv4_checksum:
+
+; This is the fast procedure to create or check a IP header without options
+;
+; To create a new checksum, the checksum field must be set to 0 before computation
+;
+; To check an existing checksum, leave the checksum as is, and it will be 0 after this procedure, if it was correct
+
+	xor	edx, edx
+
+	add	dl, [esi+1]
+	adc	dh, [esi+0]
+
+	adc	dl, [esi+3]
+	adc	dh, [esi+2]
+
+	adc	dl, [esi+5]
+	adc	dh, [esi+4]
+
+	adc	dl, [esi+7]
+	adc	dh, [esi+6]
+
+	adc	dl, [esi+9]
+	adc	dh, [esi+8]
+
+; we skip 11th and 12th byte, they are the checksum bytes and should be 0 for re-calculation
+
+	adc	dl, [esi+13]
+	adc	dh, [esi+12]
+
+	adc	dl, [esi+15]
+	adc	dh, [esi+14]
+
+	adc	dl, [esi+17]
+	adc	dh, [esi+16]
+
+	adc	dl, [esi+19]
+	adc	dh, [esi+18]
+
+	adc	edx, 0
+
+	call	checksum_2
+
+	neg	word [esi+10]		; zero will stay zero so we just get the checksum
+	add	word [esi+10], dx	;  , else we will get (new checksum - old checksum) in the end, wich should be 0 :)
+
+	ret
+
 
 
 
