@@ -15,6 +15,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
 format MS COFF
 
 	API_VERSION		equ 0x01000100
@@ -341,12 +342,12 @@ proc service_proc stdcall, ioctl:dword
 
 ; Fill in the direct call addresses into the struct
 
-	mov	dword [device.reset], reset
-	mov	dword [device.transmit], transmit
-	mov	dword [device.get_MAC], read_mac
-	mov	dword [device.set_MAC], write_mac
-	mov	dword [device.unload], unload
-	mov	dword [device.name], my_service
+	mov	[device.reset], reset
+	mov	[device.transmit], transmit
+	mov	[device.get_MAC], read_mac
+	mov	[device.set_MAC], write_mac
+	mov	[device.unload], unload
+	mov	[device.name], my_service
 
 ; save the pci bus and device numbers
 
@@ -787,6 +788,8 @@ int_handler:
 
 	mov	esi, RTL8139_LIST
 	mov	ecx, [RTL8139_DEV]
+	test	ecx, ecx
+	jz	.fail
 .nextdevice:
 	mov	ebx, dword [esi]
 
@@ -800,7 +803,8 @@ int_handler:
 	test	ax , ax
 	jnz	.got_it
 
-	loop	.nextdevice
+	dec	ecx
+	jnz	.nextdevice
 
 	ret					    ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 
