@@ -276,9 +276,8 @@ checksum_1:
 	adc	dh, [esi+0]
 
 	adc	edx, 0
-
-	inc	ecx
-	inc	ecx
+	inc	esi
+	inc	esi
 
   .no_2:
 	popf

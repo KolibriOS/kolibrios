@@ -74,20 +74,20 @@ UDP_init:
 align 4
 UDP_handler:
 
-	DEBUGF	1,"UDP_Handler, checksum:%x\n", [edx+UDP_Packet.Checksum]:4
+	DEBUGF	1,"UDP_Handler, checksum:%x, size:%u\n", [edx+UDP_Packet.Checksum]:4, ecx
 
 ; First validate, checksum:
 	cmp    [edx + UDP_Packet.Checksum], 0
 	jz     .no_checksum
 
-	push	ecx edx
+	push	edx
 
 	push	esi
 	push	edi
 	mov	esi, edx
 	call	UDP_checksum
 
-	pop	edx ecx
+	pop	edx
 
 	cmp    [edx + UDP_Packet.Checksum], 0
 	jnz    .checksum_mismatch
@@ -122,9 +122,9 @@ UDP_handler:
 	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], 0xffffffff
 	je	.ok1
 
-	mov	esi, [esp]
-	mov	esi, [ebx + ETH_FRAME.Data + IPv4_Packet.SourceAddress] ; get the Source address from the IP Packet   FIXME
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], esi
+;        mov     esi, [esp] ; start of data (ethernet header)
+;        mov     esi, [esi + ETH_FRAME.Data + IPv4_Packet.SourceAddress] ; get the Source address from the IP Packet   FIXME
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], edi ;esi
 	jne	.try_more					      ; Quit if the source IP is not valid, check for more sockets with this IP/PORT combination
 
 
@@ -174,6 +174,7 @@ UDP_handler:
 	inc	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.firstpacket]
 
 	jmp	.ok2
+
 
   .checksum_mismatch:
 
@@ -301,8 +302,9 @@ UDP_checksum:
 	adc	dl, [esp+3+8]
 	adc	dh, [esp+2+8]
 
-	adc	dl, byte[esi+UDP_Packet.Length+1]
-	adc	dh, byte[esi+UDP_Packet.Length+0]
+
+	adc	dl, cl ; byte[esi+UDP_Packet.Length+1]
+	adc	dh, ch ; byte[esi+UDP_Packet.Length+0]
 
 ; Done with pseudoheader, now do real header
 	adc	dl, byte[esi+UDP_Packet.SourcePort+1]
