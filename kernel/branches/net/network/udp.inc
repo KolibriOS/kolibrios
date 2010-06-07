@@ -68,6 +68,10 @@ UDP_init:
 ;       pointer to device struct in ebx
 ;       UDP Packet size in ecx
 ;       pointer to UDP Packet in edx
+;
+;       esi = ipv4 source address
+;       edi = ipv4 dest   address
+;
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
@@ -77,20 +81,22 @@ UDP_handler:
 	DEBUGF	1,"UDP_Handler, checksum:%x, size:%u\n", [edx+UDP_Packet.Checksum]:4, ecx
 
 ; First validate, checksum:
-	cmp    [edx + UDP_Packet.Checksum], 0
-	jz     .no_checksum
+	cmp	[edx + UDP_Packet.Checksum], 0
+	jz	.no_checksum
+
+	xchg	edi, esi	; save ipv4 source address so we can look it up later
 
 	push	edx
 
 	push	esi
 	push	edi
 	mov	esi, edx
-	call	UDP_checksum
+	call	UDP_checksum	; this destroys edx, ecx and esi (but not edi! :)
 
 	pop	edx
 
-	cmp    [edx + UDP_Packet.Checksum], 0
-	jnz    .checksum_mismatch
+	cmp	[edx + UDP_Packet.Checksum], 0
+	jnz	.checksum_mismatch
 
   .no_checksum:
 	DEBUGF	1,"UDP Checksum is correct\n"
@@ -122,9 +128,7 @@ UDP_handler:
 	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], 0xffffffff
 	je	.ok1
 
-;        mov     esi, [esp] ; start of data (ethernet header)
-;        mov     esi, [esi + ETH_FRAME.Data + IPv4_Packet.SourceAddress] ; get the Source address from the IP Packet   FIXME
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], edi ;esi
+	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], edi   ; edi is IPv4 destination address
 	jne	.try_more					      ; Quit if the source IP is not valid, check for more sockets with this IP/PORT combination
 
 
