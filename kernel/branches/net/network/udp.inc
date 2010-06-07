@@ -267,7 +267,7 @@ UDP_socket_send:
 
   .fail:
 	; todo: queue the packet
-	add	esp, 8+12+8
+	add	esp, 8+8
 	ret
 
 

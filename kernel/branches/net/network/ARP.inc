@@ -436,20 +436,19 @@ ARP_del_entry:
 	cmp	esi, [NumARP]
 	jge	.error
 
-	DEBUGF 1,"deleting the entry..\n"
-
 	imul	esi, ARP_ENTRY.size
 
 	mov	ecx, (ARP_TABLE_SIZE - 1) * ARP_ENTRY.size
 	sub	ecx, esi
 
-	lea	edi, [ebx + esi]	    ;edi=ptr to entry that should be deleted
+	lea	edi, [ARPTable + esi]		 ;edi=ptr to entry that should be deleted
 	lea	esi, [edi + ARP_ENTRY.size] ;esi=ptr to next entry
 
 	shr	ecx,1	   ;ecx/2 => ARP_ENTRY_SIZE MUST BE EVEN NUMBER!
 	rep	movsw
 
 	dec	[NumARP] ;decrease arp-entries counter
+	DEBUGF 1,"ARP entry deleted\n"
 .error:
 	ret
 
