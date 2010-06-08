@@ -29,7 +29,7 @@ otst_panel_left equ 265
 include 'tile_fun.inc'
 include 'pl_import.inc'
 
-  @use_library
+  @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
 struct FileInfoBlock
 	Function dd ?
@@ -79,9 +79,6 @@ start:
 	jz	@f
 	mcall	-1	;exit not correct
 @@:
-
-  stdcall dll.Init,dword[lib_init]
-  stdcall dll.Init,dword[lib_init_ini]
 
   copy_path ini_name,sys_path,file_name,0x0
   stdcall dword[ini_get_str],file_name,ini_sec,ini_k_cache,dword[edit1.text],dword[edit1.max],ini_def_cache
