@@ -242,16 +242,20 @@
 ;         0C   dword  draw limit - y end
 ; 0x80339000 -> 3BFFF3   free (12k)
 ; 0x8033BFF4 -> 33BFFF   background info 
-; 0x8033C000 -> 3??FFF   page map: 1bit per page; size = mem_size>>15 (max: 128k)
-; 0x003??000 -> 3??FFF	 phys. location of system PTE head (12kb min); 
-; =====================================
-; 0x805FFF80 -> 5FFFFF   TSS  (128)
-; 0x80600000 -> 7FFFFF   extra kernel data structutes(2M max)
-; =====================================
+; 0x8033C000    	 page map     (length b = memsize shr 15)
+; 0x8033C000 + b         start of static pagetables
+
+; 0x803FFFFF <- no direct address translation beyond this point
+; ============================================================= 
+
+; 0x805FF000 -> 5FFF80   TSS  
+; 0x80600000 -> 601FFF   i/o maps
+
 ; 0x80800000 ->       kernel heap
 ; 0x80FFFFFF          heap min limit
 ; 0xFDBFFFFF          heap max limit
 
+; 0xF0000000 -> 0xF1FFFFFF  PCI-express extended config space
 ; 0xFDC00000 -> 0xFDFFFFFF  page tables 4Mb
 ; 0xFE000000 -> 0xFFFFFFFF  LFB 32Mb
 ; 0xFE000000 -> 0xFE7FFFFF  application available LFB 8Mb
