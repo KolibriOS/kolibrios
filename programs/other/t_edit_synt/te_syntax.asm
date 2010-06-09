@@ -17,11 +17,11 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-
+include '../t_edit/mem.inc'
 include 'te_data.inc'
 include 'te_work.inc' ;text work functions
 
-@use_library
+@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,0
 
 align 4
 start:
@@ -39,7 +39,7 @@ start:
 
 ;-------------------------------------------------
   mov ecx,maxSyntaxFileSize
-  call mem_Alloc
+  stdcall mem.Alloc,ecx
   mov [options_file],eax
   mov [options_file_end],eax
   add [options_file_end],ecx
@@ -59,13 +59,13 @@ load_libraries l_libs_start,load_lib_end
   copy_path fn_icon_tl_sys,sys_path,file_name,0
 
   mov ecx,3*256*13
-  call mem_Alloc
+  stdcall mem.Alloc,ecx
   mov dword[tree1.data_img_sys],eax
 
   mov [run_file_70.Function], 0
   mov [run_file_70.Position], 54
   mov [run_file_70.Flags], 0
-  mov [run_file_70.Count], 3*256*13
+  mov [run_file_70.Count], ecx
   mov [run_file_70.Buffer], eax
   mov byte[run_file_70+20], 0
   mov [run_file_70.FileName], file_name
@@ -82,13 +82,13 @@ load_libraries l_libs_start,load_lib_end
   copy_path fn_icon_tl_nod,sys_path,file_name,0
 
   mov ecx,3*256*2
-  call mem_Alloc
+  stdcall mem.Alloc,ecx
   mov dword[tree1.data_img],eax
 
 ;  mov [run_file_70.Function], 0
 ;  mov [run_file_70.Position], 54
 ;  mov [run_file_70.Flags], 0
-  mov [run_file_70.Count], 3*256*2
+  mov [run_file_70.Count], ecx
   mov [run_file_70.Buffer], eax
 ;  mov byte[run_file_70+20], 0
 ;  mov [run_file_70.FileName], file_name
@@ -244,8 +244,7 @@ button:
 .exit:
   ;push eax
 
-  mov ecx,[options_file]
-  call mem_Free
+  stdcall mem.Free,[options_file]
 
   stdcall [tl_data_clear], tree1
   stdcall [ted_delete], tedit0
@@ -301,7 +300,7 @@ get_wnd_in_focus:
 	;@@:
 	ret
 
-hed db 'TextEditor syntax file converter 31.05.10',0 ;подпись окна
+hed db 'TextEditor syntax file converter 09.06.10',0 ;подпись окна
 
 txtErrOpen db 'Не найден файл, проверьте правильность имени',0
 txtErrIni0 db 'Не открылся файл с иконками',0
@@ -325,38 +324,9 @@ err_message_found_lib1	db 'Sorry I cannot found library msgbox.obj',0
 
 ;library structures
 l_libs_start:
-  lib0 l_libs boxlib_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l0, myimport,err_message_import0, head_f_i0
+  lib0 l_libs boxlib_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l0, boxlib_import,err_message_import0, head_f_i0
 load_lib_end:
 
-;-----------------------------------------------------------------------------
-;функция для выделения памяти
-;input:
-; ecx = size data
-;otput:
-; eax = pointer to memory
-align 4
-mem_Alloc:
-  push ebx
-  mov eax,68
-  mov ebx,12
-  int 0x40
-  pop ebx
-  ret
-;-----------------------------------------------------------------------------
-;функция для освобождения памяти
-;input:
-; ecx = pointer to memory
-align 4
-mem_Free:
-  push eax ebx
-  cmp ecx,0
-  jz @f
-    mov eax,68
-    mov ebx,13
-    int 0x40
-  @@:
-  pop ebx eax
-  ret
 
 i_end:
 	rb 1024

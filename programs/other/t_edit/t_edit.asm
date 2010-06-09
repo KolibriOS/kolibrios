@@ -21,9 +21,9 @@ maxSyntaxFileSize equ 410000
 
 include '../../proc32.inc'
 include '../../macros.inc'
+include 'mem.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-
 include 'lang.inc'
 include '../../develop/libraries/box_lib/asm/trunk/opendial.mac'
 use_OpenDialog
@@ -33,7 +33,7 @@ include 'strlen.inc'
 include 't_draw.inc' ;draw main window functions
 include 't_button.inc' ;text work functions
 
-@use_library
+@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,0
 
 align 4
 start:
@@ -76,7 +76,7 @@ init_OpenDialog OpenDialog_data
 
 ; init bmp file
   mov ecx,1200*18
-  call mem_Alloc
+  stdcall mem.Alloc,ecx
   mov [bmp_icon],eax
 
   copy_path fn_icon,sys_path,file_name,0x0
@@ -103,7 +103,7 @@ init_OpenDialog OpenDialog_data
   copy_path fn_icon_tl_sys,sys_path,file_name,0x0
 
   mov ecx,3*256*13
-  call mem_Alloc
+  stdcall mem.Alloc,ecx
   mov dword[tree1.data_img_sys],eax
 
   ;mov [run_file_70.Function], 0
@@ -126,7 +126,7 @@ init_OpenDialog OpenDialog_data
   copy_path fn_icon_tl_nod,sys_path,file_name,0x0
 
   mov ecx,3*256*2
-  call mem_Alloc
+  stdcall mem.Alloc,ecx
   mov dword[tree1.data_img],eax
 
 ;  mov [run_file_70.Function], 0
@@ -494,8 +494,7 @@ button:
     stdcall [mb_create],msgbox_8,thread ;message: save changes in file?
     jmp still
   @@:
-  mov ecx,[bmp_icon]
-  call mem_Free
+  stdcall mem.Free,[bmp_icon]
 
   stdcall [ted_delete], tedit0
   stdcall dword[tl_data_clear], tree1
@@ -531,7 +530,7 @@ end if
 
 ;library structures
 l_libs_start:
-  lib0 l_libs boxlib_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l0, myimport,err_message_import0, head_f_i0
+  lib0 l_libs boxlib_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l0, boxlib_import,err_message_import0, head_f_i0
   lib1 l_libs msgbox_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l0, msgbox_lib_import, err_message_import1, head_f_i0
 load_lib_end:
 

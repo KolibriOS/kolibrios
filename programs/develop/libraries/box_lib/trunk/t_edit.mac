@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 17.05.2010 IgorA
+; файл последний раз изменялся 09.06.2010 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -154,7 +154,7 @@ proc ted_init, edit:dword
 
 	mov ecx,sizeof.symbol
 	imul ecx,ted_max_chars
-	call mem_Alloc ;выделяем память
+	invoke mem.alloc,ecx ;выделяем память
 	mov ted_tex,eax
 	mov ted_tex_1,eax
 	add ted_tex_1,sizeof.symbol
@@ -166,7 +166,7 @@ proc ted_init, edit:dword
 ;-------------------------------------------------
 	mov ecx,1024 ;1024 - для массива ted_arr_key_pos
 	add ecx,ted_syntax_file_size
-	call mem_Alloc
+	invoke mem.alloc,ecx
 	mov ted_arr_key_pos,eax
 	add eax,1024
 	mov ted_syntax_file,eax
@@ -255,8 +255,8 @@ align 4
 proc ted_delete, edit:dword
 	push edi
 	mov edi,dword[edit]
-	stdcall mem_Free,ted_tex
-	stdcall mem_Free,ted_arr_key_pos ;ted_syntax_file
+	invoke mem.free,ted_tex
+	invoke mem.free,ted_arr_key_pos ;ted_syntax_file
 	pop edi
 	ret
 endp
@@ -1204,7 +1204,7 @@ proc ted_memory_increase
 		add ecx,ted_max_chars
 		mov ted_max_chars,ecx
 		imul ecx,sizeof.symbol
-		stdcall mem_ReAlloc, ted_tex,ecx
+		invoke mem.realloc, ted_tex,ecx
 		mov ebx,ted_tex
 		mov ted_tex,eax
 		mov ted_tex_1,eax
@@ -3946,7 +3946,7 @@ proc ted_but_save_file, edit:dword, file:dword, f_name:dword
   je .no_save
 
   mov ecx,ted_max_chars
-  call mem_Alloc
+  invoke mem.alloc,ecx
   push eax ;запоминаем указатель на выделенную память
 
   mov edx,ted_tex
@@ -3999,7 +3999,7 @@ call ted_fun_save_err
   @@:
 
   pop ecx ;записываем указатель на выделенную память
-  stdcall mem_Free,ecx
+  invoke mem.free,ecx
   .no_save:
   popad
   ret

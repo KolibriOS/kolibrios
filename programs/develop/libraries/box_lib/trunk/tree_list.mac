@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 15.05.2010 IgorA
+; файл последний раз изменялся 09.06.2010 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -27,14 +27,14 @@ tl_data_init: ;выделние памяти для структур списка и основной информации (констр
     xor ecx,ecx
     mov cx,tl_info_size
     imul ecx,tl_info_max_count
-    call mem_Alloc
+    invoke mem.alloc,ecx
     mov dword[edi],eax ;копируем указатель на полученую память в структуру
     mov tl_data_img,0  ;обнуляем указатель 'data_img'
     mov tl_data_img_sys,0 ;обнуляем указатель 'data_img_sys'
 
     mov ecx,sizeof.TreeList
     imul ecx,tl_info_max_count
-    call mem_Alloc
+    invoke mem.alloc,ecx
     mov tl_data_nodes,eax ;копируем указатель на полученую память в структуру
 
     push dword edi
@@ -70,15 +70,15 @@ proc tl_data_clear, tlist:dword ;очистка памяти элемента (деструктор)
 	mov edi,dword[tlist]
 	cmp tl_data_img,0
 	je @f
-		stdcall mem_Free,tl_data_img ;чистка системных иконок
+		invoke mem.free,tl_data_img ;чистка системных иконок
 	@@:
 	cmp tl_data_img_sys,0
 	je @f
-		stdcall mem_Free,tl_data_img_sys ;чистка системных иконок
+		invoke mem.free,tl_data_img_sys ;чистка системных иконок
 	@@:
-	stdcall mem_Free,dword[edi]
+	invoke mem.free,dword[edi]
 
-	stdcall mem_Free,tl_data_nodes
+	invoke mem.free,tl_data_nodes
 	pop edi
 	ret
 endp

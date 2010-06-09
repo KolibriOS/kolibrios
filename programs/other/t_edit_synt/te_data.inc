@@ -10,7 +10,9 @@ fn_icon_tl_nod db 'tl_nod_16.bmp',0
 ;---------------------------------------------------------------------
 
 align 4
-myimport:
+boxlib_import:
+dd alib_init2 ;функция запускается макросом 1 раз при подключении бибилиотеки, потому в программе метка на нее не нужна
+
 edit_box_draw  dd aEdit_box_draw
 edit_box_key   dd aEdit_box_key
 edit_box_mouse dd aEdit_box_mouse
@@ -83,6 +85,7 @@ ted_text_colored dd sz_ted_text_colored
 ;version_text_edit dd sz_ted_version
 
 dd 0,0
+alib_init2 db 'lib_init',0
 
 aEdit_box_draw	db 'edit_box',0
 aEdit_box_key	db 'edit_box_key',0

@@ -21,47 +21,10 @@ include 'bl_sys.mac'
 include 'box_lib.mac' ;macro which should make life easier :)
 
 ;-----------------------------------------------------------------------------
-;функция для выделения памяти
-;input:
-; ecx = size data
-;otput:
-; eax = pointer to memory
-align 4
-mem_Alloc:
-  push ebx
-  mov eax,68
-  mov ebx,12
-  int 0x40
-  pop ebx
-  ret
-;функция для освобождения памяти
-;input:
-; ecx = pointer to memory
-align 4
-proc mem_Free, mptr:dword
-	push eax ebx ecx
-	mov ecx,[mptr]
-	cmp ecx,0
-	jz @f
-		mov eax,68
-		mov ebx,13
-		int 0x40
-	@@:
-	pop ecx ebx eax
-	ret
-endp
-;функция для перераспределения памяти
-;otput:
-; eax = pointer to memory
-align 4
-proc mem_ReAlloc, mptr:dword, size:dword
-	push ebx ecx edx
-	mov	edx, [mptr]
-	mov	ecx, [size]
-	mcall 68, 20
-	pop	edx ecx ebx
-	ret
-endp
+mem.alloc   dd ? ;функция для выделения памяти
+mem.free    dd ? ;функция для освобождения памяти
+mem.realloc dd ? ;функция для перераспределения памяти
+dll.load    dd ?
 
 ;----------------------------------------------------
 ;EditBox
@@ -138,8 +101,17 @@ use_path_show
 align 16
 use_text_edit
 
+;input:
+; eax = указатель на функцию выделения памяти
+; ebx = ... освобождения памяти
+; ecx = ... перераспределения памяти
+; edx = ... загрузки библиотеки (пока не используется)
 align 16
-init:
+lib_init:
+	mov	[mem.alloc], eax
+	mov	[mem.free], ebx
+	mov	[mem.realloc], ecx
+	mov	[dll.load], edx
 ret
 
 
@@ -147,7 +119,7 @@ align 16
 EXPORTS:
 
 
-dd	sz_init,			init
+dd	sz_init,			lib_init
 dd	sz_version,			0x00000001
 
 dd	sz_edit_box,			edit_box

@@ -1,5 +1,7 @@
 align 4
 boxlib_import:
+  dd alib_init2 ;функция запускается макросом 1 раз при подключении бибилиотеки, потому в программе метка на нее не нужна
+
   edit_box_draw  dd aEdit_box_draw
   edit_box_key   dd aEdit_box_key
   edit_box_mouse dd aEdit_box_mouse
@@ -44,6 +46,7 @@ boxlib_import:
   tl_get_mem_size dd sz_tl_get_mem_size
 
   dd 0,0
+  alib_init2 db 'lib_init',0
 
   aEdit_box_draw  db 'edit_box',0
   aEdit_box_key   db 'edit_box_key',0
@@ -90,7 +93,7 @@ boxlib_import:
 
 align 4
 libini_import:
-  lib_init_ini dd alib_init0
+  dd alib_init0
   ini_get_str  dd aini_get_str
 dd 0,0
   alib_init0   db 'lib_init',0
@@ -98,7 +101,7 @@ dd 0,0
 
 align 4
 libimg_import:
-  lib_init    dd alib_init1
+  dd alib_init1
   img_is_img  dd aimg_is_img
   img_info    dd aimg_info
   img_from_file dd aimg_from_file

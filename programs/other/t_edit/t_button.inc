@@ -26,7 +26,7 @@ struct symbol
 ends
 
 
-hed db 'TextEditor 27.05.10',0 ;подпись окна
+hed db 'TextEditor 09.06.10',0 ;подпись окна
 sc system_colors
 
 fn_icon db 'te_icon.bmp',0
@@ -43,37 +43,6 @@ ted_on_init_synt_err:
 	ret
 
 
-;-----------------------------------------------------------------------------
-;функция для выделения памяти
-;input:
-; ecx = size data
-;otput:
-; eax = pointer to memory
-align 4
-mem_Alloc:
-  push ebx
-  mov eax,68
-  mov ebx,12
-  int 0x40
-  pop ebx
-  ret
-;-----------------------------------------------------------------------------
-;функция для освобождения памяти
-;input:
-; ecx = pointer to memory
-align 4
-mem_Free:
-  push eax ebx
-  cmp ecx,0
-  jz @f
-    mov eax,68
-    mov ebx,13
-    int 0x40
-  @@:
-  pop ebx eax
-  ret
-
-  
 align 4
 ted_but_new_file:
   push eax ebx
