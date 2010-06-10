@@ -72,6 +72,7 @@ load_libraries	l_libs_start,end_l_libs
 	call	convert_icons
 	call	load_ini
 	call	calc_ini
+	jmp	red_1
 ;---------------------------------------------------------------------
 red:
 	call	control_minimal_window_size
