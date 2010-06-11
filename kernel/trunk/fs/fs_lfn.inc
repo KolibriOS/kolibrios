@@ -8,8 +8,8 @@
 $Revision$
 
 
-image_of_eax EQU esp+36
-image_of_ebx EQU esp+24
+image_of_eax EQU esp+32
+image_of_ebx EQU esp+20
 
 ; System function 70 - files with long names (LFN)
 ; diamond, 2006
@@ -89,9 +89,8 @@ fs_additional_handlers:
         dd      0
 
 endg
-
 file_system_lfn:
-; in: eax->fileinfo block
+; in: ebx->fileinfo block
 ; operation codes:
 ; 0 : read file
 ; 1 : read folder
@@ -105,7 +104,6 @@ file_system_lfn:
 ; 9 : create directory
 
 ; parse file name
-	xchg	ebx, eax
 	lea	esi, [ebx+20]
 	lodsb
 	test	al, al

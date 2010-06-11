@@ -544,10 +544,8 @@ proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
 	   mov [name], ebx
 
 	   pushad
-	   push eax
-	   lea eax, [cmd]
+	   lea ebx, [cmd]
 	   call file_system_lfn
-	   pop eax
 	   popad
 	   ret
 endp

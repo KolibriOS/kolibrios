@@ -21,12 +21,10 @@ saverd_fileinfo:
 endg
 sysfn_saveramdisk:      ; 18.6 = SAVE FLOPPY IMAGE (HD version only)
         call    restorefatchain
-        mov     eax, saverd_fileinfo
+        mov     ebx, saverd_fileinfo
         mov     [saverd_fileinfo.name], ecx
         pushad
-        push    eax
-        call    file_system_lfn
-        pop     eax
+        call    file_system_lfn	;in ebx
         popad
         mov     [esp+32], eax
         ret

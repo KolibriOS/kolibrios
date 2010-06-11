@@ -169,10 +169,6 @@ iglobal
       dd 0
       dd syscall_putimage_palette; 65-PutImagePalette
       dd sys_process_def         ; 66-Process definitions - keyboard
-      dd 0
-      dd 0
-      dd 0
-      dd file_system_lfn         ; 70-Common file system interface, version 2
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; NEW SYSTEM FUNCTIONS TABLE ;;
@@ -250,7 +246,7 @@ iglobal
       dd syscall_move_window     ; 67-Window move or resize
       dd f68			 ; 68-Some internal services
       dd sys_debug_services      ; 69-Debug
-      dd cross_order             ; 70-Common file system interface, version 2
+      dd file_system_lfn         ; 70-Common file system interface, version 2
       dd syscall_window_settings ; 71-Window settings
       dd sys_sendwindowmsg       ; 72-Send window message
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
