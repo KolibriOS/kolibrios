@@ -112,13 +112,24 @@ macro find_io bus, dev, io {
 
 }
 
+macro find_irq bus, dev, irq {
+
+	push	eax edx ecx
+	movzx	ecx, bus
+	movzx	edx, dev
+	stdcall PciRead8, ecx ,edx ,0x3c				; 0x3c is the offset where irq can be found
+	mov	irq, al
+	pop	ecx edx eax
+
+}
+
 
 
 macro make_bus_master bus, dev {
 
 	movzx	ecx, bus
 	movzx	edx, dev
-	stdcall PciRead32, ecx ,edx ,PCI_REG_COMMAND
+	stdcall PciRead32, ecx ,edx, PCI_REG_COMMAND
 
 	or	al, (1 shl PCI_BIT_MASTER) or (1 shl PCI_BIT_PIO)
 	and	al, not (1 shl PCI_BIT_MMIO)
@@ -164,3 +175,25 @@ macro virt_to_dma { ; input is eax
 	inc	esp
 
 }
+
+
+;struc ETH_DEVICE {
+macro ETH_DEVICE {
+; pointers to procedures
+      .unload		dd ?
+      .reset		dd ?
+      .transmit 	dd ?
+      .set_MAC		dd ?
+      .get_MAC		dd ?
+      .set_mode 	dd ?
+      .get_mode 	dd ?
+; status
+      .bytes_tx 	dq ?
+      .bytes_rx 	dq ?
+      .packets_tx	dd ?
+      .packets_rx	dd ?
+      .mode		dd ?
+      .name		dd ?
+      .mac		dp ?
+}
+

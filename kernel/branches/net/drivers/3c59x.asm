@@ -102,7 +102,7 @@ include 'fdo.inc'
 include 'netdrv.inc'
 
 
-OS_BASE 	equ 0;
+OS_BASE 	equ 0
 new_app_base	equ 0x60400000
 PROC_BASE	equ OS_BASE+0x0080000
 
@@ -111,24 +111,11 @@ public service_proc
 public version
 
 
-struc ETH_DEVICE {
-; pointers to procedures
-      .unload		dd ?
-      .reset		dd ?
-      .transmit 	dd ?
-      .set_MAC		dd ?
-      .get_MAC		dd ?
-      .set_mode 	dd ?
-      .get_mode 	dd ?
-; status & variables
-      .bytes_tx 	dq ?
-      .bytes_rx 	dq ?
-      .packets_tx	dd ?
-      .packets_rx	dd ?
-      .mode		dd ?  ; This dword contains cable status (10mbit/100mbit, full/half duplex, auto negotiation or not,..)
-      .name		dd ?
-      .mac		dp ?
-; device specific
+virtual at ebx
+
+	device:
+
+	ETH_DEVICE
 
       .rx_buffer	dd ?
       .tx_buffer	dd ?
@@ -152,10 +139,6 @@ struc ETH_DEVICE {
 
       .size = $ - device
 
-}
-
-virtual at ebx
-  device ETH_DEVICE
 end virtual
 
 
@@ -530,17 +513,12 @@ proc service_proc stdcall, ioctl:dword
 	mov	[device.pci_dev], cl
 
 ; Now, it's time to find the base io addres of the PCI device
-; TODO: implement check if bus and dev exist on this machine
-
 
 	find_io [device.pci_bus], [device.pci_dev], [device.io_addr]
 
 ; We've found the io address, find IRQ now
 
-	movzx	ecx, [device.pci_bus]
-	movzx	edx, [device.pci_dev]
-	stdcall PciRead8, ecx ,edx ,0x3c				; 0x3c is the offset where irq can be found
-	mov	[device.irq_line], al
+	find_irq [device.pci_bus], [device.pci_dev], [device.irq_line]
 
 	DEBUGF	1,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
 	[device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
