@@ -8,7 +8,7 @@
 ; COMPILE WITH FASM
 
 PLAYLIST_PATH equ '/HD0/1/PLAYLIST.TXT'
-APP_MEM   equ 150*1024
+;APP_MEM   equ 150*1024
 
 IPC_PLAY  equ 0xa1
 IPC_PAUS  equ 0xa2
@@ -56,14 +56,16 @@ use32
   db	 'MENUET01'
   dd	 0x01
   dd	 START
-  dd	 I_END
-  dd	 APP_MEM
-  dd	 APP_MEM - 1024
+  dd	 IM_END
+  dd	 I_END ;APP_MEM
+  dd	 stacktop ;APP_MEM - 1024
   dd	 I_PARAM
 listsel    dd 0
 channel dd 0
 COLOR_ORDER equ MENUETOS
 include '..\..\..\macros.inc' ; decrease code size (optional)
+include '..\..\..\develop\libraries\box_lib\asm\trunk\opendial.mac'
+	use_OpenDialog
 lang fix en
 ;purge mov
 include 'debug.inc'
@@ -77,6 +79,10 @@ hdrimg:
 btns:
     file 'buttons.gif'
 START:
+        mcall 68, 11
+;OpenDialog initialisation
+init_OpenDialog	OpenDialog_data
+
     or	 [flag],FL_BOTTRED;+FL_MUTE
     mov  ecx,ipcarea
     call init_ipc
@@ -120,6 +126,20 @@ clearpath:
   noparam:
     mov  [param],'W'
     or	 [flag],FL_ADD
+;---------------------------------------------------------------------
+;OpenDialog_start:
+;	copy_path	open_dialog_name,path,library_path,0
+	
+	start_OpenDialog	OpenDialog_data
+
+	cmp	[OpenDialog_data.status],2 ; OpenDialog does not start
+	je	.fopen  ; 	some kind of alternative, instead OpenDialog
+	cmp	[OpenDialog_data.status],1
+	je	open_file
+	jmp	still
+;---------------------------------------------------------------------
+
+.fopen:
     call fopen
   get_path:
     cmp  byte[filename],0
@@ -341,6 +361,35 @@ pl_ptr	   dd playlist
 param	   db 'W'
 curnote    db 0x80
 tick_count dd 0
+;---------------------------------------------------------------------
+OpenDialog_data:
+.type			dd 0
+.procinfo		dd prcinfo ;+4
+.com_area_name		dd communication_area_name ;+8
+.com_area		dd 0 ;+12
+.opendir_pach		dd temp_dir_pach ;+16
+.dir_default_pach	dd communication_area_default_pach ;+20
+.start_path		dd open_dialog_path ;+24
+.draw_window		dd draw_window ;+28
+.status			dd 0 ;+32
+.openfile_pach		dd filename ;+36
+.filename_area		dd 0	;+40
+.filter_area		dd Filter
+
+communication_area_name:
+	db 'FFFFFFFF_open_dialog',0
+open_dialog_path:
+	db '/sys/File Managers/opendial',0
+communication_area_default_pach:
+	db '/rd/1',0
+
+Filter:
+dd Filter.end - Filter
+.1:
+db 'MID',0
+.end:
+db 0
+;---------------------------------------------------------------------
 dir_info:
         dd      1
         dd      0
@@ -354,11 +403,11 @@ file_info:
 	   dd 0
 	   dd 0
 	   dd 0
-fsize	   dd APP_MEM-2048-workarea     ; max size
+fsize	   dd 120*1024  ;APP_MEM-2048-workarea     ; max size
 	   dd workarea
-I_END:	; конец программы
+IM_END:	; конец программы
 filename:
-	   rb 1024+16
+	   rb 4096 ;1024+16
 prcinfo    process_information
 I_PARAM    rb 256
 childPID   dd ?
@@ -388,5 +437,16 @@ bottom_raw rb 25*378*3+8
 	   rb 4
 playlist   rb 256*LISTITEMS
 IncludeUGlobals
+;----------------------------------------------------------------
+temp_dir_pach:
+        rb 4096
+;----------------------------------------------------------------
+	rb 4096
+thread_stack:
+	rb 4096
+stacktop:
+;----------------------------------------------------------------
 dir_table  rb 32+304
 workarea:
+	rb 120*1024
+I_END:

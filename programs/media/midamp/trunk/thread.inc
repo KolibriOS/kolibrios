@@ -68,7 +68,7 @@ respawn:
   .less:
     loop .nxt
     push esi
-    mcall 51,1,new_thread,APP_MEM
+    mcall 51,1,new_thread,thread_stack ;APP_MEM
     pop  edx
     cmp  edx,[childPID]
     jne  .nochild
