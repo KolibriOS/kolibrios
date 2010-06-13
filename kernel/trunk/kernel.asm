@@ -4460,36 +4460,47 @@ end if
 .smbl2:
         ret
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 66 sys function.                                                ;;
+;; in eax=66,ebx in [0..5],ecx,edx                                 ;;
+;; out eax                                                         ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+iglobal
+align 4
+f66call:
+           dd sys_process_def.1   ; 1 = set keyboard mode
+           dd sys_process_def.2   ; 2 = get keyboard mode
+           dd sys_process_def.3   ; 3 = get keyboard ctrl, alt, shift
+           dd sys_process_def.4
+           dd sys_process_def.5
+endg
+
+
 
 
 sys_process_def:
+	dec	ebx
+	cmp	ebx,5
+	jae	.not_support	;if >=6 then or eax,-1
+
         mov     edi, [CURRENT_TASK]
+	jmp	dword [f66call+ebx*4]
 
-        dec     eax             ; 1 = set keyboard mode
-     jne   no_set_keyboard_setup
+.not_support:
+	or	eax,-1
+	ret
 
+.1:
      shl   edi,8
-     mov   [edi+SLOT_BASE + APPDATA.keyboard_mode],bl
+     mov   [edi+SLOT_BASE + APPDATA.keyboard_mode],cl
 
      ret
 
-   no_set_keyboard_setup:
-
-        dec     eax             ; 2 = get keyboard mode
-     jne   no_get_keyboard_setup
-
+.2:				; 2 = get keyboard mode
      shl   edi,8
      movzx eax, byte [SLOT_BASE+edi + APPDATA.keyboard_mode]
-
-     mov   [esp+36],eax
-
+     mov   [esp+32],eax
      ret
-
-   no_get_keyboard_setup:
-
-        dec     eax             ; 3 = get keyboard ctrl, alt, shift
-     jne   no_get_keyboard_cas
-
 ;     xor   eax,eax
 ;     movzx eax,byte [shift]
 ;     movzx ebx,byte [ctrl]
@@ -4498,20 +4509,14 @@ sys_process_def:
 ;     movzx ebx,byte [alt]
 ;     shl   ebx,3
 ;     add   eax,ebx
-
+.3:				;3 = get keyboard ctrl, alt, shift
  ;// mike.dld [
      mov   eax, [kb_state]
  ;// mike.dld ]
-
-     mov   [esp+36],eax
-
+     mov   [esp+32],eax
      ret
 
-   no_get_keyboard_cas:
-
-        dec     eax
-        jnz     no_add_keyboard_hotkey
-
+.4:
         mov     eax, hotkey_list
 @@:
         cmp     dword [eax+8], 0
@@ -4519,29 +4524,25 @@ sys_process_def:
         add     eax, 16
         cmp     eax, hotkey_list+16*256
         jb      @b
-        mov     dword [esp+36], 1
+        mov     dword [esp+32], 1
         ret
 .found_free:
         mov     [eax+8], edi
-        mov     [eax+4], ecx
-        movzx   ebx, bl
-        lea     ebx, [hotkey_scancodes+ebx*4]
-        mov     ecx, [ebx]
-        mov     [eax], ecx
-        mov     [ebx], eax
-        mov     [eax+12], ebx
+        mov     [eax+4], edx
+        movzx   ecx, cl
+        lea     ecx, [hotkey_scancodes+ecx*4]
+        mov     edx, [ecx]
+        mov     [eax], edx
+        mov     [ecx], eax
+        mov     [eax+12], ecx
         jecxz   @f
-        mov     [ecx+12], eax
+        mov     [edx+12], eax
 @@:
-        and     dword [esp+36], 0
+        and     dword [esp+32], 0
         ret
 
-no_add_keyboard_hotkey:
-
-        dec     eax
-        jnz     no_del_keyboard_hotkey
-
-        movzx   ebx, bl
+.5:
+        movzx   ebx, cl
         lea     ebx, [hotkey_scancodes+ebx*4]
         mov     eax, [ebx]
 .scan:
@@ -4549,13 +4550,13 @@ no_add_keyboard_hotkey:
         jz      .notfound
         cmp     [eax+8], edi
         jnz     .next
-        cmp     [eax+4], ecx
+        cmp     [eax+4], edx
         jz      .found
 .next:
         mov     eax, [eax]
         jmp     .scan
 .notfound:
-        mov     dword [esp+36], 1
+        mov     dword [esp+32], 1
         ret
 .found:
         mov     ecx, [eax]
@@ -4571,12 +4572,8 @@ no_add_keyboard_hotkey:
         mov     [eax+8], edx
         mov     [eax+12], edx
         mov     [eax], edx
-        mov     [esp+36], edx
+        mov     [esp+32], edx
         ret
-
-no_del_keyboard_hotkey:
-     ret
-
 
 align 4
 

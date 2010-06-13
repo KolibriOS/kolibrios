@@ -3421,6 +3421,7 @@ Remarks:
 ======================================================================
 The input mode influences results of reading keys by function 2.
 When a program loads, ASCII input mode is set for it.
+If subfunction is not support then eax=-1.
 
 -------------- Subfunction 1 - set keyboard input mode. --------------
 Parameters:
