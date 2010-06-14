@@ -3857,13 +3857,7 @@ sys_putimage_bpp:
         dec     [mouse_pause]
         pop     ebp esi ebp
         jmp     [draw_pointer]
-
-syscall_putimage_palette:
-        mov     edi, esi
-        mov     esi, edx
-        mov     edx, ecx
-        mov     ecx, ebx
-        mov     ebx, eax
+align 4
 sys_putimage_palette:
 ; ebx = pointer to image
 ; ecx = [xsize]*65536 + [ysize]

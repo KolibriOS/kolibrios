@@ -166,8 +166,6 @@ iglobal
       dd sys_gs                  ; 61-Direct graphics access
       dd sys_pci                 ; 62-PCI functions
       dd sys_msg_board           ; 63-System message board
-      dd 0
-      dd syscall_putimage_palette; 65-PutImagePalette
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; NEW SYSTEM FUNCTIONS TABLE ;;
@@ -240,7 +238,7 @@ iglobal
       dd cross_order             ; 62-PCI functions
       dd cross_order             ; 63-System message board
       dd sys_resize_app_memory   ; 64-Resize application memory usage
-      dd cross_order             ; 65-PutImagePalette
+      dd sys_putimage_palette    ; 65-PutImagePalette
       dd sys_process_def         ; 66-Process definitions - keyboard
       dd syscall_move_window     ; 67-Window move or resize
       dd f68			 ; 68-Some internal services
