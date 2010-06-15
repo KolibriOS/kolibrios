@@ -157,12 +157,12 @@ iglobal
       dd 0
       dd socket                  ; 53-Socket interface
       dd 0
-      dd sound_interface         ; 55-Sound interface
+      dd 0
       dd 0
       dd 0
       dd file_system             ; 58-Common file system interface
       dd 0
-      dd sys_IPC                 ; 60-Inter Process Communication
+      dd 0
       dd sys_gs                  ; 61-Direct graphics access
       dd sys_pci                 ; 62-PCI functions
       dd sys_msg_board           ; 63-System message board
@@ -228,12 +228,12 @@ iglobal
       dd stack_driver_stat       ; 52-Stack driver status
       dd cross_order             ; 53-Socket interface
       dd undefined_syscall       ; 54-reserved
-      dd cross_order             ; 55-Sound interface
+      dd sound_interface	 ; 55-Sound interface
       dd undefined_syscall       ; 56-reserved
       dd sys_pcibios             ; 57-PCI BIOS32
       dd cross_order             ; 58-Common file system interface
       dd undefined_syscall       ; 59-reserved
-      dd cross_order             ; 60-Inter Process Communication
+      dd sys_IPC		 ; 60-Inter Process Communication
       dd cross_order             ; 61-Direct graphics access
       dd cross_order             ; 62-PCI functions
       dd cross_order             ; 63-System message board

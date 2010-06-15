@@ -949,53 +949,72 @@ endp
 
 sys_IPC:
 ;input:
-;  eax=1 - set ipc buffer area
-;    ebx=address of buffer
-;    ecx=size of buffer
+;  ebx=1 - set ipc buffer area
+;    ecx=address of buffer
+;    edx=size of buffer
 ;  eax=2 - send message
 ;    ebx=PID
 ;    ecx=address of message
 ;    edx=size of message
 
-           cmp  eax,1
-           jne @f
-           call set_ipc_buff
-           mov [esp+36], eax
-           ret
+	dec	ebx
+	jnz	@f
+
+	mov  	eax,[current_slot]
+        pushf
+        cli
+        mov  	[eax+APPDATA.ipc_start],ecx     ;set fields in extended information area
+        mov  	[eax+APPDATA.ipc_size],edx
+
+        add edx, ecx
+        add edx, 4095
+        and edx, not 4095
+
+.touch: mov eax, [ecx]
+        add ecx, 0x1000
+        cmp ecx, edx
+        jb  .touch
+
+        popf
+        mov [esp+32], ebx	;ebx=0
+        ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;2
 @@:
-           cmp eax, 2
-           jne @f
-           stdcall sys_ipc_send, ebx, ecx, edx
-           mov [esp+36], eax
-           ret
+	dec	ebx
+	jnz	@f
+
+        stdcall sys_ipc_send, ecx, edx, esi
+        mov 	[esp+32], eax
+        ret
 @@:
-           xor eax, eax
-           not eax
-           mov [esp+36], eax
-           ret
+	or	eax,-1
+        mov 	[esp+32], eax
+        ret
 
-align 4
-proc set_ipc_buff
+;align 4
+;proc set_ipc_buff
 
-           mov  eax,[current_slot]
-           pushf
-           cli
-           mov  [eax+APPDATA.ipc_start],ebx     ;set fields in extended information area
-           mov  [eax+APPDATA.ipc_size],ecx
-
-           add ecx, ebx
-           add ecx, 4095
-           and ecx, not 4095
-
-.touch:    mov eax, [ebx]
-           add ebx, 0x1000
-           cmp ebx, ecx
-           jb  .touch
-
-           popf
-           xor eax, eax
-           ret
-endp
+;           mov  eax,[current_slot]
+;           pushf
+;           cli
+;           mov  [eax+APPDATA.ipc_start],ebx     ;set fields in extended information area
+;           mov  [eax+APPDATA.ipc_size],ecx
+;
+;           add ecx, ebx
+;           add ecx, 4095
+;           and ecx, not 4095
+;
+;.touch:    mov eax, [ebx]
+;           add ebx, 0x1000
+;           cmp ebx, ecx
+;           jb  .touch
+;
+;           popf
+;           xor eax, eax
+;           ret
+;endp
 
 proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            locals

@@ -21,22 +21,22 @@ $Revision$
 align 4
 sound_interface:
 
-           cmp   eax, edi                      ; this is subfunction #55 ?
-           jne  retFunc55                      ; if no then return.
+           cmp   eax,ebx			; this is subfunction #55 ?
+           jne  retFunc55			; if no then return.
 
            cmp   byte [sound_flag],0
            jne   retFunc55
 
            movzx eax, byte [countDelayNote]
-           or    al, al                        ; player is busy ?
-           jnz  retFunc55                      ; return counter delay Note
+           or    al, al                         ; player is busy ?
+           jnz   retFunc55                      ; return counter delay Note
 
-           mov   [memAdrNote],edx
+           mov   [memAdrNote],esi;edx
            call  get_pid
            mov   [pidProcessNote],eax
            xor   eax, eax                      ; Ok!  EAX = 0
  retFunc55:
-           mov   [esp+36], eax                 ; return value EAX for application
+           mov   [esp+32], eax                 ; return value EAX for application
            ret
 
 iglobal
