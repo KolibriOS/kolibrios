@@ -4569,35 +4569,47 @@ sys_process_def:
         mov     [esp+32], edx
         ret
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 61 sys function.                                                ;;
+;; in eax=61,ebx in [1..3]                                         ;;
+;; out eax                                                         ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+iglobal
+align 4
+f61call:
+           dd sys_gs.1   ; resolution
+           dd sys_gs.2   ; bits per pixel
+           dd sys_gs.3   ; bytes per scanline
+endg
+
+
 align 4
 
 sys_gs:                         ; direct screen access
+	dec	ebx
+	cmp	ebx,2
+	ja	.not_support
+	jmp	dword [f61call+ebx*4]
+.not_support:
+	or  [esp+32],dword -1
+        ret
 
-     cmp  eax,1                 ; resolution
-     jne  no_gs1
+
+.1:                             ; resolution
      mov  eax,[Screen_Max_X]
      shl  eax,16
      mov  ax,[Screen_Max_Y]
      add  eax,0x00010001
-     mov  [esp+36],eax
+     mov  [esp+32],eax
      ret
-   no_gs1:
-
-     cmp   eax,2                ; bits per pixel
-     jne   no_gs2
+.2:				; bits per pixel
      movzx eax,byte [ScreenBPP]
-     mov   [esp+36],eax
+     mov   [esp+32],eax
      ret
-   no_gs2:
-
-     cmp   eax,3                ; bytes per scanline
-     jne   no_gs3
+.3:                             ; bytes per scanline
      mov   eax,[BytesPerScanLine]
-     mov   [esp+36],eax
-     ret
-   no_gs3:
-
-     or  [esp+36],dword -1
+     mov   [esp+32],eax
      ret
 
 
