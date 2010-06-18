@@ -35,7 +35,7 @@ get_device_by_hid_callback(ACPI_HANDLE obj, u32_t depth, void* context,
 
     ACPI_BUFFER buffer;
 
-    ACPI_DEVICE_INFO info;
+    ACPI_DEVICE_INFO *info;
 
    // *retval = NULL;
 
@@ -51,19 +51,14 @@ get_device_by_hid_callback(ACPI_HANDLE obj, u32_t depth, void* context,
 
     dbgprintf("device %d %s ", counter, buff);
 
-/*
-    buffer.Pointer = &info;
-    memset(&info, 0, sizeof(ACPI_DEVICE_INFO));
-    status = AcpiGetObjectInfo(obj, &buffer.Pointer);
+    status = AcpiGetObjectInfo(obj, &info);
 
     if (ACPI_SUCCESS (status))
     {
-        dbgprintf (" HID: %s, ADR: %x %x, Status: %x",
-        info.HardwareId.String,
-        (UINT32)(info.Address>>32),(UINT32)info.Address,
-        info.CurrentStatus);
+        if (info->Valid & ACPI_VALID_HID)
+            dbgprintf (" HID: %s", info->HardwareId.String);
+
     };
-*/
 
     dbgprintf("\n");
     counter++;
@@ -100,41 +95,45 @@ prt_walk_table(ACPI_BUFFER *prt)
 }
 
 
-
-
 u32_t drvEntry(int action, char *cmdline)
 {
     u32_t retval;
+
+    ACPI_STATUS status;
 
     int i;
 
     if(action != 1)
         return 0;
 
-      ACPI_STATUS status;
+    status = AcpiReallocateRootTable();
+    if (ACPI_FAILURE(status)) {
+        dbgprintf("Unable to reallocate ACPI tables\n");
+        goto err;
+    }
 
-      status = AcpiInitializeSubsystem();
-      if (status != AE_OK) {
-            dbgprintf("AcpiInitializeSubsystem failed (%s)\n",
-                       AcpiFormatException(status));
-            goto err;
-      }
+    status = AcpiInitializeSubsystem();
+    if (status != AE_OK) {
+          dbgprintf("AcpiInitializeSubsystem failed (%s)\n",
+                     AcpiFormatException(status));
+          goto err;
+    }
 
-      status = AcpiInitializeTables(NULL, 0, TRUE);
-      if (status != AE_OK) {
-            dbgprintf("AcpiInitializeTables failed (%s)\n",
-                       AcpiFormatException(status));
-            goto err;
-      }
+    status = AcpiInitializeTables(NULL, 0, TRUE);
+    if (status != AE_OK) {
+          dbgprintf("AcpiInitializeTables failed (%s)\n",
+                     AcpiFormatException(status));
+          goto err;
+    }
 
-      status = AcpiLoadTables();
-      if (status != AE_OK) {
-            dbgprintf("AcpiLoadTables failed (%s)\n",
-                       AcpiFormatException(status));
-            goto err;
-      }
+    status = AcpiLoadTables();
+    if (status != AE_OK) {
+          dbgprintf("AcpiLoadTables failed (%s)\n",
+                     AcpiFormatException(status));
+          goto err;
+    }
 
-    u32_t mode = ACPI_FULL_INITIALIZATION;
+    u32_t mode = ACPI_NO_HARDWARE_INIT | ACPI_NO_ACPI_ENABLE;
 
     status = AcpiEnableSubsystem(mode);
     if (status != AE_OK) {
