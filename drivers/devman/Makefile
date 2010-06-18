@@ -17,7 +17,7 @@ DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32
 LDFLAGS = -nostdlib -shared -s -Map acpi.map --image-base 0\
 	  --file-alignment 512 --section-alignment 4096
 
-LIBPATH:= -L$(DRV_DIR)/ddk -L./acpi
+LIBPATH:= -L$(DRV_DIR)/ddk -L./acpica
 
 LIBS:=    -lacpica -lgcc -ldrv -lcore
 
