@@ -1521,13 +1521,14 @@ proc shmem_close stdcall, name:dword
            test edi, edi
            jz .next
 
-           lea eax, [edi+SMEM.name]
+           lea edi, [edi+SMEM.name]
            stdcall strncmp, [name], edi, 32
            test eax, eax
            jne .next
 
            stdcall user_free, [esi+SMAP.base]
 
+           mov eax,esi
            call [esi+APPOBJ.destroy]
 @@:
            popfd
