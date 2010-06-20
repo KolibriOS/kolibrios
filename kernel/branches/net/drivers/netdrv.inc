@@ -15,9 +15,9 @@
 	PCI_REG_CAPABILITY_ID	equ 0x0 ; capapility ID in pm register block
 	PCI_REG_PM_STATUS	equ 0x4 ; power management status register
 	PCI_REG_PM_CTRL 	equ 0x4 ; power management control register
-	PCI_BIT_PIO		equ 0 ; bit0: io space control
-	PCI_BIT_MMIO		equ 1 ; bit1: memory space control
-	PCI_BIT_MASTER		equ 2 ; bit2: device acts as a PCI master
+	PCI_BIT_PIO		equ 1 ; bit0: io space control
+	PCI_BIT_MMIO		equ 2 ; bit1: memory space control
+	PCI_BIT_MASTER		equ 4 ; bit2: device acts as a PCI master
 
 
 	PAGESIZE		equ	4096
@@ -66,7 +66,6 @@ macro allocate_and_clear dest, size, err {
     end if
 
 ; Clear the allocated buffer
-	;mov     edi, eax
 	mov	ecx, size/4		; divide by 4 because of DWORD
 	xor	eax, eax
 	rep	stosd
@@ -77,28 +76,21 @@ macro allocate_and_clear dest, size, err {
 
 macro find_io bus, dev, io {
 
-
 	local	.check, .inc, .got
-
 
 	xor	eax, eax
 	mov	esi, PCI_BASE_ADDRESS_0
 	movzx	ecx, bus
 	movzx	edx, dev
   .check:
-	stdcall PciRead16, ecx ,edx ,esi
+	stdcall PciRead32, ecx ,edx ,esi
 
-	mov	io , eax
-	and	eax, PCI_BASE_ADDRESS_IO_MASK
-	test	eax, eax
+	test	eax, PCI_BASE_ADDRESS_IO_MASK
 	jz	.inc
 
-	mov	eax, io
-	and	eax, PCI_BASE_ADDRESS_SPACE_IO
-	test	eax, eax
+	test	eax, PCI_BASE_ADDRESS_SPACE_IO
 	jz	.inc
 
-	mov	eax, io
 	and	eax, PCI_BASE_ADDRESS_IO_MASK
 	mov	io , eax
 	jmp	.got
@@ -106,7 +98,7 @@ macro find_io bus, dev, io {
   .inc:
 	add	esi, 4
 	cmp	esi, PCI_BASE_ADDRESS_5
-	jbe	.check
+	jle	.check
 
   .got:
 
@@ -124,6 +116,18 @@ macro find_irq bus, dev, irq {
 }
 
 
+macro find_rev bus, dev, rev {
+
+	push	eax edx ecx
+	movzx	ecx, bus
+	movzx	edx, dev
+	stdcall PciRead8, ecx ,edx ,0x8
+	mov	rev, al
+	pop	ecx edx eax
+
+}
+
+
 
 macro make_bus_master bus, dev {
 
@@ -131,13 +135,11 @@ macro make_bus_master bus, dev {
 	movzx	edx, dev
 	stdcall PciRead32, ecx ,edx, PCI_REG_COMMAND
 
-	or	al, (1 shl PCI_BIT_MASTER) or (1 shl PCI_BIT_PIO)
-	and	al, not (1 shl PCI_BIT_MMIO)
+	or	al, PCI_BIT_MASTER or PCI_BIT_PIO
+	and	al, not PCI_BIT_MMIO
 	stdcall PciWrite32, ecx, edx, PCI_REG_COMMAND, eax
 
 }
-
-
 
 struc IOCTL {
       .handle		dd ?
@@ -196,4 +198,33 @@ macro ETH_DEVICE {
       .name		dd ?
       .mac		dp ?
 }
+
+
+
+macro SLIP_DEVICE {
+; pointers to procedures
+	.unload 	dd ?
+	.reset		dd ?
+	.transmit	dd ?
+	.set_mode	dd ?
+	.get_mode	dd ?
+; status
+	.bytes_tx	dq ?
+	.bytes_rx	dq ?
+	.packets_tx	dd ?
+	.packets_rx	dd ?
+	.mode		dd ?
+	.name		dd ?
+}
+
+macro GetRealAddr {
+
+	push	eax
+	call	GetPgAddr
+	and	dword [esp], (PAGESIZE - 1)
+	add	eax, dword [esp]
+	add	esp, 4
+
+}
+
 
