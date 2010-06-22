@@ -83,11 +83,11 @@ CSR7	equ	0x38	 ; Interrupt enable
 CSR8	equ	0x40	 ; Missed frames and overflow counter
 CSR9	equ	0x48	 ; Boot ROM, serial ROM, and MII management
 CSR10	equ	0x50	 ; Boot ROM programming address
-;CSR11 General-purpose timer 0x58
+CSR11	equ	0x58	 ; General-purpose timer
 CSR12	equ	0x60	 ; General-purpose port
 CSR13	equ	0x68
-;CSR14 Reserved 0x70
-;CSR15 Watchdog timer 0x78
+CSR14	equ	0x70
+CSR15	equ	0x78	 ; Watchdog timer
 
 ;--------bits/commands of CSR0-------------------
 CSR0_RESET		equ	1b
@@ -276,7 +276,7 @@ CSR9_SROM_DI		equ	1 SHL 2 	; Data In to SROM
 CSR9_SROM_CK		equ	1 SHL 1 	; clock for SROM
 CSR9_SROM_CS		equ	1 SHL 0 	; chip select.. always needed
 
-; assume dx is CSR9 (SROM port)
+; assume dx is CSR9
 macro SROM_Delay {
 	push	eax
 	in	eax, dx
@@ -288,6 +288,13 @@ macro SROM_Delay {
 	in	eax, dx
 	in	eax, dx
 	in	eax, dx
+	in	eax, dx
+	pop	eax
+}
+
+; assume dx is CSR9
+macro MDIO_Delay {
+	push	eax
 	in	eax, dx
 	pop	eax
 }
@@ -742,6 +749,8 @@ reset:
 
 	status
 
+	call	start_link
+
 
 ; wait a bit
 	mov	esi, 3000
@@ -752,11 +761,22 @@ reset:
 
 	call	Send_Setup_Packet
 
-	set_io	0
-	status
+	xor	eax, eax
+; clear packet/byte counters
+
+	lea	edi, [device.bytes_tx]
+	mov	ecx, 6
+	rep	stosd
 
 	DEBUGF	1,"Reset done\n"
-	xor	eax, eax
+
+	ret
+
+
+align 4
+start_link:
+
+	; TODO: write working code here
 
 	ret
 
@@ -866,8 +886,6 @@ Send_Setup_Packet:
 	dec	[device.tx_free_des]
        @@:
 
-	wbinvd;;;
-
 ; start tx
 	set_io	0
 	status
@@ -942,12 +960,6 @@ transmit:
 ; set descriptor info
 	mov	[eax+DES.DES0], DES0_OWN		; say it is now owned by the 21x4x
 
-	DEBUGF	1,"TDES0: %x\n", [eax+DES.DES0]:8
-	DEBUGF	1,"TDES1: %x\n", [eax+DES.DES1]:8
-	DEBUGF	1,"TDES2: %x\n", [eax+DES.DES2]:8
-	DEBUGF	1,"TDES3: %x\n", [eax+DES.DES3]:8
-
-
 ; start tx
 	set_io	0
 	status
@@ -962,13 +974,15 @@ transmit:
 					; if already started, issues a Transmit Poll command
 	set_io	CSR1
 	mov	eax, -1
-	DEBUGF	1,"Sending transmit poll command\n"
   .do_it:
 	out	dx , eax
-	status
 
+; Update stats
 
-	wbinvd;;;;
+	inc	[device.packets_tx]
+	mov	eax, [esp+8]
+	add	dword [device.bytes_tx], eax
+	adc	dword [device.bytes_tx + 4], 0
 
 ; go to next descriptor
 	inc	[device.tx_wr_des]
@@ -1446,6 +1460,239 @@ SROM_Read_Word:
 	mov	eax, esi
 
 	DEBUGF 1,"%x\n", ax
+
+	ret
+
+
+
+
+
+
+
+;<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+;*********************************************************************
+;* Media Descriptor Code                                             *
+;*********************************************************************
+
+; MII transceiver control section.
+; Read and write the MII registers using software-generated serial
+; MDIO protocol.  See the MII specifications or DP83840A data sheet
+; for details.
+
+; The maximum data clock rate is 2.5 Mhz.  The minimum timing is usually
+; met by back-to-back PCI I/O cycles, but we insert a delay to avoid
+; "overclocking" issues or future 66Mhz PCI.
+
+; Read and write the MII registers using software-generated serial
+; MDIO protocol.  It is just different enough from the EEPROM protocol
+; to not share code.  The maxium data clock rate is 2.5 Mhz.
+
+MDIO_SHIFT_CLK		equ	0x10000
+MDIO_DATA_WRITE0	equ	0x00000
+MDIO_DATA_WRITE1	equ	0x20000
+MDIO_ENB		equ	0x00000 	; Ignore the 0x02000 databook setting.
+MDIO_ENB_IN		equ	0x40000
+MDIO_DATA_READ		equ	0x80000
+
+; MII transceiver control section.
+; Read and write the MII registers using software-generated serial
+; MDIO protocol.  See the MII specifications or DP83840A data sheet
+; for details.
+
+align 4
+mdio_read:	; phy_id:edx, location:esi
+
+	DEBUGF	1,"mdio read, phy=%x, location=%x", edx, esi
+
+	shl	edx, 5
+	or	esi, edx
+	or	esi, 0xf6 shl 10
+
+	set_io	0
+	set_io	CSR9
+
+;    if (tp->chip_id == LC82C168) {
+;        int i = 1000;
+;        outl(0x60020000 + (phy_id<<23) + (location<<18), ioaddr + 0xA0);
+;        inl(ioaddr + 0xA0);
+;        inl(ioaddr + 0xA0);
+;        while (--i > 0)
+;            if ( ! ((retval = inl(ioaddr + 0xA0)) & 0x80000000))
+;                return retval & 0xffff;
+;        return 0xffff;
+;    }
+;
+;    if (tp->chip_id == COMET) {
+;        if (phy_id == 1) {
+;            if (location < 7)
+;                return inl(ioaddr + 0xB4 + (location<<2));
+;            else if (location == 17)
+;                return inl(ioaddr + 0xD0);
+;            else if (location >= 29 && location <= 31)
+;                return inl(ioaddr + 0xD4 + ((location-29)<<2));
+;        }
+;        return 0xffff;
+;    }
+
+; Establish sync by sending at least 32 logic ones.
+
+	mov	ecx, 32
+  .loop:
+	mov	eax, MDIO_ENB or MDIO_DATA_WRITE1
+	out	dx, eax
+	MDIO_Delay
+
+	or	eax, MDIO_SHIFT_CLK
+	out	dx, eax
+	MDIO_Delay
+
+	dec	ecx
+	jnz	.loop
+
+
+; Shift the read command bits out.
+
+	mov	ecx, 1 shl 15
+  .loop2:
+	mov	eax, MDIO_ENB
+	test	esi, ecx
+	jz	@f
+	or	eax, MDIO_DATA_WRITE1
+       @@:
+	out	dx, eax
+	MDIO_Delay
+
+	or	eax, MDIO_SHIFT_CLK
+	out	dx, eax
+	MDIO_Delay
+
+	shr	ecx, 1
+	jnz	.loop2
+
+
+; Read the two transition, 16 data, and wire-idle bits.
+
+	xor	esi, esi
+	mov	ecx, 19
+  .loop3:
+	mov	eax, MDIO_ENB_IN
+	out	dx, eax
+	MDIO_Delay
+
+	shl	esi, 1
+	in	eax, dx
+	test	eax, MDIO_DATA_READ
+	jz	@f
+	inc	esi
+       @@:
+
+	mov	eax, MDIO_ENB_IN or MDIO_SHIFT_CLK
+	out	dx, eax
+	MDIO_Delay
+
+	dec	ecx
+	jnz	.loop3
+
+	shr	esi, 1
+	movzx	eax, si
+
+	DEBUGF	1,", data=%x\n", ax
+
+	ret
+
+
+
+
+align 4
+mdio_write:	;int phy_id: edx, int location: edi, int value: ax)
+
+	DEBUGF	1,"mdio write, phy=%x, location=%x, data=%x\n", edx, edi, ax
+
+	shl	edi, 18
+	or	edi, 0x5002 shl 16
+	shl	edx, 23
+	or	edi, edx
+	mov	di, ax
+
+	set_io	0
+	set_io	CSR9
+
+;    if (tp->chip_id == LC82C168) {
+;        int i = 1000;
+;        outl(cmd, ioaddr + 0xA0);
+;        do
+;            if ( ! (inl(ioaddr + 0xA0) & 0x80000000))
+;                break;
+;        while (--i > 0);
+;        return;
+;    }
+
+;    if (tp->chip_id == COMET) {
+;        if (phy_id != 1)
+;            return;
+;        if (location < 7)
+;            outl(value, ioaddr + 0xB4 + (location<<2));
+;        else if (location == 17)
+;            outl(value, ioaddr + 0xD0);
+;        else if (location >= 29 && location <= 31)
+;            outl(value, ioaddr + 0xD4 + ((location-29)<<2));
+;        return;
+;    }
+
+
+; Establish sync by sending at least 32 logic ones.
+
+	mov	ecx, 32
+  .loop:
+	mov	eax, MDIO_ENB or MDIO_DATA_WRITE1
+	out	dx, eax
+	MDIO_Delay
+
+	or	eax, MDIO_SHIFT_CLK
+	out	dx, eax
+	MDIO_Delay
+
+	dec	ecx
+	jnz	.loop
+
+
+; Shift the command bits out.
+
+	mov	ecx, 1 shl 31
+  .loop2:
+	mov	eax, MDIO_ENB
+	test	edi, ecx
+	jz	@f
+	or	eax, MDIO_DATA_WRITE1
+       @@:
+	out	dx, eax
+	MDIO_Delay
+
+	or	eax, MDIO_SHIFT_CLK
+	out	dx, eax
+	MDIO_Delay
+
+	shr	ecx, 1
+	jnz	.loop2
+
+
+; Clear out extra bits.
+
+	mov	ecx, 2
+  .loop3:
+	mov	eax, MDIO_ENB
+	out	dx, eax
+	MDIO_Delay
+
+	or	eax, MDIO_SHIFT_CLK
+	out	dx, eax
+	MDIO_Delay
+
+	dec	ecx
+	jnz	.loop3
 
 	ret
 
