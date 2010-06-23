@@ -411,6 +411,8 @@ char_toupper:
 	jb	.ret
 	cmp	al, 'z'
 	jbe	.az
+        cmp     al, 'ñ'
+        jz      .yo1
 	cmp	al, ' '
 	jb	.ret
 	cmp	al, 'à'
@@ -426,6 +428,10 @@ char_toupper:
 .az:
 	and	al, not 0x20
 	ret
+.yo1:
+; 0xF1 -> 0xF0
+        dec     ax
+        ret
 
 fat_get_name:
 ; in: edi->FAT entry

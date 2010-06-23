@@ -942,6 +942,18 @@ ntfs_decode_mcb_entry:
         pop     edi ecx eax
         ret
 
+unichar_toupper:
+        push    eax
+        call    uni2ansi_char
+        cmp     al, '_'
+        jz      .unk
+        add     esp, 4
+        call    char_toupper
+        jmp     ansi2uni_char
+.unk:
+        pop     eax
+        ret
+
 ntfs_find_lfn:
 ; in: esi+ebp -> name
 ; out: CF=1 - file not found
@@ -1030,15 +1042,15 @@ ntfs_find_lfn:
         push    edi
 @@:
         lodsw
-        call    uni2ansi_char
-        call    char_toupper
+        call    unichar_toupper
         push    eax
         mov     al, [edi]
         inc     edi
         cmp     al, '/'
         jz      .slash
         call    char_toupper
-        cmp     al, [esp]
+        call    ansi2uni_char
+        cmp     ax, [esp]
         pop     eax
         loopz   @b
         jz      .found
