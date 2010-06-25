@@ -1,0 +1,34 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
+
+iglobal
+saverd_fileinfo:
+        dd      2               ; subfunction: write
+        dd      0               ; (reserved)
+        dd      0               ; (reserved)
+        dd      1440*1024       ; size 1440 Kb
+        dd      0               ; [_rd_base]
+        db      0
+.name:
+        dd      ?
+endg
+sysfn_saveramdisk:      ; 18.6 = SAVE FLOPPY IMAGE (HD version only)
+        call    restorefatchain
+        mov     eax, [_rd_base]
+        mov [saverd_fileinfo+4], eax
+        mov     eax, saverd_fileinfo
+        mov     [saverd_fileinfo.name], ecx
+        pushad
+        push    eax
+        call    file_system_lfn
+        pop     eax
+        popad
+        mov     [esp+32], eax
+        ret

@@ -1,0 +1,163 @@
+#0    **** MAIN ****
+GAMES              >      /@6
+DEMOS              >      /@1
+GRAPHICS           >      /@12
+SOUND AND MUSIC    >      /@11
+DEVELOPMENT        >      /@2
+SYSTEM             >      /@4
+NETWORK            >      /@3
+OTHER              >      /@5
+HELP                      /HD0/1/KOLIBRI/BIN/docpak
+RUN APPLICATION           /HD0/1/KOLIBRI/BIN/run
+SHUTDOWN                  /HD0/1/KOLIBRI/BIN/end
+#1    **** DEMOS ****
+FIRE                      /HD0/1/KOLIBRI/BIN/fire
+FIRE2                     /HD0/1/KOLIBRI/BIN/fire2
+CIRCLE                    /HD0/1/KOLIBRI/BIN/circle
+TRANSPARENCY              /HD0/1/KOLIBRI/BIN/transp
+FRACTAL                   /HD0/1/KOLIBRI/BIN/tinyfrac
+COLOR DEMO                /HD0/1/KOLIBRI/BIN/colorref
+EYES                      /HD0/1/KOLIBRI/BIN/eyes
+TUBE                      /HD0/1/KOLIBRI/BIN/tube
+PLASMA                    /HD0/1/KOLIBRI/BIN/plasma
+MOVEBACK                  /HD0/1/KOLIBRI/BIN/movback
+LIFE                      /HD0/1/KOLIBRI/BIN/life2
+SDLFIRE                   /HD0/1/KOLIBRI/BIN/sdlfire
+TRANTEST                  /HD0/1/KOLIBRI/BIN/trantest
+3D                 >      /@15
+#2    **** PROGRAMMING ****
+ARCHIVER MHC              /HD0/1/KOLIBRI/BIN/mhc
+PACKER MTAPPACK           /HD0/1/KOLIBRI/BIN/mtappack
+TINYPAD                   /HD0/1/KOLIBRI/BIN/tinypad
+TINYPAD2                  /HD0/1/KOLIBRI/BIN/tinypad2
+FLAT ASSEMBLER            /HD0/1/KOLIBRI/BIN/fasm
+HEX-EDITOR                /HD0/1/KOLIBRI/BIN/heed
+ASCII-CODES               /HD0/1/KOLIBRI/BIN/keyascii
+SCAN-CODES                /HD0/1/KOLIBRI/BIN/scancode
+HEX2DEC2BIN               /HD0/1/KOLIBRI/BIN/h2d2b
+CALCULATOR                /HD0/1/KOLIBRI/BIN/calc
+DEBUG BOARD               /HD0/1/KOLIBRI/BIN/board
+DEBUGGER                  /HD0/1/KOLIBRI/BIN/mtdbg
+EXAMPLES           >      /@7
+#3    **** NET ****
+CONFIGURATION             /HD0/1/KOLIBRI/BIN/stackcfg
+NET STATUS                /HD0/1/KOLIBRI/BIN/ethstat
+ARP STATUS                /HD0/1/KOLIBRI/BIN/arpstat
+DNS RESOLVER              /HD0/1/KOLIBRI/BIN/dnsr
+DHCP (ONLY TEST)          /HD0/1/KOLIBRI/BIN/dhcp
+AUTODHCP                  /HD0/1/KOLIBRI/BIN/autodhcp
+TERMINAL                  /HD0/1/KOLIBRI/BIN/terminal
+LOCAL CLUSTER             /HD0/1/KOLIBRI/BIN/local
+REMOTE CLUSTER            /HD0/1/KOLIBRI/BIN/remote
+SERVERS            >      /@9
+CLIENTS            >      /@10
+#4    **** SYSTEM ****
+PROTECTION TEST           /HD0/1/KOLIBRI/BIN/test
+DEBUG BOARD               /HD0/1/KOLIBRI/BIN/board
+READ HDD                  /HD0/1/KOLIBRI/BIN/hdread
+ADJUSTMENT         >      /@8
+SYSTEM SENSORS     >      /@14
+WORK WITH FILES    >      /@13
+#5    **** MISC ****
+SCREEN MAGNIFIER          /HD0/1/KOLIBRI/BIN/magnify
+ANALOGUE CLOCK            /HD0/1/KOLIBRI/BIN/aclock
+BINARY CLOCK              /HD0/1/KOLIBRI/BIN/bcdclk
+TIMER                     /HD0/1/KOLIBRI/BIN/timer
+SCRSHOOT                  /HD0/1/KOLIBRI/BIN/scrshoot
+CALENDAR                  /HD0/1/KOLIBRI/BIN/calendar
+BGI FONT DEMO             /HD0/1/KOLIBRI/BIN/bgitest
+RTF READER                /HD0/1/KOLIBRI/BIN/rtfread
+@RCHER                    /HD0/1/KOLIBRI/BIN/@rcher
+#6    **** GAMES ****
+TETRIS                    /HD0/1/KOLIBRI/BIN/tetris
+C4                        /HD0/1/KOLIBRI/BIN/c4
+15                        /HD0/1/KOLIBRI/BIN/15
+MINE                      /HD0/1/KOLIBRI/BIN/mine
+PONG                      /HD0/1/KOLIBRI/BIN/pong
+MEMORY BLOCKS             /HD0/1/KOLIBRI/BIN/mblocks
+NEW PONG                  /HD0/1/KOLIBRI/BIN/pong3
+PHENIX                    /HD0/1/KOLIBRI/BIN/phenix
+FREECELL                  /HD0/1/KOLIBRI/BIN/freecell
+ARCANII                   /HD0/1/KOLIBRI/BIN/arcanii
+CLICKOMANIA               /HD0/1/KOLIBRI/BIN/click
+RED SQUARE                /HD0/1/KOLIBRI/BIN/rsquare
+PIPES                     /HD0/1/KOLIBRI/BIN/pipes
+XONIX                     /HD0/1/KOLIBRI/BIN/xonix
+PHARAOH TOMB              /HD0/1/KOLIBRI/BIN/fara
+SQ_GAME                   /HD0/1/KOLIBRI/BIN/sq_game
+CHECKERS                  /HD0/1/KOLIBRI/BIN/checkers
+QUAKE         HD0_1       /HD0/1/MENUETOS/sdlquake
+DOOM          HD0_1       /HD0/1/MENUETOS/doom/mdoom
+SOKOBAN       HD0_1       /HD0/1/KOLIBRI/BIN/soko
+#7    **** EXAMPLES ****
+THREADS                   /HD0/1/KOLIBRI/BIN/thread
+IPC                       /HD0/1/KOLIBRI/BIN/ipc
+COLOR SLIDER              /HD0/1/KOLIBRI/BIN/cslide
+CONSOLE EXAMPLE           /HD0/1/KOLIBRI/BIN/testcon2
+#8    **** SETUP ****
+DEVICES SETUP             /HD0/1/KOLIBRI/BIN/setup
+BACKGROUND SETUP          /HD0/1/KOLIBRI/BIN/pic4
+MEVIEW                    /HD0/1/KOLIBRI/BIN/mv
+JPEGVIEW                  /HD0/1/KOLIBRI/BIN/jpegview
+COLORS & SKIN SETUP       /HD0/1/KOLIBRI/BIN/desktop
+PANEL SETUP               /HD0/1/KOLIBRI/BIN/spanel
+ICONS SETUP               /HD0/1/KOLIBRI/BIN/icon
+VRR                       /HD0/1/KOLIBRI/BIN/vrr
+#9    **** SERVERS ****
+SMTPS                     /HD0/1/KOLIBRI/BIN/smtps
+HTTPS                     /HD0/1/KOLIBRI/BIN/https
+MP3S                      /HD0/1/KOLIBRI/BIN/mp3s
+FTPS                      /HD0/1/KOLIBRI/BIN/ftps
+NETSENDS                  /HD0/1/KOLIBRI/BIN/netsends
+RCC-SERVER                /HD0/1/KOLIBRI/BIN/rccs
+#10   **** CLIENTS ****
+TFTP CLIENT               /HD0/1/KOLIBRI/BIN/tftpc
+INTERNET-CHESS            /HD0/1/KOLIBRI/BIN/chess
+SIMPLY BROWSER            /HD0/1/KOLIBRI/BIN/httpc
+NNTP-NEWSGROUPS           /HD0/1/KOLIBRI/BIN/nntpc
+TELNET                    /HD0/1/KOLIBRI/BIN/telnet
+POP - MAIL                /HD0/1/KOLIBRI/BIN/popc
+TFTP AUDIO STREAM         /HD0/1/KOLIBRI/BIN/tftpa
+IRC CLIENT                /HD0/1/KOLIBRI/BIN/airc
+YAHOO MESSENG.(DEMO)      /HD0/1/KOLIBRI/BIN/ym
+NETSENDC                  /HD0/1/KOLIBRI/BIN/netsendc
+TESTFTP1                  /HD0/1/KOLIBRI/BIN/testftp1
+RCC-CLIENT                /HD0/1/KOLIBRI/BIN/rccc
+JMAIL                     /rd/1/network/jmail
+#11   **** AUDIO ****
+SB AUDIO PLAYER           /HD0/1/KOLIBRI/BIN/sb
+MIDAMP                    /HD0/1/KOLIBRI/BIN/midamp
+CD PLAYER                 /HD0/1/KOLIBRI/BIN/cdp
+VOLUME                    /HD0/1/KOLIBRI/BIN/mixer
+TEST MIDI                 /HD0/1/KOLIBRI/BIN/midiplay
+#12   **** GRAPHICS ****
+ICON EDITOR (BMP)         /HD0/1/KOLIBRI/BIN/iconedit
+JPEG VIEWER               /HD0/1/KOLIBRI/BIN/jpegview
+BMP VIEWER                /HD0/1/KOLIBRI/BIN/mv
+GIFVIEW                   /HD0/1/KOLIBRI/BIN/gifview
+ANIMAGE                   /HD0/1/KOLIBRI/BIN/animage
+#13  **** êÄÅéíÄ ë îÄâãÄåà ****
+CMD CONSOLE               /HD0/1/KOLIBRI/BIN/cmd
+SYSXTREE                  /HD0/1/KOLIBRI/BIN/sysxtree
+KFAR                      /HD0/1/KOLIBRI/BIN/kfar
+COPY FILE                 /HD0/1/KOLIBRI/BIN/copy2
+SAVE RD IMAGE             /HD0/1/KOLIBRI/BIN/rdsave
+#14
+PROCESSES (CPU)           /HD0/1/KOLIBRI/BIN/cpu
+PCI DEVICES               /HD0/1/KOLIBRI/BIN/pcidev
+TEST GRAPHICS SPEED       /HD0/1/KOLIBRI/BIN/mgb
+CPUID                     /HD0/1/KOLIBRI/BIN/cpuid
+GHOST MONITOR             /HD0/1/KOLIBRI/BIN/gmon
+K. BUS DISCONNECTED       /HD0/1/KOLIBRI/BIN/kbd
+#15
+SCREENSAVER               /HD0/1/KOLIBRI/BIN/crownscr
+3D-CUBE                   /HD0/1/KOLIBRI/BIN/3dcube2
+3D-LABYRINTH              /HD0/1/KOLIBRI/BIN/free3d04
+3D-TEXTURED CUBE          /HD0/1/KOLIBRI/BIN/3dtcub10
+3DSHEART                  /HD0/1/KOLIBRI/BIN/3dsheart
+VIEW3DS                   /HD0/1/KOLIBRI/BIN/view3ds
+CUBELINE                  /HD0/1/KOLIBRI/BIN/cubeline
+3D-TEXTURED CUBE 2        /HD0/1/KOLIBRI/BIN/cubetext
+GEARS                     /HD0/1/KOLIBRI/BIN/gears
+FLATWAV                   /HD0/1/KOLIBRI/BIN/flatwav
+##

@@ -1,0 +1,24 @@
+AA-SYSXTREE-004-/hd0/1/kolibri/bin/sysxtree   -                              *
+AB-COPY    -008-/hd0/1/kolibri/bin/copy2      -                              *
+BB-CALC    -006-/hd0/1/kolibri/bin/calc       -                              *
+CA-TINYPAD -011-/hd0/1/kolibri/bin/tinypad    -                              *
+CB-TINYPAD2-011-/hd0/1/kolibri/tinypad2       -                              *
+JA-VRR     -009-/hd0/1/kolibri/bin/vrr        -                              *
+II-C4      -005-/hd0/1/kolibri/bin/c4         -                              *
+JI-MINE    -017-/hd0/1/kolibri/bin/mine       -                              *
+IH-TETRIS  -021-/hd0/1/kolibri/bin/tetris     -                              *
+JH-MBLOCKS -013-/hd0/1/kolibri/bin/mblocks    -                              *
+HI-PONG    -026-/hd0/1/kolibri/bin/pong3      -                              *
+GI-15      -000-/hd0/1/kolibri/bin/15         -                              *
+HH-LIFE2   -015-/hd0/1/kolibri/bin/life2      -                              *
+BA-FASM    -012-/hd0/1/kolibri/bin/fasm       -                              *
+JB-ANIMAGE -018-/hd0/1/kolibri/bin/animage    -                              *
+CC-CMD     -023-/hd0/1/kolibri/bin/cmd        -                              *
+IA-BOARD   -022-/hd0/1/kolibri/bin/board      -                              *
+BC-KFAR    -027-/hd0/1/kolibri/bin/kfar/kfar  -                              *
+HA-MTDBG   -029-/hd0/1/kolibri/bin/mtdbg      -                              *
+AH-PIPES   -030-/hd0/1/kolibri/bin/pipes      -                              *
+AI-FARA    -031-/hd0/1/kolibri/bin/fara       -                              *
+BI-ARC-II  -014-/hd0/1/kolibri/bin/arcanii    -                              *
+BH-XONIX   -024-/hd0/1/kolibri/bin/xonix      -                              *
+GH-CHECKERS-002-/hd0/1/kolibri/bin/checkers   -                              *
