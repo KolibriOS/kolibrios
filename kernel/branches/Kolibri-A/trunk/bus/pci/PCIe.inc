@@ -28,7 +28,6 @@ $Revision: 1463 $
 ;
 ;***************************************************************************
 
-PCIe_CONFIG_SPACE	equ	0xF0000000	; to be moved to const.inc
 mmio_pcie_cfg_addr	dd  	0x0	; intel pcie space may be defined here
 mmio_pcie_cfg_lim	dd	0x0		; upper pcie space address 
 

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -19,6 +19,7 @@
 ;; SPraid (simba)
 ;; Hidnplayr
 ;; Alexey Teplov (<Lrz>)
+;; Artem Jerdev (art_zh)
 ;;
 ;; Data in this file was originally part of MenuetOS project which is
 ;; distributed under the terms of GNU GPL. It is modified and redistributed as
@@ -249,7 +250,6 @@ B32:
 
            call init_BIOS32
 ; MEMORY MODEL
-           call mem_test
            call init_mem
            call init_page_map
 
@@ -849,6 +849,9 @@ end if
   je  no_st_network
         call set_network_conf
   no_st_network:
+
+        call init_userDMA	; <<<<<<<<< ================ core/memory.inc ========================================
+	  call pci_ext_config	; <<<<<<<<< bus/pci/pcie.inc
 
 ; LOAD FIRST APPLICATION
         cli

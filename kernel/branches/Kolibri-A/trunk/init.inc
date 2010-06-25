@@ -12,38 +12,6 @@ MEM_WB     equ 6               ;write-back memory
 MEM_WC     equ 1               ;write combined memory
 MEM_UC     equ 0               ;uncached memory
 
-align 4
-proc mem_test
-; if we have BIOS with fn E820, skip the test
-           cmp dword [BOOT_VAR-OS_BASE + 0x9100], 0
-           jnz .ret
-
-           mov eax, cr0
-           and eax, not (CR0_CD+CR0_NW)
-           or eax, CR0_CD         ;disable caching
-           mov cr0, eax
-           wbinvd                 ;invalidate cache
-
-           xor edi, edi
-           mov ebx, 'TEST'
-@@:
-           add edi, 0x100000
-           xchg ebx, dword [edi]
-           cmp dword [edi], 'TEST'
-           xchg ebx, dword [edi]
-           je @b
-
-           and eax, not (CR0_CD+CR0_NW)  ;enable caching
-           mov cr0, eax
-           inc dword [BOOT_VAR-OS_BASE + 0x9100]
-           xor eax, eax
-           mov [BOOT_VAR-OS_BASE + 0x9104], eax
-           mov [BOOT_VAR-OS_BASE + 0x9108], eax
-           mov [BOOT_VAR-OS_BASE + 0x910C], edi
-           mov [BOOT_VAR-OS_BASE + 0x9110], eax
-.ret:
-           ret
-endp
 
 align 4
 proc init_mem
@@ -129,8 +97,6 @@ proc init_mem
            rep stosd
 
            mov edx, (sys_pgdir-OS_BASE)+ 0x800; (OS_BASE shr 20)
-           bt [cpu_caps-OS_BASE], CAPS_PSE
-           jnc .no_PSE
 
            mov ebx, cr4
            or ebx, CR4_PSE
@@ -142,20 +108,6 @@ proc init_mem
            add edx, 4
 
            mov edi, [tmp_page_tabs] 
-           jmp .map_kernel_heap		; new kernel fits to the first 4Mb - nothing to do with ".map_low"
-.no_PSE:
-           mov eax, PG_SW
-           mov ecx, [tmp_page_tabs]
-           shr ecx, 12
-.map_low:
-           mov edi, [tmp_page_tabs]
-@@:                                   ;
-           stosd
-           add eax, 0x1000
-           dec ecx
-           jnz @B
-
-.map_kernel_heap:
            mov ecx, [pg_data.kernel_tables-OS_BASE]
            shl ecx, 10
            xor eax, eax

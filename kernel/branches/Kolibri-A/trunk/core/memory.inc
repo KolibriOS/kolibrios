@@ -373,9 +373,7 @@ proc init_LFB
            mov [pg_count], edi
            shr edi, 10
 
-           bt [cpu_caps], CAPS_PSE
-           jnc .map_page_tables
-           or esi, PG_LARGE+PG_UW
+           or esi,  PG_GLOBAL+PG_LARGE+PG_UW
            mov edx, sys_pgdir+(LFB_BASE shr 20)
 @@:
            mov [edx], esi
@@ -384,39 +382,29 @@ proc init_LFB
            dec edi
            jnz @B
 
-           bt [cpu_caps], CAPS_PGE
-           jnc @F
-           or dword [sys_pgdir+(LFB_BASE shr 20)], PG_GLOBAL
-@@:
            mov dword [LFBAddress], LFB_BASE
            mov eax, cr3       ;flush TLB
            mov cr3, eax
            ret
+endp
 
-.map_page_tables:
-
-@@:
-           call alloc_page
-           stdcall map_page_table, edx, eax
-           add edx, 0x00400000
-           dec edi
-           jnz @B
-
-           mov eax, [LFBAddress]
-           mov edi, page_tabs + (LFB_BASE shr 10)
-           or eax, PG_UW
-           mov ecx, [pg_count]
-           cld
-@@:
-           stosd
-           add eax, 0x1000
-           dec ecx
-           jnz @B
-
-           mov dword [LFBAddress], LFB_BASE
-           mov eax, cr3       ;flush TLB
-           mov cr3, eax
-
+align 4
+proc init_userDMA
+           stdcall alloc_pages, 4096 	; 16M <<<<<<<<<<+++++++++++++++++++++++++++++++++
+           add eax, 0x007FFFF0
+	   and eax, 0xFF800000		; align at 8M boundary
+	   mov [UserDMAaddr], eax
+           or  eax, PG_UW + PG_NOCACHE
+           mov ebx, USER_DMA_BUFFER
+	   mov ecx, 2048		; 8M, to be sure
+           call commit_pages
+           mov eax, [UserDMAaddr]
+           or  eax, PG_LARGE + PG_UW + PG_NOCACHE
+           mov ebx, sys_pgdir + (USER_DMA_BUFFER shr 20)
+           mov [ebx], eax
+	   add ebx, 4
+           add eax, 0x00400000
+           mov [ebx], eax
            ret
 endp
 

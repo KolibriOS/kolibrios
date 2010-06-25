@@ -8,11 +8,13 @@
 ;;                                                              ;;
 ;;  32 bit PCI driver code                                      ;;
 ;;                                                              ;;
+;;  Version 0.4  February 2nd,  2010                            ;;
 ;;  Version 0.3  April 9, 2007                                  ;;
 ;;  Version 0.2  December 21st, 2002                            ;;
 ;;                                                              ;;
 ;;  Author: Victor Prodan, victorprodan@yahoo.com               ;;
 ;;          Mihailov Ilia, ghost.nsk@gmail.com                  ;;
+;;          Artem Jerdev,  kolibri@jerdev.co.uk                 ;;
 ;;    Credits:                                                  ;;
 ;;          Ralf Brown                                          ;;
 ;;          Mike Hibbett, mikeh@oceanfree.net                   ;;
@@ -30,7 +32,7 @@ $Revision$
 ;   Description
 ;       entry point for system PCI calls
 ;***************************************************************************
-;mmio_pci_addr	equ  0x400		 ; set actual PCI address here to activate user-MMIO
+mmio_pci_addr	dw  0x400	; default PCI device bdf-address 
 
 
 align 4
@@ -76,14 +78,13 @@ pci_fn_3:
 	cmp al,10
 	jz pci_write_reg  ;dword
 
-if defined mmio_pci_addr
 	cmp al,11	    ;  user-level MMIO functions 
 	jz pci_mmio_init
 	cmp al,12
 	jz pci_mmio_map
 	cmp al,13
 	jz pci_mmio_unmap
-end if
+
 
       no_pci_access_for_applications:
 
@@ -384,14 +385,14 @@ if defined mmio_pci_addr	; must be set above
 ;
 ;   Description
 ;       IN:  bx = device's PCI bus address (bbbbbbbbdddddfff)
-;   Returns  eax = user heap space available (bytes)
+;   Returns  eax = phys. address of user-accessible DMA block 
 ;   Error codes
 ;       eax = -1 : PCI user access blocked,
 ;       eax = -2 : device not registered for uMMIO service
 ;       eax = -3 : user heap initialization failure
 ;***************************************************************************
 pci_mmio_init:
-    cmp     bx, mmio_pci_addr	
+    cmp     bx, [mmio_pci_addr]	
     jz	    @f
     mov     eax,-2
     ret
@@ -399,6 +400,7 @@ pci_mmio_init:
     call    init_heap	   ; (if not initialized yet)
     or	    eax,eax
     jz	    @f
+    mov     eax, [UserDMAaddr]
     ret
 @@:
     mov     eax,-3
@@ -412,10 +414,9 @@ pci_mmio_init:
 ;   Description
 ;       maps a block of PCI memory to user-accessible linear address
 ;
-;       WARNING! This VERY EXPERIMENTAL service is for one chosen PCI device only!
-;       The target device address should be set in kernel var mmio_pci_addr
 ;
-;       IN:  ah = BAR#;
+;       IN:  ah = BAR#; or
+;       IN:  ah = 0xDA for DMA-mapping requests; 
 ;       IN: ebx = block size (bytes);
 ;       IN: ecx = offset in MMIO block (in 4K-pages, to avoid misaligned pages);
 ;
@@ -432,11 +433,20 @@ pci_mmio_init:
 
 pci_mmio_map:
     and     edx,0x0ffff
+    cmp     ah, 0xDA
+    jz     .dma_map
     cmp     ah,6
     jc     .bar_0_5
     jz     .bar_rom
     mov     eax,-2
     ret
+
+.dma_map:
+    push    ecx
+    mov     ecx,ebx
+    mov     eax,[UserDMAaddr]
+    jmp    .allocate_block
+    
 .bar_rom:
     mov    ah, 8	; bar6 = Expansion ROM base address
 .bar_0_5:
@@ -448,7 +458,7 @@ pci_mmio_map:
     shl     bl, 1
     shl     bl, 1
     add     bl, 0x10	; now bl = BAR offset in PCI config. space
-    mov     ax, mmio_pci_addr
+    mov     ax, [mmio_pci_addr]
     mov     bh, al	; bh = dddddfff
     mov     al, 2	; al : DW to read
     call    pci_read_reg
@@ -465,7 +475,9 @@ pci_mmio_map:
     pop     ecx 	; ecx = block size, bytes (expanded to whole page)
     mov     ebx, ecx	; user_alloc destroys eax, ecx, edx, but saves ebx
     and     eax, 0xFFFFFFF0
-    push    eax 	      ; store MMIO physical address + keep 2DWords in the stack
+
+.allocate_block:
+    push    eax 	; store MMIO physical address + keep the stack 2x4b deep 
     stdcall user_alloc, ecx
     or	    eax, eax
     jnz     mmio_map_over
@@ -484,9 +496,7 @@ mmio_map_over:
     pop     edx 	; edx = MMIO shift (pages)
     shl     edx, 12	; edx = MMIO shift (bytes)
     add     eax, edx	; eax = uMMIO physical address
-    or	    eax, PG_SHARED
-    or	    eax, PG_UW
-    or	    eax, PG_NOCACHE
+    or	    eax, (PG_SHARED+PG_UW+PG_NOCACHE)
     mov     edi, ebx
     call    commit_pages
     mov     eax, edi

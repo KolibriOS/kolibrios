@@ -253,6 +253,7 @@ BytesPerScanLine    equ (OS_BASE+0x000FE08)
 SCR_MODE            equ (OS_BASE+0x000FE0C)
 
 LFBAddress          equ (OS_BASE+0x000FE80)
+UserDMAaddr         equ (OS_BASE+0x000FE84)
 BTN_ADDR            equ (OS_BASE+0x000FE88)
 MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
 
@@ -321,6 +322,9 @@ end virtual
 
 HEAP_BASE           equ (OS_BASE+0x0800000)
 HEAP_MIN_SIZE       equ 0x01000000
+
+PCIe_CONFIG_SPACE   equ	0xF0000000	
+USER_DMA_BUFFER     equ 0xFD000000    ; linear addr.
 
 page_tabs           equ 0xFDC00000
 app_page_tabs       equ 0xFDC00000

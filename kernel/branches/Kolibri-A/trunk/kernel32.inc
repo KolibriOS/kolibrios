@@ -268,8 +268,8 @@ include "gui/mouse.inc"
 include "gui/skincode.inc"
 
 ; Pci functions
-
 include "bus/pci/pci32.inc"
+include "bus/pci/pcie.inc"
 
 ; Floppy drive controller
 
