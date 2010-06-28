@@ -187,15 +187,15 @@ calc_vmodes_table:
         lfs     si, [es:vi.VideoModePtr]
 
         mov     bx,modes_table
-;save no vesa mode of work 320x200, EGA/CGA 256 梥⮢ and 640x480, VGA 16 梥⮢
-        mov     word [es:bx],640
-        mov     word [es:bx+2],480
-        mov     word [es:bx+6],0x13
+;save no vesa mode of work 320x200, EGA/CGA 256 colors and 640x480, VGA 16 cols
+;        mov     word [es:bx],640
+;        mov     word [es:bx+2],480
+;        mov     word [es:bx+6],0x13
         
-        mov     word [es:bx+10],640
-        mov     word [es:bx+12],480
-        mov     word [es:bx+16],0x12
-        add     bx,20
+;        mov     word [es:bx+10],640
+;        mov     word [es:bx+12],480
+;        mov     word [es:bx+16],0x12
+;        add     bx,20
   .next_mode:
         mov     cx,word [fs:si] ; mode number
         cmp     cx,-1
@@ -215,23 +215,12 @@ calc_vmodes_table:
         test    [es:mi.ModeAttributes],10000000b   ;LFB ?
         jz      @f
 
-        cmp     [es:mi.BitsPerPixel], 24	;It show only videomodes to have support 24 and 32 bpp
+        cmp     [es:mi.BitsPerPixel], 32	;to show only 32 bpp videomodes 
         jb      @f
-
-;        cmp     [es:mi.BitsPerPixel],16
-;        jne     .l0
-;        cmp     [es:mi.GreenMaskSize],5
-;        jne     .l0
-;        mov     [es:mi.BitsPerPixel],15
-
 
 .l0:
-        cmp     [es:mi.XRes],640
+        cmp     [es:mi.XRes],800	; only 800x600 and higher
         jb      @f
-        cmp     [es:mi.YRes],480
-        jb      @f
-;        cmp     [es:mi.BitsPerPixel],8
-;        jb      @f
 
         mov     ax,[es:mi.XRes]
         mov     [es:bx+0],ax               ; +0[2] : resolution X
@@ -257,46 +246,6 @@ calc_vmodes_table:
 
         mov     word[es:bx],-1  ;end video table
         mov     word[end_cursor],bx     ;save end cursor position
-;;;;;;;;;;;;;;;;;;
-;Sort array
-;        mov     si,modes_table
-;.new_mode:
-;        mov     ax,word [es:si]
-;        cmp     ax,-1
-;        je      .exxit
-;        add     ax,word [es:si+2]
-;        add     ax,word [es:si+8]
-;        mov     bp,si
-;.again:
-;        add     bp,12
-;        mov     bx,word [es:bp]
-;        cmp     bx,-1
-;        je      .exit
-;        add     bx,word [es:bp+2]
-;        add     bx,word [es:bp+8]
-;        
-;        cmp     ax,bx
-;        ja      .loops
-;        jmp     .again
-;.loops: 
-;        push    dword [es:si]
-;        push    dword [es:si+4]
-;        push    dword [es:si+8]
-;        push    dword [es:bp]
-;        push    dword [es:bp+4]
-;        push    dword [es:bp+8]
-;
-;        pop     dword [es:si+8]
-;        pop     dword [es:si+4]
-;        pop     dword [es:si]
-;        pop     dword [es:bp+8]
-;        pop     dword [es:bp+4]
-;        pop     dword [es:bp]
-;        jmp     .new_mode
-;
-;.exit:  add     si,12
-;        jmp     .new_mode
-;.exxit:
         popad
         ret
 
@@ -366,17 +315,9 @@ check_first_parm:
         call    .loops
         test    ax,ax
         jz     .ok_found_mode
-        mov     ax,640
-        mov     bx,480
-        mov     si,modes_table
-        call    .loops
-        test    ax,ax
-        jz     .ok_found_mode
 
         mov     si,modes_table
         jmp     .ok_found_mode
-
-
 
 .no_zero:
 	mov	bp,word [number_vm]
@@ -685,14 +626,14 @@ set_vmode:
         mov     word [es:0x900C],bx              ; resolution Y
         mov     word [es:0x9008],cx              ; number of mode
 
-        cmp     cx,0x12
-        je      .mode0x12_0x13
-        cmp     cx,0x13
-        je      .mode0x12_0x13
+;        cmp     cx,0x12
+;        je      .mode0x12_0x13
+;        cmp     cx,0x13
+;        je      .mode0x12_0x13
 
 
-        cmp     byte [s_vesa.ver],'2'
-        jb      .vesa12
+;        cmp     byte [s_vesa.ver],'2'
+;        jb      .vesa12
 
 ;  VESA 2 and Vesa 3
 
@@ -708,48 +649,43 @@ set_vmode:
         mov     ax, [es:di+BytesPerLine]
         mov     [es:0x9001], ax
         ; BPP
-        cmp     [es:mi.BitsPerPixel],16
-        jne     .l0
-        cmp     [es:mi.GreenMaskSize],5
-        jne     .l0
-        mov     [es:mi.BitsPerPixel],15
+;        cmp     [es:mi.BitsPerPixel],16
+;        jne     .l0
+;        cmp     [es:mi.GreenMaskSize],5
+;        jne     .l0
+;        mov     [es:mi.BitsPerPixel],15
 .l0:
         mov     al, byte [es:di+0x19]
         mov     [es:0x9000], al
         jmp     .exit
 
-.mode0x12_0x13:
-        mov     byte [es:0x9000], 32
-        or      dword [es:0x9018], 0xFFFFFFFF; 0x800000
+;.mode0x12_0x13:
+;        mov     byte [es:0x9000], 32
+;        or      dword [es:0x9018], 0xFFFFFFFF; 0x800000
 
 
 ;  VESA 1.2 PM BANK SWITCH ADDRESS
 
-.vesa12:
+;.vesa12:
 
 
-        mov     ax,0x4f0A
-        xor     bx,bx
-        int     0x10
-        xor     eax,eax
-        xor     ebx,ebx
-        mov     ax,es
-        shl     eax,4
-        mov     bx,di
-        add     eax,ebx
-        movzx   ebx,word[es:di]
-        add     eax,ebx
-        push    0x0000
-        pop     es
-        mov     [es:0x9014],eax
+;        mov     ax,0x4f0A
+;        xor     bx,bx
+;        int     0x10
+;        xor     eax,eax
+;        xor     ebx,ebx
+;        mov     ax,es
+;        shl     eax,4
+;        mov     bx,di
+;        add     eax,ebx
+;        movzx   ebx,word[es:di]
+;        add     eax,ebx
+;        push    0x0000
+;        pop     es
+;        mov     [es:0x9014],eax
   .exit:
         ret
 
 
-;        mov     dword[es:0x9018],0x000A0000
-;        ret
-
-;=============================================================================
-;=============================================================================
 ;=============================================================================
 

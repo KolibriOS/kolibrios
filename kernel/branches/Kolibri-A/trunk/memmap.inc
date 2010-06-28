@@ -123,8 +123,8 @@
 ;   FE08  dword       screen y multiplier	
 ;   FE0C  dword       screen mode	
 ;   FE10  ->   FE7F   free (112)
-;   FE80  dword       address of LFB in physical
-;   FE84  dword       address of applications memory start in physical	?
+;   FE80  dword       physical address of LFB
+;   FE84  dword       physical address of user-accessible static system buffer
 ;   FE88  dword       address of button list
 ;   FE8C  dword       memory to use 
 ;   FE90  ->   FEFF   free (112)
@@ -253,9 +253,10 @@
 
 ; 0x80800000 ->       kernel heap
 ; 0x80FFFFFF          heap min limit
-; 0xFDBFFFFF          heap max limit
+; 0xEFFFFFFF          heap max limit
 
 ; 0xF0000000 -> 0xF1FFFFFF  PCI-express extended config space
+; 0xFD000000 -> 0xFD3FFFFF  static system buffer 4Mb
 ; 0xFDC00000 -> 0xFDFFFFFF  page tables 4Mb
 ; 0xFE000000 -> 0xFFFFFFFF  LFB 32Mb
 ; 0xFE000000 -> 0xFE7FFFFF  application available LFB 8Mb

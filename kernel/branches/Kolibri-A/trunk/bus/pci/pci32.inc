@@ -378,7 +378,6 @@ pci_write_reg_err:
 	dec	eax
 	ret
 
-if defined mmio_pci_addr	; must be set above
 ;***************************************************************************
 ;   Function
 ;      pci_mmio_init 
@@ -388,15 +387,11 @@ if defined mmio_pci_addr	; must be set above
 ;   Returns  eax = phys. address of user-accessible DMA block 
 ;   Error codes
 ;       eax = -1 : PCI user access blocked,
-;       eax = -2 : device not registered for uMMIO service
 ;       eax = -3 : user heap initialization failure
 ;***************************************************************************
 pci_mmio_init:
-    cmp     bx, [mmio_pci_addr]	
-    jz	    @f
-    mov     eax,-2
-    ret
-@@:
+    mov     [mmio_pci_addr],bx
+
     call    init_heap	   ; (if not initialized yet)
     or	    eax,eax
     jz	    @f
@@ -520,8 +515,6 @@ mmio_map_over:
 pci_mmio_unmap:
     stdcall user_free, ebx
     ret
-
-end if
 
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 uglobal

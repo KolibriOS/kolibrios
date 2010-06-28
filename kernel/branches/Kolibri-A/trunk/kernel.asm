@@ -127,14 +127,9 @@ include "boot/preboot.inc"
 
 if lang eq en
 include "boot/booteng.inc"     ; english system boot messages
-else if lang eq ru
+else
 include "boot/bootru.inc"      ; russian system boot messages
 include "boot/ru.inc"          ; Russian font
-else if lang eq et
-include "boot/bootet.inc"      ; estonian system boot messages
-include "boot/et.inc"          ; Estonian font
-else
-include "boot/bootge.inc"      ; german system boot messages
 end if
 
 include "boot/bootcode.inc"    ; 16 bit system boot code
@@ -395,31 +390,31 @@ high_code:
         mov     eax,[BOOT_VAR+0x9018]
         mov     [LFBAddress],eax
 
-        cmp     [SCR_MODE],word 0100000000000000b
-        jge     setvesa20
-        cmp     [SCR_MODE],word 0x13
-        je      v20ga32
-        mov     [PUTPIXEL],dword Vesa12_putpixel24  ; Vesa 1.2
-        mov     [GETPIXEL],dword Vesa12_getpixel24
-        cmp     [ScreenBPP],byte 24
-        jz      ga24
-        mov     [PUTPIXEL],dword Vesa12_putpixel32
-        mov     [GETPIXEL],dword Vesa12_getpixel32
-      ga24:
-        jmp     v20ga24
+;==        cmp     [SCR_MODE],word 0100000000000000b
+;        jge     setvesa20
+;        cmp     [SCR_MODE],word 0x13
+;        je      v20ga32
+;        mov     [PUTPIXEL],dword Vesa12_putpixel24  ; Vesa 1.2
+;        mov     [GETPIXEL],dword Vesa12_getpixel24
+;        cmp     [ScreenBPP],byte 24
+;        jz      ga24
+;        mov     [PUTPIXEL],dword Vesa12_putpixel32
+;        mov     [GETPIXEL],dword Vesa12_getpixel32
+;      ga24:
+;        jmp     v20ga24
       setvesa20:
-        mov     [PUTPIXEL],dword Vesa20_putpixel24  ; Vesa 2.0
-        mov     [GETPIXEL],dword Vesa20_getpixel24
-        cmp     [ScreenBPP],byte 24
-        jz      v20ga24
+;        mov     [PUTPIXEL],dword Vesa20_putpixel24  ; Vesa 2.0
+;        mov     [GETPIXEL],dword Vesa20_getpixel24
+;        cmp     [ScreenBPP],byte 24
+;        jz      v20ga24
       v20ga32:
         mov     [PUTPIXEL],dword Vesa20_putpixel32
         mov     [GETPIXEL],dword Vesa20_getpixel32
-      v20ga24:
-        cmp     [SCR_MODE],word 0x12                ; 16 C VGA 640x480
-        jne     no_mode_0x12
-        mov     [PUTPIXEL],dword VGA_putpixel
-        mov     [GETPIXEL],dword Vesa20_getpixel32
+;      v20ga24:
+;        cmp     [SCR_MODE],word 0x12                ; 16 C VGA 640x480
+;        jne     no_mode_0x12
+;        mov     [PUTPIXEL],dword VGA_putpixel
+;        mov     [GETPIXEL],dword Vesa20_getpixel32
       no_mode_0x12:
 
 ; -------- Fast System Call init ----------
@@ -814,19 +809,19 @@ end if
 
 ; PALETTE FOR 320x200 and 640x480 16 col
 
-        cmp   [SCR_MODE],word 0x12
-        jne   no_pal_vga
-        mov   esi,boot_pal_vga
-        call  boot_log
-        call  paletteVGA
-      no_pal_vga:
+;        cmp   [SCR_MODE],word 0x12
+;        jne   no_pal_vga
+;        mov   esi,boot_pal_vga
+;        call  boot_log
+;        call  paletteVGA
+;      no_pal_vga:
 
-        cmp   [SCR_MODE],word 0x13
-        jne   no_pal_ega
-        mov   esi,boot_pal_ega
-        call  boot_log
-        call  palette320x200
-      no_pal_ega:
+;        cmp   [SCR_MODE],word 0x13
+;        jne   no_pal_ega
+;        mov   esi,boot_pal_ega
+;        call  boot_log
+;        call  palette320x200
+;      no_pal_ega:
 
 ; LOAD DEFAULT SKIN
 
@@ -1023,8 +1018,8 @@ boot_log:
 		inc	  edi
         call  dtext
 
-        mov   [novesachecksum],1000
-        call  checkVga_N13
+;        mov   [novesachecksum],1000
+;        call  checkVga_N13
 
         popad
 
@@ -1041,7 +1036,7 @@ osloop:
         call    window_check_events
         call    mouse_check_events
         call   checkmisc
-        call   checkVga_N13
+;        call   checkVga_N13
         call   stack_handler
         call   checkidle
         call   check_fdd_motor_status
@@ -3801,9 +3796,9 @@ drawbackground:
      dbrv12:
        cmp  [SCR_MODE],word 0100000000000000b
        jge  dbrv20
-       cmp  [SCR_MODE],word 0x13
-       je   dbrv20
-       call  vesa12_drawbackground
+;       cmp  [SCR_MODE],word 0x13
+;       je   dbrv20
+;       call  vesa12_drawbackground
        dec   [mouse_pause]
        call   [draw_pointer]
        ret
@@ -3843,16 +3838,14 @@ sys_putimage:
         mov     ebp, putimage_get24bpp
         mov     esi, putimage_init24bpp
 sys_putimage_bpp:
-;        call    [disable_mouse] ; this will be done in xxx_putimage
-;        mov     eax, vga_putimage
-        cmp     [SCR_MODE], word 0x12
-        jz      @f   ;.doit
-        mov     eax, vesa12_putimage
-        cmp     [SCR_MODE], word 0100000000000000b
-        jae     @f
-        cmp     [SCR_MODE], word 0x13
-        jnz     .doit
-@@:
+;        cmp     [SCR_MODE], word 0x12
+;        jz      @f   ;.doit
+;        mov     eax, vesa12_putimage
+;        cmp     [SCR_MODE], word 0100000000000000b
+;        jae     @f
+;        cmp     [SCR_MODE], word 0x13
+;        jnz     .doit
+;@@:
         mov     eax, vesa20_putimage
 .doit:
         inc     [mouse_pause]
@@ -4140,14 +4133,14 @@ __sys_drawbar:
     cmp   [SCR_MODE],word 0x12
     je   dbv20
    sdbv20:
-    cmp  [SCR_MODE],word 0100000000000000b
-    jge  dbv20
-    cmp  [SCR_MODE],word 0x13
-    je   dbv20
-    call vesa12_drawbar
-    dec   [mouse_pause]
-    call   [draw_pointer]
-    ret
+;    cmp  [SCR_MODE],word 0100000000000000b
+;    jge  dbv20
+;    cmp  [SCR_MODE],word 0x13
+;    je   dbv20
+;    call vesa12_drawbar
+;    dec   [mouse_pause]
+;    call   [draw_pointer]
+;    ret
   dbv20:
     call vesa20_drawbar
     dec   [mouse_pause]

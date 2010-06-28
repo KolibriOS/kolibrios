@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
@@ -196,13 +196,6 @@ if lang eq ru
         mov     ax, 1100h
         int     10h
  ; End set VGA russian font
-else if lang eq et
-        mov     bp, ET_FNT              ; ET_FNT1
-        mov     bx, 1000h               ;
-        mov     cx, 255                 ; 256 symbols
-        xor     dx, dx                  ; 0 - position of first symbol
-        mov     ax, 1100h
-        int     10h
 end if
 
 ; draw frames
@@ -245,21 +238,21 @@ dfl1:
 
 
 ; TEST FOR 386+
-
-        mov     bx, 0x4000
-        pushf
-        pop     ax
-        mov     dx, ax
-        xor     ax, bx
-        push    ax
-        popf
-        pushf
-        pop     ax
-        and     ax, bx
-        and     dx, bx
-        cmp     ax, dx
-        jnz     cpugood
-        mov     si, not386
+	jmp	cpugood
+;        mov     bx, 0x4000
+;        pushf
+;        pop     ax
+;        mov     dx, ax
+;        xor     ax, bx
+;        push    ax
+;        popf
+;        pushf
+;        pop     ax
+;        and     ax, bx
+;        and     dx, bx
+;        cmp     ax, dx
+;        jnz     cpugood
+;        mov     si, not386
 sayerr:
         call    print
         jmp     $
@@ -315,32 +308,32 @@ sayerr:
 .nopci:
 ; \end{Mario79}
 
-        mov     al, 0xf6        ; —брос клавиатуры, разрешить сканирование
-        out     0x60, al
-        xor     cx, cx
-wait_loop:       ; variant 2
+;        mov     al, 0xf6        ; —брос клавиатуры, разрешить сканирование
+;        out     0x60, al
+;        xor     cx, cx
+;wait_loop:       ; variant 2
 ; reading state of port of 8042 controller
-        in      al, 64h
-        and     al, 00000010b  ; ready flag
+;        in      al, 64h
+;        and     al, 00000010b  ; ready flag
 ; wait until 8042 controller is ready
-        loopnz  wait_loop
+;        loopnz  wait_loop
 
-;;;/diamond today   5.02.2008
+;;;/diamond   5.02.2008
 ; set keyboard typematic rate & delay
-        mov     al, 0xf3
-        out     0x60, al
-        xor     cx, cx
-@@:
-        in      al, 64h
-        test    al, 2
-        loopnz  @b
-        mov     al, 0
-        out     0x60, al
-        xor     cx, cx
-@@:
-        in      al, 64h
-        test    al, 2
-        loopnz  @b
+;        mov     al, 0xf3
+;        out     0x60, al
+;        xor     cx, cx
+;@@:
+;        in      al, 64h
+;        test    al, 2
+;        loopnz  @b
+;        mov     al, 0
+;        out     0x60, al
+;        xor     cx, cx
+;@@:
+;        in      al, 64h
+;        test    al, 2
+;        loopnz  @b
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; --------------- APM ---------------------
         and     word [es:0x9044], 0     ; ver = 0.0 (APM not found)

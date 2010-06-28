@@ -394,11 +394,11 @@ proc init_userDMA
            add eax, 0x007FFFF0
 	   and eax, 0xFF800000		; align at 8M boundary
 	   mov [UserDMAaddr], eax
-           or  eax, PG_UW + PG_NOCACHE
-           mov ebx, USER_DMA_BUFFER
-	   mov ecx, 2048		; 8M, to be sure
-           call commit_pages
-           mov eax, [UserDMAaddr]
+;           or  eax, PG_UW + PG_NOCACHE
+;           mov ebx, USER_DMA_BUFFER
+;	   mov ecx, 2048		; 8M, to be sure
+;           call commit_pages
+;           mov eax, [UserDMAaddr]
            or  eax, PG_LARGE + PG_UW + PG_NOCACHE
            mov ebx, sys_pgdir + (USER_DMA_BUFFER shr 20)
            mov [ebx], eax

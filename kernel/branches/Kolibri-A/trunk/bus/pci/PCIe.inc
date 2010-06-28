@@ -28,14 +28,13 @@ $Revision: 1463 $
 ;
 ;***************************************************************************
 
-mmio_pcie_cfg_addr	dd  	0x0	; intel pcie space may be defined here
-mmio_pcie_cfg_lim	dd	0x0		; upper pcie space address 
+mmio_pcie_cfg_addr	dd  	0x00000000	; pcie space may be defined here
+mmio_pcie_cfg_lim	dd	0x000FFFFF	; upper pcie space address 
 
 
 align 4
 
 pci_ext_config:
-
 	mov	ebx, [mmio_pcie_cfg_addr]
 	or	ebx,ebx
 	jz	@f
@@ -99,8 +98,8 @@ pci_ext_config:
 .pcie_cfg_mapped:
 	
 ;	-- glad to have the extended PCIe config field found
-;	mov	esi, boot_pcie_ok
-;	call	boot_log
+	mov	esi, boot_pcie_ok
+	call	boot_log
 	ret	; <<<<<<<<<<< OK >>>>>>>>>>>
 	
 .no_pcie_cfg:
@@ -112,7 +111,7 @@ pci_ext_config:
 	cmp	bl, 0xC0		; MMIO regs lay below this offset
 	jb	.check_HT_mmio
 .pcie_failed:
-;	mov	esi, boot_pcie_fail
-;	call	boot_log
+	mov	esi, boot_pcie_fail
+	call	boot_log
 	ret	; <<<<<<<<< FAILURE >>>>>>>>>
 
