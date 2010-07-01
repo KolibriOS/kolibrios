@@ -54,10 +54,8 @@ include	'lang.inc'
 include '../../../macros.inc'
 include	'../../libraries/box_lib/trunk/box_lib.mac'
 include	'../../libraries/box_lib/load_lib.mac'
-include	'../../libraries/box_lib/asm/trunk/opendial.mac'
 
 @use_library
-use_OpenDialog
 
 times	16	dd	0
 
@@ -94,8 +92,12 @@ ends
 
 START:
 	mcall	68,11
+
+load_libraries l_libs_start,end_l_libs
+
 ;OpenDialog	initialisation
-init_OpenDialog	OpenDialog_data
+	push    dword OpenDialog_data
+	call    [OpenDialog_Init]
 
 	mov	edi,filename_area
 	mov	esi,start_temp_file_name
@@ -106,9 +108,6 @@ init_OpenDialog	OpenDialog_data
 	stosb
 	test	eax,eax
 	jnz	@b
-
-	load_library	boxlib_name,cur_dir_path,buf_cmd_lin,system_path,\
-	err_message_found_lib,head_f_l,myimport,err_message_import,head_f_i
 
 	mcall	40,0x27
 
@@ -1658,11 +1657,6 @@ create_help_window:
 ;-------------------------------------------------
 
 open_file:
-	mov	dword [ed_box_data],1
-	mov	dword [ed_box_data+4],edit1
-	call	draw_ed_box	;рисуем editbox
-	;размер файла?
-.0:
 	mov	[func_70.func_n],5
 	mov	[func_70.param1],0
 	mov	[func_70.param2],0
@@ -1760,10 +1754,13 @@ open_file:
 ;-------------------------------------------------------------------------------
 open_dialog_save:
 	mov	[OpenDialog_data.type],1	; Save
-	start_OpenDialog	OpenDialog_data
-	cmp	[OpenDialog_data.status],2	; OpenDialog does not start
-;	je	.sysxtree	; some kind of alternative, instead OpenDialog
-	je	save_file
+
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
+
+;	cmp	[OpenDialog_data.status],2	; OpenDialog does not start
+;;	je	.sysxtree	; some kind of alternative, instead OpenDialog
+;	je	save_file
 	cmp	[OpenDialog_data.status],1
 	jne	still
 	mov	esi,fname_buf
@@ -1779,13 +1776,9 @@ open_dialog_save:
 	sub	esi,path
 	mov	[edit1.size],esi
 	mov	[edit1.pos],esi
-	jmp	save_file.1
+;	jmp	save_file
 ;-------------------------------------------------------------------------------
 save_file:	;сохраняем файл
-	mov	dword [ed_box_data],1
-	mov	dword [ed_box_data+4],edit1
-	call	draw_ed_box
-.1:
 	mov	[func_70.func_n],2
 	mov	[func_70.param1],0
 	mov	[func_70.param2],0
@@ -2759,17 +2752,15 @@ Ctrl_X:
 ;---------------------------------------------------------------------
 open_dialog:
 	mov	[OpenDialog_data.type],0	; Open
-	start_OpenDialog	OpenDialog_data
-	cmp	[OpenDialog_data.status],2	; OpenDialog does not start
-	je	.sysxtree	; some kind of alternative, instead OpenDialog
+
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
+
+;	cmp	[OpenDialog_data.status],2	; OpenDialog does not start
+;	je	.sysxtree	; some kind of alternative, instead OpenDialog
 	cmp	[OpenDialog_data.status],1
 	jne	still
 	mov	esi,fname_buf
-	jmp	.load
-.sysxtree:
-	call	opendialog
-	jc	still
-	mov	esi,path
 .load:
 	mov	edi,file_name
 	cld
@@ -2783,204 +2774,8 @@ open_dialog:
 	sub	esi,path
 	mov	[edit1.size],esi
 	mov	[edit1.pos],esi
-	jmp	open_file.0
-;---------------------------------------------------------------------
-;##################################
-opendialog:
-;
-; STEP 1 Run SYSXTREE with parametrs MYPID 4 bytes in dec,
-; 1 byte space, 1 byte type of dialog (O - Open ,S - Save)
-;
-	mov	edi,path
-	xor	eax,eax
-	mov	ecx,(1024+16)/4
-	rep	stosd
-
-	mov	[dlg_pid_get],0
-
-; Get my PID in dec format 4 bytes
-	mov	eax,9
-	mov	ebx,procinfo
-	or	ecx,-1
-	mcall
-
-; convert eax bin to param dec
-	mov	eax,dword [procinfo+30]	;offset of myPID
-	mov	edi,param+4-1	;offset to 4 bytes
-	mov	ecx,4
-	mov	ebx,10
-.new_d:
-	xor	edx,edx
-	div	ebx
-	add	dl,'0'
-	mov	[edi],dl
-	dec	edi
-	loop	.new_d
-
-; wirite 1 byte space to param
-	mov	[param+4],byte 32	;Space for next parametr
-; and 1 byte type of dialog to param
-	mov	[param+5],byte 'O'	;Get Open dialog (Use 'S' for Save dialog)
-
-;
-; STEP2 prepare IPC area for get messages
-;
-
-; prepare IPC area
-	mov	[path],dword 0
-	mov	[path+4],dword 8
-
-; define IPC memory
-	mov	eax,60
-	mov	ebx,1		; define IPC
-	mov	ecx,path	; offset of area
-	mov	edx,1024+16	; size
-	mcall
-
-; change wanted events list 7-bit IPC event
-	mov	eax,40
-	mov	ebx,01000111b
-;	cmp	[image],0
-;	jnz	@f
-;	mov	bl,01000110b
-;@@:
-	mcall
-
-;
-; STEP 3 run SYSTEM XTREE with parameters
-;
-	mov	eax,70
-	mov	ebx,run_fileinfo
-	mcall
-	bt	eax,31
-	jnc	@f
-	mcall	40,0x27
-	add	esp,4
 	jmp	open_file
-@@:
-	mov	[get_loops],0
-.getmesloop:
-	mov	eax,23
-	mov	ebx,50	;0.5 sec
-	mcall
-	dec	eax
-	jz	.mred
-	dec	eax
-	jz	.mkey
-	dec	eax
-	jz	.mbutton
-	cmp	al,	7-3
-	jz	.mgetmes
-; Get number of procces
-	mov	ebx,procinfo
-	mov	ecx,-1
-	mov	eax,9
-	mcall
-	mov	ebp,eax
-
-.loox:
-	mov	eax,9
-	mov	ebx,procinfo
-	mov	ecx,ebp
-	mcall
-	mov	eax,[DLGPID]
-	cmp	[procinfo+30],eax	;IF Dialog find
-	je	.dlg_is_work	;jmp to dlg_is_work
-	dec	ebp
-	jnz	.loox
-
-	jmp	.erroff
-
-.dlg_is_work:
-	cmp	[procinfo+50],word 9	;If slot state 9 - dialog is terminated
-	je	.erroff	;TESTODP2 terminated too
-
-	cmp	[dlg_pid_get],dword 1
-	je	.getmesloop
-	inc	[get_loops]
-	cmp	[get_loops],4	;2 sec if DLG_PID not get TESTOP2 terminated
-	jae	.erroff
-	jmp	.getmesloop
-
-.mred:
-;	cmp	[image],	0
-;	jz	.getmesloop
-;	call	redraw_all
-	call	draw_window_1
-	jmp	.getmesloop
-.mkey:
-	mov	eax,2
-	mcall	;	read (eax=2)
-	jmp	.getmesloop
-.mbutton:
-	mov	eax,17	; get id
-	mcall
-	cmp	ah,1	; button id=1 ?
-	jne	.getmesloop
-	mov	eax,-1	; close this program
-	mcall
-.mgetmes:
-
-; If dlg_pid_get then second message get jmp to still
-	cmp	[dlg_pid_get],dword 1
-	je	.ready
-
-; First message is number of PID SYSXTREE dialog
-
-; convert PID dec to PID bin
-	movzx	eax,byte [path+16]
-	sub	eax,48
-	imul	eax,10
-	movzx	ebx,byte [path+16+1]
-	add	eax,ebx
-	sub	eax,48
-	imul	eax,10
-	movzx	ebx,byte [path+16+2]
-	add	eax,ebx
-	sub	eax,48
-	imul	eax,10
-	movzx	ebx,byte [path+16+3]
-	add	eax,ebx
-	sub	eax,48
-	mov	[DLGPID],eax
-
-; Claear and prepare IPC area for next message
-	mov	[path],dword 0
-	mov	[path+4],dword 8
-	mov	[path+8],dword 0
-	mov	[path+12],dword 0
-	mov	[path+16],dword 0
-
-; Set dlg_pid_get for get next message
-	mov	[dlg_pid_get],dword 1
-;	cmp	[image],0
-;	jz	.getmesloop
-;	call	redraw_all
-	call	draw_window_1
-	jmp	.getmesloop
-
-.ready:
-;
-; The second message get
-; Second message is 100 bytes path to SAVE/OPEN file
-; shl path string on 16 bytes
-;
-	mov	esi,path+16
-	mov	edi,path
-	mov	ecx,1024/4
-	rep	movsd
-	mov	[edi],byte 0
-
-.openoff:
-	mcall	40,0x27
-	clc
-	ret
-
-.erroff:
-	mcall	40,0x27
-	stc
-	ret
-;##################################
+;---------------------------------------------------------------------
 
 ;	DATA	AREA
 
@@ -2988,8 +2783,19 @@ opendialog:
 ;---------------------------------------------------------
 ;----------------------- DATA AREA------------------------
 ;---------------------------------------------------------
+align 4
+ProcLib_import:
+OpenDialog_Init		dd aOpenDialog_Init
+OpenDialog_Start	dd aOpenDialog_Start
+;OpenDialog__Version	dd aOpenDialog_Version
+        dd      0
+        dd      0
+aOpenDialog_Init	db 'OpenDialog_init',0
+aOpenDialog_Start	db 'OpenDialog_start',0
+;aOpenDialog_Version	db 'Version_OpenDialog',0
+;---------------------------------------------------------------------
 align	4
-myimport:
+Box_lib_import:
 edit_box_draw		dd aEdit_box_draw
 edit_box_key		dd aEdit_box_key
 edit_box_mouse		dd aEdit_box_mouse
@@ -3280,13 +3086,16 @@ op_text2:
 .e21:
 
 
-system_path	db '/sys/lib/'
-boxlib_name	db 'box_lib.obj',0
+system_dir_Boxlib			db '/sys/lib/box_lib.obj',0
+system_dir_ProcLib			db '/sys/lib/proc_lib.obj',0
 
 head_f_i:
 head_f_l	db 'error',0
-err_message_found_lib	db 'box_lib.obj was not found',0
-err_message_import	db 'box_lib.obj was not imported',0
+err_message_found_lib1		db 'box_lib.obj - Not found!',0
+err_message_found_lib2		db 'proc_lib.obj - Not found!',0
+
+err_message_import1			db 'box_lib.obj - Wrong import!',0
+err_message_import2			db 'proc_lib.obj - Wrong import!',0
 
 sel_text	db "From to",0
 
@@ -3408,6 +3217,18 @@ directory_ptr	dd	0
 
 
 title	db	_title
+;---------------------------------------------------------------------
+l_libs_start:
+;	load_library	boxlib_name,cur_dir_path,buf_cmd_lin,system_path,\
+;	err_message_found_lib,head_f_l,myimport,err_message_import,head_f_i
+
+library01  l_libs system_dir_Boxlib+9, cur_dir_path, buf_cmd_lin, system_dir_Boxlib, \
+err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
+
+library02  l_libs system_dir_ProcLib+9, cur_dir_path, buf_cmd_lin, system_dir_ProcLib, \
+err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+
+end_l_libs:
 ;---------------------------------------------------------------------
 OpenDialog_data:
 .type			dd 0
