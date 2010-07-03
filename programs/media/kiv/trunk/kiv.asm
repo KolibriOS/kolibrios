@@ -16,21 +16,22 @@ include 'dll.inc'
 include '../../../develop/libraries/libs-dev/libio/libio.inc'
 include '../../../develop/libraries/libs-dev/libimg/libimg.inc'
 
-include '../../../develop/libraries/box_lib/asm/trunk/opendial.mac'
-use_OpenDialog
+;include '../../../develop/libraries/box_lib/asm/trunk/opendial.mac'
+;use_OpenDialog
 ;-----------------------------------------------------------------------------
 
 START:
 	mcall	68, 11
 
-; OpenDialog initialisation
-init_OpenDialog	OpenDialog_data
-	
 	stdcall dll.Load, @IMPORT
 	or	eax, eax
 	jnz	exit
 
 	invoke	sort.START, 1
+
+; OpenDialog initialisation
+	push    dword OpenDialog_data
+	call    [OpenDialog_Init]
 
 	mov	ecx, 1	; for 15.4: 1 = tile
 	cmp	word [@PARAMS], '\T'
@@ -51,7 +52,9 @@ init_OpenDialog	OpenDialog_data
 
 	mov	[OpenDialog_data.draw_window],draw_window_fake
 	
-	start_OpenDialog	OpenDialog_data
+; OpenDialog Open
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
 
 	cmp	[OpenDialog_data.status],1
 	jne	exit
@@ -205,7 +208,9 @@ button:
     @@: cmp	eax, 'opn'
 	jne	@f
 	
-	start_OpenDialog	OpenDialog_data
+; OpenDialog Open
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
 	
 	cmp	[OpenDialog_data.status],1
 	jne	still
@@ -927,7 +932,9 @@ library 			\
 	libgfx , 'libgfx.obj' , \
 	libimg , 'libimg.obj' , \
 	libini , 'libini.obj' , \
-	sort   , 'sort.obj'
+	sort   , 'sort.obj'   , \
+	proc_lib ,'proc_lib.obj'
+
 
 import	libio			  , \
 	libio.init , 'lib_init'   , \
@@ -957,6 +964,10 @@ import	libini, \
 	ini_get_shortcut, 'ini_get_shortcut'
 
 import  sort, sort.START, 'START', SortDir, 'SortDir', strcmpi, 'strcmpi'
+
+import	proc_lib, \
+	OpenDialog_Init, 'OpenDialog_init', \
+	OpenDialog_Start,'OpenDialog_start'
 
 bFirstDraw	db	0
 ;-----------------------------------------------------------------------------
