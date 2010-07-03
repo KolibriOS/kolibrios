@@ -50,19 +50,18 @@ syms equ 12
   dd     esp_end     ; количество памяти
   dd     sys_mem     ; адрес вершины стэка
   dd     fname_buf   ; адрес буфера для параметров (не используется)
-  dd     0x0         ; зарезервировано
+  dd     cur_dir_path         ; зарезервировано
 
-include '..\..\..\MACROS.INC' ; макросы облегчают жизнь ассемблерщиков!
+include '..\..\..\macros.inc' ; макросы облегчают жизнь ассемблерщиков!
 include '..\..\..\develop\libraries\box_lib\load_lib.mac'
-include '..\..\..\develop\libraries\box_lib\asm\trunk\opendial.mac'
 
 ;include 'MACROS.INC'
 ;include 'load_lib.mac'
-;include 'opendial.mac'
+
+@use_library
 
 include 'debug.inc'
 
-	use_OpenDialog
 if ~ RENDER eq PIX
   TOP=TOP+4
   include 'bgifont.inc'
@@ -78,8 +77,12 @@ help_end:
 
 START:
         mcall 68, 11
-;OpenDialog initialisation
-init_OpenDialog	OpenDialog_data
+
+load_libraries l_libs_start,end_l_libs
+
+;OpenDialog	initialisation
+	push    dword OpenDialog_data
+	call    [OpenDialog_Init]
 
     mov  [pitch],2
   if ~ RENDER eq PIX
@@ -257,28 +260,29 @@ still:
   .nominus:
   end if
     cmp  ah,108         ; L - load
-    jne  stilld
+    jne  still
   .file_open:
 ;---------------------------------------------------------------------
 ;OpenDialog_start:
 ;	copy_path	open_dialog_name,path,library_path,0
 	
-	start_OpenDialog	OpenDialog_data
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
 
-	cmp	[OpenDialog_data.status],2 ; OpenDialog does not start
-	je	.sysxtree  ; 	some kind of alternative, instead OpenDialog
+;	cmp	[OpenDialog_data.status],2 ; OpenDialog does not start
+;	je	.sysxtree  ; 	some kind of alternative, instead OpenDialog
 	cmp	[OpenDialog_data.status],1
 	je	prep_load
 	jmp	still
 ;---------------------------------------------------------------------  
-.sysxtree:
-    or   [mode],RTF_OPENING
-    opendialog draw_window, prep_load, st_1, fname_buf
-  st_1:
-    and  [mode],not RTF_OPENING
-    jmp  still;red
-  stilld:
-    jmp  still
+;.sysxtree:
+;    or   [mode],RTF_OPENING
+;    opendialog draw_window, prep_load, st_1, fname_buf
+;  st_1:
+;    and  [mode],not RTF_OPENING
+;    jmp  still;red
+;  stilld:
+;    jmp  still
 ;---------------------------------------------------------------------
 
   button:
@@ -529,6 +533,34 @@ if RENDER eq FREE
   end if 
 btn_end:
 ;---------------------------------------------------------------------
+l_libs_start:
+
+library01  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
+err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+
+end_l_libs:
+;---------------------------------------------------------------------
+system_dir_ProcLib			db '/sys/lib/proc_lib.obj',0
+
+head_f_i:
+head_f_l	db 'error',0
+
+err_message_found_lib2		db 'proc_lib.obj - Not found!',0
+
+err_message_import2			db 'proc_lib.obj - Wrong import!',0
+
+;---------------------------------------------------------------------
+align 4
+ProcLib_import:
+OpenDialog_Init		dd aOpenDialog_Init
+OpenDialog_Start	dd aOpenDialog_Start
+;OpenDialog__Version	dd aOpenDialog_Version
+        dd      0
+        dd      0
+aOpenDialog_Init	db 'OpenDialog_init',0
+aOpenDialog_Start	db 'OpenDialog_start',0
+;aOpenDialog_Version	db 'Version_OpenDialog',0
+;---------------------------------------------------------------------
 OpenDialog_data:
 .type			dd 0
 .procinfo		dd procinfo ;+4
@@ -679,5 +711,9 @@ rb ESPSIZE
 ;---------------------------------------------------------------------
 temp_dir_pach:
         rb 4096
+cur_dir_path:
+	rb 4096
+library_path:
+	rb 4096
 ;---------------------------------------------------------------------
 esp_end:
