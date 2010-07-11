@@ -23,6 +23,12 @@
 	PAGESIZE		equ	4096
 
 
+; network driver types
+
+	NET_TYPE_ETH		equ 1
+	NET_TYPE_SLIP		equ 2
+
+
 
 	LAST_IO = 0
 
@@ -135,9 +141,11 @@ macro make_bus_master bus, dev {
 	movzx	edx, dev
 	stdcall PciRead32, ecx ,edx, PCI_REG_COMMAND
 
-	or	al, PCI_BIT_MASTER or PCI_BIT_PIO
-	and	al, not PCI_BIT_MMIO
+	or	al, PCI_BIT_MASTER ;or PCI_BIT_PIO
+;        and     al, not PCI_BIT_MMIO
 	stdcall PciWrite32, ecx, edx, PCI_REG_COMMAND, eax
+
+;; TODO: try to switch to PIO, and check if PIO works or not..
 
 }
 
@@ -178,9 +186,13 @@ macro virt_to_dma { ; input is eax
 
 }
 
+macro NET_DEVICE {
+      .type		dd ?
+}
 
 ;struc ETH_DEVICE {
 macro ETH_DEVICE {
+      NET_DEVICE
 ; pointers to procedures
       .unload		dd ?
       .reset		dd ?
@@ -202,6 +214,7 @@ macro ETH_DEVICE {
 
 
 macro SLIP_DEVICE {
+	NET_DEVICE
 ; pointers to procedures
 	.unload 	dd ?
 	.reset		dd ?

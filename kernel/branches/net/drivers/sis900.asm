@@ -36,22 +36,10 @@ format MS COFF
 include 'proc32.inc'
 include 'imports.inc'
 include 'fdo.inc'
+include 'netdrv.inc'
 
 public START
 public version
-
-struc IOCTL {
-      .handle		dd ?
-      .io_code		dd ?
-      .input		dd ?
-      .inp_size 	dd ?
-      .output		dd ?
-      .out_size 	dd ?
-}
-
-virtual at 0
-  IOCTL IOCTL
-end virtual
 
 NUM_RX_DESC    equ    4 	      ;* Number of RX descriptors *
 NUM_TX_DESC    equ    1 	      ;* Number of TX descriptors *
@@ -61,23 +49,11 @@ MAX_ETH_FRAME_SIZE  equ    1516
 
 TOTAL_BUFFERS_SIZE equ NUM_RX_DESC*RX_BUFF_SZ + NUM_TX_DESC*TX_BUFF_SZ
 
-struc ETH_DEVICE {
-; pointers to procedures
-      .unload		dd ?
-      .reset		dd ?
-      .transmit 	dd ?
-      .set_MAC		dd ?
-      .get_MAC		dd ?
-      .set_mode 	dd ?
-      .get_mode 	dd ?
-; status & variables
-      .bytes_tx 	dq ?
-      .bytes_rx 	dq ?
-      .packets_tx	dd ?
-      .packets_rx	dd ?
-      .mode		dd ?  ; This dword contains cable status (10mbit/100mbit, full/half duplex, auto negotiation or not,..)
-      .name		dd ?
-      .mac		dp ?
+virtual at 0
+	device:
+
+	ETH_DEVICE
+
 ; device specific
       .io_addr		dd ?
       .pci_bus		db ?
@@ -91,7 +67,7 @@ align 4
       .txd: times (3 * NUM_TX_DESC) dd 0
       .rxd: times (3 * NUM_RX_DESC) dd 0
       .size:
-}
+end virtual
 
 ; First page is designated to ETH_DEVICE, buffers start from second
 ALLOCATION_SIZE = ((device.size+0FFFh) and not 0FFFh) + TOTAL_BUFFERS_SIZE
@@ -102,9 +78,6 @@ ALLOCATION_SIZE = (ALLOCATION_SIZE + 7FFFh) and not 7FFFh
 
 MAX_DEVICES = 16	; maximum number of devices which this driver can handle
 
-virtual at 0
-  device ETH_DEVICE
-end virtual
 
 	PCI_HEADER_TYPE 	      equ 0x0e	;8 bit
 	PCI_BASE_ADDRESS_0	      equ 0x10	;32 bit
@@ -238,7 +211,9 @@ service_proc:
 	jnz	.destroy
 ; 4n. If device was successfully initialized, register it for the kernel.
 
-	call	EthRegDev
+	mov	[device.type], NET_TYPE_ETH
+	call	NetRegDev
+
 	cmp	eax, -1
 	je	.destroy
 
@@ -248,7 +223,7 @@ service_proc:
 
   .find_devicenum:
 	mov	ebx, eax
-	call	EthStruc2Dev						; This kernel procedure converts a pointer to device struct in ebx
+	call	NetPtrToNum						; This kernel procedure converts a pointer to device struct in ebx
 									; into a device number in edi
 	mov	eax, edi						; Application wants it in eax instead
 	ret	4

@@ -13,7 +13,7 @@ use32
 include '../macros.inc'
 purge mov,add,sub
 include '../proc32.inc'
-include 'dll.inc'
+include '../dll.inc'
 
 include '../network_lib/network.inc'
 

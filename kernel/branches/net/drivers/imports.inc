@@ -88,7 +88,7 @@ kernel_export \
 \
 	      LFBAddress,\
 \
-	      EthReceiver,\
-	      EthRegDev,\
-	      EthUnRegDev,\
-	      EthStruc2Dev
+	      NetRegDev,\
+	      NetUnRegDev,\
+	      NetPtrToNum,\
+	      EthReceiver

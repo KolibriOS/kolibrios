@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ARP.INC                                                        ;;
@@ -12,7 +12,7 @@
 ;;    Written by hidnplayr@kolibrios.org                           ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
-;;             Version 2, June 1991                                ;;
+;;             Version 2, June- 1991                                ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,15 +242,14 @@ ARP_create_request:
 	mov	eax, [IP_LIST+4*edi]				; senderIP
 	push	eax
 
-	mov	edi, [ETH_DRV_LIST + 4*edi]
+	mov	edi, [NET_DRV_LIST + 4*edi]
 	lea	eax, [edi + ETH_DEVICE.mac]
 	mov	ebx, ETH_BROADCAST
 	mov	ecx, 60 ; minimum packet size
 	mov	edx, edi ;;;
 	mov	di , ETHER_ARP
 	call	ETH_create_packet
-	cmp	edi, -1
-	je	.exit
+	jz	.exit
 
 	mov	ecx, eax
 
@@ -275,7 +274,7 @@ ARP_create_request:
 	DEBUGF 1,"ARP Packet for device %x created successfully\n", ebx
 
 	push	edx ecx
-	jmp	ETH_sender
+	jmp	NET_send
 
   .exit:
 	add	esp, 8
@@ -523,7 +522,7 @@ ARP_handler:
 	cmp	word [edx + ARP_Packet.Opcode], ARP_REQ_OPCODE	; Is this a request packet?
 	jne	.exit
 
-	call	ETH_struc2dev
+	call	NET_ptr_to_num
 	DEBUGF	1,"ARP Request packet through device: %u\n", edi
 	inc	[ARP_PACKETS_RX+4*edi]
 	cmp	edi, -1
@@ -549,7 +548,7 @@ ARP_handler:
 	movsd							; Move sender IP to Dest IP
 
 	pop	esi
-	mov	esi, [ETH_DRV_LIST + 4*esi]
+	mov	esi, [NET_DRV_LIST + 4*esi]
 	lea	esi, [esi + ETH_DEVICE.mac]
 	lea	edi, [edx + ARP_Packet.SenderMAC]
 	movsd							; Copy MAC address from in MAC_LIST
@@ -573,7 +572,7 @@ ARP_handler:
 
 	DEBUGF	1,"ARP_Handler - Sending reply \n"
 
-	jmp	ETH_sender					; And send it!
+	jmp	NET_send				      ; And send it!
 
      .exit:
 	call	kernel_free

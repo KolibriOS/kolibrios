@@ -194,7 +194,7 @@ str7	db	'Got data!',10,10,0
 
 sockaddr1:
 	dw AF_INET4
-.port	dw 23 shl 8
+.port	dw 23
 .ip	dd 0
 	rb 10
 

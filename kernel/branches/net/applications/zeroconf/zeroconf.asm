@@ -129,203 +129,184 @@ no_IP:
 
 START:					    ; start of execution
 
-    mcall 40, 1 shl 7 ; network event
+	mcall	40, 1 shl 7 ; network event
 
-;    eth.set_network_drv 0x00000383
+	DEBUGF	1,">Zero-config service:\n"
 
-    DEBUGF  1,">Zero-config service:\n"
+	mcall	75, 1337 shl 16 + 4
 
-;    eth.status eax                          ; Read the Stack status
-;    test    eax,eax                         ; if eax is zero, no driver was found
-;    jnz     @f
-;    DEBUGF  1,"No Card found!\n"
-;    jmp     close
+	cmp	eax, -1
+	je	close
 
-;   @@:
-;    DEBUGF  1,"Detected card: %x\n",eax
-;   @@:
-;    eth.check_cable eax
-;    test    al,al
-;    jnz     @f
-;    DEBUGF  1,"Cable disconnected!\n"
-;    mcall   5, 500                          ; loop until cable is connected (check every 5 sec)
-;    jmp     @r
+	mov	word[MAC], bx
+	mov	dword[MAC+2], eax
 
-;   @@:
-;    eth.read_mac MAC
+	DEBUGF	1,"->MAC: %x-%x-%x-%x-%x-%x\n",[MAC]:2,[MAC+1]:2,[MAC+2]:2,[MAC+3]:2,[MAC+4]:2,[MAC+5]:2
 
-    mcall 75, 1337 shl 16 + 4
+	cld
+	mov	edi, path      ; Calculate the length of zero-terminated string
+	xor	al , al
+	mov	ecx, 1024
+	repnz	scas byte[es:edi]
+	dec	edi
 
-    cmp     eax, -1
-    je	    close
+	mov	esi, filename
+	movsd
+	movsb
 
-    mov   word[MAC], bx
-    mov   dword[MAC+2], eax
+	DEBUGF	1,"->path to ini: %s\n", path
 
-    DEBUGF  1,"->MAC: %x-%x-%x-%x-%x-%x\n",[MAC]:2,[MAC+1]:2,[MAC+2]:2,[MAC+3]:2,[MAC+4]:2,[MAC+5]:2
+	mcall	    68,11
 
-    cld
-    mov     edi, path	   ; Calculate the length of zero-terminated string
-    xor     al , al
-    mov     ecx, 1024
-    repnz   scas byte[es:edi]
-    dec     edi
-
-    mov     esi, filename
-    movsd
-    movsb
-
-    DEBUGF  1,"->path to ini: %s\n", path
-
-    mcall 68,11
-
-    stdcall dll.Load,@IMPORT
-    or	    eax,eax
-    jnz     skip_ini
+	stdcall dll.Load,@IMPORT
+	or	eax,eax
+	jnz	skip_ini
 
 
-    invoke ini.get_str, path, str_ipconfig, str_type, inibuf, 16, 0
+	invoke ini.get_str, path, str_ipconfig, str_type, inibuf, 16, 0
 
-    mov  eax,dword[inibuf]
+	mov    eax,dword[inibuf]
 
-    cmp  eax,'stat'
-    jne  skip_ini
+	cmp    eax,'stat'
+	jne    skip_ini
 
-    invoke ini.get_str, path, str_ipconfig, str_ip, inibuf, 16, 0
-    mov    edx, inibuf
-    call   Ip2dword
-    mcall  75, 3, edx
+	invoke ini.get_str, path, str_ipconfig, str_ip, inibuf, 16, 0
+	mov    edx, inibuf
+	call   Ip2dword
+	mcall  75, 3, edx
 
-    invoke ini.get_str, path, str_ipconfig, str_gateway, inibuf, 16, 0
-    mov    edx, inibuf
-    call   Ip2dword
-    mcall  75, 9, edx
+	invoke ini.get_str, path, str_ipconfig, str_gateway, inibuf, 16, 0
+	mov    edx, inibuf
+	call   Ip2dword
+	mcall  75, 9, edx
 
-    invoke ini.get_str, path, str_ipconfig, str_dns, inibuf, 16, 0
-    mov    edx, inibuf
-    call   Ip2dword
-    mcall  75, 5, edx
+	invoke ini.get_str, path, str_ipconfig, str_dns, inibuf, 16, 0
+	mov    edx, inibuf
+	call   Ip2dword
+	mcall  75, 5, edx
 
-    invoke ini.get_str, path, str_ipconfig, str_subnet, inibuf, 16, 0
-    mov    edx, inibuf
-    call   Ip2dword
-    mcall  75, 7, edx
+	invoke ini.get_str, path, str_ipconfig, str_subnet, inibuf, 16, 0
+	mov    edx, inibuf
+	call   Ip2dword
+	mcall  75, 7, edx
 
 
-    mcall  -1
+	mcall  -1
 
 
 skip_ini:
 
-    DEBUGF  1,"->Skip ini\n"
+	DEBUGF	1,"->Skip ini\n"
 
-    mcall 74, 0, AF_INET4, IP_PROTO_UDP, 0	; open socket (parameters: domain, type, reserved)
-    cmp   eax, -1
-    je	  error
-    mov   [socketNum], eax
+	mcall 74, 0, AF_INET4, IP_PROTO_UDP, 0	    ; open socket (parameters: domain, type, reserved)
+	cmp   eax, -1
+	je    error
+	mov   [socketNum], eax
 
-    DEBUGF  1,"->socket %x opened\n", eax
+	DEBUGF	1,"->socket %x opened\n", eax
 
-    mcall 74, 2, [socketNum], sockaddr1, 18	; bind socket to local port 68
-    cmp   eax, -1
-    je	  error
+	mcall 74, 2, [socketNum], sockaddr1, 18     ; bind socket to local port 68
+	cmp   eax, -1
+	je    error
 
-    DEBUGF  1,"->Socket Bound to local port 68\n"
+	DEBUGF	1,"->Socket Bound to local port 68\n"
 
-    mcall 74, 4, [socketNum], sockaddr2, 18	; connect to 255.255.255.255 on port 67
-    cmp   eax, -1
-    je	  error
+	mcall 74, 4, [socketNum], sockaddr2, 18     ; connect to 255.255.255.255 on port 67
+	cmp   eax, -1
+	je    error
 
-    DEBUGF  1,"->Connected to 255.255.255.255 on port 67\n"
+	DEBUGF	1,"->Connected to 255.255.255.255 on port 67\n"
 
-    mov     byte [dhcpMsgType], 0x01	    ; DHCP discover
-    mov     dword [dhcpLease], esi	    ; esi is still -1 (-1 = forever)
+	mov	byte [dhcpMsgType], 0x01	; DHCP discover
+	mov	dword [dhcpLease], esi		; esi is still -1 (-1 = forever)
 
-    mcall   26, 9
-    imul    eax,100
-    mov     [currTime],eax
+	mcall	26, 9
+	imul	eax,100
+	mov	[currTime],eax
 
 buildRequest:				    ; Creates a DHCP request packet.
 
-    DEBUGF  1,"->Building request\n"
+	DEBUGF	1,"->Building request\n"
 
-    stdcall mem.Alloc, BUFFER
-    mov     [dhcpMsg], eax
-    test    eax,eax
-    jz	    apipa
+	stdcall mem.Alloc, BUFFER
+	mov	[dhcpMsg], eax
+	test	eax,eax
+	jz	apipa
 
+	    ;;; todo: skip this bullcrap
 
-    mov     edi, eax
-    mov     ecx,BUFFER
-    xor     eax,eax
-    cld
-    rep     stosb
+	mov	edi, eax
+	mov	ecx, BUFFER
+	xor	eax, eax
+	cld
+	rep	stosb
 
-    mov     edx,[dhcpMsg]
+	    ;; todo: put this in a buffer instead of writing bytes and words!
 
-    mov     [edx], byte 0x01		    ; Boot request
-    mov     [edx+1], byte 0x01		    ; Ethernet
-    mov     [edx+2], byte 0x06		    ; Ethernet h/w len
-    mov     [edx+4], dword 0x11223344	    ; xid
-    mov     eax,[currTime]
-    mov     [edx+8], eax		    ; secs, our uptime
-    mov     [edx+10], byte 0x80 	    ; broadcast flag set
-    mov     eax, dword [MAC]		    ; first 4 bytes of MAC
-    mov     [edx+28],dword eax
-    mov     ax, word [MAC+4]		    ; last 2 bytes of MAC
-    mov     [edx+32],word ax
-    mov     [edx+236], dword 0x63538263     ; magic number
-    mov     [edx+240], word 0x0135	    ; option DHCP msg type
-    mov     al, [dhcpMsgType]
-    mov     [edx+240+2], al
-    mov     [edx+240+3], word 0x0433	    ; option Lease time = infinity
-    mov     eax, [dhcpLease]
-    mov     [edx+240+5], eax
-    mov     [edx+240+9], word 0x0432	    ; option requested IP address
-    mov     eax, [dhcpClientIP]
-    mov     [edx+240+11], eax
-    mov     [edx+240+15], word 0x0437	    ; option request list
-    mov     [edx+240+17], dword 0x0f060301
+	mov	edx,[dhcpMsg]
 
-    cmp     [dhcpMsgType], byte 0x01	    ; Check which msg we are sending
-    jne     request_options
+	mov	[edx], byte 0x01		; Boot request
+	mov	[edx+1], byte 0x01		; Ethernet
+	mov	[edx+2], byte 0x06		; Ethernet h/w len
+	mov	[edx+4], dword 0x11223344	; xid                 ;;;;;;;
+	mov	eax,[currTime]
+	mov	[edx+8], eax			; secs, our uptime
+	mov	[edx+10], byte 0x80		; broadcast flag set
+	mov	eax, dword [MAC]		; first 4 bytes of MAC
+	mov	[edx+28],dword eax
+	mov	ax, word [MAC+4]		; last 2 bytes of MAC
+	mov	[edx+32],word ax
+	mov	[edx+236], dword 0x63538263	; magic cookie
+	mov	[edx+240], word 0x0135		; option DHCP msg type
+	mov	al, [dhcpMsgType]
+	mov	[edx+240+2], al
+	mov	[edx+240+3], word 0x0433	; option Lease time = infinity
+	mov	eax, [dhcpLease]
+	mov	[edx+240+5], eax
+	mov	[edx+240+9], word 0x0432	; option requested IP address
+	mov	eax, [dhcpClientIP]
+	mov	[edx+240+11], eax
+	mov	[edx+240+15], word 0x0437	; option request list
+	mov	[edx+240+17], dword 0x0f060301
 
-    mov     [edx+240+21], byte 0xff	    ; "Discover" options
+	cmp	[dhcpMsgType], byte 0x01	; Check which msg we are sending
+	jne	request_options
 
-    mov     [dhcpMsgLen], dword 262	    ; end of options marker
-    jmp     send_request
+	mov	[edx+240+21], byte 0xff 	; "Discover" options
+
+	mov	[dhcpMsgLen], dword 262 	; end of options marker
+	jmp	send_request
 
 request_options:
-    mov     [edx+240+21], word 0x0436	    ; server IP
-    mov     eax, [dhcpServerIP]
-    mov     [edx+240+23], eax
+	mov	[edx+240+21], word 0x0436	; server IP
+	mov	eax, [dhcpServerIP]
+	mov	[edx+240+23], eax
 
-    mov     [edx+240+27], byte 0xff	    ; end of options marker
+	mov	[edx+240+27], byte 0xff 	; end of options marker
 
-    mov     [dhcpMsgLen], dword 268
+	mov	[dhcpMsgLen], dword 268
 
 send_request:
-    mcall 74, 6, [socketNum], [dhcpMsg], [dhcpMsgLen] ; write to socket ( send broadcast request )
+	mcall	74, 6, [socketNum], [dhcpMsg], [dhcpMsgLen]	; write to socket ( send broadcast request )
 
-    mov     eax, [dhcpMsg]		      ; Setup the DHCP buffer to receive response
-    mov     [dhcpMsgLen], eax		    ; Used as a pointer to the data
+	mov	eax, [dhcpMsg]				; Setup the DHCP buffer to receive response
+	mov	[dhcpMsgLen], eax			; Used as a pointer to the data
 
-    mcall 23, TIMEOUT*10		    ; wait for data
+	mcall	23, TIMEOUT*10				; wait for data
 
-read_data:				    ; we have data - this will be the response
+read_data:						; we have data - this will be the response
+	mcall	74, 7, [socketNum], [dhcpMsg], BUFFER	; read data from socket
 
-    mcall 74, 7, [socketNum], [dhcpMsg], BUFFER   ; read data from socket
+	DEBUGF	1,"->%d bytes received\n", eax
 
-    DEBUGF  1,"->%d bytes received\n", eax
+	push	eax
+	mcall	74, 1, [socketNum]		       ; close the socket
+	pop	eax
 
-    push eax
-    mcall 74, 1, [socketNum]			 ; close the socket
-    pop  eax
+	cmp	eax, -1
+	je	error
 
-    cmp eax, -1
-    je	error
-
-    mov [dhcpMsgLen], eax
+	mov	[dhcpMsgLen], eax
 
     ; depending on which msg we sent, handle the response
     ; accordingly.
@@ -342,23 +323,23 @@ read_data:				    ; we have data - this will be the response
     cmp     [dhcpMsgType], byte 0x03	    ; did we send a request?
     je	    request
 
-    jmp     close			    ; really unknown, what we did
+	jmp	close				; really unknown, what we did
 
 discover:
-    call    parseResponse
+	call	parseResponse
 
-    cmp     [dhcpMsgType], byte 0x02	    ; Was the response an offer?
-    jne     apipa			    ; NO - so we do zeroconf
-    mov     [dhcpMsgType], byte 0x03	    ; DHCP request
-    jmp     buildRequest
+	cmp	[dhcpMsgType], byte 0x02	; Was the response an offer?
+	jne	apipa				; NO - so we do zeroconf
+	mov	[dhcpMsgType], byte 0x03	; DHCP request
+	jmp	buildRequest
 
 request:
-    call    parseResponse
+	call	parseResponse
 
-    cmp     [dhcpMsgType], byte 0x05	    ; Was the response an ACK? It should be
-    jne     apipa			    ; NO - so we do zeroconf
+	cmp	[dhcpMsgType], byte 0x05	; Was the response an ACK? It should be
+	jne	apipa				; NO - so we do zeroconf
 
-    jmp     close
+	jmp	close
 
 ;***************************************************************************
 ;   Function
@@ -464,7 +445,7 @@ pr001:
 pr_exit:
 
 ;    DEBUGF  1,"Sending ARP announce\n"
-;    eth.ARP_ANNOUNCE [dhcpClientIP]         ; send an ARP announce packet
+;;;
 
     jmp close
 
@@ -572,7 +553,7 @@ str_type db 'type',0
 sockaddr1:
 
 	dw AF_INET4
-	dw 68 shl 8	; local port
+	dw 68		; local port
 	dd 0		; local IP
 
 	rb 10
@@ -581,7 +562,7 @@ sockaddr1:
 sockaddr2:
 
 	dw AF_INET4
-	dw 67 shl 8	; destination port
+	dw 67		; destination port
 	dd -1		; destination IP
 
 	rb 10

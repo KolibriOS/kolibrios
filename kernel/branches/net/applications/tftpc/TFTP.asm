@@ -1,31 +1,35 @@
 use32
+    org 0x0
 
-	org 0x0
-
-	db 'MENUET01'
-	dd 1, START, I_END, IM_END+0x1000, IM_END+0x1000, 0, 0
+    db 'MENUET01'
+    dd 0x1
+    dd START
+    dd I_END
+    dd IM_END
+    dd IM_END
+    dd 0, 0
 
 include '../proc32.inc'
 include '../macros.inc'
-include '../dll.inc'
 include '../libio.inc'
-include '../../../../../programs/develop/libraries/box_lib/trunk/box_lib.mac'
+include '../dll.inc'
+include 'editbox_ex.mac'
 
 include '../network.inc'
 
 
 filebuffer_size equ 4*4096 ; 16kb   (dont try to change it yet..)
-TIMEOUT 	equ 500
+TIMEOUT 	equ 100
 buffer_len	equ 1500
 
 AF_INET4	equ 2
 IP_PROTO_UDP	equ 17
 
-opcode_rrq	equ 1 shl 8
-opcode_wrq	equ 2 shl 8
-opcode_data	equ 3 shl 8
-opcode_ack	equ 4 shl 8
-opcode_error	equ 5 shl 8
+opcode_rrq	equ 1
+opcode_wrq	equ 2
+opcode_data	equ 3
+opcode_ack	equ 4
+opcode_error	equ 5
 
 ; read/write request packet
 ;
@@ -51,14 +55,14 @@ opcode_error	equ 5 shl 8
 ; error packet
 ;
 ;  2 bytes  2 bytes        string    1 byte
-;  -----------------------------------------
+;  ----------------------------------------
 ; | Opcode |  ErrorCode |   ErrMsg   |   0  |
-;  -----------------------------------------
+;  ----------------------------------------
 
 
 START:
 
-;;        mcall   68, 11
+	mcall	68, 11
 
 	stdcall dll.Load, @IMPORT
 	or	eax, eax
@@ -185,11 +189,11 @@ draw_window:
 
 	mcall	4,350*65536+137, 0x80000000, str_kb_s
 
-;        mcall   47,1 shl 31 + 7 shl 16 + 1,kbps,305*65536+137,0x00000000
+	mcall	47,1 shl 31 + 7 shl 16 + 1,kbps,305*65536+137,0x00000000
 
-	mcall	4,20*65536+137, 0x80000000, [status]
+	mcall	4,50*65536+137, 0x80000000, str_complete
 
-;        mcall   47,1 shl 31 + 3 shl 16 + 1,done,25*65536+137,0x00000000
+	mcall	47,1 shl 31 + 3 shl 16 + 1,done,25*65536+137,0x00000000
 
 	mcall	12,2
 
@@ -209,51 +213,40 @@ start_transfer:
 	push	esp	; fourth parameter
 	push	0	; third parameter
 	push	0	; second parameter
-	push	SRV	; first parameter
+	push	dword SRV     ; first parameter
 	call	[getaddrinfo]
 
-	pop	esi	; now we will have pointer to result in esi
+	pop	esi
 
 ; test for error
 	test	eax, eax
 	jnz	still
 
-	mov	esi, [esi + addrinfo.ai_addr]
+	mov	esi, [esi]
 	mov	esi, [esi + sockaddr_in.sin_addr]
 	mov	dword [IP], esi
 
-	stdcall mem.Alloc, buffer_len
-	test	eax, eax
-	jz	stop_transfer
-	mov	[packetbuff], eax
-
-	invoke	file_open, local_addr, O_READ + O_WRITE + O_CREATE
-	cmp	eax, 32
-	jb	stop_transfer
-
-	mov	[fh], eax
-
-	mcall	socket, AF_INET4, IP_PROTO_UDP, 0		; socket_open
+	mcall	socket, AF_INET4, IP_PROTO_UDP, 0		 ; socket_open
 	cmp	eax, -1
 	je	still
 
 	mov	[socketnum], eax
 
-	mcall	connect, [socketnum], sockaddr, sockaddr_len	; socket_connect
+	mcall	connect, [socketnum], sockaddr, sockaddr_len	     ; socket_connect
 	cmp	eax, -1
 	je	still
 
 	mov	word [I_END], opcode_rrq
-	cmp	[option_group2],op3		; method = get?
-	jz	@f
+	cmp	[option_group2],op3
+	je	@f
 	mov	word [I_END], opcode_wrq
-       @@:
+      @@:
 
 	xor	al , al
 	mov	edi, remote_addr
 	mov	ecx, 250
 	repnz	scasb
-	sub	edi, remote_addr
+	sub	edi, remote_addr-1
 	mov	ecx, edi
 	mov	edi, I_END+2
 	mov	esi, remote_addr
@@ -283,211 +276,168 @@ start_transfer:
 	mov	esi, edi
 	mcall	send, [socketnum], I_END
 
-	mov	[last_ack], 0
-
-;        mcall   26, 9
-;        mov     [last_time], eax
-
-	mov	[status], str_transfering
-	call	draw_window
-
 	mcall	40, 10000101b
 
-	cmp	[option_group2],op3		; method = get?
-	jnz	send_data_loop
+	mov	[last_ack], 0
 
-	invoke	file_truncate, [fh]
+
+
+
+
 
 receive_data_loop:
 
 	mcall	23, TIMEOUT
 
 	dec	eax
-	jz	.redraw
+	jz	.red
 
 	dec	eax
-	dec	eax
-	jz	.btn
+	jz	.key
 
-	mcall	recv, [socketnum], [packetbuff], buffer_len ; receive data
 
-	mov	esi, [packetbuff]
-	cmp	word[esi], opcode_data
+	mcall	recv, [socketnum], buffer, buffer_len, 0  ; receive data
+
+	cmp	word[buffer], opcode_data
 	jne	.error
 
 	mov	bx, [last_ack]
-	inc	bx
-	rol	bx, 8
-
-	cmp	word [esi + 2], bx
+	cmp	word [buffer + 2], bx
 	jne	.packet_got_lost
-
 	inc	[last_ack]
 
+	cmp	eax, 4+512
+	je	.continue
 
-	; now, we need to store the data
-
-	add	esi, 4
-	sub	eax, 4
-	mov	ecx, eax
-	invoke	file_write, [fh], esi ,ecx
-
-	cmp	ecx, 512      ; full data packet?
-	jge	.continue
-
-	; last packet, or something else
-
-	mov	[status], str_success
-
-.kill_xfer:
-
-	invoke	file_close, [fh]
-	mcall	close, [socketnum]
-	jmp	stop_transfer
-
+; last packet, or something else
 .error:
-
-	cmp	word[esi], opcode_error
-	je	.decode_error
-
-	jmp	.continue
 
 .packet_got_lost:
 
 
+
 .continue:
 
-;        mcall   26, 9
-;        mov     ebx, [last_time]
-;        mov     [last_time], eax
-;        xor     edx, edx
-;        sub     eax, ebx
-;        xchg    eax, ecx
-;        div     ecx
-;        mov     [kbps], eax
-;        mcall   47,1 shl 31 + 7 shl 16 + 1,kbps,305*65536+137,0x40000000, 0x00ffffff
-
-	mov	word [buffer], opcode_ack		 ; send ack
-	mov	ax, [last_ack]
-	rol	ax, 8
-	mov	word [buffer+2], ax
+	mov	word[buffer], opcode_ack		; send ack
 	mcall	send, [socketnum], buffer, 4, 0
 
 	jmp	receive_data_loop
 
+.red:
 
-.btn:
-	mcall	17
-
-	jmp	.kill_xfer
-
-.redraw:
 	call	draw_window
+
 	jmp	receive_data_loop
 
 
-.decode_error:
-	movzx	esi, word[esi + 2]
-	cmp	esi, 7
-	cmovg	esi, [zero]
+.key:
+	mcall	2
+	cmp	ah, 2
+	jz	exit
 
-	mov	esi, dword [4*esi + error_crosslist]
-	mov	[status], esi
+	; close socket ?
 
-	jmp	.kill_xfer
+	jmp	receive_data_loop
+
+
+
 
 
 
 ;--------------------------------
 
 
-send_data_loop:
+send_:
 
-	mov	word[buffer], opcode_data
+	invoke	file_open, local_addr, O_READ
+	or	eax, eax
+	jz	.exit
+	mov	[fh], eax
+
+	stdcall mem.Alloc, filebuffer_size
+	or	eax, eax
+	jz	.exit
+	mov	[fb], eax
+
+	mov	[last_ack], 0
+	mov	[fo], 0
 
 .read_chunk:
 
-	inc	[last_ack]
-
-	mov	ax, [last_ack]
-	xchg	al, ah
-	mov	word[buffer+2], ax
-
-	invoke	file_read, [fh], buffer + 4, 512
+	invoke	file_seek, [fh], [fo], SEEK_END
 	cmp	eax, -1
-	je	.kill_xfer
+	je	.exit
+	invoke	file_read, [fh], [fb], filebuffer_size
+	cmp	eax, -1
+	je	.exit
+	add	[fo], filebuffer_size
+	cmp	eax, filebuffer_size
+	je	.packet
 
-	add	eax, 4
-	mov	[packetsize], eax
+	; ijhidfhfdsndsfqk
 
-.send_packet:
-	mcall	send, [socketnum], buffer, [packetsize], 0	 ; send data
+.packet:
+
+	movzx	esi, [last_ack]
+	and	esi, 0x000000001f   ; last five bits    BUFFER SIZE MUST BE 16 kb for this to work !!!
+	shl	esi, 9		    ; = * 512
+	add	esi, [fb]
+	mov	edi, buffer
+	mov	ax, opcode_data
+	stosw
+	mov	ax, [last_ack]
+	stosw
+	mov	ecx, 512/4
+	rep	movsd
+
+	mcall	send, [socketnum], buffer, 4+512, 0	  ; send data
+
 
 .loop:
+
 	mcall	23, TIMEOUT
 
 	dec	eax
 	jz	.red
 
 	dec	eax
-	dec	eax
-	jz	.btn
+	jz	.key
 
-	mcall	recv, [socketnum], [packetbuff], buffer_len	     ; receive ack
-	cmp	eax, -1
-	je	.kill_xfer
+	mcall	recv, [socketnum], buffer, buffer_len, 0  ; receive ack
 
-	mov	esi, [packetbuff]
-
-	cmp	word[esi], opcode_error
-	je	.decode_error
-
-	cmp	word[esi], opcode_ack
-	jne	.send_packet
+	cmp	word[buffer], opcode_ack
+	jne	.exit
 
 	mov	ax, [last_ack]
-	xchg	al, ah
-	cmp	word[esi+2], ax
-	jne	.send_packet
+	cmp	word[buffer+2], ax
+	jne	.packet
+	inc	[last_ack]
+	test	[last_ack],0x001f
+	jz	.read_chunk
+	jmp	.packet
 
-	cmp	[packetsize], 512+4
-	jne	.xfer_ok				      ; transfer is done
-
-
-
-	jmp	.read_chunk
 
 .red:
+
 	call	draw_window
+
 	jmp	.loop
 
-.btn:
-	mcall	17
 
+.key:
+	mcall	2
+	cmp	ah, 2
+	jz	exit
 
-.kill_xfer:
-	mov	[status], str_fail
+	; close socket ?
 
-.xfer_done:
+	jmp	.loop
+
+.exit:
 	invoke	file_close, [fh]
-	mcall	close, [socketnum]
-	jmp	stop_transfer
+	jmp	still
 
 
-.xfer_ok:
-	mov	[status], str_success
-	jmp	.xfer_done
-
-
-.decode_error:
-	movzx	esi, word[esi + 2]
-	cmp	esi, 7
-	cmovg	esi, [zero]
-
-	mov	esi, dword [4*esi + error_crosslist]
-	mov	[status], esi
-
-	jmp	.send_packet
 
 
 
@@ -500,16 +450,16 @@ done	       dd 0
 
 sockaddr:
 	dw AF_INET4
-	dw 69 shl 8
+	dw 69
 IP	db 192,168,1,115
 sockaddr_len = $ - sockaddr
 
 align 16
 @IMPORT:
 
-library box_lib , 'box_lib.obj',\
-	io_lib	, 'libio.obj',\
-	network , 'network.obj'
+library box_lib , 'box_lib.obj'
+library io_lib	, 'libio.obj'
+library network , 'network.obj'
 
 import	box_lib 				,\
 	edit_box_draw	 ,'edit_box'		,\
@@ -538,17 +488,16 @@ import	io_lib					,\
 	file_truncate	, 'file_truncate'	,\
 	file_close	, 'file_close'
 
-import	network 				,\
-	inet_ntoa	, 'inet_ntoa'		,\
-	getaddrinfo	, 'getaddrinfo' 	,\
-	freeaddrinfo	, 'freeaddrinfo'
+import	network 					,\
+	inet_ntoa		, 'inet_ntoa'		,\
+	getaddrinfo		, 'getaddrinfo' 	,\
+	freeaddrinfo		, 'freeaddrinfo'
 
 
-
-edit1 edit_box 300,80,5 ,0xffffff,0x6f9480,0,0,0,99 ,SRV,ed_focus,  13,13
-edit2 edit_box 300,80,25,0xffffff,0x6a9480,0,0,0,99 ,remote_addr,ed_figure_only, 5,5
-edit3 edit_box 300,80,45,0xffffff,0x6a9480,0,0,0,99 ,local_addr,ed_figure_only, 13,13
-edit4 edit_box 40,340,68,0xffffff,0x6a9480,0,0,0,5 ,BLK,ed_figure_only, 3, 3
+edit1 edit_box 300,80,5 ,0xffffff,0x6f9480,0,0,0,99 ,SRV,ed_focus,  11,11
+edit2 edit_box 300,80,25,0xffffff,0x6a9480,0,0,0,99 ,remote_addr,ed_figure_only, 10,10
+edit3 edit_box 300,80,45,0xffffff,0x6a9480,0,0,0,99 ,local_addr,ed_figure_only, 27,27
+edit4 edit_box 40,340,68,0xffffff,0x6a9480,0,0,0,5 ,BLK,ed_figure_only, 3,3
 
 op1 option_box option_group1,80,68,6,12,0xffffff,0,0,netascii,octet-netascii
 op2 option_box option_group1,80,85,6,12,0xFFFFFF,0,0,octet,get-octet
@@ -558,7 +507,6 @@ op4 option_box option_group2,210,85,6,12,0xFFFFFF,0,0,put,BLK-put
 
 option_group1	dd op1
 option_group2	dd op3
-
 Option_boxs1	dd op1,op2,0
 Option_boxs2	dd op3,op4,0
 
@@ -572,11 +520,6 @@ str_blocksize	db 'Blocksize:',0
 str_kb_s	db 'kb/s',0
 str_complete	db '% complete',0
 str_transfer	db 'Transfer',0
-str_waiting	db 'Welcome!',0
-str_transfering db 'Transfering...',0
-
-str_success	db 'Tranfser completed sucessfully',0
-str_fail	db 'Transfer failed!',0
 
 str_error:
 ._0 db 'Not defined, see error message (if any).',0
@@ -589,18 +532,6 @@ str_error:
 ._7 db 'No such user.',0
 
 
-error_crosslist:
-dd	str_error._0
-dd	str_error._1
-dd	str_error._2
-dd	str_error._3
-dd	str_error._4
-dd	str_error._5
-dd	str_error._6
-dd	str_error._7
-
-
-
 netascii db 'NetASCII'
 octet	 db 'Octet'
 get	 db 'GET'
@@ -611,25 +542,19 @@ BLK	 db "512",0,0,0
 last_ack dw ?
 
 fh	 dd ?	; file handle
-
-last_time dd ?
-
-packetbuff	dd	?
-packetsize	dd	?
-status		dd	str_waiting
-zero		dd	0
+fo	 dd ?	; file offset
+fb	 dd ?	; file buffer
 
 SRV db "192.168.1.115",0
-times (SRV + 256 - $) db 0
+rb (SRV + 256 - $)
 
-remote_addr db "3.png",0
-times (remote_addr + 256 - $) db 0
+remote_addr db "IMG00",0
+rb (remote_addr + 256 - $)
 
-local_addr  db "/sys/test.png",0
-times (local_addr + 256 - $) db 0
+local_addr  db "/hd0/1/KolibriOS/kernel.mnt",0
+rb (local_addr + 256 - $)
 
 I_END:
-
 buffer:
 rb buffer_len
 

@@ -449,7 +449,10 @@ proc service_proc stdcall, ioctl:dword
 	test	eax, eax
 	jnz	.err2							; If an error occured, exit
 
-	call	EthRegDev
+
+	mov	[device.type], NET_TYPE_ETH
+	call	NetRegDev
+
 	cmp	eax, -1
 	je	.destroy
 
@@ -460,7 +463,7 @@ proc service_proc stdcall, ioctl:dword
   .find_devicenum:
 	DEBUGF	2,"Trying to find device number of already registered device\n"
 	mov	ebx, eax
-	call	EthStruc2Dev						; This kernel procedure converts a pointer to device struct in ebx
+	call	NetPtrToNum						; This kernel procedure converts a pointer to device struct in ebx
 									; into a device number in edi
 	mov	eax, edi						; Application wants it in eax instead
 	DEBUGF	2,"Kernel says: %u\n", eax

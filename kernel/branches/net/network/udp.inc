@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  UDP.INC                                                        ;;
@@ -55,12 +55,11 @@ UDP_init:
 	ret
 
 
-
 ;-----------------------------------------------------------------
 ;
-; UDP_Handler:
+; UDP_input:
 ;
-;  Called by IPv4_handler,
+;  Called by IPv4_input,
 ;  this procedure will inject the udp data diagrams in the application sockets.
 ;
 ;  IN:  Pointer to buffer in [esp]
@@ -76,23 +75,20 @@ UDP_init:
 ;
 ;-----------------------------------------------------------------
 align 4
-UDP_handler:
+UDP_input:
 
-	DEBUGF	1,"UDP_Handler, checksum:%x, size:%u\n", [edx+UDP_Packet.Checksum]:4, ecx
+	DEBUGF	1,"UDP_input, size:%u\n", ecx
 
 ; First validate, checksum:
 	cmp	[edx + UDP_Packet.Checksum], 0
 	jz	.no_checksum
 
-	xchg	edi, esi	; save ipv4 source address so we can look it up later
+	xchg	edi, esi	; save ipv4 source address to edi so we can use it later
 
 	push	edx
-
-	push	esi
-	push	edi
+	push	esi edi
 	mov	esi, edx
-	call	UDP_checksum	; this destroys edx, ecx and esi (but not edi! :)
-
+	call	UDP_checksum	; this destroys edx, ecx and esi (but not edi...)
 	pop	edx
 
 	cmp	[edx + UDP_Packet.Checksum], 0
@@ -108,76 +104,64 @@ UDP_handler:
 	mov	eax, net_sockets
   .try_more:
 	mov	si , [edx + UDP_Packet.DestinationPort]   ; get the local port from the IP Packet's UDP header
+	rol	si , 8
   .next_socket:
-	mov	eax, [eax + SOCKET_head.NextPtr]
+	mov	eax, [eax + SOCKET.NextPtr]
 	or	eax, eax
 	jz	.dump
-	cmp	[eax + SOCKET_head.Domain], AF_INET4
+	cmp	[eax + SOCKET.Domain], AF_INET4
 	jne	.next_socket
-	cmp	[eax + SOCKET_head.Type], IP_PROTO_UDP
+	cmp	[eax + SOCKET.Type], IP_PROTO_UDP
 	jne	.next_socket
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.LocalPort], si
+	cmp	[eax + UDP_SOCKET.LocalPort], si
 	jne	.next_socket
 
-	DEBUGF	1,"found socket with matching domain, type and localport\n"
+	DEBUGF	1,"using socket: %x\n", eax
 
-	; For dhcp, we must allow any remote server to respond.
-	; I will accept the first incoming response to be the one
-	; I bind to, if the socket is opened with a destination IP address of
-	; 255.255.255.255
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], 0xffffffff
-	je	.ok1
+	;;; TODO: when packet is processed, check more sockets!
 
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP], edi   ; edi is IPv4 destination address
-	jne	.try_more					      ; Quit if the source IP is not valid, check for more sockets with this IP/PORT combination
+	cmp	[eax + IP_SOCKET.RemoteIP], 0xffffffff
+	je	@f
+	cmp	[eax + IP_SOCKET.RemoteIP], edi 	; edi is the packets source address
+	jne	.try_more
+       @@:
 
-
-	DEBUGF	1,"Remote Ip matches\n"
-  .ok1:
-
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.firstpacket], 0
+	cmp	[eax + UDP_SOCKET.firstpacket], 0
 	jz	.updateport
 
 	mov	si, [edx + UDP_Packet.SourcePort]
-	cmp	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], si
+	rol	si, 8
+	cmp	[eax + UDP_SOCKET.RemotePort], si
 	jne	.dump
 
 	push	ebx
-	lea	ebx, [eax + SOCKET_head.lock]
+	lea	ebx, [eax + SOCKET.lock]
 	call	wait_mutex
 	pop	ebx
 
-  .ok2:
-
+  .updatesock:
+	inc	[UDP_PACKETS_RX]
 	DEBUGF	1,"Found valid UDP packet for socket %x\n", eax
 	lea	esi, [edx + UDP_Packet.Data]
 	movzx	ecx, [edx + UDP_Packet.Length]
 	rol	cx , 8
 	sub	cx , UDP_Packet.Data
 
-	inc	[UDP_PACKETS_RX]
-
-	pop	edi
-	add	esp, 4
-
-	sub	esi, edi
-	xchg	esi, edi
-	jmp	socket_internal_receiver
-
+	jmp	SOCKET_input
 
   .updateport:
-
 	push	ebx
-	lea	ebx, [eax + SOCKET_head.lock]
+	lea	ebx, [eax + SOCKET.lock]
 	call	wait_mutex
 	pop	ebx
 
 	mov	si, [edx + UDP_Packet.SourcePort]
-	DEBUGF	1,"Changing remote port to: %x\n", si
-	mov	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort], si
-	inc	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.firstpacket]
+	rol	si, 8
+	DEBUGF	1,"Changing remote port to: %u\n", si
+	mov	[eax + UDP_SOCKET.RemotePort], si
+	inc	[eax + UDP_SOCKET.firstpacket]
 
-	jmp	.ok2
+	jmp	.updatesock
 
 
   .checksum_mismatch:
@@ -202,7 +186,7 @@ UDP_handler:
 
 ;-----------------------------------------------------------------
 ;
-; UDP_socket_send
+; UDP_output
 ;
 ; IN: eax = socket pointer
 ;     ecx = number of bytes to send
@@ -211,27 +195,31 @@ UDP_handler:
 ;-----------------------------------------------------------------
 
 align 4
-UDP_socket_send:
+UDP_output:
 
-	mov	edx, dword [eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.LocalPort] ; load local port and remote port at once
-	DEBUGF	1,"local port: %x, remote port: %x\n",\
-	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.LocalPort]:4,\
-	[eax + SOCKET_head.end + IPv4_SOCKET.end + UDP_SOCKET.RemotePort]:4
-	mov	ebx, [eax + SOCKET_head.end + IPv4_SOCKET.LocalIP]
-	mov	eax, [eax + SOCKET_head.end + IPv4_SOCKET.RemoteIP]
+	DEBUGF	1,"UDP_output: socket:%x, bytes: %u, data ptr: %x\n", eax, ecx, esi
 
-	DEBUGF	1,"Create UDP Packet (size=%u)\n",ecx
+	mov	dx, [eax + UDP_SOCKET.RemotePort]
+	DEBUGF	1,"remote port: %u\n", dx
+	rol	dx, 8
+	rol	edx, 16
+	mov	dx, [eax + UDP_SOCKET.LocalPort]
+	DEBUGF	1,"local port: %u\n", dx
+	rol	dx, 8
+
+
+	mov	ebx, [eax + IP_SOCKET.LocalIP]
+	mov	eax, [eax + IP_SOCKET.RemoteIP]
 
 	mov	di , IP_PROTO_UDP
 	sub	esp, 8						; Data ptr and data size will be placed here
 	add	ecx, UDP_Packet.Data
 
-; TODO: fill in:   dx  = fragment id
+;;; TODO: fragment id
 
 	push	edx esi
-	call	IPv4_create_packet				; TODO: figure out a way to choose between IPv4 and IPv6
-	cmp	edi, -1
-	je	.fail
+	call	IPv4_create_packet
+	jz	.fail
 
 	mov	[esp + 8], eax					; pointer to buffer start
 	mov	[esp + 8 + 4], edx				; buffer size
@@ -251,22 +239,22 @@ UDP_socket_send:
 	rep	movsb
 	pop	ecx edi
 
-	pop	dword [edi + UDP_Packet.SourcePort]		; fill in both portnumbers
+	pop	dword [edi + UDP_Packet.SourcePort]
 	mov	[edi + UDP_Packet.Checksum], 0			; set it to zero, to calculate checksum
 
 ; Checksum
 	mov	esi, edi
-	pushd	[edi-4] ; destination address           ; TODO: fix this, IPv4 packet could have options..
+	pushd	[edi-4] ; destination address                   ; TODO: fix this, IPv4 packet could have options..
 	pushd	[edi-8] ; source address
 	call	UDP_checksum
 
 	inc	[UDP_PACKETS_TX]
 
 	DEBUGF	1,"Sending UDP Packet to device %x\n", ebx
-	jmp	ETH_sender
+
+	jmp	NET_send
 
   .fail:
-	; todo: queue the packet
 	add	esp, 8+8
 	ret
 
@@ -275,7 +263,7 @@ UDP_socket_send:
 
 ;-----------------------------------------------------------------
 ;
-; checksum_udp
+; UDP_checksum
 ;
 ; This is the fast procedure to create or check a UDP header
 ;  - To create a new checksum, the checksum field must be set to 0 before computation

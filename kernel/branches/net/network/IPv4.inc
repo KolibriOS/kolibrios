@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IPv4.INC                                                       ;;
@@ -18,16 +18,13 @@
 
 $Revision$
 
-; IP underlying protocols numbers
-
-ETHER_IPv4	equ 0x0008	; Reversed from 0800 for intel
-
-MAX_FRAGMENTS	equ 16
+MAX_FRAGMENTS	equ 64
 MAX_IP		equ MAX_NET_DEVICES
+IP_MAX_INTERFACES   equ MAX_IP
 
 struct	IPv4_Packet
 	.VersionAndIHL		db  ?  ; Version[0-3 bits] and IHL(header length)[4-7 bits]
-	.TypeOfService		db  ?
+	.TypeOfService		db  ?  ; precedence [7-5] minimize delay [4], maximize throughput [3], maximize riliability [2] minimize momentary cost [1] and zero [0]
 	.TotalLength		dw  ?
 	.Identification 	dw  ?
 	.FlagsAndFragmentOffset dw  ?  ; Flags[0-2] and FragmentOffset[3-15]
@@ -58,13 +55,15 @@ ends
 
 align 4
 uglobal
-	BROADCAST	dd  ?
+
 	IP_LIST 	rd  MAX_IP
 	SUBNET_LIST	rd  MAX_IP
 	DNS_LIST	rd  MAX_IP
 	GATEWAY_LIST	rd  MAX_IP
+
 	IP_PACKETS_TX	rd  MAX_IP
 	IP_PACKETS_RX	rd  MAX_IP
+
 	FRAGMENT_LIST	rb  MAX_FRAGMENTS*FRAGMENT_slot.size
 endg
 
@@ -83,11 +82,11 @@ align 4
 IPv4_init:
 
 	or	eax, -1
-	mov	edi, BROADCAST
-	mov	ecx, 4*MAX_IP+1
+	mov	edi, IP_LIST
+	mov	ecx, 4*MAX_IP
 	rep	stosd
 
-	xor	eax, eax
+	inc	eax
 	mov	edi, FRAGMENT_LIST
 	mov	ecx, FRAGMENT_slot.size*MAX_FRAGMENTS/4 + 2*MAX_IP
 	rep	stosd
@@ -114,10 +113,12 @@ IPv4_init:
 ;-----------------------------------------------------------------
 align 4
 IPv4_handler:	 ; TODO: implement handler for IP options
-		 ; TODO2: add code for IPv4 sockets (raw sockets)
+		 ; TODO2: add code for raw sockets
 
-	DEBUGF	1,"IP_Handler - start\n"
-
+	DEBUGF	1,"IPv4_Handler, packet from: %u.%u.%u.%u ",\
+	[edx + IPv4_Packet.SourceAddress]:1,[edx + IPv4_Packet.SourceAddress + 1]:1,[edx + IPv4_Packet.SourceAddress + 2]:1,[edx + IPv4_Packet.SourceAddress + 3]:1
+	DEBUGF	1,"to: %u.%u.%u.%u\n",\
+	[edx + IPv4_Packet.DestinationAddress]:1,[edx + IPv4_Packet.DestinationAddress + 1]:1,[edx + IPv4_Packet.DestinationAddress + 2]:1,[edx + IPv4_Packet.DestinationAddress + 3]:1
 
 ;-------------------------------------------
 ; Check if the packet still has time to live
@@ -133,61 +134,66 @@ IPv4_handler:	 ; TODO: implement handler for IP options
 	cmp	al , 0x05					; IHL!= 5*4(20 bytes)
 	jnz	.has_options
 
-
 ;-------------------------------
-; Now, re-calcualte the checksum
+; Now, re-calculate the checksum
 
-	; Re-calculate checksum
 	push	edx ebx
 	mov	esi, edx
 	call	IPv4_checksum
 	pop	ebx edx
 
-	; now see if it was correct
 	cmp	[edx + IPv4_Packet.HeaderChecksum], 0
 	jne	.dump						; if checksum isn't valid then dump packet
 
 	DEBUGF	1,"IPv4 Checksum is correct\n"
 
-;-------------------------------------------------------
-; Time to find out what interface this packet belongs to
+;-----------------------------------
+; Check if destination IP is correct
 
-; Therefore we will scan the current list of IP's
+	call	NET_ptr_to_num
+	shl	edi, 2
 
-	mov	eax, [edx + IPv4_Packet.DestinationAddress]
-	mov	edi, BROADCAST
-	mov	ecx, MAX_IP+1
+	; check if it matches local ip
 
-  .find_ip_loop:
-	cmp	eax, dword [edi]
-	jz	.ip_ok
-	add	edi, 4
-	dec	ecx
-	jnz	.find_ip_loop
+	mov	eax, dword[IP_LIST+edi]
+	cmp	[edx + IPv4_Packet.DestinationAddress], eax
+	je	.ip_ok
 
-	; it was not on the list, perhaps it's a loopback ?
+	; check for broadcast
+
+	mov	eax, dword[SUBNET_LIST+edi]
 	not	eax
-	test	eax, 127 shl 24 ; 127.x.x.x
-	jz	.ip_ok
+	or	eax, dword[IP_LIST+edi]
+	cmp	[edx + IPv4_Packet.DestinationAddress], eax
+	je	.ip_ok
 
-	;  TODO: we need to check for broadcasts (other then 255.255.255.255)
+	; or a special broadcast
+
+	cmp	[edx + IPv4_Packet.DestinationAddress], -1
+	je	.ip_ok
+
+;        ; maybe it's a multicast then
+;
+;        mov     eax, [edx + IPv4_Packet.DestinationAddress]
+;        and     eax, 0xff000000
+;        cmp     eax, 224 shl 24
+;        je      .ip_ok
+
+	; or a loopback address
+
+	cmp	eax, 127 shl 24
+	je	.ip_ok
+
+	; or it's not meant for us..
 
 	DEBUGF	2,"Destination address does not match!\n"
-
 	jmp	.dump
 
-
-;---------------------------------------------------
-; Now we can update stats and find the device number
+;------------------------
+; Now we can update stats
 
   .ip_ok:
-	call	ETH_struc2dev					; TODO: make this work on other protocols too!
-	inc	[IP_PACKETS_RX+4*edi]
-	DEBUGF	1,"Packet comes from %u.%u.%u.%u\n",\
-	[edx + IPv4_Packet.SourceAddress]:1,[edx + IPv4_Packet.SourceAddress + 1]:1,[edx + IPv4_Packet.SourceAddress + 2]:1,[edx + IPv4_Packet.SourceAddress + 3]:1
-
-
-
+	inc	[IP_PACKETS_RX+edi]
 
 ;----------------------------------
 ; Check if the packet is fragmented
@@ -198,14 +204,12 @@ IPv4_handler:	 ; TODO: implement handler for IP options
 	test	[edx + IPv4_Packet.FlagsAndFragmentOffset], 0xff1f	; If flag is not set, but there is a fragment offset, the packet is last in series of fragmented packets
 	jnz	.is_last_fragment
 
-
-
 ;-------------------------------------------------------------------
 ; No, it's just a regular IP packet, pass it to the higher protocols
 
   .handle_it:							; We reach here if packet hasnt been fragmented, or when it already has been re-constructed
 	movzx	eax, byte [edx + IPv4_Packet.VersionAndIHL]	; Calculate Header length by using IHL field
-	and	eax, 0x0000000F 				;
+	and	eax, 0x0000000f 				;
 	shl	eax, 2						;
 	movzx	ecx, word [edx + IPv4_Packet.TotalLength]	; Calculate length of encapsulated Packet
 	xchg	cl , ch 					;
@@ -220,13 +224,13 @@ IPv4_handler:	 ; TODO: implement handler for IP options
 	pop	edx						; Offset to data (tcp/udp/icmp/.. Packet)
 
 	cmp	al , IP_PROTO_TCP
-	je	TCP_handler
+	je	TCP_input
 
 	cmp	al , IP_PROTO_UDP
-	je	UDP_handler
+	je	UDP_input
 
 	cmp	al , IP_PROTO_ICMP
-	je	ICMP_handler
+	je	ICMP_input
 
 	DEBUGF	2,"unknown Internet protocol: %u\n", al
 
@@ -351,7 +355,7 @@ IPv4_handler:	 ; TODO: implement handler for IP options
 	cmp	esi, -1
 	jne	.count_bytes
 
-	mov	esi, [esp+4]  ;;;
+	mov	esi, [esp+4]
 	mov	[edi + FRAGMENT_entry.NextPtr], esi			       ; Add this packet to the chain, this simplifies the following code
 	mov	[esi + FRAGMENT_entry.NextPtr], -1
 	mov	[esi + FRAGMENT_entry.PrevPtr], edi
@@ -463,12 +467,14 @@ IPv4_handler:	 ; TODO: implement handler for IP options
 ;
 ; find fragment slot
 ;
-; IN: pointer to fragmented packet in edx         ; TODO: the RFC says we should check protocol too
+; IN: pointer to fragmented packet in edx
 ; OUT: pointer to slot in edi, -1 on error
 ;
 ;-----------------------------------------------------------------
 align 4
 IPv4_find_fragment_slot:
+
+;;; TODO: the RFC says we should check protocol number too
 
 	push	eax ebx ecx edx
 	mov	ax , word [edx + IPv4_Packet.Identification]
@@ -514,7 +520,7 @@ IPv4_decrease_fragment_ttls:
 	dec	[esi + FRAGMENT_slot.ttl]
 	jnz	.try_next
 	DEBUGF 1,"Fragment slot timed-out!\n"
-	; TODO: clear all entry's of timed-out slot
+;;; TODO: clear all entry's of timed-out slot
   .try_next:
 	add	esi, 4
 	loop	.loop
@@ -524,38 +530,63 @@ IPv4_decrease_fragment_ttls:
 
 
 
-;-----------------------------------------------------------------
+;------------------------------------------------------------------
+;
+;
+; IN: dword [esp] = pointer to packet to be fragmented
+;     dword [esp+4] = buffer size
+;     edx = pointer to IPv4 header in that packet
+;     ecx = data length
+;     ebx = device structure
+;
+; OUT: /
+;
+;------------------------------------------------------------------
+align 4
+IPv4_fragment:
+
+;;; TODO: write code here
+
+
+	call	kernel_free
+	add	esp, 4
+
+	ret
+
+
+
+
+;------------------------------------------------------------------
 ;
 ; Create_IPv4_Packet
 ;
 ; IN: eax = dest ip
 ;     ebx = source ip
 ;     ecx = data length
-;     dx  = fragment id
+;     dx  = fragment id  ;;;;
 ;     di  = protocol
 ;
 ; OUT: eax = pointer to buffer start
 ;      ebx = pointer to device struct (needed for sending procedure)
 ;      ecx = unchanged (packet size of embedded data)
 ;      edx = size of complete buffer
-;      esi = pointer to sending procedure
-;      edi = pointer to start of data (-1 on error)
+;      edi = pointer to start of data (0 on error)
 ;
-;----------------------------------------------------------------- ;;; TODO: create fragmented packets
+;------------------------------------------------------------------
 align 4
 IPv4_create_packet:
 
 	DEBUGF 1,"Create IPv4 Packet (size=%u)\n", ecx
 
-	cmp	ecx, 1480
+	cmp	ecx, 65500	      ; Max IPv4 packet size
 	jg	.exit_
 
-	test	ebx, ebx	      ; if dest ip = 0
+	test	ebx, ebx	      ; if source ip = 0
 	jnz	.ip_ok		      ; and local ip is valid
 				      ; use local ip instead
 	cmp	[IP_LIST],0xffffffff  ;
 	je	.ip_ok		      ; TODO: find solution to send broadcast
-				      ; on device other then device 0
+				      ;  on device other then device 0
 	mov	ebx, [IP_LIST]	      ;
 				      ;
   .ip_ok:			      ;
@@ -563,7 +594,7 @@ IPv4_create_packet:
 	push	ecx eax ebx dx di
 
 	cmp	eax, -1
-	je	.broadcast		  ; If it is broadcast, just send
+	je	.broadcast		; If it is broadcast, just send
 
 	call	ARP_IP_to_MAC
 
@@ -582,16 +613,17 @@ IPv4_create_packet:
   .send:
 	call	IPv4_dest_to_dev
 	inc	[IP_PACKETS_TX+4*edi]
-	mov	edx, [ETH_DRV_LIST + 4*edi]
+	mov	edx, [NET_DRV_LIST + 4*edi]
 	lea	eax, [edx + ETH_DEVICE.mac]
 	mov	ebx, esp
 	mov	ecx, [esp+18]	 ;; 18 or  22 ??
 	add	ecx, IPv4_Packet.DataOrOptional
 	mov	di , ETHER_IPv4
-	call	ETH_create_packet		   ; TODO: figure out a way to make this work with other protocols too
+	;;; TODO: detect if packet is too large for ethernet, if so, call IPv4_fragment
+	call	ETH_create_packet		   ;;; TODO: figure out a way to make this work with other protocols too
 	add	esp, 6
-	cmp	edi, -1
-	je	.exit
+	test	edi, edi
+	jz	.exit
 
 	mov	[edi + IPv4_Packet.VersionAndIHL], 0x45   ; IPv4, normal length (no Optional header)
 	mov	[edi + IPv4_Packet.TypeOfService], 0
@@ -615,19 +647,19 @@ IPv4_create_packet:
 	pop	esi edx eax ecx
 	add	edi, IPv4_Packet.DataOrOptional
 
-	DEBUGF 1,"IPv4 Packet for device %x created successfully\n", ebx
+	DEBUGF	1,"IPv4 Packet for device %x created successfully\n", ebx
 
 	ret
 
 
   .not_found:
-	DEBUGF 1,"Create IPv4 Packet - ARP entry not found!\n"
-	; TODO: QUEUE the packet to resend later!
+	DEBUGF	1,"Create IPv4 Packet - ARP entry not found!\n"
+	;;;;;;
   .exit:
 	add	esp, 16
   .exit_:
-	DEBUGF 1,"Create IPv4 Packet - failed\n"
-	or	edi, -1
+	DEBUGF	1,"Create IPv4 Packet - failed\n"
+	and	edi, 0
 	ret
 
 

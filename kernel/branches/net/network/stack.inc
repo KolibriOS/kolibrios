@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  STACK.INC                                                      ;;
@@ -23,19 +23,22 @@ __DEBUG_LEVEL_OLD__  equ __DEBUG_LEVEL__
 __DEBUG_LEVEL__ equ 1			; this sets the debug level for network part of kernel
 
 uglobal
-	last_1sTick	db ?
-	last_1hsTick	dd ?
+	net_10ms       dd ?
+	net_tmr_count  dw ?
 endg
 
 MAX_NET_DEVICES 	equ 16
-QUEUE_BEFORE_SENDING	equ 0		; 1 or 0 (enable or disable) currently only affects ethernet
+
+ETH_QUEUE		equ 0		; 1 = enable / 0 = disable
 
 MIN_EPHEMERAL_PORT equ 49152
 MAX_EPHEMERAL_PORT equ 61000
 
-ETHER		equ 1337		; TODO: find another value for this (how does it work in posix ?)
+; Ethernet protocol numbers
 ETHER_ARP	equ 0x0608
+ETHER_IPv4	equ 0x0008		; Reversed from 0800 for intel
 
+;Protocol family
 AF_UNSPEC	equ 0
 AF_UNIX 	equ 1
 AF_INET4	equ 2
@@ -46,85 +49,88 @@ AF_INET4	equ 2
 ;AF_BRIDGE       equ 7
 ;AF_AAL5         equ 8
 ;AF_X25          equ 9
-;AF_INET6        equ 10
+AF_INET6	equ 10
 ;AF_MAX          equ 12
 
+; Internet protocol numbers
 IP_PROTO_IP	equ 0
 IP_PROTO_ICMP	equ 1
 IP_PROTO_TCP	equ 6
 IP_PROTO_UDP	equ 17
 
 ; Socket types
-SOCK_STREAM	= 1
-SOCK_DGRAM	= 2
-SOCK_RAW	= 3
+SOCK_STREAM	equ 1
+SOCK_DGRAM	equ 2
+SOCK_RAW	equ 3
 
-TCB_LISTEN		equ 1
-TCB_SYN_SENT		equ 2
-TCB_SYN_RECEIVED	equ 3
-TCB_ESTABLISHED 	equ 4
-TCB_FIN_WAIT_1		equ 5
-TCB_FIN_WAIT_2		equ 6
-TCB_CLOSE_WAIT		equ 7
-TCB_CLOSING		equ 8
-TCB_LAST_ACK		equ 9
-TCB_TIMED_WAIT		equ 10
-TCB_CLOSED		equ 11
+; Socket options
+SO_ACCEPTCON equ 1
 
-TH_FIN			equ 1 shl 0
-TH_SYN			equ 1 shl 1
-TH_RST			equ 1 shl 2
-TH_PUSH 		equ 1 shl 3
-TH_ACK			equ 1 shl 4
-TH_URG			equ 1 shl 5
+SOCKET_MAXDATA	equ 4096
+
+; Network driver types
+NET_TYPE_ETH	equ 1
+NET_TYPE_SLIP	equ 2
 
 
-macro inc_INET reg {
+virtual at 0
 
-	add	byte [reg + 3], 1
-	adc	byte [reg + 2], 0
-	adc	byte [reg + 1], 0
-	adc	byte [reg], 0
+	NET_DEVICE:
+	.type		dd ?
+	.end:
 
-}
-
-
-macro add_INET reg {
-	add	byte [reg + 3], cl
-	adc	byte [reg + 2], ch
-	adc	byte [reg + 1], 0
-	adc	byte [reg], 0
-	rol	ecx, 16
-	add	byte [reg + 1], cl
-	adc	byte [reg], ch
-	rol	ecx, 16
-}
+end virtual
 
 
+; Exactly as it says..
 macro pseudo_random reg {
-
 	add	reg, [esp]
 	rol	reg, 5
 	xor	reg, [timer_ticks]
 	imul	reg, 214013
 	xor	reg, 0xdeadbeef
 	rol	reg, 9
+}
 
-	pushd	reg
-	mov	word [esp], 0x8080 ; kernel heap start addr      (os_stack)
-	xor	reg, [esp]
-	add	esp, 4
+macro ntohld reg {
+
+	rol	word reg, 8
+	rol	dword reg, 16
+	rol	word reg, 8
 
 }
 
+macro ntohlw reg {
+
+	rol	word reg, 8
+
+}
+
+
 include "queue.inc"
+
+include "ethernet.inc"
+;include "slip.inc"
+
 include "ARP.inc"
 include "IPv4.inc"
-include "ethernet.inc"
-include "socket.inc"
-include "tcp.inc"
-include "udp.inc"
+
 include "icmp.inc"
+include "udp.inc"
+include "tcp.inc"
+
+include "socket.inc"
+
+
+
+align 4
+uglobal
+
+	NET_RUNNING	dd  ?
+	NET_DRV_LIST	rd  MAX_NET_DEVICES
+
+endg
+
 
 ;-----------------------------------------------------------------
 ;
@@ -139,28 +145,37 @@ include "icmp.inc"
 align 4
 stack_init:
 
+; Init the network drivers list
+
+	xor	eax, eax
+	mov	edi, NET_RUNNING
+	mov	ecx, MAX_NET_DEVICES + 1
+	rep	stosd
+
+; Call other init procedures
+
 	call	ETH_init
+;        call    SLIP_init
+
 	call	IPv4_init
+	call	ICMP_init
+
 	call	ARP_init
 	call	UDP_init
 	call	TCP_init
-	call	ICMP_init
+
 	call	socket_init
 
-	mov	al, 0		      ; set up 1s timer
-	out	0x70, al
-	in	al, 0x71
-	mov	[last_1sTick], al
+	mov	[net_tmr_count], 0
 
 	ret
-
 
 
 ;-----------------------------------------------------------------
 ;
 ; stack_handler
 ;
-;  This function calls all network init procedures
+;  This function is called in kernel loop
 ;
 ;  IN:  /
 ;  OUT: /
@@ -169,39 +184,228 @@ stack_init:
 align 4
 stack_handler:
 
-	cmp	[ETH_RUNNING], 0
+	cmp	[NET_RUNNING], 0
 	je	.exit
 
 	; Test for 10ms tick
 	mov	eax, [timer_ticks]
-	cmp	eax, [last_1hsTick]
+	cmp	eax, [net_10ms]
 	je	.exit
+	mov	[net_10ms], eax
 
-	mov	[last_1hsTick], eax
-
-	call	ETH_handler		    ; handle all queued ethernet packets
-if QUEUE_BEFORE_SENDING
+   if ETH_QUEUE
+	call	ETH_handler
 	call	ETH_send_queued
-end if
-	call	TCP_send_queued
+   end if
+	call	TCP_10ms
 
-  .sec_tick:
-
-	; Test for 1 second tick
-	mov	al, 0
-	out	0x70, al
-	in	al, 0x71
-	cmp	al, [last_1sTick]
-	je	.exit
-
-	mov	[last_1sTick], al
+	inc	[net_tmr_count]
+	cmp	[net_tmr_count], 50
+	je	.500ms
+	cmp	[net_tmr_count], 100
+	jne	.exit
 
 	call	ARP_decrease_entry_ttls
 	call	IPv4_decrease_fragment_ttls
-	call	TCP_decrease_socket_ttls
+	call	TCP_timer_1000ms
+
+	mov	[net_tmr_count], 0
+
+  .500ms:
+	call	TCP_500ms
 
   .exit:
 	ret
+
+
+
+;-----------------------------------------------------------------
+;
+; NET_Add_Device:
+;
+;  This function is called by the network drivers,
+;  to register each running NIC to the kernel
+;
+;  IN:  Pointer to device structure in ebx
+;  OUT: Device num in eax, -1 on error
+;
+;-----------------------------------------------------------------
+align 4
+NET_add_device:
+
+	DEBUGF	1,"NET_Add_Device: %x\n", ebx
+
+	mov	eax, [NET_RUNNING]
+	cmp	eax, MAX_NET_DEVICES
+	jge	.error
+
+;----------------------------------
+; Check if device is already listed
+	mov	eax, ebx
+	mov	ecx, MAX_NET_DEVICES	  ; We need to check whole list because a device may be removed without re-organizing list
+	mov	edi, NET_DRV_LIST
+
+	repne	scasd			  ; See if device is already in the list
+	jz	.error
+
+;----------------------------
+; Find empty slot in the list
+	xor	eax, eax
+	mov	ecx, MAX_NET_DEVICES
+	mov	edi, NET_DRV_LIST
+
+	repne	scasd
+	jnz	.error
+
+	sub	edi, 4
+
+	cmp	[ebx + NET_DEVICE.type], NET_TYPE_ETH
+	je	.ethernet
+
+	cmp	[ebx + NET_DEVICE.type], NET_TYPE_SLIP
+	je	.slip
+
+	DEBUGF	1,"Unknown network device type: %u\n", [ebx + NET_DEVICE.type]
+	jmp	.error
+
+  .ethernet:
+	DEBUGF	1,"Trying to add an ethernet driver\n"
+
+	inc	[ETH_RUNNING]		  ; Indicate that one more ethernet device is up and running
+	jmp	.add_it
+
+  .slip:
+	DEBUGF	1,"Trying to add a slip driver\n"
+	;;;;
+	jmp	.error
+
+
+  .add_it:
+
+;-----------------------------
+; Add device to the found slot
+	mov	[edi], ebx		  ; add device to list
+
+	sub	edi, NET_DRV_LIST	  ; Calculate device number in eax
+	mov	eax, edi		  ;
+	shr	eax, 2
+
+	inc	[NET_RUNNING]		  ; Indicate that one more network device is up and running
+
+	DEBUGF	1,"Device number: %u\n",eax
+	ret
+
+  .error:
+	or	eax, -1
+	DEBUGF	2,"Adding network device failed\n"
+	ret
+
+
+
+;-----------------------------------------------------------------
+;
+; NET_Remove_Device:
+;
+;  This function is called by etwork drivers,
+;  to unregister network devices from the kernel
+;
+;  IN:  Pointer to device structure in ebx
+;  OUT: eax: -1 on error
+;
+;-----------------------------------------------------------------
+align 4
+NET_remove_device:
+
+	cmp	[NET_RUNNING], 0
+	je	.error
+
+;----------------------------
+; Find the driver in the list
+
+	mov	eax, ebx
+	mov	ecx, MAX_NET_DEVICES
+	mov	edi, NET_DRV_LIST
+
+	repne	scasd
+	jnz	.error
+
+;------------------------
+; Remove it from the list
+
+	xor	eax, eax
+	mov	dword [edi-4], eax
+
+	dec	[NET_RUNNING]
+	ret
+
+  .error:
+	or	eax, -1
+	ret
+
+
+
+;-----------------------------------------------------------------
+;
+; NET_ptr_to_num
+;
+; IN:  ebx = ptr to device struct
+; OUT: edi = -1 on error, device number otherwise
+;
+;-----------------------------------------------------------------
+align 4
+NET_ptr_to_num:
+	push	ecx
+
+	mov	ecx, MAX_NET_DEVICES
+	mov	edi, NET_DRV_LIST
+
+  .loop:
+	cmp	ebx, [edi]
+	jz	.found
+	add	edi, 4
+	dec	ecx
+	jnz	.loop
+
+	; repnz  scasd could work too if eax is used instead of ebx!
+
+	or	edi, -1
+
+	pop	ecx
+	ret
+
+  .found:
+	sub	edi, NET_DRV_LIST
+	shr	edi, 2
+
+	pop	ecx
+	ret
+
+
+
+
+;--------------------------
+;
+; NET_send
+;
+; IN:   ebx = ptr to device struct
+;      [esp] = data ptr
+;    [esp + 4] = data size
+;
+; OUT: /
+;
+;--------------------------
+align 4
+NET_send:
+
+	call	[ebx + ETH_DEVICE.transmit] ;;;;
+
+;;; TODO:check if packet was sent ok
+
+	call	kernel_free
+	add	esp, 4
+	ret
+
+
 
 
 ;-----------------------------------------------------------------
@@ -333,7 +537,7 @@ sys_network:
 	cmp	ebx, -1
 	jne	@f
 
-	mov	eax, [ETH_RUNNING]
+	mov	eax, [NET_RUNNING]
 	jmp	.return
 
    @@:
@@ -344,12 +548,12 @@ sys_network:
 	and	esi, 0x0000ff00
 	shr	esi, 6
 
-	cmp	dword [esi + ETH_DRV_LIST], 0 ; check if driver is running
+	cmp	dword [esi + NET_DRV_LIST], 0 ; check if driver is running
 	je	.doesnt_exist
 
-	test	bl, bl			; 0 = Get device type (ethernet/token ring/...)
+	test	bl, bl			 ; 0 = Get device type (ethernet/token ring/...)
 	jnz	@f
-					 ; todo
+
 	xor	eax, eax
 	jmp	.return
 
@@ -358,7 +562,7 @@ sys_network:
 	dec	bl			; 1 = Get device name
 	jnz	@f
 
-	mov	esi, [esi + ETH_DRV_LIST]
+	mov	esi, [esi + NET_DRV_LIST]
 	mov	esi, [esi + ETH_DEVICE.name]
 	mov	edi, ecx
 
@@ -373,7 +577,7 @@ sys_network:
 	dec	bl			; 2 = Reset the device
 	jnz	@f
 
-	mov	esi, [esi + ETH_DRV_LIST]
+	mov	esi, [esi + NET_DRV_LIST]
 	call	[esi + ETH_DEVICE.reset]
 	jmp	.return
 
@@ -382,7 +586,7 @@ sys_network:
 	dec	bl			; 3 = Stop driver for this device
 	jnz	@f
 
-	mov	esi, [esi + ETH_DRV_LIST]
+	mov	esi, [esi + NET_DRV_LIST]
 	call	[esi + ETH_DEVICE.unload]
 	jmp	.return
 
@@ -407,7 +611,7 @@ sys_network:
 
 ;----------------------------------------------------------------
 ;
-;  System Function To work with Protocols  (75)
+;  System function to work with protocols  (75)
 ;
 ;----------------------------------------------------------------
 align 4
@@ -417,8 +621,8 @@ sys_protocols:
 
 	mov	esi, ebx
 	and	esi, 0x0000ff00
-	shr	esi, 6
-	cmp	dword [esi + ETH_DRV_LIST], 0	; check if driver is running TODO: check other lists too
+	shr	esi, 6				; now we have the device num * 4 in esi
+	cmp	dword [esi + NET_DRV_LIST], 0	; check if driver is running
 	je	.doesnt_exist
 
 	push	.return 			; return address (we will be using jumps instead of calls)
@@ -441,7 +645,7 @@ sys_protocols:
 	cmp	ax , ETHER_ARP
 	je	ARP_API
 
-	cmp	ax , ETHER
+	cmp	ax , 1337
 	je	ETH_API
 
 	add	esp, 4				 ; if we reached here, no function was called, so we need to balance stack

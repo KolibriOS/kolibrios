@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;; Realtek 8139 driver for KolibriOS                               ;;
@@ -368,7 +368,9 @@ proc service_proc stdcall, ioctl:dword
 	inc	[RTL8139_DEV]						;
 
 
-	call	EthRegDev
+	mov	[device.type], NET_TYPE_ETH
+	call	NetRegDev
+
 	cmp	eax, -1
 	je	.destroy
 
@@ -378,8 +380,7 @@ proc service_proc stdcall, ioctl:dword
 
   .find_devicenum:
 	DEBUGF	2,"Trying to find device number of already registered device\n"
-	mov	ebx, eax
-	call	EthStruc2Dev						; This kernel procedure converts a pointer to device struct in ebx
+	call	NetPtrToNum						; This kernel procedure converts a pointer to device struct in ebx
 									; into a device number in edi
 	mov	eax, edi						; Application wants it in eax instead
 	DEBUGF	2,"Kernel says: %u\n", eax
@@ -445,22 +446,25 @@ probe:
 	shr	ah , 2
 	shr	ax , 6
 	and	al , 01111111b
+
 	mov	ecx, HW_VER_ARRAY_SIZE-1
   .chip_ver_loop:
-	cmp	al , [hw_ver_array+ecx]
+	cmp	al , [hw_ver_array + ecx]
 	je	.chip_ver_found
 	dec	ecx
 	jns	.chip_ver_loop
-	xor	cl , cl ; default RTL8139
+  .unknown:
+	mov	ecx, 8
   .chip_ver_found:
+	cmp	ecx, 8
+	jg	.unknown
+
 	mov	[device.hw_ver_id], cl
 
-	shl	ecx, 2
-	add	ecx, crosslist
-	mov	ecx, [ecx]
+	mov	ecx, [crosslist + ecx*4]
 	mov	[device.name], ecx
 
-	DEBUGF	2,"Chip version: %s\n",ecx
+	DEBUGF	2,"Chip version: %s\n", ecx
 
 ; wake up the chip
 
@@ -1223,6 +1227,7 @@ device_5      db 'Realtek 8100',0
 device_6      db 'Realtek 8139D',0
 device_7      db 'Realtek 8139CP',0
 device_8      db 'Realtek 8101',0
+device_unknown db 'Unknown RTL8139 clone', 0
 
 crosslist     dd device_1
 	      dd device_2
@@ -1232,6 +1237,7 @@ crosslist     dd device_1
 	      dd device_6
 	      dd device_7
 	      dd device_8
+	      dd device_unknown
 
 hw_ver_array  db VER_RTL8139			; This array is used by the probe routine to find out wich version of the RTL8139 we are working with
 	      db VER_RTL8139A
@@ -1241,6 +1247,7 @@ hw_ver_array  db VER_RTL8139			; This array is used by the probe routine to find
 	      db VER_RTL8139D
 	      db VER_RTL8139CP
 	      db VER_RTL8101
+	      db 0
 
 HW_VER_ARRAY_SIZE = $-hw_ver_array
 

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  queue.inc                                                   ;;
@@ -14,7 +14,7 @@
 
 $Revision$
 
-; The Queues implemented by these macros for a sort of ring-buffer.
+; The Queues implemented by these macros form a ring-buffer.
 ; The data to these queue's always looks like this:
 ;
 ; At top, you have the queue struct, wich has the size (number of currently queued packets, read and write pointers.

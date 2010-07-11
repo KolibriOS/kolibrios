@@ -689,7 +689,7 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	push	0
 	push	0	; sin_zero
 	push	esi	; sin_addr
-	push	AF_INET + (53 shl 24)
+	push	AF_INET + (53 shl 16)
 			; sin_family and sin_port in network byte order
 ; 8c. Connect.
 	mcall	74, 4, , esp, sizeof.sockaddr_in
