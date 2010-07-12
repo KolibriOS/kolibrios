@@ -540,7 +540,7 @@ ecPrintChar:
     cmp  bx,word[Free+4]
     jge   .text
     or   [mode],RTF_BOTTOM
-    dps  <'btm',13,10>
+;    dps  <'btm',13,10>
     test [mode],RTF_TOEOF
     jne  .text
     mov  eax,ecOutOfWindow

@@ -1,6 +1,6 @@
 ;   RTF READER FOR MENUET v1.
 ;   Written in pure assembler by Ivushkin Andrey aka Willow
-;
+;   Menu_bar and scroll_bar from box_lib provided by dunkaist
 ;---------------------------------------------------------------------
 M64 equ 64*1024
 N_A equ 0x412f4e
@@ -8,12 +8,12 @@ RTFSIZE equ M64
 RTFSTACKSIZE equ M64
 BGIFONTSIZE equ 120*1024
 ESPSIZE equ M64
-LMARGIN equ 20
+LMARGIN equ 15
 CHARW equ 6
 CHARH equ 11
 WINW  equ 600
 WINH  equ 450
-WIN_COLOR equ 0x3f0f0f0
+WIN_COLOR equ 0x33f0f0f0;0x3f0f0f0
 DEFCOLOR equ 0x303030
 ;RENDER equ PIX
 ;RENDER equ BGI
@@ -21,7 +21,7 @@ RENDER equ FREE
 
 BGIFONT_PATH equ '/sys/fonts/'
 FONT_NAME equ 'LITT'
-TOP =55
+TOP = 45
 MODE equ RTF
 INVALHEX equ 0
 RTF_COLORLESS equ 1
@@ -40,6 +40,13 @@ GUTTER equ 10
 BENCH  equ 0;1
 syms equ 12
 
+;-------------------------------
+
+scroll_width_size       equ     15
+AR_OFFSET               equ     10
+
+;-------------------------------
+
   use32              ; включить 32-битный режим ассемблера
   org    0x0         ; адресация с нуля
 
@@ -52,8 +59,9 @@ syms equ 12
   dd     fname_buf   ; адрес буфера для параметров (не используется)
   dd     cur_dir_path         ; зарезервировано
 
-include '..\..\..\macros.inc' ; макросы облегчают жизнь ассемблерщиков!
-include '..\..\..\develop\libraries\box_lib\load_lib.mac'
+include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
+include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../../develop/libraries/box_lib/load_lib.mac'
 
 ;include 'MACROS.INC'
 ;include 'load_lib.mac'
@@ -67,22 +75,23 @@ if ~ RENDER eq PIX
   include 'bgifont.inc'
 end if
 include 'rtf_lite.inc'
-include 'ascl.inc'
+;include 'ascl.inc'
 ;---------------------------------------------------------------------
 ;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
 ;---------------------------------------------------------------------
 help_file:
-file  'reader.rtf'
+    file  'reader.rtf'
 help_end:
 
 START:
         mcall 68, 11
+        mcall 40, 0x27
 
 load_libraries l_libs_start,end_l_libs
 
-;OpenDialog	initialisation
-	push    dword OpenDialog_data
-	call    [OpenDialog_Init]
+;OpenDialog     initialisation
+        push    dword OpenDialog_data
+        call    [OpenDialog_Init]
 
     mov  [pitch],2
   if ~ RENDER eq PIX
@@ -117,7 +126,7 @@ load_libraries l_libs_start,end_l_libs
         mov     dword [fileinfo.name], N_A
 .sizok:
     and  [wSave],0
-    mov  [HClick],-100
+;    mov  [HClick],-100
     mov  eax,ebx
     and  eax,RTFSIZE-1
     add  eax,I_END
@@ -133,8 +142,8 @@ load_libraries l_libs_start,end_l_libs
     mov  [fname_size],edi
 top_red:
     mov  [top],TOP
+    mov  [scroll_bar_data_vertical.position],0
 red:                    ; перерисовать окно
-
     call draw_window    ; вызываем процедуру отрисовки окна
 
 ;---------------------------------------------------------------------
@@ -148,6 +157,8 @@ still:
     je   red            ; если да - на метку red
     cmp  eax,3          ; нажата кнопка ?
     je   button         ; если да - на button
+    cmp  eax,6
+    je   mouse
 
 ;---------------------------------------------------------------------
 
@@ -160,6 +171,7 @@ still:
     xor  [mode],RTF_HELP
     test [mode],RTF_HELP
     jz   load_file
+    mov  dword[HDoc],200                        ; it makes the help page not scroll
     mov  ecx,help_end-help_file
     mov  [block_end],ecx
     add  [block_end],I_END
@@ -208,37 +220,91 @@ still:
   .nopi:
     cmp  ah,180         ; Home
     je   top_red
+    
+    cmp  byte[is_scroll_bar_needed], 0
+     je  still
+    
     mov  ebx,dword[prcinfo+46]
     sub  ebx,TOP+15
     cmp  ah,183 ;PgDn
     jne  .nopgdn
-    sub  [top],bx
+;    sub  [top],bx
+
+    cmp  byte[is_scroll_bar_needed], 0
+     je  still
+    
+    mov  eax, [scroll_bar_data_vertical.position]
+    add  eax, AR_OFFSET*7
+    mov  ebx, [scroll_bar_data_vertical.max_area]
+    sub  ebx, [scroll_bar_data_vertical.cur_area]
+    cmp  eax, ebx
+    mov  dword[scroll_bar_data_vertical.position], eax
+    jl  @f
+    mov  dword[scroll_bar_data_vertical.position], ebx
+  @@:
+    call Set_position
     jmp  red
   .nopgdn:
     cmp  ah,177 ;arrDn
     jne  .noardn
-    sub  [top],CHARH
+;    sub  [top],CHARH
+
+    cmp  byte[is_scroll_bar_needed], 0
+     je  still
+    
+    mov  eax, [scroll_bar_data_vertical.position]
+    add  eax, AR_OFFSET
+    mov  ebx, [scroll_bar_data_vertical.max_area]
+    sub  ebx, [scroll_bar_data_vertical.cur_area]
+    cmp  eax, ebx
+    mov  dword[scroll_bar_data_vertical.position], eax
+    jl  @f
+    mov  dword[scroll_bar_data_vertical.position], ebx
+  @@:
+    call Set_position
+
     jmp  red
   .noardn:
     mov  cx,[top]
     cmp  ah,184 ;PgUp
     jne  .nopgup
-    add  [top],bx
-    cmp  [top],TOP
-    jl   red
-    mov  [top],TOP
-    cmp  cx,[top]
-    je   still
+;    add  [top],bx
+;    cmp  [top],TOP
+;    jl   red
+;    mov  [top],TOP
+;    cmp  cx,[top]
+;    je   still
+
+    cmp  byte[is_scroll_bar_needed], 0
+     je  still
+    
+    cmp  dword[scroll_bar_data_vertical.position], AR_OFFSET*7
+    sub  dword[scroll_bar_data_vertical.position], AR_OFFSET*7
+    jg  @f
+    mov  dword[scroll_bar_data_vertical.position], 0
+  @@:
+    call Set_position
     jmp  red
   .nopgup:
     cmp  ah,178 ;arrUp
     jne  .noarup
-    add  [top],CHARH
-    cmp  [top],TOP
-    jl   red
-    mov  [top],TOP
-    cmp  cx,[top]
-    je   still
+;    add  [top],CHARH
+
+    cmp  byte[is_scroll_bar_needed], 0
+     je  still
+    
+    cmp  dword[scroll_bar_data_vertical.position], AR_OFFSET
+    sub  dword[scroll_bar_data_vertical.position], AR_OFFSET
+    jg  @f
+    mov  dword[scroll_bar_data_vertical.position], 0
+  @@:
+    call Set_position
+
+;    cmp  [top],TOP
+;    jl   red
+;    mov  [top],TOP
+;    cmp  cx,[top]
+;    je   still
     jmp  red
   .noarup:
   if  RENDER eq FREE
@@ -259,21 +325,32 @@ still:
     jmp  .zoom
   .nominus:
   end if
+    cmp  ah,0xB5        ; end
+    jne  .pre_file_open
+  .end:
+
+    cmp  byte[is_scroll_bar_needed], 0
+     je  still
+    
+    mov  dword[scroll_bar_data_vertical.position], 250
+    call Set_position
+    jmp  red
+  .pre_file_open:
     cmp  ah,108         ; L - load
     jne  still
   .file_open:
 ;---------------------------------------------------------------------
 ;OpenDialog_start:
-;	copy_path	open_dialog_name,path,library_path,0
-	
-	push    dword OpenDialog_data
-	call    [OpenDialog_Start]
+;       copy_path       open_dialog_name,path,library_path,0
+        
+        push    dword OpenDialog_data
+        call    [OpenDialog_Start]
 
-;	cmp	[OpenDialog_data.status],2 ; OpenDialog does not start
-;	je	.sysxtree  ; 	some kind of alternative, instead OpenDialog
-	cmp	[OpenDialog_data.status],1
-	je	prep_load
-	jmp	still
+;       cmp     [OpenDialog_data.status],2 ; OpenDialog does not start
+;       je      .sysxtree  ;    some kind of alternative, instead OpenDialog
+        cmp     [OpenDialog_data.status],1
+        je      prep_load
+        jmp     still
 ;---------------------------------------------------------------------  
 ;.sysxtree:
 ;    or   [mode],RTF_OPENING
@@ -287,58 +364,124 @@ still:
 
   button:
     mcall 17            ; 17 - получить идентификатор нажатой кнопки
-    cmp   ah,2
-    je    key.help
-    cmp   ah,3
-    je    key.color
-    cmp   ah,4
-    je    key.alignment
-    cmp   ah,5
-    je    key.file_open
-    cmp   ah,6
-    je    key.incp
-    cmp   ah,7
-    je    key.decp
-  if RENDER eq FREE
-    cmp   ah,8
-    je    key.zminus
-    cmp   ah,9
-    je    key.zplus
-  end if
-    cmp   ah, 1         ; если НЕ нажата кнопка с номером 1,
-    jne   .noexit       ;  вернуться
 
+    cmp   ah, 1         ; если нажата кнопка с номером 1,
+    je    .exit
+    jmp still
+    
   .exit:
     mcall -1            ; иначе конец программы
-  .noexit:
-    cmp   ah,20
-    jne   still
-    mcall 37,1
-    and   eax,0xffff
-    cmp   eax,[HClick]
-    je    still
-    mov   [HClick],eax
-    sub   eax,25
-    mul   [HDoc]
-    mov   ebx,dword[prcinfo+46]
-    sub   ebx,25
-    div   ebx
-    dpd   eax
-    mov   [top],TOP
-    sub   [top],ax
-    dps   'B'
-    jmp   red;still
+    
+
+;---------------------------------------------------------------------
+;---  MOUSE EVENT PROCESSING  ----------------------------------------
+;---------------------------------------------------------------------    
+mouse:
+        mcall   37,7
+        test    eax,    eax
+        je      .menu_bar_1;.mouse
+        jmp     still
+
+
+.menu_bar_1:
+        call    .set_mouse_flag
+@@:
+        push    dword menu_data_1       ;mouse event for Menu 1
+        call    [menu_bar_mouse]
+        cmp     [menu_data_1.click],dword 1
+        jne     .menu_bar_2
+        cmp     [menu_data_1.cursor_out],dword 0
+        jne     .analyse_out_menu_1
+        jmp     .menu_bar_1
+.menu_bar_2:
+        push    dword menu_data_2
+        call    [menu_bar_mouse]
+        cmp     [menu_data_2.click],dword 1
+        jne     .menu_bar_3
+        cmp     [menu_data_2.cursor_out],dword 0
+        jne     .analyse_out_menu_2
+        jmp     .menu_bar_1
+.menu_bar_3:
+        push    dword menu_data_3
+        call    [menu_bar_mouse]
+        cmp     [menu_data_3.click],dword 1
+        jne     .scroll_bar
+        cmp     [menu_data_3.cursor_out],dword 0
+        jne     .analyse_out_menu_3
+        jmp     .menu_bar_1
+
+.set_mouse_flag:
+        xor     eax,eax
+        inc     eax
+        mov     [menu_data_1.get_mouse_flag],eax
+        mov     [menu_data_2.get_mouse_flag],eax
+        mov     [menu_data_3.get_mouse_flag],eax
+        ret
+
+.analyse_out_menu_1:
+        cmp     [menu_data_1.cursor_out],dword 1
+        je      key.file_open
+        cmp     [menu_data_1.cursor_out],dword 2
+        je      button.exit
+        jmp     red
+
+.analyse_out_menu_2:
+        cmp     [menu_data_2.cursor_out],dword 1
+        je      key.zplus
+        cmp     [menu_data_2.cursor_out],dword 2
+        je      key.zminus
+        cmp     [menu_data_2.cursor_out],dword 3
+        je      key.incp
+        cmp     [menu_data_2.cursor_out],dword 4
+        je      key.decp
+        cmp     [menu_data_2.cursor_out],dword 5
+        je      key.alignment
+        cmp     [menu_data_2.cursor_out],dword 6
+        je      key.color
+        jmp     red
+
+.analyse_out_menu_3:
+        cmp     [menu_data_3.cursor_out],dword 1
+        je      key.help
+        jmp     red
+
+.scroll_bar:
+        cmp     [is_scroll_bar_needed], 0
+        je      still
+.vertical:
+        mov     eax,[scroll_bar_data_vertical.max_area]
+        cmp     eax,[scroll_bar_data_vertical.cur_area]
+        jbe     still
+; mouse event for Vertical ScrollBar
+
+        push    dword scroll_bar_data_vertical
+        call    [scrollbar_ver_mouse]
+  
+        call    Set_position
+        
+        mov     eax,scroll_bar_data_vertical.redraw
+        xor     ebx,ebx
+        cmp     [eax],ebx
+        je      @f
+        mov     [eax],ebx
+        jmp     red
+@@:
+        cmp     [scroll_bar_data_vertical.delta2],0
+        jne     still
+.other:
+        jmp     still
 ;---------------------------------------------------------------------
 ;---  ОПРЕДЕЛЕНИЕ И ОТРИСОВКА ОКНА  ----------------------------------
 ;---------------------------------------------------------------------
 
 draw_window:
 
-    mcall 12, 1                    ; функция 12: сообщить ОС об отрисовке окна
-                                   ; 1 - начинаем рисовать
+    mcall 12, 1
 
-    mcall 0, <10,WINW>, <100,WINH>, WIN_COLOR,0x805080D0, 0x005080D0
-    mcall 4, <8,8>, 0x10DDEEFF, title, titlesize-title
+;    mcall 0, <10,WINW>, <100,WINH>, WIN_COLOR,0x805080D0, 0x005080D0
+;    mcall 4, <8,8>, 0x10DDEEFF, title, titlesize-title
+    mcall 0, <10,WINW>, <100,WINH>, WIN_COLOR,0x80000000, window_title
+
     mov  esi,ecx
     mcall 47,0x30000,isymImplemented,<114,8>
     add  edx,36 shl 16
@@ -361,67 +504,37 @@ draw_window:
     or   [mode],RTF_TOEOF
     and  [HDoc],0
     and  [line_count],0
-    mov  [HClick],-100
+;    mov  [HClick],-100
   .nochg:
 
+;---------------------------------------------
+    mov eax, dword[prcinfo+0x3E]
+    sub eax, scroll_width_size
+    mov word[scroll_bar_data_vertical.start_x], ax
 
-mcall 13,<5,dword[prcinfo+42]>,<21,21>,0x8000459a
+    mov eax, dword[prcinfo+0x42]
+    sub eax, 17
+    mov word[scroll_bar_data_vertical.size_y], ax
 
-mcall 8,7*65536+39,23*65536+16,5,0x459a           ;load
-mcall 8,46*65536+57,23*65536+16,4,0x459a ;align
-mcall 8,103*65536+44,23*65536+16,3,0x459a   ;color
-mcall 8,147*65536+37,23*65536+16,2,0x459a        ;help
+    mov ebx, dword[prcinfo+0x3E]
+    mcall     38, , 65536*18+18, 0x8b8b89
+    inc ebx
+    mcall     13, , 65536*0+18, 0xe9e9e2
+;---------------------------------------------
+; draw for Menu 1
+        push    dword menu_data_1
+        call    [menu_bar_draw] 
+; draw for Menu 2
+        push    dword menu_data_2
+        call    [menu_bar_draw] 
+; draw for Menu 3
+        push    dword menu_data_3
+        call    [menu_bar_draw]         
+;---------------------------------------------
 
-mcall 8,184*65536+44,23*65536+16,7,0x459a ;prev
-mcall 8,229*65536+46,23*65536+16,6,0x459a      ;next
-
-if RENDER eq FREE
-mcall 8,276*65536+44,23*65536+16,9,0x459a ;zoom+
-mcall 8,320*65536+44,23*65536+16,8,0x459a ;zoom-
-end if
-
-
-
-
-;    sub  ebx,60
-;    shl  ebx,16
-;    mov  bx,12
-;    mov  ecx,5 shl 16+12
-;    mov  esi,0xb810e7
-;    mov  edx,2
-; BTN_SPACE equ 14 shl 16
-;    mcall 8             ;2
-;    sub  ebx,BTN_SPACE
-;    inc  edx
-;    mcall 8,,,,0x459a    ;3
-;    sub  ebx,BTN_SPACE
-;    inc  edx
-;    mcall ,,,,0x107a30  ;4
-;    sub  ebx,BTN_SPACE
-;    inc  edx
-;    mcall ,,,,0xcc0000  ;5
-;    sub  ebx,BTN_SPACE
-;    inc  edx
-;    mcall ,,,,0x575f8c  ;6
-;    sub  ebx,BTN_SPACE
-;    inc  edx
-;    mcall ,,,,0x575f8c  ;7
-;  if RENDER eq FREE
-;    sub  ebx,BTN_SPACE
-;    inc  edx
-;    mcall ,,,,0x6a73d0  ;8
-;    sub  ebx,BTN_SPACE
-;    inc  edx
-;    mcall ,,,,0xd048c8  ;9
-;  end if
-;text
-;    shr  ecx,16
-;    mov  bx,cx
-;    add  ebx,3 shl 16+3
-    mcall 4,10*65536+27,0x10ddeeff,btn_text,btn_end-btn_text
-
-    sub  dword[prcinfo+42],LMARGIN
-    sub  dword[prcinfo+46],CHARH
+    sub  dword[prcinfo+42],2*LMARGIN+scroll_width_size
+    sub  dword[prcinfo+46],CHARH+25
+    
  if GUTTER eq 1
     mov  ebx,LMARGIN shl 16+20
     mov  ecx,20
@@ -435,17 +548,6 @@ end if
     add  ebx,50 shl 16
     loop .loop1
  end if
-    mov  ebx,dword[prcinfo+42]
-    shl  ebx,16
-    add  ebx,2 shl 16+13
-    mov  ecx,dword[prcinfo+46]
-    add  ecx,40 shl 16-35
-    mov  edx,20+1 shl 29
-    mcall 8
-    mov  ecx,[HClick]
-    shl  ecx,16
-    add  ecx,6-3 shl 16 + 7
-    mcall 13,,,0xe26830
  if MODE eq RTF
     test [mode],RTF_OPENING
     jne  .ex
@@ -465,11 +567,11 @@ end if
     mov  word[Free+4],ax
     mov  esi,I_END
     call RtfParse
-    dpd  eax
-    dps  'Lines='
+;    dpd  eax
+;    dps  'Lines='
     mov  eax,[line_count]
-    dpd  eax
-    newline
+;    dpd  eax
+;    newline
 ;    movzx  eax,word[Free+4]
 ;    dpd  eax
     mov  eax,dword[prcinfo+42]
@@ -478,8 +580,8 @@ end if
 if BENCH eq 1
     mcall 26,9
     sub  eax,[bench]
-    dps  <13,10,'Bench='>
-    dpd  eax
+;    dps  <13,10,'Bench='>
+;    dpd  eax
 end if
  else
     mov  [char],0
@@ -509,10 +611,60 @@ end if
     loop .l0
  end if
  .ex:
-    mcall 12, 2                    ; функция 12: сообщить ОС об отрисовке окна
-                                   ; 2, закончили рисовать
-    ret                            ; выходим из процедуры
+call Set_position
+;---------------------------------------------
+    cmp  [is_scroll_bar_needed], 0
+     je  @f
+        xor     eax,eax
+        inc     eax
+        mov     [scroll_bar_data_vertical.all_redraw],eax
+; draw for Vertical ScrollBar
+        push    dword scroll_bar_data_vertical
+        call    [scrollbar_ver_draw]
+; reset all_redraw flag 
+        xor     eax,eax
+        mov     [scroll_bar_data_vertical.all_redraw],eax
+  @@:
+;---------------------------------------------
+    mcall 12, 2
+    ret
 
+;---------------------------------------------------------------------
+Set_position:
+
+    mov  eax, dword[prcinfo+46]
+    cmp  eax, [HDoc]
+    mov  byte[is_scroll_bar_needed], 0
+     jnl .quit
+    mov  byte[is_scroll_bar_needed], 1
+
+    mov  eax, [scroll_bar_data_vertical.max_area]
+    mul  dword[prcinfo+46]
+    div  dword[HDoc]
+    cmp  eax, [scroll_bar_data_vertical.max_area]
+    mov  dword[scroll_bar_data_vertical.cur_area],eax
+     jng @f
+    mov  eax, [scroll_bar_data_vertical.max_area]
+    mov  dword[scroll_bar_data_vertical.cur_area], eax
+  @@:
+    mov eax, [HDoc]
+    cmp eax, dword[prcinfo+46]
+    sub eax, dword[prcinfo+46]
+    add eax, 100                    ; height of clear area under text when you are at the end of document
+     jg @f
+    mov eax, 0
+  @@:
+    mul [scroll_bar_data_vertical.position]
+    mov ebx, [scroll_bar_data_vertical.max_area]
+    sub ebx, [scroll_bar_data_vertical.cur_area]
+    div ebx
+    
+    mov dword[top], TOP
+    sub dword[top], eax
+    
+  .quit:
+    ret
+;---------------------------------------------------------------------
 if GUTTER eq 1
    arrow db 0x19
 end if
@@ -523,64 +675,64 @@ end if
 ; интерфейс программы многоязычный
 ;  Вы можете задать язык в MACROS.INC (lang fix язык)
 
-title:
-  db 'RTF Reader v1.    (     ):'
-titlesize:
-btn_text:
-    db 'Load Aligment Color Help    <      >'
-if RENDER eq FREE
-    db '    Zoom+ Zoom- '
-  end if 
-btn_end:
+window_title:           db      'RtfRead v1.033',0
+buf_cmd_lin             rb      0
+is_scroll_bar_needed    db      0
 ;---------------------------------------------------------------------
 l_libs_start:
 
 library01  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
 err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
 
+library02  l_libs system_dir_Boxlib+9, cur_dir_path, buf_cmd_lin, system_dir_Boxlib, \
+err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
+
 end_l_libs:
 ;---------------------------------------------------------------------
-system_dir_ProcLib			db '/sys/lib/proc_lib.obj',0
+system_dir_ProcLib      db '/sys/lib/proc_lib.obj',0
+system_dir_Boxlib       db '/sys/lib/box_lib.obj',0
 
 head_f_i:
-head_f_l	db 'error',0
+head_f_l                db 'error',0
 
-err_message_found_lib2		db 'proc_lib.obj - Not found!',0
+err_message_found_lib1  db 'box_lib.obj - Not found!',0
+err_message_found_lib2  db 'proc_lib.obj - Not found!',0
 
-err_message_import2			db 'proc_lib.obj - Wrong import!',0
+err_message_import1     db 'box_lib.obj - Wrong import!',0
+err_message_import2     db 'proc_lib.obj - Wrong import!',0
 
 ;---------------------------------------------------------------------
 align 4
 ProcLib_import:
-OpenDialog_Init		dd aOpenDialog_Init
-OpenDialog_Start	dd aOpenDialog_Start
-;OpenDialog__Version	dd aOpenDialog_Version
+OpenDialog_Init         dd aOpenDialog_Init
+OpenDialog_Start        dd aOpenDialog_Start
+;OpenDialog__Version    dd aOpenDialog_Version
         dd      0
         dd      0
-aOpenDialog_Init	db 'OpenDialog_init',0
-aOpenDialog_Start	db 'OpenDialog_start',0
-;aOpenDialog_Version	db 'Version_OpenDialog',0
+aOpenDialog_Init        db 'OpenDialog_init',0
+aOpenDialog_Start       db 'OpenDialog_start',0
+;aOpenDialog_Version    db 'Version_OpenDialog',0
 ;---------------------------------------------------------------------
 OpenDialog_data:
-.type			dd 0
-.procinfo		dd procinfo ;+4
-.com_area_name		dd communication_area_name ;+8
-.com_area		dd 0 ;+12
-.opendir_pach		dd temp_dir_pach ;+16
-.dir_default_pach	dd communication_area_default_pach ;+20
-.start_path		dd open_dialog_path ;+24
-.draw_window		dd draw_window ;+28
-.status			dd 0 ;+32
-.openfile_pach		dd fname_buf ;+36
-.filename_area		dd 0	;+40
-.filter_area		dd Filter
+.type                   dd 0
+.procinfo               dd procinfo ;+4
+.com_area_name          dd communication_area_name ;+8
+.com_area               dd 0 ;+12
+.opendir_pach           dd temp_dir_pach ;+16
+.dir_default_pach       dd communication_area_default_pach ;+20
+.start_path             dd open_dialog_path ;+24
+.draw_window            dd draw_window ;+28
+.status                 dd 0 ;+32
+.openfile_pach          dd fname_buf ;+36
+.filename_area          dd 0    ;+40
+.filter_area            dd Filter
 
 communication_area_name:
-	db 'FFFFFFFF_open_dialog',0
+        db 'FFFFFFFF_open_dialog',0
 open_dialog_path:
-	db '/sys/File Managers/opendial',0
+        db '/sys/File Managers/opendial',0
 communication_area_default_pach:
-	db '/rd/1',0
+        db '/rd/1',0
 
 Filter:
 dd Filter.end - Filter
@@ -606,29 +758,9 @@ fileinfo:
 .size  dd 1
   dd I_END
 .name:
-;   db '//'
-;  db ' /HD/1/RTF/texts/FASM.TXT',0
-;  db '/HD/1/RTF/TEST2.RTF',0
-;  db '/HD/1/RTF/texts/index_ru.RTF',0
-;  db '/HD/1/RTF/texts/stas.RTF',0
-;  db '/HD/1/RTF/texts/zed.RTF',0
-;  db '/HD/1/RTF/PRACT.RTF',0
-;  db '/HD/1/RTF/SETUP2.RTF',0
-;  db '/HD/1/RTF/texts/TC_RU.RTF',0
-;  db '/HD/1/RTF/texts/WORD.RTF',0
-;  db '/HD/1/RTF/texts/WORD97.RTF',0
-;  db '/HD/1/RTF/texts/MASTAPP.RTF',0
-;  db '/HD/1/RTF/texts/1c_tor77.RTF',0
-;  db '/HD/1/RTF/texts/RELATION.RTF',0
-;  db '/HD/1/RTF/texts/PLANETS.RTF',0
-;  db '/HD/1/RTF/texts/LOTRRUS.RTF',0
-;  db '/HD/1/RTF/texts/RULEBOOK.RTF',0
-;  db '/HD/1/RTF/texts/RULEBK2.RTF',0
-;  db '/HD/1/RTF/texts/GLEB.RTF',0
-;  db '/HD/1/RTF/texts/DWG13_14.RTF',0
-;  db '/HD/1/RTF/texts/LK.RTF',0
 
-;  db '/HD/1/RTF/texts/JUSTIFY.RTF',0
+;  db '/HD/1/RTF/texts/index_ru.RTF',0
+
    rb  256-($-.name)
 ;---------------------------------------------------------------------
 ;blind db ?
@@ -681,7 +813,7 @@ fname_size dd ?
 max_block dd ?
 cur_block dd ?
 HDoc dd ?
-HClick dd ?
+;HClick dd ?
 top dw ?
 line_count dd ?
 par_count  dd ?
@@ -700,6 +832,211 @@ listptr dd ?
 szKeyword rb 31
 szParameter rb 21
 block_end dd ?
+
+;---------------------------------------------------------------------
+align   4
+Box_lib_import:
+
+menu_bar_draw           dd aMenu_bar_draw
+menu_bar_mouse          dd aMenu_bar_mouse
+
+scrollbar_ver_draw      dd aScrollbar_ver_draw
+scrollbar_ver_mouse     dd aScrollbar_ver_mouse
+
+        dd 0
+        dd 0
+
+aMenu_bar_draw          db 'menu_bar_draw',0
+aMenu_bar_mouse         db 'menu_bar_mouse',0
+;aVersion_menu_bar       db 'version_menu_bar',0
+
+aScrollbar_ver_draw     db 'scrollbar_v_draw',0
+aScrollbar_ver_mouse    db 'scrollbar_v_mouse',0
+;---------------------------------------------------------------------
+align   4
+menu_data_1:
+.type:          dd 0    ;+0
+.x:
+.size_x         dw 40   ;+4
+.start_x        dw 2    ;+6
+.y:
+.size_y         dw 15   ;+8
+.start_y        dw 2    ;+10
+.text_pointer:  dd menu_text_area       ;0      ;+12
+.pos_pointer:   dd menu_text_area.1     ;0      ;+16
+.text_end       dd menu_text_area.end   ;0      ;+20
+.mouse_pos      dd 0    ;+24
+.mouse_keys     dd 0    ;+28
+.x1:
+.size_x1        dw 40   ;+32
+.start_x1       dw 2    ;+34
+.y1:
+.size_y1        dw 100  ;+36
+.start_y1       dw 18   ;+38
+.bckg_col       dd 0xeeeeee     ;+40
+.frnt_col       dd 0xff ;+44
+.menu_col       dd 0xffffff     ;+48
+.select         dd 0    ;+52
+.out_select     dd 0    ;+56
+.buf_adress     dd 0    ;+60
+.procinfo       dd 0    ;+64
+.click          dd 0    ;+68
+.cursor         dd 0    ;+72
+.cursor_old     dd 0    ;+76
+.interval       dd 16   ;+80
+.cursor_max     dd 0    ;+84
+.extended_key   dd 0    ;+88
+.menu_sel_col   dd 0x00cc00     ;+92
+.bckg_text_col  dd 0    ;+96
+.frnt_text_col  dd 0xffffff     ;+100
+.mouse_keys_old dd 0    ;+104
+.font_height    dd 8    ;+108
+.cursor_out     dd 0    ;+112
+.get_mouse_flag dd 0    ;+116
+
+menu_text_area:
+        db 'File',0
+.1:
+        db 'Open',0
+        db 'Exit',0
+.end:
+        db 0
+;---------------------------------------------------------------------
+align   4
+menu_data_2:
+.type:          dd 0    ;+0
+.x:
+.size_x         dw 40   ;+4
+.start_x        dw 43   ;+6
+.y:
+.size_y         dw 15   ;+8
+.start_y        dw 2    ;+10
+.text_pointer:  dd menu_text_area_2     ;0      ;+12
+.pos_pointer:   dd menu_text_area_2.1   ;0      ;+16
+.text_end       dd menu_text_area_2.end ;0      ;+20
+.mouse_pos      dd 0    ;+24
+.mouse_keys     dd 0    ;+28
+.x1:
+.size_x1        dw 50   ;+32
+.start_x1       dw 43   ;+34
+.y1:
+.size_y1        dw 100  ;+36
+.start_y1       dw 18   ;+38
+.bckg_col       dd 0xeeeeee     ;+40
+.frnt_col       dd 0xff ;+44
+.menu_col       dd 0xffffff     ;+48
+.select         dd 0    ;+52
+.out_select     dd 0    ;+56
+.buf_adress     dd 0    ;+60
+.procinfo       dd 0    ;+64
+.click          dd 0    ;+68
+.cursor         dd 0    ;+72
+.cursor_old     dd 0    ;+76
+.interval       dd 16   ;+80
+.cursor_max     dd 0    ;+84
+.extended_key   dd 0    ;+88
+.menu_sel_col   dd 0x00cc00     ;+92
+.bckg_text_col  dd 0    ;       +96
+.frnt_text_col  dd 0xffffff     ;+100
+.mouse_keys_old dd 0    ;+104
+.font_height    dd 8    ;+108
+.cursor_out     dd 0    ;+112
+.get_mouse_flag dd 0    ;+116
+
+menu_text_area_2:
+        db 'View',0
+.1:
+        db 'Zoom +',0
+        db 'Zoom -',0
+        db ' >  >',0
+        db '  << ',0
+        db 'Align',0
+        db 'Color',0
+.end:
+        db 0
+;---------------------------------------------------------------------
+align   4
+menu_data_3:
+.type:          dd 0    ;+0
+.x:
+.size_x         dw 40   ;+4
+.start_x        dw 84   ;+6
+.y:
+.size_y         dw 15   ;+8
+.start_y        dw 2    ;+10
+.text_pointer:  dd menu_text_area_3     ;0      ;+12
+.pos_pointer:   dd menu_text_area_3.1   ;0      ;+16
+.text_end       dd menu_text_area_3.end ;0      ;+20
+.mouse_pos      dd 0    ;+24
+.mouse_keys     dd 0    ;+28
+.x1:
+.size_x1        dw 40   ;+32
+.start_x1       dw 84   ;+34
+.y1:
+.size_y1        dw 100  ;+36
+.start_y1       dw 18   ;+38
+.bckg_col       dd 0xeeeeee     ;+40
+.frnt_col       dd 0xff ;+44
+.menu_col       dd 0xffffff     ;+48
+.select         dd 0    ;+52
+.out_select     dd 0    ;+56
+.buf_adress     dd 0    ;+60
+.procinfo       dd 0    ;+64
+.click          dd 0    ;+68
+.cursor         dd 0    ;+72
+.cursor_old     dd 0    ;+76
+.interval       dd 16   ;+80
+.cursor_max     dd 0    ;+84
+.extended_key   dd 0    ;+88
+.menu_sel_col   dd 0x00cc00     ;+92
+.bckg_text_col  dd 0    ;       +96
+.frnt_text_col  dd 0xffffff     ;+100
+.mouse_keys_old dd 0    ;+104
+.font_height    dd 8    ;+108
+.cursor_out     dd 0    ;+112
+.get_mouse_flag dd 0    ;+116
+
+menu_text_area_3:
+        db 'Help',0
+.1:
+        db 'Home',0
+.end:
+        db 0
+;---------------------------------------------------------------------
+align   4
+scroll_bar_data_vertical:
+.x:
+.size_x         dw scroll_width_size;+0
+.start_x        dw WINW-25  ;+2
+.y:
+.size_y         dw WINH-45  ;+4
+.start_y        dw 19   ;+6
+.btn_high       dd scroll_width_size    ;+8
+.type           dd 1    ;+12
+.max_area       dd 300       ;+16
+.cur_area       dd 50   ;+20
+.position       dd 0    ;+24
+.bckg_col       dd 0xAAAAAA     ;+28
+.frnt_col       dd 0xCCCCCC     ;+32
+.line_col       dd 0    ;+36
+.redraw         dd 0    ;+40
+.delta          dw 0    ;+44
+.delta2         dw 0    ;+46
+.run_x:
+.r_size_x       dw 0    ;+48
+.r_start_x      dw 0    ;+50
+.run_y:
+.r_size_y       dw 0    ;+52
+.r_start_y      dw 0    ;+54
+.m_pos          dd 0    ;+56
+.m_pos_2        dd 0    ;+60
+.m_keys         dd 0    ;+64
+.run_size       dd 0    ;+68
+.position2      dd 0    ;+72
+.work_size      dd 0    ;+76
+.all_redraw     dd 0    ;+80
+.ar_offset      dd AR_OFFSET   ;+84
+;---------------------------------------------------------------------
 I_END:                             ; метка конца программы
 
 procinfo process_information
@@ -712,8 +1049,8 @@ rb ESPSIZE
 temp_dir_pach:
         rb 4096
 cur_dir_path:
-	rb 4096
+        rb 4096
 library_path:
-	rb 4096
+        rb 4096
 ;---------------------------------------------------------------------
 esp_end:
