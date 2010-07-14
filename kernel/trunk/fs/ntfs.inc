@@ -740,6 +740,7 @@ ntfs_read_attr:
         and     eax, 0x1FF
         mov     [ntfs_cur_tail], eax
 @@:
+	DEBUGF 1,'tail=%x, size=%x\n',[ntfs_cur_tail],[ntfs_cur_size]
         cmp     [ntfs_cur_size], 0
         jz      .okret
         mov     eax, [ntfs_cur_offs]
@@ -774,6 +775,7 @@ ntfs_read_attr:
         mov     ecx, [ntfs_cur_size]
 @@:
         mov     ebx, [ntfs_cur_buf]
+        DEBUGF 1,'eax=%x,ecx=%x,ebx=%x,offs=%x,size=%x\n',eax,ecx,ebx,[ntfs_cur_offs],[ntfs_cur_size]
 @@:
         call    hd_read
         cmp     [hd_error], 0
@@ -785,6 +787,7 @@ ntfs_read_attr:
         dec     [ntfs_cur_size]
         inc     [ntfs_cur_offs]
         loop    @b
+        DEBUGF 1,'cur_size=%x\n',[ntfs_cur_size]
         pop     ecx
         xor     eax, eax
         xor     edx, edx
@@ -873,6 +876,16 @@ ntfs_read_file_record:
 .errret:
         xor     eax, eax
         ret
+
+ntfs_read_file_record_sysfn:
+	mov	eax, ebx
+	call	ntfs_read_file_record
+	mov	[esp+20h], eax
+	mov	edi, ecx
+	mov	esi, [ntfs_data.frs_buffer]
+	mov	ecx, 0x400/4
+	rep	movsd
+	ret
 
 ntfs_restore_usa_frs:
         mov     eax, [ntfs_data.frs_size]
@@ -968,11 +981,15 @@ ntfs_find_lfn:
         mov     [ntfs_cur_buf], eax
         call    ntfs_read_attr
         jnc     @f
+        DEBUGF 1,'ntfs_find_lfn: $INDEX_ROOT not found in %s\n',esi
 .ret:
         ret
 @@:
         cmp     [ntfs_cur_read], 0x20
-        jc      .ret
+        jnc     @f
+        DEBUGF 1,'ntfs_find_lfn: $INDEX_ROOT too small in %s\n',esi
+        jmp     .ret
+@@:
         pushad
         mov     esi, [ntfs_data.cur_index_buf]
         mov     eax, [esi+14h]
@@ -983,6 +1000,7 @@ ntfs_find_lfn:
         shr     eax, 9
         cmp     eax, [ntfs_data.cur_index_size]
         ja      @f
+        DEBUGF 1,'ntfs_find_lfn: err1 in %s\n',[esp+4]
 .stc_ret:
         popad
         stc
@@ -998,6 +1016,7 @@ ntfs_find_lfn:
         call    kernel_alloc
         test    eax, eax
         jnz     @f
+        DEBUGF 1,'ntfs_find_lfn: err2 in %s\n',[esp+4]
         and     [ntfs_data.cur_index_size], 0
         and     [ntfs_data.cur_index_buf], 0
         jmp     .stc_ret
@@ -1015,7 +1034,10 @@ ntfs_find_lfn:
         call    kernel_alloc
         pop     ebp esi
         test    eax, eax
-        jz      .stc_ret
+        jnz     @f
+        DEBUGF 1,'ntfs_find_lfn: err3 in %s\n',[esp+4]
+        jmp     .stc_ret
+@@:
         mov     edi, eax
         mov     ecx, [ntfs_data.cur_index_size]
         shl     ecx, 9-2
@@ -1067,7 +1089,10 @@ ntfs_find_lfn:
         pop     esi
 .subnode:
         test    byte [esi+0Ch], 1
-        jz      .notfound
+        jnz     @f
+        DEBUGF 1,'ntfs_find_lfn: err4 in %s\n',[esp+4]
+        jmp     .notfound
+@@:
         movzx   eax, word [esi+8]
         mov     eax, [esi+eax-8]
         mul     [ntfs_data.sectors_per_cluster]
@@ -1081,15 +1106,22 @@ ntfs_find_lfn:
         mov     eax, ebp
         shl     eax, 9
         cmp     [ntfs_cur_read], eax
-        jnz     .notfound
+        jz      @f
+        DEBUGF 1,'ntfs_find_lfn: err5 in %s\n',[esp+4]
+        jmp     .notfound
+@@:
         cmp     dword [esi], 'INDX'
-        jnz     .notfound
+        jz      @f
+        DEBUGF 1,'ntfs_find_lfn: err6 in %s\n',[esp+4]
+        jmp     .notfound
+@@:
         mov     ebx, esi
         call    ntfs_restore_usa
         jc      .notfound
         add     esi, 0x18
         jmp     .scanloop
 .notfound:
+        DEBUGF 1,'ntfs_find_lfn: .notfound in %s\n',[esp+4]
         popad
         stc
         ret
@@ -1107,6 +1139,7 @@ ntfs_find_lfn:
         pop     esi
         mov     eax, [esi]
         mov     [ntfs_cur_iRecord], eax
+        DEBUGF 1,'ntfs_find_lfn: 0x%x is irecord for %s\n',eax,[esp+4]
         mov     [esp+1Ch], esi
         mov     [esp+4], edi
         popad
@@ -1150,6 +1183,7 @@ ntfs_HdRead:
         pop     eax
         ret
 .found:
+	DEBUGF 1,'ntfs_HdRead: irecord is 0x%x\n',[ntfs_cur_iRecord]
         mov     [ntfs_cur_attr], 0x80   ; $DATA
         and     [ntfs_cur_offs], 0
         and     [ntfs_cur_size], 0
@@ -1228,11 +1262,14 @@ ntfs_HdRead:
         mov     eax, ecx
         shr     eax, 9
         mov     [ntfs_cur_size], eax
+;        DEBUGF 1,'ntfs_HdRead: [ntfs_cur_offs]=%x\n',[ntfs_cur_offs]
+;        DEBUGF 1,'ntfs_HdRead: [ntfs_cur_size]=%x\n',[ntfs_cur_size]
         add     eax, [ntfs_cur_offs]
         push    eax
         call    ntfs_read_attr.continue
         pop     [ntfs_cur_offs]
         mov     eax, [ntfs_cur_read]
+;        DEBUGF 1,'ntfs_HdRead: [ntfs_cur_read]=%x\n',[ntfs_cur_read]
         add     [esp+10h], eax
         mov     eax, ecx
         and     eax, not 0x1FF
@@ -1285,6 +1322,7 @@ ntfs_HdReadFolder:
         jz      .doit
         call    ntfs_find_lfn
         jnc     .doit2
+        DEBUGF 1,'ntfs_HdReadFolder: ntfs_find_lfn failed\n'
 .notfound:
         or      ebx, -1
         push    ERROR_FILE_NOT_FOUND
@@ -1299,7 +1337,10 @@ ntfs_HdReadFolder:
         mov     [ntfs_cur_size], 1
         mov     [ntfs_cur_buf], ntfs_bitmap_buf
         call    ntfs_read_attr
-        jc      .notfound
+        jnc     @f
+        DEBUGF 1,'ntfs_HdReadFolder: no $STANDARD_INFORMATION\n'
+        jmp     .notfound
+@@:
         mov     [ntfs_cur_attr], 0x90   ; $INDEX_ROOT
         and     [ntfs_cur_offs], 0
         mov     eax, [ntfs_data.cur_index_size]
@@ -1308,6 +1349,7 @@ ntfs_HdReadFolder:
         mov     [ntfs_cur_buf], eax
         call    ntfs_read_attr
         jnc     .ok
+        DEBUGF 1,'ntfs_HdReadFolder: no $INDEX_ROOT\n'
         cmp     [hd_error], 0
         jz      .notfound
         or      ebx, -1
