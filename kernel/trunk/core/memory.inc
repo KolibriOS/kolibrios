@@ -1423,9 +1423,9 @@ proc set_mtrr stdcall, base:dword,size:dword,mem_type:dword
            mov ebx, [size]
            dec ebx
            mov eax, 0xFFFFFFFF
-;           mov edx, 0x0000000F
+           mov edx, 0x0000000F
            sub eax, ebx
-;           sbb edx, 0
+           sbb edx, 0
            or eax, 0x800
            inc ecx
            wrmsr
