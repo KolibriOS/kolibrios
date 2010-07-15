@@ -112,7 +112,7 @@ ARP_init:
 ;
 ;  This function resets all ARP variables
 ;
-;  IN: eax = IPv4 address
+;  IN:  eax = IPv4 address
 ;  OUT: eax = -1 on error, else eax = first two bytes of mac
 ;                   ( high 16 bits are zero)
 ;       ebx = last four bytes of mac                                  ; TODO: special eax value for 'request send'
@@ -130,18 +130,18 @@ ARP_IP_to_MAC:
     ; else
     ;  destination is remote, so pass to gateway
 
-	xor	edx, edx ; TODO: find device num in edx
+	xor	edx, edx ;;; TODO: find device num in edx
 
-	mov	ebx, [IP_LIST+edx]
-	and	ebx, [SUBNET_LIST+edx]
+	mov	ebx, [IP_LIST + edx]
+	and	ebx, [SUBNET_LIST + edx]
 
 	mov	ecx, eax
-	and	ecx, [SUBNET_LIST+edx]
+	and	ecx, [SUBNET_LIST + edx]
 
 	cmp	ecx, ebx
 	je	.local
 
-	mov	eax, [GATEWAY_LIST+edx]
+	mov	eax, [GATEWAY_LIST + edx]
 	DEBUGF 1,"requested IP is not on subnet, using gateway\n"
 
   .local:
@@ -274,7 +274,8 @@ ARP_create_request:
 	DEBUGF 1,"ARP Packet for device %x created successfully\n", ebx
 
 	push	edx ecx
-	jmp	NET_send
+	call	[ebx + NET_DEVICE.transmit]
+	ret
 
   .exit:
 	add	esp, 8
@@ -572,7 +573,8 @@ ARP_handler:
 
 	DEBUGF	1,"ARP_Handler - Sending reply \n"
 
-	jmp	NET_send				      ; And send it!
+	call	[ebx + NET_DEVICE.transmit]
+	ret
 
      .exit:
 	call	kernel_free

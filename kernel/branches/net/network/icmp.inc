@@ -209,8 +209,8 @@ ICMP_input:
 	pop	ecx edx ebx
 	mov	word [edx + ICMP_Packet.Checksum], ax
 
-	jmp	NET_send						  ; Send the reply
-									    ; and return to caller of this proc
+	call	[ebx + NET_DEVICE.transmit]
+	ret
 
 
 
@@ -251,7 +251,7 @@ ICMP_input:
 	add	esp, 4
 	sub	edx, esi
 	mov	edi, edx
-;;;        jmp     SOCKET_input
+	jmp	SOCKET_input
 
        .dump:
 	DEBUGF	1,"ICMP_Handler - dumping\n"
@@ -264,24 +264,22 @@ ICMP_input:
 
 ;-----------------------------------------------------------------
 ;
-; Note: ICMP only works on top of IP protocol :)
+; ICMP_output
 ;
-; inputs:
-;
-; eax = dest ip
-; ebx = source ip
-; ecx = data length
-; dh = type
-; dl = code
-; high 16 bits of edx = fragment id (for IP header)
-; esi = data offset
-; edi = identifier shl 16 + sequence number
+; IN:  eax = dest ip
+;      ebx = source ip
+;      ecx = data length
+;      dh  = type
+;      dl  = code
+;      high 16 bits of edx = fragment id (for IP header)
+;      esi = data offset
+;      edi = identifier shl 16 + sequence number
 ;
 ;-----------------------------------------------------------------
 align 4
 ICMP_output:
 
-	DEBUGF 1,"Create ICMP Packet\n"
+	DEBUGF	1,"Creating ICMP Packet\n"
 
 	push	esi edi edx
 
@@ -292,7 +290,7 @@ ICMP_output:
 	call	IPv4_create_packet
 	jz	.exit
 
-	DEBUGF 1,"full icmp packet size: %u\n", edx
+	DEBUGF	1,"full icmp packet size: %u\n", edx
 
 	pop	eax
 	mov	word [edi + ICMP_Packet.Type], ax	; Write both type and code bytes at once
@@ -320,13 +318,12 @@ ICMP_output:
 	rep	movsb
 
 	sub	edi, edx				;;; TODO: find a better way to remember start of packet
-	mov	ecx, [ebx + ETH_DEVICE.transmit]
-	push	edx edi ecx
-	DEBUGF 1,"Sending ICMP Packet\n"
-	ret						; Send the packet (create_packet routine outputs pointer to routine to send packet in eax)
-
+	push	edx edi
+	DEBUGF	1,"Sending ICMP Packet\n"
+	call	[ebx + NET_DEVICE.transmit]
+	ret
   .exit:
-	DEBUGF 1,"Creating ICMP Packet failed\n"
+	DEBUGF	1,"Creating ICMP Packet failed\n"
 	add	esp, 3*4
 	ret
 

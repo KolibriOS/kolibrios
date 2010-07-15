@@ -187,47 +187,49 @@ macro virt_to_dma { ; input is eax
 }
 
 macro NET_DEVICE {
-      .type		dd ?
+
+	.type		dd ?	; Type field
+	.mtu		dd ?	; Maximal Transmission Unit
+	.name		dd ?	; Ptr to 0 terminated string
+
+	.unload 	dd ?	; Ptrs to driver functions
+	.reset		dd ?	;
+	.transmit	dd ?	;
+
+	.bytes_tx	dq ?	; Statistics, updated by the driver
+	.bytes_rx	dq ?	;
+	.packets_tx	dd ?	;
+	.packets_rx	dd ?	;
+
+	.end:
 }
 
 ;struc ETH_DEVICE {
 macro ETH_DEVICE {
       NET_DEVICE
-; pointers to procedures
-      .unload		dd ?
-      .reset		dd ?
-      .transmit 	dd ?
-      .set_MAC		dd ?
-      .get_MAC		dd ?
-      .set_mode 	dd ?
-      .get_mode 	dd ?
-; status
-      .bytes_tx 	dq ?
-      .bytes_rx 	dq ?
-      .packets_tx	dd ?
-      .packets_rx	dd ?
-      .mode		dd ?
-      .name		dd ?
-      .mac		dp ?
+
+	.set_mode	dd ?
+	.get_mode	dd ?
+
+	.set_MAC	dd ?
+	.get_MAC	dd ?
+
+	.mode		dd ?
+	.mac		dp ?
+			dp ?	; qword alignment
+
 }
 
 
 
 macro SLIP_DEVICE {
 	NET_DEVICE
-; pointers to procedures
-	.unload 	dd ?
-	.reset		dd ?
-	.transmit	dd ?
+
 	.set_mode	dd ?
 	.get_mode	dd ?
-; status
-	.bytes_tx	dq ?
-	.bytes_rx	dq ?
-	.packets_tx	dd ?
-	.packets_rx	dd ?
+
 	.mode		dd ?
-	.name		dd ?
+
 }
 
 macro GetRealAddr {
@@ -235,7 +237,7 @@ macro GetRealAddr {
 	push	eax
 	call	GetPgAddr
 	and	dword [esp], (PAGESIZE - 1)
-	add	eax, dword [esp]
+	or	eax, dword [esp]
 	add	esp, 4
 
 }

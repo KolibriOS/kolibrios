@@ -58,6 +58,22 @@ TCP_OPT_MAXSEG		equ 2		; Maximum Segment Size.
 TCP_OPT_WINDOW		equ 3		; window scale
 TCP_OPT_TIMESTAMP	equ 8
 
+; Fundamental timer values
+TCP_time_MSL		equ 47		; max segment lifetime (30s)
+TCP_time_re_min 	equ 2		; min retransmission (1,28s)
+TCP_time_re_max 	equ 100 	; max retransmission (64s)
+TCP_time_pers_min	equ 8		; min persist (5,12s)
+TCP_time_pers_max	equ 94		; max persist (60,16s)
+TCP_time_keep_init	equ 118 	; connectione stablishment (75,52s)
+TCP_time_keep_idle	equ 4608	; idle time before 1st probe (2h)
+TCP_time_keep_interval	equ 118 	; between probes when no response (75,52s)
+TCP_time_rtt_default	equ 5		; default Round Trip Time (3,2s)
+
+; timer constants
+TCP_max_rxtshift	equ 12		; max retransmissions waiting for ACK
+TCP_max_keepcnt 	equ 8		; max keepalive probes
+
+
 struct	TCP_segment
 	.SourcePort		dw ?
 	.DestinationPort	dw ?
@@ -113,24 +129,56 @@ TCP_init:
 	mov	ecx, (6*IP_MAX_INTERFACES)
 	rep	stosd
 
-	mov	[TCP_sequence_num],1
+	mov	[TCP_sequence_num], 1
+
+	ret
+
+
+;----------------------
+;
+;
+;----------------------
+align 4
+TCP_timer_160ms:
+
+	mov	eax, net_sockets
+  .loop:
+	mov	eax, [eax + SOCKET.NextPtr]
+	or	eax, eax
+	jz	.exit
+
+	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	jne	.loop
+
+	dec	[eax + TCP_SOCKET.timer_ack]
+	jnz	.loop
+
+	DEBUGF	1,"TCP ack for socket %x expired, time to piggyback!\n", eax
+
+	push	eax
+	call	TCP_respond
+	pop	eax
+
+	jmp	.loop
+
+  .exit:
 
 	ret
 
 
 ;-----------------------------------------------------------------
 ;
-; decrease socket ttls
-;
-; IN: /
-; OUT: /
-;
-; destroys: eax
 ;
 ;-----------------------------------------------------------------
 align 4
-TCP_timer_1000ms:
-; scan through all the active TCP sockets, decrementing active timers
+TCP_timer_640ms:
+
+; Update TCP sequence number
+
+	add	[TCP_sequence_num], 64000
+
+; scan through all the active TCP sockets, decrementing ALL timers
+; timers do not have the chance to wrap because of the keepalive timer will kill the socket when it expires
 
 	mov	eax, net_sockets
   .loop:
@@ -142,60 +190,38 @@ TCP_timer_1000ms:
 	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
 	jne	.loop
 
-	cmp	[eax + TCP_SOCKET.t_timer], 0
-	jne	.decrement_tcb
-  ;;;;;;      cmp     [eax + TCP_SOCKET.wndsizeTimer], 0
-	jne	.decrement_wnd
-	jmp	.loop
+	dec    [eax + TCP_SOCKET.timer_retransmission]
+	jnz	.check_more2
 
-  .decrement_tcb:
-; decrement it, delete socket if TCB timer = 0 & socket in timewait state
-	dec	[eax + TCP_SOCKET.t_timer]
+	DEBUGF	1,"socket %x: Retransmission timer expired\n", eax
+
+	push	eax
+	call	TCP_output
+	pop	eax
+
+  .check_more2:
+	dec	[eax + TCP_SOCKET.timer_keepalive]
+	jnz	.check_more3
+
+	DEBUGF	1,"socket %x: Keepalive expired\n", eax
+
+	;;; TODO: check socket state and handle accordingly
+
+  .check_more3:
+	dec	[eax + TCP_SOCKET.timer_timed_wait]
+	jnz	.check_more5
+
+	DEBUGF	1,"socket %x: 2MSL timer expired\n", eax
+
+  .check_more5:
+	dec	[eax + TCP_SOCKET.timer_persist]
 	jnz	.loop
 
-	cmp	[eax + TCP_SOCKET.t_state], TCB_TIMED_WAIT
-	jne	.loop
+	DEBUGF	1,"socket %x: persist timer expired\n", eax
 
-	push	[eax + SOCKET.NextPtr]
-	call	SOCKET_free
-	pop	eax
-	jmp	.check_only
-
-  .decrement_wnd:
-;;;;;;        dec     [eax + TCP_SOCKET.wndsizeTimer]
-
+	jmp	.loop
   .exit:
 	ret
-
-
-
-;----------------------
-;
-; TCP_500ms
-;
-;----------------------
-align 4
-TCP_500ms:
-
-	add	[TCP_sequence_num], 64000
-
-	ret
-
-
-
-;----------------------
-;
-; TCP_10ms
-;
-;----------------------
-align 4
-TCP_10ms:
-
-	; todo: decrease timers
-
-	ret
-
-
 
 
 ;-----------------------------------------------------------------
@@ -374,8 +400,9 @@ TCP_input:
 ;-------------------------------------
 ; Reset idle timer and keepalive timer
 
+	;;;; TODO: idle timer?
 
-; TODO
+	mov	[ebx + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval
 
 ;-----------------------------------------
 ; Process TCP options if not in LISTEN state
@@ -475,13 +502,14 @@ TCP_input:
 ; Delete acknowledged bytes from send buffer
 
 ; Stop retransmit timer
+	mov	[ebx + TCP_SOCKET.timer_ack], 0
 
 ; Awaken waiting processes
+	mov	eax, ebx
+	call	SOCKET_notify_owner
 
 ; Generate more output
-
-
-
+	call	TCP_output
 
 	jmp	.drop
 
@@ -518,8 +546,9 @@ TCP_input:
 	add	[ebx + TCP_SOCKET.RCV_NXT], ecx
 
 ; Add the data to the socket buffer
-
-; The receiving process is awakened (by sorwakeup).
+	mov	eax, ebx
+	;;; mov...
+	call	SOCKET_input
 
 ; The delayed-ACK flag is set and the input processing is complete.
 
@@ -679,8 +708,8 @@ align 4
 	jle	@f
 	mov	[ebx + TCP_SOCKET.SND_NXT], eax
 
-
-; TODO: turn off retransmission timer
+	mov	[ebx + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval
+	mov	[ebx + TCP_SOCKET.timer_retransmission], 0
 
 	mov	eax, [edx + TCP_segment.SequenceNumber]
 	mov	[ebx + TCP_SOCKET.IRS], eax
@@ -937,18 +966,6 @@ align 4
 	jg	.ack_dup
 	jl	.ack_nodup
 
-;        dd      .ack_nodup      ;TCB_CLOSED
-;        dd      .ack_nodup      ;TCB_LISTEN
-;        dd      .ack_nodup      ;TCB_SYN_SENT
-;        dd      .ack_syn_rcvd   ;TCB_SYN_RECEIVED
-;        dd      .ack_dup        ;TCB_ESTABLISHED
-;        dd      .ack_dup        ;TCB_CLOSE_WAIT
-;        dd      .ack_dup        ;TCB_FIN_WAIT_1
-;        dd      .ack_dup        ;TCB_CLOSING
-;        dd      .ack_dup        ;TCB_LAST_ACK
-;        dd      .ack_dup        ;TCB_FIN_WAIT_2
-;        dd      .ack_dup        ;TCB_TIMED_WAIT
-
 	;;;;;
 
   .ack_dup:
@@ -960,7 +977,7 @@ align 4
 	;;;; 887
 
 ;-------------------------------------------------
-; If the congestion window was infalted to account
+; If the congestion window was inflated to account
 ; for the other side's cached packets, retrace it
 
 	;;;; 888 -  902
@@ -970,6 +987,14 @@ align 4
 ; RTT measurements and retransmission timer
 
 	;;;;; 903 - 926
+
+	mov	[ebx + TCP_SOCKET.timer_retransmission], 0
+
+	mov	eax, [ebx + TCP_SOCKET.SND_MAX]
+	cmp	eax, [edx + TCP_segment.AckNumber]
+	je	.all_outstanding
+	mov	[ebx + TCP_SOCKET.timer_retransmission], 120 ;;;; TODO: correct this value
+  .all_outstanding:
 
 
 ;-------------------------------------------
@@ -1428,7 +1453,7 @@ TCP_pull_out_of_band:
 ;
 ; TCP_output
 ;
-; IN: eax = socket pointer
+; IN:  eax = socket pointer
 ;;     esi = ptr to data
 ;;     ecx = number of data bytes
 ;
@@ -1614,7 +1639,7 @@ TCP_output:
 
   .enter_persist:
 
-	DEBUGF	1,"Entering pesist state\n"
+	DEBUGF	1,"Entering persist state\n"
 
 
 
@@ -1748,7 +1773,7 @@ TCP_output:
 ;;;;        jz      .fail
 
 	push	edx eax
-	call	NET_send
+	call	[ebx + NET_DEVICE.transmit]
 	ret
 
 ;----------------
@@ -1831,11 +1856,8 @@ TCP_output:
 
 
 	DEBUGF 1,"Sending TCP Packet to device %x\n", ebx
-	mov	esi, [ebx + ETH_DEVICE.transmit]
-
+	call	[ebx + NET_DEVICE.transmit]
 	ret
-
-
 
 ;-------------------------
 ;
@@ -1902,11 +1924,14 @@ TCP_drop:
 
 ;---------------------------------------
 ;
-; TCP_respond
+; TCP_ack
 ;
-; The easy way to send a RST/ACK segment
+; The easy way to send an ACK/RST/keepalive segment
 ;
 ;  IN:  eax = socket ptr
+;       -or-
+;       edx = packet ptr (eax must be 0)
+;        cl = flags
 ;
 ;  OUT: /
 ;
@@ -1915,6 +1940,113 @@ align 4
 TCP_respond:
 
 	DEBUGF	1,"TCP_respond\n"
+
+;---------------------
+; Create the IP packet
+
+	push	cx eax edx
+	mov	ebx, [eax + IP_SOCKET.LocalIP]
+	mov	eax, [eax + IP_SOCKET.RemoteIP]
+	mov	ecx, TCP_segment.Data
+	mov	di , IP_PROTO_TCP
+	call	IPv4_create_packet
+	test	edi, edi
+	jz	.error
+
+;---------------------------
+; Now fill in the TCP header
+
+	pop	ecx
+	pop	esi
+
+	test	esi, esi
+;        jz
+
+
+	push	edx eax
+
+	push	dword .checksum
+	je    .use_segment
+	jmp   .use_socket
+
+;---------------------
+; Fill in the checksum
+
+  .checksum:
+
+	push	[esi + IP_SOCKET.LocalIP]
+	push	[esi + IP_SOCKET.RemoteIP]
+	lea	esi, [edi - 20]
+	xor	ecx, ecx
+	call	TCP_checksum
+
+;--------------------
+; And send the segment
+
+	call	[ebx + NET_DEVICE.transmit]
+	ret
+
+  .error:
+	DEBUGF	1,"TCP_ack failed\n"
+	add	esp, 4
+
+	ret
+
+;---------------------------------------------------
+; Fill in the TCP header by using a received segment
+
+  .use_segment:
+
+	mov	ax, [esi + TCP_segment.DestinationPort]
+	rol	ax, 8
+	stosw
+	mov	ax, [esi + TCP_segment.SourcePort]
+	rol	ax, 8
+	stosw
+	mov	eax, [esi + TCP_segment.AckNumber]
+	bswap	eax
+	stosd
+	xor	eax, eax
+	stosd
+	mov	al, 0x50	; Dataoffset: 20 bytes
+	stosb
+	mov	al, cl
+	stosb
+	mov	ax, 1280
+	rol	ax, 8
+	stosw			; window
+	xor	eax, eax
+	stosd			; checksum + urgentpointer
+
+	ret
+
+
+;-----------------------------------------------
+; Fill in the TCP header by using the socket ptr
+
+  .use_socket:
+
+	mov	ax, [esi + TCP_SOCKET.LocalPort]
+	rol	ax, 8
+	stosw
+	mov	ax, [esi + TCP_SOCKET.RemotePort]
+	rol	ax, 8
+	stosw
+	mov	eax, [esi + TCP_SOCKET.SND_NXT]
+	bswap	eax
+	stosd
+	mov	eax, [esi + TCP_SOCKET.RCV_NXT]
+	bswap	eax
+	stosd
+	mov	al, 0x50	; Dataoffset: 20 bytes
+	stosb
+	mov	al, cl
+	stosb
+	mov	ax, [esi + TCP_SOCKET.RCV_WND]
+	rol	ax, 8
+	stosw			; window
+	xor	eax, eax
+	stosd			; checksum + urgentpointer
 
 	ret
 

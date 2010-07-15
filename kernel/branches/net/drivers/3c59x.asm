@@ -1,21 +1,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
+;;  3Com network driver for KolibriOS                           ;;
+;;                                                              ;;
+;;  Ported to KolibriOS net-branch by hidnplayr (28/05/10)      ;;
+;;                                                              ;;
+;;  Thanks to: scrap metal recyclers, whom provide me with      ;;
+;;                         loads of hardware                    ;;
+;;             diamond: who makes me understand KolibriOS       ;;
+;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  Ethernet Driver for KolibriOS
-;;
-;;  3c59x.asm
-;;  Ported to KolibriOS net-branch by hidnplayr (28/05/10)
-;;
-;;  Thanks to: scrap metal recyclers, whom provide me with loads of hardware
-;;             diamond: who makes me understand KolibriOS
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                         ;;
@@ -84,13 +80,14 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-PROMISCIOUS equ 1
-
-
 format MS COFF
 
 	API_VERSION		equ 0x01000100
+	DRIVER_VERSION		equ 5
+
+	MAX_DEVICES		equ 16
+	FORCE_FD		equ 0  ; forcing full duplex mode makes sense at some cards and link types
+	PROMISCIOUS		equ 0  ; enables promiscous mode
 
 	DEBUG			equ 1
 	__DEBUG__		equ 1
@@ -101,55 +98,18 @@ include 'imports.inc'
 include 'fdo.inc'
 include 'netdrv.inc'
 
-
-OS_BASE 	equ 0
-new_app_base	equ 0x60400000
-PROC_BASE	equ OS_BASE+0x0080000
-
 public START
 public service_proc
 public version
 
-
-virtual at ebx
-
-	device:
-
-	ETH_DEVICE
-
-      .rx_buffer	dd ?
-      .tx_buffer	dd ?
-      .dpd_buffer	dd ?
-      .upd_buffer	dd ?
-      .curr_upd 	dd ?
-      .prev_dpd 	dd ?
-
-      .io_addr		dd ?
-      .pci_bus		db ?
-      .pci_dev		db ?
-      .irq_line 	db ?
-
-      .prev_tx_frame		dd ?
-      .ver_id			db ?
-      .full_bus_master		db ?
-      .has_hwcksm		db ?
-      .preamble 		db ?
-      .dn_list_ptr_cleared	db ?
-      .self_directed_packet	rb 20
-
-      .size = $ - device
-
-end virtual
-
-
 struc DPD {	; Download Packet Descriptor
 
-      .next_ptr 	dd ?
-      .frame_start_hdr	dd ?
-      .frag_addr	dd ?	; for packet data
-      .frag_len 	dd ?	; for packet data
-      .realaddr 	dd ?
-      .size		= 32
+	.next_ptr	  dd ?
+	.frame_start_hdr  dd ?
+	.frag_addr	  dd ?	  ; for packet data
+	.frag_len	  dd ?	  ; for packet data
+	.realaddr	  dd ?
+	.size		  = 32
 }
 
 virtual at 0
@@ -159,12 +119,12 @@ end virtual
 
 struc UPD {	; Upload Packet Descriptor
 
-      .next_ptr 	dd ?
-      .pkt_status	dd ?
-      .frag_addr	dd ?
-      .frag_len 	dd ?	; for packet data
-      .realaddr 	dd ?
-      .size		= 32
+	.next_ptr	dd ?
+	.pkt_status	dd ?
+	.frag_addr	dd ?
+	.frag_len	dd ?	; for packet data
+	.realaddr	dd ?
+	.size		= 32
 
 }
 
@@ -172,17 +132,11 @@ virtual at 0
   upd UPD
 end virtual
 
-
-	MAX_DEVICES		equ 16
-	FORCE_FD		equ 0  ; forcing full duplex mode makes sense at some cards and link types
-
-
 ; Ethernet frame symbols
 	ETH_ALEN		equ 6
 	ETH_HLEN		equ (2*ETH_ALEN+2)
 	ETH_ZLEN		equ 60 ; 60 + 4bytes auto payload for
 					      ; mininmum 64bytes frame length
-
 ; Registers
 	REG_POWER_MGMT_CTRL	equ 0x7c
 	REG_UP_LIST_PTR 	equ 0x38
@@ -193,9 +147,11 @@ end virtual
 	REG_TX_STATUS		equ 0x1b
 	REG_RX_STATUS		equ 0x18
 	REG_TX_DATA		equ 0x10
+
 ; Common window registers
 	REG_INT_STATUS		equ 0xe
 	REG_COMMAND		equ 0xe
+
 ; Register window 7
 	REG_MASTER_STATUS	equ 0xc
 	REG_POWER_MGMT_EVENT	equ 0xc
@@ -203,6 +159,7 @@ end virtual
 	REG_VLAN_ETHER_TYPE	equ 0x4
 	REG_VLAN_MASK		equ 0x0
 	REG_MASTER_ADDRESS	equ 0x0
+
 ; Register window 6
 	REG_BYTES_XMITTED_OK	equ 0xc
 	REG_BYTES_RCVD_OK	equ 0xa
@@ -216,6 +173,7 @@ end virtual
 	REG_MULTIPLE_COLLISIONS equ 0x2
 	REG_SQE_ERRORS		equ 0x1
 	REG_CARRIER_LOST	equ 0x0
+
 ; Register window 5
 	REG_INDICATION_ENABLE	equ 0xc
 	REG_INTERRUPT_ENABLE	equ 0xa
@@ -223,6 +181,7 @@ end virtual
 	REG_RX_FILTER		equ 0x8
 	REG_RX_EARLY_THRESH	equ 0x6
 	REG_TX_START_THRESH	equ 0x0
+
 ; Register window 4
 	REG_UPPER_BYTES_OK	equ 0xe
 	REG_BAD_SSD		equ 0xc
@@ -231,8 +190,10 @@ end virtual
 	REG_NETWORK_DIAGNOSTIC	equ 0x6
 	REG_FIFO_DIAGNOSTIC	equ 0x4
 	REG_VCO_DIAGNOSTIC	equ 0x2 ; may not supported
+
 ; Bits in register window 4
 	BIT_AUTOSELECT		equ 24
+
 ; Register window 3
 	REG_TX_FREE		equ 0xc
 	REG_RX_FREE		equ 0xa
@@ -240,6 +201,7 @@ end virtual
 	REG_MAC_CONTROL 	equ 0x6
 	REG_MAX_PKT_SIZE	equ 0x4
 	REG_INTERNAL_CONFIG	equ 0x0
+
 ; Register window 2
 	REG_RESET_OPTIONS	equ 0xc
 	REG_STATION_MASK_HI	equ 0xa
@@ -248,6 +210,7 @@ end virtual
 	REG_STATION_ADDRESS_HI	equ 0x4
 	REG_STATION_ADDRESS_MID equ 0x2
 	REG_STATION_ADDRESS_LO	equ 0x0
+
 ; Register window 1
 	REG_TRIGGER_BITS	equ 0xc
 	REG_SOS_BITS		equ 0xa
@@ -258,34 +221,42 @@ end virtual
 	REG_SMB_STATUS		equ 0x2
 	REG_SMB_ADDRESS 	equ 0x1
 	REG_SMB_FIFO_DATA	equ 0x0
+
 ; Register window 0
 	REG_EEPROM_DATA 	equ 0xc
 	REG_EEPROM_COMMAND	equ 0xa
 	REG_BIOS_ROM_DATA	equ 0x8
 	REG_BIOS_ROM_ADDR	equ 0x4
+
 ; Physical management bits
 	BIT_MGMT_DIR		equ 2 ; drive with the data written in mgmtData
 	BIT_MGMT_DATA		equ 1 ; MII management data bit
 	BIT_MGMT_CLK		equ 0 ; MII management clock
+
 ; MII commands
 	MII_CMD_MASK		equ (1111b shl 10)
 	MII_CMD_READ		equ (0110b shl 10)
 	MII_CMD_WRITE		equ (0101b shl 10)
+
 ; MII registers
 	REG_MII_BMCR		equ 0 ; basic mode control register
 	REG_MII_BMSR		equ 1 ; basic mode status register
 	REG_MII_ANAR		equ 4 ; auto negotiation advertisement register
 	REG_MII_ANLPAR		equ 5 ; auto negotiation link partner ability register
 	REG_MII_ANER		equ 6 ; auto negotiation expansion register
+
 ; MII bits
 	BIT_MII_AUTONEG_COMPLETE     equ 5 ; auto-negotiation complete
 	BIT_MII_PREAMBLE_SUPPRESSION equ 6
+
 ; eeprom bits and commands
 	EEPROM_CMD_READ 	equ 0x80
 	EEPROM_BIT_BUSY 	equ 15
+
 ; eeprom registers
 	EEPROM_REG_OEM_NODE_ADDR equ 0xa
 	EEPROM_REG_CAPABILITIES  equ 0x10
+
 ; Commands for command register
 	SELECT_REGISTER_WINDOW	equ (1 shl 11)
 
@@ -306,7 +277,6 @@ end virtual
 	EXTRA_PREAMBLE		equ 0x4000
 
 ; Status
-
 	IntLatch		equ 0x0001
 	HostError		equ 0x0002
 	TxComplete		equ 0x0004
@@ -315,18 +285,15 @@ end virtual
 	RxEarly 		equ 0x0020
 	IntReq			equ 0x0040
 	StatsFull		equ 0x0080
-	DMADone 		equ 0x0100 ; 1 shl 8
-	DownComplete		equ 0x0200 ; 1 shl 9
-	UpComplete		equ 0x0400 ; 1 shl 10
+	DMADone 		equ 0x0100
+	DownComplete		equ 0x0200
+	UpComplete		equ 0x0400
 	DMAInProgress		equ 0x0800 ; 1 shl 11  (DMA controller is still busy)
 	CmdInProgress		equ 0x1000 ; 1 shl 12  (EL3_CMD is still busy)
 
-	S_5_INTS		equ HostError + RxEarly + UpComplete + DownComplete ; + RxComplete + TxComplete + TxAvailable
-
-
+	S_5_INTS		equ HostError + RxEarly + UpComplete + DownComplete ;+ TxComplete + RxComplete  + TxAvailable
 
 ; Commands
-
 	TotalReset		equ 0 shl 11
 	SelectWindow		equ 1 shl 11
 	StartCoax		equ 2 shl 11
@@ -354,29 +321,47 @@ end virtual
 	StatsEnable		equ 21 shl 11
 	StatsDisable		equ 22 shl 11
 	StopCoax		equ 23 shl 11
-	SetFilterBit		equ 25 shl 11}
-
+	SetFilterBit		equ 25 shl 11
 
 ; Rx mode bits
-
 	RxStation		equ 1
 	RxMulticast		equ 2
 	RxBroadcast		equ 4
 	RxProm			equ 8
 
-
 ; RX/TX buffers sizes
-
 	MAX_ETH_PKT_SIZE	equ 1536   ; max packet size
 	NUM_RX_DESC		equ 4	   ; a power of 2 number
 	NUM_TX_DESC		equ 4	   ; a power of 2 number
-	RX_BUFFER_SIZE		equ (MAX_ETH_FRAME_SIZE*NUM_RX_DESC)
-	TX_BUFFER_SIZE		equ (MAX_ETH_FRAME_SIZE*NUM_TX_DESC)
 	MAX_ETH_FRAME_SIZE	equ 1520	; size of ethernet frame + bytes alignment
 
+virtual at ebx
 
+	device:
 
+	ETH_DEVICE
 
+	.dpd_buffer	  rd (dpd.size*NUM_TX_DESC)/4
+	.upd_buffer	  rd (upd.size*NUM_RX_DESC)/4
+	.curr_upd	  dd ?
+	.prev_dpd	  dd ?
+
+	.io_addr	  dd ?
+	.pci_bus	  db ?
+	.pci_dev	  db ?
+	.irq_line	  db ?
+
+	.prev_tx_frame		  dd ?
+	.ver_id 		  db ?
+	.full_bus_master	  db ?
+	.has_hwcksm		  db ?
+	.preamble		  db ?
+	.dn_list_ptr_cleared	  db ?
+	.self_directed_packet	  rb 20
+
+	.size = $ - device
+
+end virtual
 
 section '.flat' code readable align 16
 
@@ -513,20 +498,13 @@ proc service_proc stdcall, ioctl:dword
 	mov	[device.pci_dev], cl
 
 ; Now, it's time to find the base io addres of the PCI device
-
 	find_io [device.pci_bus], [device.pci_dev], [device.io_addr]
 
 ; We've found the io address, find IRQ now
-
 	find_irq [device.pci_bus], [device.pci_dev], [device.irq_line]
 
 	DEBUGF	1,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
 	[device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
-
-	allocate_and_clear [device.tx_buffer], (MAX_ETH_FRAME_SIZE*NUM_TX_DESC), .err
-	allocate_and_clear [device.rx_buffer], (MAX_ETH_FRAME_SIZE*NUM_RX_DESC), .err
-	allocate_and_clear [device.dpd_buffer], (dpd.size*NUM_TX_DESC), .err
-	allocate_and_clear [device.upd_buffer], (dpd.size*NUM_RX_DESC), .err
 
 ; Ok, the eth_device structure is ready, let's probe the device
 	call	probe							; this function will output in eax
@@ -579,8 +557,6 @@ proc service_proc stdcall, ioctl:dword
 	; todo: reset device into virgin state
 
   .err:
-	stdcall KernelFree, [device.rx_buffer]
-	stdcall KernelFree, [device.tx_buffer]
 	stdcall KernelFree, ebx
 
 
@@ -613,7 +589,7 @@ endp
 ;***************************************************************************
 
 align 4
-probe:			; Tested - ok
+probe:
 
 	DEBUGF	1,"Probing 3com card\n"
 
@@ -671,6 +647,11 @@ probe:			; Tested - ok
 	jnz	.boomerang_func
 	mov	[device.transmit], vortex_transmit
 	DEBUGF	1,"Device is a vortex type\n"
+	DEBUGF	1,"I'm sorry but vortex code hasnt been tested yet\n"
+	DEBUGF	1,"Please contact me on hidnplayr@kolibrios.org\n"
+	DEBUGF	1,"If you can help me finish it!\n"
+	or	eax, -1
+	ret
 	jmp	@f
 .boomerang_func: ; full bus master, so use boomerang functions
 	mov	[device.transmit], boomerang_transmit
@@ -811,6 +792,9 @@ reset:
 	lea	edi, [device.bytes_tx]
 	mov	ecx, 6
 	rep	stosd
+
+; Set the mtu, kernel will be able to send now
+	mov	[device.mtu], 1514
 
 	ret
 
@@ -975,13 +959,9 @@ tx_reset:
 	jnz	.tx_reset_loop
 .tx_set_prev:
 ; init last_dpd
-	mov	eax, [device.dpd_buffer]
-	add	eax, (NUM_TX_DESC-1)*dpd.size
+	lea	eax, [device.dpd_buffer + (NUM_TX_DESC-1)*dpd.size]
 	mov	[device.prev_dpd], eax
 
-	mov	eax, [device.tx_buffer]
-	add	eax, (NUM_TX_DESC-1)*MAX_ETH_FRAME_SIZE
-	mov	[device.prev_tx_frame], eax
 .tx_enable:
 	ret
 
@@ -1004,59 +984,54 @@ rx_reset:
 	set_io	REG_COMMAND
 	mov	ax, RxReset or 0x4
 	out	dx, ax
+
 ; wait for RxReset to complete
 	mov	ecx, 200000
-.rx_reset_loop:
+  .loop:
 	in	ax, dx
 	test	ah, 10000b ; check CmdInProgress
 	dec	ecx
-	jnz	.rx_reset_loop
+	jnz	.loop
+
 ; create upd ring
+	lea	eax, [device.upd_buffer]
+	GetRealAddr
+	mov	edi, eax						; real addr of first descr
 
-	mov	eax, [device.upd_buffer]
-	mov	[device.curr_upd], eax
-	call	GetPgAddr
-	mov	esi, eax
-
-	mov	eax, [device.rx_buffer]
-	call	GetPgAddr
-	mov	edi, eax
-
-	mov	edx, [device.upd_buffer]
-	add	edx, (NUM_RX_DESC-1)*upd.size
-
-	mov	eax, [device.upd_buffer]
-
-	push	ebx
-	mov	ebx, [device.rx_buffer]
+	lea	esi, [device.upd_buffer]				; ptr to first descr
+	lea	edx, [device.upd_buffer + (NUM_RX_DESC-1)*upd.size]	; ptr to last descr
 
 	mov	ecx, NUM_RX_DESC
-.upd_loop:
-	mov	[edx + upd.next_ptr], esi				; edx = upd buff
 
-	and	[eax + upd.pkt_status], 0				; eax = next upd buff
-	mov	[eax + upd.frag_addr], edi
-	mov	[eax + upd.frag_len], MAX_ETH_FRAME_SIZE or (1 shl 31)
-	mov	[eax + upd.realaddr], ebx
+  .upd_loop:
+	mov	[edx + upd.next_ptr], edi
 
-	add	edi, MAX_ETH_FRAME_SIZE
-	add	ebx, MAX_ETH_FRAME_SIZE
+	push	ecx edx
+	stdcall KernelAlloc, MAX_ETH_FRAME_SIZE
+	pop	edx ecx
+	mov	[esi + upd.realaddr], eax
+	call	GetPgAddr
+	mov	[esi + upd.frag_addr], eax
+	and	[esi + upd.pkt_status], 0
+	mov	[esi + upd.frag_len], MAX_ETH_FRAME_SIZE or (1 shl 31)
+
+	DEBUGF	1,"UPD: lin=%x phys=%x len=%x next ptr=%x\n", [esi+upd.realaddr]:8, [esi+upd.frag_addr]:8, [esi+upd.frag_len]:8, edi
+	DEBUGF	1,"UPD: cur=%x prev=%x\n", esi, edx
+
+	mov	edx, esi
 	add	esi, upd.size
-	mov	edx, eax
-	add	eax, upd.size
-
+	add	edi, upd.size
 	dec	ecx
 	jnz	.upd_loop
 
-	pop	ebx
-
-	mov	eax, [device.upd_buffer]
-	call	GetPgAddr
+	lea	eax, [device.upd_buffer]
+	mov	[device.curr_upd], eax
+	GetRealAddr
 	set_io	0
 	set_io	REG_UP_LIST_PTR
 	out	dx, eax
 
-.rx_enable:
+  .rx_enable:
 	ret
 
 
@@ -2228,6 +2203,8 @@ vortex_transmit:
 	mov	ax, (10100b shl 11) + 1 ; StartDMADown
 	out	dx, ax
 .finish:
+	call	KernelFree
+	add	esp, 4
 	ret
 
 
@@ -2245,26 +2222,32 @@ vortex_transmit:
 align 4
 boomerang_transmit:
 
-	DEBUGF	1,"Sending packet (boomerang)\n"
+	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n",[esp+4],[esp+8]
+	mov	eax, [esp+4]
+	DEBUGF	1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
+	[eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
+	[eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
+	[eax+13]:2,[eax+12]:2
 
 	cmp	dword [esp+8], MAX_ETH_FRAME_SIZE
-	ja	.finish ; packet is too long
+	jg	.fail
 
 	call	check_tx_status
+
 	test	al, al
 	jnz	tx_reset
 
 ; calculate descriptor address
-	mov	eax, [device.prev_dpd]
-	DEBUGF	1,"Previous DPD: %x\n", eax
-	add	eax, dpd.size
-	mov	ecx, [device.dpd_buffer]
-	add	ecx, NUM_TX_DESC*dpd.size
-	cmp	eax, ecx
-	cmovae	eax, [device.dpd_buffer]	; Wrap if needed
+	mov	esi, [device.prev_dpd]
+	DEBUGF	1,"Previous DPD: %x\n", esi
+	add	esi, dpd.size
+	lea	ecx, [device.dpd_buffer + (NUM_TX_DESC)*dpd.size]
+	cmp	esi, ecx
+	jl	@f
+	lea	esi, [device.dpd_buffer]	; Wrap if needed
+       @@:
+	DEBUGF	1,"Found a free DPD: %x\n", esi
 
-	DEBUGF	1,"Found a free DPD: %x\n", eax
-	push	eax
 ; check DnListPtr
 	set_io	0
 	set_io	REG_DN_LIST_PTR
@@ -2272,91 +2255,56 @@ boomerang_transmit:
 ; mark if Dn_List_Ptr is cleared
 	test	eax, eax
 	setz	[device.dn_list_ptr_cleared]
+
 ; finish if no more free descriptor is available - FIXME!
-	cmp	eax, [esp]
-	pop	eax
-	jz	.finish
-
-
-	push	eax		;<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-; calculate tx_buffer address
-	mov	edi, [device.prev_tx_frame]
-	DEBUGF	1,"Previous TX frame:: %x\n", edi
-	add	edi, MAX_ETH_FRAME_SIZE
-
-	mov	ecx, [device.tx_buffer]
-	add	ecx, NUM_TX_DESC*MAX_ETH_FRAME_SIZE
-	cmp	edi, ecx
-	cmovae	edi, [device.tx_buffer] 	; Wrap if needed
-
-	DEBUGF	1,"Found place in TX buffer: %x\n", edi
-	push	edi		;<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+;        cmp     eax, esi
+;        jz      .finish
 
 ; update statistics
 	inc	[device.packets_tx]
-
-	mov	ecx, [esp+8+8]
+	mov	ecx, [esp+8]		; buffer size
 	add	dword [device.bytes_tx], ecx
 	adc	dword [device.bytes_tx + 4], 0
 
-; copy packet data
-	mov	esi, [esp+4+8]
-	DEBUGF	1,"Copying %u bytes from %x to %x\n", ecx, esi, edi
-	shr	cx , 1
-	jnc	.nb
-	movsb
-  .nb:
-	shr	cx , 1
-	jnc	.nw
-	movsw
-  .nw:
-	rep	movsd
-
 ; program DPD
-	mov	eax, [esp]		; Tx buffer address
+	and	[esi+dpd.next_ptr], 0
+	mov	eax, [esp+4]		; Tx buffer address
+	mov	[esi+dpd.realaddr], eax
 	call	GetPgAddr
-	mov	edi, [esp]
-	and	edi, 4096 - 1
-	or	edi, eax
-
-	mov	eax, [esp+4]		; descriptor
-	DEBUGF	1,"Frag addr is: %x\n", edi
-	and	[eax+dpd.next_ptr], 0
-	mov	[eax+dpd.frag_addr], edi
-
-	mov	ecx, [esp+8+8]		; packet size
+	mov	[esi+dpd.frag_addr], eax
+	mov	ecx, [esp+8]		; packet size
 	or	ecx, 0x80000000 	; last fragment
-	DEBUGF	1,"Frag size + flag is: %x\n", ecx
-	mov	[eax+dpd.frag_len], ecx
+	mov	[esi+dpd.frag_len], ecx
 
-	mov	ecx, [esp+8+8]		; packet size
-	or	ecx, 0x8000		; transmission complete notification
+	mov	ecx, [esp+8]		; packet size
+;        or      ecx, 0x8000             ; transmission complete notification
+
+	or	ecx, 1 shl 31
+
 ;        test    byte [device.has_hwcksm], 0xff
 ;        jz      @f
-;        or      ecx, (1 shl 26) ; set AddTcpChecksum
+;        or      ecx, (1 shl 26)         ; set AddTcpChecksum
 ;@@:
-	DEBUGF	1,"Frag start_hdr + flag is: %x\n", ecx
-	mov	[eax+dpd.frame_start_hdr], ecx
+	mov	[esi+dpd.frame_start_hdr], ecx
 
+	DEBUGF	1,"DPD: lin=%x phys=%x len=%x start hdr=%x\n", [esi+dpd.realaddr]:8, [esi+dpd.frag_addr]:8, [esi+dpd.frag_len]:8, [esi+dpd.frame_start_hdr]:8
 
-; calculate physical address
-	mov	edi, eax
-	call	GetPgAddr
-	and	edi, 4096 - 1
-	or	eax, edi
+; calculate physical address of dpd
+	mov	eax, esi
+	GetRealAddr
 	cmp	[device.dn_list_ptr_cleared], 0
 	jz	.add_to_list
 
-	DEBUGF	1,"DN list ptr: %x\n", eax
 ; write Dn_List_Ptr
+	DEBUGF	1,"DPD phys addr=%x\n", eax
 	set_io	0
 	set_io	REG_DN_LIST_PTR
 	out	dx, eax
-	jmp	.finish_pop
-.add_to_list:
+	jmp	.finish
 
+  .add_to_list:
 	DEBUGF	1,"Adding To list\n"
-
+	push	eax
 ; DnStall
 	set_io	0
 	set_io	REG_COMMAND
@@ -2364,47 +2312,46 @@ boomerang_transmit:
 	out	dx, ax
 
 ; wait for DnStall to complete
-
 	DEBUGF	1,"Waiting for DnStall\n"
 	mov	ecx, 6000
-.wait_for_stall:
+  .wait_for_stall:
 	in	ax, dx			; read REG_INT_STATUS
 	test	ah, 10000b
 	jz	.dnstall_ok
 	dec	ecx
 	jnz	.wait_for_stall
 
-.dnstall_ok:
+  .dnstall_ok:
 	DEBUGF	1,"DnStall ok!\n"
-	mov	eax, [esp]		; prev_tx_frame
 	mov	ecx, [device.prev_dpd]
 	mov	[ecx+dpd.next_ptr], eax
 
 	set_io	0
 	set_io	REG_DN_LIST_PTR
 	in	eax, dx
-
 	test	eax, eax
+	pop	eax
 	jnz	.dnunstall
+
 ; if Dn_List_Ptr has been cleared fill it up
 	DEBUGF	1,"DnList Ptr has been cleared\n"
-	mov	eax, [esp]
 	out	dx, eax
 
-.dnunstall:
+  .dnunstall:
 ; DnUnStall
 	set_io	0
 	set_io	REG_COMMAND
 	mov	ax, ((110b shl 11)+3)
 	out	dx, ax
 
-.finish_pop:
-	pop	[device.prev_tx_frame]
-	pop	[device.prev_dpd]
-
-.finish:
+  .finish:
+	mov	[device.prev_dpd], esi
 	xor	eax, eax
-	ret
+	ret	8
+
+  .fail:
+	stdcall KernelFree, [esp+4]
+	ret	8
 
 
 ;---------------------------------
@@ -2581,7 +2528,9 @@ int_vortex:
 
   .read_frame:
 ; program buffer address to read in
-	stdcall KernelAlloc, ecx ; Allocate a buffer to put packet into
+	push	ecx
+	stdcall KernelAlloc, MAX_ETH_FRAME_SIZE
+	pop	ecx
 	test	eax, eax
 	jz	.finish
 
@@ -2672,14 +2621,13 @@ int_vortex:
 align 4
 int_boomerang:
 
-;        DEBUGF  1,"\nIRQ %x Boomerang\n",eax:2
+	DEBUGF	1,"\nIRQ %x Boomerang\n",eax:2
 
 ; find pointer of device wich made IRQ occur
 
 	mov	esi, BOOMERANG_LIST
 	mov	ecx, [BOOMERANG_DEVICES]
 
-;        DEBUGF  1,"Devices: %u\n", ecx
 	test	ecx, ecx
 	jz	.fail
   .nextdevice:
@@ -2705,20 +2653,12 @@ int_boomerang:
 .got_it:
 
 	DEBUGF	1,"Device: %x Status: %x ", ebx, eax
-
 	push	ax
 ; disable all INTS
 
 	set_io	REG_COMMAND
 	mov	ax, SetIntrEnb
 	out	dx, ax
-
-;; acknowledge all int sources
-;
-;        mov     ax, word [esp]
-;        and     ax, 0xff
-;        or      ax, AckIntr
-;        out     dx, ax
 
 ;--------------------------------------------------------------------------
 	test	word[esp], UpComplete
@@ -2730,75 +2670,59 @@ int_boomerang:
 	DEBUGF	1,"UpComplete\n"
 
 ; check if packet is uploaded
-	mov	eax, [device.curr_upd]
-	test	byte [eax+upd.pkt_status+1], 0x80 ; upPktComplete
+	mov	esi, [device.curr_upd]
+	test	byte [esi+upd.pkt_status+1], 0x80 ; upPktComplete
 	jz	.finish
+	DEBUGF	1, "Current upd: %x\n", esi
 ; packet is uploaded check for any error
   .check_error:
-	test	byte [eax+upd.pkt_status+1], 0x40 ; upError
+	test	byte [esi+upd.pkt_status+1], 0x40 ; upError
 	jz	.copy_packet_length
 	DEBUGF	1,"Error in packet\n"
-	and	[eax+upd.pkt_status], 0 	  ; mark packet as read
+	and	[esi+upd.pkt_status], 0 	  ; mark packet as read
 	jmp	.finish
   .copy_packet_length:
-	mov	ecx, [eax+upd.pkt_status]
+	mov	ecx, [esi+upd.pkt_status]
 	and	ecx, 0x1fff
-	cmp	ecx, MAX_ETH_PKT_SIZE
-	jbe	.copy_packet
-	and	[eax+upd.pkt_status], 0
-	jmp	.finish
 
-  .copy_packet:
-	DEBUGF	1, " data hw addr:%x\n", [eax+upd.frag_addr]
+;        cmp     ecx, MAX_ETH_PKT_SIZE
+;        jbe     .copy_packet
+;        and     [esi+upd.pkt_status], 0
+;        jmp     .finish
+;  .copy_packet:
 
-	mov	esi, [eax+upd.realaddr]
-
-	push	esi ecx
-	stdcall KernelAlloc, ecx ; Allocate a buffer to put packet into
-	pop	ecx esi
-	test	eax, eax
-	jz	.finish
+	DEBUGF	1, "Received %u bytes in buffer %x\n", ecx, [esi+upd.realaddr]:8
 
 	push	dword .loop ;.finish
-	push	ecx eax
-	mov	edi, eax
-
-	DEBUGF	1, " copying %u bytes from %x to %x\n", ecx, esi, edi
+	push	ecx
+	push	[esi+upd.realaddr]
 
 ; update statistics
 	inc	[device.packets_rx]
-
 	add	dword [device.bytes_rx], ecx
 	adc	dword [device.bytes_rx + 4], 0
 
-; copy packet data
-	shr	cx , 1
-	jnc	.nb
-	movsb
-  .nb:
-	shr	cx , 1
-	jnc	.nw
-	movsw
-  .nw:
-	rep	movsd
+; update UPD (Alloc new buffer for next packet)
+	stdcall KernelAlloc, MAX_ETH_FRAME_SIZE
+	mov	[esi + upd.realaddr], eax
+	GetRealAddr
+	mov	[esi + upd.frag_addr], eax
+	and	[esi + upd.pkt_status], 0
+	mov	[esi + upd.frag_len], MAX_ETH_FRAME_SIZE or (1 shl 31)
 
-	mov	eax, [device.curr_upd]
-	DEBUGF	1, "current upd: %x\n", eax
-	and	[eax + upd.pkt_status], 0	; clear the ring buffer entry for reuse
-	mov	[eax + upd.frag_len], MAX_ETH_FRAME_SIZE or (1 shl 31) ;;;
-	add	eax, upd.size
-
-	mov	ecx, [device.upd_buffer]
-	add	ecx, (NUM_RX_DESC)*upd.size
-
-	cmp	eax, ecx
-	cmovae	eax, [device.upd_buffer]
-	mov	[device.curr_upd], eax
-	DEBUGF	1, "next upd: %x\n", eax
+; Update UPD pointer
+	add	esi, upd.size
+	lea	ecx, [device.upd_buffer+(NUM_RX_DESC)*upd.size]
+	cmp	esi, ecx
+	jl	@f
+	lea	esi, [device.upd_buffer]
+       @@:
+	mov	[device.curr_upd], esi
+	DEBUGF	1, "Next upd: %x\n", esi
 
 	jmp	EthReceiver
-
   .loop:
+
 	mov	ebx, [esp]
 	jmp	.receive
 
@@ -2811,25 +2735,44 @@ int_boomerang:
 	in	eax, dx
 	test	ah, 0x20	     ; UpStalled
 	jz	.noUpUnStall
+
+	DEBUGF	1, "upUnStalling\n"
 ; issue upUnStall command
 	set_io	REG_COMMAND
 	mov	ax, ((11b shl 12)+1) ; upUnStall
 	out	dx, ax
-	DEBUGF	1, "upUnStalling\n"
-  .noUpUnStall:
 
+	;;;; FIXME: make upunstall work
+
+  .noUpUnStall:
 .noRX:
+	test	word[esp], DownComplete
+	jz	.noTX
+	DEBUGF	1, "Downcomplete!\n"
+
+	mov	ecx, NUM_TX_DESC
+	lea	esi, [device.dpd_buffer]
+  .txloop:
+	test	[esi+dpd.frame_start_hdr], 1 shl 31
+	jz	.maybenext
+
+	and	[esi+dpd.frame_start_hdr], 0
+	push	ecx
+	stdcall KernelFree, [esi+dpd.realaddr]
+	pop	ecx
+
+  .maybenext:
+	add	esi, dpd.size
+	dec	ecx
+	jnz	.txloop
+
+.noTX:
 	pop	ax
 
 	set_io	0
 	set_io	REG_COMMAND
 	or	ax, AckIntr
 	out	dx, ax
-
-    ;    set_io  REG_COMMAND
-    ;    mov     ax, AckIntr + IntLatch
-    ;    out     dx, ax
-
 
 	set_io	REG_INT_STATUS
 	in	ax, dx
@@ -2841,17 +2784,13 @@ int_boomerang:
 	mov	ax, SetIntrEnb + S_5_INTS
 	out	dx, ax
 
-
 	ret
 
 
 
 
 ; End of code
-
 align 4 					; Place all initialised data here
-
-
 
 macro strtbl name, [string]
 {
@@ -2866,7 +2805,7 @@ forward
 
 VORTEX_DEVICES	     dd 0
 BOOMERANG_DEVICES    dd 0
-version 	     dd (5 shl 16) or (API_VERSION and 0xFFFF)
+version 	     dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
 my_service	     db '3C59X',0		     ; max 16 chars include zero
 
 
@@ -3000,7 +2939,6 @@ dw 0x9056, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM or EXTRA_PREAMBLE
 dw 0x9210, IS_TORNADO or HAS_NWAY or HAS_HWCKSM
 ; 3c920B-EMB-WNM Tornado
 HW_VERSIONS_SIZE = $ - hw_versions
-
 
 include_debug_strings				; All data wich FDO uses will be included here
 

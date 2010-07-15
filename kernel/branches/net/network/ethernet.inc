@@ -16,8 +16,6 @@
 
 $Revision$
 
-ETH_QUEUE_SIZE		equ 16
-
 struct	ETH_FRAME
 	.DstMAC 	dp  ?  ; destination MAC-address
 	.SrcMAC 	dp  ?  ; source MAC-address
@@ -28,20 +26,14 @@ ends
 virtual at NET_DEVICE.end
 
 	ETH_DEVICE:
-	.unload 	dd ?
-	.reset		dd ?
-	.transmit	dd ?
-	.set_MAC	dd ?
-	.get_MAC	dd ?
+
 	.set_mode	dd ?
 	.get_mode	dd ?
 
-	.bytes_tx	dq ?
-	.bytes_rx	dq ?
-	.packets_tx	dd ?
-	.packets_rx	dd ?
+	.set_MAC	dd ?
+	.get_MAC	dd ?
+
 	.mode		dd ?
-	.name		dd ?
 	.mac		dp ?
 
 end virtual
@@ -108,6 +100,9 @@ ETH_receiver:
 	cmp	ax, ETHER_ARP
 	je	ARP_handler
 
+;        cmp     ax, ETHER_PPP_DISCOVERY
+;        je      PPPOE_discovery
+
 	DEBUGF	2,"Unknown ethernet packet type %x\n", ax
 
   .dump:
@@ -138,7 +133,10 @@ ETH_create_packet:
 
 	DEBUGF	1,"Creating Ethernet Packet (size=%u): \n", ecx
 
-	cmp	ecx, 1500 ;;;
+	push	esi
+	mov	esi, [NET_DRV_LIST]	   ;;; TODO: FIXME
+	cmp	ecx, [esi + NET_DEVICE.mtu]
+	pop	esi
 	jg	.exit
 
 	push	ecx di eax ebx edx
@@ -171,7 +169,7 @@ ETH_create_packet:
 	mov	ebx, [NET_DRV_LIST + ebx]
 
 	cmp	edx, 46 + ETH_FRAME.Data    ; If data size is less then 46, add padding bytes
-	jg	.continue
+	jge	.continue
 	mov	edx, 46 + ETH_FRAME.Data
        .continue:
 
@@ -240,23 +238,23 @@ ETH_API:
 	ret
 
 .packets_tx:
-	mov	eax, dword [eax + ETH_DEVICE.packets_tx]
+	mov	eax, dword [eax + NET_DEVICE.packets_tx]
 
 	ret
 
 .packets_rx:
-	mov	eax, dword [eax + ETH_DEVICE.packets_rx]
+	mov	eax, dword [eax + NET_DEVICE.packets_rx]
 	ret
 
 .bytes_tx:
-	mov	ebx, dword [eax + ETH_DEVICE.bytes_tx + 4]
-	mov	eax, dword [eax + ETH_DEVICE.bytes_tx]
+	mov	ebx, dword [eax + NET_DEVICE.bytes_tx + 4]
+	mov	eax, dword [eax + NET_DEVICE.bytes_tx]
 	mov	[esp+20+4], ebx 			; TODO: fix this ugly code
 	ret
 
 .bytes_rx:
-	mov	ebx, dword [eax + ETH_DEVICE.bytes_rx + 4]
-	mov	eax, dword [eax + ETH_DEVICE.bytes_rx]
+	mov	ebx, dword [eax + NET_DEVICE.bytes_rx + 4]
+	mov	eax, dword [eax + NET_DEVICE.bytes_rx]
 	mov	[esp+20+4], ebx 			; TODO: fix this ugly code
 	ret
 
@@ -270,8 +268,7 @@ ETH_API:
 .write_mac:
 	push	ecx
 	push	dx
-	mov	eax, [eax + ETH_DEVICE.set_MAC]
-	call	eax
+	call	[eax + ETH_DEVICE.set_MAC]
 	ret
 
 .in_queue:

@@ -252,8 +252,8 @@ UDP_output:
 
 	DEBUGF	1,"Sending UDP Packet to device %x\n", ebx
 
-	jmp	NET_send
-
+	call	[ebx + NET_DEVICE.transmit]
+	ret
   .fail:
 	add	esp, 8+8
 	ret

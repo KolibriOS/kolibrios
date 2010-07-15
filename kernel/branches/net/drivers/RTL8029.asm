@@ -1,9 +1,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;; RTL8029/ne2000 driver for KolibriOS                             ;;
+;;  RTL8029/ne2000 driver for KolibriOS                            ;;
+;;                                                                 ;;
+;;  based on RTL8029.asm driver for menuetos                       ;;
+;;  and realtek8029.asm for SolarOS by Eugen Brasoveanu            ;;
 ;;                                                                 ;;
 ;;    Written by hidnplayr@kolibrios.org                           ;;
 ;;     with help from CleverMouse                                  ;;
@@ -11,55 +14,46 @@
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
 ;;                                                                 ;;
-;; current status (september 2009) - UNSTABLE                      ;;
-;;                                                                 ;;
-;; based on RTL8029.asm driver for menuetos                        ;;
-;; and realtek8029.asm for SolarOS by Eugen Brasoveanu             ;;
-;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;$Revision$
 
 format MS COFF
 
-API_VERSION	equ 0x01000100
+	API_VERSION		equ 0x01000100
+	DRIVER_VERSION		equ 5
 
-DEBUG equ 1
-__DEBUG__ equ 1
-__DEBUG_LEVEL__ equ 1
+	MAX_DEVICES		equ 16
+
+	DEBUG			equ 1
+	__DEBUG__		equ 1
+	__DEBUG_LEVEL__ 	equ 1
 
 include 'proc32.inc'
 include 'imports.inc'
 include 'fdo.inc'
 include 'netdrv.inc'
 
-OS_BASE 	equ 0
-new_app_base	equ 0x60400000
-PROC_BASE	equ OS_BASE+0x0080000
-
-
 virtual at ebx
 
-       device:
+	device:
 
-       ETH_DEVICE
+	ETH_DEVICE
 
-      .io_addr		dd ?
-      .irq_line 	db ?
-      .pci_bus		db ?
-      .pci_dev		db ?
+	.io_addr	  dd ?
+	.irq_line	  db ?
+	.pci_bus	  db ?
+	.pci_dev	  db ?
 
-      .flags		db ?
-      .vendor		db ?
-      .asic_base	dw ?
-      .memsize		db ?
-      .rx_start 	db ?
-      .tx_start 	db ?
-      .bmem		dd ?
-      .rmem		dd ?
-      .romdata		rb 16
+	.flags		  db ?
+	.vendor 	  db ?
+	.asic_base	  dw ?
+	.memsize	  db ?
+	.rx_start	  db ?
+	.tx_start	  db ?
+	.bmem		  dd ?
+	.rmem		  dd ?
+	.romdata	  rb 16
 
-      .size = $ - device
+	.size = $ - device
 
 end virtual
 
@@ -67,8 +61,6 @@ end virtual
 public START
 public service_proc
 public version
-
-	MAX_DEVICES		  equ 16	  ; Max number of devices this driver may handle
 
 	P0_PSTART		  equ 0x01
 	P0_PSTOP		  equ 0x02
@@ -234,8 +226,8 @@ proc service_proc stdcall, ioctl:dword
 
 ; check if the device is already listed
 
-	mov	esi, DEVICE_LIST
-	mov	ecx, [DEVICES]
+	mov	esi, device_list
+	mov	ecx, [devices]
 	test	ecx, ecx
 	jz	.firstdevice_pci
 
@@ -269,8 +261,8 @@ proc service_proc stdcall, ioctl:dword
 
   .isa:
 
-	mov	esi, DEVICE_LIST
-	mov	ecx, [DEVICES]
+	mov	esi, device_list
+	mov	ecx, [devices]
 	test	ecx, ecx
 	jz	.firstdevice_isa
 	mov	al , [eax+3]
@@ -305,9 +297,9 @@ proc service_proc stdcall, ioctl:dword
 	test	eax, eax
 	jnz	.err							; If an error occured, exit
 
-	mov	eax, [DEVICES]
-	mov	[DEVICE_LIST+4*eax], ebx
-	inc	[DEVICES]
+	mov	eax, [devices]
+	mov	[device_list+4*eax], ebx
+	inc	[devices]
 
 	mov	[device.type], NET_TYPE_ETH
 	call	NetRegDev
@@ -346,7 +338,7 @@ endp
 
 create_new_struct:
 
-	cmp	[DEVICES], MAX_DEVICES
+	cmp	[devices], MAX_DEVICES
 	jge	.fail
 
 	push	edx
@@ -572,7 +564,7 @@ nsr_001:
 nsr_002:
 	out	dx, al
 
-;clear remote bytes count
+; clear remote bytes count
 	set_io	0
 
 	xor	al, al
@@ -584,7 +576,7 @@ nsr_002:
 	out	dx, al
 
 
-;initialize Receive configuration register
+; initialize Receive configuration register
 	set_io	P0_RCR
 	mov	al, 0x20	; monitor mode
 	out	dx, al
@@ -670,6 +662,9 @@ nsr_002:
 	mov	ecx, 6
 	rep	stosd
 
+; Set the mtu, kernel will be able to send now
+	mov	[device.mtu], 1514
+
 ; Indicate that we have successfully reset the card
 	DEBUGF	2,"Done!\n"
 
@@ -733,10 +728,14 @@ transmit:
 	adc	dword [device.bytes_tx + 4], 0
 
 .finish:
+	call	Kernelfree
+	add	esp, 4
 	xor	eax, eax
 	ret
 
 .err:
+	call	Kernelfree
+	add	esp, 4
 	or	eax, -1
 	ret
 
@@ -752,8 +751,8 @@ int_handler:
 	DEBUGF	2,"IRQ %x ",eax:2
 
 ; find pointer of device wich made INT occur
-	mov	esi, DEVICE_LIST
-	mov	ecx, [DEVICES]
+	mov	esi, device_list
+	mov	ecx, [devices]
 .nextdevice:
 	mov	ebx, [esi]
 
@@ -1197,8 +1196,8 @@ epw_005:				; Wait for Remote DMA Complete
 ;all initialized data place here
 align 4
 
-DEVICES 	dd 0
-version 	dd (5 shl 16) or (API_VERSION and 0xFFFF)
+devices 	dd 0
+version 	dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
 my_service	db 'RTL8029/ne2000',0  ;max 16 chars include zero
 
 device_1	db 'Realtek 8029',0
@@ -1213,7 +1212,7 @@ include_debug_strings
 
 section '.data' data readable writable align 16  ;place all uninitialized data place here
 
-DEVICE_LIST	rd MAX_DEVICES
+device_list	rd MAX_DEVICES
 
 
 

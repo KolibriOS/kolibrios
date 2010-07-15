@@ -3,22 +3,24 @@
 ;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;; Realtek 8139 driver for KolibriOS                               ;;
+;;  Realtek 8139 driver for KolibriOS                              ;;
+;;                                                                 ;;
+;;  based on RTL8139.asm driver for menuetos                       ;;
+;;  and realtek8139.asm for SolarOS by Eugen Brasoveanu            ;;
 ;;                                                                 ;;
 ;;    Written by hidnplayr@kolibrios.org                           ;;
-;;                                                                 ;;
-;;     0.1 - x march 2009                                          ;;
-;;     0.2 - 8 november 2009                                       ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 format MS COFF
 
 	API_VERSION		equ 0x01000100
+	DRIVER_VERSION		equ 5
+
+	MAX_DEVICES		equ 16
 
 	DEBUG			equ 1
 	__DEBUG__		equ 1
@@ -29,45 +31,9 @@ include 'imports.inc'
 include 'fdo.inc'
 include 'netdrv.inc'
 
-OS_BASE 	equ 0
-new_app_base	equ 0x60400000
-PROC_BASE	equ OS_BASE+0x0080000
-
 public START
 public service_proc
 public version
-
-
-virtual at ebx
-
-      device:
-
-      ETH_DEVICE
-
-      .rx_buffer	dd ?
-      .tx_buffer	dd ?
-      .rx_data_offset	dd ?
-      .io_addr		dd ?
-      .curr_tx_desc	db ?
-      .pci_bus		db ?
-      .pci_dev		db ?
-      .irq_line 	db ?
-      .hw_ver_id	db ?
-
-      .size = $ - device
-
-end virtual
-
-
-; RTL8139 specific defines
-
-	MAX_RTL8139		equ 16	 ; Max number of devices this driver may handle
-	TX_TIMEOUT		equ 30	 ; 300 milliseconds timeout
-
-	PCI_REG_CMD		equ 0x04 ; command register
-	PCI_BIT_PIO		equ 0	 ; bit0: io space control
-	PCI_BIT_MMIO		equ 1	 ; bit1: memory space control
-	PCI_BIT_MASTER		equ 2	 ; bit2: device acts as a PCI master
 
 	REG_IDR0		equ 0x00
 	REG_MAR0		equ 0x08 ; multicast filter register 0
@@ -169,8 +135,8 @@ end virtual
 
 	RX_BUFFER_SIZE		equ (8192 shl RBLEN);+16
 	MAX_ETH_FRAME_SIZE	equ 1516 ; exactly 1514 wthout CRC
+
 	NUM_TX_DESC		equ 4
-	TX_BUF_SIZE		equ 4096 ; size of one tx buffer (set to 4kb because of KolibriOS's page size)
 
 	EE_93C46_REG_ETH_ID	equ 7 ; MAC offset
 	EE_93C46_READ_CMD	equ (6 shl 6) ; 110b + 6bit address
@@ -226,6 +192,30 @@ end virtual
 	TSR_OWC 		equ 1 SHL 29
 	TSR_TABT		equ 1 SHL 30
 	TSR_CRS 		equ 1 SHL 31
+
+
+virtual at ebx
+
+	device:
+
+	ETH_DEVICE
+
+	.rx_buffer	dd ?
+	.tx_buffer	dd ?
+	.rx_data_offset dd ?
+	.io_addr	dd ?
+	.curr_tx_desc	db ?
+	.last_tx_desc	db ?
+	.pci_bus	db ?
+	.pci_dev	db ?
+	.irq_line	db ?
+	.hw_ver_id	db ?
+
+	.TX_DESC	rd NUM_TX_DESC
+
+	.size = $ - device
+
+end virtual
 
 
 
@@ -298,8 +288,8 @@ proc service_proc stdcall, ioctl:dword
 
 ; check if the device is already listed
 
-	mov	esi, RTL8139_LIST
-	mov	ecx, [RTL8139_DEV]
+	mov	esi, device_list
+	mov	ecx, [devices]
 	test	ecx, ecx
 	jz	.firstdevice
 
@@ -315,11 +305,11 @@ proc service_proc stdcall, ioctl:dword
 
 ; This device doesnt have its own eth_device structure yet, lets create one
   .firstdevice:
-	cmp	[RTL8139_DEV], MAX_RTL8139		; First check if the driver can handle one more card
+	cmp	[devices], MAX_DEVICES			; First check if the driver can handle one more card
 	jge	.fail
 
 	push	edx
-	stdcall KernelAlloc, device.size	 ; Allocate the buffer for eth_device structure
+	stdcall KernelAlloc, device.size		; Allocate the buffer for eth_device structure
 	pop	edx
 	test	eax, eax
 	jz	.fail
@@ -355,7 +345,7 @@ proc service_proc stdcall, ioctl:dword
 
 
 	allocate_and_clear [device.rx_buffer], (RX_BUFFER_SIZE+MAX_ETH_FRAME_SIZE), .err
-	allocate_and_clear [device.tx_buffer], (TX_BUF_SIZE*NUM_TX_DESC), .err
+   ;;     allocate_and_clear [device.tx_buffer], (TX_BUF_SIZE*NUM_TX_DESC), .err
 
 ; Ok, the eth_device structure is ready, let's probe the device
 
@@ -363,10 +353,9 @@ proc service_proc stdcall, ioctl:dword
 	test	eax, eax
 	jnz	.err							; If an error occured, exit
 
-	mov	eax, [RTL8139_DEV]					; Add the device structure to our device list
-	mov	[RTL8139_LIST+4*eax], ebx				; (IRQ handler uses this list to find device)
-	inc	[RTL8139_DEV]						;
-
+	mov	eax, [devices]						; Add the device structure to our device list
+	mov	[device_list+4*eax], ebx				; (IRQ handler uses this list to find device)
+	inc	[devices]						;
 
 	mov	[device.type], NET_TYPE_ETH
 	call	NetRegDev
@@ -393,7 +382,7 @@ proc service_proc stdcall, ioctl:dword
 
   .err:
 	stdcall KernelFree, dword [device.rx_buffer]
-	stdcall KernelFree, dword [device.tx_buffer]
+     ;;   stdcall KernelFree, dword [device.tx_buffer]
 	stdcall KernelFree, ebx
 
 
@@ -537,7 +526,7 @@ reset:
 	DEBUGF	1,"\nCould not attach int handler!\n"
 ;        or      eax, -1
 ;        ret
-  @@:
+       @@:
 
 ; reset chip
 
@@ -613,6 +602,7 @@ reset:
 
 	mov	[device.rx_data_offset], eax
 	mov	[device.curr_tx_desc], al
+	mov	[device.last_tx_desc], al
 
 ; clear packet/byte counters
 
@@ -624,21 +614,6 @@ reset:
 
 	set_io	REG_MPC
 	out	dx , eax
-
-; Set up the 4 Txbuffer descriptors
-
-	set_io	REG_TSAD0
-	mov	eax, [device.tx_buffer]
-	mov	ecx, 4
-  .loop:
-	push	eax
-	call	GetPgAddr
-	DEBUGF	1,"Desc: %x ", eax
-	out	dx , eax
-	add	dx , 4
-	pop	eax
-	add	eax, TX_BUF_SIZE
-	loop	.loop
 
 ; set RxBuffer address, init RX buffer offset
 
@@ -658,6 +633,9 @@ reset:
 
 	call	read_mac
 
+; Set the mtu, kernel will be able to send now
+	mov	[device.mtu], 1514
+
 ; Indicate that we have successfully reset the card
 
 	DEBUGF	2,"Done!\n"
@@ -675,7 +653,6 @@ reset:
 ;;     pointer to device structure in ebx  ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 align 4
 transmit:
 	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n",[esp+4],[esp+8]
@@ -686,71 +663,69 @@ transmit:
 	[eax+13]:2,[eax+12]:2
 
 	cmp	dword [esp+8], MAX_ETH_FRAME_SIZE
-	jg	.finish 			; packet is too long
+	jg	.fail
 	cmp	dword [esp+8], 60
-	jl	.finish 			; packet is too short
+	jl	.fail
 
-; check descriptor
-	DEBUGF	1,"Checking descriptor, "
+; check if we own the discriptor
+	set_io	0
 	movzx	ecx, [device.curr_tx_desc]
-	mov	edx, [device.io_addr]
-	lea	edx, [edx+ecx*4+REG_TSD0]
+	shl	ecx, 2
+	lea	edx, [edx+ecx+REG_TSD0]
 	in	ax, dx
-	test	ax, 0x1fff ; or no size given
-	jz	.send_packet
-	and	ax, (1 shl BIT_TOK) or (1 shl BIT_OWN)
-	cmp	ax, (1 shl BIT_TOK) or (1 shl BIT_OWN)
-	jz	.send_packet
-; wait for timeout
-	DEBUGF	1,"Waiting for timeout, "
+	test	ax, (1 shl BIT_OWN)
+	jz	.wait_to_send
 
-	push	edx ebx 			 ; TODO : rtl8139 internal timer should be used instead
-	stdcall Sleep, TX_TIMEOUT		 ; ? What registers does this destroy ?
-	pop	ebx edx
+  .send_packet:
+; Set the buffer address
+	set_io	0
+	lea	edx, [edx+ecx+REG_TSAD0]
+	mov	eax, [esp+4]
+	mov	[device.TX_DESC+ecx], eax
+	GetRealAddr
+	out	dx, eax
 
-	in	ax, dx
-	and	ax, (1 shl BIT_TOK) or (1 shl BIT_OWN)
-	cmp	ax, (1 shl BIT_TOK) or (1 shl BIT_OWN)
-	jz	.send_packet			 ; if chip hung, reset it
-	push	dx
-	call	reset				 ; reset the card
-	pop	dx
-.send_packet:
-	DEBUGF	1,"Sending packet, "
+; And the size of the buffer
+	set_io	0
+	lea	edx, [edx+ecx+REG_TSD0]
+	mov	eax, [esp+8]
+;        or      eax, (ERTXTH shl BIT_ERTXTH)    ; Early threshold
+	out	dx , eax
 
-	push	edx
-	movzx	eax, [device.curr_tx_desc]   ; calculate the current tx_buffer address
-	mov	edx, TX_BUF_SIZE ;MAX_ETH_FRAME_SIZE          ;
-	mul	edx				 ;
-	mov	edi, [device.tx_buffer]      ;
-	add	edi, eax			 ; Store it in edi
-	pop	edx
-
-	mov	esi, [esp+4]			 ; Copy data to that address
-	mov	ecx, [esp+8]			 ;
-	shr	ecx, 2				 ;
-	rep	movsd				 ;
-	mov	ecx, [esp+8]			 ;
-	and	ecx, 3				 ;
-	rep	movsb				 ;
-
-	inc	[device.packets_tx]	     ;
-	mov	eax, [esp+8]			 ; Get packet size in eax
-
+; Update stats
+	inc	[device.packets_tx]
 	add	dword [device.bytes_tx], eax
 	adc	dword [device.bytes_tx + 4], 0
 
-;        or      eax, (ERTXTH shl BIT_ERTXTH)     ; Set descriptor size and the early tx treshold into the correct Transmission status register (TSD0, TSD1, TSD2 or TSD3)
-	out	dx , eax			 ;
-
-; get next descriptor 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, ...
+; get next descriptor
 	inc	[device.curr_tx_desc]
 	and	[device.curr_tx_desc], 3
 
-	DEBUGF	1," - Packet Sent! "
-.finish:
-	DEBUGF	1," - Done!\n"
-	ret
+	DEBUGF	1,"Packet Sent! "
+	xor	eax, eax
+	ret	8
+
+  .wait_to_send:
+
+	DEBUGF	1,"Waiting for timeout\n"
+
+	mov	esi, 30
+	stdcall Sleep
+
+	in	ax, dx
+	test	ax, (1 shl BIT_OWN)
+	jnz	.send_packet
+
+	pusha
+	call	reset				 ; if chip hung, reset it
+	popa
+
+	jmp	.send_packet
+
+  .fail:
+	DEBUGF	1,"failed!\n"
+	or	eax, -1
+	ret	8
 
 
 
@@ -761,16 +736,15 @@ transmit:
 ;; Interrupt handler ;;
 ;;                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
-
 align 4
 int_handler:
 
-	DEBUGF	1,"IRQ %x ",eax:2		    ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
+	DEBUGF	1,"IRQ %x\n", eax:2		      ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
 
 ; find pointer of device wich made IRQ occur
 
-	mov	esi, RTL8139_LIST
-	mov	ecx, [RTL8139_DEV]
+	mov	esi, device_list
+	mov	ecx, [devices]
 	test	ecx, ecx
 	jz	.fail
 .nextdevice:
@@ -799,7 +773,6 @@ int_handler:
 
 ;----------------------------------------------------
 ; Received packet ok?
-
 	test	ax, ISR_ROK
 	jz	@f
 	push	ax
@@ -835,7 +808,6 @@ int_handler:
 	pop	ecx
 	test	eax, eax			    ; Test if we allocated succesfully
 	jz	.abort
-
 
 	mov	edi, eax			    ; Where we will copy too
 
@@ -914,60 +886,78 @@ int_handler:
 
 ;----------------------------------------------------
 ; Transmit error ?
-
   @@:
 	test	ax, ISR_TER
 	jz	@f
 
-	push	ax
-	cmp	[device.curr_tx_desc], 4
-	jz	.notxd
-
-	set_io	0
-	movzx	ecx, [device.curr_tx_desc]
-	lea	edx, [edx+ecx*4+REG_TSD0]
-	in	eax, dx
-
-  .notxd:
-	test	eax, TSR_TUN
-	jz	.nobun
-	DEBUGF	2, "TX: FIFO Buffer underrun!\n"
-
-  .nobun:
-	test	eax, TSR_OWC
-	jz	.noowc
-	DEBUGF	2, "TX: OWC!\n"
-
-  .noowc:
-	test	eax, TSR_TABT
-	jz	.notabt
-	DEBUGF	2, "TX: TABT!\n"
-
-  .notabt:
-	test	eax, TSR_CRS
-	jz	.nocsl
-	DEBUGF	2, "TX: Carrier Sense Lost!\n"
-
-  .nocsl:
-;                test    eax, TSR_OWN or TSR_TOK
-;                jz      .nofd
-;                DEBUGF  1, "TX: Transmit OK (desc: %u)\n", ecx
+;        push    ax
+;        cmp     [device.curr_tx_desc], 4
+;        jz      .notxd
 ;
-;               .nofd:
-	pop	ax
+;        set_io  0
+;        movzx   ecx, [device.curr_tx_desc]
+;        lea     edx, [edx+ecx*4+REG_TSD0]
+;        in      eax, dx
+;
+;  .notxd:
+;        test    eax, TSR_TUN
+;        jz      .nobun
+;        DEBUGF  2, "TX: FIFO Buffer underrun!\n"
+;
+;  .nobun:
+;        test    eax, TSR_OWC
+;        jz      .noowc
+;        DEBUGF  2, "TX: OWC!\n"
+;
+;  .noowc:
+;        test    eax, TSR_TABT
+;        jz      .notabt
+;        DEBUGF  2, "TX: TABT!\n"
+;
+;  .notabt:
+;        test    eax, TSR_CRS
+;        jz      .nocsl
+;        DEBUGF  2, "TX: Carrier Sense Lost!\n"
+;
+;  .nocsl:
+;        pop     ax
 
 ;----------------------------------------------------
 ; Transmit ok ?
-
   @@:
 	test	ax, ISR_TOK
 	jz	@f
 
-	DEBUGF	1, "TX: Transmit OK (desc: %u)\n", [device.curr_tx_desc]:1
+	push	ax
+	mov	si, 4
+  .txdesloop:
+	movzx	ecx, [device.last_tx_desc]
+	shl	ecx, 2
+
+	set_io	0
+	set_io	REG_TSD0
+	add	edx, ecx
+	in	eax, dx
+
+	test	eax, TSR_TOK
+	jz	.notthisone
+	mov	eax, TSR_OWN
+	out	dx , eax
+	DEBUGF	1,"TX OK: free buffer %x\n", [device.TX_DESC+ecx]:8
+	stdcall KernelFree, [device.TX_DESC+ecx]
+  .notthisone:
+
+	inc	[device.last_tx_desc]
+	and	[device.last_tx_desc], 3
+
+	dec	si
+	jnz	.txdesloop
+
+  .done:
+	pop	ax
 
 ;----------------------------------------------------
 ; Rx buffer overflow ?
-
   @@:
 	test	ax, ISR_RXOVW
 	jz	@f
@@ -975,16 +965,14 @@ int_handler:
 	push	ax
 	DEBUGF	2,"RX-buffer overflow!\n"
 
-	mov	edx, [device.io_addr]
-	add	edx, REG_ISR
+	set_io	0
+	set_io	REG_ISR
 	mov	ax , ISR_FIFOOVW or ISR_RXOVW
 	out	dx , ax
 	pop	ax
 
 ;----------------------------------------------------
-; Packet underrun? ?
-
-
+; Packet underrun?
   @@:
 	test	ax, ISR_PUN
 	jz	@f
@@ -993,23 +981,21 @@ int_handler:
 
 ;----------------------------------------------------
 ; Receive FIFO overflow ?
-
   @@:
 	test	ax, ISR_FIFOOVW
 	jz	@f
 
 	push	ax
-	DEBUGF	2,"RX fifo overflox!\n"
+	DEBUGF	2,"RX fifo overflow!\n"
 
-	mov	edx, [device.io_addr]
-	add	edx, REG_ISR
+	set_io	0
+	set_io	REG_ISR
 	mov	ax , ISR_FIFOOVW or ISR_RXOVW
 	out	dx , ax
 	pop	ax
 
 ;----------------------------------------------------
 ; Something about Cable changed ?
-
   @@:
 	test	ax, ISR_LENCHG
 	jz	.fail
@@ -1017,11 +1003,7 @@ int_handler:
 	DEBUGF	2,"Cable changed!\n"
 	call	cable
 
-; If none of the above events happened, just exit clearing int
-
   .fail:
-
-	DEBUGF	1,"\n"
 	ret
 
 
@@ -1213,47 +1195,48 @@ read_eeprom:
 
 ; End of code
 
+section '.data' data readable writable align 16 ; place all uninitialized data place here
 align 4 					; Place all initialised data here
 
-RTL8139_DEV   dd 0
-version       dd (5 shl 16) or (API_VERSION and 0xFFFF)
-my_service    db 'RTL8139',0			; max 16 chars include zero
+devices 	dd 0
+version 	dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
+my_service	db 'RTL8139',0			  ; max 16 chars include zero
 
-device_1      db 'Realtek 8139',0
-device_2      db 'Realtek 8139A',0
-device_3      db 'Realtek 8139B',0
-device_4      db 'Realtek 8139C',0
-device_5      db 'Realtek 8100',0
-device_6      db 'Realtek 8139D',0
-device_7      db 'Realtek 8139CP',0
-device_8      db 'Realtek 8101',0
-device_unknown db 'Unknown RTL8139 clone', 0
+device_1	db 'Realtek 8139',0
+device_2	db 'Realtek 8139A',0
+device_3	db 'Realtek 8139B',0
+device_4	db 'Realtek 8139C',0
+device_5	db 'Realtek 8100',0
+device_6	db 'Realtek 8139D',0
+device_7	db 'Realtek 8139CP',0
+device_8	db 'Realtek 8101',0
+device_unknown	db 'Unknown RTL8139 clone', 0
 
-crosslist     dd device_1
-	      dd device_2
-	      dd device_3
-	      dd device_4
-	      dd device_5
-	      dd device_6
-	      dd device_7
-	      dd device_8
-	      dd device_unknown
+crosslist:
+	dd device_1
+	dd device_2
+	dd device_3
+	dd device_4
+	dd device_5
+	dd device_6
+	dd device_7
+	dd device_8
+	dd device_unknown
 
-hw_ver_array  db VER_RTL8139			; This array is used by the probe routine to find out wich version of the RTL8139 we are working with
-	      db VER_RTL8139A
-	      db VER_RTL8139B
-	      db VER_RTL8139C
-	      db VER_RTL8100
-	      db VER_RTL8139D
-	      db VER_RTL8139CP
-	      db VER_RTL8101
-	      db 0
+hw_ver_array:			 ; This array is used by the probe routine to find out wich version of the RTL8139 we are working with
+	db VER_RTL8139
+	db VER_RTL8139A
+	db VER_RTL8139B
+	db VER_RTL8139C
+	db VER_RTL8100
+	db VER_RTL8139D
+	db VER_RTL8139CP
+	db VER_RTL8101
+	db 0
 
 HW_VER_ARRAY_SIZE = $-hw_ver_array
 
 include_debug_strings				; All data wich FDO uses will be included here
 
-section '.data' data readable writable align 16 ; place all uninitialized data place here
-
-RTL8139_LIST rd MAX_RTL8139			; This list contains all pointers to device structures the driver is handling
+device_list	rd MAX_DEVICES			 ; This list contains all pointers to device structures the driver is handling
 

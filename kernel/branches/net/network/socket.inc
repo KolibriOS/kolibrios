@@ -74,7 +74,6 @@ virtual at IP_SOCKET.end
 	.OrigRemotePort 	dw ? ; original remote port (used to reset to LISTEN state)
 
 	.t_state		dd ? ; TCB state
-	.t_timer		dd ? ; TCB timer (seconds)
 	.t_rxtshift		dd ?
 	.t_rxtcur		dd ?
 	.t_dupacks		dd ?
@@ -143,6 +142,16 @@ virtual at IP_SOCKET.end
 	.ts_recent		dd ?
 	.ts_recent_age		dd ?
 	.last_ack_sent		dd ?
+
+
+;-------
+; Timers
+
+	.timer_retransmission	dw ?	; rexmt
+	.timer_ack		dw ?
+	.timer_persist		dw ?
+	.timer_keepalive	dw ?	; keepalive/syn timeout
+	.timer_timed_wait	dw ?	; also used as 2msl timer
 
 	.end:
 end virtual
@@ -335,7 +344,7 @@ SOCKET_bind:
 	jz	s_error
 
     .got_port:
-	DEBUGF	1,"using local port: %u", bx
+	DEBUGF	1,"using local port: %u\n", bx
 	mov	word [eax + UDP_SOCKET.LocalPort], bx
 
 	mov	ebx, dword [edx + 4]
@@ -391,7 +400,7 @@ SOCKET_connect:
 	mov	bx , word [edx + 2]
 	mov	word [eax + UDP_SOCKET.RemotePort], bx
 	mov	[eax + UDP_SOCKET.firstpacket], 0
-	DEBUGF	1,"remote port: %u ",bx
+	DEBUGF	1,"remote port: %u\n",bx
 
 	mov	ebx, dword [edx + 4]
 	mov	dword [eax + IP_SOCKET.RemoteIP], ebx
@@ -408,6 +417,8 @@ SOCKET_connect:
 	add	[TCP_sequence_num], 6400
 	mov	[eax + TCP_SOCKET.ISS], ebx
 
+	mov	[eax + TCP_SOCKET.timer_keepalive], 120 	; 120*630ms => 75,6 seconds
+
 	lea	ebx, [eax + SOCKET.lock]
 	call	wait_mutex
 
@@ -417,7 +428,7 @@ SOCKET_connect:
 
 	mov	bx , word [edx + 2]
 	mov	[eax + TCP_SOCKET.RemotePort], bx
-	DEBUGF	1,"remote port: %u ",bx
+	DEBUGF	1,"remote port: %u\n", bx
 
 	mov	ebx, dword [edx + 4]
 	mov	[eax + IP_SOCKET.RemoteIP], ebx
@@ -434,6 +445,8 @@ SOCKET_connect:
 	jne	@f
 	call	SOCKET_find_port
        @@:
+
+	DEBUGF	1,"remote port: %u\n", [eax + TCP_SOCKET.LocalPort]:2
 
 ;        mov     [eax + TCP_SOCKET.t_state], TCB_SYN_SENT
 	call	TCP_output

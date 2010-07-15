@@ -1,17 +1,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;; DEC 21x4x driver for KolibriOS                                  ;;
+;;  DEC 21x4x driver for KolibriOS                                 ;;
 ;;                                                                 ;;
 ;;  Based on dec21140.Asm from Solar OS by                         ;;
 ;;     Eugen Brasoveanu,                                           ;;
 ;;       Ontanu Bogdan Valentin                                    ;;
 ;;                                                                 ;;
-;;    Written by hidnplayr@kolibrios.org                           ;;
-;;                                                                 ;;
-;;     0.1 - 5 june 2010                                           ;;
+;;  Written by hidnplayr@kolibrios.org                             ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
@@ -21,6 +19,9 @@
 format MS COFF
 
 	API_VERSION		equ 0x01000100
+	DRIVER_VERSION		equ 5
+
+	MAX_DEVICES		equ 16
 
 	DEBUG			equ 1
 	__DEBUG__		equ 1
@@ -31,14 +32,9 @@ include 'imports.inc'
 include 'fdo.inc'
 include 'netdrv.inc'
 
-OS_BASE 	equ 0
-new_app_base	equ 0x60400000
-PROC_BASE	equ OS_BASE+0x0080000
-
 public START
 public service_proc
 public version
-
 
 virtual at ebx
 
@@ -46,26 +42,21 @@ virtual at ebx
 
 	ETH_DEVICE
 
-; device specific
-      .rx_p_des 	dd ?  ; descriptors ring with received packets
-      .tx_p_des 	dd ?  ; descriptors ring with 'to transmit' packets
-      .tx_free_des	dd ?  ; Tx descriptors available
-      .tx_wr_des	dd ?  ; Tx current descriptor to write data to
-      .tx_rd_des	dd ?  ; Tx current descriptor to read TX completion
-      .rx_crt_des	dd ?  ; Rx current descriptor
+	.rx_p_des	  dd ?	; descriptors ring with received packets
+	.tx_p_des	  dd ?	; descriptors ring with 'to transmit' packets
+	.tx_free_des	  dd ?	; Tx descriptors available
+	.tx_wr_des	  dd ?	; Tx current descriptor to write data to
+	.tx_rd_des	  dd ?	; Tx current descriptor to read TX completion
+	.rx_crt_des	  dd ?	; Rx current descriptor
 
-      .io_addr		dd ?
-      .pci_bus		db ?
-      .pci_dev		db ?
-      .irq_line 	db ?
+	.io_addr	  dd ?
+	.pci_bus	  db ?
+	.pci_dev	  db ?
+	.irq_line	  db ?
 
-      .size = $ - device
+	.size = $ - device
 
 end virtual
-
-
-
-MAX_DEVICES	equ 16
 
 ;-------------------------------------------
 ; configuration registers
@@ -381,7 +372,7 @@ proc service_proc stdcall, ioctl:dword
 
 ; check if the device is already listed
 
-	mov	esi, DEVICE_LIST
+	mov	esi, device_list
 	mov	ecx, [devices]
 	test	ecx, ecx
 	jz	.firstdevice
@@ -442,7 +433,7 @@ proc service_proc stdcall, ioctl:dword
 ; Ok, the eth_device structure is ready, let's probe the device
 ; Because initialization fires IRQ, IRQ handler must be aware of this device
 	mov	eax, [devices]						; Add the device structure to our device list
-	mov	[DEVICE_LIST+4*eax], ebx				; (IRQ handler uses this list to find device)
+	mov	[device_list+4*eax], ebx				; (IRQ handler uses this list to find device)
 	inc	[devices]						;
 
 	call	probe							; this function will output in eax
@@ -771,6 +762,9 @@ reset:
 	mov	ecx, 6
 	rep	stosd
 
+; Set the mtu, kernel will be able to send now
+	mov	[device.mtu], 1514
+
 	DEBUGF	1,"Reset done\n"
 
 	ret
@@ -1000,13 +994,16 @@ transmit:
 
 	DEBUGF	1,"transmit ok\n"
 	xor	eax, eax
+	call	Kernelfree
+	add	esp, 4
 	ret
 
   .fail:
 	DEBUGF	1,"transmit failed\n"
 	or	eax, -1
+	call	Kernelfree
+	add	esp, 4
 	ret
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -1025,7 +1022,7 @@ int_handler:
 	mov	ecx, [devices]
 	test	ecx, ecx
 	jz	.fail
-	mov	esi, DEVICE_LIST
+	mov	esi, device_list
   .nextdevice:
 	mov	ebx, dword [esi]
 
@@ -1701,17 +1698,16 @@ mdio_write:	;int phy_id: edx, int location: edi, int value: ax)
 
 
 ; End of code
-
 align 4 					; Place all initialised data here
 
 devices       dd 0
-version       dd (5 shl 16) or (API_VERSION and 0xFFFF)
+version       dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
 my_service    db 'DEC21X4X',0			 ; max 16 chars include zero
 
 include_debug_strings				; All data wich FDO uses will be included here
 
 section '.data' data readable writable align 16 ; place all uninitialized data place here
 
-DEVICE_LIST rd MAX_DEVICES		       ; This list contains all pointers to device structures the driver is handling
+device_list rd MAX_DEVICES		       ; This list contains all pointers to device structures the driver is handling
 
 

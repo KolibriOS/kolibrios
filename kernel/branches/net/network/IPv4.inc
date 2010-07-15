@@ -172,10 +172,10 @@ IPv4_handler:	 ; TODO: implement handler for IP options
 	cmp	[edx + IPv4_Packet.DestinationAddress], -1
 	je	.ip_ok
 
-;        ; maybe it's a multicast then
-;
-;        mov     eax, [edx + IPv4_Packet.DestinationAddress]
-;        and     eax, 0xff000000
+	; maybe it's a multicast then
+
+	mov	eax, [edx + IPv4_Packet.DestinationAddress]
+	and	eax, 0xff000000
 ;        cmp     eax, 224 shl 24
 ;        je      .ip_ok
 

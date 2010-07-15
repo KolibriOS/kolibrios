@@ -35,8 +35,10 @@ MIN_EPHEMERAL_PORT equ 49152
 MAX_EPHEMERAL_PORT equ 61000
 
 ; Ethernet protocol numbers
-ETHER_ARP	equ 0x0608
-ETHER_IPv4	equ 0x0008		; Reversed from 0800 for intel
+ETHER_ARP		equ 0x0608
+ETHER_IPv4		equ 0x0008		; Reversed from 0800 for intel
+ETHER_PPP_DISCOVERY	equ 0x6388
+ETHER_PPP_SESSION	equ 0x6488
 
 ;Protocol family
 AF_UNSPEC	equ 0
@@ -76,7 +78,20 @@ NET_TYPE_SLIP	equ 2
 virtual at 0
 
 	NET_DEVICE:
-	.type		dd ?
+
+	.type		dd ?	; Type field
+	.mtu		dd ?	; Maximal Transmission Unit
+	.name		dd ?	; Ptr to 0 terminated string
+
+	.unload 	dd ?	; Ptrs to driver functions
+	.reset		dd ?	;
+	.transmit	dd ?	;
+
+	.bytes_tx	dq ?	; Statistics, updated by the driver
+	.bytes_rx	dq ?	;
+	.packets_tx	dd ?	;
+	.packets_rx	dd ?	;
+
 	.end:
 
 end virtual
@@ -193,26 +208,17 @@ stack_handler:
 	je	.exit
 	mov	[net_10ms], eax
 
-   if ETH_QUEUE
-	call	ETH_handler
-	call	ETH_send_queued
-   end if
-	call	TCP_10ms
+	test	[net_10ms], 0x0f	; 160ms
+	jnz	.exit
 
-	inc	[net_tmr_count]
-	cmp	[net_tmr_count], 50
-	je	.500ms
-	cmp	[net_tmr_count], 100
-	jne	.exit
+;        call    TCP_timer_160ms
 
+	test	[net_10ms], 0x3f	; 640ms
+	jnz	.exit
+
+;        call    TCP_timer_640ms
 	call	ARP_decrease_entry_ttls
 	call	IPv4_decrease_fragment_ttls
-	call	TCP_timer_1000ms
-
-	mov	[net_tmr_count], 0
-
-  .500ms:
-	call	TCP_500ms
 
   .exit:
 	ret
@@ -380,34 +386,6 @@ NET_ptr_to_num:
 	pop	ecx
 	ret
 
-
-
-
-;--------------------------
-;
-; NET_send
-;
-; IN:   ebx = ptr to device struct
-;      [esp] = data ptr
-;    [esp + 4] = data size
-;
-; OUT: /
-;
-;--------------------------
-align 4
-NET_send:
-
-	call	[ebx + ETH_DEVICE.transmit] ;;;;
-
-;;; TODO:check if packet was sent ok
-
-	call	kernel_free
-	add	esp, 4
-	ret
-
-
-
-
 ;-----------------------------------------------------------------
 ;
 ; checksum_1
@@ -563,7 +541,7 @@ sys_network:
 	jnz	@f
 
 	mov	esi, [esi + NET_DRV_LIST]
-	mov	esi, [esi + ETH_DEVICE.name]
+	mov	esi, [esi + NET_DEVICE.name]
 	mov	edi, ecx
 
 	mov	ecx, 64 ; max length
@@ -578,7 +556,7 @@ sys_network:
 	jnz	@f
 
 	mov	esi, [esi + NET_DRV_LIST]
-	call	[esi + ETH_DEVICE.reset]
+	call	[esi + NET_DEVICE.reset]
 	jmp	.return
 
   @@:
@@ -587,7 +565,7 @@ sys_network:
 	jnz	@f
 
 	mov	esi, [esi + NET_DRV_LIST]
-	call	[esi + ETH_DEVICE.unload]
+	call	[esi + NET_DEVICE.unload]
 	jmp	.return
 
   @@:
@@ -645,13 +623,13 @@ sys_protocols:
 	cmp	ax , ETHER_ARP
 	je	ARP_API
 
-	cmp	ax , 1337
+	cmp	ax , 1337  ;;;;;
 	je	ETH_API
 
 	add	esp, 4				 ; if we reached here, no function was called, so we need to balance stack
 
   .doesnt_exist:
-	DEBUGF	1,"sys_protocols: protocol %u doesnt exist on device %u!\n",ax, bh
+	DEBUGF	1,"sys_protocols: protocol %u doesnt exist on device %u!\n", ax, bh
 	mov	eax, -1
 
   .return:
