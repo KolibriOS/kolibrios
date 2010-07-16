@@ -12,6 +12,7 @@ include '../../../macros.inc'
 include '../../../system/launch/trunk/mem.inc'
 include '../../../develop/libraries/libs-dev/.test/dll.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+;include '../../../system/board/trunk/debug.inc'
 
 ;;===Define_chapter============================================================================================================
 
@@ -55,10 +56,10 @@ align 4
   @@:
     mov  dword[eax],    '.ini'
 
-      invoke  ini.get_int, cur_dir_path, aPreferences, aSpeed, 70
+      invoke  ini.get_int, cur_dir_path, aPreferences, aSpeed, 80
     neg  eax
     add  [time_wait_limit],    eax
-      invoke  ini.get_int, cur_dir_path, aPreferences, aDecorations, 1
+      invoke  ini.get_int, cur_dir_path, aPreferences, aDecorations, 2
     mov  [decorations], al
 
       invoke  ini.get_color, cur_dir_path, aColors, aBackground_color, 0x000000
@@ -98,6 +99,15 @@ align 4
     or   [hiscore_number_color],   eax
       invoke  ini.get_color, cur_dir_path, aColors, aChampion_name_color, 0x80ffffff
     or   [champion_name_color],   eax
+      invoke  ini.get_color, cur_dir_path, aColors, aEdit_box_selection_color, 0x00aa00
+    or   [edit1+0x10],  eax
+
+    mov  eax, [background_color]
+    mov  [edit1+0x0C],  eax
+    mov  [edit1+0x14],  eax
+    mov  [edit1+0x18],  eax
+    mov  eax, [game_over_hiscore_color]
+    mov  [edit1+0x1C],  eax
 
 include 'first_menu.asm'            ; First menu body and functions
 include 'level.asm'                 ; Level body and functions (game process)
@@ -684,13 +694,13 @@ aGame_over_hiscore_color    db      'Game_over_hiscore_color',0
 aScore_number_color         db      'Score_number_color',0
 aHiscore_number_color       db      'Hiscore_number_color',0
 aChampion_name_color        db      'Champion_name_color',0
+aEdit_box_selection_color   db      'Edit_box_selection_color',0
 
-edit1 edit_box 100,397,278,0x000000,0x00aa00,0x000000,0x000000,0x80ffdd44,15,hed,mouse_dd,ed_focus,hed_end-hed-1,hed_end-hed-1
+edit1 edit_box 100,397,278,0x000000,0x000000,0x000000,0x000000,0x80000000,15,hed,mouse_dd,ed_focus,hed_end-hed-1,hed_end-hed-1
 
 hed                         db      '',0
 hed_end:
 rb  256
-ed_buffer   rb 100
 
 mouse_dd                    rd      1
 
