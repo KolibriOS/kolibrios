@@ -357,7 +357,6 @@ virtual at ebx
 	.has_hwcksm		  db ?
 	.preamble		  db ?
 	.dn_list_ptr_cleared	  db ?
-	.self_directed_packet	  rb 20
 
 	.size = $ - device
 
@@ -473,12 +472,7 @@ proc service_proc stdcall, ioctl:dword
 	cmp	ecx, MAX_DEVICES			; First check if the driver can handle one more card
 	jge	.fail
 
-	push	edx
-	stdcall KernelAlloc, dword device.size		; Allocate the buffer for eth_device structure
-	pop	edx
-	test	eax, eax
-	jz	.fail
-	mov	ebx, eax				; ebx is always used as a pointer to the structure (in driver, but also in kernel code)
+	allocate_and_clear ebx, device.size, .fail	; Allocate the buffer for device structure
 
 ; Fill in the direct call addresses into the struct
 
@@ -516,30 +510,26 @@ proc service_proc stdcall, ioctl:dword
 	test	word [hw_versions+2+ecx*4], IS_VORTEX
 	jz	.not_vortex
 
-
-	mov	eax, [VORTEX_DEVICES]					       ; Add the device structure to our device list
+	mov	eax, [VORTEX_DEVICES]					; Add the device structure to our device list
 	mov	[VORTEX_LIST+4*eax], ebx				; (IRQ handler uses this list to find device)
-	inc	[VORTEX_DEVICES]					       ;
+	inc	[VORTEX_DEVICES]					;
 
   .register:
-
 	mov	[device.type], NET_TYPE_ETH
 	call	NetRegDev
 
 	cmp	eax, -1
 	je	.destroy
 
-	call	start
-
+	call	start_device
 	ret
 
   .not_vortex:
-
 	mov	eax, [BOOMERANG_DEVICES]					  ; Add the device structure to our device list
 	mov	[BOOMERANG_LIST+4*eax], ebx				   ; (IRQ handler uses this list to find device)
 	inc	[BOOMERANG_DEVICES]
 
-	call	.register
+	jmp	.register
 
 ; If the device was already loaded, find the device number and return it in eax
 
@@ -612,16 +602,16 @@ probe:
 
 ; get chip version
 	mov	ecx, HW_VERSIONS_SIZE/4-1
-.loop:
+  .loop:
 	cmp	ax , [hw_versions+ecx*4]
 	jz	.found
 	loop	.loop
 	DEBUGF	1,"ecx: %u\n", ecx
-.notfound:
+  .notfound:
 	DEBUGF	1,"Device id not found in list!\n"
 	or	eax, -1
 	ret
-.found:
+  .found:
 	mov	esi, [hw_str+ecx*4]
 	DEBUGF	1,"Hardware type: %s\n", esi
 	mov	[device.name], esi
@@ -638,7 +628,7 @@ probe:
 	movzx	edx, [device.pci_dev]
 	stdcall PciWrite32, ecx, edx, PCI_REG_LATENCY, eax
 
-.not_vortex:
+  .not_vortex:
 ; set RX/TX functions
 	mov	ax, EEPROM_REG_CAPABILITIES
 	call	read_eeprom
@@ -653,10 +643,10 @@ probe:
 	or	eax, -1
 	ret
 	jmp	@f
-.boomerang_func: ; full bus master, so use boomerang functions
+  .boomerang_func: ; full bus master, so use boomerang functions
 	mov	[device.transmit], boomerang_transmit
 	DEBUGF	1,"Device is a boomerang type\n"
-@@:
+       @@:
 	call	read_mac_eeprom
 
 	test	byte [device.full_bus_master], 0xff
@@ -674,13 +664,13 @@ probe:
 	test	word [ecx*4+hw_versions+2], INVERT_LED_PWR
 	jz	@f
 	or	al, 0x10
-@@:
+       @@:
 	test	word [ecx*4+hw_versions+2], INVERT_MII_PWR
 	jz	@f
 	or	ah, 0x40
-@@:
+       @@:
 	out	dx, ax
-.set_preamble:
+  .set_preamble:
 ; use preamble as default
 	mov	byte [device.preamble], 1 ; enable preamble
 
@@ -741,8 +731,8 @@ reset:
 
 	call	write_mac
 
-	call	rx_reset
-	call	tx_reset
+
+;<<<<<<<<<<<<<<
 
 	set_io	REG_COMMAND
 	mov	ax, SELECT_REGISTER_WINDOW + 1
@@ -767,6 +757,14 @@ reset:
 
 	call	set_rx_mode
 	call	set_active_port
+
+;>>>>>>>>>>
+
+	call	create_rx_ring
+	call	rx_reset
+	call	tx_reset
+
+;>>>>>>>>>>>>>>>>>>
 
 	set_io	0
 	set_io	REG_COMMAND
@@ -803,7 +801,8 @@ reset:
 
 
 align 4
-start:
+start_device:
+	DEBUGF	1,"Starting the device\n"
 
 	set_io	0
 	set_io	REG_COMMAND
@@ -821,26 +820,28 @@ start:
 ; wait for linkDetect
 	set_io	REG_MEDIA_STATUS
 	mov	ecx, 20 ; wait for max 2s
-.link_detect_loop:
-	mov	esi, 10
-	stdcall Sleep ; 100 ms
+  .link_detect_loop:
+	mov	esi, 100
+	call	Sleep ; 100 ms
 	in	ax, dx
 	test	ah, 1000b ; linkDetect
 	jnz	@f
 	loop	.link_detect_loop
-@@:
+	DEBUGF	1,"Link detect timed-out!\n"
+       @@:
 
 ; print link type
 	xor	eax, eax
 	bsr	ax, word [device.mode]
 	jz	@f
 	sub	ax, 4
-@@:
+       @@:
+
 	mov	esi, [link_str+eax*4]
-	DEBUGF 1,"Established Link type: %s\n", esi
+	DEBUGF	1,"Established Link type: %s\n", esi
 
+; enable interrupts
 
-	set_io	0
 	set_io	REG_COMMAND
 	mov	ax, SELECT_REGISTER_WINDOW + 1
 	out	dx, ax
@@ -854,11 +855,6 @@ start:
 	mov	ax, SetIntrEnb + S_5_INTS
 	out	dx, ax
 
-	set_io	0
-	set_io	REG_COMMAND
-	mov	ax, SELECT_REGISTER_WINDOW + 1
-
-
 	ret
 
 
@@ -870,17 +866,18 @@ start:
 align 4
 set_rx_mode:
 
+	DEBUGF	1,"Setting RX mode\n"
+
 	set_io	0
 	set_io	REG_COMMAND
 
-	if	defined PROMISCIOUS
+if	defined PROMISCIOUS
 	mov	ax, SetRxFilter + RxStation + RxMulticast + RxBroadcast + RxProm
-	else if  defined ALLMULTI
+else if  defined ALLMULTI
 	mov	ax, SetRxFilter + RxStation + RxMulticast + RxBroadcast
-	else
+else
 	mov	ax, SetRxFilter + RxStation + RxBroadcast
-	end if
-
+end if
 	out	dx, ax
 
 	ret
@@ -905,7 +902,7 @@ set_rx_mode:
 align 4
 global_reset:
 
-	DEBUGF 1,"Global reset: "
+	DEBUGF 1,"Global reset..\n"
 
 ; GlobalReset
 	set_io	0
@@ -915,16 +912,15 @@ global_reset:
 	out	dx, ax
 ; wait for GlobalReset to complete
 	mov	ecx, 64000
-.loop:
+  .loop:
 	in	ax , dx
 	test	ah , 10000b ; check CmdInProgress
-;        jz      .finish
 	loopz	.loop
-;.finish:
-;        DEBUGF 1,"Waiting for nic to boot..\n"
+
+	DEBUGF 1,"Waiting for nic to boot..\n"
 ; wait for 2 seconds for NIC to boot
-	mov	esi, 200
-	stdcall Sleep ; 2 seconds
+	mov	esi, 2000
+	call	Sleep ; 2 seconds
 
 	DEBUGF 1,"Ok!\n"
 
@@ -990,9 +986,24 @@ rx_reset:
   .loop:
 	in	ax, dx
 	test	ah, 10000b ; check CmdInProgress
+	jz	.done
 	dec	ecx
 	jnz	.loop
+  .done:
 
+	lea	eax, [device.upd_buffer]
+	mov	[device.curr_upd], eax
+	GetRealAddr
+	set_io	0
+	set_io	REG_UP_LIST_PTR
+	out	dx, eax
+
+  .rx_enable:
+	ret
+
+
+align 4
+create_rx_ring:
 ; create upd ring
 	lea	eax, [device.upd_buffer]
 	GetRealAddr
@@ -1024,16 +1035,7 @@ rx_reset:
 	dec	ecx
 	jnz	.upd_loop
 
-	lea	eax, [device.upd_buffer]
-	mov	[device.curr_upd], eax
-	GetRealAddr
-	set_io	0
-	set_io	REG_UP_LIST_PTR
-	out	dx, eax
-
-  .rx_enable:
 	ret
-
 
 
 
@@ -1055,11 +1057,19 @@ rx_reset:
 align 4
 try_link_detect:
 
-	DEBUGF 1,"trying to detect link\n"
+	DEBUGF	1,"trying to detect link\n"
 
 ; create self-directed packet
+	stdcall KernelAlloc, 20 ; create a buffer for the self-directed packet
+	test	eax, eax
+	jz	.fail
+
+	pushd	20		; Packet parameters for device.transmit
+	push	eax		;
+
+	mov	edi, eax
+
 	lea	esi, [device.mac]
-	lea	edi, [device.self_directed_packet]
 	movsw
 	movsd
 	sub	esi, 6
@@ -1069,9 +1079,6 @@ try_link_detect:
 	stosw
 
 ; download self-directed packet
-	push	20
-	lea	eax, [device.self_directed_packet]
-	push	eax
 	call	[device.transmit]
 
 ; switch to register window 4
@@ -1097,14 +1104,18 @@ try_link_detect:
 	xor	al, al
 	jmp	.finish
 
-.link_detected:
+  .link_detected:
+	DEBUGF	1,"link detected!\n"
 	setb	al
 
-.finish:
+  .finish:
 	test	al, al
 	jz	@f
 	or	byte [device.mode+1], 100b
-@@:
+       @@:
+	ret
+
+  .fail:
 	ret
 
 
@@ -1116,7 +1127,7 @@ try_link_detect:
 ;      try_phy checks the auto-negotiation function
 ;      in the PHY at PHY index. It can also be extended to
 ;      include link detection for non-IEEE 802.3u
-;      auto-negotiation devices, for instance the BCM5000.
+;      auto-negotiation devices, for instance the BCM5000.              ; TODO: BCM5000
 ;   Parameters
 ;       ah - PHY index
 ;       ebx - device stucture
@@ -1131,7 +1142,8 @@ try_link_detect:
 align 4
 try_phy:
 
-	DEBUGF 1,"trying phy\n"
+	DEBUGF 1,"PHY=%u\n", ah
+	DEBUGF 1,"Detecting if device is auto-negotiation capable\n"
 
 	mov	al, REG_MII_BMCR
 	push	eax
@@ -1142,30 +1154,34 @@ try_phy:
 	call	mdio_write	; returns with window #4
 
 ; wait for reset to complete
-	mov	esi, 200
+	mov	esi, 2000
 	stdcall Sleep	   ; 2s
 	mov	eax, [esp]
 	call	mdio_read	; returns with window #4
 	test	ah , 0x80
-	jnz	.fail_finish
+	jnz	.fail1
 	mov	eax, [esp]
 
 ; wait for a while after reset
-	mov	esi, 2
+	mov	esi, 20
 	stdcall Sleep	   ; 20ms
 	mov	eax, [esp]
 	mov	al , REG_MII_BMSR
-	call	mdio_read	; returns with window #4
+	call	mdio_read	 ; returns with window #4
 	test	al , 1		 ; extended capability supported?
-	jz	.no_ext_cap
+	jz	.fail2
 
 ; auto-neg capable?
 	test	al , 1000b
-	jz	.fail_finish	; not auto-negotiation capable
+	jz	.fail2		 ; not auto-negotiation capable
+
+	DEBUGF	1,"Device is auto-negotiation capable\n"
 
 ; auto-neg complete?
 	test	al , 100000b
 	jnz	.auto_neg_ok
+
+	DEBUGF	1,"Restarting auto-negotiation\n"
 
 ; restart auto-negotiation
 	mov	eax, [esp]
@@ -1182,15 +1198,17 @@ try_phy:
 	or	bh , 10010b	; restart auto-negotiation
 	mov	eax, [esp]
 	call	mdio_write	; returns with window #4
-	mov	esi, 400
+	mov	esi, 4000
 	stdcall Sleep  ; 4 seconds
 	mov	eax, [esp]
 	mov	al , REG_MII_BMSR
 	call	mdio_read ; returns with window #4
 	test	al , 100000b ; auto-neg complete?
 	jnz	.auto_neg_ok
-	jmp	.fail_finish
-.auto_neg_ok:
+	jmp	.fail3
+  .auto_neg_ok:
+
+	DEBUGF	1,"Auto-negotiation complete\n"
 
 ; compare advertisement and link partner ability registers
 	mov	eax, [esp]
@@ -1220,14 +1238,27 @@ try_phy:
 	test	esi, 1010b shl 5; check for full-duplex
 	jz	.half_duplex
 	or	ax , 0x120	; set full duplex and flow control
-.half_duplex:
+  .half_duplex:
+	DEBUGF 1,"Using half-duplex\n"
 	out	dx , ax
 	mov	al , 1
 	ret
-.no_ext_cap:
 
-; not yet implemented BCM5000
-.fail_finish:
+
+  .fail1:
+	DEBUGF	1,"reset failed!\n"
+	pop	eax
+	xor	al, al
+	ret
+
+  .fail2:
+	DEBUGF	1,"This device is not auto-negotiation capable!\n"
+	pop	eax
+	xor	al, al
+	ret
+
+  .fail3:
+	DEBUGF	1,"auto-negotiation reset failed!\n"
 	pop	eax
 	xor	al, al
 	ret
@@ -1255,7 +1286,7 @@ try_phy:
 align 4
 try_mii:
 
-	DEBUGF 1,"trying mii\n"
+	DEBUGF	1,"trying to find MII PHY\n"
 
 ; switch to register window 3
 	set_io	0
@@ -1267,37 +1298,46 @@ try_mii:
 	and	eax, (1111b shl 20)
 	cmp	eax, (1000b shl 20) ; is auto-negotiation set?
 	jne	.mii_device
-; auto-negotiation is set
+
+	DEBUGF	1,"auto-negotiation is set\n"
 ; switch to register window 4
 	set_io	REG_COMMAND
 	mov	ax , SELECT_REGISTER_WINDOW+4
 	out	dx , ax
+
 ; PHY==24 is the on-chip auto-negotiation logic
 ; it supports only 10base-T and 100base-TX
 	mov	ah , 24
 	call	try_phy
 	test	al , al
 	jz	.fail_finish
+
 	mov	cl , 24
 	jmp	.check_preamble
-.mii_device:
+
+  .mii_device:
 	cmp	eax, (0110b shl 20)
 	jne	.fail_finish
+
 	set_io	0
 	set_io	REG_COMMAND
 	mov	ax , SELECT_REGISTER_WINDOW+4
 	out	dx , ax
+
 	set_io	REG_PHYSICAL_MGMT
 	in	ax , dx
 	and	al , (1 shl BIT_MGMT_DIR) or (1 shl BIT_MGMT_DATA)
 	cmp	al , (1 shl BIT_MGMT_DATA)
 	je	.search_for_phy
+
 	xor	al , al
 	ret
-.search_for_phy:
+
+  .search_for_phy:
 ; search for PHY
 	mov	cx , 31
-.search_phy_loop:
+  .search_phy_loop:
+	DEBUGF	1,"Searching the PHY\n"
 	cmp	cx , 24
 	je	.next_phy
 	mov	ah , cl ; ah = phy
@@ -1315,26 +1355,31 @@ try_mii:
 	pop	cx
 	test	al , al
 	jnz	.check_preamble
-.next_phy:
+  .next_phy:
 	loopw	.search_phy_loop
-.fail_finish:
+
+  .fail_finish:
 	xor	al, al
 	ret
+
 ; epilog
-.check_preamble:
+  .check_preamble:
+	DEBUGF	1,"Using PHY: %u\nChecking PreAmble\n", cl
 	push	eax ; eax contains the return value of try_phy
 ; check hard coded preamble forcing
 	movzx	eax, [device.ver_id]
 	test	word [eax*4+hw_versions+2], EXTRA_PREAMBLE
 	setnz	[device.preamble] ; force preamble
 	jnz	.finish
+
 ; check mii for preamble suppression
 	mov	ah, cl
 	mov	al, REG_MII_BMSR
 	call	mdio_read
 	test	al, 1000000b ; preamble suppression?
 	setz	[device.preamble] ; no
-.finish:
+
+  .finish:
 	pop	eax
 	ret
 
@@ -1384,9 +1429,16 @@ test_packet:
 	call	rx_reset
 	call	tx_reset
 
-; download a self-directed test packet
+; create self-directed packet
+	stdcall KernelAlloc, 20 ; create a buffer for the self-directed packet
+	test	eax, eax
+	jz	.fail
+
+	pushd	20		; Packet parameters for device.transmit
+	push	eax		;
+
+	mov	edi, eax
 	lea	esi, [device.mac]
-	lea	edi, [device.self_directed_packet]
 	movsw
 	movsd
 	sub	esi, 6
@@ -1395,14 +1447,12 @@ test_packet:
 	mov	ax , 0x0608
 	stosw
 
-	push	20
-	lea	eax, [device.self_directed_packet]
-	push	eax
+; download self-directed packet
 	call	[device.transmit]
 
 ; wait for 2s
-	mov	esi, 200
-	stdcall Sleep	 ; 2s
+	mov	esi, 2000
+	call	Sleep
 
 ; check if self-directed packet is received
 	mov	eax, [device.packets_rx]
@@ -1420,9 +1470,10 @@ test_packet:
 	in	ax , dx
 	and	ax , not 0x120
 	out	dx , ax
+  .fail:
 	xor	eax, eax
 
-.finish:
+  .finish:
 	ret
 
 
@@ -1467,30 +1518,33 @@ try_loopback:
 ; enable 100BASE-2 DC-DC converter
 	mov	ax, (10b shl 11) ; EnableDcConverter
 	out	dx, ax
-.complete_loopback:
+  .complete_loopback:
+
 	mov	cx, 2 ; give a port 3 chances to complete a loopback
-.next_try:
+  .next_try:
 	push	ecx
 	call	test_packet
 	pop	ecx
 	test	eax, eax
 	loopzw	.next_try
-.finish:
+
+  .finish:
 	xchg	eax, [esp]
 	test	al, al
 	jz	.aui_finish
+
 ; issue DisableDcConverter command
 	set_io	0
 	set_io	REG_COMMAND
 	mov	ax, (10111b shl 11)
 	out	dx, ax
-.aui_finish:
+  .aui_finish:
 	pop	eax ; al contains the result of operation
 
 	test	al, al
 	jnz	@f
 	and	byte [device.mode+1], not 11000b
-@@:
+       @@:
 
 	ret
 
@@ -1509,13 +1563,14 @@ try_loopback:
 align 4
 set_active_port:
 
-	DEBUGF 1,"Setting active port: "
+	DEBUGF 1,"Trying to find the active port\n"
 
 ; switch to register window 3
 	set_io	0
 	set_io	REG_COMMAND
-	mov	ax, SELECT_REGISTER_WINDOW+3
+	mov	ax, SELECT_REGISTER_WINDOW + 3
 	out	dx, ax
+
 	set_io	REG_INTERNAL_CONFIG
 	in	eax, dx
 	test	eax, (1 shl 24) ; check if autoselect enable
@@ -1538,14 +1593,10 @@ set_active_port:
 	jz	.mii_device
 	DEBUGF 1,"Using auto negotiation\n"
 	ret
-.mii_device:
 
+  .mii_device:
 ; switch to register window 3
 	set_io	0
-	set_io	REG_COMMAND
-	mov	ax, SELECT_REGISTER_WINDOW+3
-	out	dx, ax
-
 ; check for off-chip mii device
 	set_io	REG_MEDIA_OPTIONS
 	in	ax, dx
@@ -1561,13 +1612,10 @@ set_active_port:
 	jz	.base_fx
 	DEBUGF 1,"Using off-chip mii device\n"
 	ret
-.base_fx:
 
+  .base_fx:
 ; switch to register window 3
 	set_io	0
-	set_io	REG_COMMAND
-	mov	ax, SELECT_REGISTER_WINDOW+3
-	out	dx, ax
 ; check for 100BASE-FX
 	set_io	REG_MEDIA_OPTIONS
 	in	ax, dx ; read media option register
@@ -1583,13 +1631,10 @@ set_active_port:
 	jz	.aui_enable
 	DEBUGF 1,"Using 100Base-FX\n"
 	ret
-.aui_enable:
 
+  .aui_enable:
 ; switch to register window 3
 	set_io	0
-	set_io	REG_COMMAND
-	mov	ax, SELECT_REGISTER_WINDOW+3
-	out	dx, ax
 ; check for 10Mbps AUI connector
 	set_io	REG_MEDIA_OPTIONS
 	in	ax, dx ; read media option register
@@ -1606,18 +1651,16 @@ set_active_port:
 	jz	.coax_available
 	DEBUGF 1,"Using 10Mbps aui\n"
 	ret
-.coax_available:
 
+  .coax_available:
 ; switch to register window 3
 	set_io	0
-	set_io	REG_COMMAND
-	mov	ax, SELECT_REGISTER_WINDOW+3
-	out	dx, ax
 ; check for coaxial 10BASE-2 port
 	set_io	REG_MEDIA_OPTIONS
 	in	ax, dx ; read media option register
 	test	al, 10000b ; check 10BASE-2
 	jz	.set_first_available_media
+
 	set_io	REG_INTERNAL_CONFIG
 	in	eax, dx
 	and	eax, not (1111b shl 20)
@@ -1629,8 +1672,9 @@ set_active_port:
 	jz	.set_first_available_media
 	DEBUGF 1,"Using 10BASE-2 port\n"
 	ret
-.set_first_available_media:
 
+  .set_first_available_media:
+	DEBUGF	1,"Using the first available media\n"
 
 ;***************************************************************************
 ;   Function
@@ -1638,7 +1682,7 @@ set_active_port:
 ;   Description
 ;      sets the first available media
 ;   Parameters
-;      ebp - io_addr
+;      ebx - ptr to device struct
 ;   Return value
 ;      al - 0
 ;      al - 1
@@ -1650,23 +1694,26 @@ set_active_port:
 align 4
 set_available_media:
 
-	DEBUGF 1,"Using the first available media\n"
-
+	DEBUGF	1,"Setting the available media\n"
 ; switch to register window 3
 	set_io	0
 	set_io	REG_COMMAND
 	mov	ax, SELECT_REGISTER_WINDOW+3
 	out	dx, ax
-	set_io	REG_INTERNAL_CONFIG
-	in	eax, dx
-	push	eax
+
 	set_io	REG_MEDIA_OPTIONS
 	in	ax, dx
-	test	al, 10b
+	DEBUGF	1,"available media:%x\n", al
+	mov	cl, al
+
+	set_io	REG_INTERNAL_CONFIG
+	in	eax, dx
+	and	eax, not (1111b shl 20) ; these bits hold the 'transceiver select' value
+
+	test	cl, 10b 	; baseTXAvailable
 	jz	@f
-; baseTXAvailable
-	pop	eax
-	and	eax, not (1111b shl 20)
+
+	DEBUGF	1,"base TX is available\n"
 	or	eax, (100b shl 20)
 if defined FORCE_FD
 	mov	word [device.mode], (1 shl 8)
@@ -1674,77 +1721,75 @@ else
 	mov	word [device.mode], (1 shl 7)
 end if
 	jmp	.set_media
-@@:
-	test	al, 100b
+       @@:
+
+	test	cl, 100b	; baseFXAvailable
 	jz	@f
-; baseFXAvailable
-	pop	eax
-	and	eax, not (1111b shl 20)
+
+	DEBUGF	1,"base FX is available\n"
 	or	eax, (101b shl 20)
-
 	mov	word [device.mode], (1 shl 10)
-
 	jmp	.set_media
-@@:
-	test	al, 1000000b
+       @@:
+
+	test	cl, 1000000b	; miiDevice
 	jz	@f
-; miiDevice
-	pop	eax
-	and	eax, not (1111b shl 20)
+
+	DEBUGF	1,"mii-device is available\n"
 	or	eax, (0110b shl 20)
-
 	mov	word [device.mode], (1 shl 13)
-
 	jmp	.set_media
-@@:
-	test	al, 1000b
+       @@:
+
+	test	cl, 1000b	; 10bTAvailable
 	jz	@f
-.set_default:
-; 10bTAvailable
-	pop	eax
-	and	eax, not (1111b shl 20)
+
+	DEBUGF	1,"10base-T is available\n"
+  .set_default:
 if FORCE_FD
 	mov	word [device.mode], (1 shl 6)
 else
 	mov	word [device.mode], (1 shl 5)
-end if ; FORCE_FD
+end if
 	jmp	.set_media
-@@:
-	test	al, 10000b
+       @@:
+
+	test	cl, 10000b	; coaxAvailable
 	jz	@f
-; coaxAvailable
+
+	DEBUGF	1,"coax is available\n"
+	push	eax
 	set_io	REG_COMMAND
 	mov	ax, (10b shl 11) ; EnableDcConverter
 	out	dx, ax
 	pop	eax
-	and	eax, not (1111b shl 20)
+
 	or	eax, (11b shl 20)
-
 	mov	word [device.mode], (1 shl 12)
-
 	jmp	.set_media
-@@:
-	test	al, 10000b
-	jz	.set_default
-; auiAvailable
-	pop	eax
-	and	eax, not (1111b shl 20)
-	or	eax, (1 shl 20)
+       @@:
 
+	test	cl, 10000b	; auiAvailable
+	jz	.set_default
+
+	DEBUGF	1,"AUI is available\n"
+	or	eax, (1 shl 20)
 	mov	word [device.mode], (1 shl 11)
 
-.set_media:
+  .set_media:
+	set_io	0
 	set_io	REG_INTERNAL_CONFIG
 	out	dx, eax
+
 if FORCE_FD
-; set fullDuplexEnable in MacControl register
+	DEBUGF	1,"Forcing full duplex\n"
 	set_io	REG_MAC_CONTROL
 	in	ax, dx
 	or	ax, 0x120
 	out	dx, ax
-end if ; FORCE_FD
-	mov	al, 1
+end if
 
+	mov	al, 1
 	ret
 
 
@@ -1771,18 +1816,14 @@ wake_up:
 	test	al, 10000b	; is there "new capabilities" linked list?
 	jz	.device_awake
 
-	DEBUGF 1,"1 "
-
 ; search for power management register
 	stdcall PciRead16, ecx, edx, PCI_REG_CAP_PTR
 	cmp	al, 0x3f
 	jbe	.device_awake
 
-	DEBUGF 1,"2 "
-
 ; traverse the list
 	movzx	esi, al
-.pm_loop:
+  .pm_loop:
 	stdcall PciRead32, ecx, edx, esi
 
 	cmp	al , 1
@@ -1795,9 +1836,7 @@ wake_up:
 	jmp	.device_awake
 
 ; waku up the device if necessary
-.set_pm_state:
-
-	DEBUGF 1,"3 "
+  .set_pm_state:
 
 	add	esi, PCI_REG_PM_CTRL
 	stdcall PciRead32, ecx, edx, esi
@@ -1805,8 +1844,8 @@ wake_up:
 	jz	.device_awake
 	and	al, not 11b ; set state to D0
 	stdcall PciWrite32, ecx, edx, esi, eax
-.device_awake:
 
+  .device_awake:
 	DEBUGF 1,"Device is awake\n"
 
 	ret
@@ -1895,6 +1934,8 @@ wake_up:
 ;       out     dx, ax
 ;.finish:
 ;       ret
+
+
 ;***************************************************************************
 ;   Function
 ;      read_eeprom
@@ -1906,14 +1947,14 @@ wake_up:
 ;   Return value:
 ;      ax - word read
 ;   Destroyed registers
-;      ax, ebx, edx, ebp
+;      ax, ebx, edx
 ;
 ;***************************************************************************
 
 align 4
 read_eeprom:
 
-	DEBUGF 1,"Reading from eeprom:\n"
+	DEBUGF 1,"Reading from eeprom.. "
 
 	push	eax
 ; switch to register window 0
@@ -1981,7 +2022,7 @@ mdio_sync:
 ; send 32 logic ones
 	set_io	REG_PHYSICAL_MGMT
 	mov	ecx, 31
-.loop:
+  .loop:
 	mov	ax, (1 shl BIT_MGMT_DATA) or (1 shl BIT_MGMT_DIR)
 	out	dx, ax
 	in	ax, dx ; delay
@@ -1989,7 +2030,7 @@ mdio_sync:
 	out	dx, ax
 	in	ax, dx ; delay
 	loop	.loop
-.no_preamble:
+  .no_preamble:
 
 	ret
 
@@ -2011,7 +2052,7 @@ mdio_sync:
 align 4
 mdio_read:
 
-	DEBUGF 1,"reading MII registers\n"
+	DEBUGF 1,"Reading MII registers\n"
 
 	push	eax
 	call	mdio_sync ; returns with window #4
@@ -2025,13 +2066,13 @@ mdio_read:
 
 	mov	esi, eax
 	mov	ecx, 13
-.cmd_loop:
+  .cmd_loop:
 	mov	ax, (1 shl BIT_MGMT_DIR) ; write mii
 	bt	esi, ecx
 	jnc	.zero_bit
 	or	al, (1 shl BIT_MGMT_DATA)
 
-.zero_bit:
+  .zero_bit:
 	out	dx, ax
 	push	ax
 	in	ax, dx ; delay
@@ -2044,7 +2085,7 @@ mdio_read:
 ; read data (18 bits with the two transition bits)
 	mov	ecx, 17
 	xor	esi, esi
-.read_loop:
+  .read_loop:
 	shl	esi, 1
 	xor	eax, eax ; read comand
 	out	dx, ax
@@ -2053,7 +2094,7 @@ mdio_read:
 	test	al, (1 shl BIT_MGMT_DATA)
 	jz	.dont_set
 	inc	esi
-.dont_set:
+  .dont_set:
 	mov	ax, (1 shl BIT_MGMT_CLK)
 	out	dx, ax
 	in	ax, dx ; delay
@@ -2099,12 +2140,13 @@ mdio_write:
 	mov	ax, si
 	mov	esi, eax
 	mov	ecx, 31
-.cmd_loop:
+
+  .cmd_loop:
 	mov	ax, (1 shl BIT_MGMT_DIR) ; write mii
 	bt	esi, ecx
-	jnc	.zero_bit
+	jnc	@f
 	or	al, (1 shl BIT_MGMT_DATA)
-.zero_bit:
+       @@:
 	out	dx, ax
 	push	eax
 	in	ax, dx ; delay
@@ -2139,18 +2181,20 @@ check_tx_status:
 	set_io	0
 	set_io	REG_TX_STATUS
 	mov	ecx, 31 ; max number of queue entries
-.tx_status_loop:
+
+  .tx_status_loop:
 	in	al, dx
 	test	al, al
 	jz	.finish ; no error
 	test	al, 0x3f
 	jnz	.finish ; error
-.no_error_found:
+  .no_error_found:
 ; clear current TxStatus entry which advances the next one
 	xor	al, al
 	out	dx, al
 	loop	.tx_status_loop
-.finish:
+
+  .finish:
 
 	ret
 
@@ -2357,9 +2401,8 @@ boomerang_transmit:
 ;---------------------------------
 ; Write MAC
 
-
 align 4
-write_mac:   ; Tested - ok
+write_mac:
 
 	DEBUGF 1,"Writing mac\n"
 
@@ -2381,14 +2424,12 @@ write_mac:   ; Tested - ok
 	inc	dx
 	outsw
 
+
 ;----------------------------
 ; Read MAC
 
-
 align 4
-read_mac:    ; Tested - ok
-
-
+read_mac:
 
 	set_io	0
 	set_io	REG_COMMAND
@@ -2416,7 +2457,6 @@ read_mac:    ; Tested - ok
 ;------------------------------------
 ; Read MAC from eeprom
 
-
 align 4
 read_mac_eeprom:	; Tested - ok
 
@@ -2424,14 +2464,13 @@ read_mac_eeprom:	; Tested - ok
 
 ; read MAC from eeprom
 	mov	ecx, 3
-.mac_loop:
+  .mac_loop:
 	lea	ax, [EEPROM_REG_OEM_NODE_ADDR+ecx-1]
 	push	ecx
 	call	read_eeprom
 	pop	ecx
 	xchg	ah, al ; htons
 	mov	word [device.mac+ecx*2-2], ax
-
 	loop	.mac_loop
 
 	DEBUGF 1,"%x-%x-%x-%x-%x-%x\n",[device.mac]:2,[device.mac+1]:2,[device.mac+2]:2,[device.mac+3]:2,[device.mac+4]:2,[device.mac+5]:2
@@ -2554,8 +2593,6 @@ int_vortex:
 ; check for master operation in progress
 	set_io	REG_MASTER_STATUS   ; TODO: use timeout and reset after timeout expired
   .dma_loop:
-	xor	esi, esi
-	stdcall Sleep
 	in	ax, dx
 	test	ah, 0x80
 	jnz	.dma_loop

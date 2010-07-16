@@ -54,11 +54,14 @@ macro set_io addr {
 macro allocate_and_clear dest, size, err {
 
 ; We need to allocate at least 8 pages, if we want a continuous memory in ram
+	push	edx
     if (size < 8*4096) & (size > 4096)
 	stdcall KernelAlloc, 8*4096
     else
 	stdcall KernelAlloc, size
     end if
+	pop	edx
+
 	test	eax, eax
 	jz	err
 	mov	dest, eax		; Save the address to it into the device struct
@@ -68,7 +71,9 @@ macro allocate_and_clear dest, size, err {
     if (size < 8*4096) & (size > 4096)
 	add	eax, (size/4096+1)*4096
 	mov	ecx, 8-(size/4096+1)
+	push	edx
 	call	ReleasePages
+	pop	edx
     end if
 
 ; Clear the allocated buffer
