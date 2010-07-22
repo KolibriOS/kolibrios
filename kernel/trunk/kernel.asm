@@ -614,6 +614,13 @@ high_code:
         mov     al, 0x3F
         out     0xA1, al
 
+; Enable interrupts in IDE controller
+        mov     al, 0
+        mov     dx, 0x3F6
+        out     dx, al
+        mov     dl, 0x76
+        out     dx, al
+
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
