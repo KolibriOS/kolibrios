@@ -1,4 +1,4 @@
-;   RTF READER FOR MENUET v1.
+;   RTF READER FOR KOLIBRI >= 0.7.7.0
 ;   Written in pure assembler by Ivushkin Andrey aka Willow
 ;   Menu_bar and scroll_bar from box_lib provided by dunkaist
 ;---------------------------------------------------------------------
@@ -104,6 +104,7 @@ load_libraries l_libs_start,end_l_libs
     je   load_file;top_red
     jmp  noactivate
  prep_load:
+    mov  [is_scroll_bar_needed],    0
 ;    mcall 18,3,dword[prcinfo+30]
  noactivate:
 ;    and  ebp,not RTF_OPENING
@@ -168,6 +169,7 @@ still:
     cmp  ah,104         ; HELP
     jne  .nohelp
   .help:
+    mov  [is_scroll_bar_needed],    0
     xor  [mode],RTF_HELP
     test [mode],RTF_HELP
     jz   load_file
@@ -221,7 +223,7 @@ still:
     cmp  ah,180         ; Home
     je   top_red
     
-    cmp  byte[is_scroll_bar_needed], 0
+    cmp  dword[is_scroll_bar_needed], 0
      je  still
     
     mov  ebx,dword[prcinfo+46]
@@ -230,7 +232,7 @@ still:
     jne  .nopgdn
 ;    sub  [top],bx
 
-    cmp  byte[is_scroll_bar_needed], 0
+    cmp  dword[is_scroll_bar_needed], 0
      je  still
     
     mov  eax, [scroll_bar_data_vertical.position]
@@ -249,7 +251,7 @@ still:
     jne  .noardn
 ;    sub  [top],CHARH
 
-    cmp  byte[is_scroll_bar_needed], 0
+    cmp  dword[is_scroll_bar_needed], 0
      je  still
     
     mov  eax, [scroll_bar_data_vertical.position]
@@ -275,7 +277,7 @@ still:
 ;    cmp  cx,[top]
 ;    je   still
 
-    cmp  byte[is_scroll_bar_needed], 0
+    cmp  dword[is_scroll_bar_needed], 0
      je  still
     
     cmp  dword[scroll_bar_data_vertical.position], AR_OFFSET*7
@@ -290,7 +292,7 @@ still:
     jne  .noarup
 ;    add  [top],CHARH
 
-    cmp  byte[is_scroll_bar_needed], 0
+    cmp  dword[is_scroll_bar_needed], 0
      je  still
     
     cmp  dword[scroll_bar_data_vertical.position], AR_OFFSET
@@ -329,10 +331,12 @@ still:
     jne  .pre_file_open
   .end:
 
-    cmp  byte[is_scroll_bar_needed], 0
+    cmp  dword[is_scroll_bar_needed], 0
      je  still
     
-    mov  dword[scroll_bar_data_vertical.position], 250
+    mov  eax, [scroll_bar_data_vertical.max_area]
+    sub  eax, [scroll_bar_data_vertical.cur_area]
+    mov  dword[scroll_bar_data_vertical.position], eax
     call Set_position
     jmp  red
   .pre_file_open:
@@ -446,7 +450,7 @@ mouse:
         jmp     red
 
 .scroll_bar:
-        cmp     [is_scroll_bar_needed], 0
+        cmp     dword[is_scroll_bar_needed], 0
         je      still
 .vertical:
         mov     eax,[scroll_bar_data_vertical.max_area]
@@ -476,12 +480,47 @@ mouse:
 
 draw_window:
 
-    mcall 12, 1
+    mcall 9, procinfo2, -1
+    mov  edx, -1
+    mov  esi, -1
+    
+    mov  eax, [procinfo2.box.width]
+    cmp  eax, 140
+     je  @f
+    mov  [is_scroll_bar_needed],    0
+     jg  @f
+    mov  edx, 140
+  @@:
 
+    mov  eax, [procinfo2.box.height]
+    cmp  eax, 80
+     je  @f
+    mov  [is_scroll_bar_needed],    0
+     jg  @f
+    mov  esi, 80
+  @@:
+
+    mcall 67, -1, -1
+
+    mcall 12, 1
 ;    mcall 0, <10,WINW>, <100,WINH>, WIN_COLOR,0x805080D0, 0x005080D0
 ;    mcall 4, <8,8>, 0x10DDEEFF, title, titlesize-title
     mcall 0, <10,WINW>, <100,WINH>, WIN_COLOR,0x80000000, window_title
-
+;---------------------------------------------
+    cmp  [is_scroll_bar_needed],    0
+     je  @f
+    call Set_scroll_position
+        xor     eax,eax
+        inc     eax
+        mov     [scroll_bar_data_vertical.all_redraw],eax
+; draw for Vertical ScrollBar
+        push    dword scroll_bar_data_vertical
+        call    [scrollbar_ver_draw]
+; reset all_redraw flag 
+        xor     eax,eax
+        mov     [scroll_bar_data_vertical.all_redraw],eax
+  @@:
+;---------------------------------------------
     mov  esi,ecx
     mcall 47,0x30000,isymImplemented,<114,8>
     add  edx,36 shl 16
@@ -492,7 +531,7 @@ draw_window:
     jne  .noNA
     mov  esi,0x10ff0000
   .noNA:
-    mcall 4,edx,esi,fileinfo.name,[fname_size]
+;    mcall 4,edx,esi,fileinfo.name,[fname_size]
     mov  edi,prcinfo
     mcall 9,edi,-1
     and  [mode],not RTF_TOEOF
@@ -508,13 +547,7 @@ draw_window:
   .nochg:
 
 ;---------------------------------------------
-    mov eax, dword[prcinfo+0x3E]
-    sub eax, scroll_width_size
-    mov word[scroll_bar_data_vertical.start_x], ax
-
-    mov eax, dword[prcinfo+0x42]
-    sub eax, 17
-    mov word[scroll_bar_data_vertical.size_y], ax
+    call  Set_scroll_position
 
     mov ebx, dword[prcinfo+0x3E]
     mcall     38, , 65536*18+18, 0x8b8b89
@@ -613,7 +646,7 @@ end if
  .ex:
 call Set_position
 ;---------------------------------------------
-    cmp  [is_scroll_bar_needed], 0
+    cmp  dword[is_scroll_bar_needed], 0
      je  @f
         xor     eax,eax
         inc     eax
@@ -631,12 +664,11 @@ call Set_position
 
 ;---------------------------------------------------------------------
 Set_position:
-
     mov  eax, dword[prcinfo+46]
     cmp  eax, [HDoc]
-    mov  byte[is_scroll_bar_needed], 0
+    mov  dword[is_scroll_bar_needed], 0
      jnl .quit
-    mov  byte[is_scroll_bar_needed], 1
+    mov  dword[is_scroll_bar_needed], 1
 
     mov  eax, [scroll_bar_data_vertical.max_area]
     mul  dword[prcinfo+46]
@@ -650,7 +682,7 @@ Set_position:
     mov eax, [HDoc]
     cmp eax, dword[prcinfo+46]
     sub eax, dword[prcinfo+46]
-    add eax, 100                    ; height of clear area under text when you are at the end of document
+    add eax, 20                    ; height of clear area under text when you are at the end of document
      jg @f
     mov eax, 0
   @@:
@@ -665,6 +697,19 @@ Set_position:
   .quit:
     ret
 ;---------------------------------------------------------------------
+Set_scroll_position:
+    mcall 9, procinfo2, -1
+    mov eax, dword[procinfo2+0x3E]
+    sub eax, scroll_width_size
+    mov word[scroll_bar_data_vertical.start_x], ax
+
+    mov eax, dword[procinfo2+0x42]
+    sub eax, 17
+    mov word[scroll_bar_data_vertical.size_y], ax
+    
+    ret
+;---------------------------------------------------------------------
+
 if GUTTER eq 1
    arrow db 0x19
 end if
@@ -675,16 +720,16 @@ end if
 ; интерфейс программы многоязычный
 ;  Вы можете задать язык в MACROS.INC (lang fix язык)
 
-window_title:           db      'RtfRead v1.033',0
-buf_cmd_lin             rb      0
-is_scroll_bar_needed    db      0
+window_title:           db      'RtfRead v1.034',0
+buf_cmd_lin             dd      0x0
+is_scroll_bar_needed    dd      0x0
 ;---------------------------------------------------------------------
 l_libs_start:
 
 library01  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
 err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
 
-library02  l_libs system_dir_Boxlib+9, cur_dir_path, buf_cmd_lin, system_dir_Boxlib, \
+library02  l_libs system_dir_Boxlib+9, cur_dir_path, library_path, system_dir_Boxlib, \
 err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
 
 end_l_libs:
@@ -776,7 +821,7 @@ else
 end if
   Free BGIfree FONT_NAME,0,0,1.0,1.0,char,1,0x44000000,0
 end if
-I_END0:
+;I_END0:
 fname_buf:
         rb      1024+16
 fileattr rd 40/4
@@ -948,8 +993,8 @@ menu_text_area_2:
 .1:
         db 'Zoom +',0
         db 'Zoom -',0
-        db ' >  >',0
-        db '  << ',0
+        db ' > >',0
+        db ' << ',0
         db 'Align',0
         db 'Color',0
 .end:
@@ -1037,14 +1082,14 @@ scroll_bar_data_vertical:
 .all_redraw     dd 0    ;+80
 .ar_offset      dd AR_OFFSET   ;+84
 ;---------------------------------------------------------------------
+I_END0:
 I_END:                             ; метка конца программы
 
 procinfo process_information
 rb RTFSIZE
 esp1:
 rb ESPSIZE
-sys_mem:
-rb ESPSIZE
+procinfo2 process_information
 ;---------------------------------------------------------------------
 temp_dir_pach:
         rb 4096
@@ -1053,4 +1098,6 @@ cur_dir_path:
 library_path:
         rb 4096
 ;---------------------------------------------------------------------
+    rb ESPSIZE                      ;stack
 esp_end:
+sys_mem:
