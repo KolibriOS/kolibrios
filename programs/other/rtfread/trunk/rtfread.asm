@@ -485,20 +485,26 @@ draw_window:
     mov  esi, -1
     
     mov  eax, [procinfo2.box.width]
-    cmp  eax, 140
+    cmp  eax, [window_width]
      je  @f
     mov  [is_scroll_bar_needed],    0
-     jg  @f
-    mov  edx, 140
+    cmp  eax, 140
+     jnl @f
+    mov  eax, 140
   @@:
+    mov  edx, eax
+    mov  [window_width],    eax
 
     mov  eax, [procinfo2.box.height]
-    cmp  eax, 80
+    cmp  eax, [window_height]
      je  @f
     mov  [is_scroll_bar_needed],    0
-     jg  @f
-    mov  esi, 80
+    cmp  eax, 80
+     jnl @f
+    mov  eax, 80
   @@:
+    mov  esi, eax
+    mov  [window_height],   eax
 
     mcall 67, -1, -1
 
@@ -721,8 +727,9 @@ end if
 ;  Вы можете задать язык в MACROS.INC (lang fix язык)
 
 window_title:           db      'RtfRead v1.034',0
-buf_cmd_lin             dd      0x0
 is_scroll_bar_needed    dd      0x0
+window_width            dd      0x0
+window_height           dd      0x0
 ;---------------------------------------------------------------------
 l_libs_start:
 
