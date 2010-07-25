@@ -1036,10 +1036,10 @@ sys_window_maximize_handler: ;/////////////////////////////////////////////////
         add     edi, window_data
 
         ; can window change its height?
+        ; only types 2 and 3 can be resized
         mov     dl, [edi + WDATA.fl_wstyle]
-        and     dl, 0x0f
-        cmp     dl, 0x04
-        je      .exit
+        test    dl, 2
+        jz      .exit
 
         ; toggle normal/maximized window state
         mov     bl, [edi + WDATA.fl_wstate]
