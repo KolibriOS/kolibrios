@@ -341,12 +341,7 @@ create_new_struct:
 	cmp	[devices], MAX_DEVICES
 	jge	.fail
 
-	push	edx
-	stdcall KernelAlloc, device.size
-	pop	edx
-	test	eax, eax
-	jz	.fail
-	mov	ebx, eax
+	allocate_and_clear ebx, device.size, .fail	; Allocate the buffer for device structure
 
 	mov	[device.reset], reset
 	mov	[device.transmit], transmit
@@ -357,8 +352,8 @@ create_new_struct:
 
 	ret
 
-.fail:
-	add	esp, 4
+  .fail:
+	add	esp, 4		; return to caller of 'hook'
 	or	eax, -1
 	ret
 
@@ -678,8 +673,6 @@ nsr_002:
 ; buffer in [esp+4], size in [esp+8], pointer to device struct in ebx
 ;***************************************************************************
 
-; TODO: use a RING-buffer
-
 align 4
 transmit:
 
@@ -727,17 +720,12 @@ transmit:
 	add	dword [device.bytes_tx], eax
 	adc	dword [device.bytes_tx + 4], 0
 
-.finish:
-	call	Kernelfree
-	add	esp, 4
-	xor	eax, eax
-	ret
-
 .err:
-	call	Kernelfree
-	add	esp, 4
 	or	eax, -1
-	ret
+.finish:
+	stdcall KernelFree, [esp+4]
+	ret	8
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -769,7 +757,6 @@ int_handler:
 
 	loop	.nextdevice
 	ret
-
 
 
 ; looks like we've found a device wich received a packet..
