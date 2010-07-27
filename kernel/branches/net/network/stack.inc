@@ -66,13 +66,15 @@ SOCK_DGRAM	equ 2
 SOCK_RAW	equ 3
 
 ; Socket options
-SO_ACCEPTCON equ 1
+SO_ACCEPTCON	equ 1
 
-SOCKET_MAXDATA	equ 4096
+SOCKET_MAXDATA	equ 4096*32	; must be 4096*(power of 2) where 'power of 2' is at least 8
 
 ; Network driver types
 NET_TYPE_ETH	equ 1
 NET_TYPE_SLIP	equ 2
+
+MAX_backlog	equ 20		; backlog for stream sockets
 
 
 virtual at 0
@@ -92,6 +94,8 @@ virtual at 0
 	.packets_tx	dd ?	;
 	.packets_rx	dd ?	;
 
+;       .chksum         dd ?    ; bitmask stating available checksum routines on hardware
+
 	.end:
 
 end virtual
@@ -102,6 +106,7 @@ macro pseudo_random reg {
 	add	reg, [esp]
 	rol	reg, 5
 	xor	reg, [timer_ticks]
+	add	reg, [CPU_FREQ]
 	imul	reg, 214013
 	xor	reg, 0xdeadbeef
 	rol	reg, 9
@@ -111,13 +116,25 @@ macro ntohld reg {
 
 	rol	word reg, 8
 	rol	dword reg, 16
-	rol	word reg, 8
+	rol	word reg , 8
 
 }
 
 macro ntohlw reg {
 
 	rol	word reg, 8
+
+}
+
+
+macro packet_to_debug { 	; set esi to packet you want to print, ecx to number of bytes
+
+local	.loop
+
+  .loop:
+	lodsb
+	DEBUGF	1,"%x ", eax:2
+	loop	@r
 
 }
 
@@ -161,25 +178,23 @@ align 4
 stack_init:
 
 ; Init the network drivers list
-
 	xor	eax, eax
 	mov	edi, NET_RUNNING
 	mov	ecx, MAX_NET_DEVICES + 1
 	rep	stosd
 
-; Call other init procedures
+	ETH_init
+;        SLIP_init
+;        PPPOE_init
 
-	call	ETH_init
-;        call    SLIP_init
+	IPv4_init
+	ICMP_init
 
-	call	IPv4_init
-	call	ICMP_init
+	ARP_init
+	UDP_init
+	TCP_init
 
-	call	ARP_init
-	call	UDP_init
-	call	TCP_init
-
-	call	socket_init
+	SOCKET_init
 
 	mov	[net_tmr_count], 0
 
@@ -211,14 +226,14 @@ stack_handler:
 	test	[net_10ms], 0x0f	; 160ms
 	jnz	.exit
 
-;        call    TCP_timer_160ms
+	TCP_timer_160ms
 
 	test	[net_10ms], 0x3f	; 640ms
 	jnz	.exit
 
-;        call    TCP_timer_640ms
-	call	ARP_decrease_entry_ttls
-	call	IPv4_decrease_fragment_ttls
+	TCP_timer_640ms
+	ARP_decrease_entry_ttls
+	IPv4_decrease_fragment_ttls
 
   .exit:
 	ret
@@ -275,13 +290,13 @@ NET_add_device:
 	jmp	.error
 
   .ethernet:
-	DEBUGF	1,"Trying to add an ethernet driver\n"
+	DEBUGF	1,"Trying to add an ethernet device\n"
 
 	inc	[ETH_RUNNING]		  ; Indicate that one more ethernet device is up and running
 	jmp	.add_it
 
   .slip:
-	DEBUGF	1,"Trying to add a slip driver\n"
+	DEBUGF	1,"Trying to add a slip device\n"
 	;;;;
 	jmp	.error
 
@@ -490,15 +505,15 @@ checksum_2:
 
 	mov	ecx, edx
 	shr	ecx, 16
-	add	edx, ecx
-
+	add	dx, cx
+	test	dx, dx		; it seems that ZF is not set when CF is set :(
 	not	dx
 	jnz	.not_zero
 	dec	dx
   .not_zero:
 	xchg	dl, dh
 
-	DEBUGF 1,"Checksum: %x\n",dx
+	DEBUGF 1,"Checksum: %x\n", dx
 
 	ret
 

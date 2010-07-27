@@ -82,7 +82,7 @@ iglobal
   szNetUnRegDev       db 'NetUnRegDev',0
   szNetPtrToNum       db 'NetPtrToNum',0
   szEthReceiver       db 'EthReceiver',0
-  szIPv4Handler       db 'IPv4Handler',0
+  szIPv4_input	      db 'IPv4_input',0
 
 
 align 16
@@ -155,8 +155,8 @@ kernel_export:
   dd szNetRegDev       , NET_add_device
   dd szNetUnRegDev     , NET_remove_device
   dd szNetPtrToNum     , NET_ptr_to_num
-  dd szEthReceiver     , ETH_receiver
-  dd szIPv4Handler     , IPv4_handler
+  dd szEthReceiver     , ETH_input
+  dd szIPv4_input      , IPv4_input
 
 exp_lfb:
   dd szLFBAddress      , 0

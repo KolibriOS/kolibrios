@@ -35,21 +35,14 @@
 macro set_io addr {
 
 	if	addr = 0
-
 	mov	edx, [device.io_addr]
-
 	else if addr = LAST_IO
-
 	else
-
 	add	edx, addr - LAST_IO
-
 	end if
 
 	LAST_IO = addr
 }
-
-
 
 macro allocate_and_clear dest, size, err {
 
@@ -82,8 +75,6 @@ macro allocate_and_clear dest, size, err {
 	rep	stosd
 
 }
-
-
 
 macro find_io bus, dev, io {
 
@@ -126,7 +117,6 @@ macro find_irq bus, dev, irq {
 
 }
 
-
 macro find_rev bus, dev, rev {
 
 	push	eax edx ecx
@@ -137,8 +127,6 @@ macro find_rev bus, dev, rev {
 	pop	ecx edx eax
 
 }
-
-
 
 macro make_bus_master bus, dev {
 
@@ -168,10 +156,7 @@ virtual at edx
 end virtual
 
 
-
-
 if used null_op
-
 align 4
 null_op:
 	or	eax, -1
@@ -180,11 +165,11 @@ null_op:
 end if
 
 
-macro virt_to_dma { ; input is eax
+macro GetRealAddr { ; input is eax
 
 	push	ax
-	and	word[esp], PAGESIZE - 1
 	call	GetPgAddr
+	and	word[esp], PAGESIZE - 1
 	or	ax, word[esp]
 	inc	esp
 	inc	esp
@@ -209,7 +194,7 @@ macro NET_DEVICE {
 	.end:
 }
 
-;struc ETH_DEVICE {
+
 macro ETH_DEVICE {
       NET_DEVICE
 
@@ -236,15 +221,3 @@ macro SLIP_DEVICE {
 	.mode		dd ?
 
 }
-
-macro GetRealAddr {
-
-	push	eax
-	call	GetPgAddr
-	and	dword [esp], (PAGESIZE - 1)
-	or	eax, dword [esp]
-	add	esp, 4
-
-}
-
-

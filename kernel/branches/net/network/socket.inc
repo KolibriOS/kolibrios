@@ -5,11 +5,13 @@
 ;;                                                                 ;;
 ;;  SOCKET.INC                                                     ;;
 ;;                                                                 ;;
-;;    Written by hidnplayr@kolibrios.org                           ;;
-;;     based on code by mike.dld                                   ;;
+;;    Written by hidnplayr@kolibrios.org,                          ;;
+;;     and Clevermouse.                                            ;;
 ;;                                                                 ;;
-;;          GNU GENERAL PUBLIC LICENSE                             ;;
-;;             Version 2, June 1991                                ;;
+;;       Based on code by mike.dld                                 ;;
+;;                                                                 ;;
+;;         GNU GENERAL PUBLIC LICENSE                              ;;
+;;          Version 2, June 1991                                   ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,9 +33,7 @@ virtual at 0
 	.errorcode		dd ?
 
 	.options		dd ?
-	.SO_SND.SB_CC		dd ?  ;;;;; socket options: number of bytes in socket
-	.SO_RCV.SB_CC		dd ?
-	.state			dd ?  ;;;;;;;;;
+	.state			dd ?
 
 	.end:
 end virtual
@@ -47,15 +47,6 @@ virtual at SOCKET.end
 
 	.RemoteIP		dd ?
 				rd 3 ; for IPv6 addresses
-
-	.end:
-end virtual
-
-virtual at SOCKET.end
-
-	SOCKET_virtual:
-
-	.ConnectedTo		dd ? ; Socket number of other socket this one is connected to
 
 	.end:
 end virtual
@@ -114,7 +105,6 @@ virtual at IP_SOCKET.end
 
 ;----------------------
 ; Transmit timing stuff
-
 	.t_idle 		dd ?
 	.t_rtt			dd ?
 	.t_rtseq		dd ?
@@ -125,7 +115,6 @@ virtual at IP_SOCKET.end
 
 ;-----------------
 ; Out-of-band data
-
 	.t_oobflags		dd ?
 	.t_iobc 		dd ?
 	.t_softerror		dd ?
@@ -133,7 +122,6 @@ virtual at IP_SOCKET.end
 
 ;---------
 ; RFC 1323
-
 	.SND_SCALE		db ? ; Scale factor
 	.RCV_SCALE		db ?
 	.request_r_scale	db ?
@@ -146,12 +134,11 @@ virtual at IP_SOCKET.end
 
 ;-------
 ; Timers
-
-	.timer_retransmission	dw ?	; rexmt
+	.timer_retransmission	dw ? ; rexmt
 	.timer_ack		dw ?
 	.timer_persist		dw ?
-	.timer_keepalive	dw ?	; keepalive/syn timeout
-	.timer_timed_wait	dw ?	; also used as 2msl timer
+	.timer_keepalive	dw ? ; keepalive/syn timeout
+	.timer_timed_wait	dw ? ; also used as 2msl timer
 
 	.end:
 end virtual
@@ -176,9 +163,32 @@ virtual at IP_SOCKET.end
 	.end:
 end virtual
 
+struc	RING_BUFFER {
+	.start_ptr		dd ? ; Pointer to start of buffer
+	.end_ptr		dd ? ; pointer to end of buffer
+	.read_ptr		dd ? ; Read pointer
+	.write_ptr		dd ? ; Write pointer
+	.size			dd ? ; Number of bytes buffered
+}
+
+virtual at 0
+
+	RING_BUFFER	RING_BUFFER
+
+end virtual
+
+virtual at TCP_SOCKET.end
+
+	rcv	RING_BUFFER
+	snd	RING_BUFFER
+
+ STREAM_SOCKET:
+	.end:
+
+end virtual
+
 
 struct	socket_queue_entry
-;        .owner          dd ?
 	.data_ptr	dd ?
 	.buf_ptr	dd ?
 	.data_size	dd ?
@@ -186,7 +196,6 @@ struct	socket_queue_entry
 ends
 
 
-MAX_backlog		equ 20	     ; backlog for stream sockets
 SOCKETBUFFSIZE		equ 4096     ; in bytes
 
 SOCKET_QUEUE_SIZE	equ 10	     ; maximum number ofincoming packets queued for 1 socket
@@ -204,24 +213,41 @@ endg
 ;
 ; SOCKET_init
 ;
-;  -
-;
-;  IN:  /
-;  OUT: /
-;
 ;-----------------------------------------------------------------
-align 4
-socket_init:
+macro	SOCKET_init {
 
 	xor	eax, eax
 	mov	edi, net_sockets
 	mov	ecx, 4
 	rep	stosd
 
-	mov	[last_UDP_port], MIN_EPHEMERAL_PORT
-	mov	[last_TCP_port], MIN_EPHEMERAL_PORT
+;--- for random port --
 
-	ret
+	mov	al, 0x0 		; set up 1s timer
+	out	0x70, al
+	in	al, 0x71
+
+;----------------------
+
+       @@:
+	pseudo_random eax
+	cmp	ax, MIN_EPHEMERAL_PORT
+	jl	@r
+	cmp	ax, MAX_EPHEMERAL_PORT
+	jg	@r
+
+	mov	[last_UDP_port], ax
+
+       @@:
+	pseudo_random eax
+	cmp	ax, MIN_EPHEMERAL_PORT
+	jl	@r
+	cmp	ax, MAX_EPHEMERAL_PORT
+	jg	@r
+
+	mov	[last_TCP_port], ax
+
+}
 
 
 ;-----------------------------------------------------------------
@@ -232,11 +258,20 @@ socket_init:
 align 4
 sys_socket:
 	cmp	ebx, 8		; highest possible number
-	jg	s_error
-	lea	ebx, [.table + 4*ebx]
+	jg	@f
+	lea	ebx, [sock_sysfn_table + 4*ebx]
 	jmp	dword [ebx]
+       @@:
+	cmp	ebx, 255
+	jz	SOCKET_debug
 
-.table:
+s_error:
+	DEBUGF	1,"socket error\n"
+	mov	dword [esp+32], -1
+
+	ret
+
+sock_sysfn_table:
 	dd	SOCKET_open	; 0
 	dd	SOCKET_close	; 1
 	dd	SOCKET_bind	; 2
@@ -248,12 +283,6 @@ sys_socket:
 	dd	SOCKET_get_opt	; 8
 ;        dd      SOCKET_set_opt  ; 9
 
-
-s_error:
-	DEBUGF	1,"socket error\n"
-	mov	dword [esp+32], -1
-
-	ret
 
 
 ;-----------------------------------------------------------------
@@ -279,6 +308,40 @@ SOCKET_open:
 	mov	[eax + SOCKET.Protocol], esi
 
 	mov	[esp+32], edi
+
+	cmp	ecx, AF_INET4
+	jnz	.no_stream
+
+	push	[IP_LIST]		  ;;;;
+	pop	[eax + IP_SOCKET.LocalIP] ;;;;
+
+	cmp	edx, IP_PROTO_TCP
+	jnz	.no_stream
+
+	mov	esi, eax
+	stdcall kernel_alloc, SOCKET_MAXDATA
+	mov	[esi + rcv.start_ptr], eax
+	mov	[esi + rcv.write_ptr], eax
+	mov	[esi + rcv.read_ptr], eax
+	mov	[esi + rcv.size], 0
+	add	eax,  SOCKET_MAXDATA
+	mov	[esi + rcv.end_ptr], eax
+
+	stdcall kernel_alloc, SOCKET_MAXDATA
+	mov	[esi + snd.start_ptr], eax
+	mov	[esi + snd.write_ptr], eax
+	mov	[esi + snd.read_ptr], eax
+	mov	[esi + snd.size], 0
+	add	eax,  SOCKET_MAXDATA
+	mov	[esi + snd.end_ptr], eax
+
+	ret
+
+  .no_stream:
+
+	push	edi
+	init_queue (eax + SOCKET_QUEUE_LOCATION)
+	pop	edi
 
 	ret
 
@@ -347,9 +410,6 @@ SOCKET_bind:
 	DEBUGF	1,"using local port: %u\n", bx
 	mov	word [eax + UDP_SOCKET.LocalPort], bx
 
-	mov	ebx, dword [edx + 4]
-	mov	dword [eax + IP_SOCKET.LocalIP], ebx
-
 	DEBUGF	1,"local ip: %u.%u.%u.%u\n",\
 	[eax + IP_SOCKET.LocalIP + 0]:1,[eax + IP_SOCKET.LocalIP + 1]:1,\
 	[eax + IP_SOCKET.LocalIP + 2]:1,[eax + IP_SOCKET.LocalIP + 3]:1
@@ -411,20 +471,10 @@ SOCKET_connect:
 
 
   .tcp:
-	; set sequence number
-
-	mov	ebx, [TCP_sequence_num]
-	add	[TCP_sequence_num], 6400
-	mov	[eax + TCP_SOCKET.ISS], ebx
-
-	mov	[eax + TCP_SOCKET.timer_keepalive], 120 	; 120*630ms => 75,6 seconds
-
 	lea	ebx, [eax + SOCKET.lock]
 	call	wait_mutex
 
 	; fill in remote port and IP
-
-;;;;;;        mov     [eax + TCP_SOCKET.wndsizeTimer], 0     ; Reset the window timer.
 
 	mov	bx , word [edx + 2]
 	mov	[eax + TCP_SOCKET.RemotePort], bx
@@ -435,21 +485,25 @@ SOCKET_connect:
 
 	; check if local port and IP is ok
 
-	cmp	[eax + IP_SOCKET.LocalIP], 0
-	jne	@f
-	push	[IP_LIST]	    ;;;;; device zero = default
-	pop	[eax + IP_SOCKET.LocalIP]
-       @@:
-
 	cmp	[eax + TCP_SOCKET.LocalPort], 0
 	jne	@f
 	call	SOCKET_find_port
        @@:
+	DEBUGF	1,"local port: %u\n", [eax + TCP_SOCKET.LocalPort]:2
 
-	DEBUGF	1,"remote port: %u\n", [eax + TCP_SOCKET.LocalPort]:2
+;;;;;
+	mov	[eax + TCP_SOCKET.timer_persist], 0
+	mov	[eax + TCP_SOCKET.t_state], TCB_SYN_SENT
+	mov	ebx, [TCP_sequence_num]
+	add	[TCP_sequence_num], 6400
+	mov	[eax + TCP_SOCKET.ISS], ebx
+	mov	[eax + TCP_SOCKET.timer_keepalive], 120 	; 120*640ms => 75,6 seconds
 
-;        mov     [eax + TCP_SOCKET.t_state], TCB_SYN_SENT
+;;;;            mov     [ebx + TCP_SOCKET.timer_retransmission],
+
+	push	eax
 	call	TCP_output
+	pop	eax
 
 	mov	[eax + SOCKET.lock], 0
 
@@ -583,11 +637,11 @@ SOCKET_close:
 	test	[eax + TCP_SOCKET.t_state], TCB_SYN_RECEIVED  ;;;;;;
 	jz	.free
 
-	call	TCP_output
+  ;;;      call    TCP_output
 
-	mov	dword [esp+32], 0
+  ;;;      mov     dword [esp+32], 0
 
-	ret
+  ;;;      ret
 
 ;       state must be LISTEN, SYN_SENT, CLOSED or maybe even invalid
 ;       so, we may destroy the socket
@@ -688,6 +742,12 @@ SOCKET_send:
   .af_inet4:
 	DEBUGF	1,"af_inet4\n"
 
+	cmp	[eax + IP_SOCKET.LocalIP], 0
+	jne	@f
+	mov	ebx, [IP_LIST]				;;;;
+	mov	dword [eax + IP_SOCKET.LocalIP], ebx
+       @@:
+
 	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
 	je	.tcp
 
@@ -786,6 +846,35 @@ SOCKET_get_opt:
 	jz	@f
 	mov	[eax], ecx
 @@:
+	mov	dword [esp+32], 0
+	ret
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_debug
+;
+;  Copies socket variables to application buffer
+;
+;  IN:  ecx = socket number
+;       edx = pointer to buffer
+;
+;  OUT: -1 on error
+;-----------------------------------------------------------------
+align 4
+SOCKET_debug:
+
+	DEBUGF	1,"socket_debug\n"
+
+	call	SOCKET_num_to_ptr
+	jz	s_error
+
+	mov	esi, eax
+	mov	edi, edx
+	mov	ecx, SOCKETBUFFSIZE/4
+	rep	movsd
+
 	mov	dword [esp+32], 0
 	ret
 
@@ -941,6 +1030,188 @@ SOCKET_input:
 
 ;-----------------------------------------------------------------
 ;
+; SOCKET_ring_add
+;
+; Adds data to a stream socket
+;
+;  IN:  eax = ptr to ring struct
+;       ecx = data size
+;       esi = ptr to data
+;
+;  OUT: eax = number of bytes stored
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_ring_add:
+
+	DEBUGF	1,"SOCKET_ring_add: ringbuff=%x ptr=%x size=%u\n", eax, esi, ecx
+
+	mov	edi, [eax + RING_BUFFER.size]
+	add	edi, ecx
+	cmp	edi, SOCKET_MAXDATA
+	jg	.too_large
+
+	mov	[eax + RING_BUFFER.size], edi	     ; update size
+  .copy:
+	push	ecx	;<<<< 1
+	mov	edi, [eax + RING_BUFFER.write_ptr]   ; set write ptr in edi
+	add	[eax + RING_BUFFER.write_ptr], ecx   ; update write pointer
+	mov	edx, [eax + RING_BUFFER.end_ptr]
+	cmp	edx, [eax + RING_BUFFER.write_ptr]
+	jg	.copy_in_2
+	je	.wrap_write_ptr
+
+  .copy_more:
+	push	ecx
+	and	ecx, 3
+	rep	movsb
+	pop	ecx
+	shr	ecx, 2
+	rep	movsd
+	pop	ecx	; >>>> 1/2
+	DEBUGF	2,"Copied %u bytes\n", ecx
+
+	ret
+
+  .too_large:
+	mov	ecx, SOCKET_MAXDATA				; calculate number of bytes available in buffer
+	sub	ecx, [eax + RING_BUFFER.size]
+	jz	.full
+
+	mov	[eax + RING_BUFFER.size], SOCKET_MAXDATA	; update size, we will fill buffer completely
+
+	jmp	.copy
+
+  .full:
+	DEBUGF	2,"Ring buffer is full!\n"
+	xor	ecx, ecx
+	ret
+
+  .copy_in_2:
+	DEBUGF	1,"Copying in 2 passes\n"
+
+	mov	edx, ecx
+	mov	ecx, [eax + RING_BUFFER.end_ptr]    ; find number of bytes till end of buffer
+	sub	ecx, edi
+	sub	edx, ecx
+	push	edx	; <<<< 2
+
+	mov	edi, [eax + RING_BUFFER.start_ptr]
+	call	.copy_more
+
+  .wrap_write_ptr:
+	sub	[eax + RING_BUFFER.write_ptr], SOCKET_MAXDATA	; update write pointer
+	jmp	.copy_more
+
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_ring_read
+;
+; reads the data, but let the data remain in the buffer
+;
+;  IN:  eax = ptr to ring struct
+;       ecx = buffer size
+;       edi = ptr to buffer
+;
+;  OUT: eax = number of bytes read
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_ring_read:
+
+	DEBUGF	1,"SOCKET_ring_read: ringbuff=%x ptr=%x size=%u\n", eax, esi, ecx
+
+	cmp	[eax + RING_BUFFER.size], ecx	     ; update size
+	jl	.too_large
+
+	mov	esi, [eax + RING_BUFFER.read_ptr]    ; update read ptr
+  .copy:
+	push	ecx	;<<<< 1
+	mov	edx, [eax + RING_BUFFER.read_ptr]
+	add	edx, ecx
+	cmp	edx, [eax + RING_BUFFER.end_ptr]
+	jg	.copy_in_2
+
+  .copy_more:
+	push	ecx
+	and	ecx, 3
+	rep	movsb
+	pop	ecx
+	shr	ecx, 2
+	rep	movsd
+	pop	ecx	; >>>> 1/2
+	DEBUGF	2,"Copied %u bytes\n", ecx
+
+	ret
+
+  .too_large:
+	mov	ecx, [eax + RING_BUFFER.size]
+	jmp	.copy
+
+  .full:
+	DEBUGF	2,"Ring buffer is full!\n"
+	xor	ecx, ecx
+	ret
+
+  .copy_in_2:
+	DEBUGF	1,"Copying in 2 passes\n"
+
+	mov	edx, ecx
+	mov	ecx, [eax + RING_BUFFER.end_ptr]    ; find number of bytes till end of buffer
+	sub	ecx, edi
+	sub	edx, ecx
+	push	edx	; <<<< 2
+
+	mov	esi, [eax + RING_BUFFER.start_ptr]
+	call	.copy_more
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_ring_free
+;
+; Free's some bytes from the ringbuffer
+;
+;  IN:  eax = ptr to ring struct
+;       ecx = data size
+;
+;  OUT: ecx = number of bytes free-ed
+;
+;-----------------------------------------------------------------
+align 4
+SOCKET_ring_free:
+
+	DEBUGF	1,"Trying to free %u bytes of data from ring %x\n", ecx, eax
+
+	cmp	ecx, [eax + RING_BUFFER.size]
+	jle	.go_for_it
+
+	cmp	ecx, SOCKET_MAXDATA				;;;;
+	jg	.moron_input
+
+	mov	ecx, [eax + RING_BUFFER.size]
+
+  .go_for_it:
+	sub	[eax + RING_BUFFER.size], ecx
+	add	[eax + RING_BUFFER.read_ptr], ecx
+
+	mov	edx, [eax + RING_BUFFER.end_ptr]
+	cmp	[eax + RING_BUFFER.read_ptr], edx
+	jl	@f
+	sub	[eax + RING_BUFFER.read_ptr], SOCKET_MAXDATA	;;;;;
+       @@:
+	ret
+
+  .moron_input:
+	xor	ecx, ecx
+	ret
+
+
+;-----------------------------------------------------------------
+;
 ; SOCKET_notify_owner
 ;
 ; notify's the owner of a socket that something happened
@@ -1011,7 +1282,7 @@ SOCKET_alloc:
 	push	ecx ebx
 
 	stdcall kernel_alloc, SOCKETBUFFSIZE
-	DEBUGF	1, "socket_alloc: %x ", eax
+	DEBUGF	1, "SOCKET_alloc: ptr=%x\n", eax
 	or	eax, eax
 	jz	.exit
 
@@ -1023,17 +1294,14 @@ SOCKET_alloc:
 	rep	stosd
 	pop	edi eax
 
-	init_queue (eax + SOCKET_QUEUE_LOCATION)
-
 ; find first free socket number and use it
-
 	mov	ebx, net_sockets
 	xor	ecx, ecx
   .next_socket_number:
 	inc	ecx
   .next_socket:
 	mov	ebx, [ebx + SOCKET.NextPtr]
-	or	ebx, ebx
+	test	ebx, ebx
 	jz	.last_socket
 	cmp	[ebx + SOCKET.Number], ecx
 	jne	.next_socket
@@ -1042,23 +1310,21 @@ SOCKET_alloc:
 
   .last_socket:
 	mov	[eax + SOCKET.Number], ecx
-
-	DEBUGF	1, "(number: %u)\n", ecx
+	DEBUGF	1, "SOCKET_alloc: number=%u\n", ecx
+	mov	edi, ecx
 
 ; Fill in PID
 	mov	ebx, [TASK_BASE]
 	mov	ebx, [ebx + TASKDATA.pid]
-
 	mov	[eax + SOCKET.PID], ebx
 
-; add socket to the list by changing pointers
-
+; add socket to the list by re-arranging some pointers
 	mov	ebx, [net_sockets + SOCKET.NextPtr]
 
 	mov	[eax + SOCKET.PrevPtr], net_sockets
 	mov	[eax + SOCKET.NextPtr], ebx
 
-	or	ebx, ebx
+	test	ebx, ebx
 	jz	@f
 	add	ebx, SOCKET.lock	; lock the next socket
 	call	wait_mutex
@@ -1068,9 +1334,7 @@ SOCKET_alloc:
        @@:
 
 	mov	[net_sockets + SOCKET.NextPtr], eax
-
-	mov	edi, ecx
-	or	eax, eax	; used to clear zero flag
+	or	eax, eax		; used to clear zero flag
   .exit:
 	pop	ebx ecx
 
@@ -1101,6 +1365,16 @@ SOCKET_free:
 
 	DEBUGF	1, "freeing socket..\n"
 
+	cmp	[eax + SOCKET.Domain], AF_INET4
+	jnz	.no_stream
+
+	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	jnz	.no_stream
+
+	stdcall kernel_free, [eax + rcv.start_ptr]
+	stdcall kernel_free, [eax + snd.start_ptr]
+  .no_stream:
+
 	push	eax				; this will be passed to kernel_free
 	mov	ebx, [eax + SOCKET.NextPtr]
 	mov	eax, [eax + SOCKET.PrevPtr]
@@ -1123,6 +1397,39 @@ SOCKET_free:
 	DEBUGF	1, "socket is gone!\n"
 
   .error:
+	ret
+
+
+; socket nr in ebx
+; new socket nr in eax
+; preserver edx
+
+align 4
+SOCKET_fork:
+
+;; Exit if backlog queue is full
+;        mov     ax, [ebx + TCP_SOCKET.backlog_cur]
+;        cmp     ax, [ebx + TCP_SOCKET.backlog]
+;        jae     .exit
+
+; Allocate new socket
+	call	SOCKET_alloc
+     ;;;   jz      .fail
+
+; Copy structure from current socket to new, (including lock!)
+; We start at PID to reserve the socket num, and the 2 pointers at beginning of socket
+	lea	esi, [edx + SOCKET.PID]
+	lea	edi, [eax + SOCKET.PID]
+	mov	ecx, (TCP_SOCKET.end - SOCKET.PID + 3)/4
+	rep	movsd
+
+;; Push pointer to new socket to queue
+;        movzx   ecx, [ebx + TCP_SOCKET.backlog_cur]
+;        inc     [ebx + TCP_SOCKET.backlog_cur]
+;        mov     [ebx + TCP_SOCKET.end + ecx*4], eax
+
+;;;;        mov     [eax + IP_SOCKET.RemoteIP], esi ; IP source address
+
 	ret
 
 

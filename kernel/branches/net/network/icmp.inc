@@ -109,21 +109,16 @@ endg
 ;
 ; ICMP_init
 ;
-;  This function resets all ICMP variables
-;
-;  IN:  /
-;  OUT: /
-;
 ;-----------------------------------------------------------------
-align 4
-ICMP_init:
+
+macro ICMP_init {
 
 	xor	eax, eax
 	mov	edi, ICMP_PACKETS_TX
 	mov	ecx, 2*MAX_IP
 	rep	stosd
 
-	ret
+}
 												    
 													     
 
@@ -235,7 +230,7 @@ ICMP_input:
 	call	IPv4_dest_to_dev
 	cmp	edi,-1
 	je	.dump
-	inc	[ICMP_PACKETS_RX+4*edi]
+	inc	[ICMP_PACKETS_RX+edi]
 
 	DEBUGF 1,"Found valid ICMP packet for socket %x\n", esi
 
@@ -284,10 +279,10 @@ ICMP_output:
 	push	esi edi edx
 
 	add	ecx, ICMP_Packet.Data
-	mov	di , IP_PROTO_ICMP
+	mov	di , IP_PROTO_ICMP SHL 8 + 128	; TTL
 	shr	edx, 16
 
-	call	IPv4_create_packet
+	call	IPv4_output
 	jz	.exit
 
 	DEBUGF	1,"full icmp packet size: %u\n", edx

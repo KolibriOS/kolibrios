@@ -40,19 +40,62 @@ endg
 ;
 ;  This function resets all UDP variables
 ;
-;  IN:  /
-;  OUT: /
-;
 ;-----------------------------------------------------------------
-align 4
-UDP_init:
+macro	UDP_init {
 
 	xor	eax, eax
 	mov	edi, UDP_PACKETS_TX
 	mov	ecx, 2*MAX_IP
 	rep	stosd
+}
 
-	ret
+
+
+
+macro	UDP_checksum	IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size, destroys: ecx, edx
+
+; Pseudoheader
+	mov	edx, IP_PROTO_UDP
+
+	add	dl, [IP1+1+4]
+	adc	dh, [IP1+0+4]
+	adc	dl, [IP1+3+4]
+	adc	dh, [IP1+2+4]
+
+	adc	dl, [IP2+1+8]
+	adc	dh, [IP2+0+8]
+	adc	dl, [IP2+3+8]
+	adc	dh, [IP2+2+8]
+
+	adc	dl, cl ; byte[esi+UDP_Packet.Length+1]
+	adc	dh, ch ; byte[esi+UDP_Packet.Length+0]
+
+; Done with pseudoheader, now do real header
+	adc	dl, byte[esi+UDP_Packet.SourcePort+1]
+	adc	dh, byte[esi+UDP_Packet.SourcePort+0]
+
+	adc	dl, byte[esi+UDP_Packet.DestinationPort+1]
+	adc	dh, byte[esi+UDP_Packet.DestinationPort+0]
+
+	adc	dl, byte[esi+UDP_Packet.Length+1]
+	adc	dh, byte[esi+UDP_Packet.Length+0]
+
+	adc	edx, 0
+
+; Done with header, now do data
+	push	esi
+	movzx	ecx, [esi+UDP_Packet.Length]
+	rol	cx , 8
+	sub	cx , UDP_Packet.Data
+	add	esi, UDP_Packet.Data
+
+	call	checksum_1
+	call	checksum_2
+	pop	esi
+
+	add	[esi+UDP_Packet.Checksum], dx	; this final instruction will set or clear ZF :)
+
+}
 
 
 ;-----------------------------------------------------------------
@@ -62,11 +105,11 @@ UDP_init:
 ;  Called by IPv4_input,
 ;  this procedure will inject the udp data diagrams in the application sockets.
 ;
-;  IN:  Pointer to buffer in [esp]
-;       size of buffer in [esp+4]
-;       pointer to device struct in ebx
-;       UDP Packet size in ecx
-;       pointer to UDP Packet in edx
+;  IN:   [esp]  = Pointer to buffer
+;       [esp+4] = size of buffer
+;       ebx = ptr to device struct
+;       ecx = UDP Packet size
+;       edx = ptr to UDP header
 ;
 ;       esi = ipv4 source address
 ;       edi = ipv4 dest   address
@@ -80,18 +123,18 @@ UDP_input:
 	DEBUGF	1,"UDP_input, size:%u\n", ecx
 
 ; First validate, checksum:
-	cmp	[edx + UDP_Packet.Checksum], 0
-	jz	.no_checksum
-
-	xchg	edi, esi	; save ipv4 source address to edi so we can use it later
+	neg	[esi+UDP_Packet.Checksum]	; substract chechksum from 0
+	jz	.no_checksum			; if checksum is zero, it is considered valid and we continue processing
+						; otherwise, we will re-calculate the checksum and add it to this value, thus creating 0 when it is correct
 
 	push	edx
-	push	esi edi
+	push	edi
+	push	esi
 	mov	esi, edx
-	call	UDP_checksum	; this destroys edx, ecx and esi (but not edi...)
+	UDP_checksum (esp), (esp+4)
+	pop	edi
+	pop	esi	; we dont need it, but it is smaller then add esp, 4
 	pop	edx
-
-	cmp	[edx + UDP_Packet.Checksum], 0
 	jnz	.checksum_mismatch
 
   .no_checksum:
@@ -168,12 +211,6 @@ UDP_input:
 
 	DEBUGF	2,"UDP_Handler - checksum mismatch\n"
 
-;        mov     esi, edx
-;       @@:                         ;
-;        lodsb                      ;
-;        DEBUGF  2,"%x ", eax:2     ;
-;        loop    @r                 ;
-
   .dump:
 	call	kernel_free
 	add	esp, 4 ; pop (balance stack)
@@ -207,26 +244,23 @@ UDP_output:
 	DEBUGF	1,"local port: %u\n", dx
 	rol	dx, 8
 
-
 	mov	ebx, [eax + IP_SOCKET.LocalIP]
 	mov	eax, [eax + IP_SOCKET.RemoteIP]
 
-	mov	di , IP_PROTO_UDP
+	mov	di, IP_PROTO_UDP shl 8 + 128
 	sub	esp, 8						; Data ptr and data size will be placed here
 	add	ecx, UDP_Packet.Data
 
 ;;; TODO: fragment id
-
 	push	edx esi
-	call	IPv4_create_packet
+	call	IPv4_output
 	jz	.fail
 
 	mov	[esp + 8], eax					; pointer to buffer start
 	mov	[esp + 8 + 4], edx				; buffer size
 
-	rol	cx, 8
 	mov	[edi + UDP_Packet.Length], cx
-	ror	cx, 8
+	rol	[edi + UDP_Packet.Length], 8
 
 	pop	esi
 	push	edi ecx
@@ -240,13 +274,11 @@ UDP_output:
 	pop	ecx edi
 
 	pop	dword [edi + UDP_Packet.SourcePort]
-	mov	[edi + UDP_Packet.Checksum], 0			; set it to zero, to calculate checksum
 
 ; Checksum
 	mov	esi, edi
-	pushd	[edi-4] ; destination address                   ; TODO: fix this, IPv4 packet could have options..
-	pushd	[edi-8] ; source address
-	call	UDP_checksum
+	mov	[edi + UDP_Packet.Checksum], 0
+	UDP_checksum (edi-4), (edi-8)				; TODO: fix this, IPv4 packet could have options..
 
 	inc	[UDP_PACKETS_TX]
 
@@ -254,78 +286,12 @@ UDP_output:
 
 	call	[ebx + NET_DEVICE.transmit]
 	ret
+
   .fail:
-	add	esp, 8+8
+	DEBUGF	1,"UDP_output: failed\n"
+	add	esp, 4+4+8
+	xor	eax, eax
 	ret
-
-
-
-
-;-----------------------------------------------------------------
-;
-; UDP_checksum
-;
-; This is the fast procedure to create or check a UDP header
-;  - To create a new checksum, the checksum field must be set to 0 before computation
-;  - To check an existing checksum, leave the checksum as is,
-;     and it will be 0 after this procedure, if it was correct
-;
-;  IN:  push source ip
-;       push dest ip
-;       esi = packet ptr
-;
-;  OUT: checksum is filled in in packet! (but also in dx)
-;
-;-----------------------------------------------------------------
-
-align 4
-UDP_checksum:
-
-; Pseudoheader
-	mov	edx, IP_PROTO_UDP		; NO shl 8 here ! (it took me ages to figure this one out)
-
-	add	dl, [esp+1+4]
-	adc	dh, [esp+0+4]
-	adc	dl, [esp+3+4]
-	adc	dh, [esp+2+4]
-
-	adc	dl, [esp+1+8]
-	adc	dh, [esp+0+8]
-	adc	dl, [esp+3+8]
-	adc	dh, [esp+2+8]
-
-
-	adc	dl, cl ; byte[esi+UDP_Packet.Length+1]
-	adc	dh, ch ; byte[esi+UDP_Packet.Length+0]
-
-; Done with pseudoheader, now do real header
-	adc	dl, byte[esi+UDP_Packet.SourcePort+1]
-	adc	dh, byte[esi+UDP_Packet.SourcePort+0]
-
-	adc	dl, byte[esi+UDP_Packet.DestinationPort+1]
-	adc	dh, byte[esi+UDP_Packet.DestinationPort+0]
-
-	adc	dl, byte[esi+UDP_Packet.Length+1]
-	adc	dh, byte[esi+UDP_Packet.Length+0]
-
-	adc	edx, 0
-
-; Done with header, now do data
-	push	esi
-	movzx	ecx, [esi+UDP_Packet.Length]
-	rol	cx , 8
-	sub	cx , UDP_Packet.Data
-	add	esi, UDP_Packet.Data
-
-	call	checksum_1
-	call	checksum_2
-	pop	esi
-
-	neg	[esi+UDP_Packet.Checksum]	    ; zero will stay zero so we just get the checksum
-	add	[esi+UDP_Packet.Checksum], dx	    ;  , else we will get (new checksum - old checksum) in the end, wich should be 0 :)
-
-	ret	8
-
 
 
 

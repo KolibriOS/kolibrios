@@ -56,37 +56,33 @@ endg
 ;
 ;  This function resets all ethernet variables
 ;
-;  IN:  /
-;  OUT: /
-;
 ;-----------------------------------------------------------------
-align 4
-ETH_init:
+macro	ETH_init {
 
 	mov	[ETH_RUNNING], 0
 
-	ret
+}
 
 
 ;-----------------------------------------------------------------
 ;
-; ETH_Receiver:
+; ETH_input
 ;
 ;  This function is called by ethernet drivers,
 ;  It pushes the received ethernet packets onto the eth_in_queue
 ;
 ;  IN:   [esp]  = Pointer to buffer
-;       [esp-4] = size of buffer
+;       [esp+4] = size of buffer
 ;         ebx   = pointer to eth_device
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
 align 4
-ETH_receiver:
+ETH_input:
 	mov	eax, [esp]
 	mov	ecx, [esp+4]
 
-	DEBUGF	1,"ETH_Handler - size: %u\n", ecx
+	DEBUGF	1,"ETH_input - size: %u\n", ecx
 	cmp	ecx, 60    ; check packet length
 	jl	.dump
 	sub	ecx, ETH_FRAME.Data
@@ -95,10 +91,10 @@ ETH_receiver:
 	mov	ax , [eax + ETH_FRAME.Type]
 
 	cmp	ax, ETHER_IPv4
-	je	IPv4_handler
+	je	IPv4_input
 
 	cmp	ax, ETHER_ARP
-	je	ARP_handler
+	je	ARP_input
 
 ;        cmp     ax, ETHER_PPP_DISCOVERY
 ;        je      PPPOE_discovery
@@ -106,19 +102,19 @@ ETH_receiver:
 	DEBUGF	2,"Unknown ethernet packet type %x\n", ax
 
   .dump:
-	DEBUGF	2,"ETH_Handler - dumping\n"
+	DEBUGF	2,"ETH_input - dumping\n"
 	call	kernel_free
 	add	esp, 4
 	ret
 
 ;-----------------------------------------------------------------
 ;
-; ETH_create_packet
+; ETH_output
 ;
 ; IN: eax = pointer to source mac
-;     ebx = pointer to destination mac
+;     ebx = device ptr
 ;     ecx = packet size
-;     edx = device number
+;     edx = pointer to destination mac
 ;      di = protocol
 ;
 ; OUT: edi = 0 on error, pointer to buffer otherwise
@@ -129,62 +125,60 @@ ETH_receiver:
 ;
 ;-----------------------------------------------------------------
 align 4
-ETH_create_packet:
+ETH_output:
 
-	DEBUGF	1,"Creating Ethernet Packet (size=%u): \n", ecx
+	DEBUGF	1,"ETH_output: size=%u device:%x\n", ecx, ebx
 
-	push	esi
-	mov	esi, [NET_DRV_LIST]	   ;;; TODO: FIXME
-	cmp	ecx, [esi + NET_DEVICE.mtu]
-	pop	esi
+	cmp	ecx, [ebx + NET_DEVICE.mtu]
 	jg	.exit
 
-	push	ecx di eax ebx edx
-
+	push	ecx			; << 1
+	push	di eax edx		; << 2
 	add	ecx, ETH_FRAME.Data
-	push	ecx
-	push	ecx
-	call	kernel_alloc
+
+	push	ecx			; << 3
+
+	push	ecx			; << 4
+	call	kernel_alloc		; >> 4
+	test	eax, eax
+	jz	.out_of_ram
 	mov	edi, eax
-	test	edi, edi
-	jz	.pop_exit
 
-	pop	ecx
-	pop	edx
+	pop	ecx			; >> 3
 
-	pop	esi
+	pop	esi			; >> 2
 	movsd
 	movsw
-	pop	esi
+	pop	esi			; >> 2
 	movsd
 	movsw
-	pop	ax
+	pop	ax			; >> 2
 	stosw
 
 	lea	eax, [edi - ETH_FRAME.Data]  ; Set eax to buffer start
-	mov	edx, ecx		     ; Set ebx to complete buffer size
-	pop	ecx
+	mov	edx, ecx		     ; Set edx to complete buffer size
 
-	xor	ebx, ebx			;;;; TODO: Fixme
-	mov	ebx, [NET_DRV_LIST + ebx]
+	pop	ecx			; >> 1
 
-	cmp	edx, 46 + ETH_FRAME.Data    ; If data size is less then 46, add padding bytes
-	jge	.continue
-	mov	edx, 46 + ETH_FRAME.Data
-       .continue:
-
-	DEBUGF	1,"done: %x size:%u device:%x\n", eax, edx, ebx
+	cmp	edx, 60-1		; minimum ethernet packet size
+	jle	.adjust_size
+	DEBUGF	1,"ETH_output: done: %x total size: %u\n", eax, edx
 	ret
 
-  .pop_exit:
-	DEBUGF	2,"Out of ram space!!\n"
-	add	esp, 18
-	and	edi, 0
+  .adjust_size:
+	mov	edx, 60
+	ret
+
+  .out_of_ram:
+	DEBUGF	2,"ETH_output: Out of ram space!!\n"
+	add	esp, 3*4+2+4
+	sub	edi, edi
 	ret
 
   .exit:
-	DEBUGF	2,"Packet too large!\n"
-	and	edi, 0
+	DEBUGF	2,"ETH_output: Packet too large!\n"
+	sub	edi, edi
+;;;        dec     edi
 	ret
 
 
