@@ -57,7 +57,7 @@ macro uglobal {
   UGlobals equ UGlobals,
   macro __UGlobalBlock { }
 
-endg fix }      ; Use endg for ending iglobal and uglobal blocks.
+endg fix }	; Use endg for ending iglobal and uglobal blocks.
 
 
 macro IncludeIGlobals{
@@ -176,7 +176,7 @@ struc mls [sstring]
     db ssize
     db sstring
   common
-    db -1         ; mod
+    db -1	  ; mod
  }
 
 
@@ -280,7 +280,7 @@ macro __mov reg,a,b {	    ; mike.dld
 
 
 include 'config.inc'
-;__CPU_type	equ	p5
+;__CPU_type     equ     p5
 SYSENTER_VAR	equ	0
 
 macro mcall a,b,c,d,e,f {   ; mike.dld, updated by Ghost for Fast System Calls
@@ -481,7 +481,7 @@ struct process_information
   slot_state		  dw ?	; +50
 			  dw ?	; +52
   client_box		  BOX	; +54
-  wnd_state               db ?  ; +70
+  wnd_state		  db ?	; +70
   rb (1024-71)
 ends
 
@@ -517,6 +517,31 @@ struct FILEINFO
   DateModify FILEDATE
   Size	     dq ?
 ends
+
+
+if __CPU_type eq p5		; CMOVcc isnt supported on the P5
+
+cmove	fix	cmovz
+macro cmovz reg1, reg2 {
+
+local	.jumpaddr
+
+	jnz	.jumpaddr
+	mov	reg1, reg2
+       .jumpaddr:
+}
+
+cmovne	fix	cmovnz
+macro cmovnz reg1, reg2 {
+
+local	.jumpaddr
+
+	jz	.jumpaddr
+	mov	reg1, reg2
+       .jumpaddr:
+}
+
+end if
 
 ; constants
 

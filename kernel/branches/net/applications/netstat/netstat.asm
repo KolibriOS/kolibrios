@@ -11,7 +11,7 @@ use32
     db	   'MENUET01'	     ; 8 byte id
     dd	   0x01 	     ; header version
     dd	   START	     ; start of code
-    dd	   IM_END	     ; size of image
+    dd	   I_END	     ; size of image
     dd	   (I_END+0x100)     ; memory for app
     dd	   (I_END+0x100)     ; esp
     dd	   I_PARAM , 0x0     ; I_Param , I_Icon
@@ -25,14 +25,12 @@ include '..\debug-fdo.inc'
 START:				       ; start of execution
     ; TODO: check Parameters
 
-    DEBUGF 1, 'Hello!\n'
-
+    DEBUGF  1, 'Netstat application loaded!\n'
 
   redraw:
-
     mcall   12, 1
 
-    mcall   0, 100 shl 16 + 520, 100 shl 16 + 240, 0x34bcbcbc, ,name
+    mcall   0, 100 shl 16 + 520, 100 shl 16 + 240, 0x34bcbcbc , , name
 
     mov     edx, 101
     mov     esi, 0x00aaaaff
@@ -42,7 +40,7 @@ START:				       ; start of execution
     cmove   esi, edi
     mcall   8, 25 shl 16 + 65, 25 shl 16 + 20
 
-   @@:
+  .morebuttons:
     inc     edx
     add     ebx, 75 shl 16
     mov     esi, 0x00aaaaff
@@ -52,12 +50,12 @@ START:				       ; start of execution
     mcall
 
     cmp     edx, 105
-    jle     @r
+    jle     .morebuttons
 
     mcall   4, 28 shl 16 + 31, 0x80000000, modes
 
     cmp     [mode], 101
-    jne     @f
+    jne     .no_eth
 
     mcall   4, 20 shl 16 + 75, 0x80000000, str_packets_tx
     add     ebx, 18
@@ -89,10 +87,10 @@ START:				       ; start of execution
     call    draw_mac
     jmp     end_of_draw
 
- @@:
+ .no_eth:
 
     cmp     [mode], 102
-    jne     @f
+    jne     .no_ip
 
     mcall   4, 20 shl 16 + 75, 0x80000000, str_packets_tx
     add     ebx, 18
@@ -146,10 +144,10 @@ START:				       ; start of execution
 
     jmp     end_of_draw
 
- @@:
+ .no_ip:
 
     cmp     [mode], 103
-    jne     @f
+    jne     .no_arp
 
     mcall   4, 20 shl 16 + 75, 0x80000000, str_packets_tx
     add     ebx, 18
@@ -161,7 +159,7 @@ START:				       ; start of execution
 
     jmp     end_of_draw
 
- @@:
+ .no_arp:
 
     mcall   4, 20 shl 16 + 75, 0x80000000, str_packets_tx
     add     ebx, 18
@@ -176,7 +174,7 @@ START:				       ; start of execution
 
   mainloop:
 
-    mcall   23,50		   ; wait for event with timeout    (0,5 s)
+    mcall   23,500		    ; wait for event with timeout    (0,5 s)
 
     cmp     eax, 1
     je	    redraw
@@ -461,11 +459,9 @@ draw_mac:
 	add	edx, 15 shl 16
 	mcall
 
-	mov	eax, [esp]
-	add	esp, 6+4
 	sub	edx, 5*15 shl 16
 
-	jmp	eax
+	ret	6
 
 
 draw_ip:
@@ -493,14 +489,10 @@ draw_ip:
 	mcall
 
 	sub	edx, 3*30 shl 16
-	mov	eax, [esp]
-	add	esp, 8
-	jmp	eax
+	ret	4
 
 
 ; DATA AREA
-
-IM_END:
 
 name	db 'Netstat',0
 mode	db 101
