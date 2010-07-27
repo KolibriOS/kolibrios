@@ -50,22 +50,20 @@ macro	UDP_init {
 }
 
 
-
-
 macro	UDP_checksum	IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size, destroys: ecx, edx
 
 ; Pseudoheader
 	mov	edx, IP_PROTO_UDP
 
-	add	dl, [IP1+1+4]
-	adc	dh, [IP1+0+4]
-	adc	dl, [IP1+3+4]
-	adc	dh, [IP1+2+4]
+	add	dl, [IP1+1]
+	adc	dh, [IP1+0]
+	adc	dl, [IP1+3]
+	adc	dh, [IP1+2]
 
-	adc	dl, [IP2+1+8]
-	adc	dh, [IP2+0+8]
-	adc	dl, [IP2+3+8]
-	adc	dh, [IP2+2+8]
+	adc	dl, [IP2+1]
+	adc	dh, [IP2+0]
+	adc	dl, [IP2+3]
+	adc	dh, [IP2+2]
 
 	adc	dl, cl ; byte[esi+UDP_Packet.Length+1]
 	adc	dh, ch ; byte[esi+UDP_Packet.Length+0]
@@ -123,7 +121,7 @@ UDP_input:
 	DEBUGF	1,"UDP_input, size:%u\n", ecx
 
 ; First validate, checksum:
-	neg	[esi+UDP_Packet.Checksum]	; substract chechksum from 0
+	neg	[edx+UDP_Packet.Checksum]	; substract chechksum from 0
 	jz	.no_checksum			; if checksum is zero, it is considered valid and we continue processing
 						; otherwise, we will re-calculate the checksum and add it to this value, thus creating 0 when it is correct
 

@@ -54,6 +54,65 @@ struct	FRAGMENT_entry		       ; This structure will replace the ethernet header 
 ends
 
 
+align 4
+uglobal
+
+	IP_LIST 	rd  MAX_IP
+	SUBNET_LIST	rd  MAX_IP
+	DNS_LIST	rd  MAX_IP
+	GATEWAY_LIST	rd  MAX_IP
+
+	IP_PACKETS_TX	rd  MAX_IP
+	IP_PACKETS_RX	rd  MAX_IP
+
+	FRAGMENT_LIST	rb  MAX_FRAGMENTS*FRAGMENT_slot.size
+endg
+
+
+;-----------------------------------------------------------------
+;
+; IPv4_init
+;
+;  This function resets all IP variables
+;
+;-----------------------------------------------------------------
+macro	IPv4_init {
+
+	xor	eax, eax
+	mov	edi, IP_LIST
+	mov	ecx, 4*MAX_IP
+	rep	stosd
+
+	mov	edi, FRAGMENT_LIST
+	mov	ecx, FRAGMENT_slot.size*MAX_FRAGMENTS/4 + 2*MAX_IP
+	rep	stosd
+
+}
+
+
+;-----------------------------------------------------------------
+;
+; Decrease TimeToLive of all fragment slots
+;
+;-----------------------------------------------------------------
+macro IPv4_decrease_fragment_ttls {
+
+local	.loop
+
+	mov	esi, FRAGMENT_LIST
+	mov	ecx, MAX_FRAGMENTS
+  .loop:
+	cmp	[esi + FRAGMENT_slot.ttl], 0
+	je	.try_next
+	dec	[esi + FRAGMENT_slot.ttl]
+	jnz	.try_next
+	DEBUGF 1,"Fragment slot timed-out!\n"
+;;; TODO: clear all entry's of timed-out slot
+  .try_next:
+	add	esi, 4
+	loop	.loop
+}
+
 
 
 macro IPv4_checksum ptr {
@@ -116,67 +175,6 @@ macro IPv4_checksum ptr {
 	add	word [ptr+10], bx	;  , else we will get (new checksum - old checksum) in the end, wich should be 0 :)
 	pop	ebx
 
-}
-
-
-
-align 4
-uglobal
-
-	IP_LIST 	rd  MAX_IP
-	SUBNET_LIST	rd  MAX_IP
-	DNS_LIST	rd  MAX_IP
-	GATEWAY_LIST	rd  MAX_IP
-
-	IP_PACKETS_TX	rd  MAX_IP
-	IP_PACKETS_RX	rd  MAX_IP
-
-	FRAGMENT_LIST	rb  MAX_FRAGMENTS*FRAGMENT_slot.size
-endg
-
-
-;-----------------------------------------------------------------
-;
-; IPv4_init
-;
-;  This function resets all IP variables
-;
-;-----------------------------------------------------------------
-macro	IPv4_init {
-
-	xor	eax, eax
-	mov	edi, IP_LIST
-	mov	ecx, 4*MAX_IP
-	rep	stosd
-
-	mov	edi, FRAGMENT_LIST
-	mov	ecx, FRAGMENT_slot.size*MAX_FRAGMENTS/4 + 2*MAX_IP
-	rep	stosd
-
-}
-
-
-;-----------------------------------------------------------------
-;
-; Decrease TimeToLive of all fragment slots
-;
-;-----------------------------------------------------------------
-macro IPv4_decrease_fragment_ttls {
-
-local	.loop
-
-	mov	esi, FRAGMENT_LIST
-	mov	ecx, MAX_FRAGMENTS
-  .loop:
-	cmp	[esi + FRAGMENT_slot.ttl], 0
-	je	.try_next
-	dec	[esi + FRAGMENT_slot.ttl]
-	jnz	.try_next
-	DEBUGF 1,"Fragment slot timed-out!\n"
-;;; TODO: clear all entry's of timed-out slot
-  .try_next:
-	add	esi, 4
-	loop	.loop
 }
 
 
@@ -607,6 +605,8 @@ IPv4_output:
 
 	test	eax, 0xffff0000 	; error bits
 	jnz	.arp_error
+
+  .continue:
 
 	push	ebx	; push the mac
 	push	ax

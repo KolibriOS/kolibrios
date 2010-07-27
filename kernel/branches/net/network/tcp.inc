@@ -240,16 +240,16 @@ macro	TCP_checksum IP1, IP2 {
 	mov	edx, IP_PROTO_TCP
 
 	; source address
-	add	dl, byte [IP1+1+4]
-	adc	dh, byte [IP1+0+4]
-	adc	dl, byte [IP1+3+4]
-	adc	dh, byte [IP1+2+4]
+	add	dl, byte [IP1+1]
+	adc	dh, byte [IP1+0]
+	adc	dl, byte [IP1+3]
+	adc	dh, byte [IP1+2]
 
 	; destination address
-	adc	dl, byte [IP2+1+8]
-	adc	dh, byte [IP2+0+8]
-	adc	dl, byte [IP2+3+8]
-	adc	dh, byte [IP2+2+8]
+	adc	dl, byte [IP2+1]
+	adc	dh, byte [IP2+0]
+	adc	dl, byte [IP2+3]
+	adc	dh, byte [IP2+2]
 
 	; size
 	adc	dl, cl
@@ -306,7 +306,7 @@ TCP_input:
 	mov	[edx + TCP_segment.Checksum], 0
 	push	esi edi
 	mov	esi, edx
-	TCP_checksum
+	TCP_checksum (esp), (esp+4)
 	pop	esi edi ; yes, swap them (we dont need dest addr)
 	pop	cx	; previous checksum
 	cmp	cx, dx
@@ -437,7 +437,7 @@ TCP_input:
 
 	DEBUGF	1,"Segment has options\n"
 
-	test	[ebx + TCP_SOCKET.t_state], TCB_LISTEN		; no options when in listen state
+	cmp	[ebx + TCP_SOCKET.t_state], TCB_LISTEN		; no options when in listen state
 	jz	.no_options
 
 	lea	edi, [edx + TCP_segment.Data]
@@ -475,9 +475,12 @@ TCP_input:
 	test	[edx + TCP_segment.Flags], TH_SYN
 	jz	@f
 
-	DEBUGF	1,"Got maxseg option"
+	movzx	eax, word[edi+2]
+	rol	ax, 8
+	DEBUGF	1,"Maxseg: %u", ax
 
-	;;;;;
+	mov	[ebx + TCP_SOCKET.t_maxseg], eax
+
        @@:
 	add	edi, 4
 	jmp	.opt_loop
@@ -1758,8 +1761,8 @@ TCP_output:
 	pop	ecx
 	add	esp, ecx
 
-	mov	[esp + 3*4+4], edx	; packet size
-	mov	[esp + 3*4], eax	; packet ptr
+	mov	[esp + 4+4], edx	; packet size
+	mov	[esp + 4], eax		; packet ptr
 
 	mov	edx, edi
 	sub	edx, ecx
@@ -1782,8 +1785,6 @@ TCP_output:
 ; Create the checksum  (we have already pushed IPs onto stack)
 
 	DEBUGF	1,"checksum: ptr=%x size=%u\n", esi, ecx
-	DEBUGF	1,"ip=%x\n", [esp]:8
-	DEBUGF	1,"ip=%x\n", [esp+4]:8
 
 	TCP_checksum (eax + IP_SOCKET.LocalIP), (eax + IP_SOCKET.RemoteIP)
 	mov	[esi+TCP_segment.Checksum], dx

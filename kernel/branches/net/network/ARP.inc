@@ -499,9 +499,24 @@ ARP_IP_to_MAC:
 	cmp	eax, -1
 	je	.full
 
+	mov	ecx, eax
 	pop	eax
-
+	push	ecx
 	call	ARP_output_request
+
+;; TODO: check if driver could transmit packet
+
+	pop	eax
+	imul	eax, ARP_ENTRY.size
+	add	eax, ARP_table
+
+	mov	ecx, 25
+  .wait_loop:
+	cmp	[eax + ARP_ENTRY.Status], 1
+	je	.got_it
+	mov	esi, 10
+	call	delay_ms
+	loop	.wait_loop
 
 	mov	eax, -2 	; request send
 	ret
@@ -511,6 +526,7 @@ ARP_IP_to_MAC:
 	cmp	[esi + ARP_ENTRY.Status], 1
 	jne	.invalid
 
+  .got_it:
 	movzx	eax, word [esi+ARP_ENTRY.MAC]
 	mov	ebx, dword[esi+ARP_ENTRY.MAC+2]
 	ret
@@ -529,7 +545,6 @@ ARP_IP_to_MAC:
 	mov	eax, 0x0000ffff
 	mov	ebx, 0xffffffff
 	ret
-
 
 
 ;-----------------------------------------------------------------
