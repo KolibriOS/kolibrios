@@ -506,16 +506,18 @@ ARP_IP_to_MAC:
 
 ;; TODO: check if driver could transmit packet
 
-	pop	eax
-	imul	eax, ARP_ENTRY.size
-	add	eax, ARP_table
+	pop	esi
+	imul	esi, ARP_ENTRY.size
+	add	esi, ARP_table
 
 	mov	ecx, 25
   .wait_loop:
-	cmp	[eax + ARP_ENTRY.Status], 1
+	cmp	[esi + ARP_ENTRY.Status], 1
 	je	.got_it
+	push	esi
 	mov	esi, 10
 	call	delay_ms
+	pop	esi
 	loop	.wait_loop
 
 	mov	eax, -2 	; request send

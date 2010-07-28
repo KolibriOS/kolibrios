@@ -169,6 +169,7 @@ struc	RING_BUFFER {
 	.read_ptr		dd ? ; Read pointer
 	.write_ptr		dd ? ; Write pointer
 	.size			dd ? ; Number of bytes buffered
+	.end:
 }
 
 virtual at 0
@@ -179,10 +180,9 @@ end virtual
 
 virtual at TCP_SOCKET.end
 
-	rcv	RING_BUFFER
-	snd	RING_BUFFER
-
  STREAM_SOCKET:
+	.rcv	rd     RING_BUFFER.end/4
+	.snd	rd     RING_BUFFER.end/4
 	.end:
 
 end virtual
@@ -221,21 +221,12 @@ macro	SOCKET_init {
 	mov	ecx, 4
 	rep	stosd
 
-;--- for random port --
-
-	mov	al, 0x0 		; set up 1s timer
-	out	0x70, al
-	in	al, 0x71
-
-;----------------------
-
        @@:
 	pseudo_random eax
 	cmp	ax, MIN_EPHEMERAL_PORT
 	jl	@r
 	cmp	ax, MAX_EPHEMERAL_PORT
 	jg	@r
-
 	mov	[last_UDP_port], ax
 
        @@:
@@ -244,7 +235,6 @@ macro	SOCKET_init {
 	jl	@r
 	cmp	ax, MAX_EPHEMERAL_PORT
 	jg	@r
-
 	mov	[last_TCP_port], ax
 
 }
@@ -318,22 +308,13 @@ SOCKET_open:
 	cmp	edx, IP_PROTO_TCP
 	jnz	.no_stream
 
-	mov	esi, eax
-	stdcall kernel_alloc, SOCKET_MAXDATA
-	mov	[esi + rcv.start_ptr], eax
-	mov	[esi + rcv.write_ptr], eax
-	mov	[esi + rcv.read_ptr], eax
-	mov	[esi + rcv.size], 0
-	add	eax,  SOCKET_MAXDATA
-	mov	[esi + rcv.end_ptr], eax
+	mov	ebx, eax
 
-	stdcall kernel_alloc, SOCKET_MAXDATA
-	mov	[esi + snd.start_ptr], eax
-	mov	[esi + snd.write_ptr], eax
-	mov	[esi + snd.read_ptr], eax
-	mov	[esi + snd.size], 0
-	add	eax,  SOCKET_MAXDATA
-	mov	[esi + snd.end_ptr], eax
+	lea	eax, [ebx + STREAM_SOCKET.snd]
+	call	SOCKET_ring_create
+
+	lea	eax, [ebx + STREAM_SOCKET.rcv]
+	call	SOCKET_ring_create
 
 	ret
 
@@ -497,9 +478,11 @@ SOCKET_connect:
 	mov	ebx, [TCP_sequence_num]
 	add	[TCP_sequence_num], 6400
 	mov	[eax + TCP_SOCKET.ISS], ebx
-	mov	[eax + TCP_SOCKET.timer_keepalive], 120 	; 120*640ms => 75,6 seconds
+	mov	[eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
 
-;;;;            mov     [ebx + TCP_SOCKET.timer_retransmission],
+	TCP_sendseqinit eax
+
+;;;;            mov     [ebx + TCP_SOCKET.timer_retransmission],   ;; todo: create macro to set retransmission timer
 
 	push	eax
 	call	TCP_output
@@ -671,6 +654,9 @@ SOCKET_receive:
 	call	SOCKET_num_to_ptr
 	jz	s_error
 
+	cmp	[eax + SOCKET.Type], IP_PROTO_TCP	;;;;;;;;
+	je	.tcp
+
 	mov	ebx, esi
 	get_from_queue (eax + SOCKET_QUEUE_LOCATION),\
 		       SOCKET_QUEUE_SIZE,\
@@ -707,9 +693,17 @@ SOCKET_receive:
 .nd:
 ; remove the packet     ;;; TODO: only if it is empty!!
 
-;;;;        call    TCP_output  ; only if it is tcp
-
 	call	kernel_free
+	ret
+
+  .tcp:
+
+	mov	ecx, esi
+	mov	edi, edx
+	add	eax, STREAM_SOCKET.rcv
+	call	SOCKET_ring_read
+
+	mov	dword[esp+32], ecx			      ; return number of bytes copied in ebx
 
 	ret
 
@@ -787,8 +781,13 @@ SOCKET_send:
 	jz	s_error
 
      @@:
-;;;; TODO: queue the data
 
+	push	eax
+	mov	ecx, esi
+	mov	esi, edx
+	add	eax, STREAM_SOCKET.snd
+	call	SOCKET_ring_write
+	pop	eax
 	call	TCP_output
 
 	mov	[esp+32], eax
@@ -1028,145 +1027,142 @@ SOCKET_input:
 
 	ret
 
+
+;--------------------------
+;
+; eax = ptr to ring struct (just a buffer of the right size)
+;
+align 4
+SOCKET_ring_create:
+
+	mov	esi, eax
+	stdcall create_ring_buffer, SOCKET_MAXDATA, PG_SW
+
+	DEBUGF	1,"SOCKET_ring_created: %x\n", eax
+	mov	[esi + RING_BUFFER.start_ptr], eax
+	mov	[esi + RING_BUFFER.write_ptr], eax
+	mov	[esi + RING_BUFFER.read_ptr], eax
+	mov	[esi + RING_BUFFER.size], 0
+	add	eax,  SOCKET_MAXDATA
+	mov	[esi + RING_BUFFER.end_ptr], eax
+
+	ret
+
 ;-----------------------------------------------------------------
 ;
-; SOCKET_ring_add
+; SOCKET_ring_write
 ;
-; Adds data to a stream socket
+; Adds data to a stream socket, and updates write pointer and size
 ;
 ;  IN:  eax = ptr to ring struct
 ;       ecx = data size
 ;       esi = ptr to data
 ;
-;  OUT: eax = number of bytes stored
+;  OUT: ecx = number of bytes stored
 ;
 ;-----------------------------------------------------------------
 align 4
-SOCKET_ring_add:
+SOCKET_ring_write:
 
-	DEBUGF	1,"SOCKET_ring_add: ringbuff=%x ptr=%x size=%u\n", eax, esi, ecx
+	DEBUGF	1,"SOCKET_ring_write: ringbuff=%x ptr=%x size=%u\n", eax, esi, ecx
 
-	mov	edi, [eax + RING_BUFFER.size]
-	add	edi, ecx
-	cmp	edi, SOCKET_MAXDATA
+	add	[eax + RING_BUFFER.size], ecx
+	cmp	[eax + RING_BUFFER.size], SOCKET_MAXDATA
 	jg	.too_large
 
-	mov	[eax + RING_BUFFER.size], edi	     ; update size
   .copy:
-	push	ecx	;<<<< 1
-	mov	edi, [eax + RING_BUFFER.write_ptr]   ; set write ptr in edi
-	add	[eax + RING_BUFFER.write_ptr], ecx   ; update write pointer
-	mov	edx, [eax + RING_BUFFER.end_ptr]
-	cmp	edx, [eax + RING_BUFFER.write_ptr]
-	jg	.copy_in_2
-	je	.wrap_write_ptr
+	mov	edi, [eax + RING_BUFFER.write_ptr]
+	DEBUGF	2,"Copying %u bytes from %x to %x\n", ecx, esi, edi
 
-  .copy_more:
 	push	ecx
-	and	ecx, 3
-	rep	movsb
-	pop	ecx
-	shr	ecx, 2
+	shr	ecx, 1
+	jnc	.nb
+	movsb
+.nb:
+	shr	ecx, 1
+	jnc	.nw
+	movsw
+.nw:
+	test	ecx, ecx
+	jz	.nd
 	rep	movsd
-	pop	ecx	; >>>> 1/2
-	DEBUGF	2,"Copied %u bytes\n", ecx
+.nd:
+	pop	ecx
+
+	cmp	edi, [eax + RING_BUFFER.end_ptr]
+	jge	.wrap
+	mov	[eax + RING_BUFFER.write_ptr], edi
+
+	ret
+
+  .wrap:
+	sub	edi, SOCKET_MAXDATA
+	mov	[eax + RING_BUFFER.write_ptr], edi
 
 	ret
 
   .too_large:
 	mov	ecx, SOCKET_MAXDATA				; calculate number of bytes available in buffer
 	sub	ecx, [eax + RING_BUFFER.size]
-	jz	.full
+	jge	.full
 
 	mov	[eax + RING_BUFFER.size], SOCKET_MAXDATA	; update size, we will fill buffer completely
-
 	jmp	.copy
 
   .full:
 	DEBUGF	2,"Ring buffer is full!\n"
 	xor	ecx, ecx
 	ret
-
-  .copy_in_2:
-	DEBUGF	1,"Copying in 2 passes\n"
-
-	mov	edx, ecx
-	mov	ecx, [eax + RING_BUFFER.end_ptr]    ; find number of bytes till end of buffer
-	sub	ecx, edi
-	sub	edx, ecx
-	push	edx	; <<<< 2
-
-	mov	edi, [eax + RING_BUFFER.start_ptr]
-	call	.copy_more
-
-  .wrap_write_ptr:
-	sub	[eax + RING_BUFFER.write_ptr], SOCKET_MAXDATA	; update write pointer
-	jmp	.copy_more
-
-
 
 
 ;-----------------------------------------------------------------
 ;
 ; SOCKET_ring_read
 ;
-; reads the data, but let the data remain in the buffer
+; reads the data, BUT DOES NOT CLEAR IT FROM MEMORY YET
 ;
 ;  IN:  eax = ptr to ring struct
 ;       ecx = buffer size
 ;       edi = ptr to buffer
 ;
-;  OUT: eax = number of bytes read
+;  OUT: ecx = number of bytes read
 ;
 ;-----------------------------------------------------------------
 align 4
 SOCKET_ring_read:
 
-	DEBUGF	1,"SOCKET_ring_read: ringbuff=%x ptr=%x size=%u\n", eax, esi, ecx
+	DEBUGF	1,"SOCKET_ring_read: ringbuff=%x ptr=%x size=%u\n", eax, edi, ecx
 
-	cmp	[eax + RING_BUFFER.size], ecx	     ; update size
-	jl	.too_large
+	cmp	ecx, [eax + RING_BUFFER.size]
+	jg	.less_data
 
-	mov	esi, [eax + RING_BUFFER.read_ptr]    ; update read ptr
   .copy:
-	push	ecx	;<<<< 1
-	mov	edx, [eax + RING_BUFFER.read_ptr]
-	add	edx, ecx
-	cmp	edx, [eax + RING_BUFFER.end_ptr]
-	jg	.copy_in_2
+	mov	esi, [eax + RING_BUFFER.read_ptr]
 
-  .copy_more:
+	DEBUGF	2,"Copying %u bytes from %x to %x\n", ecx, esi, edi
 	push	ecx
-	and	ecx, 3
-	rep	movsb
-	pop	ecx
-	shr	ecx, 2
+	shr	ecx, 1
+	jnc	.nb
+	movsb
+.nb:
+	shr	ecx, 1
+	jnc	.nw
+	movsw
+.nw:
+	test	ecx, ecx
+	jz	.nd
 	rep	movsd
-	pop	ecx	; >>>> 1/2
-	DEBUGF	2,"Copied %u bytes\n", ecx
+.nd:
+	pop	ecx
 
+;  .no_data_at_all:
 	ret
 
-  .too_large:
+  .less_data:
 	mov	ecx, [eax + RING_BUFFER.size]
+	test	ecx, ecx
+;        jz      .no_data_at_all
 	jmp	.copy
-
-  .full:
-	DEBUGF	2,"Ring buffer is full!\n"
-	xor	ecx, ecx
-	ret
-
-  .copy_in_2:
-	DEBUGF	1,"Copying in 2 passes\n"
-
-	mov	edx, ecx
-	mov	ecx, [eax + RING_BUFFER.end_ptr]    ; find number of bytes till end of buffer
-	sub	ecx, edi
-	sub	edx, ecx
-	push	edx	; <<<< 2
-
-	mov	esi, [eax + RING_BUFFER.start_ptr]
-	call	.copy_more
 
 
 ;-----------------------------------------------------------------
@@ -1186,26 +1182,19 @@ SOCKET_ring_free:
 
 	DEBUGF	1,"Trying to free %u bytes of data from ring %x\n", ecx, eax
 
-	cmp	ecx, [eax + RING_BUFFER.size]
-	jle	.go_for_it
-
-	cmp	ecx, SOCKET_MAXDATA				;;;;
-	jg	.moron_input
-
-	mov	ecx, [eax + RING_BUFFER.size]
-
-  .go_for_it:
 	sub	[eax + RING_BUFFER.size], ecx
+	jl	.sumthinwong
 	add	[eax + RING_BUFFER.read_ptr], ecx
 
 	mov	edx, [eax + RING_BUFFER.end_ptr]
 	cmp	[eax + RING_BUFFER.read_ptr], edx
 	jl	@f
-	sub	[eax + RING_BUFFER.read_ptr], SOCKET_MAXDATA	;;;;;
+	sub	[eax + RING_BUFFER.read_ptr], SOCKET_MAXDATA
        @@:
 	ret
 
-  .moron_input:
+  .sumthinwong: 	       ; we could free all available bytes, but that would be stupid, i guess..
+	add	[eax + RING_BUFFER.size], ecx
 	xor	ecx, ecx
 	ret
 
@@ -1371,8 +1360,8 @@ SOCKET_free:
 	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
 	jnz	.no_stream
 
-	stdcall kernel_free, [eax + rcv.start_ptr]
-	stdcall kernel_free, [eax + snd.start_ptr]
+	stdcall kernel_free, [eax + STREAM_SOCKET.rcv + RING_BUFFER.start_ptr]
+	stdcall kernel_free, [eax + STREAM_SOCKET.snd + RING_BUFFER.start_ptr]
   .no_stream:
 
 	push	eax				; this will be passed to kernel_free
@@ -1400,9 +1389,9 @@ SOCKET_free:
 	ret
 
 
-; socket nr in ebx
-; new socket nr in eax
-; preserver edx
+; IN:  socket nr in ebx
+; OUT: socket nr in eax
+; preserves edx
 
 align 4
 SOCKET_fork:
@@ -1440,7 +1429,7 @@ SOCKET_fork:
 ; Get socket structure address by its number
 ;
 ; IN:  ecx = socket number
-; OUT: ecx = 0 on error, socket ptr otherwise
+; OUT: eax = 0 on error, socket ptr otherwise
 ;       ZF = set on error
 ;
 ;---------------------------------------------------
