@@ -702,6 +702,7 @@ SOCKET_receive:
 	mov	edi, edx
 	add	eax, STREAM_SOCKET.rcv
 	call	SOCKET_ring_read
+	call	SOCKET_ring_free
 
 	mov	dword[esp+32], ecx			      ; return number of bytes copied in ebx
 

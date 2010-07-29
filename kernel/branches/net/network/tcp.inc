@@ -341,6 +341,7 @@ TCP_input:
 
 	sub	ecx, esi	; update packet size
 	jl	.drop
+	DEBUGF	1,"we got %u bytes of data\n", ecx
 
 ;-----------------------------------------------------------------------------------------
 ; Check if this packet has a timestamp option (We do it here so we can process it quickly)
@@ -434,10 +435,10 @@ TCP_input:
 ; unscale the window into a 32 bit value (notice that SND_SCALE must be initialised to 0)
 
 	movzx	eax, [edx + TCP_segment.Window]
-	push	cx
+	push	ecx
 	mov	cl, [ebx + TCP_SOCKET.SND_SCALE]
 	shl	eax, cl
-	pop	cx
+	pop	ecx
 
 	;;;; do something with eax
 
@@ -584,6 +585,8 @@ TCP_input:
 	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
 	jne	.not_uni_xfer
 
+	DEBUGF	1,"6\n"
+
 ;---------------------------------------
 ; check if we are sender in the uni-xfer
 
@@ -593,19 +596,25 @@ TCP_input:
 	test	ecx, ecx
 	jnz	.not_sender
 
+	DEBUGF	1,"7\n"
+
 ; - The congestion window is greater than or equal to the current send window.
 ;     This test is true only if the window is fully open, that is, the connection is not in the middle of slow start or congestion avoidance.
 	mov	eax, [ebx + TCP_SOCKET.SND_CWND]
 	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
 	jl	.not_uni_xfer
 
+	DEBUGF	1,"8\n"
+
 ; - The acknowledgment field in the segment is less than or equal to the maximum sequence number sent.
-	mov	ecx, [edx + TCP_segment.AckNumber]
-	cmp	ecx, [ebx + TCP_SOCKET.SND_MAX]
+	mov	eax, [edx + TCP_segment.AckNumber]
+	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
 	jg	.not_uni_xfer
 
+	DEBUGF	1,"9\n"
+
 ; - The acknowledgment field in the segment is greater than the largest unacknowledged sequence number.
-	sub	ecx, [ebx + TCP_SOCKET.SND_UNA]
+	sub	eax, [ebx + TCP_SOCKET.SND_UNA]
 	jle	.not_uni_xfer
 
 	DEBUGF	1,"Header prediction: we are sender\n"
@@ -638,6 +647,8 @@ TCP_input:
 
   .not_sender:
 ; - The amount of data in the segment is greater than 0 (data count is in ecx)
+
+	DEBUGF	1,"10\n"
 
 ; - The acknowledgment field equals the largest unacknowledged sequence number. This means no data is acknowledged by this segment.
 	mov	eax, [edx + TCP_segment.AckNumber]
@@ -1043,7 +1054,7 @@ align 4
 
   .rst_close:
 
-	DEBUGF	1,"Closing with reset"
+	DEBUGF	1,"Closing with reset\n"
 
 	;;; Close the socket
 	jmp	.drop
@@ -1061,7 +1072,7 @@ align 4
 
 	test	[edx + TCP_segment.Flags], TH_ACK
 	jz	.drop
-
+      @@:
 ;----------------
 ; Process the ACK
 
@@ -1069,13 +1080,13 @@ align 4
 	jg	.ack_dup
 	jl	.ack_nodup
 
-	DEBUGF	1,"TCP state = syn received"
+	DEBUGF	1,"TCP state = syn received\n"
 
 	;;;;;
 
   .ack_dup:
 
-	DEBUGF	1,"Duplicate ACK"
+	DEBUGF	1,"Duplicate ACK\n"
 
 	;;;;
 
@@ -1083,7 +1094,7 @@ align 4
 
 	;;;; 887
 
-	DEBUGF	1,"New ACK"
+	DEBUGF	1,"New ACK\n"
 
 ;-------------------------------------------------
 ; If the congestion window was inflated to account
@@ -1114,9 +1125,12 @@ align 4
 ;------------------------------------------
 ; Remove acknowledged data from send buffer
 
-	xor	ecx, ecx	;;;;;;
+	push	ecx
+	mov	ecx, [edx + TCP_segment.AckNumber]			 ;;;
+	sub	ecx, [ebx + TCP_SOCKET.SND_UNA] 			;;;
 	lea	eax, [ebx + STREAM_SOCKET.snd]
 	call	SOCKET_ring_free	  ;;;; 943 - 956
+	pop	ecx
 
 ;---------------------------------------
 ; Wake up process waiting on send buffer
@@ -1251,7 +1265,7 @@ align 4
 
   .do_data:
 
-	DEBUGF	1,"TCP: do data\n"
+	DEBUGF	1,"TCP: do data (%u)\n", ecx
 
 	test	[edx + TCP_segment.Flags], TH_FIN
 	jnz	.process_fin
@@ -1645,24 +1659,24 @@ TCP_output:
 ;--------------------------
 ; Should a segment be sent?
 
-	test	[ebx + TCP_SOCKET.t_flags], TF_ACKNOW
+	test	[eax + TCP_SOCKET.t_flags], TF_ACKNOW
 	jnz	.send
 
 	test	dl, TH_SYN + TH_RST
 	jnz	.send
 
-	mov	eax, [ebx + TCP_SOCKET.SND_UP]
-	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
+	mov	ebx, [eax + TCP_SOCKET.SND_UP]
+	cmp	ebx, [eax + TCP_SOCKET.SND_UNA]
 	jg	.send
 
 	test	dl, TH_FIN
 	jz	.enter_persist
 
-	test	[ebx + TCP_SOCKET.t_flags], TF_SENTFIN
+	test	[eax + TCP_SOCKET.t_flags], TF_SENTFIN
 	jnz	.send
 
-	mov	eax, [ebx + TCP_SOCKET.SND_NXT]
-	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
+	mov	ebx, [eax + TCP_SOCKET.SND_NXT]
+	cmp	ebx, [eax + TCP_SOCKET.SND_UNA]
 	je	.send
 
 ;--------------------
