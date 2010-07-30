@@ -167,6 +167,7 @@ ETH_output:
 
   .adjust_size:
 	mov	edx, 60
+	test	edx, edx	; clear zero flag
 	ret
 
   .out_of_ram:

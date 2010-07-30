@@ -90,20 +90,6 @@ struct	TCP_segment
 	.Data:				; ..or options
 ends
 
-struct	tcp_in_queue_entry
-	.data_ptr	dd ?
-	.data_size	dd ?
-	.offset 	dd ?
-	.size:
-ends
-
-struct	tcp_out_queue_entry
-	.data_ptr	dd ?
-	.data_size	dd ?
-
-	.size:
-ends
-
 align 4
 uglobal
 	TCP_segments_tx 	rd IP_MAX_INTERFACES
@@ -557,35 +543,23 @@ TCP_input:
 	cmp	[ebx + TCP_SOCKET.t_state], TCB_ESTABLISHED
 	jnz	.not_uni_xfer
 
-	DEBUGF	1,"1\n"
-
 	test	[edx + TCP_segment.Flags], TH_SYN + TH_FIN + TH_RST + TH_URG
 	jnz	.not_uni_xfer
 
-	DEBUGF	1,"2\n"
-
 	test	[edx + TCP_segment.Flags], TH_ACK
 	jz	.not_uni_xfer
-
-	DEBUGF	1,"3\n"
 
 	mov	eax, [edx + TCP_segment.SequenceNumber]
 	cmp	eax, [ebx + TCP_SOCKET.RCV_NXT]
 	jne	.not_uni_xfer
 
-	DEBUGF	1,"4\n"
-
-;;        movzx   eax, [edx + TCP_segment.Window] ;;;;; (should use pre-calculated value isntead: todo: figure out where to store it)
-;;        cmp     eax, [ebx + TCP_SOCKET.SND_WND]
-;;        jne     .not_uni_xfer
-
-	DEBUGF	1,"5\n"
+	movzx	eax, [edx + TCP_segment.Window] ;;;;; (should use pre-calculated value instead: todo: figure out where to store it)
+	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
+	jne	.not_uni_xfer
 
 	mov	eax, [ebx + TCP_SOCKET.SND_NXT]
 	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
 	jne	.not_uni_xfer
-
-	DEBUGF	1,"6\n"
 
 ;---------------------------------------
 ; check if we are sender in the uni-xfer
@@ -596,22 +570,16 @@ TCP_input:
 	test	ecx, ecx
 	jnz	.not_sender
 
-	DEBUGF	1,"7\n"
-
 ; - The congestion window is greater than or equal to the current send window.
 ;     This test is true only if the window is fully open, that is, the connection is not in the middle of slow start or congestion avoidance.
 	mov	eax, [ebx + TCP_SOCKET.SND_CWND]
 	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
 	jl	.not_uni_xfer
 
-	DEBUGF	1,"8\n"
-
 ; - The acknowledgment field in the segment is less than or equal to the maximum sequence number sent.
 	mov	eax, [edx + TCP_segment.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
 	jg	.not_uni_xfer
-
-	DEBUGF	1,"9\n"
 
 ; - The acknowledgment field in the segment is greater than the largest unacknowledged sequence number.
 	sub	eax, [ebx + TCP_SOCKET.SND_UNA]
@@ -625,10 +593,14 @@ TCP_input:
 ; Update RTT estimators
 
 ; Delete acknowledged bytes from send buffer
-; notice how ecx already holds number of bytes ack-ed
-
+	mov	ecx, eax
 	lea	eax, [ebx + STREAM_SOCKET.snd]
 	call	SOCKET_ring_free
+
+; update window pointers
+	mov	eax, [edx + TCP_segment.AckNumber]
+	dec	eax
+	mov	[ebx + TCP_SOCKET.SND_WL1], eax
 
 ; Stop retransmit timer
 	mov	[ebx + TCP_SOCKET.timer_ack], 0
@@ -637,18 +609,18 @@ TCP_input:
 	mov	eax, ebx
 	call	SOCKET_notify_owner
 
-; Generate more output
-	call	TCP_output
-
-	jmp	.drop
+;; Generate more output
+;;        mov     eax, ebx
+;;        call    TCP_output
+;;
+;;        jmp     .drop
+	jmp	.step6
 
 ;-------------------------------------------------
 ; maybe we are the receiver in the uni-xfer then..
 
   .not_sender:
 ; - The amount of data in the segment is greater than 0 (data count is in ecx)
-
-	DEBUGF	1,"10\n"
 
 ; - The acknowledgment field equals the largest unacknowledged sequence number. This means no data is acknowledged by this segment.
 	mov	eax, [edx + TCP_segment.AckNumber]
@@ -1084,17 +1056,15 @@ align 4
 
 	;;;;;
 
-  .ack_dup:
-
-	DEBUGF	1,"Duplicate ACK\n"
-
-	;;;;
-
   .ack_nodup:
 
-	;;;; 887
-
 	DEBUGF	1,"New ACK\n"
+
+
+
+  .ack_dup:
+
+	;;;;
 
 ;-------------------------------------------------
 ; If the congestion window was inflated to account
@@ -1125,12 +1095,26 @@ align 4
 ;------------------------------------------
 ; Remove acknowledged data from send buffer
 
-	push	ecx
-	mov	ecx, [edx + TCP_segment.AckNumber]			 ;;;
-	sub	ecx, [ebx + TCP_SOCKET.SND_UNA] 			;;;
+	pusha
+; Delete acknowledged bytes from send buffer
+	mov	ecx, [edx + TCP_segment.AckNumber]
+	sub	ecx, [ebx + TCP_SOCKET.SND_UNA]
 	lea	eax, [ebx + STREAM_SOCKET.snd]
-	call	SOCKET_ring_free	  ;;;; 943 - 956
-	pop	ecx
+	call	SOCKET_ring_free
+	popa
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  code missing (943?)
+
+	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	[ebx + TCP_SOCKET.SND_UNA], eax
+
+	cmp	eax, [ebx + TCP_SOCKET.SND_NXT]
+	jl	@f
+	mov	[ebx + TCP_SOCKET.SND_NXT], eax
+       @@:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;---------------------------------------
 ; Wake up process waiting on send buffer
@@ -1156,73 +1140,89 @@ align 4
 	dd	._1010		;TCB_TIMED_WAIT
 
 
-._963:
+  ._963:
 
 
 	jmp	.step6
 
 
-._958:
+  ._958:
 
 	jmp	.step6
 
-._999:
-
-	jmp	.step6
-
-
-._1010:
+  ._999:
 
 	jmp	.step6
 
 
+  ._1010:
 
-align 4
-.step6:
+	jmp	.step6
+
+
+  .step6:
 
 	DEBUGF	1,"step 6\n"
 
-;--------------------------
-; update window information
+;----------------------------------------------
+; check if we need to update window information
 
 	test	[edx + TCP_segment.Flags], TH_ACK
 	jz	.no_window_update
 
 	mov	eax, [ebx + TCP_SOCKET.SND_WL1]
 	cmp	eax, [edx + TCP_segment.SequenceNumber]
+	jl	.update_window
+	jg	@f
 
-	;;;; 1021
+	mov	eax, [ebx + TCP_SOCKET.SND_WL2]
+	cmp	eax, [edx + TCP_segment.AckNumber]
+	jl	.update_window
+	jg	.no_window_update
+       @@:
+
+	mov	eax, [ebx + TCP_SOCKET.SND_WL2] 	  ;;;;
+	cmp	eax, [edx + TCP_segment.AckNumber]
+	jne	.no_window_update
+
+	movzx	eax, [edx + TCP_segment.Window]
+	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
+	jle	.no_window_update
+
+  .update_window:
+
+	DEBUGF	1,"Updating window\n"
 
 ;----------------------------------
 ; Keep track of pure window updates
 
-	test	ecx, ecx
-	jz	@f
+;        test    ecx, ecx
+;        jz      @f
+;
+;        mov     eax, [ebx + TCP_SOCKET.SND_WL2]
+;        cmp     eax, [edx + TCP_segment.AckNumber]
+;        jne     @f
+;
+;        ;; mov eax, tiwin
+;        cmp     eax, [ebx + TCP_SOCKET.SND_WND]
+;        jle     @f
+;
+;        ;;; update stats
+;
+;       @@:
 
-	mov	eax, [ebx + TCP_SOCKET.SND_WL2]
-	cmp	eax, [edx + TCP_segment.AckNumber]
-	jne	@f
-
-	;; mov eax, tiwin
-	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
-	jle	@f
-
-	;;; update stats
-
-       @@:
-
-	;; mov eax, incoming window
+	movzx	eax, [edx + TCP_segment.Window] 	;;; FIXME: use pre-calculated value instead!
 	cmp	eax, [ebx + TCP_SOCKET.max_sndwnd]
 	jle	@f
 	mov	[ebx + TCP_SOCKET.max_sndwnd], eax
        @@:
 	mov	[ebx + TCP_SOCKET.SND_WND], eax
 
-	mov	eax, [edx + TCP_segment.SequenceNumber]
-	mov	[ebx + TCP_SOCKET.SND_WL1], eax
+	push	[edx + TCP_segment.SequenceNumber]
+	pop	[ebx + TCP_SOCKET.SND_WL1]
 
-	mov	eax, [edx + TCP_segment.AckNumber]
-	mov	[ebx + TCP_SOCKET.SND_WL2], eax
+	push	[edx + TCP_segment.AckNumber]
+	pop	[ebx + TCP_SOCKET.SND_WL2]
 
 	;;; needoutput = 1
 
@@ -1496,8 +1496,6 @@ TCP_pull_out_of_band:
 ; TCP_output
 ;
 ; IN:  eax = socket pointer
-;;     esi = ptr to data
-;;     ecx = number of data bytes
 ;
 ; OUT: /
 ;
@@ -1849,11 +1847,14 @@ TCP_output:
 ; ecx = buffer size
 ; edi = ptr to buffer
 
+;        test    ecx, ecx
 	mov	eax, [esp+4]		  ; socket ptr
-	push	edx
+	add	[eax + TCP_SOCKET.SND_NXT], ecx
 	add	eax, STREAM_SOCKET.snd
+	push	edx
 	call	SOCKET_ring_read
-	pop	esi ecx
+	pop	esi
+	pop	ecx
 	pop	eax
 
 	test	[esi + TCP_segment.Flags], TH_SYN + TH_FIN
@@ -1861,8 +1862,6 @@ TCP_output:
 	inc	[eax + TCP_SOCKET.SND_NXT]
 	;;; TODO: update sentfin flag
        @@:
-
-;;        add     [eax + TCP_SOCKET.SND_NXT], ecx
 
 	mov	edx, [eax + TCP_SOCKET.SND_NXT]
 	cmp	edx, [eax + TCP_SOCKET.SND_MAX]
@@ -1893,7 +1892,7 @@ TCP_output:
   .fail:
 	pop	ecx
 	add	esp, ecx
-	add	esp, 4+4+8+4
+	add	esp, 4+8
 	DEBUGF 1,"TCP_output: failed\n"
 	ret
 
