@@ -392,6 +392,7 @@ set_window_defaults: ;/////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? <description>
 ;------------------------------------------------------------------------------
+        mov     byte [window_data + 0x20 + WDATA.cl_titlebar + 3], 1 ; desktop is not movable
         push    eax ecx
         xor     eax, eax
         mov     ecx, WIN_STACK
