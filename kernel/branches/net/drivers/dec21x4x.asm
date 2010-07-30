@@ -994,16 +994,14 @@ transmit:
 
 	DEBUGF	1,"transmit ok\n"
 	xor	eax, eax
-	call	Kernelfree
-	add	esp, 4
-	ret
+	stdcall KernelFree, [esp+4]
+	ret	8
 
   .fail:
 	DEBUGF	1,"transmit failed\n"
 	or	eax, -1
-	call	Kernelfree
-	add	esp, 4
-	ret
+	stdcall KernelFree, [esp+4]
+	ret	8
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;

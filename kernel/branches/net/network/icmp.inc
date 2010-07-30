@@ -132,24 +132,24 @@ macro ICMP_init {
 ;
 ;  IN:  Pointer to buffer in [esp]
 ;       size of buffer in [esp+4]
-;       pointer to device struct in ebx
-;       ICMP Packet size in ecx
-;       pointer to ICMP Packet data in edx
+;       ebx = pointer to device struct
+;       ecx = ICMP Packet size
+;       edx = ptr to ICMP Packet data
+;       esi = ipv4 source address
+;       edi = ipv4 dest   address
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
 align 4
 ICMP_input:
 
-;;; TODO: works only on pure ethernet right now !
+;;; TODO: check checksum!
 
-	DEBUGF	1,"ICMP_Handler - start\n"
+	DEBUGF	1,"ICMP_input - start\n"
 	cmp	byte [edx + ICMP_Packet.Type], ICMP_ECHO		    ; Is this an echo request?
 	jne	.check_sockets
 
-;;; TODO: check checksum!
-
-	DEBUGF	1,"ICMP_Handler - echo request\n"
+	DEBUGF	1,"ICMP_input - echo request\n"
 
 	mov	byte [edx + ICMP_Packet.Type], ICMP_ECHOREPLY		    ; Change Packet type to reply
 	mov	word [edx + ICMP_Packet.Checksum], 0			    ; Set checksum to 0, needed to calculate new checksum
@@ -211,42 +211,46 @@ ICMP_input:
 
 
        .check_sockets:
-	; TODO: validate the header & checksum.
-
 	; Look for an open ICMP socket
+	; esi = sender ip
 
-	mov	esi, net_sockets
+	mov	ebx, net_sockets
   .try_more:
-	mov	ax , [edx + ICMP_Packet.Identifier]
+;        mov     ax , [edx + ICMP_Packet.Identifier]
   .next_socket:
-	mov	esi, [esi + SOCKET.NextPtr]
-	or	esi, esi
+	mov	ebx, [ebx + SOCKET.NextPtr]
+	or	ebx, ebx
 	jz	.dump
-	cmp	[esi + SOCKET.Type], IP_PROTO_ICMP
+
+	cmp	[ebx + SOCKET.Domain], AF_INET4
 	jne	.next_socket
-	cmp	[esi + ICMP_SOCKET.Identifier], ax
+
+	cmp	[ebx + SOCKET.Type], SOCK_RAW
 	jne	.next_socket
 
-	call	IPv4_dest_to_dev
-	cmp	edi,-1
-	je	.dump
-	inc	[ICMP_PACKETS_RX+edi]
+	cmp	[ebx + SOCKET.Protocol], IP_PROTO_ICMP
+	jne	.next_socket
 
-	DEBUGF 1,"Found valid ICMP packet for socket %x\n", esi
+	cmp	[ebx + IP_SOCKET.RemoteIP], esi
+	jne	.next_socket
 
-	lea	ebx, [esi + SOCKET.lock]
+;        cmp     [esi + ICMP_SOCKET.Identifier], ax
+;        jne     .next_socket
+
+;        call    IPv4_dest_to_dev
+;        cmp     edi,-1
+;        je      .dump
+;        inc     [ICMP_PACKETS_RX+edi]
+
+	DEBUGF 1,"Found valid ICMP packet for socket %x\n", ebx
+
+	mov	eax, ebx
+	add	ebx, SOCKET.lock
 	call	wait_mutex
 
-	; Now, assign data to socket. We have socket address in esi.
-	; We have ICMP Packet in edx
-	; number of bytes in ecx
-
-	mov	eax, esi
-	pop	esi
-	add	esp, 4
-	sub	edx, esi
-	mov	edi, edx
+	mov	esi, edx
 	jmp	SOCKET_input
+
 
        .dump:
 	DEBUGF	1,"ICMP_Handler - dumping\n"
@@ -278,6 +282,8 @@ ICMP_output:
 
 	push	esi edi edx
 
+	mov	ebx, [eax + IP_SOCKET.LocalIP]
+	mov	eax, [eax + IP_SOCKET.RemoteIP]
 	add	ecx, ICMP_Packet.Data
 	mov	di , IP_PROTO_ICMP SHL 8 + 128	; TTL
 	shr	edx, 16
@@ -320,6 +326,57 @@ ICMP_output:
   .exit:
 	DEBUGF	1,"Creating ICMP Packet failed\n"
 	add	esp, 3*4
+	ret
+
+
+
+
+;-----------------------------------------------------------------
+;
+; ICMP_output
+;
+; IN:  eax = socket ptr
+;      ecx = data length
+;      esi = data offset
+;
+;-----------------------------------------------------------------
+align 4
+ICMP_output_raw:
+
+	DEBUGF	1,"Creating ICMP Packet for socket %x, data ptr=%x\n", eax, edx
+
+	push	edx
+
+	mov	di, IP_PROTO_ICMP SHL 8 + 128  ; TTL
+	shr	edx, 16
+	mov	ebx, [eax + IP_SOCKET.LocalIP]
+	mov	eax, [eax + IP_SOCKET.RemoteIP]
+	call	IPv4_output
+	jz	.exit
+
+	pop	esi
+	push	edx
+	push	eax
+
+	push	edi ecx
+	DEBUGF	1,"copying %u bytes from %x to %x\n", ecx, esi, edi
+	rep	movsb
+	pop	ecx edi
+
+	mov	[edi + ICMP_Packet.Checksum], 0
+
+	mov	esi, edi
+	xor	edx, edx
+	call	checksum_1
+	call	checksum_2
+	mov	[edi + ICMP_Packet.Checksum], dx
+
+	DEBUGF	1,"Sending ICMP Packet\n"
+	call	[ebx + NET_DEVICE.transmit]
+	ret
+  .exit:
+	DEBUGF	1,"Creating ICMP Packet failed\n"
+	add	esp, 4
 	ret
 
 

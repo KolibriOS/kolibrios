@@ -1275,7 +1275,7 @@ transmit:
 	add	dword [device.bytes_tx], ecx
 	adc	dword [device.bytes_tx+4], 0
 
-	ret
+	ret	8
 
 
 ; End of code

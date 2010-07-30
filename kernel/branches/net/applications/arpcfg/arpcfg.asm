@@ -147,8 +147,6 @@ START:				       ; start of execution
 
 ; DATA AREA
 
-IM_END:
-
 name	db 'ARP manager',0
 
 title	db '#   IP-address        MAC-address         Status    TTL',0
@@ -165,6 +163,8 @@ ARP_ENTRY:
        .size:
 
 include_debug_strings	 ; ALWAYS present in data section
+
+IM_END:
 
 I_PARAM rb 1024
 

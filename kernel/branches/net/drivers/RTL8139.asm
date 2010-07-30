@@ -308,12 +308,7 @@ proc service_proc stdcall, ioctl:dword
 	cmp	[devices], MAX_DEVICES			; First check if the driver can handle one more card
 	jge	.fail
 
-	push	edx
-	stdcall KernelAlloc, device.size		; Allocate the buffer for eth_device structure
-	pop	edx
-	test	eax, eax
-	jz	.fail
-	mov	ebx, eax				; ebx is always used as a pointer to the structure (in driver, but also in kernel code)
+	allocate_and_clear ebx, device.size, .fail	; Allocate the buffer for device structure
 
 ; Fill in the direct call addresses into the struct
 
@@ -619,19 +614,20 @@ reset:
 
 	mov	eax, [device.rx_buffer]
 	call	GetPgAddr
-	set_io	0
+;        set_io  0
 	set_io	REG_RBSTART
 	out	dx , eax
-
-; enable interrupts
-
-	mov	eax, INTERRUPT_MASK
-	set_io	REG_IMR
-	out	dx , ax
 
 ; Read MAC address
 
 	call	read_mac
+
+; enable interrupts
+
+	set_io	0
+	set_io	REG_IMR
+	mov	eax, INTERRUPT_MASK
+	out	dx , ax
 
 ; Set the mtu, kernel will be able to send now
 	mov	[device.mtu], 1514
@@ -724,7 +720,7 @@ transmit:
 
   .fail:
 	DEBUGF	1,"failed!\n"
-	or	eax, -1
+	stdcall KernelFree, [esp+4]
 	ret	8
 
 
@@ -889,6 +885,8 @@ int_handler:
   @@:
 	test	ax, ISR_TER
 	jz	@f
+
+	DEBUGF	1,"Transmit error\n"
 
 ;        push    ax
 ;        cmp     [device.curr_tx_desc], 4
@@ -1110,85 +1108,6 @@ read_mac:
 	stosw
 
 	DEBUGF	2,"%x-%x-%x-%x-%x-%x\n",[edi-6]:2,[edi-5]:2,[edi-4]:2,[edi-3]:2,[edi-2]:2,[edi-1]:2
-
-	ret
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
-;; Read eeprom (type 93c46 and 93c56)                                   ;;
-;;                                                                      ;;
-;; In: word to be read in al (6bit in case of 93c46 and 8bit otherwise) ;;
-;;     pointer to device structure in ebx                               ;;
-;;                                                                      ;;
-;; OUT: word read in ax                                                 ;;
-;;                                                                      ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
-read_eeprom:
-	DEBUGF	2,"Reading eeprom, "
-
-	set_io	0
-	push	ebx
-	movzx	ebx, al
-	set_io	REG_RXCONFIG
-	in	al, dx
-	test	al, (1 shl BIT_9356SEL)
-	jz	.type_93c46
-;       and     bl, 01111111b ; don't care first bit
-	or	bx, EE_93C56_READ_CMD		; it contains start bit
-	mov	cx, EE_93C56_CMD_LENGTH-1	; cmd_loop counter
-	jmp	.read_eeprom
-.type_93c46:
-	and	bl, 00111111b
-	or	bx, EE_93C46_READ_CMD		; it contains start bit
-	mov	cx, EE_93C46_CMD_LENGTH-1	; cmd_loop counter
-.read_eeprom:
-	set_io	REG_9346CR
-;       mov     al, (1 shl BIT_93C46_EEM1)
-;       out     dx, al
-	mov	al, (1 shl BIT_93C46_EEM1) or (1 shl BIT_93C46_EECS) ; wake up the eeprom
-	out	dx, al
-.cmd_loop:
-	mov	al, (1 shl BIT_93C46_EEM1) or (1 shl BIT_93C46_EECS)
-	bt	bx, cx
-	jnc	.zero_bit
-	or	al, (1 shl BIT_93C46_EEDI)
-.zero_bit:
-	out	dx, al
-;       push    eax
-;       in      eax, dx ; eeprom delay
-;       pop     eax
-	or	al, (1 shl BIT_93C46_EESK)
-	out	dx, al
-;       in      eax, dx ; eeprom delay
-	dec	cx
-	jns	.cmd_loop
-;       in      eax, dx ; eeprom delay
-	mov	al, (1 shl BIT_93C46_EEM1) or (1 shl BIT_93C46_EECS)
-	out	dx, al
-	mov	cl, 0xf
-.read_loop:
-	shl	ebx, 1
-	mov	al, (1 shl BIT_93C46_EEM1) or (1 shl BIT_93C46_EECS) or (1 shl BIT_93C46_EESK)
-	out	dx, al
-;       in      eax, dx ; eeprom delay
-	in	al, dx
-	and	al, (1 shl BIT_93C46_EEDO)
-	jz	.dont_set
-	inc	ebx
-.dont_set:
-	mov	al, (1 shl BIT_93C46_EEM1) or (1 shl BIT_93C46_EECS)
-	out	dx, al
-;       in      eax, dx ; eeprom delay
-	dec	cl
-	jns	.read_loop
-	xor	al, al
-	out	dx, al
-	mov	ax, bx
-	pop	ebx
 
 	ret
 

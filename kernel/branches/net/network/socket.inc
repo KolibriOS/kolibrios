@@ -317,6 +317,9 @@ SOCKET_open:
 	cmp	edx, IP_PROTO_TCP
 	je	.tcp
 
+	cmp	edx, SOCK_RAW
+	je	.raw
+
   .no_inet4:
 	ret
 
@@ -340,7 +343,36 @@ SOCKET_open:
 	pop	eax
 
 	mov	[eax + SOCKET.snd_proc], SOCKET_send_udp
-	mov	[eax + SOCKET.rcv_proc], SOCKET_receive_udp
+	mov	[eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+
+	ret
+
+  .raw:
+;        test    esi, esi
+;        jz      .ip
+
+	cmp	esi, IP_PROTO_ICMP
+	je	.icmp
+
+	ret
+
+;  .ip:
+;        push    eax
+;        init_queue (eax + SOCKET_QUEUE_LOCATION)
+;        pop     eax
+;
+;        mov     [eax + SOCKET.snd_proc], SOCKET_send_ip
+;        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+;
+;        ret
+
+  .icmp:
+	push	eax
+	init_queue (eax + SOCKET_QUEUE_LOCATION)
+	pop	eax
+
+	mov	[eax + SOCKET.snd_proc], SOCKET_send_icmp
+	mov	[eax + SOCKET.rcv_proc], SOCKET_receive_dgram
 
 	ret
 
@@ -426,7 +458,7 @@ SOCKET_bind:
 align 4
 SOCKET_connect:
 
-	DEBUGF	1,"socket_connect: socknum: %u sockaddr: %x, length: %u\n", ecx, edx, esi
+	DEBUGF	1,"SOCKET_connect: socknum: %u sockaddr: %x, length: %u\n", ecx, edx, esi
 
 	call	SOCKET_num_to_ptr
 	jz	s_error
@@ -446,6 +478,9 @@ SOCKET_connect:
 
 	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
 	je	.tcp
+
+	cmp	[eax + SOCKET.Type], SOCK_RAW
+	je	.raw
 
 	jmp	s_error
 
@@ -497,6 +532,13 @@ SOCKET_connect:
 	mov	dword [esp+32], 0	; success!
 	ret
 
+  .raw:
+	push	dword [edx + 4]
+	pop	dword [eax + IP_SOCKET.RemoteIP]
+
+	mov	dword [esp+32], 0	; success!
+	ret
+
 
 ;-----------------------------------------------------------------
 ;
@@ -510,7 +552,7 @@ SOCKET_connect:
 align 4
 SOCKET_listen:
 
-	DEBUGF	1,"Socket_listen: socknum: %u backlog: %u\n", ecx, edx
+	DEBUGF	1,"SOCKET_listen: socknum: %u backlog: %u\n", ecx, edx
 
 	call	SOCKET_num_to_ptr
 	jz	s_error
@@ -550,7 +592,7 @@ SOCKET_listen:
 align 4
 SOCKET_accept:
 
-	DEBUGF	1,"Socket_accept: socknum: %u sockaddr: %x, length: %u\n", ecx, edx, esi
+	DEBUGF	1,"SOCKET_accept: socknum: %u sockaddr: %x, length: %u\n", ecx, edx, esi
 
 	call	SOCKET_num_to_ptr
 	jz	s_error
@@ -601,7 +643,7 @@ SOCKET_accept:
 align 4
 SOCKET_close:
 
-	DEBUGF	1,"socket_close: socknum: %u\n", ecx
+	DEBUGF	1,"SOCKET_close: socknum: %u\n", ecx
 
 	call	SOCKET_num_to_ptr
 	jz	s_error
@@ -658,11 +700,10 @@ SOCKET_receive:
 	jmp	[eax + SOCKET.rcv_proc]
 
 
-
 align 4
-SOCKET_receive_udp:
+SOCKET_receive_dgram:
 
-	DEBUGF	1,"type: UDP\n"
+	DEBUGF	1,"SOCKET_receive: DGRAM\n"
 
 	mov	ebx, esi
 	mov	edi, edx					; addr to buffer
@@ -705,7 +746,7 @@ SOCKET_receive_udp:
 align 4
 SOCKET_receive_tcp:
 
-	DEBUGF	1,"type: TCP\n"
+	DEBUGF	1,"SOCKET_receive: TCP\n"
 
 	mov	ecx, esi
 	mov	edi, edx
@@ -733,7 +774,7 @@ SOCKET_receive_tcp:
 align 4
 SOCKET_send:
 
-	DEBUGF	1,"SOCKET_send: socknum: %u sockaddr: %x, length: %u, flags: %x, ", ecx, edx, esi, edi
+	DEBUGF	1,"SOCKET_send: socknum: %u data ptr: %x, length: %u, flags: %x, ", ecx, edx, esi, edi
 
 	call	SOCKET_num_to_ptr
 	jz	s_error
@@ -741,11 +782,10 @@ SOCKET_send:
 	jmp	[eax + SOCKET.snd_proc]
 
 
-
 align 4
 SOCKET_send_udp:
 
-	DEBUGF	1,"type: UDP\n"
+	DEBUGF	1,"SOCKET_send: UDP\n"
 
 	mov	ecx, esi
 	mov	esi, edx
@@ -759,7 +799,7 @@ SOCKET_send_udp:
 align 4
 SOCKET_send_tcp:
 
-	DEBUGF	1,"type: TCP\n"
+	DEBUGF	1,"SOCKET_send: TCP\n"
 
 	push	eax
 	mov	ecx, esi
@@ -771,6 +811,31 @@ SOCKET_send_tcp:
 	call	TCP_output
 
 	mov	[esp+32], eax
+	ret
+
+
+;align 4
+;SOCKET_send_ip:
+;
+;        DEBUGF  1,"type: IP\n"
+;
+;        mov     ecx, esi
+;        mov     esi, edx
+;
+;        call    IPv4_output_raw
+;
+;        mov     dword [esp+32], eax
+;        ret
+
+align 4
+SOCKET_send_icmp:
+
+	DEBUGF	1,"SOCKET_send: ICMP\n"
+
+	mov	ecx, esi
+	call	ICMP_output_raw
+
+	mov	dword [esp+32], 0
 	ret
 
 
@@ -991,13 +1056,13 @@ SOCKET_input:
 
 	add_to_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, socket_queue_entry.size, SOCKET_input.full
 
-	DEBUGF	1,"Queued packet successfully\n"
+	DEBUGF	1,"SOCKET_input: queued packet successfully\n"
 	add	esp, socket_queue_entry.size
 	mov	[eax + SOCKET.lock], 0
 	jmp	SOCKET_notify_owner
 
   .full:
-	DEBUGF	2,"Socket %x is full!\n", eax
+	DEBUGF	2,"SOCKET_input: socket %x is full!\n", eax
 	mov	[eax + SOCKET.lock], 0
 	call	kernel_free
 	add	esp, 8
@@ -1049,7 +1114,7 @@ SOCKET_ring_write:
 
   .copy:
 	mov	edi, [eax + RING_BUFFER.write_ptr]
-	DEBUGF	2,"Copying %u bytes from %x to %x\n", ecx, esi, edi
+	DEBUGF	2,"SOCKET_ring_write: %u bytes from %x to %x\n", ecx, esi, edi
 
 	push	ecx
 	shr	ecx, 1
@@ -1087,7 +1152,7 @@ SOCKET_ring_write:
 	jmp	.copy
 
   .full:
-	DEBUGF	2,"Ring buffer is full!\n"
+	DEBUGF	2,"SOCKET_ring_write: ring buffer is full!\n"
 	xor	ecx, ecx
 	ret
 
@@ -1116,7 +1181,7 @@ SOCKET_ring_read:
   .copy:
 	mov	esi, [eax + RING_BUFFER.read_ptr]
 
-	DEBUGF	2,"Copying %u bytes from %x to %x\n", ecx, esi, edi
+	DEBUGF	2,"SOCKET_ring_read: %u bytes from %x to %x\n", ecx, esi, edi
 	push	ecx
 	shr	ecx, 1
 	jnc	.nb
@@ -1334,7 +1399,7 @@ SOCKET_free:
 	lea	ebx, [eax + SOCKET.lock]
 	call	wait_mutex
 
-	DEBUGF	1, "freeing socket..\n"
+	DEBUGF	1, "SOCKET_free: freeing socket..\n"
 
 	cmp	[eax + SOCKET.Domain], AF_INET4
 	jnz	.no_tcp
@@ -1352,7 +1417,7 @@ SOCKET_free:
 	mov	ebx, [eax + SOCKET.NextPtr]
 	mov	eax, [eax + SOCKET.PrevPtr]
 
-	DEBUGF	1, "linking socket %x to socket %x\n", eax, ebx
+	DEBUGF	1, "SOCKET_free: linking socket %x to socket %x\n", eax, ebx
 
 	test	eax, eax
 	jz	@f
@@ -1367,7 +1432,7 @@ SOCKET_free:
 	call	kernel_free
 	pop	ebx
 
-	DEBUGF	1, "socket is gone!\n"
+	DEBUGF	1, "SOCKET_free: success!\n"
 
   .error:
 	ret

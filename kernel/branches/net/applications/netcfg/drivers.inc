@@ -135,4 +135,9 @@ dd  0x08001516
 dd  0x08911516
 dd  0x0
 
+db 'dec21x4x',0
+dd  0x000901011
+dd  0x001901011
+dd  0x0
+
 dd  0x0 ; driverlist end

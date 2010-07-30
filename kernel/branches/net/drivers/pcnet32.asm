@@ -23,6 +23,10 @@ format MS COFF
 	__DEBUG__		equ 1
 	__DEBUG_LEVEL__ 	equ 1
 
+	TX_RING_SIZE		equ 4
+	RX_RING_SIZE		equ 4
+	PKT_BUF_SZ		equ 1544
+
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -33,6 +37,19 @@ public START
 public service_proc
 public version
 
+struc buf_head {
+	.base		dd ?
+	.length 	dw ?
+	.status 	dw ?
+	.msg_length	dw ?
+	.misc		dw ?
+	.reserved	dd ?
+	.size:
+}
+
+virtual at 0
+ buf_head buf_head
+end virtual
 
 virtual at ebx
 
@@ -57,8 +74,8 @@ virtual at ebx
 	.access_write_rap	dd ?
 	.access_reset		dd ?
 
-	  ; The following fields up to .tx_ring_phys inclusive form
-	  ; initialization block for hardware; do not modify  (must be 4-aligned)
+	; The following fields up to .tx_ring_phys inclusive form
+	; initialization block for hardware; do not modify  (must be 4-aligned)
 
 	.private:
 	.mode_		dw ?
@@ -68,8 +85,10 @@ virtual at ebx
 	.filter 	dq ?
 	.rx_ring_phys	dd ?
 	.tx_ring_phys	dd ?
-	.rx_ring	dd ?
-	.tx_ring	dd ?
+
+	.rx_ring	rb RX_RING_SIZE * buf_head.size
+	.tx_ring	rb TX_RING_SIZE * buf_head.size
+
 	.cur_rx 	db ?
 	.cur_tx 	db ?
 	.dirty_rx	dd ?
@@ -88,20 +107,6 @@ virtual at ebx
 
 end virtual
 
-struc buf_head {
-	.base		dd ?
-	.length 	dw ?
-	.status 	dw ?
-	.msg_length	dw ?
-	.misc		dw ?
-	.reserved	dd ?
-
-	.size:
-}
-
-virtual at 0
- buf_head buf_head
-end virtual
 
 struc rx_desc_2 { ; Swstyle 2
 
@@ -147,9 +152,6 @@ virtual at 0
  rx_desc rx_desc_2
 end virtual
 
-
-; PCI Bus defines
-
 	PORT_AUI		equ 0x00
 	PORT_10BT		equ 0x01
 	PORT_GPSI		equ 0x02
@@ -164,16 +166,11 @@ end virtual
 	LOG_TX_BUFFERS		equ 2
 	LOG_RX_BUFFERS		equ 2
 
-	TX_RING_SIZE		equ 4
 	TX_RING_MOD_MASK	equ (TX_RING_SIZE-1)
 	TX_RING_LEN_BITS	equ (LOG_TX_BUFFERS shl 12)
 
-	RX_RING_SIZE		equ 4
 	RX_RING_MOD_MASK	equ (RX_RING_SIZE-1)
 	RX_RING_LEN_BITS	equ (LOG_RX_BUFFERS shl 4)
-
-	PKT_BUF_SZ		equ 1544
-	PKT_BUF_SZ_NEG		equ 0xf9f8
 
 	WIO_RDP 		equ 0x10
 	WIO_RAP 		equ 0x12
@@ -518,19 +515,8 @@ proc service_proc stdcall, ioctl:dword
 	DEBUGF	1,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
 	[device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
 
-;;;        allocate_and_clear [device.tx_buffer], (RX_RING_SIZE * PKT_BUF_SZ), .err
+	allocate_and_clear [device.tx_buffer], (RX_RING_SIZE * PKT_BUF_SZ), .err
 	allocate_and_clear [device.rx_buffer], (TX_RING_SIZE * PKT_BUF_SZ), .err
-	allocate_and_clear [device.rx_ring], (RX_RING_SIZE * buf_head.size), .err
-
-	mov	eax, [device.rx_ring]
-	call	GetPgAddr
-	mov	[device.rx_ring_phys], eax
-
-	allocate_and_clear [device.tx_ring], (TX_RING_SIZE * buf_head.size), .err
-
-	mov	eax, [device.tx_ring]
-	call	GetPgAddr
-	mov	[device.tx_ring_phys], eax
 
 ; Ok, the eth_device structure is ready, let's probe the device
 ; Because initialization fires IRQ, IRQ handler must be aware of this device
@@ -569,7 +555,7 @@ proc service_proc stdcall, ioctl:dword
   .err:
 	DEBUGF	1,"Error, removing all data !\n"
 	stdcall KernelFree, [device.rx_buffer]
-;;;        stdcall KernelFree, [device.tx_buffer]
+	stdcall KernelFree, [device.tx_buffer]
 	stdcall KernelFree, ebx
 
   .fail:
@@ -610,26 +596,33 @@ ret
 align 4
 probe:
 
+; make the device a bus master
+
 	make_bus_master [device.pci_bus], [device.pci_dev]
 
-; first, fill in some of the structure variables
+; create the RX-ring
 
-	mov	edi, [device.rx_ring]
+	lea	edi, [device.rx_ring]
 	mov	ecx, RX_RING_SIZE
 	mov	eax, [device.rx_buffer]
 	call	GetPgAddr
   .rx_init:
 	mov	[edi + buf_head.base], eax
-	mov	[edi + buf_head.length], PKT_BUF_SZ_NEG
+	mov	[edi + buf_head.length], - PKT_BUF_SZ
 	mov	[edi + buf_head.status], 0x8000
 	and	dword [edi + buf_head.msg_length], 0
 	and	dword [edi + buf_head.reserved], 0
 	add	eax, PKT_BUF_SZ
-;        inc     eax
-	add	 edi, buf_head.size
-	loop	 .rx_init
+	add	edi, buf_head.size
+	loop	.rx_init
 
-	mov	edi, [device.tx_ring]
+	lea	eax, [device.rx_ring]
+	GetRealAddr
+	mov	[device.rx_ring_phys], eax
+
+; create the Tx-ring
+
+	lea	edi, [device.tx_ring]
 	mov	ecx, TX_RING_SIZE
 	mov	eax, [device.tx_buffer]
 	call	GetPgAddr
@@ -642,9 +635,13 @@ probe:
 	add	edi, buf_head.size
 	loop	.tx_init
 
+	lea	eax, [device.tx_ring]
+	GetRealAddr
+	mov	[device.tx_ring_phys], eax
+
 	mov	[device.tlen_rlen], (TX_RING_LEN_BITS or RX_RING_LEN_BITS)
 
-	; First, we must try to use Word operations
+; First, we must try to use Word operations
 	call	switch_to_wio
 	set_io	0
 	call	wio_reset
@@ -655,22 +652,23 @@ probe:
 	jne	.try_dwio
 
 	; Try Word I/O
-	mov	ax , 88
-	add	edx, WIO_RAP
-	out	dx , ax
+	mov	ax, 88
+	set_io	WIO_RAP
+	out	dx, ax
 	nop
 	nop
-	in	ax , dx
-	sub	edx, WIO_RAP
-	cmp	ax , 88
+	in	ax, dx
+	set_io	0
+	cmp	ax, 88
 	jne	.try_dwio
 
-	DEBUGF 1,"Using WIO\n"
+	DEBUGF	1,"Using WIO\n"
 
 	call	switch_to_wio
 
 	jmp	.L1
 
+; If WIO fails, try to use DWIO
   .try_dwio:
 	call	dwio_reset
 
@@ -683,27 +681,27 @@ probe:
 	; Try Dword I/O
 	set_io	DWIO_RAP
 	mov	eax, 88
-	out	dx , eax
+	out	dx, eax
 	nop
 	nop
 	in	eax, dx
 	set_io	0
-	and	eax, 0xffff
-	cmp	eax, 88
+	cmp	ax, 88
 	jne	.no_dev
 
-	DEBUGF 1,"Using DWIO\n"
+	DEBUGF	1,"Using DWIO\n"
 
 	call	switch_to_dwio
 
 	jmp	.L1
 
+; If both methods fail, something is wrong!
   .no_dev:
-	DEBUGF 1,"PCnet device not found!\n"
-	mov	eax, 1
+	DEBUGF	1,"PCnet device not found!\n"
+	mov	eax, -1
 	ret
-  .L1:
 
+  .L1:
 	mov	ecx, CSR_CHIPID0
 	call	[device.access_read_csr]
 	mov	esi, eax
@@ -722,7 +720,8 @@ probe:
 	and	eax, 0xffff
 	mov	[device.chip_version], eax
 
-	DEBUGF 1,"chip version ok\n"
+	DEBUGF	1,"chip version: %x\n", eax
+
 	mov	[device.fdx], 0
 	mov	[device.mii], 0
 	mov	[device.fset], 0
@@ -749,7 +748,7 @@ probe:
 	cmp	eax, 0x2627
 	je	.L9
 
-	DEBUGF 1,"Invalid chip rev\n"
+	DEBUGF	1,"Invalid chip rev\n"
 	jmp	.no_dev
   .L2:
 	mov	[device.name], device_l2
@@ -788,19 +787,17 @@ probe:
 ;        mov     [device.fdx], 1
 	mov	[device.mii], 1
   .L10:
-	DEBUGF 1,"device name: %s\n",[device.name]
+	DEBUGF	1,"device name: %s\n",[device.name]
 
 	cmp	[device.fset], 1
 	jne	.L11
 	mov	ecx, BCR_BUSCTL
 	call	[device.access_read_bcr]
-	or	eax, 0x800
+	or	ax, 0x800
 	call	[device.access_write_bcr]
 
 	mov	ecx, CSR_DMACTL
 	call	[device.access_read_csr]
-;        and     eax, 0xc00
-;        or      eax, 0xc00
 	mov	eax, 0xc00
 	call	[device.access_write_csr]
 
@@ -808,8 +805,7 @@ probe:
 	mov	[device.ltint],1
   .L11:
 
-	DEBUGF 1,"PCI done\n"
-	mov	eax, PORT_ASEL
+	mov	eax, PORT_ASEL			; Auto-select
 	mov	[device.options], eax
 	mov	[device.mode_], word 0x0003
 	mov	[device.tlen_rlen], word (TX_RING_LEN_BITS or RX_RING_LEN_BITS)
@@ -818,15 +814,14 @@ probe:
 	mov	dword [device.filter+4], 0
 
 	mov	eax, IMR
-	mov	ecx, CSR_IMR			  ; Write interrupt mask
+	mov	ecx, CSR_IMR			; Write interrupt mask
 	call	[device.access_write_csr]
-
-
-
 
 
 align 4
 reset:
+
+	DEBUGF	1,"Resetting PCnet device: %x\n", ebx
 
 ; attach int handler
 
@@ -845,10 +840,10 @@ reset:
 
 ; Switch to dword operations
 
-	DEBUGF 1,"Switching to 32-bit mode\n"
+	DEBUGF	1,"Switching to 32-bit mode\n"
 
 	mov	ecx, DWIO_RDP
-	mov	eax, 0
+	xor	eax, eax
 	call	wio_write_csr
 
 	call	switch_to_dwio
@@ -858,28 +853,31 @@ reset:
 	set_io	0
 	set_io	DWIO_RAP
 	mov	eax, 88
-	out	dx , eax
+	out	dx, eax
 	nop
 	nop
 	in	eax, dx
 	set_io	0
-	and	eax, 0xffff
-	cmp	eax, 88
+	cmp	ax, 88
 	je	.yes_dwio
 
-	call	switch_to_wio			; it seem to have failed, reset device again and use wio
+	call	switch_to_wio			; it seems to have failed, reset device again and use wio
 	set_io	0
 	call	[device.access_reset]
 
   .yes_dwio:
+	set_io	0
+	mov	ecx, BCR_SSTYLE 		; Select Software style 2      ;;;
+	mov	eax, 2
+	call	[device.access_write_bcr]
 
 	; set/reset autoselect bit
 	mov	ecx, BCR_MISCCFG
 	call	[device.access_read_bcr]
-	and	eax,not 2
+
 	test	[device.options], PORT_ASEL
-	jz	.L1
-	or	eax, 2
+	jnz	 .L1
+	and	eax, not 2
   .L1:
 	call	[device.access_write_bcr]
 
@@ -940,7 +938,7 @@ reset:
 	test	[device.options], PORT_ASEL
 	jz	.L9
 	mov	ecx, BCR_MIICTL
-	DEBUGF 1,"ASEL, enable auto-negotiation\n"
+	DEBUGF	1,"ASEL, enable auto-negotiation\n"
 	call	[device.access_read_bcr]
 	and	eax, not 0x98
 	or	eax, 0x20
@@ -968,41 +966,41 @@ reset:
 	movsw
 
 	lea	eax, [device.private]
-	mov	ecx, eax
-	and	ecx, 0xFFF ; KolibriOS PAGE SIZE
-	call	GetPgAddr
-	add	eax, ecx
-
+	GetRealAddr
 	push	eax
 	and	eax, 0xffff
 	mov	ecx, 1
 	call	[device.access_write_csr]
 	pop	eax
-	shr	eax,16
-	mov	ecx,2
+	shr	eax, 16
+	mov	ecx, 2
 	call	[device.access_write_csr]
 
-	mov	ecx,4
-	mov	eax,0x0915
+	mov	ecx, 4
+	mov	eax, 0x0915
 	call	[device.access_write_csr]
 
-	mov	ecx,0
-	mov	eax,1
+	xor	ecx, ecx
+	mov	eax, 1
 	call	[device.access_write_csr]
 
-	mov	[device.tx_full],0
-	mov	[device.cur_rx],0
-	mov	[device.cur_tx],0
-	mov	[device.dirty_rx],0
-	mov	[device.dirty_tx],0
+	mov	[device.tx_full], 0
+	mov	[device.cur_rx], 0
+	mov	[device.cur_tx], 0
+	mov	[device.dirty_rx], 0
+	mov	[device.dirty_tx], 0
 
-	mov	ecx,100
+	mov	ecx, 100
 .L11:
 	push	ecx
 	xor	ecx, ecx
 	call	[device.access_read_csr]
 	pop	ecx
-	test	ax,0x100
+	push	esi
+	mov	esi, 100
+	call	Sleep
+	pop	esi
+	test	ax, 0x100
 	jnz	.L12
 	loop	.L11
 .L12:
@@ -1046,7 +1044,7 @@ reset:
 
 align 4
 transmit:
-	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n",[esp+4],[esp+8]
+	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
 	mov	eax, [esp+4]
 	DEBUGF	1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
 	[eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
@@ -1063,7 +1061,9 @@ transmit:
 	imul	edi, eax, PKT_BUF_SZ
 	shl	eax, 4
 	add	edi, [device.tx_buffer]
-	add	eax, [device.tx_ring]
+
+	lea	eax, [eax + device.tx_ring]
+
 	test	byte [eax + buf_head.status + 1], 80h
 	jnz	.nospace
 
@@ -1104,17 +1104,15 @@ transmit:
 	adc	dword [device.bytes_tx + 4], 0
 	DEBUGF	2," - Done!\n"
 
-	call	Kernelfree
-	add	esp, 4
-	ret
+	stdcall KernelFree, [esp+4]
+	ret	8
 
 .nospace:
 	DEBUGF	1, 'ERROR: no free transmit descriptors\n'
 ; todo: maybe somehow notify the kernel about the error?
 
-	call	Kernelfree
-	add	esp, 4
-	ret
+	stdcall KernelFree, [esp+4]
+	ret	8
 
 
 
@@ -1127,7 +1125,7 @@ transmit:
 align 4
 int_handler:
 
-	DEBUGF	1,"IRQ %x ", eax:2		; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
+	DEBUGF	1,"IRQ=%x ", eax:2		; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
 
 ; find pointer of device wich made IRQ occur
 
@@ -1137,7 +1135,6 @@ int_handler:
 	jz	.abort
   .nextdevice:
 	mov	ebx, [esi]
-	DEBUGF	1,"device=%x? ", ebx
 	set_io	0
 
 	push	ecx
@@ -1154,7 +1151,7 @@ int_handler:
 	ret					; If no device was found, abort (The irq was probably for a device, not registered to this driver
 
   .got_it:
-	DEBUGF	1,"yes, reason=%x ", ax
+	DEBUGF	1,"csr=%x\n", ax
 ;-------------------------------------------------------
 ; Possible reasons:
 ; initialization done - ignore
@@ -1170,7 +1167,11 @@ int_handler:
 	test	ax, CSR_RINT
 	jz	@f
 
-.receiver_test_loop:
+	push	ax
+
+	DEBUGF	1,"packet received!\n"
+
+ .receiver_test_loop:
 	movzx	eax, [device.cur_rx]
 ;        and     eax, RX_RING_MOD_MASK
 	mov	edi, eax
@@ -1179,7 +1180,7 @@ int_handler:
 	add	esi, [device.rx_buffer] 	; esi now points to rx buffer
 
 	shl	edi, 4				; desc * 16 (16 is size of one ring entry)
-	add	edi, [device.rx_ring]		; edi now points to current rx ring entry
+	lea	edi, [edi + device.rx_ring]	; edi now points to current rx ring entry
 
 	mov	cx , [edi + buf_head.status]
 
@@ -1234,8 +1235,24 @@ int_handler:
 	jmp	EthReceiver			; Send the copied packet to kernel
 
   .abort:
-	DEBUGF	1,"done \n"
+	pop	ax
   @@:
+
+	test	ax, IMR_TINT
+	jz	@f
+
+	DEBUGF	1,"Transmit OK!\n"
+
+  @@:
+
+	test	ax, IMR_MISS
+	jz	@f
+
+	DEBUGF	1,"We missed a frame! (RX ring full?)\n"
+
+  @@:
+
+	DEBUGF	1,"done\n"
 
 	ret
 
@@ -1253,10 +1270,9 @@ write_mac:	; in: mac pushed onto stack (as 3 words)
 
 	DEBUGF	1,"Writing MAC: %x-%x-%x-%x-%x-%x",[esp+0]:2,[esp+1]:2,[esp+2]:2,[esp+3]:2,[esp+4]:2,[esp+5]:2
 
-	mov	edx, [device.io_addr]
-	add	edx, 2
+	set_io	0
+;        set_io  2
 	xor	eax, eax
-
 	mov	ecx, CSR_PAR0
        @@:
 	pop	ax
@@ -1279,8 +1295,8 @@ write_mac:	; in: mac pushed onto stack (as 3 words)
 read_mac:
 	DEBUGF	1,"Reading MAC"
 
-	mov	edx, [device.io_addr]
-	add	edx, 6
+	set_io	0
+	set_io	6
        @@:
 	dec	dx
 	dec	dx
@@ -1518,11 +1534,11 @@ dwio_reset:
 
 
 ; End of code
-align 4 					; Place all initialised data here
+align 4 					  ; Place all initialised data here
 
 devices       dd 0
 version       dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
-my_service    db 'PCnet32',0			; max 16 chars include zero
+my_service    db 'PCnet',0			  ; max 16 chars include zero
 
 device_l2     db "PCnet/PCI 79C970",0
 device_l4     db "PCnet/PCI II 79C970A",0

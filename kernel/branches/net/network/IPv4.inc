@@ -653,6 +653,94 @@ IPv4_output:
 	ret
 
 
+
+
+
+;------------------------------------------------------------------
+;
+; IPv4_output_raw
+;
+; IN: eax = socket ptr
+;     ecx = data length
+;     esi = data ptr
+;
+; OUT: /
+;
+;------------------------------------------------------------------
+align 4
+IPv4_output_raw:
+
+	DEBUGF 1,"IPv4_output_raw: size=%u ptr=%x socket=%x\n", ecx, esi, eax
+
+	cmp	ecx, 1480		;;;;;
+	jg	.too_large
+
+	sub	esp, 8
+	push	esi eax
+
+	call	ARP_IP_to_MAC
+
+	test	eax, 0xffff0000 	; error bits
+	jnz	.arp_error
+
+  .continue:
+
+	push	ebx	; push the mac
+	push	ax
+
+	call	IPv4_dest_to_dev
+	inc	[IP_PACKETS_TX+edi]
+	mov	ebx, [NET_DRV_LIST+edi]
+	lea	eax, [ebx + ETH_DEVICE.mac]
+	mov	edx, esp
+	mov	ecx, [esp + 6+4]
+	add	ecx, IPv4_Packet.DataOrOptional
+	mov	di, ETHER_IPv4
+	call	ETH_output
+	jz	.error
+
+	add	esp, 6	; pop the mac
+
+	mov	dword[esp+4+4], edx
+	mov	dword[esp+4+4+4], eax
+
+	pop	eax esi
+;; todo: check socket options if we should add header, or just compute checksum
+
+	push	edi ecx
+	rep	movsb
+	pop	ecx edi
+
+;        [edi + IPv4_Packet.VersionAndIHL]              ; IPv4, normal length (no Optional header)
+;        [edi + IPv4_Packet.TypeOfService]              ; nothing special, just plain ip packet
+;        [edi + IPv4_Packet.TotalLength]
+;        [edi + IPv4_Packet.TotalLength]                ; internet byte order
+;        [edi + IPv4_Packet.FlagsAndFragmentOffset]
+
+	mov	[edi + IPv4_Packet.HeaderChecksum], 0
+
+;        [edi + IPv4_Packet.TimeToLive]                 ; ttl shl 8 + protocol
+;        [edi + IPv4_Packet.Protocol]
+;        [edi + IPv4_Packet.Identification]             ; fragment id
+;        [edi + IPv4_Packet.SourceAddress]
+;        [edi + IPv4_Packet.DestinationAddress]
+
+	IPv4_checksum edi			;;;; todo: checksum for IP packet with options!
+	add	edi, IPv4_Packet.DataOrOptional
+	DEBUGF	1,"IPv4 Packet for device %x created successfully\n", ebx
+	call	[ebx + NET_DEVICE.transmit]
+	ret
+
+  .error:
+	add	esp, 6
+  .arp_error:
+	add	esp, 8+4+4
+  .too_large:
+	DEBUGF	1,"IPv4_output_raw: Failed\n"
+	sub	edi, edi
+	ret
+
+
 ;--------------------------------------------------------
 ;
 ;
