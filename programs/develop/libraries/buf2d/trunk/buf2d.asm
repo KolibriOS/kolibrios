@@ -15,6 +15,7 @@ BUF_STRUCT_SIZE equ 21
 buf2d_data equ dword[edi] ;данные буфера изображения
 buf2d_w equ dword[edi+8] ;ширина буфера
 buf2d_h equ dword[edi+12] ;высота буфера
+buf2d_l equ word[edi+4]
 buf2d_t equ word[edi+6] ;отступ сверху
 buf2d_size_lt equ dword[edi+4] ;отступ слева и справа для буфера
 buf2d_color equ dword[edi+16] ;цвет фона буфера
@@ -196,8 +197,14 @@ proc buf_clear, buf_struc:dword, color:dword ;очистка буфера заданым цветом
 	ret
 endp
 
+;функция для обрезания буферов 8 и 24 битных, по заданому цвету.
+;параметр opt задается комбинацией констант:
+; BUF2D_OPT_CROP_TOP - обрезка сверху
+; BUF2D_OPT_CROP_LEFT - обрезка слева
+; BUF2D_OPT_CROP_BOTTOM - обрезка снизу
+; BUF2D_OPT_CROP_RIGHT - обрезка справа
 align 4
-proc buf_crop_color, buf_struc:dword, color:dword, opt:dword ;обрезка буфера по заданому цветом цвету
+proc buf_crop_color, buf_struc:dword, color:dword, opt:dword
 locals
 	crop_r dd ?
 endl
@@ -305,14 +312,14 @@ endl
 		add esi,buf2d_data ;esi - указатель на конец буфера изображения
 		mov dword[crop_r],0
 		cld
-		.found_beg:
+		.24found_beg_right:
 		sub esi,3 ;двигаемся на 1-ну колонку влево
 		mov ecx,buf2d_h ;восстановление ecx для нового цикла
 		@@:
 			cmp word[esi],ax
-			jne .found
+			jne .24found_right
 			cmp byte[esi+2],dl
-			jne .found
+			jne .24found_right
 			sub esi,ebx ;прыгаем на верхнюю строку
 			loop @b
 		inc dword[crop_r]
@@ -320,30 +327,30 @@ endl
 		mov ecx,buf2d_w
 		dec ecx ;1 колонка на запас
 		cmp dword[crop_r],ecx
-		jge .found
+		jge .24found_right
 
 		sub esi,3 ;двигаемся на 1-ну колонку влево
 		mov ecx,buf2d_h ;восстановление ecx для нового цикла
 		@@:
 			add esi,ebx ;прыгаем на нижнюю строку
 			cmp word[esi],ax
-			jne .found
+			jne .24found_right
 			cmp byte[esi+2],dl
-			jne .found
+			jne .24found_right
 			loop @b
 		inc dword[crop_r]
 
 		mov ecx,buf2d_w
 		dec ecx ;1 колонка на запас
 		cmp dword[crop_r],ecx
-		jl .found_beg
+		jl .24found_beg_right
 
-		.found:
+		.24found_right:
 		cmp dword[crop_r],0
 		je .24no_crop_right
 			mov ecx,buf2d_w
 			sub ecx,dword[crop_r]
-			stdcall img_rgb_wcrop, buf2d_data, buf2d_w, ecx, buf2d_h ;обрезаем буфер, по новому размеру
+			stdcall img_rgb_crop_r, buf2d_data, buf2d_w, ecx, buf2d_h ;обрезаем буфер, по новому размеру
 			mov buf2d_w,ecx ;ставим новую ширину для буфера
 			mov ebx,buf2d_h
 			imul ecx,ebx
@@ -351,6 +358,66 @@ endl
 			invoke mem.realloc,buf2d_data,ecx
 			mov buf2d_data,eax ;на случай если изменился указатель на данные
 	.24no_crop_right:
+
+	bt dword[opt],BUF2D_BIT_OPT_CROP_LEFT
+	jae .24no_crop_left
+		mov eax,dword[color]
+		mov edx,eax ;ax = colors - r,g
+		shr edx,16 ;dl = color - b
+		mov ebx,buf2d_w
+		lea ebx,[ebx+ebx*2]
+		mov esi,buf2d_data ;esi - указатель на начоло буфера изображения
+		mov dword[crop_r],0
+		cld
+		.24found_beg_left:
+
+		mov ecx,buf2d_h ;восстановление ecx для нового цикла
+		@@:
+			cmp word[esi],ax
+			jne .24found_left
+			cmp byte[esi+2],dl
+			jne .24found_left
+			add esi,ebx ;прыгаем на нижнюю строку
+			loop @b
+		inc dword[crop_r]
+		add esi,3 ;двигаемся на 1-ну колонку вправо
+
+		mov ecx,buf2d_w
+		dec ecx ;1 колонка на запас
+		cmp dword[crop_r],ecx
+		jge .24found_left
+
+		mov ecx,buf2d_h ;восстановление ecx для нового цикла
+		@@:
+			sub esi,ebx ;прыгаем на верхнюю строку
+			cmp word[esi],ax
+			jne .24found_left
+			cmp byte[esi+2],dl
+			jne .24found_left
+			loop @b
+		inc dword[crop_r]
+		add esi,3 ;двигаемся на 1-ну колонку вправо
+
+		mov ecx,buf2d_w
+		dec ecx ;1 колонка на запас
+		cmp dword[crop_r],ecx
+		jl .24found_beg_left
+
+		.24found_left:
+		cmp dword[crop_r],0
+		je .24no_crop_left
+			mov ecx,buf2d_w
+			sub ecx,dword[crop_r]
+			stdcall img_rgb_crop_l, buf2d_data, buf2d_w, ecx, buf2d_h ;обрезаем буфер, по новому размеру
+			mov buf2d_w,ecx ;ставим новую ширину для буфера
+			mov ebx,buf2d_h
+			imul ecx,ebx
+			lea ecx,[ecx+ecx*2]
+			invoke mem.realloc,buf2d_data,ecx
+			mov buf2d_data,eax ;на случай если изменился указатель на данные
+			mov eax,dword[crop_r]
+			add buf2d_l,ax
+	.24no_crop_left:
 
 	.24end_f:
 
@@ -479,7 +546,7 @@ endl
 		je .8no_crop_right
 			mov ecx,buf2d_w
 			sub ecx,edx
-			stdcall img_gray_wcrop, buf2d_data, buf2d_w, ecx, buf2d_h ;обрезаем буфер, по новому размеру
+			stdcall img_gray_crop_r, buf2d_data, buf2d_w, ecx, buf2d_h ;обрезаем буфер, по новому размеру
 			mov buf2d_w,ecx ;ставим новую ширину для буфера
 			mov ebx,buf2d_h
 			imul ecx,ebx
@@ -487,19 +554,72 @@ endl
 			mov buf2d_data,eax ;на случай если изменился указатель на данные
 	.8no_crop_right:
 
+	bt dword[opt],BUF2D_BIT_OPT_CROP_LEFT
+	jae .8no_crop_left
+		mov eax,dword[color]
+		mov ebx,buf2d_w
+		mov esi,buf2d_data ;esi - указатель на начоло буфера изображения
+		mov edx,0
+		cld
+		.8found_beg_left:
+
+		mov ecx,buf2d_h ;восстановление ecx для нового цикла
+		@@:
+			cmp word[esi],ax
+			jne .8found_left
+			add esi,ebx ;прыгаем на нижнюю строку
+			loop @b
+		inc edx
+		inc esi ;двигаемся на 1-ну колонку вправо
+
+		mov ecx,buf2d_w
+		dec ecx ;1 колонка на запас
+		cmp edx,ecx
+		jge .8found_left
+
+		mov ecx,buf2d_h ;восстановление ecx для нового цикла
+		@@:
+			sub esi,ebx ;прыгаем на верхнюю строку
+			cmp word[esi],ax
+			jne .8found_left
+			loop @b
+		inc edx
+		inc esi ;двигаемся на 1-ну колонку вправо
+
+		mov ecx,buf2d_w
+		dec ecx ;1 колонка на запас
+		cmp edx,ecx
+		jl .8found_beg_left
+
+		.8found_left:
+		cmp edx,0
+		je .8no_crop_left
+			mov ecx,buf2d_w
+			sub ecx,edx
+			stdcall img_gray_crop_l, buf2d_data, buf2d_w, ecx, buf2d_h ;обрезаем буфер, по новому размеру
+			mov buf2d_w,ecx ;ставим новую ширину для буфера
+			mov ebx,buf2d_h
+			imul ecx,ebx
+			invoke mem.realloc,buf2d_data,ecx
+			mov buf2d_data,eax ;на случай если изменился указатель на данные
+			mov eax,edx
+			add buf2d_l,ax
+	.8no_crop_left:
+
 	.8end_f:
 
 	popad
 	ret
 endp
 
+;обрезаем цветное изображение с правой стороны
 ;input:
 ;data_rgb - pointer to rgb data
 ;size_w_old - width img in pixels
 ;size_w_new - new width img in pixels
 ;size_h - height img in pixels
 align 4
-proc img_rgb_wcrop, data_rgb:dword, size_w_old:dword, size_w_new:dword, size_h:dword
+proc img_rgb_crop_r, data_rgb:dword, size_w_old:dword, size_w_new:dword, size_h:dword
 	pushad
 	mov eax, dword[size_w_old]
 	lea eax, dword[eax+eax*2] ;eax = width(old) * 3(rgb)
@@ -525,13 +645,14 @@ proc img_rgb_wcrop, data_rgb:dword, size_w_old:dword, size_w_new:dword, size_h:d
 	ret
 endp
 
+;обрезаем серое изображение с правой стороны
 ;input:
 ;data_gray - pointer to gray data
 ;size_w_old - width img in pixels
 ;size_w_new - new width img in pixels
 ;size_h - height img in pixels
 align 4
-proc img_gray_wcrop, data_gray:dword, size_w_old:dword, size_w_new:dword, size_h:dword
+proc img_gray_crop_r, data_gray:dword, size_w_old:dword, size_w_new:dword, size_h:dword
 	pushad
 	mov eax, dword[size_w_old]
 	mov ebx, dword[size_w_new]
@@ -551,6 +672,68 @@ proc img_gray_wcrop, data_gray:dword, size_w_old:dword, size_w_new:dword, size_h
 		sub esi,ebx
 		jmp @b
 	@@:
+	popad
+	ret
+endp
+
+;обрезаем цветное изображение с левой стороны
+;input:
+;data_rgb - pointer to rgb data
+;size_w_old - width img in pixels
+;size_w_new - new width img in pixels
+;size_h - height img in pixels
+align 4
+proc img_rgb_crop_l, data_rgb:dword, size_w_old:dword, size_w_new:dword, size_h:dword
+	pushad
+	mov edi,dword[data_rgb]
+	mov esi,edi
+	mov eax,dword[size_w_old]
+	mov ebx,dword[size_w_new]
+	cmp eax,ebx
+	jle .end_f ;старый размер изображения не может быть меньше нового (при условии обрезания картинки)
+		lea eax,[eax+eax*2]
+		lea ebx,[ebx+ebx*2]
+		sub eax,ebx
+		mov edx,dword[size_h] ;высота изображения
+		cld
+		@@:
+			add esi,eax
+			mov ecx,ebx
+			rep movsb
+			dec edx
+			cmp edx,0
+			jg @b
+	.end_f:
+	popad
+	ret
+endp
+
+;обрезаем серое изображение с левой стороны
+;input:
+;data_gray - pointer to gray data
+;size_w_old - width img in pixels
+;size_w_new - new width img in pixels
+;size_h - height img in pixels
+align 4
+proc img_gray_crop_l, data_gray:dword, size_w_old:dword, size_w_new:dword, size_h:dword
+	pushad
+	mov edi,dword[data_gray]
+	mov esi,edi
+	mov eax,dword[size_w_old]
+	mov ebx,dword[size_w_new]
+	cmp eax,ebx
+	jle .end_f ;старый размер изображения не может быть меньше нового (при условии обрезания картинки)
+		sub eax,ebx
+		mov edx,dword[size_h] ;высота изображения
+		cld
+		@@:
+			add esi,eax
+			mov ecx,ebx
+			rep movsb
+			dec edx
+			cmp edx,0
+			jg @b
+	.end_f:
 	popad
 	ret
 endp
@@ -888,20 +1071,20 @@ proc img_rgb24_wdiv2 data_rgb:dword, size:dword
   lea ecx,[ecx+ecx*2]
   cld
   @@: ;затемнение цвета пикселей
-    shr byte[eax],1
-    inc eax
-    loop @b
+		shr byte[eax],1
+		inc eax
+		loop @b
 
   mov eax,dword[data_rgb]
   mov ecx,dword[size] ;ecx = size
   shr ecx,1
   @@: ;сложение цветов пикселей
-    mov bx,word[eax+3] ;копируем цвет соседнего пикселя
-    add word[eax],bx
-    mov bl,byte[eax+5] ;копируем цвет соседнего пикселя
-    add byte[eax+2],bl
-    add eax,6 ;=2*3
-    loop @b
+		mov bx,word[eax+3] ;копируем цвет соседнего пикселя
+		add word[eax],bx
+		mov bl,byte[eax+5] ;копируем цвет соседнего пикселя
+		add byte[eax+2],bl
+		add eax,6 ;=2*3
+		loop @b
 
   mov eax,dword[data_rgb]
   add eax,3
@@ -911,14 +1094,14 @@ proc img_rgb24_wdiv2 data_rgb:dword, size:dword
   shr ecx,1
   dec ecx ;лишний пиксель
   @@: ;поджатие пикселей
-    mov edx,dword[ebx]
-    mov word[eax],dx
-    shr edx,16
-    mov byte[eax+2],dl
+		mov edx,dword[ebx]
+		mov word[eax],dx
+		shr edx,16
+		mov byte[eax+2],dl
 
-    add eax,3
-    add ebx,6
-    loop @b
+		add eax,3
+		add ebx,6
+		loop @b
   ;pop edx ecx ebx eax
   ret
 endp

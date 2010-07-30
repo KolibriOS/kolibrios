@@ -31,8 +31,8 @@ BUF_STRUCT_SIZE equ 21
 buf2d_data equ dword[edi] ;данные буфера изображения
 buf2d_w equ dword[edi+8] ;ширина буфера
 buf2d_h equ dword[edi+12] ;высота буфера
-buf2d_t equ word[edi+6] ;отступ сверху
 buf2d_l equ word[edi+4] ;отступ слева
+buf2d_t equ word[edi+6] ;отступ сверху
 buf2d_size_lt equ dword[edi+4] ;отступ слева и справа для буфера
 buf2d_color equ dword[edi+16] ;цвет фона буфера
 buf2d_bits equ byte[edi+20] ;количество бит в 1-й точке изображения
@@ -54,12 +54,23 @@ OFFS_SHADOW_X equ 2 ;сдвиг теней по оси 'x'
 OFFS_SHADOW_Y equ 2 ;сдвиг теней по оси 'y'
 IMAGE_FONT_SIZE equ 128*144*3
 
+use_but equ 1
+
+if use_but eq 1
+BUT1_T equ 10 ;отступ сверху
+BUT1_L equ 15 ;отступ слева
+BUT1_W equ 50 ;ширина
+BUT1_H equ 20 ;высота
+BUT1_NEXT_TOP equ (BUT1_T+BUT1_H)*65536
+end if
+
 fn_icon0 db 'curici.png',0 ;имя файла с декорациями
 fn_icon1 db 'wolf.png',0 ;имя файла с волком и зайцем
 fn_icon2 db 'eggs.png',0 ;имя файла с яйцами
 fn_icon3 db 'chi.png',0 ;имя файла с циплятами
 fn_font db 'font8x9.bmp',0
 
+;цвета в игре
 color_fon dd 0xffffff
 color_shadows dd 0xd0d0d0 ;цвет теней
 color_trees dd 0x008000 ;цвет травы
@@ -68,6 +79,9 @@ color_egg dd 0x404080 ;цвет яйца
 color_chick dd 0x00d0d0 ;цвет ципленка
 color_curici dd 0x8080d0 ;цвет курицы
 color_perilo dd 0x000080 ;цвет перила (гребня)
+;цвета интерфейса
+color_but_sm dd 0x808080 ;цвет маленьких кнопок
+color_but_bi dd 0x8080ff ;цвет больших кнопок
 
 macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
@@ -113,7 +127,10 @@ mask_chi_cr_l  equ 1000000000000000000000b ;маска для создания левого
 mask_chi_cr_r  equ 1000000000000000000000000000b ;маска для создания правого
 bit_chi_left  equ 21 ;1-й бит который отвечает за бегущего слева
 bit_chi_right equ 27 ;1-й бит который отвечает за бегущего права
+val_zaac_time_y equ 5 ;колличество тактов, которое обязательно должен провисеть заяц
+val_zaac_time_n equ 7 ;колличество тактов, которое обязательно должен быть спрятанным заяц
 
+zaac_status db 0
 pos_wolf db 0 ;позиция волка 0-й бит слева/справа, 1-й бит сверху/вниз
 ;rb 1
 pos_eggs dd 0 ;позиции расположения яиц и циплят
@@ -149,7 +166,8 @@ proc CreateTrapharetBuffer, buf:dword, img_data:dword
 	mov edi,dword[buf]
 	stdcall [buf2d_create_f_img], edi,[img_data] ;создаем буфер
 	stdcall [buf2d_conv_24_to_8], edi,1 ;делаем буфер прозрачности 8бит
-	stdcall [buf2d_crop_color], edi,buf2d_color,BUF2D_OPT_CROP_TOP+BUF2D_OPT_CROP_BOTTOM+BUF2D_OPT_CROP_RIGHT
+	;обрезаем лишние края буфера, для более быстрого рисования
+	stdcall [buf2d_crop_color], edi,buf2d_color,BUF2D_OPT_CROP_TOP+BUF2D_OPT_CROP_BOTTOM+BUF2D_OPT_CROP_RIGHT+BUF2D_OPT_CROP_LEFT
 	pop edi
 	ret
 endp
@@ -444,14 +462,23 @@ MoveEggs:
 	and dword[pos_eggs],mask_clear_all ;очистка упавших яиц и добежавших курей
 
 	call rand_next
-	bt dword[rand_x],6
-	jc @f
-	bt dword[rand_x],8
-	jc @f
-	bt dword[rand_x],9
+	cmp byte[zaac_status],0
+	jle @f
+		dec byte[zaac_status]
+		jmp .no_zaac_move ;заяц пока не двигается
+	@@:
+	
+	bt dword[rand_x],6 ;заяц от фонаря меняет статус
 	jc @f
 		xor byte[pos_wolf],val_zaac ;высовываем/засовываем зайца
+		bt word[pos_wolf],val_zaac
+		jc .zaac_n
+			mov byte[zaac_status],val_zaac_time_y ;ставим минимальное время для смены статуса
+			jmp @f
+		.zaac_n:
+			mov byte[zaac_status],val_zaac_time_n ;ставим минимальное время для смены статуса
 	@@:
+	.no_zaac_move:
 
 	;создание новых яиц
 	bt dword[rand_x],4 ;проверяем будем ли создавать новое яйцо
@@ -486,6 +513,7 @@ proc InitGame, b:dword ;первоначальные настройки игры
 	mov byte[some_text+1],0 ;текст с числом пойманных яиц
 	mov byte[count_last],0
 	mov dword[pos_eggs],0
+	mov byte[zaac_status],0
 
 	cmp dword[b],0
 	jne @f
@@ -697,8 +725,8 @@ draw_window:
 	mcall 12,1
 
 	xor eax,eax
-	mov ebx,20*65536+370
-	mov ecx,20*65536+280
+	mov ebx,20*65536+480
+	mov ecx,20*65536+270
 	mov edx,[sc.work]
 	;or edx,0x33000000
 	or edx,0x73000000
@@ -738,6 +766,32 @@ draw_window:
 		mov esi,dword[procinfo.client_box.width] ;когда по ширине не влазит
 		inc esi
 	.draw_s:
+
+if use_but eq 1
+	; *** рисование кнопок ***
+push esi
+	mov eax,8
+	xor ebx,ebx
+	mov bx,buf2d_l
+	add ebx,buf2d_w
+	add ebx,BUT1_L
+	shl ebx,16
+	mov bx,BUT1_W
+	mov ecx,BUT1_T*65536+BUT1_H
+	mov edx,5
+	;or edx,0x40000000
+	mov esi,dword[color_but_sm]
+	int 0x40
+
+	inc edx
+	add ecx,BUT1_NEXT_TOP
+	int 0x40
+pop esi
+
+	; *** восстановление параметров ***
+	mov eax,13 ;рисование прямоугольника
+	mov edx,[sc.work]
+end if
 
 	mov ebx,esi
 	mov ecx,dword[procinfo.client_box.height]
@@ -785,6 +839,15 @@ draw_display:
 align 4
 button:
 	mcall 17 ;получить код нажатой кнопки
+	if use_but eq 1
+	cmp ah,5
+	jne @f
+		stdcall InitGame,0
+	@@:
+	cmp ah,6
+	jne @f
+		stdcall InitGame,1
+	@@:	end if
 	cmp ah,1
 	jne still
 .exit:
@@ -887,7 +950,7 @@ image_data dd 0 ;память для преобразования картинки функциями libimg
 image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
 
 run_file_70 FileInfoBlock
-hed db 'Nu pogodi 29.07.10',0 ;подпись окна
+hed db 'Nu pogodi 30.07.10',0 ;подпись окна
 sc system_colors  ;системные цвета
 
 align 4
