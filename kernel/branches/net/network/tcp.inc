@@ -356,13 +356,13 @@ TCP_input:
 ;-------------------------------------------
 ; Convert Big-endian values to little endian
 
-	ntohld	[edx + TCP_segment.SequenceNumber]
-	ntohld	[edx + TCP_segment.AckNumber]
+	ntohd	[edx + TCP_segment.SequenceNumber]
+	ntohd	[edx + TCP_segment.AckNumber]
 
-	ntohlw	[edx + TCP_segment.Window]
-	ntohlw	[edx + TCP_segment.UrgentPointer]
-	ntohlw	[edx + TCP_segment.SourcePort]
-	ntohlw	[edx + TCP_segment.DestinationPort]
+	ntohw	[edx + TCP_segment.Window]
+	ntohw	[edx + TCP_segment.UrgentPointer]
+	ntohw	[edx + TCP_segment.SourcePort]
+	ntohw	[edx + TCP_segment.DestinationPort]
 
 ;------------------------------------------------------------
 ; Next thing to do is find the TCB (thus, the socket pointer)
@@ -378,7 +378,10 @@ TCP_input:
 	or	ebx, ebx
 	jz	.drop_with_reset
 
-	cmp	[ebx + SOCKET.Protocol], IP_PROTO_TCP	  ;;; We should also check if family is AF_INET
+	cmp	[ebx + SOCKET.Domain], AF_INET4
+	jne	.socket_loop
+
+	cmp	[ebx + SOCKET.Protocol], IP_PROTO_TCP
 	jne	.socket_loop
 
 	mov	ax, [edx + TCP_segment.DestinationPort]
@@ -386,7 +389,7 @@ TCP_input:
 	jne	.socket_loop
 
 	mov	eax, [ebx + IP_SOCKET.RemoteIP]
-	cmp	eax, edi			; sender IP
+	cmp	eax, edi			; edi is source ip from packet
 	je	@f
 	test	eax, eax
 	jnz	.socket_loop
@@ -417,22 +420,39 @@ TCP_input:
 
 	DEBUGF	1,"Socket locked\n"
 
-;----------------------------------------------------------------------------------------
-; unscale the window into a 32 bit value (notice that SND_SCALE must be initialised to 0)
+;---------------------------------------
+; unscale the window into a 32 bit value
 
 	movzx	eax, [edx + TCP_segment.Window]
 	push	ecx
 	mov	cl, [ebx + TCP_SOCKET.SND_SCALE]
 	shl	eax, cl
+	mov	dword [edx + TCP_segment.Window], eax	; word after window is checksum, we dont need checksum anymore
 	pop	ecx
-
-	;;;; do something with eax
 
 ;-----------------------------------
 ; Is this socket a listening socket?
 
 	test	[ebx + SOCKET.options], SO_ACCEPTCON
-;        jnz     .listening_socket                       ;;;;; TODO
+	jz	.no_listening_socket
+
+	call	SOCKET_fork
+	jz	.drop
+
+	push	[edx + TCP_segment.DestinationPort]
+	pop	[eax + TCP_SOCKET.LocalPort]
+
+	push	[edx - IPv4_Packet.DataOrOptional + IPv4_Packet.DestinationAddress]	;;; FIXME
+	pop	[eax + IP_SOCKET.LocalIP]
+
+	push	[edx - IPv4_Packet.DataOrOptional + IPv4_Packet.SourceAddress]	   ;;; FIXME
+	pop	[eax + IP_SOCKET.RemoteIP]
+
+	mov	[eax + TCP_SOCKET.t_state], TCB_LISTEN
+
+	jmp	.not_uni_xfer
+
+  .no_listening_socket:
 
 ;-------------------------------------
 ; Reset idle timer and keepalive timer
@@ -449,7 +469,7 @@ TCP_input:
 	DEBUGF	1,"Segment has options\n"
 
 	cmp	[ebx + TCP_SOCKET.t_state], TCB_LISTEN		; no options when in listen state
-	jz	.no_options
+	jz	.not_uni_xfer					; also no header prediction
 
 	lea	edi, [edx + TCP_segment.Data]
 	lea	eax, [edx + esi]
@@ -553,7 +573,7 @@ TCP_input:
 	cmp	eax, [ebx + TCP_SOCKET.RCV_NXT]
 	jne	.not_uni_xfer
 
-	movzx	eax, [edx + TCP_segment.Window] ;;;;; (should use pre-calculated value instead: todo: figure out where to store it)
+	mov	eax, dword [edx + TCP_segment.Window]
 	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
 	jne	.not_uni_xfer
 
@@ -687,7 +707,7 @@ align 4
 
 	DEBUGF	1,"TCP state: listen\n"
 
-	test	[edx + TCP_segment.Flags], TH_RST
+	test	[edx + TCP_segment.Flags], TH_RST	;;; TODO: kill new socket on error
 	jnz	.drop
 
 	test	[edx + TCP_segment.Flags], TH_ACK
@@ -696,13 +716,8 @@ align 4
 	test	[edx + TCP_segment.Flags], TH_SYN
 	jz	.drop
 
-	cmp	esi, 0xffffff		; destination ip = 255.255.255.255 ?
-	jz	.drop
 
 	; TODO: check if it's a broadcast or multicast, and drop if so
-
-	call	SOCKET_fork
-	jz	.drop		; if we could not open a new connection, drop segment (;;;; should we send RST too?)
 
 ;-----------------------
 ; Fill in some variables
@@ -718,11 +733,23 @@ align 4
 	push	[eax + TCP_SOCKET.ISS]
 	pop	[eax + TCP_SOCKET.SND_NXT]
 
+	TCP_sendseqinit eax
+	TCP_rcvseqinit eax
+
 	mov	[eax + TCP_SOCKET.t_state], TCB_SYN_RECEIVED
 	mov	[eax + TCP_SOCKET.t_flags], TF_ACKNOW
-	mov	[eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval
+	mov	[eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval  ;;;; macro
 
-	mov	ebx, eax
+	add	eax, STREAM_SOCKET.snd
+	call	SOCKET_ring_create
+
+	add	eax, STREAM_SOCKET.rcv - STREAM_SOCKET.snd
+	call	SOCKET_ring_create
+
+	sub	eax, STREAM_SOCKET.rcv
+
+	mov	[eax + SOCKET.lock], 0
+	mov	ebx, eax	; if there is data, it must arrive in this new socket!
 	jmp	.trim_then_step6
 
 
@@ -828,9 +855,6 @@ align 4
        @@:
 	;;;;;
 	jmp	.step6
-
-
-
 
 
   .trim_then_step6:
@@ -1083,7 +1107,7 @@ align 4
 	mov	eax, [ebx + TCP_SOCKET.SND_MAX]
 	cmp	eax, [edx + TCP_segment.AckNumber]
 	je	.all_outstanding
-	mov	[ebx + TCP_SOCKET.timer_retransmission], 120 ;;;; TODO: correct this value
+	mov	[ebx + TCP_SOCKET.timer_retransmission], 120 ;;;; TODO: correct this value (use a macro for it)
   .all_outstanding:
 
 ;-------------------------------------------
@@ -1182,7 +1206,7 @@ align 4
 	jg	.no_window_update
        @@:
 
-	mov	eax, [ebx + TCP_SOCKET.SND_WL2] 	  ;;;;
+	mov	eax, [ebx + TCP_SOCKET.SND_WL2]
 	cmp	eax, [edx + TCP_segment.AckNumber]
 	jne	.no_window_update
 
@@ -1212,7 +1236,7 @@ align 4
 ;
 ;       @@:
 
-	movzx	eax, [edx + TCP_segment.Window] 	;;; FIXME: use pre-calculated value instead!
+	mov	eax, dword [edx + TCP_segment.Window]
 	cmp	eax, [ebx + TCP_SOCKET.max_sndwnd]
 	jle	@f
 	mov	[ebx + TCP_SOCKET.max_sndwnd], eax
@@ -1288,7 +1312,7 @@ align 4
 	lea	esi, [edx + eax]
 
 	or	[ebx + TCP_SOCKET.t_flags], TF_DELACK
-	add	[ebx + TCP_SOCKET.RCV_NXT], ecx 	 ;;; right ?
+	add	[ebx + TCP_SOCKET.RCV_NXT], ecx
 
 	lea	eax, [ebx + STREAM_SOCKET.rcv]
 	call	SOCKET_ring_write
@@ -1558,7 +1582,7 @@ TCP_output:
 
   .no_zero_window:
 
-	mov	[eax + TCP_SOCKET.timer_persist], 0	;;;;
+	mov	[eax + TCP_SOCKET.timer_persist], 0
 	mov	[eax + TCP_SOCKET.t_rxtshift], 0
 
   .no_persist_timeout:
@@ -1800,16 +1824,16 @@ TCP_output:
 	shr	edi, 2	;        .DataOffset             db ? ;;;;
 
 	push	[eax + TCP_SOCKET.RCV_NXT]	;        .AckNumber              dd ?
-	ntohld	[esp]
+	ntohd	[esp]
 
 	push	[eax + TCP_SOCKET.SND_NXT]	;        .SequenceNumber         dd ?
-	ntohld	[esp]
+	ntohd	[esp]
 
 	push	[eax + TCP_SOCKET.RemotePort]	;        .DestinationPort        dw ?
-	ntohlw	[esp]
+	ntohw	[esp]
 
 	push	[eax + TCP_SOCKET.LocalPort]	;        .SourcePort             dw ?
-	ntohlw	[esp]
+	ntohw	[esp]
 
 	push	edi		; header size
 

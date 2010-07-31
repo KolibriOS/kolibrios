@@ -74,7 +74,7 @@ SOCKET_MAXDATA	equ 4096*32	; must be 4096*(power of 2) where 'power of 2' is at 
 NET_TYPE_ETH	equ 1
 NET_TYPE_SLIP	equ 2
 
-MAX_backlog	equ 20		; backlog for stream sockets
+MAX_backlog	equ 20		; maximum backlog for stream sockets
 
 
 virtual at 0
@@ -112,7 +112,7 @@ macro pseudo_random reg {
 	rol	reg, 9
 }
 
-macro ntohld reg {
+macro ntohd reg {
 
 	rol	word reg, 8
 	rol	dword reg, 16
@@ -120,7 +120,7 @@ macro ntohld reg {
 
 }
 
-macro ntohlw reg {
+macro ntohw reg {
 
 	rol	word reg, 8
 

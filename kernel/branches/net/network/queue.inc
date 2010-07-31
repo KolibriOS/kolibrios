@@ -24,7 +24,7 @@ $Revision$
 
 
 struct	queue
-	.size		dd ?	; number of queued packets in thsi queue
+	.size		dd ?	; number of queued packets in this queue
 	.w_ptr		dd ?	; current writing pointer in queue
 	.r_ptr		dd ?	; current reading pointer
 	.data:
