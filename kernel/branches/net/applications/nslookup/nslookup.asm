@@ -15,7 +15,7 @@ purge mov,add,sub
 include '../proc32.inc'
 include '../dll.inc'
 
-include '../network_lib/network.inc'
+include '../network.inc'
 
 ; entry point
 start:

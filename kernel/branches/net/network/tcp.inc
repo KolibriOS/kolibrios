@@ -135,7 +135,7 @@ local	.exit
 	or	eax, eax
 	jz	.exit
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP		;;; We should also check if family is AF_INET
 	jne	.loop
 
 	dec	[eax + TCP_SOCKET.timer_ack]
@@ -177,7 +177,7 @@ local	.exit
 	or	eax, eax
 	jz	.exit
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP	  ;;; We should also check if family is AF_INET
 	jne	.loop
 
 	inc	[eax + TCP_SOCKET.t_idle]
@@ -378,7 +378,7 @@ TCP_input:
 	or	ebx, ebx
 	jz	.drop_with_reset
 
-	cmp	[ebx + SOCKET.Type], IP_PROTO_TCP
+	cmp	[ebx + SOCKET.Protocol], IP_PROTO_TCP	  ;;; We should also check if family is AF_INET
 	jne	.socket_loop
 
 	mov	ax, [edx + TCP_segment.DestinationPort]
@@ -1106,6 +1106,8 @@ align 4
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  code missing (943?)
 
+
+
 	mov	eax, [edx + TCP_segment.AckNumber]
 	mov	[ebx + TCP_SOCKET.SND_UNA], eax
 
@@ -1114,7 +1116,6 @@ align 4
 	mov	[ebx + TCP_SOCKET.SND_NXT], eax
        @@:
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;---------------------------------------
 ; Wake up process waiting on send buffer

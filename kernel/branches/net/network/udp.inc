@@ -152,7 +152,7 @@ UDP_input:
 	jz	.dump
 	cmp	[eax + SOCKET.Domain], AF_INET4
 	jne	.next_socket
-	cmp	[eax + SOCKET.Type], IP_PROTO_UDP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_UDP
 	jne	.next_socket
 	cmp	[eax + UDP_SOCKET.LocalPort], si
 	jne	.next_socket

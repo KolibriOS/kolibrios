@@ -42,14 +42,10 @@ RATE_LIMIT_INTERVAL equ 60		    ; seconds (delay between successive attempts)
 DEFEND_INTERVAL     equ 10		    ; seconds (min. wait between defensive ARPs)
 
 
-AF_INET4	equ 2  ;;;;;
-IP_PROTO_UDP	equ 17
-
-
-
 include '../proc32.inc'
 include '../macros.inc'
 include '../debug-fdo.inc'
+include '../network.inc'
 include 'dhcp.inc'
 include 'dll.inc'
 
@@ -136,7 +132,7 @@ START:					    ; start of execution
 	mcall	75, 1337 shl 16 + 4
 
 	cmp	eax, -1
-	je	close
+	je	exit
 
 	mov	word[MAC], bx
 	mov	dword[MAC+2], eax
@@ -198,7 +194,7 @@ skip_ini:
 
 	DEBUGF	1,"->Skip ini\n"
 
-	mcall 74, 0, AF_INET4, IP_PROTO_UDP, 0	    ; open socket (parameters: domain, type, reserved)
+	mcall 74, 0, AF_INET4, SOCK_DGRAM, 0	  ; open socket (parameters: domain, type, reserved)
 	cmp   eax, -1
 	je    error
 	mov   [socketNum], eax
@@ -300,7 +296,7 @@ read_data:						; we have data - this will be the response
 	DEBUGF	1,"->%d bytes received\n", eax
 
 	push	eax
-	mcall	74, 1, [socketNum]		       ; close the socket
+	mcall	74, 1, [socketNum]		       ; exit the socket
 	pop	eax
 
 	cmp	eax, -1
@@ -323,7 +319,7 @@ read_data:						; we have data - this will be the response
     cmp     [dhcpMsgType], byte 0x03	    ; did we send a request?
     je	    request
 
-	jmp	close				; really unknown, what we did
+	jmp	exit			       ; really unknown, what we did
 
 discover:
 	call	parseResponse
@@ -339,7 +335,7 @@ request:
 	cmp	[dhcpMsgType], byte 0x05	; Was the response an ACK? It should be
 	jne	apipa				; NO - so we do zeroconf
 
-	jmp	close
+	jmp	exit
 
 ;***************************************************************************
 ;   Function
@@ -447,7 +443,7 @@ pr_exit:
 ;    DEBUGF  1,"Sending ARP announce\n"
 ;;;
 
-    jmp close
+    jmp exit
 
 apipa:
     stdcall mem.Free, [dhcpMsg]
@@ -511,7 +507,7 @@ link_local:
     ; we should, instead of closing, detect ARP conflicts and detect if cable keeps connected ;)
 
 error:
-close:
+exit:
     mcall -1
 
 
@@ -591,5 +587,7 @@ dhcpMsg 	dd  ?
 I_END_2:
 
 path		rb  1024+5
+
+		rb  65536
 
 I_END:

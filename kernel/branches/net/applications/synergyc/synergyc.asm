@@ -86,7 +86,7 @@ start:
 	push	newline
 	call	[con_write_asciiz]
 
-	mcall	socket, AF_INET4, IPPROTO_TCP, 0
+	mcall	socket, AF_INET4, SOCK_STREAM, 0
 	cmp	eax, -1
 	je	error
 

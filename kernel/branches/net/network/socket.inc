@@ -58,8 +58,8 @@ virtual at IP_SOCKET.end
 
 	TCP_SOCKET:
 
-	.LocalPort		dw ? ; In INET byte order
-	.RemotePort		dw ? ; In INET byte order
+	.LocalPort		dw ?
+	.RemotePort		dw ?
 
 	.backlog		dw ? ; Backlog
 	.backlog_cur		dw ? ; current size of queue for un-accept-ed connections
@@ -150,8 +150,8 @@ virtual at IP_SOCKET.end
 
 	UDP_SOCKET:
 
-	.LocalPort		dw ? ; In INET byte order
-	.RemotePort		dw ? ; In INET byte order
+	.LocalPort		dw ?
+	.RemotePort		dw ?
 	.firstpacket		db ?
 
 	.end:
@@ -161,7 +161,7 @@ virtual at IP_SOCKET.end
 
 	ICMP_SOCKET:
 
-	.Identifier		dw ? ;
+	.Identifier		dw ?
 
 	.end:
 end virtual
@@ -250,10 +250,9 @@ macro	SOCKET_init {
 ;-----------------------------------------------------------------
 align 4
 sys_socket:
-	cmp	ebx, 8		; highest possible number
+	cmp	ebx, 9		; highest possible number
 	jg	@f
-	lea	ebx, [sock_sysfn_table + 4*ebx]
-	jmp	dword [ebx]
+	jmp	dword [sock_sysfn_table + 4*ebx]
        @@:
 	cmp	ebx, 255
 	jz	SOCKET_debug
@@ -274,10 +273,8 @@ sock_sysfn_table:
 	dd	SOCKET_accept	; 5
 	dd	SOCKET_send	; 6
 	dd	SOCKET_receive	; 7
-	dd	SOCKET_get_opt	; 8
-;        dd      SOCKET_set_opt  ; 9
-
-
+	dd	SOCKET_set_opt	; 8
+	dd	SOCKET_get_opt	; 9
 
 ;-----------------------------------------------------------------
 ;
@@ -297,11 +294,11 @@ SOCKET_open:
 	call	SOCKET_alloc
 	jz	s_error
 
+	mov	[esp+32], edi			; return socketnumber
+
 	mov	[eax + SOCKET.Domain], ecx
 	mov	[eax + SOCKET.Type], edx
 	mov	[eax + SOCKET.Protocol], esi
-
-	mov	[esp+32], edi			; return socketnumber
 
 	cmp	ecx, AF_INET4
 	jne	.no_inet4
@@ -309,12 +306,10 @@ SOCKET_open:
 	push	[IP_LIST]
 	pop	[eax + IP_SOCKET.LocalIP]	; fill in local ip number
 
-	call	SOCKET_find_port		; fill in a local port number, application may change it later, or use this one
-
-	cmp	edx, IP_PROTO_UDP
+	cmp	edx, SOCK_DGRAM
 	je	.udp
 
-	cmp	edx, IP_PROTO_TCP
+	cmp	edx, SOCK_STREAM
 	je	.tcp
 
 	cmp	edx, SOCK_RAW
@@ -323,7 +318,43 @@ SOCKET_open:
   .no_inet4:
 	ret
 
+align 4
+  .raw:
+;        test    esi, esi       ; IP_PROTO_IP
+;        jz      .ip
+
+	cmp	esi, IP_PROTO_ICMP
+	je	.icmp
+
+	cmp	esi, IP_PROTO_UDP
+	je	.udp
+
+	cmp	esi, IP_PROTO_TCP
+	je	.tcp
+
+	ret
+
+align 4
+  .udp:
+	mov	[eax + SOCKET.Protocol], IP_PROTO_UDP
+
+	call	SOCKET_find_port		; fill in a local port number, application may change it later, or use this one
+
+	push	eax
+	init_queue (eax + SOCKET_QUEUE_LOCATION)
+	pop	eax
+
+	mov	[eax + SOCKET.snd_proc], SOCKET_send_udp
+	mov	[eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+
+	ret
+
+align 4
   .tcp:
+	mov	[eax + SOCKET.Protocol], IP_PROTO_TCP
+
+	call	SOCKET_find_port		; fill in a local port number, application may change it later, or use this one
+
 	mov	ebx, eax
 
 	lea	eax, [ebx + STREAM_SOCKET.snd]
@@ -337,26 +368,10 @@ SOCKET_open:
 
 	ret
 
-  .udp:
-	push	eax
-	init_queue (eax + SOCKET_QUEUE_LOCATION)
-	pop	eax
 
-	mov	[eax + SOCKET.snd_proc], SOCKET_send_udp
-	mov	[eax + SOCKET.rcv_proc], SOCKET_receive_dgram
-
-	ret
-
-  .raw:
-;        test    esi, esi
-;        jz      .ip
-
-	cmp	esi, IP_PROTO_ICMP
-	je	.icmp
-
-	ret
-
+;align 4
 ;  .ip:
+;
 ;        push    eax
 ;        init_queue (eax + SOCKET_QUEUE_LOCATION)
 ;        pop     eax
@@ -366,7 +381,10 @@ SOCKET_open:
 ;
 ;        ret
 
+
+align 4
   .icmp:
+
 	push	eax
 	init_queue (eax + SOCKET_QUEUE_LOCATION)
 	pop	eax
@@ -421,8 +439,6 @@ SOCKET_bind:
 	cmp	esi, 6
 	jl	s_error
 
-	mov	ecx, [eax + SOCKET.Type]
-
 	mov	bx, word [edx + 2]
 	test	bx, bx
 	jz	.use_preset_port
@@ -473,17 +489,21 @@ SOCKET_connect:
 
   .af_inet4:
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_UDP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_UDP
 	je	.udp
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP
 	je	.tcp
 
-	cmp	[eax + SOCKET.Type], SOCK_RAW
-	je	.raw
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_IP
+	je	.ip
+
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_ICMP
+	je	.ip
 
 	jmp	s_error
 
+align 4
   .udp:
 	mov	bx , word [edx + 2]
 	mov	word [eax + UDP_SOCKET.RemotePort], bx
@@ -497,7 +517,7 @@ SOCKET_connect:
 	mov	dword [esp+32], 0
 	ret
 
-
+align 4
   .tcp:
 	lea	ebx, [eax + SOCKET.lock]
 	call	wait_mutex
@@ -532,7 +552,8 @@ SOCKET_connect:
 	mov	dword [esp+32], 0	; success!
 	ret
 
-  .raw:
+align 4
+  .ip:
 	push	dword [edx + 4]
 	pop	dword [eax + IP_SOCKET.RemoteIP]
 
@@ -560,7 +581,7 @@ SOCKET_listen:
 	cmp	word [eax + SOCKET.Domain], AF_INET4
 	jne	s_error
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP
 	jne	s_error
 
 	; TODO: check local port number
@@ -572,7 +593,7 @@ SOCKET_listen:
 
 	mov	[eax + TCP_SOCKET.backlog], dx
 	mov	[eax + TCP_SOCKET.t_state], TCB_LISTEN
-	 or	[eax + SOCKET.options], SO_ACCEPTCON
+	 or	[eax + SOCKET.options], SO_ACCEPTCON		;;;; TODO: set socket state to listen
 
 	mov	dword [esp+32], 0
 
@@ -604,7 +625,7 @@ SOCKET_accept:
 
   .af_inet4:
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP
 	je	.tcp
 
 	jmp	s_error
@@ -651,13 +672,16 @@ SOCKET_close:
 	cmp	[eax + SOCKET.Domain], AF_INET4
 	jne	s_error
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_UDP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_UDP
 	je	.free
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_ICMP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_ICMP
 	je	.free
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_IP
+	je	.free
+
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP
 	je	.tcp
 
 	jmp	s_error
@@ -895,6 +919,14 @@ SOCKET_get_opt:
 
 
 
+
+align 4
+SOCKET_set_opt:
+
+	ret
+
+
+
 ;-----------------------------------------------------------------
 ;
 ; SOCKET_debug
@@ -942,10 +974,10 @@ SOCKET_find_port:
 
 	push	ebx esi ecx
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_UDP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_UDP
 	je	.udp
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP
 	je	.tcp
 
 	jmp	.error
@@ -986,7 +1018,7 @@ SOCKET_find_port:
 
 ;-----------------------------------------------------------------
 ;
-; SOCKET_check_port
+; SOCKET_check_port (to be used with AF_INET only!)
 ;
 ; Checks if a local port number is unused
 ; If the proposed port number is unused, it is filled in in the socket structure
@@ -1002,7 +1034,7 @@ SOCKET_check_port:
 
 	DEBUGF	1,"SOCKET_check_port\n"
 
-	mov	ecx, [eax + SOCKET.Type]
+	mov	ecx, [eax + SOCKET.Protocol]
 	mov	esi, net_sockets
 
   .next_socket:
@@ -1010,7 +1042,7 @@ SOCKET_check_port:
 	or	esi, esi
 	jz	.port_ok
 
-	cmp	[esi + SOCKET.Type], ecx
+	cmp	[esi + SOCKET.Protocol], ecx
 	jne	.next_socket
 
 	cmp	[esi + UDP_SOCKET.LocalPort], bx
@@ -1404,7 +1436,7 @@ SOCKET_free:
 	cmp	[eax + SOCKET.Domain], AF_INET4
 	jnz	.no_tcp
 
-	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP
 	jnz	.no_tcp
 
 	mov	ebx, eax
@@ -1625,10 +1657,10 @@ SOCKET_process_end:
 
 	mov	[ebx + SOCKET.PID], 0
 
-	cmp	[ebx + SOCKET.Type], IP_PROTO_UDP
+	cmp	[ebx + SOCKET.Protocol], IP_PROTO_UDP
 	je	.udp
 
-	cmp	[ebx + SOCKET.Type], IP_PROTO_TCP
+	cmp	[ebx + SOCKET.Protocol], IP_PROTO_TCP
 	je	.tcp
 
 	jmp	.next_socket	; kill all sockets for given PID

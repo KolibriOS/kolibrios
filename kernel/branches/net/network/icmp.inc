@@ -225,9 +225,6 @@ ICMP_input:
 	cmp	[ebx + SOCKET.Domain], AF_INET4
 	jne	.next_socket
 
-	cmp	[ebx + SOCKET.Type], SOCK_RAW
-	jne	.next_socket
-
 	cmp	[ebx + SOCKET.Protocol], IP_PROTO_ICMP
 	jne	.next_socket
 

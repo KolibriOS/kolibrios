@@ -7,7 +7,7 @@ include '../proc32.inc'
 include '../macros.inc'
 purge section,mov,add,sub
 
-include 'network.inc'
+include '../network.inc'
 
 section '.flat' code readable align 16
 
@@ -29,7 +29,8 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
 	mov	[dll.load], edx
 	mov	[DNSrequestID], 1
 	stdcall edx, @IMPORT
-	ret	4
+	xor	eax, eax
+	ret
 
 ;;===========================================================================;;
 ;; in_addr_t __stdcall inet_addr(__in const char* hostname);                 ;;
@@ -257,7 +258,7 @@ inet_ntoa:								     ;;
 	ret
 
 struct __gai_reqdata
-	socket	dd	?
+	socketnum  dd	   ?
 ; external code should not look on rest of this structure,
 ; it is internal for getaddrinfo_start/process/abort
 	reqid		dw	?	; DNS request ID
@@ -279,7 +280,7 @@ getaddrinfo:								     ;;
 ;;---------------------------------------------------------------------------;;
 ;> first parameter (optional) = host name                                    ;;
 ;> second parameter (optional) = service name (decimal number for now)       ;;
-;> third parameter (optional) = hints for socket type                        ;;
+;> third parameter (optional) = hints for socketnum type                        ;;
 ;> fourth parameter = pointer to result (head of L1-list)                    ;;
 ;;---------------------------------------------------------------------------;;
 ;< eax = 0 on success / one of EAI_ codes on error                           ;;
@@ -425,30 +426,30 @@ end virtual
 	jecxz	@f
 	cmp	[ecx+addrinfo.ai_family], edi
 	jz	@f
-	cmp	[ecx+addrinfo.ai_family], PF_INET
+	cmp	[ecx+addrinfo.ai_family], AF_INET4
 	jnz	.ret
 @@:
 ; 1e. Valid combinations for ai_socktype/ai_protocol: 0/0 for any or
 ;       SOCK_STREAM/IPPROTO_TCP, SOCK_DGRAM/IPPROTO_UDP
-;       (raw sockets are not yet supported by the kernel)
+;       (raw socketnums are not yet supported by the kernel)
 	xor	edx, edx	; assume 0=any if no hints
-	jecxz	.socket_type_ok
+	jecxz	.socketnum_type_ok
 	mov	edx, [ecx+addrinfo.ai_socktype]
 	mov	esi, [ecx+addrinfo.ai_protocol]
 ; 1f. Test for ai_socktype=0 and ai_protocol=0.
 	test	edx, edx
 	jnz	.check_socktype
 	test	esi, esi
-	jz	.socket_type_ok
+	jz	.socketnum_type_ok
 ; 1g. ai_socktype=0, ai_protocol is nonzero.
 	push	EAI_SERVICE
 	pop	eax
 	inc	edx	; edx = SOCK_STREAM
 	cmp	esi, IPPROTO_TCP
-	jz	.socket_type_ok
+	jz	.socketnum_type_ok
 	inc	edx	; edx = SOCK_DGRAM
 	cmp	esi, IPPROTO_UDP
-	jz	.socket_type_ok
+	jz	.socketnum_type_ok
 .ret:
 ; Restore saved registers, destroy stack frame and return.
 	mov	esp, ebp
@@ -464,16 +465,16 @@ end virtual
 	cmp	edx, SOCK_DGRAM
 	jnz	.ret
 	test	esi, esi
-	jz	.socket_type_ok
+	jz	.socketnum_type_ok
 	cmp	esi, IPPROTO_UDP
-	jz	.socket_type_ok
+	jz	.socketnum_type_ok
 	jmp	.ret
 .check_tcp:
 	test	esi, esi
-	jz	.socket_type_ok
+	jz	.socketnum_type_ok
 	cmp	esi, IPPROTO_TCP
 	jnz	.ret
-.socket_type_ok:
+.socketnum_type_ok:
 	mov	[ebx+__gai_reqdata.socktype], dl
 ; 2. Resolve service.
 ; 2a. If no name is given, remember value -1.
@@ -513,7 +514,7 @@ end virtual
 ; 3. Process host name.
 	mov	esi, [.hostname]
 ; 3a. If hostname is not given,
-;       use localhost for active sockets and INADDR_ANY for passive sockets.
+;       use localhost for active socketnums and INADDR_ANY for passive socketnums.
 	mov	eax, 0x0100007F ; 127.0.0.1 in network byte order
 	test	byte [ebx+__gai_reqdata.flags], AI_PASSIVE
 	jz	@f
@@ -679,17 +680,17 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	cmp	eax, -1
 	je	.ret.dnserr
 	mov	esi, eax	; put server address to esi
-; 8. Open UDP socket to DNS server, port 53.
-; 8a. Create new socket.
-	mcall	74, 0, AF_INET, IPPROTO_UDP
+; 8. Open UDP socketnum to DNS server, port 53.
+; 8a. Create new socketnum.
+	mcall	74, 0, AF_INET4, SOCK_DGRAM
 	cmp	eax, -1 ; error?
 	jz	.ret.dnserr
-	mov	ecx, eax	; put socket handle to ecx
+	mov	ecx, eax	; put socketnum handle to ecx
 ; 8b. Create sockaddr structure on the stack.
 	push	0
 	push	0	; sin_zero
 	push	esi	; sin_addr
-	push	AF_INET + (53 shl 16)
+	push	AF_INET4 + (53 shl 16)
 			; sin_family and sin_port in network byte order
 ; 8c. Connect.
 	mcall	74, 4, , esp, sizeof.sockaddr_in
@@ -706,7 +707,7 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	cmp	eax, -1
 	jz	.ret.close
 	mov	eax, [.reqdata]
-	mov	[eax+__gai_reqdata.socket], ecx
+	mov	[eax+__gai_reqdata.socketnum], ecx
 	push	-1
 	pop	eax	; return status: more processing required
 	jmp	.ret.dns
@@ -759,11 +760,11 @@ end virtual
 	push	ebx esi edi
 	mov	edi, [.reqdata]
 ; 2. Read UDP datagram.
-	mov	ecx, [edi+__gai_reqdata.socket]
+	mov	ecx, [edi+__gai_reqdata.socketnum]
 	push	edi
 	mcall	74, 7, , , 512, 0
 	pop	edi
-; 3. Ignore events for other sockets (return if no data read)
+; 3. Ignore events for other socketnums (return if no data read)
 	test	eax, eax
 	jz	.ret.more_processing_required
 ; 4. Sanity check: discard too short packets.
@@ -918,10 +919,10 @@ end virtual
 @@:
 	pop	eax
 .ret.close:
-; 15. Close socket.
+; 15. Close socketnum.
 	push	eax
 	mov	ecx, [.reqdata]
-	mov	ecx, [ecx+__gai_reqdata.socket]
+	mov	ecx, [ecx+__gai_reqdata.socketnum]
 	mcall	74, 1
 	pop	eax
 ; 16. Restore used registers, destroy stack frame and return.
@@ -1170,12 +1171,12 @@ getaddrinfo._.generate_data:						     ;;
 ; 4. Fill struct addrinfo.
 	mov	eax, [ebx+__gai_reqdata.flags]
 	mov	[edi+addrinfo.ai_flags], eax
-	mov	byte [edi+addrinfo.ai_family], PF_INET
+	mov	byte [edi+addrinfo.ai_family], AF_INET4
 	mov	byte [edi+addrinfo.ai_addrlen], sizeof.sockaddr_in
 	lea	ecx, [edi+sizeof.addrinfo]
 	mov	[edi+addrinfo.ai_addr], ecx
 ; 5. Fill struct sockaddr_in.
-	mov	byte [ecx+sockaddr_in.sin_family], PF_INET
+	mov	byte [ecx+sockaddr_in.sin_family], AF_INET4
 	pop	eax
 	mov	[ecx+sockaddr_in.sin_addr], eax
 ; 6. Append new item to the list.
@@ -1189,7 +1190,7 @@ getaddrinfo._.generate_data:						     ;;
 	ret
 
 .set_socktype:
-; Set ai_socktype and ai_protocol fields by given socket type.
+; Set ai_socktype and ai_protocol fields by given socketnum type.
 	mov	byte [edi+addrinfo.ai_socktype], cl
 	dec	cl
 	jnz	.set_udp
@@ -1219,9 +1220,9 @@ getaddrinfo_abort:							     ;;
 ;;===========================================================================;;
 ; 0. Save used registers for __stdcall.
 	push	ebx
-; 1. Allocated resources: only socket, so close it and return.
+; 1. Allocated resources: only socketnum, so close it and return.
 	mov	eax, [esp+8]
-	mov	ecx, [eax+__gai_reqdata.socket]
+	mov	ecx, [eax+__gai_reqdata.socketnum]
 	mcall	74, 1
 ; 2. Restore used registers and return.
 	pop	ebx

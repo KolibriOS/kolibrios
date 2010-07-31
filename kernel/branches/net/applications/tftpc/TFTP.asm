@@ -226,7 +226,7 @@ start_transfer:
 	mov	esi, [esi + sockaddr_in.sin_addr]
 	mov	dword [IP], esi
 
-	mcall	socket, AF_INET4, IP_PROTO_UDP, 0		 ; socket_open
+	mcall	socket, AF_INET4, SOCK_DGRAM, 0 	       ; socket_open
 	cmp	eax, -1
 	je	still
 
