@@ -2166,7 +2166,7 @@ mdio_write:
 ;      Checks TxStatus queue.
 ;   Return value
 ;      al - 0 no error was found
-;      al - 1 error was found TxReset is needed
+;      al - 1 error was found TxReset was needed
 ;   Destroyed registers
 ;      eax, ecx, edx, ebp
 ;
@@ -2187,7 +2187,7 @@ check_tx_status:
 	test	al, al
 	jz	.finish ; no error
 	test	al, 0x3f
-	jnz	.finish ; error
+	jnz	.error
   .no_error_found:
 ; clear current TxStatus entry which advances the next one
 	xor	al, al
@@ -2196,6 +2196,10 @@ check_tx_status:
 
   .finish:
 
+	ret
+
+  .error:
+	call	tx_reset
 	ret
 
 
@@ -2219,8 +2223,6 @@ vortex_transmit:
 	ja	.finish ; packet is too long
 
 	call	check_tx_status
-	test	al, al
-	jnz	tx_reset
 
 ; switch to register window 7
 	set_io	0
@@ -2277,9 +2279,6 @@ boomerang_transmit:
 	jg	.fail
 
 	call	check_tx_status
-
-	test	al, al
-	jnz	tx_reset
 
 ; calculate descriptor address
 	mov	esi, [device.prev_dpd]
