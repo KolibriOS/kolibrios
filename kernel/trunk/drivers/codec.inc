@@ -173,7 +173,6 @@ patch_AD:
 	   ret
 
 
-
 align 16
 ac_unknown     db 'unknown manufacturer',13,10,0
 ac_Realtek     db 'Realtek Semiconductor',13,10,0
@@ -181,6 +180,9 @@ ac_Analog      db 'Analog Devices',13,10,0
 ac_CMedia      db 'C-Media Electronics',13,10,0
 ac_Cirrus      db 'Cirrus Logic',13,10,0
 ac_Wolfson     db 'Wolfson Microelectronics',13,10,0
+ac_VIA	       db 'VIA Technologies',13,10,0
+ac_SigmaTel    db 'SigmaTel',13,10,0
+ac_eMicro      db 'eMicro',13,10,0
 
 chip_unknown   db 'unknown codec id ', 0
 
@@ -189,6 +191,9 @@ CHIP_REALTEK   equ 0x414C4700
 CHIP_CMEDIA    equ 0x434D4900
 CHIP_CIRRUS    equ 0x43525900
 CHIP_WOLFSON   equ 0x574D4C00
+CHIP_VIA       equ 0x56494100
+CHIP_SIGMATEL  equ 0x83847600
+CHIP_EMICRO    equ 0x454D4300
 
 align 16
 codecs	       dd CHIP_ANALOG, ac_Analog,  chips_Analog
@@ -196,6 +201,9 @@ codecs	       dd CHIP_ANALOG, ac_Analog,  chips_Analog
 	       dd CHIP_REALTEK,ac_Realtek, chips_Realtek
 	       dd CHIP_CIRRUS, ac_Cirrus,  chips_Cirrus
 	       dd CHIP_WOLFSON,ac_Wolfson, chips_Wolfson
+	       dd CHIP_VIA,    ac_VIA,	   chips_VIA
+	       dd CHIP_SIGMATEL,    ac_SigmaTel,     chips_SigmaTel
+	       dd CHIP_EMICRO,	  ac_eMicro,	 chips_eMicro
 	       dd 0
 
 align 16
@@ -207,6 +215,8 @@ chips_Analog   dd 0x03, chip_AD1819
 	       dd 0x62, chip_AD1887
 	       dd 0x63, chip_AD1886A
 	       dd 0x70, chip_AD1980
+	       dd 0x72, chip_AD1981A
+	       dd 0x74, chip_AD1981B
 	       dd 0x75, chip_AD1985
 	       dd 0xFF
 
@@ -243,8 +253,17 @@ chips_Cirrus   dd 0x00, chip_CS4297
 	       dd 0xFF
 
 chips_Wolfson  dd 0x00, chip_WM9700
-               dd 0x03, chip_WM9703
-               dd 0x04, chip_WM9704
+	       dd 0x03, chip_WM9703
+	       dd 0x04, chip_WM9704
+	       dd 0xFF
+
+chips_VIA      dd 0x61, chip_VIA1612A
+	       dd 0xFF
+
+chips_SigmaTel dd 0x58, chip_STAC9758
+	       dd 0xFF
+
+chips_eMicro   dd 0x28, chip_EM28028
 	       dd 0xFF
 
 align 16
@@ -258,6 +277,8 @@ chip_AD1886	 db 'AD1886 ',0dh,0ah,00h
 chip_AD1886A	 db 'AD1886A',0dh,0ah,00h
 chip_AD1887	 db 'AD1887 ',0dh,0ah,00h
 chip_AD1980	 db 'AD1980 ',0dh,0ah,00h
+chip_AD1981A	 db 'AD1981A',0dh,0ah,00h
+chip_AD1981B	 db 'AD1981B',0dh,0ah,00h
 chip_AD1985	 db 'AD1985 ',0dh,0ah,00h
 
 ;Realtek
@@ -290,6 +311,16 @@ chip_CS4291	 db 'CS4291',13,10,0
 chip_CS4202	 db 'CS4202',13,10,0
 
 ;Wolfson
-chip_WM9700      db 'WM9704',13,10,0
-chip_WM9703      db 'WM9703/9704',13,10,0
-chip_WM9704      db 'WM9704 (quad)',13,10,0
+chip_WM9700	 db 'WM9704',13,10,0
+chip_WM9703	 db 'WM9703/9704',13,10,0
+chip_WM9704	 db 'WM9704 (quad)',13,10,0
+
+;VIA
+chip_VIA1612A	 db 'VIA1612A',13,10,0
+
+;SigmaTel
+chip_STAC9758	 db 'STAC9758,59',13,10,0
+
+;eMicro
+chip_EM28028	 db 'EM28028',13,10,0
+
