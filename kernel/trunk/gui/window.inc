@@ -1223,30 +1223,33 @@ window._.invalidate_screen: ;//////////////////////////////////////////////////
         push    eax ebx
 
         ; TODO: do we really need `draw_limits`?
+        ; Yes, they are used by background drawing code.
         mov     ecx, [eax + BOX.left]
         mov     edx, [ebx + BOX.left]
         cmp     ecx, edx
         jle     @f
-        xchg    ecx, edx
+        mov     ecx, edx
     @@: mov     [draw_limits.left], ecx
-        mov     ecx, [eax + BOX.width]
-        cmp     ecx, [ebx + BOX.width]
+        mov     ecx, [eax + BOX.left]
+        add     ecx, [eax + BOX.width]
+        add     edx, [ebx + BOX.width]
+        cmp     ecx, edx
         jae     @f
-        mov     ecx, [ebx + BOX.width]
-    @@: add     ecx, edx
-        mov     [draw_limits.right], ecx
+        mov     ecx, edx
+    @@: mov     [draw_limits.right], ecx
         mov     ecx, [eax + BOX.top]
         mov     edx, [ebx + BOX.top]
         cmp     ecx, edx
         jle     @f
-        xchg    ecx, edx
+        mov     ecx, edx
     @@: mov     [draw_limits.top], ecx
-        mov     ecx, [eax + BOX.height]
-        cmp     ecx, [ebx + BOX.height]
+        mov     ecx, [eax + BOX.top]
+        add     ecx, [eax + BOX.height]
+        add     edx, [ebx + BOX.height]
+        cmp     ecx, edx
         jae     @f
-        mov     ecx, [ebx + BOX.height]
-    @@: add     ecx, edx
-        mov     [draw_limits.bottom], ecx
+        mov     ecx, edx
+    @@: mov     [draw_limits.bottom], ecx
 
         ; recalculate screen buffer at old position
         push    ebx
