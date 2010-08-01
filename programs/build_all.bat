@@ -81,6 +81,7 @@ fasm system\skinsel\skinsel.asm %BIN%\skinsel
 fasm system\ss\trunk\@ss.asm %BIN%\@ss
 fasm system\vrr\trunk\vrr.asm %BIN%\vrr
 fasm system\vrr_m\trunk\vrr_m.asm %BIN%\vrr_m
+fasm system\zkey\trunk\zkey.asm %BIN%\zkey
 
 echo *
 echo Building develop
@@ -211,6 +212,7 @@ fasm demos\cslide\trunk\cslide.asm %BIN%\demos\cslide
 fasm demos\eyes\trunk\eyes.asm %BIN%\demos\eyes
 fasm demos\fire\trunk\fire.asm %BIN%\demos\fire
 fasm demos\fire2\trunk\fire2.asm %BIN%\demos\fire2
+fasm demos\firework\trunk\firework.asm %BIN%\demos\firework
 fasm demos\free3d04\trunk\free3d04.asm %BIN%\3d\free3d04
 fasm demos\magnify\trunk\magnify.asm %BIN%\magnify
 fasm demos\movback\trunk\movback.asm %BIN%\demos\movback
@@ -220,6 +222,7 @@ fasm demos\tinyfrac\trunk\tinyfrac.asm %BIN%\demos\tinyfrac
 fasm demos\transp\trunk\transp.asm %BIN%\demos\transp
 fasm demos\trantest\trunk\trantest.asm %BIN%\demos\trantest
 fasm demos\tube\trunk\tube.asm %BIN%\demos\tube
+fasm demos\unvwater\trunk\unvwater.asm %BIN%\demos\unvwater
 
 erase lang.inc
 
@@ -270,6 +273,7 @@ kpack %BIN%\skinsel
 kpack %BIN%\@ss
 kpack %BIN%\vrr
 kpack %BIN%\vrr_m
+kpack %BIN%\zkey
 
 echo *
 echo Compressing develop
@@ -395,6 +399,7 @@ kpack %BIN%\demos\cslide
 kpack %BIN%\demos\eyes
 kpack %BIN%\demos\fire
 kpack %BIN%\demos\fire2
+kpack %BIN%\demos\firework
 kpack %BIN%\3d\free3d04
 kpack %BIN%\magnify
 kpack %BIN%\demos\movback
@@ -404,6 +409,7 @@ kpack %BIN%\demos\tinyfrac
 kpack %BIN%\demos\transp
 kpack %BIN%\demos\trantest
 kpack %BIN%\demos\tube
+kpack %BIN%\demos\unvwater
 
 echo *
 echo Compressing complete
