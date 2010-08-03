@@ -58,17 +58,19 @@ keymap_alt:
   boot_windefs      db   'Setting window defaults',0
   boot_bgr          db   'Calculating background',0
   boot_resirqports  db   'Reserving IRQs & ports',0
-  boot_setrports    db   'Setting addresses for IRQs',0
+; boot_setrports    db   'Setting addresses for IRQs',0
   boot_setostask    db   'Setting OS task',0
   boot_allirqs      db   'Unmasking all IRQs',0
   boot_tsc          db   'Reading TSC',0
   boot_cpufreq      db   'CPU frequency is ','    ',' MHz',0
-  boot_pal_ega      db   'Setting EGA/CGA 320x200 palette',0
-  boot_pal_vga      db   'Setting VGA 640x480 palette',0
+;  boot_pal_ega      db   'Setting EGA/CGA 320x200 palette',0
+;  boot_pal_vga      db   'Setting VGA 640x480 palette',0
   boot_failed       db   'Failed to start first app',0
   boot_mtrr         db   'Setting MTRR',0
   boot_pcie_ok      db   'PCIe config set OK',0
   boot_pcie_fail    db   'PCIe config XXX failed XXX',0
+  boot_rs7xx_fail   db	 'RS7xx config XXX failed XXX',0
+  boot_rs7xx_blkd   db	 'RS7xx config ---------- FAILED -----------',0
 if preboot_blogesc
   boot_tasking      db   'All set - press ESC to start',0
 end if

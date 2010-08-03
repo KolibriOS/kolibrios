@@ -270,6 +270,7 @@ include "gui/skincode.inc"
 ; Pci functions
 include "bus/pci/pci32.inc"
 include "bus/pci/pcie.inc"
+include "bus/ht.inc"		; AMD HyperTransport bus control
 
 ; Floppy drive controller
 

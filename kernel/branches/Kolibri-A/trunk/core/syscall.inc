@@ -17,39 +17,40 @@ cross_order:
         mov     edx, esi
         mov     esi, edi
         movzx   edi, byte[esp+28 + 4]
+	  sub	    edi, 53		; all zeroes before
         call    dword [servetable+edi*4]
         ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                            ;;
 ;;                     SYSENTER ENTRY                         ;;
-;;                                                            ;;
+;;                                  (not used on AMD systems) ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-align 32
-sysenter_entry:
-        ; Настраиваем стек
-        mov     esp, [ss:tss._esp0]
-        sti
-        push    ebp                     ; save app esp + 4
-        mov     ebp, [ebp]              ; ebp - original ebp
-        ;------------------
-        pushad
-        cld
+;align 32
+;sysenter_entry:
+;        ; Настраиваем стек
+;        mov     esp, [ss:tss._esp0]
+;        sti
+;        push    ebp                     ; save app esp + 4
+;        mov     ebp, [ebp]              ; ebp - original ebp
+;        ;------------------
+;        pushad
+;        cld
+;
+;        movzx   eax, al
+;        call    dword [servetable2 + eax * 4]
 
-        movzx   eax, al
-        call    dword [servetable2 + eax * 4]
-
-        popad
-        ;------------------
-        xchg    ecx, [ss:esp]           ; в вершин стека - app ecx, ecx - app esp + 4
-        sub     ecx, 4
-        xchg    edx, [ecx]              ; edx - return point, & save original edx
-        push    edx
-        mov     edx, [ss:esp + 4]
-        mov     [ecx + 4], edx          ; save original ecx
-        pop     edx
-        sysexit
+;       popad
+;       ;------------------
+;       xchg    ecx, [ss:esp]           ; в вершин стека - app ecx, ecx - app esp + 4
+;        sub     ecx, 4
+;        xchg    edx, [ecx]              ; edx - return point, & save original edx
+;        push    edx
+;        mov     edx, [ss:esp + 4]
+;        mov     [ecx + 4], edx          ; save original ecx
+;        pop     edx
+;        sysexit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                            ;;
@@ -61,7 +62,7 @@ align 16
 i40:
         pushad
         cld
-        movzx   eax, al
+        and   eax, 0x07F
         call    dword [servetable2 + eax * 4]
         popad
         iretd
@@ -73,25 +74,12 @@ i40:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 32
 syscall_entry:
-  ;     cli                 syscall clear IF
-        xchg    esp, [ss:tss._esp0]
-        push    ecx
-        lea     ecx, [esp+4]
-        xchg    ecx, [ss:tss._esp0]
-        sti
-        push    ecx
-        mov     ecx, [ecx]
-        ;------------------
-        pushad
-        cld
+;       push    ecx
+	  sti
+        xor   eax, 3
+        call    dword [servetable3 + eax * 4]
 
-        movzx   eax, al
-        call    dword [servetable2 + eax * 4]
-
-        popad
-        ;------------------
-        mov     ecx, [ss:esp+4]
-        pop     esp
+;       pop     ecx
         sysret
 
 iglobal
@@ -102,59 +90,6 @@ iglobal
   align 4
   servetable:
 
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
       dd socket                  ; 53-Socket interface
       dd 0
       dd 0
@@ -246,7 +181,15 @@ iglobal
       dd file_system_lfn         ; 70-Common file system interface, version 2
       dd syscall_window_settings ; 71-Window settings
       dd sys_sendwindowmsg       ; 72-Send window message
-        times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
+        times 127 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application
+
+align 4
+servetable3:
+	
+	dd 	paleholder	; 0
+	dd 	paleholder	; 1
+	dd 	paleholder	; 2
+	dd 	sys_end	; last
 
 endg

@@ -313,11 +313,11 @@ high_code:
 ; init selectors
     mov ebx,[BOOT_VAR+0x9040]			; offset of APM entry point
     movzx eax,word [BOOT_VAR+0x9050] 	; real-mode segment base address of
-										; protected-mode 32-bit code segment
+						; protected-mode 32-bit code segment
     movzx ecx,word [BOOT_VAR+0x9052] 	; real-mode segment base address of
-										; protected-mode 16-bit code segment
+						; protected-mode 16-bit code segment
     movzx edx,word [BOOT_VAR+0x9054] 	; real-mode segment base address of
-										; protected-mode 16-bit data segment
+						; protected-mode 16-bit data segment
 
     shl    eax, 4
     mov    [dword apm_code_32 + 2], ax
@@ -390,70 +390,56 @@ high_code:
         mov     eax,[BOOT_VAR+0x9018]
         mov     [LFBAddress],eax
 
-;==        cmp     [SCR_MODE],word 0100000000000000b
-;        jge     setvesa20
-;        cmp     [SCR_MODE],word 0x13
-;        je      v20ga32
-;        mov     [PUTPIXEL],dword Vesa12_putpixel24  ; Vesa 1.2
-;        mov     [GETPIXEL],dword Vesa12_getpixel24
-;        cmp     [ScreenBPP],byte 24
-;        jz      ga24
-;        mov     [PUTPIXEL],dword Vesa12_putpixel32
-;        mov     [GETPIXEL],dword Vesa12_getpixel32
-;      ga24:
-;        jmp     v20ga24
+;==        
+	cmp     [SCR_MODE],word 0100000000000000b
+        jge     setvesa20
+	mov	eax, 0xDEADBEEF
+	hlt
+;        ===  EGA, VGA & Vesa 1.2 modes not supported ===
       setvesa20:
-;        mov     [PUTPIXEL],dword Vesa20_putpixel24  ; Vesa 2.0
+;        mov     [PUTPIXEL],dword Vesa20_putpixel24  ; Vesa 2.0 24bpp modes
 ;        mov     [GETPIXEL],dword Vesa20_getpixel24
 ;        cmp     [ScreenBPP],byte 24
 ;        jz      v20ga24
       v20ga32:
         mov     [PUTPIXEL],dword Vesa20_putpixel32
         mov     [GETPIXEL],dword Vesa20_getpixel32
-;      v20ga24:
-;        cmp     [SCR_MODE],word 0x12                ; 16 C VGA 640x480
-;        jne     no_mode_0x12
-;        mov     [PUTPIXEL],dword VGA_putpixel
-;        mov     [GETPIXEL],dword Vesa20_getpixel32
-      no_mode_0x12:
 
 ; -------- Fast System Call init ----------
 ; Intel SYSENTER/SYSEXIT (AMD CPU support it too)
-           bt [cpu_caps], CAPS_SEP
-           jnc .SEnP   ; SysEnter not Present
-           xor edx, edx
-           mov ecx, MSR_SYSENTER_CS
-           mov eax, os_code
-           wrmsr
-           mov ecx, MSR_SYSENTER_ESP
-;           mov eax, sysenter_stack ; Check it
-           xor     eax, eax
-           wrmsr
-           mov ecx, MSR_SYSENTER_EIP
-           mov eax, sysenter_entry
-           wrmsr
+;           bt [cpu_caps], CAPS_SEP
+;           jnc .SEnP   ; SysEnter not Present
+;           xor edx, edx
+;           mov ecx, MSR_SYSENTER_CS
+;           mov eax, os_code
+;           wrmsr
+;           mov ecx, MSR_SYSENTER_ESP
+;;           mov eax, sysenter_stack ; Check it
+;           xor     eax, eax
+;           wrmsr
+;           mov ecx, MSR_SYSENTER_EIP
+;           mov eax, sysenter_entry
+;           wrmsr
 .SEnP:
 ; AMD SYSCALL/SYSRET
-           cmp byte[cpu_vendor], 'A'
-           jne .noSYSCALL
-           mov eax, 0x80000001
-           cpuid
-           test edx, 0x800  ; bit_11 - SYSCALL/SYSRET support
-           jz .noSYSCALL
+;           cmp byte[cpu_vendor], 'A'
+;          jne .noSYSCALL
+;           mov eax, 0x80000001
+;           cpuid
+;           test edx, 0x800  ; bit_11 - SYSCALL/SYSRET support
+;           jz .noSYSCALL
            mov ecx, MSR_AMD_EFER
            rdmsr
            or eax, 1   ; bit_0 - System Call Extension (SCE)
            wrmsr
 
-        ; !!!! It`s dirty hack, fix it !!!
         ; Bits of EDX :
         ; Bit 31–16 During the SYSRET instruction, this field is copied into the CS register
         ;  and the contents of this field, plus 8, are copied into the SS register.
         ; Bit 15–0 During the SYSCALL instruction, this field is copied into the CS register
         ;  and the contents of this field, plus 8, are copied into the SS register.
 
-        ; mov   edx, (os_code + 16) * 65536 + os_code
-           mov edx, 0x1B0008
+           mov edx, 0x1B000B	; RING3 task stack will be used for fast syscalls!
 
            mov eax, syscall_entry
            mov ecx, MSR_AMD_STAR
@@ -461,7 +447,7 @@ high_code:
 .noSYSCALL:
 ; -----------------------------------------
         stdcall alloc_page
-        stdcall map_page, tss-0xF80, eax, PG_SW
+        stdcall map_page, tss-0xF80, eax, PG_SW		; lower 0xF80 bytes might be used for something
         stdcall alloc_page
         inc     eax
         mov     [SLOT_BASE+256+APPDATA.io_map], eax
@@ -495,9 +481,10 @@ high_code:
 ;Add IO access table - bit array of permitted ports
            mov edi, tss._io_map_0
            xor eax, eax
-           not eax
-           mov ecx, 8192/4
-           rep stosd                 ; access to 4096*8=65536 ports
+	   mov ecx, 2047
+	   rep stosd		     ; access to 65504 ports granted
+	   not eax		     ; the last 32 ports blocked
+	   stosd
 
            mov  ax,tss0
            ltr  ax
@@ -694,11 +681,6 @@ end if
         call  boot_log
         call  reserve_irqs_ports
 
-; SET PORTS FOR IRQ HANDLERS
-
-        ;mov  esi,boot_setrports
-        ;call boot_log
-        ;call setirqreadports
 
 ; SET UP OS TASK
 
@@ -845,8 +827,10 @@ end if
         call set_network_conf
   no_st_network:
 
-        call init_userDMA	; <<<<<<<<< ================ core/memory.inc ========================================
-	  call pci_ext_config	; <<<<<<<<< bus/pci/pcie.inc
+        call init_userDMA	; <<<<<<<<< ============== core/memory.inc =================
+;	call pci_ext_config	; <<<<<<<<< bus/pci/pcie.inc
+;-------------------------------------------------------------------------------
+        call rs7xx_pcie_init    ; <<<<<<<<< bus/ht.inc
 
 ; LOAD FIRST APPLICATION
         cli
@@ -1097,59 +1081,12 @@ include "kernel32.inc"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 reserve_irqs_ports:
-
-        push eax
-        xor	eax,eax
-		inc	eax
-        mov  byte [irq_owner+4*0],al		;1    ; timer
-        ;mov  [irq_owner+4*1], 1    ; keyboard
-        mov  byte [irq_owner+4*6],al		;1    ; floppy diskette
-        mov  byte [irq_owner+4*13],al	;1   ; math co-pros
-        mov  byte [irq_owner+4*14],al	;1   ; ide I
-        mov  byte [irq_owner+4*15],al	;1   ; ide II
-        pop  eax
-
-; RESERVE PORTS
-	push  4
-        pop   dword [RESERVED_PORTS]	;,edi
-
-	push  1
-        pop   dword [RESERVED_PORTS+16+0]	;,dword 1
-        and   dword [RESERVED_PORTS+16+4],0	;,dword 0x0
-        mov   dword [RESERVED_PORTS+16+8],0x2d	;,dword 0x2d
-
-	push  1
-        pop   dword [RESERVED_PORTS+32+0]	;,dword 1
-        push  0x30
-        pop   dword [RESERVED_PORTS+32+4]	;,dword 0x30
-	push  0x4d
-        pop   dword [RESERVED_PORTS+32+8]	;,dword 0x4d
-
-	push  1
-        pop   dword [RESERVED_PORTS+48+0]	;,dword 1
-	push  0x50
-        pop   dword [RESERVED_PORTS+48+4]	;,dword 0x50
-        mov   dword [RESERVED_PORTS+48+8],0xdf	;,dword 0xdf
-
-	push  1
-        pop   dword [RESERVED_PORTS+64+0]	;,dword 1
-
-        mov   dword [RESERVED_PORTS+64+4],0xe5	;,dword 0xe5
-        mov   dword [RESERVED_PORTS+64+8],0xff	;,dword 0xff
-
+	; removed 
         ret
 
 setirqreadports:
-
-        mov   [irq12read+0],dword 0x60 + 0x01000000  ; read port 0x60 , byte
-	    and   dword [irq12read+4],0                   ; end of port list
-;        mov   [irq12read+4],dword 0                  ; end of port list
-        ;mov   [irq04read+0],dword 0x3f8 + 0x01000000 ; read port 0x3f8 , byte
-        ;mov   [irq04read+4],dword 0                  ; end of port list
-        ;mov   [irq03read+0],dword 0x2f8 + 0x01000000 ; read port 0x2f8 , byte
-        ;mov   [irq03read+4],dword 0                  ; end of port list
-
-        ret
+	; removed
+	ret
 
 iglobal
   process_number dd 0x1
@@ -1185,60 +1122,7 @@ set_variables:
 align 4
 ;input  eax=43,bl-byte of output, ecx - number of port
 sys_outport:
-
-    mov   edi,ecx          ; separate flag for read / write
-    and   ecx,65535
-
-    mov   eax,[RESERVED_PORTS]
-    test  eax,eax
-    jnz   .sopl8
-    inc	  eax
-	mov   [esp+32],eax
-    ret
-
-  .sopl8:
-    mov   edx,[TASK_BASE]
-    mov   edx,[edx+0x4]
-    ;and   ecx,65535
-    ;cld - set on interrupt 0x40
-  .sopl1:
-
-    mov   esi,eax
-    shl   esi,4
-    add   esi,RESERVED_PORTS
-    cmp   edx,[esi+0]
-    jne   .sopl2
-    cmp   ecx,[esi+4]
-    jb    .sopl2
-    cmp   ecx,[esi+8]
-    jg    .sopl2
-.sopl3:
-
-    test  edi,0x80000000 ; read ?
-    jnz   .sopl4
-
-	mov	  eax,ebx
-    mov   dx,cx          ; write
-    out   dx,al
-    and   [esp+32],dword 0
-    ret
-
-	.sopl2:
-
-    dec   eax
-    jnz   .sopl1
-	inc	  eax
-    mov   [esp+32],eax
-    ret
-
-  
-  .sopl4:
-
-    mov   dx,cx          ; read
-    in    al,dx
-    and   eax,0xff
-    and   [esp+32],dword 0
-    mov   [esp+20],eax
+     and   [esp+32],dword 1	; for backward compatibility: operation failed
     ret
 
 display_number:
@@ -3462,269 +3346,25 @@ memmove:       ; memory move in bytes
 align 4
 
 sys_programirq:
-
-    mov   eax, [TASK_BASE]
-    add   ebx, [eax + TASKDATA.mem_start]
-
-    cmp   ecx, 16
-    jae   .not_owner
-    mov   edi, [eax + TASKDATA.pid]
-    cmp   edi, [irq_owner + 4 * ecx]
-    je    .spril1
-.not_owner:
-    xor   ecx, ecx
-    inc   ecx
-    jmp   .end
-  .spril1:
-
-    shl   ecx, 6
-    mov   esi, ebx
-    lea   edi, [irq00read + ecx]
-    push  16
-    pop   ecx
-
-    cld
-    rep   movsd
-  .end:
-    mov   [esp+32], ecx
+	; removed 
+    mov   dword [esp+32], 1	; operation failed
     ret
 
 
 align 4
 
 get_irq_data:
-     movzx esi, bh                       ; save number of subfunction, if bh = 1, return data size, otherwise, read data
-     xor   bh, bh
-     cmp   ebx, 16
-     jae   .not_owner
-     mov   edx, [4 * ebx + irq_owner]    ; check for irq owner
-
-     mov   eax,[TASK_BASE]
-
-     cmp   edx,[eax+TASKDATA.pid]
-     je    gidril1
-.not_owner:
-     xor   edx, edx
-     dec   edx
-     jmp   gid1
-
-  gidril1:
-
-     shl   ebx, 12
-     lea   eax, [ebx + IRQ_SAVE]         ; calculate address of the beginning of buffer + 0x0 - data size
-     mov   edx, [eax]                    ;                                              + 0x4 - data offset
-     dec   esi
-     jz    gid1
-     test  edx, edx                      ; check if buffer is empty
-     jz    gid1
-
-     mov   ebx, [eax + 0x4]
-     mov   edi, ecx
-
-     mov   ecx, 4000                     ; buffer size, used frequently
-
-     cmp   ebx, ecx                      ; check for the end of buffer, if end of buffer, begin cycle again
-     jb    @f
-
-     xor   ebx, ebx
-
-   @@:
-
-     lea   esi, [ebx + edx]              ; calculate data size and offset
-     cld
-     cmp   esi, ecx                      ; if greater than the buffer size, begin cycle again
-     jbe   @f
-
-     sub   ecx, ebx
-     sub   edx, ecx
-
-     lea   esi, [eax + ebx + 0x10]
-     rep   movsb
-
-     xor   ebx, ebx
-   @@:
-     lea   esi, [eax + ebx + 0x10]
-     mov   ecx, edx
-     add   ebx, edx
-
-     rep   movsb
-     mov   edx, [eax]
-     mov   [eax], ecx                    ; set data size to zero
-     mov   [eax + 0x4], ebx              ; set data offset
-
-   gid1:
-     mov   [esp+32], edx                 ; eax
+	; removed
+     mov   dword [esp+32], -1                 
      ret
 
 
 set_io_access_rights:
-      push edi eax
-      mov edi, tss._io_map_0
-;     mov   ecx,eax
-;     and   ecx,7    ; offset in byte
-;     shr   eax,3    ; number of byte
-;     add   edi,eax
-;     mov   ebx,1
-;     shl   ebx,cl
-     test  ebp,ebp
-;     cmp   ebp,0                ; enable access - ebp = 0
-     jnz   siar1
-;     not   ebx
-;     and   [edi],byte bl
-     btr [edi], eax
-     pop eax edi
+	;removed
      ret
-siar1:
-     bts [edi], eax
-  ;  or    [edi],byte bl        ; disable access - ebp = 1
-     pop eax edi
-     ret
-;reserve/free group of ports
-;  * eax = 46 - number function
-;  * ebx = 0 - reserve, 1 - free
-;  * ecx = number start arrea of ports
-;  * edx = number end arrea of ports (include last number of port)
-;Return value:
-;  * eax = 0 - succesful 
-;  * eax = 1 - error
-;  * The system has reserve this ports:
-;    0..0x2d, 0x30..0x4d, 0x50..0xdf, 0xe5..0xff (include last number of port).
-;destroys eax,ebx, ebp
+
 r_f_port_area:
-
-     test  ebx, ebx
-     jnz   free_port_area
-;     je    r_port_area
-;     jmp   free_port_area
-
-;   r_port_area:
-
-;     pushad
-
-     cmp   ecx,edx            ; beginning > end ?
-     ja    rpal1
-     cmp   edx,65536
-     jae   rpal1
-     mov   eax,[RESERVED_PORTS]
-     test  eax,eax            ; no reserved areas ?
-     je    rpal2
-     cmp   eax,255            ; max reserved
-     jae   rpal1
- rpal3:
-     mov   ebx,eax
-     shl   ebx,4
-     add   ebx,RESERVED_PORTS
-     cmp   ecx,[ebx+8]
-     ja    rpal4
-     cmp   edx,[ebx+4]
-     jae   rpal1
-;     jb    rpal4
-;     jmp   rpal1
- rpal4:
-     dec   eax
-     jnz   rpal3
-     jmp   rpal2
-   rpal1:
-;     popad
-;     mov   eax,1
-     xor    eax,eax
-     inc    eax
-     ret
-   rpal2:
-;     popad
-     ; enable port access at port IO map
-	cli
-	pushad                        ; start enable io map
-
-	cmp   edx,65536 ;16384
-	jae   no_unmask_io ; jge
-	mov   eax,ecx
-;	push	ebp
-	xor	ebp,ebp                ; enable - eax = port
-new_port_access:
-;     pushad
-	call	set_io_access_rights
-;     popad
-     inc   eax
-     cmp   eax,edx
-     jbe   new_port_access
-;	pop	ebp
-no_unmask_io:
-	popad                         ; end enable io map
-     sti
-
-     mov   eax,[RESERVED_PORTS]
-     add   eax,1
-     mov   [RESERVED_PORTS],eax
-     shl   eax,4
-     add   eax,RESERVED_PORTS
-     mov   ebx,[TASK_BASE]
-     mov   ebx,[ebx+TASKDATA.pid]
-     mov   [eax],ebx
-     mov   [eax+4],ecx
-     mov   [eax+8],edx
-
-     xor   eax, eax
-     ret
-
-free_port_area:
-
-;     pushad
-     mov   eax,[RESERVED_PORTS]     ; no reserved areas ?
-     test  eax,eax
-     jz    frpal2
-     mov   ebx,[TASK_BASE]
-     mov   ebx,[ebx+TASKDATA.pid]
-   frpal3:
-     mov   edi,eax
-     shl   edi,4
-     add   edi,RESERVED_PORTS
-     cmp   ebx,[edi]
-     jne   frpal4
-     cmp   ecx,[edi+4]
-     jne   frpal4
-     cmp   edx,[edi+8]
-     jne   frpal4
-     jmp   frpal1
-   frpal4:
-     dec   eax
-     jnz   frpal3
-   frpal2:
-;     popad
-     inc   eax
-     ret
-   frpal1:
-	push	ecx
-	mov   ecx,256
-	sub   ecx,eax
-	shl   ecx,4
-	mov   esi,edi
-	add   esi,16
-	cld
-	rep   movsb
-
-	dec   dword [RESERVED_PORTS]
-;popad
-;disable port access at port IO map
-
-;     pushad                        ; start disable io map
-     pop	eax	;start port
-     cmp   edx,65536 ;16384
-     jge   no_mask_io
-
-;     mov   eax,ecx
-	xor	ebp,ebp
-	inc	ebp
-new_port_access_disable:
-;     pushad
-;     mov   ebp,1                  ; disable - eax = port
-     call  set_io_access_rights
-;     popad
-     inc   eax
-     cmp   eax,edx
-     jbe   new_port_access_disable
-no_mask_io:
-;     popad                         ; end disable io map
+	; removed; always returns 0
      xor   eax, eax
      ret
 

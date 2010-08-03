@@ -28,12 +28,14 @@ $Revision: 1463 $
 ;
 ;***************************************************************************
 
+align 4
 mmio_pcie_cfg_addr	dd  	0x00000000	; pcie space may be defined here
 mmio_pcie_cfg_lim	dd	0x000FFFFF	; upper pcie space address 
+mmio_pcie_cfg_pdes	dw	0		; number of PDEs to map the space
+PCIe_bus_range		dw	0		; the Bus range: power-of-2 Megabytes
 
 
 align 4
-
 pci_ext_config:
 	mov	ebx, [mmio_pcie_cfg_addr]
 	or	ebx,ebx
@@ -60,7 +62,7 @@ pci_ext_config:
 	jz	.no_pcie_cfg
 	shl	eax, 8			; bus:[27..20], dev:[19:15] 
 	or	eax, 0x00007FFC		; fun:[14..12], reg:[11:2] 
-	mov	[mmio_pcie_cfg_lim], eax
+;	mov	[mmio_pcie_cfg_lim], eax
 	mov	cl, bl
 	mov	ax, 0x0002		; bus = 0, 1dword to read
 	call 	pci_read_reg
@@ -74,30 +76,14 @@ pci_ext_config:
 	test	eax, 0x000F0000		; MMIO Base must be bus0-aligned
 	jnz	.no_pcie_cfg
 	mov	[mmio_pcie_cfg_addr], eax
-	add	eax, 0x000FFFFC
-	sub	eax,[mmio_pcie_cfg_lim]	; MMIO must cover at least one bus
-	ja	.no_pcie_cfg
+;	add	eax, 0x000FFFFC
+;	sub	eax,[mmio_pcie_cfg_lim]	; MMIO must cover at least one bus
+;	ja	.no_pcie_cfg
 
 ;	-- it looks like a true PCIe config space; 
-	mov 	eax,[mmio_pcie_cfg_addr]	; physical address
-	or	eax, (PG_SHARED + PG_LARGE + PG_USER)
-	mov	ebx, PCIe_CONFIG_SPACE		; linear address
-	mov	ecx, ebx
-	shr	ebx, 20		
-	add	ebx, sys_pgdir			; PgDir entry @
-@@:
-	mov	dword[ebx], eax			; map 4 buses
-	invlpg	[ecx]
-	cmp	bl, 4
-	jz	.pcie_cfg_mapped		; fix it later
-	add	bl, 4				; next PgDir entry
-	add	eax, 0x400000			; eax += 4M
-	add	ecx, 0x400000
-	jmp	@b	
 
 .pcie_cfg_mapped:
 	
-;	-- glad to have the extended PCIe config field found
 	mov	esi, boot_pcie_ok
 	call	boot_log
 	ret	; <<<<<<<<<<< OK >>>>>>>>>>>
