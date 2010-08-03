@@ -132,38 +132,15 @@ macro make_bus_master bus, dev {
 
 	movzx	ecx, bus
 	movzx	edx, dev
-	stdcall PciRead16, ecx ,edx, PCI_REG_COMMAND
+	stdcall PciRead32, ecx ,edx, PCI_REG_COMMAND
 
-	or	al, PCI_BIT_MASTER or PCI_BIT_PIO
-	and	al, not PCI_BIT_MMIO
+	or	al, PCI_BIT_MASTER ;or PCI_BIT_PIO
+;        and     al, not PCI_BIT_MMIO
+	stdcall PciWrite32, ecx, edx, PCI_REG_COMMAND, eax
 
-;        or      al, PCI_BIT_MASTER or PCI_BIT_MMIO
-;        and     al, not PCI_BIT_PIO
-
-	stdcall PciWrite16, ecx, edx, PCI_REG_COMMAND, eax
+;; TODO: try to switch to PIO, and check if PIO works or not..
 
 }
-
-
-; .Latency:
-   ;*******Get current latency setting************************
-;   mov     al, 1                                       ;read a byte
-;   mov     bh, [pci_dev]
-;   mov     ah, [pci_bus]
-;   mov     bl, 0x0D                                ;from Lantency Timer Register
-;   call    pci_read_reg
-   ;******see if its aat least 64 clocks********
-;   cmp      ax,64
-;   jge      PCNET_adjust_pci_device_Done
-   ;******Set latency to 32 clocks*******
-;   mov     cx, 64                              ;value to write
-;   mov     bh, [pci_dev]
-;   mov     al, 1                               ;write a byte
-;   mov     ah, [pci_bus]
-;   mov     bl, 0x0D                            ;to Lantency Timer Register
-;   call    pci_write_reg
-   ;******Check latency setting***********
-;  .Done:
 
 struc IOCTL {
       .handle		dd ?
@@ -213,8 +190,6 @@ macro NET_DEVICE {
 	.bytes_rx	dq ?	;
 	.packets_tx	dd ?	;
 	.packets_rx	dd ?	;
-
-;        .hwcksum        dd ?
 
 	.end:
 }
