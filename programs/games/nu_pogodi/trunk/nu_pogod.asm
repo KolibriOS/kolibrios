@@ -47,9 +47,11 @@ struct FileInfoBlock
 	FileName dd ?
 ends
 
-GAME_POLE_W equ 315 ;ширина поля
-GAME_POLE_H equ 210 ;высота поля
-GAME_POLE_BYTES equ GAME_POLE_W*GAME_POLE_H*3 ;размер файла с изображением
+displ_w dd ? ;ширина поля
+displ_h dd ? ;высота поля
+displ_bytes dd ? ;размер 1-го файла с изображением
+;displ_bytes equ 315*210*3 ;размер 1-го файла с изображением
+
 OFFS_SHADOW_X equ 2 ;сдвиг теней по оси 'x'
 OFFS_SHADOW_Y equ 2 ;сдвиг теней по оси 'y'
 IMAGE_FONT_SIZE equ 128*144*3
@@ -70,6 +72,13 @@ fn_icon2 db 'eggs.png',0 ;имя файла с яйцами
 fn_icon3 db 'chi.png',0 ;имя файла с циплятами
 fn_font db 'font8x9.bmp',0
 
+ini_name db 'nu_pogod.ini',0
+ini_sec_files db 'Files',0
+key_displ_w db 'displ_w',0
+key_displ_h db 'displ_h',0
+ini_sec_color db 'Colors',0
+key_color_unit db 'unit',0
+
 ;цвета в игре
 color_fon dd 0xffffff
 color_shadows dd 0xd0d0d0 ;цвет теней
@@ -81,13 +90,14 @@ color_curici dd 0x8080d0 ;цвет курицы
 color_perilo dd 0x000080 ;цвет перила (гребня)
 ;цвета интерфейса
 color_but_sm dd 0x808080 ;цвет маленьких кнопок
-color_but_bi dd 0x8080ff ;цвет больших кнопок
+color_but_te dd 0xffffff ;цвет текста на кнопках
 
 macro load_image_file path,buf,size { ;макрос для загрузки изображений
+	copy_path path,sys_path,file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
 
-	copy_path path,sys_path,file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	mov eax,70 ;70-я функция работа с файлами
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
@@ -130,6 +140,9 @@ bit_chi_right equ 27 ;1-й бит который отвечает за бегущего права
 val_zaac_time_y equ 5 ;колличество тактов, которое обязательно должен провисеть заяц
 val_zaac_time_n equ 7 ;колличество тактов, которое обязательно должен быть спрятанным заяц
 
+txt_game_a db 'Игра А',0
+txt_game_b db 'Игра Б',0
+
 zaac_status db 0
 pos_wolf db 0 ;позиция волка 0-й бит слева/справа, 1-й бит сверху/вниз
 ;rb 1
@@ -162,13 +175,23 @@ pop eax
 ;по фоновому цвету и трафарет будет занимат ьмного места в памяти
 align 4
 proc CreateTrapharetBuffer, buf:dword, img_data:dword
-	push edi
+	push eax edi
 	mov edi,dword[buf]
+
+	;заполнение данных буфера
+	mov buf2d_size_lt,0
+	mov eax,dword[displ_w]
+	mov buf2d_w,eax
+	mov eax,dword[displ_h]
+	mov buf2d_h,eax
+	mov buf2d_color,0xffffff
+	mov buf2d_bits,24
+
 	stdcall [buf2d_create_f_img], edi,[img_data] ;создаем буфер
 	stdcall [buf2d_conv_24_to_8], edi,1 ;делаем буфер прозрачности 8бит
 	;обрезаем лишние края буфера, для более быстрого рисования
 	stdcall [buf2d_crop_color], edi,buf2d_color,BUF2D_OPT_CROP_TOP+BUF2D_OPT_CROP_BOTTOM+BUF2D_OPT_CROP_RIGHT+BUF2D_OPT_CROP_LEFT
-	pop edi
+	pop edi eax
 	ret
 endp
 
@@ -184,32 +207,32 @@ InitBackgroundBuffer: ;создание фонового изображения
 	xor eax,eax
 	xor ebx,ebx
 
-	mov edi,buf_tr_fon0
+	mov edi,buf_decor
 	mov ax,buf2d_t
 	add eax,OFFS_SHADOW_Y
 	mov bx,buf2d_l
 	add ebx,OFFS_SHADOW_X
 	stdcall [buf2d_bit_blt_alpha], esi, ebx,eax, edi,[color_shadows] ;рисуем тени домиков
-	mov edi,buf_tr_fon1
+	add edi,BUF_STRUCT_SIZE
 	mov ax,buf2d_t
 	add eax,OFFS_SHADOW_Y
 	mov bx,buf2d_l
 	add ebx,OFFS_SHADOW_X
 	stdcall [buf2d_bit_blt_alpha], esi, ebx,eax, edi,[color_shadows] ;рисуем тени куриц
-	mov edi,buf_tr_fon2
+	add edi,BUF_STRUCT_SIZE
 	mov ax,buf2d_t
 	add eax,OFFS_SHADOW_Y
 	mov bx,buf2d_l
 	add ebx,OFFS_SHADOW_X
 	stdcall [buf2d_bit_blt_alpha], esi, ebx,eax, edi,[color_shadows] ;рисуем тени деревьев
 
-	mov edi,buf_tr_fon0
+	mov edi,buf_decor
 	mov ax,buf2d_t
 	stdcall [buf2d_bit_blt_alpha], esi, 0,eax, edi,[color_perilo] ;рисуем домики
-	mov edi,buf_tr_fon1
+	add edi,BUF_STRUCT_SIZE
 	mov ax,buf2d_t
 	stdcall [buf2d_bit_blt_alpha], esi, 0,eax, edi,[color_curici] ;рисуем курицы
-	mov edi,buf_tr_fon2
+	add edi,BUF_STRUCT_SIZE
 	mov ax,buf2d_t
 	stdcall [buf2d_bit_blt_alpha], esi, 0,eax, edi,[color_trees] ;рисуем деревья
 	popad
@@ -534,6 +557,29 @@ proc InitGame, b:dword ;первоначальные настройки игры
 endp
 
 align 4
+proc LoadArrayBuffer, f_name:dword, buf_start:dword, count:dword
+	pushad
+	mov edx,dword[displ_bytes]
+	mov ecx,edx
+	imul ecx,dword[count]
+	mov eax,dword[f_name]
+	load_image_file eax,image_data_gray,ecx
+		mov edx,dword[displ_bytes]
+		mov eax,[image_data_gray]
+		mov edi,dword[buf_start]
+		mov ecx,dword[count]
+		cld
+		@@: ;считываем 3 буфера с декорациями
+			stdcall CreateTrapharetBuffer,edi,eax
+			add eax,edx
+			add edi,BUF_STRUCT_SIZE
+			loop @b
+	stdcall mem.Free,[image_data_gray] ;освобождаем память
+	popad
+	ret
+endp
+
+align 4
 start:
 	load_libraries l_libs_start,load_lib_end
 
@@ -552,67 +598,24 @@ start:
 	mcall 40,0x27
 	mcall 48,3,sc,sizeof.system_colors ;получаем системные цвета
 
-	load_image_file fn_icon0,image_data_gray,3*GAME_POLE_BYTES
-		mov eax,[image_data_gray]
-		stdcall CreateTrapharetBuffer,buf_tr_fon0,eax
-		add eax,GAME_POLE_BYTES
-		stdcall CreateTrapharetBuffer,buf_tr_fon1,eax
-		add eax,GAME_POLE_BYTES
-		stdcall CreateTrapharetBuffer,buf_tr_fon2,eax
-	stdcall mem.Free,[image_data_gray] ;освобождаем память
+	;работа с файлом настроек
+	copy_path ini_name,sys_path,file_name,0x0
+	stdcall dword[ini_get_int],file_name,ini_sec_files,key_displ_w,210
+	mov	dword[displ_w],eax
+	stdcall dword[ini_get_int],file_name,ini_sec_files,key_displ_h,140
+	mov	dword[displ_h],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_unit,0
+	mov	dword[color_wolf],eax
 
-	stdcall [buf2d_create], buf_fon ;создаем буфер с фоновыми декорациями
+	mov edx,dword[displ_w]
+	imul edx,dword[displ_h]
+	lea edx,[edx+edx*2]
+	mov dword[displ_bytes],edx ;вычисляем размер игрового поля
 
-	load_image_file fn_icon1,image_data_gray, 9*GAME_POLE_BYTES
-		mov eax,[image_data_gray]
-		mov edi,buf_wolf
-		mov ecx,9
-		cld
-		@@: ;считываем 9 буферов с волком и зайцем
-			mov buf2d_size_lt,0
-			mov buf2d_w,GAME_POLE_W
-			mov buf2d_h,GAME_POLE_H
-			mov buf2d_color,0xffffff
-			mov buf2d_bits,24
-			stdcall CreateTrapharetBuffer,edi,eax
-			add eax,GAME_POLE_BYTES
-			add edi,BUF_STRUCT_SIZE
-			loop @b
-	stdcall mem.Free,[image_data_gray] ;освобождаем память
-
-	load_image_file fn_icon2,image_data_gray, 22*GAME_POLE_BYTES
-		mov eax,[image_data_gray]
-		mov edi,buf_egg
-		mov ecx,22
-		cld
-		@@: ;считываем 22 буферов с яйцами
-			mov buf2d_size_lt,0
-			mov buf2d_w,GAME_POLE_W
-			mov buf2d_h,GAME_POLE_H
-			mov buf2d_color,0xffffff
-			mov buf2d_bits,24
-			stdcall CreateTrapharetBuffer,edi,eax
-			add eax,GAME_POLE_BYTES
-			add edi,BUF_STRUCT_SIZE
-			loop @b
-	stdcall mem.Free,[image_data_gray] ;освобождаем память
-
-	load_image_file fn_icon3,image_data_gray, 13*GAME_POLE_BYTES
-		mov eax,[image_data_gray]
-		mov edi,buf_chi
-		mov ecx,13
-		cld
-		@@: ;считываем 13 буферов с циплятами
-			mov buf2d_size_lt,0
-			mov buf2d_w,GAME_POLE_W
-			mov buf2d_h,GAME_POLE_H
-			mov buf2d_color,0xffffff
-			mov buf2d_bits,24
-			stdcall CreateTrapharetBuffer,edi,eax
-			add eax,GAME_POLE_BYTES
-			add edi,BUF_STRUCT_SIZE
-			loop @b
-	stdcall mem.Free,[image_data_gray] ;освобождаем память
+	stdcall LoadArrayBuffer, fn_icon0, buf_decor,3 ;считываем 3 буфера с декорациями
+	stdcall LoadArrayBuffer, fn_icon1, buf_wolf,9 ;считываем 9 буферов с волком и зайцем
+	stdcall LoadArrayBuffer, fn_icon2, buf_egg,22 ;считываем 22 буферов с яйцами
+	stdcall LoadArrayBuffer, fn_icon3, buf_chi,13 ;считываем 13 буферов с циплятами
 
 	load_image_file fn_font, image_data_gray,IMAGE_FONT_SIZE
 	stdcall [buf2d_create_f_img], buf_font,[image_data_gray] ;создаем буфер
@@ -626,7 +629,19 @@ start:
 ;add edi,BUF_STRUCT_SIZE ;переходим на буфер корзины
 ;stdcall [buf2d_clear],edi,0x808080 ;заливаем его серым цветом
 
+	mov ebx,dword[displ_w]
+	mov edx,dword[displ_h]
+
+	mov edi,buf_displ
+	mov buf2d_w,ebx
+	mov buf2d_h,edx
 	stdcall [buf2d_create], buf_displ ;создаем буфер для вывода на экран
+
+	mov edi,buf_fon
+	mov buf2d_w,ebx
+	mov buf2d_h,edx
+	stdcall [buf2d_create], buf_fon ;создаем буфер с фоновыми декорациями
+
 	call InitBackgroundBuffer ;заполняем буфер с фоновыми декорациями
 	stdcall InitGame,0
 	mcall 26,9
@@ -736,9 +751,9 @@ draw_window:
 	mcall 9,procinfo,-1
 	mov edi,buf_displ
 	mov eax,dword[procinfo.client_box.width]
-	cmp eax,GAME_POLE_W
+	cmp eax,dword[displ_w]
 	jle @f
-		sub eax,GAME_POLE_W
+		sub eax,dword[displ_w]
 		shr eax,1
 		mov buf2d_l,ax ;выправниваем буфер по центру окна
 	@@:
@@ -749,7 +764,7 @@ draw_window:
 	mov edx,[sc.work]
 	xor esi,esi
 	mov si,buf2d_l
-	add esi,GAME_POLE_W
+	add esi,dword[displ_w]
 	mov ebx,dword[procinfo.client_box.width]
 	inc ebx
 	cmp esi,ebx
@@ -788,6 +803,20 @@ push esi
 	int 0x40
 pop esi
 
+	mov eax,4 ;аЁбRў -Ё? в?Єбв 
+	mov bx,BUT1_H
+	add ebx,3*65536;+3
+	mov ecx,dword[color_but_te]
+	or  ecx,0x80000000
+	mov edx,txt_game_a
+	int 0x40
+
+	ror ebx,16
+	add ebx,BUT1_NEXT_TOP
+	ror ebx,16
+	mov edx,txt_game_b
+	int 0x40
+
 	; *** восстановление параметров ***
 	mov eax,13 ;рисование прямоугольника
 	mov edx,[sc.work]
@@ -796,7 +825,7 @@ end if
 	mov ebx,esi
 	mov ecx,dword[procinfo.client_box.height]
 	inc ecx
-	mov esi,GAME_POLE_H
+	mov esi,dword[displ_h]
 	cmp esi,ebx
 	jge @f
 		sub ecx,esi
@@ -808,7 +837,7 @@ end if
 	
 	xor ebx,ebx
 	mov bx,buf2d_l
-	mov ecx,GAME_POLE_H
+	mov ecx,dword[displ_h]
 	int 0x40 ;рисование левого бокового поля
 
 	mcall 12,2
@@ -818,22 +847,17 @@ end if
 align 4
 draw_display:
 
-	stdcall mem_copy, dword[buf_fon],dword[buf_displ],GAME_POLE_BYTES ;копирование изображения из фонового буфера
-	call DrawZaac
+	stdcall mem_copy, dword[buf_fon],dword[buf_displ],315*210*3;dword[displ_bytes] ;копирование изображения из фонового буфера
+	call DrawZaac ;рисуем зайца
 	call DrawWolf ;рисуем волка
-	call DrawEggs
+	call DrawEggs ;рисуем яйца
 
-	stdcall [buf2d_draw_text], buf_displ, buf_font,game_text,GAME_POLE_W/2,OFFS_SHADOW_X,[color_curici] ;рисуем строку с текстом
-
+push eax
+	mov eax,dword[displ_w]
+	shr eax,1
+	stdcall [buf2d_draw_text], buf_displ, buf_font,game_text,eax,OFFS_SHADOW_X,[color_curici] ;рисуем строку с текстом
+pop eax
 	stdcall [buf2d_draw], buf_displ
-
-;mov eax,4 ;рисование текста
-;mov ebx,(GAME_POLE_W/2)*65536+OFFS_SHADOW_X
-;mov ecx,[color_curici]
-;or  ecx,0x80000000
-;mov edx,some_text
-;mcall
-
 	ret
 
 align 4
@@ -854,13 +878,15 @@ button:
 	stdcall [buf2d_delete],buf_fon ;удаляем буфер
 	stdcall [buf2d_delete],buf_displ ;удаляем буфер
 
-	stdcall [buf2d_delete],buf_tr_fon0
-	stdcall [buf2d_delete],buf_tr_fon1
-	stdcall [buf2d_delete],buf_tr_fon2
-
 	stdcall [buf2d_delete],buf_font
 
 	cld
+	mov ecx,3
+	mov edi,buf_decor
+	@@: ;удаляем 3 буфера
+		stdcall [buf2d_delete],edi
+		add edi,BUF_STRUCT_SIZE
+		loop @b
 	mov ecx,9
 	mov edi,buf_wolf
 	@@: ;удаляем 9 буферов с волком и зайцем
@@ -895,10 +921,16 @@ name_libimg db 'libimg.obj',0
 err_message_found_lib1 db 'Не удалось найти библиотеку libimg.obj',0
 err_message_import1 db 'Ошибка при импорте библиотеки libimg.obj',0
 
+system_dir2 db '/sys/lib/'
+libini_name db 'libini.obj',0
+err_message_found_lib2 db 'Не удалось найти библиотеку libini.obj',0
+err_message_import2 db 'Ошибка при импорте библиотеки libini.obj',0
+
 ;library structures
 l_libs_start:
 	lib0 l_libs name_buf2d,  sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, import_buf2d_lib, err_message_import0, head_f_i
 	lib1 l_libs name_libimg, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l, import_libimg, err_message_import1, head_f_i
+	lib2 l_libs libini_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l, libini_import, err_message_import2, head_f_i
 load_lib_end:
 
 align 4
@@ -950,18 +982,8 @@ image_data dd 0 ;память для преобразования картинки функциями libimg
 image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
 
 run_file_70 FileInfoBlock
-hed db 'Nu pogodi 30.07.10',0 ;подпись окна
+hed db 'Nu pogodi 03.08.10',0 ;подпись окна
 sc system_colors  ;системные цвета
-
-align 4
-buf_fon: ;фоновый буфер
-	dd 0 ;указатель на буфер изображения
-	dw 0 ;+4 left
-	dw 0 ;+6 top
-	dd GAME_POLE_W ;+8 w
-	dd GAME_POLE_H ;+12 h
-	dd 0xffffff ;+16 color
-	db 24 ;+20 bit in pixel
 
 align 4
 buf_font: ;буфер со шрифтом
@@ -974,41 +996,27 @@ buf_font: ;буфер со шрифтом
 	db 24 ;+20 bit in pixel
 
 align 4
-buf_tr_fon0: ;буфер с домиками и рейками
+buf_displ:
 	dd 0 ;указатель на буфер изображения
-	dw 0 ;+4 left
-	dw 0 ;+6 top
-	dd GAME_POLE_W ;+8 w
-	dd GAME_POLE_H ;+12 h
-	dd 0xffffff ;+16 color
+	dw 25,0
+	dd ? ;+8 w
+	dd ? ;+12 h
+	dd 0 ;+16 color
 	db 24 ;+20 bit in pixel
+
 align 4
-buf_tr_fon1: ;буфер с курицами
+buf_fon: ;фоновый буфер
 	dd 0 ;указатель на буфер изображения
 	dw 0 ;+4 left
 	dw 0 ;+6 top
-	dd GAME_POLE_W ;+8 w
-	dd GAME_POLE_H ;+12 h
-	dd 0xffffff ;+16 color
-	db 24 ;+20 bit in pixel
-align 4
-buf_tr_fon2: ;буфер с растениями
-	dd 0 ;указатель на буфер изображения
-	dw 0 ;+4 left
-	dw 0 ;+6 top
-	dd GAME_POLE_W ;+8 w
-	dd GAME_POLE_H ;+12 h
+	dd ? ;+8 w
+	dd ? ;+12 h
 	dd 0xffffff ;+16 color
 	db 24 ;+20 bit in pixel
 
 align 4
-buf_displ:
-	dd 0 ;указатель на буфер изображения
-	dw 25,0
-	dd GAME_POLE_W ;+8 w
-	dd GAME_POLE_H ;+12 h
-	dd 0 ;+16 color
-	db 24 ;+20 bit in pixel
+buf_decor: ;буфера с декорациями: домиками и рейками; с курицами; с растениями
+	rb 3*BUF_STRUCT_SIZE
 
 align 4
 buf_wolf:
@@ -1021,6 +1029,20 @@ buf_egg:
 align 4
 buf_chi:
 	rb 13*BUF_STRUCT_SIZE
+
+
+
+align 4
+libini_import:
+	dd alib_init0
+	ini_get_str   dd aini_get_str
+	ini_get_int   dd aini_get_int
+	ini_get_color dd aini_get_color
+dd 0,0
+	alib_init0     db 'lib_init',0
+	aini_get_str   db 'ini_get_str',0
+	aini_get_int   db 'ini_get_int',0
+	aini_get_color db 'ini_get_color',0
 
 align 4
 import_libimg:
