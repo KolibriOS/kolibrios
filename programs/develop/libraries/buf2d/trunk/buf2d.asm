@@ -219,6 +219,8 @@ endl
 		mov edx,eax ;ax = colors - r,g
 		shr edx,16 ;dl = color - b
 		mov ecx,buf2d_h
+		cmp ecx,1
+		jle .24no_crop_bottom ;проверяем на случай если высота буфера 1 пиксель
 		mov ebx,buf2d_w
 		imul ecx,ebx
 		lea esi,[ecx+ecx*2] ;esi=3*ecx
@@ -262,6 +264,8 @@ endl
 		shr edx,16 ;dl = color - b
 		mov esi,buf2d_data
 		mov ecx,buf2d_h
+		cmp ecx,1
+		jle .24no_crop_top ;проверяем на случай если высота буфера 1 пиксель
 		dec ecx ;при обрезании должна остаться минимум 1-на строка пикселей
 		mov ebx,buf2d_w
 		imul ecx,ebx
@@ -306,6 +310,8 @@ endl
 		mov edx,eax ;ax = colors - r,g
 		shr edx,16 ;dl = color - b
 		mov ebx,buf2d_w
+		cmp ebx,1
+		jle .24no_crop_right ;на случай если ширина буфера 1 пиксель
 		lea ebx,[ebx+ebx*2]
 		mov esi,ebx
 		imul esi,buf2d_h
@@ -365,6 +371,8 @@ endl
 		mov edx,eax ;ax = colors - r,g
 		shr edx,16 ;dl = color - b
 		mov ebx,buf2d_w
+		cmp ebx,1
+		jle .24no_crop_left ;на случай если ширина буфера 1 пиксель
 		lea ebx,[ebx+ebx*2]
 		mov esi,buf2d_data ;esi - указатель на начоло буфера изображения
 		mov dword[crop_r],0
@@ -430,6 +438,8 @@ endl
 		mov eax,dword[color]
 		mov esi,buf2d_data
 		mov ecx,buf2d_h
+		cmp ecx,1
+		jle .8no_crop_bottom ;проверяем на случай если высота буфера 1 пиксель
 		mov ebx,buf2d_w
 		imul ecx,ebx
 		mov esi,ecx
@@ -468,6 +478,8 @@ endl
 		mov eax,dword[color]
 		mov esi,buf2d_data
 		mov ecx,buf2d_h
+		cmp ecx,1
+		jle .8no_crop_top ;проверяем на случай если высота буфера 1 пиксель
 		dec ecx ;при обрезании должна остаться минимум 1-на строка пикселей
 		mov ebx,buf2d_w
 		imul ecx,ebx
@@ -507,6 +519,8 @@ endl
 	jae .8no_crop_right
 		mov eax,dword[color]
 		mov ebx,buf2d_w
+		cmp ebx,1
+		jle .8no_crop_right ;на случай если ширина буфера 1 пиксель
 		mov esi,ebx
 		imul esi,buf2d_h
 		add esi,buf2d_data ;esi - указатель на конец буфера изображения
@@ -558,6 +572,8 @@ endl
 	jae .8no_crop_left
 		mov eax,dword[color]
 		mov ebx,buf2d_w
+		cmp ebx,1
+		jle .8no_crop_left ;на случай если ширина буфера 1 пиксель
 		mov esi,buf2d_data ;esi - указатель на начоло буфера изображения
 		mov edx,0
 		cld

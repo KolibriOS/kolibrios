@@ -66,16 +66,22 @@ BUT1_H equ 20 ;высота
 BUT1_NEXT_TOP equ (BUT1_T+BUT1_H)*65536
 end if
 
+FILE_NAME_MAX equ 20 ;максимальная длинна имени файла (без папок, относительно текущей)
+;значения имен по умолчанию
+ini_def_unit_file db 'wolf.png',0
+;имена файлов
 fn_icon0 db 'curici.png',0 ;имя файла с декорациями
-fn_icon1 db 'wolf.png',0 ;имя файла с волком и зайцем
+fn_icon1 rb FILE_NAME_MAX ;имя файла с волком и зайцем
 fn_icon2 db 'eggs.png',0 ;имя файла с яйцами
 fn_icon3 db 'chi.png',0 ;имя файла с циплятами
 fn_font db 'font8x9.bmp',0
 
 ini_name db 'nu_pogod.ini',0
 ini_sec_files db 'Files',0
+key_file_unit db 'file_unit',0
 key_displ_w db 'displ_w',0
 key_displ_h db 'displ_h',0
+
 ini_sec_color db 'Colors',0
 key_color_unit db 'unit',0
 
@@ -606,6 +612,8 @@ start:
 	mov	dword[displ_h],eax
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_unit,0
 	mov	dword[color_wolf],eax
+	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_unit,fn_icon1,FILE_NAME_MAX,ini_def_unit_file
+
 
 	mov edx,dword[displ_w]
 	imul edx,dword[displ_h]
