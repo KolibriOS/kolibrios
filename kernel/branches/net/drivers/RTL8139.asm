@@ -22,6 +22,8 @@ format MS COFF
 
 	MAX_DEVICES		equ 16
 
+	RBLEN			equ 3 ; Receive buffer size: 0==8K 1==16k 2==32k 3==64k
+
 	DEBUG			equ 1
 	__DEBUG__		equ 1
 	__DEBUG_LEVEL__ 	equ 2
@@ -116,7 +118,6 @@ public version
 	BIT_IFG1		equ 25
 	BIT_IFG0		equ 24
 
-	RBLEN			equ 2 ; Receive buffer size: 0==8K 1==16k 2==32k 3==64k
 	TXRR			equ 8 ; total retries = 16+(TXRR*16)
 	TX_MXDMA		equ 6 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=2048
 	ERTXTH			equ 8 ; in unit of 32 bytes e.g:(8*32)=256
@@ -135,7 +136,6 @@ public version
 
 	RX_BUFFER_SIZE		equ (8192 shl RBLEN);+16
 	MAX_ETH_FRAME_SIZE	equ 1516 ; exactly 1514 wthout CRC
-
 	NUM_TX_DESC		equ 4
 
 	EE_93C46_REG_ETH_ID	equ 7 ; MAC offset
@@ -202,10 +202,11 @@ virtual at ebx
 
 	.rx_buffer	dd ?
 	.tx_buffer	dd ?
+
 	.rx_data_offset dd ?
 	.io_addr	dd ?
+
 	.curr_tx_desc	db ?
-	.last_tx_desc	db ?
 	.pci_bus	db ?
 	.pci_dev	db ?
 	.irq_line	db ?
@@ -338,9 +339,12 @@ proc service_proc stdcall, ioctl:dword
 	DEBUGF	2,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
 	[device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
 
+; Allocate the receive buffer
 
-	allocate_and_clear [device.rx_buffer], (RX_BUFFER_SIZE+MAX_ETH_FRAME_SIZE), .err
-   ;;     allocate_and_clear [device.tx_buffer], (TX_BUF_SIZE*NUM_TX_DESC), .err
+	stdcall CreateRingBuffer, dword (RX_BUFFER_SIZE), dword PG_SW
+	test	eax, eax
+	jz	.err
+	mov	[device.rx_buffer], eax
 
 ; Ok, the eth_device structure is ready, let's probe the device
 
@@ -377,9 +381,7 @@ proc service_proc stdcall, ioctl:dword
 
   .err:
 	stdcall KernelFree, dword [device.rx_buffer]
-     ;;   stdcall KernelFree, dword [device.tx_buffer]
 	stdcall KernelFree, ebx
-
 
   .fail:
 	or	eax, -1
@@ -559,7 +561,7 @@ reset:
 	set_io	REG_COMMAND
 	out	dx , al
 
-; 32k Rxbuffer, unlimited dma burst, no wrapping, no rx threshold
+; Rxbuffer size, unlimited dma burst, no wrapping, no rx threshold
 ; accept broadcast packets, accept physical match packets
 
 	mov	ax , RX_CONFIG
@@ -597,7 +599,9 @@ reset:
 
 	mov	[device.rx_data_offset], eax
 	mov	[device.curr_tx_desc], al
-	mov	[device.last_tx_desc], al
+
+;        set_io  REG_CAPR
+;        out     dx , ax
 
 ; clear packet/byte counters
 
@@ -613,8 +617,10 @@ reset:
 ; set RxBuffer address, init RX buffer offset
 
 	mov	eax, [device.rx_buffer]
-	call	GetPgAddr
-;        set_io  0
+	mov	dword[eax], 0
+	DEBUGF	2,"RX buffer:%x\n", eax
+	GetRealAddr
+	DEBUGF	2,"RX buffer:%X\n", eax
 	set_io	REG_RBSTART
 	out	dx , eax
 
@@ -651,7 +657,7 @@ reset:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 4
 transmit:
-	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n",[esp+4],[esp+8]
+	DEBUGF	1,"\nTransmitting packet, buffer:%x, size:%u\n",[esp+4],[esp+8]
 	mov	eax, [esp+4]
 	DEBUGF	1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
 	[eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
@@ -663,50 +669,51 @@ transmit:
 	cmp	dword [esp+8], 60
 	jl	.fail
 
-; check if we own the discriptor
+; check if we own the current discriptor
 	set_io	0
+	set_io	REG_TSD0
 	movzx	ecx, [device.curr_tx_desc]
 	shl	ecx, 2
-	lea	edx, [edx+ecx+REG_TSD0]
-	in	ax, dx
-	test	ax, (1 shl BIT_OWN)
+	add	edx, ecx
+	in	eax, dx
+	test	eax, (1 shl BIT_OWN)
 	jz	.wait_to_send
 
   .send_packet:
+; get next descriptor
+	inc	[device.curr_tx_desc]
+	and	[device.curr_tx_desc], NUM_TX_DESC-1
+
+; Update stats
+	inc	[device.packets_tx]
+	mov	eax, [esp+8]
+	add	dword [device.bytes_tx], eax
+	adc	dword [device.bytes_tx + 4], 0
+
 ; Set the buffer address
-	set_io	0
-	lea	edx, [edx+ecx+REG_TSAD0]
+	set_io	REG_TSAD0
 	mov	eax, [esp+4]
 	mov	[device.TX_DESC+ecx], eax
 	GetRealAddr
 	out	dx, eax
 
 ; And the size of the buffer
-	set_io	0
-	lea	edx, [edx+ecx+REG_TSD0]
+	set_io	REG_TSD0
 	mov	eax, [esp+8]
-;        or      eax, (ERTXTH shl BIT_ERTXTH)    ; Early threshold
-	out	dx , eax
+	or	eax, (ERTXTH shl BIT_ERTXTH)	; Early threshold
+	out	dx, eax
 
-; Update stats
-	inc	[device.packets_tx]
-	add	dword [device.bytes_tx], eax
-	adc	dword [device.bytes_tx + 4], 0
-
-; get next descriptor
-	inc	[device.curr_tx_desc]
-	and	[device.curr_tx_desc], 3
-
-	DEBUGF	1,"Packet Sent! "
+	DEBUGF	1,"Packet Sent!\n"
 	xor	eax, eax
 	ret	8
 
   .wait_to_send:
-
 	DEBUGF	1,"Waiting for timeout\n"
 
-	mov	esi, 30
+	push	edx
+	mov	esi, 300
 	stdcall Sleep
+	pop	edx
 
 	in	ax, dx
 	test	ax, (1 shl BIT_OWN)
@@ -735,7 +742,7 @@ transmit:
 align 4
 int_handler:
 
-	DEBUGF	1,"IRQ %x\n", eax:2		      ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
+	DEBUGF	1,"\nIRQ %x\n", eax:2			; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
 
 ; find pointer of device wich made IRQ occur
 
@@ -790,12 +797,12 @@ int_handler:
 ; packet is ok, copy it
 	movzx	ecx, word [eax+2]		    ; packet length
 
+	sub	ecx, 4				    ; don't copy CRC
+
 ; Update stats
 	add	dword [device.bytes_rx], ecx
 	adc	dword [device.bytes_rx + 4], 0
 	inc	dword [device.packets_rx]
-
-	sub	ecx, 4				    ; don't copy CRC
 
 	DEBUGF	1,"Received %u bytes\n", ecx
 
@@ -828,7 +835,6 @@ int_handler:
 
 	jmp	EthReceiver			    ; Send it to kernel
 
-
   .abort:
 	pop	eax ebx
 						    ; update eth_data_start_offset
@@ -843,7 +849,7 @@ int_handler:
 	sub	eax, RX_BUFFER_SIZE
   .no_wrap:
 	mov	[device.rx_data_offset], eax
-	DEBUGF	1,"New RX ptr: %d ", eax
+	DEBUGF	1,"New RX ptr: %d\n", eax
 
 	set_io	0
 	set_io	REG_CAPR			    ; update 'Current Address of Packet Read register'
@@ -881,22 +887,25 @@ int_handler:
 	pop	ax
 
 ;----------------------------------------------------
-; Transmit error ?
+; Transmit ok / Transmit error
   @@:
-	test	ax, ISR_TER
+	test	ax, ISR_TOK + ISR_TER
 	jz	@f
 
-	DEBUGF	1,"Transmit error\n"
+	push	ax
+	xor	ecx, ecx
+  .txdesloop:
+	set_io	0
+	set_io	REG_TSD0
+	add	edx, ecx
+	in	eax, dx
 
-;        push    ax
-;        cmp     [device.curr_tx_desc], 4
-;        jz      .notxd
-;
-;        set_io  0
-;        movzx   ecx, [device.curr_tx_desc]
-;        lea     edx, [edx+ecx*4+REG_TSD0]
-;        in      eax, dx
-;
+	test	eax, TSR_OWN			; DMA operation completed
+	jz	.notthisone
+
+	cmp	[device.TX_DESC+ecx], 0
+	je	.notthisone
+
 ;  .notxd:
 ;        test    eax, TSR_TUN
 ;        jz      .nobun
@@ -918,40 +927,17 @@ int_handler:
 ;        DEBUGF  2, "TX: Carrier Sense Lost!\n"
 ;
 ;  .nocsl:
-;        pop     ax
 
-;----------------------------------------------------
-; Transmit ok ?
-  @@:
-	test	ax, ISR_TOK
-	jz	@f
-
-	push	ax
-	mov	si, 4
-  .txdesloop:
-	movzx	ecx, [device.last_tx_desc]
-	shl	ecx, 2
-
-	set_io	0
-	set_io	REG_TSD0
-	add	edx, ecx
-	in	eax, dx
-
-	test	eax, TSR_TOK
-	jz	.notthisone
-	mov	eax, TSR_OWN
-	out	dx , eax
 	DEBUGF	1,"TX OK: free buffer %x\n", [device.TX_DESC+ecx]:8
+	push	ecx ebx
 	stdcall KernelFree, [device.TX_DESC+ecx]
+	pop	ebx ecx
+	mov	[device.TX_DESC+ecx], 0
+
   .notthisone:
-
-	inc	[device.last_tx_desc]
-	and	[device.last_tx_desc], 3
-
-	dec	si
-	jnz	.txdesloop
-
-  .done:
+	add	ecx, 4
+	cmp	ecx, 16
+	jl	.txdesloop
 	pop	ax
 
 ;----------------------------------------------------

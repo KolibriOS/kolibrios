@@ -20,7 +20,10 @@
 	PCI_BIT_MASTER		equ 4 ; bit2: device acts as a PCI master
 
 
-	PAGESIZE		equ	4096
+; Kernel variables
+
+	PAGESIZE		equ 4096
+	PG_SW			equ 0x003
 
 
 ; network driver types
@@ -165,7 +168,7 @@ null_op:
 end if
 
 
-macro GetRealAddr { ; input is eax
+macro GetRealAddr { ; input and output is eax
 
 	push	ax
 	call	GetPgAddr

@@ -868,6 +868,11 @@ hw_start:
 
 	DEBUGF	1,"hw_start\n"
 
+; attach int handler
+	movzx	eax, [device.irq_line]
+	DEBUGF	1,"Attaching int handler to irq %x\n", eax:1
+	stdcall AttachIntHandler, eax, int_handler, dword 0
+
 	; Soft reset the chip
 	set_io	0
 	set_io	REG_ChipCmd
