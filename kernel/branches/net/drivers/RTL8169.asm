@@ -711,6 +711,13 @@ reset:
 	call	init_ring
 	call	hw_start
 
+; clear packet/byte counters
+
+	xor	eax, eax
+	lea	edi, [device.bytes_tx]
+	mov	ecx, 6
+	rep	stosd
+
 	mov	[device.mtu], 1500
 
 	xor	eax, eax
@@ -1052,8 +1059,8 @@ transmit:
 	or	eax, DSB_EORbit
     @@: mov	[esi + tx_desc.status], eax
 
-;----------------------------------------
-; Set the polling bit (start transmission
+;-----------------------------------------
+; Set the polling bit (start transmission)
 
 	set_io	0
 	set_io	REG_TxPoll
@@ -1065,6 +1072,15 @@ transmit:
 
 	inc	[tpc.cur_tx]
 	and	[tpc.cur_tx], NUM_TX_DESC - 1
+
+;-------------
+; Update stats
+
+	inc	[device.packets_tx]
+	mov	eax, [esp+8]
+	add	dword [device.bytes_tx], eax
+	adc	dword [device.bytes_tx + 4], 0
+
 	ret	8
 
   .fail:
@@ -1146,6 +1162,12 @@ int_handler:
 	push	eax
 	DEBUGF	1,"data length = %u\n", ax
 
+;-------------
+; Update stats
+	add	dword [device.bytes_rx], eax
+	adc	dword [device.bytes_rx + 4], 0
+	inc	dword [device.packets_rx]
+
 	push	[esi + rx_desc.buf_soft_addr]
 
 ;----------------------
@@ -1185,7 +1207,25 @@ int_handler:
 	push	ax
 
 	DEBUGF	1,"TX ok!\n"
-	; TODO: free buffers
+
+	mov	ecx, NUM_TX_DESC
+	lea	esi, [device.tx_ring]
+  .txloop:
+	cmp	[esi+tx_desc.buf_soft_addr], 0
+	jz	.maybenext
+
+	test	[esi+tx_desc.status], DSB_OWNbit
+	jnz	.maybenext
+
+	push	ecx
+	stdcall KernelFree, [esi+tx_desc.buf_soft_addr]
+	pop	ecx
+	and	[esi+tx_desc.buf_soft_addr], 0
+
+  .maybenext:
+	add	esi, tx_desc.size
+	dec	ecx
+	jnz	.txloop
 
 	pop	ax
   .no_tx:
@@ -1240,6 +1280,15 @@ mac_info dd \
   0x04000000, MCFG_METHOD_03, \
   0x00800000, MCFG_METHOD_02, \
   0x00000000, MCFG_METHOD_01	; catch-all
+
+name_01 	db "RTL8169", 0
+name_02_03	db "RTL8169s/8110s", 0
+name_04 	db "RTL8169sb/8110sb", 0
+name_05 	db "RTL8169sc/8110sc", 0
+name_11_12	db "RTL8168b/8111b", 0	; PCI-E
+name_13 	db "RTL8101e", 0	; PCI-E 8139
+name_14_15	db "RTL8100e", 0	; PCI-E 8139
+
 
 section '.data' data readable writable align 16 ; place all uninitialized data place here
 
