@@ -1141,6 +1141,7 @@ int_handler:
 
 	push	ax
 
+  .check_more:
 	mov	eax, rx_desc.size
 	mul	[tpc.cur_rx]
 	lea	esi, [eax + rx_ring]
@@ -1156,7 +1157,7 @@ int_handler:
 	test	eax, SD_RxRES
 	jnz	.rx_return	;;;;; RX error!
 
-	push	.rx_return
+	push	.check_more
 	and	eax, 0x00001FFF
 	add	eax, -4 			; we dont need CRC
 	push	eax
@@ -1164,6 +1165,7 @@ int_handler:
 
 ;-------------
 ; Update stats
+
 	add	dword [device.bytes_rx], eax
 	adc	dword [device.bytes_rx + 4], 0
 	inc	dword [device.packets_rx]
@@ -1209,7 +1211,7 @@ int_handler:
 	DEBUGF	1,"TX ok!\n"
 
 	mov	ecx, NUM_TX_DESC
-	lea	esi, [device.tx_ring]
+	lea	esi, [tx_ring]
   .txloop:
 	cmp	[esi+tx_desc.buf_soft_addr], 0
 	jz	.maybenext
