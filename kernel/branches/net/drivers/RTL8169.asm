@@ -236,34 +236,24 @@ PCFG_METHOD_1	    equ 0x01	; PHY Reg 0x03 bit0-3 == 0x0000
 PCFG_METHOD_2	    equ 0x02	; PHY Reg 0x03 bit0-3 == 0x0001
 PCFG_METHOD_3	    equ 0x03	; PHY Reg 0x03 bit0-3 == 0x0002
 
-PCI_COMMAND_IO		equ 0x1   ; Enable response in I/O space
-PCI_COMMAND_MEM 	equ 0x2   ; Enable response in mem space
-PCI_COMMAND_MASTER	equ 0x4   ; Enable bus mastering
-PCI_LATENCY_TIMER	equ 0x0d  ; 8 bits
-PCI_COMMAND_SPECIAL	equ 0x8   ; Enable response to special cycles
-PCI_COMMAND_INVALIDATE	equ 0x10  ; Use memory write and invalidate
-PCI_COMMAND_VGA_PALETTE equ 0x20  ; Enable palette snooping
-PCI_COMMAND_PARITY	equ 0x40  ; Enable parity checking
-PCI_COMMAND_WAIT	equ 0x80  ; Enable address/data stepping
-PCI_COMMAND_SERR	equ 0x100 ; Enable SERR
-PCI_COMMAND_FAST_BACK	equ 0x200 ; Enable back-to-back writes
-
 virtual at 0
   tx_desc:
   .status    dd ?
   .vlan_tag  dd ?
-  .buf_addr  dd ?
-  .buf_Haddr dd ?
+  .buf_addr  dq ?
   .size = $
+  rb	(NUM_TX_DESC-1)*tx_desc.size
+  .buf_soft_addr	dd ?
 end virtual
 
 virtual at 0
   rx_desc:
   .status    dd ?
   .vlan_tag  dd ?
-  .buf_addr  dd ?
-  .buf_Haddr dd ?
+  .buf_addr  dq ?
   .size = $
+  rb	(NUM_RX_DESC-1)*rx_desc.size
+  .buf_soft_addr	dd ?
 end virtual
 
 virtual at ebx
@@ -289,11 +279,11 @@ virtual at ebx
 	.TxDescArray	dd ? ; Index of 256-alignment Tx Descriptor buffer
 	.RxDescArray	dd ? ; Index of 256-alignment Rx Descriptor buffer
 
-	rb 255-(($ - ebx) and 255)		;        align 256
-	tx_ring rb NUM_TX_DESC * tx_desc.size
+	rb 256-(($ - device) and 255)		   ;        align 256
+	tx_ring rb NUM_TX_DESC * tx_desc.size * 2
 
-	rb 255-(($ - ebx) and 255)		;        align 256
-	rx_ring rb NUM_RX_DESC * rx_desc.size
+	rb 256-(($ - device) and 255)		   ;        align 256
+	rx_ring rb NUM_RX_DESC * rx_desc.size * 2
 
 	device_size = $ - device
 
@@ -330,14 +320,13 @@ macro	READ_GMII_REG  RegAddr {
 
 local	.error, .done
 
-	mov	eax, RegAddr shl 16
 	set_io	REG_PHYAR
-	in	eax, dx
+	mov	eax, RegAddr shl 16
+	out	dx, eax
 
 	call	PHY_WAIT
 	jz	.error
 
-	set_io	REG_PHYAR
 	in	eax, dx
 	and	eax, 0xFFFF
 	jmp	.done
@@ -354,7 +343,7 @@ PHY_WAIT:	; io addr must already be set to REG_PHYAR
 
 	push	ecx
 	mov	ecx, 2000
-	; Check if the RTL8169 has completed writing to the specified MII register
+	; Check if the RTL8169 has completed writing/reading to the specified MII register
     @@:
 	in	eax, dx
 	test	eax, 0x80000000
@@ -456,12 +445,7 @@ proc service_proc stdcall, ioctl:dword
 	cmp	[devices], MAX_DEVICES			; First check if the driver can handle one more card
 	jge	.fail
 
-	push	edx
-	stdcall KernelAlloc, device_size		; Allocate the buffer for eth_device structure
-	pop	edx
-	test	eax, eax
-	jz	.fail
-	mov	ebx, eax				; ebx is always used as a pointer to the structure (in driver, but also in kernel code)
+	allocate_and_clear ebx, device_size, .fail	; Allocate memory to put the device structure in
 
 ; Fill in the direct call addresses into the struct
 
@@ -689,11 +673,11 @@ probe:
 	; wait for auto-negotiation process
     @@: dec	ecx
 	jz	@f
+	set_io	0
 	READ_GMII_REG PHY_STAT_REG
 	udelay	100
 	test	eax, PHY_Auto_Neco_Comp
 	jz	@b
-	set_io	0
 	set_io	REG_PHYstatus
 	in	al, dx
 	jmp	@f
@@ -730,7 +714,6 @@ reset:
 	mov	[device.mtu], 1500
 
 	xor	eax, eax
-
 	ret
 
 
@@ -744,6 +727,7 @@ PHY_config:
 
 	cmp	[tpc.mcfg], MCFG_METHOD_04
 	jne	.not_4
+	set_io	0
 ;       WRITE_GMII_REG 0x1F, 0x0001
 ;       WRITE_GMII_REG 0x1b, 0x841e
 ;       WRITE_GMII_REG 0x0e, 0x7bfb
@@ -757,7 +741,9 @@ PHY_config:
 	je	@f
 	cmp	[tpc.mcfg], MCFG_METHOD_03
 	jne	.not_2_or_3
-    @@: WRITE_GMII_REG 0x1F, 0x0001
+    @@:
+	set_io	0
+	WRITE_GMII_REG 0x1F, 0x0001
 	WRITE_GMII_REG 0x15, 0x1000
 	WRITE_GMII_REG 0x18, 0x65C7
 	WRITE_GMII_REG 0x04, 0x0000
@@ -850,14 +836,16 @@ init_ring:
 
 	mov	edi, [tpc.RxDescArray]
 	mov	ecx, NUM_RX_DESC
-    @@:
-	stdcall KernelAlloc, 2048
-	mov	[edi + rx_desc.buf_Haddr], eax
-	GetRealAddr
-	mov	[edi + rx_desc.buf_addr], eax
+  .loop:
+	push	ecx
+	stdcall KernelAlloc, RX_BUF_SIZE
+	mov	[edi + rx_desc.buf_soft_addr], eax
+	call	GetPgAddr
+	mov	dword [edi + rx_desc.buf_addr], eax
 	mov	[edi + rx_desc.status], DSB_OWNbit or RX_BUF_SIZE
 	add	edi, rx_desc.size
-	loop	@b
+	pop	ecx
+	loop	.loop
 	or	[edi - rx_desc.size + rx_desc.status], DSB_EORbit
 
 	ret
@@ -972,6 +960,7 @@ hw_start:
 
 	call	set_rx_mode
 
+	set_io	0
 	; no early-rx interrupts
 	set_io	REG_MultiIntr
 	in	ax, dx
@@ -993,7 +982,7 @@ read_mac:
 	set_io	0
 	set_io	REG_MAC0
 	xor	ecx, ecx
-	lea	esi, [device.mac]
+	lea	edi, [device.mac]
 	mov	ecx, MAC_ADDR_LEN
 
 	; Get MAC address. FIXME: read EEPROM
@@ -1048,15 +1037,15 @@ transmit:
 ;---------------------------
 ; Program the packet pointer
 
-	mov	eax, [esp]
-	mov	[esi + tx_desc.buf_Haddr], eax
+	mov	eax, [esp + 4]
+	mov	[esi + tx_desc.buf_soft_addr], eax
 	GetRealAddr
-	mov	[esi + tx_desc.buf_addr], eax
+	mov	dword [esi + tx_desc.buf_addr], eax
 
 ;------------------------
 ; Program the packet size
 
-	mov	eax, [esp + 4]
+	mov	eax, [esp + 8]
     @@: or	eax, DSB_OWNbit or DSB_FSbit or DSB_LSbit
 	cmp	[tpc.cur_tx], NUM_TX_DESC - 1
 	jne	@f
@@ -1076,7 +1065,6 @@ transmit:
 
 	inc	[tpc.cur_tx]
 	and	[tpc.cur_tx], NUM_TX_DESC - 1
-
 	ret	8
 
   .fail:
@@ -1109,6 +1097,7 @@ int_handler:
   .nextdevice:
 	mov	ebx, dword [esi]
 
+	set_io	0
 	set_io	REG_IntrStatus
 	in	ax, dx
 
@@ -1142,7 +1131,8 @@ int_handler:
 
 	DEBUGF	1,"RxDesc.status = 0x%x\n", [esi + rx_desc.status]
 
-	test	[esi + rx_desc.status], DSB_OWNbit
+	mov	eax, [esi + rx_desc.status]
+	test	eax, DSB_OWNbit ;;;
 	jnz	.rx_return
 
 	DEBUGF	1,"tpc.cur_rx = %u\n", [tpc.cur_rx]
@@ -1156,7 +1146,15 @@ int_handler:
 	push	eax
 	DEBUGF	1,"data length = %u\n", ax
 
-	push	[esi + rx_desc.buf_Haddr]
+	push	[esi + rx_desc.buf_soft_addr]
+
+;----------------------
+; Allocate a new buffer
+
+	stdcall KernelAlloc, RX_BUF_SIZE
+	mov	[esi + rx_desc.buf_soft_addr], eax
+	GetRealAddr
+	mov	dword [esi + rx_desc.buf_addr], eax
 
 ;---------------
 ; re set OWN bit
@@ -1166,14 +1164,6 @@ int_handler:
 	jne	@f
 	or	eax, DSB_EORbit
     @@: mov	[esi + rx_desc.status], eax
-
-;----------------------
-; Allocate a new buffer
-
-	stdcall KernelAlloc, RX_BUF_SIZE
-	mov	[esi + rx_desc.buf_Haddr], eax
-	GetRealAddr
-	sub	[esi + rx_desc.buf_addr], eax
 
 ;--------------
 ; Update rx ptr
