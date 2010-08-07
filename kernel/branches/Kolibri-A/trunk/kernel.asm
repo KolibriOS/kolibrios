@@ -677,9 +677,9 @@ end if
 
 ; RESERVE SYSTEM IRQ'S JA PORT'S
 
-        mov   esi,boot_resirqports
-        call  boot_log
-        call  reserve_irqs_ports
+;        mov   esi,boot_resirqports
+;        call  boot_log
+;        call  reserve_irqs_ports
 
 
 ; SET UP OS TASK
@@ -828,6 +828,8 @@ end if
   no_st_network:
 
         call init_userDMA	; <<<<<<<<< ============== core/memory.inc =================
+        mov     esi, boot_uDMA_ok
+        call    boot_log
 ;	call pci_ext_config	; <<<<<<<<< bus/pci/pcie.inc
 ;-------------------------------------------------------------------------------
         call rs7xx_pcie_init    ; <<<<<<<<< bus/ht.inc

@@ -32,7 +32,7 @@ $Revision$
 ;   Description
 ;       entry point for system PCI calls
 ;***************************************************************************
-mmio_pci_addr	dw  0x400	; default PCI device bdf-address 
+mmio_pci_addr	dw  0x400	; default PCI device bdf-address
 
 
 align 4
@@ -78,7 +78,7 @@ pci_fn_3:
 	cmp al,10
 	jz pci_write_reg  ;dword
 
-	cmp al,11	    ;  user-level MMIO functions 
+	cmp al,11	    ;  user-level MMIO functions
 	jz pci_mmio_init
 	cmp al,12
 	jz pci_mmio_map
@@ -128,10 +128,6 @@ pci_make_config_cmd:
 align 4
 
 pci_read_reg:
-	cmp	byte [BOOT_VAR+0x9020],2 ;what mechanism will we use?
-	je	pci_read_reg_2
-
-		; mechanism 1
 	push	esi   ; save register size into ESI
 	mov	esi,eax
 	and	esi,3
@@ -177,66 +173,6 @@ pci_fin_read1:
 	pop	eax
 	pop	esi
 	ret
-pci_read_reg_2:
-
-	test	bh,128	;mech#2 only supports 16 devices per bus
-	jnz	pci_read_reg_err
-
-	push esi   ; save register size into ESI
-	mov esi,eax
-	and esi,3
-
-	push	eax
-		;store current state of config space
-	mov	dx,0xcf8
-	in	al,dx
-	mov	ah,al
-	mov	dl,0xfa
-	in	al,dx
-
-	xchg	eax,[esp]
-		; out 0xcfa,bus
-	mov	al,ah
-	out	dx,al
-		; out 0xcf8,0x80
-	mov	dl,0xf8
-	mov	al,0x80
-	out	dx,al
-		; compute addr
-	shr	bh,3 ; func is ignored in mechanism 2
-	or	bh,0xc0
-	mov	dx,bx
-
-	or	esi,esi
-	jz	pci_read_byte2
-	cmp	esi,1
-	jz	pci_read_word2
-	cmp	esi,2
-	jz	pci_read_dword2
-	jmp	pci_fin_read2
-
-pci_read_byte2:
-	in	al,dx
-	jmp pci_fin_read2
-pci_read_word2:
-	in	ax,dx
-	jmp pci_fin_read2
-pci_read_dword2:
-	in	eax,dx
-;       jmp pci_fin_read2
-pci_fin_read2:
-
-		; restore configuration space
-	xchg	eax,[esp]
-	mov	dx,0xcfa
-	out	dx,al
-	mov	dl,0xf8
-	mov	al,ah
-	out	dx,al
-
-	pop	eax
-	pop	esi
-	ret
 
 pci_read_reg_err:
 	xor	eax,eax
@@ -259,10 +195,6 @@ pci_read_reg_err:
 align 4
 
 pci_write_reg:
-	cmp byte [BOOT_VAR+0x9020],2 ;what mechanism will we use?
-	je pci_write_reg_2
-
-		; mechanism 1
 	push	esi   ; save register size into ESI
 	mov	esi,eax
 	and	esi,3
@@ -301,73 +233,10 @@ pci_write_dword1:
 	out	dx,eax
 	jmp	pci_fin_write1
 pci_fin_write1:
-
 		; restore configuration control
 	pop	eax
 	mov	dl,0xf8
 	out	dx,eax
-
-	xor	eax,eax
-	pop	esi
-
-	ret
-pci_write_reg_2:
-
-	test	bh,128	;mech#2 only supports 16 devices per bus
-	jnz	pci_write_reg_err
-
-
-	push esi   ; save register size into ESI
-	mov esi,eax
-	and esi,3
-
-	push	eax
-		;store current state of config space
-	mov	dx,0xcf8
-	in	al,dx
-	mov	ah,al
-	mov	dl,0xfa
-	in	al,dx
-	xchg	eax,[esp]
-		; out 0xcfa,bus
-	mov	al,ah
-	out	dx,al
-		; out 0xcf8,0x80
-	mov	dl,0xf8
-	mov	al,0x80
-	out	dx,al
-		; compute addr
-	shr	bh,3 ; func is ignored in mechanism 2
-	or	bh,0xc0
-	mov	dx,bx
-		; write register
-	mov	eax,ecx
-
-	or	esi,esi
-	jz	pci_write_byte2
-	cmp	esi,1
-	jz	pci_write_word2
-	cmp	esi,2
-	jz	pci_write_dword2
-	jmp	pci_fin_write2
-
-pci_write_byte2:
-	out	dx,al
-	jmp pci_fin_write2
-pci_write_word2:
-	out	dx,ax
-	jmp pci_fin_write2
-pci_write_dword2:
-	out	dx,eax
-	jmp	pci_fin_write2
-pci_fin_write2:
-		; restore configuration space
-	pop	eax
-	mov	dx,0xcfa
-	out	dx,al
-	mov	dl,0xf8
-	mov	al,ah
-	out	dx,al
 
 	xor	eax,eax
 	pop	esi
@@ -380,11 +249,11 @@ pci_write_reg_err:
 
 ;***************************************************************************
 ;   Function
-;      pci_mmio_init 
+;      pci_mmio_init
 ;
 ;   Description
 ;       IN:  bx = device's PCI bus address (bbbbbbbbdddddfff)
-;   Returns  eax = phys. address of user-accessible DMA block 
+;   Returns  eax = phys. address of user-accessible DMA block
 ;   Error codes
 ;       eax = -1 : PCI user access blocked,
 ;       eax = -3 : user heap initialization failure
@@ -404,14 +273,14 @@ pci_mmio_init:
 
 ;***************************************************************************
 ;   Function
-;      pci_mmio_map 
+;      pci_mmio_map
 ;
 ;   Description
 ;       maps a block of PCI memory to user-accessible linear address
 ;
 ;
 ;       IN:  ah = BAR#; or
-;       IN:  ah = 0xDA for DMA-mapping requests; 
+;       IN:  ah = 0xDA for DMA-mapping requests;
 ;       IN: ebx = block size (bytes);
 ;       IN: ecx = offset in MMIO block (in 4K-pages, to avoid misaligned pages);
 ;
@@ -429,10 +298,10 @@ pci_mmio_init:
 pci_mmio_map:
     and     edx,0x0ffff
     cmp     ah, 0xDA
-    jz     .dma_map
+    jz	   .dma_map
     cmp     ah,6
-    jc     .bar_0_5
-    jz     .bar_rom
+    jc	   .bar_0_5
+    jz	   .bar_rom
     mov     eax,-2
     ret
 
@@ -441,7 +310,7 @@ pci_mmio_map:
     mov     ecx,ebx
     mov     eax,[UserDMAaddr]
     jmp    .allocate_block
-    
+
 .bar_rom:
     mov    ah, 8	; bar6 = Expansion ROM base address
 .bar_0_5:
@@ -472,7 +341,7 @@ pci_mmio_map:
     and     eax, 0xFFFFFFF0
 
 .allocate_block:
-    push    eax 	; store MMIO physical address + keep the stack 2x4b deep 
+    push    eax 	; store MMIO physical address + keep the stack 2x4b deep
     stdcall user_alloc, ecx
     or	    eax, eax
     jnz     mmio_map_over
@@ -499,7 +368,7 @@ mmio_map_over:
 
 ;***************************************************************************
 ;   Function
-;      pci_mmio_unmap_page 
+;      pci_mmio_unmap_page
 ;
 ;   Description
 ;       unmaps the linear space previously tied to a PCI memory block

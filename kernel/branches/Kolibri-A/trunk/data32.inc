@@ -67,6 +67,7 @@ keymap_alt:
 ;  boot_pal_vga      db   'Setting VGA 640x480 palette',0
   boot_failed       db   'Failed to start first app',0
   boot_mtrr         db   'Setting MTRR',0
+  boot_uDMA_ok      db   'Set user DMA OK',0
   boot_pcie_ok      db   'PCIe config set OK',0
   boot_pcie_fail    db   'PCIe config XXX failed XXX',0
   boot_rs7xx_fail   db	 'RS7xx config XXX failed XXX',0

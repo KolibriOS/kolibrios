@@ -11,15 +11,16 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+$Revision: 1554 $
 
 
-align 4
 
 ;=============================================================================
 ;
 ; This code is a part of Kolibri-A and will only work with AMD RS760+ chipsets
 ;
 ;=============================================================================
+align 4
 
 ;------------------------------------------
 ;       params:   al = nbconfig register#
@@ -33,6 +34,7 @@ rs7xx_nbconfig_read_pci:
 	add	dl, 4
 	in	eax, dx
 	ret
+align 4
 
 rs7xx_nbconfig_flush_pci:
 	mov	eax, 0x0B0		; a scratch reg
@@ -40,6 +42,7 @@ rs7xx_nbconfig_flush_pci:
 	out	dx,  eax
 	ret
 
+align 4
 
 rs7xx_nbconfig_write_pci:
 	and	eax, 0x0FC		 ; leave register# only
@@ -60,10 +63,9 @@ rs7xx_nbconfig_write_pci:
 ;
 ;***************************************************************************
 
+align 4
+
 rs7xx_pcie_init:
-;        mov     al,  0x7C                       ; NB_IOC_CFG_CNTL
-;        mov     ebx, 0x20000000
-;        call    rs7xx_nbconfig_write_pci
 	mov	al, 0x7C		       ; NB_IOC_CFG_CNTL
 	call	rs7xx_nbconfig_read_pci
 	mov	ebx, eax
@@ -98,47 +100,50 @@ rs7xx_pcie_init:
 	call	rs7xx_nbconfig_flush_pci
 	mov	eax, ebx
 	and	eax, 0xFFE00000 		; valid bits [31..21]
-	jnz	@f				; NB BAR3 may be invisible!
-	call  pci_ext_config		; try to get pcie ecfg address indirectly
-@@:
-	or 	eax, eax
-	jz	.rs7xx_pcie_fail
+	jz	.rs7xx_pcie_blocked		; NB BAR3 may be invisible!
+						; try to get pcie ecfg address indirectly
+.addr_found:
 	mov	[mmio_pcie_cfg_addr], eax	; physical address (lower 32 bits)
 	add	[mmio_pcie_cfg_lim],  eax
 
-;       -- map the whole PCIe config space;
 	or	eax, (PG_SHARED + PG_LARGE + PG_UW)  ;  by the way, UW is unsafe!
 	mov	ecx, PCIe_CONFIG_SPACE		; linear address
 	mov	ebx, ecx
 	shr	ebx, 20
 	add	ebx, sys_pgdir			; PgDir entry @
-	xor	dx,  dx 				; PDEs counter
+	mov	dl, byte[mmio_pcie_cfg_pdes]	; 1 page = 4M in address space
+	cmp	dl, (USER_DMA_BUFFER - PCIe_CONFIG_SPACE) / 4194304
+	jb	@f
+	mov	dl, ((USER_DMA_BUFFER - PCIe_CONFIG_SPACE) / 4194304) - 1
+	mov	byte[mmio_pcie_cfg_pdes], dl
 @@:
-	mov	dword[ebx], eax 			; map 4 buses
+	xor	dx,  dx 			; PDEs counter
+@@:
+	mov	dword[ebx], eax 		; map 4 buses
 	invlpg	[ecx]				; next PgDir entry
 	add	bx,  4				; new PDE
 	add	eax, 0x400000			; +4M phys.
 	add	ecx, 0x400000			; +4M lin.
-	inc	dx
-	cmp	dx, [mmio_pcie_cfg_pdes]	; all mapped yet?
-	jnz	@b
-
+	cmp	dl, byte[mmio_pcie_cfg_pdes]
+	jnc	.pcie_cfg_mapped
+	inc	dl
+	jmp	@b
 .pcie_cfg_mapped:
 	mov	esi, boot_pcie_ok
 	call	boot_log
-	ret	; <<<<<<<<<<< OK >>>>>>>>>>>
-
+	ret	; <<< OK >>>
 .rs7xx_pcie_fail:
 	mov	esi, boot_rs7xx_fail
 	call	boot_log
 	ret
-
 .rs7xx_pcie_blocked:
 	mov	esi, boot_rs7xx_blkd
 	call	boot_log
-
-
+	call	pci_ext_config
+	jmp	.addr_found
 	ret
+
+
 
 
 
