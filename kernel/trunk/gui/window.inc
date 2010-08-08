@@ -319,6 +319,9 @@ syscall_move_window: ;///// system function 67 ////////////////////////////////
         shl     edi, 5
         add     edi, window_data
 
+        test    [edi + WDATA.fl_wdrawn], 1
+        jz      .exit
+
         test    [edi + WDATA.fl_wstate], WSTATE_MAXIMIZED
         jnz     .exit
 
@@ -1437,6 +1440,7 @@ window._.sys_set_window: ;/////////////////////////////////////////////////////
         ; was it already defined before?
         test    [edi + WDATA.fl_wdrawn], 1
         jnz     .set_client_box
+        or      [edi + WDATA.fl_wdrawn], 1
 
         ; NOTE: commented out since doesn't provide necessary functionality
         ;       anyway, to be reworked

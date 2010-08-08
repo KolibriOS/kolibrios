@@ -2907,11 +2907,6 @@ sys_redrawstat:
         mov     eax, [Screen_Max_Y]
         mov     [edx + RECT.bottom], eax
 
-        mov     edi, [TASK_BASE]
-        or      [edi - twdw + WDATA.fl_wdrawn], 1   ; no new position & buttons from app
-        call    sys_window_mouse
-        ret
-
   srl1:
         ret
 
