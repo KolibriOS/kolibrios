@@ -3,7 +3,7 @@
 use32
     org 0x0
     db  'MENUET01'
-    dd  0x1,start,i_end,d_end,stacktop,0x0,cur_dir_path
+    dd  0x01,start,i_end,d_end,stacktop,0x0,cur_dir_path
 
 ;;---HEADER--------------------------------------------------------------------------------------------------------------------
 
@@ -16,12 +16,38 @@ include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 
 ;;===Define_chapter============================================================================================================
 
+GRID_WIDTH                  equ     28
+GRID_HEIGHT                 equ     14
+
+MIN_SQUARE_SIDE_LENGTH      equ     9
+
 SCORE_EAT                   equ     100
 
 LEFT                        equ     0
 DOWN                        equ     1
 UP                          equ     2
 RIGHT                       equ     3
+
+struct  LEVEL
+    field                   db      GRID_WIDTH*GRID_HEIGHT  dup (?)
+    snake_dots              db      6   dup (?)
+    snake_direction         dd      ?
+    snake_direction_next    dd      ?
+    number_of_stones        dd      ?
+ends
+
+CLASSIC_MODE                equ     0
+LEVELS_MODE                 equ     1
+
+CLASSIC_MODE_FIRST_LEVEL    equ     0
+LEVELS_MODE_FIRST_LEVEL     equ     1
+
+EAT_TO_END_LEVEL            equ     12
+PAUSE_BETWEEN_LEVELS        equ     250
+PAUSE_WHILE_DRAWING_SPLASH  equ     4
+
+CHAMPION_NAME_LENGTH        equ     15
+LAST_LEVEL_NUMBER           equ     12
 
 ;;---Define_chapter------------------------------------------------------------------------------------------------------------
 
@@ -45,22 +71,18 @@ align 4
       invoke  ini.get_int, cur_dir_path, aPreferences, aSpeed, 80
     neg  eax
     add  [time_wait_limit],    eax
-      invoke  ini.get_int, cur_dir_path, aPreferences, aSquare_side_length, 19
-    mov  [square_side_length],  eax
-      invoke  ini.get_int, cur_dir_path, aPreferences, aSpace_between_squares, 1
-    mov  [space_between_squares],   eax
       invoke  ini.get_str, cur_dir_path, aPreferences, aTheme, aTheme_name, 31, aTheme_name
 
       invoke  ini.get_int, cur_dir_path, aTheme_name, aDecorations, 2
-    mov  [decorations], al
+    mov  [decorations], eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aBackground_color, 0x000000
     or   [background_color],    eax
     or   [window_style],    eax
-      invoke  ini.get_color, cur_dir_path, aTheme_name, aDecorations_color, 0x00aaaa00
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aDecorations_color, 0xAAAA00
     or   [decorations_color],  eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aSnake_color, 0x1111ff
     or   [snake_color], eax
-      invoke  ini.get_color, cur_dir_path, aTheme_name, aSnake_head_color, 0x1111ff
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aSnake_head_color, 0x6B6Bff
     or   [snake_head_color], eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aSnake_picture_color, 0x4488ff
     or   [snake_picture_color], eax
@@ -70,6 +92,8 @@ align 4
     or   [pause_picture_color], eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aGame_over_picture_color, 0xff1111
     or   [game_over_picture_color], eax
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aYou_win_picture_color, 0xffff11
+    or   [you_win_picture_color],   eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aEat_color, 0xffff11
     or   [eat_color],   eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aNavigation_strings_color, 0x80ff7777
@@ -78,6 +102,8 @@ align 4
     or   [game_over_strings_color],  eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aScore_string_color, 0x80ffffff
     or   [score_string_color],   eax
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aLevel_string_color, 0xffffff
+    or   [level_string_color],  eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aHiscore_string_color, 0x80ffffff
     or   [hiscore_string_color],   eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aChampion_string_color, 0x80ffffff
@@ -86,19 +112,45 @@ align 4
     or   [game_over_hiscore_color], eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aScore_number_color, 0xffffff
     or   [score_number_color],   eax
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aLevel_number_color, 0xffffff
+    or   [level_number_color],  eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aHiscore_number_color, 0x00ffffff
     or   [hiscore_number_color],   eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aChampion_name_color, 0x80ffffff
     or   [champion_name_color],   eax
       invoke  ini.get_color, cur_dir_path, aTheme_name, aEdit_box_selection_color, 0x00aa00
-    or   [edit1+0x10],  eax
+    or   [edit1.shift_color],   eax
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aButton_color, 0xDDDDDD
+    or   [button_color],    eax
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aButton_text_color, 0x000000
+    or   [button_text_color],   eax
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aStone_color, 0x5f8700
+    or   [stone_color], eax
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aSplash_background_color, 0xAAAA00
+    or   [splash_background_color],    eax
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aSplash_level_number_color, 0x000000
+    or   [splash_level_number_color],   eax
+      invoke  ini.get_color, cur_dir_path, aTheme_name, aSplash_level_string_color, 0x000000
+    or   [splash_level_string_color],   eax
+
+      invoke  ini.get_int, cur_dir_path, aReserved, aSquare_side_length, 19
+    mov  [square_side_length],  eax
+      invoke  ini.get_str, cur_dir_path, aReserved, aChampion_name_classic, champion_name_classic, CHAMPION_NAME_LENGTH, champion_name_classic
+      invoke  ini.get_int, cur_dir_path, aReserved, aHiscore_classic, 777
+    or   [hi_score_classic],    eax
+      invoke  ini.get_str, cur_dir_path, aReserved, aChampion_name_levels, champion_name_levels, CHAMPION_NAME_LENGTH, champion_name_levels
+      invoke  ini.get_int, cur_dir_path, aReserved, aHiscore_levels, 777
+    or   [hi_score_levels], eax
 
     mov  eax, [background_color]
-    mov  [edit1+0x0C],  eax
-    mov  [edit1+0x14],  eax
-    mov  [edit1+0x18],  eax
+    mov  [edit1.color], eax
+    mov  [edit1.focus_border_color],    eax
+    mov  [edit1.blur_border_color], eax
     mov  eax, [game_over_hiscore_color]
-    mov  [edit1+0x1C],  eax
+    mov  [edit1.text_color],    eax
+
+      mcall     37,4,cursor_data,2                  ; load empty cursor (for "hiding" cursor while level_mode)
+    mov  [cursor_handle],   eax
 
       call      Set_geometry
 
@@ -108,6 +160,37 @@ include 'pause.asm'                 ; Pause body and functions
 include 'game_over.asm'             ; Game_over body and functions
 
 ;;===Some_functions============================================================================================================
+
+
+Save_do_smth_else_and_exit:
+    ;;===Save_do_smth_else_and_exit============================================================================================
+
+      mcall     37,6,[cursor_handle]                ; delete cursor
+
+      invoke    ini.set_int, cur_dir_path, aReserved, aSquare_side_length, [square_side_length]
+
+    mov  edi, champion_name_classic
+    xor  al,  al
+    mov  ecx, CHAMPION_NAME_LENGTH+1
+    cld
+    repne scasb
+    neg  ecx
+    add  ecx, CHAMPION_NAME_LENGTH
+      invoke    ini.set_str, cur_dir_path, aReserved, aChampion_name_classic, champion_name_classic, ecx
+      invoke    ini.set_int, cur_dir_path, aReserved, aHiscore_classic, [hi_score_classic]
+
+    mov  edi, champion_name_levels
+    xor  al,  al
+    mov  ecx, CHAMPION_NAME_LENGTH+1
+    cld
+    repne scasb
+    neg  ecx
+    add  ecx, CHAMPION_NAME_LENGTH
+      invoke    ini.set_str, cur_dir_path, aReserved, aChampion_name_levels, champion_name_levels, ecx
+      invoke    ini.set_int, cur_dir_path, aReserved, aHiscore_levels, [hi_score_levels]
+
+    ;;---Save_do_smth_else_and_exit--------------------------------------------------------------------------------------------
+
 
 Exit:
     ;;===Exit==================================================================================================================
@@ -121,8 +204,8 @@ Exit:
 Set_geometry:
     ;;===Set_geometry==========================================================================================================
 
-    mov  eax, [space_between_squares]
-    add  eax, [square_side_length]
+    mov  eax, [square_side_length]
+    inc  eax                                            ; space between squares
     mov  [g_s],   eax
 
     mov  eax, [g_s]
@@ -140,16 +223,12 @@ Set_geometry:
     add  eax, 25
     mov  [gbym1],   eax
 
-    mov  eax, [g_w]
-    mul  word[g_h]
-    mov  [gw_mul_gh],   eax
-
-    mov  edx, [g_w]
+    mov  edx, GRID_WIDTH
     mov  eax, [g_s]
     mul  dx
     mov  [gw_mul_gs],   eax
 
-    mov  edx, [g_h]
+    mov  edx, GRID_HEIGHT
     mov  eax, [g_s]
     mul  dx
     mov  [gh_mul_gs],   eax
@@ -184,11 +263,12 @@ Set_geometry:
     add  eax, 5*2                                   ; skin width
     mov  [window_width],    eax
 
-    mov  eax, [gh_mul_gs]
+      mcall     48,4                                ; get skin header height
+    add  eax, [gh_mul_gs]
     add  eax, [gbym1]
     add  eax, [g_e]
     add  eax, 30
-    add  eax, 22+5                                  ; skin height
+    add  eax, 5                                      ; skin height (bottom part)
     mov  [window_height],   eax
 
       mcall     48, 5
@@ -198,12 +278,6 @@ Set_geometry:
     cmp  dx, word[window_width]                     ; does window fit to work area width?
      jnl @f
     dec  [square_side_length]
-;    dps  'snake: Window does not fit to screen.'
-;    newline
-;    dps  'Square_side_length was decreased.'
-;    newline
-;    dps  'Check you config file! (snake.ini)'
-;    newline
      jmp Set_geometry
   @@:
 
@@ -213,12 +287,6 @@ Set_geometry:
     cmp  cx, word[window_height]                     ; does window fit to work area height?
      jnl @f
     dec  [square_side_length]
-;    dps  'snake: Window does not fit to screen.'
-;    newline
-;    dps  'Square_side_length was decreased.'
-;    newline
-;    dps  'Check you config file! (snake.ini)'
-;    newline
      jmp Set_geometry
   @@:
 
@@ -242,17 +310,95 @@ Set_geometry:
     mov  [bottom_bottom_strings],  eax
 
     sub  eax, 4
-    mov  [edit1+0x08],  eax
+    mov  [edit1.top],   eax
+
+
+    mov  eax, [g_s]
+    shl  eax, 2
+    sub  eax, 2
+    mov  [button_width_short],  eax
+    mov  eax, [g_s]
+    shl  eax, 3
+    add  eax, [g_s]
+    sub  eax, 2
+    mov  [button_width_long],   eax
+    mov  eax, [g_s]
+    sub  eax, 2
+    mov  [button_height],   eax
+
+    mov  bl,  0x10
+    mov  cl,  0x08
+
+    mov  al,  byte[g_s]
+    mul  bl
+    mov  bx,  ax
+    add  bx,  word[gbxm1]
+    inc  bx
+
+    mov  al,  byte[g_s]
+    mul  cl
+    mov  cx,  ax
+    add  cx,  word[gbym1]
+    inc  cx
+    
+    mov  [button_x_left],   ebx
+    mov  [button_y_top],    ecx
+    
+    add  ebx, [g_s]
+    add  ebx, [g_s]
+    add  ebx, [g_s]
+    add  ebx, [g_s]
+    add  ebx, [g_s]
+    
+    mov  [button_x_right],  ebx
+    
+    add  ecx,  [g_s]
+    add  ecx,  [g_s]
+    
+    mov  [button_y_middle], ecx
+    
+    add  ecx,  [g_s]
+    add  ecx,  [g_s]
+    
+    mov  [button_y_bottom], ecx
+
 
     ret
 
     ;;---Set_geometry------------------------------------------------------------------------------------------------------
 
 
+Increase_geometry:
+    ;;===Increase_geometry=================================================================================================
+
+    inc  [square_side_length]
+      call      Set_geometry
+      mcall     67,[wp_x],[wp_y],[window_width],[window_height]
+
+    ret
+
+    ;;---Increase_geometry-------------------------------------------------------------------------------------------------
+
+
+Decrease_geometry:
+    ;;===Decrease_geometry=================================================================================================
+
+    cmp  [square_side_length],  MIN_SQUARE_SIDE_LENGTH
+     je  @f
+    dec  [square_side_length]
+      call      Set_geometry
+      mcall     67,[wp_x],[wp_y],[window_width],[window_height]
+
+  @@:
+    ret
+
+    ;;---Decrease_geometry-------------------------------------------------------------------------------------------------
+
+
 Draw_decorations:
     ;;===Draw_decorations==================================================================================================
 
-    mov  al, [decorations]
+    mov  al, byte[decorations]
     dec  al
      jz  grid_lines
     dec  al
@@ -287,7 +433,7 @@ Draw_decorations:
     mov  ecx, [gbym1_shl16_gbym1]
     add  ecx, [gh_mul_gs]
     mov  edx, [decorations_color]
-    mov  esi, [g_w]
+    mov  esi, GRID_WIDTH
     add  esi, 1
 
   @@:
@@ -300,7 +446,7 @@ Draw_decorations:
     mov  ebx, [gbxm1_shl16_gbxm1]
     add  ebx, [gw_mul_gs]
     mov  ecx, [gbym1_shl16_gbym1]
-    mov  esi, [g_h]
+    mov  esi, GRID_HEIGHT
     add  esi, 1
     
   @@:
@@ -322,7 +468,7 @@ Draw_decorations:
     add  ecx, [gbym1_plus_gh_mul_gs]
     add  ecx, [g_e]
     mov  edx, [decorations_color]
-    mov  esi, [g_w]
+    mov  esi, GRID_WIDTH
     add  esi, 1
 
   @@:
@@ -337,7 +483,7 @@ Draw_decorations:
     add  ebx, [gbxm1_plus_gw_mul_gs]
     add  ebx, [g_e]
     mov  ecx, [gbym1_shl16_gbym1]
-    mov  esi, [g_h]
+    mov  esi, GRID_HEIGHT
     add  esi, 1
     
   @@:
@@ -596,6 +742,8 @@ Draw_square:
     ;; bh   -   y_coord
     ;; edx  -   color
 
+    push eax ebx ecx edx
+
     mov  cl,  bh
 
     mov  al,  byte[g_s]
@@ -615,8 +763,10 @@ Draw_square:
     shl  ecx, 16
     add  ecx, [g_s]
     dec  ecx
-        
+
       mcall     13
+
+    pop  edx ecx ebx eax
 
     ret
 
@@ -628,7 +778,7 @@ Draw_menu_esc:
 
     mov  ebx, [window_width]
     shr  ebx, 1
-    sub  ebx, (string_apply_name_enter-string_menu_esc-1)*3+6
+    sub  ebx, string_menu_esc.size*3+6
     shl  ebx, 16
     add  ebx, dword[top_strings]
       mcall     4, ,[navigation_strings_color],string_menu_esc
@@ -647,9 +797,9 @@ Draw_score_string:
     shl  ebx, 16
     add  ebx, dword[bottom_top_strings]
       mcall     4, ,[score_string_color],string_score
-      
+
     ret
-    
+
     ;;---Draw_score_string-------------------------------------------------------------------------------------------------
     
     
@@ -658,14 +808,14 @@ Draw_score_number:
 
     mov  edx, [window_width]
     shr  edx, 3
-    sub  edx, 6
-    add  edx, (string_hi_score-string_score)*6
+    sub  edx, 5+1
+    add  edx, string_score.size*6
     shl  edx, 16
     add  edx, dword[bottom_top_strings]
       mcall     47,0x00070000,[score], ,[score_number_color],[background_color]
-        
+
     ret
-        
+
     ;;---Draw_score_number-------------------------------------------------------------------------------------------------
 
 
@@ -676,7 +826,7 @@ Draw_hiscore_string:
     shr  ebx, 3
     neg  ebx
     add  ebx, [window_width]
-    sub  ebx, (string_player-string_hi_score)*6+7*6+5
+    sub  ebx, string_hi_score.size*6+7*6+5
     shl  ebx, 16
     add  ebx, dword[bottom_top_strings]
       mcall     4, ,[hiscore_string_color],string_hi_score
@@ -685,9 +835,9 @@ Draw_hiscore_string:
     
     ;;---Draw_hiscore_string-----------------------------------------------------------------------------------------------
 
-    
+
 Draw_hiscore_number:
-    ;;===Draw_hiscore_number===============================================================================================
+    ;;===Draw_hiscore_number===================================================================================================
 
     mov  edx, [window_width]
     shr  edx, 3
@@ -696,21 +846,30 @@ Draw_hiscore_number:
     sub  edx, 7*6+6
     shl  edx, 16
     add  edx, dword[bottom_top_strings]
-      mcall     47,0x00070000,[hi_score], ,[hiscore_number_color]
+    
+    cmp  [play_mode],   CLASSIC_MODE
+     jne @f
+    mov  ecx, [hi_score_classic]
+     jmp .done
+  @@:
+    mov  ecx, [hi_score_levels]
+
+  .done:
+      mcall     47,0x00070000, , ,[hiscore_number_color]
     
     ret
     
-    ;;---Draw_hiscore_number-----------------------------------------------------------------------------------------------
-    
-    
+    ;;---Draw_hiscore_number---------------------------------------------------------------------------------------------------
+
+
 Draw_champion_string:
-    ;;===Draw_champion_string==============================================================================================
+    ;;===Draw_champion_string==================================================================================================
 
     mov  ebx, [window_width]
     shr  ebx, 3
     neg  ebx
     add  ebx, [window_width]
-    sub  ebx, (string_level-string_champion)*6+7*6+5
+    sub  ebx, string_champion.size*6+7*6+5
     shl  ebx, 16
     add  ebx, dword[bottom_bottom_strings]
       mcall     4, ,[champion_string_color],string_champion
@@ -727,11 +886,20 @@ Draw_champion_name:
     shr  ebx, 3
     neg  ebx
     add  ebx, [window_width]
-    sub  ebx, (press_to_start-champion_name)*6+7*6+6
-    add  ebx, (press_to_start-champion_name)*6
+    sub  ebx, CHAMPION_NAME_LENGTH/2*6+7*6+6                ; there is no difference between length of champion names for other play_modes
+    add  ebx, CHAMPION_NAME_LENGTH/2*6
     shl  ebx, 16
     add  ebx, dword[bottom_bottom_strings]
-      mcall     4, ,[champion_name_color],champion_name
+
+    cmp  [play_mode],   CLASSIC_MODE
+     jne @f
+    mov  edx, champion_name_classic
+     jmp .done
+  @@:
+    mov  edx, champion_name_levels
+
+  .done:
+      mcall     4, ,[champion_name_color],
 
     ret
 
@@ -783,24 +951,28 @@ Draw_on_map:
     ;;           cl =   value to draw
     ;;
 
+    push eax ebx edx
+
     and  eax, 0x0000ffff
     xor  bx,  bx
     mov  bl,  al
     shr  ax,  8
-    mov  dx,  word[g_w]
+    mov  dx,  GRID_WIDTH
     mul  dx
     add  ax,  bx
-    mov  edi, field_map
-    add  edi, eax
-    mov  [edi], cl
+    mov  edx, field_map
+    add  edx, eax
+    mov  [edx], cl
+    
+    pop edx ebx eax
 
     ret
 
-    ;;---Draw_on_map-------------------------------------------------------------------------------------------------------
+    ;;---Draw_on_map-----------------------------------------------------------------------------------------------------------
 
 
 Get_from_map:
-    ;;===Get_from_map======================================================================================================
+    ;;===Get_from_map==========================================================================================================
     ;;  in  :
     ;;           al =   x coord
     ;;           ah =   y coord
@@ -814,7 +986,7 @@ Get_from_map:
     xor  bx,  bx
     mov  bl,  al
     shr  ax,  8
-    mov  dx,  word[g_w]
+    mov  dx,  GRID_WIDTH
     mul  dx
     add  ax,  bx
     mov  edi, field_map
@@ -825,13 +997,112 @@ Get_from_map:
 
     ret
 
-    ;;---Get_from_map------------------------------------------------------------------------------------------------------
+    ;;---Get_from_map-----------------------------------------------------------------------------------------------------------
 
 
-;;---Some_functions--------------------------------------------------------------------------------------------------------
+Load_level:
+    ;;===Load_level=============================================================================================================
+    ;;  in  :
+    ;;          cur_level_number    =   level number to load
+    ;;
+
+    mov  eax, [cur_level_number]
+    mov  edx, stage_00
+  @@:
+    test al,  al
+     jz  @f
+    add  edx, 410
+    dec  al
+     jmp @b
+  @@:
+  
+    mov  [cur_level],   edx
+
+    mov  esi, edx
+    add  esi, LEVEL.field
+    mov  edi, field_map
+    mov  ecx, GRID_WIDTH*GRID_HEIGHT/4
+    rep  movsd
+
+    mov  esi, edx
+    add  esi, LEVEL.snake_dots
+    mov  edi, snake_dots
+    mov  ecx, 3
+    rep  movsw
+    
+    mov  esi, edx
+    add  esi, LEVEL.snake_direction
+    mov  eax, [esi]
+    mov  [snake_direction], eax
+    
+    mov  esi, edx
+    add  esi, LEVEL.snake_direction_next
+    mov  eax, [esi]
+    mov  [snake_direction_next],    eax
+
+    mov  esi, edx
+    add  esi, LEVEL.number_of_stones
+    mov  eax, [esi]
+    mov  [number_of_free_dots], GRID_WIDTH*GRID_HEIGHT-3
+    sub  [number_of_free_dots], eax
+    
+    mov  ax,  word[snake_dots]
+    mov  cl,  1
+      call      Draw_on_map
+    mov  ax,  word[snake_dots+2]
+    mov  cl,  1
+      call      Draw_on_map
+    mov  ax,  word[snake_dots+4]
+    mov  cl,  1
+      call      Draw_on_map
+
+    mov  [action],  0
+    mov  [snake_length_x2], 6
+
+    ret
+
+    ;;---Load_level-------------------------------------------------------------------------------------------------------------
 
 
-;;===Variables=============================================================================================================
+Draw_stones:
+    ;;===Draw_stones============================================================================================================
+
+    mov  ax,  0*0x100+GRID_WIDTH
+    mov  cx,  0*0x100+GRID_HEIGHT
+    mov  edx, [stone_color]
+    mov  esi, [cur_level]
+    add  esi, LEVEL.field
+      call      Draw_picture
+
+    ret
+
+    ;;---Draw_stones------------------------------------------------------------------------------------------------------------
+
+
+Hide_cursor:
+    ;;===Hide_cursor===========================================================================================================
+
+      mcall     37,5,[cursor_handle]
+
+    ret
+
+    ;;---Show_cursor-----------------------------------------------------------------------------------------------------------
+
+
+Show_cursor:
+    ;;===Hide_cursor===========================================================================================================
+
+      mcall     37,5,0
+
+    ret
+
+    ;;---Show_cursor-----------------------------------------------------------------------------------------------------------
+
+
+;;---Some_functions-------------------------------------------------------------------------------------------------------------
+
+
+;;===Variables==================================================================================================================
 
 window_title                db      'Snake',0
 window_style                dd      0x34000000
@@ -839,106 +1110,426 @@ time_before_waiting         dd      0x0
 time_to_wait                dd      0x0
 time_wait_limit             dd      101
 
+play_mode                   dd      0x0
+
+square_side_length          dd      19
 
 gbxm1                       dd      30
 gbym1                       dd      30
-g_w                         dd      29
-g_h                         dd      15
-g_e                         dd      13
 
-field_map                   db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-
-string_score                db      'SCORE :',0
-string_hi_score             db      'HI-SCORE :',0
-string_player               db      'PLAYER :',0
-string_champion             db      'CHAMPION :',0
-string_level                db      'LEVEL :',0
-string_pause_space          db      'PAUSE - ',0x27,'SPACE',0x27,0
-string_resume_space         db      'RESUME - ',0x27,'SPACE',0x27,0
-string_menu_esc             db      'MENU - ',0x27,'ESC',0x27,0
-string_apply_name_enter     db      'APPLY NAME - ',0x27,'ENTER',0x27,0
-press_to_start              db      'PRESS ',0x27,'SPACE',0x27,' OR ',0x27,'ENTER',0x27,' TO START',0
-press_esc_to_exit           db      'PRESS ',0x27,'ESC',0x27,' TO EXIT',0
+szZ string_score            ,'SCORE : '
+szZ string_hi_score         ,'HI-SCORE : '
+;szZ string_player           ,'PLAYER :'
+szZ string_champion         ,'CHAMPION : '
+szZ string_level            ,'LEVEL : '
+;szZ string_hi_level         ,'HI-LEVEL :'
+szZ string_pause_space      ,'PAUSE - ',0x27,'SPACE',0x27
+szZ string_resume_space     ,'RESUME - ',0x27,'SPACE',0x27
+szZ string_menu_esc         ,'MENU - ',0x27,'ESC',0x27
+szZ string_apply_name_enter ,'APPLY NAME - ',0x27,'ENTER',0x27
+szZ press_to_start          ,'PRESS ',0x27,'ENTER',0x27,' TO START'
+szZ press_esc_to_exit       ,'PRESS ',0x27,'ESC',0x27,' TO EXIT'
 ;press_F2_to_options         db      'PRESS ',0x27,'F2',0x27,' TO OPTIONS',0
 
-string_congratulations      db      '   Congratulations!!! New hi-score is :',0
-string_enter_your_name      db      'You are the champion! Enter your name :',0
-strings_end:
+szZ string_congratulations  ,'   Congratulations!!! New hi-score is : '
+szZ string_enter_your_name  ,'You are the champion! Enter your name : '
 
-snake_dots                  db      3,3, 4,3, 5,3,  865    dup (0)
-snake_napravlenie           db      3
-snake_napravlenie_next      db      3
-snake_length_x2             dd      6
+szZ string_button_play      ,'PLAY'
+szZ string_button_exit      ,'EXIT'
+szZ string_button_inc       ,'+INC+'
+szZ string_button_dec       ,'-dec-'
+szZ string_button_pm_classic,'CLASSIC mode'
+szZ string_button_pm_levels ,'LEVELS mode'
 
-score                       dd      0
-hi_score                    dd      777
-is_new_record               db      0
+is_new_record               dd      0
 
-action                      db      0
+action                      dd      0
 
-picture_first_menu_snake    db      1,1,1,1,1,0,1,0,0,0,1,0,0,1,1,1,0,0,1,0,0,1,0,0,1,1,1,1,1,\
-                                    1,0,0,0,0,0,1,1,0,0,1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0,0,\
-                                    1,0,0,0,0,0,1,0,1,0,1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0,0,\
-                                    1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,0,1,1,0,0,0,0,1,1,1,1,0,\
-                                    0,0,0,0,1,0,1,0,0,1,1,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0,0,\
-                                    1,1,1,1,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,1,1,0,1,1,1,1,1
+picture_first_menu_snake    db      1,1,1,1,0,1,0,0,1,0,0,1,1,0,0,1,0,0,1,0,1,1,1,1,\
+                                    1,0,0,0,0,1,1,0,1,0,1,0,0,1,0,1,0,1,0,0,1,0,0,1,\
+                                    1,1,1,1,0,1,0,1,1,0,1,0,0,1,0,1,1,0,0,0,1,1,1,1,\
+                                    0,0,0,1,0,1,0,1,1,0,1,1,1,1,0,1,0,1,0,0,1,0,0,0,\
+                                    1,1,1,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,1,1,1
+                                    
 
 picture_first_menu_version  db      1,1,1,1,0,0,0,1,1,1,1,\
-                                    1,0,0,1,0,0,0,0,0,0,1,\
-                                    1,0,0,1,0,0,0,0,1,1,1,\
+                                    1,0,0,1,0,0,0,1,0,0,0,\
+                                    1,0,0,1,0,0,0,1,1,1,1,\
                                     1,0,0,1,0,0,0,0,0,0,1,\
                                     1,1,1,1,0,1,0,1,1,1,1
 
-picture_pause               db      0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,1,0,0,0,1,0,0,1,1,0,0,1,0,0,1,0,1,1,1,1,0,1,1,1,1,0,0,\
-                                    0,0,1,0,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,0,0,1,0,0,0,0,0,\
-                                    0,0,1,1,1,1,0,0,1,0,0,1,0,1,0,0,1,0,1,1,1,1,0,1,1,1,0,0,0,\
-                                    0,0,1,0,0,0,0,0,1,1,1,1,0,1,0,0,1,0,0,0,0,1,0,1,0,0,0,0,0,\
-                                    0,0,1,0,0,0,0,0,1,0,0,1,0,0,1,1,0,0,1,1,1,1,0,1,1,1,1,0,0
+picture_pause               db      1,1,1,0,0,0,1,1,0,0,1,0,0,1,0,1,1,1,1,0,1,1,1,1,\
+                                    1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,0,0,1,0,0,0,\
+                                    1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,0,0,1,0,0,0,\
+                                    1,1,1,0,0,1,1,1,1,0,1,0,0,1,0,1,1,1,1,0,1,1,1,1,\
+                                    1,0,0,0,0,1,0,0,1,0,1,0,0,1,0,0,0,0,1,0,1,0,0,0,\
+                                    1,0,0,0,0,1,0,0,1,0,0,1,1,0,0,1,1,1,1,0,1,1,1,1
 
-picture_game_over           db      0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,1,0,0,1,0,0,1,1,1,0,0,1,0,0,0,1,0,1,1,1,1,0,0,0,0,0,0,0,\
-                                    1,0,0,0,0,0,1,0,0,0,1,0,1,1,0,1,1,0,1,0,0,0,0,0,0,0,0,0,0,\
-                                    1,0,0,1,1,0,1,0,0,0,1,0,1,0,1,0,1,0,1,1,1,0,0,0,0,0,0,0,0,\
-                                    1,0,0,0,1,0,1,1,1,1,1,0,1,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,\
-                                    0,1,1,1,0,0,1,0,0,0,1,0,1,0,0,0,1,0,1,1,1,1,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,1,1,1,1,0,1,1,1,1,0,0,\
-                                    0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,1,0,\
-                                    0,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,1,1,1,0,0,1,0,0,0,1,0,\
-                                    0,0,0,0,0,0,1,0,0,0,1,0,0,1,0,1,0,0,1,0,0,0,0,1,1,1,1,0,0,\
-                                    0,0,0,0,0,0,0,1,1,1,0,0,0,0,1,0,0,0,1,1,1,1,0,1,0,0,0,1,0
+picture_game_over           db      0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,1,0,0,1,0,0,1,1,1,0,0,1,0,0,0,1,0,1,1,1,1,0,0,0,0,\
+                                    1,0,0,0,0,0,1,0,0,0,1,0,1,1,0,1,1,0,1,0,0,0,0,0,0,0,\
+                                    1,0,0,1,1,0,1,0,0,0,1,0,1,0,1,0,1,0,1,1,1,0,0,0,0,0,\
+                                    1,0,0,0,1,0,1,1,1,1,1,0,1,0,0,0,1,0,1,0,0,0,0,0,0,0,\
+                                    0,1,1,1,0,0,1,0,0,0,1,0,1,0,0,0,1,0,1,1,1,1,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,1,1,1,1,0,1,1,1,1,0,\
+                                    0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,1,\
+                                    0,0,0,0,1,0,0,0,1,0,1,0,0,0,1,0,1,1,1,0,0,1,0,0,0,1,\
+                                    0,0,0,0,1,0,0,0,1,0,0,1,0,1,0,0,1,0,0,0,0,1,1,1,1,0,\
+                                    0,0,0,0,0,1,1,1,0,0,0,0,1,0,0,0,1,1,1,1,0,1,0,0,0,1
 
-start_map                   db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
-                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+picture_you_win             db      1,0,0,0,1,0,0,1,1,1,0,0,1,0,0,0,1,\
+                                    1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,\
+                                    0,1,0,1,0,0,1,0,0,0,1,0,1,0,0,0,1,\
+                                    0,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,1,\
+                                    0,0,1,0,0,0,0,1,1,1,0,0,0,1,1,1,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,1,0,0,0,1,0,0,1,0,0,1,0,0,0,1,0,\
+                                    0,1,0,1,0,1,0,0,1,0,0,1,1,0,0,1,0,\
+                                    0,1,0,1,0,1,0,0,1,0,0,1,0,1,0,1,0,\
+                                    0,1,0,1,0,1,0,0,1,0,0,1,0,0,1,1,0,\
+                                    0,0,1,0,1,0,0,0,1,0,0,1,0,0,0,1,0
+
+picture_level               db      1,0,0,0,0,1,1,1,1,0,1,0,0,1,0,1,1,1,1,0,1,0,0,0,\
+                                    1,0,0,0,0,1,0,0,0,0,1,0,0,1,0,1,0,0,0,0,1,0,0,0,\
+                                    1,0,0,0,0,1,1,1,0,0,1,0,0,1,0,1,1,1,0,0,1,0,0,0,\
+                                    1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,1,0,0,0,0,1,0,0,0,\
+                                    1,1,1,1,0,1,1,1,1,0,1,1,0,0,0,1,1,1,1,0,1,1,1,1
+
+digits_font                 db      1,1,1,1,\
+                                    1,0,0,1,\
+                                    1,0,0,1,\
+                                    1,0,0,1,\
+                                    1,1,1,1,\
+                                    \
+                                    0,0,1,0,\
+                                    0,1,1,0,\
+                                    0,0,1,0,\
+                                    0,0,1,0,\
+                                    0,0,1,0,\
+                                    \
+                                    1,1,1,1,\
+                                    0,0,0,1,\
+                                    1,1,1,1,\
+                                    1,0,0,0,\
+                                    1,1,1,1,\
+                                    \
+                                    1,1,1,1,\
+                                    0,0,0,1,\
+                                    0,1,1,1,\
+                                    0,0,0,1,\
+                                    1,1,1,1,\
+                                    \
+                                    1,0,0,1,\
+                                    1,0,0,1,\
+                                    1,1,1,1,\
+                                    0,0,0,1,\
+                                    0,0,0,1,\
+                                    \
+                                    1,1,1,1,\
+                                    1,0,0,0,\
+                                    1,1,1,1,\
+                                    0,0,0,1,\
+                                    1,1,1,1,\
+                                    \
+                                    1,1,1,1,\
+                                    1,0,0,0,\
+                                    1,1,1,1,\
+                                    1,0,0,1,\
+                                    1,1,1,1,\
+                                    \
+                                    1,1,1,1,\
+                                    0,0,0,1,\
+                                    0,0,0,1,\
+                                    0,0,0,1,\
+                                    0,0,0,1,\
+                                    \
+                                    1,1,1,1,\
+                                    1,0,0,1,\
+                                    1,1,1,1,\
+                                    1,0,0,1,\
+                                    1,1,1,1,\
+                                    \
+                                    1,1,1,1,\
+                                    1,0,0,1,\
+                                    1,1,1,1,\
+                                    0,0,0,1,\
+                                    1,1,1,1
+
+stage_00:
+.field                      db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+.snake_dots                 db      3,3, 4,3, 5,3
+.snake_direction            dd      RIGHT
+.snake_direction_next       dd      RIGHT
+.number_of_stones           dd      0
+
+stage_01:
+.field                      db      2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2,\
+                                    2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,\
+                                    2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,\
+                                    2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,\
+                                    2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,\
+                                    2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,\
+                                    2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,\
+                                    2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,\
+                                    2,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,2
+
+.snake_dots                 db      3,3, 4,3, 5,3
+.snake_direction            dd      RIGHT
+.snake_direction_next       dd      RIGHT
+.number_of_stones           dd      36
+
+stage_02:
+.field                      db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,0,0,0,\
+                                    0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,\
+                                    0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,\
+                                    0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,\
+                                    0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,\
+                                    0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,\
+                                    0,0,0,2,2,2,2,2,2,2,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+.snake_dots                 db      7,5, 8,5, 9,5
+.snake_direction            dd      RIGHT
+.snake_direction_next       dd      RIGHT
+.number_of_stones           dd      40
+
+stage_03:
+.field                      db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,2,2,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,2,2,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,2,2,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,2,2,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+.snake_dots                 db      23,0, 22,0, 21,0
+.snake_direction            dd      LEFT
+.snake_direction_next       dd      LEFT
+.number_of_stones           dd      44
+
+stage_04:
+.field                      db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,\
+                                    0,0,0,2,0,0,0,0,0,0,2,0,0,0,0,0,0,2,0,0,0,0,0,0,2,0,0,0,\
+                                    0,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,\
+                                    0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,\
+                                    0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,\
+                                    0,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,2,0,0,0,0,0,0,2,0,0,0,0,0,0,2,0,0,0,0,0,0,2,0,0,0,\
+                                    0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+.snake_dots                 db      19,6, 19,7, 19,8
+.snake_napravlenie          dd      DOWN
+.snake_napravlenie_next     dd      DOWN
+.number_of_stones           dd      40
+
+stage_05:
+.field                      db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,\
+                                    0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,\
+                                    0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+.snake_dots                 db      0,0, 0,1, 1,1
+.snake_direction            dd      RIGHT
+.snake_direction_next       dd      RIGHT
+.number_of_stones           dd      112
+
+stage_06:
+.field                      db      0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,\
+                                    0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,\
+                                    0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,0,\
+                                    0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,\
+                                    0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0
+
+.snake_dots                 db      0,0, 0,1, 1,1
+.snake_direction            dd      RIGHT
+.snake_direction_next       dd      RIGHT
+.number_of_stones           dd      128
+
+stage_07:
+.field                      db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,2,0,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,2,0,2,2,2,2,2,2,2,2,2,2,0,2,0,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,2,0,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,2,0,2,2,2,2,2,2,2,2,2,2,2,2,0,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+.snake_dots                 db      8,1, 9,1, 10,1
+.snake_direction            dd      RIGHT
+.snake_direction_next       dd      RIGHT
+.number_of_stones           dd      83
+
+stage_08:
+.field                      db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,2,0,0,2,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,2,0,2,0,0,2,0,0,2,0,0,0,0,0,2,0,2,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,\
+                                    0,0,0,0,2,2,2,2,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,2,0,0,0,\
+                                    0,0,0,0,0,2,2,2,0,0,2,0,0,0,0,0,2,0,0,0,0,0,2,0,2,0,0,0,\
+                                    0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,\
+                                    0,0,0,2,0,0,0,0,2,2,0,0,0,0,0,0,0,2,2,2,0,0,2,0,0,0,0,0,\
+                                    0,0,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+.snake_dots                 db      0,0, 1,0, 2,0
+.snake_direction            dd      RIGHT
+.snake_direction_next       dd      RIGHT
+.number_of_stones           dd      40
+
+stage_09:
+.field                      db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,1,1,1,1,0,1,0,0,1,0,0,1,1,0,0,1,0,0,1,0,1,1,1,1,0,0,\
+                                    0,0,1,0,0,0,0,1,1,0,1,0,1,0,0,1,0,1,0,1,0,0,1,0,0,0,0,0,\
+                                    0,0,1,1,1,1,0,1,0,1,1,0,0,0,0,1,0,1,1,0,0,0,1,1,1,0,0,0,\
+                                    0,0,0,0,0,1,0,1,0,1,1,0,0,1,1,1,0,1,0,1,0,0,1,0,0,0,0,0,\
+                                    0,0,1,1,1,1,0,1,0,0,1,0,0,0,0,1,0,1,0,0,1,0,1,1,1,1,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+.snake_dots                 db      12,6, 12,7, 12,8
+.snake_direction            dd      DOWN
+.snake_direction_next       dd      DOWN
+.number_of_stones           dd      59
+
+stage_10:
+.field                      db      2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,\
+                                    2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,\
+                                    2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,\
+                                    2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,\
+                                    2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,\
+                                    2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,\
+                                    2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,\
+                                    2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0,2,2,2,0
+
+.snake_dots                 db      3,2, 3,3, 4,3
+.snake_direction            dd      RIGHT
+.snake_direction_next       dd      RIGHT
+.number_of_stones           dd      231
+
+stage_11:
+.field                      db      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,2,2,2,0,0,0,0,0,2,2,2,0,0,0,0,0,2,2,2,0,0,0,0,\
+                                    0,0,0,0,2,2,0,2,2,0,0,0,2,2,0,2,2,0,0,0,2,2,0,2,2,0,0,0,\
+                                    0,0,0,2,2,0,0,0,2,2,0,2,2,0,0,0,2,2,0,2,2,0,0,0,2,2,0,0,\
+                                    0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,2,0,0,\
+                                    0,0,0,2,2,0,0,0,2,2,0,2,2,0,0,0,2,2,0,2,2,0,0,0,2,2,0,0,\
+                                    0,0,0,0,2,2,0,2,2,0,0,0,2,2,0,2,2,0,0,0,2,2,0,2,2,0,0,0,\
+                                    0,0,0,0,0,2,2,2,0,0,0,0,0,2,2,2,0,0,0,0,0,2,2,2,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+.snake_dots                 db      3,12, 4,12, 5,12
+.snake_direction            dd      RIGHT
+.snake_direction_next       dd      RIGHT
+.number_of_stones           dd      69
+
+stage_12:
+.field                      db      0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,\
+                                    0,2,2,0,2,2,2,0,0,0,0,2,0,0,0,0,0,0,0,0,2,0,2,0,0,2,0,2,\
+                                    0,2,0,0,2,0,2,2,2,2,0,2,2,0,0,2,2,2,0,0,0,0,0,0,0,2,2,2,\
+                                    0,2,2,0,0,0,0,2,0,2,0,0,0,0,0,2,0,2,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,\
+                                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,2,0,0,0,\
+                                    0,2,0,2,0,0,2,2,0,0,0,0,2,2,0,0,2,0,2,0,0,2,2,0,0,0,2,2,\
+                                    0,2,2,2,0,0,2,0,0,0,0,0,2,0,0,0,2,2,2,0,0,2,0,0,0,0,0,2,\
+                                    0,0,0,0,0,0,2,2,0,0,0,0,2,2,0,0,0,0,0,0,0,2,2,0,0,0,2,2,\
+                                    0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,\
+                                    0,0,0,2,0,2,0,0,2,0,2,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,\
+                                    2,2,0,2,2,2,0,0,0,0,0,0,0,2,2,0,2,0,2,0,0,2,0,0,0,0,0,0,\
+                                    0,2,0,0,0,0,2,2,2,0,0,0,0,0,2,0,2,2,2,0,0,2,2,0,2,0,2,0,\
+                                    2,2,0,0,0,0,2,0,2,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,2,2,2,0
+
+.snake_dots                 db      27,0, 26,0, 25,0
+.snake_direction            dd      LEFT
+.snake_direction_next       dd      LEFT
+.number_of_stones           dd      110
 
 background_color            dd      0x000000
 decorations_color           dd      0x00000000
@@ -948,6 +1539,7 @@ snake_picture_color         dd      0x000000
 version_picture_color       dd      0x000000
 pause_picture_color         dd      0x000000
 game_over_picture_color     dd      0x000000
+you_win_picture_color       dd      0x000000
 eat_color                   dd      0x000000
 navigation_strings_color    dd      0x80000000
 game_over_strings_color     dd      0x80000000
@@ -958,6 +1550,15 @@ game_over_hiscore_color     dd      0x80000000
 score_number_color          dd      0x40000000
 hiscore_number_color        dd      0x00000000
 champion_name_color         dd      0x80000000
+button_color                dd      0x000000
+button_text_color           dd      0x80000000
+stone_color                 dd      0x000000
+splash_background_color     dd      0x000000
+splash_level_string_color   dd      0x000000
+splash_level_number_color   dd      0x000000
+level_string_color          dd      0x80000000
+level_number_color          dd      0x00000000
+
 
 align 4
 @IMPORT:
@@ -982,8 +1583,6 @@ bFirstDraw  db  0
 
 aPreferences                db      'Preferences',0
 aSpeed                      db      'Speed',0
-aSquare_side_length         db      'Square_side_length',0
-aSpace_between_squares      db      'Space_between_squares',0
 aTheme                      db      'Theme',0
 
 aTheme_name                 db      32  dup (0)
@@ -996,6 +1595,7 @@ aSnake_picture_color        db      'Snake_picture_color',0
 aVersion_picture_color      db      'Version_picture_color',0
 aPause_picture_color        db      'Pause_picture_color',0
 aGame_over_picture_color    db      'Game_over_picture_color',0
+aYou_win_picture_color      db      'You_win_picture_color',0
 aEat_color                  db      'Eat_color',0
 aNavigation_strings_color   db      'Navigation_string_color',0
 aGame_over_strings_color    db      'Game_over_string_color',0
@@ -1007,10 +1607,21 @@ aScore_number_color         db      'Score_number_color',0
 aHiscore_number_color       db      'Hiscore_number_color',0
 aChampion_name_color        db      'Champion_name_color',0
 aEdit_box_selection_color   db      'Edit_box_selection_color',0
+aButton_color               db      'Button_color',0
+aButton_text_color          db      'Button_text_color',0
+aStone_color                db      'Stone_color',0
+aSplash_background_color    db      'Splash_background_color',0
+aSplash_level_string_color  db      'Splash_level_string_color',0
+aSplash_level_number_color  db      'Splash_level_number_color',0
+aLevel_string_color         db      'Level_string_color',0
+aLevel_number_color         db      'Level_number_color',0
 
-aScore                      db      'Score',0
-aHiscore                    db      'Hiscore',0
-aChampion_name              db      'Champion_name',0
+aReserved                   db      'Reserved',0
+aSquare_side_length         db      'Square_side_length',0
+aHiscore_classic            db      'Hiscore_classic',0
+aChampion_name_classic      db      'Champion_name_classic',0
+aHiscore_levels             db      'Hiscore_levels',0
+aChampion_name_levels       db      'Champion_name_levels',0
 
 edit1 edit_box 65,397,0x0,0x000000,0x000000,0x000000,0x000000,0x80000000,15,hed,mouse_dd,ed_focus,hed_end-hed-1,hed_end-hed-1
 
@@ -1021,21 +1632,35 @@ hed_end:
 rb  256
 mouse_dd                    rd      1
 
-decorations                 rb      1
-number_of_free_dots         rw      1
+cur_level                   rd      1
+cur_level_number            rd      1
+hi_level                    rd      1
 
-eat                         rb      1
+score                       rd      1
+hi_score_classic            rd      1
+hi_score_levels             rd      1
 
-square_side_length          rd      1
-space_between_squares       rd      1
+champion_name_classic       rb      CHAMPION_NAME_LENGTH
+champion_name_levels        rb      CHAMPION_NAME_LENGTH
+
+snake_dots                  rb      GRID_WIDTH*GRID_HEIGHT*2+3          ; +3 bytes for faster dword copying
+snake_direction             rd      1
+snake_direction_next        rd      1
+snake_length_x2             rd      1
+
+decorations                 rd      1
+number_of_free_dots         rd      1
+
+eat                         rw      1
+
 g_s                         rd      1
+g_e                         rd      1
 
 window_width                rd      1
 window_height               rd      1
 wp_x                        rd      1
 wp_y                        rd      1
 
-gw_mul_gh                   rd      1
 gw_mul_gs                   rd      1
 gh_mul_gs                   rd      1
 gbxm1_plus_gw_mul_gs        rd      1
@@ -1049,10 +1674,22 @@ bottom_middle_strings       rd      1
 bottom_bottom_strings       rd      1
 top_strings                 rd      1
 
-champion_name               rb      16
+button_x_left               rd      1
+button_x_right              rd      1
+button_y_top                rd      1
+button_y_middle             rd      1
+button_y_bottom             rd      1
+button_width_short          rd      1
+button_width_long           rd      1
+button_height               rd      1
+
+cursor_data                 rb      32*32*4
+cursor_handle               rd      1
 
 cur_dir_path                rb      4096
 @PARAMS                     rb      4096
+
+field_map                   rb      GRID_WIDTH*GRID_HEIGHT*2
 
 rb 4096
 stacktop:

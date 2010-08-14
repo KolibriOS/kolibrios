@@ -2,11 +2,22 @@
 
 Game_over:
 
+      call      Show_cursor
+
     mov  ebx, [score]
-    cmp  ebx, [hi_score]
+    
+    cmp  [play_mode],   CLASSIC_MODE
+     jne @f
+    cmp  ebx, [hi_score_classic]
      jng .redraw
-     
     mov  [is_new_record], 1
+     jmp .done
+  @@:
+    cmp  ebx, [hi_score_levels]
+     jng .redraw
+    mov  [is_new_record], 1
+     jmp .done
+  .done:
 
       mcall     40,100111b                      ; set events: standart + mouse
 
@@ -38,8 +49,7 @@ Game_over:
 
 
   .mouse:                                       ; mouse event received
-    push dword edit1
-      call      [edit_box.mouse]
+      invoke        edit_box.mouse, edit1
     
      jmp .still
 
@@ -47,28 +57,21 @@ Game_over:
   .key:                                         ; a key was pressed
       mcall     2                               ; get keycode
 
-    cmp  [is_new_record], 1
-     jnz .key.skip
-     
+    cmp  [is_new_record],   1
+     je  .key.is_record
+
+    cmp  ah,  0x1B                              ; Escape - go to menu
+     jne .still
+     jmp First_menu
+
+  .key.is_record:
     cmp  ah,  0x0D                              ; Enter
      jnz @f
       call      Score_and_name_store
-    mov  [is_new_record],   0
-      mcall     40,111b                         ; set events: standart
      jmp First_menu
-
   @@:
-    push    dword edit1
-    call    [edit_box.key]
-    
+      invoke        edit_box.key, edit1
      jmp .still
-  .key.skip:
-
-    cmp  ah,  0x1B                              ; Escape - go to menu
-     jne  .still
-
-      mcall     40,111b                         ; set events: standart
-     jmp First_menu
 
 
   .button:                                      ; a button was pressed
@@ -76,7 +79,7 @@ Game_over:
     shr  eax, 8                                 ; we should do it to get the real button code
 
     cmp  eax, 1
-     je  Exit
+     je  Save_do_smth_else_and_exit
 
      jmp .still
 
@@ -88,10 +91,19 @@ Game_over:
 Draw_game_over_picture:
     ;;===Draw_game_over_picture================================================================================================
 
-    mov  ax,  0*0x100+29
+    cmp  [is_new_record],   1
+     je  @f
+    mov  ax,  1*0x100+26
     mov  cx,  1*0x100+13
     mov  edx, [game_over_picture_color]
     mov  esi, picture_game_over
+     jmp .done
+  @@:
+    mov  ax,  5*0x100+17
+    mov  cx,  1*0x100+12
+    mov  edx, [you_win_picture_color]
+    mov  esi, picture_you_win
+  .done:
       call      Draw_picture
 
     ret
@@ -107,37 +119,33 @@ Draw_game_over_strings:
 
     mov  ebx, [window_width]
     shr  ebx, 1
-    sub  ebx, (string_enter_your_name-string_congratulations-1+8)*3+6
+    sub  ebx, string_congratulations.size*3+6*6
     shl  ebx, 16
     add  ebx, [bottom_top_strings]
       mcall     4, ,[game_over_strings_color],string_congratulations
     mov  ebx, [window_width]
     shr  ebx, 1
-    sub  ebx, (strings_end-string_enter_your_name-1+8)*3+6
-;    add  ebx, (strings_end-string_enter_your_name)*6
+    sub  ebx, string_enter_your_name.size*3+6*6
     shl  ebx, 16
     add  ebx, [bottom_bottom_strings]
       mcall      , , ,string_enter_your_name
     mov  ebx, [window_width]
     shr  ebx, 1
-    sub  ebx, (press_to_start-string_apply_name_enter-1)*3+6
+    sub  ebx, string_apply_name_enter.size*3
     shl  ebx, 16
     add  ebx, [top_strings]
       mcall      , ,[navigation_strings_color],string_apply_name_enter
     mov  edx, [window_width]
     shr  edx, 1
-    sub  edx, (string_enter_your_name-string_congratulations-1+8)*3+7
-    add  edx, (string_enter_your_name-string_congratulations)*6
+    add  edx, string_congratulations.size*3-6*6-1
     shl  edx, 16
     add  edx, dword[bottom_top_strings]
       mcall     47,0x00070000,[score], ,[game_over_hiscore_color]
     mov  ebx, [window_width]
     shr  ebx, 1
-    sub  ebx, (strings_end-string_enter_your_name-1+8)*3+9
-    add  ebx, (strings_end-string_enter_your_name)*6
-    mov  [edit1+0x04],  ebx
-    push    dword edit1
-      call      [edit_box.draw]
+    add  ebx, string_enter_your_name.size*3-6*6-3
+    mov  [edit1.left],  ebx
+      invoke        edit_box.draw, edit1
 
     ret
 
@@ -153,8 +161,28 @@ Draw_game_over_strings:
 Score_and_name_store:
     ;;===Name_store============================================================================================================
 
-      invoke    ini.set_str, cur_dir_path, aScore, aChampion_name, hed, 15
-      invoke    ini.set_int, cur_dir_path, aScore, aHiscore, [score]
+    mov  esi, hed
+
+    cmp  [play_mode],   CLASSIC_MODE
+     jne @f
+    mov  edi, champion_name_classic
+     jmp .done
+  @@:
+    mov  edi, champion_name_levels
+  .done:
+
+    mov  ecx, CHAMPION_NAME_LENGTH
+    rep  movsb
+    
+    mov  eax, [score]
+
+    cmp  [play_mode],   CLASSIC_MODE
+     jne @f
+    mov  [hi_score_classic],    eax
+     jmp .done2
+  @@:
+    mov  [hi_score_levels], eax
+  .done2:
 
     ret
 

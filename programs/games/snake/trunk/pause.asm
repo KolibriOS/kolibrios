@@ -2,6 +2,7 @@
 
 Pause_mode:
 
+      call      Show_cursor
     mov  [action],  0
     mov  eax, [time_wait_limit]
     mov  [time_to_wait],    eax
@@ -37,7 +38,7 @@ Pause_mode:
     shr  eax, 8                                 ; we should do it to get the real button code
 
     cmp  eax, 1
-     je  Exit
+     je  Save_do_smth_else_and_exit
 
      jmp .still
 
@@ -60,7 +61,7 @@ Pause_mode:
 Draw_pause_picture:
     ;;===Draw_pause_picture========================================================================================================
 
-    mov  ax,  0*0x100+29
+    mov  ax,  2*0x100+24
     mov  cx,  4*0x100+6
     mov  edx, [pause_picture_color]
     mov  esi, picture_pause
@@ -76,7 +77,7 @@ Draw_pause_strings:
 
     mov  ebx, [window_width]
     shr  ebx, 1
-    sub  ebx, (string_menu_esc-string_resume_space-1)*3+6
+    sub  ebx, string_resume_space.size*3+6
     shl  ebx, 16
     add  ebx, dword[bottom_middle_strings]
       mcall     4, ,[navigation_strings_color],string_resume_space ; Show 'RESUME - SPACE' string

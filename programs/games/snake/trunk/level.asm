@@ -2,31 +2,13 @@
 
 Level_begin:
 
-    mov  [score],   0
-    mov  [action],  0
-    mov  eax,   [gw_mul_gh]
-    sub  eax, 3
-    mov  [number_of_free_dots], ax
-
-      invoke  ini.get_str, cur_dir_path, aScore, aChampion_name, champion_name, 15, champion_name
-      invoke  ini.get_int, cur_dir_path, aScore, aHiscore, 0
-      
-    test eax, eax
-     jz  @f
-    mov  dword  [hi_score],    eax
-  @@:
-
-    mov  esi, start_map
-    mov  edi, field_map
-    mov  ecx, [gw_mul_gh]
-    shr  ecx, 2
-    rep  movsd
-
+      call      Load_level
       call      Get_eat
 
 Level_body:
     ;;===Level_body========================================================================================================
 
+      call      Hide_cursor
 mcall     26, 9
     mov  [time_before_waiting], eax
     mov  eax, [time_wait_limit]
@@ -43,6 +25,7 @@ mcall     26, 9
       mcall     0, , ,[window_style], ,window_title
     
       call      Draw_decorations
+      call      Draw_stones
       call      Draw_snake
       call      Draw_eat
       call      Draw_level_strings
@@ -82,6 +65,16 @@ mcall     26, 9
          jz  .button                            ; 
 
 
+  .button:                                      ; процедура обрабоки кнопок в программе
+      mcall     17                              ; функция 17: получить номер нажатой кнопки
+
+    shr  eax, 8                                 ; сдвигаем регистр eax на 8 бит вправо, чтобы получить номер нажатой кнопки
+    cmp  eax, 1
+     je  Save_do_smth_else_and_exit             ; если это не кнопка 1 (зарезервирована системой как кнопка закрытия программы), пропускаем 2 следующие строчки кода
+
+     jmp .still
+
+
   .key:
       mcall     2                               ; get keycode
     
@@ -101,135 +94,124 @@ mcall     26, 9
      jmp .still                                 ; jump to wait for another event
 
 
-  .button:                                       ; процедура обрабоки кнопок в программе
-      mcall     17                              ; функция 17: получить номер нажатой кнопки
-
-    shr  eax, 8                                 ; сдвигаем регистр eax на 8 бит вправо, чтобы получить номер нажатой кнопки
-    cmp  eax, 1
-     je  Exit                                   ; если это не кнопка 1 (зарезервирована системой как кнопка закрытия программы), пропускаем 2 следующие строчки кода
-
-     jmp .still
-
-
   .key.left:
-    bts  dword[action], 0
+    bts  [action],  0
      jc  @f
     mov  [time_to_wait],    0
   @@:
-    mov  [snake_napravlenie_next],  LEFT
+    mov  [snake_direction_next],    LEFT
      jmp .still
             
   .key.down:
-    bts  dword[action], 0
+    bts  [action],  0
      jc  @f
     mov  [time_to_wait],    0
   @@:
-    mov  [snake_napravlenie_next],  DOWN
+    mov  [snake_direction_next],    DOWN
      jmp .still
             
   .key.up:
-    bts  dword[action], 0
+    bts  [action],  0
      jc  @f
     mov  [time_to_wait],    0
   @@:
-    mov  [snake_napravlenie_next],  UP
+    mov  [snake_direction_next],    UP
      jmp .still
             
   .key.right:
-    bts  dword[action], 0
+    bts  [action],  0
      jc  @f
     mov  [time_to_wait],    0
   @@:
-    mov  [snake_napravlenie_next],  RIGHT
+    mov  [snake_direction_next],    RIGHT
      jmp .still
 
 
   Game_step:
 
-    cmp  [snake_napravlenie],   LEFT            ; are we moving to left?
+    cmp  [snake_direction], LEFT                ; are we moving to left?
      jz  .left
-    cmp  [snake_napravlenie],   DOWN            ; ... down?
+    cmp  [snake_direction], DOWN                ; ... down?
      jz  .down
-    cmp  [snake_napravlenie],   UP              ; ... up?
+    cmp  [snake_direction], UP                  ; ... up?
      jz  .up
      jmp .right                                 ; then right
      
   .left:
-    cmp  [snake_napravlenie_next],  RIGHT       ; next step is to right?
-     jz  .with_rewerse
-     jmp .without_rewerse
+    cmp  [snake_direction_next],    RIGHT       ; next step is to right?
+     jz  .with_reverse
+     jmp .without_reverse
   
   .down:
-    cmp  [snake_napravlenie_next],  UP          ; next step is to up?
-     jz  .with_rewerse
-     jmp .without_rewerse
+    cmp  [snake_direction_next],    UP          ; next step is to up?
+     jz  .with_reverse
+     jmp .without_reverse
      
   .up:
-    cmp  [snake_napravlenie_next],  DOWN        ; next step is to bottom?
-     jz  .with_rewerse
-     jmp .without_rewerse
+    cmp  [snake_direction_next],    DOWN        ; next step is to bottom?
+     jz  .with_reverse
+     jmp .without_reverse
 
   .right:
-    cmp  [snake_napravlenie_next],  LEFT        ; next step is to left?
-     jz  .with_rewerse
-     jmp .without_rewerse
+    cmp  [snake_direction_next],    LEFT        ; next step is to left?
+     jz  .with_reverse
+     jmp .without_reverse
 
 
-  .with_rewerse:
-      call      Set_reverse_napravlenie
+  .with_reverse:
+      call      Set_reverse_direction
       call      Reverse
         
-  .without_rewerse:
-;    mov  [time_to_wait],   0
+  .without_reverse:
     mov  edx, snake_dots-2
     add  edx, [snake_length_x2]
         
-    cmp  [snake_napravlenie_next],  LEFT
+    cmp  [snake_direction_next],    LEFT
      je  .to_left
-    cmp  [snake_napravlenie_next],  DOWN
+    cmp  [snake_direction_next],    DOWN
      je  .to_down 
-    cmp  [snake_napravlenie_next],  UP
+    cmp  [snake_direction_next],    UP
      je  .to_up
-    cmp  [snake_napravlenie_next],  RIGHT
+    cmp  [snake_direction_next],    RIGHT
      je  .to_right    
         
       .to_left:
-        mov  [snake_napravlenie],   LEFT
+        mov  [snake_direction], LEFT
         mov  ax,  [edx]
         dec  al
         cmp  al,  -1
          jne @f
-        mov  al,  byte[g_w]
+        mov  al,  GRID_WIDTH
         dec  al
       @@:
          jmp Snake_move
 
       .to_down:
-        mov  [snake_napravlenie],   DOWN
+        mov  [snake_direction], DOWN
         mov  ax,  [edx]
         inc  ah
-        cmp  ah,  byte[g_h]
+        cmp  ah,  GRID_HEIGHT
          jne @f
         mov  ah,  0
       @@:
          jmp Snake_move
         
       .to_up:
-        mov  [snake_napravlenie],   UP
+        mov  [snake_direction], UP
         mov  ax,  [edx]
         dec  ah
         cmp  ah,  -1
          jne @f
-        mov  ah,  byte[g_h]
+        mov  ah,  GRID_HEIGHT
         dec  ah
       @@:
          jmp Snake_move
         
       .to_right:
-        mov  [snake_napravlenie],   RIGHT
+        mov  [snake_direction], RIGHT
         mov  ax,  [edx]
         inc  al
-        cmp  al,  byte[g_w]
+        cmp  al,  GRID_WIDTH
          jne @f
         mov  al,  0
       @@:
@@ -285,7 +267,7 @@ Draw_level_strings:
 
     mov  ebx, [window_width]
     shr  ebx, 1
-    sub  ebx, (string_resume_space-string_pause_space-1)*3+6
+    sub  ebx, string_pause_space.size*3+6
     shl  ebx, 16
     add  ebx, [top_strings]
       mcall     4, ,[navigation_strings_color],string_pause_space ; Draw 'PAUSE - SPACE' string
@@ -297,6 +279,26 @@ Draw_level_strings:
     call    Draw_champion_name
     call    Draw_hiscore_string
     call    Draw_hiscore_number
+
+    cmp  [play_mode],   LEVELS_MODE
+     jne @f
+
+    mov  ebx, [window_width]
+    shr  ebx, 3
+    sub  ebx, 5
+    shl  ebx, 16
+    add  ebx, [bottom_bottom_strings]
+      mcall     4, ,[level_string_color],string_level
+
+    mov  edx, [window_width]
+    shr  edx, 3
+    sub  edx, 5+1
+    add  edx, string_level.size*6
+    shl  edx, 16
+    add  edx, [bottom_bottom_strings]
+      mcall     47,0x00020000,[cur_level_number], ,[level_number_color],[background_color]
+
+  @@:
 
     ret
 
@@ -368,7 +370,7 @@ Get_eat:
   .place_found:
     sub  ebx, field_map
     mov  eax, ebx
-    mov  bl,  byte[g_w]
+    mov  bl,  GRID_WIDTH
     div  bl
     xchg al,  ah
     
@@ -395,8 +397,8 @@ Sdvig:
     ;;---Sdvig-------------------------------------------------------------------------------------------------------------
 
 
-Set_reverse_napravlenie:
-    ;;===Set_reverse_napravlenie===========================================================================================
+Set_reverse_direction:
+    ;;===Set_reverse_direction==================================================================================================
 
     mov  eax, snake_dots
     mov  ebx, snake_dots+2
@@ -410,32 +412,32 @@ Set_reverse_napravlenie:
     cmp  cl,  0
      jne .skip2
     
-    mov  dl,  byte[g_w]
+    mov  dl,  GRID_WIDTH
     dec  dl
     cmp  ch,  dl
      jne .Normal_y_ravny
-    mov  [snake_napravlenie_next],  RIGHT
+    mov  [snake_direction_next],    RIGHT
     ret
         
   .skip2:
-    mov  dl,  byte[g_w]
+    mov  dl,  GRID_WIDTH
     dec  dl
     cmp  cl,  dl
      jne .Normal_y_ravny
     cmp  ch,  0
      jne .Normal_y_ravny
-    mov  [snake_napravlenie_next],  LEFT
+    mov  [snake_direction_next],    LEFT
     ret
     
   .Normal_y_ravny:
 
     cmp  cl,  ch
      jg  .Napravlenie_to_right
-    mov  [snake_napravlenie_next],  LEFT
+    mov  [snake_direction_next],    LEFT
     ret
 
   .Napravlenie_to_right:
-    mov  [snake_napravlenie_next],  RIGHT
+    mov  [snake_direction_next],    RIGHT
     ret
 
   .X_ravny:
@@ -447,40 +449,40 @@ Set_reverse_napravlenie:
     cmp  cl,  0
      jne .skip3
     
-    mov  dl,  byte[g_h]
+    mov  dl,  GRID_HEIGHT
     dec  dl
     cmp  ch,  dl
      jne .Normal_x_ravny
-    mov  [snake_napravlenie_next],  DOWN
+    mov  [snake_direction_next],    DOWN
     ret
         
   .skip3:
-    mov  dl,  byte[g_h]
+    mov  dl,  GRID_HEIGHT
     dec  dl
     cmp  ch,  dl
      jne .Normal_x_ravny
     cmp  ch,  0
      jne .Normal_x_ravny
-    mov  [snake_napravlenie_next],  UP
+    mov  [snake_direction_next],    UP
     ret
     
   .Normal_x_ravny:
 
     cmp  cl,  ch                                ; !!!
      jg  .Napravlenie_to_down                   ; 0 1 2 ...
-    mov  [snake_napravlenie_next],  UP          ; 1
+    mov  [snake_direction_next],    UP          ; 1
     ret                                         ; 2
                                                 ; .
   .Napravlenie_to_down:                         ; .
-    mov  [snake_napravlenie_next],  DOWN        ; .
+    mov  [snake_direction_next],    DOWN        ; .
 
     ret
 
-    ;;---Set_reverse_napravlenie-------------------------------------------------------------------------------------------
+    ;;---Set_reverse_direction--------------------------------------------------------------------------------------------------
     
     
 Snake_move:
-    ;;===Snake_move========================================================================================================
+    ;;===Snake_move=============================================================================================================
     ;;  in  :
     ;;           ax =   coord's of new head
     ;;          edx =   snake_dots+[snake_length_x2]-2 (snake head)
@@ -493,8 +495,8 @@ Snake_move:
 
     add  [snake_length_x2], 2
     add  [score],   SCORE_EAT
-    dec  word[number_of_free_dots]
-    cmp  word[number_of_free_dots], 0
+    dec  [number_of_free_dots]
+    cmp  [number_of_free_dots], 0
      je  Game_over
     mov  ax,  word[eat]
     mov  cl,  1
@@ -539,6 +541,13 @@ Snake_move:
     dec  [score]
       call      Draw_score_number
   @@:
+
+    cmp  [play_mode],   LEVELS_MODE
+     jne @f
+    cmp  [snake_length_x2], (EAT_TO_END_LEVEL+3)*2
+     je  Do_smth_between_levels
+  @@:
+
       mcall     26, 9
     mov  [time_before_waiting], eax
     mov  eax, [time_wait_limit]
@@ -546,5 +555,113 @@ Snake_move:
      jmp Level_body.still
 
     ;;---Snake_move------------------------------------------------------------------------------------------------------------
+
+
+Do_smth_between_levels:
+    ;;===Do_smth_between_levels================================================================================================
+
+    inc  [cur_level_number]
+    cmp  [cur_level_number],    LAST_LEVEL_NUMBER+1
+     jne @f
+    mov  [cur_level_number],    LEVELS_MODE_FIRST_LEVEL
+  @@:
+
+      call      Draw_splash
+
+  @@:
+      mcall     2
+    cmp  eax, 1
+     jne @b
+
+     jmp Level_begin
+
+    ;;---Do_smth_between_levels------------------------------------------------------------------------------------------------
+
+
+Draw_splash:
+    ;;===Draw_splash===========================================================================================================
+
+    mov  al,  0
+    mov  cl,  GRID_WIDTH-1
+    mov  edx, [splash_background_color]
+
+  .draw:
+    mov  bh,  GRID_HEIGHT-1
+    mov  bl,  al
+  @@:
+      call      Draw_square
+    sub  bh,  2
+    cmp  bh,  0
+     jg  @b
+    
+    inc  al
+    
+    mov  bh,  GRID_HEIGHT-2
+    mov  bl,  cl
+  @@:
+      call      Draw_square
+    sub  bh,  2
+    cmp  bh,  0
+     jnl @b
+
+    dec  cl
+    cmp  cl,  0
+     jl  @f
+
+    push eax ebx
+      mcall     5,PAUSE_WHILE_DRAWING_SPLASH
+    pop  ebx eax
+
+     jmp .draw
+  @@:
+
+    
+
+    mov  ax,  2*0x100+24
+    mov  cx,  1*0x100+5
+    mov  edx, [splash_level_string_color]
+    mov  esi, picture_level
+      call      Draw_picture
+
+    mov  eax, [cur_level_number]
+    mov  dl,  10
+    div  dl
+    push ax
+    
+    mov  esi, digits_font
+  @@:
+    test al,  al
+     jz  @f
+    add  esi, 20
+    dec  al
+     jmp @b
+  @@:
+    
+    mov  ax,  9*0x100+4
+    mov  cx,  8*0x100+5
+    mov  edx, [splash_level_number_color]
+      call      Draw_picture
+    
+    pop  ax
+    mov  esi, digits_font
+  @@:
+    test ah,  ah
+     jz  @f
+    add  esi, 20
+    dec  ah
+     jmp @b
+  @@:
+
+    mov  ax,  15*0x100+4
+    mov  cx,  8*0x100+5
+    mov  edx, [splash_level_number_color]
+      call      Draw_picture
+
+      mcall     5,PAUSE_BETWEEN_LEVELS
+
+    ret
+
+    ;;---Draw_splash-----------------------------------------------------------------------------------------------------------
+
 
 ;;---Some_functions------------------------------------------------------------------------------------------------------------
