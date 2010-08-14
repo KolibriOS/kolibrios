@@ -182,13 +182,22 @@ struc mls [sstring]
 
 
 ; strings
-macro sz name,[data] {	     ; from MFAR [mike.dld]
+macro sz name,[data] {       ; from MFAR [mike.dld]
  common
   if used name
    name db data
    .size = $-name
   end if
 }
+
+macro szZ name,[data] {      ; same as sz, but with 0 at the end of line (ASCIIZ string) [dunkaist]
+ common
+  if used name
+   name db data,0
+   .size = $-name-1
+  end if
+}
+sz0 fix szZ
 
 macro lsz name,[lng,data] {  ; from MFAR [mike.dld]
  common
@@ -203,7 +212,7 @@ macro lsz name,[lng,data] {  ; from MFAR [mike.dld]
   end if
 }
 
-macro szc name,elsz,[data] {	     ; from MFAR [mike.dld]
+macro szc name,elsz,[data] {         ; from MFAR [mike.dld]
  common
   local s,m
   m = 0
@@ -270,7 +279,7 @@ macro mpack dest, hsrc, lsrc
   end if
 }
 
-macro __mov reg,a,b {	    ; mike.dld
+macro __mov reg,a,b {       ; mike.dld
  if (~a eq)&(~b eq)
    mpack reg,a,b
  else if (~a eq)&(b eq)
@@ -280,11 +289,11 @@ macro __mov reg,a,b {	    ; mike.dld
 
 
 include 'config.inc'
-;__CPU_type	equ	p5
-SYSENTER_VAR	equ	0
+;__CPU_type equ p5
+SYSENTER_VAR    equ 0
 
 macro mcall a,b,c,d,e,f {   ; mike.dld, updated by Ghost for Fast System Calls
- local	..ret_point
+ local  ..ret_point
  __mov eax,a
  __mov ebx,b
  __mov ecx,c
@@ -293,26 +302,26 @@ macro mcall a,b,c,d,e,f {   ; mike.dld, updated by Ghost for Fast System Calls
  __mov edi,f
 
  if __CPU_type eq p5
-	int	0x40
+    int 0x40
  else
   if __CPU_type eq p6
-	push	ebp
-	mov	ebp, esp
-	push	..ret_point	; it may be 2 or 5 byte
-	sysenter
+    push    ebp
+    mov ebp, esp
+    push    ..ret_point ; it may be 2 or 5 byte
+    sysenter
  ..ret_point:
-	pop	edx
-	pop	ecx
+    pop edx
+    pop ecx
 
   else
    if __CPU_type eq k6
-	push	ecx
-	syscall
-	pop	ecx
+    push    ecx
+    syscall
+    pop ecx
    else
-	display 'ERROR : unknown CPU type (set to p5)', 10, 13
-	__CPU_type equ p5
-	int	0x40
+    display 'ERROR : unknown CPU type (set to p5)', 10, 13
+    __CPU_type equ p5
+    int 0x40
    end if
   end if
  end if
@@ -393,9 +402,9 @@ macro add arg1,arg2
  {
    if (arg2 eqtype 0)
       if (arg2) = 1
-	 inc arg1
+     inc arg1
       else
-	 add arg1,arg2
+     add arg1,arg2
       end if
    else
       add arg1,arg2
@@ -406,9 +415,9 @@ macro sub arg1,arg2
  {
    if (arg2 eqtype 0)
       if (arg2) = 1
-	 dec arg1
+     dec arg1
       else
-	 sub arg1,arg2
+     sub arg1,arg2
       end if
    else
       sub arg1,arg2
@@ -419,17 +428,17 @@ macro mov arg1,arg2
  {
    if (arg1 in __regs) & ((arg2 eqtype 0) | (arg2 eqtype '0'))
       if (arg2) = 0
-	 xor arg1,arg1
+     xor arg1,arg1
       else if (arg2) = 1
-	 xor arg1,arg1
-	 inc arg1
+     xor arg1,arg1
+     inc arg1
       else if (arg2) = -1
-	 or  arg1,-1
+     or  arg1,-1
       else if (arg2) > -128 & (arg2) < 128
-	 push arg2
-	 pop  arg1
+     push arg2
+     pop  arg1
       else
-	 mov  arg1,arg2
+     mov  arg1,arg2
       end if
    else
       mov arg1,arg2
@@ -454,68 +463,68 @@ struc POINT _t,_dx,_dy {
 include 'struct.inc'
 
 struct RECT
-  left	 dd ?
-  top	 dd ?
+  left   dd ?
+  top    dd ?
   right  dd ?
   bottom dd ?
 ends
 
 struct BOX
-  left	 dd ?
-  top	 dd ?
+  left   dd ?
+  top    dd ?
   width  dd ?
   height dd ?
 ends
 
 ; structures used in MeOS
 struct process_information
-  cpu_usage		  dd ?	; +0
-  window_stack_position   dw ?	; +4
-  window_stack_value	  dw ?	; +6
-			  dw ?	; +8
-  process_name		  rb 12 ; +10
-  memory_start		  dd ?	; +22
-  used_memory		  dd ?	; +26
-  PID			  dd ?	; +30
-  box			  BOX	; +34
-  slot_state		  dw ?	; +50
-			  dw ?	; +52
-  client_box		  BOX	; +54
+  cpu_usage       dd ?  ; +0
+  window_stack_position   dw ?  ; +4
+  window_stack_value      dw ?  ; +6
+              dw ?  ; +8
+  process_name        rb 12 ; +10
+  memory_start        dd ?  ; +22
+  used_memory         dd ?  ; +26
+  PID             dd ?  ; +30
+  box             BOX   ; +34
+  slot_state          dw ?  ; +50
+              dw ?  ; +52
+  client_box          BOX   ; +54
   wnd_state               db ?  ; +70
   rb (1024-71)
 ends
 
 struct system_colors
-  frame 	   dd ?
-  grab		   dd ?
-  grab_button	   dd ?
+  frame        dd ?
+  grab         dd ?
+  grab_button      dd ?
   grab_button_text dd ?
-  grab_text	   dd ?
-  work		   dd ?
-  work_button	   dd ?
+  grab_text    dd ?
+  work         dd ?
+  work_button      dd ?
   work_button_text dd ?
-  work_text	   dd ?
-  work_graph	   dd ?
+  work_text    dd ?
+  work_graph       dd ?
 ends
 
 struct FILEDATE
   Second db ?
   Minute db ?
-  Hour	 db ?
-	 db ?
-  Day	 db ?
+  Hour   db ?
+     db ?
+  Day    db ?
   Month  db ?
-  Year	 dw ?
+  Year   dw ?
 ends
 
 struct FILEINFO
   Attributes dd ?
   IsUnicode  db ?
-	     db 3 dup(?)
+         db 3 dup(?)
   DateCreate FILEDATE
   DateAccess FILEDATE
   DateModify FILEDATE
-  Size	     dq ?
+  Size       dq ?
 ends
 
 ; constants
@@ -524,16 +533,16 @@ ends
 EV_IDLE        = 0
 EV_TIMER       = 0
 EV_REDRAW      = 1
-EV_KEY	       = 2
+EV_KEY         = 2
 EV_BUTTON      = 3
 EV_EXIT        = 4
 EV_BACKGROUND  = 5
 EV_MOUSE       = 6
-EV_IPC	       = 7
+EV_IPC         = 7
 EV_STACK       = 8
 
 ; event mask bits for function 40
-EVM_REDRAW     =	1b
+EVM_REDRAW     =    1b
 EVM_KEY        =       10b
 EVM_BUTTON     =      100b
 EVM_EXIT       =     1000b
