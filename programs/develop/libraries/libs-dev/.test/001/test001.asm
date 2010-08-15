@@ -396,7 +396,7 @@ import	libgfx, \
 	gfx.open	,'gfx_open',\
 	gfx.close	,'gfx_close',\
 	gfx.pen.color	,'gfx_pen_color',\
-	gfx.brush.color ,'gfx_brush.color',\
+	gfx.brush.color ,'gfx_brush_color',\
 	gfx.pixel	,'gfx_pixel',\
 	gfx.move.to	,'gfx_move_to',\
 	gfx.line.to	,'gfx_line_to',\

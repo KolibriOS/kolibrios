@@ -278,8 +278,15 @@ endl
 	neg	eax
 	sub	eax, ecx
 	invoke	file.seek, ebx, eax, SEEK_CUR
+	push	ecx
 	invoke	file.write, ebx, [buf], ecx
-	jmp	@b
+	pop	ecx
+	cmp	eax, ecx
+	jz	@b
+  .fail:
+	or	eax, -1
+	pop	ecx ebx
+	ret
   .done:
 	mov	eax, [_delta]
 	neg	eax
@@ -289,10 +296,6 @@ endl
 	invoke	mem.free, [buf]
 	pop	ecx ebx
   .skip:
-	ret
-  .fail:
-	or	eax, -1
-	pop	ecx ebx
 	ret
 
   .down:
