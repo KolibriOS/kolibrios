@@ -5,33 +5,34 @@
 ;
 ;   Compile with FASM for Menuet
 ;
-LMARGIN equ (15+5)
-TMARGIN equ (35+5)
-HSPACE  equ 16		
-VSPACE  equ 12
-IPC_BUF equ 160
-DR_GRID equ 0;1
+LMARGIN    equ (15+5)
+TMARGIN    equ (35+5)
+HSPACE	   equ 16
+VSPACE	   equ 12
+IPC_BUF    equ 160
+DR_GRID    equ 0;1
+WRITE_LOG  equ 1
 
 FL_KRNL equ 1
 
 include 'lang.inc'
 
    use32
-   org    0x0
-   db     'MENUET01'              ; 8 byte id
-   dd     0x01                    ; header version
-   dd     START                   ; start of code
-   dd     I_END                   ; size of image
-   dd     i_end+0x2000                  ; memory for app (4 Kb)
-   dd     i_end+0x2000                  ; esp
-   dd     0x0 , 0x0               ; I_Param , I_Icon
+   org	  0x0
+   db	  'MENUET01'		  ; 8 byte id
+   dd	  0x01			  ; header version
+   dd	  START 		  ; start of code
+   dd	  I_END 		  ; size of image
+   dd	  i_end+0x2000			; memory for app (4 Kb)
+   dd	  i_end+0x2000			; esp
+   dd	  0x0 , 0x0		  ; I_Param , I_Icon
 include '..\..\..\MACROS.INC'
 include 'debug.inc'
 purge newline
 MAXSTRINGS = 16
 TMP = 80*(MAXSTRINGS+1)
 
-START:                          ; start of execution
+START:				; start of execution
 
      mcall 60,1,ipcbuff,IPC_BUF+20
      mcall 40,1000111b
@@ -64,24 +65,28 @@ START:                          ; start of execution
      mov  ecx,sc
      mov  edx,sizeof.system_colors
      mcall
+  if WRITE_LOG
+     mov  esi, filename
+     call CreateFile
+  end if
 
   red:
      call draw_window
 
 still:
 
-    mov  eax,23                 ; wait here for event
+    mov  eax,23 		; wait here for event
     mov  ebx,1
     mcall
 
-    cmp  eax,1                  ; redraw request ?
-    je   red
-    cmp  eax,2                  ; key in buffer ?
-    je   key
-    cmp  eax,3                  ; button in buffer ?
-    je   button
+    cmp  eax,1			; redraw request ?
+    je	 red
+    cmp  eax,2			; key in buffer ?
+    je	 key
+    cmp  eax,3			; button in buffer ?
+    je	 button
     cmp  eax,7
-    je   ipc
+    je	 ipc
 
     mov  eax,63
     mov  ebx,2
@@ -89,8 +94,27 @@ still:
 
     cmp  ebx,1
     jne  still
-		
+
   new_data:
+  if WRITE_LOG
+     pusha
+     mov  [tmp], al
+     mov  edx, tmp
+     mov  ecx, 1
+     mov  esi, filename
+  .write_to_logfile:
+     call WriteToFile
+     cmp  eax, 5
+     jne  @f
+     mov  esi, filename
+     mov  [filepos], 0
+     call CreateFile
+     jmp  .write_to_logfile
+  @@:
+     inc  [filepos]
+     popa
+  end if
+
     mov  ebp,[targ]
   .no4:
     cmp  al,13
@@ -123,15 +147,15 @@ still:
     jmp  new_check
   no10:
     cmp  ebp,text1
-    je   add2
-  		mov  ecx,[krnl_cnt]
+    je	 add2
+		mov  ecx,[krnl_cnt]
 		  cmp  al,[krnl_msg+ecx]
-  		jne  .noknl
+		jne  .noknl
 		  inc  [krnl_cnt]
-  		cmp  [krnl_cnt],4
-  		jne  new_check
+		cmp  [krnl_cnt],4
+		jne  new_check
     mov  [targ],text1
-  	.noknl:
+	.noknl:
     mov  ebp,[targ]
 	   jecxz .add
     push eax
@@ -153,10 +177,10 @@ still:
     mcall
 
     cmp  ebx,1
-    je   new_data
+    je	 new_data
 
     cmp  [vmode],2
-    je   still
+    je	 still
     call draw_window
 
     jmp  still
@@ -173,7 +197,7 @@ still:
    .lp:
     mcall 9
     cmp  [ebx+30],esi
-    je   .ok
+    je	 .ok
     loop .lp
     and  [dump_len],0
     jmp  red
@@ -184,17 +208,17 @@ still:
     mov  ecx,12
     rep  movsb
     jmp  red
-  key:                          ; key
-    mov  al,2                  ; just read it and ignore
+  key:				; key
+    mov  al,2		       ; just read it and ignore
     mcall
     cmp  ah,' '
-    je   button.no_krnl_flt
+    je	 button.no_krnl_flt
     cmp  [vmode],2
     jne  still
     cmp  ah,176 ;left
-    jb   still
+    jb	 still
     cmp  ah,179 ;right
-    ja  still
+    ja	still
     mov  ecx,[offs]
     shr  eax,8
     sub  eax,176
@@ -207,41 +231,41 @@ still:
 
 arrows dd -1,16,-16,1
 
-  button:                       ; button
-    mov  al,17                 ; get id
+  button:			; button
+    mov  al,17		       ; get id
     mcall
 
-    cmp  ah,1                   ; button id=1 ?
+    cmp  ah,1			; button id=1 ?
     jne  .noclose
 
-    or   eax,-1                 ; close this program
+    or	 eax,-1 		; close this program
     mcall
   .noclose:
-   	shr  eax,8
-  		cmp  eax,10
-  		jb   .nodump
+	shr  eax,8
+		cmp  eax,10
+		jb   .nodump
 		  lea  edi,[eax-10]
-  		mcall 37,1
+		mcall 37,1
 		  sub  eax,[edi*4+dump_cell_marg]
-  		sub  eax,TMARGIN+VSPACE
-  		push eax
+		sub  eax,TMARGIN+VSPACE
+		push eax
     and  eax,0xffff
 		  xor  edx,edx
-  		div  word[edi*4+dump_cell_size+2]
+		div  word[edi*4+dump_cell_size+2]
 		  mov  ecx,eax
     shl  ecx,16
-  		xor  edx,edx
+		xor  edx,edx
 		  pop  eax
-  		shr  eax,16
-  		div  word[edi*4+dump_cell_size]
-  		mov  cx,ax
+		shr  eax,16
+		div  word[edi*4+dump_cell_size]
+		mov  cx,ax
   .check_sel:
-  		mov  eax,ecx
+		mov  eax,ecx
     shl  ax,12
     shr  eax,12
     inc  eax
     cmp  eax,[dump_len]
-    ja   still;.nosel
+    ja	 still;.nosel
     mov  dword[sel_byte],ecx
     dec  eax
     mov  [offs],eax
@@ -257,7 +281,7 @@ arrows dd -1,16,-16,1
     and  byte[ipcbuff],0
     inc  [vmode]
     cmp  [vmode],3
-    jb   .vmok
+    jb	 .vmok
     and  [vmode],0
   .vmok:
     jmp  red
@@ -270,7 +294,7 @@ add_char:
     mov  [ebp+esi],al
     inc  dword[ebp-8]
     cmp  dword[ebp-8],80
-    jb   .ok
+    jb	 .ok
     mov  dword[ebp-8],79
   .ok:
     pop  esi
@@ -283,20 +307,20 @@ add_char:
 
 draw_window:
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,1			   ; 1, start of draw
     mcall
 
-                                   ; DRAW WINDOW
-    xor  eax,eax                     ; function 0 : define and draw window
+				   ; DRAW WINDOW
+    xor  eax,eax		     ; function 0 : define and draw window
 ;   mov  ebx,50*65536+400          ; [x start] *65536 + [x size]
     mov  ebx,[xstart]
-    mov  ecx,MAXSTRINGS*10+45      ; [y start] *65536 + [y size]
-    mov  edx,[sc.work]             ; color of work area RRGGBB,8->color gl
-    or   edx,0x13000000
-    mov  edi,title                ; WINDOW LABEL
+    mov  ecx,MAXSTRINGS*10+45	   ; [y start] *65536 + [y size]
+    mov  edx,[sc.work]		   ; color of work area RRGGBB,8->color gl
+    or	 edx,0x13000000
+    mov  edi,title		  ; WINDOW LABEL
     mcall
-    
+
     mov  ecx,4
     mov  esi,[sc.work]
     mov  ebx,296 shl 16+5*6
@@ -307,12 +331,12 @@ draw_window:
     mcall 4,<300,8>,,,4
 
     cmp  [vmode],2
-    je   no_mdbg
-    mov  ebx,15*65536+33           ; draw info text with function 4
+    je	 no_mdbg
+    mov  ebx,15*65536+33	   ; draw info text with function 4
     mov  ecx,[sc.work_text]
     mov  edx,text1
     cmp  [vmode],0
-    je   .kern
+    je	 .kern
     mov  edx,text2
   .kern:
     mov  esi,80
@@ -333,10 +357,10 @@ draw_window:
   end if
     mov  ecx,[dump_len]
     call dump_btn
-  		call draw_dump
+		call draw_dump
 		enddraw:
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,2			   ; 2, end of draw
     mcall
 
     ret
@@ -398,10 +422,10 @@ draw_dump:
   call draw_numbers
   mcall 4,(LMARGIN+2) shl 16+27,0,dump_title,dump_t_len-dump_title
   mcall 47,0x30101,ipcbuff+8,(LMARGIN+2+6*29)shl 16+27
-  add   edx,(6*27) shl 16
-  mov   ecx,offs
+  add	edx,(6*27) shl 16
+  mov	ecx,offs
   mcall
-  sub   edx,(5*6)shl 16
+  sub	edx,(5*6)shl 16
   mcall ,0x30001
   mov  ecx,16
   mov  edi,HSPACE shl 16
@@ -417,17 +441,17 @@ draw_dump:
   popa
 		mov  edx,TMARGIN+2
 		mov  edi,ecx
-	.lp:	
+	.lp:
 		add  edx,(LMARGIN+2) shl 16+VSPACE
 		mov  ecx,16
 		cmp  edi,ecx
 		jae  .less
 		mov  ecx,edi
-	.less:	
+	.less:
 		sub  edi,ecx
 		push esi ecx
 		mov  ebx,0x20100
-	.lp1:	
+	.lp1:
 		push ecx esi
 		movzx ecx,byte[esi]
 		mcall 47,,,,0
@@ -472,7 +496,7 @@ dump_btn: ; ecx-length
 		test ecx,0xffff
 		je   .even
 		add  ecx,16
-	.even:	
+	.even:
 		shr  ecx,4
 		imul ecx,VSPACE
 		add  ecx,(TMARGIN+VSPACE)shl 16-5
@@ -501,7 +525,74 @@ dump_btn: ; ecx-length
   mcall 13
 		popa
 .ex:
-		ret		
+		ret
+
+
+if WRITE_LOG
+;********************************************
+;*  input:  esi = pointer to the file name  *
+;********************************************
+
+CreateFile:
+    pusha
+    mov      dword [InfoStructure],    2   ; create file
+    mov      dword [InfoStructure+4],  0   ; reserved
+    mov      dword [InfoStructure+8],  0   ; reserved
+    mov      dword [InfoStructure+12], 0   ; 0 bytes to write (just create)
+    mov      dword [InfoStructure+16], 0   ; NULL data pointer (no data)
+    mov      dword [InfoStructure+20], 0   ; reserved
+    mov      dword [InfoStructure+21], esi ; pointer to the file name
+    mcall    70, InfoStructure
+    clc
+    test     eax, eax
+    jz	     .out
+    stc
+  .out:
+    popa
+    ret
+
+;********************************************
+;*  input:  esi = pointer to the file name  *
+;*          edx = pointer to data buffer    *
+;*          ecx = data length               *
+;********************************************
+
+WriteToFile:
+    push     ebx
+    mov      dword [InfoStructure],    3   ; write to file
+    mov      eax,  [filepos]
+    mov      dword [InfoStructure+4],  eax ; lower position addr
+    mov      dword [InfoStructure+8],  0   ; upper position addr (0 for FAT)
+    mov      dword [InfoStructure+12], ecx ; number of bytes to write
+    mov      dword [InfoStructure+16], edx ; pointer to data buffer
+    mov      dword [InfoStructure+20], 0   ; reserved
+    mov      dword [InfoStructure+21], esi ; pointer to the file name
+    mcall    70, InfoStructure
+    clc
+    test     eax, eax
+    jz	     .out
+    stc
+  .out:
+    pop      ebx
+    ret
+
+
+InfoStructure:
+		     dd      0x0     ; subfunction number
+		     dd      0x0     ; position in the file in bytes
+		     dd      0x0     ; upper part of the position address
+		     dd      0x0     ; number of     bytes to read
+		     dd      0x0     ; pointer to the buffer to write data
+		     db      0
+		     dd      0	     ; pointer to the filename
+
+filepos  dd 0
+filename db '/sys/boardlog.txt',0
+tmp	 db 0
+end if
+
+
+
 
 krnl_msg db 'K : '
 duk db 'KernUserDump'
@@ -517,14 +608,14 @@ dump_cell_size dw HSPACE,VSPACE,6,VSPACE
 ; 11,11 > 0,-1
 ; 5,11  > 0,-1
 if lang eq ru
-   title    db   'Доска отладки и сообщений',0
+   title    db	 'Доска отладки и сообщений',0
 else if lang eq en
-   title    db   'General debug & message board',0
+   title    db	 'General debug & message board',0
 else
-   title    db   'Allgemeines debug- & nachrichtenboard',0
+   title    db	 'Allgemeines debug- & nachrichtenboard',0
 end if
    krnl_cnt dd 0
-   vmode dd 0
+   vmode dd 1
    targ  dd text2
 I_END:
      offs dd ?
