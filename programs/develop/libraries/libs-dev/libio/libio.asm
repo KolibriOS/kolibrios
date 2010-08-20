@@ -179,7 +179,7 @@ locals
   loc_buf  rb 40
 endl
 
-	push	ebx ecx esi edi
+	push	ebx esi edi
 
 	xor	ebx, ebx
 	invoke	mem.alloc, sizeof.InternalFileInfo
@@ -212,7 +212,7 @@ endl
 	jne	.exit_error.ex
     @@:
 	mov	eax, ebx
-	pop	edi esi ecx ebx
+	pop	edi esi ebx
 	ret
 
   .exit_error.ex:
@@ -233,7 +233,7 @@ endl
   .exit_error:
 	invoke	mem.free, ebx
 	xor	eax, eax
-	pop	edi esi ecx ebx
+	pop	edi esi ebx
 	ret
 endp
 

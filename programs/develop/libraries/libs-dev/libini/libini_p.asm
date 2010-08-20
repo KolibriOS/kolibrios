@@ -81,14 +81,12 @@ proc libini._.get_char _f ;/////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push ecx
 	mov	ecx, [_f]
 	dec	[ecx + IniFile.cnt]
 	jns	@f
 	stdcall libini._.preload_block, [_f]
 	dec	[ecx + IniFile.cnt]
     @@: lodsb
-	pop ecx
 	ret
 endp
 
@@ -101,7 +99,6 @@ proc libini._.skip_nonblanks _f ;///////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push ecx
 	mov	ecx, [_f]
     @@: stdcall libini._.get_char, [_f]
 	cmp	al, 32
@@ -117,7 +114,6 @@ proc libini._.skip_nonblanks _f ;///////////////////////////////////////////////
 	stdcall libini._.skip_line, [_f]
 	jmp	@b
     @@: stdcall libini._.unget_char, [_f]
-	pop ecx
 	ret
 endp
 
@@ -130,7 +126,6 @@ proc libini._.skip_spaces _f ;//////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push ecx
 	mov	ecx, [_f]
     @@: stdcall libini._.get_char, [_f]
 	cmp	al, 32
@@ -138,7 +133,6 @@ proc libini._.skip_spaces _f ;//////////////////////////////////////////////////
 	cmp	al, 9
 	je	@b
     @@: stdcall libini._.unget_char, [_f]
-	pop ecx
 	ret
 endp
 
@@ -151,7 +145,6 @@ proc libini._.skip_line _f ;////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push ecx
 	mov	ecx, [_f]
     @@: stdcall libini._.get_char, [_f]
 	or	al, al
@@ -161,7 +154,6 @@ proc libini._.skip_line _f ;////////////////////////////////////////////////////
 	cmp	al, 10
 	jne	@b
     @@: stdcall libini._.unget_char, [_f]
-	pop ecx
 	ret
 endp
 
@@ -433,7 +425,7 @@ proc libini._.find_section _f, _sec_name ;//////////////////////////////////////
 ;< eax = -1 (fail) / 0 (ok)                                                                       ;;
 ;< [_f.pos] = new cursor position (right after ']' char if eax = 0, at the end of file otherwise) ;;
 ;;================================================================================================;;
-	push	ebx ecx edi
+	push	ebx edi
 
 	mov	ecx, [_f]
 	invoke	file.seek, [ecx + IniFile.fh], 0, SEEK_SET
@@ -469,12 +461,12 @@ proc libini._.find_section _f, _sec_name ;//////////////////////////////////////
     @@:
 	cmp	byte[edi], 0
 	jne	.next_section
-	pop	edi ecx ebx
+	pop	edi ebx
 	xor	eax, eax
 	ret
 
   .exit_error:
-	pop	edi ecx ebx
+	pop	edi ebx
 	or	eax, -1
 	ret
 endp
