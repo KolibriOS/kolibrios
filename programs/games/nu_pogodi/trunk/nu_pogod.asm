@@ -50,27 +50,24 @@ ends
 displ_w dd ? ;ширина поля
 displ_h dd ? ;высота поля
 displ_bytes dd ? ;размер 1-го файла с изображением
-;displ_bytes equ 315*210*3 ;размер 1-го файла с изображением
+offs_shadow_x dd ? ;сдвиг теней по оси 'x'
+offs_shadow_y dd ? ;сдвиг теней по оси 'y'
 
-OFFS_SHADOW_X equ 2 ;сдвиг теней по оси 'x'
-OFFS_SHADOW_Y equ 2 ;сдвиг теней по оси 'y'
 IMAGE_FONT_SIZE equ 128*144*3
 
-use_but equ 1
-
-if use_but eq 1
 BUT1_T equ 10 ;отступ сверху
 BUT1_L equ 15 ;отступ слева
 BUT1_W equ 50 ;ширина
 BUT1_H equ 20 ;высота
 BUT1_NEXT_TOP equ (BUT1_T+BUT1_H)*65536
-end if
+
 
 FILE_NAME_MAX equ 20 ;максимальная длинна имени файла (без папок, относительно текущей)
 ;значения имен по умолчанию
+ini_def_decorat_file db 'curici.png',0
 ini_def_unit_file db 'wolf.png',0
 ;имена файлов
-fn_icon0 db 'curici.png',0 ;имя файла с декорациями
+fn_icon0 rb FILE_NAME_MAX ;имя файла с декорациями
 fn_icon1 rb FILE_NAME_MAX ;имя файла с волком и зайцем
 fn_icon2 db 'eggs.png',0 ;имя файла с яйцами
 fn_icon3 db 'chi.png',0 ;имя файла с циплятами
@@ -78,22 +75,31 @@ fn_font db 'font8x9.bmp',0
 
 ini_name db 'nu_pogod.ini',0
 ini_sec_files db 'Files',0
+key_file_decorat db 'file_decorat',0
 key_file_unit db 'file_unit',0
 key_displ_w db 'displ_w',0
 key_displ_h db 'displ_h',0
+key_shadow_x db 'offs_shadow_x',0
+key_shadow_y db 'offs_shadow_y',0
 
 ini_sec_color db 'Colors',0
+;ключи для считывания цветов из *.ini файла
+key_color_fon db 'background',0
+key_color_shadows db 'shadows',0
+key_color_egg db 'objects',0
+key_color_chick db 'lost',0
+key_color_decorat: db 'dec'
+	.ind: db '?',0
 key_color_unit db 'unit',0
 
 ;цвета в игре
-color_fon dd 0xffffff
-color_shadows dd 0xd0d0d0 ;цвет теней
-color_trees dd 0x008000 ;цвет травы
-color_wolf dd 0x800000 ;цвет волка и зайца
-color_egg dd 0x404080 ;цвет яйца
-color_chick dd 0x00d0d0 ;цвет ципленка
-color_curici dd 0x8080d0 ;цвет курицы
-color_perilo dd 0x000080 ;цвет перила (гребня)
+color_fon dd ? ;цвет фона
+color_shadows dd ? ;цвет теней
+color_wolf dd ? ;цвет волка и зайца
+color_egg dd ? ;цвет яйца
+color_chick dd ? ;цвет ципленка
+color_decorat dd ?,?,? ;цвета декораций (курицы, перила, ...)
+
 ;цвета интерфейса
 color_but_sm dd 0x808080 ;цвет маленьких кнопок
 color_but_te dd 0xffffff ;цвет текста на кнопках
@@ -136,6 +142,7 @@ mask_lot_ld    equ 100000b ;маска для левого нижнего лотка
 mask_lot_ru    equ 10000000000b ;маска для правого верхнего лотка
 mask_lot_rd    equ 1000000000000000b ;маска для правого нижнего лотка
 mask_clear_all equ 11111011111011110111101111011110b ;маска для очистки падающих яиц и прибежавших циплят
+mask_move_eggs equ 11111111111111111111b ;маска движущихся яиц
 mask_fail_eggs equ 100001000010000100000b ;маска падающих яиц
 mask_chi_left  equ 11111000000000000000000000b ;маска левых циплят
 mask_chi_right equ 11111000000000000000000000000000b ;маска правых циплят
@@ -149,7 +156,7 @@ val_zaac_time_n equ 7 ;колличество тактов, которое обязательно должен быть спрят
 txt_game_a db 'Игра А',0
 txt_game_b db 'Игра Б',0
 
-zaac_status db 0
+zaac_status db 0 ;число тактов, которое заяц не должен менять свое положение
 pos_wolf db 0 ;позиция волка 0-й бит слева/справа, 1-й бит сверху/вниз
 ;rb 1
 pos_eggs dd 0 ;позиции расположения яиц и циплят
@@ -211,36 +218,35 @@ InitBackgroundBuffer: ;создание фонового изображения
 	mov esi,edi
 
 	xor eax,eax
-	xor ebx,ebx
+	cld
+	cmp dword[offs_shadow_x],0
+	jne @f
+	cmp dword[offs_shadow_y],0
+	jne @f
+		jmp .end_shadows
+	@@:
+		mov edi,buf_decor
+		xor ebx,ebx
+		mov ecx,3
+		@@:
+			mov ax,buf2d_t
+			add eax,[offs_shadow_y]
+			mov bx,buf2d_l
+			add ebx,[offs_shadow_x]
+			stdcall [buf2d_bit_blt_alpha], esi, ebx,eax, edi,[color_shadows] ;рисуем тени декораций
+			add edi,BUF_STRUCT_SIZE
+			loop @b
+	.end_shadows:
 
 	mov edi,buf_decor
-	mov ax,buf2d_t
-	add eax,OFFS_SHADOW_Y
-	mov bx,buf2d_l
-	add ebx,OFFS_SHADOW_X
-	stdcall [buf2d_bit_blt_alpha], esi, ebx,eax, edi,[color_shadows] ;рисуем тени домиков
-	add edi,BUF_STRUCT_SIZE
-	mov ax,buf2d_t
-	add eax,OFFS_SHADOW_Y
-	mov bx,buf2d_l
-	add ebx,OFFS_SHADOW_X
-	stdcall [buf2d_bit_blt_alpha], esi, ebx,eax, edi,[color_shadows] ;рисуем тени куриц
-	add edi,BUF_STRUCT_SIZE
-	mov ax,buf2d_t
-	add eax,OFFS_SHADOW_Y
-	mov bx,buf2d_l
-	add ebx,OFFS_SHADOW_X
-	stdcall [buf2d_bit_blt_alpha], esi, ebx,eax, edi,[color_shadows] ;рисуем тени деревьев
-
-	mov edi,buf_decor
-	mov ax,buf2d_t
-	stdcall [buf2d_bit_blt_alpha], esi, 0,eax, edi,[color_perilo] ;рисуем домики
-	add edi,BUF_STRUCT_SIZE
-	mov ax,buf2d_t
-	stdcall [buf2d_bit_blt_alpha], esi, 0,eax, edi,[color_curici] ;рисуем курицы
-	add edi,BUF_STRUCT_SIZE
-	mov ax,buf2d_t
-	stdcall [buf2d_bit_blt_alpha], esi, 0,eax, edi,[color_trees] ;рисуем деревья
+	mov ebx,color_decorat
+	mov ecx,3
+	@@:
+		mov ax,buf2d_t
+		stdcall [buf2d_bit_blt_alpha], esi, 0,eax, edi,[ebx] ;рисуем декорации
+		add edi,BUF_STRUCT_SIZE
+		add ebx,4
+		loop @b
 	popad
 	ret
 
@@ -510,6 +516,14 @@ MoveEggs:
 	.no_zaac_move:
 
 	;создание новых яиц
+	cmp word[eggs_count],5 ;первые 5 яиц катятся по 1-му
+	jge @f
+		mov ecx,dword[pos_eggs]
+		and ecx,mask_move_eggs
+		;cmp ecx,0
+		jnz .end_creat
+	@@:
+
 	bt dword[rand_x],4 ;проверяем будем ли создавать новое яйцо
 	jc .end_creat
 	bt dword[rand_x],5 ;проверяем с какой стороны будем создавать новое яйцо
@@ -610,10 +624,34 @@ start:
 	mov	dword[displ_w],eax
 	stdcall dword[ini_get_int],file_name,ini_sec_files,key_displ_h,140
 	mov	dword[displ_h],eax
+	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_decorat,fn_icon0,FILE_NAME_MAX,ini_def_decorat_file
+	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_unit,fn_icon1,FILE_NAME_MAX,ini_def_unit_file
+	stdcall dword[ini_get_int],file_name,ini_sec_files,key_shadow_x,2
+	mov	dword[offs_shadow_x],eax
+	stdcall dword[ini_get_int],file_name,ini_sec_files,key_shadow_y,2
+	mov	dword[offs_shadow_y],eax
+
+	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_fon,0xffffff
+	mov	dword[color_fon],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_shadows,0xd0d0d0
+	mov	dword[color_shadows],eax
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_unit,0
 	mov	dword[color_wolf],eax
-	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_unit,fn_icon1,FILE_NAME_MAX,ini_def_unit_file
+	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_egg,0x404080
+	mov	dword[color_egg],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_chick,0x00d0d0
+	mov	dword[color_chick],eax
 
+	mov ebx,color_decorat
+	mov byte[key_color_decorat.ind],'0'
+	mov ecx,3
+	cld
+	@@:
+		stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_decorat,0x000080
+		mov dword[ebx],eax
+		add ebx,4
+		inc byte[key_color_decorat.ind]
+		loop @b
 
 	mov edx,dword[displ_w]
 	imul edx,dword[displ_h]
@@ -790,7 +828,6 @@ draw_window:
 		inc esi
 	.draw_s:
 
-if use_but eq 1
 	; *** рисование кнопок ***
 push esi
 	mov eax,8
@@ -828,7 +865,6 @@ pop esi
 	; *** восстановление параметров ***
 	mov eax,13 ;рисование прямоугольника
 	mov edx,[sc.work]
-end if
 
 	mov ebx,esi
 	mov ecx,dword[procinfo.client_box.height]
@@ -863,7 +899,7 @@ draw_display:
 push eax
 	mov eax,dword[displ_w]
 	shr eax,1
-	stdcall [buf2d_draw_text], buf_displ, buf_font,game_text,eax,OFFS_SHADOW_X,[color_curici] ;рисуем строку с текстом
+	stdcall [buf2d_draw_text], buf_displ, buf_font,game_text,eax,[offs_shadow_x],[color_wolf] ;рисуем строку с текстом
 pop eax
 	stdcall [buf2d_draw], buf_displ
 	ret
@@ -871,7 +907,7 @@ pop eax
 align 4
 button:
 	mcall 17 ;получить код нажатой кнопки
-	if use_but eq 1
+
 	cmp ah,5
 	jne @f
 		stdcall InitGame,0
@@ -879,7 +915,7 @@ button:
 	cmp ah,6
 	jne @f
 		stdcall InitGame,1
-	@@:	end if
+	@@:
 	cmp ah,1
 	jne still
 .exit:
@@ -990,7 +1026,7 @@ image_data dd 0 ;память для преобразования картинки функциями libimg
 image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
 
 run_file_70 FileInfoBlock
-hed db 'Nu pogodi 03.08.10',0 ;подпись окна
+hed db 'Nu pogodi 20.08.10',0 ;подпись окна
 sc system_colors  ;системные цвета
 
 align 4
