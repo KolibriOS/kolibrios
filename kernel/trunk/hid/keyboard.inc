@@ -177,6 +177,7 @@ irq1:
        mov   eax,VKEY_SCRLOCK
        jmp   .no_key.xor
    @@:
+       mov   bh,0
        test  ch,ch
        js    .writekey
        movzx eax,ch		 ; plain key
@@ -200,7 +201,6 @@ irq1:
        jz    @f
        mov   bl,[keymap_alt+eax]
    @@:
-	mov	bh, 0
 	jmp	.writekey
 .modifier:
 	test	ch, ch
