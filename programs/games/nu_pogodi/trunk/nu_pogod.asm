@@ -66,10 +66,11 @@ FILE_NAME_MAX equ 20 ;максимальная длинна имени файла (без папок, относительно т
 ;значения имен по умолчанию
 ini_def_decorat_file db 'curici.png',0
 ini_def_unit_file db 'wolf.png',0
+ini_def_objects_file db 'eggs.png',0
 ;имена файлов
 fn_icon0 rb FILE_NAME_MAX ;имя файла с декорациями
 fn_icon1 rb FILE_NAME_MAX ;имя файла с волком и зайцем
-fn_icon2 db 'eggs.png',0 ;имя файла с яйцами
+fn_icon2 rb FILE_NAME_MAX ;имя файла с яйцами
 fn_icon3 db 'chi.png',0 ;имя файла с циплятами
 fn_font db 'font8x9.bmp',0
 
@@ -77,10 +78,16 @@ ini_name db 'nu_pogod.ini',0
 ini_sec_files db 'Files',0
 key_file_decorat db 'file_decorat',0
 key_file_unit db 'file_unit',0
+key_file_objects db 'file_objects',0
 key_displ_w db 'displ_w',0
 key_displ_h db 'displ_h',0
 key_shadow_x db 'offs_shadow_x',0
 key_shadow_y db 'offs_shadow_y',0
+
+ini_sec_game db 'Game',0
+key_delay_a db 'delay_a',0
+key_delay_b db 'delay_b',0
+key_delay_min db 'delay_min',0
 
 ini_sec_color db 'Colors',0
 ;ключи для считывания цветов из *.ini файла
@@ -166,6 +173,9 @@ some_text db '0'
 	rb 8 ;текст с числом пойманных яиц
 count_last db 0 ;счетчик пропущенных яиц
 game_spd dd 0 ;задержка игры
+game_delay_a dd ? ;первоначальная задержка для игры А
+game_delay_b dd ? ;первоначальная задержка для игры Б
+game_delay_min dd ? ;минимальная задержка
 
 ;для генерации случайных чисел
 rand_x dd 0
@@ -410,7 +420,8 @@ CountEggsInc: ;увеличиваем счетчик яиц на 1
 		and ax,0xf ;через каждые 16 яиц уменьшаем время
 		cmp ax,0
 		jne @f
-			cmp dword[game_spd],15 ;минимальная задержка
+			mov edi,dword[game_delay_min] ;минимальная задержка
+			cmp dword[game_spd],edi
 			jle @f
 				dec dword[game_spd]
 		@@:
@@ -554,23 +565,25 @@ proc InitGame, b:dword ;первоначальные настройки игры
 	mov word[eggs_count],0 ;колличество пойманых яиц
 	mov byte[some_text],'0'
 	mov byte[some_text+1],0 ;текст с числом пойманных яиц
-	mov byte[count_last],0
+	mov byte[count_last],0 ;штрафные очки
 	mov dword[pos_eggs],0
 	mov byte[zaac_status],0
 
+	push eax ebx
 	cmp dword[b],0
 	jne @f
 		mov byte[game_text+5],'А'
-		mov dword[game_spd],65 ;задержка игры
+		mov eax,dword[game_delay_a]
+		mov dword[game_spd],eax ;задержка игры
 		jmp .end_init
 	@@:
 		mov byte[game_text+5],'Б'
-		mov dword[game_spd],35 ;задержка игры
+		mov eax,dword[game_delay_b]
+		mov dword[game_spd],eax ;задержка игры
 	.end_init:
 
-	push eax ebx
-		mcall 26,9
-		mov dword[rand_x],eax ;заполняем 1-е случайное число
+	mcall 26,9
+	mov dword[rand_x],eax ;заполняем 1-е случайное число
 	pop ebx eax
 
 	ret
@@ -626,11 +639,20 @@ start:
 	mov	dword[displ_h],eax
 	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_decorat,fn_icon0,FILE_NAME_MAX,ini_def_decorat_file
 	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_unit,fn_icon1,FILE_NAME_MAX,ini_def_unit_file
+	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_objects,fn_icon2,FILE_NAME_MAX,ini_def_objects_file
 	stdcall dword[ini_get_int],file_name,ini_sec_files,key_shadow_x,2
 	mov	dword[offs_shadow_x],eax
 	stdcall dword[ini_get_int],file_name,ini_sec_files,key_shadow_y,2
 	mov	dword[offs_shadow_y],eax
 
+	;считывание настроек влияющих на скорсть игры
+	stdcall dword[ini_get_int],file_name,ini_sec_game,key_delay_a,65
+	mov	dword[game_delay_a],eax
+	stdcall dword[ini_get_int],file_name,ini_sec_game,key_delay_b,35
+	mov	dword[game_delay_b],eax
+	stdcall dword[ini_get_int],file_name,ini_sec_game,key_delay_min,15
+	mov	dword[game_delay_min],eax
+	
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_fon,0xffffff
 	mov	dword[color_fon],eax
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_shadows,0xd0d0d0
@@ -647,7 +669,9 @@ start:
 	mov ecx,3
 	cld
 	@@:
+		push ecx ;функция ini_get_color имеет право манять регистр ecx
 		stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_decorat,0x000080
+		pop ecx
 		mov dword[ebx],eax
 		add ebx,4
 		inc byte[key_color_decorat.ind]
@@ -1026,7 +1050,7 @@ image_data dd 0 ;память для преобразования картинки функциями libimg
 image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
 
 run_file_70 FileInfoBlock
-hed db 'Nu pogodi 20.08.10',0 ;подпись окна
+hed db 'Nu pogodi 22.08.10',0 ;подпись окна
 sc system_colors  ;системные цвета
 
 align 4
