@@ -191,6 +191,8 @@ fasm games\phenix\trunk\phenix.asm %BIN%\games\phenix
 fasm games\pipes\pipes.asm %BIN%\games\pipes
 fasm games\pong\trunk\pong.asm %BIN%\games\pong
 fasm games\pong3\trunk\pong3.asm %BIN%\games\pong3
+fasm games\snake\snake.asm %BIN%\games\snake
+copy games\snake\snake.ini %BIN%\games\snake.ini
 fasm games\tanks\trunk\tanks.asm %BIN%\games\tanks
 fasm games\tetris\trunk\tetris.asm %BIN%\games\tetris
 rem fasm games\hunter\trunk\hunter.asm %BIN%\games\hunter
