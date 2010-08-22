@@ -543,6 +543,10 @@ load_directory:
     jz  .copy
     cmp ecx, 'cur'
     jz  .copy
+; dunkaist [
+    cmp ecx, 'pcx'
+    jz  .copy
+; dunkaist ]
     cmp ecx, 'jpeg'
     jz  @f
     cmp ecx, 'jpeG'
@@ -1049,7 +1053,9 @@ db 'JPE',0
 db 'PNG',0
 db 'ICO',0
 db 'CUR',0
+; dunkaist [
 db 'PCX',0
+; dunkaist ]
 .end:
 db 0
 
