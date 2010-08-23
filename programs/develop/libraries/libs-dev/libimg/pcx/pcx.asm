@@ -42,7 +42,7 @@ proc img.is.pcx _data, _length ;////////////////////////////////////////////////
      jne    .is_not_pcx
     cmp     [edi+pcx_header.encoding],  1
      jne    .is_not_pcx
-    cmp     [esi+pcx_header.reserved],  0
+    cmp     [edi+pcx_header.reserved],  0
      jne    .is_not_pcx
 
     add     edi,    pcx_header.filler
