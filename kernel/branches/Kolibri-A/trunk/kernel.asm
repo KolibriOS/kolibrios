@@ -4251,13 +4251,13 @@ sys_gs:                         ; direct screen access
      ret
 
 
-align 4 ; PCI functions
-
-sys_pci:
-
-     call  pci_api
-     mov   [esp+36],eax
-     ret
+;align 4 ; PCI functions
+;
+;sys_pci:
+;
+;     call  pci_api
+;     mov   [esp+36],eax
+;     ret
 
 
 align 4  ;  system functions
