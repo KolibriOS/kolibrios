@@ -12,7 +12,7 @@ jmps dw  _close, kDel,kMute, bList.shuf, bList.repe, bList.prev, bList.next
 ; bottom actions
    dw kDel,bLsave,bLload,bRemAll,bAdd,bAddDir,bSelZero,bInvSel,bSelAll,bRemCrop
    dw  bMinimize,bAbout,bResetTrk
-
+;------------------------------------------------------------------------
 jmps_end:
 
 key:
@@ -108,7 +108,7 @@ key:
     mov  eax,IPC_TRIG
     call ipc_send
     jmp  red
-
+;------------------------------------------------------------------------
   button:
     mov  eax,17
     mcall
@@ -171,9 +171,11 @@ SH_POPUP equ 10
     mov  eax,67
     mcall
     ret
+;------------------------------------------------------------------------
   bMinimize:
 ;    mcall 18,10
     jmp  still
+;------------------------------------------------------------------------
   bList:
     mov  [popup],-1
     mov  edx,[listsel]
@@ -253,6 +255,7 @@ SH_POPUP equ 10
     cmp  al,[list_count]
     jae  still
     jmp  play_
+;------------------------------------------------------------------------
   bBar:
     cmp  [tick_count],0
     jz   still
@@ -281,8 +284,9 @@ SH_POPUP equ 10
     mov  [cur_ptr],esi
   drw:
     jmp  red
-
+;------------------------------------------------------------------------
 OCT_CH equ 3
+;------------------------------------------------------------------------
   bOctU:
     add  [octave],OCT_CH
     jmp  midi_kill
@@ -320,34 +324,53 @@ OCT_CH equ 3
     and  [list_count],0
     mov  [play_limit],playlist-2
     jmp  red
-  bAdd:
-    movzx eax,[list_count]
-    dpd  eax
-    call fopen
-    mov  edi,filename
-    cmp  byte[edi],0
-    jz   still
-    call str_len
-    xchg eax,ecx
-    mov  esi,edi
-    jmp  add_song
-  bAddDir:
-    call fopen
-    mov  edi,filename
-    cmp  byte[edi],0
-    jz   still
-    call find_slash
-    lea  edx,[edi-filename+fnbuf] ; edx -> '/'
-    and  byte[edi],0
-    mov  esi,filename
-    mov  edi,fnbuf
-    mov  ecx,1024/4
-    rep  movsd
-        and     dword [dir_info+4], 0
-  .nxt2:
+;------------------------------------------------------------------------
+bAdd:
+	movzx eax,[list_count]
+	dpd  eax
+	mov	[OpenDialog_data.type],0	; Open
+	or	[flag],FL_LOCK	
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
+	and	[flag],not FL_LOCK
+	cmp	[OpenDialog_data.status],1
+	jne	still
+
+	mov  edi,filename
+	cmp  byte[edi],0
+	jz   still
+	call str_len
+	xchg eax,ecx
+	mov  esi,edi
+	jmp  add_song
+;------------------------------------------------------------------------
+bAddDir:
+	mov	[OpenDialog_data.type],2	; Dir
+	or	[flag],FL_LOCK	
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
+	and	[flag],not FL_LOCK
+	cmp	[OpenDialog_data.status],1
+	jne	still
+
+	mov  esi,filename
+	mov  edi,fnbuf
+	xor	eax,eax
+@@:
+	cld
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@r
+	mov	[edi-1],byte '/'
+	mov	edx,edi
+
+	and     dword [dir_info+4], 0
+.nxt2:
         mcall   70, dir_info
-        cmp     ebx, 1
-        jnz     red ;still
+	test	eax,eax
+	jnz	red
+
         test    byte [dir_table+32], 11000b     ; exclude directories & vol label
         jnz     .no
         mov     edi, dir_table+32+40
@@ -370,8 +393,12 @@ OCT_CH equ 3
         sub     ecx, esi
         call    PL_add
 .no:
-        inc     dword [dir_info+4]
-        jmp     .nxt2
+	mov	eax,[dir_info+4]
+	cmp	eax,[dir_table+8]
+	je	red
+	inc     dword [dir_info+4]
+	jmp     .nxt2
+;------------------------------------------------------------------------
   bSelZero:
     call PL_clearsel
     jmp  red
@@ -390,7 +417,7 @@ OCT_CH equ 3
     mov  edx,about1
     call debug_outstr
     jmp  still
-
+;------------------------------------------------------------------------
 get_num:  ; out: eax-number entered
     or   [flag],FL_LOCK
     mcall 10
@@ -418,7 +445,7 @@ get_num:  ; out: eax-number entered
     jne  get_num
     mcall 17
     jmp  get_num
-
+;------------------------------------------------------------------------
 find_slash:
 ; in: edi-filename, out: edi-slash ptr-1
     push eax ecx
@@ -432,4 +459,4 @@ find_slash:
     add  edi,2
     pop  ecx eax
     ret
-
+;------------------------------------------------------------------------

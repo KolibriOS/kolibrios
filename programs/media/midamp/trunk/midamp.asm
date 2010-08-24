@@ -73,7 +73,7 @@ include	'../../../develop/libraries/box_lib/load_lib.mac'
 lang fix en
 ;purge mov
 include 'debug.inc'
-include 'dlg.inc'
+;include 'dlg.inc'
 include 'playlist.inc'
 include 'gif_lite.inc'
 bottom:
@@ -137,22 +137,24 @@ clearpath:
 ;---------------------------------------------------------------------
 ;OpenDialog_start:
 ;	copy_path	open_dialog_name,path,library_path,0
-	
+	mov	[OpenDialog_data.type],0	; Open
+	or	[flag],FL_LOCK	
 	push    dword OpenDialog_data
 	call    [OpenDialog_Start]
-
-	cmp	[OpenDialog_data.status],2 ; OpenDialog does not start
-	je	.fopen  ; 	some kind of alternative, instead OpenDialog
+	and	[flag],not FL_LOCK
+;	cmp	[OpenDialog_data.status],2 ; OpenDialog does not start
+;	je	.fopen  ; 	some kind of alternative, instead OpenDialog
 	cmp	[OpenDialog_data.status],1
-	je	open_file
-	jmp	still
+;	je	open_file
+;	jmp	still
+	jne	still
 ;---------------------------------------------------------------------
 
-.fopen:
-    call fopen
-  get_path:
-    cmp  byte[filename],0
-    jz	 still
+;.fopen:
+;    call fopen
+;  get_path:
+;    cmp  byte[filename],0
+;    jz	 still
   open_file:
     cmp  [param],'W'
     je	 .noplay
@@ -323,12 +325,12 @@ str_len:
     pop  edi ecx
     ret
 
-fopen:
-    or	 [flag],FL_LOCK
-    opendialog draw_window, ret_path, ret_path, filename
-ret_path:
-    and  [flag],not FL_LOCK
-    ret
+;fopen:
+;    or	 [flag],FL_LOCK
+;;    opendialog draw_window, ret_path, ret_path, filename
+;ret_path:
+;    and  [flag],not FL_LOCK
+;    ret
 
 include 'event.inc'
 include "thread.inc"
@@ -491,7 +493,8 @@ thread_stack:
 	rb 4096
 stacktop:
 ;----------------------------------------------------------------
-dir_table  rb 32+304
+dir_table:
+	rb 32+304
 workarea:
 	rb 120*1024
 I_END:
