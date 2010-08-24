@@ -60,12 +60,16 @@ use32
   dd	 I_END ;APP_MEM
   dd	 stacktop ;APP_MEM - 1024
   dd	 I_PARAM
+  dd     cur_dir_path
+  
 listsel    dd 0
 channel dd 0
 COLOR_ORDER equ MENUETOS
-include '..\..\..\macros.inc' ; decrease code size (optional)
-include '..\..\..\develop\libraries\box_lib\asm\trunk\opendial.mac'
-	use_OpenDialog
+include '../../../macros.inc' ; decrease code size (optional)
+include	'../../../develop/libraries/box_lib/load_lib.mac'
+
+@use_library
+
 lang fix en
 ;purge mov
 include 'debug.inc'
@@ -80,8 +84,12 @@ btns:
     file 'buttons.gif'
 START:
         mcall 68, 11
+		
+load_libraries l_libs_start,end_l_libs
+
 ;OpenDialog initialisation
-init_OpenDialog	OpenDialog_data
+	push    dword OpenDialog_data
+	call    [OpenDialog_Init]
 
     or	 [flag],FL_BOTTRED;+FL_MUTE
     mov  ecx,ipcarea
@@ -130,7 +138,8 @@ clearpath:
 ;OpenDialog_start:
 ;	copy_path	open_dialog_name,path,library_path,0
 	
-	start_OpenDialog	OpenDialog_data
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
 
 	cmp	[OpenDialog_data.status],2 ; OpenDialog does not start
 	je	.fopen  ; 	some kind of alternative, instead OpenDialog
@@ -375,6 +384,12 @@ OpenDialog_data:
 .openfile_pach		dd filename ;+36
 .filename_area		dd 0	;+40
 .filter_area		dd Filter
+.x:
+.x_size			dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size			dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
 
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
@@ -389,6 +404,33 @@ dd Filter.end - Filter
 db 'MID',0
 .end:
 db 0
+;---------------------------------------------------------------------
+system_dir_ProcLib			db '/sys/lib/proc_lib.obj',0
+
+head_f_i:
+head_f_l	db 'error',0
+err_message_found_lib2		db 'proc_lib.obj - Not found!',0
+
+err_message_import2			db 'proc_lib.obj - Wrong import!',0
+
+;---------------------------------------------------------------------
+align 4
+ProcLib_import:
+OpenDialog_Init		dd aOpenDialog_Init
+OpenDialog_Start	dd aOpenDialog_Start
+;OpenDialog__Version	dd aOpenDialog_Version
+        dd      0
+        dd      0
+aOpenDialog_Init	db 'OpenDialog_init',0
+aOpenDialog_Start	db 'OpenDialog_start',0
+;aOpenDialog_Version	db 'Version_OpenDialog',0
+;---------------------------------------------------------------------
+l_libs_start:
+
+library01  l_libs system_dir_ProcLib+9, cur_dir_path, temp_dir_pach, system_dir_ProcLib, \
+err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+
+end_l_libs:
 ;---------------------------------------------------------------------
 dir_info:
         dd      1
@@ -440,6 +482,9 @@ IncludeUGlobals
 ;----------------------------------------------------------------
 temp_dir_pach:
         rb 4096
+;----------------------------------------------------------------
+cur_dir_path:
+	rb 4096
 ;----------------------------------------------------------------
 	rb 4096
 thread_stack:

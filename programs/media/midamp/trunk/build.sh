@@ -5,6 +5,6 @@
 	echo "lang fix en"
 	echo "lang fix en" > lang.inc
 	mkdir bin
-	fasm -m 65536 MIDAMP.ASM ./bin/midamp
+	fasm -m 65536 midamp.asm ./bin/midamp
 	rm -f lang.inc
 	exit 0
