@@ -45,8 +45,7 @@ include '../../load_lib.mac'
 ;include 'macros.inc'
 ;include 'load_lib.mac'
 @use_library
-include 'opendial.mac'
-use_OpenDialog
+
 ;---------------------------------------------------------------------
 ;--- Start of program ----------------------------------------------
 ;---------------------------------------------------------------------
@@ -66,7 +65,8 @@ load_libraries	l_libs_start,end_l_libs
 	mov	[deflate_unpack],eax
 
 ; OpenDialog initialisation
-init_OpenDialog	OpenDialog_data
+	push    dword OpenDialog_data
+	call    [OpenDialog_Init]
 
 	mov	edi,filename_area
 	mov	esi,start_temp_file_name
@@ -303,7 +303,8 @@ OpenDialog_start:
 	copy_path	open_dialog_name,path,library_path,0
 
 
-start_OpenDialog	OpenDialog_data
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
 
 	cmp	[OpenDialog_data.status],2	; OpenDialog does not start
 	je	still	; some kind of alternative, instead OpenDialog

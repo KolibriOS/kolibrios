@@ -20,6 +20,7 @@ plugins_directory	db 0
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_CnvPNG	db '/sys/lib/cnv_png.obj',0
 system_dir_UNPACK	db '/sys/lib/archiver.obj',0
+system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 ; Если есть желание разъединить, то нужно использовать следующию конструкцию
 ;system_path      db '/sys/lib/box_lib.obj',0
 ;... любая последовательность других команд и определений.
@@ -30,14 +31,17 @@ ihead_f_i:
 ihead_f_l		db 'System error',0
 
 er_message_found_lib	db 'Sorry I cannot load library box_lib.obj',0
-er_message_import	db 'Error on load import library box_lib.obj',0
+er_message_import		db 'Error on load import library box_lib.obj',0
 
 er_message_found_lib2	db 'cnv_png.obj - Not found!',0
-er_message_import2	db 'cnv_png.obj - Wrong import!',0
+er_message_import2		db 'cnv_png.obj - Wrong import!',0
 
-err_message_found_lib3	db 'archiver.obj - Not found!',0
-err_message_import3	db 'archiver.obj - Wrong import!',0
+er_message_found_lib3	db 'archiver.obj - Not found!',0
+er_message_import3		db 'archiver.obj - Wrong import!',0
 
+er_message_found_lib4	db 'proc_lib.obj - Not found!',0
+er_message_import4		db 'proc_lib.obj - Wrong import!',0
+;---------------------------------------------------------------------
 align	4
 l_libs_start:
 library01	l_libs system_dir_Boxlib+9, path, file_name, system_dir_Boxlib,\
@@ -47,9 +51,23 @@ library02	l_libs system_dir_CnvPNG+9, path, file_name, system_dir_CnvPNG,\
 er_message_found_lib2, ihead_f_l, cnv_png_import, er_message_import2, ihead_f_i, plugins_directory
 
 library03	l_libs system_dir_UNPACK+9, path, file_name, system_dir_UNPACK,\
-err_message_found_lib3, ihead_f_l, UNPACK_import, err_message_import3, ihead_f_i, plugins_directory
+er_message_found_lib3, ihead_f_l, UNPACK_import, er_message_import3, ihead_f_i, plugins_directory
+
+library04  l_libs system_dir_ProcLib+9, path, file_name, system_dir_ProcLib, \
+er_message_found_lib4, ihead_f_l, ProcLib_import, er_message_import4, ihead_f_i, plugins_directory
 
 end_l_libs:
+;---------------------------------------------------------------------
+align 4
+ProcLib_import:
+OpenDialog_Init		dd aOpenDialog_Init
+OpenDialog_Start	dd aOpenDialog_Start
+;OpenDialog__Version	dd aOpenDialog_Version
+        dd      0
+        dd      0
+aOpenDialog_Init	db 'OpenDialog_init',0
+aOpenDialog_Start	db 'OpenDialog_start',0
+;aOpenDialog_Version	db 'Version_OpenDialog',0
 ;---------------------------------------------------------------------
 align	4
 cnv_png_import:
@@ -438,6 +456,12 @@ OpenDialog_data:
 .openfile_pach		dd openfile_pach	;+36
 .filename_area		dd filename_area	;+40
 .filter_area		dd Filter
+.x:
+.x_size			dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size			dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
 
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
