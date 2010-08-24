@@ -46,8 +46,8 @@ include '../../trunk/box_lib.mac'
 ;include 'box_lib.mac'
 @use_library
 
-x_minimal_size equ 300
-y_minimal_size equ 200
+x_minimal_size equ 350
+y_minimal_size equ 250
 ;---------------------------------------------------------------------
 ;---------------------------------------------------------------------
 START:
@@ -105,7 +105,7 @@ control_minimal_window_size:
 	jnz	.end	;red_1
 	mov	esi,-1
 	mov	eax,procinfo
-	mov	eax,[eax+66]
+	mov	eax,[eax+46]
 	cmp	eax,dword y_minimal_size ;200
 	jae	@f
 	mov	esi,dword y_minimal_size ;200
@@ -113,7 +113,7 @@ control_minimal_window_size:
 @@:
 	mov	edx,-1
 	mov	eax,procinfo
-	mov	eax,[eax+62]
+	mov	eax,[eax+42]
 	cmp	eax,dword x_minimal_size ;300
 	jae	@f
 	mov	edx,dword x_minimal_size ;300
