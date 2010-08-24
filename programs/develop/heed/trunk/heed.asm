@@ -150,6 +150,7 @@ load_libraries l_libs_start,end_l_libs
 ;	jmp	open_file
 
 redraw_all:
+	call	control_minimal_window_size
 	call	draw_window_1
 still:
 	mcall	10
@@ -163,11 +164,42 @@ still:
 	dec	al
 	jz	button
 	jmp	still
-
-red:	call	ready_screen_buffer
+;---------------------------------------------------------------------
+control_minimal_window_size:
+	pusha
+	mcall	9,procinfo,-1
+	mov		eax,[ebx+70]
+	test	eax,10b
+	jnz		.end
+	test	eax,100b
+	jnz		.end
+	test	eax,1b
+	jnz		.end
+	mov		esi,-1
+	mov		eax,procinfo
+	mov		eax,[eax+46]
+	cmp		eax,200
+	jae		@f
+	mov		esi,200
+	mcall	67,-1,ebx,ebx
+@@:
+	mov		edx,-1
+	mov		eax,procinfo
+	mov		eax,[eax+42]
+	cmp		eax,300
+	jae		@f
+	mov		edx,300
+	mcall	67,-1,ebx,,ebx
+@@:
+.end:
+	popa
+	ret
+;---------------------------------------------------------------------
+red:
+	call	ready_screen_buffer
 	call	main_area
 	jmp	still
-
+;---------------------------------------------------------------------
 draw_window_1:
 	call	start_draw
 	call	draw_window
@@ -177,7 +209,7 @@ draw_window_1:
 	call	ready_screen_buffer
 	call	main_area
 	ret
-
+;---------------------------------------------------------------------
 key:
 	mcall	2
 	dec	al
@@ -1272,6 +1304,7 @@ show_file_size:
 
 align	4
 draw_window:
+	xor	esi,esi
 	mcall	0,100*65536+653,100*65536+360,((0x73 shl 24) + frgrd_color),,title
 	mcall	9,threath_buf,-1
 	cmp	byte [threath_buf+70],3	;окно свёрнуто в заголовок?
@@ -3266,6 +3299,7 @@ dd	Filter.end - Filter.1
 db	0
 
 start_temp_file_name:	db 'temp.bin',0
+
 ;---------------------------------------------------------------------
 
 I_END:
