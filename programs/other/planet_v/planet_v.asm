@@ -19,8 +19,6 @@ include 'dll.inc'
 
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../develop/libraries/box_lib/asm/trunk/opendial.mac'
-use_OpenDialog
 
 min_window_w equ 485 ;минимальная ширина окна
 min_window_h equ 325 ;минимальная высота окна
@@ -170,7 +168,7 @@ start:
   mov byte[file_name],0
 
   ; OpenDialog initialisation
-  init_OpenDialog OpenDialog_data
+  stdcall [OpenDialog_Init],OpenDialog_data
 
 align 4
 red_win:
@@ -463,33 +461,39 @@ popad
 
   head_f_i:
   head_f_l  db 'Системная ошибка',0
-  err_message_found_lib0 db 'Не удалось найти библиотеку box_lib.obj',0
+  err_message_found_lib0 db 'Не найдена библиотека box_lib.obj',0
   err_message_import0 db 'Ошибка при импорте библиотеки box_lib.obj',0
-  err_message_found_lib1 db 'Не удалось найти библиотеку libimg.obj',0
+  err_message_found_lib1 db 'Не найдена библиотека libimg.obj',0
   err_message_import1 db 'Ошибка при импорте библиотеки libimg.obj',0
-  err_message_found_lib2 db 'Не удалось найти библиотеку str.obj',0
+  err_message_found_lib2 db 'Не найдена библиотека str.obj',0
   err_message_import2 db 'Ошибка при импорте библиотеки str.obj',0
-  err_message_found_lib3 db 'Не удалось найти библиотеку libini.obj',0
+  err_message_found_lib3 db 'Не найдена библиотека libini.obj',0
   err_message_import3 db 'Ошибка при импорте библиотеки libini.obj',0
+  err_message_found_lib4 db 'Не найдена библиотека proc_lib.obj',0
+  err_message_import4 db 'Ошибка при импорте библиотеки proc_lib.obj',0
 
 system_dir0 db '/sys/lib/'
-boxlib_name db 'box_lib.obj',0
+lib0_name db 'box_lib.obj',0
 
 system_dir1 db '/sys/lib/'
-libimg_name db 'libimg.obj',0
+lib1_name db 'libimg.obj',0
 
 system_dir2 db '/sys/lib/'
-strlib_name db 'str.obj',0
+lib2_name db 'str.obj',0
 
 system_dir3 db '/sys/lib/'
-libini_name db 'libini.obj',0
+lib3_name db 'libini.obj',0
+
+system_dir4 db '/sys/lib/'
+lib4_name db 'proc_lib.obj',0
 
 ;library structures
 l_libs_start:
-  lib0 l_libs boxlib_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, boxlib_import,err_message_import0, head_f_i
-  lib1 l_libs libimg_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l, libimg_import, err_message_import1, head_f_i
-  lib2 l_libs strlib_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l, strlib_import, err_message_import2, head_f_i
-  lib3 l_libs libini_name, sys_path, file_name, system_dir3, err_message_found_lib3, head_f_l, libini_import, err_message_import3, head_f_i
+  lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, boxlib_import,err_message_import0, head_f_i
+  lib1 l_libs lib1_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l, libimg_import, err_message_import1, head_f_i
+  lib2 l_libs lib2_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l, strlib_import, err_message_import2, head_f_i
+  lib3 l_libs lib3_name, sys_path, file_name, system_dir3, err_message_found_lib3, head_f_l, libini_import, err_message_import3, head_f_i
+  lib4 l_libs lib4_name, sys_path, file_name, system_dir4, err_message_found_lib4, head_f_l, proclib_import, err_message_import4, head_f_i
 load_lib_end:
 
 align 4
@@ -848,7 +852,8 @@ fun_opn_dlg: ;функция для вызова OpenFile диалога
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	mov [OpenDialog_data.type],2
 	mov dword[plugin_path],0 ;что-бы при открытии диалогового окна путь всегда брался из OpenDialog_data.dir_default_path
-	start_OpenDialog OpenDialog_data
+
+	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
 	je @f
 		mov esi,[OpenDialog_data.openfile_path]
@@ -960,6 +965,12 @@ OpenDialog_data:
 .openfile_path		dd openfile_path	;+36 путь к открываемому файлу
 .filename_area		dd filename_area	;+40
 .filter_area		dd Filter
+.x:
+.x_size 		dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size 		dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
 
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
@@ -1016,7 +1027,7 @@ align 4
   ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 
-hed db 'Planet viewer 27.05.10',0 ;подпись окна
+hed db 'Planet viewer 24.08.10',0 ;подпись окна
 
 sc system_colors  ;системные цвета
 mouse_dd dd 0 ;нужно для Shift-а в editbox

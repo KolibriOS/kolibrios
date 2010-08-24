@@ -3,7 +3,7 @@ boxlib_import:
   dd alib_init2 ;функция запускается макросом 1 раз при подключении бибилиотеки, потому в программе метка на нее не нужна
 
   edit_box_draw  dd aEdit_box_draw
-  edit_box_key   dd aEdit_box_key
+  edit_box_key	 dd aEdit_box_key
   edit_box_mouse dd aEdit_box_mouse
 ;  version_ed     dd aVersion_ed
 
@@ -93,11 +93,19 @@ boxlib_import:
 
 align 4
 libini_import:
-  dd alib_init0
-  ini_get_str  dd aini_get_str
+	dd alib_init0
+	ini_get_str  dd aini_get_str
 dd 0,0
-  alib_init0   db 'lib_init',0
-  aini_get_str db 'ini_get_str',0
+	alib_init0   db 'lib_init',0
+	aini_get_str db 'ini_get_str',0
+
+align 4
+proclib_import:
+	OpenDialog_Init dd aOpenDialog_Init
+	OpenDialog_Start dd aOpenDialog_Start
+dd 0,0
+	aOpenDialog_Init db 'OpenDialog_init',0
+	aOpenDialog_Start db 'OpenDialog_start',0
 
 align 4
 libimg_import:
