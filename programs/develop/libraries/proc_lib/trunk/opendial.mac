@@ -47,6 +47,10 @@ od_status		equ dword [ebp+32] ; 0-Cancel, 1-Get path OK, 2-Use alternatives
 od_openfile_pach	equ dword [ebp+36] ; Getting path to file
 od_filename_area	equ dword [ebp+40] ; Adress of file name area
 od_filter_area		equ dword [ebp+44] ; Adress of filter area
+od_x_size		equ [ebp+48] ; Window X size
+od_x_start		equ [ebp+50] ; Window X position
+od_y_size		equ [ebp+52] ; Window y size
+od_y_start		equ [ebp+54] ; Window Y position
 ;*****************************************************************************
 .init:
 	pusha
@@ -92,8 +96,43 @@ OpenDialog_exit
 	mov	[eax+2],bx
 	
 	mov	[eax],word 2	; folder for open
+
+	pusha
+	mcall	9,od_procinfo,-1
+
+	mov	eax,[ebx+42] ;main window x size
+	shr	eax,1
+	add	eax,[ebx+34] ; main window x start
+	mov	cx,od_x_size
+	shr	cx,1
+	sub	ax,cx
+	test	ax,cx
+	test	eax,0x8000
+	jz	@f
+	xor	eax,eax
+@@:
+	mov	od_x_start,ax
+
+	mov	eax,[ebx+46] ;main window y size
+	shr	eax,1
+	add	eax,[ebx+38] ; main window y start
+	mov	cx,od_y_size
+	shr	cx,1
+	sub	ax,cx
+	test	eax,0x8000
+	jz	@f
+	xor	eax,eax
+@@:
+	mov	od_y_start,ax
+	popa
+
+	mov	ebx,dword od_x_size
+	mov	[eax+4],ebx
+	mov	ebx,dword od_y_size
+	mov	[eax+8],ebx
+
 	mov	edi,eax
-	add	edi,4
+	add	edi,12
 
 	mov	esi,od_opendir_pach
 	xor	eax,eax
@@ -108,7 +147,7 @@ OpenDialog_exit
 	cmp	od_type,dword 2
 	je	.4
 	mov	edi,od_com_area
-	add	edi,4096-256
+	add	edi,3840 ;4096-256
 
 	mov	esi,od_filename_area
 	test	esi,esi
@@ -153,10 +192,11 @@ OpenDialog_exit
 	jne	.still
 
 	mov	esi,od_com_area
-	add	esi,4
+	add	esi,12
 	mov	edi,od_openfile_pach
 	call	.copy
 	mov	od_status,1
+
 	mov	esi,od_openfile_pach
 	mov	edi,od_opendir_pach
 	call	.copy_dir_path
@@ -165,7 +205,7 @@ OpenDialog_exit
 	cmp	od_type,dword 2
 	je	@f
 	mov	esi,od_com_area
-	add	esi,4096-256
+	add	esi,3840
 	mov	edi,od_filename_area
 	test	edi,edi
 	jz	@f
@@ -179,6 +219,11 @@ OpenDialog_exit
 .1:
 	mov	od_status,2
 .3:
+	mov	eax,od_com_area
+	mov	ebx,[eax+4]
+	mov	od_x_size,ebx
+	mov	ebx,[eax+8]
+	mov	od_y_size, ebx
 OpenDialog_exit
 ;----------------------------------------------
 .get_filter_data:
@@ -189,7 +234,7 @@ OpenDialog_exit
 ;	jmp	still
 	ret
 @@:
-	add	edi,4096+4
+	add	edi,4100
 	mov	esi,od_filter_area
 	mov	ecx,[esi]
 	test	ecx,ecx

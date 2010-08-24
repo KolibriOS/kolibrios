@@ -45,6 +45,9 @@ include '../../trunk/box_lib.mac'
 ;include 'load_lib.mac'
 ;include 'box_lib.mac'
 @use_library
+
+x_minimal_size equ 300
+y_minimal_size equ 200
 ;---------------------------------------------------------------------
 ;---------------------------------------------------------------------
 START:
@@ -103,17 +106,17 @@ control_minimal_window_size:
 	mov	esi,-1
 	mov	eax,procinfo
 	mov	eax,[eax+66]
-	cmp	eax,200
+	cmp	eax,dword y_minimal_size ;200
 	jae	@f
-	mov	esi,200
+	mov	esi,dword y_minimal_size ;200
 	mcall	67,-1,ebx,ebx
 @@:
 	mov	edx,-1
 	mov	eax,procinfo
 	mov	eax,[eax+62]
-	cmp	eax,300
+	cmp	eax,dword x_minimal_size ;300
 	jae	@f
-	mov	edx,300
+	mov	edx,dword x_minimal_size ;300
 	mcall	67,-1,ebx,,ebx
 @@:
 .end:
@@ -371,7 +374,7 @@ user_selected_name_action:
 	call	draw_window
 	ret
 @@:
-	add	eax,4
+	add	eax,12
 ;copy_path	user_selected_name,dir_pach,eax,0
 	mov	esi,dir_pach
 	mov	edi,eax
@@ -555,6 +558,20 @@ button:
 	jz	@f
 	call	start_error_window_thread
 @@:
+	call	get_window_param
+	mov	ebx,[communication_area]
+	mov	ecx,procinfo
+;	mov	eax,[window_x]
+	mov	eax,[ecx+34]
+	shl	eax,16
+	add	eax,[ecx+42]
+	mov	[ebx+4],eax
+;	mov	eax,[window_y]
+	mov	eax,[ecx+38]
+	shl	eax,16
+	add	eax,[ecx+46]
+	mov	[ebx+8],eax
+
 	mcall	-1
 ;---------------------------------------------------------------------
 .reload_dir:
@@ -930,8 +947,16 @@ get_communication_area:
 	jz	@f
 	mcall	68,22,param,,0x01
 	mov	[communication_area],eax
-	movzx	eax,word [eax+2]
-	mov	[open_dialog_type],eax
+	movzx	ebx,word [eax+2]
+	mov	[open_dialog_type],ebx
+	mov	ebx,[eax+4]
+	cmp	bx,word x_minimal_size ;300
+	jb	@f
+	mov	[window_x],ebx
+	mov	ebx,[eax+8]
+	cmp	bx,word y_minimal_size ;200
+	jb	@f
+	mov	[window_y],ebx
 @@:
 	ret
 ;---------------------------------------------------------------------
@@ -942,11 +967,11 @@ load_start_directory:
 	movzx	ebx,word [eax]
 	test	eax,eax
 	jz	.1
-	add	eax,4
+	add	eax,12 ;4
 	mov	esi,eax
 	push	esi
 	mov	esi,[communication_area]
-	add	esi,4096-256
+	add	esi,3840 ;4096-256
 	mov	eax,[esi]
 	test	eax,eax
 	jnz	@f
@@ -1090,7 +1115,7 @@ file_no_folder:
 	ret
 @@:
 	mov	edi,eax
-	add	edi,4
+	add	edi,12
 	mov	esi,file_name	
 	call	copy_dir_name
 	
@@ -1101,7 +1126,7 @@ file_no_folder:
 	mov	esi,user_selected_name
 @@:
 	mov	edi,[communication_area]
-	add	edi,4096-256
+	add	edi,3840 ;4096-256
 	call	copy_dir_name
 	
 	mov	eax,[communication_area]
@@ -1220,7 +1245,9 @@ draw_window:
 
 	mcall	12,1
 
-	mcall	0,<10,420>,<10,320>,0x63AABBCC,
+;	mcall	0,<10,420>,<10,320>,0x63AABBCC,
+	xor	esi,esi
+	mcall	0,[window_x],[window_y],0x63AABBCC,
 
 ;	mov	ecx,[communication_area]
 ;	add	ecx,4096+4+4
@@ -1874,7 +1901,7 @@ delete_unsupported_BDFE:
 	
 	push	eax ebx ecx esi
 	mov	edi,[communication_area]
-	add	edi,4096+4
+	add	edi,4100
 	call	compare_expansion
 	test	eax,eax
 	pop	esi ecx ebx eax
@@ -2846,6 +2873,12 @@ name_editboxes_end:
 
 mouse_dd rd	1
 ;---------------------------------------------------------------------
+window_x:
+.x_size		dw 420
+.x_start	dw 10
+window_y:
+.y_size		dw 320
+.y_start	dw 10
 ;---------------------------------------------------------------------
 features_table:
 .type_table:

@@ -3243,6 +3243,12 @@ OpenDialog_data:
 .openfile_pach 		dd fname_buf	;+36
 .filename_area		dd filename_area	;+40
 .filter_area		dd Filter
+.x:
+.x_size			dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size			dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
 
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
