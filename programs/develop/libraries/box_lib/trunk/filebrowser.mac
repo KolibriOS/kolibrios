@@ -223,7 +223,7 @@ fb_for_all_panel_selection:
 fb_draw_folder_data:
 	mov	eax,fb_folder_block
 	sub	eax,fb_max_panel_line
-	test	eax,0x8000000
+	test	eax,0x80000000
 	jz	.ok_left
 	mov	fb_start_draw_line,0
 	jmp	@f
@@ -1222,7 +1222,7 @@ fb_key:
 	mov	eax,fb_max_panel_line
 	mov	ebx,fb_start_draw_line
 	sub	ebx,eax
-	test	ebx,0x8000000
+	test	ebx,0x80000000
 	jz	@f
 	cmp	fb_start_draw_line,0
 	jne	.page_up_1
