@@ -26,7 +26,7 @@ struct symbol
 ends
 
 
-hed db 'TextEditor 09.06.10',0 ;подпись окна
+hed db 'TextEditor 25.08.10',0 ;подпись окна
 sc system_colors
 
 fn_icon db 'te_icon.bmp',0
@@ -107,7 +107,7 @@ ted_but_open_file:
 
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	mov [OpenDialog_data.type],0
-	start_OpenDialog OpenDialog_data
+	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
 	jne @f
 		stdcall mem_spac, msgbox_9.fdp,100

@@ -3,10 +3,13 @@ fn_syntax_dir db 'info/',0
 def_col_file db 'default.syn',0
 
 system_dir0 db '/sys/lib/'
-boxlib_name db 'box_lib.obj',0
+lib0_name db 'box_lib.obj',0
 
 system_dir1 db '/sys/lib/'
-msgbox_name db 'msgbox.obj',0
+lib1_name db 'msgbox.obj',0
+
+system_dir2 db '/sys/lib/'
+lib2_name db 'proc_lib.obj',0
 
 fn_icon_tl_sys db 'tl_sys_16.bmp',0
 fn_icon_tl_nod db 'tl_nod_16.bmp',0
@@ -162,7 +165,15 @@ dd 0,0
 	sz_ted_but_find_next	db 'ted_but_find_next',0
 	sz_ted_text_colored		db 'ted_text_colored',0
 	;sz_ted_version db 'version_text_edit',0
-;--------------------------------------------------
+
+align 4
+proclib_import:
+	OpenDialog_Init dd aOpenDialog_Init
+	OpenDialog_Start dd aOpenDialog_Start
+dd 0,0
+	aOpenDialog_Init db 'OpenDialog_init',0
+	aOpenDialog_Start db 'OpenDialog_start',0
+
 align 4
 msgbox_lib_import:
 	mb_create dd amb_create
@@ -172,7 +183,7 @@ dd 0,0
 	amb_create db 'mb_create',0
 	amb_reinit db 'mb_reinit',0
 	amb_setfunctions db 'mb_setfunctions',0
-;---------------------------------------------------------------------   
+;---------------------------------------------------------------------
 align 4
 wScr:
 .x:
@@ -324,14 +335,22 @@ OpenDialog_data:
 .procinfo		dd procinfo	;+4
 .com_area_name	dd communication_area_name	;+8
 .com_area		dd 0	;+12
-.opendir_path		dd plugin_path	;+16
-.dir_default_path	dd openfile_path ;+20
+.opendir_path		dd plugin_path ;+16
+.dir_default_path	dd default_dir ;+20
 .start_path		dd file_name ;+24 путь к диалогу открытия файлов
 .draw_window	dd draw_window	;+28
 .status 		dd 0	;+32
 .openfile_path	dd openfile_path	;+36 путь к открываемому файлу
 .filename_area	dd filename_area	;+40
 .filter_area	dd Filter
+.x:
+.x_size 		dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size 		dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
+
+default_dir db '/rd/1',0 ;директория по умолчанию
 
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0

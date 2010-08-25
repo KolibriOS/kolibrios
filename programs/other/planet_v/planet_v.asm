@@ -958,7 +958,7 @@ OpenDialog_data:
 .com_area_name		dd communication_area_name	;+8
 .com_area		dd 0	;+12
 .opendir_path		dd plugin_path	;+16
-.dir_default_path	dd openfile_path ;+20
+.dir_default_path	dd default_dir ;+20
 .start_path		dd file_name ;+24 путь к диалогу открытия файлов
 .draw_window		dd draw_window	;+28
 .status 		dd 0	;+32
@@ -971,6 +971,8 @@ OpenDialog_data:
 .y:
 .y_size 		dw 320 ;+52 ; Window y size
 .y_start		dw 10 ;+54 ; Window Y position
+
+default_dir db '/rd/1',0 ;директория по умолчанию
 
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0

@@ -25,8 +25,6 @@ include 'mem.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'lang.inc'
-include '../../develop/libraries/box_lib/asm/trunk/opendial.mac'
-use_OpenDialog
 
 include 't_data.inc'
 include 'strlen.inc'
@@ -68,11 +66,11 @@ load_libraries l_libs_start,load_lib_end
 @@:
 
 ;---------------------------------------------------------------------
-  stdcall [ted_init], tedit0
-  stdcall dword[tl_data_init], tree1
+	stdcall [ted_init], tedit0
+	stdcall dword[tl_data_init], tree1
 
 ; OpenDialog initialisation
-init_OpenDialog OpenDialog_data
+	stdcall [OpenDialog_Init],OpenDialog_data
 
 ; init bmp file
   mov ecx,1200*18
@@ -511,27 +509,30 @@ edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x408
 buf_find db 302 dup(0)
 
 if lang eq ru
-  err_message_found_lib0 db 'Извините не удалось найти библиотеку box_lib.obj',0
   head_f_i0:
   head_f_l0  db 'Системная ошибка',0
-  err_message_import0 db 'Ошибка при импорте библиотеки box_lib.obj',0
-  err_message_found_lib1 db 'Извините не удалось найти библиотеку msgbox.obj',0
-  err_message_import1 db 'Ошибка при импорте библиотеки msgbox.obj',0
+  err_message_found_lib0 db 'Не найдена библиотека ',39,'box_lib.obj',39,0
+  err_message_import0 db 'Ошибка при импорте библиотеки ',39,'box_lib.obj',39,0
+  err_message_found_lib1 db 'Не найдена библиотека ',39,'msgbox.obj',39,0
+  err_message_import1 db 'Ошибка при импорте библиотеки ',39,'msgbox.obj',39,0
+  err_message_found_lib2 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
+  err_message_import2 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
 else
-  err_message_found_lib0 db 'Sorry I cannot found library box_lib.obj',0
   head_f_i0:
   head_f_l0  db 'System error',0
-  err_message_import0 db 'Error on load import library box_lib.obj',0
-  err_message_found_lib1 db 'Sorry I cannot found library msgbox.obj',0
-  ;head_f_i1:
-  ;head_f_l1 db 'System error',0
-  err_message_import1 db 'Error on load import library msgbox.obj',0
+  err_message_found_lib0 db 'Sorry I cannot found library ',39,'box_lib.obj',39,0
+  err_message_import0 db 'Error on load import library ',39,'box_lib.obj',39,0
+  err_message_found_lib1 db 'Sorry I cannot found library ',39,'msgbox.obj',39,0
+  err_message_import1 db 'Error on load import library ',39,'msgbox.obj',39,0
+  err_message_found_lib2 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,0
+  err_message_import2 db 'Error on load import library ',39,'proc_lib.obj',39,0
 end if
 
 ;library structures
 l_libs_start:
-  lib0 l_libs boxlib_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l0, boxlib_import,err_message_import0, head_f_i0
-  lib1 l_libs msgbox_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l0, msgbox_lib_import, err_message_import1, head_f_i0
+  lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l0, boxlib_import,err_message_import0, head_f_i0
+  lib1 l_libs lib1_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l0, msgbox_lib_import, err_message_import1, head_f_i0
+  lib2 l_libs lib2_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l0, proclib_import, err_message_import2, head_f_i0
 load_lib_end:
 
 
