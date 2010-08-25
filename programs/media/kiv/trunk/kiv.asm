@@ -29,16 +29,24 @@ START:
 
     invoke  sort.START, 1
 
-; OpenDialog initialisation
-    push    dword OpenDialog_data
-    call    [OpenDialog_Init]
-
     mov ecx, 1  ; for 15.4: 1 = tile
     cmp word [@PARAMS], '\T'
     jz  set_bgr
     inc ecx ; for 15.4: 2 = stretch
     cmp word [@PARAMS], '\S'
     jz  set_bgr
+
+    cmp byte [@PARAMS], 0
+    jz @f
+    mov esi, @PARAMS
+    mov edi, path
+    mov ecx, 4096/4
+    rep movsd
+    mov byte [edi-1], 0
+@@:
+; OpenDialog initialisation
+    push    dword OpenDialog_data
+    call    [OpenDialog_Init]
 
 ; initialize keyboard handling
     invoke  ini_get_shortcut, inifilename, aShortcuts, aNext, -1, next_mod
