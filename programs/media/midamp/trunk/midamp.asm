@@ -87,6 +87,14 @@ START:
 		
 load_libraries l_libs_start,end_l_libs
 
+    mov  esi,I_PARAM
+    cmp  dword[esi],0
+    jz @f
+    mov edi,filename
+    mov ecx,256/4
+    rep movsd
+    mov byte [edi-1], 0
+@@:
 ;OpenDialog initialisation
 	push    dword OpenDialog_data
 	call    [OpenDialog_Init]
@@ -124,7 +132,7 @@ load_libraries l_libs_start,end_l_libs
     mov  [param],al
     inc  esi
   .defact:
-    mov  edi,filename;fnbuf
+	mov  edi,filename;fnbuf
     mov  ecx,64
     rep  movsd
     jmp  open_file
