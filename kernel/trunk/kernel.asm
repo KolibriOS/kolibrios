@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -4615,16 +4615,6 @@ sys_gs:                         ; direct screen access
      mov   eax,[BytesPerScanLine]
      mov   [esp+32],eax
      ret
-
-
-align 4 ; PCI functions
-
-sys_pci:
-
-     call  pci_api
-     mov   [esp+36],eax
-     ret
-
 
 align 4  ;  system functions
 

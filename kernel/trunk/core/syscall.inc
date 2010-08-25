@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -17,6 +17,7 @@ cross_order:
         mov     edx, esi
         mov     esi, edi
         movzx   edi, byte[esp+28 + 4]
+	sub	edi,53
         call    dword [servetable+edi*4]
         ret
 
@@ -101,60 +102,6 @@ iglobal
 
   align 4
   servetable:
-
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
-      dd 0
       dd socket                  ; 53-Socket interface
       dd 0
       dd 0
@@ -164,7 +111,7 @@ iglobal
       dd 0
       dd 0
       dd 0
-      dd sys_pci                 ; 62-PCI functions
+      dd 0			 ; 62-PCI functions
       dd sys_msg_board           ; 63-System message board
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -235,7 +182,7 @@ iglobal
       dd undefined_syscall       ; 59-reserved
       dd sys_IPC		 ; 60-Inter Process Communication
       dd sys_gs			 ; 61-Direct graphics access
-      dd cross_order             ; 62-PCI functions
+      dd pci_api	;cross_order             ; 62-PCI functions
       dd cross_order             ; 63-System message board
       dd sys_resize_app_memory   ; 64-Resize application memory usage
       dd sys_putimage_palette    ; 65-PutImagePalette

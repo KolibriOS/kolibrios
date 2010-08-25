@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;                                                              ;;
@@ -32,63 +32,114 @@ $Revision$
 ;***************************************************************************
 ;mmio_pci_addr	equ  0x400		 ; set actual PCI address here to activate user-MMIO
 
+iglobal
+align 4
+f62call:
+	dd	pci_api.0
+	dd	pci_api.1
+	dd	pci_api.2
+	dd	pci_api.not_support	;3
+	dd	pci_read_reg		;4 byte
+	dd	pci_read_reg            ;5 word
+	dd	pci_read_reg            ;6 dword
+	dd	pci_api.not_support     ;7 
+	dd	pci_write_reg           ;8 byte
+	dd	pci_write_reg           ;9 word
+	dd	pci_write_reg           ;10 dword
+if defined mmio_pci_addr
+	dd	pci_mmio_init		;11
+	dd	pci_mmio_map		;12
+	dd	pci_mmio_unmap		;13
+end if
+f62_rcall:
+	dd	pci_read_reg.0		;4 byte
+	dd	pci_read_reg.1		;5 word
+	dd	pci_read_reg.2		;6 dword
+f62_rcall2:
+	dd	pci_read_reg_2.0	;4 byte
+	dd	pci_read_reg_2.1	;5 word
+	dd	pci_read_reg_2.2	;6 dword
+f62_wcall:
+	dd	pci_write_reg.0		;4 byte
+	dd	pci_write_reg.1		;5 word
+	dd	pci_write_reg.2		;6 dword
+f62_wcall2:
+	dd	pci_write_reg_2.0	;4 byte
+	dd	pci_write_reg_2.1	;5 word
+	dd	pci_write_reg_2.2	;6 dword
+endg
+
 
 align 4
-
 pci_api:
-
+        movzx	eax,bl
 	cmp  [pci_access_enabled],1
-	jne  no_pci_access_for_applications
-
-	or al,al
-	jnz pci_fn_1
-	; PCI function 0: get pci version (AH.AL)
-	movzx eax,word [BOOT_VAR+0x9022]
-	ret
-
-pci_fn_1:
-	cmp al,1
-	jnz pci_fn_2
-
-	; PCI function 1: get last bus in AL
-	mov al,[BOOT_VAR+0x9021]
-	ret
-
-pci_fn_2:
-	cmp al,2
-	jne pci_fn_3
-	; PCI function 2: get pci access mechanism
-	mov al,[BOOT_VAR+0x9020]
-	ret
-pci_fn_3:
-
-	cmp al,4
-	jz pci_read_reg   ;byte
-	cmp al,5
-	jz pci_read_reg   ;word
-	cmp al,6
-	jz pci_read_reg   ;dword
-
-	cmp al,8
-	jz pci_write_reg  ;byte
-	cmp al,9
-	jz pci_write_reg  ;word
-	cmp al,10
-	jz pci_write_reg  ;dword
+	jne  .no_pci_access_for_applications
 
 if defined mmio_pci_addr
-	cmp al,11	    ;  user-level MMIO functions 
-	jz pci_mmio_init
-	cmp al,12
-	jz pci_mmio_map
-	cmp al,13
-	jz pci_mmio_unmap
-end if
+        cmp eax, 13
+        jb .not_support
+else
+        cmp eax, 10
+        jb .not_support
+end if	
+        call dword [f62call+eax*4]
+        mov	dword [esp+32],eax
+        ret
 
-      no_pci_access_for_applications:
 
-	or eax,-1
 
+;	or al,al
+;	jnz pci_fn_1
+	; PCI function 0: get pci version (AH.AL)
+.0:
+	movzx	eax, word [BOOT_VAR+0x9022]
+	ret
+
+;pci_fn_1:
+;	cmp al,1
+;	jnz pci_fn_2
+
+	; PCI function 1: get last bus in AL
+.1:
+	movzx	eax, byte [BOOT_VAR+0x9021]
+	ret
+
+;pci_fn_2:
+;	cmp al,2
+;	jne pci_fn_3
+	; PCI function 2: get pci access mechanism
+.2:
+	movzx	eax, byte [BOOT_VAR+0x9020]
+	ret
+;pci_fn_3:
+
+;	cmp al,4
+;	jz pci_read_reg   ;byte
+;	cmp al,5
+;	jz pci_read_reg   ;word
+;	cmp al,6
+;	jz pci_read_reg   ;dword
+
+;	cmp al,8
+;	jz pci_write_reg  ;byte
+;	cmp al,9
+;	jz pci_write_reg  ;word
+;	cmp al,10
+;	jz pci_write_reg  ;dword
+
+;if defined mmio_pci_addr
+;	cmp al,11	    ;  user-level MMIO functions 
+;	jz pci_mmio_init
+;	cmp al,12
+;	jz pci_mmio_map
+;	cmp al,13
+;	jz pci_mmio_unmap
+;end if
+
+.not_support:
+.no_pci_access_for_applications:
+	or 	eax,-1
 	ret
 
 ;***************************************************************************
@@ -97,20 +148,20 @@ end if
 ;
 ;   Description
 ;       creates a command dword  for use with the PCI bus
-;       bus # in ah
-;       device+func in bh (dddddfff)
-;       register in bl
+;       bus # in bh;ah
+;       device+func in ch;bh (dddddfff)
+;       register in cl;bl
 ;
-;      command dword returned in eax ( 10000000 bbbbbbbb dddddfff rrrrrr00 )
+;      command dword returned in ebx;eax ( 10000000 bbbbbbbb dddddfff rrrrrr00 )
 ;***************************************************************************
 
 align 4
 
 pci_make_config_cmd:
-    shl     eax,8	   ; move bus to bits 16-23
-    mov     ax,bx	   ; combine all
-    and     eax,0xffffff
-    or	    eax,0x80000000
+    shl     ebx,8;eax,8	   ; move bus to bits 16-23
+    mov     bx,cx;ax,bx	   ; combine all
+    and     ebx,0xffffff;eax,0xffffff
+    or	    ebx,0x80000000;eax,0x80000000
     ret
 
 ;***************************************************************************
@@ -131,12 +182,12 @@ pci_read_reg:
 	je	pci_read_reg_2
 
 		; mechanism 1
-	push	esi   ; save register size into ESI
-	mov	esi,eax
+;	push	esi   ; save register size into ESI
+	mov	esi,ebx;eax
 	and	esi,3
 
 	call	pci_make_config_cmd
-	mov	ebx,eax
+	mov	eax,ebx;ebx,eax
 		; get current state
 	mov	dx,0xcf8
 	in	eax, dx
@@ -150,42 +201,44 @@ pci_read_reg:
 	and	bl,3
 	or	dl,bl	 ; add to port address first 2 bits of register address
 
-	or	esi,esi
-	jz	pci_read_byte1
-	cmp	esi,1
-	jz	pci_read_word1
-	cmp	esi,2
-	jz	pci_read_dword1
-	jmp	pci_fin_read1
+;	or	esi,esi
+;	jz	pci_read_byte1
+;	cmp	esi,1
+;	jz	pci_read_word1
+;	cmp	esi,2
+;	jz	pci_read_dword1
+;	jmp	pci_fin_read1
+	jmp	dword [f62_rcall+esi*4]
 
-pci_read_byte1:
+.0:
 	in	al,dx
-	jmp pci_fin_read1
-pci_read_word1:
+	jmp .pci_fin_read1
+.1:
 	in	ax,dx
-	jmp pci_fin_read1
-pci_read_dword1:
+	jmp .pci_fin_read1
+.2:
 	in	eax,dx
-	jmp	pci_fin_read1
-pci_fin_read1:
+;	jmp	pci_fin_read1
+.pci_fin_read1:
 		; restore configuration control
 	xchg	eax,[esp]
 	mov	dx,0xcf8
 	out	dx,eax
 
 	pop	eax
-	pop	esi
+	;pop	esi
 	ret
 pci_read_reg_2:
 
-	test	bh,128	;mech#2 only supports 16 devices per bus
-	jnz	pci_read_reg_err
+	test	ch,128;bh,128	;mech#2 only supports 16 devices per bus
+	jnz	pci_api.not_support
 
-	push esi   ; save register size into ESI
-	mov esi,eax
+;	push esi   ; save register size into ESI
+	mov esi,ebx;eax
 	and esi,3
 
-	push	eax
+	push	ebx;eax
+	mov	eax,ebx
 		;store current state of config space
 	mov	dx,0xcf8
 	in	al,dx
@@ -202,28 +255,30 @@ pci_read_reg_2:
 	mov	al,0x80
 	out	dx,al
 		; compute addr
-	shr	bh,3 ; func is ignored in mechanism 2
-	or	bh,0xc0
-	mov	dx,bx
+	shr	ch,3;bh,3 ; func is ignored in mechanism 2
+	or	ch,0xc0;bh,0xc0
+	mov	dx,cx;bx
 
-	or	esi,esi
-	jz	pci_read_byte2
-	cmp	esi,1
-	jz	pci_read_word2
-	cmp	esi,2
-	jz	pci_read_dword2
-	jmp	pci_fin_read2
+;	or	esi,esi
+;	jz	pci_read_byte2
+;	cmp	esi,1
+;	jz	pci_read_word2
+;	cmp	esi,2
+;	jz	pci_read_dword2
+;	jmp	pci_fin_read2
+	jmp	dword [f62_rcall2+esi*4]
 
-pci_read_byte2:
+.0:
 	in	al,dx
-	jmp pci_fin_read2
-pci_read_word2:
+	jmp .pci_fin_read2
+.1:
 	in	ax,dx
-	jmp pci_fin_read2
-pci_read_dword2:
+	jmp .pci_fin_read2
+.2:
 	in	eax,dx
 ;       jmp pci_fin_read2
-pci_fin_read2:
+
+.pci_fin_read2:
 
 		; restore configuration space
 	xchg	eax,[esp]
@@ -234,13 +289,12 @@ pci_fin_read2:
 	out	dx,al
 
 	pop	eax
-	pop	esi
+;	pop	esi
 	ret
 
-pci_read_reg_err:
-	xor	eax,eax
-	dec	eax
-	ret
+;pci_read_reg_err:
+;	or 	dword [esp+32],-1
+;	ret
 
 
 ;***************************************************************************
@@ -262,12 +316,13 @@ pci_write_reg:
 	je pci_write_reg_2
 
 		; mechanism 1
-	push	esi   ; save register size into ESI
-	mov	esi,eax
-	and	esi,3
+;	push	esi   ; save register size into ESI
+	mov	esi,ebx;eax
+	and	esi,3	;not need
 
 	call	pci_make_config_cmd
-	mov	ebx,eax
+	mov	eax,ebx;ebx,eax
+	mov	ecx,edx		;cross registers
 		; get current state into ecx
 	mov	dx,0xcf8
 	in	eax, dx
@@ -282,24 +337,23 @@ pci_write_reg:
 	or	dl,bl
 	mov	eax,ecx
 
-	or	esi,esi
-	jz	pci_write_byte1
-	cmp	esi,1
-	jz	pci_write_word1
-	cmp	esi,2
-	jz	pci_write_dword1
-	jmp	pci_fin_write1
-
-pci_write_byte1:
+;	or	esi,esi
+;	jz	pci_write_byte1
+;	cmp	esi,1
+;	jz	pci_write_word1
+;	cmp	esi,2
+;	jz	pci_write_dword1
+;	jmp	pci_fin_write1
+	jmp	dword [f62_wcall+esi*4]
+.0:
 	out	dx,al
-	jmp pci_fin_write1
-pci_write_word1:
+	jmp .pci_fin_write1
+.1:
 	out	dx,ax
-	jmp pci_fin_write1
-pci_write_dword1:
+	jmp .pci_fin_write1
+.2:
 	out	dx,eax
-	jmp	pci_fin_write1
-pci_fin_write1:
+.pci_fin_write1:
 
 		; restore configuration control
 	pop	eax
@@ -307,20 +361,20 @@ pci_fin_write1:
 	out	dx,eax
 
 	xor	eax,eax
-	pop	esi
-
+	;pop	esi
 	ret
 pci_write_reg_2:
 
-	test	bh,128	;mech#2 only supports 16 devices per bus
-	jnz	pci_write_reg_err
+	test	ch,128;bh,128	;mech#2 only supports 16 devices per bus
+	jnz	pci_api.not_support
 
 
-	push esi   ; save register size into ESI
+;	push esi   ; save register size into ESI
 	mov esi,eax
-	and esi,3
+	and esi,3	;not need
 
 	push	eax
+	mov	ecx,edx		;cross registers
 		;store current state of config space
 	mov	dx,0xcf8
 	in	al,dx
@@ -342,24 +396,23 @@ pci_write_reg_2:
 		; write register
 	mov	eax,ecx
 
-	or	esi,esi
-	jz	pci_write_byte2
-	cmp	esi,1
-	jz	pci_write_word2
-	cmp	esi,2
-	jz	pci_write_dword2
-	jmp	pci_fin_write2
-
-pci_write_byte2:
+;	or	esi,esi
+;	jz	pci_write_byte2
+;	cmp	esi,1
+;	jz	pci_write_word2
+;	cmp	esi,2
+;	jz	pci_write_dword2
+;	jmp	pci_fin_write2
+	jmp	dword [f62_wcall2+esi*4]
+.0:
 	out	dx,al
-	jmp pci_fin_write2
-pci_write_word2:
+	jmp .pci_fin_write2
+.1:
 	out	dx,ax
-	jmp pci_fin_write2
-pci_write_dword2:
+	jmp .pci_fin_write2
+.2:
 	out	dx,eax
-	jmp	pci_fin_write2
-pci_fin_write2:
+.pci_fin_write2:
 		; restore configuration space
 	pop	eax
 	mov	dx,0xcfa
@@ -369,13 +422,13 @@ pci_fin_write2:
 	out	dx,al
 
 	xor	eax,eax
-	pop	esi
+	;pop	esi
 	ret
 
-pci_write_reg_err:
-	xor	eax,eax
-	dec	eax
-	ret
+;pci_write_reg_err:
+;	xor	eax,eax
+;	dec	eax
+;	ret
 
 if defined mmio_pci_addr	; must be set above
 ;***************************************************************************
@@ -383,7 +436,7 @@ if defined mmio_pci_addr	; must be set above
 ;      pci_mmio_init 
 ;
 ;   Description
-;       IN:  bx = device's PCI bus address (bbbbbbbbdddddfff)
+;       IN:  cx = device's PCI bus address (bbbbbbbbdddddfff)
 ;   Returns  eax = user heap space available (bytes)
 ;   Error codes
 ;       eax = -1 : PCI user access blocked,
@@ -391,7 +444,7 @@ if defined mmio_pci_addr	; must be set above
 ;       eax = -3 : user heap initialization failure
 ;***************************************************************************
 pci_mmio_init:
-    cmp     bx, mmio_pci_addr	
+    cmp     cx, mmio_pci_addr	
     jz	    @f
     mov     eax,-2
     ret
@@ -431,6 +484,11 @@ pci_mmio_init:
 ;***************************************************************************
 
 pci_mmio_map:
+;cross
+	mov	eax,ebx
+	mov	ebx,ecx
+	mov	ecx,edx
+;;;;;;;;;;;;;;;;;;;
     and     edx,0x0ffff
     cmp     ah,6
     jc     .bar_0_5
@@ -508,7 +566,7 @@ mmio_map_over:
 ;***************************************************************************
 
 pci_mmio_unmap:
-    stdcall user_free, ebx
+    stdcall user_free, ecx;ebx
     ret
 
 end if
