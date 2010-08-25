@@ -19,7 +19,7 @@
 
 
 struct FormatsTableEntry
-  Is	 dd ?
+  Is     dd ?
   Decode dd ?
   Encode dd ?
 ends
@@ -28,10 +28,10 @@ struct Image
   Checksum dd ? ; ((Width ROL 16) OR Height) XOR Data[0]
   Width    dd ?
   Height   dd ?
-  Next	   dd ?
+  Next     dd ?
   Previous dd ?
   Type     dd ? ; one of Image.bppN
-  Data	   dd ?
+  Data     dd ?
   Palette  dd ? ; used iff Type eq Image.bpp8
   Extended dd ?
   Flags    dd ? ; bitfield
@@ -45,6 +45,7 @@ Image.bpp24 = 2
 Image.bpp32 = 3
 Image.bpp15 = 4
 Image.bpp16 = 5
+Image.bpp1  = 6
 
 ; bits in Image.Flags
 Image.IsAnimated = 1
@@ -54,9 +55,9 @@ struct ImageDecodeOptions
   BackgroundColor dd ? ; used for transparent images as background
 ends
 
-FLIP_VERTICAL	= 0x01
+FLIP_VERTICAL   = 0x01
 FLIP_HORIZONTAL = 0x02
-FLIP_BOTH	= FLIP_VERTICAL or FLIP_HORIZONTAL
+FLIP_BOTH   = FLIP_VERTICAL or FLIP_HORIZONTAL
 
 ROTATE_90_CW   = 0x01
 ROTATE_180     = 0x02

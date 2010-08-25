@@ -73,38 +73,26 @@ proc img.decode.pcx _data, _length, _options ;//////////////////////////////////
 ;< eax = 0 (error) or pointer to image                                                            ;;
 ;;================================================================================================;;
 locals
-;  IMGwidth      dd ?
-;  IMGheight     dd ?
-;  IMGbpp        dd ?
-buf                 rb      1
 nplanes             rd      1
 xsize               rw      1
 ysize               rw      1
-stxsize             rw      1
-stysize             rw      1
+bpl                 rw      1
 total_bpl           rd      1
-total_bpl_tmp       rd      1
 line_begin          rd      1
-retvalue            rd      1
-
+retvalue            rd      1                       ; 0 (error) or pointer to image 
 endl
 
     pusha
 
     mov     esi,    [_data]
-
-    cmp     [esi+pcx_header.bpp],   1
-     jz     monochrome
-    cmp     byte[esi+pcx_header.nplanes],   3
-     jnz    indexed
-
-
-
-  _24bit:
-    xor     eax,   eax
-    mov     al,    byte[esi+pcx_header.nplanes]
+    movzx   eax,    byte[esi+pcx_header.nplanes]
     mov     [nplanes],  eax
-    mul     word[esi+pcx_header.bpl]
+    mov     bx,  word[esi+pcx_header.bpl]
+    mov     [bpl],  bx
+    mul     bx
+    shl     eax,    16
+    mov     ax,     dx
+    ror     eax,    16
     mov     [total_bpl],    eax
 
     movzx   eax,    word[esi+pcx_header.xmax]
@@ -116,6 +104,15 @@ endl
     inc     bx
     sub     bx,     word[esi+pcx_header.ymin]
     mov     [ysize],    bx
+
+
+    cmp     [esi+pcx_header.bpp],   1
+     jz     .monochrome
+    cmp     byte[esi+pcx_header.nplanes],   3
+     jnz    .indexed
+
+
+  ._24bit:
 
       stdcall   img.create, eax, ebx, Image.bpp24
     mov     [retvalue], eax
@@ -134,106 +131,106 @@ endl
 
     mov     esi,    [_data]
     add     esi,    128
-    mov     edi,    [retvalue]
-    mov     edi,    [edi+Image.Data]
+;    mov     edi,    [retvalue]
+    mov     edi,    [eax+Image.Data]
     add     edi,    2
     mov     [line_begin],   edi
     mov     ebx,    [total_bpl]
 
-  .begin:
-    mov     eax,    [_data]
-    mov     ax,     word[eax+pcx_header.bpl]
-  .decode:
-    mov     dl,     byte[esi]
-    inc     esi
-    mov     [buf],  dl
-    and     dl,     0xC0
-    cmp     dl,     0xC0
-     jne    @f
-    mov     dl,     byte[buf]
-    and     dl,     0x3F
-    mov     dh,     [esi]
-    inc     esi
-
-  .write_sequence:
-    mov     [edi], dh
+  ._24bit.begin:
+    mov     ax,     word[bpl]
+  ._24bit.decode:
+      call      get_byte
+  ._24bit.write_sequence:
+    mov     [edi],  dl
     dec     ax
-    dec     ebx
     add     edi,    [nplanes]
-    dec     dl
-    test    dl,     dl
-     jnz    .write_sequence
+    dec     dh
+     jnz    ._24bit.write_sequence
 
     test    ax,     ax
-     jz     .end_color_line
-     jmp    .decode
-  @@:
-    mov     dl,     byte[buf]
-    mov     [edi],  dl
-    add     edi, [nplanes]
-    dec     ebx
-    dec     ax
-     jz     .end_color_line
-     jmp    .decode
+     jz     ._24bit.end_color_line
+     jmp    ._24bit.decode
 
- .end_color_line:
+ ._24bit.end_color_line:
     test    ebx,    ebx
-     jz     .end_full_line
+     jz     ._24bit.end_full_line
     dec     [line_begin]
     mov     edi,    [line_begin]
-     jmp    .begin
+     jmp    ._24bit.begin
 
-  .end_full_line:
+  ._24bit.end_full_line:
     dec     word[ysize]
      jz     .quit
     mov     ebx,    [total_bpl]
     add     edi,    2
     mov     [line_begin],   edi
-     jmp    .begin
+     jmp    ._24bit.begin
 
-  .quit:
-    popa
-    mov     eax,    [retvalue]
-    ret
 
-  indexed:
-
-    xor     eax,   eax
-    mov     al,    byte[esi+pcx_header.nplanes]
-    mov     [nplanes],  eax
-    mul     word[esi+pcx_header.bpl]
-    mov     [total_bpl],    eax
-
-    movzx   eax,    word[esi+pcx_header.xmax]
-    inc     ax
-    sub     ax,     word[esi+pcx_header.xmin]
-    mov     [xsize],    ax
-
-    movzx   ebx,    word[esi+pcx_header.ymax]
-    inc     bx
-    sub     bx,     word[esi+pcx_header.ymin]
-    mov     [ysize],    bx
+  .indexed:
 
       stdcall   img.create, eax, ebx, Image.bpp8
     mov     [retvalue], eax
     test    eax,    eax
      jz     .quit
+
+    movzx   ebx,    [xsize]
+    movzx   ecx,    [ysize]
+    mov     edx,    [eax+Image.Data]
+
+    rol     ebx,    16
+    or      ebx,    ecx
+    xor     ebx,    [edx]
+    mov     [eax+Image.Checksum],   ebx
 
     mov     esi,    [_data]
     add     esi,    [_length]
     sub     esi,    768
     mov     edi,    [eax+Image.Palette]
-    mov     ecx,    256
+    mov      cx,    256
   @@:
     mov     ebx,    [esi]
-    and     ebx,    0x00ffffff
     bswap   ebx
     shr     ebx,    8
     mov     [edi],  ebx
     add     edi,    4
     add     esi,    3
-    dec     ecx
+    dec     cx
      jnz    @b
+
+    mov     esi,    [_data]
+    add     esi,    128
+;    mov     edi,    [retvalue]
+    mov     edi,    [eax+Image.Data]
+
+  .indexed.begin:
+    mov     ax,     word[bpl]
+  .indexed.decode:
+      call      get_byte
+  .indexed.write_sequence:
+    mov     [edi], dl
+    inc     edi
+    dec     ax
+    dec     dh
+     jnz    .indexed.write_sequence
+
+    test    ax,     ax
+     jz     .indexed.end_line
+     jmp    .indexed.decode
+
+  .indexed.end_line:
+    dec     word[ysize]
+     jz     .quit
+     jmp    .indexed.begin
+
+
+  .monochrome:
+
+      stdcall   img.create, eax, ebx, Image.bpp1
+    mov     [retvalue], eax
+    test    eax,    eax
+     jz     .quit
 
     movzx   ebx,    [xsize]
     movzx   ecx,    [ysize]
@@ -243,176 +240,43 @@ endl
     or      ebx,    ecx
     xor     ebx,    [edx]
     mov     [eax+Image.Checksum],   ebx
-
-
-    mov     esi,    [_data]
-    add     esi,    128
-    mov     edi,    [retvalue]
-    mov     edi,    [edi+Image.Data]
-
-  .begin:
-    mov     eax,    [_data]
-    mov     ax,     word[eax+pcx_header.bpl]
-  .decode:
-    mov     dl,     byte[esi]
-    inc     esi
-    mov     [buf],  dl
-    and     dl,     0xC0
-    cmp     dl,     0xC0
-     jne    @f
-    mov     dl,     [buf]
-    and     dl,     0x3F
-    mov     dh,     [esi]
-    inc     esi
-
-  .write_sequence:
-    mov     [edi], dh
-    inc     edi
-    dec     ax
-    dec     dl
-     jnz    .write_sequence
-
-    test    ax,     ax
-     jz     .end_line
-     jmp    .decode
-  @@:
-    mov     dl,     byte[buf]
-    mov     [edi],  dl
-    inc     edi
-    dec     ax
-     jz     .end_line
-     jmp    .decode
-
-  .end_line:
-    dec     word[ysize]
-     jz     .quit
-     jmp    .begin
-
-  .quit:
-    popa
-    mov     eax,    [retvalue]
-    ret
-
-
-  monochrome:
-
-    xor     eax,    eax
-    mov     ax,     word[esi+pcx_header.bpl]
-    mov     [total_bpl],    eax
-
-    movzx   eax,    word[esi+pcx_header.xmax]
-    inc     ax
-    sub     ax,     word[esi+pcx_header.xmin]
-    mov     [xsize],    ax
-
-    movzx   ebx,    word[esi+pcx_header.ymax]
-    inc     bx
-    sub     bx,     word[esi+pcx_header.ymin]
-    mov     [ysize],    bx
-
-      stdcall   img.create, eax, ebx, Image.bpp8
-    mov     [retvalue], eax
-    test    eax,    eax
-     jz     .quit
 
     mov     edi,    [eax+Image.Palette]
     mov     [edi],  dword   0x00000000
     mov     [edi+4],    dword   0x00ffffff
 
-    movzx   ebx,    [xsize]
-    movzx   ecx,    [ysize]
-    mov     edx,    [eax+Image.Data]
-
-    rol     ebx,    16
-    or      ebx,    ecx
-    xor     ebx,    [edx]
-    mov     [eax+Image.Checksum],   ebx
-
-
     mov     esi,    [_data]
     add     esi,    128
-    mov     edi,    [retvalue]
-    mov     edi,    [edi+Image.Data]
+;    mov     edi,    [retvalue]
+    mov     edi,    [eax+Image.Data]
 
-  .begin:
-    mov     eax,    [total_bpl]
-    mov     [total_bpl_tmp],    eax
+
+  .monochrome.begin:
+    mov     ebx,    [total_bpl]
     mov     ax,     [xsize]
 
-  .decode:
-
-    mov     dh,     byte[esi]
-    inc     esi
-    mov     [buf],  dh
-    and     dh,     0xC0
-    cmp     dh,     0xC0
-     je    .cycle1
-    mov     dh,     1
-    mov     dl,     [buf]
-     jmp    .exit1
-  .cycle1:
-    mov     dh,     [buf]
-    and     dh,     0x3F
-    mov     dl,     byte[esi]
-    inc     esi
-  .exit1:
-    push    eax
-    xor     eax,    eax
-    mov     al,     dh
-    sub     [total_bpl_tmp],    eax
-    pop     eax
-
-
-  .write_sequence:
-    mov     ecx,    7
-  .go:
-    bt      edx,    ecx
-     jnc    @f
-    mov     [edi],  byte    0x01
-     jmp    .later
-  @@:
-    mov     [edi],  byte    0x00
-  .later:
+  .monochrome.decode:
+      call      get_byte
+  .monochrome.write_sequence:
+    mov     [edi],  dl
     inc     edi
-    dec     ax
-     jnz    .lol
-  @@:
-    cmp     [total_bpl_tmp],    0
+    cmp     ax,     8
+     jng    .monochrome.is_last_byte_in_line
+    sub     ax,     8
+    dec     dh
+     jnz    .monochrome.write_sequence
+     jmp    .monochrome.decode
+
+  .monochrome.is_last_byte_in_line:
+    test    ebx,    ebx
      jng    @f
-
-    mov     dh,     byte[esi]
-    inc     esi
-    mov     [buf],  dh
-    and     dh,     0xC0
-    cmp     dh,     0xC0
-     je    .cycle2
-    mov     dh,     1
-    mov     dl,     [buf]
-     jmp    .exit2
-  .cycle2:
-    mov     dh,     [buf]
-    and     dh,     0x3F
-    mov     dl,     byte[esi]
-    inc     esi
-  .exit2:
-    push    eax
-    xor     eax,    eax
-    mov     al,     dh
-    sub     [total_bpl_tmp],    eax
-    pop     eax
-
-     jmp    @b
+      call      get_byte
+     jmp    .monochrome.is_last_byte_in_line
   @@:
     dec     word[ysize]
-     jnz    .begin
+     jnz    .monochrome.begin
      jmp    .quit
-  .lol:
-    dec     ecx
-    cmp     ecx,    -1
-     jne    .go
-    dec     dh
-     jnz    .write_sequence
-     jmp    .decode
+
 
   .quit:
     popa
@@ -445,7 +309,25 @@ endp
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
+proc get_byte
 
+    mov     dh,     byte[esi]
+    inc     esi
+    cmp     dh,     0xC0
+     jnb    .cycle1
+    mov     dl,     dh
+    mov     dh,     1
+     jmp    .exit1
+  .cycle1:
+    and     dh,     0x3F
+    mov     dl,     byte[esi]
+    inc     esi
+  .exit1:
+    movzx   ecx,     dh
+    sub     ebx,    ecx
+
+    ret
+endp
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
