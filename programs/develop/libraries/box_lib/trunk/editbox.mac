@@ -218,7 +218,7 @@ ret
 ;eax
 ;edx - color
 ;----------------------------------------------------------
-;вход только цвет edx
+
 edit_box.draw_bg:
         mov     ebx,ed_left
         add     ebx,1
@@ -226,6 +226,7 @@ edit_box.draw_bg:
         shl     ebx,16
         add     ebx,ed_width
         sub     ebx,1
+;вход только цвет edx
 edit_box.draw_bg_eax:
         mov     ecx,ed_top
         mov     eax,13
@@ -336,11 +337,11 @@ pushad
         ja      edit_box.sub_8
 
         push    ebx
-        call    edit_box.get_n                  ;получим кол-во символов в паре регистров edx:eax 
+        call    edit_box.get_n  ;получим кол-во символов которые уменщаются в ширине компонента, в паре регистров edx:eax 
         pop     ebx
         mov     edx,ebx
         add     edx,eax         ;ed_offset+width editbox
-        inc     edx             ;необходимо для номального положения курсора в крайней левой позиции
+        inc     edx             ;необходимо для нормального положения курсора в крайней левой позиции
         cmp     edx,ecx
         ja      @f
 
@@ -355,8 +356,8 @@ pushad
         jmp     edit_box.chk_d
 
 edit_box.sub_8:
-	cmp     ecx,0
-        je      edit_box.sub_min
+	test    ecx,ecx
+        jz      edit_box.sub_min
         cmp     ebx,8
         jbe     edit_box.sub_min
         sub     ebx,8   ;ebx=ed_offset
@@ -373,8 +374,9 @@ edit_box.chk_d: mov     ed_offset,ebx
         call    edit_box.draw_bg
         and     word ed_flags,ed_offset_cl
 edit_ex
-@@:
+@@:     
         or      word ed_flags,ed_offset_fl
+
 edit_ex
 }
 
@@ -391,7 +393,8 @@ edit_box_key.shift: ;;;;;;;SHIFT
         call    edit_box_key.sh_cl_
         jmp     edit_box.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;
-edit_box_key.f_exit:    call   edit_box.check_offset
+edit_box_key.f_exit:    
+	call	edit_box.check_offset
         and     word ed_flags,ed_shift_cl
         call    edit_box_key.enable_null
         jmp     edit_box.draw_cursor_text
@@ -591,6 +594,7 @@ edit_box_key.sh_home_end:
         or      word ed_flags,ed_shift_bac ;установка флага, выделенной области
         jmp     edit_box_key.sh_e_end
 edit_box_key.sh_exit_:      
+        call    edit_box.draw_bg
 	call    edit_box.check_offset
         ret
 ;функция внесения 0 по адресу ed_size+1
