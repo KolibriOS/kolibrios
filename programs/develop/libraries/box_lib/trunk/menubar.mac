@@ -438,10 +438,7 @@ m_get_mouse_flag	equ [edi+116]
 	ret
 ;---------------------------------------------------------------------
 .allocate_menu_area:
-	cmp	m_buf_adress,dword 0
-	je	@f
 	call	.free_menu_area
-@@:
 	movzx	ecx,word m_size_x1
 	movzx	eax,word m_size_y1
 	imul	ecx,eax
@@ -451,9 +448,12 @@ m_get_mouse_flag	equ [edi+116]
 	ret
 ;---------------------------------------------------------------------
 .free_menu_area:
+	cmp	m_buf_adress,dword 0
+	je	@f
 	mcall	68,13,m_buf_adress
 	xor	eax,eax
 	mov	m_buf_adress,eax
+@@:
 	ret
 ;---------------------------------------------------------------------
 .get_menu_area:
@@ -485,6 +485,7 @@ m_get_mouse_flag	equ [edi+116]
 	mov	dx,m_start_y1
 	 
 	mcall	7, m_buf_adress
+	call	.free_menu_area
 	ret
 ;---------------------------------------------------------------------
 .mouse_menu:
