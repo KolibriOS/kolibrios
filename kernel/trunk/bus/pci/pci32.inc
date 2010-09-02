@@ -170,8 +170,8 @@ pci_make_config_cmd:
 ;
 ;   Description
 ;       read a register from the PCI config space into EAX/AX/AL
-;       IN: ah=bus,device+func=bh,register address=bl
-;           number of bytes to read (1,2,4) coded into AL, bits 0-1
+;       IN: bh=bus,device+func=ch,register address=cl
+;           number of bytes to read (1,2,4) coded into BL, bits 0-1
 ;           (0 - byte, 1 - word, 2 - dword)
 ;***************************************************************************
 
@@ -303,9 +303,9 @@ pci_read_reg_2:
 ;
 ;   Description
 ;       write a register from ECX/CX/CL into the PCI config space
-;       IN: ah=bus,device+func=bh,register address (dword aligned)=bl,
-;           value to write in ecx
-;           number of bytes to write (1,2,4) coded into AL, bits 0-1
+;       IN: bh=bus,device+func=ch,register address (dword aligned)=cl,
+;           value to write in edx
+;           number of bytes to write (1,2,4) coded into BL, bits 0-1
 ;           (0 - byte, 1 - word, 2 - dword)
 ;***************************************************************************
 
@@ -468,9 +468,9 @@ pci_mmio_init:
 ;       WARNING! This VERY EXPERIMENTAL service is for one chosen PCI device only!
 ;       The target device address should be set in kernel var mmio_pci_addr
 ;
-;       IN:  ah = BAR#;
-;       IN: ebx = block size (bytes);
-;       IN: ecx = offset in MMIO block (in 4K-pages, to avoid misaligned pages);
+;       IN:  bh = BAR#;
+;       IN: ecx = block size (bytes);
+;       IN: edx = offset in MMIO block (in 4K-pages, to avoid misaligned pages);
 ;
 ;   Returns eax = MMIO block's linear address in the userspace (if no error)
 ;
@@ -484,13 +484,8 @@ pci_mmio_init:
 ;***************************************************************************
 
 pci_mmio_map:
-;cross
-	mov	eax,ebx
-	mov	ebx,ecx
-	mov	ecx,edx
-;;;;;;;;;;;;;;;;;;;
     and     edx,0x0ffff
-    cmp     ah,6
+    cmp     bh, 6
     jc     .bar_0_5
     jz     .bar_rom
     mov     eax,-2
@@ -498,18 +493,18 @@ pci_mmio_map:
 .bar_rom:
     mov    ah, 8	; bar6 = Expansion ROM base address
 .bar_0_5:
+    push    edx
+    add     ecx, 4095
+    and     ecx, 0xFFFFF000	; 4k-alignment
     push    ecx
-    add     ebx, 4095
-    and     ebx,-4096
-    push    ebx
-    mov     bl, ah	; bl = BAR# (0..5), however bl=8 for BAR6
-    shl     bl, 1
-    shl     bl, 1
-    add     bl, 0x10	; now bl = BAR offset in PCI config. space
+    mov     cl, bh	; cl = BAR# (0..5), however cl=8 for BAR6
+    shl     cl, 1
+    shl     cl, 1
+    add     cl, 0x10	; now cl = BAR offset in PCI config. space
     mov     ax, mmio_pci_addr
-    mov     bh, al	; bh = dddddfff
-    mov     al, 2	; al : DW to read
-    call    pci_read_reg
+    mov     ch, al	; ch = dddddfff
+    mov     bl, 2		; bl : DW to read
+    call    pci_read_reg	; new call
     or	    eax, eax
     jnz     @f
     mov     eax,-3	; empty I/O space
@@ -520,12 +515,12 @@ pci_mmio_map:
     mov     eax,-4	; damned ports (not MMIO space)
     jmp     mmio_ret_fail
 @@:
-    pop     ecx 	; ecx = block size, bytes (expanded to whole page)
+    pop     ecx 		; ecx = block size, bytes (expanded to whole page)
     mov     ebx, ecx	; user_alloc destroys eax, ecx, edx, but saves ebx
-    and     eax, 0xFFFFFFF0
+    and     al, 0xF0	; clear flags 
     push    eax 	      ; store MMIO physical address + keep 2DWords in the stack
     stdcall user_alloc, ecx
-    or	    eax, eax
+    or	eax, eax
     jnz     mmio_map_over
     mov     eax,-5	; problem with page allocation
 
@@ -538,13 +533,11 @@ mmio_map_over:
     mov     ecx, ebx	; ecx = size (bytes, expanded to whole page)
     shr     ecx, 12	; ecx = number of pages
     mov     ebx, eax	; ebx = linear address
-    pop     eax 	; eax = MMIO start
-    pop     edx 	; edx = MMIO shift (pages)
+    pop     eax 		; eax = MMIO start
+    pop     edx 		; edx = MMIO shift (pages)
     shl     edx, 12	; edx = MMIO shift (bytes)
     add     eax, edx	; eax = uMMIO physical address
-    or	    eax, PG_SHARED
-    or	    eax, PG_UW
-    or	    eax, PG_NOCACHE
+    or	eax, PG_SHARED+PG_UW+PG_NOCACHE
     mov     edi, ebx
     call    commit_pages
     mov     eax, edi
@@ -642,17 +635,18 @@ sys_pcibios:
 	jmp	..nxt2
 
 .not_FIND_PCI_CLASS_CODE:
+	mov	edx, ecx
 	cmp	ebp, 8			; READ_CONFIG_*
 	jb	.not_READ_CONFIG
 	cmp	ebp, 0x0A
 	ja	.not_READ_CONFIG
-	mov	eax, ebp
-	mov	ah, bh
-	mov	edx, edi
-	mov	bh, bl
-	mov	bl, dl
-	call	pci_read_reg
-	mov	ecx, eax
+	mov	eax, ebp	; -- ?? 
+;	mov	ah, bh	; bus
+	mov	ecx, edi
+	mov	ch, bl	; dev+fn
+;	mov	cl, dl	; reg#
+	call	pci_read_reg	
+	mov	edx, eax
 	xor	ah, ah			; SUCCESSFUL
 	jmp	.return_abc
 .not_READ_CONFIG:
@@ -661,10 +655,10 @@ sys_pcibios:
 	cmp	ebp, 0x0D
 	ja	.not_WRITE_CONFIG
 	lea	eax, [ebp+1]
-	mov	ah, bh
-	mov	edx, edi
-	mov	bh, bl
-	mov	bl, dl
+;	mov	ah, bh	; bus
+	mov	ecx, edi	
+	mov	ch, bl
+;	mov	cl, dl
 	call	pci_write_reg
 	xor	ah, ah			; SUCCESSFUL
 	jmp	.return_abc
