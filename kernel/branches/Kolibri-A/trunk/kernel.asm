@@ -4253,11 +4253,11 @@ sys_gs:                         ; direct screen access
 
 ;align 4 ; PCI functions
 ;
-;sys_pci:
-;
-;     call  pci_api
-;     mov   [esp+36],eax
-;     ret
+sys_pci:
+
+     call  pci_api
+     mov   [esp+36],eax
+     ret
 
 
 align 4  ;  system functions

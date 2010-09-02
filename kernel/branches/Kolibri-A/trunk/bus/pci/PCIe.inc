@@ -94,3 +94,14 @@ pci_ext_config:
 	call	boot_log
 	ret	; <<<<<<<<< FAILURE >>>>>>>>>
 
+
+;--------------------------------------------------------------------------
+; this routine is platform-specific and used to change some BIOS settengs
+; pcie_init_gfx
+;       sets the GPP mode of GFX bus
+
+
+;       this option disables external graphics
+pcie_init_gfx:
+
+	 ret

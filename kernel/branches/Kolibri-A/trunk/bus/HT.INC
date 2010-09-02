@@ -7,13 +7,16 @@
 ;;                                                              ;;
 ;;  AMD HyperTransport bus control                              ;;
 ;;                                                              ;;
-;;                  art_zh  <artem@jerdev.co.uk>                ;;
+;;                  art_zh  <kolibri@jerdev.co.uk>              ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision: 1554 $
 
-
+NB_MISC_INDEX	equ	0xF0000060	; NB Misc indirect access
+NB_MISC_DATA	equ	0xF0000064
+PCIEIND_INDEX	equ	0xF00000E0	; PCIe Core indirect config space access
+HTIU_NB_INDEX	equ	0xF0000094	; HyperTransport indirect config space access
 
 ;=============================================================================
 ;
@@ -44,6 +47,10 @@ rs7xx_nbconfig_flush_pci:
 
 align 4
 
+;------------------------------------------
+;       params:   al = nbconfig register#
+;                ebx = register content
+;
 rs7xx_nbconfig_write_pci:
 	and	eax, 0x0FC		 ; leave register# only
 	or	eax, 0x80000000 	 ; bdf = 0:0.0
@@ -53,6 +60,138 @@ rs7xx_nbconfig_write_pci:
 	mov	eax, ebx
 	out	dx, eax
 	ret
+
+;***************************************************************************
+;   Function
+;      rs7xx_unlock_bar3:     unlocks the BAR3 register of nbconfig that
+;                             makes pcie config address space visible
+;   -----------------------
+;   in: nothing      out: nothing      destroys:   eax ebx edx
+;
+;***************************************************************************
+align 4
+rs7xx_unlock_bar3:
+	mov	eax, NB_MISC_INDEX
+	mov	ebx, 0x080			; reg#0; write-enable
+	call	rs7xx_nbconfig_write_pci	; set index
+	mov	eax, NB_MISC_DATA
+	call	rs7xx_nbconfig_read_pci 	; read data
+	mov	ebx, eax
+	and	ebx, 0xFFFFFFF7 		; clear bit3
+	mov	eax, NB_MISC_DATA
+	call	rs7xx_nbconfig_write_pci	; write it back
+	mov	eax, NB_MISC_INDEX
+	xor	ebx, ebx			; reg#0; write-locked
+	call	rs7xx_nbconfig_write_pci	; set index
+	ret
+
+;--------------------------------------------------------------
+align 4
+rs780_read_misc:
+;  in: eax(al) - reg#           out: eax = NBMISCIND data
+	push	edx
+	mov	edx, NB_MISC_INDEX
+	and	eax, 0x07F
+	mov	[edx], eax
+	add	dl, 4
+	mov	eax, [edx]
+	pop	edx
+	ret
+
+;-------------------------------------------
+align 4
+rs780_write_misc:
+;  in: eax(al) - reg#     ebx = NBMISCIND data
+	push	edx
+	mov	edx, NB_MISC_INDEX
+	and	eax, 0x07F
+	or	eax, 0x080		; set WE
+	mov	[edx], eax
+	add	dl, 4
+	mov	[edx], ebx
+	sub	dl, 4
+	xor	eax,   eax
+	mov	[edx], eax		; safety last
+	pop	edx
+	ret
+
+;-------------------------------------------------------------
+align 4
+rs780_read_pcieind:
+;  in: ah = bridge#, al = reg#           out: eax = PCIEIND data
+	push	edx
+	xor	edx, edx
+	mov	ah,  dl 		; bridge# :     0 = Core+GFX;   0x10 = Core+SB
+	and	dl,  15 		;            0x20 = Core+GPP;  2..12 = a PortBridge
+	shl	edx, 15 		; device#
+	add	edx, PCIEIND_INDEX	; full bdf-address
+	and	eax, 0x30FF
+	or	al,  al
+	jnz	@f
+	shl	eax, 4			; set bits 17..16 for a Core bridge
+@@:
+	mov	[edx], eax
+	add	dl,  4
+	mov	eax, [edx]
+	pop	edx
+	ret
+
+;-------------------------------------------
+align 4
+rs780_write_pcieind:
+;  in: ah = bridge#, al = reg#,  ebx = PCIEIND data
+	push	edx
+	xor	edx, edx
+	mov	ah,  dl 		; bridge# :     0 = Core+GFX;   0x10 = Core+SB
+	and	dl,  15 		;            0x20 = Core+GPP;  2..12 = a PortBridge
+	shl	edx, 15 		; device#
+	add	edx, PCIEIND_INDEX	; full bdf-address
+	and	eax, 0x30FF
+	or	al,  al
+	jnz	@f
+	shl	eax, 4			; set bits 17..16 for a Core bridge
+@@:
+	mov	[edx], eax
+	add	dl,  4
+	mov	[edx], ebx
+	sub	dl,  4
+	xor	eax,   eax
+	mov	[edx], eax		; safety last
+	pop	edx
+	ret
+
+;------------------------------------------------
+align 4
+rs780_read_htiu:
+; in:  al = reg#  |  out: eax = HTIU data
+;------------------------------------------------
+	push	edx
+	mov	edx,  HTIU_NB_INDEX
+	and	eax, 0x07F
+	mov	[edx], eax
+	add	dl,  4
+	mov	eax, [edx]
+	pop	edx
+	ret
+;------------------------------------------------
+align 4
+rs780_write_htiu:
+; in:  al = reg#; ebx = data
+;------------------------------------------------
+	push	edx
+	mov	edx,  HTIU_NB_INDEX
+	and	eax, 0x07F
+	or	eax, 0x100
+	mov	[edx], eax
+	add	dl,  4
+	mov	[edx], ebx
+	sub	dl,  4
+	xor	eax,   eax
+	mov	[edx], eax
+	pop	edx
+	ret
+
+
 
 ;***************************************************************************
 ;   Function
@@ -66,6 +205,7 @@ rs7xx_nbconfig_write_pci:
 align 4
 
 rs7xx_pcie_init:
+	call	rs7xx_unlock_bar3
 	mov	al, 0x7C		       ; NB_IOC_CFG_CNTL
 	call	rs7xx_nbconfig_read_pci
 	mov	ebx, eax
@@ -120,7 +260,6 @@ rs7xx_pcie_init:
 	xor	dx,  dx 			; PDEs counter
 @@:
 	mov	dword[ebx], eax 		; map 4 buses
-	invlpg	[ecx]				; next PgDir entry
 	add	bx,  4				; new PDE
 	add	eax, 0x400000			; +4M phys.
 	add	ecx, 0x400000			; +4M lin.
@@ -128,6 +267,8 @@ rs7xx_pcie_init:
 	jnc	.pcie_cfg_mapped
 	inc	dl
 	jmp	@b
+	mov	eax, cr3
+	mov	cr3, eax			; flush TLB
 .pcie_cfg_mapped:
 	mov	esi, boot_pcie_ok
 	call	boot_log
@@ -135,13 +276,11 @@ rs7xx_pcie_init:
 .rs7xx_pcie_fail:
 	mov	esi, boot_rs7xx_fail
 	call	boot_log
-	ret
+	jmp	$
 .rs7xx_pcie_blocked:
 	mov	esi, boot_rs7xx_blkd
 	call	boot_log
-	call	pci_ext_config
-	jmp	.addr_found
-	ret
+	jmp	$
 
 
 

@@ -99,7 +99,7 @@ iglobal
       dd 0
       dd 0
       dd 0
-      dd 0;sys_pci                 ; 62-PCI functions
+      dd sys_pci                 ; 62-PCI functions
       dd sys_msg_board           ; 63-System message board
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -170,7 +170,7 @@ iglobal
       dd undefined_syscall       ; 59-reserved
       dd sys_IPC		 ; 60-Inter Process Communication
       dd sys_gs			 ; 61-Direct graphics access
-      dd pci_api;cross_order             ; 62-PCI functions
+      dd cross_order             ; 62-PCI functions
       dd cross_order             ; 63-System message board
       dd sys_resize_app_memory   ; 64-Resize application memory usage
       dd sys_putimage_palette    ; 65-PutImagePalette
