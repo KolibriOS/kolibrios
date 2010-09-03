@@ -1,7 +1,7 @@
 
 
 u32_t pciGetBaseSize(int bus, int devfn, int index,
-                     Bool destructive, Bool *min)
+                     bool destructive, bool *min)
 {
   int offset;
   u32_t addr1;

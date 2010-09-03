@@ -1,4 +1,6 @@
 
+typedef struct list_head  list_t;
+
 
 typedef struct {
   int     available;          /**< Count of available items in this slab. */
@@ -38,7 +40,7 @@ typedef struct
 
 typedef struct
 {
-    link_t  link;
+    list_t  list;
 
     addr_t  iobase;
 
@@ -184,7 +186,7 @@ typedef struct __attribute__ ((packed))
 
 typedef struct
 {
-    link_t  link;
+    list_t  list;
     u32_t   id;
 
     hc_t   *host;
@@ -205,14 +207,14 @@ typedef struct
 
 typedef struct   tag_request
 {
-    link_t        link;
+    list_t        list;
     td_t         *td_head;
     td_t         *td_tail;
     addr_t        data;
     size_t        size;
     udev_t       *dev;
     u32_t         type;
-    Bool        (*handler)(udev_t *dev, struct   tag_request *rq);
+    bool        (*handler)(udev_t *dev, struct   tag_request *rq);
 }request_t;
 
 
@@ -221,22 +223,23 @@ typedef struct   tag_request
 #define  TOKEN( size, toggle, ep, addr, pid) \
          ( (((size)-1)<<21)|(toggle)|(((ep)&0xF)<<15)|((addr)<<8)|(pid))
 
-Bool ctrl_request(udev_t *dev, void *req, u32_t dir,
+bool FindUSBControllers();
+
+bool ctrl_request(udev_t *dev, void *req, u32_t dir,
                   void *data, size_t req_size);
 
+bool set_address(udev_t *dev);
 
-Bool set_address(udev_t *dev);
+bool init_device(udev_t *dev);
 
-Bool init_device(udev_t *dev);
-
-Bool init_hid(udev_t *dev);
+bool init_hid(udev_t *dev);
 
 struct boot_packet
 {
-    u8_t buttons;
-    i8_t x;
-    i8_t y;
-    i8_t z;
+    u8_t  buttons;
+    char  x;
+    char  y;
+    char  z;
 }__attribute__ ((packed));
 
 #define DOUT   0xE1

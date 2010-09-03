@@ -16,7 +16,7 @@ struct hid_descriptor {
 
 void create_hid_mouse(udev_t *dev, endpoint_descr_t *en_d);
 
-Bool init_hid(udev_t *dev)
+bool init_hid(udev_t *dev)
 {
     interface_descr_t              *interface;
     struct hid_descriptor          *hds;
@@ -96,11 +96,11 @@ Bool init_hid(udev_t *dev)
         if( interface->bInterfaceProtocol == 2)
             create_hid_mouse(dev, ep);
   //  }
-    return TRUE;
+    return true;
 };
 
 
-Bool mouse_handler(udev_t *dev, struct tag_request *rq)
+bool mouse_handler(udev_t *dev, struct tag_request *rq)
 {
     td_t   *td;
 
@@ -115,7 +115,7 @@ Bool mouse_handler(udev_t *dev, struct tag_request *rq)
     td->status = 0x00800000 | dev->speed;
     td->token ^= DATA1;
 
-    return TRUE;
+    return true;
 };
 
 void create_hid_mouse(udev_t *dev, endpoint_descr_t *en_d)
@@ -142,13 +142,12 @@ void create_hid_mouse(udev_t *dev, endpoint_descr_t *en_d)
     enp.size    = en_d->wMaxPacketSize;
     enp.toggle  = DATA0;
 
-    packet = malloc(enp.size);
-    memset(packet, 0, enp.size);
+    packet = kzalloc(enp.size, 0);
 
     rq = create_request(dev, &enp, DIN, packet, enp.size);
     rq->handler = &mouse_handler;
 
-    list_prepend(&rq->link, &rq_list);
+    list_add_tail(&rq->list, &rq_list);
 
     dbgprintf("create_hid_mouse\n");
 }

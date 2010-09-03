@@ -1,16 +1,21 @@
 
 CC = gcc
-FASM = e:/fasm/fasm.exe
 CFLAGS = -c -O2 -fomit-frame-pointer -fno-builtin-printf 
-LDRHD  = -shared -T ld.x -s --file-alignment 32
+LDFLAGS = -nostdlib -shared -s -Map usb.map --image-base 0\
+	  --file-alignment 512 --section-alignment 4096
 
-INCLUDES = -I ../../include
+DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 
 
-HFILES:=     ../../include/types.h	\
-             ../../include/syscall.h	\
-             ../../include/link.h       \
-             ../../include/pci.h        \
-             usb.h
+DRV_TOPDIR   = $(CURDIR)/../..
+
+DRV_INCLUDES = $(DRV_TOPDIR)/include
+
+INCLUDES = 	-I$(DRV_INCLUDES) \
+		-I$(DRV_INCLUDES)/linux
+
+LIBPATH = $(DRV_TOPDIR)/ddk
+
+
 
 SRC_DEP:=    pci.inc		\
 	     detect.inc		\
@@ -21,17 +26,18 @@ USB_SRC:=    usb.c
 
 USB_OBJ:=    usb.obj
 
+LIBS:=    -ldrv -lcore 
 
 USB =        usb.dll
 
 all: $(USB)
 
 $(USB): $(USB_OBJ) $(SRC_DEP) $(HFILES) Makefile
-	wlink name usb.dll SYS nt_dll lib libdrv op offset=0 op nod op maxe=25 op el op STUB=stub.exe op START=_drvEntry @usb.lk
+	ld $(LDFLAGS) -L$(LIBPATH) -T usb.lds -o $@ $(USB_OBJ) $(LIBS)  
 	kpack.exe usb.dll usb.drv
 
 usb.obj : usb.c $(SRC_DEP) $(HFILES) Makefile
-	$(CC) $(INCLUDES) $(CFLAGS) -o usb.obj usb.c
+	$(CC) $(DEFINES) $(INCLUDES) $(CFLAGS) -o usb.obj usb.c
 
 %.obj : %.c $(HFILES)
 	$(CC) $(CFLAGS) -o $@ $<

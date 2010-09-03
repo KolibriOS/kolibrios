@@ -1,30 +1,30 @@
 
 
-#include "types.h"
-#include "link.h"
+#include <kernel.h>
+#include <mutex.h>
+#include <pci.h>
 
-#include <stdio.h>
-#include <malloc.h>
-#include <memory.h>
+//#include <stdio.h>
+//#include <malloc.h>
+//#include <memory.h>
 
-#include "pci.h"
 
-#include "syscall.h"
+#include <syscall.h>
 #include "usb.h"
 
 
 int __stdcall srv_usb(ioctl_t *io);
 
-Bool init_hc(hc_t *hc);
+bool init_hc(hc_t *hc);
 
 static slab_t   qh_slab;
 static slab_t   td_slab;
 
-static link_t  hc_list;
-static link_t  newdev_list;
-static link_t  rq_list;
+LIST_HEAD( hc_list );
+LIST_HEAD( newdev_list );
+LIST_HEAD( rq_list );
 
-u32_t __stdcall drvEntry(int action)
+u32_t drvEntry(int action, char *cmdline)
 {
     u32_t   retval;
     hc_t   *hc;
@@ -41,11 +41,7 @@ u32_t __stdcall drvEntry(int action)
         return 0;
     }
 
-    list_initialize(&hc_list);
-    list_initialize(&newdev_list);
-    list_initialize(&rq_list);
-
-    if( !FindPciDevice() ) {
+    if( !FindUSBControllers() ) {
         dbgprintf("no uhci devices found\n");
         return 0;
     };
@@ -86,19 +82,19 @@ u32_t __stdcall drvEntry(int action)
 
     hc = (hc_t*)hc_list.next;
 
-    while( &hc->link != &hc_list)
+    while( &hc->list != &hc_list)
     {
         init_hc(hc);
-        hc = (hc_t*)hc->link.next;
+        hc = (hc_t*)hc->list.next;
     }
 
     dbgprintf("\n");
 
     dev = (udev_t*)newdev_list.next;
-    while( &dev->link != &newdev_list)
+    while( &dev->list != &newdev_list)
     {
         udev_t *tmp = dev;
-        dev = (udev_t*)dev->link.next;
+        dev = (udev_t*)dev->list.next;
 
         if(tmp->id != 0)
             init_device(tmp);
@@ -110,7 +106,7 @@ u32_t __stdcall drvEntry(int action)
         request_t *rq;
 
         rq = (request_t*)rq_list.next;
-        while( &rq->link != &rq_list)
+        while( &rq->list != &rq_list)
         {
             qh_t      *qh;
             td_t      *td;
@@ -122,19 +118,19 @@ u32_t __stdcall drvEntry(int action)
             qh->qelem = td->dma;
 
             __asm__ __volatile__ ("":::"memory");
-            rq = (request_t*)rq->link.next;
+            rq = (request_t*)rq->list.next;
         };
 
         delay(10/10);
 
         rq = (request_t*)rq_list.next;
-        while( &rq->link != &rq_list)
+        while( &rq->list != &rq_list)
         {
             request_t *tmp;
             td_t      *td;
 
             tmp = rq;
-            rq = (request_t*)rq->link.next;
+            rq = (request_t*)rq->list.next;
 
             td  = tmp->td_head;
 

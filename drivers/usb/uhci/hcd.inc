@@ -118,11 +118,11 @@ reset_needed:
 }
 
 
-Bool init_hc(hc_t *hc)
+bool init_hc(hc_t *hc)
 {
-	int port;
-    u32_t ifl;
-    u16_t dev_status;
+    int    port;
+    u32_t  ifl;
+    u16_t  dev_status;
     int i;
 
     dbgprintf("\n\ninit uhci %x\n\n", hc->pciId);
@@ -212,7 +212,7 @@ Bool init_hc(hc_t *hc)
             status = in16(hc->iobase + USBPORTSC1 + (port * 2));
             if(status & 1)
             {
-                udev_t *dev = malloc(sizeof(udev_t));
+                udev_t *dev = kmalloc(sizeof(udev_t),0);
 
                 out16(hc->iobase + USBPORTSC1 + (port * 2), 0x0E);
 
@@ -222,10 +222,9 @@ Bool init_hc(hc_t *hc)
                 status = in16(hc->iobase + USBPORTSC1 + (port * 2));
                 dbgprintf("port%d status %x\n", port, status);
 
-                link_initialize(&dev->link);
-                dev->id       = 0;
+                INIT_LIST_HEAD(&dev->list);
+
                 dev->host     = hc;
-                dev->addr     = 0;
                 dev->port     = port;
                 dev->ep0_size = 8;
                 dev->status   = status;
@@ -244,7 +243,7 @@ Bool init_hc(hc_t *hc)
                 };
 
                 if(set_address(dev)) {
-                    list_prepend(&dev->link, &newdev_list);
+                    list_add_tail(&dev->list, &newdev_list);
                     hc->port_map |= 1<<port;
                 }
                 else {
@@ -255,7 +254,7 @@ Bool init_hc(hc_t *hc)
             };
         };
     };
-    return TRUE;
+    return true;
 };
 
 u16_t __attribute__((aligned(16)))
@@ -269,7 +268,7 @@ SETUP(0) IN(1) IN(0) IN(1)...OUT(0)
 */
 
 
-Bool set_address(udev_t *dev)
+bool set_address(udev_t *dev)
 {
     static  udev_id   = 0;
     static  udev_addr = 0;
@@ -292,7 +291,7 @@ Bool set_address(udev_t *dev)
     req_addr[1] = address;
 
     if( !ctrl_request(dev, &req_addr, DOUT, NULL, 0))
-        return FALSE;
+        return false;
 
     dev->addr = address;
     dev->id   = (++udev_id << 8) | address;
@@ -303,12 +302,12 @@ Bool set_address(udev_t *dev)
     data[1] = 0;
 
     if( !ctrl_request(dev, &req_descr, DIN, data, 8))
-        return FALSE;
+        return false;
 
     dev_descr_t *descr = (dev_descr_t*)&data;
     dev->ep0_size = descr->bMaxPacketSize0;
 
-    return TRUE;
+    return true;
 }
 
 request_t *create_request(udev_t *dev, endp_t *enp, u32_t dir,
@@ -317,26 +316,31 @@ request_t *create_request(udev_t *dev, endp_t *enp, u32_t dir,
     td_t  *td, *td_prev;
     addr_t data_dma;
 
-    request_t *rq = (request_t*)malloc(sizeof(request_t));
+    size_t  packet_size = enp->size;
+    size_t  size = req_size;
 
-    link_initialize(&rq->link);
+    request_t *rq = (request_t*)kmalloc(sizeof(request_t),0);
 
-    rq->td_head = 0;
-    rq->td_tail = 0;
+    INIT_LIST_HEAD(&rq->list);
 
     rq->data = (addr_t)data;
     rq->size = req_size;
-    rq->dev = dev;
+    rq->dev  = dev;
 
     if(data)
         data_dma = DMA(data);
 
     td_prev = NULL;
 
-    while(req_size >= enp->size)
+    while(size > 0)
     {
+        if ( size < packet_size)
+        {
+            packet_size = size;
+        };
+
         td = alloc_td();
-        td->link   = 1;
+        td->link = 1;
 
         if(rq->td_head == NULL)
             rq->td_head = td;
@@ -344,34 +348,15 @@ request_t *create_request(udev_t *dev, endp_t *enp, u32_t dir,
         if( td_prev )
             td_prev->link   = td->dma | 4;
         td->status = 0x00800000 | dev->speed;
-        td->token  = TOKEN(enp->size,enp->toggle,enp->address,
+        td->token  = TOKEN(packet_size,enp->toggle,enp->address,
                            dev->addr,dir);
         td->buffer = data_dma;
         td->bk     = td_prev;
 
         td_prev = td;
 
-        data_dma+= enp->size;
-        req_size-= enp->size;
-        enp->toggle ^= DATA1;
-    }
-    if(req_size)
-    {
-        td = alloc_td();
-        td->link   = 1;
-
-        if(rq->td_head == NULL)
-            rq->td_head = td;
-
-        if( td_prev )
-            td_prev->link   = td->dma | 4;
-
-        td->status = 0x00800000 | dev->speed;
-        td->token  = TOKEN( req_size, enp->toggle, enp->address,
-                            dev->addr, dir);
-        td->buffer = data_dma;
-        td->bk     = td_prev;
-
+        data_dma+= packet_size;
+        size-= packet_size;
         enp->toggle ^= DATA1;
     }
     rq->td_tail = td;
@@ -387,7 +372,7 @@ request_t *create_request(udev_t *dev, endp_t *enp, u32_t dir,
     return rq;
 }
 
-Bool ctrl_request(udev_t *dev, void *req, u32_t pid,
+bool ctrl_request(udev_t *dev, void *req, u32_t pid,
                   void *data, size_t req_size)
 {
     size_t  packet_size = dev->ep0_size;
@@ -397,7 +382,7 @@ Bool ctrl_request(udev_t *dev, void *req, u32_t pid,
     td_t   *td0, *td, *td_prev;
     qh_t   *qh;
     addr_t  data_dma = 0;
-    Bool    retval;
+    bool    retval;
 
     td0 = alloc_td();
 
@@ -411,27 +396,17 @@ Bool ctrl_request(udev_t *dev, void *req, u32_t pid,
 
     td_prev = td0;
 
-    while(size >= packet_size)
+    while(size > 0)
     {
+        if ( size < packet_size)
+        {
+            packet_size = size;
+        };
+
         td = alloc_td();
         td_prev->link   = td->dma | 4;
         td->status = 0x00800000 | dev->speed;
         td->token  = TOKEN(packet_size, toggle, 0,dev->addr, pid);
-        td->buffer = data_dma;
-        td->bk     = td_prev;
-
-        td_prev = td;
-
-        data_dma+= packet_size;
-        size-= packet_size;
-        toggle ^= DATA1;
-    }
-    if(size)
-    {
-        td = alloc_td();
-        td_prev->link   = td->dma | 4;
-        td->status = 0x00800000 | dev->speed;
-        td->token  = ((size-1)<<21)|toggle|(dev->addr<<8)|pid;
         td->buffer = data_dma;
         td->bk     = td_prev;
 
@@ -480,8 +455,8 @@ Bool ctrl_request(udev_t *dev, void *req, u32_t pid,
         dbgprintf("td status %x\n",td->status);
         dbgprintf("qh %x \n", qh->qelem);
 
-        retval = FALSE;
-    } else retval = TRUE;
+        retval = false;
+    } else retval = true;
 
     do
     {
@@ -494,7 +469,7 @@ Bool ctrl_request(udev_t *dev, void *req, u32_t pid,
 };
 
 
-Bool init_device(udev_t *dev)
+bool init_device(udev_t *dev)
 {
     static  u16_t __attribute__((aligned(16)))
             req_descr[4]  = {0x0680,0x0100,0x0000,18};
@@ -586,7 +561,7 @@ Bool init_device(udev_t *dev)
                 break;
             case USB_CLASS_HID:
                 dev->conf = conf;
-                list_remove(&dev->link);
+                list_del(&dev->list);
                 return init_hid(dev);
 
             case USB_CLASS_PRINTER:
