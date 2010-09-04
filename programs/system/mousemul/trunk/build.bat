@@ -1,2 +1,2 @@
-@fasm mousEmul.asm mousemul
+@fasm mousemul.asm mousemul
 @pause
