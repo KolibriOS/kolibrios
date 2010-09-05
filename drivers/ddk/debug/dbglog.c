@@ -99,6 +99,7 @@ int dbg_open(char *path)
 
 int vsnprintf(char *s, size_t n, const char *format, va_list arg);
 
+
 int printf(const char* format, ...)
 {
     char  txtbuf[256];
@@ -135,7 +136,9 @@ int dbgprintf(const char* format, ...)
     {
         SysMsgBoardStr(txtbuf);
 
-        if(dbgfile.path)
+/*  do not write into log file if interrupts disabled */
+
+        if ( (get_eflags() & (1 << 9)) && dbgfile.path)
         {
             write_file(dbgfile.path,txtbuf,dbgfile.offset,len,&writes);
             dbgfile.offset+=writes;

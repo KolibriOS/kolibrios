@@ -7,6 +7,8 @@
     .global _AllocPage
     .global _AllocPages
 
+    .global _AttachIntHandler
+
     .global _CreateRingBuffer
     .global _Delay
     .global _DestroyObject
@@ -43,6 +45,8 @@
 
     .def  _AllocPage;         .scl  2;  .type 32; .endef
     .def  _AllocPages;        .scl  2;  .type 32; .endef
+
+    .def  _AttachIntHandler;  .scl  2;  .type 32; .endef
 
     .def  _CreateRingBuffer;  .scl  2;  .type 32; .endef
 
@@ -81,6 +85,8 @@
 
 _AllocPage:
 _AllocPages:
+
+_AttachIntHandler:
 
 _CreateRingBuffer:
 
@@ -122,6 +128,8 @@ _SysMsgBoardStr:
 
         .ascii " -export:AllocPage"            # gcc ABI
         .ascii " -export:AllocPages"           # gcc ABI
+
+        .ascii " -export:AttachIntHandler"     # stdcall
 
         .ascii " -export:CreateRingBuffer"     # stdcall
 
