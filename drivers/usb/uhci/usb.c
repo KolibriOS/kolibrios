@@ -113,11 +113,12 @@ u32_t drvEntry(int action, char *cmdline)
 
             td  = rq->td_head;
             dev = rq->dev;
-            qh  = dev->host->qh1;
 
+            qh = dev->host->qh[rq->qnum];
             qh->qelem = td->dma;
 
-            __asm__ __volatile__ ("":::"memory");
+            mb();
+
             rq = (request_t*)rq->list.next;
         };
 

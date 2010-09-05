@@ -38,6 +38,23 @@ typedef struct
 
 }qh_t __attribute__((aligned(16)));
 
+
+#define UHCI_NUM_SKELQH 11
+
+#define SKEL_ISO        1
+#define SKEL_ASYNC      9
+
+/*
+#define     QH_1    0
+#define     QH_2    1
+#define     QH_4    2
+#define     QH_8    3
+#define     QH_16   4
+#define     QH_32   5
+#define     QH_64   6
+*/
+
+
 typedef struct
 {
     list_t  list;
@@ -48,7 +65,7 @@ typedef struct
     count_t frame_number;
     addr_t  frame_dma;
 
-    qh_t   *qh1;
+    qh_t   *qh[UHCI_NUM_SKELQH];
 
     u32_t  *data;
     addr_t  data_dma;
@@ -63,6 +80,7 @@ typedef struct
     addr_t  memBase[6];
     size_t  memSize[6];
     u32_t   memType[6];
+    u32_t   irq_line;
 }hc_t;
 
 typedef struct tag_td
@@ -214,6 +232,7 @@ typedef struct   tag_request
     size_t        size;
     udev_t       *dev;
     u32_t         type;
+    int           qnum;
     bool        (*handler)(udev_t *dev, struct   tag_request *rq);
 }request_t;
 
@@ -247,4 +266,14 @@ struct boot_packet
 
 #define DATA0  (0<<19)
 #define DATA1  (1<<19)
+
+
+
+static inline u32_t __bsf(u32_t val)
+{
+    asm("bsf %1,%0"
+        :"=r" (val)
+        :"rm" (val));
+    return val;
+}
 

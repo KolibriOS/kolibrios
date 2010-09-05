@@ -112,7 +112,7 @@ bool mouse_handler(udev_t *dev, struct tag_request *rq)
         pkt = (struct boot_packet *)rq->data;
         SetMouseData(pkt->buttons, pkt->x, -pkt->y, -pkt->z, 0);
     };
-    td->status = 0x00800000 | dev->speed;
+    td->status = TD_CTRL_ACTIVE | TD_CTRL_IOC | dev->speed;
     td->token ^= DATA1;
 
     return true;
@@ -145,6 +145,7 @@ void create_hid_mouse(udev_t *dev, endpoint_descr_t *en_d)
     packet = kzalloc(enp.size, 0);
 
     rq = create_request(dev, &enp, DIN, packet, enp.size);
+    rq->qnum = 6;
     rq->handler = &mouse_handler;
 
     list_add_tail(&rq->list, &rq_list);

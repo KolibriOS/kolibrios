@@ -1,9 +1,12 @@
 
 #define UHCI_USBLEGSUP          0x00c0  /* legacy support */
-#define UHCI_USBCMD                  0  /* command register */
-#define UHCI_USBINTR                 4  /* interrupt register */
+#define UHCI_USBLEGSUP_DEFAULT  0x2000  /* only PIRQ enable set */
 #define UHCI_USBLEGSUP_RWC      0x8f00  /* the R/WC bits */
 #define UHCI_USBLEGSUP_RO       0x5040  /* R/O and reserved bits */
+
+
+#define UHCI_USBCMD                  0  /* command register */
+#define UHCI_USBINTR                 4  /* interrupt register */
 #define UHCI_USBCMD_RUN         0x0001  /* RUN/STOP bit */
 #define UHCI_USBCMD_HCRESET     0x0002  /* Host Controller reset */
 #define UHCI_USBCMD_EGSM        0x0008  /* Global Suspend Mode */
@@ -117,12 +120,38 @@ reset_needed:
 	return 1;
 }
 
+void hc_interrupt()
+{
+    hc_t   *hc;
+
+    printf("USB interrupt\n");
+
+    hc = (hc_t*)hc_list.next;
+
+    while( &hc->list != &hc_list)
+    {
+        hc_t  *tmp;
+        u16_t  status;
+
+        tmp = hc;
+        hc = (hc_t*)hc->list.next;
+
+        status = in16(tmp->iobase + USBSTS);
+        if (!(status & ~USBSTS_HCH))            /* shared interrupt, not mine */
+            continue;
+        out16(tmp->iobase + USBSTS, status);     /* Clear it */
+    }
+
+};
+
+
 
 bool init_hc(hc_t *hc)
 {
     int    port;
     u32_t  ifl;
     u16_t  dev_status;
+    td_t   *td;
     int i;
 
     dbgprintf("\n\ninit uhci %x\n\n", hc->pciId);
@@ -166,18 +195,42 @@ bool init_hc(hc_t *hc)
     hc->frame_dma    = GetPgAddr(hc->frame_base);
     hc->frame_number = 0;
 
+
+    for (i = 0; i < UHCI_NUM_SKELQH; i++)
+    {
     qh_t *qh = alloc_qh();
 
     qh->qlink = 1;
     qh->qelem = 1;
 
-    hc->qh1 = qh;
+        hc->qh[i] = qh;
+    }
+    for (i = SKEL_ISO + 1; i < SKEL_ASYNC; ++i)
+        hc->qh[i]->qlink = hc->qh[SKEL_ASYNC]->dma | 2;
 
- //   dbgprintf("alloc qh %x dma %x\n", qh, qh->dma);
+/*
+    td = alloc_td();
 
-    for(i=0; i<1024; i++)
-        hc->frame_base[i] = qh->dma | 2;
+    td->link   = 1;
+    td->status =  (1<<24) | (1<<23) ;
+    td->token  = TOKEN( 0x7FF, DATA0, 0, 0, 0xE1);
+    td->buffer = 0;
+    td->bk     = NULL;
+*/
 
+    for (i = 0; i < 1024; i++)
+    {
+        int qnum;
+
+        qnum = 8 - (int) __bsf( i | 1024);
+
+        if (qnum <= 1)
+            qnum = 9;
+
+        hc->frame_base[i] = hc->qh[qnum]->dma | 2;
+    }
+
+    mb();
 
     /* Set the frame length to the default: 1 ms exactly */
     out8(hc->iobase + USBSOF, USBSOF_DEFAULT);
@@ -189,6 +242,13 @@ bool init_hc(hc_t *hc)
     out16(hc->iobase + USBFRNUM, 0);
 
     out16(hc->iobase + USBSTS, 0x3F);
+
+    out16(hc->iobase + UHCI_USBINTR, 4);
+
+    AttachIntHandler(hc->irq_line, hc_interrupt, 0);
+
+    pciWriteWord(hc->PciTag, UHCI_USBLEGSUP, UHCI_USBLEGSUP_DEFAULT);
+
     out16(hc->iobase + USBCMD, USBCMD_RS | USBCMD_CF |
                                USBCMD_MAXP);
 
@@ -347,7 +407,7 @@ request_t *create_request(udev_t *dev, endp_t *enp, u32_t dir,
 
         if( td_prev )
             td_prev->link   = td->dma | 4;
-        td->status = 0x00800000 | dev->speed;
+        td->status = TD_CTRL_ACTIVE | dev->speed;
         td->token  = TOKEN(packet_size,enp->toggle,enp->address,
                            dev->addr,dir);
         td->buffer = data_dma;
@@ -358,17 +418,10 @@ request_t *create_request(udev_t *dev, endp_t *enp, u32_t dir,
         data_dma+= packet_size;
         size-= packet_size;
         enp->toggle ^= DATA1;
-    }
+    };
+
+    td->status |= TD_CTRL_IOC;
     rq->td_tail = td;
-/*
-    dbgprintf("create request %x\n"
-              "head           %x\n"
-              "tail           %x\n"
-              "data           %x\n"
-              "size           %x\n",
-              rq, rq->td_head, rq->td_tail,
-              rq->data, rq->size);
-*/
     return rq;
 }
 
@@ -405,7 +458,7 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
 
         td = alloc_td();
         td_prev->link   = td->dma | 4;
-        td->status = 0x00800000 | dev->speed;
+        td->status = TD_CTRL_ACTIVE | dev->speed;
         td->token  = TOKEN(packet_size, toggle, 0,dev->addr, pid);
         td->buffer = data_dma;
         td->bk     = td_prev;
@@ -423,15 +476,17 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
     pid = (pid == DIN) ? DOUT : DIN;
 
     td->link = 1;
-    td->status = 0x00800000 | dev->speed;
+    td->status = TD_CTRL_ACTIVE | TD_CTRL_IOC | dev->speed ;
     td->token  = (0x7FF<<21)|DATA1|(dev->addr<<8)|pid;
     td->buffer = 0;
     td->bk     = td_prev;
 
-    qh = dev->host->qh1;
+    qh = dev->host->qh[SKEL_ASYNC];
 
     qh->qelem = td0->dma;
-    __asm__ __volatile__ ("":::"memory");
+
+    mb();
+ //   __asm__ __volatile__ ("":::"memory");
 
     count_t timeout  = 25;
     while(timeout--){

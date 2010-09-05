@@ -41,6 +41,9 @@ bool FindUSBControllers()
             hc->pciId  = PciRead32(bus,devfn, 0);
             hc->PciTag = pciTag(bus,(devfn>>3)&0x1F,devfn&0x7);
 
+            hc->irq_line = PciRead32(bus,devfn, 0x3C) & 0xFF;
+            dbgprintf("Host IRQ %d\n", hc->irq_line);
+
             for (i = 0; i < 6; i++)
             {
                 u32_t base;
