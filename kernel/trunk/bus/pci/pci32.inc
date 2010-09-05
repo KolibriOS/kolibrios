@@ -30,7 +30,7 @@ $Revision$
 ;   Description
 ;       entry point for system PCI calls
 ;***************************************************************************
-;mmio_pci_addr	equ  0x400		 ; set actual PCI address here to activate user-MMIO
+;mmio_pci_addr  equ  0x400               ; set actual PCI address here to activate user-MMIO
 
 iglobal
 align 4
@@ -40,12 +40,12 @@ f62call:
 	dd	pci_fn_2
 	dd	pci_service_not_supported	;3
 	dd	pci_read_reg		;4 byte
-	dd	pci_read_reg            ;5 word
-	dd	pci_read_reg            ;6 dword
-	dd	pci_service_not_supported   ;7 
-	dd	pci_write_reg           ;8 byte
-	dd	pci_write_reg           ;9 word
-	dd	pci_write_reg           ;10 dword
+	dd	pci_read_reg		;5 word
+	dd	pci_read_reg		;6 dword
+	dd	pci_service_not_supported   ;7
+	dd	pci_write_reg		;8 byte
+	dd	pci_write_reg		;9 word
+	dd	pci_write_reg		;10 dword
 if defined mmio_pci_addr
 	dd	pci_mmio_init		;11
 	dd	pci_mmio_map		;12
@@ -64,19 +64,20 @@ pci_api:
 	mov	eax,ebx
 	mov	ebx,ecx
 	mov	ecx,edx
+	movzx	edx, al
 ;;;;;;;;;;;;;;;;;;;
 
 if defined mmio_pci_addr
-        cmp eax, 13
-        jb pci_service_not_supported
+	cmp al, 13
+	ja pci_service_not_supported
 else
-        cmp eax, 10
-        jb pci_service_not_supported
+	cmp al, 10
+	ja pci_service_not_supported
 end if
-	
-        call 	dword [f62call+eax*4]
-        mov	dword [esp+32],eax
-        ret
+
+	call	dword [f62call+edx*4]
+	mov	dword [esp+32],eax
+	ret
 ;; ============================================
 
 pci_fn_0:
@@ -96,6 +97,7 @@ pci_fn_2:
 
 pci_service_not_supported:
 	or eax,-1
+	mov	dword [esp+32],eax
 	ret
 
 ;***************************************************************************
@@ -387,7 +389,7 @@ pci_write_reg_err:
 if defined mmio_pci_addr	; must be set above
 ;***************************************************************************
 ;   Function
-;      pci_mmio_init 
+;      pci_mmio_init
 ;
 ;   Description
 ;       IN:  bx = device's PCI bus address (bbbbbbbbdddddfff)
@@ -398,7 +400,7 @@ if defined mmio_pci_addr	; must be set above
 ;       eax = -3 : user heap initialization failure
 ;***************************************************************************
 pci_mmio_init:
-    cmp     bx, mmio_pci_addr	
+    cmp     bx, mmio_pci_addr
     jz	    @f
     mov     eax,-2
     ret
@@ -414,7 +416,7 @@ pci_mmio_init:
 
 ;***************************************************************************
 ;   Function
-;      pci_mmio_map 
+;      pci_mmio_map
 ;
 ;   Description
 ;       maps a block of PCI memory to user-accessible linear address
@@ -440,8 +442,8 @@ pci_mmio_init:
 pci_mmio_map:
     and     edx,0x0ffff
     cmp     ah,6
-    jc     .bar_0_5
-    jz     .bar_rom
+    jc	   .bar_0_5
+    jz	   .bar_rom
     mov     eax,-2
     ret
 .bar_rom:
@@ -501,7 +503,7 @@ mmio_map_over:
 
 ;***************************************************************************
 ;   Function
-;      pci_mmio_unmap_page 
+;      pci_mmio_unmap_page
 ;
 ;   Description
 ;       unmaps the linear space previously tied to a PCI memory block
