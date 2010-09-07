@@ -987,10 +987,18 @@ load_start_directory:
 	mov	edi,dir_pach
 	call	copy_dir_name
 	
+;	call	load_directory
+;	mov	eax,[N_error]
+;	test	eax,eax
+;	jnz	button.exit
+.3:
 	call	load_directory
 	mov	eax,[N_error]
 	test	eax,eax
-	jnz	button.exit
+	jz	@f
+	call	error_handler
+	jmp	.3
+@@:
 	ret
 ;---------------------------------------------------------------------
 load_next_dir:
