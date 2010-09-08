@@ -12,6 +12,7 @@ use32
 include '../../../macros.inc'
 include '../../../proc32.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../develop/libraries/box_lib/trunk/box_lib.mac' ;макросы для задания элементов box_lib
 include 'mem.inc'
 include 'dll.inc'
 
@@ -61,24 +62,35 @@ BUT1_W equ 50 ;ширина
 BUT1_H equ 20 ;высота
 BUT1_NEXT_TOP equ (BUT1_T+BUT1_H)*65536
 
+game_select_mode db 1 ;режим выбора игры
 
 FILE_NAME_MAX equ 20 ;максимальная длинна имени файла (без папок, относительно текущей)
 ;значения имен по умолчанию
 ini_def_decorat_file db 'curici.png',0
 ini_def_unit_file db 'wolf.png',0
 ini_def_objects_file db 'eggs.png',0
+ini_def_lost_file db 'chi.png',0
 ;имена файлов
 fn_icon0 rb FILE_NAME_MAX ;имя файла с декорациями
 fn_icon1 rb FILE_NAME_MAX ;имя файла с волком и зайцем
 fn_icon2 rb FILE_NAME_MAX ;имя файла с яйцами
-fn_icon3 db 'chi.png',0 ;имя файла с циплятами
+fn_icon3 rb FILE_NAME_MAX ;имя файла с циплятами
 fn_font db 'font8x9.bmp',0
 
-ini_name db 'nu_pogod.ini',0
+fn_icon_tl_sys db 'tl_sys_16.png',0
+TREE_ICON_SYS16_BMP_SIZE equ 256*3*11+54 ;размер bmp файла с системными иконками
+
+ini_m_name db 'main.ini',0
+key_count db 'count',0
+key_game db 'g'
+	key_game_ind db 0,0,0
+
+ini_name rb FILE_NAME_MAX ;имя ini файла c выбранной игрой
 ini_sec_files db 'Files',0
 key_file_decorat db 'file_decorat',0
 key_file_unit db 'file_unit',0
 key_file_objects db 'file_objects',0
+key_file_lost db 'file_lost',0
 key_displ_w db 'displ_w',0
 key_displ_h db 'displ_h',0
 key_shadow_x db 'offs_shadow_x',0
@@ -612,25 +624,35 @@ proc LoadArrayBuffer, f_name:dword, buf_start:dword, count:dword
 	ret
 endp
 
+txt_tile_type_0 rb FILE_NAME_MAX
+
 align 4
-start:
-	load_libraries l_libs_start,load_lib_end
+user_is_select:
+	push ecx esi edi
+	
+	stdcall [tl_node_get_data], tree1
+	pop esi
+	cmp esi,0 ;если имя игры пустое
+	je @f	
+		mov edi,ini_name
+		mov ecx,FILE_NAME_MAX
+		cld
+		rep movsb
 
-	;проверка на сколько удачно загузилась наша либа
-	mov	ebp,lib0
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
-		mcall -1 ;exit not correct
+		mov byte[game_select_mode],0
+		call InitAll
 	@@:
-	mov	ebp,lib1
-	cmp	dword [ebp+ll_struc_size-4],0
-	jz	@f
-		mcall -1 ;exit not correct
-	@@:
+	pop edi esi ecx
 
-	mcall 40,0x27
-	mcall 48,3,sc,sizeof.system_colors ;получаем системные цвета
+	call draw_window
+	ret
 
+;******************************************************************************
+; функция, которая 1 раз делает все настройки нужные для игры
+;******************************************************************************
+align 4
+InitAll:
+	pushad
 	;работа с файлом настроек
 	copy_path ini_name,sys_path,file_name,0x0
 	stdcall dword[ini_get_int],file_name,ini_sec_files,key_displ_w,210
@@ -640,6 +662,8 @@ start:
 	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_decorat,fn_icon0,FILE_NAME_MAX,ini_def_decorat_file
 	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_unit,fn_icon1,FILE_NAME_MAX,ini_def_unit_file
 	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_objects,fn_icon2,FILE_NAME_MAX,ini_def_objects_file
+	stdcall dword[ini_get_str],file_name,ini_sec_files,key_file_lost,fn_icon3,FILE_NAME_MAX,ini_def_lost_file
+
 	stdcall dword[ini_get_int],file_name,ini_sec_files,key_shadow_x,2
 	mov	dword[offs_shadow_x],eax
 	stdcall dword[ini_get_int],file_name,ini_sec_files,key_shadow_y,2
@@ -714,6 +738,58 @@ start:
 
 	call InitBackgroundBuffer ;заполняем буфер с фоновыми декорациями
 	stdcall InitGame,0
+	popad
+	ret
+
+align 4
+start:
+	load_libraries l_libs_start,load_lib_end
+
+	;проверка на сколько удачно загузилась наша либа
+	mov	ebp,lib0
+	cmp	dword [ebp+ll_struc_size-4],0
+	jz	@f
+		mcall -1 ;exit not correct
+	@@:
+	mov	ebp,lib1
+	cmp	dword [ebp+ll_struc_size-4],0
+	jz	@f
+		mcall -1 ;exit not correct
+	@@:
+
+	mcall 40,0x27
+	mcall 48,3,sc,sizeof.system_colors ;получаем системные цвета
+
+;******************************************************************************
+; подготовка списка игор
+;******************************************************************************
+	stdcall dword[tl_data_init], tree1
+
+	load_image_file fn_icon_tl_sys, image_data_gray,TREE_ICON_SYS16_BMP_SIZE
+	stdcall [buf2d_create_f_img], buf_tree_sys,[image_data_gray] ;создаем буфер
+	stdcall mem.Free,[image_data_gray] ;освобождаем память
+
+	mov edi,buf_tree_sys
+	m2m dword[tree1.data_img_sys],buf2d_data
+
+	;работа с главным файлом настроек
+	copy_path ini_m_name,sys_path,file_name,0x0
+
+	stdcall dword[ini_get_int],file_name,ini_sec_files,key_count,1
+	mov	ecx,eax
+	mov dl,'0'
+	cld
+	@@:
+		mov byte[key_game_ind],dl
+		inc dl
+		push ecx edx
+		stdcall dword[ini_get_str],file_name,ini_sec_files,key_game,txt_tile_type_0,FILE_NAME_MAX,ini_def_decorat_file
+		stdcall dword[tl_node_add], txt_tile_type_0, 0, tree1 ;добавляем название игры
+		stdcall dword[tl_cur_next], tree1 ;переносим курсор вниз, что-бы не поменялся порядок игр
+		pop edx ecx
+	loop @b
+	stdcall dword[tl_cur_beg], tree1 ;переносим курсор вверх
+
 	mcall 26,9
 	mov [last_time],ebx
 
@@ -725,7 +801,11 @@ red_win:
 
 align 4
 still: ;главный цикл
-	mcall 26,9
+
+	cmp byte[game_select_mode],0
+	jne .select_mode
+	
+	mcall 26,9 ;берем системное время
 	mov ebx,[last_time]
 	add ebx,dword[game_spd] ;delay
 	sub ebx,eax
@@ -738,21 +818,37 @@ still: ;главный цикл
 	cmp eax,0
 	je it_is_time_now
 
-	;mcall 10
+	jmp @f
+	.select_mode:
+		mcall 10
+	@@:
 
-	cmp al,0x1 ;изменилось положение окна
+	cmp al,1 ;изменилось положение окна
 	jz red_win
-	cmp al,0x2
+	cmp al,2
 	jz key
-	cmp al,0x3
+	cmp al,3
 	jz button
+	cmp al,6
+	jz mouse
 
+	jmp still
+
+align 4
+mouse:
+	cmp byte[game_select_mode],0
+	je @f
+		stdcall [tl_mouse], tree1 ;если игра еще не выбрана
+	@@:
 	jmp still
 
 align 4
 it_is_time_now:
 	mcall 26,9
 	mov [last_time],eax
+
+	cmp byte[game_select_mode],0
+	jne still
 
 	;...здесь идут действия, вызываемые каждые delay сотых долей секунд...
 	call MoveEggs
@@ -763,6 +859,11 @@ align 4
 key:
 	push eax ebx
 	mcall 2
+
+	cmp byte[game_select_mode],0
+	je @f
+		stdcall [tl_key], tree1
+	@@:
 
 	cmp ah,176 ;Left
 	jne @f
@@ -817,6 +918,9 @@ draw_window:
 	or edx,0x73000000
 	mov edi,hed
 	mcall ;создание окна
+
+	cmp byte[game_select_mode],0
+	jne .select_mode
 
 	mcall 9,procinfo,-1
 	mov edi,buf_displ
@@ -908,6 +1012,11 @@ pop esi
 	mov ecx,dword[displ_h]
 	int 0x40 ;рисование левого бокового поля
 
+	jmp @f
+	.select_mode:
+		stdcall dword[tl_draw],dword tree1
+	@@:
+
 	mcall 12,2
 	popad
 	ret
@@ -915,7 +1024,7 @@ pop esi
 align 4
 draw_display:
 
-	stdcall mem_copy, dword[buf_fon],dword[buf_displ],315*210*3;dword[displ_bytes] ;копирование изображения из фонового буфера
+	stdcall mem_copy, dword[buf_fon],dword[buf_displ],dword[displ_bytes] ;копирование изображения из фонового буфера
 	call DrawZaac ;рисуем зайца
 	call DrawWolf ;рисуем волка
 	call DrawEggs ;рисуем яйца
@@ -946,6 +1055,7 @@ button:
 	stdcall [buf2d_delete],buf_fon ;удаляем буфер
 	stdcall [buf2d_delete],buf_displ ;удаляем буфер
 
+	stdcall [buf2d_delete],buf_tree_sys
 	stdcall [buf2d_delete],buf_font
 
 	cld
@@ -974,31 +1084,39 @@ button:
 		add edi,BUF_STRUCT_SIZE
 		loop @b
 
+	mov dword[tree1.data_img_sys],0 ;чистим указатель на изображение
+	stdcall dword[tl_data_clear], tree1
 	mcall -1 ;выход из программы
 
 head_f_i:
 head_f_l  db 'Системная ошибка',0
 
 system_dir0 db '/sys/lib/'
-name_buf2d db 'buf2d.obj',0
+lib0_name db 'buf2d.obj',0
 err_message_found_lib0 db 'Не удалось найти библиотеку buf2d.obj',0
 err_message_import0 db 'Ошибка при импорте библиотеки buf2d.obj',0
 
 system_dir1 db '/sys/lib/'
-name_libimg db 'libimg.obj',0
+lib1_name db 'libimg.obj',0
 err_message_found_lib1 db 'Не удалось найти библиотеку libimg.obj',0
 err_message_import1 db 'Ошибка при импорте библиотеки libimg.obj',0
 
 system_dir2 db '/sys/lib/'
-libini_name db 'libini.obj',0
+lib2_name db 'libini.obj',0
 err_message_found_lib2 db 'Не удалось найти библиотеку libini.obj',0
 err_message_import2 db 'Ошибка при импорте библиотеки libini.obj',0
 
+system_dir3 db '/sys/lib/'
+lib3_name db 'box_lib.obj',0
+err_message_found_lib3 db 'Не удалось найти библиотеку box_lib.obj',0
+err_message_import3 db 'Ошибка при импорте библиотеки box_lib.obj',0
+
 ;library structures
 l_libs_start:
-	lib0 l_libs name_buf2d,  sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, import_buf2d_lib, err_message_import0, head_f_i
-	lib1 l_libs name_libimg, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l, import_libimg, err_message_import1, head_f_i
-	lib2 l_libs libini_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l, libini_import, err_message_import2, head_f_i
+	lib0 l_libs lib0_name,	sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l, import_buf2d_lib, err_message_import0, head_f_i
+	lib1 l_libs lib1_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l, import_libimg, err_message_import1, head_f_i
+	lib2 l_libs lib2_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l, import_libini, err_message_import2, head_f_i
+	lib3 l_libs lib3_name, sys_path, file_name, system_dir3, err_message_found_lib3, head_f_l, import_box_lib, err_message_import3, head_f_i
 load_lib_end:
 
 align 4
@@ -1050,8 +1168,24 @@ image_data dd 0 ;память для преобразования картинки функциями libimg
 image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
 
 run_file_70 FileInfoBlock
-hed db 'Nu pogodi 22.08.10',0 ;подпись окна
+hed db 'Nu pogodi 08.09.10',0 ;подпись окна
 sc system_colors  ;системные цвета
+
+count_of_dir_list_files equ 10
+el_focus dd tree1
+tree1 tree_list FILE_NAME_MAX,count_of_dir_list_files+2, tl_key_no_edit+tl_draw_par_line+tl_list_box_mode,\
+	16,16, 0x8080ff,0x0000ff,0xffffff, 10,10,140,100, 0,0,0, el_focus,\
+	0,user_is_select
+
+align 4
+buf_tree_sys:
+	dd 0 ;указатель на буфер изображения
+	dw 0 ;+4 left
+	dw 0 ;+6 top
+	dd 16 ;+8 w
+	dd 16*11 ;+12 h
+	dd 0 ;+16 color
+	db 24 ;+20 bit in pixel
 
 align 4
 buf_font: ;буфер со шрифтом
@@ -1101,7 +1235,7 @@ buf_chi:
 
 
 align 4
-libini_import:
+import_libini:
 	dd alib_init0
 	ini_get_str   dd aini_get_str
 	ini_get_int   dd aini_get_int
@@ -1203,6 +1337,57 @@ import_buf2d_lib:
 	sz_buf2d_crop_color db 'buf2d_crop_color',0
 	sz_buf2d_offset_h db 'buf2d_offset_h',0
 
+align 4
+import_box_lib:
+	dd alib_init2
+
+	;scrollbar_ver_draw  dd aScrollbar_ver_draw
+
+	tl_data_init dd sz_tl_data_init
+	tl_data_clear dd sz_tl_data_clear
+	tl_info_clear dd sz_tl_info_clear
+	tl_key dd sz_tl_key
+	tl_mouse dd sz_tl_mouse
+	tl_draw dd sz_tl_draw
+	tl_info_undo dd sz_tl_info_undo
+	tl_info_redo dd sz_tl_info_redo
+	tl_node_add dd sz_tl_node_add
+	tl_node_set_data dd sz_tl_node_set_data
+	tl_node_get_data dd sz_tl_node_get_data
+	tl_node_delete dd sz_tl_node_delete
+	tl_cur_beg dd sz_tl_cur_beg
+	tl_cur_next dd sz_tl_cur_next
+	tl_cur_perv dd sz_tl_cur_perv
+	tl_node_close_open dd sz_tl_node_close_open
+	tl_node_lev_inc dd sz_tl_node_lev_inc
+	tl_node_lev_dec dd sz_tl_node_lev_dec
+
+dd 0,0
+	alib_init2 db 'lib_init',0
+
+	;aScrollbar_ver_draw  db 'scrollbar_v_draw',0
+
+	sz_tl_data_init db 'tl_data_init',0
+	sz_tl_data_clear db 'tl_data_clear',0
+	sz_tl_info_clear db 'tl_info_clear',0
+	sz_tl_key db 'tl_key',0
+	sz_tl_mouse db 'tl_mouse',0
+	sz_tl_draw db 'tl_draw',0
+	sz_tl_info_undo db 'tl_info_undo',0
+	sz_tl_info_redo db 'tl_info_redo',0
+	sz_tl_node_add db 'tl_node_add',0
+	sz_tl_node_set_data db 'tl_node_set_data',0
+	sz_tl_node_get_data db 'tl_node_get_data',0
+	sz_tl_node_delete db 'tl_node_delete',0
+	sz_tl_cur_beg db 'tl_cur_beg',0
+	sz_tl_cur_next db 'tl_cur_next',0
+	sz_tl_cur_perv db 'tl_cur_perv',0
+	sz_tl_node_close_open db 'tl_node_close_open',0
+	sz_tl_node_lev_inc db 'tl_node_lev_inc',0
+	sz_tl_node_lev_dec db 'tl_node_lev_dec',0
+
+
+
 i_end:
 	rb 1024
 	align 16
@@ -1210,8 +1395,6 @@ i_end:
 stacktop:
 	sys_path rb 4096
 	file_name:
-		rb 4096
-	plugin_path:
 		rb 4096
 	openfile_path:
 		rb 4096

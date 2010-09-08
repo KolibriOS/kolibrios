@@ -88,6 +88,27 @@
 
 <h2><a name="fun_get_d">tl_node_get_data</a></h2>
 <p>Ѕерет указатель на данные (пользовательские и подпись) из узла под курсором.</p>
+<p>ѕример 1:</p>
+<pre>	stdcall [tl_node_get_data], tree1
+	pop eax</pre>
+<p>где: <b>tree1</b> - структура tree_list;
+ <b>eax</b> - указатель на дынные узла.</p>
+
+<p>ѕример 2:</p>
+<pre>	NODE_SIZE equ 200
+	node_data rb NODE_SIZE
+.........
+push ecx esi edi
+	stdcall [tl_node_get_data], tree1
+	pop esi
+	mov edi,node_data
+	mov ecx,NODE_SIZE
+	cld
+	rep movsb
+pop edi esi ecx</pre>
+<p>где: <b>tree1</b> - структура tree_list;
+ <b>NODE_SIZE</b> - размер дынных узла;
+ <b>node_data</b> - копи€ на дынных узла.</p>
 
 <h2><a name="fun_delete">tl_node_delete</a></h2>
 <p>”дал€ет узел, но не окончательно, при необходимости узел можно вернуть функцией <b>tl_info_undo</b>.</p>
@@ -235,6 +256,6 @@
 <p>—тиль не отображает уровни (как в ListBox все узлы одного уровн€).</p>
 
 <hr>
-<p>ƒокументаци€ обновл€лась последний раз 10.01.10.</p>
+<p>ƒокументаци€ обновл€лась последний раз 08.09.10.</p>
 </body>
 </html>
