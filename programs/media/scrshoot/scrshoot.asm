@@ -379,8 +379,15 @@ shoot:
 @@:
 	pop	dword [scr_buf.size]
 
+	cmp	[autoshoot_flag],1
+	jne	.2
+	
+	bt	dword [ch5.flags],1  ; включено ли автосохранение ?
+	jnc	@f
+	call	save_file
+@@:
 	draw_status	shooted_ok
-
+.2:
 	bt	dword [flags],1
 	jnc	@f
 	ret
@@ -388,7 +395,7 @@ shoot:
 
 	bt	dword [ch2.flags],1  ; показать окно предпросмотра ?
 	jnc	@f
-	cmp		[PrintScreen],0
+	cmp	[PrintScreen],0
 	jne	@f
 	call	show_scr_window
 	ret
@@ -457,7 +464,7 @@ pusha
 	xor	ebx,ebx
 	inc	ebx
 	mov	ecx,scr_window
-	mov	edx,i_end_tread-1000
+	mov	edx,i_end_tread-512
 	mcall
 @@:
 popa
@@ -503,7 +510,7 @@ start_autoshoot:
 	xor	ebx,ebx
 	inc	ebx
 	mov	ecx,autoshoot
-	mov	edx,i_end_tread-512
+	mov	edx,i_end_tread
 	mcall
 @@:
 ret
@@ -515,6 +522,7 @@ ret
 
 ;--- цикл потока автосъемки ---
 autoshoot:
+	mov	[autoshoot_flag],1
 	mov	ecx,[slot_n]
 	activ_window
 .next:
@@ -528,7 +536,9 @@ autoshoot:
 	mcall
 	call	shoot
 	jmp	autoshoot.next
-
+.close:
+	mov	[autoshoot_flag],0
+	jmp	close
 ;--- процедура прорисовки строки состояния ---
 ; (должна вызываться потоком главного окна)
 dr_st:
@@ -892,6 +902,7 @@ sign_n_input:
 	db	'2',0
 
 PrintScreen	db  0
+autoshoot_flag	db  0
 	
 app_ipc ipc_buffer 32
 align 4
