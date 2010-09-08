@@ -455,7 +455,7 @@ communication_area_default_pach:
 	db '/hd0/1/kolibri',0
 
 Filter:
-dd	Filter.end - Filter.1
+dd	Filter.end - Filter
 .1:
 db	'IMG',0
 db	'IMA',0

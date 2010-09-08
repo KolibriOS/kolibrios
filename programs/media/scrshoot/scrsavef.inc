@@ -3,7 +3,7 @@ pusha
         bt      dword [flags],0
         jnc     .not_shooted
 
-        cmp     byte [ed_buffer.1],0
+        cmp     byte [fname_buf],0
         je      .no_file_name
 
         mov     edi,sign_n_input
@@ -16,7 +16,7 @@ pusha
         mov     edi,file_name
         rep     stosb   ; заполняем нулями
 
-        mov     esi,ed_buffer.1
+        mov     esi,fname_buf
         mov     edi,file_name
 .next:
         mov     ah,[esi]

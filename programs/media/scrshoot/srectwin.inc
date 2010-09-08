@@ -222,43 +222,116 @@ ret
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;DATA данные
 ;Всегда соблюдать последовательность в имени.
-system_path      db '/sys/lib/'
-library_name     db 'box_lib.obj',0
-err_message_found_lib   db 'Sorry I cannot load library box_lib.obj',0
+
+system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
+system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
+
 head_f_i:
-head_f_l        db 'System error',0
-err_message_import      db 'Error on load import library box_lib.obj',0
+head_f_l	db 'System error',0
 
-myimport:   
+err_message_found_lib1	db 'box_lib.obj - Not found!',0
+err_message_found_lib2	db 'proc_lib.obj - Not found!',0
 
-edit_box_draw   dd      aEdit_box_draw
-edit_box_key    dd      aEdit_box_key
-edit_box_mouse  dd      aEdit_box_mouse
-version_ed      dd      aVersion_ed
+err_message_import1	db 'box_lib.obj - Wrong import!',0
+err_message_import2	db 'proc_lib.obj - Wrong import!',0
 
-check_box_draw  dd      aCheck_box_draw
-check_box_mouse dd      aCheck_box_mouse
-version_ch      dd      aVersion_ch
+;---------------------------------------------------------------------
+align 4
+ProcLib_import:
+OpenDialog_Init		dd aOpenDialog_Init
+OpenDialog_Start	dd aOpenDialog_Start
+;OpenDialog__Version	dd aOpenDialog_Version
+        dd      0
+        dd      0
+aOpenDialog_Init	db 'OpenDialog_init',0
+aOpenDialog_Start	db 'OpenDialog_start',0
+;aOpenDialog_Version	db 'Version_OpenDialog',0
+;---------------------------------------------------------------------
+align 4
+Box_lib_import:	
+;init_lib		dd a_init
+;version_lib		dd a_version
 
-option_box_draw  dd      aOption_box_draw
-option_box_mouse dd      aOption_box_mouse
-version_op       dd      aVersion_op
 
-                dd      0
-                dd      0
+edit_box_draw		dd aEdit_box_draw
+edit_box_key		dd aEdit_box_key
+edit_box_mouse		dd aEdit_box_mouse
+;version_ed		dd aVersion_ed
 
-aEdit_box_draw  db 'edit_box',0
-aEdit_box_key   db 'edit_box_key',0
-aEdit_box_mouse db 'edit_box_mouse',0
-aVersion_ed     db 'version_ed',0
+check_box_draw		dd aCheck_box_draw
+check_box_mouse	dd aCheck_box_mouse
+;version_ch		dd aVersion_ch
 
-aCheck_box_draw  db 'check_box_draw',0
-aCheck_box_mouse db 'check_box_mouse',0
-aVersion_ch      db 'version_ch',0
+option_box_draw	dd aOption_box_draw
+option_box_mouse	dd aOption_box_mouse
+;version_op		dd aVersion_op
 
-aOption_box_draw  db 'option_box_draw',0
-aOption_box_mouse db 'option_box_mouse',0
-aVersion_op       db 'version_op',0
+;scrollbar_ver_draw	dd aScrollbar_ver_draw
+;scrollbar_ver_mouse	dd aScrollbar_ver_mouse
+;scrollbar_hor_draw	dd aScrollbar_hor_draw
+;scrollbar_hor_mouse	dd aScrollbar_hor_mouse
+;version_scrollbar	dd aVersion_scrollbar
+
+;dinamic_button_draw	dd aDbutton_draw
+;dinamic_button_mouse	dd aDbutton_mouse
+;version_dbutton	dd aVersion_dbutton
+
+;menu_bar_draw		dd aMenu_bar_draw
+;menu_bar_mouse		dd aMenu_bar_mouse
+;menu_bar_activate	dd aMenu_bar_activate
+;version_menu_bar	dd aVersion_menu_bar
+
+;FileBrowser_draw	dd aFileBrowser_draw
+;FileBrowser_mouse	dd aFileBrowser_mouse
+;FileBrowser_key	dd aFileBrowser_key
+;Version_FileBrowser	dd aVersion_FileBrowser
+
+PathShow_prepare	dd sz_PathShow_prepare
+PathShow_draw		dd sz_PathShow_draw
+;Version_path_show	dd szVersion_path_show
+			dd 0
+			dd 0
+
+;a_init			db 'lib_init',0
+;a_version		db 'version',0
+
+aEdit_box_draw		db 'edit_box',0
+aEdit_box_key		db 'edit_box_key',0
+aEdit_box_mouse	db 'edit_box_mouse',0
+;aVersion_ed		db 'version_ed',0
+
+aCheck_box_draw	db 'check_box_draw',0
+aCheck_box_mouse	db 'check_box_mouse',0
+;aVersion_ch		db 'version_ch',0
+
+aOption_box_draw	db 'option_box_draw',0
+aOption_box_mouse	db 'option_box_mouse',0
+;aVersion_op		db 'version_op',0
+
+;aScrollbar_ver_draw	db 'scrollbar_v_draw',0
+;aScrollbar_ver_mouse	db 'scrollbar_v_mouse',0
+;aScrollbar_hor_draw	db 'scrollbar_h_draw',0
+;aScrollbar_hor_mouse	db 'scrollbar_h_mouse',0
+;aVersion_scrollbar	db 'version_scrollbar',0
+
+;aDbutton_draw		db 'dbutton_draw',0
+;aDbutton_mouse		db 'dbutton_mouse',0
+;aVersion_dbutton	db 'version_dbutton',0
+
+;aMenu_bar_draw		db 'menu_bar_draw',0
+;aMenu_bar_mouse		db 'menu_bar_mouse',0
+;aMenu_bar_activate	db 'menu_bar_activate',0
+;aVersion_menu_bar	db 'version_menu_bar',0
+
+;aFileBrowser_draw	db 'FileBrowser_draw',0
+;aFileBrowser_mouse	db 'FileBrowser_mouse',0
+;aFileBrowser_key	db 'FileBrowser_key',0
+;aVersion_FileBrowser	db 'version_FileBrowser',0
+
+sz_PathShow_prepare	db 'PathShow_prepare',0
+sz_PathShow_draw	db 'PathShow_draw',0
+;szVersion_path_show	db 'version_PathShow',0
+;---------------------------------------------------------------------
 
 ;width,left,top,color,shift_color,focus_border_color,\
 ;       blur_border_color,text_color,max,text,mouse_variable,flags,size,pos

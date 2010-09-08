@@ -1,10 +1,19 @@
+;
+;   Screenshooter for Kolibri
+;
+; version:	1.0
+; last update:  08/09/2010
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      select path for save with OpenDialog,
+;               bag fix for threads stacks
+;---------------------------------------------------------------------
 ; 01.06.09 - Компоненты беруться из системной библиотеки <Lrz>
 ; Автор программы Евтихов Максим (Maxxxx32)
 ; 24.07.2008 <Lrz> обновлен editbox
 ; 01.02.07 - обновлён editbox
 ; 31.01.07 - всё теперь рисуется относительно клиентской области
 
-title equ 'Screenshooter v 0.92' ; Заголовок окна
+title equ 'Screenshooter v 1.0' ; Заголовок окна
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include '../../develop/examples/editbox/trunk/editbox.inc'
@@ -21,9 +30,9 @@ use32
     db 'MENUET01'
     dd 0x1
     dd start
+    dd IM_END
     dd i_end
-    dd i_end
-    dd i_end
+    dd stacktop
     dd cmdstr
     dd cur_dir_path
 
@@ -59,8 +68,11 @@ macro get_sys_colors col_buf
 ;--- начало программы ---
 align 4
 start:
-sys_load_library  library_name, cur_dir_path, library_path, system_path, \
-err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+;sys_load_library  library_name, cur_dir_path, library_path, system_path, \
+;err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+
+load_libraries l_libs_start,end_l_libs
+
 ;if return code =-1 then exit, else nornary work
 ;        cmp     eax,-1
 	inc	eax
@@ -73,6 +85,36 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
 	test	eax,eax
 	jz	close
 
+;---------------------------------------------------------------------	
+	mov	edi,filename_area
+	mov	esi,start_temp_file_name
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+
+
+	mov	edi,fname_buf
+	mov	esi,ed_buffer.1
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+	
+;OpenDialog	initialisation
+	push    dword OpenDialog_data
+	call    [OpenDialog_Init]
+
+; prepare for PathShow
+	push	dword PathShow_data_1
+	call	[PathShow_prepare]
+;---------------------------------------------------------------------	
 	;mov     al,[gs:1280*4*1024]
 		    ; устанавливаем ipc буффер
 	push	60
@@ -120,13 +162,15 @@ key:
 	cmp	al,2
 	jne	@f
 	cmp	ah,55
-	jne	@f
+	jne	still
+	mov	[PrintScreen],1
 	call	shoot
+	mov	[PrintScreen],0
 	jmp	still
 @@:
 ;        key_edit_boxes editboxes,editboxes_end
-	push	dword edit1
-	call	[edit_box_key]
+;	push	dword edit1
+;	call	[edit_box_key]
 
 	push	dword edit2
 	call	[edit_box_key]
@@ -149,8 +193,8 @@ mouse:
 	cmp	eax,[slot_n]
 	jne	still
 ;----------------------------------
-	push	dword edit1
-	call	[edit_box_mouse]
+;	push	dword edit1
+;	call	[edit_box_mouse]
 	push	dword edit2
 	call	[edit_box_mouse]
 	push	dword edit3
@@ -213,6 +257,15 @@ p_close:
 close:
 	app_close
 
+;---------------------------------------------------------------------
+draw_PathShow:
+	pusha
+	mcall	13,<4,302>,<35,15>,0xffffff
+; draw for PathShow
+	push	dword PathShow_data_1
+	call	[PathShow_draw]
+	popa
+	ret
 ;--------------------------------------------------------------------
 ;--- прооцедура перерисовки главного окна ---------------------------
 ;--------------------------------------------------------------------
@@ -263,8 +316,8 @@ start_draw_window	 ; начало перерисовки
 	draw_labels labels,labels_end		 ; метки
 ;        draw_edit_boxes editboxes,editboxes_end  ; edit_box
 ;------ show check editbox -----------
-	push	dword edit1
-	call	[edit_box_draw]
+;	push	dword edit1
+;	call	[edit_box_draw]
 	push	dword edit2												     
 	call	[edit_box_draw]
 	push	dword edit3
@@ -272,6 +325,8 @@ start_draw_window	 ; начало перерисовки
 	push	dword edit4
 	call	[edit_box_draw]
 ;------ end check all editbox -------
+
+	call	draw_PathShow
 
 	draw_txt_buttons buttons,buttons_end	 ; кнопки
 ;        draw_check_boxes check_boxes,check_boxes_end ; флажки
@@ -324,10 +379,6 @@ shoot:
 @@:
 	pop	dword [scr_buf.size]
 
-	bt	dword [ch5.flags],1  ; включено ли автосохранение ?
-	jnc	@f
-	call	save_file
-@@:
 	draw_status	shooted_ok
 
 	bt	dword [flags],1
@@ -337,10 +388,28 @@ shoot:
 
 	bt	dword [ch2.flags],1  ; показать окно предпросмотра ?
 	jnc	@f
-
+	cmp		[PrintScreen],0
+	jne	@f
 	call	show_scr_window
 	ret
 @@:
+	bt	dword [ch5.flags],1  ; включено ли автосохранение ?
+	jnc	@f
+	
+; invoke OpenDialog
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
+	cmp	[OpenDialog_data.status],1
+	je	.1
+	ret
+.1:
+; prepare for PathShow
+	push	dword PathShow_data_1
+	call	[PathShow_prepare]
+
+	call	save_file
+@@:
+	
 	bt	word [ch3.flags],1   ; восстановить окно ?
 	jnc	@f
 
@@ -507,6 +576,19 @@ one_shoot:
 	jmp	@f
 ;--- процедра, запускающая поток, сохраняющий снимок ---
 save_shoot:
+; invoke OpenDialog
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
+	cmp	[OpenDialog_data.status],1
+	je	.1
+	ret
+.1:
+; prepare for PathShow
+	push	dword PathShow_data_1
+	call	[PathShow_prepare]
+
+	call	draw_PathShow
+
 	mov	ecx,save_shoot_thread
 	mov	edx,shoot_esp
 @@:
@@ -619,13 +701,24 @@ label10 label 5,185,0,text.10
 status label 5,201,0,no_shoot
 labels_end:
 
+;---------------------------------------------------------------------
+l_libs_start:
+
+library01  l_libs system_dir_Boxlib+9, cur_dir_path, library_path, system_dir_Boxlib, \
+err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
+
+library02  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
+err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+
+end_l_libs:
+;---------------------------------------------------------------------
 editboxes:
-edit1 edit_box 300,5,35,cl_white,0,0,0,0,300,ed_buffer.1,mouse_dd,ed_focus,10,10	; путь к файлу
+;edit1 edit_box 300,5,35,cl_white,0,0,0,0,300,ed_buffer.1,mouse_dd,ed_focus,10,10	; путь к файлу
 edit2 edit_box 35,75,134,cl_white,0,0,0,0,9,ed_buffer.2,mouse_dd,ed_figure_only,3,3	    ; задержка
 edit3 edit_box 35,165,164,cl_white,0,0,0,0,9,ed_buffer.3,mouse_dd,ed_figure_only    ; автонумерация
 edit4 edit_box 16,165,181,cl_white,0,0,0,0,1,sign_n_input,mouse_dd,ed_figure_only,1
 editboxes_end:
-
+;---------------------------------------------------------------------
 buttons:
 but1 txt_button 150,5,15,65,2,0,0,but_text.1,one_shoot		   ; сделать снимок
 but2 txt_button 145,160,15,65,3,0,0,but_text.2,save_shoot	   ; сохранить снимок
@@ -635,18 +728,18 @@ but5 txt_button 150,5,15,85,6,0,0,but_text.5,start_autoshoot	   ; начать автосъё
 but6 txt_button 145,160,15,85,7,0,0,but_text.6,stop_autoshoot	   ; остановить автосъёмку
 but7 txt_button 40,205,10,150,8,0,0,but_text.7,show_set_rect_window ; задать область
 buttons_end:
-
+;---------------------------------------------------------------------
 check_boxes:
 ch1 check_box 5,105,5,11,cl_white,0,0,ch_text.1,(ch_text.2-ch_text.1),ch_flag_en  ; свернуть окно
 ch2 check_box 5,120,5,11,cl_white,0,0,ch_text.2,(ch_text.3-ch_text.2),ch_flag_en  ; затем сделать активным
 ch3 check_box 145,105,5,11,cl_white,0,0,ch_text.3,(ch_text.4-ch_text.3),ch_flag_en ; показать снимок
 ch4 check_box 5,135,5,11,cl_white,0,0,ch_text.4,(ch_text.5-ch_text.4),ch_flag_en   ; задержка
-ch5 check_box 5,150,5,11,cl_white,0,0,ch_text.5,(ch_text.6-ch_text.5)
+ch5 check_box 5,150,5,11,cl_white,0,0,ch_text.5,(ch_text.6-ch_text.5),ch_flag_en
 ch6 check_box 5,165,5,11,cl_white,0,0,ch_text.6,(ch_text.7-ch_text.6),ch_flag_en
 use_rect check_box 145,150,5,11,cl_white,0,0,ch_text.7,(ch_text.8-ch_text.7) ; исп. область
 ; автонумерация
 check_boxes_end:
-
+;---------------------------------------------------------------------
 if lang eq ru
 text:
 .2 db 'Высота экрана:',0
@@ -743,16 +836,84 @@ invalid_rect db 'Wrong area size',0
 
 end if
 
+;---------------------------------------------------------------------
+PathShow_data_1:
+.type			dd 0	;+0
+.start_y		dw 38	;+4
+.start_x		dw 6	;+6
+.font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
+.area_size_x		dw 300	;+10
+.font_number		dd 0	;+12	; 0 - monospace, 1 - variable
+.background_flag	dd 0	;+16
+.font_color		dd 0x0	;+20
+.background_color	dd 0x0	;+24
+.text_pointer		dd fname_buf	;+28
+.work_area_pointer	dd text_work_area	;+32
+.temp_text_length	dd 0	;+36
+;---------------------------------------------------------------------
+OpenDialog_data:
+.type			dd 1	; Save
+.procinfo		dd procinfo	;+4
+.com_area_name		dd communication_area_name	;+8
+.com_area		dd 0	;+12
+.opendir_pach		dd temp_dir_pach	;+16
+.dir_default_pach	dd communication_area_default_pach	;+20
+.start_path		dd open_dialog_path	;+24
+.draw_window		dd draw_window	;+28
+.status			dd 0	;+32
+.openfile_pach 		dd fname_buf	;+36
+.filename_area		dd filename_area	;+40
+.filter_area		dd Filter
+.x:
+.x_size			dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size			dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
+
+communication_area_name:
+	db 'FFFFFFFF_open_dialog',0
+open_dialog_path:
+	db '/sys/File Managers/opendial',0
+communication_area_default_pach:
+	db '/sys',0
+
+Filter:
+dd	Filter.end - Filter
+.1:
+db	'BMP',0
+.end:
+db	0
+
+start_temp_file_name:	db '1.bmp',0
+
+;---------------------------------------------------------------------
 sign_n_input:
 	db	'2',0
 
+PrintScreen	db  0
+	
 app_ipc ipc_buffer 32
 align 4
 
 mouse_flag: dd 0x0
+;---------------------------------------------------------------------
+align 4
+
+ed_buffer:
+.1: db '/sys/1.bmp',0
+;rb 287
+.2:
+	db '100',0
+	rb 6
+.3:
+	rb 10
+;---------------------------------------------------------------------	
+IM_END:
+;---------------------------------------------------------------------
 structure_of_potock:
 rb 100
-
+;---------------------------------------------------------------------
 align 4
 
 cur_number	  dd	  ?
@@ -785,17 +946,7 @@ sf_buf:
 
 set_rect_window_pid dd ?
 set_rect_window_slot dd ?
-
-align 4
-
-ed_buffer:
-.1: db '/sys/*.bmp',0
-rb 287
-.2: db '100',0
- rb 6
-.3:  rb 10
-
-
+;---------------------------------------------------------------------
 align 4
 rect_input_buffer:
 .left rb 6
@@ -804,7 +955,7 @@ rect_input_buffer:
 .height rb 6
 
 cmdstr rb 257
-
+;---------------------------------------------------------------------
 align 4
 
 file_name:
@@ -821,14 +972,42 @@ sc sys_color_table
 app procinfo	    ; информация о главном окне
 active_app procinfo ; информация об активном окне
 set_rect_window_procinfo procinfo  ; информация об окне области
-shoot_esp rb 512		   ; стек потока фотканья
-set_rect_window_esp rb 512	   ; стек окна области
+;---------------------------------------------------------------------
+	rb 512		   ; стек потока фотканья
+shoot_esp:
+;---------------------------------------------------------------------
+	rb 512	   ; стек окна области
+set_rect_window_esp:
+;---------------------------------------------------------------------
 ;        app_end    ; конец программы
 mouse_dd	rd 1
+;---------------------------------------------------------------------
 align 4
-cur_dir_path	rb 4096
-library_path	rb 4096
+cur_dir_path:
+	rb 4096
+;---------------------------------------------------------------------
+library_path:
+	rb 4096
+;---------------------------------------------------------------------
+temp_dir_pach:
+	rb 4096
+;---------------------------------------------------------------------
+text_work_area:
+	rb 1024
+;---------------------------------------------------------------------
+fname_buf:
+	rb 4096
+;---------------------------------------------------------------------
+procinfo:
+	rb 1024
+;---------------------------------------------------------------------
+filename_area:
+	rb 256
+;---------------------------------------------------------------------
+	rb 1024
 i_end_tread:
-rb 1024
-align 4
+;---------------------------------------------------------------------
+	rb 1024
+stacktop:
+;---------------------------------------------------------------------
 i_end:
