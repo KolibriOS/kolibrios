@@ -6,7 +6,9 @@
 ;    < russian edition by Ivan Poddubny >
 ;    < skin selection by Mike Semenyako >
 ;
-
+; last update:  10/09/2010
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      select path with OpenDialog
 ;******************************************************************************
    use32
    org     0
@@ -14,14 +16,17 @@
    dd      1           ; header version
    dd      START       ; start address
    dd      I_END       ; file size
-   dd      28000h      ; memory
-   dd      10000h      ; stack pointer
-   dd      param,0     ; parameters, reserved
-
-   include 'lang.inc'
-   include '..\..\..\macros.inc'
-   include 'kglobals.inc'
-   include 'unpacker.inc'
+   dd      i_end ;28000h      ; memory
+   dd      stacktop    ; stack pointer
+   dd      skin_info       ; parameters
+   dd      cur_dir_path ; path to file
+   
+include 'lang.inc'
+include '../../../macros.inc'
+include 'kglobals.inc'
+include 'unpacker.inc'
+include '../../../develop/libraries/box_lib/load_lib.mac'
+	@use_library
 ;******************************************************************************
 
 
@@ -67,27 +72,92 @@ ends
 
 
 START:                          ; start of execution
+;---------------------------------------------------------------------
+	mcall	68,11
+	
+	test	eax,eax
+	jz	close	
+
+load_libraries l_libs_start,end_l_libs
+
+;if return code =-1 then exit, else nornary work
+;        cmp     eax,-1
+	inc	eax
+	test	eax,eax
+	jz	close
+
+;---------------------------------------------------------------------
+	mov	edi,filename_area
+	mov	esi,start_temp_file_name
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+
+
+	mov	edi,fname
+	mov	esi,default_dtp
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+
+;---------------------------------------------------------------------
+;        mov     esi, param
+;        cmp     byte [esi], 0
+;		je	@f
+;        jnz     has_param
+;    mov  esi,default_skn
+;    mov  edi,fname
+;    mov  ecx,default_skn.size
+;    rep  movsb
+;    jmp  skin_path_ready
+;has_param:
+;        mov     ecx, 256/4
+;        mov     edi, fname
+;        rep     movsd
+;		skin_path_ready
+;---------------------------------------------------------------------
+	mov	edi,skin_info
+	cmp     byte [edi], 0
+	jne	skin_path_ready
+	mov	esi,default_skin
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+skin_path_ready:	
+;---------------------------------------------------------------------
+;OpenDialog	initialisation
+	push    dword OpenDialog_data
+	call    [OpenDialog_Init]
+
+	push    dword OpenDialog_data2
+	call    [OpenDialog_Init]
+	
+; prepare for PathShow
+	push	dword PathShow_data_1
+	call	[PathShow_prepare]
+	
+	push	dword PathShow_data_2
+	call	[PathShow_prepare]
+;---------------------------------------------------------------------	
     mov  eax,48                 ; get current colors
     mov  ebx,3
     mov  ecx,color_table
     mov  edx,4*10
     mcall
 
-        mov     esi, param
-        cmp     byte [esi], 0
-        jnz     has_param
-
-    mov  esi,default_skn
-    mov  edi,fname
-    mov  ecx,default_skn.size
-    rep  movsb
-    jmp  @f
-has_param:
-        mov     ecx, 256/4
-        mov     edi, fname
-        rep     movsd
-@@:
-    call load_skin_file
+    call load_skin_file.2
 
 ;    mov  esi, default_dtp
 ;    mov  edi, fname
@@ -124,11 +194,11 @@ still:
     mov  al,17                  ; get id
     mcall
 
-    cmp  ah,11                  ; read string
-    jne  no_string
-    call read_string
-    jmp  still
-  no_string:
+;    cmp  ah,11                  ; read string
+;    jne  no_string
+;    call read_string
+;    jmp  still
+;  no_string:
 
     cmp  ah,12                  ; load file
     jne  no_load
@@ -180,9 +250,9 @@ doapply:
 
     cmp   ah,18                 ; apply skin
     jne   no_apply_skin
-    cmp   [skin_info.fname],0
+    cmp   [skin_info],0
     je    no_apply_skin
-    mcall 48,8,skin_info.fname
+    mcall 48,8,skin_info
     call  draw_window
     jmp   still
   no_apply_skin:
@@ -196,10 +266,10 @@ doapply:
     shl  eax,2
     mov  ebx,[color]
     mov  [eax+color_table],ebx
-    cmp  dword[0x18000+SKIN_HEADER.ident],'SKIN'
+    cmp  dword[not_packed_area+SKIN_HEADER.ident],'SKIN'
     jne  @f
-    mov  edi,[0x18000+SKIN_HEADER.params]
-    mov  dword[edi+0x18000+SKIN_PARAMS.dtp.data+eax],ebx
+    mov  edi,[not_packed_area+SKIN_HEADER.params]
+    mov  dword[edi+not_packed_area+SKIN_PARAMS.dtp.data+eax],ebx
     call draw_skin
 @@: call draw_colours
     jmp  still
@@ -207,6 +277,7 @@ doapply:
 
     cmp  ah,1                   ; terminate
     jnz  noid1
+close:
     or   eax,-1
     mcall
   noid1:
@@ -275,8 +346,23 @@ draw_cursor:
     popa
     ret
 
-
+;---------------------------------------------------------------------
 load_file:
+;---------------------------------------------------------------------
+; invoke OpenDialog
+	mov	[OpenDialog_data.type],dword 0
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
+	cmp	[OpenDialog_data.status],1
+	je	.1
+	ret
+.1:
+; prepare for PathShow
+	push	dword PathShow_data_1
+	call	[PathShow_prepare]
+
+	call	draw_PathShow
+;---------------------------------------------------------------------
         xor     eax, eax
         mov     ebx, read_info
         mov     dword [ebx], eax       ; subfunction: read
@@ -286,42 +372,57 @@ load_file:
         mov     dword [ebx+16], color_table ; address
         mcall   70
         ret
-
+;---------------------------------------------------------------------
 load_skin_file:
+;---------------------------------------------------------------------
+; invoke OpenDialog
+	push    dword OpenDialog_data2
+	call    [OpenDialog_Start]
+	cmp	[OpenDialog_data2.status],1
+	je	.1
+	ret
+.1:
+; prepare for PathShow
+	push	dword PathShow_data_2
+	call	[PathShow_prepare]
+
+	call	draw_PathShow
+;---------------------------------------------------------------------
+.2:
         xor     eax, eax
-        mov     ebx, read_info
+        mov     ebx, read_info2
         mov     dword [ebx], eax       ; subfunction: read
         mov     dword [ebx+4], eax     ; offset (low dword)
         mov     dword [ebx+8], eax     ; offset (high dword)
         mov     dword [ebx+12], 32*1024 ; read: max 32 KBytes
-        mov     dword [ebx+16], 0x10000 ; address
+        mov     dword [ebx+16], file_load_area ; address
         mcall   70
 
-        mov     esi, 0x10000
+        mov     esi, file_load_area
 
         cmp     dword [esi], 'KPCK'
         jnz     notpacked
         cmp     dword [esi+4], 32*1024 ; max 32 KBytes
         ja      doret
-        push    0x20000
+        push    unpack_area
         push    esi
         call    unpack
-        mov     esi, 0x20000
+        mov     esi, unpack_area
 notpacked:
 
     cmp   dword[esi+SKIN_HEADER.ident],'SKIN'
     jne   doret
 
-    mov   edi,0x18000
+    mov   edi,not_packed_area
     mov   ecx,0x8000/4
     rep   movsd
 
-    mov   esi,fname
-    mov   edi,skin_info.fname
-    mov   ecx,257
-    rep   movsb
+;    mov   esi,fname
+;    mov   edi,skin_info.fname
+;    mov   ecx,257
+;    rep   movsb
 
-    mov   ebp,0x18000
+    mov   ebp,not_packed_area
     mov   esi,[ebp+SKIN_HEADER.params]
     add   esi,ebp
     lea   esi,[esi+SKIN_PARAMS.dtp.data]
@@ -332,8 +433,23 @@ notpacked:
 
 ret
 
-
+;---------------------------------------------------------------------
 save_file:
+;---------------------------------------------------------------------
+; invoke OpenDialog
+	mov	[OpenDialog_data.type],dword 1
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
+	cmp	[OpenDialog_data.status],1
+	je	.1
+	ret
+.1:
+; prepare for PathShow
+	push	dword PathShow_data_1
+	call	[PathShow_prepare]
+
+	call	draw_PathShow
+;---------------------------------------------------------------------
         mov     ebx, write_info
         mov     dword [ebx], 2         ; subfunction: write
         and     dword [ebx+4], 0       ; (reserved)
@@ -342,75 +458,75 @@ save_file:
         mov     dword [ebx+16], color_table ; address
         mcall   70
         ret
+;---------------------------------------------------------------------
+;read_string:
+;
+;    pusha
+;
+;    mov  edi,fname
+;    mov  al,'_'
+;    mov  ecx,87
+;    cld
+;    rep  stosb
+;
+;    call print_text
+;
+;    mov  edi,fname
+;
+;  f11:
+;    mov  eax,10
+;    mcall
+;    cmp  eax,2
+;    jne  read_done
+;;    mov  eax,2
+;    mcall
+;    shr  eax,8
+;    cmp  eax,13
+;    je   read_done
+;    cmp  eax,8
+;    jne  nobsl
+;    cmp  edi,fname
+;    je   f11
+;    dec  edi
+;    mov  [edi],byte '_'
+;    call print_text
+;    jmp  f11
+;   nobsl:
+;    mov  [edi],al
+;
+;    call print_text
+;
+;    inc  edi
+;    cmp  edi, fname+87
+;    jne  f11
+;
+;  read_done:
+;
+;    mov  ecx, fname+88
+;    sub  ecx, edi
+;    mov  eax, 0
+;    cld
+;    rep  stosb
+;
+;    call print_text
+;
+;    popa
+;
+;    ret
 
-read_string:
 
-    pusha
-
-    mov  edi,fname
-    mov  al,'_'
-    mov  ecx,87
-    cld
-    rep  stosb
-
-    call print_text
-
-    mov  edi,fname
-
-  f11:
-    mov  eax,10
-    mcall
-    cmp  eax,2
-    jne  read_done
-;    mov  eax,2
-    mcall
-    shr  eax,8
-    cmp  eax,13
-    je   read_done
-    cmp  eax,8
-    jne  nobsl
-    cmp  edi,fname
-    je   f11
-    dec  edi
-    mov  [edi],byte '_'
-    call print_text
-    jmp  f11
-   nobsl:
-    mov  [edi],al
-
-    call print_text
-
-    inc  edi
-    cmp  edi, fname+87
-    jne  f11
-
-  read_done:
-
-    mov  ecx, fname+88
-    sub  ecx, edi
-    mov  eax, 0
-    cld
-    rep  stosb
-
-    call print_text
-
-    popa
-
-    ret
-
-
-print_text:
-    pushad
-
-    mpack ebx,15,6*87+4
-    mpack ecx,(30+18*10+2),11
-    mcall 13,,,[w_work]
-
-    mpack ebx,17,(30+18*10+4)
-    mcall 4,,[w_work_text],fname,87
-
-    popad
-ret
+;print_text:
+;    pushad
+;
+;    mpack ebx,15,6*87+4
+;    mpack ecx,(30+18*10+2),11
+;    mcall 13,,,[w_work]
+;
+;    mpack ebx,17,(30+18*10+4)
+;    mcall 4,,[w_work_text],fname,87
+;
+;    popad
+;ret
 
 
 draw_color:
@@ -553,7 +669,7 @@ end virtual
 draw_skin:
         mcall   13,<area.x,area.width>,<area.y+2,area.height-2>,0x00FFFFFF
 
-        mov     ebp,0x18000
+        mov     ebp,not_packed_area
         mov     edi,[ebp+SKIN_HEADER.params]
         add     edi,ebp
         mpack   ebx,wnd1.x,wnd1.width
@@ -670,7 +786,7 @@ draw_skin:
         add     edx,(wnd3.x+wnd3.width)*65536+wnd3.y
         mcall   7
 
-        mov     ebp,0x18000
+        mov     ebp,not_packed_area
         mov     edi,[ebp+SKIN_HEADER.params]
         add     edi,ebp
         mov     eax,dword[edi+SKIN_PARAMS.margin.left-2]
@@ -734,7 +850,7 @@ draw_skin:
         add     edx,(wnd4.x+wnd4.width)*65536+wnd4.y
         mcall   7
 
-        mov     ebp,0x18000
+        mov     ebp,not_packed_area
         mov     edi,[ebp+SKIN_HEADER.params]
         add     edi,ebp
         pop     eax
@@ -782,7 +898,20 @@ draw_skin:
         mcall   4,,[dtp.work_button_text],button_text,button_text.size
 
         ret
-
+;---------------------------------------------------------------------
+draw_PathShow:
+	pusha
+	mcall	13,<10,534>,<214,15>,0xffffff
+	mcall	13,<10,534>,<232,15>,0xffffff
+; draw for PathShow
+	push	dword PathShow_data_1
+	call	[PathShow_draw]
+	
+	push	dword PathShow_data_2
+	call	[PathShow_draw]
+	popa
+	ret
+;---------------------------------------------------------------------
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
@@ -806,7 +935,7 @@ draw_window:
                                       ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,110*65536+555         ; [x start] *65536 + [x size]
-    mov  ecx,50*65536+255          ; [y start] *65536 + [y size]
+    mov  ecx,50*65536+275          ; [y start] *65536 + [y size]
     mov  edx,[w_work]              ; color of work area RRGGBB,8->color
     or   edx,0x14000000
     mov  edi,title                ; WINDOW LABEL
@@ -819,21 +948,21 @@ if lang eq ru
   apply_w = (5*2+6*9)
 else
   load_w  = (5*2+6*6)
-  save_w  = (5*2+6*6)
+  save_w  = (5*2+6*8)
   flat_w  = (5*2+6*4)
   apply_w = (5*2+6*7)
 end if
 
-    mov  eax,8                    ; FILENAME BUTTON
-    mov  ebx,5*65536+545
-    mov  ecx,212*65536+10
-    mov  edx,0x4000000B
-    mov  esi,[w_grab_button]       ; button color RRGGBB
-    mcall
+;    mov  eax,8                    ; FILENAME BUTTON
+;    mov  ebx,5*65536+545
+;    mov  ecx,212*65536+10
+;    mov  edx,0x4000000B
+;    mov  esi,[w_grab_button]       ; button color RRGGBB
+;    mcall
 
-;   mov  eax,8                    ; LOAD BUTTON
+    mov  eax,8                    ; LOAD BUTTON
     mov  ebx,15*65536+load_w
-    mov  ecx,(30+18*11)*65536+14
+    mov  ecx,(35+18*12)*65536+14
     mov  edx,12
     mov  esi,[w_work_button]
     mcall
@@ -871,15 +1000,20 @@ end if
     mcall
 
     mov  eax, 4
-    mov  ebx, (339-t1.size*6-12)*65536+(30+18*11+4)
+    mov  ebx, (339-t1.size*6-12)*65536+(35+18*12+4)
     mov  ecx, [w_work_button_text]
     mov  edx, t1
     mov  esi, t1.size
     mcall
 
-    mov  ebx,(336+(555-335)/2-t2.size*6/2)*65536+(30+18*11+4)
+    mov  ebx,(336+(555-335)/2-t2.size*6/2)*65536+(35+18*12+4)
     mov  edx,t2
     mov  esi,t2.size
+    mcall
+
+    mov  ebx,(15+(load_w+save_w+2-t3.size*6)/2)*65536+(35+18*12+4)
+    mov  edx,t3
+    mov  esi,t3.size
     mcall
 
 ;   mov  eax, 4
@@ -935,22 +1069,24 @@ end if
 
     call draw_colours
 
-    mcall 13,<5,546>,<212,11>,[w_work]
-    mcall 13,<337,7>,<2,250>,[w_frame]
-    shr   edx,1
-    and   edx,0x007F7F7F
-    mcall 38,<336,336>,<20,250>
-    add   ebx,0x00080008
-    mcall
-    sub   ebx,0x00040004
-    mcall ,,<0,255>
-    mcall ,<5,550>,<211,211>
-    add   ecx,0x000C000C
-    mcall
+	call	draw_PathShow	
+	
+;    mcall 13,<5,546>,<212,11>,[w_work]
+;    mcall 13,<337,7>,<2,250>,[w_frame]
+;    shr   edx,1
+;    and   edx,0x007F7F7F
+;    mcall 38,<336,336>,<20,250>
+;    add   ebx,0x00080008
+;    mcall
+;    sub   ebx,0x00040004
+;    mcall ,,<0,255>
+;    mcall ,<5,550>,<211,211>
+;    add   ecx,0x000C000C
+;    mcall
 
-    call print_text
+;    call print_text
 
-    cmp  dword[0x18000+SKIN_HEADER.ident],'SKIN'
+    cmp  dword[not_packed_area+SKIN_HEADER.ident],'SKIN'
     jne  @f
     call draw_skin
   @@:
@@ -975,8 +1111,6 @@ lsz text,\
     ru,  ' íÖäëí çÄ äçéèäÖ                ',\
     ru,  ' íÖäëí Ç êÄÅéóÖâ éÅãÄëíà        ',\
     ru,  ' ÉêÄîàäÄ Ç êÄÅéóÖâ éÅãÄëíà      ',\
-    ru,  '                                ',\
-    ru,  ' áÄÉêìáàíú  ëéïêÄçàíú           ',\
     ru,  'x',\
     en,  ' WINDOW FRAME                   ',\
     en,  ' WINDOW GRAB BAR                ',\
@@ -988,8 +1122,6 @@ lsz text,\
     en,  ' WINDOW WORK AREA BUTTON TEXT   ',\
     en,  ' WINDOW WORK AREA TEXT          ',\
     en,  ' WINDOW WORK AREA GRAPH         ',\
-    en,  '                                ',\
-    en,  '  LOAD    SAVE                  ',\
     en,  'x',\
     et,  ' AKNA RAAM                      ',\
     et,  ' AKNA HAARAMISE RIBA            ',\
@@ -1001,8 +1133,6 @@ lsz text,\
     et,  ' AKNA T÷÷PIIRKONNA NUPPU TEKST  ',\
     et,  ' AKNA T÷÷PIIRKONNA TEKST        ',\
     et,  ' AKNA T÷÷PIIRKONNA GRAAFIKA     ',\
-    et,  '                                ',\
-    et,  '  LAADI SALVESTA                ',\
     et,  'x'
 
 lsz t1,\
@@ -1014,6 +1144,11 @@ lsz t2,\
     ru,  ' áÄÉêìáàíú   èêàåÖçàíú ',\
     en,  '  LOAD     APPLY  ',\
     et,  '  LAADI   KINNITA '
+
+lsz t3,\
+    ru,  ' áÄÉêìáàíú  ëéïêÄçàíú ',\
+    en,  '  LOAD     SAVE  ',\
+    et,  ' LAADI  SALVESTA',\
 
 lsz caption_text,\
     ru, 'á†£Æ´Æ¢Æ™',\
@@ -1032,7 +1167,7 @@ lsz button_text,\
     en, 'Button text',\
     et, 'Nupu tekst'
 
-sz  default_skn, '/sys/DEFAULT.SKN',0
+;sz  default_skn, '/sys/DEFAULT.SKN',0
 
 if lang eq ru
   title db 'çÄëíêéâäÄ éäéç',0
@@ -1045,6 +1180,225 @@ end if
 
 color dd  0
 
+;---------------------------------------------------------------------
+l_libs_start:
+
+library01  l_libs system_dir_Boxlib+9, cur_dir_path, library_path, system_dir_Boxlib, \
+err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
+
+library02  l_libs system_dir_ProcLib+9, cur_dir_path, library_path, system_dir_ProcLib, \
+err_message_found_lib2, head_f_l, ProcLib_import, err_message_import2, head_f_i
+
+end_l_libs:
+;---------------------------------------------------------------------
+system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
+system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
+
+head_f_i:
+head_f_l	db 'System error',0
+
+err_message_found_lib1	db 'box_lib.obj - Not found!',0
+err_message_found_lib2	db 'proc_lib.obj - Not found!',0
+
+err_message_import1	db 'box_lib.obj - Wrong import!',0
+err_message_import2	db 'proc_lib.obj - Wrong import!',0
+
+;---------------------------------------------------------------------
+align 4
+ProcLib_import:
+OpenDialog_Init		dd aOpenDialog_Init
+OpenDialog_Start	dd aOpenDialog_Start
+;OpenDialog__Version	dd aOpenDialog_Version
+        dd      0
+        dd      0
+aOpenDialog_Init	db 'OpenDialog_init',0
+aOpenDialog_Start	db 'OpenDialog_start',0
+;aOpenDialog_Version	db 'Version_OpenDialog',0
+;---------------------------------------------------------------------
+align 4
+Box_lib_import:	
+;init_lib		dd a_init
+;version_lib		dd a_version
+
+
+;edit_box_draw		dd aEdit_box_draw
+;edit_box_key		dd aEdit_box_key
+;edit_box_mouse		dd aEdit_box_mouse
+;version_ed		dd aVersion_ed
+
+;check_box_draw		dd aCheck_box_draw
+;check_box_mouse	dd aCheck_box_mouse
+;version_ch		dd aVersion_ch
+
+;option_box_draw	dd aOption_box_draw
+;option_box_mouse	dd aOption_box_mouse
+;version_op		dd aVersion_op
+
+;scrollbar_ver_draw	dd aScrollbar_ver_draw
+;scrollbar_ver_mouse	dd aScrollbar_ver_mouse
+;scrollbar_hor_draw	dd aScrollbar_hor_draw
+;scrollbar_hor_mouse	dd aScrollbar_hor_mouse
+;version_scrollbar	dd aVersion_scrollbar
+
+;dinamic_button_draw	dd aDbutton_draw
+;dinamic_button_mouse	dd aDbutton_mouse
+;version_dbutton	dd aVersion_dbutton
+
+;menu_bar_draw		dd aMenu_bar_draw
+;menu_bar_mouse		dd aMenu_bar_mouse
+;menu_bar_activate	dd aMenu_bar_activate
+;version_menu_bar	dd aVersion_menu_bar
+
+;FileBrowser_draw	dd aFileBrowser_draw
+;FileBrowser_mouse	dd aFileBrowser_mouse
+;FileBrowser_key	dd aFileBrowser_key
+;Version_FileBrowser	dd aVersion_FileBrowser
+
+PathShow_prepare	dd sz_PathShow_prepare
+PathShow_draw		dd sz_PathShow_draw
+;Version_path_show	dd szVersion_path_show
+			dd 0
+			dd 0
+
+;a_init			db 'lib_init',0
+;a_version		db 'version',0
+
+;aEdit_box_draw		db 'edit_box',0
+;aEdit_box_key		db 'edit_box_key',0
+;aEdit_box_mouse	db 'edit_box_mouse',0
+;aVersion_ed		db 'version_ed',0
+
+;aCheck_box_draw	db 'check_box_draw',0
+;aCheck_box_mouse	db 'check_box_mouse',0
+;aVersion_ch		db 'version_ch',0
+
+;aOption_box_draw	db 'option_box_draw',0
+;aOption_box_mouse	db 'option_box_mouse',0
+;aVersion_op		db 'version_op',0
+
+;aScrollbar_ver_draw	db 'scrollbar_v_draw',0
+;aScrollbar_ver_mouse	db 'scrollbar_v_mouse',0
+;aScrollbar_hor_draw	db 'scrollbar_h_draw',0
+;aScrollbar_hor_mouse	db 'scrollbar_h_mouse',0
+;aVersion_scrollbar	db 'version_scrollbar',0
+
+;aDbutton_draw		db 'dbutton_draw',0
+;aDbutton_mouse		db 'dbutton_mouse',0
+;aVersion_dbutton	db 'version_dbutton',0
+
+;aMenu_bar_draw		db 'menu_bar_draw',0
+;aMenu_bar_mouse		db 'menu_bar_mouse',0
+;aMenu_bar_activate	db 'menu_bar_activate',0
+;aVersion_menu_bar	db 'version_menu_bar',0
+
+;aFileBrowser_draw	db 'FileBrowser_draw',0
+;aFileBrowser_mouse	db 'FileBrowser_mouse',0
+;aFileBrowser_key	db 'FileBrowser_key',0
+;aVersion_FileBrowser	db 'version_FileBrowser',0
+
+sz_PathShow_prepare	db 'PathShow_prepare',0
+sz_PathShow_draw	db 'PathShow_draw',0
+;szVersion_path_show	db 'version_PathShow',0
+;---------------------------------------------------------------------
+PathShow_data_1:
+.type			dd 0	;+0
+.start_y		dw 217	;+4
+.start_x		dw 12	;+6
+.font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
+.area_size_x		dw 530	;+10
+.font_number		dd 0	;+12	; 0 - monospace, 1 - variable
+.background_flag	dd 0	;+16
+.font_color		dd 0x0	;+20
+.background_color	dd 0x0	;+24
+.text_pointer		dd fname	;+28
+.work_area_pointer	dd text_work_area	;+32
+.temp_text_length	dd 0	;+36
+;---------------------------------------------------------------------
+PathShow_data_2:
+.type			dd 0	;+0
+.start_y		dw 235	;+4
+.start_x		dw 12	;+6
+.font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
+.area_size_x		dw 530	;+10
+.font_number		dd 0	;+12	; 0 - monospace, 1 - variable
+.background_flag	dd 0	;+16
+.font_color		dd 0x0	;+20
+.background_color	dd 0x0	;+24
+.text_pointer		dd skin_info	;+28
+.work_area_pointer	dd text_work_area2	;+32
+.temp_text_length	dd 0	;+36
+;---------------------------------------------------------------------
+OpenDialog_data:
+.type			dd 0
+.procinfo		dd procinfo	;+4
+.com_area_name		dd communication_area_name	;+8
+.com_area		dd 0	;+12
+.opendir_pach		dd temp_dir_pach	;+16
+.dir_default_pach	dd communication_area_default_pach	;+20
+.start_path		dd open_dialog_path	;+24
+.draw_window		dd draw_window	;+28
+.status			dd 0	;+32
+.openfile_pach 		dd fname	;+36
+.filename_area		dd filename_area	;+40
+.filter_area		dd Filter
+.x:
+.x_size			dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size			dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
+
+OpenDialog_data2:
+.type			dd 0
+.procinfo		dd procinfo	;+4
+.com_area_name		dd communication_area_name2	;+8
+.com_area		dd 0	;+12
+.opendir_pach		dd temp_dir_pach2	;+16
+.dir_default_pach	dd communication_area_default_pach	;+20
+.start_path		dd open_dialog_path	;+24
+.draw_window		dd draw_window	;+28
+.status			dd 0	;+32
+.openfile_pach 		dd skin_info	;+36
+.filename_area		dd filename_area2	;+40
+.filter_area		dd Filter2
+.x:
+.x_size			dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size			dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
+
+communication_area_name2:
+	db 'FFFFFFFF_open_dialog',0
+
+communication_area_name:
+	db 'FFFFFFFF_open_dialog2',0
+open_dialog_path:
+	db '/sys/File Managers/opendial',0
+communication_area_default_pach:
+	db '/sys',0
+
+Filter:
+dd	Filter.end - Filter
+.1:
+db	'DTP',0
+.end:
+db	0
+
+Filter2:
+dd	Filter.end - Filter
+.1:
+db	'SKN',0
+.end:
+db	0
+
+start_temp_file_name:	db 'default.dtp',0
+
+default_skin:
+	db '/sys/default.skn',0
+default_dtp:
+	db '/sys/default.dtp',0
+;---------------------------------------------------------------------
 IncludeIGlobals
 
 I_END:
@@ -1057,7 +1411,7 @@ read_info:
   .blocks       dd ?            ; 512 bytes
   .address      dd ?
   .workarea     dd ?
-fname rb 256+1            ; filename (+1 - for zero at the end)
+fname rb 4096            ; filename
 
 virtual at read_info
  write_info:
@@ -1068,10 +1422,15 @@ virtual at read_info
   .workarea     dd ?
 end virtual
 
-skin_info:
-  .fname rb 256+1
+read_info2:
+  .mode         dd ?            ; read
+  .start_block  dd ?            ; first block
+  .blocks       dd ?            ; 512 bytes
+  .address      dd ?
+  .workarea     dd ?
+skin_info rb 4096
 
-param   rb      257
+;param   rb      257
 
 align 4
 app_colours:
@@ -1089,3 +1448,48 @@ w_work_graph         dd ?
 
 color_table:
   times 10 dd ?
+;---------------------------------------------------------------------
+align 4
+cur_dir_path:
+	rb 4096
+;---------------------------------------------------------------------
+library_path:
+	rb 4096
+;---------------------------------------------------------------------
+;fname_buf:
+;	rb 4096
+;---------------------------------------------------------------------
+temp_dir_pach:
+	rb 4096
+;---------------------------------------------------------------------
+temp_dir_pach2:
+	rb 4096
+;---------------------------------------------------------------------
+text_work_area:
+	rb 1024
+;---------------------------------------------------------------------
+text_work_area2:
+	rb 1024
+;---------------------------------------------------------------------
+procinfo:
+	rb 1024
+;---------------------------------------------------------------------
+filename_area:
+	rb 256
+;---------------------------------------------------------------------
+filename_area2:
+	rb 256
+;---------------------------------------------------------------------
+	rb 4096
+stacktop:
+;---------------------------------------------------------------------
+file_load_area:	; old 0x10000
+	rb 32*1024
+;---------------------------------------------------------------------
+not_packed_area:	; old 0x18000
+	rb 32*1024
+;---------------------------------------------------------------------
+unpack_area:	; old 0x20000
+	rb 32*1024
+;---------------------------------------------------------------------
+i_end:
