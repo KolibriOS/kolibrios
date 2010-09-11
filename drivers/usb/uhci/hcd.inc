@@ -124,24 +124,45 @@ void hc_interrupt()
 {
     hc_t   *hc;
 
-    printf("USB interrupt\n");
+//    printf("USB interrupt\n");
 
     hc = (hc_t*)hc_list.next;
 
     while( &hc->list != &hc_list)
     {
-        hc_t  *tmp;
+        hc_t       *htmp;
+        request_t  *rq;
         u16_t  status;
 
-        tmp = hc;
+        htmp = hc;
+
         hc = (hc_t*)hc->list.next;
 
-        status = in16(tmp->iobase + USBSTS);
+        status = in16(htmp->iobase + USBSTS);
         if (!(status & ~USBSTS_HCH))            /* shared interrupt, not mine */
             continue;
-        out16(tmp->iobase + USBSTS, status);     /* Clear it */
-    }
+        out16(htmp->iobase + USBSTS, status);     /* Clear it */
 
+        rq = (request_t*)htmp->rq_list.next;
+
+        while( &rq->list != &htmp->rq_list)
+        {
+            request_t *rtmp;
+            td_t      *td;
+
+            rtmp = rq;
+            rq = (request_t*)rq->list.next;
+
+            td  = rtmp->td_tail;
+
+            if( td->status & TD_CTRL_ACTIVE)
+                continue;
+
+            list_del(&rtmp->list);
+
+            RaiseEvent(rtmp->evh, 0, &rtmp->event);
+        };
+    }
 };
 
 
@@ -422,6 +443,15 @@ request_t *create_request(udev_t *dev, endp_t *enp, u32_t dir,
 
     td->status |= TD_CTRL_IOC;
     rq->td_tail = td;
+
+    rq->evh = CreateEvent(NULL, MANUAL_DESTROY);
+
+    if(rq->evh.handle == 0)
+        printf("%s: epic fail\n", __FUNCTION__);
+
+    rq->event.code    = 0xFF000001;
+    rq->event.data[0] = (addr_t)rq;
+
     return rq;
 }
 
@@ -436,6 +466,15 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
     qh_t   *qh;
     addr_t  data_dma = 0;
     bool    retval;
+
+
+    request_t *rq = (request_t*)kmalloc(sizeof(request_t),0);
+
+    INIT_LIST_HEAD(&rq->list);
+
+    rq->data = (addr_t)data;
+    rq->size = req_size;
+    rq->dev  = dev;
 
     td0 = alloc_td();
 
@@ -481,19 +520,33 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
     td->buffer = 0;
     td->bk     = td_prev;
 
+    rq->td_head = td0;
+    rq->td_tail = td;
+
+    rq->evh = CreateEvent(NULL, MANUAL_DESTROY);
+
+    if(rq->evh.handle == 0)
+        printf("%s: epic fail\n", __FUNCTION__);
+
+    rq->event.code    = 0xFF000001;
+    rq->event.data[0] = (addr_t)rq;
+
+    u32_t efl = safe_cli();
+
+      list_add_tail(&rq->list, &dev->host->rq_list);
+
     qh = dev->host->qh[SKEL_ASYNC];
 
     qh->qelem = td0->dma;
 
     mb();
- //   __asm__ __volatile__ ("":::"memory");
 
-    count_t timeout  = 25;
-    while(timeout--){
-        delay(10/10);
-        if( !(td->status & TD_CTRL_ACTIVE))
-            break;
-    }
+    safe_sti(efl);
+
+    WaitEvent(rq->evh.handle, rq->evh.euid);
+
+    dbgprintf("td0 status 0x%0x\n", td0->status);
+    dbgprintf("td  status 0x%0x\n", td->status);
 
     if( (td0->status & TD_ANY_ERROR) ||
         (td_prev->status & TD_ANY_ERROR) ||
@@ -513,12 +566,21 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
         retval = false;
     } else retval = true;
 
+    qh->qelem = 1;
+
+    mb();
+
     do
     {
         td_prev = td->bk;
         free_td(td);
         td = td_prev;
     }while( td != NULL);
+
+/*
+    delete event;
+*/
+    kfree(rq);
 
     return retval;
 };
@@ -545,7 +607,10 @@ bool init_device(udev_t *dev)
                dev->id, dev->host->pciId, dev->port);
 
     if( !ctrl_request(dev, req_descr, DIN, &descr, 18))
+    {
+        dbgprintf("%s epic fail\n",__FUNCTION__);
         return;
+    };
 
     dev->dev_descr = descr;
 

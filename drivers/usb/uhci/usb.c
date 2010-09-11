@@ -104,42 +104,25 @@ u32_t drvEntry(int action, char *cmdline)
     {
         udev_t    *dev;
         request_t *rq;
+        kevent_t    event;
+        u32_t       handle;
 
-        rq = (request_t*)rq_list.next;
-        while( &rq->list != &rq_list)
-        {
-            qh_t      *qh;
-            td_t      *td;
+        event.code    = 0;
+        event.data[0] = 0;
 
-            td  = rq->td_head;
-            dev = rq->dev;
+        handle = GetEvent(&event);
 
-            qh = dev->host->qh[rq->qnum];
-            qh->qelem = td->dma;
+//        dbgprintf("event handle 0x%0x code 0x%0x\n",
+//                   handle, event.code);
 
-            mb();
+        if(event.code != 0xFF000001)
+            continue;
 
-            rq = (request_t*)rq->list.next;
-        };
+        rq = (request_t*)event.data[0];
 
-        delay(10/10);
+//        dbgprintf("rq = 0x%0x\n", rq);
 
-        rq = (request_t*)rq_list.next;
-        while( &rq->list != &rq_list)
-        {
-            request_t *tmp;
-            td_t      *td;
-
-            tmp = rq;
-            rq = (request_t*)rq->list.next;
-
-            td  = tmp->td_head;
-
-            if( td->status & TD_CTRL_ACTIVE)
-                continue;
-
-            tmp->handler(tmp->dev, tmp);
-        };
+        rq->handler(rq->dev, rq);
     };
 
     retval = RegService("USB", srv_usb);

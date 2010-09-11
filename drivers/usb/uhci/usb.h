@@ -44,16 +44,6 @@ typedef struct
 #define SKEL_ISO        1
 #define SKEL_ASYNC      9
 
-/*
-#define     QH_1    0
-#define     QH_2    1
-#define     QH_4    2
-#define     QH_8    3
-#define     QH_16   4
-#define     QH_32   5
-#define     QH_64   6
-*/
-
 
 typedef struct
 {
@@ -81,6 +71,8 @@ typedef struct
     size_t  memSize[6];
     u32_t   memType[6];
     u32_t   irq_line;
+
+    list_t  rq_list;
 }hc_t;
 
 typedef struct tag_td
@@ -233,6 +225,8 @@ typedef struct   tag_request
     udev_t       *dev;
     u32_t         type;
     int           qnum;
+    evhandle_t    evh;
+    kevent_t      event;
     bool        (*handler)(udev_t *dev, struct   tag_request *rq);
 }request_t;
 

@@ -7,6 +7,12 @@
 
 typedef struct
 {
+    u32_t  code;
+    u32_t  data[5];
+}kevent_t;
+
+typedef struct
+{
   u32_t      handle;
   u32_t      io_code;
   void       *input;
@@ -51,10 +57,10 @@ void*  STDCALL KernelFree(void *mem)__asm__("KernelFree");
 void*  STDCALL UserAlloc(size_t size)__asm__("UserAlloc");
 int    STDCALL UserFree(void *mem)__asm__("UserFree");
 
-void*  STDCALL GetDisplay()__asm__("GetDisplay");
+void*  STDCALL GetDisplay(void)__asm__("GetDisplay");
 
 
-addr_t STDCALL AllocPage()__asm__("AllocPage");
+addr_t STDCALL AllocPage(void)__asm__("AllocPage");
 addr_t STDCALL AllocPages(count_t count)__asm__("AllocPages");
 
 void* STDCALL CreateRingBuffer(size_t size, u32_t map)__asm__("CreateRingBuffer");
@@ -108,7 +114,24 @@ int dbgprintf(const char* format, ...);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-static inline int GetScreenSize()
+
+static inline u32_t CreateEvent(kevent_t *ev, u32_t flags, u32_t *uid)
+{
+     u32_t  handle;
+     u32_t  euid;
+
+     __asm__ __volatile__ (
+     "call *__imp__CreateEvent"
+     :"=a"(handle),"=d"(euid)
+     :"S" (ev), "c"(flags));
+     __asm__ __volatile__ ("":::"ebx","ecx", "esi", "edi");
+
+     if(uid) *uid = euid;
+
+     return handle;
+};
+
+static inline int GetScreenSize(void)
 {
   int retval;
 
@@ -118,7 +141,7 @@ static inline int GetScreenSize()
   return retval;
 }
 
-static inline int GetScreenBpp()
+static inline int GetScreenBpp(void)
 {
   int retval;
 
@@ -128,7 +151,7 @@ static inline int GetScreenBpp()
   return retval;
 }
 
-static inline int GetScreenPitch()
+static inline int GetScreenPitch(void)
 {
   int retval;
 
@@ -245,26 +268,6 @@ static inline void __DestroyObject(void *obj)
      :::"eax","ebx","ecx","edx","esi","edi","cc","memory");
 }
 
-
-/*
-u32 __RegService(char *name, srv_proc_t proc)
-{
-  u32 retval;
-
-  asm __volatile__
-  (
-    "pushl %%eax \n\t"
-    "pushl %%ebx \n\t"
-    "call *__imp__RegService \n\t"
-    :"=eax" (retval)
-    :"a" (proc), "b" (name)
-    :"memory"
-  );
-  return retval;
-};
-*/
-
-
 static inline u32_t GetService(const char *name)
 {
     u32_t handle;
@@ -298,6 +301,16 @@ static inline void safe_sti(u32_t ifl)
      "popf\n"
      : : "r" (ifl)
 	);
+}
+
+static inline u32_t get_eflags(void)
+{
+    u32_t val;
+    asm volatile (
+    "pushfl\n\t"
+    "popl %0\n"
+    : "=r" (val));
+    return val;
 }
 
 static inline void __clear (void * dst, unsigned len)
@@ -364,13 +377,13 @@ static inline void delay(int time)
 
 }
 
-static inline void change_task()
+static inline void change_task(void)
 {
      __asm__ __volatile__ (
      "call *__imp__ChangeTask");
 }
 
-static inline sysSetScreen(int width, int height, int pitch)
+static inline void sysSetScreen(int width, int height, int pitch)
 {
     __asm__ __volatile__
     (

@@ -103,6 +103,7 @@ bool init_hid(udev_t *dev)
 bool mouse_handler(udev_t *dev, struct tag_request *rq)
 {
     td_t   *td;
+    qh_t   *qh;
 
     td = rq->td_head;
 
@@ -114,6 +115,13 @@ bool mouse_handler(udev_t *dev, struct tag_request *rq)
     };
     td->status = TD_CTRL_ACTIVE | TD_CTRL_IOC | dev->speed;
     td->token ^= DATA1;
+
+    u32_t efl = safe_cli();
+      list_add_tail(&rq->list, &dev->host->rq_list);
+      qh = dev->host->qh[6];
+      qh->qelem = rq->td_head->dma;
+      mb();
+    safe_sti(efl);
 
     return true;
 };
@@ -148,7 +156,12 @@ void create_hid_mouse(udev_t *dev, endpoint_descr_t *en_d)
     rq->qnum = 6;
     rq->handler = &mouse_handler;
 
-    list_add_tail(&rq->list, &rq_list);
+    u32_t efl = safe_cli();
+      list_add_tail(&rq->list, &dev->host->rq_list);
+      qh = dev->host->qh[6];
+      qh->qelem = rq->td_head->dma;
+      mb();
+    safe_sti(efl);
 
     dbgprintf("create_hid_mouse\n");
 }

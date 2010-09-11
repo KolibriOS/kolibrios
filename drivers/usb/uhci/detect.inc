@@ -9,6 +9,8 @@ bool FindUSBControllers()
     if( (last_bus = PciApi(1))==-1)
         return retval;
 
+    dbgprintf("last bus %x\n", last_bus);
+
     for(bus=0;bus<=last_bus;bus++)
     {
         u32_t devfn;
@@ -37,12 +39,12 @@ bool FindUSBControllers()
 
             hc = (hc_t*)kmalloc(sizeof(hc_t), 0);
             INIT_LIST_HEAD(&hc->list);
+            INIT_LIST_HEAD(&hc->rq_list);
 
             hc->pciId  = PciRead32(bus,devfn, 0);
             hc->PciTag = pciTag(bus,(devfn>>3)&0x1F,devfn&0x7);
 
             hc->irq_line = PciRead32(bus,devfn, 0x3C) & 0xFF;
-            dbgprintf("Host IRQ %d\n", hc->irq_line);
 
             for (i = 0; i < 6; i++)
             {
@@ -61,6 +63,9 @@ bool FindUSBControllers()
                     }
                 }
             };
+            dbgprintf("host controller %x bus %x devfn %x, IRQ %d\n",
+                       hc->pciId, bus, devfn, hc->irq_line);
+
             list_add_tail(&hc->list, &hc_list);
             retval = true;
         };

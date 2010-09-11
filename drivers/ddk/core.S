@@ -9,6 +9,8 @@
 
     .global _AttachIntHandler
 
+    .global _CreateEvent
+
     .global _CreateRingBuffer
     .global _Delay
     .global _DestroyObject
@@ -16,6 +18,7 @@
     .global _FreeKernelSpace
 
     .global _GetDisplay
+    .global _GetEvent
     .global _GetPgAddr
     .global _GetService
 
@@ -36,17 +39,23 @@
     .global _PciWrite32
     .global _PciWrite8
 
+    .global _RaiseEvent
+
     .global _RegService
 
     .global _SetMouseData
     .global _SetScreen
     .global _SysMsgBoardStr
 
+    .global _WaitEvent
+
 
     .def  _AllocPage;         .scl  2;  .type 32; .endef
     .def  _AllocPages;        .scl  2;  .type 32; .endef
 
     .def  _AttachIntHandler;  .scl  2;  .type 32; .endef
+
+    .def  _CreateEvent;       .scl  2;  .type 32; .endef
 
     .def  _CreateRingBuffer;  .scl  2;  .type 32; .endef
 
@@ -56,6 +65,7 @@
     .def  _FreeKernelSpace;   .scl  2;  .type 32; .endef
 
     .def  _GetDisplay;        .scl  2;  .type 32; .endef
+    .def  _GetEvent;          .scl  2;  .type 32; .endef
     .def  _GetPgAddr;         .scl  2;  .type 32; .endef
     .def  _GetService;        .scl  2;  .type 32; .endef
 
@@ -76,17 +86,24 @@
     .def  _PciWrite32;        .scl  2;  .type 32; .endef
     .def  _PciWrite8;         .scl  2;  .type 32; .endef
 
+    .def  _RaiseEvent;        .scl  2;  .type 32; .endef
+
     .def  _RegService;        .scl  2;  .type 32; .endef
 
     .def  _SetScreen;         .scl  2;  .type 32; .endef
     .def  _SetMouseData;      .scl  2;  .type 32; .endef
     .def  _SysMsgBoardStr;    .scl  2;  .type 32; .endef
 
+    .def  _WaitEvent;         .scl  2;  .type 32; .endef
+
+
 
 _AllocPage:
 _AllocPages:
 
 _AttachIntHandler:
+
+_CreateEvent:
 
 _CreateRingBuffer:
 
@@ -97,6 +114,7 @@ _DestroyObject:
 _FreeKernelSpace:
 
 _GetDisplay:
+_GetEvent:
 _GetPgAddr:
 _GetService:
 
@@ -117,11 +135,15 @@ _PciWrite16:
 _PciWrite32:
 _PciWrite8:
 
+_RaiseEvent:
 _RegService:
 
 _SetMouseData:
 _SetScreen:
 _SysMsgBoardStr:
+
+_WaitEvent:
+
         ret
 
     .section .drectve
@@ -130,6 +152,8 @@ _SysMsgBoardStr:
         .ascii " -export:AllocPages"           # gcc ABI
 
         .ascii " -export:AttachIntHandler"     # stdcall
+
+        .ascii " -export:CreateEvent"          #
 
         .ascii " -export:CreateRingBuffer"     # stdcall
 
@@ -140,6 +164,7 @@ _SysMsgBoardStr:
         .ascii " -export:FreeKernelSpace"      # stdcall
 
         .ascii " -export:GetDisplay"           # stdcall
+        .ascii " -export:GetEvent"             #
         .ascii " -export:GetPgAddr"            # stdcall
         .ascii " -export:GetService"           # stdcall
 
@@ -160,10 +185,13 @@ _SysMsgBoardStr:
         .ascii " -export:PciWrite32"           # stdcall
         .ascii " -export:PciWrite8"            # stdcall
 
+        .ascii " -export:RaiseEvent"           #
+
         .ascii " -export:RegService"           # stdcall
 
         .ascii " -export:SetMouseData"         # stdcall
         .ascii " -export:SetScreen"            # stdcall
         .ascii " -export:SysMsgBoardStr"       # stdcall
 
+        .ascii " -export:WaitEvent"            # stdcall
 
