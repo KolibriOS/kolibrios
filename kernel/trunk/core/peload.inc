@@ -283,6 +283,12 @@ __exports:
           alloc_page,            'AllocPage',          \      ; gcc ABI
           alloc_pages,           'AllocPages',         \      ; stdcall
           commit_pages,          'CommitPages',        \      ; eax, ebx, ecx
+\
+          create_event,          'CreateEvent',        \      ; ecx, esi
+          raise_event,           'RaiseEvent',         \      ; eax, ebx, edx, esi
+          wait_event,            'WaitEvent',          \      ; eax, ebx
+          get_event_ex,          'GetEvent',           \      ; edi
+\
           create_kernel_object,  'CreateObject',       \
           create_ring_buffer,    'CreateRingBuffer',   \      ; stdcall
           destroy_kernel_object, 'DestroyObject',      \

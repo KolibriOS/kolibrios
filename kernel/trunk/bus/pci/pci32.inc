@@ -61,17 +61,19 @@ pci_api:
 	jne  pci_service_not_supported
 
 ;cross
+    push eax
 	mov	eax,ebx
 	mov	ebx,ecx
 	mov	ecx,edx
-	movzx	edx, al
+    pop edx
+	movzx	edx, dl
 ;;;;;;;;;;;;;;;;;;;
 
 if defined mmio_pci_addr
-	cmp al, 13
+    cmp dl, 13
 	ja pci_service_not_supported
 else
-	cmp al, 10
+    cmp dl, 10
 	ja pci_service_not_supported
 end if
 
