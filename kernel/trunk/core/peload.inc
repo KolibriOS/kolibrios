@@ -306,7 +306,7 @@ __exports:
 \
           get_display,           'GetDisplay',         \
           set_screen,            'SetScreen',          \
-          pci_api,               'PciApi',             \
+          pci_api_drv,           'PciApi',             \
           pci_read8,             'PciRead8',           \      ; stdcall
           pci_read16,            'PciRead16',          \      ; stdcall
           pci_read32,            'PciRead32',          \      ; stdcall

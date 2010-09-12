@@ -99,7 +99,7 @@ kernel_export:
   dd szMutexLock       , mutex_lock            ;gcc fastcall
   dd szMutexUnlock     , mutex_unlock          ;gcc fastcall
 
-  dd szPciApi          , pci_api
+  dd szPciApi          , pci_api_drv
   dd szPciRead32       , pci_read32
   dd szPciRead16       , pci_read16
   dd szPciRead8        , pci_read8

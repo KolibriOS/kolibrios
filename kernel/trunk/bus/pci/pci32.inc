@@ -57,23 +57,25 @@ endg
 align 4
 
 pci_api:
-	cmp  [pci_access_enabled],1
-	jne  pci_service_not_supported
 
 ;cross
-    push eax
-	mov	eax,ebx
+    mov eax,ebx
 	mov	ebx,ecx
 	mov	ecx,edx
-    pop edx
-	movzx	edx, dl
-;;;;;;;;;;;;;;;;;;;
+
+align 4
+pci_api_drv:
+
+    cmp  [pci_access_enabled],1
+    jne  pci_service_not_supported
+
+    movzx   edx, al
 
 if defined mmio_pci_addr
-    cmp dl, 13
+    cmp al, 13
 	ja pci_service_not_supported
 else
-    cmp dl, 10
+    cmp al, 10
 	ja pci_service_not_supported
 end if
 
