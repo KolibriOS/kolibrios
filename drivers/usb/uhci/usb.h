@@ -51,6 +51,8 @@ typedef struct
 
     addr_t  iobase;
 
+    struct dma_pool *td_pool;
+
     u32_t   *frame_base;
     count_t frame_number;
     addr_t  frame_dma;

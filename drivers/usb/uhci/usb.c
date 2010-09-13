@@ -1,24 +1,17 @@
 
 
-#include <kernel.h>
+#include <ddk.h>
 #include <mutex.h>
 #include <pci.h>
-
-//#include <stdio.h>
-//#include <malloc.h>
-//#include <memory.h>
-
-
+#include <linux/dmapool.h>
 #include <syscall.h>
 #include "usb.h"
-
 
 int __stdcall srv_usb(ioctl_t *io);
 
 bool init_hc(hc_t *hc);
 
 static slab_t   qh_slab;
-static slab_t   td_slab;
 
 LIST_HEAD( hc_list );
 LIST_HEAD( newdev_list );
@@ -63,30 +56,16 @@ u32_t drvEntry(int action, char *cmdline)
         p->r1     = 0;
      };
 
-     td_slab.available = 128;
-     td_slab.start     = KernelAlloc(4096);
-     td_slab.nextavail = (addr_t)td_slab.start;
-     td_slab.dma       = GetPgAddr(td_slab.start);
-
-     td_t *td;
-     for (i = 0, td = (td_t*)td_slab.start, dma = td_slab.dma;
-          i < 128; i++, td++, dma+= sizeof(td_t))
-     {
-        td->link   = (addr_t)(td+1);
-        td->status = 0;
-        td->token  = 0;
-        td->buffer = 0;
-        td->dma    = dma;
-     };
-
-
     hc = (hc_t*)hc_list.next;
 
     while( &hc->list != &hc_list)
     {
-        init_hc(hc);
+        hc_t *tmp = hc;
         hc = (hc_t*)hc->list.next;
-    }
+
+        if( !init_hc(tmp))
+            list_del(&tmp->list);
+    };
 
     dbgprintf("\n");
 
@@ -184,26 +163,6 @@ static void  free_qh(qh_t *qh)
      qh_slab.available++;
 };
 
-static td_t* alloc_td()
-{
-    if( td_slab.available )
-    {
-        td_t *td;
-
-        td_slab.available--;
-        td = (td_t*)td_slab.nextavail;
-        td_slab.nextavail = td->link;
-        return td;
-     }
-     return NULL;
-};
-
-static void  free_td(td_t *td)
-{
-     td->link = td_slab.nextavail;
-     td_slab.nextavail = (addr_t)td;
-     td_slab.available++;
-};
 
 #include "pci.inc"
 #include "detect.inc"

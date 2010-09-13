@@ -21,6 +21,7 @@
     .global _GetEvent
     .global _GetPgAddr
     .global _GetService
+    .global _GetTimerTicks
 
     .global _KernelAlloc
     .global _KernelFree
@@ -68,6 +69,7 @@
     .def  _GetEvent;          .scl  2;  .type 32; .endef
     .def  _GetPgAddr;         .scl  2;  .type 32; .endef
     .def  _GetService;        .scl  2;  .type 32; .endef
+    .def  _GetTimerTicks;     .scl  2;  .type 32; .endef
 
     .def  _KernelAlloc;       .scl  2;  .type 32; .endef
     .def  _KernelFree;        .scl  2;  .type 32; .endef
@@ -117,6 +119,7 @@ _GetDisplay:
 _GetEvent:
 _GetPgAddr:
 _GetService:
+_GetTimerTicks:
 
 _KernelAlloc:
 _KernelFree:
@@ -167,6 +170,7 @@ _WaitEvent:
         .ascii " -export:GetEvent"             #
         .ascii " -export:GetPgAddr"            # stdcall
         .ascii " -export:GetService"           # stdcall
+        .ascii " -export:GetTimerTicks"        #
 
         .ascii " -export:KernelAlloc"          # stdcall
         .ascii " -export:KernelFree"           # stdcall

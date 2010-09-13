@@ -1,5 +1,6 @@
 
-#include <types.h>
+#include <ddk.h>
+#include <mutex.h>
 #include <syscall.h>
 
 #pragma pack(push, 1)

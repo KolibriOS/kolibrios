@@ -216,6 +216,13 @@ bool init_hc(hc_t *hc)
     hc->frame_dma    = GetPgAddr(hc->frame_base);
     hc->frame_number = 0;
 
+    hc->td_pool = dma_pool_create("uhci_td", NULL,
+                                  sizeof(td_t), 16, 0);
+    if (!hc->td_pool)
+    {
+        dbgprintf("unable to create td dma_pool\n");
+        goto err_create_td_pool;
+    }
 
     for (i = 0; i < UHCI_NUM_SKELQH; i++)
     {
@@ -336,6 +343,12 @@ bool init_hc(hc_t *hc)
         };
     };
     return true;
+
+err_create_td_pool:
+
+    KernelFree(hc->frame_base);
+
+    return false;
 };
 
 u16_t __attribute__((aligned(16)))
@@ -396,9 +409,10 @@ request_t *create_request(udev_t *dev, endp_t *enp, u32_t dir,
 {
     td_t  *td, *td_prev;
     addr_t data_dma;
-
+    hc_t     *hc = dev->host;
     size_t  packet_size = enp->size;
     size_t  size = req_size;
+    addr_t  td_dma;
 
     request_t *rq = (request_t*)kmalloc(sizeof(request_t),0);
 
@@ -420,7 +434,9 @@ request_t *create_request(udev_t *dev, endp_t *enp, u32_t dir,
             packet_size = size;
         };
 
-        td = alloc_td();
+        td = dma_pool_alloc(hc->td_pool, 0, &td_dma);
+        td->dma = td_dma;
+
         td->link = 1;
 
         if(rq->td_head == NULL)
@@ -465,6 +481,10 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
     td_t   *td0, *td, *td_prev;
     qh_t   *qh;
     addr_t  data_dma = 0;
+    hc_t   *hc = dev->host;
+
+    addr_t  td_dma = 0;
+
     bool    retval;
 
 
@@ -476,7 +496,10 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
     rq->size = req_size;
     rq->dev  = dev;
 
-    td0 = alloc_td();
+    td0 = dma_pool_alloc(hc->td_pool, 0, &td_dma);
+    td0->dma = td_dma;
+
+    dbgprintf("alloc td0 %x dma %x\n", td0, td_dma);
 
     td0->status = 0x00800000 | dev->speed;
     td0->token  = TOKEN( 8, DATA0, 0, dev->addr, 0x2D);
@@ -495,7 +518,11 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
             packet_size = size;
         };
 
-        td = alloc_td();
+        td = dma_pool_alloc(hc->td_pool, 0, &td_dma);
+        td->dma = td_dma;
+
+        dbgprintf("alloc td %x dma %x\n", td, td->dma);
+
         td_prev->link   = td->dma | 4;
         td->status = TD_CTRL_ACTIVE | dev->speed;
         td->token  = TOKEN(packet_size, toggle, 0,dev->addr, pid);
@@ -509,7 +536,11 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
         toggle ^= DATA1;
     }
 
-    td = alloc_td();
+    td = dma_pool_alloc(hc->td_pool, 0, &td_dma);
+    td->dma = td_dma;
+
+    dbgprintf("alloc td %x dma %x\n", td, td->dma);
+
     td_prev->link   = td->dma | 4;
 
     pid = (pid == DIN) ? DOUT : DIN;
@@ -573,7 +604,7 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
     do
     {
         td_prev = td->bk;
-        free_td(td);
+        dma_pool_free(hc->td_pool, td, td->dma);
         td = td_prev;
     }while( td != NULL);
 

@@ -26,7 +26,7 @@ USB_SRC:=    usb.c
 
 USB_OBJ:=    usb.obj
 
-LIBS:=    -ldrv -lcore 
+LIBS:=    -lddk -lcore 
 
 USB =        usb.dll
 

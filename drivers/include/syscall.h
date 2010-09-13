@@ -2,33 +2,6 @@
 #ifndef __SYSCALL_H__
 #define __SYSCALL_H__
 
-
-#define OS_BASE   0x80000000
-
-typedef struct
-{
-    u32_t  code;
-    u32_t  data[5];
-}kevent_t;
-
-typedef struct
-{
-  u32_t      handle;
-  u32_t      io_code;
-  void       *input;
-  int        inp_size;
-  void       *output;
-  int        out_size;
-}ioctl_t;
-
-typedef int (__stdcall *srv_proc_t)(ioctl_t *);
-
-#define ERR_OK       0
-#define ERR_PARAM   -1
-
-
-u32_t drvEntry(int, char *)__asm__("_drvEntry");
-
 ///////////////////////////////////////////////////////////////////////////////
 
 #define STDCALL  __attribute__ ((stdcall)) __attribute__ ((dllimport))
@@ -40,14 +13,11 @@ u32_t drvEntry(int, char *)__asm__("_drvEntry");
 
 #define SysMsgBoardStr  __SysMsgBoardStr
 #define PciApi          __PciApi
-//#define RegService      __RegService
 #define CreateObject    __CreateObject
 #define DestroyObject   __DestroyObject
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define PG_SW       0x003
-#define PG_NOCACHE  0x018
 
 void*  STDCALL AllocKernelSpace(size_t size)__asm__("AllocKernelSpace");
 void   STDCALL FreeKernelSpace(void *mem)__asm__("FreeKernelSpace");
@@ -59,6 +29,7 @@ int    STDCALL UserFree(void *mem)__asm__("UserFree");
 
 void*  STDCALL GetDisplay(void)__asm__("GetDisplay");
 
+u32_t  IMPORT  GetTimerTicks(void)__asm__("GetTimerTicks");
 
 addr_t STDCALL AllocPage(void)__asm__("AllocPage");
 addr_t STDCALL AllocPages(count_t count)__asm__("AllocPages");
@@ -77,8 +48,6 @@ void  FASTCALL MutexUnlock(struct mutex*)__asm__("MutexUnlock");
 
 void   STDCALL SetMouseData(int btn, int x, int y,
                             int z, int h)__asm__("SetMouseData");
-
-static u32_t PciApi(int cmd);
 
 u8_t  STDCALL PciRead8 (u32_t bus, u32_t devfn, u32_t reg)__asm__("PciRead8");
 u16_t STDCALL PciRead16(u32_t bus, u32_t devfn, u32_t reg)__asm__("PciRead16");
@@ -114,22 +83,51 @@ int dbgprintf(const char* format, ...);
 
 ///////////////////////////////////////////////////////////////////////////////
 
-
-static inline u32_t CreateEvent(kevent_t *ev, u32_t flags, u32_t *uid)
+static inline evhandle_t CreateEvent(kevent_t *ev, u32_t flags)
 {
-     u32_t  handle;
-     u32_t  euid;
+     evhandle_t evh;
 
      __asm__ __volatile__ (
      "call *__imp__CreateEvent"
-     :"=a"(handle),"=d"(euid)
-     :"S" (ev), "c"(flags));
+     :"=A"(evh.raw)
+     :"S" (ev), "c"(flags)
+     :"memory");
      __asm__ __volatile__ ("":::"ebx","ecx", "esi", "edi");
 
-     if(uid) *uid = euid;
+     return evh;
+};
 
+static inline void RaiseEvent(evhandle_t evh, u32_t flags, kevent_t *ev)
+{
+     __asm__ __volatile__ (
+     "call *__imp__RaiseEvent"
+     ::"a"(evh.handle),"b"(evh.euid),"d"(flags),"S" (ev)
+     :"memory");
+     __asm__ __volatile__ ("":::"ebx","ecx", "esi", "edi");
+
+};
+
+static inline void WaitEvent(u32_t handle, u32_t euid)
+{
+     __asm__ __volatile__ (
+     "call *__imp__WaitEvent"
+     ::"a"(handle),"b"(euid));
+     __asm__ __volatile__ ("":::"ecx","edx", "esi");
+};
+
+static inline u32_t GetEvent(kevent_t *ev)
+{
+    u32_t  handle;
+
+    __asm__ __volatile__ (
+    "call *__imp__GetEvent"
+    :"=a"(handle)
+    :"D"(ev)
+    :"memory");
+    __asm__ __volatile__ ("":::"ebx","ecx","edx", "esi","edi");
      return handle;
 };
+
 
 static inline int GetScreenSize(void)
 {
@@ -238,10 +236,11 @@ static inline u32_t __PciApi(int cmd)
      u32_t retval;
 
      __asm__ __volatile__ (
-     "call *__imp__PciApi"
+     "call *__imp__PciApi \n\t"
+     "movzxb %%al, %%eax"
      :"=a" (retval)
      :"a" (cmd)
-     :"memory");
+     :"ebx","ecx","edx");
      return retval;
 };
 
@@ -294,13 +293,10 @@ static inline u32_t safe_cli(void)
     return ifl;
 }
 
-static inline void safe_sti(u32_t ifl)
+static inline void safe_sti(u32_t efl)
 {
-     __asm__ __volatile__ (
-     "pushl %0\n\t"
-     "popf\n"
-     : : "r" (ifl)
-	);
+     if (efl & (1<<9))
+        __asm__ __volatile__ ("sti");
 }
 
 static inline u32_t get_eflags(void)
@@ -317,7 +313,6 @@ static inline void __clear (void * dst, unsigned len)
 {
      u32_t tmp;
      __asm__ __volatile__ (
-//     "xorl %%eax, %%eax \n\t"
      "cld \n\t"
      "rep stosb \n"
      :"=c"(tmp),"=D"(tmp)
@@ -411,6 +406,9 @@ static inline void *
 pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
                       addr_t *dma_handle)
 {
+
+    size = (size + 0x7FFF) & ~0x7FFF;
+
     *dma_handle = AllocPages(size >> 12);
     return (void*)MapIoMem(*dma_handle, size, PG_SW+PG_NOCACHE);
 }
