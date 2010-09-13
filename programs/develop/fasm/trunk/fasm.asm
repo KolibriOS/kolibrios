@@ -85,7 +85,7 @@ START:	    ; Start of execution
    call    mov_param_str
 ;  mov     edi,path
 ;  DEBUGF  "  path: %s\n",edi
-   dec     esi
+   dec	   esi
    cmp	   [esi], dword ',run'
    jne	   @f
    mov	   [_run_outfile],1
@@ -95,8 +95,8 @@ START:	    ; Start of execution
    jmp	   start
 
 start_1:
-sys_load_library  library_name, cur_dir_path, library_path, system_path, \
-  err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+;sys_
+load_libraries l_libs_start,load_lib_end
 
   cmp eax,-1
   jne @f
@@ -108,6 +108,10 @@ sys_load_library  library_name, cur_dir_path, library_path, system_path, \
   edit_boxes_set_sys_color edit1,editboxes_end,sc
   check_boxes_set_sys_color ch1_dbg,ch1_dbg+ch_struc_size,sc
 
+  ; OpenDialog initialisation
+  push dword OpenDialog_data
+  call dword [OpenDialog_Init]
+
 red:	; Redraw
     call draw_window
 
@@ -116,7 +120,7 @@ still:
     pop eax 
     mcall
     cmp al,6
-    je  call_mouse
+    je	call_mouse
     dec eax 
     je	red	     ; Redraw request
     dec eax 
@@ -150,6 +154,10 @@ button:    ; Button in Window
     mcall
 
 noclose:    
+	cmp ah,5 ;press button for OpenDialog
+	jne @f
+		call fun_opn_dlg
+	@@:
     cmp  ah,2	      ; Start compiling
     je	 start
     cmp  ah,3	      ; Start compiled file
@@ -223,18 +231,26 @@ draw_window:
     madd  ecx, (14*3+16)/3+1,0
     mcall ,,,4
 
+	;button for OpenDialog [..]
+	mov ebx, 5*65536+47
+	mov ecx, 33*65536+14
+	mcall ,,,5
+
     mpack ebx,6,0    ; Draw Window Text
     add  ebx,1+ 14/2-3
     mov  ecx,[sc.work_text]
     mov  edx,text
     mov  esi,text.line_size
     mov  eax,4
-   newline:
-    mcall
+
+    mcall ;InFile
     add  ebx, 16 ;14
     add  edx,text.line_size
-    cmp  byte[edx],'x'
-    jne  newline
+    mcall ;OutFile
+	mov ecx,[sc.work_button_text]
+    add  ebx, 16 ;14
+    add  edx,text.line_size
+	mcall ;Path
 
     mov   ebx,[pinfo.box.width]
     sub   ebx,MAGIC1+10+1-9
@@ -281,6 +297,66 @@ draw_window:
     ret
 
 bottom_right dd ?
+
+align 4
+fun_opn_dlg: ;функция для вызова OpenFile диалога
+	pushad
+	copy_path open_dialog_name,communication_area_default_path,library_path,0
+	mov [OpenDialog_data.type],0
+
+	xor al,al
+	mov edi,dword[edit3.text]
+	mov ecx,dword[edit3.max]
+	cld
+	repne scasb
+	cmp byte[edi-2],'/'
+	jne @f
+		mov byte[edi-2],0 ;если в конце пути есть слеш, то путь укорачиваем на 1 символ
+	@@:
+
+	push dword OpenDialog_data
+	call dword [OpenDialog_Start]
+	cmp [OpenDialog_data.status],2
+	je @f
+		xor al,al
+		mov edi,dword[edit3.text]
+		mov ebx,edi ;copy text pointer
+		mov ecx,dword[edit3.max]
+		cld
+		repne scasb
+		cmp byte[edi-2],'/'
+		jne .no_slash
+			dec edi ;если в конце пути есть слеш, то путь укорачиваем на 1 символ
+		.no_slash:
+		mov byte[edi-1],'/' ;ставим в конце пути слеш
+		mov byte[edi],0 ;отрезаем имя найденного файла
+		sub edi,ebx ;edi = strlen(edit3.text)
+		mov [edit3.size],edi
+		mov [edit3.pos],edi
+
+		;xor al,al
+		mov edi,dword[OpenDialog_data.filename_area]
+		mov ebx,edi ;copy text pointer
+		mov ecx,dword[edit1.max]
+		;cld
+		repne scasb
+		sub edi,ebx ;edi = strlen(OpenDialog_data.filename_area)
+		mov ecx,edi
+		dec edi
+		mov [edit1.size],edi
+		mov [edit1.pos],edi
+		mov esi,dword[OpenDialog_data.filename_area]
+		mov edi,dword[edit1.text]
+		;cld
+		rep movsb
+
+		push dword edit1
+		call dword [edit_box_draw]
+		push dword edit3
+		call dword [edit_box_draw]
+	@@:
+	popad
+	ret
 
 draw_messages:
     mov    eax,13      ; clear work area
@@ -334,7 +410,7 @@ text:
 .line_size = $-text
   db 'ВыхФайл:'
   db '   Путь:'
-  db 'x'
+  ;db 'x'
 
   s_compile db 'Компил.'
   s_run     db ' Пуск  '
@@ -342,19 +418,19 @@ text:
   s_dbgdescr db 'Создавать отладочную информацию',0
   s_dbgdescr_end:
 
-  err_message_import db 'Ошибка при импорте box_lib.obj',0
-  err_message_found_lib db 'Ошибка при поиске box_lib.obj',0 ;строка, которая будет в сформированном окне, если библиотека не будет найдена
-  head_f_i: 
+  err_message_found_lib0 db 'Не найдена библиотека box_lib.obj',0  ;строка, которая будет в сформированном окне, если библиотека не будет найдена
+  err_message_import0 db 'Ошибка при импорте библиотеки box_lib.obj',0
+  err_message_found_lib1 db 'Не найдена библиотека proc_lib.obj',0
+  err_message_import1 db 'Ошибка при импорте библиотеки proc_lib.obj',0
+  head_f_i:
   head_f_l db 'Системная ошибка',0 ;заголовок окна, при возникновении ошибки
-  system_path db '/sys/lib/'
-  library_name db 'box_lib.obj',0
 else
 text:
-  db ' INFILE:'
+  db ' InFile:'
 .line_size = $-text
-  db 'OUTFILE:'
-  db '   PATH:'
-  db 'x'
+  db 'OutFile:'
+  db '   Path:'
+  ;db 'x'
 
   s_compile db 'COMPILE'
   s_run     db '  RUN  '
@@ -362,15 +438,24 @@ text:
   s_dbgdescr db 'Generate debug information',0
   s_dbgdescr_end:
 
-  err_message_import db 'Error on load import library box_lib.obj',0
-  err_message_found_lib db 'Sorry I cannot found library box_lib.obj',0 ;строка, которая будет в сформированном окне, если библиотека не будет найдена
-  head_f_i: 
+  err_message_found_lib0 db 'Sorry I cannot found library box_lib.obj',0
+  err_message_import0 db 'Error on load import library box_lib.obj',0
+  err_message_found_lib1 db 'Sorry I cannot found library proc_lib.obj',0
+  err_message_import1 db 'Error on load import library proc_lib.obj',0
+
+  head_f_i:
   head_f_l db 'System error',0 ;заголовок окна, при возникновении ошибки
-  system_path db '/sys/lib/'
-  library_name db 'box_lib.obj',0
 end if
 
-myimport:
+  system_dir0 db '/sys/lib/'
+  lib0_name db 'box_lib.obj',0
+
+  system_dir1 db '/sys/lib/'
+  lib1_name db 'proc_lib.obj',0
+
+
+align 4
+import_box_lib:
   edit_box_draw  dd aEdit_box_draw
   edit_box_key	 dd aEdit_box_key
   edit_box_mouse dd aEdit_box_mouse
@@ -391,11 +476,63 @@ myimport:
   aCheck_box_mouse db 'check_box_mouse',0
   ;aVersion_ch      db 'version_ch',0
 
+align 4
+import_proc_lib:
+	OpenDialog_Init dd aOpenDialog_Init
+	OpenDialog_Start dd aOpenDialog_Start
+dd 0,0
+	aOpenDialog_Init db 'OpenDialog_init',0
+	aOpenDialog_Start db 'OpenDialog_start',0
+
+;library structures
+l_libs_start:
+  lib0 l_libs lib0_name, cur_dir_path, library_path, system_dir0, err_message_found_lib0, head_f_l, import_box_lib, err_message_import0, head_f_i
+  lib1 l_libs lib1_name, cur_dir_path, library_path, system_dir1, err_message_found_lib1, head_f_l, import_proc_lib,err_message_import1, head_f_i
+load_lib_end:
+
 edit1 edit_box 153, 56, 1, 0xffffff, 0xff, 0x80ff, 0, 0x8000, (outfile-infile-1), infile, mouse_dd, 0, 11,11
 edit2 edit_box 153, 56, 17, 0xffffff, 0xff, 0x80ff, 0, 0x8000,(path-outfile-1), outfile, mouse_dd, 0, 7,7
 edit3 edit_box 153, 56, 33, 0xffffff, 0xff, 0x80ff, 0, 0x8000,(path_end-path-1), path, mouse_dd, 0, 6,6
 editboxes_end:
 ch1_dbg check_box 5, 49, 6, 12, 0xffffff, 0x80ff, 0, s_dbgdescr,(s_dbgdescr_end-s_dbgdescr)
+
+;---------------------------------------------------------------------
+align 4
+OpenDialog_data:
+.type			dd 0
+.procinfo		dd pinfo	;+4
+.com_area_name		dd communication_area_name	;+8
+.com_area		dd 0	;+12
+.opendir_path		dd path ;+16
+.dir_default_path	dd default_dir ;+20
+.start_path		dd library_path ;+24 путь к диалогу открытия файлов
+.draw_window		dd draw_window	;+28
+.status 		dd 0	;+32
+.openfile_path		dd path ;+36 путь к открываемому файлу
+.filename_area		dd filename_area	;+40
+.filter_area		dd Filter
+.x:
+.x_size 		dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size 		dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
+
+default_dir db '/rd/1',0 ;директория по умолчанию
+
+communication_area_name:
+	db 'FFFFFFFF_open_dialog',0
+open_dialog_name:
+	db 'opendial',0
+communication_area_default_path:
+	db '/rd/1/File managers/',0
+
+Filter:
+dd Filter.end - Filter
+.1:
+db 'ASM',0
+.end:
+db 0
 
 mouse_dd dd 0 ;эєцэю фы  Shift-р т editbox
 
@@ -403,7 +540,7 @@ infile	  db 'example.asm'
   times MAX_PATH-$+infile  db 0
 outfile db 'example'
   times MAX_PATH-$+outfile db 0
-path	db '/rd/1/'
+path	db '/rd/1//' ;OpenDialog при запуске убирает последний слеш, но диалог может использоваться не всегда, потому слеша 2
   times MAX_PATH-$+path    db 0
 path_end:
 lf db 13,10,0
@@ -414,7 +551,7 @@ mov_param_str:
 @@:
     lodsb
     cmp    al,','
-    je     @f
+    je	   @f
     stosb
     test   al,al
     jnz    @b
@@ -543,6 +680,7 @@ program_end:
 params	rb 4096
 cur_dir_path rb 4096
 library_path rb 4096
+filename_area rb 256
 
 align 4
 
