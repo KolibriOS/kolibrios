@@ -321,6 +321,7 @@ __exports:
           user_free,             'UserFree',           \      ; stdcall
           unmap_pages,           'UnmapPages',         \      ; eax, ecx
           sys_msg_board_str,     'SysMsgBoardStr',     \
+          get_timer_ticks,       'GetTimerTicks',      \
           delay_hs,              'Delay',              \      ; ebx
           set_mouse_data,        'SetMouseData'
 

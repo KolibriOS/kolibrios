@@ -635,7 +635,8 @@ proc kernel_free stdcall, base:dword
            pop esi ebx
            ret
 .fail:
-           and [heap_mutex], 0
+           xor eax, eax
+           mov [heap_mutex], eax
            pop esi ebx
            ret
 endp
