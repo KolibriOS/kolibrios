@@ -327,7 +327,7 @@ ret
 ;--- изменяем смещение ------------------------------------
 ;--- если смещение было установка флага ed_offset_cl иначе
 ; если ничего не изменилось то выставление ed_offset_fl
-; в общей битовой маррице состояния компонентов word ed_flags
+; в общей битовой матрице состояния компонентов word ed_flags
 ;----------------------------------------------------------
 edit_box.check_offset:
 pushad
@@ -378,6 +378,31 @@ edit_ex
         or      word ed_flags,ed_offset_fl
 
 edit_ex
+
+align 4
+proc edit_box_set_text, edit:dword, text:dword
+pushad
+	mov edi,dword[edit]
+	mov ecx,ed_max
+	inc ecx ;учитываем будущее обрезание строки для ascii 0
+	mov edi,dword[text]
+	xor al,al
+	cld
+	repne scasb ;поиск в строке edi символа al
+	mov ecx,edi ;ecx = text + мин. значение из: 1) ed_max или 2) длинны строки text
+
+	mov edi,dword[edit]
+	mov esi,dword[text]
+	sub ecx,esi ;ecx = длинна строки text (но не больше чем ed_max)
+	dec ecx
+	mov ed_size,ecx ;ставим новый размер строки
+	mov ed_pos,ecx ;ставим курсор в конец новой строки
+	mov edi,ed_text
+	repne movsb ;копирование текстовой строки text в edit_box
+	mov byte[edi],0 ;ставим ascii 0 в конце строки
+popad
+ret
+endp
 }
 
 macro use_key_func

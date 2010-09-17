@@ -918,11 +918,11 @@ draw_window:
 	or edx,0x73000000
 	mov edi,hed
 	mcall ;создание окна
+	mcall 9,procinfo,-1
 
 	cmp byte[game_select_mode],0
 	jne .select_mode
 
-	mcall 9,procinfo,-1
 	mov edi,buf_displ
 	mov eax,dword[procinfo.client_box.width]
 	cmp eax,dword[displ_w]
@@ -1015,11 +1015,66 @@ pop esi
 	jmp @f
 	.select_mode:
 		stdcall dword[tl_draw],dword tree1
+		mov edi,tree1
+		add edi,tl_offs_box
+		stdcall draw_rect_border, procinfo.client_box, edi
 	@@:
 
 	mcall 12,2
 	popad
 	ret
+
+; функция рисует поля вокруг прямоугольника user_box
+; размер полей вычисляется исходя из размеров client_rect
+; предполагается, что в большинстве случаев client_rect > user_box
+align 4
+proc draw_rect_border, client_rect:dword, user_box:dword
+	pushad
+	mov edi,dword[client_rect]
+	mov esi,dword[user_box]
+	cmp esi,0
+	je @f
+		mov ebx,dword[edi+8] ;+8 = width
+		inc bx
+		mov ecx,dword[esi+4] ;+4 = top
+		mov edx,[sc.work]
+		mov eax,13
+		int 0x40 ;top
+
+		mov eax,dword[esi+4] ;+4 = top
+		add eax,dword[esi+12] ;+12 = height
+		cmp eax,dword[edi+12]
+		jge .no_bottom
+			mov ecx,eax
+			shl ecx,16
+			mov cx,word[edi+12] ;+12 = bottom
+			inc cx
+			sub cx,ax
+			mov eax,13
+			int 0x40 ;bottom
+		.no_bottom:
+
+		mov ebx,dword[esi] ;+0 left
+		mov ecx,dword[esi+4] ;+4 = top
+		shl ecx,16
+		mov cx,word[esi+12] ;+12 = height
+		inc cx 
+		mov eax,13
+		int 0x40 ;left
+
+		mov eax,dword[esi] ;+0 left
+		add eax,dword[esi+8] ;+8 = width
+		mov ebx,eax
+		shl ebx,16
+		mov bx,word[edi+8] ;+8 = right
+		sub bx,ax
+		inc bx
+		mov eax,13
+		int 0x40 ;right
+	@@:
+	popad
+	ret
+endp
 
 align 4
 draw_display:
@@ -1168,7 +1223,7 @@ image_data dd 0 ;память для преобразования картинки функциями libimg
 image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
 
 run_file_70 FileInfoBlock
-hed db 'Nu pogodi 08.09.10',0 ;подпись окна
+hed db 'Nu pogodi 17.09.10',0 ;подпись окна
 sc system_colors  ;системные цвета
 
 count_of_dir_list_files equ 10

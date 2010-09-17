@@ -12,6 +12,8 @@
 <ul>
 <li><a href="#fun_key">edit_box_key</a></li>
 <li><a href="#fun_mouse">edit_box_mouse</a></li>
+<li><a href="#fun_draw">edit_box_draw</a></li>
+<li><a href="#fun_set_text">edit_box_set_text</a></li>
 <li><a href="#version">version_ed</a></li>
 </ul>
 <p><a href="#struc_editbox">Структура editbox</a></p>
@@ -29,6 +31,18 @@
 
 <h2><a name="fun_mouse">edit_box_mouse</a></h2>
 <p>Эта функция должна вызыватся при вводе информации с мыши.</p>
+
+<h2><a name="fun_draw">edit_box_draw</a></h2>
+<p>Эта функция должна вызыватся при вводе перерисовке элемента.</p>
+
+<h2><a name="fun_set_text">edit_box_set_text</a></h2>
+<p>Эта функция копирует текст из указателя в текстовое поле. Если текст в указателе окажется длиннее чем допустимый в элементе edit_box, то он запишется не весь. После вызова данной функции необходимо перерисовать окно функцией edit_box_draw, иначе изменения будут сразу не видны. Пример использования:</p>
+<pre>	push dword buf
+	push dword edit1
+	call dword [edit_box_set_text]
+.........
+buf db '111-222-333',0</pre>
+<p>где <b>edit1</b> - структура элемента edit_box; <b>buf</b> - буфер, в котором содержится устанавливаемый текст.</p>
 
 <h2><a name="version">version_ed</a></h2>
 <p>Версия элемента</p>
@@ -74,6 +88,6 @@
 <p>Текстовое поле в фокусе.</p>
 
 <hr>
-<p>Документация обновлялась последний раз 10.01.10.</p>
+<p>Документация обновлялась последний раз 17.09.10.</p>
 </body>
 </html>

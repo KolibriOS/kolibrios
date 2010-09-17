@@ -334,21 +334,9 @@ fun_opn_dlg: ;функция для вызова OpenFile диалога
 		mov [edit3.size],edi
 		mov [edit3.pos],edi
 
-		;xor al,al
-		mov edi,dword[OpenDialog_data.filename_area]
-		mov ebx,edi ;copy text pointer
-		mov ecx,dword[edit1.max]
-		;cld
-		repne scasb
-		sub edi,ebx ;edi = strlen(OpenDialog_data.filename_area)
-		mov ecx,edi
-		dec edi
-		mov [edit1.size],edi
-		mov [edit1.pos],edi
-		mov esi,dword[OpenDialog_data.filename_area]
-		mov edi,dword[edit1.text]
-		;cld
-		rep movsb
+		push dword [OpenDialog_data.filename_area]
+		push dword edit1
+		call dword [edit_box_set_text]
 
 		push dword edit1
 		call dword [edit_box_draw]
@@ -456,10 +444,11 @@ end if
 
 align 4
 import_box_lib:
-  edit_box_draw  dd aEdit_box_draw
-  edit_box_key	 dd aEdit_box_key
-  edit_box_mouse dd aEdit_box_mouse
-  ;version_ed     dd aVersion_ed
+	edit_box_draw  dd aEdit_box_draw
+	edit_box_key	 dd aEdit_box_key
+	edit_box_mouse dd aEdit_box_mouse
+	edit_box_set_text dd aEdit_box_set_text
+	;version_ed     dd aVersion_ed
 
   check_box_draw  dd aCheck_box_draw
   check_box_mouse dd aCheck_box_mouse
@@ -470,6 +459,7 @@ import_box_lib:
   aEdit_box_draw  db 'edit_box',0
   aEdit_box_key   db 'edit_box_key',0
   aEdit_box_mouse db 'edit_box_mouse',0
+  aEdit_box_set_text db 'edit_box_set_text',0
   ;aVersion_ed     db 'version_ed',0
 
   aCheck_box_draw  db 'check_box_draw',0

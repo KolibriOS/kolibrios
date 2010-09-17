@@ -428,12 +428,12 @@ pushad
   mov edx,txt_met_sh
   int 0x40
 
-  mov ecx,[sc.work_text]
-  or  ecx,0x80000000
-
   mov ebx,175*65536+13
   mov edx,txt_cache
   int 0x40
+
+  mov ecx,[sc.work_text]
+  or  ecx,0x80000000
 
   mov bx,di
   ;add bx,450-otst_panel_left
@@ -856,7 +856,6 @@ fun_opn_dlg: ;функция для вызова OpenFile диалога
 	stdcall [OpenDialog_Start],OpenDialog_data
 	cmp [OpenDialog_data.status],2
 	je @f
-		mov esi,[OpenDialog_data.openfile_path]
 		stdcall [str_len],dword[edit1.text],dword[edit1.max]
 		mov [edit1.size],eax
 		mov [edit1.pos],eax

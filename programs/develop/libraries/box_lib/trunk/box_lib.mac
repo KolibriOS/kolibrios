@@ -257,6 +257,7 @@ tl_err_load_caption     equ   1b ;в памяти нет заголовка 'tree'
 tl_err_load_info_size   equ 100b ;не совпадает размер информационной структуры при открытии
 tl_load_mode_add        equ 0x20000 ;опция считывания в режиме добавления информации
 tl_save_load_heder_size equ 26 ;размер заголовка для записи/чтения элементов
+tl_offs_box equ 58 ;начало BOX структуры для tree_list
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Basic macros for use TextEditor                          ;
