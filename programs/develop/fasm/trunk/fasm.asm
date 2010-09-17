@@ -338,7 +338,28 @@ fun_opn_dlg: ;функция для вызова OpenFile диалога
 		push dword edit1
 		call dword [edit_box_set_text]
 
+		push dword [OpenDialog_data.filename_area]
+		push dword edit2
+		call dword [edit_box_set_text]
+
+		mov esi,[edit2.text]
+		xor eax,eax
+		cld
+		.cycle:
+			lodsb
+			test eax,eax
+			jnz .cycle
+		sub esi,4
+		cmp esi,[edit2.text]
+		jle .short_fn
+			mov byte[esi],0
+			sub dword [edit2.size],4
+			sub dword [edit2.pos],4
+		.short_fn:
+
 		push dword edit1
+		call dword [edit_box_draw]
+		push dword edit2
 		call dword [edit_box_draw]
 		push dword edit3
 		call dword [edit_box_draw]
