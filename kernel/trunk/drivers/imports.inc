@@ -27,9 +27,9 @@ kernel_export \
 	      ReservePortArea,\
 	      Boot_Log,\
 \
-          MutexInit,
-          MutexLock,
-          MutexUnlock,
+          MutexInit,\
+          MutexLock,\
+          MutexUnlock,\
 \
 	      PciApi,\
 	      PciRead32,\

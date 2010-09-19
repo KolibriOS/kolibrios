@@ -1,7 +1,7 @@
 @echo off
 cls
 set languages=en ru ge et
-set drivers=sound sis infinity ensoniq ps2mouse com_mouse uart ati2d vmode
+set drivers=com_mouse emu10k1x ensoniq fm801 infinity sis sound uart viasound vmode vt823(x)
 set targets=all kernel drivers skins clean
 
 call :Check_Target %1
