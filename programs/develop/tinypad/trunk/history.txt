@@ -1,6 +1,10 @@
 
 HISTORY:
 
+4.0.6 (26/09/2010, Marat Zakiyanov aka Mario79, aka Mario)
+  new features:
+    - Select file path with OpenDialog for Load and Save.
+
 4.0.5 (Rus, mike.dld)
   bug-fixes:
     - new tab is created when opening a file from Tinypad's home folder

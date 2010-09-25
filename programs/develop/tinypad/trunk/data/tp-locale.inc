@@ -305,5 +305,5 @@ lsz sysfuncs_filename,\
   en,<'SYSFUNCS.TXT',0>,\
   et,<'SYSFUNCET.TXT',0>
 
-sz s_example,'EXAMPLE.ASM'
+sz s_example,'/sys/example.asm'
 sz s_still  ,'still'

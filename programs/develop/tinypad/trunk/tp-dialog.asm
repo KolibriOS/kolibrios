@@ -29,7 +29,7 @@ proc define_3d_button ;///////////////////////////////////////////////////////
 	popad
 	ret	4*3
 endp
-
+;-----------------------------------------------------------------------------
 finddlg_handler:
 	cmp	al,1
 	je	.draw
@@ -126,71 +126,74 @@ finddlg_handler:
 	mov	[focused_tb],eax
 	call	.draw
     @@: ret
-
+;-----------------------------------------------------------------------------
 osdlg_handler:
-	cmp	al,1
-	je	.draw
-	cmp	al,2
-	je	.key
-	cmp	al,3
-	je	botdlg.button
+	mov	[open_dialog],1
 	ret
 
-  .draw:
-	mov	ebx,[bot_ofs]
-	add	ebx,(1+3)*65536+6
-	mcall	4,,[sc.work_text],s_2filename,s_2filename.size
-	mov	ebx,[p_info.client_box.width]
-	shl	ebx,16
-	mov	ecx,[bot_ofs]
-	shl	ecx,16
-	add	ecx,(2+18)*65536+15
+;	cmp	al,1
+;	je	.draw
+;	cmp	al,2
+;	je	.key
+;	cmp	al,3
+;	je	botdlg.button
+;	ret
 
-	push	20002
-	cmp	[bot_mode2],0
-	jne	.draw.lp1
-	add	ebx,-(2+6*(s_2open.size+2))*65536+6*(s_2open.size+2)
-	push	s_2open s_2open.size
-	jmp	@f
-  .draw.lp1:
-	add	ebx,-(2+6*(s_2save.size+2))*65536+6*(s_2save.size+2)
-	push	s_2save s_2save.size
+;  .draw:
+;	mov	ebx,[bot_ofs]
+;	add	ebx,(1+3)*65536+6
+;	mcall	4,,[sc.work_text],s_2filename,s_2filename.size
+;	mov	ebx,[p_info.client_box.width]
+;	shl	ebx,16
+;	mov	ecx,[bot_ofs]
+;	shl	ecx,16
+;	add	ecx,(2+18)*65536+15
+;
+;	push	20002
+;	cmp	[bot_mode2],0
+;	jne	.draw.lp1
+;	add	ebx,-(2+6*(s_2open.size+2))*65536+6*(s_2open.size+2)
+;	push	s_2open s_2open.size
+;	jmp	@f
+;  .draw.lp1:
+;	add	ebx,-(2+6*(s_2save.size+2))*65536+6*(s_2save.size+2)
+;	push	s_2save s_2save.size
 
-    @@: call	define_3d_button
-	sub	ebx,(6*(s_2cancel.size+2)+3)*65536
-	mov	bx,6*(s_2cancel.size+2)
-	push	20001 s_2cancel s_2cancel.size
-	call	define_3d_button
+;    @@: call	define_3d_button
+;	sub	ebx,(6*(s_2cancel.size+2)+3)*65536
+;	mov	bx,6*(s_2cancel.size+2)
+;	push	20001 s_2cancel s_2cancel.size
+;	call	define_3d_button
 
-	cmp	[bot_mode2], 2	    ; exit-save dialog
-	jne	@f
+;	cmp	[bot_mode2], 2	    ; exit-save dialog
+;	jne	@f
 
-	sub	ebx,(6*(s_2save_no.size+2)+3)*65536
-	mov	bx,6*(s_2save_no.size+2)
-	push	20007 s_2save_no s_2save_no.size
-	call	define_3d_button
+;	sub	ebx,(6*(s_2save_no.size+2)+3)*65536
+;	mov	bx,6*(s_2save_no.size+2)
+;	push	20007 s_2save_no s_2save_no.size
+;	call	define_3d_button
 
-    @@: mov	ebp,tb_opensave
-	mov	eax,[p_info.client_box.width]
-	sub	eax,6*(s_2filename.size+1)+1
-	add	eax,6*(s_2filename.size+1)*65536
-	mov	dword[tbox.width],eax
-	add	ecx,-18*65536+1
-	mov	dword[tbox.height],ecx
-	call	textbox.draw
+;    @@: mov	ebp,tb_opensave
+;	mov	eax,[p_info.client_box.width]
+;	sub	eax,6*(s_2filename.size+1)+1
+;	add	eax,6*(s_2filename.size+1)*65536
+;	mov	dword[tbox.width],eax
+;	add	ecx,-18*65536+1
+;	mov	dword[tbox.height],ecx
+;	call	textbox.draw
 
-	ret
+;	ret
 
-  .key:
-	cmp	ebx,KEY_ESCAPE
-	je	btn.bot.cancel
-	cmp	ebx,KEY_RETURN
-	je	btn.bot.opensave
-	cmp	ebx,KEY_NUMRETURN
-	je	btn.bot.opensave
-	call	textbox.key
-	ret
-
+;  .key:
+;	cmp	ebx,KEY_ESCAPE
+;	je	btn.bot.cancel
+;	cmp	ebx,KEY_RETURN
+;	je	btn.bot.opensave
+;	cmp	ebx,KEY_NUMRETURN
+;	je	btn.bot.opensave
+;	call	textbox.key
+;	ret
+;-----------------------------------------------------------------------------
 gotodlg_handler:
 	cmp	al,1
 	je	.draw
@@ -251,11 +254,11 @@ gotodlg_handler:
 	je	btn.bot.opensave
 	call	textbox.key
 	ret
-
+;-----------------------------------------------------------------------------
 cur_part   dd ?
 cur_color  dd ?
 cur_colors rd 10
-
+;-----------------------------------------------------------------------------
 optsdlg_handler:
 	cmp	al,1
 	je	.draw
@@ -579,7 +582,7 @@ TPOSW = 10
 
   .mouse.exit:
 	ret
-
+;-----------------------------------------------------------------------------
 botdlg.button:
 	mov	esi,accel_table2_botdlg
   .acc: cmp	ebx,[esi]
@@ -590,7 +593,7 @@ botdlg.button:
 	cmp	byte[esi],0
 	jne	.acc
 	ret
-
+;-----------------------------------------------------------------------------
   btn.bot.cancel:
 	xor	eax,eax
 	mov	[bot_mode],al
@@ -599,7 +602,7 @@ botdlg.button:
 	mov	[s_status],eax
 	call	drawwindow
 	ret
-
+;-----------------------------------------------------------------------------
   btn.bot.opensave:
 	cmp	[bot_mode2],0
 	je	.lp1
@@ -616,7 +619,7 @@ botdlg.button:
 	mov	[bot_dlg_height],eax
 	call	drawwindow
 	ret
-
+;-----------------------------------------------------------------------------
   btn.bot.no:
 	xor	eax,eax
 	mov	[bot_mode],al
@@ -630,7 +633,7 @@ botdlg.button:
 	ret
     @@: call	key.ctrl_f4.close
 	ret
-
+;-----------------------------------------------------------------------------
   btn.bot.find:
 	movzx	ecx,[tb_find.length]
 	mov	[s_search.size],ecx
@@ -683,7 +686,7 @@ botdlg.button:
 	call	key.f3
 	call	drawwindow
 	ret
-
+;-----------------------------------------------------------------------------
   btn.bot.appearance:
     @@: xor	eax,eax
 	mov	[bot_mode],al
@@ -695,12 +698,13 @@ botdlg.button:
 	stdcall save_settings
 	call	drawwindow
 	ret
-
+;-----------------------------------------------------------------------------
 tabpos_round db 4,3,1,2
-
+;-----------------------------------------------------------------------------
   btn.bot.tabpos:
 	movzx	eax,[tabs_pos]
 	mov	al,[tabpos_round+eax-1]
 	mov	[tabs_pos],al
     @@: call	optsdlg_handler.draw_tabpos
 	ret
+;-----------------------------------------------------------------------------

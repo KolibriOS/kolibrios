@@ -114,3 +114,50 @@ sz ini_options_auto_indent,'auto_indent',0
 sz ini_options_smart_tab,'smart_tab',0
 sz ini_options_optim_save,'optim_save',0
 sz ini_options_line_nums,'line_nums',0
+;-----------------------------------------------------------------------------
+OpenDialog_data:
+.type			dd 0
+.procinfo		dd p_info	;+4
+.com_area_name		dd communication_area_name	;+8
+.com_area		dd 0	;+12
+.opendir_pach		dd temp_dir_pach	;+16
+.dir_default_pach	dd communication_area_default_pach	;+20
+.start_path		dd open_dialog_path	;+24
+.draw_window		dd draw_window_for_OD	;+28
+.status			dd 0	;+32
+.openfile_pach 		dd fname_Info	;+36
+.filename_area		dd filename_area	;+40
+.filter_area		dd Filter
+.x:
+.x_size			dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size			dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
+
+communication_area_name:
+	db 'FFFFFFFF_open_dialog',0
+open_dialog_path:
+	db '/sys/File Managers/opendial',0
+communication_area_default_pach:
+	db '/sys',0
+
+Filter:
+dd	Filter.end - Filter
+.1:
+db	'TXT',0
+db	'ASM',0
+db	'INC',0
+db	'INI',0
+db	'LOG',0
+db	'DAT',0
+db	'INF',0
+db	'BAT',0
+db	'SH',0
+
+.end:
+db	0
+
+open_dialog	db 0
+;-----------------------------------------------------------------------------
+

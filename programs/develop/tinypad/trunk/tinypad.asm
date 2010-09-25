@@ -34,7 +34,7 @@ include 'tinypad.inc'
 
 header '01',1,@CODE,TINYPAD_END,STATIC_MEM_END,MAIN_STACK,@PARAMS,ini_path
 
-APP_VERSION equ 'SVN (4.0.5)'
+APP_VERSION equ 'SVN (4.0.6)'
 
 TRUE = 1
 FALSE = 0
@@ -182,6 +182,23 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	mov	al,[tabs_pos]
 	mov	[tab_bar.Style],al
 
+;---------------------------------------------------------------------
+	mov	edi,filename_area
+	mov	esi,s_example+5
+	call	copy_str_1
+
+	mov	esi,tb_opensave.text
+	mov	edi,fname_Info
+	call	copy_str_1
+	xor	eax,eax
+	mov	[edi],al
+;---------------------------------------------------------------------
+;OpenDialog	initialisation
+	push    dword OpenDialog_data
+	call    [OpenDialog_Init]
+;---------------------------------------------------------------------
+
+
 	mcall	66,1,1
 	mcall	40,00100111b
 red:
@@ -193,6 +210,8 @@ still:
 	call	draw_statusbar ; write current position & number of strings
 
   .skip_write:
+	cmp	[open_dialog],1
+	je	.open_dialog
 	mcall	10	; wait here until event
 	cmp	[main_closed],0
 	jne	key.alt_x
@@ -206,7 +225,86 @@ still:
 	jz	mouse
 
 	jmp	still.skip_write
+;---------------------------------------------------------------------
+.open_dialog:
+	pusha
 
+	call	btn.bot.cancel
+
+	mov	esi,tb_opensave.text
+	mov	edi,[OpenDialog_data.openfile_pach]
+	movzx	ecx,[tb_opensave.length]
+	mov	edx,[OpenDialog_data.filename_area]
+	mov	ebx,[OpenDialog_data.opendir_pach]
+	call	copy_str_2
+	movzx	eax,byte [bot_mode2]
+	mov	[OpenDialog_data.type],eax
+	popa
+; invoke OpenDialog
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
+
+	cmp	[OpenDialog_data.status],1
+	jne	.3
+
+	pusha
+	mov	edi,tb_opensave.text
+	mov	esi,[OpenDialog_data.openfile_pach]
+	call	copy_str_1
+	sub	edi,tb_opensave.text
+	dec	edi
+	mov	eax,edi
+	mov	[tb_opensave.length],al
+	popa
+	
+	cmp	[bot_mode2],0
+	je	.2
+	call	save_file
+	jmp	.3
+.2:
+	call	load_file
+.3:
+	mov	[open_dialog],0
+	jmp	red
+;-----------------------------------------------------------------------------
+draw_window_for_OD:
+	call	drawwindow
+	call	draw_statusbar
+	ret
+;-----------------------------------------------------------------------------
+copy_str_2:
+	cld
+	push	esi ecx
+	rep	movsb	; edi  openfile_pach
+	xor	eax,eax
+	mov	[edi],al
+	pop	ecx esi
+	mov	edi,ebx
+	rep	movsb	; edi opendir_pach
+	mov	[edi],al
+	mov	esi,edi
+	std
+@@:
+	lodsb
+	cmp	al,byte '/'
+	jne	@b
+	inc	esi
+	xor	eax,eax
+	mov	[esi],al
+	inc	esi
+	mov	edi,edx	; edi filename_area
+	call	copy_str_1
+	ret
+;-----------------------------------------------------------------------------
+copy_str_1:
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+	ret
 ;-----------------------------------------------------------------------------
 proc get_event ctx ;//////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
@@ -525,7 +623,8 @@ section @IMPORT ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 library \
 	libini,'libini.obj',\
 	libio,'libio.obj',\
-	libgfx,'libgfx.obj'
+	libgfx,'libgfx.obj',\
+	proc_lib,'proc_lib.obj'
 
 import	libini, \
 	ini.get_str  ,'ini_get_str',\
@@ -567,6 +666,10 @@ import	libgfx, \
 	gfx.rectangle	,'gfx_rectangle',\
 	gfx.rectangle.ex,'gfx_rectangle_ex'
 
+import	proc_lib, \
+	OpenDialog_Init  ,'OpenDialog_init',\
+	OpenDialog_Start  ,'OpenDialog_start'
+
 TINYPAD_END:	 ; end of file
 
 ;-----------------------------------------------------------------------------
@@ -587,6 +690,16 @@ sc	system_colors
 
 ini_path rb PATHL
 
+;---------------------------------------------------------------------
+temp_dir_pach:
+	rb 4096
+;---------------------------------------------------------------------
+fname_Info:
+	rb 4096            ; filename
+;---------------------------------------------------------------------
+filename_area:
+	rb 256
+;---------------------------------------------------------------------
 rb 1024*4
 MAIN_STACK:
 rb 1024*4
