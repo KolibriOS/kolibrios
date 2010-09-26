@@ -19,7 +19,7 @@ LDFLAGS = -nostdlib -shared -s -Map acpi.map --image-base 0\
 
 LIBPATH:= -L$(DRV_DIR)/ddk -L./acpica
 
-LIBS:=    -lacpica -lgcc -ldrv -lcore
+LIBS:=    -lacpica -lgcc -lddk -lcore
 
 
 NAME= acpi
@@ -34,7 +34,8 @@ NAME_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
 
 
 $(NAME).dll: $(NAME_OBJS) acpi.lds Makefile
-	ld $(LIBPATH) $(LDFLAGS) -T acpi.lds -o $@ $(NAME_OBJS) $(LIBS)  
+	ld $(LIBPATH) $(LDFLAGS) -T acpi.lds -o $@ $(NAME_OBJS) $(LIBS)
+	kpack $(NAME).dll  
 
 %.o : %.c $(HFILES) Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
