@@ -24,7 +24,10 @@ LIBS:=    -lacpica -lgcc -lddk -lcore
 
 NAME= acpi
 
-NAME_SRCS= 	acpi.c
+NAME_SRCS= 	acpi.c		\
+		scan.c		\
+		pci_irq.c	\
+		pci/pci.c
 
 
 all: $(NAME).dll

@@ -1,59 +1,57 @@
-#       memcmp()                                        Author: Kees J. Bot
-#                                                               2 Jan 1994
+/*	memcmp()					Author: Kees J. Bot */
+/*								2 Jan 1994 */
 
-# int memcmp(const void *s1, const void *s2, size_t n)
-#       Compare two chunks of memory.
-#
+/* int memcmp(const void *s1, const void *s2, size_t n) */
+/*	Compare two chunks of memory. */
+/* */
+#include "asm.h"
 
-.intel_syntax
-
-.globl _memcmp
-
-        .text
-	.align	16
-_memcmp:
+ENTRY(memcmp)
 	cld
-	push	ebp
-	mov	ebp, esp
-	push	esi
-	push	edi
-        mov     esi, [8+ebp]    # String s1
-        mov     edi, [12+ebp]   # String s2
-        mov     ecx, [16+ebp]   # Length
-	cmp	ecx, 16
-        jb      cbyte           # Don't bother being smart with short arrays
-	mov	eax, esi
-	or	eax, edi
-	testb	al, 1
-        jnz     cbyte           # Bit 0 set, use byte compare
-	testb	al, 2
-        jnz     cword           # Bit 1 set, use word compare
-clword: shrd    eax, ecx, 2     # Save low two bits of ecx in eax
-	shr	ecx, 2
-	repe
-        cmpsd                   # Compare longwords
-	sub	esi, 4
-	sub	edi, 4
-        inc     ecx             # Recompare the last longword
-        shld    ecx, eax, 2     # And any excess bytes
+	push	%ebp
+	movl	%esp, %ebp
+	push	%esi
+	push	%edi
+	movl	8(%ebp), %esi	/* String s1 */
+	movl	12(%ebp), %edi	/* String s2 */
+	movl	16(%ebp), %ecx	/* Length */
+	cmpl	$16, %ecx
+	jb	cbyte	/* Don't bother being smart with short arrays */
+	movl	%esi, %eax
+	orl	%edi, %eax
+	testb	$1, %al
+	jne	cbyte	/* Bit 0 set, use byte compare */
+	testb	$2, %al
+	jne	cword	/* Bit 1 set, use word compare */
+clword:
+	shrdl	$2, %ecx, %eax	/* Save low two bits of ecx in eax */
+	shrl	$2, %ecx
+
+	repe cmpsl	/* Compare longwords */
+	subl	$4, %esi
+	subl	$4, %edi
+	incl	%ecx	/* Recompare the last longword */
+	shldl	$2, %eax, %ecx	/* And any excess bytes */
 	jmp	last
-cword:  shrd    eax, ecx, 1     # Save low bit of ecx in eax
-	shr	ecx, 1
-	repe
-        cmpsw                   # Compare words
-	sub	esi, 2
-	sub	edi, 2
-        inc     ecx             # Recompare the last word
-        shld    ecx, eax, 1     # And one more byte?
-cbyte:  test    ecx, ecx        # Set 'Z' flag if ecx = 0
-last:	repe
-        cmpsb                   # Look for the first differing byte
-        seta    al              # al = (s1 > s2)
-        setb    ah              # ah = (s1 < s2)
-	subb	al, ah
-        movsxb  eax, al         # eax = (s1 > s2) - (s1 < s2), i.e. -1, 0, 1
-        mov     edx, esi        # For bcmp() to play with
-	pop	edi
-	pop	esi
-	pop	ebp
+cword:
+	shrdl	$1, %ecx, %eax	/* Save low bit of ecx in eax */
+	shrl	$1, %ecx
+
+	repe cmpsw	/* Compare words */
+	subl	$2, %esi
+	subl	$2, %edi
+	incl	%ecx	/* Recompare the last word */
+	shldl	$1, %eax, %ecx	/* And one more byte? */
+cbyte:
+	testl	%ecx, %ecx	/* Set 'Z' flag if ecx = 0 */
+last:
+	repe cmpsb	/* Look for the first differing byte */
+	seta	%al	/* al = (s1 > s2) */
+	setb	%ah	/* ah = (s1 < s2) */
+	subb	%ah, %al
+	movsbl	%al, %eax	/* eax = (s1 > s2) - (s1 < s2), i.e. -1, 0, 1 */
+	movl	%esi, %edx	/* For bcmp() to play with */
+	pop	%edi
+	pop	%esi
+	pop	%ebp
 	ret

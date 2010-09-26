@@ -1,22 +1,11 @@
-# strncmp() Author: Kees J. Bot 1 Jan 1994
+/*	strncmp()					Author: Kees J. Bot */
+/*								1 Jan 1994 */
 
-# int strncmp(const char *s1, const char *s2, size_t n)
-#     Compare two strings.
-#
+/* int strncmp(const char *s1, const char *s2, size_t n) */
+/*	Compare two strings. */
+/* */
+#include "asm.h"
 
-.intel_syntax
-
-.globl _strncmp
-.globl _strcmp
-
-.text
-           .align  16
-_strncmp:
-           mov     ecx, [esp+12]    # Maximum length
-           jmp     __strncmp        # Common code
-
-
-           .align  16
-_strcmp:
-           mov     ecx, -1          # Maximum length
-           jmp     __strncmp        # Common code
+ENTRY(strncmp)
+	movl	12(%esp), %ecx	/* Maximum length */
+	jmp	_C_LABEL(_strncmp) /* Common code */

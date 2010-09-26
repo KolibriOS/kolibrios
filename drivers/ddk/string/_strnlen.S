@@ -1,30 +1,27 @@
-# _strnlen() Author: Kees J. Bot  1 Jan 1994
+/*	_strnlen()					Author: Kees J. Bot */
+/*								1 Jan 1994 */
 
-# size_t _strnlen(const char *s, size_t ecx)
-# Return the length of a string.
+/* size_t _strnlen(const char *s, size_t ecx) */
+/*	Return the length of a string. */
+/* */
+#include "asm.h"
 
-.intel_syntax
+ENTRY(_strnlen)
+	push	%ebp
+	movl	%esp, %ebp
+	push	%edi
+	movl	8(%ebp), %edi	/* edi = string */
+	xorb	%al, %al	/* Look for a zero byte */
+	movl	%ecx, %edx	/* Save maximum count */
+	cmpb	$1, %cl	/* 'Z' bit must be clear if ecx = 0 */
+	cld
 
-.globl __strnlen
-
-.text
-           .align  16
-__strnlen:
-           push    ebp
-           mov     ebp, esp
-           push    edi
-           mov     edi, [ebp+8]    # edi = string
-           xorb    al, al          # Look for a zero byte
-           mov     edx, ecx        # Save maximum count
-           cmpb    cl, 1           # 'Z' bit must be clear if ecx = 0
-           cld
-           repne
-           scasb                   # Look for zero
-           jne     no0
-           inc     ecx             # Don't count zero byte
+	repne scasb	/* Look for zero */
+	jne	no0
+	incl	%ecx	/* Don't count zero byte */
 no0:
-           mov     eax, edx
-           sub     eax, ecx        # Compute bytes scanned
-           pop     edi
-           pop     ebp
-           ret
+	movl	%edx, %eax
+	subl	%ecx, %eax	/* Compute bytes scanned */
+	pop	%edi
+	pop	%ebp
+	ret

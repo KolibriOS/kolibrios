@@ -1,15 +1,11 @@
-# strlen()    Author: Kees J. Bot  1 Jan 1994
+/*	strlen()					Author: Kees J. Bot */
+/*								1 Jan 1994 */
 
-# size_t strlen(const char *s)
-# Return the length of a string.
+/* size_t strlen(const char *s) */
+/*	Return the length of a string. */
+/* */
+#include "asm.h"
 
-.intel_syntax
-
-.globl _strlen
-
-.text
-
-        .align  16
-_strlen:
-           mov     ecx, -1       # Unlimited length
-           jmp     __strnlen     # Common code
+ENTRY(strlen)
+	movl	$-1, %ecx	/* Unlimited length */
+	jmp	_C_LABEL(_strnlen) /* Common code */

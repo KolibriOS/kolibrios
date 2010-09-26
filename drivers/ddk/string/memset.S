@@ -1,47 +1,45 @@
-#       memset()                                        Author: Kees J. Bot
-#                                                               2 Jan 1994
-# void *memset(void *s, int c, size_t n)
-#       Set a chunk of memory to the same byte value.
-#
+/*	memset()					Author: Kees J. Bot */
+/*								2 Jan 1994 */
 
-.intel_syntax
+/* void *memset(void *s, int c, size_t n) */
+/*	Set a chunk of memory to the same byte value. */
+/* */
+#include "asm.h"
 
-.global _memset
-
-        .text
-	.align	16
-_memset:
-        push  ebp
-        mov ebp, esp
-        push  edi
-        mov     edi, [8+ebp]     # The string
-        movzx   eax, byte ptr [12+ebp]    # The fill byte
-        mov     ecx, [16+ebp]    # Length
-        cld
-        cmp ecx, 16
-        jb      sbyte           # Don't bother being smart with short arrays
-        test  edi, 1
-        jnz     sbyte           # Bit 0 set, use byte store
-        test  edi, 2
-        jnz     sword           # Bit 1 set, use word store
+ENTRY(memset)
+	push	%ebp
+	movl	%esp, %ebp
+	push	%edi
+	movl	8(%ebp), %edi	/* The string */
+	movzbl	12(%ebp), %eax	/* The fill byte */
+	movl	16(%ebp), %ecx	/* Length */
+	cld
+	cmpl	$16, %ecx
+	jb	sbyte	/* Don't bother being smart with short arrays */
+	testl	$1, %edi
+	jne	sbyte	/* Bit 0 set, use byte store */
+	testl	$2, %edi
+	jne	sword	/* Bit 1 set, use word store */
 slword:
-        movb    ah, al
-        mov edx, eax
-        sal edx, 16
-        or      eax, edx        # One byte to four bytes
-        shrd    edx, ecx, 2     # Save low two bits of ecx in edx
-        shr ecx, 2
-        rep     stosd           # Store longwords.
-        shld    ecx, edx, 2     # Restore low two bits
-        sword:
-        movb    ah, al          # One byte to two bytes
-        shr ecx, 1
-        rep     stosw           # Store words
-        adc     ecx, ecx        # One more byte?
+	movb	%al, %ah
+	movl	%eax, %edx
+	sall	$16, %edx
+	orl	%edx, %eax	/* One byte to four bytes */
+	shrdl	$2, %ecx, %edx	/* Save low two bits of ecx in edx */
+	shrl	$2, %ecx
+
+	rep stosl	/* Store longwords. */
+	shldl	$2, %edx, %ecx	/* Restore low two bits */
+sword:
+	movb	%al, %ah	/* One byte to two bytes */
+	shrl	$1, %ecx
+
+	rep stosw	/* Store words */
+	adcl	%ecx, %ecx	/* One more byte? */
 sbyte:
-        rep     stosb           # Store bytes
+	rep stosb	/* Store bytes */
 done:
-        mov     eax, [8+ebp]    # Return some value you have no need for
-        pop edi
-        pop ebp
-        ret
+	movl	8(%ebp), %eax	/* Return some value you have no need for */
+	pop	%edi
+	pop	%ebp
+	ret

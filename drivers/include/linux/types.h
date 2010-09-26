@@ -330,11 +330,6 @@ struct drm_file;
 
 
 
-#define ENTER()   dbgprintf("enter %s\n",__FUNCTION__)
-#define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
-
-
-
 #define PCI_DEVICE_ID_ATI_RADEON_QY 0x5159
 
 #endif /* _LINUX_TYPES_H */

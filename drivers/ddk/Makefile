@@ -29,20 +29,31 @@ NAME_SRCS:=  				\
 		stdio/vsprintf.c	\
 		stdio/doprnt.c		\
 		stdio/chartab.c		\
-           	string/_memmove.S	\
-           	string/_strncat.S	\
-           	string/_strncmp.S 	\
-           	string/_strncpy.S 	\
-           	string/_strnlen.S 	\
-           	string/memcpy.S   	\
-           	string/memcmp.S   	\
-           	string/memset.S   	\
-           	string/strcat.S		\
-           	string/strchr.S   	\
-           	string/strcpy.S   	\
-           	string/strncpy.S  	\
-           	string/strncmp.S  	\
-           	string/strlen.S
+		string/_memmove.S 	\
+		string/_strncat.S 	\
+		string/_strncmp.S 	\
+		string/_strncpy.S 	\
+		string/_strnlen.S 	\
+		string/bcmp.S 		\
+		string/bcopy.S 		\
+		string/bzero.S 		\
+		string/index.S 		\
+		string/memchr.S 	\
+		string/memcmp.S 	\
+		string/memcpy.S 	\
+		string/memmove.S 	\
+		string/memset.S 	\
+		string/rindex.S 	\
+		string/strcat.S 	\
+		string/strchr.S 	\
+		string/strcmp.S 	\
+		string/strcpy.S 	\
+		string/strlen.S 	\
+		string/strncat.S 	\
+		string/strncmp.S 	\
+		string/strncpy.S 	\
+		string/strnlen.S 	\
+		string/strrchr.S 
 
 
 
@@ -64,7 +75,7 @@ libcore.a: core.S Makefile
 	$(LD) -shared -s --out-implib $@ --output-def core.def -o core.dll core.o
 	
 %.o: %.S Makefile
-	$(AS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) -o $@ $<

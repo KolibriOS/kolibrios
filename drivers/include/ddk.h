@@ -11,6 +11,9 @@
 
 #define MANUAL_DESTROY      0x80000000
 
+#define ENTER()   dbgprintf("enter %s\n",__FUNCTION__)
+#define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
+
 typedef struct
 {
     u32_t  code;

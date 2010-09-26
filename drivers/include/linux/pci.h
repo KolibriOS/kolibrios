@@ -349,10 +349,43 @@ struct resource
 {
          resource_size_t start;
          resource_size_t end;
-//         const char *name;
+         const char *name;
          unsigned long flags;
-//         struct resource *parent, *sibling, *child;
+         struct resource *parent, *sibling, *child;
 };
+
+
+/*
+ *  For PCI devices, the region numbers are assigned this way:
+ */
+enum {
+    /* #0-5: standard PCI resources */
+    PCI_STD_RESOURCES,
+    PCI_STD_RESOURCE_END = 5,
+
+    /* #6: expansion ROM resource */
+    PCI_ROM_RESOURCE,
+
+    /* device specific resources */
+#ifdef CONFIG_PCI_IOV
+    PCI_IOV_RESOURCES,
+    PCI_IOV_RESOURCE_END = PCI_IOV_RESOURCES + PCI_SRIOV_NUM_BARS - 1,
+#endif
+
+    /* resources assigned to buses behind the bridge */
+#define PCI_BRIDGE_RESOURCE_NUM 4
+
+    PCI_BRIDGE_RESOURCES,
+    PCI_BRIDGE_RESOURCE_END = PCI_BRIDGE_RESOURCES +
+                  PCI_BRIDGE_RESOURCE_NUM - 1,
+
+    /* total resources associated with a PCI device */
+    PCI_NUM_RESOURCES,
+
+    /* preserve this for compatibility */
+    DEVICE_COUNT_RESOURCE
+};
+
 
 /*
  * IO resources have these defined flags.
@@ -549,6 +582,71 @@ typedef struct
     struct pci_dev      pci_dev;
 }pci_dev_t;
 
+
+typedef unsigned short __bitwise pci_bus_flags_t;
+enum pci_bus_flags {
+    PCI_BUS_FLAGS_NO_MSI   = (__force pci_bus_flags_t) 1,
+    PCI_BUS_FLAGS_NO_MMRBC = (__force pci_bus_flags_t) 2,
+};
+
+struct pci_sysdata
+{
+    int             domain;         /* PCI domain */
+    int             node;           /* NUMA node */
+#ifdef CONFIG_X86_64
+    void            *iommu;         /* IOMMU private data */
+#endif
+};
+
+struct pci_bus;
+
+struct pci_ops
+{
+    int (*read)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 *val);
+    int (*write)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 val);
+};
+
+
+struct pci_bus {
+    struct list_head node;      /* node in list of buses */
+    struct pci_bus  *parent;    /* parent bus this bridge is on */
+    struct list_head children;  /* list of child buses */
+    struct list_head devices;   /* list of devices on this bus */
+    struct pci_dev  *self;      /* bridge device as seen by parent */
+    struct list_head slots;     /* list of slots on this bus */
+    struct resource *resource[PCI_BRIDGE_RESOURCE_NUM];
+    struct list_head resources; /* address space routed to this bus */
+
+    struct pci_ops  *ops;       /* configuration access functions */
+    void        *sysdata;       /* hook for sys-specific extension */
+
+    unsigned char   number;     /* bus number */
+    unsigned char   primary;    /* number of primary bridge */
+    unsigned char   secondary;  /* number of secondary bridge */
+    unsigned char   subordinate;    /* max number of subordinate buses */
+
+    char        name[48];
+
+    unsigned short  bridge_ctl; /* manage NO_ISA/FBB/et al behaviors */
+    pci_bus_flags_t bus_flags;  /* Inherited by child busses */
+//    struct device       *bridge;
+//    struct device       dev;
+//    struct bin_attribute    *legacy_io; /* legacy I/O for this bus */
+//    struct bin_attribute    *legacy_mem; /* legacy mem */
+    unsigned int        is_added:1;
+};
+
+#define pci_bus_b(n)    list_entry(n, struct pci_bus, node)
+#define to_pci_bus(n)   container_of(n, struct pci_bus, dev)
+
+
+static inline int pci_domain_nr(struct pci_bus *bus)
+{
+    struct pci_sysdata *sd = bus->sysdata;
+    return sd->domain;
+}
+
+
 int enum_pci_devices(void);
 
 struct pci_device_id*
@@ -557,6 +655,11 @@ find_pci_device(pci_dev_t* pdev, struct pci_device_id *idlist);
 #define DMA_BIT_MASK(n) (((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
 
 int pci_set_dma_mask(struct pci_dev *dev, u64 mask);
+
+struct pci_bus * pci_create_bus(int bus, struct pci_ops *ops, void *sysdata);
+struct pci_bus * pci_find_bus(int domain, int busnr);
+struct pci_bus * pci_find_next_bus(const struct pci_bus *from);
+
 
 
 #define pci_name(x) "radeon"

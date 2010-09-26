@@ -1,67 +1,60 @@
-# _memmove() Author: Kees J. Bot 2 Jan 1994
+/*	_memmove()					Author: Kees J. Bot */
+/*								2 Jan 1994 */
 
-# void *_memmove(void *s1, const void *s2, size_t n)
-#       Copy a chunk of memory.  Handle overlap.
+/* void *_memmove(void *s1, const void *s2, size_t n) */
+/*	Copy a chunk of memory.  Handle overlap. */
+/* */
 
-.intel_syntax
+#include "asm.h"
 
-.globl __memmove, __memcpy
-
-.text
-
-           .align  16
-__memmove:
-           push    ebp
-           mov     ebp, esp
-
-           push    esi
-           push    edi
-
-           mov     edi, [ebp+8]     # String s1
-           mov     esi, [ebp+12]    # String s2
-           mov     ecx, [ebp+16]    # Length
-
-           mov     eax, edi
-           sub     eax, esi
-           cmp     eax, ecx
-           jb      downwards        # if (s2 - s1) < n then copy downwards
-__memcpy:
-           cld                      # Clear direction bit: upwards
-           cmp     ecx, 16
-           jb      upbyte           # Don't bother being smart with short arrays
-
-           mov     eax, esi
-           or      eax, edi
-           testb   al, 1
-           jnz     upbyte           # Bit 0 set, use byte copy
-
-           testb   al, 2
-
-           jnz     upword           # Bit 1 set, use word copy
+ENTRY(_memmove)
+	push	%ebp
+	movl	%esp, %ebp
+	push	%esi
+	push	%edi
+	movl	8(%ebp), %edi	/* String s1 */
+	movl	12(%ebp), %esi	/* String s2 */
+	movl	16(%ebp), %ecx	/* Length */
+	movl	%edi, %eax
+	subl	%esi, %eax
+	cmpl	%ecx, %eax
+	jb	downwards	/* if (s2 - s1) < n then copy downwards */
+LABEL(_memcpy)
+	cld	/* Clear direction bit: upwards */
+	cmpl	$16, %ecx
+	jb	upbyte	/* Don't bother being smart with short arrays */
+	movl	%esi, %eax
+	orl	%edi, %eax
+	testb	$1, %al
+	jne	upbyte	/* Bit 0 set, use byte copy */
+	testb	$2, %al
+	jne	upword	/* Bit 1 set, use word copy */
 uplword:
-           shrd    eax, ecx, 2      # Save low 2 bits of ecx in eax
-           shr     ecx, 2
-           rep movsd                # Copy longwords.
-           shld    ecx, eax, 2      # Restore excess count
+	shrdl	$2, %ecx, %eax	/* Save low 2 bits of ecx in eax */
+	shrl	$2, %ecx
+
+	rep movsl	/* Copy longwords. */
+	shldl	$2, %eax, %ecx	/* Restore excess count */
 upword:
-           shr     ecx, 1
-           rep movsw                # Copy words
-           adc     ecx, ecx         # One more byte?
+	shrl	$1, %ecx
+
+	rep movsw	/* Copy words */
+	adcl	%ecx, %ecx	/* One more byte? */
 upbyte:
-           rep movsb                # Copy bytes
+	rep movsb	/* Copy bytes */
 done:
-           mov     eax, [ebp+8]     # Absolutely noone cares about this value
-           pop     edi
-           pop     esi
-           pop     ebp
-           ret
+	movl	8(%ebp), %eax	/* Absolutely noone cares about this value */
+	pop	%edi
+	pop	%esi
+	pop	%ebp
+	ret
 
-# Handle bad overlap by copying downwards, don't bother to do word copies.
-
+/* Handle bad overlap by copying downwards, don't bother to do word copies. */
 downwards:
-           std                     # Set direction bit: downwards
-           lea     esi, [esi+ecx-1]
-           lea     edi, [edi+ecx-1]
-           rep movsb               # Copy bytes
-           cld
-           jmp     done
+	std	/* Set direction bit: downwards */
+	leal	-1(%esi,%ecx,1), %esi
+	leal	-1(%edi,%ecx,1), %edi
+
+	rep movsb	/* Copy bytes */
+	cld
+	jmp	done

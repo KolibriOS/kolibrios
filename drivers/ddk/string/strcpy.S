@@ -1,24 +1,20 @@
-#       strcpy()                                        Author: Kees J. Bot
-#                                                               1 Jan 1994
-# char *strcpy(char *s1, const char *s2)
-#       Copy string s2 to s1.
-#
+/*	strcpy()					Author: Kees J. Bot */
+/*								1 Jan 1994 */
 
-.intel_syntax
+/* char *strcpy(char *s1, const char *s2) */
+/*	Copy string s2 to s1. */
+/* */
+#include "asm.h"
 
-.global _strcpy
-
-        .text
-	.align	16
-_strcpy:
-	push	ebp
-	mov	ebp, esp
-	push	esi
-	push	edi
-        mov     ecx, -1         # Unlimited length
-        call    _strncpy        # Common code
-        mov     eax, [8+ebp]    # Return s1
-	pop	edi
-	pop	esi
-	pop	ebp
+ENTRY(strcpy)
+	push	%ebp
+	movl	%esp, %ebp
+	push	%esi
+	push	%edi
+	movl	$-1, %ecx	/* Unlimited length */
+	call	_C_LABEL(_strncpy) /* Common code */
+	movl	8(%ebp), %eax	/* Return s1 */
+	pop	%edi
+	pop	%esi
+	pop	%ebp
 	ret
