@@ -76,10 +76,10 @@ align 32
 syscall_entry:
 ;       push    ecx
 	  sti
-        xor   eax, 3
+        and   eax, 3
         call    dword [servetable3 + eax * 4]
 
-;       pop     ecx
+ ;      pop     ecx
         sysret
 
 iglobal
@@ -187,8 +187,8 @@ iglobal
 align 4
 servetable3:
 	
-	dd 	paleholder	; 0
-	dd 	paleholder	; 1
+	dd 	FFT4	; 0
+	dd 	FFT4	; 1
 	dd 	paleholder	; 2
 	dd 	sys_end	; last
 
