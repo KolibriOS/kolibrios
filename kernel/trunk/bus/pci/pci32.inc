@@ -63,9 +63,6 @@ pci_api:
 	mov	ebx,ecx
 	mov	ecx,edx
 
-align 4
-pci_api_drv:
-
     cmp  [pci_access_enabled],1
     jne  pci_service_not_supported
 
@@ -82,6 +79,24 @@ end if
 	call	dword [f62call+edx*4]
 	mov	dword [esp+32],eax
 	ret
+
+
+align 4
+pci_api_drv:
+
+    cmp  [pci_access_enabled],1
+    jne  .fail
+
+    cmp eax, 2
+    ja   .fail
+
+    jmp dword [f62call+eax*4]
+
+.fail:
+    or eax,-1
+    ret
+
+
 ;; ============================================
 
 pci_fn_0:
