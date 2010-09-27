@@ -1,7 +1,9 @@
 
+#include <ddk.h>
 #include <linux/kernel.h>
-#include <pci.h>
 #include <errno-base.h>
+#include <linux/mutex.h>
+#include <pci.h>
 #include <syscall.h>
 
 static LIST_HEAD(devices);
@@ -93,10 +95,10 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
         res  = &dev->resource[pos];
 
         reg = PCI_BASE_ADDRESS_0 + (pos << 2);
-        l = PciRead32(dev->bus, dev->devfn, reg);
-        PciWrite32(dev->bus, dev->devfn, reg, ~0);
-        sz = PciRead32(dev->bus, dev->devfn, reg);
-        PciWrite32(dev->bus, dev->devfn, reg, l);
+        l = PciRead32(dev->busnr, dev->devfn, reg);
+        PciWrite32(dev->busnr, dev->devfn, reg, ~0);
+        sz = PciRead32(dev->busnr, dev->devfn, reg);
+        PciWrite32(dev->busnr, dev->devfn, reg, l);
 
         if (!sz || sz == 0xffffffff)
             continue;
@@ -132,10 +134,10 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
         {
             u32_t szhi, lhi;
 
-            lhi = PciRead32(dev->bus, dev->devfn, reg+4);
-            PciWrite32(dev->bus, dev->devfn, reg+4, ~0);
-            szhi = PciRead32(dev->bus, dev->devfn, reg+4);
-            PciWrite32(dev->bus, dev->devfn, reg+4, lhi);
+            lhi = PciRead32(dev->busnr, dev->devfn, reg+4);
+            PciWrite32(dev->busnr, dev->devfn, reg+4, ~0);
+            szhi = PciRead32(dev->busnr, dev->devfn, reg+4);
+            PciWrite32(dev->busnr, dev->devfn, reg+4, lhi);
             sz64 = ((u64_t)szhi << 32) | raw_sz;
             l64 = ((u64_t)lhi << 32) | l;
             sz64 = pci_size64(l64, sz64, PCI_BASE_ADDRESS_MEM_MASK);
@@ -160,9 +162,9 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
             else if (lhi)
             {
                 /* 64-bit wide address, treat as disabled */
-                PciWrite32(dev->bus, dev->devfn, reg,
+                PciWrite32(dev->busnr, dev->devfn, reg,
                         l & ~(u32_t)PCI_BASE_ADDRESS_MEM_MASK);
-                PciWrite32(dev->bus, dev->devfn, reg+4, 0);
+                PciWrite32(dev->busnr, dev->devfn, reg+4, 0);
                 res->start = 0;
                 res->end = sz;
             }
@@ -175,10 +177,10 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
         dev->rom_base_reg = rom;
         res = &dev->resource[PCI_ROM_RESOURCE];
 
-        l = PciRead32(dev->bus, dev->devfn, rom);
-        PciWrite32(dev->bus, dev->devfn, rom, ~PCI_ROM_ADDRESS_ENABLE);
-        sz = PciRead32(dev->bus, dev->devfn, rom);
-        PciWrite32(dev->bus, dev->devfn, rom, l);
+        l = PciRead32(dev->busnr, dev->devfn, rom);
+        PciWrite32(dev->busnr, dev->devfn, rom, ~PCI_ROM_ADDRESS_ENABLE);
+        sz = PciRead32(dev->busnr, dev->devfn, rom);
+        PciWrite32(dev->busnr, dev->devfn, rom, l);
 
         if (l == 0xffffffff)
             l = 0;
@@ -203,10 +205,10 @@ static void pci_read_irq(struct pci_dev *dev)
 {
     u8_t irq;
 
-    irq = PciRead8(dev->bus, dev->devfn, PCI_INTERRUPT_PIN);
+    irq = PciRead8(dev->busnr, dev->devfn, PCI_INTERRUPT_PIN);
     dev->pin = irq;
     if (irq)
-        PciRead8(dev->bus, dev->devfn, PCI_INTERRUPT_LINE);
+        PciRead8(dev->busnr, dev->devfn, PCI_INTERRUPT_LINE);
     dev->irq = irq;
 };
 
@@ -215,7 +217,7 @@ static int pci_setup_device(struct pci_dev *dev)
 {
     u32_t  class;
 
-    class = PciRead32(dev->bus, dev->devfn, PCI_CLASS_REVISION);
+    class = PciRead32(dev->busnr, dev->devfn, PCI_CLASS_REVISION);
     dev->revision = class & 0xff;
     class >>= 8;                                /* upper 3 bytes */
     dev->class = class;
@@ -234,8 +236,8 @@ static int pci_setup_device(struct pci_dev *dev)
                 goto bad;
             pci_read_irq(dev);
             pci_read_bases(dev, 6, PCI_ROM_ADDRESS);
-            dev->subsystem_vendor = PciRead16(dev->bus, dev->devfn,PCI_SUBSYSTEM_VENDOR_ID);
-            dev->subsystem_device = PciRead16(dev->bus, dev->devfn, PCI_SUBSYSTEM_ID);
+            dev->subsystem_vendor = PciRead16(dev->busnr, dev->devfn,PCI_SUBSYSTEM_VENDOR_ID);
+            dev->subsystem_device = PciRead16(dev->busnr, dev->devfn, PCI_SUBSYSTEM_ID);
 
             /*
              *      Do the ugly legacy mode stuff here rather than broken chip
@@ -247,7 +249,7 @@ static int pci_setup_device(struct pci_dev *dev)
             {
                 u8_t progif;
 
-                progif = PciRead8(dev->bus, dev->devfn,PCI_CLASS_PROG);
+                progif = PciRead8(dev->busnr, dev->devfn,PCI_CLASS_PROG);
                 if ((progif & 1) == 0)
                 {
                     dev->resource[0].start = 0x1F0;
@@ -285,11 +287,11 @@ static int pci_setup_device(struct pci_dev *dev)
                         goto bad;
                 pci_read_irq(dev);
                 pci_read_bases(dev, 1, 0);
-                dev->subsystem_vendor = PciRead16(dev->bus,
+                dev->subsystem_vendor = PciRead16(dev->busnr,
                                                   dev->devfn,
                                                   PCI_CB_SUBSYSTEM_VENDOR_ID);
 
-                dev->subsystem_device = PciRead16(dev->bus,
+                dev->subsystem_device = PciRead16(dev->busnr,
                                                   dev->devfn,
                                                   PCI_CB_SUBSYSTEM_ID);
                 break;
@@ -352,7 +354,7 @@ static pci_dev_t* pci_scan_device(u32_t bus, int devfn)
     if(unlikely(dev == NULL))
         return NULL;
 
-    dev->pci_dev.bus      = bus;
+    dev->pci_dev.busnr      = bus;
     dev->pci_dev.devfn    = devfn;
     dev->pci_dev.hdr_type = hdr & 0x7f;
     dev->pci_dev.multifunction    = !!(hdr & 0x80);
@@ -503,140 +505,14 @@ int pci_find_capability(struct pci_dev *dev, int cap)
 {
     int pos;
 
-    pos = __pci_bus_find_cap_start(dev->bus, dev->devfn, dev->hdr_type);
+    pos = __pci_bus_find_cap_start(dev->busnr, dev->devfn, dev->hdr_type);
     if (pos)
-        pos = __pci_find_next_cap(dev->bus, dev->devfn, pos, cap);
+        pos = __pci_find_next_cap(dev->busnr, dev->devfn, pos, cap);
 
     return pos;
 }
 
 
-#if 0
-/**
- * pci_set_power_state - Set the power state of a PCI device
- * @dev: PCI device to be suspended
- * @state: PCI power state (D0, D1, D2, D3hot, D3cold) we're entering
- *
- * Transition a device to a new power state, using the Power Management
- * Capabilities in the device's config space.
- *
- * RETURN VALUE:
- * -EINVAL if trying to enter a lower state than we're already in.
- * 0 if we're already in the requested state.
- * -EIO if device does not support PCI PM.
- * 0 if we can successfully change the power state.
- */
-int
-pci_set_power_state(struct pci_dev *dev, pci_power_t state)
-{
-        int pm, need_restore = 0;
-        u16 pmcsr, pmc;
-
-        /* bound the state we're entering */
-        if (state > PCI_D3hot)
-                state = PCI_D3hot;
-
-        /*
-         * If the device or the parent bridge can't support PCI PM, ignore
-         * the request if we're doing anything besides putting it into D0
-         * (which would only happen on boot).
-         */
-        if ((state == PCI_D1 || state == PCI_D2) && pci_no_d1d2(dev))
-                return 0;
-
-        /* find PCI PM capability in list */
-        pm = pci_find_capability(dev, PCI_CAP_ID_PM);
-
-        /* abort if the device doesn't support PM capabilities */
-        if (!pm)
-                return -EIO;
-
-        /* Validate current state:
-         * Can enter D0 from any state, but if we can only go deeper
-         * to sleep if we're already in a low power state
-         */
-        if (state != PCI_D0 && dev->current_state > state) {
-                printk(KERN_ERR "%s(): %s: state=%d, current state=%d\n",
-                        __FUNCTION__, pci_name(dev), state, dev->current_state);
-                return -EINVAL;
-        } else if (dev->current_state == state)
-                return 0;        /* we're already there */
-
-
-        pci_read_config_word(dev,pm + PCI_PM_PMC,&pmc);
-        if ((pmc & PCI_PM_CAP_VER_MASK) > 3) {
-                printk(KERN_DEBUG
-                       "PCI: %s has unsupported PM cap regs version (%u)\n",
-                       pci_name(dev), pmc & PCI_PM_CAP_VER_MASK);
-                return -EIO;
-        }
-
-        /* check if this device supports the desired state */
-        if (state == PCI_D1 && !(pmc & PCI_PM_CAP_D1))
-                return -EIO;
-        else if (state == PCI_D2 && !(pmc & PCI_PM_CAP_D2))
-                return -EIO;
-
-        pci_read_config_word(dev, pm + PCI_PM_CTRL, &pmcsr);
-
-        /* If we're (effectively) in D3, force entire word to 0.
-         * This doesn't affect PME_Status, disables PME_En, and
-         * sets PowerState to 0.
-         */
-        switch (dev->current_state) {
-        case PCI_D0:
-        case PCI_D1:
-        case PCI_D2:
-                pmcsr &= ~PCI_PM_CTRL_STATE_MASK;
-                pmcsr |= state;
-                break;
-        case PCI_UNKNOWN: /* Boot-up */
-                if ((pmcsr & PCI_PM_CTRL_STATE_MASK) == PCI_D3hot
-                 && !(pmcsr & PCI_PM_CTRL_NO_SOFT_RESET))
-                        need_restore = 1;
-                /* Fall-through: force to D0 */
-        default:
-                pmcsr = 0;
-                break;
-        }
-
-        /* enter specified state */
-        pci_write_config_word(dev, pm + PCI_PM_CTRL, pmcsr);
-
-        /* Mandatory power management transition delays */
-        /* see PCI PM 1.1 5.6.1 table 18 */
-        if (state == PCI_D3hot || dev->current_state == PCI_D3hot)
-                msleep(pci_pm_d3_delay);
-        else if (state == PCI_D2 || dev->current_state == PCI_D2)
-                udelay(200);
-
-        /*
-         * Give firmware a chance to be called, such as ACPI _PRx, _PSx
-         * Firmware method after native method ?
-         */
-        if (platform_pci_set_power_state)
-                platform_pci_set_power_state(dev, state);
-
-        dev->current_state = state;
-
-        /* According to section 5.4.1 of the "PCI BUS POWER MANAGEMENT
-         * INTERFACE SPECIFICATION, REV. 1.2", a device transitioning
-         * from D3hot to D0 _may_ perform an internal reset, thereby
-         * going to "D0 Uninitialized" rather than "D0 Initialized".
-         * For example, at least some versions of the 3c905B and the
-         * 3c556B exhibit this behaviour.
-         *
-         * At least some laptop BIOSen (e.g. the Thinkpad T21) leave
-         * devices in a D3hot state at boot.  Consequently, we need to
-         * restore at least the BARs so that the device will be
-         * accessible to its driver.
-         */
-        if (need_restore)
-                pci_restore_bars(dev);
-
-        return 0;
-}
-#endif
 
 int pcibios_enable_resources(struct pci_dev *dev, int mask)
 {
@@ -644,7 +520,7 @@ int pcibios_enable_resources(struct pci_dev *dev, int mask)
     int  idx;
     struct resource *r;
 
-    cmd = PciRead16(dev->bus, dev->devfn, PCI_COMMAND);
+    cmd = PciRead16(dev->busnr, dev->devfn, PCI_COMMAND);
     old_cmd = cmd;
     for (idx = 0; idx < PCI_NUM_RESOURCES; idx++)
     {
@@ -672,7 +548,7 @@ int pcibios_enable_resources(struct pci_dev *dev, int mask)
     if (cmd != old_cmd) {
         printk("PCI: Enabling device %s (%04x -> %04x)\n",
                 pci_name(dev), old_cmd, cmd);
-        PciWrite16(dev->bus, dev->devfn, PCI_COMMAND, cmd);
+        PciWrite16(dev->busnr, dev->devfn, PCI_COMMAND, cmd);
     }
     return 0;
 }
@@ -766,7 +642,6 @@ struct pci_device_id* find_pci_device(pci_dev_t* pdev, struct pci_device_id *idl
             }
         };
     }
-
     return NULL;
 };
 
@@ -793,53 +668,6 @@ void *pci_map_rom(struct pci_dev *pdev, size_t *size)
     void  *rom;
 
 #if 0
-    /*
-     * IORESOURCE_ROM_SHADOW set on x86, x86_64 and IA64 supports legacy
-     * memory map if the VGA enable bit of the Bridge Control register is
-     * set for embedded VGA.
-     */
-    if (res->flags & IORESOURCE_ROM_SHADOW) {
-        /* primary video rom always starts here */
-        start = (u32_t)0xC0000;
-        *size = 0x20000; /* cover C000:0 through E000:0 */
-    } else {
-        if (res->flags & (IORESOURCE_ROM_COPY | IORESOURCE_ROM_BIOS_COPY)) {
-            *size = pci_resource_len(pdev, PCI_ROM_RESOURCE);
-             return (void *)(unsigned long)
-                     pci_resource_start(pdev, PCI_ROM_RESOURCE);
-        } else {
-                /* assign the ROM an address if it doesn't have one */
-            //if (res->parent == NULL &&
-            //     pci_assign_resource(pdev,PCI_ROM_RESOURCE))
-            //         return NULL;
-             start = pci_resource_start(pdev, PCI_ROM_RESOURCE);
-             *size = pci_resource_len(pdev, PCI_ROM_RESOURCE);
-             if (*size == 0)
-                     return NULL;
-
-             /* Enable ROM space decodes */
-             if (pci_enable_rom(pdev))
-                     return NULL;
-        }
-    }
-
-    rom = ioremap(start, *size);
-    if (!rom) {
-            /* restore enable if ioremap fails */
-            if (!(res->flags & (IORESOURCE_ROM_ENABLE |
-                                IORESOURCE_ROM_SHADOW |
-                                IORESOURCE_ROM_COPY)))
-                    pci_disable_rom(pdev);
-            return NULL;
-    }
-
-    /*
-     * Try to find the true size of the ROM since sometimes the PCI window
-     * size is much larger than the actual size of the ROM.
-     * True size is important if the ROM is going to be copied.
-     */
-    *size = pci_get_rom_size(rom, *size);
-
 #endif
 
     unsigned char tmp[32];

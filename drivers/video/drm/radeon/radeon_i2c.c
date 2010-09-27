@@ -90,6 +90,7 @@ static void radeon_i2c_do_lock(struct radeon_i2c_chan *i2c, int lock_state)
 			WREG32(RADEON_DVI_I2C_CNTL_0, (RADEON_I2C_SOFT_RST |
 						R200_DVI_I2C_PIN_SEL(R200_SEL_DDC3)));
 		}
+			mutex_unlock(&rdev->dc_hw_i2c_mutex);
 	}
 	}
 

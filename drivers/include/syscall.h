@@ -1,4 +1,6 @@
 
+#include <ddk.h>
+
 #ifndef __SYSCALL_H__
 #define __SYSCALL_H__
 
@@ -240,7 +242,8 @@ static inline u32_t __PciApi(int cmd)
      "movzxb %%al, %%eax"
      :"=a" (retval)
      :"a" (cmd)
-     :"ebx","ecx","edx");
+     :"cc");
+
      return retval;
 };
 

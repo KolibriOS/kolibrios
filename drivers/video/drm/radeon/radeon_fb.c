@@ -286,8 +286,6 @@ int radeonfb_create(struct drm_device *dev,
 	DRM_INFO("fb depth is %d\n", fb->depth);
 	DRM_INFO("   pitch is %d\n", fb->pitch);
 
-    dbgprintf("fb = %x\n", fb);
-
 	fb->fbdev = info;
 	rfbdev->rfb = rfb;
 	rfbdev->rdev = rdev;

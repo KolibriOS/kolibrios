@@ -17,7 +17,7 @@ CFLAGS   = -c -O2 $(INCLUDES) $(DEFINES) -march=i686 -fomit-frame-pointer -fno-b
 
 LIBPATH:= $(DRV_TOPDIR)/ddk
 
-LIBS:=    -ldrv -lcore 
+LIBS:=    -lddk -lcore 
 
 LDFLAGS = -nostdlib -shared -s -Map atikms.map --image-base 0\
 	  --file-alignment 512 --section-alignment 4096

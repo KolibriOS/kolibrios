@@ -391,7 +391,7 @@ struct ttm_bo_global {
 	struct ttm_mem_shrink shrink;
 	size_t ttm_bo_extra_size;
 	size_t ttm_bo_size;
-//	struct mutex device_list_mutex;
+	struct mutex device_list_mutex;
 	spinlock_t lru_lock;
 
 	/**

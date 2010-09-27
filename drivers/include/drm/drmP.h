@@ -57,7 +57,7 @@
 //#include <linux/dma-mapping.h>
 //#include <linux/mm.h>
 //#include <linux/cdev.h>
-//#include <linux/mutex.h>
+#include <linux/mutex.h>
 //#include <asm/io.h>
 //#include <asm/mman.h>
 //#include <asm/uaccess.h>
@@ -970,7 +970,7 @@ struct drm_device {
 	/** \name Locks */
 	/*@{ */
     spinlock_t count_lock;      /**< For inuse, drm_device::open_count, drm_device::buf_use */
-//   struct mutex struct_mutex;  /**< For others */
+	struct mutex struct_mutex;	/**< For others */
 	/*@} */
 
 	/** \name Usage Counters */
@@ -1001,7 +1001,7 @@ struct drm_device {
 	/*@{ */
 	struct list_head ctxlist;	/**< Linked list of context handles */
 	int ctx_count;			/**< Number of context handles */
-//   struct mutex ctxlist_mutex; /**< For ctxlist */
+	struct mutex ctxlist_mutex;	/**< For ctxlist */
 
 //   struct idr ctx_idr;
 

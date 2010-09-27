@@ -34,11 +34,8 @@
 #include "drm_hashtab.h"
 #include <linux/kref.h>
 #include <linux/list.h>
-
-#include <linux/spinlock.h>
-
 //#include <linux/wait.h>
-//#include <linux/mutex.h>
+#include <linux/mutex.h>
 //#include <linux/mm.h>
 //#include <linux/rbtree.h>
 #include <linux/bitmap.h>

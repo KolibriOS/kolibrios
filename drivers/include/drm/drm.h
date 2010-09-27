@@ -772,7 +772,4 @@ typedef struct drm_scatter_gather drm_scatter_gather_t;
 typedef struct drm_set_version drm_set_version_t;
 #endif
 
-#define mutex_lock(x)
-#define mutex_unlock(x)
-
 #endif

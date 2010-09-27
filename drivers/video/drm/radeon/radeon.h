@@ -60,6 +60,7 @@
  *                          are considered as fatal)
  */
 
+#include <ddk.h>
 #include <asm/atomic.h>
 
 #include <linux/list.h>
@@ -331,6 +332,7 @@ struct radeon_bo_list {
  * GEM objects.
  */
 struct radeon_gem {
+	struct mutex		mutex;
 	struct list_head	objects;
 };
 
@@ -466,7 +468,7 @@ struct radeon_ib {
  * mutex protects scheduled_ibs, ready, alloc_bm
  */
 struct radeon_ib_pool {
-//   struct mutex        mutex;
+	struct mutex		mutex;
 	struct radeon_bo	*robj;
 	struct list_head	bogus_ib;
 	struct radeon_ib	ibs[RADEON_IB_POOL_SIZE];
@@ -486,7 +488,7 @@ struct radeon_cp {
     uint64_t            gpu_addr;
     uint32_t            align_mask;
     uint32_t            ptr_mask;
-//	struct mutex		mutex;
+	struct mutex		mutex;
     bool                ready;
 };
 
@@ -507,6 +509,7 @@ struct r600_ih {
 };
 
 struct r600_blit {
+	struct mutex		mutex;
 	struct radeon_bo	*shader_obj;
 	u64 shader_gpu_addr;
 	u32 vs_offset, ps_offset;
@@ -539,7 +542,7 @@ void radeon_ring_fini(struct radeon_device *rdev);
 struct radeon_cs_reloc {
 //	struct drm_gem_object		*gobj;
 	struct radeon_bo		*robj;
-//    struct radeon_bo_list   lobj;
+	struct radeon_bo_list		lobj;
     uint32_t                handle;
     uint32_t                flags;
 };
@@ -745,7 +748,7 @@ struct radeon_power_state {
 #define RADEON_MODE_OVERCLOCK_MARGIN 500 /* 5 MHz */
 
 struct radeon_pm {
-//	struct mutex		mutex;
+	struct mutex		mutex;
 //	struct delayed_work	idle_work;
 	enum radeon_pm_state	state;
 	enum radeon_pm_action	planned_action;
@@ -962,7 +965,7 @@ struct radeon_device {
     struct radeon_gem       gem;
 	struct radeon_pm		pm;
 	uint32_t			bios_scratch[RADEON_BIOS_NUM_SCRATCH];
-//    struct mutex            cs_mutex;
+	struct mutex			cs_mutex;
     struct radeon_wb        wb;
 	struct radeon_dummy_page	dummy_page;
     bool                gpu_lockup;
@@ -977,6 +980,7 @@ struct radeon_device {
 	struct r600_blit r600_blit;
 	int msi_enabled; /* msi enabled */
 	int num_crtc; /* number of crtcs */
+	struct mutex dc_hw_i2c_mutex; /* display controller hw i2c mutex */
 
 	/* audio stuff */
 //   struct timer_list   audio_timer;

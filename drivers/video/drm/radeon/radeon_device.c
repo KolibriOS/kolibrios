@@ -565,6 +565,7 @@ int radeon_atombios_init(struct radeon_device *rdev)
 	atom_card_info->pll_write = cail_pll_write;
 
 	rdev->mode_info.atom_context = atom_parse(atom_card_info, rdev->bios);
+	mutex_init(&rdev->mode_info.atom_context->mutex);
     radeon_atom_initialize_bios_scratch_regs(rdev->ddev);
 	atom_allocate_fb_scratch(rdev->mode_info.atom_context);
     return 0;
@@ -711,9 +712,12 @@ int radeon_device_init(struct radeon_device *rdev,
 	rdev->accel_working = false;
     /* mutex initialization are all done here so we
      * can recall function without having locking issues */
- //   mutex_init(&rdev->cs_mutex);
- //   mutex_init(&rdev->ib_pool.mutex);
- //   mutex_init(&rdev->cp.mutex);
+    mutex_init(&rdev->cs_mutex);
+    mutex_init(&rdev->ib_pool.mutex);
+    mutex_init(&rdev->cp.mutex);
+	mutex_init(&rdev->dc_hw_i2c_mutex);
+	mutex_init(&rdev->gem.mutex);
+	mutex_init(&rdev->pm.mutex);
  //   rwlock_init(&rdev->fence_drv.lock);
 
 	/* Set asic functions */
@@ -758,14 +762,6 @@ int radeon_device_init(struct radeon_device *rdev,
     }
     DRM_INFO("register mmio base: 0x%08X\n", (uint32_t)rdev->rmmio_base);
     DRM_INFO("register mmio size: %u\n", (unsigned)rdev->rmmio_size);
-
-	/* if we have > 1 VGA cards, then disable the radeon VGA resources */
-	/* this will fail for cards that aren't VGA class devices, just
-	 * ignore it */
-//	r = vga_client_register(rdev->pdev, rdev, NULL, radeon_vga_set_decode);
-//	if (r) {
-//		return -EINVAL;
-//	}
 
 	r = radeon_init(rdev);
 	if (r)
@@ -871,6 +867,17 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     dev->pdev = pdev;
     dev->pci_device = pdev->device;
     dev->pci_vendor = pdev->vendor;
+
+    INIT_LIST_HEAD(&dev->filelist);
+    INIT_LIST_HEAD(&dev->ctxlist);
+    INIT_LIST_HEAD(&dev->vmalist);
+    INIT_LIST_HEAD(&dev->maplist);
+
+    spin_lock_init(&dev->count_lock);
+    spin_lock_init(&dev->drw_lock);
+    mutex_init(&dev->struct_mutex);
+    mutex_init(&dev->ctxlist_mutex);
+
 
     ret = radeon_driver_load_kms(dev, ent->driver_data );
     if (ret)
@@ -1037,7 +1044,6 @@ u32_t drvEntry(int action, char *cmdline)
     dbgprintf("Radeon RC10 cmdline %s\n", cmdline);
 
     enum_pci_devices();
-
     ent = find_pci_device(&device, pciidlist);
 
     if( unlikely(ent == NULL) )
