@@ -1,0 +1,419 @@
+
+#include <ddk.h>
+#include <linux/errno.h>
+#include <mutex.h>
+#include <pci.h>
+#include <syscall.h>
+
+
+#define LEGACY_IO_RESOURCE  (IORESOURCE_IO | IORESOURCE_PCI_FIXED)
+
+/**
+ * pci_setup_device - fill in class and map information of a device
+ * @dev: the device structure to fill
+ *
+ * Initialize the device structure with information about the device's
+ * vendor,class,memory and IO-space addresses,IRQ lines etc.
+ * Called at initialisation of the PCI subsystem and by CardBus services.
+ * Returns 0 on success and negative if unknown type of device (not normal,
+ * bridge or CardBus).
+ */
+int pci_setup_device(struct pci_dev *dev)
+{
+    u32 class;
+    u8 hdr_type;
+    struct pci_slot *slot;
+    int pos = 0;
+
+    if (pci_read_config_byte(dev, PCI_HEADER_TYPE, &hdr_type))
+        return -EIO;
+
+    dev->sysdata = dev->bus->sysdata;
+//    dev->dev.parent = dev->bus->bridge;
+//    dev->dev.bus = &pci_bus_type;
+    dev->hdr_type = hdr_type & 0x7f;
+    dev->multifunction = !!(hdr_type & 0x80);
+    dev->error_state = pci_channel_io_normal;
+    set_pcie_port_type(dev);
+
+    list_for_each_entry(slot, &dev->bus->slots, list)
+        if (PCI_SLOT(dev->devfn) == slot->number)
+            dev->slot = slot;
+
+    /* Assume 32-bit PCI; let 64-bit PCI cards (which are far rarer)
+       set this higher, assuming the system even supports it.  */
+    dev->dma_mask = 0xffffffff;
+
+//    dev_set_name(&dev->dev, "%04x:%02x:%02x.%d", pci_domain_nr(dev->bus),
+//             dev->bus->number, PCI_SLOT(dev->devfn),
+//             PCI_FUNC(dev->devfn));
+
+    pci_read_config_dword(dev, PCI_CLASS_REVISION, &class);
+    dev->revision = class & 0xff;
+    class >>= 8;                    /* upper 3 bytes */
+    dev->class = class;
+    class >>= 8;
+
+    dbgprintf("found [%04x:%04x] class %06x header type %02x\n",
+         dev->vendor, dev->device, class, dev->hdr_type);
+
+    /* need to have dev->class ready */
+    dev->cfg_size = pci_cfg_space_size(dev);
+
+    /* "Unknown power state" */
+    dev->current_state = PCI_UNKNOWN;
+
+    /* Early fixups, before probing the BARs */
+//    pci_fixup_device(pci_fixup_early, dev);
+    /* device class may be changed after fixup */
+    class = dev->class >> 8;
+
+    switch (dev->hdr_type) {            /* header type */
+    case PCI_HEADER_TYPE_NORMAL:            /* standard header */
+        if (class == PCI_CLASS_BRIDGE_PCI)
+            goto bad;
+        pci_read_irq(dev);
+        pci_read_bases(dev, 6, PCI_ROM_ADDRESS);
+        pci_read_config_word(dev, PCI_SUBSYSTEM_VENDOR_ID, &dev->subsystem_vendor);
+        pci_read_config_word(dev, PCI_SUBSYSTEM_ID, &dev->subsystem_device);
+
+        /*
+         *  Do the ugly legacy mode stuff here rather than broken chip
+         *  quirk code. Legacy mode ATA controllers have fixed
+         *  addresses. These are not always echoed in BAR0-3, and
+         *  BAR0-3 in a few cases contain junk!
+         */
+        if (class == PCI_CLASS_STORAGE_IDE) {
+            u8 progif;
+            pci_read_config_byte(dev, PCI_CLASS_PROG, &progif);
+            if ((progif & 1) == 0) {
+                dev->resource[0].start = 0x1F0;
+                dev->resource[0].end = 0x1F7;
+                dev->resource[0].flags = LEGACY_IO_RESOURCE;
+                dev->resource[1].start = 0x3F6;
+                dev->resource[1].end = 0x3F6;
+                dev->resource[1].flags = LEGACY_IO_RESOURCE;
+            }
+            if ((progif & 4) == 0) {
+                dev->resource[2].start = 0x170;
+                dev->resource[2].end = 0x177;
+                dev->resource[2].flags = LEGACY_IO_RESOURCE;
+                dev->resource[3].start = 0x376;
+                dev->resource[3].end = 0x376;
+                dev->resource[3].flags = LEGACY_IO_RESOURCE;
+            }
+        }
+        break;
+
+    case PCI_HEADER_TYPE_BRIDGE:            /* bridge header */
+        if (class != PCI_CLASS_BRIDGE_PCI)
+            goto bad;
+        /* The PCI-to-PCI bridge spec requires that subtractive
+           decoding (i.e. transparent) bridge must have programming
+           interface code of 0x01. */
+        pci_read_irq(dev);
+        dev->transparent = ((dev->class & 0xff) == 1);
+        pci_read_bases(dev, 2, PCI_ROM_ADDRESS1);
+        set_pcie_hotplug_bridge(dev);
+        pos = pci_find_capability(dev, PCI_CAP_ID_SSVID);
+        if (pos) {
+            pci_read_config_word(dev, pos + PCI_SSVID_VENDOR_ID, &dev->subsystem_vendor);
+            pci_read_config_word(dev, pos + PCI_SSVID_DEVICE_ID, &dev->subsystem_device);
+        }
+        break;
+
+    case PCI_HEADER_TYPE_CARDBUS:           /* CardBus bridge header */
+        if (class != PCI_CLASS_BRIDGE_CARDBUS)
+            goto bad;
+        pci_read_irq(dev);
+        pci_read_bases(dev, 1, 0);
+        pci_read_config_word(dev, PCI_CB_SUBSYSTEM_VENDOR_ID, &dev->subsystem_vendor);
+        pci_read_config_word(dev, PCI_CB_SUBSYSTEM_ID, &dev->subsystem_device);
+        break;
+
+    default:                    /* unknown header */
+        dbgprintf("unknown header type %02x, "
+            "ignoring device\n", dev->hdr_type);
+        return -EIO;
+
+    bad:
+        dbgprintf("ignoring class %02x (doesn't match header "
+            "type %02x)\n", class, dev->hdr_type);
+        dev->class = PCI_CLASS_NOT_DEFINED;
+    }
+
+    /* We found a fine healthy device, go go go... */
+    return 0;
+}
+
+
+
+struct pci_dev *alloc_pci_dev(void)
+{
+    struct pci_dev *dev;
+
+    dev = kzalloc(sizeof(struct pci_dev), GFP_KERNEL);
+    if (!dev)
+        return NULL;
+
+    INIT_LIST_HEAD(&dev->bus_list);
+
+    return dev;
+}
+
+/*
+ * Read the config data for a PCI device, sanity-check it
+ * and fill in the dev structure...
+ */
+static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
+{
+    struct pci_dev *dev;
+    u32 l;
+    int timeout = 10;
+
+    if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, &l))
+        return NULL;
+
+    /* some broken boards return 0 or ~0 if a slot is empty: */
+    if (l == 0xffffffff || l == 0x00000000 ||
+        l == 0x0000ffff || l == 0xffff0000)
+        return NULL;
+
+    /* Configuration request Retry Status */
+    while (l == 0xffff0001) {
+        delay(timeout/10);
+        timeout *= 2;
+        if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, &l))
+            return NULL;
+        /* Card hasn't responded in 60 seconds?  Must be stuck. */
+        if (delay > 60 * 1000) {
+            printk(KERN_WARNING "pci %04x:%02x:%02x.%d: not "
+                    "responding\n", pci_domain_nr(bus),
+                    bus->number, PCI_SLOT(devfn),
+                    PCI_FUNC(devfn));
+            return NULL;
+        }
+    }
+
+    dev = alloc_pci_dev();
+    if (!dev)
+        return NULL;
+
+    dev->bus = bus;
+    dev->devfn = devfn;
+    dev->vendor = l & 0xffff;
+    dev->device = (l >> 16) & 0xffff;
+
+    if (pci_setup_device(dev)) {
+        kfree(dev);
+        return NULL;
+    }
+
+    return dev;
+}
+
+
+struct pci_dev * pci_scan_single_device(struct pci_bus *bus, int devfn)
+{
+    struct pci_dev *dev;
+
+    dev = pci_get_slot(bus, devfn);
+    if (dev) {
+//        pci_dev_put(dev);
+        return dev;
+    }
+
+    dev = pci_scan_device(bus, devfn);
+    if (!dev)
+        return NULL;
+
+    pci_device_add(dev, bus);
+
+    return dev;
+}
+
+static unsigned next_ari_fn(struct pci_dev *dev, unsigned fn)
+{
+    u16 cap;
+    unsigned pos, next_fn;
+
+    if (!dev)
+        return 0;
+
+    pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_ARI);
+    if (!pos)
+        return 0;
+    pci_read_config_word(dev, pos + 4, &cap);
+    next_fn = cap >> 8;
+    if (next_fn <= fn)
+        return 0;
+    return next_fn;
+}
+
+static unsigned next_trad_fn(struct pci_dev *dev, unsigned fn)
+{
+    return (fn + 1) % 8;
+}
+
+static unsigned no_next_fn(struct pci_dev *dev, unsigned fn)
+{
+    return 0;
+}
+
+static int only_one_child(struct pci_bus *bus)
+{
+    struct pci_dev *parent = bus->self;
+    if (!parent || !pci_is_pcie(parent))
+        return 0;
+    if (parent->pcie_type == PCI_EXP_TYPE_ROOT_PORT ||
+        parent->pcie_type == PCI_EXP_TYPE_DOWNSTREAM)
+        return 1;
+    return 0;
+}
+
+/**
+ * pci_scan_slot - scan a PCI slot on a bus for devices.
+ * @bus: PCI bus to scan
+ * @devfn: slot number to scan (must have zero function.)
+ *
+ * Scan a PCI slot on the specified PCI bus for devices, adding
+ * discovered devices to the @bus->devices list.  New devices
+ * will not have is_added set.
+ *
+ * Returns the number of new devices found.
+ */
+int pci_scan_slot(struct pci_bus *bus, int devfn)
+{
+    unsigned fn, nr = 0;
+    struct pci_dev *dev;
+    unsigned (*next_fn)(struct pci_dev *, unsigned) = no_next_fn;
+
+    if (only_one_child(bus) && (devfn > 0))
+        return 0; /* Already scanned the entire slot */
+
+    dev = pci_scan_single_device(bus, devfn);
+    if (!dev)
+        return 0;
+    if (!dev->is_added)
+        nr++;
+
+    if (pci_ari_enabled(bus))
+        next_fn = next_ari_fn;
+    else if (dev->multifunction)
+        next_fn = next_trad_fn;
+
+    for (fn = next_fn(dev, 0); fn > 0; fn = next_fn(dev, fn)) {
+        dev = pci_scan_single_device(bus, devfn + fn);
+        if (dev) {
+            if (!dev->is_added)
+                nr++;
+            dev->multifunction = 1;
+        }
+    }
+
+    /* only one slot has pcie device */
+    if (bus->self && nr)
+        pcie_aspm_init_link_state(bus->self);
+
+    return nr;
+}
+
+
+unsigned int pci_scan_child_bus(struct pci_bus *bus)
+{
+    unsigned int devfn, pass, max = bus->secondary;
+    struct pci_dev *dev;
+
+    dbgprintf("scanning bus\n");
+
+    /* Go find them, Rover! */
+    for (devfn = 0; devfn < 0x100; devfn += 8)
+        pci_scan_slot(bus, devfn);
+
+    /* Reserve buses for SR-IOV capability. */
+    max += pci_iov_bus_range(bus);
+
+    /*
+     * After performing arch-dependent fixup of the bus, look behind
+     * all PCI-to-PCI bridges on this bus.
+     */
+    if (!bus->is_added) {
+        dbgprintf("fixups for bus\n");
+        pcibios_fixup_bus(bus);
+        if (pci_is_root_bus(bus))
+            bus->is_added = 1;
+    }
+
+    for (pass=0; pass < 2; pass++)
+        list_for_each_entry(dev, &bus->devices, bus_list) {
+            if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
+                dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
+                max = pci_scan_bridge(bus, dev, max, pass);
+        }
+
+    /*
+     * We've scanned the bus and so we know all about what's on
+     * the other side of any bridges that may be on this bus plus
+     * any devices.
+     *
+     * Return how far we've got finding sub-buses.
+     */
+    dbgprintf("bus scan returning with max=%02x\n", max);
+    return max;
+}
+
+/**
+ * pci_cfg_space_size - get the configuration space size of the PCI device.
+ * @dev: PCI device
+ *
+ * Regular PCI devices have 256 bytes, but PCI-X 2 and PCI Express devices
+ * have 4096 bytes.  Even if the device is capable, that doesn't mean we can
+ * access it.  Maybe we don't have a way to generate extended config space
+ * accesses, or the device is behind a reverse Express bridge.  So we try
+ * reading the dword at 0x100 which must either be 0 or a valid extended
+ * capability header.
+ */
+int pci_cfg_space_size_ext(struct pci_dev *dev)
+{
+    u32 status;
+    int pos = PCI_CFG_SPACE_SIZE;
+
+    if (pci_read_config_dword(dev, pos, &status) != PCIBIOS_SUCCESSFUL)
+        goto fail;
+    if (status == 0xffffffff)
+        goto fail;
+
+    return PCI_CFG_SPACE_EXP_SIZE;
+
+ fail:
+    return PCI_CFG_SPACE_SIZE;
+}
+
+int pci_cfg_space_size(struct pci_dev *dev)
+{
+    int pos;
+    u32 status;
+    u16 class;
+
+    class = dev->class >> 8;
+    if (class == PCI_CLASS_BRIDGE_HOST)
+        return pci_cfg_space_size_ext(dev);
+
+    pos = pci_pcie_cap(dev);
+    if (!pos) {
+        pos = pci_find_capability(dev, PCI_CAP_ID_PCIX);
+        if (!pos)
+            goto fail;
+
+        pci_read_config_dword(dev, pos + PCI_X_STATUS, &status);
+        if (!(status & (PCI_X_STATUS_266MHZ | PCI_X_STATUS_533MHZ)))
+            goto fail;
+    }
+
+    return pci_cfg_space_size_ext(dev);
+
+ fail:
+    return PCI_CFG_SPACE_SIZE;
+}
+
+

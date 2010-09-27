@@ -1,4 +1,37 @@
 
+struct acpi_device;
+
+
+/*
+ * ACPI Driver
+ * -----------
+ */
+
+typedef int (*acpi_op_add) (struct acpi_device * device);
+typedef int (*acpi_op_remove) (struct acpi_device * device, int type);
+typedef int (*acpi_op_start) (struct acpi_device * device);
+//typedef int (*acpi_op_suspend) (struct acpi_device * device,
+//                pm_message_t state);
+typedef int (*acpi_op_resume) (struct acpi_device * device);
+typedef int (*acpi_op_bind) (struct acpi_device * device);
+typedef int (*acpi_op_unbind) (struct acpi_device * device);
+typedef void (*acpi_op_notify) (struct acpi_device * device, u32 event);
+
+struct acpi_bus_ops {
+    u32 acpi_op_add:1;
+    u32 acpi_op_start:1;
+};
+
+struct acpi_device_ops {
+    acpi_op_add add;
+    acpi_op_remove remove;
+    acpi_op_start start;
+//    acpi_op_suspend suspend;
+    acpi_op_resume resume;
+    acpi_op_bind bind;
+    acpi_op_unbind unbind;
+    acpi_op_notify notify;
+};
 
 struct resource_list {
     struct resource_list *next;
@@ -35,12 +68,6 @@ enum acpi_bus_device_type {
 /* Quirk for broken IBM BIOSes */
 #define ACPI_SMBUS_IBM_HID      "SMBUSIBM"
 
-
-struct acpi_bus_ops
-{
-    u32_t acpi_op_add:1;
-    u32_t acpi_op_start:1;
-};
 
 
 #define ACPI_ID_LEN     16 /* only 9 bytes needed here, 16 bytes are used */
@@ -106,7 +133,7 @@ struct acpi_device
 //    struct acpi_device_wakeup wakeup;
 //    struct acpi_device_perf performance;
 //    struct acpi_device_dir dir;
-//    struct acpi_device_ops ops;
+    struct acpi_device_ops ops;
 //    struct acpi_driver *driver;
     void *driver_data;
 //    struct device dev;
@@ -114,6 +141,16 @@ struct acpi_device
  //   enum acpi_bus_removal_type removal_type;    /* indicate for different removal type */
 };
 
+
+struct acpi_pci_root {
+    struct list_head node;
+    struct acpi_device * device;
+    struct acpi_pci_id id;
+    struct pci_bus *bus;
+    u16 segment;
+    struct resource secondary;      /* downstream bus range */
+
+};
 
 
 #define acpi_device_bid(d)  ((d)->pnp.bus_id)
@@ -126,3 +163,7 @@ int acpi_match_device_ids(struct acpi_device *device,
               const struct acpi_device_ids *ids);
 
 int acpi_pci_irq_add_prt(ACPI_HANDLE handle, struct pci_bus *bus);
+int acpi_pci_bind_root(struct acpi_device *device);
+struct pci_dev *acpi_get_pci_dev(ACPI_HANDLE handle);
+int acpi_is_root_bridge(ACPI_HANDLE handle);
+

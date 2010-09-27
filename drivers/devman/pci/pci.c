@@ -7,7 +7,8 @@
 
 LIST_HEAD(pci_root_buses);
 
-#define IO_SPACE_LIMIT 0xffff
+#define IO_SPACE_LIMIT          0xffff
+#define PCIBIOS_SUCCESSFUL      0x00
 
 struct resource ioport_resource = {
     .name   = "PCI IO",
@@ -23,12 +24,89 @@ struct resource iomem_resource = {
     .flags  = IORESOURCE_MEM,
 };
 
+#define PCI_FIND_CAP_TTL    48
 
-static inline int pci_domain_nr(struct pci_bus *bus)
+static int __pci_find_next_cap_ttl(struct pci_bus *bus, unsigned int devfn,
+                   u8 pos, int cap, int *ttl)
 {
-    struct pci_sysdata *sd = bus->sysdata;
-    return sd->domain;
+    u8 id;
+
+    while ((*ttl)--) {
+        pci_bus_read_config_byte(bus, devfn, pos, &pos);
+        if (pos < 0x40)
+            break;
+        pos &= ~3;
+        pci_bus_read_config_byte(bus, devfn, pos + PCI_CAP_LIST_ID,
+                     &id);
+        if (id == 0xff)
+            break;
+        if (id == cap)
+            return pos;
+        pos += PCI_CAP_LIST_NEXT;
+    }
+    return 0;
 }
+
+static int __pci_find_next_cap(struct pci_bus *bus, unsigned int devfn,
+                   u8 pos, int cap)
+{
+    int ttl = PCI_FIND_CAP_TTL;
+
+    return __pci_find_next_cap_ttl(bus, devfn, pos, cap, &ttl);
+}
+static int __pci_bus_find_cap_start(struct pci_bus *bus,
+                    unsigned int devfn, u8 hdr_type)
+{
+    u16 status;
+
+    pci_bus_read_config_word(bus, devfn, PCI_STATUS, &status);
+    if (!(status & PCI_STATUS_CAP_LIST))
+        return 0;
+
+    switch (hdr_type) {
+    case PCI_HEADER_TYPE_NORMAL:
+    case PCI_HEADER_TYPE_BRIDGE:
+        return PCI_CAPABILITY_LIST;
+    case PCI_HEADER_TYPE_CARDBUS:
+        return PCI_CB_CAPABILITY_LIST;
+    default:
+        return 0;
+    }
+
+    return 0;
+}
+
+
+/**
+ * pci_find_capability - query for devices' capabilities
+ * @dev: PCI device to query
+ * @cap: capability code
+ *
+ * Tell if a device supports a given PCI capability.
+ * Returns the address of the requested capability structure within the
+ * device's PCI configuration space or 0 in case the device does not
+ * support it.  Possible values for @cap:
+ *
+ *  %PCI_CAP_ID_PM           Power Management
+ *  %PCI_CAP_ID_AGP          Accelerated Graphics Port
+ *  %PCI_CAP_ID_VPD          Vital Product Data
+ *  %PCI_CAP_ID_SLOTID       Slot Identification
+ *  %PCI_CAP_ID_MSI          Message Signalled Interrupts
+ *  %PCI_CAP_ID_CHSWP        CompactPCI HotSwap
+ *  %PCI_CAP_ID_PCIX         PCI-X
+ *  %PCI_CAP_ID_EXP          PCI Express
+ */
+int pci_find_capability(struct pci_dev *dev, int cap)
+{
+    int pos;
+
+    pos = __pci_bus_find_cap_start(dev->bus, dev->devfn, dev->hdr_type);
+    if (pos)
+        pos = __pci_find_next_cap(dev->bus, dev->devfn, pos, cap);
+
+    return pos;
+}
+
 
 static struct pci_bus * pci_alloc_bus(void)
 {
@@ -148,4 +226,93 @@ pci_find_next_bus(const struct pci_bus *from)
     return b;
 }
 
+
+/**
+ * pci_get_slot - locate PCI device for a given PCI slot
+ * @bus: PCI bus on which desired PCI device resides
+ * @devfn: encodes number of PCI slot in which the desired PCI
+ * device resides and the logical device number within that slot
+ * in case of multi-function devices.
+ *
+ * Given a PCI bus and slot/function number, the desired PCI device
+ * is located in the list of PCI devices.
+ * If the device is found, its reference count is increased and this
+ * function returns a pointer to its data structure.  The caller must
+ * decrement the reference count by calling pci_dev_put().
+ * If no device is found, %NULL is returned.
+ */
+struct pci_dev * pci_get_slot(struct pci_bus *bus, unsigned int devfn)
+{
+    struct list_head *tmp;
+    struct pci_dev *dev;
+
+//    WARN_ON(in_interrupt());
+//    down_read(&pci_bus_sem);
+
+    list_for_each(tmp, &bus->devices) {
+        dev = pci_dev_b(tmp);
+        if (dev->devfn == devfn)
+            goto out;
+    }
+
+    dev = NULL;
+ out:
+//    pci_dev_get(dev);
+//    up_read(&pci_bus_sem);
+    return dev;
+}
+
+
+
+
+/**
+ * pci_find_ext_capability - Find an extended capability
+ * @dev: PCI device to query
+ * @cap: capability code
+ *
+ * Returns the address of the requested extended capability structure
+ * within the device's PCI configuration space or 0 if the device does
+ * not support it.  Possible values for @cap:
+ *
+ *  %PCI_EXT_CAP_ID_ERR     Advanced Error Reporting
+ *  %PCI_EXT_CAP_ID_VC      Virtual Channel
+ *  %PCI_EXT_CAP_ID_DSN     Device Serial Number
+ *  %PCI_EXT_CAP_ID_PWR     Power Budgeting
+ */
+int pci_find_ext_capability(struct pci_dev *dev, int cap)
+{
+    u32 header;
+    int ttl;
+    int pos = PCI_CFG_SPACE_SIZE;
+
+    /* minimum 8 bytes per capability */
+    ttl = (PCI_CFG_SPACE_EXP_SIZE - PCI_CFG_SPACE_SIZE) / 8;
+
+    if (dev->cfg_size <= PCI_CFG_SPACE_SIZE)
+        return 0;
+
+    if (pci_read_config_dword(dev, pos, &header) != PCIBIOS_SUCCESSFUL)
+        return 0;
+
+    /*
+     * If we have no capabilities, this is indicated by cap ID,
+     * cap version and next pointer all being 0.
+     */
+    if (header == 0)
+        return 0;
+
+    while (ttl-- > 0) {
+        if (PCI_EXT_CAP_ID(header) == cap)
+            return pos;
+
+        pos = PCI_EXT_CAP_NEXT(header);
+        if (pos < PCI_CFG_SPACE_SIZE)
+            break;
+
+        if (pci_read_config_dword(dev, pos, &header) != PCIBIOS_SUCCESSFUL)
+            break;
+    }
+
+    return 0;
+}
 

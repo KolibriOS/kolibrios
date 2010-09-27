@@ -110,29 +110,12 @@ void print_device_tree(struct acpi_device *device)
 };
 
 
-/*
-int acpi_pci_bind_root(struct acpi_device *device)
-{
-    device->ops.bind = acpi_pci_bind;
-    device->ops.unbind = acpi_pci_unbind;
 
-    return 0;
-}
-*/
 
 static bool pci_use_crs = false;
 
 #define IORESOURCE_BUS      0x00001000
 
-struct acpi_pci_root {
-    struct list_head node;
-    struct acpi_device * device;
-    struct acpi_pci_id id;
-    struct pci_bus *bus;
-    u16 segment;
-    struct resource secondary;      /* downstream bus range */
-
-};
 
 static LIST_HEAD(acpi_pci_roots);
 
@@ -177,6 +160,23 @@ static ACPI_STATUS try_get_root_bridge_busnr(ACPI_HANDLE handle,
         return AE_ERROR;
     return AE_OK;
 }
+
+
+static void acpi_pci_bridge_scan(struct acpi_device *device)
+{
+    int status;
+    struct acpi_device *child = NULL;
+
+    if (device->flags.bus_address)
+        if (device->parent && device->parent->ops.bind) {
+            status = device->parent->ops.bind(device);
+            if (!status) {
+                list_for_each_entry(child, &device->children, node)
+                    acpi_pci_bridge_scan(child);
+            }
+        }
+}
+
 
 
 struct pci_root_info
@@ -416,7 +416,7 @@ struct pci_bus*  pci_acpi_scan_root(struct acpi_pci_root *root)
         bus = pci_create_bus(busnum, &pci_root_ops, sd);
         if (bus) {
             get_current_resources(device, busnum, domain, bus);
-//            bus->subordinate = pci_scan_child_bus(bus);
+            bus->subordinate = pci_scan_child_bus(bus);
         }
     }
 
@@ -528,9 +528,9 @@ static int acpi_pci_root_add(struct acpi_device *device)
      * -----------------------
      * Thus binding the ACPI and PCI devices.
      */
-//    result = acpi_pci_bind_root(device);
-//    if (result)
-//        goto end;
+    result = acpi_pci_bind_root(device);
+    if (result)
+        goto end;
 
     /*
      * PCI Routing Table
@@ -544,8 +544,8 @@ static int acpi_pci_root_add(struct acpi_device *device)
     /*
      * Scan and bind all _ADR-Based Devices
      */
-//    list_for_each_entry(child, &device->children, node)
-//        acpi_pci_bridge_scan(child);
+    list_for_each_entry(child, &device->children, node)
+        acpi_pci_bridge_scan(child);
 
     return 0;
 
@@ -760,71 +760,6 @@ err:
     return 0;
 
 };
-
-#if 0
-    scan_devices();
-
-    {
-        bool retval = false;
-        u32_t bus, last_bus;
-
-        if( (last_bus = PciApi(1))==-1)
-            return retval;
-
-        dbgprintf("last bus %x\n", last_bus);
-
-        for(bus=0; bus <= last_bus; bus++)
-        {
-            u32_t dev;
-
-            for(dev = 0; dev < 32; dev++)
-            {
-                u32_t fn;
-
-                for(fn = 0; fn < 8; fn++)
-                {
-
-                    u32_t id;
-                    u32_t irq_bios, irq_acpi;
-                    u32_t irq_pin;
-                    u16_t pcicmd;
-                    u32_t tmp;
-
-                    u32_t devfn = (dev<<3 )|fn;
-
-                    id = PciRead32(bus,devfn, PCI_VENDOR_ID);
-
-    /* some broken boards return 0 or ~0 if a slot is empty: */
-                if (id == 0xffffffff || id == 0x00000000 ||
-                    id == 0x0000ffff || id == 0xffff0000)
-                    continue;
-
-                pcicmd = PciRead16(bus,devfn, PCI_COMMAND);
-                if (! pcicmd & PCI_COMMAND_IO)
-                    continue;
-
-                tmp = PciRead32(bus,devfn, 0x3C);
-
-                irq_bios = tmp & 0xFF;
-                irq_pin  = (tmp >> 8) & 0xFF;
-
-                int slot = (fn >> 3) & 0x1f;
-
-                irq_acpi = irqtable[ dev * PCI_MAX_PINS +(irq_pin-1) ];
-
-                if( irq_acpi < 0)
-                    dbgprintf("PCI: no ACPI IRQ routing for "
-                    "device %d.%d.%d INT%c\n",bus,dev,fn,'A'+irq_pin-1);
-
-                dbgprintf("pci device %x_%x bus %d dev %d fn %d,"
-                          "IRQ PIN %d BIOS IRQ %d ACPI IRQ %d\n",
-                          id & 0xFFFF, id>>16, bus, dev, fn, irq_pin, irq_bios, irq_acpi);
-                };
-            }
-        };
-    };
-#endif
-
 
 #if 0
 

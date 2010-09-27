@@ -626,10 +626,10 @@ static int acpi_add_single_object(struct acpi_device **child,
     /*
      * Bind _ADR-Based Devices when hot add
      */
-//    if (device->flags.bus_address) {
-//        if (device->parent && device->parent->ops.bind)
-//            device->parent->ops.bind(device);
-//    }
+    if (device->flags.bus_address) {
+        if (device->parent && device->parent->ops.bind)
+            device->parent->ops.bind(device);
+    }
 
 end:
     if (!result) {

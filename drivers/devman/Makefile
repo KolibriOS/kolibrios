@@ -1,4 +1,5 @@
 
+
 CC = gcc
 FASM = e:/fasm/fasm.exe
 
@@ -27,7 +28,10 @@ NAME= acpi
 NAME_SRCS= 	acpi.c		\
 		scan.c		\
 		pci_irq.c	\
-		pci/pci.c
+		pci_root.c	\
+		pci/pci.c	\
+		pci/probe.c	\
+		pci_bind.c
 
 
 all: $(NAME).dll
