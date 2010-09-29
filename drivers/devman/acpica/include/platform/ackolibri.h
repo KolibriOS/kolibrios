@@ -116,9 +116,14 @@
 
 #include "acgcc.h"
 
-#include <linux\types.h>
-#include <linux\mutex.h>
 
+#include <linux/string.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <asm/atomic.h>
+#include <linux/errno.h>
+#include <ddk.h>
+#include <linux/pci.h>
 #include <syscall.h>
 
 #define ACPI_MACHINE_WIDTH          32

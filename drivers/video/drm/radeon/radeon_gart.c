@@ -30,6 +30,18 @@
 #include "radeon.h"
 #include "radeon_reg.h"
 
+
+static inline void *
+pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
+                      addr_t *dma_handle)
+{
+
+    size = (size + 0x7FFF) & ~0x7FFF;
+
+    *dma_handle = AllocPages(size >> 12);
+    return (void*)MapIoMem(*dma_handle, size, PG_SW+PG_NOCACHE);
+}
+
 /*
  * Common GART table functions.
  */
@@ -271,3 +283,5 @@ void radeon_gart_fini(struct radeon_device *rdev)
 	rdev->gart.pages = NULL;
 	rdev->gart.pages_addr = NULL;
 }
+
+

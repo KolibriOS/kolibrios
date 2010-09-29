@@ -1,5 +1,4 @@
 
-
 CC = gcc
 
 DRV_DIR   = $(CURDIR)/../..

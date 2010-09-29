@@ -5,7 +5,6 @@
 #include <pci.h>
 #include <syscall.h>
 
-LIST_HEAD(pci_root_buses);
 
 #define IO_SPACE_LIMIT          0xffff
 #define PCIBIOS_SUCCESSFUL      0x00
@@ -106,59 +105,6 @@ int pci_find_capability(struct pci_dev *dev, int cap)
 
     return pos;
 }
-
-
-static struct pci_bus * pci_alloc_bus(void)
-{
-    struct pci_bus *b;
-
-    b = kzalloc(sizeof(*b), GFP_KERNEL);
-    if (b) {
-        INIT_LIST_HEAD(&b->node);
-        INIT_LIST_HEAD(&b->children);
-        INIT_LIST_HEAD(&b->devices);
-        INIT_LIST_HEAD(&b->slots);
-        INIT_LIST_HEAD(&b->resources);
-    }
-    return b;
-}
-
-struct pci_bus * pci_create_bus(int bus, struct pci_ops *ops, void *sysdata)
-{
-    int error;
-    struct pci_bus *b, *b2;
-
-    b = pci_alloc_bus();
-    if (!b)
-        return NULL;
-
-    b->sysdata = sysdata;
-    b->ops = ops;
-
-    b2 = pci_find_bus(pci_domain_nr(b), bus);
-    if (b2) {
-        /* If we already got to this bus through a different bridge, ignore it */
-        dbgprintf("bus already known\n");
-        goto err_out;
-    }
-
-//    down_write(&pci_bus_sem);
-    list_add_tail(&b->node, &pci_root_buses);
-//    up_write(&pci_bus_sem);
-
-    b->number = b->secondary = bus;
-    b->resource[0] = &ioport_resource;
-    b->resource[1] = &iomem_resource;
-
-    return b;
-
-err_out:
-    kfree(b);
-    return NULL;
-}
-
-
-
 
 
 static struct pci_bus *pci_do_find_bus(struct pci_bus *bus, unsigned char busnr)
@@ -316,3 +262,60 @@ int pci_find_ext_capability(struct pci_dev *dev, int cap)
     return 0;
 }
 
+#if 0
+
+u32 pci_probe = 0;
+
+#define PCI_NOASSIGN_ROMS   0x80000
+#define PCI_NOASSIGN_BARS   0x200000
+
+static void pcibios_fixup_device_resources(struct pci_dev *dev)
+{
+    struct resource *rom_r = &dev->resource[PCI_ROM_RESOURCE];
+    struct resource *bar_r;
+    int bar;
+
+    if (pci_probe & PCI_NOASSIGN_BARS) {
+        /*
+        * If the BIOS did not assign the BAR, zero out the
+        * resource so the kernel doesn't attmept to assign
+        * it later on in pci_assign_unassigned_resources
+        */
+        for (bar = 0; bar <= PCI_STD_RESOURCE_END; bar++) {
+            bar_r = &dev->resource[bar];
+            if (bar_r->start == 0 && bar_r->end != 0) {
+                bar_r->flags = 0;
+                bar_r->end = 0;
+            }
+        }
+    }
+
+    if (pci_probe & PCI_NOASSIGN_ROMS) {
+        if (rom_r->parent)
+            return;
+        if (rom_r->start) {
+            /* we deal with BIOS assigned ROM later */
+            return;
+        }
+        rom_r->start = rom_r->end = rom_r->flags = 0;
+    }
+}
+
+/*
+ *  Called after each bus is probed, but before its children
+ *  are examined.
+ */
+
+void pcibios_fixup_bus(struct pci_bus *b)
+{
+    struct pci_dev *dev;
+
+    /* root bus? */
+//    if (!b->parent)
+//        x86_pci_root_bus_res_quirks(b);
+    pci_read_bridge_bases(b);
+    list_for_each_entry(dev, &b->devices, bus_list)
+        pcibios_fixup_device_resources(dev);
+}
+
+#endif

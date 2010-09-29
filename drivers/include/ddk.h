@@ -1,8 +1,11 @@
 
+
 #ifndef __DDK_H__
 #define __DDK_H__
 
 #include <kernel.h>
+#include <mutex.h>
+
 
 #define OS_BASE             0x80000000
 

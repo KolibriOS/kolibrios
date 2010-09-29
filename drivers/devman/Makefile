@@ -1,4 +1,7 @@
 
+
+
+
 CC = gcc
 FASM = e:/fasm/fasm.exe
 
@@ -28,6 +31,7 @@ NAME_SRCS= 	acpi.c		\
 		scan.c		\
 		pci_irq.c	\
 		pci_root.c	\
+		pci/access.c	\
 		pci/pci.c	\
 		pci/probe.c	\
 		pci_bind.c

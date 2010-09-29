@@ -24,7 +24,9 @@
 
 
 #include <ddk.h>
+#include <linux/errno.h>
 #include <linux/mutex.h>
+#include <pci.h>
 #include <syscall.h>
 
 

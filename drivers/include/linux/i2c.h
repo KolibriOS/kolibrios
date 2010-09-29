@@ -33,6 +33,14 @@
 
 
 #define I2C_NAME_SIZE   20
+#define I2C_MODULE_PREFIX "i2c:"
+
+struct i2c_device_id {
+	char name[I2C_NAME_SIZE];
+	u32  driver_data	/* Data private to the driver */
+			__attribute__((aligned(sizeof(u32))));
+};
+
 
 struct i2c_msg;
 struct i2c_algorithm;
@@ -203,7 +211,7 @@ struct i2c_adapter {
 };
 #define to_i2c_adapter(d) container_of(d, struct i2c_adapter, dev)
 
-static inline void *i2c_get_adapdata(const struct i2c_adapter *dev)
+static inline void *i2c_get_adapdata(struct i2c_adapter *dev)
 {
 	return dev_get_drvdata(&dev->dev);
 }

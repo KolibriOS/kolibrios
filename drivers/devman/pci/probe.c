@@ -5,8 +5,707 @@
 #include <pci.h>
 #include <syscall.h>
 
+LIST_HEAD(pci_root_buses);
+
+#define IO_SPACE_LIMIT 0xffff
+
+
+
 
 #define LEGACY_IO_RESOURCE  (IORESOURCE_IO | IORESOURCE_PCI_FIXED)
+
+#define CARDBUS_LATENCY_TIMER   176 /* secondary latency timer */
+#define CARDBUS_RESERVE_BUSNR   3
+
+static int pcibios_assign_all_busses(void)
+{
+    return 0;
+};
+
+/**
+ * pci_ari_enabled - query ARI forwarding status
+ * @bus: the PCI bus
+ *
+ * Returns 1 if ARI forwarding is enabled, or 0 if not enabled;
+ */
+static inline int pci_ari_enabled(struct pci_bus *bus)
+{
+    return bus->self && bus->self->ari_enabled;
+}
+
+/*
+ * Translate the low bits of the PCI base
+ * to the resource type
+ */
+static inline unsigned int pci_calc_resource_flags(unsigned int flags)
+{
+    if (flags & PCI_BASE_ADDRESS_SPACE_IO)
+        return IORESOURCE_IO;
+
+    if (flags & PCI_BASE_ADDRESS_MEM_PREFETCH)
+        return IORESOURCE_MEM | IORESOURCE_PREFETCH;
+
+    return IORESOURCE_MEM;
+}
+
+static u64 pci_size(u64 base, u64 maxbase, u64 mask)
+{
+    u64 size = mask & maxbase;  /* Find the significant bits */
+    if (!size)
+        return 0;
+
+    /* Get the lowest of them to find the decode size, and
+       from that the extent.  */
+    size = (size & ~(size-1)) - 1;
+
+    /* base == maxbase can be valid only if the BAR has
+       already been programmed with all 1s.  */
+    if (base == maxbase && ((base | size) & mask) != mask)
+        return 0;
+
+    return size;
+}
+
+static inline enum pci_bar_type decode_bar(struct resource *res, u32 bar)
+{
+    if ((bar & PCI_BASE_ADDRESS_SPACE) == PCI_BASE_ADDRESS_SPACE_IO) {
+        res->flags = bar & ~PCI_BASE_ADDRESS_IO_MASK;
+        return pci_bar_io;
+    }
+
+    res->flags = bar & ~PCI_BASE_ADDRESS_MEM_MASK;
+
+    if (res->flags & PCI_BASE_ADDRESS_MEM_TYPE_64)
+        return pci_bar_mem64;
+    return pci_bar_mem32;
+}
+
+
+
+/**
+ * pci_read_base - read a PCI BAR
+ * @dev: the PCI device
+ * @type: type of the BAR
+ * @res: resource buffer to be filled in
+ * @pos: BAR position in the config space
+ *
+ * Returns 1 if the BAR is 64-bit, or 0 if 32-bit.
+ */
+int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+            struct resource *res, unsigned int pos)
+{
+    u32 l, sz, mask;
+    u16 orig_cmd;
+
+    mask = type ? PCI_ROM_ADDRESS_MASK : ~0;
+
+    if (!dev->mmio_always_on) {
+        pci_read_config_word(dev, PCI_COMMAND, &orig_cmd);
+        pci_write_config_word(dev, PCI_COMMAND,
+            orig_cmd & ~(PCI_COMMAND_MEMORY | PCI_COMMAND_IO));
+    }
+
+    res->name = pci_name(dev);
+
+    pci_read_config_dword(dev, pos, &l);
+    pci_write_config_dword(dev, pos, l | mask);
+    pci_read_config_dword(dev, pos, &sz);
+    pci_write_config_dword(dev, pos, l);
+
+    if (!dev->mmio_always_on)
+        pci_write_config_word(dev, PCI_COMMAND, orig_cmd);
+
+    /*
+     * All bits set in sz means the device isn't working properly.
+     * If the BAR isn't implemented, all bits must be 0.  If it's a
+     * memory BAR or a ROM, bit 0 must be clear; if it's an io BAR, bit
+     * 1 must be clear.
+     */
+    if (!sz || sz == 0xffffffff)
+        goto fail;
+
+    /*
+     * I don't know how l can have all bits set.  Copied from old code.
+     * Maybe it fixes a bug on some ancient platform.
+     */
+    if (l == 0xffffffff)
+        l = 0;
+
+    if (type == pci_bar_unknown) {
+        type = decode_bar(res, l);
+        res->flags |= pci_calc_resource_flags(l) | IORESOURCE_SIZEALIGN;
+        if (type == pci_bar_io) {
+            l &= PCI_BASE_ADDRESS_IO_MASK;
+            mask = PCI_BASE_ADDRESS_IO_MASK & IO_SPACE_LIMIT;
+        } else {
+            l &= PCI_BASE_ADDRESS_MEM_MASK;
+            mask = (u32)PCI_BASE_ADDRESS_MEM_MASK;
+        }
+    } else {
+        res->flags |= (l & IORESOURCE_ROM_ENABLE);
+        l &= PCI_ROM_ADDRESS_MASK;
+        mask = (u32)PCI_ROM_ADDRESS_MASK;
+    }
+
+    if (type == pci_bar_mem64) {
+        u64 l64 = l;
+        u64 sz64 = sz;
+        u64 mask64 = mask | (u64)~0 << 32;
+
+        pci_read_config_dword(dev, pos + 4, &l);
+        pci_write_config_dword(dev, pos + 4, ~0);
+        pci_read_config_dword(dev, pos + 4, &sz);
+        pci_write_config_dword(dev, pos + 4, l);
+
+        l64 |= ((u64)l << 32);
+        sz64 |= ((u64)sz << 32);
+
+        sz64 = pci_size(l64, sz64, mask64);
+
+        if (!sz64)
+            goto fail;
+
+        if ((sizeof(resource_size_t) < 8) && (sz64 > 0x100000000ULL)) {
+            dbgprintf("%s reg %x: can't handle 64-bit BAR\n",
+                __FUNCTION__, pos);
+            goto fail;
+        }
+
+        res->flags |= IORESOURCE_MEM_64;
+        if ((sizeof(resource_size_t) < 8) && l) {
+            /* Address above 32-bit boundary; disable the BAR */
+            pci_write_config_dword(dev, pos, 0);
+            pci_write_config_dword(dev, pos + 4, 0);
+            res->start = 0;
+            res->end = sz64;
+        } else {
+            res->start = l64;
+            res->end = l64 + sz64;
+        dbgprintf("%s reg %x: %pR\n", __FUNCTION__, pos, res);
+        }
+    } else {
+        sz = pci_size(l, sz, mask);
+
+        if (!sz)
+            goto fail;
+
+        res->start = l;
+        res->end = l + sz;
+
+        dbgprintf("%s reg %x: %pR\n", __FUNCTION__, pos, res);
+    }
+
+ out:
+    return (type == pci_bar_mem64) ? 1 : 0;
+ fail:
+    res->flags = 0;
+    goto out;
+}
+
+static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
+{
+    unsigned int pos, reg;
+
+    for (pos = 0; pos < howmany; pos++) {
+        struct resource *res = &dev->resource[pos];
+        reg = PCI_BASE_ADDRESS_0 + (pos << 2);
+        pos += __pci_read_base(dev, pci_bar_unknown, res, reg);
+    }
+
+    if (rom) {
+        struct resource *res = &dev->resource[PCI_ROM_RESOURCE];
+        dev->rom_base_reg = rom;
+        res->flags = IORESOURCE_MEM | IORESOURCE_PREFETCH |
+                IORESOURCE_READONLY | IORESOURCE_CACHEABLE |
+                IORESOURCE_SIZEALIGN;
+        __pci_read_base(dev, pci_bar_mem32, res, rom);
+    }
+}
+
+#if 0
+
+void pci_read_bridge_bases(struct pci_bus *child)
+{
+    struct pci_dev *dev = child->self;
+    struct resource *res;
+    int i;
+
+    if (pci_is_root_bus(child)) /* It's a host bus, nothing to read */
+        return;
+
+    dbgprintf("PCI bridge to [bus %02x-%02x]%s\n",
+         child->secondary, child->subordinate,
+         dev->transparent ? " (subtractive decode)" : "");
+
+    pci_bus_remove_resources(child);
+    for (i = 0; i < PCI_BRIDGE_RESOURCE_NUM; i++)
+        child->resource[i] = &dev->resource[PCI_BRIDGE_RESOURCES+i];
+
+    pci_read_bridge_io(child);
+    pci_read_bridge_mmio(child);
+    pci_read_bridge_mmio_pref(child);
+
+    if (dev->transparent) {
+        pci_bus_for_each_resource(child->parent, res, i) {
+            if (res) {
+                pci_bus_add_resource(child, res,
+                             PCI_SUBTRACTIVE_DECODE);
+                dbgprintf("  bridge window %pR (subtractive decode)\n", res);
+            }
+        }
+    }
+}
+
+#endif
+
+static struct pci_bus * pci_alloc_bus(void)
+{
+    struct pci_bus *b;
+
+    b = kzalloc(sizeof(*b), GFP_KERNEL);
+    if (b) {
+        INIT_LIST_HEAD(&b->node);
+        INIT_LIST_HEAD(&b->children);
+        INIT_LIST_HEAD(&b->devices);
+        INIT_LIST_HEAD(&b->slots);
+        INIT_LIST_HEAD(&b->resources);
+//        b->max_bus_speed = PCI_SPEED_UNKNOWN;
+//        b->cur_bus_speed = PCI_SPEED_UNKNOWN;
+    }
+    return b;
+}
+
+
+#if 0
+
+static unsigned char pcix_bus_speed[] = {
+    PCI_SPEED_UNKNOWN,      /* 0 */
+    PCI_SPEED_66MHz_PCIX,       /* 1 */
+    PCI_SPEED_100MHz_PCIX,      /* 2 */
+    PCI_SPEED_133MHz_PCIX,      /* 3 */
+    PCI_SPEED_UNKNOWN,      /* 4 */
+    PCI_SPEED_66MHz_PCIX_ECC,   /* 5 */
+    PCI_SPEED_100MHz_PCIX_ECC,  /* 6 */
+    PCI_SPEED_133MHz_PCIX_ECC,  /* 7 */
+    PCI_SPEED_UNKNOWN,      /* 8 */
+    PCI_SPEED_66MHz_PCIX_266,   /* 9 */
+    PCI_SPEED_100MHz_PCIX_266,  /* A */
+    PCI_SPEED_133MHz_PCIX_266,  /* B */
+    PCI_SPEED_UNKNOWN,      /* C */
+    PCI_SPEED_66MHz_PCIX_533,   /* D */
+    PCI_SPEED_100MHz_PCIX_533,  /* E */
+    PCI_SPEED_133MHz_PCIX_533   /* F */
+};
+
+static unsigned char pcie_link_speed[] = {
+    PCI_SPEED_UNKNOWN,      /* 0 */
+    PCIE_SPEED_2_5GT,       /* 1 */
+    PCIE_SPEED_5_0GT,       /* 2 */
+    PCIE_SPEED_8_0GT,       /* 3 */
+    PCI_SPEED_UNKNOWN,      /* 4 */
+    PCI_SPEED_UNKNOWN,      /* 5 */
+    PCI_SPEED_UNKNOWN,      /* 6 */
+    PCI_SPEED_UNKNOWN,      /* 7 */
+    PCI_SPEED_UNKNOWN,      /* 8 */
+    PCI_SPEED_UNKNOWN,      /* 9 */
+    PCI_SPEED_UNKNOWN,      /* A */
+    PCI_SPEED_UNKNOWN,      /* B */
+    PCI_SPEED_UNKNOWN,      /* C */
+    PCI_SPEED_UNKNOWN,      /* D */
+    PCI_SPEED_UNKNOWN,      /* E */
+    PCI_SPEED_UNKNOWN       /* F */
+};
+
+
+static void pci_set_bus_speed(struct pci_bus *bus)
+{
+    struct pci_dev *bridge = bus->self;
+    int pos;
+
+    pos = pci_find_capability(bridge, PCI_CAP_ID_AGP);
+    if (!pos)
+        pos = pci_find_capability(bridge, PCI_CAP_ID_AGP3);
+    if (pos) {
+        u32 agpstat, agpcmd;
+
+        pci_read_config_dword(bridge, pos + PCI_AGP_STATUS, &agpstat);
+        bus->max_bus_speed = agp_speed(agpstat & 8, agpstat & 7);
+
+        pci_read_config_dword(bridge, pos + PCI_AGP_COMMAND, &agpcmd);
+        bus->cur_bus_speed = agp_speed(agpstat & 8, agpcmd & 7);
+    }
+
+    pos = pci_find_capability(bridge, PCI_CAP_ID_PCIX);
+    if (pos) {
+        u16 status;
+        enum pci_bus_speed max;
+        pci_read_config_word(bridge, pos + 2, &status);
+
+        if (status & 0x8000) {
+            max = PCI_SPEED_133MHz_PCIX_533;
+        } else if (status & 0x4000) {
+            max = PCI_SPEED_133MHz_PCIX_266;
+        } else if (status & 0x0002) {
+            if (((status >> 12) & 0x3) == 2) {
+                max = PCI_SPEED_133MHz_PCIX_ECC;
+            } else {
+                max = PCI_SPEED_133MHz_PCIX;
+            }
+        } else {
+            max = PCI_SPEED_66MHz_PCIX;
+        }
+
+        bus->max_bus_speed = max;
+        bus->cur_bus_speed = pcix_bus_speed[(status >> 6) & 0xf];
+
+        return;
+    }
+
+    pos = pci_find_capability(bridge, PCI_CAP_ID_EXP);
+    if (pos) {
+        u32 linkcap;
+        u16 linksta;
+
+        pci_read_config_dword(bridge, pos + PCI_EXP_LNKCAP, &linkcap);
+        bus->max_bus_speed = pcie_link_speed[linkcap & 0xf];
+
+        pci_read_config_word(bridge, pos + PCI_EXP_LNKSTA, &linksta);
+        pcie_update_link_speed(bus, linksta);
+    }
+}
+
+#endif
+
+
+static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+                       struct pci_dev *bridge, int busnr)
+{
+    struct pci_bus *child;
+    int i;
+
+    /*
+     * Allocate a new bus, and inherit stuff from the parent..
+     */
+    child = pci_alloc_bus();
+    if (!child)
+        return NULL;
+
+    child->parent = parent;
+    child->ops = parent->ops;
+    child->sysdata = parent->sysdata;
+    child->bus_flags = parent->bus_flags;
+
+    /* initialize some portions of the bus device, but don't register it
+     * now as the parent is not properly set up yet.  This device will get
+     * registered later in pci_bus_add_devices()
+     */
+//    child->dev.class = &pcibus_class;
+//    dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
+
+    /*
+     * Set up the primary, secondary and subordinate
+     * bus numbers.
+     */
+    child->number = child->secondary = busnr;
+    child->primary = parent->secondary;
+    child->subordinate = 0xff;
+
+    if (!bridge)
+        return child;
+
+    child->self = bridge;
+//    child->bridge = get_device(&bridge->dev);
+
+//    pci_set_bus_speed(child);
+
+    /* Set up default resource pointers and names.. */
+    for (i = 0; i < PCI_BRIDGE_RESOURCE_NUM; i++) {
+        child->resource[i] = &bridge->resource[PCI_BRIDGE_RESOURCES+i];
+        child->resource[i]->name = child->name;
+    }
+    bridge->subordinate = child;
+
+    return child;
+}
+
+struct pci_bus* pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev, int busnr)
+{
+    struct pci_bus *child;
+
+    child = pci_alloc_child_bus(parent, dev, busnr);
+    if (child) {
+//        down_write(&pci_bus_sem);
+        list_add_tail(&child->node, &parent->children);
+//        up_write(&pci_bus_sem);
+    }
+    return child;
+}
+
+
+static void pci_fixup_parent_subordinate_busnr(struct pci_bus *child, int max)
+{
+    struct pci_bus *parent = child->parent;
+
+    /* Attempts to fix that up are really dangerous unless
+       we're going to re-assign all bus numbers. */
+    if (!pcibios_assign_all_busses())
+        return;
+
+    while (parent->parent && parent->subordinate < max) {
+        parent->subordinate = max;
+        pci_write_config_byte(parent->self, PCI_SUBORDINATE_BUS, max);
+        parent = parent->parent;
+    }
+}
+
+
+/*
+ * If it's a bridge, configure it and scan the bus behind it.
+ * For CardBus bridges, we don't scan behind as the devices will
+ * be handled by the bridge driver itself.
+ *
+ * We need to process bridges in two passes -- first we scan those
+ * already configured by the BIOS and after we are done with all of
+ * them, we proceed to assigning numbers to the remaining buses in
+ * order to avoid overlaps between old and new bus numbers.
+ */
+int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max, int pass)
+{
+    struct pci_bus *child;
+    int is_cardbus = (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS);
+    u32 buses, i, j = 0;
+    u16 bctl;
+    u8 primary, secondary, subordinate;
+    int broken = 0;
+
+    pci_read_config_dword(dev, PCI_PRIMARY_BUS, &buses);
+    primary = buses & 0xFF;
+    secondary = (buses >> 8) & 0xFF;
+    subordinate = (buses >> 16) & 0xFF;
+
+    dbgprintf("scanning [bus %02x-%02x] behind bridge, pass %d\n",
+        secondary, subordinate, pass);
+
+    /* Check if setup is sensible at all */
+    if (!pass &&
+        (primary != bus->number || secondary <= bus->number)) {
+        dbgprintf("bus configuration invalid, reconfiguring\n");
+        broken = 1;
+    }
+
+    /* Disable MasterAbortMode during probing to avoid reporting
+       of bus errors (in some architectures) */
+    pci_read_config_word(dev, PCI_BRIDGE_CONTROL, &bctl);
+    pci_write_config_word(dev, PCI_BRIDGE_CONTROL,
+                  bctl & ~PCI_BRIDGE_CTL_MASTER_ABORT);
+
+    if ((secondary || subordinate) && !pcibios_assign_all_busses() &&
+        !is_cardbus && !broken) {
+        unsigned int cmax;
+        /*
+         * Bus already configured by firmware, process it in the first
+         * pass and just note the configuration.
+         */
+        if (pass)
+            goto out;
+
+        /*
+         * If we already got to this bus through a different bridge,
+         * don't re-add it. This can happen with the i450NX chipset.
+         *
+         * However, we continue to descend down the hierarchy and
+         * scan remaining child buses.
+         */
+        child = pci_find_bus(pci_domain_nr(bus), secondary);
+        if (!child) {
+            child = pci_add_new_bus(bus, dev, secondary);
+            if (!child)
+                goto out;
+            child->primary = primary;
+            child->subordinate = subordinate;
+            child->bridge_ctl = bctl;
+        }
+
+        cmax = pci_scan_child_bus(child);
+        if (cmax > max)
+            max = cmax;
+        if (child->subordinate > max)
+            max = child->subordinate;
+    } else {
+        /*
+         * We need to assign a number to this bus which we always
+         * do in the second pass.
+         */
+        if (!pass) {
+            if (pcibios_assign_all_busses() || broken)
+                /* Temporarily disable forwarding of the
+                   configuration cycles on all bridges in
+                   this bus segment to avoid possible
+                   conflicts in the second pass between two
+                   bridges programmed with overlapping
+                   bus ranges. */
+                pci_write_config_dword(dev, PCI_PRIMARY_BUS,
+                               buses & ~0xffffff);
+            goto out;
+        }
+
+        /* Clear errors */
+        pci_write_config_word(dev, PCI_STATUS, 0xffff);
+
+        /* Prevent assigning a bus number that already exists.
+         * This can happen when a bridge is hot-plugged */
+        if (pci_find_bus(pci_domain_nr(bus), max+1))
+            goto out;
+        child = pci_add_new_bus(bus, dev, ++max);
+        buses = (buses & 0xff000000)
+              | ((unsigned int)(child->primary)     <<  0)
+              | ((unsigned int)(child->secondary)   <<  8)
+              | ((unsigned int)(child->subordinate) << 16);
+
+        /*
+         * yenta.c forces a secondary latency timer of 176.
+         * Copy that behaviour here.
+         */
+        if (is_cardbus) {
+            buses &= ~0xff000000;
+            buses |= CARDBUS_LATENCY_TIMER << 24;
+        }
+
+        /*
+         * We need to blast all three values with a single write.
+         */
+        pci_write_config_dword(dev, PCI_PRIMARY_BUS, buses);
+
+        if (!is_cardbus) {
+            child->bridge_ctl = bctl;
+            /*
+             * Adjust subordinate busnr in parent buses.
+             * We do this before scanning for children because
+             * some devices may not be detected if the bios
+             * was lazy.
+             */
+            pci_fixup_parent_subordinate_busnr(child, max);
+            /* Now we can scan all subordinate buses... */
+            max = pci_scan_child_bus(child);
+            /*
+             * now fix it up again since we have found
+             * the real value of max.
+             */
+            pci_fixup_parent_subordinate_busnr(child, max);
+        } else {
+            /*
+             * For CardBus bridges, we leave 4 bus numbers
+             * as cards with a PCI-to-PCI bridge can be
+             * inserted later.
+             */
+            for (i=0; i<CARDBUS_RESERVE_BUSNR; i++) {
+                struct pci_bus *parent = bus;
+                if (pci_find_bus(pci_domain_nr(bus),
+                            max+i+1))
+                    break;
+                while (parent->parent) {
+                    if ((!pcibios_assign_all_busses()) &&
+                        (parent->subordinate > max) &&
+                        (parent->subordinate <= max+i)) {
+                        j = 1;
+                    }
+                    parent = parent->parent;
+                }
+                if (j) {
+                    /*
+                     * Often, there are two cardbus bridges
+                     * -- try to leave one valid bus number
+                     * for each one.
+                     */
+                    i /= 2;
+                    break;
+                }
+            }
+            max += i;
+            pci_fixup_parent_subordinate_busnr(child, max);
+        }
+        /*
+         * Set the subordinate bus number to its real value.
+         */
+        child->subordinate = max;
+        pci_write_config_byte(dev, PCI_SUBORDINATE_BUS, max);
+    }
+
+    vsprintf(child->name,
+        (is_cardbus ? "PCI CardBus %04x:%02x" : "PCI Bus %04x:%02x"),
+        pci_domain_nr(bus), child->number);
+
+    /* Has only triggered on CardBus, fixup is in yenta_socket */
+    while (bus->parent) {
+        if ((child->subordinate > bus->subordinate) ||
+            (child->number > bus->subordinate) ||
+            (child->number < bus->number) ||
+            (child->subordinate < bus->number)) {
+            dbgprintf("[bus %02x-%02x] %s "
+                "hidden behind%s bridge %s [bus %02x-%02x]\n",
+                child->number, child->subordinate,
+                (bus->number > child->subordinate &&
+                 bus->subordinate < child->number) ?
+                    "wholly" : "partially",
+                bus->self->transparent ? " transparent" : "",
+                "FIX BRIDGE NAME",
+                bus->number, bus->subordinate);
+        }
+        bus = bus->parent;
+    }
+
+out:
+    pci_write_config_word(dev, PCI_BRIDGE_CONTROL, bctl);
+
+    return max;
+}
+
+void set_pcie_port_type(struct pci_dev *pdev)
+{
+    int pos;
+    u16 reg16;
+
+    pos = pci_find_capability(pdev, PCI_CAP_ID_EXP);
+    if (!pos)
+        return;
+    pdev->is_pcie = 1;
+    pdev->pcie_cap = pos;
+    pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
+    pdev->pcie_type = (reg16 & PCI_EXP_FLAGS_TYPE) >> 4;
+}
+
+void set_pcie_hotplug_bridge(struct pci_dev *pdev)
+{
+    int pos;
+    u16 reg16;
+    u32 reg32;
+
+    pos = pci_pcie_cap(pdev);
+    if (!pos)
+        return;
+    pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &reg16);
+    if (!(reg16 & PCI_EXP_FLAGS_SLOT))
+        return;
+    pci_read_config_dword(pdev, pos + PCI_EXP_SLTCAP, &reg32);
+    if (reg32 & PCI_EXP_SLTCAP_HPC)
+        pdev->is_hotplug_bridge = 1;
+}
+
+/*
+ * Read interrupt line and base address registers.
+ * The architecture-dependent code can tweak these, of course.
+ */
+static void pci_read_irq(struct pci_dev *dev)
+{
+    unsigned char irq;
+
+    pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &irq);
+    dev->pin = irq;
+    if (irq)
+        pci_read_config_byte(dev, PCI_INTERRUPT_LINE, &irq);
+    dev->irq = irq;
+}
+
 
 /**
  * pci_setup_device - fill in class and map information of a device
@@ -176,7 +875,9 @@ static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
 
     /* some broken boards return 0 or ~0 if a slot is empty: */
     if (l == 0xffffffff || l == 0x00000000 ||
-        l == 0x0000ffff || l == 0xffff0000)
+        l == 0x0000ffff || l == 0xffff0000 ||
+        (l & 0xffff0000) == 0xffff0000     ||
+        (l & 0x0000ffff) == 0x0000ffff )
         return NULL;
 
     /* Configuration request Retry Status */
@@ -186,7 +887,7 @@ static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
         if (pci_bus_read_config_dword(bus, devfn, PCI_VENDOR_ID, &l))
             return NULL;
         /* Card hasn't responded in 60 seconds?  Must be stuck. */
-        if (delay > 60 * 1000) {
+        if (timeout > 60 * 1000) {
             printk(KERN_WARNING "pci %04x:%02x:%02x.%d: not "
                     "responding\n", pci_domain_nr(bus),
                     bus->number, PCI_SLOT(devfn),
@@ -212,6 +913,36 @@ static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
     return dev;
 }
 
+void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
+{
+//    device_initialize(&dev->dev);
+//    dev->dev.release = pci_release_dev;
+//    pci_dev_get(dev);
+
+//    dev->dev.dma_mask = &dev->dma_mask;
+//    dev->dev.dma_parms = &dev->dma_parms;
+//    dev->dev.coherent_dma_mask = 0xffffffffull;
+
+//    pci_set_dma_max_seg_size(dev, 65536);
+//    pci_set_dma_seg_boundary(dev, 0xffffffff);
+
+    /* Fix up broken headers */
+//    pci_fixup_device(pci_fixup_header, dev);
+
+    /* Clear the state_saved flag. */
+    dev->state_saved = false;
+
+    /* Initialize various capabilities */
+//    pci_init_capabilities(dev);
+
+    /*
+     * Add the device to our list of discovered devices
+     * and the bus list for fixup functions, etc.
+     */
+//    down_write(&pci_bus_sem);
+    list_add_tail(&dev->bus_list, &bus->devices);
+//    up_write(&pci_bus_sem);
+}
 
 struct pci_dev * pci_scan_single_device(struct pci_bus *bus, int devfn)
 {
@@ -312,8 +1043,8 @@ int pci_scan_slot(struct pci_bus *bus, int devfn)
     }
 
     /* only one slot has pcie device */
-    if (bus->self && nr)
-        pcie_aspm_init_link_state(bus->self);
+//    if (bus->self && nr)
+//        pcie_aspm_init_link_state(bus->self);
 
     return nr;
 }
@@ -339,7 +1070,7 @@ unsigned int pci_scan_child_bus(struct pci_bus *bus)
      */
     if (!bus->is_added) {
         dbgprintf("fixups for bus\n");
-        pcibios_fixup_bus(bus);
+//        pcibios_fixup_bus(bus);
         if (pci_is_root_bus(bus))
             bus->is_added = 1;
     }
@@ -416,4 +1147,39 @@ int pci_cfg_space_size(struct pci_dev *dev)
     return PCI_CFG_SPACE_SIZE;
 }
 
+
+
+struct pci_bus * pci_create_bus(int bus, struct pci_ops *ops, void *sysdata)
+{
+    int error;
+    struct pci_bus *b, *b2;
+
+    b = pci_alloc_bus();
+    if (!b)
+        return NULL;
+
+    b->sysdata = sysdata;
+    b->ops = ops;
+
+    b2 = pci_find_bus(pci_domain_nr(b), bus);
+    if (b2) {
+        /* If we already got to this bus through a different bridge, ignore it */
+        dbgprintf("bus already known\n");
+        goto err_out;
+    }
+
+//    down_write(&pci_bus_sem);
+    list_add_tail(&b->node, &pci_root_buses);
+//    up_write(&pci_bus_sem);
+
+    b->number = b->secondary = bus;
+    b->resource[0] = &ioport_resource;
+    b->resource[1] = &iomem_resource;
+
+    return b;
+
+err_out:
+    kfree(b);
+    return NULL;
+}
 

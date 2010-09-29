@@ -405,17 +405,6 @@ static inline void iounmap(void *addr)
     FreeKernelSpace(addr);
 }
 
-static inline void *
-pci_alloc_consistent(struct pci_dev *hwdev, size_t size,
-                      addr_t *dma_handle)
-{
-
-    size = (size + 0x7FFF) & ~0x7FFF;
-
-    *dma_handle = AllocPages(size >> 12);
-    return (void*)MapIoMem(*dma_handle, size, PG_SW+PG_NOCACHE);
-}
-
 static inline void __SysMsgBoardStr(char *text)
 {
     __asm__ __volatile__(

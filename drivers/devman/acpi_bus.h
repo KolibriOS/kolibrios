@@ -33,12 +33,6 @@ struct acpi_device_ops {
     acpi_op_notify notify;
 };
 
-struct resource_list {
-    struct resource_list *next;
-    struct resource *res;
-//    struct pci_dev *dev;
-};
-
 enum acpi_bus_device_type {
     ACPI_BUS_TYPE_DEVICE = 0,
     ACPI_BUS_TYPE_POWER,
