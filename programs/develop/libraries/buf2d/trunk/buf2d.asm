@@ -998,6 +998,55 @@ endl
 	ret
 endp
 
+;рисование горизонтальной линии, потому нет параметра coord_y0
+align 4
+proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword, color:dword
+	pushad
+		mov edx,dword[color]
+
+		mov eax,edi
+		mov edi,[buf_struc]
+		cmp buf2d_bits,24
+		jne @f
+
+		mov ebx,dword[coord_x0]
+		mov ecx,dword[coord_y0]
+		mov esi,dword[coord_x1]
+		
+		@@: ;for (x=x0 ; x<x1; x++) ;------------------------------------
+			call draw_pixel
+			inc ebx
+			cmp ebx,esi
+			jge @f
+			jmp @b
+		@@:
+	popad
+	ret
+endp
+
+align 4
+proc buf_rect_by_size, buf_struc:dword, coord_x:dword,coord_y:dword,w:dword,h:dword, color:dword
+pushad
+	mov edi,[buf_struc]
+	cmp buf2d_bits,24
+	jne .coord_end
+
+		mov eax,[coord_x]
+		mov ebx,[coord_y]
+		mov ecx,[w]
+		add ecx,eax
+		mov edx,[h]
+		add edx,ebx
+		mov esi,dword[color]
+		stdcall buf_line_h, edi, eax, ebx, ecx, esi ;линия -
+		stdcall buf_line_brs, edi, eax, ebx, eax, edx, esi ;линия |
+		stdcall buf_line_h, edi, eax, edx, ecx, esi ;линия -
+		stdcall buf_line_brs, edi, ecx, ebx, ecx, edx, esi ;линия |
+	.coord_end:
+popad
+	ret
+endp
+
 align 4
 proc buf_circle, buf_struc:dword, coord_x:dword, coord_y:dword, r:dword, color:dword
 locals
@@ -2034,6 +2083,7 @@ EXPORTS:
 	dd sz_buf2d_draw, buf_draw_buf
 	dd sz_buf2d_delete, buf_delete
 	dd sz_buf2d_line, buf_line_brs
+	dd sz_buf2d_rect_by_size, buf_rect_by_size
 	dd sz_buf2d_circle, buf_circle
 	dd sz_buf2d_img_hdiv2, buf_img_hdiv2
 	dd sz_buf2d_img_wdiv2, buf_img_wdiv2
@@ -2055,6 +2105,7 @@ EXPORTS:
 	sz_buf2d_draw db 'buf2d_draw',0
 	sz_buf2d_delete db 'buf2d_delete',0
 	sz_buf2d_line db 'buf2d_line',0 ;рисование линии
+	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0 ;рисование прямоугольника, 2-я координата задана по размеру
 	sz_buf2d_circle db 'buf2d_circle',0 ;рисование окружности
 	sz_buf2d_img_hdiv2 db 'buf2d_img_hdiv2',0 ;сжатие изображения по высоте в 2 раза (размер буфера не меняется)
 	sz_buf2d_img_wdiv2 db 'buf2d_img_wdiv2',0 ;сжатие изображения по ширине в 2 раза (размер буфера не меняется)

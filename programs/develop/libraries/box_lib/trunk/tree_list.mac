@@ -1535,7 +1535,7 @@ align 4
 tl_node_poi_get_data: ;взять указатель на данные узла
   push ebp
   mov ebp,esp
-  push eax ecx edi
+  push eax ecx edx edi
     mov edi,dword[ebp+12]
     mov edx,dword[ebp+8]
 
@@ -1549,7 +1549,7 @@ tl_node_poi_get_data: ;взять указатель на данные узла
       add eax,dword[edi]
       mov dword[ebp+12],eax ;return node data pointer
     @@:
-  pop edi ecx eax
+  pop edi edx ecx eax
   pop ebp
   ret 4
 

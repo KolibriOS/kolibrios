@@ -30,9 +30,9 @@
 <li><a href="#fun_lev_d">tl_node_lev_dec</a></li>
 <li><a href="#fun_mov_u">tl_node_move_up</a></li>
 <li><a href="#fun_mov_d">tl_node_move_down</a></li>
-<li>tl_node_poi_get_info</li>
-<li>tl_node_poi_get_next_info</li>
-<li>tl_node_poi_get_data</li>
+<li><a href="#fun_poi_gi">tl_node_poi_get_info</a></li>
+<li><a href="#fun_poi_gni">tl_node_poi_get_next_info</a></li>
+<li><a href="#fun_poi_gd">tl_node_poi_get_data</a></li>
 <li><a href="#fun_sme">tl_save_mem</a></li>
 <li><a href="#fun_lme">tl_load_mem</a></li>
 <li><a href="#fun_gme">tl_get_mem_size</a></li>
@@ -76,10 +76,10 @@
 
 <h2><a name="fun_add">tl_node_add</a></h2>
 <p>Добавляет узел, в позицию указанную курсором. Пример добавления узла:</p>
-<pre>  push dword tree1
-  push dword 0x10002
-  push dword data_buffer
-  call dword[tl_node_add]</pre>
+<pre>	push dword tree1
+	push dword 0x10002
+	push dword data_buffer
+	call dword[tl_node_add]</pre>
 <p>где: <b>tree1</b> - структура tree_list;
  <b>0x10002</b> - параметры узла (старшие байты 0x0001 - индекс иконки, отображаемой возле узла; меньший байт 0x02 - уровень вложености узла); <b>data_buffer</b> - указатель на дынные, добавляемые в узел.</p>
 
@@ -134,36 +134,57 @@ pop edi esi ecx</pre>
 
 <h2><a name="fun_mov_u">tl_node_move_up</a></h2>
 <p>Перемещает вверх узел под курсором. Вместе с узлом двигается также и курсор. Пример использования функции:</p>
-<pre>  push dword tree1
-  call dword[tl_node_move_up] ;переместить узел</pre>
+<pre>	push dword tree1
+	call dword[tl_node_move_up] ;переместить узел</pre>
 <p>где: <b>tree1</b> - структура tree_list</p>
 
 <h2><a name="fun_mov_d">tl_node_move_down</a></h2>
 <p>Перемещает вниз узел под курсором. Вместе с узлом двигается также и курсор. Пример использования функции:</p>
-<pre>  push dword tree1
-  call dword[tl_node_move_down] ;переместить узел</pre>
+<pre>	push dword tree1
+	call dword[tl_node_move_down] ;переместить узел</pre>
 <p>где: <b>tree1</b> - структура tree_list</p>
 
-<h2>tl_node_poi_get_info</h2>
-<p>Берет внутренний указатель на структуру описывающую узел.</p>
-<h2>tl_node_poi_get_next_info</h2>
-<p>Берет указатель на следующий элемент в цепи, без учета открытия/закрытия дочерних узлов.</p>
-<h2>tl_node_poi_get_data</h2>
-<p>Берет указатель на данные (пользовательские и подпись) из узла указанного в указателе.</p>
+<h2><a name="fun_poi_gi">tl_node_poi_get_info</a></h2>
+<p>Берет внутренний указатель на структуру описывающую узел. Пример использования функции:</p>
+<pre>	push dword tree1
+	push dword 0
+	call dword[tl_node_poi_get_info]
+	pop esi</pre>
+<p>где: <b>tree1</b> - структура tree_list;
+<b>0</b> - позиция узла, с которого берется указатель;
+<b>esi</b> - указатель на структуру описывающую узел.</p>
 
-<p>Функциями tl_node_poi_get_info, tl_node_poi_get_next_info и tl_node_poi_get_data можно считывать информацию о узлах элемента, при этом не меняя текущего положения курсора. Т. е. можно организовать доступ к даным элемента в &quot;фоновом режиме&quot;.</p>
+<h2><a name="fun_poi_gni">tl_node_poi_get_next_info</a></h2>
+<p>Берет указатель на следующий элемент в цепи, без учета открытия/закрытия дочерних узлов. Пример использования функции:</p>
+<pre>	push tree1
+	push esi
+	call dword[tl_node_poi_get_next_info]
+	pop esi ;переходим к следущему узлу</pre>
+<p>где: <b>tree1</b> - структура tree_list;
+<b>esi</b> - до вызова функции указатель на структуру описывающую узел, после вызова указатель на структуру описывающую следущий узел в цепи.</p>
+
+<h2><a name="fun_poi_gd">tl_node_poi_get_data</a></h2>
+<p>Берет указатель на данные (пользовательские и подпись) из узла указанного в указателе. Пример использования функции:</p>
+<pre>	push dword tree1
+	push dword esi
+	call dword[tl_node_poi_get_data]
+	pop eax ;получаем данные узла</pre>
+<p>где: <b>tree1</b> - структура tree_list;
+<b>esi</b> - указатель на структуру описывающую узел;
+<b>eax</b> - указатель на данные узла, описааного в esi.</p>
+<p>Указатель, возвращаемый функцией <i>tl_node_poi_get_data</i> аналогичен указателю возвращаемому функцией <i>tl_node_get_data</i>. Отличие функций в том, что <i>tl_node_poi_get_data</i> работает без задействования курсора. Функциями <i>tl_node_poi_get_info</i>, <i>tl_node_poi_get_next_info</i> и <i>tl_node_poi_get_data</i> можно считывать информацию о узлах элемента, при этом не меняя текущего положения курсора. Т. е. можно организовать доступ к даным элемента в &quot;фоновом режиме&quot;.</p>
 
 <h2><a name="fun_sme">tl_save_mem</a></h2>
 <p>Сохраняет информацию об узлах элемента в память. Пример использования функции:</p>
-<pre>  MEM_SIZE equ 5000
-  node_data rb MEM_SIZE
+<pre>	MEM_SIZE equ 5000
+	node_data rb MEM_SIZE
 .........
-  push dword tree1
-  push dword 0
-  push dword node_data
-  push dword MEM_SIZE
-  call dword[tl_save_mem]
-  pop eax</pre>
+	push dword tree1
+	push dword 0
+	push dword node_data
+	push dword MEM_SIZE
+	call dword[tl_save_mem]
+	pop eax</pre>
 <p>где: <b>tree1</b> - структура tree_list;
  <b>0</b> - опция сохранения в начало блока памяти (если = 1, то добавляет элемент после других сохраненных ранее);
  <b>node_data</b> - указатель на блок памяти;
@@ -172,15 +193,15 @@ pop edi esi ecx</pre>
 
 <h2><a name="fun_lme">tl_load_mem</a></h2>
 <p>Загружает информацию об узлах элемента из памяти. Пример использования функции:</p>
-<pre>  MEM_SIZE equ 5000
-  node_data rb MEM_SIZE
+<pre>	MEM_SIZE equ 5000
+	node_data rb MEM_SIZE
 .........
-  push dword tree1
-  push dword 0
-  push dword node_data
-  push dword MEM_SIZE
-  call dword[tl_load_mem]
-  pop eax</pre>
+	push dword tree1
+	push dword 0
+	push dword node_data
+	push dword MEM_SIZE
+	call dword[tl_load_mem]
+	pop eax</pre>
 <p>где: <b>tree1</b> - структура tree_list;
  <b>0</b> - индекс считываемого элемента;
  <b>node_data</b> - указатель на блок памяти;
@@ -197,8 +218,9 @@ pop edi esi ecx</pre>
 
 <h1><a name="struc_tree_list">Структура tree_list</a></h1>
 <pre>struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
-    col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
-    info_capt_len,el_focus, p_scrol,on_press {
+	col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
+	info_capt_len,el_focus, p_scrol,on_press
+{
   .data_info  dd 0
   .info_size  dw info_size
   .info_max_count dd info_max_count
@@ -232,20 +254,25 @@ pop edi esi ecx</pre>
 <p><b>info_max_count</b> - максимальное количество узлов, которые можно добавить в элемент.</p>
 <p><b>style</b> - стили элемента.</p>
 <p><b>data_nodes</b> - указатель на внутренние структуры узлов (<i>TreeList</i>).</p>
-<p><b>data_img</b> - указатель на изображения с иконками узлов.</p>
-<p><b>data_img_sys</b> - указатель на системные изображения (курсор, плюсики, линии, ... все кроме иконок узлов).</p>
+<p><b>data_img</b> - указатель на изображения с иконками узлов. Формат изображения такой же как и в сист. ф. 7: <i>BBGGRRBBGGRR...</i>.</p>
+<p><b>img_cx</b> - ширина одной иконки.</p>
+<p><b>img_cy</b> - высота одной иконки.</p>
+<p><b>data_img_sys</b> - указатель на системные изображения (курсор, плюсики, линии, ... все кроме иконок узлов). Формат изображения такой же как и в сист. ф. 7: <i>BBGGRRBBGGRR...</i></p>
+<p><b>col_bkg</b> - цвет фона.</p>
+<p><b>col_zag</b> - цвет строки заголовка (если она задана) и кнопок и ползунка вертикальной полосы прокрутки (если она есть).</p>
+<p><b>col_txt</b> - цвет текста.</p>
 <p><b>capt_cy</b> - высота строки для подписи вверху элемента, если меньше 9 подпись не выводится.</p>
 <p><b>info_capt_len</b> - длинна текста для подписи. Если равно 0, то длинна считается так: <i>info_size - info_capt_offs</i>.</p>
 <p><b>p_scrol</b> - указатель на структуру скроллинга, связанного с данным элементом.</p>
-<p><b>on_press</b> - указатель на функцию, которая будет вызвана при нажитии [<b>Enter</b>]. Если указатель равен 0 то ничего не будет вызыватся.</p>
+<p><b>on_press</b> - указатель на функцию, которая будет вызвана при нажатии [<b>Enter</b>]. Если указатель равен 0 то ничего не будет вызываться.</p>
 
 <p><img src="info_size.png"></p>
 <p>Рис. 2. Параметры <i>info_size</i>, <i>info_capt_offs</i> и <i>info_capt_len</i> в узле</p>
 
 <p>Пример создания структуры:</p>
 <pre>tree1 tree_list 24,500, tl_draw_par_line+tl_list_box_mode, 16,16,\
-    0x8080ff,0x0000ff,0xffffff, 10,35,200-16,285, 14,4,0,\
-    el_focus, wScr,fun_on_enter</pre>
+	0x8080ff,0x0000ff,0xffffff, 10,35,200-16,285, 14,4,0,\
+	el_focus, wScr,fun_on_enter</pre>
 
 <h1><a name="tree_list_styles">Стили элемента</a></h1>
 <h2>tl_key_no_edit</h2>
@@ -256,6 +283,6 @@ pop edi esi ecx</pre>
 <p>Стиль не отображает уровни (как в ListBox все узлы одного уровня).</p>
 
 <hr>
-<p>Документация обновлялась последний раз 08.09.10.</p>
+<p>Документация обновлялась последний раз 30.09.10.</p>
 </body>
 </html>
