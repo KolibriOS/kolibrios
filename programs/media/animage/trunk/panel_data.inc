@@ -1,7 +1,7 @@
 ;**********************************************************
 ;------------------TEXT DATA-------------------------------
 ;**********************************************************
-name_of_program      db 'Graphics editor <<ANIMAGE>> V 1.1',0
+name_of_program      db 'Graphics editor <<ANIMAGE>> V 1.2',0
 mouse_pos_x	     db 'X='
 mouse_pos_y	     db 'Y='
 new_text1	     db 'PICTURE SIZE X'

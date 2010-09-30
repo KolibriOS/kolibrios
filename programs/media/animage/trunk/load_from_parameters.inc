@@ -5,25 +5,24 @@
 ;OUT
 ;value not returned
 
-check_loading_from_parameters:
+;check_loading_from_parameters:
 
-     cmp [eax],byte 0
-     jz no_parameters
+;     cmp [eax],byte 0
+;     jz no_parameters
 
      ;copy file name
-     mov esi,eax
-     mov edi,ebx
-     mov ecx,256
-     rep movsb
+;     mov esi,eax
+;     mov edi,ebx
+;     mov ecx,256
+;     rep movsb
 
      ;load file in memory
      
-     call load_picture
+;     call load_picture
 
-     no_parameters:
+;     no_parameters:
      
-     ret
-
+;     ret
 
 ; load picture from file to memory
 
@@ -83,36 +82,8 @@ load_picture:
 	 ;----------------------------------------------------------
 	 ;Get momory for unpacking picture and for picture's bufers
 	 ;----------------------------------------------------------
-	 mov eax,[Picture_SizeX]
-	 mov ebx,[Picture_SizeY]
-
-	 imul eax,ebx
-	 lea eax,[eax+eax*2]
-
-	 mov ebx,[ScreenPointer]
-	 add ebx,(1200*1000*3)+50*(20*20*3)+500000
-
-	 mov [PointerToPicture],ebx
-	 mov [PointerToCopyPicture],ebx
-	 mov [PointerToCopyPicture2],ebx
-	 mov [PointerToEditBufer],ebx
-	 mov [PointerToSpriteBufer],ebx
-
-	 add [PointerToCopyPicture],eax
-
-	 add [PointerToCopyPicture2],eax
-	 add [PointerToCopyPicture2],eax
-
-	 add [PointerToEditBufer],eax
-	 add [PointerToEditBufer],eax
-	 add [PointerToEditBufer],eax
-
-	 add [PointerToSpriteBufer],eax
-	 add [PointerToSpriteBufer],eax
-	 add [PointerToSpriteBufer],eax
-	 add [PointerToSpriteBufer],eax
-
 	 call GetMemory
+
 	 ;----------------------------------------------------------
 	 ;--------------------Load file in memory-------------------
 	 ;----------------------------------------------------------

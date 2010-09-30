@@ -78,7 +78,7 @@
 
     mov eax,CursorsID
     call delete_cursors
-
+close:
     mov eax,-1
     mcall
 

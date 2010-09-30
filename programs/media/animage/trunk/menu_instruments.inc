@@ -172,34 +172,6 @@ TakeInstruments:
 	 mcall
 
 	 ;get memory for new picture
-	 mov eax,[Picture_SizeX]
-	 mov ebx,[Picture_SizeY]
-
-	 imul eax,ebx
-	 lea eax,[eax+eax*2]
-
-	 mov ebx,[ScreenPointer]
-	 add ebx,(1200*1000*3)+50*(20*20*3)+500000
-
-	 mov [PointerToPicture],ebx
-	 mov [PointerToCopyPicture],ebx
-	 mov [PointerToCopyPicture2],ebx
-	 mov [PointerToEditBufer],ebx
-	 mov [PointerToSpriteBufer],ebx
-
-	 add [PointerToCopyPicture],eax
-
-	 add [PointerToCopyPicture2],eax
-	 add [PointerToCopyPicture2],eax
-
-	 add [PointerToEditBufer],eax
-	 add [PointerToEditBufer],eax
-	 add [PointerToEditBufer],eax
-
-	 add [PointerToSpriteBufer],eax
-	 add [PointerToSpriteBufer],eax
-	 add [PointerToSpriteBufer],eax
-	 add [PointerToSpriteBufer],eax
 
 	 call GetMemory
 
@@ -217,7 +189,17 @@ TakeInstruments:
 	cmp [number_menu],2
 	 jne no_open
 
-	 opendialog drawwin,open_1,open_2,file_path
+;	 opendialog drawwin,open_1,open_2,file_path
+;---------------------------------------------------------------------
+	mov	[OpenDialog_data.type],0 ; open
+	
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
+	
+	cmp	[OpenDialog_data.status],1
+	jne	still
+;---------------------------------------------------------------------
+
 	 open_1:
 
 	 mov eax,40
@@ -278,35 +260,6 @@ TakeInstruments:
 	 ;----------------------------------------------------------
 	 ;Get momory for unpacking picture and for picture's bufers
 	 ;----------------------------------------------------------
-	 mov eax,[Picture_SizeX]
-	 mov ebx,[Picture_SizeY]
-
-	 imul eax,ebx
-	 lea eax,[eax+eax*2]
-
-	 mov ebx,[ScreenPointer]
-	 add ebx,(1200*1000*3)+50*(20*20*3)+500000
-
-	 mov [PointerToPicture],ebx
-	 mov [PointerToCopyPicture],ebx
-	 mov [PointerToCopyPicture2],ebx
-	 mov [PointerToEditBufer],ebx
-	 mov [PointerToSpriteBufer],ebx
-
-	 add [PointerToCopyPicture],eax
-
-	 add [PointerToCopyPicture2],eax
-	 add [PointerToCopyPicture2],eax
-
-	 add [PointerToEditBufer],eax
-	 add [PointerToEditBufer],eax
-	 add [PointerToEditBufer],eax
-
-	 add [PointerToSpriteBufer],eax
-	 add [PointerToSpriteBufer],eax
-	 add [PointerToSpriteBufer],eax
-	 add [PointerToSpriteBufer],eax
-
 	 call GetMemory
 	 ;----------------------------------------------------------
 	 ;--------------------Load file in memory-------------------
@@ -380,7 +333,16 @@ TakeInstruments:
 	 cmp [number_menu],4
 	 jne no_save
 
-	 savedialog drawwin,save1,save2,file_path
+;	 savedialog drawwin,save1,save2,file_path
+;---------------------------------------------------------------------
+	mov	[OpenDialog_data.type],1 ; save
+	
+	push    dword OpenDialog_data
+	call    [OpenDialog_Start]
+	
+	cmp	[OpenDialog_data.status],1
+	jne	still
+;---------------------------------------------------------------------
 
 	 save1:
 
