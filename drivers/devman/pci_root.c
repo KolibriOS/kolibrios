@@ -22,7 +22,7 @@ static const struct acpi_device_ids root_device_ids[] = {
     {"", 0},
 };
 
-static LIST_HEAD(acpi_pci_roots);
+LIST_HEAD(acpi_pci_roots);
 
 
 /**
@@ -146,4 +146,45 @@ out:
 
     return pdev;
 }
+
+
+static void print_bus_irqs(struct pci_bus *bus)
+{
+    struct pci_dev *dev;
+
+    list_for_each_entry(dev, &bus->devices, bus_list)
+    {
+        dbgprintf("PCI_%x_%x bus:%d devfn: %x bios irq %d acpi irq %d\n",
+                   dev->vendor, dev->device, dev->busnr, dev->devfn,
+                   dev->irq, acpi_get_irq(dev));
+    };
+}
+
+void print_pci_irqs()
+{
+    struct acpi_pci_root *root;
+
+    ENTER();
+    list_for_each_entry(root, &acpi_pci_roots, node)
+    {
+        struct pci_bus *pbus, *tbus;
+        struct pci_dev *dev;
+
+        pbus = root->bus;
+
+        list_for_each_entry(dev, &pbus->devices, bus_list)
+        {
+            dbgprintf("PCI_%x_%x bus:%d devfn: %x bios irq %d acpi irq %d\n",
+                      dev->vendor, dev->device, dev->busnr, dev->devfn,
+                      dev->irq, acpi_get_irq(dev));
+        };
+
+        list_for_each_entry(tbus, &pbus->children, node)
+        {
+            print_bus_irqs(tbus);
+        };
+    }
+    LEAVE();
+};
+
 

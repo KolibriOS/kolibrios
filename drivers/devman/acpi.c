@@ -65,6 +65,8 @@ static ACPI_HANDLE pci_root_handle;
 
 #define acpi_remap( addr ) MapIoMem((void*)(addr),4096, 0x01)
 
+void print_pci_irqs();
+
 
 struct acpi_device *acpi_root;
 
@@ -117,7 +119,7 @@ static bool pci_use_crs = false;
 #define IORESOURCE_BUS      0x00001000
 
 
-static LIST_HEAD(acpi_pci_roots);
+extern struct list_head acpi_pci_roots;
 
 #define ACPI_PCI_ROOT_CLASS     "pci_bridge"
 #define ACPI_PCI_ROOT_DEVICE_NAME   "PCI Root Bridge"
@@ -650,6 +652,8 @@ u32_t drvEntry(int action, char *cmdline)
 //    print_device_tree(acpi_root);
 
     acpi_init_pci(acpi_root);
+
+    print_pci_irqs();
 
 /*
     ACPI_HANDLE bus_handle;

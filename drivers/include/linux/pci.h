@@ -575,6 +575,7 @@ int pci_find_next_ht_capability(struct pci_dev *dev, int pos, int ht_cap);
 struct pci_bus * pci_find_next_bus(const struct pci_bus *from);
 unsigned int pci_scan_child_bus(struct pci_bus *bus);
 void pcibios_fixup_bus(struct pci_bus *b);
+u8 pci_swizzle_interrupt_pin(struct pci_dev *dev, u8 pin);
 
 
 static inline bool pci_is_root_bus(struct pci_bus *pbus)
@@ -652,7 +653,9 @@ static inline int pci_ats_enabled(struct pci_dev *dev)
     return 0;
 }
 
-#define pci_name(x) "radeon"
+int acpi_get_irq(struct pci_dev *dev);
+
+#define pci_name(x) ""
 
 #endif //__PCI__H__
 

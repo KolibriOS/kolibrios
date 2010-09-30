@@ -262,6 +262,31 @@ int pci_find_ext_capability(struct pci_dev *dev, int cap)
     return 0;
 }
 
+
+/**
+ * pci_swizzle_interrupt_pin - swizzle INTx for device behind bridge
+ * @dev: the PCI device
+ * @pin: the INTx pin (1=INTA, 2=INTB, 3=INTD, 4=INTD)
+ *
+ * Perform INTx swizzling for a device behind one level of bridge.  This is
+ * required by section 9.1 of the PCI-to-PCI bridge specification for devices
+ * behind bridges on add-in cards.  For devices with ARI enabled, the slot
+ * number is always 0 (see the Implementation Note in section 2.2.8.1 of
+ * the PCI Express Base Specification, Revision 2.1)
+ */
+u8 pci_swizzle_interrupt_pin(struct pci_dev *dev, u8 pin)
+{
+    int slot;
+
+ //   if (pci_ari_enabled(dev->bus))
+ //       slot = 0;
+ //   else
+        slot = PCI_SLOT(dev->devfn);
+
+    return (((pin - 1) + slot) % 4) + 1;
+}
+
+
 #if 0
 
 u32 pci_probe = 0;

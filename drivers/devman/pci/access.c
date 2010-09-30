@@ -77,7 +77,7 @@ int pci_bus_read_config_word (struct pci_bus *bus, u32 devfn,
 
 
 int pci_bus_read_config_dword (struct pci_bus *bus, u32 devfn,
-                              int pos, u16 *value)
+                               int pos, u32 *value)
 {
     if ( pos & 3)
         return PCIBIOS_BAD_REGISTER_NUMBER;

@@ -875,9 +875,7 @@ static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
 
     /* some broken boards return 0 or ~0 if a slot is empty: */
     if (l == 0xffffffff || l == 0x00000000 ||
-        l == 0x0000ffff || l == 0xffff0000 ||
-        (l & 0xffff0000) == 0xffff0000     ||
-        (l & 0x0000ffff) == 0x0000ffff )
+        l == 0x0000ffff || l == 0xffff0000)
         return NULL;
 
     /* Configuration request Retry Status */

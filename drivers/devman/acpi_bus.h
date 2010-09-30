@@ -146,6 +146,10 @@ struct acpi_pci_root {
 
 };
 
+static inline void *acpi_driver_data(struct acpi_device *d)
+{
+    return d->driver_data;
+}
 
 #define acpi_device_bid(d)  ((d)->pnp.bus_id)
 #define acpi_device_adr(d)  ((d)->pnp.bus_address)
@@ -160,4 +164,7 @@ int acpi_pci_irq_add_prt(ACPI_HANDLE handle, struct pci_bus *bus);
 int acpi_pci_bind_root(struct acpi_device *device);
 struct pci_dev *acpi_get_pci_dev(ACPI_HANDLE handle);
 int acpi_is_root_bridge(ACPI_HANDLE handle);
+
+int acpi_pci_link_allocate_irq(ACPI_HANDLE handle, int index,
+                               int *triggering, int *polarity, char **name);
 
