@@ -22,8 +22,9 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
          mov  ebx, [irq]                   ;irq num
          test ebx, ebx
          jz   .err
-         cmp  ebx, 15                      ; hidnplayr says: we only have 16 IRQ's
-         ja   .err
+	cmp	ebx, [IRQ_COUNT]		; hidnplayr says: we only have 16 IRQ's
+						; Ghost says: we can have more...
+	jae	.err
          mov  eax, [handler]
          test eax, eax
          jz   .err
@@ -54,7 +55,7 @@ endp
 
 uglobal
 
-	irq_rights	 rd	 16
+	irq_rights	 rd	 IRQ_RESERVE
 
 endg
 
@@ -80,85 +81,31 @@ proc  detach_int_handler
 	   ret
 endp
 
-align 4
-proc enable_irq stdcall, irq_line:dword
-	   mov ebx, [irq_line]
-	   mov edx, 0x21
-	   cmp ebx, 8
-	   jb @F
-	   mov edx, 0xA1
-	   sub ebx,8
-@@:
-	   in al,dx
-	   btr eax, ebx
-	   out dx, al
-	   ret
-endp
 
 align 16
 ;; proc irq_serv
 
 irq_serv:
 
-.irq_1:
-	   push 1
-	   jmp .main
-align 4
-.irq_2:
-	   push 2
-	   jmp .main
-align 4
-.irq_3:
-	   push 3
-	   jmp .main
-align 4
-.irq_4:
-	   push 4
-	   jmp .main
-align 4
-.irq_5:
-	   push 5
-	   jmp .main
-; align 4
-; .irq_6:
-;	   push 6
+; .irq_1:
+	   ; push 1
 ;	   jmp .main
+; etc...	   
+	   
+macro irq_serv_h [num] {
+	forward
 align 4
-.irq_7:
-	   push 7
+  .irq_#num :
+	push num
 	   jmp .main
-align 4
-.irq_8:
-	   push 8
-	   jmp .main
-align 4
-.irq_9:
-	   push 9
-	   jmp .main
-align 4
-.irq_10:
-	   push 10
-	   jmp .main
-align 4
-.irq_11:
-	   push 11
-	   jmp .main
-align 4
-.irq_12:
-	   push 12
-	   jmp .main
-; align 4
-; .irq_13:
-;	   push 13
-;	   jmp .main
-; align 4
-; .irq_14:
-;	   push 14
-;	   jmp .main
-; align 4
-; .irq_15:
-;	   push 15
-;	   jmp .main
+}
+
+irq_serv_h 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12
+
+; I don`t known how to use IRQ_RESERVE
+if IRQ_RESERVE > 16
+irq_serv_h 16, 17, 18, 19, 20, 21, 22, 23
+end if
 
 align 16
 .main:
@@ -178,15 +125,8 @@ align 16
 	   call ebx
 	   mov	[check_idle_semaphore],5
 
-.exit:
-
-	   cmp dword [esp + 32], 8
-	   mov al, 0x20
-	   jb @f
-	   out 0xa0, al
-@@:
-	   out 0x20, al
-
+.exit:	mov	eax, [esp + 32]
+	call	IRQ_EOI
 	   restore_ring3_context
 	   add	 esp, 4
 
@@ -1620,70 +1560,3 @@ destroy_kernel_object:
 
 	   call free	       ;release object memory
 	   ret
-
-
-
-if 0
-
-irq:
-
-.irq0:
-	   pusfd
-	   pushad
-	   push IRQ_0
-	   jmp .master
-.irq_1:
-	   pusfd
-	   pushad
-	   push IRQ_1
-	   jmp .master
-
-.master:
-	   mov ax, app_data
-	   mov ds, eax
-	   mov es, eax
-	   mov ebx, [esp+4]  ;IRQ_xx
-	   mov eax, [irq_handlers+ebx+4]
-	   call intr_handler
-	   mov ecx, [esp+4]
-	   cmp [irq_actids+ecx*4], 0
-	   je @F
-	   in al, 0x21
-	   bts eax, ecx
-	   out 0x21, al
-	   mov al, 0x20
-	   out 0x20, al
-	   jmp .restart
-
-.slave:
-	   mov ax, app_data
-	   mov ds, eax
-	   mov es, eax
-	   mov ebx, [esp+4]  ;IRQ_xx
-	   mov eax, [irq_handlers+ebx+4]
-	   call intr_handler
-	   mov ecx, [esp+4]
-	   sub ecx, 8
-	   cmp [irq_actids+ecx*4], 0
-	   je @F
-	   in al, 0xA1
-	   bts eax, ecx
-	   out 0xA1, al
-	   mov al, 0x20
-	   out 0xA0, al
-	   out 0x20, al
-.restart:
-	   mov ebx, [next_slot]
-	   test ebx, ebx
-	   jz @F
-	   mov [next_task],0
-	   mov esi, [prev_slot]
-	   call do_change_task
-	   add esp, 4
-	   iretd
-
-end if
-
-
-
-

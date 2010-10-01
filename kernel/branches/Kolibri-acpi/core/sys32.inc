@@ -39,6 +39,7 @@ iglobal
         times   12 dd unknown_interrupt ;int_20..int_31
 
     ;interrupt handlers addresses (for interrupt gate construction)
+	; 0x20 .. 0x2F - IRQ handlers
         dd      irq0, irq_serv.irq_1, irq_serv.irq_2
     if  USE_COM_IRQ
         dd      irq_serv.irq_3, irq_serv.irq_4
@@ -47,9 +48,22 @@ iglobal
     end if
         dd      irq_serv.irq_5,  p_irq6,          irq_serv.irq_7
         dd      irq_serv.irq_8,  irq_serv.irq_9,  irq_serv.irq_10
-        dd      irq_serv.irq_11, irq_serv.irq_12, irqD,p_irq14,p_irq15
-        times   16 dd unknown_interrupt ;int_0x30..int_0x3F
+        dd irq_serv.irq_11, irq_serv.irq_12
+	dd irq13
+	dd p_irq14,p_irq15
+	; I don`t known how to use IRQ_RESERVE
+if IRQ_RESERVE > 16
+	dd irq_serv.irq_16
+	dd irq_serv.irq_17
+	dd irq_serv.irq_18
+	dd irq_serv.irq_19
+	dd irq_serv.irq_20
+	dd irq_serv.irq_21
+	dd irq_serv.irq_22
+	dd irq_serv.irq_23
+end if
 
+	times 32 - IRQ_RESERVE dd unknown_interrupt
     ;int_0x40 gate trap (for directly copied)
         dw      i40 and 0xFFFF, os_code, 11101111b shl 8, i40 shr 16
 
@@ -122,8 +136,9 @@ exc_c:                          ; исключения (все, кроме 7-го - #NM)
   reg_esi       equ esp+0x04
   reg_edi       equ esp+0x00
 
-        Mov     ds,ax,app_data  ; загрузим правильные значения
-        mov     es,ax           ; в сегментные регистры
+	mov	ax, app_data	;исключение
+	mov	ds, ax		;загрузим правильные значени
+	mov	es, ax		;в регистры
         cld                     ; и приводим DF к стандарту
         movzx   ebx,bl
 ; redirect to V86 manager? (EFLAGS & 0x20000) != 0?
@@ -186,10 +201,12 @@ IRetToUserHook:
         stosd
         mov     [edi], ebx
         restore_ring3_context
+; simply return control to interrupted process
 unknown_interrupt:
         iretd
 
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+; bl - error vector
 show_error_parameters:
         mov     edx,[TASK_BASE] ;not scratched below
         DEBUGF  1, "K : Process - forced terminate PID: %x\n", [edx+TASKDATA.pid]
@@ -228,6 +245,8 @@ show_error_parameters:
   restore  reg_esi
   restore  reg_edi
 
+; IRQ runtime
+
 ; irq1  ->  hid/keyboard.inc
 macro irqh [num] {
   p_irq#num :
@@ -235,9 +254,13 @@ macro irqh [num] {
         jmp     irqhandler
 }
 
+irqh 2,3,4,5,7,8,9,10,11
+; I don`t known how to use IRQ_RESERVE
+if IRQ_RESERVE > 16
+irqh 16, 17, 18, 19, 20, 21, 22, 23
+end if
 
-
-p_irq6:
+p_irq6:	; FDC
         save_ring3_context
         mov     ax, app_data  ;os_data
         mov     ds, ax
@@ -246,12 +269,28 @@ p_irq6:
         cmp     [v86_irqhooks+edi*8], 0
         jnz     v86_irq2
         call    fdc_irq
-        call    ready_for_next_irq
+	mov	[check_idle_semaphore], 5
+	mov	al, 6
+	call	IRQ_EOI
         restore_ring3_context
         iret
 
+irq13:	; Math coprocessor
+	save_ring3_context
+	mov	ax, app_data  ;os_data
+	mov	ds, ax
+	mov	es, ax
 
-p_irq14:
+	mov	dx, 0xf0
+	mov	al, 0
+	out	dx, al
+
+	mov	al, 13
+	call	IRQ_EOI
+	restore_ring3_context
+	iret
+
+p_irq14: ; HDD
         save_ring3_context
         mov     ax, app_data  ;os_data
         mov     ds, ax
@@ -261,10 +300,13 @@ p_irq14:
         jnz     v86_irq2
 ;       mov     byte [BOOT_VAR + 0x48E], 0xFF
         call    [irq14_func]
-        call    ready_for_next_irq_1
+	mov	[check_idle_semaphore], 5
+	mov	al, 14
+	call	IRQ_EOI
         restore_ring3_context
         iret
-p_irq15:
+
+p_irq15: ; HDD2
         save_ring3_context
         mov     ax, app_data  ;os_data
         mov     ds, ax
@@ -274,7 +316,9 @@ p_irq15:
         jnz     v86_irq2
 ;       mov     byte [BOOT_VAR + 0x48E], 0xFF
         call    [irq15_func]
-        call    ready_for_next_irq_1
+	mov	[check_idle_semaphore], 5
+	mov	al, 15
+	call	IRQ_EOI
         restore_ring3_context
         iret
 
@@ -307,7 +351,7 @@ irqD:
         iret
 
 
-irqh 2,3,4,5,7,8,9,10,11
+align 4
 
 irqhandler:
 

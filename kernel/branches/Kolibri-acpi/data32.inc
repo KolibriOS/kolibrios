@@ -49,24 +49,21 @@ keymap_alt:
 
   boot_memdetect    db   'Determining amount of memory',0
   boot_fonts        db   'Fonts loaded',0
-  boot_tss          db   'Setting TSSs',0
-  boot_cpuid        db   'Reading CPUIDs',0
   boot_devices      db   'Detecting devices',0
-  boot_timer        db   'Setting timer',0
-  boot_irqs         db   'Reprogramming IRQs',0
   boot_setmouse     db   'Setting mouse',0
   boot_windefs      db   'Setting window defaults',0
   boot_bgr          db   'Calculating background',0
   boot_resirqports  db   'Reserving IRQs & ports',0
-  boot_setrports    db   'Setting addresses for IRQs',0
   boot_setostask    db   'Setting OS task',0
-  boot_allirqs      db   'Unmasking all IRQs',0
+  boot_allirqs	    db	 'Unmasking IRQs',0
   boot_tsc          db   'Reading TSC',0
   boot_cpufreq      db   'CPU frequency is ','    ',' MHz',0
   boot_pal_ega      db   'Setting EGA/CGA 320x200 palette',0
   boot_pal_vga      db   'Setting VGA 640x480 palette',0
   boot_failed       db   'Failed to start first app',0
-  boot_mtrr         db   'Setting MTRR',0
+  boot_APIC_found   db	 'APIC enabled', 0
+  boot_APIC_nfound  db	 'APIC not found', 0
+  
 if preboot_blogesc
   boot_tasking      db   'All set - press ESC to start',0
 end if
@@ -262,28 +259,10 @@ cur_saved_data    rb 4096
 fpu_data:         rb 512
 
 ; device irq owners
-irq_owner         rd 16 ; process id
-
+irq_owner	  rd IRQ_RESERVE ; process id
 ; on irq read ports
-
-irq00read         rd 16
-irq01read         rd 16
-irq02read         rd 16
-irq03read         rd 16
-irq04read         rd 16
-irq05read         rd 16
-irq06read         rd 16
-irq07read         rd 16
-irq08read         rd 16
-irq09read         rd 16
-irq10read         rd 16
-irq11read         rd 16
-irq12read         rd 16
-irq13read         rd 16
-irq14read         rd 16
-irq15read         rd 16
-
-irq_tab           rd 16
+irq00read	  rd 16 * IRQ_RESERVE
+irq_tab 	  rd IRQ_RESERVE
 
 mem_block_map     rb 512
 mem_block_list    rd 64

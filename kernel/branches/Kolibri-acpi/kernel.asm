@@ -591,28 +591,22 @@ high_code:
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 
-        call  rerouteirqs
+	call	PIC_init
 
 ; Initialize system V86 machine
         call    init_sys_v86
 
-; TIMER SET TO 1/100 S
+; Initialize system timer (IRQ0)
+	call	PIT_init
 
-        mov   al,0x34              ; set to 100Hz
-        out   0x43,al
-        mov   al,0x9b              ; lsb    1193180 / 1193
-        out   0x40,al
-        mov   al,0x2e              ; msb
-        out   0x40,al
+; Try to Initialize APIC
+	call	APIC_init
 
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
-; Also enable IRQ2, because in some configurations
-; IRQs from slave controller are not delivered until IRQ2 on master is enabled
-        mov     al, 0xFA
-        out     0x21, al
-        mov     al, 0x3F
-        out     0xA1, al
+	call	unmask_timer
+	stdcall enable_irq, 14
+	stdcall enable_irq, 15
 
 ; Enable interrupts in IDE controller
         mov     al, 0
@@ -661,6 +655,13 @@ end if
 
         mov   esi,boot_fonts
         call  boot_log
+
+; Display APIC status
+	mov	esi, boot_APIC_found
+	test	dword[APIC], 0xffffffff
+	jnz	@f
+	mov	esi, boot_APIC_nfound
+@@:	call	boot_log
 
 ; PRINT AMOUNT OF MEMORY
         mov     esi, boot_memdetect
@@ -779,9 +780,6 @@ end if
         mov   [CPU_FREQ],eax          ; save tsc / sec
 ;       mov ebx, 1000000
 ;       div ebx
-; вообще-то производительность в данном конкретном месте
-; совершенно некритична, но чтобы заткнуть любителей
-; оптимизирующих компиляторов ЯВУ...
         mov     edx, 2251799814
         mul     edx
         shr     edx, 19
@@ -805,7 +803,6 @@ end if
 
 ; SET MOUSE
 
-        ;call   detect_devices
         stdcall load_driver, szPS2MDriver
 ;        stdcall load_driver, szCOM_MDriver
 
@@ -904,7 +901,7 @@ first_app_found:
         and    al,00000010b
         loopnz @b
 
-       ; mov   al, 0xED       ; svetodiody - only for testing!
+       ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
        ; call  kb_write
        ; call  kb_read
        ; mov   al, 111b
@@ -963,8 +960,9 @@ if defined debug_com_base
 
 end if
 
-; START MULTITASKING
+;-=-=-=-=-=-=- START MULTITASKING -=-=-=-=-=-=-=-=-
 
+; A 'All set - press ESC to start' messages if need
 if preboot_blogesc
         mov     esi, boot_tasking
         call    boot_log
@@ -973,7 +971,6 @@ if preboot_blogesc
         jne     .bll1
 end if
 
-;       mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
 
 ; UNMASK ALL IRQ'S
 
@@ -994,8 +991,12 @@ end if
 ;        out   0xa0,al
 ;
 ;        loop  ready_for_irqs         ; flush the queue
+         cli                          ;guarantee forbidance of interrupts.
+	stdcall enable_irq, 2		; @#$%! PIC
+   	     stdcall enable_irq, 6		; FDD
+	     stdcall enable_irq, 13		; co-processor
 
-        stdcall attach_int_handler, 1, irq1, 0
+       	stdcall attach_int_handler, dword 1, irq1, dword 0	; keyboard
 
 ;        mov    [dma_hdd],1
         cmp     [IDEContrRegsBaseAddr], 0
@@ -1007,7 +1008,6 @@ end if
 
         jmp osloop
 
-;        jmp   $                      ; wait here for timer to take control
 
         ; Fly :)
 
@@ -1150,8 +1150,8 @@ reserve_irqs_ports:
 
 setirqreadports:
 
-        mov   [irq12read+0],dword 0x60 + 0x01000000  ; read port 0x60 , byte
-	    and   dword [irq12read+4],0                   ; end of port list
+        mov   [irq00read+12*4*16],dword 0x60 + 0x01000000  ; read port 0x60 , byte
+        and   dword [irq00read+12*4*16],0                   ; end of port list
 ;        mov   [irq12read+4],dword 0                  ; end of port list
         ;mov   [irq04read+0],dword 0x3f8 + 0x01000000 ; read port 0x3f8 , byte
         ;mov   [irq04read+4],dword 0                  ; end of port list
@@ -1240,7 +1240,7 @@ sys_outport:
     mov   [esp+32],eax
     ret
 
-  
+
   .sopl4:
 
     mov   dx,cx          ; read
@@ -1549,13 +1549,13 @@ cd_base db 0
 
 endg
    nsyse4:
-                 
+
      	sub  ebx,2		 ; SYSTEM LANGUAGE
      	jnz  nsyse5
      	mov  [syslang],ecx
      	ret
    nsyse5:
-         
+
      	sub  ebx,2		; HD BASE
      	jnz  nsyse7
 
@@ -1762,7 +1762,7 @@ ngsyse12:
      	mov  [esp+32],dword 1
      	ret
 
-	
+
 get_timer_ticks:
     	mov eax,[timer_ticks]
     	ret
@@ -2936,7 +2936,7 @@ sheduler:
 	dd	sys_sheduler.03
 	dd	sys_sheduler.04
 endg
-sys_sheduler:   
+sys_sheduler:
 ;rewritten by <Lrz>  29.12.2009
 	jmp	dword [sheduler+ebx*4]
 ;.shed_counter:
@@ -2949,7 +2949,7 @@ sys_sheduler:
 ;.perf_control:
 	inc	ebx			;before ebx=2, ebx=3
         cmp	ebx,ecx			;if ecx=3, ebx=3
-        jz 	cache_disable		
+        jz 	cache_disable
 
 	dec	ebx                     ;ebx=2
 	cmp	ebx,ecx                 ;
@@ -2965,7 +2965,7 @@ sys_sheduler:
 
 	ret
 
-.03:	
+.03:
 ;.rdmsr_instr:
 ;now counter in ecx
 ;(edx:eax) esi:edi => edx:esi
@@ -3591,7 +3591,7 @@ siar1:
 ;  * ecx = number start arrea of ports
 ;  * edx = number end arrea of ports (include last number of port)
 ;Return value:
-;  * eax = 0 - succesful 
+;  * eax = 0 - succesful
 ;  * eax = 1 - error
 ;  * The system has reserve this ports:
 ;    0..0x2d, 0x30..0x4d, 0x50..0xdf, 0xe5..0xff (include last number of port).
@@ -3744,19 +3744,19 @@ reserve_free_irq:
 
      push  ecx
      lea   ecx, [irq_owner + 4 * ecx]
-     mov   edx, [ecx]
+     mov   edx, [ecx]		; IRQ owner PID
      mov   eax, [TASK_BASE]
-     mov   edi, [eax + TASKDATA.pid]
+     mov   edi, [eax + TASKDATA.pid]	; current task PID
      pop   eax
      dec   ebx
      jnz   reserve_irq
-
-     cmp   edx, edi
+	; free irq
+     cmp   edx, edi		; check owner
      jne   ril1
      dec   esi
-     mov   [ecx], esi
+     mov   [ecx], esi		; esi = 0
 
-     jmp   ril1
+     jmp   ril1			; return successful
 
   reserve_irq:
 
@@ -3792,6 +3792,18 @@ f_irqs:
      dd 0x0
      dd p_irq14
      dd p_irq15
+
+     ; I don`t known how to use IRQ_RESERVE
+if IRQ_RESERVE > 16
+	dd p_irq16
+	dd p_irq17
+	dd p_irq18
+	dd p_irq19
+	dd p_irq20
+	dd p_irq21
+	dd p_irq22
+	dd p_irq23
+end if
 
 endg
 
@@ -4286,64 +4298,6 @@ _rdtsc:
      ret
 end if
 
-rerouteirqs:
-
-        cli
-
-        mov     al,0x11         ;  icw4, edge triggered
-        out     0x20,al
-        call    pic_delay
-        out     0xA0,al
-        call    pic_delay
-
-        mov     al,0x20         ;  generate 0x20 +
-        out     0x21,al
-        call    pic_delay
-        mov     al,0x28         ;  generate 0x28 +
-        out     0xA1,al
-        call    pic_delay
-
-        mov     al,0x04         ;  slave at irq2
-        out     0x21,al
-        call    pic_delay
-        mov     al,0x02         ;  at irq9
-        out     0xA1,al
-        call    pic_delay
-
-        mov     al,0x01         ;  8086 mode
-        out     0x21,al
-        call    pic_delay
-        out     0xA1,al
-        call    pic_delay
-
-        mov     al,255          ; mask all irq's
-        out     0xA1,al
-        call    pic_delay
-        out     0x21,al
-        call    pic_delay
-
-        mov     ecx,0x1000
-        cld
-picl1:  call    pic_delay
-        loop    picl1
-
-        mov     al,255          ; mask all irq's
-        out     0xA1,al
-        call    pic_delay
-        out     0x21,al
-        call    pic_delay
-
-        cli
-
-        ret
-
-
-pic_delay:
-
-        jmp     pdl1
-pdl1:   ret
-
-
 sys_msg_board_str:
 
      pushad
@@ -4806,27 +4760,27 @@ syscall_getarea:
            dec   ebx
      ; eax - x, ebx - y
      mov   edx,ecx
-     
+
      shr   ecx,16
      and   edx,0xffff
      mov   esi,ecx
      ; ecx - size x, edx - size y
-         
+
          mov   ebp,edx
          dec   ebp
      lea   ebp,[ebp*3]
-         
+
          imul  ebp,esi
-         
+
          mov   esi,ecx
          dec   esi
          lea   esi,[esi*3]
-         
+
      add   ebp,esi
      add   ebp,edi
 
      add   ebx,edx
-         
+
 .start_y:
      push  ecx edx
 .start_x:
@@ -4834,7 +4788,7 @@ syscall_getarea:
      add   eax,ecx
 
      call  dword [GETPIXEL] ; eax - x, ebx - y
-     
+
      mov   [ebp],cx
      shr   ecx,16
      mov   [ebp+2],cl
@@ -5118,9 +5072,7 @@ yes_shutdown_param:
 
            call restorefatchain
 
-           mov al, 0xFF
-           out 0x21, al
-           out 0xA1, al
+	   call IRQ_mask_all
 
 if 0
            mov  word [OS_BASE+0x467+0],pr_mode_exit

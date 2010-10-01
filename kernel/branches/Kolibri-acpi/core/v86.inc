@@ -328,7 +328,7 @@ v86_start:
         cmp     edx, -1
         jz      .noirqhook
 uglobal
-v86_irqhooks    rd      16*2
+v86_irqhooks    rd      IRQ_RESERVE * 2
 endg
         cmp     [v86_irqhooks+edx*8], 0
         jz      @f
@@ -898,12 +898,10 @@ v86_irq2:
         pop     ecx
 .cont:
         loop    .scan
-        mov     al, 20h
-        out     20h, al
-        cmp     edi, 8
-        jb      @f
-        out     0A0h, al
-@@:
+	
+	mov	eax, edi
+	call	IRQ_EOI
+
         popad
         iretd
 .found:

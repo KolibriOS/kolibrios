@@ -203,9 +203,6 @@ WIN_STACK           equ (OS_BASE+0x000C000)
 WIN_POS             equ (OS_BASE+0x000C400)
 FDD_BUFF            equ (OS_BASE+0x000D000)
 
-;unused ? only one reference
-ENABLE_TASKSWITCH   equ (OS_BASE+0x000E000)
-
 PUTPIXEL            equ (OS_BASE+0x000E020)
 GETPIXEL            equ (OS_BASE+0x000E024)
 
