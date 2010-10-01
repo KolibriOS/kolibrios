@@ -382,7 +382,7 @@ draw_panel:
 	mov edx,15
 	mov esi,6
 	sub ecx,10
-	call draw_volume_rectangle
+	call draw_volume_rectangle ; top menu - file and etc.
 
 	;mov eax,5
 	;mov ebx,20
@@ -398,7 +398,7 @@ draw_panel:
 	mov edx,50
 	mov esi,1
 	sub ecx,10
-	call draw_volume_rectangle
+	call draw_volume_rectangle ; tools panel
 
 	mov eax,5
 	mov ebx,20+15+1+50+1
@@ -407,7 +407,7 @@ draw_panel:
 	mov esi,1
 	sub ecx,10+20
 	sub edx,20+15+1+50+1+5+20
-	call draw_volume_rectangle
+	call draw_volume_rectangle	; picure area
 
 	mov eax,5
 	mov ebx,[Window_SizeY]
@@ -416,7 +416,7 @@ draw_panel:
 	mov esi,3
 	sub ecx,30
 	sub ebx,25+10
-	call draw_volume_rectangle
+	call draw_volume_rectangle	; horizontal scrollbar
 
 	mov eax,[Window_SizeX]
 	mov ebx,20+15+1+49+2
@@ -425,7 +425,7 @@ draw_panel:
 	mov esi,3
 	sub eax,25+10
 	sub edx,20+15+1+49+5+20
-	call draw_volume_rectangle
+	call draw_volume_rectangle	; vertical scrollbar
 
 	mov eax,[Window_SizeX]
 	mov ebx,[Window_SizeY]
@@ -434,7 +434,7 @@ draw_panel:
 	mov esi,6
 	sub eax,25+10
 	sub ebx,25+10
-	call draw_volume_rectangle
+	call draw_volume_rectangle	; down and right small area
 
 	;mov eax,445
 	;mov ebx,20+15+6

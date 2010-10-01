@@ -63,9 +63,9 @@ drawwin:
 	shl ecx,16
 	add ebx,[Window_SizeX]
 	add ecx,[Window_SizeY]
-	mov edx,0x03aabbcc
-	mov esi,0x805080d0
-	mov edi,0x005080d0
+	mov edx,0x43aabbcc
+	xor esi,esi	;0x805080d0
+	xor edi,edi	;0x005080d0
 	mcall
 
 	call draw_panel
