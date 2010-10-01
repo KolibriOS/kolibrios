@@ -47,7 +47,8 @@ communication_area_default_pach:
 Filter:
 dd	Filter.end - Filter
 .1:
-db	'MGB',0
+db	'BMP',0
+db	'GIF',0
 .end:
 db	0
 

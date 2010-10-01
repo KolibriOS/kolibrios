@@ -284,6 +284,8 @@ TakeInstruments:
 	    ;BMP DECODER
 	    call bmptoimg
 	    mov [save_flag],1
+		jmp	draw_1
+		
 	 no_unpakcing_bmp_file:
 
 
@@ -296,6 +298,7 @@ TakeInstruments:
 	 no_unpakcing_file:
 
 	 call load_icons
+draw_1:	
 	 call drawwin
 
 	 open_2:
@@ -334,6 +337,22 @@ TakeInstruments:
 	 jne no_save
 
 ;	 savedialog drawwin,save1,save2,file_path
+;---------------------------------------------------------------------
+; replace extension to '.bmp'
+	push	eax esi
+	mov	esi,[OpenDialog_data.filename_area]
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	test	eax,eax
+	jnz	@r
+	sub esi,5
+	cmp	[esi],byte '.'
+	jne	@f
+	mov [esi],dword '.bmp'
+@@:
+	pop	esi eax
 ;---------------------------------------------------------------------
 	mov	[OpenDialog_data.type],1 ; save
 	
