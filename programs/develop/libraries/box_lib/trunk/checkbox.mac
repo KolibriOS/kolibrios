@@ -6,44 +6,45 @@ macro use_checkbox_draw
 {
 check_box_draw:
        pusha   ;сохраним все регистры
-       mov	edi,dword [esp+36]
-       mov 	eax,13 
-       movzx 	ebx,word ch_left 
-       shl 	ebx,16 
-       add 	ebx,ch_size 
-       mov 	ecx,ch_top 
-       shl 	ecx,16 
-       add 	ecx,dword ch_size 
-       mov 	edx,dword ch_border_color 
-       mcall 	;рисуем рамку 
+       mov     edi,dword [esp+36]
+       mov eax,13 
+       movzx ebx,word ch_left 
+       shl ebx,16 
+       add ebx,ch_size 
+       mov ecx,ch_top 
+       shl ecx,16 
+       add ecx,dword ch_size 
+       mov edx,dword ch_border_color 
+       mcall ;рисуем рамку 
 
-       mov 	edx,dword ch_color 
-       add 	ebx,1 shl 16 - 2 
-       add 	ecx,1 shl 16 - 2 
-       mcall 	;закрашиваем внутренности чекбокса 
+       mov edx,dword ch_color 
+       add ebx,1 shl 16 - 2 
+       add ecx,1 shl 16 - 2 
+       mcall ;закрашиваем внутренности чекбокса 
 
        test dword ch_flags,2  ;достать значение бита из переменной и поместить в  флаг CF 
        jz   @f                ;в если CF=1, то выполним следующую процедуру иначе перейти на нижнюю @@
-       call check_box_draw_ch ;нарисовать включенный чек бокс
+       call check_box_draw_ch  ;нарисовать включенный чек бокс
 @@:
 ;----------------------------
 ;расчет куда будет произведен вывод текста
 ;----------------------------
-        movzx 	ebx,word ch_left        	;загрузить значение х для чек бокса
-        add	ebx,dword ch_size
-        add	ebx,dword ch_text_margin	;добавить размер стороны и расстояние на котором начнется вывод текста
-        shl	ebx,16				;сдвинем на 16 разрядов в лево (умножим на 65536)
-        mov	bx,word ch_top			;загрузим значение по y
-        add	ebx,ch_size
-        mov	ecx,dword ch_text_color		;загрузим цвет надписи + flags
-        sub	ebx,7				;добавим значение длины стороны -9+2
+        movzx ebx,word ch_left        ;загрузить значение х для чек бокса
+        add   ebx,dword ch_size
+        add   ebx,dword ch_text_margin;добавить размер стороны и расстояние на котором начнется вывод текста
+        shl   ebx,16                ;сдвинем на 16 разрядов в лево (умножим на 65536)
+        mov   bx,word ch_top        ;загрузим значение по y
+        add   ebx,ch_size
+        mov   ecx,dword ch_text_color        ;загрузим цвет надписи + flags
+        sub   ebx,7        ;добавим значение длины стороны -9+2
         
-        mov	edx,dword ch_text_ptr		;укажем адрес от куда нужно выводить строку
-        mov	esi,dword ch_text_length
-        mov	eax,4				;внесем в eax значение вывода надписи на канву
-        mcall					;Вывод 
-	popa					;восстановить значения регистров из стека
-	ret 4					;выйдем из процедуры
+        mov   edx,dword ch_text_ptr                ;укажем адрес от куда нужно выводить строку
+        mov   esi,dword ch_text_length
+        ;внесем в eax значение вывода надписи на канву
+        mov   eax,4
+        mcall                  ;Вывод 
+popa                              ;восстановить значения регистров из стека
+ret 4                             ;выйдем из процедуры
 
 check_box_clear_ch:                        ;очистка чек бокса
         mov   edx,dword ch_color   ;цвет внутри чек бокса
@@ -53,7 +54,7 @@ check_box_draw_ch:            ;нарисовать включенный чек бокс
 @@:
         movzx ebx,word ch_left  ;загрузить координату по х
         mov   eax,dword ch_size
-        mov   di,ax
+        mov   bp,ax
         shr   eax,2
         push  ax
  
