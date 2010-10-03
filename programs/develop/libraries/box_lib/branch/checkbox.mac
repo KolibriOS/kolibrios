@@ -1,3 +1,4 @@
+;ѕоследна€ модификаци€ 03.10.2010
 ;файл создан 13.02.2009 <Lrz> Ќа код применена GPL2 лицензи€
 ;ћакрос дл€ системной библиотеки box_lib.obj
 ;Checkbox
@@ -6,21 +7,18 @@ macro use_checkbox_draw
 {
 check_box_draw:
        pusha   ;сохраним все регистры
-       mov	edi,dword [esp+36]
-       mov 	eax,13 
-       movzx 	ebx,word ch_left 
-       shl 	ebx,16 
-       add 	ebx,ch_size 
-       mov 	ecx,ch_top 
-       shl 	ecx,16 
-       add 	ecx,dword ch_size 
-       mov 	edx,dword ch_border_color 
-       mcall 	;рисуем рамку 
+;       mov	edi,dword [esp+36]
+;	mov 	ebx,ch_left_s
+;	mov 	ecx,ch_top_s
+;	mov 	edx,dword ch_border_color 
+;	mov	eax,13
+;	mcall 	;рисуем рамку 
+	mcall	13,ch_left_s,ch_top_s,ch_border_color
 
-       mov 	edx,dword ch_color 
-       add 	ebx,1 shl 16 - 2 
-       add 	ecx,1 shl 16 - 2 
-       mcall 	;закрашиваем внутренности чекбокса 
+	mov 	edx,dword ch_color 
+	add 	ebx,1 shl 16 - 2 
+	add 	ecx,1 shl 16 - 2 
+	mcall 	;закрашиваем внутренности чекбокса 
 
        test dword ch_flags,2  ;достать значение бита из переменной и поместить в  флаг CF 
        jz   @f                ;в если CF=1, то выполним следующую процедуру иначе перейти на нижнюю @@
@@ -29,7 +27,7 @@ check_box_draw:
 ;----------------------------
 ;расчет куда будет произведен вывод текста
 ;----------------------------
-        movzx 	ebx,word ch_left        	;загрузить значение х дл€ чек бокса
+        mov 	ebx,ch_left        	;загрузить значение х дл€ чек бокса
         add	ebx,dword ch_size
         add	ebx,dword ch_text_margin	;добавить размер стороны и рассто€ние на котором начнетс€ вывод текста
         shl	ebx,16				;сдвинем на 16 разр€дов в лево (умножим на 65536)
