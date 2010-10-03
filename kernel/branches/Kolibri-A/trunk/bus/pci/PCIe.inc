@@ -76,9 +76,6 @@ pci_ext_config:
 	shl	eax, 8
 	test	eax, 0x000F0000 	; MMIO Base must be bus0-aligned
 	jnz	.no_pcie_cfg
-
-;       -- it looks like a true PCIe config space;
-
 	ret	; <<<<<<<<<<< OK >>>>>>>>>>>
 
 .no_pcie_cfg:
@@ -92,6 +89,7 @@ pci_ext_config:
 .pcie_failed:
 	mov	esi, boot_pcie_fail
 	call	boot_log
+	xor	eax, eax
 	ret	; <<<<<<<<< FAILURE >>>>>>>>>
 
 
