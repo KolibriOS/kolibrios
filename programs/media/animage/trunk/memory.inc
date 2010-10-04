@@ -1,30 +1,8 @@
 ;----------------------------------------------------------
 ;--------change size of memory which use program-----------
 ;----------------------------------------------------------
-;GetMemory:
-;	pushad
-;	mov	eax,64
-;	mov	ebx,1
-;	mov	ecx,[Picture_SizeX]
-;	mov	edx,[Picture_SizeY]
-;	imul	ecx,edx
-;	lea	ecx,[ecx+ecx*2]
-;	lea	ecx,[ecx+ecx*4]		;(Picture_SizeX*Picture_SizeY*3)*5
-;	add	ecx,[ScreenPointer]
-;	add	ecx,(1200*1000)*3+50*(20*20*3)+500000+16000+0x4000 ; 4192384
-;	add	ecx,[extended_memory]
-;	mcall
-;	test	eax,eax
-;	jz	have_new_memory
-;	mov	esi,sound_havent_memory
-;	call	sound
-;	jmp	still
-;have_new_memory:
-;	popad
-;	ret
-
 GetMemory:
-	pushad
+	pusha
 	mov	ecx,[Picture_SizeX]
 	mov	edx,[Picture_SizeY]
 	imul	ecx,edx
@@ -36,13 +14,14 @@ GetMemory:
 	jnz	have_new_memory
 	mov	esi,sound_havent_memory
 	call	sound
-	pushad
+	popa
+	add	esp,4
 	jmp	still
 
 have_new_memory:
 	mov	[ScreenPointer],eax
 	call	prepare_data_pointers
-	popad
+	popa
 	ret
 ;---------------------------------------------------------
 prepare_data_pointers:
@@ -72,5 +51,13 @@ prepare_data_pointers:
 	add	[PointerToSpriteBufer],eax
 	add	[PointerToSpriteBufer],eax
 	add	[PointerToSpriteBufer],eax
+
+	mov	eax,[ScreenPointer]
+	add	eax,(1200*100*3)+50*(20*20*3)+1
+	mov	[PointerToPalette],eax
+
+	mov	eax,[ScreenPointer]
+	add	eax,(1200*1000)*3+50*(20*20*3)+8
+	mov	[ReserveArray],eax
 	ret
 ;---------------------------------------------------------

@@ -2,194 +2,159 @@
 ;-----------instruments of menu-----------------------------
 ;-----------------------------------------------------------
 TakeInstruments:
+;|||||||||||||||||||FILE||||||||||||||||||||||
+	cmp	[number_panel],7
+	jne	no_file
 
-	 ;|||||||||||||||||||FILE||||||||||||||||||||||
-	 cmp [number_panel],7
-	 jne no_file
+;<<<<<NEW>>>>>>>
+	cmp	[number_menu],1
+	jne	no_new
 
-	 ;<<<<<NEW>>>>>>>
-	 cmp [number_menu],1
-	 jne no_new
+	mov	eax,80
+	mov	ebx,100
+	mov	ecx,150
+	mov	edx,90
+	mov	 esi,1
+	call	draw_volume_rectangle
 
-	 mov eax,80
-	 mov ebx,100
-	 mov ecx,150
-	 mov edx,90
-	 mov  esi,1
-	 call draw_volume_rectangle
+	mov	eax,177
+	mov	ebx,115
+	mov	ecx,40
+	mov	edx,14
+	mov	 esi,4
+	call	draw_volume_rectangle
 
-	 mov eax,177
-	 mov ebx,115
-	 mov ecx,40
-	 mov edx,14
-	 mov  esi,4
-	 call draw_volume_rectangle
+	mov	eax,177
+	mov	ebx,115+24
+	mov	ecx,40
+	mov	edx,14
+	mov	 esi,4
+	call	draw_volume_rectangle
 
-	 mov eax,177
-	 mov ebx,115+24
-	 mov ecx,40
-	 mov edx,14
-	 mov  esi,4
-	 call draw_volume_rectangle
+	mov	eax,175
+	mov	ebx,170
+	mov	ecx,40
+	mov	edx,15
+	mov	esi,1
+	call	draw_volume_rectangle
 
-	 mov eax,175
-	 mov ebx,170
-	 mov ecx,40
-	 mov edx,15
-	 mov  esi,1
-	 call draw_volume_rectangle
+	mov	eax,90
+	mov	ebx,118
+	mov	ecx,0xffffff
+	mov	edx,new_text1
+	mov	esi,14
+	call	print_text
 
-	 mov eax,90
-	 mov ebx,118
-	 mov ecx,0xffffff
-	 mov edx,new_text1
-	 mov esi,14
-	 call print_text
+	mov	eax,90
+	mov	ebx,118+24
+	mov	ecx,0xffffff
+	mov	edx,new_text2
+	mov	esi,14
+	call	print_text
 
-	 mov eax,90
-	 mov ebx,118+24
-	 mov ecx,0xffffff
-	 mov edx,new_text2
-	 mov esi,14
-	 call print_text
+	mov	eax,185
+	mov	ebx,175
+	mov	ecx,0xffffff
+	mov	edx,ok_text
+	mov	esi,2
+	call	print_text
 
-	 mov eax,185
-	 mov ebx,175
-	 mov ecx,0xffffff
-	 mov edx,ok_text
-	 mov esi,2
-	 call print_text
+	mov	edx,1000000000000000000000000000000b+1000
+	mcall	8,<177,40>,<115,14>,
 
-	 mov eax,8
-	 mov ebx,177*65536+40
-	 mov ecx,115*65536+14
-	 mov edx,1000000000000000000000000000000b
-	 add edx,1000
-	 mcall
+	mov	edx,1000000000000000000000000000000b+1001
+	mcall	,,<139,14>,
 
-	 mov eax,8
-	 mov ebx,177*65536+40
-	 mov ecx,139*65536+14
-	 mov edx,1000000000000000000000000000000b
-	 add edx,1001
-	 mcall
+	mov	edx,1000000000000000000000000000000b+1002
+	mcall	,<175,40>,<170,15>
 
-	 mov eax,8
-	 mov ebx,175*65536+40
-	 mov ecx,170*65536+15
-	 mov edx,1000000000000000000000000000000b
-	 add edx,1002
-	 mcall
+no_activate_space:
+	mcall	10
 
-	 no_activate_space:
+	cmp	eax,1
+	je	exit_new
 
-	 mov eax,10
-	 mcall
+	cmp	eax,3
+	jne	no_activate_space
 
-	 cmp eax,1
-	 je exit_new
+	mcall	17
+	shr	eax,8
 
-	 cmp eax,3
-	 jne no_activate_space
+	cmp	eax,1000
+	jl	no_activate_space
 
-	 mov eax,17
-	 mcall
-	 shr eax,8
+	cmp	eax,1000
+	jne	no_picture_size_x
 
-	 cmp eax,1000
-	 jl no_activate_space
+	mov	eax,180
+	mov	ebx,119
+	mov	ecx,5
+	call	dialog_line
 
-	 cmp eax,1000
-	 jne no_picture_size_x
+	mov	eax,string_
+	mov	ebx,13
+	call	find_symvol
 
-	 mov eax,180
-	 mov ebx,119
-	 mov ecx,5
-	 call dialog_line
+	dec	eax
+	mov	[length_number],eax
+	mov	eax,string_
+	call	value
 
-	 mov eax,string_
-	 mov ebx,13
-	 call find_symvol
+	mov	[Picture_SizeX],eax
+	jmp	no_activate_space
+;---------------------------------------------------------------------
+no_picture_size_x:
+	cmp	eax,1001
+	jne	no_picture_size_y
 
-	 dec eax
-	 mov [length_number],eax
-	 mov eax,string_
-	 call value
+	mov	eax,180
+	mov	ebx,119+24
+	mov	ecx,5
+	call	dialog_line
 
-	 mov [Picture_SizeX],eax
+	mov	eax,string_
+	mov	ebx,13
+	call	find_symvol
 
-	 jmp no_activate_space
+	dec	eax
+	mov	[length_number],eax
+	mov	eax,string_
+	call	value
 
-	 no_picture_size_x:
+	mov	[Picture_SizeY],eax
+	jmp	no_activate_space
+;---------------------------------------------------------------------
+no_picture_size_y:
+	cmp	eax,1002
+	jne	no_activate_space
 
-	 cmp eax,1001
-	 jne no_picture_size_y
+exit_new:
+	mov	edx,11100000000000000000000000000000b+1002
+	mcall	8,<175,40>,<170,15>
 
-	 mov eax,180
-	 mov ebx,119+24
-	 mov ecx,5
-	 call dialog_line
+	mov	edx,11100000000000000000000000000000b+1001
+	mcall	,<177,40>,<139,14>
 
-	 mov eax,string_
-	 mov ebx,13
-	 call find_symvol
+	mov	edx,11100000000000000000000000000000b+1000
+	mcall	,,<115,14>
 
-	 dec eax
-	 mov [length_number],eax
-	 mov eax,string_
-	 call value
+;get memory for new picture
+	call	GetMemory
 
-	 mov [Picture_SizeY],eax
+	and	[save_flag],0
+	and	[number_panel],0
+	and	[number_menu],0
 
-	 jmp no_activate_space
+	call	cleare_work_arrea
+	call	drawwin
+	jmp	still
+;---------------------------------------------------------------------
+no_new:
+;<<<<<OPEN>>>>>>>
+	cmp	[number_menu],2
+	jne	no_open
 
-	 no_picture_size_y:
-
-	 cmp eax,1002
-	 jne no_activate_space
-
-	 exit_new:
-
-	 mov eax,8
-	 mov ebx,175*65536+40
-	 mov ecx,170*65536+15
-	 mov edx,11100000000000000000000000000000b
-	 add edx,1002
-	 mcall
-
-	 mov eax,8
-	 mov ebx,177*65536+40
-	 mov ecx,139*65536+14
-	 mov edx,11100000000000000000000000000000b
-	 add edx,1001
-	 mcall
-
-	 mov eax,8
-	 mov ebx,177*65536+40
-	 mov ecx,115*65536+14
-	 mov edx,11100000000000000000000000000000b
-	 add edx,1000
-	 mcall
-
-	 ;get memory for new picture
-
-	 call GetMemory
-
-	 and [save_flag],0
-	 and [number_panel],0
-	 and [number_menu],0
-
-	 call cleare_work_arrea
-	 call drawwin
-
-	 jmp still
-	 no_new:
-
-	 ;<<<<<OPEN>>>>>>>
-	cmp [number_menu],2
-	 jne no_open
-
-;	 opendialog drawwin,open_1,open_2,file_path
+;	opendialog drawwin,open_1,open_2,file_path
 ;---------------------------------------------------------------------
 	mov	[OpenDialog_data.type],0 ; open
 	
@@ -199,144 +164,126 @@ TakeInstruments:
 	cmp	[OpenDialog_data.status],1
 	jne	still
 ;---------------------------------------------------------------------
+open_1:
+	mcall	40,100111b
 
-	 open_1:
+	mov	eax,file_path
+	mov	ebx,[ScreenPointer]
+	add	ebx,0x10000
 
-	 mov eax,40
-	 mov ebx,100111b
-	 mcall
+	call	load_heading_of_file
 
-	 mov eax,file_path
-	 mov ebx,[ScreenPointer]
-	 add ebx,0x10000
+	mov	esi,[ScreenPointer]
+	add	esi,0x10000
+;-------------is this BMP file ?----------------
+	xor	eax,eax
+	mov	ax,[esi]
+	mov	[type],ax
 
-	 call load_heading_of_file
+	cmp	[type],word 'BM'
+	jne	no_bmp_file
 
-	 mov esi,[ScreenPointer]
-	 add esi,0x10000
-	 ;-------------is this BMP file ?----------------
-	 xor eax,eax
-	 mov ax,[esi]
-	 mov [type],ax
+	xor	eax,eax
+	xor	ebx,ebx
+	mov	eax,[esi+18]
+	mov	ebx,[esi+22]
+	mov	[Picture_SizeX],eax
+	mov	[Picture_SizeY],ebx
+	jmp	exit_type
+;---------------------------------------------------------------------
+no_bmp_file:
+;-------------is this GIF file ?----------------
+	xor	eax,eax
+	mov	ax,[esi]
+	mov	[type],ax
 
-	 cmp [type],word 'BM'
-	 jne no_bmp_file
+	cmp	[type],'GI'
+	jne	no_gif_file
 
-	 xor eax,eax
-	 xor ebx,ebx
-	 mov eax,[esi+18]
-	 mov ebx,[esi+22]
-	 mov [Picture_SizeX],eax
-	 mov [Picture_SizeY],ebx
+	add	esi,6
+	xor	eax,eax
+	xor	ebx,ebx
+	mov	ax,word[esi]
+	mov	bx,word[esi+2]
+	mov	[Picture_SizeX],eax
+	mov	[Picture_SizeY],ebx
+	jmp	exit_type
+;---------------------------------------------------------------------
+no_gif_file:
+	jmp	no_unpakcing_file
+;---------------------------------------------------------------------
+exit_type:
+;----------------------------------------------------------
+;Get momory for unpacking picture and for picture's bufers
+;----------------------------------------------------------
+	call	GetMemory
+;----------------------------------------------------------
+;--------------------Load file in memory-------------------
+;----------------------------------------------------------
+	mov	eax,file_path
+	mov	ebx,[PointerToCopyPicture]
+	add	ebx,1000
+	call	load_file
+;----------------------------------------------------------
+;-------------------Unpacking picture----------------------
+;----------------------------------------------------------
+	mov	esi,[PointerToCopyPicture]
+	add	esi,1000
+	mov	edi,[PointerToPicture]
+	mov	eax,[ScreenPointer]
 
-	 jmp exit_type
+	cmp	[type],'BM'
+	jne	no_unpakcing_bmp_file
+	;BMP DECODER
 
-	 no_bmp_file:
+	call	bmptoimg
 
-	 ;-------------is this GIF file ?----------------
-	 xor eax,eax
-	 mov ax,[esi]
-	 mov [type],ax
+	mov	[save_flag],1
+	jmp	draw_1
+;---------------------------------------------------------------------
+no_unpakcing_bmp_file:
+	cmp	[type],'GI'
+	jne	no_unpakcing_file
+	;GIF DECODER
+	sub	edi,8
 
-	 cmp [type],'GI'
-	 jne no_gif_file
+	call	ReadGIF
 
-	 add esi,6
-	 xor eax,eax
-	 xor ebx,ebx
-	 mov ax,word[esi]
-	 mov bx,word[esi+2]
-	 mov [Picture_SizeX],eax
-	 mov [Picture_SizeY],ebx
-
-	 jmp exit_type
-
-	 no_gif_file:
-
-	 jmp no_unpakcing_file
-
-	 exit_type:
-
-	 ;----------------------------------------------------------
-	 ;Get momory for unpacking picture and for picture's bufers
-	 ;----------------------------------------------------------
-	 call GetMemory
-	 ;----------------------------------------------------------
-	 ;--------------------Load file in memory-------------------
-	 ;----------------------------------------------------------
-
-	 mov eax,file_path
-	 mov ebx,[PointerToCopyPicture]
-	 add ebx,1000
-
-	 call load_file
-
-	 ;----------------------------------------------------------
-	 ;-------------------Unpacking picture----------------------
-	 ;----------------------------------------------------------
-	 mov esi,[PointerToCopyPicture]
-	 add esi,1000
-	 mov edi,[PointerToPicture]
-	 mov eax,[ScreenPointer]
-
-	 cmp [type],'BM'
-	 jne no_unpakcing_bmp_file
-	    ;BMP DECODER
-	    call bmptoimg
-	    mov [save_flag],1
-		jmp	draw_1
-		
-	 no_unpakcing_bmp_file:
-
-
-	 cmp [type],'GI'
-	 jne no_unpakcing_file
-	   ;GIF DECODER
-	   sub edi,8
-	   call ReadGIF
-	   mov [save_flag],1
-	 no_unpakcing_file:
-
-	 call load_icons
+	mov	[save_flag],1
+	jmp	draw_1
+;---------------------------------------------------------------------
+no_unpakcing_file:
+	call	load_icons
 draw_1:	
-	 call drawwin
+	call	drawwin
+open_2:
+	mov	[Scroll1CoordinatX],9
+	mov	[Scroll2CoordinatY],89
+	and	[number_panel],0
+	and	[number_menu],0
+	jmp	still
+;---------------------------------------------------------------------
+no_open:
+ ;<<<<<<<<<<<SAVE>>>>>>>>>>>>
+	cmp	[number_menu],3
+	jne	no_save_
 
-	 open_2:
+	mov	al,[save_flag]
+	test	al,al
+	jz	no_save_file
+	jmp	save_enter
+;---------------------------------------------------------------------
+no_save_file:
+	and	[number_panel],0
+	and	[number_menu],0
+	jmp	still
+;---------------------------------------------------------------------
+no_save_:
+ ;<<<<<<<<<SAVE AS>>>>>>>>>>>
+	cmp	[number_menu],4
+	jne	no_save
 
-	 mov [Scroll1CoordinatX],9
-	 mov [Scroll2CoordinatY],89
-	 and [number_panel],0
-	 and [number_menu],0
-
-	 jmp still
-
-	 no_open:
-
-	 ;<<<<<<<<<<<SAVE>>>>>>>>>>>>
-	 cmp [number_menu],3
-	 jne no_save_
-
-	 mov al,[save_flag]
-
-	 test al,al
-	 jz no_save_file
-
-	 jmp save_enter
-
-	 no_save_file:
-
-	 and [number_panel],0
-	 and [number_menu],0
-
-	 jmp still
-
-	 no_save_:
-
-	 ;<<<<<<<<<SAVE AS>>>>>>>>>>>
-	 cmp [number_menu],4
-	 jne no_save
-
-;	 savedialog drawwin,save1,save2,file_path
+; savedialog drawwin,save1,save2,file_path
 ;---------------------------------------------------------------------
 ; replace extension to '.bmp'
 	push	eax esi
@@ -347,10 +294,10 @@ draw_1:
 	lodsb
 	test	eax,eax
 	jnz	@r
-	sub esi,5
+	sub	esi,5
 	cmp	[esi],byte '.'
 	jne	@f
-	mov [esi],dword '.bmp'
+	mov	[esi],dword '.bmp'
 @@:
 	pop	esi eax
 ;---------------------------------------------------------------------
@@ -358,472 +305,416 @@ draw_1:
 	
 	push    dword OpenDialog_data
 	call    [OpenDialog_Start]
-	
+
 	cmp	[OpenDialog_data.status],1
 	jne	still
 ;---------------------------------------------------------------------
-
-	 save1:
-
-	 save_enter:
-	 mov eax,40
-	 mov ebx,100111b
-	 mcall
-
-	 call analizing_picture_to_palette
-	 ;eax => number of colors in picture
-	 mov ebx,[PointerToPicture]
-	 mov ecx,[PointerToEditBufer]
-	 mov edx,[PointerToPalette]
-	 mov esi,[Picture_SizeX]
-	 mov edi,[Picture_SizeY]
-
-	 call coding_bmp
-
-	 mov eax,file_path
-	 mov ecx,ebx
-	 mov ebx,[PointerToEditBufer]
-	 push eax
-	 push ebx
-	 push ecx
-
-	 call save_file
-
-	 mov [save_flag],1
-	 and [number_panel],0
-	 and [number_menu],0
-	 call drawwin
-
-	 jmp still
-
-	 save2:
-
-	 and [number_panel],0
-	 and [number_menu],0
-
-	 jmp still
-	 no_save:
-
-	 ;<<<<<<EXIT>>>>>>>
-	 cmp [number_menu],5
-	 jne no_exit_program
-
-	 mov eax,-1
-	 mcall
-
-	 no_exit_program:
-
-	 no_file:
-
-	 ;|||||||||||||||||||||||||||||EDIT|||||||||||||||||||||||||
-
-	 ;<<<<<<<<<<UNDO>>>>>>>>>>
-	 cmp [number_panel],6
-	 jne no_edit
-
-	 cmp [number_menu],1
-	 jne no_undo
-
-	 cmp [number_undo],1
-	 jne no_one____
-
-	 mov esi,[PointerToCopyPicture]
-
-	 no_one____:
-
-	 cmp [number_undo],2
-	 jne no_two____
-
-	 mov esi,[PointerToCopyPicture2]
-
-	 no_two____:
-
-	 mov edi,[PointerToPicture]
-	 mov ecx,[Picture_SizeX]
-	 imul ecx,[Picture_SizeY]
-	 lea ecx,[ecx+ecx*2]
-	 add ecx,4
-	 shr ecx,2
-	 cld
-	 rep movsd
-	 call MovePictureToWorkScreen
-
-	 dec [number_undo]
-	 jnz no_null_undo
-
-	 mov [number_undo],1
-
-	 no_null_undo:
-
-	 and [number_panel],0
-	 and [number_menu],0
-	 jmp still
-	 no_undo:
-
-	 ;<<<<<<<<<<COPY>>>>>>>>>>
-
-	 cmp [number_menu],2
-	 jne no_copy
-
-	 cmp [instrument_used],1
-	 jne no_copy
-	 cmp [Activate_instrument],0
-	 jne no_copy
-
-	mov eax,[OldX]
-	mov ebx,[OldY]
-
-	cmp eax,[rectangular_shade_x]
-	jl no_remove_x_copy
-
-	mov ecx,[rectangular_shade_x]
-	mov [OldX],ecx			  ; OldX <-----> rectangulare_shade_x
-	mov [rectangular_shade_x],eax
-
-	no_remove_x_copy:
-
-	cmp ebx,[rectangular_shade_y]
-	jl no_remove_y_copy
-
-	mov ecx,[rectangular_shade_y]
-	mov [OldY],ecx			  ; OldY <-----> rectangulare_shade_y
-	mov [rectangular_shade_y],ebx
-
-	no_remove_y_copy:
-
-	 mov eax,[OldX]
-	 mov ebx,[OldY]
-	 mov ecx,[rectangular_shade_x]
-	 mov edx,[rectangular_shade_y]
-	 inc eax
-	 inc ebx
-	 dec ecx
-	 dec edx
-
-	 mov [x],eax
-	 mov [y],ebx
-	 mov esi,eax
-	 mov edi,ebx
-	 mov [Dx_],1
-	 mov [Dy_],1
-
-	 sub ecx,eax
-	 jnz no_signum_fill_r_x_copy
-
-	 mov [Dx_],-1
-
-	 no_signum_fill_r_x_copy:
-
-	 sub edx,ebx
-	 jnz no_signum_fill_r_y_copy
-
-	 mov [Dy_],-1
-
-	 no_signum_fill_r_y_copy:
-
-	 mov ebx,[rectangular_shade_y]
-	 sub ebx,edi
-
-	 mov edx,[PointerToEditBufer]
-	 mov [y],edi
-	 loop_fill_rectangle_y_copy:
-
-	 mov [x],esi
-	 loop_fill_rectangle_x_copy:
-
-	 push esi
-	 push edi
-
-	 mov eax,[PointerToPicture]
-	 mov ebx,[Picture_SizeX]
-	 mov esi,[x]
-	 mov edi,[y]
-	 call GetColorOfPixel
-
-	 mov [edx],ax
-	 shr eax,16
-	 mov [edx+2],al
-
-	 pop edi
-	 pop esi
-
-	 add edx,3
-
-	 mov eax,[x]
-	 add eax,[Dx_]
-	 mov [x],eax
-
-	 cmp eax,[rectangular_shade_x]
-	 jl loop_fill_rectangle_x_copy
-
-	 mov eax,[y]
-	 add eax,[Dy_]
-	 mov [y],eax
-
-	 cmp eax,[rectangular_shade_y]
-	 jl loop_fill_rectangle_y_copy
-
-	 call MovePictureToWorkScreen
-
-	 and [number_panel],0
-	 and [number_menu],0
-	 mov [DrawSprite_flag],1
-
-	 jmp still
-
-	 no_copy:
-
-	 ;<<<<<<<<<<PASTE>>>>>>>>
-	 cmp [number_menu],3
-	 jne no_paste
-
-	 cmp [instrument_used],1
-	 jne no_paste
-
-	 cmp [Activate_instrument],0
-	 jne no_paste
-
-	 mov eax,[OldX]
-	 mov ebx,[OldY]
-
-	 cmp eax,[rectangular_shade_x]
-	 jl no_remove_x_paste
-
-	 mov ecx,[rectangular_shade_x]
-	 mov [OldX],ecx 		   ; OldX <-----> rectangulare_shade_x
-	 mov [rectangular_shade_x],eax
-
-	 no_remove_x_paste:
-
-	 cmp ebx,[rectangular_shade_y]
-	 jl no_remove_y_paste
-
-	 mov ecx,[rectangular_shade_y]
-	 mov [OldY],ecx 		   ; OldY <-----> rectangulare_shade_y
-	 mov [rectangular_shade_y],ebx
-
-	 no_remove_y_paste:
-
-	 mov eax,[OldX]
-	 mov ebx,[OldY]
-	 mov ecx,[rectangular_shade_x]
-	 mov edx,[rectangular_shade_y]
-	 inc eax
-	 inc ebx
-	 dec ecx
-	 dec edx
-
-	 mov [x],eax
-	 mov [y],ebx
-	 mov esi,eax
-	 mov edi,ebx
-	 mov [Dx_],1
-	 mov [Dy_],1
-
-	 sub ecx,eax
-	 jnz no_signum_fill_r_x_paste
-
-	 mov [Dx_],-1
-
-	 no_signum_fill_r_x_paste:
-
-	 sub edx,ebx
-	 jnz no_signum_fill_r_y_paste
-
-	 mov [Dy_],-1
-
-	 no_signum_fill_r_y_paste:
-
-	 mov edx,[PointerToEditBufer]
-	 mov [y],edi
-
-	 loop_fill_rectangle_y_paste:
-
-	 mov [x],esi
-	 loop_fill_rectangle_x_paste:
-
-	 push esi
-	 push edi
-
-	 mov ecx,[edx]
-	 and ecx,0xffffff ;color
-
-	 mov eax,[PointerToPicture]
-	 mov ebx,[Picture_SizeX]
-	 mov esi,[x]
-	 mov edi,[y]
-	 call PutPixel
-
-	 pop edi
-	 pop esi
-
-	 add edx,3
-
-	 mov eax,[x]
-	 add eax,[Dx_]
-	 mov [x],eax
-	 cmp eax,[rectangular_shade_x]
-	 jl loop_fill_rectangle_x_paste
-
-	 mov eax,[y]
-	 add eax,[Dy_]
-	 mov [y],eax
-	 cmp eax,[rectangular_shade_y]
-
-	 jl loop_fill_rectangle_y_paste
-
-	 call MovePictureToWorkScreen
-	 and [number_panel],0
-	 and [number_menu],0
-	 mov [Paste_flag],1
-
-	 jmp still
-
-	 no_paste:
-
-	 ;<<<<<<<<<<CUT>>>>>>>>>>
-	 cmp [number_menu],4
-	 jne no_cut
-
-	 cmp [instrument_used],1
-	 jne no_cut
-
-	 cmp [Activate_instrument],0
-	 jne no_cut
-
-	 mov eax,[OldX]
-	 mov ebx,[OldY]
-
-	 cmp eax,[rectangular_shade_x]
-	 jl no_remove_x_cut
-
-	 mov ecx,[rectangular_shade_x]
-	 mov [OldX],ecx 		   ; OldX <-----> rectangulare_shade_x
-	 mov [rectangular_shade_x],eax
-
-	 no_remove_x_cut:
-
-	 cmp ebx,[rectangular_shade_y]
-	 jl no_remove_y_cut
-
-	 mov ecx,[rectangular_shade_y]
-	 mov [OldY],ecx 		   ; OldY <-----> rectangulare_shade_y
-	 mov [rectangular_shade_y],ebx
-
-	 no_remove_y_cut:
-
-	 mov eax,[OldX]
-	 mov ebx,[OldY]
-	 mov ecx,[rectangular_shade_x]
-	 mov edx,[rectangular_shade_y]
-	 inc eax
-	 inc ebx
-	 dec ecx
-	 dec edx
-
-	 mov [x],eax
-	 mov [y],ebx
-	 mov esi,eax
-	 mov edi,ebx
-	 mov [Dx_],1
-	 mov [Dy_],1
-
-	 sub ecx,eax
-	 jnz no_signum_fill_r_x
-
-	 mov [Dx_],-1
-
-	 no_signum_fill_r_x:
-
-	 sub edx,ebx
-	 jnz no_signum_fill_r_y
-
-	 mov [Dy_],-1
-
-	 no_signum_fill_r_y:
-
-	 mov [y],edi
-	 loop_fill_rectangle_y:
-
-	 mov [x],esi
-	 loop_fill_rectangle_x:
-
-	 push esi
-	 push edi
-
-	 mov eax,[PointerToPicture]
-	 mov ebx,[Picture_SizeX]
-	 mov ecx,dword 0xffffff
-	 mov esi,[x]
-	 mov edi,[y]
-	 call PutPixel
-
-	 pop edi
-	 pop esi
-
-	 mov eax,[x]
-	 add eax,[Dx_]
-	 mov [x],eax
-
-	 cmp eax,[rectangular_shade_x]
-	 jl loop_fill_rectangle_x
-
-	 mov eax,[y]
-	 add eax,[Dy_]
-	 mov [y],eax
-
-	 cmp eax,[rectangular_shade_y]
-	 jl loop_fill_rectangle_y
-
-	 call MovePictureToWorkScreen
-
-	 and [number_panel],0
-	 and [number_menu],0
-
-	 jmp still
-	 no_cut:
-
-	 ;<<<<<<CLEARE ALL>>>>>>
-	 cmp [number_menu],5
-	 jne no_cleare_all
-
-	 call cleare_work_arrea
-
-	 call MovePictureToWorkScreen
-
-	 and [number_panel],0
-	 and [number_menu],0
-
-	 jmp still
-	 no_cleare_all:
-	 ;<<<<<<TO ALLOCATE ALL>>>>>>
-
-	 cmp [number_menu],6
-	 jne no_to_allocate_all
-
-	 mov [OldX],1
-	 mov [OldY],1
-	 mov eax,[Picture_SizeX]
-	 mov ebx,[Picture_SizeY]
-	 dec eax
-	 dec ebx
-	 mov [rectangular_shade_x],eax
-	 mov [rectangular_shade_y],ebx
-	 mov [instrument_used],1
-	 mov [Activate_instrument],1
-	 mov [Current_instrument],30
-	 mov [crossing],0
-	 and [number_panel],0
-	 and [number_menu],0
-	 ;call TakeButtonInstruments
-	 ;call MovePictureToWorkScreen
-	 jmp still
-
-	 no_to_allocate_all:
-
-	 no_edit:
-
-
-	 jmp still
-
-	 ret
+save1:
+save_enter:
+	mcall	40,100111b
+
+	call	analizing_picture_to_palette
+
+	;eax => number of colors in picture
+	mov	ebx,[PointerToPicture]
+	mov	ecx,[PointerToEditBufer]
+	mov	edx,[PointerToPalette]
+	mov	esi,[Picture_SizeX]
+	mov	edi,[Picture_SizeY]
+
+	call	coding_bmp
+
+	mov	eax,file_path
+	mov	ecx,ebx
+	mov	ebx,[PointerToEditBufer]
+
+	call	save_file
+
+	mov	[save_flag],1
+	and	[number_panel],0
+	and	[number_menu],0
+	call	drawwin
+	jmp	still
+;---------------------------------------------------------------------
+;save2:
+;	and	[number_panel],0
+;	and	[number_menu],0
+;	jmp	still
+;---------------------------------------------------------------------
+no_save:
+ ;<<<<<<EXIT>>>>>>>
+	cmp	[number_menu],5
+	jne	no_exit_program
+
+	mov	eax,-1
+	mcall
+;---------------------------------------------------------------------
+no_exit_program:
+no_file:
+;|||||||||||||||||||||||||||||EDIT|||||||||||||||||||||||||
+;<<<<<<<<<<UNDO>>>>>>>>>>
+	cmp	[number_panel],6
+	jne	still	;no_edit
+
+	cmp	[number_menu],1
+	jne	no_undo
+
+	cmp	[number_undo],1
+	jne	no_one____
+
+	mov	esi,[PointerToCopyPicture]
+
+no_one____:
+	cmp	[number_undo],2
+	jne	no_two____
+
+	mov	esi,[PointerToCopyPicture2]
+
+no_two____:
+	mov	edi,[PointerToPicture]
+	mov	ecx,[Picture_SizeX]
+	imul	ecx,[Picture_SizeY]
+	lea	ecx,[ecx+ecx*2]
+	add	ecx,4
+	shr	ecx,2
+	cld
+	rep	movsd
+	call	MovePictureToWorkScreen
+
+	dec	[number_undo]
+	jnz	no_null_undo
+
+	mov	[number_undo],1
+
+no_null_undo:
+	and	[number_panel],0
+	and	[number_menu],0
+	jmp	still
+;---------------------------------------------------------------------
+no_undo:
+;<<<<<<<<<<COPY>>>>>>>>>>
+	cmp	[number_menu],2
+	jne	no_copy
+
+	cmp	[instrument_used],1
+	jne	no_copy
+	cmp	[Activate_instrument],0
+	jne	no_copy
+
+	mov	eax,[OldX]
+	mov	ebx,[OldY]
+
+	cmp	eax,[rectangular_shade_x]
+	jl	no_remove_x_copy
+
+	mov	ecx,[rectangular_shade_x]
+	mov	[OldX],ecx			 ; OldX <-----> rectangulare_shade_x
+	mov	[rectangular_shade_x],eax
+
+no_remove_x_copy:
+	cmp	ebx,[rectangular_shade_y]
+	jl	no_remove_y_copy
+
+	mov	ecx,[rectangular_shade_y]
+	mov	[OldY],ecx			 ; OldY <-----> rectangulare_shade_y
+	mov	[rectangular_shade_y],ebx
+
+no_remove_y_copy:
+	mov	eax,[OldX]
+	mov	ebx,[OldY]
+	mov	ecx,[rectangular_shade_x]
+	mov	edx,[rectangular_shade_y]
+	inc	eax
+	inc	ebx
+	dec	ecx
+	dec	edx
+
+	mov	[x],eax
+	mov	[y],ebx
+	mov	esi,eax
+	mov	edi,ebx
+	mov	[Dx_],1
+	mov	[Dy_],1
+
+	sub	ecx,eax
+	jnz	no_signum_fill_r_x_copy
+
+	mov	[Dx_],-1
+
+no_signum_fill_r_x_copy:
+	sub	edx,ebx
+	jnz	no_signum_fill_r_y_copy
+
+	mov	[Dy_],-1
+
+no_signum_fill_r_y_copy:
+	mov	ebx,[rectangular_shade_y]
+	sub	ebx,edi
+
+	mov	edx,[PointerToEditBufer]
+	mov	[y],edi
+
+loop_fill_rectangle_y_copy:
+	mov	[x],esi
+
+loop_fill_rectangle_x_copy:
+	push	esi edi
+	mov	eax,[PointerToPicture]
+	mov	ebx,[Picture_SizeX]
+	mov	esi,[x]
+	mov	edi,[y]
+	call	GetColorOfPixel
+	mov	[edx],ax
+	shr	eax,16
+	mov	[edx+2],al
+	pop	edi esi
+
+	add	edx,3
+	mov	eax,[x]
+	add	eax,[Dx_]
+	mov	[x],eax
+
+	cmp	eax,[rectangular_shade_x]
+	jl	loop_fill_rectangle_x_copy
+
+	mov	eax,[y]
+	add	eax,[Dy_]
+	mov	[y],eax
+
+	cmp	eax,[rectangular_shade_y]
+	jl	loop_fill_rectangle_y_copy
+
+	call	MovePictureToWorkScreen
+
+	and	[number_panel],0
+	and	[number_menu],0
+	mov	[DrawSprite_flag],1
+	jmp	still
+;---------------------------------------------------------------------
+no_copy:
+;<<<<<<<<<<PASTE>>>>>>>>
+	cmp	[number_menu],3
+	jne	no_paste
+
+	cmp	[instrument_used],1
+	jne	no_paste
+
+	cmp	[Activate_instrument],0
+	jne	no_paste
+
+	mov	eax,[OldX]
+	mov	ebx,[OldY]
+
+	cmp	eax,[rectangular_shade_x]
+	jl	no_remove_x_paste
+
+	mov	ecx,[rectangular_shade_x]
+	mov	[OldX],ecx 		  ; OldX <-----> rectangulare_shade_x
+	mov	[rectangular_shade_x],eax
+
+no_remove_x_paste:
+	cmp	ebx,[rectangular_shade_y]
+	jl	no_remove_y_paste
+
+	mov	ecx,[rectangular_shade_y]
+	mov	[OldY],ecx 		  ; OldY <-----> rectangulare_shade_y
+	mov	[rectangular_shade_y],ebx
+
+no_remove_y_paste:
+	mov	eax,[OldX]
+	mov	ebx,[OldY]
+	mov	ecx,[rectangular_shade_x]
+	mov	edx,[rectangular_shade_y]
+	inc	eax
+	inc	ebx
+	dec	ecx
+	dec	edx
+
+	mov	[x],eax
+	mov	[y],ebx
+	mov	esi,eax
+	mov	edi,ebx
+	mov	[Dx_],1
+	mov	[Dy_],1
+
+	sub	ecx,eax
+	jnz	no_signum_fill_r_x_paste
+
+	mov	[Dx_],-1
+
+no_signum_fill_r_x_paste:
+	sub	edx,ebx
+	jnz	no_signum_fill_r_y_paste
+
+	mov	[Dy_],-1
+
+no_signum_fill_r_y_paste:
+	mov	edx,[PointerToEditBufer]
+	mov	[y],edi
+
+loop_fill_rectangle_y_paste:
+	mov	[x],esi
+
+loop_fill_rectangle_x_paste:
+	push	esi edi
+	mov	ecx,[edx]
+	and	ecx,0xffffff ;color
+	mov	eax,[PointerToPicture]
+	mov	ebx,[Picture_SizeX]
+	mov	esi,[x]
+	mov	edi,[y]
+	call	PutPixel
+	pop	edi esi
+
+	add	edx,3
+
+	mov	eax,[x]
+	add	eax,[Dx_]
+	mov	[x],eax
+	cmp	eax,[rectangular_shade_x]
+	jl	loop_fill_rectangle_x_paste
+
+	mov	eax,[y]
+	add	eax,[Dy_]
+	mov	[y],eax
+	cmp	eax,[rectangular_shade_y]
+	jl	loop_fill_rectangle_y_paste
+
+	call	MovePictureToWorkScreen
+	and	[number_panel],0
+	and	[number_menu],0
+	mov	[Paste_flag],1
+	jmp	still
+;---------------------------------------------------------------------
+no_paste:
+;<<<<<<<<<<CUT>>>>>>>>>>
+	cmp	[number_menu],4
+	jne	no_cut
+
+	cmp	[instrument_used],1
+	jne	no_cut
+
+	cmp	[Activate_instrument],0
+	jne	no_cut
+
+	mov	eax,[OldX]
+	mov	ebx,[OldY]
+
+	cmp	eax,[rectangular_shade_x]
+	jl	no_remove_x_cut
+
+	mov	ecx,[rectangular_shade_x]
+	mov	[OldX],ecx 		  ; OldX <-----> rectangulare_shade_x
+	mov	[rectangular_shade_x],eax
+
+no_remove_x_cut:
+	cmp	ebx,[rectangular_shade_y]
+	jl	no_remove_y_cut
+
+	mov	ecx,[rectangular_shade_y]
+	mov	[OldY],ecx 		  ; OldY <-----> rectangulare_shade_y
+	mov	[rectangular_shade_y],ebx
+
+no_remove_y_cut:
+	mov	eax,[OldX]
+	mov	ebx,[OldY]
+	mov	ecx,[rectangular_shade_x]
+	mov	edx,[rectangular_shade_y]
+	inc	eax
+	inc	ebx
+	dec	ecx
+	dec	edx
+
+	mov	[x],eax
+	mov	[y],ebx
+	mov	esi,eax
+	mov	edi,ebx
+	mov	[Dx_],1
+	mov	[Dy_],1
+
+	sub	ecx,eax
+	jnz	no_signum_fill_r_x
+
+	mov	[Dx_],-1
+
+no_signum_fill_r_x:
+	sub	edx,ebx
+	jnz	no_signum_fill_r_y
+
+	mov	[Dy_],-1
+
+no_signum_fill_r_y:
+	mov	[y],edi
+
+loop_fill_rectangle_y:
+	mov	[x],esi
+
+loop_fill_rectangle_x:
+	push	esi edi
+	mov	eax,[PointerToPicture]
+	mov	ebx,[Picture_SizeX]
+	mov	ecx,dword 0xffffff
+	mov	esi,[x]
+	mov	edi,[y]
+	call	PutPixel
+	pop	edi esi
+
+	mov	eax,[x]
+	add	eax,[Dx_]
+	mov	[x],eax
+
+	cmp	eax,[rectangular_shade_x]
+	jl	loop_fill_rectangle_x
+
+	mov	eax,[y]
+	add	eax,[Dy_]
+	mov	[y],eax
+
+	cmp	eax,[rectangular_shade_y]
+	jl	loop_fill_rectangle_y
+
+	call	MovePictureToWorkScreen
+
+	and	[number_panel],0
+	and	[number_menu],0
+	jmp	still
+;---------------------------------------------------------------------
+no_cut:
+;<<<<<<CLEARE ALL>>>>>>
+	cmp	[number_menu],5
+	jne	no_cleare_all
+
+	call	cleare_work_arrea
+	call	MovePictureToWorkScreen
+
+	and	[number_panel],0
+	and	[number_menu],0
+	jmp	still
+;---------------------------------------------------------------------
+no_cleare_all:
+;<<<<<<TO ALLOCATE ALL>>>>>>
+	cmp	[number_menu],6
+	jne	still	;no_to_allocate_all
+
+	mov	[OldX],1
+	mov	[OldY],1
+	mov	eax,[Picture_SizeX]
+	mov	ebx,[Picture_SizeY]
+	dec	eax
+	dec	ebx
+	mov	[rectangular_shade_x],eax
+	mov	[rectangular_shade_y],ebx
+	mov	[instrument_used],1
+	mov	[Activate_instrument],1
+	mov	[Current_instrument],30
+	mov	[crossing],0
+	and	[number_panel],0
+	and	[number_menu],0
+;	call	TakeButtonInstruments
+;	call	MovePictureToWorkScreen
+	jmp	still
+;---------------------------------------------------------------------
+;no_to_allocate_all:
+;no_edit:
+;	jmp	still
+;---------------------------------------------------------------------

@@ -2,103 +2,166 @@
 ;-------------draw window of program-----------------------
 ;----------------------------------------------------------
 drawwin:
+	or	ecx,-1
+	mcall	9,procinfo
+	mov	esi,procinfo
 
-	mov eax,9
-	mov ebx,IPC_table
-	or ecx,-1
-	mcall
+	mov	eax,[esi+34]
+	mov	ebx,[esi+38]
+	mov	ecx,[esi+42]
+	mov	edx,[esi+46]
+	mov	[Window_CordinatX],eax
+	mov	[Window_CordinatY],ebx
+	mov	[Window_SizeX],ecx
+	mov	[Window_SizeY],edx
 
-	mov eax,[IPC_table+34]
-	mov ebx,[IPC_table+38]
-	mov ecx,[IPC_table+42]
-	mov edx,[IPC_table+46]
-	mov [Window_CordinatX],eax
-	mov [Window_CordinatY],ebx
-	mov [Window_SizeX],ecx
-	mov [Window_SizeY],edx
+	cmp	[Window_SizeX],585
+	jae	no_minimum_size_x
 
-	cmp [Window_SizeX],585
-	jae no_minimum_size_x
+	mov	[Window_SizeX],585
+	mov	ecx,[Window_SizeX]
 
-	mov [Window_SizeX],585
-	mov ecx,[Window_SizeX]
+no_minimum_size_x:
+	cmp	[Window_SizeY],400
+	jae	no_minimum_size_y
 
-	no_minimum_size_x:
+	mov	[Window_SizeY],400
+	mov	edx,[Window_SizeY]
 
-	cmp [Window_SizeY],400
-	jae no_minimum_size_y
+no_minimum_size_y:
+	mov	[MaxWorkScreen_SizeX],ecx
+	mov	[MaxWorkScreen_SizeY],edx
+	sub	[MaxWorkScreen_SizeX],20+10+5+10
+	sub	[MaxWorkScreen_SizeY],20+10+15+1+49+20+10
 
-	mov [Window_SizeY],400
-	mov edx,[Window_SizeY]
+	cmp	[MaxWorkScreen_SizeX],0
+	jns	no_znak1
 
-	no_minimum_size_y:
+	mov	[MaxWorkScreen_SizeX],ecx
 
-	mov [MaxWorkScreen_SizeX],ecx
-	mov [MaxWorkScreen_SizeY],edx
-	sub [MaxWorkScreen_SizeX],20+10+5+10
-	sub [MaxWorkScreen_SizeY],20+10+15+1+49+20+10
+no_znak1:
+	cmp	[MaxWorkScreen_SizeY],0
+	jns	no_znak2
 
-	cmp [MaxWorkScreen_SizeX],0
-	jns no_znak1
+	mov	[MaxWorkScreen_SizeY],edx
 
-	mov [MaxWorkScreen_SizeX],ecx
+no_znak2:
 
-	no_znak1:
+	mcall	12,1
+;------------------------------------------------
+	mov	ebx,[Window_CordinatX]
+	mov	ecx,[Window_CordinatY]
+	shl	ebx,16
+	shl	ecx,16
+	add	ebx,[Window_SizeX]
+	add	ecx,[Window_SizeY]
+	xor	esi,esi	;0x805080d0
+;	xor	edi,edi	;0x005080d0
+	mcall	0,,,0x53aabbcc,,name_of_program
+;------------------------------------------------
+	mov	eax,5
+	mov	ebx,20
+	mov	ecx,[Window_SizeX]
+	mov	edx,15
+	mov	esi,6
+	sub	ecx,10
+	call	draw_volume_rectangle ; top menu - file and etc.
 
-	cmp [MaxWorkScreen_SizeY],0
-	jns no_znak2
+	mov	[counter],7
+	mov	edi,panel_text
+	call	print_panel_text
+;------------------------------------------------
+	mov	eax,5
+	mov	ebx,20+15+1
+	mov	ecx,[Window_SizeX]
+	mov	edx,50
+	mov	esi,1
+	sub	ecx,10
+	call	draw_volume_rectangle ; tools panel
+	call	draw_icons
+	call	PrintMousePos
+;------------------------------------------------
+	mov	ecx,[k]
+	and	[PosX],0
+	and	[PosY],0
+	call	MovePictureToWorkScreen
+;------------------------------------------------
+	mov	ebx,[WorkScreen_SizeX]
+	add	ebx,5+3
+	mov	edx,[Window_SizeX]
+	sub	edx,ebx
+	sub	edx,25+10-3
+	shl	ebx,16
+	mov	bx,dx
+	
+	mov	ecx,20+15+1+49+2
+	mov	edx,[Window_SizeY]
+	mov	eax,[WorkScreen_SizeY]
+	shr	eax,16
+	sub	edx,eax
+	sub	edx,20+15+1+49+2+25+10
+	shl	ecx,16
+	mov	cx,dx
 
-	mov [MaxWorkScreen_SizeY],edx
+	mcall	13,,,0xc7cbcf
+;------------------------------------------------
+	mcall	,<5,3>
+;------------------------------------------------
+	mov	ebx,5
+	mov	edx,[Window_SizeX]
+	mov	eax,[WorkScreen_SizeX]
+	shr	eax,16
+	sub	edx,eax
+	sub	edx,25+10
+	shl	ebx,16
+	mov	bx,dx
 
-	no_znak2:
+	mov	ecx,[WorkScreen_SizeY]
+	add	ecx,20+15+1+49+2+3
+	mov	edx,[Window_SizeY]
+	sub	edx,ecx
+	sub	edx,25+10-3
+	shl	ecx,16
+	mov	cx,dx
 
-	mov eax,12
-	mov ebx,1
-	mcall
+	mcall	13,,,0xc7cbcf
+;------------------------------------------------
+	mcall	,,<20+15+1+49+2,3>
+;------------------------------------------------
+;	draw_volume_rectangle
+;	eax - start X
+;	ebx - start Y
+;	ecx - size X
+;	edx - size Y
 
-	and eax,0
-	mov ebx,[Window_CordinatX]
-	mov ecx,[Window_CordinatY]
-	shl ebx,16
-	shl ecx,16
-	add ebx,[Window_SizeX]
-	add ecx,[Window_SizeY]
-	mov edx,0x43aabbcc
-	xor esi,esi	;0x805080d0
-	xor edi,edi	;0x005080d0
-	mcall
-
-	call draw_panel
-	call PrintMousePos
-
-	mov [counter],7
-	mov edi,panel_text
-	call print_panel_text
-
-	;>>>>>>Leency
-	;mov eax,10
-	;mov ebx,5
-	;mov ecx,0xffffff
-	;mov edx,name_of_program
-	;mov esi,34
-	;call print_text
-
-	mov eax,71
-	mov ebx,1
-	mov ecx,name_of_program
-	int 40h
-	;Leency<<<<<<<
-
-	mov eax,12
-	mov ebx,2
-	mcall
-
-	mov ecx,[k]
-
-	and [PosX],0
-	and [PosY],0
-	call MovePictureToWorkScreen
-	call draw_scrollers
-	call draw_icons
-
+	mov	eax,5
+	mov	ebx,[Window_SizeY]
+	mov	ecx,[Window_SizeX]
+	mov	edx,20+10
+	mov	esi,3
+	sub	ecx,30
+	sub	ebx,25+10
+	call	draw_volume_rectangle	; horizontal scrollbar
+;------------------------------------------------
+	mov	eax,[Window_SizeX]
+	mov	ebx,20+15+1+49+2
+	mov	ecx,20+10
+	mov	edx,[Window_SizeY]
+	mov	esi,3
+	sub	eax,25+10
+	sub	edx,20+15+1+49+5+20
+	call	draw_volume_rectangle	; vertical scrollbar
+	call	draw_scrollers
+;------------------------------------------------
+	mov	eax,[Window_SizeX]
+	mov	ebx,[Window_SizeY]
+	mov	ecx,20+10
+	mov	edx,20+10
+	mov	esi,6
+	sub	eax,25+10
+	sub	ebx,25+10
+	call	draw_volume_rectangle	; down and right small area
+;------------------------------------------------
+	mcall	12,2
 	ret
+;-----------------------------------------------------------------------------

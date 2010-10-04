@@ -1,6 +1,12 @@
 ;*******************************************************
 ;**************GRAPHICS EDITOR ANIMAGE *****************
 ;*******************************************************
+; version:	1.3
+; last update:  05/10/2010
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Fixed window flicker when redrawing,
+;               Fixed memory leak for stack
+;--------------------------------------------------------
 ; version:	1.2
 ; last update:  30/09/2010
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -69,7 +75,7 @@ include	'init_data.inc'
 
 	call	drawwin
 ;---------------------------------------------------------
-;---------Check loading of file from psrsmeters-----------
+;---------Check loading of file from parameters-----------
 ;---------------------------------------------------------
 ;	mov	eax,parameters
 ;	mov	ebx,file_path
@@ -98,15 +104,14 @@ include	'init_data.inc'
 ;----------------------------------------------------------
 ;---------------------MAIN LOOP----------------------------
 ;----------------------------------------------------------
+red:
+	call	drawwin
 still:
 	call	event
+
 	cmp	eax,1
-	jne	no_redraw_window
+	je	red
 
-	call	drawwin
-	jmp	still
-
-no_redraw_window:
 	cmp	eax,2
 	je	keys
 
@@ -139,7 +144,7 @@ include	'events_of_buttons.inc'
 include	'events_of_mouse.inc'
 include	'panel_engen.inc'
 include	'screen.inc'
-include	'menu_instruments.inc'
+include 'menu_instruments.inc'
 include	'icons_instruments.inc'
 include	'icons.inc'
 include	'sprites.inc'
@@ -152,6 +157,7 @@ include	'memory.inc'
 ;------------variables and data of program------------------
 ;-----------------------------------------------------------
 sound_havent_memory	db 150,64,0
+
 include 'lib_data.inc'
 include	'panel_data.inc'
 include	'palitra256.inc'
@@ -306,13 +312,9 @@ IncludeUGlobals
 align 4
 CursorsID	rd 10
 ;---------------------------------------------------------------------
-;align 4
-;parameters
-;	rb 257
-;---------------------------------------------------------------------
 align 4
 file_path:
-	rb 4096	;rb 1024+16
+	rb 4096
 ;---------------------------------------------------------------------
 align 4
 filename_area:
@@ -333,9 +335,6 @@ cur_dir_path:
 align 4
 procinfo:
 	rb 1024
-;---------------------------------------------------------------------
-align 4
-IPC_table	rd 256
 ;---------------------------------------------------------------------
 align 4
 	rb 4096
