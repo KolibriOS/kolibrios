@@ -1034,14 +1034,43 @@ pushad
 		mov eax,[coord_x]
 		mov ebx,[coord_y]
 		mov ecx,[w]
+		cmp ecx,1
+		jl .coord_end
 		add ecx,eax
+		dec ecx
 		mov edx,[h]
+		cmp edx,1
+		jl .coord_end
+
 		add edx,ebx
+		dec edx
 		mov esi,dword[color]
 		stdcall buf_line_h, edi, eax, ebx, ecx, esi ;линия -
 		stdcall buf_line_brs, edi, eax, ebx, eax, edx, esi ;линия |
 		stdcall buf_line_h, edi, eax, edx, ecx, esi ;линия -
 		stdcall buf_line_brs, edi, ecx, ebx, ecx, edx, esi ;линия |
+	.coord_end:
+popad
+	ret
+endp
+
+align 4
+proc buf_filled_rect_by_size, buf_struc:dword, coord_x:dword,coord_y:dword,w:dword,h:dword, color:dword
+pushad
+	mov edi,[buf_struc]
+	cmp buf2d_bits,24
+	jne .coord_end
+		mov eax,[coord_x]
+		mov ebx,[coord_y]
+		mov edx,[w]
+		add edx,eax
+		mov ecx,[h]
+		mov esi,dword[color]
+		cld
+		@@:
+			stdcall buf_line_h, edi, eax, ebx, edx, esi ;линия -
+			inc ebx
+			loop @b
 	.coord_end:
 popad
 	ret
@@ -1692,6 +1721,9 @@ proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf
 	mov edi,[buf_destination]
 	cmp buf2d_bits,24
 	jne .error2 ;формат буфера не поодерживается
+	mov ebx,[coord_x] ;в ebx временно ставим отступ изображения (для проверки)
+	cmp ebx,buf2d_w   ;проверяем влазит ли изображение по ширине
+	jge .copy_end     ;если изображение полностью вылазит за правую сторону
 		mov ebx,buf2d_h ;ebx - высота основного буфера
 		mov ecx,[coord_y]
 		cmp ecx,ebx
@@ -2084,6 +2116,7 @@ EXPORTS:
 	dd sz_buf2d_delete, buf_delete
 	dd sz_buf2d_line, buf_line_brs
 	dd sz_buf2d_rect_by_size, buf_rect_by_size
+	dd sz_buf2d_filled_rect_by_size, buf_filled_rect_by_size
 	dd sz_buf2d_circle, buf_circle
 	dd sz_buf2d_img_hdiv2, buf_img_hdiv2
 	dd sz_buf2d_img_wdiv2, buf_img_wdiv2
@@ -2105,7 +2138,8 @@ EXPORTS:
 	sz_buf2d_draw db 'buf2d_draw',0
 	sz_buf2d_delete db 'buf2d_delete',0
 	sz_buf2d_line db 'buf2d_line',0 ;рисование линии
-	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0 ;рисование прямоугольника, 2-я координата задана по размеру
+	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0 ;рисование рамки прямоугольника, 2-я координата задана по размеру
+	sz_buf2d_filled_rect_by_size db 'buf2d_filled_rect_by_size',0 ;рисование залитого прямоугольника, 2-я координата задана по размеру
 	sz_buf2d_circle db 'buf2d_circle',0 ;рисование окружности
 	sz_buf2d_img_hdiv2 db 'buf2d_img_hdiv2',0 ;сжатие изображения по высоте в 2 раза (размер буфера не меняется)
 	sz_buf2d_img_wdiv2 db 'buf2d_img_wdiv2',0 ;сжатие изображения по ширине в 2 раза (размер буфера не меняется)
