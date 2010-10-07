@@ -1390,7 +1390,7 @@ proc buf_bit_blt, buf_destination:dword, coord_x:dword, coord_y:dword, buf_sourc
 	je .sou32
 		jmp .copy_end ;формат буфера не поодерживается
 
-	.sou24: ;в источнике 32 битная картинка
+	.sou24: ;в источнике 24 битная картинка
 	mov eax,buf2d_w
 	mov edx,buf2d_h ;высота копируемой картинки
 	mov esi,buf2d_data ;данные копируемой картинки
@@ -1398,6 +1398,9 @@ proc buf_bit_blt, buf_destination:dword, coord_x:dword, coord_y:dword, buf_sourc
 	mov edi,[buf_destination]
 	cmp buf2d_bits,24
 	jne .copy_end ;формат буфера не поодерживается
+	mov ebx,[coord_x] ;в ebx временно ставим отступ изображения (для проверки)
+	cmp ebx,buf2d_w   ;проверяем влазит ли изображение по ширине
+	jge .copy_end     ;если изображение полностью вылазит за правую сторону
 		mov ebx,buf2d_h ;ebx - высота основного буфера
 		mov ecx,[coord_y]
 		cmp ecx,ebx
@@ -1460,6 +1463,9 @@ proc buf_bit_blt, buf_destination:dword, coord_x:dword, coord_y:dword, buf_sourc
 	mov edi,[buf_destination]
 	cmp buf2d_bits,24
 	jne .copy_end ;формат буфера не поодерживается
+	mov ebx,[coord_x] ;в ebx временно ставим отступ изображения (для проверки)
+	cmp ebx,buf2d_w   ;проверяем влазит ли изображение по ширине
+	jge .copy_end     ;если изображение полностью вылазит за правую сторону
 		mov ebx,buf2d_h ;ebx - высота основного буфера
 		mov ecx,[coord_y]
 		cmp ecx,ebx
