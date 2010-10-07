@@ -104,6 +104,8 @@ for (;i>0;--i)
 void kol_main()
 {
 
+NUM_OF_CMD = sizeof(COMMANDS)/sizeof(COMMANDS[0]);
+
 strcpy(title, "SHELL ");
 strcat(title, SHELL_VERSION);
 CONSOLE_INIT(title);
@@ -112,6 +114,8 @@ strcpy(cur_dir, PATH);
 dir_truncate(cur_dir);
 
 con_set_cursor_height(con_get_font_height()-1);
+
+ALIASES = malloc(128*1024);
 
 if (strlen(PARAM) > 0)
 	strcpy(CMD, PARAM);

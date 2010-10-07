@@ -36,6 +36,8 @@ bgr_changed:
         shl     eax, 16
         mov     [top_right_corner], eax
 
+        mcall   66, 4, 57, 0    ; hot key for {Space}
+        mcall   66, 4, 28, 0    ; hot key for {Enter}
 still:
         movzx   ebx, [time]
         imul    ebx, 60*100
@@ -62,6 +64,14 @@ create_setup:
         jmp     still
 key:
         mcall                   ; eax = 2
+        cmp     al, 2           ; hot key?
+        jne     still           ; no hotkey, evenets handling go on
+        xor     edx, edx
+        mov     dl, ah
+        mov     eax, 72
+        mov     ebx, 1
+        mov     ecx, 2
+        mcall                   ; transfer key code to active window after interception
         jmp     still
 
 create_ss_thread:
