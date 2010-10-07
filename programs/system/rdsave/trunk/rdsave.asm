@@ -1,5 +1,6 @@
 ;
 ;   RDsave для Kolibri (0.6.5.0 и старше)
+;   Save RAM disk to a hard or floppy drive
 ;
 ; version:	1.3
 ; last update:  08/09/2010
