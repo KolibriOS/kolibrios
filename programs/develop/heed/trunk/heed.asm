@@ -48,7 +48,7 @@ use32
 	dd	0x0	;buf_cmd_lin
 	dd	cur_dir_path
 
-_title	equ 'HeEd 0.15'
+_title	equ 'HeEd 0.15', 0
 
 include	'lang.inc'
 include '../../../macros.inc'
@@ -178,17 +178,17 @@ control_minimal_window_size:
 	mov		esi,-1
 	mov		eax,procinfo
 	mov		eax,[eax+46]
-	cmp		eax,200
+	cmp		eax,299
 	jae		@f
-	mov		esi,200
+	mov		esi,299
 	mcall	67,-1,ebx,ebx
 @@:
 	mov		edx,-1
 	mov		eax,procinfo
 	mov		eax,[eax+42]
-	cmp		eax,300
+	cmp		eax,399
 	jae		@f
-	mov		edx,300
+	mov		edx,399
 	mcall	67,-1,ebx,,ebx
 @@:
 .end:
@@ -315,6 +315,7 @@ button:
 	mcall	17
 	dec	ah
 	jnz	still
+
 	jmp	close_prog
 
 align	4
@@ -1613,7 +1614,18 @@ show_insert:	;отображение режима вставки/замены
 	;help window
 create_help_window:
 	pushad
+        cmp	[help_is_open_already], 1
+        jne	@f
+  	mov     ECX, [help_window_pid]
+        mcall   18, 21
+        xchg    EAX, ECX
+        mcall   18, 3
+	popad
+        ret
+@@:
 	mcall	51,1,.thread,(.threat_stack+16*4)
+        mov     [help_is_open_already], 1
+        mov     [help_window_pid], EAX
 	popad
 	ret
 .thread:
@@ -1627,11 +1639,13 @@ create_help_window:
 	dec	al
 	jz	.button
 	jmp	.still
+        and	[help_is_open_already], 0
 	mcall	-1
 .button:
 	mcall	17,1
 	cmp	ah,1
 	jne	@f
+        and	[help_is_open_already], 0
 	mcall	-1
 @@:
 	cmp	ah,2
@@ -2942,7 +2956,7 @@ align	4
 menu_data_1:
 .type:		dd 0	;+0
 .x:
-.size_x		dw 40	;+4
+.size_x	dw 40	;+4
 .start_x	dw 2	;+6
 .y:
 .size_y		dw 15	;+8
@@ -2953,7 +2967,11 @@ menu_data_1:
 .mouse_pos	dd 0	;+24
 .mouse_keys	dd 0	;+28
 .x1:
-.size_x1	dw 40	;+32
+if lang eq ru
+ .size_x1	dw 4*2+9*6	;+32
+else
+ .size_x1	dw 40	;+32
+end if
 .start_x1	dw 2	;+34
 .y1:
 .size_y1	dw 100	;+36
@@ -2980,19 +2998,28 @@ menu_data_1:
 .get_mouse_flag	dd 0	;+116
 
 menu_text_area:
-	db 'File',0
-.1:
-	db 'Open',0
-	db 'Save',0
-	db 'Exit',0
+if lang eq ru
+  	 db 'Файл',0
+ .1:
+	 db 'Открыть',0
+	 db 'Сохранить',0
+	 db 'Выход',0
+else
+  	 db 'File',0
+ .1:
+	 db 'Open',0
+	 db 'Save',0
+	 db 'Exit',0
+end if
 .end:
-	db 0
+	 db 0
+
 ;---------------------------------------------------------------------
 align	4
 menu_data_2:
 .type:		dd 0	;+0
 .x:
-.size_x		dw 40	;+4
+.size_x	dw 40	;+4
 .start_x	dw 43	;+6
 .y:
 .size_y		dw 15	;+8
@@ -3003,7 +3030,7 @@ menu_data_2:
 .mouse_pos	dd 0	;+24
 .mouse_keys	dd 0	;+28
 .x1:
-.size_x1	dw 50	;+32
+.size_x1	dw 4*2+5*6	;+32
 .start_x1	dw 43	;+34
 .y1:
 .size_y1	dw 100	;+36
@@ -3030,20 +3057,30 @@ menu_data_2:
 .get_mouse_flag	dd 0	;+116
 
 menu_text_area_2:
-	db 'View',0
-.1:
-	db 'Add 4',0
-	db 'Add 8',0
-	db 'Sub 4',0
-	db 'Sub 8',0
+if lang eq ru
+	 db 'Вид',0
+ .1:
+else
+	 db 'View',0
+ .1:
+end if
+	 db 'Add 4',0
+	 db 'Add 8',0
+	 db 'Sub 4',0
+	 db 'Sub 8',0
 .end:
-	db 0
+	 db 0
+
 ;---------------------------------------------------------------------
 align	4
 menu_data_3:
 .type:		dd 0	;+0
 .x:
-.size_x		dw 40	;+4
+if lang eq ru
+ .size_x	dw 4*2+7*6	;+32
+else
+ .size_x	dw 40	;+4
+end if
 .start_x	dw 84	;+6
 .y:
 .size_y		dw 15	;+8
@@ -3054,7 +3091,11 @@ menu_data_3:
 .mouse_pos	dd 0	;+24
 .mouse_keys	dd 0	;+28
 .x1:
-.size_x1	dw 40	;+32
+if lang eq ru
+ .size_x1	dw 4*2+7*6	;+32
+else
+ .size_x1	dw 40	;+32
+end if
 .start_x1	dw 84	;+34
 .y1:
 .size_y1	dw 100	;+36
@@ -3081,21 +3122,27 @@ menu_data_3:
 .get_mouse_flag	dd 0	;+116
 
 menu_text_area_3:
+if lang eq ru
+	db 'Справка',0
+ .1:
+	db 'Справка',0
+else
 	db 'Help',0
-.1:
+ .1:
 	db 'Help',0
+end if
 .end:
 	db 0
 ;---------------------------------------------------------------------
 edit1	edit_box 200,190,27,0xffffff,0x6a9480,0,0xAABBCC,0,134,cur_dir_path,ed_focus,ed_focus,6,6	;файл	открыть\сохранить
-edit2	edit_box 55,260,29,0xeeeeee,0x6a9480,0,0xAABBCC,4,8,go_to_string,ed_focus,ed_focus,0,0	;перехожд	на	смещение
-edit3	edit_box 55,260,29,0xeeeeee,0x6a9480,0,0xAABBCC,4,8,find_string,ed_focus,ed_focus,0,0	;поиск
+edit2	edit_box 55,270,29,0xeeeeee,0x6a9480,0,0xAABBCC,4,8,go_to_string,ed_focus,ed_focus,0,0	;перехожд	на	смещение
+edit3	edit_box 55,270,29,0xeeeeee,0x6a9480,0,0xAABBCC,4,8,find_string,ed_focus,ed_focus,0,0	;поиск
 edit4	edit_box 55,220,49,0xeeeeee,0x6a9480,0,0xAABBCC,4,8,sel1_string,ed_focus,ed_focus,0,0	;выделить	блок	нач.смещ.
 edit5	edit_box 55,300,49,0xeeeeee,0x6a9480,0,0xAABBCC,4,8,sel2_string,ed_focus,0,0,0	;выделить	блок	кон.смещ.
 
 op1	option_box option_group1,210,50,6,12,0xffffff,0,0,op_text.1,op_text.e1-op_text.1,1
 op2	option_box option_group1,310,50,6,12,0xFFFFFF,0,0,op_text.2,op_text.e2-op_text.2
-op3	option_box option_group1,210,65,6,12,0xffffff,0,0,op_text.3,op_text.e3-op_text.3
+op3	option_box option_group1,310,65,6,12,0xffffff,0,0,op_text.3,op_text.e3-op_text.3
 op11	option_box option_group2,210,50,6,12,0xffffff,0,0,op_text2.11,op_text2.e11-op_text2.11
 op12	option_box option_group2,310,50,6,12,0xffffff,0,0,op_text2.21,op_text2.e21-op_text2.21
 
@@ -3105,12 +3152,21 @@ Option_boxs	dd op1,op2,op3,0
 Option_boxs2	dd op11,op12,0
 
 op_text:	; Сопровождающий текст для чек боксов
-.1	db 'Absolutely'
-.e1:
-.2	db 'Forward'
-.e2:
-.3	db 'Back'
-.e3:
+if lang eq ru
+ .1	db 'Абсолютное'
+ .e1:
+ .2	db 'Вперед'
+ .e2:
+ .3	db 'Назад'
+ .e3:
+else
+ .1	db 'Absolutely'
+ .e1:
+ .2	db 'Forward'
+ .e2:
+ .3	db 'Back'
+ .e3:
+end if
 
 op_text2:
 .11	db 'Hex'
@@ -3122,19 +3178,32 @@ op_text2:
 system_dir_Boxlib			db '/sys/lib/box_lib.obj',0
 system_dir_ProcLib			db '/sys/lib/proc_lib.obj',0
 
-head_f_i:
-head_f_l	db 'error',0
-err_message_found_lib1		db 'box_lib.obj - Not found!',0
-err_message_found_lib2		db 'proc_lib.obj - Not found!',0
-
-err_message_import1			db 'box_lib.obj - Wrong import!',0
-err_message_import2			db 'proc_lib.obj - Wrong import!',0
-
 sel_text	db "From to",0
 
 help_but_text	= menu_text_area_3 ;db	'Help',0
-error_open_file_string	db "Isn't found!",0
-error_save_file_string	db "Isn't saved!",0
+
+head_f_i:
+if lang eq ru
+ head_f_l	db 'ошибка',0
+ err_message_found_lib1		db 'box_lib.obj - Не найден!',0
+ err_message_found_lib2		db 'proc_lib.obj - Не найден!',0
+
+ err_message_import1			db 'box_lib.obj - Ошибка импорта!',0
+ err_message_import2			db 'proc_lib.obj - Ошибка импорта!',0
+
+ error_open_file_string	db "Файл не найден!",0
+ error_save_file_string	db "Файл не сохранен!",0
+else
+ head_f_l	db 'error',0
+ err_message_found_lib1		db 'box_lib.obj - Not found!',0
+ err_message_found_lib2		db 'proc_lib.obj - Not found!',0
+
+ err_message_import1			db 'box_lib.obj - Wrong import!',0
+ err_message_import2			db 'proc_lib.obj - Wrong import!',0
+
+ error_open_file_string	db "Isn't found!",0
+ error_save_file_string	db "Isn't saved!",0
+end if
 string_cp866	db ' cp866'
 string_cp1251	db 'cp1251'
 string_koi8r	db 'koi8-r'
@@ -3221,33 +3290,7 @@ help_end:
 ;align	4096
 font_buffer	file 'cp866-8x16'	;ASCII+cp866	(+Ё,ё)
 cp1251		file 'cp1251-8x16'
-koi8_r		file 'koi8-r-8x16'
-
-
-;##########################	open_dial
-get_loops	dd 0
-dlg_pid_get	dd 0
-DLGPID	dd 0
-param:
-	dd 0	; My dec PID
-	dd 0,0	; Type of dialog
-run_fileinfo:
-	dd 7
-	dd 0
-	dd param
-	dd 0
-	dd 0
-;run_filepath
-	db '/sys/SYSXTREE',0
-readdir_fileinfo:
-	dd 1
-	dd 0
-	dd 0
-readblocks	dd	0
-directory_ptr	dd	0
-
-;##########################	
-
+koi8_r		file 'koi8-r-8x16'	
 
 title	db	_title
 ;---------------------------------------------------------------------
@@ -3346,6 +3389,9 @@ find_string	rb 17
 sel1_string	rb 9
 sel2_string	rb 9
 cur_help_string	rb 1	;номер строки, с которой выводится текст в help - окне
+
+help_is_open_already	db ?  ;если окно справки открыто, то здесь 1
+help_window_pid 	dd ?
 
 func_70	f70
 ;---------------------------------------------------------------------
