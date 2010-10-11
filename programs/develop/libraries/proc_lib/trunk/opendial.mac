@@ -89,6 +89,10 @@ OpenDialog_exit
 .start:
 	pusha
 	mov   ebp,dword [esp+36]
+	mcall	40,1b
+	push	eax	; save events mask
+	
+	
 	mov	eax,od_com_area
 	test	eax,eax
 	jz	.1
@@ -132,7 +136,7 @@ OpenDialog_exit
 	mov	[eax+8],ebx
 
 	mov	edi,eax
-	add	edi,12
+	add	edi,16	;12
 
 	mov	esi,od_opendir_pach
 	xor	eax,eax
@@ -177,11 +181,31 @@ OpenDialog_exit
 .still:
 	mcall	23,50
 	cmp	eax,1
-	jne	@f
+	jne	.no_draw
+
 	pusha
 	call	od_draw_window
 	popa
+
+	pusha
+	mcall	9,od_procinfo,-1
+	mov	ecx,[ebx+30]	; PID
+	mcall	18,21
+	mov	ecx,eax	; WINDOW SLOT
+	mcall	18,7
+	cmp	eax,ecx ; compare ACTIVE and WINDOW SLOT 
+	jne	@f
+	mov	eax,od_com_area
+;	xor	ecx,ecx
+	mov	ecx,[eax+12]
+	test	ecx,ecx
+	jz	@f
+	mcall	18,3
 @@:
+	popa
+
+	
+.no_draw:
 	mov	eax,od_com_area
 	movzx	ebx,word [eax]
 	test	ebx,ebx
@@ -192,7 +216,7 @@ OpenDialog_exit
 	jne	.still
 
 	mov	esi,od_com_area
-	add	esi,12
+	add	esi,16	;12
 	mov	edi,od_openfile_pach
 	call	.copy
 	mov	od_status,1
@@ -224,6 +248,9 @@ OpenDialog_exit
 	mov	od_x_size,ebx
 	mov	ebx,[eax+8]
 	mov	od_y_size, ebx
+	
+	pop	ebx	; restore events mask
+	mcall	40
 OpenDialog_exit
 ;----------------------------------------------
 .get_filter_data:

@@ -54,9 +54,9 @@ START:
 	mcall	68,11
 	mcall	66,1,1
 	mcall	40,0x27
-	call	get_active_pocess
-
 	call	get_communication_area
+	
+	call	get_active_pocess
 
 load_libraries	l_libs_start,end_l_libs
 	test	eax,eax
@@ -374,7 +374,7 @@ user_selected_name_action:
 	call	draw_window
 	ret
 @@:
-	add	eax,12
+	add	eax,16	;12
 ;copy_path	user_selected_name,dir_pach,eax,0
 	mov	esi,dir_pach
 	mov	edi,eax
@@ -967,7 +967,7 @@ load_start_directory:
 	movzx	ebx,word [eax]
 	test	eax,eax
 	jz	.1
-	add	eax,12 ;4
+	add	eax,16	;12 ;4
 	mov	esi,eax
 	push	esi
 	mov	esi,[communication_area]
@@ -1123,7 +1123,7 @@ file_no_folder:
 	ret
 @@:
 	mov	edi,eax
-	add	edi,12
+	add	edi,16	;12
 	mov	esi,file_name	
 	call	copy_dir_name
 	
@@ -1622,17 +1622,27 @@ prepare_scrollbar_data:
 	ret
 ;---------------------------------------------------------------------
 get_active_pocess:
+;	mcall	9,procinfo,-1
+;	mov	eax,[ebx+30]
+;	mov	[PID],eax
+;	xor	ecx,ecx
+;@@:
+;	inc	ecx
+;	mcall	9,procinfo
+;	mov	eax,[PID]
+;	cmp	eax,[ebx+30]
+;	jne	@r
+;	mov	[active_process],ecx
+
 	mcall	9,procinfo,-1
-	mov	eax,[ebx+30]
-	mov	[PID],eax
-	xor	ecx,ecx
-@@:
-	inc	ecx
-	mcall	9,procinfo
-	mov	eax,[PID]
-	cmp	eax,[ebx+30]
-	jne	@r
-	mov	[active_process],ecx
+	mov	ecx,[ebx+30]	; PID
+	mcall	18,21
+	mov	[active_process],eax	; WINDOW SLOT
+	mov	ebx,[communication_area]	
+	test	ebx,ebx
+	jz	.1
+	mov	[ebx+12],eax	; WINDOW SLOT to com. area
+.1:
 	ret
 ;---------------------------------------------------------------------
 get_window_param:
