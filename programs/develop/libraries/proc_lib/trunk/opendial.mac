@@ -178,33 +178,43 @@ OpenDialog_exit
 	shr	eax,31
 	test	eax,eax
 	jnz	.1
+;----------------------------------------------
 .still:
-	mcall	23,50
+; The main window of application sometimes
+; is not present the really. For this reason
+; not use func 10 and 23, because event 1
+; is not cleared without call of func 0.
+; In this case is suitable only func 5 and 11!
+	mcall	5,10
+	mcall	11
 	cmp	eax,1
 	jne	.no_draw
-
+;----------------------------------------------
+.draw:
 	pusha
 	call	od_draw_window
 	popa
-
+;----------------------------------------------
 	pusha
 	mcall	9,od_procinfo,-1
 	mov	ecx,[ebx+30]	; PID
 	mcall	18,21
+	test	eax,eax
+	jz	@f
+
 	mov	ecx,eax	; WINDOW SLOT
 	mcall	18,7
 	cmp	eax,ecx ; compare ACTIVE and WINDOW SLOT 
 	jne	@f
+
 	mov	eax,od_com_area
-;	xor	ecx,ecx
 	mov	ecx,[eax+12]
 	test	ecx,ecx
 	jz	@f
 	mcall	18,3
 @@:
 	popa
-
-	
+;----------------------------------------------
 .no_draw:
 	mov	eax,od_com_area
 	movzx	ebx,word [eax]
