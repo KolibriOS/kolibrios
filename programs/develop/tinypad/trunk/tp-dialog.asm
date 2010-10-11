@@ -128,71 +128,73 @@ finddlg_handler:
     @@: ret
 ;-----------------------------------------------------------------------------
 osdlg_handler:
+	cmp	[bot_mode2], 2
+	je	@f
 	mov	[open_dialog],1
 	ret
+@@:
+	cmp	al,1
+	je	.draw
+	cmp	al,2
+	je	.key
+	cmp	al,3
+	je	botdlg.button
+	ret
 
-;	cmp	al,1
-;	je	.draw
-;	cmp	al,2
-;	je	.key
-;	cmp	al,3
-;	je	botdlg.button
-;	ret
+  .draw:
+	mov	ebx,[bot_ofs]
+	add	ebx,(1+3)*65536+6
+	mcall	4,,[sc.work_text],s_2filename,s_2filename.size
+	mov	ebx,[p_info.client_box.width]
+	shl	ebx,16
+	mov	ecx,[bot_ofs]
+	shl	ecx,16
+	add	ecx,(2+18)*65536+15
 
-;  .draw:
-;	mov	ebx,[bot_ofs]
-;	add	ebx,(1+3)*65536+6
-;	mcall	4,,[sc.work_text],s_2filename,s_2filename.size
-;	mov	ebx,[p_info.client_box.width]
-;	shl	ebx,16
-;	mov	ecx,[bot_ofs]
-;	shl	ecx,16
-;	add	ecx,(2+18)*65536+15
-;
-;	push	20002
-;	cmp	[bot_mode2],0
-;	jne	.draw.lp1
-;	add	ebx,-(2+6*(s_2open.size+2))*65536+6*(s_2open.size+2)
-;	push	s_2open s_2open.size
-;	jmp	@f
-;  .draw.lp1:
-;	add	ebx,-(2+6*(s_2save.size+2))*65536+6*(s_2save.size+2)
-;	push	s_2save s_2save.size
+	push	20002
+	cmp	[bot_mode2],0
+	jne	.draw.lp1
+	add	ebx,-(2+6*(s_2open.size+2))*65536+6*(s_2open.size+2)
+	push	s_2open s_2open.size
+	jmp	@f
+  .draw.lp1:
+	add	ebx,-(2+6*(s_2save.size+2))*65536+6*(s_2save.size+2)
+	push	s_2save s_2save.size
 
-;    @@: call	define_3d_button
-;	sub	ebx,(6*(s_2cancel.size+2)+3)*65536
-;	mov	bx,6*(s_2cancel.size+2)
-;	push	20001 s_2cancel s_2cancel.size
-;	call	define_3d_button
+    @@: call	define_3d_button
+	sub	ebx,(6*(s_2cancel.size+2)+3)*65536
+	mov	bx,6*(s_2cancel.size+2)
+	push	20001 s_2cancel s_2cancel.size
+	call	define_3d_button
 
-;	cmp	[bot_mode2], 2	    ; exit-save dialog
-;	jne	@f
+	cmp	[bot_mode2], 2	    ; exit-save dialog
+	jne	@f
 
-;	sub	ebx,(6*(s_2save_no.size+2)+3)*65536
-;	mov	bx,6*(s_2save_no.size+2)
-;	push	20007 s_2save_no s_2save_no.size
-;	call	define_3d_button
+	sub	ebx,(6*(s_2save_no.size+2)+3)*65536
+	mov	bx,6*(s_2save_no.size+2)
+	push	20007 s_2save_no s_2save_no.size
+	call	define_3d_button
 
-;    @@: mov	ebp,tb_opensave
-;	mov	eax,[p_info.client_box.width]
-;	sub	eax,6*(s_2filename.size+1)+1
-;	add	eax,6*(s_2filename.size+1)*65536
-;	mov	dword[tbox.width],eax
-;	add	ecx,-18*65536+1
-;	mov	dword[tbox.height],ecx
-;	call	textbox.draw
+    @@: mov	ebp,tb_opensave
+	mov	eax,[p_info.client_box.width]
+	sub	eax,6*(s_2filename.size+1)+1
+	add	eax,6*(s_2filename.size+1)*65536
+	mov	dword[tbox.width],eax
+	add	ecx,-18*65536+1
+	mov	dword[tbox.height],ecx
+	call	textbox.draw
 
-;	ret
+	ret
 
-;  .key:
-;	cmp	ebx,KEY_ESCAPE
-;	je	btn.bot.cancel
-;	cmp	ebx,KEY_RETURN
-;	je	btn.bot.opensave
-;	cmp	ebx,KEY_NUMRETURN
-;	je	btn.bot.opensave
-;	call	textbox.key
-;	ret
+  .key:
+	cmp	ebx,KEY_ESCAPE
+	je	btn.bot.cancel
+	cmp	ebx,KEY_RETURN
+	je	btn.bot.opensave
+	cmp	ebx,KEY_NUMRETURN
+	je	btn.bot.opensave
+	call	textbox.key
+	ret
 ;-----------------------------------------------------------------------------
 gotodlg_handler:
 	cmp	al,1
