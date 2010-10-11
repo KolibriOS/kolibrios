@@ -129,14 +129,14 @@ aCheck_box_draw  db 'check_box_draw',0
 aCheck_box_mouse db 'check_box_mouse',0
 aVersion_ch	 db 'version_ch',0
 ;---------------------------------------------------------------------
-check1 check_box (10 shr 16 + 12),(45 shr 16 + 12),6,0x80AABBCC,0,0,check_text,14,ch_flag_en
-check2 check_box (10 shr 16 + 12),(60 shr 16 + 12),6,0x80AABBCC,0,0,check_text2,15
+check1 check_box (10 shr 16 + 12),(45 shr 16 + 12),6,0x80AABBCC,0,0,check_text,ch_flag_en
+check2 check_box (10 shr 16 + 12),(60 shr 16 + 12),6,0x80AABBCC,0,0,check_text2
 ;---------------------------------------------------------------------
 hed		db 'CheckBox Exemples <Lrz> date 03.10.2010',0
 hed_end:
 ;---------------------------------------------------------------------
-check_text	db 'First checkbox'
-check_text2	db 'Second checkbox'
+check_text	db 'First checkbox',0
+check_text2	db 'Second checkbox',0
 ;---------------------------------------------------------------------
 MEM_END:
 cur_dir_path	rb 1024
