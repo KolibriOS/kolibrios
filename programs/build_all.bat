@@ -96,6 +96,7 @@ fasm develop\mtdbg\mtdbg.asm %BIN%\develop\mtdbg
 rem fasm develop\param\trunk\param.asm param
 fasm develop\scancode\trunk\scancode.asm %BIN%\develop\scancode
 fasm develop\tinypad\trunk\tinypad.asm %BIN%\tinypad
+fasm develop\cObj\trunk\cObj.asm %BIN%\develop\cObj
 
 echo *
 echo Building systems libraries
