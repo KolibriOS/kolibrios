@@ -998,7 +998,7 @@ endl
 	ret
 endp
 
-;рисование горизонтальной линии, потому нет параметра coord_y0
+;рисование горизонтальной линии, потому нет параметра coord_y1
 align 4
 proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword, color:dword
 	pushad
@@ -1544,24 +1544,6 @@ combine_colors:
 	mov cl,byte[esi+3] ;pro
 	xor ch,ch
 	sub bx,cx ;256-pro
-	;---red---
-	xor ah,ah
-	mov al,byte[esi+2]
-	imul ax,bx
-	xor dh,dh
-	mov dl,byte[edi+2]
-	imul dx,cx
-	add ax,dx
-	mov byte[edi+2],ah
-	;---green---
-	xor ah,ah
-	mov al,byte[esi+1]
-	imul ax,bx
-	xor dh,dh
-	mov dl,byte[edi+1]
-	imul dx,cx
-	add ax,dx
-	mov byte[edi+1],ah
 	;---blye---
 	xor ah,ah
 	mov al,byte[esi]
@@ -1571,6 +1553,24 @@ combine_colors:
 	imul dx,cx
 	add ax,dx
 	mov byte[edi],ah
+	;---green---
+	xor ah,ah
+	mov al,byte[esi+1]
+	imul ax,bx
+	xor dh,dh
+	mov dl,byte[edi+1]
+	imul dx,cx
+	add ax,dx
+	mov byte[edi+1],ah
+	;---red---
+	xor ah,ah
+	mov al,byte[esi+2]
+	imul ax,bx
+	xor dh,dh
+	mov dl,byte[edi+2]
+	imul dx,cx
+	add ax,dx
+	mov byte[edi+2],ah
 
 	pop dx cx bx ax
 	ret
@@ -1674,16 +1674,16 @@ combine_colors_2:
 	mov si,0x00ff ;---get transparent---
 	sub si,cx ;256-pro
 
-	;---blye---
+		;---blye---
 		mov al,bl
 		xor ah,ah
 		shr ebx,8
 		imul ax,si
 		xor dh,dh
-		mov dl,byte[edi+2]
+		mov dl,byte[edi]
 		imul dx,cx
 		add ax,dx
-		mov byte[edi+2],ah
+		mov byte[edi],ah
 		;---green---
 		mov al,bl
 		xor ah,ah
@@ -1699,10 +1699,10 @@ combine_colors_2:
 		xor ah,ah
 		imul ax,si
 		xor dh,dh
-		mov dl,byte[edi]
+		mov dl,byte[edi+2]
 		imul dx,cx
 		add ax,dx
-		mov byte[edi],ah
+		mov byte[edi+2],ah
 
 	pop si dx cx ebx ax
 	ret
