@@ -52,11 +52,23 @@ include 'box_lib.mac'
 ;--- Start of program ----------------------------------------------
 ;---------------------------------------------------------------------
 START:
+	mcall	40,0x27
+
 sys_load_library  library_name, cur_dir_path, library_path, system_path, \
 err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
        	test	eax,eax
 	jnz	exit
+;init checkboxes
+	push	dword check1
+	call	[init_checkbox]
 
+	push	dword check2
+	call	[init_checkbox]
+
+	push	dword check3
+	call	[init_checkbox]
+
+	
 window:
 	call draw_window		;первоначально необходимо нарисовать окно
 align 4
@@ -74,6 +86,10 @@ still:				;основной обработчик
 
 	push	dword check2
 	call	[check_box_mouse]
+
+	push	dword check3
+	call	[check_box_mouse]
+
 
 	jmp still    ;если ничего из перечисленного то снова в цикл
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,6 +115,10 @@ draw_window:		;рисование окна приложения
 	push	dword check2
 	call	[check_box_draw]
 
+	push	dword check3
+	call	[check_box_draw]
+
+
 	mcall	12,2
 	ret
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -119,24 +139,28 @@ err_message_import	db 'Error on load import library box_lib.obj',0
 
 myimport:   
 
+init_checkbox	dd	aInit_checkbox
 check_box_draw	dd	aCheck_box_draw
 check_box_mouse dd	aCheck_box_mouse
 version_ch	dd	aVersion_ch
 		dd	0,0
 
 
+aInit_checkbox	 db 'init_checkbox',0
 aCheck_box_draw  db 'check_box_draw',0
 aCheck_box_mouse db 'check_box_mouse',0
 aVersion_ch	 db 'version_ch',0
 ;---------------------------------------------------------------------
-check1 check_box (10 shr 16 + 12),(45 shr 16 + 12),6,0x80AABBCC,0,0,check_text,ch_flag_en
-check2 check_box (10 shr 16 + 12),(60 shr 16 + 12),6,0x80AABBCC,0,0,check_text2
+check1 check_box (20 shl 16 + 12),(45 shl 16 + 12),6,0xC0AABBCC,0,0x80000000,check_text,ch_flag_en
+check2 check_box (20 shl 16 + 22),(60 shl 16 + 12),6,0xC0AABBCC,0,0x80000000,check_text2
+check3 check_box (20 shl 16 + 12),(75 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text3
 ;---------------------------------------------------------------------
-hed		db 'CheckBox Exemples <Lrz> date 03.10.2010',0
+hed		db 'CheckBox Exemples <Lrz> date 12.10.2010',0
 hed_end:
 ;---------------------------------------------------------------------
 check_text	db 'First checkbox',0
 check_text2	db 'Second checkbox',0
+check_text3	db 'Number 3 checkbox',0
 ;---------------------------------------------------------------------
 MEM_END:
 cur_dir_path	rb 1024

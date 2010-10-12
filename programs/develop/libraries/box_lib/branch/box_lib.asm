@@ -43,6 +43,8 @@ align 16
 ;CheckBox
 ;----------------------------------------------------
 align 16
+_init_checkbox		;macro for init checkbox
+align 16
 use_checkbox_draw	;macro reveals the function of the display.
 align 16
 use_checkbox_mouse	;macro reveals processing function of the mouse.
@@ -131,9 +133,10 @@ dd	sz_version,			0x00000001
 ;dd	sz_edit_box_set_text,		edit_box_set_text
 ;dd	szVersion_ed,			0x00000001
 
+dd	sz_init_checkbox,		init_checkbox
 dd	sz_check_box_draw,		check_box_draw
 dd	sz_check_box_mouse,		check_box_mouse
-dd	szVersion_ch,			0x00000001
+dd	szVersion_ch,			0x00000002
 
 ;dd	sz_option_box_draw,		option_box_draw
 ;dd	sz_option_box_mouse,		option_box_mouse
@@ -229,6 +232,7 @@ sz_edit_box_mouse		db 'edit_box_mouse',0
 sz_edit_box_set_text		db 'edit_box_set_text',0
 szVersion_ed			db 'version_ed',0
 
+sz_init_checkbox		db 'init_checkbox',0
 sz_check_box_draw		db 'check_box_draw',0
 sz_check_box_mouse		db 'check_box_mouse',0
 szVersion_ch			db 'version_ch',0

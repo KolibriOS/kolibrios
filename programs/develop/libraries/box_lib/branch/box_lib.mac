@@ -103,9 +103,9 @@ macro edit_boxes_set_sys_color start,end,color_table
 }
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Basic macros for use CheckBox                            ;
-;Last change 11.10.2010					  ;
+;Last change 12.10.2010					  ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ch_struc_size=32		;размер структуры
+ch_struc_size=36		;размер структуры
 ch_flag_en=10b 			;флаг установленного чек бокса.
 
 ch_left_s	equ [ebp]	;кордината начала рисования по х
@@ -116,6 +116,7 @@ ch_border_color equ [ebp+16] 	; or [edi+4] ;цвет рамки checkbox ее можно задать 
 ch_text_color   equ [ebp+20] 	;[edi+4]  ;цвет текста
 ch_text_ptr     equ [ebp+24] 	;указатель на начало текстовой строки 
 ch_flags 	equ [ebp+28]	;флаги
+ch_sz_str       equ [ebp+32]	;длинна строки, вычисляется при инициализации компонента
 
 struc check_box left_s,top_s,ch_text_margin,color,border_color,text_color,text,flags
 {				;структура параметров для чек бокса
@@ -126,7 +127,8 @@ struc check_box left_s,top_s,ch_text_margin,color,border_color,text_color,text,f
 .border_color: 	dd border_color	;цвет рамки
 .text_color:	dd text_color	;цвет надписи
 .text: 		dd text		;адрес в коде программы где расположен текст
-.flags:		dd flags+0	; флаги        
+.flags:		dd flags+0	;флаги
+.size_of_str:	dd 0x0		;длинна строки, вычисляется при инициализации компонента
 }
 
 macro check_boxes_set_sys_color start,end,color_table
