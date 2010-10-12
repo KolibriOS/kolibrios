@@ -89,9 +89,6 @@ OpenDialog_exit
 .start:
 	pusha
 	mov   ebp,dword [esp+36]
-	mcall	40,1b
-	push	eax	; save events mask
-	
 	
 	mov	eax,od_com_area
 	test	eax,eax
@@ -168,13 +165,19 @@ OpenDialog_exit
 	call	.get_filter_data
 @@:
 ;----------------------------------------------
+	mov	ebx,od_procinfo
+	xor	eax,eax
+	mov	edi,ebx
+	mov	ecx,6
+	cld
+	rep	stosd
+	mov	[ebx],dword 7
 	mov	eax,od_com_area_name
-	mov	[start_open_dialog.parameter],eax
-
+	mov	[ebx+8],eax
 	mov	eax,od_start_path
-	mov	[start_open_dialog.name],eax
+	mov	[ebx+21],eax
+	mcall	70
 
-	mcall	70,dword start_open_dialog
 	shr	eax,31
 	test	eax,eax
 	jnz	.1
@@ -188,7 +191,18 @@ OpenDialog_exit
 	mcall	5,10
 	mcall	11
 	cmp	eax,1
-	jne	.no_draw
+	je	.draw
+	cmp	eax,2
+	je	.key
+	cmp	eax,3
+	je	.button
+	jmp	.no_draw
+.key:
+	mcall	2
+	jmp	.no_draw
+.button:
+	mcall	17
+	jmp	.no_draw
 ;----------------------------------------------
 .draw:
 	pusha
@@ -196,10 +210,7 @@ OpenDialog_exit
 	popa
 ;----------------------------------------------
 	pusha
-	mcall	9,od_procinfo,-1
-	mov	ecx,[ebx+30]	; PID
-	mcall	18,21
-	test	eax,eax
+	call	.prepare_PID
 	jz	@f
 
 	mov	ecx,eax	; WINDOW SLOT
@@ -258,17 +269,25 @@ OpenDialog_exit
 	mov	od_x_size,ebx
 	mov	ebx,[eax+8]
 	mov	od_y_size, ebx
-	
-	pop	ebx	; restore events mask
-	mcall	40
+
+	call	.prepare_PID
+	jz	@f
+	mov	ecx,eax	; WINDOW SLOT
+	mcall	18,3
+@@:
 OpenDialog_exit
+;----------------------------------------------
+.prepare_PID:
+	mcall	9,od_procinfo,-1
+	mov	ecx,[ebx+30]	; PID
+	mcall	18,21
+	test	eax,eax
+	ret
 ;----------------------------------------------
 .get_filter_data:
 	mov	edi,od_com_area
 	test	edi,edi
 	jnz	@f
-;	add	esp,4
-;	jmp	still
 	ret
 @@:
 	add	edi,4100
@@ -328,14 +347,5 @@ OpenDialog_exit
 	cld
 	ret
 ;----------------------------------------------
-align	4
-start_open_dialog:
-.subfunction	dd 7
-.flags		dd 0
-.parameter	dd 0	;od_com_area_name
-.reserved1	dd 0
-.reserved2	dd 0
-		db 0
-.name:		dd 0	;od_start_path
 }
 ;*****************************************************************************
