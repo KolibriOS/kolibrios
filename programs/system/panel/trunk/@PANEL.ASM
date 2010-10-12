@@ -811,6 +811,23 @@ need_window_tab:
 	jz	.nodraw
 @@:
 ; \end{diamond}[29.03.2007]
+; <begin> (pterox)[12.10.2010] 
+; do not draw OpenDialog windows
+	push	EDI
+	mov	EDI, dword [EBX+10]
+	or	EDI, 0x20202020
+	cmp	EDI, 'open'
+	jne	@f
+	mov	EDI, dword [EBX+14]
+	or	EDI, 0x20202020
+	cmp	dword [EBX+14], 'dial'
+	jne	@f
+	pop	EDI
+	jmp	.nodraw
+
+@@:
+	pop	EDI
+; <end> (pterox)[12.10.2010] 
 	cmp	dword [ebx+10], 'ICON'
 	jnz	@f
 	cmp	[ebx+42], dword 51
