@@ -141,19 +141,19 @@ macro init_checkboxes start,end
 	mov     ecx,((end-start)/ch_struc_size)
 @@:
 	push    ebp			;указатель на первый checkbox
-	call	[check_box_mouse]	;макрос проверки мышки над checkbox'ом
+	call	[init_checkbox]	;макрос проверки мышки над checkbox'ом
 	add     ebp,ch_struc_size
 	loop    @b
 }
 
-;ћакрос отрисовки группы checkboxes.
-macro checkboxes_draw start,end
+;ћакрос проверки мышки группы checkboxes.
+macro checkboxes_mouse start,end
 {
 	mov     ebp,start
 	mov     ecx,((end-start)/ch_struc_size)
 @@:
 	push    ebp			;указатель на первый checkbox
-	call	[check_box_draw]	;нарисовать checkbox
+	call	[check_box_mouse]	;нарисовать checkbox
 	add     ebp,ch_struc_size
 	loop    @b
 }
