@@ -107,6 +107,9 @@ macro edit_boxes_set_sys_color start,end,color_table
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ch_struc_size=36		;размер структуры
 ch_flag_en=10b 			;флаг установленного чек бокса.
+ch_flag_top=0x0			;флаг расположени€ текста вверху т.е. 3-й бит
+ch_flag_middle=100b		;флаг расположени€ текста в центре т.е. 4-й бит.
+ch_flag_bottom=1000b		;флаг расположени€ текста в низу т.е. по умолчанию принимаетс€ значение внизу т.е. отсуствие 3-го и 4-го бита
 
 ch_left_s	equ [ebp]	;кордината начала рисовани€ по х
 ch_top_s	equ [ebp+4]	;координата начала рисовани€ по у
@@ -129,6 +132,42 @@ struc check_box left_s,top_s,ch_text_margin,color,border_color,text_color,text,f
 .text: 		dd text		;адрес в коде программы где расположен текст
 .flags:		dd flags+0	;флаги
 .size_of_str:	dd 0x0		;длинна строки, вычисл€етс€ при инициализации компонента
+}
+
+;ћакрос проверки щелчка мышки над группой checkboxes.
+macro init_checkboxes start,end
+{
+	mov     ebp,start
+	mov     ecx,((end-start)/ch_struc_size)
+@@:
+	push    ebp			;указатель на первый checkbox
+	call	[check_box_mouse]	;макрос проверки мышки над checkbox'ом
+	add     ebp,ch_struc_size
+	loop    @b
+}
+
+;ћакрос отрисовки группы checkboxes.
+macro checkboxes_draw start,end
+{
+	mov     ebp,start
+	mov     ecx,((end-start)/ch_struc_size)
+@@:
+	push    ebp			;указатель на первый checkbox
+	call	[check_box_draw]	;нарисовать checkbox
+	add     ebp,ch_struc_size
+	loop    @b
+}
+
+;ћакрос отрисовки группы checkboxes.
+macro checkboxes_draw start,end
+{
+	mov     ebp,start
+	mov     ecx,((end-start)/ch_struc_size)
+@@:
+	push    ebp			;указатель на первый checkbox
+	call	[check_box_draw]	;нарисовать checkbox
+	add     ebp,ch_struc_size
+	loop    @b
 }
 
 macro check_boxes_set_sys_color start,end,color_table

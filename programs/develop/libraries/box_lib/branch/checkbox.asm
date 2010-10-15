@@ -68,6 +68,15 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
 	push	dword check3
 	call	[init_checkbox]
 
+	push	dword check4
+	call	[init_checkbox]
+
+	push	dword check5
+	call	[init_checkbox]
+
+	push	dword check6
+	call	[init_checkbox]
+
 	
 window:
 	call draw_window		;первоначально необходимо нарисовать окно
@@ -88,6 +97,16 @@ still:				;основной обработчик
 	call	[check_box_mouse]
 
 	push	dword check3
+	call	[check_box_mouse]
+
+
+	push	dword check4
+	call	[check_box_mouse]
+
+	push	dword check5
+	call	[check_box_mouse]
+
+	push	dword check6
 	call	[check_box_mouse]
 
 
@@ -116,6 +135,15 @@ draw_window:		;рисование окна приложения
 	call	[check_box_draw]
 
 	push	dword check3
+	call	[check_box_draw]
+
+	push	dword check4
+	call	[check_box_draw]
+
+	push	dword check5
+	call	[check_box_draw]
+
+	push	dword check6
 	call	[check_box_draw]
 
 
@@ -151,16 +179,22 @@ aCheck_box_draw  db 'check_box_draw',0
 aCheck_box_mouse db 'check_box_mouse',0
 aVersion_ch	 db 'version_ch',0
 ;---------------------------------------------------------------------
-check1 check_box (20 shl 16 + 12),(45 shl 16 + 12),6,0xC0AABBCC,0,0x80000000,check_text,ch_flag_en
-check2 check_box (20 shl 16 + 22),(60 shl 16 + 12),6,0xC0AABBCC,0,0x80000000,check_text2
-check3 check_box (20 shl 16 + 12),(75 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text3
+check1 check_box (10 shl 16 + 12),(10 shl 16 + 12),6,0xC0AABBCC,0,0x80000000,check_text,ch_flag_en
+check2 check_box (10 shl 16 + 22),(25 shl 16 + 12),6,0xC0AABBCC,0,0x80000000,check_text2
+check3 check_box (10 shl 16 + 12),(40 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text3
+check4 check_box (10 shl 16 + 12),(70 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text4,ch_flag_top
+check5 check_box (10 shl 16 + 12),(100 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text5,ch_flag_middle
+check6 check_box (10 shl 16 + 12),(130 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text6,ch_flag_bottom
 ;---------------------------------------------------------------------
-hed		db 'CheckBox Exemples <Lrz> date 12.10.2010',0
+hed		db 'CheckBox Exemples <Lrz> date 15.10.2010',0
 hed_end:
 ;---------------------------------------------------------------------
-check_text	db 'First checkbox',0
-check_text2	db 'Second checkbox',0
-check_text3	db 'Number 3 checkbox',0
+check_text	db 'First checkbox, set flag ch_flag_en',0
+check_text2	db 'Second checkbox,not set any flag',0
+check_text3	db 'Number 3 checkbox, not set any flag',0
+check_text4	db 'Set flag is ch_flag_top',0
+check_text5	db 'Set flag is ch_flag_middle',0
+check_text6	db 'Set flag is ch_flag_bottom',0
 ;---------------------------------------------------------------------
 MEM_END:
 cur_dir_path	rb 1024
