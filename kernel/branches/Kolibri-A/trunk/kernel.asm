@@ -1026,7 +1026,7 @@ osloop:
         call   stack_handler
         call   checkidle
         call   check_fdd_motor_status
-        call   check_ATAPI_device_event
+;        call   check_ATAPI_device_event
         jmp    osloop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                    ;
@@ -4347,63 +4347,6 @@ syscall_getscreensize:                  ; GetScreenSize
 
 align 4
 
-syscall_cdaudio:                        ; CD
-
-        cmp     ebx, 4
-        jb      .audio
-        jz      .eject
-        cmp     ebx, 5
-        jnz     .ret
-.load:
-        call    .reserve
-        call    LoadMedium
-        ;call    .free
-		jmp		.free
-;        ret
-.eject:
-        call    .reserve
-        call    clear_CD_cache
-        call    allow_medium_removal
-        call    EjectMedium
-;        call    .free
-		jmp		.free
-;        ret
-.audio:
-     call  sys_cd_audio
-     mov   [esp+36-4],eax
-.ret:
-     ret
-
-.reserve:
-        call    reserve_cd
-        mov     eax, ecx
-        shr     eax, 1
-        and     eax, 1
-        inc     eax
-        mov     [ChannelNumber], ax
-        mov     eax, ecx
-        and     eax, 1
-        mov     [DiskNumber], al
-        call    reserve_cd_channel
-        and     ebx, 3
-        inc     ebx
-        mov     [cdpos], ebx
-        add     ebx, ebx
-        mov     cl, 8
-        sub     cl, bl
-        mov     al, [DRIVE_DATA+1]
-        shr     al, cl
-        test    al, 2
-        jz      .free;.err
-        ret
-.free:
-        call    free_cd_channel
-        and     [cd_status], 0
-        ret
-.err:
-        call    .free
-;        pop     eax
-        ret
 
 align 4
 
@@ -4734,9 +4677,6 @@ system_shutdown:          ; shut down the system
            ret
 @@:
            call stop_all_services
-           push 3                ; stop playing cd
-           pop  eax
-           call sys_cd_audio
 
 yes_shutdown_param:
            cli

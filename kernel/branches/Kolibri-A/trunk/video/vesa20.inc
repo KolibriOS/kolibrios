@@ -288,8 +288,8 @@ align   4
 .finish:
      add     esp, putimg.stack_data
      popad
-     call   VGA__putimage
-     mov     [EGA_counter],1
+;     call   VGA__putimage
+;     mov     [EGA_counter],1
      ret
 
 
@@ -731,9 +731,6 @@ align   4
      jnz     .new_y
      add     esp, drbar.stack_data
      popad
-     call    VGA_draw_bar
-     xor     eax, eax
-     mov     [EGA_counter],1
      ret
 
 align 4
@@ -820,8 +817,6 @@ dp4:
         cmp     ebx, [draw_data+32+RECT.bottom]
         jbe     dp2
         popad
-        mov     [EGA_counter], 1
-        call    VGA_drawbackground
         ret
 
 ; ----------
@@ -1002,8 +997,6 @@ sdp4:
 sdpdone:
         add     esp, 44
         popad
-        mov     [EGA_counter],1
-        call    VGA_drawbackground
         ret
 
 uglobal

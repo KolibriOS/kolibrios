@@ -128,6 +128,8 @@ reserve_hd1:
 
 uglobal
 hd_in_cache db ?
+IDE_Channel_1		       db  0	; moved from fs/iso9660.inc
+IDE_Channel_2		       db  0
 endg
 
 reserve_hd_channel:

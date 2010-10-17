@@ -214,19 +214,19 @@ include "fs/ntfs.inc"	  ; read / write for ntfs filesystem
 include "fs/fat12.inc"	  ; read / write for fat12 filesystem
 include "blkdev/rd.inc"   ; ramdisk read /write
 include "fs/fs_lfn.inc"    ; syscall, version 2
-include "fs/iso9660.inc"  ; read for iso9660 filesystem CD
+;include "fs/iso9660.inc"  ; read for iso9660 filesystem CD
 include "fs/ext2.inc"	  ; read / write for ext2 filesystem
 
 ; sound
 
 include "sound/playnote.inc"	; player Note for Speaker PC
-include "sound/FHT.inc" 	; fast Fourier transform routines
+;include "sound/FHT.inc" 	; fast Fourier transform routines
 
 ; display
 
 ;include "video/vesa12.inc"   ; Vesa 1.2 functions
 include "video/vesa20.inc"   ; Vesa 2.0 functions
-include "video/vga.inc"      ; VGA 16 color functions
+;include "video/vga.inc"      ; VGA 16 color functions
 include "video/cursors.inc"  ; cursors functions
 
 ; Network Interface & TCPIP Stack
@@ -262,8 +262,8 @@ include "blkdev/hd_drv.inc"
 
 ; CD drive controller
 
-include "blkdev/cdrom.inc"
-include "blkdev/cd_drv.inc"
+;include "blkdev/cdrom.inc"
+;include "blkdev/cd_drv.inc"
 
 ; Character devices
 

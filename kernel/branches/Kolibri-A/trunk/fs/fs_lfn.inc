@@ -1,4 +1,3 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
@@ -41,20 +40,6 @@ rootdirs:
 	db	3,'hd3'
 	dd	fs_OnHd3
 	dd	fs_NextHd3
-;**********************************************
-	db	3,'cd0'
-	dd	fs_OnCd0
-	dd	fs_NextCd
-	db	3,'cd1'
-	dd	fs_OnCd1
-	dd	fs_NextCd
-	db	3,'cd2'
-	dd	fs_OnCd2
-	dd	fs_NextCd
-	db	3,'cd3'
-	dd	fs_OnCd3
-	dd	fs_NextCd
-;***********************************************
 	db	0
 
 
@@ -71,16 +56,6 @@ virtual_root_query:
 	db	'hd2',0
 	dd	fs_HasHd3
 	db	'hd3',0
-;**********************************************
-	dd	fs_HasCd0
-	db	'cd0',0
-	dd	fs_HasCd1
-	db	'cd1',0
-	dd	fs_HasCd2
-	db	'cd2',0
-	dd	fs_HasCd3
-	db	'cd3',0
-;**********************************************
 	dd	0
 
 fs_additional_handlers:
@@ -167,8 +142,8 @@ file_system_lfn:
 	cmp	dword [ebx], 1
 	jnz	.access_denied
 	xor	eax, eax
-	mov	ebp, [ebx+12]			;ÐºÐ¾Ð»Ð¸Ñ‡ÐµÑÑ‚Ð²Ð¾ Ð±Ð»Ð¾ÐºÐ¾Ð² Ð´Ð»Ñ ÑÑ‡Ð¸Ñ‚Ñ‹Ð²Ð°Ð½Ð¸Ñ
-	mov	edx, [ebx+16]			;ÐºÑƒÐ´Ð° Ð·Ð°Ð¿Ð¸ÑÑ‹Ð²Ð°Ñ‚ÑŒ Ñ€ÑƒÐ·ÐµÐ»ÑŒÑ‚Ð°Ñ‚
+	mov	ebp, [ebx+12]			;êîëè÷åñòâî áëîêîâ äëÿ ñ÷èòûâàíèÿ
+	mov	edx, [ebx+16]			;êóäà çàïèñûâàòü ðóçåëüòàò
     ;    add     edx, std_application_base_address
 	push	dword [ebx+4]	; first block
 	mov	ebx, [ebx+8]	; flags
@@ -571,88 +546,6 @@ fs_HdServices:
 	dd	fs_HdCreateFolder
 fs_NumHdServices = ($ - fs_HdServices)/4
 
-;*******************************************************
-fs_OnCd0:
-	call	reserve_cd
-	mov  [ChannelNumber],1
-	mov  [DiskNumber],0
-	push	6
-	push	1
-	jmp	fs_OnCd
-fs_OnCd1:
-	call	reserve_cd
-	mov  [ChannelNumber],1
-	mov  [DiskNumber],1
-	push	4
-	push	2
-	jmp	fs_OnCd
-fs_OnCd2:
-	call	reserve_cd
-	mov  [ChannelNumber],2
-	mov  [DiskNumber],0
-	push	2
-	push	3
-	jmp	fs_OnCd
-fs_OnCd3:
-	call	reserve_cd
-	mov  [ChannelNumber],2
-	mov  [DiskNumber],1
-	push	0
-	push	4
-fs_OnCd:
-	call	reserve_cd_channel
-	pop	eax
-	mov	[cdpos], eax
-	pop	eax
-	cmp	ecx, 0x100
-	jae	.nf
-	push	ecx ebx
-	mov	cl,al
-	mov	bl,[DRIVE_DATA+1]
-	shr	bl,cl
-	test	bl,2
-	pop	ebx ecx
-
-	jnz	@f
-.nf:
-	call	free_cd_channel
-	and    [cd_status], 0
-	mov	dword [image_of_eax], 5       ; not found
-	ret
-@@:
-	mov	ecx, [ebx+12]
-	mov	edx, [ebx+16]
-    ;    add     edx, std_application_base_address
-	mov	eax, [ebx]
-	cmp	eax,fs_NumCdServices
-	jae	 .not_impl
-	add	ebx, 4
-	call	dword [fs_CdServices + eax*4]
-	call	free_cd_channel
-	and	[cd_status], 0
-	mov	[image_of_eax], eax
-	mov	[image_of_ebx], ebx
-	ret
-.not_impl:
-	call	free_cd_channel
-	and	[cd_status], 0
-	mov	dword [image_of_eax], 2       ; not implemented
-	ret
-
-fs_CdServices:
-	dd	fs_CdRead
-	dd	fs_CdReadFolder
-	dd	fs_NotImplemented
-	dd	fs_NotImplemented
-	dd	fs_NotImplemented
-	dd	fs_CdGetFileInfo
-	dd	fs_NotImplemented
-	dd	0
-	dd	fs_NotImplemented
-	dd	fs_NotImplemented
-fs_NumCdServices = ($ - fs_CdServices)/4
-
-;*******************************************************
 
 fs_HasRamdisk:
 	mov	al, 1	; we always have ramdisk
@@ -1141,3 +1034,65 @@ get_full_file_name:
 	jz	.ret.ok
 	mov	byte [edi-1], '/'
 	jmp	.set_copy_cont
+
+; ===============  moved from fs/iso9660.inc
+
+char_todown:
+; convert character to uppercase, using cp866 encoding
+; in: al=symbol
+; out: al=converted symbol
+	cmp	al, 'A'
+	jb	.ret
+	cmp	al, 'Z'
+	jbe	.az
+	cmp	al, '€'
+	jb	.ret
+	cmp	al, ''
+	jb	.rus1
+	cmp	al, 'Ÿ'
+	ja	.ret
+; 0x90-0x9F -> 0xE0-0xEF
+	add	al, 'à'-''
+.ret:
+	ret
+.rus1:
+; 0x80-0x8F -> 0xA0-0xAF
+.az:
+	add	al, 0x20
+	ret
+
+uni2ansi_char:
+; convert UNICODE character in al to ANSI character in ax, using cp866 encoding
+; in: ax=UNICODE character
+; out: al=converted ANSI character
+	cmp	ax, 0x80
+	jb	.ascii
+	cmp	ax, 0x401
+	jz	.yo1
+	cmp	ax, 0x451
+	jz	.yo2
+	cmp	ax, 0x410
+	jb	.unk
+	cmp	ax, 0x440
+	jb	.rus1
+	cmp	ax, 0x450
+	jb	.rus2
+.unk:
+	mov	al, '_'
+	jmp	.doit
+.yo1:
+	mov	al, 'ð'
+	jmp	.doit
+.yo2:
+	mov	al, 'ñ'
+	jmp	.doit
+.rus1:
+; 0x410-0x43F -> 0x80-0xAF
+	add	al, 0x70
+	jmp	.doit
+.rus2:
+; 0x440-0x44F -> 0xE0-0xEF
+	add	al, 0xA0
+.ascii:
+.doit:
+	ret

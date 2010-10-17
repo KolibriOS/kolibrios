@@ -100,19 +100,19 @@ uglobal
   pf_err_code   dd ?
 endg
 
-page_fault_exc:                 ; дуракоусточивость: селекторы испорчены...
-        pop     [ss:pf_err_code]; действительно до следующего #PF
+page_fault_exc:                 ; fool-proofing: if selectors damaged...
+        pop     [ss:pf_err_code]; active to the next #PF
         save_ring3_context
         mov     bl,14
 
-exc_c:                          ; исключения (все, кроме 7-го - #NM)
-; Фрэйм стека при исключении/прерывании из 3-го кольца + pushad (т.е., именно здесь)
+exc_c:                          ; exceptions (all but the 7th - #NM)
+; the stack frame for an exception/interrupt occured in Ring3 + pushad (i.e. here)
   reg_ss        equ esp+0x30
   reg_esp3      equ esp+0x2C
   reg_eflags    equ esp+0x28
   reg_cs3       equ esp+0x24
   reg_eip       equ esp+0x20
- ; это фрэйм от pushad
+ ; pushad's frame
   reg_eax       equ esp+0x1C
   reg_ecx       equ esp+0x18
   reg_edx       equ esp+0x14
@@ -122,9 +122,9 @@ exc_c:                          ; исключения (все, кроме 7-го - #NM)
   reg_esi       equ esp+0x04
   reg_edi       equ esp+0x00
 
-        Mov     ds,ax,app_data  ; загрузим правильные значения
-        mov     es,ax           ; в сегментные регистры
-        cld                     ; и приводим DF к стандарту
+        Mov     ds,ax,app_data  ; load the correct values
+        mov     es,ax           ; to segregs
+        cld                     ; and clear DF
         movzx   ebx,bl
 ; redirect to V86 manager? (EFLAGS & 0x20000) != 0?
         test    byte[reg_eflags+2],2
@@ -259,7 +259,6 @@ p_irq14:
         mov     edi, 14
         cmp     [v86_irqhooks+edi*8], 0
         jnz     v86_irq2
-;       mov     byte [BOOT_VAR + 0x48E], 0xFF
         call    [irq14_func]
         call    ready_for_next_irq_1
         restore_ring3_context
@@ -272,7 +271,6 @@ p_irq15:
         mov     edi, 15
         cmp     [v86_irqhooks+edi*8], 0
         jnz     v86_irq2
-;       mov     byte [BOOT_VAR + 0x48E], 0xFF
         call    [irq15_func]
         call    ready_for_next_irq_1
         restore_ring3_context
@@ -281,11 +279,10 @@ p_irq15:
 ready_for_next_irq:
 	mov	eax,5
         mov     [check_idle_semaphore],eax
-;        mov     al, 0x20
 	add 	eax,(0x20-0x5)
-
         out     0x20, al
         ret
+
 ;destroy eax
 ready_for_next_irq_1:
 	mov	eax,5
@@ -409,18 +406,14 @@ clear_application_table_status:
 
         ret
 
-;  * eax = 64 - номер функции
-;  * ebx = 1 - единственная подфункция
-;  * ecx = новый размер памяти
-;Возвращаемое значение:
-;  * eax = 0 - успешно
-;  * eax = 1 - недостаточно памяти
+;  * eax = 64 - sysFn #
+;  * ebx = 1  - subFn
+;  * ecx = new memory size
+;Returns:
+;  * eax = 0 - OK
+;  * eax = 1 - insufficient memory
 
 sys_resize_app_memory:
-        ; ebx = 1 - resize
-        ; ecx = new amount of memory
-
-;        cmp    eax,1
 	dec	ebx
         jnz    .no_application_mem_resize
         stdcall new_mem_resize, ecx
@@ -429,15 +422,14 @@ sys_resize_app_memory:
         ret
 
 iglobal
-;  process_terminating  db 'K : Process - terminating',13,10,0
-;  process_terminated   db 'K : Process - done',13,10,0
-  msg_obj_destroy       db 'K : destroy app object',13,10,0
+  msg_obj_destroy       db 'K : app object destroyed',13,10,0
 endg
 
+; terminate application
 ; param
 ;  esi= slot
 
-terminate: ; terminate application
+terminate: 
 
            .slot equ esp   ;locals
 
@@ -450,9 +442,6 @@ terminate: ; terminate application
            shl    esi, 5
            mov    [CURRENT_TASK+esi+TASKDATA.state], 9
            ret
-@@:
-           ;mov    esi,process_terminating
-           ;call   sys_msg_board_str
 @@:
            cli
            cmp   [application_table_status],0
@@ -674,11 +663,10 @@ term9:
         cmp    [CURRENT_TASK + edi + TASKDATA.state], byte 9  ; skip dead slots
         je     .check_next_window
         add    edi, window_data
-; \begin{diamond}[19.09.2006]
+
 ; skip minimized windows
         test   [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
         jnz    .check_next_window
-; \end{diamond}
         call   waredraw
  .nothing_to_activate:
         popad
@@ -691,11 +679,11 @@ term9:
         jnz     @f
         call    free_hd_channel
         and     [hd1_status], 0
-@@:
-        cmp     [cd_status], esi
-        jnz     @f
-        call    free_cd_channel
-        and     [cd_status], 0
+;@@:
+;        cmp     [cd_status], esi
+;        jnz     @f
+;        call    free_cd_channel
+;        and     [cd_status], 0
 @@:
         cmp     [flp_status], esi
         jnz     @f
@@ -794,7 +782,6 @@ term9:
     add  ecx, 0x100
     jmp  .xd0
 .xd1:
-;    call  systest
     sti  ; .. and life goes on
 
     mov   eax, [draw_limits.left]
@@ -810,15 +797,13 @@ term9:
     mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
 
     and   [application_table_status],0
-    ;mov   esi,process_terminated
-    ;call  sys_msg_board_str
     add esp, 4
     ret
 restore .slot
 
 iglobal
   boot_sched_1    db   'Building gdt tss pointer',0
-  boot_sched_2    db   'Building IDT table',0
+;  boot_sched_2    db   'Building IDT table',0
 endg
 
 
@@ -826,9 +811,4 @@ build_scheduler:
 
         mov    esi,boot_sched_1
         call   boot_log
-  ;      call   build_process_gdt_tss_pointer
-
-  ;      mov    esi,boot_sched_2
-  ;      call   boot_log
-
         ret
