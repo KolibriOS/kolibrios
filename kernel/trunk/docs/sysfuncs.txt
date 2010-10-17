@@ -347,6 +347,7 @@ Returned value:
       * bit 0 (mask 1): window is maximized
       * bit 1 (mask 2): window is minimized to panel
       * bit 2 (mask 4): window is rolled up
+    * +71 = +0x47: dword: event mask
 Remarks:
   * Slots are numbered starting from 1.
   * Returned value is not a total number of threads, because there

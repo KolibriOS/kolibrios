@@ -2775,6 +2775,10 @@ sys_cpuusage:
         mov     al, [ecx+window_data+WDATA.fl_wstate]
         stosb
 
+    ; Event mask (+71)
+        mov     EAX, dword [ECX+CURRENT_TASK+TASKDATA.event_mask]
+        stosd
+
         pop     esi
         pop     edi
 
