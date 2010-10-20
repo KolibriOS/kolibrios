@@ -62,9 +62,9 @@ db_click			equ [edi+52]
 dinamic_button_exit
 
 .draw_1:
-	cmp    db_select,dword 1
+	cmp    dword db_select,1
 	je     .active_1
-	cmp    db_select,dword 2
+	cmp    dword db_select,2
 	je     .click_2
 	mov    ebx,db_passive_raw
 	jmp    .draw_2 
@@ -137,7 +137,7 @@ dinamic_button_exit
 	 
 	 test   db_mouse_keys,dword 1b
 	 jnz   @f
-	 cmp   db_select,dword 1
+	 cmp   dword db_select,1
 	 je    .exit_menu_1
 	 mov   db_select,dword 1
 	 call  .draw_1
@@ -157,7 +157,7 @@ dinamic_button_exit
 	 jmp   .exit_menu_2
 	 
 .exit_menu:
-	 cmp   db_select,dword 0
+	 cmp   dword db_select,0
 	 je    .exit_menu_1
 	 mov   db_select,dword 0
 	 

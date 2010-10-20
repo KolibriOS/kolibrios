@@ -132,7 +132,7 @@ fb_draw_panel_1:
 	ret
 ;---------------------------------------------------------------------
 fb_clear_panel:
-	cmp	fb_all_redraw,dword 1
+	cmp	fb_all_redraw,1
 	jne	@f
 	xor	eax,eax
 	mov	fb_max_name_temp_size,eax
@@ -160,7 +160,7 @@ fb_calc_max_panel_line:
 	ret
 ;---------------------------------------------------------------------
 fb_draw_panel_selection:
-	cmp	fb_all_redraw,dword 2
+	cmp	fb_all_redraw,2
 	je	.end
 	xor	eax,eax
 	cmp	fb_select_panel_counter,eax
@@ -194,7 +194,7 @@ fb_draw_panel_selection:
 	add	ebx,eax
 	mcall	13
 	pop	ebx
-	cmp	fb_all_redraw,dword 0
+	cmp	fb_all_redraw,0
 	je	.end
 	mov	bx,fb_start_x
 	ror	ebx,16
@@ -263,9 +263,9 @@ fb_draw_folder_data:
 @@:
 	call	fb_clear_line
 	call	fb_draw_type_size_date
-	cmp	fb_all_redraw,dword 2
+	cmp	fb_all_redraw,2
 	je	.draw_icon
-	cmp	fb_all_redraw,dword 0
+	cmp	fb_all_redraw,0
 	je	@f
 .draw_icon:
 	call	fb_draw_icon
@@ -385,7 +385,7 @@ fb_draw_folder_data:
 	pusha
 	mov	edx,fb_name_temp_area
 
-	cmp	fb_all_redraw,dword 2
+	cmp	fb_all_redraw,2
 	jne	.draw_name_temp_area_1
 	mov	esi,fb_max_name_temp_size
 	and	ecx,0xffffff
@@ -406,7 +406,7 @@ fb_draw_folder_data:
 .end_1:
 	popa
 .end_2:
-	cmp	fb_all_redraw,dword 1
+	cmp	fb_all_redraw,1
 	jne	@f
 
 	mov	ax,fb_start_y
@@ -447,9 +447,9 @@ fb_clear_line:
 	mov	fb_draw_panel_selection_flag,1
 	jmp	.end
 .continue:
-	cmp	fb_all_redraw,dword 2
+	cmp	fb_all_redraw,2
 	je	.end
-	cmp	fb_all_redraw,dword 0
+	cmp	fb_all_redraw,0
 	je	.end
 	mov	ebx,[esp+16]
 	mov	cx,bx
@@ -649,7 +649,7 @@ fb_draw_type_size_date:
 @@:
 	pop	ebx
 	add	bx,ax
-	cmp	fb_all_redraw,dword 2
+	cmp	fb_all_redraw,2
 	jne	.draw  ;@f
 	and	ecx,0xffffff
 	add	ecx,0x40000000

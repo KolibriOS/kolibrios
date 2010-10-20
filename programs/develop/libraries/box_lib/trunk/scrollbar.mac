@@ -326,7 +326,7 @@ scroll_bar_exit
 .no_size:
 	mov   sb_run_size,eax
 ;*********************************
-	cmp   sb_delta,word 1
+	cmp   word sb_delta,1
 	je	.@@_3
 	mov   eax,sb_work_size
 	sub   eax,sb_run_size
@@ -358,7 +358,7 @@ scroll_bar_exit
 	mov   ecx,sb_size_y
 	mov   edx,sb_line_col
 	mov   eax,13
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; left extreme line
 @@:
@@ -366,7 +366,7 @@ scroll_bar_exit
 	ror   ebx,16
 	add   bx,sb_size_x
 	rol   ebx,16
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; right extreme line
 @@:
@@ -378,7 +378,7 @@ scroll_bar_exit
 	mov   bx,sb_size_x
 	dec   ebx	
 	mov   cx,1
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; top button - extreme line
 @@:
@@ -387,7 +387,7 @@ scroll_bar_exit
 	add   ecx,sb_btn_high
 	sub   ecx,2
 	mov   edx,sb_frnt_col
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; top button filling
 ;*********************************	
@@ -400,7 +400,7 @@ draw_up_arrow_vertical
 	add   ecx,sb_btn_high  ;14 shl 16
 	rol   ecx,16
 	mov   edx,sb_line_col
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ;  top button - bottom line
 @@:
@@ -474,7 +474,7 @@ draw_runner_center_vertical
 	inc   ecx
 	mov   edx,sb_line_col
 	mov   eax,13
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; bottom button - top line
 @@:
@@ -483,7 +483,7 @@ draw_runner_center_vertical
 	add   cx,sb_btn_high
 	sub   ecx,2
 	mov   edx,sb_frnt_col
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; bottom button filling
 ;********************************* 
@@ -498,7 +498,7 @@ draw_down_arrow_vertical
 	
 	mov   edx,sb_line_col
 	mov   cx,1
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; bottom button - extreme line
 @@:
@@ -514,7 +514,7 @@ draw_down_arrow_vertical
 	mov	 edi,dword [esp+36]
 	mcall 37,1
 	mov   sb_m_pos,eax
-	cmp   sb_m_pos_2,dword 0
+	cmp   dword sb_m_pos_2,0
 	jne   @f
 	
 	mov   sb_m_pos_2,eax	
@@ -534,7 +534,7 @@ draw_down_arrow_vertical
 	jmp   .continue_2
 	
 @@:
-	cmp   sb_m_keys,dword 0
+	cmp   dword sb_m_keys,0
 	jne	 @f
 	mov   eax,sb_m_pos
 	mov   sb_m_pos_2,eax
@@ -559,7 +559,7 @@ draw_down_arrow_vertical
 	cmp   ax,cx
 	jb	.exit_sb
 	
-	cmp   sb_delta2,word 0
+	cmp   word sb_delta2,0
 	je	@f
 	push  ecx
 	add   cx,sb_btn_high
@@ -572,17 +572,17 @@ draw_down_arrow_vertical
 	cmp   ax,cx
 	ja	.exit_sb
 
-	cmp   sb_delta2,word 0
+	cmp   word sb_delta2,0
 	je	@f
 	sub   cx,sb_btn_high
 	cmp   ax,cx
 	ja	.exit_sb
 	
 @@:
-	cmp   sb_delta2,word 1
+	cmp   word sb_delta2,1
 	je	@f
 	
-	cmp   sb_m_keys,dword 0
+	cmp   dword sb_m_keys,0
 	je	.exit_sb
 	
 	mov   cx,sb_start_x
@@ -663,13 +663,13 @@ draw_down_arrow_vertical
 	xor   ecx,ecx
 	mov   cx,sb_start_y
 	add   cx,sb_btn_high   ;15
-	cmp   sb_delta,word 1
+	cmp   word sb_delta,1
 	je	.scroll_sb
 	
 	cmp   ax,cx
 	ja	.scroll_sb
 	
-	cmp   sb_m_keys,dword 0
+	cmp   dword sb_m_keys,0
 	je   .exit_sb
 	
 	mov   eax,sb_ar_offset
@@ -688,7 +688,7 @@ draw_down_arrow_vertical
 	add   cx,sb_size_y
 	sub   cx,sb_btn_high
 	sub   cx,sb_btn_high
-	cmp   sb_delta,word 1
+	cmp   word sb_delta,1
 	je	@f
 	
 	cmp   ax,cx
@@ -703,7 +703,7 @@ draw_down_arrow_vertical
 .scroll_sb_1:	
 	mov   ebx,sb_run_size
 ;*****************************************************************************	
-	cmp   sb_delta,word 1
+	cmp   word sb_delta,1
 	je	.continue
 	
 @@:
@@ -780,7 +780,7 @@ draw_down_arrow_vertical
 	jmp   .exit_sb
 ;*****************************************************************************
 .down_sb:
-	cmp   sb_m_keys,dword 0
+	cmp   dword sb_m_keys,0
 	je   .exit_sb
 	
 	mov   eax,sb_max_area
@@ -850,7 +850,7 @@ scroll_bar_exit
 .no_size:
 	mov   sb_run_size,eax
 ;*********************************
-	cmp   sb_delta,word 1
+	cmp   word sb_delta,1
 	je	.@@_3
 	mov   eax,sb_work_size
 	sub   eax,sb_run_size
@@ -882,7 +882,7 @@ scroll_bar_exit
 	inc   ecx	
 	mov   edx,sb_line_col
 	mov   eax,13
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; top extreme line
 @@:
@@ -890,7 +890,7 @@ scroll_bar_exit
 	ror   ecx,16
 	add   cx,sb_size_y
 	rol   ecx,16
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; bottom extreme line
 @@:
@@ -902,7 +902,7 @@ scroll_bar_exit
 	mov   cx,sb_size_y
 	dec   ecx	
 	mov   bx,1
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; left button - extreme line
 @@:
@@ -911,7 +911,7 @@ scroll_bar_exit
 	add   ebx,sb_btn_high
 	sub   ebx,2
 	mov   edx,sb_frnt_col
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; left  button filling
 ;*********************************	
@@ -924,7 +924,7 @@ draw_up_arrow_horizontal
 	add   ebx,sb_btn_high  ;14 shl 16
 	rol   ebx,16
 	mov   edx,sb_line_col
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ;  left  button - right line
 @@:
@@ -998,7 +998,7 @@ draw_runner_center_horizontal
 	inc   ebx
 	mov   edx,sb_line_col
 	mov   eax,13
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40	; bottom button - top line
 @@:
@@ -1007,7 +1007,7 @@ draw_runner_center_horizontal
 	add   bx,sb_btn_high
 	sub   ebx,2
 	mov   edx,sb_frnt_col
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; bottom button filling
 ;********************************* 
@@ -1022,7 +1022,7 @@ draw_down_arrow_horizontal
 	
 	mov   edx,sb_line_col
 	mov   bx,1
-	cmp  sb_all_redraw,dword 0
+	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; bottom button - extreme line
 @@:
@@ -1036,7 +1036,7 @@ draw_down_arrow_horizontal
 	mov	 edi,dword [esp+36]
 	mcall 37,1
 	mov   sb_m_pos,eax
-	cmp   sb_m_pos_2,dword 0
+	cmp   dword sb_m_pos_2,0
 	jne   @f
 	
 	mov   sb_m_pos_2,eax	
@@ -1056,7 +1056,7 @@ draw_down_arrow_horizontal
 	jmp   .continue_2
 	
 @@:
-	cmp   sb_m_keys,dword 0
+	cmp   dword sb_m_keys,0
 	jne	 @f
 	mov   eax,sb_m_pos
 	mov   sb_m_pos_2,eax
@@ -1081,7 +1081,7 @@ draw_down_arrow_horizontal
 	cmp   ax,cx
 	jb	.exit_sb
 	
-	cmp   sb_delta2,word 0
+	cmp   word sb_delta2,0
 	je	@f
 	push  ecx
 	add   cx,sb_btn_high
@@ -1094,17 +1094,17 @@ draw_down_arrow_horizontal
 	cmp   ax,cx
 	ja	.exit_sb
 
-	cmp   sb_delta2,word 0
+	cmp   word sb_delta2,0
 	je	@f
 	sub   cx,sb_btn_high
 	cmp   ax,cx
 	ja	.exit_sb
 	
 @@:
-	cmp   sb_delta2,word 1
+	cmp   word sb_delta2,1
 	je	@f
 	
-	cmp   sb_m_keys,dword 0
+	cmp   dword sb_m_keys,0
 	je	.exit_sb
 	
 	mov   cx,sb_start_y   ;x
@@ -1188,13 +1188,13 @@ draw_down_arrow_horizontal
 	xor   ecx,ecx
 	mov   cx,sb_start_x   ;y
 	add   cx,sb_btn_high   ;15
-	cmp   sb_delta,word 1
+	cmp   word sb_delta,1
 	je	.scroll_sb
 	
 	cmp   ax,cx
 	ja	.scroll_sb
 	
-	cmp   sb_m_keys,dword 0
+	cmp   dword sb_m_keys,0
 	je   .exit_sb
 	
 	mov   eax,sb_ar_offset
@@ -1213,7 +1213,7 @@ draw_down_arrow_horizontal
 	add   cx,sb_size_x	;y
 	sub   cx,sb_btn_high
 	sub   cx,sb_btn_high
-	cmp   sb_delta,word 1
+	cmp   word sb_delta,1
 	je	@f
 	
 	cmp   ax,cx
@@ -1228,7 +1228,7 @@ draw_down_arrow_horizontal
 .scroll_sb_1:	
 	mov   ebx,sb_run_size
 ;*****************************************************************************	
-	cmp   sb_delta,word 1
+	cmp   word sb_delta,1
 	je	.continue
 	
 @@:
@@ -1306,7 +1306,7 @@ draw_down_arrow_horizontal
 	jmp   .exit_sb
 ;*****************************************************************************
 .down_sb:
-	cmp   sb_m_keys,dword 0
+	cmp   dword sb_m_keys,0
 	je   .exit_sb
 	
 	mov   eax,sb_max_area

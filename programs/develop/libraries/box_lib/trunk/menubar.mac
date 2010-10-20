@@ -87,7 +87,7 @@ m_get_mouse_flag	equ [edi+116]
 	
 	mov	ebx,m_size_x
 	mov	ecx,m_size_y
-	cmp	m_select,dword 1
+	cmp	dword m_select,1
 	je	.active
 	mov	edx,m_bckg_col
 	jmp	@f
@@ -99,7 +99,7 @@ m_get_mouse_flag	equ [edi+116]
 	mov	bx,cx
 	movzx	eax,word m_size_y
 	call	.calculate_font_offset
-	cmp	m_select,dword 1
+	cmp	dword m_select,1
 	je	.active_1
 	mov	ecx,m_bckg_text_col
 	add	ecx,0x80000000
@@ -237,16 +237,16 @@ m_get_mouse_flag	equ [edi+116]
 	cmp	ax,cx
 	ja	.exit_menu
 
-	test	m_mouse_keys,dword 1b
+	test	dword m_mouse_keys,1b
 	jnz	@f
-	cmp	m_select,dword 1
+	cmp	dword m_select,1
 	je	.exit_menu_1
-	mov	m_select,dword 1
+	mov	dword m_select,1
 	call	.draw_1
 	jmp	.exit_menu_1
 @@:
 
-	cmp	m_get_mouse_flag,dword 1
+	cmp	dword m_get_mouse_flag,1
 	mov	m_get_mouse_flag,dword 0
 	je	@f
 	
@@ -278,7 +278,7 @@ m_get_mouse_flag	equ [edi+116]
 .key_menu:
 	mcall	2
 
-	cmp	m_extended_key,dword 1
+	cmp	dword m_extended_key,1
 	je	.extended_key
 	test	al,al
 	jnz	.key_menu_end
@@ -376,7 +376,7 @@ m_get_mouse_flag	equ [edi+116]
 	cmp	ah,73    ;PageUp
 	jne	.menu_key_79
 @@:
-	cmp	m_cursor,dword 0
+	cmp	dword m_cursor,0
 	je	.still
 	mov	ebx,m_cursor
 	mov	m_cursor_old,ebx
@@ -448,7 +448,7 @@ m_get_mouse_flag	equ [edi+116]
 	ret
 ;---------------------------------------------------------------------
 .free_menu_area:
-	cmp	m_buf_adress,dword 0
+	cmp	dword m_buf_adress,0
 	je	@f
 	mcall	68,13,m_buf_adress
 	xor	eax,eax
@@ -540,7 +540,7 @@ m_get_mouse_flag	equ [edi+116]
 	jmp	.exit_menu_3
 	 
 .exit_menu:
-	cmp	m_select,dword 0
+	cmp	dword m_select,0
 	je	.exit_menu_1
 	mov	m_select,dword 0
 	 
