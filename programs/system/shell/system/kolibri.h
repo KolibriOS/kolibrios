@@ -88,3 +88,4 @@ unsigned kol_time_tick();
 unsigned kol_sound_speaker(char data[]);
 unsigned kol_process_info(unsigned slot, char buf1k[]);
 int kol_process_kill_pid(unsigned process);
+void kol_get_kernel_ver(char buff16b[]);

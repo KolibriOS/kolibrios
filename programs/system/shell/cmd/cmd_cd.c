@@ -7,7 +7,11 @@ unsigned result;
 
 if (NULL == dir)
 	{
-	printf("  cd directory\n\r");
+	#if LANG_ENG
+		printf("  cd <directory>\n\r");
+	#elif LANG_RUS
+		printf("  cd <директория>\n\r");
+	#endif
 	return FALSE;
 	}
 

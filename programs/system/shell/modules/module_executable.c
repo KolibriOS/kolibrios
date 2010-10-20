@@ -5,14 +5,18 @@ int executable_run(char cmd[], char args[])
 {
 
 char		exec[256];
-char		error_starting[]={"  No such command '%s'.\n\r"};
+#if LANG_ENG
+	char		error_starting[]={"  No such command '%s'.\n\r"};
+#elif LANG_RUS
+	char		error_starting[]={"  ç• ‚†™Æ© ™Æ¨†≠§Î - '%s'.\n\r"};
+#endif
 int		result;
 
-if ( '/' == cmd[0]) // ÂÒÎË ÔÛÚ¸ ‡·ÒÓÎ·ÚÌ˚È
+if ( '/' == cmd[0]) // •·´® Ø„‚Ï †°·Æ´°‚≠Î©
 	{
 	strcpy(exec, cmd);
 
-	if (  !file_check(exec) ) // ÔÓ‚ÂˇÂÏ ÒÛ˘ÂÒÚ‚Ó‚‡ÌËÂ Ù‡ÈÎ‡
+	if (  !file_check(exec) ) // Ø‡Æ¢•‡Ô•¨ ·„È•·‚¢Æ¢†≠®• ‰†©´†
 		{
 		printf(error_starting, cmd);
 		return FALSE;
@@ -21,14 +25,14 @@ if ( '/' == cmd[0]) // ÂÒÎË ÔÛÚ¸ ‡·ÒÓÎ·ÚÌ˚È
 
 else 
 	{
-	strcpy(exec, cur_dir); // ÔÓ‚ÂˇÂÏ Ù‡ÈÎ ‚ ÚÂÍÛ˘ÂÏ Í‡Ú‡ÎÓ„Â
+	strcpy(exec, cur_dir); // Ø‡Æ¢•‡Ô•¨ ‰†©´ ¢ ‚•™„È•¨ ™†‚†´Æ£•
 	strcat(exec, cmd);
 	
-	if ( !file_check(exec) ) // ÔÓ‚ÂˇÂÏ ÒÛ˘ÂÒÚ‚Ó‚‡ÌËÂ Ù‡ÈÎ‡
+	if ( !file_check(exec) ) // Ø‡Æ¢•‡Ô•¨ ·„È•·‚¢Æ¢†≠®• ‰†©´†
 		{
-		strcpy(exec, "/rd/1/"); // ÔÓ‚ÂˇÂÏ Ù‡ÈÎ Ì‡ ‚ËÚÛ‡Î¸ÌÓÏ ‰ËÒÍÂ
+		strcpy(exec, "/rd/1/"); // Ø‡Æ¢•‡Ô•¨ ‰†©´ ≠† ¢®‡‚„†´Ï≠Æ¨ §®·™•
 		strcat(exec, cmd);
-			if ( !file_check(exec) ) // ÔÓ‚ÂˇÂÏ ÒÛ˘ÂÒÚ‚Ó‚‡ÌËÂ Ù‡ÈÎ‡
+			if ( !file_check(exec) ) // Ø‡Æ¢•‡Ô•¨ ·„È•·‚¢Æ¢†≠®• ‰†©´†
 				{
 				printf(error_starting, cmd);
 				return FALSE;
@@ -42,11 +46,15 @@ if ( script_check(exec) )
 	return script_run(exec, args);
 	}
 
-/* Á‡ÔÛÒÍ ÔÓ„‡ÏÏ˚ */
+/* ß†Ø„·™ Ø‡Æ£‡†¨¨Î */
 result = program_run(exec, args);
 if (result > 0)
 	{
-	printf ("  '%s' started. PID = %d\n\r", cmd, result);
+	#if LANG_ENG
+		printf ("  '%s' started. PID = %d\n\r", cmd, result);
+	#elif LANG_RUS
+		printf ("  '%s' ß†Ø„È•≠. PID = %d\n\r", cmd, result);
+	#endif
 	return TRUE;
 	}
 else	

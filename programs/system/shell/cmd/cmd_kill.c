@@ -24,7 +24,7 @@ int result;
 
 if (NULL == process)
 	{
-	printf("  kill PID\n\r");
+	printf("  kill <PID>\n\r");
 	return FALSE;
 	}
 else

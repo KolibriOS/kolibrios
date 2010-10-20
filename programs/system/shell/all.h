@@ -1,6 +1,8 @@
 
 /// ===========================================================
 
+#include "lang.h"
+
 #include "system/boolean.h"
 #include "system/kolibri.h"
 #include "system/stdlib.h"
@@ -22,7 +24,7 @@
 #include "cmd/cmd_date.c"
 #include "cmd/cmd_exit.c"
 #include "cmd/cmd_cd.c"
-#include "cmd/cmd_free.c"
+#include "cmd/cmd_memory.c"
 #include "cmd/cmd_reboot.c"
 #include "cmd/cmd_mkdir.c"
 #include "cmd/cmd_rmdir.c"
@@ -33,6 +35,9 @@
 #include "cmd/cmd_clear.c"
 #include "cmd/cmd_ccpuid.c"
 #include "cmd/cmd_sleep.c"
+#include "cmd/cmd_turnoff.c"
+#include "cmd/cmd_kerver.c"
+#include "cmd/cmd_uptime.c"
 
 #include "modules/module_command.c"
 #include "modules/module_program.c"

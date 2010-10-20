@@ -5,13 +5,17 @@ int cmd_more(char file[])
 kol_struct70	k70;
 kol_struct_BDVK	bdvk;
 unsigned	result, filesize, pos, i;
-char		buf[81]; //сєЇхЁ
+char		buf[81]; //буфер
 char		temp[256];
 unsigned	flags;
 
 if (NULL == file)
 	{
-	printf ("  less filename\n\r");
+	#if LANG_ENG
+		printf ("  more <filename>\n\r");
+	#elif LANG_RUS
+		printf ("  more <имя файла>\n\r");
+	#endif
 	return FALSE;
 		}
 
@@ -41,11 +45,11 @@ k70.p16 = &bdvk;
 k70.p20 = 0;
 k70.p21 = temp;
 
-result = kol_file_70(&k70); // яюыєўрхь шэЇюЁьрЎш■ ю Їрщых
+result = kol_file_70(&k70); // получаем информацию о файле
 if ( 0 != result ) 
 	return FALSE;
 
-filesize = bdvk.p32[0]; // яюыєўрхь ЁрчьхЁ Їрщыр
+filesize = bdvk.p32[0]; // получаем размер файла
 
 buf[80]=0;
 flags = con_get_flags();
@@ -63,7 +67,7 @@ for (pos=0;pos<filesize;pos+=80)
 	k70.p20 = 0;
 	k70.p21 = temp;
 
-	result = kol_file_70(&k70); // ўЄхэшх 80 ёшьтюыют
+	result = kol_file_70(&k70); // чтение 80 символов
 	for (i=0; i<80; i++)
 		{
 

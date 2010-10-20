@@ -8,7 +8,11 @@ unsigned	result;
 
 if (NULL == dir)
 	{
-	printf("  mkdir directory\n\r");
+	#if LANG_ENG
+		printf("  mkdir <directory>\n\r");
+	#elif LANG_RUS
+		printf("  mkdir <директория>\n\r");
+	#endif	
 	return FALSE;
 	}
 

@@ -8,7 +8,11 @@ unsigned	result;
 
 if (NULL == file)
 	{
-	printf("  touch filename\n\r");
+	#if LANG_ENG
+		printf("  touch <filename>\n\r");
+	#elif LANG_RUS
+		printf("  touch <имя файла>\n\r");
+	#endif
 	return FALSE;
 	}
 

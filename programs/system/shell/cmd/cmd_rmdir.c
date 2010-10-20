@@ -8,7 +8,11 @@ unsigned	result;
 
 if (NULL == dir)
 	{
-	printf("  rmdir directory\n\r");
+	#if LANG_ENG
+		printf("  rmdir <directory>\n\r");
+	#elif LANG_ENG
+		printf("  rmdir <директория>\n\r");
+	#endif
 	return FALSE;
 	}
 

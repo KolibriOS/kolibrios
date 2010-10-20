@@ -8,7 +8,11 @@ unsigned	result;
 
 if (NULL == file)
 	{
-	printf ("  rm filename\n\r");
+	#if LANG_ENG
+		printf ("  rm <filename>\n\r");
+	#elif LANG_RUS
+		printf ("  rm <имя файла>\n\r");
+	#endif
 	return FALSE;
 	}
 
