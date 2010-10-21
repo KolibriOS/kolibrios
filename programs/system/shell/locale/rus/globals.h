@@ -22,6 +22,6 @@ const command_t COMMANDS[]=
 	{"sleep",   "  Останавливает работу Shell'а на заданное время. Использование:\n\r    sleep <интервал в сотых доля секунды>\n\r  Пример:\n\r    sleep 500 ;пауза на 5 сек.\n\r", &cmd_sleep},
 	{"shutdown","  Выключает компьютер\n\r", &cmd_shutdown},
 	{"touch",   "  Создаёт пустой файл или изменяет дату/время создания файла. Использование:\n\r    touch <имя файла>\n\r", &cmd_touch},
-	{"uptime",  "  Показывает uptime", &cmd_uptime},
+	{"uptime",  "  Показывает uptime\n\r", &cmd_uptime},
 	{"ver",     "  Показывает версию. Использование:\n\r    ver ;версия Shell'а\n\r    ver kernel ;версия и номер ревизии ядра КоОС\n\r", &cmd_ver},
 };

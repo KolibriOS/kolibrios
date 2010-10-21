@@ -22,6 +22,6 @@ const command_t COMMANDS[]=
 	{"sleep",   "  Stops the shell for the desired period. Usage:\n\r    sleep <time in the 1/100 of second>\n\r  Example:\n\r    sleep 500 ;pause for 5sec.\n\r", &cmd_sleep},
 	{"shutdown","  Turns off the computer\n\r", &cmd_shutdown},
 	{"touch",   "  Creates an empty file or updates the time/date stamp on a file. Usage:\n\r    touch <file name>\n\r", &cmd_touch},
-	{"uptime",  "  Displays the uptime", &cmd_uptime},
+	{"uptime",  "  Displays the uptime\n\r", &cmd_uptime},
 	{"ver",     "  Displays version. Usage:\n\r    ver ;Shell version\n\r    ver kernel ;version of KoOS kernel\n\r", &cmd_ver},
 };
