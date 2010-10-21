@@ -35,8 +35,7 @@
 #include "cmd/cmd_clear.c"
 #include "cmd/cmd_ccpuid.c"
 #include "cmd/cmd_sleep.c"
-#include "cmd/cmd_turnoff.c"
-#include "cmd/cmd_kerver.c"
+#include "cmd/cmd_shutdown.c"
 #include "cmd/cmd_uptime.c"
 
 #include "modules/module_command.c"
