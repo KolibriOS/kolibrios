@@ -850,7 +850,7 @@ dd REV - kernel SVN revision number
 For Kolibri 0.7.7.0+ kernel:
 db 0,7,7,0
 db 0
-dd 1657
+dd 1675
 
 ======================================================================
 ======= Function 18, subfunction 14 - wait for screen retrace. =======
