@@ -8,11 +8,11 @@ char		exec[256];
 #if LANG_ENG
 	char		error_starting[]={"  No such command '%s'.\n\r"};
 #elif LANG_RUS
-	char		error_starting[]={"  Не такой команды - '%s'.\n\r"};
+	char		error_starting[]={"  Нет такой команды - '%s'.\n\r"};
 #endif
 int		result;
 
-if ( '/' == cmd[0]) // если путь абсолбтный
+if ( '/' == cmd[0]) // если путь абсолютный
 	{
 	strcpy(exec, cmd);
 

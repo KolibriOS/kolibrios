@@ -37,6 +37,7 @@
 #include "cmd/cmd_sleep.c"
 #include "cmd/cmd_shutdown.c"
 #include "cmd/cmd_uptime.c"
+#include "cmd/cmd_killall.c"
 
 #include "modules/module_command.c"
 #include "modules/module_program.c"

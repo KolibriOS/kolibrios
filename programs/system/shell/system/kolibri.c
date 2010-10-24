@@ -411,6 +411,11 @@ int kol_process_kill_pid(unsigned process)
 asm ("int $0x40"::"a"(18), "b"(18), "c"(process));
 }
 
+int kol_kill_process(unsigned process)
+{
+asm ("int $0x40"::"a"(18), "b"(2), "c"(process));
+}
+
 void kol_get_kernel_ver(char buff16b[])
 {
 asm ("int $0x40"::"a"(18), "b"(13), "c"(buff16b));

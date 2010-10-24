@@ -1,5 +1,5 @@
 
-#define SHELL_VERSION "0.4.51"
+#define SHELL_VERSION "0.4.52"
 
 extern char	PATH[256];
 extern char	PARAM[256];
@@ -65,6 +65,7 @@ int cmd_ver(char arg[]);
 int cmd_sleep(char arg[]);
 int cmd_shutdown(char arg[]);
 int cmd_uptime(char param[]);
+int cmd_killall(char process_name[]);
 
 /// ===========================================================
 
