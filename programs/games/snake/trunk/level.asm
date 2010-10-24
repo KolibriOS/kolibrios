@@ -4,6 +4,7 @@ Level_begin:
 
       call      Load_level
       call      Get_eat
+        mcall     66,1,1                          ; set scan codes mode for keyboard
 
 Level_body:
     ;;===Level_body========================================================================================================
@@ -15,13 +16,8 @@ mcall     26, 9
     mov  [time_to_wait],    eax
 
   .redraw:
+      call      Set_geometry
       mcall     12,1
-    mov  ebx, [wp_x]
-    shl  ebx, 16
-    add  ebx, dword[window_width]
-    mov  ecx, [wp_y]
-    shl  ecx, 16
-    add  ecx, dword[window_height]
       mcall     0, , ,[window_style], ,window_title
     
       call      Draw_decorations
@@ -70,26 +66,83 @@ mcall     26, 9
 
     shr  eax, 8                                 ; сдвигаем регистр eax на 8 бит вправо, чтобы получить номер нажатой кнопки
     cmp  eax, 1
-     je  Save_do_smth_else_and_exit             ; если это не кнопка 1 (зарезервирована системой как кнопка закрытия программы), пропускаем 2 следующие строчки кода
+     je  Save_do_smth_else_and_exit
 
      jmp .still
 
 
   .key:
       mcall     2                               ; get keycode
-    
-    cmp  ah,  0x1B                              ; Escape
+
+;pushf
+;pusha
+;movzx eax, ah
+;dph eax
+;newline
+;popa
+;popf
+
+    cmp  ah,  0x01                              ; Escape
      je  First_menu
-    cmp  ah,  0x20                              ; Space
+    cmp  ah,  0x39                              ; Space
      je  Pause_mode
-    cmp  ah,  0xB0                              ; Left
+    cmp  ah,  0x4B                              ; Left
      je  .key.left
-    cmp  ah,  0xB1                              ; Down
+    cmp  ah,  [shortcut_move_left]              ; Left
+     je  .key.left
+    cmp  ah,  0x50                              ; Down
      je  .key.down
-    cmp  ah,  0xB2                              ; Up
+    cmp  ah,  [shortcut_move_down]              ; Down
+     je  .key.down
+    cmp  ah,  0x48                              ; Up
      je  .key.up
-    cmp  ah,  0xB3                              ; Right
+    cmp  ah,  [shortcut_move_up]                ; Up
+     je  .key.up
+    cmp  ah,  0x4D                              ; Right
      je  .key.right
+    cmp  ah,  [shortcut_move_right]             ; Right
+     je  .key.right
+
+    cmp  ah,  0x4B+0x80                         ; Left released
+     je  .key.released.left
+    mov  al,  [shortcut_move_left]
+    add  al,  0x80
+    cmp  ah,  al                                ; Left released
+     je  .key.released.left
+    cmp  ah,  0x50+0x80                         ; Down released
+     je  .key.released.down
+    mov  al,  [shortcut_move_down]
+    add  al,  0x80
+    cmp  ah,  al                                ; Down released
+     je  .key.released.down
+    cmp  ah,  0x48+0x80                         ; Up released
+     je  .key.released.up
+    mov  al,  [shortcut_move_up]
+    add  al,  0x80
+    cmp  ah,  al                                ; Up released
+     je  .key.released.up
+    cmp  ah,  0x4D+0x80                         ; Right released
+     je  .key.released.right
+    mov  al,  [shortcut_move_right]
+    add  al,  0x80
+    cmp  ah,  al                                ; Right released
+     je  .key.released.right
+
+    cmp  ah, [shortcut_reverse]
+     jne @f
+      call      Reverse_snake
+     jmp .still
+  @@:
+    cmp  ah, [shortcut_increase]
+     jne @f
+      call      Increase_geometry
+     jmp .redraw
+  @@:
+    cmp  ah, [shortcut_decrease]
+     jne @f
+      call      Decrease_geometry
+     jmp .redraw
+  @@:
     
      jmp .still                                 ; jump to wait for another event
 
@@ -99,7 +152,14 @@ mcall     26, 9
      jc  @f
     mov  [time_to_wait],    0
   @@:
+    cmp  [smart_reverse],   1
+     jne @f
+    cmp  [snake_direction], RIGHT
+     je  .still
+  @@:
     mov  [snake_direction_next],    LEFT
+    bts  [acceleration_mask],   LEFT
+     jc  Game_step
      jmp .still
             
   .key.down:
@@ -107,7 +167,14 @@ mcall     26, 9
      jc  @f
     mov  [time_to_wait],    0
   @@:
+    cmp  [smart_reverse],   1
+     jne @f
+    cmp  [snake_direction], UP
+     je  .still
+  @@:
     mov  [snake_direction_next],    DOWN
+    bts  [acceleration_mask],   DOWN
+     jc  Game_step
      jmp .still
             
   .key.up:
@@ -115,7 +182,14 @@ mcall     26, 9
      jc  @f
     mov  [time_to_wait],    0
   @@:
+    cmp  [smart_reverse],   1
+     jne @f
+    cmp  [snake_direction], DOWN
+     je  .still
+  @@:
     mov  [snake_direction_next],    UP
+    bts  [acceleration_mask],   UP
+     jc  Game_step
      jmp .still
             
   .key.right:
@@ -123,7 +197,31 @@ mcall     26, 9
      jc  @f
     mov  [time_to_wait],    0
   @@:
+    cmp  [smart_reverse],   1
+     jne @f
+    cmp  [snake_direction], LEFT
+     je  .still
+  @@:
     mov  [snake_direction_next],    RIGHT
+    bts  [acceleration_mask],   RIGHT
+     jc  Game_step
+     jmp .still
+
+
+  .key.released.left:
+    btr  [acceleration_mask],   LEFT
+     jmp .still
+
+  .key.released.down:
+    btr  [acceleration_mask],   DOWN
+     jmp .still
+
+  .key.released.up:
+    btr  [acceleration_mask],   UP
+     jmp .still
+
+  .key.released.right:
+    btr  [acceleration_mask],   RIGHT
      jmp .still
 
 
@@ -256,6 +354,7 @@ Draw_head_prehead:
     mov  bx,  [esi]
     mov  edx, [snake_color]
       call      Draw_square
+      call      Draw_lives_in_head
 
     ret
 
@@ -349,7 +448,7 @@ Get_eat:
     ;;  out :
     ;;          ax  =   coord's of the eat square (al=x, ah=y)
     ;;
-    
+
       mcall     26,9
 ;    xor  eax, esp
     shl  eax, 1
@@ -502,8 +601,28 @@ Snake_move:
     mov  cl,  1
       call      Draw_on_map
       call      Draw_head_prehead
+
+    cmp  [play_mode],   CLASSIC_MODE
+     jne .is_not_classic_mode
+    dec  byte[speed_up_counter]
+     jns @f
+    mov  al,  byte[speed_up_counter+1]
+    mov  byte[speed_up_counter],    al
+    cmp  [time_wait_limit], 4
+     jl  @f
+    dec  [time_wait_limit]
+  @@:
+
+  .is_not_classic_mode:
+    cmp  [play_mode],   LEVELS_MODE
+     jne .is_not_levels_mode
+    cmp  [snake_length_x2], (EAT_TO_END_LEVEL+3)*2
+     je  .skip
+
+  .is_not_levels_mode:
       call      Get_eat
       call      Draw_eat
+  .skip:
 
      jmp Keys_done
 
@@ -519,6 +638,7 @@ Snake_move:
     pop ax
 
       call      Get_from_map
+
     test bl,  bl
      jnz Game_over
 
@@ -606,17 +726,26 @@ Draw_splash:
 
     dec  cl
     cmp  cl,  0
-     jl  @f
+     jl  .picture
 
     push eax ebx
       mcall     5,PAUSE_WHILE_DRAWING_SPLASH
+      mcall     2
+    cmp  ah,  0x39                              ; Space
+     jne @f
     pop  ebx eax
-
-     jmp .draw
+     jmp .quit
   @@:
+    cmp  ah,  0x1C                              ; Enter
+     jne @f
+    pop  ebx eax
+     jmp .quit
+  @@:
+    pop  ebx eax
+     jmp .draw
 
-    
 
+  .picture:
     mov  ax,  2*0x100+24
     mov  cx,  1*0x100+5
     mov  edx, [splash_level_string_color]
@@ -632,7 +761,7 @@ Draw_splash:
   @@:
     test al,  al
      jz  @f
-    add  esi, 20
+    add  esi, 5
     dec  al
      jmp @b
   @@:
@@ -647,7 +776,7 @@ Draw_splash:
   @@:
     test ah,  ah
      jz  @f
-    add  esi, 20
+    add  esi, 5
     dec  ah
      jmp @b
   @@:
@@ -657,11 +786,62 @@ Draw_splash:
     mov  edx, [splash_level_number_color]
       call      Draw_picture
 
-      mcall     5,PAUSE_BETWEEN_LEVELS
-
+      mcall     26,9
+    mov  [time_before_waiting], eax
+    mov  [time_to_wait],    PAUSE_BETWEEN_LEVELS
+  @@:
+      mcall     23,[time_to_wait]
+      mcall     2
+    cmp  ah,  0x39                              ; Space
+     je  .quit
+    cmp  ah,  0x1C                              ; Enter
+     je  .quit
+      mcall     26,9
+    push eax
+    sub  eax, [time_before_waiting]
+    pop  [time_before_waiting]
+    sub  [time_to_wait],  eax
+     jns @b
+  .quit:
     ret
 
     ;;---Draw_splash-----------------------------------------------------------------------------------------------------------
+
+
+Draw_lives_in_head:
+    ;;===Draw_lives_in_head====================================================================================================
+
+    cmp  [play_mode],   LEVELS_MODE
+     jne .quit
+    test [show_lives_style],    2
+     jz  .quit
+    mov  eax, snake_dots-2
+    add  eax, [snake_length_x2]
+    mov  ax,  word[eax]
+
+    mov  bl,  ah
+    mul  byte[g_s]
+    mov  edx, [gbxm1]
+    add  dx,  ax
+    shl  edx, 16
+    mov  al,  bl
+    mul  byte[g_s]
+    mov  dx,  word[gbym1]
+    add  dx,  ax
+
+    mov  eax, [g_s]
+    shl  eax, 16
+    add  eax, [g_s]
+    and  eax, 0xfffefffe
+    shr  eax, 1
+    add  edx, eax
+    sub  edx, 0x00020003
+      mcall     47,0x80010001,lives,,[lives_in_head_number_color]
+
+  .quit:
+    ret
+
+    ;;---Draw_lives_in_head----------------------------------------------------------------------------------------------------
 
 
 ;;---Some_functions------------------------------------------------------------------------------------------------------------

@@ -2,19 +2,15 @@
 
 Pause_mode:
 
+      mcall     66,1,1                          ; set scan codes mode for keyboard
       call      Show_cursor
     mov  [action],  0
     mov  eax, [time_wait_limit]
     mov  [time_to_wait],    eax
 
   .redraw:
+      call      Set_geometry
       mcall     12,1
-    mov  ebx, [wp_x]
-    shl  ebx, 16
-    add  ebx, dword[window_width]
-    mov  ecx, [wp_y]
-    shl  ecx, 16
-    add  ecx, dword[window_height]
       mcall     0, , ,[window_style], ,window_title
 
       call      Draw_decorations
@@ -46,10 +42,20 @@ Pause_mode:
   .key:                                         ; a key was pressed
       mcall     2                               ; get keycode
     
-    cmp  ah,  0x1B                              ; Escape - go to menu
+    cmp  ah,  0x01                              ; Escape - go to menu
      je  First_menu
-    cmp  ah,  0x20                              ; Space - resume game
+    cmp  ah,  0x39                              ; Space - resume game
      je  Level_body
+    cmp  ah, [shortcut_increase]
+     jne @f
+      call      Increase_geometry
+     jmp .redraw
+  @@:
+    cmp  ah, [shortcut_decrease]
+     jne @f
+      call      Decrease_geometry
+     jmp .redraw
+  @@:
     
      jmp .still
 

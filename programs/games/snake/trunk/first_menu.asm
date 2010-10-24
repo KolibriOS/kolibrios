@@ -1,21 +1,23 @@
 ;;===First_menu_mode===========================================================================================================
 
 First_menu:
+    mov  byte[window_title+5],  0
+      mcall     71,1,window_title
       mcall     40,111b                         ; set events: standart
+      mcall     66,1,1                          ; set scan codes mode for keyboard
     mov  [is_new_record],   0
+    mov  [lives],   START_LIVES
       call      Show_cursor
 
     mov  [score],   0
       call      Set_first_level_of_play_mode
 
+    mov  ebx, [time_wait_limit_const]
+    mov  [time_wait_limit], ebx
+
   .redraw:
+      call      Set_geometry
       mcall     12,1
-    mov  ebx, [wp_x]
-    shl  ebx, 16
-    add  ebx, dword[window_width]
-    mov  ecx, [wp_y]
-    shl  ecx, 16
-    add  ecx, dword[window_height]
       mcall     0, , ,[window_style], ,window_title
 
       call      Draw_decorations
@@ -68,16 +70,26 @@ First_menu:
   .key:                                         ; a key was pressed
       mcall     2                               ; get keycode
 
-    cmp  ah, 0x1B                               ; Escape
+    cmp  ah, 0x01                               ; Escape
      je  Save_do_smth_else_and_exit
-    cmp  ah, 0x0D                               ; Enter
+    cmp  ah, 0x1C                               ; Enter
      je  Level_begin
-    cmp  ah, 0x20                               ; Space
+    cmp  ah, 0x39                               ; Space
      jne @f
       call      Change_play_mode
       call      Delete_buttons
       call      Draw_buttons
      jmp .still                                 ; jump to wait for another event
+  @@:
+    cmp  ah, [shortcut_increase]
+     jne @f
+      call      Increase_geometry
+     jmp .redraw
+  @@:
+    cmp  ah, [shortcut_decrease]
+     jne @f
+      call      Decrease_geometry
+     jmp .redraw
   @@:
      jmp .still                                 ; jump to wait for another event
 

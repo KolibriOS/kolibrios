@@ -2,6 +2,17 @@
 
 Game_over:
 
+    cmp  [play_mode],   LEVELS_MODE
+     jne @f
+    dec  [lives]
+     jz  @f
+      call      Draw_splash
+     jmp Level_begin
+  @@:
+
+    mov  byte[window_title+5],  0
+      mcall     71,1,window_title
+      mcall     66,1,0                          ; set ascii mode for keyboard
       call      Show_cursor
 
     mov  ebx, [score]
@@ -22,13 +33,8 @@ Game_over:
       mcall     40,100111b                      ; set events: standart + mouse
 
   .redraw:
+      call      Set_geometry
       mcall     12,1
-    mov  ebx, [wp_x]
-    shl  ebx, 16
-    add  ebx, dword[window_width]
-    mov  ecx, [wp_y]
-    shl  ecx, 16
-    add  ecx, dword[window_height]
       mcall     0, , ,[window_style], ,window_title
 
       call      Draw_decorations
