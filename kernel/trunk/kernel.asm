@@ -2311,14 +2311,10 @@ endg
 iglobal
 version_inf:
   db 0,7,7,0  ; version 0.7.7.0
-  db UID_KOLIBRI
+  db 0		;reserved
   dd __REV__
 version_end:
 endg
-
-UID_NONE=0
-UID_MENUETOS=1   ;official
-UID_KOLIBRI=2    ;russian
 
 sys_cachetodiskette:
         cmp     ebx, 1

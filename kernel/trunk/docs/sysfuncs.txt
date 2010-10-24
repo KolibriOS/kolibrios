@@ -845,12 +845,12 @@ Returned value:
   * function does not return value
 Structure of the buffer:
 db a,b,c,d for version a.b.c.d
-db UID_xxx: one of UID_NONE=0, UID_MENUET=1, UID_KOLIBRI=2
+db 0: reserved
 dd REV - kernel SVN revision number
-For Kolibri 0.7.7.0 kernel:
+For Kolibri 0.7.7.0+ kernel:
 db 0,7,7,0
-db 2
-dd 1319
+db 0
+dd 1657
 
 ======================================================================
 ======= Function 18, subfunction 14 - wait for screen retrace. =======
