@@ -3,7 +3,6 @@
 ;; Copyright (C) 2010 KolibriOS team.     All rights reserved.  ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
-;;  HT.inc                                                      ;;                                                    ;;
 ;;                                                              ;;
 ;;  AMD HyperTransport bus control                              ;;
 ;;                                                              ;;

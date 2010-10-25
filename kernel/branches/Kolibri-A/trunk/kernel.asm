@@ -68,7 +68,6 @@ USE_COM_IRQ     equ 1      ; make irq 3 and irq 4 available for PCI devices
 
 include "proc32.inc"
 include "kglobals.inc"
-include "lang.inc"
 
 include "const.inc"
 max_processes    equ   255
@@ -125,12 +124,7 @@ version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
 include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
 
-if lang eq en
 include "boot/booteng.inc"     ; english system boot messages
-else
-include "boot/bootru.inc"      ; russian system boot messages
-include "boot/ru.inc"          ; Russian font
-end if
 
 include "boot/bootcode.inc"    ; 16 bit system boot code
 include "bus/pci/pci16.inc"
@@ -1920,6 +1914,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 
      cmp  edx,[application_table_status]    ; clear app table stat
      jne  noatsc
+
      and  [application_table_status],0
    noatsc:
    noprocessterminate:
