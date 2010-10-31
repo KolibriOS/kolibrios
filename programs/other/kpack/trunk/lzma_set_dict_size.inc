@@ -1,11 +1,12 @@
 ;* Call: ***************************************************************
+; lzma_set_dict_size(unsigned logdictsize)
 lzma_set_dict_size:
 	mov	ecx,[esp+4]
 	xor	eax,eax
 	inc	eax
 	shl	eax,cl
-	mov	[0x29568],eax
+	mov	[_dictionarySize],eax
 	lea	eax,[ecx+ecx]
-	mov	[0x29570],eax
+	mov	[_distTableSize],eax
 	ret	4
 ;*****************************************************************************

@@ -1,22 +1,29 @@
+kIfinityPrice equ 0x0FFFFFFF
+
 ;* Call: ***************************************************************
+;lzma_compress(
+;	const void* source,
+;	void* destination,
+;	unsigned length,
+;	void* workmem)
 lzma_compress:
 	push	ebp
 	mov	ebp,esp
 	and	esp,0xFFFFFFF8
-	sub	esp,0xC
+	sub	esp,12
 	push	ebx
 	push	esi
 	push	edi
 	push	2
 	pop	esi
 	xor	ebx,ebx
-	mov	[esp+0x14],esi
-	mov	[0x19FB0],bl
-	mov	byte [0x19FB1],1
-	mov	[esp+0x10],esi
+	mov	[esp+20],esi
+	mov	[g_FastPos],bl
+	mov	byte [g_FastPos+1],1
+	mov	[esp+16],esi
 ;----------------------------------------------------------
 .labl_00:
-	mov	ecx,[esp+0x10]
+	mov	ecx,[esp+16]
 	xor	edi,edi
 	sar	ecx,1
 	dec	ecx
@@ -24,92 +31,100 @@ lzma_compress:
 	shl	edi,cl
 	cmp	edi,ebx
 	jbe	.labl_01
-	mov	eax,[esp+0x14]
+
+	mov	eax,[esp+20]
 	push	edi
-	push	dword [esp+0x14]
-	lea	eax,[eax+0x19FB0]
+	push	dword [esp+20]
+	lea	eax,[eax+g_FastPos]
 	push	eax
 	call	_memset
-	add	esp,0xC
-	add	[esp+0x14],edi
+	add	esp,12
+	add	[esp+20],edi
 ;----------------------------------------------------------
 .labl_01:
-	inc	dword [esp+0x10]
-	cmp	dword [esp+0x10],0x14
+	inc	dword [esp+16]
+	cmp	dword [esp+16],20
 	jl	.labl_00
-	mov	edi,[ebp+0x14]
+
+	mov	edi,[ebp+20]
 	push	3
 	pop	eax
 	mov	ecx,edi
 	and	ecx,eax
-	mov	edx,0x80	;'€'
-	mov	[0x1CC30],edx
-	mov	[0x51A00],esi
-	mov	[0x1CC34],eax
-	mov	[0x1B234],eax
-	mov	[0x2956C],ebx
-	mov	[0x19FA9],bl
-	mov	[0x19FA8],bl
+	mov	edx,128
+	mov	[_numFastBytes],edx
+	mov	[_posStateBits],esi
+	mov	[_posStateMask],eax
+	mov	[_numLiteralContextBits],eax
+	mov	[_numLiteralPosStateBits],ebx
+	mov	[_writeEndMark],bl
+	mov	[_finished],bl
 	je	.labl_02
+
 	sub	edi,ecx
 	add	edi,4
 ;----------------------------------------------------------
 .labl_02:
-	mov	[0x519F4],eax
-	mov	eax,[0x29568]
-	mov	[0x519F0],edi
+;CLiteralEncoder_Create
+	mov	[_numPrevBits],eax
+	mov	eax,[_dictionarySize]
+	mov	[_posEncoders],edi
 	add	edi,0x6000
 	inc	eax
-	mov	[0x519F8],ebx
-	mov	[0x519FC],ebx
-	mov	[0x52218],edx
-	mov	[0x51A0C],eax
-	mov	[0x52224],edi
-	mov	dword [0x52220],0xFF	;'ÿ'
-	call	lz_cm_01
-	call	cm_pr_07
-	call	cm_pr_08
-	call	cm_pr_09
-	push	0x7F	;''
+	mov	[_numPosBits],ebx
+	mov	[_posMask],ebx
+;MatchFinder_Create
+	mov	[_matchMaxLen],edx
+	mov	[_cyclicBufferSize],eax
+	mov	[_hash],edi
+	mov	dword [_cutValue],0xFF
+	call	CEncoder_Init
+	call	FillPosSlotPrices
+	call	FillDistancesPrices
+	call	FillAlignPrices
+	push	127
 	pop	esi
-	mov	[0x19F64],esi
-	mov	[esp+0x10],ebx
+	mov	[_lenEncoder+0xC88C],esi
+	mov	[esp+16],ebx
 ;----------------------------------------------------------
 .labl_03:
-	push	dword [esp+0x10]
-	mov	eax,0xD6D8
-	call	cm_pr_01
-	inc	dword [esp+0x10]
-	cmp	dword [esp+0x10],4
+	push	dword [esp+16]
+	mov	eax,_lenEncoder
+	call	CPriceTableEncoder_UpdateTable
+	inc	dword [esp+16]
+	cmp	dword [esp+16],4
 	jb	.labl_03
-	mov	[0x294F4],esi
+
+	mov	[_repMatchLenEncoder+0xC88C],esi
 	xor	esi,esi
 ;----------------------------------------------------------
 .labl_04:
 	push	esi
-	mov	eax,0x1CC68
-	call	cm_pr_01
+	mov	eax,_repMatchLenEncoder
+	call	CPriceTableEncoder_UpdateTable
 	inc	esi
 	cmp	esi,4
 	jb	.labl_04
+
 	mov	eax,[ebp+8]
-	mov	esi,[ebp+0xC]
+	mov	esi,[ebp+12]
 	dec	eax
-	mov	[0x52628],eax
-	mov	eax,[ebp+0x10]
+	mov	[_buffer],eax
+	mov	eax,[ebp+16]
 	inc	eax
-	mov	[0x52630],eax
+	mov	[_streamPos],eax
 	mov	ecx,0x110000
 	xor	eax,eax
-	mov	[0x1CC28],ebx
-	mov	[0x1CC2C],ebx
-	mov	[0x1B400],ebx
-	mov	[0x1B404],ebx
-	mov	[0x52634],esi
-	mov	dword [0x5262C],1
+	mov	[lastPosSlotFillingPos],ebx
+	mov	[lastPosSlotFillingPos+4],ebx
+	mov	[nowPos64],ebx
+	mov	[nowPos64+4],ebx
+	mov	[pack_length],esi
+	mov	dword [_pos],1
 	rep	stosd	
-	mov	[0x5221C],ebx
+	mov	[pack_pos],ebx
 ;----------------------------------------------------------
+;MatchFinder_Init
 .labl_08:
 	push	8
 	mov	eax,ebx
@@ -118,6 +133,7 @@ lzma_compress:
 .labl_07:
 	test	al,1
 	je	.labl_05
+
 	shr	eax,1
 	xor	eax,0xEDB88320
 	jmp	.labl_06
@@ -128,23 +144,25 @@ lzma_compress:
 .labl_06:
 	dec	ecx
 	jne	.labl_07
-	mov	[0x52228+ebx*4],eax
+
+	mov	[crc_table+ebx*4],eax
 	inc	ebx
-	cmp	ebx,0x100
+	cmp	ebx,256
 	jb	.labl_08
 ;----------------------------------------------------------
 .labl_09:
-	call	lz_cm_02
+	call	CodeOneBlock
 	test	al,al
 	jne	.labl_09
-	mov	eax,[0x52634]
+
+	mov	eax,[pack_length]
 	pop	edi
 	sub	eax,esi
 	pop	esi
 	pop	ebx
 	mov	esp,ebp
 	pop	ebp
-	ret	0x10
+	ret	16
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
@@ -159,25 +177,27 @@ _memset:
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-lz_cm_01:
-	and	dword [0x51A10],0
-	and	dword [0x51A14],0
-	or	dword [0x51A04],0xFFFFFFFF
+CEncoder_Init:
+;RangeEncoder_Init
+	and	dword [low],0
+	and	dword [low+4],0
+	or	dword [range],0xFFFFFFFF
 	push	ebx
 	push	esi
 	push	edi
 	xor	eax,eax
-	mov	edi,0x1BC08
+	mov	edi,_repDistances
 	stosd	
 	stosd	
 	xor	ebx,ebx
 	stosd	
 	inc	ebx
-	mov	byte [0x519EC],0
-	mov	byte [0x19FAB],0
-	stosd	
-	mov	[0x51A08],ebx
-	mov	byte [0x519ED],0
+;CBaseState_Init
+	mov	byte [_state],0
+	mov	byte [_previousByte],0
+	stosd
+	mov	[_cacheSize],ebx
+	mov	byte [_cache],0
 	xor	ecx,ecx
 ;----------------------------------------------------------
 .labl_00:
@@ -186,7 +206,7 @@ lz_cm_01:
 	push	8
 	pop	edx
 	sub	edx,ecx
-	lea	esi,[0x51A18+eax*4]
+	lea	esi,[Models+eax*4]
 	shl	edx,6
 ;----------------------------------------------------------
 .labl_01:
@@ -198,102 +218,107 @@ lz_cm_01:
 	add	esi,4
 	dec	eax
 	jne	.labl_01
+
 	inc	ecx
 	cmp	ecx,9
 	jl	.labl_00
-	push	0xC
+
+	push	12
 	pop	edx
-	mov	esi,0x400
+	mov	esi,1024
 	mov	eax,esi
 	mov	ecx,edx
-	mov	edi,0x29538
+	mov	edi,_isRepG2
+	rep	stosd
+	mov	ecx,edx
+	mov	edi,_isRepG1
 	rep	stosd	
 	mov	ecx,edx
-	mov	edi,0x1AF00
+	mov	edi,_isRepG0
 	rep	stosd	
 	mov	ecx,edx
-	mov	edi,0x1CC38
-	rep	stosd	
-	mov	ecx,edx
-	mov	edi,0x515B8
+	mov	edi,_isRep
 	rep	stosd	
 	xor	ecx,ecx
 ;----------------------------------------------------------
 .labl_02:
-	lea	edi,[ecx+0x1A7B0]
+	lea	edi,[ecx+_isRep0Long]
 	mov	eax,esi
-	stosd	
-	stosd	
-	stosd	
-	stosd	
-	lea	edi,[ecx+0x1AF30]
+	stosd
+	stosd
+	stosd
+	stosd
+	lea	edi,[ecx+_isMatch]
 	mov	eax,esi
-	stosd	
-	stosd	
-	stosd	
-	add	ecx,0x40	;'@'
-	cmp	ecx,0x300
-	stosd	
+	stosd
+	stosd
+	stosd
+	add	ecx,64
+	cmp	ecx,768
+	stosd
 	jl	.labl_02
-	mov	eax,[0x519F4]
-	mov	ecx,[0x519F8]
+
+	mov	eax,[_numPrevBits]
+	mov	ecx,[_numPosBits]
 	add	ecx,eax
 	mov	eax,ebx
 	shl	eax,cl
 	test	eax,eax
 	jbe	.labl_04
+
 	xor	edx,edx
 	mov	ebx,eax
 ;----------------------------------------------------------
 .labl_03:
-	mov	eax,[0x519F0]
+	mov	eax,[_posEncoders]
 	lea	edi,[edx+eax]
-	mov	ecx,0x300
+	mov	ecx,768
 	mov	eax,esi
-	add	edx,0xC00
+	add	edx,3072
 	dec	ebx
 	rep	stosd	
 	jne	.labl_03
 ;----------------------------------------------------------
 .labl_04:
-	mov	edi,0x1BC18
+	mov	edi,_posSlotEncoder
 ;----------------------------------------------------------
 .labl_05:
 	push	6
 	pop	ecx
 	mov	eax,edi
-	call	cm_pr_15
-	add	edi,0x404
-	cmp	edi,0x1CC28
+	call	CBitTreeEncoder_Init
+	add	edi,1028
+	cmp	edi,lastPosSlotFillingPos
 	jl	.labl_05
-	push	0x72	;'r'
+
+	push	114
 	mov	eax,esi
 	pop	ecx
-	mov	edi,0x1B238
-	mov	esi,0xD6D8
+	mov	edi,_literalEncoder
+	mov	esi,_lenEncoder
 	rep	stosd
-	call	cm_pr_00
-	mov	esi,0x1CC68
-	call	cm_pr_00
+	call	CPriceTableEncoder_Init
+	mov	esi,_repMatchLenEncoder
+	call	CPriceTableEncoder_Init
 	push	4
 	pop	ecx
-	mov	eax,0x515E8
-	call	cm_pr_15
+	mov	eax,_posAlignEncoder
+	call	CBitTreeEncoder_Init
 	pop	edi
 	xor	eax,eax
 	pop	esi
-	mov	byte [0x19FAA],0	;0x1B238
-	mov	[0x29574],eax
-	mov	[0x1AEF8],eax
-	mov	[0x1AEFC],eax
+	mov	byte [_longestMatchWasFound],0
+	mov	[_optimumEndIndex],eax
+	mov	[_optimumCurrentIndex],eax
+	mov	[_additionalOffset],eax
 	pop	ebx
 	ret	
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-lz_cm_02:
+CodeOneBlock:
 	sub	esp,0x2C
-	cmp	byte [0x19FA8],0
+	cmp	byte [_finished],0
 	push	ebx
 	push	ebp
 	push	esi
@@ -305,229 +330,244 @@ lz_cm_02:
 	jmp	.labl_28
 ;----------------------------------------------------------
 .labl_01:
-	mov	ebp,[0x1B400]
-	mov	edi,[0x1B404]
+	mov	ebp,[nowPos64]
+	mov	edi,[nowPos64+4]
 	mov	eax,ebp
 	or	eax,edi
-	mov	byte [0x19FA8],1
-	mov	[esp+0x34],ebp
-	mov	[esp+0x38],edi
+	mov	byte [_finished],1
+	mov	[esp+52],ebp
+	mov	[esp+56],edi
 	jne	.labl_04
-	mov	eax,[0x52630]
-	sub	eax,[0x5262C]
+
+	mov	eax,[_streamPos]
+	sub	eax,[_pos]
 	jne	.labl_03
+
 	push	5
 	pop	esi
 ;----------------------------------------------------------
 .labl_02:
-	call	cm_pr_13
+	call	RangeEncoder_ShiftLow
 	dec	esi
 	jne	.labl_02
+
 	jmp	.labl_00
 ;----------------------------------------------------------
 .labl_03:
-	call	cm_pr_06
-	movzx	esi,byte [0x519EC]
+	call	ReadMatchDistances
+	movzx	esi,byte [_state]
 	mov	edx,esi
 	shl	edx,6
 	xor	edi,edi
 	push	edi
-	add	edx,0x1AF30
-	call	cm_pr_14
+	add	edx,_isMatch
+	call	CMyBitEncoder_Encode
 	mov	al,[esi+LiteralNextStates]
-	mov	ecx,[0x5262C]
-	mov	[0x519EC],al
-	mov	eax,[0x52628]
-	sub	eax,[0x1AEFC]
+	mov	ecx,[_pos]
+	mov	[_state],al
+	mov	eax,[_buffer]
+	sub	eax,[_additionalOffset]
 	mov	bl,[eax+ecx]
-	mov	al,[0x19FAB]
-	mov	[esp+0x18],bl
-	push	dword [esp+0x18]
+	mov	al,[_previousByte]
+	mov	[esp+24],bl
+	push	dword [esp+24]
 	push	edi
-	call	cm_pr_04
-	imul	eax,eax,0xC00
-	add	eax,[0x519F0]
+	call	CState_IsCharState
+	imul	eax,eax,3072
+	add	eax,[_posEncoders]
 	push	eax
-	call	cm_pr_03
-	dec	dword [0x1AEFC]
+	call	CLiteralEncoder2_Encode
+	dec	dword [_additionalOffset]
 	xor	ebp,ebp
 	inc	ebp
-	mov	[0x19FAB],bl
-	mov	[0x1B400],ebp
-	mov	[0x1B404],edi
+	mov	[_previousByte],bl
+	mov	[nowPos64],ebp
+	mov	[nowPos64+4],edi
 ;----------------------------------------------------------
 .labl_04:
-	mov	eax,[0x52630]
-	sub	eax,[0x5262C]
+	mov	eax,[_streamPos]
+	sub	eax,[_pos]
 	jne	.labl_06
+
 	push	5
 	pop	esi
 ;----------------------------------------------------------
 .labl_05:
-	call	cm_pr_13
+	call	RangeEncoder_ShiftLow
 	dec	esi
 	jne	.labl_05
+
 	jmp	.labl_00
 ;----------------------------------------------------------
 .labl_06:
-	lea	eax,[esp+0x14]
+	lea	eax,[esp+20]
 	push	eax
-	lea	eax,[esp+0x14]
+	lea	eax,[esp+20]
 	push	eax
 	mov	ebx,ebp
 	push	ebp
 	and	ebx,3
-	call	lz_cm_03
-	cmp	dword [esp+0x14],1
+	call	GetOptimum
+	cmp	dword [esp+20],1
 	jne	.labl_09
-	cmp	dword [esp+0x10],0xFFFFFFFF
+
+	cmp	dword [esp+16],0xFFFFFFFF
 	jne	.labl_09
-	movzx	eax,byte [0x519EC]
+
+	movzx	eax,byte [_state]
 	shl	eax,4
 	add	eax,ebx
 	push	0
-	lea	edx,[0x1AF30+eax*4]
-	call	cm_pr_14
-	mov	eax,[0x52628]
-	mov	esi,[0x1AEFC]
-	mov	ebx,[0x5262C]
+	lea	edx,[_isMatch+eax*4]
+	call	CMyBitEncoder_Encode
+	mov	eax,[_buffer]
+	mov	esi,[_additionalOffset]
+	mov	ebx,[_pos]
 	sub	eax,esi
 	mov	al,[eax+ebx]
-	mov	[esp+0x18],al
-	mov	al,[0x19FAB]
+	mov	[esp+24],al
+	mov	al,[_previousByte]
 	push	ebp
-	call	cm_pr_04
-	imul	eax,eax,0xC00
-	add	eax,[0x519F0]
-	cmp	byte [0x519EC],7
-	push	dword [esp+0x18]
+	call	CState_IsCharState
+	imul	eax,eax,3072
+	add	eax,[_posEncoders]
+	cmp	byte [_state],7
+	push	dword [esp+24]
 	jb	.labl_07
-	mov	ecx,[0x52628]
-	sub	ecx,[0x1BC08]
+
+	mov	ecx,[_buffer]
+	sub	ecx,[_repDistances]
 	sub	ecx,esi
 	mov	cl,[ecx+ebx-1]
-	mov	[esp+0x34],cl
-	push	dword [esp+0x34]
+	mov	[esp+52],cl
+	push	dword [esp+52]
 	push	eax
-	call	lz_cm_04
+	call	CLiteralEncoder2_EncodeMatched
 	jmp	.labl_08
 ;----------------------------------------------------------
 .labl_07:
 	push	eax
-	call	cm_pr_03
+	call	CLiteralEncoder2_Encode
 ;----------------------------------------------------------
 .labl_08:
-	movzx	eax,byte [0x519EC]
+	movzx	eax,byte [_state]
 	mov	al,[eax+LiteralNextStates]
-	mov	[0x519EC],al
-	mov	al,[esp+0x18]
+	mov	[_state],al
+	mov	al,[esp+24]
 	jmp	.labl_24
 ;----------------------------------------------------------
 .labl_09:
-	movzx	edi,byte [0x519EC]
+	movzx	edi,byte [_state]
 	mov	eax,edi
 	shl	eax,4
 	add	eax,ebx
 	shl	eax,2
 	push	1
-	lea	edx,[eax+0x1AF30]
-	mov	[esp+0x28],eax
-	call	cm_pr_14
-	cmp	dword [esp+0x10],4
+	lea	edx,[eax+_isMatch]
+	mov	[esp+40],eax
+	call	CMyBitEncoder_Encode
+	cmp	dword [esp+16],4
 	jnb	.labl_17
+
 	mov	esi,edi
 	shl	esi,2
 	push	1
-	lea	edx,[esi+0x515B8]
-	call	cm_pr_14
-	cmp	dword [esp+0x10],0
-	lea	edx,[esi+0x1CC38]
+	lea	edx,[esi+_isRep]
+	call	CMyBitEncoder_Encode
+	cmp	dword [esp+16],0
+	lea	edx,[esi+_isRepG0]
 	jne	.labl_10
+
 	push	0
-	call	cm_pr_14
-	mov	edx,[esp+0x24]
+	call	CMyBitEncoder_Encode
+	mov	edx,[esp+36]
 	xor	eax,eax
-	cmp	dword [esp+0x14],1
-	lea	edx,[edx+0x1A7B0]
+	cmp	dword [esp+20],1
+	lea	edx,[edx+_isRep0Long]
 	setne	al
 	jmp	.labl_12
 ;----------------------------------------------------------
 .labl_10:
 	push	1
-	call	cm_pr_14
-	cmp	dword [esp+0x10],1
-	lea	edx,[esi+0x1AF00]
+	call	CMyBitEncoder_Encode
+	cmp	dword [esp+16],1
+	lea	edx,[esi+_isRepG1]
 	jne	.labl_11
+
 	push	0
 	jmp	.labl_13
 ;----------------------------------------------------------
 .labl_11:
 	push	1
-	call	cm_pr_14
-	mov	eax,[esp+0x10]
+	call	CMyBitEncoder_Encode
+	mov	eax,[esp+16]
 	add	eax,0xFFFFFFFE
-	lea	edx,[esi+0x29538]
+	lea	edx,[esi+_isRepG2]
 ;----------------------------------------------------------
 .labl_12:
 	push	eax
 ;----------------------------------------------------------
 .labl_13:
-	call	cm_pr_14
-	mov	eax,[esp+0x14]
+	call	CMyBitEncoder_Encode
+	mov	eax,[esp+20]
 	cmp	eax,1
 	jne	.labl_14
+
 	mov	al,[edi+ShortRepNextStates]
 	jmp	.labl_15
 ;----------------------------------------------------------
 .labl_14:
 	add	eax,0xFFFFFFFE
-	mov	esi,0x1CC68
-	call	cm_pr_02
+	mov	esi,_repMatchLenEncoder
+	call	CPriceTableEncoder_Encode
 	mov	al,[edi+RepNextStates]
 ;----------------------------------------------------------
 .labl_15:
-	mov	[0x519EC],al
-	mov	eax,[esp+0x10]
-	mov	ecx,[0x1BC08+eax*4]
+	mov	[_state],al
+	mov	eax,[esp+16]
+	mov	ecx,[_repDistances+eax*4]
 	test	eax,eax
 	je	.labl_23
 ;----------------------------------------------------------
 .labl_16:
 	dec	eax
-	mov	edx,[0x1BC08+eax*4]
-	mov	[0x1BC0C+eax*4],edx
+	mov	edx,[_repDistances+eax*4]
+	mov	[_repDistances+4+eax*4],edx
 	jne	.labl_16
-	mov	[0x1BC08],ecx
+
+	mov	[_repDistances],ecx
 	jmp	.labl_23
 ;----------------------------------------------------------
 .labl_17:
 	push	0
-	lea	edx,[0x515B8+edi*4]
-	call	cm_pr_14
+	lea	edx,[_isRep+edi*4]
+	call	CMyBitEncoder_Encode
 	mov	al,[edi+MatchNextStates]
-	mov	edi,[esp+0x14]
-	mov	[0x519EC],al
+	mov	edi,[esp+20]
+	mov	[_state],al
 	add	edi,0xFFFFFFFE
 	mov	eax,edi
-	mov	esi,0xD6D8
-	call	cm_pr_02
-	sub	dword [esp+0x10],4
-	mov	eax,[esp+0x10]
-	call	cm_pr_000
-	cmp	dword [esp+0x14],6
+	mov	esi,_lenEncoder
+	call	CPriceTableEncoder_Encode
+	sub	dword [esp+16],4
+	mov	eax,[esp+16]
+	call	GetPosSlot
+	cmp	dword [esp+20],6
 	mov	ebx,eax
 	jb	.labl_18
+
 	push	3
 	pop	edi
 ;----------------------------------------------------------
 .labl_18:
-	imul	edi,edi,0x404
+	imul	edi,edi,1028
 	push	ebx
-	add	edi,0x1BC18
+	add	edi,_posSlotEncoder
 	call	cm_pr_16
 	cmp	ebx,4
 	jb	.labl_21
-	mov	esi,[esp+0x10]
+
+	mov	esi,[esp+16]
 	xor	eax,eax
 	inc	eax
 	mov	ecx,ebx
@@ -538,29 +578,32 @@ lz_cm_02:
 	or	edi,2
 	shl	edi,cl
 	sub	esi,edi
-	cmp	ebx,0xE
+	cmp	ebx,14
 	jnb	.labl_20
-	mov	[esp+0x20],esi
-	mov	[esp+0x1C],eax
+
+	mov	[esp+32],esi
+	mov	[esp+28],eax
 	test	ecx,ecx
 	jle	.labl_21
-	mov	[esp+0x24],ecx
+
+	mov	[esp+36],ecx
 ;----------------------------------------------------------
 .labl_19:
-	mov	edx,[esp+0x1C]
-	mov	esi,[esp+0x20]
+	mov	edx,[esp+28]
+	mov	esi,[esp+32]
 	sub	edx,ebx
 	add	edx,edi
 	and	esi,1
 	push	esi
-	lea	edx,[0x1B234+edx*4]
-	call	cm_pr_14
-	mov	eax,[esp+0x1C]
-	shr	dword [esp+0x20],1
-	dec	dword [esp+0x24]
+	lea	edx,[_numLiteralContextBits+edx*4]
+	call	CMyBitEncoder_Encode
+	mov	eax,[esp+28]
+	shr	dword [esp+32],1
+	dec	dword [esp+36]
 	lea	eax,[esi+eax*2]
-	mov	[esp+0x1C],eax
+	mov	[esp+28],eax
 	jne	.labl_19
+
 	jmp	.labl_21
 ;----------------------------------------------------------
 .labl_20:
@@ -568,77 +611,84 @@ lz_cm_02:
 	mov	ecx,esi
 	shr	ecx,4
 	push	ecx
-	call	lz_cm_05
+	call	RangeEncoder_EncodeDirectBits
 	and	esi,0xF
 	push	esi
-	call	lz_cm_06
-	dec	dword [0x1B230]
+	call	CBitTreeEncoder_ReverseEncode
+	dec	dword [_alignPriceCount]
 	jne	.labl_21
-	call	cm_pr_09
+
+	call	FillAlignPrices
 ;----------------------------------------------------------
 .labl_21:
-	mov	eax,0x1BC14
+	mov	eax,_repDistances+12
 ;----------------------------------------------------------
 .labl_22:
 	mov	ecx,[eax-4]
 	mov	[eax],ecx
 	sub	eax,4
-	cmp	eax,0x1BC08
+	cmp	eax,_repDistances
 	jne	.labl_22
-	mov	eax,[esp+0x10]
-	mov	[0x1BC08],eax
+
+	mov	eax,[esp+16]
+	mov	[_repDistances],eax
 ;----------------------------------------------------------
 .labl_23:
-	mov	eax,[0x52628]
-	mov	esi,[0x1AEFC]
-	mov	ebx,[0x5262C]
-	mov	ecx,[esp+0x14]
-	mov	edi,[0x1B404]
+	mov	eax,[_buffer]
+	mov	esi,[_additionalOffset]
+	mov	ebx,[_pos]
+	mov	ecx,[esp+20]
+	mov	edi,[nowPos64+4]
 	sub	eax,esi
 	add	eax,ebx
 	mov	al,[eax+ecx-1]
 ;----------------------------------------------------------
 .labl_24:
-	sub	esi,[esp+0x14]
-	add	ebp,[esp+0x14]
-	mov	[0x19FAB],al
+	sub	esi,[esp+20]
+	add	ebp,[esp+20]
+	mov	[_previousByte],al
 	adc	edi,0
 	mov	eax,ebp
-	sub	eax,[0x1CC28]
+	sub	eax,[lastPosSlotFillingPos]
 	mov	ecx,edi
-	sbb	ecx,[0x1CC2C]
-	mov	[0x1AEFC],esi
-	mov	[0x1B400],ebp
-	mov	[0x1B404],edi
-	mov	[esp+0x28],ecx
+	sbb	ecx,[lastPosSlotFillingPos+4]
+	mov	[_additionalOffset],esi
+	mov	[nowPos64],ebp
+	mov	[nowPos64+4],edi
+	mov	[esp+40],ecx
 	jne	.labl_25
-	cmp	eax,0x200
+
+	cmp	eax,512
 	jb	.labl_26
 ;----------------------------------------------------------
 .labl_25:
-	call	cm_pr_07
-	call	cm_pr_08
-	mov	[0x1CC28],ebp
-	mov	[0x1CC2C],edi
+	call	FillPosSlotPrices
+	call	FillDistancesPrices
+	mov	[lastPosSlotFillingPos],ebp
+	mov	[lastPosSlotFillingPos+4],edi
 ;----------------------------------------------------------
 .labl_26:
 	test	esi,esi
 	jne	.labl_06
-	mov	eax,[0x52630]
+
+	mov	eax,[_streamPos]
 	sub	eax,ebx
 	je	.labl_29
+
 	mov	ecx,ebp
-	sub	ecx,[esp+0x34]
+	sub	ecx,[esp+52]
 	mov	eax,edi
-	sbb	eax,[esp+0x38]
+	sbb	eax,[esp+56]
 	test	eax,eax
 	ja	.labl_27
+
 	jb	.labl_06
+
 	cmp	ecx,0x1000
 	jb	.labl_06
 ;----------------------------------------------------------
 .labl_27:
-	mov	byte [0x19FA8],0
+	mov	byte [_finished],0
 	mov	al,1
 ;----------------------------------------------------------
 .labl_28:
@@ -646,7 +696,7 @@ lz_cm_02:
 	pop	esi
 	pop	ebp
 	pop	ebx
-	add	esp,0x2C
+	add	esp,44
 	ret	
 ;----------------------------------------------------------
 .labl_29:
@@ -654,305 +704,325 @@ lz_cm_02:
 	pop	esi
 ;----------------------------------------------------------
 .labl_30:
-	call	cm_pr_13
+	call	RangeEncoder_ShiftLow
 	dec	esi
 	jne	.labl_30
+
 	jmp	.labl_00
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-lz_cm_03:
+GetOptimum:
 	push	ebp
 	mov	ebp,esp
-	mov	ecx,[0x1AEF8]
-	sub	esp,0x74
+	mov	ecx,[_optimumCurrentIndex]
+	sub	esp,116
 	push	esi
-	cmp	[0x29574],ecx
+	cmp	[_optimumEndIndex],ecx
 	je	.labl_00
+
 	mov	eax,ecx
-	imul	eax,eax,0x28
-	add	eax,0x29578
-	mov	edx,[eax+0x10]
-	mov	eax,[eax+0x14]
+	imul	eax,eax,40
+	add	eax,state.State
+	mov	edx,[eax+16]
+	mov	eax,[eax+20]
 	mov	esi,edx
 	sub	esi,ecx
-	mov	ecx,[ebp+0x10]
+	mov	ecx,[ebp+16]
 	mov	[ecx],esi
-	mov	ecx,[ebp+0xC]
+	mov	ecx,[ebp+12]
 	mov	[ecx],eax
-	mov	[0x1AEF8],edx
+	mov	[_optimumCurrentIndex],edx
 	jmp	.labl_76
 ;----------------------------------------------------------
 .labl_00:
 	push	edi
 	xor	edi,edi
-	cmp	byte [0x19FAA],0	;0x1B238
-	mov	[0x29574],edi
-	mov	[0x1AEF8],edi
+	cmp	byte [_longestMatchWasFound],0
+	mov	[_optimumEndIndex],edi
+	mov	[_optimumCurrentIndex],edi
 	jne	.labl_01
-	call	cm_pr_06
+
+	call	ReadMatchDistances
 	jmp	.labl_02
 ;----------------------------------------------------------
 .labl_01:
-	mov	eax,[0x19FAC]
-	mov	byte [0x19FAA],0	;0x1B238
+	mov	eax,[_longestMatchLength]
+	mov	byte [_longestMatchWasFound],0
 ;----------------------------------------------------------
 .labl_02:
 	push	ebx
 	mov	ebx,[ebp+8]
-	mov	[ebp-0x10],eax
+	mov	[ebp-16],eax
 	mov	eax,ebx
 	shl	eax,2
-	mov	[ebp-0x4C],eax
+	mov	[ebp-76],eax
 ;----------------------------------------------------------
 .labl_03:
 	mov	esi,edi
 	shl	esi,2
-	mov	eax,[esi+0x1BC08]
+	mov	eax,[esi+_repDistances]
 	push	eax
-	mov	[ebp+esi-0x64],eax
+	mov	[ebp+esi-100],eax
 	push	dword 0xFFFFFFFF
-	mov	eax,0x111
-	call	cm_pr_18
-	mov	[ebp+esi-0x74],eax
+	mov	eax,273
+	call	GetMatchLen
+	mov	[ebp+esi-116],eax
 	test	edi,edi
 	je	.labl_04
-	mov	ecx,[ebp-0x4C]
-	cmp	eax,[ebp+ecx-0x74]
+
+	mov	ecx,[ebp-76]
+	cmp	eax,[ebp+ecx-116]
 	jbe	.labl_05
 ;----------------------------------------------------------
 .labl_04:
 	mov	ebx,edi
-	mov	[ebp-0x4C],esi
+	mov	[ebp-76],esi
 ;----------------------------------------------------------
 .labl_05:
 	inc	edi
 	cmp	edi,4
 	jb	.labl_03
-	mov	eax,[ebp+ebx*4-0x74]
-	mov	ecx,0x80	;'€'
-	mov	[ebp-0x44],eax
+
+	mov	eax,[ebp+ebx*4-116]
+	mov	ecx,128
+	mov	[ebp-68],eax
 	cmp	eax,ecx
 	jb	.labl_06
-	mov	ecx,[ebp+0xC]
+
+	mov	ecx,[ebp+12]
 	mov	[ecx],ebx
 	jmp	.labl_07
 ;----------------------------------------------------------
 .labl_06:
-	cmp	[ebp-0x10],ecx
+	cmp	[ebp-16],ecx
 	jb	.labl_08
-	mov	eax,[0x1ACB0]
-	mov	ecx,[ebp+0xC]
+
+	mov	eax,[distances+512]
+	mov	ecx,[ebp+12]
 	add	eax,4
 	mov	[ecx],eax
-	mov	eax,[ebp-0x10]
+	mov	eax,[ebp-16]
 ;----------------------------------------------------------
 .labl_07:
-	mov	ecx,[ebp+0x10]
+	mov	ecx,[ebp+16]
 	mov	[ecx],eax
 	dec	eax
-	call	lz_cm_07
+	call	MovePos
 	jmp	.labl_75
 ;----------------------------------------------------------
 .labl_08:
-	mov	ecx,[0x52628]
-	mov	eax,[0x5262C]
+	mov	ecx,[_buffer]
+	mov	eax,[_pos]
 	mov	dl,[eax+ecx-1]
-	sub	eax,[0x1BC08]
-	mov	bl,[0x519EC]
-	mov	[0x29578],bl
+	sub	eax,[_repDistances]
+	mov	bl,[_state]
+	mov	[state.State],bl
 	mov	al,[eax+ecx-2]
-	mov	[ebp-0x34],al
+	mov	[ebp-52],al
 	mov	eax,[ebp+8]
 	and	eax,3
 	movzx	ecx,bl
 	shl	ecx,4
 	add	ecx,eax
-	mov	esi,[0x1AF30+ecx*4]
-	mov	[ebp-0x1C],eax
+	mov	esi,[_isMatch+ecx*4]
+	mov	[ebp-28],eax
 	cmp	bl,7
 	sbb	al,al
-	mov	[ebp-0x30],dl
-	push	dword [ebp-0x30]
+	mov	[ebp-48],dl
+	push	dword [ebp-48]
 	inc	al
-	push	dword [ebp-0x34]
+	push	dword [ebp-52]
 	movzx	eax,al
 	push	eax
 	push	dword [ebp+8]
-	mov	al,[0x19FAB]
-	mov	[ebp-0x4C],esi
-	call	cm_pr_05
-	or	dword [0x295B4],0xFFFFFFFF
-	and	dword [0x295B0],0
+	mov	al,[_previousByte]
+	mov	[ebp-76],esi
+	call	CLiteralEncoder_GetPrice
+	or	dword [state.BackPrev+40],0xFFFFFFFF
+	and	dword [state.PosPrev+40],0
 	shr	esi,2
-	add	eax,[0x51A18+esi*4]
-	mov	byte [0x295A1],0
-	mov	[0x295AC],eax
-	lea	esi,[ebp-0x64]
-	mov	edi,0x29590
+	add	eax,[Models+esi*4]
+	mov	byte [state.Prev1IsChar+40],0
+	mov	[state.Price+40],eax
+	lea	esi,[ebp-100]
+	mov	edi,state.Backs
 	movsd	
 	movsd	
-	mov	eax,0x800
+	mov	eax,2048
 	mov	ecx,eax
-	sub	ecx,[ebp-0x4C]
+	sub	ecx,[ebp-76]
 	movsd	
 	shr	ecx,2
-	mov	edx,[0x51A18+ecx*4]
+	mov	edx,[Models+ecx*4]
 	movzx	ecx,bl
 	movsd	
-	mov	esi,[0x515B8+ecx*4]
+	mov	esi,[_isRep+ecx*4]
 	sub	eax,esi
 	shr	eax,2
-	mov	edi,[0x51A18+eax*4]
-	mov	al,[ebp-0x30]
+	mov	edi,[Models+eax*4]
+	mov	al,[ebp-48]
 	add	edi,edx
-	mov	[ebp-0x4C],edx
-	cmp	[ebp-0x34],al
+	mov	[ebp-76],edx
+	cmp	[ebp-52],al
 	jne	.labl_09
-	push	dword [ebp-0x1C]
+
+	push	dword [ebp-28]
 	mov	al,bl
-	call	cm_pr_10
+	call	GetRepLen1Price
 	add	eax,edi
-	cmp	eax,[0x295AC]
+	cmp	eax,[state.Price+40]
 	jnb	.labl_09
-	and	dword [0x295B4],0
-	mov	[0x295AC],eax
-	mov	byte [0x295A1],0
+
+	and	dword [state.BackPrev+40],0
+	mov	[state.Price+40],eax
+	mov	byte [state.Prev1IsChar+40],0
 ;----------------------------------------------------------
 .labl_09:
 	push	2
 	pop	eax
-	cmp	[ebp-0x10],eax
+	cmp	[ebp-16],eax
 	jnb	.labl_10
-	mov	eax,[ebp+0xC]
-	mov	ecx,[0x295B4]
+
+	mov	eax,[ebp+12]
+	mov	ecx,[state.BackPrev+40]
 	mov	[eax],ecx
-	mov	eax,[ebp+0x10]
+	mov	eax,[ebp+16]
 	mov	dword [eax],1
 	jmp	.labl_75
 ;----------------------------------------------------------
 .labl_10:
-	mov	ecx,[ebp-0x10]
+	mov	ecx,[ebp-16]
 	shr	esi,2
-	mov	esi,[0x51A18+esi*4]
-	add	esi,[ebp-0x4C]
-	mov	[ebp-0x4C],esi
-	cmp	ecx,[ebp-0x44]
+	mov	esi,[Models+esi*4]
+	add	esi,[ebp-76]
+	mov	[ebp-76],esi
+	cmp	ecx,[ebp-68]
 	ja	.labl_11
-	and	dword [ebp-0x10],0
+
+	and	dword [ebp-16],0
 ;----------------------------------------------------------
 .labl_11:
-	mov	[ebp-0x18],eax
-	cmp	[ebp-0x10],eax
+	mov	[ebp-24],eax
+	cmp	[ebp-16],eax
 	jb	.labl_13
-	mov	esi,0x295DC
+
+	mov	esi,state.BackPrev+40*2
 ;----------------------------------------------------------
 .labl_12:
-	mov	eax,[ebp-0x18]
-	mov	edx,[0x1AAB0+eax*4]
-	push	dword [ebp-0x1C]
+	mov	eax,[ebp-24]
+	mov	edx,[distances+eax*4]
+	push	dword [ebp-28]
 	and	dword [esi-4],0
 	lea	ecx,[edx+4]
 	mov	[esi],ecx
-	call	cm_pr_12
-	add	eax,[ebp-0x4C]
-	inc	dword [ebp-0x18]
+	call	GetPosLenPrice
+	add	eax,[ebp-76]
+	inc	dword [ebp-24]
 	mov	[esi-8],eax
-	mov	eax,[ebp-0x18]
-	mov	byte [esi-0x13],0
-	add	esi,0x28	;'('
-	cmp	eax,[ebp-0x10]
+	mov	eax,[ebp-24]
+	mov	byte [esi-19],0
+	add	esi,40
+	cmp	eax,[ebp-16]
 	jbe	.labl_12
 ;----------------------------------------------------------
 .labl_13:
-	mov	ecx,[ebp-0x10]
-	cmp	ecx,[ebp-0x44]
+	mov	ecx,[ebp-16]
+	cmp	ecx,[ebp-68]
 	jnb	.labl_14
-	mov	ecx,[ebp-0x44]
-	mov	[ebp-0x10],ecx
+
+	mov	ecx,[ebp-68]
+	mov	[ebp-16],ecx
 ;----------------------------------------------------------
 .labl_14:
-	cmp	[ebp-0x18],ecx
+	cmp	[ebp-24],ecx
 	ja	.labl_16
-	mov	eax,[ebp-0x18]
-	sub	ecx,[ebp-0x18]
-	imul	eax,eax,0x28
-	add	eax,0x29584
+
+	mov	eax,[ebp-24]
+	sub	ecx,[ebp-24]
+	imul	eax,eax,40
+	add	eax,state.Price
 	inc	ecx
 ;----------------------------------------------------------
 .labl_15:
-	mov	dword [eax],0x0FFFFFFF
-	add	eax,0x28	;'('
+	mov	dword [eax],kIfinityPrice
+	add	eax,40
 	dec	ecx
 	jne	.labl_15
 ;----------------------------------------------------------
 .labl_16:
-	and	dword [ebp-0x18],0
+	and	dword [ebp-24],0
 ;----------------------------------------------------------
 .labl_17:
-	mov	eax,[ebp-0x18]
-	mov	eax,[ebp+eax*4-0x74]
+	mov	eax,[ebp-24]
+	mov	eax,[ebp+eax*4-116]
 	push	2
 	pop	ecx
-	mov	[ebp-0x20],ecx
+	mov	[ebp-32],ecx
 	cmp	eax,ecx
 	jb	.labl_20
-	mov	esi,0x295D4
+
+	mov	esi,state.Price+40*2
 ;----------------------------------------------------------
 .labl_18:
-	push	dword [ebp-0x1C]
-	mov	edx,[ebp-0x18]
+	push	dword [ebp-28]
+	mov	edx,[ebp-24]
 	movzx	eax,bl
 	push	eax
-	mov	eax,[ebp-0x20]
-	call	cm_pr_11
+	mov	eax,[ebp-32]
+	call	GetRepPrice
 	add	eax,edi
 	cmp	eax,[esi]
 	jnb	.labl_19
+
 	and	dword [esi+4],0
 	mov	[esi],eax
-	mov	eax,[ebp-0x18]
+	mov	eax,[ebp-24]
 	mov	[esi+8],eax
-	mov	byte [esi-0xB],0
+	mov	byte [esi-11],0
 ;----------------------------------------------------------
 .labl_19:
-	inc	dword [ebp-0x20]
-	mov	eax,[ebp-0x18]
-	mov	ecx,[ebp-0x20]
-	add	esi,0x28	;'('
-	cmp	ecx,[ebp+eax*4-0x74]
+	inc	dword [ebp-32]
+	mov	eax,[ebp-24]
+	mov	ecx,[ebp-32]
+	add	esi,40
+	cmp	ecx,[ebp+eax*4-116]
 	jbe	.labl_18
 ;----------------------------------------------------------
 .labl_20:
-	inc	dword [ebp-0x18]
-	cmp	dword [ebp-0x18],4
+	inc	dword [ebp-24]
+	cmp	dword [ebp-24],4
 	jb	.labl_17
-	mov	eax,[ebp-0x10]
+
+	mov	eax,[ebp-16]
 	xor	ecx,ecx
 	inc	ecx
 	mov	[ebp-8],eax
-	mov	[ebp-0xC],ecx
+	mov	[ebp-12],ecx
 	cmp	eax,ecx
 	je	.labl_74
 ;----------------------------------------------------------
 .labl_21:
-	mov	edi,[ebp-0xC]
+	mov	edi,[ebp-12]
 	inc	dword [ebp+8]
 	mov	ebx,edi
-	imul	ebx,ebx,0x28
-	mov	dl,[ebx+0x29579]
-	mov	esi,[ebx+0x29588]
+	imul	ebx,ebx,40
+	mov	dl,[ebx+state.Prev1IsChar]
+	mov	esi,[ebx+state.PosPrev]
 	test	dl,dl
 	je	.labl_25
+
 	dec	esi
-	cmp	byte [ebx+0x2957A],0
+	cmp	byte [ebx+state.Prev2],0
 	je	.labl_23
-	mov	eax,[ebx+0x2957C]
-	imul	eax,eax,0x28
-	cmp	dword [ebx+0x29580],4
-	mov	al,[eax+0x29578]
+
+	mov	eax,[ebx+state.PosPrev2]
+	imul	eax,eax,40
+	cmp	dword [ebx+state.BackPrev2],4
+	mov	al,[eax+state.State]
 	movzx	eax,al
 	jnb	.labl_22
+
 	mov	al,[eax+RepNextStates]
 	jmp	.labl_24
 ;----------------------------------------------------------
@@ -962,8 +1032,8 @@ lz_cm_03:
 ;----------------------------------------------------------
 .labl_23:
 	mov	eax,esi
-	imul	eax,eax,0x28
-	mov	al,[eax+0x29578]
+	imul	eax,eax,40
+	mov	al,[eax+state.State]
 ;----------------------------------------------------------
 .labl_24:
 	movzx	eax,al
@@ -972,16 +1042,18 @@ lz_cm_03:
 ;----------------------------------------------------------
 .labl_25:
 	mov	eax,esi
-	imul	eax,eax,0x28
-	mov	cl,[eax+0x29578]
+	imul	eax,eax,40
+	mov	cl,[eax+state.State]
 ;----------------------------------------------------------
 .labl_26:
 	dec	edi
 	cmp	esi,edi
 	jne	.labl_29
-	cmp	dword [ebx+0x2958C],0
+
+	cmp	dword [ebx+state.BackPrev],0
 	movzx	eax,cl
 	jne	.labl_27
+
 	mov	al,[eax+ShortRepNextStates]
 	jmp	.labl_28
 ;----------------------------------------------------------
@@ -989,16 +1061,18 @@ lz_cm_03:
 	mov	al,[eax+LiteralNextStates]
 ;----------------------------------------------------------
 .labl_28:
-	mov	[ebp-0x14],al
+	mov	[ebp-20],al
 	jmp	.labl_35
 ;----------------------------------------------------------
 .labl_29:
 	test	dl,dl
 	je	.labl_31
-	cmp	byte [ebx+0x2957A],0
+
+	cmp	byte [ebx+state.Prev2],0
 	je	.labl_31
-	mov	esi,[ebx+0x2957C]
-	mov	eax,[ebx+0x29580]
+
+	mov	esi,[ebx+state.PosPrev2]
+	mov	eax,[ebx+state.BackPrev2]
 	movzx	ecx,cl
 ;----------------------------------------------------------
 .labl_30:
@@ -1006,28 +1080,31 @@ lz_cm_03:
 	jmp	.labl_32
 ;----------------------------------------------------------
 .labl_31:
-	mov	eax,[ebx+0x2958C]
+	mov	eax,[ebx+state.BackPrev]
 	movzx	ecx,cl
 	cmp	eax,4
 	jb	.labl_30
+
 	mov	cl,[ecx+MatchNextStates]
 ;----------------------------------------------------------
 .labl_32:
-	imul	esi,esi,0x28
-	add	esi,0x29578
-	mov	[ebp-0x14],cl
+	imul	esi,esi,40
+	add	esi,state.State
+	mov	[ebp-20],cl
 	mov	edx,esi
 	cmp	eax,4
 	jnb	.labl_34
-	mov	ecx,[edx+eax*4+0x18]
+
+	mov	ecx,[edx+eax*4+24]
 	xor	esi,esi
 	inc	esi
-	mov	[ebp-0x64],ecx
+	mov	[ebp-100],ecx
 	cmp	eax,esi
 	jb	.labl_33
-	lea	esi,[edx+0x18]
+
+	lea	esi,[edx+24]
 	mov	ecx,eax
-	lea	edi,[ebp-0x60]
+	lea	edi,[ebp-96]
 	rep	movsd	
 	lea	esi,[eax+1]
 	cmp	esi,4
@@ -1035,9 +1112,9 @@ lz_cm_03:
 ;----------------------------------------------------------
 .labl_33:
 	push	4
-	lea	edx,[edx+esi*4+0x18]
+	lea	edx,[edx+esi*4+24]
 	pop	ecx
-	lea	edi,[ebp+esi*4-0x64]
+	lea	edi,[ebp+esi*4-100]
 	sub	ecx,esi
 	mov	esi,edx
 	rep	movsd	
@@ -1045,143 +1122,154 @@ lz_cm_03:
 ;----------------------------------------------------------
 .labl_34:
 	add	eax,0xFFFFFFFC
-	mov	[ebp-0x64],eax
-	lea	esi,[edx+0x18]
-	lea	edi,[ebp-0x60]
+	mov	[ebp-100],eax
+	lea	esi,[edx+24]
+	lea	edi,[ebp-96]
 	movsd	
 	movsd	
 	movsd	
 ;----------------------------------------------------------
 .labl_35:
-	mov	al,[ebp-0x14]
-	mov	[ebx+0x29578],al
-	lea	edi,[ebx+0x29590]
-	lea	esi,[ebp-0x64]
+	mov	al,[ebp-20]
+	mov	[ebx+state.State],al
+	lea	edi,[ebx+state.Backs]
+	lea	esi,[ebp-100]
 	movsd	
 	movsd	
 	movsd	
 	movsd	
-	call	cm_pr_06
-	mov	[ebp-0x2C],eax
-	cmp	eax,0x80	;'€'
+	call	ReadMatchDistances
+	mov	[ebp-44],eax
+	cmp	eax,128
 	jnb	.labl_73
-	mov	eax,[ebx+0x29584]
-	mov	edi,[0x5262C]
+
+	mov	eax,[ebx+state.Price]
+	mov	edi,[_pos]
 	mov	esi,[ebp+8]
-	mov	[ebp-0x48],eax
-	mov	eax,[0x52628]
+	mov	[ebp-72],eax
+	mov	eax,[_buffer]
 	lea	eax,[edi+eax-1]
 	mov	cl,[eax]
-	mov	[ebp-0x30],cl
-	push	dword [ebp-0x30]
+	mov	[ebp-48],cl
+	push	dword [ebp-48]
 	mov	ecx,eax
-	sub	ecx,[ebp-0x64]
+	sub	ecx,[ebp-100]
 	and	esi,3
 	mov	cl,[ecx-1]
-	mov	[ebp-0x34],cl
-	movzx	ecx,byte [ebp-0x14]
-	push	dword [ebp-0x34]
-	mov	[ebp-0x40],ecx
+	mov	[ebp-52],cl
+	movzx	ecx,byte [ebp-20]
+	push	dword [ebp-52]
+	mov	[ebp-64],ecx
 	shl	ecx,4
 	add	ecx,esi
-	mov	ecx,[0x1AF30+ecx*4]
-	cmp	byte [ebp-0x14],7
-	mov	[ebp-0x4C],ecx
+	mov	ecx,[_isMatch+ecx*4]
+	cmp	byte [ebp-20],7
+	mov	[ebp-76],ecx
 	sbb	cl,cl
 	inc	cl
 	movzx	ecx,cl
 	push	ecx
 	push	dword [ebp+8]
-	mov	[ebp-0x28],eax
+	mov	[ebp-40],eax
 	mov	al,[eax-1]
-	mov	[ebp-0x1C],esi
-	call	cm_pr_05
+	mov	[ebp-28],esi
+	call	CLiteralEncoder_GetPrice
 	mov	esi,eax
-	mov	eax,[ebp-0x4C]
+	mov	eax,[ebp-76]
 	shr	eax,2
-	add	esi,[0x51A18+eax*4]
+	add	esi,[Models+eax*4]
 	mov	byte [ebp-1],0
-	add	esi,[ebp-0x48]
-	cmp	esi,[ebx+0x295AC]
+	add	esi,[ebp-72]
+	cmp	esi,[ebx+state.Price+40]
 	jnb	.labl_36
-	mov	eax,[ebp-0xC]
-	or	dword [ebx+0x295B4],0xFFFFFFFF
-	mov	[ebx+0x295AC],esi
-	mov	[ebx+0x295B0],eax
-	mov	byte [ebx+0x295A1],0
+
+	mov	eax,[ebp-12]
+	or	dword [ebx+state.BackPrev+40],0xFFFFFFFF
+	mov	[ebx+state.Price+40],esi
+	mov	[ebx+state.PosPrev+40],eax
+	mov	byte [ebx+state.Prev1IsChar+40],0
 	mov	byte [ebp-1],1
 ;----------------------------------------------------------
 .labl_36:
-	mov	edx,[ebp-0x40]
-	mov	edx,[0x515B8+edx*4]
-	mov	ecx,0x800
+	mov	edx,[ebp-64]
+	mov	edx,[_isRep+edx*4]
+	mov	ecx,2048
 	mov	eax,ecx
-	sub	eax,[ebp-0x4C]
+	sub	eax,[ebp-76]
 	sub	ecx,edx
 	shr	eax,2
-	mov	eax,[0x51A18+eax*4]
-	add	eax,[ebp-0x48]
+	mov	eax,[Models+eax*4]
+	add	eax,[ebp-72]
 	shr	ecx,2
-	mov	ecx,[0x51A18+ecx*4]
+	mov	ecx,[Models+ecx*4]
 	add	ecx,eax
-	mov	[ebp-0x4C],eax
-	mov	al,[ebp-0x30]
-	mov	[ebp-0x54],edx
-	mov	[ebp-0x48],ecx
-	cmp	[ebp-0x34],al
+	mov	[ebp-76],eax
+	mov	al,[ebp-48]
+	mov	[ebp-84],edx
+	mov	[ebp-72],ecx
+	cmp	[ebp-52],al
 	jne	.labl_38
-	mov	eax,[ebp-0xC]
-	cmp	[ebx+0x295B0],eax
+
+	mov	eax,[ebp-12]
+	cmp	[ebx+state.PosPrev+40],eax
 	jnb	.labl_37
-	cmp	dword [ebx+0x295B4],0
+
+	cmp	dword [ebx+state.BackPrev+40],0
 	je	.labl_38
 ;----------------------------------------------------------
 .labl_37:
-	push	dword [ebp-0x1C]
-	mov	al,[ebp-0x14]
-	call	cm_pr_10
-	add	eax,[ebp-0x48]
-	cmp	eax,[ebx+0x295AC]
+	push	dword [ebp-28]
+	mov	al,[ebp-20]
+	call	GetRepLen1Price
+	add	eax,[ebp-72]
+	cmp	eax,[ebx+state.Price+40]
 	ja	.labl_38
-	and	dword [ebx+0x295B4],0
-	mov	[ebx+0x295AC],eax
-	mov	eax,[ebp-0xC]
-	mov	[ebx+0x295B0],eax
-	mov	byte [ebx+0x295A1],0
+
+	and	dword [ebx+state.BackPrev+40],0
+	mov	[ebx+state.Price+40],eax
+	mov	eax,[ebp-12]
+	mov	[ebx+state.PosPrev+40],eax
+	mov	byte [ebx+state.Prev1IsChar+40],0
 ;----------------------------------------------------------
 .labl_38:
-	mov	eax,[0x52630]
+	mov	eax,[_streamPos]
 	sub	eax,edi
-	mov	ecx,0xFFF
-	sub	ecx,[ebp-0xC]
+	mov	ecx,4095
+	sub	ecx,[ebp-12]
 	inc	eax
-	mov	[ebp-0x38],eax
+	mov	[ebp-56],eax
 	cmp	eax,ecx
 	jbe	.labl_39
+
 	mov	eax,ecx
-	mov	[ebp-0x38],ecx
+	mov	[ebp-56],ecx
 ;----------------------------------------------------------
 .labl_39:
-	mov	[ebp-0x24],eax
+	mov	[ebp-36],eax
 	cmp	eax,2
 	jb	.labl_72
-	mov	ecx,0x80	;'€'
+
+	mov	ecx,128
 	cmp	eax,ecx
 	jbe	.labl_40
-	mov	[ebp-0x24],ecx
+
+	mov	[ebp-36],ecx
 ;----------------------------------------------------------
 .labl_40:
-	cmp	dword [ebp-0x24],3
+	cmp	dword [ebp-36],3
 	jb	.labl_45
+
 	cmp	byte [ebp-1],0
 	jne	.labl_45
-	mov	ecx,[ebp-0x64]
+
+	mov	ecx,[ebp-100]
 	xor	eax,eax
 	inc	eax
 	inc	ecx
-	cmp	[ebp-0x24],eax
+	cmp	[ebp-36],eax
 	jbe	.labl_42
-	mov	edi,[ebp-0x28]
+
+	mov	edi,[ebp-40]
 	mov	edx,edi
 	sub	edx,ecx
 ;----------------------------------------------------------
@@ -1189,167 +1277,180 @@ lz_cm_03:
 	mov	cl,[eax+edi]
 	cmp	cl,[edx+eax]
 	jne	.labl_42
+
 	inc	eax
-	cmp	eax,[ebp-0x24]
+	cmp	eax,[ebp-36]
 	jb	.labl_41
 ;----------------------------------------------------------
 .labl_42:
 	dec	eax
-	mov	[ebp-0x20],eax
+	mov	[ebp-32],eax
 	cmp	eax,2
 	jb	.labl_45
-	mov	eax,[ebp-0x40]
+
+	mov	eax,[ebp-64]
 	mov	al,[eax+LiteralNextStates]
 	mov	ecx,[ebp+8]
 	movzx	edx,al
-	mov	[ebp-0x3C],al
+	mov	[ebp-60],al
 	mov	eax,edx
 	shl	eax,4
 	inc	ecx
-	mov	edi,0x800
+	mov	edi,2048
 	and	ecx,3
 	add	eax,ecx
 	mov	ebx,edi
-	sub	ebx,[0x1AF30+eax*4]
+	sub	ebx,[_isMatch+eax*4]
 	mov	eax,edi
-	sub	eax,[0x515B8+edx*4]
-	mov	edx,[ebp-0xC]
+	sub	eax,[_isRep+edx*4]
+	mov	edx,[ebp-12]
 	shr	ebx,2
-	mov	edi,[0x51A18+ebx*4]
+	mov	edi,[Models+ebx*4]
 	shr	eax,2
-	add	edi,[0x51A18+eax*4]
-	mov	eax,[ebp-0x20]
+	add	edi,[Models+eax*4]
+	mov	eax,[ebp-32]
 	add	edi,esi
 	lea	esi,[edx+eax]
 	mov	eax,[ebp-8]
 	lea	edx,[esi+1]
 	cmp	eax,edx
 	jnb	.labl_44
+
 	sub	edx,[ebp-8]
-	imul	eax,eax,0x28
-	add	eax,0x29584
+	imul	eax,eax,40
+	add	eax,state.Price
 	add	[ebp-8],edx
 ;----------------------------------------------------------
 .labl_43:
-	add	eax,0x28	;'('
+	add	eax,40
 	dec	edx
-	mov	dword [eax],0x0FFFFFFF
+	mov	dword [eax],kIfinityPrice
 	jne	.labl_43
 ;----------------------------------------------------------
 .labl_44:
-	mov	eax,[ebp-0x20]
+	mov	eax,[ebp-32]
 	push	ecx
-	push	dword [ebp-0x3C]
+	push	dword [ebp-60]
 	xor	edx,edx
-	call	cm_pr_11
-	imul	esi,esi,0x28
+	call	GetRepPrice
+	imul	esi,esi,40
 	add	eax,edi
-	add	esi,0x295A0
-	cmp	eax,[esi+0xC]
+	add	esi,state.State+40
+	cmp	eax,[esi+12]
 	jnb	.labl_45
-	mov	[esi+0xC],eax
-	mov	eax,[ebp-0xC]
+
+	mov	[esi+12],eax
+	mov	eax,[ebp-12]
 	inc	eax
-	and	dword [esi+0x14],0
-	mov	[esi+0x10],eax
+	and	dword [esi+20],0
+	mov	[esi+16],eax
 	mov	byte [esi+1],1
 	mov	byte [esi+2],0
 ;----------------------------------------------------------
 .labl_45:
-	and	dword [ebp-0x18],0
+	and	dword [ebp-24],0
 ;----------------------------------------------------------
 .labl_46:
-	mov	eax,[ebp-0x18]
-	mov	eax,[ebp+eax*4-0x64]
-	mov	edx,[ebp-0x28]
+	mov	eax,[ebp-24]
+	mov	eax,[ebp+eax*4-100]
+	mov	edx,[ebp-40]
 	inc	eax
 	mov	ecx,edx
 	sub	ecx,eax
-	mov	[ebp-0x44],eax
+	mov	[ebp-68],eax
 	mov	al,[edx]
-	mov	[ebp-0x50],ecx
+	mov	[ebp-80],ecx
 	cmp	al,[ecx]
 	jne	.labl_58
+
 	mov	al,[edx+1]
 	cmp	al,[ecx+1]
 	jne	.labl_58
+
 	push	2
 	pop	esi
-	cmp	[ebp-0x24],esi
+	cmp	[ebp-36],esi
 	jbe	.labl_48
 ;----------------------------------------------------------
 .labl_47:
 	mov	al,[edx+esi]
 	cmp	al,[ecx+esi]
 	jne	.labl_48
+
 	inc	esi
-	cmp	esi,[ebp-0x24]
+	cmp	esi,[ebp-36]
 	jb	.labl_47
 ;----------------------------------------------------------
 .labl_48:
-	mov	eax,[ebp-0xC]
+	mov	eax,[ebp-12]
 	lea	ebx,[eax+esi]
-	mov	[ebp-0x20],ebx
-	imul	ebx,ebx,0x28
+	mov	[ebp-32],ebx
+	imul	ebx,ebx,40
 	mov	edi,esi
-	add	ebx,0x29584
+	add	ebx,state.Price
 ;----------------------------------------------------------
 .labl_49:
 	mov	eax,[ebp-8]
-	mov	ecx,[ebp-0x20]
+	mov	ecx,[ebp-32]
 	cmp	eax,ecx
 	jnb	.labl_51
+
 	sub	ecx,[ebp-8]
-	imul	eax,eax,0x28
-	add	eax,0x29584
+	imul	eax,eax,40
+	add	eax,state.Price
 	add	[ebp-8],ecx
 ;----------------------------------------------------------
 .labl_50:
-	add	eax,0x28	;'('
+	add	eax,40
 	dec	ecx
-	mov	dword [eax],0x0FFFFFFF
+	mov	dword [eax],kIfinityPrice
 	jne	.labl_50
 ;----------------------------------------------------------
 .labl_51:
-	push	dword [ebp-0x1C]
-	mov	edx,[ebp-0x18]
-	push	dword [ebp-0x14]
+	push	dword [ebp-28]
+	mov	edx,[ebp-24]
+	push	dword [ebp-20]
 	mov	eax,esi
-	call	cm_pr_11
-	add	eax,[ebp-0x48]
+	call	GetRepPrice
+	add	eax,[ebp-72]
 	cmp	eax,[ebx]
 	jnb	.labl_52
+
 	mov	[ebx],eax
-	mov	eax,[ebp-0xC]
+	mov	eax,[ebp-12]
 	mov	[ebx+4],eax
-	mov	eax,[ebp-0x18]
+	mov	eax,[ebp-24]
 	mov	[ebx+8],eax
-	mov	byte [ebx-0xB],0
+	mov	byte [ebx-11],0
 ;----------------------------------------------------------
 .labl_52:
 	dec	esi
-	sub	ebx,0x28	;'('
-	dec	dword [ebp-0x20]
+	sub	ebx,40
+	dec	dword [ebp-32]
 	cmp	esi,2
 	jnb	.labl_49
+
 	lea	eax,[edi+1]
-	lea	esi,[eax+0x80]
-	cmp	esi,[ebp-0x38]
+	lea	esi,[eax+128]
+	cmp	esi,[ebp-56]
 	jbe	.labl_53
-	mov	esi,[ebp-0x38]
+
+	mov	esi,[ebp-56]
 ;----------------------------------------------------------
 .labl_53:
 	cmp	eax,esi
 	jnb	.labl_55
-	mov	edx,[ebp-0x28]
+
+	mov	edx,[ebp-40]
 	mov	ecx,eax
-	sub	ecx,[ebp-0x44]
+	sub	ecx,[ebp-68]
 	add	ecx,edx
 ;----------------------------------------------------------
 .labl_54:
 	mov	bl,[eax+edx]
 	cmp	bl,[ecx]
 	jne	.labl_55
+
 	inc	eax
 	inc	ecx
 	cmp	eax,esi
@@ -1359,330 +1460,347 @@ lz_cm_03:
 	or	ecx,0xFFFFFFFF
 	sub	ecx,edi
 	add	eax,ecx
-	mov	[ebp-0x10],eax
+	mov	[ebp-16],eax
 	cmp	eax,2
 	jb	.labl_58
-	mov	eax,[ebp-0x40]
+
+	mov	eax,[ebp-64]
 	mov	al,[eax+RepNextStates]
 	mov	edx,[ebp+8]
 	movzx	eax,al
 	mov	ebx,eax
 	mov	al,[eax+LiteralNextStates]
 	lea	ecx,[edi+edx]
-	mov	[ebp-0x3C],al
+	mov	[ebp-60],al
 	movzx	eax,al
 	mov	esi,ecx
 	and	esi,3
 	shl	ebx,4
 	add	esi,ebx
-	mov	esi,[0x1AF30+esi*4]
+	mov	esi,[_isMatch+esi*4]
 	lea	ebx,[edi+edx+1]
-	mov	[ebp-0x20],eax
-	mov	eax,[ebp-0x28]
+	mov	[ebp-32],eax
+	mov	eax,[ebp-40]
 	movzx	edx,byte [edi+eax]
 	mov	al,[eax+edi-1]
 	push	edx
-	mov	edx,[ebp-0x50]
+	mov	edx,[ebp-80]
 	movzx	edx,byte [edx+edi]
 	push	edx
-	shr	esi,02
-	mov	esi,[0x51A18+esi*4]
+	shr	esi,2
+	mov	esi,[Models+esi*4]
 	push	1
 	push	ecx
-	mov	[ebp-0x44],esi
+	mov	[ebp-68],esi
 	and	ebx,3
-	call	cm_pr_05
-	push	dword [ebp-0x1C]
-	mov	edx,[ebp-0x18]
-	push	dword [ebp-0x14]
+	call	CLiteralEncoder_GetPrice
+	push	dword [ebp-28]
+	mov	edx,[ebp-24]
+	push	dword [ebp-20]
 	mov	esi,eax
 	mov	eax,edi
-	call	cm_pr_11
-	mov	ecx,[ebp-0x20]
+	call	GetRepPrice
+	mov	ecx,[ebp-32]
 	add	esi,eax
 	shl	ecx,4
 	add	ecx,ebx
-	mov	eax,0x800
+	mov	eax,2048
 	mov	edx,eax
-	sub	edx,[0x1AF30+ecx*4]
-	mov	ecx,[ebp-0x20]
-	sub	eax,[0x515B8+ecx*4]
-	mov	ecx,[ebp-0xC]
+	sub	edx,[_isMatch+ecx*4]
+	mov	ecx,[ebp-32]
+	sub	eax,[_isRep+ecx*4]
+	mov	ecx,[ebp-12]
 	shr	edx,2
-	add	esi,[0x51A18+edx*4]
+	add	esi,[Models+edx*4]
 	shr	eax,2
-	add	esi,[0x51A18+eax*4]
-	mov	eax,[ebp-0x10]
-	add	esi,[ebp-0x44]
+	add	esi,[Models+eax*4]
+	mov	eax,[ebp-16]
+	add	esi,[ebp-68]
 	lea	eax,[eax+edi+1]
-	add	esi,[ebp-0x48]
+	add	esi,[ebp-72]
 	add	eax,ecx
-	mov	[ebp-0x44],eax
+	mov	[ebp-68],eax
 	cmp	[ebp-8],eax
 	jnb	.labl_57
+
 	mov	eax,[ebp-8]
-	mov	ecx,[ebp-0x44]
-	imul	eax,eax,0x28
+	mov	ecx,[ebp-68]
+	imul	eax,eax,40
 	sub	ecx,[ebp-8]
-	add	eax,0x29584
+	add	eax,state.Price
 	add	[ebp-8],ecx
 ;----------------------------------------------------------
 .labl_56:
-	add	eax,0x28	;'('
+	add	eax,40
 	dec	ecx
-	mov	dword [eax],0x0FFFFFFF
+	mov	dword [eax],kIfinityPrice
 	jne	.labl_56
 ;----------------------------------------------------------
 .labl_57:
-	mov	eax,[ebp-0x10]
+	mov	eax,[ebp-16]
 	push	ebx
-	push	dword [ebp-0x3C]
+	push	dword [ebp-60]
 	xor	edx,edx
-	call	cm_pr_11
-	mov	ecx,[ebp-0x44]
-	imul	ecx,ecx,0x28
+	call	GetRepPrice
+	mov	ecx,[ebp-68]
+	imul	ecx,ecx,40
 	add	eax,esi
-	add	ecx,0x29578
-	cmp	eax,[ecx+0xC]
+	add	ecx,state.State
+	cmp	eax,[ecx+12]
 	jnb	.labl_58
-	and	dword [ecx+0x14],0
-	mov	[ecx+0xC],eax
-	mov	eax,[ebp-0xC]
+
+	and	dword [ecx+20],0
+	mov	[ecx+12],eax
+	mov	eax,[ebp-12]
 	lea	edx,[edi+eax+1]
 	mov	[ecx+4],eax
-	mov	eax,[ebp-0x18]
-	mov	[ecx+0x10],edx
+	mov	eax,[ebp-24]
+	mov	[ecx+16],edx
 	mov	byte [ecx+1],1
 	mov	byte [ecx+2],1
 	mov	[ecx+8],eax
 ;----------------------------------------------------------
 .labl_58:
-	inc	dword [ebp-0x18]
-	cmp	dword [ebp-0x18],4
+	inc	dword [ebp-24]
+	cmp	dword [ebp-24],4
 	jb	.labl_46
-	mov	eax,[ebp-0x24]
-	cmp	[ebp-0x2C],eax
+
+	mov	eax,[ebp-36]
+	cmp	[ebp-44],eax
 	jbe	.labl_59
-	mov	[ebp-0x2C],eax
+
+	mov	[ebp-44],eax
 ;----------------------------------------------------------
 .labl_59:
-	cmp	dword [ebp-0x2C],2
+	cmp	dword [ebp-44],2
 	jb	.labl_72
-	mov	esi,[ebp-0x2C]
+
+	mov	esi,[ebp-44]
 	cmp	esi,2
 	jne	.labl_60
-	cmp	dword [0x1AAB8],0x80	;'€'
+
+	cmp	dword [distances+8],0x80
 	jnb	.labl_72
 ;----------------------------------------------------------
 .labl_60:
-	mov	eax,[ebp-0x54]
+	mov	eax,[ebp-84]
 	shr	eax,2
-	mov	eax,[0x51A18+eax*4]
-	add	eax,[ebp-0x4C]
-	mov	[ebp-0x4C],eax
-	mov	eax,[ebp-0xC]
+	mov	eax,[Models+eax*4]
+	add	eax,[ebp-76]
+	mov	[ebp-76],eax
+	mov	eax,[ebp-12]
 	lea	ecx,[esi+eax]
 	cmp	[ebp-8],ecx
 	jnb	.labl_62
+
 	mov	eax,[ebp-8]
-	imul	eax,eax,0x28
+	imul	eax,eax,40
 	mov	edx,ecx
 	sub	edx,[ebp-8]
-	add	eax,0x29584
+	add	eax,state.Price
 	add	[ebp-8],edx
 ;----------------------------------------------------------
 .labl_61:
-	add	eax,0x28	;'('
+	add	eax,40
 	dec	edx
-	mov	dword [eax],0x0FFFFFFF
+	mov	dword [eax],kIfinityPrice
 	jne	.labl_61
 ;----------------------------------------------------------
 .labl_62:
-	imul	ecx,ecx,0x28
-	add	ecx,0x29584
-	lea	eax,[0x1AAB4+esi*4]
+	imul	ecx,ecx,40
+	add	ecx,state.Price
+	lea	eax,[distances+4+esi*4]
 	lea	edi,[esi+1]
-	mov	[ebp-0x24],eax
+	mov	[ebp-36],eax
 	mov	ebx,ecx
-	mov	[ebp-0x48],ecx
+	mov	[ebp-72],ecx
 ;----------------------------------------------------------
 .labl_63:
-	mov	eax,[ebp-0x24]
+	mov	eax,[ebp-36]
 	mov	esi,[eax-4]
-	push	dword [ebp-0x1C]
+	push	dword [ebp-28]
 	lea	eax,[edi-1]
 	mov	edx,esi
-	call	cm_pr_12
-	add	eax,[ebp-0x4C]
-	mov	[ebp-0x50],eax
+	call	GetPosLenPrice
+	add	eax,[ebp-76]
+	mov	[ebp-80],eax
 	cmp	eax,[ebx]
 	jnb	.labl_64
+
 	mov	[ebx],eax
-	mov	eax,[ebp-0xC]
+	mov	eax,[ebp-12]
 	mov	[ebx+4],eax
 	lea	eax,[esi+4]
 	mov	[ebx+8],eax
-	mov	byte [ebx-0xB],0
+	mov	byte [ebx-11],0
 ;----------------------------------------------------------
 .labl_64:
 	lea	eax,[edi-1]
-	cmp	eax,[ebp-0x2C]
+	cmp	eax,[ebp-44]
 	je	.labl_65
-	mov	eax,[ebp-0x24]
+
+	mov	eax,[ebp-36]
 	cmp	esi,[eax]
 	je	.labl_71
 ;----------------------------------------------------------
 .labl_65:
 	inc	esi
-	lea	ecx,[edi+0x80]
-	mov	[ebp-0x44],esi
-	mov	[ebp-0x10],edi
-	cmp	ecx,[ebp-0x38]
+	lea	ecx,[edi+128]
+	mov	[ebp-68],esi
+	mov	[ebp-16],edi
+	cmp	ecx,[ebp-56]
 	jbe	.labl_66
-	mov	ecx,[ebp-0x38]
+
+	mov	ecx,[ebp-56]
 ;----------------------------------------------------------
 .labl_66:
 	cmp	edi,ecx
 	jnb	.labl_68
+
 	mov	eax,edi
 	sub	eax,esi
-	add	eax,[ebp-0x28]
+	add	eax,[ebp-40]
 ;----------------------------------------------------------
 .labl_67:
-	mov	edx,[ebp-0x10]
-	mov	esi,[ebp-0x28]
+	mov	edx,[ebp-16]
+	mov	esi,[ebp-40]
 	mov	dl,[edx+esi]
 	cmp	dl,[eax]
 	jne	.labl_68
-	inc	dword [ebp-0x10]
+
+	inc	dword [ebp-16]
 	inc	eax
-	cmp	[ebp-0x10],ecx
+	cmp	[ebp-16],ecx
 	jb	.labl_67
 ;----------------------------------------------------------
 .labl_68:
 	or	ecx,0xFFFFFFFF
 	lea	eax,[edi-1]
 	sub	ecx,eax
-	add	[ebp-0x10],ecx
-	cmp	dword [ebp-0x10],2
+	add	[ebp-16],ecx
+	cmp	dword [ebp-16],2
 	jb	.labl_71
-	mov	eax,[ebp-0x40]
+
+	mov	eax,[ebp-64]
 	mov	al,[eax+MatchNextStates]
 	mov	ecx,[ebp+8]
 	movzx	eax,al
 	mov	esi,eax
 	mov	al,[eax+LiteralNextStates]
 	lea	edx,[edi+ecx-1]
-	mov	[ebp-0x3C],al
+	mov	[ebp-60],al
 	movzx	eax,al
 	shl	esi,4
 	mov	ebx,edx
 	and	ebx,3
 	add	esi,ebx
-	mov	esi,[0x1AF30+esi*4]
+	mov	esi,[_isMatch+esi*4]
 	lea	ebx,[edi+ecx]
-	mov	[ebp-0x20],eax
-	mov	eax,[ebp-0x28]
+	mov	[ebp-32],eax
+	mov	eax,[ebp-40]
 	movzx	ecx,byte [edi+eax-1]
 	push	ecx
 	mov	ecx,edi
-	sub	ecx,[ebp-0x44]
+	sub	ecx,[ebp-68]
 	shr	esi,2
 	movzx	ecx,byte [ecx+eax-1]
-	mov	esi,[0x51A18+esi*4]
+	mov	esi,[Models+esi*4]
 	mov	al,[edi+eax-2]
 	push	ecx
 	push	1
 	push	edx
-	mov	[ebp-0x54],esi
+	mov	[ebp-84],esi
 	and	ebx,3
-	call	cm_pr_05
-	mov	ecx,[ebp-0x20]
+	call	CLiteralEncoder_GetPrice
+	mov	ecx,[ebp-32]
 	mov	esi,eax
 	shl	ecx,4
 	add	ecx,ebx
-	mov	eax,0x800
+	mov	eax,2048
 	mov	edx,eax
-	sub	edx,[0x1AF30+ecx*4]
-	mov	ecx,[ebp-0x20]
-	sub	eax,[0x515B8+ecx*4]
-	mov	ecx,[ebp-0xC]
+	sub	edx,[_isMatch+ecx*4]
+	mov	ecx,[ebp-32]
+	sub	eax,[_isRep+ecx*4]
+	mov	ecx,[ebp-12]
 	shr	edx,2
-	add	esi,[0x51A18+edx*4]
+	add	esi,[Models+edx*4]
 	shr	eax,2
-	add	esi,[0x51A18+eax*4]
-	mov	eax,[ebp-0x10]
-	add	esi,[ebp-0x54]
+	add	esi,[Models+eax*4]
+	mov	eax,[ebp-16]
+	add	esi,[ebp-84]
 	add	eax,edi
-	add	esi,[ebp-0x50]
+	add	esi,[ebp-80]
 	add	eax,ecx
-	mov	[ebp-0x20],eax
+	mov	[ebp-32],eax
 	cmp	[ebp-8],eax
 	jnb	.labl_70
+
 	mov	eax,[ebp-8]
-	mov	ecx,[ebp-0x20]
-	imul	eax,eax,0x28
+	mov	ecx,[ebp-32]
+	imul	eax,eax,40
 	sub	ecx,[ebp-8]
-	add	eax,0x29584
+	add	eax,state.Price
 	add	[ebp-8],ecx
 ;----------------------------------------------------------
 .labl_69:
-	add	eax,0x28	;'('
+	add	eax,40
 	dec	ecx
-	mov	dword [eax],0x0FFFFFFF
+	mov	dword [eax],kIfinityPrice
 	jne	.labl_69
 ;----------------------------------------------------------
 .labl_70:
-	mov	eax,[ebp-0x10]
+	mov	eax,[ebp-16]
 	push	ebx
-	push	dword [ebp-0x3C]
+	push	dword [ebp-60]
 	xor	edx,edx
-	call	cm_pr_11
-	mov	ecx,[ebp-0x20]
-	mov	ebx,[ebp-0x48]
-	imul	ecx,ecx,0x28
+	call	GetRepPrice
+	mov	ecx,[ebp-32]
+	mov	ebx,[ebp-72]
+	imul	ecx,ecx,40
 	add	eax,esi
-	add	ecx,0x29578
-	cmp	eax,[ecx+0xC]
+	add	ecx,state.State
+	cmp	eax,[ecx+12]
 	jnb	.labl_71
-	and	dword [ecx+0x14],0
-	mov	[ecx+0xC],eax
-	mov	eax,[ebp-0xC]
+
+	and	dword [ecx+20],0
+	mov	[ecx+12],eax
+	mov	eax,[ebp-12]
 	lea	edx,[edi+eax]
 	mov	[ecx+4],eax
-	mov	eax,[ebp-0x44]
+	mov	eax,[ebp-68]
 	add	eax,3
-	mov	[ecx+0x10],edx
+	mov	[ecx+16],edx
 	mov	byte [ecx+1],1
 	mov	byte [ecx+2],1
 	mov	[ecx+8],eax
 ;----------------------------------------------------------
 .labl_71:
-	sub	dword [ebp-0x24],4
-	sub	ebx,0x28	;'('
+	sub	dword [ebp-36],4
+	sub	ebx,40
 	dec	edi
 	lea	eax,[edi-1]
-	mov	[ebp-0x48],ebx
+	mov	[ebp-72],ebx
 	cmp	eax,2
 	jnb	.labl_63
 ;----------------------------------------------------------
 .labl_72:
-	inc	dword [ebp-0xC]
-	mov	eax,[ebp-0xC]
+	inc	dword [ebp-12]
+	mov	eax,[ebp-12]
 	cmp	eax,[ebp-8]
 	jne	.labl_21
+
 	jmp	.labl_74
 ;----------------------------------------------------------
 .labl_73:
-	mov	eax,[ebp-0x2C]
-	mov	[0x19FAC],eax
-	mov	byte [0x19FAA],1	;0x1B238
+	mov	eax,[ebp-44]
+	mov	[_longestMatchLength],eax
+	mov	byte [_longestMatchWasFound],1
 ;----------------------------------------------------------
 .labl_74:
-	push	dword [ebp-0xC]
-	push	dword [ebp+0xC]
-	call	lz_cm_08
-	mov	ecx,[ebp+0x10]
+	push	dword [ebp-12]
+	push	dword [ebp+12]
+	call	Backward
+	mov	ecx,[ebp+16]
 	mov	[ecx],eax
 ;----------------------------------------------------------
 .labl_75:
@@ -1692,11 +1810,11 @@ lz_cm_03:
 .labl_76:
 	pop	esi
 	leave	
-	ret	0xC
+	ret	12
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-lz_cm_04:
+CLiteralEncoder2_EncodeMatched:
 	push	ebp
 	mov	ebp,esp
 	push	ecx
@@ -1710,8 +1828,8 @@ lz_cm_04:
 .labl_00:
 	dec	dword [ebp-4]
 	movzx	ecx,byte [ebp-4]
-	movzx	esi,byte [ebp+0xC]
-	movzx	edi,byte [ebp+0x10]
+	movzx	esi,byte [ebp+12]
+	movzx	edi,byte [ebp+16]
 	shr	esi,cl
 	shr	edi,cl
 	mov	ecx,[ebp+8]
@@ -1722,25 +1840,27 @@ lz_cm_04:
 	and	edi,1
 	push	edi
 	lea	edx,[ecx+eax*4]
-	call	cm_pr_14
+	call	CMyBitEncoder_Encode
 	add	ebx,ebx
 	or	ebx,edi
 	cmp	esi,edi
 	jne	.labl_02
+
 	cmp	dword [ebp-4],0
 	jne	.labl_00
+
 	jmp	.labl_03
 ;----------------------------------------------------------
 .labl_01:
 	dec	dword [ebp-4]
-	movzx	esi,byte [ebp+0x10]
+	movzx	esi,byte [ebp+16]
 	mov	cl,[ebp-4]
 	mov	eax,[ebp+8]
 	shr	esi,cl
 	lea	edx,[eax+ebx*4]
 	and	esi,1
 	push	esi
-	call	cm_pr_14
+	call	CMyBitEncoder_Encode
 	add	ebx,ebx
 	or	ebx,esi
 ;----------------------------------------------------------
@@ -1753,75 +1873,80 @@ lz_cm_04:
 	pop	esi
 	pop	ebx
 	leave	
-	ret	0xC
+	ret	12
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-lz_cm_05:
+RangeEncoder_EncodeDirectBits:
 	push	esi
 	mov	esi,eax
 	jmp	.labl_02
 ;----------------------------------------------------------
 .labl_00:
 	mov	eax,[esp+8]
-	shr	dword [0x51A04],1
+	shr	dword [range],1
 	dec	esi
 	mov	ecx,esi
 	shr	eax,cl
 	test	al,1
 	je	.labl_01
-	mov	eax,[0x51A04]
-	add	[0x51A10],eax
-	adc	dword [0x51A14],0
+
+	mov	eax,[range]
+	add	[low],eax	
+	adc	dword [low+4],0
 ;----------------------------------------------------------
 .labl_01:
-	cmp	dword [0x51A04],0x1000000
+	cmp	dword [range],0x1000000
 	jnb	.labl_02
-	shl	dword [0x51A04],8
-	call	cm_pr_13
+
+	shl	dword [range],8
+	call	RangeEncoder_ShiftLow
 ;----------------------------------------------------------
 .labl_02:
 	test	esi,esi
 	jne	.labl_00
+
 	pop	esi
 	ret	4
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-lz_cm_06:
+CBitTreeEncoder_ReverseEncode:
 	push	esi
 	xor	esi,esi
 	push	edi
-	mov	edi,[0x519E8]
+	mov	edi,[i_01]
 	inc	esi
 ;----------------------------------------------------------
 .labl_00:
-	mov	eax,[esp+0xC]
+	mov	eax,[esp+12]
 	and	eax,1
-	lea	edx,[0x515E8+esi*4]
+	lea	edx,[_posAlignEncoder+esi*4]
 	push	eax
 	lea	esi,[eax+esi*2]
-	call	cm_pr_14
-	shr	dword [esp+0xC],1
+	call	CMyBitEncoder_Encode
+	shr	dword [esp+12],1
 	dec	edi
 	jne	.labl_00
+
 	pop	edi
 	pop	esi
 	ret	4
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-lz_cm_07:
+MovePos:
 	push	esi
 	mov	esi,eax
 	test	esi,esi
 	je	.labl_01
-	add	[0x1AEFC],esi
+
+	add	[_additionalOffset],esi
 ;----------------------------------------------------------
 .labl_00:
 	dec	esi
 	call	lz_cm_09
-	call	cm_pr_19
+	call	MatchFinder_MovePos
 	test	esi,esi
 	jne	.labl_00
 ;----------------------------------------------------------
@@ -1831,63 +1956,66 @@ lz_cm_07:
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-lz_cm_08:
+Backward:
 	push	ebp
 	mov	ebp,esp
 	push	ecx
-	mov	ecx,[ebp+0xC]
+	mov	ecx,[ebp+12]
 	mov	eax,ecx
-	imul	eax,eax,0x28
-	mov	edx,[eax+0x29588]
-	mov	eax,[eax+0x2958C]
+	imul	eax,eax,40
+	mov	edx,[eax+state.PosPrev]
+	mov	eax,[eax+state.BackPrev]
 	push	ebx
 	push	esi
-	mov	[0x29574],ecx
+	mov	[_optimumEndIndex],ecx
 	mov	[ebp-4],eax
 	push	edi
 ;----------------------------------------------------------
 .labl_00:
-	imul	ecx,ecx,0x28
-	cmp	byte [ecx+0x29579],0
+	imul	ecx,ecx,40
+	cmp	byte [ecx+state.Prev1IsChar],0
 	je	.labl_01
+
 	mov	eax,edx
-	imul	eax,eax,0x28
-	or	dword [eax+0x2958C],0xFFFFFFFF
-	lea	esi,[eax+0x29579]
-	lea	edi,[eax+0x29588]
+	imul	eax,eax,40
+	or	dword [eax+state.BackPrev],0xFFFFFFFF
+	lea	esi,[eax+state.Prev1IsChar]
+	lea	edi,[eax+state.PosPrev]
 	lea	ebx,[edx-1]
 	mov	byte [esi],0
 	mov	[edi],ebx
-	cmp	byte [ecx+0x2957A],0
+	cmp	byte [ecx+state.Prev2],0
 	je	.labl_01
-	mov	byte [esi-0x28],0
-	mov	esi,[ecx+0x2957C]
-	mov	[edi-0x28],esi
-	mov	ecx,[ecx+0x29580]
-	mov	[eax+0x29564],ecx
+
+	mov	byte [esi-40],0
+	mov	esi,[ecx+state.PosPrev2]
+	mov	[edi-40],esi
+	mov	ecx,[ecx+state.BackPrev2]
+	mov	[eax+state.BackPrev-40],ecx
 ;----------------------------------------------------------
 .labl_01:
 	mov	ecx,[ebp-4]
 	mov	eax,edx
-	imul	eax,eax,0x28
+	imul	eax,eax,40
 	mov	esi,edx
-	mov	edx,[eax+0x2958C]
-	mov	[eax+0x2958C],ecx
-	mov	ecx,[ebp+0xC]
+	mov	edx,[eax+state.BackPrev]
+	mov	[eax+state.BackPrev],ecx
+	mov	ecx,[ebp+12]
 	mov	[ebp-4],edx
-	mov	edx,[eax+0x29588]
-	mov	[eax+0x29588],ecx
+	mov	edx,[eax+state.PosPrev]
+	mov	[eax+state.PosPrev],ecx
 	mov	ecx,esi
-	mov	[ebp+0xC],ecx
+	mov	[ebp+12],ecx
 	test	esi,esi
 	jne	.labl_00
-	mov	eax,[0x2958C]
+
+	mov	eax,[state.BackPrev]
 	mov	ecx,[ebp+8]
 	pop	edi
 	mov	[ecx],eax
-	mov	eax,[0x29588]
+	mov	eax,[state.PosPrev]
 	pop	esi
-	mov	[0x1AEF8],eax
+	mov	[_optimumCurrentIndex],eax
 	pop	ebx
 	leave
 	ret	8
@@ -1897,137 +2025,144 @@ lz_cm_08:
 lz_cm_09:
 	push	ebp
 	mov	ebp,esp
-	mov	edx,[0x52218]
-	mov	eax,[0x5262C]
-	mov	ecx,[0x52630]
-	sub	esp,0x2C
+	mov	edx,[_matchMaxLen]
+	mov	eax,[_pos]
+	mov	ecx,[_streamPos]
+	sub	esp,44
 	push	esi
 	lea	esi,[edx+eax]
 	cmp	esi,ecx
 	ja	.labl_00
-	mov	[ebp-0x18],edx
+
+	mov	[ebp-24],edx
 	jmp	.labl_01
 ;----------------------------------------------------------
 .labl_00:
 	sub	ecx,eax
-	mov	[ebp-0x18],ecx
+	mov	[ebp-24],ecx
 	cmp	ecx,3
 	jb	.labl_13
 ;----------------------------------------------------------
 .labl_01:
-	mov	ecx,[0x51A0C]
+	mov	ecx,[_cyclicBufferSize]
 	mov	edx,eax
 	sub	edx,ecx
 	cmp	ecx,eax
-	mov	ecx,[0x52628]
+	mov	ecx,[_buffer]
 	lea	esi,[ecx+eax]
 	movzx	ecx,byte [esi+2]
 	push	ebx
 	movzx	ebx,word [esi]
 	push	edi
 	sbb	edi,edi
-	and	dword [ebp-0x1C],0
-	and	dword [ebp-0x28],0
+	and	dword [ebp-28],0
+	and	dword [ebp-40],0
 	shl	ecx,8
 	and	edi,edx
 	movzx	edx,byte [esi]
-	xor	ecx,[0x52228+edx*4]
+	xor	ecx,[crc_table+edx*4]
 	movzx	edx,byte [esi+1]
 	xor	ecx,edx
-	mov	edx,[0x52224]
+	mov	edx,[_hash]
 	and	ecx,0xFFFFF
 	lea	ecx,[edx+ecx*4]
 	mov	[edx+ebx*4+0x400000],eax
 	mov	ebx,[ecx]
 	mov	[ecx],eax
-	mov	ecx,[0x5221C]
+	mov	ecx,[pack_pos]
 	lea	ecx,[edx+ecx*8+0x440000]
 	mov	[ebp-4],ebx
 	lea	ebx,[ecx+4]
-	mov	[ebp-0xC],ecx
-	mov	ecx,[0x52220]
-	mov	[ebp-0x10],ebx
-	mov	[ebp-0x14],ecx
+	mov	[ebp-12],ecx
+	mov	ecx,[_cutValue]
+	mov	[ebp-16],ebx
+	mov	[ebp-20],ecx
 	cmp	[ebp-4],edi
 	jbe	.labl_11
 ;----------------------------------------------------------
 .labl_02:
-	mov	ecx,[ebp-0x14]
-	dec	dword [ebp-0x14]
+	mov	ecx,[ebp-20]
+	dec	dword [ebp-20]
 	test	ecx,ecx
 	je	.labl_11
-	mov	ecx,[0x52628]
+
+	mov	ecx,[_buffer]
 	mov	ebx,[ebp-4]
 	add	ecx,ebx
-	mov	[ebp-0x24],ecx
-	mov	ecx,[ebp-0x28]
-	cmp	ecx,[ebp-0x1C]
+	mov	[ebp-36],ecx
+	mov	ecx,[ebp-40]
+	cmp	ecx,[ebp-28]
 	jb	.labl_03
-	mov	ecx,[ebp-0x1C]
+
+	mov	ecx,[ebp-28]
 ;----------------------------------------------------------
 .labl_03:
-	mov	ebx,[ebp-0x24]
+	mov	ebx,[ebp-36]
 	mov	[ebp-8],ecx
 	add	ecx,esi
 	sub	ebx,esi
-	mov	[ebp-0x20],ebx
+	mov	[ebp-32],ebx
 	jmp	.labl_05
 ;----------------------------------------------------------
 .labl_04:
-	mov	ecx,[ebp-0x2C]
-	mov	ebx,[ebp-0x20]
+	mov	ecx,[ebp-44]
+	mov	ebx,[ebp-32]
 ;----------------------------------------------------------
 .labl_05:
 	mov	bl,[ebx+ecx]
 	cmp	bl,[ecx]
 	jne	.labl_06
+
 	inc	dword [ebp-8]
 	inc	ecx
-	mov	[ebp-0x2C],ecx
+	mov	[ebp-44],ecx
 	mov	ecx,[ebp-8]
-	cmp	ecx,[ebp-0x18]
+	cmp	ecx,[ebp-24]
 	jne	.labl_04
 ;----------------------------------------------------------
 .labl_06:
-	mov	ecx,[0x5221C]
+	mov	ecx,[pack_pos]
 	mov	ebx,eax
 	sub	ebx,[ebp-4]
 	cmp	ebx,ecx
 	ja	.labl_07
+
 	sub	ecx,ebx
 	jmp	.labl_08
 ;----------------------------------------------------------
 .labl_07:
 	sub	ecx,ebx
-	add	ecx,[0x51A0C]
+	add	ecx,[_cyclicBufferSize]
 ;----------------------------------------------------------
 .labl_08:
 	lea	ecx,[edx+ecx*8+0x440000]
-	mov	[ebp-0x20],ecx
+	mov	[ebp-32],ecx
 	mov	ecx,[ebp-8]
-	cmp	ecx,[ebp-0x18]
+	cmp	ecx,[ebp-24]
 	je	.labl_14
-	mov	ebx,[ebp-0x24]
+
+	mov	ebx,[ebp-36]
 	mov	bl,[ecx+ebx]
 	cmp	bl,[ecx+esi]
 	mov	ecx,[ebp-4]
 	jnb	.labl_09
-	mov	ebx,[ebp-0xC]
+
+	mov	ebx,[ebp-12]
 	mov	[ebx],ecx
-	mov	ecx,[ebp-0x20]
+	mov	ecx,[ebp-32]
 	mov	ebx,[ebp-8]
 	add	ecx,4
-	mov	[ebp-0xC],ecx
-	mov	[ebp-0x1C],ebx
+	mov	[ebp-12],ecx
+	mov	[ebp-28],ebx
 	jmp	.labl_10
 ;----------------------------------------------------------
 .labl_09:
-	mov	ebx,[ebp-0x10]
+	mov	ebx,[ebp-16]
 	mov	[ebx],ecx
-	mov	ecx,[ebp-0x20]
+	mov	ecx,[ebp-32]
 	mov	ebx,[ebp-8]
-	mov	[ebp-0x10],ecx
-	mov	[ebp-0x28],ebx
+	mov	[ebp-16],ecx
+	mov	[ebp-40],ebx
 ;----------------------------------------------------------
 .labl_10:
 	mov	ecx,[ecx]
@@ -2036,9 +2171,9 @@ lz_cm_09:
 	ja	.labl_02
 ;----------------------------------------------------------
 .labl_11:
-	mov	eax,[ebp-0xC]
+	mov	eax,[ebp-12]
 	and	dword [eax],0
-	mov	eax,[ebp-0x10]
+	mov	eax,[ebp-16]
 	and	dword [eax],0
 ;----------------------------------------------------------
 .labl_12:
@@ -2051,43 +2186,45 @@ lz_cm_09:
 	ret	
 ;----------------------------------------------------------
 .labl_14:
-	mov	eax,[ebp-0x20]
+	mov	eax,[ebp-32]
 	mov	ecx,[eax]
-	mov	edx,[ebp-0xC]
+	mov	edx,[ebp-12]
 	mov	[edx],ecx
 	mov	eax,[eax+4]
-	mov	ecx,[ebp-0x10]
+	mov	ecx,[ebp-16]
 	mov	[ecx],eax
 	jmp	.labl_12
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_000:
-	cmp	eax,0x400
+GetPosSlot:
+	cmp	eax,1024
 	jnb	.labl_00
-	movzx	eax,byte [eax+0x19FB0]
+
+	movzx	eax,byte [eax+g_FastPos]
 	ret 
 ;----------------------------------------------------------
 .labl_00:
 	cmp	eax,0x80000
 	jnb	.labl_01
+
 	shr	eax,9
-	movzx	eax,byte [eax+0x19FB0]
-	add	eax,0x12
+	movzx	eax,byte [eax+g_FastPos]
+	add	eax,18
 	ret 
 ;----------------------------------------------------------
 .labl_01:
-	shr	eax,0x12
-	movzx	eax,byte [eax+0x19FB0]
-	add	eax,0x24 ;'$'
+	shr	eax,18
+	movzx	eax,byte [eax+g_FastPos]
+	add	eax,36 ;'$'
 	ret 
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_00:
+CPriceTableEncoder_Init:
 	push	ebx
 	push	edi
-	mov	eax,0x400
+	mov	eax,1024
 	push	4
 	mov	[esi],eax
 	mov	[esi+4],eax
@@ -2098,48 +2235,51 @@ cm_pr_00:
 	push	3
 	lea	eax,[edi-0x4040]
 	pop	ecx
-	call	cm_pr_15
+	call	CBitTreeEncoder_Init
 	push	3
 	pop	ecx
 	mov	eax,edi
-	call	cm_pr_15
-	add	edi,0x404
+	call	CBitTreeEncoder_Init
+	add	edi,1028
 	dec	ebx
 	jne	.labl_00
+
 	push	8
 	pop	ecx
 	pop	edi
 	lea	eax,[esi+0x8088]
 	pop	ebx
-	jmp	cm_pr_15
+	jmp	CBitTreeEncoder_Init
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_01:
+CPriceTableEncoder_UpdateTable:
 	push	ebx
 	push	edi
 	mov	edi,eax
 	xor	ebx,ebx
 	cmp	[edi+0xC88C],ebx
 	jbe	.labl_01
-	mov	eax,[esp+0xC]
+
+	mov	eax,[esp+12]
 	push	esi
 	lea	esi,[edi+eax*4+0x848C]
 ;----------------------------------------------------------
 .labl_00:
-	mov	eax,[esp+0x10]
+	mov	eax,[esp+16]
 	mov	edx,ebx
-	call	lz_cm_10
+	call	NLength_CEncoder_GetPrice
 	mov	[esi],eax
 	inc	ebx
-	add	esi,0x40	;'@'
+	add	esi,64
 	cmp	ebx,[edi+0xC88C]
 	jb	.labl_00
+
 	pop	esi
 ;----------------------------------------------------------
 .labl_01:
 	mov	eax,[edi+0xC88C]
-	mov	ecx,[esp+0xC]
+	mov	ecx,[esp+12]
 	mov	[edi+ecx*4+0xC890],eax
 	pop	edi
 	pop	ebx
@@ -2147,47 +2287,49 @@ cm_pr_01:
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-lz_cm_10:
+NLength_CEncoder_GetPrice:
 	push	ebp
 	mov	ebp,esp
 	push	ecx
 	push	esi
 	cmp	edx,8
 	jnb	.labl_00
-	imul	eax,eax,0x404
+
+	imul	eax,eax,1028
 	lea	esi,[eax+edi+8]
-	call	cm_pr_17
+	call	CBitTreeEncoder_GetPrice
 	mov	ecx,[edi]
 	shr	ecx,2
-	add	eax,[0x51A18+ecx*4]
+	add	eax,[Models+ecx*4]
 	jmp	.labl_03
 ;----------------------------------------------------------
 .labl_00:
 	push	ebx
-	mov	ebx,0x800
+	mov	ebx,2048
 	mov	ecx,ebx
 	sub	ecx,[edi]
 	shr	ecx,2
-	mov	ecx,[0x51A18+ecx*4]
+	mov	ecx,[Models+ecx*4]
 	mov	[ebp-4],ecx
-	cmp	edx,0x10
+	cmp	edx,16
 	jnb	.labl_01
-	imul	eax,eax,0x404
+
+	imul	eax,eax,1028
 	add	edx,0xFFFFFFF8
 	lea	esi,[eax+edi+0x4048]
-	call	cm_pr_17
+	call	CBitTreeEncoder_GetPrice
 	mov	ecx,[edi+4]
 	shr	ecx,2
-	add	eax,[0x51A18+ecx*4]
+	add	eax,[Models+ecx*4]
 	jmp	.labl_02
 ;----------------------------------------------------------
 .labl_01:
 	add	edx,0xFFFFFFF0
 	lea	esi,[edi+0x8088]
-	call	cm_pr_17
+	call	CBitTreeEncoder_GetPrice
 	sub	ebx,[edi+4]
 	shr	ebx,2
-	add	eax,[0x51A18+ebx*4]
+	add	eax,[Models+ebx*4]
 ;----------------------------------------------------------
 .labl_02:
 	add	[ebp-4],eax
@@ -2201,38 +2343,40 @@ lz_cm_10:
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_02:
+CPriceTableEncoder_Encode:
 	push	edi
 	mov	edi,eax
 	mov	edx,esi
 	cmp	edi,8
 	jnb	.labl_00
+
 	push	0
-	call	cm_pr_14
+	call	CMyBitEncoder_Encode
 	mov	eax,ebx
-	imul	eax,eax,0x404
+	imul	eax,eax,1028
 	push	edi
 	lea	edi,[eax+esi+8]
 	jmp	.labl_02
 ;----------------------------------------------------------
 .labl_00:
 	push	1
-	call	cm_pr_14
+	call	CMyBitEncoder_Encode
 	lea	edx,[esi+4]
-	cmp	edi,0x10
+	cmp	edi,16
 	jnb	.labl_01
+
 	push	0
-	call	cm_pr_14
+	call	CMyBitEncoder_Encode
 	add	edi,0xFFFFFFF8
 	mov	eax,ebx
-	imul	eax,eax,0x404
+	imul	eax,eax,1028
 	push	edi
 	lea	edi,[eax+esi+0x4048]
 	jmp	.labl_02
 ;----------------------------------------------------------
 .labl_01:
 	push	1
-	call	cm_pr_14
+	call	CMyBitEncoder_Encode
 	add	edi,0xFFFFFFF0
 	push	edi
 	lea	edi,[esi+0x8088]
@@ -2242,16 +2386,17 @@ cm_pr_02:
 	dec	dword [esi+ebx*4+0xC890]
 	pop	edi
 	jne	.labl_03
+
 	push	ebx
 	mov	eax,esi
-	call	cm_pr_01
+	call	CPriceTableEncoder_UpdateTable
 ;----------------------------------------------------------
 .labl_03:
 	ret	
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_03:
+CLiteralEncoder2_Encode:
 	push	ebx
 	push	esi
 	push	edi
@@ -2261,19 +2406,20 @@ cm_pr_03:
 	pop	ebx
 ;----------------------------------------------------------
 .labl_00:
-	movzx	esi,byte [esp+0x14]
-	mov	eax,[esp+0x10]
+	movzx	esi,byte [esp+20]
+	mov	eax,[esp+16]
 	dec	ebx
 	mov	cl,bl
 	shr	esi,cl
 	lea	edx,[eax+edi*4]
 	and	esi,1
 	push	esi
-	call	cm_pr_14
+	call	CMyBitEncoder_Encode
 	add	edi,edi
 	or	edi,esi
 	test	ebx,ebx
 	jne	.labl_00
+
 	pop	edi
 	pop	esi
 	pop	ebx
@@ -2281,10 +2427,10 @@ cm_pr_03:
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_04:
-	mov	edx,[0x519F4]
+CState_IsCharState:
+	mov	edx,[_numPrevBits]
 	push	esi
-	mov	esi,[0x519FC]
+	mov	esi,[_posMask]
 	and	esi,[esp+8]
 	push	8
 	pop	ecx
@@ -2299,17 +2445,17 @@ cm_pr_04:
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_05:
-	push	dword [esp+0x10]
-	push	dword [esp+0x10]
-	push	dword [esp+0x10]
-	push	dword [esp+0x10]
-	call	cm_pr_04
-	imul	eax,eax,0xC00
-	add	eax,[0x519F0]
+CLiteralEncoder_GetPrice:
+	push	dword [esp+16]
+	push	dword [esp+16]
+	push	dword [esp+16]
+	push	dword [esp+16]
+	call	CState_IsCharState
+	imul	eax,eax,3072
+	add	eax,[_posEncoders]
 	push	eax
 	call	lz_cm_11
-	ret	0x10
+	ret	16
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
@@ -2324,16 +2470,17 @@ lz_cm_11:
 	inc	esi
 	push	edi
 	mov	dword [ebp-4],8
-	cmp	[ebp+0xC],al
+	cmp	[ebp+12],al
 	je	.labl_02
-	movzx	ecx,byte [ebp+0x14]
-	mov	[ebp+0xC],ecx
+
+	movzx	ecx,byte [ebp+20]
+	mov	[ebp+12],ecx
 ;----------------------------------------------------------
 .labl_00:
 	dec	dword [ebp-4]
 	movzx	ecx,byte [ebp-4]
-	movzx	edi,byte [ebp+0x10]
-	mov	edx,[ebp+0xC]
+	movzx	edi,byte [ebp+16]
+	mov	edx,[ebp+12]
 	mov	ebx,[ebp+8]
 	shr	edi,cl
 	shr	edx,cl
@@ -2341,7 +2488,7 @@ lz_cm_11:
 	mov	ecx,edi
 	shl	ecx,8
 	add	ecx,esi
-	mov	ecx,[ebx+ecx*4+0x400]
+	mov	ecx,[ebx+ecx*4+1024]
 	and	edx,1
 	sub	ecx,edx
 	mov	ebx,edx
@@ -2349,13 +2496,15 @@ lz_cm_11:
 	xor	ecx,ebx
 	shr	ecx,2
 	and	ecx,0x1FF
-	add	eax,[0x51A18+ecx*4]
+	add	eax,[Models+ecx*4]
 	add	esi,esi
 	or	esi,edx
 	cmp	edi,edx
 	jne	.labl_01
+
 	cmp	dword [ebp-4],0
 	jne	.labl_00
+
 	jmp	.labl_04
 ;----------------------------------------------------------
 .labl_01:
@@ -2363,7 +2512,7 @@ lz_cm_11:
 	je	.labl_04
 ;----------------------------------------------------------
 .labl_02:
-	movzx	edi,byte [ebp+0x14]
+	movzx	edi,byte [ebp+20]
 ;----------------------------------------------------------
 .labl_03:
 	dec	dword [ebp-4]
@@ -2380,7 +2529,7 @@ lz_cm_11:
 	xor	ecx,ebx
 	shr	ecx,2
 	and	ecx,0x1FF
-	add	eax,[0x51A18+ecx*4]
+	add	eax,[Models+ecx*4]
 	or	esi,edx
 	cmp	dword [ebp-4],0
 	jne	.labl_03
@@ -2390,56 +2539,58 @@ lz_cm_11:
 	pop	esi
 	pop	ebx
 	leave	
-	ret	0x10
+	ret	16
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_06:
+ReadMatchDistances:
 	push	esi
-	call	lz_cm_12
+	call	GetLongestMatch
 	mov	ecx,eax
-	mov	esi,0x80	;'€'
+	mov	esi,0x80
 	cmp	ecx,esi
 	jne	.labl_00
-	push	dword [0x1ACB0]
-	lea	eax,[esi+0x11]
+
+	push	dword [distances+512]
+	lea	eax,[esi+17]
 	push	esi
-	call	cm_pr_18
+	call	GetMatchLen
 	mov	ecx,eax
 	add	ecx,esi
 ;----------------------------------------------------------
 .labl_00:
-	inc	dword [0x1AEFC]
-	call	cm_pr_19
+	inc	dword [_additionalOffset]
+	call	MatchFinder_MovePos
 	mov	eax,ecx
 	pop	esi
 	ret	
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-lz_cm_12:
+GetLongestMatch:
 	push	ebp
 	mov	ebp,esp
 	sub	esp,0x34
-	mov	edx,[0x52218]
-	mov	ecx,[0x5262C]
-	mov	eax,[0x52630]
-	and	dword [ebp-0x18],0
+	mov	edx,[_matchMaxLen]
+	mov	ecx,[_pos]
+	mov	eax,[_streamPos]
+	and	dword [ebp-24],0
 	push	esi
 	lea	esi,[edx+ecx]
 	cmp	esi,eax
 	ja	.labl_02
-	mov	[ebp-0x20],edx
+
+	mov	[ebp-32],edx
 ;----------------------------------------------------------
 .labl_00:
-	mov	eax,[0x51A0C]
+	mov	eax,[_cyclicBufferSize]
 	mov	edx,ecx
 	sub	edx,eax
 	cmp	eax,ecx
 	sbb	eax,eax
 	and	eax,edx
-	mov	[ebp-0x28],eax
-	mov	eax,[0x52628]
+	mov	[ebp-40],eax
+	mov	eax,[_buffer]
 	push	ebx
 	push	edi
 	lea	edi,[eax+ecx]
@@ -2447,10 +2598,10 @@ lz_cm_12:
 	movzx	esi,byte [edi]
 	movzx	eax,word [edi]
 	shl	edx,8
-	xor	edx,[0x52228+esi*4]
+	xor	edx,[crc_table+esi*4]
 	movzx	esi,byte [edi+1]
 	xor	edx,esi
-	mov	esi,[0x52224]
+	mov	esi,[_hash]
 	and	edx,0xFFFFF
 	lea	edx,[esi+edx*4]
 	mov	ebx,[edx]
@@ -2458,143 +2609,152 @@ lz_cm_12:
 	mov	[ebp-8],ebx
 	mov	ebx,[eax]
 	mov	[eax],ecx
-	or	dword [0x01AAB8],0xFFFFFFFF
-	cmp	ebx,[ebp-0x28]
+	or	dword [distances+8],0xFFFFFFFF
+	cmp	ebx,[ebp-40]
 	jbe	.labl_01
+
 	mov	eax,ecx
 	sub	eax,ebx
 	dec	eax
-	mov	[0x01AAB8],eax
-	mov	dword [ebp-0x18],2
+	mov	[distances+8],eax
+	mov	dword [ebp-24],2
 ;----------------------------------------------------------
 .labl_01:
-	mov	ebx,[0x5221C]
-	and	dword [ebp-0x24],0
+	mov	ebx,[pack_pos]
+	and	dword [ebp-36],0
 	mov	[edx],ecx
-	or	dword [0x1AABC],0xFFFFFFFF
-	and	dword [ebp-0x30],0
+	or	dword [distances+12],0xFFFFFFFF
+	and	dword [ebp-48],0
 	lea	edx,[esi+ebx*8+0x440000]
 	lea	eax,[edx+4]
-	mov	[ebp-0x14],eax
-	mov	eax,[0x52220]
-	mov	[ebp-0x1C],eax
+	mov	[ebp-20],eax
+	mov	eax,[_cutValue]
+	mov	[ebp-28],eax
 	mov	eax,[ebp-8]
-	mov	[ebp-0x10],edx
+	mov	[ebp-16],edx
 	jmp	.labl_13
 ;----------------------------------------------------------
 .labl_02:
 	sub	eax,ecx
-	mov	[ebp-0x20],eax
+	mov	[ebp-32],eax
 	cmp	eax,3
 	jnb	.labl_00
+
 	xor	eax,eax
 	jmp	.labl_16
 ;----------------------------------------------------------
 .labl_03:
-	mov	eax,[ebp-0x1C]
-	dec	dword [ebp-0x1C]
+	mov	eax,[ebp-28]
+	dec	dword [ebp-28]
 	test	eax,eax
 	je	.labl_14
-	mov	eax,[0x52628]
+
+	mov	eax,[_buffer]
 	mov	edx,[ebp-8]
 	add	eax,edx
-	mov	[ebp-0x2C],eax
-	mov	eax,[ebp-0x30]
-	cmp	eax,[ebp-0x24]
+	mov	[ebp-44],eax
+	mov	eax,[ebp-48]
+	cmp	eax,[ebp-36]
 	jb	.labl_04
-	mov	eax,[ebp-0x24]
+
+	mov	eax,[ebp-36]
 ;----------------------------------------------------------
 .labl_04:
-	mov	edx,[ebp-0x2C]
+	mov	edx,[ebp-44]
 	mov	[ebp-4],eax
 	add	eax,edi
 	sub	edx,edi
-	mov	[ebp-0xC],edx
+	mov	[ebp-12],edx
 	jmp	.labl_06
 ;----------------------------------------------------------
 .labl_05:
-	mov	edx,[ebp-0xC]
-	mov	eax,[ebp-0x34]
+	mov	edx,[ebp-12]
+	mov	eax,[ebp-52]
 ;----------------------------------------------------------
 .labl_06:
 	mov	dl,[edx+eax]
 	cmp	dl,[eax]
 	jne	.labl_07
+
 	inc	dword [ebp-4]
 	inc	eax
-	mov	[ebp-0x34],eax
+	mov	[ebp-52],eax
 	mov	eax,[ebp-4]
-	cmp	eax,[ebp-0x20]
+	cmp	eax,[ebp-32]
 	jne	.labl_05
 ;----------------------------------------------------------
 .labl_07:
 	mov	eax,ecx
 	sub	eax,[ebp-8]
-	mov	[ebp-0xC],eax
-	mov	eax,[ebp-0x18]
+	mov	[ebp-12],eax
+	mov	eax,[ebp-24]
 	cmp	eax,[ebp-4]
 	jnb	.labl_09
 ;----------------------------------------------------------
 .labl_08:
-	mov	edx,[ebp-0xC]
+	mov	edx,[ebp-12]
 	inc	eax
 	dec	edx
-	mov	[0x1AAB0+eax*4],edx
+	mov	[distances+eax*4],edx
 	cmp	eax,[ebp-4]
 	jb	.labl_08
-	mov	[ebp-0x18],eax
+
+	mov	[ebp-24],eax
 ;----------------------------------------------------------
 .labl_09:
 	mov	eax,ebx
-	sub	eax,[ebp-0xC]
-	cmp	[ebp-0xC],ebx
+	sub	eax,[ebp-12]
+	cmp	[ebp-12],ebx
 	jbe	.labl_10
-	add	eax,[0x51A0C]
+
+	add	eax,[_cyclicBufferSize]
 ;----------------------------------------------------------
 .labl_10:
 	lea	eax,[esi+eax*8+0x440000]
-	mov	[ebp-0xC],eax
+	mov	[ebp-12],eax
 	mov	eax,[ebp-4]
-	cmp	eax,[ebp-0x20]
+	cmp	eax,[ebp-32]
 	je	.labl_17
-	mov	edx,[ebp-0x2C]
+
+	mov	edx,[ebp-44]
 	mov	dl,[eax+edx]
 	cmp	dl,[eax+edi]
 	mov	eax,[ebp-8]
 	jnb	.labl_11
-	mov	edx,[ebp-0x10]
+
+	mov	edx,[ebp-16]
 	mov	[edx],eax
-	mov	eax,[ebp-0xC]
+	mov	eax,[ebp-12]
 	mov	edx,[ebp-4]
 	add	eax,4
-	mov	[ebp-0x10],eax
-	mov	[ebp-0x24],edx
+	mov	[ebp-16],eax
+	mov	[ebp-36],edx
 	jmp	.labl_12
 ;----------------------------------------------------------
 .labl_11:
-	mov	edx,[ebp-0x14]
+	mov	edx,[ebp-20]
 	mov	[edx],eax
-	mov	eax,[ebp-0xC]
+	mov	eax,[ebp-12]
 	mov	edx,[ebp-4]
-	mov	[ebp-0x14],eax
-	mov	[ebp-0x30],edx
+	mov	[ebp-20],eax
+	mov	[ebp-48],edx
 ;----------------------------------------------------------
 .labl_12:
 	mov	eax,[eax]
 	mov	[ebp-8],eax
 ;----------------------------------------------------------
 .labl_13:
-	cmp	eax,[ebp-0x28]
+	cmp	eax,[ebp-40]
 	ja	.labl_03
 ;----------------------------------------------------------
 .labl_14:
-	mov	eax,[ebp-0x10]
+	mov	eax,[ebp-16]
 	and	dword [eax],0
-	mov	eax,[ebp-0x14]
+	mov	eax,[ebp-20]
 	and	dword [eax],0
 ;----------------------------------------------------------
 .labl_15:
-	mov	eax,[ebp-0x18]
+	mov	eax,[ebp-24]
 	pop	edi
 	pop	ebx
 ;----------------------------------------------------------
@@ -2604,49 +2764,52 @@ lz_cm_12:
 	ret	
 ;----------------------------------------------------------
 .labl_17:
-	mov	eax,[ebp-0xC]
+	mov	eax,[ebp-12]
 	mov	ecx,[eax]
-	mov	edx,[ebp-0x10]
+	mov	edx,[ebp-16]
 	mov	[edx],ecx
 	mov	eax,[eax+4]
-	mov	ecx,[ebp-0x14]
+	mov	ecx,[ebp-20]
 	mov	[ecx],eax
 	jmp	.labl_15
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_07:
+FillPosSlotPrices:
 	push	ecx
 	push	ebx
 	push	ebp
 	push	esi
 	push	edi
 	xor	ebp,ebp
-	mov	esi,0x1BC18
-	mov	dword [esp+0x10],4
+	mov	esi,_posSlotEncoder
+	mov	dword [esp+16],4
 ;----------------------------------------------------------
 .labl_00:
 	xor	edi,edi
 ;----------------------------------------------------------
 .labl_01:
-	mov	ebx,[0x29570]
+	mov	ebx,[_distTableSize]
 	cmp	edi,ebx
 	jnb	.labl_03
+
 	mov	edx,edi
-	call	cm_pr_17
+	call	CBitTreeEncoder_GetPrice
 	lea	ecx,[edi+ebp]
 	inc	edi
-	mov	[0x1A3B0+ecx*4],eax
-	cmp	edi,0xE
+	mov	[_posSlotPrices+ecx*4],eax
+	cmp	edi,14
 	jb	.labl_01
+
 	cmp	edi,ebx
 	jnb	.labl_03
+
 	lea	ebx,[edi+ebp]
-	lea	ebx,[0x1A3B0+ebx*4]
+	lea	ebx,[_posSlotPrices+ebx*4]
 ;----------------------------------------------------------
 .labl_02:
 	mov	edx,edi
-	call	cm_pr_17
+	call	CBitTreeEncoder_GetPrice
 	mov	ecx,edi
 	shr	ecx,1
 	sub	ecx,5
@@ -2655,14 +2818,15 @@ cm_pr_07:
 	mov	[ebx],eax
 	inc	edi
 	add	ebx,4
-	cmp	edi,[0x29570]
+	cmp	edi,[_distTableSize]
 	jb	.labl_02
 ;----------------------------------------------------------
 .labl_03:
-	add	esi,0x404
-	add	ebp,0x40	;'@'
-	dec	dword [esp+0x10]
+	add	esi,1028
+	add	ebp,64
+	dec	dword [esp+16]
 	jne	.labl_00
+
 	pop	edi
 	pop	esi
 	pop	ebp
@@ -2672,40 +2836,40 @@ cm_pr_07:
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_08:
+FillDistancesPrices:
 	push	ebp
 	mov	ebp,esp
-	sub	esp,0x24
-	and	dword [ebp-0x14],0
+	sub	esp,36
+	and	dword [ebp-20],0
 	push	ebx
 	push	esi
 	push	edi
 	push	4
 	pop	ebx
-	mov	dword [ebp-0x18],0x1B418
-	mov	dword [ebp-0x10],0x1A3B0
-	mov	[ebp-0x24],ebx
+	mov	dword [ebp-24],_distancesPrices+16
+	mov	dword [ebp-16],_posSlotPrices
+	mov	[ebp-36],ebx
 ;----------------------------------------------------------
 .labl_00:
-	mov	eax,[ebp-0x18]
-	mov	esi,[ebp-0x10]
-	lea	edi,[eax-0x10]
+	mov	eax,[ebp-24]
+	mov	esi,[ebp-16]
+	lea	edi,[eax-16]
 	movsd	
 	movsd	
 	movsd	
 	movsd	
 	mov	[ebp-4],ebx
-	mov	[ebp-0xC],eax
+	mov	[ebp-12],eax
 ;----------------------------------------------------------
 .labl_01:
 	mov	esi,[ebp-4]
 	mov	eax,esi
-	call	cm_pr_000
+	call	GetPosSlot
 	mov	edx,eax
 	mov	ecx,edx
 	xor	eax,eax
 	inc	eax
-	mov	[ebp-0x20],edx
+	mov	[ebp-32],edx
 	and	edx,eax
 	shr	ecx,1
 	dec	ecx
@@ -2713,17 +2877,17 @@ cm_pr_08:
 	shl	edx,cl
 	xor	edi,edi
 	mov	[ebp-8],eax
-	mov	[ebp-0x1C],ecx
+	mov	[ebp-28],ecx
 	sub	esi,edx
 	test	ecx,ecx
 	je	.labl_03
 ;----------------------------------------------------------
 .labl_02:
 	mov	eax,[ebp-8]
-	sub	eax,[ebp-0x20]
+	sub	eax,[ebp-32]
 	mov	ecx,esi
 	add	eax,edx
-	mov	eax,[0x1B234+eax*4]
+	mov	eax,[_numLiteralContextBits+eax*4]
 	and	ecx,1
 	sub	eax,ecx
 	mov	ebx,ecx
@@ -2731,33 +2895,36 @@ cm_pr_08:
 	xor	eax,ebx
 	shr	eax,2
 	and	eax,0x1FF
-	add	edi,[0x51A18+eax*4]
+	add	edi,[Models+eax*4]
 	mov	eax,[ebp-8]
 	shr	esi,1
-	dec	dword [ebp-0x1C]
+	dec	dword [ebp-28]
 	lea	eax,[ecx+eax*2]
 	mov	[ebp-8],eax
 	jne	.labl_02
+
 	push	4
 	pop	ebx
 ;----------------------------------------------------------
 .labl_03:
-	mov	eax,[ebp-0x20]
-	mov	ecx,[ebp-0x14]
+	mov	eax,[ebp-32]
+	mov	ecx,[ebp-20]
 	add	ecx,eax
-	mov	eax,[0x1A3B0+ecx*4]
-	mov	ecx,[ebp-0xC]
-	add	[ebp-0xC],ebx
+	mov	eax,[_posSlotPrices+ecx*4]
+	mov	ecx,[ebp-12]
+	add	[ebp-12],ebx
 	add	eax,edi
 	inc	dword [ebp-4]
-	cmp	dword [ebp-4],0x80	;'€'
+	cmp	dword [ebp-4],0x80
 	mov	[ecx],eax
 	jb	.labl_01
-	add	dword [ebp-0x10],0x100
-	add	dword [ebp-0x14],0x40	;'@'
-	add	dword [ebp-0x18],0x200
-	dec	dword [ebp-0x24]
+
+	add	dword [ebp-16],256
+	add	dword [ebp-20],64
+	add	dword [ebp-24],512
+	dec	dword [ebp-36]
 	jne	.labl_00
+
 	pop	edi
 	pop	esi
 	pop	ebx
@@ -2766,7 +2933,7 @@ cm_pr_08:
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_09:
+FillAlignPrices:
 	push	ebp
 	mov	ebp,esp
 	push	ecx
@@ -2778,14 +2945,14 @@ cm_pr_09:
 	mov	[ebp-8],esi
 ;----------------------------------------------------------
 .labl_00:
-	mov	eax,[0x519E8]
+	mov	eax,[i_01]
 	xor	edx,edx
 	xor	ecx,ecx
 	inc	edx
 	mov	[ebp-4],eax
 ;----------------------------------------------------------
 .labl_01:
-	mov	edi,[0x515E8+edx*4]
+	mov	edi,[_posAlignEncoder+edx*4]
 	mov	eax,esi
 	and	eax,1
 	sub	edi,eax
@@ -2794,57 +2961,60 @@ cm_pr_09:
 	xor	edi,ebx
 	shr	edi,2
 	and	edi,0x1FF
-	add	ecx,[0x51A18+edi*4]
+	add	ecx,[Models+edi*4]
 	shr	esi,1
 	dec	dword [ebp-4]
 	lea	edx,[eax+edx*2]
 	jne	.labl_01
+
 	mov	esi,[ebp-8]
-	push	0x10
-	mov	[0x51578+esi*4],ecx
+	push	16
+	mov	[_alignPrices+esi*4],ecx
 	inc	esi
 	pop	eax
 	mov	[ebp-8],esi
 	cmp	esi,eax
 	jb	.labl_00
+
 	pop	edi
 	pop	esi
-	mov	[0x1B230],eax
+	mov	[_alignPriceCount],eax
 	pop	ebx
 	leave	
 	ret	
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_10:
+GetRepLen1Price:
 	movzx	eax,al
-	mov	edx,[0x1CC38+eax*4]
+	mov	edx,[_isRepG0+eax*4]
 	mov	ecx,eax
 	shl	ecx,4
 	add	ecx,[esp+4]
 	shr	edx,2
-	mov	ecx,[0x1A7B0+ecx*4]
+	mov	ecx,[_isRep0Long+ecx*4]
 	shr	ecx,2
-	mov	eax,[0x51A18+ecx*4]
-	add	eax,[0x51A18+edx*4]
+	mov	eax,[Models+ecx*4]
+	add	eax,[Models+edx*4]
 	ret	4
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_11:
+GetRepPrice:
 	movzx	ecx,byte [esp+4]
 	shl	eax,4
 	add	eax,[esp+8]
 	push	esi
-	mov	eax,[0x25074+eax*4]
-	mov	esi,0x800
+	mov	eax,[_repMatchLenEncoder+0x840C+eax*4]
+	mov	esi,2048
 	test	edx,edx
 	jne	.labl_00
+
 	mov	edx,ecx
-	mov	ecx,[0x1CC38+ecx*4]
+	mov	ecx,[_isRepG0+ecx*4]
 	shl	edx,4
-	add	edx,[esp+0xC]
-	sub	esi,[0x1A7B0+edx*4]
+	add	edx,[esp+12]
+	sub	esi,[_isRep0Long+edx*4]
 	shr	ecx,2
 	jmp	.labl_02
 ;----------------------------------------------------------
@@ -2852,20 +3022,21 @@ cm_pr_11:
 	push	edi
 	shl	ecx,2
 	mov	edi,esi
-	sub	edi,[ecx+0x1CC38]
+	sub	edi,[ecx+_isRepG0]
 	shr	edi,2
-	add	eax,[0x51A18+edi*4]
+	add	eax,[Models+edi*4]
 	pop	edi
 	cmp	edx,1
 	jne	.labl_01
-	mov	ecx,[ecx+0x1AF00]
+
+	mov	ecx,[ecx+_isRepG1]
 	shr	ecx,2
-	add	eax,[0x51A18+ecx*4]
+	add	eax,[Models+ecx*4]
 	jmp	.labl_03
 ;----------------------------------------------------------
 .labl_01:
-	sub	esi,[ecx+0x1AF00]
-	mov	ecx,[ecx+0x29538]
+	sub	esi,[ecx+_isRepG1]
+	mov	ecx,[ecx+_isRepG2]
 	add	edx,0xFFFFFFFE
 	sub	ecx,edx
 	neg	edx
@@ -2875,8 +3046,8 @@ cm_pr_11:
 ;----------------------------------------------------------
 .labl_02:
 	shr	esi,2
-	mov	edx,[0x51A18+esi*4]
-	add	edx,[0x51A18+ecx*4]
+	mov	edx,[Models+esi*4]
+	add	edx,[Models+ecx*4]
 	add	eax,edx
 ;----------------------------------------------------------
 .labl_03:
@@ -2885,15 +3056,17 @@ cm_pr_11:
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_12:
+GetPosLenPrice:
 	push	esi
 	mov	esi,eax
-	mov	ecx,0x80	;'€'
+	mov	ecx,0x80
 	cmp	esi,2
 	jne	.labl_00
+
 	cmp	edx,ecx
 	jb	.labl_01
-	mov	eax,0x0FFFFFFF
+
+	mov	eax,kIfinityPrice
 	jmp	.labl_09
 ;----------------------------------------------------------
 .labl_00:
@@ -2911,44 +3084,48 @@ cm_pr_12:
 .labl_03:
 	cmp	edx,ecx
 	jnb	.labl_04
+
 	shl	eax,7
 	add	eax,edx
-	mov	ecx,[0x1B408+eax*4]
+	mov	ecx,[_distancesPrices+eax*4]
 	jmp	.labl_08
 ;----------------------------------------------------------
 .labl_04:
 	mov	ecx,edx
-	cmp	edx,0x10000
+;GetPosSlot2
+	cmp	edx,0x10000	;if (pos < (1<<16))
 	jnb	.labl_05
+
 	shr	ecx,6
-	movzx	ecx,byte [ecx+0x19FB0]
-	add	ecx,0xC
+	movzx	ecx,byte [ecx+g_FastPos]
+	add	ecx,12
 	jmp	.labl_07
 ;----------------------------------------------------------
 .labl_05:
-	cmp	edx,0x2000000
+	cmp	edx,0x2000000	;if (pos < (1<<25))
 	jnb	.labl_06
-	shr	ecx,0xF
-	movzx	ecx,byte [ecx+0x19FB0]
-	add	ecx,0x1E
+
+	shr	ecx,15
+	movzx	ecx,byte [ecx+g_FastPos]
+	add	ecx,30
 	jmp	.labl_07
 ;----------------------------------------------------------
 .labl_06:
-	shr	ecx,0x18
-	movzx	ecx,byte [ecx+0x19FB0]
-	add	ecx,0x30	;'0'
+	shr	ecx,24
+	movzx	ecx,byte [ecx+g_FastPos]
+	add	ecx,48
 ;----------------------------------------------------------
 .labl_07:
 	shl	eax,6
 	add	eax,ecx
-	mov	ecx,[0x1A3B0+eax*4]
-	and	edx,0xF
-	add	ecx,[0x51578+edx*4]
+	mov	ecx,[_posSlotPrices+eax*4]
+	and	edx,15
+	add	ecx,[_alignPrices+edx*4]
 ;----------------------------------------------------------
 .labl_08:
 	shl	esi,4
 	add	esi,[esp+8]
-	mov	eax,[0x15AE4+esi*4]
+	mov	eax,[_prices+esi*4]
 	add	eax,ecx
 ;----------------------------------------------------------
 .labl_09:
@@ -2957,19 +3134,20 @@ cm_pr_12:
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_13:
+RangeEncoder_ShiftLow:
 	push	ecx
 	push	ecx
-	mov	eax,[0x51A10]
+	mov	eax,[low]
 	push	esi
-	mov	esi,[0x51A14]
+	mov	esi,[low+4]
 	cmp	eax,0xFF000000
 	jb	.labl_00
+
 	test	esi,esi
 	je	.labl_02
 ;----------------------------------------------------------
 .labl_00:
-	mov	cl,[0x519ED]
+	mov	cl,[_cache]
 	and	dword [esp+8],0
 	mov	edx,esi
 	push	ebx
@@ -2977,21 +3155,22 @@ cm_pr_13:
 .labl_01:
 	mov	bl,dl
 	add	bl,cl
-	mov	ecx,[0x52634]
-	inc	dword [0x52634]
+	mov	ecx,[pack_length]
+	inc	dword [pack_length]
 	mov	[ecx],bl
 	or	cl,0xFF
-	dec	dword [0x51A08]
+	dec	dword [_cacheSize]
 	jne	.labl_01
-	mov	cl,[0x51A13]
-	mov	[0x519ED],cl
+
+	mov	cl,[low+3]
+	mov	[_cache],cl
 	pop	ebx
 ;----------------------------------------------------------
 .labl_02:
-	inc	dword [0x51A08]
+	inc	dword [_cacheSize]
 	shl	eax,8
-	and	dword [0x51A14],0
-	mov	[0x51A10],eax
+	and	dword [low+4],0
+	mov	[low],eax
 	pop	esi
 	pop	ecx
 	pop	ecx
@@ -2999,15 +3178,16 @@ cm_pr_13:
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_14:
-	mov	ecx,[0x51A04]
+CMyBitEncoder_Encode:
+	mov	ecx,[range]
 	mov	eax,[edx]
 	shr	ecx,0xB
 	imul	ecx,eax
 	cmp	dword [esp+4],0
 	jne	.labl_00
-	mov	[0x51A04],ecx
-	mov	ecx,0x800
+
+	mov	[range],ecx
+	mov	ecx,2048
 	sub	ecx,eax
 	shr	ecx,5
 	add	ecx,eax
@@ -3015,36 +3195,38 @@ cm_pr_14:
 	jmp	.labl_01
 ;----------------------------------------------------------
 .labl_00:
-	add	[0x51A10],ecx
-	adc	dword [0x51A14],0
-	sub	[0x51A04],ecx
+	add	[low],ecx
+	adc	dword [low+4],0
+	sub	[range],ecx
 	mov	ecx,eax
 	shr	ecx,5
 	sub	eax,ecx
 	mov	[edx],eax
 ;----------------------------------------------------------
 .labl_01:
-	cmp	dword [0x51A04],0x1000000
+	cmp	dword [range],0x1000000
 	jnb	.labl_02
-	shl	dword [0x51A04],8
-	call	cm_pr_13
+
+	shl	dword [range],8
+	call	RangeEncoder_ShiftLow
 ;----------------------------------------------------------
 .labl_02:
 	ret	4
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_15:
+CBitTreeEncoder_Init:
 	xor	edx,edx
 	inc	edx
 	shl	edx,cl
-	mov	[eax+0x400],ecx
+	mov	[eax+1024],ecx
 	lea	ecx,[edx-1]
 	test	ecx,ecx
 	jbe	.labl_00
+
 	push	edi
 	lea	edi,[eax+4]
-	mov	eax,0x400
+	mov	eax,1024
 	rep	stosd	
 	pop	edi
 ;----------------------------------------------------------
@@ -3056,32 +3238,33 @@ cm_pr_15:
 cm_pr_16:
 	mov	eax,[esp+4]
 	push	ebx
-	mov	ebx,[edi+0x400]
+	mov	ebx,[edi+1024]
 	push	esi
 	xor	esi,esi
 	inc	esi
 	add	eax,eax
-	mov	[esp+0xC],eax
+	mov	[esp+12],eax
 ;----------------------------------------------------------
 .labl_00:
-	mov	eax,[esp+0xC]
+	mov	eax,[esp+12]
 	mov	ecx,ebx
 	shr	eax,cl
 	lea	edx,[edi+esi*4]
 	and	eax,1
 	push	eax
 	lea	esi,[eax+esi*2]
-	call	cm_pr_14
+	call	CMyBitEncoder_Encode
 	dec	ebx
 	jne	.labl_00
+
 	pop	esi
 	pop	ebx
 	ret	4
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_17:
-	mov	ecx,[esi+0x400]
+CBitTreeEncoder_GetPrice:
+	mov	ecx,[esi+1024]
 	push	edi
 	xor	edi,edi
 	inc	edi
@@ -3099,41 +3282,45 @@ cm_pr_17:
 	xor	edi,ecx
 	shr	edi,2
 	and	edi,0x1FF
-	add	eax,[0x51A18+edi*4]
+	add	eax,[Models+edi*4]
 	cmp	edx,1
 	jne	.labl_00
+
 	pop	edi
 	ret	
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_18:
-	mov	ecx,[0x52630]
+GetMatchLen:
+	mov	ecx,[_streamPos]
 	push	edi
 	mov	edi,eax
-	mov	eax,[0x5262C]
+	mov	eax,[_pos]
 	sub	ecx,eax
 	sub	ecx,[esp+8]
 	cmp	edi,ecx
 	jbe	.labl_00
+
 	mov	edi,ecx
 ;----------------------------------------------------------
 .labl_00:
-	mov	ecx,[0x52628]
-	inc	dword [esp+0xC]
+	mov	ecx,[_buffer]
+	inc	dword [esp+12]
 	add	ecx,eax
 	add	ecx,[esp+8]
 	xor	eax,eax
 	test	edi,edi
 	jbe	.labl_03
+
 	push	esi
 	mov	esi,ecx
-	sub	esi,[esp+0x10]
+	sub	esi,[esp+16]
 ;----------------------------------------------------------
 .labl_01:
 	mov	dl,[eax+ecx]
 	cmp	dl,[esi+eax]
 	jne	.labl_02
+
 	inc	eax
 	cmp	eax,edi
 	jb	.labl_01
@@ -3147,14 +3334,15 @@ cm_pr_18:
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_19:
-	inc	dword [0x5221C]
-	mov	eax,[0x5221C]
-	cmp	eax,[0x51A0C]
+MatchFinder_MovePos:
+	inc	dword [pack_pos]
+	mov	eax,[pack_pos]
+	cmp	eax,[_cyclicBufferSize]
 	jne	.labl_00
-	and	dword [0x5221C],0
+
+	and	dword [pack_pos],0
 ;----------------------------------------------------------
 .labl_00:
-	inc	dword [0x5262C]
+	inc	dword [_pos]
 	ret	
 ;***********************************************************************

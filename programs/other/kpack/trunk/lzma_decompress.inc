@@ -4,9 +4,9 @@ lzma_decompress:
 	push	edi
 	push	ebx
 	push	ebp
-	mov	esi,[esp+0x14]
+	mov	esi,[esp+20]
 	xor	ebp,ebp
-	mov	edi,0xD6B8
+	mov	edi,unpack.code_
 	inc	esi
 	lodsd 
 	bswap	eax
@@ -20,43 +20,47 @@ lzma_decompress:
 	xchg	esi,eax
 	stosd 
 	mov	ecx,0x1F36
-	mov	eax,0x400
-	mov	edi,0x59E0
+	mov	eax,1024
+	mov	edi,unpack.p
 	rep	stosd 
-	mov	edi,[esp+0x18]
+	mov	edi,[esp+24]
 	mov	ebx, edi
-	add	ebx,[esp+0x1C]
+	add	ebx,[esp+28]
 ;--------------------------------------------------------------------
-.labl_00:
+.main_loop:
 	cmp	edi,ebx
-	jnb	.labl_19
+	jnb	.main_loop_done
+
 	mov	edx,edi
 	and	edx,3
 	push	eax
 	mov	eax,ebp
 	shl	eax,6
-	lea	eax,[eax+edx*4+0x59E0]
-	call	cm_pr_20
+	lea	eax,[eax+edx*4+unpack.p]
+	call	RangeDecoderBitDecode
 	pop	eax
 	jb	.labl_06
+
 	movzx	eax,al
 	shr	eax,5
-	imul	eax,eax,0xC00
-	add	eax,0x76B8
+	imul	eax,eax,3072
+	add	eax,unpack.p+0x1CD8
 	mov	cl,1
 	cmp	ebp,7
 	jb	.labl_02
+
 	mov	dl,[edi+esi]
 ;--------------------------------------------------------------------
 .labl_01:
 	add	dl,dl
 	setb	ch
 	push	eax
-	lea	eax,[eax+ecx*4+0x400]
-	call	cm_pr_20
+	lea	eax,[eax+ecx*4+1024]
+	call	RangeDecoderBitDecode
 	pop	eax
 	adc	cl,cl
 	jb	.labl_03
+
 	xor	ch,cl
 	test	ch,1
 	mov	ch,0
@@ -65,7 +69,7 @@ lzma_decompress:
 .labl_02:
 	push	eax
 	lea	eax,[eax+ecx*4]
-	call	cm_pr_20
+	call	RangeDecoderBitDecode
 	pop	eax
 	adc	cl,cl
 	jnb	.labl_02
@@ -74,64 +78,72 @@ lzma_decompress:
 	mov	eax,ebp
 	cmp	al,4
 	jb	.labl_04
-	cmp	al,0xA
+
+	cmp	al,10
 	mov	al,3
 	jb	.labl_04
+
 	mov	al,6
 ;--------------------------------------------------------------------
 .labl_04:
 	sub	ebp,eax
 	xchg	ecx,eax
 ;--------------------------------------------------------------------
-.labl_05:
+.main_loop_1:
 	stosb 
-	jmp	.labl_00
+	jmp	.main_loop
 ;--------------------------------------------------------------------
 .labl_06:
-	lea	eax,[0x5CE0+ebp*4]
-	call	cm_pr_20
+	lea	eax,[unpack.p+768+ebp*4]
+	call	RangeDecoderBitDecode
 	jnb	.labl_09
-	add	eax,0x30 ;'0'
-	call	cm_pr_20
+
+	add	eax,48
+	call	RangeDecoderBitDecode
 	jb	.labl_07
+
 	mov	eax, ebp
 	shl	eax,6
-	lea	eax,[eax+edx*4+0x5DA0]
-	call	cm_pr_20
+	lea	eax,[eax+edx*4+unpack.p+0x3C0]
+	call	RangeDecoderBitDecode
 	jb	.labl_08
+
 	cmp	ebp,7
 	sbb	ebp,ebp
-	lea	ebp,[ebp+ebp+0xB]
+	lea	ebp,[ebp+ebp+11]
 	mov	al,[edi+esi]
-	jmp	.labl_05
+	jmp	.main_loop_1
 ;--------------------------------------------------------------------
 .labl_07:
-	add	eax,0x30 ;'0'
-	call	cm_pr_20
-	xchg	esi,[0xD6C0]
+	add	eax,48
+	call	RangeDecoderBitDecode
+	xchg	esi,[unpack.rep0]
 	jnb	.labl_08
-	add	eax,0x30 ;'0'
-	call	cm_pr_20
-	xchg	esi,[0xD6C4]
+
+	add	eax,48
+	call	RangeDecoderBitDecode
+	xchg	esi,[unpack.rep1]
 	jnb	.labl_08
-	xchg	esi,[0xD6C8]
+
+	xchg	esi,[unpack.rep2]
 ;--------------------------------------------------------------------
 .labl_08:
-	mov	eax,0x6EB0
-	call	cm_pr_22
+	mov	eax,unpack.p+0x14D0
+	call	LzmaLenDecode
 	push	8
 	jmp	.labl_17
 ;--------------------------------------------------------------------
 .labl_09:
-	xchg	esi,[0xD6C0]
-	xchg	esi,[0xD6C4]
-	mov	[0xD6C8],esi
-	mov	eax,0x66A8
-	call	cm_pr_22
+	xchg	esi,[unpack.rep0]
+	xchg	esi,[unpack.rep1]
+	mov	[unpack.rep2],esi
+	mov	eax,unpack.p+0xCC8
+	call	LzmaLenDecode
 	push	3
 	pop	eax
 	cmp	eax,ecx
 	jb	.labl_10
+
 	mov	eax,ecx
 ;--------------------------------------------------------------------
 .labl_10:
@@ -140,11 +152,12 @@ lzma_decompress:
 	pop	ecx
 	shl	eax,cl
 	shl	eax,2
-	add	eax,0x60A0
-	call	cm_pr_23
+	add	eax,unpack.p+0x6C0
+	call	RangeDecoderBitTreeDecode
 	mov	esi,ecx
 	cmp	ecx,4
 	jb	.labl_16
+
 	push	ecx
 	xor	eax,eax
 	inc	eax
@@ -154,11 +167,12 @@ lzma_decompress:
 	shl	eax,cl
 	mov	esi, eax
 	pop	edx
-	cmp	edx,0xE
+	cmp	edx,14
 	jnb	.labl_11
+
 	sub	eax,edx
 	shl	eax,2
-	add	eax,0x649C
+	add	eax,unpack.p+0xABC
 	jmp	.labl_14
 ;--------------------------------------------------------------------
 .labl_11:
@@ -166,21 +180,22 @@ lzma_decompress:
 	xor	eax,eax
 ;--------------------------------------------------------------------
 .labl_12:
-	shr	dword [0xD6BC],1
+	shr	dword [unpack.range],1
 	add	eax, eax
-	mov	edx,[0xD6B8]
-	sub	edx,[0xD6BC]
+	mov	edx,[unpack.code_]
+	sub	edx,[unpack.range]
 	jb	.labl_13
-	mov	[0xD6B8],edx
+
+	mov	[unpack.code_],edx
 	inc	eax
 ;--------------------------------------------------------------------
 .labl_13:
-	call	cm_pr_21
+	call	RangeDecoderBitDecode_1
 	loop	.labl_12
 	mov	cl,4
 	shl	eax,cl
 	add	esi,eax
-	mov	eax,0x6668
+	mov	eax,unpack.p+0xC88
 ;--------------------------------------------------------------------
 .labl_14:
 	push	edi
@@ -192,7 +207,7 @@ lzma_decompress:
 .labl_15:
 	push	eax
 	lea	eax,[eax+edx*4]
-	call	cm_pr_20
+	call	RangeDecoderBitDecode
 	lahf 
 	adc	edx,edx
 	sahf 
@@ -213,6 +228,7 @@ lzma_decompress:
 	cmp	ebp,7
 	pop	ebp
 	jb	.labl_18
+
 	inc	ebp
 	inc	ebp
 	inc	ebp
@@ -224,107 +240,117 @@ lzma_decompress:
 	rep	movsb 
 	lodsb 
 	pop	esi
-	jmp	.labl_05
+	jmp	.main_loop_1
 ;--------------------------------------------------------------------
-.labl_19:
+.main_loop_done:
 	pop	ebp
 	pop	ebx
 	pop	edi
 	pop	esi
-	ret	0xC
+	ret	12
 ;*****************************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_20:
+RangeDecoderBitDecode:
+; in: eax->prob
+; out: CF=bit; destroys eax
 	push	edx
-	mov	edx,[0xD6BC]
-	shr	edx,0xB
+	mov	edx,[unpack.range]
+	shr	edx,11
 	imul	edx,[eax]
-	cmp	[0xD6B8],edx
-	jnb	.labl_01
-	mov	[0xD6BC],edx
-	mov	edx,0x800
+	cmp	[unpack.code_],edx
+	jnb	.2
+
+	mov	[unpack.range],edx
+	mov	edx,2048
 	sub	edx,[eax]
 	shr	edx,5
 	add	[eax],edx
 ;--------------------------------------------------------------------
-.labl_00:
+.1:
 	pushfd 
-	call	cm_pr_21
+	call	RangeDecoderBitDecode_1
 	popfd 
 	pop	edx
 	ret 
 ;--------------------------------------------------------------------
-.labl_01:
-	sub	[0xD6BC],edx
-	sub	[0xD6B8],edx
+.2:
+	sub	[unpack.range],edx
+	sub	[unpack.code_],edx
 	mov	edx,[eax]
 	shr	edx,5
 	sub	[eax],edx
 	stc 
-	jmp	.labl_00
+	jmp	.1
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_21:
-	cmp	[0xD6BF],byte 0
-	jne	.labl_00
-	shl	dword [0xD6BC],8
-	shl	dword [0xD6B8],8
+RangeDecoderBitDecode_1:
+	cmp	byte [unpack.range+3],0
+	jne	@f
+
+	shl	dword [unpack.range],8
+	shl	dword [unpack.code_],8
 	push	eax
-	mov	eax,[0xD6CC]
+	mov	eax,[unpack.rep3]
 	mov	al,[eax]
-	inc	dword [0xD6CC]
-	mov	[0xD6B8],al
+	inc	dword [unpack.rep3]
+	mov	[unpack.code_],al
 	pop	eax
 ;--------------------------------------------------------------------
-.labl_00:
+@@:
 	ret 
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_22:
-	call	cm_pr_20
-	jnb	.labl_01
+LzmaLenDecode:
+; in: eax->prob, edx=posState
+; out: ecx=len
+	call	RangeDecoderBitDecode
+	jnb	.2
+
 	add	eax,4
-	call	cm_pr_20
-	jb	.labl_00
+	call	RangeDecoderBitDecode
+	jb	.1
+
 	mov	cl,3
 	shl	edx,cl
-	lea	eax,[eax+edx*4+0x204]
-	call	cm_pr_23
+	lea	eax,[eax+edx*4+516]
+	call	RangeDecoderBitTreeDecode
 	add	ecx,8
 	ret 
 ;--------------------------------------------------------------------
-.labl_00:
-	add	eax,0x404
+.1:
+	add	eax,1028
 	mov	cl,8
-	call	cm_pr_23
-	add	ecx,0x10
+	call	RangeDecoderBitTreeDecode
+	add	ecx,16
 	ret 
 ;--------------------------------------------------------------------
-.labl_01:
+.2:
 	mov	cl,3
 	shl	edx,cl
 	lea	eax,[eax+edx*4+8]
 ;***********************************************************************
 
 ;* Call: ***************************************************************
-cm_pr_23:
+RangeDecoderBitTreeDecode:
+; in: eax->probs,ecx=numLevels
+; out: ecx=length; destroys edx
 	push	edi
 	xor	edx,edx
 	inc	edx
 	mov	edi,edx
 	xchg	edi, eax
 ;--------------------------------------------------------------------
-.labl_00:
+@@:
 	push	eax
 	lea	eax,[edi+edx*4]
-	call	cm_pr_20
+	call	RangeDecoderBitDecode
 	pop	eax
 	adc	dl,dl
 	add	al,al
-	loop	.labl_00
+	loop	@b
 	sub	dl,al
 	pop	edi
 	mov	ecx,edx
