@@ -252,8 +252,13 @@ Screen_Max_Y        equ (OS_BASE+0x000FE04)
 BytesPerScanLine    equ (OS_BASE+0x000FE08)
 SCR_MODE            equ (OS_BASE+0x000FE0C)
 
-LFBAddress          equ (OS_BASE+0x000FE80)
-UserDMAaddr         equ (OS_BASE+0x000FE84)
+mmio_pcie_cfg_addr  equ	(OS_BASE+0x000FE74)	
+mmio_pcie_cfg_lim   equ	(OS_BASE+0x000FE78)	
+mmio_pcie_cfg_pdes  equ	(OS_BASE+0x000FE7C)	
+PCIe_bus_range	    equ	(OS_BASE+0x000FE7E)	
+
+UserDMAaddr         equ (OS_BASE+0x000FE80)
+LFBAddress          equ (OS_BASE+0x000FE84)
 BTN_ADDR            equ (OS_BASE+0x000FE88)
 MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
 

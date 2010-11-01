@@ -122,9 +122,13 @@
 ;   FE04  dword       screen y size		
 ;   FE08  dword       screen y multiplier	
 ;   FE0C  dword       screen mode	
-;   FE10  ->   FE7F   free (112)
-;   FE80  dword       physical address of LFB
-;   FE84  dword       physical address of user-accessible static system buffer
+;   FE10  ->   FE73   free (100)
+;   FE74  dword	      PCIe extended (memory-mappable) config space - physical address
+;   FE78  dword       PCIe extended config space limit
+;   FE7C  word        number of 4M-pages needed to map PCIe config space
+;   FE7E  word        PCIe bus range (power-ow-two Mbytes)
+;   FE80  dword       physical address of user-accessible static system buffer
+;   FE84  dword       physical address of LFB
 ;   FE88  dword       address of button list
 ;   FE8C  dword       memory to use 
 ;   FE90  ->   FEFF   free (112)
@@ -138,7 +142,16 @@
 ;   FFFF  byte        do not change task for 1/100 sec.
 ;
 ; 0x80010000 ->  6CBFF   kernel, 32-bit run-time code (up to 371 Kb)
-
+;       in the current version:
+;            ->  01726   16-bit code end
+;            ->  01828   16-bit data end
+;            ->  11828   32-bit code start
+;            ->  2E19E   32-bit code end 
+; 	     ->  314F8..end_of_kernel	 zero-filled zone after preinit_mem  
+;            ->  34DFB   uninitialized globals start 
+;            ->  3CFEA   end_of_kernel 
+;	     ->  3D000   not used (190k)
+; 0x80050000 -> 090000	 zero-filled zone after preinit_mem  
 ; 0x8006CC00 ->  6DBFF   stack at boot time (4Kb)
 ;
 ; 0x8006DC00 ->  6E5FF   basic text font II
@@ -192,6 +205,8 @@
 ; 0x800A0000 ->  AFFFF   screen access area
 ; 0x800B0000 ->  FFFFF   bios rest in peace -area (320k)	?
 ; 0x80100000 -> 27FFFF   diskette image	(1m5)
+
+; 0x80280000 -> HEAP_BASE zero-filled zone after preinit_mem  
 ; 0x80280000 -> 281FFF   ramdisk fat	(8k)
 ; 0x80282000 -> 283FFF   floppy  fat	(8k)
 ;
@@ -225,8 +240,8 @@
 ;            dword   end port
 ;            dword   0
 ;
-; 0x802E0000 -> 2EFFFF   irq data area	(64k)
-; 0x802F0000 -> 2FFFFF   low memory save	(64k)
+; 0x802E0000 -> 2EFFFF   irq data area	 (64k)
+; 0x802F0000 -> 2FFFFF   low memory save (64k)
 ;
 ; 0x80300000 -> 31FFFF   tcp memory       (128k)
 ; 0x80320000 -> 327FFF   tcp memory       (32k)

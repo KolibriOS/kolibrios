@@ -87,10 +87,9 @@ pci_ext_config:
 	jb	.check_HT_mmio
 
 .pcie_failed:
-	mov	esi, boot_pcie_fail
-	call	boot_log
-	xor	eax, eax
-	ret	; <<<<<<<<< FAILURE >>>>>>>>>
+	jmp	$
+;        xor     eax, eax
+;        ret     ; <<<<<<<<< FAILURE >>>>>>>>>
 
 
 ;--------------------------------------------------------------------------
