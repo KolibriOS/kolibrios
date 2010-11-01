@@ -37,13 +37,22 @@ align 16
 use_editbox_mouse	;macro reveals processing function of the mouse.
 
 ;----------------------------------------------------
-;CheckBox
+;CheckBox old version
 ;----------------------------------------------------
 align 16
 use_checkbox_draw	;macro reveals the function of the display.
 align 16
 use_checkbox_mouse	;macro reveals processing function of the mouse.
 
+;----------------------------------------------------
+;CheckBox2
+;----------------------------------------------------
+align 16
+_init_checkbox2		;macro for init checkbox
+align 16
+use_checkbox_draw2	;macro reveals the function of the display.
+align 16
+use_checkbox_mouse2	;macro reveals processing function of the mouse.
 
 ;--------------------------------------------------
 ;radiobutton Group
@@ -131,6 +140,12 @@ dd	szVersion_ed,			0x00000001
 dd	sz_check_box_draw,		check_box_draw
 dd	sz_check_box_mouse,		check_box_mouse
 dd	szVersion_ch,			0x00000001
+
+dd	sz_init_checkbox2,		init_checkbox2
+dd	sz_check_box_draw2,		check_box_draw2
+dd	sz_check_box_mouse2,		check_box_mouse2
+dd	szVersion_ch2,			0x00000002
+
 
 dd	sz_option_box_draw,		option_box_draw
 dd	sz_option_box_mouse,		option_box_mouse
@@ -229,6 +244,11 @@ szVersion_ed			db 'version_ed',0
 sz_check_box_draw		db 'check_box_draw',0
 sz_check_box_mouse		db 'check_box_mouse',0
 szVersion_ch			db 'version_ch',0
+
+sz_init_checkbox2		db 'init_checkbox2',0
+sz_check_box_draw2		db 'check_box_draw2',0
+sz_check_box_mouse2		db 'check_box_mouse2',0
+szVersion_ch2			db 'version_ch2',0
 
 sz_option_box_draw		db 'option_box_draw',0
 sz_option_box_mouse		db 'option_box_mouse',0

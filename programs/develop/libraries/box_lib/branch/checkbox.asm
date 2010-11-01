@@ -174,17 +174,17 @@ version_ch	dd	aVersion_ch
 		dd	0,0
 
 
-aInit_checkbox	 db 'init_checkbox',0
-aCheck_box_draw  db 'check_box_draw',0
-aCheck_box_mouse db 'check_box_mouse',0
-aVersion_ch	 db 'version_ch',0
+aInit_checkbox	 db 'init_checkbox2',0
+aCheck_box_draw  db 'check_box_draw2',0
+aCheck_box_mouse db 'check_box_mouse2',0
+aVersion_ch	 db 'version_ch2',0
 ;---------------------------------------------------------------------
-check1 check_box (10 shl 16 + 12),(10 shl 16 + 12),6,0xC0AABBCC,0,0x80000000,check_text,ch_flag_en
-check2 check_box (10 shl 16 + 22),(25 shl 16 + 12),6,0xC0AABBCC,0,0x80000000,check_text2
-check3 check_box (10 shl 16 + 12),(40 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text3
-check4 check_box (10 shl 16 + 12),(70 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text4,ch_flag_top
-check5 check_box (10 shl 16 + 12),(100 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text5,ch_flag_middle
-check6 check_box (10 shl 16 + 12),(130 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text6,ch_flag_bottom
+check1 check_box2 (10 shl 16 + 12),(10 shl 16 + 12),6,0xC0AABBCC,0,0x80000000,check_text,ch_flag_en
+check2 check_box2 (10 shl 16 + 22),(25 shl 16 + 12),6,0xC0AABBCC,0,0x80000000,check_text2
+check3 check_box2 (10 shl 16 + 12),(40 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text3
+check4 check_box2 (10 shl 16 + 12),(70 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text4,ch_flag_top
+check5 check_box2 (10 shl 16 + 12),(100 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text5,ch_flag_middle
+check6 check_box2 (10 shl 16 + 12),(130 shl 16 + 22),6,0xC0AABBCC,0,0x80000000,check_text6,ch_flag_bottom
 ;---------------------------------------------------------------------
 hed		db 'CheckBox Exemples <Lrz> date 15.10.2010',0
 hed_end:

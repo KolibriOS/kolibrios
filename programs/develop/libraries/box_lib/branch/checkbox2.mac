@@ -4,14 +4,14 @@
 ;Checkbox
 
 ;Инициализация checkbox
-macro _init_checkbox
+macro _init_checkbox2
 {
-init_checkbox:
+init_checkbox2:
 ;подсчитаем кол-во символов в длинне выводимой строки.
 	pushad
 	mov	ebp,dword [esp+36]	;загружаем указатель на структуру, указатель мы передаем в стеке
-	mov	ebx,dword ch_text_margin	;eax=0
-	mov	esi,dword ch_text_ptr   ;указатель на строчку
+	mov	ebx,dword 2ch_text_margin	;eax=0
+	mov	esi,dword 2ch_text_ptr   ;указатель на строчку
 	lodsb	                        ;в al первый символ из строки
 	test	al,al
 	jz	.ex_loop
@@ -22,26 +22,26 @@ init_checkbox:
 	jnz	@b
 .ex_loop:
 
-	mov	dword ch_sz_str,ebx     ;запишим длинну строки с учетом отступа от квадратика
+	mov	dword 2ch_sz_str,ebx     ;запишим длинну строки с учетом отступа от квадратика
 	popad
 	ret 4
 }
 
-macro use_checkbox_draw
+macro use_checkbox_draw2
 {
-check_box_draw:
+check_box_draw2:
 	pushad   ;сохраним все регистры 
 	mov	ebp,dword [esp+36]	;загружаем указатель на структуру, указатель мы передаем в стеке
-	mcall	13,ch_left_s,ch_top_s,ch_border_color		;рисуем рамку чек бокса, фактически рисуем прямоугольник и закрашиваем фон внутри цветом рамки бокса
+	mcall	13,2ch_left_s,2ch_top_s,2ch_border_color		;рисуем рамку чек бокса, фактически рисуем прямоугольник и закрашиваем фон внутри цветом рамки бокса
 
-	mov 	edx,dword ch_color	;загружаем цвет фона
+	mov 	edx,dword 2ch_color	;загружаем цвет фона
 	add 	ebx,1 shl 16 - 2 
 	add 	ecx,1 shl 16 - 2 
 	mcall 	;закрашиваем внутренности чекбокса фоном
 
-	test dword ch_flags,2  ;достать значение бита из переменной и поместить в  флаг CF 
+	test dword 2ch_flags,2  ;достать значение бита из переменной и поместить в  флаг CF 
 	jz   @f                ;в если CF=1, то выполним следующую процедуру иначе перейти на нижнюю @@
-	call check_box_draw_ch ;нарисовать включенный чек бокс
+	call check_box_draw_ch2 ;нарисовать включенный чек бокс
 @@:
 ;----------------------------
 ;расчет куда будет произведен вывод текста
@@ -56,44 +56,44 @@ check_box_draw:
 ;        add	eax,dword ch_top_s		;cкорректируем позицию Х. Т.е. сейчас в верхней части ebx у нас точка начала вывода текста по Y
 	
 ; Оптимизация для ЦП
-	mov 	ebx,dword ch_left_s		;загрузить значение (х shl 16 + длинна)  для чек бокса
-	mov	eax,dword ch_top_s		;загрузим значение по (y shl 16 + длинна) для чек бокса 
+	mov 	ebx,dword 2ch_left_s		;загрузить значение (х shl 16 + длинна)  для чек бокса
+	mov	eax,dword 2ch_top_s		;загрузим значение по (y shl 16 + длинна) для чек бокса 
 	mov	ecx,eax
-	add	ebx,dword ch_text_margin	;добавим размер стороны и расстояние на котором начнется вывод текста
+	add	ebx,dword 2ch_text_margin	;добавим размер стороны и расстояние на котором начнется вывод текста
 	shr	eax,16				;сдвинем на 16 разрядов в право (разделим на 65536) в ax верхная точка
 	shl	ebx,16				;сдвинем на 16 разрядов в лево (умножим на 65536)
 
 	sub	ecx,8				;корретировка учитываем высоту шрифта
 
-	test 	dword ch_flags,ch_flag_bottom	;проверим, нужно ли выводить вверху надпись
+	test 	dword 2ch_flags,ch_flag_bottom	;проверим, нужно ли выводить вверху надпись
 	jnz	.bottom
 
-	test 	dword ch_flags,ch_flag_middle	;проверим, нужно ли выводить в центр надпись
+	test 	dword 2ch_flags,ch_flag_middle	;проверим, нужно ли выводить в центр надпись
 	jz	.top				;остался только top
 	
 	shr	cx,1				;разделим на 2
 .bottom:
 	add	ax,cx
 .top:
-	add	ebx,dword ch_left_s             ;cкорректируем позицию Х. Т.е. сейчас в верхней части ebx у нас точка начала вывода текста по Х
+	add	ebx,dword 2ch_left_s             ;cкорректируем позицию Х. Т.е. сейчас в верхней части ebx у нас точка начала вывода текста по Х
 	mov	bx,ax
 						;ebx х shl 16 +y координаты вывода строчки
 
-	mov	ecx,dword ch_text_color		;загрузим цвет надписи + flags
-        mov	edx,dword ch_text_ptr		;укажем адрес от куда нужно выводить строку
+	mov	ecx,dword 2ch_text_color		;загрузим цвет надписи + flags
+        mov	edx,dword 2ch_text_ptr		;укажем адрес от куда нужно выводить строку
         mcall	4				;Вывод 
 	popad					;восстановить значения регистров из стека
 	ret 4					;выйдем из процедуры и удалим из стека указатель на структуру (4 байта)
 
-check_box_clear_ch:				;очистка чек бокса
-        mov	edx,dword ch_color   		;цвет внутри чек бокса
+check_box_clear_ch2:				;очистка чек бокса
+        mov	edx,dword 2ch_color   		;цвет внутри чек бокса
         jmp	@f				;безусловный прыжок на нижнюю метку @@
-check_box_draw_ch:				;нарисовать включенный чек бокс
-        mov	edx,dword ch_border_color	;загрузить цвет
+check_box_draw_ch2:				;нарисовать включенный чек бокс
+        mov	edx,dword 2ch_border_color	;загрузить цвет
 @@:
 ;Отобразить включеный checkbox
-	mov	ebx,dword ch_left_s		;загружаем х shl 16 + длинна по Х
-	mov	ecx,dword ch_top_s		;загружаем Y shl 16 + длинна по Y
+	mov	ebx,dword 2ch_left_s		;загружаем х shl 16 + длинна по Х
+	mov	ecx,dword 2ch_top_s		;загружаем Y shl 16 + длинна по Y
 	add 	ebx,2 shl 16 - 4		;после этих изменений (X+2) shl 16 +длинна по (Х-2)
 	add 	ecx,2 shl 16 - 4		;после этих изменений (Y+2) shl 16 +длинна по (Y-2)
 	mcall	13				;отобразить квадрат внутри checkbox
@@ -101,14 +101,14 @@ check_box_draw_ch:				;нарисовать включенный чек бокс
 }
 
 
-macro use_checkbox_mouse
+macro use_checkbox_mouse2
 {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Обработчик mouse
 ;При попадании мышки + нажата клавиша в область checkbox состояние бокса должно менятся активный - не активный.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-check_box_mouse:      ;обработка мыши 
+check_box_mouse2:      ;обработка мыши 
 pushad
 	mov	ebp,dword [esp+36]	;загружаем указатель на структуру, указатель мы передаем в стеке
         mcall	37,2			;проверяем состояние клавиш мышки. Было ли событие нажатая клавиша на мышке.
@@ -119,7 +119,7 @@ pushad
         mcall	37,1			;получить координаты курсора относительно окна
 					;на выходе в eax x shl 16 + y
 ;сравнение верхней точки по Y
-	mov	ecx,dword ch_top_s	;y shl 16 +длинна по y
+	mov	ecx,dword 2ch_top_s	;y shl 16 +длинна по y
 	mov	ebx,ecx
 	shr	ebx,16                  ;bx = координата по y
 	cmp	ax,bx
@@ -131,24 +131,24 @@ pushad
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	shr	eax,16			;сместим координату по Х в нижную часть регистра т.е. в ax
 ;сравнение по начальной точке Х
-	mov 	ecx,dword ch_left_s	;загрузить значение (х shl 16 + длинна)  для чек бокса
+	mov 	ecx,dword 2ch_left_s	;загрузить значение (х shl 16 + длинна)  для чек бокса
 	mov	ebx,ecx
 	shr	ebx,16                  ;bx = координата по X
 	cmp	ax,bx
 	jb	.check_box_mouse_end	;указатель мышки меньше начальной координаты по X чем координата по X у бокса
 ;сравнение конечной точки по X
 	add	bx,cx			;сложим длинну по x и координату точки по х получим координату конечной точки по Х
-	add	bx,word ch_sz_str	;добавим длинну строки текста с отступом предвартиельно записав их в момент инициализации
+	add	bx,word 2ch_sz_str	;добавим длинну строки текста с отступом предвартиельно записав их в момент инициализации
 	cmp	ax,bx
 	ja	.check_box_mouse_end	;указатель мышки больше конечной координаты по х чем координата по Х у бокса
 ;если все проверки были успешно пройдены мы обязаны поменять состояние бокса
-	btc	dword	ch_flags,2	;перенос 2-го бита в cf и инверсия его
+	btc	dword	2ch_flags,2	;перенос 2-го бита в cf и инверсия его
 	jc	.enable_box		;если CF=1 то отобразим включенный бокс и выйдем
 	push	dword .check_box_mouse_end	;фокус -покус, вернемся после вызова check_box_clear_ch на метку check_box_mouse_end
-	jmp	check_box_clear_ch      ;выключить чек бокс т.е. на месте закрашенного прямоугольника отобразить цвет фона.	
+	jmp	check_box_clear_ch2     ;выключить чек бокс т.е. на месте закрашенного прямоугольника отобразить цвет фона.	
 
 .enable_box:
-	call	check_box_draw_ch	;отобразить включенный чек бокс
+	call	check_box_draw_ch2	;отобразить включенный чек бокс
 .check_box_mouse_end:
 popad					;восстановить регистры из стека
 	ret  4				;выйти и восстановим стек

@@ -111,17 +111,17 @@ ch_flag_top=0x0			;флаг расположения текста вверху т.е. 3-й бит
 ch_flag_middle=100b		;флаг расположения текста в центре т.е. 4-й бит.
 ch_flag_bottom=1000b		;флаг расположения текста в низу т.е. по умолчанию принимается значение внизу т.е. отсуствие 3-го и 4-го бита
 
-ch_left_s	equ [ebp]	;кордината начала рисования по х
-ch_top_s	equ [ebp+4]	;координата начала рисования по у
-ch_text_margin 	equ [ebp+8] 	;=4 расстояние от прямоугольника чек бокса до надписи 
-ch_color 	equ [ebp+12]	;цвет внутри checkbox
-ch_border_color equ [ebp+16] 	; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
-ch_text_color   equ [ebp+20] 	;[edi+4]  ;цвет текста
-ch_text_ptr     equ [ebp+24] 	;указатель на начало текстовой строки 
-ch_flags 	equ [ebp+28]	;флаги
-ch_sz_str       equ [ebp+32]	;длинна строки, вычисляется при инициализации компонента
+2ch_left_s	equ [ebp]	;кордината начала рисования по х
+2ch_top_s	equ [ebp+4]	;координата начала рисования по у
+2ch_text_margin equ [ebp+8] 	;=4 расстояние от прямоугольника чек бокса до надписи 
+2ch_color 	equ [ebp+12]	;цвет внутри checkbox
+2ch_border_color	equ [ebp+16] 	; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
+2ch_text_color	equ [ebp+20] 	;[edi+4]  ;цвет текста
+2ch_text_ptr	equ [ebp+24] 	;указатель на начало текстовой строки 
+2ch_flags	equ [ebp+28]	;флаги
+2ch_sz_str	equ [ebp+32]	;длинна строки, вычисляется при инициализации компонента
 
-struc check_box left_s,top_s,ch_text_margin,color,border_color,text_color,text,flags
+struc check_box2 left_s,top_s,ch_text_margin,color,border_color,text_color,text,flags
 {				;структура параметров для чек бокса
 .left_s: 	dd left_s	;+0 положение по х dw + размер dw
 .top_s:  	dd top_s	;+4 положение по у dw + размер dw
@@ -135,37 +135,37 @@ struc check_box left_s,top_s,ch_text_margin,color,border_color,text_color,text,f
 }
 
 ;Макрос проверки щелчка мышки над группой checkboxes.
-macro init_checkboxes start,end
+macro init_checkboxes2 start,end
 {
 	mov     ebp,start
 	mov     ecx,((end-start)/ch_struc_size)
 @@:
 	push    ebp			;указатель на первый checkbox
-	call	[init_checkbox]	;макрос проверки мышки над checkbox'ом
+	call	[init_checkbox2]	;макрос проверки мышки над checkbox'ом
 	add     ebp,ch_struc_size
 	loop    @b
 }
 
 ;Макрос проверки мышки группы checkboxes.
-macro checkboxes_mouse start,end
+macro checkboxes_mouse2 start,end
 {
 	mov     ebp,start
 	mov     ecx,((end-start)/ch_struc_size)
 @@:
 	push    ebp			;указатель на первый checkbox
-	call	[check_box_mouse]	;нарисовать checkbox
+	call	[check_box_mouse2]	;нарисовать checkbox
 	add     ebp,ch_struc_size
 	loop    @b
 }
 
 ;Макрос отрисовки группы checkboxes.
-macro checkboxes_draw start,end
+macro checkboxes_draw2 start,end
 {
 	mov     ebp,start
 	mov     ecx,((end-start)/ch_struc_size)
 @@:
 	push    ebp			;указатель на первый checkbox
-	call	[check_box_draw]	;нарисовать checkbox
+	call	[check_box_draw2]	;нарисовать checkbox
 	add     ebp,ch_struc_size
 	loop    @b
 }
