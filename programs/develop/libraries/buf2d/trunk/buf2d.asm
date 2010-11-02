@@ -84,7 +84,7 @@ draw_pixel:
 		add esi,ebx	 ;size_x*y+x
 		lea esi,[esi+esi*2] ;(size_x*y+x)*3
 		add esi,buf2d_data  ;ptr+(size_x*y+x)*3
- 
+
 		mov word[esi],dx ;copy pixel color
 		ror edx,16
 		mov byte[esi+2],dl
@@ -92,7 +92,42 @@ draw_pixel:
 	pop esi
 	@@:
 	ret
-;endp
+
+;input:
+; ebx = coord x
+; ecx = coord y
+; edi = pointer to buffer struct
+;output:
+; eax = цвет точки
+; в случае ошибки eax = 0xffffffff
+align 4
+get_pixel_24:
+	mov eax,0xffffffff
+
+	bt ebx,31
+	jc @f
+	bt ecx,31
+	jc @f
+	cmp ebx,buf2d_w
+	jge @f
+	cmp ecx,buf2d_h
+	jge @f
+	push esi
+		mov esi,buf2d_w ;size x
+		imul esi,ecx ;size_x*y
+		add esi,ebx	 ;size_x*y+x
+		lea esi,[esi+esi*2] ;(size_x*y+x)*3
+		add esi,buf2d_data  ;ptr+(size_x*y+x)*3
+
+		xor eax,eax
+		mov ax,word[esi] ;copy pixel color
+		ror eax,16
+		mov al,byte[esi+2]
+		ror eax,16
+	pop esi
+	@@:
+	ret
+
 
 ;создание буфера
 align 4
@@ -1002,15 +1037,13 @@ endp
 align 4
 proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword, color:dword
 	pushad
-		mov edx,dword[color]
-
-		mov eax,edi
 		mov edi,[buf_struc]
 		cmp buf2d_bits,24
-		jne @f
+		jne .end24
 
 		mov ebx,dword[coord_x0]
 		mov ecx,dword[coord_y0]
+		mov edx,dword[color]
 		mov esi,dword[coord_x1]
 		
 		@@: ;for (x=x0 ; x<x1; x++) ;------------------------------------
@@ -1020,6 +1053,7 @@ proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword
 			jge @f
 			jmp @b
 		@@:
+		.end24:
 	popad
 	ret
 endp
@@ -1138,6 +1172,141 @@ endl
 	popad
 	ret
 endp
+
+;функция для заливки области выбранным цветом
+align 4
+proc buf_flood_fill, buf_struc:dword, coord_x:dword, coord_y:dword, mode:dword, color_f:dword, color_b:dword
+	pushad
+		mov edi,[buf_struc]
+		cmp buf2d_bits,24
+		jne .end24
+
+			mov ebx,dword[coord_x]
+			mov ecx,dword[coord_y]
+			mov edx,dword[color_f]
+			mov esi,dword[color_b]
+
+			cmp dword[mode],1 ;в зависимости от 'mode' определяем каким алгоритмом будем пользоваться
+			je @f
+				call buf_flood_fill_recurs_0 ;заливаем до пикселей цвета esi
+				jmp .end24
+			@@:
+				call buf_flood_fill_recurs_1 ;заливаем пиксели имеющие цвет esi
+
+		.end24:
+	popad
+	ret
+endp
+
+;input:
+; ebx = coord_x
+; ecx = coord_y
+; edx = цвет заливки
+; esi = цвет границы, до которой будет ити заливка
+; edi = buf_struc
+;output:
+; eax = портится
+align 4
+buf_flood_fill_recurs_0:
+	call get_pixel_24
+	cmp eax,0xffffffff ;if error coords
+	je .end_fun
+	cmp eax,edx ;если цвет пикселя совпал с цветом заливки, значит заливка в этой области уже была сделана
+	je .end_fun
+
+		call draw_pixel
+
+		dec ebx
+		call get_pixel_24
+		cmp eax,esi
+		je @f
+			call buf_flood_fill_recurs_0
+		@@:
+		inc ebx
+
+
+		inc ebx
+		call get_pixel_24
+		cmp eax,esi
+		je @f
+			call buf_flood_fill_recurs_0
+		@@:
+		dec ebx
+
+		dec ecx
+		call get_pixel_24
+		cmp eax,esi
+		je @f
+			call buf_flood_fill_recurs_0
+		@@:
+		inc ecx
+
+		inc ecx
+		call get_pixel_24
+		cmp eax,esi
+		je @f
+			call buf_flood_fill_recurs_0
+		@@:
+		dec ecx
+
+	.end_fun:
+	ret
+
+;input:
+; ebx = coord_x
+; ecx = coord_y
+; edx = цвет заливки
+; esi = цвет пикселей, по которым будет ити заливка
+; edi = buf_struc
+;output:
+; eax = портится
+align 4
+buf_flood_fill_recurs_1:
+	call get_pixel_24
+	cmp eax,0xffffffff ;if error coords
+	je .end_fun
+	cmp eax,edx ;если цвет пикселя совпал с цветом заливки, значит заливка в этой области уже была сделана
+	je .end_fun
+	cmp eax,esi ;если цвет пикселя не совпал с заливаемым цветом заливки, то прекращаем заливку
+	jne .end_fun
+
+		call draw_pixel
+
+		dec ebx
+		call get_pixel_24
+		cmp eax,esi
+		jne @f
+			call buf_flood_fill_recurs_1
+		@@:
+		inc ebx
+
+
+		inc ebx
+		call get_pixel_24
+		cmp eax,esi
+		jne @f
+			call buf_flood_fill_recurs_1
+		@@:
+		dec ebx
+
+		dec ecx
+		call get_pixel_24
+		cmp eax,esi
+		jne @f
+			call buf_flood_fill_recurs_1
+		@@:
+		inc ecx
+
+		inc ecx
+		call get_pixel_24
+		cmp eax,esi
+		jne @f
+			call buf_flood_fill_recurs_1
+		@@:
+		dec ecx
+
+	.end_fun:
+	ret
 
 align 4
 proc buf_img_wdiv2, buf_struc:dword
@@ -2136,6 +2305,7 @@ EXPORTS:
 	dd sz_buf2d_draw_text, buf_draw_text
 	dd sz_buf2d_crop_color, buf_crop_color
 	dd sz_buf2d_offset_h, buf_offset_h
+	dd sz_buf2d_flood_fill, buf_flood_fill
 	dd 0,0
 	sz_lib_init db 'lib_init',0
 	sz_buf2d_create db 'buf2d_create',0
@@ -2159,3 +2329,5 @@ EXPORTS:
 	sz_buf2d_draw_text db 'buf2d_draw_text',0
 	sz_buf2d_crop_color db 'buf2d_crop_color',0
 	sz_buf2d_offset_h db 'buf2d_offset_h',0
+	sz_buf2d_flood_fill db 'buf2d_flood_fill',0
+
