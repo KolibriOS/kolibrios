@@ -8,6 +8,16 @@
 <p><a href="../box_lib.htm">На главную &uarr;</a></p>
 <h1>Оглавление</h1>
 <p><a href="#vveden">Введение</a></p>
+    <p><a href="#version2">Version 2</a></p>
+<p><a href="#funct2">Функции 2</a></p>
+<ul>
+<li><a href="#fun_init2">init_checkbox2</a></li>
+<li><a href="#fun_draw2">check_box_draw2</a></li>
+<li><a href="#fun_mouse2">check_box_mouse2</a></li>
+<li><a href="#version_ch2">version_ch2</a></li>
+</ul>
+<br>
+<p><a href="#version1">Version 1</a></p>
 <p><a href="#funct">Функции</a></p>
 <ul>
 <li><a href="#fun_draw">check_box_draw</a></li>
@@ -18,8 +28,63 @@
 <p><a href="#checkbox_styles">Стили элемента</a></p>
 
 <h1><a name="vveden">Введение</a></h1>
-<p>Флажок, используется при вводе логической информации.</p>
+<p>Checkbox предназначен для установки, снятия флага активности процесса. Часто 
+    используется для включения / выключения тех или иных функций.</p>
+<h1><a name="version2">Checkbox version 2</a></h1>
+<p>Version 2 была разработана в 2010 году и является переработанной и оптимизированной версией. Основные отличия от версии 1:</p>
+<ul>
+<li>Поддержка ASCIIZ строк.</li>
+<li>Появился код инициализации бокса, что уменьшает задержки при обработки событий мышки.</li>
+<li>Оптимизированна структура компонента, при неизменном размере.</li>
+<li>Написаны макросы, которые позволяют работать с группами checkbox.</li>
+</ul>
 
+
+<h1><a name="funct2">Функции2</a></h1>
+
+<h2><a name="fun_init2">init_checkbox2</a></h2>
+<p>Эта функция должна вызыватся при инициализации приложения, фактически она считает колличество символов в стоке для вывода. Если не нужно выводить подписи к checkbox, то ее можно не вызывать.</p>
+
+<h2><a name="fun_draw2">check_box_draw2</a></h2>
+<p>Эта функция должна вызыватся при вводе информации с клавиатуры.</p>
+
+<h2><a name="fun_mouse2">check_box_mouse2</a></h2>
+<p>Эта функция должна вызыватся при вводе информации с мыши.</p>
+
+<h2><a name="version_ch2">version_ch2</a></h2>
+<p>Версия элемента</p>
+
+<h1><a name="struc_checkbox2">Структура checkbox2</a></h1>
+<pre>struc check_box2 left_s,top_s,ch_text_margin,color,border_color,text_color,text,flags
+{				;структура параметров для чек бокса
+.left_s: 	dd left_s	;+0 положение по х dw + размер dw
+.top_s:  	dd top_s	;+4 положение по у dw + размер dw
+.ch_text_margin: dd ch_text_margin ;расстояние от прямоугольника чек бокса до надписи
+.color:   	dd color	;цвет внутри чекбокса
+.border_color: 	dd border_color	;цвет рамки
+.text_color:	dd text_color	;цвет надписи должен быть в формате цвет or 0x80000000, это для отображения ASCIIZ строк.
+.text: 		dd text		;адрес в коде программы где расположен текст
+.flags:		dd flags+0	;флаги
+.size_of_str:	dd 0x0		;длинна строки, вычисляется при инициализации компонента
+}
+</pre>
+<p><b>left_s</b> - отступ слева + длинна в формате (положение по x * 65536 +длинна по х).</p>
+<p><b>top</b> - отступ сверху + длинна по y (положение по y* 65536 +длинна по y).</p>
+<p><b>ch_text_margin</b> - расстояние от прямоугольника чек бокса до надписи.</p>
+<p><b>color</b> - цвет внутри чекбокса.</p>
+
+<h1><a name="checkbox_styles">Стили элемента</a></h1>
+
+<pre>
+ch_flag_en  =   10b		;флаг установленного чек бокса.
+ch_flag_top =   0x0             ;флаг расположения текста вверху т.е. 3-й бит
+ch_flag_middle  =   100b        ;флаг расположения текста в центре т.е. 4-й бит.
+ch_flag_bottom  =   1000b	;флаг расположения текста в низу т.е. по умолчанию принимается значение внизу т.е. отсуствие 3-го и 4-го бита
+</pre>
+
+
+<h1><a name="version1">Checkbox version 1</a></h1>
+<p>Version 1 была разработана в 2007-2009 годах.</p>
 <h1><a name="funct">Функции</a></h1>
 
 <h2><a name="fun_draw">check_box_draw</a></h2>

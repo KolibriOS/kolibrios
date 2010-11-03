@@ -12,6 +12,7 @@
 ; 24.07.2008 <Lrz> обновлен editbox
 ; 01.02.07 - обновлён editbox
 ; 31.01.07 - всё теперь рисуется относительно клиентской области
+; 02.11.10 - Используется checkbox версии 2
 
 title equ 'Screenshooter v 1.0' ; Заголовок окна
 include '../../develop/libraries/box_lib/load_lib.mac'
@@ -140,6 +141,8 @@ load_libraries l_libs_start,end_l_libs
 
 	; устанавливаем маску событий
 	set_events_mask (evm_redraw+evm_key+evm_button+evm_mouse+evm_ipc)
+;инициализация checkboxes
+	init_checkboxes2	check_boxes,check_boxes_end
 
 ; сюда прыгаем при каждой перерисовке
 red:
@@ -149,7 +152,8 @@ red:
 	; устанавливаем системные цвета у GUI компонентов
 	txt_but_set_sys_color buttons,buttons_end,sc		 ; \
 	labels_set_sys_color labels,labels_end,sc		 ; |
-	check_boxes_set_sys_color check_boxes,check_boxes_end,sc ; |
+	check_boxes_set_sys_color2 check_boxes,check_boxes_end,sc; |
+;	check_boxes_set_sys_color check_boxes,check_boxes_end,sc ; |
 	edit_boxes_set_sys_color editboxes,editboxes_end,sc	 ; /
 
 	get_screen_prop scr ; получаем информацию об экране
@@ -202,20 +206,21 @@ mouse:
 	push	dword edit4
 	call	[edit_box_mouse]
 ;----------------------------------
-	push	dword ch1
-	call	[check_box_mouse]
-	push	dword ch2
-	call	[check_box_mouse]
-	push	dword ch3
-	call	[check_box_mouse]
-	push	dword ch4
-	call	[check_box_mouse]
-	push	dword ch5
-	call	[check_box_mouse]
-	push	dword ch6
-	call	[check_box_mouse]
-	push	dword use_rect
-	call	[check_box_mouse]
+	checkboxes_mouse2	check_boxes,check_boxes_end
+;	push	dword ch1
+;	call	[check_box_mouse]
+;	push	dword ch2
+;	call	[check_box_mouse]
+;	push	dword ch3
+;	call	[check_box_mouse]
+;	push	dword ch4
+;	call	[check_box_mouse]
+;	push	dword ch5
+;	call	[check_box_mouse]
+;	push	dword ch6
+;	call	[check_box_mouse]
+;	push	dword use_rect
+;	call	[check_box_mouse]
 ;-----------------------------------
 ;        mouse_check_boxes check_boxes,check_boxes_end
 ;        mouse_edit_boxes editboxes,editboxes_end
@@ -331,20 +336,23 @@ start_draw_window	 ; начало перерисовки
 	draw_txt_buttons buttons,buttons_end	 ; кнопки
 ;        draw_check_boxes check_boxes,check_boxes_end ; флажки
 ;------ check all checkbox ---------
-	push	dword ch1
-	call	[check_box_draw]
-	push	dword ch2
-	call	[check_box_draw]	
-	push	dword ch3
-	call	[check_box_draw]
-	push	dword ch4
-	call	[check_box_draw]
-	push	dword ch5
-	call	[check_box_draw]
-	push	dword ch6
-	call	[check_box_draw]
-	push	dword use_rect
-	call	[check_box_draw]
+;	push	dword ch1
+;	call	[check_box_draw]
+;	push	dword ch2
+;	call	[check_box_draw]	
+;	push	dword ch3
+;	call	[check_box_draw]
+;	push	dword ch4
+;	call	[check_box_draw]
+;	push	dword ch5
+;	call	[check_box_draw]
+;	push	dword ch6
+;	call	[check_box_draw]
+;	push	dword use_rect
+;	call	[check_box_draw]
+
+	checkboxes_draw2	check_boxes,check_boxes_end
+
 ;------ end check all checkbox ------
 
 stop_draw_window      ; конец перерисовки
@@ -740,13 +748,13 @@ but7 txt_button 40,205,10,150,8,0,0,but_text.7,show_set_rect_window ; задать обл
 buttons_end:
 ;---------------------------------------------------------------------
 check_boxes:
-ch1 check_box 5,105,5,11,cl_white,0,0,ch_text.1,(ch_text.2-ch_text.1),ch_flag_en  ; свернуть окно
-ch2 check_box 5,120,5,11,cl_white,0,0,ch_text.2,(ch_text.3-ch_text.2),ch_flag_en  ; затем сделать активным
-ch3 check_box 145,105,5,11,cl_white,0,0,ch_text.3,(ch_text.4-ch_text.3),ch_flag_en ; показать снимок
-ch4 check_box 5,135,5,11,cl_white,0,0,ch_text.4,(ch_text.5-ch_text.4),ch_flag_en   ; задержка
-ch5 check_box 5,150,5,11,cl_white,0,0,ch_text.5,(ch_text.6-ch_text.5),ch_flag_en
-ch6 check_box 5,165,5,11,cl_white,0,0,ch_text.6,(ch_text.7-ch_text.6),ch_flag_en
-use_rect check_box 145,150,5,11,cl_white,0,0,ch_text.7,(ch_text.8-ch_text.7) ; исп. область
+ch1 check_box2 (5 shl 16+11),(105 shl 16 +11),5,cl_white,0,0x80000000,ch_text.1,ch_flag_en+ch_flag_bottom	; свернуть окно
+ch2 check_box2 (5 shl 16+11),(120 shl 16 +11),5,cl_white,0,0x80000000,ch_text.2,ch_flag_en+ch_flag_bottom	; затем сделать активным
+ch3 check_box2 (1455 shl 16+11),(105 shl 16 +11),5,cl_white,0,0x80000000,ch_text.3,ch_flag_en+ch_flag_bottom	; показать снимок
+ch4 check_box2 (5 shl 16+11),(135 shl 16 +11),5,cl_white,0,0x80000000,ch_text.4,ch_flag_en+ch_flag_bottom	; задержка
+ch5 check_box2 (5 shl 16+11),(150 shl 16 +11),5,cl_white,0,0x80000000,ch_text.5,ch_flag_en+ch_flag_bottom
+ch6 check_box2 (5 shl 16+11),(165 shl 16 +11),5,cl_white,0,0x80000000,ch_text.6,ch_flag_en+ch_flag_bottom
+use_rect check_box2 (145 shl 16+11),(150 shl 16 +11),5,cl_white,0,0x80000000,ch_text.7,ch_flag_bottom		; исп. область
 ; автонумерация
 check_boxes_end:
 ;---------------------------------------------------------------------
@@ -773,14 +781,13 @@ but_text:
 .7 db 'задать',0
 
 ch_text:
-.1 db 'Свернуть окно';,0
-.2 db 'Показать снимок';,0
-.3 db 'затем сделать активным';,0
-.4 db 'Задержка:';,0
-.5 db 'Автосохранение';,0
-.6 db 'Автонумерация, начиная с';,0
-.7 db 'Область'
-.8:
+.1 db 'Свернуть окно',0
+.2 db 'Показать снимок',0
+.3 db 'затем сделать активным',0
+.4 db 'Задержка:',0
+.5 db 'Автосохранение',0
+.6 db 'Автонумерация, начиная с',0
+.7 db 'Область',0
 
 no_shoot db 'Снимок не сделан',0
 shooting db 'Фотографирование...',0
@@ -820,14 +827,13 @@ but_text:
 .7 db 'Set',0
 
 ch_text:
-.1 db 'Minimize window';,0
-.2 db 'Show photo';,0
-.3 db 'then make active';,0
-.4 db 'Delay:';,0
-.5 db 'Autosave';,0
-.6 db 'Start numeration from';,0
-.7 db 'Area'
-.8:
+.1 db 'Minimize window',0
+.2 db 'Show photo',0
+.3 db 'then make active',0
+.4 db 'Delay:',0
+.5 db 'Autosave',0
+.6 db 'Start numeration from',0
+.7 db 'Area',0
 
 no_shoot db 'There is no photo',0
 shooting db 'Photographing...',0

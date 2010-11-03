@@ -86,18 +86,18 @@ macro set_events_mask mask
         mcall
 }
 
-macro check_boxes_set_sys_color start,end,color_table
-{
-ch_left equ [edi]    ;координата начала рисования по х
-ch_top equ [edi+2]   ;координата начала рисования по у
-ch_text_margin equ [edi+4]      ;=4 расстояние от прямоугольника чек бокса до надписи 
-ch_size equ [edi+8]             ;12 размер квадрата чек бокса 
-ch_color equ [edi+12]           ;цвет внутри checkbox
-ch_border_color equ [edi+16] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
-ch_text_color equ   [edi+20];[edi+4]  ;цвет текста
-ch_text_ptr equ [edi+24]    ;указатель на начало текстовой строки 
-ch_text_length equ [edi+28]
-ch_flags equ [edi+32]       ;флаги 
+;macro check_boxes_set_sys_color start,end,color_table
+;{
+;ch_left equ [edi]    ;координата начала рисования по х
+;ch_top equ [edi+4]   ;координата начала рисования по у
+;ch_text_margin equ [edi+8]      ;=4 расстояние от прямоугольника чек бокса до надписи 
+;ch_size equ [edi+8]             ;12 размер квадрата чек бокса 
+;ch_color equ [edi+12]           ;цвет внутри checkbox
+;ch_border_color equ [edi+16] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
+;ch_text_color equ   [edi+20];[edi+4]  ;цвет текста
+;ch_text_ptr equ [edi+24]    ;указатель на начало текстовой строки 
+;ch_text_length equ [edi+28]
+;ch_flags equ [edi+32]       ;флаги 
 
 
 ;ch_left equ [edi]    ;координата начала рисования по х
@@ -109,17 +109,17 @@ ch_flags equ [edi+32]       ;флаги
 ;ch_text_length equ [edi+20] ;длина надписи (2^64 такой длины может быть текст)
 ;ch_flags equ [edi+24]       ;флаги
 
-        mov     edi,start
-        mov     ecx,((end-start)/ch_struc_size)
-        mov     esi,color_table
-@@:
-        push    dword [esi+32]
-        pop     dword ch_text_color
-        push    dword [esi+36]
-        pop     dword ch_border_color
-        add     edi,ch_struc_size
-        loop    @b
-}
+;        mov     edi,start
+;        mov     ecx,((end-start)/ch_struc_size)
+;        mov     esi,color_table
+;@@:
+;        push    dword [esi+32]
+;        pop     dword ch_text_color
+;        push    dword [esi+36]
+;        pop     dword ch_border_color
+;        add     edi,ch_struc_size
+;        loop    @b
+;}
 macro get_key
 {
         ;mov     eax,2
