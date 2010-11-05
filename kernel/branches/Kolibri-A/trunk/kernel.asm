@@ -4188,16 +4188,6 @@ sys_gs: 			; direct screen access
      mov   [esp+32],eax
      ret
 
-
-;align 4 ; PCI functions
-;
-sys_pci:
-
-     call  pci_api
-     mov   [esp+36],eax
-     ret
-
-
 align 4  ;  system functions
 
 syscall_setpixel:			; SetPixel

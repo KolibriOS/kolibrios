@@ -337,26 +337,6 @@ endp
 
 align 4
 proc init_LFB
-;           cmp dword [LFBAddress], -1
-;           jne @f
-;
-;        mov     esi, boot_framebuf
-;        call    boot_log
-;
-;           mov [BOOT_VAR+0x901c],byte 2
-;           stdcall alloc_pages, (0x280000 / 4096)
-;
-;           push eax
-;           call alloc_page
-;           stdcall map_page_table, LFB_BASE, eax
-;           pop eax
-;           or eax, PG_UW
-;           mov ebx, LFB_BASE
-;           mov ecx, 0x280000 / 4096
-;           call commit_pages
-;           mov [LFBAddress], dword LFB_BASE
-;           ret
-;@@:
 	   call init_mtrr
 
 	   mov edx, LFB_BASE
@@ -365,7 +345,6 @@ proc init_LFB
 	   mov dword [exp_lfb+4], edx
 
 	   shr edi, 12			     ; C00
-;           mov [pg_count], edi
 	   shr edi, 10			     ; 3
 
 	   or esi,  PG_GLOBAL+PG_LARGE+PG_UW
@@ -559,7 +538,7 @@ update_mem_size:
 ;  eax= linear address
 ;
 ; retval
-;  eax= phisical page address
+;  eax= physical page address
 
 align 4
 get_pg_addr:
@@ -689,12 +668,8 @@ end if
 	test	eax,12	;U/S (+below)
 	jnz	.fail	;приложение обратилось к памяти
 			;ядра
-       ;test    eax, 8
-       ;jnz     .fail   ;установлен зарезервированный бит
-			;в таблицах страниц. добавлено в P4/Xeon
 
 ;попытка записи в защищённую страницу ядра
-
 	cmp	ebx, tss._io_map_0
 	jb	.fail
 
@@ -703,7 +678,6 @@ end if
 
 ; io permission map
 ; copy-on-write protection
-
 	call	alloc_page
 	test	eax, eax
 	jz	.fail
@@ -750,15 +724,8 @@ proc map_mem stdcall, lin_addr:dword,slot:dword,\
 	   and eax, 0xFFFFF000
 	   jz .exit
 	   stdcall map_page,edi,eax,PG_UW
-;           inc ebx
-;           add edi, 0x1000
-;           mov eax, [esi+ebx*4]
-;           test eax, eax
-;           jz @f
-;          and eax, 0xFFFFF000
-;           stdcall map_page, edi, eax
 
-@@:	   mov edi, [lin_addr]
+	   mov edi, [lin_addr]
 	   and edi, 0xFFFFF000
 	   mov ecx, [buf_size]
 	   add ecx, 4095
@@ -818,7 +785,7 @@ proc map_memEx stdcall, lin_addr:dword,slot:dword,\
 	   jz .exit
 	   stdcall map_page,edi,eax,PG_UW
 
-@@:	   mov edi, [lin_addr]
+	   mov edi, [lin_addr]
 	   and edi, 0xFFFFF000
 	   mov ecx, [buf_size]
 	   add ecx, 4095
@@ -971,29 +938,6 @@ sys_IPC:
 	or	eax,-1
 	mov	[esp+32], eax
 	ret
-
-;align 4
-;proc set_ipc_buff
-
-;           mov  eax,[current_slot]
-;           pushf
-;           cli
-;           mov  [eax+APPDATA.ipc_start],ebx     ;set fields in extended information area
-;           mov  [eax+APPDATA.ipc_size],ecx
-;
-;           add ecx, ebx
-;           add ecx, 4095
-;           and ecx, not 4095
-;
-;.touch:    mov eax, [ebx]
-;           add ebx, 0x1000
-;           cmp ebx, ecx
-;           jb  .touch
-;
-;           popf
-;           xor eax, eax
-;           ret
-;endp
 
 proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 	   locals

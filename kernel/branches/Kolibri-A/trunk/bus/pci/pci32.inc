@@ -8,6 +8,7 @@
 ;;                                                              ;;
 ;;  32 bit PCI driver code                                      ;;
 ;;                                                              ;;
+;;  Version 0.4A November 4th,  2010                            ;;
 ;;  Version 0.4  February 2nd,  2010                            ;;
 ;;  Version 0.3  April 9, 2007                                  ;;
 ;;  Version 0.2  December 21st, 2002                            ;;
@@ -32,87 +33,94 @@ $Revision$
 ;   Description
 ;       entry point for system PCI calls
 ;***************************************************************************
-mmio_pci_addr	dw  0x400	; default PCI device bdf-address
+align 4
+mmio_pci_addr	dw  0x100	; default PCI device bdf-address
+	dw 0
 
+iglobal
+align 4
+f62call:
+	dd	pci_fn_0
+	dd	pci_fn_1
+	dd	pci_fn_2
+	dd	pci_service_not_supported	;3
+	dd	pci_read_reg		;4 byte
+	dd	pci_read_reg		;5 word
+	dd	pci_read_reg		;6 dword
+	dd	pci_service_not_supported   ;7
+	dd	pci_write_reg		;8 byte
+	dd	pci_write_reg		;9 word
+	dd	pci_write_reg		;10 dword
+	dd	pci_mmio_init		;11
+	dd	pci_mmio_map		;12
+	dd	pci_mmio_unmap		;13
+endg
 
 align 4
-
 pci_api:
+;cross
+	mov	eax, ebx
+	mov	ebx, ecx
+	mov	ecx, edx
 
 	cmp  [pci_access_enabled],1
-	jne  no_pci_access_for_applications
+	jne  pci_service_not_supported
 
-	or al,al
-	jnz pci_fn_1
-	; PCI function 0: get pci version (AH.AL)
+	movzx	edx, al
+	cmp al, 13
+	ja pci_service_not_supported
+
+	call	dword [f62call+edx*4]
+	mov	dword [esp+32],eax
+
+	ret
+
+align 4
+pci_api_drv:
+
+    cmp  [pci_access_enabled],1
+    jne  .fail
+
+    cmp eax, 2
+    ja	 .fail
+
+    jmp dword [f62call+eax*4]
+
+.fail:
+    or eax,-1
+    ret
+
+;; ============================================
+
+pci_fn_0:	; PCI function 0: get pci version (AH.AL)
 	movzx eax,word [BOOT_VAR+0x9022]
 	ret
 
-pci_fn_1:
-	cmp al,1
-	jnz pci_fn_2
-
-	; PCI function 1: get last bus in AL
+pci_fn_1:	; PCI function 1: get last bus in AL
 	mov al,[BOOT_VAR+0x9021]
 	ret
 
-pci_fn_2:
-	cmp al,2
-	jne pci_fn_3
-	; PCI function 2: get pci access mechanism
+pci_fn_2:	; PCI function 2: get pci access mechanism
 	mov al,[BOOT_VAR+0x9020]
 	ret
-pci_fn_3:
 
-	cmp al,4
-	jz pci_read_reg   ;byte
-	cmp al,5
-	jz pci_read_reg   ;word
-	cmp al,6
-	jz pci_read_reg   ;dword
-
-	cmp al,8
-	jz pci_write_reg  ;byte
-	cmp al,9
-	jz pci_write_reg  ;word
-	cmp al,10
-	jz pci_write_reg  ;dword
-
-	cmp al,11	    ;  user-level MMIO functions
-	jz pci_mmio_init
-	cmp al,12
-	jz pci_mmio_map
-	cmp al,13
-	jz pci_mmio_unmap
-
-
-      no_pci_access_for_applications:
-
+pci_service_not_supported:
 	or eax,-1
-
+	mov	dword [esp+32],eax
 	ret
 
 ;***************************************************************************
-;   Function
-;      pci_make_config_cmd
-;
-;   Description
-;       creates a command dword  for use with the PCI bus
-;       bus # in ah
-;       device+func in bh (dddddfff)
-;       register in bl
-;
+;      (for backward compatibility only)
 ;      command dword returned in eax ( 10000000 bbbbbbbb dddddfff rrrrrr00 )
 ;***************************************************************************
-
 align 4
-
 pci_make_config_cmd:
     shl     eax,8	   ; move bus to bits 16-23
     mov     ax,bx	   ; combine all
     and     eax,0xffffff
     or	    eax,0x80000000
     ret
+
 
 ;***************************************************************************
 ;   Function
@@ -126,8 +134,30 @@ pci_make_config_cmd:
 ;***************************************************************************
 
 align 4
-
 pci_read_reg:
+;	push	edx
+;	xor	edx, edx
+;	mov	dh,  ah 	; bus
+;	mov	dl,  bh 	; dev+fn
+;	shl	edx, 12
+;	mov	dl,  bl 	; reg
+;	add	edx, PCIe_CONFIG_SPACE
+;
+;	and	al, 2
+;	jz	@f
+;	mov	eax, dword[edx]
+;	pop	edx
+;	ret
+;@@:
+;	and	al, 1
+;	jz	@f
+;	mov	ax, word[edx]
+;	pop	edx
+;	ret
+;@@:
+;	mov	al, byte[edx]
+;	pop	edx
+;	ret
 	push	esi   ; save register size into ESI
 	mov	esi,eax
 	and	esi,3
@@ -174,10 +204,6 @@ pci_fin_read1:
 	pop	esi
 	ret
 
-pci_read_reg_err:
-	xor	eax,eax
-	dec	eax
-	ret
 
 
 ;***************************************************************************
@@ -193,8 +219,29 @@ pci_read_reg_err:
 ;***************************************************************************
 
 align 4
-
 pci_write_reg:
+;	push	edx
+;	xor	edx, edx
+;	mov	dh,  ah 	; bus
+;	mov	dl,  bh 	; dev+fn
+;	shl	edx, 12
+;	mov	dl,  bl 	; reg
+;	add	edx, PCIe_CONFIG_SPACE
+;
+;	test	al, 2
+;	jz	@f
+;	mov	dword[edx], ecx
+;	ret
+;@@:
+;	test	al, 1
+;	jz	@f
+;	mov	word[edx], cx
+;	pop	edx
+;	ret
+;@@:
+;	mov	byte[edx], cl
+;	pop	edx
+;	ret
 	push	esi   ; save register size into ESI
 	mov	esi,eax
 	and	esi,3
@@ -233,18 +280,13 @@ pci_write_dword1:
 	out	dx,eax
 	jmp	pci_fin_write1
 pci_fin_write1:
+
 		; restore configuration control
 	pop	eax
 	mov	dl,0xf8
 	out	dx,eax
-
 	xor	eax,eax
 	pop	esi
-	ret
-
-pci_write_reg_err:
-	xor	eax,eax
-	dec	eax
 	ret
 
 ;***************************************************************************
@@ -322,10 +364,11 @@ pci_mmio_map:
     shl     bl, 1
     shl     bl, 1
     add     bl, 0x10	; now bl = BAR offset in PCI config. space
-    mov     ax, [mmio_pci_addr]
-    mov     bh, al	; bh = dddddfff
-    mov     al, 2	; al : DW to read
-    call    pci_read_reg
+    mov     eax, dword[mmio_pci_addr]
+    shl     eax, 12
+    mov     al, bl	; BAR offset
+    add     eax, PCIe_CONFIG_SPACE
+    mov     eax, [eax]	; read the BAR
     or	    eax, eax
     jnz     @f
     mov     eax,-3	; empty I/O space
