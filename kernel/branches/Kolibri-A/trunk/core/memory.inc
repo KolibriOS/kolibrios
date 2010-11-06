@@ -1089,25 +1089,7 @@ sysfn_meminfo:
 .fail:
 	   or dword [esp+32], -1
 	   ret
-iglobal
-align 4
-f68call:
-	   dd f68.11   ; init_heap
-	   dd f68.12   ; user_alloc
-	   dd f68.13   ; user_free
-	   dd f68.14   ; get_event_ex
-	   dd f68.fail ;moved to f68.24
-	   dd f68.16   ; get_service
-	   dd f68.17   ; call_service
-	   dd f68.fail ;moved to f68.25
-	   dd f68.19   ; load_dll
-	   dd f68.20   ; user_realloc
-	   dd f68.21   ; load_driver
-	   dd f68.22   ; shmem_open
-	   dd f68.23   ; shmem_close
-	   dd f68.24
-	   dd f68.25
-endg
+
 align 4
 f68:
 	   cmp	ebx,4
@@ -1226,6 +1208,24 @@ f68:
 	   xor eax, eax
 	   mov [esp+32], eax
 	   ret
+
+align 4
+f68call:
+	   dd f68.11   ; init_heap
+	   dd f68.12   ; user_alloc
+	   dd f68.13   ; user_free
+	   dd f68.14   ; get_event_ex
+	   dd f68.fail ;moved to f68.24
+	   dd f68.16   ; get_service
+	   dd f68.17   ; call_service
+	   dd f68.fail ;moved to f68.25
+	   dd f68.19   ; load_dll
+	   dd f68.20   ; user_realloc
+	   dd f68.21   ; load_driver
+	   dd f68.22   ; shmem_open
+	   dd f68.23   ; shmem_close
+	   dd f68.24
+	   dd f68.25
 
 align 4
 proc load_pe_driver stdcall, file:dword

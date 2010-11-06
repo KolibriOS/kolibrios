@@ -553,6 +553,13 @@ v20ga32:
 	mov	al, 0x3F
 	out	0xA1, al
 
+; Enable interrupts in IDE controller
+        mov     al, 0
+        mov     dx, 0x3F6
+        out     dx, al
+        mov     dl, 0x76
+        out     dx, al
+
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2048,10 +2055,13 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
 ;     cmp  ecx,4  ; set mouse pointer position
      dec   ecx
      jnz  .set_mouse_button
-     mov   [MOUSE_Y],dx    ;y
-     ror   edx,16
-     mov   [MOUSE_X],dx    ;x
+     cmp   dx, word[Screen_Max_Y]
+     ja    .end
+
      rol   edx,16
+     cmp   dx, word[Screen_Max_X]
+     ja    .end
+     mov   [MOUSE_X], edx
      ret
  .set_mouse_button:
 ;     cmp   ecx,5  ; set mouse button features
@@ -2124,14 +2134,10 @@ endg
 iglobal
 version_inf:
   db 0,7,7,0  ; version 0.7.7.0
-  db UID_KOLIBRI
+  db 0		;reserved
   dd __REV__
 version_end:
 endg
-
-UID_NONE=0
-UID_MENUETOS=1	 ;official
-UID_KOLIBRI=2	 ;russian
 
 sys_cachetodiskette:
 	cmp	ebx, 1
@@ -2588,6 +2594,10 @@ sys_cpuusage:
 	mov	al, [ecx+window_data+WDATA.fl_wstate]
 	stosb
 
+    ; Event mask (+71)
+        mov     EAX, dword [ECX+CURRENT_TASK+TASKDATA.event_mask]
+        stosd
+
 	pop	esi
 	pop	edi
 
@@ -2719,11 +2729,6 @@ sys_redrawstat:
 	mov	[edx + RECT.right], eax
 	mov	eax, [Screen_Max_Y]
 	mov	[edx + RECT.bottom], eax
-
-	mov	edi, [TASK_BASE]
-	or	[edi - twdw + WDATA.fl_wdrawn], 1   ; no new position & buttons from app
-	call	sys_window_mouse
-	ret
 
   srl1:
 	ret

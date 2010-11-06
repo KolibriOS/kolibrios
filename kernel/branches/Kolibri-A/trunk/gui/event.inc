@@ -7,6 +7,13 @@
 
 $Revision$
 
+WINDOW_MOVE_AND_RESIZE_FLAGS = \
+  mouse.WINDOW_RESIZE_N_FLAG + \
+  mouse.WINDOW_RESIZE_W_FLAG + \
+  mouse.WINDOW_RESIZE_S_FLAG + \
+  mouse.WINDOW_RESIZE_E_FLAG + \
+  mouse.WINDOW_MOVE_FLAG
+
 uglobal
 align 4
   event_start   dd ?
@@ -445,7 +452,7 @@ get_event_for_app:                                 ;; used from f10,f11,f23
         xor     eax,eax
         ret
 .IRQ:
-;TODO: сделать так же, как и для FlagAutoReset (BgrRedraw,Mouse,IPC,Stack,Debug)
+;TODO: same thing as done for FlagAutoReset (BgrRedraw,Mouse,IPC,Stack,Debug)
         mov     edx,[irq_owner+eax*4-64] ; eax==16+irq
         cmp     edx,[edi+TASKDATA.pid]
         jne     .loop
@@ -460,8 +467,9 @@ get_event_for_app:                                 ;; used from f10,f11,f23
         push    eax
 ; If the window is captured and moved by the user, then no mouse events!!!
         mov     al, [mouse.active_sys_window.action]
-        test    al, mouse.WINDOW_MOVE_FLAG
-        pop     eax
+        and     al, WINDOW_MOVE_AND_RESIZE_FLAGS
+        test    al, al
+	pop     eax
         jnz     .loop
 @@:
         btr     [ebx+APPDATA.event_mask],eax

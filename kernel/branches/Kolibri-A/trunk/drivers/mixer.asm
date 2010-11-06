@@ -87,7 +87,7 @@ end if
 endp
 
 align 4
-proc update_stream
+proc update_streams
            locals
              stream_index  dd ?
              event         rd 6
@@ -97,6 +97,9 @@ proc update_stream
 .l1:
            mov edx, [stream_index]
            mov esi, [play_list+edx*4]
+
+           add dword [esi+STREAM.time_stamp], 4096
+           adc dword [esi+STREAM.time_stamp+4], 0
 
            mov eax, [esi+STREAM.out_rp]
            cmp eax, [esi+STREAM.out_top]

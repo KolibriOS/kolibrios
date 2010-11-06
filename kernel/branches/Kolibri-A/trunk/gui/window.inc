@@ -319,6 +319,9 @@ syscall_move_window: ;///// system function 67 ////////////////////////////////
         shl     edi, 5
         add     edi, window_data
 
+        test    [edi + WDATA.fl_wdrawn], 1
+        jz      .exit
+
         test    [edi + WDATA.fl_wstate], WSTATE_MAXIMIZED
         jnz     .exit
 
@@ -392,6 +395,7 @@ set_window_defaults: ;/////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? <description>
 ;------------------------------------------------------------------------------
+        mov     byte [window_data + 0x20 + WDATA.cl_titlebar + 3], 1 ; desktop is not movable
         push    eax ecx
         xor     eax, eax
         mov     ecx, WIN_STACK
@@ -1036,10 +1040,10 @@ sys_window_maximize_handler: ;/////////////////////////////////////////////////
         add     edi, window_data
 
         ; can window change its height?
+        ; only types 2 and 3 can be resized
         mov     dl, [edi + WDATA.fl_wstyle]
-        and     dl, 0x0f
-        cmp     dl, 0x04
-        je      .exit
+        test    dl, 2
+        jz      .exit
 
         ; toggle normal/maximized window state
         mov     bl, [edi + WDATA.fl_wstate]
@@ -1222,30 +1226,33 @@ window._.invalidate_screen: ;//////////////////////////////////////////////////
         push    eax ebx
 
         ; TODO: do we really need `draw_limits`?
+        ; Yes, they are used by background drawing code.
         mov     ecx, [eax + BOX.left]
         mov     edx, [ebx + BOX.left]
         cmp     ecx, edx
         jle     @f
-        xchg    ecx, edx
+        mov     ecx, edx
     @@: mov     [draw_limits.left], ecx
-        mov     ecx, [eax + BOX.width]
-        cmp     ecx, [ebx + BOX.width]
+        mov     ecx, [eax + BOX.left]
+        add     ecx, [eax + BOX.width]
+        add     edx, [ebx + BOX.width]
+        cmp     ecx, edx
         jae     @f
-        mov     ecx, [ebx + BOX.width]
-    @@: add     ecx, edx
-        mov     [draw_limits.right], ecx
+        mov     ecx, edx
+    @@: mov     [draw_limits.right], ecx
         mov     ecx, [eax + BOX.top]
         mov     edx, [ebx + BOX.top]
         cmp     ecx, edx
         jle     @f
-        xchg    ecx, edx
+        mov     ecx, edx
     @@: mov     [draw_limits.top], ecx
-        mov     ecx, [eax + BOX.height]
-        cmp     ecx, [ebx + BOX.height]
+        mov     ecx, [eax + BOX.top]
+        add     ecx, [eax + BOX.height]
+        add     edx, [ebx + BOX.height]
+        cmp     ecx, edx
         jae     @f
-        mov     ecx, [ebx + BOX.height]
-    @@: add     ecx, edx
-        mov     [draw_limits.bottom], ecx
+        mov     ecx, edx
+    @@: mov     [draw_limits.bottom], ecx
 
         ; recalculate screen buffer at old position
         push    ebx
@@ -1433,6 +1440,7 @@ window._.sys_set_window: ;/////////////////////////////////////////////////////
         ; was it already defined before?
         test    [edi + WDATA.fl_wdrawn], 1
         jnz     .set_client_box
+        or      [edi + WDATA.fl_wdrawn], 1
 
         ; NOTE: commented out since doesn't provide necessary functionality
         ;       anyway, to be reworked

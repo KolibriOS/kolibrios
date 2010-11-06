@@ -283,6 +283,12 @@ __exports:
           alloc_page,            'AllocPage',          \      ; gcc ABI
           alloc_pages,           'AllocPages',         \      ; stdcall
           commit_pages,          'CommitPages',        \      ; eax, ebx, ecx
+\
+          create_event,          'CreateEvent',        \      ; ecx, esi
+          raise_event,           'RaiseEvent',         \      ; eax, ebx, edx, esi
+          wait_event,            'WaitEvent',          \      ; eax, ebx
+          get_event_ex,          'GetEvent',           \      ; edi
+\
           create_kernel_object,  'CreateObject',       \
           create_ring_buffer,    'CreateRingBuffer',   \      ; stdcall
           destroy_kernel_object, 'DestroyObject',      \
@@ -300,7 +306,7 @@ __exports:
 \
           get_display,           'GetDisplay',         \
           set_screen,            'SetScreen',          \
-          pci_api,               'PciApi',             \
+          pci_api_drv,           'PciApi',             \
           pci_read8,             'PciRead8',           \      ; stdcall
           pci_read16,            'PciRead16',          \      ; stdcall
           pci_read32,            'PciRead32',          \      ; stdcall
@@ -315,6 +321,7 @@ __exports:
           user_free,             'UserFree',           \      ; stdcall
           unmap_pages,           'UnmapPages',         \      ; eax, ecx
           sys_msg_board_str,     'SysMsgBoardStr',     \
+          get_timer_ticks,       'GetTimerTicks',      \
           delay_hs,              'Delay',              \      ; ebx
           set_mouse_data,        'SetMouseData'
 

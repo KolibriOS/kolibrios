@@ -347,6 +347,7 @@ Returned value:
       * bit 0 (mask 1): window is maximized
       * bit 1 (mask 2): window is minimized to panel
       * bit 2 (mask 4): window is rolled up
+    * +71 = +0x47: dword: event mask
 Remarks:
   * Slots are numbered starting from 1.
   * Returned value is not a total number of threads, because there
@@ -844,12 +845,12 @@ Returned value:
   * function does not return value
 Structure of the buffer:
 db a,b,c,d for version a.b.c.d
-db UID_xxx: one of UID_NONE=0, UID_MENUET=1, UID_KOLIBRI=2
+db 0
 dd REV - kernel SVN revision number
-For Kolibri 0.7.1.0 kernel:
-db 0,7,0,0
+For Kolibri 0.7.7.0 kernel:
+db 0,7,7,0
 db 2
-dd 638
+dd 1657
 
 ======================================================================
 ======= Function 18, subfunction 14 - wait for screen retrace. =======
@@ -1658,56 +1659,8 @@ Returned value:
 Remarks:
   * If the buffer is too small to hold all data, only first (edx-1)
     bytes are copied and than terminating 0 is inserted.
-
-======================================================================
-=============== Function 32 - delete file from ramdisk. ==============
-======================================================================
-Parameters:
-  * eax = 32 - function number
-  * ebx = pointer to the filename
-Returned value:
-  * eax = 0 - success; otherwise file system error code
-Remarks:
-  * This function is obsolete; function 58 allows to fulfill
-    the same operations with the extended possibilities.
-  * The current implementation returns only values 0(success) and
-    5(file not found).
-  * The filename must be either in the format 8+3 characters
-    (first 8 characters - name itself, last 3 - extension,
-    the short names and extensions are supplemented with spaces),
-    or in the format 8.3 characters "FILE.EXT"/"FILE.EX "
-    (name no more than 8 characters, dot, extension 3 characters
-    supplemented if necessary by spaces).
-    The filename must be written with capital letters. The terminating
-    character with code 0 is not necessary (not ASCIIZ-string).
-  * This function does not support folders on the ramdisk.
-
-======================================================================
-================ Function 33 - write file to ramdisk. ================
-======================================================================
-Parameters:
-  * eax = 33 - function number
-  * ebx = pointer to the filename
-  * ecx = pointer to data for writing
-  * edx = number of bytes for writing
-  * should be set esi=0
-Returned value:
-  * eax = 0 - success, otherwise file system error code
-Remarks:
-  * This function is obsolete; function 70 allows to fulfil
-    the same operations with extended possibilities.
-  * If esi contains non-zero value and selected file already exists,
-    one more file with the same name will be created.
-  * Otherwise file will be overwritten.
-  * The filename must be either in the format 8+3 characters
-    (first 8 characters - name itself, last 3 - extension,
-    the short names and extensions are supplemented with spaces),
-    or in the format 8.3 characters "FILE.EXT"/"FILE.EX "
-    (name no more than 8 characters, dot, extension 3 characters
-    supplemented if necessary by spaces).
-    The filename must be written with capital letters. The terminating
-    character with code 0 is not necessary (not ASCIIZ-string).
-  * This function does not support folders on the ramdisk.
+  * By default, current folder for the thread is "/rd/1".
+  * At process/thread creation the current folder will be inherited 
 
 ======================================================================
 ======= Function 35 - read the color of a pixel on the screen. =======
@@ -3421,7 +3374,6 @@ Remarks:
 ======================================================================
 The input mode influences results of reading keys by function 2.
 When a program loads, ASCII input mode is set for it.
-If subfunction is not support then eax=-1.
 
 -------------- Subfunction 1 - set keyboard input mode. --------------
 Parameters:
@@ -3773,6 +3725,58 @@ Remarks:
   * If ecx=0, the function frees memory block at edx and returns 0.
   * The contents of the block are unchanged up to the shorter of
     the new and old sizes.
+======================================================================
+======== Function 68, subfunction 22 - open named memory area. =======
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 22 - subfunction number
+  * ecx = area name. Maximum of 31 characters with terminating zero
+  * edx = area size in bytes for SHM_CREATE and SHM_OPEN_ALWAYS
+  * esi = flags for open and access:
+    * SHM_OPEN        = 0x00 - open existing memory area. If an area
+                          with such name does not exist, the function
+                          will return error code 5.
+    * SHM_OPEN_ALWAYS = 0x04 - open existing or create new
+                          memory area.
+    * SHM_CREATE      = 0x08 - create new memory area. If an area
+                          with such name already exists, the function
+                          will return error code 10.
+    * SHM_READ        = 0x00 - only read access
+    * SHM_WRITE       = 0x01 - read and write access
+Returned value:
+  * eax = pointer to memory area, 0 if error has occured
+  * if new area is created (SHM_CREATE or SHM_OPEN_ALWAYS):
+    edx = 0 - success, otherwise - error code
+  * if existing area is opened (SHM_OPEN or SHM_OPEN_ALWAYS):
+    edx = error code (if eax=0) or area size in bytes
+Error codes:
+  * E_NOTFOUND = 5
+  * E_ACCESS = 10
+  * E_NOMEM = 30
+  * E_PARAM = 33
+Remarks:
+  * Before this call one must initialize process heap by call to
+    subfunction 11.
+  * If a new area is created, access flags set maximal rights
+    for other processes. An attempt from other process to open
+    with denied rights will fail with error code E_ACCESS.
+  * The process which has created an area always has write access.
+
+======================================================================
+======= Function 68, subfunction 23 - close named memory area. =======
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 23 - subfunction number
+  * ecx = area name. Maximum of 31 characters with terminating zero
+Returned value:
+  * eax destroyed
+Remarks:
+  * A memory area is physically freed (with deleting all data and
+    freeing physical memory), when all threads which have opened
+    this area will close it.
+  * When thread is terminating, all opened by it areas are closed.
 
 ======================================================================
 ====== Function 68, subfunction 24 - set new exceptions handler ======
@@ -3813,6 +3817,7 @@ Parameters:
   * edx = value of activity (0/1)
 Returned value:
   * eax = value of old activity for this signal (0/1)
+  * eax = -1 - invalid signal number
 Remarks:
   * In current implementation, it is changed only exception mask for
     user exception handler, wich was previously set by subfunction 24.
@@ -4111,6 +4116,10 @@ Examples:
   * '/hd0/2/menuet/pics/tanzania.bmp',0
   * '/hd0/1/Program files/NameOfProgram/SomeFile.SomeExtension',0
   * '/sys/MySuperApp.ini',0
+Also function supports relative names.  If the path begins not 
+with '/', it is considered relative to a current folder. To get or 
+set a current folder, use the function 30.
+
 Available subfunctions:
   * subfunction 0 - read file
   * subfunction 1 - read folder

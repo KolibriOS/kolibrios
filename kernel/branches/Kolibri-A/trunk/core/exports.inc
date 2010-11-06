@@ -22,6 +22,10 @@ iglobal
   szReservePortArea   db 'ReservePortArea',0
   szBoot_Log          db 'Boot_Log',0
 
+  szMutexInit         db 'MutexInit',0
+  szMutexLock         db 'MutexLock',0
+  szMutexUnlock       db 'MutexUnlock',0
+
   szPciApi            db 'PciApi', 0
   szPciRead32         db 'PciRead32', 0
   szPciRead16         db 'PciRead16', 0
@@ -91,7 +95,11 @@ kernel_export:
   dd szReservePortArea , r_f_port_area
   dd szBoot_Log        , boot_log
 
-  dd szPciApi          , pci_api
+  dd szMutexInit       , mutex_init            ;gcc fastcall
+  dd szMutexLock       , mutex_lock            ;gcc fastcall
+  dd szMutexUnlock     , mutex_unlock          ;gcc fastcall
+
+  dd szPciApi          , pci_api_drv
   dd szPciRead32       , pci_read32
   dd szPciRead16       , pci_read16
   dd szPciRead8        , pci_read8

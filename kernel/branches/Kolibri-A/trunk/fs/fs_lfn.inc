@@ -795,7 +795,7 @@ biosdisk_enum_root:
         xor     eax, eax
         ret
 .big:
-        push    ecx
+        push    ecx edx
         push    -'0'
         mov     ecx, 10
 @@:
@@ -810,7 +810,7 @@ biosdisk_enum_root:
         add     al, '0'
         stosb
         jnz     @b
-        pop     ecx
+        pop     edx ecx
         pop     eax
         inc     eax
         ret
