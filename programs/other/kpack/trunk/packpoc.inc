@@ -1,7 +1,6 @@
 ;*********************************************************************
 pack:
-;	call	clear_edit_points
-;	and	[curedit],0
+	call	refresh_editbox_data
 ; clear messages
 	call	clear_messages
 ; display logo
@@ -34,9 +33,7 @@ inopened:
         test    ebx,ebx
         jz      infileerr
 ; maximum memory requests: 2*insize + 2*(maxoutsize+400h) + worksize
-;	mov	esi,[memf]
 	xor	esi,esi
-;	mov	[infile],esi
 	add	esi,ebx
 	mov	[inbuftmp],esi
 	add	esi,ebx
@@ -54,7 +51,6 @@ inopened:
 	mov	[workmem],esi
 	add	ecx,ebx
 	add	ecx,ecx
-;	add	ecx,[memf]
 ; LZMA requires 0x448000 + dictsize*9.5 bytes for workmem,
 	and	[lzma_dictsize],0
 	push	ecx
@@ -77,10 +73,6 @@ inopened:
 	add	eax,448000h
 	pop	ecx
 	add	ecx,eax
-;	mcall	64,1
-	
-;	test	eax,eax
-;	jz	mem_ok
 
 	mcall	68,12
 
@@ -138,7 +130,7 @@ mem_ok:
 	jnz	infileerr
 
 	mov	eax,[outfile]
-	mov	[eax],dword 'KPCK'	;'KCPK'
+	mov	[eax],dword 'KPCK'
 	mov     ecx,[insize]
 	mov	[eax+4],dword ecx
 	mov	edi,eax

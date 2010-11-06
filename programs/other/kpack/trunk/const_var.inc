@@ -10,19 +10,21 @@ definoutname	db 0
 defpath		db '/RD/1/'
 ;curedit		dd 0
 
-info_str	db 'KPack - Kolibri Packer, version 0.13',10
+info_str	db 'KPack - Kolibri Packer, version 0.15',10
 		db 'Uses LZMA v4.32 compression library',10,10
 info_len	= $ - info_str
 usage_str	db 'Written by diamond in 2006, 2007, 2009 specially for KolibriOS',10
+		db 'Disassembled code, using Box_Lib, Proc_Lib and OpenDialog',10
+		db '    by Mario79, 2010',10
 		db 'LZMA  is copyright (c) 1999-2005 by Igor Pavlov',10
 		db 10
 		db 'Command-line usage:',10
-		db ' kpack infile [outfile]',10
-		db 'If no output file is specified,',10
-		db '    packed data will be written back to input file',10
+		db ' path_to_infile with zero',10
 		db 10
 		db 'Window usage:',10
-		db " enter input file name, output file name and press needed button",10
+		db 'Select file with PATH-button and press needed button',10
+		db ' or enter input and output file name,',10 
+		db ' enter path and press needed button',10
 usage_len	= $ - usage_str
 errload_str	db 'Cannot load input file',10
 errload_len	= $ - errload_str
@@ -125,8 +127,6 @@ system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 ;---------------------------------------------------------------------
 align 4
 l_libs_start:
-;	load_library	boxlib_name,cur_dir_path,buf_cmd_lin,system_path,\
-;	err_message_found_lib,head_f_l,myimport,err_message_import,head_f_i
 
 library01  l_libs system_dir_Boxlib+9, cur_dir_path, library_path, system_dir_Boxlib, \
 err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i
@@ -178,9 +178,9 @@ start_temp_file_name:	db 'temp.bin',0
 
 ;---------------------------------------------------------------------
 align 4
-edit1 edit_box 160, 62, 1+22, 0xffffff, 0xff, 0x80ff, 0, 0x8000, 256, inname, mouse_dd, 0, 11,11
-edit2 edit_box 160, 62, 17+22, 0xffffff, 0xff, 0x80ff, 0, 0x8000,256, outname, mouse_dd, 0, 7,7
-edit3 edit_box 160, 62, 33+22, 0xffffff, 0xff, 0x80ff, 0, 0x8000,256, path, mouse_dd, 0, 6,6
+edit1 edit_box 160, 60, 1, 0xffffff, 0xff, 0x80ff, 0, 0x8000, 256, inname, mouse_dd, 0, 11,11
+edit2 edit_box 160, 60, 17, 0xffffff, 0xff, 0x80ff, 0, 0x8000,256, outname, mouse_dd, 0, 7,7
+edit3 edit_box 160, 60, 33, 0xffffff, 0xff, 0x80ff, 0, 0x8000,256, path, mouse_dd, 0, 6,6
 editboxes_end:
 
 mouse_dd dd 0

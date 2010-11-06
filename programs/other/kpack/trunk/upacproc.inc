@@ -1,7 +1,6 @@
 ;*********************************************************************
 unpack:
-;	call	clear_edit_points
-;	and	[curedit],0
+	call	refresh_editbox_data
 ; clear messages
 	call	clear_messages
 ; display logo
@@ -26,15 +25,6 @@ unpack:
 	mov	ecx,[insize]
 	test	ecx,ecx
 	jz      infileerr
-
-;	mov	ecx,[memf]
-;	mov	[infile],ecx
-;	add	ecx,eax
-;	mov	[outfile],ecx
-;	mov	[outfilebest],ecx
-;	mcall	64,1
-;	test	eax,eax
-;	jnz	memf1
 
 	mcall	68,12
 
@@ -62,12 +52,6 @@ unpack_err:
 	jmp	write_string
 ;---------------------------------------------------------------------
 @@:
-;	mov	ecx,[outfile]
-;	add	ecx,dword [eax+4]
-;	mcall	64,1
-;	test	eax,eax
-;	jnz	memf1
-
 	mov	ecx,[eax+4]
 	add	ecx,[insize]
 

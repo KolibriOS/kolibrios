@@ -1,4 +1,20 @@
 ; kpack = Kolibri Packer
+;---------------------------------------------------------------------
+; version:	0.15
+; last update:  06/11/2010
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      1) Window Y=4, B=1
+;               2) Refresh lenght of data after Editbox editing
+;               3) Changed format of start parameter -
+;                    longer path (total length 255 + zero).
+;---------------------------------------------------------------------
+; version:	0.14
+; last update:  03/11/2010
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      select path with OpenDialog,
+;               using Box_Lib and Proc_Lib
+;---------------------------------------------------------------------
+; Kpack - Kolibri Packer
 ; Kolibri version
 ; Written by diamond in 2006, 2007 specially for KolibriOS
 ;
@@ -16,12 +32,12 @@ use32
 	dd 1
 	dd START
 	dd IM_END
-	dd I_END		;memf
+	dd I_END
 	dd stacktop
 	dd params
 	dd cur_dir_path
 ;---------------------------------------------------------------------
-include '..\..\..\macros.inc'
+include '../../../macros.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/libraries/box_lib/load_lib.mac'
   @use_library
@@ -29,6 +45,10 @@ include '../../../develop/libraries/box_lib/load_lib.mac'
 START:
 	mcall	68,11
 	mcall	40,100111b
+
+load_libraries l_libs_start,load_lib_end
+	cmp eax,-1
+	je exit
 
 	call	clear_messages
 ; set default path = /RD/1/
@@ -39,59 +59,39 @@ START:
 	movsd
 ; get system window info
 	mcall	48,3,color_table,40
-	inc	ebx
-	mcall
-	mov	[skinheight],eax
-	jmp	default
-; check command line
+;--------------------------------------
+	xor	eax,eax
+	cmp	[params],al
+	je	default
+	
+	mov	edi,path
 	mov	esi,params
-	mov	[esi+100h],byte 0
-;--------------------------------------
-parse_opt:
-	call	skip_spaces
-	test	al,al
-	jz	default
+	call	copy_1
 
+	sub	esi,2
+	std
+@@:
+	lodsb
+	dec	edi
+	cmp	al,byte '/'
+	jnz	@r
+	
+	mov	[edi-1],byte 0
 	mov	edi,inname
-	call	copy_name
-	test	al,al
-	jz	outeqin
-
+	add	esi,2
+	push	esi
+	call	copy_1
+	pop	esi
 	mov	edi,outname
-	call	copy_name
-	test	al,al
-	jnz	default
-;--------------------------------------
-doit:
+	call	copy_1
+;---------------------------------------------------------------------
+	call	set_editbox_position_all
+;---------------------------------------------------------------------
 	call	draw_window
 	call	pack
-	jmp	still
-;---------------------------------------------------------------------
-clear_messages:
-	xor	eax,eax
-	mov	ecx,80*20/4+1
-	mov	edi,message_mem
-	rep	stosd
-	ret
-;---------------------------------------------------------------------
-exit:
-	xor	eax,eax
-	dec	eax
-	mcall
-;--------------------------------------
-outeqin:
-	mov	ecx,256/4+1
-	mov	esi,inname-4
-	mov	edi,outname-4
-	rep	movsd
-	jmp	doit
-;---------------------------------------------------------------------
+	jmp	OD_initialization
+;*********************************************************************
 default:
-
-load_libraries l_libs_start,load_lib_end
-	cmp eax,-1
-	je exit
-
 	mov	esi,definoutname
 	mov	edi,esi
 	xor	ecx,ecx
@@ -111,15 +111,12 @@ load_libraries l_libs_start,load_lib_end
 	mov	edi,outname
 	rep	movsb
 ;---------------------------------------------------------------------
-;	mov	edi,fname_buf
-;	mov	esi,path4
-;	call	copy_1
-	
+	call	set_editbox_position_all
+;---------------------------------------------------------------------
+OD_initialization:
 ;OpenDialog	initialisation
 	push    dword OpenDialog_data
 	call    [OpenDialog_Init]
-;---------------------------------------------------------------------
-	call	set_editbox_position_all
 ;---------------------------------------------------------------------
 red:
 	call	draw_window
@@ -145,6 +142,18 @@ still:
 	call	[edit_box_mouse]
 
 	jmp	still
+;*********************************************************************
+clear_messages:
+	xor	eax,eax
+	mov	ecx,80*20/4+1
+	mov	edi,message_mem
+	rep	stosd
+	ret
+;*********************************************************************
+exit:
+	xor	eax,eax
+	dec	eax
+	mcall
 ;*********************************************************************
 button:
 ; button pressed
@@ -190,6 +199,10 @@ nounpack:
 	jmp	still
 ;*********************************************************************
 OpenDialog_start:
+	mov	esi,path
+	mov	edi,temp_dir_pach
+	call	copy_1	
+
 	push    dword OpenDialog_data
 	call    [OpenDialog_Start]
 	cmp	[OpenDialog_data.status],1
@@ -198,22 +211,17 @@ OpenDialog_start:
 	mov	esi,filename_area
 	mov	edi,inname
 	call	copy_1
-	sub	edi,inname
-	mov	[innamelen],edi
 
 	mov	esi,filename_area
 	mov	edi,outname
 	call	copy_1
-	sub	edi,outname
-	mov	[outnamelen],edi
 	
 	mov	esi,temp_dir_pach
 	mov	edi,path
 	call	copy_1
-	sub	edi,path
-	dec	edi
-	mov	[pathlen],edi
 	
+	call	refresh_editbox_data
+
 	call	set_editbox_position_all
 
 	call	draw_editbox
@@ -228,6 +236,35 @@ copy_1:
 	stosb
 	test	eax,eax
 	jnz	@r
+	ret
+;*********************************************************************
+refresh_editbox_data:
+	mov	esi,inname
+	mov	edi,innamelen
+	call	refresh_data
+
+	mov	esi,outname
+	mov	edi,outnamelen
+	call	refresh_data
+
+	mov	esi,path
+	mov	edi,pathlen
+	call	refresh_data
+
+	ret
+;*********************************************************************
+refresh_data:
+	push	esi
+	xor	eax,eax
+	cld	
+@@:
+	lodsb
+	test	eax,eax
+	jnz	@r
+	pop	eax
+	sub	esi,eax
+	dec	esi
+	mov	[edi],esi
 	ret
 ;*********************************************************************
 set_editbox_position_all:
@@ -257,14 +294,6 @@ key:
 	call	[edit_box_key]
 
 	jmp	still
-;*********************************************************************
-onenter:
-;	cmp	[curedit],inname
-;	jnz	@f
-
-	push	2
-	pop	eax
-	jmp	nounpack
 ;*********************************************************************
 get_full_name:
 	push	esi
@@ -327,14 +356,10 @@ newline:
 x2:
 	mov	[message_cur_pos],edx
 ; update window
-	mov	ecx,[skinheight]
-	shl	ecx,16
-	add	ecx,3700DEh
-	mcall	13,<9,417>,,[color_table+20]
+	mcall	13,<6,414>,<54,222>,[color_table+20]
 ;--------------------------------------
 draw_messages:
-	mov	ebx,[skinheight]
-	add	ebx,3Ch+12*10000h
+	mov	ebx,12 shl 16+60
 	mov	edi,message_mem
 ;--------------------------------------
 @@:
@@ -358,32 +383,27 @@ draw_messages:
 draw_window:
 ; start redraw
 	mcall	12,1
-	mov	edi,[skinheight]
 ;--------------------------------------
 ; define window
 	xor	eax,eax
-	mov	ecx,100 shl 16+286
-	add	ecx,edi
+	mov	ecx,100 shl 16+306
 	mov	edx,[color_table+20]
-	add	edx,13000000h
-;	push	edi
+	add	edx,34000000h
 	xor	esi,esi
-	mcall	,<100,435>,,,,fullname	;temp_dir_pach	;caption_str
-;	pop	edi
+	xor	edi,edi
+	mcall	,<100,436>,,,,caption_str
 	mcall	9,procinfo,-1
 ;--------------------------------------
 ; draw lines and frame
 	call	draw_lines
 ; draw buttons
 	call	draw_bittons
-; infile, outfile, path strings
-;	call	draw_strings
 ; draw messages
 	call	draw_messages
 ; draw editbox's
 	mov	eax,[procinfo+42]
 	sub	eax,65+72+10
-	mov	[edit1.width],eax ; устанавливаем ширину текстовых полей
+	mov	[edit1.width],eax
 	mov	[edit2.width],eax
 	mov	[edit3.width],eax
 
@@ -416,51 +436,23 @@ set_editbox_position:
 	ret
 ;*********************************************************************
 draw_lines:
-;	mov	edi,[skinheight]
-; lines - horizontal
-;	mov	ebx,8 shl 16+352
-;	mov	ecx,edi
-;	shl	ecx,16
-;	or	ecx,edi
-;	add	ecx,2 shl 16+2
-;	mcall	38,,,[color_table+36]
-;	mov	esi,3
-;@@:
-;	add	ecx,12 shl 16+12
-;	mcall
-;	dec	esi
-;	jnz	@r
-;--------------------------------------
-; lines - vertical
-;	sub	ecx,36 shl 16
-;	mcall	,<8,8>
-;	add	ebx,52 shl 16+52
-;	mcall
-;	add	ebx,292 shl 16+292
-;	mcall
-;--------------------------------------
-	mov	edi,[skinheight]
-	mov	ecx,edi
-	shl	ecx,16
-	or	ecx,edi
-	add	ecx,2 shl 16+2+12*3
-;	add	ecx,12*3
+	mov	ecx,2 shl 16+12*3
 ; draw frame for messages data
 	push	ecx
-	add	ecx,52 shl 16+16
-	mcall	38,<8,425>,,[color_table+36]
+	add	ecx,50 shl 16+16
+	mcall	38,<3,423>,,[color_table+36]
 	add	ecx,224*(1 shl 16+1)
 	mcall
 	sub	cx,224
-	mcall	,<8,8>
-	mcall	,<426,426>
+	mcall	,<3,3>
+	mcall	,<423,423>
 	pop	ecx
 	ret
 ;*********************************************************************
 draw_bittons:
 ; define compress button
 	mov	cx,18
-	mcall	8,<354,72>,,2,[color_table+36]
+	mcall	8,<351,72>,,2,[color_table+36]
 ; uncompress button
 	add	ecx,18 shl 16
 	inc	edx
@@ -469,30 +461,18 @@ draw_bittons:
 ; question button
 	push	esi
 	mov	dl,7
-	mcall	,<417,9>
+	mcall	,<414,9>
 	shr	ecx,16
-	lea	ebx,[ecx+1A40002h]
+	lea	ebx,[ecx+1A10002h]
 	mcall	4,,[color_table+28],aQuestion,1
-;	mov	al,8
 	pop	esi
 ; define settings buttons
-;	mov	ebx,9 shl 16+50
-	lea	ecx,[edi+2]
-	add	ecx,16*2
+	mov	ecx,16*2+2
 	shl	ecx,16
 	mov	cx,13
-;	push	4
-;	pop	edx
-;--------------------------------------
-;@@:
-;	mcall
-;	add	ecx,12 shl 16
-;	inc	edx
-;	cmp	edx,6
-;	jbe	@b
-	mcall	8,<9,50>,,4
+	mcall	8,<6,50>,,4
 ; text on settings buttons
-	lea	ebx,[edi+5+0C0000h]
+	mov	ebx,9 shl 16+5
 	mov	al,4
 	mov	ecx,[color_table+28]
 	push	buttons1names
@@ -507,46 +487,9 @@ draw_bittons:
 	cmp	[edx-6],byte ' '
 	jnz	@b
 ; text on compress and decompress buttons
-	lea	ebx,[edi+8+1720000h]
 	or	ecx,80000000h
-	mcall	,,,aCompress
-	lea	ebx,[edi+1Ah+16A0000h]
-	mcall	,,,aDecompress
-	ret
-;*********************************************************************
-copy_name:
-	lea	edx,[edi+256]
-;--------------------------------------
-@@:
-	lodsb
-	cmp	al,' '
-	jbe	copy_name_done
-
-	stosb
-	cmp	edi,edx
-	jb	@b
-;--------------------------------------
-@@:
-	lodsb
-	cmp	al,' '
-	ja	@b
-;--------------------------------------
-copy_name_done:
-	dec	esi
-	sub	edx,256
-	sub	edi,edx
-	mov	[edx-4],edi
-;--------------------------------------
-skip_spaces:
-	lodsb
-	cmp	al,0
-	jz	@f
-
-	cmp	al,' '
-	jbe	skip_spaces
-;--------------------------------------
-@@:
-	dec	esi
+	mcall	,<367,7>,,aCompress
+	mcall	,<359,25>,,aDecompress
 	ret
 ;*********************************************************************
 ;Pack procedures
