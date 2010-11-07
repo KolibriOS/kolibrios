@@ -138,6 +138,7 @@ DEV_NOTIFY	      equ  5
 DEV_SET_MASTERVOL     equ  6
 DEV_GET_MASTERVOL     equ  7
 DEV_GET_INFO	      equ  8
+DEV_GET_POS           equ  9
 
 struc AC_CNTRL		    ;AC controller base class
 { .bus		      dd ?
@@ -453,6 +454,19 @@ proc service_proc stdcall, ioctl:dword
 	   mov ebx, [edi+output]
 	   stdcall get_master_vol, ebx
 	   ret
+
+@@:
+           cmp eax, DEV_GET_POS
+           jne @F
+
+           mov ebx, 4096
+           mov edx, 0x18
+           call [ctrl.ctrl_read16]
+           sub ebx, eax
+           mov edx, [edi+output]
+           mov [edx], ebx
+           xor eax, eax
+           ret
 ;@@:
 ;           cmp eax, DEV_GET_INFO
 ;           jne @F

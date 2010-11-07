@@ -55,6 +55,7 @@ MANUAL_DESTROY    equ 0x80000000
 DEV_PLAY          equ 1
 DEV_STOP          equ 2
 DEV_CALLBACK      equ 3
+DEV_GET_POS       equ  9
 
 struc IOCTL
 {  .handle        dd ?
@@ -193,11 +194,12 @@ proc service_proc stdcall, ioctl:dword
            cmp eax, (srv_calls_end-srv_calls)/4
            ja  .fail
 
-           cmp eax, SND_CREATE_BUFF
-           ja @F
+           cmp eax, SND_DESTROY_BUFF
+           jb @F
 
-           jmp [srv_calls+eax*4]
-@@:
+;           cmp [edi+inp_size], 4
+;           jb .fali
+
            mov ebx, [edi+input]
            mov edx, [ebx]
 
@@ -207,7 +209,10 @@ proc service_proc stdcall, ioctl:dword
            cmp [edx+STREAM.size], STREAM.sizeof
            jne .fail
 
+@@:
            jmp [srv_calls+eax*4]
+
+
 .fail:
            mov eax, -1
            ret
@@ -340,12 +345,11 @@ align 4
            ret
 align 4
 .snd_settimebase:
-           cmp [edi+inp_size], 8
+           cmp [edi+inp_size], 12
            jne .fail
 
-           mov edi, [edi+input]
-           mov eax, [edi]
-           mov ebx, [edi+4]
+           mov eax, [ebx]
+           mov ebx, [ebx+4]
            mov dword [edx+STREAM.time_base], eax
            mov dword [edx+STREAM.time_base+4], ebx
            xor eax, eax
@@ -355,15 +359,45 @@ align 4
            cmp [edi+out_size], 8
            jne .fail
 
+           xor ebx, ebx
+           push 48
+           push ebx            ; local storage
+
+           cmp [edx+STREAM.flags], SND_STOP
+           je @F
+
+           mov eax, esp
+
+           push edx
+           push edi
+
+           push 4              ;.out_size
+           push eax            ;.output
+           push ebx            ;.inp_size
+           push ebx            ;.input
+           push DEV_GET_POS    ;.code
+           push dword [hSound] ;.handle
+           mov eax, esp
+
+           stdcall ServiceHandler, eax
+           add esp, 6*4
+
+           pop edi
+           pop edx
+
+           test eax, eax
+           jz @F
+
+           mov dword [esp], 0   ; clear offset
+@@:
            mov edi, [edi+output]
 
-           push 48
-           emms
            fild  qword [edx+STREAM.time_stamp]
-           fidiv dword [esp]
+           fiadd dword [esp]    ; primary buffer offset
+           fidiv dword [esp+4]  ; total_samples / frequency
            fadd  qword [edx+STREAM.time_base]
            fstp  qword [edi]
-           add esp, 4
+           add esp, 8
 
            xor eax, eax
            ret
