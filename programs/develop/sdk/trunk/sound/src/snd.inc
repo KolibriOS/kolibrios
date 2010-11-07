@@ -30,6 +30,8 @@ SND_SETPAN          equ 14
 SND_GETPAN          equ 15
 SND_GETBUFFSIZE     equ 16
 SND_GETFREESPACE    equ 17
+SND_SETTIMEBASE     equ 18
+SND_GETTIMESTAMP    equ 19
 
 DEV_SET_BUFF        equ  4
 DEV_NOTIFY          equ  5

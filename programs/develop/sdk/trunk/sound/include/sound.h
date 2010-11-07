@@ -71,6 +71,9 @@ extern "C"
 #define SND_GETPAN         15
 #define SND_GETBUFFSIZE    16
 #define SND_GETFREESPACE   17
+#define SND_SETTIMEBASE    18
+#define SND_GETTIMESTAMP   19
+
 
 #define PLAY_SYNC     0x80000000
 
@@ -103,6 +106,9 @@ int _stdcall  GetPan(SNDBUF hBuff, int *pan);
 
 int _stdcall  GetMasterVol(int* vol);
 int _stdcall  SetMasterVol(int vol);
+
+int _stdcall  SetTimeBase(SNDBUF hBuff, double base);
+int _stdcall  GetTimeStamp(SNDBUF hBuff, double *stamp);
 
 
 typedef struct
