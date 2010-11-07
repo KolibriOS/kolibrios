@@ -2,20 +2,13 @@
 
 #define FORCED_PIO
 
-#include "types.h"
-
+#include <ddk.h>
 #include "pci.h"
-#include "syscall.h"
+#include <syscall.h>
 
 #include "geode.h"
 
-#define DEBUG
-
-#ifdef DEBUG
-  #define DBG(format,...) dbgprintf(format,##__VA_ARGS__)
-#else
-  #define DBG(format,...)
-#endif
+#define DBG(format,...) dbgprintf(format,##__VA_ARGS__)
 
 #define  BM0_IRQ            0x04
 #define  BM1_IRQ            0x08
@@ -470,7 +463,7 @@ Bool FindPciDevice()
 };
 
 
-u32_t __stdcall drvEntry(int action)
+u32_t drvEntry(int action, char *cmdline)
 {
     u32_t retval;
 
@@ -479,17 +472,15 @@ u32_t __stdcall drvEntry(int action)
     if(action != 1)
         return 0;
 
-#ifdef DEBUG
     if(!dbg_open("/rd/1/drivers/geode.log"))
     {
         printf("Can't open /rd/1/drivers/geode.log\nExit\n");
         return 0;
     }
-#endif
 
     if( FindPciDevice() == FALSE)
     {
-        DBG("Device not found\n");
+        dbgprintf("Device not found\n");
         return 0;
     };
 
@@ -516,7 +507,7 @@ u32_t __stdcall drvEntry(int action)
 #define DEV_SET_MASTERVOL      6
 #define DEV_GET_MASTERVOL      7
 #define DEV_GET_INFO           8
-
+#define DEV_GET_POS            9
 
 int __stdcall srv_sound(ioctl_t *io)
 {
@@ -547,6 +538,14 @@ int __stdcall srv_sound(ioctl_t *io)
             if(io->inp_size==4)
             {
                 geode.callback = (void*)(*inp);
+                return 0;
+            }
+            break;
+
+        case DEV_GET_POS:
+            if(io->out_size==4)
+            {
+                *outp = ctrl_read_32(0x60)>>2;
                 return 0;
             }
             break;

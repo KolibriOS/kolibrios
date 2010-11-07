@@ -2,14 +2,23 @@
 CC = gcc
 FASM = e:/fasm/fasm.exe
 CFLAGS = -c -O2 -fomit-frame-pointer -fno-builtin-printf 
-LDRHD  = -shared -T ld.x -s --file-alignment 32
+LDFLAGS = -nostdlib -shared -s -Map usb.map --image-base 0\
+	  --file-alignment 512 --section-alignment 4096
 
-INCLUDES = -I ../../include
+DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 
 
-HFILES:=     ../../include/types.h	\
-             ../../include/syscall.h	\
-             ../../include/pci.h	\
-             geode.h			
+DRV_TOPDIR   = $(CURDIR)/../..
+
+DRV_INCLUDES = $(DRV_TOPDIR)/include
+
+INCLUDES = 	-I$(DRV_INCLUDES) \
+		-I$(DRV_INCLUDES)/linux
+
+LIBPATH = $(DRV_TOPDIR)/ddk
+
+LIBS:=    -lddk -lcore 
+
+HFILES:=     geode.h			
 
 SRC_DEP:=    
 GEODE_SRC:=    amd_geode.h     
@@ -20,11 +29,11 @@ GEODE:=  geode.dll
 all: $(GEODE)
 
 $(GEODE): geode.obj $(SRC_DEP) $(HFILES) Makefile
-	wlink name $(GEODE) SYS nt_dll lib libdrv op offset=0 op nod op maxe=25 op el op STUB=stub.exe op START=_drvEntry @$(NAME).lk
+	ld $(LDFLAGS) -L$(LIBPATH) -T driver.lds -o $@ geode.obj $(LIBS)  
 	kpack.exe geode.dll geode.drv
 
 geode.obj : geode.c $(SRC_DEP) $(HFILES) Makefile
-	$(CC) $(INCLUDES) $(CFLAGS) -o geode.obj geode.c
+	$(CC) $(DEFINES) $(INCLUDES) $(CFLAGS) -o geode.obj geode.c
 
 
 

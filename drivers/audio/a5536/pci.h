@@ -1,4 +1,8 @@
 
+typedef int Bool;
+
+#define TRUE   1
+#define FALSE  0
 
 #pragma pack(push, 1)
 typedef struct
