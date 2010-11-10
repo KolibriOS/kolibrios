@@ -2,7 +2,7 @@
 CC = gcc
 FASM = e:/fasm/fasm.exe
 CFLAGS = -c -O2 -fomit-frame-pointer -fno-builtin-printf 
-LDFLAGS = -nostdlib -shared -s -Map usb.map --image-base 0\
+LDFLAGS = -nostdlib -shared -s -Map geode.map --image-base 0\
 	  --file-alignment 512 --section-alignment 4096
 
 DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 

@@ -48,6 +48,7 @@ typedef struct
     int     CurrentPowerState;
 
     addr_t  buffer;
+    addr_t  buffer_dma;
     addr_t  prd_dma;
 
     addr_t  irq_line;
@@ -245,6 +246,7 @@ Bool init_device()
 
     addr_t buffer = geode.buffer;
     addr_t dma = GetPgAddr(geode.buffer);
+    geode.buffer_dma = dma;
 
     geode.prd_dma  = (((addr_t)prd_tab) & 4095) + GetPgAddr((void*)prd_tab);
 
@@ -478,6 +480,8 @@ u32_t drvEntry(int action, char *cmdline)
         return 0;
     }
 
+    printf("AMD Geode CS5536 audio driver\n");
+
     if( FindPciDevice() == FALSE)
     {
         dbgprintf("Device not found\n");
@@ -545,7 +549,10 @@ int __stdcall srv_sound(ioctl_t *io)
         case DEV_GET_POS:
             if(io->out_size==4)
             {
-                *outp = ctrl_read_32(0x60)>>2;
+                u32_t  dma;
+                dma = ctrl_read_32(0x60);
+                dma-= geode.buffer_dma;
+                *outp = (dma & 16383)>>2;
                 return 0;
             }
             break;
