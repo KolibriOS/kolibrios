@@ -459,10 +459,12 @@ proc service_proc stdcall, ioctl:dword
            cmp eax, DEV_GET_POS
            jne @F
 
-           mov ebx, 4096
+           mov ebx, 8192
            mov edx, 0x18
+           xor eax, eax
            call [ctrl.ctrl_read16]
            sub ebx, eax
+           shr ebx, 1
            mov edx, [edi+output]
            mov [edx], ebx
            xor eax, eax

@@ -359,6 +359,9 @@ align 4
            cmp [edi+out_size], 8
            jne .fail
 
+           pushfd
+           cli
+
            xor ebx, ebx
            push 48
            push ebx            ; local storage
@@ -392,12 +395,15 @@ align 4
 @@:
            mov edi, [edi+output]
 
+           emms
            fild  qword [edx+STREAM.time_stamp]
            fiadd dword [esp]    ; primary buffer offset
            fidiv dword [esp+4]  ; total_samples / frequency
            fadd  qword [edx+STREAM.time_base]
            fstp  qword [edi]
            add esp, 8
+
+           popfd
 
            xor eax, eax
            ret
@@ -547,6 +553,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
 
            mov dword [edi+STREAM.time_stamp],   ebx
            mov dword [edi+STREAM.time_stamp+4], ebx
+           mov dword [edi+STREAM.last_ts], ebx
 
            stdcall AllocPages, dword 64/4
            mov edi, [str]

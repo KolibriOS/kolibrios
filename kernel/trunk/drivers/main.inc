@@ -127,6 +127,7 @@ align 8
 
     .time_base     dq ?
     .time_stamp    dq ?
+    .last_ts       dd ?
 
     .notify_event  dd ?
     .notify_id     dd ?

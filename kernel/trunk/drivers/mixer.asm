@@ -100,6 +100,7 @@ proc update_streams
 
            add dword [esi+STREAM.time_stamp], 4096
            adc dword [esi+STREAM.time_stamp+4], 0
+           mov dword [esi+STREAM.last_ts], 0
 
            mov eax, [esi+STREAM.out_rp]
            cmp eax, [esi+STREAM.out_top]
