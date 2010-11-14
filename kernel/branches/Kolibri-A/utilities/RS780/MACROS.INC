@@ -283,7 +283,7 @@ macro __mov reg,a,b {	    ; mike.dld
 ;__CPU_type     equ     p5
 SYSENTER_VAR	equ	0
 
-macro mcall a,b,c,d,e,f {   ; mike.dld, updated by Ghost for Fast System Calls
+macro mcall a,b,c,d,e,f {   
  __mov eax,a
  __mov ebx,b
  __mov ecx,c

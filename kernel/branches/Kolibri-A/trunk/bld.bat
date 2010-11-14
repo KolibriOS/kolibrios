@@ -34,7 +34,7 @@ goto :eof
 
    if not exist bin mkdir bin
    echo lang fix %lang% > lang.inc
-   fasm -m 65536 kernel.asm bin\kernel.mnt
+   c:\fasm\fasm -m 65536 kernel.asm bin\kernel.mnt
    if not %errorlevel%==0 goto :Error_FasmFailed
    erase lang.inc
 goto :eof
