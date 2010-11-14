@@ -187,15 +187,7 @@ calc_vmodes_table:
         lfs     si, [es:vi.VideoModePtr]
 
         mov     bx,modes_table
-;save no vesa mode of work 320x200, EGA/CGA 256 colors and 640x480, VGA 16 cols
-;        mov     word [es:bx],640
-;        mov     word [es:bx+2],480
-;        mov     word [es:bx+6],0x13
-        
-;        mov     word [es:bx+10],640
-;        mov     word [es:bx+12],480
-;        mov     word [es:bx+16],0x12
-;        add     bx,20
+
   .next_mode:
         mov     cx,word [fs:si] ; mode number
         cmp     cx,-1
@@ -206,7 +198,7 @@ calc_vmodes_table:
         int     0x10
 
         or      ah,ah
-        jnz     .modes_ok.2;vesa_info.exit
+        jnz     .modes_ok.2		;vesa_info.exit
 
         test    [es:mi.ModeAttributes],00000001b   ;videomode support ?
         jz      @f
@@ -229,13 +221,13 @@ calc_vmodes_table:
         mov     ax,[es:mi.ModeAttributes]
         mov     [es:bx+4],ax               ; +4[2] : attributes
 
-        cmp     [s_vesa.ver],'2'
-        jb      .lp1
+;<<        cmp     [s_vesa.ver],'2'
+;<<        jb      .lp1
 
-        or      cx,0x4000  ; use LFB
+        or      cx,0x4000  			; use LFB <<< ?
 .lp1:	mov     [es:bx+6],cx               ; +6 : mode number
         movzx   ax,byte [es:mi.BitsPerPixel]
-        mov     word [es:bx+8],ax               ; +8 : bits per pixel
+        mov     word [es:bx+8],ax               ; +8 : bits per pixel << ?
         add     bx,size_of_step                 ; size of record 
 
     @@:
@@ -251,46 +243,46 @@ calc_vmodes_table:
 
 ;-----------------------------------------------------------------------------
 
-draw_current_vmode:
-        push    0
-        pop     es
+;draw_current_vmode:
+;        push    0
+;        pop     es
 
-        mov     si,word [cursor_pos]
+;        mov     si,word [cursor_pos]
 
-        cmp     word [es:si+6],0x12
-        je      .no_vesa_0x12
+;        cmp     word [es:si+6],0x12
+;        je      .no_vesa_0x12
 
-        cmp     word [es:si+6],0x13
-        je      .no_vesa_0x13
+;        cmp     word [es:si+6],0x13
+;        je      .no_vesa_0x13
 
-        mov     di,loader_block_error
-        movzx   eax,word[es:si+0]
-        mov     ecx,10
-        call    int2strnz
-        mov     byte[es:di],'x'
-        inc     di
-        movzx   eax,word[es:si+2]
-        call    int2strnz
-        mov     byte[es:di],'x'
-        inc     di
-        movzx   eax,word[es:si+8]
-        call    int2strnz
-        mov     dword[es:di],0x00000d0a
-        mov     si,loader_block_error
-        push    ds
-        push    es
-        pop     ds
-        call    printplain
-        pop     ds
-        ret
-.no_vesa_0x13:
-        mov     si,mode0
-        jmp     .print
-.no_vesa_0x12:
-        mov     si,mode9
-.print:
-        call    printplain
-        ret        
+;        mov     di,loader_block_error
+;        movzx   eax,word[es:si+0]
+;        mov     ecx,10
+;        call    int2strnz
+;        mov     byte[es:di],'x'
+;        inc     di
+;        movzx   eax,word[es:si+2]
+;        call    int2strnz
+;        mov     byte[es:di],'x'
+;        inc     di
+;        movzx   eax,word[es:si+8]
+;        call    int2strnz
+;        mov     dword[es:di],0x00000d0a
+;        mov     si,loader_block_error
+;        push    ds
+;        push    es
+;        pop     ds
+;        call    printplain
+;        pop     ds
+;        ret
+;.no_vesa_0x13:
+;        mov     si,mode0
+;        jmp     .print
+;.no_vesa_0x12:
+;        mov     si,mode9
+;.print:
+;        call    printplain
+;        ret        
 ;-----------------------------------------------------------------------------
 check_first_parm:
         mov     si,word [preboot_graph]
@@ -305,12 +297,6 @@ check_first_parm:
 
         mov     ax,1024
         mov     bx,768
-        mov     si,modes_table
-        call    .loops
-        test    ax,ax
-        jz     .ok_found_mode
-        mov     ax,800
-        mov     bx,600
         mov     si,modes_table
         call    .loops
         test    ax,ax
@@ -331,14 +317,9 @@ check_first_parm:
         jz     .ok_found_mode
 
 	mov    si,modes_table
-;        cmp     ax,modes_table
-;        jb      .zerro           ;check on correct if bellow
-;        cmp     ax,word [end_cursor]
-;        ja      .zerro           ;check on correct if anymore
 
 .ok_found_mode:
         mov     word [home_cursor],si
-;        mov     word [cursor_pos],si
         mov     word [preboot_graph],si
         mov     ax,si
 
@@ -373,9 +354,6 @@ check_first_parm:
         jne     .next
         cmp     bx,word [es:si+2]
         jne     .next
-        cmp     word [es:si+8],32
-        je      .ok
-        cmp     word [es:si+8],24
         je      .ok
 .next:  add     si,size_of_step
         cmp     word [es:si],-1
@@ -393,200 +371,200 @@ check_first_parm:
         
 ;-----------------------------------------------------------------------------
 draw_vmodes_table:
-        _setcursor 9, 2
-        mov     si,gr_mode
-        call    printplain
+;        _setcursor 9, 2
+;        mov     si,gr_mode
+;        call    printplain
 
-        mov     si,_st
-        call    printplain
+;        mov     si,_st
+;        call    printplain
 
-        push    word [cursor_pos]
-        pop     ax
-        push    word [home_cursor]
-        pop     si
-        mov     cx,si
+;        push    word [cursor_pos]
+;        pop     ax
+;        push    word [home_cursor]
+;        pop     si
+;        mov     cx,si
 
-        cmp     ax,si
-        je      .ok
-        jb      .low
+ ;       cmp     ax,si
+;        je      .ok
+;        jb      .low
 
 
-        add     cx,size_of_step*long_v_table
+ ;       add     cx,size_of_step*long_v_table
         
-        cmp     ax,cx
-        jb      .ok
+  ;      cmp     ax,cx
+;        jb      .ok
         
-        sub     cx,size_of_step*long_v_table
-        add     cx,size_of_step
-        cmp     cx,word[end_cursor]
-        jae     .ok
-        add     si,size_of_step
-        push    si
-        pop     word [home_cursor]
-        jmp     .ok
+;        sub     cx,size_of_step*long_v_table
+;        add     cx,size_of_step
+;        cmp     cx,word[end_cursor]
+;        jae     .ok
+;        add     si,size_of_step
+;        push    si
+;        pop     word [home_cursor]
+;        jmp     .ok
 
 
-.low:   sub     cx,size_of_step
-        cmp     cx,modes_table
-        jb      .ok
-        push    cx
-        push    cx
-        pop     word [home_cursor]
-        pop     si
+;.low:   sub     cx,size_of_step
+;        cmp     cx,modes_table
+;        jb      .ok
+;        push    cx
+;        push    cx
+;        pop     word [home_cursor]
+;        pop     si
 
 
-.ok:
+;.ok:
 ; calculate scroll position
-        push    si
-        mov     ax, [end_cursor]
-        sub     ax, modes_table
-        mov     bx, size_of_step
-        cwd
-        div     bx
-        mov     si, ax          ; si = size of list
-        mov     ax, [home_cursor]
-        sub     ax, modes_table
-        cwd
-        div     bx
-        mov     di, ax
-        mov     ax, scroll_area_size*long_v_table
-        cwd
-        div     si
-        test    ax, ax
-        jnz     @f
-        inc     ax
-@@:
-        cmp     al, scroll_area_size
-        jb      @f
-        mov     al, scroll_area_size
-@@:
-        mov     cx, ax
+;        push    si
+;        mov     ax, [end_cursor]
+;        sub     ax, modes_table
+;        mov     bx, size_of_step
+;        cwd
+;        div     bx
+;        mov     si, ax          ; si = size of list
+;        mov     ax, [home_cursor]
+;        sub     ax, modes_table
+;        cwd
+;        div     bx
+;        mov     di, ax
+;        mov     ax, scroll_area_size*long_v_table
+;        cwd
+;        div     si
+;        test    ax, ax
+;        jnz     @f
+;        inc     ax
+;@@:
+;        cmp     al, scroll_area_size
+;        jb      @f
+;        mov     al, scroll_area_size
+;@@:
+;        mov     cx, ax
 ; cx = scroll height
 ; calculate scroll pos
-        xor     bx, bx          ; initialize scroll pos
-        sub     al, scroll_area_size+1
-        neg     al
-        sub     si, long_v_table-1
-        jbe     @f
-        mul     di
-        div     si
-        mov     bx, ax
-@@:
-        inc     bx
-        imul    ax, bx, size_of_step
-        add     ax, [home_cursor]
-        mov     [scroll_start], ax
-        imul    cx, size_of_step
-        add     ax, cx
-        mov     [scroll_end], ax
-        pop     si
-        mov     bp,long_v_table               ;show rows
-.@@_next_bit:
+;        xor     bx, bx          ; initialize scroll pos
+;        sub     al, scroll_area_size+1
+;        neg     al
+;        sub     si, long_v_table-1
+;        jbe     @f
+;        mul     di
+;        div     si
+;        mov     bx, ax
+;@@:
+;        inc     bx
+;        imul    ax, bx, size_of_step
+;        add     ax, [home_cursor]
+;        mov     [scroll_start], ax
+;        imul    cx, size_of_step
+;        add     ax, cx
+;        mov     [scroll_end], ax
+;        pop     si
+;        mov     bp,long_v_table               ;show rows
+;.@@_next_bit:
 ;clear cursor
-	mov	ax,'  '
-        mov     word[ds:_r1+21],ax
-        mov     word[ds:_r1+50],ax
+;	mov	ax,'  '
+;        mov     word[ds:_r1+21],ax
+;        mov     word[ds:_r1+50],ax
 
-        mov     word[ds:_r2+21],ax
-        mov     word[ds:_r2+45],ax
+;        mov     word[ds:_r2+21],ax
+;        mov     word[ds:_r2+45],ax
 
-        mov     word[ds:_rs+21],ax
-        mov     word[ds:_rs+46],ax
+;        mov     word[ds:_rs+21],ax
+;        mov     word[ds:_rs+46],ax
 ; draw string
-        cmp     word [es:si+6],0x12
-        je      .show_0x12
-        cmp     word [es:si+6],0x13
-        je      .show_0x13
+;        cmp     word [es:si+6],0x12
+;        je      .show_0x12
+;        cmp     word [es:si+6],0x13
+;        je      .show_0x13
 
-        movzx   eax,word[es:si]
-        cmp     ax,-1
-        je      .@@_end
-        mov     di,_rs+23          
-        mov     ecx,10
-        mov     bl,4
-        call    int2str
-        movzx   eax,word[es:si+2]
-        inc     di
-        mov     bl,4
-        call    int2str
+;        movzx   eax,word[es:si]
+;        cmp     ax,-1
+;        je      .@@_end
+;        mov     di,_rs+23          
+;        mov     ecx,10
+;        mov     bl,4
+;        call    int2str
+;        movzx   eax,word[es:si+2]
+;        inc     di
+;        mov     bl,4
+;        call    int2str
 
-        movzx   eax,word[es:si+8]
-        inc     di
-        mov     bl,2
-        call    int2str
+;        movzx   eax,word[es:si+8]
+;        inc     di
+;        mov     bl,2
+;        call    int2str
 
-        cmp     si, word [cursor_pos]
-        jne     .next
+;        cmp     si, word [cursor_pos]
+;        jne     .next
 ;draw   cursor
-        mov     word[ds:_rs+21],'>>'
-        mov     word[ds:_rs+46],'<<'
+;        mov     word[ds:_rs+21],'>>'
+;        mov     word[ds:_rs+46],'<<'
         
 
 
-.next:
-        push    si
-        mov     si,_rs
-.@@_sh:
+;.next:
+;        push    si
+;        mov     si,_rs
+;.@@_sh:
 ; add to the string pseudographics for scrollbar
-        pop     bx
-        push    bx
-        mov     byte [si+53], ' '
-        cmp     bx, [scroll_start]
-        jb      @f
-        cmp     bx, [scroll_end]
-        jae     @f
-        mov     byte [si+53], 0xDB ; filled bar
-@@:
-        push    bx
-        add     bx, size_of_step
-        cmp     bx, [end_cursor]
-        jnz     @f
-        mov     byte [si+53], 31 ; 'down arrow' symbol
-@@:
-        sub     bx, [home_cursor]
-        cmp     bx, size_of_step*long_v_table
-        jnz     @f
-        mov     byte [si+53], 31 ; 'down arrow' symbol
-@@:
-        pop     bx
-        cmp     bx, [home_cursor]
-        jnz     @f
-        mov     byte [si+53], 30 ; 'up arrow' symbol
-@@:
-        call    printplain
-        pop     si
-        add     si,size_of_step
+;        pop     bx
+;        push    bx
+;        mov     byte [si+53], ' '
+;        cmp     bx, [scroll_start]
+;        jb      @f
+;        cmp     bx, [scroll_end]
+;        jae     @f
+;        mov     byte [si+53], 0xDB ; filled bar
+;@@:
+;        push    bx
+;        add     bx, size_of_step
+;        cmp     bx, [end_cursor]
+;        jnz     @f
+;        mov     byte [si+53], 31 ; 'down arrow' symbol
+;@@:
+;        sub     bx, [home_cursor]
+;        cmp     bx, size_of_step*long_v_table
+;        jnz     @f
+;        mov     byte [si+53], 31 ; 'down arrow' symbol
+;@@:
+;        pop     bx
+;        cmp     bx, [home_cursor]
+;        jnz     @f
+;        mov     byte [si+53], 30 ; 'up arrow' symbol
+;@@:
+;        call    printplain
+;        pop     si
+;        add     si,size_of_step
 
-        dec     bp
-        jnz     .@@_next_bit
+;        dec     bp
+;        jnz     .@@_next_bit
 
-.@@_end:
-        mov     si,_bt
-        call    printplain
+;.@@_end:
+;        mov     si,_bt
+;        call    printplain
         ret
-.show_0x13:
-        push    si
+;.show_0x13:
+;        push    si
 
-        cmp     si, word [cursor_pos]
-        jne     @f
-        mov     word[ds:_r1+21],'>>'
-        mov     word[ds:_r1+50],'<<'        
-@@:
-        mov     si,_r1
-        jmp     .@@_sh
-.show_0x12:
-        push    si
-        cmp     si, word [cursor_pos]
-        jne     @f
+;        cmp     si, word [cursor_pos]
+;        jne     @f
+;        mov     word[ds:_r1+21],'>>'
+;        mov     word[ds:_r1+50],'<<'        
+;@@:
+;        mov     si,_r1
+;        jmp     .@@_sh
+;.show_0x12:
+;        push    si
+;        cmp     si, word [cursor_pos]
+;        jne     @f
 
-        mov     word[ds:_r2+21],'>>'
-        mov     word[ds:_r2+45],'<<'
-@@:
-        mov     si,_r2
-        jmp     .@@_sh
+;        mov     word[ds:_r2+21],'>>'
+;        mov     word[ds:_r2+45],'<<'
+;@@:
+;        mov     si,_r2
+;        jmp     .@@_sh
 
 ;-----------------------------------------------------------------------------
-;Clear arrea of current video page (0xb800)
+;Clear area of current video page (0xb800)
 clear_vmodes_table:
         pusha
        ; draw frames
@@ -626,63 +604,26 @@ set_vmode:
         mov     word [es:0x900C],bx              ; resolution Y
         mov     word [es:0x9008],cx              ; number of mode
 
-;        cmp     cx,0x12
-;        je      .mode0x12_0x13
-;        cmp     cx,0x13
-;        je      .mode0x12_0x13
 
-
-;        cmp     byte [s_vesa.ver],'2'
-;        jb      .vesa12
-
-;  VESA 2 and Vesa 3
+;  VESA 2 and Vesa 3 only
 
         mov     ax,0x4f01
         and     cx,0xfff
         mov     di,mi;0xa000
         int     0x10
         ; LFB
-        mov     eax,[es:mi.PhysBasePtr];di+0x28]
+        mov     eax,[es:mi.PhysBasePtr]		;di+0x28]
         mov     [es:0x9018],eax
         ; ---- vbe voodoo
         BytesPerLine equ 0x10
         mov     ax, [es:di+BytesPerLine]
         mov     [es:0x9001], ax
         ; BPP
-;        cmp     [es:mi.BitsPerPixel],16
-;        jne     .l0
-;        cmp     [es:mi.GreenMaskSize],5
-;        jne     .l0
-;        mov     [es:mi.BitsPerPixel],15
 .l0:
         mov     al, byte [es:di+0x19]
         mov     [es:0x9000], al
         jmp     .exit
 
-;.mode0x12_0x13:
-;        mov     byte [es:0x9000], 32
-;        or      dword [es:0x9018], 0xFFFFFFFF; 0x800000
-
-
-;  VESA 1.2 PM BANK SWITCH ADDRESS
-
-;.vesa12:
-
-
-;        mov     ax,0x4f0A
-;        xor     bx,bx
-;        int     0x10
-;        xor     eax,eax
-;        xor     ebx,ebx
-;        mov     ax,es
-;        shl     eax,4
-;        mov     bx,di
-;        add     eax,ebx
-;        movzx   ebx,word[es:di]
-;        add     eax,ebx
-;        push    0x0000
-;        pop     es
-;        mov     [es:0x9014],eax
   .exit:
         ret
 

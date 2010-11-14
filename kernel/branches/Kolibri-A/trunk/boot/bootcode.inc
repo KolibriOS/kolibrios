@@ -47,8 +47,8 @@ printplain:
 	popa
 	ret
 
-getkey:
-; get number in range [bl,bh] (bl,bh in ['0'..'9'])
+ getkey:
+;get number in range [bl,bh] (bl,bh in ['0'..'9'])
 ; in: bx=range
 ; out: ax=digit (1..9, 10 for 0)
 	mov	ah, 0
@@ -209,32 +209,16 @@ dfl1:
 ; draw bottom
 	mov	si, d80x25_bottom
 	mov	cx, d80x25_bottom_num * 80
-@@:
-	lodsb
-	stosw
-	loop	@b
+;@@:
+;	lodsb
+;	stoswvmode
+;	loop	@b
 
 	mov	byte [space_msg+80], 0	  ; now space_msg is null terminated
 
 	_setcursor d80x25_top_num,0
 
 
-; TEST FOR 386+
-	jmp	cpugood
-;        mov     bx, 0x4000
-;        pushf
-;        pop     ax
-;        mov     dx, ax
-;        xor     ax, bx
-;        push    ax
-;        popf
-;        pushf
-;        pop     ax
-;        and     ax, bx
-;        and     dx, bx
-;        cmp     ax, dx
-;        jnz     cpugood
-;        mov     si, not386
 sayerr:
 	call	print
 	jmp	$
@@ -403,7 +387,7 @@ cfgmanager:
 	mov	si, curvideo_msg
 	call	print
 
-	    call    draw_current_vmode
+;<<	    call    draw_current_vmode
 
 	mov	si, usebd_msg
 	cmp	[preboot_biosdisk], 1
