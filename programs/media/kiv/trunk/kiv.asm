@@ -8,7 +8,7 @@ dd 0x01, START, I_END, F_END, stacktop, @PARAMS, 0x0
 
 FALSE = 0
 TRUE  = 1
-
+include '../../../config.inc'		;for nightbuild
 include '../../../proc32.inc'
 include '../../../macros.inc'
 include 'dll.inc'
@@ -1051,8 +1051,13 @@ OpenDialog_data:
 
 communication_area_name:
     db 'FFFFFFFF_open_dialog',0
+
 open_dialog_path:
+if __nightbuild eq yes
+    db '/sys/MANAGERS/opendial',0
+else
     db '/sys/File Managers/opendial',0
+end if
 communication_area_default_pach:
     db '/rd/1',0
 

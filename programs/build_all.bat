@@ -51,7 +51,7 @@ echo Enter CPU_type ("p5" for interrupt, "p6" for SYSENTER, "k6" for SYSCALL)
 call :input_value res %__CPU_type%
 echo __CPU_type fix %res% > config.inc
 
-for %%i in (%BIN% %BIN%\demos %BIN%\develop %BIN%\lib %BIN%\games %BIN%\network %BIN%\3d %BIN%\fonts) do if not exist %%i mkdir %%i
+for %%i in (%BIN% %BIN%\demos %BIN%\develop %BIN%\lib %BIN%\games %BIN%\network %BIN%\3d %BIN%\fonts %BIN%\nightbuild) do if not exist %%i mkdir %%i
 
 echo *
 echo Building system
@@ -227,6 +227,16 @@ fasm demos\trantest\trunk\trantest.asm %BIN%\demos\trantest
 fasm demos\tube\trunk\tube.asm %BIN%\demos\tube
 fasm demos\unvwater\trunk\unvwater.asm %BIN%\demos\unvwater
 
+echo *
+echo Building depend application for fdd's nightbuild
+echo *
+echo __nightbuild fix yes >> config.inc
+fasm media\kiv\trunk\kiv.asm %BIN%\nightbuild\kiv
+
+
+
+;restore
+echo __CPU_type fix %res% > config.inc
 erase lang.inc
 
 echo *
@@ -413,6 +423,12 @@ kpack %BIN%\demos\transp
 kpack %BIN%\demos\trantest
 kpack %BIN%\demos\tube
 kpack %BIN%\demos\unvwater
+
+echo *
+echo Compressing nightbuild
+echo *
+kpack %BIN%\nightbuild\kiv
+
 
 echo *
 echo Compressing complete
