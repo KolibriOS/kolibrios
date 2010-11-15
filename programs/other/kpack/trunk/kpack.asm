@@ -37,6 +37,7 @@ use32
 	dd params
 	dd cur_dir_path
 ;---------------------------------------------------------------------
+include '../../../config.inc'		;for nightbuild
 include '../../../macros.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/libraries/box_lib/load_lib.mac'

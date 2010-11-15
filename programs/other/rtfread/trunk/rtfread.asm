@@ -59,6 +59,7 @@ AR_OFFSET               equ     10
   dd     fname_buf   ; адрес буфера для параметров (не используется)
   dd     cur_dir_path         ; зарезервировано
 
+include '../../../config.inc'		;for nightbuild
 include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/libraries/box_lib/load_lib.mac'
@@ -788,7 +789,11 @@ OpenDialog_data:
 communication_area_name:
         db 'FFFFFFFF_open_dialog',0
 open_dialog_path:
-        db '/sys/File Managers/opendial',0
+if __nightbuild eq yes
+    db '/sys/MANAGERS/opendial',0
+else
+    db '/sys/File Managers/opendial',0
+end if
 communication_area_default_pach:
         db '/rd/1',0
 

@@ -36,7 +36,7 @@ SECONDARY_CHANNEL equ 0x177
 ; Регистр по смещению 0х10 для функции 02 содержит 0x1c01 (порты 0х1с00-0х1с07)
 
 ; Режимы Legacy, Native и пр. меняются через BIOS.
-
+include '../../../config.inc'		;for nightbuild
 include '..\..\..\macros.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/libraries/box_lib/load_lib.mac'
@@ -1843,7 +1843,11 @@ communication_area_name2:
 communication_area_name:
 	db 'FFFFFFFF_open_dialog2',0
 open_dialog_path:
-	db '/sys/File Managers/opendial',0
+if __nightbuild eq yes
+    db '/sys/MANAGERS/opendial',0
+else
+    db '/sys/File Managers/opendial',0
+end if
 communication_area_default_pach:
 	db '/sys',0
 

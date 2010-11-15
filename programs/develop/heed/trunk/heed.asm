@@ -51,6 +51,7 @@ use32
 _title	equ 'HeEd 0.15', 0
 
 include	'lang.inc'
+include '../../../config.inc'		;for nightbuild
 include '../../../macros.inc'
 include	'../../libraries/box_lib/trunk/box_lib.mac'
 include	'../../libraries/box_lib/load_lib.mac'
@@ -3329,7 +3330,11 @@ OpenDialog_data:
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
 open_dialog_path:
+if __nightbuild eq yes
+	db '/sys/MANAGERS/opendial',0
+else
 	db '/sys/File Managers/opendial',0
+end if
 communication_area_default_pach:
 	db '/rd/1',0
 

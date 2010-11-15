@@ -22,6 +22,7 @@
    dd      cur_dir_path ; path to file
    
 include 'lang.inc'
+include '../../../config.inc'		;for nightbuild
 include '../../../macros.inc'
 include 'kglobals.inc'
 include 'unpacker.inc'
@@ -1374,7 +1375,11 @@ communication_area_name2:
 communication_area_name:
 	db 'FFFFFFFF_open_dialog2',0
 open_dialog_path:
-	db '/sys/File Managers/opendial',0
+if __nightbuild eq yes
+    db '/sys/MANAGERS/opendial',0
+else
+    db '/sys/File Managers/opendial',0
+end if
 communication_area_default_pach:
 	db '/sys',0
 

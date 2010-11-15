@@ -22,7 +22,8 @@
 
 include 'lang.inc'
 
-include '../../../macros.inc' ; useful stuff
+include '../../../config.inc'		;for nightbuild
+include '../../../macros.inc'		; useful stuff
 include '../../../struct.inc'
 include '../../../proc32.inc'
 

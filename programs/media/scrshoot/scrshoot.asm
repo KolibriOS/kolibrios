@@ -18,6 +18,7 @@ title equ 'Screenshooter v 1.0' ; Заголовок окна
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include '../../develop/examples/editbox/trunk/editbox.inc'
+include '../../config.inc'		;for nightbuild
 include '../../macros.inc'
 include 'txtbut.inc'
 include 'label.inc'
@@ -890,7 +891,11 @@ OpenDialog_data:
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
 open_dialog_path:
+if __nightbuild eq yes
+	db '/sys/MANAGERS/opendial',0
+else
 	db '/sys/File Managers/opendial',0
+end if
 communication_area_default_pach:
 	db '/sys',0
 

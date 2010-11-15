@@ -31,6 +31,7 @@ org	0x0
 	dd cur_dir_path
 
 
+include '../../../config.inc'		;for nightbuild
 include	'..\..\..\macros.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 	@use_library

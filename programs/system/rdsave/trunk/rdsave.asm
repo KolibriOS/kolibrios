@@ -15,6 +15,7 @@
 ;
 ;---------------------------------------------------------------------
 include 'lang.inc'
+include '../../../config.inc'		;for nightbuild
 include '..\..\..\macros.inc'
 
 appname equ 'RDsave '
@@ -451,7 +452,11 @@ OpenDialog_data:
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
 open_dialog_path:
-	db '/sys/File Managers/opendial',0
+if __nightbuild eq yes
+    db '/sys/MANAGERS/opendial',0
+else
+    db '/sys/File Managers/opendial',0
+end if
 communication_area_default_pach:
 	db '/hd0/1/kolibri',0
 

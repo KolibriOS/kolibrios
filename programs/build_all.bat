@@ -232,6 +232,12 @@ echo Building depend application for fdd's nightbuild
 echo *
 echo __nightbuild fix yes >> config.inc
 fasm media\kiv\trunk\kiv.asm %BIN%\nightbuild\kiv
+fasm media\scrshoot\scrshoot.asm %BIN%\nightbuild\scrshoot
+fasm media\animage\trunk\animage.asm %BIN%\nightbuild\animage
+fasm media\midamp\trunk\midamp.asm %BIN%\nightbuild\midamp
+fasm develop\heed\trunk\heed.asm %BIN%\nightbuild\heed
+fasm develop\tinypad\trunk\tinypad.asm %BIN%\nightbuild\tinypad
+fasm system\desktop\trunk\desktop.asm %BIN%\nightbuild\desktop
 
 
 
@@ -428,6 +434,7 @@ echo *
 echo Compressing nightbuild
 echo *
 kpack %BIN%\nightbuild\kiv
+kpack %BIN%\nightbuild\scrshoot
 
 
 echo *

@@ -40,7 +40,11 @@ OpenDialog_data:
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
 open_dialog_path:
-	db '/sys/File Managers/opendial',0
+if __nightbuild eq yes
+    db '/sys/MANAGERS/opendial',0
+else
+    db '/sys/File Managers/opendial',0
+end if
 communication_area_default_pach:
 	db '/rd0/1/',0
 
