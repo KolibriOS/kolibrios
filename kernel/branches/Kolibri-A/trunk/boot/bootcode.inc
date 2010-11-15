@@ -47,24 +47,6 @@ printplain:
 	popa
 	ret
 
- getkey:
-;get number in range [bl,bh] (bl,bh in ['0'..'9'])
-; in: bx=range
-; out: ax=digit (1..9, 10 for 0)
-	mov	ah, 0
-	int	16h
-	cmp	al, bl
-	jb	getkey
-	cmp	al, bh
-	ja	getkey
-	push	ax
-	call	putchar
-	pop	ax
-	and	ax, 0Fh
-	jnz	@f
-	mov	al, 10
-@@:
-	ret
 
 setcursor:
 ; in: dl=column, dh=row
@@ -90,14 +72,19 @@ boot_read_floppy:
 	jnc	@f
 	inc	si
 	cmp	si, 10
-	jb	@b
-	mov	si, badsect
-sayerr_plain:
-	call	printplain
-	jmp	$
+	jnb	$
 @@:
 	pop	si
 	ret
+
+sayerr_plain:
+	call	printplain
+	jmp	$
+
+sayerr:
+	call	print
+	jmp	$
+
 
 ; convert abs. sector number (AX) to BIOS T:H:S
 ; sector number = (abs.sector%BPB_SecPerTrk)+1
@@ -209,20 +196,16 @@ dfl1:
 ; draw bottom
 	mov	si, d80x25_bottom
 	mov	cx, d80x25_bottom_num * 80
-;@@:
-;	lodsb
-;	stoswvmode
-;	loop	@b
+@@:
+	lodsb
+	stosw
+	loop	@b
 
 	mov	byte [space_msg+80], 0	  ; now space_msg is null terminated
 
 	_setcursor d80x25_top_num,0
 
-
-sayerr:
-	call	print
-	jmp	$
-     cpugood:
+cpugood:
 
 	push	0
 	popf
@@ -336,7 +319,7 @@ cfgmanager:
 ; d) preboot_device = from what boot?
 
 ; determine default settings
-	mov	[.bSettingsChanged], 0
+;        mov     [.bSettingsChanged], 0
 
 ;.preboot_gr_end:
 	mov	di, preboot_device
@@ -360,287 +343,13 @@ cfgmanager:
 	adc	byte [di+preboot_dma-preboot_device], 0
 	cmp	byte [di+preboot_biosdisk-preboot_device], 1
 	adc	byte [di+preboot_biosdisk-preboot_device], 0
-; default value for VRR is OFF
-	cmp	byte [di+preboot_vrrm-preboot_device], 0
-	jnz	@f
-	mov	byte [di+preboot_vrrm-preboot_device], 2
-@@:
-; notify user
-	_setcursor 5,2
-
-	mov	si, linef
-	call	printplain
-	mov	si, start_msg
-	call	print
-	mov	si, time_msg
-	call	print
-; get start time
-	call	.gettime
-	mov	[.starttime], eax
-	mov	word [.timer], .newtimer
-	mov	word [.timer+2], cs
-.printcfg:
-
-	_setcursor 9,0
-	mov	si, current_cfg_msg
-	call	print
-	mov	si, curvideo_msg
-	call	print
-
-;<<	    call    draw_current_vmode
-
-	mov	si, usebd_msg
-	cmp	[preboot_biosdisk], 1
-	call	.say_on_off
-	mov	si, vrrm_msg
-	cmp	[preboot_vrrm], 1
-	call	.say_on_off
-	mov	si, preboot_device_msg
-	call	print
-	mov	al, [preboot_device]
-	and	eax, 7
-	mov	si, [preboot_device_msgs+eax*2]
-	call	printplain
-.show_remarks:
-; show remarks in gray color
-	mov	di, ((21-num_remarks)*80 + 2)*2
-	push	0xB800
-	pop	es
-	mov	cx, num_remarks
-	mov	si, remarks
-.write_remarks:
-	lodsw
-	push	si
-	xchg	ax, si
-	mov	ah, 1*16+7	; background: blue (1), foreground: gray (7)
-	push	di
-.write_remark:
-	lodsb
-	test	al, al
-	jz	@f
-	stosw
-	jmp	.write_remark
-@@:
-	pop	di
-	pop	si
-	add	di, 80*2
-	loop	.write_remarks
-.wait:
-	_setcursor 25,0 	; out of screen
-; set timer interrupt handler
-	cli
-	push	0
-	pop	es
-	push	dword [es:8*4]
-	pop	dword [.oldtimer]
-	push	dword [.timer]
-	pop	dword [es:8*4]
-	sti
-; wait for keypressed
-	xor	ax,ax
-	int	16h
-	push	ax
-; restore timer interrupt
-	mov	eax, [.oldtimer]
-	mov	[es:8*4], eax
-	mov	[.timer], eax
 
 	_setcursor 7,0
 	mov	si, space_msg
 	call	printplain
-; clear remarks and restore normal attributes
-	push	es
-	mov	di, ((21-num_remarks)*80 + 2)*2
-	push	0xB800
-	pop	es
-	mov	cx, num_remarks
-	mov	ax, ' ' + (1*16 + 15)*100h
-@@:
-	push	cx
-	mov	cx, 76
-	rep	stosw
-	pop	cx
-	add	di, 4*2
-	loop	@b
-	pop	es
-	pop	ax
-; switch on key
-	cmp	al, 13
-	jz	.continue
-	or	al, 20h
-	cmp	al, 'a'
-	jz	.change_a
-	cmp	al, 'b'
-	jz	.change_b
-	cmp	al, 'c'
-	jz	.change_c
-	cmp	al, 'd'
-	jnz	.show_remarks
-	_setcursor 15,0
-	mov	si, bdev
-	call	print
-	mov	bx, '14'
-	call	getkey
-	mov	[preboot_device], al
-	_setcursor 13,0
-.d:
-	mov	[.bSettingsChanged], 1
-	call	clear_vmodes_table	       ;clear vmodes_table
-	jmp    .printcfg
-.change_a:
-.loops:
-	call	draw_vmodes_table
-	_setcursor 25,0 	; out of screen
-	xor	ax,ax
-	int	0x16
-
-	mov	si,word [cursor_pos]
-
-	cmp	ah,0x48;x,0x48E0               ; up
-	jne	.down
-	cmp	si,modes_table
-	jbe	.loops
-	sub	word [cursor_pos],size_of_step
-	jmp	.loops
-
-.down:	cmp	ah,0x50;x,0x50E0               ; down
-	jne	.pgup
-	cmp	word[es:si+10],-1
-	je	.loops
-	add	word [cursor_pos],size_of_step
-	jmp	.loops
-
-.pgup:	cmp	ah,0x49 		; page up
-	jne	.pgdn
-	sub	si, size_of_step*long_v_table
-	cmp	si, modes_table
-	jae	@f
-	mov	si, modes_table
-@@:
-	mov	word [cursor_pos], si
-	mov	si, word [home_cursor]
-	sub	si, size_of_step*long_v_table
-	cmp	si, modes_table
-	jae	@f
-	mov	si, modes_table
-@@:
-	mov	word [home_cursor], si
-	jmp	.loops
-
-.pgdn:	cmp	ah,0x51 		; page down
-	jne	.enter
-	mov	ax, [end_cursor]
-	add	si, size_of_step*long_v_table
-	cmp	si, ax
-	jb	@f
-	mov	si, ax
-	sub	si, size_of_step
-@@:
-	mov	word [cursor_pos], si
-	mov	si, word [home_cursor]
-	sub	ax, size_of_step*long_v_table
-	add	si, size_of_step*long_v_table
-	cmp	si, ax
-	jb	@f
-	mov	si, ax
-@@:
-	mov	word [home_cursor], si
-	jmp	.loops
-
-.enter: cmp	al,0x0D;x,0x1C0D               ; enter
-	jne	.loops
-	push	word [cursor_pos]
-	pop	bp
-	push	word [es:bp]
-	pop	word [x_save]
-	push	word [es:bp+2]
-	pop	word [y_save]
-	push	word [es:bp+6]
-	pop	word [number_vm]
-	mov	word [preboot_graph],bp 	  ;save choose
-
-	jmp    .d
-
-.change_b:
-	_setcursor 15,0
-	mov	si, ask_bd
-	call	print
-	mov	bx, '12'
-	call	getkey
-	mov	[preboot_biosdisk], al
-	_setcursor 11,0
-	jmp	.d
-.change_c:
-	_setcursor 15,0
-	mov	si, vrrmprint
-	call	print
-	mov	bx, '12'
-	call	getkey
-	mov	[preboot_vrrm], al
-	_setcursor 12,0
-	jmp	.d
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-.say_on_off:
-	pushf
-	call	print
-	mov	si, on_msg
-	popf
-	jz	@f
-	mov	si, off_msg
-@@:	jmp	printplain
-; novesa and vervesa strings are not used at the moment of executing this code
-virtual at novesa
-.oldtimer dd ?
-.starttime dd ?
-.bSettingsChanged db ?
-.timer dd ?
-end virtual
+;        pop     ax              ; <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ??
+	jmp	.continue
 .loader_block dd -1
-.gettime:
-	mov	ah, 0
-	int	1Ah
-	xchg	ax, cx
-	shl	eax, 10h
-	xchg	ax, dx
-	ret
-.newtimer:
-	push	ds
-	push	cs
-	pop	ds
-	pushf
-	call	[.oldtimer]
-	pushad
-	call	.gettime
-	sub	eax, [.starttime]
-	sub	ax, 18*5
-	jae	.timergo
-	neg	ax
-	add	ax, 18-1
-	mov	bx, 18
-	xor	dx, dx
-	div	bx
-
-; wait 5/4/3/2 seconds, 1 second
-	cmp	al, 1
-	mov	cl, 's'
-	ja	@f
-	mov	cl, ' '
-@@:	mov	[time_str+9], cl
-	add	al, '0'
-	mov	[time_str+1], al
-	mov	si, time_msg
-	_setcursor 7,0
-	call	print
-	_setcursor 25,0
-	popad
-	pop	ds
-	iret
-.timergo:
-	push	0
-	pop	es
-	mov	eax, [.oldtimer]
-	mov	[es:8*4], eax
-	mov	sp, 0EC00h
 .continue:
 	sti
 	_setcursor 6,0
@@ -651,35 +360,8 @@ end virtual
 	mov	si, loading_msg
 	call	print
 	_setcursor 15,0
-	cmp	[.bSettingsChanged], 0
-	jz	.load
-	cmp	[.loader_block], -1
-	jz	.load
-	les	bx, [.loader_block]
-	mov	eax, [es:bx+3]
-	push	ds
-	pop	es
-	test	eax, eax
-	jz	.load
-	push	eax
-	mov	si, save_quest
-	call	print
-.waityn:
-	mov	ah, 0
-	int	16h
-	or	al, 20h
-	cmp	al, 'n'
-	jz	.loadc
-	cmp	al, 'y'
-	jnz	.waityn
-	call	putchar
-	mov	byte [space_msg+80], 186
+	jmp	 .load
 
-	pop	eax
-	push	cs
-	push	.cont
-	push	eax
-	retf			      ;call back
 .loadc:
 	pop	eax
 .cont:
@@ -691,7 +373,6 @@ end virtual
 	call	printplain
 	_setcursor 15,0
 .load:
-; \end{diamond}[02.12.2005]
 
 ; ASK GRAPHICS MODE
 
@@ -870,8 +551,8 @@ sayerr_floppy:
 	mov	dx, 0x3f2
 	mov	al, 0
 	out	dx, al
-	mov	si, memmovefailed
-	jmp	sayerr_plain
+;        mov     si, memmovefailed
+	jmp	$
 @@:
 	pop	ax			; restore from stack count of words in boot+FAT
 	shl	ax, 1			; make bytes count from count of words
@@ -1055,37 +736,11 @@ no_sys_on_floppy:
 	mov	es, ax
 
 	mov	bx, [es:0x9008] 	; vga & 320x200
-;        mov     bx, ax
-;      cmp     ax, 0x13
-;        je      setgr
-;        cmp     ax, 0x12
-;        je      setgr
 	mov	ax, 0x4f02		; Vesa
 setgr:
 	int	0x10
 	test	ah, ah
-	mov	si, fatalsel
-	jnz	v_mode_error
-; set mode 0x12 graphics registers:
-;        cmp     bx, 0x12
-;        jne     gmok2
-;        mov     al, 0x05
-;        mov     dx, 0x03ce
-;        push    dx
-;        out     dx, al      ; select GDC mode register
-;        mov     al, 0x02
-;        inc     dx
-;        out     dx, al      ; set write mode 2
-;        mov     al, 0x02
-;        mov     dx, 0x03c4
-;        out     dx, al      ; select VGA sequencer map mask register
-;        mov     al, 0x0f
-;        inc     dx
-;        out     dx, al      ; set mask for all planes 0-3
-;        mov     al, 0x08
-;        pop     dx
-;        out     dx, al      ; select GDC bit mask register
-			   ; for writes to 0x03cf
+	jnz	$
 gmok2:
 	push	ds
 	pop	es
