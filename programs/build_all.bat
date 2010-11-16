@@ -238,9 +238,11 @@ fasm media\midamp\trunk\midamp.asm %BIN%\nightbuild\midamp
 fasm develop\heed\trunk\heed.asm %BIN%\nightbuild\heed
 fasm develop\tinypad\trunk\tinypad.asm %BIN%\nightbuild\tinypad
 fasm system\desktop\trunk\desktop.asm %BIN%\nightbuild\desktop
-
-
-
+fasm system\hdd_info\trunk\hdd_info.asm %BIN%\nightbuild\hdd_info
+fasm system\mgb\trunk\mgb.asm %BIN%\nightbuild\mgb
+fasm system\rdsave\trunk\rdsave.asm %BIN%\nightbuild\rdsave
+fasm other\kpack\trunk\kpack.asm %BIN%\nightbuild\kpack
+fasm other\rtfread\trunk\rtfread.asm %BIN%\nightbuild\rtfread
 ;restore
 echo __CPU_type fix %res% > config.inc
 erase lang.inc
@@ -435,7 +437,16 @@ echo Compressing nightbuild
 echo *
 kpack %BIN%\nightbuild\kiv
 kpack %BIN%\nightbuild\scrshoot
-
+kpack %BIN%\nightbuild\animage
+kpack %BIN%\nightbuild\midamp
+kpack %BIN%\nightbuild\heed
+kpack %BIN%\nightbuild\tinypad
+kpack %BIN%\nightbuild\desktop
+kpack %BIN%\nightbuild\hdd_info
+kpack %BIN%\nightbuild\mgb
+kpack %BIN%\nightbuild\rdsave
+kpack %BIN%\nightbuild\kpack
+kpack %BIN%\nightbuild\rtfread
 
 echo *
 echo Compressing complete
