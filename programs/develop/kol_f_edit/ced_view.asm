@@ -19,7 +19,9 @@ include 'strlen.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 11.11.10',0
+hed db 'kol_f_edit 17.11.10',0
+
+sizeof.TreeList equ 20 ;need for element 'tree_list'
 
 BUF_STRUCT_SIZE equ 21
 buf2d_data equ dword[edi] ;данные буфера изображения
@@ -34,10 +36,11 @@ buf2d_bits equ byte[edi+20] ;количество бит в 1-й точке изображения
 MAX_LEN_OBJ_TXT equ 200
 MAX_CED_OBJECTS equ 200
 MAX_OPT_FIELDS equ 11
-MAX_OBJ_TYPES equ 16
+MAX_OBJ_TYPES equ 18
 WND_CAPT_COLOR equ 0xb0d0ff
 BUF_SIZE equ 1000
 
+C_TD equ 't' ;typedef
 C_AC equ 'a' ;автоматические коды (auto code)
 C_ST equ 's' ;struct
 C_IN equ '#' ;include
@@ -52,6 +55,8 @@ C_BU equ 'b' ;Button
 C_DT equ 'x' ;рисовать текст
 C_RE equ 'r' ;рисовать прямоугольник
 C_KE equ 'k' ;клавиатура
+C_LIB equ 'l'
+C_IFN equ 'f'
 
 ;modif
 CPP_MOD_ACM equ 2 ;события мыши
@@ -101,16 +106,13 @@ struct FileInfoBlock
 ends
 
 struct object
-	c db ?
-	txt rb MAX_LEN_OBJ_TXT
-	lvl db 0
-	clo db 0
-	perv dd ?
-	next dd ?
-	typid dd ?
-	tc dd ?
-	td dd ?
-	modif dd ?
+	c db ? ;0
+	txt rb MAX_LEN_OBJ_TXT ;1
+	lvl db 0 ;1+mt
+	clo db 0 ;2+mt
+	rb 8 ;3+mt не используется, отсталось от Win версии
+	typid dd ? ;3+8+mt
+	modif dd ? ;7+8+mt
 ends
 
 struct ObjOpt
@@ -295,7 +297,7 @@ start:
 		mov [edit1.size],eax
 		mov ecx,eax
 		rep movsb
-		call but_open
+		call but_open_proj
 	@@:
 
 
@@ -334,58 +336,79 @@ pushad
 	mov edx,[sc.work]
 	or  edx,0x33000000
 	mov edi,hed
-	mcall
+	int 0x40
 
-	mov eax,8 ;button 'Open'
+	mov eax,8 ;button 'Open Project'
 	mov esi,0x80ff
-	mov ebx,230*65536+70
-	mov ecx,5*65536+22
+	mov ebx,230*65536+18
+	mov ecx,5*65536+18
 	mov edx,5
-	mcall
+	int 0x40
+
+	;button 'Save Project'
+	mov ebx,250*65536+18
+	mov ecx,5*65536+18
+	mov edx,6
+	int 0x40
+	stdcall draw_icon, 17,251,6 ;17 - save icon
 
 	;button 'Show Constructor'
 	mov ebx,310*65536+18
 	mov ecx,5*65536+18
 	mov edx,11
-	mcall
+	int 0x40
 	stdcall draw_icon, 12,311,6 ;12 - window icon
 
 	;button 'Show Code'
 	mov ebx,330*65536+18
 	mov edx,12
-	mcall
+	int 0x40
 	stdcall draw_icon, 11,331,6 ;11 - text icon
 
 	;button 'Update Code'
 	mov ebx,350*65536+18
 	mov edx,13
-	mcall
+	int 0x40
 
 	;button 'Save Code'
 	mov ebx,370*65536+18
 	mov edx,14
-	mcall
+	int 0x40
 	stdcall draw_icon, 17,371,6 ;17 - save icon
 
 	;button ']P'
 	mov ebx,390*65536+18
 	mov edx,15
-	mcall
+	int 0x40
 	stdcall draw_icon, 18,391,6 ;18 - знак конца абзаца
 
 	;button 'Show color text'
 	mov ebx,410*65536+18
 	mov edx,16
-	mcall
+	int 0x40
 	stdcall draw_icon, 19,411,6
+
+	;button 'Move Up'
+	mov ebx,160*65536+18
+	mov ecx,30*65536+18
+	mov edx,21
+	int 0x40
+	stdcall draw_icon, 23,161,31 ;23 - move up
+
+	;button 'Move Down'
+	mov ebx,180*65536+18
+	mov ecx,30*65536+18
+	mov edx,22
+	int 0x40
+	stdcall draw_icon, 24,181,31 ;24 - move down
 
 ; 10 30 50 70 90
 
 	mov eax,4 ;подпись 'Открыть'
-	mov ebx,245*65536+13
+	mov ebx,232*65536+13
 	mov ecx,0x80ffff00
 	mov edx,txtOpen
-	mcall
+	int 0x40
 
 	cmp [err_opn],1
 	jne @f
@@ -393,7 +416,7 @@ pushad
 		mov ebx,10*65536+35
 		mov ecx,0x80ff0000
 		mov edx,txtErrOpen
-		mcall
+		int 0x40
 	@@:
 
 	cmp [err_ini0],1
@@ -477,7 +500,11 @@ button:
 	mcall 17
 	cmp ah,5
 	jne @f
-		call but_open
+		call but_open_proj
+	@@:
+	cmp ah,6
+	jne @f
+		call but_save_proj
 	@@:
 	cmp ah,10
 	jne @f
@@ -507,6 +534,14 @@ button:
 	jne @f
 		call but_show_syntax
 	@@:
+	cmp ah,21
+	jne @f
+		call but_obj_move_up
+	@@:
+	cmp ah,22
+	jne @f
+		call but_obj_move_down
+	@@:
 	cmp ah,1
 	jne still
 .exit:
@@ -526,7 +561,7 @@ button:
 	mcall -1
 
 align 4
-but_open:
+but_open_proj:
 	pushad
 	mov eax,70
 	mov [run_file_70.Function], 0
@@ -578,6 +613,90 @@ but_open:
 	call draw_window ;перерисовка окна идет в любом случае, даже если файл не открылся
 	popad
 	ret
+
+;сохранение файла проэкта на диск
+align 4
+but_save_proj:
+	pushad
+
+	mov edi,ced_info
+
+	stdcall [tl_node_poi_get_info], 0,tree2
+	pop edx
+	@@:
+		cmp edx,0
+		je @f
+		stdcall [tl_node_poi_get_data], edx,tree2
+		pop esi ;получаем данные узла
+
+		mov bl,byte[edx+2] ;bl - уровень объекта
+		mov byte[esi+1+MAX_LEN_OBJ_TXT],bl
+
+		;вычисляем новый индекс для типа объекта
+		mov ebx,[esi+3+8+MAX_LEN_OBJ_TXT] ;ebx - тип объекта
+		;сохраняем тип объекта
+		push ebx
+			imul ebx,sizeof.TreeList
+			add ebx,[tree2.data_nodes] ;ebx - указатель объект указывающий тип
+			stdcall get_obj_npp,ebx
+			mov [esi+3+8+MAX_LEN_OBJ_TXT],eax
+			mov eax,esi
+
+			;копируем объект в память для сохранения
+			xor ecx,ecx
+			mov cx,word[tree2.info_size]
+			cld
+			rep movsb
+		;восстанавливаем тип объекта
+		pop dword[eax+3+8+MAX_LEN_OBJ_TXT]
+
+		stdcall [tl_node_poi_get_next_info], edx,tree2
+		pop edx ;переходим к следущему узлу
+		jmp @b
+	@@:
+	mov byte[edi],0
+	inc edi
+	mov ecx,edi
+	sub ecx,ced_info ;ecx - размер сохраняемого файла       
+
+	mov eax,70
+	mov [run_file_70.Function], 2
+	mov [run_file_70.Position], 0
+	mov [run_file_70.Flags], 0
+	mov [run_file_70.Count], ecx
+	mov [run_file_70.Buffer], ced_info
+	mov [run_file_70.rezerv], 0
+	push [edit1.text]
+	pop [run_file_70.FileName]
+	mov ebx,run_file_70
+	int 0x40
+
+	popad
+	ret
+
+;берет номер по порядку по указателю на структуру объекта
+align 4
+proc get_obj_npp, p_obj_str:dword
+	mov eax,2
+	push ebx edx
+	mov ebx,[p_obj_str]
+
+	stdcall [tl_node_poi_get_info], 0,tree2
+	pop edx
+	@@:
+		cmp edx,0
+		je @f
+		cmp edx,ebx
+		je @f
+
+		inc eax
+		stdcall [tl_node_poi_get_next_info], edx,tree2
+		pop edx ;переходим к следущему узлу
+		jmp @b
+	@@:
+	pop edx ebx
+	ret
+endp
 
 ;функция для сохранения созданного asm файла
 align 4
@@ -749,14 +868,14 @@ buf_skin3:
 	db 24 ;+20 bit in pixel
 
 show_mode db 0 ;режим для показа определенного окна
-txtOpen db 'Открыть',0
+txtOpen db 'От',0
 txtErrOpen db 'Не найден файл, проверьте правильность имени',0
 txtErrIni1 db 'Не открылся файл с опциями',0
 err_opn db 0
 err_ini0 db 0 ;???
 err_ini1 db 0
 
-edit1 edit_box 210, 10, 10, 0xffffff, 0xff80, 0xff, 0xff0000, 0x4080, 300, ed_text1, mouse_dd, 0, 7, 7
+edit1 edit_box 210, 10, 5, 0xffffff, 0xff80, 0xff, 0xff0000, 0x4080, 300, ed_text1, mouse_dd, 0, 7, 7
 
 edit2 edit_box 115, 32, 20, 0xffffff, 0x80ff, 0xff, 0x808080, 0, MAX_LEN_OBJ_TXT, ed_text2, mouse_dd, 0
 edit3 edit_box 115, 32, 20, 0xffffff, 0x80ff, 0xff, 0x808080, 0, MAX_LEN_OBJ_TXT, ed_text3, mouse_dd, 0
@@ -1125,6 +1244,8 @@ import_box_lib:
 	tl_node_set_data dd sz_tl_node_set_data
 	tl_node_get_data dd sz_tl_node_get_data
 	tl_node_delete dd sz_tl_node_delete
+	tl_node_move_up dd sz_tl_node_move_up
+	tl_node_move_down dd sz_tl_node_move_down
 	tl_cur_beg dd sz_tl_cur_beg
 	tl_cur_next dd sz_tl_cur_next
 	tl_cur_perv dd sz_tl_cur_perv
@@ -1185,6 +1306,8 @@ dd 0,0
 	sz_tl_node_set_data db 'tl_node_set_data',0
 	sz_tl_node_get_data db 'tl_node_get_data',0
 	sz_tl_node_delete db 'tl_node_delete',0
+	sz_tl_node_move_up db 'tl_node_move_up',0
+	sz_tl_node_move_down db 'tl_node_move_down',0
 	sz_tl_cur_beg db 'tl_cur_beg',0
 	sz_tl_cur_next db 'tl_cur_next',0
 	sz_tl_cur_perv db 'tl_cur_perv',0

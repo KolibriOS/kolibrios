@@ -530,9 +530,9 @@ end if
 
 ;library structures
 l_libs_start:
-  lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l0, boxlib_import,err_message_import0, head_f_i0
-  lib1 l_libs lib1_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l0, msgbox_lib_import, err_message_import1, head_f_i0
-  lib2 l_libs lib2_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l0, proclib_import, err_message_import2, head_f_i0
+	lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l0, boxlib_import,err_message_import0, head_f_i0
+	lib1 l_libs lib1_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l0, msgbox_lib_import, err_message_import1, head_f_i0
+	lib2 l_libs lib2_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l0, proclib_import, err_message_import2, head_f_i0
 load_lib_end:
 
 
@@ -540,21 +540,22 @@ i_end:
 	rb 1024
 	align 16
 	procinfo process_information
-	thread:
 		rb 1024
+	thread:
+	rb 1024
 stacktop:
-  sys_path:
-    rb 4096
-  file_name:
-    rb 4096
-  file_name_rez:
-    rb 4096
-  plugin_path:
-    rb 4096
-  openfile_path:
-    rb 4096
-  filename_area:
-    rb 256
-  file_info:
-    rb 40
+	sys_path:
+		rb 4096
+	file_name:
+		rb 4096
+	file_name_rez:
+		rb 4096
+	plugin_path:
+		rb 4096
+	openfile_path:
+		rb 4096
+	filename_area:
+		rb 256
+	file_info:
+		rb 40
 mem:

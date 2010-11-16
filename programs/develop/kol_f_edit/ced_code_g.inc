@@ -251,6 +251,7 @@ proc get_code_auto, p_obj:dword
 		jae @f
 			call get_code_auto_data_el
 			call get_code_auto_data_dop
+			call get_code_auto_data_libs
 		@@:
 		insert_nl
 	popad
@@ -320,17 +321,13 @@ proc get_code_auto_data_el
 		cmp byte[ebx],C_ED
 		jne @f
 			;1,2,3,4,...,6,...8,...,10 - w,x,y,col_fon,...,col_frame,...,col_txt,...,txt
-			stdcall get_obj_text_col,ebx,0
-			stdcall str_len,edx
-			stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
+			stdcall insert_text_prop, ebx,0
 			stdcall insert_text, txt_ebox
 
 			mov ecx,1
 			.prop:
 				insert_sp
-				stdcall get_obj_text_col,ebx,ecx
-				stdcall str_len,edx
-				stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
+				stdcall insert_text_prop, ebx,ecx
 				insert_coma
 				inc ecx
 				cmp ecx,10
@@ -362,6 +359,105 @@ proc get_code_auto_data_el
 	popad
 	ret
 endp
+
+;данные для библиотек
+align 4
+proc get_code_auto_data_libs
+	pushad
+	insert_nl ;отступ для форматирования
+
+	stdcall dword[tl_node_poi_get_info], 0,tree2
+	pop esi
+	.beg_iterat:
+		cmp esi,0
+		je .find_no
+
+		stdcall dword[tl_node_poi_get_data], esi,tree2
+		pop ebx ;получаем данные узла
+		cmp ebx,0
+		je .find_no
+
+		cmp byte[ebx],C_LIB
+		jne @f
+			;0,1,2,3,4,5 - l_nam,s_dir,i_met,...
+			stdcall insert_text, txt_align_4
+			stdcall insert_text_prop, ebx,2
+			stdcall insert_text, txt_d_poi
+			insert_nl
+
+			call get_code_lib_table
+		@@:
+
+		stdcall dword[tl_node_poi_get_next_info], esi,tree2
+		pop esi ;переходим к следущему узлу
+
+		jmp .beg_iterat
+	.find_no:
+	popad
+	ret
+endp
+
+;input:
+; esi
+align 4
+get_code_lib_table:
+pushad
+	mov bl,byte[esi+2]
+	mov edi,esi
+	stdcall dword[tl_node_poi_get_data], esi,tree2
+	pop edx ;получение данных родительского объекта
+	cmp edx,0
+	je @f
+	@@:
+		stdcall dword[tl_node_poi_get_next_info], esi,tree2
+		pop esi ;переходим к следущему узлу
+		cmp esi,0
+		je @f
+		cmp byte[esi+2],bl ;lev
+		jle @f
+			stdcall dword[tl_node_poi_get_data], esi,tree2
+			pop ecx ;получаем данные узла
+			cmp ecx,0
+			je @f
+			cmp byte[ecx],C_IFN
+			jne @b
+				;вставка указателя на функцию
+				insert_tab
+				stdcall insert_text_prop, ecx,0
+				stdcall insert_text, txt_dd
+				stdcall insert_text_prop, edx,3 ;приставка к функции
+				stdcall insert_text_prop, ecx,0
+				insert_nl
+			jmp @b
+	@@:
+	stdcall insert_text, txt_dd_0_0
+	mov esi,edi
+	@@:
+		stdcall dword[tl_node_poi_get_next_info], esi,tree2
+		pop esi ;переходим к следущему узлу
+		cmp esi,0
+		je @f
+		cmp byte[esi+2],bl ;lev
+		jle @f
+			stdcall dword[tl_node_poi_get_data], esi,tree2
+			pop ecx ;получаем данные узла
+			cmp ecx,0
+			je @f
+			cmp byte[ecx],C_IFN
+			jne @b
+				;вставка имени импортированной функции
+				insert_tab
+				stdcall insert_text_prop, edx,3 ;приставка к функции
+				stdcall insert_text_prop, ecx,0
+				stdcall insert_text, txt_db
+				stdcall insert_text, txt_str_beg
+				stdcall insert_text_prop, ecx,1
+				stdcall insert_text, txt_str_end
+				insert_nl
+			jmp @b
+	@@:
+popad
+	ret
 
 ;
 align 4
@@ -626,6 +722,7 @@ proc get_code_window, p_obj:dword
 		insert_nl
 
 		;or edx,0x33000000
+		insert_tab
 		stdcall insert_text, txt_or
 		insert_reg txt_edx
 		insert_coma
@@ -642,10 +739,11 @@ proc get_code_window, p_obj:dword
 
 		insert_tab
 		stdcall insert_text, txt_i_40
+		insert_nl
 
 		call get_code_draw_obj
 
-		stdcall insert_text, txt_draw_we
+		stdcall insert_text, txt_draw_we ;код завершающий функцию рисования
 	popad
 	ret
 endp
@@ -788,9 +886,7 @@ proc get_code_struct, p_obj:dword
 		;0 - name
 
 		stdcall [ted_text_add], tedit0,txt_struct,7,ted_opt_ed_move_cursor
-		stdcall get_obj_text_col,ebx,0
-		stdcall str_len,edx
-		stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
+		stdcall insert_text_prop, ebx,0
 		insert_nl
 
 	popad
@@ -814,9 +910,7 @@ proc get_code_variable, p_obj:dword,o_lev:dword
 		loop @b
 		.no_tab:
 
-		stdcall get_obj_text_col,ebx,0
-		stdcall str_len,edx
-		stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
+		stdcall insert_text_prop, ebx,0 ;имя переменной
 		insert_sp
 
 		mov ecx,dword[ebx+u_object.typid-u_object] ;ecx - относительный индекс родительского объекта (в памяти)
@@ -827,16 +921,11 @@ proc get_code_variable, p_obj:dword,o_lev:dword
 
 		;проверку на правильность ecx ???
 
-		stdcall get_obj_text_col,ecx,0
-		stdcall str_len,edx
-		stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
+		stdcall insert_text_prop, ecx,0 ;тип переменной
 		insert_sp
+		stdcall insert_text_prop, ebx,1 ;значение
 
-		stdcall get_obj_text_col,ebx,1
-		stdcall str_len,edx
-		stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
-
-		stdcall get_obj_text_col,ebx,2
+		stdcall get_obj_text_col,ebx,2 ;комментарий
 		stdcall str_len,edx
 		cmp eax,1
 		jl @f
@@ -853,6 +942,8 @@ endp
 
 
 ;--- текстовые константы ---
+txt_str_beg db 39,0
+txt_str_end db 39,',0',0
 txt_coma db ',',0
 txt_i_40 db 'int 0x40',13,0
 txt_0 db '0',0
@@ -867,14 +958,12 @@ txt_com db ';',0
 txt_sp db ' ',0
 txt_tab db 9,0
 txt_br db '\',13,9,0
-txt_txt:
-	db 'txt_',0
-txt_db:
-	db ' db ',0
-txt_mouse_dd:
-	db ', mouse_dd, ',0
-txt_times:
-	db ':',13,9,'times ',0
+txt_txt db 'txt_',0
+txt_db db ' db ',0
+txt_dd db ' dd ',0
+txt_dd_0_0 db 9,'dd 0,0',13,0
+txt_mouse_dd db ', mouse_dd, ',0
+txt_times db ':',13,9,'times ',0
 txt_draw_wb:
 	db 13,'align 4',13,'draw_window:',13,'pushad',13,9,'mcall 12,1',13,0
 txt_draw_we:
@@ -910,8 +999,7 @@ txt_std_key_ed:
 txt_incl:
 	db 'include ',0
 txt_ebox:
-	db ' edit_box'
-	.end: db 0
+	db ' edit_box',0
 txt_editb_draw:
 	db 9,'stdcall [edit_box_draw], ',0
 txt_cbox_draw:

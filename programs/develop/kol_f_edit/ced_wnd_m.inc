@@ -73,6 +73,16 @@ draw_obj_info:
 	.exit_fun:
 	ret
 
+align 4
+but_obj_move_up:
+	stdcall [tl_node_move_up], tree2
+	ret
+
+align 4
+but_obj_move_down:
+	stdcall [tl_node_move_down], tree2
+	ret
+
 ;обновление объектов в tree2, по значениям текстовых полей
 ;функция обратная к данной on_file_object_select
 align 4
