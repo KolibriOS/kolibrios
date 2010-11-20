@@ -73,14 +73,45 @@ draw_obj_info:
 	.exit_fun:
 	ret
 
+;поднимаем объект вверх по списку
 align 4
 but_obj_move_up:
 	stdcall [tl_node_move_up], tree2
 	ret
 
+;опускаем объект вниз по списку
 align 4
 but_obj_move_down:
 	stdcall [tl_node_move_down], tree2
+	ret
+
+;копируем объект
+align 4
+but_obj_copy:
+push ecx esi edi
+	stdcall [tl_node_get_data], tree2
+	pop esi
+	mov edi,[tree2.data_info] ;данные 0-го узла, используем для копирования
+	xor ecx,ecx
+	mov cx,word[tree2.info_size]
+	cld
+	rep movsb
+pop edi esi ecx
+	ret
+
+;вставляем объект
+align 4
+but_obj_paste:
+push eax ebx ecx edi
+		mov eax,[tree2.data_info] ;данные 0-го узла, используем для копирования
+		mov bl,byte[eax]
+		call find_obj_in_opt
+		xor ecx,ecx
+		mov cx,word[edi+obj_opt.img-obj_opt] ;cx - индекс главной иконки добавляемого объекта
+		shl ecx,16
+		stdcall [tl_node_add], eax, ecx, tree2 ;добавляем объект
+		stdcall [tl_draw], tree2
+pop edi ecx ebx eax
 	ret
 
 ;обновление объектов в tree2, по значениям текстовых полей

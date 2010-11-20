@@ -228,6 +228,7 @@ proc get_code_text, p_obj:dword
 	ret
 endp
 
+;обработка объекта создающего автоматичексие коды
 align 4
 proc get_code_auto, p_obj:dword
 	pushad
@@ -251,7 +252,27 @@ proc get_code_auto, p_obj:dword
 		jae @f
 			call get_code_auto_data_el
 			call get_code_auto_data_dop
-			call get_code_auto_data_libs
+
+			xor edx,edx
+			mov dl,C_LIB
+			stdcall find_obj_in_file,edx ;eax - указатель на структуру библиотеки
+			cmp eax,0
+			je @f
+				stdcall insert_text, txt_head_i
+				stdcall insert_text, txt_d_poi
+				insert_nl
+				stdcall insert_text, txt_head_l
+				stdcall insert_text, txt_db
+				stdcall insert_text, txt_str_beg
+				stdcall insert_text, txt_sys_err
+				stdcall insert_text, txt_str_end
+				insert_nl
+
+				call get_code_auto_data_libs_param
+				stdcall insert_text, txt_ll_start
+					call get_code_auto_data_libs_struc
+				stdcall insert_text, txt_ll_end
+				call get_code_auto_data_libs ;таблицы импорта библиотек
 		@@:
 		insert_nl
 	popad
@@ -334,22 +355,152 @@ proc get_code_auto_data_el
 			jl .prop
 
 			insert_br
-			;insert_tab
 			stdcall insert_text, txt_txt
 
 			mov edx,fp_icon
 			stdcall get_obj_id, ebx,edx
-			stdcall str_len,edx ;eax = len(fp_icon)
-			stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
+			stdcall insert_text,edx
 
-			;insert_coma
-			;insert_sp
 			stdcall insert_text, txt_mouse_dd
 			insert_nl
 		@@:
 		;cmp byte[ebx],C_CB
 		;jne @f
 		;@@:
+
+		stdcall dword[tl_node_poi_get_next_info], esi,tree2
+		pop esi ;переходим к следущему узлу
+
+		jmp .beg_iterat
+	.find_no:
+	popad
+	ret
+endp
+
+;данные дл€ библиотек
+align 4
+proc get_code_auto_data_libs_param
+	pushad
+	insert_nl ;отступ дл€ форматировани€
+
+	stdcall dword[tl_node_poi_get_info], 0,tree2
+	pop esi
+	.beg_iterat:
+		cmp esi,0
+		je .find_no
+
+		stdcall dword[tl_node_poi_get_data], esi,tree2
+		pop ebx ;получаем данные узла
+		cmp ebx,0
+		je .find_no
+
+		cmp byte[ebx],C_LIB
+		jne @f
+			;0,1,2,3,4,5 - l_nam,s_dir,i_met,...
+
+			stdcall insert_text, txt_sys_dir
+			;object code
+			mov edx,fp_icon
+			stdcall get_obj_id, ebx,edx
+			stdcall insert_text,edx
+			stdcall insert_text,txt_db
+			;stdcall insert_text, txt_str_beg
+			stdcall insert_text_prop, ebx,1
+			;stdcall insert_text, txt_str_end
+			insert_nl
+
+			stdcall insert_text, txt_lib_name
+			stdcall insert_text,edx
+			stdcall insert_text,txt_db
+			stdcall insert_text, txt_str_beg
+			stdcall insert_text_prop, ebx,0
+			stdcall insert_text, txt_str_end
+			insert_nl
+
+			stdcall insert_text,txt_err_m_f_lib
+			stdcall insert_text,edx
+			stdcall insert_text,txt_db
+			stdcall insert_text, txt_str_beg
+			stdcall insert_text_prop, ebx,4
+			stdcall insert_text, txt_str_end
+			insert_nl
+
+			stdcall insert_text,txt_err_m_i_lib
+			stdcall insert_text,edx
+			stdcall insert_text,txt_db
+			stdcall insert_text, txt_str_beg
+			stdcall insert_text_prop, ebx,5
+			stdcall insert_text, txt_str_end
+			insert_nl
+
+			insert_nl
+		@@:
+
+		stdcall dword[tl_node_poi_get_next_info], esi,tree2
+		pop esi ;переходим к следущему узлу
+
+		jmp .beg_iterat
+	.find_no:
+	popad
+	ret
+endp
+
+;данные дл€ библиотек
+align 4
+proc get_code_auto_data_libs_struc
+	pushad
+	;insert_nl ;отступ дл€ форматировани€
+
+	stdcall dword[tl_node_poi_get_info], 0,tree2
+	pop esi
+	.beg_iterat:
+		cmp esi,0
+		je .find_no
+
+		stdcall dword[tl_node_poi_get_data], esi,tree2
+		pop ebx ;получаем данные узла
+		cmp ebx,0
+		je .find_no
+
+		cmp byte[ebx],C_LIB
+		jne @f
+			;0,1,2,3,4,5 - l_nam,s_dir,i_met,...
+
+			stdcall insert_text, txt_lib
+			;object code
+			mov edx,fp_icon
+			stdcall get_obj_id, ebx,edx
+			stdcall insert_text,edx
+			insert_sp
+			stdcall insert_text, txt_ll
+			stdcall insert_text, txt_lib_name
+			stdcall insert_text,edx
+			stdcall insert_text,txt_coma
+
+			stdcall insert_text, txt_lib_path
+
+			stdcall insert_text, txt_sys_dir
+			stdcall insert_text,edx
+			stdcall insert_text,txt_coma
+			stdcall insert_text,txt_br
+			stdcall insert_text,txt_tab
+
+			stdcall insert_text,txt_err_m_f_lib
+			stdcall insert_text,edx
+			stdcall insert_text,txt_coma
+			stdcall insert_text,txt_head_l
+			stdcall insert_text,txt_coma
+
+			stdcall insert_text_prop, ebx,2
+			stdcall insert_text,txt_coma
+
+			stdcall insert_text,txt_err_m_i_lib
+			stdcall insert_text,edx
+			stdcall insert_text,txt_coma
+			stdcall insert_text,txt_head_i
+
+			insert_nl
+		@@:
 
 		stdcall dword[tl_node_poi_get_next_info], esi,tree2
 		pop esi ;переходим к следущему узлу
@@ -968,6 +1119,18 @@ txt_draw_wb:
 	db 13,'align 4',13,'draw_window:',13,'pushad',13,9,'mcall 12,1',13,0
 txt_draw_we:
 	db 9,'mcall 12,2',13,'popad',13,9,'ret',13,0
+txt_sys_dir db 'system_dir_',0
+txt_lib_name db 'lib_name_',0
+txt_lib_path db ' sys_path, library_path, ',0
+txt_sys_err db 'С®бв•ђ≠†п Ѓи®°™†',0
+txt_ll_start db 'l_libs_start:',13,0
+txt_lib db 9,'lib_',0
+txt_ll db 'l_libs ',0
+txt_err_m_f_lib db 'err_msg_found_lib_',0
+txt_head_l db 'head_f_l',0
+txt_err_m_i_lib db 'err_msg_import_',0
+txt_head_i db 'head_f_i',0
+txt_ll_end db 'l_libs_end:',13,0
 txt_but_create db '0x40000000',0 ;tmp
 txt_0x33000000 db '0x33000000',0 ;tmp
 txt_struct db 'struct ',0
@@ -998,8 +1161,7 @@ txt_std_key_ed:
 	db 9,'stdcall [edit_box_key], ',0
 txt_incl:
 	db 'include ',0
-txt_ebox:
-	db ' edit_box',0
+txt_ebox db ' edit_box',0
 txt_editb_draw:
 	db 9,'stdcall [edit_box_draw], ',0
 txt_cbox_draw:

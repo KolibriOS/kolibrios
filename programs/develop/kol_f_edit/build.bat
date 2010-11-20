@@ -1,6 +1,6 @@
 if not exist bin mkdir bin
-@fasm.exe -m 16384 ced_view.asm bin\ced_view.kex
-@kpack bin\ced_view.kex
+@fasm.exe -m 16384 kol_f_edit.asm bin\kol_f_edit.kex
+@kpack bin\kol_f_edit.kex
 @fasm.exe -m 16384 ob_o.asm bin\ob_o.opt
 
 if not exist bin\tl_sys_16.png @copy tl_sys_16.png bin\tl_sys_16.png

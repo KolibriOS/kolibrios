@@ -19,7 +19,7 @@ include 'strlen.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 17.11.10',0
+hed db 'kol_f_edit 20.11.10',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
@@ -140,7 +140,8 @@ fn_font_s1 db 'font6x9.bmp',0
 IMAGE_FILE_FONT1_SIZE equ 96*144*3 ;размер файла с 1-м системным шрифтом
 
 fn_icon db 'icon.bmp',0
-bmp_icon rb 0x300*30
+count_main_icons equ 33 ;число иконок в файле icon.bmp
+bmp_icon rb 0x300*count_main_icons
 
 fn_icon_tl_sys db 'tl_sys_16.png',0
 TREE_ICON_SYS16_BMP_SIZE equ 256*3*11+54 ;размер bmp файла с системными иконками
@@ -203,7 +204,7 @@ start:
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 54
 	mov [run_file_70.Flags], 0
-	mov [run_file_70.Count], 0x300*30
+	mov [run_file_70.Count], 0x300*count_main_icons
 	mov [run_file_70.Buffer], bmp_icon
 	mov [run_file_70.rezerv], 0
 	mov [run_file_70.FileName], fp_icon
@@ -344,37 +345,39 @@ pushad
 	mov ecx,5*65536+18
 	mov edx,5
 	int 0x40
+	stdcall draw_icon, 22,231,6 ;22 - open
 
 	;button 'Save Project'
 	mov ebx,250*65536+18
 	mov ecx,5*65536+18
 	mov edx,6
 	int 0x40
-	stdcall draw_icon, 17,251,6 ;17 - save icon
+	stdcall draw_icon, 17,251,6 ;17 - save
 
 	;button 'Show Constructor'
 	mov ebx,310*65536+18
 	mov ecx,5*65536+18
 	mov edx,11
 	int 0x40
-	stdcall draw_icon, 12,311,6 ;12 - window icon
+	stdcall draw_icon, 12,311,6 ;12 - window
 
 	;button 'Show Code'
 	mov ebx,330*65536+18
 	mov edx,12
 	int 0x40
-	stdcall draw_icon, 11,331,6 ;11 - text icon
+	stdcall draw_icon, 11,331,6 ;11 - text
 
 	;button 'Update Code'
 	mov ebx,350*65536+18
 	mov edx,13
 	int 0x40
+	stdcall draw_icon, 32,351,6 ;32 - update
 
 	;button 'Save Code'
 	mov ebx,370*65536+18
 	mov edx,14
 	int 0x40
-	stdcall draw_icon, 17,371,6 ;17 - save icon
+	stdcall draw_icon, 17,371,6 ;17 - save
 
 	;button ']P'
 	mov ebx,390*65536+18
@@ -402,17 +405,32 @@ pushad
 	int 0x40
 	stdcall draw_icon, 24,181,31 ;24 - move down
 
-; 10 30 50 70 90
-
-	mov eax,4 ;подпись 'Открыть'
-	mov ebx,232*65536+13
-	mov ecx,0x80ffff00
-	mov edx,txtOpen
+	;button 'Copy'
+	mov ebx,200*65536+18
+	mov ecx,30*65536+18
+	mov edx,23
 	int 0x40
+	stdcall draw_icon, 30,201,31 ;30 - copy
+
+	;button 'Paste'
+	mov ebx,220*65536+18
+	mov ecx,30*65536+18
+	mov edx,24
+	int 0x40
+	stdcall draw_icon, 31,221,31 ;31 - paste
+
+	;button 'Property'
+	mov ebx,240*65536+18
+	mov ecx,30*65536+18
+	mov edx,25
+	int 0x40
+	stdcall draw_icon, 7,241,31 ;7 - property
+
+; 10 30 50 70 90
 
 	cmp [err_opn],1
 	jne @f
-		;mov eax,4
+		mov eax,4
 		mov ebx,10*65536+35
 		mov ecx,0x80ff0000
 		mov edx,txtErrOpen
@@ -541,6 +559,18 @@ button:
 	cmp ah,22
 	jne @f
 		call but_obj_move_down
+	@@:
+	cmp ah,23
+	jne @f
+		call but_obj_copy
+	@@:
+	cmp ah,24
+	jne @f
+		call but_obj_paste
+	@@:
+	cmp ah,25
+	jne @f
+		call on_file_object_select
 	@@:
 	cmp ah,1
 	jne still
@@ -777,11 +807,8 @@ push eax ebx ecx
 	pop eax
 	cmp eax,0
 	je @f
-		;mov bl,byte[eax]
-		;call find_obj_in_opt
 		xor ecx,ecx
 		mov cx,word[eax+obj_opt.img-obj_opt] ;cx - индекс главной иконки добавляемого объекта
-		;mov cx,word[edi+obj_opt.img-obj_opt] ;cx - индекс главной иконки добавляемого объекта
 		shl ecx,16
 		stdcall dword[tl_node_add], eax, ecx, tree2 ;добавляем объект
 	@@:
@@ -868,7 +895,6 @@ buf_skin3:
 	db 24 ;+20 bit in pixel
 
 show_mode db 0 ;режим для показа определенного окна
-txtOpen db 'От',0
 txtErrOpen db 'Не найден файл, проверьте правильность имени',0
 txtErrIni1 db 'Не открылся файл с опциями',0
 err_opn db 0
