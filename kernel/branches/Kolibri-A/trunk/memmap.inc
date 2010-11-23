@@ -143,14 +143,14 @@
 ;
 ; 0x80010000 ->  6CBFF   kernel, 32-bit run-time code (up to 371 Kb)
 ;       in the current version:
-;            ->  01726   16-bit code end
-;            ->  01828   16-bit data end
-;            ->  11828   32-bit code start
-;            ->  2E19E   32-bit code end 
-; 	     ->  314F8..end_of_kernel	 zero-filled zone after preinit_mem  
-;            ->  34DFB   uninitialized globals start 
-;            ->  3CFEA   end_of_kernel 
-;	     ->  3D000   not used (190k)
+;            ->  00B37   16-bit code end
+;            ->  00C40   16-bit data end
+;            ->  10C40   32-bit code start
+;            ->  2D582   32-bit code end 
+; 	     ->  30918..end_of_kernel	 zero-filled zone after preinit_mem  
+;            ->  3421B   uninitialized globals start 
+;            ->  3C40A   end_of_kernel 
+;	     ->  3D000   not used (194k)
 ; 0x80050000 -> 090000	 zero-filled zone after preinit_mem  
 ; 0x8006CC00 ->  6DBFF   stack at boot time (4Kb)
 ;

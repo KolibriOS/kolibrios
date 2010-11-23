@@ -154,7 +154,7 @@ drm:
 	add    eax,ecx	; save picture under mouse
 	add    ebx,edx
 	push   ecx
-	call   getpixel
+	call   get_pixel
 	mov    [COLOR_TEMP],ecx
 	pop    ecx
 	mov    eax,edx

@@ -379,8 +379,8 @@ high_code:
 ;        ===  EGA, VGA & Vesa 1.2 modes not supported ===
 setvesa20:
 v20ga32:
-	mov	[PUTPIXEL],dword Vesa20_putpixel32
-	mov	[GETPIXEL],dword Vesa20_getpixel32
+	mov	[PUTPIXEL],dword put_pixel
+	mov	[GETPIXEL],dword get_pixel
 
 ; -------- Fast System Call init ----------
 .SEnP:
