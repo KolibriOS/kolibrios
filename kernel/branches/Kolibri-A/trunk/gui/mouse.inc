@@ -699,3 +699,6 @@ mouse._.check_sys_window_actions: ;////////////////////////////////////////////
 
   .exit:
         ret
+
+diff16 "mouse code end ",0,$
+diff16 "mouse code size",mouse_check_events,$

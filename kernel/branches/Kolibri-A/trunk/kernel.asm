@@ -198,7 +198,6 @@ diff16 "end of tmp_gdt ",0,$
 
 include "data16.inc"
 
-diff16 "end of data16  ",0,$
 
 use32
 org $+0x10000
@@ -500,9 +499,11 @@ v20ga32:
 	shr	eax,16
 	mov	[graph_data_l+4],al
 	mov	[graph_data_l+7],ah
-
+	
+	or      [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
 	stdcall kernel_alloc, [_WinMapSize]
-	mov [_WinMapAddress], eax
+	mov     [_WinMapAddress], eax
+	xor     [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
 
 	xor  eax,eax
 	inc  eax
@@ -894,31 +895,9 @@ if preboot_blogesc
 	jne	.bll1
 end if
 
-;       mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
-
-; UNMASK ALL IRQ'S
-
-;        mov   esi,boot_allirqs
-;        call  boot_log
-;
-;        cli                          ;guarantee forbidance of interrupts.
-;        mov   al,0                   ; unmask all irq's
-;        out   0xA1,al
-;        out   0x21,al
-;
-;        mov   ecx,32
-;
-;     ready_for_irqs:
-;
-;        mov   al,0x20                ; ready for irqs
-;        out   0x20,al
-;        out   0xa0,al
-;
-;        loop  ready_for_irqs         ; flush the queue
 
 	stdcall attach_int_handler, 1, irq1, 0
 
-;        mov    [dma_hdd],1
 	cmp	[IDEContrRegsBaseAddr], 0
 	setnz	[dma_hdd]
 	mov [timer_ticks_enable],1		; for cd driver
@@ -926,11 +905,9 @@ end if
 	sti
 	call change_task
 
-	jmp osloop
+	jmp osloop				; Fly :)
 
-;        jmp   $                      ; wait here for timer to take control
-
-	; Fly :)
+diff16 "init code end: ",0,$
 
 include 'unpacker.inc'
 include 'fdo.inc'
@@ -2238,6 +2215,7 @@ nosb1:
     test  ecx, ecx
     jz	  @f
     cmp   eax, static_background_data
+
     jz	  .ret
 @@:
     mov ebx, [mem_BACKGROUND]
@@ -2726,6 +2704,7 @@ sys_redrawstat:
 	mov	[edx + RECT.left], 0
 	mov	[edx + RECT.top], 0
 	mov	eax, [Screen_Max_X]
+
 	mov	[edx + RECT.right], eax
 	mov	eax, [Screen_Max_Y]
 	mov	[edx + RECT.bottom], eax

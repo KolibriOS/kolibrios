@@ -458,3 +458,5 @@ drawwindow_IV:
 
         ret  4
 
+diff16 "skin  code end ",0,$
+diff16 "skin  code size",read_skin_file,$

@@ -130,3 +130,5 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         popad
         pop  eax                ; << // Alver 22.06.2008 // <<
         ret
+diff16 "font  code end ",0,$
+diff16 "font  code size",dtext,$

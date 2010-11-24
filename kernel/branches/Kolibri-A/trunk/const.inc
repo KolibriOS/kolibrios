@@ -252,6 +252,7 @@ Screen_Max_Y        equ (OS_BASE+0x000FE04)
 BytesPerScanLine    equ (OS_BASE+0x000FE08)
 SCR_MODE            equ (OS_BASE+0x000FE0C)
 
+KERNEL_ALLOC_FLAG   equ (OS_BASE+0x000FE70)   
 mmio_pcie_cfg_addr  equ	(OS_BASE+0x000FE74)	
 mmio_pcie_cfg_lim   equ	(OS_BASE+0x000FE78)	
 mmio_pcie_cfg_pdes  equ	(OS_BASE+0x000FE7C)	

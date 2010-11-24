@@ -110,6 +110,7 @@ proc init_kernel_heap
            mov [mem_used.fd], eax
            mov [mem_used.bk], eax
 
+	   mov [KERNEL_ALLOC_FLAG], dword PG_SW
            stdcall alloc_pages, dword 32
            mov ecx, 32
            mov edx, eax
@@ -571,7 +572,7 @@ proc kernel_alloc stdcall, size:dword
            mov edi, eax
            mov edx, [lin_addr]
 @@:
-           stdcall map_page,edx,edi,dword PG_SW
+           stdcall map_page,edx,edi,dword [KERNEL_ALLOC_FLAG]
            add edx, 0x1000
            add edi, 0x1000
            dec ecx
@@ -1538,3 +1539,5 @@ proc shmem_close stdcall, name:dword
 .fail:
            ret
 endp
+diff16 "heap  code end ",0,$
+diff16 "heap  code size",init_kernel_heap,$

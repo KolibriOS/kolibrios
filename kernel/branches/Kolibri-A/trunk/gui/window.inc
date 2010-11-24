@@ -2083,3 +2083,6 @@ window._.draw_negative_box: ;//////////////////////////////////////////////////
         call    draw_rectangle.forced
         pop     esi ebx eax
         ret
+
+diff16 "window code end",0,$
+diff16 "window.inc size",syscall_draw_window,$
