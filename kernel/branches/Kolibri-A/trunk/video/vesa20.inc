@@ -256,8 +256,8 @@ put_pixel:	; left for compatibility with Vesa20_putpixel32
 ; ebx = y
      imul    ebx, [BytesPerScanLine]	 ; ebx = y * y multiplier
      lea     edi, [ebx+eax*4]  ; edi = x*4+(y*y multiplier)
-     mov     eax, [esp+32-8+4] ; eax = color
-     mov     [LFB_BASE+edi], eax
+;     mov     eax, [esp+32-8+4] ; eax = color
+     mov     [LFB_BASE+edi], ecx
      ret
 
 
@@ -277,7 +277,6 @@ calculate_edi:
 
 align 4
 __sys_draw_line:
-;     inc   [mouse_pause]
      call    [_display.disable_mouse]
 
 ; draw a line
@@ -306,6 +305,7 @@ dl_dy equ esp+0
      push    eax	   ; save x1
      push    ebx	   ; save y1
      push    esi	   ; save x2
+
      push    ebp	   ; save y2
 ; checking x-axis...
      sub     esi, eax	   ; esi = x2-x1
@@ -408,6 +408,9 @@ hline:
      cmp     ebx, [Screen_Max_Y]
      jge     .out
      push    eax ebp esi ebx edx
+     bt      ecx, 24			; color inversion check
+     rcl     edi,1			; forced graphics check
+
      mov     ebp, [_display.width]	; ebp = screen co-ords base
      imul    ebp, ebx
      add     ebp, [_WinMapAddress]
@@ -425,28 +428,46 @@ hline:
      mov     edx, [Screen_Max_X]
 
 .draw:	; -- the line ---
-     test    edi,1			; forced  ?
-     jnz    .checked
-; check whether the line covered by other windows
-     movzx   esi, byte [ebp+eax]
-     cmp     esi, [CURRENT_TASK]
-     jne     .nextpixel
-.checked:
-     test    ecx,0x01000000
-     jz     .noneg
+     jmp     dword [hline.drawtable + edi*4]	; a coolhack (C) Serge
+
+align 4
+.invert_color:
      mov     ecx, [ebx+eax*4]
-     not     ecx
-     and     ecx, 0x01FFFFFF	; keep bit[24] high !
-.noneg:
+     xor     ecx, 0x00FFFFFF
+     or      ecx, 0x01000000		; keep bit[24] high !
+align 4
+.check_overlap:
+     movzx   esi, byte [ebp+eax]	; check whether the line covered by other windows
+     cmp     esi, [CURRENT_TASK]
+     je      .putpixel
+     jmp     .nextpixel
+align 4
+.invert_force:
+     mov     ecx, [ebx+eax*4]
+     xor     ecx, 0x00FFFFFF
+     or      ecx, 0x01000000		; keep bit[24] high !
+align 4
+.putpixel:
      mov     [ebx+eax*4], ecx
+align 4
 .nextpixel:
      inc     eax
      cmp     eax, edx
-     jle     .draw
+     ja     .exit
+     jmp     dword [hline.drawtable + edi*4]	; close the loop
+
 .exit:
+     shr     edi, 1			; restore the 'force' bit
      pop     edx ebx esi ebp eax
 .out:
      ret
+align 4
+.drawtable:
+dd	.check_overlap  ; general case
+dd	.invert_color
+dd	.putpixel	; force to draw it
+dd	.invert_force
+
 
 align 4
 vline:
@@ -481,31 +502,47 @@ vline:
      jb     .draw
      mov     edx, [Screen_Max_Y]	; to prevent off-screen drawing
 
-.draw:	  ; (vertical line itself)
-     test    edi,1			; forced  ?
-     jnz    .checked
-; check whether the line covered by other windows
+.draw:	  
+     jmp     dword [vline.drawtable + edi*4]	
+align 4
+.invert_color:
+     mov     ecx, [eax]
+     xor     ecx, 0x00FFFFFF
+     or      ecx, 0x01000000		
+align 4
+.check_overlap:
      movzx   esi, byte [ebp]
      cmp     esi, [CURRENT_TASK]
-     jne     .nextpixel
-.checked:
-     test    ecx,0x01000000
-     jz     .noneg
+     je      .putpixel
+     jmp     .nextpixel
+
+align 4
+.invert_force:
      mov     ecx, [eax]
-     not     ecx
-     and     ecx, 0x01FFFFFF		; keep bit[24] high !
-.noneg:
+     xor     ecx, 0x00FFFFFF
+     or      ecx, 0x01000000		
+align 4
+.putpixel:
      mov     [eax], ecx
+align 4
 .nextpixel:
      add     eax, [BytesPerScanLine]
      add     ebp, [_display.width]
      inc     ebx
      cmp     ebx, edx
-     jle    .draw
+     ja     .exit
+     jmp     dword [vline.drawtable + edi*4]	
 .exit:
+     shr     edi, 1
      pop     edx ebx esi ebp eax
 .out:
      ret
+align 4
+.drawtable:
+dd	.check_overlap  ; general case
+dd	.invert_color
+dd	.putpixel	; force to draw it
+dd	.invert_force
 
 
 ;*************************************************
@@ -1005,20 +1042,23 @@ init_background:
 
 align 16
 overlapping_of_points_mmx:
-	movd	mm0, eax
-	movd	mm4, eax
-	movd	mm1, ebx
-	pxor	mm2, mm2
-	punpcklbw mm0, mm2
-	punpcklbw mm1, mm2
-	psubw	mm1, mm0
-	movd	mm3, ecx
-	psrld	mm3, 24
-	packuswb mm3, mm3
-	packuswb mm3, mm3
-	pmullw	mm1, mm3
-	psrlw	mm1, 8
-	packuswb mm1, mm2
-	paddb	mm4, mm1
-	movd	eax, mm4
-	ret
+        movd    mm0, eax
+        movd    mm4, eax
+        movd    mm1, ebx
+        pxor    mm2, mm2
+        punpcklbw mm0, mm2
+        punpcklbw mm1, mm2
+        psubw   mm1, mm0
+        movd    mm3, ecx
+        psrld   mm3, 24
+        packuswb mm3, mm3
+        packuswb mm3, mm3
+        pmullw  mm1, mm3
+        psrlw   mm1, 8
+        packuswb mm1, mm2
+        paddb   mm4, mm1
+        movd    eax, mm4
+        ret
+diff16 "VESA2 code end ",0,$
+diff16 "VESA2 code size",get_pixel,$
+
