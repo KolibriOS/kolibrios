@@ -1,5 +1,5 @@
 align 4
-draw_obj_info:
+draw_obj_info: ;окно со свойствами объекта
 	mov eax,13 ;rect
 	mov edx,WND_CAPT_COLOR
 	mov ebx,[wndObjI.left]
@@ -19,7 +19,7 @@ draw_obj_info:
 	mov edx,WND_CAPT_COLOR
 	int 0x40
 
-	mov edx,[foc_obj] ;init icon pointers
+	mov edx,[foc_obj] ;берем указатель на объект
 	cmp edx,0
 	je .exit_fun
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -43,21 +43,35 @@ draw_obj_info:
     int 0x40
 
 	mov eax,8 ;кнопка для сохранения изменений
-	mov ebx,125*65536+20
-	mov ecx,161*65536+10
+    mov ebx,[wndObjI.left]
+	add ebx,119
+    shl ebx,16
+	add ebx,18
+	mov ecx,[wndObjI.top]
+	add ecx,1
+	shl ecx,16
+	add ecx,18
 	mov edx,10
 	mov esi,0xd040
 	int 0x40
+
+	ror ebx,16 ;вычисляем координаты для иконки
+	ror ecx,16
+	and ebx,0xffff
+	and ecx,0xffff
+	inc ebx
+	inc ecx
+	stdcall draw_icon, 17,ebx,ecx ;17 - save
+
+	mov edi,edit2
+	.cycle:
+		stdcall [edit_box_draw], edi ;рисуем поля со свойствами объекта
+		add edi,ed_struc_size
+		cmp edi,prop_wnd_edits_end
+		jl .cycle
+
     popad
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	stdcall [edit_box_draw], dword edit2
-	stdcall [edit_box_draw], dword edit3
-	stdcall [edit_box_draw], dword edit4
-	stdcall [edit_box_draw], dword edit5
-	stdcall [edit_box_draw], dword edit6
-	stdcall [edit_box_draw], dword edit7
-	stdcall [edit_box_draw], dword edit8
-	stdcall [edit_box_draw], dword edit9
 
 	xor ebx,ebx ;номер поля
 	.draw_column:
@@ -122,34 +136,35 @@ but_element_change:
 	cmp dword[foc_obj],0
 	je @f
 		pushad
-		stdcall get_obj_win_param, 0,edit2
-		stdcall get_obj_win_param, 1,edit3
-		stdcall get_obj_win_param, 2,edit4
-		stdcall get_obj_win_param, 3,edit5
-		stdcall get_obj_win_param, 4,edit6
-		stdcall get_obj_win_param, 5,edit7
-		stdcall get_obj_win_param, 6,edit8
-		stdcall get_obj_win_param, 7,edit9
+		xor ebx,ebx
+		mov edi,edit2
+		.cycle:
+			call get_obj_win_param
+			inc ebx
+			add edi,ed_struc_size
+			cmp edi,prop_wnd_edits_end
+			jl .cycle
 		popad
 	@@:
 	call draw_constructor ;обновляем окно конструктора
 	call draw_window
 	ret
 
+;input:
+; ebx - property column
+; edi - pointer to property editbox
 align 4
-proc get_obj_win_param, col:dword, edit:dword
-;pushad
-		stdcall get_obj_text_col, [foc_obj], [col] ;edx - смещение для текста
-		stdcall get_obj_text_len_col, [foc_obj], [col] ;eax - длинна поля
-		cld
-		mov edi,[edit]
+get_obj_win_param:
+	pushad
 		mov esi,ed_text
+		stdcall get_obj_text_col, [foc_obj], ebx ;edx - смещение для текста
+		stdcall get_obj_text_len_col, [foc_obj], ebx ;eax - длинна поля
+		cld
 		mov edi,edx
 		mov ecx,eax
 		rep movsb
+	popad
 	ret
-;popad
-endp
 
 ;input:
 ;  obj - pointer to object
@@ -269,7 +284,7 @@ proc draw_icon_obj, o_type:dword,n_col:dword, coord_y:dword
 	mov eax,7
 	mov ecx,0x100010 ;ecx - size:16*16
 	mov edx,[wndObjI.left]
-	add edx,5
+	add edx,3 ;отступ от левого края рамки до иконки
 	shl edx,16
 	add edx,[coord_y]
 	int 0x40

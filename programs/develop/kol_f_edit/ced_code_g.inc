@@ -118,7 +118,12 @@ macro insert_ret
 
 
 align 4
-but_code_gen:
+but_update:
+	call draw_constructor
+	cmp byte[show_mode],0 ;условие видимости окна конструктора
+	jne @f
+		stdcall [buf2d_draw], buf_fon
+	@@:
 	call code_gen
 	cmp byte[show_mode],1 ;условие видимости текстового окна
 	jne @f
@@ -163,12 +168,11 @@ push ebx
 		jne @f
 			stdcall get_code_struct,eax ;обработка объекта
 			stdcall dword[tl_node_poi_get_next_info], esi,tree2
-			pop ecx ;переходим к следущему узлу
-			cmp ecx,0
-			je .find_no
-			cmp byte[ecx+2],bl ;lev
+			pop esi ;переходим к следущему узлу
+			cmp esi,0
+			je .end_st
+			cmp byte[esi+2],bl ;lev
 			jle .end_st
-				mov esi,ecx
 				push bx
 					mov bl,byte[esi+2]
 					call code_gen_obj ;рекурсивный вызов дочерних объектов
@@ -362,11 +366,46 @@ proc get_code_auto_data_el
 			stdcall insert_text,edx
 
 			stdcall insert_text, txt_mouse_dd
+
+			stdcall insert_text, txt_0 ;тут будут свойства editbox а пока просто ставим 0
+			xchg eax,edx ;сохраняем значение edx
+			stdcall get_obj_text_col,ebx,10
+			cmp byte[edx],0 ;проверяем пустая ли строка при запуске editbox
+			je .null_string
+				xchg eax,edx ;востанавливаем значение edx
+				stdcall insert_text, txt_coma
+
+				stdcall insert_text, txt_txt
+				stdcall insert_text,edx
+				stdcall insert_text,txt_met_end
+				stdcall insert_text,txt_minus
+				stdcall insert_text, txt_txt
+				stdcall insert_text,edx
+				stdcall insert_text,txt_minus
+				stdcall insert_text, txt_1
+				stdcall insert_text, txt_coma
+
+				stdcall insert_text, txt_txt
+				stdcall insert_text,edx
+				stdcall insert_text,txt_met_end
+				stdcall insert_text,txt_minus
+				stdcall insert_text, txt_txt
+				stdcall insert_text,edx
+				stdcall insert_text,txt_minus
+				stdcall insert_text, txt_1
+			.null_string:
 			insert_nl
 		@@:
-		;cmp byte[ebx],C_CB
-		;jne @f
-		;@@:
+		cmp byte[ebx],C_DT
+		jne @f
+			stdcall insert_text, txt_txt
+			mov edx,fp_icon
+			stdcall get_obj_id, ebx,edx
+			stdcall insert_text,edx
+			stdcall insert_text, txt_db
+			stdcall insert_text_prop, ebx,0
+			insert_nl
+		@@:
 
 		stdcall dword[tl_node_poi_get_next_info], esi,tree2
 		pop esi ;переходим к следущему узлу
@@ -631,22 +670,52 @@ proc get_code_auto_data_dop
 		jne @f
 			;1,2,3,4,...,6,...8,...,10 - w,x,y,col_fon,...,col_frame,...,col_txt,...,txt
 			stdcall insert_text, txt_txt
-
 			mov edx,fp_icon
 			stdcall get_obj_id, ebx,edx
-			stdcall str_len,edx ;eax = len(fp_icon)
-			stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
-			stdcall insert_text, txt_times
+			stdcall insert_text,edx
 
-			stdcall get_obj_text_col,ebx,9
-			stdcall str_len,edx
-			stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
+			stdcall get_obj_text_col,ebx,10
+			cmp byte[edx],0
+			je .no_text
+				stdcall insert_text, txt_d_poi
+				stdcall insert_text, txt_db
+				stdcall insert_text, txt_str_beg
+				stdcall str_len,edx
+				stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
+				stdcall insert_text, txt_str_end
+				insert_nl
 
-			insert_plus
-			stdcall insert_text, txt_2
-			stdcall insert_text, txt_db
-			insert_0
-			insert_nl
+				insert_tab
+				stdcall insert_text, txt_met_end
+				stdcall insert_text, txt_rb
+				stdcall insert_text, txt_txt
+				mov edx,fp_icon
+				stdcall get_obj_id, ebx,edx
+				stdcall insert_text,edx
+
+				stdcall insert_text, txt_minus
+				stdcall insert_text, txt_txt
+				stdcall insert_text,edx
+				stdcall insert_text, txt_met_end
+
+				insert_plus
+				stdcall insert_text_prop,ebx,9
+				insert_plus
+				stdcall insert_text, txt_3
+				
+				insert_nl
+
+				jmp @f
+
+			.no_text: ;первоначально текст не задан
+				stdcall insert_text, txt_times
+
+				stdcall insert_text_prop,ebx,9
+				insert_plus
+				stdcall insert_text, txt_2
+				stdcall insert_text, txt_db
+				insert_0
+				insert_nl
 		@@:
 		;cmp byte[ebx],C_CB
 		;jne @f
@@ -1018,6 +1087,49 @@ proc get_code_draw_obj
 			stdcall insert_text, txt_i_40
 			insert_nl
 		@@:
+		cmp byte[ebx],C_DT ;рисование текста через сист. ф. 4
+		jne @f
+			insert_tab
+			stdcall insert_text, txt_mov
+			insert_reg txt_eax
+			insert_coma
+			stdcall insert_text, txt_4
+			insert_nl
+
+			insert_tab
+			stdcall insert_text, txt_mov
+			insert_reg txt_ebx
+			insert_coma
+			stdcall insert_text_prop, ebx,1
+			insert_i65p
+			stdcall insert_text_prop, ebx,2
+			insert_nl
+
+			insert_tab
+			stdcall insert_text, txt_mov
+			insert_reg txt_ecx
+			insert_coma
+			stdcall insert_text_prop, ebx,3
+			insert_nl
+
+;or ecx,0x80000000
+
+			insert_tab
+			stdcall insert_text, txt_mov
+			insert_reg txt_edx
+			insert_coma
+			stdcall insert_text, txt_txt
+			mov edx,fp_icon
+			stdcall get_obj_id, ebx,edx
+			stdcall insert_text,edx
+			insert_nl
+
+;mov esi,...
+
+			insert_tab
+			stdcall insert_text, txt_i_40
+			insert_nl
+		@@:
 
 		stdcall dword[tl_node_poi_get_next_info], esi,tree2
 		pop esi ;переходим к следущему узлу
@@ -1104,6 +1216,8 @@ txt_3 db '3',0
 txt_4 db '4',0
 txt_8 db '8',0
 txt_plus db '+',0
+txt_minus db '-',0
+;txt_dol db '$',0
 txt_nl db 13,0
 txt_com db ';',0
 txt_sp db ' ',0
@@ -1112,6 +1226,7 @@ txt_br db '\',13,9,0
 txt_txt db 'txt_',0
 txt_db db ' db ',0
 txt_dd db ' dd ',0
+txt_rb db ' rb ',0
 txt_dd_0_0 db 9,'dd 0,0',13,0
 txt_mouse_dd db ', mouse_dd, ',0
 txt_times db ':',13,9,'times ',0
@@ -1134,6 +1249,7 @@ txt_ll_end db 'l_libs_end:',13,0
 txt_but_create db '0x40000000',0 ;tmp
 txt_0x33000000 db '0x33000000',0 ;tmp
 txt_struct db 'struct ',0
+txt_met_end db '.end',0
 txt_ends db 'ends',13,13,0
 txt_mov db 'mov ',0
 txt_xor db 'xor ',0

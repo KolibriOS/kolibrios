@@ -19,7 +19,7 @@ include 'strlen.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 20.11.10',0
+hed db 'kol_f_edit 29.11.10',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
@@ -140,7 +140,7 @@ fn_font_s1 db 'font6x9.bmp',0
 IMAGE_FILE_FONT1_SIZE equ 96*144*3 ;размер файла с 1-м системным шрифтом
 
 fn_icon db 'icon.bmp',0
-count_main_icons equ 33 ;число иконок в файле icon.bmp
+count_main_icons equ 35 ;число иконок в файле icon.bmp
 bmp_icon rb 0x300*count_main_icons
 
 fn_icon_tl_sys db 'tl_sys_16.png',0
@@ -183,9 +183,12 @@ start:
 	mov eax,[wndObjI.top]
 	add eax,[recMain.top]
 	inc eax
+	mov ebx,[wndObjI.left]
+	add ebx,16+6 ;ширина иконки + отступы
 	mov edi,edit2
 	@@:
-		mov ed_top,eax
+		mov ed_top,eax ;отступ сверху
+		mov ed_left,ebx ;отступ слева
 		add edi,ed_struc_size
 		add eax,[recMain.height]
 		cmp edi,prop_wnd_edits_end
@@ -367,7 +370,7 @@ pushad
 	int 0x40
 	stdcall draw_icon, 11,331,6 ;11 - text
 
-	;button 'Update Code'
+	;button 'Update: Code, Constructor'
 	mov ebx,350*65536+18
 	mov edx,13
 	int 0x40
@@ -391,40 +394,54 @@ pushad
 	int 0x40
 	stdcall draw_icon, 19,411,6
 
-	;button 'Move Up'
-	mov ebx,160*65536+18
+	;button 'Add Object'
+	mov ebx,125*65536+18
 	mov ecx,30*65536+18
+	mov edx,31
+	int 0x40
+	stdcall draw_icon, 14,126,31 ;14 - add object
+
+	;button 'Move Up'
+	mov ebx,155*65536+18
 	mov edx,21
 	int 0x40
-	stdcall draw_icon, 23,161,31 ;23 - move up
+	stdcall draw_icon, 23,156,31 ;23 - move up
 
 	;button 'Move Down'
-	mov ebx,180*65536+18
-	mov ecx,30*65536+18
+	mov ebx,175*65536+18
 	mov edx,22
 	int 0x40
-	stdcall draw_icon, 24,181,31 ;24 - move down
+	stdcall draw_icon, 24,176,31 ;24 - move down
 
 	;button 'Copy'
-	mov ebx,200*65536+18
-	mov ecx,30*65536+18
+	mov ebx,195*65536+18
 	mov edx,23
 	int 0x40
-	stdcall draw_icon, 30,201,31 ;30 - copy
+	stdcall draw_icon, 30,196,31 ;30 - copy
 
 	;button 'Paste'
-	mov ebx,220*65536+18
-	mov ecx,30*65536+18
+	mov ebx,215*65536+18
 	mov edx,24
 	int 0x40
-	stdcall draw_icon, 31,221,31 ;31 - paste
+	stdcall draw_icon, 31,216,31 ;31 - paste
 
 	;button 'Property'
-	mov ebx,240*65536+18
-	mov ecx,30*65536+18
+	mov ebx,235*65536+18
 	mov edx,25
 	int 0x40
-	stdcall draw_icon, 7,241,31 ;7 - property
+	stdcall draw_icon, 7,236,31 ;7 - property
+
+	;button 'Undo'
+	mov ebx,255*65536+18
+	mov edx,26
+	int 0x40
+	stdcall draw_icon, 33,256,31 ;33 - undo
+
+	;button 'Redo'
+	mov ebx,275*65536+18
+	mov edx,27
+	int 0x40
+	stdcall draw_icon, 34,276,31 ;34 - redo
 
 ; 10 30 50 70 90
 
@@ -468,14 +485,14 @@ popad
 align 4
 mouse:
 	stdcall [edit_box_mouse], dword edit1
-	stdcall [edit_box_mouse], dword edit2
-	stdcall [edit_box_mouse], dword edit3
-	stdcall [edit_box_mouse], dword edit4
-	stdcall [edit_box_mouse], dword edit5
-	stdcall [edit_box_mouse], dword edit6
-	stdcall [edit_box_mouse], dword edit7
-	stdcall [edit_box_mouse], dword edit8
-	stdcall [edit_box_mouse], dword edit9
+	push edi
+	mov edi,edit2
+	.cycle:
+		stdcall [edit_box_mouse], edi
+		add edi,ed_struc_size
+		cmp edi,prop_wnd_edits_end
+		jl .cycle
+	pop edi
 	stdcall [edit_box_mouse], dword edit_sav
 	stdcall [tl_mouse], dword tree1
 	stdcall [tl_mouse], dword tree2
@@ -490,14 +507,14 @@ align 4
 key:
 	mcall 2
 	stdcall [edit_box_key], dword edit1
-	stdcall [edit_box_key], dword edit2
-	stdcall [edit_box_key], dword edit3
-	stdcall [edit_box_key], dword edit4
-	stdcall [edit_box_key], dword edit5
-	stdcall [edit_box_key], dword edit6
-	stdcall [edit_box_key], dword edit7
-	stdcall [edit_box_key], dword edit8
-	stdcall [edit_box_key], dword edit9
+	push edi
+	mov edi,edit2
+	.cycle:
+		stdcall [edit_box_key], edi
+		add edi,ed_struc_size
+		cmp edi,prop_wnd_edits_end
+		jl .cycle
+	pop edi
 	stdcall [edit_box_key], dword edit_sav
 	stdcall [tl_key], dword tree1
 	stdcall [tl_key], dword tree2
@@ -538,7 +555,7 @@ button:
 	@@:
 	cmp ah,13
 	jne @f
-		call but_code_gen
+		call but_update
 	@@:
 	cmp ah,14
 	jne @f
@@ -571,6 +588,20 @@ button:
 	cmp ah,25
 	jne @f
 		call on_file_object_select
+	@@:
+	cmp ah,26
+	jne @f
+		stdcall [tl_info_undo], tree2
+		stdcall [tl_draw], tree2
+	@@:
+	cmp ah,27
+	jne @f
+		stdcall [tl_info_redo], tree2
+		stdcall [tl_draw], tree2
+	@@:
+	cmp ah,31
+	jne @f
+		call on_add_object
 	@@:
 	cmp ah,1
 	jne still
@@ -629,7 +660,12 @@ but_open_proj:
 			.zero:
 			shl ecx,16 ;в ecx индекс иконки
 			mov cl,byte[eax+1+MAX_LEN_OBJ_TXT] ;уровень объекта
+
+			;tl_node_close_open - не подходит, т.к. действует на узлы имеющие дочерние
+			mov ch,byte[eax+2+MAX_LEN_OBJ_TXT] ;закрытый/открытый
+
 			stdcall dword[tl_node_add], eax, ecx, tree2 ;добавляем объект
+
 			stdcall dword[tl_cur_next], tree2 ;переносим курсор вниз, что-бы не поменялся порядок
 			add eax,sizeof.object ;переход на следующий объект
 			jmp @b
@@ -661,6 +697,8 @@ but_save_proj:
 
 		mov bl,byte[edx+2] ;bl - уровень объекта
 		mov byte[esi+1+MAX_LEN_OBJ_TXT],bl
+		mov bl,byte[edx+3] ;bl - открытие/закрытие объекта
+		mov byte[esi+2+MAX_LEN_OBJ_TXT],bl
 
 		;вычисляем новый индекс для типа объекта
 		mov ebx,[esi+3+8+MAX_LEN_OBJ_TXT] ;ebx - тип объекта
@@ -786,17 +824,43 @@ on_file_object_select:
 	pop dword[foc_obj]
 	cmp dword[foc_obj],0
 	je @f
-		stdcall set_obj_win_param, 0,edit2
-		stdcall set_obj_win_param, 1,edit3
-		stdcall set_obj_win_param, 2,edit4
-		stdcall set_obj_win_param, 3,edit5
-		stdcall set_obj_win_param, 4,edit6
-		stdcall set_obj_win_param, 5,edit7
-		stdcall set_obj_win_param, 6,edit8
-		stdcall set_obj_win_param, 7,edit9
+		push ebx edi
+		xor ebx,ebx
+		mov edi,edit2
+		.cycle:
+			stdcall set_obj_win_param, ebx,edi
+			inc ebx
+			add edi,ed_struc_size
+			cmp edi,prop_wnd_edits_end
+			jl .cycle
+		pop edi ebx
 	@@:
 	call draw_window
 	ret
+
+align 4
+proc set_obj_win_param, col:dword, edit:dword
+	pushad
+		stdcall get_obj_text_col, [foc_obj], [col] ;edx - text
+		stdcall get_obj_text_len_col, [foc_obj], [col] ;eax - длинна поля
+		mov edi,[edit]
+		cmp eax,1
+		jl @f
+			dec eax
+			mov ed_max,eax ;ed_max = edi+.max
+			mov ed_focus_border_color, dword 0xff
+			mov ed_blur_border_color, dword 0x808080
+			stdcall [edit_box_set_text], edi,edx ;обновляем editbox
+			jmp .end_f
+		@@:
+			mov ed_max,dword MAX_LEN_OBJ_TXT
+			mov ed_focus_border_color, dword 0xffffff ;делаем невидимую активную рамку
+			mov ed_blur_border_color, dword 0xffffff ;делаем невидимую фоновую рамку
+			stdcall [edit_box_set_text], edi,txt_null
+		.end_f:
+	popad
+	ret
+endp
 
 ;функция вызываемая при нажатии Enter в окне tree1
 ;добавляет новый объект в окно tree2
@@ -810,31 +874,14 @@ push eax ebx ecx
 		xor ecx,ecx
 		mov cx,word[eax+obj_opt.img-obj_opt] ;cx - индекс главной иконки добавляемого объекта
 		shl ecx,16
-		stdcall dword[tl_node_add], eax, ecx, tree2 ;добавляем объект
+		stdcall mem_clear, u_object,sizeof.object
+		mov bl,byte[eax]
+		mov byte[u_object.c],bl
+		stdcall dword[tl_node_add], u_object, ecx, tree2 ;добавляем объект
 	@@:
 pop ecx ebx eax
 	call draw_window
 	ret
-
-align 4
-proc set_obj_win_param, col:dword, edit:dword
-	pushad
-		stdcall get_obj_text_col, [foc_obj], [col]
-		stdcall get_obj_text_len_col, [foc_obj], [col] ;eax - длинна поля
-		mov edi,[edit]
-		cmp eax,1
-		jl @f
-			dec eax
-			mov ed_max,eax ;ed_max = edi+.max
-			stdcall [edit_box_set_text], edi,edx ;обновляем editbox
-			jmp .end_f
-		@@:
-			mov ed_max,dword MAX_LEN_OBJ_TXT
-			stdcall [edit_box_set_text], edi,txt_null
-		.end_f:
-	popad
-	ret
-endp
 
 align 4
 but_ctrl_o:
@@ -911,6 +958,9 @@ edit6 edit_box 115, 32, 20, 0xffffff, 0x80ff, 0xff, 0x808080, 0, MAX_LEN_OBJ_TXT
 edit7 edit_box 115, 32, 20, 0xffffff, 0x80ff, 0xff, 0x808080, 0, MAX_LEN_OBJ_TXT, ed_text7, mouse_dd, 0
 edit8 edit_box 115, 32, 20, 0xffffff, 0x80ff, 0xff, 0x808080, 0, MAX_LEN_OBJ_TXT, ed_text8, mouse_dd, 0
 edit9 edit_box 115, 32, 20, 0xffffff, 0x80ff, 0xff, 0x808080, 0, MAX_LEN_OBJ_TXT, ed_text9, mouse_dd, 0
+edit10 edit_box 115, 32, 20, 0xffffff, 0x80ff, 0xff, 0x808080, 0, MAX_LEN_OBJ_TXT, ed_text10, mouse_dd, 0
+edit11 edit_box 115, 32, 20, 0xffffff, 0x80ff, 0xff, 0x808080, 0, MAX_LEN_OBJ_TXT, ed_text11, mouse_dd, 0
+edit12 edit_box 115, 32, 20, 0xffffff, 0x80ff, 0xff, 0x808080, 0, MAX_LEN_OBJ_TXT, ed_text12, mouse_dd, 0
 prop_wnd_edits_end: ;конец текстовых полей, отвечающих за свойства
 
 edit_sav edit_box 210, 310, 30, 0xffffff, 0xff80, 0xff, 0xff0000, 0x4080, 300, ed_text_sav, mouse_dd, 0
@@ -926,6 +976,9 @@ ed_text6 rb MAX_LEN_OBJ_TXT+2
 ed_text7 rb MAX_LEN_OBJ_TXT+2
 ed_text8 rb MAX_LEN_OBJ_TXT+2
 ed_text9 rb MAX_LEN_OBJ_TXT+2
+ed_text10 rb MAX_LEN_OBJ_TXT+2
+ed_text11 rb MAX_LEN_OBJ_TXT+2
+ed_text12 rb MAX_LEN_OBJ_TXT+2
 ed_text_sav rb 302
 
 txt_null db 'null',0
@@ -934,11 +987,11 @@ mouse_dd dd ?
 el_focus dd tree1
 ;дерево со списком возможных типов объектов
 tree1 tree_list sizeof.ObjOpt,20+2, tl_key_no_edit+tl_draw_par_line+tl_list_box_mode,\
-	16,16, 0xffffff,0xb0d0ff,0xd000ff, 10,50,125,100, 0,3,0, el_focus,\
+	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,50,125,100, 0,3,0, el_focus,\
 	w_scr_t1,on_add_object
 ;дерево с объектами в пользовательском файле
 tree2 tree_list sizeof.object,MAX_CED_OBJECTS+2, tl_draw_par_line,\
-	16,16, 0xffffff,0xb0d0ff,0xd000ff, 160,50,125,280, 13,1,MAX_LEN_OBJ_TXT, el_focus,\
+	16,16, 0xffffff,0xb0d0ff,0xd000ff, 155,50,130,280, 13,1,MAX_LEN_OBJ_TXT, el_focus,\
 	w_scr_t2,on_file_object_select
 
 msgbox_0:
@@ -1134,11 +1187,11 @@ sc system_colors
 
 image_data dd 0 ;память для преобразования картинки функциями libimg
 
-recMain BOX 3,13,16,18
+recMain BOX 3,20,16,18 ;координаты: 1,2 - отступы; 3,4 - размер
 ced_info object 0 ;on start == 0
 	rb sizeof.object*(MAX_CED_OBJECTS-1)
 
-wndObjI BOX 10,160,125+16,170
+wndObjI BOX 5,155,125+16,175
 text_buffer db BUF_SIZE dup(0)
 fn_obj_opt db 'ob_o.opt',0
 obj_opt ObjOpt
