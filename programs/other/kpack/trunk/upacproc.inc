@@ -1,25 +1,6 @@
 ;*********************************************************************
 unpack:
-	call	refresh_editbox_data
-; clear messages
-	call	clear_messages
-; display logo
-	mov	esi,info_str
-	push	info_len
-	pop	ecx
-	call	write_string
-
-; load input file
-	mov	esi,inname
-	call	get_full_name
-	mov	ebx,fn70block
-	mov	[ebx],dword 5
-	and	[ebx+4],dword 0
-	and	[ebx+8],dword 0
-	and	[ebx+12],dword 0
-	mov	[ebx+16],dword file_attr
-	mcall	70
-	test	eax,eax
+	call	displogo_and_readfile
 	jnz	infileerr
 
 	mov	ecx,[insize]
@@ -179,5 +160,20 @@ return_memory:
 	xor	eax,eax
 	mov	[infile],eax
 @@:
+	ret
+;*********************************************************************
+displogo_and_readfile:
+	call	clear_mess_and_displogo
+; load input file
+	mov	esi,inname
+	call	get_full_name
+	mov	ebx,fn70block
+	mov	[ebx],dword 5
+	and	[ebx+4],dword 0
+	and	[ebx+8],dword 0
+	and	[ebx+12],dword 0
+	mov	[ebx+16],dword file_attr
+	mcall	70
+	test	eax,eax
 	ret
 ;*********************************************************************

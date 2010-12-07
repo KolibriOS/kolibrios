@@ -42,8 +42,7 @@ fn70start	rd 1
 fn70size	rd 1
 fn70zero	rd 1
 fn70dest	rd 1
-fullname	rb 256
-
+fullname	rb 4096	;256
 ;---------------------------------------------------------------------
 align 4
 file_attr	rd 8
@@ -199,7 +198,7 @@ _numPrevBits:		rd 1
 _numPosBits:		rd 1
 _posMask:		rd 1
 _posStateBits:		rd 1
-range:			rd 1
+_range:			rd 1
 _cacheSize:		rd 1
 _cyclicBufferSize:	rd 1
 ;-----------------------------------------------------
@@ -224,3 +223,14 @@ pack_length:	rd 1
 ;---------------------------------------------------------------------
 ; Compress data area end
 ;---------------------------------------------------------------------
+
+;*********************************************************************
+; Kerpack data
+;*********************************************************************
+align	4
+inptr		dd ?
+indelta		dd ?
+insize1		dd ?
+;ct1		rb 256
+;ctn		dd ?
+;cti		db ?

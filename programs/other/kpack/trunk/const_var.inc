@@ -10,7 +10,7 @@ definoutname	db 0
 defpath		db '/RD/1/'
 ;curedit		dd 0
 
-info_str	db 'KPack - Kolibri Packer, version 0.15',10
+info_str	db 'KPack - Kolibri Packer, version 0.20',10
 		db 'Uses LZMA v4.32 compression library',10,10
 info_len	= $ - info_str
 usage_str	db 'Written by diamond in 2006, 2007, 2009 specially for KolibriOS',10
@@ -26,6 +26,10 @@ usage_str	db 'Written by diamond in 2006, 2007, 2009 specially for KolibriOS',10
 		db ' or enter input and output file name,',10 
 		db ' enter path and press needed button',10
 usage_len	= $ - usage_str
+already_str	db 'Already packed kernel.mnt file',10
+already_len	= $ - already_str
+notkernel_str	db 'This is not kernel.mnt file',10
+notkernel_len	= $ - notkernel_str
 errload_str	db 'Cannot load input file',10
 errload_len	= $ - errload_str
 outfileerr_str	db 'Cannot save output file',10
@@ -75,21 +79,25 @@ Box_lib_import:
 edit_box_draw		dd aEdit_box_draw
 edit_box_key		dd aEdit_box_key
 edit_box_mouse		dd aEdit_box_mouse
-version_ed		dd aVersion_ed
+;version_ed		dd aVersion_ed
 
-option_box_draw		dd aOption_box_draw
-option_box_mouse	dd aOption_box_mouse
-version_op		dd aVersion_op
+check_box_draw		dd aCheck_box_draw
+check_box_mouse		dd aCheck_box_mouse
+;version_ch		dd aVersion_ch
 
-scrollbar_ver_draw	dd aScrollbar_ver_draw
-scrollbar_ver_mouse	dd aScrollbar_ver_mouse
-scrollbar_hor_draw	dd aScrollbar_hor_draw
-scrollbar_hor_mouse	dd aScrollbar_hor_mouse
-version_scrollbar	dd aVersion_scrollbar
+;option_box_draw	dd aOption_box_draw
+;option_box_mouse	dd aOption_box_mouse
+;version_op		dd aVersion_op
 
-menu_bar_draw		dd aMenu_bar_draw
-menu_bar_mouse		dd aMenu_bar_mouse
-version_menu_bar	dd aVersion_menu_bar
+;scrollbar_ver_draw	dd aScrollbar_ver_draw
+;scrollbar_ver_mouse	dd aScrollbar_ver_mouse
+;scrollbar_hor_draw	dd aScrollbar_hor_draw
+;scrollbar_hor_mouse	dd aScrollbar_hor_mouse
+;version_scrollbar	dd aVersion_scrollbar
+
+;menu_bar_draw		dd aMenu_bar_draw
+;menu_bar_mouse		dd aMenu_bar_mouse
+;version_menu_bar	dd aVersion_menu_bar
 
 	dd 0
 	dd 0
@@ -97,21 +105,25 @@ version_menu_bar	dd aVersion_menu_bar
 aEdit_box_draw		db 'edit_box',0
 aEdit_box_key		db 'edit_box_key',0
 aEdit_box_mouse		db 'edit_box_mouse',0
-aVersion_ed		db 'version_ed',0
+;aVersion_ed		db 'version_ed',0
 
-aOption_box_draw	db 'option_box_draw',0
-aOption_box_mouse	db 'option_box_mouse',0
-aVersion_op		db 'version_op',0
+aCheck_box_draw		db 'check_box_draw',0
+aCheck_box_mouse	db 'check_box_mouse',0
+;aVersion_ch		db 'version_ch',0
 
-aScrollbar_ver_draw	db 'scrollbar_v_draw',0
-aScrollbar_ver_mouse	db 'scrollbar_v_mouse',0
-aScrollbar_hor_draw	db 'scrollbar_h_draw',0
-aScrollbar_hor_mouse	db 'scrollbar_h_mouse',0
-aVersion_scrollbar	db 'version_scrollbar',0
+;aOption_box_draw	db 'option_box_draw',0
+;aOption_box_mouse	db 'option_box_mouse',0
+;aVersion_op		db 'version_op',0
 
-aMenu_bar_draw		db 'menu_bar_draw',0
-aMenu_bar_mouse		db 'menu_bar_mouse',0
-aVersion_menu_bar	db 'version_menu_bar',0
+;aScrollbar_ver_draw	db 'scrollbar_v_draw',0
+;aScrollbar_ver_mouse	db 'scrollbar_v_mouse',0
+;aScrollbar_hor_draw	db 'scrollbar_h_draw',0
+;aScrollbar_hor_mouse	db 'scrollbar_h_mouse',0
+;aVersion_scrollbar	db 'version_scrollbar',0
+
+;aMenu_bar_draw		db 'menu_bar_draw',0
+;aMenu_bar_mouse		db 'menu_bar_mouse',0
+;aVersion_menu_bar	db 'version_menu_bar',0
 ;---------------------------------------------------------------------
 head_f_i:
 head_f_l	db 'System error',0
@@ -189,3 +201,30 @@ editboxes_end:
 
 mouse_dd dd 0
 ;---------------------------------------------------------------------
+
+check1 check_box 353,40,4,10,0x80AABBCC,0,0,check_text,6
+
+check_text db 'Kernel',0
+;*********************************************************************
+; Kerpack data
+;*********************************************************************
+align 4
+fn70_read:
+		dd	0
+		dd	0
+		dd	0
+insize3		dd	200*1024
+infile3		dd	infile
+		db	0
+		dd	fullname
+
+align 4
+fn70_write:
+		dd	2
+		dd	0
+		dd	0
+outsize3	dd	?
+outfile3	dd	outfile
+		db	0
+		dd	fullname
+;*********************************************************************

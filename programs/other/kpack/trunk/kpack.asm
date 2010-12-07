@@ -1,5 +1,10 @@
 ; kpack = Kolibri Packer
 ;---------------------------------------------------------------------
+; version:	0.20
+; last update:  07/12/2010
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Added code for packing the kernel.mnt
+;---------------------------------------------------------------------
 ; version:	0.15
 ; last update:  06/11/2010
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -142,7 +147,28 @@ still:
 	push	dword edit3
 	call	[edit_box_mouse]
 
+	push	dword check1
+	call	[check_box_mouse]
+	
 	jmp	still
+;*********************************************************************
+tell_compress_mess:
+	push	compressing_len
+	pop	ecx
+	mov	esi,compressing_str
+	call	write_string
+	ret
+;*********************************************************************
+clear_mess_and_displogo:
+	call	refresh_editbox_data
+; clear messages
+	call	clear_messages
+; display logo
+	mov	esi,info_str
+	push	info_len
+	pop	ecx
+	call	write_string
+	ret
 ;*********************************************************************
 clear_messages:
 	xor	eax,eax
@@ -169,16 +195,24 @@ button:
 	dec	eax
 	jnz	nopack
 
+	mov	eax,[check1+32]
+	test	eax,10b
+	jnz	@f
+
 	call	pack
 	jmp	still
+;---------------------------------------------------------------------	
+@@:
+	call	kerpack
+	jmp	still	
 ;---------------------------------------------------------------------
 nopack:
 	dec	eax
 	jnz	nounpack
-
+	
 	call	unpack
 	jmp	still
-;---------------------------------------------------------------------
+;---------------------------------------------------------------------	
 but7:
 	call	clear_messages
 ; display logo
@@ -416,10 +450,15 @@ draw_window:
 draw_editbox:
 	push	dword edit1
 	call	[edit_box_draw]
+	
 	push	dword edit2
 	call	[edit_box_draw]
+	
 	push	dword edit3
 	call	[edit_box_draw]
+	
+	push	dword check1
+	call	[check_box_draw]
 	ret
 ;*********************************************************************
 set_editbox_position:
@@ -507,6 +546,9 @@ include 'lzma_set_dict_size.inc'
 ;---------------------------------------------------------------------
 ;lzma_decompress:
 include	'lzma_decompress.inc'
+;---------------------------------------------------------------------
+;kerpack code:
+include	'kerpack.inc'
 ;---------------------------------------------------------------------
 ;initialized variables and constants
 include 'const_var.inc'

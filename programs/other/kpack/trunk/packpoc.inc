@@ -1,24 +1,6 @@
 ;*********************************************************************
 pack:
-	call	refresh_editbox_data
-; clear messages
-	call	clear_messages
-; display logo
-	mov	esi,info_str
-	push	info_len
-	pop	ecx
-	call	write_string
-; load input file
-	mov	esi,inname
-	call	get_full_name
-	mov	ebx,fn70block
-	mov	[ebx],dword 5
-	and	[ebx+4],dword 0
-	and	[ebx+8],dword 0
-	and     [ebx+12],dword 0
-	mov	[ebx+16],dword  file_attr
-	mcall	70
-	test	eax,eax
+	call	displogo_and_readfile
 	jz	inopened
 ;---------------------------------------------------------------------
 infileerr:
@@ -154,10 +136,8 @@ lzma_setds:
 	call	lzma_set_dict_size
 ;--------------------------------------
 no_lzma_setds:
-	push	compressing_len
-	pop	ecx
-	mov	esi,compressing_str
-	call	write_string
+	call	tell_compress_mess
+	
 	mov	esi,[outfile1]
 	mov     edi,[outfile2]
 	movsd

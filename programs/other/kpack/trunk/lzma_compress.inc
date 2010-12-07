@@ -181,7 +181,7 @@ CEncoder_Init:
 ;RangeEncoder_Init
 	and	dword [low],0
 	and	dword [low+4],0
-	or	dword [range],0xFFFFFFFF
+	or	dword [_range],0xFFFFFFFF
 	push	ebx
 	push	esi
 	push	edi
@@ -1884,22 +1884,22 @@ RangeEncoder_EncodeDirectBits:
 ;----------------------------------------------------------
 .labl_00:
 	mov	eax,[esp+8]
-	shr	dword [range],1
+	shr	dword [_range],1
 	dec	esi
 	mov	ecx,esi
 	shr	eax,cl
 	test	al,1
 	je	.labl_01
 
-	mov	eax,[range]
+	mov	eax,[_range]
 	add	[low],eax	
 	adc	dword [low+4],0
 ;----------------------------------------------------------
 .labl_01:
-	cmp	dword [range],0x1000000
+	cmp	dword [_range],0x1000000
 	jnb	.labl_02
 
-	shl	dword [range],8
+	shl	dword [_range],8
 	call	RangeEncoder_ShiftLow
 ;----------------------------------------------------------
 .labl_02:
@@ -3179,14 +3179,14 @@ RangeEncoder_ShiftLow:
 
 ;* Call: ***************************************************************
 CMyBitEncoder_Encode:
-	mov	ecx,[range]
+	mov	ecx,[_range]
 	mov	eax,[edx]
 	shr	ecx,0xB
 	imul	ecx,eax
 	cmp	dword [esp+4],0
 	jne	.labl_00
 
-	mov	[range],ecx
+	mov	[_range],ecx
 	mov	ecx,2048
 	sub	ecx,eax
 	shr	ecx,5
@@ -3197,17 +3197,17 @@ CMyBitEncoder_Encode:
 .labl_00:
 	add	[low],ecx
 	adc	dword [low+4],0
-	sub	[range],ecx
+	sub	[_range],ecx
 	mov	ecx,eax
 	shr	ecx,5
 	sub	eax,ecx
 	mov	[edx],eax
 ;----------------------------------------------------------
 .labl_01:
-	cmp	dword [range],0x1000000
+	cmp	dword [_range],0x1000000
 	jnb	.labl_02
 
-	shl	dword [range],8
+	shl	dword [_range],8
 	call	RangeEncoder_ShiftLow
 ;----------------------------------------------------------
 .labl_02:
