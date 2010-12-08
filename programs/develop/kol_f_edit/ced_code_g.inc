@@ -164,7 +164,7 @@ push ebx
 		cmp eax,0
 		je .find_no
 
-		cmp byte[eax],C_ST
+		cmp byte[eax],C_STR
 		jne @f
 			stdcall get_code_struct,eax ;обработка объекта
 			stdcall dword[tl_node_poi_get_next_info], esi,tree2
@@ -181,31 +181,31 @@ push ebx
 			stdcall [ted_text_add], tedit0,txt_ends,6,ted_opt_ed_move_cursor
 			jmp .beg_iterat
 		@@:
-		cmp byte[eax],C_TT
+		cmp byte[eax],C_TXT
 		jne @f
 			stdcall get_code_text,eax ;обработка объекта
 		@@:
-		cmp byte[eax],C_IN
+		cmp byte[eax],C_INC
 		jne @f
 			stdcall get_code_incl,eax ;обработка объекта
 		@@:
-		cmp byte[eax],C_CO
+		cmp byte[eax],C_COM
 		jne @f
 			stdcall get_code_comment,eax ;обработка объекта
 		@@:
-		cmp byte[eax],C_VR
+		cmp byte[eax],C_VAR
 		jne @f
 			stdcall get_code_variable,eax,ebx ;обработка объекта
 		@@:
-		cmp byte[eax],C_WI
+		cmp byte[eax],C_WND
 		jne @f
 			stdcall get_code_window,eax ;обработка объекта
 		@@:
-		cmp byte[eax],C_AC
+		cmp byte[eax],C_ACO
 		jne @f
 			stdcall get_code_auto,eax ;обработка объекта
 		@@:
-		cmp byte[eax],C_KE ;клавиатура
+		cmp byte[eax],C_KEY ;клавиатура
 		jne @f
 			stdcall get_code_key,eax ;обработка объекта
 		@@:
@@ -298,7 +298,7 @@ proc get_code_auto_m
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_ED
+		cmp byte[ebx],C_EDB
 		jne @f
 			stdcall insert_text, txt_std_mouse_ed
 			;insert_sp
@@ -307,7 +307,7 @@ proc get_code_auto_m
 			stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
 			insert_nl
 		@@:
-		cmp byte[ebx],C_CB
+		cmp byte[ebx],C_CHB
 		jne @f
 			stdcall insert_text, txt_std_mouse_cb
 			;insert_sp
@@ -343,7 +343,7 @@ proc get_code_auto_data_el
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_ED
+		cmp byte[ebx],C_EDB
 		jne @f
 			;1,2,3,4,...,6,...8,...,10 - w,x,y,col_fon,...,col_frame,...,col_txt,...,txt
 			stdcall insert_text_prop, ebx,0
@@ -362,7 +362,7 @@ proc get_code_auto_data_el
 			stdcall insert_text, txt_txt
 
 			mov edx,fp_icon
-			stdcall get_obj_id, ebx,edx
+			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text,edx
 
 			stdcall insert_text, txt_mouse_dd
@@ -396,11 +396,11 @@ proc get_code_auto_data_el
 			.null_string:
 			insert_nl
 		@@:
-		cmp byte[ebx],C_DT
+		cmp byte[ebx],C_DTT
 		jne @f
 			stdcall insert_text, txt_txt
 			mov edx,fp_icon
-			stdcall get_obj_id, ebx,edx
+			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text,edx
 			stdcall insert_text, txt_db
 			stdcall insert_text_prop, ebx,0
@@ -440,7 +440,7 @@ proc get_code_auto_data_libs_param
 			stdcall insert_text, txt_sys_dir
 			;object code
 			mov edx,fp_icon
-			stdcall get_obj_id, ebx,edx
+			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text,edx
 			stdcall insert_text,txt_db
 			;stdcall insert_text, txt_str_beg
@@ -508,7 +508,7 @@ proc get_code_auto_data_libs_struc
 			stdcall insert_text, txt_lib
 			;object code
 			mov edx,fp_icon
-			stdcall get_obj_id, ebx,edx
+			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text,edx
 			insert_sp
 			stdcall insert_text, txt_ll
@@ -666,12 +666,12 @@ proc get_code_auto_data_dop
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_ED
+		cmp byte[ebx],C_EDB
 		jne @f
 			;1,2,3,4,...,6,...8,...,10 - w,x,y,col_fon,...,col_frame,...,col_txt,...,txt
 			stdcall insert_text, txt_txt
 			mov edx,fp_icon
-			stdcall get_obj_id, ebx,edx
+			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text,edx
 
 			stdcall get_obj_text_col,ebx,10
@@ -690,7 +690,7 @@ proc get_code_auto_data_dop
 				stdcall insert_text, txt_rb
 				stdcall insert_text, txt_txt
 				mov edx,fp_icon
-				stdcall get_obj_id, ebx,edx
+				stdcall get_obj_id_str, ebx,edx
 				stdcall insert_text,edx
 
 				stdcall insert_text, txt_minus
@@ -717,7 +717,7 @@ proc get_code_auto_data_dop
 				insert_0
 				insert_nl
 		@@:
-		;cmp byte[ebx],C_CB
+		;cmp byte[ebx],C_CHB
 		;jne @f
 		;@@:
 
@@ -745,7 +745,7 @@ proc get_code_auto_but
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_BU
+		cmp byte[ebx],C_BUT
 		jne @f
 			insert_tab
 			insert_cmp
@@ -797,7 +797,7 @@ proc get_code_a_but_fun
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_BU
+		cmp byte[ebx],C_BUT
 		jne @f
 			stdcall get_obj_text_col,ebx,6
 			stdcall str_len,edx
@@ -851,7 +851,7 @@ proc get_code_funct_key
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_ED
+		cmp byte[ebx],C_EDB
 		jne @f
 			stdcall insert_text, txt_std_key_ed
 			stdcall insert_text_prop,ebx,0
@@ -984,19 +984,19 @@ proc get_code_draw_obj
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_ED
+		cmp byte[ebx],C_EDB
 		jne @f
 			stdcall insert_text, txt_editb_draw
 			stdcall insert_text_prop, ebx,0
 			insert_nl
 		@@:
-		cmp byte[ebx],C_CB
+		cmp byte[ebx],C_CHB
 		jne @f
 			stdcall insert_text, txt_cbox_draw
 			stdcall insert_text_prop, ebx,0
 			insert_nl
 		@@:
-		cmp byte[ebx],C_BU
+		cmp byte[ebx],C_BUT
 		jne @f
 			insert_tab
 			stdcall insert_text, txt_mov
@@ -1048,7 +1048,7 @@ proc get_code_draw_obj
 			stdcall insert_text, txt_i_40
 			insert_nl
 		@@:
-		cmp byte[ebx],C_RE
+		cmp byte[ebx],C_REC
 		jne @f
 			insert_tab
 			stdcall insert_text, txt_mov
@@ -1087,7 +1087,7 @@ proc get_code_draw_obj
 			stdcall insert_text, txt_i_40
 			insert_nl
 		@@:
-		cmp byte[ebx],C_DT ;рисование текста через сист. ф. 4
+		cmp byte[ebx],C_DTT ;рисование текста через сист. ф. 4
 		jne @f
 			insert_tab
 			stdcall insert_text, txt_mov
@@ -1120,7 +1120,7 @@ proc get_code_draw_obj
 			insert_coma
 			stdcall insert_text, txt_txt
 			mov edx,fp_icon
-			stdcall get_obj_id, ebx,edx
+			stdcall get_obj_id_str, ebx,edx
 			stdcall insert_text,edx
 			insert_nl
 
@@ -1295,8 +1295,11 @@ txt_key_2:
 db 9,'jmp still',13
 txt_key_3:
 
+;получаем порядковый номер объекта относительно памяти элемента tree2
+;output:
+; txt_buf - строка с номером объекта
 align 4
-proc get_obj_id, p_obj:dword, txt_buf:dword
+proc get_obj_id_str, p_obj:dword, txt_buf:dword
 	push eax ecx edx
 	mov eax,dword[p_obj]
 	sub eax,[tree2.data_info]
@@ -1309,6 +1312,22 @@ proc get_obj_id, p_obj:dword, txt_buf:dword
 	mov byte[edx],0
 	stdcall str_cat_value,edx,eax
 	pop edx ecx eax
+	ret
+endp
+
+;получаем порядковый номер объекта относительно памяти элемента tree2
+;output:
+; eax - номер объекта
+align 4
+proc get_obj_id, p_obj:dword
+	push ecx edx
+	mov eax,dword[p_obj]
+	sub eax,[tree2.data_info]
+	xor edx,edx
+	xor ecx,ecx
+	mov cx,word[tree2.info_size]
+	div ecx
+	pop edx ecx
 	ret
 endp
 

@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TreeList для Kolibri OS
-; файл последний раз изменялся 09.06.2010 IgorA
+; файл последний раз изменялся 01.12.2010 IgorA
 ; на код применена GPL2 лицензия
 
 
@@ -918,87 +918,87 @@ tl_get_display_cur_pos: ;берет позицию курсора, относительно экрана
 ; esi = coord of bottom border
 align 4
 tl_draw_node: ;рисует узел с: картинкой, подписью, иконкой открытия/закрытия и линиями к родит. узлу
-  push eax ebx ecx edx esi
+	push eax ebx ecx edx esi
 
-    mov ebx,1 ;1 - место под курсор и под знак +,-
-    bt tl_style,2 ;tl_list_box_mode
-    jc @f
-      inc ebx ;+1 - место под знак +,-
-    @@:
-    add bl,byte[edx+2];get level
-    imul bx,tl_img_cx
-    add ebx,tl_box_left
+	mov ebx,1 ;1 - место под курсор
+	bt tl_style,2 ;tl_list_box_mode
+	jc @f
+		inc ebx ;+1 - место под знак +,-
+		add bl,byte[edx+2] ;добавляем уровень элемента для его учета в левом отступе иконки
+	@@:
+	imul bx,tl_img_cx
+	add ebx,tl_box_left
 
-    shl ebx,16
-    mov bx,tl_img_cx
-    xor ecx,ecx
-    mov cx,tl_img_cy
-    imul ecx,eax
-    add ecx,tl_box_top
-    add cx,tl_capt_cy
+	shl ebx,16
+	mov bx,tl_img_cx
+	xor ecx,ecx
+	mov cx,tl_img_cy
+	imul ecx,eax
+	add ecx,tl_box_top
+	add cx,tl_capt_cy
 
-    ;crop image if on the border
-    cmp esi,ecx ;если узел внизу и его вообще не видно
-    jl .end_draw
+	;crop image if on the border
+	cmp esi,ecx ;если узел внизу и его вообще не видно
+	jl .end_draw
 
-    sub esi,ecx
-    shl ecx,16
-    mov cx,tl_img_cy
-    cmp si,tl_img_cy
-    jge @f
-      mov cx,si ;если узел виден частично (попал на нижнюю границу)
-      jmp .crop ;пропускаем рисование надписи, которая скорее всего тоже вылезет за нижнюю границу
-    @@:
-      call tl_draw_node_caption
-    .crop:
-    mov esi,ecx ;save ecx
+	sub esi,ecx
+	shl ecx,16
+	mov cx,tl_img_cy
+	cmp si,tl_img_cy
+	jge @f
+		mov cx,si ;если узел виден частично (попал на нижнюю границу)
+		jmp .crop ;пропускаем рисование надписи, которая скорее всего тоже вылезет за нижнюю границу
+	@@:
+		call tl_draw_node_caption
+	.crop:
+	mov esi,ecx ;save ecx
 
-    cmp tl_data_img,0
-    jne .draw_img_n
-    push edx
-      mov edx,tl_col_txt
-      mov eax,13
-      int 0x40 ;draw node rect
-    pop edx
-    jmp @f
-    .draw_img_n:
-    push ebx edx esi
-      xor esi,esi
-      mov si,word[edx] ;get icon type
-      mov edx,ebx
-      ror ecx,16
-      mov dx,cx
-      mov cx,bx
-      ror ecx,16
-      mov ebx,3 ;rgb = 3 bytes
-      imul bx,tl_img_cx
-      imul bx,tl_img_cy
-      imul ebx,esi ;esi = icon index
-      add ebx,tl_data_img
+	cmp tl_data_img,0
+	jne .draw_img_n
+		push edx
+		mov edx,tl_col_txt
+		mov eax,13
+		int 0x40 ;draw node rect
+	pop edx
+	jmp @f
+	.draw_img_n:
+	push ebx edx esi
+		xor esi,esi
+		mov si,word[edx] ;get icon type
+		mov edx,ebx
+		ror ecx,16
+		mov dx,cx
+		mov cx,bx
+		ror ecx,16
+		mov ebx,3 ;rgb = 3 bytes
+		imul bx,tl_img_cx
+		imul bx,tl_img_cy
+		imul ebx,esi ;esi = icon index
+		add ebx,tl_data_img
 
-      mov eax,7
-      int 0x40 ;draw node icon '-'
-    pop esi edx ebx
-    @@:
+		mov eax,7
+		int 0x40 ;draw node icon '-'
+	pop esi edx ebx
+	@@:
 
-    mov al,byte[edx+2] ;draw minus '-'
-    mov ecx,tl_data_nodes
-    add ecx,sizeof.TreeList
+	mov al,byte[edx+2] ;draw minus '-'
+	mov ecx,tl_data_nodes
+	add ecx,sizeof.TreeList
 
-    mov ah,10 ;get icon index '+' or '-' ?
-    cmp byte[edx+3],1
-    jne .close
-      dec ah
-    .close:
+	mov ah,10 ;get icon index '+' or '-' ?
+	cmp byte[edx+3],1
+	jne .close
+		dec ah
+	.close:
 
-    call tl_draw_node_icon_opn_clo ;рисование иконки открытого или закрытого узла
-    bt tl_style,1
-    jae .end_draw
-      call tl_draw_node_icon_par_lin ;рисование линии к родительскому элементу
-      call tl_draw_node_icon_par_lin_up ;рисование вертикальной линии к родительскому элементу
-    .end_draw:
-  pop esi edx ecx ebx eax
-  ret
+	call tl_draw_node_icon_opn_clo ;рисование иконки открытого или закрытого узла
+	bt tl_style,1
+	jae .end_draw
+		call tl_draw_node_icon_par_lin ;рисование линии к родительскому элементу
+		call tl_draw_node_icon_par_lin_up ;рисование вертикальной линии к родительскому элементу
+	.end_draw:
+	pop esi edx ecx ebx eax
+	ret
 
 ;input:
 ; ecx = pointer to 1 node struct

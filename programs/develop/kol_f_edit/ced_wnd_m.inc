@@ -1,91 +1,3 @@
-align 4
-draw_obj_info: ;окно со свойствами объекта
-	mov eax,13 ;rect
-	mov edx,WND_CAPT_COLOR
-	mov ebx,[wndObjI.left]
-	shl ebx,16
-	add ebx,[wndObjI.width]
-	mov ecx,[wndObjI.top]
-	add ecx,[recMain.top]
-	shl ecx,16
-	add ecx,[wndObjI.height]
-	sub ecx,[recMain.top]
-	mov edx,0xffffff ;0x80ffffff
-	int 0x40 ;прямоугольник для окна
-
-	mov ecx,[wndObjI.top] ;draw caption
-	shl ecx,16
-	add ecx,[recMain.top]
-	mov edx,WND_CAPT_COLOR
-	int 0x40
-
-	mov edx,[foc_obj] ;берем указатель на объект
-	cmp edx,0
-	je .exit_fun
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    pushad
-    ;draw caption wndObjI
-    mov eax,4 ;подпись - название объекта
-
-    mov bl,[edx]
-    call find_obj_in_opt
-    mov edx,edi
-
-    mov ebx,[wndObjI.left]
-    add ebx,[recMain.left]
-    add ebx,4
-    shl ebx,16
-    add ebx,[wndObjI.top]
-    add ebx,4
-    mov ecx,0xc0d000ff
-    mov edi,WND_CAPT_COLOR
-    add edx,obj_opt.info-obj_opt
-    int 0x40
-
-	mov eax,8 ;кнопка для сохранения изменений
-    mov ebx,[wndObjI.left]
-	add ebx,119
-    shl ebx,16
-	add ebx,18
-	mov ecx,[wndObjI.top]
-	add ecx,1
-	shl ecx,16
-	add ecx,18
-	mov edx,10
-	mov esi,0xd040
-	int 0x40
-
-	ror ebx,16 ;вычисляем координаты для иконки
-	ror ecx,16
-	and ebx,0xffff
-	and ecx,0xffff
-	inc ebx
-	inc ecx
-	stdcall draw_icon, 17,ebx,ecx ;17 - save
-
-	mov edi,edit2
-	.cycle:
-		stdcall [edit_box_draw], edi ;рисуем поля со свойствами объекта
-		add edi,ed_struc_size
-		cmp edi,prop_wnd_edits_end
-		jl .cycle
-
-    popad
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-	xor ebx,ebx ;номер поля
-	.draw_column:
-		mov eax,ebx
-		imul eax,[recMain.height]
-		add eax,[recMain.top]
-		add eax,[wndObjI.top]
-		stdcall draw_icon_obj,[edx],ebx,eax
-
-		inc ebx
-		cmp ebx,MAX_OPT_FIELDS
-	jl .draw_column
-	.exit_fun:
-	ret
 
 ;поднимаем объект вверх по списку
 align 4
@@ -134,20 +46,47 @@ align 4
 but_element_change:
 	;foc_obj - указатель на последний выбранный узел в tree2
 	cmp dword[foc_obj],0
-	je @f
+	je .err_obj
 		pushad
+		;установка текстовых свойств
 		xor ebx,ebx
 		mov edi,edit2
-		.cycle:
+		@@:
 			call get_obj_win_param
 			inc ebx
 			add edi,ed_struc_size
 			cmp edi,prop_wnd_edits_end
-			jl .cycle
+		jl @b
+
+		;установка ссылки на объект типа
+		mov edx,dword[foc_obj]
+		mov dword[edx+u_object.typid-u_object],0 ;на случай если ничего не выбрано
+		stdcall [tl_node_get_data],tree3
+		pop eax
+		cmp eax,0
+		je @f
+			mov eax,dword[eax] ;берем порядковый номер (в памяти) выбранного объекта
+			mov dword[edx+u_object.typid-u_object],eax
+		@@:
+
+		;установка логических свойств
+		mov edi,ch1.flags
+		mov eax,1
+		xor ebx,ebx
+		@@:
+			bt dword[edi],1 ;почему оно тут не работает я не знаю ... ???
+			jnc .opt_no_sel
+				or ebx,eax ;накопление отмеченных опций
+			.opt_no_sel:
+			shl eax,1
+			add edi,ch_struc_size
+			cmp edi,check_boxes_end
+		jl @b
+		mov dword[edx+u_object.modif-u_object],ebx
 		popad
-	@@:
+	.err_obj:
 	call draw_constructor ;обновляем окно конструктора
-	call draw_window
+	;call draw_window
 	ret
 
 ;input:
@@ -259,7 +198,7 @@ pop ebx
 endp
 
 align 4
-proc draw_icon_obj, o_type:dword,n_col:dword, coord_y:dword
+proc draw_obj_icon, o_type:dword,n_col:dword, coord_y:dword
 	pushad
 	xor ebx,ebx
 	mov bl,byte[o_type]
@@ -283,12 +222,59 @@ proc draw_icon_obj, o_type:dword,n_col:dword, coord_y:dword
 
 	mov eax,7
 	mov ecx,0x100010 ;ecx - size:16*16
-	mov edx,[wndObjI.left]
-	add edx,3 ;отступ от левого края рамки до иконки
+	mov edx,3 ;отступ от левого края рамки до иконки
 	shl edx,16
 	add edx,[coord_y]
 	int 0x40
 	.end_fun:
+	popad
+	ret
+endp
+
+;вывод текста с подписью
+align 4
+proc draw_obj_caption, o_type:dword,n_col:dword, coord_y:dword
+	pushad
+	stdcall get_obj_text_len_col, [foc_obj], [n_col] ;eax - длинна поля
+	cmp eax,1
+	jl .no_draw
+
+	xor ebx,ebx
+	mov bl,byte[o_type]
+	call find_obj_in_opt
+
+	mov edx,edi
+	add edx,obj_opt.caption-obj_opt
+
+	mov eax,[n_col]
+	mov ebx,150
+	shl ebx,16
+	add ebx,dword[coord_y]
+	add ebx,3
+	mov ecx,0 ;text color
+
+	mov esi,edx
+	.beg_found:
+		cmp byte[esi],0
+		je .end_found
+		cmp byte[esi],'*'
+		je @f
+		inc esi
+		jmp .beg_found
+	@@:
+	cmp eax,0
+	je .end_found
+		dec eax
+		inc esi
+		mov edx,esi ;переключаем начало строки на след. подпись
+		jmp .beg_found
+	.end_found:
+	cmp esi,edx
+	jle .no_draw
+		sub esi,edx ;esi = text len
+		mov eax,4
+		int 0x40
+	.no_draw:
 	popad
 	ret
 endp

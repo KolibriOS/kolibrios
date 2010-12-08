@@ -16,10 +16,11 @@ include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'mem.inc'
 include 'dll.inc'
 include 'strlen.inc'
+include 'obj_codes.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 29.11.10',0
+hed db 'kol_f_edit 08.12.10',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
@@ -33,38 +34,37 @@ buf2d_size_lt equ dword[edi+4] ;отступ слева и справа для буфера
 buf2d_color equ dword[edi+16] ;цвет фона буфера
 buf2d_bits equ byte[edi+20] ;количество бит в 1-й точке изображения
 
-MAX_LEN_OBJ_TXT equ 200
+
 MAX_CED_OBJECTS equ 200
 MAX_OPT_FIELDS equ 11
-MAX_OBJ_TYPES equ 18
+MAX_OBJ_TYPES equ 18 ;максимальное число объектов
+MAX_OBJ_CAPTIONS equ 1000 ;размер дополнительных подписей подписей
 WND_CAPT_COLOR equ 0xb0d0ff
 BUF_SIZE equ 1000
-
-C_TD equ 't' ;typedef
-C_AC equ 'a' ;автоматические коды (auto code)
-C_ST equ 's' ;struct
-C_IN equ '#' ;include
-C_TT equ 'd' ;блок кода (данных)
-C_VR equ '-' ;переменная
-C_CO equ ';' ;комментарий
-C_WI equ 'w' ;окно
-C_CB equ 'c' ;CheckBox
-C_OP equ 'o' ;OptionBox
-C_ED equ 'e' ;EditBox
-C_BU equ 'b' ;Button
-C_DT equ 'x' ;рисовать текст
-C_RE equ 'r' ;рисовать прямоугольник
-C_KE equ 'k' ;клавиатура
-C_LIB equ 'l'
-C_IFN equ 'f'
 
 ;modif
 CPP_MOD_ACM equ 2 ;события мыши
 BIT_MOD_ACM equ 1 ;события мыши
+CPP_MOD_ACI equ 4 ; включения
+BIT_MOD_ACI equ 2 ; включения
 CPP_MOD_ACD equ 8 ;данные объектов
 BIT_MOD_ACD equ 3 ;данные объектов
 CPP_MOD_ABU equ 16 ;связывание кнопок
 BIT_MOD_ABU equ 4 ;связывание кнопок
+
+CPP_MOD_WI_CA equ 16 ; стиль окна подпись
+CPP_MOD_WI_AO equ 32 ; стиль окна координаты относительно клиентской области
+CPP_MOD_WI_RD equ 64 ; стиль окна перерисовка окна
+CPP_MOD_WI_GR equ 128 ; стиль окна градиент
+CPP_MOD_CHE equ 512 ; ch_flag_en - выбран CheckBox
+CPP_MOD_TXT_ASCII_0 equ 1 ; текст заканчив. 0
+CPP_MOD_TXT_TRAN equ 4 ; текст прозрачный
+CPP_MOD_TXT_CHAR2 equ 2 ; текст 2-м шрифтом
+CPP_MOD_EDIT_FOC equ 1 ; EditBox в фокусе
+CPP_MOD_EDIT_FIO equ 2 ;
+CPP_MOD_RE_GR equ 1 ; градиентный прямоугольник
+CPP_MOD_BUT_NFON equ 1 ; стиль Button не рисовать кнопку
+CPP_MOD_BUT_NBORD equ 2 ; стиль Button не рисовать границу
 
 macro load_image_file path,buf,size ;макрос для загрузки изображений
 {
@@ -116,13 +116,14 @@ struct object
 ends
 
 struct ObjOpt
-	c db ?
+	db ?
 	bl_type db ?
 	graph db ?
 	info rb 30
 	caption rb 200
 	Col rw MAX_OPT_FIELDS
 	img rw MAX_OPT_FIELDS ;индексы картинок (в файле 'icon.bmp')
+	bit_prop dd 0 ;битовые свойства
 ends
 
 SKIN_H equ 22
@@ -151,6 +152,7 @@ icon_font_s1 dd 0 ;указатель на временную память для загрузки шрифта
 fn_syntax db 'asm.syn',0 ;имя загружаемого файла синтаксиса
 
 include 'ced_wnd_m.inc'
+include 'ced_wnd_prop.inc' ;файл с функциями окна свойств объекта
 include 'ced_constr.inc' ;файл с функциями окна конструктора
 include 'ced_code_g.inc' ;файл с функциями генерирования кодов
 
@@ -180,17 +182,15 @@ start:
 		mcall -1 ;exit not correct
 	@@:
 
-	mov eax,[wndObjI.top]
-	add eax,[recMain.top]
-	inc eax
-	mov ebx,[wndObjI.left]
-	add ebx,16+6 ;ширина иконки + отступы
+	;задание размеров полей со свойствами
+	mov eax,prop_edits_top
+	mov ebx,16+6 ;ширина иконки + отступы
 	mov edi,edit2
 	@@:
 		mov ed_top,eax ;отступ сверху
 		mov ed_left,ebx ;отступ слева
 		add edi,ed_struc_size
-		add eax,[recMain.height]
+		add eax,prop_edits_height
 		cmp edi,prop_wnd_edits_end
 		jl @b
 
@@ -226,8 +226,9 @@ start:
 	load_image_file fn_icon_tl_sys, icon_tl_sys,TREE_ICON_SYS16_BMP_SIZE
 	;если изображение не открылось, то в icon_tl_sys будут
 	;не инициализированные данные, но ошибки не будет, т. к. буфер нужного размера
-	m2m dword[tree1.data_img_sys],dword[icon_tl_sys]
-	m2m dword[tree2.data_img_sys],dword[icon_tl_sys]
+	mov eax,dword[icon_tl_sys]
+	mov dword[tree1.data_img_sys],eax
+	mov dword[tree2.data_img_sys],eax
 
 	;1-й файл скина
 	load_image_file fn_skin_1, icon_font_s1,IMAGE_FILE_SKIN1_SIZE
@@ -254,7 +255,7 @@ start:
 	;load options file
 	mov eax,70
 	mov [run_file_70.Position], 0
-	mov [run_file_70.Count], sizeof.ObjOpt*MAX_OBJ_TYPES
+	mov [run_file_70.Count], sizeof.ObjOpt*MAX_OBJ_TYPES+MAX_OBJ_CAPTIONS
 	mov [run_file_70.Buffer], obj_opt
 	mov [run_file_70.FileName], fp_obj_opt
 	mov ebx,run_file_70
@@ -271,7 +272,7 @@ start:
 			cmp bl,0
 			je @f
 			;xor ecx,ecx ;в ecx будет индекс иконки
-			mov cx,word[eax+sizeof.ObjOpt-2*MAX_OPT_FIELDS]
+			mov cx,word[eax+obj_opt.img-obj_opt]
 			cmp cx,0
 			jge .zero
 				xor cx,cx ;что-бы не глючило с отрицательным индексом
@@ -454,21 +455,15 @@ pushad
 		int 0x40
 	@@:
 
-	cmp [err_ini0],1
-	je err_init_icon
-	cmp [err_ini1],1
-	je err_init_icon
-		call draw_obj_info ;окно редактирования выбранного объекта
-	err_init_icon:
-
 	stdcall [edit_box_draw], dword edit1
 	stdcall [edit_box_draw], dword edit_sav
-	stdcall [tl_draw],dword tree1
+
 	mov dword[w_scr_t1.all_redraw],1
-	stdcall [scrollbar_ver_draw],dword w_scr_t1
-	stdcall [tl_draw],dword tree2
+	;stdcall [scrollbar_ver_draw],dword w_scr_t1
+	stdcall [tl_draw],dword tree1
 	mov dword[w_scr_t2.all_redraw],1
-	stdcall [scrollbar_ver_draw],dword w_scr_t2
+	;stdcall [scrollbar_ver_draw],dword w_scr_t2
+	stdcall [tl_draw],dword tree2
 
 	cmp byte[show_mode],0 ;условие видимости окна конструктора
 	jne @f
@@ -485,14 +480,6 @@ popad
 align 4
 mouse:
 	stdcall [edit_box_mouse], dword edit1
-	push edi
-	mov edi,edit2
-	.cycle:
-		stdcall [edit_box_mouse], edi
-		add edi,ed_struc_size
-		cmp edi,prop_wnd_edits_end
-		jl .cycle
-	pop edi
 	stdcall [edit_box_mouse], dword edit_sav
 	stdcall [tl_mouse], dword tree1
 	stdcall [tl_mouse], dword tree2
@@ -507,26 +494,9 @@ align 4
 key:
 	mcall 2
 	stdcall [edit_box_key], dword edit1
-	push edi
-	mov edi,edit2
-	.cycle:
-		stdcall [edit_box_key], edi
-		add edi,ed_struc_size
-		cmp edi,prop_wnd_edits_end
-		jl .cycle
-	pop edi
 	stdcall [edit_box_key], dword edit_sav
 	stdcall [tl_key], dword tree1
 	stdcall [tl_key], dword tree2
- 
-;  cmp ah,178 ;Up
-;  jne @f
-;    cmp [cur_y],0
-;    je @f
-;    dec [cur_y]
-;    call get_obj_pos
-;    call draw_window
-;  @@:
 
 	jmp still
 
@@ -541,10 +511,10 @@ button:
 	jne @f
 		call but_save_proj
 	@@:
-	cmp ah,10
-	jne @f
-		call but_element_change
-	@@:
+	;cmp ah,10
+	;jne @f
+		;call but_element_change
+	;@@:
 	cmp ah,11
 	jne @f
 		call but_show_constructor
@@ -653,7 +623,7 @@ but_open_proj:
 
 			call find_obj_in_opt ;edi = pointer to ObjOpt struct
 
-			mov cx,word[edi+sizeof.ObjOpt-2*MAX_OPT_FIELDS]
+			mov cx,word[edi+obj_opt.img-obj_opt]
 			cmp cx,0
 			jge .zero
 				xor cx,cx ;что-бы не глючило с отрицательным индексом
@@ -743,6 +713,8 @@ but_save_proj:
 	ret
 
 ;берет номер по порядку по указателю на структуру объекта
+;output:
+; eax - номер объекта
 align 4
 proc get_obj_npp, p_obj_str:dword
 	mov eax,2
@@ -820,22 +792,19 @@ ted_save_err_msg:
 ;функция обратная к данной but_element_change
 align 4
 on_file_object_select:
-	stdcall [tl_node_get_data], tree2
-	pop dword[foc_obj]
-	cmp dword[foc_obj],0
-	je @f
-		push ebx edi
-		xor ebx,ebx
-		mov edi,edit2
-		.cycle:
-			stdcall set_obj_win_param, ebx,edi
-			inc ebx
-			add edi,ed_struc_size
-			cmp edi,prop_wnd_edits_end
-			jl .cycle
-		pop edi ebx
+	cmp byte[prop_wnd_run],0
+	jne @f
+		mov byte[prop_wnd_run],1
+		stdcall [tl_node_get_data], tree2
+		pop dword[foc_obj]
+		cmp dword[foc_obj],0
+		je @f
+			pushad
+			;все действия по настройке элементов управления выполняются в окне со свойствами
+			mcall 51,1,prop_start,prop_thread
+			popad
 	@@:
-	call draw_window
+	;call draw_window
 	ret
 
 align 4
@@ -944,9 +913,9 @@ buf_skin3:
 show_mode db 0 ;режим для показа определенного окна
 txtErrOpen db 'Не найден файл, проверьте правильность имени',0
 txtErrIni1 db 'Не открылся файл с опциями',0
-err_opn db 0
-err_ini0 db 0 ;???
-err_ini1 db 0
+err_opn db 0 ;рез. открытия файла проэкта
+err_ini0 db 0 ;рез. открытия файла с иконками
+err_ini1 db 0 ;рез. открытия файла с опциями
 
 edit1 edit_box 210, 10, 5, 0xffffff, 0xff80, 0xff, 0xff0000, 0x4080, 300, ed_text1, mouse_dd, 0, 7, 7
 
@@ -987,7 +956,7 @@ mouse_dd dd ?
 el_focus dd tree1
 ;дерево со списком возможных типов объектов
 tree1 tree_list sizeof.ObjOpt,20+2, tl_key_no_edit+tl_draw_par_line+tl_list_box_mode,\
-	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,50,125,100, 0,3,0, el_focus,\
+	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,50,125,280, 0,3,0, el_focus,\
 	w_scr_t1,on_add_object
 ;дерево с объектами в пользовательском файле
 tree2 tree_list sizeof.object,MAX_CED_OBJECTS+2, tl_draw_par_line,\
@@ -1187,15 +1156,13 @@ sc system_colors
 
 image_data dd 0 ;память для преобразования картинки функциями libimg
 
-recMain BOX 3,20,16,18 ;координаты: 1,2 - отступы; 3,4 - размер
 ced_info object 0 ;on start == 0
 	rb sizeof.object*(MAX_CED_OBJECTS-1)
 
-wndObjI BOX 5,155,125+16,175
 text_buffer db BUF_SIZE dup(0)
 fn_obj_opt db 'ob_o.opt',0
 obj_opt ObjOpt
-	rb sizeof.ObjOpt*(MAX_OBJ_TYPES-1)
+	rb sizeof.ObjOpt*(MAX_OBJ_TYPES-1)+MAX_OBJ_CAPTIONS
 	db 0 ;eof options
 
 cur_x dd 0
@@ -1308,6 +1275,10 @@ import_box_lib:
 	edit_box_mouse dd aEdit_box_mouse
 	edit_box_set_text dd aEdit_box_set_text
 
+	init_checkbox dd aInit_checkbox
+	check_box_draw dd aCheck_box_draw
+	check_box_mouse dd aCheck_box_mouse
+
 	scrollbar_ver_draw dd aScrollbar_ver_draw
 	scrollbar_hor_draw dd aScrollbar_hor_draw
 
@@ -1369,6 +1340,10 @@ dd 0,0
 	aEdit_box_key	db 'edit_box_key',0
 	aEdit_box_mouse db 'edit_box_mouse',0
 	aEdit_box_set_text db 'edit_box_set_text',0
+
+	aInit_checkbox db 'init_checkbox2',0
+	aCheck_box_draw db 'check_box_draw2',0
+	aCheck_box_mouse db 'check_box_mouse2',0
 
 	aScrollbar_ver_draw  db 'scrollbar_v_draw',0
 	aScrollbar_hor_draw  db 'scrollbar_h_draw',0
@@ -1507,6 +1482,8 @@ i_end:
 	buf_cmd_lin rb 1024
 	fp_icon rb 1024 ;icon file path
 	fp_obj_opt rb 1024 ;obj options file patch
+	rb 1024
+	prop_thread:
 	rb 1024
 	thread: ;вверху дочерний стек для окна сообщения
 	rb 1024

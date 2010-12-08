@@ -24,7 +24,7 @@ pushad
 	@@:
 
 	xor edx,edx
-	mov dl,C_WI
+	mov dl,C_WND
 	stdcall find_obj_in_file,edx ;eax - указатель на структуру окна
 	cmp eax,0
 	je .end_draw
@@ -81,15 +81,15 @@ pushad
 	.end_skin:
 
 	xor edx,edx ;рисуем графические элементы
-	mov dl,C_BU
+	mov dl,C_BUT
 	stdcall draw_arr_objects, edx,draw_obj_but
-	mov dl,C_ED
+	mov dl,C_EDB
 	stdcall draw_arr_objects, edx,draw_obj_edit
-	mov dl,C_CB
+	mov dl,C_CHB
 	stdcall draw_arr_objects, edx,draw_obj_check
-	mov dl,C_DT
+	mov dl,C_DTT
 	stdcall draw_arr_objects, edx,draw_obj_text
-	mov dl,C_RE
+	mov dl,C_REC
 	stdcall draw_arr_objects, edx,draw_obj_rect_f13
 
 	.end_draw:
