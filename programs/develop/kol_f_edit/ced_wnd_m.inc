@@ -74,7 +74,7 @@ but_element_change:
 		mov eax,1
 		xor ebx,ebx
 		@@:
-			bt dword[edi],1 ;почему оно тут не работает я не знаю ... ???
+			bt dword[edi],1
 			jnc .opt_no_sel
 				or ebx,eax ;накопление отмеченных опций
 			.opt_no_sel:

@@ -20,7 +20,7 @@ include 'obj_codes.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 08.12.10',0
+hed db 'kol_f_edit 10.12.10',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
