@@ -30,7 +30,7 @@ virtual at 0
 	.Domain 		dd ? ; INET/UNIX/..
 	.Type			dd ? ; RAW/STREAM/DGRAP
 	.Protocol		dd ? ; ICMP/IPv4/ARP/TCP/UDP
-;        .errorcode              dd ?
+	.errorcode		dd ?
 
 	.options		dd ?
 	.state			dd ?

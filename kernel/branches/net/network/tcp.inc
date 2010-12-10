@@ -779,7 +779,8 @@ align 4
 	test	[edx + TCP_segment.Flags], TH_ACK
 	jz	.drop
 
-	;tp = tcp_drop(tp, ECONNREFUSED)
+	mov	ebx, ECONNREFUSED
+	call	TCP_drop
 
 	jmp	.drop
        @@:
@@ -1063,7 +1064,9 @@ align 4
 	test	[edx + TCP_segment.Flags], TH_SYN
 	jz	@f
 
-	;;; tcp_drop ( ECONNRESET)
+	mov	ebx, ECONNRESET
+	call	TCP_drop
+
 	jmp	.drop_with_reset
 
 	test	[edx + TCP_segment.Flags], TH_ACK
@@ -1964,8 +1967,9 @@ TCP_outflags:
 ; TCP_drop
 ;
 ;  IN:  eax = socket ptr
+;       ebx = error number
 ;
-;  OUT: /
+;  OUT: eax = socket ptr
 ;
 ;-------------------------
 align 4
@@ -1973,17 +1977,44 @@ TCP_drop:
 
 	DEBUGF	1,"TCP_drop\n"
 
-;        cmp     [eax + TCP_SOCKET.t_state], TCB_SYN_RECEIVED
-;        jl      .no_syn_received
+	cmp	[eax + TCP_SOCKET.t_state], TCB_SYN_RECEIVED
+	jl	.no_syn_received
 
 	mov	[eax + TCP_SOCKET.t_state], TCB_CLOSED
 
 	call	TCP_output
 
-;  .no_syn_received:
+;;; TODO: update stats
+
+	jmp	TCP_close
+
+  .no_syn_received:
+
+;;; TODO: update stats
+
+;;; TODO: check if error code is "Connection timed out' and handle accordingly
+
+	mov	[eax + SOCKET.errorcode], ebx
+
+	jmp	TCP_close
+
+
+;-------------------------
+;
+; TCP_close
+;
+;  IN:  eax = socket ptr
+;  OUT: eax = socket ptr
+;
+;-------------------------
+align 4
+TCP_close:
+
+;;; TODO: update RTT and mean deviation
+;;; TODO: update slow start threshold
+;;; TODO: release connection resources
 
 	ret
-
 
 
 

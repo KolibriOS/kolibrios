@@ -76,6 +76,14 @@ NET_TYPE_SLIP	equ 2
 
 MAX_backlog	equ 20		; maximum backlog for stream sockets
 
+; Error Codes
+ENOBUFS 	equ 55
+ECONNREFUSED	equ 61
+ECONNRESET	equ 52
+ETIMEDOUT	equ 60
+ECONNABORTED	equ 53
+
+
 
 virtual at 0
 
