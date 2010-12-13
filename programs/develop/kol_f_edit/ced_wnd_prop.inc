@@ -15,6 +15,8 @@ prop_start:
 pushad
 	mcall 40,0x27 ;маска ожидаемых событий
 
+	call init_obj_count_txt_props ;получаем число используемых полей
+
 	; настройка текстовых полей
 	xor ebx,ebx
 	mov edi,edit2
@@ -35,7 +37,7 @@ pushad
 	mov dword[tree3.data_img_sys],eax
 
 	mov edx,[foc_obj]
-	cmp byte[edx],C_VAR
+	cmp dword[edx],C_VAR
 	jne .sel_end
 
 	stdcall [tl_node_poi_get_info], 0,tree2
@@ -49,10 +51,10 @@ pushad
 		mov ebx,[foc_obj]
 		cmp ebx,esi
 		je .add_end ;избегаем циклической ссылки
-		mov bl,[esi]
-		cmp bl,C_TDF
+		mov ebx,dword[esi]
+		cmp ebx,C_TDF
 		je .add_beg
-		cmp bl,C_STR
+		cmp ebx,C_STR
 		je .add_beg
 			jmp .add_end
 		.add_beg:
@@ -60,7 +62,7 @@ pushad
 			mov edi,u_object
 			mov dword[edi],eax
 			add edi,4
-			inc esi ;переходим на имя объекта
+			add esi,u_object.txt-u_object ;переходим на имя объекта
 			mov ecx,MAX_LEN_OBJ_TXT
 			cld
 			rep movsb
@@ -107,7 +109,7 @@ pushad
 
 	;установка новых подписей
 	mov esi,[foc_obj] ;берем указатель на объект
-	mov bl,byte[esi]
+	mov ebx,dword[esi]
 	call find_obj_in_opt
 	mov edi,dword[edi+obj_opt.bit_prop-obj_opt]
 	cmp edi,0
@@ -161,7 +163,7 @@ pushad
 	mov edx,[foc_obj] ;берем указатель на объект
 	cmp edx,0
 	je @f
-		mov bl,[edx]
+		mov ebx,dword[edx]
 		call find_obj_in_opt
 		add edi,obj_opt.info-obj_opt ;edi - подпись (название объекта)
 	@@:
@@ -195,11 +197,12 @@ pushad
 		stdcall draw_icon, 17,ebx,ecx ;17 - save
 
 		mov edi,edit2
+		mov ecx,[obj_count_txt_props]
+		cld
 		.cycle:
-			stdcall [edit_box_draw], edi ;рисуем поля со свойствами объекта
+			stdcall [edit_box_draw], edi
 			add edi,ed_struc_size
-			cmp edi,prop_wnd_edits_end
-		jl .cycle
+		loop .cycle
 
 		cmp [err_ini0],1
 		je .exit_fun
@@ -219,7 +222,7 @@ pushad
 			cmp ebx,MAX_OPT_FIELDS
 			jl .draw_column
 
-		cmp byte[edx],C_VAR
+		cmp dword[edx],C_VAR
 		jne .no_tree
 			mov dword[w_scr_t3.all_redraw],1
 			stdcall [tl_draw], tree3
@@ -231,6 +234,7 @@ pushad
 	mcall 12,2
 popad
 
+;не отрывать эту функцию от предыдущей
 align 4
 prop_still:
 	pushad
@@ -251,44 +255,137 @@ prop_still:
 	popad
 	jmp prop_still
 
+;в цикле пробегаем по всем полям со свойствами,
+;что-бы посчитать число используемых полей
 align 4
-prop_key:
-push eax edi
-	mcall 2
+init_obj_count_txt_props:
+pushad
+	mov edx,[foc_obj] ;берем указатель на объект
+	xor ebx,ebx
 	mov edi,edit2
 	.cycle:
-		stdcall [edit_box_key], edi
+		stdcall get_obj_text_len_col, edx,ebx ;eax - длинна поля
+		cmp eax,1
+		jl @f ;выход из цикла если поле не используеться
+		inc ebx
+
 		add edi,ed_struc_size
 		cmp edi,prop_wnd_edits_end
 		jl .cycle
+	@@:
+	mov [obj_count_txt_props],ebx
+popad
+	ret
 
-	mov edi,[foc_obj]
-	cmp byte[edi],C_VAR
+;вывод текстовых подписей для полей со свойствами
+align 4
+proc draw_obj_caption, o_type:dword,n_col:dword, coord_y:dword
+	pushad
+	stdcall get_obj_text_len_col, [foc_obj], [n_col] ;eax - длинна поля
+	cmp eax,1
+	jl .no_draw
+
+	xor ebx,ebx
+	mov ebx,dword[o_type]
+	call find_obj_in_opt
+
+	mov edx,edi
+	add edx,obj_opt.caption-obj_opt
+
+	mov eax,[n_col]
+	mov ebx,143 ;отступ слева
+	shl ebx,16
+	add ebx,dword[coord_y]
+	add ebx,3
+	mov ecx,0 ;text color
+
+	mov esi,edx
+	.beg_found:
+		cmp byte[esi],0
+		je .end_found
+		cmp byte[esi],'*'
+		je @f
+		inc esi
+		jmp .beg_found
+	@@:
+	cmp eax,0
+	je .end_found
+		dec eax
+		inc esi
+		mov edx,esi ;переключаем начало строки на след. подпись
+		jmp .beg_found
+	.end_found:
+	cmp esi,edx
+	jle .no_draw
+		sub esi,edx ;esi = text len
+		mov eax,4
+		int 0x40
+	.no_draw:
+	popad
+	ret
+endp
+
+align 4
+proc set_obj_win_param, col:dword, edit:dword
+	pushad
+		stdcall get_obj_text_col, [foc_obj], [col] ;edx - text
+		stdcall get_obj_text_len_col, [foc_obj], [col] ;eax - длинна поля
+		mov edi,[edit]
+		cmp eax,1
+		jl @f
+			dec eax
+			mov ed_max,eax ;ed_max = edi+.max
+			mov ed_focus_border_color, dword 0xff
+			mov ed_blur_border_color, dword 0x808080
+			stdcall [edit_box_set_text], edi,edx ;обновляем editbox
+			jmp .end_f
+		@@:
+			mov ed_max,dword MAX_LEN_OBJ_TXT
+			;stdcall [edit_box_set_text], edi,txt_null
+		.end_f:
+	popad
+	ret
+endp
+
+align 4
+prop_key:
+push eax ecx edi
+	mcall 2
+	mov edi,edit2
+	mov ecx,[obj_count_txt_props]
+	cld
+	.cycle:
+		stdcall [edit_box_key], edi
+		add edi,ed_struc_size
+	loop .cycle
+
+	mov edi,dword[foc_obj]
+	cmp dword[edi],C_VAR
 	jne @f
 		stdcall [tl_key], tree3
 	@@:
-pop edi eax
+pop edi ecx eax
 	ret
 
 align 4
 prop_mouse:
-	push edi
+	push ecx edi
 	mov edi,edit2
+	mov ecx,[obj_count_txt_props]
+	cld
 	.cycle:
 		stdcall [edit_box_mouse], edi
 		add edi,ed_struc_size
-		cmp edi,prop_wnd_edits_end
-		jl .cycle
+	loop .cycle
 
-	mov edi,[foc_obj]
-	cmp byte[edi],C_VAR
+	mov edi,dword[foc_obj]
+	cmp dword[edi],C_VAR
 	jne @f
 		stdcall [tl_mouse], tree3
 	@@:
 
 	checkboxes_mouse2 check_boxes,check_boxes_end
-
-	pop edi
+	pop edi ecx
 	ret
 
 align 4

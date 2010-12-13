@@ -164,9 +164,12 @@ push ebx
 		cmp eax,0
 		je .find_no
 
-		cmp byte[eax],C_STR
+		cmp dword[eax],C_STR
 		jne @f
-			stdcall get_code_struct,eax ;обработка объекта
+			stdcall insert_text,txt_struct
+			stdcall insert_text_prop, eax,0
+			insert_nl
+			
 			stdcall dword[tl_node_poi_get_next_info], esi,tree2
 			pop esi ;переходим к следущему узлу
 			cmp esi,0
@@ -178,34 +181,34 @@ push ebx
 					call code_gen_obj ;рекурсивный вызов дочерних объектов
 				pop bx
 			.end_st:
-			stdcall [ted_text_add], tedit0,txt_ends,6,ted_opt_ed_move_cursor
+			stdcall insert_text,txt_ends
 			jmp .beg_iterat
 		@@:
-		cmp byte[eax],C_TXT
+		cmp dword[eax],C_TXT
 		jne @f
 			stdcall get_code_text,eax ;обработка объекта
 		@@:
-		cmp byte[eax],C_INC
+		cmp dword[eax],C_INC
 		jne @f
 			stdcall get_code_incl,eax ;обработка объекта
 		@@:
-		cmp byte[eax],C_COM
+		cmp dword[eax],C_COM
 		jne @f
 			stdcall get_code_comment,eax ;обработка объекта
 		@@:
-		cmp byte[eax],C_VAR
+		cmp dword[eax],C_VAR
 		jne @f
 			stdcall get_code_variable,eax,ebx ;обработка объекта
 		@@:
-		cmp byte[eax],C_WND
+		cmp dword[eax],C_WND
 		jne @f
 			stdcall get_code_window,eax ;обработка объекта
 		@@:
-		cmp byte[eax],C_ACO
+		cmp dword[eax],C_ACO
 		jne @f
 			stdcall get_code_auto,eax ;обработка объекта
 		@@:
-		cmp byte[eax],C_KEY ;клавиатура
+		cmp dword[eax],C_KEY ;клавиатура
 		jne @f
 			stdcall get_code_key,eax ;обработка объекта
 		@@:
@@ -218,17 +221,14 @@ push ebx
 pop ebx
 	ret
 
-
+;добавление объекта с програмным кодом (текстом)
 align 4
 proc get_code_text, p_obj:dword
-	pushad
+	;pushad
 		insert_nl
-		mov ebx,dword[p_obj]
-		stdcall get_obj_text_col,ebx,0
-		stdcall str_len,edx
-		stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
+		stdcall insert_text_prop, dword[p_obj],0
 		insert_nl
-	popad
+	;popad
 	ret
 endp
 
@@ -238,13 +238,12 @@ proc get_code_auto, p_obj:dword
 	pushad
 		insert_nl
 		mov ebx,dword[p_obj]
-		mov ecx,dword[ebx+u_object.modif-u_object]
-		bt ecx,BIT_MOD_ACM
+		test_bool_prop ebx,BIT_MOD_ACM
 		jae @f
 			;автоматические события от мыши
 			call get_code_auto_m
 		@@:
-		bt ecx,BIT_MOD_ABU
+		test_bool_prop ebx,BIT_MOD_ABU
 		jae @f
 			;создание функции button
 			insert_but_beg
@@ -252,13 +251,12 @@ proc get_code_auto, p_obj:dword
 			insert_but_end
 			call get_code_a_but_fun ;коды функций, вызываемых при нажатии кнопок
 		@@:
-		bt ecx,BIT_MOD_ACD
+		test_bool_prop ebx,BIT_MOD_ACD
 		jae @f
 			call get_code_auto_data_el
 			call get_code_auto_data_dop
 
-			xor edx,edx
-			mov dl,C_LIB
+			mov edx,C_LIB
 			stdcall find_obj_in_file,edx ;eax - указатель на структуру библиотеки
 			cmp eax,0
 			je @f
@@ -298,7 +296,7 @@ proc get_code_auto_m
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_EDB
+		cmp dword[ebx],C_EDB
 		jne @f
 			stdcall insert_text, txt_std_mouse_ed
 			;insert_sp
@@ -307,7 +305,7 @@ proc get_code_auto_m
 			stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
 			insert_nl
 		@@:
-		cmp byte[ebx],C_CHB
+		cmp dword[ebx],C_CHB
 		jne @f
 			stdcall insert_text, txt_std_mouse_cb
 			;insert_sp
@@ -343,7 +341,7 @@ proc get_code_auto_data_el
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_EDB
+		cmp dword[ebx],C_EDB
 		jne @f
 			;1,2,3,4,...,6,...8,...,10 - w,x,y,col_fon,...,col_frame,...,col_txt,...,txt
 			stdcall insert_text_prop, ebx,0
@@ -396,7 +394,7 @@ proc get_code_auto_data_el
 			.null_string:
 			insert_nl
 		@@:
-		cmp byte[ebx],C_DTT
+		cmp dword[ebx],C_DTT
 		jne @f
 			stdcall insert_text, txt_txt
 			mov edx,fp_icon
@@ -433,7 +431,7 @@ proc get_code_auto_data_libs_param
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_LIB
+		cmp dword[ebx],C_LIB
 		jne @f
 			;0,1,2,3,4,5 - l_nam,s_dir,i_met,...
 
@@ -501,7 +499,7 @@ proc get_code_auto_data_libs_struc
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_LIB
+		cmp dword[ebx],C_LIB
 		jne @f
 			;0,1,2,3,4,5 - l_nam,s_dir,i_met,...
 
@@ -567,7 +565,7 @@ proc get_code_auto_data_libs
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_LIB
+		cmp dword[ebx],C_LIB
 		jne @f
 			;0,1,2,3,4,5 - l_nam,s_dir,i_met,...
 			stdcall insert_text, txt_align_4
@@ -609,7 +607,7 @@ pushad
 			pop ecx ;получаем данные узла
 			cmp ecx,0
 			je @f
-			cmp byte[ecx],C_IFN
+			cmp dword[ecx],C_IFN
 			jne @b
 				;вставка указателя на функцию
 				insert_tab
@@ -633,7 +631,7 @@ pushad
 			pop ecx ;получаем данные узла
 			cmp ecx,0
 			je @f
-			cmp byte[ecx],C_IFN
+			cmp dword[ecx],C_IFN
 			jne @b
 				;вставка имени импортированной функции
 				insert_tab
@@ -666,7 +664,7 @@ proc get_code_auto_data_dop
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_EDB
+		cmp dword[ebx],C_EDB
 		jne @f
 			;1,2,3,4,...,6,...8,...,10 - w,x,y,col_fon,...,col_frame,...,col_txt,...,txt
 			stdcall insert_text, txt_txt
@@ -717,9 +715,6 @@ proc get_code_auto_data_dop
 				insert_0
 				insert_nl
 		@@:
-		;cmp byte[ebx],C_CHB
-		;jne @f
-		;@@:
 
 		stdcall dword[tl_node_poi_get_next_info], esi,tree2
 		pop esi ;переходим к следущему узлу
@@ -745,7 +740,7 @@ proc get_code_auto_but
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_BUT
+		cmp dword[ebx],C_BUT
 		jne @f
 			insert_tab
 			insert_cmp
@@ -797,7 +792,7 @@ proc get_code_a_but_fun
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_BUT
+		cmp dword[ebx],C_BUT
 		jne @f
 			stdcall get_obj_text_col,ebx,6
 			stdcall str_len,edx
@@ -851,7 +846,7 @@ proc get_code_funct_key
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_EDB
+		cmp dword[ebx],C_EDB
 		jne @f
 			stdcall insert_text, txt_std_key_ed
 			stdcall insert_text_prop,ebx,0
@@ -984,20 +979,20 @@ proc get_code_draw_obj
 		cmp ebx,0
 		je .find_no
 
-		cmp byte[ebx],C_EDB
+		cmp dword[ebx],C_EDB
 		jne @f
 			stdcall insert_text, txt_editb_draw
 			stdcall insert_text_prop, ebx,0
 			insert_nl
 		@@:
-		cmp byte[ebx],C_CHB
+		cmp dword[ebx],C_CHB
 		jne @f
 			stdcall insert_text, txt_cbox_draw
 			stdcall insert_text_prop, ebx,0
 			insert_nl
 		@@:
-		cmp byte[ebx],C_BUT
-		jne @f
+		cmp dword[ebx],C_BUT
+		jne .ob_draw_but
 			insert_tab
 			stdcall insert_text, txt_mov
 			insert_reg txt_eax
@@ -1028,13 +1023,16 @@ proc get_code_draw_obj
 			insert_reg txt_edx
 			insert_coma
 			stdcall insert_text_prop, ebx,0
-			insert_nl
-
-			insert_tab
-			stdcall insert_text, txt_or
-			insert_reg txt_edx
-			insert_coma
-			stdcall insert_text, txt_but_create
+			test_bool_prop ebx,BIT_MOD_BUT_NFON
+			jnc @f
+				stdcall insert_text, txt_plus
+				stdcall insert_text, txt_bit_30
+			@@:
+			test_bool_prop ebx,BIT_MOD_BUT_NBORD
+			jnc @f
+				stdcall insert_text, txt_plus
+				stdcall insert_text, txt_bit_29
+			@@:
 			insert_nl
 
 			insert_tab
@@ -1047,8 +1045,8 @@ proc get_code_draw_obj
 			insert_tab
 			stdcall insert_text, txt_i_40
 			insert_nl
-		@@:
-		cmp byte[ebx],C_REC
+		.ob_draw_but:
+		cmp dword[ebx],C_REC
 		jne @f
 			insert_tab
 			stdcall insert_text, txt_mov
@@ -1087,8 +1085,8 @@ proc get_code_draw_obj
 			stdcall insert_text, txt_i_40
 			insert_nl
 		@@:
-		cmp byte[ebx],C_DTT ;рисование текста через сист. ф. 4
-		jne @f
+		cmp dword[ebx],C_DTT ;рисование текста через сист. ф. 4
+		jne .ob_draw_text
 			insert_tab
 			stdcall insert_text, txt_mov
 			insert_reg txt_eax
@@ -1110,9 +1108,25 @@ proc get_code_draw_obj
 			insert_reg txt_ecx
 			insert_coma
 			stdcall insert_text_prop, ebx,3
+			test_bool_prop ebx,BIT_MOD_TXT_ASCII_0
+			jnc @f
+				;or ecx,0x80000000 - бит для строки ASCIIZ
+				stdcall insert_text,txt_plus
+				stdcall insert_text,txt_bit_31
+			@@:
+			test_bool_prop ebx,BIT_MOD_TXT_NO_TRAN
+			jnc @f
+				;or ecx,0x40000000 - бит для не прозрачного текста
+				stdcall insert_text,txt_plus
+				stdcall insert_text,txt_bit_30
+			@@:
+			test_bool_prop ebx,BIT_MOD_TXT_CHAR2
+			jnc @f
+				;or ecx,0x40000000 - бит для 2-го сист. шрифта
+				stdcall insert_text,txt_plus
+				stdcall insert_text,txt_bit_28
+			@@:
 			insert_nl
-
-;or ecx,0x80000000
 
 			insert_tab
 			stdcall insert_text, txt_mov
@@ -1125,33 +1139,26 @@ proc get_code_draw_obj
 			insert_nl
 
 ;mov esi,...
+			test_bool_prop ebx,BIT_MOD_TXT_NO_TRAN
+			jnc @f
+				insert_tab
+				stdcall insert_text, txt_mov
+				insert_reg txt_edi
+				insert_coma
+				stdcall insert_text_prop, ebx,4 ;цвет фона
+				insert_nl
+			@@:
 
 			insert_tab
 			stdcall insert_text, txt_i_40
 			insert_nl
-		@@:
+		.ob_draw_text:
 
 		stdcall dword[tl_node_poi_get_next_info], esi,tree2
 		pop esi ;переходим к следущему узлу
 
 		jmp .beg_iterat
 	.find_no:
-	popad
-	ret
-endp
-
-
-
-align 4
-proc get_code_struct, p_obj:dword
-	pushad
-		mov ebx,dword[p_obj]
-		;0 - name
-
-		stdcall [ted_text_add], tedit0,txt_struct,7,ted_opt_ed_move_cursor
-		stdcall insert_text_prop, ebx,0
-		insert_nl
-
 	popad
 	ret
 endp
@@ -1166,7 +1173,7 @@ proc get_code_variable, p_obj:dword,o_lev:dword
 		mov ecx,dword[o_lev]
 		cmp cl,0
 		je .no_tab ;избегаем зацикливания (0-1 = 2^32-1)
-		and cx,0xff
+		and ecx,0xff
 		cld
 		@@:
 			insert_tab ;формирование отступа перед переменной
@@ -1246,7 +1253,10 @@ txt_head_l db 'head_f_l',0
 txt_err_m_i_lib db 'err_msg_import_',0
 txt_head_i db 'head_f_i',0
 txt_ll_end db 'l_libs_end:',13,0
-txt_but_create db '0x40000000',0 ;tmp
+txt_bit_28 db '0x10000000',0
+txt_bit_29 db '0x20000000',0
+txt_bit_30 db '0x40000000',0
+txt_bit_31 db '0x80000000',0
 txt_0x33000000 db '0x33000000',0 ;tmp
 txt_struct db 'struct ',0
 txt_met_end db '.end',0

@@ -29,14 +29,14 @@ pop edi esi ecx
 align 4
 but_obj_paste:
 push eax ebx ecx edi
-		mov eax,[tree2.data_info] ;данные 0-го узла, используем для копирования
-		mov bl,byte[eax]
-		call find_obj_in_opt
-		xor ecx,ecx
-		mov cx,word[edi+obj_opt.img-obj_opt] ;cx - индекс главной иконки добавляемого объекта
-		shl ecx,16
-		stdcall [tl_node_add], eax, ecx, tree2 ;добавляем объект
-		stdcall [tl_draw], tree2
+	mov eax,[tree2.data_info] ;данные 0-го узла, используем для копирования
+	mov ebx,dword[eax]
+	call find_obj_in_opt
+	xor ecx,ecx
+	mov cx,word[edi+obj_opt.img-obj_opt] ;cx - индекс главной иконки добавляемого объекта
+	shl ecx,16
+	stdcall [tl_node_add], eax, ecx, tree2 ;добавляем объект
+	stdcall [tl_draw], tree2
 pop edi ecx ebx eax
 	ret
 
@@ -114,23 +114,21 @@ get_obj_win_param:
 align 4
 proc get_obj_text_col, obj:dword, ind:dword
 	mov edx,dword[obj]
-	inc edx ;goto text
-push ebx
-	mov ebx,dword[ind]
-	cmp bx,0
+	add edx,4 ;goto text
+push ebx ecx
+	mov ecx,dword[ind]
+	cmp cx,0
 	je .end_fun
 
-	shl ebx,8 ;в bh попадает номер искомой колонки
-	mov bl,byte[edx-1] ;в bl попадает код объекта
+	mov ebx,dword[edx-4] ;в ebx попадает код объекта
 
-	push ecx edi
+	push edi
 	call find_obj_in_opt ;ищем структуру с опциями объекта
 
 	add edi,obj_opt.Col-obj_opt
-	dec bh
-	and ebx,0xff00
-	shr ebx,7 ;сдвигаем на 7, т.к. нужно значение bh умноженное на 2
-	add edi,ebx ;+ бывшее bh*2
+	dec ecx
+	shl ecx,1 ;умножаем на 2
+	add edi,ecx ;+ ind*2
 	xor ecx,ecx
 	mov cx,word[edi] ;ecx - сдиг для искомого поля
 	add edx,ecx
@@ -144,9 +142,9 @@ push ebx
 		mov edx,0 ;not text
 	@@:
 
-	pop edi ecx
+	pop edi
 	.end_fun:
-pop ebx
+pop ecx ebx
 	ret
 endp
 
@@ -158,20 +156,17 @@ endp
 align 4
 proc get_obj_text_len_col, obj:dword, ind:dword
 	xor eax,eax
-push ebx
-	mov ebx,dword[ind]
-	shl ebx,8 ;в bh попадает номер искомой колонки
+push ebx ecx edi
+	mov ecx,dword[ind]
 	mov eax,dword[obj]
-	mov bl,byte[eax] ;в bl попадает код объекта
+	mov ebx,dword[eax] ;в ebx попадает код объекта
 	xor eax,eax
 
-	push edi
 	call find_obj_in_opt ;ищем структуру с опциями объекта
 
 	add edi,obj_opt.Col-obj_opt
-	and ebx,0xff00
-	shr ebx,7 ;сдвигаем на 7, т.к. нужно значение bh умноженное на 2
-	add edi,ebx ;+ бывшее bh*2
+	shl ecx,1 ;умножаем на 2
+	add edi,ecx ;+ ind*2
 
 	mov ax,word[edi] ;eax - сдиг для следущего поля
 	cmp ax,0
@@ -191,9 +186,8 @@ push ebx
 		mov eax,0 ;not text
 	@@:
 
-	pop edi
 	.end_fun:
-pop ebx
+pop edi ecx ebx
 	ret
 endp
 
@@ -201,7 +195,7 @@ align 4
 proc draw_obj_icon, o_type:dword,n_col:dword, coord_y:dword
 	pushad
 	xor ebx,ebx
-	mov bl,byte[o_type]
+	mov ebx,dword[o_type]
 	call find_obj_in_opt
 
 	add edi,obj_opt.img-obj_opt ;get index (+0)
@@ -231,54 +225,6 @@ proc draw_obj_icon, o_type:dword,n_col:dword, coord_y:dword
 	ret
 endp
 
-;вывод текста с подписью
-align 4
-proc draw_obj_caption, o_type:dword,n_col:dword, coord_y:dword
-	pushad
-	stdcall get_obj_text_len_col, [foc_obj], [n_col] ;eax - длинна поля
-	cmp eax,1
-	jl .no_draw
-
-	xor ebx,ebx
-	mov bl,byte[o_type]
-	call find_obj_in_opt
-
-	mov edx,edi
-	add edx,obj_opt.caption-obj_opt
-
-	mov eax,[n_col]
-	mov ebx,150
-	shl ebx,16
-	add ebx,dword[coord_y]
-	add ebx,3
-	mov ecx,0 ;text color
-
-	mov esi,edx
-	.beg_found:
-		cmp byte[esi],0
-		je .end_found
-		cmp byte[esi],'*'
-		je @f
-		inc esi
-		jmp .beg_found
-	@@:
-	cmp eax,0
-	je .end_found
-		dec eax
-		inc esi
-		mov edx,esi ;переключаем начало строки на след. подпись
-		jmp .beg_found
-	.end_found:
-	cmp esi,edx
-	jle .no_draw
-		sub esi,edx ;esi = text len
-		mov eax,4
-		int 0x40
-	.no_draw:
-	popad
-	ret
-endp
-
 align 4
 proc draw_icon, ind:dword,coord_x:dword,coord_y:dword
 	pushad
@@ -301,16 +247,16 @@ proc draw_icon, ind:dword,coord_x:dword,coord_y:dword
 endp
 
 ;input
-;  bl = cod object
+;  ebx = cod object
 ;output:
 ;  edi = pointer to option struct
 align 4
 find_obj_in_opt:
 	push ecx
-	xor ecx,ecx ;find 'bl' in options
+	xor ecx,ecx ;find 'ebx' in options
 	mov edi,obj_opt
 	@@:
-		cmp bl,[edi] ;find
+		cmp ebx,dword[edi] ;find
 		je @f
 		inc ecx
 		cmp ecx,MAX_OBJ_TYPES
@@ -343,7 +289,7 @@ push ebx esi
 		cmp eax,0
 		je .find_no
 
-		cmp byte[eax],bl ;смотрим описан ли искомый объект в узле
+		cmp dword[eax],ebx ;смотрим описан ли искомый объект в узле
 		je .find_yes
 
 		stdcall dword[tl_node_poi_get_next_info], esi,tree2
@@ -370,7 +316,7 @@ push ebx esi
 	cmp dword[obj_find_last],0
 	je .find_no
 
-	mov ebx,[o_type]
+	mov ebx,dword[o_type]
 
 	stdcall dword[tl_node_poi_get_next_info], dword[obj_find_last],tree2
 	pop esi ;переходим к следущему узлу
@@ -384,7 +330,7 @@ push ebx esi
 		cmp eax,0
 		je .find_no
 
-		cmp byte[eax],bl ;смотрим описан ли искомый объект в узле
+		cmp dword[eax],ebx ;смотрим описан ли искомый объект в узле
 		je .find_yes
 
 		stdcall dword[tl_node_poi_get_next_info], esi, tree2

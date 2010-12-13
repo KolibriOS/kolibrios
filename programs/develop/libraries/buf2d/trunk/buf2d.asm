@@ -1045,12 +1045,15 @@ proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword
 		mov ecx,dword[coord_y0]
 		mov edx,dword[color]
 		mov esi,dword[coord_x1]
-		
-		@@: ;for (x=x0 ; x<x1; x++) ;------------------------------------
-			call draw_pixel
-			inc ebx
+		cmp ebx,esi
+		jle @f
+			xchg ebx,esi ;если x0 > x1 то меняем местами x0 и x1
+
+		@@: ;цикл по оси x от x0 до x1
 			cmp ebx,esi
 			jge @f
+			call draw_pixel
+			inc ebx
 			jmp @b
 		@@:
 		.end24:
@@ -1099,6 +1102,8 @@ pushad
 		mov edx,[w]
 		add edx,eax
 		mov ecx,[h]
+		cmp ecx,1 ;сравнение с минимально возможной высотой
+		jl .coord_end ;если высота меньше 1-го пикселя
 		mov esi,dword[color]
 		cld
 		@@:

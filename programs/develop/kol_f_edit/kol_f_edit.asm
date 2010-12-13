@@ -20,7 +20,7 @@ include 'obj_codes.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 10.12.10',0
+hed db 'kol_f_edit 13.12.10',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
@@ -43,28 +43,23 @@ WND_CAPT_COLOR equ 0xb0d0ff
 BUF_SIZE equ 1000
 
 ;modif
-CPP_MOD_ACM equ 2 ;события мыши
-BIT_MOD_ACM equ 1 ;события мыши
-CPP_MOD_ACI equ 4 ; включения
-BIT_MOD_ACI equ 2 ; включения
-CPP_MOD_ACD equ 8 ;данные объектов
-BIT_MOD_ACD equ 3 ;данные объектов
-CPP_MOD_ABU equ 16 ;связывание кнопок
-BIT_MOD_ABU equ 4 ;связывание кнопок
-
-CPP_MOD_WI_CA equ 16 ; стиль окна подпись
-CPP_MOD_WI_AO equ 32 ; стиль окна координаты относительно клиентской области
-CPP_MOD_WI_RD equ 64 ; стиль окна перерисовка окна
-CPP_MOD_WI_GR equ 128 ; стиль окна градиент
-CPP_MOD_CHE equ 512 ; ch_flag_en - выбран CheckBox
-CPP_MOD_TXT_ASCII_0 equ 1 ; текст заканчив. 0
-CPP_MOD_TXT_TRAN equ 4 ; текст прозрачный
-CPP_MOD_TXT_CHAR2 equ 2 ; текст 2-м шрифтом
-CPP_MOD_EDIT_FOC equ 1 ; EditBox в фокусе
-CPP_MOD_EDIT_FIO equ 2 ;
-CPP_MOD_RE_GR equ 1 ; градиентный прямоугольник
-CPP_MOD_BUT_NFON equ 1 ; стиль Button не рисовать кнопку
-CPP_MOD_BUT_NBORD equ 2 ; стиль Button не рисовать границу
+BIT_MOD_ACI equ 0 ;подключения файлов
+BIT_MOD_ACM equ 1 ;события от мыши
+BIT_MOD_ACD equ 2 ;данные объектов
+BIT_MOD_ABU equ 3 ;связывание кнопок
+;CPP_MOD_WI_CA equ 16 ; стиль окна подпись
+;CPP_MOD_WI_AO equ 32 ; стиль окна координаты относительно клиентской области
+;CPP_MOD_WI_RD equ 64 ; стиль окна перерисовка окна
+;CPP_MOD_WI_GR equ 128 ; стиль окна градиент
+;CPP_MOD_CHE equ 512 ; ch_flag_en - выбран CheckBox
+BIT_MOD_TXT_ASCII_0 equ 0 ; текст заканчив. 0
+BIT_MOD_TXT_NO_TRAN equ 1 ; текст прозрачный
+BIT_MOD_TXT_CHAR2 equ 2 ; текст 2-м шрифтом
+;CPP_MOD_EDIT_FOC equ 1 ; EditBox в фокусе
+;CPP_MOD_EDIT_FIO equ 2 ;
+;CPP_MOD_RE_GR equ 1 ; градиентный прямоугольник
+BIT_MOD_BUT_NFON equ 0 ; стиль Button не рисовать кнопку
+BIT_MOD_BUT_NBORD equ 1 ; стиль Button не рисовать границу
 
 macro load_image_file path,buf,size ;макрос для загрузки изображений
 {
@@ -106,21 +101,20 @@ struct FileInfoBlock
 ends
 
 struct object
-	c db ? ;0
-	txt rb MAX_LEN_OBJ_TXT ;1
-	lvl db 0 ;1+mt
-	clo db 0 ;2+mt
-	rb 8 ;3+mt не используется, отсталось от Win версии
-	typid dd ? ;3+8+mt
-	modif dd ? ;7+8+mt
+	id dd ? ;идентификатор объекта
+	txt rb MAX_LEN_OBJ_TXT ;текстовые свойства
+	lvl db 0
+	clo db 0
+	typid dd ? ;номер объекта определяющего тип переменной
+	modif dd ? ;битовые свойства
 ends
 
 struct ObjOpt
-	db ?
+	dd ?
 	bl_type db ?
 	graph db ?
 	info rb 30
-	caption rb 200
+	caption rb MAX_OPT_CAPTION
 	Col rw MAX_OPT_FIELDS
 	img rw MAX_OPT_FIELDS ;индексы картинок (в файле 'icon.bmp')
 	bit_prop dd 0 ;битовые свойства
@@ -150,6 +144,12 @@ icon_tl_sys dd 0 ;указатеель на память для хранения системных иконок
 icon_font_s1 dd 0 ;указатель на временную память для загрузки шрифта
 
 fn_syntax db 'asm.syn',0 ;имя загружаемого файла синтаксиса
+
+;макрос для проверки битового свойства
+macro test_bool_prop obj_reg,n_prop
+{
+	bt dword[obj_reg+u_object.modif-u_object],n_prop
+}
 
 include 'ced_wnd_m.inc'
 include 'ced_wnd_prop.inc' ;файл с функциями окна свойств объекта
@@ -268,8 +268,8 @@ start:
 
 		mov eax,obj_opt ;добавляем объекты
 		@@:
-			mov bl,byte[eax]
-			cmp bl,0
+			mov ebx,dword[eax]
+			cmp ebx,0
 			je @f
 			;xor ecx,ecx ;в ecx будет индекс иконки
 			mov cx,word[eax+obj_opt.img-obj_opt]
@@ -617,8 +617,8 @@ but_open_proj:
 		stdcall dword[tl_info_clear], tree2
 		mov eax,ced_info ;добавляем объекты
 		@@:
-			mov bl,byte[eax]
-			cmp bl,0
+			mov ebx,dword[eax]
+			cmp ebx,0
 			je @f
 
 			call find_obj_in_opt ;edi = pointer to ObjOpt struct
@@ -629,10 +629,10 @@ but_open_proj:
 				xor cx,cx ;что-бы не глючило с отрицательным индексом
 			.zero:
 			shl ecx,16 ;в ecx индекс иконки
-			mov cl,byte[eax+1+MAX_LEN_OBJ_TXT] ;уровень объекта
+			mov cl,byte[eax++u_object.lvl-u_object] ;уровень объекта
 
 			;tl_node_close_open - не подходит, т.к. действует на узлы имеющие дочерние
-			mov ch,byte[eax+2+MAX_LEN_OBJ_TXT] ;закрытый/открытый
+			mov ch,byte[eax++u_object.clo-u_object] ;закрытый/открытый
 
 			stdcall dword[tl_node_add], eax, ecx, tree2 ;добавляем объект
 
@@ -666,34 +666,33 @@ but_save_proj:
 		pop esi ;получаем данные узла
 
 		mov bl,byte[edx+2] ;bl - уровень объекта
-		mov byte[esi+1+MAX_LEN_OBJ_TXT],bl
+		mov byte[esi+u_object.lvl-u_object],bl
 		mov bl,byte[edx+3] ;bl - открытие/закрытие объекта
-		mov byte[esi+2+MAX_LEN_OBJ_TXT],bl
+		mov byte[esi+u_object.clo-u_object],bl
 
 		;вычисляем новый индекс для типа объекта
-		mov ebx,[esi+3+8+MAX_LEN_OBJ_TXT] ;ebx - тип объекта
+		mov ebx,[esi+u_object.typid-u_object] ;ebx - тип объекта
 		;сохраняем тип объекта
 		push ebx
 			imul ebx,sizeof.TreeList
 			add ebx,[tree2.data_nodes] ;ebx - указатель объект указывающий тип
 			stdcall get_obj_npp,ebx
-			mov [esi+3+8+MAX_LEN_OBJ_TXT],eax
+			mov [esi+u_object.typid-u_object],eax
 			mov eax,esi
-
 			;копируем объект в память для сохранения
 			xor ecx,ecx
 			mov cx,word[tree2.info_size]
 			cld
 			rep movsb
 		;восстанавливаем тип объекта
-		pop dword[eax+3+8+MAX_LEN_OBJ_TXT]
+		pop dword[eax+u_object.typid-u_object]
 
 		stdcall [tl_node_poi_get_next_info], edx,tree2
 		pop edx ;переходим к следущему узлу
 		jmp @b
 	@@:
-	mov byte[edi],0
-	inc edi
+	mov dword[edi],0 ;метка конца файла
+	add edi,4
 	mov ecx,edi
 	sub ecx,ced_info ;ecx - размер сохраняемого файла       
 
@@ -807,30 +806,6 @@ on_file_object_select:
 	;call draw_window
 	ret
 
-align 4
-proc set_obj_win_param, col:dword, edit:dword
-	pushad
-		stdcall get_obj_text_col, [foc_obj], [col] ;edx - text
-		stdcall get_obj_text_len_col, [foc_obj], [col] ;eax - длинна поля
-		mov edi,[edit]
-		cmp eax,1
-		jl @f
-			dec eax
-			mov ed_max,eax ;ed_max = edi+.max
-			mov ed_focus_border_color, dword 0xff
-			mov ed_blur_border_color, dword 0x808080
-			stdcall [edit_box_set_text], edi,edx ;обновляем editbox
-			jmp .end_f
-		@@:
-			mov ed_max,dword MAX_LEN_OBJ_TXT
-			mov ed_focus_border_color, dword 0xffffff ;делаем невидимую активную рамку
-			mov ed_blur_border_color, dword 0xffffff ;делаем невидимую фоновую рамку
-			stdcall [edit_box_set_text], edi,txt_null
-		.end_f:
-	popad
-	ret
-endp
-
 ;функция вызываемая при нажатии Enter в окне tree1
 ;добавляет новый объект в окно tree2
 align 4
@@ -844,8 +819,8 @@ push eax ebx ecx
 		mov cx,word[eax+obj_opt.img-obj_opt] ;cx - индекс главной иконки добавляемого объекта
 		shl ecx,16
 		stdcall mem_clear, u_object,sizeof.object
-		mov bl,byte[eax]
-		mov byte[u_object.c],bl
+		mov ebx,dword[eax]
+		mov dword[u_object.id],ebx
 		stdcall dword[tl_node_add], u_object, ecx, tree2 ;добавляем объект
 	@@:
 pop ecx ebx eax
@@ -956,11 +931,11 @@ mouse_dd dd ?
 el_focus dd tree1
 ;дерево со списком возможных типов объектов
 tree1 tree_list sizeof.ObjOpt,20+2, tl_key_no_edit+tl_draw_par_line+tl_list_box_mode,\
-	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,50,125,280, 0,3,0, el_focus,\
+	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,50,125,280, 0,obj_opt.info-obj_opt,0, el_focus,\
 	w_scr_t1,on_add_object
 ;дерево с объектами в пользовательском файле
 tree2 tree_list sizeof.object,MAX_CED_OBJECTS+2, tl_draw_par_line,\
-	16,16, 0xffffff,0xb0d0ff,0xd000ff, 155,50,130,280, 13,1,MAX_LEN_OBJ_TXT, el_focus,\
+	16,16, 0xffffff,0xb0d0ff,0xd000ff, 155,50,130,280, 13,u_object.txt-u_object,MAX_LEN_OBJ_TXT, el_focus,\
 	w_scr_t2,on_file_object_select
 
 msgbox_0:
@@ -1168,6 +1143,7 @@ obj_opt ObjOpt
 cur_x dd 0
 cur_y dd 0
 foc_obj dd 0 ;объект в фокусе
+obj_count_txt_props dd 0 ;количество используемых текстовых свойств
 obj_m_win dd 0 ;структура главного окна
 
 ;

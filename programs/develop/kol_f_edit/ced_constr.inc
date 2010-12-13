@@ -23,8 +23,7 @@ pushad
 		jmp .end_draw
 	@@:
 
-	xor edx,edx
-	mov dl,C_WND
+	mov edx,C_WND
 	stdcall find_obj_in_file,edx ;eax - указатель на структуру окна
 	cmp eax,0
 	je .end_draw
@@ -80,16 +79,16 @@ pushad
 		stdcall [buf2d_bit_blt], buf_fon, eax,0, buf_skin3 ;прорисовка правого скина
 	.end_skin:
 
-	xor edx,edx ;рисуем графические элементы
-	mov dl,C_BUT
+	;рисуем графические элементы
+	mov edx,C_BUT
 	stdcall draw_arr_objects, edx,draw_obj_but
-	mov dl,C_EDB
+	mov edx,C_EDB
 	stdcall draw_arr_objects, edx,draw_obj_edit
-	mov dl,C_CHB
+	mov edx,C_CHB
 	stdcall draw_arr_objects, edx,draw_obj_check
-	mov dl,C_DTT
+	mov edx,C_DTT
 	stdcall draw_arr_objects, edx,draw_obj_text
-	mov dl,C_REC
+	mov edx,C_REC
 	stdcall draw_arr_objects, edx,draw_obj_rect_f13
 
 	.end_draw:
@@ -142,7 +141,13 @@ endl
 		mov ecx,eax
 		stdcall get_obj_text_col,ebx,5
 		stdcall conv_str_to_int,edx
-		stdcall [buf2d_rect_by_size], buf_fon, dword[coor_x],dword[coor_y],edi,ecx,eax
+		test_bool_prop ebx,BIT_MOD_BUT_NFON
+		jc .no_draw_fon
+			stdcall [buf2d_filled_rect_by_size], buf_fon, dword[coor_x],dword[coor_y],edi,ecx,eax
+			jmp @f
+		.no_draw_fon: ;не прорисовываем кнопку
+			stdcall [buf2d_rect_by_size], buf_fon, dword[coor_x],dword[coor_y],edi,ecx,eax
+		@@:
 	popad
 	ret
 endp
