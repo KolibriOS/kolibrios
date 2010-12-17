@@ -150,7 +150,9 @@ local	.loop
 include "queue.inc"
 
 include "ethernet.inc"
+
 ;include "slip.inc"
+;include "pppoe.inc"
 
 include "ARP.inc"
 include "IPv4.inc"

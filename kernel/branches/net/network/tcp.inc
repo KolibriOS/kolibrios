@@ -572,7 +572,8 @@ TCP_input:
 	mov	eax, [edx + TCP_segment.SequenceNumber]
 	cmp	eax, [ebx + TCP_SOCKET.RCV_NXT]
 	jne	.not_uni_xfer
-
+	DEBUGF	1,"TCP_segment.window=%u\n", [edx + TCP_segment.Window]:4
+	DEBUGF	1,"TCP_SOCKET.SND_WND=%u\n", [ebx + TCP_SOCKET.SND_WND]:4
 	mov	eax, dword [edx + TCP_segment.Window]
 	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
 	jne	.not_uni_xfer
@@ -613,9 +614,11 @@ TCP_input:
 ; Update RTT estimators
 
 ; Delete acknowledged bytes from send buffer
+	pusha
 	mov	ecx, eax
 	lea	eax, [ebx + STREAM_SOCKET.snd]
 	call	SOCKET_ring_free
+	popa
 
 ; update window pointers
 	mov	eax, [edx + TCP_segment.AckNumber]
@@ -629,12 +632,12 @@ TCP_input:
 	mov	eax, ebx
 	call	SOCKET_notify_owner
 
-;; Generate more output
+;; Generate more output                  FIXME
 ;;        mov     eax, ebx
 ;;        call    TCP_output
 ;;
 ;;        jmp     .drop
-	jmp	.step6
+	jmp	.ack_processed
 
 ;-------------------------------------------------
 ; maybe we are the receiver in the uni-xfer then..
@@ -647,7 +650,9 @@ TCP_input:
 	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
 	jne	.not_uni_xfer
 
-; - The reassembly list of out-of-order segments for the connection is empty (seg_next equals tp). ;;;;;;;
+; - The reassembly list of out-of-order segments for the connection is empty (seg_next equals tp).
+
+;;;;;;;     TODO
 
 	jnz	.not_uni_xfer
 
@@ -656,12 +661,14 @@ TCP_input:
 
 	DEBUGF	1,"header prediction: we are receiver\nreceiving %u bytes of data\n", ecx
 
+	pusha
 	add	esi, edx
 	lea	eax, [ebx + STREAM_SOCKET.rcv]
 	call	SOCKET_ring_write			; Add the data to the socket buffer
 
 	mov	eax, ebx
 	call	SOCKET_notify_owner
+	popa
 
 	add	[ebx + TCP_SOCKET.RCV_NXT], ecx 	; Update sequence number with number of bytes we have copied
 	or	[ebx + TCP_SOCKET.t_flags], TF_DELACK	; Set delayed ack flag
@@ -767,8 +774,6 @@ align 4
 	mov	eax, [edx + TCP_segment.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.ISS]
 	jle	.drop_with_reset
-
-;        mov     eax, [edx + TCP_segment.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
 	jg	.drop_with_reset
        @@:
@@ -779,6 +784,7 @@ align 4
 	test	[edx + TCP_segment.Flags], TH_ACK
 	jz	.drop
 
+	mov	eax, ebx
 	mov	ebx, ECONNREFUSED
 	call	TCP_drop
 
@@ -855,7 +861,7 @@ align 4
 	; TODO...
        @@:
 	;;;;;
-	jmp	.step6
+	jmp	.ack_processed
 
 
   .trim_then_step6:
@@ -867,8 +873,6 @@ align 4
 
 	mov	eax, [ebx + TCP_SOCKET.RCV_NXT]
 	sub	eax, [edx + TCP_segment.SequenceNumber]
-
-	test	eax, eax
 	jz	.no_duplicate
 
 	test	[edx + TCP_segment.Flags], TH_SYN
@@ -1064,6 +1068,7 @@ align 4
 	test	[edx + TCP_segment.Flags], TH_SYN
 	jz	@f
 
+	mov	eax, ebx
 	mov	ebx, ECONNRESET
 	call	TCP_drop
 
@@ -1072,30 +1077,49 @@ align 4
 	test	[edx + TCP_segment.Flags], TH_ACK
 	jz	.drop
       @@:
-;----------------
-; Process the ACK
+
+;---------------
+; ACK processing
 
 	cmp	[ebx + TCP_SOCKET.t_state], TCB_SYN_RECEIVED
-	jg	.ack_dup
-	jl	.ack_nodup
+	jnz	.no_syn_rcv
 
 	DEBUGF	1,"TCP state = syn received\n"
 
-	;;;;;
+	;;;;;  801-815
 
-  .ack_nodup:
+  .no_syn_rcv:
 
-	DEBUGF	1,"New ACK\n"
+; check for duplicate ACK
 
+	mov	eax, [edx + TCP_segment.AckNumber]
+	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
+	jg	.not_dup_ack
 
+	DEBUGF	1,"Duplicate ACK\n"
 
-  .ack_dup:
+	test	ecx, ecx
+	jnz	.ack_processed
 
-	;;;;
+	mov	eax, dword [edx + TCP_segment.Window]
+	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
+	jne	.ack_processed
+
+; Process the duplicate ACK
+
+	;;;;; 833 - 878
+
+;;;        call    TCP_output
+	jmp	.drop
+
+  .not_dup_ack:
+
+	DEBUGF	1,"new ACK\n"
+
 
 ;-------------------------------------------------
 ; If the congestion window was inflated to account
-; for the other side's cached packets, retrace it
+; for the other side's cached packets, retract it
 
 	;;;; 888 -  902
 
@@ -1123,17 +1147,20 @@ align 4
 ; Remove acknowledged data from send buffer
 
 	pusha
-; Delete acknowledged bytes from send buffer
 	mov	ecx, [edx + TCP_segment.AckNumber]
-	sub	ecx, [ebx + TCP_SOCKET.SND_UNA]
+	sub	ecx, [ebx + TCP_SOCKET.SND_UNA] 	; ecx now holds number of bytes acked
+
 	lea	eax, [ebx + STREAM_SOCKET.snd]
 	call	SOCKET_ring_free
 	popa
 
+;---------------------------------------
+; Wake up process waiting on send buffer
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  code missing (943?)
+	mov	eax, ebx
+	call	SOCKET_notify_owner
 
-
+; Update TCB
 
 	mov	eax, [edx + TCP_segment.AckNumber]
 	mov	[ebx + TCP_SOCKET.SND_UNA], eax
@@ -1143,54 +1170,55 @@ align 4
 	mov	[ebx + TCP_SOCKET.SND_NXT], eax
        @@:
 
-
-;---------------------------------------
-; Wake up process waiting on send buffer
-
-	mov	eax, ebx
-	call	SOCKET_notify_owner
+; General ACK handling complete
+; Now do the state-specific ones
 
 	mov	eax, [ebx + TCP_SOCKET.t_state]
-	shl	eax, 2
-	jmp	dword [eax + .ACK_sw_list]
+	jmp	dword [eax*4 + .ACK_sw_list]
 
   .ACK_sw_list:
-	dd	.step6		;TCB_CLOSED
-	dd	.step6		;TCB_LISTEN
-	dd	.step6		;TCB_SYN_SENT
-	dd	.step6		;TCB_SYN_RECEIVED
-	dd	.step6		;TCB_ESTABLISHED
-	dd	.step6		;TCB_CLOSE_WAIT
-	dd	._963		;TCB_FIN_WAIT_1
-	dd	._958		;TCB_CLOSING
-	dd	._999		;TCB_LAST_ACK
-	dd	.step6		;TCB_FIN_WAIT_2
-	dd	._1010		;TCB_TIMED_WAIT
+	dd	.ack_processed	;TCB_CLOSED
+	dd	.ack_processed	;TCB_LISTEN
+	dd	.ack_processed	;TCB_SYN_SENT
+	dd	.ack_processed	;TCB_SYN_RECEIVED
+	dd	.ack_processed	;TCB_ESTABLISHED
+	dd	.ack_processed	;TCB_CLOSE_WAIT
+	dd	.ack_fw1	;TCB_FIN_WAIT_1
+	dd	.ack_c		;TCB_CLOSING
+	dd	.ack_la 	;TCB_LAST_ACK
+	dd	.ack_processed	;TCB_FIN_WAIT_2
+	dd	.ack_tw 	;TCB_TIMED_WAIT
 
 
-  ._963:
+  .ack_fw1:
+
+;;; TODO: 963
+
+	jmp	.ack_processed
+
+  .ack_c:
+
+;;; TODO: 958
+
+	jmp	.ack_processed
+
+  .ack_la:
+
+;;; TODO: 999
+
+	jmp	.ack_processed
 
 
-	jmp	.step6
+  .ack_tw:
+
+;;; TODO: 1010
+
+	jmp	.ack_processed
 
 
-  ._958:
+  .ack_processed:
 
-	jmp	.step6
-
-  ._999:
-
-	jmp	.step6
-
-
-  ._1010:
-
-	jmp	.step6
-
-
-  .step6:
-
-	DEBUGF	1,"step 6\n"
+	DEBUGF	1,"ack processed\n"
 
 ;----------------------------------------------
 ; check if we need to update window information
@@ -1383,17 +1411,11 @@ align 4
 
 	;;; if debug enabled, output packet
 
-	;test    ;;;needoutput = 1
-	;jnz     .outputnow
+	;test    needoutput, needoutput
+	;jz      .dumpit
 
 	test	[ebx + TCP_SOCKET.t_flags], TF_ACKNOW
-	jnz	.ack_now
-
-	call	kernel_free
-	add	esp, 4
-	ret
-
-  .ack_now:
+	jz	.dumpit
 
 	DEBUGF	1,"ACK now!\n"
 
@@ -1401,6 +1423,8 @@ align 4
 	mov	eax, ebx
 	call	TCP_output
 	pop	ebx
+
+  .dumpit:
 
 	call	kernel_free
 	add	esp, 4
@@ -2010,9 +2034,15 @@ TCP_drop:
 align 4
 TCP_close:
 
+	DEBUGF	1,"TCP_close\n"
+
 ;;; TODO: update RTT and mean deviation
 ;;; TODO: update slow start threshold
 ;;; TODO: release connection resources
+
+; Now, mark the socket as being disconnected
+
+	mov	[eax + SOCKET.state], 0 ;;; FIXME
 
 	ret
 
