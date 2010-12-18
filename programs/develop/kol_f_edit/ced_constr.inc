@@ -207,50 +207,108 @@ locals
 	coor_x dd ?
 	coor_y dd ?
 	ot_txt dd ? ;отступ для текста
-	size_wh dd ? ;размер квадратика
+	size_w dd ? ;размер квадратика w
+	size_h dd ? ;размер квадратика h
 	col_txt dd ? ;цвет тектса
 endl
 	pushad
 		mov ebx,dword[p_obj]
-		;1,2,3, 4,5,6, 7,8 - x,y,txt, col_fon,col_frame,col_txt, w_txt,w_h
+		;1,2,3,4,5, 6,7,8, 9 - ot_x,ot_y,w,h,ot_w_txt, col_fon,col_frame,col_txt, txt
 
-		stdcall get_obj_text_col,ebx,1
+		stdcall get_obj_text_col,ebx,1 ;ot_x
 		stdcall conv_str_to_int,edx
 		mov [coor_x],eax
-		stdcall get_obj_text_col,ebx,2
+		stdcall get_obj_text_col,ebx,2 ;ot_y
 		stdcall conv_str_to_int,edx
 		mov [coor_y],eax
 		move_to_skin [coor_x],[coor_y]
-		stdcall get_obj_text_col,ebx,7
+		stdcall get_obj_text_col,ebx,5 ;ot_w_txt
 		stdcall conv_str_to_int,edx
 		mov [ot_txt],eax
-		stdcall get_obj_text_col,ebx,8
+		stdcall get_obj_text_col,ebx,3 ;w
 		stdcall conv_str_to_int,edx
 		dec eax ;размер меньше на 1 пиксель
-		mov [size_wh],eax
-		stdcall get_obj_text_col,ebx,5
+		mov [size_w],eax
+		stdcall get_obj_text_col,ebx,4 ;h
+		stdcall conv_str_to_int,edx
+		dec eax ;размер меньше на 1 пиксель
+		mov [size_h],eax
+		stdcall get_obj_text_col,ebx,7 ;col_frame
 		stdcall conv_str_to_int,edx
 		stdcall [buf2d_rect_by_size], buf_fon, dword[coor_x],dword[coor_y],\
-			dword[size_wh],dword[size_wh], eax
+			dword[size_w],dword[size_h], eax
 
+		;заливка фона checkbox-а
 		inc dword[coor_x]
 		inc dword[coor_y]
-		sub dword[size_wh],2
-		stdcall get_obj_text_col,ebx,4
+		sub dword[size_w],2
+		sub dword[size_h],2
+		stdcall get_obj_text_col,ebx,6 ;col_fon
 		stdcall conv_str_to_int,edx
 		stdcall [buf2d_filled_rect_by_size], buf_fon, dword[coor_x],dword[coor_y],\
-			dword[size_wh],dword[size_wh], eax
+			dword[size_w],dword[size_h], eax
 
-		stdcall get_obj_text_col,ebx,6
+		test_bool_prop ebx,BIT_MOD_CHE
+		jnc @f
+			;рисование отметки в checkbox-е
+			inc dword[coor_x]
+			inc dword[coor_y]
+			sub dword[size_w],2
+			sub dword[size_h],2
+			stdcall get_obj_text_col,ebx,7 ;col_frame
+			stdcall conv_str_to_int,edx
+			stdcall [buf2d_filled_rect_by_size], buf_fon, dword[coor_x],dword[coor_y],\
+				dword[size_w],dword[size_h], eax
+		@@:
+
+		;востанавливаем положение и размеры
+		stdcall get_obj_text_col,ebx,1 ;ot_x
+		stdcall conv_str_to_int,edx
+		mov [coor_x],eax
+		stdcall get_obj_text_col,ebx,2 ;ot_y
+		stdcall conv_str_to_int,edx
+		mov [coor_y],eax
+		move_to_skin [coor_x],[coor_y]
+		stdcall get_obj_text_col,ebx,3 ;w
+		stdcall conv_str_to_int,edx
+		dec eax ;размер меньше на 1 пиксель
+		mov [size_w],eax
+		stdcall get_obj_text_col,ebx,4 ;h
+		stdcall conv_str_to_int,edx
+		dec eax ;размер меньше на 1 пиксель
+		mov [size_h],eax
+
+		stdcall get_obj_text_col,ebx,8 ;col_txt
 		stdcall conv_str_to_int,edx
 		mov [col_txt],eax
-		mov eax,[ot_txt]
-		add eax,[size_wh]
-		add eax,2-1 ;sub dword[size_wh],2 ;inc dword[coor_x]
-		add [coor_x],eax ;вычисляем координаты для текстовой подписи
-		add [coor_y],5-1 ;inc dword[coor_y]
-		stdcall get_obj_text_col,ebx,3
-		stdcall [buf2d_draw_text], buf_fon, buf_font,edx,dword[coor_x],dword[coor_y],\
+		mov eax,[coor_x]
+		add eax,[size_w]
+		add eax,[ot_txt] ;вычисляем координаты для текстовой подписи
+
+		test_bool_prop ebx,BIT_MOD_CHE_T
+		jc .end_txt_align ;if text aligment = top
+
+		test_bool_prop ebx,BIT_MOD_CHE_M
+		jnc @f
+			shl [coor_y],1 ;умножаем на 2
+			mov ecx,[size_h]
+			add [coor_y],ecx ;добавляем высоту checkbox
+			sub [coor_y],9 ;отнимаем высоту символа
+			shr [coor_y],1 ;делим на получившееся 2, получаем отступ для стоящего по центру текста
+			jmp .end_txt_align
+		@@:
+
+		test_bool_prop ebx,BIT_MOD_CHE_B
+		jnc @f
+			mov ecx,[size_h]
+			add [coor_y],ecx ;добавляем высоту checkbox
+			sub [coor_y],9 ;отнимаем высоту символа
+				;получаем отступ для стоящего снизу текста
+		@@:
+		.end_txt_align:
+
+		stdcall get_obj_text_col,ebx,9 ;txt
+		stdcall [buf2d_draw_text], buf_fon, buf_font,edx,eax,dword[coor_y],\
 			dword[col_txt] ;рисуем строку с текстом
 	popad
 	ret

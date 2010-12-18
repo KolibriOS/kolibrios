@@ -20,7 +20,7 @@ include 'obj_codes.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 13.12.10',0
+hed db 'kol_f_edit 18.12.10',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
@@ -43,23 +43,27 @@ WND_CAPT_COLOR equ 0xb0d0ff
 BUF_SIZE equ 1000
 
 ;modif
-BIT_MOD_ACI equ 0 ;подключения файлов
+BIT_MOD_ACI equ 0 ;первоначальные настройки элементов
 BIT_MOD_ACM equ 1 ;события от мыши
 BIT_MOD_ACD equ 2 ;данные объектов
 BIT_MOD_ABU equ 3 ;связывание кнопок
-;CPP_MOD_WI_CA equ 16 ; стиль окна подпись
-;CPP_MOD_WI_AO equ 32 ; стиль окна координаты относительно клиентской области
-;CPP_MOD_WI_RD equ 64 ; стиль окна перерисовка окна
-;CPP_MOD_WI_GR equ 128 ; стиль окна градиент
-;CPP_MOD_CHE equ 512 ; ch_flag_en - выбран CheckBox
-BIT_MOD_TXT_ASCII_0 equ 0 ; текст заканчив. 0
-BIT_MOD_TXT_NO_TRAN equ 1 ; текст прозрачный
-BIT_MOD_TXT_CHAR2 equ 2 ; текст 2-м шрифтом
-;CPP_MOD_EDIT_FOC equ 1 ; EditBox в фокусе
+;CPP_MOD_WI_CA equ 16 ;стиль окна подпись
+;CPP_MOD_WI_AO equ 32 ;стиль окна координаты относительно клиентской области
+;CPP_MOD_WI_RD equ 64 ;стиль окна перерисовка окна
+;CPP_MOD_WI_GR equ 128 ;стиль окна градиент
+BIT_MOD_CHE equ 0 ; ch_flag_en - выбран CheckBox
+BIT_MOD_CHE_T equ 1 ;сверху
+BIT_MOD_CHE_M equ 2 ;по центру
+BIT_MOD_CHE_B equ 3 ;снизу
+BIT_MOD_TXT_ASCII_0 equ 0 ;текст заканчив. 0
+BIT_MOD_TXT_NO_TRAN equ 1 ;текст прозрачный
+BIT_MOD_TXT_CHAR2 equ 2 ;текст 2-м шрифтом
+;CPP_MOD_EDIT_FOC equ 1 ;EditBox в фокусе
 ;CPP_MOD_EDIT_FIO equ 2 ;
-;CPP_MOD_RE_GR equ 1 ; градиентный прямоугольник
-BIT_MOD_BUT_NFON equ 0 ; стиль Button не рисовать кнопку
-BIT_MOD_BUT_NBORD equ 1 ; стиль Button не рисовать границу
+;CPP_MOD_RE_GR equ 1 ;градиентный прямоугольник
+BIT_MOD_BUT_NFON equ 0 ;стиль Button не рисовать кнопку
+BIT_MOD_BUT_NBORD equ 1 ;стиль Button не рисовать границу
+BIT_MOD_IMPORT_FUNCT_COMMENT equ 0 ;коментировать функцию
 
 macro load_image_file path,buf,size ;макрос для загрузки изображений
 {

@@ -3,18 +3,18 @@
 ;
 
 C_TDF equ 'Type' ;typedef
-C_ACO equ ('a' shl 24) ;автоматические коды (auto code)
+C_ACO equ 'Auto' ;автоматические коды (auto code)
 C_STR equ ('s' shl 24) ;struct
 C_INC equ ('#' shl 24) ;include
 C_TXT equ ('d' shl 24) ;блок кода (данных)
 C_VAR equ ('-' shl 24) ;переменная
 C_COM equ (';' shl 24) ;комментарий
 C_WND equ ('w' shl 24) ;окно
-C_CHB equ ('c' shl 24) ;CheckBox
+C_CHB equ 'ChkB' ;CheckBox
 C_OPT equ ('o' shl 24) ;OptionBox
 C_EDB equ ('e' shl 24) ;EditBox
 C_BUT equ ('b' shl 24) ;Button
-C_DTT equ ('x' shl 24) ;рисовать текст
+C_DTT equ 'Text' ;рисовать текст
 C_REC equ 'Rect' ;рисовать прямоугольник
 C_KEY equ ('k' shl 24) ;клавиатура
 C_LIB equ 'Libr' ;библиотека

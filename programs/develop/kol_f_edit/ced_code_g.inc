@@ -46,6 +46,36 @@ proc insert_text_prop, p_obj:dword,index:dword
 	ret
 endp
 
+;функция вставляет 2 параметра по 16 бит в виде:
+; (_p1_ shl 16 + _p2_)
+align 4
+proc insert_2_prop_16_bit, obj:dword, p_hi:dword, p_lo:dword
+	stdcall insert_text, txt_skob_o
+	stdcall insert_text_prop, [obj],[p_hi]
+	stdcall insert_text, txt_shl_16
+	stdcall insert_text, txt_skob_c
+	stdcall insert_text, txt_plus
+	stdcall insert_text_prop, [obj],[p_lo]
+	ret
+endp
+
+;вставляем строку вида:
+; txt_(n) db (s)
+align 4
+proc insert_text_label_data, obj:dword, col:dword
+	push eax edx
+	mov eax,[obj]
+		stdcall insert_text, txt_txt
+		mov edx,fp_icon
+		stdcall get_obj_id_str, eax,edx ;edx = 'n'
+		stdcall str_cat, edx,txt_db ;edx = 'n db '
+		stdcall insert_text, edx
+		stdcall insert_text_prop, eax,[col]
+		insert_nl
+	pop edx eax
+	ret
+endp
+
 macro insert_tab
 {
 	stdcall [ted_text_add], tedit0,txt_tab,1,ted_opt_ed_move_cursor
@@ -82,11 +112,6 @@ macro insert_reg8 reg_name
 {
 	stdcall [ted_text_add], tedit0,reg_name,2,ted_opt_ed_move_cursor
 }
-macro insert_i65p
-{
-	stdcall [ted_text_add], tedit0,txt_i65p,7,ted_opt_ed_move_cursor
-}
-
 
 ;
 macro insert_but_beg
@@ -151,7 +176,7 @@ popad
 ; esi - указатель на узел
 align 4
 code_gen_obj:
-push ebx
+push ebx edx
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
@@ -165,9 +190,24 @@ push ebx
 		je .find_no
 
 		cmp dword[eax],C_STR
-		jne @f
-			stdcall insert_text,txt_struct
+		jne .no_struct
+			stdcall get_obj_text_col, eax,1 ;edx - указатель на 1-е свойство структуры
+			stdcall insert_text,txt_struc
+			cmp byte[edx],0
+			jne @f
+				stdcall insert_text,txt_t
+			@@:
+			insert_sp
 			stdcall insert_text_prop, eax,0
+
+			cmp byte[edx],0
+			je @f
+				;если структура задана макросом
+				insert_sp
+				stdcall insert_text_prop, eax,1
+				insert_nl
+				stdcall insert_text, txt_skob_fo
+			@@:
 			insert_nl
 			
 			stdcall dword[tl_node_poi_get_next_info], esi,tree2
@@ -181,9 +221,16 @@ push ebx
 					call code_gen_obj ;рекурсивный вызов дочерних объектов
 				pop bx
 			.end_st:
+			cmp byte[edx],0
+			je @f
+				;если структура задана макросом
+				stdcall insert_text, txt_skob_fc
+				insert_nl
+				jmp .beg_iterat
+			@@:
 			stdcall insert_text,txt_ends
 			jmp .beg_iterat
-		@@:
+		.no_struct:
 		cmp dword[eax],C_TXT
 		jne @f
 			stdcall get_code_text,eax ;обработка объекта
@@ -218,7 +265,7 @@ push ebx
 
 		jmp .beg_iterat
 	.find_no:
-pop ebx
+pop edx ebx
 	ret
 
 ;добавление объекта с програмным кодом (текстом)
@@ -238,6 +285,14 @@ proc get_code_auto, p_obj:dword
 	pushad
 		insert_nl
 		mov ebx,dword[p_obj]
+		test_bool_prop ebx,BIT_MOD_ACI
+		jae @f
+			mov edx,C_CHB
+			stdcall find_obj_in_file,edx ;eax - гЄ § вҐ«м ­  бвагЄвгаг check_box
+			cmp eax,0
+			je @f
+				stdcall insert_text, txt_std_init_cb
+		@@:
 		test_bool_prop ebx,BIT_MOD_ACM
 		jae @f
 			;автоматические события от мыши
@@ -254,12 +309,23 @@ proc get_code_auto, p_obj:dword
 		test_bool_prop ebx,BIT_MOD_ACD
 		jae @f
 			call get_code_auto_data_el
+
+			mov edx,C_CHB
+			stdcall find_obj_in_file,edx ;eax - гЄ § вҐ«м ­  бвагЄвгаг check_box
+			cmp eax,0
+			je .no_check
+				stdcall insert_text, txt_cb_b
+				call get_code_auto_data_el_cbox
+				stdcall insert_text, txt_cb_e
+			.no_check:
+
 			call get_code_auto_data_dop
 
 			mov edx,C_LIB
 			stdcall find_obj_in_file,edx ;eax - указатель на структуру библиотеки
 			cmp eax,0
 			je @f
+				insert_nl
 				stdcall insert_text, txt_head_i
 				stdcall insert_text, txt_d_poi
 				insert_nl
@@ -281,7 +347,6 @@ proc get_code_auto, p_obj:dword
 	ret
 endp
 
-
 align 4
 proc get_code_auto_m
 	pushad
@@ -299,19 +364,13 @@ proc get_code_auto_m
 		cmp dword[ebx],C_EDB
 		jne @f
 			stdcall insert_text, txt_std_mouse_ed
-			;insert_sp
-			stdcall get_obj_text_col,ebx,0
-			stdcall str_len,edx
-			stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
+			stdcall insert_text_prop, ebx,0
 			insert_nl
 		@@:
 		cmp dword[ebx],C_CHB
 		jne @f
 			stdcall insert_text, txt_std_mouse_cb
-			;insert_sp
-			stdcall get_obj_text_col,ebx,0
-			stdcall str_len,edx
-			stdcall [ted_text_add], tedit0,edx,eax,ted_opt_ed_move_cursor
+			stdcall insert_text_prop, ebx,0
 			insert_nl
 		@@:
 
@@ -361,7 +420,7 @@ proc get_code_auto_data_el
 
 			mov edx,fp_icon
 			stdcall get_obj_id_str, ebx,edx
-			stdcall insert_text,edx
+			stdcall insert_text, edx
 
 			stdcall insert_text, txt_mouse_dd
 
@@ -396,13 +455,95 @@ proc get_code_auto_data_el
 		@@:
 		cmp dword[ebx],C_DTT
 		jne @f
+			stdcall insert_text_label_data, ebx,0
+		@@:
+
+		stdcall dword[tl_node_poi_get_next_info], esi,tree2
+		pop esi ;переходим к следущему узлу
+
+		jmp .beg_iterat
+	.find_no:
+	popad
+	ret
+endp
+
+align 4
+proc get_code_auto_data_el_cbox
+	pushad
+	insert_nl ;отступ для форматирования
+
+	stdcall dword[tl_node_poi_get_info], 0,tree2
+	pop esi
+	.beg_iterat:
+		cmp esi,0
+		je .find_no
+
+		stdcall dword[tl_node_poi_get_data], esi,tree2
+		pop ebx ;получаем данные узла
+		cmp ebx,0
+		je .find_no
+
+		cmp dword[ebx],C_CHB
+		jne .no_check
+			;1,2,3,4,5, 6,7,8, 9 - ot_x,ot_y,w,h,ot_w_txt, col_fon,col_frame,col_txt, txt
+
+			stdcall insert_text_prop, ebx,0
+			stdcall insert_text, txt_cbox
+			insert_sp
+
+			stdcall insert_2_prop_16_bit, ebx,1,3
+			stdcall insert_text, txt_coma
+			stdcall insert_2_prop_16_bit, ebx,2,4
+			stdcall insert_text, txt_coma
+
+			stdcall insert_text_prop, ebx,5
+			stdcall insert_text, txt_coma
+			insert_sp
+
+			stdcall insert_text_prop, ebx,6
+			stdcall insert_text, txt_coma
+			stdcall insert_text_prop, ebx,7
+			stdcall insert_text, txt_coma
+			;stdcall insert_text, txt_bit_31
+			;stdcall insert_text, txt_plus
+			stdcall insert_text_prop, ebx,8
+			stdcall insert_text, txt_coma
+			stdcall insert_text, txt_br
+
 			stdcall insert_text, txt_txt
 			mov edx,fp_icon
 			stdcall get_obj_id_str, ebx,edx
-			stdcall insert_text,edx
-			stdcall insert_text, txt_db
-			stdcall insert_text_prop, ebx,0
+			stdcall insert_text, edx
+			stdcall insert_text, txt_coma
+
+			;флаги
+			stdcall insert_text,txt_0
+			test_bool_prop ebx,BIT_MOD_CHE
+			jnc @f
+				stdcall insert_text,txt_plus
+				stdcall insert_text,txt_bit_che
+			@@:
+			test_bool_prop ebx,BIT_MOD_CHE_T
+			jnc @f
+				stdcall insert_text,txt_plus
+				stdcall insert_text,txt_bit_che_t
+			@@:
+			test_bool_prop ebx,BIT_MOD_CHE_M
+			jnc @f
+				stdcall insert_text,txt_plus
+				stdcall insert_text,txt_bit_che_m
+			@@:
+			test_bool_prop ebx,BIT_MOD_CHE_B
+			jnc @f
+				stdcall insert_text,txt_plus
+				stdcall insert_text,txt_bit_che_b
+			@@:
+
 			insert_nl
+		.no_check:
+		cmp dword[ebx],C_DTT
+		jne @f
+			stdcall insert_text_label_data, ebx,0
 		@@:
 
 		stdcall dword[tl_node_poi_get_next_info], esi,tree2
@@ -610,6 +751,10 @@ pushad
 			cmp dword[ecx],C_IFN
 			jne @b
 				;вставка указателя на функцию
+				test_bool_prop ecx,BIT_MOD_IMPORT_FUNCT_COMMENT
+				jae .no_com_0
+					stdcall insert_text, txt_com
+				.no_com_0:
 				insert_tab
 				stdcall insert_text_prop, ecx,0
 				stdcall insert_text, txt_dd
@@ -634,6 +779,10 @@ pushad
 			cmp dword[ecx],C_IFN
 			jne @b
 				;вставка имени импортированной функции
+				test_bool_prop ecx,BIT_MOD_IMPORT_FUNCT_COMMENT
+				jae .no_com_1
+					stdcall insert_text, txt_com
+				.no_com_1:
 				insert_tab
 				stdcall insert_text_prop, edx,3 ;приставка к функции
 				stdcall insert_text_prop, ecx,0
@@ -714,6 +863,10 @@ proc get_code_auto_data_dop
 				stdcall insert_text, txt_db
 				insert_0
 				insert_nl
+		@@:
+		cmp dword[ebx],C_CHB
+		jne @f
+			stdcall insert_text_label_data, ebx,9
 		@@:
 
 		stdcall dword[tl_node_poi_get_next_info], esi,tree2
@@ -913,9 +1066,7 @@ proc get_code_window, p_obj:dword
 		stdcall insert_text, txt_mov
 		insert_reg txt_ebx
 		insert_coma
-		stdcall insert_text_prop, ebx,2
-		insert_i65p
-		stdcall insert_text_prop, ebx,4
+		stdcall insert_2_prop_16_bit, ebx,2,4
 		insert_nl
 
 		;mov ecx,...
@@ -923,9 +1074,7 @@ proc get_code_window, p_obj:dword
 		stdcall insert_text, txt_mov
 		insert_reg txt_ecx
 		insert_coma
-		stdcall insert_text_prop, ebx,3
-		insert_i65p
-		stdcall insert_text_prop, ebx,5
+		stdcall insert_2_prop_16_bit, ebx,3,5
 		insert_nl
 
 		;mov edx,...
@@ -1004,18 +1153,14 @@ proc get_code_draw_obj
 			stdcall insert_text, txt_mov
 			insert_reg txt_ebx
 			insert_coma
-			stdcall insert_text_prop, ebx,1
-			insert_i65p
-			stdcall insert_text_prop, ebx,3
+			stdcall insert_2_prop_16_bit, ebx,1,3
 			insert_nl
 
 			insert_tab
 			stdcall insert_text, txt_mov
 			insert_reg txt_ecx
 			insert_coma
-			stdcall insert_text_prop, ebx,2
-			insert_i65p
-			stdcall insert_text_prop, ebx,4
+			stdcall insert_2_prop_16_bit, ebx,2,4
 			insert_nl
 
 			insert_tab
@@ -1060,18 +1205,14 @@ proc get_code_draw_obj
 			stdcall insert_text, txt_mov
 			insert_reg txt_ebx
 			insert_coma
-			stdcall insert_text_prop, ebx,1
-			insert_i65p
-			stdcall insert_text_prop, ebx,3
+			stdcall insert_2_prop_16_bit, ebx,1,3
 			insert_nl
 
 			insert_tab
 			stdcall insert_text, txt_mov
 			insert_reg txt_ecx
 			insert_coma
-			stdcall insert_text_prop, ebx,2
-			insert_i65p
-			stdcall insert_text_prop, ebx,4
+			stdcall insert_2_prop_16_bit, ebx,2,4
 			insert_nl
 
 			insert_tab
@@ -1098,9 +1239,7 @@ proc get_code_draw_obj
 			stdcall insert_text, txt_mov
 			insert_reg txt_ebx
 			insert_coma
-			stdcall insert_text_prop, ebx,1
-			insert_i65p
-			stdcall insert_text_prop, ebx,2
+			stdcall insert_2_prop_16_bit, ebx,1,2
 			insert_nl
 
 			insert_tab
@@ -1215,6 +1354,10 @@ endp
 txt_str_beg db 39,0
 txt_str_end db 39,',0',0
 txt_coma db ',',0
+txt_skob_o db '(',0
+txt_skob_c db ')',0
+txt_skob_fo db '{',0 ;скобка фигурная открывающая
+txt_skob_fc db '}',0 ;скобка фигурная закрывающая
 txt_i_40 db 'int 0x40',13,0
 txt_0 db '0',0
 txt_1 db '1',0
@@ -1257,8 +1400,13 @@ txt_bit_28 db '0x10000000',0
 txt_bit_29 db '0x20000000',0
 txt_bit_30 db '0x40000000',0
 txt_bit_31 db '0x80000000',0
+txt_bit_che db 'ch_flag_en',0
+txt_bit_che_t db 'ch_flag_top',0
+txt_bit_che_m db 'ch_flag_middle',0
+txt_bit_che_b db 'ch_flag_bottom',0
 txt_0x33000000 db '0x33000000',0 ;tmp
-txt_struct db 'struct ',0
+txt_struc db 'struc',0
+txt_t db 't',0
 txt_met_end db '.end',0
 txt_ends db 'ends',13,13,0
 txt_mov db 'mov ',0
@@ -1278,15 +1426,22 @@ txt_esi db 'esi',0
 txt_align_4 db 'align 4',13,0
 txt_d_poi db ':',0
 txt_ret db 'ret',13,0
-txt_i65p db '*65536+',0
+txt_shl_16 db ' shl 16',0
 txt_std_mouse_ed:
 	db 9,'stdcall [edit_box_mouse], ',0
+txt_std_init_cb:
+	db 9,'init_checkboxes2 check_boxes,check_boxes_end',13,0
 txt_std_mouse_cb:
 	db 9,'stdcall [check_box_mouse], ',0
 txt_std_key_ed:
 	db 9,'stdcall [edit_box_key], ',0
 txt_incl:
 	db 'include ',0
+
+txt_cbox db ' check_box2',0
+txt_cb_b db 13,'check_boxes:',0
+txt_cb_e db 'check_boxes_end:',13,0
+
 txt_ebox db ' edit_box',0
 txt_editb_draw:
 	db 9,'stdcall [edit_box_draw], ',0
