@@ -26,7 +26,7 @@ include 'lang.inc'
    dd	  i_end+0x2000			; memory for app (4 Kb)
    dd	  i_end+0x2000			; esp
    dd	  0x0 , 0x0		  ; I_Param , I_Icon
-include '..\..\..\MACROS.INC'
+include '\..\..\MACROS.INC'
 include 'debug.inc'
 purge newline
 MAXSTRINGS = 16

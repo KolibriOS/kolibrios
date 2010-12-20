@@ -1,4 +1,4 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                          ;
 ;   Stack Configuration Tool               ;
 ;                                          ;
@@ -628,15 +628,15 @@ text:
     db '   Неактивный      Модем на Com-порту: 0x     <   '
     db '   Slip            Прерывание модема:    0x   <   '
     db '   PPP                                            '
-    db '   Драйвер пакетов    IP server назначенный       '
-    db '   (Ethernet)         Фикс.      .   .   .    <   '
+    db '   Драйвер пакетов    IP назначается сервером     '
+    db '   (Ethernet)         Фикс.:     .   .   .    <   '
     db '                      Шлюз:      .   .   .    <   '
     db '                      Подсеть:   .   .   .    <   '
     db '                      DNS IP:    .   .   .    <   '
     db '                                                  '
     db 'w            Читать     Применить                 '
 
-elseif lang eq nl
+else if lang eq nl
 title	   db  'Netwerk configuratie',0
 text:
     db '   Niet actief      Modem Com Poort:   0x     <   '
@@ -649,6 +649,20 @@ text:
     db '                      DNS IP:    .   .   .    <   '
     db '                                                  '
     db 'w            Vernieuw   Toepassen                 '
+
+else if lang eq ua
+title	   db  'Налаштування мережi'
+text:
+    db '   Неактивний      Модем на Com-порту  0x     <   '
+    db '   Slip            Com-порт модема:      0x   <   '
+    db '   PPP                                            '
+    db '   Драйвер пакетiв    IP призначається сервером   '
+    db '   (Ethernet)         Фiкс.:     .   .   .    <   '
+    db '                      Маршрут:   .   .   .    <   '
+    db '                      Маска:     .   .   .    <   '
+    db '                      DNS IP     .   .   .    <   '
+    db '                                                  '
+    db 'w           Прочитати  Застосувати                '
 
 else
 title	   db  'Stack configuration',0
