@@ -5,6 +5,7 @@
 ;
 ;   Compile with FASM for Menuet
 ;
+
 LMARGIN    equ (15+5)
 TMARGIN    equ (35+5)
 HSPACE	   equ 16
