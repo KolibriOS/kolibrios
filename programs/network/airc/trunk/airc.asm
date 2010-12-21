@@ -53,10 +53,10 @@ UTF8 = 2
 ENCODING_X = 25 + 15*6
 ENCODING_Y = 183 + 3*12
 
-def_server_name db	'kolibrios.org',0		  ; default server name
+def_server_name db      'kolibrios.org',0                 ; default server name
 
 user_nick	dd	12				  ; length
-		db	'Dmitry_Sokolowski      '	  ; string
+		db	'kolibri_user           '	  ; string
 user_nick_max = $ - user_nick - 4
 
 user_real_name	dd	14				  ; length
@@ -104,17 +104,17 @@ redraw: 			; redraw
 
 still:
 
-    mov  eax,10 		; wait here for event
+    mov  eax,10                 ; wait here for event
     mcall
 
-    dec  eax			; redraw
+    dec  eax                    ; redraw
     je	 redraw
     dec  eax			; key
     je	 main_window_key
     dec  eax			; button
     je	 button
     cmp  al,4
-    jz	 ipc
+    jz   ipc
 
     call process_network_event
 
@@ -137,7 +137,7 @@ button: 			; button
     cmp  ah,1			; close program
     jne  noclose
 exit:
-    or	 eax,-1
+    or   eax,-1
     mcall
   noclose:
     cmp  ah,21
@@ -164,7 +164,7 @@ exit:
 ipc:
     mov  edx,msgbox_struct
     cmp  byte[edx-1],0
-    jz	 @f
+    jz   @f
     mov  byte[edx-1],0
     mov  al,[edx]
     dec  eax
@@ -287,7 +287,7 @@ socket_commands:
 
 
     cmp  ah,24	   ; close socket
-    jz	 disconnect
+    jz   disconnect
   no_24:
 
 
@@ -667,7 +667,7 @@ process_command:
     mov  ecx,[xpos]
     sub  ecx,7
     cmp  ecx,user_nick_max
-    jb	 @f
+    jb   @f
     mov  ecx,user_nick_max
   @@:
     mov  [user_nick],ecx
@@ -705,7 +705,7 @@ process_command:
     mov  ecx,[xpos]
     sub  ecx,7
     cmp  ecx,user_real_name_max
-    jb	 @f
+    jb   @f
     mov  ecx,user_real_name_max
   @@:
     mov  [user_real_name],ecx
@@ -2169,28 +2169,28 @@ draw_window:
     mov  edi,title
     mcall
 
-    mov  eax,8			   ; button: change encoding
+    mov  eax,8                     ; button: change encoding
     mov  ebx,(ENCODING_X-2)*65536+38
     mov  ecx,(ENCODING_Y-2)*65536+12
     mov  edx,21
     mov  esi,[main_button]
     mcall
 
-;    mov  eax,8                    ; button: open socket
+;    mov  eax,8			   ; button: open socket
     mov  ebx,43*65536+22
     mov  ecx,241*65536+10
 ;    mov  edx,22
     inc  edx
     mcall
 
-    ;mov  eax,8                    ; button: send userinfo
+    ;mov  eax,8			   ; button: send userinfo
     mov  ebx,180*65536+22
     mov  ecx,241*65536+10
 ;    mov  edx,23
     inc  edx
     mcall
 
-    ;mov  eax,8                    ; button: close socket
+    ;mov  eax,8			   ; button: close socket
     mov  ebx,317*65536+22
     mov  ecx,241*65536+10
 ;    mov  edx,24
@@ -2281,28 +2281,28 @@ main_button  dd 0x6565cc
 
 text:
 
-db '   Ваше имя  : KolibriOS User - меняйте так: /areal Jill User         '
-db '   Ник       : Ataualpa       - меняйте так: /anick Jill              '
-db '   Сервер    : kolibrios.org  - меняйте так: /aserv irc.by            '
-db '   Кодировка : UTF-8                                                  '
+db '   Real name : KolibriOS User  - change with eg /areal Jill User      '
+db '   Nick      : kolibri_user    - change with eg /anick Jill           '
+db '   Server    : kolibrios.org   - change with eg /aserv irc.by         '
+db '   Encoding  : UTF-8                                                  '
 db '                                                                      '
-db '          1) Соединить         2) Послать данные      3) Завершить    '
+db '        1) Connect             2) Send userinfo       3) Disconnect   '
 db '                                                                      '
-db '   Статус соединения: отсоединено                                     '
+db '   Connection status: disconnected                                    '
 db '                                                                      '
-db '   Команды после установления соединения:                             '
+db '   Commands after established connection:                             '
 db '                                                                      '
-db '   /join #ChannelName         - например: /join #general              '
-db '   /part #ChannelName         - например: /part #windows              '
-db '   /query Nickname            - например: /query Mary                 '
-db '   /quit                      - покинуть сервер и закрыть сокет       '
+db '   /join #ChannelName         - eg /join #general                     '
+db '   /part #ChannelName         - eg /part #windows                     '
+db '   /query Nickname            - eg /query Mary                        '
+db '   /quit                      - Quit server and Close socket          '
 db 'x' ; <- END MARKER, DONT DELETE
 
 status_text:
-db	'отсоединено             '
-db	'получаю имя сервера...  '
-db	'соединение...           '
-db	'соединено               '
+db	'disconnected            '
+db      'resolving server name...'
+db	'connecting...           '
+db	'connected               '
 status_text_len = 24
 
 encoding_text:
@@ -2330,7 +2330,7 @@ channel_thread:
     add   eax,0x80000
     mov   esp,eax
 
-;    mov   edi,ebp       ; clear thread memory
+;    mov   edi,ebp	 ; clear thread memory
 ;    imul  edi,120*80
 ;    add   edi,I_END
 ;    mov   ecx,120*80
@@ -2376,13 +2376,13 @@ channel_thread:
 
     mcall 10
     dec   eax
-    jz	  thread_redraw
+    jz    thread_redraw
     dec   eax
-    jz	  thread_key
+    jz    thread_key
     dec   eax
-    jz	  thread_end
+    jz    thread_end
     cmp   al,4
-    jz	  thread_ipc
+    jz    thread_ipc
     call  check_mouse
     jmp   w_t
   thread_end:
@@ -2531,7 +2531,7 @@ thread_key:
     mov  ebx,1
     mcall
     cmp  dword [ipcbuf+4],8
-    jne  wait_for_sending
+    jne	 wait_for_sending
     popa
     call draw_channel_text
     call print_entry
@@ -2648,7 +2648,7 @@ thread_draw_window:
     mcall
 
 
-    ;mov  eax,38                   ; line
+    ;mov  eax,38 		   ; line
     mov  ebx,410*65536+410
     mov  ecx,22*65536+148
     mov  edx,[channel_line_sun]
@@ -2773,7 +2773,7 @@ align 4
 @IMPORT:
 
 library network, 'network.obj', msgbox, 'msgbox.obj'
-import	network, \
+import  network, \
 	getaddrinfo_start,	'getaddrinfo_start',	\
 	getaddrinfo_process,	'getaddrinfo_process',	\
 	getaddrinfo_abort,	'getaddrinfo_abort',	\
@@ -2798,15 +2798,15 @@ encoding	dd	UTF8
 recode_proc	dd	recode_to_cp866, recode_to_cp1251, recode_to_utf8
 get_byte_table	dd	get_byte_cp866, get_byte_cp1251, get_byte_utf8
 msgbox_func_array:
-times 3 	dd	msgbox_notify
+times 3		dd	msgbox_notify
 initialized_size:
 
 main_PID	dd	?	; identifier of main thread
-utf8_bytes_rest dd	?	; bytes rest in current UTF8 sequence
+utf8_bytes_rest	dd	?	; bytes rest in current UTF8 sequence
 utf8_char	dd	?	; first bits of current UTF8 character
 gai_reqdata	rb	32	; buffer for getaddrinfo_start/process
-ip_list 	dd	?	; will be filled as pointer to addrinfo list
-irc_server_name rb	256	; buffer for irc_server_name
+ip_list		dd	?	; will be filled as pointer to addrinfo list
+irc_server_name	rb	256	; buffer for irc_server_name
 packetbuf	rb	1024	; buffer for packets to server
 mb_stack	rb	1024	; stack for messagebox thread
 
