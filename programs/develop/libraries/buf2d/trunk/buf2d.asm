@@ -2164,7 +2164,7 @@ line_len4i:
 	ret 4 ;8
 
 align 4
-proc buf_cruve_bezier, buffer:dword, coord_p0:dword,coord_p1:dword,coord_p2:dword, color:dword
+proc buf_curve_bezier, buffer:dword, coord_p0:dword,coord_p1:dword,coord_p2:dword, color:dword
 	locals
 		delt_t dd ?
 		opr_param dd ?
@@ -2179,7 +2179,7 @@ proc buf_cruve_bezier, buffer:dword, coord_p0:dword,coord_p1:dword,coord_p2:dwor
 ;  dc.SetPixel(xt,yt,255L);
 ;}
 
-	mov edx,[color] ;set cruve color
+	mov edx,[color] ;set curve color
 	mov edi,[buffer]
 	xor ebx,ebx
 	xor ecx,ecx
@@ -2305,7 +2305,7 @@ EXPORTS:
 	dd sz_buf2d_bit_blt, buf_bit_blt
 	dd sz_buf2d_bit_blt_transp, buf_bit_blt_transp
 	dd sz_buf2d_bit_blt_alpha, buf_bit_blt_alpha
-	dd sz_buf2d_cruve_bezier, buf_cruve_bezier
+	dd sz_buf2d_curve_bezier, buf_curve_bezier
 	dd sz_buf2d_convert_text_matrix, buf_convert_text_matrix
 	dd sz_buf2d_draw_text, buf_draw_text
 	dd sz_buf2d_crop_color, buf_crop_color
@@ -2329,7 +2329,7 @@ EXPORTS:
 	sz_buf2d_bit_blt db 'buf2d_bit_blt',0
 	sz_buf2d_bit_blt_transp db 'buf2d_bit_blt_transp',0
 	sz_buf2d_bit_blt_alpha db 'buf2d_bit_blt_alpha',0
-	sz_buf2d_cruve_bezier db 'buf2d_cruve_bezier',0
+	sz_buf2d_curve_bezier db 'buf2d_curve_bezier',0
 	sz_buf2d_convert_text_matrix db 'buf2d_convert_text_matrix',0
 	sz_buf2d_draw_text db 'buf2d_draw_text',0
 	sz_buf2d_crop_color db 'buf2d_crop_color',0

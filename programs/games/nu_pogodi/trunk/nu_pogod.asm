@@ -1365,7 +1365,7 @@ import_buf2d_lib:
 	buf2d_bit_blt dd sz_buf2d_bit_blt
 	buf2d_bit_blt_transp dd sz_buf2d_bit_blt_transp
 	buf2d_bit_blt_alpha dd sz_buf2d_bit_blt_alpha
-	buf2d_cruve_bezier dd sz_buf2d_cruve_bezier
+	buf2d_curve_bezier dd sz_buf2d_curve_bezier
 	buf2d_convert_text_matrix dd sz_buf2d_convert_text_matrix
 	buf2d_draw_text dd sz_buf2d_draw_text
 	buf2d_crop_color dd sz_buf2d_crop_color
@@ -1386,7 +1386,7 @@ import_buf2d_lib:
 	sz_buf2d_bit_blt db 'buf2d_bit_blt',0
 	sz_buf2d_bit_blt_transp db 'buf2d_bit_blt_transp',0
 	sz_buf2d_bit_blt_alpha db 'buf2d_bit_blt_alpha',0
-	sz_buf2d_cruve_bezier db 'buf2d_cruve_bezier',0
+	sz_buf2d_curve_bezier db 'buf2d_curve_bezier',0
 	sz_buf2d_convert_text_matrix db 'buf2d_convert_text_matrix',0
 	sz_buf2d_draw_text db 'buf2d_draw_text',0
 	sz_buf2d_crop_color db 'buf2d_crop_color',0

@@ -6,9 +6,8 @@ C_TDF equ 'Type' ;typedef
 C_ACO equ 'Auto' ;автоматические коды (auto code)
 C_STR equ ('s' shl 24) ;struct
 C_INC equ ('#' shl 24) ;include
-C_TXT equ ('d' shl 24) ;блок кода (данных)
+C_TXT equ 'Code' ;блок кода (данных)
 C_VAR equ ('-' shl 24) ;переменная
-C_COM equ (';' shl 24) ;комментарий
 C_WND equ ('w' shl 24) ;окно
 C_CHB equ 'ChkB' ;CheckBox
 C_OPT equ ('o' shl 24) ;OptionBox

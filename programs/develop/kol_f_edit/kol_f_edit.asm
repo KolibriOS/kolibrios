@@ -20,7 +20,7 @@ include 'obj_codes.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 18.12.10',0
+hed db 'kol_f_edit 22.12.10',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
@@ -37,7 +37,7 @@ buf2d_bits equ byte[edi+20] ;количество бит в 1-й точке изображения
 
 MAX_CED_OBJECTS equ 200
 MAX_OPT_FIELDS equ 11
-MAX_OBJ_TYPES equ 18 ;максимальное число объектов
+MAX_OBJ_TYPES equ 17 ;максимальное число объектов
 MAX_OBJ_CAPTIONS equ 1000 ;размер дополнительных подписей подписей
 WND_CAPT_COLOR equ 0xb0d0ff
 BUF_SIZE equ 1000
@@ -58,8 +58,8 @@ BIT_MOD_CHE_B equ 3 ;снизу
 BIT_MOD_TXT_ASCII_0 equ 0 ;текст заканчив. 0
 BIT_MOD_TXT_NO_TRAN equ 1 ;текст прозрачный
 BIT_MOD_TXT_CHAR2 equ 2 ;текст 2-м шрифтом
-;CPP_MOD_EDIT_FOC equ 1 ;EditBox в фокусе
-;CPP_MOD_EDIT_FIO equ 2 ;
+BIT_MOD_EDIT_FOC equ 0 ;EditBox в фокусе
+BIT_MOD_EDIT_FIO equ 1 ;
 ;CPP_MOD_RE_GR equ 1 ;градиентный прямоугольник
 BIT_MOD_BUT_NFON equ 0 ;стиль Button не рисовать кнопку
 BIT_MOD_BUT_NBORD equ 1 ;стиль Button не рисовать границу
@@ -121,7 +121,8 @@ struct ObjOpt
 	caption rb MAX_OPT_CAPTION
 	Col rw MAX_OPT_FIELDS
 	img rw MAX_OPT_FIELDS ;индексы картинок (в файле 'icon.bmp')
-	bit_prop dd 0 ;битовые свойства
+	bit_prop dd 0 ;битовые свойства (подписи, названия)
+	bit_val dd 0 ;битовые свойства (значения, константы)
 ends
 
 SKIN_H equ 22
@@ -728,7 +729,7 @@ proc get_obj_npp, p_obj_str:dword
 	pop edx
 	@@:
 		cmp edx,0
-		je @f
+		je .no_exist
 		cmp edx,ebx
 		je @f
 
@@ -736,6 +737,8 @@ proc get_obj_npp, p_obj_str:dword
 		stdcall [tl_node_poi_get_next_info], edx,tree2
 		pop edx ;переходим к следущему узлу
 		jmp @b
+	.no_exist: ;когда идет ссылка на не существующий объект
+		xor eax,eax ;обнуляем указатель, что-бы не сохранять в файл мусор
 	@@:
 	pop edx ebx
 	ret
@@ -1209,7 +1212,7 @@ import_buf2d_lib:
 	buf2d_line dd sz_buf2d_line
 	buf2d_rect_by_size dd sz_buf2d_rect_by_size
 	buf2d_filled_rect_by_size dd sz_buf2d_filled_rect_by_size
-	buf2d_circle dd sz_buf2d_circle
+	;buf2d_circle dd sz_buf2d_circle
 	buf2d_img_hdiv2 dd sz_buf2d_img_hdiv2
 	buf2d_img_wdiv2 dd sz_buf2d_img_wdiv2
 	buf2d_conv_24_to_8 dd sz_buf2d_conv_24_to_8
@@ -1217,10 +1220,10 @@ import_buf2d_lib:
 	buf2d_bit_blt dd sz_buf2d_bit_blt
 	buf2d_bit_blt_transp dd sz_buf2d_bit_blt_transp
 	buf2d_bit_blt_alpha dd sz_buf2d_bit_blt_alpha
-	buf2d_cruve_bezier dd sz_buf2d_cruve_bezier
+	;buf2d_curve_bezier dd sz_buf2d_curve_bezier
 	buf2d_convert_text_matrix dd sz_buf2d_convert_text_matrix
 	buf2d_draw_text dd sz_buf2d_draw_text
-	buf2d_crop_color dd sz_buf2d_crop_color
+	;buf2d_crop_color dd sz_buf2d_crop_color
 	buf2d_offset_h dd sz_buf2d_offset_h	
 dd 0,0
 	sz_lib_init db 'lib_init',0
@@ -1232,7 +1235,7 @@ dd 0,0
 	sz_buf2d_line db 'buf2d_line',0
 	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0 ;рисование прямоугольника, 2-я координата задана по размеру
 	sz_buf2d_filled_rect_by_size db 'buf2d_filled_rect_by_size',0
-	sz_buf2d_circle db 'buf2d_circle',0 ;рисование окружности
+	;sz_buf2d_circle db 'buf2d_circle',0 ;рисование окружности
 	sz_buf2d_img_hdiv2 db 'buf2d_img_hdiv2',0
 	sz_buf2d_img_wdiv2 db 'buf2d_img_wdiv2',0
 	sz_buf2d_conv_24_to_8 db 'buf2d_conv_24_to_8',0
@@ -1240,10 +1243,10 @@ dd 0,0
 	sz_buf2d_bit_blt db 'buf2d_bit_blt',0
 	sz_buf2d_bit_blt_transp db 'buf2d_bit_blt_transp',0
 	sz_buf2d_bit_blt_alpha db 'buf2d_bit_blt_alpha',0
-	sz_buf2d_cruve_bezier db 'buf2d_cruve_bezier',0
+	;sz_buf2d_curve_bezier db 'buf2d_curve_bezier',0
 	sz_buf2d_convert_text_matrix db 'buf2d_convert_text_matrix',0
 	sz_buf2d_draw_text db 'buf2d_draw_text',0
-	sz_buf2d_crop_color db 'buf2d_crop_color',0
+	;sz_buf2d_crop_color db 'buf2d_crop_color',0
 	sz_buf2d_offset_h db 'buf2d_offset_h',0
 
 align 4

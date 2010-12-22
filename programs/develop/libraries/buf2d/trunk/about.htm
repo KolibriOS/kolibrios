@@ -62,7 +62,7 @@ table { font-size: 15px; }
  С ее помощью можно создавать буфера с изображениями в памяти, и при необходимости выводить их на экран.
  Изображения можно накладывать одно на другое, поддерживается работа с прозрачными изображениями, есть функция рисования лини пока на этом все.</p>
 
-<p>Последнее обновление библиотеки 02.11.10.</p>
+<p>Последнее обновление библиотеки 22.12.10.</p>
 
 <h1><a name="f_buf">Форматы буферов</a></h1>
 <p>Поддерживается 3 формата буферов.
@@ -161,7 +161,7 @@ buf_0:
 <p>Рисует в буфере изображение из другого буфера в указанных координатах, при этом учитывается прозрачность.
  Буфер который будет нарисован должен быть 8 битным, а тот в котором рисуют 24 битным.</p>
 
-<h4>buf2d_cruve_bezier</h4>
+<h4>buf2d_curve_bezier</h4>
 <p>Рисует по трем точкам отрезок кривой безье.</p>
 
 <h4>buf2d_convert_text_matrix</h4>
@@ -229,7 +229,7 @@ import_buf2d_lib:
 	buf2d_bit_blt dd sz_buf2d_bit_blt
 	buf2d_bit_blt_transp dd sz_buf2d_bit_blt_transp
 	buf2d_bit_blt_alpha dd sz_buf2d_bit_blt_alpha
-	buf2d_cruve_bezier dd sz_buf2d_cruve_bezier
+	buf2d_curve_bezier dd sz_buf2d_curve_bezier
 	buf2d_convert_text_matrix dd sz_buf2d_convert_text_matrix
 	buf2d_draw_text dd sz_buf2d_draw_text
 	buf2d_crop_color dd sz_buf2d_crop_color
@@ -254,7 +254,7 @@ import_buf2d_lib:
 	sz_buf2d_bit_blt db 'buf2d_bit_blt',0
 	sz_buf2d_bit_blt_transp db 'buf2d_bit_blt_transp',0
 	sz_buf2d_bit_blt_alpha db 'buf2d_bit_blt_alpha',0
-	sz_buf2d_cruve_bezier db 'buf2d_cruve_bezier',0
+	sz_buf2d_curve_bezier db 'buf2d_curve_bezier',0
 	sz_buf2d_convert_text_matrix db 'buf2d_convert_text_matrix',0
 	sz_buf2d_draw_text db 'buf2d_draw_text',0
 	sz_buf2d_crop_color db 'buf2d_crop_color',0
@@ -274,5 +274,6 @@ import_buf2d_lib:
 <p>07.10.10 - доработана функция buf_bit_blt (при попытке нарисовать изображение за пределами правого края буфера приложение вызвавшее функцию падало).</p>
 <p>11.10.10 - исправлено задание цветов в некоторых функциях, красный и синий цвета поменял местами. Теперь цвета совпадают с сисемными функциями.</p>
 <p>02.11.10 - добавлена функция buf2d_flood_fill.</p>
+<p>22.12.10 - изменено имя функции buf2d_cruve_bezier на buf2d_curve_bezier.</p>
  </body>
 </html>
