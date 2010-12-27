@@ -2004,21 +2004,21 @@ end if
   negativedraw db 0          ; for procedure draw_card
 
 
-  spade          file 'SPADE.BMP': 54
-  spade_updown   file 'SPADEUD.BMP': 54
-  spade_small    file 'SPADESML.BMP': 54
+  spade          file 'Spade.bmp': 54
+  spade_updown   file 'SpadeUD.bmp': 54
+  spade_small    file 'SpadeSml.bmp': 54
 
-  club           file 'CLUB.BMP': 54
-  club_updown    file 'CLUBUD.BMP': 54
-  club_small     file 'CLUBSML.BMP': 54
+  club           file 'Club.bmp': 54
+  club_updown    file 'ClubUD.bmp': 54
+  club_small     file 'ClubSml.bmp': 54
 
-  diamond        file 'DIAM.BMP': 54
-  diamond_updown file 'DIAMUD.BMP': 54
-  diamond_small  file 'DIAMSML.BMP': 54
+  diamond        file 'Diam.bmp': 54
+  diamond_updown file 'DiamUD.bmp': 54
+  diamond_small  file 'DiamSml.bmp': 54
 
-  heart          file 'HEART.BMP': 54
-  heart_updown   file 'HEARTUD.BMP': 54
-  heart_small    file 'HEARTSML.BMP': 54
+  heart          file 'Heart.bmp': 54
+  heart_updown   file 'HeartUD.bmp': 54
+  heart_small    file 'HeartSml.bmp': 54
 
 
   scNotSelected = 0

@@ -529,7 +529,7 @@ mmio_next_bar:
 	ret
 
 
-include 'VENDORS.INC'
+include 'vendors.inc'
 ;------------------------------------------------------------------
 ; DATA AREA
 DATA

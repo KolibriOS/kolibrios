@@ -18,7 +18,7 @@ use32
 	dd	0x100000	; required amount of memory
 	dd	0x00000000	; reserved=no extended header
 
-include "aspAPI.inc"
+include "ASPAPI.INC"
 
 N_KEYCOLOR equ 0x00677889 ; Normal button color
 C_KEYCOLOR equ 0x00344556 ; Control button color

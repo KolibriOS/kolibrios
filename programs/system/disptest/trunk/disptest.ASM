@@ -12,7 +12,7 @@ include "..\..\..\MACROS.INC"
 ; <--- start of MenuetOS application --->
 MEOS_APP_START
 
-include "..\..\..\debug.inc"
+;include "..\..\..\debug.inc"
 
 
 ; <--- start of code --->

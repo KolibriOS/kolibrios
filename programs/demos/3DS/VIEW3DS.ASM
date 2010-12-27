@@ -481,20 +481,20 @@ still:
 ;--------------------------------------------------------------------------------
 ;-------------------------PROCEDURES---------------------------------------------
 ;--------------------------------------------------------------------------------
-include "tex3.inc"
-include "flat_cat.inc"
-include "tex_cat.inc"
-include "bump_cat.inc"
-include "3dmath.inc"
-include "grd3.inc"
-include "flat3.inc"
-include "bump3.inc"
-include "b_procs.inc"
-include "a_procs.inc"
-include "grd_cat.inc"
-include "bump_tex.inc"
-include "grd_tex.inc"
-include "two_tex.inc"
+include "TEX3.INC"
+include "FLAT_CAT.INC"
+include "TEX_CAT.INC"
+include "BUMP_CAT.INC"
+include "3DMATH.INC"
+include "GRD3.INC"
+include "FLAT3.INC"
+include "BUMP3.INC"
+include "B_PROCS.INC"
+include "A_PROCS.INC"
+include "GRD_CAT.INC"
+include "BUMP_TEX.INC"
+include "GRD_TEX.INC"
+include "TWO_TEX.INC"
 
 alloc_buffer_mem:
     movzx    ecx,[size_x]

@@ -265,7 +265,7 @@ draw_window:
   mov  ecx,25*65536+ (LEN_Y-BORDER_TOP-BORDER_BOTTOM)*ADOBE_SIZE+Y_LOCATION+30
   mov  edx,[sc.work]             ; color of work area RRGGBB
   or   edx,0x13000000
-  mov  edi,header                ; WINDOW LABEL
+  mov  edi,title                 ; WINDOW LABEL
   int  0x40
 
                                     
@@ -833,14 +833,14 @@ block_table:
 
 if lang eq ru
 
-  header         db '’…’ˆ‘ 1.61 - ‘’…‹Šˆ ˆ …‹',0
+  title          db '’…’ˆ‘ 1.61 - ‘’…‹Šˆ ˆ …‹',0
   labe           db '€“‡€',0
   text           db 'çª¨:',0
   game_finished: db '‚€Ÿ',0
 
 else
 
-  header         db 'TETRIS 1.61 - ARROWS & SPACE',0
+  title          db 'TETRIS 1.61 - ARROWS & SPACE',0
   labe           db 'PAUSE',0
   text           db 'Score:',0
   game_finished: db 'NEW GAME',0

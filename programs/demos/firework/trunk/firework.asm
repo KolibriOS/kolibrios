@@ -19,7 +19,7 @@ use32
 	dd	0x100000	; required amount of memory
 	dd	0x00000000	; reserved=no extended header
 
-include "aspAPI.inc"
+include "aspapi.inc"
 SCREEN_WIDTH   equ    320
 SCREEN_HEIGHT  equ    200
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

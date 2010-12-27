@@ -385,4 +385,4 @@ sign1    db     0
 sign2    db     0
 
 EYES_END: ; end of code
-file "EYES.RAW"
+file "eyes.raw"

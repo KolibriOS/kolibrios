@@ -43,7 +43,7 @@ DEFEND_INTERVAL     equ 10		    ; seconds (min. wait between defensive ARPs)
 
 include '../../../proc32.inc'
 include '../../../macros.inc'
-include 'eth.inc'
+include 'ETH.INC'
 include 'debug-fdo.inc'
 include 'dhcp.inc'
 include 'dll.inc'
