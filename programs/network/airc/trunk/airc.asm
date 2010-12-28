@@ -53,7 +53,7 @@ UTF8 = 2
 ENCODING_X = 25 + 15*6
 ENCODING_Y = 183 + 3*12
 
-def_server_name db	'kolibrios.org',0		  ; default server name
+def_server_name db	'chat.freenode.net',0		  ; default server name
 
 user_nick	dd	12				  ; length
 		db	'kolibri_user           '	  ; string
@@ -2282,7 +2282,7 @@ if lang eq ru
 text:
 db '   Ваше имя  : KolibriOS User  - меняйте так: /areal Jill User        '
 db '   Ник       : kolibri_user    - меняйте так: /anick Jill             '
-db '   Сервер    : kolibrios.org   - меняйте так: /aserv irc.by           '
+db '   Сервер    : freenode.net    - меняйте так: /aserv irc.by           '
 db '   Кодировка : UTF-8                                                  '
 db '                                                                      '
 db '        1) Connect             2) Send userinfo       3) Disconnect   '
@@ -2291,7 +2291,7 @@ db '   Статус соединения: не соединено                                    '
 db '                                                                      '
 db '   Команды, доступные после установки соединения:                     '
 db '                                                                      '
-db '   /join #ChannelName         - например: /join #general              '
+db '   /join #ChannelName         - например: /join #kolibrios            '
 db '   /part #ChannelName         - например: /part #windows              '
 db '   /query Nickname            - например: /query Mary                 '
 db '   /quit                      - Покинуть сервер и закрыть сокет       '
@@ -2314,7 +2314,7 @@ else
 text:
 db '   Real name : KolibriOS User  - change with eg /areal Jill User      '
 db '   Nick      : kolibri_user    - change with eg /anick Jill           '
-db '   Server    : kolibrios.org   - change with eg /aserv irc.by         '
+db '   Server    : freenode.net    - change with eg /aserv irc.by         '
 db '   Encoding  : UTF-8                                                  '
 db '                                                                      '
 db '        1) Connect             2) Send userinfo       3) Disconnect   '
@@ -2323,7 +2323,7 @@ db '   Connection status: disconnected                                    '
 db '                                                                      '
 db '   Commands after established connection:                             '
 db '                                                                      '
-db '   /join #ChannelName         - eg /join #general                     '
+db '   /join #ChannelName         - eg /join #kolibrios                   '
 db '   /part #ChannelName         - eg /part #windows                     '
 db '   /query Nickname            - eg /query Mary                        '
 db '   /quit                      - Quit server and Close socket          '
