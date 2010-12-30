@@ -90,4 +90,6 @@ kernel_export \
 	      strchr,\
 	      strrchr,\
 \
-	      LFBAddress
+	      LFBAddress,\
+	      GetDisplay,\
+	      SetScreen

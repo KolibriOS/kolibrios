@@ -75,6 +75,9 @@ iglobal
   szSleep             db 'Sleep',0
   szGetTimerTicks     db 'GetTimerTicks',0
 
+  szGetDisplay        db 'GetDisplay',0
+  szSetScreen         db 'SetScreen',0
+
   szStrncat           db 'strncat',0
   szStrncpy           db 'strncpy',0
   szstrncmp           db 'strncmp',0
@@ -146,6 +149,9 @@ kernel_export:
   dd szSetMouseData    , set_mouse_data        ;stdcall
   dd szSleep           , delay_ms
   dd szGetTimerTicks   , get_timer_ticks
+
+  dd szGetDisplay      , get_display
+  dd szSetScreen       , set_screen
 
   dd szStrncat         , strncat
   dd szStrncpy         , strncpy
