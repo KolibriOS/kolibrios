@@ -138,15 +138,6 @@ macro insert_reg8 reg_name
 }
 
 ;
-macro insert_but_beg
-{
-	stdcall [ted_text_add], tedit0,txt_but_1,txt_but_2-txt_but_1,ted_opt_ed_move_cursor
-}
-macro insert_but_end
-{
-	stdcall [ted_text_add], tedit0,txt_but_2,txt_but_3-txt_but_2,ted_opt_ed_move_cursor
-}
-;
 macro insert_key_beg
 {
 	stdcall [ted_text_add], tedit0,txt_key_1,txt_key_2-txt_key_1,ted_opt_ed_move_cursor
@@ -200,7 +191,7 @@ popad
 ; esi - указатель на узел
 align 4
 code_gen_obj:
-push ebx edx
+push eax ebx edx
 	.beg_iterat:
 		cmp esi,0
 		je .find_no
@@ -233,27 +224,15 @@ push ebx edx
 				stdcall insert_text, txt_skob_fo
 			@@:
 			insert_nl
-			
-			stdcall dword[tl_node_poi_get_next_info], esi,tree2
-			pop esi ;переходим к следущему узлу
-			cmp esi,0
-			je .end_st
-			cmp byte[esi+2],bl ;lev
-			jle .end_st
-				push bx
-					mov bl,byte[esi+2]
-					call code_gen_obj ;рекурсивный вызов дочерних объектов
-				pop bx
-			.end_st:
+			stdcall get_code_children_objects, esi
+			call move_next_no_child_objects ;пропуск дочерних обектов
 			cmp byte[edx],0
 			je @f
 				;если структура задана макросом
 				stdcall insert_text, txt_skob_fc
 				insert_nl
-				jmp .beg_iterat
 			@@:
 			stdcall insert_text,txt_ends
-			jmp .beg_iterat
 		.no_struct:
 		cmp dword[eax],C_TXT
 		jne @f
@@ -270,10 +249,14 @@ push ebx edx
 		cmp dword[eax],C_WND
 		jne @f
 			stdcall get_code_window,eax ;обработка объекта
+			stdcall get_code_children_objects, esi ;обработка дочерних обектов
+			call move_next_no_child_objects ;пропуск дочерних обектов
+			stdcall insert_text, txt_draw_we ;код завершающий функцию рисования
 		@@:
 		cmp dword[eax],C_ACO
 		jne @f
-			stdcall get_code_auto,eax ;обработка объекта
+			stdcall get_code_auto,esi ;обработка объекта
+			call move_next_no_child_objects ;пропуск дочерних обектов
 		@@:
 		cmp dword[eax],C_KEY ;клавиатура
 		jne @f
@@ -285,7 +268,49 @@ push ebx edx
 
 		jmp .beg_iterat
 	.find_no:
-pop edx ebx
+pop edx ebx eax
+	ret
+
+;взять коды дочерних объектов
+align 4
+proc get_code_children_objects, p_node:dword
+	push ebx esi
+		mov esi,[p_node]
+		mov bl,byte[esi+2] ;сохраняем уровень текущего объекта
+
+		stdcall dword[tl_node_poi_get_next_info], esi,tree2
+		pop esi ;переходим к следущему узлу
+		cmp esi,0 ;если достигли конца списка объектов
+		je @f
+		cmp byte[esi+2],bl ;если уровень следующего объекта больше или равен текущему
+		jle @f ;то дочерних узлов нет
+			mov bl,byte[esi+2]
+			call code_gen_obj ;рекурсивный вызов дочерних объектов
+		@@:
+	pop esi ebx
+	ret
+endp
+
+;пропуск всех дочерних объектов
+;input:
+; esi - указатель на узел
+;outpet:
+; esi - указатель следущий не дочерний (относительно входящего) на узел
+align 4
+move_next_no_child_objects:
+	push eax ebx
+		mov bl,byte[esi+2] ;сохраняем уровень текущего объекта
+		@@:
+			stdcall dword[tl_node_poi_get_next_info], esi,tree2
+			pop eax ;переходим к следущему узлу
+			cmp eax,0 ;если достигли конца списка объектов
+			je @f
+			cmp byte[eax+2],bl ;если уровень следующего объекта больше или равен текущему
+			jle @f ;то дочерних узлов нет
+			mov esi,eax ;если следущий узел оказался дочерним, переставляем указатель
+			jmp @b
+		@@:
+	pop ebx eax
 	ret
 
 ;добавление объекта с програмным кодом (текстом)
@@ -301,10 +326,13 @@ endp
 
 ;обработка объекта создающего автоматичексие коды
 align 4
-proc get_code_auto, p_obj:dword
+proc get_code_auto, p_node:dword
 	pushad
 		insert_nl
-		mov ebx,dword[p_obj]
+		mov esi,dword[p_node]
+		stdcall dword[tl_node_poi_get_data], esi,tree2
+		pop ebx ;получаем данные узла
+
 		test_bool_prop ebx,BIT_MOD_ACI
 		jae @f
 			mov edx,C_CHB
@@ -321,9 +349,13 @@ proc get_code_auto, p_obj:dword
 		test_bool_prop ebx,BIT_MOD_ABU
 		jae @f
 			;создание функции button
-			insert_but_beg
+			stdcall insert_text, txt_but_beg
 			call get_code_auto_but ;коды вызова кнопок
-			insert_but_end
+			stdcall insert_text, txt_but_mid
+			stdcall get_code_children_objects, esi
+			;конец функции button (кнопка id=-1, завершение программы)
+			stdcall insert_text, txt_but_end
+
 			call get_code_a_but_fun ;коды функций, вызываемых при нажатии кнопок
 		@@:
 		test_bool_prop ebx,BIT_MOD_ACD
@@ -1105,8 +1137,6 @@ proc get_code_window, p_obj:dword
 		insert_nl
 
 		call get_code_draw_obj
-
-		stdcall insert_text, txt_draw_we ;код завершающий функцию рисования
 	popad
 	ret
 endp
@@ -1423,16 +1453,14 @@ txt_cb_b db 13,'check_boxes:',0
 txt_cb_e db 'check_boxes_end:',13,0
 
 txt_ebox db ' edit_box',0
-txt_editb_draw:
-	db 9,'stdcall [edit_box_draw], ',0
-txt_cbox_draw:
-	db 9,'stdcall [check_box_draw], ',0
+txt_editb_draw db 9,'stdcall [edit_box_draw], ',0
+txt_cbox_draw db 9,'stdcall [check_box_draw], ',0
 
-txt_but_1:
-db 'align 4',13,'button:',13,9,'mcall 17',13
-txt_but_2:
-db 9,'cmp ah,1',13,9,'jne still',13,'.exit:',13,9,'mcall -1',13
-txt_but_3:
+;начало функции кнопок
+txt_but_beg db 'align 4',13,'button:',13,9,'mcall 17',13,0
+txt_but_mid db 9,'cmp ah,1',13,9,'jne still',13,'.exit:',13,0
+;конец функции кнопок (завершение програмы)
+txt_but_end db 9,'mcall -1',13,0
 
 txt_key_1:
 db 'align 4',13,'key:',13,9,'mcall 2',13
