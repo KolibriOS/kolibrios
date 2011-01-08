@@ -1,0 +1,365 @@
+
+
+
+macro	TCP_checksum IP1, IP2 {
+
+;-------------
+; Pseudoheader
+
+	; protocol type
+	mov	edx, IP_PROTO_TCP
+
+	; source address
+	add	dl, byte [IP1+1]
+	adc	dh, byte [IP1+0]
+	adc	dl, byte [IP1+3]
+	adc	dh, byte [IP1+2]
+
+	; destination address
+	adc	dl, byte [IP2+1]
+	adc	dh, byte [IP2+0]
+	adc	dl, byte [IP2+3]
+	adc	dh, byte [IP2+2]
+
+	; size
+	adc	dl, cl
+	adc	dh, ch
+
+;---------------------
+; Real header and data
+
+	push	esi
+	call	checksum_1
+	call	checksum_2
+	pop	esi
+
+}	; returns in dx only
+
+
+
+
+macro	TCP_sendseqinit ptr {
+
+	push	edi			;;;; i dont like this static use of edi
+	mov	edi, [ptr + TCP_SOCKET.ISS]
+	mov	[ptr + TCP_SOCKET.SND_UP], edi
+	mov	[ptr + TCP_SOCKET.SND_MAX], edi
+	mov	[ptr + TCP_SOCKET.SND_NXT], edi
+	mov	[ptr + TCP_SOCKET.SND_UNA], edi
+	pop	edi
+
+}
+
+
+
+macro	TCP_rcvseqinit ptr {
+
+	push	edi
+	mov	edi, [ptr + TCP_SOCKET.IRS]
+	inc	edi
+	mov	[ptr + TCP_SOCKET.RCV_NXT], edi
+	mov	[ptr + TCP_SOCKET.RCV_ADV], edi
+	pop	edi
+
+}
+
+
+
+
+
+
+
+
+
+
+;---------------------------
+;
+; TCP_pull_out_of_band
+;
+; IN:  eax =
+;      ebx = socket ptr
+;      edx = tcp packet ptr
+;
+; OUT: /
+;
+;---------------------------
+
+align 4
+TCP_pull_out_of_band:
+
+	DEBUGF	1,"TCP_pull_out_of_band\n"
+
+	;;;; 1282-1305
+
+	ret
+
+
+
+
+
+
+
+
+;-------------------------
+;
+; TCP_drop
+;
+;  IN:  eax = socket ptr
+;       ebx = error number
+;
+;  OUT: eax = socket ptr
+;
+;-------------------------
+align 4
+TCP_drop:
+
+	DEBUGF	1,"TCP_drop\n"
+
+	cmp	[eax + TCP_SOCKET.t_state], TCB_SYN_RECEIVED
+	jl	.no_syn_received
+
+	mov	[eax + TCP_SOCKET.t_state], TCB_CLOSED
+
+	call	TCP_output
+
+;;; TODO: update stats
+
+	jmp	TCP_close
+
+  .no_syn_received:
+
+;;; TODO: update stats
+
+;;; TODO: check if error code is "Connection timed out' and handle accordingly
+
+	mov	[eax + SOCKET.errorcode], ebx
+
+
+
+
+
+
+
+
+;-------------------------
+;
+; TCP_close
+;
+;  IN:  eax = socket ptr
+;  OUT: eax = socket ptr
+;
+;-------------------------
+align 4
+TCP_close:
+
+	DEBUGF	1,"TCP_close\n"
+
+;;; TODO: update RTT and mean deviation
+;;; TODO: update slow start threshold
+;;; TODO: release connection resources
+
+; Now, mark the socket as being disconnected
+
+	mov	[eax + SOCKET.state], 0 ;;; FIXME
+
+	ret
+
+
+
+
+
+
+
+
+
+
+;-------------------------
+;
+; TCP_outflags
+;
+;  IN:  eax = socket ptr
+;
+;  OUT: edx = flags
+;
+;-------------------------
+align 4
+TCP_outflags:
+
+	mov	edx, [eax + TCP_SOCKET.t_state]
+	movzx	edx, byte [edx + .flaglist]
+
+	DEBUGF	1,"TCP_outflags, socket: %x, flags: %x\n", eax, dl
+
+	ret
+
+  .flaglist:
+
+	db	TH_RST + TH_ACK 	; TCB_CLOSED
+	db	0			; TCB_LISTEN
+	db	TH_SYN			; TCB_SYN_SENT
+	db	TH_SYN + TH_ACK 	; TCB_SYN_RECEIVED
+	db		 TH_ACK 	; TCB_ESTABLISHED
+	db		 TH_ACK 	; TCB_CLOSE_WAIT
+	db	TH_SYN + TH_ACK 	; TCB_FIN_WAIT_1
+	db	TH_SYN + TH_ACK 	; TCB_CLOSING
+	db	TH_SYN + TH_ACK 	; TCB_LAST_ACK
+	db		 TH_ACK 	; TCB_FIN_WAIT_2
+	db		 TH_ACK 	; TCB_TIMED_WAIT
+
+
+
+
+
+
+;---------------------------------------
+;
+; The easy way to send an ACK/RST/keepalive segment
+;
+; TCP_respond_socket:
+;
+;  IN:  ebx = socket ptr
+;        cl = flags
+;
+;--------------------------------------
+align 4
+TCP_respond_socket:
+
+	DEBUGF	1,"TCP_respond_socket\n"
+
+;---------------------
+; Create the IP packet
+
+	push	cx ebx
+	mov	eax, [ebx + IP_SOCKET.RemoteIP]
+	mov	ebx, [ebx + IP_SOCKET.LocalIP]
+	mov	ecx, TCP_segment.Data
+	mov	di , IP_PROTO_TCP shl 8 + 128
+	call	IPv4_output
+	test	edi, edi
+	jz	.error
+	pop	esi cx
+	push	edx eax
+
+;-----------------------------------------------
+; Fill in the TCP header by using the socket ptr
+
+	mov	ax, [esi + TCP_SOCKET.LocalPort]
+	rol	ax, 8
+	stosw
+	mov	ax, [esi + TCP_SOCKET.RemotePort]
+	rol	ax, 8
+	stosw
+	mov	eax, [esi + TCP_SOCKET.SND_NXT]
+	bswap	eax
+	stosd
+	mov	eax, [esi + TCP_SOCKET.RCV_NXT]
+	bswap	eax
+	stosd
+	mov	al, 0x50	; Dataoffset: 20 bytes
+	stosb
+	mov	al, cl
+	stosb
+	mov	ax, [esi + TCP_SOCKET.RCV_WND]
+	rol	ax, 8
+	stosw			; window
+	xor	eax, eax
+	stosd			; checksum + urgentpointer
+
+;---------------------
+; Fill in the checksum
+
+  .checksum:
+	sub	edi, TCP_segment.Data
+	mov	ecx, TCP_segment.Data
+	xchg	esi, edi
+	TCP_checksum (edi + IP_SOCKET.LocalIP), (esi + IP_SOCKET.RemoteIP)
+	mov	[esi+TCP_segment.Checksum], dx
+
+;--------------------
+; And send the segment
+
+	call	[ebx + NET_DEVICE.transmit]
+	ret
+
+  .error:
+	DEBUGF	1,"TCP_respond failed\n"
+	add	esp, 2+4
+
+	ret
+
+
+
+
+
+
+
+
+;-------------------------
+; TCP_respond.segment:
+;
+;  IN:  edx = segment ptr (a previously received segment)
+;        cl = flags
+
+align 4
+TCP_respond_segment:
+
+	DEBUGF	1,"TCP_respond_segment\n"
+
+;---------------------
+; Create the IP packet
+
+	push	cx edx
+	mov	ebx, [edx - 20 + IPv4_Packet.SourceAddress]	 ;;;; and what if ip packet had options?!
+	mov	eax, [edx - 20 + IPv4_Packet.DestinationAddress]   ;;;
+	mov	ecx, TCP_segment.Data
+	mov	di , IP_PROTO_TCP shl 8 + 128
+	call	IPv4_output
+	jz	.error
+	pop	esi cx
+
+	push	edx eax
+
+;---------------------------------------------------
+; Fill in the TCP header by using a received segment
+
+	mov	ax, [esi + TCP_segment.DestinationPort]
+	rol	ax, 8
+	stosw
+	mov	ax, [esi + TCP_segment.SourcePort]
+	rol	ax, 8
+	stosw
+	mov	eax, [esi + TCP_segment.AckNumber]
+	bswap	eax
+	stosd
+	xor	eax, eax
+	stosd
+	mov	al, 0x50	; Dataoffset: 20 bytes
+	stosb
+	mov	al, cl
+	stosb
+	mov	ax, 1280
+	rol	ax, 8
+	stosw			; window
+	xor	eax, eax
+	stosd			; checksum + urgentpointer
+
+;---------------------
+; Fill in the checksum
+
+  .checksum:
+	lea	esi, [edi - TCP_segment.Data]
+	mov	ecx, TCP_segment.Data
+	TCP_checksum (esi - 20 + IPv4_Packet.DestinationAddress), (esi - 20 + IPv4_Packet.DestinationAddress)
+	mov	[esi+TCP_segment.Checksum], dx
+
+;--------------------
+; And send the segment
+
+	call	[ebx + NET_DEVICE.transmit]
+	ret
+
+  .error:
+	DEBUGF	1,"TCP_respond failed\n"
+	add	esp, 2+4
+
+	ret

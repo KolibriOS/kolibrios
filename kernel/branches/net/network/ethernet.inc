@@ -205,11 +205,6 @@ ETH_API:
 	movzx	eax, bh
 	shl	eax, 2
 
-	cmp	bl, 7
-	jz	.out_queue
-	cmp	bl, 6
-	jz	.in_queue
-
 	mov	eax, dword [NET_DRV_LIST + eax]
 	cmp	[eax + NET_DEVICE.type], NET_TYPE_ETH
 	jne	.error
@@ -266,20 +261,3 @@ ETH_API:
 	call	[eax + ETH_DEVICE.set_MAC]
 	ret
 
-.in_queue:
-   if ETH_QUEUE
-	add	eax, ETH_IN_QUEUE
-	mov	eax, [eax + queue.size]
-   else
-	or	eax, -1
-   end if
-	ret
-
-.out_queue:
-   if ETH_QUEUE
-	add	eax, ETH_OUT_QUEUE
-	mov	eax, [eax + queue.size]
-   else
-	or	eax, -1
-   end if
-	ret

@@ -484,7 +484,7 @@ align 4
 
 	push	eax
 	init_queue (eax + SOCKET_QUEUE_LOCATION)	; Set up data receiving queue
-	pop	   eax
+	pop	eax
 
 	mov	[eax + SOCKET.lock], 0
 	mov	dword [esp+32], 0
@@ -508,18 +508,14 @@ align 4
 
 	mov	[eax + TCP_SOCKET.timer_persist], 0
 	mov	[eax + TCP_SOCKET.t_state], TCB_SYN_SENT
-	mov	ebx, [TCP_sequence_num]
+	push	[TCP_sequence_num]
 	add	[TCP_sequence_num], 6400
-	mov	[eax + TCP_SOCKET.ISS], ebx
+	pop	[eax + TCP_SOCKET.ISS]
 	mov	[eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
 
 	TCP_sendseqinit eax
 
 ;        mov     [ebx + TCP_SOCKET.timer_retransmission],   ;; todo: create macro to set retransmission timer
-
-	push	eax
-	call	TCP_output
-	pop	eax
 
 	mov	ebx, eax
 
@@ -530,6 +526,10 @@ align 4
 	call	SOCKET_ring_create
 
 	mov	[ebx + SOCKET.lock], 0
+
+	mov	eax, ebx
+	call	TCP_output
+
 	mov	dword [esp+32], 0
 	ret
 

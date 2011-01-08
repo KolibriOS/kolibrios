@@ -20,7 +20,8 @@
 $Revision$
 
 __DEBUG_LEVEL_OLD__  equ __DEBUG_LEVEL__
-__DEBUG_LEVEL__ equ 1			; this sets the debug level for network part of kernel
+
+__DEBUG_LEVEL__ equ 1		; this sets the debug level for network part of kernel
 
 uglobal
 	net_10ms       dd ?
@@ -29,14 +30,12 @@ endg
 
 MAX_NET_DEVICES 	equ 16
 
-ETH_QUEUE		equ 0		; 1 = enable / 0 = disable
-
 MIN_EPHEMERAL_PORT equ 49152
 MAX_EPHEMERAL_PORT equ 61000
 
 ; Ethernet protocol numbers
 ETHER_ARP		equ 0x0608
-ETHER_IPv4		equ 0x0008		; Reversed from 0800 for intel
+ETHER_IPv4		equ 0x0008
 ETHER_PPP_DISCOVERY	equ 0x6388
 ETHER_PPP_SESSION	equ 0x6488
 
@@ -52,7 +51,6 @@ AF_INET4	equ 2
 ;AF_AAL5         equ 8
 ;AF_X25          equ 9
 AF_INET6	equ 10
-;AF_MAX          equ 12
 
 ; Internet protocol numbers
 IP_PROTO_IP	equ 0
