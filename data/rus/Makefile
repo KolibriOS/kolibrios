@@ -281,9 +281,9 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 # SYSXTREE
 # 3d/CUBETEXT
 # 3d/LOGIO.BMP
-	dd if=/dev/zero of=$(BUILD_DIR)/kolibri.img count=2880 bs=512
+	dd if=/dev/zero of=$(BUILD_DIR)/kolibri.img count=2880 bs=512 2>&1
 	mformat -f 1440 -i $(BUILD_DIR)/kolibri.img ::
-	dd if=$(BUILD_DIR)/boot_fat12.bin of=$(BUILD_DIR)/kolibri.img count=1 bs=512 conv=notrunc
+	dd if=$(BUILD_DIR)/boot_fat12.bin of=$(BUILD_DIR)/kolibri.img count=1 bs=512 conv=notrunc 2>&1
 	mmd -i $(BUILD_DIR)/kolibri.img ::3D
 	mmd -i $(BUILD_DIR)/kolibri.img ::DEMOS
 	mmd -i $(BUILD_DIR)/kolibri.img ::DEVELOP
