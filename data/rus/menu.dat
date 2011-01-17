@@ -1,0 +1,183 @@
+#0    **** MAIN ****
+Игры               >      /@1
+Демки              >      /@4
+Графика            >      /@6
+Звук и музыка      >      /@7
+Разработка         >      /@8
+Система            >      /@10
+Обработка данных   >      /@14
+Сеть               >      /@15
+Разное             >      /@18
+Помощь                    /rd/1/docpak
+Запуск программы          /rd/1/run
+Завершение работы         /rd/1/end
+#1    **** GAMES ****
+Логические         >      /@2
+Аркады             >      /@3
+Эмулятор Spectrum         /rd/1/e80
+Memory Blocks             /rd/1/games/mblocks
+FreeCell                  /rd/1/games/freecell
+Трубопровод               /rd/1/games/pipes
+Косилка                   /rd/1/games/kosilka
+RockeT ForceS             /rd/1/games/rforces
+Атака                     /rd/1/games/ataka
+Find Numbers              /rd/1/games/FindNumbers
+#2    **** ЛОГИЧЕСКИЕ ****
+C4                        /rd/1/games/c4
+15                        /rd/1/games/15
+Сапёр                     /rd/1/games/mine
+Just Clicks               /rd/1/games/clicks
+Шашки                     /rd/1/games/checkers
+SQ_Game                   /rd/1/games/sq_game
+Color Lines               /rd/1/games/lines
+Lights                    /rd/1/games/lights
+Крестики-нолики           /rd/1/games/kox
+Быки и Коровы             /rd/1/games/bnc
+Миллионер                 /rd/1/games/whowtbam
+Лабиринт                  /rd/1/games/megamaze
+Морской бой               /rd/1/games/sw
+Судоку                    /rd/1/games/sudoku
+Го-моку                   /rd/1/games/gomoku
+Реверси                   /rd/1/games/reversi
+#3    **** АРКАДЫ ****
+Тетрис                    /rd/1/games/tetris
+Понг                      /rd/1/games/pong
+Новый Понг                /rd/1/games/pong3
+Red Square                /rd/1/games/rsquare
+XONIX                     /rd/1/games/xonix
+ArcanII                   /rd/1/games/arcanii
+PheniX                    /rd/1/games/phenix
+Падение                   /rd/1/games/padenie
+Змейка                    /rd/1/games/snake
+#4    **** DEMOS ****
+Трёхмерные         >      /@5
+Огонь                     /rd/1/demos/fire
+Кружок                    /rd/1/demos/circle
+Фрактал Мандельброта      /rd/1/demos/tinyfrac
+Цвета                     /rd/1/demos/colorref
+Глаза                     /rd/1/demos/eyes
+Труба                     /rd/1/demos/tube
+Plasma                    /rd/1/demos/plasma
+Moveback                  /rd/1/demos/movback
+Life                      /rd/1/demos/life2
+TranTest                  /rd/1/demos/trantest
+Паутинка                  /rd/1/demos/web
+Фейерверк                 /rd/1/demos/firework
+UnvWater                  /rd/1/demos/unvwater
+#5    **** 3D demos ****
+Скринсейвер               /rd/1/3d/crownscr
+3D-Куб                    /rd/1/3d/3dcube2
+3D-Лабиринт               /rd/1/3d/free3d04
+3D-Textured Cube          /rd/1/3d/3dtcub10
+3DSHeart                  /rd/1/3d/3dsheart
+View3DS                   /rd/1/3d/view3ds
+CubeLine                  /rd/1/3d/cubeline
+3D-Куб с текстурой        /rd/1/3d/cubetext
+Шестерёнки                /rd/1/3d/gears
+FlatWave                  /rd/1/3d/flatwav
+3D-Спираль                /rd/1/3d/3dspiral
+#6    **** GRAPHICS ****
+Просмотр изображений      /rd/1/media/kiv
+Редактор Animage          /rd/1/media/animage
+#7    **** AUDIO ****
+MidAMP                    /rd/1/media/midamp
+CD-плейер                 /rd/1/media/cdp
+#8    **** PROGRAMMING ****
+Примеры            >      /@9
+Инструменты        >      /@20
+#9    **** EXAMPLES ****
+Потоки (демо)             /rd/1/develop/thread
+IPC                       /rd/1/develop/ipc
+Color Slider              /rd/1/demos/cslide
+Консольный пример 1       /rd/1/develop/testcon2
+Консольный пример 2       /rd/1/develop/test_gets
+Окна сообщений            /rd/1/demos/use_mb
+#10   **** SYSTEM ****
+Настройка          >      /@11
+Системные сенсоры  >      /@12
+Работа с файлами   >      /@13
+Тестирование       >      /@19
+Спец. возможности  >      /@21
+Доска отладки             /rd/1/develop/board
+#11   **** SETUP ****
+Устройства                /rd/1/setup
+Генератор фона            /rd/1/pic4
+Стиль окон                /rd/1/desktop
+Панель задач              /rd/1/spanel
+Менеджер иконок           /rd/1/icon
+VRR                       /rd/1/vrr
+MyKey                     /rd/1/mykey
+Видеорежим для ATI        /rd/1/vmode
+#12   **** SENSORS ****
+Диспетчер процессов       /rd/1/cpu
+PCI-устройства            /rd/1/pcidev
+Тест скорости граф.       /rd/1/mgb
+CPUID                     /rd/1/cpuid
+GHOST Monitor             /rd/1/gmon
+K. Bus disconnected       /rd/1/kbd
+HDD информер              /rd/1/hdd_info
+Чтение HDD                /rd/1/hdread
+#13   **** FM ****
+KFAR                      /rd/1/File Managers/kfar
+KFM                       /rd/1/File Managers/kfm
+Eolite                    /rd/1/File Managers/Eolite
+Консоль SHELL             /rd/1/shell
+SysXTree                  /rd/1/sysxtree
+Сохранение образа         /rd/1/rdsave
+#14   **** ОБРАБОТКА ДАННЫХ ****
+Калькулятор               /rd/1/calc
+Текстовый редактор        /rd/1/tinypad
+Табличный процессор       /rd/1/table
+Построение графиков       /rd/1/graph
+HEX-редактор              /rd/1/demos/heed
+#15   **** NET ****
+Серверы            >      /@16
+Клиенты            >      /@17
+Конфигурация              /rd/1/network/stackcfg
+Zero-Config               /rd/1/network/zeroconf
+Статус сети               /rd/1/network/ethstat
+Статус ARP                /rd/1/network/arpstat
+#16   **** SERVERS ****
+SMTPS                     /rd/1/network/smtps
+HTTPS                     /rd/1/network/https
+FTPS                      /rd/1/network/ftps
+#17   **** CLIENTS ****
+TFTP-клиент               /rd/1/network/tftpc
+Интернет-шахматы          /rd/1/network/chess
+Простой HTTP-клиент       /rd/1/network/httpc
+Просмотр HTML+HTTP        /rd/1/htmlv
+NNTP-группы новостей      /rd/1/network/nntpc
+TELNET                    /rd/1/network/telnet
+POP-почта                 /rd/1/network/popc
+IRC-клиент                /rd/1/network/airc
+YAHOO IM (демо)           /rd/1/network/ym
+JMail                     /rd/1/network/jmail
+VNC-клиент                /rd/1/network/vncclient
+DNS resolver              /rd/1/network/nslookup
+#18   **** OTHER ****
+Аналоговые часы           /rd/1/demos/aclock
+Бинарные часы             /rd/1/demos/bcdclk
+Таймер                    /rd/1/demos/timer
+Создание скриншотов       /rd/1/scrshoot
+Календарь                 /rd/1/calendar
+BGI-шрифты (демо)         /rd/1/fonts/bgitest
+Просмотр RTF              /rd/1/rtfread
+Таблица Менделеева        /rd/1/period
+Пипетка                   /rd/1/pipetka
+Тренажёр KJ|ABuIIIA       /rd/1/games/klavisha
+#19   **** SYSTEM TESTS ****
+Тест защиты               /rd/1/test
+Тест монитора             /rd/1/disptest
+#20   **** DEVELOP TOOLS ****
+Упаковщик KPack           /rd/1/kpack
+Flat Assembler            /rd/1/develop/fasm
+ASCII-коды                /rd/1/develop/keyascii
+SCAN-коды                 /rd/1/develop/scancode
+Hex2Dec2Bin               /rd/1/develop/h2d2b
+Доска отладки             /rd/1/develop/board
+Отладчик                  /rd/1/develop/mtdbg
+#21   **** SYSTEM SPECIAL ****
+Экранная лупа             /rd/1/magnify
+Экранная клавиатура       /rd/1/zkey
+Таблица символов          /rd/1/ASCIIVju
+##

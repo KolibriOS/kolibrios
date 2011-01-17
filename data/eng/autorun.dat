@@ -1,0 +1,12 @@
+# Program          Parameters  Delay
+/RD/1/COMMOUSE        <NO>        1    # COM mice detector
+/RD/1/DRIVERS/ATIKMS -l/rd/1/drivers/ati.log -1 #ATI videodriver loader
+/RD/1/MEDIA/KIV \T__background.gif -1  # Desktop background image
+/RD/1/@CLIP           <NO>        1    # Clipboard
+/RD/1/@RB             <NO>        1    # Desktop right-click menu
+/RD/1/@SS             <NO>        1    # Screensaver
+/RD/1/@PANEL          <NO>        1    # Start panel
+/RD/1/SETUP           BOOT        1    # Load device settings
+/RD/1/ICON            BOOT        1    # Multithread icon
+/RD/1/NETWORK/ZEROCONF <NO>       1    # Network configuration
+### Hello, ASM World! ###
