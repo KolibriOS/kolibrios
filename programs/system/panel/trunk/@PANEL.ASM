@@ -16,7 +16,7 @@ use32
 
 include 'lang.inc'
 include '..\..\..\macros.inc'
-include 'moi.inc'   ;раскладки клавиатуры
+include 'MOI.INC'   ;раскладки клавиатуры
 
 time_bgr_color = 0x66cc
 

@@ -29,7 +29,7 @@ use32
                 dd      0x20000
                 dd      0,0                     ; reserved=no extended header
 
-include "MACROS.INC"
+include "macros.inc"
 
 ; 0x0+       - program image
 ; 0x1ffff    - stack

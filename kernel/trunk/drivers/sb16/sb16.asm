@@ -7,7 +7,7 @@
 
 format MS COFF
 
-include 'config.inc'
+include 'CONFIG.INC'
 
 ;structs----------------------------------------------------------
 struc IOCTL
@@ -33,7 +33,7 @@ include '..\imports.inc'
 
 section '.flat' code readable align 16
 
-include 'sb16.inc'
+include 'SB16.INC'
 
 ;-------------------------------------------------------------------------------
 proc START stdcall, state:dword

@@ -17,7 +17,7 @@ macro embed_file fn
    label3:
    db fn
    label:
-     file fn
+     file '%DOCDIR%' # fn
    label2:
    FILE_COUNT=FILE_COUNT+1
 }
@@ -179,15 +179,27 @@ embedded:
 
 ; -- Start of embedding area ------
   embed_file 'README.TXT'        ;a
+if lang eq ru
   embed_file 'GNU.TXT'           ;b
+else
+  embed_file 'COPYING.TXT'       ;b
+end if
   embed_file 'HOT_KEYS.TXT'      ;c
   embed_file 'FASM.TXT'          ;d
   embed_file 'MTDBG.TXT'         ;e
+if lang eq ru
   embed_file 'VRR_RUS.TXT'       ;f
   embed_file 'SYSFUNCR.TXT'      ;g
-  embed_file 'PPP_RUS.TXT'       ;h
-  embed_file 'STACK_RU.TXT'      ;i
-  embed_file 'GROBFAR.TXT'       ;j
+  embed_file 'STACK_RU.TXT'      ;h
+  embed_file 'GROBFAR.TXT'       ;i
+else
+  embed_file 'VRR_ENG.TXT'       ;f
+  embed_file 'SYSFUNCS.TXT'      ;g
+  embed_file 'STACK.TXT'         ;h
+  embed_file 'FARA.TXT'          ;i
+end if
+  embed_file 'KFAR_KEYS.TXT'     ;j
+  embed_file 'INI.TXT'           ;k
 ; -- End of embedding area  -------
 
   dd 0

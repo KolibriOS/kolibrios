@@ -816,7 +816,7 @@ end if
         mov     [boot_dev], al
 
 ; GET MEMORY MAP
-include 'detect/biosmem.inc'
+include '../detect/biosmem.inc'
 
 ; READ DISKETTE TO MEMORY
 
