@@ -194,17 +194,17 @@ obtain_cluster:
 	mov	ax,0e2eh			; ah=0eh (teletype), al='.'
 	xor	bh,bh
 	int	10h
-
-	; convert cluster number to sector number
-	mov	ax,bp				; data cluster to read
-	sub	ax,2
-	xor	bx,bx
-	mov	bl,byte [BPB_SecPerClus+boot_program]
-	mul	bx
-	add	ax,word [data_start+boot_program]
 	pop	bx
 
 writesec:
+	; convert cluster number to sector number
+	mov	ax,bp				; data cluster to read
+	sub	ax,2
+	xor	dx,dx
+	mov	dl,byte [BPB_SecPerClus+boot_program]
+	mul	dx
+	add	ax,word [data_start+boot_program]
+
 	call	conv_abs_to_THS			; convert abs sector (AX) to BIOS T:H:S (track:head:sector)
 patchhere:
 	mov	ah,2				; ah=2 (read)
@@ -267,7 +267,7 @@ write1st:
 	push	cs
 	pop	ds
 	mov	byte [patchhere+1+boot_program], 3	; change ah=2 to ah=3
-	mov	ax,[cluster1st+boot_program]
+	mov	bp,[cluster1st+boot_program]
 	push	1000h
 	pop	es
 	xor	bx,bx
