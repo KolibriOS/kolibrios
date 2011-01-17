@@ -5,7 +5,7 @@
 
 # Define directories for destination, source repository, sources of kernel, sources of programs.
 BUILD_DIR:=build
-REPOSITORY:=../localcopy
+REPOSITORY:=../..
 KERNEL:=$(REPOSITORY)/kernel/trunk
 PROGS:=$(REPOSITORY)/programs
 
