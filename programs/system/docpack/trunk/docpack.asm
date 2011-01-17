@@ -32,6 +32,7 @@ appname equ 'Doc Pack'
    dd     I_END+0x400             ; esp
    dd     my_param , 0x0          ; I_Param , I_Icon
 include '..\..\..\MACROS.INC'
+include 'lang.inc'
 
 start:
   cmp   [my_param],0
