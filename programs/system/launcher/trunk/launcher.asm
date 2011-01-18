@@ -6,7 +6,7 @@
 ;
 ;   Компилируйте с помощью FASM 1.52 и выше
 ;
-include "..\..\..\MACROS.INC"
+include "../../../macros.inc"
 
   use32
   org    0x0

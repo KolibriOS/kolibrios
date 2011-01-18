@@ -31,7 +31,7 @@ appname equ 'Doc Pack'
    dd     I_END+0x400             ; memory for app
    dd     I_END+0x400             ; esp
    dd     my_param , 0x0          ; I_Param , I_Icon
-include '..\..\..\MACROS.INC'
+include '../../../macros.inc'
 include 'lang.inc'
 
 start:

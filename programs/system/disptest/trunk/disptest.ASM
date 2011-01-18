@@ -7,7 +7,7 @@
 
 ; <--- include all MeOS stuff --->
 include "lang.inc"
-include "..\..\..\MACROS.INC"
+include "../../../macros.inc"
 
 ; <--- start of MenuetOS application --->
 MEOS_APP_START
