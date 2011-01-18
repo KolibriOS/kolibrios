@@ -311,49 +311,8 @@ File\ Managers/.dir:
 	mkdir -p "File Managers"
 	touch "File Managers/.dir"
 
-# Define the rule for all FASM programs.
-# Yes, this looks like a black magic.
-# But it is not so scary as it seems.
-# First, we define "meta-rule" as a rule which is
-# macro depending on $(fasmprog).
-# Second, the construction foreach+eval creates
-# usual rules, one for each $(fasmprog) in $(FASM_PROGRAMS).
-# Note that meta-rule is double-expanded, first
-# time as the arg of eval - it is the place where $(fasmprog)
-# gets expanded - and second time as the rule;
-# so all $ which are expected to expand at the second time should be escaped.
-# And all $ which are expected to be expanded by the shell should be escaped
-# twice, so they become $$$$.
-
-# The arguments of macro fasm_meta_rule:
-# $(1) = name of binary file,
-# $(2) = name of main source file.
-# $(3) = folder of binary file - without spaces.
-# $(4) = name of program - without path and extension,
-define fasm_meta_rule
-$(1): $(2) Makefile .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
-	fasm -m 65536 $$< "$$@" -s .deps/$(4).fas
-	prepsrc .deps/$(4).fas /dev/null
-	prepsrc .deps/$(4).fas /dev/stdout | (echo -n '$(1):' && \
-	perl -ne 's|\\|/|g;print " \\\n $$$$1" if /^;include \x27(.*?)\x27/' \
-	&& echo) > .deps/$(4).Po
-	kpack --nologo "$$@"
--include .deps/$(4).Po
-endef
-
-progname=$(call respace,$(basename $(notdir $(call binarypart,$(f)))))
-binarydir=$(subst ./,,$(dir $(call binarypart,$(f))))
-$(foreach f,$(FASM_PROGRAMS),$(eval $(call fasm_meta_rule,$(fbinary),$(fsource),$(binarydir),$(progname))))
-
-# Rule for the kernel differs: it uses kerpack instead of kpack.
-kernel.mnt: $(KERNEL)/kernel.asm Makefile .deps/.dir
-	fasm -m 65536 $< "$@" -s .deps/kernel.fas
-	prepsrc .deps/kernel.fas /dev/null
-	prepsrc .deps/kernel.fas /dev/stdout | (echo -n 'kernel.mnt:' && \
-	perl -ne 's|\\|/|g;print " \\\n $$1" if /^;include \x27(.*?)\x27/' \
-	&& echo) > .deps/kernel.Po
-	kerpack $@
--include .deps/kernel.Po
+# FASM black magic goes to Makefile.fasm.
+include Makefile.fasm
 
 # Rule for copying files is simpler, but similar to previous.
 define copy_meta_rule
