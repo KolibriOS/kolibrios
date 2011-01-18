@@ -54,7 +54,7 @@ FASM_PROGRAMS:=\
  disptest:DISPTEST:$(PROGS)/system/disptest/trunk/disptest.ASM \
  docpak:DOCPAK:$(PROGS)/system/docpack/trunk/docpack.asm \
  downloader:downloader:$(PROGS)/network/downloader/trunk/downloader.asm \
- end:END:$(PROGS)/system/end/trunk/end.asm \
+ end:END:$(PROGS)/system/end/light/end.asm \
  gmon:GMON:$(PROGS)/system/gmon/gmon.asm \
  hdd_info:HDD_INFO:$(PROGS)/system/hdd_info/trunk/hdd_info.asm \
  icon:ICON:$(PROGS)/system/icon/trunk/icon.asm \
