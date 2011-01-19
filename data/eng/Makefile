@@ -43,7 +43,7 @@ FASM_PROGRAMS:=\
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
  @rb:@RB:$(PROGS)/system/rb/trunk/@RB.ASM \
- @ss:@SS:$(PROGS)/system/ss/trunk/@SS.ASM \
+ @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm\
  calc:CALC:$(PROGS)/other/calc/trunk/calc.asm \
  calendar:CALENDAR:$(PROGS)/system/calendar/trunk/calendar.asm \
  commouse:COMMOUSE:$(PROGS)/system/commouse/trunk/commouse.asm \
