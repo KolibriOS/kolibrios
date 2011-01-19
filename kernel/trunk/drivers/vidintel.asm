@@ -263,11 +263,50 @@ SetMode:
 ; 1. Program the registers of videocard.
 ; look into the PRM
 	cli
-	or	byte [esi+7000Ah], 0Ch	; PIPEACONF: disable Display+Cursor Planes
-	or	byte [esi+7100Ah], 0Ch	; PIPEBCONF: disable Display+Cursor Planes
+;	or	byte [esi+7000Ah], 0Ch	; PIPEACONF: disable Display+Cursor Planes
+;	or	byte [esi+7100Ah], 0Ch	; PIPEBCONF: disable Display+Cursor Planes
+	xor	eax, eax
+	xor	edx, edx
+	cmp	[deviceType], i965_start
+	jb	@f
+	mov	dl, 9Ch - 84h
+@@:
+;	or	byte [esi+71403h], 80h	; VGACNTRL: VGA Display Disable
+	and	byte [esi+70080h], not 27h	; CURACNTR: disable cursor A
+	mov	dword [esi+70084h], eax	; CURABASE: force write to CURA* regs
+	and	byte [esi+700C0h], not 27h	; CURBCNTR: disable cursor B
+	mov	dword [esi+700C4h], eax	; CURBBASE: force write to CURB* regs
+	and	byte [esi+70183h], not 80h	; DSPACNTR: disable Primary A Plane
+	mov	dword [esi+edx+70184h], eax	; DSPALINOFF/DSPASURF: force write to DSPA* regs
+	and	byte [esi+71183h], not 80h	; DSPBCNTR: disable Primary B Plane
+	mov	dword [esi+edx+71184h], eax	; DSPBLINOFF/DSPBSURF: force write to DSPB* regs
+if 1
+	cmp	[deviceType], ironlake_start
+	jae	.disable_pipes
+	mov	edx, 10000h
+	or	byte [esi+70024h], 2	; PIPEASTAT: clear VBLANK status
+	or	byte [esi+71024h], 2	; PIPEBSTAT: clear VBLANK status
+.wait_vblank_preironlake1:
+	mov	ecx, 1000h
+	loop	$
+	test	byte [esi+7000Bh], 80h		; PIPEACONF: pipe A active?
+	jz	@f
+	test	byte [esi+70024h], 2		; PIPEASTAT: got VBLANK?
+	jz	.wait_vblank_preironlake2
+@@:
+	test	byte [esi+7100Bh], 80h		; PIPEBCONF: pipe B active?
+	jz	.disable_pipes
+	test	byte [esi+71024h], 2		; PIPEBSTAT: got VBLANK?
+	jnz	.disable_pipes
+.wait_vblank_preironlake2:
+	dec	edx
+	jnz	.wait_vblank_preironlake1
+	jmp	.not_disabled
+.disable_pipes:
+end if
 	and	byte [esi+7000Bh], not 80h	; PIPEACONF: disable pipe
 	and	byte [esi+7100Bh], not 80h	; PIPEBCONF: disable pipe
-;	or	byte [esi+71403h], 80h	; VGACNTRL: VGA Display Disable
+if 1
 	mov	edx, 10000h
 @@:
 	mov	ecx, 1000h
@@ -288,6 +327,30 @@ SetMode:
 	jnz	@b
 	jmp	.not_disabled
 @@:
+else
+; alternative way of waiting for pipe stop, works too
+	mov	edx, 1000h
+.dis1:
+	push	dword [esi+71000h]
+	push	dword [esi+70000h]
+	mov	ecx, 10000h
+	loop	$
+	pop	eax
+	xor	eax, [esi+70000h]
+	and	eax, 1FFFh
+	pop	eax
+	jnz	.notdis1
+	xor	eax, [esi+71000h]
+	and	eax, 1FFFh
+	jz	.disabled
+.notdis1:
+	dec	edx
+	jnz	.dis1
+.not_disabled:
+	sti
+	jmp	.return
+.disabled:
+end if
 	lea	eax, [esi+61183h]
 	cmp	[deviceType], ironlake_start
 	jb	@f
@@ -312,9 +375,9 @@ SetMode:
 	shl	ecx, 2
 	mov	dword [edx+10188h], ecx	; DSPASTRIDE: set scanline length
 	and	byte [esi+61233h], not 80h	; PFIT_CONTROL: disable panel fitting 
-	or	byte [edx+10183h], 80h		; DSPACNTR: enable Display Plane A
 	or	byte [edx+1000Bh], 80h		; PIPEACONF: enable pipe
-	and	byte [edx+1000Ah], not 0Ch	; PIPEACONF: enable Display+Cursor Planes
+;	and	byte [edx+1000Ah], not 0Ch	; PIPEACONF: enable Display+Cursor Planes
+	or	byte [edx+10183h], 80h		; DSPACNTR: enable Display Plane A
 	sti
 ; 2. Notify the kernel that resolution has changed.
 	call	GetDisplay
@@ -356,6 +419,7 @@ pciids:
 	dw	0x2772	; i945g
 	dw	0x27a2	; i945gm
 	dw	0x27ae	; i945gm
+i965_start = ($ - pciids) / 2
 	dw	0x2972	; i965g
 	dw	0x2982	; i965g
 	dw	0x2992	; i965g
