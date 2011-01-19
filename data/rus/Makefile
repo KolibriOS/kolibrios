@@ -164,6 +164,13 @@ FASM_PROGRAMS:=\
  network/zeroconf:NETWORK/ZEROCONF:$(PROGS)/network/zeroconf/trunk/zeroconf.asm \
 # end of list
 
+# The list of all NASM programs with one main NASM file.
+# Format of an item is exactly the same as in the previous list.
+NASM_PROGRAMS:=\
+ demos/aclock:DEMOS/ACLOCK:$(PROGS)/demos/aclock/trunk/aclock.asm \
+ games/c4:GAMES/C4:$(PROGS)/games/c4/trunk/c4.asm \
+# end of list
+
 # The list of files which should be copied from somewhere.
 # Format of an item is exactly the same as in the previous list.
 COPY_FILES:=\
@@ -198,7 +205,7 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  vmode:VMODE \
  3d/3dsheart:3D/3DSHEART 3d/3dspiral:3D/3DSPIRAL 3d/cubeline:3D/CUBELINE \
  3d/flatwav:3D/FLATWAV 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
- demos/aclock:DEMOS/ACLOCK demos/ak47.lif:DEMOS/AK47.LIF \
+ demos/ak47.lif:DEMOS/AK47.LIF \
  demos/barge.lif:DEMOS/BARGE.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
  demos/use_mb:DEMOS/USE_MB demos/web:DEMOS/WEB \
@@ -215,7 +222,7 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  fonts/bold.chr:FONTS/BOLD.CHR fonts/char2.mt:FONTS/CHAR2.MT \
  fonts/char.mt:FONTS/CHAR.MT \
  games/appdata.dat:GAMES/APPDATA.DAT games/ataka:GAMES/ATAKA \
- games/basekurs.kla:GAMES/BASEKURS.KLA games/bnc:GAMES/BNC games/c4:GAMES/C4 \
+ games/basekurs.kla:GAMES/BASEKURS.KLA games/bnc:GAMES/BNC \
  games/checkers:GAMES/CHECKERS games/clicks:GAMES/CLICKS \
  games/FindNumbers:GAMES/FindNumbers games/gomoku:GAMES/GOMOKU \
  games/klavisha:GAMES/KLAVISHA games/kosilka:GAMES/KOSILKA \
@@ -249,9 +256,10 @@ fimage=$(call respace,$(call imagepart,$(f)))
 fsource=$(call respace,$(call sourcepart,$(f)))
 
 # Define targets for image file.
-# Join lists $(FASM_PROGRAMS), $(COPY_FILES) and $(OTHER_FILES);
-# for each item in the united list call fbinary.
-targets:=$(foreach f,$(COPY_FILES) $(FASM_PROGRAMS) $(OTHER_FILES),$(fbinary))
+# Join all the lists above.
+targets_full:=$(COPY_FILES) $(FASM_PROGRAMS) $(NASM_PROGRAMS) $(OTHER_FILES)
+# For each item in the united list call fbinary.
+targets:=$(foreach f,$(targets_full),$(fbinary))
 
 # Define a command for copying a file inside the image.
 # mcopy_command is a macro with two parameters,
@@ -271,7 +279,7 @@ define newline
 
 
 endef
-mcopy_all_items:=$(foreach f,$(FASM_PROGRAMS) $(COPY_FILES) $(OTHER_FILES),$(mcopy_item_command)$(newline))
+mcopy_all_items:=$(foreach f,$(targets_full),$(mcopy_item_command)$(newline))
 
 # The main goal: image.
 $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
@@ -314,14 +322,13 @@ File\ Managers/.dir:
 # FASM black magic goes to Makefile.fasm.
 include Makefile.fasm
 
-# Rule for copying files is simpler, but similar to previous.
-define copy_meta_rule
-$(1): $(2) Makefile $$(call respace,$$(addsuffix .dir,$(3)))
-	cp $$< "$$@"
-endef
-$(foreach f,$(COPY_FILES),$(eval $(call copy_meta_rule,$(fbinary),$(fsource),$(binarydir))))
+# Similar for NASM.
+include Makefile.nasm
 
-# Special rules for copying sysfuncr.txt.
+# Similar for copying files.
+include Makefile.copy
+
+# Special rules for copying sysfuncr.txt - it isn't directly included in the image.
 docpak: $(DOCDIR)SYSFUNCR.TXT $(wildcard $(DOCDIR)*)
 $(DOCDIR)SYSFUNCR.TXT: $(KERNEL)/docs/sysfuncr.txt
 	cp $(KERNEL)/docs/sysfuncr.txt $(DOCDIR)SYSFUNCR.TXT
