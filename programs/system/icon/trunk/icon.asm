@@ -25,7 +25,7 @@ ICON_STRIP equ '/sys/ICONSTRP.GIF'
   dd     icon_data+0x30000        ; memory for app
   dd     icon_data+0x30000        ; esp
   dd     I_Param , 0x0  ; I_Param , I_Icon
-include  '..\..\..\macros.inc'
+include  '../../../macros.inc'
 include  'lang.inc'
 COLOR_ORDER equ MENUETOS
 include  'gif_lite.inc'
@@ -998,6 +998,8 @@ still2:
     mov  al,17
     mcall
 
+	cmp	ah, 2
+	jnz	still2
 
     mov  esi,[ebp+8]
           mov  ebx,1
@@ -1294,13 +1296,13 @@ draw_window2:
     mov  ecx,[ebp+4-2]
     add  ebx,[yw]           ; [x start] *65536 + [x size]
     add  ecx,51            ; [y start] *65536 + [y size]
-    mov  edx,0x01000000        ; color of work area RRGGBB,8->color gl
+    mov  edx,0x41000000        ; color of work area RRGGBB,8->color gl
     mcall
 
     mov  eax,8      ; button
     mov  ebx,51
     mov  ecx,50
-    mov  edx,0x40000001
+    mov  edx,0x40000002
     mcall
 
     mov  eax,5
