@@ -149,6 +149,10 @@ load_libraries l_libs_start,end_l_libs
 
 	call	ready_screen_buffer
 ;	jmp	open_file
+	mcall	9,procinfo,-1
+	mov	ecx,[ebx+30]	; PID
+	mcall	18,21
+	mov	[active_process],eax	; WINDOW SLOT
 
 redraw_all:
 	call	control_minimal_window_size
@@ -321,6 +325,10 @@ button:
 
 align	4
 mouse:
+	mcall	18,7
+	cmp	[active_process],eax
+	jne	still
+
 	mcall	37,7
 	test	eax,eax
 	jz	.menu_bar_1;.mouse
@@ -3384,6 +3392,8 @@ shblock_end	rd 1	;смещение конца блока
 ;mouse_flag	rd 1
 file_size	rd 1
 ;	rd	1 ;под старший dword
+
+active_process	rd 1
 
 ed_box_data:	rd 8	;первый dword -кол-во элементов для обработки, далее указатели на editX;
 

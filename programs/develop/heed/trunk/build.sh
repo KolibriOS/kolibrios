@@ -6,6 +6,7 @@
 	echo "lang fix en" > lang.inc
 	mkdir bin
 	fasm -m 16384 heed.asm ./bin/heed
+	kpack	./bin/heed
 	rm -f lang.inc
 	exit 0
 

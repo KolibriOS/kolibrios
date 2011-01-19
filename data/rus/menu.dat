@@ -129,7 +129,7 @@ SysXTree                  /rd/1/sysxtree
 Текстовый редактор        /rd/1/tinypad
 Табличный процессор       /rd/1/table
 Построение графиков       /rd/1/graph
-HEX-редактор              /rd/1/demos/heed
+HEX-редактор              /rd/1/develop/heed
 #15   **** NET ****
 Серверы            >      /@16
 Клиенты            >      /@17

@@ -126,7 +126,7 @@ Calculator                /rd/1/calc
 TinyPad                   /rd/1/tinypad
 Table Processor           /rd/1/table
 Graph builder             /rd/1/graph
-Hex-Editor                /rd/1/demos/heed
+Hex-Editor                /rd/1/develop/heed
 #15    **** NET ****
 Servers            >      /@16
 Clients            >      /@17
