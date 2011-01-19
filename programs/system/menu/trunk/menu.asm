@@ -190,7 +190,11 @@ still:
   button:	      ; BUTTON HANDLER
     mov  eax, 17	 ; get id
     mcall
-
+                        ; dunkaist[
+    test eax,0xfffffe00 ; is it system close button? (close signal from @panel)
+    setz byte[close_now]; set (or not set) close_recursive flag
+     jz  close          ; if so, close all menus
+                        ; dunkaist]
   button1:
     mov  esi, edi
     push edi
@@ -486,6 +490,9 @@ draw_window:
     add  esi, 0x1a1a1a
   .nohighlight:
     or	   edx, 0x20000000
+                                ; dunkaist[
+    add  edx, 0xd1ff00          ; This makes first menu buttons differ from system close button with 0x000001 id
+                                ; dunkaist]
     mcall
     movzx edx, dl
 
