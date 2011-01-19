@@ -521,7 +521,10 @@ still:
   button:		 ; button
     mov  eax,17
     int  0x40
-
+							; dunkaist[
+	test eax,	0xfffffe00	; is it close button? (signal from @panel)
+	 jz  still				; if so - wait for another event, because @panel shouldn't be closed
+							; dunkaist]
     cmp  al, 0			; barsuk
     jnz  right_mouse
 
@@ -1594,7 +1597,8 @@ draw_menuet_icon:
     mov  ecx, 1*65536
     add  ecx, [b_size_y]
     dec  ecx
-    mov  edx, 0x20000001
+;    mov  edx, 0x20000001			; dunkaist[
+    mov  edx, 0x20d1ff01			; dunkaist]
     add  edx, [button_frames]
     mov  esi, [wcolor]
     int  0x40
