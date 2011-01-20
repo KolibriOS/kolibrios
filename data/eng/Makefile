@@ -255,9 +255,10 @@ fimage=$(call respace,$(call imagepart,$(f)))
 fsource=$(call respace,$(call sourcepart,$(f)))
 
 # Define targets for image file.
-# Join lists $(FASM_PROGRAMS), $(COPY_FILES) and $(OTHER_FILES);
-# for each item in the united list call fbinary.
-targets:=$(foreach f,$(COPY_FILES) $(FASM_PROGRAMS) $(OTHER_FILES),$(fbinary))
+# Join all the lists above.
+targets_full:=$(COPY_FILES) $(FASM_PROGRAMS) $(NASM_PROGRAMS) $(OTHER_FILES)
+# For each item in the united list call fbinary.
+targets:=$(foreach f,$(targets_full),$(fbinary))
 
 # Define a command for copying a file inside the image.
 # mcopy_command is a macro with two parameters,
@@ -277,7 +278,7 @@ define newline
 
 
 endef
-mcopy_all_items:=$(foreach f,$(FASM_PROGRAMS) $(COPY_FILES) $(OTHER_FILES),$(mcopy_item_command)$(newline))
+mcopy_all_items:=$(foreach f,$(targets_full),$(mcopy_item_command)$(newline))
 
 # The main goal: image.
 $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
