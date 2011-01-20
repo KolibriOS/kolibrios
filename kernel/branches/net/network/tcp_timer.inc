@@ -60,17 +60,6 @@ local	.exit
 	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP
 	jne	.loop
 
-
-;---------------
-
-	cmp	[eax + SOCKET.lock], 0
-	jz	@f
-
-	DEBUGF	1,"\nlocked\n"
-       @@:
-
-;-----------
-
 	inc	[eax + TCP_SOCKET.t_idle]
 	dec	[eax + TCP_SOCKET.timer_retransmission]
 	jnz	.check_more2
