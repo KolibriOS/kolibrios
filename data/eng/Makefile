@@ -321,14 +321,13 @@ File\ Managers/.dir:
 # FASM black magic goes to Makefile.fasm.
 include Makefile.fasm
 
-# Rule for copying files is simpler, but similar to previous.
-define copy_meta_rule
-$(1): $(2) Makefile $$(call respace,$$(addsuffix .dir,$(3)))
-	cp $$< "$$@"
-endef
-$(foreach f,$(COPY_FILES),$(eval $(call copy_meta_rule,$(fbinary),$(fsource),$(binarydir))))
+# Similar for NASM.
+include Makefile.nasm
 
-# Special rules for copying sysfuncs.txt.
+# Similar for copying files.
+include Makefile.copy
+
+# Special rules for copying sysfuncs.txt - it isn't directly included in the image.
 docpak: $(DOCDIR)SYSFUNCS.TXT $(wildcard $(DOCDIR)*)
 $(DOCDIR)SYSFUNCS.TXT: $(KERNEL)/docs/sysfuncs.txt
 	cp $(KERNEL)/docs/sysfuncs.txt $(DOCDIR)SYSFUNCS.TXT
