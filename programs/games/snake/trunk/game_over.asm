@@ -105,7 +105,7 @@ Draw_game_over_picture:
     mov  esi, picture_game_over
      jmp .done
   @@:
-    mov  ax,  5*0x100+17
+    mov  ax,  1*0x100+26
     mov  cx,  1*0x100+12
     mov  edx, [you_win_picture_color]
     mov  esi, picture_you_win
