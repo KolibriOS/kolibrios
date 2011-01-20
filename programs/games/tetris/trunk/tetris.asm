@@ -127,6 +127,7 @@ draw:           movzx edx,byte [current_block_color]
                 mov   eax,5
                 movzx ebx,byte [delay]
                 int   0x40
+                mov   [force_down],	1
                 jmp   still
 
 block_crash:    dec dword [current_block_y]
@@ -207,11 +208,15 @@ adr50:          jmp scendi
 
 adr51:          cmp ah,DOWN_KEY
                 jne adr61
+                cmp [force_down], 1
+                 jne scendi
                 mov byte [delay],5  ;!!! 2
 adr52:          jmp scendi
 
 adr61:          cmp ah,' '
                 jne adr62
+                cmp [force_down], 1
+                 jne scendi
                 mov byte [delay],5  ;!!! 2
 adr62:          jmp scendi
 
@@ -368,6 +373,8 @@ adr_5:          inc ebx
 ;-------------------------------------------------------------
 new_block:      mov dword [current_block_y],1
                 mov dword [current_block_x],7
+
+				mov   [force_down],	0				; allow fast falling _after_ first game step
 
                 call random
                 and al,7
@@ -861,6 +868,7 @@ number_str:             db 0,0,0,0,0,0,0,0,0
 end_number_str:
 size_of_number_str      dd 9
 delay:                  db 40
+force_down				dd 1
 sc     system_colors
 table_tetris:
 
