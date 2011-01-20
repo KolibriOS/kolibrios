@@ -187,7 +187,8 @@ COPY_FILES:=\
  fonts/simp.chr:FONTS/SIMP.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/SIMP.CHR \
  fonts/smal.chr:FONTS/SMAL.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/SMAL.CHR \
  fonts/trip.chr:FONTS/TRIP.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TRIP.CHR \
- fonts/tscr.chr:FONTS/TSCR.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TSCR.CHR
+ fonts/tscr.chr:FONTS/TSCR.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TSCR.CHR \
+ games/snake.ini:GAMES/SNAKE.INI:$(PROGS)/games/snake/trunk/snake.ini
 
 # List of other files to be included in the image file.
 # Some of them are auto-built with special rules, some just exist before build.
@@ -230,7 +231,7 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  games/lights:GAMES/LIGHTS games/megamaze:GAMES/MEGAMAZE games/mine:GAMES/MINE \
  games/msquare:GAMES/MSQUARE games/padenie:GAMES/PADENIE \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
- games/snake.ini:GAMES/SNAKE.INI games/sq_game:GAMES/SQ_GAME \
+ games/sq_game:GAMES/SQ_GAME \
  games/sudoku:GAMES/SUDOKU games/sw:GAMES/SW games/whowtbam:GAMES/WHOWTBAM \
  games/xonix:GAMES/XONIX \
  lib/cnv_png.obj:LIB/CNV_PNG.OBJ lib/msgbox.obj:LIB/MSGBOX.OBJ \
