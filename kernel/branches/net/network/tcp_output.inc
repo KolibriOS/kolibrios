@@ -88,7 +88,7 @@ TCP_output:
 ; If FIN has been set, but not ACKed, but we havent been called to retransmit, esi will be -1
 ; Otherwise, window shrank after we sent into it.
 
-	jnc	.bigger_than_zero
+	jns	.not_negative
 
 ; enter persist state
 	xor	esi, esi
@@ -108,7 +108,7 @@ TCP_output:
 
 ; If window didn't close completely, just wait for an ACK
 
-  .bigger_than_zero:
+  .not_negative:
 
 ;---------------------------
 ; Send one segment at a time (124)
@@ -129,9 +129,7 @@ TCP_output:
 	add	edi, esi
 	sub	edi, [eax + TCP_SOCKET.SND_UNA]
 	sub	edi, [eax + STREAM_SOCKET.snd + RING_BUFFER.size]
-
-	cmp	edi, 0
-	jge	@f
+	jns	@f
 
 	and	dl, not (TH_FIN)
 

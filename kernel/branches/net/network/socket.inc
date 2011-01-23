@@ -513,6 +513,8 @@ align 4
 	pop	[eax + TCP_SOCKET.ISS]
 	mov	[eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
 
+	mov	[eax + TCP_SOCKET.t_maxseg], 1480	;;;;;
+
 	TCP_sendseqinit eax
 
 ;        mov     [ebx + TCP_SOCKET.timer_retransmission],   ;; todo: create macro to set retransmission timer
