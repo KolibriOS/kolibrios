@@ -1,3 +1,21 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;                                                                 ;;
+;;   Written by hidnplayr@kolibrios.org                            ;;
+;;                                                                 ;;
+;;    Based on the code of 4.4BSD                                  ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
 ;-----------------------------------------------------------------
 ;
 ; TCP_input:
@@ -339,8 +357,9 @@ TCP_input:
 
 ; Update RTT estimators
 
-; Delete acknowledged bytes from send buffer
+;;; TODO
 
+; Delete acknowledged bytes from send buffer
 	pusha
 	mov	ecx, eax
 	lea	eax, [ebx + STREAM_SOCKET.snd]
@@ -349,22 +368,20 @@ TCP_input:
 
 ; update window pointers
 	mov	eax, [edx + TCP_segment.AckNumber]
-	dec	eax
-	mov	[ebx + TCP_SOCKET.SND_WL1], eax
+	mov	[ebx + TCP_SOCKET.SND_UNA], eax
 
 ; Stop retransmit timer
 	mov	[ebx + TCP_SOCKET.timer_ack], 0
 
 ; Awaken waiting processes
+	mov	[ebx + SOCKET.lock], 0
 	mov	eax, ebx
 	call	SOCKET_notify_owner
 
-;; Generate more output     FIXME
-;;        mov     eax, ebx
-;;        call    TCP_output
-;;
-;;        jmp     .drop
-	jmp	.ack_processed
+; Generate more output
+	call	TCP_output
+
+	jmp	.drop_not_locked
 
 ;-------------------------------------------------
 ; maybe we are the receiver in the uni-xfer then..
@@ -387,16 +404,15 @@ TCP_input:
 
 	DEBUGF	1,"header prediction: we are receiver\nreceiving %u bytes of data\n", ecx
 
-	pusha
+	add	[ebx + TCP_SOCKET.RCV_NXT], ecx 	; Update sequence number with number of bytes we have copied
+
 	add	esi, edx
 	lea	eax, [ebx + STREAM_SOCKET.rcv]
 	call	SOCKET_ring_write			; Add the data to the socket buffer
 
 	mov	eax, ebx
 	call	SOCKET_notify_owner
-	popa
 
-	add	[ebx + TCP_SOCKET.RCV_NXT], ecx 	; Update sequence number with number of bytes we have copied
 	or	[ebx + TCP_SOCKET.t_flags], TF_DELACK	; Set delayed ack flag
 
 	jmp	.drop
@@ -415,7 +431,7 @@ TCP_input:
 
 ; Calculate receive window size
 
-;;;;
+;;;; TODO: 444
 
 	cmp	[ebx + TCP_SOCKET.t_state], TCB_LISTEN
 	je	.LISTEN
@@ -540,7 +556,7 @@ align 4
 
 	TCP_rcvseqinit ebx
 
-	mov	[ebx + TCP_SOCKET.t_flags], TF_ACKNOW
+	or	[ebx + TCP_SOCKET.t_flags], TF_ACKNOW
 
 	mov	eax, [ebx + TCP_SOCKET.SND_UNA]
 	cmp	eax, [ebx + TCP_SOCKET.ISS]
@@ -608,7 +624,7 @@ align 4
 
 ; First, check if timestamp is present
 
-;;;; TODO
+;;;; TODO 602
 
 ; Then, check if at least some bytes of data are within window
 
@@ -628,10 +644,12 @@ align 4
 
 	mov	eax, [ebx + TCP_SOCKET.RCV_NXT]
 	sub	eax, [edx + TCP_segment.SequenceNumber]
-	jz	.no_duplicate
+	jle	.no_duplicate
+
+	DEBUGF	1,"Uh oh.. %x bytes of duplicate data!\n", eax
 
 	test	[edx + TCP_segment.Flags], TH_SYN
-	jz	.no_drop
+	jz	.no_dup_syn
 
 ; remove duplicate syn
 
@@ -643,13 +661,13 @@ align 4
 
 	dec	[edx + TCP_segment.UrgentPointer]
 
-	jmp	.no_drop
+	jmp	.no_dup_syn
        @@:
 
 	and	[edx + TCP_segment.Flags], not (TH_URG)
 	dec	eax
 	jz	.no_duplicate
-  .no_drop:
+  .no_dup_syn:
 
 	DEBUGF	1,"Going to drop %u out of %u bytes\n", eax, ecx
 
@@ -828,12 +846,13 @@ align 4
 
 	jmp	.drop
 
+
+
+
+
+
+
   .rst_skip:
-
-
-
-
-
 
 
 ;--------------------------------------
@@ -850,7 +869,6 @@ align 4
 	test	[edx + TCP_segment.Flags], TH_ACK
 	jz	.drop
       @@:
-
 
 
 
@@ -876,39 +894,125 @@ align 4
 	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
 	jg	.not_dup_ack
 
-	DEBUGF	1,"Duplicate ACK\n"
-
 	test	ecx, ecx
-	jnz	.ack_processed
+	jnz	.reset_dupacks
 
 	mov	eax, dword [edx + TCP_segment.Window]
 	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
-	jne	.ack_processed
+	jne	.reset_dupacks
 
-; Process the duplicate ACK
+	DEBUGF	1,"Processing a duplicate ACK..\n"
 
-	;;;;; 833 - 878
+	cmp	[ebx + TCP_SOCKET.timer_retransmission], 10000 ;;;;
+	jg	@f
 
-;;;        call    TCP_output
+	mov	eax, [edx + TCP_segment.AckNumber]
+	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
+	je	.dup_ack
+
+       @@:
+	mov	[ebx + TCP_SOCKET.t_dupacks], 0
+	jmp	.not_dup_ack
+
+  .dup_ack:
+	inc	[ebx + TCP_SOCKET.t_dupacks]
+	cmp	[ebx + TCP_SOCKET.t_dupacks], TCP_re_xmit_thresh
+	jne	.no_re_xmit
+
+	push	[ebx + TCP_SOCKET.SND_NXT]		; >>>>
+
+	mov	eax, [ebx + TCP_SOCKET.SND_WND]
+	cmp	eax, [ebx + TCP_SOCKET.SND_CWND]
+	cmovg	eax, [ebx + TCP_SOCKET.SND_CWND]
+	shr	eax, 1
+	push	edx
+	xor	edx, edx
+	div	[ebx + TCP_SOCKET.t_maxseg]
+	cmp	eax, 2
+	jge	@f
+	mov	ax, 2
+       @@:
+	mul	[ebx + TCP_SOCKET.t_maxseg]
+	pop	edx
+	mov	[ebx + TCP_SOCKET.SND_SSTHRESH], eax
+
+	mov	[ebx + TCP_SOCKET.timer_retransmission], 0	; turn off retransmission timer
+	mov	[ebx + TCP_SOCKET.t_rtt], 0
+	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	[ebx + TCP_SOCKET.SND_NXT], eax
+	mov	eax, [ebx + TCP_SOCKET.t_maxseg]
+	mov	[ebx + TCP_SOCKET.SND_CWND], eax
+
+	mov	eax, ebx
+	call	TCP_output					; retransmit missing segment
+
+	push	edx
+	xor	edx, edx
+	mov	eax, [ebx + TCP_SOCKET.t_maxseg]
+	mul	[ebx + TCP_SOCKET.t_dupacks]
+	pop	edx
+	add	eax, [ebx + TCP_SOCKET.SND_SSTHRESH]
+	mov	[ebx + TCP_SOCKET.SND_CWND], eax
+
+	pop	eax					; <<<<
+	cmp	eax, [ebx + TCP_SOCKET.SND_NXT]
+	jl	@f
+	mov	[ebx + TCP_SOCKET.SND_NXT], eax
+       @@:
+
 	jmp	.drop
 
+
+  .no_re_xmit:
+	jle	.not_dup_ack
+
+	DEBUGF	1,"Increasing congestion window\n"
+
+	mov	eax, [ebx + TCP_SOCKET.t_maxseg]
+	add	[ebx + TCP_SOCKET.SND_CWND], eax
+
+	mov	eax, ebx
+	call	TCP_output
+
+	jmp	.drop
+
+
+
+
+
+
   .not_dup_ack:
-
-	DEBUGF	1,"new ACK\n"
-
-
-
-
-
-
 
 ;-------------------------------------------------
 ; If the congestion window was inflated to account
 ; for the other side's cached packets, retract it
 
-	;;;; 888 -  902
+	mov	eax, [ebx + TCP_SOCKET.SND_SSTHRESH]
+	cmp	eax, [ebx + TCP_SOCKET.SND_CWND]
+	jg	@f
+	cmp	[ebx + TCP_SOCKET.t_dupacks], TCP_re_xmit_thresh
+	jle	@f
+	mov	[ebx + TCP_SOCKET.SND_CWND], eax
+       @@:
+
+	mov	[ebx + TCP_SOCKET.t_dupacks], 0
+
+	mov	eax, [edx + TCP_segment.AckNumber]
+	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
+	jle	@f
+
+	;;; TODO: update stats
+	jmp	.drop_after_ack
+
+       @@:
+
+	mov	edi, [edx + TCP_segment.AckNumber]
+	sub	edi, [ebx + TCP_SOCKET.SND_UNA] 	; now we got the number of acked bytes in esi
+
+	;;; TODO: update stats
 
 
+	DEBUGF	1,"We have an acceptable ACK of %x bytes\n", esi
 
 
 
@@ -918,7 +1022,7 @@ align 4
 ;------------------------------------------
 ; RTT measurements and retransmission timer
 
-	;;;;; 903 - 926
+	;;;;; 912 - 926
 
 	mov	[ebx + TCP_SOCKET.timer_retransmission], 0
 
@@ -937,8 +1041,32 @@ align 4
 ;-------------------------------------------
 ; Open congestion window in response to ACKs
 
-	;;;;
+	mov	esi, [ebx + TCP_SOCKET.SND_CWND]
+	mov	eax, [ebx + TCP_SOCKET.t_maxseg]
 
+	cmp	esi, [ebx + TCP_SOCKET.SND_SSTHRESH]
+	jle	@f
+	push	edx
+	push	eax
+	mul	eax
+	div	esi
+	pop	edx
+	shr	edx, 3
+	add	eax, edx
+	pop	edx
+       @@:
+
+	add	esi, eax
+
+	push	ecx
+	mov	cl, [ebx + TCP_SOCKET.SND_SCALE]
+	mov	eax, TCP_max_win
+	shl	eax, cl
+	pop	ecx
+
+	cmp	esi, eax
+	cmovg	esi, eax
+	mov	[ebx + TCP_SOCKET.SND_CWND], esi
 
 
 
@@ -949,13 +1077,13 @@ align 4
 ;------------------------------------------
 ; Remove acknowledged data from send buffer
 
-	pusha
-	mov	ecx, [edx + TCP_segment.AckNumber]
-	sub	ecx, [ebx + TCP_SOCKET.SND_UNA] 	; ecx now holds number of bytes acked
-
+	push	ecx edx ebx
+	mov	ecx, edi
 	lea	eax, [ebx + STREAM_SOCKET.snd]
 	call	SOCKET_ring_free
-	popa
+	pop	ebx
+	sub	[ebx + TCP_SOCKET.SND_WND], ecx
+	pop	edx ecx
 
 ; Wake up process waiting on send buffer
 
@@ -971,6 +1099,7 @@ align 4
 	jl	@f
 	mov	[ebx + TCP_SOCKET.SND_NXT], eax
        @@:
+
 
 
 
@@ -1016,8 +1145,9 @@ align 4
 
 
 
+  .reset_dupacks:		; We got a new ACK, reset duplicate ACK counter
 
-align 4
+	mov	[ebx + TCP_SOCKET.t_dupacks], 0
 
   .ack_processed:	; (step 6)
 

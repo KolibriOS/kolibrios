@@ -1,9 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
-;;                                                                 ;;
-;;  TCP.INC                                                        ;;
 ;;                                                                 ;;
 ;;  Part of the tcp/ip network stack for KolibriOS                 ;;
 ;;                                                                 ;;
@@ -76,6 +74,8 @@ TCP_max_keepcnt 	equ 8		; max keepalive probes
 ;
 TCP_max_winshift	equ 14
 TCP_max_win		equ 65535
+
+TCP_re_xmit_thresh	equ 3
 
 struct	TCP_segment
 	.SourcePort		dw ?

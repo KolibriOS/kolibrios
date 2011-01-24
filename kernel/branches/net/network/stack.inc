@@ -1,16 +1,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  STACK.INC                                                      ;;
 ;;                                                                 ;;
-;;  BASIC TCP/IP stack for KolibriOS                               ;;
+;;  TCP/IP stack for KolibriOS                                     ;;
 ;;                                                                 ;;
 ;;    Written by hidnplayr@kolibrios.org                           ;;
 ;;                                                                 ;;
-;;     based on the work of Mike Hibbett, mikeh@oceanfree.net      ;;
-;;     but also Paolo Franchetti                                   ;;
+;;     Some parts of code are based on the work of:                ;;
+;;      Mike Hibbett (menuetos network stack)                      ;;
+;;      Eugen Brasoveanu (solar os network stack and drivers)      ;;
+;;      mike.dld (kolibrios socket code)                           ;;
+;;                                                                 ;;
+;;     TCP part is based on 4.4BSD                                 ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
@@ -19,19 +23,18 @@
 
 $Revision$
 
-__DEBUG_LEVEL_OLD__  equ __DEBUG_LEVEL__
-
-__DEBUG_LEVEL__ equ 1		; this sets the debug level for network part of kernel
+__DEBUG_LEVEL_OLD__	equ __DEBUG_LEVEL__	; use seperate debug level for network part of kernel
+__DEBUG_LEVEL__ 	equ 1
 
 uglobal
-	net_10ms       dd ?
-	net_tmr_count  dw ?
+	net_10ms	dd ?
+	net_tmr_count	dw ?
 endg
 
 MAX_NET_DEVICES 	equ 16
 
-MIN_EPHEMERAL_PORT equ 49152
-MAX_EPHEMERAL_PORT equ 61000
+MIN_EPHEMERAL_PORT	equ 49152
+MAX_EPHEMERAL_PORT	equ 61000
 
 ; Ethernet protocol numbers
 ETHER_ARP		equ 0x0608
@@ -43,13 +46,6 @@ ETHER_PPP_SESSION	equ 0x6488
 AF_UNSPEC	equ 0
 AF_UNIX 	equ 1
 AF_INET4	equ 2
-;AF_AX25         equ 3
-;AF_IPX          equ 4
-;AF_APPLETALK    equ 5
-;AF_NETROM       equ 6
-;AF_BRIDGE       equ 7
-;AF_AAL5         equ 8
-;AF_X25          equ 9
 AF_INET6	equ 10
 
 ; Internet protocol numbers
@@ -100,7 +96,7 @@ virtual at 0
 	.packets_tx	dd ?	;
 	.packets_rx	dd ?	;
 
-;       .chksum         dd ?    ; bitmask stating available checksum routines on hardware
+;       .hwacc          dd ?    ; bitmask stating available hardware accelerations (offload engines)
 
 	.end:
 

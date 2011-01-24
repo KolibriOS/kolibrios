@@ -1,9 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
-;;                                                                 ;;
-;;  SOCKET.INC                                                     ;;
 ;;                                                                 ;;
 ;;    Written by hidnplayr@kolibrios.org,                          ;;
 ;;     and Clevermouse.                                            ;;
@@ -45,12 +43,8 @@ end virtual
 virtual at SOCKET.end
 
 	IP_SOCKET:
-
-	.LocalIP		dd ?
-				rd 3 ; for IPv6 addresses
-
-	.RemoteIP		dd ?
-				rd 3 ; for IPv6 addresses
+	.LocalIP		rd 4
+	.RemoteIP		rd 4
 
 	.end:
 end virtual
@@ -788,6 +782,9 @@ SOCKET_send:
 	call	SOCKET_num_to_ptr
 	jz	s_error
 
+	mov	ecx, esi
+	mov	esi, edx
+
 	jmp	[eax + SOCKET.snd_proc]
 
 
@@ -795,9 +792,6 @@ align 4
 SOCKET_send_udp:
 
 	DEBUGF	1,"SOCKET_send: UDP\n"
-
-	mov	ecx, esi
-	mov	esi, edx
 
 	call	UDP_output
 
@@ -811,8 +805,6 @@ SOCKET_send_tcp:
 	DEBUGF	1,"SOCKET_send: TCP\n"
 
 	push	eax
-	mov	ecx, esi
-	mov	esi, edx
 	add	eax, STREAM_SOCKET.snd
 	call	SOCKET_ring_write
 	pop	eax
@@ -828,12 +820,9 @@ SOCKET_send_ip:
 
 	DEBUGF	1,"type: IP\n"
 
-	mov	ecx, esi
-	mov	esi, edx
-
 	call	IPv4_output_raw
 
-	mov	dword [esp+32], eax
+	mov	[esp+32], eax
 	ret
 
 align 4
@@ -841,7 +830,6 @@ SOCKET_send_icmp:
 
 	DEBUGF	1,"SOCKET_send: ICMP\n"
 
-	mov	ecx, esi
 	call	ICMP_output_raw
 
 	mov	dword [esp+32], 0
