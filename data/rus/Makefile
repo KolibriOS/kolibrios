@@ -191,13 +191,13 @@ COPY_FILES:=\
  games/snake.ini:GAMES/SNAKE.INI:$(PROGS)/games/snake/trunk/snake.ini
 
 # The list of all C-- programs with one main C-- file.
-# Format of an item is exactly the same as in the previous list.
+# Format of an item is exactly the same as in the previous list,
+# except that there can be fourth field with parameters for a compiler.
 CMM_PROGRAMS:=\
  File|Managers/eolite:File|Managers/EOLITE:$(PROGS)/fs/Eolite/trunk/Eolite.c-- \
  games/clicks:GAMES/CLICKS:$(PROGS)/games/clicks/trunk/clicks.c-- \
+ games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
 # end if list
-# mine is not compilable
-# games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--
 
 # List of other files to be included in the image file.
 # Some of them are auto-built with special rules, some just exist before build.
@@ -236,7 +236,7 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  games/FindNumbers:GAMES/FindNumbers games/gomoku:GAMES/GOMOKU \
  games/klavisha:GAMES/KLAVISHA games/kosilka:GAMES/KOSILKA \
  games/kosskin.gfx:GAMES/KOSSKIN.GFX games/kox:GAMES/KOX \
- games/lights:GAMES/LIGHTS games/megamaze:GAMES/MEGAMAZE games/mine:GAMES/MINE \
+ games/lights:GAMES/LIGHTS games/megamaze:GAMES/MEGAMAZE \
  games/msquare:GAMES/MSQUARE games/padenie:GAMES/PADENIE \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/sq_game:GAMES/SQ_GAME \
@@ -258,11 +258,13 @@ respace=$(subst |,$(space),$(1))
 binarypart=$(word 1,$(subst :, ,$(1)))
 imagepart=$(word 2,$(subst :, ,$(1)))
 sourcepart=$(word 3,$(subst :, ,$(1)))
+parampart=$(word 4,$(subst :, ,$(1)))
 # Get file names, possibly with spaces inside, from an item.
 # Here $(f) is an item - in fact, macro argument.
 fbinary=$(call respace,$(call binarypart,$(f)))
 fimage=$(call respace,$(call imagepart,$(f)))
 fsource=$(call respace,$(call sourcepart,$(f)))
+fparam=$(call respace,$(call parampart,$(f)))
 
 # Define targets for image file.
 # Join all the lists above.
@@ -274,7 +276,7 @@ targets:=$(foreach f,$(targets_full),$(fbinary))
 # mcopy_command is a macro with two parameters,
 # local file name $(1) and image file name $(2).
 # Note that spaces in these have to be escaped with backslashes.
-mcopy_command=mcopy -mi $(BUILD_DIR)/kolibri.img $(1) ::$(2)
+mcopy_command=mcopy -moi $(BUILD_DIR)/kolibri.img $(1) ::$(2)
 # Specialize a previous command for an item $(f) in one of lists.
 mcopy_item_command=$(call mcopy_command,$(fbinary),$(fimage))
 
@@ -313,8 +315,9 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 	mmd -i $(BUILD_DIR)/kolibri.img ::NETWORK
 	$(mcopy_all_items)
 
-# Special target to modify behaviour of make.
+# Special targets to modify behaviour of make.
 .DELETE_ON_ERROR:
+.SUFFIXES: # disable all predefined rules
 
 # The floppy bootsector.
 $(BUILD_DIR)/boot_fat12.bin: $(KERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootloader/floppy1440.inc
