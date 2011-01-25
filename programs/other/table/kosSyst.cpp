@@ -4,10 +4,39 @@
 
 #define atexitBufferSize	32
 
+// Autobuild uses FASM method for exe->kos,
+// MENUET01 header should be present in EXE.
+#ifdef AUTOBUILD
+char kosExePath[1024];
+char exeStack[16384];
+// must be alphabetically first in the image
+#pragma data_seg(".1seg")
+extern "C" struct
+{
+	char header[8];
+	int headerver;
+	void* entry;
+	void* i_end;
+	void* memsize;
+	void* stack;
+	void* params;
+	void* icon;
+} header = {
+	{'M', 'E', 'N', 'U', 'E', 'T', '0', '1'},
+	1,
+	&crtStartUp,
+	0,	// filled by doexe2.asm
+	0,	// filled by doexe2.asm
+	exeStack + sizeof(exeStack),
+	NULL,
+	kosExePath
+};
+#pragma data_seg()
+#else
+char *kosExePath = NULL;
+#endif
 
 char pureCallMessage[] = "PURE function call!";
-
-char *kosExePath = NULL;
 
 //
 void (__cdecl *atExitList[atexitBufferSize])();
@@ -65,12 +94,13 @@ Dword rtlRand( void )
  return RandomSeed;
 }
 
-
-/*void * __cdecl memcpy( void *dst, const void *src, size_t bytesCount )
+#ifdef AUTOBUILD
+// Well, not really related to auto-build, but some compilation issue
+void memcpy( void *dst, const void *src, size_t bytesCount )
 {
 	__asm{
 		mov edi, dst
-		mov eax, dst
+//		mov eax, dst
 		mov esi, src
 		mov ecx, bytesCount
 		rep movsb
@@ -87,7 +117,8 @@ void memset( Byte *dst, Byte filler, Dword count )
 		mov ecx, count
 		rep stosb
 	}
-}*/
+}
+#endif
 
 
 //
@@ -867,24 +898,32 @@ int __cdecl _purecall()
 #pragma data_seg(".CRT$XCA")
 #pragma data_seg(".CRT$XCZ")
 typedef void (__cdecl *_PVFV)(void);
-__declspec(allocate(".CRT$XCA"))  _PVFV __xc_a[1] = { NULL };
-__declspec(allocate(".CRT$XCZ"))  _PVFV __xc_z[1] = { NULL };
+//__declspec(allocate(".CRT$XCA"))  _PVFV __xc_a[1] = { NULL };
+//__declspec(allocate(".CRT$XCZ"))  _PVFV __xc_z[1] = { NULL };
 //
+extern void ALMOST_HALF_init();
 #pragma comment(linker, "/merge:.CRT=.rdata")
 //
 void crtStartUp()
 {
+#ifdef AUTOBUILD
+// linker will try to remove unused variables; force header to be included
+	header.header;
+#endif
 	// вызываем инициализаторы по списку, NULL'ы игнорируем
-	for ( _PVFV *pbegin = __xc_a; pbegin < __xc_z; pbegin++ )
+	/*for ( _PVFV *pbegin = __xc_a; pbegin < __xc_z; pbegin++ )
 	{
 		//
 		if ( *pbegin != NULL )
 			(**pbegin)();
-	}
+	}*/
+	ALMOST_HALF_init();
 	// инициализируем генератор случайных чисел
 	rtlSrand( kos_GetSystemClock() );
+#ifndef AUTOBUILD
 	// путь к файлу процесса
 	kosExePath = *((char **)0x20);
+#endif
 	// вызов главной функции приложения
 	kos_Main();
 	// выход

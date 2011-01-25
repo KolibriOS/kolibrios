@@ -190,6 +190,15 @@ COPY_FILES:=\
  fonts/tscr.chr:FONTS/TSCR.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TSCR.CHR \
  games/snake.ini:GAMES/SNAKE.INI:$(PROGS)/games/snake/trunk/snake.ini
 
+# The list of all C-- programs with one main C-- file.
+# Format of an item is exactly the same as in the previous list.
+CMM_PROGRAMS:=\
+ File|Managers/eolite:File|Managers/EOLITE:$(PROGS)/fs/Eolite/trunk/Eolite.c-- \
+ games/clicks:GAMES/CLICKS:$(PROGS)/games/clicks/trunk/clicks.c-- \
+# end if list
+# mine is not compilable
+# games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--
+
 # List of other files to be included in the image file.
 # Some of them are auto-built with special rules, some just exist before build.
 # Each item is of the form <local name>:<name inside image>.
@@ -212,7 +221,6 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  demos/use_mb:DEMOS/USE_MB demos/web:DEMOS/WEB \
  drivers/atikms.dll:DRIVERS/ATIKMS.DLL \
  File|Managers/buttons.bmp:File|Managers/BUTTONS.BMP \
- File|Managers/eolite:File|Managers/EOLITE \
  File|Managers/eolite.ini:File|Managers/EOLITE.INI \
  File|Managers/icons.bmp:File|Managers/ICONS.BMP \
  File|Managers/icons.ini:File|Managers/ICONS.INI \
@@ -223,7 +231,7 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  fonts/bold.chr:FONTS/BOLD.CHR fonts/char2.mt:FONTS/CHAR2.MT \
  fonts/char.mt:FONTS/CHAR.MT \
  games/bnc:GAMES/BNC \
- games/checkers:GAMES/CHECKERS games/clicks:GAMES/CLICKS \
+ games/checkers:GAMES/CHECKERS \
  games/FindNumbers:GAMES/FindNumbers games/gomoku:GAMES/GOMOKU \
  games/klavisha:GAMES/KLAVISHA games/kosilka:GAMES/KOSILKA \
  games/kosskin.gfx:GAMES/KOSSKIN.GFX games/kox:GAMES/KOX \
@@ -257,7 +265,7 @@ fsource=$(call respace,$(call sourcepart,$(f)))
 
 # Define targets for image file.
 # Join all the lists above.
-targets_full:=$(COPY_FILES) $(FASM_PROGRAMS) $(NASM_PROGRAMS) $(OTHER_FILES)
+targets_full:=$(COPY_FILES) $(FASM_PROGRAMS) $(NASM_PROGRAMS) $(OTHER_FILES) $(CMM_PROGRAMS)
 # For each item in the united list call fbinary.
 targets:=$(foreach f,$(targets_full),$(fbinary))
 
@@ -332,3 +340,119 @@ include Makefile.copy
 docpak: $(DOCDIR)SYSFUNCS.TXT $(wildcard $(DOCDIR)*)
 $(DOCDIR)SYSFUNCS.TXT: $(KERNEL)/docs/sysfuncs.txt
 	cp $(KERNEL)/docs/sysfuncs.txt $(DOCDIR)SYSFUNCS.TXT
+
+# Similar for C--.
+include Makefile.cmm
+
+# Sorry, even black magic seems to be insufficient for
+# auto-handling all subtle effects. So we just define
+# command lines for compiling and linking, and
+# maintain the list of sources and objects by hand.
+include Makefile.msvc
+
+# Rules for table
+table: .obj.table/table.exe
+	$(msvc_final)
+TABLE_OBJECTS:=.obj.table/calc.obj .obj.table/func.obj .obj.table/hello.obj \
+ .obj.table/KosFile.obj .obj.table/kosSyst.obj .obj.table/math2.obj \
+ .obj.table/mcsmemm.obj .obj.table/parser.obj
+TABLE_H_FILES:=$(wildcard $(PROGS)/other/table/*.h)
+.obj.table/table.exe: $(TABLE_OBJECTS)
+	$(msvc_link)
+$(TABLE_OBJECTS): .obj.table/%.obj: $(PROGS)/other/table/%.cpp $(TABLE_H_FILES) Makefile.msvc | .obj.table
+	$(msvc_compile)
+.obj.table:
+	mkdir -p .obj.table
+
+# Rules for graph
+graph: .obj.graph/graph.exe
+	$(msvc_final)
+GRAPH_CPP_OBJECTS:=.obj.graph/func.obj .obj.graph/hello.obj .obj.graph/kolibri.obj \
+ .obj.graph/KosFile.obj .obj.graph/kosSyst.obj .obj.graph/math2.obj \
+ .obj.graph/mcsmemm.obj .obj.graph/parser.obj
+GRAPH_C_OBJECTS:=.obj.graph/string.obj
+GRAPH_H_FILES:=$(wildcard $(PROGS)/other/graph/*.h)
+GRAPH_FASM_OBJECTS:=.obj.graph/memcpy.obj .obj.graph/memset.obj
+.obj.graph/graph.exe: $(GRAPH_CPP_OBJECTS) $(GRAPH_C_OBJECTS) $(GRAPH_FASM_OBJECTS)
+	$(msvc_link)
+$(GRAPH_CPP_OBJECTS): .obj.graph/%.obj: $(PROGS)/other/graph/%.cpp $(GRAPH_H_FILES) Makefile.msvc | .obj.graph
+	$(msvc_compile)
+$(GRAPH_C_OBJECTS): .obj.graph/%.obj: $(PROGS)/other/graph/%.c $(GRAPH_H_FILES) Makefile.msvc | .obj.graph
+	$(msvc_compile)
+$(GRAPH_FASM_OBJECTS): .obj.graph/%.obj: $(PROGS)/other/graph/%.asm Makefile.msvc | .obj.graph
+	fasm $< $@
+.obj.graph:
+	mkdir -p .obj.graph
+
+# Rules for kosilka
+games/kosilka: .obj.kosilka/kosilka.exe
+	$(msvc_final)
+KOSILKA_OBJECTS:=.obj.kosilka/kosilka.obj .obj.kosilka/KosFile.obj .obj.kosilka/kosSyst.obj .obj.kosilka/mcsmemm.obj
+KOSILKA_H_FILES:=$(PROGS)/games/kosilka/*.h
+.obj.kosilka/kosilka.exe: $(KOSILKA_OBJECTS)
+	$(msvc_link)
+$(KOSILKA_OBJECTS): .obj.kosilka/%.obj: $(PROGS)/games/kosilka/%.cpp $(KOSILKA_H_FILES) Makefile.msvc | .obj.kosilka
+	$(msvc_compile)
+.obj.kosilka:
+	mkdir -p .obj.kosilka
+
+include Makefile.gcc
+
+# Rules for shell
+shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o \
+ $(PROGS)/system/shell/kolibri.ld
+	$(call gcc_link,$(PROGS)/system/shell/kolibri.ld)
+.obj.shell/shell.o: $(PROGS)/system/shell/shell.c \
+ $(PROGS)/system/shell/all.h \
+ $(PROGS)/system/shell/system/*.h \
+ $(PROGS)/system/shell/cmd/*.c \
+ $(PROGS)/system/shell/modules/*.c \
+ $(PROGS)/system/shell/locale/rus/globals.h \
+ Makefile.gcc | .obj.shell
+	$(gcc_compile)
+.obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o: .obj.shell/%.o: \
+ $(PROGS)/system/shell/system/%.c $(PROGS)/system/shell/system/*.h \
+ Makefile.gcc | .obj.shell
+	$(gcc_compile)
+	win32-gcc -c -Os -o $@ $<
+.obj.shell/start.o: $(PROGS)/system/shell/start.asm | .obj.shell
+	fasm $< $@
+.obj.shell:
+	mkdir -p .obj.shell
+
+# Rules for media/ac97snd
+# Not compilable from svn sources, using preloaded binary
+
+# Rules for atikms.dll
+# Use Makefile from $(REPOSITORY)/drivers/ddk and $(REPOSITORY)/drivers/video/drm/radeon
+# However, dependencies must be duplicated - I don't know how to avoid this
+# without need to rebuild kolibri.img at every iteration...
+# Note that we are going to write in the directory shared
+# between all Makefiles, so we need locked operations.
+drivers/atikms.dll: $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll drivers/.dir
+	kpack --nologo $< $@
+$(REPOSITORY)/drivers/video/drm/radeon/atikms.dll:
+	flock $(REPOSITORY)/drivers/video/drm/radeon/.lock \
+	$(MAKE) CC=win32-gcc AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/video/drm/radeon
+$(REPOSITORY)/drivers/ddk/libddk.a:
+	flock $(REPOSITORY)/drivers/ddk/.lock \
+	$(MAKE) CC=win32-gcc AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/ddk
+# dependencies
+$(REPOSITORY)/drivers/video/drm/radeon/atikms.dll: \
+ $(REPOSITORY)/drivers/video/drm/radeon/atikms.lds \
+ $(REPOSITORY)/drivers/ddk/libddk.a \
+ $(REPOSITORY)/drivers/video/drm/radeon/*.[Sch] \
+ $(REPOSITORY)/drivers/video/drm/radeon/*.asm \
+ $(REPOSITORY)/drivers/video/drm/radeon/Makefile \
+ $(REPOSITORY)/drivers/video/drm/radeon/firmware/*.bin \
+ $(REPOSITORY)/drivers/include/*.h \
+ $(REPOSITORY)/drivers/include/*/*.h \
+ $(REPOSITORY)/drivers/include/*/*/*.h \
+ $(REPOSITORY)/drivers/include/*/*/*/*.h
+$(REPOSITORY)/drivers/ddk/libddk.a: \
+ $(REPOSITORY)/drivers/ddk/Makefile \
+ $(REPOSITORY)/drivers/ddk/*/* \
+ $(REPOSITORY)/drivers/include/*.h \
+ $(REPOSITORY)/drivers/include/*/*.h \
+ $(REPOSITORY)/drivers/include/*/*/*.h \
+ $(REPOSITORY)/drivers/include/*/*/*/*.h

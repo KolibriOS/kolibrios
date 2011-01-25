@@ -1,6 +1,7 @@
 
 #include "string.h"
 
+#ifndef AUTOBUILD
 void*  memset(void *mem, int c, unsigned size)
 {
 unsigned i;
@@ -109,3 +110,4 @@ char* strchr(const char* string, int c)
 	return (char*)0;
 }
 
+#endif

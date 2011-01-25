@@ -1,7 +1,7 @@
 #include <math.h>
 #include "kosSyst.h"
 extern "C" int _fltused = 0;
-double acos(double x)
+double __cdecl acos(double x)
 {
 	__asm {
 		fld	qword ptr [esp+4]
@@ -15,7 +15,7 @@ double acos(double x)
 		fpatan
 	}
 }
-double asin(double x)
+double __cdecl asin(double x)
 {
 	__asm {
 		fld	qword ptr [esp+4]
@@ -43,7 +43,7 @@ extern "C" double _ftol(double x)
 	}
 }
 #endif
-double ceil(double x)
+double __cdecl ceil(double x)
 {
 	__asm {
 		fld	qword ptr [esp+4]
@@ -56,7 +56,7 @@ double ceil(double x)
 	}
 }
 
-double floor(double x)
+double __cdecl floor(double x)
 {
 	__asm {
 		fld	qword ptr [esp+4]
@@ -69,7 +69,7 @@ double floor(double x)
 	}
 }
 
-double round(double x)
+double __cdecl round(double x)
 {
 	__asm {
 		fld	qword ptr [esp+4]

@@ -260,7 +260,10 @@ double func_round(double val)
 	__asm fild x
 }
 
-const double ALMOST_HALF = 0.5 - epsilon;
+//const double ALMOST_HALF = 0.5 - epsilon;
+double ALMOST_HALF;
+extern void ALMOST_HALF_init(void)
+{ ALMOST_HALF = 0.5 - epsilon; }
 double func_floor(double val)
 {
 	int x;

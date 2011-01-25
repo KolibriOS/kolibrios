@@ -31,9 +31,9 @@ void kos_DrawLine( Word x1, Word y1, Word x2, Word y2, Dword colour, Dword inver
 void DrawRegion(Dword x,Dword y,Dword width,Dword height,Dword color1);
 int atoi(const char* string);
 
-double fabs(double x);
-double cos(double x);
-double sin(double x);
+double __cdecl fabs(double x);
+double __cdecl cos(double x);
+double __cdecl sin(double x);
 int di(double x);
 
 double id(int x);

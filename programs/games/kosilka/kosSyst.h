@@ -130,7 +130,7 @@ Dword rtlInterlockedExchange( Dword *target, Dword value );
 // функция -1 завершения процесса
 void __declspec(noreturn) kos_ExitApp();
 // функция 0
-void kos_DefineAndDrawWindow(
+void __declspec(noinline) kos_DefineAndDrawWindow(
 	Word x, Word y,
 	Word sizeX, Word sizeY,
 	Byte mainAreaType, Dword mainAreaColour,
@@ -158,11 +158,11 @@ void kos_WriteTextToWindow_internal(Dword pos, Dword font, const char* textPtr, 
 	kos_WriteTextToWindow_internal(((x)<<16)|(y), ((fontType)<<24)|(textColour), textPtr, textLen)
 #endif
 // функция 7 нарисовать изображение
-void kos_PutImage( RGB * imagePtr, Word sizeX, Word sizeY, Word x, Word y );
+void __declspec(noinline) kos_PutImage( RGB * imagePtr, Word sizeX, Word sizeY, Word x, Word y );
 // функция 8 определить кнопку
 void kos_DefineButton( Word x, Word y, Word sizeX, Word sizeY, Dword buttonID, Dword colour );
 // функция 5 пауза, в сотых долях секунды
-void __cdecl kos_Pause( Dword value );
+void __declspec(noinline) __cdecl kos_Pause( Dword value );
 // функция 9 - информация о процессе
 Dword kos_ProcessInfo( sProcessInfo *targetPtr, Dword processID = PROCESS_ID_SELF );
 // функция 10
@@ -172,7 +172,7 @@ Dword kos_CheckForEvent();
 // функция 12
 void __cdecl kos_WindowRedrawStatus( Dword status );
 // функция 13 нарисовать полосу
-void kos_DrawBar( Word x, Word y, Word sizeX, Word sizeY, Dword colour );
+void __declspec(noinline) kos_DrawBar( Word x, Word y, Word sizeX, Word sizeY, Dword colour );
 // функция 17
 bool kos_GetButtonID( Dword &buttonID );
 // функция 23
@@ -189,7 +189,7 @@ void kos_GetMouseState( Dword & buttons, int & cursorX, int & cursorY );
 // функция 40 установить маску событий
 void kos_SetMaskForEvents( Dword mask );
 // функция 47 вывести в окно приложения число
-void kos_DisplayNumberToWindow(
+void __declspec(noinline) kos_DisplayNumberToWindow(
    Dword value,
    Dword digitsNum,
    Word x,

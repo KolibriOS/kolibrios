@@ -1,7 +1,10 @@
 
 /// ===========================================================
 
+#ifndef AUTOBUILD
+// autobuild does not create lang.h, but defines LANG_{RUS,ENG} directly
 #include "lang.h"
+#endif
 
 #include "system/boolean.h"
 #include "system/kolibri.h"

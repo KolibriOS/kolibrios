@@ -32,10 +32,10 @@ typedef unsigned __int8 Byte;
 
 #define abs(a) (a<0?0-a:a)
 
-extern "C" double acos(double x);
-extern "C" double asin(double x);
-extern "C" double floor(double x);
-extern "C" double round(double x);
+extern "C" double __cdecl acos(double x);
+extern "C" double __cdecl asin(double x);
+extern "C" double __cdecl floor(double x);
+extern "C" double __cdecl round(double x);
 #pragma function(acos,asin)
 #if _MSC_VER > 1200
 #pragma function(floor)
@@ -101,8 +101,10 @@ union sProcessInfo
 	} processInfo;
 };
 
+#ifndef AUTOBUILD
 //
 extern char *kosExePath;
+#endif
 
 //
 void crtStartUp();
@@ -122,6 +124,9 @@ char * __cdecl strrchr( const char * string, int c );
 extern "C" void * __cdecl memcpy( void *dst, const void *src, size_t bytesCount );
 extern "C" void memset( Byte *dst, Byte filler, Dword count );
 //#pragma intrinsic(memcpy,memset)
+#elif defined AUTOBUILD
+void memcpy( void *dst, const void *src, size_t bytesCount );
+void memset( Byte *dst, Byte filler, Dword count );
 #else
 void * __cdecl memcpy( void *dst, const void *src, size_t bytesCount );
 void memset( Byte *dst, Byte filler, Dword count );
@@ -147,7 +152,7 @@ bool kos_GetKey( Byte &keyCode );
 // функция 3 получить время
 Dword kos_GetSystemClock();
 // функция 4
-void kos_WriteTextToWindow(
+void __declspec(noinline) kos_WriteTextToWindow(
 	Word x, Word y,
 	Byte fontType,
 	Dword textColour,
@@ -157,7 +162,7 @@ void kos_WriteTextToWindow(
 // функция 7 нарисовать изображение
 void kos_PutImage( RGB * imagePtr, Word sizeX, Word sizeY, Word x, Word y );
 // функция 8 определить кнопку
-void kos_DefineButton( Word x, Word y, Word sizeX, Word sizeY, Dword buttonID, Dword colour );
+void __declspec(noinline) kos_DefineButton( Word x, Word y, Word sizeX, Word sizeY, Dword buttonID, Dword colour );
 // функция 5 пауза, в сотых долях секунды
 void kos_Pause( Dword value );
 // функция 9 - информация о процессе
@@ -169,7 +174,7 @@ Dword kos_CheckForEvent();
 // функция 12
 void kos_WindowRedrawStatus( Dword status );
 // функция 13 нарисовать полосу
-void kos_DrawBar( Word x, Word y, Word sizeX, Word sizeY, Dword colour );
+void __declspec(noinline) kos_DrawBar( Word x, Word y, Word sizeX, Word sizeY, Dword colour );
 // функция 17
 bool kos_GetButtonID( Dword &buttonID );
 // функция 23

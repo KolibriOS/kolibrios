@@ -1,6 +1,8 @@
 
 
 CC = gcc
+LD = ld
+AS = as
 FASM = e:/fasm/fasm.exe
 
 DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 
@@ -13,7 +15,7 @@ DRV_INCLUDES = $(DRV_TOPDIR)/include
 INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/drm	\
 		-I$(DRV_INCLUDES)/linux
 
-CFLAGS   = -c -O2 $(INCLUDES) $(DEFINES) -march=i686 -fomit-frame-pointer -fno-builtin-printf
+CFLAGS   = -c -Os $(INCLUDES) $(DEFINES) -march=i486 -fomit-frame-pointer -fno-builtin-printf
 
 LIBPATH:= $(DRV_TOPDIR)/ddk
 
@@ -135,15 +137,15 @@ NAME_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
 
 all: $(NAME).dll
 
-$(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(HFILES) atikms.lds Makefile
-	ld -L$(LIBPATH) $(LDFLAGS) -T atikms.lds -o $@ $(NAME_OBJS) $(LIBS)  
+$(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(HFILES) $(LIBPATH)/libcore.a $(LIBPATH)/libddk.a atikms.lds Makefile
+	$(LD) -L$(LIBPATH) $(LDFLAGS) -T atikms.lds -o $@ $(NAME_OBJS) $(LIBS)  
 
 
 %.o : %.c $(HFILES) Makefile
 	$(CC) $(CFLAGS) $(DEFINES) -o $@ $<
 
 %.o : %.S $(HFILES) Makefile
-	as -o $@ $<
+	$(AS) -o $@ $<
 
 fwblob.o:  fwblob.asm $(FW_BINS) Makefile
 	$(FASM) $< $@

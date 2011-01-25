@@ -1,0 +1,13 @@
+define msvc_compile
+win32-cl /c /O2 /Os /Oy /GF /GS- /GR- /EHs-c- /fp:fast /GL /QIfist /Gr /DAUTOBUILD /Fo$@ Z:$< >&2
+endef
+define msvc_link
+win32-link /section:.bss,E /fixed:no /subsystem:native \
+/merge:.data=.text /merge:.rdata=.text /merge:.1seg=.text \
+/entry:crtStartUp /out:$@ /ltcg /nodefaultlib \
+$(addprefix Z:,$^) >&2
+endef
+define msvc_final
+EXENAME=$< fasm doexe2.asm "$@"
+kpack --nologo "$@"
+endef

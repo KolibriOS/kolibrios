@@ -59,18 +59,18 @@ int atoi(const char* string)
 
 
 
-double fabs(double x)
+double __cdecl fabs(double x)
 {
 	__asm	fld	x
 	__asm	fabs
 }
 #define M_PI       3.14159265358979323846
-double cos(double x)
+double __cdecl cos(double x)
 {
 	__asm	fld	x
 	__asm	fcos
 }
-double sin(double x)
+double __cdecl sin(double x)
 {
 	__asm	fld	x
 	__asm	fsin
@@ -242,12 +242,14 @@ void format( char *Str, int len, char* Format, ... )
 	Str[j] = 0;
 }
 
+#ifndef AUTOBUILD
 void *memcpy(void *dst, const void *src, unsigned size)
 {
 	while (size--)
 		*((char*)dst+size) = *((char*)src+size);
 	return dst;
 }
+#endif
 
 int strcmp(const char *s1, const char *s2)
 {

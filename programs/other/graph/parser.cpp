@@ -18,17 +18,17 @@
 #define ERR_BADVARIABLE -5
 #define ERR_OVERFLOW -6
 
-double tg(double d)
+double __cdecl tg(double d)
 {
 	return sin(d) / cos(d);
 }
 
-double ctg(double d)
+double __cdecl ctg(double d)
 {
 	return cos(d) / sin(d);
 }
 
-double exp(double x)
+double __cdecl exp(double x)
 {
 	__asm {
 		fld	x 
@@ -49,7 +49,7 @@ double exp(double x)
 	
 }
 
-double log(double x)
+double __cdecl log(double x)
 {
 	//return 0.0;
 	__asm {
@@ -61,7 +61,7 @@ double log(double x)
 	}
 }
 
-double sqrt(double x)
+double __cdecl sqrt(double x)
 {
 	__asm {
 		fld x
@@ -69,7 +69,7 @@ double sqrt(double x)
 	}
 }
 
-double atan(double x)
+double __cdecl atan(double x)
 {
 	return 0.0; // в лом
 }
@@ -81,7 +81,7 @@ double pow(double x, double y)
 
 
 // represents general mathematical function
-typedef double(*matfunc)(double);
+typedef double(__cdecl*matfunc)(double);
 
 // used to link function name to the function
 typedef struct  

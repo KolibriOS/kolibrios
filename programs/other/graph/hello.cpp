@@ -55,7 +55,12 @@ char *HugeBuf = NULL;
 
 //char fuck[64] = "$this is a fucking marker$";
 // параметры командной строки
+#ifdef AUTOBUILD
+extern char params[1024];
+char params[1024];
+#else
 char params[1024] = "_FIND_ME_";
+#endif
 
 /*
 
