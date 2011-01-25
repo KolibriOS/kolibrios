@@ -6,10 +6,10 @@
 define cmm_meta_rule
 $(1): $(2) Makefile.cmm $$(call respace,$$(addsuffix .dir,$(3))) \
  $$(wildcard $$(dir $(2))*) $$(wildcard $$(dir $(2))*/*)
-	flock $$(dir $(2)).lock \
+	flock $$(dir $(2)).lock -c '\
 	win32-c-- $(5) /IP=Z:$$(dir $(2)) Z:$$< >&2 && \
 	if [ -e $$(basename $$<) ]; then f=$$(basename $$<); else f=$$(basename $$<).com; fi && \
-	kpack --nologo $$$$f "$$@" && rm $$$$f
+	kpack --nologo $$$$f "$$@" && rm $$$$f'
 endef
 
 $(foreach f,$(CMM_PROGRAMS),$(eval $(call cmm_meta_rule,$(fbinary),$(fsource),$(binarydir),$(progname),$(fparam))))
