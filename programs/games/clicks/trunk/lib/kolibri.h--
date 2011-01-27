@@ -4,8 +4,8 @@ char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
 dword  start_addr   = #main;
 dword  final_addr   = #stop+32;
-dword  alloc_mem    = 0x00100000;
-dword  x86esp_reg   = 0x0007fff0;
+dword  alloc_mem    = 0x00004096;
+dword  x86esp_reg   = 0x00004096;
 dword  I_Param      = 0x0;
 dword  I_Icon       = 0x0;
 
@@ -14,10 +14,22 @@ dword  I_Icon       = 0x0;
 #define evReDraw  1
 
 #define BT_DEL		0x80000000
-#define BT_HIDE		0x40000000
+#define BT_HIDE	0x40000000
 #define BT_NOFRAME	0x20000000
 
 
+struct system_colors{
+	dword frame,grab,grab_button,grab_button_text,grab_text,work,work_button,work_button_text,work_text,work_graph;
+	void get();
+};
+void system_colors::get()
+{
+	EAX = 48;
+	EBX = 3;
+	ECX = #frame;
+	EDX = 40;
+	$int	0x40
+}
 
 inline fastcall dword WaitEvent(){
  EAX = 10;              // wait here for event
@@ -30,13 +42,13 @@ inline fastcall void ExitProcess(){
  $int 0x40
 }
 
-inline fastcall word GetKey(){
+inline fastcall byte GetKey(){
  EAX = 2;              // just read it key from buffer
  $int  0x40
  EAX = EAX >> 8;
 }
 
-inline fastcall word GetButtonID(){
+inline fastcall byte GetButtonID(){
  EAX = 17;            // Get ID
  $int  0x40
  EAX = EAX >> 8;
@@ -56,13 +68,6 @@ inline fastcall void DeleteButton(dword EDX)
 	$int 0x40;
 }
 
-inline fastcall dword strlen(dword EDI){
-	ECX=EAX=0;
-	ECX--;
-	$REPNE $SCASB
-	EAX-=2+ECX;
-}
-
 
 inline fastcall void WindowRedrawStatus(dword EBX){
 	EAX = 12;
@@ -72,11 +77,11 @@ inline fastcall void WindowRedrawStatus(dword EBX){
 
 void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,byte headerType,dword headerColour,EDI)
 {
+ 	EAX = 0;
 	EBX = x << 16 + sizeX;
 	ECX = y << 16 + sizeY;
 	EDX = mainAreaType << 24 | mainAreaColour;
 	ESI = headerType << 24 | headerColour;
-	$xor eax,eax
 	$int 0x40
 }
 
@@ -106,27 +111,6 @@ void DrawBar(dword x,y,w,h,EDX)
 }
 
 
-void DrawRegion(dword x,y,width,height,color1)
-{
-	DrawBar(x,y,width,1,color1); //полоса гор сверху
-	DrawBar(x,y+height,width,1,color1); //полоса гор снизу
-	DrawBar(x,y,1,height,color1); //полоса верт слева
-	DrawBar(x+width,y,1,height+1,color1); //полоса верт справа
-}
-
-void DrawFlatButton(dword x,y,width,height,id,color,text)
-{
-	DrawRegion(x,y,width,height,0x94AECE);
-	DrawBar(x+1,y+1,width-1,1,0xFFFFFF); //полоса гор белая
-	DrawBar(x+1,y+height-1,width-2,1,0xC7C7C7); //тень верт
-	DrawBar(x+1,y+1,1,height-1,0xFFFFFF); //полоса верт белая
-	DrawBar(x+width-1,y+2,1,height-2,0xC7C7C7); //тень верт
-	DrawBar(x+2,y+2,width-3,height-3,color); //заливка
-	IF (id<>0) DefineButton(x,y,width,height,id+BT_HIDE,0xEFEBEF); //определяем кнопку
-	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
-}
-
-
 void PutImage(dword EBX,w,h,x,y)
 {
 	EAX = 7;
@@ -152,12 +136,6 @@ void WriteNumber(dword x,y,byte fontType, ESI, ECX)
 {
 	EAX = 47;
 	EBX = 2<<16;
-	/*ecx = 0
-	while(eax>10)
-	{
-		ecx ++;
-		eax /= 10;
-	}*/
 	EDX = x<<16+y;
 	ESI = fontType<<24+ESI;
 	$int 0x40;

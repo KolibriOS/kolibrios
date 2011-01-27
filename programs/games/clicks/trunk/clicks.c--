@@ -12,8 +12,12 @@ Compiled by C--Sphinx v0.239 b26
 #include "files\boxes.txt"
 #include "files\cups.txt"
 
+#ifndef AUTOBUILD
+#include "lang.h--"
+#endif
 
 byte i,j, XX, YY;
+system_colors sc;
 
 struct
 {
@@ -125,37 +129,59 @@ void ReDraw_Blocks(byte newgame)
 				{
 				DefineButton(j*21,y-22, 20, 20, num+BT_HIDE, 0);
 				PutImage(matrix[num].color-1*1323+#img,21,21,j*21,y-22);
-				}	ELSE DrawBar(j*21,y-22,21,21, 0xB2B4BF);
+				}
+			ELSE
+				DrawBar(j*21,y-22,21,21, 0xB2B4BF);
 			num++;
 		}
 		y=y+21;
 	}
-	DrawBar(90,178,71,8,0xE4DFE1);
-	IF (check_for_end()==1) WriteText(90,178,0x80,0,"Результат:",10);
-	ELSE WriteText(96,178,0x80,0,"Осталось:",10);
+#ifdef LANG_RUS
+	DrawBar(90,178,71,8,sc.work);
+	IF (check_for_end()==1) WriteText(90,178,0x80,sc.work_text,"Результат:",10);
+	ELSE WriteText(96,178,0x80,sc.work_text,"Осталось:",10);
+#else
+	DrawBar(108,178,60,8,sc.work);
+	IF (check_for_end()==1) WriteText(108,178,0x80,sc.work_text,"Result:",10);
+	ELSE WriteText(108,178,0x80,sc.work_text,"Blocks:",10);
+#endif
 	FOR (i=0;i<8;i++) FOR (j=0;j<8;j++) IF (matrix[j*8+i].mark==0) count_blocks++;
-	WriteNumber(150,178,0x80,0,count_blocks);
+	WriteNumber(150,178,0x80,sc.work_text,count_blocks);
 	//
 	if (check_for_end()==1) && (count_blocks<8)
 	{
-		DrawFlatButton(21,42,125,62,0,0xE4DFE1,"");
+		DrawFlatButton();
+#ifdef LANG_RUS
 		IF (count_blocks==0) copystr(" Лучше всех!", #temp);  
 		IF (count_blocks==1) copystr("  Прекрасно", #temp);
 		IF (count_blocks==2) copystr("Очень хорошо!", #temp);
+#else
+		IF (count_blocks==0) copystr("The best!", #temp);
+		IF (count_blocks==1) copystr("Wonderful", #temp);
+		IF (count_blocks==2) copystr("Very good", #temp);
+#endif
 		IF (count_blocks>=3) //баг!!!
 		{
+#ifdef LANG_RUS
 			copystr("   Неплохо", #temp);
+#else
+			copystr(" Not bed", #temp);
+#endif
 			count_blocks=3;
 		}
-		PutImage(count_blocks*42*37*3+#cups,42,37,63,48);
+		PutImage(count_blocks*4662+#cups,42,37,63,48);
+#ifdef LANG_RUS
 		WriteText(46,91,0x80,0x0,#temp,0);
+#else
+		WriteText(58,91,0x80,0x0,#temp,0);
+#endif
 	}
 }
 
 
 void main()
-{	byte id, skin_width;
-	randomize();
+{	byte id;
+	//randomize();
 	ReDraw_Blocks(1);
 	loop()
 	{
@@ -183,16 +209,35 @@ void main()
 				break;
 			case evReDraw:
 				WindowRedrawStatus(1);
-				skin_width = GetSkinWidth();
-				DefineAndDrawWindow(400,276,177,201+skin_width,0x74,0x10B2B4BF,0,0,"Just Clicks v0.76");
-				DefineButton(150,2-skin_width,18,18,255+BT_HIDE+BT_NOFRAME,0x0866CC00);
-				DrawBar(0,168,168,29,0xE4DFE1);
-				//DrawFlatButton(9,172,84,19,254,0xE4DFE1,"New game (F2)");
-				DrawFlatButton(4,172,80,19,254,0xE4DFE1,"Заново (F2)");
-				ReDraw_Blocks(0);
+				DefineAndDrawWindow(400,276,177,201+GetSkinWidth(),0x74,0x10B2B4BF,0,0,"Just Clicks v0.77");
 				WindowRedrawStatus(2);
+				sc.get();
+				DefineButton(150,-18,18,18,255+BT_HIDE+BT_NOFRAME,0); //кнопочка закрытия :]
+				DrawBar(0,168,168,29,sc.work); //панелька снизу
+#ifdef LANG_RUS
+				DefineButton(9,172,76,19,254,sc.work_button);
+				WriteText(16,178,0x80,sc.work_button_text,"Заново (F2)",0);
+#else
+				DefineButton(9,172,86,19,254,sc.work_button);
+				WriteText(15,178,0x80,sc.work_button_text,"New game (F2)",0);
+#endif
+				ReDraw_Blocks(0);
 		}
 	}
+}
+
+
+void DrawFlatButton()
+{
+	DrawBar(21,42,125,1,0x94AECE); //полоса гор сверху
+	DrawBar(21,104,125,1,0x94AECE); //полоса гор снизу
+	DrawBar(21,42,1,62,0x94AECE); //полоса верт слева
+	DrawBar(146,42,1,63,0x94AECE); //полоса верт справа
+	DrawBar(22,43,124,1,0xFFFFFF); //полоса гор белая
+	DrawBar(22,103,123,1,0xC7C7C7); //тень верт
+	DrawBar(22,43,1,61,0xFFFFFF); //полоса верт белая
+	DrawBar(145,44,1,60,0xC7C7C7); //тень верт
+	DrawBar(23,44,122,59,0xE4DFE1); //заливка
 }
 
 stop:
