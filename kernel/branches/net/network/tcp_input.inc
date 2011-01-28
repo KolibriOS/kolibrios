@@ -1101,7 +1101,7 @@ align 4
        @@:
 
 
-
+	;; TODO: use zero flag as 'ourfinisacked'
 
 
 
@@ -1126,22 +1126,43 @@ align 4
 	dd	.ack_tw 	;TCB_TIMED_WAIT
 
 
-  .ack_fw1:	; 963
+  .ack_fw1:
+	jz	.ack_processed
 
+	test	[ebx + SOCKET.state], SO_CANTRCVMORE
+	jnz	@f
+	;;soisdisconnected(ebx)
+	mov	[ebx + TCP_SOCKET.timer_timed_wait], TCP_time_max_idle
+       @@:
 
+	mov	[ebx + TCP_SOCKET.t_state], TCB_FIN_WAIT_2
 	jmp	.ack_processed
 
-  .ack_c:	; 958
 
+  .ack_c:
+	jz	.ack_processed
+
+	mov	[ebx + TCP_SOCKET.t_state], TCB_TIMED_WAIT
+	call	TCP_cancel_timers
+	mov	[ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
+	;;soisdisconnected(ebx)
 	jmp	.ack_processed
 
-  .ack_la:	; 999
 
-	jmp	.ack_processed
+  .ack_la:
+	jz	.ack_processed
 
-  .ack_tw:	; 1010
+	call	TCP_close
+	jmp	.drop
 
-	jmp	.ack_processed
+
+  .ack_tw:
+	mov	[ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
+	jmp	.drop_after_ack
+
+
+
+
 
 
 
