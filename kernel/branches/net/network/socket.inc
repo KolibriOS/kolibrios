@@ -1724,3 +1724,18 @@ SOCKET_is_disconnected:
 	or	[eax + SOCKET.options], SS_CANTRCVMORE + SS_CANTSENDMORE
 
 	jmp	SOCKET_notify_owner
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_cant_recv_more
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_cant_recv_more:
+
+	ret

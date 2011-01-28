@@ -43,56 +43,56 @@ ETHER_PPP_DISCOVERY	equ 0x6388
 ETHER_PPP_SESSION	equ 0x6488
 
 ;Protocol family
-AF_UNSPEC	equ 0
-AF_UNIX 	equ 1
-AF_INET4	equ 2
-AF_INET6	equ 10
+AF_UNSPEC		equ 0
+AF_UNIX 		equ 1
+AF_INET4		equ 2
+AF_INET6		equ 10
 
 ; Internet protocol numbers
-IP_PROTO_IP	equ 0
-IP_PROTO_ICMP	equ 1
-IP_PROTO_TCP	equ 6
-IP_PROTO_UDP	equ 17
+IP_PROTO_IP		equ 0
+IP_PROTO_ICMP		equ 1
+IP_PROTO_TCP		equ 6
+IP_PROTO_UDP		equ 17
 
 ; Socket types
-SOCK_STREAM	equ 1
-SOCK_DGRAM	equ 2
-SOCK_RAW	equ 3
+SOCK_STREAM		equ 1
+SOCK_DGRAM		equ 2
+SOCK_RAW		equ 3
 
 ; Socket options
-SO_ACCEPTCON	equ 1
+SO_ACCEPTCON		equ 1
 
 ; Socket States
-SS_NOFDREF		equ 0x001   ; no file table ref any more
-SS_ISCONNECTED		equ 0x002   ; socket connected to a peer
-SS_ISCONNECTING 	equ 0x004   ; in process of connecting to peer
-SS_ISDISCONNECTING	equ 0x008   ; in process of disconnecting
-SS_CANTSENDMORE 	equ 0x010   ; can't send more data to peer
-SS_CANTRCVMORE		equ 0x020   ; can't receive more data from peer
-SS_RCVATMARK		equ 0x040   ; at mark on input
-SS_ISABORTING		equ 0x080   ; aborting fd references - close()
-SS_RESTARTSYS		equ 0x100   ; restart blocked system calls
-SS_ISDISCONNECTED	equ 0x800   ; socket disconnected from peer
+SS_NOFDREF		equ 0x001	; no file table ref any more
+SS_ISCONNECTED		equ 0x002	; socket connected to a peer
+SS_ISCONNECTING 	equ 0x004	; in process of connecting to peer
+SS_ISDISCONNECTING	equ 0x008	; in process of disconnecting
+SS_CANTSENDMORE 	equ 0x010	; can't send more data to peer
+SS_CANTRCVMORE		equ 0x020	; can't receive more data from peer
+SS_RCVATMARK		equ 0x040	; at mark on input
+SS_ISABORTING		equ 0x080	; aborting fd references - close()
+SS_RESTARTSYS		equ 0x100	; restart blocked system calls
+SS_ISDISCONNECTED	equ 0x800	; socket disconnected from peer
 
-SS_ASYNC		equ 0x100   ; async i/o notify
-SS_ISCONFIRMING 	equ 0x200   ; deciding to accept connection req
-SS_MORETOCOME		equ 0x400   ;
+SS_ASYNC		equ 0x100	; async i/o notify
+SS_ISCONFIRMING 	equ 0x200	; deciding to accept connection req
+SS_MORETOCOME		equ 0x400
 
 
-SOCKET_MAXDATA	equ 4096*32	; must be 4096*(power of 2) where 'power of 2' is at least 8
+SOCKET_MAXDATA		equ 4096*32	; must be 4096*(power of 2) where 'power of 2' is at least 8
 
 ; Network driver types
-NET_TYPE_ETH	equ 1
-NET_TYPE_SLIP	equ 2
+NET_TYPE_ETH		equ 1
+NET_TYPE_SLIP		equ 2
 
-MAX_backlog	equ 20		; maximum backlog for stream sockets
+MAX_backlog		equ 20		; maximum backlog for stream sockets
 
 ; Error Codes
-ENOBUFS 	equ 55
-ECONNREFUSED	equ 61
-ECONNRESET	equ 52
-ETIMEDOUT	equ 60
-ECONNABORTED	equ 53
+ENOBUFS 		equ 55
+ECONNREFUSED		equ 61
+ECONNRESET		equ 52
+ETIMEDOUT		equ 60
+ECONNABORTED		equ 53
 
 
 
@@ -144,19 +144,6 @@ macro ntohw reg {
 	rol	word reg, 8
 
 }
-
-
-macro packet_to_debug { 	; set esi to packet you want to print, ecx to number of bytes
-
-local	.loop
-
-  .loop:
-	lodsb
-	DEBUGF	1,"%x ", eax:2
-	loop	@r
-
-}
-
 
 include "queue.inc"
 
@@ -263,7 +250,7 @@ stack_handler:
 
 ;-----------------------------------------------------------------
 ;
-; NET_Add_Device:
+; NET_add_Device:
 ;
 ;  This function is called by the network drivers,
 ;  to register each running NIC to the kernel

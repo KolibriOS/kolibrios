@@ -1339,6 +1339,22 @@ align 4
 
 	DEBUGF	1,"Processing FIN\n"
 
+	cmp	[ebx + TCP_SOCKET.t_state], TCB_CLOSE_WAIT
+	je	.not_first_fin
+	cmp	[ebx + TCP_SOCKET.t_state], TCB_CLOSING
+	je	.not_first_fin
+	cmp	[ebx + TCP_SOCKET.t_state], TCB_FIN_WAIT_2
+	je	.not_first_fin
+
+	DEBUGF	1,"First FIN for this connection\n"
+
+	mov	eax, ebx
+	call	SOCKET_cant_recv_more
+
+	mov	[ebx + TCP_SOCKET.t_flags], TF_ACKNOW
+	inc	[ebx + TCP_SOCKET.RCV_NXT]
+
+  .not_first_fin:
 	mov	eax, [ebx + TCP_SOCKET.t_state]
 	shl	eax, 2
 	jmp	dword [eax + .FIN_sw_list]
@@ -1356,23 +1372,28 @@ align 4
 	dd	.fin_wait2	;TCB_FIN_WAIT_2
 	dd	.fin_timed	;TCB_TIMED_WAIT
 
-
-
   .fin_syn_est:
 
-	jmp	.final_processing
+	mov	[ebx + TCP_SOCKET.t_state], TCB_CLOSE_WAIT
+	jmp	.no_fin
 
   .fin_wait1:
 
-	jmp	.final_processing
+	mov	[ebx + TCP_SOCKET.t_state], TCB_CLOSING
+	jmp	.no_fin
 
   .fin_wait2:
 
-	jmp	.final_processing
+	mov	[ebx + TCP_SOCKET.t_state], TCB_TIMED_WAIT
+	mov	eax, ebx
+	call	TCP_cancel_timers
+	mov	[ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
+	call	SOCKET_is_disconnected
+	jmp	.no_fin
 
   .fin_timed:
-
-	jmp	.final_processing
+	mov	[ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
+	jmp	.no_fin
 
   .no_fin:
 
