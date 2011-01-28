@@ -19,7 +19,7 @@
 
 *******************************************************************************/
 
-? pragma option LST    // generate ASM listing file - создать ассемблерный листинг
+//? pragma option LST    // generate ASM listing file - создать ассемблерный листинг
 ? warning    TRUE      // включить режим вывода предупреждений
 ? jumptomain NONE
 ? include "kos_sys.h--"     // MenuetOS system functions - системные функции MenuetOS
