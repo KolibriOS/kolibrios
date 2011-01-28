@@ -1,0 +1,85 @@
+#Life 1.05
+#D Crystal&decay 2700
+#D
+#D A p150 gun fires at a pair of pentadecathlons.  When the first glider
+#D hits the PDs, it is reflected back and hits the second, forming a
+#D honey farm.  Subsequent gliders form a crystal growing upstream.  When
+#D the crystal reaches an eater near the gun, it begins to decay.
+#D When it's all gone, the cycle begins again.
+#D
+#D The period of this pattern is 2700, but by moving the PDs, any period
+#D of the form  750 + 1950n  (n>=0)  can be obtained.
+#D Dean Hickerson, dean@ucdmath.ucdavis.edu  3/27/90
+#N
+#P -14 -23
+**
+**
+#P -17 -19
+...*
+..***
+.*...*
+...*
+*.....*
+*.....*
+.*...*
+..***
+#P -19 2
+**...**
+.
+.*...*
+..***
+..***
+#P -16 11
+**
+**
+#P -4 -13
+**
+**
+#P 5 -16
+**
+*.*
+.***
+..***
+.***
+*.*
+**
+#P 17 -14
+....*
+.****
+****
+*..*
+****
+.****
+....*
+#P 30 -11
+**
+**
+#P 13 9
+...*
+.***
+*
+**
+#P 1 19
+**
+*
+.***
+...*
+#P 45 47
+..**......**
+.*..*....*..*
+******..******
+.*..*....*..*
+..**......**
+#P 40 59
+***
+*.*
+***
+***
+***
+***
+*.*
+***
+#P -14 -4
+..*
+*.*
+.**

@@ -1,0 +1,29 @@
+#Life 1.05
+#D Puffer train
+#D
+#D This was created simply by perturbing
+#D the sides of a B-heptomino with two
+#D LWSS's.  A B-heptomino is a naturally
+#D occurring object that lurches forward at
+#D the speed c/2 before its own debris
+#D usually destroys it.  Not here!  The
+#D LWSS keep it alive.  See BHEPTO, RAKE,
+#D RAKE2.  For a super dirty puffer, see
+#D LINEPUF.
+#N
+#P -2 -8
+...*
+....*
+*...*
+.****
+#P -2 -1
+*
+.**
+..*
+..*
+.*
+#P -2 6
+...*
+....*
+*...*
+.****

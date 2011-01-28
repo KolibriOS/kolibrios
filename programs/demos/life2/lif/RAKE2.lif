@@ -1,0 +1,34 @@
+#Life 1.05
+#D Backward Rake
+#D
+#D Two LWSS perturb the output of a
+#D puffer train (PUFTRAIN) to make
+#D a moving glider gun. Very
+#D similar to RAKE.
+#N
+#P -10 -8
+.**
+****
+**.**
+..**
+#P -2 -8
+...*
+....*
+*...*
+.****
+#P -2 -1
+*
+.**
+..*
+..*
+.*
+#P -2 6
+...*
+....*
+*...*
+.****
+#P -20 8
+...*
+....*
+*...*
+.****

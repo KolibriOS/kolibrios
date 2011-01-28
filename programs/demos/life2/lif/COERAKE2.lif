@@ -1,0 +1,39 @@
+#Life 1.05
+#D p16 forward rake
+#D Just like the backward rake
+#D (coerake1.lif) but with an
+#D additional pair of *WSS to
+#D turn each glider around.
+#D By Tim Coe, 1996.
+#N
+#P 4 -4
+....**
+****.**
+.*****
+..***
+.
+.
+..****
+.*...*
+.....*
+....*
+#P -4 5
+....**
+****.**
+******
+.****
+#P -6 -10
+.******
+*.....*
+......*
+.....*
+#P -17 -8
+.******
+*.....*
+......*
+.....*
+#P -20 4
+.....*
+......*
+*.....*
+.******

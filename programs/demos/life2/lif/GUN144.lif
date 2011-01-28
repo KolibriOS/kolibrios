@@ -1,0 +1,58 @@
+#Life 1.05
+#D p144 glider gun
+#D Found by Bill Gosper, 7/22/94,
+#D using an oscillator by Achim
+#D Flammenkamp, Dean Hickerson,
+#D and David Bell, combined with
+#D a p72 oscillator by Bob 
+#D Wainwright. Same period as
+#D GUNSTAR but much smaller.
+#N
+#P -29 -11
+....**
+****....**
+***.**..**
+.....*
+#P -9 -11
+.....*
+***.**..**
+****....**
+....**
+#P -22 -4
+**
+**
+#P -8 -4
+**
+**
+#P -12 -1
+.***
+*
+*..*
+.**
+#P 1 2
+..**
+.*..*
+*...*
+...*
+.***
+.*
+#P -2 8
+***
+#P 10 -1
+...*
+.***
+.*
+*...*
+*..*
+.**
+#P 15 -2
+***
+#P 20 -6
+**
+**
+#P 20 11
+**
+**
+#P -6 11
+**
+**

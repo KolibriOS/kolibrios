@@ -1,0 +1,103 @@
+#Life 1.05
+#D Minimal area pseudo p23 glider gun
+#D The construction uses Peter Rott's p46 glider gun variant with a
+#D hole in the center. It was improved by David Bell's double blocks.
+#D Dieter Leithner, constructed 2 Oct 1993, improved 14 Oct 1996
+#N
+#P -34 -16
+.**
+.**
+.
+.
+**
+**
+#P -34 -5
+**
+**
+.
+.
+.**
+.**
+#P -24 -13
+***
+...*
+....*
+...*
+.**
+.
+.**
+...*
+....*
+...*
+***
+#P -4 -17
+...*
+..**
+.***
+**
+.**
+..*
+.
+..*
+.**
+**
+.***
+..**
+...*
+#P 11 -15
+**
+**
+#P 7 -3
+**
+**
+#P 24 -4
+*
+**
+.**
+**
+.
+.
+.
+**
+.**
+**
+*
+#P 31 -7
+**
+**
+.
+.
+.**
+.**
+#P 31 4
+.**
+.**
+.
+.
+**
+**
+#P -27 6
+**
+**
+.
+.
+.
+.
+.
+**
+**
+#P -18 5
+.**
+*.*
+*
+***
+.
+.
+.
+***
+*
+*.*
+.**
+#P 0 13
+**
+**

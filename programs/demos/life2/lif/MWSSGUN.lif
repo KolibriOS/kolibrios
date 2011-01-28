@@ -1,0 +1,75 @@
+#Life 1.05
+#D Middleweight Spaceship gun
+#D By Bill Gosper.
+#D 
+#D Spaceship guns are actually rather easy to make,
+#D thanks to their glider syntheses (see MAKEFISH).
+#D With those, you can make an *WSS gun of just
+#D about any period that you can make a glider gun.
+#D (See also MWSSRAK2.)
+#N
+#P -25 -25
+**
+**
+#P -33 -16
+.***
+*..*
+**.*
+#P -26 -16
+***
+*..*
+*.**
+#P -39 1
+..**
+.*.*
+.*
+**
+#P -33 13
+***
+*..**
+.***
+..*
+#P -27 13
+..***
+**..*
+.***
+..*
+#P -25 23
+**
+**
+#P -19 -23
+**
+**
+#P -9 -30
+.**
+**
+.*****
+..****
+.
+..****
+.*****
+**
+.**
+#P 12 -28
+.*...*
+*.....*
+......*
+.*...**
+..***
+.
+..***
+.*...**
+......*
+*.....*
+.*...*
+#P 28 -20
+**
+**
+#P -11 -11
+..*
+**
+.**
+#P 1 -22
+*.*
+**
+.*

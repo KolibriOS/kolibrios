@@ -1,0 +1,37 @@
+#Life 1.05
+#D p184 gun using a single b-heptomino.
+#D
+#D Since 184 is a multiple of 46, this
+#D gun is perfect for p46 glider logic.
+#D David Buckingham, July 1996.
+#N
+#P -3 -19
+...*
+.***
+*
+**
+#P 8 -15
+...*
+.***
+*
+**
+#P -7 0
+.***
+*..*
+**..*
+...**
+#P -19 -3
+..**
+.*.*
+.*
+**
+#P -15 8
+..**
+.*.*
+.*
+**
+#P -4 13
+**
+*
+.***
+...*

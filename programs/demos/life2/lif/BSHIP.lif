@@ -1,0 +1,44 @@
+#Life 1.05
+#D Blinker ship
+#D Leaves a trail of blinkers
+#D which are eaten by a pattern
+#D with not quite a large enough
+#D appetite (6c/13).  A similar
+#D idea is shown in PIPUF.
+#N
+#P 10 -4
+.****
+*...*
+....*
+*..*
+.
+*..*
+....*
+*...*
+.****
+#P 6 -1
+**
+***
+**
+#P 1 -8
+.**
+****
+**.**
+..**
+#P 1 5
+..**
+**.**
+****
+.**
+#P -3 -2
+...*
+.***
+***
+.***
+...*
+#P -11 -2
+.***
+*...*
+*...*
+*...*
+.***

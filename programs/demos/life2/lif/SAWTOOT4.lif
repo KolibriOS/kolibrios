@@ -1,0 +1,304 @@
+#Life 1.05
+#D Orthogonal sawtooth with expansion factor 11
+#D Population is unbounded but does not tend to infinity.  Its graph is a
+#D sawtooth function with ever-increasing teeth.  More specifically, the
+#D population in generation t = 36*11^n - 37 (n>=1), is 7(t+1)/30 + 746, but the
+#D population in generation 12*11^n - 51 (n>=1) is only 635 if n is even, 633 if
+#D n is odd.  This uses a spark from a period 9, speed c/3 orthogonal spaceship,
+#D found by David Bell, to turn a LWSS into a loaf, which is then pulled back by
+#D pairs of LWSSs.  When the loaf is pulled all the way back, it gets deleted and
+#D the cycle begins again.  (The deletion is caused by interaction with a LWSS
+#D and with 3 gliders which would otherwise form a LWSS.)
+#D 
+#D Try putting something in the path of the c/3, far away from the guns.  When
+#D the beam of LWSSs hits the resulting garbage, it is likely that a loaf will
+#D eventually be formed and pulled back.  No matter where the loaf starts, when
+#D it reaches the guns it will be deleted by one of 3 different reactions.  (The
+#D block behind the c/3 is used for one of these; it's not needed for the
+#D sawtooth pattern itself.) The beam of LWSSs will again be released and may
+#D eventually form another loaf.  The process may be repeated many times until
+#D either the LWSS beam burns through the garbage or the reaction moves upstream
+#D and consumes the guns.
+#D 
+#D Dean Hickerson, dean@ucdmath.ucdavis.edu  5/15/92
+#N
+#P 20 5
+**
+.*
+.*.*
+..**
+#P 21 -11
+...............*...**
+..............*....***
+................***...*
+.*.........*...*.**.*.**
+.**........***......*.*
+..*.**.*.**..*....*..***
+..*...***...*........*.**.*
+..*.....**..*....******....**
+*.*....**..................**
+..*.....**..*....******....**
+..*...***...*........*.**.*
+..*.**.*.**..*....*..***
+.**........***......*.*
+.*.........*...*.**.*.**
+................***...*
+..............*....***
+...............*...**
+#P 29 7
+*.*
+*..*
+...**
+.*...**
+...**
+*..*
+*.*
+#P 39 9
+...*
+..*.*
+.*.**
+**.**
+.*.**
+..*.*
+...*
+#P 54 12
+.*
+**
+#P 31 16
+*
+**
+#P 26 19
+***
+*
+.*
+#P 51 25
+**
+.*
+#P 40 23
+**
+.*
+...**
+...***
+...**
+.*
+**
+#P 27 25
+..**
+.*
+*
+*
+*
+.*
+..**
+#P 17 27
+*
+**
+#P 41 -24
+.*
+**
+#P 31 -27
+*.*
+*...*
+....*
+.....*
+....*
+*...*
+*.*
+#P 15 -29
+...**
+.*..*
+*
+*
+*
+.*..*
+...**
+#P 23 -25
+*
+*.*
+**
+#P -1 -26
+....*
+..*.*
+**
+**
+**
+..*.*
+....*
+#P -5 -22
+*
+**
+.*
+#P -11 -24
+..**
+.*
+*
+*
+*
+.*
+..**
+#P -21 -19
+..**
+.*.*
+.*
+**
+#P 2 -17
+*
+.**
+**
+#P 18 -10
+**
+*
+#P 13 -2
+.**
+****
+**.**
+..**
+#P 3 -5
+...*
+....*
+*...*
+.****
+#P -27 -5
+...*
+....*
+*...*
+.****
+#P -25 -18
+*.*
+**
+.*
+#P 4 -30
+.*
+**
+#P -7 -33
+**
+*..*
+....*
+....*
+....*
+*..*
+**
+#P -20 -35
+...*
+..****
+.**.****
+***.**...*
+.**.**...*
+..*****...*
+...*...***
+#P -30 -32
+**
+*
+#P -48 -32
+**
+.*
+#P -51 -27
+...*
+.*...*
+.*****
+**...**
+.*****
+..***
+...*
+#P -53 -8
+**...**
+.
+*.....*
+.
+.**.**
+...*
+#P -48 0
+**
+*
+.***
+...*
+#P -47 -14
+*.*
+.**
+.*
+#P -57 -2
+*
+***
+...*
+..**
+#P -55 6
+..***
+.*...*
+.
+*.....*
+**...**
+#P -53 22
+**...**
+.
+*.....*
+.
+.**.**
+...*
+#P -50 32
+*
+**
+#P -44 -5
+.*
+*.*
+.*
+#P -43 7
+.**
+*.*
+..*
+#P -23 -13
+.**.........**
+*..*.......*..*
+***.........***
+...*********
+..*..*****..*
+..**..***..**
+#P -31 9
+*
+**
+#P -23 6
+...**
+..*.*
+.***
+***
+.***
+..*.*
+...**
+#P -12 4
+...*
+..*.*
+**...*
+.*...*
+**...*
+..*.*
+...*
+#P 1 2
+..**
+..*
+*.*
+**
+#P -3 14
+.**
+*.*
+..*
+#P -28 22
+**
+*
+#P -23 20
+....*
+..*.*
+.*.*
+*..*
+.*.*
+..*.*
+....*
+#P -5 22
+**
+***
+..**.*
+..*..*
+..**.*
+***
+**
+#P 6 24
+.*
+**

@@ -1,0 +1,33 @@
+#Life 1.05
+#D Rake
+#D
+#D Two LWSS perturb the output of a
+#D puffer train (PUFTRAIN) to make
+#D a moving glider gun.
+#N
+#P -10 -8
+.**
+****
+**.**
+..**
+#P -2 -8
+...*
+....*
+*...*
+.****
+#P -2 -1
+*
+.**
+..*
+..*
+.*
+#P -2 6
+...*
+....*
+*...*
+.****
+#P -19 9
+.****
+*...*
+....*
+...*

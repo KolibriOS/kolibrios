@@ -1,0 +1,178 @@
+#Life 1.05
+#D Still-Life Reflector
+#D 
+#D Converts one glider into 4 for any input stream
+#D with a period of 672 or greater, unless pipelining
+#D techniques are employed. It is a great challenge
+#D to come up with the small, fast reflector that
+#D consists solely of still-lifes. Dieter Leithner
+#D (dietrich.deithner@dlr.de) is offering a $100
+#D prize for the first stable glider reflector that
+#D fits within a 50x50 box.
+#D 
+#D A glider collides with a boat in generation 97,
+#D destroying the boat but creating a B-heptomino at
+#D generation 107. This is converted into a Herschel
+#D in 59 generations. Herschel conduits of lengths 64,
+#D 77, 77, 64, 64, 77, 119, and 64 set the Herschel up
+#D for a final collision to recreate the destroyed
+#D boat.
+#D 
+#D The first stable glider reflectors were created by
+#D Paul Callahan and Dean Hickerson in late 1996. This
+#D one by Dave Buckingham, May 30, 1997.
+#N
+#P -31 -20
+**
+*.*
+.*
+#P -44 -16
+*.**
+**.*
+#P -35 -13
+**
+**
+#P -27 -5
+..**
+..*
+*.*
+**
+#P -47 13
+**
+**
+#P -46 20
+**
+**
+#P -42 18
+**
+**
+#P -40 24
+**
+**
+#P -26 25
+..**
+...*
+***
+*
+#P -11 24
+**
+**
+#P -11 5
+...*
+.***
+*
+**
+#P -1 12
+*
+***
+...*
+..**
+#P 14 15
+**
+**
+#P 14 32
+**
+*
+.***
+...*
+#P 20 22
+..**
+.*.*
+.*
+**
+#P 34 29
+**
+**
+#P 39 24
+**
+**
+#P 41 28
+**
+**
+#P 45 22
+**
+**
+#P 12 4
+..**
+...*
+***
+*..***
+..*...*
+.**..**
+#P 43 -13
+**
+**
+#P 45 -7
+**
+**
+#P 49 -9
+**
+**
+#P 50 -2
+**
+**
+#P 27 -16
+...*
+.***
+*
+**
+#P 14 -13
+**
+**
+#P 3 -3
+**
+*.*
+..*
+..**
+#P 0 -33
+...*
+.***
+*
+**
+#P -1 -27
+**
+**
+#P -6 -26
+**
+**
+#P -7 -32
+**
+**
+#P -14 1
+..**
+...*
+***
+*
+#P -16 -1
+**
+**
+#P -20 -8
+*
+***
+...*
+..*.*
+...*
+#P -18 -14
+**
+**
+#P -26 -40
+**
+**
+#P -33 -39
+**
+**
+#P -31 -35
+**
+**
+#P -37 -33
+**
+**
+#P -26 -17
+**
+*
+.***
+...*
+#P -59 -46
+*
+.**
+**

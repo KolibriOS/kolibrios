@@ -1,0 +1,121 @@
+#Life 1.05
+#D SloPuf: Move fast but Puff slowly. A good motto to live your Life by.
+#D 
+#D This can be modified in two ways to give larger periods as follows:
+#D 
+#D Moving the back 12 spaceships backwards by 9 cells and outwards by 3 cells
+#D increases the period by 96.
+#D 
+#D Moving the back 6 spaceships forwards by one cell and outwards by one cell,
+#D and moving the next 6 spaceships forwards by 3 cells and inwards by one cell
+#D increases the period by 8 and leaves one more blinker as output.  (This can
+#D only be done when there is sufficient room along the center line.)
+#D 
+#D An interesting linear combination of the two rules results in the following:
+#D 
+#D Moving the back six spaceships backwards by 6 cells and outwards by 6 cells
+#D increases the period by 120 and leaves 3 more blinkers as output.
+#D 
+#D By David Bell
+#N
+#P -41 -10
+...*
+.*...*
+*
+*....*
+*****
+#P -41 -2
+.**
+**.***
+.****
+..**
+#P -39 3
+...**
+.*....*
+*
+*.....*
+******
+#P -33 0
+***
+#P -29 -3
+........*
+.**.*..*.*
+*.*.****.*
+*
+*.*.****.*
+.**.*..*.*
+........*
+#P -17 -19
+******
+*.....*
+*
+.*....*
+...**
+#P -17 15
+...**
+.*....*
+*
+*.....*
+******
+#P 2 -23
+.**
+**.**
+.****
+..**
+#P 2 20
+..**
+.****
+**.**
+.**
+#P 10 -29
+.**
+**.****
+.******
+..****
+#P 10 26
+..****
+.******
+**.****
+.**
+#P 11 -13
+..****
+.******
+**.****
+.**
+#P 11 10
+.**
+**.****
+.******
+..****
+#P 21 -32
+..***
+.*****
+**.***
+.**
+#P 21 29
+.**
+**.***
+.*****
+..***
+#P 30 -22
+...**
+.*....*
+*
+*.....*
+******
+#P 30 18
+******
+*.....*
+*
+.*....*
+...**
+#P 34 -36
+.**
+**.****
+.******
+..****
+#P 34 33
+..****
+.******
+**.****
+.**

@@ -1,0 +1,13 @@
+#Life 1.05
+#D Pi Heptomino
+#D
+#D A common pattern in Life.
+#D
+#D Pi = 3.141592653589793238
+#D
+#D See SPARK2PI, PIPUF, REVFUSE.
+#N
+#P 3 3
+***
+*.*
+*.*

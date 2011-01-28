@@ -1,0 +1,39 @@
+#Life 1.05
+#D p30 glider gun (the Original)
+#D
+#D This is made of two of a pattern
+#D know as the "queen bee", which
+#D sometimes occurs naturally,
+#D whose debris can be deleted on 
+#D the sides by blocks or eaters.
+#D But a collision in the center
+#D can, as seen here, miraculously 
+#D form a glider. Just one of these
+#D moving back and forth is called
+#D piston (see the p30 in OSCSPN2).
+#N
+#P 4 -5
+....*
+.****
+****
+*..*
+****
+.****
+....*
+#P 13 -4
+*
+*
+#P -6 -3
+..*
+.*.*
+*...**
+*...**
+*...**
+.*.*
+..*
+#P 17 -2
+**
+**
+#P -17 0
+**
+**

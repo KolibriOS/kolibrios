@@ -1,0 +1,38 @@
+#Life 1.05
+#D p46 glider gun
+#D Based on two shuttles which
+#D make use of a double 
+#D B-heptomino reaction.  See
+#D the p46 piston in OSCSPN2.
+#N
+#P 2 -17
+**
+**
+#P -6 -8
+..*
+.***
+**.*
+#P 1 -8
+.*
+***
+*.**
+#P -25 4
+..*
+..**
+*.***
+....**
+...**
+...*
+.
+...*
+...**
+....**
+*.***
+..**
+..*
+#P -36 6
+**
+**
+#P -9 13
+**
+**

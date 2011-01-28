@@ -1,0 +1,18 @@
+#Life 1.05
+#D Boat stretcher
+#D Diagonal c/4 spaceship found by Tim Coe 2/20/96.
+#D Noam Elkies noticed that it can stretch a boat.
+#N
+#P -13 -13
+**.*.......***
+*...*......*
+*....*.......*.......**
+..**.......*.*....**.*
+....*.*....***.*..**
+..........*...**..**
+......**.****.**
+.......*******
+#P -2 -2
+.*
+*.*
+.*

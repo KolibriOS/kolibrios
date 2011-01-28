@@ -1,0 +1,13 @@
+#Life 1.05
+#D r-pentomino
+#D A small, vigorous, common pattern.
+#D
+#D When the Game of Life was first
+#D introduced around 1970, this was
+#D proposed as the smallest pattern
+#D for which the outcome was unknown.
+#N
+#P 3 3
+.**
+**
+.*

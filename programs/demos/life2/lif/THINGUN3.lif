@@ -1,0 +1,56 @@
+#Life 1.05
+#D p92 glider gun
+#D Smallest known p92 gun; it uses 2 overlapping p46 guns whose
+#D streams cross in an eater-assisted ternary reaction.
+#D Dean Hickerson, dean@ucdmath.ucdavis.edu  1/8/91
+#N
+#P -35 -6
+**
+*
+#P -19 -6
+***
+..*
+..*
+.*
+.
+.*
+..*
+..*
+***
+#P -6 -10
+..*
+.**
+**
+.**
+.
+.
+.
+.**
+**
+.**
+..*
+#P 10 -13
+..**
+..*
+*.*
+**
+#P 10 8
+**
+*.*
+..*
+..**
+#P 22 -6
+**
+*.*
+..*
+***
+.
+.
+.
+***
+..*
+*.*
+**
+#P 32 -5
+**
+.*

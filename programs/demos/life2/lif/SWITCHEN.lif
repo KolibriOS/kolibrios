@@ -1,0 +1,14 @@
+#Life 1.05
+#D Switch Engine
+#D by Charles Corderman.
+#D The smallest forever-growing
+#D pattern in the Game of Life.
+#N
+#P -13 -3
+.*.*
+*
+.*..*
+...***
+#P 13 2
+**
+*

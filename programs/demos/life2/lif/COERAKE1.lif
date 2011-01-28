@@ -1,0 +1,26 @@
+#Life 1.05
+#D p16 backward rake
+#D A very simple construction: just
+#D four *WSS and an extra cell.  By
+#D Tim Coe, 1996.
+#N
+#P 4 -4
+....**
+****.**
+.*****
+..***
+#P 5 2
+.****
+*...*
+....*
+...*
+#P -6 -10
+.******
+*.....*
+......*
+.....*
+#P -4 5
+....**
+****.**
+******
+.****

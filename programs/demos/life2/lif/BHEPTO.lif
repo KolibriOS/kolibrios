@@ -1,0 +1,14 @@
+#Life 1.05
+#D B-heptomino
+#D A somewhat vigorous, commonly seen bit of
+#D fluff, which lends to Life's growth
+#D tendencies.  This piece is used in PUFTRAIN,
+#D RAKE, RAKE2, RAKE3, BHEPTPUF, GUN46, TRACK,
+#D GUNSTAR, GUNSTAR2, GUNSTAR3, BI-GUN, and the
+#D p46, p54, and p100 shuttles in OSCSPN2 and
+#D OSCSPN3, and in many other patterns.
+#N
+#P -1 -1
+.*
+***
+*.**

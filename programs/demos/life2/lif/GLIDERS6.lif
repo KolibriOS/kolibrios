@@ -1,0 +1,18 @@
+#Life 1.05
+#D How 6 gliders can pass right through each other
+#D
+#D This is somewhat amazing, considering that even
+#D 4-glider collisions have not all been explored.
+#N
+#P 3 -3
+..*
+**........*
+.**...*..*
+.....**..***
+.....*.*
+#P -13 0
+....*.*
+***..**
+..*..*...**
+.*........**
+.........*

@@ -1,0 +1,185 @@
+#Life 1.05
+#D Line Puffer of width 33
+#D 
+#D The width is defined by the length of the first free-standing line
+#D in the puffer's plume.  The formula for this is 12n+1-s, where n is
+#D the number of middle segments, and s is the number of cells covered
+#D by the little 3-cell, 5-unit puff-suppressors on the upper edge of
+#D this otherwise symmetrical pattern.
+#D 
+#D Here, n=4, and s=6+5+5.  The Y-shaped puff-suppressors can have 5,
+#D 6, or 7 units of spacing on between them, or between one of them and
+#D the end.  You only need 2 or 3 such suppressors to produce any
+#D puffer width.
+#D 
+#D Notice that placing random debris behind the puffer sometimes
+#D affects the plume permanently - even turning it asymmetrical if the
+#D debris was asymmetrical.  It also affects the period of the puffer,
+#D that is, the number of generations it takes to repeat.  By
+#D increasing the width, the period can be made to rise exponentially,
+#D surpassing 10^6 at a width of only about 70.  But the most amazing
+#D thing is that it has a half-life on the order of 10^8 generations.
+#D 
+#D By Hartmut Holzwart and Al Hensel, April 1994
+#N
+#P 3 -22
+*
+..*
+*
+.
+.
+*
+..*
+*
+.
+*
+*
+..*
+#P 1 -49
+*.*
+*..*
+...**
+.....*
+...****
+..*....*
+....*..*
+....*..*
+......*
+*.****
+*...*
+...*
+.*.*
+.
+..***
+...**
+..***
+.
+.*.*
+.*..*
+....*
+..*..*
+....**
+#P 10 -48
+*
+****
+..**
+.....*
+..****
+......*
+..*..***
+....***
+.....*
+*.***
+**..*
+.***
+.*
+...*
+.*.*
+....*
+.*.*
+...*
+.*
+.***
+..***
+..**
+#P 6 -26
+*.*..**
+*.*.**
+*
+*.*.**
+*.*..**
+*.....**
+*.*..*.**
+*.*.***..*
+*........*
+*.*.***..*
+*.*..*.**
+*.....**
+*.*..**
+*.*.**
+*
+*.*.**
+*.*..**
+*.....**
+*.*..*.**
+*.*.***..*
+*........*
+*.*.***..*
+*.*..*.**
+*.....**
+*.*..**
+*.*.**
+*
+*.*.**
+*.*..**
+*.....**
+*.*..*.**
+*.*.***..*
+*........*
+*.*.***..*
+*.*..*.**
+*.....**
+*.*..**
+*.*.**
+*
+*.*.**
+*.*..**
+*.....**
+*.*..*.**
+*.*.***..*
+*........*
+*.*.***..*
+*.*..*.**
+*.....**
+*.*..**
+*.*.**
+*
+*.*.**
+*.*..**
+#P 1 27
+....**
+..*..*
+....*
+.*..*
+.*.*
+.
+..***
+...**
+..***
+.
+.*.*
+...*
+*...*
+*.****
+......*
+....*..*
+....*..*
+..*....*
+...****
+.....*
+...**
+*..*
+*.*
+#P 10 27
+..**
+..***
+.***
+.*
+...*
+.*.*
+....*
+.*.*
+...*
+.*
+.***
+**..*
+*.***
+.....*
+....***
+..*..***
+......*
+..****
+.....*
+..**
+****
+*

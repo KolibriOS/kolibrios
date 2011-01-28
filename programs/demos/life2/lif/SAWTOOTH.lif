@@ -1,0 +1,269 @@
+#Life 1.05
+#D Orthogonal sawtooth with expansion factor 6
+#D Population is unbounded but does not tend to infinity.  Its graph is
+#D a sawtooth function with ever-increasing teeth.  More specifically,
+#D the population in generations  t  near  28*6^n  is about  t/5  if
+#D t  is odd and about  3t/20  if  t  is even, but the population in
+#D generation  14*6^n - 84  (n>=2)  is only 562.  (Even more
+#D specifically, the population in generation  t = 28*6^n + 12  (n>=1),
+#D is 3t/20 + 555  and it drops to  t/5 + 599  in the next generation.)
+#D 
+#D This uses a spark from a period 4, speed c/4 orthogonal spaceship,
+#D found by Tim Coe, to turn one LWSS into a loaf, which is then pulled
+#D back by subsequent pairs of LWSSs. When the loaf is pulled all the
+#D way back, it gets deleted and the cycle begins again.
+#D 
+#D Dean Hickerson, dean@ucdmath.ucdavis.edu  8/14/92
+#D Tim Coe, coe@vitsemi.com  8/11/95
+#N
+#P 3 -5
+..*.*
+**...**
+....*.*
+....*
+.......*
+..*...**
+.*
+**.**
+**.*
+.*.**
+.*
+..*..*
+.**..*
+...**
+.
+.
+....***
+.*.*
+..*.*..*
+....*...*
+.......*
+.....**
+...***
+...***
+#P 55 -29
+.*
+**
+#P 41 -32
+....*.*
+...*..*
+..**
+**...*
+..**
+...*..*
+....*.*
+#P 30 -34
+**
+*.*
+...*
+*..*
+...*
+*.*
+**
+#P 12 -37
+....*
+..*.*
+.*.*
+*..*
+.*.*
+..*.*
+....*
+#P 8 -35
+**
+*
+#P 2 -35
+...*
+..**
+.**
+***
+.**
+..**
+...*
+#P -7 -37
+**
+.*
+.*.*
+..**
+#P -2 -27
+**
+*.*
+..*
+..**
+#P -14 -32
+....*
+..*.*
+**
+**
+**
+..*.*
+....*
+#P -18 -28
+*
+**
+.*
+#P -24 -30
+..**
+.*
+*
+*
+*
+.*
+..**
+#P -34 -27
+*
+**
+#P -5 -9
+**
+*.*
+..*
+..**
+#P -14 -14
+..**
+.*.*
+*
+*..*
+*
+.*.*
+..**
+#P -28 -16
+*.*
+*..*
+...**
+.*...**
+...**
+*..*
+*.*
+#P -37 -14
+**
+*
+#P -23 -6
+**
+.*
+#P -32 -8
+*
+*.*
+...**
+...**
+...**
+*.*
+*
+#P -49 -6
+**
+..*
+...*
+...*
+...*
+..*
+**
+#P -57 -8
+**
+.*
+.*.*
+..**
+#P -54 1
+**
+*
+#P -57 10
+**.*.**
+*.....*
+.*...*
+..***
+#P -55 21
+...*
+...*
+..*.*
+.**.**
+*.....*
+...*
+**...**
+#P -52 35
+.*
+**
+#P -50 13
+.*
+.**
+*.*
+#P -41 23
+..**
+.*.*
+.*
+**
+#P -35 18
+....*.*
+...*..*
+..**
+**...*
+..**
+...*..*
+....*.*
+#P -30 27
+**
+*
+#P -21 25
+...*
+..**
+.**
+***
+.**
+..**
+...*
+#P -14 27
+**
+**
+**
+#P -11 27
+....*
+..*.*
+.*.*
+*..*
+.*.*
+..*.*
+....*
+#P 5 30
+....**
+....*
+.**
+***
+.**
+....*
+....**
+#P 23 28
+*
+*.*
+...**
+...**
+...**
+*.*
+*
+#P 32 30
+**
+.*
+#P -26 17
+.*
+**
+*.*
+#P -15 16
+.*
+*.*
+**.*
+**.**
+**.*
+*.*
+.*
+#P -9 14
+..**
+..*
+*.*
+**
+#P -3 8
+..**
+.*.*
+.*
+**
+#P -25 8
+..**..***..**
+..*..*****..*
+...*********
+***.........***
+*..*.......*..*
+.**.........**

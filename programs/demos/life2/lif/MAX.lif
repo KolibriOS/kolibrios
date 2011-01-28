@@ -1,0 +1,62 @@
+#Life 1.05
+#D MAX, the smallest known example of a "spacefiller"
+#D
+#D This is the fastest-growing known pattern in Conway's Game of Life
+#D (possibly the fastest possible). It fills space to a density of 1/2,
+#D conjectured to be the maximum density, and does it at a speed of c/2
+#D in each of the 4 directions, which has been proven to be the maximum
+#D possible speed.
+#D
+#D Population is [(t+19)^2+463]/4 for t divisible by 4;
+#D .             [(t+19)^2+487]/4 for t even, not div. by 4;
+#D .             [(t+18)^2+639]/4 for t odd.
+#D
+#D Original construction, top/bottom stretchers by Hartmut Holzwart;
+#D Size optimization, left/right stretchers by David Bell;
+#D Original idea, middle part, l/r stretcher connection by Al Hensel.
+#D This spacefiller by David Bell, September 1993.
+#N
+#P -14 -21
+.....*.*
+....*..*
+...**
+..*
+.****
+*....*
+*..*
+*..*
+.*.........***...***
+..****.*..*..*...*..*
+...*...*.....*...*
+....*........*...*
+....*.*......*...*
+.
+...***.....***...***
+...**.......*.....*
+...***......*******
+...........*.......*
+....*.*...***********
+...*..*..*............**
+...*.....************...*
+...*...*.............*...*
+....*...************.....*
+.....**............*..*..*
+........***********...*.*
+.........*.......*
+..........*******......***
+..........*.....*.......**
+.........***...***.....***
+.
+...........*...*......*.*
+...........*...*........*
+...........*...*.....*...*
+........*..*...*..*..*.****
+.........***...***.........*
+.........................*..*
+.........................*..*
+.......................*....*
+........................****
+..........................*
+........................**
+.....................*..*
+.....................*.*
