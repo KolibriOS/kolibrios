@@ -15,6 +15,7 @@
 
 $Revision$
 
+
 virtual at 0
 
 	SOCKET:
@@ -1680,3 +1681,46 @@ SOCKET_process_end:
 	pop	ebx
 
 	ret
+
+
+
+
+
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_is_disconnecting
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_is_disconnecting:
+
+	and	[eax + SOCKET.options], not (SS_ISCONNECTING)
+	or	[eax + SOCKET.options], SS_ISDISCONNECTING + SS_CANTRCVMORE + SS_CANTSENDMORE
+
+	jmp	SOCKET_notify_owner
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_is_disconnected
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_is_disconnected:
+
+	and	[eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
+	or	[eax + SOCKET.options], SS_CANTRCVMORE + SS_CANTSENDMORE
+
+	jmp	SOCKET_notify_owner

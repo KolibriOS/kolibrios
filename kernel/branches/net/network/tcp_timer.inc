@@ -112,3 +112,24 @@ local	.exit
   .exit:
 
 }
+
+
+
+; eax = socket
+
+TCP_cancel_timers:
+
+	push	eax edi
+
+	lea	edi, [eax + TCP_SOCKET.timer_retransmission]
+	xor	eax, eax
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+
+	pop	edi eax
+
+
+	ret

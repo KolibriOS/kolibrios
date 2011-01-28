@@ -1129,10 +1129,11 @@ align 4
   .ack_fw1:
 	jz	.ack_processed
 
-	test	[ebx + SOCKET.state], SO_CANTRCVMORE
+	test	[ebx + SOCKET.state], SS_CANTRCVMORE
 	jnz	@f
-	;;soisdisconnected(ebx)
-	mov	[ebx + TCP_SOCKET.timer_timed_wait], TCP_time_max_idle
+	mov	eax, ebx
+	call	SOCKET_is_disconnected
+;;;        mov     [ebx + TCP_SOCKET.timer_timed_wait], TCP_time_max_idle
        @@:
 
 	mov	[ebx + TCP_SOCKET.t_state], TCB_FIN_WAIT_2
@@ -1143,15 +1144,19 @@ align 4
 	jz	.ack_processed
 
 	mov	[ebx + TCP_SOCKET.t_state], TCB_TIMED_WAIT
+	mov	eax, ebx
 	call	TCP_cancel_timers
 	mov	[ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
-	;;soisdisconnected(ebx)
+	mov	eax, ebx
+	call	SOCKET_is_disconnected
 	jmp	.ack_processed
 
 
   .ack_la:
 	jz	.ack_processed
 
+
+	mov	eax, ebx
 	call	TCP_close
 	jmp	.drop
 
