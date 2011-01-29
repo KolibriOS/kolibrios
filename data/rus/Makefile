@@ -126,6 +126,8 @@ FASM_PROGRAMS:=\
  games/arcanii:GAMES/ARCANII:$(PROGS)/games/arcanii/trunk/arcanii.asm \
  games/freecell:GAMES/FREECELL:$(PROGS)/games/freecell/freecell.ASM \
  games/invaders:GAMES/INVADERS:$(PROGS)/games/invaders/invaders.asm \
+ games/kox:GAMES/KOX:$(PROGS)/games/kox/trunk/kox.asm \
+ games/lights:GAMES/LIGHTS:$(PROGS)/games/lights/trunk/lights.asm \
  games/lines:GAMES/LINES:$(PROGS)/games/lines/lines.asm \
  games/mblocks:GAMES/MBLOCKS:$(PROGS)/games/mblocks/trunk/mblocks.asm \
  games/phenix:GAMES/PHENIX:$(PROGS)/games/phenix/trunk/phenix.asm \
@@ -134,6 +136,7 @@ FASM_PROGRAMS:=\
  games/pong3:GAMES/PONG3:$(PROGS)/games/pong3/trunk/pong3.asm \
  games/rsquare:GAMES/RSQUARE:$(PROGS)/games/rsquare/trunk/rsquare.asm \
  games/snake:GAMES/SNAKE:$(PROGS)/games/snake/trunk/snake.asm \
+ games/sw:GAMES/SW:$(PROGS)/games/sw/trunk/sw.asm \
  games/tetris:GAMES/TETRIS:$(PROGS)/games/tetris/trunk/tetris.asm \
  lib/archiver.obj:LIB/ARCHIVER.OBJ:$(PROGS)/fs/kfar/trunk/kfar_arc/kfar_arc.asm \
  lib/box_lib.obj:LIB/BOX_LIB.OBJ:$(PROGS)/develop/libraries/box_lib/trunk/box_lib.asm \
@@ -239,12 +242,11 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  games/checkers:GAMES/CHECKERS \
  games/FindNumbers:GAMES/FindNumbers games/gomoku:GAMES/GOMOKU \
  games/klavisha:GAMES/KLAVISHA games/kosilka:GAMES/KOSILKA \
- games/kosskin.gfx:GAMES/KOSSKIN.GFX games/kox:GAMES/KOX \
- games/lights:GAMES/LIGHTS games/megamaze:GAMES/MEGAMAZE \
+ games/kosskin.gfx:GAMES/KOSSKIN.GFX games/megamaze:GAMES/MEGAMAZE \
  games/msquare:GAMES/MSQUARE games/padenie:GAMES/PADENIE \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/sq_game:GAMES/SQ_GAME \
- games/sudoku:GAMES/SUDOKU games/sw:GAMES/SW games/whowtbam:GAMES/WHOWTBAM \
+ games/sudoku:GAMES/SUDOKU games/whowtbam:GAMES/WHOWTBAM \
  games/xonix:GAMES/XONIX \
  lib/cnv_png.obj:LIB/CNV_PNG.OBJ lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
