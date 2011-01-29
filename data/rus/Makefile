@@ -216,8 +216,7 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  panel.dat:PANEL.DAT pipetka:PIPETKA setup.dat:SETUP.DAT \
  shell:SHELL spanel:SPANEL table:TABLE test:TEST \
  vmode:VMODE 3d/3dsheart:3D/3DSHEART \
- 3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS \
- 3d/house.3ds:3D/HOUSE.3DS 3d/hrt.3ds:3D/HRT.3DS 3d/teapot.3ds:3D/TEAPOT.3DS \
+ 3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
  demos/ak47.lif:DEMOS/AK47.LIF \
  demos/barge.lif:DEMOS/BARGE.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
