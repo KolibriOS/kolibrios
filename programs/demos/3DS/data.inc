@@ -15,6 +15,7 @@
 	size_x		dw	SIZE_X
 	size_y		dw	SIZE_Y
 
+	re_alloc_flag db 0
 	angle_counter dw 0
 	piD180	      dd 0.017453292519943295769236907684886
 	piD128	      dd 0.024544
@@ -146,6 +147,11 @@ bumps_flag	  db 0
 bumps_deep_flag   db 3
 		  dd bumps_d_f
 
+		  db 21
+		  db 're-map tex'
+		  db 255
+map_tex_flag	  db ? ;1
+		  dd ?	;bumps_d_f
 ;                  db 21
 ;                  db 'light No. '
 ;                  db 3
@@ -262,7 +268,7 @@ base_vector:
       if Ext=SSE
 	db   ' (SSE)'
       end if
-	db   ' 0.053'
+	db   ' 0.054'
     labellen:
 	STRdata db '-1        '
 
@@ -277,7 +283,7 @@ if USE_LFN
 	 fsize	dd	0 ;180000 ; sizeof(workarea)
 	 fptr	dd	0 ;workarea
 	file_name:
-		db	'/rd/1/3d/teapot.3ds',0
+		db	'/rd/1/3d/house.3ds',0
 
 else
 
@@ -288,7 +294,7 @@ else
 		dd workarea
 		dd hash_table
 	file_name:
-		db   '/rd/1/teapot.3ds',0
+		db   '/rd/1/house.3ds',0
 end if
 
 I_END:
@@ -390,7 +396,7 @@ align 8
 	rand_seed	    dw ?
 align 8
 	buffer	dq	?
-	err_	dd	?
+	err	dd	?
 	drr	dd	?
 	xx	dd	?
 	yy	dd	?

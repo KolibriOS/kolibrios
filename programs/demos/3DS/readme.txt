@@ -1,8 +1,11 @@
-View3ds 0.053 - tiny viewer to .3ds files.
+View3ds 0.054 - tiny viewer to .3ds files.
 
 What's new?
-1. Optimizations.
-
+1. Skinned window by Leency.
+2. Optimizations.
+3. Re map texture, bumps option - allow spherical mapping around each axle (X,Y,Z).
+4. Problem with too small memory to generate object fixed. (Problem ocurred with
+   house.3ds object and others objects contains less than 1000 faces and points).
 
 Buttons description:
 1. rotary: choosing rotary axle: x, y, x+y.
@@ -14,8 +17,8 @@ Buttons description:
    mapping).
 3. speed: idle, full.
 4,5. zoom in, out: no comment.
-6. catmull: on( use z buffer ( z coordinate interpolation), off( depth sorting, painters alghoritm).
-   txgrd and 2tex models only with catmull  = on.
+6. catmull: on( use z buffer ( z coordinate interpolation), off( depth sorting, painters
+   alghoritm).Txgrd and 2tex models only with catmull  = on.
 7. culling: backface culling on/ off.
 8. rand. light: Randomize 3 unlinear lights( so called Phong's illumination).
 9. Blur: blur N times; N=0,1,2,3,4,5
@@ -26,6 +29,9 @@ Buttons description:
 14. move: changes meaning x,y,z +/- buttons  ->  obj: moving object, camr: moving camera.
 15. generate: Generates some objects: node, Thorn Crown, heart...
 16. bumps: random, according to texture.
-15. bumps deep -> create bumps deeper or lighter.
+17. bumps deep -> create bumps deeper or lighter.
+18. re-map tex -> re-map texture and bump map coordinates, to change spherical mapping 
+    around axle use 'xchg' and 'mirror' buttons, then press 're-map tex' button.
 
-			 Macgub 		X 2009
+			 Macgub 		december 2009
+                                                                                  Last edited Jan 2010

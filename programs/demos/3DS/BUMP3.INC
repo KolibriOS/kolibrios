@@ -436,13 +436,13 @@ bump_line:
 ;--------------    edi - pointer to screen buffer
 ;stack - another parameters :
 .y    equ dword [ebp+4]
-.bx1  equ dword [ebp+8]   ;   ---
+.bx1  equ	[ebp+8]   ;   ---
 .by1  equ dword [ebp+12]  ;       |
-.bx2  equ dword [ebp+16]  ;       |
+.bx2  equ	[ebp+16]  ;       |
 .by2  equ dword [ebp+20]  ;       |>   bump and env coords
-.ex1  equ dword [ebp+24]  ;       |>   shifted shl ROUND
+.ex1  equ	[ebp+24]  ;       |>   shifted shl ROUND
 .ey1  equ dword [ebp+28]  ;       |
-.ex2  equ dword [ebp+32]  ;       |
+.ex2  equ	[ebp+32]  ;       |
 .ey2  equ dword [ebp+36]  ;   ---
 .bmap equ dword [ebp+40]
 .emap equ dword [ebp+44]
@@ -450,13 +450,13 @@ bump_line:
 .x1   equ dword [ebp-4]
 .x2   equ dword [ebp-8]
 .dbx  equ dword [ebp-12]
-.dby  equ dword [ebp-16]
+.dby  equ	[ebp-16]
 .dex  equ dword [ebp-20]
-.dey  equ dword [ebp-24]
+.dey  equ	[ebp-24]
 .cbx  equ dword [ebp-28]
-.cby  equ dword [ebp-32]
+.cby  equ	[ebp-32]
 .cex  equ dword [ebp-36]
-.cey  equ dword [ebp-40]
+.cey  equ	[ebp-40]
 	mov	ebp,esp
 
 	mov	ecx,.y
@@ -470,7 +470,7 @@ bump_line:
 	je	.bl_end
 
 	xchg	eax,ebx
-
+if Ext = NON
 	mov	edx,.bx1
 	xchg	edx,.bx2
 	mov	.bx1,edx
@@ -484,6 +484,16 @@ bump_line:
 	mov	edx,.ey1
 	xchg	edx,.ey2
 	mov	.ey1,edx
+else
+	movq	mm0,.bx1
+	movq	mm1,.bx2
+	movq	mm2,.ex1
+	movq	mm3,.ex2
+	movq	.bx2,mm0
+	movq	.bx1,mm1
+	movq	.ex1,mm3
+	movq	.ex2,mm2
+end if
   .bl_ok:
 	push	eax
 	push	ebx	      ;store x1, x2
@@ -523,9 +533,9 @@ bump_line:
 	idiv	ecx
 	push	eax
 
-	push	.bx1
+	push	dword .bx1
 	push	.by1
-	push	.ex1
+	push	dword .ex1
 	push	.ey1
      .draw:
     ; if TEX = SHIFTING   ;bump drawing only in shifting mode
@@ -591,7 +601,14 @@ bump_line:
      .put_pixel:
 	stosd
 	dec	edi
-
+;if Ext >= MMX
+;        movq    mm0,.cby
+;        movq    mm1,.cey
+;        paddd   mm0,.dby
+;        paddd   mm1,.dey
+;        movq    .cby,mm0
+;        movq    .cey,mm1
+;else
 	mov	eax,.dbx
 	add	.cbx,eax
 	mov	eax,.dby
@@ -600,7 +617,7 @@ bump_line:
 	add	.cex,eax
 	mov	eax,.dey
 	add	.cey,eax
-
+;end if
 	dec	ecx
 	jnz	.draw
    ;   end if

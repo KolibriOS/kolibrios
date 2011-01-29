@@ -59,9 +59,6 @@ tex_triangle_z:
 .cz1	  equ dword[ebp-88]
 .cz2	  equ dword[ebp-92]
 
-if Ext >= MMX
-	emms
-end if
 	mov	ebp,esp
 	push	esi		  ; store memory pointers
 	push	edx

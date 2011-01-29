@@ -65,46 +65,44 @@ tex_plus_grd_triangle:
 
    .dx12      equ  dword[ebp-28] ;dd ?
    .tex_dx12  equ  dword[ebp-32] ;dd ?
-   .tex_dy12  equ  dword[ebp-36] ;dd ?
+   .tex_dy12  equ	[ebp-36] ;dd ?
    .dz12      equ  dword[ebp-40] ;dd ?
-   .dc12r     equ  dword[ebp-44] ;dd ?
+   .dc12r     equ	[ebp-44] ;dd ?
    .dc12g     equ  dword[ebp-48] ;dd ?
-   .dc12b     equ  dword[ebp-52] ;dd ?
+   .dc12b     equ	[ebp-52] ;dd ?
 
    .dx23      equ  dword[ebp-56] ;dd ?
    .tex_dx23  equ  dword[ebp-60] ;dd ?
-   .tex_dy23  equ  dword[ebp-64] ;dd ?
+   .tex_dy23  equ	[ebp-64] ;dd ?
    .dz23      equ  dword[ebp-68] ;dd ?
-   .dc23r     equ  dword[ebp-72] ;dd ?
+   .dc23r     equ	[ebp-72] ;dd ?
    .dc23g     equ  dword[ebp-76] ;dd ?
-   .dc23b     equ  dword[ebp-80] ;dword[ebp-8]dd ?
+   .dc23b     equ	[ebp-80] ;dword[ebp-8]dd ?
 
    .dx13      equ  dword[ebp-84] ;dd ?
    .tex_dx13  equ  dword[ebp-88] ;dd ?
-   .tex_dy13  equ  dword[ebp-92] ;dd ?
+   .tex_dy13  equ	[ebp-92] ;dd ?
    .dz13      equ  dword[ebp-96] ;dd ?
-   .dc13r     equ  dword[ebp-100] ;dd ?
+   .dc13r     equ	[ebp-100] ;dd ?
    .dc13g     equ  dword[ebp-104] ;dd ?
-   .dc13b     equ  dword[ebp-108] ;dd ?
+   .dc13b     equ	[ebp-108] ;dd ?
 
-   .zz1       equ  dword[ebp-112] ;dw ?
-   .zz2       equ  dword[ebp-116] ;dw ?
-   .cur1r     equ  dword[ebp-120] ;dw ?
-   .cur1g     equ  dword[ebp-124] ;dw ?
-   .cur1b     equ  dword[ebp-128] ;dw ?
-   .cur2r     equ  dword[ebp-132] ;dw ?
-   .cur2g     equ  dword[ebp-136] ;dw ?
-   .cur2b     equ  dword[ebp-140] ;dw ?
-   .scan_x1   equ  dword[ebp-144] ;dd ?
-   .scan_x2   equ  dword[ebp-148] ;dd ?
-   .scan_y1   equ  dword[ebp-152] ;dd ?
-   .scan_y2   equ  dword[ebp-156] ;dd ?
+   .scan_x1   equ  dword[ebp-112] ;dd ?
+   .scan_y1   equ	[ebp-116] ;dd ?
+   .zz1       equ  dword[ebp-120] ;dw ?
+   .cur1r     equ	[ebp-124] ;dw ?
+   .cur1g     equ  dword[ebp-128] ;dw ?
+   .cur1b     equ	[ebp-132] ;dw ?
+
+   .scan_x2   equ  dword[ebp-136] ;dd ?
+   .scan_y2   equ	[ebp-140] ;dd ?
+   .zz2       equ  dword[ebp-144] ;dw ?
+   .cur2r     equ	[ebp-148] ;dw ?
+   .cur2g     equ  dword[ebp-152] ;dw ?
+   .cur2b     equ	[ebp-156] ;dw ?
 
 
        mov    ebp,esp
-if Ext>=MMX
-       emms
-end if
 
    ;    mov     .tex_ptr,edx
    ;    mov     .z_ptr,esi
@@ -468,18 +466,18 @@ end if
        push	.zz2
 
        push	.scan_x2
-       push	.scan_y2
-       push	.cur2r
+       push	dword .scan_y2
+       push	dword .cur2r
        push	.cur2g
-       push	.cur2b
+       push	dword .cur2b
 
        push	.zz1
 
        push	.scan_x1
-       push	.scan_y1
-       push	.cur1r
+       push	dword .scan_y1
+       push	dword .cur1r
        push	.cur1g
-       push	.cur1b
+       push	dword .cur1b
 
        sar	eax,ROUND
        sar	ebx,ROUND
@@ -487,18 +485,39 @@ end if
 
       ; pop      ebp ebx eax
        popad
+
+if Ext >= MMX
+       movq	mm0,.cur1b
+       movq	mm1,.cur1r
+       movq	mm2,.scan_y1
+       movq	mm3,.cur2b
+       movq	mm4,.cur2r
+       movq	mm5,.scan_y2
+       paddd	mm0,.dc13b
+       paddd	mm1,.dc13r
+       paddd	mm2,.tex_dy13
+       paddd	mm3,.dc12b
+       paddd	mm4,.dc12r
+       paddd	mm5,.tex_dy12
+       movq	.cur1b,mm0
+       movq	.cur1r,mm1
+       movq	.scan_y1,mm2
+       movq	.cur2b,mm3
+       movq	.cur2r,mm4
+       movq	.scan_y2,mm5
+else
        mov	edx,.dc13b
        add	.cur1b,edx
        mov	esi,.dc13g
        add	.cur1g,esi
        mov	edi,.dc13r
        add	.cur1r,edi
+       mov	edx,.dz13
+       add	.zz1,edx
        mov	edx,.tex_dx13
        add	.scan_x1,edx
        mov	esi,.tex_dy13
        add	.scan_y1,esi
-       mov	edx,.dz13
-       add	.zz1,edx
 
        mov	edi,.dc12b
        add	.cur2b,edi
@@ -512,6 +531,7 @@ end if
        add	.scan_y2,esi
        mov	edx,.dz12
        add	.zz2,edx
+end if
        add	eax,.dx13
        add	ebx,.dx12
        inc	cx
@@ -563,24 +583,45 @@ end if
        push	.zz2
 
        push	.scan_x2
-       push	.scan_y2
-       push	.cur2r
+       push	dword .scan_y2
+       push	dword .cur2r
        push	.cur2g
-       push	.cur2b
+       push	dword .cur2b
 
        push	.zz1
 
        push	.scan_x1
-       push	.scan_y1
-       push	.cur1r
+       push	dword .scan_y1
+       push	dword .cur1r
        push	.cur1g
-       push	.cur1b
+       push	dword .cur1b
 
        sar	eax,ROUND
        sar	ebx,ROUND
        call	horizontal_tex_grd_line
 
        popad
+
+if Ext >= MMX
+       movq	mm0,.cur1b
+       movq	mm1,.cur1r
+       movq	mm2,.scan_y1
+       movq	mm3,.cur2b
+       movq	mm4,.cur2r
+       movq	mm5,.scan_y2
+       paddd	mm0,.dc13b
+       paddd	mm1,.dc13r
+       paddd	mm2,.tex_dy13
+       paddd	mm3,.dc23b
+       paddd	mm4,.dc23r
+       paddd	mm5,.tex_dy23
+       movq	.cur1b,mm0
+       movq	.cur1r,mm1
+       movq	.scan_y1,mm2
+       movq	.cur2b,mm3
+       movq	.cur2r,mm4
+       movq	.scan_y2,mm5
+else
        mov	edx,.dc13b
        add	.cur1b,edx
        mov	esi,.dc13g
@@ -606,6 +647,7 @@ end if
        add	.scan_y2,esi
        mov	edx,.dz23
        add	.zz2,edx
+end if
        add	eax,.dx13
        add	ebx,.dx23
        inc	cx

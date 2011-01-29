@@ -178,28 +178,20 @@ bump_tex_triangle_z:
        loop	@b
        jmp	.bt_dx12_done
  .bt_dx12_make:
+       movsx	ebx,bx
 
        mov	ax,.x2
        sub	ax,.x1
        cwde
-       movsx	ebx,bx
        shl	eax,ROUND
        cdq
        idiv	ebx
  ;     mov      .dx12,eax
        push	 eax
 
-       mov     ax,.z2
-       sub     ax,.z1
-       cwde
-       shl     eax,CATMULL_SHIFT
-       cdq
-       idiv    ebx
-       push    eax
-
 if Ext>=SSE
 
-       sub	 esp,16
+       sub	 esp,28
    ;    mov       eax,256
        cvtsi2ss  xmm4,[i255d]
        cvtsi2ss  xmm3,ebx	     ;rcps
@@ -228,12 +220,54 @@ if Ext>=SSE
 
        shufps	 xmm1,xmm1,10110001b
 			     ;xmm1--> | dbx | dby | dex | dey |
-       cvtps2pi  mm0,xmm1	   ; mm0 -> 2 delta dwords
+       cvtps2pi  mm0,xmm1 ;mm0,xmm1          ; mm0 -> 2 delta dwords
        movhlps	 xmm1,xmm1
-       cvtps2pi  mm1,xmm1
+       cvtps2pi  mm1,xmm1 ;mm1,xmm1
        movq	 .dey12,mm0
        movq	 .dby12,mm1
 ;-------------
+  ;    pxor      mm0,mm0
+  ;    pxor      mm1,mm1
+   ;/   pinsrw    mm0,.z1,1
+   ;/   pinsrw    mm0,.x1,0
+   ;/   pinsrw    mm1,.z2,1
+   ;/   pinsrw    mm1,.x2,0
+       mov	 ax,.z2
+       sub	 ax,.z1
+       cwde
+   ;/    movd      mm1,eax
+
+   ;/    punpcklwd  mm0,mm4
+   ;/    punpcklwd  mm1,mm4
+
+  ;     cvtpi2ps   xmm1,mm1
+  ;     cvtpi2ps   xmm2,mm0
+  ;     subps      xmm1,xmm2
+
+   ;/   psubd      mm1,mm0
+
+       movd	  mm2,[.t_x1]
+       movd	  mm3,[.t_x2]
+
+       punpcklwd  mm2,mm4
+       punpcklwd  mm3,mm4
+       psubd	  mm3,mm2
+
+   ;/  cvtpi2ps  xmm1,mm1
+       cvtsi2ss  xmm1,eax
+       movlhps	 xmm1,xmm1
+       cvtpi2ps  xmm1,mm3
+
+       divps	 xmm1,xmm3   ; xmm1--> | xxx | dz | dty | dtx |
+
+       shufps	 xmm1,xmm1,11100001b
+			     ; xmm1--> | xxx | dz | dtx | dty |
+       cvtps2pi  mm0,xmm1    ; mm0 -> 2 delta dwords  | dtx | dty |
+       movhlps	 xmm1,xmm1
+       cvtss2si  eax,xmm1    ; eax --> 1 delta dword | dz |
+       movq	 .dty12,mm0
+       mov	 .dz12,eax
+;----
 ;       mov       ax,.z2
 ;       sub       ax,.z1
 ;       cwde
@@ -243,6 +277,7 @@ if Ext>=SSE
 ;       movd      mm1,eax
 ;       psllq     mm1,32
 ;       movd      mm1,ebx
+
 ;;       push      ebx
 ;;       push      eax
 ;;       movq      mm1,[esp]
@@ -282,6 +317,13 @@ if Ext>=SSE
 ;       movq      .dty12,mm0
 ;       movq      .dz12,mm1
 else
+       mov     ax,.z2
+       sub     ax,.z1
+       cwde
+       shl     eax,CATMULL_SHIFT
+       cdq
+       idiv    ebx
+       push    eax
 
        mov	ax,word[.b_x2]
        sub	ax,word[.b_x1]
@@ -319,7 +361,7 @@ else
  ;     mov      .dey12,eax
        push	 eax
 
-end if
+;end if
 
        mov	ax,word[.t_x2]
        sub	ax,word[.t_x1]
@@ -338,7 +380,7 @@ end if
        idiv	ebx
  ;     mov      .dty12,eax
        push	 eax
-
+end if
    .bt_dx12_done:
 
        mov	bx,.y3	     ; calc delta13
@@ -361,18 +403,9 @@ end if
  ;     mov      .dx13,eax
        push	 eax
 
-       mov     ax,.z3
-       sub     ax,.z1
-       cwde
-       shl     eax,CATMULL_SHIFT
-       cdq
-       idiv    ebx
-  ;    mov    .dz13,eax
-       push    eax
-
 if Ext>=SSE
 
-       sub	 esp,16
+       sub	 esp,28
    ;    mov       eax,255
        cvtsi2ss  xmm4,[i255d]
        cvtsi2ss  xmm3,ebx	     ;rcps
@@ -406,7 +439,42 @@ if Ext>=SSE
        cvtps2pi  mm1,xmm1
        movq	 .dey13,mm0
        movq	 .dby13,mm1
+;----------
+       mov	 ax,.z3
+       sub	 ax,.z1
+       cwde
+
+       movd	  mm2,[.t_x1]
+       movd	  mm3,[.t_x3]
+
+       punpcklwd  mm2,mm4
+       punpcklwd  mm3,mm4
+       psubd	  mm3,mm2
+
+       cvtsi2ss  xmm1,eax
+       movlhps	 xmm1,xmm1
+       cvtpi2ps  xmm1,mm3
+
+       divps	 xmm1,xmm3   ; xmm1--> | xxx | dz | dty | dtx |
+
+       shufps	 xmm1,xmm1,11100001b
+			     ; xmm1--> | xxx | dz | dtx | dty |
+       cvtps2pi  mm0,xmm1    ; mm0 -> 2 delta dwords  | dtx | dty |
+       movhlps	 xmm1,xmm1
+       cvtss2si  eax,xmm1    ; eax --> 1 delta dword | dz |
+       movq	 .dty13,mm0
+       mov	 .dz13,eax
 else
+       mov     ax,.z3
+       sub     ax,.z1
+       cwde
+       shl     eax,CATMULL_SHIFT
+       cdq
+       idiv    ebx
+  ;    mov    .dz13,eax
+       push    eax
+
+
        mov	ax,word[.b_x3]
        sub	ax,word[.b_x1]
        cwde
@@ -442,7 +510,6 @@ else
        idiv	ebx
  ;     mov      .dey13,eax
        push	 eax
-end if
 
        mov	ax,word[.t_x3]
        sub	ax,word[.t_x1]
@@ -461,7 +528,7 @@ end if
        idiv	ebx
  ;     mov      .dty13,eax
        push	 eax
-
+end if
    .bt_dx13_done:
 
        mov	bx,.y3	     ; calc delta23
@@ -484,18 +551,9 @@ end if
  ;     mov      .dx23,eax
        push	 eax
 
-       mov     ax,.z3
-       sub     ax,.z2
-       cwde
-       shl     eax,CATMULL_SHIFT
-       cdq
-       idiv    ebx
-     ; mov     .dz23,eax
-       push    eax
-
 if Ext>=SSE
 
-       sub	 esp,16
+       sub	 esp,28
     ;   mov       eax,255
        cvtsi2ss  xmm4,[i255d]
        cvtsi2ss  xmm3,ebx	     ;rcps
@@ -529,7 +587,42 @@ if Ext>=SSE
        cvtps2pi  mm1,xmm1
        movq	 .dey23,mm0
        movq	 .dby23,mm1
+;----------
+       mov	 ax,.z3
+       sub	 ax,.z2
+       cwde
+
+       movd	  mm2,[.t_x2]
+       movd	  mm3,[.t_x3]
+
+       punpcklwd  mm2,mm4
+       punpcklwd  mm3,mm4
+       psubd	  mm3,mm2
+
+       cvtsi2ss  xmm1,eax
+       movlhps	 xmm1,xmm1
+       cvtpi2ps  xmm1,mm3
+
+       divps	 xmm1,xmm3   ; xmm1--> | xxx | dz | dty | dtx |
+
+       shufps	 xmm1,xmm1,11100001b
+			     ; xmm1--> | xxx | dz | dtx | dty |
+       cvtps2pi  mm0,xmm1    ; mm0 -> 2 delta dwords  | dtx | dty |
+       movhlps	 xmm1,xmm1
+       cvtss2si  eax,xmm1    ; eax --> 1 delta dword | dz |
+       movq	 .dty23,mm0
+       mov	 .dz23,eax
 else
+
+       mov     ax,.z3
+       sub     ax,.z2
+       cwde
+       shl     eax,CATMULL_SHIFT
+       cdq
+       idiv    ebx
+     ; mov     .dz23,eax
+       push    eax
+
        mov	ax,word[.b_x3]
        sub	ax,word[.b_x2]
        cwde
@@ -565,7 +658,7 @@ else
        idiv	ebx
  ;     mov      .dey23,eax
        push	 eax
-end if
+
 
        mov	ax,word[.t_x3]
        sub	ax,word[.t_x2]
@@ -584,7 +677,7 @@ end if
        idiv	ebx
  ;     mov      .dty23,eax
        push	 eax
-
+end if
       ;  sub     esp,40
    .bt_dx23_done:
        sub	 esp,64

@@ -710,20 +710,14 @@ bump_line_z:
 ;--------------    edi - pointer to screen buffer
 ;stack - another parameters :
 .y	equ dword [ebp+4]
-.bx1q	equ	  [ebp+8]
-.bx2q	equ	  [ebp+16]
-.ex1q	equ	  [ebp+24]
-.ex2q	equ	  [ebp+32]
-.bx1	equ dword [ebp+8]   ;   ---
+.bx1	equ	  [ebp+8]   ;   ---
 .by1	equ dword [ebp+12]  ;       |
-.bx2	equ dword [ebp+16]  ;       |
+.bx2	equ	  [ebp+16]  ;       |
 .by2	equ dword [ebp+20]  ;       |>   bump and env coords
-.ex1	equ dword [ebp+24]  ;       |>   shifted shl ROUND
+.ex1	equ	  [ebp+24]  ;       |>   shifted shl ROUND
 .ey1	equ dword [ebp+28]  ;       |
-.ex2	equ dword [ebp+32]  ;       |
+.ex2	equ	  [ebp+32]  ;       |
 .ey2	equ dword [ebp+36]  ;   ---
-;.bx1q   equ qword [ebp+8]   ; - new
-;.ex1q   equ qword [ebp+24]  ; - new
 .bmap	equ dword [ebp+40]
 .emap	equ dword [ebp+44]
 .z_buff equ dword [ebp+48]
@@ -733,18 +727,14 @@ bump_line_z:
 .x1	equ dword [ebp-4]
 .x2	equ dword [ebp-8]
 .dbx	equ dword [ebp-12]
-.dby	equ dword [ebp-16]
-.dbyq	equ qword [ebp-16]  ; - new
+.dby	equ	  [ebp-16]
 .dex	equ dword [ebp-20]
-.dey	equ dword [ebp-24]
-.deyq	equ qword [ebp-24]  ; - new
+.dey	equ	  [ebp-24]
 .dz	equ dword [ebp-28]
 .cbx	equ dword [ebp-32]
-.cby	equ dword [ebp-36]
-.cbyq	equ qword [ebp-36]  ; - new
+.cby	equ	  [ebp-36]
 .cex	equ dword [ebp-40]
-.cey	equ dword [ebp-44]
-.ceyq	equ qword [ebp-44]  ; - new
+.cey	equ	  [ebp-44]
 .cz	equ dword [ebp-48]
 .czbuff equ dword [ebp-52]
 .temp1	equ	   ebp-60
@@ -782,14 +772,14 @@ if Ext=NON
 	mov	.ey1,edx
 else
 
-	movq	mm0,.bx1q
-	movq	mm1,.ex1q
-	movq	mm2,.bx2q
-	movq	mm3,.ex2q
-	movq	.bx2q,mm0
-	movq	.ex2q,mm1
-	movq	.bx1q,mm2
-	movq	.ex1q,mm3
+	movq	mm0,.bx1
+	movq	mm1,.ex1
+	movq	mm2,.bx2
+	movq	mm3,.ex2
+	movq	.bx2,mm0
+	movq	.ex2,mm1
+	movq	.bx1,mm2
+	movq	.ex1,mm3
 
 end if
 
@@ -816,12 +806,12 @@ if Ext >= SSE
        cvtsi2ss  xmm3,ebx	     ;rcps
        shufps	 xmm3,xmm3,0
 
-       cvtpi2ps  xmm0,.bx1q ;mm0
+       cvtpi2ps  xmm0,.bx1 ;mm0
        movlhps	 xmm0,xmm0
-       cvtpi2ps  xmm0,.ex1q ;mm2
-       cvtpi2ps  xmm1,.bx2q ;mm1
+       cvtpi2ps  xmm0,.ex1 ;mm2
+       cvtpi2ps  xmm1,.bx2 ;mm1
        movlhps	 xmm1,xmm1
-       cvtpi2ps  xmm1,.ex2q ;mm3
+       cvtpi2ps  xmm1,.ex2 ;mm3
        subps	 xmm1,xmm0
 
        divps	 xmm1,xmm3
@@ -830,8 +820,8 @@ if Ext >= SSE
        cvtps2pi  mm0,xmm1	   ; mm0 -> 2 delta dwords
        movhlps	 xmm1,xmm1
        cvtps2pi  mm1,xmm1
-       movq	 .deyq,mm0
-       movq	 .dbyq,mm1
+       movq	 .dey,mm0
+       movq	 .dby,mm1
 
 else
 
@@ -911,9 +901,9 @@ end if
 	mov	ecx,.x2
 	sub	ecx,.x1
 	; init current variables
-	push	.bx1
+	push	dword .bx1
 	push	.by1
-	push	.ex1
+	push	dword .ex1
 	push	.ey1
 
 	push	.z1		 ; current z shl CATMULL_SHIFT
@@ -1072,6 +1062,14 @@ end if
      .no_skip:
 	add	.czbuff,4
 ;;   if Ext = NON
+if Ext >= MMX
+	movq	mm0,.cby
+	movq	mm1,.cey
+	paddd	mm0,.dby
+	paddd	mm1,.dey
+	movq	.cby,mm0
+	movq	.cey,mm1
+else
 	mov	eax,.dbx
 	add	.cbx,eax
 	mov	eax,.dby
@@ -1080,6 +1078,7 @@ end if
 	add	.cex,eax
 	mov	eax,.dey
 	add	.cey,eax
+end if
 ;;    else
 ;;        paddd   mm0,mm2
 ;;        paddd   mm1,mm3

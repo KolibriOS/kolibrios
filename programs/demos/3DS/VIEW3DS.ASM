@@ -1,6 +1,6 @@
 
-; application : View3ds ver. 0.053 - tiny .3ds files viewer.
-; compiler    : FASM  1.65.13
+; application : View3ds ver. 0.054 - tiny .3ds files viewer.
+; compiler    : FASM  1.67.11
 ; system      : KolibriOS/MenuetOS
 ; author      : Macgub aka Maciej Guba
 ; email       : macgub3@wp.pl
@@ -215,6 +215,13 @@ still:
      .next_m:
 	cmp	 ah,18
 	jne	 .next_m2
+     if USE_LFN
+	mov	 [re_alloc_flag],1	 ; reallocate memory
+	mov	 [triangles_count_var],1000
+	mov	 [points_count_var],1000
+	call	 alloc_mem_for_tp
+	mov	 [re_alloc_flag],0
+     end if
 	mov	 bl,[generator_flag]
 	or	 bl,bl
 	jz	 .next_m2
@@ -244,8 +251,11 @@ still:
      @@:
 	mov	 edi,bumpmap
 	call	 calc_bumpmap
-      .next_m3:
-
+     .next_m3:
+	cmp	ah,21		 ; re map bumps, texture coordinates
+	jne	@f
+	call	calc_bumpmap_coords
+      @@:
 	jmp	noclose
 
 
@@ -595,14 +605,16 @@ calc_bumpmap_coords:	  ; map texture, bump
 ;      mov   ebp,esp
 ;      sub   esp,4
 
-      fninit			 ; spherical mapping around y axle
+      fninit
       fldpi
       fadd	st,st
-;      fstp      .Pi2
       mov	esi,[points_ptr]
       mov	edi,tex_points
       movzx	ecx,[points_count_var]
       inc	ecx
+;      cmp       [map_tex_flag],1
+;      jne       .cylindric
+      ; spherical mapping around y axle
 
    @@:
       fld	dword[esi]     ; x coord
@@ -635,8 +647,27 @@ calc_bumpmap_coords:	  ; map texture, bump
       add      edi,4
       loop     @b
       ffree    st0
+;      jmp      .end_map
+;  .cylindric:
+;       fld     dword[esi]     ; around y axle
+;       fld     dword[esi+8]
+;       fpatan
+;       fdiv    st0,st1
+;       fimul   [tex_x_div2]
+;       fiadd   [tex_x_div2]
+;       fistp   word[edi]
 
-;      mov      esp,ebp
+;       fld     dword[esi+4]
+;       fimul   [tex_y_div2]
+;       fiadd   [tex_y_div2]
+;       fistp   word[edi+2]
+
+;       add     esi,12
+;       add     edi,4
+;       loop    .cylindric
+;       ffree    st0
+;;      mov      esp,ebp
+;   .end_map:
 ret
 
 
@@ -2399,11 +2430,18 @@ ret
 if USE_LFN
 alloc_mem_for_tp:
 	mov	eax, 68
+	cmp	[re_alloc_flag],1
+	jz	@f
 	mov	ebx, 12
+	jmp	.alloc
+    @@:
+	mov	ebx,20
+    .alloc:
 	movzx	ecx, [triangles_count_var]
 	inc	ecx
 	lea	ecx, [ecx*3]
 	add	ecx, ecx
+	mov	edx,[triangles_ptr]
 	int	0x40		       ;  -> allocate memory to triangles
 	mov	[triangles_ptr], eax   ;  -> eax = pointer to allocated mem
 
@@ -2419,6 +2457,7 @@ alloc_mem_for_tp:
 	movzx	ecx, [triangles_count_var]
 	lea	ecx, [3+ecx*3]
 	shl	ecx, 2
+	mov	edx,[triangles_normals_ptr]
 	int	0x40			       ;  -> allocate memory for triangles normals
 	mov	[triangles_normals_ptr], eax   ;  -> eax = pointer to allocated mem
 
@@ -2426,22 +2465,26 @@ alloc_mem_for_tp:
 	movzx	ecx, [points_count_var]
 	lea	ecx,[3+ecx*3]
 	shl	ecx, 2
+	mov	edx,[points_normals_ptr]
 	int	0x40
 	mov	[points_normals_ptr], eax
 
 	mov	eax, 68
-	mov	ebx, 12
+    ;    mov     ebx, 12
 	movzx	ecx, [points_count_var]
 	lea	ecx,[3+ecx*3]
 	shl	ecx, 2
+	mov	edx,[points_normals_rot_ptr]
 	int	0x40
 	mov	[points_normals_rot_ptr], eax
 
 	mov	eax, 68
+	mov	edx,[points_ptr]
 	int	0x40
 	mov	[points_ptr], eax
 
 	mov	eax, 68
+	mov	edx,[points_rotated_ptr]
 	int	0x40
 	mov	[points_rotated_ptr], eax
 
@@ -2449,6 +2492,7 @@ alloc_mem_for_tp:
 	movzx	ecx, [points_count_var]
 	inc	ecx
 	shl	ecx, 3
+	mov	edx,[points_translated_ptr]
 	int	0x40
 	mov	[points_translated_ptr], eax
 ret
@@ -2592,7 +2636,7 @@ ret
 	add	bx,110
 	mov	cx,[size_y]
 	add	cx,30
-	mov	edx,0x02000000	; color of work area RRGGBB,8->color gl
+	mov	edx,0x14000000	; color of work area RRGGBB,8->color gl
 	mov	esi,0x805080d0	; color of grab bar  RRGGBB,8->color gl
 	mov	edi,0x005080d0	; color of frames    RRGGBB
 	int	0x40
@@ -2606,15 +2650,15 @@ ret
 	int	0x40
 
 	; CLOSE BUTTON
-	mov	eax,8		; function 8 : define and draw button
-	movzx	ebx,[size_x]
-	shl	ebx,16
-	add	ebx, 91 shl 16 + 12
-;        mov     ebx,(SIZE_X+80+30-19)*65536+12     ; [x start] *65536 + [x size]
-	mov	ecx,5*65536+12	; [y start] *65536 + [y size]
-	mov	edx,1		; button id
-	mov	esi,0x6688dd	; button color RRGGBB
-	int	0x40
+;       mov     eax,8           ; function 8 : define and draw button
+;       movzx   ebx,[size_x]
+;       shl     ebx,16
+;       add     ebx, 91 shl 16 + 12
+;;        mov     ebx,(SIZE_X+80+30-19)*65536+12     ; [x start] *65536 + [x size]
+;       mov     ecx,5*65536+12  ; [y start] *65536 + [y size]
+;       mov     edx,1           ; button id
+;       mov     esi,0x6688dd    ; button color RRGGBB
+;       int     0x40
 
 	call	buttons 	; more buttons
 
