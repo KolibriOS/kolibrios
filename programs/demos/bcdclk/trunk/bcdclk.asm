@@ -17,8 +17,8 @@ use32
  dd 0x1000
  dd 0x0 , 0x0
 
-include "lang.inc"
-include "..\..\..\macros.inc"
+include 'lang.inc'
+include '../../../macros.inc'
 
 
 START:

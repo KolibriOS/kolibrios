@@ -8,7 +8,7 @@
 ;   2) Screen width bigger than height
 ;   3) Screen width and height are even (2*k)
 
-include '..\..\..\macros.inc'
+include '../../../macros.inc'
 
 background_cl = 0x000000
 foreground_cl = 0xFFFFFF
