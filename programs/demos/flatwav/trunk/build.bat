@@ -1,0 +1,1 @@
+fasm flatwav.asm flatwav

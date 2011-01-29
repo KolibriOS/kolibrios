@@ -81,6 +81,7 @@ FASM_PROGRAMS:=\
  3d/free3d04:3D/FREE3D04:$(PROGS)/demos/free3d04/trunk/free3d04.asm \
  3d/view3ds:3D/VIEW3DS:$(PROGS)/demos/3DS/VIEW3DS.ASM \
  3d/3dspiral:3D/3DSPIRAL:$(PROGS)/demos/3dspiral/trunk/3dspiral.asm \
+ 3d/flatwav:3D/FLATWAV:$(PROGS)/demos/flatwav/trunk/FLATWAV.ASM \
  demos/bcdclk:DEMOS/BCDCLK:$(PROGS)/demos/bcdclk/bcdclk/bcdclk.asm \
  demos/circle:DEMOS/CIRCLE:$(PROGS)/develop/examples/circle/trunk/circle.asm \
  demos/colorref:DEMOS/COLORREF:$(PROGS)/demos/colorref/trunk/colorref.asm \
@@ -216,7 +217,7 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  shell:SHELL spanel:SPANEL table:TABLE test:TEST \
  vmode:VMODE \
  3d/3dsheart:3D/3DSHEART 3d/cubeline:3D/CUBELINE \
- 3d/flatwav:3D/FLATWAV 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
+ 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
  demos/ak47.lif:DEMOS/AK47.LIF \
  demos/barge.lif:DEMOS/BARGE.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
