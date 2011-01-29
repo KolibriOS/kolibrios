@@ -1,5 +1,3 @@
-@erase lang.inc
-@echo lang fix ru >lang.inc
+@copy russian.inc lang.inc
 @fasm pong.asm pong
-@erase lang.inc
 @pause

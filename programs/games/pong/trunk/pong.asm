@@ -1,21 +1,23 @@
 ;
-;    PONG for MENUET v1.0
+;    PONG for MENUET v1.1
 ;    2001 by Mario Birkner, Germany
 ;    cyflexx@digitalrice.com
 ;
 ;    PONG for MENUET is
-;    a small PONG-clone for MenuetOS
+;    a small PONG-clone for MenuetOS/KolibriOS
 ;
-; HINT: If the Paddle moves too slow,increase the
-;       typematic Rate in your BIOS
+;
+;    improved by Oleksandr Bogomaz aka Albom
+;    albom85@yandex.ru
+;    11.07.2008
 ;
 
-include '..\..\..\macros.inc'
+include '../../../macros.inc'
 
-CK_UP1 equ 113
-CK_DOWN1 equ 97
-CK_UP2 equ 130+48
-CK_DOWN2 equ 129+48
+CK_UP1 equ 16
+CK_DOWN1 equ 30
+CK_UP2 equ 72
+CK_DOWN2 equ 80
 
 use32
 
@@ -32,6 +34,11 @@ use32
 
 
 START:
+
+    mov  eax, 66
+    mov  ebx, 1
+    mov  ecx, 1
+    mcall		; установить режим сканкодов
 
     call draw_window
 
@@ -54,6 +61,41 @@ still:
     mov  ebx,[delay]
     mcall
 
+    ; в соответствии с нажатыми клавишами перемещаем пложадки
+    cmp  [is_up1], 1
+    jne  _next_key1
+    cmp  [posya],52*65536+64
+    je   _next_key2
+    sub  [posya],4*65536
+ _next_key1:
+    cmp  [is_dn1], 1
+    jne  _next_key2
+    cmp  [posya],140*65536+64
+    je   _next_key2
+    add  [posya],4*65536
+ _next_key2:
+    cmp  [is_up2], 1
+    jne  _next_key3
+    cmp  [posyb],52*65536+64
+    je   keys_ok
+    sub  [posyb],4*65536
+ _next_key3:
+    cmp  [is_dn2], 1
+    jne  _next_key4
+    cmp  [posyb],140*65536+64
+    je   keys_ok
+    add  [posyb],4*65536
+ _next_key4:
+
+
+ keys_ok:
+
+    ; стираем площадки
+    call cl1
+    call cl0
+    ; рисуем площадки
+    call drawpad
+
     jmp  move
 
  red:
@@ -70,40 +112,53 @@ still:
     jne  still
 
    up1:
-    cmp  ah,CK_UP1
+    cmp  ah,CK_UP1 ; обработка нажатия клавиши
     jne  dn1
-    cmp  [posya],52*65536+64
-    je   still
-    sub  [posya],4*65536
-    call cl0
-    call drawpad
+    mov  [is_up1], 1
+    mov  [is_dn1], 0
     jmp  still
    dn1:
-    cmp  ah,CK_DOWN1
-    jne  up2
-    cmp  [posya],140*65536+64
-    je   still
-    add  [posya],4*65536
-    call cl0
-    call drawpad
+    cmp  ah,CK_DOWN1 ; обработка нажатия клавиши
+    jne  up1u
+    mov  [is_up1], 0
+    mov  [is_dn1], 1
     jmp  still
+   up1u:
+    cmp  ah,CK_UP1+128 ; обработка отпускания клавиши
+    jne  dn1u
+    mov  [is_up1], 0
+    mov  [is_dn1], 0
+    jmp  still
+   dn1u:
+    cmp  ah,CK_DOWN1+128 ; обработка отпускания клавиши
+    jne  up2
+    mov  [is_up1], 0
+    mov  [is_dn1], 0
+    jmp  still
+
    up2:
-    cmp  ah,CK_UP2
+    cmp  ah,CK_UP2 ; обработка нажатия клавиши
     jne  dn2
-    cmp  [posyb],52*65536+64
-    je   still
-    sub  [posyb],4*65536
-    call cl1
-    call drawpad
+    mov  [is_up2], 1
+    mov  [is_dn2], 0
     jmp  still
    dn2:
-    cmp  ah,CK_DOWN2
+    cmp  ah,CK_DOWN2 ; обработка нажатия клавиши
+    jne  up2u
+    mov  [is_up2], 0
+    mov  [is_dn2], 1
+    jmp  still
+   up2u:
+    cmp  ah,CK_UP2+128 ; обработка отпускания клавиши
+    jne  dn2u
+    mov  [is_up2], 0
+    mov  [is_dn2], 0
+    jmp  still
+   dn2u:
+    cmp  ah,CK_DOWN2+128 ; обработка отпускания клавиши
     jne  still
-    cmp  [posyb],140*65536+64
-    je   still
-    add  [posyb],4*65536
-    call cl1
-    call drawpad
+    mov  [is_up2], 0
+    mov  [is_dn2], 0
     jmp  still
 
   button:
@@ -395,21 +450,12 @@ delay   dd 0x1          ;delay betw. frames
 scp1    dd 0x0
 scp2    dd 0x0
 
+is_up1	dd 0x0 ; \
+is_dn1	dd 0x0 ; | какие клавиши нажаты
+is_up2	dd 0x0 ; |
+is_dn2	dd 0x0 ; /
 
-scotext:
-     db  'SCORE:    :'
-welcome:
-     db  'PLAYER1: Q , A            PLAYER2:  , '
-b0lab:
-     db  'NEW GAME'
-labelt:
-     db  'PONG FOR MENUET v1.0',0
-w1:
-     db  'Player 1 wins!'
-w2:
-     db  'Player 2 wins!'
-clsign:
-     db   'x'
+include "lang.inc"
 
 ball:
 file "ball.raw"
