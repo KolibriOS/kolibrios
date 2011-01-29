@@ -207,7 +207,7 @@ fasm demos\3dtcub10\trunk\3dtcub10.asm %BIN%\3d\3dtcub10
 cd demos\aclock\trunk\
 nasmw -t -f bin -o ..\..\..\%BIN%\demos\aclock aclock.asm
 cd ..\..\..
-fasm demos\bcdclk\bcdclk\bcdclk.asm %BIN%\demos\bcdclk
+fasm demos\bcdclk\trunk\bcdclk.asm %BIN%\demos\bcdclk
 fasm demos\bgitest\trunk\bgitest.asm %BIN%\fonts\bgitest
 fasm demos\colorref\trunk\colorref.asm %BIN%\demos\colorref
 fasm demos\crownscr\trunk\crownscr.asm %BIN%\3d\crownscr

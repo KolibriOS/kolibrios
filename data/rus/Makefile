@@ -148,6 +148,8 @@ FASM_PROGRAMS:=\
  media/cdp:MEDIA/CDP:$(PROGS)/media/cdp/trunk/cdp.asm \
  media/kiv:MEDIA/KIV:$(PROGS)/media/kiv/trunk/kiv.asm \
  media/midamp:MEDIA/MIDAMP:$(PROGS)/media/midamp/trunk/midamp.asm \
+ media/listplay:MEDIA/LISTPLAY:$(PROGS)/media/listplay/trunk/listplay.asm \
+ media/startmus:MEDIA/STARTMUS:$(PROGS)/media/startmus/trunk/STARTMUS.ASM \
  network/airc:NETWORK/AIRC:$(PROGS)/network/airc/trunk/airc.asm \
  network/arpstat:NETWORK/ARPSTAT:$(PROGS)/network/arpstat/trunk/arpstat.asm \
  network/chess:NETWORK/CHESS:$(PROGS)/network/chess/trunk/chess.asm \
@@ -247,7 +249,6 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  lib/cnv_png.obj:LIB/CNV_PNG.OBJ lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
  media/ac97snd:MEDIA/AC97SND media/kiv.ini:MEDIA/KIV.INI \
- media/listplay:MEDIA/LISTPLAY media/startmus:MEDIA/STARTMUS \
  network/jmail:NETWORK/JMAIL network/zeroconf.ini:NETWORK/ZEROCONF.INI \
 #end of list
 #3d/logio.bmp:3D/LOGIO.BMP 3d/cubetext:3D/CUBETEXT
