@@ -82,7 +82,6 @@ FASM_PROGRAMS:=\
  3d/view3ds:3D/VIEW3DS:$(PROGS)/demos/3DS/VIEW3DS.ASM \
  3d/3dspiral:3D/3DSPIRAL:$(PROGS)/demos/3dspiral/trunk/3dspiral.asm \
  3d/flatwav:3D/FLATWAV:$(PROGS)/demos/flatwav/trunk/FLATWAV.ASM \
- demos/bcdclk:DEMOS/BCDCLK:$(PROGS)/demos/bcdclk/trunk/bcdclk.asm \
  demos/circle:DEMOS/CIRCLE:$(PROGS)/develop/examples/circle/trunk/circle.asm \
  demos/colorref:DEMOS/COLORREF:$(PROGS)/demos/colorref/trunk/colorref.asm \
  demos/cslide:DEMOS/CSLIDE:$(PROGS)/demos/cslide/trunk/cslide.asm \
