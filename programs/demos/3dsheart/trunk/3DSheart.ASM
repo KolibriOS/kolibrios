@@ -1322,7 +1322,7 @@ draw_triangles:
 	cmp	dword[esi],-1
 	jne	.again_dts
 ret
-translate_points:
+;translate_points:
 ;        fninit
 ;        mov     ebx,points_rotated
 ;    again_trans:
