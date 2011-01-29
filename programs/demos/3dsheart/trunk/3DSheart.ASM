@@ -1947,7 +1947,7 @@ align 8
 align 8
 	buffer	dq	?
 
-	err	dd	?
+	err_	dd	?
 	drr	dd	?
 	xx	dd	?
 	yy	dd	?
