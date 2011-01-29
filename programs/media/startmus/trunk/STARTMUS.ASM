@@ -7,7 +7,7 @@ use32
         dd      0x400
         dd      0,0
 
-include '..\..\macros.inc'
+include '../../../macros.inc'
 
 start:
         mov     eax, 55

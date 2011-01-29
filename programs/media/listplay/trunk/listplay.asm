@@ -16,7 +16,7 @@ use32
 	    dd	   0x20000	     ; esp
 	    dd	   playlist,  0x0
 
-include '..\..\macros.inc'
+include '../../../macros.inc'
 
 START:			   ; start of execution
 or   [trig_sys],40h
