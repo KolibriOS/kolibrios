@@ -1,0 +1,311 @@
+KFM - Kolibri File Manager
+
+13.10.07  -  v0.47b  - 27271b
+Changes:
+1) Is corrected bug connected with by mistreating of hard disks containing sections
+    with unsupported OS by file systems or not containing of sections.
+2) New version EDITBOX. Is corrected bug - terminating or incorrect work of the application,
+    at simultaneous selection by the mouse and pressing the keys in EDITBOX.
+
+11.10.07  -  v0.47  - 27226b
+Changes:
+1) Navigating by the keyboard:
+   a) Alt+Enter - get for files and directories:
+      location, name, size, amount of files and directories
+      (including for a case of selection of separate files and directories).
+      Special thank <Lrz> and Mute, for the help in implementation of the procedure
+      of division of the whole 64 bit numbers, without usage of the FPU.
+2) The progress of deleting now takes into account all nested files and directories.
+3) Fix error - incorrect work physical scrollers of the mouse.
+
+30.09.07  -  v0.46  - 25458b
+Changes:
+1) Deleting of nested folders and files, the progress of deleting while takes
+   into account the selected files and folders only in the start directory.
+
+26.08.07  -  v0.45h  - 24915b
+Changes:
+1) SCROLL BAR - size of a pointer changes on amount of files in the directory.
+
+17.08.07  -  v0.45g  - 24617b
+Changes:
+1) Navigating by the mouse:
+    a) Processing physical scrollers of the mouse, in left and right panel.
+
+09.08.07  -  v0.45f  - 24257b
+Changes:
+1) Navigating by the keyboard:
+    a) Open file in other application with parameter:
+     Shift + W - set background, mode: tile.
+     Ctrl + W - set background, mode: stretch.
+     (Options work only for JPEGVIEW version 0.18 or above)
+
+04.08.07  -  v0.45e  - 24137b
+Changes:
+1) Menu of choice of the disk - navigating by the keyboard:
+   à) Insert - load tray of selected ATAPI device.
+   á) Delete - eject tray of selected ATAPI device.
+
+02.08.07  -  v0.45d  - 24037b
+Changes:
+1) Fix bug - response of the application to events of the mice occurring concerning other application,
+    which window is on top of the window stack.
+2) Fix bug - "consumption" of system resources at minimization of the window in the panel.
+
+12.07.07  -  v0.45b  - 23977b
+Changes:
+1) Fix bug - ignoring the mouse on kernels above than 566 revision.
+
+05.07.07  -  v0.45a  - 23993b
+Changes:
+1) Fix error appeared in v0.45 - the option buttons of devices did not work.
+
+24.06.07 - v0.45 - 23988b
+Changes:
+1) Usage of output of the window without fill of a working area (Function 0, EDX bit C).
+   Now window does not blink at full redraw.
+2) Limitation on a minimum size of the window: Xmin=495, Ymin=180.
+   Is entered because of failure display of units of the window at smaller sizes.
+3) Fix error - terminate program when window is rolled up.
+
+17.06.07 - v0.44k - 23421b
+Changes:
+1) The processing of click of the mouse - started applications is changed are output atop of the window KFM.
+2) Opening directories and start of files on a double click.
+
+03.06.07 - v0.44i - 23210b
+Changes:
+1) Capture of focal point active SCROLL BAR before release of a mouse button.
+
+04.05.07 - v0.44h - 23066b
+Changes:
+1) The miss of focal point in EDITBOX, in some cases is eliminated.
+    (Thank < Lrz > for correction of the code) 
+
+27.04.07 - v0.44g - 23130b
+Changes:
+1) The order of indexing of icons in INI is changed and BMP files now first three are rigidly fixed. Before it was not, that could result in inaccuracies at replacement of the file with icons on alternate. 
+2) Acceleration of output on 20 % at paging contents of the directory, at the expense of optimization of the procedure of search of output icons in INI the file.
+
+26.04.07 - v0.44e - 23126b
+Changes:
+1) The change SCROLL BAR - now at pressing extreme arrows moves not the cursor, and looked through contents of the directory are shifted on one unit.
+   (Thank Heavyiron for sentence of idea)
+2) If the quantity of displayed units in the panel is less than greatest possible displayed value the code SCROLL BAR to become passive.
+3) The error resulting in a split between a scroll box SCROLL BAR and lower arrow is eliminated.
+4) The error resulting in absence corrections of a position of the cursor at deleting last on the list of the file in the directory, which size of less greatest possible displayed value is eliminated.
+5) Small optimization of the code on a size.
+
+22.04.07 - v0.44 - 23118b
+Changes:
+1) Complete implementation of a unit of handle SCROLL BAR.
+2) Navigating by the mouse:
+   a) Choice of the active panel, click on the panel.
+   b) Installation of a selection cursor on the file or directory, click on the selected item.
+   c) Click on the placed selection cursor is equivalent to pressing the key ENTER.
+   d) Handle the menu of choice of the disk through the mouse.
+
+21.04.07 - v0.43c - 21777b
+Changes:
+1) The new version EDITBOX (< Lrz >), are corrected error with residual selection of a name.
+2) The acceptable colour of selection for EDITBOX, in the version 0.43 on an error was placed(installed) black.
+3) Primary implementation of a unit of handle SCROLL BAR, without feedback.
+
+16.04.07 - v0.43 - 20999b
+Changes:
+1) The new version EDITBOX (Maxxxx32 and < Lrz >), are eliminated error with editing of a name at creation, copying and moving of the file.
+2) Mapping files is corrected: the files with the absent extension and simultaneously with a point in the end now are displayed completely.
+3) Menu of choice of the disk - navigating by the keyboard:
+   a) Home and PageUp - cursor in a beginning of the list
+   b) End and PageDown - cursor in the end of the list
+4) Optimization of output of bars of progress at copying, moving and deleting of files.
+   Now bars of progress are drawn completely only for the first time and at arrival of event redraw of the window.
+
+01.04.07 - v0.42 - 20707b
+Changes:
+1) Draw progress of copying of files.
+2) Draw progress of moving of files.
+
+31.03.07 - v0.41 - 20091b
+Changes:
+1) Mapping progress of deleting of files.
+2) Navigating by the keyboard:
+    a) F1 - help, hot shortcut keys.
+3) Navigating by the mouse:
+    a) Button F1 - help, hot shortcut keys.
+       The presence of the file kfm_keys.txt in the directory is required, where the application is located.
+4) New version the indirect component EDITBOX (Maxxxx32 and < Lrz >).
+
+29.03.07 - v0.40a - 19708b
+Changes:
+1) Navigating by the keyboard:
+    a) F12 - program termination. 
+2) Navigating by the mouse:
+    a) Button F12 - program termination. 
+
+28.03.07 - v0.40 - 19603b
+Changes:
+1) Moving the selected and single files - the selected directories are ignored.
+2) Navigating by the keyboard:
+    a) F6 - moving of the file from the active panel in opposite.
+    b) Ctrl+A and Ctrl + (NumPad (+) Up) - selection of all files and directories in the active panel, except for the directory '..'
+    c) Ctrl + (NumPad (-) Up) - to deselect of all files and directories in the active panel, except for the directory '..'
+    d) Ctrl + (NumPad (*) Up) - to invert selection of all files and directories in the active panel, except for the directory '..'
+3) Navigating by the mouse:
+    a) Button F6 - moving of the file from the active panel in opposite.
+    b) The button of the main panel " To move the file " - moving of the file from the active panel in opposite.
+
+27.03.07 - v0.39 - 18778b
+Changes:
+1) Copying the selected files - the selected directories are ignored.
+2) Final elimination error with selection of files.
+
+24.03.07 - v0.38 - 18510b
+Changes:
+1) Copying files exceeding a size of the free RAM.
+    The memory for the buffer of copying is backed up at the rate of 25 % from free memory of the RAM at the moment of a beginning of copying.
+    If the file size less than 25 % of the free RAM a size of the buffer is equal to a file size.
+
+20.03.07 - v0.37b - 18239b
+Changes:
+1) The error is corrected, when the colour of last file in the directory did not vary at selection by the key Insert.
+2) Navigating by the mouse:
+Buttons of the main panel:
+    a) " To create the directory " - creation of the directory in the active panel.
+    b) " To copy the file " - copying file from the active panel in opposite.
+
+17.03.07 - v0.37 - 18157b
+Changes:
+1) The single copying of files (for one pass) for editing the name of the file is used of indirect components EDITBOX, thank to the authors: Maxxxx32 and <Lrz>, for saving of time in development KFM.
+2) Navigating by the keyboard:
+    a) F5 - copying file from the active panel in opposite.
+3) Navigating by the mouse:
+    b) Button F5 - copying file from the active panel in opposite.
+
+16.03.07 - v0.36 - 17338b
+Changes:
+1) The creation of the directory, for input of the name of the directory is used of indirect components EDITBOX, thank to the authors: Maxxxx32 and <Lrz>, for saving of time in development KFM.
+2) Navigating by the keyboard:
+   a) F7 - creation of the directory in the active panel.
+3) Navigating by the mouse:
+    a) Button F7 - creation of the directory in the active panel.
+
+13.03.07 - v0.35f - 15667b
+Changes:
+1) Jamming the cursor on last page is eliminated at paging End and PageDown.
+
+11.03.07 - v0.35e - 15590b
+Changes:
+1) The button " to reboot the directory " now redraw only active panel.
+2) The flicker because of superfluous plottings is eliminated at achievement of the end of the directory by keys End and PageDown.
+3) Small optimization of the code on a size.
+
+08.03.07 - v0.35b - 15602b
+Changes:
+1) Optimization of usage of area of paths to files.
+2) The error - output of the cursor for limits of the screen is corrected at return from the unwrapped mode of the window.
+
+04.03.07 - v0.35 - 21540b
+Changes:
+1) Procedure of search of the end of section in INI the file.
+2) Search and output of icons through associations in INI the file.
+3) Optimization of the code on a size.
+4) Navigating by the keyboard:
+   a) F4 - editing of the file in the indirect application, association in INI the file.
+5) Navigating by the mouse:
+    a) Button F4 - editing of the file in the indirect application, association in INI the file.
+
+01.03.07 - v0.34b - 23030b
+Changes:
+1) The miss of the menu of confirmation of deleting of files is corrected at activation of the window of other application.
+2) Navigating by the mouse:
+    a) Button F8 - deleting of the file.
+
+18.02.07 - v0.34 - 22870b
+Changes:
+1) Deleting the selected files.
+
+17.02.07 - v0.33b - 22841b
+Changes:
+1) Menu of confirmation of deleting of files.
+
+14.02.07 - v0.33 - 22494b
+Changes:
+1) Selection of files by red colour.
+2) Single deleting of files.
+3) Navigating by the keyboard:
+   a) Delete and F8 - the deleting of the file, on which is the cursor.
+   b) Insert - the selection by red colour of the file, on which is the cursor and cursor update on 1 position downwards.
+
+06.02.07 - v0.32 - 20581b
+Changes:
+1) Increase of speed of sorting on extensions on 10 %.
+2) Error handling of a file system.
+3) Button of the main panel: exit from the directory, reboot the directory.
+4) Navigating by the keyboard:
+   a) Ctrl+R - repeated loading of contents of the directory in the active panel
+
+28.01.07 - v0.30 - 19555b
+Changes:
+1) Preprocessing contents of the directory.
+2) Acceleration of sorting of contents of the directory on names and extensions.
+3) Sorting contents of the directory according a size of files.
+4) Sorting contents of the directory by date of modification of files.
+5) Navigating by the keyboard:
+   a) Ctrl+F3 - sorting according names, for the active panel
+   b) Ctrl+F4 - sorting according extensions, for the active panel
+   c) Ctrl+F5 - sorting according a size, for the active panel
+   d) Ctrl+F6 - sorting by date of modification, for the active panel
+
+27.01.07 - v0.27 - 18985b
+Changes:
+1) Sorting contents of the directory according extensions.
+
+22.01.07 - v0.25 - 18718b
+Changes:
+1) Sorting contents of the directory according names.
+
+13.01.07 - v0.22e - 17898b
+Changes:
+1) The new icons for some types of files are added.
+2) The output of icons for some types of graphics files is added.
+3) Sorting contents of the directory on folders and directories.
+
+11.01.07 - v0.22c - 16877b
+Changes:
+1) The track from the menu of choice of the disk remaining after it, "empty" completion is eliminated, in a case if quantity of files displayed in the directory not it is enough for overwriting a menu display.
+
+10.01.07 - v0.22b - 16849b
+Changes:
+1) The handler of keys in the menu of choice of the disk (Alt+F1, F2) is corrected.
+    Now menu correctly reacts on activated NumLock.
+
+07.01.07 - v0.22 - 16835b
+Changes:
+1) Dynamic allocation of memory for contents of the directory of the left and right panel.
+2) Correct allocation of the cursor at an output from the directory in the parent directory.
+
+05.01.07 - v0.18- 16064b
+Changes:
+1) The flicker is eliminated at cursor update in limits of the panel,
+   (The flicker appears only on a bar of the cursor)
+2) The flicker is reduced at cursor update for limits of the panel,
+3) Navigating by the keyboard:
+   a) Home - in a beginning of the directory,
+   b) End - in the end of the directory.
+4) The error in the procedure is corrected
+   Opening of files on the extension.
+
+29.12.06 - v0.1 - 15411b
+Changes:
+1) Interface 50 %,
+2) Navigating by the keyboard:
+   a) Up arrow and downwards - cursor update of selection,
+   b) PageUp and PageDown - page upwards and downwards,
+   c) Alt+F1 (F2), for choice of the disk of the left (right) panel
+3) Start of the applications (Enter),
+4) Opening files on the extension (Enter),
+5) Loading of files of icons (BMP) both adjustments (INI), and dynamic allocation of memory for them.
+
+18.10.06 - beginning of the project
+  Changes: no anything!
