@@ -1,0 +1,4 @@
+STYLE XP
+Panther theme for KolibriOS
+
+Author: Aqwas andrew_qs@bk.ru

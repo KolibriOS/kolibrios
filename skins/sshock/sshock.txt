@@ -1,0 +1,5 @@
+sshock
+
+ theme for KolibriOS
+
+Author: G@K
