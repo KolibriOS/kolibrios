@@ -319,6 +319,14 @@ include "../../3DS/3DMATH.INC"
 include "../../3DS/GRD3.INC"
 include "../../3DS/FLAT3.INC"
 
+fill_Z_buffer:
+	mov	eax,0x70000000
+      ;  mov     edi,Z_buffer
+	mov	edi,[Zbuffer_ptr]
+	mov	ecx,SIZE_X*SIZE_Y
+	rep	stosd
+ret
+
 
 ;alloc_buffer_mem:
 ;        mov     eax,68
