@@ -374,7 +374,7 @@ link_local:
     mov  ecx,0xfea9			    ; IP 169.254.0.0 link local net, see RFC3927
     mov  cx,ax
     eth.set_IP ecx			    ; mask is 255.255.0.0
-    DEBUGF 1,"Link Local IP assinged: 169.254.%u.%u\n",[generator+2]:1,[generator+3]:1
+    DEBUGF 1,"Link Local IP assigned: 169.254.%u.%u\n",[generator+2]:1,[generator+3]:1
     eth.set_SUBNET 0xffff
     eth.set_GATEWAY 0x0
     eth.set_DNS 0x0
@@ -406,7 +406,7 @@ link_local:
     cmp   esi,PROBE_NUM
     jl	  probe_loop
 
-; now we wait further ANNOUNCE_WAIT seconds and send ANNOUNCE_NUM ARP announces. If any other host has assingned
+; now we wait further ANNOUNCE_WAIT seconds and send ANNOUNCE_NUM ARP announces. If any other host has assigned
 ; IP within this time, we should create another adress, that have to be done later
 
     DEBUGF  1,"Waiting %us\n",ANNOUNCE_WAIT

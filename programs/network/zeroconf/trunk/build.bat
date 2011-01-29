@@ -1,2 +1,2 @@
-@fasm autodhcp.asm autodhcp
+@fasm zeroconf.asm zeroconf
 @pause
