@@ -94,6 +94,7 @@ FASM_PROGRAMS:=\
  demos/trantest:DEMOS/TRANTEST:$(PROGS)/demos/trantest/trunk/trantest.asm \
  demos/tube:DEMOS/TUBE:$(PROGS)/demos/tube/trunk/tube.asm \
  demos/unvwater:DEMOS/UNVWATER:$(PROGS)/demos/unvwater/trunk/unvwater.asm \
+ demos/web:DEMOS/WEB:$(PROGS)/demos/web/trunk/web.asm \ 
  develop/board:DEVELOP/BOARD:$(PROGS)/system/board/trunk/board.asm \
  develop/cObj:DEVELOP/cObj:$(PROGS)/develop/cObj/trunk/cObj.asm \
  develop/fasm:DEVELOP/FASM:$(PROGS)/develop/fasm/trunk/fasm.asm \
@@ -218,7 +219,7 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  demos/ak47.lif:DEMOS/AK47.LIF \
  demos/barge.lif:DEMOS/BARGE.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
- demos/use_mb:DEMOS/USE_MB demos/web:DEMOS/WEB \
+ demos/use_mb:DEMOS/USE_MB \
  drivers/atikms.dll:DRIVERS/ATIKMS.DLL \
  File|Managers/buttons.bmp:File|Managers/BUTTONS.BMP \
  File|Managers/eolite.ini:File|Managers/EOLITE.INI \

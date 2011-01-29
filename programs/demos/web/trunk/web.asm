@@ -5,10 +5,10 @@
 
 ;Used assumptions:
 ;   1) Screen resolution does not change while app is running
-;   2) Screen width bigger then height
+;   2) Screen width bigger than height
 ;   3) Screen width and height are even (2*k)
 
-include "macros.inc"
+include '..\..\..\macros.inc'
 
 background_cl = 0x000000
 foreground_cl = 0xFFFFFF
