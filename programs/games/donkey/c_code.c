@@ -11,7 +11,7 @@
 #include "donkey_02.h"
 #include "az.h"
 
-char STR_DONKEY[] = {"D O N K E Y  0.7"};
+char STR_DONKEY[] = {"D O N K E Y  0.8"};
 
 int start, paintbg, pause;
 int dox, doy;
@@ -20,6 +20,9 @@ int drx, dry;
 int drn, don;
 
 int speed;
+
+char snd_ok[]={0x08, 0x89, 0x0f, 0};
+char snd_game_over[]={0x08, 0xa9, 0x0f, 0x09, 0x99, 0x0f, 0x11, 0x59, 0x0f, 0};
 
 
 GB_BMP screen, font, car01, car02, donkey01, donkey02, az;
@@ -193,6 +196,7 @@ if (doy < -50)
 
 if ((drx == dox)&&(dry > doy-15)&&(dry < doy+15))
 	{
+	kol_sound_speaker(snd_game_over);
 	don++;
 	dry = 0;
 	drn /= 10;
@@ -324,6 +328,9 @@ for (;;)
 				{
 				if (-1 == pause)
 					break;
+
+				kol_sound_speaker(snd_ok);
+
 				drx *= -1;
 				screen_draw();
 				}
