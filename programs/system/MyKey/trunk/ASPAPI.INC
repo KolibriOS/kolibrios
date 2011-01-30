@@ -17,7 +17,7 @@ macro start_draw_window x,y,xsize,ysize,areacolor,caption,capsize
 	; WINDOW LABEL
 	mov	eax, 4			; function 4 : write text to window
 	mov	ebx, 8*65536+8		; [x start] *65536 + [y start]
-	mov	ecx, 0x00ffffff 	; color of text RRGGBB
+	mov	ecx, 0x0;0ffffff         ; color of text RRGGBB
 	mov	edx, caption		; pointer to text beginning
 	mov	esi, capsize	; text length
 	int	0x40
@@ -89,6 +89,10 @@ proc outtextxy stdcall, x:dword, y:dword, prompt:dword, prompt_len:dword, color:
 	mov	ecx, dword [color]
 	mov	edx, dword [prompt]
 	mov	esi, dword [prompt_len]
+	test	esi, esi
+	jnz	@f
+	or	ecx, 0x80000000
+      @@:
 	int	0x40
 	popa
 ret
@@ -136,6 +140,16 @@ macro rectangle x,y,xsize,ysize,color
   line x,y,x,y2,color
   line x,y2,x2,y2,color
   line x2,y,x2,y2,color
+}
+
+macro rectangle2 x,y,xsize,ysize,color1,color2
+{
+  x2=x+xsize
+  y2=y+ysize
+  line x,y,x2,y,color1
+  line x,y,x,y2,color1
+  line x,y2,x2,y2,color2
+  line x2,y,x2,y2,color2
 }
 
 macro putpixel x,y,color

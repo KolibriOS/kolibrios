@@ -139,10 +139,12 @@ debug_outhex:
 ret
 
 SysMsgBoardChar:
+   push   eax ebx ecx
    mov	  cl, al
    mov	  eax, 63
    mov	  ebx, 1
    int	  0x40
+   pop	  ecx ebx eax
 ret
 
 SysMsgBoardStr:

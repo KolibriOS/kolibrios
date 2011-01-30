@@ -12,11 +12,10 @@
    в нижнее - передаваемые ей параметры.
 
   Необходимо сделать:   
-a. Загрузка и сохранение конфигурационного файла.
-b. Удаление горячих клавиш.
-c. Изменение уже установленных горячих клавиш.
+a. Удаление горячих клавиш.
+b. Изменение уже установленных горячих клавиш.
 
-Номер версии: 0.1
+Номер версии: 0.2
 
 ==Автор==
 Asper
@@ -38,11 +37,10 @@ on the keyboard.
    in the lower text field - parametrs have to be passed to program.
 
   ToDo:
-a. Load and save of configuration file will be implemented in the next version.
-b. Delete hotkeys.
-c. Change hotkeys that are already set.
+a. Delete hotkeys.
+b. Change hotkeys that are already set.
 
-Version number: 0.1
+Version number: 0.2
 
 ==Author==
 Asper
