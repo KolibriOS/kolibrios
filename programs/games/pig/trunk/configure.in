@@ -1,0 +1,43 @@
+dnl Process this file with autoconf to produce a configure script.
+
+dnl Simple Automake init
+AC_INIT(pig.c)
+
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+
+AM_INIT_AUTOMAKE(pig, 1.0)
+
+dnl Check for various tools
+AC_PROG_CC
+AC_PROG_CPP
+
+dnl Check some compiler/platform stuff
+AC_TYPE_SIGNAL
+
+dnl-------------------------------------------------------
+dnl Checks for SDL
+dnl-------------------------------------------------------
+SDL_VERSION=1.2.0
+AM_PATH_SDL($SDL_VERSION,:,
+	AC_MSG_ERROR([*** SDL version $SDL_VERSION required!])
+)
+CFLAGS="$CFLAGS $SDL_CFLAGS"
+LIBS="$LIBS $SDL_LIBS"
+
+dnl-------------------------------------------------------
+dnl Checks for SDL_image
+dnl-------------------------------------------------------
+AC_CHECK_LIB(SDL_image, IMG_Load,,
+	AC_MSG_ERROR([You need the SDL_image library to compile this software.
+	Get it at http://www.libsdl.org/projects/SDL_image/]),
+	-lSDL
+)
+LIBS="$LIBS -lSDL_image"
+
+dnl Get compile and linking flags
+CFLAGS="$CFLAGS $SDL_CFLAGS"
+LIBS="$LIBS $SDL_LIBS"
+
+dnl Generate Makefile
+AC_OUTPUT(Makefile)
