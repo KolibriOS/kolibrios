@@ -1,10 +1,11 @@
 
-#include "kolibri.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
 
-#include "gblib.h"
+#include "system/kolibri.h"
+#include "system/stdlib.h"
+#include "system/string.h"
+
+#include "system/gblib.h"
+
 #include "az3.h"
 #include "az4.h"
 
@@ -23,7 +24,7 @@ char y;
 
 //=====================================
 
-char STR_TITLE[] = {"Piton 0.3"};
+char STR_TITLE[] = {"Piton 0.3.1"};
 
 int mode;
 char score[10];
@@ -175,7 +176,7 @@ switch ( mode)
 	{
 	case 0:
 		gb_bar(&screen, 0, 0, scrw, scrh, 0xbb);
-		az_puts("П И Т О Н   0.3", 10, 60);
+		az_puts("П И Т О Н   0.3.1", 10, 60);
 		az_puts("ремейк для ОС Колибри", 10, 120);
 		az_puts("автор: А. Богомаз", 10, 135);
 		press_space();
@@ -203,7 +204,7 @@ switch ( mode)
 		az_puts("К О Н Е Ц    И Г Р Ы", 10, 60);
 		kol_screen_wait_rr();
 		kol_paint_image(0, 0, scrw, scrh, screen.bmp);
-		kol_sleep(120);
+		kol_sleep(170);
 		mode = 0;
 		return;
 	};
@@ -282,7 +283,7 @@ mode = 0;
 
 for (;;)
 	{
-	kol_sleep(9);
+	kol_sleep(7);
 
 	if ( 1 == mode)
 		{
