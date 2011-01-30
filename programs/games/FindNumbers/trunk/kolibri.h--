@@ -1,0 +1,168 @@
+//CODED by Veliant, Leency, Nable. GNU GPL licence.
+
+#code32 TRUE
+
+char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
+dword  os_version   = 0x00000001;
+dword  start_addr   = #main;
+dword  final_addr   = #stop+32;
+dword  alloc_mem    = 0x00100000;
+dword  x86esp_reg   = 0x00100000;
+dword  I_Param      = #param;
+dword  I_Icon       = 0x0;
+char param[256]="";
+
+//Events
+#define evMouse	6
+#define evButton	3
+#define evKey		2
+#define evReDraw	1
+
+//Button options
+#define BT_DEL		0x80000000
+#define BT_HIDE		0x40000000
+#define BT_NOFRAME	0x20000000
+
+#define OLD		-1
+#define true		1
+#define false		0
+
+inline fastcall dword WaitEvent(){
+ EAX = 10;
+ $int 0x40
+}
+
+inline fastcall word GetKey(){
+ EAX = 2;              // just read this key from buffer
+ $int  0x40
+ EAX = EAX >> 8;
+}
+
+inline fastcall word GetButtonID(){
+ EAX = 17;
+ $int  0x40
+ EAX = EAX >> 8;
+}
+
+inline fastcall dword strlen(dword EDI){
+	EAX=0;
+	ECX=-1;
+	$REPNE $SCASB
+	EAX-=2+ECX;
+}
+
+byte WindowRePaint=0;
+inline fastcall void WindowRedrawStatus(dword EBX)
+{
+	EAX = 12;              // function 12:tell os about windowdraw
+	$int 0x40
+	IF (EBX==1) WindowRePaint=1; ELSE WindowRePaint=0;
+}
+
+void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,byte headerType,dword headerColour,EDI)
+{
+	EBX = x << 16 + sizeX;
+	ECX = y << 16 + sizeY;
+	EDX = mainAreaType << 24 | mainAreaColour;
+	ESI = headerType << 24 | headerColour;
+	$xor eax,eax
+	$int 0x40
+}   
+
+
+void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
+{
+	EAX = 4;
+	EBX = x<<16+y;
+	ECX = fontType<<24+color;
+	$int 0x40;
+}
+
+void WriteNumber(dword x,y,byte fontType, ESI, ECX) 
+{
+EAX = 47;
+EBX = 2<<16;
+EDX = x<<16+y;
+ESI = fontType<<24+ESI;
+$int 0x40;
+} 
+
+
+
+void DrawBar(dword x,y,w,h,EDX)
+{
+	EAX = 13;
+	EBX = x<<16+w;
+	ECX = y<<16+h;
+ 	$int 0x40
+}
+
+void DefineButton(dword x,y,w,h,EDX,ESI)
+{
+ 	EAX = 8;
+	EBX = x<<16+w;
+	ECX = y<<16+h;
+ 	$int 0x40
+}
+
+inline fastcall void DeleteButton(dword EDX)
+{
+	EAX = 8;
+	EDX += BT_DEL;
+	$int 0x40;
+}
+
+void DrawFlatButton(dword x,y,width,height,id,color,text)
+{
+	DrawRegion_3D(x,y,width,height,0x94AECE,0x94AECE);
+	DrawRegion_3D(x+1,y+1,width-2,height-2,0xFFFFFF,0xC7C7C7);
+	DrawBar(x+2,y+2,width-3,height-3,color); //§ «ЁўЄ 
+	IF (id<>0)	DefineButton(x,y,width,height,id+BT_HIDE,0xEFEBEF); //Є­®ЇЄ 
+	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
+}
+
+
+dword generator;  // random number generator - для генерации случайных чисел
+
+:int random(int max)
+// get pseudo-random number - получить псевдослучайное число
+{
+  $rdtsc        // eax & edx
+  $xor eax,edx
+  $not eax
+
+  EBX = generator;
+  $ror ebx,3
+  $xor ebx,0xdeadbeef
+  EBX += EAX;
+  generator = EBX;
+  
+  EAX += EBX;
+  EAX = EAX % max;
+  return EAX;
+}
+
+:randomize()
+// initialize random number generator - инициализировать генератор случайных чисел
+{
+  asm
+  {
+    mov eax,3
+    int 0x40
+    ror eax,16
+  }
+  generator = EAX;
+}
+
+inline fastcall ExitProcess(){
+ EAX = -1;              // close this program
+ $int 0x40
+}
+
+void DrawRegion_3D(dword x,y,width,height,color1,color2)
+{
+	DrawBar(x,y,width+1,1,color1);
+	DrawBar(x,y+1,1,height-1,color1);
+	DrawBar(x+width,y+1,1,height,color2);
+	DrawBar(x,y+height,width,1,color2);
+}

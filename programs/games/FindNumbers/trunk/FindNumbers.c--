@@ -1,0 +1,157 @@
+//(C) Artemonische, 2010
+
+#pragma option meos
+//#include "..\lib\kolibri.h--" //подключаем библиотеку с KolibriOS API
+#include "kolibri.h--"
+
+int find=10;
+struct
+	{
+	int x;
+	int y;
+	int button_id;
+	int mark;
+	int text;
+	}box[81];
+
+void main()
+{	
+	int button,tempi,tempj;
+	randomize();
+	initialization();
+	draw_window();
+	draw_buttons();
+	loop()
+	{
+		switch(WaitEvent())
+		{
+			CASE evButton:
+				button=GetButtonID();
+				IF (button==1)
+					{
+					ExitProcess();
+					}
+				IF (button==582)
+					{
+					find=10;
+					initialization();
+					draw_window();
+					draw_buttons();
+					}
+				if (button>500) && (button<582) && (box[button-500].text == find)
+					{
+					box[button-500].mark=2;
+					find++;
+					if (find==91)
+						{
+						draw_window();
+						}
+					else
+						{
+						DeleteButton(button);
+						tempi=box[button-500].y*30-30;
+						tempj=30*box[button-500].x-16;
+						DrawBar(tempi,tempj,30,30,0xDCFFDC);
+						DrawBar(70,289,16,8,0xDCFFDC);
+						DrawBar(252,289,16,8,0xDCFFDC);
+						WriteNumber(70,289,0x80,0,find);
+						WriteNumber(252,289,0x80,0,90-find+1);
+						}
+					}
+				BREAK;
+			CASE evKey: //если произошло нажатие клавиши на клавиатуре
+				IF (GetKey()==051)
+					{
+					find=10;
+					initialization();
+					draw_window();
+					draw_buttons();
+					}
+				BREAK;
+			CASE evReDraw:
+				draw_window();
+				draw_buttons();
+				BREAK;
+		}
+	}
+	ExitProcess();
+}
+
+void draw_window()
+{
+	WindowRedrawStatus(1); //начало перерисовки окна
+	DefineAndDrawWindow(300,176,280,340,0x34,0xDCFFDC,0,0,"FindNumbers v1.1"); //рисуем окно
+	DrawBar(0,13,271,1,0x0CFF0C); //линия сверху
+	DrawBar(0,285,271,1,0x0CFF0C);
+	DrawBar(0,299,271,1,0x0CFF0C); //линия снизу
+	if (find<=90)
+		{
+		WriteText(4,4,0x80,0x000000,"Соберите все числа от 10 до 90 по порядку...");
+		WriteText(4,289,0x80,0x000000,"Ищем число: ");
+		WriteText(162,289,0x80,0x000000,"Осталось найти: ");
+		WriteNumber(70,289,0x80,0,find);
+		WriteNumber(252,289,0x80,0,90-find+1);
+		DrawFlatButton(155,300,115,14,582,0xAFFFAF,"Заново (F2)");
+		WriteText(4,304,0x80,0x000000,"Made by Artemonische,2010");
+		}
+	IF (find==91)
+		{
+		WriteText(70,100,0x80,0x000000,"Вы нашли все числа! :)");
+		DrawFlatButton(100,110,70,20,582,0xE4DFE1,"Заново (F2)");
+		}
+	WindowRedrawStatus(2); //конец перерисовки окна
+}
+
+void draw_buttons()
+{
+int i,tempi,tempj;
+	for (i=1;i<=81;i++)
+		{
+		IF (box[i].mark==1)
+			{
+			tempi=box[i].y*30-30;
+			tempj=30*box[i].x-16;
+			DefineButton(tempi,tempj,29,29,box[i].button_id,0xAFFFAF);
+			WriteNumber(tempi+11,tempj+11,0x80,0,box[i].text);
+			}
+		}
+}
+
+void initialization()
+{
+int i,j,t;
+t=0;
+	FOR (i=1;i<=9;i++)
+		{
+		FOR (j=1;j<=9;j++)
+			{
+			t++;
+			box[t].x=j;
+			box[t].y=i;
+			box[t].mark=1;
+			box[t].button_id=500+t;
+			box[t].text=Generate(t);
+			}
+		}
+}
+
+int Generate(int xx)
+{
+	int temp,k,p;
+	p=2;
+	WHILE (p==2)
+		{
+		temp=random(81)+10;
+		p=1;
+		FOR (k=1; k<xx; k++)
+			{
+			IF (box[k].text==temp)
+				{
+				p=2;
+				BREAK;
+				}
+			}
+		}
+	return temp;
+}
+stop:
