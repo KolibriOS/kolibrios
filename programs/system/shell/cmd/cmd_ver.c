@@ -23,7 +23,7 @@ if (!strcmp(param, "kernel"))
 	#if LANG_ENG
 		printf ("  KolibriOS v%d.%d.%d.%d. Kernel SVN-rev.: %d\n\r", vA, vB, vC, vD, Rev);
 	#elif LANG_RUS
-		printf ("  КолибриОС v%d.%d.%d.%d. SVN-рев. ядра: %d\n\r", vA, vB, vC, vD, Rev);
+		printf ("  KolibriOS v%d.%d.%d.%d. SVN-рев. ядра: %d\n\r", vA, vB, vC, vD, Rev);
 	#endif
 	free(kvbuf);
 	return TRUE;

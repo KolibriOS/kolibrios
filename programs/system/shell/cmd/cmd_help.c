@@ -7,7 +7,7 @@ int i;
 #if LANG_ENG
 	char available[]={"  %d commands available:\n\r"};
 #elif LANG_RUS
-	char available[]={"  Кол-во доступных команд: %d\n\r"};
+	char available[]={"  Количество доступных команд: %d\n\r"};
 #endif
 
 if ( !strlen(cmd) )
