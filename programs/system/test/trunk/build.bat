@@ -1,0 +1,1 @@
+fasm test.asm test

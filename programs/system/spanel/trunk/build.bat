@@ -1,0 +1,1 @@
+fasm spanel.asm spanel

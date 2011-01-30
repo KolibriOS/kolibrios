@@ -1,0 +1,45 @@
+#include "..\lib\kolibri.h--" 
+#include "..\lib\memory.h--"
+// Kolibri Notify Daemon. v0.1 by SoUrcerer
+
+dword id;
+void main()
+{   
+  
+   word key;
+id=GetScreenWidth();
+
+loop()
+   {
+      switch(WaitEvent()) 
+      {
+         case evButton:
+            id=GetButtonID();               
+            ExitProcess();
+          break;
+      
+         case evKey:
+         key = GetKey();
+         ExitProcess();
+         break;
+         
+         case evReDraw:
+            draw_window();
+          break;
+      }
+	Pause (500);
+	ExitProcess();
+   }
+}
+
+void draw_window()
+{
+   WindowRedrawStatus(1); 
+   DefineAndDrawWindow(id-300,0,300,44,0x30000000,0x1012141F,0,0,"Kolibri Notify"); 
+//   DefineButton(0,300,0,96,0x30000001,0x0) ;
+   WriteText(7,7,0x80,0xFFFFFF,"Kolibri Notify",0);
+   WriteText(7,25,0x80,0xEFEFEF,I_Param,0);
+   WindowRedrawStatus(2); 
+}
+
+stop:
