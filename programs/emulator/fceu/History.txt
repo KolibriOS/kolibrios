@@ -1,0 +1,33 @@
+01.09.08 == Port v0.1 == Emulator v0.42 
+- загрузка NES файлов                  | - load NES files
+- исполнение NES файлов                | - execute NES files
+- массштабирование размера окна        | - scale window size
+- работает в ОС Kolibri и Menuet       | - work in OS Kolibri and Menuet
+
+
+24.10.08 == Port v0.2 == Emulator v0.42 
+- работа с сис. функцией 70            | - working with sys. function 70
+- создание сохранений                  | - make saves
+- загрузка сохранений                  | - load saves
+- создание скриншотов                  | - make screenshots
+- добавлены клавиши Турбо A и Турбо B  | - Turbo A and Turbo B keys were added
+- работает только в ОС Kolibri из-за   | - work in OS Kolibri only because of  
+   использования сис. функции 70       |     using sys. function 70
+                                      
+09.07.09 == Port v0.3 == Emulator v0.96
+- добавлено 33 новых маппера           | - 33 new mappers were add 
+     ( 48, 51, 52, 57, 61, 72, 74, 77, 82, 83, 88, 92, 96, 114, 115-117, 140, 
+       144, 152-156, 189, 227, 232, 234, 235, 242, 248-250 )
+
+- добавлены новые эмулируемые          | - new emulated devices were add
+   устройства                          |
+     ( power pads, game pads, zapper, arkanoid, shadow, Family BASIC Keyboard )
+
+- выбор виртуального джойстика         | - select virtual joysticks
+- ускоренный вывод графики             | - faster graphics output
+- вывод fps                            | - fps output
+- сообщения теперь выводятся на доску  | - messages now output to the debug board
+   отладки                             |
+- см. файл "ChangeLog.txt" чтобы       | - see file "ChangeLog.txt" for full list of changes
+   просмотреть весь список изменений   |
+
