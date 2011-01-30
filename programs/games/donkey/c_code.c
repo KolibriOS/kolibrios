@@ -1,10 +1,9 @@
 
-#include "kolibri.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include "system/kolibri.h"
+#include "system/stdlib.h"
+#include "system/string.h"
 
-#include "gblib.h"
+#include "system/gblib.h"
 
 #include "car_01.h"
 #include "car_02.h"
