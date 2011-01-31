@@ -510,7 +510,7 @@ getMouseCol:
 	
 	inc eax				; xform into range [1,7]
 	ret
-.outside
+.outside:
 	xor eax,eax
 	ret
 

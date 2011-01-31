@@ -338,7 +338,7 @@ drawLabels:
 	mov eax,MOS_SC_WRITETEXT
 	int 0x40
 
-.next
+.next:
 	add edi,LABEL_size			; next label
 	pop ecx
 	dec ecx

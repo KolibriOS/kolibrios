@@ -176,7 +176,7 @@ alphabeta:
 	xor eax,eax
 	leave
 	ret 4*4
-.notfull
+.notfull:
 	; max search depth reached -> do static evaluation
 	cmp dword [ply],0
 	je .staticeval
