@@ -10,6 +10,7 @@
 ;;                                                                 ;;
 ;;  Version 0.1  11 February 2007                                  ;;
 ;;  Version 0.2  3 August 2010 - port to net branch by hidnplayr   ;;
+;;  Version 0.3  31 Januari 2011 - bugfixes by hidnplayr           ;;
 ;;                                                                 ;;
 ;;  References:                                                    ;;
 ;;    r8169.c - linux driver (etherboot project)                   ;;
@@ -604,6 +605,7 @@ init_board:
 	ret
 
   .match:
+	DEBUGF	1,"init_board: chipset=%u\n", ecx
 	xor	eax,eax
 	ret
 
@@ -928,7 +930,7 @@ hw_start:
 	DEBUGF	1,"Set MAC Reg C+CR Offset 0xE0: bit-3 and bit-14\n"
 	jmp	.set
     @@:
-	DEBUGF	1," Set MAC Reg C+CR Offset 0xE0: bit-3\n"
+	DEBUGF	1,"Set MAC Reg C+CR Offset 0xE0: bit-3\n"
   .set:
 	set_io	REG_CPlusCmd
 	out	dx, ax
@@ -1041,6 +1043,8 @@ transmit:
 	mul	[tpc.cur_tx]
 	lea	esi, [eax + tx_ring]
 
+	DEBUGF	1,"Using TX desc: %x\n", esi
+
 ;---------------------------
 ; Program the packet pointer
 
@@ -1140,8 +1144,11 @@ int_handler:
 	jz	.no_rx
 
 	push	ax
+	push	ebx
 
   .check_more:
+	pop	ebx
+	DEBUGF	1,"ebx = 0x%x\n", ebx
 	mov	eax, rx_desc.size
 	mul	[tpc.cur_rx]
 	lea	esi, [eax + rx_ring]
@@ -1157,6 +1164,7 @@ int_handler:
 	test	eax, SD_RxRES
 	jnz	.rx_return	;;;;; RX error!
 
+	push	ebx
 	push	.check_more
 	and	eax, 0x00001FFF
 	add	eax, -4 			; we dont need CRC
@@ -1220,6 +1228,7 @@ int_handler:
 	jnz	.maybenext
 
 	push	ecx
+	DEBUGF	1,"Freeing up TX desc: %x\n", esi
 	stdcall KernelFree, [esi+tx_desc.buf_soft_addr]
 	pop	ecx
 	and	[esi+tx_desc.buf_soft_addr], 0
