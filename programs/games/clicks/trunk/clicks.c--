@@ -63,7 +63,7 @@ byte id_curr,id_next,bz;
 		_HH:
 		id_next=bz*8+j;
 		IF (matrix[id_curr].mark == 1)
-			IF (bz>0)&&(matrix[id_next].mark == 1) {bz--; GOTO _HH;}
+			IF (matrix[id_next].mark == 1)&&(bz>0) {bz--; GOTO _HH;}
 			ELSE IF (matrix[id_next].mark == 0)
 			{
 				matrix[id_curr].color=matrix[id_next].color;
