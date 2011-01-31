@@ -30,9 +30,9 @@ define fasm_meta_rule
 $(1): $(2) Makefile.fasm .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
 	fasm -m 65536 $$< "$$@" -s .deps/$(4).fas
 	prepsrc .deps/$(4).fas /dev/null
-	prepsrc .deps/$(4).fas /dev/stdout | (echo -n '$(1):' && \
-	perl -ne 's|\\|/|g;print " \\\n $$$$1" if /^;include \x27(.*?)\x27/' \
-	&& echo) > .deps/$(4).Po
+	prepsrc .deps/$(4).fas /dev/stdout | \
+	perl -n -e 's|\\|/|g;push @a,$$$$1 if/^;include \x27(.*?)\x27/;' \
+	-e 'END{$$$$a=join " \\\n ",@a;print "$(1): $$$$a\n$$$$a:\n"}' > .deps/$(4).Po
 	kpack --nologo "$$@"
 -include .deps/$(4).Po
 endef
@@ -45,8 +45,8 @@ $(foreach f,$(FASM_PROGRAMS),$(eval $(call fasm_meta_rule,$(fbinary),$(fsource),
 kernel.mnt: $(KERNEL)/kernel.asm Makefile.fasm .deps/.dir
 	fasm -m 65536 $< "$@" -s .deps/kernel.fas
 	prepsrc .deps/kernel.fas /dev/null
-	prepsrc .deps/kernel.fas /dev/stdout | (echo -n 'kernel.mnt:' && \
-	perl -ne 's|\\|/|g;print " \\\n $$1" if /^;include \x27(.*?)\x27/' \
-	&& echo) > .deps/kernel.Po
+	prepsrc .deps/kernel.fas /dev/stdout | \
+	perl -n -e 's|\\|/|g;push @a,$$1 if/^;include \x27(.*?)\x27/;' \
+	-e 'END{$$a=join " \\\n ",@a;print "$@: $$a\n$$a:\n"}' > .deps/kernel.Po
 	kerpack $@
 -include .deps/kernel.Po
