@@ -1,0 +1,96 @@
+View3ds 0.055 - January 2011.
+1. SSE optimizations (file BUMP_TEX.INC).
+2. Compiles correctly in newest FASM.
+-----------------------------------------------------------------------------------
+
+View3ds 0.054 - December 2009 (Updated January 2010).
+1. Skinned window by Leency.
+2. Optimizations.
+3. Re map texture, bumps option - allow spherical mapping around each axle (X,Y,Z).
+4. Problem with too small memory to generate object fixed. (Problem ocurred with
+   house.3ds object and others objects contains less than 1000 faces and points).
+-----------------------------------------------------------------------------------
+
+View3ds 0.053 - (?) 2009
+1. Optimizations.
+-----------------------------------------------------------------------------------
+
+View3ds 0.052 - November 2007.
+1. Memory for file is allocated dynamically.
+2. Optimizations.
+Note: compiling correct only for KolibriOS.
+-----------------------------------------------------------------------------------
+
+View3ds 0.051 - October 2007.
+1. More smooth texture mapping in tex and txgr shading model and others based on
+   tex3.inc, tex_cat.inc shading models.
+2. Predefined three, I hope, nice lights.
+-----------------------------------------------------------------------------------
+
+View3ds 0.05 - (?) 2007
+1. New shading model: cubic environment mapping with 1.5 kb light buffer.
+2. Bumps optionally according to texture. ( It gives so called texture with
+   shifts in bumps + texture shading model. )
+3. Bumps depth button.
+-----------------------------------------------------------------------------------
+
+View3ds 0.04 - March 2007.
+1. New shading model: bump + texture.  Only version with z coordinate
+   interpolation.
+2. SSE optimizations ( files: two_tex.inc and bump_tex.inc )
+-----------------------------------------------------------------------------------
+
+View3ds 0.03 - March 2007.
+1. Two shading models: smooth + texture, spherical environment mapping + texture.
+   Version only with z coordinate interpolation.
+2. Bit changed rotary. I took attempt in SSE instuctions. ( matrix multiplication )
+3. Color position depend drawing model  instead spot light ( I hope,spot light come
+   back in future ).
+-----------------------------------------------------------------------------------
+
+View3ds 0.02 - December 2006.
+1. New shading models - "spot" - spot light (only one, it's very CPU hungry model,
+   and there is no easy way to implement buffer) with light attenuation (In my
+   implmentation works not perfect); "dots" - app draws only points (with no culling).
+2. Some loseless operations "mirror": according to each axis, rotary 90 degrees.
+3. Postprocesing efects: Emboss (use blur to make edges more visable), fire ( be
+   carefull during `fire + embos`parallel using).
+4. "Move" -  Changes meaning of 'add vector' buttons:
+   used "obj"  move  object, "camr" move camera (in this option use culling = 'off'
+   I must make culling procedure bit advanced).
+5. Generate button. Few objects generating (with bad normals)
+6. Some optimizations on MMX.
+7. I took an attempt to memory managing functions, but it decreased speed (no aligned
+   memory in Menuet functions?)
+
+There is really much work to do and I see disorder in app code.
+Greetings for all, especially Madis Kalme for .3ds files support and good vibrations.  ;)
+Merry Christmas and happy new year.
+-----------------------------------------------------------------------------------
+
+App View3ds ver 0.01 - November 2006.
+1. Object generating (for now only one). When no parameter specified or error occured
+   during reading file from disk, app generate object. No teapot.3ds needed on ramdrive,
+   but, if this file exist it would be read as default.
+2. Bug in read_from_file procedure fixed. (In  May, when I made shading light vector
+   depend, I demaged bit Madis' procedure.)
+3. Backface culling on/off option. (Some objects need culling off - they have mismatched
+   normal vectors. Example: iron.3ds, sink.3ds, the generated one.)
+4. Random lights procedure.
+5. Spherical (instead old - planar ) bump, texture mapping.
+6. Bit improved menu.
+7. Blur.
+-----------------------------------------------------------------------------------
+
+App "View3ds" - it's very early, still unfinished version but I want show you it.
+Based on earlier demos.
+1. 3ds object import as a parameter ( for now only short names supported )
+   I updated Kfar app - it can run view3ds with parameter. You must copy it on
+   ramdrive. You could do such funny thing: Run updated Kfar in KolbrInWin,
+   before them set in KolInWin.ini file path to ramdrive, where yo have "view3ds",
+   choose 3ds file ... Emulator will run View3ds with selected file.
+   If no parameter specified, app try open tpot.3ds from ramdrive. If tpot.3ds
+   don't exist on rd, app hang.
+2. Many lights. Every light - unlinear model ( Phong illumination ). For now
+   no light setting option.
+3. Light buffer for grd, flat model.

@@ -1,10 +1,10 @@
 
-; application : View3ds ver. 0.054 - tiny .3ds files viewer.
-; compiler    : FASM  1.67.11
-; system      : KolibriOS/MenuetOS
+; application : View3ds ver. 0.055 - tiny .3ds files viewer.
+; compiler    : FASM
+; system      : KolibriOS
 ; author      : Macgub aka Maciej Guba
 ; email       : macgub3@wp.pl
-; web         : www.menuet.xt.pl
+; web         : www.macgub.hekko.pl
 ; Fell free to use this intro in your own distribution of KolibriOS/MenuetOS.
 ; Special greetings to all MenuetOS maniax in the world.
 ; I hope because my intros Christian Belive will be near to each of You.
@@ -34,7 +34,7 @@ LIGHT_SIZE equ 22			       ;      |  |
 NON   =   0				       ;     -/  \-
 MMX   =   1
 SSE   =   2
-Ext   =   MMX			;Ext={ NON | MMX | SSE}
+Ext   =   MMX		     ;Ext={ NON | MMX | SSE}
 
 ; 0 for short names (Menuet-compatible), 1 for long names (Kolibri features)
 USE_LFN = 1

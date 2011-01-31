@@ -88,6 +88,8 @@ bump_tex_triangle_z:
 .dtx23 equ dword[ebp-(52+4*15)]
 .dty23 equ	[ebp-(52+4*16)]
 
+if Ext < SSE
+
 .cx1   equ dword[ebp-(52+4*17)] 	; current variables
 .cz1   equ	[ebp-(52+4*18)]
 .cx2   equ dword[ebp-(52+4*19)]
@@ -106,6 +108,27 @@ bump_tex_triangle_z:
 .ctx2  equ dword[ebp-(52+4*31)]
 .cty2  equ	[ebp-(52+4*32)]
 
+else
+
+.cx1   equ dword[ebp-(52+4*17)] 	; current variables
+.cz1   equ	[ebp-(52+4*18)]
+.cbx1  equ dword[ebp-(52+4*19)]
+.cby1  equ	[ebp-(52+4*20)]
+.cex1  equ dword[ebp-(52+4*21)]
+.cey1  equ	[ebp-(52+4*22)]
+.ctx1  equ dword[ebp-(52+4*23)]
+.cty1  equ	[ebp-(52+4*24)]
+
+.cx2   equ dword[ebp-(52+4*25)]
+.cz2   equ	[ebp-(52+4*26)]
+.cbx2  equ dword[ebp-(52+4*27)]
+.cby2  equ	[ebp-(52+4*28)]
+.cex2  equ dword[ebp-(52+4*29)]
+.cey2  equ	[ebp-(52+4*30)]
+.ctx2  equ dword[ebp-(52+4*31)]
+.cty2  equ	[ebp-(52+4*32)]
+
+end if
        cld
        mov     ebp,esp
        push    edx	  ; store bump map
@@ -180,18 +203,9 @@ bump_tex_triangle_z:
  .bt_dx12_make:
        movsx	ebx,bx
 
-       mov	ax,.x2
-       sub	ax,.x1
-       cwde
-       shl	eax,ROUND
-       cdq
-       idiv	ebx
- ;     mov      .dx12,eax
-       push	 eax
 
 if Ext>=SSE
-
-       sub	 esp,28
+       sub	 esp,32
    ;    mov       eax,256
        cvtsi2ss  xmm4,[i255d]
        cvtsi2ss  xmm3,ebx	     ;rcps
@@ -220,6 +234,7 @@ if Ext>=SSE
 
        shufps	 xmm1,xmm1,10110001b
 			     ;xmm1--> | dbx | dby | dex | dey |
+;1       movups    .dey12,xmm1
        cvtps2pi  mm0,xmm1 ;mm0,xmm1          ; mm0 -> 2 delta dwords
        movhlps	 xmm1,xmm1
        cvtps2pi  mm1,xmm1 ;mm1,xmm1
@@ -235,6 +250,11 @@ if Ext>=SSE
        mov	 ax,.z2
        sub	 ax,.z1
        cwde
+
+       mov	dx,.x2
+       sub	dx,.x1
+       movsx	edx,dx
+
    ;/    movd      mm1,eax
 
    ;/    punpcklwd  mm0,mm4
@@ -256,17 +276,40 @@ if Ext>=SSE
    ;/  cvtpi2ps  xmm1,mm1
        cvtsi2ss  xmm1,eax
        movlhps	 xmm1,xmm1
+       cvtsi2ss  xmm1,edx
+   ;    movss     xmm1,xmm4
+       shufps	 xmm1,xmm1,00101111b
        cvtpi2ps  xmm1,mm3
 
-       divps	 xmm1,xmm3   ; xmm1--> | xxx | dz | dty | dtx |
+       divps	 xmm1,xmm3   ; xmm1--> | dx | dz | dty | dtx |
 
        shufps	 xmm1,xmm1,11100001b
-			     ; xmm1--> | xxx | dz | dtx | dty |
+			     ; xmm1--> | dx | dz | dtx | dty |
+;1       movlps    .dty12,xmm1
+;1       movhps    .dz12,xmm1
        cvtps2pi  mm0,xmm1    ; mm0 -> 2 delta dwords  | dtx | dty |
        movhlps	 xmm1,xmm1
-       cvtss2si  eax,xmm1    ; eax --> 1 delta dword | dz |
+       cvtps2pi  mm1,xmm1
        movq	 .dty12,mm0
-       mov	 .dz12,eax
+       movq	 .dz12,mm1
+;temporaly conversion to keep upside down
+;     fninit
+;     fld      .dx12
+;     fistp    .dx12
+;     fld      dword .dz12
+;     fistp    dword .dz12
+;     fld      .dbx12
+;     fistp    .dbx12
+;     fld      dword .dby12
+;     fistp    dword .dby12
+;     fld      .dex12
+;     fistp    .dex12
+;     fld      dword .dey12
+;     fistp    dword .dey12
+;     fld      .dtx12
+;     fistp    .dtx12
+;     fld      dword .dty12
+;     fistp    dword .dty12
 ;----
 ;       mov       ax,.z2
 ;       sub       ax,.z1
@@ -317,6 +360,15 @@ if Ext>=SSE
 ;       movq      .dty12,mm0
 ;       movq      .dz12,mm1
 else
+       mov	ax,.x2
+       sub	ax,.x1
+       cwde
+       shl	eax,ROUND
+       cdq
+       idiv	ebx
+ ;     mov      .dx12,eax
+       push	 eax
+
        mov     ax,.z2
        sub     ax,.z1
        cwde
@@ -361,8 +413,6 @@ else
  ;     mov      .dey12,eax
        push	 eax
 
-;end if
-
        mov	ax,word[.t_x2]
        sub	ax,word[.t_x1]
        cwde
@@ -393,20 +443,12 @@ end if
        loop	@b
        jmp	.bt_dx13_done
  .bt_dx13_make:
-       mov	ax,.x3
-       sub	ax,.x1
-       cwde
        movsx	ebx,bx
-       shl	eax,ROUND
-       cdq
-       idiv	ebx
- ;     mov      .dx13,eax
-       push	 eax
 
 if Ext>=SSE
 
-       sub	 esp,28
-   ;    mov       eax,255
+       sub	 esp,32
+   ;    mov       eax,256
        cvtsi2ss  xmm4,[i255d]
        cvtsi2ss  xmm3,ebx	     ;rcps
        divss	 xmm3,xmm4
@@ -434,15 +476,21 @@ if Ext>=SSE
 
        shufps	 xmm1,xmm1,10110001b
 			     ;xmm1--> | dbx | dby | dex | dey |
-       cvtps2pi  mm0,xmm1	   ; mm0 -> 2 delta dwords
+;1       movups    .dey13,xmm1
+
+       cvtps2pi  mm0,xmm1 ;mm0,xmm1          ; mm0 -> 2 delta dwords
        movhlps	 xmm1,xmm1
-       cvtps2pi  mm1,xmm1
+       cvtps2pi  mm1,xmm1 ;mm1,xmm1
        movq	 .dey13,mm0
        movq	 .dby13,mm1
-;----------
+
        mov	 ax,.z3
        sub	 ax,.z1
        cwde
+
+       mov	dx,.x3
+       sub	dx,.x1
+       movsx	edx,dx
 
        movd	  mm2,[.t_x1]
        movd	  mm3,[.t_x3]
@@ -453,18 +501,53 @@ if Ext>=SSE
 
        cvtsi2ss  xmm1,eax
        movlhps	 xmm1,xmm1
+       cvtsi2ss  xmm1,edx
+       shufps	 xmm1,xmm1,00101111b
        cvtpi2ps  xmm1,mm3
 
-       divps	 xmm1,xmm3   ; xmm1--> | xxx | dz | dty | dtx |
+       divps	 xmm1,xmm3   ; xmm1--> | dx | dz | dty | dtx |
 
        shufps	 xmm1,xmm1,11100001b
-			     ; xmm1--> | xxx | dz | dtx | dty |
+			     ; xmm1--> | dx | dz | dtx | dty |
+;1       movlps    .dty13,xmm1
+;1       movhps    .dz13,xmm1
+
        cvtps2pi  mm0,xmm1    ; mm0 -> 2 delta dwords  | dtx | dty |
        movhlps	 xmm1,xmm1
-       cvtss2si  eax,xmm1    ; eax --> 1 delta dword | dz |
+       cvtps2pi  mm1,xmm1
        movq	 .dty13,mm0
-       mov	 .dz13,eax
+       movq	 .dz13,mm1
+
+;temporaly conversion to keep upside down
+;     fninit
+;     fld      .dx13
+;     fistp    .dx13
+;     fld      dword .dz13
+;     fistp    dword .dz13
+;     fld      .dbx13
+;     fistp    .dbx13
+;     fld      dword .dby13
+;     fistp    dword .dby13
+;     fld      .dex13
+;     fistp    .dex13
+;     fld      dword .dey13
+;     fistp    dword .dey13
+;     fld      .dtx13
+;     fistp    .dtx13
+;     fld      dword .dty13
+;     fistp    dword .dty13
+
 else
+
+       mov	ax,.x3
+       sub	ax,.x1
+       cwde
+       shl	eax,ROUND
+       cdq
+       idiv	ebx
+ ;     mov      .dx13,eax
+       push	 eax
+
        mov     ax,.z3
        sub     ax,.z1
        cwde
@@ -541,20 +624,12 @@ end if
        loop	@b
        jmp	.bt_dx23_done
  .bt_dx23_make:
-       mov	ax,.x3
-       sub	ax,.x2
-       cwde
        movsx	ebx,bx
-       shl	eax,ROUND
-       cdq
-       idiv	ebx
- ;     mov      .dx23,eax
-       push	 eax
 
 if Ext>=SSE
 
-       sub	 esp,28
-    ;   mov       eax,255
+       sub	 esp,32
+   ;    mov       eax,256
        cvtsi2ss  xmm4,[i255d]
        cvtsi2ss  xmm3,ebx	     ;rcps
        divss	 xmm3,xmm4
@@ -582,15 +657,21 @@ if Ext>=SSE
 
        shufps	 xmm1,xmm1,10110001b
 			     ;xmm1--> | dbx | dby | dex | dey |
-       cvtps2pi  mm0,xmm1	   ; mm0 -> 2 delta dwords
+;1       movups    .dey23,xmm1
+
+       cvtps2pi  mm0,xmm1 ;mm0,xmm1          ; mm0 -> 2 delta dwords
        movhlps	 xmm1,xmm1
-       cvtps2pi  mm1,xmm1
+       cvtps2pi  mm1,xmm1 ;mm1,xmm1
        movq	 .dey23,mm0
        movq	 .dby23,mm1
-;----------
+
        mov	 ax,.z3
        sub	 ax,.z2
        cwde
+
+       mov	dx,.x3
+       sub	dx,.x2
+       movsx	edx,dx
 
        movd	  mm2,[.t_x2]
        movd	  mm3,[.t_x3]
@@ -601,18 +682,50 @@ if Ext>=SSE
 
        cvtsi2ss  xmm1,eax
        movlhps	 xmm1,xmm1
+       cvtsi2ss  xmm1,edx
+       shufps	 xmm1,xmm1,00101111b
        cvtpi2ps  xmm1,mm3
 
-       divps	 xmm1,xmm3   ; xmm1--> | xxx | dz | dty | dtx |
+       divps	 xmm1,xmm3   ; xmm1--> | dx | dz | dty | dtx |
 
        shufps	 xmm1,xmm1,11100001b
-			     ; xmm1--> | xxx | dz | dtx | dty |
+			    ; xmm1--> | dx | dz | dtx | dty |
+;       movlps    .dty23,xmm1
+;       movhps    .dz23,xmm1
        cvtps2pi  mm0,xmm1    ; mm0 -> 2 delta dwords  | dtx | dty |
        movhlps	 xmm1,xmm1
-       cvtss2si  eax,xmm1    ; eax --> 1 delta dword | dz |
+       cvtps2pi  mm1,xmm1    ; mm1 --> 2 delta dwords | dx  |  dz |
        movq	 .dty23,mm0
-       mov	 .dz23,eax
+       movq	 .dz23,mm1
+
+
+;temporaly conversion to keep upside down
+;     fninit
+;     fld      .dx23
+;     fistp    .dx23
+;     fld      dword .dz23
+;     fistp    dword .dz23
+;     fld      .dbx23
+;     fistp    .dbx23
+;     fld      dword .dby23
+;     fistp    dword .dby23
+;     fld      .dex23
+;     fistp    .dex23
+;     fld      dword .dey23
+;     fistp    dword .dey23
+;     fld      .dtx23
+;     fistp    .dtx23
+;     fld      dword .dty23
+;     fistp    dword .dty23
 else
+       mov	ax,.x3
+       sub	ax,.x2
+       cwde
+       shl	eax,ROUND
+       cdq
+       idiv	ebx
+ ;     mov      .dx23,eax
+       push	 eax
 
        mov     ax,.z3
        sub     ax,.z2
@@ -681,6 +794,58 @@ end if
       ;  sub     esp,40
    .bt_dx23_done:
        sub	 esp,64
+;if Ext>=SSE
+;       movsx    eax,.x1
+;       shl      eax,ROUND
+;       cvtsi2ss xmm0,eax
+;       movss    .cx1,xmm0
+;       movss    .cx2,xmm0
+;
+;       movsx    ebx,word[.b_x1]
+;       shl      ebx,ROUND
+;       cvtsi2ss xmm0,ebx
+;       movss    .cbx1,xmm0
+;       movss    .cbx2,xmm0
+;
+;       movsx    ecx,word[.b_y1]
+;       shl      ecx,ROUND
+;       cvtsi2ss xmm0,ecx
+;       movss    .cby1,xmm0
+;       movss    .cby2,xmm0
+
+;       movsx    edx,word[.e_x1]
+;       shl      edx,ROUND
+;       cvtsi2ss xmm0,edx
+;       movss    .cex1,xmm0
+;       movss    .cex2,xmm0
+;
+;       movsx    eax,word[.e_y1]
+;       shl      eax,ROUND
+;       cvtsi2ss xmm0,eax
+;       movss    .cey1,xmm0
+;       movss    .cey2,xmm0
+;
+
+;       movsx    ebx,.z1
+;       shl      ebx,CATMULL_SHIFT
+;       cvtsi2ss xmm0,ebx
+;       movss    .cz1,xmm0
+;       movss    .cz2,xmm0
+;
+;       movsx    ecx,word[.t_x1]
+;       shl      ecx,ROUND
+;       cvtsi2ss xmm0,ecx
+;       movss    .ctx1,xmm0
+;       movss    .ctx2,xmm0
+
+;       movsx    edx,word[.t_y1]
+;       shl      edx,ROUND
+;       cvtsi2ss xmm0,edx
+;       movss    .cty1,xmm0
+;       movss    .cty2,xmm0
+
+;else
+
        movsx	eax,.x1
        shl	eax,ROUND
        mov	.cx1,eax
@@ -737,13 +902,36 @@ end if
        mov	.cty2,edx
       ; push     edx
       ; push     edx
-
+;end if
 
        movsx	ecx,.y1
        cmp	cx,.y2
        jge	.loop12_done
   .loop12:
        call	.call_line
+;if Ext >= SSE
+;       movups  xmm0,.cby1
+;       movups  xmm1,.cty1
+;       movups  xmm2,.cby2
+;       movups  xmm3,.cty2
+;       movups  xmm4,.dby13
+;       movups  xmm5,.dty13
+;       movups  xmm6,.dby12
+;       movups  xmm7,.dty12
+;       addps   xmm0,xmm4
+;       addps   xmm1,xmm5
+;       addps   xmm2,xmm6
+;       addps   xmm3,xmm7
+;
+;;       addps   xmm0,.dby12
+;;       addps   xmm1,.dty12
+;;       addps   xmm2,.dby13
+;;       addps   xmm3,.dty13
+;       movups  .cby1,xmm0
+;       movups  .cty1,xmm1
+;       movups  .cby2,xmm2
+;       movups  .cty2,xmm3
+;end if
 
 if Ext >= MMX
        movq	mm0,.cby2
@@ -770,7 +958,8 @@ if Ext >= MMX
        movq	.cty2,mm5
        movq	.cz1,mm6
        movq	.cz2,mm7
-else
+end if
+if Ext = NON
        mov	edx,.dbx13
        add	.cbx1,edx
        mov	eax,.dbx12
@@ -816,6 +1005,8 @@ end if
        cmp	cx,.y3
        jge	.loop23_done
 
+;if Ext < SSE
+
        movsx	eax,.z2
        shl	eax,CATMULL_SHIFT
        mov	.cz2,eax
@@ -847,10 +1038,76 @@ end if
        movzx	ebx,word[.t_y2]
        shl	ebx,ROUND
        mov	.cty2,ebx
+;else
+;       movsx    eax,.z2
+;       shl      eax,CATMULL_SHIFT
+;       cvtsi2ss xmm0,eax
+;       movss    .cz2,xmm0
+;
+;       movsx    ebx,.x2
+;       shl      ebx,ROUND
+;       cvtsi2ss xmm1,ebx
+;       movss    .cx2,xmm1
+;
+;       movzx    edx,word[.b_x2]
+;       shl      edx,ROUND
+;       cvtsi2ss xmm2,edx
+;       movss    .cbx2,xmm2
+;
+;       movzx    eax,word[.b_y2]
+;       shl      eax,ROUND
+;       cvtsi2ss xmm0,eax
+;       movss    .cby2,xmm0
+;
+;       movzx    ebx,word[.e_x2]
+;       shl      ebx,ROUND
+;       cvtsi2ss xmm1,ebx
+;       movss    .cex2,xmm1
+;
+;       movzx    edx,word[.e_y2]
+;       shl      edx,ROUND
+;       cvtsi2ss xmm2,edx
+;       movss    .cey2,xmm2
+;
+;       movzx    eax,word[.t_x2]
+;       shl      eax,ROUND
+;       cvtsi2ss xmm0,eax
+;       movss    .ctx2,xmm0
+;
+;       movzx    ebx,word[.t_y2]
+;       shl      ebx,ROUND
+;       cvtsi2ss xmm1,ebx
+;       movss    .cty2,xmm1
+
+;end if
 
      .loop23:
        call	.call_line
 
+;if Ext >= SSE
+
+;       movups  xmm0,.cby1
+;       movups  xmm1,.cty1
+;       movups  xmm2,.cby2
+;       movups  xmm3,.cty2
+;       movups  xmm4,.dby13
+;       movups  xmm5,.dty13
+;       movups  xmm6,.dby23
+;       movups  xmm7,.dty23
+;       addps   xmm0,xmm4
+;       addps   xmm1,xmm5
+;       addps   xmm2,xmm6
+;       addps   xmm3,xmm7
+; ;      addps   xmm0,.dby13
+; ;      addps   xmm1,.dty13
+; ;      addps   xmm2,.dby23
+; ;      addps   xmm3,.dty23
+;       movups  .cby1,xmm0
+;       movups  .cty1,xmm1
+;       movups  .cby2,xmm2
+;       movups  .cty2,xmm3
+;
+;end if
 if Ext >= MMX
        movq	mm0,.cby2
        movq	mm1,.cby1
@@ -876,7 +1133,8 @@ if Ext >= MMX
        movq	.cty2,mm5
        movq	.cz1,mm6
        movq	.cz2,mm7
-else
+end if
+If Ext = NON
        mov	edx,.dbx13
        add	.cbx1,edx
        mov	eax,.dbx23
@@ -912,7 +1170,6 @@ else
        add	.cty1,edx
        mov	eax,.dty23
        add	.cty2,eax
-
 end if
        inc	ecx
        cmp	cx,.y3
@@ -923,24 +1180,107 @@ end if
 ret   50
 
 .call_line:
+;if Ext >= SSE
+;       pushad
+;       push     .tex_ptr
+;       fninit
+;       fld      dword .cty1
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;;       push     dword .cty1
+;       fld      .ctx1
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;;       push     .ctx1
+;       fld      dword .cz1
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;    ;   push     dwod .cz1
+;       fld      dword .cty2
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;    ;   push     .cty2
+;       fld      .ctx2
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;  ;     push     dword .ctx2
+;       fld      dword .cz2
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;;       push     dword .cz2
+;
+;       push     .z_buff
+;       push     .t_emap
+;       push     .t_bmap
+;--------------------------------------
+;       fld      dword .cey2
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;;       push     dword .cey2
+;
+;       fld      .cex2
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;;       push     .cex2
+;
+;       fld      dword .cby2
+;       fistp    dword [esp-4]
+;       sub      esp,4
+; ;      push     dword .cby2
 
+;       fld      .cbx2
+;       fistp    dword [esp-4]
+;       sub      esp,4
+ ;      push     .cbx2
+;------------------------------------
+;       fld      dword .cey1
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;;       push     dword .cey1
+;       fld      .cex1
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;    ;   push     .cex1
+;       fld      dword .cby1
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;;       push     dword .cby1
+;       fld      .cbx1
+;       fistp    dword [esp-4]
+;       sub      esp,4
+;;      push     .cbx1
+;       push     ecx
+
+;       fld      .cx1
+;       fistp    dword [esp-4]
+;       mov      eax,[esp-4]
+;       sar      eax,ROUND
+;       fld      .cx2
+;       fistp    dword [esp-4]
+;       mov      ebx,[esp-4]
+;       sar      ebx,ROUND
+
+;       call     bump_tex_line_z
+;
+;       popad
+;else
        pushad
        push	.tex_ptr
-       push	dword .cty2
-       push	.ctx2
        push	dword .cty1
        push	.ctx1
        push	dword .cz1
+       push	dword .cty2
+       push	.ctx2
        push	dword .cz2
        push	.z_buff
        push	.t_emap
        push	.t_bmap
        push	dword .cey2
        push	.cex2
-       push	dword .cey1
-       push	.cex1
        push	dword .cby2
        push	.cbx2
+       push	dword .cey1
+       push	.cex1
        push	dword .cby1
        push	.cbx1
        push	ecx
@@ -953,6 +1293,7 @@ ret   50
        call	bump_tex_line_z
 
        popad
+;end if
 ret
 bump_tex_line_z:
 ;--------------in: eax - x1
@@ -960,62 +1301,46 @@ bump_tex_line_z:
 ;--------------    edi - pointer to screen buffer
 ;stack - another parameters :
 .y	equ dword [ebp+4]
-.bx1q	equ	  [ebp+8]
-.bx2q	equ	  [ebp+16]
-.ex1q	equ	  [ebp+24]
-.ex2q	equ	  [ebp+32]
-.tx1q	equ	  [ebp+60]
-.tx2q	equ	  [ebp+68]
-;.bx1q   equ       [ebp+8]
-;.bx2q   equ       [ebp+16]
-;.ex1q   equ       [ebp+24]
-;.exyq   equ       [ebp+32]
-.bx1	equ dword [ebp+8]   ;   ---
-.by1	equ dword [ebp+12]  ;       |
-.bx2	equ dword [ebp+16]  ;       |
-.by2	equ dword [ebp+20]  ;       |>   b. map and e. map coords
-.ex1	equ dword [ebp+24]  ;       |>   shifted shl ROUND
-.ey1	equ dword [ebp+28]  ;       |
-.ex2	equ dword [ebp+32]  ;       |
-.ey2	equ dword [ebp+36]  ;   ---
-.bmap	equ dword [ebp+40]  ; bump map offset
-.emap	equ dword [ebp+44]  ; env map offset
-.z_buff equ dword [ebp+48]
-.z2	equ dword [ebp+52]  ;   -- |>   z coords shifted
-.z1	equ dword [ebp+56]  ;   --       shl  CATMULL_SHIFT
 
-.tx1	equ dword [ebp+60]  ;  -----
-.ty1	equ dword [ebp+64]  ;       |>   shifted shl ROUND
-.tx2	equ dword [ebp+68]  ;       |
-.ty2	equ dword [ebp+72]  ;   ---
+.bx1	equ  [ebp+8]   ;   ---
+.by1	equ  [ebp+12]  ;       |
+.ex1	equ  [ebp+16]  ;       |
+.ey1	equ  [ebp+20]  ;       |
+.bx2	equ  [ebp+24]  ;       |
+.by2	equ  [ebp+28]  ;       |>   b. map and e. map coords
+.ex2	equ  [ebp+32]  ;       |>   shifted shl ROUND
+.ey2	equ  [ebp+36]  ;   ---
+.bmap	equ  [ebp+40]  ; bump map offset
+.emap	equ  [ebp+44]  ; env map offset
+.z_buff equ  [ebp+48]
+.z2	equ  [ebp+52]
+.tx2	equ  [ebp+56]
+.ty2	equ  [ebp+60]
+.z1	equ  [ebp+64]
+.tx1	equ  [ebp+68]
+.ty1	equ  [ebp+72]
 .tex_map equ dword [ebp+76]  ; texture offset  ( pointer )
 
 
-.x1	equ dword [ebp-4]
-.x2	equ dword [ebp-8]
-.dbx	equ dword [ebp-12]
-.dby	equ dword [ebp-16]
-.dbyq	equ qword [ebp-16]  ; - new
-.dex	equ dword [ebp-20]
-.dey	equ dword [ebp-24]
-.deyq	equ qword [ebp-24]  ; - new
-.dz	equ dword [ebp-28]
-.dtx	equ dword [ebp-32]
-.dty	equ dword [ebp-36]
-.dtyq	equ qword [ebp-36]
+.x1	equ [ebp-4]
+.x2	equ [ebp-8]
+.dbx	equ [ebp-12]
+.dby	equ [ebp-16]
+.dex	equ [ebp-20]
+.dey	equ [ebp-24]
+.dz	equ [ebp-28]
+.dtx	equ [ebp-32]
+.dty	equ [ebp-36]
 
-.cbx	equ dword [ebp-40]
-.cby	equ dword [ebp-44]
-.cbyq	equ qword [ebp-44]  ; - new
-.cex	equ dword [ebp-48]
-.cey	equ dword [ebp-52]
-.ceyq	equ qword [ebp-52]  ; - new
-.cz	equ dword [ebp-56]
-.czbuff equ dword [ebp-60]
-.ctx	equ dword [ebp-64]
-.cty	equ dword [ebp-68]
-.ctyq	equ qword [ebp-68]
-.c_scr	equ dword [ebp-72]
+.cbx	equ [ebp-40]
+.cby	equ [ebp-44]
+.cex	equ [ebp-48]
+.cey	equ [ebp-52]
+.cz	equ [ebp-56]
+.czbuff equ [ebp-60]
+.ctx	equ [ebp-64]
+.cty	equ [ebp-68]
+.c_scr	equ [ebp-72]
 
 .temp1	equ	   ebp-80
 .temp2	equ	   ebp-88
@@ -1024,8 +1349,6 @@ bump_tex_line_z:
 .temp5	equ	   ebp-92
 
 	mov	ebp,esp
-
-
 
 	mov	ecx,.y
 	or	ecx,ecx
@@ -1059,19 +1382,30 @@ if Ext=NON
 	mov	edx,.ty1
 	xchg	edx,.ty2
 	mov	.ty1,edx
-else
-	movq	mm0,.bx1q
-	movq	mm1,.bx2q
-	movq	mm2,.ex1q
-	movq	mm3,.ex2q
-	movq	mm4,.tx1q
-	movq	mm5,.tx2q
-	movq	.bx2q,mm0
-	movq	.bx1q,mm1
-	movq	.ex1q,mm3
-	movq	.ex2q,mm2
-	movq	.tx1q,mm5
-	movq	.tx2q,mm4
+end if
+if Ext = MMX
+	movq	mm0,.bx1
+	movq	mm1,.bx2
+	movq	mm2,.ex1
+	movq	mm3,.ex2
+	movq	mm4,.tx1
+	movq	mm5,.tx2
+	movq	.bx2,mm0
+	movq	.bx1,mm1
+	movq	.ex1,mm3
+	movq	.ex2,mm2
+	movq	.tx1,mm5
+	movq	.tx2,mm4
+end if
+if Ext>=SSE
+	movups xmm0,.bx1
+	movups xmm1,.bx2
+	movups .bx1,xmm1
+	movups .bx2,xmm0
+	movq	mm0,.tx1
+	movq	mm1,.tx2
+	movq	.tx1,mm1
+	movq	.tx2,mm0
 end if
 
 	mov	edx,.z1
@@ -1080,9 +1414,9 @@ end if
   .bl_ok:
 	push	eax
 	push	ebx	      ;store x1, x2
-	cmp	.x1,SIZE_X
+	cmp	dword .x1,SIZE_X
 	jge	.bl_end
-	cmp	.x2,0
+	cmp	dword .x2,0
 	jle	.bl_end
 
 	mov	ebx,.x2
@@ -1093,43 +1427,51 @@ if Ext>=SSE
        sub	 esp,28
        cvtsi2ss  xmm3,ebx	     ;rcps
        shufps	 xmm3,xmm3,0
+; float using SSE variant  ::-->
+;       movups    xmm0,.bx1  ; new
+;       movups    xmm1,.bx2  ; new
 
-       cvtpi2ps  xmm0,.bx1q ;mm0
+       cvtpi2ps  xmm0,.bx1 ;mm0    ; variant fixed point
        movlhps	 xmm0,xmm0
-       cvtpi2ps  xmm0,.ex1q ;mm2
-       cvtpi2ps  xmm1,.bx2q ;mm1
+       cvtpi2ps  xmm0,.ex1 ;mm2
+       cvtpi2ps  xmm1,.bx2 ;mm1
        movlhps	 xmm1,xmm1
-       cvtpi2ps  xmm1,.ex2q ;mm3
+       cvtpi2ps  xmm1,.ex2 ;mm3
        subps	 xmm1,xmm0
 
        divps	 xmm1,xmm3
 
        shufps	 xmm1,xmm1,10110001b
+;       movups    .dey,xmm1  ; new
        cvtps2pi  mm0,xmm1	   ; mm0 -> 2 delta dwords
        movhlps	 xmm1,xmm1
        cvtps2pi  mm1,xmm1
-       movq	 .deyq,mm0
-       movq	 .dbyq,mm1
+       movq	 .dey,mm0
+       movq	 .dby,mm1
 
        movd	 mm2,.z1
        movd	 mm3,.z2
 
-       cvtpi2ps  xmm0,.tx1q ;mm0
+       cvtpi2ps  xmm0,.tx1 ;mm0
        movlhps	 xmm0,xmm0
        cvtpi2ps  xmm0,mm2
-       cvtpi2ps  xmm1,.tx2q ;mm1
+       cvtpi2ps  xmm1,.tx2 ;mm1
        movlhps	 xmm1,xmm1
        cvtpi2ps  xmm1,mm3
+;       movups    xmm0,,z1  ; new
+;       movups    xmm1,.z2  ; new
        subps	 xmm1,xmm0
 
        divps	 xmm1,xmm3
+
+;       movups    .dz,xmm1  ;new
 
        shufps	 xmm1,xmm1,10110100b
        cvtps2pi  mm0,xmm1	   ; mm0 -> 2 delta dwords
        movhlps	 xmm1,xmm1
        cvtps2pi  mm1,xmm1
        movd	 .dz,mm0
-       movq	 .dtyq,mm1
+       movq	 .dty,mm1
 
 else
 
@@ -1177,14 +1519,27 @@ else
 	push	eax
 
 end if
-	cmp	.x1,0	      ; set correctly begin variable
+	cmp	dword .x1,0	    ; set correctly begin variable
 	jge	@f	      ; CLIPPING ON FUNCTION
 			      ; cutting triangle exceedes screen
 	mov	ebx,.x1
 	neg	ebx
+
+;if Ext >= SSE
+
+;        cvtsi2ss xmm0,ebx
+;        shufps   xmm0,xmm0,0
+;        movups   xmm1,.dey
+;        mulps    xmm1,xmm0
+;        shufps   xmm1,xmm1,00011011b
+;        movups   xmm2,.bx1
+;        addps    xmm2,xmm1
+;        movups   .bx1,xmm2
+
+	mov	eax,.dz
 	imul	ebx	      ; eax = .dz * abs(.x1)
 	add	.z1,eax
-	mov	.x1,0
+	mov	dword .x1,0
 
 	mov	eax,.dbx
 	imul	ebx
@@ -1211,9 +1566,9 @@ end if
 	add	.ty1,eax
 
       @@:
-	cmp	.x2,SIZE_X
+	cmp	dword .x2,SIZE_X
 	jl	@f
-	mov	.x2,SIZE_X
+	mov	dword .x2,SIZE_X
       @@:
 	mov	eax,SIZE_X	 ;calc memory begin in buffers
 	mul	.y
@@ -1227,21 +1582,21 @@ end if
 	mov	ecx,.x2
 	sub	ecx,.x1
 	; init current variables
-	push	.bx1   ; current b, e and t shifted shl ROUND   .cbx
-	push	.by1					     ;  .cby
-	push	.ex1					     ;  .cex
-	push	.ey1					     ;  .cey
+	push	dword .bx1   ; current b, e and t shifted shl ROUND   .cbx
+	push	dword .by1					   ;  .cby
+	push	dword .ex1					   ;  .cex
+	push	dword .ey1					   ;  .cey
 
-	push	.z1    ; current z shl CATMULL_SHIFT         ; .cz
+	push	dword .z1    ; current z shl CATMULL_SHIFT         ; .cz
 	push	esi					     ; .czbuff
 
-	push	.tx1	  ;         .ctx
-	push	.ty1	  ;         .cty
+	push	dword .tx1	;         .ctx
+	push	dword .ty1	;         .cty
 	push	edi	  ;         .c_scr
 if Ext>=MMX
-	movq	mm7,.ctyq
-	movq	mm6,.cbyq
-	movq	mm5,.ceyq
+	movq	mm7,.cty
+	movq	mm6,.cby
+	movq	mm5,.cey
 ;        movq    mm4,.dtyq
 ;        movq    mm3,.dbyq
 end if
@@ -1264,7 +1619,6 @@ else
 	psrlq	mm1,32
 	movd	esi,mm1
 end if
-
 
 
 	shl	eax,TEX_SHIFT
@@ -1295,6 +1649,7 @@ end if
 	add	ebx,.bmap
 	movzx	ebx,byte [ebx]
 	sub	edx,ebx
+
 
      ;  eax - horizontal sub    modificated x coord
      ;  edx - vertical   sub    modificated y coord
@@ -1400,8 +1755,8 @@ end if
 	stosd
 
       .skip:
-	add	.czbuff,4
-	add	.c_scr,3
+	add	dword .czbuff,4
+	add	dword .c_scr,3
 
 if Ext=NON
 	mov	eax,.dbx
@@ -1420,9 +1775,9 @@ if Ext=NON
 	add	.cty,edx
 
 else
-	paddd	mm7,.dtyq
-	paddd	mm6,.dbyq
-	paddd	mm5,.deyq
+	paddd	mm7,.dty
+	paddd	mm6,.dby
+	paddd	mm5,.dey
 end if
 	mov	eax,.dz
 	add	.cz,eax

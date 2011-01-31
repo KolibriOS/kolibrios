@@ -1,11 +1,8 @@
-View3ds 0.054 - tiny viewer to .3ds files.
+View3ds 0.055 - tiny viewer to .3ds files.
 
 What's new?
-1. Skinned window by Leency.
-2. Optimizations.
-3. Re map texture, bumps option - allow spherical mapping around each axle (X,Y,Z).
-4. Problem with too small memory to generate object fixed. (Problem ocurred with
-   house.3ds object and others objects contains less than 1000 faces and points).
+1. SSE optimizations (file BUMP_TEX.INC).
+3. Compiles correctly in newest FASM.
 
 Buttons description:
 1. rotary: choosing rotary axle: x, y, x+y.
@@ -33,5 +30,4 @@ Buttons description:
 18. re-map tex -> re-map texture and bump map coordinates, to change spherical mapping 
     around axle use 'xchg' and 'mirror' buttons, then press 're-map tex' button.
 
-			 Macgub 		december 2009
-                                                                                  Last edited Jan 2010
+			 Macgub 		 Jan 2011

@@ -268,7 +268,7 @@ base_vector:
       if Ext=SSE
 	db   ' (SSE)'
       end if
-	db   ' 0.054'
+	db   ' 0.055'
     labellen:
 	STRdata db '-1        '
 
@@ -396,7 +396,7 @@ align 8
 	rand_seed	    dw ?
 align 8
 	buffer	dq	?
-	err_	dd	?
+	errr	dd	?
 	drr	dd	?
 	xx	dd	?
 	yy	dd	?
