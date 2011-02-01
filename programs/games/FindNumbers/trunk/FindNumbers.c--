@@ -25,13 +25,13 @@ void main()
 	{
 		switch(WaitEvent())
 		{
-			CASE evButton:
+			case evButton:
 				button=GetButtonID();
-				IF (button==1)
+				if (button==1)
 					{
 					ExitProcess();
 					}
-				IF (button==582)
+				if (button==582)
 					{
 					find=10;
 					initialization();
@@ -58,20 +58,20 @@ void main()
 						WriteNumber(252,289,0x80,0,90-find+1);
 						}
 					}
-				BREAK;
-			CASE evKey: //если произошло нажатие клавиши на клавиатуре
-				IF (GetKey()==051)
+				break;
+			case evKey: //если произошло нажатие клавиши на клавиатуре
+				if (GetKey()==051)
 					{
 					find=10;
 					initialization();
 					draw_window();
 					draw_buttons();
 					}
-				BREAK;
-			CASE evReDraw:
+				break;
+			case evReDraw:
 				draw_window();
 				draw_buttons();
-				BREAK;
+				break;
 		}
 	}
 	ExitProcess();
@@ -94,7 +94,7 @@ void draw_window()
 		DrawFlatButton(155,300,115,14,582,0xAFFFAF,"Заново (F2)");
 		WriteText(4,304,0x80,0x000000,"Made by Artemonische,2010");
 		}
-	IF (find==91)
+	if (find==91)
 		{
 		WriteText(70,100,0x80,0x000000,"Вы нашли все числа! :)");
 		DrawFlatButton(100,110,70,20,582,0xE4DFE1,"Заново (F2)");
@@ -107,7 +107,7 @@ void draw_buttons()
 int i,tempi,tempj;
 	for (i=1;i<=81;i++)
 		{
-		IF (box[i].mark==1)
+		if (box[i].mark==1)
 			{
 			tempi=box[i].y*30-30;
 			tempj=30*box[i].x-16;
@@ -121,9 +121,9 @@ void initialization()
 {
 int i,j,t;
 t=0;
-	FOR (i=1;i<=9;i++)
+	for (i=1;i<=9;i++)
 		{
-		FOR (j=1;j<=9;j++)
+		for (j=1;j<=9;j++)
 			{
 			t++;
 			box[t].x=j;
@@ -139,16 +139,16 @@ int Generate(int xx)
 {
 	int temp,k,p;
 	p=2;
-	WHILE (p==2)
+	while (p==2)
 		{
 		temp=random(81)+10;
 		p=1;
-		FOR (k=1; k<xx; k++)
+		for (k=1; k<xx; k++)
 			{
-			IF (box[k].text==temp)
+			if (box[k].text==temp)
 				{
 				p=2;
-				BREAK;
+				break;
 				}
 			}
 		}
