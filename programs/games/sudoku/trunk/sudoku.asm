@@ -1128,7 +1128,7 @@ Pltr:
 .fxk dd Square_clr,Fix_nmb_clr
 
 align 4
-FONT file "SUDOKU.FNT"
+FONT file "sudoku.fnt"
 ;Палитры:
 
 
