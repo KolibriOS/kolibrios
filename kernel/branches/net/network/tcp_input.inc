@@ -105,7 +105,7 @@ TCP_input:
 	ntohw	[edx + TCP_segment.DestinationPort]
 
 ;------------------------------------------------------------
-; Next thing to do is find the TCB (thus, the socket pointer)
+; Next thing to do is find the TCPS (thus, the socket pointer)
 
 ; IP Packet TCP Destination Port = local Port
 ; (IP Packet SenderAddress = Remote IP)  OR  (Remote IP = 0)
@@ -148,7 +148,7 @@ TCP_input:
 ;----------------------------
 ; Check if socket isnt closed
 
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_CLOSED
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_CLOSED
 	je	.drop_not_locked
 
 ;----------------
@@ -193,7 +193,7 @@ TCP_input:
 	push	[edx - IPv4_Packet.DataOrOptional + IPv4_Packet.SourceAddress]	   ;;; FIXME
 	pop	[eax + IP_SOCKET.RemoteIP]
 
-	mov	[eax + TCP_SOCKET.t_state], TCB_LISTEN
+	mov	[eax + TCP_SOCKET.t_state], TCPS_LISTEN
 
 	jmp	.not_uni_xfer
 
@@ -213,7 +213,7 @@ TCP_input:
 
 	DEBUGF	1,"Segment has options\n"
 
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_LISTEN		; no options when in listen state
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_LISTEN 	 ; no options when in listen state
 	jz	.not_uni_xfer					; also no header prediction
 
 	lea	edi, [edx + TCP_segment.Data]
@@ -310,7 +310,7 @@ TCP_input:
 ;  -  If the length is not 0 and the ACK didn't move, we're the receiver side of the transfer.
 ;      If the packets are in order (data queue is empty), add the data to the socket buffer and request a delayed ACK
 
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_ESTABLISHED
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
 	jnz	.not_uni_xfer
 
 	test	[edx + TCP_segment.Flags], TH_SYN + TH_FIN + TH_RST + TH_URG
@@ -438,10 +438,10 @@ TCP_input:
 
 ;;;; TODO: 444
 
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_LISTEN
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_LISTEN
 	je	.LISTEN
 
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_SYN_SENT
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_SYN_SENT
 	je	.SYN_SENT
 
 	jmp	.NOT_LISTEN_OR_SYN_SENT
@@ -481,7 +481,7 @@ align 4
 	TCP_sendseqinit eax
 	TCP_rcvseqinit eax
 
-	mov	[eax + TCP_SOCKET.t_state], TCB_SYN_RECEIVED
+	mov	[eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
 	mov	[eax + TCP_SOCKET.t_flags], TF_ACKNOW
 	mov	[eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval  ;;;; macro
 
@@ -578,7 +578,7 @@ align 4
 
 	mov	[ebx + SOCKET.state],1	;;;; FIXME
 
-	mov	[ebx + TCP_SOCKET.t_state], TCB_ESTABLISHED
+	mov	[ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
 
 ;;; TODO: check if we should scale the connection (567-572)
 ;;; TODO: update RTT estimators
@@ -589,7 +589,7 @@ align 4
 
 	DEBUGF	1,"TCP: simultaneous open\n"
 ; We have received a syn but no ACK, so we are having a simultaneous open..
-	mov	[ebx + TCP_SOCKET.t_state], TCB_SYN_RECEIVED
+	mov	[ebx + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
 
 
 
@@ -747,7 +747,7 @@ align 4
 	cmp	[ebx + SOCKET.PID], 0
 	jg	@f
 
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_CLOSE_WAIT
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_CLOSE_WAIT
 	jle	@f
 
 	test	ecx, ecx
@@ -811,44 +811,43 @@ align 4
 	jmp	dword [eax + .rst_sw_list]
 
   .rst_sw_list:
-	dd	.rst_skip	;TCB_CLOSED
-	dd	.rst_skip	;TCB_LISTEN
-	dd	.rst_skip	;TCB_SYN_SENT
-	dd	.econnrefused	;TCB_SYN_RECEIVED
-	dd	.econnreset	;TCB_ESTABLISHED
-	dd	.econnreset	;TCB_CLOSE_WAIT
-	dd	.econnreset	;TCB_FIN_WAIT_1
-	dd	.rst_close	;TCB_CLOSING
-	dd	.rst_close	;TCB_LAST_ACK
-	dd	.econnreset	;TCB_FIN_WAIT_2
-	dd	.rst_close	;TCB_TIMED_WAIT
+	dd	.rst_skip	;TCPS_CLOSED
+	dd	.rst_skip	;TCPS_LISTEN
+	dd	.rst_skip	;TCPS_SYN_SENT
+	dd	.econnrefused	;TCPS_SYN_RECEIVED
+	dd	.econnreset	;TCPS_ESTABLISHED
+	dd	.econnreset	;TCPS_CLOSE_WAIT
+	dd	.econnreset	;TCPS_FIN_WAIT_1
+	dd	.rst_close	;TCPS_CLOSING
+	dd	.rst_close	;TCPS_LAST_ACK
+	dd	.econnreset	;TCPS_FIN_WAIT_2
+	dd	.rst_close	;TCPS_TIMED_WAIT
 
   .econnrefused:
-
 	DEBUGF	1,"Connection refused"
 
-;;; TODO: debug info
-
+	mov	[ebx + SOCKET.errorcode], ECONNREFUSED
 	jmp	.close
 
   .econnreset:
-
 	DEBUGF	1,"Connection reset"
 
-;;; TODO: debug info
+	mov	[ebx + SOCKET.errorcode], ECONNRESET
 
-  .close:
-
+    .close:
 	DEBUGF	1,"Closing connection"
 
-;;; update stats
+	mov	[ebx + TCP_SOCKET.t_state], TCPS_CLOSED
+	;;; TODO: update stats
+	mov	eax, ebx
+	call	TCP_close
+	jmp	.drop
 
   .rst_close:
-
 	DEBUGF	1,"Closing with reset\n"
 
-;;; Close the socket
-
+	mov	eax, ebx
+	call	TCP_close
 	jmp	.drop
 
 
@@ -866,9 +865,9 @@ align 4
 	test	[edx + TCP_segment.Flags], TH_SYN
 	jz	@f
 
+	mov	eax, ebx
 	mov	ebx, ECONNRESET
 	call	TCP_drop
-
 	jmp	.drop_with_reset
 
 	test	[edx + TCP_segment.Flags], TH_ACK
@@ -884,12 +883,39 @@ align 4
 ;---------------
 ; ACK processing
 
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_SYN_RECEIVED
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
 	jnz	.no_syn_rcv
 
 	DEBUGF	1,"TCP state = syn received\n"
 
-	;;;;;  801-815
+	mov	eax, [edx + TCP_segment.AckNumber]
+	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
+	jg	.drop_with_reset
+
+	cmp	[ebx + TCP_SOCKET.SND_MAX], eax
+	jg	.drop_with_reset
+	;;; update stats
+	mov	eax, ebx
+	call	SOCKET_is_connected
+	mov	[ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
+
+; Do window scaling?
+
+	test	[ebx + TCP_SOCKET.t_flags], TF_RCVD_SCALE
+	jz	@f
+	test	[ebx + TCP_SOCKET.t_flags], TF_REQ_SCALE
+	jz	@f
+
+	;;; 810-811
+
+       @@:
+
+	;;; 813 ?
+
+	mov	eax, [edx + TCP_segment.SequenceNumber]
+	dec	eax
+	mov	[ebx + TCP_SOCKET.SND_WL1], eax
+	jmp	.not_dup_ack
 
   .no_syn_rcv:
 
@@ -1095,7 +1121,7 @@ align 4
 	mov	eax, ebx
 	call	SOCKET_notify_owner
 
-; Update TCB
+; Update TCPS
 
 	mov	eax, [edx + TCP_segment.AckNumber]
 	mov	[ebx + TCP_SOCKET.SND_UNA], eax
@@ -1118,17 +1144,17 @@ align 4
 	jmp	dword [eax*4 + .ACK_sw_list]
 
   .ACK_sw_list:
-	dd	.ack_processed	;TCB_CLOSED
-	dd	.ack_processed	;TCB_LISTEN
-	dd	.ack_processed	;TCB_SYN_SENT
-	dd	.ack_processed	;TCB_SYN_RECEIVED
-	dd	.ack_processed	;TCB_ESTABLISHED
-	dd	.ack_processed	;TCB_CLOSE_WAIT
-	dd	.ack_fw1	;TCB_FIN_WAIT_1
-	dd	.ack_c		;TCB_CLOSING
-	dd	.ack_la 	;TCB_LAST_ACK
-	dd	.ack_processed	;TCB_FIN_WAIT_2
-	dd	.ack_tw 	;TCB_TIMED_WAIT
+	dd	.ack_processed	;TCPS_CLOSED
+	dd	.ack_processed	;TCPS_LISTEN
+	dd	.ack_processed	;TCPS_SYN_SENT
+	dd	.ack_processed	;TCPS_SYN_RECEIVED
+	dd	.ack_processed	;TCPS_ESTABLISHED
+	dd	.ack_processed	;TCPS_CLOSE_WAIT
+	dd	.ack_fw1	;TCPS_FIN_WAIT_1
+	dd	.ack_c		;TCPS_CLOSING
+	dd	.ack_la 	;TCPS_LAST_ACK
+	dd	.ack_processed	;TCPS_FIN_WAIT_2
+	dd	.ack_tw 	;TCPS_TIMED_WAIT
 
 
   .ack_fw1:
@@ -1141,14 +1167,14 @@ align 4
 ;;;        mov     [ebx + TCP_SOCKET.timer_timed_wait], TCP_time_max_idle
        @@:
 
-	mov	[ebx + TCP_SOCKET.t_state], TCB_FIN_WAIT_2
+	mov	[ebx + TCP_SOCKET.t_state], TCPS_FIN_WAIT_2
 	jmp	.ack_processed
 
 
   .ack_c:
 	jz	.ack_processed
 
-	mov	[ebx + TCP_SOCKET.t_state], TCB_TIMED_WAIT
+	mov	[ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
 	mov	eax, ebx
 	call	TCP_cancel_timers
 	mov	[ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL
@@ -1262,7 +1288,7 @@ align 4
 	cmp	[edx + TCP_segment.UrgentPointer], 0
 	jz	.not_urgent
 
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_TIMED_WAIT
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
 	je	.not_urgent
 
 ; Ignore bogus urgent offsets
@@ -1301,7 +1327,7 @@ align 4
 	test	[edx + TCP_segment.Flags], TH_FIN
 	jnz	.process_fin
 
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_FIN_WAIT_1
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_FIN_WAIT_1
 	jge	.dont_do_data
 
 	test	ecx, ecx
@@ -1344,11 +1370,11 @@ align 4
 
 	DEBUGF	1,"Processing FIN\n"
 
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_CLOSE_WAIT
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_CLOSE_WAIT
 	je	.not_first_fin
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_CLOSING
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_CLOSING
 	je	.not_first_fin
-	cmp	[ebx + TCP_SOCKET.t_state], TCB_FIN_WAIT_2
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_FIN_WAIT_2
 	je	.not_first_fin
 
 	DEBUGF	1,"First FIN for this connection\n"
@@ -1365,31 +1391,31 @@ align 4
 	jmp	dword [eax + .FIN_sw_list]
 
   .FIN_sw_list:
-	dd	.no_fin 	;TCB_CLOSED
-	dd	.no_fin 	;TCB_LISTEN
-	dd	.no_fin 	;TCB_SYN_SENT
-	dd	.fin_syn_est	;TCB_SYN_RECEIVED
-	dd	.fin_syn_est	;TCB_ESTABLISHED
-	dd	.no_fin 	;TCB_CLOSE_WAIT
-	dd	.fin_wait1	;TCB_FIN_WAIT_1
-	dd	.no_fin 	;TCB_CLOSING
-	dd	.no_fin 	;TCB_LAST_ACK
-	dd	.fin_wait2	;TCB_FIN_WAIT_2
-	dd	.fin_timed	;TCB_TIMED_WAIT
+	dd	.no_fin 	;TCPS_CLOSED
+	dd	.no_fin 	;TCPS_LISTEN
+	dd	.no_fin 	;TCPS_SYN_SENT
+	dd	.fin_syn_est	;TCPS_SYN_RECEIVED
+	dd	.fin_syn_est	;TCPS_ESTABLISHED
+	dd	.no_fin 	;TCPS_CLOSE_WAIT
+	dd	.fin_wait1	;TCPS_FIN_WAIT_1
+	dd	.no_fin 	;TCPS_CLOSING
+	dd	.no_fin 	;TCPS_LAST_ACK
+	dd	.fin_wait2	;TCPS_FIN_WAIT_2
+	dd	.fin_timed	;TCPS_TIMED_WAIT
 
   .fin_syn_est:
 
-	mov	[ebx + TCP_SOCKET.t_state], TCB_CLOSE_WAIT
+	mov	[ebx + TCP_SOCKET.t_state], TCPS_CLOSE_WAIT
 	jmp	.no_fin
 
   .fin_wait1:
 
-	mov	[ebx + TCP_SOCKET.t_state], TCB_CLOSING
+	mov	[ebx + TCP_SOCKET.t_state], TCPS_CLOSING
 	jmp	.no_fin
 
   .fin_wait2:
 
-	mov	[ebx + TCP_SOCKET.t_state], TCB_TIMED_WAIT
+	mov	[ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
 	mov	eax, ebx
 	call	TCP_cancel_timers
 	mov	[ebx + TCP_SOCKET.timer_timed_wait], 2 * TCP_time_MSL

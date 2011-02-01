@@ -130,10 +130,10 @@ TCP_drop:
 
 	DEBUGF	1,"TCP_drop\n"
 
-	cmp	[eax + TCP_SOCKET.t_state], TCB_SYN_RECEIVED
+	cmp	[eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
 	jl	.no_syn_received
 
-	mov	[eax + TCP_SOCKET.t_state], TCB_CLOSED
+	mov	[eax + TCP_SOCKET.t_state], TCPS_CLOSED
 
 	call	TCP_output
 
@@ -209,17 +209,17 @@ TCP_outflags:
 
   .flaglist:
 
-	db	TH_RST + TH_ACK 	; TCB_CLOSED
-	db	0			; TCB_LISTEN
-	db	TH_SYN			; TCB_SYN_SENT
-	db	TH_SYN + TH_ACK 	; TCB_SYN_RECEIVED
-	db		 TH_ACK 	; TCB_ESTABLISHED
-	db		 TH_ACK 	; TCB_CLOSE_WAIT
-	db	TH_SYN + TH_ACK 	; TCB_FIN_WAIT_1
-	db	TH_SYN + TH_ACK 	; TCB_CLOSING
-	db	TH_SYN + TH_ACK 	; TCB_LAST_ACK
-	db		 TH_ACK 	; TCB_FIN_WAIT_2
-	db		 TH_ACK 	; TCB_TIMED_WAIT
+	db	TH_RST + TH_ACK 	; TCPS_CLOSED
+	db	0			; TCPS_LISTEN
+	db	TH_SYN			; TCPS_SYN_SENT
+	db	TH_SYN + TH_ACK 	; TCPS_SYN_RECEIVED
+	db		 TH_ACK 	; TCPS_ESTABLISHED
+	db		 TH_ACK 	; TCPS_CLOSE_WAIT
+	db	TH_SYN + TH_ACK 	; TCPS_FIN_WAIT_1
+	db	TH_SYN + TH_ACK 	; TCPS_CLOSING
+	db	TH_SYN + TH_ACK 	; TCPS_LAST_ACK
+	db		 TH_ACK 	; TCPS_FIN_WAIT_2
+	db		 TH_ACK 	; TCPS_TIMED_WAIT
 
 
 

@@ -501,7 +501,7 @@ align 4
        @@:
 
 	mov	[eax + TCP_SOCKET.timer_persist], 0
-	mov	[eax + TCP_SOCKET.t_state], TCB_SYN_SENT
+	mov	[eax + TCP_SOCKET.t_state], TCPS_SYN_SENT
 	push	[TCP_sequence_num]
 	add	[TCP_sequence_num], 6400
 	pop	[eax + TCP_SOCKET.ISS]
@@ -585,7 +585,7 @@ SOCKET_listen:
 
 	mov	[eax + SOCKET.backlog], dx
 	or	[eax + SOCKET.options], SO_ACCEPTCON
-	mov	[eax + TCP_SOCKET.t_state], TCB_LISTEN
+	mov	[eax + TCP_SOCKET.t_state], TCPS_LISTEN
 
 	push	eax
 	init_queue (eax + SOCKET_QUEUE_LOCATION)		; Set up sockets queue
@@ -666,7 +666,7 @@ SOCKET_close:
 	jmp	s_error
 
   .tcp:
-	cmp	[eax + TCP_SOCKET.t_state], TCB_SYN_RECEIVED	; state must be LISTEN, SYN_SENT or CLOSED
+	cmp	[eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED	 ; state must be LISTEN, SYN_SENT or CLOSED
 	jl	.free
 
 	call	TCP_output
@@ -849,7 +849,7 @@ SOCKET_send_icmp:
 ;
 ; At moment, uses only pseudo-optname -2 for get last_ack_number for TCP.
 ; TODO: find best way to notify that send()'ed data were acknowledged
-; Also pseudo-optname -3 is valid and returns socket state, one of TCB_*.
+; Also pseudo-optname -3 is valid and returns socket state, one of TCPS_*.
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -1738,3 +1738,23 @@ align 4
 SOCKET_cant_recv_more:
 
 	ret
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_is_connected
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_is_connected:
+
+
+	and	[eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISDISCONNECTING + SS_ISCONFIRMING)
+	or	[eax + SOCKET.options], SS_ISCONNECTED
+
+	jmp	SOCKET_notify_owner
