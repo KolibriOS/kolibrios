@@ -131,7 +131,6 @@ virtual at IP_SOCKET.end
 ;-------
 ; Timers
 	.timer_retransmission	dw ? ; rexmt
-	.timer_ack		dw ?
 	.timer_persist		dw ?
 	.timer_keepalive	dw ? ; keepalive/syn timeout
 	.timer_timed_wait	dw ? ; also used as 2msl timer
@@ -1209,12 +1208,12 @@ SOCKET_ring_read:
   .nd:
 	pop	ecx
 
-;  .no_data_at_all:
+  .no_data_at_all:
 	ret
 
   .less_data:
 	mov	ecx, [eax + RING_BUFFER.size]
-	test	ecx, ecx
+;        test    ecx, ecx
 ;        jz      .no_data_at_all
 	jmp	.copy
 

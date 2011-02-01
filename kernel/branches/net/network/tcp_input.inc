@@ -32,6 +32,7 @@ $Revision$
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
+
 align 4
 TCP_input:
 
@@ -153,10 +154,14 @@ TCP_input:
 ;----------------
 ; Lock the socket
 
+	cmp	[ebx + SOCKET.lock], 0
+	jne	.drop_not_locked     ;;; HACK ! HACK ! dirty fucking HACK !   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 	add	ebx, SOCKET.lock
 	DEBUGF	1,"lock: %x\n", [ebx]
 	call	wait_mutex
 	sub	ebx, SOCKET.lock
+
 
 	DEBUGF	1,"Socket locked\n"
 
@@ -371,7 +376,7 @@ TCP_input:
 	mov	[ebx + TCP_SOCKET.SND_UNA], eax
 
 ; Stop retransmit timer
-	mov	[ebx + TCP_SOCKET.timer_ack], 0
+	mov	[ebx + TCP_SOCKET.timer_retransmission], 0
 
 ; Awaken waiting processes
 	mov	[ebx + SOCKET.lock], 0
@@ -646,7 +651,7 @@ align 4
 	sub	eax, [edx + TCP_segment.SequenceNumber]
 	jle	.no_duplicate
 
-	DEBUGF	1,"Uh oh.. %x bytes of duplicate data!\n", eax
+	DEBUGF	1,"Uh oh.. %u bytes of duplicate data!\n", eax
 
 	test	[edx + TCP_segment.Flags], TH_SYN
 	jz	.no_dup_syn
@@ -669,14 +674,14 @@ align 4
 	jz	.no_duplicate
   .no_dup_syn:
 
-	DEBUGF	1,"Going to drop %u out of %u bytes\n", eax, ecx
-
 ; eax holds number of bytes to drop
 
 ; Check for entire duplicate packet
 
 	cmp	eax, ecx
 	jge	.duplicate
+
+	DEBUGF	1,"Going to drop %u out of %u bytes\n", eax, ecx
 
 ;;; TODO: apply figure 28.30
 
@@ -718,7 +723,7 @@ align 4
 
 ;;; TODO
 
-	jmp	.drop	       ;;; DROP the packet ??
+	jmp	.drop_after_ack
 
   .no_duplicate:
 
@@ -1456,8 +1461,8 @@ align 4
 	mov	[ebx + SOCKET.lock], 0
 
 	push	ebx
-	mov	eax, ebx
-	call	TCP_output
+	mov	cl, TH_ACK
+	call	TCP_respond_socket
 	pop	ebx
 
 	call	kernel_free
@@ -1500,10 +1505,9 @@ align 4
 
   .respond_ack:
 
-	mov	dl, TH_RST
-
 	push	ebx
-	call	TCP_respond_segment
+	mov	cl, TH_RST
+	call	TCP_respond_socket
 	pop	ebx
 
 	jmp	.destroy_new_socket
@@ -1511,9 +1515,8 @@ align 4
 
   .respond_syn:
 
-	mov	dl, TH_RST + TH_ACK
-
 	push	ebx
+	mov	cl, TH_RST + TH_ACK
 	call	TCP_respond_socket
 	pop	ebx
 

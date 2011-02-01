@@ -361,7 +361,7 @@ TCP_output:
 
 	pushw	0	;        .UrgentPointer          dw ?
 	pushw	0	;        .Checksum               dw ?
-	pushw	0x00a0	;        .Window                 dw ?    ;;;;;;;
+	pushw	0x00a0	;        .Window                 dw ?    ;;;;;;; FIXME
 	shl	edi, 2	;        .DataOffset             db ?  only 4 left-most bits
 	shl	dx, 8
 	or	dx, di	;        .Flags                  db ?

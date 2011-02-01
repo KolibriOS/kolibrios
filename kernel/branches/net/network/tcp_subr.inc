@@ -228,7 +228,7 @@ TCP_outflags:
 
 ;---------------------------------------
 ;
-; The easy way to send an ACK/RST/keepalive segment
+; The fast way to send an ACK/RST/keepalive segment
 ;
 ; TCP_respond_socket:
 ;
@@ -274,8 +274,9 @@ TCP_respond_socket:
 	stosb
 	mov	al, cl
 	stosb
-	mov	ax, [esi + TCP_SOCKET.RCV_WND]
-	rol	ax, 8
+;        mov     ax, [esi + TCP_SOCKET.RCV_WND]
+;        rol     ax, 8
+	mov	ax, 0x00a0	;;;;;;; FIXME
 	stosw			; window
 	xor	eax, eax
 	stosd			; checksum + urgentpointer
@@ -287,7 +288,7 @@ TCP_respond_socket:
 	sub	edi, TCP_segment.Data
 	mov	ecx, TCP_segment.Data
 	xchg	esi, edi
-	TCP_checksum (edi + IP_SOCKET.LocalIP), (esi + IP_SOCKET.RemoteIP)
+	TCP_checksum (edi + IP_SOCKET.LocalIP), (edi + IP_SOCKET.RemoteIP)
 	mov	[esi+TCP_segment.Checksum], dx
 
 ;--------------------

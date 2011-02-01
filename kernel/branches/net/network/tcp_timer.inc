@@ -24,23 +24,26 @@ macro	TCP_timer_160ms {
 local	.loop
 local	.exit
 
-	mov	eax, net_sockets
+	mov	ebx, net_sockets
   .loop:
-	mov	eax, [eax + SOCKET.NextPtr]
-	or	eax, eax
+	mov	ebx, [ebx + SOCKET.NextPtr]
+	or	ebx, ebx
 	jz	.exit
 
-	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP		;;; We should also check if family is AF_INET
+	cmp	[ebx + SOCKET.Domain], AF_INET4
 	jne	.loop
 
-	dec	[eax + TCP_SOCKET.timer_ack]
-	jnz	.loop
+	cmp	[ebx + SOCKET.Protocol], IP_PROTO_TCP		;;; We should also check if family is AF_INET
+	jne	.loop
 
-	DEBUGF	1,"TCP ack for socket %x expired, time to piggyback!\n", eax
+	test	[ebx + TCP_SOCKET.t_flags], TF_DELACK
+	jz	.loop
+	and	[ebx + TCP_SOCKET.t_flags], not (TF_DELACK)
 
-	push	eax
+	push	ebx
+	mov	cl, TH_ACK
 	call	TCP_respond_socket
-	pop	eax
+	pop	ebx
 
 	jmp	.loop
 
