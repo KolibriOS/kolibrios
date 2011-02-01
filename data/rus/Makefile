@@ -41,6 +41,7 @@ export DOCDIR
 FASM_PROGRAMS:=\
  @clip:@CLIP:$(PROGS)/system/clip/trunk/@clip.ASM \
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
+ @notify:@NOTIFY:$(PROGS)/system/notify/trunk/@notify.asm \
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
  @rb:@RB:$(PROGS)/system/rb/trunk/@RB.ASM \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm \
@@ -63,6 +64,7 @@ FASM_PROGRAMS:=\
  magnify:MAGNIFY:$(PROGS)/demos/magnify/trunk/magnify.asm \
  mgb:MGB:$(PROGS)/system/mgb/trunk/mgb.asm \
  mousemul:MOUSEMUL:$(PROGS)/system/mousemul/trunk/mousemul.asm \
+ mykey:MYKEY:$(PROGS)/system/MyKey/trunk/MyKey.asm \
  pcidev:PCIDEV:$(PROGS)/system/pcidev/trunk/PCIDEV.ASM \
  period:PERIOD:$(PROGS)/other/period/trunk/period.asm \
  pic4:PIC4:$(PROGS)/media/pic4/trunk/pic4.asm \
@@ -71,6 +73,8 @@ FASM_PROGRAMS:=\
  run:RUN:$(PROGS)/system/run/trunk/run.asm \
  scrshoot:SCRSHOOT:$(PROGS)/media/scrshoot/scrshoot.asm \
  setup:SETUP:$(PROGS)/system/setup/trunk/setup.asm \
+ spanel:SPANEL:$(PROGS)/system/spanel/trunk/spanel.asm \
+ test:TEST:$(PROGS)/system/test/trunk/test.asm \
  tinypad:TINYPAD:$(PROGS)/develop/tinypad/trunk/tinypad.asm \
  vrr:VRR:$(PROGS)/system/vrr/trunk/vrr.asm \
  vrr_m:VRR_M:$(PROGS)/system/vrr_m/trunk/vrr_m.asm \
@@ -223,9 +227,9 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  icons.dat:ICONS.DAT iconstrp.gif:ICONSTRP.GIF index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY kpack:KPACK \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
- menu.dat:MENU.DAT mykey:MYKEY @notify:@NOTIFY \
+ menu.dat:MENU.DAT \
  panel.dat:PANEL.DAT pipetka:PIPETKA setup.dat:SETUP.DAT \
- shell:SHELL spanel:SPANEL table:TABLE test:TEST \
+ shell:SHELL table:TABLE \
  vmode:VMODE 3d/3dsheart:3D/3DSHEART \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
  demos/ak47.lif:DEMOS/AK47.LIF \

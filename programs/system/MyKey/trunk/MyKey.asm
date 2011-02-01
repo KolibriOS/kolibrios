@@ -19,7 +19,7 @@ use32
 	dd	0x0
 	dd	app_path
 
-include 'aspAPI.inc'
+include 'ASPAPI.INC'
 include 'string.inc'
 include 'macros.inc'
 include 'editbox_ex.mac'

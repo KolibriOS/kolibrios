@@ -16,7 +16,7 @@ use32
                dd     0x8000                  ; esp
                dd     0x0 , 0x0               ; I_Param , I_Icon
 
-include '..\..\macros.inc'
+include '../../../macros.inc'
 
 START:                          ; start of execution
 
