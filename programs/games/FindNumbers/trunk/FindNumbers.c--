@@ -107,7 +107,7 @@ void draw_buttons()
 int i,tempi,tempj;
 	FOR (i=1;i<=81;i++)
 		{
-		if (box[i].mark==1)
+		IF (box[i].mark==1)
 			{
 			tempi=box[i].y*30-30;
 			tempj=30*box[i].x-16;
