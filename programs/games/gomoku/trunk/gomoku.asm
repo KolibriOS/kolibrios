@@ -12,7 +12,7 @@ use32
 	dd	(I_END+200+13*N*N) and not 3
 	dd	0x0,0x0
 
-include 'macros.inc'
+include '../../../macros.inc'
 include 'lang.inc'
 
 AttackFactor dw 1	; Importance of attack (1..16)

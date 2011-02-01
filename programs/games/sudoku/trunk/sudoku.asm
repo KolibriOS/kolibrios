@@ -49,7 +49,7 @@ debug_print_dec num
 popad
 }
 
-include 'macros.inc'
+include '../../../macros.inc'
 ;include 'debug.inc'
 include 'editbox_ex.mac'
 include 'lang.inc'

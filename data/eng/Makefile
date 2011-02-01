@@ -76,12 +76,12 @@ FASM_PROGRAMS:=\
  vrr_m:VRR_M:$(PROGS)/system/vrr_m/trunk/vrr_m.asm \
  zkey:ZKEY:$(PROGS)/system/zkey/trunk/ZKEY.ASM \
  3d/3dcube2:3D/3DCUBE2:$(PROGS)/demos/3dcube2/trunk/3DCUBE2.ASM \
+ 3d/3dspiral:3D/3DSPIRAL:$(PROGS)/demos/3dspiral/trunk/3dspiral.asm \
  3d/3dtcub10:3D/3DTCUB10:$(PROGS)/demos/3dtcub10/trunk/3DTCUB10.ASM \
  3d/crownscr:3D/CROWNSCR:$(PROGS)/demos/crownscr/trunk/crownscr.asm  \
+ 3d/flatwav:3D/FLATWAV:$(PROGS)/demos/flatwav/trunk/FLATWAV.ASM \
  3d/free3d04:3D/FREE3D04:$(PROGS)/demos/free3d04/trunk/free3d04.asm \
  3d/view3ds:3D/VIEW3DS:$(PROGS)/demos/3DS/VIEW3DS.ASM \
- 3d/3dspiral:3D/3DSPIRAL:$(PROGS)/demos/3dspiral/trunk/3dspiral.asm \
- 3d/flatwav:3D/FLATWAV:$(PROGS)/demos/flatwav/trunk/FLATWAV.ASM \
  demos/bcdclk:DEMOS/BCDCLK:$(PROGS)/demos/bcdclk/trunk/bcdclk.asm \
  demos/circle:DEMOS/CIRCLE:$(PROGS)/develop/examples/circle/trunk/circle.asm \
  demos/colorref:DEMOS/COLORREF:$(PROGS)/demos/colorref/trunk/colorref.asm \
@@ -124,6 +124,11 @@ FASM_PROGRAMS:=\
  fonts/bgitest:FONTS/BGITEST:$(PROGS)/demos/bgitest/trunk/bgitest.asm \
  games/15:GAMES/15:$(PROGS)/games/15/trunk/15.ASM \
  games/arcanii:GAMES/ARCANII:$(PROGS)/games/arcanii/trunk/arcanii.asm \
+ games/bnc:GAMES/BNC:$(PROGS)/games/bnc/trunk/bnc.asm \
+ games/gomoku:GAMES/GOMOKU:$(PROGS)/games/gomoku/trunk/gomoku.asm \
+ games/msquare:GAMES/MSQUARE:$(PROGS)/games/MSquare/trunk/MSquare.asm \
+ games/sq_game:GAMES/SQ_GAME:$(PROGS)/games/sq_game/trunk/SQ_GAME.ASM \
+ games/sudoku:GAMES/SUDOKU:$(PROGS)/games/sudoku/trunk/sudoku.asm \
  games/freecell:GAMES/FREECELL:$(PROGS)/games/freecell/freecell.ASM \
  games/invaders:GAMES/INVADERS:$(PROGS)/games/invaders/invaders.asm \
  games/kox:GAMES/KOX:$(PROGS)/games/kox/trunk/kox.asm \
@@ -204,8 +209,9 @@ COPY_FILES:=\
 CMM_PROGRAMS:=\
  File|Managers/eolite:File|Managers/EOLITE:$(PROGS)/fs/Eolite/trunk/Eolite.c-- \
  games/clicks:GAMES/CLICKS:$(PROGS)/games/clicks/trunk/clicks.c-- \
+ games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
-# end if list
+# end of list
 
 # List of other files to be included in the image file.
 # Some of them are auto-built with special rules, some just exist before build.
@@ -237,15 +243,10 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  File|Managers/kfm_keys.txt:File|Managers/KFM_KEYS.TXT \
  fonts/bold.chr:FONTS/BOLD.CHR fonts/char2.mt:FONTS/CHAR2.MT \
  fonts/char.mt:FONTS/CHAR.MT \
- games/bnc:GAMES/BNC \
- games/checkers:GAMES/CHECKERS \
- games/FindNumbers:GAMES/FindNumbers games/gomoku:GAMES/GOMOKU \
- games/klavisha:GAMES/KLAVISHA games/kosilka:GAMES/KOSILKA \
- games/kosskin.gfx:GAMES/KOSSKIN.GFX games/megamaze:GAMES/MEGAMAZE \
- games/msquare:GAMES/MSQUARE \
+ games/checkers:GAMES/CHECKERS games/klavisha:GAMES/KLAVISHA \
+ games/kosilka:GAMES/KOSILKA games/kosskin.gfx:GAMES/KOSSKIN.GFX \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
- games/sq_game:GAMES/SQ_GAME \
- games/sudoku:GAMES/SUDOKU games/xonix:GAMES/XONIX \
+ games/xonix:GAMES/XONIX games/megamaze:GAMES/MEGAMAZE \
  lib/cnv_png.obj:LIB/CNV_PNG.OBJ lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
  media/ac97snd:MEDIA/AC97SND media/kiv.ini:MEDIA/KIV.INI \
