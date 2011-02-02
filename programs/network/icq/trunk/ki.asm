@@ -12,7 +12,7 @@ include "../../../macros.inc"
 purge mov
 ;include "ASCL9/ascl.inc"
 ;include "debug.inc"
-include "editbox.inc"
+include "EDITBOX.INC"
 
 ; <--- start of MenuetOS application --->
 MEOS_APP_START
@@ -1608,7 +1608,7 @@ snac_buff db 1024 dup 0
     ; Обработка рассоединения
     ;
   m_close_conn:
-    write_debug 'Another Computer is Useing YOUR UIN!'
+    write_debug 'Another Computer is Using YOUR UIN!'
     call srv_disconnect
     call closesocket
     jmp m_fin

@@ -169,6 +169,7 @@ FASM_PROGRAMS:=\
  network/ftps:NETWORK/FTPS:$(PROGS)/network/ftps/trunk/FTPS.ASM \
  network/httpc:NETWORK/HTTPC:$(PROGS)/network/httpc/trunk/httpc.asm \
  network/https:NETWORK/HTTPS:$(PROGS)/network/https/trunk/https.asm \
+ network/icq:NETWORK/ICQ:$(PROGS)/network/icq/trunk/ki.asm \
  network/nntpc:NETWORK/NNTPC:$(PROGS)/network/nntpc/trunk/nntpc.asm \
  network/nslookup:NETWORK/NSLOOKUP:$(PROGS)/develop/libraries/network/examples/nslookup.asm \
  network/popc:NETWORK/POPC:$(PROGS)/network/popc/trunk/popc.asm \
