@@ -1,0 +1,2 @@
+@fasm ki.asm ki
+
