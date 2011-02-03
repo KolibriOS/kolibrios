@@ -335,6 +335,9 @@ align 4
 	mov	[eax + SOCKET.Protocol], IP_PROTO_TCP
 	mov	[eax + SOCKET.snd_proc], SOCKET_send_tcp
 	mov	[eax + SOCKET.rcv_proc], SOCKET_receive_tcp
+
+
+	mov	[eax + TCP_SOCKET.t_maxseg], 1480	;;;;; FIXME
 	ret
 
 
@@ -506,8 +509,6 @@ align 4
 	add	[TCP_sequence_num], 6400
 	pop	[eax + TCP_SOCKET.ISS]
 	mov	[eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
-
-	mov	[eax + TCP_SOCKET.t_maxseg], 1480	;;;;;
 
 	TCP_sendseqinit eax
 
@@ -1491,7 +1492,7 @@ SOCKET_fork:
 
 	and	[eax + SOCKET.options], not SO_ACCEPTCON
 
-	call	SOCKET_notify_owner
+  ;;;;;      call    SOCKET_notify_owner
 	pop	edi ecx esi
 
 	ret

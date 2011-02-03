@@ -181,21 +181,26 @@ TCP_input:
 	test	[ebx + SOCKET.options], SO_ACCEPTCON
 	jz	.no_listening_socket
 
-	call	SOCKET_fork
-	jz	.drop
+	DEBUGF	1,"Accepting new connection\n"
 
-	push	[edx + TCP_segment.DestinationPort]
-	pop	[eax + TCP_SOCKET.LocalPort]
+	mov	[ebx + SOCKET.lock], 0
+	call	SOCKET_fork
+
+	test	eax, eax
+	jz	.drop
 
 	push	[edx - IPv4_Packet.DataOrOptional + IPv4_Packet.DestinationAddress]	;;; FIXME
 	pop	[eax + IP_SOCKET.LocalIP]
 
-	push	[edx - IPv4_Packet.DataOrOptional + IPv4_Packet.SourceAddress]	   ;;; FIXME
-	pop	[eax + IP_SOCKET.RemoteIP]
+	push	[edx + TCP_segment.DestinationPort]
+	pop	[eax + TCP_SOCKET.LocalPort]
 
 	mov	[eax + TCP_SOCKET.t_state], TCPS_LISTEN
 
-	jmp	.not_uni_xfer
+;        mov     [ebx + SOCKET.lock], 0
+	mov	ebx, eax
+
+	jmp	.LISTEN
 
   .no_listening_socket:
 
@@ -467,34 +472,40 @@ align 4
 
 ;;; TODO: check if it's a broadcast or multicast, and drop if so
 
-	add	[TCP_sequence_num], 64000
+	push	[edx - IPv4_Packet.DataOrOptional + IPv4_Packet.SourceAddress]	   ;;; FIXME
+	pop	[ebx + IP_SOCKET.RemoteIP]
 
 	push	[edx + TCP_segment.SourcePort]
-	pop	[eax + TCP_SOCKET.RemotePort]
+	pop	[ebx + TCP_SOCKET.RemotePort]
 
 	push	[edx + TCP_segment.SequenceNumber]
-	pop	[eax + TCP_SOCKET.IRS]
+	pop	[ebx + TCP_SOCKET.IRS]
 
-	push	[eax + TCP_SOCKET.ISS]
-	pop	[eax + TCP_SOCKET.SND_NXT]
+	push	[TCP_sequence_num]     ;;;;;
+	add	[TCP_sequence_num], 64000 / 2
+	pop	[ebx + TCP_SOCKET.ISS]
 
-	TCP_sendseqinit eax
-	TCP_rcvseqinit eax
+	push	[ebx + TCP_SOCKET.ISS]
+	pop	[ebx + TCP_SOCKET.SND_NXT]
 
-	mov	[eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
-	mov	[eax + TCP_SOCKET.t_flags], TF_ACKNOW
-	mov	[eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval  ;;;; macro
+	TCP_sendseqinit ebx
+	TCP_rcvseqinit ebx
 
-	add	eax, STREAM_SOCKET.snd
+	mov	[ebx + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
+	mov	[ebx + TCP_SOCKET.t_flags], TF_ACKNOW
+	mov	[ebx + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval  ;;;; macro
+
+	lea	eax, [ebx + STREAM_SOCKET.snd]
 	call	SOCKET_ring_create
 
-	add	eax, STREAM_SOCKET.rcv - STREAM_SOCKET.snd
+	lea	eax, [ebx + STREAM_SOCKET.rcv]
 	call	SOCKET_ring_create
 
-	lea	ebx, [eax - STREAM_SOCKET.rcv]
-	mov	[ebx + SOCKET.lock], 0
+;;;        call    SOCKET_notify_owner
 
 	jmp	.trim_then_step6
+				   
+
 
 
 
@@ -662,16 +673,13 @@ align 4
 	inc	[edx + TCP_segment.SequenceNumber]
 
 	cmp	[edx + TCP_segment.UrgentPointer], 1
-	jl	@f
-
+	jle	@f
 	dec	[edx + TCP_segment.UrgentPointer]
-
-	jmp	.no_dup_syn
+	jmp	.dup_syn
        @@:
-
 	and	[edx + TCP_segment.Flags], not (TH_URG)
+  .dup_syn:
 	dec	eax
-	jz	.no_duplicate
   .no_dup_syn:
 
 ; eax holds number of bytes to drop
@@ -889,11 +897,11 @@ align 4
 	DEBUGF	1,"TCP state = syn received\n"
 
 	mov	eax, [edx + TCP_segment.AckNumber]
-	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
+	cmp	[ebx + TCP_SOCKET.SND_UNA], eax
+	jg	.drop_with_reset
+	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
 	jg	.drop_with_reset
 
-	cmp	[ebx + TCP_SOCKET.SND_MAX], eax
-	jg	.drop_with_reset
 	;;; update stats
 	mov	eax, ebx
 	call	SOCKET_is_connected
@@ -1487,8 +1495,10 @@ align 4
 	mov	[ebx + SOCKET.lock], 0
 
 	push	ebx
-	mov	cl, TH_ACK
-	call	TCP_respond_socket
+;        mov     cl, TH_ACK
+;        call    TCP_respond_socket
+	mov	eax, ebx
+	call	TCP_output
 	pop	ebx
 
 	call	kernel_free

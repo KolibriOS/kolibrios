@@ -594,7 +594,7 @@ IPv4_find_fragment_slot:
 align 4
 IPv4_output:
 
-	DEBUGF 1,"IPv4_create_packet: size=%u\n", ecx
+	DEBUGF	1,"IPv4_create_packet: size=%u\n", ecx
 
 	cmp	ecx, 65500		; Max IPv4 packet size
 	jg	.too_large

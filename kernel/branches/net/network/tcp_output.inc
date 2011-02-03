@@ -492,7 +492,8 @@ TCP_output:
   .fail:
 	pop	ecx
 	add	esp, ecx
-	add	esp, 4+8
+	pop	eax
+	add	esp, 8
 	mov	[eax + SOCKET.lock], 0
 	DEBUGF 1,"TCP_output: failed\n"
 	ret
