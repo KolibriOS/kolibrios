@@ -60,6 +60,7 @@ FASM_PROGRAMS:=\
  hdd_info:HDD_INFO:$(PROGS)/system/hdd_info/trunk/hdd_info.asm \
  icon:ICON:$(PROGS)/system/icon/trunk/icon.asm \
  kbd:KBD:$(PROGS)/system/kbd/trunk/kbd.ASM \
+ kpack:KPACK:$(PROGS)/other/kpack/trunk/kpack.asm \
  launcher:LAUNCHER:$(PROGS)/system/launcher/trunk/launcher.asm \
  magnify:MAGNIFY:$(PROGS)/demos/magnify/trunk/magnify.asm \
  mgb:MGB:$(PROGS)/system/mgb/trunk/mgb.asm \
@@ -124,6 +125,7 @@ FASM_PROGRAMS:=\
  drivers/vmode.mdr:DRIVERS/VMODE.MDR:$(KERNEL)/drivers/vmode.asm \
  drivers/vt8235.obj:DRIVERS/VT8235.OBJ:$(KERNEL)/drivers/vt823x.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
+ File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/OpenDial:File|Managers/OPENDIAL:$(PROGS)/develop/libraries/box_lib/asm/trunk/OpenDial.asm \
  fonts/bgitest:FONTS/BGITEST:$(PROGS)/demos/bgitest/trunk/bgitest.asm \
  games/15:GAMES/15:$(PROGS)/games/15/trunk/15.ASM \
@@ -195,6 +197,9 @@ COPY_FILES:=\
  config.inc:CONFIG.INC:$(PROGS)/config.inc \
  struct.inc:STRUCT.INC:$(PROGS)/struct.inc \
  File|Managers/z_icons.png:File|Managers/Z_ICONS.PNG:$(PROGS)/develop/libraries/box_lib/asm/trunk/z_icons.png \
+ File|Managers/kfm_keys.txt:File|Managers/KFM_KEYS.TXT:$(PROGS)/fs/kfm/trunk/docs/english/kfm_keys.txt \
+ File|Managers/buttons.bmp:File|Managers/BUTTONS.BMP:$(PROGS)/fs/kfm/trunk/buttons.bmp \
+ File|Managers/icons.bmp:File|Managers/ICONS.BMP:$(PROGS)/fs/kfm/trunk/icons.bmp \
  fonts/euro.chr:FONTS/EURO.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/EURO.CHR \
  fonts/goth.chr:FONTS/GOTH.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/GOTH.CHR \
  fonts/lcom.chr:FONTS/LCOM.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/LCOM.CHR \
@@ -225,7 +230,7 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  background.gif:background.gif default.skn:DEFAULT.SKN \
  e80:E80 graph:GRAPH hdread:HDREAD htmlv:HTMLV \
  icons.dat:ICONS.DAT iconstrp.gif:ICONSTRP.GIF index_htm:INDEX.HTM \
- kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY kpack:KPACK \
+ kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
  menu.dat:MENU.DAT \
  panel.dat:PANEL.DAT setup.dat:SETUP.DAT \
@@ -237,14 +242,10 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
  demos/use_mb:DEMOS/USE_MB \
  drivers/atikms.dll:DRIVERS/ATIKMS.DLL \
- File|Managers/buttons.bmp:File|Managers/BUTTONS.BMP \
  File|Managers/eolite.ini:File|Managers/EOLITE.INI \
- File|Managers/icons.bmp:File|Managers/ICONS.BMP \
  File|Managers/icons.ini:File|Managers/ICONS.INI \
  File|Managers/kfar.ini:File|Managers/KFAR.INI \
- File|Managers/kfm:File|Managers/KFM \
  File|Managers/kfm.ini:File|Managers/KFM.INI \
- File|Managers/kfm_keys.txt:File|Managers/KFM_KEYS.TXT \
  fonts/bold.chr:FONTS/BOLD.CHR fonts/char2.mt:FONTS/CHAR2.MT \
  fonts/char.mt:FONTS/CHAR.MT \
  games/checkers:GAMES/CHECKERS games/klavisha:GAMES/KLAVISHA \
