@@ -435,8 +435,42 @@ shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/std
 .obj.shell:
 	mkdir -p .obj.shell
 
+# Rules for sdk/sound, used by media/ac97snd
+SOUNDDIR=$(PROGS)/develop/sdk/trunk/sound/src
+SOUND_OBJECTS:=$(patsubst $(SOUNDDIR)/%.asm,.sdk/%.obj,$(wildcard $(SOUNDDIR)/*.asm))
+SOUND_INC_FILES:=$(wildcard $(SOUNDDIR)/*.inc)
+.sdk/sound.lib: $(SOUND_OBJECTS)
+	win32-link /lib /out:$@ $^
+$(SOUND_OBJECTS): .sdk/%.obj: $(SOUNDDIR)/%.asm $(SOUND_INC_FILES) | .sdk
+	fasm $< $@
+.sdk:
+	mkdir -p .sdk
 # Rules for media/ac97snd
-# Not compilable from svn sources, using preloaded binary
+AC97DIR=$(PROGS)/media/ac97snd
+media/ac97snd: .obj.ac97snd/ac97snd.exe
+	$(msvc_final)
+.obj.ac97snd/ac97snd.exe: .obj.ac97snd/ac97wav.obj .obj.ac97snd/crt.obj .obj.ac97snd/k_lib.obj \
+	.obj.ac97snd/mpg.lib .sdk/sound.lib $(AC97DIR)/ufmod.obj
+	$(msvc_link)
+.obj.ac97snd/ac97wav.obj: $(AC97DIR)/ac97snd/ac97wav.c \
+	$(AC97DIR)/kolibri.h $(AC97DIR)/ac97snd/ac97wav.h $(AC97DIR)/mpg/mpg123.h \
+	$(AC97DIR)/sound.h $(AC97DIR)/ufmod-codec.h Makefile.msvc | .obj.ac97snd
+	$(msvc_compile)
+.obj.ac97snd/crt.obj: $(AC97DIR)/ac97snd/crt.c $(AC97DIR)/ac97snd/crt.h Makefile.msvc | .obj.ac97snd
+	$(msvc_compile)
+.obj.ac97snd/k_lib.obj: $(AC97DIR)/ac97snd/k_lib.asm $(AC97DIR)/ac97snd/proc32.inc | .obj.ac97snd
+	fasm $< $@
+AC97SND_MPG_C_FILES:=$(wildcard $(AC97DIR)/mpg/*.c)
+AC97SND_MPG_H_FILES:=$(wildcard $(AC97DIR)/mpg/*.h)
+AC97SND_MPG_C_OBJECTS:=$(patsubst $(AC97DIR)/mpg/%.c,.obj.ac97snd/%.o,$(AC97SND_MPG_C_FILES))
+.obj.ac97snd/mpg.lib: $(AC97SND_MPG_C_OBJECTS) .obj.ac97snd/pow.obj
+	win32-link /lib /ltcg /out:$@ $^
+$(AC97SND_MPG_C_OBJECTS): .obj.ac97snd/%.o: $(AC97DIR)/mpg/%.c $(AC97SND_MPG_H_FILES) Makefile.msvc | .obj.ac97snd
+	$(msvc_compile)
+.obj.ac97snd/pow.obj: $(AC97DIR)/mpg/pow.asm $(AC97DIR)/mpg/proc32.inc | .obj.ac97snd
+	fasm $< $@
+.obj.ac97snd:
+	mkdir -p .obj.ac97snd
 
 # Rules for atikms.dll
 # Use Makefile from $(REPOSITORY)/drivers/ddk and $(REPOSITORY)/drivers/video/drm/radeon

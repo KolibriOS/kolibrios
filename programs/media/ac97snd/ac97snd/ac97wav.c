@@ -1182,7 +1182,7 @@ void uint2str(unsigned int value, char *string)
 
 
 ///*********
-void *memmove ( void * dst, void * src, unsigned int count)  /* uFMOD integration */
+void *__cdecl memmove ( void * dst, const void * src, unsigned int count)  /* uFMOD integration */
 { void *ret;
   ret = dst;
 
