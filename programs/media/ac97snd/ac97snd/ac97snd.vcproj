@@ -125,6 +125,8 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				CommandLine="..\Release\pe2kos.exe ..\Release\ac97snd.exe ..\Release\ac97snd.bin"
+				Outputs="..\Release\ac97snd"
 			/>
 			<Tool
 				Name="FASM"

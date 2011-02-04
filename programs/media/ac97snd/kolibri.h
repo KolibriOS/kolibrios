@@ -101,6 +101,14 @@ void _stdcall make_button(int x, int y, int xsize, int ysize, int id, int color)
 void _stdcall draw_bar(int x, int y, int xsize, int ysize, int color);
 void _stdcall write_text(int x,int y,int color,char* text,int len);
 
+//Asper [
+void debug_out_str(const char* str);
+void ResizeReplaceWindow (DWORD x, DWORD y, DWORD w, DWORD h);
+void set_event_mask(int mask);
+void ipc_init(char *buf, int bufsize);
+int ipc_send_msg(int PID, char *msg);
+//] Asper
+
 #ifdef __cplusplus
 extern "C"
 }

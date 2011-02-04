@@ -22,6 +22,7 @@
 
 
 DWORD test_mp3(char *buf);
+DWORD test_m3u(char *buf); //Asper+
 
 //void (*snd_play)();
 void wave_out(char* buff);
