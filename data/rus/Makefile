@@ -312,7 +312,7 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 # SYSXTREE
 # 3d/CUBETEXT
 # 3d/LOGIO.BMP
-	str=`LANG=ru_RU.utf8 date -u +"[автосборка %d %b %Y %R из r$(REV)]"|iconv -f utf8 -t cp866`; \
+	str=`LANG=ru_RU.utf8 date -u +"[автосборка %d %b %Y %R, r$(REV)]"|iconv -f utf8 -t cp866`; \
 	echo -n $$str|dd of=kernel.mnt bs=1 seek=`expr 279 - length "$$str"` conv=notrunc 2>/dev/null
 	dd if=/dev/zero of=$(BUILD_DIR)/kolibri.img count=2880 bs=512 2>&1
 	mformat -f 1440 -i $(BUILD_DIR)/kolibri.img ::
