@@ -210,7 +210,9 @@ COPY_FILES:=\
  fonts/smal.chr:FONTS/SMAL.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/SMAL.CHR \
  fonts/trip.chr:FONTS/TRIP.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TRIP.CHR \
  fonts/tscr.chr:FONTS/TSCR.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TSCR.CHR \
- games/snake.ini:GAMES/SNAKE.INI:$(PROGS)/games/snake/trunk/snake.ini
+ games/snake.ini:GAMES/SNAKE.INI:$(PROGS)/games/snake/trunk/snake.ini \
+ media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
+# end of list
 
 # The list of all C-- programs with one main C-- file.
 # Format of an item is exactly the same as in the previous list,
@@ -254,7 +256,7 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  games/xonix:GAMES/XONIX games/megamaze:GAMES/MEGAMAZE \
  lib/cnv_png.obj:LIB/CNV_PNG.OBJ lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
- media/ac97snd:MEDIA/AC97SND media/kiv.ini:MEDIA/KIV.INI \
+ media/ac97snd:MEDIA/AC97SND \
  network/jmail:NETWORK/JMAIL network/zeroconf.ini:NETWORK/ZEROCONF.INI \
 #end of list
 #3d/logio.bmp:3D/LOGIO.BMP 3d/cubetext:3D/CUBETEXT
