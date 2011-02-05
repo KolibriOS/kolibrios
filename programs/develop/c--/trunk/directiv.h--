@@ -141,7 +141,7 @@ dword pname1,pname2,j;
 	_llseek(dll,fptr+6,0); _lread(dll,#nsect,2);			 // Number of sections
 	delta=export;
 	i=1;
-	while(i<=nsect){
+	WHILE(i<=nsect){
 		EAX=i; EAX--; EAX=EAX*40; EAX+=260; EAX+=fptr;	// fptr+260+40*(i-1)
 		_llseek(dll,EAX,0); _lread(dll,#base,4); // RVA of section
 		IF(base<=export){
@@ -273,7 +273,7 @@ byte var_name[IDLENGTH];
 			linenum2++; // Обнаружен конец строки
 			totallines++;
 		}
-		else if(AL=='}'){	// блок закрыт
+		else IF(AL=='}'){	// блок закрыт
 			count--;
 			IF(count==0){ // конец процедуры
 				ESI><inptr2;

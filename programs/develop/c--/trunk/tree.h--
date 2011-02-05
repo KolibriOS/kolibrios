@@ -1,3 +1,4 @@
+#define STRING_ERROR	"string found in tree when trying to add to	it"
 // ---- Занесение поименованной константы в список
 AddConstToTree(dword keystring,constvalue)
 dword ptr,newptr; // idrec structure
@@ -32,7 +33,7 @@ dword ptr,newptr; // idrec structure
 				}
 				ptr=DSDWORD[ESI+right];
 			}
-			ELSE internalerror("string found in tree when trying to add to	it");
+			ELSE internalerror(STRING_ERROR);
 		}
 	}
 // Формируем новую запись в списке
@@ -110,7 +111,7 @@ dword ptr,newptr;
 				}
 				ptr=DSDWORD[ESI+right];
 			}
-			ELSE internalerror("string found in tree when trying to add to	it");
+			ELSE internalerror(STRING_ERROR);
 		}
 	}
 	ESI=newptr;
