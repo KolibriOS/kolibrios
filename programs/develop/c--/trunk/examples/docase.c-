@@ -1,0 +1,17 @@
+#map
+#debug
+#list
+main()   // execution always starts at main ()
+{
+docase{
+  EBX+=80;
+  case(ECX==10)
+//#list
+    EBX=10;
+  case(EBX<5){
+    ECX=5; continue;}
+  default
+    EDX+=8;
+  }
+EAX=9;
+}

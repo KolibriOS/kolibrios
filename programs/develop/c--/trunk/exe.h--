@@ -1,0 +1,145 @@
+// ---- Формирование IMPORT секции
+void DoLink()
+dword i,j,DirTable,AddrTable,dllName,apiName,byName,hold;
+dword dll,api;
+{
+	OptImportTableAdr=outptr-output;
+	DirTable=outptr;
+	if(APIcount==0){
+		OUTDWORD(outptr -output + OptBaseOfCode + 4);
+		OUTDWORD(0x80000001);
+		OUTDWORD(0);
+		OUTDWORD(DirTable-output+40+OptBaseOfCode);
+		OUTDWORD(outptr-output + OptBaseOfCode - 12);
+		DirTable=outptr;
+		outptr = outptr + 20;
+		OUTDWORD('resu');
+		OUTDWORD('d.23');
+		OUTDWORD('ll');
+//	OUTDWORD(0x72657375); OUTDWORD(0x642E3233); OUTDWORD(0x6C6C);
+		apiName=outptr;
+	}
+	else {
+		EAX=DLLcount+1*20;
+		outptr+=EAX;	// на начало LookupTables
+		i=0;
+		while(i<DLLcount){		// Просмотр списка DLL
+			EAX=i<<2;
+			dll=DLLlist[EAX];
+			EBX=dll;		// Ссылка на DLL в списке идентификаторов
+			byName = DSDWORD[EBX+rectype];	// Импорт по имени?
+			if(DSDWORD[EBX+recmodline]){	// Были вызовы API из данной DLL?
+				dllName=outptr;
+				ESI=DSDWORD[EBX+recid]; // Указатель на имя DLL
+				do{
+					$LODSB;
+					OP(byte AL);
+				}while(AL!=0);	// Сохраним имя DLL
+				AddrTable = outptr; //фиксируем начало AddrTable для данного DLL
+				apiName=DSDWORD[EBX+recmodline]+1<<2+AddrTable;
+				j=0;
+				while(j<posts){ 	// Ищем в post
+					EBX=j<<2+posttype;
+					if(DSDWORD[EBX]==POST_API){
+						EBX=j<<2+postnum;
+						api=DSDWORD[EBX];
+						ECX=api;
+						if(DSDWORD[ECX+rectype]==dll){		// Из обрабатываемого DLL?
+							if(DSDWORD[ECX+recmodline]==0){ // Еще не внесен в Lookup
+								DSDWORD[ECX+recmodline]=outptr-output+OptBaseOfCode;
+								IF(byName){
+									OUTDWORD(apiName - output + OptBaseOfCode - 2);
+									hold=outptr;
+									outptr=apiName;
+									EAX=DSDWORD[ECX+newid];
+									IF(EAX!=0){ // Есть алиас?
+										IF(lstrcmpA(DSDWORD[ECX+recid],EAX)!=0){
+											ESI=api;
+											ESI=DSDWORD[ESI+newid];
+											GOTO L1;
+										}
+									}
+									ESI=DSDWORD[ECX+recid];
+L1:
+									do{
+										$LODSB;
+										OP(byte AL);
+									}while(AL!=0);	// Сохраним имя API
+									apiName=outptr;
+									outptr=hold;
+								}
+								ELSE{
+									EAX=DSDWORD[ECX+recnumber]|0x80000000;	// ord number
+									OUTDWORD(EAX);
+								}
+							}
+						}
+					}
+					j++;
+				} // end search in post
+				OUTDWORD(0);
+				outptr=hold;
+				outptr=DirTable;
+				OUTDWORD(AddrTable-output+OptBaseOfCode);
+				OUTDWORD(0);
+				OUTDWORD(0);
+				OUTDWORD(dllName-output+OptBaseOfCode);
+				OUTDWORD(AddrTable-output+OptBaseOfCode);
+				DirTable=outptr;
+				outptr=apiName;
+			}
+			i++;
+		} // end search in DLLlist
+	}
+	outptr=DirTable;
+	OUTDWORD(0);
+	OUTDWORD(0);
+	OUTDWORD(0);
+	OUTDWORD(0);
+	OUTDWORD(0);
+	outptr=apiName;
+	OptImportTableSize=outptr-output-OptImportTableAdr;
+	OptImportTableAdr=OptImportTableAdr+OptBaseOfCode;
+}
+
+// ---- Формирование EXE
+dword WriteEXE()
+dword diskout;	// Handle выходного файла
+byte exefile[FILENAMESIZE];
+{
+	wsprintfA(#exefile,"%s.EXE",#rawfilename);
+	SHOW(#exefile);
+	diskout=_lcreat(#exefile,0);
+	IF(EAX==0){
+		wsprintfA(#mapstr,"ERROR, unable to create output file %s.\n",#exefile);
+		WRITESTR(#mapstr);
+		return(-1);
+	}
+	OptCodeSize=outptr-startptr+1;
+	OptImageSize=OptCodeSize/OptSectionAlignment;
+	OptImageSize+=2;
+	OptImageSize=OptImageSize*OptSectionAlignment;
+	OptImageSize+=0x80000;
+	TxtVirtualSize=OptCodeSize+0x80000;
+	TxtSizeOfRawData=OptCodeSize/OptFileAlignment;
+	TxtSizeOfRawData++;
+	TxtSizeOfRawData=TxtSizeOfRawData*OptFileAlignment;
+	_lwrite(diskout,#exeheader,0x160);
+	WriteZero(diskout, 0xA0);
+	IF(outptr-output)_lwrite(diskout,output,outptr-output);
+	EAX=OptCodeSize%OptFileAlignment;
+	EAX><EBX;
+	EAX=OptFileAlignment-EBX;
+	EAX++;
+	WriteZero(diskout, EAX);
+	_lclose(diskout);
+	return(0);
+}
+
+// ----
+WriteZero(dword handle,size)
+byte c;
+{
+	c=0;
+	loop(size)_lwrite(handle,#c,1);
+}

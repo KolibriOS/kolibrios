@@ -1,0 +1,111 @@
+//===== Глобальные константы
+#define SHOW "WRITESTR"
+// ---- 
+#define STD_INPUT_HANDLE	-10
+#define STD_OUTPUT_HANDLE	-11
+#define STD_ERROR_HANDLE	-12
+#define CREATE_NEW		1
+#define CREATE_ALWAYS 		2
+#define OPEN_EXISTING 		3
+#define OPEN_ALWAYS 		4
+#define TRUNCATE_EXISTING 	5
+// ----
+#define GENERIC_READ	0x80000000
+#define GENERIC_WRITE	0x40000000
+#define GENERIC_EXECUTE 0x20000000
+#define GENERIC_ALL	0x10000000
+// ---- Константы компилятора
+#define _END	0x1B
+#define FILENAMESIZE 80
+#define IDLENGTH 65 // Длина имени идентификатора, включая NULL-терминатор
+#define MAXDATA 512000	// Размер буферов под код и данные
+#define MAXDBGS 50000 // Размер буферов под отладочну  информацию
+#define MAXDLLS 100
+#define MAXINPUT 512000 // Максимальны	размер входного файла
+#define MAXMDL	100	// Максимальное число includes
+#define MAXPOSTS 150000 // Размер буферов под POST обработку
+#define NULL	0
+#define SORTSIZE 20
+#define STRLEN 1000 // Длина буфера под token
+// ------------------------------------------
+//===== Нумерованные константы
+// ---- Коды возврата
+enum{ e_ok, e_outofmemory, e_cannotopeninput, e_toomanyerrors,
+	e_internalerror, e_noinputspecified, e_unknowncommandline,
+	e_extract, e_cannotopenmapfile, e_someerrors };
+// ---- Коды tokens tk_xxxx
+enum{
+tk_eof,tk_number,tk_string,tk_var,
+tk_id,
+tk_db,tk_dw,tk_dd,tk_dq,	// Типы переменных
+tk_byte,tk_char,tk_word,tk_short,
+tk_dword,tk_int,
+tk_enum,			// Нумерованные константы
+tk_struc, 	// Определение структуры
+tk_if,tk_else,tk_endif, // Условная компиляция
+tk_include,tk_define, // Включение фа ла//Определение константы
+tk_import,		// Импорт из DLL
+tk_map, 		// Генерация MAP-файла
+tk_debug, 	// Генерация отладочной информации
+tk_list,		// Выдача ASM-листинга
+tk_dll, 		// Генерация DLL-файла
+tk_loop,tk_return,tk_do,
+tk_while,tk_void,
+tk_continue,tk_break,
+tk_docase,tk_case,tk_default,
+tk_carryflag,tk_extract,tk_FALSE,tk_from,
+tk_notcarryflag,tk_notoverflow,tk_overflow,tk_TRUE,
+tk_zeroflag,tk_notzeroflag,
+tk_assign,tk_swap,
+tk_minus,tk_plus,
+tk_minusminus,tk_plusplus,tk_mult,tk_div,tk_mod,
+tk_multminus,tk_divminus,tk_modminus,tk_rr,tk_ll,
+tk_rrminus,
+tk_llminus,
+tk_minusequals,tk_plusequals,tk_rrequals,tk_llequals,
+tk_or,tk_and,tk_xor,tk_not,
+tk_orminus,
+tk_andminus,tk_xorminus,
+tk_orequals,tk_andequals,tk_xorequals,
+tk_equalto,
+tk_notequal,tk_greater,tk_greaterequal,tk_less,
+tk_lessequal,
+tk_oror,tk_andand,tk_openbrace,tk_closebrace,
+tk_openbracket,tk_closebracket,tk_openblock,tk_closeblock,
+tk_colon,tk_semicolon,tk_comma,tk_period,
+tk_dollar,tk_question,tk_tilda,
+tk_reg,tk_controlreg,tk_debugreg,tk_testreg,tk_seg,
+tk_undefproc,tk_proc,
+tk_postnumber,
+tk_local,tk_locallabel,tk_param,tk_locnumber,
+tk_DLL,tk_API,tk_directive,tk_command,tk_mnemonics,
+tokens
+};
+// ---- Кодировка типа процедур
+enum{ cpt_near, cpt_far };
+// ---- Кодировка POST записей
+enum { POST_CALL=1, POST_API, POST_DATA, POST_LOC, POST_STR };
+// ---- Описание структуры в dbginfo: dbg_...
+enum{ dbg_mod=0,	// Номер модуля
+	dbg_line=4, // Номер строк	в модуле
+	dbg_loc=8,	// Позиция в EXE-файле
+	dbg_size=12}; // размер структуры
+// ---- Описание структуры idrec
+enum{ left=0, 	// Указатель на idrec
+	right=4,		// Указатель на idrec
+	recid=8,		// Имя идентификатора
+	newid=recid+4,	// Указатель на алиас для recid
+	rectok=newid+4, // Номер token
+	rectype=rectok+4, // Тип token: void, byte, char, word, ...
+	recsrc=rectype+4, // Исходный текст
+	recpost=recsrc+4, // Флаг POST переменной
+	recnumber=recpost+4, // Значение или offset в recsrc
+	recmodline=recnumber+4,// Номер модуля и строки
+	recsize=recnumber+4};// размер структуры
+// ---- Описание структуры localrec
+enum{ localnext=0,		// Указатель на следующую localrec
+	localid=4,		// Имя локально  переменной
+	localtok=localid+IDLENGTH,// Значение token
+	localtype=localtok+4, // тип переменной
+	localnumber=localtype+4,	// Позиция в стеке
+	local_size=localnumber+4};	// Размер структуры
