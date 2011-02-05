@@ -1,6 +1,4 @@
 //===== Глобальные константы
-#define SHOW "WRITESTR"
-// ---- 
 #define STD_INPUT_HANDLE	-10
 #define STD_OUTPUT_HANDLE	-11
 #define STD_ERROR_HANDLE	-12

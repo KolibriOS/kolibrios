@@ -108,7 +108,7 @@ dword diskout;	// Handle выходного файла
 byte exefile[FILENAMESIZE];
 {
 	wsprintfA(#exefile,"%s.EXE",#rawfilename);
-	SHOW(#exefile);
+	WRITESTR(#exefile);
 	diskout=_lcreat(#exefile,0);
 	IF(EAX==0){
 		wsprintfA(#mapstr,"ERROR, unable to create output file %s.\n",#exefile);

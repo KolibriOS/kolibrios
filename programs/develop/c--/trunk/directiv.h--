@@ -822,7 +822,7 @@ G01:
 		}
 		else IF(tok==tk_from){
 			NextTok();
-			SHOW("count = DoFrom(1);\n");
+			WRITESTR("count = DoFrom(1);\n");
 			i=size*elements;
 			i-=count;
 			loop(i)OP(byte 0);
@@ -830,7 +830,7 @@ G01:
 		}
 		else IF(tok==tk_extract){
 			NextTok();
-			SHOW("count = DoExtract(1);\n");
+			WRITESTR("count = DoExtract(1);\n");
 			i=size*elements;
 			i-=count;
 			loop(i)OP(byte 0);
