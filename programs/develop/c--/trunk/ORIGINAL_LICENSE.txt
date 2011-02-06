@@ -1,0 +1,152 @@
+INTRO TO SPHINX C-- (updated 28 Oct 1996)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Hello, and welcome to SPHINX C--.  C-- is a language I (Peter Cellik)
+created, it is a half way point between C and Assembly.  The main thought
+behind C-- is to create very small, and hopefully fast programs.  The output
+efficiency is close to assembly with the source file being similar to C and
+thus more readable than assembly source.  C-- can be used as a stand alone
+language, or, via the use of Microsoft compatible OBJ output, be used within
+another language such as C++ or Borland Pascal.
+
+This is the final release of C--!  It has been over a year since I have made
+any changes to C--, so I have decided its time to release it all to the
+public domain.  I have enjoyed your responses over the years and I look
+forward to more.  I have had replies from over 25 different countries.
+Thank you everyone for saying hello.  Sorry if I did not reply, sometimes
+there just isn't time.
+
+The file is C--FINAL.ZIP.  It should contain the compiler, the examples and
+also the source code.
+
+
+REQUIREMENTS:
+~~~~~~~~~~~~~
+    System Requirements:
+    - 8086 or higher CPU computer
+    - DOS 3.0 or greater
+    - 512K RAM or greater
+    - Keyboard (I should hope)
+    - a hard drive will really speed things up, though C-- can even run off a
+      floppy if you are not in a hurry
+    - a mouse may assist navigation through the C-- Work Bench, but the
+      keyboard can be used instead
+    - some of the example files require VGA display, if you do not have VGA
+      you are missing out on life
+
+    Programmer Requirements (uh-oh):
+    - Brain (a good one too)
+    - Reasonable understanding of C or similar high level language
+    - Some 8086 or higher assembly knowledge, the more the better
+
+    
+FILE LIST:
+~~~~~~~~~~
+The following files should be included in the C--C????.ZIP package:
+
+.\C--      EXE   // The SPHINX C-- Compiler
+.\C--      OVL   // File required by C--.EXE
+.\WB       COM   // C-- Work Bench Driver
+.\WB       EXE   // C-- Work Bench Main Program
+.\C--INFO  DOC   // Info on the C-- Programming Language
+.\C--ASM   DOC   // Info on C-- Inline Assembly Language
+.\STAKPROC DOC   // Info on C-- stack procedures
+.\REGPROCS DOC   // Info on C-- REG procedures and macros
+.\WBHELP   DOC   // Info on using the C-- Work Bench
+.\ALLPROCS DOC   // List of all stack and REG procedures and macros
+.\???????? H--   // Some C-- header files
+.\README   DOC   // This file your reading
+.\examples\GUS\*.*       // Gravis Ultra Sound example programs
+.\examples\OBJ\*.*       // OBJ file output example programs
+.\examples\OTHER\*.*     // Misc. example programs
+.\examples\ROCK\*.*      // VGA game example program
+.\examples\SBLASTER\*.*  // Sound blaster example programs
+.\examples\SIMPLE\*.*    // Small and simple example programs
+.\examples\SYSTEM\*.*    // System detection example programs
+.\examples\TSR\*.*       // Terminate and Stay Resident example programs
+.\examples\VGA\*.*       // VGA example programs
+.\examples\stuff\*.*     // some personal examples
+.\examples\HISTORY.DOC   // Revision history of this example package
+.\source\*.*           // Source for SPHINX C-- Compiler and Work Bench
+
+NOTE:  I do not take credit (or blame) for EURO_MOD.EXE, it is supplied as a
+       usefully utility which can be accessed via a C-- header file.  It is
+       free and, as far as I understand, can be used and distributed by 
+       anyone for anyone.
+
+
+
+HOW TO START:
+~~~~~~~~~~~~~
+UnZIP the C--FINAL.ZIP package using the '-d' option.
+
+Next, set the 'C--' environmental variable to the full path of the directory
+you unzipped into.  C-- uses the 'C--' environmental variable to find the
+compiler, help files and include files.  For example, if you unzipped C--
+into the directory 'C:\C--', then you would type:
+
+	SET C--=C:\C--
+
+You may wish to add the above line to your 'AUTOEXEC.BAT'.
+
+You may then type WB at the DOS prompt to start the C-- Work Bench.  Take a 
+look at some the *.C-- example files.  Press F3 to load and F5 to compile and 
+run.
+
+Be sure to be in the same directory as the source file(s) for the *.C-- file
+may need to load some other files, such as palettes and bitmaps.  Use the
+'Change Dir...' command in the 'File' menu to change directories.
+
+After you get a taste of what it can do, take a look at the file 'C--INFO.DOC'
+for information on how to program in C--.  'C--INFO.DOC' can be viewed in the
+C-- Work Bench by pressing <SHIFT><F1> or selecting 'Main General Help' from
+the 'Help' menu.
+
+
+THE PRICE:
+~~~~~~~~~~
+This version of C-- is GREENWARE, and you are free to use it so long as you 
+make an effort everyday to help out the environment.  A few ideas:
+	- use only recycled computer paper
+	- be sure to recycle the computer paper after you use it
+	- use public transport
+	- sell that 80 cylinder car of yours and buy a small 4 cylinder, or
+	  better yet, buy a motorbike
+	- support Green Peace
+	- REDUCE-REUSE-recycle
+	- stop smoking
+	- ride a bike to work or school
+	- don't buy products that are harmful to the environment
+	- stop using weed killers on your lawn
+	- support Friends of the Earth
+	- recycle your cans
+	- don't buy products that have lots of extra packaging
+	- use a fax modem instead of a paper fax machine
+	- reuse your plastic bags
+	- (you get the idea)
+
+
+DISCLAIMER:
+~~~~~~~~~~~
+I accept no responsibility for any damage or loss of time, hardware, sanity, 
+software or data caused by this product or programs made with it.  So there!
+
+
+FINAL NOTES:
+~~~~~~~~~~~~
+Any programs you make with C-- you may do with as you wish.  I would greatly
+appreciate any feedback you can give me.  Just say hello, or send me some
+cool stuff.  Send me your comments, maybe even some code you have written,
+I would like them very much.
+
+I can be contacted at:   PETER SPHINX CELLIK
+			 RR#2 SITE 33 C11
+			 GABRIOLA ISLAND B.C.
+			 V0R 1X0
+			 CANADA
+
+Current E-mail Address:  cellik@sfu.ca
+
+Hope to hear from you soon.
+
+/* end of README.DOC */
