@@ -18,18 +18,14 @@
 
 ///=============================
 
-#define LANG_EN
-
-#ifdef LANG_RU
+#if LANG_RUS
 char BTN_OK[]={"OK"};
 char BTN_CANCEL[]={"Отмена"};
 char BTN_ABORT[]={"Прекратить"};
 char BTN_RETRY[]={"Повторить"};
 char BTN_INGNORE[]={"Игнорировать"};
 char BTN_NO[]={"Нет"};
-#endif
-
-#ifdef LANG_EN
+#else
 char BTN_OK[]={"OK"};
 char BTN_CANCEL[]={"Cancel"};
 char BTN_ABORT[]={"Abort"};

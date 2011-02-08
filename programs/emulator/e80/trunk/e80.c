@@ -1,4 +1,9 @@
 
+#ifndef AUTOBUILD
+// autobuild does not create lang.h, but defines LANG_{RUS,ENG} directly
+#include "lang.h"
+#endif
+
 #include "system/kolibri.h"
 #include "system/stdlib.h"
 #include "system/string.h"

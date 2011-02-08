@@ -1,5 +1,6 @@
 del *.o
 fasm asm_code.asm start.o
+echo #define LANG_RUS 1 > lang.h
 gcc -c z80/z80.c
 gcc -c system/kolibri.c
 gcc -c system/stdlib.c
