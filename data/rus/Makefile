@@ -439,6 +439,24 @@ shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/std
 .obj.shell:
 	mkdir -p .obj.shell
 
+# Rules for e80
+E80DIR=$(PROGS)/emulator/e80/trunk
+e80: .obj.e80/start.o .obj.e80/kolibri.o .obj.e80/stdlib.o .obj.e80/string.o .obj.e80/z80.o .obj.e80/e80.o
+	$(call gcc_link,$(E80DIR)/kolibri.ld)
+.obj.e80/e80.o: $(E80DIR)/e80.c $(E80DIR)/48.h \
+ $(E80DIR)/system/*.h $(E80DIR)/system/msgbox.c \
+ $(E80DIR)/z80/z80.h Makefile.gcc | .obj.e80
+	$(gcc_compile)
+.obj.e80/kolibri.o .obj.e80/stdlib.o .obj.e80/string.o: .obj.e80/%.o: \
+ $(E80DIR)/system/%.c $(E80DIR)/system/*.h Makefile.gcc | .obj.e80
+	$(gcc_compile)
+.obj.e80/z80.o: $(E80DIR)/z80/z80.c $(E80DIR)/z80/*
+	$(gcc_compile)
+.obj.e80/start.o: $(E80DIR)/asm_code.asm | .obj.e80
+	fasm $< $@
+.obj.e80:
+	mkdir -p .obj.e80
+
 # Rules for sdk/sound, used by media/ac97snd
 SOUNDDIR=$(PROGS)/develop/sdk/trunk/sound/src
 SOUND_OBJECTS:=$(patsubst $(SOUNDDIR)/%.asm,.sdk/%.obj,$(wildcard $(SOUNDDIR)/*.asm))
