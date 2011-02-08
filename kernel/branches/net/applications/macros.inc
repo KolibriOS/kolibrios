@@ -541,6 +541,24 @@ local	.jumpaddr
        .jumpaddr:
 }
 
+macro cmovg reg1, reg2 {
+
+local	.jumpaddr
+
+	jle	.jumpaddr
+	mov	reg1, reg2
+       .jumpaddr:
+}
+
+macro cmovl reg1, reg2 {
+
+local	.jumpaddr
+
+	jge	.jumpaddr
+	mov	reg1, reg2
+       .jumpaddr:
+}
+
 end if
 
 ; constants

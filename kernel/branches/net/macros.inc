@@ -101,6 +101,49 @@ end if
 
 macro Mov op1,op2,op3 ; op1 = op2 = op3
  {
-        mov   op2,op3
-        mov   op1,op2
+	mov   op2,op3
+	mov   op1,op2
  }
+
+
+if __CPU_type eq p5		; CMOVcc isnt supported on the P5
+
+cmove	fix	cmovz
+macro cmovz reg1, reg2 {
+
+local	.jumpaddr
+
+	jnz	.jumpaddr
+	mov	reg1, reg2
+       .jumpaddr:
+}
+
+cmovne	fix	cmovnz
+macro cmovnz reg1, reg2 {
+
+local	.jumpaddr
+
+	jz	.jumpaddr
+	mov	reg1, reg2
+       .jumpaddr:
+}
+
+macro cmovg reg1, reg2 {
+
+local	.jumpaddr
+
+	jle	.jumpaddr
+	mov	reg1, reg2
+       .jumpaddr:
+}
+
+macro cmovl reg1, reg2 {
+
+local	.jumpaddr
+
+	jge	.jumpaddr
+	mov	reg1, reg2
+       .jumpaddr:
+}
+
+end if
