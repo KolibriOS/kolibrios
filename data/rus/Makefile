@@ -212,6 +212,7 @@ COPY_FILES:=\
  fonts/tscr.chr:FONTS/TSCR.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TSCR.CHR \
  games/snake.ini:GAMES/SNAKE.INI:$(PROGS)/games/snake/trunk/snake.ini \
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
+ .shell:.shell:$(PROGS)/system/shell/bin/rus/.shell \
 # end of list
 
 # The list of all C-- programs with one main C-- file.
