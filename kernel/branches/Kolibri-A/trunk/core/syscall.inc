@@ -17,7 +17,7 @@ cross_order:
 	mov	edx, esi
 	mov	esi, edi
 	movzx	edi, byte[esp+28 + 4]
-	sub	edi, 53			; all zeroes before
+	sub	edi, 53 		; all zeroes before
 	call	dword [servetable+edi*4]
 	ret
 
@@ -44,10 +44,28 @@ i40:
 
 align 32
 syscall_entry:
+	push  ecx
 ;        sti
-	push ecx
-	and   eax, 3
-	call	dword [servetable3 + eax * 4]
+;        and   eax, 3
+;        call    dword [servetable3 + eax * 4]
+
+	mov edi, [esp+4]
+	mov ecx, [esp+8]
+	mov edx, [esp+12]
+	mov ebx, [esp+16]
+	and al, 1
+	jz .hline
+	mov eax, [esp+20]
+	sti
+	call vline
+	jmp .done
+.hline:
+	mov eax, [esp+20]
+	sti
+	call hline
+.done:
+
+
 	pop	ecx
 	sysret
 
@@ -67,7 +85,7 @@ iglobal
       dd 0
       dd 0
       dd 0
-      dd 0		 	 ; 62-PCI functions
+      dd 0			 ; 62-PCI functions
       dd sys_msg_board		 ; 63-System message board
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -100,7 +118,7 @@ iglobal
       dd sys_setup		 ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
       dd sys_settime		 ; 22-setting date,time,clock and alarm-clock
       dd sys_wait_event_timeout  ; 23-TimeOutWaitForEvent
-      dd undefined_syscall	; syscall_cdaudio	 ; 24-PlayCdTrack,StopCd and GetCdPlaylist
+      dd undefined_syscall	; syscall_cdaudio        ; 24-PlayCdTrack,StopCd and GetCdPlaylist
       dd undefined_syscall	 ; 25-reserved
       dd sys_getsetup		 ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
       dd undefined_syscall	 ; 27-reserved
@@ -155,8 +173,8 @@ iglobal
 align 4
 servetable3:	; Kolibri-A special service
 
-	dd	paleholder	 ; 0
-	dd	paleholder	 ; 1
+	dd	hline	    ; 0
+	dd	vline	    ; 1
 	dd	paleholder	 ; 2
 	dd	sys_end ; last
 

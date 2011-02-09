@@ -320,11 +320,9 @@ high_code:
     mov    eax, [BOOT_VAR + 0x9044]    ; version & flags
     mov    [apm_vf], eax
 ; -----------------------------------------
-;        movzx eax,byte [BOOT_VAR+0x9010]       ; mouse port
-;        mov   [0xF604],byte 1  ;al
 		mov	al, [BOOT_VAR+0x901F]		; DMA access
 	mov	[allow_dma_access], al
-	movzx eax, byte [BOOT_VAR+0x9000]	 ; bpp
+	mov   eax, 32	 			; <<<<<<<<<  bpp
 	mov [ScreenBPP],al
 
 	mov [_display.bpp], eax
@@ -336,27 +334,26 @@ high_code:
 	dec   eax
 	mov   [Screen_Max_X],eax
 	mov   [screen_workarea.right],eax
-	movzx eax,word [BOOT_VAR+0x900C]  ; Y max
-	mov [_display.height], eax
+	inc	eax
+	shr	eax, 2
+	mov	[_WinMapWidth], eax             ; 1 tyle = 4 pixels
+	movzx eax,word [BOOT_VAR+0x900C]        ; Y max
+	mov   [_display.height], eax
 	dec   eax
 	mov   [Screen_Max_Y],eax
 	mov   [screen_workarea.bottom],eax
-	movzx eax,word [BOOT_VAR+0x9008]  ; screen mode
+	movzx eax,word [BOOT_VAR+0x9008]        ; screen mode
 	mov   [SCR_MODE],eax
-	mov   eax,[BOOT_VAR+0x9014]	  ; Vesa 1.2 bnk sw add
+	mov   eax,[BOOT_VAR+0x9014]	        ; Vesa 1.2 bnk sw add
 	mov   [BANK_SWITCH],eax
-	mov   [BytesPerScanLine],word 640*4	    ; Bytes PerScanLine
-	cmp   [SCR_MODE],word 0x13	    ; 320x200
-	je    @f
-	cmp   [SCR_MODE],word 0x12	    ; VGA 640x480
-	je    @f
-	movzx eax, word[BOOT_VAR+0x9001]	; for other modes
+	movzx eax, word[BOOT_VAR+0x9001]        ; for other modes
 	mov   [BytesPerScanLine],ax
-	mov [_display.pitch], eax
+	mov   [_display.pitch], eax
 @@:
-	mov eax, [_display.width]
-	mul [_display.height]
-	mov [_WinMapSize], eax
+	mov   eax, [_display.height]
+	shr   eax, 1
+	mul   [_WinMapWidth]
+	mov   [_WinMapSize], eax
 
 	mov	esi, BOOT_VAR+0x9080
 	movzx	ecx, byte [esi-1]
@@ -500,10 +497,10 @@ v20ga32:
 	mov	[graph_data_l+4],al
 	mov	[graph_data_l+7],ah
 	
-	or      [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
+;	or      [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
 	stdcall kernel_alloc, [_WinMapSize]
 	mov     [_WinMapAddress], eax
-	xor     [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
+;	xor     [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
 
 	xor  eax,eax
 	inc  eax
@@ -605,6 +602,17 @@ end if
 ; PRINT AMOUNT OF MEMORY
 	mov	esi, boot_memdetect
 	call	boot_log
+
+; <<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>
+	mov ebx, img_test_struct
+	mov ecx, 3*65536 + 4
+	mov edx, 32*65536 + 512
+	mov esi, 32
+        xor     edi, edi
+	mov     ebp, edi
+	call sys_putimage_palette.forced
+
+;<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>	
 
 	movzx	ecx, word [boot_y]
 	or	ecx, (10+29*6) shl 16 ; "Determining amount of memory"
@@ -2241,6 +2249,7 @@ draw_background_temp:
 ;    je    nosb31
 ;draw_background_temp:
 ;    mov   [bgrchanged],1 ;0
+
     mov    [background_defined], 1
     mov    byte[BACKGROUND_CHANGED], 1
     call  force_redraw_background
@@ -2838,23 +2847,24 @@ ret
 
 
 ; check if pixel is allowed to be drawn
+; -- not in use any more ?
 
-checkpixel:
-	push eax edx
-
-	mov  edx,[Screen_Max_X]     ; screen x size
-	inc  edx
-	imul edx, ebx
-	add  eax, [_WinMapAddress]
-	mov  dl, [eax+edx] ; lea eax, [...]
-
-	xor  ecx, ecx
-	mov  eax, [CURRENT_TASK]
-	cmp  al, dl
-	setne cl
-
-	pop  edx eax
-	ret
+;checkpixel:
+;	push eax ebx edx
+;	shr  ebx, 1
+;	mov  edx, [_WinMapWidth]     ; <<<< 
+;	imul edx, ebx
+;       shr  eax, 2
+;	add  eax, [_WinMapAddress]
+;	mov  dl,  [eax+edx] 		 
+;
+;	xor  ecx, ecx
+;	mov  eax, [CURRENT_TASK]
+;	cmp  al, dl
+;	setne cl
+;
+;	pop  edx ebx eax
+;	ret
 
 iglobal
   cpustring db 'CPU',0
@@ -2903,12 +2913,6 @@ no_set_bgr_event:
     jz	  nobackgr
     cmp    [background_defined], 0
     jz	  nobackgr
-;    mov   [draw_data+32 + RECT.left],dword 0
-;    mov   [draw_data+32 + RECT.top],dword 0
-;    mov   eax,[Screen_Max_X]
-;    mov   ebx,[Screen_Max_Y]
-;    mov   [draw_data+32 + RECT.right],eax
-;    mov   [draw_data+32 + RECT.bottom],ebx
 @@:
     call  drawbackground
     xor   eax, eax
@@ -2950,8 +2954,6 @@ markz:
     je	 system_shutdown
 
 noshutdown:
-
-
     mov   eax,[TASK_COUNT]		    ; termination
     mov   ebx,TASK_DATA+TASKDATA.state
     mov   esi,1
@@ -2970,19 +2972,13 @@ newct:
     ret
 
 ; redraw screen
-
-redrawscreen:
-
 ; eax , if process window_data base is eax, do not set flag/limits
 
+redrawscreen:
 	 pushad
 	 push  eax
 
-;;;         mov   ebx,2
-;;;         call  delay_hs
-
-	 ;mov   ecx,0               ; redraw flags for apps
-	 xor   ecx,ecx
+	 xor   ecx,ecx	                ; redraw flags for apps
        newdw2:
 
 	 inc   ecx
@@ -3034,8 +3030,6 @@ redrawscreen:
 
 	 cmp   dword[esp], 1
 	 jnz   .az
-;         cmp   byte[BACKGROUND_CHANGED], 0
-;         jnz   newdw8
 	 cmp   byte[REDRAW_BACKGROUND], 0
 	 jz    .az
 	 mov   dl, 0
@@ -3086,6 +3080,7 @@ redrawscreen:
 	 jne   nobgrd
 	 inc   byte[REDRAW_BACKGROUND]
 
+
        newdw8:
        nobgrd:
 
@@ -3106,7 +3101,6 @@ redrawscreen:
 	 ret
 
 calculatebackground:   ; background
-
 	mov   edi, [_WinMapAddress]		   ; set os to use all pixels
 	mov   eax,0x01010101
 	mov   ecx, [_WinMapSize]
@@ -3122,11 +3116,7 @@ uglobal
   imax	  dd 0x0
 endg
 
-
-
 delay_ms:     ; delay in 1/1000 sec
-
-
 	push  eax
 	push  ecx
 
@@ -3154,15 +3144,12 @@ delay_ms:     ; delay in 1/1000 sec
 
 	ret
 
-
 set_app_param:
 	mov	edi, [TASK_BASE]
 	mov	eax, [edi + TASKDATA.event_mask]
 	mov	[edi + TASKDATA.event_mask], ebx
 	mov	[esp+32], eax
 	ret
-
-
 
 delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
@@ -3189,7 +3176,6 @@ delay_hs:     ; delay in 1/100 secs
 
 align 16	;very often call this subrutine
 memmove:       ; memory move in bytes
-
 ; eax = from
 ; ebx = to
 ; ecx = no of bytes
@@ -3219,54 +3205,6 @@ memmove:       ; memory move in bytes
     ret
 
 
-; <diamond> Sysfunction 34, read_floppy_file, is obsolete. Use 58 or 70 function instead.
-;align 4
-;
-;read_floppy_file:
-;
-;; as input
-;;
-;; eax pointer to file
-;; ebx file lenght
-;; ecx start 512 byte block number
-;; edx number of blocks to read
-;; esi pointer to return/work area (atleast 20 000 bytes)
-;;
-;;
-;; on return
-;;
-;; eax = 0 command succesful
-;;       1 no fd base and/or partition defined
-;;       2 yet unsupported FS
-;;       3 unknown FS
-;;       4 partition not defined at hd
-;;       5 file not found
-;; ebx = size of file
-;
-;     mov   edi,[TASK_BASE]
-;     add   edi,0x10
-;     add   esi,[edi]
-;     add   eax,[edi]
-;
-;     pushad
-;     mov  edi,esi
-;     add  edi,1024
-;     mov  esi,0x100000+19*512
-;     sub  ecx,1
-;     shl  ecx,9
-;     add  esi,ecx
-;     shl  edx,9
-;     mov  ecx,edx
-;     cld
-;     rep  movsb
-;     popad
-;
-;     mov   [esp+36],eax
-;     mov   [esp+24],ebx
-;     ret
-
-
-
 align 4
 
 sys_programirq:
@@ -3294,7 +3232,6 @@ r_f_port_area:
 
 
 reserve_free_irq:
-
      xor   esi, esi
      inc   esi
      cmp   ecx, 16
@@ -3317,7 +3254,6 @@ reserve_free_irq:
      jmp   ril1
 
   reserve_irq:
-
      cmp   dword [ecx], 0
      jne   ril1
 
@@ -3355,76 +3291,65 @@ endg
 
 drawbackground:
        inc   [mouse_pause]
-       cmp   [SCR_MODE],word 0x12
-       je   dbrv20
-     dbrv12:
-       cmp  [SCR_MODE],word 0100000000000000b
-       jge  dbrv20
-;       cmp  [SCR_MODE],word 0x13
-;       je   dbrv20
-;       call  vesa12_drawbackground
+;       cmp   [BgrDrawMode],dword 1
+;       jne   bgrstr
+;       call  vesa20_drawbackground_tiled
+       call  drawbackground
        dec   [mouse_pause]
        call   [draw_pointer]
        ret
-     dbrv20:
-       cmp   [BgrDrawMode],dword 1
-       jne   bgrstr
-       call  vesa20_drawbackground_tiled
-       dec   [mouse_pause]
-       call   [draw_pointer]
-       ret
-     bgrstr:
-       call  vesa20_drawbackground_stretch
-       dec   [mouse_pause]
-       call   [draw_pointer]
-       ret
+;     bgrstr:
+;       call  vesa20_drawbackground_stretch
+;       dec   [mouse_pause]
+;       call   [draw_pointer]
+;       ret
 
+; ====================================================================
 align 4
-
-syscall_putimage:			; PutImage
+syscall_putimage:			; PutImage = SysFn07
 sys_putimage:
-     test  ecx,0x80008000
-     jnz   .exit
-     test  ecx,0x0000FFFF
+     test  ecx,0x80008000		; ecx = { SizeX | SizeY }
+     jnz   .exit			; edx = { OrigX | OrigY }
+     test  ecx,0x0000FFFF		; ebx points to the 24bpp-image
      jz    .exit
      test  ecx,0xFFFF0000
      jnz   @f
   .exit:
      ret
  @@:
+        push    edi
 	mov	edi,[current_slot]
 	add	dx,word[edi+APPDATA.wnd_clientbox.top]
 	rol	edx,16
 	add	dx,word[edi+APPDATA.wnd_clientbox.left]
+        pop     edi
 	rol	edx,16
-  .forced:
-	push	ebp esi 0
-	mov	ebp, putimage_get24bpp
-	mov	esi, putimage_init24bpp
-sys_putimage_bpp:
-;        cmp     [SCR_MODE], word 0x12
-;        jz      @f   ;.doit
-;        mov     eax, vesa12_putimage
-;        cmp     [SCR_MODE], word 0100000000000000b
-;        jae     @f
-;        cmp     [SCR_MODE], word 0x13
-;        jnz     .doit
-;@@:
-	mov	eax, vesa20_putimage
-.doit:
+  .forced:                              ; called from gui/skincode.inc [215]
+	push	esi
+	mov     esi, ecx
+        shr     esi, 16                 ; SizeX
+        lea     esi, [esi*2+esi]        ; 3 bytes per pixel
+        mov     [img_buf_line_size], esi
+        mov     [img_draw_core_fn], draw_core_24bpp
+        mov     [img_draw_edge_fn], draw_edge_24bpp
+        mov     [img_bytes_per_pix], 3
+        pop     esi
+
+sys_putimage_bpp:                       ; only called from sys_putimage_palette
 	inc	[mouse_pause]
-	call	eax
+	call	_putimage		
 	dec	[mouse_pause]
-	pop	ebp esi ebp
 	jmp	[draw_pointer]
+
+
 align 4
-sys_putimage_palette:
+sys_putimage_palette:                   ; sysFn 65
 ; ebx = pointer to image
 ; ecx = [xsize]*65536 + [ysize]
 ; edx = [xstart]*65536 + [ystart]
-; esi = number of bits per pixel, must be 8, 24 or 32
+; esi = number of bits per pixel, must be 1, 8, 24 or 32
 ; edi = pointer to palette
-; ebp = row delta
+; ebp = line offset
 	mov	eax, [CURRENT_TASK]
 	shl	eax, 8
 	add	dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.top]
@@ -3432,257 +3357,52 @@ sys_putimage_palette:
 	add	dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.left]
 	rol	edx, 16
 .forced:
-	cmp	esi, 1
-	jnz	@f
-	push	edi
-	mov	eax, [edi+4]
-	sub	eax, [edi]
-	push	eax
-	push	dword [edi]
-	push	0ffffff80h
-	mov	edi, esp
-	call	put_mono_image
-	add	esp, 12
-	pop	edi
-	ret
-@@:
-	cmp	esi, 2
-	jnz	@f
-	push	edi
-	push	0ffffff80h
-	mov	edi, esp
-	call	put_2bit_image
-	pop	eax
-	pop	edi
-	ret
-@@:
-	cmp	esi, 4
-	jnz	@f
-	push	edi
-	push	0ffffff80h
-	mov	edi, esp
-	call	put_4bit_image
-	pop	eax
-	pop	edi
-	ret
-@@:
-	push	ebp esi ebp
-	cmp	esi, 8
-	jnz	@f
-	mov	ebp, putimage_get8bpp
-	mov	esi, putimage_init8bpp
-	jmp	sys_putimage_bpp
-@@:
-	cmp	esi, 15
-	jnz	@f
-	mov	ebp, putimage_get15bpp
-	mov	esi, putimage_init15bpp
-	jmp	sys_putimage_bpp
-@@:
-	cmp	esi, 16
-	jnz	@f
-	mov	ebp, putimage_get16bpp
-	mov	esi, putimage_init16bpp
-	jmp	sys_putimage_bpp
-@@:
-	cmp	esi, 24
-	jnz	@f
-	mov	ebp, putimage_get24bpp
-	mov	esi, putimage_init24bpp
-	jmp	sys_putimage_bpp
-@@:
-	cmp	esi, 32
-	jnz	@f
-	mov	ebp, putimage_get32bpp
-	mov	esi, putimage_init32bpp
-	jmp	sys_putimage_bpp
-@@:
-	pop	ebp esi ebp
-	ret
+        mov     [img_palette], edi
+        mov     eax, esi
+        cmp     eax, 32       ;>32bpp (stupid call)
+        ja      .exit
+        shr     al, 3         ; 0=1bpp, other lo-pix modes not supported
+        push    esi
+        mov     [img_bytes_per_pix], eax
+        mov     esi, [eax*4 + img_core_proc_0]
+        mov     [img_draw_core_fn], esi
+        mov     esi, [eax*4 + img_edge_proc_0]
+        mov     [img_draw_edge_fn], esi
+        mov     esi, ecx
+        shr     esi, 16                 ; esi = SizeX
+        or      al, al
+        jz      .1bpp
+	imul	esi, eax
+        jmp     .done
+.1bpp:
+	add	esi, 7
+	shr	esi, 3                  ; 8 pixels per byte
+.done:
+        add     esi, ebp                ; + line offset
+        mov     [img_buf_line_size], esi
+        pop     esi
+	jmp	_putimage ;<<< sys_putimage_bpp
+.exit:
+        ret
 
-put_mono_image:
-	push	ebp esi ebp
-	mov	ebp, putimage_get1bpp
-	mov	esi, putimage_init1bpp
-	jmp	sys_putimage_bpp
-put_2bit_image:
-	push	ebp esi ebp
-	mov	ebp, putimage_get2bpp
-	mov	esi, putimage_init2bpp
-	jmp	sys_putimage_bpp
-put_4bit_image:
-	push	ebp esi ebp
-	mov	ebp, putimage_get4bpp
-	mov	esi, putimage_init4bpp
-	jmp	sys_putimage_bpp
+align 4
+img_core_proc_0         dd      draw_core_1bpp 
+img_core_proc_1         dd      draw_core_8bpp 
+img_core_proc_2         dd      draw_core_16bpp 
+img_core_proc_3         dd      draw_core_24bpp 
+img_core_proc_4         dd      draw_core_32bpp 
 
-putimage_init24bpp:
-	lea	eax, [eax*3]
-putimage_init8bpp:
-	ret
+img_edge_proc_0         dd      draw_edge_1bpp 
+img_edge_proc_1         dd      draw_edge_8bpp 
+img_edge_proc_2         dd      draw_edge_16bpp 
+img_edge_proc_3         dd      draw_edge_24bpp 
+img_edge_proc_4         dd      draw_edge_32bpp 
 
-align 16
-putimage_get24bpp:
-	movzx	eax, byte [esi+2]
-	shl	eax, 16
-	mov	ax, [esi]
-	add	esi, 3
-	ret	4
-align 16
-putimage_get8bpp:
-	movzx	eax, byte [esi]
-	push	edx
-	mov	edx, [esp+8]
-	mov	eax, [edx+eax*4]
-	pop	edx
-	inc	esi
-	ret	4
-
-putimage_init1bpp:
-	add	eax, ecx
-	push	ecx
-	add	eax, 7
-	add	ecx, 7
-	shr	eax, 3
-	shr	ecx, 3
-	sub	eax, ecx
-	pop	ecx
-	ret
-align 16
-putimage_get1bpp:
-	push	edx
-	mov	edx, [esp+8]
-	mov	al, [edx]
-	add	al, al
-	jnz	@f
-	lodsb
-	adc	al, al
-@@:
-	mov	[edx], al
-	sbb	eax, eax
-	and	eax, [edx+8]
-	add	eax, [edx+4]
-	pop	edx
-	ret	4
-
-putimage_init2bpp:
-	add	eax, ecx
-	push	ecx
-	add	ecx, 3
-	add	eax, 3
-	shr	ecx, 2
-	shr	eax, 2
-	sub	eax, ecx
-	pop	ecx
-	ret
-align 16
-putimage_get2bpp:
-	push	edx
-	mov	edx, [esp+8]
-	mov	al, [edx]
-	mov	ah, al
-	shr	al, 6
-	shl	ah, 2
-	jnz	.nonewbyte
-	lodsb
-	mov	ah, al
-	shr	al, 6
-	shl	ah, 2
-	add	ah, 1
-.nonewbyte:
-	mov	[edx], ah
-	mov	edx, [edx+4]
-	movzx	eax, al
-	mov	eax, [edx+eax*4]
-	pop	edx
-	ret	4
-
-putimage_init4bpp:
-	add	eax, ecx
-	push	ecx
-	add	ecx, 1
-	add	eax, 1
-	shr	ecx, 1
-	shr	eax, 1
-	sub	eax, ecx
-	pop	ecx
-	ret
-align 16
-putimage_get4bpp:
-	push	edx
-	mov	edx, [esp+8]
-	add	byte [edx], 80h
-	jc	@f
-	movzx	eax, byte [edx+1]
-	mov	edx, [edx+4]
-	and	eax, 0x0F
-	mov	eax, [edx+eax*4]
-	pop	edx
-	ret	4
-@@:
-	movzx	eax, byte [esi]
-	add	esi, 1
-	mov	[edx+1], al
-	shr	eax, 4
-	mov	edx, [edx+4]
-	mov	eax, [edx+eax*4]
-	pop	edx
-	ret	4
-
-putimage_init32bpp:
-	shl	eax, 2
-	ret
-align 16
-putimage_get32bpp:
-	lodsd
-	ret	4
-
-putimage_init15bpp:
-putimage_init16bpp:
-	add	eax, eax
-	ret
-align 16
-putimage_get15bpp:
-; 0RRRRRGGGGGBBBBB -> 00000000RRRRR000GGGGG000BBBBB000
-	push	ecx edx
-	movzx	eax, word [esi]
-	add	esi, 2
-	mov	ecx, eax
-	mov	edx, eax
-	and	eax, 0x1F
-	and	ecx, 0x1F shl 5
-	and	edx, 0x1F shl 10
-	shl	eax, 3
-	shl	ecx, 6
-	shl	edx, 9
-	or	eax, ecx
-	or	eax, edx
-	pop	edx ecx
-	ret	4
-
-align 16
-putimage_get16bpp:
-; RRRRRGGGGGGBBBBB -> 00000000RRRRR000GGGGGG00BBBBB000
-	push	ecx edx
-	movzx	eax, word [esi]
-	add	esi, 2
-	mov	ecx, eax
-	mov	edx, eax
-	and	eax, 0x1F
-	and	ecx, 0x3F shl 5
-	and	edx, 0x1F shl 11
-	shl	eax, 3
-	shl	ecx, 5
-	shl	edx, 8
-	or	eax, ecx
-	or	eax, edx
-	pop	edx ecx
-	ret	4
-
+; ==================================================
 ; eax x beginning
 ; ebx y beginning
 ; ecx x end
-	; edx y end
+; edx y end
 ; edi color
 
 __sys_drawbar:
@@ -3693,28 +3413,13 @@ __sys_drawbar:
 	add	edx,[esi+APPDATA.wnd_clientbox.top]
   .forced:
     inc   [mouse_pause]
-;        call    [disable_mouse]
-    cmp   [SCR_MODE],word 0x12
-    je	 dbv20
-   sdbv20:
-;    cmp  [SCR_MODE],word 0100000000000000b
-;    jge  dbv20
-;    cmp  [SCR_MODE],word 0x13
-;    je   dbv20
-;    call vesa12_drawbar
-;    dec   [mouse_pause]
-;    call   [draw_pointer]
-;    ret
-  dbv20:
+;  dbv20:
     call vesa20_drawbar
     dec   [mouse_pause]
-    call   [draw_pointer]
-    ret
-
+    jmp   [draw_pointer]
 
 
 kb_read:
-
 	push	ecx edx
 
 	mov	ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
@@ -3745,15 +3450,6 @@ kb_write:
 	push	ecx edx
 
 	mov	dl,al
-;        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
-;      kw_loop1:
-;        in      al,0x64
-;        test    al,0x20
-;        jz      kw_ok1
-;        loop    kw_loop1
-;        mov     ah,1
-;        jmp     kw_exit
-;      kw_ok1:
 	in	al,0x60
 	mov	ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
       kw_loop:
@@ -4491,7 +4187,12 @@ set_screen:
 	stdcall kernel_free, [_WinMapAddress]
 
 	mov eax, [_display.width]
-	mul [_display.height]
+	shr eax, 1
+	shr eax, 1
+	mov [_WinMapWidth], eax
+	mov eax, [_display.height]
+	shr eax, 1
+	mul [_WinMapWidth]
 	mov [_WinMapSize], eax
 
 	stdcall kernel_alloc, eax

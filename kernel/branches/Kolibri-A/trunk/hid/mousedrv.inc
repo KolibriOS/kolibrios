@@ -35,19 +35,6 @@ endg
 ;include 'm_com.inc'
 
 
-;test_mario79:
-;        push   esi
-;        push   eax
-;        mov    [write_error_to],process_test_m79+43
-;        movzx  eax,al  ;[DevErrorCode]
-;        call   writehex
-;        mov    esi,process_test_m79
-;        call   sys_msg_board_str
-;        pop    eax
-;        pop    esi
-;        ret
-;process_test_m79 db 'K : Process - test Mario79 error    00000000',13,10,0
-
 draw_mouse_under:
 	; return old picture
 
@@ -108,12 +95,15 @@ save_draw_mouse:
 	movzx  ebx,word [MOUSE_X]
 	push eax
 	push ebx
-
-	mov ecx, [Screen_Max_X]
-	inc ecx
-	mul ecx
-    add eax, [_WinMapAddress]
-    movzx edx, byte [ebx+eax]
+	
+	mov	ecx, ebx		; <<<<
+	shr	ecx, 1
+	imul 	ecx, [_WinMapWidth]
+	shr	eax, 1
+	shr	eax, 1
+	add	eax, ecx
+    	add 	eax, [_WinMapAddress]
+    	movzx edx, byte [ebx+eax]
 	shl edx, 8
         mov esi, [edx+SLOT_BASE+APPDATA.cursor]
 
@@ -286,11 +276,13 @@ __sys_disable_mouse:
       add  edx,window_data
       movzx  eax, word [MOUSE_X]
       movzx  ebx, word [MOUSE_Y]
-      mov  ecx,[Screen_Max_X]
-      inc  ecx
-      imul  ecx,ebx
-      add  ecx,eax
-      add  ecx, [_WinMapAddress]
+	mov	ecx, ebx		; <<<<
+	shr	ecx, 1
+	imul 	ecx, [_WinMapWidth]
+	shr	eax, 1
+	shr	eax, 1
+	add	ecx, eax
+    	add 	ecx, [_WinMapAddress]
       mov   eax, [CURRENT_TASK]
       movzx ebx, byte [ecx]
       cmp   eax,ebx
@@ -454,3 +446,5 @@ mouse_acceleration:
 @@:
 	ret
 
+diff16 "window code end",0,$
+diff10 "mousedrv  size ",draw_mouse_under,$
