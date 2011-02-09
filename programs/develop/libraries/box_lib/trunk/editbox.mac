@@ -62,18 +62,18 @@ pushad
 ;----------------------------------------------------------
 ;--- проверяем, что нажато --------------------------------
 ;----------------------------------------------------------
-use_key_process  backspase,delete,left,right,home,end,insert
+use_key_process  backspace,delete,left,right,home,end,insert
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Заглушка на обработку клавиш вверх и вниз т.е. при обнаружении этих кодов происходит выход из обработчика
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 use_key_no_process   up,down,esc,enter,tab,numl,capsl,scrolll
 ;--- нажата другая клавиша ---
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Проверка установлен ли флаг при котором нужно выводить только цифры в нужном боксе если такойнеобходимости нет нужно закоментировать макрос
+;Проверка установлен ли флаг при котором нужно выводить только цифры в нужном боксе, если такой необходимости нет, нужно закоментировать макрос
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 use_key_figures_only
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;проверка на shift был ли нажат
+;проверка на shift, был ли нажат
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 are_key_shift_press
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -81,7 +81,7 @@ are_key_shift_press
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 are_key_cur_end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Обработка клавиш insert,delete.backspase,home,end,left,right
+;Обработка клавиш insert,delete.backspace,home,end,left,right
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 use_work_key
 }
@@ -142,43 +142,22 @@ use_key_func
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Функции для работы с mouse
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-use_mouse_func 
+use_mouse_func
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Bit mask from editbox
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ;ниже расположены функции которыми реализуется весь алгоритм
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-;Макрос для вывода основных функций которые испльзуются боксом
+;Макрос для вывода основных функций которые используются боксом
 macro use_general_func
 {
 ;debug_func
 ;----------------------------------------------------------
-;--- процедура прорисовки выделеной части -----------------
+;--- процедура прорисовки выделенной части -----------------
 ;----------------------------------------------------------
 edit_box.draw_shift:
         test    word ed_flags,ed_shift_bac ;установка флага, выделенной области
@@ -200,7 +179,7 @@ edit_box.draw_text:
         cmp     eax,esi
         jae     @F
         mov     esi,eax         ;чтобы не выходить за пределы экрана
-;--- рисуем текст ---                                            
+;--- рисуем текст ---
 @@:     mov     eax,4
         mov     ebx,ed_left
         mov     edx,ed_offset
@@ -234,17 +213,17 @@ edit_box.draw_bg_eax:
         shl     ecx,16
         add     ecx,ed_height
         dec     ecx
-        mcall   
+        mcall
 ret
 ;----------------------------------------------------------
-;--- процедура получения количества символов в текущей щирине компонента
+;--- процедура получения количества символов в текущей ширине компонента
 ;----------------------------------------------------------
 edit_box.get_n:
         mov     eax,ed_width    ;получем ширину компонента
-        xor     edx,edx   ;результат распологается в паре edx:eax в eax - остаток
-        sub     eax,4           ;вычтим 4
-        mov     ebx,6           ;загрузми делитель
-        div     ebx             ;размделим на 6
+        xor     edx,edx   ;результат располагается в паре edx:eax в eax - остаток
+        sub     eax,4           ;вычтем 4
+        mov     ebx,6           ;загрузим делитель
+        div     ebx             ;разделим на 6
 ret
 ;----------------------------------------------------------
 ;--- процедура рисования курсора --------------------------
@@ -272,14 +251,14 @@ edit_box.draw_cursor:
         shl     ebx,16
         mov     bx,bp
         mov     ebp,ecx
-        
+
         shl     ecx,16
         mov     cx,bp
         add     ecx,ed_height-4
-        
+
         mov     cl_curs_x,ebx
         mov     cl_curs_y,ecx
-edit_box.draw_curs:              
+edit_box.draw_curs:
         mcall   38
 ret
 ;----------------------------------------------------------
@@ -325,8 +304,8 @@ ret
 ;----------------------------------------------------------
 ;--- проверка, зашел ли курсор за границы и, если надо, ---
 ;--- изменяем смещение ------------------------------------
-;--- если смещение было установка флага ed_offset_cl иначе
-; если ничего не изменилось то выставление ed_offset_fl
+;--- если смещение было, установка флага ed_offset_cl, иначе,
+; если ничего не изменилось, то выставление ed_offset_fl
 ; в общей битовой матрице состояния компонентов word ed_flags
 ;----------------------------------------------------------
 edit_box.check_offset:
@@ -337,7 +316,7 @@ pushad
         ja      edit_box.sub_8
 
         push    ebx
-        call    edit_box.get_n  ;получим кол-во символов которые уменщаются в ширине компонента, в паре регистров edx:eax 
+        call    edit_box.get_n  ;получим кол-во символов которые умещаются в ширине компонента, в паре регистров edx:eax
         pop     ebx
         mov     edx,ebx
         add     edx,eax         ;ed_offset+width editbox
@@ -374,7 +353,7 @@ edit_box.chk_d: mov     ed_offset,ebx
         call    edit_box.draw_bg
         and     word ed_flags,ed_offset_cl
 edit_ex
-@@:     
+@@:
         or      word ed_flags,ed_offset_fl
 
 edit_ex
@@ -389,11 +368,11 @@ pushad
 	xor al,al
 	cld
 	repne scasb ;поиск в строке edi символа al
-	mov ecx,edi ;ecx = text + мин. значение из: 1) ed_max или 2) длинны строки text
+	mov ecx,edi ;ecx = text + мин. значение из: 1) ed_max или 2) длины строки text
 
 	mov edi,dword[edit]
 	mov esi,dword[text]
-	sub ecx,esi ;ecx = длинна строки text (но не больше чем ed_max)
+	sub ecx,esi ;ecx = длина строки text (но не больше чем ed_max)
 	dec ecx
 	mov ed_size,ecx ;ставим новый размер строки
 	mov ed_pos,ecx ;ставим курсор в конец новой строки
@@ -418,7 +397,7 @@ edit_box_key.shift: ;;;;;;;SHIFT
         call    edit_box_key.sh_cl_
         jmp     edit_box.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;
-edit_box_key.f_exit:    
+edit_box_key.f_exit:
 	call	edit_box.check_offset
         and     word ed_flags,ed_shift_cl
         call    edit_box_key.enable_null
@@ -437,9 +416,9 @@ edit_box_key.sh_cl_:
         jmp     edit_box_key.sh_n1
                      ;если иначе
 edit_box_key.sh_n:
-	push    ebx  
+	push    ebx
         push    eax
-edit_box_key.sh_n1: 
+edit_box_key.sh_n1:
         call    edit_box.check_offset
         call    edit_box.get_n
         mov     edx,eax ;size of ed_box
@@ -449,7 +428,7 @@ edit_box_key.sh_n1:
         pop     ebx     ;большее
         pop     eax     ;меньшее
 
-        cmp     eax,ecx         ;сравнение с меньшего с offset.
+        cmp     eax,ecx         ;сравнение меньшего с offset.
         jae     edit_box_key.f_f            ;если больше
         xor     eax,eax
         cmp     edx,ebx         ;cравним размер w_off с большим
@@ -457,9 +436,9 @@ edit_box_key.sh_n1:
         sub     ebx,ecx
         jmp     edit_box_key.nxt_f
 @@:     mov     ebx,edx
-        sub     ebx,ecx 
+        sub     ebx,ecx
         jmp     edit_box_key.nxt_f
-edit_box_key.f_f:   
+edit_box_key.f_f:
         sub     eax,ecx
         cmp     edx,ebx         ;cравним размер w_off с большим
         jle     @f
@@ -467,7 +446,7 @@ edit_box_key.f_f:
         sub     ebx,eax
         jmp     edit_box_key.nxt_f
 @@:
-        mov     ebx,edx 
+        mov     ebx,edx
         sub     ebx,ecx
         sub     ebx,eax
 edit_box_key.nxt_f:
@@ -478,7 +457,7 @@ edit_box_key.nxt_f:
         inc     ebx
         shl     ebx,16
         lea     ecx,[edx*2+edx]
-        shl     ecx,1   
+        shl     ecx,1
         mov     bx,cx
         inc     ebx
         mov     edx,ebp;shift_color
@@ -494,23 +473,23 @@ edit_box_key.drw_sim:
         call    edit_box_key.draw_rectangle   ;нарисовать прямоугольник с заданным цветом
         jmp     @b
 ;;;;;;;;;;;;;;;;;;;;;
-;Фукция установки выделения при движения влево и вправо и нажатии shift
-;Логика: 
+;Функция установки выделения при движении влево и вправо и нажатии shift
+;Логика:
 ;;;;;;;;;;
 edit_box_key.draw_wigwag:
 ;функция установки переменных
         mov     ebp,shift_color
         call    edit_box.clear_cursor
 
-        or      word ed_flags,ed_shift_bac ;установка флага, выделенной области
+        or      word ed_flags,ed_shift_bac ;установка флага выделенной области
         mov     ebp,shift_color
         mov     eax,dword       ed_pos
         test    word ed_flags,ed_left_fl
         jz      edit_box_key.low
         jmp     @f
 ;;;;;;;;;;
-;Фукция удаления выделения при движения влево и вправо и нажатии shift
-;Логика: 
+;Функция удаления выделения при движении влево и вправо и нажатии shift
+;Логика:
 ;;;;;;;;;;
 edit_box_key.draw_wigwag_cl:
 ;функция установки переменных
@@ -536,7 +515,7 @@ edit_box_key.sh_first_sh:
         or      word ed_flags,ed_shift_on
 @@:     ret
 ;Обработка крайних положений в editbox при нажатом shift
-;производит снятие выделение, если нет shift
+;производит снятие выделения, если нет shift
 ;иначе вообще выходит
 edit_box_key.sh_st_of:
         test    word ed_flags,ed_shift
@@ -546,16 +525,16 @@ edit_box_key.sh_st_of:
         mov     ebp,ed_color
         mov     ebx,dword       ed_shift_pos
         call    edit_box_key.sh_cl_  ;очистка выделеного фрагмента
-        and     word ed_flags,ed_shift_cl ; очистка от того что убрали выделение 
+        and     word ed_flags,ed_shift_cl ; очистка от того, что убрали выделение
         jmp     edit_box.draw_cursor_text
 @@:
         and     word ed_flags,ed_shift_off
         popad
         ret     4
-;проверка состояния shift был ли он нажат раньше?
+;проверка состояния shift, был ли он нажат раньше?
 edit_box_key.sh_enable:
         test    word ed_flags,ed_shift
-        jne     edit_box_key.sh_ext_en ;нарисовать закрашеный прямоугольник
+        jne     edit_box_key.sh_ext_en ;нарисовать закрашенный прямоугольник
 
         test    word ed_flags,ed_shift_bac
         je      @f
@@ -563,24 +542,24 @@ edit_box_key.sh_enable:
 
         mov     ebp,ed_color
         mov     ebx,dword       ed_shift_pos
-        call    edit_box_key.sh_cl_  ;очистка выделеного фрагмента
-        call    edit_box_key.draw_wigwag_cl 
-        and     word ed_flags,ed_shift_cl ; 1вар не нужно 
+        call    edit_box_key.sh_cl_  ;очистка выделенного фрагмента
+        call    edit_box_key.draw_wigwag_cl
+        and     word ed_flags,ed_shift_cl ; 1вар не нужно
         ret
 
 @@:     mov     ebp,ed_color
         call    edit_box.clear_cursor
         call    edit_box.check_offset
         ret
-edit_box_key.sh_ext_en:     
+edit_box_key.sh_ext_en:
         call    edit_box.check_offset
         test    word ed_flags,ed_offset_fl
         je      @f
-;Рисование закрашеных прямоугольников и очистка их
+;Рисование закрашенных прямоугольников и их очистка
         mov     eax,dword       ed_shift_pos
         mov     ebx,dword       ed_pos
         mov     ecx,dword       ed_shift_pos_old
-;проверка и рисование закрашеных областей
+;проверка и рисование закрашенных областей
         cmp     eax,ecx
         je      edit_box_key.1_shem
         jb      edit_box_key.smaller
@@ -618,7 +597,7 @@ edit_box_key.sh_home_end:
         call    edit_box_key.sh_cl_
         or      word ed_flags,ed_shift_bac ;установка флага, выделенной области
         jmp     edit_box_key.sh_e_end
-edit_box_key.sh_exit_:      
+edit_box_key.sh_exit_:
         call    edit_box.draw_bg
 	call    edit_box.check_offset
         ret
@@ -645,17 +624,17 @@ edit_box_key.del_char:
         cmp     eax,ecx
         jae     edit_box_key.dh_n
 
-        mov     ed_pos,eax      ;что бы не было убегания курсора
+        mov     ed_pos,eax      ;чтобы не было убегания курсора
         mov     ebp,ecx
         sub     ebp,eax
-        add     ebx,eax  ;eax меньше 
+        add     ebx,eax  ;eax меньше
         sub     edx,ecx
         add     esi,ecx
 
         mov     dword ed_shift_pos,ebp
         jmp     edit_box_key.del_ch_sh
                      ;если иначе
-edit_box_key.dh_n:  
+edit_box_key.dh_n:
         mov     ebp,eax
         sub     ebp,ecx
         add     ebx,ecx
@@ -664,7 +643,7 @@ edit_box_key.dh_n:
         mov     dword ed_shift_pos,ebp
         jmp     edit_box_key.del_ch_sh
 
-@@:     add     esi,ecx ;указатель + смещение к реальному буфферу
+@@:     add     esi,ecx ;указатель + смещение к реальному буферу
         mov     ebx,esi
         inc     esi
         cld
@@ -679,7 +658,7 @@ edit_box_key.del_ch_sh:
         stosb
         dec edx
         jns @b
-        
+
         pop edi
         ret
 ;вычислить закрашиваемую область
@@ -690,7 +669,7 @@ edit_box_key.clear_bg:
         mov     ebx,ed_offset
         add     eax,ebx ;eax = w_off= ed_offset+width
         mov     ebx,ebp ;ed_size
-        
+
         cmp     eax,ebx
         jb      @f
         mov     eax,ed_pos
@@ -701,8 +680,8 @@ edit_box_key.clear_bg:
 @@:     mov     ebx,ed_pos
         push    ebx
         sub     eax,ebx
-        mov     ebx,eax ;It is don't optimal
-        
+        mov     ebx,eax ;It is not optimal
+
         pop     eax     ;ed_pos
         mov     ecx,ed_offset
         sub     eax,ecx
@@ -721,7 +700,7 @@ edit_box_key.nxt:
         inc     ebx
         shl     ebx,16
         lea     ecx,[edx*2+edx]
-        shl     ecx,1   
+        shl     ecx,1
         mov     bx,cx
         mov     edx,ed_color
         call    edit_box.draw_bg_eax
@@ -732,7 +711,7 @@ edit_box_key.nxt:
 ;Нарисовать прямоугольник, цвет передается в ebp
 ;входные параметры:
 ;eax=dword ed_pos
-;ebp=-цвет ed_color or shift_color 
+;ebp=-цвет ed_color or shift_color
 edit_box_key.draw_rectangle:
         mov     ecx,dword ed_offset
         sub     eax,ecx
@@ -756,40 +735,40 @@ pusha   ;сохраним все регистры
         or      word ed_flags,ed_shift   ;установим флаг
 @@:edit_ex
 }
-;макрос клавиш на которые происходит реакция 
-macro use_key_process backspase,delete,left,right,home,end,insert
+;макрос клавиш на которые происходит реакция
+macro use_key_process backspace,delete,left,right,home,end,insert
 {
-if backspase eq 
+if backspace eq
 else
         cmp     ah,8
         jz      edit_box_key.backspace
 end if
-if delete eq 
+if delete eq
 else
         cmp     ah,0xb6
         jz      edit_box_key.delete
 end if
-if left eq 
+if left eq
 else
         cmp     ah,176
         jz      edit_box_key.left
 end if
-if right eq 
+if right eq
 else
         cmp     ah,179
         jz      edit_box_key.right
 end if
-if home eq 
+if home eq
 else
         cmp     ah,180
         jz      edit_box_key.home
 end if
-if home eq 
+if home eq
 else
         cmp     ah,181
         jz      edit_box_key.end
 end if
-if insert eq 
+if insert eq
 else
         cmp     ah,185  ;insert
         jz      edit_box_key.insert
@@ -798,45 +777,45 @@ end if
 
 macro use_key_no_process  up,down,esc,enter,tab,numl,capsl,scrolll
 {
-if up eq 
+if up eq
 else
         cmp     ah,177
         jz      edit_box.editbox_exit
 end if
-if down eq 
+if down eq
 else
         cmp     ah,178
         jz      edit_box.editbox_exit
 end if
-if esc eq 
+if esc eq
 else
         cmp     ah,27   ;ESC - клавиша ))
         jz      edit_box.editbox_exit
 end if
-if enter eq 
+if enter eq
 else
         cmp     ah,13   ;ENTER - клавиша ))
         jz      edit_box.editbox_exit
 end if
-if tab eq 
+if tab eq
 else
         cmp     ah,9   ;TAB - клавиша ))
         jz      edit_box.editbox_exit
 end if
 
-if numl eq 
+if numl eq
 else
         cmp     ah,4   ;Num Lock - клавиша ))
         jz      edit_box.editbox_exit
 end if
 
-if capsl eq 
+if capsl eq
 else
         cmp     ah,2   ;Caps Lock - клавиша ))
         jz      edit_box.editbox_exit
 end if
 
-if scrolll eq 
+if scrolll eq
 else
         cmp     ah,1   ;Scroll Lock - клавиша ))
         jz      edit_box.editbox_exit
@@ -846,7 +825,7 @@ end if
 
 macro use_key_figures_only
 {
-        test    word ed_flags,ed_figure_only  ; только цифры ?
+        test    word ed_flags,ed_figure_only  ; только цифры?
         jz      @f
         cmp     ah,'0'
         jb      edit_box.editbox_exit
@@ -871,7 +850,7 @@ macro are_key_shift_press
         mov     ebp,ed_size
         call    edit_box_key.clear_bg
 ;;;;;;;;;;;;;;;;;;;;;
-        popa 
+        popa
         call    edit_box_key.del_char
 ;;;;
         mov     eax,dword ed_shift_pos
@@ -906,7 +885,7 @@ macro are_key_cur_end
         cmp     ecx,ebx         ;Если у нас позиция курсора = текущему размеру напечатанных символов т.е. курсор стоит в конце
         je      edit_box_key.In_k
 
-        test    dword bp_flags,ed_insert ;IF insert is enable  т.к. edi изменен адресуем через ebp
+        test    dword bp_flags,ed_insert ;IF insert is enabled  т.к. edi изменен, адресуем через ebp
         jne     edit_box_key.ins_v
 ;clear
 pusha
@@ -915,16 +894,16 @@ pusha
         call    edit_box_key.clear_bg
 popa
         sub     ecx,ebx         ;Найдем кол-во символов для передвижения.
-        inc     edi             ;Сместим наши символы в право
+        inc     edi             ;Сместим наши символы вправо
         std
         inc     ecx
-   @@:  
+   @@:
         ;--------
         lodsb
         stosb
         ;--------
         loop    @b
-edit_box_key.In_k:  
+edit_box_key.In_k:
 	cld
         pop eax
         mov al,ah
@@ -961,7 +940,7 @@ pusha
 popa
         jmp     edit_box_key.In_k
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-edit_box_key.delete:        
+edit_box_key.delete:
         mov     edx,ed_size
         mov     ecx,ed_pos
         cmp     edx,ecx
@@ -970,18 +949,18 @@ edit_box_key.delete:
         jne     edit_box_key.del_bac
         popad
         ret     4
-edit_box_key.bac_del:       
+edit_box_key.bac_del:
         call    edit_box_key.del_char
         jmp     edit_box_key.draw_all
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;        
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;--- нажата клавиша backspace ---
 edit_box_key.backspace:
-        ; проверяем, курсор у левого края ?
+        test    word ed_flags,ed_shift_on
+        jne     edit_box_key.delete
+        ; проверяем, курсор у левого края?
         mov     ecx,ed_pos
         test    ecx,ecx
         jnz     edit_box_key.del_bac
-        test    word ed_flags,ed_shift_on
-        jne     edit_box_key.bac_del
         popad
         ret     4
 
@@ -1021,7 +1000,7 @@ edit_box_key.draw_all2:
         ret
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;--- нажата клавиша left ---
-edit_box_key.left:  
+edit_box_key.left:
 	mov     ebx,ed_pos
         test    ebx,ebx
         jz      edit_box_key.sh_st_of
@@ -1032,7 +1011,7 @@ edit_box_key.left:
         jmp     edit_box.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;--- нажата клавиша right ---
-edit_box_key.right: 
+edit_box_key.right:
 	mov     ebx,ed_pos
         cmp     ebx,ed_size
         je      edit_box_key.sh_st_of
@@ -1042,7 +1021,7 @@ edit_box_key.right:
         call    edit_box_key.sh_enable
         jmp     edit_box.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-edit_box_key.home:  
+edit_box_key.home:
         mov     ebx,ed_pos
         test    ebx,ebx
         jz      edit_box_key.sh_st_of
@@ -1052,7 +1031,7 @@ edit_box_key.home:
         call    edit_box_key.sh_home_end
         jmp     edit_box.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-edit_box_key.end:   
+edit_box_key.end:
         mov     ebx,ed_pos
         cmp     ebx,dword ed_size
         je      edit_box_key.sh_st_of
@@ -1083,31 +1062,31 @@ edit_box_mouse.mouse_wigwag:
 
         add     ebx,ed_width
         cmp     eax,ebx
-        ja      edit_box_mouse.mright 
+        ja      edit_box_mouse.mright
 
         sub     ebx,ed_width
 
         xor     edx,edx
-        sub     eax,ebx ; вычтим из координат мышки по оси х координаты до editbox по оси х
+        sub     eax,ebx ; вычтем из координат мышки по оси х координаты до editbox по оси х
         mov     ebx,6
         div     ebx
 ;;;;;;;;;;;;;;;;;;
 ;;процедура обработки положения выделенного текста, в пределах области editbox
 ;;;;;;;;;;;;;;;;;;
 ;Получили координаты в eax мышки, т.е. куда она переместилась
-;Рисование закрашеных прямоугольников и очистка их
+;Рисование закрашенных прямоугольников и их очистка
         add     eax,ed_offset   ;добавим смещение
         cmp     eax,dword ed_size       ;если вышли за пределы, то ничего не делать
         ja      edit_box_mouse.mwigvag
-edit_box_mouse.mdraw: 
+edit_box_mouse.mdraw:
         mov     dword   ed_pos,eax ;сохраним новое значение
-;Рисование закрашеных прямоугольников и очистка их
+;Рисование закрашенных прямоугольников и их очистка
         mov     ecx,dword       ed_shift_pos
         mov     ebx,dword       ed_shift_pos_old
         mov     dword   ed_shift_pos_old,eax    ;внесем новое значение старой позиции курсора
-;проверка и рисование закрашеных областей
+;проверка и рисование закрашенных областей
         cmp     ecx,ebx         ;выясняем куда было движение на один шаг назад
-        je      edit_box_mouse.m1_shem        ;движения не было ранее 
+        je      edit_box_mouse.m1_shem        ;движения не было ранее
         jb      edit_box_mouse.msmaller       ;движение было ->
         cmp     ebx,eax         ;движение было до этого <- и тут мы проверяем сейчас куда движение происходит
         ja      edit_box_mouse.m1_shem        ;если было движение <- то нужно закрасить область
@@ -1124,7 +1103,7 @@ edit_box_mouse.msmaller:
         call    edit_box_key.sh_cl_
         jmp     edit_box_mouse.mwigvag
 ;alike  =
-edit_box_mouse.m1_shem: 
+edit_box_mouse.m1_shem:
         mov     ebp,shift_color
 ;входные параметры ebp=color ebx=ed_shift_pos
         mov     ebx,ecx
@@ -1137,7 +1116,7 @@ edit_box_mouse.mwigvag:
 ;       ret
 edit_box_mouse.mleft:
         mov     eax,ed_pos
-        cmp     eax,0                                        
+        cmp     eax,0
         jbe      edit_box_mouse.mwigvag
         dec     eax
         call    edit_box.check_offset
@@ -1159,7 +1138,7 @@ edit_box_mouse.mright:
         push    eax
         call    edit_box_key.sh_cl_
         pop     eax
-        jmp     edit_box_mouse.mdraw  
+        jmp     edit_box_mouse.mdraw
 }
 
 macro use_work_mouse
@@ -1175,7 +1154,7 @@ macro use_work_mouse
         mov     ebx,ed_top
         cmp     ax,bx
         jl      edit_box_mouse._blur;.mouse_end_no_focus
-        
+
         add     ebx,ed_height
         cmp     ax,bx
         jg      edit_box_mouse._blur;.mouse_end_no_focus
@@ -1189,7 +1168,7 @@ macro use_work_mouse
         add     ebx,ed_width
 
         cmp     ax,bx
-        jg      edit_box_mouse._blur;.mouse_end_no_focus        
+        jg      edit_box_mouse._blur;.mouse_end_no_focus
 
 ;--- изменяем позицию курсора ---
         push    eax
@@ -1219,10 +1198,10 @@ edit_box_mouse._mshift:
         call    edit_box_key.sh_cl_
         and     word ed_flags,ed_shift_bac_cl
         pop     eax
-@@:     
+@@:
         test    word ed_flags,ed_mouse_on
         jne     @f
-        
+
         mov     dword ed_shift_pos,eax
         or      word  ed_flags,ed_mouse_on
         mov     dword ed_pos,eax
@@ -1238,15 +1217,15 @@ edit_box_mouse._mshift:
 
         bts     word ed_flags,1                 ;установка фокуса
         jmp     edit_box_mouse.m_sh
-@@:             
+@@:
         cmp     eax,dword ed_shift_pos  ;если позиции не изменились
         je      edit_box.editbox_exit
         mov     ed_pos,eax
         mov     ebp,dword shift_color
         mov     ebx,dword ed_shift_pos
         call    edit_box_key.sh_cl_
-        or      word ed_flags,ed_mous_adn_b     ;установим бит что мы выделили +shift_on +
-edit_box_mouse.m_sh:  
+        or      word ed_flags,ed_mous_adn_b     ;установим бит, что мы выделили +shift_on +
+edit_box_mouse.m_sh:
 	call    edit_box.draw_text
         call    edit_box.draw_cursor
 ;----------------------------------------------------------
@@ -1269,7 +1248,7 @@ edit_box_mouse.drc:   call    edit_box.draw_border
 ; Макрос выхода
 macro edit_ex
 {
-popad          
+popad
 ret
 }
 macro debug
@@ -1300,23 +1279,23 @@ macro debug
 macro   debug_func
 {
 .str:
-        mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-         ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-        cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
+        mov ecx,0x0a ;задается система счисления, изменяются регистры ebx,eax,ecx,edx, входные параметры eax - число
+         ;перевод числа в ASCII строку, входные данные ecx=система счисления, edi адрес куда будем записывать строку, причем конец переменной
+        cmp eax,ecx  ;сравнить, если в eax меньше, чем в ecx, то перейти на @@-1 т.е. на pop eax
         jb @f
         xor edx,edx  ;очистить edx
         div ecx      ;разделить - остаток в edx
         push edx     ;положить в стек
         ;dec edi             ;смещение необходимое для записи с конца строки
-        call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
+        call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента, пока в eax не станет меньше чем в ecx
         pop eax
-        @@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-        ;sbb al,$69  ;- честно данная инструкция меня заставляет задуматься т.е. я не знаю как это работает
+        @@: ;cmp al,10 ;проверить не меньше ли значение в al, чем 10 (для системы счисления 10 данная команда - лишная))
+        ;sbb al,$69  ;- честно, данная инструкция меня заставляет задуматься т.е. я не знаю как это работает
         ;das        ;после данной команды как бы происходит уменьшение al на 66h  (в книге написано другое)
-        or al,0x30  ;данная команда короче  чем две выше 
-        stosb       ;записать элемент из регистра al в ячеку памяти es:edi
- 
-        ret         ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+        or al,0x30  ;данная команда короче, чем две выше
+        stosb       ;записать элемент из регистра al в ячейку памяти es:edi
+
+        ret         ;вернуться очень интересный ход, т.к. пока в стеке хранится кол-во вызовов, то столько раз мы и будем вызываться
 }
 
 ed_struc_size=76
