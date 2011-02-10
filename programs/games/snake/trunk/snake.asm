@@ -358,7 +358,9 @@ Set_geometry:
     add  eax, 5*2                                   ; skin width
     mov  esi, eax
     test [proc_info.wnd_state], 0x01
-    cmovnz  eax, [proc_info.box.width]
+     jz  @f
+    mov  eax, [proc_info.box.width]
+  @@:
     mov  [window_width],    eax
 
     sub  eax, [gw_mul_gs]
@@ -376,7 +378,9 @@ Set_geometry:
     add  eax, 5                                      ; skin height (bottom part)
     mov  edi, eax
     test [proc_info.wnd_state], 0x01
-    cmovnz  eax, [proc_info.box.height]
+     jz	 @f
+    mov  eax, [proc_info.box.height]
+  @@:
     mov  [window_height],   eax
 
     sub  eax, [gh_mul_gs]
