@@ -129,7 +129,8 @@ struct acpi_device
 //    struct acpi_device_dir dir;
     struct acpi_device_ops ops;
 //    struct acpi_driver *driver;
-    void *driver_data;
+    void   *driver_data;
+    struct pci_dev *pci_dev;
 //    struct device dev;
     struct acpi_bus_ops bus_ops;    /* workaround for different code path for hotplug */
  //   enum acpi_bus_removal_type removal_type;    /* indicate for different removal type */

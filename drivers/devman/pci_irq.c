@@ -222,9 +222,11 @@ int acpi_get_irq(struct pci_dev *dev)
     int rc;
 
     pin = dev->pin;
-    if (!pin) {
-        dbgprintf(("No interrupt pin configured for device %s\n",
-                  pci_name(dev)));
+
+    if ( !pin )
+    {
+        dbgprintf("No interrupt pin configured for device %s\n",
+                  pci_name(dev));
         return 0;
     }
 
@@ -295,7 +297,6 @@ int acpi_get_irq(struct pci_dev *dev)
          (triggering == ACPI_LEVEL_SENSITIVE) ? "level" : "edge",
          (polarity == ACPI_ACTIVE_LOW) ? "low" : "high", dev->irq);
 #endif
-
     return gsi;
 }
 
@@ -505,7 +506,7 @@ static int acpi_pci_link_allocate(struct acpi_pci_link *link)
      * forget active IRQ that is not in possible list
      */
     if (i == link->irq.possible_count) {
-        printk(KERN_WARNING PREFIX "_CRS %d not found"
+        dbgprintf(KERN_WARNING PREFIX "_CRS %d not found"
                       " in _PRS\n", link->irq.active);
         link->irq.active = 0;
     }

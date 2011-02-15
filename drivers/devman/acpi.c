@@ -7,6 +7,7 @@
 
 #include "acpi.h"
 #include "acpi_bus.h"
+#include "dmdev.h"
 
 #define PREFIX "ACPI: "
 
@@ -17,8 +18,9 @@
 
 #define ACPI_IS_ROOT_DEVICE(device)    (!(device)->parent)
 
-static LIST_HEAD(acpi_device_list);
-static LIST_HEAD(acpi_bus_id_list);
+LIST_HEAD(acpi_device_list);
+LIST_HEAD(acpi_bus_id_list);
+LIST_HEAD(dmdev_tree);
 
 
 struct acpi_device_bus_id
@@ -65,6 +67,8 @@ static ACPI_HANDLE pci_root_handle;
 
 #define acpi_remap( addr ) MapIoMem((void*)(addr),4096, 0x01)
 
+char* strdup(const char *str);
+
 void print_pci_irqs();
 
 
@@ -78,6 +82,14 @@ enum pic_mode
     IO_PIC  = 0,
     IO_APIC
 };
+
+static ACPI_STATUS
+resource_to_addr(ACPI_RESOURCE *resource, ACPI_RESOURCE_ADDRESS64 *addr);
+
+static void create_dm_list();
+
+static void print_dm_list();
+
 
 static void set_pic_mode(enum pic_mode mode)
 {
@@ -99,17 +111,8 @@ static void set_pic_mode(enum pic_mode mode)
         dbgprintf(PREFIX "machine set to %s mode\n", mode ? "APIC" : "PIC");
 }
 
-void print_device_tree(struct acpi_device *device)
-{
-    struct acpi_device *child;
 
-    dbgprintf("%s\n", device->pnp.bus_id);
 
-    list_for_each_entry(child, &device->children, node)
-    {
-        print_device_tree(child);
-    };
-};
 
 
 
@@ -649,318 +652,19 @@ u32_t drvEntry(int action, char *cmdline)
 
     acpi_scan();
 
-//    print_device_tree(acpi_root);
-
     acpi_init_pci(acpi_root);
 
     print_pci_irqs();
 
-/*
-    ACPI_HANDLE bus_handle;
-    ACPI_HANDLE pci_root;
+    create_dm_list();
 
-    status = AcpiGetHandle(0, "\\_SB_", &bus_handle);
-    dbgprintf("system bus handle %x\n", bus_handle);
-
-    status = AcpiGetHandle(bus_handle, "PCI0", &pci_root);
-    if (status != AE_OK) {
-          dbgprintf("AcpiGetHandle failed (%s)\n",
-                     AcpiFormatException(status));
-          goto err;
-    }
-
-    AcpiWalkNamespace(ACPI_TYPE_ANY, ACPI_ROOT_OBJECT, 100,
-                      get_device_by_hid_callback, NULL, NULL, NULL);
-*/
-
-#if 0
-
-    AcpiWalkNamespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, 4,
-                      get_device_by_hid_callback, NULL, NULL, NULL);
-
-    ACPI_OBJECT obj;
-    ACPI_HANDLE bus_handle;
-    ACPI_HANDLE pci_root;
-
-    status = AcpiGetHandle(0, "\\_SB_", &bus_handle);
-    dbgprintf("system bus handle %x\n", bus_handle);
-
-    status = AcpiGetHandle(bus_handle, "PCI0", &pci_root);
-
-    if (status != AE_OK) {
-        dbgprintf("AcpiGetHandle failed (%s)\n",
-            AcpiFormatException(status));
-        goto err;
-    }
-
-    dbgprintf("pci root handle %x\n\n", pci_root);
-
-    ACPI_BUFFER prt_buffer;
-
-    prt_buffer.Length = ACPI_ALLOCATE_BUFFER;
-    prt_buffer.Pointer = NULL;
-
-    status = AcpiGetIrqRoutingTable(pci_root, &prt_buffer);
-
-    if (status != AE_OK) {
-        dbgprintf("AcpiGetIrqRoutingTable failed (%s)\n",
-            AcpiFormatException(status));
-        goto err;
-    }
-
-    prt_walk_table(&prt_buffer);
-
-
-    ACPI_OBJECT arg = { ACPI_TYPE_INTEGER };
-    ACPI_OBJECT_LIST arg_list = { 1, &arg };
-
-    arg.Integer.Value = ACPI_IRQ_MODEL_IOAPIC;
-
-    dbgprintf("\nset ioapic mode\n\n");
-
-    status = AcpiEvaluateObject(NULL, "\\_PIC", &arg_list, NULL);
-
-    if (ACPI_FAILURE(status)) {
-        dbgprintf("AcpiEvaluateObject failed (%s)\n",
-            AcpiFormatException(status));
- //       goto err;
-    }
-
-
-    status = AcpiGetIrqRoutingTable(pci_root, &prt_buffer);
-
-    if (status != AE_OK) {
-        dbgprintf("AcpiGetIrqRoutingTable failed (%s)\n",
-            AcpiFormatException(status));
-        goto err;
-    }
-
-    prt_walk_table(&prt_buffer);
-
-    u8_t pin = PciRead8 (0, (31<<3) | 1, 0x3D);
-    dbgprintf("bus 0 device 31 function 1 pin %d\n", pin-1);
-
-    pin = PciRead8 (0, (31<<3) | 2, 0x3D);
-    dbgprintf("bus 0 device 31 function 2 pin %d\n", pin-1);
-
-    pin = PciRead8 (0, (31<<3) | 3, 0x3D);
-    dbgprintf("bus 0 device 31 function 3 pin %d\n", pin-1);
-
-    pin = PciRead8 (0, (31<<3) | 4, 0x3D);
-    dbgprintf("bus 0 device 31 function 4 pin %d\n", pin-1);
-
-    pin = PciRead8 (0, (31<<3) | 5, 0x3D);
-    dbgprintf("bus 0 device 31 function 5 pin %d\n", pin-1);
-
-    pin = PciRead8 (0, (31<<3) | 6, 0x3D);
-    dbgprintf("bus 0 device 31 function 6 pin %d\n", pin-1);
-
-    pin = PciRead8 (0, (31<<3) | 7, 0x3D);
-    dbgprintf("bus 0 device 31 function 7 pin %d\n", pin-1);
-#endif
+    print_dm_list();
 
 err:
 
     return 0;
 
 };
-
-#if 0
-
-ACPI_STATUS
-get_device_by_hid_callback(ACPI_HANDLE obj, u32_t depth, void* context,
-    void** retval)
-{
-    static u32_t counter = 0;
-    static char buff[256];
-
-    ACPI_STATUS status;
-
-    ACPI_BUFFER buffer;
-
-    ACPI_DEVICE_INFO *info;
-
-   // *retval = NULL;
-
-    buffer.Length = 255;
-    buffer.Pointer = buff;
-
-    status = AcpiGetName(obj, ACPI_FULL_PATHNAME, &buffer);
-    if (status != AE_OK) {
-        return AE_CTRL_TERMINATE;
-    }
-
-    buff[buffer.Length] = '\0';
-
-    dbgprintf("device %d %s ", counter, buff);
-
-    status = AcpiGetObjectInfo(obj, &info);
-
-    if (ACPI_SUCCESS (status))
-    {
-        if (info->Valid & ACPI_VALID_HID)
-            dbgprintf (" HID: %s", info->HardwareId.String);
-
-    };
-
-    dbgprintf("\n");
-    counter++;
-
-    return AE_OK;
-}
-
-prt_walk_table(ACPI_BUFFER *prt)
-{
-    ACPI_PCI_ROUTING_TABLE *entry;
-    char *prtptr;
-
-    /* First check to see if there is a table to walk. */
-    if (prt == NULL || prt->Pointer == NULL)
-        return;
-
-    /* Walk the table executing the handler function for each entry. */
-    prtptr = prt->Pointer;
-    entry = (ACPI_PCI_ROUTING_TABLE *)prtptr;
-    while (entry->Length != 0)
-    {
-
-        dbgprintf("adress: %x %x  ", (u32_t)(entry->Address>>32),
-                  (u32_t)entry->Address);
-        dbgprintf("pin: %d  index: %d  source: %s\n",
-                   entry->Pin,
-                   entry->SourceIndex,
-                   entry->Source);
-
-//      handler(entry, arg);
-        prtptr += entry->Length;
-        entry = (ACPI_PCI_ROUTING_TABLE *)prtptr;
-    }
-}
-
-
-static void add_irq(unsigned dev, unsigned pin, u8_t irq)
-{
-//    assert(dev < PCI_MAX_DEVICES && pin < PCI_MAX_PINS);
-
-    irqtable[dev * PCI_MAX_PINS + pin] = irq;
-}
-
-static ACPI_STATUS get_irq_resource(ACPI_RESOURCE *res, void *context)
-{
-    ACPI_PCI_ROUTING_TABLE *tbl = (ACPI_PCI_ROUTING_TABLE *) context;
-
-    if (res->Type == ACPI_RESOURCE_TYPE_IRQ)
-    {
-        ACPI_RESOURCE_IRQ *irq;
-
-        irq = &res->Data.Irq;
-        add_irq(tbl->Address >> 16, tbl->Pin,
-                irq->Interrupts[tbl->SourceIndex]);
-    } else if (res->Type == ACPI_RESOURCE_TYPE_EXTENDED_IRQ)
-    {
-        ACPI_RESOURCE_EXTENDED_IRQ *irq;
-
-        add_irq(tbl->Address >> 16, tbl->Pin,
-                irq->Interrupts[tbl->SourceIndex]);
-    }
-
-    return AE_OK;
-}
-
-char buff[4096];
-
-static ACPI_STATUS get_pci_irq_routing(ACPI_HANDLE handle)
-{
-    ACPI_STATUS status;
-    ACPI_BUFFER abuff;
-    ACPI_PCI_ROUTING_TABLE *tbl;
-
-    abuff.Length = sizeof(buff);
-    abuff.Pointer = buff;
-
-    status = AcpiGetIrqRoutingTable(handle, &abuff);
-    if (ACPI_FAILURE(status)) {
-        return AE_OK;
-    }
-
-    for (tbl = (ACPI_PCI_ROUTING_TABLE *)abuff.Pointer; tbl->Length;
-            tbl = (ACPI_PCI_ROUTING_TABLE *)
-            ((char *)tbl + tbl->Length))
-    {
-        ACPI_HANDLE src_handle;
-
-        if (*(char*)tbl->Source == '\0') {
-            add_irq(tbl->Address >> 16, tbl->Pin, tbl->SourceIndex);
-            continue;
-        }
-
-        status = AcpiGetHandle(handle, tbl->Source, &src_handle);
-        if (ACPI_FAILURE(status)) {
-            printf("Failed AcpiGetHandle\n");
-            continue;
-        }
-        status = AcpiWalkResources(src_handle, METHOD_NAME__CRS,
-                get_irq_resource, tbl);
-        if (ACPI_FAILURE(status)) {
-            printf("Failed IRQ resource\n");
-            continue;
-        }
-    }
-
-    return AE_OK;
-}
-
-static ACPI_STATUS add_pci_root_dev(ACPI_HANDLE handle,
-                UINT32 level,
-                void *context,
-                void **retval)
-{
-    int i;
-    static unsigned called;
-
-    if (++called > 1) {
-        dbgprintf("ACPI: Warning! Multi rooted PCI is not supported!\n");
-        return AE_OK;
-    }
-
-    for (i = 0; i < IRQ_TABLE_ENTRIES; i++)
-        irqtable[i] = -1;
-
-    return get_pci_irq_routing(handle);
-}
-
-static ACPI_STATUS add_pci_dev(ACPI_HANDLE handle,
-                UINT32 level,
-                void *context,
-                void **retval)
-{
-    /* skip pci root when we get to it again */
-    if (handle == pci_root_handle)
-        return AE_OK;
-
-    return get_pci_irq_routing(handle);
-}
-
-static void scan_devices(void)
-{
-    ACPI_STATUS status;
-
-    /* get the root first */
-    status = AcpiGetDevices("PNP0A03", add_pci_root_dev, NULL, NULL);
-    if (status != AE_OK) {
-        dbgprintf("scan_devices failed (%s)\n",
-                   AcpiFormatException(status));
-          return;
-    }
-
-//    assert(ACPI_SUCCESS(status));
-
-    /* get the rest of the devices that implement _PRT */
-    status = AcpiGetDevices(NULL, add_pci_dev, NULL, NULL);
-//    assert(ACPI_SUCCESS(status));
-}
-
-#endif
 
 char* strdup(const char *str)
 {
@@ -972,4 +676,248 @@ char* strdup(const char *str)
     }
     return copy;
 }
+
+
+static void dm_add_pci_bus(struct pci_bus *bus)
+{
+    struct pci_bus *tbus;
+    struct pci_dev *dev;
+    dmdev_t        *dmdev;
+
+    dmdev = (dmdev_t*)kzalloc(sizeof(dmdev_t),GFP_KERNEL);
+
+//    INIT_LIST_HEAD(&dmdev->list);
+//    dmdev->type = 1;
+//    dmdev->acpi_dev = bus->self->acpi_dev;
+//    dmdev->pci_dev = bus->self;
+//    list_add_tail(&dmdev->list, &dmdev_tree);
+
+    list_for_each_entry(dev, &bus->devices, bus_list)
+    {
+        dmdev = (dmdev_t*)kzalloc(sizeof(dmdev_t),GFP_KERNEL);
+
+        INIT_LIST_HEAD(&dmdev->list);
+        dmdev->type = 1;
+        dmdev->acpi_dev = dev->acpi_dev;
+        dmdev->pci_dev = dev;
+        list_add_tail(&dmdev->list, &dmdev_tree);
+    };
+
+    list_for_each_entry(tbus, &bus->children, node)
+    {
+        dm_add_pci_bus(tbus);
+    };
+
+};
+
+static ACPI_STATUS
+count_dev_resources(ACPI_RESOURCE *acpi_res, void *data)
+{
+    (*(int*)data)++;
+    return AE_OK;
+}
+
+
+static void dm_add_acpi(struct acpi_device *device)
+{
+    struct acpi_device *child;
+    ACPI_DEVICE_INFO *info = NULL;
+    ACPI_STATUS status;
+
+    dmdev_t  *dmdev;
+    uint32_t  res_num = 0;
+
+    status = AcpiGetObjectInfo(device->handle, &info);
+
+    if ( (status == AE_OK) && (info->Valid & ACPI_VALID_HID))
+    {
+        if( strcmp(info->HardwareId.String,"PNP0C0F") == 0)
+        {
+            kfree(info);
+            return;
+        };
+    };
+
+    kfree(info);
+
+    if(device->pci_dev == NULL)
+    {
+        AcpiWalkResources(device->handle, METHOD_NAME__CRS,
+                          count_dev_resources, &res_num);
+
+        if(res_num != 0)
+        {
+            dmdev = (dmdev_t*)kzalloc(sizeof(dmdev_t),GFP_KERNEL);
+
+            INIT_LIST_HEAD(&dmdev->list);
+            dmdev->type = 0;
+            dmdev->acpi_dev = device;
+            dmdev->pci_dev = NULL;
+            list_add_tail(&dmdev->list, &dmdev_tree);
+        };
+    };
+    list_for_each_entry(child, &device->children, node)
+    {
+        dm_add_acpi(child);
+    };
+};
+
+static void create_dm_list()
+{
+    struct acpi_pci_root *root;
+
+
+    list_for_each_entry(root, &acpi_pci_roots, node)
+    {
+        struct pci_bus *pbus, *tbus;
+        struct pci_dev *dev;
+
+        pbus = root->bus;
+
+        dm_add_pci_bus(pbus);
+    };
+
+    dm_add_acpi(acpi_root);
+};
+
+static void print_pci_resource(struct resource *res)
+{
+    if(res->flags !=0 )
+    {
+        if(res->flags & IORESOURCE_IO)
+            dbgprintf("  IO range ");
+        else if(res->flags & IORESOURCE_MEM)
+            dbgprintf("  MMIO range ");
+        dbgprintf("%x - %x\n", res->start, res->end);
+    };
+};
+
+static ACPI_STATUS
+print_acpi_resource(ACPI_RESOURCE *acpi_res, void *data)
+{
+    ACPI_RESOURCE_ADDRESS64 addr;
+    ACPI_STATUS status;
+    int i;
+
+    switch (acpi_res->Type)
+    {
+        case ACPI_RESOURCE_TYPE_IRQ:
+        {
+            ACPI_RESOURCE_IRQ *irq_data = (ACPI_RESOURCE_IRQ*)&acpi_res->Data;
+            dbgprintf(" IRQ %d\n", irq_data->Interrupts[0]);
+        };
+        break;
+
+        case ACPI_RESOURCE_TYPE_EXTENDED_IRQ:
+        {
+            ACPI_RESOURCE_EXTENDED_IRQ *irq_data = (ACPI_RESOURCE_EXTENDED_IRQ*)&acpi_res->Data;
+            dbgprintf(" IRQ %d\n", irq_data->Interrupts[0]);
+        };
+        break;
+
+        case ACPI_RESOURCE_TYPE_DMA:
+        {
+            ACPI_RESOURCE_DMA *dma_data = (ACPI_RESOURCE_DMA*) &acpi_res->Data;
+            for(i=0; i < dma_data->ChannelCount; i++)
+            {
+                dbgprintf(" DMA %s channel %d\n",
+                          dma_data->Type == ACPI_TYPE_A ? "Type A":
+                          dma_data->Type == ACPI_TYPE_B ? "Type B" :
+                          dma_data->Type == ACPI_TYPE_F ? "Type F" : "",
+                          dma_data->Channels[i]);
+            }
+        };
+        break;
+
+        case ACPI_RESOURCE_TYPE_IO:
+        {
+            ACPI_RESOURCE_IO *io_data = (ACPI_RESOURCE_IO*) &acpi_res->Data;
+
+            dbgprintf(" IO range 0%x-0%x\n",io_data->Minimum,
+                       io_data->Minimum+io_data->AddressLength-1);
+        }
+        break;
+
+        case ACPI_RESOURCE_TYPE_FIXED_IO:
+        {
+            ACPI_RESOURCE_FIXED_IO *io_data = (ACPI_RESOURCE_FIXED_IO*) &acpi_res->Data;
+            dbgprintf(" Fixed IO range 0%x-0%x\n",io_data->Address,
+                       io_data->Address+io_data->AddressLength-1);
+        };
+        break;
+
+        case ACPI_RESOURCE_TYPE_MEMORY24:
+        case ACPI_RESOURCE_TYPE_MEMORY32:
+        case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
+        {
+            ACPI_RESOURCE_ADDRESS64 addr64;
+            resource_to_addr(acpi_res, &addr64);
+            dbgprintf(" Memory range 0%x-0%x\n",
+                       (uint32_t)addr64.Minimum, (uint32_t)addr64.Maximum);
+        }
+        break;
+
+        case ACPI_RESOURCE_TYPE_ADDRESS16:
+        case ACPI_RESOURCE_TYPE_ADDRESS32:
+        case ACPI_RESOURCE_TYPE_ADDRESS64:
+        {
+            ACPI_RESOURCE_ADDRESS64 addr64;
+            ACPI_STATUS status;
+
+            status = AcpiResourceToAddress64(acpi_res, &addr64);
+            if (ACPI_SUCCESS(status))
+            {
+                dbgprintf(" Address range 0%x-0%x\n",
+                       (uint32_t)addr64.Minimum, (uint32_t)addr64.Maximum);
+            }
+        };
+        break;
+    };
+
+    return AE_OK;
+};
+
+
+static void print_dm_list()
+{
+    struct pci_dev     *pcidev;
+    struct acpi_device *acpidev;
+    dmdev_t  *dmdev;
+    uint32_t  i;
+
+    dbgprintf("\nDevices:\n");
+
+    list_for_each_entry(dmdev, &dmdev_tree, list)
+    {
+        switch(dmdev->type)
+        {
+            case 0:
+               if(dmdev->acpi_dev != NULL)
+               {
+                    acpidev = dmdev->acpi_dev;
+                    dbgprintf("\n%s\n", acpidev->pnp.bus_id);
+                    AcpiWalkResources(acpidev->handle, METHOD_NAME__CRS,
+                                      print_acpi_resource, NULL);
+               };
+               break;
+
+            case 1:
+               if(dmdev->pci_dev != NULL)
+               {
+                   pcidev = dmdev->pci_dev;
+                   dbgprintf("\nPCI_%x_%x bus:%d devfn: %x\n",
+                               pcidev->vendor, pcidev->device,
+                               pcidev->busnr, pcidev->devfn);
+
+                   for(i = 0; i < DEVICE_COUNT_RESOURCE; i++)
+                       print_pci_resource(&pcidev->resource[i]);
+
+                   if(pcidev->pin)
+                       dbgprintf("  APIC IRQ: %d\n", acpi_get_irq(pcidev));
+               };
+               break;
+        };
+    };
+};
+
 

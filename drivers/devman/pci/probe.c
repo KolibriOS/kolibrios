@@ -899,6 +899,7 @@ static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
         return NULL;
 
     dev->bus = bus;
+    dev->busnr = bus->number;
     dev->devfn = devfn;
     dev->vendor = l & 0xffff;
     dev->device = (l >> 16) & 0xffff;

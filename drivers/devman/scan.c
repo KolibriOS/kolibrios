@@ -24,8 +24,9 @@
 
 extern struct acpi_device *acpi_root;
 
-static LIST_HEAD(acpi_device_list);
-static LIST_HEAD(acpi_bus_id_list);
+extern struct list_head acpi_device_list;
+extern struct list_head acpi_bus_id_list;
+
 DEFINE_MUTEX(acpi_device_lock);
 
 
@@ -584,6 +585,10 @@ static int acpi_add_single_object(struct acpi_device **child,
     int result;
     struct acpi_device *device;
     ACPI_BUFFER buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+    ACPI_DEVICE_INFO *info = NULL;
+    ACPI_DEVICE_ID_LIST *cid_list;
+    int i;
+
 
     device = kzalloc(sizeof(struct acpi_device), GFP_KERNEL);
     if (!device) {
@@ -632,10 +637,26 @@ static int acpi_add_single_object(struct acpi_device **child,
     }
 
 end:
+
+    AcpiGetName(handle, ACPI_FULL_PATHNAME, &buffer);
+    dbgprintf(PREFIX "Adding [%s]", (char *)buffer.Pointer);
+    kfree(buffer.Pointer);
+
+    AcpiGetObjectInfo(handle, &info);
+    if (info->Valid & ACPI_VALID_HID)
+      dbgprintf (" HID: %s", info->HardwareId.String);
+
+    if (info->Valid & ACPI_VALID_CID)
+    {
+        cid_list = &info->CompatibleIdList;
+        for (i = 0; i < cid_list->Count; i++)
+            dbgprintf("  CID: %s\n", cid_list->Ids[i].String);
+    }
+    dbgprintf("\n");
+
+    kfree(info);
+
     if (!result) {
-        AcpiGetName(handle, ACPI_FULL_PATHNAME, &buffer);
-        dbgprintf(PREFIX "Adding [%s]\n", (char *)buffer.Pointer);
-        kfree(buffer.Pointer);
         *child = device;
     };
     return result;

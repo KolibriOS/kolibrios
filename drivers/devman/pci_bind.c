@@ -47,6 +47,13 @@ static int acpi_pci_bind(struct acpi_device *device)
     if (!dev)
         return 0;
 
+    device->pci_dev = dev;
+
+    dev->acpi_dev = device;
+
+    dbgprintf("bind ACPI %s PCI_%x_%x\n", device->pnp.bus_id,
+               dev->vendor, dev->device);
+
 //    pci_acpi_add_pm_notifier(device, dev);
 //    if (device->wakeup.flags.run_wake)
 //        device_set_run_wake(&dev->dev, true);

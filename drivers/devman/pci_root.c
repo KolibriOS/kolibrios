@@ -154,9 +154,12 @@ static void print_bus_irqs(struct pci_bus *bus)
 
     list_for_each_entry(dev, &bus->devices, bus_list)
     {
-        dbgprintf("PCI_%x_%x bus:%d devfn: %x bios irq %d acpi irq %d\n",
-                   dev->vendor, dev->device, dev->busnr, dev->devfn,
-                   dev->irq, acpi_get_irq(dev));
+        if(dev->pin)
+        {
+            dbgprintf("PCI_%x_%x bus:%d devfn: %x pin %d bios irq: %d acpi irq: %d\n",
+                       dev->vendor, dev->device, dev->busnr, dev->devfn,
+                       dev->pin, dev->irq, acpi_get_irq(dev));
+        };
     };
 }
 
@@ -164,7 +167,6 @@ void print_pci_irqs()
 {
     struct acpi_pci_root *root;
 
-    ENTER();
     list_for_each_entry(root, &acpi_pci_roots, node)
     {
         struct pci_bus *pbus, *tbus;
@@ -174,9 +176,10 @@ void print_pci_irqs()
 
         list_for_each_entry(dev, &pbus->devices, bus_list)
         {
-            dbgprintf("PCI_%x_%x bus:%d devfn: %x bios irq %d acpi irq %d\n",
-                      dev->vendor, dev->device, dev->busnr, dev->devfn,
-                      dev->irq, acpi_get_irq(dev));
+            if(dev->pin)
+                dbgprintf("PCI_%x_%x bus:%d devfn: %x pin %d bios irq: %d acpi irq: %d\n",
+                          dev->vendor, dev->device, dev->busnr, dev->devfn,
+                          dev->pin, dev->irq, acpi_get_irq(dev));
         };
 
         list_for_each_entry(tbus, &pbus->children, node)
@@ -184,7 +187,6 @@ void print_pci_irqs()
             print_bus_irqs(tbus);
         };
     }
-    LEAVE();
 };
 
 
