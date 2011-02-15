@@ -1,0 +1,254 @@
+;14.04.2009 - a macros for code load library the box_lib.obj from '/sys/lib/' or current dirrectory.
+; The macros for load any library/libraries:
+; Copyright (c) 2009, <Lrz>
+; All rights reserved.
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are met:
+;       * Redistributions of source code must retain the above copyright
+;       notice, this list of conditions and the following disclaimer.
+;       * Redistributions in binary form must reproduce the above copyright
+;       notice, this list of conditions and the following disclaimer in the
+;       documentation and/or other materials provided with the distribution.
+;       * Neither the name of the <organization> nor the
+;       names of its contributors may be used to endorse or promote products
+;       derived from this software without specific prior written permission.
+;
+; THIS SOFTWARE IS PROVIDED BY Alexey Teplov aka <Lrz> ''AS IS'' AND ANY
+; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+; DISCLAIMED. IN NO EVENT SHALL <copyright holder> BE LIABLE FOR ANY
+; DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+; (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;*****************************************************************************
+; This macros based on source code:
+; <Lrz> - Alexey Teplov / Алексей Теплов
+; Mario79, Mario - Marat Zakiyanov / Марат Закиянов
+; Diamondz - Evgeny Grechnikov / Евгений Гречников
+;------------------------
+; DESCRIPTION
+; Macro load_library
+; Logick of work.
+; A first time we must to check system path, where I belive find a system library. System path is "/sys/lib/".
+; If I cannot found my library, i must to check second way. Second way is current dirrectory.
+; If we cannot load library, we must show the error message:
+; "I'm sorry,the programm cannot found system library box_lib.obj."
+; "The find was make on 2 ways: /sys/lib/ and current dirrectory."
+; 
+; ebx,library_name
+; esi,cur_dir_path
+; edi,library_path
+;---------------------------------------------------------------------
+; Macro test_load_library
+; A first time we must to check own path in current dirrectory the program, where I belive find a system library.
+; If I cannot found my library, i must to check second way. Second way is system path a "/sys/lib/".
+; If we cannot load library, we must show the error message:
+; "I'm sorry,the programm cannot found system library box_lib.obj."
+; "The find was make on 2 ways: /sys/lib/ and current dirrectory."
+
+macro load_library library_name, cur_dir_path, library_path, system_path, err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+{
+local end_steep
+;---------------------------------------------------------------------  
+; loading Box_Lib library 
+
+        mcall   68,19,system_path   ; load of sys directory
+        test    eax,eax
+        jnz     end_steep 
+
+        mov     ebx,library_name
+        mov     esi,cur_dir_path
+        mov     edi,library_path
+
+        copy_path       ;the macros making way /current pach a program/+ name system library
+        
+        mcall   68,19,library_path ; load of alternative
+        test    eax,eax
+        jnz     end_steep
+
+        show_error_window  err_message_found_lib, head_f_l    ;show error message /create window
+
+end_steep:
+
+        import_boxlib myimport, err_message_import, head_f_i  ;import
+;---------------------------------------------------------------------
+}
+
+
+macro test_load_library library_name, cur_dir_path, library_path, system_path, err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+{
+local end_steep
+;---------------------------------------------------------------------  
+; loading Box_Lib library 
+        mov     ebx,library_name
+        mov     esi,cur_dir_path
+        mov     edi,library_path
+
+        copy_path       ;the macros making way /current pach a program/+ name system library
+
+        mcall   68,19,library_path ; load of alternative
+        test    eax,eax
+        jnz     end_steep 
+        
+        mcall   68,19,system_path ; load of sys directory
+        test    eax,eax
+        jnz     end_steep
+
+        show_error_window  err_message_found_lib, head_f_l    ;show error message /create window
+
+end_steep:
+
+        import_boxlib myimport, err_message_import, head_f_i  ;import
+;---------------------------------------------------------------------
+}
+
+macro load_libraries library_name, cur_dir_path, library_path, system_path, err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+{
+local end_steep
+;---------------------------------------------------------------------  
+; loading Box_Lib library 
+
+        mcall   68,19,system_path   ; load of sys directory
+        test    eax,eax
+        jnz     end_steep 
+
+        mov     ebx,library_name
+        mov     esi,cur_dir_path
+        mov     edi,library_path
+
+        copy_path       ;the macros making way /current pach a program/+ name system library
+        
+        mcall   68,19,library_path ; load of alternative
+        test    eax,eax
+        jnz     end_steep
+
+        show_error_window  err_message_found_lib, head_f_l    ;show error message /create window
+
+end_steep:
+
+        import_boxlib myimport, err_message_import, head_f_i  ;import
+;---------------------------------------------------------------------
+}
+
+
+
+
+macro copy_path 
+{
+local copy_path
+;---------------------------------------------------------------------
+;        mov     ebx,library_name
+;        mov     esi,cur_dir_path
+;        mov     edi,library_path
+
+copy_path:
+        xor     eax,eax
+        cld
+.lp1:
+        lodsb
+        stosb
+        test    eax,eax
+        jnz     .lp1
+        mov     esi,edi
+
+        std
+.lp2:
+        lodsb
+        cmp     al,'/'
+        jnz     .lp2
+        mov     edi,esi
+        mov     esi,ebx
+        add     edi,2
+
+
+        cld
+.lp3:
+        lodsb
+        stosb
+        test    eax,eax
+        jnz     .lp3
+;--------------------------------------------------------------------- 
+}
+
+macro show_error_window  err_message, head
+{
+local red_win
+local still
+local button
+
+        mcall   40,0x5         ;set mask on events rewraw window and get id button.
+red_win:
+;draw_window:
+        mcall 12, 1
+        mcall 0, <0,300>, <0,100>, 0x33AABBCC, 0x805080D0, head
+        mcall 4, <10,10>, 0x90000000, err_message; _found_lib
+        mcall 12, 2
+align 4
+still:                          ;main loop
+        mcall   10              ;wait event
+        dec  eax
+        jz   red_win
+        
+        sub  eax,2
+        jnz  still   ;go to main loop
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+button:
+        mcall   17      ;get id button
+        test    ah,ah      ;if in ah 0, then go to still
+        jz      still
+        mcall   -1
+}
+
+macro import_boxlib myimport, err_message_import, head_f_i
+{
+local import_loop
+local import_find
+local lp
+local import_find_next
+local import_found
+local import_done
+local exit
+; initialize import
+        mov     edx, eax
+        mov     esi,myimport
+import_loop:
+        lodsd
+        test    eax, eax
+        jz      import_done
+        push    edx
+import_find:
+        mov     ebx, [ds:edx]
+        test    ebx, ebx
+        jz      exit   ;import_not_found
+        push    eax
+lp:
+        mov     cl, [ds:eax]
+        cmp     cl, [ds:ebx]
+        jnz     import_find_next
+        test    cl, cl
+        jz      import_found
+        inc     eax
+        inc     ebx
+        jmp     lp
+import_find_next:
+        pop     eax
+        add     edx, 8
+        jmp     import_find
+import_found:
+        pop     eax
+        mov     eax, [ds:edx+4]
+        mov     [esi-4], eax
+        pop     edx
+        jmp     import_loop
+exit:
+        add     esp,4
+
+        show_error_window  err_message_import, head_f_i    ;show error message /create window
+
+import_done:
+;---------------------------------------------------------------------
+}
