@@ -113,6 +113,18 @@ static inline void *kcalloc(size_t n, size_t size, uint32_t flags)
         return kzalloc(n * size, 0);
 }
 
+extern const char hex_asc[];
+#define hex_asc_lo(x)   hex_asc[((x) & 0x0f)]
+#define hex_asc_hi(x)   hex_asc[((x) & 0xf0) >> 4]
+
+static inline char *pack_hex_byte(char *buf, u8 byte)
+{
+    *buf++ = hex_asc_hi(byte);
+    *buf++ = hex_asc_lo(byte);
+    return buf;
+}
+
+
 void free (void *ptr);
 
 #endif /* __KERNEL__ */

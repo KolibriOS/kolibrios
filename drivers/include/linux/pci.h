@@ -371,6 +371,8 @@ struct pci_dev {
     pci_channel_state_t error_state;    /* current connectivity state */
     struct  device  dev;        /* Generic device interface */
 
+    struct acpi_device *acpi_dev;
+
     int     cfg_size;   /* Size of configuration space */
 
     /*
@@ -577,6 +579,7 @@ unsigned int pci_scan_child_bus(struct pci_bus *bus);
 void pcibios_fixup_bus(struct pci_bus *b);
 u8 pci_swizzle_interrupt_pin(struct pci_dev *dev, u8 pin);
 
+struct pci_dev * pci_get_slot(struct pci_bus *bus, unsigned int devfn);
 
 static inline bool pci_is_root_bus(struct pci_bus *pbus)
 {

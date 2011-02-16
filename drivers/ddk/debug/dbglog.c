@@ -103,14 +103,14 @@ int vsnprintf(char *s, size_t n, const char *format, va_list arg);
 
 int printf(const char* format, ...)
 {
-    char  txtbuf[256];
+    char  txtbuf[1024];
     int   len = 0;
 
     va_list ap;
 
     va_start(ap, format);
     if (format)
-        len = vsnprintf(txtbuf, 256, format, ap);
+        len = vsnprintf(txtbuf, 1024, format, ap);
     va_end(ap);
 
     if( len )
@@ -122,7 +122,7 @@ int printf(const char* format, ...)
 
 int dbgprintf(const char* format, ...)
 {
-    char      txtbuf[256];
+    char      txtbuf[1024];
     unsigned  writes;
     int       len = 0;
 
@@ -130,7 +130,7 @@ int dbgprintf(const char* format, ...)
 
     va_start(ap, format);
     if (format)
-      len = vsnprintf(txtbuf, 256, format, ap);
+      len = vsnprintf(txtbuf, 1024, format, ap);
     va_end(ap);
 
     if( len )
@@ -150,7 +150,7 @@ int dbgprintf(const char* format, ...)
 
 int xf86DrvMsg(int skip, int code, const char* format, ...)
 {
-    char      txtbuf[256];
+    char      txtbuf[1024];
     unsigned  writes;
     va_list   ap;
 
@@ -158,7 +158,7 @@ int xf86DrvMsg(int skip, int code, const char* format, ...)
 
     va_start(ap, format);
     if (format)
-        len = vsnprintf(txtbuf, 256, format, ap);
+        len = vsnprintf(txtbuf, 1024, format, ap);
     va_end(ap);
 
     if( len )
