@@ -124,6 +124,7 @@ still:
    no13:
     cmp  al,10
     jne  no10
+    and  dword[ebp-8],0
     inc  dword[ebp-4]
     cmp  dword[ebp-4],MAXSTRINGS
     jbe  .noypos
