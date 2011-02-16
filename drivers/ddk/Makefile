@@ -1,4 +1,5 @@
 
+
 CC = gcc
 AS = as
 
@@ -24,11 +25,9 @@ NAME_SRCS:=  				\
 		linux/firmware.c	\
 		linux/list_sort.c	\
 		linux/dmapool.c		\
+		linux/ctype.c		\
 		malloc/malloc.c		\
-		stdio/icompute.c	\
 		stdio/vsprintf.c	\
-		stdio/doprnt.c		\
-		stdio/chartab.c		\
 		string/_memmove.S 	\
 		string/_strncat.S 	\
 		string/_strncmp.S 	\

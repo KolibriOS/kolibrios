@@ -174,17 +174,5 @@ int xf86DrvMsg(int skip, int code, const char* format, ...)
     return len;
 }
 
-int snprintf(char *s, size_t n, const char *format, ...)
-{
-	va_list ap;
-	int retval;
-
-	va_start(ap, format);
-	retval = vsnprintf(s, n, format, ap);
-	va_end(ap);
-
-	return retval;
-}
-
 
 
