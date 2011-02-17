@@ -236,16 +236,6 @@ bool init_hc(hc_t *hc)
     for (i = SKEL_ISO + 1; i < SKEL_ASYNC; ++i)
         hc->qh[i]->qlink = hc->qh[SKEL_ASYNC]->dma | 2;
 
-/*
-    td = alloc_td();
-
-    td->link   = 1;
-    td->status =  (1<<24) | (1<<23) ;
-    td->token  = TOKEN( 0x7FF, DATA0, 0, 0, 0xE1);
-    td->buffer = 0;
-    td->bk     = NULL;
-*/
-
     for (i = 0; i < 1024; i++)
     {
         int qnum;
@@ -282,11 +272,12 @@ bool init_hc(hc_t *hc)
 
     for (port = 0; port < hc->numports; ++port)
         out16(hc->iobase + USBPORTSC1 + (port * 2), 0x200);
-    delay(100/10);
 
     for (port = 0; port < 2; ++port)
     {
         time_t timeout;
+
+        delay(100/10);
 
         u32_t status = in16(hc->iobase + USBPORTSC1 + (port * 2));
         dbgprintf("port%d status %x\n", port, status);
@@ -404,43 +395,63 @@ bool set_address(udev_t *dev)
     return true;
 }
 
-request_t *create_request(udev_t *dev, endp_t *enp, u32_t dir,
-                          void *data, size_t req_size)
-{
-    td_t  *td, *td_prev;
-    addr_t data_dma;
-    hc_t     *hc = dev->host;
-    size_t  packet_size = enp->size;
-    size_t  size = req_size;
-    addr_t  td_dma;
+#define ALIGN16(x) (((x)+15)&~15)
 
-    request_t *rq = (request_t*)kmalloc(sizeof(request_t),0);
+#define MakePtr( cast, ptr, addValue ) (cast)((addr_t)(ptr)+(addr_t)(addValue))
+
+request_t *alloc_rq_buffer(udev_t *dev, endp_t *enp, u32_t dir,
+                           size_t data_size)
+{
+    size_t  packet_size = dev->ep0_size;
+    int     dsize = data_size;
+    size_t  buf_size;
+
+    addr_t  buf_dma;
+    addr_t  td_dma;
+    addr_t  data_dma;
+
+    request_t *rq;
+
+    td_t  *td, *td_prev;
+    int td_count = 0;
+
+    while(dsize > 0)
+    {
+        td_count++;
+        dsize-= packet_size;
+    };
+
+    buf_size = ALIGN16(sizeof(request_t)) + ALIGN16(data_size) +
+               td_count*sizeof(td_t);
+
+    rq = (request_t*)hcd_buffer_alloc(buf_size, &buf_dma);
+    memset(rq, 0, buf_size);
+
+    data_dma = buf_dma + ALIGN16(sizeof(request_t));
+    td_dma = data_dma + ALIGN16(data_size);
 
     INIT_LIST_HEAD(&rq->list);
 
-    rq->data = (addr_t)data;
-    rq->size = req_size;
+    rq->data = MakePtr(addr_t, rq, ALIGN16(sizeof(request_t)));
+    td = MakePtr(td_t*, rq->data, ALIGN16(data_size));
+    rq->td_head = td;
+    rq->size = data_size;
     rq->dev  = dev;
-
-    if(data)
-        data_dma = DMA(data);
 
     td_prev = NULL;
 
-    while(size > 0)
+    dsize = data_size;
+
+    while(dsize != 0)
     {
-        if ( size < packet_size)
+        if ( dsize < packet_size)
         {
-            packet_size = size;
+            packet_size = dsize;
         };
 
-        td = dma_pool_alloc(hc->td_pool, 0, &td_dma);
         td->dma = td_dma;
 
         td->link = 1;
-
-        if(rq->td_head == NULL)
-            rq->td_head = td;
 
         if( td_prev )
             td_prev->link   = td->dma | 4;
@@ -452,13 +463,16 @@ request_t *create_request(udev_t *dev, endp_t *enp, u32_t dir,
 
         td_prev = td;
 
+        td++;
+        td_dma+= sizeof(td_t);
         data_dma+= packet_size;
-        size-= packet_size;
+
+        dsize-= packet_size;
         enp->toggle ^= DATA1;
     };
 
-    td->status |= TD_CTRL_IOC;
-    rq->td_tail = td;
+    td_prev->status |= TD_CTRL_IOC;
+    rq->td_tail = td_prev;
 
     rq->evh = CreateEvent(NULL, MANUAL_DESTROY);
 
@@ -499,7 +513,7 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
     td0 = dma_pool_alloc(hc->td_pool, 0, &td_dma);
     td0->dma = td_dma;
 
-    dbgprintf("alloc td0 %x dma %x\n", td0, td_dma);
+//    dbgprintf("alloc td0 %x dma %x\n", td0, td_dma);
 
     td0->status = 0x00800000 | dev->speed;
     td0->token  = TOKEN( 8, DATA0, 0, dev->addr, 0x2D);
@@ -521,7 +535,7 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
         td = dma_pool_alloc(hc->td_pool, 0, &td_dma);
         td->dma = td_dma;
 
-        dbgprintf("alloc td %x dma %x\n", td, td->dma);
+//        dbgprintf("alloc td %x dma %x\n", td, td->dma);
 
         td_prev->link   = td->dma | 4;
         td->status = TD_CTRL_ACTIVE | dev->speed;
@@ -539,7 +553,7 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
     td = dma_pool_alloc(hc->td_pool, 0, &td_dma);
     td->dma = td_dma;
 
-    dbgprintf("alloc td %x dma %x\n", td, td->dma);
+//    dbgprintf("alloc td %x dma %x\n", td, td->dma);
 
     td_prev->link   = td->dma | 4;
 
@@ -564,7 +578,7 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
 
     u32_t efl = safe_cli();
 
-      list_add_tail(&rq->list, &dev->host->rq_list);
+    list_add_tail(&rq->list, &dev->host->rq_list);
 
     qh = dev->host->qh[SKEL_ASYNC];
 

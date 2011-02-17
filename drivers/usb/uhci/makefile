@@ -1,48 +1,52 @@
 
 CC = gcc
+
+
+DRV_DIR   = $(CURDIR)/../..
+
+DRV_INCLUDES = $(DRV_DIR)/include
+
+
+INCLUDES = -I$(DRV_INCLUDES) -I$(DRV_DIR)/include/linux
+
+DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32
+
 CFLAGS = -c -O2 -fomit-frame-pointer -fno-builtin-printf 
-LDFLAGS = -nostdlib -shared -s -Map usb.map --image-base 0\
+
+LDFLAGS = -nostdlib -shared -s -Map acpi.map --image-base 0\
 	  --file-alignment 512 --section-alignment 4096
 
-DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 
+LIBPATH:= -L$(DRV_DIR)/ddk 
 
-DRV_TOPDIR   = $(CURDIR)/../..
-
-DRV_INCLUDES = $(DRV_TOPDIR)/include
-
-INCLUDES = 	-I$(DRV_INCLUDES) \
-		-I$(DRV_INCLUDES)/linux
-
-LIBPATH = $(DRV_TOPDIR)/ddk
+LIBS:=    -lgcc -lddk -lcore
 
 
+NAME= usb
 
-SRC_DEP:=    pci.inc		\
-	     detect.inc		\
-	     hcd.inc		\
-	     hid.inc
+NAME_SRCS= 	usb.c		\
+		buffer.c
 
-USB_SRC:=    usb.c     
+SRC_DEP = 	hcd.inc		\
+		detect.inc	\
+		hid.inc		\
+		pci.inc		\
 
-USB_OBJ:=    usb.obj
 
-LIBS:=    -lddk -lcore 
+all: $(NAME).dll
 
-USB =        usb.dll
+NAME_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
+            $(patsubst %.c, %.o, $(NAME_SRCS))))
 
-all: $(USB)
 
-$(USB): $(USB_OBJ) $(SRC_DEP) $(HFILES) Makefile
-	ld $(LDFLAGS) -L$(LIBPATH) -T usb.lds -o $@ $(USB_OBJ) $(LIBS)  
-	kpack.exe usb.dll usb.drv
+$(NAME).dll: $(NAME_OBJS) usb.lds Makefile
+	ld $(LIBPATH) $(LDFLAGS) -T usb.lds -o $@ $(NAME_OBJS) $(LIBS)
+	kpack $(NAME).dll $(NAME).drv  
 
-usb.obj : usb.c $(SRC_DEP) $(HFILES) Makefile
-	$(CC) $(DEFINES) $(INCLUDES) $(CFLAGS) -o usb.obj usb.c
+%.o : %.c $(HFILES) $(SRC_DEP) Makefile
+	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
-%.obj : %.c $(HFILES)
-	$(CC) $(CFLAGS) -o $@ $<
-
-%.obj: %.asm
+%.o : %.S $(HFILES) Makefile
 	as -o $@ $<
+
 
 

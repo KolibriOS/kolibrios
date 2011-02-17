@@ -4,6 +4,7 @@
 #include <mutex.h>
 #include <pci.h>
 #include <linux/dmapool.h>
+#include <linux/string.h>
 #include <syscall.h>
 #include "usb.h"
 
@@ -39,22 +40,24 @@ u32_t drvEntry(int action, char *cmdline)
         return 0;
     };
 
-     qh_slab.available = 256;
-     qh_slab.start     = KernelAlloc(4096);
-     qh_slab.nextavail = (addr_t)qh_slab.start;
-     qh_slab.dma       = GetPgAddr(qh_slab.start);
+    hcd_buffer_create();
 
-     qh_t    *p;
-     addr_t  dma;
+    qh_slab.available = 256;
+    qh_slab.start     = KernelAlloc(4096);
+    qh_slab.nextavail = (addr_t)qh_slab.start;
+    qh_slab.dma       = GetPgAddr(qh_slab.start);
 
-     for (i = 0, p = (qh_t*)qh_slab.start, dma = qh_slab.dma;
-          i < 256; i++, p++, dma+= sizeof(qh_t))
-     {
-        p->qlink  = (addr_t)(p+1);
-        p->qelem  = 1;
-        p->dma    = dma;
-        p->r1     = 0;
-     };
+    qh_t    *p;
+    addr_t  dma;
+
+    for (i = 0, p = (qh_t*)qh_slab.start, dma = qh_slab.dma;
+         i < 256; i++, p++, dma+= sizeof(qh_t))
+    {
+       p->qlink  = (addr_t)(p+1);
+       p->qelem  = 1;
+       p->dma    = dma;
+       p->r1     = 0;
+    };
 
     hc = (hc_t*)hc_list.next;
 
