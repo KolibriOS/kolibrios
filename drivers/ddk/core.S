@@ -22,6 +22,7 @@
     .global _GetPgAddr
     .global _GetService
     .global _GetTimerTicks
+    .global _GetStackBase
 
     .global _KernelAlloc
     .global _KernelFree
@@ -45,6 +46,8 @@
     .global _RegService
 
     .global _SetMouseData
+    .global _SetKeyboardData
+
     .global _SetScreen
     .global _SysMsgBoardStr
 
@@ -70,6 +73,7 @@
     .def  _GetPgAddr;         .scl  2;  .type 32; .endef
     .def  _GetService;        .scl  2;  .type 32; .endef
     .def  _GetTimerTicks;     .scl  2;  .type 32; .endef
+    .def  _GetStackBase;      .scl  2;  .type 32; .endef
 
     .def  _KernelAlloc;       .scl  2;  .type 32; .endef
     .def  _KernelFree;        .scl  2;  .type 32; .endef
@@ -94,6 +98,7 @@
 
     .def  _SetScreen;         .scl  2;  .type 32; .endef
     .def  _SetMouseData;      .scl  2;  .type 32; .endef
+    .def  _SetKeyboardData;   .scl  2;  .type 32; .endef
     .def  _SysMsgBoardStr;    .scl  2;  .type 32; .endef
 
     .def  _WaitEvent;         .scl  2;  .type 32; .endef
@@ -120,6 +125,7 @@ _GetEvent:
 _GetPgAddr:
 _GetService:
 _GetTimerTicks:
+_GetStackBase:
 
 _KernelAlloc:
 _KernelFree:
@@ -142,6 +148,8 @@ _RaiseEvent:
 _RegService:
 
 _SetMouseData:
+_SetKeyboardData:
+
 _SetScreen:
 _SysMsgBoardStr:
 
@@ -171,6 +179,8 @@ _WaitEvent:
         .ascii " -export:GetPgAddr"            # stdcall
         .ascii " -export:GetService"           # stdcall
         .ascii " -export:GetTimerTicks"        #
+        .ascii " -export:GetStackBase"         #
+
 
         .ascii " -export:KernelAlloc"          # stdcall
         .ascii " -export:KernelFree"           # stdcall
@@ -194,6 +204,8 @@ _WaitEvent:
         .ascii " -export:RegService"           # stdcall
 
         .ascii " -export:SetMouseData"         # stdcall
+        .ascii " -export:SetKeyboardData"      # stdcall
+
         .ascii " -export:SetScreen"            # stdcall
         .ascii " -export:SysMsgBoardStr"       # stdcall
 

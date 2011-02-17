@@ -18,6 +18,8 @@
 #define CreateObject    __CreateObject
 #define DestroyObject   __DestroyObject
 
+#define _alloca(x) __builtin_alloca((x))
+
 ///////////////////////////////////////////////////////////////////////////////
 
 
@@ -46,10 +48,15 @@ void  FASTCALL MutexInit(struct mutex*)__asm__("MutexInit");
 void  FASTCALL MutexLock(struct mutex*)__asm__("MutexLock");
 void  FASTCALL MutexUnlock(struct mutex*)__asm__("MutexUnlock");
 
+addr_t IMPORT  GetStackBase(void)__asm__("GetStackBase");
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void   STDCALL SetMouseData(int btn, int x, int y,
                             int z, int h)__asm__("SetMouseData");
+
+void   FASTCALL SetKeyboardData(u32_t data)__asm__("SetKeyboardData");
+
 
 u8_t  STDCALL PciRead8 (u32_t bus, u32_t devfn, u32_t reg)__asm__("PciRead8");
 u16_t STDCALL PciRead16(u32_t bus, u32_t devfn, u32_t reg)__asm__("PciRead16");

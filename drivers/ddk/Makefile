@@ -1,5 +1,4 @@
 
-
 CC = gcc
 AS = as
 
@@ -17,6 +16,7 @@ CORE_SRC=	core.S
 
 NAME_SRCS:=  				\
 		debug/dbglog.c		\
+		debug/chkstk.S		\
            	io/create.c		\
            	io/finfo.c		\
            	io/ssize.c		\
