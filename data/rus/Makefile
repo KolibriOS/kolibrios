@@ -503,12 +503,12 @@ $(AC97SND_MPG_C_OBJECTS): .obj.ac97snd/%.o: $(AC97DIR)/mpg/%.c $(AC97SND_MPG_H_F
 # between all Makefiles, so we need locked operations.
 drivers/atikms.dll: $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll drivers/.dir
 	kpack --nologo $< $@
-$(REPOSITORY)/drivers/video/drm/radeon/atikms.dll:
+$(REPOSITORY)/drivers/video/drm/radeon/atikms.dll: $(REPOSITORY)/drivers/video/drm/radeon/Makefile.lto
 	flock $(REPOSITORY)/drivers/video/drm/radeon/.lock \
-	$(MAKE) CC=win32-gcc AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/video/drm/radeon
-$(REPOSITORY)/drivers/ddk/libddk.a:
+	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/video/drm/radeon -f Makefile.lto
+$(REPOSITORY)/drivers/ddk/libddk.a: $(REPOSITORY)/drivers/ddk/Makefile
 	flock $(REPOSITORY)/drivers/ddk/.lock \
-	$(MAKE) CC=win32-gcc AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/ddk
+	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/ddk
 # dependencies
 $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll: \
  $(REPOSITORY)/drivers/video/drm/radeon/atikms.lds \
