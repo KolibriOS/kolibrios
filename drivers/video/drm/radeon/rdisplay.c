@@ -15,7 +15,8 @@ display_t *rdisplay;
 static cursor_t*  __stdcall select_cursor(cursor_t *cursor);
 static void       __stdcall move_cursor(cursor_t *cursor, int x, int y);
 
-extern void destroy_cursor(void);
+extern void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor);
+//extern void destroy_cursor(void);
 
 void disable_mouse(void)
 {};
@@ -66,12 +67,13 @@ int init_cursor(cursor_t *cursor)
 
     radeon_bo_kunmap(cursor->robj);
 
- //   cursor->header.destroy = destroy_cursor;
+    cursor->header.destroy = destroy_cursor;
 
     return 0;
 };
 
-void fini_cursor(cursor_t *cursor)
+//void __attribute__((externally_visible)) fini_cursor(cursor_t *cursor)
+void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor)
 {
     list_del(&cursor->list);
     radeon_bo_unpin(cursor->robj);

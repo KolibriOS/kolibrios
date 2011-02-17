@@ -7,7 +7,8 @@ DRV_INCLUDES = $(DRV_TOPDIR)/include
 
 INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/linux -I$(DRV_INCLUDES)/linux/asm
 DEFINES  = 	-DKOLIBRI -D__KERNEL__ -DCONFIG_X86_32 
-CFLAGS = 	-c -Os $(INCLUDES) $(DEFINES) -march=i486 -fomit-frame-pointer -fno-builtin-printf 
+CFLAGS = 	-c -Os $(INCLUDES) $(DEFINES) -march=i486 -fomit-frame-pointer -fno-builtin-printf \
+-mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2
 
 NAME:=	  libddk
 
