@@ -933,7 +933,9 @@ int13_call:
         mov     [ebx+v86_regs.eflags], 20200h
         mov     esi, [sys_v86_machine]
         mov     ecx, 0x502
+        push fs
         call    v86_start
+        pop  fs
         and     [bios_hdpos], 0
         pop     edi esi ecx ebx
         movzx   edx, byte [OS_BASE + 512h]
