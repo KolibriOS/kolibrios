@@ -144,7 +144,7 @@ struc APPDATA
   .ev_count_       dd ? ;unused    ;+20
   .exc_handler     dd ?            ;+24
   .except_mask     dd ?            ;+28
-  .pl0_stack       dd ? ;unused    ;+32
+  .pl0_stack       dd ?            ;+32
   .heap_base       dd ?            ;+36
   .heap_top        dd ?            ;+40
   .cursor          dd ?            ;+44

@@ -322,8 +322,10 @@ __exports:
           unmap_pages,           'UnmapPages',         \      ; eax, ecx
           sys_msg_board_str,     'SysMsgBoardStr',     \
           get_timer_ticks,       'GetTimerTicks',      \
+          get_stack_base,        'GetStackBase',       \
           delay_hs,              'Delay',              \      ; ebx
-          set_mouse_data,        'SetMouseData'
+          set_mouse_data,        'SetMouseData',       \      ;
+          set_keyboard_data,     'SetKeyboardData'            ; gcc fastcall
 
 
 
