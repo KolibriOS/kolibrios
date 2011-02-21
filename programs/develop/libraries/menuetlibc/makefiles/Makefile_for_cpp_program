@@ -4,7 +4,8 @@ include $(MENUETDEV)/osrules.mak
 
 $(OUTFILE): $(OBJS)
 	$(MLD) $(OUTFILE) $(OBJS) -lcpp $(LIBS) $(LDFLAGS) $(LD32OPT)
-
+	objcopy $(OUTFILE) -O binary
+	
 .c.o: 
 	$(MGCC) $*.c $*.o $(CFLAGS) $(GCC32OPT)
 
