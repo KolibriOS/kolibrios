@@ -1,0 +1,4 @@
+include ../tmp_make
+
+all:
+	ar rcs $(OUTFILE) $(B_MENUET_LIBC_OBJS)

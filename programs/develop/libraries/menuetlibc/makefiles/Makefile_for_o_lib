@@ -1,0 +1,28 @@
+include $(MENUETDEV)/osrules.mak
+
+.SUFFIXES: .asm;
+
+$(OUTFILE): $(OBJS)
+	ld -r -o $(OUTFILE) $(OBJS) $(LDFLAGS) $(LD32OPT)
+
+.c.o: 
+	$(MGCC) $*.c $*.o $(CFLAGS) $(GCC32OPT)
+
+.cpp.o: 
+	$(MGPP) $*.cpp $*.o $(CPPFLAGS) $(GCC32OPT)
+	
+.cc.o: 
+	$(MGPP) $*.cc $*.o $(CPPFLAGS) $(GCC32OPT)
+
+.asm.o:
+	nasm $*.asm -f $(ASMFMT) -o $*.o
+
+.s.o:
+	cpp $*.s -o $*.asm -nostdinc -I$(MENUETDEV)/include
+	as $*.asm $(AS32OPT) -o $*.o
+	$(RM) $*.asm
+
+clean:
+	$(RM) $(OBJS) $(OUTFILE)
+
+rebuild: clean $(OUTFILE)
