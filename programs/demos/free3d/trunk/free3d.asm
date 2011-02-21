@@ -1,4 +1,12 @@
 ;---------------------------------------------------------------------
+; Free3D version 0.6
+;
+; last update:  21/02/2011
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      advanced control for mouse
+;               advanced control for keyboard:
+;               W,A,S,D adn Arrow UP,Down,Left,Right
+;---------------------------------------------------------------------
 ; Free3D version 0.5
 ;
 ; last update:  20/02/2011
@@ -28,15 +36,6 @@ ICON_SIZE_X	equ	128	;64
 ICON_SIZE_Y	equ	128	;64
 
 Floors_Height	equ	32000
-;ceil	=	sinus+TEX_SIZE	;16*1024
-;wall	=	ceil+TEX_SIZE*1
-;wall2	=	ceil+TEX_SIZE*2
-;wall3	=	ceil+TEX_SIZE*3
-;wall4	=	ceil+TEX_SIZE*4
-;wall5	=	ceil+TEX_SIZE*5
-;wall6	=	ceil+TEX_SIZE*6
-;wall7	=	ceil+TEX_SIZE*7
-;APP_MEM	equ	0x400000
 ;---------------------------------------------------------------------
 use32
 org	0x0
@@ -49,16 +48,21 @@ org	0x0
 	dd 0x0
 	dd path
 ;---------------------------------------------------------------------
-include '..\..\..\macros.inc'
+include '../../../macros.inc'
 ;include	'macros.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 ;include 'load_lib.mac'
 @use_library
-;COLOR_ORDER	equ OTHER
-;include		'gif_lite.inc'
 ;---------------------------------------------------------------------
 START:	; start of execution
 	mcall	68,11
+	mcall	66,1,1
+	mcall	40,0x27
+
+	mcall	9,procinfo,-1
+	mov	ecx,[ebx+30]	; PID
+	mcall	18,21
+	mov	[active_process],eax	; WINDOW SLOT
 
 load_libraries	l_libs_start,end_l_libs
 	test	eax,eax
@@ -84,158 +88,91 @@ load_libraries	l_libs_start,end_l_libs
 	add	esi,4
 	fadd	[sininc]
 	loop	.sinlp
-	call	draw_window	; at first, draw the window
-	call	draw_stuff
-;--------------------------------------
-align	4
-gamestart:
-; ******* MOUSE CHECK *******
-;	mov	eax,37	; check mouse (use mouse over window to navigate)
-;	mov	ebx,2	; check mousebuttons
-;	mcall
-;	cmp	eax,0	; only use mouse when button down
-;	je	noneed	; deactivated cause of disappear-bug etc.
-
-	mcall	37,1	; check	mouseposition
-	mov	ebx,eax
-	shr	eax,16
-	and	eax,0x0000FFFF	; mousex
-	and	ebx,0x0000FFFF	; mousey
-
-	cmp	eax,5	; mouse out of window ?
-	jb	check_refresh	; it will prevent an app-crash
-
-	cmp	ebx,22
-	jb	check_refresh
-
-	cmp	eax,640
-	jg	check_refresh
-
-	cmp	ebx,501
-	jg	check_refresh
-
-	cmp	eax,315	; navigating?
-	jb	m_left
-
-	cmp	eax,325	;
-	jg	m_right
-;--------------------------------------	
-continue:
-	cmp	ebx,220	;
-	jb	s_up
-
-	cmp	ebx,260	;
-	jg	s_down
-;--------------------------------------
-;   ******* END OF MOUSE CHECK *******
-align	4
-check_refresh:
-
-;	mov	eax,23	; wait for system event with 10 ms timeout
-;	mov	ebx,1	; thats max 100 FPS
-	mcall	11	; ask no wait for full speed
-
-	cmp	eax,1	; window redraw request ?
-	je	red2
-
-	cmp	eax,2	; key in buffer ?
-	je	key2
-
-	cmp	eax,3	; button in buffer ?
-	je	button2
-
-	mov	edi,[mouseya]	; check flag if a refresh has to be done
-	cmp	edi,1
-	jne	gamestart
-
-	mov	[mouseya],dword 0
-	call	draw_stuff
-	jmp	gamestart
 ;---------------------------------------------------------------------
+	call	cursor_to_screen_center
+	call	set_new_cursor_skin
+;---------------------------------------------------------------------	
 align	4
-red2:	; redraw
+red:	; redraw
 	call	draw_window
 	call	draw_stuff
-	jmp	gamestart
 ;---------------------------------------------------------------------
 align	4
-key2:	; key
-	mcall	2
-	cmp	al,1
-	je	gamestart	; keybuffer empty
+still:
+	mcall	10	; ask no wait for full speed
 
-	cmp	ah,27	; esc=End App
-	je	finish
+	cmp	eax,1	; window redraw request ?
+	je	red
 
-	cmp	ah,178	; up
-	je	s_up
+	cmp	eax,2	; key in buffer ?
+	je	key
 
-	cmp	ah,177	; down
-	je	s_down
+	cmp	eax,3	; button in buffer ?
+	je	button
 
-	cmp	ah,176	; left
-	je	s_left
-
-	cmp	ah,179	; right
-	je	s_right
-
-	jmp	gamestart	; was any other key
+	cmp	eax,6
+	jne	still
 ;---------------------------------------------------------------------
-align	4
-s_up:	; walk forward (key or mouse)
-	mov	eax,[vpx]
-	mov	ebx,[vpy]
+mouse:
+	mcall	18,7
+	cmp	[active_process],eax
+	jne	still
 
-	mov	ecx,[vheading]
-	mov	edi,[sinus+ecx*4]
+	mcall	37,1
 
-	mov	edx,[vheading]
-	lea	edx,[sinus+3600+edx*4]
-	cmp	edx,eosinus	;cosinus taken from (sinus plus 900) mod 3600
-	jb	ok200
+	xor	ebx,ebx
+	mov	bx,ax  ; EBX mouse y
+	shr	eax,16 ; EAX mouse x
 
-	sub	edx,14400
+	mov	ecx,[mouse_position_old]
+	xor	edx,edx
+	mov	dx,cx  ; EDX mouse y old
+	shr	ecx,16 ; ECX mouse x old
+	
+	cmp	eax,ecx
+	je	.y	;still
+	ja	.turn_left
+;---------------------------------------------------------------------
+.turn_right:
+	xchg	eax,ecx
+	sub	eax,ecx
+	mov	edi,[vheading]
+	add	edi,eax
+	jmp	@f
+;---------------------------------------------------------------------
+.turn_left:
+	sub	eax,ecx
+	mov	edi,[vheading]
+	sub	edi,eax
 ;--------------------------------------
-ok200:
-	mov	esi,[edx]
-;	sal	esi,1	; edit walking speed here
-;	sal	edi,1
+@@:
+	call	check_range
+;---------------------------------------------------------------------
+.y:
+	cmp	ebx,edx
+	je	.red
+	ja	.walk_down
+;--------------------------------------
+.walk_up:	
+	sub	edx,ebx
+	mov	ecx,edx
+	call	prepare_2
+	jz	.1
+;--------------------------------------	
 	add	eax,edi	; newPx
 	add	ebx,esi	; newPy
-	mov	edi,eax	; newPx / ffff
-	mov	esi,ebx	; newPy / ffff
-	sar	edi,16
-	sar	esi,16
-	mov	ecx,esi
-	sal	ecx,5	; equal *32
-	lea	ecx,[grid+ecx+edi]
-	cmp	[ecx],byte 0	; collision check
-	jne	cannotwalk0
-	mov	[vpx],eax
-	mov	[vpy],ebx
-	mov	[mouseya],dword 1	; set refresh	flag
-;--------------------------------------	
-cannotwalk0:
-	jmp	check_refresh
+	jmp	.1
 ;---------------------------------------------------------------------
-align	4
-s_down:	; walk	backward
-	mov	eax,[vpx]
-	mov	ebx,[vpy]
-	mov	ecx,[vheading]
-	mov	edi,[sinus+ecx*4]
-	mov	edx,[vheading]
-	lea	edx,[sinus+3600+edx*4]
-	cmp	edx,eosinus	; cosinus taken from (sinus plus 900) mod 3600
-	jb	ok201
-	sub	edx,14400
-;--------------------------------------
-ok201:
-	mov	esi,[edx]
-;	sal	esi,1	; edit walking speed here
-;	sal	edi,1
+.walk_down:
+	sub	ebx,edx
+	mov	ecx,ebx
+	call	prepare_2
+	jz	.1
+	
 	sub	eax,edi	; newPx
 	sub	ebx,esi	; newPy
+;--------------------------------------
+.1:
 	mov	edi,eax	; newPx / ffff
 	mov	esi,ebx	; newPy / ffff
 	sar	edi,16
@@ -244,80 +181,232 @@ ok201:
 	sal	ecx,5
 	lea	ecx,[grid+ecx+edi]
 	cmp	[ecx],byte 0
-	jne	cannotwalk1
+	je	@f
+	
+	call	cursor_to_screen_center	
+	jmp	still	;cannotwalk
+;---------------------------------------------------------------------
+@@:
 	mov	[vpx],eax
 	mov	[vpy],ebx
-	mov	[mouseya],dword 1
 ;--------------------------------------
-cannotwalk1:
-	jmp	check_refresh
+.red:
+	call	cursor_to_screen_center
+	jmp	red
 ;---------------------------------------------------------------------
 align	4
-s_left:	; turn	left	(key)
-	mov	edi,[vheading]	; heading
-	add	edi,50
-	cmp	edi,3600
-	jb	ok_heading0
+prepare_2:
+	shr	ecx,4
+	push	ecx
+	call	prepare_1
+	pop	ecx
+	cmp	ecx,3
+	jb	@f
+	mov	ecx,3
+@@:
+	shl	edi,cl
+	shl	esi,cl
+	test	ecx,ecx
+	ret
+;---------------------------------------------------------------------
+align	4
+check_range:
+	cmp	edi,0
+	jge	@f
 
-	sub	edi,3600
+	mov	edi,3600
+	jmp	.store
 ;--------------------------------------
-ok_heading0:
+@@:
+	cmp	edi,3600
+	jle	@f
+
+	xor	edi,edi
+;--------------------------------------	
+@@:
+.store:
 	mov	[vheading],edi
-	mov	[mouseya],dword 1
-	jmp	check_refresh
+	ret
+;---------------------------------------------------------------------
+align	4
+cursor_to_screen_center:
+	mcall	18,15
+	mcall	37,1
+	mov	[mouse_position_old],eax
+	ret
+;---------------------------------------------------------------------
+set_new_cursor_skin:
+	mcall	68,12,32*32*4
+	mov	ecx,eax
+	mcall	37,4,,2
+	mov	ecx,eax
+	mcall	37,5
+	ret
+;---------------------------------------------------------------------
+align	4
+key:	; key
+	mcall	2
+	cmp	[extended_key],1
+	je	.extended_key
+	test	al, al
+	jnz	still
+
+	cmp	ah, 0xE0
+	jne	@f
+
+	mov	[extended_key],1
+	jmp	still
+;---------------------------------------------------------------------
+@@:
+	cmp	ah,1	; Esc
+	je	finish
+
+	cmp	ah,17 ; W up
+	je	s_up
+
+	cmp	ah,31 ; S down
+	je	s_down
+
+	cmp	ah,30 ; A left
+	je	w_left	;s_left
+
+	cmp	ah,32 ; D right
+	je	w_right	;s_right
+
+	jmp	still
+;---------------------------------------------------------------------
+.extended_key:
+	mov	[extended_key],0
+	mov	[current_key_code],ah
+
+	cmp	ah,27	; esc=End App
+	je	finish
+
+	cmp	ah,72 ; up arrow
+	je	s_up
+
+	cmp	ah,80 ; down arrow
+	je	s_down
+
+	cmp	ah,75 ; left arrow
+	je	s_left
+
+	cmp	ah,77 ; right arrow
+	je	s_right
+
+	jmp	still
+;---------------------------------------------------------------------
+align	4
+smart_clr_key_buf:
+	mov	al,[old_key_code]
+	mov	ah,[current_key_code]
+	mov	[old_key_code],ah
+	cmp	al,ah
+	jne	.end
+;--------------------------------------
+.still:
+	mcall	2
+	cmp	[extended_key],1
+	je	.extended_key
+
+	test	al, al
+	jnz	.end
+
+	cmp	ah, 0xE0
+	jne	.end
+
+	mov	[extended_key],1
+	jmp	.still
+.end:
+	call	draw_stuff
+	jmp	still
+;---------------------------------------------------------------------
+.extended_key:
+	mov  [extended_key],0
+	mov  [current_key_code],ah
+	jmp  smart_clr_key_buf
+;---------------------------------------------------------------------
+align	4
+w_left:		; walk left
+	call	prepare_1
+	add	eax,esi	; newPx
+	sub	ebx,edi	; newPy
+	jmp	s_down.1
+;---------------------------------------------------------------------
+align	4
+w_right:	; walk right
+	call	prepare_1
+	sub	eax,esi	; newPx
+	add	ebx,edi	; newPy
+	jmp	s_down.1
+;---------------------------------------------------------------------
+align	4
+s_up:	; walk forward (key or mouse)
+	call	prepare_1
+;	sal	esi,1	; edit walking speed here
+;	sal	edi,1
+	add	eax,edi	; newPx
+	add	ebx,esi	; newPy
+	jmp	s_down.1
+;---------------------------------------------------------------------
+align	4
+s_down:	; walk	backward
+	call	prepare_1
+;	sal	esi,1	; edit walking speed here
+;	sal	edi,1
+	sub	eax,edi	; newPx
+	sub	ebx,esi	; newPy
+.1:
+	mov	edi,eax	; newPx / ffff
+	mov	esi,ebx	; newPy / ffff
+	sar	edi,16
+	sar	esi,16
+	mov	ecx,esi
+	sal	ecx,5
+	lea	ecx,[grid+ecx+edi]
+	cmp	[ecx],byte 0
+	jne	smart_clr_key_buf	;cannotwalk
+
+	mov	[vpx],eax
+	mov	[vpy],ebx
+	jmp	smart_clr_key_buf
+;---------------------------------------------------------------------
+align	4
+prepare_1:
+	mov	eax,[vpx]
+	mov	ebx,[vpy]
+	mov	ecx,[vheading]
+	mov	edx,ecx
+	mov	edi,[sinus+ecx*4]
+	lea	edx,[sinus+3600+edx*4]
+	cmp	edx,eosinus	; cosinus taken from (sinus plus 900) mod 3600
+	jb	@f
+
+	sub	edx,14400
+;--------------------------------------
+@@:
+	mov	esi,[edx]
+	ret
+;---------------------------------------------------------------------
+align	4
+s_left:		; turn	left	(key)
+	mov	edi,[vheading]
+	add	edi,50
+	jmp	s_right.1
 ;---------------------------------------------------------------------
 align	4
 s_right:	; turn	right
 	mov	edi,[vheading]
 	sub	edi,50
-	cmp	edi,-1
-	jg	ok_heading1
-
-	add	edi,3600
-;--------------------------------------	
-ok_heading1:
-	mov	[vheading],edi
-	mov	[mouseya],dword 1
-	jmp	check_refresh
+.1:
+	call	check_range
+	jmp	smart_clr_key_buf
 ;---------------------------------------------------------------------
 align	4
-m_left:	; turn	left	(mouse)
-	mov	edi,[vheading]	; heading
-	mov	ecx,315
-	sub	ecx,eax
-	sar	ecx,2
-	add	edi,ecx
-	cmp	edi,3600
-	jb	ok_heading2
-
-	sub	edi,3600
-;--------------------------------------	
-ok_heading2:
-	mov	[vheading],edi
-	mov	[mouseya],dword 1
-	jmp	continue	; allow both: walk and rotate
-;---------------------------------------------------------------------
-align	4
-m_right:	; turn right
-	mov	edi,[vheading]
-	sub	eax,325
-	sar	eax,2
-	sub	edi,eax
-	cmp	edi,-1
-	jg	ok_heading3
-
-	add	edi,3600
-;--------------------------------------
-ok_heading3:
-	mov	[vheading],edi
-	mov	[mouseya],dword 1
-	jmp	continue
-;---------------------------------------------------------------------
-align	4
-button2:	; button
+button:	; button
 	mcall	17
 	cmp	ah,1	; button id=1 ?
-	jne	gamestart
+	jne	still	;gamestart
 ;--------------------------------------
 finish:
 	mcall	-1	; close this program
@@ -501,48 +590,48 @@ nodouble:
 	cmp	eax,80
 	jg	nodark0
 ; split	rgb
-	mov	[blue],edx
-	and	[blue],dword 255
+	mov	[blue_color],edx
+	and	[blue_color],dword 255
 
 	shr	edx,8
-	mov	[green],edx
-	and	[green],dword 255
+	mov	[green_color],edx
+	and	[green_color],dword 255
 
 	shr	edx,8
-	mov	[red],edx
-	and	[red],dword 255
+	mov	[red_color],edx
+	and	[red_color],dword 255
 
 	mov	eax,81	; darkness parameter
 	sub	eax,[vdd]
 	sal	eax,1
 ; reduce rgb
-	sub	[red],eax
-	cmp	[red],dword 0
+	sub	[red_color],eax
+	cmp	[red_color],dword 0
 	jg	notblack10
 
-	mov	[red],dword 0
+	mov	[red_color],dword 0
 ;--------------------------------------
 notblack10:
-	sub	[green],eax
-	cmp	[green],dword 0
+	sub	[green_color],eax
+	cmp	[green_color],dword 0
 	jg	notblack20
 
-	mov	[green],dword 0
+	mov	[green_color],dword 0
 ;--------------------------------------
 notblack20:
-	mov	edx,[blue]
-	sub	[blue],eax
-	cmp	[blue],dword 0
+	mov	edx,[blue_color]
+	sub	[blue_color],eax
+	cmp	[blue_color],dword 0
 	jg	notblack30
 
-	mov	[blue],dword 0
+	mov	[blue_color],dword 0
 ;--------------------------------------
 notblack30:
-	shl	dword [red],16	; reassemble rgb
-	shl	dword [green],8
-	mov	edx,[red]
-	or	edx,[green]
-	or	edx,[blue]
+	shl	dword [red_color],16	; reassemble rgb
+	shl	dword [green_color],8
+	mov	edx,[red_color]
+	or	edx,[green_color]
+	or	edx,[blue_color]
 ;--------------------------------------
 nodark0:
 ;   eo custom darken floor
@@ -887,16 +976,16 @@ dark_distance:
 	cmp	eax,50
 	jg	nodark
 ; split rgb
-	mov	[blue],edx
-	and	[blue],dword 255
+	mov	[blue_color],edx
+	and	[blue_color],dword 255
 
 	shr	edx,8
-	mov	[green],edx
-	and	[green],dword 255
+	mov	[green_color],edx
+	and	[green_color],dword 255
 
 	shr	edx,8
-	mov	[red],edx
-	and	[red],dword 255
+	mov	[red_color],edx
+	and	[red_color],dword 255
 
 	mov	eax,51	; darkness parameter
 	sub	eax,[vdd]
@@ -908,36 +997,36 @@ dark_distance:
 align	4
 isdarkside:
 ; reduce rgb
-	sub	[red],eax
-	cmp	[red],	dword 0
+	sub	[red_color],eax
+	cmp	[red_color],dword 0
 	jg	notblack10b
 
-	mov	[red],dword 0
+	mov	[red_color],dword 0
 ;--------------------------------------
 align	4
 notblack10b:
-	sub	[green],eax
-	cmp	[green],dword 0
+	sub	[green_color],eax
+	cmp	[green_color],dword 0
 	jg	notblack20b
 
-	mov	[green],dword 0
+	mov	[green_color],dword 0
 ;--------------------------------------
 align	4
 notblack20b:
-	mov	edx,[blue]
-	sub	[blue],eax
-	cmp	[blue],dword 0
+	mov	edx,[blue_color]
+	sub	[blue_color],eax
+	cmp	[blue_color],dword 0
 	jg	notblack30b
 
-	mov	[blue],dword 0
+	mov	[blue_color],dword 0
 ;--------------------------------------	
 align	4
 notblack30b:
-	shl	dword [red],16	; reassemble rgb
-	shl	dword [green],8
-	mov	edx,[red]
-	or	edx,[green]
-	or	edx,[blue]
+	shl	dword [red_color],16	; reassemble rgb
+	shl	dword [green_color],8
+	mov	edx,[red_color]
+	or	edx,[green_color]
+	or	edx,[blue_color]
 	mov	eax,edx
 ;--------------------------------------
 align	4
@@ -1119,13 +1208,16 @@ vpx:
 vpy:
 	dd 0x0001FFFF
 
-title	db 'Free3D v0.5 - fisheye raycasting engine etc.',0
+title	db 'Free3D v0.6 - fisheye raycasting engine etc.',0
 
 sindegree	dd 0.0
 sininc		dd 0.0017453292519943295769236907684886
 sindiv		dd 6553.5
 ;textures:
 ;file 'texture.gif'
+current_key_code	db 0
+old_key_code		db 0
+extended_key		db 0
 ;---------------------------------------------------------------------
 align	4
 fileinfo:
@@ -1242,6 +1334,10 @@ wall5	rd 1
 wall6	rd 1
 wall7	rd 1
 ;screen_buffer	rd 1
+active_process	rd 1
+
+;mouse_position		rd 1
+mouse_position_old	rd 1
 ;---------------------------------------------------------------------
 align	4
 col1:
@@ -1300,8 +1396,8 @@ h_old:
 	dd ?	;-
 vbottom:
 	dd ?	;-
-mouseya:
-	dd ?	;-
+;mouseya:
+;	dd ?	;-
 remeax:
 	dd ?	;-
 remebx:
@@ -1314,11 +1410,11 @@ remedi:
 	dd ?	;-
 remesi:
 	dd ?	;-
-red:
+red_color:
 	dd ?	;-
-green:
+green_color:
 	dd ?	;-
-blue:
+blue_color:
 	dd ?	;-
 pseudo:
 	dd ?	;-
@@ -1337,8 +1433,11 @@ eosinus:
 ;	rd 16*1024*4
 ;---------------------------------------------------------------------
 align	4
-	rb 1024
+	rb 4096
 stacktop:
+;---------------------------------------------------------------------
+procinfo:
+	rb 1024
 ;---------------------------------------------------------------------
 path:
 	rb 4096
