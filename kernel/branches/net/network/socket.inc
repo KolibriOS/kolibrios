@@ -57,9 +57,6 @@ virtual at IP_SOCKET.end
 	.LocalPort		dw ?
 	.RemotePort		dw ?
 
-	.OrigRemoteIP		dd ? ; original remote IP address (used to reset to LISTEN state)
-	.OrigRemotePort 	dw ? ; original remote port (used to reset to LISTEN state)
-
 	.t_state		dd ? ; TCB state
 	.t_rxtshift		dd ?
 	.t_rxtcur		dd ?
@@ -1491,8 +1488,6 @@ SOCKET_fork:
 	rep	movsd
 
 	and	[eax + SOCKET.options], not SO_ACCEPTCON
-
-  ;;;;;      call    SOCKET_notify_owner
 	pop	edi ecx esi
 
 	ret
@@ -1625,7 +1620,7 @@ SOCKET_check_owner:
 
 
 
-;---------------------------------------------------
+;------------------------------------------------------
 ;
 ; SOCKET_process_end
 ;
@@ -1675,6 +1670,8 @@ SOCKET_process_end:
 
   .tcp:
 
+	;;; TODO
+
 	jmp	.next_socket
 
   .done:
@@ -1685,6 +1682,43 @@ SOCKET_process_end:
 
 
 
+;-----------------------------------------------------------------
+;
+; SOCKET_is_connecting
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_is_connecting:
+
+
+	and	[eax + SOCKET.options], not (SS_ISCONNECTED + SS_ISDISCONNECTING + SS_ISCONFIRMING)
+	or	[eax + SOCKET.options], SS_ISCONNECTING
+
+	jmp	SOCKET_notify_owner
+
+
+
+;-----------------------------------------------------------------
+;
+; SOCKET_is_connected
+;
+;  IN:  eax = socket ptr
+;  OUT: /
+;
+;-----------------------------------------------------------------
+
+align 4
+SOCKET_is_connected:
+
+
+	and	[eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISDISCONNECTING + SS_ISCONFIRMING)
+	or	[eax + SOCKET.options], SS_ISCONNECTED
+
+	jmp	SOCKET_notify_owner
 
 
 
@@ -1738,13 +1772,15 @@ SOCKET_is_disconnected:
 align 4
 SOCKET_cant_recv_more:
 
+	or	[eax + SOCKET.options], SS_CANTRCVMORE
+
 	ret
 
 
 
 ;-----------------------------------------------------------------
 ;
-; SOCKET_is_connected
+; SOCKET_cant_send_more
 ;
 ;  IN:  eax = socket ptr
 ;  OUT: /
@@ -1752,10 +1788,8 @@ SOCKET_cant_recv_more:
 ;-----------------------------------------------------------------
 
 align 4
-SOCKET_is_connected:
+SOCKET_cant_send_more:
 
+	or	[eax + SOCKET.options], SS_CANTSENDMORE
 
-	and	[eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISDISCONNECTING + SS_ISCONFIRMING)
-	or	[eax + SOCKET.options], SS_ISCONNECTED
-
-	jmp	SOCKET_notify_owner
+	ret

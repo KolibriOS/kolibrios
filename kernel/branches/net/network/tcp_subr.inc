@@ -173,9 +173,7 @@ TCP_close:
 ;;; TODO: update slow start threshold
 ;;; TODO: release connection resources
 
-; Now, mark the socket as being disconnected
-
-	mov	[eax + SOCKET.state], 0 ;;; FIXME
+	call	SOCKET_is_disconnected
 
 	ret
 

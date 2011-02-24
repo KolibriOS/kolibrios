@@ -33,7 +33,7 @@ local	.exit
 	cmp	[ebx + SOCKET.Domain], AF_INET4
 	jne	.loop
 
-	cmp	[ebx + SOCKET.Protocol], IP_PROTO_TCP		;;; We should also check if family is AF_INET
+	cmp	[ebx + SOCKET.Protocol], IP_PROTO_TCP
 	jne	.loop
 
 	test	[ebx + TCP_SOCKET.t_flags], TF_DELACK

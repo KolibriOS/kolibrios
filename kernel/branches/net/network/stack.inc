@@ -60,7 +60,16 @@ SOCK_DGRAM		equ 2
 SOCK_RAW		equ 3
 
 ; Socket options
-SO_ACCEPTCON		equ 1
+SO_ACCEPTCON		equ 1 shl 0
+SO_BROADCAST		equ 1 shl 1
+SO_DEBUG		equ 1 shl 2
+SO_DONTROUTE		equ 1 shl 3
+SO_KEEPALIVE		equ 1 shl 4
+SO_OOBINLINE		equ 1 shl 5
+SO_REUSEADDR		equ 1 shl 6
+SO_REUSEPORT		equ 1 shl 7
+SO_USELOOPBACK		equ 1 shl 8
+
 
 ; Socket States
 SS_NOFDREF		equ 0x001	; no file table ref any more
