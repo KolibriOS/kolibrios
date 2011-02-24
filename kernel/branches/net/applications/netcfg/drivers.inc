@@ -135,9 +135,13 @@ dd  0x08001516
 dd  0x08911516
 dd  0x0
 
-db 'dec21x4x',0
+db  'dec21x4x',0
 dd  0x00091011
 dd  0x00191011
+dd  0x0
+
+db  'R6040',0
+dd  0x604017F3
 dd  0x0
 
 dd  0x0 ; driverlist end
