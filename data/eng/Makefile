@@ -213,6 +213,7 @@ COPY_FILES:=\
  games/snake.ini:GAMES/SNAKE.INI:$(PROGS)/games/snake/trunk/snake.ini \
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
  .shell:.shell:$(PROGS)/system/shell/bin/eng/.shell \
+ mykey.ini:MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey.ini \
 # end of list
 
 # The list of all C-- programs with one main C-- file.
