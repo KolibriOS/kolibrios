@@ -195,6 +195,7 @@ virtual at ebx
 
 	.cur_rx 	dw ?
 	.cur_tx 	dw ?
+	.last_tx	dw ?
 	.phy_addr	dw ?
 	.phy_mode	dw ?
 	.mcr0		dw ?
@@ -205,7 +206,7 @@ virtual at ebx
 	.pci_dev	db ?
 	.irq_line	db ?
 
-	rb 3		; dword alignment
+	rb 1		; dword alignment
 
 	.tx_ring:	rb (((x_head.sizeof*TX_RING_SIZE)+32) and 0xfffffff0)
 	.rx_ring:	rb (((x_head.sizeof*RX_RING_SIZE)+32) and 0xfffffff0)
@@ -650,6 +651,7 @@ init_txbufs:
 
     .next_desc:
 	mov	[esi + x_head.ndesc], eax
+	mov	[edi + x_head.skb_ptr], 0
 	mov	[esi + x_head.status], DSC_OWNER_MAC
 
 	add	eax, x_head.sizeof
@@ -831,7 +833,7 @@ transmit:
 	xor	eax, eax
 	dec	eax
   .fail:
-	DEBUGF	1,"R6040: Send timeout\n"
+	DEBUGF	1,"Send timeout\n"
 	ret	8
 
 
@@ -876,14 +878,16 @@ int_handler:
 	add	esi, 4
 	dec	ecx
 	jnz	.nextdevice
-				; If no device was found, abort (The irq was probably for a device, not registered to this driver)
+
+  .fail:				; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 	ret
 
 ; At this point, test for all possible reasons, and handle accordingly
 
   .got_it:
+	push ax
 
-	test	ax, RX_FINISH
+	test	word [esp], RX_FINISH
 	jz	.no_RX
 
 	push	ebx
@@ -942,11 +946,37 @@ int_handler:
 
 	jmp	EthReceiver
 
+
   .no_RX:
 
-  .fail:
+	test	word [esp], TX_FINISH
+	jz	.no_TX
 
+      .loop_tx:
+	movzx	edi, [device.last_tx]
+	shl	edi, 5
+	lea	edi, [device.tx_ring + edi]
 
+	test	[edi + x_head.status], DSC_OWNER_MAC
+	jnz	.tx_loop_end
+
+	cmp	[edi + x_head.skb_ptr], 0
+	je	 .tx_loop_end
+
+	DEBUGF	1,"Freeing buffer 0x%x\n", [edi + x_head.skb_ptr]
+
+	push	[edi + x_head.skb_ptr]
+	call	KernelFree
+	mov	[edi + x_head.skb_ptr], 0
+
+	inc	[device.last_tx]
+	and	[device.last_tx], TX_RING_SIZE - 1
+	jmp	.loop_tx
+
+      .tx_loop_end:
+
+  .no_TX:
+	pop	ax
 	ret
 
 
