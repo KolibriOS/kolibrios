@@ -7,7 +7,7 @@ CFLAGS = -c -O2 -mmmx -Winline
 
 DEFINES = -DHAVE_CONFIG_H -DPACKAGE -DPIXMAN_NO_TLS -DUSE_MMX
 
-INCLUDES = -I../pixman -I../newlib/include -I../newlib/include/sys
+INCLUDES = -I../pixman -I../newlib/include
 
 SOURCES =				\
 	pixman-image.c			\
