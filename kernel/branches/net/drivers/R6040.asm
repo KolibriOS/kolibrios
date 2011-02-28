@@ -24,10 +24,27 @@ format MS COFF
 
 	DEBUG			equ 1
 	__DEBUG__		equ 1
-	__DEBUG_LEVEL__ 	equ 1
+	__DEBUG_LEVEL__ 	equ 2
 
-	TX_RING_SIZE		equ 4
+	W_MAX_TIMEOUT		equ 0x0FFF	; max time out delay time
+
+	TX_TIMEOUT		equ 6000	; Time before concluding the transmitter is hung, in ms
+
+	TX_RING_SIZE		equ 4		; RING sizes must be a power of 2
 	RX_RING_SIZE		equ 4
+
+	RX_BUF_LEN_IDX		equ 3		; 0==8K, 1==16K, 2==32K, 3==64K
+
+; Threshold is bytes transferred to chip before transmission starts.
+
+	TX_FIFO_THRESH		equ 256 	; In bytes, rounded down to 32 byte units.
+
+; The following settings are log_2(bytes)-4:  0 == 16 bytes .. 6==1024.
+
+	RX_FIFO_THRESH		equ 4		; Rx buffer level before first PCI xfer.
+	RX_DMA_BURST		equ 4		; Maximum PCI burst, '4' is 256 bytes
+	TX_DMA_BURST		equ 4
+
 
 
 include 'proc32.inc'
@@ -39,42 +56,12 @@ public START
 public service_proc
 public version
 
+; Operational parameters that usually are not changed.
 
-; ethernet address length
-ETH_ALEN	equ 6
-ETH_HLEN	equ (2 * ETH_ALEN + 2)
-ETH_ZLEN	equ 60	    ; 60 + 4bytes auto payload for mininmum 64bytes frame length
-
-; system timer frequency
-HZ		equ 1000
-
-; max time out delay time
-W_MAX_TIMEOUT	equ 0x0FFF
-
-;; Size of the in-memory receive ring.
-RX_BUF_LEN_IDX	equ 3	    ;; 0==8K, 1==16K, 2==32K, 3==64K
-RX_BUF_LEN	equ (8192 << RX_BUF_LEN_IDX)
-
-;; PCI Tuning Parameters
-;   Threshold is bytes transferred to chip before transmission starts.
-TX_FIFO_THRESH	equ 256     ;; In bytes, rounded down to 32 byte units.
-
-;; The following settings are log_2(bytes)-4:  0 == 16 bytes .. 6==1024.
-RX_FIFO_THRESH	equ 4	    ;; Rx buffer level before first PCI xfer.
-RX_DMA_BURST	equ 4	    ;; Maximum PCI burst, '4' is 256 bytes
-TX_DMA_BURST	equ 4
-
-;; Operational parameters that usually are not changed.
 PHY1_ADDR	equ 1	    ;For MAC1
 PHY2_ADDR	equ 3	    ;For MAC2
 PHY_MODE	equ 0x3100  ;PHY CHIP Register 0
 PHY_CAP 	equ 0x01E1  ;PHY CHIP Register 4
-
-;; Time in jiffies before concluding the transmitter is hung.
-TX_TIMEOUT	equ ((6000*HZ)/1000)
-
-IO_SIZE   equ 256     ; RDC MAC I/O Size
-MAX_MAC 	equ 2	    ; MAX RDC MAC
 
 ;**************************************************************************
 ; RDC R6040 Register Definitions
@@ -139,9 +126,7 @@ PHY_CC		equ 0x88    ;PHY status change configuration register
 PHY_ST		equ 0x8A    ;PHY status register
 MAC_SM		equ 0xAC    ;MAC status machine
 MAC_ID		equ 0xBE    ;Identifier register
-;?[
-;TX_DCNT         equ 0x80    ;TX descriptor count
-;RX_DCNT         equ 0x80    ;RX descriptor count
+
 MAX_BUF_SIZE	equ 0x600   ;1536
 
 MBCR_DEFAULT	equ 0x012A  ;MAC Bus Control Register
@@ -168,6 +153,11 @@ ICPLUS_PHY_ID	equ 0x0243
 RX_INTS 	equ RX_FIFO_FULL or RX_NO_DESC or RX_FINISH
 TX_INTS 	equ TX_FINISH
 INT_MASK	equ RX_INTS or TX_INTS
+
+RX_BUF_LEN	equ (8192 << RX_BUF_LEN_IDX)	; Size of the in-memory receive ring.
+
+IO_SIZE 	equ 256     ; RDC MAC I/O Size
+MAX_MAC 	equ 2	    ; MAX RDC MAC
 
 
 virtual at 0
@@ -333,7 +323,7 @@ proc service_proc stdcall, ioctl:dword
 
 	find_irq [device.pci_bus], [device.pci_dev], [device.irq_line]
 
-	DEBUGF	2,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
+	DEBUGF	1,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
 	[device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
 
 ; Ok, the eth_device structure is ready, let's probe the device
@@ -359,11 +349,11 @@ proc service_proc stdcall, ioctl:dword
 ; If the device was already loaded, find the device number and return it in eax
 
   .find_devicenum:
-	DEBUGF	2,"Trying to find device number of already registered device\n"
+	DEBUGF	1,"Trying to find device number of already registered device\n"
 	call	NetPtrToNum						; This kernel procedure converts a pointer to device struct in ebx
 									; into a device number in edi
 	mov	eax, edi						; Application wants it in eax instead
-	DEBUGF	2,"Kernel says: %u\n", eax
+	DEBUGF	1,"Kernel says: %u\n", eax
 	ret
 
 ; If an error occured, remove all allocated data and exit (returning -1 in eax)
@@ -392,12 +382,12 @@ endp
 ;;/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\;;
 
 
-macro r6040_mdio_write reg, val {
-	stdcall r6040_phy_read, [io_addr], [r6040_private.phy_addr], reg
+macro mdio_write reg, val {
+	stdcall phy_read, [device.io_addr], [device.phy_addr], reg
 }
 
-macro r6040_mdio_write reg, val {
-	stdcall r6040_phy_write, [io_addr], [r6040_private.phy_addr], reg, val
+macro mdio_write reg, val {
+	stdcall phy_write, [device.io_addr], [devce.phy_addr], reg, val
 }
 
 
@@ -447,15 +437,9 @@ probe:
 	or	eax, dword [device.mac]
 	test	eax, eax
 	jnz	@f
-	DEBUGF	1, "MAC address not initialized\n" ;, generating random"
+	DEBUGF	2, "ERROR: MAC address not initialized!\n"
 
-	;Asper: Add here generate function call!
-	;       Temporary workaround: init by constant adress
-
-	mov	dword [device.mac], 0x00006000
-	mov	word [device.mac+4], 0x0001
      @@:
-
 	; Init RDC private data
 	mov	[device.mcr0], 0x1002
 	;mov     [private.phy_addr], 1 ; Asper: Only one network card is supported now.
@@ -465,7 +449,7 @@ probe:
 	stdcall phy_read, 1, 2
 	cmp	ax, 0xFFFF
 	jne	@f
-	DEBUGF	1, "Failed to detect an attached PHY\n" ;, generating random"
+	DEBUGF	2, "Failed to detect an attached PHY\n" ;, generating random"
 	mov	eax, -1
 	ret
      @@:
@@ -492,15 +476,16 @@ probe:
 	stdcall phy_write, eax, 4, PHY_CAP
 	stdcall phy_write, eax, 0, PHY_MODE
 
-;      if PHY_MODE = 0x3100
+      if PHY_MODE = 0x3100
 	call	phy_mode_chk
 	mov	[device.phy_mode], ax
 	jmp	.phy_readen
-;      end if
+      end if
 
-;      if not (PHY_MODE and 0x0100)
+      if not (PHY_MODE and 0x0100)
 	mov	[device.phy_mode], 0
-;      end if
+      end if
+
       .phy_readen:
 
 	; Set duplex mode
@@ -527,7 +512,7 @@ probe:
 align 4
 reset:
 
-	DEBUGF	1,"Resetting R6040\n"
+	DEBUGF	2,"Resetting R6040\n"
 
 	; Mask off Interrupt
 	xor	ax, ax
@@ -539,11 +524,11 @@ reset:
 ; attach int handler
 
 	movzx	eax, [device.irq_line]
-	DEBUGF	1,"Attaching int handler to irq %x\n", eax:1
+	DEBUGF	2,"Attaching int handler to irq %x\n", eax:1
 	stdcall AttachIntHandler, eax, int_handler, dword 0
 	test	eax, eax
 	jnz	@f
-	DEBUGF	1,"\nCould not attach int handler!\n"
+	DEBUGF	2,"\nCould not attach int handler!\n"
 ;        or      eax, -1
 ;        ret
        @@:
@@ -651,7 +636,7 @@ init_txbufs:
 
     .next_desc:
 	mov	[esi + x_head.ndesc], eax
-	mov	[edi + x_head.skb_ptr], 0
+	mov	[esi + x_head.skb_ptr], 0
 	mov	[esi + x_head.status], DSC_OWNER_MAC
 
 	add	eax, x_head.sizeof
@@ -663,8 +648,6 @@ init_txbufs:
 	lea	eax, [device.tx_ring]
 	GetRealAddr
 	mov	[device.tx_ring + x_head.sizeof*(TX_RING_SIZE - 1) + x_head.ndesc], eax
-
-	DEBUGF	1,"ok\n"
 
 	ret
 
@@ -682,17 +665,14 @@ init_rxbufs:
 	mov	ecx, RX_RING_SIZE
 
     .next_desc:
-	DEBUGF	1,"esi=0x%x, edx=0x%x, ", esi, edx
-	mov	[esi + x_head.ndesc], edx
+	 mov	 [esi + x_head.ndesc], edx
 
 	push	esi ecx
-	stdcall KernelAlloc, dword 2000
+	stdcall KernelAlloc, MAX_BUF_SIZE
 	pop	ecx esi
 
-	DEBUGF	1,"eax=0x%x, ", eax
 	mov	[esi + x_head.skb_ptr], eax
 	GetRealAddr
-	DEBUGF	1,"eax=0x%x\n", eax
 	mov	[esi + x_head.buf], eax
 	mov	[esi + x_head.status], DSC_OWNER_MAC
 
@@ -708,8 +688,6 @@ init_rxbufs:
 	GetRealAddr
 	mov	[device.rx_ring + x_head.sizeof*(RX_RING_SIZE - 1) + x_head.ndesc], eax
 
-	DEBUGF	1,"ok\n"
-
 	ret
 
 
@@ -724,10 +702,6 @@ phy_mode_chk:
 	stdcall phy_read, eax, 1
 	test	eax, 0x4
 	jz	.ret_0x8000
-
-;        jnz     @f
-;        mov     eax, 0x8000             ; Link Failed, full duplex
-;  @@:
 
 	; PHY Chip Auto-Negotiation Status
 	movzx	eax, [device.phy_addr]
@@ -774,9 +748,9 @@ phy_mode_chk:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 4
 transmit:
-	DEBUGF	1,"\nTransmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
+	DEBUGF	2,"\nTransmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
 	mov	eax, [esp+4]
-	DEBUGF	1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
+	DEBUGF	2,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
 	[eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
 	[eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
 	[eax+13]:2,[eax+12]:2
@@ -791,12 +765,14 @@ transmit:
 	add	edi, ebx
 	add	edi, device.tx_ring - ebx
 
-	DEBUGF	1,"R6040: TX buffer status: 0x%x\n", [edi + x_head.status]:4
+	DEBUGF	2,"TX buffer status: 0x%x\n", [edi + x_head.status]:4
 
-	test	[edi + x_head.status], 0x8000  ; check if buffer is available
+	test	[edi + x_head.status], DSC_OWNER_MAC	; check if buffer is available
 	jnz	.wait_to_send
 
   .do_send:
+
+	DEBUGF	2,"Sending now\n"
 
 	mov	eax, [esp+4]
 	mov	[edi + x_head.skb_ptr], eax
@@ -804,7 +780,7 @@ transmit:
 	mov	[edi + x_head.buf], eax
 	mov	ecx, [esp+8]
 	mov	[edi + x_head.len], cx
-	mov	[edi + x_head.status], 0x8000
+	mov	[edi + x_head.status], DSC_OWNER_MAC
 
 	; Trigger the MAC to check the TX descriptor
 	mov	ax, 0x01
@@ -813,27 +789,31 @@ transmit:
 	out	dx, ax
 
 	inc	[device.cur_tx]
-	and	[device.cur_tx], TX_RING_SIZE-1
+	and	[device.cur_tx], TX_RING_SIZE - 1
 	xor	eax, eax
 
 	ret	8
 
   .wait_to_send:
 
-;        mov     ecx, [timer_ticks]
-;        add     ecx, 100
-;     .l2:
-;        test    [eax + x_head.status], 0x8000
-;        jz      .do_send
-;        mov     esi, 10
-;        call    Sleep
-;        cmp     ecx, [timer_ticks]
-;        jl      .l2
+	DEBUGF	2,"Waiting for TX buffer\n"
 
+	call	GetTimerTicks		; returns in eax
+	lea	edx, [eax + 100]
+     .l2:
+	test	[edi + x_head.status], DSC_OWNER_MAC
+	jz	.do_send
+	mov	esi, 10
+	call	Sleep
+	call	GetTimerTicks
+	cmp	edx, eax
+	jl	.l2
+
+	DEBUGF	1,"Send timeout\n"
 	xor	eax, eax
 	dec	eax
   .fail:
-	DEBUGF	1,"Send timeout\n"
+	DEBUGF	1,"Send failed\n"
 	ret	8
 
 
@@ -848,7 +828,7 @@ transmit:
 align 4
 int_handler:
 
-	DEBUGF	1,"\nIRQ %x ", eax:2   ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
+	DEBUGF	2,"\nIRQ %x ", eax:2   ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
 
 ; Find pointer of device wich made IRQ occur
 
@@ -866,7 +846,7 @@ int_handler:
 	in	ax, dx
 	out	dx, ax		; send it back to ACK
 
-	DEBUGF	1,"MISR=%x\n", eax:4
+	DEBUGF	2,"MISR=%x\n", eax:4
 
 	; Check if we are interessed in some of the reasons
 
@@ -906,7 +886,7 @@ int_handler:
 	test	cx, DSC_OWNER_MAC
 	jnz	.no_RX
 
-	DEBUGF	1,"packet status=0x%x\n", cx
+	DEBUGF	2,"packet status=0x%x\n", cx
 
 	test	cx, DSC_RX_ERR		; Global error status set
 	jnz	.no_RX
@@ -925,12 +905,12 @@ int_handler:
 	push	ecx
 	push	[edx + x_head.skb_ptr]
 
-	DEBUGF	1,"packet ptr=0x%x\n", [edx + x_head.skb_ptr]
+	DEBUGF	2,"packet ptr=0x%x\n", [edx + x_head.skb_ptr]
 
 	; reset the RX descriptor
 
 	push	edx
-	stdcall KernelAlloc, 2000
+	stdcall KernelAlloc, MAX_BUF_SIZE
 	pop	edx
 	mov	[edx + x_head.skb_ptr], eax
 	GetRealAddr
@@ -958,22 +938,21 @@ int_handler:
 	lea	edi, [device.tx_ring + edi]
 
 	test	[edi + x_head.status], DSC_OWNER_MAC
-	jnz	.tx_loop_end
+	jnz	.no_TX
 
 	cmp	[edi + x_head.skb_ptr], 0
-	je	 .tx_loop_end
+	je	.no_TX
 
-	DEBUGF	1,"Freeing buffer 0x%x\n", [edi + x_head.skb_ptr]
+	DEBUGF	2,"Freeing buffer 0x%x\n", [edi + x_head.skb_ptr]
 
 	push	[edi + x_head.skb_ptr]
-	call	KernelFree
 	mov	[edi + x_head.skb_ptr], 0
+	call	KernelFree
 
 	inc	[device.last_tx]
 	and	[device.last_tx], TX_RING_SIZE - 1
-	jmp	.loop_tx
 
-      .tx_loop_end:
+	jmp	.loop_tx
 
   .no_TX:
 	pop	ax
@@ -985,7 +964,7 @@ int_handler:
 align 4
 init_mac_regs:
 
-	DEBUGF	1,"initializing MAC regs\n"
+	DEBUGF	2,"initializing MAC regs\n"
 
 	; MAC operation register
 	mov	ax, 1
@@ -1014,7 +993,7 @@ init_mac_regs:
 align 4
 proc  phy_read stdcall, phy_addr:dword, reg:dword
 
-	DEBUGF	1,"PHY read, addr=0x%x reg=0x%x\n", [phy_addr]:8, [reg]:8
+	DEBUGF	2,"PHY read, addr=0x%x reg=0x%x\n", [phy_addr]:8, [reg]:8
 
 	mov	eax, [phy_addr]
 	shl	eax, 8
@@ -1038,7 +1017,7 @@ proc  phy_read stdcall, phy_addr:dword, reg:dword
 	in	ax, dx
 	and	eax, 0xFFFF
 
-	DEBUGF	1,"PHY read, val=0x%x\n", eax:4
+	DEBUGF	2,"PHY read, val=0x%x\n", eax:4
 
 	ret
 
@@ -1052,7 +1031,7 @@ endp
 align 4
 proc  phy_write stdcall, phy_addr:dword, reg:dword, val:dword
 
-	DEBUGF	1,"PHY write, addr=0x%x reg=0x%x val=0x%x\n", [phy_addr]:8, [reg]:8, [val]:8
+	DEBUGF	2,"PHY write, addr=0x%x reg=0x%x val=0x%x\n", [phy_addr]:8, [reg]:8, [val]:8
 
 	mov	eax, [val]
 	set_io	0
@@ -1078,7 +1057,7 @@ proc  phy_write stdcall, phy_addr:dword, reg:dword, val:dword
 	jnz	.write
   @@:
 
-	DEBUGF	1,"PHY write ok\n"
+	DEBUGF	2,"PHY write ok\n"
 
 	ret
 endp
