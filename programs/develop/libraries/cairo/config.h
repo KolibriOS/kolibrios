@@ -24,11 +24,13 @@
 /* Define to 1 to enable cairo's cairo-script-interpreter feature */
 //#define CAIRO_HAS_INTERPRETER 1
 
+#define CAIRO_NO_MUTEX 1
+
 /* Define to 1 to enable cairo's pthread feature */
-//#define CAIRO_HAS_PTHREAD 1
+/* #undef CAIRO_HAS_PTHREAD */
 
 /* Define to 1 if we have full pthread support */
-//#define CAIRO_HAS_REAL_PTHREAD 1
+/* #undef CAIRO_HAS_REAL_PTHREAD */
 
 /* Define to 1 if libspectre is available */
 /* #undef CAIRO_HAS_SPECTRE */
@@ -40,7 +42,7 @@
 /* #undef CAIRO_HAS_TEST_SURFACES */
 
 /* Define to 1 to enable cairo's cairo-trace feature */
-//#define CAIRO_HAS_TRACE 1
+/* #undef CAIRO_HAS_TRACE */
 
 /* Define to 1 to disable certain code paths that rely heavily on double
    precision floating-point calculation */
@@ -73,7 +75,7 @@
 #define HAVE_DLFCN_H 1
 
 /* Define to 1 if you have the `drand48' function. */
-//#define HAVE_DRAND48 1
+#define HAVE_DRAND48 1
 
 /* Define to 1 if you have the `FcFini' function. */
 /* #undef HAVE_FCFINI */
@@ -173,7 +175,7 @@
 //#define HAVE_SCHED_H 1
 
 /* Define to 1 if you have the <setjmp.h> header file. */
-//#define HAVE_SETJMP_H 1
+#define HAVE_SETJMP_H 1
 
 /* Define to 1 if you have the <signal.h> header file. */
 //#define HAVE_SIGNAL_H 1
@@ -342,7 +344,7 @@
 #define X_DISPLAY_MISSING 1
 
 /* Number of bits in a file offset, on hosts where this is settable. */
-#define _FILE_OFFSET_BITS 64
+/* #undef _FILE_OFFSET_BITS */
 
 /* Define for large files, on AIX-style hosts. */
 /* #undef _LARGE_FILES */
@@ -362,5 +364,3 @@
 #ifndef __cplusplus
 /* #undef inline */
 #endif
-
-
