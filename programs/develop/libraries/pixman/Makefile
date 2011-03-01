@@ -3,9 +3,9 @@ LIBRARY = pixman-1
 
 CC = gcc
 
-CFLAGS = -c -O2 -mmmx -Winline
+CFLAGS = -c -O2 -mmmx -Winline -fomit-frame-pointer
 
-DEFINES = -DHAVE_CONFIG_H -DPACKAGE -DPIXMAN_NO_TLS -DUSE_MMX
+DEFINES = -DHAVE_CONFIG_H -DPIXMAN_NO_TLS -DUSE_MMX
 
 INCLUDES = -I../pixman -I../newlib/include
 

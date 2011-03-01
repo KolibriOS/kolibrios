@@ -99,7 +99,7 @@
 #define STDC_HEADERS 1
 
 /* Whether the tool chain supports __thread */
-#define TOOLCHAIN_SUPPORTS__THREAD /**/
+//#define TOOLCHAIN_SUPPORTS__THREAD /**/
 
 /* use ARM NEON assembly optimizations */
 /* #undef USE_ARM_NEON */
@@ -114,10 +114,10 @@
 #define USE_MMX 1
 
 /* use OpenMP in the test suite */
-#define USE_OPENMP 1
+//#define USE_OPENMP 1
 
 /* use SSE2 compiler intrinsics */
-#define USE_SSE2 1
+//#define USE_SSE2 1
 
 /* use VMX compiler intrinsics */
 /* #undef USE_VMX */

@@ -1,11 +1,12 @@
 
+
 LIBRARY = cairo
 
 CC = gcc
 
-CFLAGS = -c -O2
+CFLAGS = -c -O2 -fomit-frame-pointer
 
-DEFINES = -DHAVE_CONFIG_H -U_WIN32 -DCAIRO_NO_MUTEX
+DEFINES = -DHAVE_CONFIG_H -DCAIRO_NO_MUTEX -U_WIN32 -U_MSC_VER -U__WIN32__ 
 
 INCLUDES = -I../pixman -I../newlib/include -I../newlib/include/sys
 
@@ -26,7 +27,6 @@ SOURCES = 					\
 	cairo-clip.c \
 	cairo-color.c \
 	cairo-composite-rectangles.c \
-	cairo-debug.c \
 	cairo-device.c \
 	cairo-fixed.c \
 	cairo-font-face.c \
