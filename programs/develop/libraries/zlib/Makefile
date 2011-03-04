@@ -2,17 +2,20 @@
 # Copyright (C) 1995-2010 Jean-loup Gailly.
 # For conditions of distribution and use, see copyright notice in zlib.h
 
-
 CC=gcc
 CPP=gcc -E
 
 CFLAGS= -O3 -c -fomit-frame-pointer
 
+LDIMPORT:= -nostdlib --out-implib libzimp.a
+
+LDFLAGS:=  -shared -s -T ../newlib/dll.lds -Map map --image-base 0
+
 INCLUDES= -I../newlib/include
 
+LIBPATH:= -L../newlib
 
-STATICLIB=libz.a
-LIBS=$(STATICLIB) $(SHAREDLIBV)
+LIBS:=  -lamz -lgcc -lcimp
 
 AR=ar rc
 
@@ -27,10 +30,14 @@ OBJA =
 
 OBJS = $(OBJC) $(OBJA)
 
-all: libz.a
+all: libz.a libz.dll
 
 libz.a: $(OBJS)
 	$(AR) $@ $(OBJS)
+
+libz.dll: $(OBJECTS) Makefile
+	ld $(LDFLAGS) $(LDIMPORT) $(LIBPATH) -o $@ $(OBJS) $(LIBS) 
+
 
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<

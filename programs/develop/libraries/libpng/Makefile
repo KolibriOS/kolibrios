@@ -7,7 +7,11 @@ AR= ar rc
 
 CFLAGS = -c -O2 -fomit-frame-pointer
 
-DEFS = -DHAVE_CONFIG_H
+LDIMPORT:= -nostdlib --out-implib libpngimp.a --exclude-libs libamz.a
+
+LDFLAGS:=  -shared -s -T../newlib/dll.lds -Map map --image-base 0
+
+DEFS = -DHAVE_CONFIG_H -D__DYNAMIC_REENT__
 
 LIBPNG_DEFINES = -DPNG_CONFIGURE_LIBPNG 
 
@@ -15,12 +19,14 @@ DEFINES= $(DEFS) $(LIBPNG_DEFINES)
 
 INCLUDES= -I../newlib/include -I../zlib
 
+LIBPATH:= -L../newlib -L../zlib
+
+LIBS:=  -lamz -lgcc -lzimp -lcimp 
 
 SOURCES = png.c pngerror.c pngget.c pngmem.c pngpread.c	\
 	  pngread.c pngrio.c pngrtran.c pngrutil.c	\
 	  pngset.c pngtrans.c pngwio.c pngwrite.c 	\
-	  pngwtran.c pngwutil.c png.h pngconf.h 	\
-	  pngdebug.h pnginfo.h pngpriv.h pngstruct.h
+	  pngwtran.c pngwutil.c
  
 
 
@@ -30,12 +36,14 @@ OBJECTS =  $(patsubst %.c, %.o, $(SOURCES))
 # targets 
 
 
-all:$(LIBRARY).a
+all:$(LIBRARY).a $(LIBRARY).dll
 
 
 $(LIBRARY).a: $(OBJECTS) Makefile
 	ar cvrs $(LIBRARY).a $(OBJECTS)
 
+$(LIBRARY).dll: $(OBJECTS) Makefile
+	ld $(LDFLAGS) $(LDIMPORT) $(LIBPATH) -o $@ $(OBJECTS) $(LIBS) 
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<

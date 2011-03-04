@@ -5,9 +5,16 @@ CC = gcc
 
 CFLAGS = -c -O2 -mmmx -Winline -fomit-frame-pointer
 
-DEFINES = -DHAVE_CONFIG_H -DPIXMAN_NO_TLS -DUSE_MMX
+LDIMPORT:= -nostdlib --out-implib libpiximp.a --exclude-libs libamz.a
+LDFLAGS:=  -shared -s -T ../newlib/dll.lds -Map map --image-base 0
+
+DEFINES = -DHAVE_CONFIG_H -DPIXMAN_NO_TLS -D__DYNAMIC_REENT__ -DUSE_MMX
 
 INCLUDES = -I../pixman -I../newlib/include
+
+LIBPATH:= -L../newlib
+
+LIBS:=  -lamz -lgcc -lcimp
 
 SOURCES =				\
 	pixman-image.c			\
@@ -40,11 +47,15 @@ OBJECTS     = $(patsubst %.c, %.o, $(SOURCES))
 
 # targets 
 
-all:$(LIBRARY).a
+all:$(LIBRARY).a $(LIBRARY).dll
 
 
 $(LIBRARY).a: $(OBJECTS) Makefile
 	ar cvrs $(LIBRARY).a $(OBJECTS)
+
+$(LIBRARY).dll: $(OBJECTS) Makefile
+	ld $(LDFLAGS) $(LDIMPORT) $(LIBPATH) -o $@ $(OBJECTS) $(LIBS) 
+
 
 %.o: %.c $(SOURCES) Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
