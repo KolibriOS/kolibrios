@@ -85,7 +85,7 @@ CAPS_xTPR      equ    46 ;
 CAPS_SYSCAL    equ    64 ;
 CAPS_XD        equ    65 ;execution disable
 CAPS_FFXSR     equ    66 ;
-CAPS_RDTSCP    equ    67 ;
+CAPS_RDTSCP    equ    67 ; not used anywhere
 CAPS_X64       equ    68 ;
 CAPS_3DNOW     equ    69 ;
 CAPS_3DNOWEXT  equ    70 ;
@@ -197,23 +197,23 @@ TASK_EVENT          equ (OS_BASE+0x0003020)
 mouseunder          equ (OS_BASE+0x0006900)
 CDDataBuf           equ (OS_BASE+0x0007000)
 FLOPPY_BUFF         equ (OS_BASE+0x0008000)
-ACTIVE_PROC_STACK   equ (OS_BASE+0x000A400) ;unused
+;ACTIVE_PROC_STACK   equ (OS_BASE+0x000A400) ;unused
 idts                equ (OS_BASE+0x000B100)
 WIN_STACK           equ (OS_BASE+0x000C000)
 WIN_POS             equ (OS_BASE+0x000C400)
 FDD_BUFF            equ (OS_BASE+0x000D000)
 
 ;unused ? only one reference
-ENABLE_TASKSWITCH   equ (OS_BASE+0x000E000)
+;ENABLE_TASKSWITCH   equ (OS_BASE+0x000E000)
 
-PUTPIXEL            equ (OS_BASE+0x000E020)
-GETPIXEL            equ (OS_BASE+0x000E024)
+;PUTPIXEL            equ (OS_BASE+0x000E020)
+;GETPIXEL            equ (OS_BASE+0x000E024)
 
 ;unused ? only one reference
-BANK_SWITCH         equ (OS_BASE+0x000E030)
+; BANK_SWITCH         equ (OS_BASE+0x000E030)	; VESA 1.2 - not used
 
 ;unused ? store mousepointer
-MOUSE_PICTURE       equ (OS_BASE+0x000F200)
+;MOUSE_PICTURE       equ (OS_BASE+0x000F200)	; mousedrv.inc - not used
 
 MOUSE_VISIBLE       equ (OS_BASE+0x000F204)
 WIN_TEMP_XY         equ (OS_BASE+0x000F300)

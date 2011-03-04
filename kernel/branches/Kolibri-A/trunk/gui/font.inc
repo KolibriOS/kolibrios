@@ -51,14 +51,14 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         cmp     byte [edx], 0
         jz      .end
 ; // Alver 22.06.2008 // {
-        cmp byte [esp+28], 1
+        cmp byte [esp+28], 1    ;  was the entry point = dtext.1 ?
         jne   @f
         dec     esi
         js        .end
 ; } \\ Alver \\
 @@:
         inc     edx
-        pushad
+        pushad                  ; esp -= 64 !
         movzx   edx, byte [edx-1]
         test    ecx, 0x10000000
         jnz     .font2
@@ -71,14 +71,14 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         shr     dl, 1
         jz      .pixloop1end
         jnc     .nopix
-        call    [putpixel]
+        call    _putpixel
         jmp     .pixloop1cont
 .nopix:
         test    ecx, 0x40000000
         jz      .pixloop1cont
         push    ecx
-        mov     ecx, [esp+4+20h+20h]
-        call    [putpixel]
+        mov     ecx, [esp+4+20h+20h]    ; original eax?
+        call    _putpixel
         pop     ecx
 .pixloop1cont:
         inc     eax
@@ -103,14 +103,14 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
 .pixloop2:
         shr     dl, 1
         jnc     .nopix2
-        call    [putpixel]
+        call    _putpixel
         jmp     .pixloop2cont
 .nopix2:
         test    ecx, 0x40000000
         jz      .pixloop2cont
         push    ecx
         mov     ecx, [esp+12+20h+20h]
-        call    [putpixel]
+        call    _putpixel
         pop     ecx
 .pixloop2cont:
         inc     eax

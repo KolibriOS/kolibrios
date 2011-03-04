@@ -161,7 +161,7 @@ drm:
 	mov    esi, edi
 	add    edi, esi
 	add    edi, esi       ; *3
-	add    edi,[MOUSE_PICTURE]	; we have our str address
+	add    edi, mousepointer	;[MOUSE_PICTURE]	; we have our str address
 	mov    esi, edi
 	add    esi, 16*24*3
 	push   ecx

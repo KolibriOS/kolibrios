@@ -51,20 +51,25 @@ draw_aligned_box:
         mov     eax, [img_map_x]
         xor     ecx, ecx
         cmp	bl, byte[ebp]		        ; check the left tile first
-        jz      .new_tile
-        bts     ebx, 26                         ; ebx[26] = 1 if edi/esi already pushed
-        jc      .seek_visible
+        je      .new_tile
+        bts     ebx, 26                         ; ebx[26] = 1 if edi/esi pushed
         push    edi
         push    esi
+        push    [img_bitoffset]
         jmp     .seek_visible
 .new_tile:
         inc     ecx			        ; visible - scan the open space
         cmp     ecx, eax      
         jz      .end_of_line
-        cmp     bl, byte[ebp+ecx]               ; overlapped? draw the visible segment if so
+        cmp     bl, byte[ebp+ecx]  
         je      .new_tile
-
-        call    [img_draw_core_fn]	        ; bpp-specific helper (see below)
+                                                ; overlapped? draw the last visible segment if so
+        bts     ebx, 26                         ; check if edi/esi already pushed
+        jc      @f
+        push    edi
+        push    esi
+        push    [img_bitoffset]
+@@:     call    [img_draw_core_fn]	        ; bpp-specific helper (see below)
 
 .seek_visible:
         inc     ecx
@@ -75,9 +80,18 @@ draw_aligned_box:
 .got_visible:
         sub     eax, ecx
 	shl     ecx, 4
-        add	edi, ecx                        ; shift the left edge 
+        add	edi, ecx                        ; shift the left edge
+        bt      ebx, 25                         ; 1bpp?
+        jc      @f 
         shr     ecx, 2
-        imul    ecx, [img_bytes_per_pix]
+        imul    ecx, [img_bytes_per_pix] 
+        jmp     .new_visible      
+@@:     shr     ecx, 8                          ; 2 tiles = 1 byte 
+        jnc     .new_visible
+        rol     [img_bitoffset], 4
+        jnc     .new_visible
+        inc     ecx
+.new_visible:
         add     esi, ecx
         xor     ecx, ecx
         jmp     .new_tile
@@ -88,6 +102,7 @@ draw_aligned_box:
 .next_line:  
         bt      ebx, 26
         jnc     @f
+        pop     [img_bitoffset]
         pop     esi
         pop     edi                                   
 @@:	inc	edx
@@ -117,7 +132,7 @@ draw_unaligned_edge:
         pushad
         mov     eax, [img_buf_line_size]
         mov     bh, dl                  ; store the 1st tile offset
-        bt      ebx, 24                 ; check if the 1st line odd
+        btr     ebx, 24                 ; check if the 1st line odd
         jnc     .new_tile           
         cmp     bl, byte[ebp]
         jne     @f
@@ -128,7 +143,6 @@ draw_unaligned_edge:
         add     edi, [BytesPerScanLine]
         add     ebp, [_WinMapWidth]
         add     esi, eax
-        btr     ebx, 24                 
 .new_tile:
         cmp     bl, byte[ebp]
         jne     .skip_tile
@@ -166,6 +180,18 @@ draw_unaligned_edge:
 ; bh = edx = tile offset (0, 4, 8 or 12 bytes)
 
 align 4
+draw_edge_0bpp:
+        push    eax 
+        mov     eax, [esi]
+.putpix:
+        mov     [edi+edx], eax
+        sub     dl,  4
+        jae     .putpix
+.exit:
+	movzx	edx, bh
+        pop     eax
+        ret
+align 4
 draw_edge_32bpp:
         push    eax 
 .putpix:
@@ -174,7 +200,7 @@ draw_edge_32bpp:
         sub     dl,  4
         jae     .putpix
 .exit:
-	mov	dl, bh
+	movzx	edx, bh
         pop     eax
         ret
 align 4
@@ -185,8 +211,8 @@ draw_edge_24bpp:
         mov     eax, [esi]
         and     eax, 0x00FFFFFF
         mov     [edi+edx], eax
-        test    dl, bh
-        jz      .exit
+        cmp     dl, bh
+        je      .exit
         add     dl,  4
         add     esi, 3
         jmp     .putpix
@@ -202,8 +228,8 @@ draw_edge_8bpp:
         movzx   eax, byte[esi]
         mov     eax, [ebp+eax*4]
         mov     [edi+edx], eax
-        test    dl, bh
-        jz      .exit
+        cmp     dl, bh
+        je      .exit
         add     dl,  4
         inc     esi
         jmp     .putpix
@@ -212,28 +238,29 @@ draw_edge_8bpp:
         ret
 align 4
 draw_edge_1bpp:
-        push    eax ecx ebx ebp
+        pushad
+        movzx   edx, bh
+        add     edx, edi
         mov     ebp, [img_palette]
         mov     ebx, [ebp+4]            ; forecolor
         mov     ebp, [ebp]              ; backcolor
         mov     ecx, [img_edgeoffset]    ; cl = 1 << left_edge_pix_num
-        mov     ebp, [esi]     
-        xor     dl, dl
+        mov     eax, [esi]     
 .testbit:
-        test    ebp, ecx
+        test    eax, ecx
         jnz     @f
         mov     eax, ebp 
         jmp     .putpix
 @@:     mov     eax, ebx
 .putpix:
-        mov     [edi+edx], eax
-        test    dl, bh
-        jz      .exit
-        add     dl, 4
-        shl     ecx, 1
+        mov     [edi], eax
+        cmp     edi, edx
+        je      .exit
+        add     edi, 4
+        rol     ecx, 1
         jmp     .testbit
 .exit:
-        pop     ebp ebx ecx eax
+        popad
         ret
 
 draw_edge_16bpp:
@@ -242,35 +269,46 @@ draw_core_16bpp:
 
 ;-------------
 ; aligned core helpers
-; esi -> left point address (image) 
+; esi -> left point address (buffer) 
 ; edi -> left point address (screen)
-; cx  =  number of tiles to draw
+; ecx =  number of tiles to draw
+align 4
+draw_core_0bpp:
+        push    eax ecx edi 
+        pushfd
+;        cli
+        cld
+        mov     eax, [esi]
+        shl     ecx, 2
+        rep     stosd
+        popfd
+        pop     edi ecx eax
+        ret
 align 4
 draw_core_32bpp:
-        push    ecx 
-        shl     ecx, 1
-        dec     ecx
-.putpix:
-        fld     qword[esi+ecx*8]        ; 2 qwords = 1 tile
-        fstp    qword[edi+ecx*8]
-        dec     cx
-        jnb     .putpix
-        pop     ecx 
+        push    ecx esi edi 
+        pushfd
+;        cli
+        cld
+        shl     ecx, 2
+        rep     movsd
+        popfd
+        pop     edi esi ecx 
         ret
 align 4
 draw_core_24bpp:
-        push    eax ecx 
-        shl     ecx, 2
+        push    eax ecx edx
+        shl     ecx, 2                  ; ecx = numpixels
         dec     ecx
-        lea     eax, [ecx*2+ecx]
+        lea     edx, [ecx*2+ecx]        ; edx = buffer byte offset
 .putpix:
-        mov     eax, [esi+eax]
+        mov     eax, [esi+edx]
         and     eax, 0x00FFFFFF
         mov     [edi+ecx*4], eax
-        sub     dx, 3
-        dec     cx
+        dec     ecx
+        sub     edx, 3
         jnb     .putpix
-        pop     ecx eax
+        pop     edx ecx eax
         ret
 align 4
 draw_core_8bpp:
@@ -289,7 +327,7 @@ draw_core_8bpp:
         jnz     .putone
         add     esi, edx        ;-)
         add     edi, 16
-        dec     cx
+        dec     ecx
         jnz     .putpix
 .exit:
         popad
@@ -302,8 +340,6 @@ draw_core_1bpp:
         mov     ebp, [ebp]              ; background color
         mov     ebx, [img_bitoffset]
         shl     ecx, 2                  ; 1 tyle = 4 pix
-        dec     ecx
-        jb      .exit
 .newblock:
         mov     eax, [esi]
 .putpix:
@@ -314,8 +350,8 @@ draw_core_1bpp:
 .bkcolor:
         mov     [edi], ebp
 .nextpix:
-        dec     cx
-        jb      .exit  
+        dec     ecx
+        jz      .exit  
         rol     ebx, 1
         jc      .nextblock
         add     edi, 4
@@ -339,6 +375,10 @@ align 4
 ; ebx -> Buffer origin
 ; ecx = packed size [x|y]
 ; edx = packed coordinates [x|y]
+; static variables required:
+; [img_draw_core_fn],  [img_draw_edge_fn]
+; [img_bytes_per_pix], [img_buf_line_size]
+; [img_palette]  (1bpp and 8bpp only)
 
 _putimage:
 ;     	call    [_display.disable_mouse]
@@ -356,14 +396,15 @@ _putimage:
      	and     edx, 0xFFFF			; Ytop
      	shr     eax, 16			        ; Xleft
 .calculate_abs_coords:
-     	mov     ebx, [TASK_BASE-twdw + WDATA.box.left]
-     	mov     ecx, [TASK_BASE-twdw + WDATA.box.top]
+        mov     edi, [TASK_BASE]
+     	mov     ebx, [edi-twdw + WDATA.box.left]
+     	mov     ecx, [edi-twdw + WDATA.box.top]
         add     ebx, eax
      	add     ecx, edx
      	mov     [img_screen_x], ebx		; abs Xleft
 ;     	mov     [img_screen_y], ecx		; ecx = abs Ytop        ; hold it !
 .check_x_size:
-     	mov     ebx, [TASK_BASE-twdw + WDATA.box.width] 
+     	mov     ebx, [edi-twdw + WDATA.box.width] 
      	inc     ebx				; ebx = window Xsize
      	sub     ebx, eax                        ; eax = rel Xleft
      	jbe     .finish				; image is out of the window
@@ -374,7 +415,7 @@ _putimage:
 @@:    	dec     eax
         mov     [img_pix_x], eax
 .check_y_size:
-     	mov     ebx, [TASK_BASE-twdw + WDATA.box.height] 
+     	mov     ebx, [edi-twdw + WDATA.box.height] 
      	inc     ebx				; ebx = real window y-size
      	sub     ebx, edx                        ; edx = rel Ytop
      	jbe     .finish				; image isn't visible
@@ -396,6 +437,9 @@ _putimage:
         mov     bl,  byte [img_bytes_per_pix]
         or      bl,  bl
         jnz     @f
+        mov     ecx, [img_buf_line_size]
+        or      cl, cl
+        je      @f
         bts     ebx, 25
 @@:    	mov     bl,  byte [CURRENT_TASK]	; get process number 
     	mov     ebp, ecx                        ; ecx = absY
@@ -407,9 +451,10 @@ _putimage:
      	mov     ecx, eax                        ; eax = absX
 	shr	ecx, 2                 
 	add     eax, [img_pix_x]
+        inc     eax
         shr     eax, 2
         add     eax, ebp	
-        mov     [img_map_right], eax		; right edge tile
+;        mov     [img_map_right], eax		; right edge tile
      	add     ebp, ecx			; left edge Map origin
         mov	ecx, [img_pix_y]
         sub     eax, ebp
@@ -422,8 +467,8 @@ _putimage:
 ; ebp -> corner tile position
 ; ecx = [img_pix_y] =  image height
 ;  bl = task #
-; ebx[24] = 1 if the core Y is odd
-; ebx[25] = 1bpp image
+; ebx[24] = 1 if Ytop is odd
+; ebx[25] = 1 if 1bpp image
 
 .start:
         bt      ebx, 25 
@@ -434,10 +479,10 @@ _putimage:
 	mov	[img_edgeoffset], eax		
 @@:
 	mov	edx, edi
-	and	edx, 0x0C       
+	mov	dh, 0x0C
+        and     dl, dh       
         jz      .go_right                       ; left edge already aligned
 .left_edge:
-        mov     dh, 0x0C
         sub     dh, dl
         movzx   edx, dh
 	call	draw_unaligned_edge
@@ -481,26 +526,26 @@ _putimage:
         mov     eax, [img_pix_x]
         shl     eax, 2                          ; 1 pix = 4 bytes
         add     eax, edi                        ; rightEdge last pix (LFB addr)
+        shl     edx, 4
+        add     edi, edx                        ; rightEdge Screen origin
         movzx   edx, al 
+        mov     eax, [img_map_x]
         and     dl, 0x0C
-        jz      .core_block             	; rightEdge is already tile-aligned
-        and     al, 0xF0
-        mov     edi, eax                        ; rightEdge Screen origin
+        cmp     dl, 0x0C
+        je      .core_block             	; rightEdge is already tile-aligned
 .right_edge:
         call    draw_unaligned_edge
-        dec     [img_map_x]             
 .core_block:
-        pop     ebp
-        mov     eax, [img_map_x]
-	or      eax, eax                        ; empty central core?
-        jz      .finish
+        or      eax, eax                        ; empty central core?
+        jz      .finish            
+        mov     ebp, [esp]
     	mov	edi, [img_lfb_origin]
 	mov	esi, [img_buf_origin]
 	
 	call	draw_aligned_box
 	
 .finish:
-     	add     esp, putimg.stack_data
+     	add     esp, (putimg.stack_data + 4)
 ;	call	[_display.enable_mouse]
 	popad
 	ret
@@ -509,19 +554,81 @@ _putimage:
         mov     edx, [img_pix_x]
         shl     edx, 2                          ; edx = rightmost tile offset (0, 4, 8, or 12 bytes)
         call    draw_unaligned_edge
-        jmp     .finish
+     	add     esp, putimg.stack_data
+	popad
+	ret
 
 
-align 64
-img_test_struct:
-        dd      0x00112233, 0x00223344, 0x00334455, 0x00445566
-        dd      0x00223344, 0x00334455, 0x00445566, 0x00334455
-        dd      0x00334455, 0x00445566, 0x00334455, 0x00223344
-        dd      0x00445566, 0x00334455, 0x00223344, 0x00112233
+;align 64
+;img_test_struct_32:     ; 8 x 10
+;        dd      0x112233, 0x223344, 0x334455, 0x445566, 0x556677, 0x667788, 0x778899, 0x887766
+;        dd      0x223344, 0x334455, 0x445566, 0x556677, 0x667788, 0x777799, 0x887766, 0x997755
+;        dd      0x334455, 0x445566, 0x556677, 0x667788, 0x777799, 0x887766, 0x997755, 0xAA7744
+;        dd      0x445566, 0x556677, 0x667788, 0x777799, 0x887766, 0x997755, 0xAA7744, 0xBB7733
+;        dd      0x334455, 0x445566, 0x556677, 0x667788, 0x777799, 0x887766, 0x997755, 0xAA7744
+;        dd      0x223344, 0x334455, 0x445566, 0x556677, 0x667788, 0x777799, 0x887766, 0x997755
+;        dd      0x112233, 0x223344, 0x334455, 0x445566, 0x556677, 0x667788, 0x777799, 0x887766
+;        dd      0x001122, 0x112233, 0x223344, 0x334455, 0x445566, 0x556677, 0x667788, 0x777799
+;        dd      0x220000, 0x001122, 0x112233, 0x223344, 0x334455, 0x445566, 0x556677, 0x667788
+;        dd      0x441100, 0x220000, 0x001122, 0x112233, 0x223344, 0x334455, 0x445566, 0x556677
+
+;align 64
+;img_test_struct_24:     ; 8 x 16
+;        dw      0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211, 0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB
+;        dw      0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB, 0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211
+;        dw      0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211, 0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB
+;        dw      0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB, 0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211
+;        dw      0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211, 0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB
+;        dw      0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB, 0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211
+;        dw      0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211, 0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB
+;        dw      0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB, 0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211
+;        dw      0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211, 0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB
+;        dw      0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB, 0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211
+;        dw      0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211, 0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB
+;        dw      0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB, 0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211
+;        dw      0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211, 0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB
+;        dw      0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB, 0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211
+;        dw      0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211, 0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB
+;        dw      0xBBAA, 0xAACC, 0xCCBB, 0xBBAA, 0xAACC, 0xCCBB, 0x1100, 0x0022, 0x2211, 0x1100, 0x0022, 0x2211
+
+;align 64
+;img_test_struct_8:     ; 20 x 10
+;        db      0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0
+;        db      0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0
+;        db      0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0
+;        db      0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0
+;        db      0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0
+;        db      0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0
+;        db      0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0
+;        db      0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0
+;        db      0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0
+;        db      0, 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0
+
+;align 64
+;img_test_struct_1:     ; 16 x 10
+;        db      0x0F, 0xF0
+;        db      0x0F, 0xF0
+;        db      0x3C, 0xC3
+;        db      0x3C, 0xC3
+;        db      0xF0, 0x0F
+;        db      0xF0, 0x0F
+;        db      0x3C, 0xC3
+;        db      0x3C, 0xC3
+;        db      0x0F, 0xF0
+;        db      0x0F, 0xF0
+
+;align 64
+;img_test_palette:     ; 6 colors
+;        dd      0x00BB2233, 0xAA4466, 0x995555, 0x00339966, 0x00884455, 0x00775566, 0x00664455, 0x00553344, 0x0
 
 ;**************************************************************************************
 align 4
 __sys_putpixel:
+        push    edx
+	mov	edx, [TASK_BASE]
+	add	eax, [edx-twdw+WDATA.box.left]
+	add	ebx, [edx-twdw+WDATA.box.top]
+        pop     edx
 _putpixel:
 
 ; eax = x coordinate
@@ -539,14 +646,13 @@ _putpixel:
 
 .not_forced:
      	push    ebx eax
-	shr	eax, 1
-	shr	eax, 1
+	shr	eax, 2
      	shr  	ebx, 1
      	imul    ebx, [_WinMapWidth]	  ; win_map (X size)/2
 	add	ebx, eax
 	mov	al, byte [CURRENT_TASK]
-     	mov   	bl, byte [_WinMapAddress+ebx]
-     	cmp     bl, al
+     	mov   	ah, byte [_WinMapAddress+ebx]
+     	cmp     ah, al
      	pop     eax ebx
      	jne     .exit0
 .checked:
@@ -565,15 +671,15 @@ _putpixel:
 
 
 
-align 4
-put_pixel:	; left for compatibility with Vesa20_putpixel32
-; eax = x
-; ebx = y
-     imul    ebx, [BytesPerScanLine]	 ; ebx = y * y multiplier
-     lea     edi, [ebx+eax*4]  ; edi = x*4+(y*y multiplier)
-;     mov     eax, [esp+32-8+4] ; eax = color
-     mov     [LFB_BASE+edi], ecx
-     ret
+;align 4
+;_put_pixel:	; left for compatibility with Vesa20_putpixel32
+;; eax = x
+;; ebx = y
+;     imul    ebx, [BytesPerScanLine]	 ; ebx = y * y multiplier
+;     lea     edi, [ebx+eax*4]  ; edi = x*4+(y*y multiplier)
+;;     mov     eax, [esp+32-8+4] ; eax = color
+;     mov     [LFB_BASE+edi], ecx
+;     ret
 
 
 ; DRAWLINE
@@ -748,7 +854,7 @@ hline:
      mov     ecx, [ebp] 		; check the line segment (16 pixels!)
      xor     ecx, [CURRENT_TASK]
 ; -- the line ---
-     jmp     dword [hline.drawtable + edi*4]	; a coolhack (C) Serge
+     jmp     dword [hline.drawtable + edi*4]	; (C) Serge, 2010
 
 
 align 4 				; internal loop
@@ -885,234 +991,69 @@ dd	.invert_force
 ;*************************************************
 
 
-virtual at esp
-drbar:
-     .bar_sx	   dd ?
-     .bar_sy	   dd ?
-     .bar_cx	   dd ?
-     .bar_cy	   dd ?
-     .abs_cx	   dd ?
-     .abs_cy	   dd ?
-     .real_sx	   dd ?
-     .real_sy	   dd ?
-     .color	   dd ?
-     .line_inc_scr dd ?
-     .line_inc_map dd ?
-     .stack_data = 4*11
-end virtual
 
 align 4
-; eax   cx
-; ebx   cy
-; ecx   xe
-; edx   ye
+; eax   xOrigin
+; ebx   yOrigin
+; ecx   xSize
+; edx   ySize
 ; edi   color
-vesa20_drawbar:
-     pushad
-     call    [_display.disable_mouse]
-     sub     esp, drbar.stack_data
-     mov     [drbar.color], edi
-     sub     edx, ebx
-     jle     .exit
-     sub     ecx, eax
-     jle     .exit
-     mov     [drbar.bar_sy], edx
-     mov     [drbar.bar_sx], ecx
-     mov     [drbar.bar_cx], eax
-     mov     [drbar.bar_cy], ebx
-     mov     edi, [TASK_BASE]
-     add     eax, [edi-twdw + WDATA.box.left] ; win_cx
-     add     ebx, [edi-twdw + WDATA.box.top] ; win_cy
-     mov     [drbar.abs_cx], eax
-     mov     [drbar.abs_cy], ebx
-; real_sx = MIN(wnd_sx-bar_cx, bar_sx);
-     mov     ebx, [edi-twdw + WDATA.box.width] ; ebx = wnd_sx
-; note that WDATA.box.width is one pixel less than real window x-size
-     inc     ebx
-     sub     ebx, [drbar.bar_cx]
-     ja      @f
-.exit:
-     add     esp, drbar.stack_data
-     popad
-     xor     eax, eax
-     inc     eax
-     ret
-@@:
-     cmp     ebx, [drbar.bar_sx]
-     jbe     .end_x
-     mov     ebx, [drbar.bar_sx]
-.end_x:
-     mov     [drbar.real_sx], ebx
-; real_sy = MIN(wnd_sy-bar_cy, bar_sy);
-     mov     ebx, [edi-twdw + WDATA.box.height] ; ebx = wnd_sy
-     inc     ebx
-     sub     ebx, [drbar.bar_cy]
-     ja      @f
-     add     esp, drbar.stack_data
-     popad
-     xor     eax, eax
-     inc     eax
-     ret
-@@:
-     cmp     ebx, [drbar.bar_sy]
-     jbe     .end_y
-     mov     ebx, [drbar.bar_sy]
-.end_y:
-     mov     [drbar.real_sy], ebx
-; line_inc_map
-     mov     eax, [Screen_Max_X]
-     sub     eax, [drbar.real_sx]
-     inc     eax
-     shr     eax, 1			; <<<<<<
-     shr     eax, 1
-     mov     [drbar.line_inc_map], eax	; vertical increment: map
-; line_inc_scr
-     mov     eax, [drbar.real_sx]
-     shl     eax, 1
-     shl     eax, 1
-     neg     eax
-     add     eax, [BytesPerScanLine]
-     mov     [drbar.line_inc_scr], eax	; vertical increment: screen
-; pointer to screen
-     mov     edx, [drbar.abs_cy]
-     mov     ebx, edx
-     imul    edx, [BytesPerScanLine]    ; edx = LFB line offset
-     mov     eax, [drbar.abs_cx]
-     shl     eax, 1
-     shl     eax, 1
-     add     edx, eax			; edx = LFB corner offset
-; pointer to pixel map
-     shr     ebx, 1
-     imul    ebx, [_WinMapWidth]	; eax = Wmap corner pos
-     mov     eax, [drbar.abs_cx]
-     shr     eax, 1
-     shr     eax, 1
-     add     eax, ebx
-     add     eax, [_WinMapAddress]
-     xchg    eax, ebp			; ebp = Wmap corner
-; get process number
-     mov     ebx, [CURRENT_TASK]
 
-; eax - RGB-color   
-; bl - process num
-; ecx - pix counter (in a tile)
-; edx - pointer to screen
-; esi - counter
-; edi - counter
+_drawbar:
+        pushad
+        sub     esp, putimg.stack_data
+	mov     [img_bytes_per_pix], 0
+	mov     [img_buf_line_size], 0
+	mov	[img_draw_core_fn],  draw_core_0bpp
+	mov	[img_draw_edge_fn],  draw_edge_0bpp
+     	mov     [putimg.image_sx], ecx
+     	mov     [putimg.image_sy], edx
+        mov     edx, ebx
+        mov     [img_palette], edi
+        mov     esi, img_palette     
+        mov     [img_buf_origin], esi     
 
-     	mov     eax, [drbar.color]    ;; BBGGRR00
-     	mov     esi, 0
-align	4
-.new_y:
-     	mov     edi, [drbar.real_sx]
-     	movzx   ecx, dl
-     	shr	cl, 2		; pix# = edx/4
-	and     cl, 3   	; pix position in a tile
-.new_tile:
-	cmp     byte [ebp], bl
-	jne     .skip
-.new_x:
-	mov     [LFB_BASE+edx], eax
-	add     edx, 4
-	dec     edi
-	jz      .add_line
-	inc	cl
-	and	cl, 3
-	jnz	.new_x
-	jmp	.new_tile	
-.skip:
-     	add     edx, 4*4
-     	and     dl, 0xF0	; LFB align 16
-     	inc     ebp
-     	sub     edi, 4     	; <<<<< 
-	add	edi, ecx	; left tile may be 1,2 or 3px only 
-     	jae     .new_tile
-
-.add_line:
-     	add     edx, [drbar.line_inc_scr] 
-; gradient-filled bars
-     test    eax, 0x80000000
-     jz      @f
-     test    al, al
-     jz      @f
-     dec     al
-@@:
-     	inc     esi
-     	test    esi, 1
-  	jne 	@f
-     	add     ebp, [drbar.line_inc_map]
-@@:	
-     	cmp     esi, [drbar.real_sy]
-     	jbe     .new_y
-     	add     esp, drbar.stack_data
-     	popad
-     	xor     eax, eax
-     ret
+	jmp     _putimage.calculate_abs_coords
+;       ret
 
 
-align 4
-;drawbackground:
-	call	[_display.disable_mouse]
-	pushad
-; External loop for all y from start to end
-	mov	ebx, [draw_data+32+RECT.top]	; y start
-.fill_line:
-	mov	edi, [draw_data+32+RECT.left]	; x start
-	shl  	edi, 1
-	shl	edi, 1
-	mov	eax, [BytesPerScanLine]
-	mul	ebx
-	xchg	edi, eax
-	add	edi, eax
-	add	edi, LFB_BASE
-
-	mov	ebp, ebx
-	shr	ebp, 1
-	imul	ebp, [_WinMapWidth]
-	mov	edx, eax
+draw_background:
+        pushad
+	pushfd
+	cld	; increment edi here!
+        mov     ebp, [_WinMapAddress]
+        mov	eax, 0x00337766		; bgndcolor
+	mov	bl, 1
+	mov	edx, [Screen_Max_X]
 	shr	edx, 1
-	shr	edx, 1
-	add	ebp, edx
-	add 	ebp, [_WinMapAddress]
-	xor	edx, edx
-	inc	edx
-	mov	esi, 0x0336677		; <<< RGB
-; eax = x, ebx = y (screen coordinates)
-; ecx - aux. var 
-; edx = 1
-; esi = 0RGB, edi -> output
-; ebp = offset in WinMapAddress
-.fill_tile:
-	cmp	[ebp], dl
-	jnz	.next_tile
-	mov     [edi],   esi
-	mov     [edi+4], esi
-	mov     [edi+8], esi
-	mov     [edi+12],esi
-	mov	ecx, [BytesPerScanLine]
-	mov     [ecx+edi],   esi
-	mov     [ecx+edi+4], esi
-	mov     [ecx+edi+8], esi
-	mov     [ecx+edi+12],esi
-.next_tile:
-	add	edi, 4*4
-	add	ebp, edx
-	add	ax, 4
-	mov	ecx, [draw_data+32+RECT.right]
-	shr     ecx, 1
-        shr     ecx, 1
-	cmp	eax, ecx
-	jbe	.fill_tile
-
-.next_line:
-	inc	ebx
-	mov	ecx, [draw_data+32+RECT.bottom]
-	shr	ecx, 1
-	jbe	.fill_line
-	popad
-	ret
-
-; ----------
+	mov	edi, LFB_BASE
+	mov	esi, [BytesPerScanLine]	
+.new_row:
+	xor	ecx, ecx
+.fill:
+	cmp	byte [ebp+ecx], bl
+	jne	.next
+	
+	mov	[edi+esi], eax		; fill all 8 pixels of this tile
+	stosd
+	mov	[edi+esi], eax
+	stosd
+	mov	[edi+esi], eax
+	stosd
+	mov	[edi+esi], eax
+	stosd
+.next:	inc	ecx
+	cmp	ecx, [_WinMapWidth]
+	jb	.fill
+	dec	edx
+	jz	.done
+	add	ebp, ecx		; += [_WinMapWidth]
+	add	edi, esi 		; += [BytesPerScanLine]
+	jmp	.new_row
+.done:
+	popfd
+        popad
+        ret
 
 
 drawbackground_stretch:		; left for future development
@@ -1128,109 +1069,27 @@ bgr_cur_line	rd	1920	; maximum width of screen
 bgr_next_line	rd	1920
 endg
 
-smooth_line:
-	mov	al, [esi+2]
-	shl	eax, 16
-	mov	ax, [esi]
-	test	ecx, ecx
-	jz	@f
-	mov	ebx, [esi+2]
-	shr	ebx, 8
-	call	[overlapping_of_points_ptr]
-@@:
-	stosd
-	mov	eax, [esp+20+8]
-	inc	eax
-	mov	[esp+20+8], eax
-	cmp	eax, [draw_data+32+RECT.right]
-	ja	@f
-	add	ecx, [esp+36+8]
-	mov	eax, edx
-	adc	edx, [esp+40+8]
-	sub	eax, edx
-	lea	eax, [eax*3]
-	sub	esi, eax
-	jmp	smooth_line
-@@:
-	mov	eax, [draw_data+32+RECT.left]
-	mov	[esp+20+8], eax
+
+_init_background:
+;	mov	edi, BgrAuxTable
+;	xor	edx, edx
+;.loop2:
+;	mov	eax, edx
+;	shl	eax, 8
+;	neg	eax
+;	mov	ecx, 0x200
+;.loop1:
+;	mov	byte [edi], ah
+;	inc	edi
+;	add	eax, edx
+;	loop	.loop1
+;	add	dl, 4
+;	jnz	.loop2
+        mov     byte [REDRAW_BACKGROUND], 1
+;        mov     dword[BgrAuxTable], 0x00337766
 	ret
 
-align 16
-overlapping_of_points:
-	push	ecx edx
-	mov	edx, eax
-	push	esi
-	shr	ecx, 26
-	mov	esi, ecx
-	mov	ecx, ebx
-	shl	esi, 9
-	movzx	ebx, dl
-	movzx	eax, cl
-	sub	eax, ebx
-	movzx	ebx, dh
-	add	dl, [BgrAuxTable+(eax+0x100)+esi]
-	movzx	eax, ch
-	sub	eax, ebx
-	add	dh, [BgrAuxTable+(eax+0x100)+esi]
-	ror	ecx, 16
-	ror	edx, 16
-	movzx	eax, cl
-	movzx	ebx, dl
-	sub	eax, ebx
-	add	dl, [BgrAuxTable+(eax+0x100)+esi]
-	pop	esi
-	mov	eax, edx
-	pop	edx
-	ror	eax, 16
-	pop	ecx
-	ret
 
-iglobal
-align 4
-overlapping_of_points_ptr	dd	overlapping_of_points
-endg
-
-init_background:
-	mov	edi, BgrAuxTable
-	xor	edx, edx
-.loop2:
-	mov	eax, edx
-	shl	eax, 8
-	neg	eax
-	mov	ecx, 0x200
-.loop1:
-	mov	byte [edi], ah
-	inc	edi
-	add	eax, edx
-	loop	.loop1
-	add	dl, 4
-	jnz	.loop2
-	test	byte [cpu_caps+(CAPS_MMX/8)], 1 shl (CAPS_MMX mod 8)
-	jz	@f
-	mov	[overlapping_of_points_ptr], overlapping_of_points_mmx
-@@:
-	ret
-
-align 16
-overlapping_of_points_mmx:
-	movd	mm0, eax
-	movd	mm4, eax
-	movd	mm1, ebx
-	pxor	mm2, mm2
-	punpcklbw mm0, mm2
-	punpcklbw mm1, mm2
-	psubw	mm1, mm0
-	movd	mm3, ecx
-	psrld	mm3, 24
-	packuswb mm3, mm3
-	packuswb mm3, mm3
-	pmullw	mm1, mm3
-	psrlw	mm1, 8
-	packuswb mm1, mm2
-	paddb	mm4, mm1
-	movd	eax, mm4
-	ret
 diff16 "GRAPH32 code end ",0,$
 diff10 "GRAPH32 code size",get_pixel,$
 

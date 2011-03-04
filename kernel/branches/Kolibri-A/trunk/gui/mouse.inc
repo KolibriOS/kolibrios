@@ -518,11 +518,13 @@ mouse._.find_sys_window_under_cursor: ;////////////////////////////////////////
 ;< esi = process slot
 ;< edi = pointer to WDATA struct
 ;------------------------------------------------------------------------------
-	mov	esi, [Screen_Max_X]
-	inc	esi
-	imul	esi, [mouse.state.pos.y]
-	add	esi, [_WinMapAddress]
-	add	esi, [mouse.state.pos.x]
+	mov	esi, [mouse.state.pos.y]
+        mov     edi, [mouse.state.pos.x]
+        shr     esi, 1
+        shr     edi, 2
+	imul	esi, [_WinMapWidth]
+	add	edi, [_WinMapAddress]
+	add	esi, edi
 	movzx	esi, byte[esi]
 	mov	edi, esi
 	shl	edi, 5
