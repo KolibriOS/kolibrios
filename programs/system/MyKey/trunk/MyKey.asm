@@ -68,8 +68,7 @@ STARTAPP:
 	test	eax, eax
 	jnz	close_app
 
-	; Get memory for editboxes text
-	mcall	68, 12, MAX_HOTKEYS_NUM*PATH_MAX_CHARS
+	mcall	68, 12, MAX_HOTKEYS_NUM*PATH_MAX_CHARS	 ; Get memory for editboxes text
 	mov	dword [buf_cmd_line], eax
 	mov	dword [edit1.text],   eax
 	mcall	68, 12, MAX_HOTKEYS_NUM*PATH_MAX_CHARS
@@ -108,7 +107,7 @@ red:
 	jz	@f
 	mov	byte [it_alive], 0
 
-	mcall	18, 3		      ; Activate input thread window
+	mcall	18, 3			    ; Activate input thread window
       @@:
 	call	draw_window
 
@@ -133,7 +132,9 @@ key:
 
 	push	eax
 	mcall	66, 3
-	mov	dword [modifiers], eax
+	;mov     edx, eax
+	;and     edx, 0x00000FF;F
+	mov	dword [modifiers], eax;edx
 	pop	eax
 
 	test	word [edit1.flags], 10b
@@ -171,7 +172,8 @@ key:
 	dec	cl
 	mov	bl, cl
 	and	ebx, 0xFF
-	shl	ebx, 2
+	shl	ebx, 2;5
+;        mov     esi, ebx
 	add	ebx, dword Hotkeys.codes
 
 	mov	edx, dword [ebx]
@@ -347,11 +349,6 @@ Load_HotkeyList:
 	call	ReadIni
 
 	mov	al, byte [butt]
-	mov	ah, byte [hotkeys_num]
-	cmp	al, ah
-	jle	@f
-	mov	al, ah
-      @@:
 	and	eax, 0xFF
 	sub	al, FIRST_ITEM_BUTTON_ID
 	mov	cl, byte PATH_MAX_CHARS
@@ -361,6 +358,7 @@ Load_HotkeyList:
 	add	ebx, dword [buf_cmd_params]
 
 
+	;mov  [butt], FIRST_ITEM_BUTTON_ID
 	mov	esi, eax
 	call	strlen
 	mov	dword [edit1.size], ecx
@@ -543,6 +541,7 @@ it_test_key_modifiers:
 	push	eax
 	mcall	66, 3 ;get control keys state
 	mov	edx,  eax
+	;and     edx,  0x00000FFF
       .lshift:
 	test	al, 1  ; LShift ?
 	jz	.rshift
@@ -595,6 +594,7 @@ it_set_keycode_name:
 	mov	esi, aPlus
 	mov	ecx, 3
 	call	strncat
+	;stdcall outtextxy, 10, 100, ctrl_key_names, 6, 0x00FF0000
       .rshift:
 	test	al, 2  ; RShift ?
 	jz	.lctrl
@@ -605,6 +605,7 @@ it_set_keycode_name:
 	mov	esi, aPlus
 	mov	ecx, 3
 	call	strncat
+	;stdcall outtextxy, 184, 100, ctrl_key_names+29, 6, 0x00FF0000
       .lctrl:
 	test	al, 4  ; LCtrl ?
 	jz	.rctrl
@@ -615,6 +616,7 @@ it_set_keycode_name:
 	mov	esi, aPlus
 	mov	ecx, 3
 	call	strncat
+	;stdcall outtextxy, 52, 100, ctrl_key_names+7, 5, 0x00FF0000
       .rctrl:
 	test	al, 8  ; RCtrl ?
 	jz	.lalt
@@ -625,6 +627,7 @@ it_set_keycode_name:
 	mov	esi, aPlus
 	mov	ecx, 3
 	call	strncat
+	;stdcall outtextxy, 148, 100, ctrl_key_names+23, 5, 0x00FF0000
       .lalt:
 	test	al, 0x10  ; LAlt ?
 	jz	.ralt
@@ -635,6 +638,7 @@ it_set_keycode_name:
 	mov	esi, aPlus
 	mov	ecx, 3
 	call	strncat
+	;stdcall outtextxy, 88, 100, ctrl_key_names+13, 4, 0x00FF0000
       .ralt:
 	test	al, 0x20  ; RAlt ?
 	jz	@f
@@ -645,6 +649,7 @@ it_set_keycode_name:
 	mov	esi, aPlus
 	mov	ecx, 3
 	call	strncat
+	;stdcall outtextxy, 118, 100, ctrl_key_names+18, 4, 0x00FF0000
       @@:
 	mov	esi, it_ascii_keymap
 	and	edx, 0xFF
@@ -652,13 +657,19 @@ it_set_keycode_name:
 	mov	ecx, 1
 	call	strncat
 
+	if 1;DEBUG
+	  mov	  esi, edi;Hotkeys.code_names
+	  call	  SysMsgBoardStr
+	  newline
+	end if
+
 	popa
 ret
 
 
 it_button:
 	mcall	17	       ; Get pressed button code
-	cmp	ah, 1	       ; Test x button
+	cmp	ah, 1		    ; Test x button
 	jne	@f
 	jmp	close_app
       @@:
@@ -895,7 +906,7 @@ RunProgram:
 
 ; Application Title
 labelt		db	'MyKey v.0.2'
-mykey_window	dd	0	   ; Slot number of MyKey main thread
+mykey_window	dd	0	   ; Slot number of MyKey
 
 
 ;########### Input Thread data start ############
@@ -921,6 +932,7 @@ SaveKeyText	db 'Save',0
 
 
 hotkeys_num   db 0;15
+;keyboard_mode db 0       ; Scan or ASCII keys to send ?  0 - ASCII , 1 - Scan
 butt	      db FIRST_ITEM_BUTTON_ID	    ; Pressed button ID
 modifiers     dd 0
 
@@ -928,8 +940,8 @@ modifiers     dd 0
 edit1 edit_box 350, 220, 30, 0xffffff, 0xAA80, 0x0000ff, 0x0, 0x0, PATH_MAX_CHARS+1, buf_cmd_line, 0, 0
 edit2 edit_box 350, 220, 50, 0xffffff, 0xAA80, 0x0000ff, 0x0, 0x0, PATH_MAX_CHARS+1, buf_cmd_params, 0, 0
 
-buf_cmd_line   dd 0
-buf_cmd_params dd 0
+buf_cmd_line   dd 0 ;db MAX_HOTKEYS_NUM*PATH_MAX_CHARS dup(0)  ; !Make it dynamic!!!
+buf_cmd_params dd 0 ;db MAX_HOTKEYS_NUM*PATH_MAX_CHARS dup(0)  ; !Make it dynamic!!!
 
 sys_path:
 system_dir0 db '/sys/lib/'
@@ -957,7 +969,8 @@ align 16
 importTable:
 library 						\
 	libini, 'libini.obj';,                           \
-;        boxlib, 'boxlib.obj'                            \
+;        boxlib, 'boxlib.obj',                           \
+;        libio, 'libio.obj',                            \
 
 ;import  boxlib, \
 ;edit_box_draw  , 'edit_box', \
@@ -1010,7 +1023,7 @@ aRamSaver      db  '/sys/rdsave',0
 app_path       rb  255
 ini_path       rb  255
 
-Hotkeys:  ;(name = 32 b) + (modifiers = 3 b) + (keycode = 1 b) + (keycode_name = 64 b) = 100 bytes for 1 hotkey
+Hotkeys:  ;(name = 32 b) + (modifiers = 3 b) + (keycode = 1 b) = 36 byte for 1 hotkey
     .names:
 	     db 'My1',0
 	     rb 28
