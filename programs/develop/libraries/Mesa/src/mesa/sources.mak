@@ -300,6 +300,8 @@ MESA_SOURCES = \
 	$(COMMON_DRIVER_SOURCES)\
 	$(ASM_C_SOURCES)
 
+MESA_CXX_SOURCES = \
+	 $(SHADER_CXX_SOURCES)
 
 # Sources for building Gallium drivers
 MESA_GALLIUM_SOURCES = \

@@ -111,33 +111,33 @@
 
 #define FEATURE_es2_glsl                  FEATURE_ES2
 
-#define FEATURE_ARB_fragment_program      0
-#define FEATURE_ARB_vertex_program        0
-#define FEATURE_ARB_vertex_shader         FEATURE_GL
-#define FEATURE_ARB_fragment_shader       0
+#define FEATURE_ARB_fragment_program      1
+#define FEATURE_ARB_vertex_program        1
+#define FEATURE_ARB_vertex_shader         1
+#define FEATURE_ARB_fragment_shader       1
 #define FEATURE_ARB_shader_objects        (FEATURE_ARB_vertex_shader || FEATURE_ARB_fragment_shader)
 #define FEATURE_ARB_shading_language_100  FEATURE_ARB_shader_objects
 #define FEATURE_ARB_geometry_shader4      FEATURE_ARB_shader_objects
 
-#define FEATURE_ARB_framebuffer_object    0
-#define FEATURE_ARB_map_buffer_range      0
+#define FEATURE_ARB_framebuffer_object    (FEATURE_GL && FEATURE_EXT_framebuffer_object)
+#define FEATURE_ARB_map_buffer_range      FEATURE_GL
 #define FEATURE_ARB_pixel_buffer_object   (FEATURE_GL && FEATURE_EXT_pixel_buffer_object)
 #define FEATURE_ARB_sync                  FEATURE_GL
-#define FEATURE_ARB_vertex_buffer_object  FEATURE_GL
+#define FEATURE_ARB_vertex_buffer_object  1
 
-#define FEATURE_EXT_framebuffer_blit      0
-#define FEATURE_EXT_framebuffer_object    0
-#define FEATURE_EXT_pixel_buffer_object   0
+#define FEATURE_EXT_framebuffer_blit      FEATURE_GL
+#define FEATURE_EXT_framebuffer_object    1
+#define FEATURE_EXT_pixel_buffer_object   1
 #define FEATURE_EXT_texture_sRGB          FEATURE_GL
 #define FEATURE_EXT_transform_feedback    FEATURE_GL
 
-#define FEATURE_APPLE_object_purgeable    0
-#define FEATURE_ATI_fragment_shader       0
-#define FEATURE_NV_fence                  0
-#define FEATURE_NV_fragment_program       0
-#define FEATURE_NV_vertex_program         0
+#define FEATURE_APPLE_object_purgeable    FEATURE_GL
+#define FEATURE_ATI_fragment_shader       FEATURE_GL
+#define FEATURE_NV_fence                  FEATURE_GL
+#define FEATURE_NV_fragment_program       FEATURE_GL
+#define FEATURE_NV_vertex_program         FEATURE_GL
 
-#define FEATURE_OES_EGL_image             0
+#define FEATURE_OES_EGL_image             1
 #define FEATURE_OES_draw_texture          FEATURE_ES1
 #define FEATURE_OES_framebuffer_object    FEATURE_ES
 #define FEATURE_OES_mapbuffer             FEATURE_ES

@@ -127,7 +127,7 @@ ALL_SOURCES = \
 
 ##### TARGETS #####
 
-default: depend lib$(LIBNAME).a $(APPS)
+default: depend lib$(LIBNAME).a 
 
 lib$(LIBNAME).a: $(OBJECTS) Makefile $(TOP)/src/glsl/Makefile.template
 	$(MKLIB) -cplusplus -o $(LIBNAME) -static $(OBJECTS)

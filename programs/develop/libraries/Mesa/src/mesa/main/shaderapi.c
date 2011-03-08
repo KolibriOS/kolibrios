@@ -851,7 +851,7 @@ compile_shader(struct gl_context *ctx, GLuint shaderObj)
    /* this call will set the sh->CompileStatus field to indicate if
     * compilation was successful.
     */
-//   _mesa_glsl_compile_shader(ctx, sh);
+   _mesa_glsl_compile_shader(ctx, sh);
 }
 
 
@@ -880,7 +880,7 @@ link_program(struct gl_context *ctx, GLuint program)
 
    FLUSH_VERTICES(ctx, _NEW_PROGRAM);
 
- //_mesa_glsl_link_shader(ctx, shProg);
+   _mesa_glsl_link_shader(ctx, shProg);
 
    /* debug code */
    if (0) {
@@ -1677,7 +1677,7 @@ _mesa_GetShaderPrecisionFormat(GLenum shadertype, GLenum precisiontype,
 void GLAPIENTRY
 _mesa_ReleaseShaderCompiler(void)
 {
-//   _mesa_destroy_shader_compiler_caches();
+   _mesa_destroy_shader_compiler_caches();
 }
 
 

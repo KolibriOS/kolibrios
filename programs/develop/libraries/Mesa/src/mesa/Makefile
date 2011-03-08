@@ -100,8 +100,8 @@ main/api_exec_es2.c: main/APIspec.xml main/es_generator.py main/APIspecutil.py m
 # Helper libraries used by many drivers:
 
 # Make archive of core mesa object files
-libmesa.a: $(MESA_OBJECTS)
-	@ $(MKLIB) -o mesa -static $(MESA_OBJECTS)
+libmesa.a: $(MESA_OBJECTS) $(GLSL_LIBS)
+	@ $(MKLIB) -o mesa -static $(MESA_OBJECTS) $(GLSL_LIBS)
 
 libes1.a: $(ES1_OBJECTS) $(GLSL_LIBS)
 	@$(MKLIB) -o es1 -static $(ES1_OBJECTS) $(GLSL_LIBS)

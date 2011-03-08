@@ -14,16 +14,16 @@
 
 #define CTX_DRIVER_CTX              	880
 
-#define CTX_LIGHT_ENABLED           	39628
-#define CTX_LIGHT_SHADE_MODEL       	39632
-#define CTX_LIGHT_COLOR_MAT_FACE    	39640
-#define CTX_LIGHT_COLOR_MAT_MODE    	39644
-#define CTX_LIGHT_COLOR_MAT_MASK    	39648
-#define CTX_LIGHT_COLOR_MAT_ENABLED 	39652
-#define CTX_LIGHT_ENABLED_LIST      	39660
-#define CTX_LIGHT_NEED_VERTS        	44021
-#define CTX_LIGHT_FLAGS             	44024
-#define CTX_LIGHT_BASE_COLOR        	44028
+#define CTX_LIGHT_ENABLED           	39612
+#define CTX_LIGHT_SHADE_MODEL       	39616
+#define CTX_LIGHT_COLOR_MAT_FACE    	39624
+#define CTX_LIGHT_COLOR_MAT_MODE    	39628
+#define CTX_LIGHT_COLOR_MAT_MASK    	39632
+#define CTX_LIGHT_COLOR_MAT_ENABLED 	39636
+#define CTX_LIGHT_ENABLED_LIST      	39644
+#define CTX_LIGHT_NEED_VERTS        	44005
+#define CTX_LIGHT_FLAGS             	44008
+#define CTX_LIGHT_BASE_COLOR        	44012
 
 
 /* =============================================================

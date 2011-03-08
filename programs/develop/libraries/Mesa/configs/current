@@ -20,8 +20,8 @@ GLES_OVERLAY = 0
 CFLAGS =  -g -O2 -Wall -Wmissing-prototypes -std=c99 -ffast-math -fno-strict-aliasing \
 	-I$(TOP)/../newlib/include $(OPT_FLAGS) $(PIC_FLAGS) $(ARCH_FLAGS) $(ASM_FLAGS) \
 	$(DEFINES)
-CXXFLAGS =  -g -O2 -Wall -fvisibility=hidden -fno-strict-aliasing \
-	$(OPT_FLAGS) $(PIC_FLAGS) $(ARCH_FLAGS) $(DEFINES)
+CXXFLAGS =  -g -O2 -Wall -fno-strict-aliasing \
+	-I$(TOP)/../newlib/include $(OPT_FLAGS) $(PIC_FLAGS) $(ARCH_FLAGS) $(DEFINES)
 LDFLAGS = 
 EXTRA_LIB_PATH = 
 RADEON_CFLAGS = 
@@ -89,10 +89,16 @@ VG_LIB_GLOB = lib$(VG_LIB).*a*
 
 # Directories to build
 LIB_DIR = lib
-SRC_DIRS =  mapi/glapi mesa 
+SRC_DIRS =  mapi/glapi glsl mesa 
 GLU_DIRS = sgi
 DRIVER_DIRS = osmesa
+EGL_DRIVERS_DIRS = 
+GALLIUM_TARGET_DIRS = 
+GALLIUM_STATE_TRACKERS_DIRS = 
 
+# Driver specific build vars
+EGL_PLATFORMS = 
+EGL_CLIENT_APIS =  $(GL_LIB)
 
 # Dependencies
 X11_INCLUDES = 
