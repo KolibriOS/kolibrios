@@ -150,7 +150,15 @@ extern int _execve_r _PARAMS ((struct _reent *, const char *, char *const *, cha
 extern int _fcntl_r _PARAMS ((struct _reent *, int, int, int));
 extern int _fork_r _PARAMS ((struct _reent *));
 extern int _fstat_r _PARAMS ((struct _reent *, int, struct stat *));
-extern int _getpid_r _PARAMS ((struct _reent *));
+static inline int _getpid_r (struct _reent *r)
+{
+  int pid;
+  (void)r;
+  __asm__ __volatile__(
+  "movl %%fs:0, %0 \n\t"
+  :"=r"(pid));
+  return pid;
+}
 extern int _isatty_r _PARAMS ((struct _reent *, int));
 extern int _kill_r _PARAMS ((struct _reent *, int, int));
 extern int _link_r _PARAMS ((struct _reent *, const char *, const char *));
