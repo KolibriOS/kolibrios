@@ -1092,7 +1092,7 @@ proc get_code_window, p_obj:dword
 		insert_reg txt_eax
 		insert_nl
 
-		;mov ebx,...
+		;mov ebx,... задается ширина окна и отступ от левого края экрана
 		insert_tab
 		stdcall insert_text, txt_mov
 		insert_reg txt_ebx
@@ -1100,7 +1100,7 @@ proc get_code_window, p_obj:dword
 		stdcall insert_2_prop_16_bit, ebx,2,4
 		insert_nl
 
-		;mov ecx,...
+		;mov ecx,... задается высота окна и отступ от верхнего края экрана
 		insert_tab
 		stdcall insert_text, txt_mov
 		insert_reg txt_ecx
@@ -1108,7 +1108,7 @@ proc get_code_window, p_obj:dword
 		stdcall insert_2_prop_16_bit, ebx,3,5
 		insert_nl
 
-		;mov edx,...
+		;mov edx,... задается цвет рабочей области окна
 		insert_tab
 		stdcall insert_text, txt_mov
 		insert_reg txt_edx
@@ -1121,7 +1121,14 @@ proc get_code_window, p_obj:dword
 		stdcall insert_text, txt_or
 		insert_reg txt_edx
 		insert_coma
-		stdcall insert_text, txt_0x33000000
+		stdcall insert_text,txt_skob_o
+		stdcall insert_text_prop, ebx,1 ;стиль окна
+		stdcall insert_text,txt_shl_24
+		stdcall insert_text,txt_skob_c
+		stdcall insert_bit_prop, ebx,BIT_MOD_WI_CAPT
+		stdcall insert_bit_prop, ebx,BIT_MOD_WI_CORD_OTN_CL_OBL
+		stdcall insert_bit_prop, ebx,BIT_MOD_WI_REDR
+		stdcall insert_bit_prop, ebx,BIT_MOD_WI_GRAD
 		insert_nl
 
 		;mov edi,...
@@ -1414,7 +1421,6 @@ txt_ll_end db 'l_libs_end:',13,0
 txt_bit_29 db '0x20000000',0
 txt_bit_30 db '0x40000000',0
 ;txt_bit_31 db '0x80000000',0
-txt_0x33000000 db '0x33000000',0 ;tmp
 txt_struc db 'struc',0
 txt_t db 't',0
 txt_met_end db '.end',0
@@ -1437,6 +1443,7 @@ txt_align_4 db 'align 4',13,0
 txt_d_poi db ':',0
 txt_ret db 'ret',13,0
 txt_shl_16 db ' shl 16',0
+txt_shl_24 db ' shl 24',0
 txt_std_mouse_ed:
 	db 9,'stdcall [edit_box_mouse], ',0
 txt_std_init_cb:

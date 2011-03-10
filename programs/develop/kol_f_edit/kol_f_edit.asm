@@ -20,7 +20,7 @@ include 'obj_codes.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
-hed db 'kol_f_edit 31.12.10',0
+hed db 'kol_f_edit 10.03.11',0
 
 sizeof.TreeList equ 20 ;need for element 'tree_list'
 
@@ -47,10 +47,10 @@ BIT_MOD_ACI equ 0 ;первоначальные настройки элементов
 BIT_MOD_ACM equ 1 ;события от мыши
 BIT_MOD_ACD equ 2 ;данные объектов
 BIT_MOD_ABU equ 3 ;связывание кнопок
-;CPP_MOD_WI_CA equ 16 ;стиль окна подпись
-;CPP_MOD_WI_AO equ 32 ;стиль окна координаты относительно клиентской области
-;CPP_MOD_WI_RD equ 64 ;стиль окна перерисовка окна
-;CPP_MOD_WI_GR equ 128 ;стиль окна градиент
+BIT_MOD_WI_CAPT equ 0 ;стиль окна подпись
+BIT_MOD_WI_CORD_OTN_CL_OBL equ 1 ;стиль окна координаты относительно клиентской области
+BIT_MOD_WI_REDR equ 2 ;стиль окна перерисовка окна
+BIT_MOD_WI_GRAD equ 3 ;стиль окна градиент
 BIT_MOD_CHE equ 0 ; ch_flag_en - выбран CheckBox
 BIT_MOD_CHE_T equ 1 ;сверху
 BIT_MOD_CHE_M equ 2 ;по центру

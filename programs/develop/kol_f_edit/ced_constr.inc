@@ -2,10 +2,20 @@
 ; в этом файле собраны функции рисующие окно конструктора
 ;
 
+;передвигаем координаты относительно скина
 macro move_to_skin coord_x,coord_y
 {
-	add coord_x,SKIN_W1
-	add coord_y,SKIN_H
+	push eax
+	mov eax,[obj_m_win] ;указатель на окно
+	cmp eax,0
+	je @f
+	test_bool_prop eax,BIT_MOD_WI_CORD_OTN_CL_OBL
+	;bt dword[[obj_m_win]+u_object.modif-u_object],n_prop
+	jnc @f
+		add coord_x,SKIN_W1
+		add coord_y,SKIN_H
+	@@:
+	pop eax
 }
 
 ;перерисовка окна конструктора
