@@ -3,7 +3,7 @@ LIBRARY = cairo
 
 CC = gcc
 
-CFLAGS = -c -O2 -fomit-frame-pointer
+CFLAGS = -c -O2 -fomit-frame-pointer -ffast-math
 
 LDIMPORT:= -nostdlib --out-implib libcairoimp.a --exclude-libs libamz.a
 

@@ -7,7 +7,7 @@ CPP=gcc -E
 
 CFLAGS= -O3 -c -fomit-frame-pointer
 
-LDIMPORT:= -nostdlib --out-implib libzimp.a
+LDIMPORT:= -nostdlib
 
 LDFLAGS:=  -shared -s -T ../newlib/dll.lds -Map map --image-base 0
 
@@ -36,7 +36,8 @@ libz.a: $(OBJS)
 	$(AR) $@ $(OBJS)
 
 libz.dll: $(OBJECTS) Makefile
-	ld $(LDFLAGS) $(LDIMPORT) $(LIBPATH) -o $@ $(OBJS) $(LIBS) 
+	dlltool -d zlib.def -Dlibz.dll -e exports.o -l libzimp.a
+	ld $(LDFLAGS) $(LDIMPORT) --exclude-all-symbols $(LIBPATH) -o $@ $(OBJS) exports.o $(LIBS) 
 
 
 %.o: %.c Makefile
