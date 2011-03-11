@@ -822,19 +822,17 @@ void _reclaim_reent _PARAMS ((struct _reent *));
 
 /* #define _REENT_ONLY define this to get only reentrant routines */
 
-#ifndef _REENT_ONLY
 
-#if defined(__DYNAMIC_REENT__) && !defined(__SINGLE_THREAD__)
-#ifndef __getreent
-  struct _reent * _EXFUN(__getreent, (void));
-#endif
+static inline struct _reent *__getreent(void)
+{
+    struct _reent *ent;
+    __asm__ __volatile__(
+    "movl %%fs:12, %0"
+    :"=r"(ent));
+    return ent;
+};
+
 # define _REENT (__getreent())
-#else /* __SINGLE_THREAD__ || !__DYNAMIC_REENT__ */
-# define _REENT _impure_ptr
-#endif /* __SINGLE_THREAD__ || !__DYNAMIC_REENT__ */
-
-#endif /* !_REENT_ONLY */
-
 #define _GLOBAL_REENT _global_impure_ptr
 
 #ifdef __cplusplus

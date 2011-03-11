@@ -27,8 +27,12 @@ typedef __libc_lock_recursive_t _LOCK_RECURSIVE_T;
 
 #define __LOCK_INIT(class,lock) \
   __libc_lock_define_initialized(class, lock)
+
 #define __LOCK_INIT_RECURSIVE(class, lock) \
   __libc_lock_define_initialized_recursive(class, lock)
+
+#define __libc_lock_define_initialized(CLASS,NAME) \
+  CLASS __libc_lock_t NAME;
 
 #define __libc_lock_define_initialized_recursive(CLASS,NAME) \
   CLASS __libc_lock_recursive_t NAME = _LIBC_LOCK_RECURSIVE_INITIALIZER;

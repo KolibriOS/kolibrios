@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <sys/kos_io.h>
 
 /* Some targets provides their own versions of this functions.  Those
    targets should define REENTRANT_SYSCALLS_PROVIDED in TARGET_CFLAGS.  */
@@ -49,62 +50,6 @@ DESCRIPTION
 */
 
 
-#pragma pack(push, 1)
-typedef struct
-{
-    char sec;
-    char min;
-    char hour;
-    char rsv;
-}detime_t;
-
-typedef struct
-{
-    char  day;
-    char  month;
-    short year;
-}dedate_t;
-
-typedef struct
-{
-    unsigned    attr;
-    unsigned    flags;
-    union
-    {
-        detime_t  ctime;
-        unsigned  cr_time;
-    };
-    union
-    {
-        dedate_t  cdate;
-        unsigned  cr_date;
-    };
-    union
-    {
-        detime_t  atime;
-        unsigned  acc_time;
-    };
-    union
-    {
-        dedate_t  adate;
-        unsigned  acc_date;
-    };
-    union
-    {
-        detime_t  mtime;
-        unsigned  mod_time;
-    };
-    union
-    {
-        dedate_t  mdate;
-        unsigned  mod_date;
-    };
-    unsigned    size;
-    unsigned    size_high;
-} fileinfo_t;
-
-#pragma pack(pop)
-
 
 #define NULL_HANDLE  (int)-1
 #define DUMMY_HANDLE (int)-2
@@ -126,99 +71,6 @@ typedef struct
 
 extern int       _fmode;
 
-int create_file(const char *path)
-{
-     int retval;
-     __asm__ __volatile__ (
-     "pushl $0 \n\t"
-     "pushl $0 \n\t"
-     "movl %0, 1(%%esp) \n\t"
-     "pushl $0 \n\t"
-     "pushl $0 \n\t"
-     "pushl $0 \n\t"
-     "pushl $0 \n\t"
-     "pushl $2 \n\t"
-     "movl %%esp, %%ebx \n\t"
-     "movl $70, %%eax \n\t"
-     "int $0x40 \n\t"
-     "addl $28, %%esp \n\t"
-     :"=a" (retval)
-     :"r" (path)
-     :"ebx");
-  return retval;
-};
-
-int set_file_size(const char *path, unsigned size)
-{
-     int retval;
-     __asm__ __volatile__(
-     "pushl $0 \n\t"
-     "pushl $0 \n\t"
-     "movl %%eax, 1(%%esp) \n\t"
-     "pushl $0 \n\t"
-     "pushl $0 \n\t"
-     "pushl $0 \n\t"
-     "pushl %%ebx \n\t"
-     "push $4 \n\t"
-     "movl %%esp, %%ebx \n\t"
-     "movl $70, %%eax \n\t"
-     "int $0x40 \n\t"
-     "addl $28, %%esp \n\t"
-     :"=a" (retval)
-     :"a" (path), "b" (size));
-     return retval;
-};
-
-int get_fileinfo(const char *path, fileinfo_t *info)
-{
-    int retval;
-
-    __asm__ __volatile__ (
-    "pushl $0 \n\t"
-    "pushl $0 \n\t"
-    "movl %1, 1(%%esp) \n\t"
-    "pushl %%ebx \n\t"
-    "pushl $0 \n\t"
-    "pushl $0 \n\t"
-    "pushl $0 \n\t"
-    "pushl $5 \n\t"
-    "movl %%esp, %%ebx \n\t"
-    "movl $70, %%eax \n\t"
-    "int $0x40 \n\t"
-    "addl $28, %%esp \n\t"
-    :"=a" (retval)
-    :"r" (path), "b" (info));
-   return retval;
-};
-
-
-int read_file(const char *path, void *buff,
-               size_t offset, size_t count, size_t *reads)
-{
-    int  retval;
-    int  d0;
-    __asm__ __volatile__(
-    "pushl $0 \n\t"
-    "pushl $0 \n\t"
-    "movl %%eax, 1(%%esp) \n\t"
-    "pushl %%ebx \n\t"
-    "pushl %%edx \n\t"
-    "pushl $0 \n\t"
-    "pushl %%ecx \n\t"
-    "pushl $0 \n\t"
-    "movl %%esp, %%ebx \n\t"
-    "mov $70, %%eax \n\t"
-    "int $0x40 \n\t"
-    "testl %%esi, %%esi \n\t"
-    "jz 1f \n\t"
-    "movl %%ebx, (%%esi) \n\t"
-"1:"
-    "addl $28, %%esp \n\t"
-    :"=a" (retval)
-    :"a"(path),"b"(buff),"c"(offset),"d"(count),"S"(reads));
-    return retval;
-};
-
 
 static inline void debug_out(const char val)
 {
@@ -239,33 +91,6 @@ int   debugwrite(const char *path, const void *buff,
     };
     *writes = ret;
     return ret;
-};
-
-
-int write_file(const char *path,const void *buff,
-               size_t offset, size_t count, size_t *writes)
-{
-     int retval;
-     __asm__ __volatile__(
-     "pushl $0 \n\t"
-     "pushl $0 \n\t"
-     "movl %%eax, 1(%%esp) \n\t"
-     "pushl %%ebx \n\t"
-     "pushl %%edx \n\t"
-     "pushl $0 \n\t"
-     "pushl %%ecx \n\t"
-     "pushl $3 \n\t"
-     "movl %%esp, %%ebx \n\t"
-     "mov $70, %%eax \n\t"
-     "int $0x40 \n\t"
-     "testl %%esi, %%esi \n\t"
-     "jz 1f \n\t"
-     "movl %%ebx, (%%esi) \n\t"
-"1:"
-     "addl $28, %%esp \n\t"
-     :"=a" (retval)
-     :"a"(path),"b"(buff),"c"(offset),"d"(count),"S"(writes));
-    return retval;
 };
 
 static int __openFileHandle(const char *path, int mode, int *err)

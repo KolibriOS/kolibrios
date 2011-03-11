@@ -4,10 +4,6 @@
 #include <string.h>
 #include <reent.h>
 
-#ifdef __getreent
-#undef __getreent
-#endif
-
 static inline
 void *user_alloc(int size)
 {
@@ -28,21 +24,12 @@ void init_reent()
     _REENT_INIT_PTR(ent);
 
     __asm__ __volatile__(
-    "movl %0, %%fs:0"
+    "movl %0, %%fs:12"
     ::"r"(ent));
     __sinit(ent);
 }
 
-struct _reent *
-_DEFUN_VOID(__getreent)
-{
-    struct _reent *ent;
 
-    __asm__ __volatile__(
-    "movl %%fs:0, %0"
-    :"=r"(ent));
-    return ent;
-}
 
 void __mutex_lock(volatile int *val)
 {

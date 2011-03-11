@@ -4,7 +4,6 @@
 
 .section .text
 
-.align 4
 ___chkstk:
 __alloca:
         pushl   %ecx            /* save temp */
@@ -26,4 +25,5 @@ __alloca:
 1:
         int3                    #trap to debugger
         .ascii "Stack overflow"
+
 

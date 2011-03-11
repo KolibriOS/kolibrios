@@ -16,6 +16,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <sys/kos_io.h>
+
 #include "cpu_features.h"
 
 
@@ -51,8 +54,6 @@ char * __libc_getenv(const char *name)
 }
 
 void __main (){};
-
-
 void init_reent();
 
 void  __attribute__((noreturn))
@@ -73,10 +74,25 @@ __thread_startup (int (*entry)(void*), void *param,
     _exit(retval);
 };
 
+struct app_hdr
+{
+    char  banner[8];
+    int   version;
+    int   start;
+    int   iend;
+    int   memsize;
+    int   stacktop;
+    char  *cmdline;
+    char  *path;
+};
+
+
 void  __attribute__((noreturn))
 __crt_startup (void)
 {
     int nRet;
+    struct   app_hdr *header;
+
 
     init_reent();
 
@@ -89,11 +105,11 @@ __crt_startup (void)
     __initPOSIXHandles();
 
     __appcwdlen = strrchr(&__pgmname, '/') - &__pgmname + 1;
-
     __appcwdlen = __appcwdlen > 1023 ? 1023 : __appcwdlen;
-
-    strncpy(__appcwd, &__pgmname, __appcwdlen);
+    memcpy(__appcwd, &__pgmname, __appcwdlen);
     __appcwd[__appcwdlen] = 0;
+
+    set_cwd(__appcwd);
 
     arg[0] = &__pgmname;
 
@@ -113,13 +129,14 @@ __crt_startup (void)
    */
 //  _mingw32_init_fmode ();
 
+
     nRet = main (_argc, _argv, NULL);
 
   /*
    * Perform exit processing for the C library. This means
    * flushing output and calling 'atexit' registered functions.
    */
-    _exit (nRet);
+    exit (nRet);
 }
 
 
