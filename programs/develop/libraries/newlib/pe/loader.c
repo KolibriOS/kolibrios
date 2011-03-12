@@ -523,7 +523,7 @@ int __fastcall link_image(void *img_base)
                         }
                         else if (minn == maxn)
                         {
-                            printf(" unresolved\n",imp_name->Name);
+                            printf(" unresolved %s\n",imp_name->Name);
                             warn=1;
                             break;
                         }

@@ -438,7 +438,7 @@ one_time_init( struct gl_context *ctx )
    /* Hopefully atexit() is widely available.  If not, we may need some
     * #ifdef tests here.
     */
-//   atexit(_mesa_destroy_shader_compiler);
+   atexit(_mesa_destroy_shader_compiler);
 
    dummy_enum_func();
 }

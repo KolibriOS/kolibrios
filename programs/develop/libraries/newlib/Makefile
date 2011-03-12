@@ -327,7 +327,7 @@ LIB_OBJS+=				\
 
 
 
-shared: $(NAME).dll libamz.a
+shared: $(NAME).dll libamz.a libc.obj
 
 
 $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
@@ -336,6 +336,9 @@ $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 
 libamz.a: $(AMZ_OBJS) Makefile
 	ar rc libamz.a $(AMZ_OBJS)
+
+libc.obj: $(NAME).dll
+	fasm pe/libc.asm ./libc.obj
 
 
 static: $(NAME).a

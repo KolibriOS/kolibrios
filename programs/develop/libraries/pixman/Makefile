@@ -6,9 +6,9 @@ CC = gcc
 CFLAGS = -c -O2 -mmmx -Winline -fomit-frame-pointer
 
 LDIMPORT:= -nostdlib --out-implib libpiximp.a --exclude-libs libamz.a
-LDFLAGS:=  -shared -s -T ../newlib/dll.lds -Map map --image-base 0
+LDFLAGS:=  -shared -s -T ../newlib/dll.lds --image-base 0
 
-DEFINES = -DHAVE_CONFIG_H -DPIXMAN_NO_TLS -D__DYNAMIC_REENT__ -DUSE_MMX
+DEFINES = -DHAVE_CONFIG_H -DPIXMAN_NO_TLS -DUSE_MMX
 
 INCLUDES = -I../pixman -I../newlib/include
 
@@ -61,5 +61,6 @@ $(LIBRARY).dll: $(OBJECTS) Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
 
-
+clean: 
+	-rm -f *.o 
  

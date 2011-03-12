@@ -7,7 +7,7 @@ CFLAGS = -c -O2 -fomit-frame-pointer -ffast-math
 
 LDIMPORT:= -nostdlib --out-implib libcairoimp.a --exclude-libs libamz.a
 
-LDFLAGS:=  -shared -s -T ../newlib/dll.lds -Map map --image-base 0
+LDFLAGS:=  -shared -s -T ../newlib/dll.lds --image-base 0
 
 DEFINES = -DHAVE_CONFIG_H -DCAIRO_NO_MUTEX -U_WIN32 -U_MSC_VER -U__WIN32__ 
 
@@ -125,6 +125,8 @@ $(LIBRARY).dll: $(OBJECTS) Makefile
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
+clean: 
+	-rm -f */*.o 
 
 
 

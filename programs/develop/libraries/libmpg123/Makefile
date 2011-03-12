@@ -4,9 +4,9 @@ CPP=gcc -E
 
 CFLAGS= -c -combine -O2 -fomit-frame-pointer -ffast-math -mmmx -finline-functions 
 
-LDIMPORT:= -nostdlib --out-implib libmpg123imp.a
+LDIMPORT:= -nostdlib --out-implib libmpg123imp.a --exclude-libs libamz.a
 
-LDFLAGS:=  -shared -s -T../newlib/dll.lds -Map map --image-base 0
+LDFLAGS:=  -shared -s -T../newlib/dll.lds --image-base 0
 
 INCLUDES= -I../newlib/include
 
@@ -61,4 +61,8 @@ $(NAME).dll: $(SRCS_OBJ) $(ASM_OBJS) Makefile
 
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
+
+clean: 
+	-rm -f *.o 
+
  

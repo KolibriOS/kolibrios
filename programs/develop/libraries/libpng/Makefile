@@ -7,11 +7,11 @@ AR= ar rc
 
 CFLAGS = -c -O2 -fomit-frame-pointer
 
-LDIMPORT:= -nostdlib --out-implib libpngimp.a --exclude-libs libamz.a
+LDIMPORT:= -nostdlib --out-implib libpngimp.a 
 
-LDFLAGS:=  -shared -s -T../newlib/dll.lds -Map map --image-base 0
+LDFLAGS:=  -shared -s -T../newlib/dll.lds --image-base 0
 
-DEFS = -DHAVE_CONFIG_H -D__DYNAMIC_REENT__
+DEFS = -DHAVE_CONFIG_H
 
 LIBPNG_DEFINES = -DPNG_CONFIGURE_LIBPNG 
 
@@ -29,7 +29,6 @@ SOURCES = png.c pngerror.c pngget.c pngmem.c pngpread.c	\
 	  pngwtran.c pngwutil.c
  
 
-
 OBJECTS =  $(patsubst %.c, %.o, $(SOURCES))
 
 
@@ -43,10 +42,14 @@ $(LIBRARY).a: $(OBJECTS) Makefile
 	ar cvrs $(LIBRARY).a $(OBJECTS)
 
 $(LIBRARY).dll: $(OBJECTS) Makefile
-	ld $(LDFLAGS) $(LDIMPORT) $(LIBPATH) -o $@ $(OBJECTS) $(LIBS) 
+	ld $(LDFLAGS) $(LDIMPORT) $(LIBPATH) -o $@ $(OBJECTS) $(LIBS) symbols.def 
 
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
+
+clean: 
+	-rm -f *.o 
+
 
 
 
