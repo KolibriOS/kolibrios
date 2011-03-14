@@ -10,7 +10,6 @@ SECTIONS
 
   .text  __image_base__ + . :
   {
-
         *(.init)
         *(.text)
         *(SORT(.text$*))
@@ -26,10 +25,7 @@ SECTIONS
         *(.gcc_exc)
         PROVIDE (etext = .);
         *(.gcc_except_table)
-  }
 
-    .rdata ALIGN(__section_alignment__):
-    {
         *(.rdata)
         *(SORT(.rdata$*))
         ___RUNTIME_PSEUDO_RELOC_LIST__ = .;
@@ -37,7 +33,26 @@ SECTIONS
         *(.rdata_runtime_pseudo_reloc)
         ___RUNTIME_PSEUDO_RELOC_LIST_END__ = .;
         __RUNTIME_PSEUDO_RELOC_LIST_END__ = .;
-    }
+  }
+  .data ALIGN(__section_alignment__):
+  {
+        PROVIDE ( __data_start__ = .) ;
+        *(.data)
+        *(.data2)
+        *(SORT(.data$*))
+        *(.jcr)
+        __CRT_MT = .;
+        LONG(0);
+        PROVIDE ( __data_end__ = .) ;
+        *(.data_cygwin_nocopy)
+  }
+
+  .eh_frame ALIGN(__section_alignment__):
+  {
+        *(.eh_frame)
+        ___iend = . ;
+  }
+
     .CRT ALIGN(__section_alignment__):
     {
          ___crt_xc_start__ = . ;
@@ -57,24 +72,6 @@ SECTIONS
         ___crt_xt_end__ = . ;
     }
 
-  .data ALIGN(__section_alignment__):
-  {
-     PROVIDE ( __data_start__ = .) ;
-    *(.data)
-        *(.data2)
-        *(SORT(.data$*))
-        *(.jcr)
-        __CRT_MT = .;
-        LONG(0);
-     PROVIDE ( __data_end__ = .) ;
-        *(.data_cygwin_nocopy)
-  }
-
-    .eh_frame ALIGN(__section_alignment__):
-    {
-        *(.eh_frame)
-        ___iend = . ;
-    }
 
   .bss ALIGN(__section_alignment__):
   {

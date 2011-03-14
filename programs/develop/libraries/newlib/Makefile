@@ -17,7 +17,7 @@ AMZ_SRCS:=					\
 			crt/crt_amz.S		\
 			crt/chkstk.S		\
 			crt/exit.S		\
-			crt/pseudo-reloc.S	\
+			crt/pseudo-reloc.c	\
 			crt/setjmp.S
 			
 STATIC_SRCS:=					\
@@ -267,7 +267,7 @@ MATH_SRCS = 	acosf.c acosh.c acoshf.c acoshl.c acosl.c asinf.c asinh.c asinhf.c 
 		sinf.S sinl.S tan.S tanf.S tanl.S s_expm1.S
 
 
-AMZ_OBJS =  $(patsubst %.S, %.o, $(AMZ_SRCS))
+AMZ_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(AMZ_SRCS)))
 
 STATIC_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(STATIC_SRCS)))
 

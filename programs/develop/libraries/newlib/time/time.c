@@ -51,3 +51,11 @@ _DEFUN (time, (t),
     }
   return -1;
 }
+
+int
+_DEFUN (gettimeofday, (ptimeval, ptimezone),
+     struct timeval *ptimeval _AND
+     void *ptimezone)
+{
+  return _gettimeofday_r (_REENT, ptimeval, ptimezone);
+}

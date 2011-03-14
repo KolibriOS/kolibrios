@@ -4,6 +4,8 @@
 
 .section .text
 
+.def	___chkstk;	.scl	2;	.type	32;	.endef 
+.def	__alloca;	.scl	2;	.type	32;	.endef 
 ___chkstk:
 __alloca:
         pushl   %ecx            /* save temp */

@@ -4,6 +4,8 @@
 
 .section .text
 
+.def	_create_thread;	.scl	2;	.type	32;	.endef 
+
 .align 4
 _create_thread:
 #.thr_proc    equ esp+8

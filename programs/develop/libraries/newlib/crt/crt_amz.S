@@ -6,6 +6,7 @@
 
 .align 4
 __start:
+	   call __pei386_runtime_relocator	
            jmp  _main
 
 .align 4
