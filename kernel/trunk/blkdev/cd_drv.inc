@@ -239,10 +239,10 @@ SendPacketDatCommand:
         in      AL,DX
         test    AL,80h   ;состояние сигнала BSY
         jnz     @@WaitDevice0
-        test    AL,08h   ;состояние сигнала DRQ
-        jz      @@WaitDevice0
         test    AL,1     ;состояние сигнала ERR
         jnz     @@Err6
+        test    AL,08h   ;состояние сигнала DRQ
+        jz      @@WaitDevice0
 ; Послать пакетную команду
         cli
         mov     DX,[ATABasePortAddr]
@@ -282,10 +282,10 @@ SendPacketDatCommand:
         in      AL,DX
         test    AL,80h   ;состояние сигнала BSY
         jnz     @@WaitDevice1
-        test    AL,08h   ;состояние сигнала DRQ
-        jz      @@WaitDevice1
         test    AL,1     ;состояние сигнала ERR
         jnz     @@Err6_temp
+        test    AL,08h   ;состояние сигнала DRQ
+        jz      @@WaitDevice1
 ; Принять блок данных от контроллера
         mov     EDI,[CDDataBuf_pointer] ;0x7000  ;CDDataBuf
         ; Загрузить адрес регистра данных контроллера
