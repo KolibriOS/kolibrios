@@ -1313,6 +1313,22 @@ buf_flood_fill_recurs_1:
 	.end_fun:
 	ret
 
+;функция для рисования точки
+align 4
+proc buf_set_pixel, buf_struc:dword, coord_x:dword, coord_y:dword, color:dword
+	pushad
+		mov edi,[buf_struc]
+		cmp buf2d_bits,24
+		jne .end24
+			mov ebx,dword[coord_x]
+			mov ecx,dword[coord_y]
+			mov edx,dword[color]
+			call draw_pixel
+		.end24:
+	popad
+	ret
+endp
+
 align 4
 proc buf_img_wdiv2, buf_struc:dword
 	pushad
@@ -2311,6 +2327,7 @@ EXPORTS:
 	dd sz_buf2d_crop_color, buf_crop_color
 	dd sz_buf2d_offset_h, buf_offset_h
 	dd sz_buf2d_flood_fill, buf_flood_fill
+	dd sz_buf2d_set_pixel, buf_set_pixel
 	dd 0,0
 	sz_lib_init db 'lib_init',0
 	sz_buf2d_create db 'buf2d_create',0
@@ -2335,4 +2352,5 @@ EXPORTS:
 	sz_buf2d_crop_color db 'buf2d_crop_color',0
 	sz_buf2d_offset_h db 'buf2d_offset_h',0
 	sz_buf2d_flood_fill db 'buf2d_flood_fill',0
+	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
 

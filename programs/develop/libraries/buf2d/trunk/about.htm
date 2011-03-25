@@ -62,7 +62,7 @@ table { font-size: 15px; }
  С ее помощью можно создавать буфера с изображениями в памяти, и при необходимости выводить их на экран.
  Изображения можно накладывать одно на другое, поддерживается работа с прозрачными изображениями, есть функция рисования лини пока на этом все.</p>
 
-<p>Последнее обновление библиотеки 22.12.10.</p>
+<p>Последнее обновление библиотеки 25.03.11.</p>
 
 <h1><a name="f_buf">Форматы буферов</a></h1>
 <p>Поддерживается 3 формата буферов.
@@ -198,6 +198,13 @@ stdcall [buf2d_convert_text_matrix], buf_1</pre>
   0xff - цвет заливки;</p>
   0xff0000 - зависит от значения 4-го параметра, 1) если 0 - цвет до которого будет заливаться область; 2) если 1 - цвет области которая будет заливатся;</p>
 
+<h4>buf2d_set_pixel</h4>
+<p>Функция ставит точку, принимает координаты и цвет. Работает на 24-битных буферах.</p>
+<pre>stdcall [buf2d_set_pixel], buf_0, 100,150, 0xff0000</pre>
+<p>где buf_0 - структура буфера;
+  100,150 - координаты точки;
+  0xff0000 - цвет точки.</p>
+
 <h1><a name="const">Константы</a></h1>
 <h4>BUF2D_OPT_CROP_TOP equ 1</h4>
 <p>Константа для функции buf2d_crop_color, обозначает обрезку буфера сверху</p>
@@ -235,6 +242,7 @@ import_buf2d_lib:
 	buf2d_crop_color dd sz_buf2d_crop_color
 	buf2d_offset_h dd sz_buf2d_offset_h
 	buf2d_flood_fill dd sz_buf2d_flood_fill
+	buf2d_set_pixel dd sz_buf2d_set_pixel
 
 	dd 0,0
 	sz_lib_init db 'lib_init',0
@@ -259,7 +267,8 @@ import_buf2d_lib:
 	sz_buf2d_draw_text db 'buf2d_draw_text',0
 	sz_buf2d_crop_color db 'buf2d_crop_color',0
 	sz_buf2d_offset_h db 'buf2d_offset_h',0
-	sz_buf2d_flood_fill db 'buf2d_flood_fill',0</pre>
+	sz_buf2d_flood_fill db 'buf2d_flood_fill',0
+	sz_buf2d_set_pixel db 'buf2d_set_pixel',0</pre>
 
 <h1><a name="hist">История</a></h1>
 <p>02.07.10 - самая первая версия библиотеки, 2 примера использования.</p>
@@ -275,5 +284,6 @@ import_buf2d_lib:
 <p>11.10.10 - исправлено задание цветов в некоторых функциях, красный и синий цвета поменял местами. Теперь цвета совпадают с сисемными функциями.</p>
 <p>02.11.10 - добавлена функция buf2d_flood_fill.</p>
 <p>22.12.10 - изменено имя функции buf2d_cruve_bezier на buf2d_curve_bezier.</p>
+<p>25.03.11 - добавлена функция рисования для точки buf2d_set_pixel.</p>
  </body>
 </html>
