@@ -266,6 +266,13 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
 #end of list
 #3d/logio.bmp:3D/LOGIO.BMP 3d/cubetext:3D/CUBETEXT
 
+# Extra targets for LiveCD image in the syntax of mkisofs
+MKISOFS_EXTRA:=\
+ dosbox/=$(PROGS)/emulator/DosBox/dosbox \
+ dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
+ dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
+#end of list
+
 # Some macro for convenient work.
 # Macros for replacing '|' to escaped space '\ '.
 space:=\ #plus space
@@ -308,7 +315,14 @@ define newline
 endef
 mcopy_all_items:=$(foreach f,$(targets_full),$(mcopy_item_command)$(newline))
 
-# The main goal: image.
+# dependencies of MKISOFS_EXTRA; we iterate through $(MKISOFS_EXTRA),
+# substitute "=" with space, get the 2nd word and join all results
+mkisofs_extra_targets:=$(foreach f,$(MKISOFS_EXTRA),$(word 2,$(subst =, ,$(f))))
+
+# The main goal: build kolibri.img and kolibri.iso
+all: $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
+
+# The first goal: floppy image.
 $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
  Makefile \
  $(BUILD_DIR)/boot_fat12.bin \
@@ -332,6 +346,12 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 	mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA
 	mmd -i $(BUILD_DIR)/kolibri.img ::NETWORK
 	$(mcopy_all_items)
+
+# The second goal: LiveCD image.
+$(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
+	mkisofs -U -J -pad -b kolibri.img -c boot.catalog -hide-joliet boot.catalog -hide-joliet kolibri.img -graft-points \
+	-A "KolibriOS AutoBuilder" -p "CleverMouse" -publisher "KolibriOS Team" -V "KolibriOS r$(REV)" -sysid "KOLIBRI" \
+	-iso-level 3 -o $(BUILD_DIR)/kolibri.iso $(BUILD_DIR)/kolibri.img $(MKISOFS_EXTRA) 2>&1
 
 # Special targets to modify behaviour of make.
 .DELETE_ON_ERROR:
