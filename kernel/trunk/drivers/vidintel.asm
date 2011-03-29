@@ -93,6 +93,10 @@ DetectDevice:
 ; 2. Prepare MMIO region to control the card.
 ; 2a. Read MMIO physical address from PCI config space.
 	push	10h
+	cmp	ecx, i9xx_start
+	jae	@f
+	mov	byte [esp], 14h
+@@:
 	push	10h
 	push	esi
 	call	PciRead32
@@ -413,20 +417,26 @@ width	dd	predefined_width
 height	dd	predefined_height
 
 pciids:
+	dw	0x3577		; i830m
+	dw	0x2562		; 845g
+	dw	0x3582		; i855gm
+i865_start = ($ - pciids) / 2
+	dw	0x2572		; i865g
+i9xx_start = ($ - pciids) / 2
 	dw	0x2582	; i915g
-	dw	0x258a	; i915g
+	dw	0x258a	; e7221g (i915g)
 	dw	0x2592	; i915gm
 	dw	0x2772	; i945g
 	dw	0x27a2	; i945gm
-	dw	0x27ae	; i945gm
+	dw	0x27ae	; i945gme
 i965_start = ($ - pciids) / 2
-	dw	0x2972	; i965g
-	dw	0x2982	; i965g
-	dw	0x2992	; i965g
+	dw	0x2972	; i946qz (i965g)
+	dw	0x2982	; g35g (i965g)
+	dw	0x2992	; i965q (i965g)
 	dw	0x29a2	; i965g
-	dw	0x29b2	; g33
-	dw	0x29c2	; g33
-	dw	0x29d2	; g33
+	dw	0x29b2	; q35g
+	dw	0x29c2	; g33g
+	dw	0x29d2	; q33g
 	dw	0x2a02	; i965gm
 	dw	0x2a12	; i965gm
 	dw	0x2a42	; gm45
