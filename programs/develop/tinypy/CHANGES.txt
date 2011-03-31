@@ -1,0 +1,35 @@
+== 1.1 =========================================================================
+* applied patch by Dean Hall to fix several range() bugs
+* applied patch by Krzysztof Kowalczyk to add VS 2005, 2008 compatibility.
+* reorganized the source so that contributed modules can go into contrib
+* reorganized the reorganization so that modules go into modules
+    since that seems less confusing somehow
+* added a crude pygame module - to see it in action:
+    $ python setup.py linux pygame
+    $ ./build/tinypy examples/julia.py
+* added support for
+    from x import *
+    from x import y
+* trimmed off 1064 bytes by changing all the tokens from dicts to
+    a Token class in tokenize, parse, encode modules
+* applied patch by Seth Lemons to support /* */ comment stripping in
+    setup.py and get tinypy up to -std=c89 spec
+* cleaned up encode.py so that registers are no longer leaked
+    added assert after each frame to check that this is the case
+* applied patch by KK to improve tinypy/tests.py feedback
+* applied patch by allefant to finish namespacing tinypy
+* applied patch by allefant to keep blob->tinypy.h from having warnings
+* added math module from Rockins Chen
+* fixed precedent of **
+* removed unused tp_data meta methods
+* made tp_data API "safer" by requiring the magic type
+* improved setup.py to handle the clean argument
+* renamed some internal fnc names for no good reason
+* added boot option to setup.py so that full boostrapping
+    isn't always required
+* applied const correctness patch from allefant
+* fixed memory leak in list & dict copy functions
+* improved kwargs support
+* got it compiling with -Wc++-compat
+* applied ord patch from allefant
+* fixed mingw build
