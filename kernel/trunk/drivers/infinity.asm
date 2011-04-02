@@ -1009,7 +1009,7 @@ proc set_vol_param stdcall, l_vol:dword,r_vol:dword,pan:dword
 	   mov	[edx+STREAM.pan], eax
 
 	   cmp word [edx+STREAM.pan], 0
-	   jl .@f
+	   jl  @f
 
 	   mov ebx, [l_vol]
 	   sub ebx, eax
