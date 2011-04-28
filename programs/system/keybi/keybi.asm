@@ -1,162 +1,206 @@
-
-; Keyboard indicators v0.1
-; by Albom
+; Keyboard indicators v0.2
+; by Albom and IgorA
 
 use32
-org	0
-db	'MENUET01'
-dd	1
-dd	_start
-dd	_end
-dd	_memory
-dd	_stack
-dd	_param
-dd	0
+ org 0
+ db 'MENUET01'
+ dd 1
+ dd _start
+ dd _end
+ dd _memory
+ dd stacktop
+ dd 0
+ dd sys_path
 
+include '../../macros.inc'
+include '../../proc32.inc'
+include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+;include 'mem.inc'
+;include 'dll.inc'
 
+@use_library ;_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
+
+align 4
 _start:
+ load_libraries l_libs_start,l_libs_end
+ mcall 48,3,sc,sizeof.system_colors
+ mcall 40,0x27
 
-call _key_set
-call _wnd_draw
+ init_checkboxes2 check_boxes,check_boxes_end
+ check_boxes_set_sys_color2 check_boxes,check_boxes_end,sc
+ call _key_set
 
-_event_wait:
-
-mov	eax, 10
-int	0x40
-
-cmp	eax, 1
-jne @f
-call	_wnd_draw
-
-@@:
-cmp	eax, 2
-jne @f
-call   _key_check
-
-@@:
-cmp	eax, 3
-jne @f
-call	_btn_check
-
-@@:
+align 4
+red_win:
+ call draw_window
 
 
-jmp  _event_wait
+align 4
+still:
+ mcall 10
 
+ cmp al,1 ;изм. положение окна
+ jz red_win
+ cmp al,2
+ jz key
+ cmp al,3
+ jz button
+
+ ;stdcall [check_box_mouse], ch1
+ ;stdcall [check_box_mouse], ch2
+ ;stdcall [check_box_mouse], ch3
+
+ jmp still
+
+;установить общесистемные "горячие клавиши"
+align 4
 _key_set:
 mov eax, 66
-mov edx, 0
 mov ebx, 4
+mov edx, 0
 mov cl, 69
 int 0x40
 
 mov eax, 66
-mov edx, 0
 mov ebx, 4
+mov edx, 0
 mov cl, 58
 int 0x40
 
 mov eax, 66
-mov edx, 0
 mov ebx, 4
+mov edx, 0
 mov cl, 70
 int 0x40
 
 ret
 
+align 4
+draw_window:
+pushad
+ mcall 12,1
+ xor eax,eax
+ mov ebx,(10 shl 16)+100
+ mov ecx,(10 shl 16)+75
+ mov edx,[sc.work]
+ or edx,(2 shl 24)+0x10000000+0x20000000
+ mov edi,[sc.grab] ;[sc.frame]
+ mov esi,[sc.grab]
+ int 0x40
 
-_wnd_draw:
-pusha
+ mov eax,8
+ mov ebx,(80 shl 16)+10
+ mov cx,-15
+ shl ecx,16
+ mov cx,10
+ mov edx,1
+ mov esi,[sc.grab_button]
+ int 0x40
 
-mov	eax, 12
-mov	ebx, 1
-int	0x40
+ stdcall [check_box_draw], ch1
+ stdcall [check_box_draw], ch2
+ stdcall [check_box_draw], ch3
+ mcall 12,2
+popad
+ ret
 
-xor	eax, eax
-mov	ebx, 10*65536+100
-mov	ecx, 10*65536+30
-mov	edx, 0x34ffffff
-mov	edi, _ind
-int	0x40
+align 4
+key:
+ mcall 2
+ call _indicators_check
+ jmp still
 
-call	_indicators_check
-
-mov	eax, 12
-mov	ebx, 2
-int	0x40
-
-popa
-ret
-
-_key_check:
-pusha
-mov	eax, 2
-int	0x40
-
-call	_indicators_check
-
-popa
-ret
-
-_btn_check:
-pusha
-mov	eax, 17
-int	0x40
-cmp	ah, 1
-jne	@f
-mov eax, -1
-int 0x40
-@@:
-popa
-ret
-
-
+align 4
 _indicators_check:
 pusha
-	mov eax, 66
-	mov ebx, 3
-	int 40h
+ mov eax, 66
+ mov ebx, 3
+ int 40h
 
 test_ins:
-	test eax, 0x80
-	jz @f
-	mov [_ind], '*'
-	jmp test_caps
+ test eax, 0x80
+ jz @f
+ bts dword[ch1.flags],1
+ jmp test_caps
 @@:
-	mov [_ind], 'o'
+ btr dword[ch1.flags],1
 
 test_caps:
-	test eax, 0x40
-	jz @f
-	mov [_ind+1], '*'
-	jmp test_scroll
+ test eax, 0x40
+ jz @f
+ bts dword[ch2.flags],1
+ jmp test_scroll
 @@:
-	mov [_ind+1], 'o'
+ btr dword[ch2.flags],1
 
 test_scroll:
-	test eax, 0x100
-	jz @f
-	mov [_ind+2], '*'
-	jmp test_ok
+ test eax, 0x100
+ jz @f
+ bts dword[ch3.flags],1
+ jmp test_ok
 @@:
-	mov [_ind+2], 'o'
+ btr dword[ch3.flags],1
 
 test_ok:
-	mov eax, 71
-	mov ebx, 1
-	mov ecx, _ind
-	int 0x40
+ call draw_window
 popa
 ret
 
-_ind db 'ooo', 0
+align 4
+button:
+ mcall 17
+ cmp ah,1
+ jne still
+.exit:
+ mcall -1
 
-_param:
-rb 256
+
+check_boxes:
+ch1 check_box2 (5 shl 16)+15,(5 shl 16)+10,5, 0xffffff,0x8000,0xff,\
+ txt_160,0+ch_flag_middle
+ch2 check_box2 (5 shl 16)+15,(17 shl 16)+10,5, 0xffffff,0x8000,0xff,\
+ txt_159,0+ch_flag_middle
+ch3 check_box2 (5 shl 16)+15,(29 shl 16)+10,5, 0xffffff,0x8000,0xff,\
+ txt_158,0+ch_flag_middle
+check_boxes_end:
+
+txt_160 db 'Num',0
+txt_159 db 'Caps',0
+txt_158 db 'Scroll',0
+
+head_f_i:
+head_f_l db 'Системная ошибка',0
+
+system_dir_0 db '/sys/lib/'
+lib_name_0 db 'box_lib.obj',0
+err_msg_found_lib_0 db 'Не найдена библиотека box_lib.obj',0
+err_msg_import_0 db 'Ошибка при импорте библиотеки box_lib',0
+
+l_libs_start:
+ lib_0 l_libs lib_name_0, sys_path, library_path, system_dir_0,\
+ err_msg_found_lib_0,head_f_l,import_box_lib,err_msg_import_0,head_f_i
+l_libs_end:
+
+align 4
+import_box_lib:
+ ;init dd sz_init
+ init_checkbox dd sz_init_checkbox
+ check_box_draw dd sz_check_box_draw
+ check_box_mouse dd sz_check_box_mouse
+ dd 0,0
+ ;sz_init db 'lib_init',0
+ sz_init_checkbox db 'init_checkbox2',0
+ sz_check_box_draw db 'check_box_draw2',0
+ sz_check_box_mouse db 'check_box_mouse2',0
+
+;mouse_dd dd 0x0
+sc system_colors 
 
 _end:
-
 align 32
-rb 2048
-_stack:
+ rb 2048
+stacktop:
+ sys_path rb 1024
+ library_path rb 1024
 _memory:
