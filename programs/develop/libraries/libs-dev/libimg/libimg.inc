@@ -32,7 +32,7 @@ struct Image
   Previous dd ?
   Type     dd ? ; one of Image.bppN
   Data     dd ?
-  Palette  dd ? ; used iff Type eq Image.bpp8
+  Palette  dd ? ; used iff Type eq Image.bpp8 or Image.bpp1
   Extended dd ?
   Flags    dd ? ; bitfield
   Delay    dd ? ; used iff Image.IsAnimated is set in Flags

@@ -39,6 +39,7 @@ include 'tga/tga.asm'
 include 'z80/z80.asm'
 include 'ico_cur/ico_cur.asm'
 include 'pcx/pcx.asm'
+include 'xcf/xcf.asm'
 
 ;;================================================================================================;;
 proc lib_init ;///////////////////////////////////////////////////////////////////////////////////;;
@@ -1997,6 +1998,7 @@ img._.formats_table:
   .jpg dd img.is.jpg, img.decode.jpg, img.encode.jpg
   .tga dd img.is.tga, img.decode.tga, img.encode.tga
   .pcx dd img.is.pcx, img.decode.pcx, img.encode.pcx
+  .xcf dd img.is.xcf, img.decode.xcf, img.encode.xcf
   .z80 dd img.is.z80, img.decode.z80, img.encode.z80 ;this must be the last entry as there are no
   ;signatures in z80 screens at all
        dd 0
