@@ -18,6 +18,8 @@ include 'lang.inc'
 include '..\..\..\macros.inc'
 include 'MOI.INC'   ;раскладки клавиатуры
 
+caps_lock_check fix 0
+
 time_bgr_color = 0x66cc
 
 width		dd  305
@@ -65,6 +67,23 @@ handle_key:
 	cmp	al, 8
 	jz	alter
 prod:
+	;{Albom
+	if caps_lock_check
+		cmp al, 58
+		jne @f
+		pusha
+		mov  eax,26
+		mov  ebx,2
+		mov  ecx,9
+		int  0x40
+		mov  ebx,eax
+		mov eax, 2
+		call draw_window ;;;???
+		popa
+		ret
+	@@:
+	end if
+	;}Albom
 	cmp	al, 15
 	jz	alt_tab_pressed
 	cmp	al, 88
@@ -81,6 +100,7 @@ prod:
 ;	jz	page_list_prev
 	cmp	al, 69
 	jz	start_mousemul_application
+
 	cmp	[current_alt_tab_app], -1
 	jz	@f
 	test	ah, 0x30
@@ -366,6 +386,17 @@ START:
 	mcall 66,,8		; Alt+7
 	mcall 66,,,101h 	; Alt+Shift+Tab
 	mcall 66,,69		; Alt+Shift+NumLock
+	;{Albom
+	; CapsLock
+	if caps_lock_check
+		mov eax, 66
+		mov edx, 0
+		mov ebx, 4
+		xor ecx, ecx
+		mov cl, 58
+		int 0x40
+	end if
+	;}Albom
 
     mcall 18, 8, 1
     test eax, eax
@@ -1322,6 +1353,12 @@ label_2:
 
     mov  ecx,[bte] ; color
 
+	;{Albom
+	if caps_lock_check
+		call flag_text_setup ; make flag_text 'enfigerufretua' or 'ENFIGERUFRETUA' depending on CapsLock state.
+	end if
+	;}Albom
+	
     dec  edx
     shl  edx,1
     add  edx,flag_text
@@ -1350,7 +1387,31 @@ label_2:
 ;    popa
 ;    ret
 
-
+;{Albom
+if caps_lock_check
+	flag_text_setup:
+		pusha
+	
+		mov eax, 66
+		mov ebx, 3
+		int 40h
+	
+		mov edi, flag_text
+		mov esi, flag_text_caps_off
+	
+		test eax, 0x40
+		jz @f
+		add esi, 14
+	@@:
+		mov ecx, 14
+		rep movsb	
+	
+		popa
+		ret
+		flag_text_caps_off db 'enfigerufretua' 
+		db 'ENFIGERUFRETUA'
+end if
+;Albom}
 
 
 ; ***************************************************
@@ -1973,16 +2034,17 @@ draw_info:    ; draw cpu usage, time, date
     inc  edx	    ;button 22
     int  0x40
 
+
     ; flags
 
-;    mov  eax,26
-;    mov  ebx,5
-;    int  0x40
-;    mov  ebx,eax
-;
-;    mov  eax,1
-;    mov  [type_lang],al
-;    call draw_flag
+;   mov  eax,26
+;   mov  ebx,5
+;   int  0x40
+;   mov  ebx,eax
+
+;   mov  eax,2
+;   mov  [type_lang],al
+;   call draw_flag
 
     mov  eax,26
     mov  ebx,2
@@ -2196,10 +2258,10 @@ dalshe:
     cmp  [graph_text],1
     jne  no_y3
     sub  bx,2
-    mov  ecx,0xffffff
+;    mov  ecx,0xffffff
   no_y3:
-
-
+  
+mov  ecx,0xffffff
     mov  edx,[esp]	       ; __:_X
     and  edx,15
     mov  eax,4
@@ -2207,7 +2269,7 @@ dalshe:
     add  edx,text
     mov  esi,1
     int  0x40
-
+mov  ecx,0xffffff
     pop  edx			; __:X_
     shr  edx,4
     and  edx,15
@@ -2216,7 +2278,7 @@ dalshe:
     add  edx,text
     mov  esi,1
     int  0x40
-
+mov  ecx,0xffffff
     mov  edx,[esp]	       ; _X:__
     and  edx,15
     mov  eax,4
@@ -2224,7 +2286,7 @@ dalshe:
     add  edx,text
     mov  esi,1
     int  0x40
-
+mov  ecx,0xffffff
     pop  edx			; X_:__
     shr  edx,4
     and  edx,15
