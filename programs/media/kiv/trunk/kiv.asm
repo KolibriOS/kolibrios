@@ -554,6 +554,8 @@ load_directory:
 ; dunkaist [
     cmp ecx, 'pcx'
     jz  .copy
+    cmp ecx, 'xcf'
+    jz  .copy
 ; dunkaist ]
     cmp ecx, 'jpeg'
     jz  @f
@@ -1074,6 +1076,7 @@ db 'ICO',0
 db 'CUR',0
 ; dunkaist [
 db 'PCX',0
+db 'XCF',0
 ; dunkaist ]
 .end:
 db 0
