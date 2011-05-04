@@ -1,4 +1,4 @@
-export MENUETDEV=/home/john/Kolibri/kolibrios.org/libc
+export MENUETDEV=../../libraries/menuetlibc
 OUTFILE = tpmain
 OBJS = tpmain.o
 include $(MENUETDEV)/makefiles/Makefile_for_program
