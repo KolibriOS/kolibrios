@@ -15,7 +15,7 @@
 
 $Revision$
 
-
+ 
 
 struc POINT {
   .x dd ?

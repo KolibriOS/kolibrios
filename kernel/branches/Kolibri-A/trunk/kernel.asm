@@ -55,7 +55,7 @@
 ;; on all copies.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+ 
 include 'macros.inc'
 
 $Revision$
@@ -219,7 +219,8 @@ diff16 "32-bit code start ",0,$
 	   call init_BIOS32	; (init.inc - to be removed later)
 
 ; PCIe extended config space access
-	   call rs7xx_pcie_init	; (bus/HT.inc)
+;	   call rs7xx_pcie_init	; (bus/HT.inc)
+	   call fusion_pcie_init	; (bus/HT.inc)
 
 ; MEMORY MODEL
 	   call init_mem	; (init.inc)

@@ -136,12 +136,16 @@ rs7xx_pcie_init:
 	call	rs7xx_nbconfig_flush_pci
 	mov	eax, ebx
 	and	eax, 0xFFE00000 		; valid bits [31..21]
-	jz	$				; NB BAR3 may be invisible!
+	jz	$				; invalid map!
 .addr_found:
 	mov	dword[mmio_pcie_cfg_addr-OS_BASE], eax	; physical address (lower 32 bits)
 	add	dword[mmio_pcie_cfg_lim-OS_BASE],  eax
 
-	or	eax, (PG_NOCACHE + PG_SHARED + PG_LARGE + PG_UW)  ;  by the way, UW is unsafe!
+; ---- common mapping procedure ----
+; (eax = phys. address of PCIe conf.space)
+;
+map_pcie_pages:
+	or	eax, (PG_NOCACHE + PG_SHARED + PG_LARGE + PG_UW)  ;  UW is unsafe, fix it!
 	mov	ecx, PCIe_CONFIG_SPACE			; linear address
 	mov	ebx, ecx
 	shr	ebx, 20
@@ -167,6 +171,32 @@ rs7xx_pcie_init:
 .pcie_cfg_mapped:
 	ret	; <<< OK >>>
 
+; ---- stepping 10h CPUs and Fusion APUs: the configspace is stored in MSR_C001_0058 ----
+align 4
+fusion_pcie_init:
+        mov     ecx, 0xC0010058
+        rdmsr
+        or      edx, edx
+        jnz     $                               ; PCIe is in the upper memory. Stop.
+        xchg    dl, al
+	mov	dword[mmio_pcie_cfg_addr-OS_BASE], eax	; store the physical address
+        mov     ecx, edx
+        and     dl, 1
+        jz      $                               ; bit[0] = 1 means no PCIe mapping allowed. Stop.
+        shr     cl, 2                           ; ecx = log2(number of buses)
+	mov	word[PCIe_bus_range-OS_BASE], cx	
+        sub     cl, 2
+        jae     @f
+        xor     cl, cl
+@@:
+        shl     edx, cl                         ; edx = number of 4M pages to map
+	mov	word[mmio_pcie_cfg_pdes-OS_BASE], dx	
+        shl     edx, 22
+        dec     edx
+        add     edx, eax                        ; the upper configspace limit
+	mov	dword[mmio_pcie_cfg_lim-OS_BASE], edx
+
+        jmp     map_pcie_pages  
 
 ; ================================================================================
 
@@ -278,6 +308,19 @@ rs780_write_htiu:
 	pop	edx
 	ret
 
+;------------------------------------------------
+align 4
+sys_rdmsr:
+;  in: [esp+8] = MSR#
+; out: [esp+8] = MSR[63:32]
+;        [eax] = MSR[31: 0]
+;------------------------------------------------
+        push    ecx edx
+        mov     ecx, [esp+16]
+        rdmsr
+        mov     [esp+16], edx
+        pop     edx ecx
+        ret
 
 
 
