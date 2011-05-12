@@ -318,40 +318,35 @@ high_code:
     mov    eax, [BOOT_VAR + 0x9044]    ; version & flags
     mov    [apm_vf], eax
 ; -----------------------------------------
-		mov	al, [BOOT_VAR+0x901F]		; DMA access
+	mov	al, [BOOT_VAR+0x901F]		; DMA access
 	mov	[allow_dma_access], al
-	mov   eax, 32	 			; <<<<<<<<<  bpp
-	mov [ScreenBPP],al
+	mov     eax, 32	 			; bpp
+	mov     [ScreenBPP],al
+	mov     [_display.bpp], eax
 
-	mov [_display.bpp], eax
-	mov [_display.vrefresh], 60
-	mov [_display.disable_mouse],  __sys_disable_mouse
+	mov     [_display.vrefresh], 60
+	mov     [_display.disable_mouse],  __sys_disable_mouse
 
-	movzx eax,word [BOOT_VAR+0x900A]  ; X max
-	mov [_display.width], eax
-	dec   eax
-	mov   [Screen_Max_X],eax
-	mov   [screen_workarea.right],eax
-	inc	eax
-	shr	eax, 2
-	mov	[_WinMapWidth], eax             ; 1 tyle = 4 pixels
-	movzx eax,word [BOOT_VAR+0x900C]        ; Y max
-	mov   [_display.height], eax
-	dec   eax
-	mov   [Screen_Max_Y],eax
-	mov   [screen_workarea.bottom],eax
-	movzx eax,word [BOOT_VAR+0x9008]        ; screen mode
-	mov   [SCR_MODE],eax
-;	mov   eax,[BOOT_VAR+0x9014]	        ; Vesa 1.2 bnk sw add == not used any more
-;	mov   [BANK_SWITCH],eax
-	movzx eax, word[BOOT_VAR+0x9001]        ; for other modes
-	mov   [BytesPerScanLine],ax
-	mov   [_display.pitch], eax
-@@:
-	mov   eax, [_display.height]
-	shr   eax, 1
-	mul   [_WinMapWidth]
-	mov   [_WinMapSize], eax
+	movzx   eax,word [BOOT_VAR+0x900A]  ; X max
+	mov     [_display.width], eax
+	dec     eax
+	mov     [Screen_Max_X],eax
+	mov     [screen_workarea.right],eax
+	movzx   eax,word [BOOT_VAR+0x900C]        ; Y max
+	mov     [_display.height], eax
+	dec     eax
+	mov     [Screen_Max_Y],eax
+	mov     [screen_workarea.bottom],eax
+	movzx   eax,word [BOOT_VAR+0x9008]        ; screen mode
+	mov     [SCR_MODE],eax
+
+	movzx   eax, word[BOOT_VAR+0x9001]        ; for other modes
+	mov     [BytesPerScanLine],ax
+	mov     [_display.pitch], eax
+ 
+	mov     eax, [_display.width]
+	mul     [_display.height]
+	mov     [_WinMapSize], eax
 
 	mov	esi, BOOT_VAR+0x9080
 	movzx	ecx, byte [esi-1]
@@ -373,8 +368,8 @@ high_code:
 ;        ===  EGA, VGA & Vesa 1.2 modes not supported ===
 setvesa20:
 v20ga32:
-;	mov	[PUTPIXEL],dword put_pixel
-;	mov	[GETPIXEL],dword get_pixel
+	mov	[PUTPIXEL],dword __sys_putpixel
+	mov	[GETPIXEL],dword get_pixel
 
 ; -------- Fast System Call init ----------
 .SEnP:
@@ -410,83 +405,82 @@ v20ga32:
 
 ; LOAD IDT
 
-	   call build_interrupt_table ;lidt is executed
-	  ;lidt [idtreg]
+	   call         build_interrupt_table ;lidt is executed
 
-	   call init_kernel_heap
-	   stdcall kernel_alloc, RING0_STACK_SIZE+512
-	   mov [os_stack_seg], eax
+	   call         init_kernel_heap
+	   stdcall      kernel_alloc, RING0_STACK_SIZE+512
+	   mov  [os_stack_seg], eax
 
-	   lea esp, [eax+RING0_STACK_SIZE]
+	   lea  esp, [eax+RING0_STACK_SIZE]
 
-	   mov [tss._ss0], os_stack
-	   mov [tss._esp0], esp
-	   mov [tss._esp], esp
-	   mov [tss._cs],os_code
-	   mov [tss._ss],os_stack
-	   mov [tss._ds],app_data
-	   mov [tss._es],app_data
-	   mov [tss._fs],app_data
-	   mov [tss._gs],app_data
-	   mov [tss._io],128
+	   mov  [tss._ss0], os_stack
+	   mov  [tss._esp0], esp
+	   mov  [tss._esp], esp
+	   mov  [tss._cs],os_code
+	   mov  [tss._ss],os_stack
+	   mov  [tss._ds],app_data
+	   mov  [tss._es],app_data
+	   mov  [tss._fs],app_data
+	   mov  [tss._gs],app_data
+	   mov  [tss._io],128
 ;Add IO access table - bit array of permitted ports
-	   mov edi, tss._io_map_0
-	   xor eax, eax
-	   mov ecx, 2047
-	   rep stosd		     ; access to 65504 ports granted
-	   not eax		     ; the last 32 ports blocked
+	   mov  edi, tss._io_map_0
+	   xor  eax, eax
+	   mov  ecx, 2047
+	   rep  stosd		     ; access to 65504 ports granted
+	   not  eax		     ; the last 32 ports blocked
 	   stosd
 
 	   mov	ax,tss0
 	   ltr	ax
 
-	   mov [LFBSize], 0x800000
+	   mov  [LFBSize], 0x800000
 	   call init_LFB
 	   call init_fpu
 	   call init_malloc
 ;-
 	   stdcall alloc_kernel_space, 0x51000
-	   mov [default_io_map], eax
+	   mov  [default_io_map], eax
 
-	   add eax, 0x2000
-	   mov [ipc_tmp], eax
-	   mov ebx, 0x1000
+	   add  eax, 0x2000
+	   mov  [ipc_tmp], eax
+	   mov  ebx, 0x1000
 
-	   add eax, 0x40000
-	   mov [proc_mem_map], eax
+	   add  eax, 0x40000
+	   mov  [proc_mem_map], eax
 
-	   add eax, 0x8000
-	   mov [proc_mem_pdir], eax
+	   add  eax, 0x8000
+	   mov  [proc_mem_pdir], eax
 
-	   add eax, ebx
-	   mov [proc_mem_tab], eax
+	   add  eax, ebx
+	   mov  [proc_mem_tab], eax
 
-	   add eax, ebx
-	   mov [tmp_task_pdir], eax
+	   add  eax, ebx
+	   mov  [tmp_task_pdir], eax
 
-	   add eax, ebx
-	   mov [tmp_task_ptab], eax
+	   add  eax, ebx
+	   mov  [tmp_task_ptab], eax
 
-	   add eax, ebx
-	   mov [ipc_pdir], eax
+	   add  eax, ebx
+	   mov  [ipc_pdir], eax
 
-	   add eax, ebx
-	   mov [ipc_ptab], eax
+	   add  eax, ebx
+	   mov  [ipc_ptab], eax
 
 	   stdcall kernel_alloc, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
 				 (unpack.lc+unpack.lp)))*4
 
-	   mov [unpack.p], eax
+	   mov  [unpack.p], eax
 
 	   call init_events
-	   mov eax, srv.fd-SRV_FD_OFFSET
-	   mov [srv.fd], eax
-	   mov [srv.bk], eax
+	   mov  eax, srv.fd-SRV_FD_OFFSET
+	   mov  [srv.fd], eax
+	   mov  [srv.bk], eax
 
-	   mov edi, irq_tab
-	   xor eax, eax
-	   mov ecx, 16
-	   rep stosd
+	   mov  edi, irq_tab
+	   xor  eax, eax
+	   mov  ecx, 16
+	   rep  stosd
 
 ;Set base of graphic segment to linear address of LFB
 	mov	eax,[LFBAddress]	  ; set for gs
@@ -512,8 +506,8 @@ v20ga32:
 	mov   [BgrDrawMode],eax
 	mov   [BgrDataWidth],eax
 	mov   [BgrDataHeight],eax
-;	mov    [mem_BACKGROUND], 4
-;	mov [img_background], static_background_data
+	mov   [mem_BACKGROUND], 4
+	mov   [img_background], static_background_data
 
 	mov	[SLOT_BASE + 256 + APPDATA.dir_table], sys_pgdir - OS_BASE
 
@@ -632,8 +626,8 @@ end if
 
 	mov   esi,boot_bgr
 	call  boot_log
-	call  _init_background   ;graph32.inc ?
-	call  calculatebackground
+	call  init_background   ; 
+        call  calculatebackground
 
 ; SET UP OS TASK
 
@@ -686,137 +680,6 @@ end if
 	mov [SLOT_BASE+APPDATA.cursor],eax
 	mov [SLOT_BASE+APPDATA.cursor+256],eax
 
-; <<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>
-
-;	mov     esi, img_test_struct_8
-;	mov     edi, 151
-
- ;       mov     ebp, edi
-;        imul    edi, [BytesPerScanLine]
-;        add     edi, LFB_BASE + 32*4
-;        mov     [img_lfb_origin], edi
-;        shr     ebp, 1
-;        imul    ebp, [_WinMapWidth]
-;        add     ebp, 32/4
-;        add     ebp, [_WinMapAddress]
-;        mov     ecx, ebp
-;        add     ecx, [_WinMapWidth]
-;        mov     byte[ecx+1], 2
-;        mov     ecx, 6
-;        mov     [img_pix_y], ecx
-;        mov     eax, 1
-;        mov     [img_bytes_per_pix], eax
-;        mov     ebx, 1
-;        bts     ebx, 24
-;        mov     eax, 8-1
-;        mov     [img_pix_x], eax
-;        inc     eax
-;        shr     eax, 2
-;        mov     [img_map_x], eax
-;	mov	[img_draw_core_fn],  draw_core_8bpp
-;	mov	[img_draw_edge_fn],  draw_edge_8bpp
-;	mov	[img_buf_line_size], 9
-;	mov	[img_palette],  img_test_palette
-
-;	call    draw_aligned_box
-;       add     edi, 48
-;        mov     edx, 8
-;        call    draw_unaligned_edge
-; mono
-;        bts     ebx, 25
-;        add     edi, [_WinMapWidth]             ; = 1/16 of the screen width
-;        mov     esi, img_test_struct_1
-;        mov     [img_lfb_origin], edi
-;        mov     ecx, 9
-;        mov     [img_map_x], 4
-;        mov     [img_bitoffset], 1
-;        mov     [img_edgeoffset], 16
-;	mov	[img_draw_core_fn],  draw_core_1bpp
-;	mov	[img_draw_edge_fn],  draw_edge_1bpp
-;	mov	[img_buf_line_size], 2
-;        mov     [img_bytes_per_pix], 0
-;	call    draw_aligned_box
-;        add     edi, 48
-;        mov     edx, 8
-;        call    draw_unaligned_edge
-;        btr     ebx, 25
-; 32bpp
-;        add     edi, [_WinMapWidth]             ; = 1/16 of the screen width
-;        mov     esi, img_test_struct_32
-;        mov     [img_lfb_origin], edi
-;        mov     ecx, 6
-;        mov     [img_map_x], 2
-;	mov	[img_draw_core_fn],  draw_core_32bpp
-;	mov	[img_draw_edge_fn],  draw_edge_32bpp
-;	mov	[img_buf_line_size], 32
-;       mov     [img_bytes_per_pix], 4
-;	call    draw_aligned_box
-;        add     edi, 48
-;        mov     edx, 8
-;        call    draw_unaligned_edge
-
-; 24bpp        
-;        add     edi, [_WinMapWidth]             ; = 1/16 of the screen width
-;        mov     esi, img_test_struct_24
-;        mov     [img_lfb_origin], edi
-;        mov     ecx, 7
-;        mov     [img_map_x], 4
-;	mov	[img_draw_core_fn],  draw_core_24bpp
-;	mov	[img_draw_edge_fn],  draw_edge_24bpp
-;	mov	[img_buf_line_size], 45
-;        mov     [img_bytes_per_pix], 3
-;	call    draw_aligned_box
-;       add     edi, 80
-;        mov     edx, 4
-;        call    draw_unaligned_edge
-
-;        mov     [TASK_BASE-twdw + WDATA.box.left], 0
-;        mov     [TASK_BASE-twdw + WDATA.box.top], 0
-;        mov     eax, [Screen_Max_X]
-;        mov     [TASK_BASE-twdw + WDATA.box.width], eax
-;        mov     eax, [Screen_Max_Y]
-;        mov     [TASK_BASE-twdw + WDATA.box.height], eax
- 
-; 	mov	ebx, img_test_struct_24
-;        mov     ecx, 16*65536 + 7
-;        mov     edx, 512*65536 + 400
-
-;        call    _putimage 
-
-
-;-----------
-;	mov ebx, img_test_struct_32
-;	mov ecx, 6*65536 + 6
-;	mov edx, 32*65536 + 512
-;	mov esi, 32
-;       xor     edi, edi
-;	mov     ebp, edi
-;	call sys_putimage_palette.forced
-
-;	mov     [img_palette], img_test_palette
-;	mov     [img_bytes_per_pix], 0
-;	mov     [img_buf_line_size], 0
-;	mov     ebx, img_test_palette
-;	mov	[img_draw_core_fn],  draw_core_0bpp
-;	mov	[img_draw_edge_fn],  draw_edge_0bpp
-;	mov     ecx, 20*65536 + 9
-;        mov     edx, 513*65536 + 401 
-;	call    _putimage
-
-;        mov     eax, 561
-;        mov     ebx, 461
-;        mov     ecx, 555
-;        mov     edx, 333
-;        mov     edi, 0xAA5533
-;        call    _drawbar
-
-
-
- ;       jmp     $
-
-;<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>	
-
-
 
   ; READ TSC / SECOND
 
@@ -855,8 +718,6 @@ end if
 ; SET VARIABLES
 
 	call  set_variables
-
-
 
 ; SET MOUSE
 
@@ -1023,7 +884,6 @@ osloop:
 	call   checkmisc
 	call   stack_handler
 	call   checkidle
-;	call   check_fdd_motor_status
 	jmp    osloop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                    ;
@@ -1832,7 +1692,6 @@ sys_end:
      test eax, eax
      jz @F
 
-
      stdcall user_free, eax
 @@:
 
@@ -2220,24 +2079,271 @@ bgrlock db 0
 endg
 
 ;===============================  SysFn 15  ================================
-; no background service supported so far ...
-;===========================================
-
 sys_background:
 
-    	cmp   ebx,6 			; subfns 1..5 do not return anything
-    	jb    .exit
-	mov	dword [esp+32], 0		; subfns 6,7 return 0 as error 
+    cmp   ebx,1 			   ; BACKGROUND SIZE
+    jnz   nosb1
+    test  ecx,ecx
+;    cmp   ecx,0
+    jz	  sbgrr
+    test  edx,edx
+;    cmp   edx,0
+    jz	  sbgrr
+@@:
+;;Maxis use atomic bts for mutexes  4.4.2009
+	bts	dword [bgrlock], 0
+	jnc	@f
+	call	change_task
+	jmp	@b
+@@:
+    mov   [BgrDataWidth],ecx
+    mov   [BgrDataHeight],edx
+;    mov   [bgrchanged],1
+
+    pushad
+; return memory for old background
+	mov	eax, [img_background]
+	cmp	eax, static_background_data
+	jz	@f
+	stdcall kernel_free, eax
+@@:
+; calculate RAW size
+    xor  eax,eax
+    inc  eax
+    cmp  [BgrDataWidth],eax
+    jae   @f
+    mov [BgrDataWidth],eax
+@@:
+    cmp  [BgrDataHeight],eax
+    jae   @f
+    mov [BgrDataHeight],eax
+@@:
+    mov  eax,[BgrDataWidth]
+    imul eax,[BgrDataHeight]
+    lea  eax,[eax*3]
+    mov  [mem_BACKGROUND],eax
+; get memory for new background
+    stdcall kernel_alloc, eax
+    test eax, eax
+    jz .memfailed
+    mov [img_background], eax
+    jmp .exit
+.memfailed:
+; revert to static monotone data
+	mov	[img_background], static_background_data
+	xor	eax, eax
+	inc	eax
+	mov	[BgrDataWidth], eax
+	mov	[BgrDataHeight], eax
+	mov	[mem_BACKGROUND], 4
 .exit:
+    popad
+	mov	[bgrlock], 0
+
+  sbgrr:
+    ret
+
+nosb1:
+
+    cmp   ebx,2 			   ; SET PIXEL
+    jnz   nosb2
+
+    mov   eax, [img_background]
+    test  ecx, ecx
+    jz	  @f
+    cmp   eax, static_background_data
+
+    jz	  .ret
+@@:
+    mov ebx, [mem_BACKGROUND]
+    add ebx, 4095
+    and ebx, -4096
+    sub ebx, 4
+    cmp   ecx, ebx
+    ja	 .ret
+
+    mov   ebx,[eax+ecx]
+    and   ebx,0xFF000000 ;255*256*256*256
+    and   edx,0x00FFFFFF ;255*256*256+255*256+255
+    add   edx,ebx
+    mov   [eax+ecx],edx
+.ret:
+    ret
+nosb2:
+
+    cmp   ebx,3 			   ; DRAW BACKGROUND
+    jnz   nosb3
+draw_background_temp:
+;    cmp   [bgrchanged],1 ;0
+;    je    nosb31
+;draw_background_temp:
+;    mov   [bgrchanged],1 ;0
+    mov    [background_defined], 1
+    mov    byte[BACKGROUND_CHANGED], 1
+    call  force_redraw_background
+   nosb31:
+    ret
+  nosb3:
+
+    cmp   ebx,4 			   ; TILED / STRETCHED
+    jnz   nosb4
+    cmp   ecx,[BgrDrawMode]
+    je	  nosb41
+    mov   [BgrDrawMode],ecx
+;    mov   [bgrchanged],1
+   nosb41:
+    ret
+  nosb4:
+
+    cmp   ebx,5 			   ; BLOCK MOVE TO BGR
+    jnz   nosb5
+    cmp   [img_background], static_background_data
+    jnz   @f
+    test  edx, edx
+    jnz   .fin
+    cmp   esi, 4
+    ja	  .fin
+  @@:
+  ; bughere
+    mov   eax, ecx
+    mov   ebx, edx
+    add   ebx, [img_background]   ;IMG_BACKGROUND
+    mov   ecx, esi
+    call  memmove
+  .fin:
+    ret
+  nosb5:
+
+	cmp	ebx, 6
+	jnz	nosb6
+;;Maxis use atomic bts for mutex 4.4.2009
+@@:
+	bts	dword [bgrlock], 0
+	jnc	@f
+	call	change_task
+	jmp	@b
+@@:
+	mov	eax, [CURRENT_TASK]
+	mov	[bgrlockpid], eax
+	cmp	[img_background], static_background_data
+	jz	.nomem
+	stdcall user_alloc, [mem_BACKGROUND]
+	mov	[esp+32], eax
+	test	eax, eax
+	jz	.nomem
+	mov	ebx, eax
+	shr	ebx, 12
+	or	dword [page_tabs+(ebx-1)*4], DONT_FREE_BLOCK
+	mov	esi, [img_background]
+	shr	esi, 12
+	mov	ecx, [mem_BACKGROUND]
+	add	ecx, 0xFFF
+	shr	ecx, 12
+.z:
+	mov	eax, [page_tabs+ebx*4]
+	test	al, 1
+	jz	@f
+	call	free_page
+@@:
+	mov	eax, [page_tabs+esi*4]
+	or	al, PG_UW
+	mov	[page_tabs+ebx*4], eax
+	mov	eax, ebx
+	shl	eax, 12
+	invlpg	[eax]
+	inc	ebx
+	inc	esi
+	loop	.z
+	ret
+.nomem:
+	and	[bgrlockpid], 0
+	mov	[bgrlock], 0
+nosb6:
+	cmp	ebx, 7
+	jnz	nosb7
+	cmp	[bgrlock], 0
+	jz	.err
+	mov	eax, [CURRENT_TASK]
+	cmp	[bgrlockpid], eax
+	jnz	.err
+	mov	eax, ecx
+	mov	ebx, ecx
+	shr	eax, 12
+	mov	ecx, [page_tabs+(eax-1)*4]
+	test	cl, USED_BLOCK+DONT_FREE_BLOCK
+	jz	.err
+	jnp	.err
+	push	eax
+	shr	ecx, 12
+	dec	ecx
+@@:
+	and	dword [page_tabs+eax*4], 0
+	mov	edx, eax
+	shl	edx, 12
+	push eax
+	invlpg	[edx]
+	pop eax
+	inc	eax
+	loop	@b
+	pop	eax
+	and	dword [page_tabs+(eax-1)*4], not DONT_FREE_BLOCK
+	stdcall user_free, ebx
+	mov	[esp+32], eax
+	and	[bgrlockpid], 0
+	mov	[bgrlock], 0
+	ret
+.err:
+	and	dword [esp+32], 0
 	ret
 
+nosb7:
+    ret
+
 ;===============================  SysFn 39  ================================
-; no background service supported so far ...
-;===========================================
 align 4
 
 sys_getbackground:
-    mov   dword [esp+32], 0
+    dec   ebx
+    jnz   nogb1
+    mov   eax,[BgrDataWidth]
+    shl   eax,16
+    mov   ax,[BgrDataHeight]
+    mov   [esp+32],eax
+    ret
+
+nogb1:
+;    cmp   eax,2                                  ; PIXEL
+    dec   ebx
+    jnz   nogb2
+
+	mov	eax, [img_background]
+	test	ecx, ecx
+	jz	@f
+	cmp	eax, static_background_data
+	jz	.ret
+@@:
+    mov ebx, [mem_BACKGROUND]
+    add ebx, 4095
+    and ebx, -4096
+    sub ebx, 4
+    cmp ecx, ebx
+    ja	.ret
+
+    mov   eax,[ecx+eax]
+
+    and   eax, 0xFFFFFF
+    mov   [esp+32],eax
+.ret:
+    ret
+  nogb2:
+
+;    cmp   eax,4                                  ; TILED / STRETCHED
+    dec   ebx
+    dec   ebx
+    jnz   nogb4
+    mov   eax,[BgrDrawMode]
+  nogb4:
+    mov   [esp+32],eax
     ret
 
 ;===========================================
@@ -3096,13 +3202,37 @@ f_irqs:
 endg
 
 drawbackground:
+;       inc   [mouse_pause]
+;       call  draw_background    ; graph32.inc
+;       dec   [mouse_pause]
+;       call   [draw_pointer]
+;       ret
        inc   [mouse_pause]
-       call  draw_background    ; graph32.inc
+       cmp   [SCR_MODE],word 0x12
+       je   dbrv20
+     dbrv12:
+       cmp  [SCR_MODE],word 0100000000000000b
+       jge  dbrv20
+       dec   [mouse_pause]
+       call   [draw_pointer]
+       ret
+     dbrv20:
+       cmp   [BgrDrawMode],dword 1
+       jne   bgrstr
+       call  vesa20_drawbackground_tiled
+       dec   [mouse_pause]
+       call   [draw_pointer]
+       ret
+     bgrstr:
+       call  vesa20_drawbackground_stretch
        dec   [mouse_pause]
        call   [draw_pointer]
        ret
 
 ; ====================================================================
+if 0
+; the new GFX sys
+
 align 4
 syscall_putimage:			; PutImage = SysFn07
 sys_putimage:
@@ -3203,6 +3333,311 @@ img_edge_proc_2         dd      draw_edge_16bpp
 img_edge_proc_3         dd      draw_edge_24bpp 
 img_edge_proc_4         dd      draw_edge_32bpp 
 
+end if
+; <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+; the old GFX sys
+align 4
+
+syscall_putimage:			; PutImage
+sys_putimage:
+     test  ecx,0x80008000
+     jnz   .exit
+     test  ecx,0x0000FFFF
+     jz    .exit
+     test  ecx,0xFFFF0000
+     jnz   @f
+  .exit:
+     ret
+ @@:
+	mov	edi,[current_slot]
+	add	dx,word[edi+APPDATA.wnd_clientbox.top]
+	rol	edx,16
+	add	dx,word[edi+APPDATA.wnd_clientbox.left]
+	rol	edx,16
+  .forced:
+	push	ebp esi 0
+	mov	ebp, putimage_get24bpp
+	mov	esi, putimage_init24bpp
+sys_putimage_bpp:
+;        cmp     [SCR_MODE], word 0x12
+;        jz      @f   ;.doit
+;        mov     eax, vesa12_putimage
+;        cmp     [SCR_MODE], word 0100000000000000b
+;        jae     @f
+;        cmp     [SCR_MODE], word 0x13
+;        jnz     .doit
+;@@:
+	mov	eax, vesa20_putimage
+.doit:
+	inc	[mouse_pause]
+	call	eax
+	dec	[mouse_pause]
+	pop	ebp esi ebp
+	jmp	[draw_pointer]
+align 4
+sys_putimage_palette:
+; ebx = pointer to image
+; ecx = [xsize]*65536 + [ysize]
+; edx = [xstart]*65536 + [ystart]
+; esi = number of bits per pixel, must be 8, 24 or 32
+; edi = pointer to palette
+; ebp = row delta
+	mov	eax, [CURRENT_TASK]
+	shl	eax, 8
+	add	dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.top]
+	rol	edx, 16
+	add	dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.left]
+	rol	edx, 16
+.forced:
+	cmp	esi, 1
+	jnz	@f
+	push	edi
+	mov	eax, [edi+4]
+	sub	eax, [edi]
+	push	eax
+	push	dword [edi]
+	push	0ffffff80h
+	mov	edi, esp
+	call	put_mono_image
+	add	esp, 12
+	pop	edi
+	ret
+@@:
+	cmp	esi, 2
+	jnz	@f
+	push	edi
+	push	0ffffff80h
+	mov	edi, esp
+	call	put_2bit_image
+	pop	eax
+	pop	edi
+	ret
+@@:
+	cmp	esi, 4
+	jnz	@f
+	push	edi
+	push	0ffffff80h
+	mov	edi, esp
+	call	put_4bit_image
+	pop	eax
+	pop	edi
+	ret
+@@:
+	push	ebp esi ebp
+	cmp	esi, 8
+	jnz	@f
+	mov	ebp, putimage_get8bpp
+	mov	esi, putimage_init8bpp
+	jmp	sys_putimage_bpp
+@@:
+	cmp	esi, 15
+	jnz	@f
+	mov	ebp, putimage_get15bpp
+	mov	esi, putimage_init15bpp
+	jmp	sys_putimage_bpp
+@@:
+	cmp	esi, 16
+	jnz	@f
+	mov	ebp, putimage_get16bpp
+	mov	esi, putimage_init16bpp
+	jmp	sys_putimage_bpp
+@@:
+	cmp	esi, 24
+	jnz	@f
+	mov	ebp, putimage_get24bpp
+	mov	esi, putimage_init24bpp
+	jmp	sys_putimage_bpp
+@@:
+	cmp	esi, 32
+	jnz	@f
+	mov	ebp, putimage_get32bpp
+	mov	esi, putimage_init32bpp
+	jmp	sys_putimage_bpp
+@@:
+	pop	ebp esi ebp
+	ret
+
+put_mono_image:
+	push	ebp esi ebp
+	mov	ebp, putimage_get1bpp
+	mov	esi, putimage_init1bpp
+	jmp	sys_putimage_bpp
+put_2bit_image:
+	push	ebp esi ebp
+	mov	ebp, putimage_get2bpp
+	mov	esi, putimage_init2bpp
+	jmp	sys_putimage_bpp
+put_4bit_image:
+	push	ebp esi ebp
+	mov	ebp, putimage_get4bpp
+	mov	esi, putimage_init4bpp
+	jmp	sys_putimage_bpp
+
+putimage_init24bpp:
+	lea	eax, [eax*3]
+putimage_init8bpp:
+	ret
+
+align 16
+putimage_get24bpp:
+	movzx	eax, byte [esi+2]
+	shl	eax, 16
+	mov	ax, [esi]
+	add	esi, 3
+	ret	4
+align 16
+putimage_get8bpp:
+	movzx	eax, byte [esi]
+	push	edx
+	mov	edx, [esp+8]
+	mov	eax, [edx+eax*4]
+	pop	edx
+	inc	esi
+	ret	4
+
+putimage_init1bpp:
+	add	eax, ecx
+	push	ecx
+	add	eax, 7
+	add	ecx, 7
+	shr	eax, 3
+	shr	ecx, 3
+	sub	eax, ecx
+	pop	ecx
+	ret
+align 16
+putimage_get1bpp:
+	push	edx
+	mov	edx, [esp+8]
+	mov	al, [edx]
+	add	al, al
+	jnz	@f
+	lodsb
+	adc	al, al
+@@:
+	mov	[edx], al
+	sbb	eax, eax
+	and	eax, [edx+8]
+	add	eax, [edx+4]
+	pop	edx
+	ret	4
+
+putimage_init2bpp:
+	add	eax, ecx
+	push	ecx
+	add	ecx, 3
+	add	eax, 3
+	shr	ecx, 2
+	shr	eax, 2
+	sub	eax, ecx
+	pop	ecx
+	ret
+align 16
+putimage_get2bpp:
+	push	edx
+	mov	edx, [esp+8]
+	mov	al, [edx]
+	mov	ah, al
+	shr	al, 6
+	shl	ah, 2
+	jnz	.nonewbyte
+	lodsb
+	mov	ah, al
+	shr	al, 6
+	shl	ah, 2
+	add	ah, 1
+.nonewbyte:
+	mov	[edx], ah
+	mov	edx, [edx+4]
+	movzx	eax, al
+	mov	eax, [edx+eax*4]
+	pop	edx
+	ret	4
+
+putimage_init4bpp:
+	add	eax, ecx
+	push	ecx
+	add	ecx, 1
+	add	eax, 1
+	shr	ecx, 1
+	shr	eax, 1
+	sub	eax, ecx
+	pop	ecx
+	ret
+align 16
+putimage_get4bpp:
+	push	edx
+	mov	edx, [esp+8]
+	add	byte [edx], 80h
+	jc	@f
+	movzx	eax, byte [edx+1]
+	mov	edx, [edx+4]
+	and	eax, 0x0F
+	mov	eax, [edx+eax*4]
+	pop	edx
+	ret	4
+@@:
+	movzx	eax, byte [esi]
+	add	esi, 1
+	mov	[edx+1], al
+	shr	eax, 4
+	mov	edx, [edx+4]
+	mov	eax, [edx+eax*4]
+	pop	edx
+	ret	4
+
+putimage_init32bpp:
+	shl	eax, 2
+	ret
+align 16
+putimage_get32bpp:
+	lodsd
+	ret	4
+
+putimage_init15bpp:
+putimage_init16bpp:
+	add	eax, eax
+	ret
+align 16
+putimage_get15bpp:
+; 0RRRRRGGGGGBBBBB -> 00000000RRRRR000GGGGG000BBBBB000
+	push	ecx edx
+	movzx	eax, word [esi]
+	add	esi, 2
+	mov	ecx, eax
+	mov	edx, eax
+	and	eax, 0x1F
+	and	ecx, 0x1F shl 5
+	and	edx, 0x1F shl 10
+	shl	eax, 3
+	shl	ecx, 6
+	shl	edx, 9
+	or	eax, ecx
+	or	eax, edx
+	pop	edx ecx
+	ret	4
+
+align 16
+putimage_get16bpp:
+; RRRRRGGGGGGBBBBB -> 00000000RRRRR000GGGGGG00BBBBB000
+	push	ecx edx
+	movzx	eax, word [esi]
+	add	esi, 2
+	mov	ecx, eax
+	mov	edx, eax
+	and	eax, 0x1F
+	and	ecx, 0x3F shl 5
+	and	edx, 0x1F shl 11
+	shl	eax, 3
+	shl	ecx, 5
+	shl	edx, 8
+	or	eax, ecx
+	or	eax, edx
+	pop	edx ecx
+	ret	4
+
+
+
 ; ==================================================
 ; eax x beginning
 ; ebx y beginning
@@ -3219,7 +3654,7 @@ __sys_drawbar:
   .forced:
     inc   [mouse_pause]
 ;  dbv20:
-    call  _drawbar
+    call  drawbar
     dec   [mouse_pause]
     jmp   [draw_pointer]
 
@@ -3965,11 +4400,7 @@ set_screen:
 	stdcall kernel_free, [_WinMapAddress]
 
 	mov eax, [_display.width]
-	shr eax, 2
-	mov [_WinMapWidth], eax
-	mov eax, [_display.height]
-	shr eax, 1
-	mul [_WinMapWidth]
+	mul [_display.height]
 	mov [_WinMapSize], eax
 
 	stdcall kernel_alloc, eax
@@ -4306,27 +4737,3 @@ uglobals_size = $ - endofcode
 diff16 "Zero-filled blk",0,endofcode
 diff16 "End of kernel  ",0,$
 
-;Кургинян - математик, и основные свои выводы делает на основе теории катастроф (есть такая вполне себе прикладная область математики) с элементами вариационного и факторного анализа. В принципе, он мог бы изложить суть в 3-4 сухих формулах, но только понять их могли (и захотели) бы человек 200-300...
-
-;Вот и приходится ему излагать то же самое, но гораздо длиннее и доходчивее. Лично я не поленился и прочитал цикл "Кризис и другие" в архиве "Завтра" за 2009 год.
-
-
-;Вот очень краткая выжимка его основных идей (с моей колокольни, конечно):
-
-;1) Планета перенаселена, ресурсов на всех не хватит, период либеральненкой глобализации должен смениться эрой жесткого рационирования при тотальном контроле всего.
-
-;2) У грядущего тоталитарного общества должна быть господствующая идеология, мобилизующая людей в суровой борьбе. Какой ей быть? для этого надо ответить на два основных вопроса: а) можно ли сделать человека лучше, сильнее, умнее? и б) можно ли сделать общество лучше, справедливее, свободнее?
-
-;3) существует 4 возможных ответа на эти 2 вопроса: (а+б+) исторический модерн, он же коммунизм; (а+б-) антиисторический модерн, или фашизм; (а-б+) религиозный фундаментализм, или Контрмодерн; и наконец (а-б-) циничный антигуманизм, он же Постмодерн.
-
-;4) крушение коммунистического проекта в XX веке было тщательно спланированной катастрофой с целью поворота человечества с модернистского пути развития на постмодернистский путь распада. Кургинян здесь имеет в виду катастрофу в математическом смысле, т.е. не какое-то печальное событие, а процесс, приводящий к такому событию. Я не хочу пересказывать здесь все положения теории катастроф - важно только понимать, что такой процесс вовсе не обязательно должен приводить к фатальному исходу - выход из катастрофы всегда можно найти, вплоть до самого последнего момента!
-
-;5) катиться по этому катастрофическому пути легко, но найти выход из катастрофы с каждым шагом все сложнее. Чтобы избежать фатального конца, одной энергии мало - требуется изрядная сила воли.
-
-;6) здесь Кургинян подключает другой математический аппарат - теорию игр. И показывает, как шулера - магистры сложной коалиционно-антагонистической игры умеют целенаправленно и эффективно лишать противников воли и смыслов для поиска выхода из катастрофы.
-
-;7) конечно, человеческое общество - сложнейшая система с непредсказуемым откликом на актиные действия каждого из игроков. Даже опытнейший шулер может здесь сделать неверные ходы. Но в распоряжении мастеров игры имеется еще один мощный аппарат - факторный анализ, позволяющий эффективно корректировать промахи и лучше предсказывть поведение сложных систем.
-
-;8) и тем не менее, выход есть! Для начала, надо реально осознать свою позицию в игре и навязать свою, активную игру (каждый новый активный игрок усложняет партнерам анализ игры). Это сложно (проще быть болваном), и это требует Воли и воссоздания Смыслов.
-
-;9) даже самая активная игра будет простым барахтаньем, если не ставится конечная цель. Такая цель есть. Точнее - была: проект (а+б+). Если ее восстановить, мы не просто вернемся к активной игре - мы можем сформировать мощную коалицию антипостмодернистов.

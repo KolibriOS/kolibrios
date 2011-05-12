@@ -378,12 +378,10 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
 
 	mov	eax, [mouse.state.pos.x]
 	sub	eax, [mouse.active_sys_window.delta.x]
-	and	al, 0xFC				; <<<<<<<<<<<<<<<<<<<
 	mov	[mouse.active_sys_window.new_box.left], eax
 	mov	eax, [mouse.state.pos.y]
 	sub	eax, [mouse.active_sys_window.delta.y]
-	and	al, 0xFE				; <<<<<<<<<<<<<<<<<<<
-	mov	[mouse.active_sys_window.new_box.top], eax
+	mov	[mouse.active_sys_window.new_box.top],  eax
 
 	mov	eax, [mouse.active_sys_window.new_box.left]
 	or	eax, eax
@@ -413,7 +411,6 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
 
 	mov	eax, [mouse.state.pos.x]
 	sub	eax, [mouse.active_sys_window.delta.x]
-	and	al, 0xFC				; <<<<<<<<<<<<<<<<<<<
 	mov	[mouse.active_sys_window.new_box.left], eax
 	sub	eax, [mouse.active_sys_window.old_box.left]
 	sub	[mouse.active_sys_window.new_box.width], eax
@@ -437,7 +434,6 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
 	mov	eax, [mouse.state.pos.y]
 	add	eax, [mouse.active_sys_window.delta.y]
 	sub	eax, [mouse.active_sys_window.old_box.top]
-	and	al, 0xFC				; <<<<<<<<<<<<<<<<<<<
 	mov	[mouse.active_sys_window.new_box.height], eax
 
 	push	eax
@@ -470,7 +466,6 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
 	mov	eax, [mouse.state.pos.x]
 	add	eax, [mouse.active_sys_window.delta.x]
 	sub	eax, [mouse.active_sys_window.old_box.left]
-	and	al, 0xFC				; <<<<<<<<<<<<<<<<<<<
 	mov	[mouse.active_sys_window.new_box.width], eax
 
 	mov	eax, [mouse.active_sys_window.new_box.width]
@@ -518,13 +513,11 @@ mouse._.find_sys_window_under_cursor: ;////////////////////////////////////////
 ;< esi = process slot
 ;< edi = pointer to WDATA struct
 ;------------------------------------------------------------------------------
-	mov	esi, [mouse.state.pos.y]
-        mov     edi, [mouse.state.pos.x]
-        shr     esi, 1
-        shr     edi, 2
-	imul	esi, [_WinMapWidth]
-	add	edi, [_WinMapAddress]
-	add	esi, edi
+        mov     esi, [Screen_Max_X]
+        inc     esi
+        imul    esi, [mouse.state.pos.y]
+        add     esi, [_WinMapAddress]
+        add     esi, [mouse.state.pos.x]
 	movzx	esi, byte[esi]
 	mov	edi, esi
 	shl	edi, 5

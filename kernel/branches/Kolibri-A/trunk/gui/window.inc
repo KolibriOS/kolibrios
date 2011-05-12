@@ -12,7 +12,7 @@ $Revision$
 ;///// public functions ///////////////////////////////////////////////////////
 ;==============================================================================
 
-window.BORDER_SIZE = 4
+window.BORDER_SIZE = 5
 
 macro FuncTable name, table_name, [label]
 {
@@ -328,19 +328,15 @@ syscall_move_window: ;///// system function 67 ////////////////////////////////
 	cmp	ebx, -1
 	jne	@f
 	mov	ebx, [edi + WDATA.box.left]
-	and	bl, 0xFC
     @@: cmp	ecx, -1
 	jne	@f
 	mov	ecx, [edi + WDATA.box.top]
-	and	cl, 0xFE
     @@: cmp	edx, -1
 	jne	@f
 	mov	edx, [edi + WDATA.box.width]
-;	and	dl, 0xFC
     @@: cmp	esi, -1
 	jne	@f
 	mov	esi, [edi + WDATA.box.height]
-;	and	esi, 0xFFFFFFFE
 
     @@: push	esi edx ecx ebx
 	mov	eax, esp
@@ -515,10 +511,8 @@ repos_windows: ;///////////////////////////////////////////////////////////////
 	mov	eax, [edi + WDATA.box.width]
 	sub	eax, ebx
 	jle	@f
-;	and	bl, 0xFC			; <<<<<<<
 	mov	[edi + WDATA.box.width], ebx
     @@: sub	ebx, [edi + WDATA.box.width]
-;	and	bl, 0xFC			; <<<<<<<
 	mov	[edi + WDATA.box.left], ebx
 
   .fix_vertical:
@@ -530,10 +524,8 @@ repos_windows: ;///////////////////////////////////////////////////////////////
 	mov	eax, [edi + WDATA.box.height]
 	sub	eax, ebx
 	jle	@f
-;	and	bl, 0xFE			; <<<<<<<
 	mov	[edi + WDATA.box.height], ebx
     @@: sub	ebx, [edi + WDATA.box.height]
-;	and	bl, 0xFE			; <<<<<<<
 	mov	[edi + WDATA.box.top], ebx
 	jmp	.fix_client_box
 
@@ -556,7 +548,7 @@ repos_windows: ;///////////////////////////////////////////////////////////////
 
 	add	edi, WDATA.sizeof
 	dec	ecx
-	jne    .next_window	; <<<<<<<<<<<
+	jne    .next_window
 
   .exit:
 	ret
@@ -565,23 +557,8 @@ align 4
 ;------------------------------------------------------------------------------
 sys_window_mouse: ;////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
-;? <description>
+;? <description>  (not used)
 ;------------------------------------------------------------------------------
-	; NOTE: commented out since doesn't provide necessary functionality
-	;       anyway, to be reworked
-;       push    eax
-;
-;       mov     eax, [timer_ticks]
-;       cmp     [new_window_starting], eax
-;       jb      .exit
-;
-;       mov     byte[MOUSE_BACKGROUND], 0
-;       mov     byte[DONT_DRAW_MOUSE], 0
-;
-;       mov     [new_window_starting], eax
-;
-; .exit:
-;       pop     eax
 	ret
 
 align 4
@@ -666,7 +643,6 @@ drawwindow_I_caption: ;////////////////////////////////////////////////////////
 	add	ebx, edx
 	mov	eax, [esi + WDATA.box.left]
 	inc	eax
-
 	shl	eax, 16
 	add	eax, [esi + WDATA.box.left]
 	add	eax, [esi + WDATA.box.width]
@@ -1209,11 +1185,6 @@ iglobal
     5,	?    ;type 4 {set by skin}
 endg
 
-;uglobal
-  ; NOTE: commented out since doesn't provide necessary functionality anyway,
-  ;       to be reworked
-; new_window_starting       dd ?
-;endg
 
 align 4
 ;------------------------------------------------------------------------------
@@ -1444,21 +1415,13 @@ window._.sys_set_window: ;/////////////////////////////////////////////////////
 	jnz	.set_client_box
 	or	[edi + WDATA.fl_wdrawn], 1
 
-	; NOTE: commented out since doesn't provide necessary functionality
-	;       anyway, to be reworked
-;       mov     eax, [timer_ticks] ; [0xfdf0]
-;       add     eax, 100
-;       mov     [new_window_starting], eax
-
-	; no it wasn't, performing initial window definition
+; performing initial window definition
 	movzx	eax, bx
 	mov	[edi + WDATA.box.width], eax
 	movzx	eax, cx
 	mov	[edi + WDATA.box.height], eax
 	sar	ebx, 16
-;	and	bl, 0xFC		; <<<<<<<<
 	sar	ecx, 16
-;	and	cl, 0xFE		; <<<<<<<<
 	mov	[edi + WDATA.box.left], ebx
 	mov	[edi + WDATA.box.top], ecx
 
@@ -1642,15 +1605,6 @@ window._.set_screen: ;/////////////////////////////////////////////////////////
 ;> edx = bottom
 ;> esi = process number
 ;------------------------------------------------------------------------------
-virtual at esp
-  ff_x	   dd ?
-  ff_y	   dd ?
-  ff_width dd ?
-  ff_xsz   dd ?
-  ff_ysz   dd ?
-  ff_map   dd ?
-  ff_scale dd ?
-end virtual
 
 	pushad
 
@@ -1675,142 +1629,38 @@ end virtual
 	sub	edx, ebx
 	inc	ecx
 	inc	edx
-	shr	ecx, 2          ; 1 tile = 4 pix
-        shr     edx, 1          ; 1 tile = 2 lines
 
 	; get WinMap start
 	push	esi
-	mov	edi, [_WinMapWidth]
+	mov	edi, [Screen_Max_X]
 	mov	esi, edi
-        shr     ebx, 1
 	imul	edi, ebx
-	shr	eax, 2
 	add	edi, eax
 	add	edi, [_WinMapAddress]
 	pop	eax             ; al = process#
-;	mov	ah, al
-;	push	ax
-;	shl	eax, 16
-;	pop	ax              ; eax = 4 dup PROCESS_NUM
+	mov	ah, al
+	push	ax
+	shl	eax, 16
+	pop	ax              ; eax = 4 dup PROCESS_NUM
 
-        sub     esi, ecx        ; map line increment (bytes)
-	mov	ebx, ecx        ; map line width 
   .next_line:
-;        shr     ecx, 2          ; 1dword = 4 tiles
-;	rep	stosd           ; filling the screen map
-;	mov	ecx, ebx      
-;	and	ecx, 3          ; 0 to 3 tiles remaining
+	push	ecx
+        shr     ecx, 2          
+	rep	stosd           ; filling the screen map
+	mov	ecx,[esp]
+	and	ecx, 3          
 	rep	stosb
-	mov	ecx, ebx
+	pop	ecx
 	add	edi, esi        
+	sub	edi, ecx
 	dec	edx
         jnz	.next_line
-	jmp	.exit
+;	jmp	.exit
 
   .shaped_window:
-	;  for (y=0; y <= y_size; y++)
-	;      for (x=0; x <= x_size; x++)
-	;          if (shape[coord(x,y,scale)]==1)
-	;             set_pixel(x, y, process_number);
-
-	sub	ecx, eax
-	sub	edx, ebx
-	inc	ecx
-	inc	edx
-
-	push	[edi + APPDATA.wnd_shape_scale]                 ; push scale first -> for loop
-
-	push	ebx
-	push	eax
-	mov	ebp, eax
-	shr	ebp, 2
-	add	ebp, [_WinMapAddress]
-	mov	eax, [_WinMapWidth] 
-        shr     ebx, 1
-	imul	eax, ebx
-	add	ebp, eax	; ebp = map origin
-
-	mov	edi, [edi + APPDATA.wnd_shape]
-	pop	eax
-	pop	ebx
-        
-        push    ebp                                             ; for loop - screen map origin
-
-	; eax = x_start
-	; ebx = y_start
-	; ecx = x_size
-	; edx = y_size
-	; esi = process_number
-	; edi = &shape
-        ; ebp = [ff_map]
-	;       [scale]
-
-        push	edx ecx                                         ; for loop - x,y size
-	mov	ecx, esi
-	shl	ecx, 5
-	mov	edx, [window_data + ecx + WDATA.box.top]
-	push	[window_data + ecx + WDATA.box.width]		; for loop - width
-	mov	ecx, [window_data + ecx + WDATA.box.left]
-	sub	ebx, edx
-	sub	eax, ecx
-	push	ebx eax                                         ; for loop - x,y
-
-	add	[ff_xsz], eax
-	add	[ff_ysz], ebx
-
-	mov	ebx, [ff_y]
-
-  .ff_new_y:
-	mov	edx, [ff_x]
-
-  .ff_new_x:
-	; -- body --
-	mov	ecx, [ff_scale]
-	mov	eax, [ff_width]
-	inc	eax
-	shr	eax, cl
-	push	ebx edx
-	shr	ebx, cl
-	shr	edx, cl
-	imul	eax, ebx
-	add	eax, edx
-	pop	edx ebx
-	add	eax, edi
-	call	.read_byte		; al= shaped window pix-mask at a given point
-	test	al,al
-	jz	@f
-	mov	eax, esi
-	mov	[ebp], al               ; a tile belongs to the window if the 1st pixel's mask = 1
-	; -- end body --
-    @@: 
-	add	edx, 4
-        inc     ebp                     
-	cmp	edx, [ff_xsz]
-	jb	.ff_new_x
-
-	inc	ebx
-	inc	ebx
-	cmp	ebx, [ff_ysz]
-	jnb	@f
-	mov	ebp, [ff_map]             
-	add	ebp, [_WinMapWidth]     ; even line: jump to next map row
-	mov	[ff_map], ebp
-	jmp	.ff_new_y
-@@:
-	add	esp, 7*4
+	;  (not supported any more)
   .exit:
 	popad
-	ret
-
-  .read_byte:
-	; eax - buffer address
-	; esi - slot#
-	push	eax ecx edx esi
-	xchg	eax, esi                
-	lea	ecx, [esp + 12]         ; buffer addr = stacked [eax] to return
-	mov	edx, 1                  ; buffer size
-	call	read_process_memory     ; (core/taskman.inc) returns #bytes read
-	pop	esi edx ecx eax         ; eax = PID
 	ret
 
 align 4

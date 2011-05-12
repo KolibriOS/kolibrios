@@ -333,8 +333,8 @@ img_screen_x	  rd 1
 img_screen_y	  rd 1
 
 align 64
-_WinMapWidth	  rd 1
-_WinMapHeight	  rd 1
+;_WinMapWidth	  rd 1
+;_WinMapHeight	  rd 1
 _WinMapAddress	  rd 1
 _WinMapSize	  rd 1
 
@@ -413,9 +413,9 @@ MouseTickCounter      rd 1
 
 ;* end code - Mario79
 
-;img_background	      rd 1
-;mem_BACKGROUND	      rd 1
-;static_background_data rd 1
+img_background	      rd 1
+mem_BACKGROUND	      rd 1
+static_background_data rd 1
 
 cache_ide0:
 cache_ide0_pointer	      rd 1

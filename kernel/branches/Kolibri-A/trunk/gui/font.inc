@@ -71,14 +71,14 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         shr     dl, 1
         jz      .pixloop1end
         jnc     .nopix
-        call    _putpixel
+        call    [putpixel]
         jmp     .pixloop1cont
 .nopix:
         test    ecx, 0x40000000
         jz      .pixloop1cont
         push    ecx
         mov     ecx, [esp+4+20h+20h]    ; original eax?
-        call    _putpixel
+        call    [putpixel]
         pop     ecx
 .pixloop1cont:
         inc     eax
@@ -103,14 +103,14 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
 .pixloop2:
         shr     dl, 1
         jnc     .nopix2
-        call    _putpixel
+        call    [putpixel]
         jmp     .pixloop2cont
 .nopix2:
         test    ecx, 0x40000000
         jz      .pixloop2cont
         push    ecx
         mov     ecx, [esp+12+20h+20h]
-        call    _putpixel
+        call    [putpixel]
         pop     ecx
 .pixloop2cont:
         inc     eax

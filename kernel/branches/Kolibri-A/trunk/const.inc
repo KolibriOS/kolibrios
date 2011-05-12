@@ -206,8 +206,8 @@ FDD_BUFF            equ (OS_BASE+0x000D000)
 ;unused ? only one reference
 ;ENABLE_TASKSWITCH   equ (OS_BASE+0x000E000)
 
-;PUTPIXEL            equ (OS_BASE+0x000E020)
-;GETPIXEL            equ (OS_BASE+0x000E024)
+PUTPIXEL            equ (OS_BASE+0x000E020)
+GETPIXEL            equ (OS_BASE+0x000E024)
 
 ;unused ? only one reference
 ; BANK_SWITCH         equ (OS_BASE+0x000E030)	; VESA 1.2 - not used

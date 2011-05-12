@@ -224,7 +224,8 @@ include "sound/playnote.inc"	; player Note for Speaker PC
 
 ; display
 
-include "video/graph32.inc"   	; 32bpp graphics
+;include "video/graph32.inc"   	; 32bpp graphics
+include "video/vesa20.inc"   	; older graphics engine
 include "video/cursors.inc"  	; cursors functions
 
 ; Network Interface & TCPIP Stack

@@ -8,7 +8,6 @@
 $Revision$
 
  
-
 ;   check mouse
 ;
 ;
@@ -32,8 +31,6 @@ mouse_delay	   dd 10
 mouse_speed_factor: dd 3
 mouse_timer_ticks  dd 0
 endg
-
-;include 'm_com.inc'
 
 
 draw_mouse_under:
@@ -97,14 +94,11 @@ save_draw_mouse:
 	push eax
 	push ebx
 	
-	mov	ecx, ebx		; <<<<
-	shr	ecx, 1
-	imul 	ecx, [_WinMapWidth]
-	shr	eax, 1
-	shr	eax, 1
-	add	eax, ecx
-    	add 	eax, [_WinMapAddress]
-    	movzx edx, byte [ebx+eax]
+	mov ecx, [Screen_Max_X]
+	inc ecx
+	mul ecx
+    add eax, [_WinMapAddress]
+    movzx edx, byte [ebx+eax]
 	shl edx, 8
         mov esi, [edx+SLOT_BASE+APPDATA.cursor]
 
@@ -277,13 +271,11 @@ __sys_disable_mouse:
       add  edx,window_data
       movzx  eax, word [MOUSE_X]
       movzx  ebx, word [MOUSE_Y]
-	mov	ecx, ebx		; <<<<
-	shr	ecx, 1
-	imul 	ecx, [_WinMapWidth]
-	shr	eax, 1
-	shr	eax, 1
-	add	ecx, eax
-    	add 	ecx, [_WinMapAddress]
+      mov  ecx,[Screen_Max_X]
+      inc  ecx
+      imul  ecx,ebx
+      add  ecx,eax
+      add  ecx, [_WinMapAddress]
       mov   eax, [CURRENT_TASK]
       movzx ebx, byte [ecx]
       cmp   eax,ebx
