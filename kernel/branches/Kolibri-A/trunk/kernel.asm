@@ -727,6 +727,7 @@ end if
 	mov   esi,boot_setmouse
 	call  boot_log
 ;	call  setmouse
+;     mov     [MOUSE_PICTURE],dword mousepointer
         cli
 
 ; STACK AND FDC
@@ -3208,23 +3209,13 @@ drawbackground:
 ;       call   [draw_pointer]
 ;       ret
        inc   [mouse_pause]
-       cmp   [SCR_MODE],word 0x12
-       je   dbrv20
-     dbrv12:
-       cmp  [SCR_MODE],word 0100000000000000b
-       jge  dbrv20
-       dec   [mouse_pause]
-       call   [draw_pointer]
-       ret
-     dbrv20:
        cmp   [BgrDrawMode],dword 1
-       jne   bgrstr
+       jne   .bgrstr
        call  vesa20_drawbackground_tiled
-       dec   [mouse_pause]
-       call   [draw_pointer]
-       ret
-     bgrstr:
+	 jmp  @f
+.bgrstr:
        call  vesa20_drawbackground_stretch
+@@:
        dec   [mouse_pause]
        call   [draw_pointer]
        ret
@@ -3653,8 +3644,7 @@ __sys_drawbar:
 	add	edx,[esi+APPDATA.wnd_clientbox.top]
   .forced:
     inc   [mouse_pause]
-;  dbv20:
-    call  drawbar
+    call  vesa20_drawbar
     dec   [mouse_pause]
     jmp   [draw_pointer]
 
@@ -3756,25 +3746,6 @@ kb_cmd:
       c_exit:
 	ret
 
-
-;setmouse:  ; set mousepicture -pointer
-	   ; ps2 mouse enable
-
-;     mov     [MOUSE_PICTURE],dword mousepointer
-;     cli
-;     ret
-
-;if used _rdtsc
-;_rdtsc:
-;     bt [cpu_caps], CAPS_TSC
-;     jnc ret_rdtsc
-;     rdtsc
-;     ret
-;   ret_rdtsc:
-;     mov   edx,0xffffffff
-;     mov   eax,0xffffffff
-;     ret
-;end if
 
 rerouteirqs:
 
@@ -4096,8 +4067,8 @@ syscall_setpixel:			; SetPixel
 	mov	ebx, ecx
 	mov	ecx, edx
 	xor	edi, edi ; no force
-;	call	[_display.disable_mouse]
-	jmp	__sys_putpixel
+	call	[_display.disable_mouse]
+	jmp	[putpixel]
 
 align 4
 

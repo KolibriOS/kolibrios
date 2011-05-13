@@ -1632,7 +1632,7 @@ window._.set_screen: ;/////////////////////////////////////////////////////////
 
 	; get WinMap start
 	push	esi
-	mov	edi, [Screen_Max_X]
+	mov	edi, [_display.width] ; = ([Screen_Max_X] + 1)
 	mov	esi, edi
 	imul	edi, ebx
 	add	edi, eax

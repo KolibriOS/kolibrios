@@ -315,22 +315,22 @@ srv.fd		  rd 1
 srv.bk		  rd 1
 
 
-align 64
-img_draw_core_fn  rd 1         ; putimage variables & helpers
-img_draw_edge_fn  rd 1
-img_lfb_origin	  rd 1
-img_buf_origin	  rd 1
-img_buf_line_size rd 1
-img_palette	  rd 1
-img_bitoffset	  rd 1
-img_edgeoffset	  rd 1
-img_bytes_per_pix rd 1
-img_map_right	  rd 1
-img_map_x	  rd 1
-img_pix_x	  rd 1          ; real Xsize
-img_pix_y	  rd 1          ; real Ysize
-img_screen_x	  rd 1
-img_screen_y	  rd 1
+;align 64
+;img_draw_core_fn  rd 1         ; putimage variables & helpers
+;img_draw_edge_fn  rd 1
+;img_lfb_origin	  rd 1
+;img_buf_origin	  rd 1
+;img_buf_line_size rd 1
+;img_palette	  rd 1
+;img_bitoffset	  rd 1
+;img_edgeoffset	  rd 1
+;img_bytes_per_pix rd 1
+;img_map_right	  rd 1
+;img_map_x	  rd 1
+;img_pix_x	  rd 1          ; real Xsize
+;img_pix_y	  rd 1          ; real Ysize
+;img_screen_x	  rd 1
+;img_screen_y	  rd 1
 
 align 64
 ;_WinMapWidth	  rd 1
