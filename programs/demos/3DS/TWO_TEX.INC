@@ -716,8 +716,8 @@ ret   34
        push	.cz1
        push	.cz2
        push	.z_buff
-       push	.t_emap
        push	.t_bmap
+       push	.t_emap
        push	dword .cey2
        push	.cex2
        push	dword .cey1
@@ -743,39 +743,31 @@ two_tex_line_z:
 ;--------------    edi - pointer to screen buffer
 ;stack - another parameters :
 .y	equ dword [ebp+4]
-.bx1q	equ	  [ebp+8]
-.bx1	equ dword [ebp+8]   ;   ---
-.by1	equ dword [ebp+12]  ;       |
-.bx2q	equ	  [ebp+16]
-.bx2	equ dword [ebp+16]  ;       |
-.by2	equ dword [ebp+20]  ;       |>   b. texture and e. texture coords
-.ex1q	equ	  [ebp+24]
-.ex1	equ dword [ebp+24]  ;       |>   shifted shl ROUND
-.ey1	equ dword [ebp+28]  ;       |
-.ex2q	equ	  [ebp+32]
-.ex2	equ dword [ebp+32]  ;       |
-.ey2	equ dword [ebp+36]  ;   ---
-.bmap	equ dword [ebp+40]  ; b texture offset
-.emap	equ dword [ebp+44]  ; e texture offset
+.bx1	equ  [ebp+8]   ;   ---
+.by1	equ  [ebp+12]  ;       |
+.bx2	equ  [ebp+16]  ;       |
+.by2	equ  [ebp+20]  ;       |>   b. texture and e. texture coords
+.ex1	equ  [ebp+24]  ;       |>   shifted shl ROUND
+.ey1	equ  [ebp+28]  ;       |
+.ex2	equ  [ebp+32]  ;       |
+.ey2	equ  [ebp+36]  ;   ---
+.emap	equ  [ebp+40]  ; b texture offset
+.bmap	equ  [ebp+44]  ; e texture offset
 .z_buff equ dword [ebp+48]
 .z2	equ dword [ebp+52]  ;   -- |>   z coords shifted
 .z1	equ dword [ebp+56]  ;   --       shl  CATMULL_SHIFT
 
 .x1	equ dword [ebp-4]
 .x2	equ dword [ebp-8]
-.dbx	equ dword [ebp-12]
-.dby	equ dword [ebp-16]
-.dbyq	equ qword [ebp-16]  ; - new
-.dex	equ dword [ebp-20]
-.dey	equ dword [ebp-24]
-.deyq	equ qword [ebp-24]  ; - new
+.dbx	equ [ebp-12]
+.dex	equ [ebp-16]
+.dby	equ [ebp-20]
+.dey	equ [ebp-24]
 .dz	equ dword [ebp-28]
-.cbx	equ dword [ebp-32]
-.cby	equ dword [ebp-36]
-.cbyq	equ qword [ebp-36]  ; - new
-.cex	equ dword [ebp-40]
-.cey	equ dword [ebp-44]
-.ceyq	equ qword [ebp-44]  ; - new
+.cbx	equ [ebp-32]
+.cex	equ [ebp-36]
+.cby	equ [ebp-40]
+.cey	equ [ebp-44]
 .cz	equ dword [ebp-48]
 .czbuff equ dword [ebp-52]
 
@@ -807,14 +799,14 @@ if Ext=NON
 	xchg	edx,.ey2
 	mov	.ey1,edx
 else
-	movq	mm0,.bx1q
-	movq	mm1,.ex1q
-	movq	mm2,.bx2q
-	movq	mm3,.ex2q
-	movq	.bx2q,mm0
-	movq	.ex2q,mm1
-	movq	.bx1q,mm2
-	movq	.ex1q,mm3
+	movq	mm0,.bx1
+	movq	mm1,.ex1
+	movq	mm2,.bx2
+	movq	mm3,.ex2
+	movq	.bx2,mm0
+	movq	.ex2,mm1
+	movq	.bx1,mm2
+	movq	.ex1,mm3
 end if
 	mov	edx,.z1
 	xchg	edx,.z2
@@ -831,7 +823,7 @@ end if
 	mov	ebx,.x2
 	sub	ebx,.x1
 
-if Ext=SSE
+if Ext>=SSE
 
        sub	 esp,16
        cvtsi2ss  xmm3,ebx	     ;rcps
@@ -847,22 +839,22 @@ if Ext=SSE
   ;     movlhps   xmm1,xmm1
   ;     cvtpi2ps  xmm1,mm3
 
-       cvtpi2ps  xmm0,.bx1q ;mm0
+       cvtpi2ps  xmm0,.bx1 ;mm0     ; bx1; by1
        movlhps	 xmm0,xmm0
-       cvtpi2ps  xmm0,.ex1q ;mm2
-       cvtpi2ps  xmm1,.bx2q ;mm1
+       cvtpi2ps  xmm0,.ex1 ;mm2     ; ex1; ey1
+       cvtpi2ps  xmm1,.bx2 ;mm1     ; bx2; by2
        movlhps	 xmm1,xmm1
-       cvtpi2ps  xmm1,.ex2q ;mm3
+       cvtpi2ps  xmm1,.ex2 ;mm3     ; ex2; ey2
        subps	 xmm1,xmm0
+				    ; hi             lo
+       divps	 xmm1,xmm3 ; xmm1 -> dby; dbx; dey; dex
 
-       divps	 xmm1,xmm3
-
-       shufps	 xmm1,xmm1,10110001b
+       shufps	 xmm1,xmm1,11011000b
        cvtps2pi  mm0,xmm1	   ; mm0 -> 2 delta dwords
        movhlps	 xmm1,xmm1
        cvtps2pi  mm1,xmm1
-       movq	 .deyq,mm0
-       movq	 .dbyq,mm1
+       movq	 .dex,mm0 ; hi - lo  ->  dbx, dex
+       movq	 .dey,mm1 ; hi - lo  ->  dby, dey
 
 else
 
@@ -872,14 +864,14 @@ else
 	idiv	ebx
 	push	eax
 
-	mov	eax,.by2       ; calc .dby
-	sub	eax,.by1
+	mov	eax,.ex2       ; calc .dby
+	sub	eax,.ex1
 	cdq
 	idiv	ebx
 	push	eax
 
-	mov	eax,.ex2       ; calc .dex
-	sub	eax,.ex1
+	mov	eax,.by2       ; calc .dex
+	sub	eax,.by1
 	cdq
 	idiv	ebx
 	push	eax
@@ -942,18 +934,18 @@ end if
 	mov	ecx,.x2
 	sub	ecx,.x1
 	; init current variables
-	push	.bx1 .by1 .ex1 .ey1 .z1 esi
-;        push    .by1
-;        push    .ex1
-;        push    .ey1
+	push	dword .bx1 ;.by1 .ex1 .ey1 .z1 esi
+	push	dword .ex1
+	push	dword .by1
+	push	dword .ey1
 
-;        push    .z1              ; current z shl CATMULL_SHIFT
-;        push    esi
+	push	.z1		 ; current z shl CATMULL_SHIFT
+	push	esi
 
 if Ext >= MMX
      pxor   mm0,mm0
-     movq   mm3,.ceyq
-     movq   mm4,.cbyq
+     movq   mm3,.cex   ; hi - lo -> cbx; cex
+     movq   mm4,.cey   ; hi - lo -> cby; cey
 ;     movq   mm5,mm3
 ;     movq   mm6,mm4
 ;     psrad  mm5,ROUND
@@ -976,35 +968,42 @@ else
 end if
 	jge	.skip
 
-;if Ext=NON
+if Ext=NON
 	mov	eax,.cby
 	mov	esi,.cbx
 	sar	eax,ROUND
 	sar	esi,ROUND
-;else
-;        movd    eax,mm6
-;        psrlq   mm6,32
-;        movd    esi,mm6
-;end if
 	shl	eax,TEX_SHIFT	;-
 	add	esi,eax
 	lea	esi,[esi*3]	    ;-  ; esi - current b. texture addres
 	add	esi,.bmap
 
-;if Ext=NON
 	mov	ebx,.cex       ;.cex - current env map X
 	mov	eax,.cey       ;.cey - current  env map y
 	sar	ebx,ROUND
 	sar	eax,ROUND
-;else
-;        movd    eax,mm5
-;        psrlq   mm5,32
-;        movd    ebx,mm5
-;end if
+
 	shl	eax,TEX_SHIFT
 	add	ebx,eax
 	lea	ebx,[ebx*3]
 	add	ebx,.emap
+
+
+else
+	movq	mm5,.cey
+	psrad	mm5,ROUND
+	pslld	mm5,TEX_SHIFT
+	movq	mm6,.cex
+	psrad	mm6,ROUND
+	paddd	mm5,mm6
+	movq	mm6,mm5
+	paddd	mm5,mm5
+	paddd	mm5,mm6
+	paddd	mm5,.emap
+	movd	esi,mm5
+	psrlq	mm5,32
+	movd	ebx,mm5
+end if
 if Ext>=MMX
 	movd	  mm1,[esi]
 	movd	  mm2,[ebx]
@@ -1056,14 +1055,14 @@ end if
 	add	.cey,eax
     else
 	add	edx,4
-	paddd	mm3,.deyq
-	paddd	mm4,.dbyq
+	paddd	mm3,.dex
+	paddd	mm4,.dey
   ;      movq    mm5,mm3
   ;      movq    mm6,mm4
   ;      psrad   mm5,ROUND
   ;      psrad   mm6,ROUND
-	movq	.ceyq,mm3
-	movq	.cbyq,mm4
+	movq	.cex,mm3
+	movq	.cey,mm4
     end if
 	mov	eax,.dz
 	add	.cz,eax

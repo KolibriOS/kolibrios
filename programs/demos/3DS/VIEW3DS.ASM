@@ -1,5 +1,5 @@
 
-; application : View3ds ver. 0.055 - tiny .3ds files viewer.
+; application : View3ds ver. 0.057 - tiny .3ds files viewer.
 ; compiler    : FASM
 ; system      : KolibriOS
 ; author      : Macgub aka Maciej Guba
@@ -81,7 +81,7 @@ START:	  ; start of execution
 	call   normalize_all_light_vectors
 	call   init_triangles_normals2
 	call   init_point_normals
-   ;    call   init_envmap2
+	call   init_envmap2
 	call   init_envmap_cub
 	call   generate_texture2
 	call   init_sincos_tab
@@ -141,7 +141,8 @@ still:
 	jne	.next_m6
 	cmp	[dr_flag],2
 	jne	@f
-	call	init_envmap2
+   ;     call    init_envmap2    ;   <----! this don't works in env mode
+				 ;          and more than ~18 kb objects
  ;       call    init_envmap_cub2
      @@:
 	cmp	[dr_flag],4
@@ -174,15 +175,15 @@ still:
 	call	make_random_lights			;    'env '  2
 	call	normalize_all_light_vectors		;    'bump'  3
 	call	do_color_buffer   ; intit color_map     ;    'tex '  4
-	cmp	[emboss_flag],1 			;    'pos '  5
-	je	@f					;    'dots'  6
-	cmp	[dr_flag],8
-	jge	@f
-	cmp	[dr_flag],2				;    'txgr'  7
-	jl	.next_m5			    ;    '2tex'  8
-	cmp	[dr_flag],3				;    'btex'  9
-	jg	.next_m5
-     @@:
+      ;  cmp     [emboss_flag],1                         ;    'pos '  5
+      ;  je      @f                                      ;    'dots'  6
+      ;  cmp     [dr_flag],8
+      ;  jge     @f
+      ;  cmp     [dr_flag],2                             ;    'txgr'  7
+      ;  jl      .next_m5                            ;    '2tex'  8
+      ;  cmp     [dr_flag],3                             ;    'btex'  9
+      ;  jg      .next_m5
+    ; @@:
 	call	init_envmap2	; update env map if shading model = environment or bump
     .next_m5:
 	cmp	 ah,11
@@ -376,8 +377,8 @@ still:
 	mov	esi,angle_x
 	mov	edi,matrix
 	call	make_rotation_matrix
-;    RDTSC
-;    push eax
+    RDTSC
+    push eax
 	mov	esi,[points_normals_ptr]
 	mov	edi,[points_normals_rot_ptr]
 	mov	ebx,matrix
@@ -425,8 +426,8 @@ still:
       @@:
 	call	fill_Z_buffer	  ; make background
      .non_f:
-    RDTSC
-    push eax
+;    RDTSC
+;    push eax
 	cmp	[dr_flag],6
 	jne	@f
 	call	 draw_dots
@@ -798,6 +799,8 @@ init_envmap2:	      ; do env_map using many light sources
 	 mov	 esp,ebp
 	 pop	 ebp
 ret
+
+
 
 do_color_buffer:	 ; do color buffer for Gouraud, flat shading
 ;env_map 512 x 512 x 3 bytes    ; many lights using

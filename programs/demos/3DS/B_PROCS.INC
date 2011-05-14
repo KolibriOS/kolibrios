@@ -636,6 +636,8 @@ make_random_lights:
   .temp2  equ ebp-8	;  - light vector generate variables
   .temp3  equ ebp-12
   .max equ 800
+	RDTSC
+	mov    [rand_seed],ax
 	push	ebp
 	mov	ebp,esp
 	sub	esp,12

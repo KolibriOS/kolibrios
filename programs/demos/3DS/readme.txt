@@ -1,8 +1,8 @@
-View3ds 0.055 - tiny viewer to .3ds files.
+View3ds 0.057 - tiny viewer to .3ds files.
 
 What's new?
-1. SSE optimizations (file BUMP_TEX.INC).
-3. Compiles correctly in newest FASM.
+1. By opening file bigger then ~18 KB, and choosing env mode program terminate.
+   I remove this bug
 
 Buttons description:
 1. rotary: choosing rotary axle: x, y, x+y.
@@ -15,14 +15,14 @@ Buttons description:
 3. speed: idle, full.
 4,5. zoom in, out: no comment.
 6. catmull: on( use z buffer ( z coordinate interpolation), off( depth sorting, painters
-   alghoritm).Txgrd and 2tex models only with catmull  = on.
+   alghoritm).Txgrd, 2tex and bumptex models only with catmull  = on.
 7. culling: backface culling on/ off.
 8. rand. light: Randomize 3 unlinear lights( so called Phong's illumination).
 9. Blur: blur N times; N=0,1,2,3,4,5
 10.11,12,13. loseless operations (rotary 90, 180 degrees).
 12. emboss: Do emboss effect( flat bumps ), use blur to do edges more deep.
        carefull with emboss + fire - it looks annoying.
-13. fire: do movement blur ( looks like fire ).
+13. fire: do motion blur ( looks like fire ).
 14. move: changes meaning x,y,z +/- buttons  ->  obj: moving object, camr: moving camera.
 15. generate: Generates some objects: node, Thorn Crown, heart...
 16. bumps: random, according to texture.
@@ -30,4 +30,4 @@ Buttons description:
 18. re-map tex -> re-map texture and bump map coordinates, to change spherical mapping 
     around axle use 'xchg' and 'mirror' buttons, then press 're-map tex' button.
 
-			 Macgub 		 Jan 2011
+			 Macgub 		 April 2011

@@ -687,10 +687,10 @@ ret   34
        push	.t_bmap
        push	dword .cey2
        push	.cex2
-       push	dword .cey1
-       push	.cex1
        push	dword .cby2
        push	.cbx2
+       push	dword .cey1
+       push	.cex1
        push	dword .cby1
        push	.cbx1
        push	ecx
@@ -712,10 +712,10 @@ bump_line_z:
 .y	equ dword [ebp+4]
 .bx1	equ	  [ebp+8]   ;   ---
 .by1	equ dword [ebp+12]  ;       |
-.bx2	equ	  [ebp+16]  ;       |
-.by2	equ dword [ebp+20]  ;       |>   bump and env coords
-.ex1	equ	  [ebp+24]  ;       |>   shifted shl ROUND
-.ey1	equ dword [ebp+28]  ;       |
+.ex1	equ	  [ebp+16]  ;       |
+.ey1	equ dword [ebp+20]  ;       |>   bump and env coords
+.bx2	equ	  [ebp+24]  ;       |>   shifted shl ROUND
+.by2	equ dword [ebp+28]  ;       |
 .ex2	equ	  [ebp+32]  ;       |
 .ey2	equ dword [ebp+36]  ;   ---
 .bmap	equ dword [ebp+40]
@@ -770,8 +770,8 @@ if Ext=NON
 	mov	edx,.ey1
 	xchg	edx,.ey2
 	mov	.ey1,edx
-else
-
+end if
+if Ext = MMX
 	movq	mm0,.bx1
 	movq	mm1,.ex1
 	movq	mm2,.bx2
@@ -780,7 +780,12 @@ else
 	movq	.ex2,mm1
 	movq	.bx1,mm2
 	movq	.ex1,mm3
-
+end if
+if Ext >= SSE
+	movups	xmm0,.bx1
+	movups	xmm1,.bx2
+	movups	.bx2,xmm0
+	movups	.bx1,xmm1
 end if
 
 	mov	edx,.z1

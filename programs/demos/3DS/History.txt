@@ -1,3 +1,14 @@
+View3ds 0.057 - April 2011.
+1. By opening file bigger then ~18 KB, and choosing env mode program terminate.
+   I remove this bug
+-----------------------------------------------------------------------------------
+
+View3ds 0.056 - February 2011.
+1. MMX optimizations in 2tex mode (file two_tex.inc).
+2. Tiny SSE optimizations (file BUMP_CAT.INC).
+3. Bit (two instructions) improved random light generation procedure.
+-----------------------------------------------------------------------------------
+
 View3ds 0.055 - January 2011.
 1. SSE optimizations (file BUMP_TEX.INC).
 2. Compiles correctly in newest FASM.
