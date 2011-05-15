@@ -220,7 +220,7 @@ COPY_FILES:=\
  games/soko-6.lev:GAMES/SOKO-6.LEV:$(PROGS)/games/soko/trunk/SOKO-6.LEV \
  games/soko-7.lev:GAMES/SOKO-7.LEV:$(PROGS)/games/soko/trunk/SOKO-7.LEV \
  games/soko-8.lev:GAMES/SOKO-8.LEV:$(PROGS)/games/soko/trunk/SOKO-8.LEV \
- games/soko-9.lev:GAMES/SOKO-9.LEV:$(PROGS)/games/soko/trunk/SOKO-9.LEV \ 
+ games/soko-9.lev:GAMES/SOKO-9.LEV:$(PROGS)/games/soko/trunk/SOKO-9.LEV \
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
  .shell:.shell:$(PROGS)/system/shell/bin/eng/.shell \
  mykey.ini:MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey.ini \
