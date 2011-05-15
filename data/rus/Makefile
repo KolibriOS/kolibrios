@@ -149,6 +149,7 @@ FASM_PROGRAMS:=\
  games/sq_game:GAMES/SQ_GAME:$(PROGS)/games/sq_game/trunk/SQ_GAME.ASM \
  games/sudoku:GAMES/SUDOKU:$(PROGS)/games/sudoku/trunk/sudoku.asm \
  games/sw:GAMES/SW:$(PROGS)/games/sw/trunk/sw.asm \
+ games/tanks:GAMES/TANKS:$(PROGS)/games/tanks/trunk/tanks.asm \
  games/tetris:GAMES/TETRIS:$(PROGS)/games/tetris/trunk/tetris.asm \
  lib/archiver.obj:LIB/ARCHIVER.OBJ:$(PROGS)/fs/kfar/trunk/kfar_arc/kfar_arc.asm \
  lib/box_lib.obj:LIB/BOX_LIB.OBJ:$(PROGS)/develop/libraries/box_lib/trunk/box_lib.asm \

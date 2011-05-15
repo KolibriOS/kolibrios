@@ -4,7 +4,7 @@
 use32
 org 0x0
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include '../../../macros.inc'
   db  'MENUET01'
   dd  0x1
   dd  START
