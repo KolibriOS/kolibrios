@@ -131,22 +131,23 @@ FASM_PROGRAMS:=\
  games/15:GAMES/15:$(PROGS)/games/15/trunk/15.ASM \
  games/arcanii:GAMES/ARCANII:$(PROGS)/games/arcanii/trunk/arcanii.asm \
  games/bnc:GAMES/BNC:$(PROGS)/games/bnc/trunk/bnc.asm \
- games/gomoku:GAMES/GOMOKU:$(PROGS)/games/gomoku/trunk/gomoku.asm \
- games/msquare:GAMES/MSQUARE:$(PROGS)/games/MSquare/trunk/MSquare.asm \
- games/sq_game:GAMES/SQ_GAME:$(PROGS)/games/sq_game/trunk/SQ_GAME.ASM \
- games/sudoku:GAMES/SUDOKU:$(PROGS)/games/sudoku/trunk/sudoku.asm \
  games/freecell:GAMES/FREECELL:$(PROGS)/games/freecell/freecell.ASM \
+ games/gomoku:GAMES/GOMOKU:$(PROGS)/games/gomoku/trunk/gomoku.asm \
  games/invaders:GAMES/INVADERS:$(PROGS)/games/invaders/invaders.asm \
+ games/klavisha:GAMES/KLAVISHA:$(PROGS)/games/klavisha/trunk/klavisha.asm \
  games/kox:GAMES/KOX:$(PROGS)/games/kox/trunk/kox.asm \
  games/lights:GAMES/LIGHTS:$(PROGS)/games/lights/trunk/lights.asm \
  games/lines:GAMES/LINES:$(PROGS)/games/lines/lines.asm \
  games/mblocks:GAMES/MBLOCKS:$(PROGS)/games/mblocks/trunk/mblocks.asm \
+ games/msquare:GAMES/MSQUARE:$(PROGS)/games/MSquare/trunk/MSquare.asm \
  games/phenix:GAMES/PHENIX:$(PROGS)/games/phenix/trunk/phenix.asm \
  games/pipes:GAMES/PIPES:$(PROGS)/games/pipes/pipes.asm \
  games/pong:GAMES/PONG:$(PROGS)/games/pong/trunk/pong.asm \
  games/pong3:GAMES/PONG3:$(PROGS)/games/pong3/trunk/pong3.asm \
  games/rsquare:GAMES/RSQUARE:$(PROGS)/games/rsquare/trunk/rsquare.asm \
  games/snake:GAMES/SNAKE:$(PROGS)/games/snake/trunk/snake.asm \
+ games/sq_game:GAMES/SQ_GAME:$(PROGS)/games/sq_game/trunk/SQ_GAME.ASM \
+ games/sudoku:GAMES/SUDOKU:$(PROGS)/games/sudoku/trunk/sudoku.asm \
  games/sw:GAMES/SW:$(PROGS)/games/sw/trunk/sw.asm \
  games/tetris:GAMES/TETRIS:$(PROGS)/games/tetris/trunk/tetris.asm \
  lib/archiver.obj:LIB/ARCHIVER.OBJ:$(PROGS)/fs/kfar/trunk/kfar_arc/kfar_arc.asm \
@@ -161,8 +162,8 @@ FASM_PROGRAMS:=\
  media/animage:MEDIA/ANIMAGE:$(PROGS)/media/animage/trunk/animage.asm \
  media/cdp:MEDIA/CDP:$(PROGS)/media/cdp/trunk/cdp.asm \
  media/kiv:MEDIA/KIV:$(PROGS)/media/kiv/trunk/kiv.asm \
- media/midamp:MEDIA/MIDAMP:$(PROGS)/media/midamp/trunk/midamp.asm \
  media/listplay:MEDIA/LISTPLAY:$(PROGS)/media/listplay/trunk/listplay.asm \
+ media/midamp:MEDIA/MIDAMP:$(PROGS)/media/midamp/trunk/midamp.asm \
  media/startmus:MEDIA/STARTMUS:$(PROGS)/media/startmus/trunk/STARTMUS.ASM \
  network/airc:NETWORK/AIRC:$(PROGS)/network/airc/trunk/airc.asm \
  network/arpstat:NETWORK/ARPSTAT:$(PROGS)/network/arpstat/trunk/arpstat.asm \
@@ -254,9 +255,8 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  fonts/char.mt:FONTS/CHAR.MT \
  games/appdata.dat:GAMES/APPDATA.DAT games/ataka:GAMES/ATAKA \
  games/basekurs.kla:GAMES/BASEKURS.KLA games/checkers:GAMES/CHECKERS \
- games/klavisha:GAMES/KLAVISHA games/kosilka:GAMES/KOSILKA \
- games/kosskin.gfx:GAMES/KOSSKIN.GFX games/megamaze:GAMES/MEGAMAZE \
- games/padenie:GAMES/PADENIE \
+ games/kosilka:GAMES/KOSILKA games/kosskin.gfx:GAMES/KOSSKIN.GFX \
+ games/megamaze:GAMES/MEGAMAZE games/padenie:GAMES/PADENIE \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/whowtbam:GAMES/WHOWTBAM games/xonix:GAMES/XONIX \
  lib/cnv_png.obj:LIB/CNV_PNG.OBJ lib/msgbox.obj:LIB/MSGBOX.OBJ \
