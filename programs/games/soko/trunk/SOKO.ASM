@@ -27,7 +27,13 @@
 
 ; COMPILE WITH FASM
 
-CUR_DIR equ '/HD/1/MENUETOS/' ; change it to appropriate path
+include '../../../macros.inc'    ; decrease code size (optional)
+include 'CELLTYPE.INC'  ; object identifiers
+;include 'debug.inc'
+;lang equ ru             ; russian interface; english if undefined
+include 'lang.inc'
+
+;CUR_DIR equ '/HD/1/MENUETOS/' ; change it to appropriate path
 
 SKIN_SIZE equ 11520         ; size of skin file (16x240)
 
@@ -75,11 +81,6 @@ use32
   dd     0x7fff0
   dd     0x0
   dd     0x0
-
-include 'macros.inc'    ; decrease code size (optional)
-include 'celltype.inc'  ; object identifiers
-;include 'debug.inc'
-;lang equ ru             ; russian interface; english if undefined
 
 START:
     mov  eax,58         ; load skin image-it is in RAW 16x240 BGR
