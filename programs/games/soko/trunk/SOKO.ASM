@@ -33,7 +33,7 @@ include 'CELLTYPE.INC'  ; object identifiers
 ;lang equ ru             ; russian interface; english if undefined
 include 'lang.inc'
 
-;CUR_DIR equ '/HD/1/MENUETOS/' ; change it to appropriate path
+CUR_DIR equ '/sys/games/' ; change it to appropriate path
 
 SKIN_SIZE equ 11520         ; size of skin file (16x240)
 
