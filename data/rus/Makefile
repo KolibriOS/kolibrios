@@ -248,8 +248,9 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
  menu.dat:MENU.DAT \
  panel.dat:PANEL.DAT pipetka:PIPETKA setup.dat:SETUP.DAT \
- shell:SHELL table:TABLE \
- vmode:VMODE 3d/3dsheart:3D/3DSHEART \
+ shell:SHELL table:TABLE vmode:VMODE \
+# yogev_ezra: Removed to free some space on RAMDISK. This demo has 90% in common with VIEW3DS 
+# 3d/3dsheart:3D/3DSHEART \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
  demos/ak47.lif:DEMOS/AK47.LIF \
  demos/barge.lif:DEMOS/BARGE.LIF demos/life2:DEMOS/LIFE2 \
