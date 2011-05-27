@@ -240,6 +240,8 @@ CMM_PROGRAMS:=\
 # Some of them are auto-built with special rules, some just exist before build.
 # Each item is of the form <local name>:<name inside image>.
 # Spaces should be represented as |.
+#
+# yogev_ezra: Removed '3dsheart' to free some space on RAMDISK. This demo has 90% in common with VIEW3DS 
 OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  background.gif:background.gif default.skn:DEFAULT.SKN \
  e80:E80 graph:GRAPH hdread:HDREAD htmlv:HTMLV \
@@ -249,8 +251,6 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  menu.dat:MENU.DAT \
  panel.dat:PANEL.DAT pipetka:PIPETKA setup.dat:SETUP.DAT \
  shell:SHELL table:TABLE vmode:VMODE \
-# yogev_ezra: Removed to free some space on RAMDISK. This demo has 90% in common with VIEW3DS 
-# 3d/3dsheart:3D/3DSHEART \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
  demos/ak47.lif:DEMOS/AK47.LIF \
  demos/barge.lif:DEMOS/BARGE.LIF demos/life2:DEMOS/LIFE2 \
