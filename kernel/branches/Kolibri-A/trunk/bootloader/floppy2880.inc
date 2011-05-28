@@ -1,3 +1,5 @@
+seg_inc_per_cluster	equ	64		; = cluster_size shr 4 
+
 	BS_OEMName	db	'KOLIBRI '	; db 8
 	BPB_BytsPerSec	dw	512		; bytes per sector
 	BPB_SecPerClus	db	2		; sectors per cluster

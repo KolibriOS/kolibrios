@@ -21,8 +21,6 @@ seg_read_kernel	equ	01000h			;segment to kernel read
 ; Boot Sector and BPB Structure
 include 'floppy1440.inc'
 ;include 'floppy2880.inc'
-;include 'floppy1680.inc'
-;include 'floppy1743.inc'
 
 start_program:
 
@@ -47,30 +45,8 @@ read_root_directory:
 	push	ss
 	pop	es
 
-	; calculate some disk parameters
-	; - beginning sector of RootDir
-	mov	ax,word [BPB_FATSz16+boot_program]
-	xor	cx,cx
-	mov	cl,byte [BPB_NumFATs+boot_program]
-	mul	cx
-	add	ax,word [BPB_RsvdSecCnt+boot_program]
-	mov	word [FirstRootDirSecNum+boot_program],ax	; 19
-	mov	si,ax
-
-	; - count of sectors in RootDir
-	mov	bx,word [BPB_BytsPerSec+boot_program]
-	mov	cl,5				; divide ax by 32
-	shr	bx,cl				; bx = directory entries per sector
-	mov	ax,word [BPB_RootEntCnt+boot_program]
-	xor	dx,dx
-	div	bx
-	mov	word [RootDirSecs+boot_program],ax		; 14
-
-	; - data start
-	add	si,ax				; add beginning sector of RootDir and count sectors in RootDir
-	mov	word [data_start+boot_program],si		; 33
 	; reading root directory
-	; al=count root dir sectrors !!!! TODO: al, max 255 sectors !!!!
+	; al=count root dir sectors !!!! TODO: al, max 255 sectors !!!!
 	mov	ah,2				; read
 	push	ax
 
@@ -96,21 +72,7 @@ loop_find_dir_entry:
 	add	si,32				; next dir. entry
 	cmp	si,ax				; end of directory
 	jb	loop_find_dir_entry
-
-file_error_message:
-	mov	si,error_message+boot_program
-
-loop_error_message:
-	lodsb
-	or	al,al
-	jz	freeze_pc
-	mov	ah,0eh
-	mov	bx,7
-	int	10h
-	jmp	loop_error_message
-
-freeze_pc:
-	jmp	$				; endless loop
+        jmp     $
 
 	; === KERNEL FOUND. LOADING... ===
 
@@ -127,29 +89,18 @@ found_kernel_file:
 	mov	ah,2				; ah=2 (read)
 	mov	al, byte [BPB_FATSz16+boot_program]	; FAT size in sectors (TODO: max 255 sectors)
 	call	read_sector
-	jc	file_error_message		; read error
 
 	mov	ax,seg_read_kernel
 	mov	es,ax
 	xor	bx,bx				; es:bx = 1000h:0000h
 
-
 	; reading kernel file
 loop_obtains_kernel_data:
-	; read one cluster of file
-	call	obtain_cluster
-	jc	file_error_message		; read error
+	call	obtain_cluster	                ; read one cluster of file
 
-	; add one cluster length to segment:offset
-	push	bx
-	mov	bx,es
-	mov	ax,word [BPB_BytsPerSec+boot_program]	;\
-	movsx	cx,byte [BPB_SecPerClus+boot_program]	; | !!! TODO: !!!
-	mul	cx					; | out this from loop !!!
-	shr	ax,4					;/
-	add	bx,ax
-	mov	es,bx
-	pop	bx
+	mov	ax,es
+	add	ax,seg_inc_per_cluster          ; << =32(1.44M) or 64(2.88) >>
+	mov	es,ax	                ; add one cluster length to segment:offset
 
 	mov	di,bp
 	shr	di,1
@@ -162,8 +113,7 @@ loop_obtains_kernel_data:
 	and	ax,0fffh
 	jmp	verify_end_sector
 move_4_right:
-	mov	cl,4
-	shr	ax,cl
+	shr	ax,4
 verify_end_sector:
 	cmp	ax,0ff8h			; last cluster
 	jae	execute_kernel
@@ -194,87 +144,70 @@ obtain_cluster:
 	mov	ax,0e2eh			; ah=0eh (teletype), al='.'
 	xor	bh,bh
 	int	10h
+;	jc	$               		; error
+        pop     bx
 
+writesec:
 	; convert cluster number to sector number
 	mov	ax,bp				; data cluster to read
 	sub	ax,2
-	xor	bx,bx
-	mov	bl,byte [BPB_SecPerClus+boot_program]
-	mul	bx
+;>>	add	ax,ax                           ; << only for 2.88M disks! >>
 	add	ax,word [data_start+boot_program]
-	pop	bx
-
-writesec:
 	call	conv_abs_to_THS			; convert abs sector (AX) to BIOS T:H:S (track:head:sector)
-patchhere:
-	mov	ah,2				; ah=2 (read)
-	mov	al,byte [BPB_SecPerClus+boot_program]	; al=(one cluster)
-	call	read_sector
-	retn
-;------------------------------------------
 
-;------------------------------------------
+patchhere:
+	mov	ax,0x201			; ah=2 (read)
+;>>                    	                        ; al=1(1.44) or 2(2.88)
 	; read sector from disk
+
 read_sector:
-	push 	bp
-	mov	bp,20				; try 20 times
-newread:
-	dec	bp
-	jz	file_error_message
 	push	ax bx cx dx
 	int	13h
+	jc	$                               ; error: stop here
 	pop	dx cx bx ax
-	jc	newread
-	pop	bp
 	retn
+
 ;------------------------------------------
-	; convert abs. sector number (AX) to BIOS T:H:S
-	; sector number = (abs.sector%BPB_SecPerTrk)+1
-	; pre.track number = (abs.sector/BPB_SecPerTrk)
-	; head number = pre.track number%BPB_NumHeads
-	; track number = pre.track number/BPB_NumHeads
-	; Return: cl - sector number
-	;	  ch - track number
-	;	  dl - drive number (0 = a:)
-	;	  dh - head number
+	; converts abs. sector number (AX) to BIOS T:H:S
+	; Returns: {pre.track number = (AX / BPB_SecPerTrk)}
+	;	ch - track number  = pre.track number/2
+        ;       cl - sector number = (abs.sector%BPB_SecPerTrk)+1
+	;	dh - head number   = pre.track number%BPB_NumHeads
+	;	dl - drive number (0 = a:)
 conv_abs_to_THS:
-	push	bx
-	mov	bx,word [BPB_SecPerTrk+boot_program]
+	mov	cx,word [BPB_SecPerTrk+boot_program]    ; << 18 or 36 >>
 	xor	dx,dx
-	div	bx
+	div	cx
 	inc	dx
 	mov	cl, dl				; cl = sector number
-	mov	bx,word [BPB_NumHeads+boot_program]
-	xor	dx,dx
-	div	bx
-	; !!!!!!! ax = track number, dx = head number
-	mov	ch,al				; ch=track number
-	xchg	dh,dl				; dh=head number
-	mov	dl,0				; dl=0 (drive 0 (a:))
-	pop	bx
+        xor     dx, dx
+        shr     ax, 1
+        rol     dx, 1           		; dh = head number
+        mov     ch, al				; ch = track number
 	retn
 ;------------------------------------------
 
 loading		db	cr,lf,'Starting system ',00h
-error_message	db	13,10
-kernel_name	db	'KERNEL  MNT ?',cr,lf,00h
-FirstRootDirSecNum	dw	?
-RootDirSecs	dw	?
-data_start	dw	?
+;error_message	db	13,10
+kernel_name	db	'KERNEL  MNT',00h
+FirstRootDirSecNum	dw	19      ; 1st sector of the root dir
+RootDirSecs	dw	14              ; << = 14(1.44M) or 15(2.88M) >>
+data_start	dw	33		; << = 33(1.44M) or 34(2.88M) >>
 
 ; <diamond>
 write1st:
 	push	cs
 	pop	ds
 	mov	byte [patchhere+1+boot_program], 3	; change ah=2 to ah=3
-	mov	ax,[cluster1st+boot_program]
+	mov	bp,[cluster1st+boot_program]
 	push	1000h
 	pop	es
 	xor	bx,bx
 	call	writesec
 	mov	byte [patchhere+1+boot_program], 2	; change back ah=3 to ah=2
 	retf
-cluster1st	dw	?
+
+cluster1st	dw	?       ; 1st cluster of kernel.mnt
 loader_block:
 		db	1
 		dw	0

@@ -3,6 +3,8 @@
 ;
 ;   Boot:
 ;
+;  0:7C00->7CFF   boot_code
+;
 ;   0:9000     byte   bits per pixel
 ;   0:9001     word   scanline length
 ;   0:9008     word   vesa video mode
@@ -68,7 +70,7 @@
 ;   6F00  ->   6FFF   free (256)
 ;
 ;   7000  ->   7FFF   unused? CD driver  (4k)
-;
+;  
 ;   8000  ->   A3FF   used? FLOPPY driver (4k)
 ;
 ;   A400  ->   B0FF   free (3k3), unused ACTIVE_PROC_STACK
