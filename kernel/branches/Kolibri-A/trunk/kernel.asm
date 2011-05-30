@@ -55,7 +55,7 @@
 ;; on all copies.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
- 
+
 include 'macros.inc'
 
 $Revision$
@@ -118,7 +118,7 @@ use16
 
 version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
 
-include "boot/bootstr.inc"     ; language-independent boot messages
+;include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
 
 include "boot/booteng.inc"     ; english system boot messages
@@ -219,7 +219,7 @@ diff16 "32-bit code start ",0,$
 	   call init_BIOS32	; (init.inc - to be removed later)
 
 ; PCIe extended config space access
-;	   call rs7xx_pcie_init	; (bus/HT.inc)
+;          call rs7xx_pcie_init ; (bus/HT.inc)
 	   call fusion_pcie_init	; (bus/HT.inc)
 
 ; MEMORY MODEL
@@ -320,33 +320,33 @@ high_code:
 ; -----------------------------------------
 	mov	al, [BOOT_VAR+0x901F]		; DMA access
 	mov	[allow_dma_access], al
-	mov     eax, 32	 			; bpp
-	mov     [ScreenBPP],al
-	mov     [_display.bpp], eax
+	mov	eax, 32 			; bpp
+	mov	[ScreenBPP],al
+	mov	[_display.bpp], eax
 
-	mov     [_display.vrefresh], 60
-	mov     [_display.disable_mouse],  __sys_disable_mouse
+	mov	[_display.vrefresh], 60
+	mov	[_display.disable_mouse],  __sys_disable_mouse
 
-	movzx   eax,word [BOOT_VAR+0x900A]  ; X max
-	mov     [_display.width], eax
-	dec     eax
-	mov     [Screen_Max_X],eax
-	mov     [screen_workarea.right],eax
-	movzx   eax,word [BOOT_VAR+0x900C]        ; Y max
-	mov     [_display.height], eax
-	dec     eax
-	mov     [Screen_Max_Y],eax
-	mov     [screen_workarea.bottom],eax
-	movzx   eax,word [BOOT_VAR+0x9008]        ; screen mode
-	mov     [SCR_MODE],eax
+	movzx	eax,word [BOOT_VAR+0x900A]  ; X max
+	mov	[_display.width], eax
+	dec	eax
+	mov	[Screen_Max_X],eax
+	mov	[screen_workarea.right],eax
+	movzx	eax,word [BOOT_VAR+0x900C]	  ; Y max
+	mov	[_display.height], eax
+	dec	eax
+	mov	[Screen_Max_Y],eax
+	mov	[screen_workarea.bottom],eax
+	movzx	eax,word [BOOT_VAR+0x9008]	  ; screen mode
+	mov	[SCR_MODE],eax
 
-	movzx   eax, word[BOOT_VAR+0x9001]        ; for other modes
-	mov     [BytesPerScanLine],ax
-	mov     [_display.pitch], eax
- 
-	mov     eax, [_display.width]
-	mul     [_display.height]
-	mov     [_WinMapSize], eax
+	movzx	eax, word[BOOT_VAR+0x9001]	  ; for other modes
+	mov	[BytesPerScanLine],ax
+	mov	[_display.pitch], eax
+
+	mov	eax, [_display.width]
+	mul	[_display.height]
+	mov	[_WinMapSize], eax
 
 	mov	esi, BOOT_VAR+0x9080
 	movzx	ecx, byte [esi-1]
@@ -405,82 +405,82 @@ v20ga32:
 
 ; LOAD IDT
 
-	   call         build_interrupt_table ;lidt is executed
+	   call 	build_interrupt_table ;lidt is executed
 
-	   call         init_kernel_heap
-	   stdcall      kernel_alloc, RING0_STACK_SIZE+512
-	   mov  [os_stack_seg], eax
+	   call 	init_kernel_heap
+	   stdcall	kernel_alloc, RING0_STACK_SIZE+512
+	   mov	[os_stack_seg], eax
 
-	   lea  esp, [eax+RING0_STACK_SIZE]
+	   lea	esp, [eax+RING0_STACK_SIZE]
 
-	   mov  [tss._ss0], os_stack
-	   mov  [tss._esp0], esp
-	   mov  [tss._esp], esp
-	   mov  [tss._cs],os_code
-	   mov  [tss._ss],os_stack
-	   mov  [tss._ds],app_data
-	   mov  [tss._es],app_data
-	   mov  [tss._fs],app_data
-	   mov  [tss._gs],app_data
-	   mov  [tss._io],128
+	   mov	[tss._ss0], os_stack
+	   mov	[tss._esp0], esp
+	   mov	[tss._esp], esp
+	   mov	[tss._cs],os_code
+	   mov	[tss._ss],os_stack
+	   mov	[tss._ds],app_data
+	   mov	[tss._es],app_data
+	   mov	[tss._fs],app_data
+	   mov	[tss._gs],app_data
+	   mov	[tss._io],128
 ;Add IO access table - bit array of permitted ports
-	   mov  edi, tss._io_map_0
-	   xor  eax, eax
-	   mov  ecx, 2047
-	   rep  stosd		     ; access to 65504 ports granted
-	   not  eax		     ; the last 32 ports blocked
+	   mov	edi, tss._io_map_0
+	   xor	eax, eax
+	   mov	ecx, 2047
+	   rep	stosd		     ; access to 65504 ports granted
+	   not	eax		     ; the last 32 ports blocked
 	   stosd
 
 	   mov	ax,tss0
 	   ltr	ax
 
-	   mov  [LFBSize], 0x800000
+	   mov	[LFBSize], 0x800000
 	   call init_LFB
 	   call init_fpu
 	   call init_malloc
 ;-
 	   stdcall alloc_kernel_space, 0x51000
-	   mov  [default_io_map], eax
+	   mov	[default_io_map], eax
 
-	   add  eax, 0x2000
-	   mov  [ipc_tmp], eax
-	   mov  ebx, 0x1000
+	   add	eax, 0x2000
+	   mov	[ipc_tmp], eax
+	   mov	ebx, 0x1000
 
-	   add  eax, 0x40000
-	   mov  [proc_mem_map], eax
+	   add	eax, 0x40000
+	   mov	[proc_mem_map], eax
 
-	   add  eax, 0x8000
-	   mov  [proc_mem_pdir], eax
+	   add	eax, 0x8000
+	   mov	[proc_mem_pdir], eax
 
-	   add  eax, ebx
-	   mov  [proc_mem_tab], eax
+	   add	eax, ebx
+	   mov	[proc_mem_tab], eax
 
-	   add  eax, ebx
-	   mov  [tmp_task_pdir], eax
+	   add	eax, ebx
+	   mov	[tmp_task_pdir], eax
 
-	   add  eax, ebx
-	   mov  [tmp_task_ptab], eax
+	   add	eax, ebx
+	   mov	[tmp_task_ptab], eax
 
-	   add  eax, ebx
-	   mov  [ipc_pdir], eax
+	   add	eax, ebx
+	   mov	[ipc_pdir], eax
 
-	   add  eax, ebx
-	   mov  [ipc_ptab], eax
+	   add	eax, ebx
+	   mov	[ipc_ptab], eax
 
 	   stdcall kernel_alloc, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
 				 (unpack.lc+unpack.lp)))*4
 
-	   mov  [unpack.p], eax
+	   mov	[unpack.p], eax
 
 	   call init_events
-	   mov  eax, srv.fd-SRV_FD_OFFSET
-	   mov  [srv.fd], eax
-	   mov  [srv.bk], eax
+	   mov	eax, srv.fd-SRV_FD_OFFSET
+	   mov	[srv.fd], eax
+	   mov	[srv.bk], eax
 
-	   mov  edi, irq_tab
-	   xor  eax, eax
-	   mov  ecx, 16
-	   rep  stosd
+	   mov	edi, irq_tab
+	   xor	eax, eax
+	   mov	ecx, 16
+	   rep	stosd
 
 ;Set base of graphic segment to linear address of LFB
 	mov	eax,[LFBAddress]	  ; set for gs
@@ -488,11 +488,11 @@ v20ga32:
 	shr	eax,16
 	mov	[graph_data_l+4],al
 	mov	[graph_data_l+7],ah
-	
-;	or      [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
+
+;       or      [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
 	stdcall kernel_alloc, [_WinMapSize]
-	mov     [_WinMapAddress], eax
-;	xor     [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
+	mov	[_WinMapAddress], eax
+;       xor     [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
 
 	xor  eax,eax
 	inc  eax
@@ -544,11 +544,11 @@ v20ga32:
 	out	0xA1, al
 
 ; Enable interrupts in IDE controller
-        mov     al, 0
-        mov     dx, 0x3F6
-        out     dx, al
-        mov     dl, 0x76
-        out     dx, al
+	mov	al, 0
+	mov	dx, 0x3F6
+	out	dx, al
+	mov	dl, 0x76
+	out	dx, al
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
@@ -559,7 +559,7 @@ include 'detect/disks.inc'
 ; READ RAMDISK IMAGE FROM HD
 
 ;!!!!!!!!!!!!!!!!!!!!!!!
-include 'boot/rdload.inc'
+;include 'boot/rdload.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
 ;    mov    [dma_hdd],1
 ; CALCULATE FAT CHAIN FOR RAMDISK
@@ -626,8 +626,8 @@ end if
 
 	mov   esi,boot_bgr
 	call  boot_log
-	call  init_background   ; 
-        call  calculatebackground
+	call  init_background	;
+	call  calculatebackground
 
 ; SET UP OS TASK
 
@@ -654,7 +654,7 @@ end if
 	mov ecx, 512/4
 	cld
 	rep movsd
- 
+
 	mov dword [SLOT_BASE+256+APPDATA.exc_handler], eax
 	mov dword [SLOT_BASE+256+APPDATA.except_mask], eax
 
@@ -726,9 +726,9 @@ end if
 
 	mov   esi,boot_setmouse
 	call  boot_log
-;	call  setmouse
+;       call  setmouse
 ;     mov     [MOUSE_PICTURE],dword mousepointer
-        cli
+	cli
 
 ; STACK AND FDC
 
@@ -752,11 +752,6 @@ end if
 	   stdcall map_page,tss._io_map_1,\
 		   [SLOT_BASE+256+APPDATA.io_map+4], PG_MAP
 
-  mov ax,[OS_BASE+0x10000+bx_from_load]
-  cmp ax,'r1'		; if not rused ram disk - load network configuration from files {SPraid.simba}
-  je  no_st_network
-	call set_network_conf
-  no_st_network:
 
 	call init_userDMA	; <<<<<<<<< ============== core/memory.inc =================
 	mov	esi, boot_uDMA_ok
@@ -2515,8 +2510,8 @@ sys_cpuusage:
 	stosb
 
     ; Event mask (+71)
-        mov     EAX, dword [ECX+CURRENT_TASK+TASKDATA.event_mask]
-        stosd
+	mov	EAX, dword [ECX+CURRENT_TASK+TASKDATA.event_mask]
+	stosd
 
 	pop	esi
 	pop	edi
@@ -2891,7 +2886,7 @@ redrawscreen:
 	 pushad
 	 push  eax
 
-	 xor   ecx,ecx	                ; redraw flags for apps
+	 xor   ecx,ecx			; redraw flags for apps
        newdw2:
 
 	 inc   ecx
@@ -3236,34 +3231,34 @@ sys_putimage:
   .exit:
      ret
  @@:
-        push    edi
+	push	edi
 	mov	edi,[current_slot]
 	add	dx,word[edi+APPDATA.wnd_clientbox.top]
 	rol	edx,16
 	add	dx,word[edi+APPDATA.wnd_clientbox.left]
-        pop     edi
+	pop	edi
 	rol	edx,16
-  .forced:                              ; called from gui/skincode.inc [215]
+  .forced:				; called from gui/skincode.inc [215]
 	push	esi
-	mov     esi, ecx
-        shr     esi, 16                 ; SizeX
-        lea     esi, [esi*2+esi]        ; 3 bytes per pixel
-        mov     [img_buf_line_size], esi
-        mov     [img_draw_core_fn], draw_core_24bpp
-        mov     [img_draw_edge_fn], draw_edge_24bpp
-        mov     [img_bytes_per_pix], 3
-        pop     esi
+	mov	esi, ecx
+	shr	esi, 16 		; SizeX
+	lea	esi, [esi*2+esi]	; 3 bytes per pixel
+	mov	[img_buf_line_size], esi
+	mov	[img_draw_core_fn], draw_core_24bpp
+	mov	[img_draw_edge_fn], draw_edge_24bpp
+	mov	[img_bytes_per_pix], 3
+	pop	esi
 
-sys_putimage_bpp:                       ; only called from sys_putimage_palette
+sys_putimage_bpp:			; only called from sys_putimage_palette
 	inc	[mouse_pause]
-	call	_putimage		
+	call	_putimage
 	dec	[mouse_pause]
 	call	[draw_pointer]
-        ret
+	ret
 
 
 align 4
-sys_putimage_palette:                   ; sysFn 65
+sys_putimage_palette:			; sysFn 65
 ; ebx = pointer to image
 ; ecx = [xsize]*65536 + [ysize]
 ; edx = [xstart]*65536 + [ystart]
@@ -3277,52 +3272,52 @@ sys_putimage_palette:                   ; sysFn 65
 	add	dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.left]
 	rol	edx, 16
 .forced:
-        push    eax
-        push    esi 
-        mov     [img_palette], edi
-        mov     eax, esi
-        cmp     eax, 32                 ;>32bpp (stupid call)
-        ja      .exit
-        shr     al, 3                   ; 0=1bpp or solid color
-        mov     [img_bytes_per_pix], eax
-        mov     esi, [eax*4 + img_core_proc_0]
-        mov     [img_draw_core_fn], esi
-        mov     esi, [eax*4 + img_edge_proc_0]
-        mov     [img_draw_edge_fn], esi
-        mov     esi, ecx
-        shr     esi, 16                 ; esi = SizeX
+	push	eax
+	push	esi
+	mov	[img_palette], edi
+	mov	eax, esi
+	cmp	eax, 32 		;>32bpp (stupid call)
+	ja	.exit
+	shr	al, 3			; 0=1bpp or solid color
+	mov	[img_bytes_per_pix], eax
+	mov	esi, [eax*4 + img_core_proc_0]
+	mov	[img_draw_core_fn], esi
+	mov	esi, [eax*4 + img_edge_proc_0]
+	mov	[img_draw_edge_fn], esi
+	mov	esi, ecx
+	shr	esi, 16 		; esi = SizeX
 	imul	esi, eax
-        or      al, al
-        jnz     .done
-        mov     eax, [esp]              ; bits per pixel
-        or      al, al
-        jz      .done
+	or	al, al
+	jnz	.done
+	mov	eax, [esp]		; bits per pixel
+	or	al, al
+	jz	.done
 .1bpp:
 	add	esi, 7
-	shr	esi, 3                  ; 8 pixels per byte
-        mov     [img_draw_edge_fn], draw_edge_1bpp
-        mov     [img_draw_core_fn], draw_core_1bpp
+	shr	esi, 3			; 8 pixels per byte
+	mov	[img_draw_edge_fn], draw_edge_1bpp
+	mov	[img_draw_core_fn], draw_core_1bpp
 .done:
-        add     esi, ebp                ; + line offset
-        mov     [img_buf_line_size], esi
-        pop     esi
-        pop     eax
+	add	esi, ebp		; + line offset
+	mov	[img_buf_line_size], esi
+	pop	esi
+	pop	eax
 	jmp	sys_putimage_bpp
 .exit:
-        ret
+	ret
 
 align 4
-img_core_proc_0         dd      draw_core_0bpp 
-img_core_proc_1         dd      draw_core_8bpp 
-img_core_proc_2         dd      draw_core_16bpp 
-img_core_proc_3         dd      draw_core_24bpp 
-img_core_proc_4         dd      draw_core_32bpp 
+img_core_proc_0 	dd	draw_core_0bpp
+img_core_proc_1 	dd	draw_core_8bpp
+img_core_proc_2 	dd	draw_core_16bpp
+img_core_proc_3 	dd	draw_core_24bpp
+img_core_proc_4 	dd	draw_core_32bpp
 
-img_edge_proc_0         dd      draw_edge_0bpp 
-img_edge_proc_1         dd      draw_edge_8bpp 
-img_edge_proc_2         dd      draw_edge_16bpp 
-img_edge_proc_3         dd      draw_edge_24bpp 
-img_edge_proc_4         dd      draw_edge_32bpp 
+img_edge_proc_0 	dd	draw_edge_0bpp
+img_edge_proc_1 	dd	draw_edge_8bpp
+img_edge_proc_2 	dd	draw_edge_16bpp
+img_edge_proc_3 	dd	draw_edge_24bpp
+img_edge_proc_4 	dd	draw_edge_32bpp
 
 end if
 ; <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -4150,7 +4145,7 @@ syscall_getpixel:			; GetPixel
      div   ecx
      mov   ebx, edx
      xchg  eax, ebx
-     call  get_pixel    ; eax - x, ebx - y
+     call  get_pixel	; eax - x, ebx - y
      mov   [esp + 32], ecx
      ret
 

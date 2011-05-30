@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -19,6 +19,17 @@
 ;; SPraid (simba)
 ;; Hidnplayr
 ;; Alexey Teplov (<Lrz>)
+;; Rus
+;; Nable
+;; shurf
+;; Alver
+;; Maxis
+;; Galkov
+;; CleverMouse
+;; tsdima
+;; turbanoff
+;; Asper
+;; art_zh
 ;;
 ;; Data in this file was originally part of MenuetOS project which is
 ;; distributed under the terms of GNU GPL. It is modified and redistributed as
@@ -220,8 +231,8 @@ B32:
 ; CLEAR 0x280000 - HEAP_BASE
 
            xor   eax,eax
-           mov   edi,0x280000
-           mov   ecx,(HEAP_BASE-OS_BASE-0x280000) / 4
+           mov   edi,CLEAN_ZONE
+           mov   ecx,(HEAP_BASE-OS_BASE-CLEAN_ZONE) / 4
            cld
            rep   stosd
 
@@ -237,7 +248,7 @@ B32:
 ; SAVE & CLEAR 0-0xffff
 
            xor   esi, esi
-           mov   edi,0x2F0000
+           mov   edi,(BOOT_VAR-OS_BASE)
            mov   ecx,0x10000 / 4
            rep   movsd
            mov   edi,0x1000

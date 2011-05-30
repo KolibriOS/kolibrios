@@ -64,78 +64,80 @@
 ;         3c   dword  cpu usage in cpu timer tics
 ;
 ;
-;   5000  ->   68FF   free (6k6)
-;   6900  ->   6EFF   saved picture under mouse pointer (1k5)
-;
-;   6F00  ->   6FFF   free (256)
-;
-;   7000  ->   7FFF   unused? CD driver  (4k)
-;  
-;   8000  ->   A3FF   used? FLOPPY driver (4k)
-;
-;   A400  ->   B0FF   free (3k3), unused ACTIVE_PROC_STACK
+;   5000  ->   73FF   << FLOPPY buffer (9k)                             - fs/fat12.inc
 
-;   B100  ->   B307   IDT for int_0x00..int_0x40
+;   7400  ->   78ff   << IDT for int_0x00..int_0x40 + reserv
 
-;   B308  ->   BFFF   free (3k3)
+;   7900  ->   7EFF   << saved picture under mouse pointer (1k5)
+;
+;   7F00  ->   7FFF   << SB16_Status (256)
+;
+; XX  8000  ->   BFFF   free (16k)  XX
+; 0x80008000 -> 9FFF   ramdisk fat    (8k)
+; 0x8000A000 -> BFFF   floppy  fat    (8k)
 
 ;   C000  ->   C3FF   window stack C000 no of windows - all in words
 ;   C402  ->   C7FF   window position in stack
 ;   D000  ->   D1FF   FDC controller
 ;   D200  ->   D3FF   FDC controller for Fat12
 ;   D400  ->   DFFF   free (3k)
-;   E000  byte        multitasking started
-;   E020  dword       putpixel address
-;   E024  dword       getpixel address
-;   E030  dword       Vesa 1.2 pm bank switch address
-;   E034  ->   F1FF   free (4k5)
-;   F200  dword       mousepicture -pointer
-;   F204  dword       mouse appearance counter
-;   F208  ->   F2FF   free (248)
-;   F300  dword       x & y temp for windowmove
-;   F304  ->   F3FF   free (252)
-;   F400  byte        no of keys in buffer
-;   F401  byte        'buffer'
-;   F402  ->   F4FF   reserved for keys
-;   F500  byte        no of buttons in buffer
-;   F501  dword       'buffer'
-;   F502  ->   F5FF   reserved for buttons
-;   F600  dword       tsc / second
-;   F604  byte        (unused?) mouse port: 1 ps2, 2 com1, 3 com2
-;   F605  ->   FAFF   free (1k2)
-;   FB00  ->   FB0F   mouse memory 00 chunk count, that includes:
-;   FB08 word	    -- mouse H-scroll
-;   FB0A word	    -- mouse x 
-;   FB0C word         -- mouse y
-;   FB0E word	    -- mouse V-scroll
-;   FB10  ->   FB17   mouse color mem
-;   FB21              x move
-;   FB22              y move
-;   FB28              high bits temp
-;   FB30              color temp
-;   FB40  byte        buttons down
-;   FB44  byte        0 mouse down -> do not draw
-;   FB4A  ->   FB4D   FB4A-B x-under - FB4C-D y-under
-;   FBF1  byte        bits per pixel
+
+;   E000  ->   F9FF   free (6k5)
+
+;   FA00  byte        no of keys in buffer
+;   FA01  byte        'buffer'
+;   FA02  ->   FAFF   reserved for keys
+
+;   FB00  byte        no of buttons in buffer
+;   FB01  dword       'buffer'
+;   FB02  ->   FBFF   reserved for buttons
+
+
 ;   FC00  ->   FCFE   com1/ps2 buffer
 ;   FCFF              com1/ps2 buffer count starting from FC00
+
 ;   FD00  ->   FDFF   free (256)
-;   FE00  dword       screen x size		
-;   FE04  dword       screen y size		
-;   FE08  dword       screen y multiplier	
-;   FE0C  dword       screen mode	
-;   FE10  ->   FE73   free (100)
-;   FE74  dword	      PCIe extended (memory-mappable) config space - physical address
-;   FE78  dword       PCIe extended config space limit
-;   FE7C  word        number of 4M-pages needed to map PCIe config space
-;   FE7E  word        PCIe bus range (power-ow-two Mbytes)
-;   FE80  dword       physical address of user-accessible static system buffer
-;   FE84  dword       physical address of LFB
-;   FE88  dword       address of button list
-;   FE8C  dword       memory to use 
-;   FE90  ->   FEFF   free (112)
+
+;   FE00  ->   FE0F   mouse memory 00 chunk count, that includes:
+;   FE08 word       -- mouse H-scroll
+;   FE0A word       -- mouse x
+;   FE0C word         -- mouse y
+;   FE0E word       -- mouse V-scroll
+
+;   FE10  ->   FB17   mouse color mem
+;   FE21              x move
+;   FE22              y move
+;   FE28              high bits temp
+;   FE30              color temp
+;   FE40  byte        buttons down
+;   FE44  byte        0 mouse down -> do not draw
+;   FE4A  ->   FE4D   FE4A-B x-under - FE4C-D y-under
+
+;   FEB8  dword       putpixel address
+;   FEBC  dword       getpixel address
+;   FEC1  byte        bits per pixel
+;   FEC4  dword       mouse appearance counter
+;   FEC8  dword       x & y temp for windowmove
+;   FECC  dword       tsc / second
+
+;   FED0  dword       screen x size
+;   FED4  dword       screen y size
+;   FED8  dword       screen y multiplier
+;   FEDC  dword       screen mode
+
+;   FEE4  dword       PCIe extended (memory-mappable) config space - physical address
+;   FEE8  dword       PCIe extended config space limit
+;   FEEC  word        number of 4M-pages needed to map PCIe config space
+;   FEEE  word        PCIe bus range (power-ow-two Mbytes)
+
+;   FEF0  dword       physical address of user-accessible static system buffer
+;   FEF4  dword       physical address of LFB
+;   FEF8  dword       address of button list
+;   FEFC  dword       memory to use
 ;   FF00  byte        1 = system shutdown request
 ;   FF01  byte        task activation request?
+
+;   FFE4  ->   FFEF   background info
 ;   FFF0  byte        >0 if redraw background request from app
 ;   FFF1  byte        >0 if background changed
 ;   FFF2              write and read bank in screen
@@ -143,17 +145,17 @@
 ;   FFF5  byte        1 do not draw pointer
 ;   FFFF  byte        do not change task for 1/100 sec.
 ;
-; 0x80010000 ->  6CBFF   kernel, 32-bit run-time code (up to 371 Kb)
+; 0x80010000 ->  6CBFF   the kernel (up to 371 Kb)
 ;       in the current version:
 ;            ->  00B3C   16-bit code end
 ;            ->  00C40   16-bit data end
 ;            ->  10C40   32-bit code start
-;            ->  2D07E   32-bit code end 
-; 	     ->  30418..end_of_kernel	 zero-filled zone after preinit_mem  
-;            ->  33D63   uninitialized globals start 
-;            ->  3BF52   end_of_kernel 
-;	     ->  3C000   not used (>200k)
-; 0x80050000 -> 090000	 zero-filled zone after preinit_mem  
+;            ->  2D07E   32-bit code end
+;            ->  30418..end_of_kernel    zero-filled zone after preinit_mem
+;            ->  33D63   uninitialized globals start
+;            ->  3BF52   end_of_kernel
+;            ->  3C000   not used (>200k)
+; 0x80050000 -> 090000   zero-filled zone after preinit_mem
 ; 0x8006CC00 ->  6DBFF   stack at boot time (4Kb)
 ;
 ; 0x8006DC00 ->  6E5FF   basic text font II
@@ -203,23 +205,29 @@
 ;         BC dword  address of debug event memory
 ;         C0  5 dd  thread debug registers: DR0,DR1,DR2,DR3,DR7
 ;
-; 0x80090000 ->  9FFFF   tmp (64k) - unused?
-; 0x800A0000 ->  AFFFF   screen access area
-; 0x800B0000 ->  FFFFF   bios rest in peace -area (320k)	?
-; 0x80100000 -> 27FFFF   diskette image	(1m5)
+; 0x80090000 ->  9FFFF   wav device buffer (64k)        ; << SB16Buffer
+; 0x800A0000 ->  AFFFF   screen access area               << VGA legacy buffer
+; 0x800B0000 ->  FFFFF   bios rest in peace -area (320k), << purpose unknown
+; 0x80100000 -> 283FFF   diskette image (1m5)
 
-; 0x80280000 -> HEAP_BASE zero-filled zone after preinit_mem  
-; 0x80280000 -> 281FFF   ramdisk fat	(8k)
-; 0x80282000 -> 283FFF   floppy  fat	(8k)
+; 0x80284000 -> HEAP_BASE zero-filled zone after preinit_mem
 ;
-; 0x80284000 -> 28BFFF   HDD DMA AREA	(32k)
+; 0x80284000 -> 28BFFF   HDD DMA AREA   (32k)
 ; 0x8028C000 -> 297FFF   free (48k)
 ;
 ; 0x80298000 -> 29ffff   auxiliary table for background smoothing code (32k)
 ;
-; 0x802A0000 -> 2B00ff   wav device buffer (64k)
-; 0x802A0000 -> 2B00ff   wav device status (256)
-; 0x802B0100 -> 2Bffff   free (63k8)
+; 0x802A0000 -> 2Bffff   free (128k)
+; 0x80328000 -> 32FFFF   !vrr driver      (32k)
+
+
+; 0x80338000 -> 338FFF draw data     - 256 entries (4k)
+;         00   dword  draw limit - x start
+;         04   dword  draw limit - y start
+;         08   dword  draw limit - x end
+;         0C   dword  draw limit - y end
+; 0x80339000 -> 3BFFF3   free (12k)
+
 ; 0x802C0000 -> 2C3fff   button info (8k)
 ;
 ;       0000 word    number of buttons
@@ -242,30 +250,21 @@
 ;            dword   end port
 ;            dword   0
 ;
-; 0x802E0000 -> 2EFFFF   irq data area	 (64k)
-; 0x802F0000 -> 2FFFFF   low memory save (64k)
+; 0x80370000 -> 37FFFF   irq data area   (64k)
+; 0x80380000 -> 38FFFF   low memory save (64k)
 ;
-; 0x80300000 -> 31FFFF   tcp memory       (128k)
-; 0x80320000 -> 327FFF   tcp memory       (32k)
-;
-; 0x80328000 -> 32FFFF   !vrr driver      (32k)
+; 0x80390000 -> 3AFFFF   tcp memory       (128k)
+; 0x803B0000 -> 3B7FFF   tcp memory       (32k)
 
-; 0x80330000 -> 377FFF   skin data		(32k)
+; 0x803B8000 -> 3BFFFF   skin data              (32k)
 
-; 0x80338000 -> 338FFF draw data     - 256 entries (4k)
-;         00   dword  draw limit - x start
-;         04   dword  draw limit - y start
-;         08   dword  draw limit - x end
-;         0C   dword  draw limit - y end
-; 0x80339000 -> 3BFFF3   free (12k)
-; 0x8033BFF4 -> 33BFFF   background info 
-; 0x8033C000    	 page map     (length b = memsize shr 15)
-; 0x8033C000 + b         start of static pagetables
+; 0x803C0000             page map     (length b = memsize shr 15)
+; 0x803C0000 + b         start of static pagetables
 
 ; 0x803FFFFF <- no direct address translation beyond this point
-; ============================================================= 
+; =============================================================
 
-; 0x805FF000 -> 5FFF80   TSS  
+; 0x805FF000 -> 5FFF80   TSS
 ; 0x80600000 -> 601FFF   i/o maps
 
 ; 0x80800000 ->       kernel heap

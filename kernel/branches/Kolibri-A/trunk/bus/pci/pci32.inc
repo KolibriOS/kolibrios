@@ -135,29 +135,29 @@ pci_make_config_cmd:
 
 align 4
 pci_read_reg:
-;	push	edx
-;	xor	edx, edx
-;	mov	dh,  ah 	; bus
-;	mov	dl,  bh 	; dev+fn
-;	shl	edx, 12
-;	mov	dl,  bl 	; reg
-;	add	edx, PCIe_CONFIG_SPACE
+;       push    edx
+;       xor     edx, edx
+;       mov     dh,  ah         ; bus
+;       mov     dl,  bh         ; dev+fn
+;       shl     edx, 12
+;       mov     dl,  bl         ; reg
+;       add     edx, PCIe_CONFIG_SPACE
 ;
-;	and	al, 2
-;	jz	@f
-;	mov	eax, dword[edx]
-;	pop	edx
-;	ret
+;       and     al, 2
+;       jz      @f
+;       mov     eax, dword[edx]
+;       pop     edx
+;       ret
 ;@@:
-;	and	al, 1
-;	jz	@f
-;	mov	ax, word[edx]
-;	pop	edx
-;	ret
+;       and     al, 1
+;       jz      @f
+;       mov     ax, word[edx]
+;       pop     edx
+;       ret
 ;@@:
-;	mov	al, byte[edx]
-;	pop	edx
-;	ret
+;       mov     al, byte[edx]
+;       pop     edx
+;       ret
 	push	esi   ; save register size into ESI
 	mov	esi,eax
 	and	esi,3
@@ -220,28 +220,28 @@ pci_fin_read1:
 
 align 4
 pci_write_reg:
-;	push	edx
-;	xor	edx, edx
-;	mov	dh,  ah 	; bus
-;	mov	dl,  bh 	; dev+fn
-;	shl	edx, 12
-;	mov	dl,  bl 	; reg
-;	add	edx, PCIe_CONFIG_SPACE
+;       push    edx
+;       xor     edx, edx
+;       mov     dh,  ah         ; bus
+;       mov     dl,  bh         ; dev+fn
+;       shl     edx, 12
+;       mov     dl,  bl         ; reg
+;       add     edx, PCIe_CONFIG_SPACE
 ;
-;	test	al, 2
-;	jz	@f
-;	mov	dword[edx], ecx
-;	ret
+;       test    al, 2
+;       jz      @f
+;       mov     dword[edx], ecx
+;       ret
 ;@@:
-;	test	al, 1
-;	jz	@f
-;	mov	word[edx], cx
-;	pop	edx
-;	ret
+;       test    al, 1
+;       jz      @f
+;       mov     word[edx], cx
+;       pop     edx
+;       ret
 ;@@:
-;	mov	byte[edx], cl
-;	pop	edx
-;	ret
+;       mov     byte[edx], cl
+;       pop     edx
+;       ret
 	push	esi   ; save register size into ESI
 	mov	esi,eax
 	and	esi,3
@@ -427,6 +427,24 @@ mmio_map_over:
 pci_mmio_unmap:
     stdcall user_free, ebx
     ret
+
+
+;------------------------------------------------
+align 4
+sys_map1:
+;       copies a block from kernel to user space
+;  in: esi = address in kernel space
+;      edi = eddress in user space
+;      ebx = count (dwords)
+; out: nothing
+;------------------------------------------------
+	mov     ecx, ebx
+        pushfd
+	cld
+	rep	movsd
+	popfd
+	ret
+
 
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 uglobal

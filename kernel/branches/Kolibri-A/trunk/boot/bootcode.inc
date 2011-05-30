@@ -20,7 +20,7 @@ $Revision$
 ;
 ;==========================================================================
 
-
+if 0
 putchar:
 ; in: al=character
 	mov	ah, 0Eh
@@ -61,6 +61,8 @@ macro _setcursor row,column
 	call	setcursor
 }
 
+end if
+
 boot_read_floppy:
 	push	si
 	xor	si, si
@@ -78,11 +80,9 @@ boot_read_floppy:
 	ret
 
 sayerr_plain:
-	call	printplain
 	jmp	$
 
 sayerr:
-	call	print
 	jmp	$
 
 
@@ -173,38 +173,6 @@ no_hd_load:
 	xor	di, di
 	mov	ah, 1*16+15
 
-; draw top
-	mov	si, d80x25_top
-	mov	cx, d80x25_top_num * 80
-@@:
-	lodsb
-	stosw
-	loop	@b
-; draw spaces
-	mov	si, space_msg
-	mov	dx, 25 - d80x25_top_num - d80x25_bottom_num
-dfl1:
-	push	si
-	mov	cx, 80
-@@:
-	lodsb
-	stosw
-	loop	@b
-	pop	si
-	dec	dx
-	jnz	dfl1
-; draw bottom
-	mov	si, d80x25_bottom
-	mov	cx, d80x25_bottom_num * 80
-@@:
-	lodsb
-	stosw
-	loop	@b
-
-	mov	byte [space_msg+80], 0	  ; now space_msg is null terminated
-
-	_setcursor d80x25_top_num,0
-
 cpugood:
 
 	push	0
@@ -268,16 +236,6 @@ cpugood:
 	mov	[es:0x9044], ax 	; Save APM Version
 	mov	[es:0x9046], cx 	; Save APM flags
 
-	; Write APM ver ----
-	and	ax, 0xf0f
-	add	ax, '00'
-	mov	si, msg_apm
-	mov	[si + 5], ah
-	mov	[si + 7], al
-	_setcursor 0, 3
-	call	printplain
-	; ------------------
-
 	mov	ax, 0x5304		; Disconnect interface
 	xor	bx, bx
 	int	0x15
@@ -291,14 +249,12 @@ cpugood:
 	mov	[es:0x9054], dx
 
 apm_end:
-	_setcursor d80x25_top_num, 0
 
 ;CHECK current of code
 	cmp	[cfgmanager.loader_block], -1
 	jz	noloaderblock
 	les	bx, [cfgmanager.loader_block]
 	cmp	byte [es:bx], 1
-	mov	si, loader_block_error
 	jnz	sayerr
 	push	0
 	pop	es
@@ -344,22 +300,11 @@ cfgmanager:
 	cmp	byte [di+preboot_biosdisk-preboot_device], 1
 	adc	byte [di+preboot_biosdisk-preboot_device], 0
 
-	_setcursor 7,0
-	mov	si, space_msg
-	call	printplain
 ;        pop     ax              ; <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ??
 	jmp	.continue
 .loader_block dd -1
 .continue:
 	sti
-	_setcursor 6,0
-	mov	si, space_msg
-	call	printplain
-	call	printplain
-	_setcursor 6,0
-	mov	si, loading_msg
-	call	print
-	_setcursor 15,0
 	jmp	 .load
 
 .loadc:
@@ -367,11 +312,6 @@ cfgmanager:
 .cont:
 	push	cs
 	pop	ds
-	mov	si, space_msg
-	mov	byte [si+80], 0
-	_setcursor 15,0
-	call	printplain
-	_setcursor 15,0
 .load:
 
 ; ASK GRAPHICS MODE
@@ -406,8 +346,6 @@ include 'detect/biosmem.inc'
 
 	cmp	[boot_dev],0
 	jne	no_sys_on_floppy
-	mov	si,diskload
-	call	print
 	xor	ax, ax		  ; reset drive
 	xor	dx, dx
 	int	0x13
@@ -464,17 +402,8 @@ include 'detect/biosmem.inc'
 	inc	ch
 	cmp	ch, 80
 	jae	ok_sys_on_floppy
-	pusha
 	mov	al, ch
 	shr	ch, 2
-	add	al, ch
-	aam
-	xchg	al, ah
-	add	ax, '00'
-	mov	si, pros
-	mov	[si], ax
-	call	printplain
-	popa
 	jmp	.a1
 .nocd:
 ; no - read only used sectors from floppy
@@ -704,11 +633,6 @@ sayerr_floppy:
 	aam
 	xchg	al, ah
 	add	ax, '00'
-	mov	si, pros
-	cmp	[si], ax
-	jz	@f
-	mov	[si], ax
-	call	printplain
 @@:
 	popa
 	inc	di
@@ -717,10 +641,6 @@ sayerr_floppy:
 	pop	bx			; clear stack
 
 ok_sys_on_floppy:
-	mov	si, backspace2
-	call	printplain
-	mov	si, okt
-	call	printplain
 no_sys_on_floppy:
 	xor	ax, ax		; reset drive
 	xor	dx, dx

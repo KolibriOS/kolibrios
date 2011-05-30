@@ -115,7 +115,6 @@ int2strnz:
 
 ;-------------------------------------------------------
 print_vesa_info:
-	_setcursor 5,2
 
 	mov	[es:vi.VESASignature],'VBE2'
 	mov	ax,0x4F00
@@ -136,22 +135,6 @@ print_vesa_info:
 	jb	$
 
   .vesaok2:
-	mov	ax,[es:vi.VESAVersion]
-	add	ax,'00'
-
-	mov	[s_vesa.ver], ah
-	mov	[s_vesa.ver+2], al
-	mov	si,s_vesa
-	call	printplain
-
-	_setcursor 4,2
-	mov	si,word[es:vi.OemStringPtr]
-	mov	di,si
-
-	push	ds
-	mov	ds,word[es:vi.OemStringPtr+2]
-	call	printplain
-	pop	ds
 
 	ret
 ;-----------------------------------------------------------------------------
@@ -224,6 +207,7 @@ check_first_parm:
 	test	si,si
 	jnz	 .no_zero	 ;if no zero
 .zerro:
+	mov	word[preboot_graph], ax
 
 	mov	ax,1024
 	mov	bx,768
@@ -294,30 +278,6 @@ check_first_parm:
 .exit:	or	ax,-1
 	ret
 
-
-
-;-----------------------------------------------------------------------------
-;Clear area of current video page (0xb800)
-;clear_vmodes_table:
-;        pusha
-       ; draw frames
-;        push    es
-;        push    0xb800
-;        pop     es
-;        mov     di,1444
-;        xor     ax,ax
-;        mov     ah, 1*16+15
-;        mov     cx,70
-;        mov     bp,12
-;.loop_start:
-;        rep     stosw
-;        mov     cx,70
-;        add     di,20
-;        dec     bp
-;        jns             .loop_start
-;        pop     es
-;        popa
-;        ret
 
 ;-----------------------------------------------------------------------------
 

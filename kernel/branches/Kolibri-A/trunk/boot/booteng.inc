@@ -14,19 +14,19 @@
 $Revision$
 
 
-d80x25_bottom:
-	  db	   186,' KolibriOS is based on MenuetOS and comes with ABSOLUTELY '
-	  db	   'NO WARRANTY         ',186
-	  db	   186,' See file COPYING for details                             '
-	  db	   '                    ',186
-	  line_full_bottom
-d80x25_bottom_num = 3
+;d80x25_bottom:
+;         db       186,' KolibriOS is based on MenuetOS and comes with ABSOLUTELY '
+;         db       'NO WARRANTY         ',186
+;         db       186,' See file COPYING for details                             '
+;         db       '                    ',186
+;         line_full_bottom
+;d80x25_bottom_num = 3
 
-msg_apm   db	  " APM x.x ", 0
-vervesa   db	  "Version of Vesa: Vesa x.x",13,10,0
+;msg_apm   db     " APM x.x ", 0
+;vervesa   db     "Version of Vesa: Vesa x.x",13,10,0
 ;novesa    db      "Display: EGA/CGA",13,10,0
-s_vesa	  db	  "Version of VESA: "
-  .ver	  db	  "?.?",13,10,0
+;s_vesa   db      "Version of VESA: "
+;  .ver   db      "?.?",13,10,0
 
 ;gr_mode   db      "Select a videomode: ",13,10,0
 
@@ -48,11 +48,11 @@ s_vesa	  db	  "Version of VESA: "
 ;btns      db      "Fatal - Can't determine color depth.",0
 ;badsect   db      13,10,186," Fatal - Bad sector. Replace floppy.",0
 ;memmovefailed db  13,10,186," Fatal - Int 0x15 move failed.",0
-okt	  db	  " ... OK"
-linef	  db	  13,10,0
-diskload  db	  "Loading diskette: 00 %",8,8,8,8,0
-pros	  db	  "00"
-backspace2 db	  8,8,0
+;okt      db      " ... OK"
+;linef    db      13,10,0
+;diskload  db     "Loading diskette: 00 %",8,8,8,8,0
+;pros     db      "00"
+;backspace2 db    8,8,0
 boot_dev  db	  0  ; 0=floppy, 1=hd
 ;start_msg db      "Press [abcd] to change settings, press [Enter] to continue booting",13,10,0
 ;time_msg  db      " or wait "
@@ -61,6 +61,6 @@ boot_dev  db	  0  ; 0=floppy, 1=hd
 ;current_cfg_msg db "cfgmanager.printcfg reached",13,10,0
 ;curvideo_msg db   " [a] Videomode: ",0
 
-loading_msg db	  "Loading KolibriOS...",0
+;loading_msg db    "Loading KolibriOS...",0
 ;save_quest db     "Remember current settings? [y/n]: ",0
-loader_block_error db "Invalid boot data",0
+;loader_block_error db "Invalid boot data",0
