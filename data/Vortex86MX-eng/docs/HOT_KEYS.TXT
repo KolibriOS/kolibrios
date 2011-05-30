@@ -1,0 +1,10 @@
+The following "hot" shortcut keys are used in the system:
+(Indexing on time of appearance in the system)
+1) Ctrl + Alt + Del start of the application CPU (the manager of processes), is a sole combination maintained on a level of a kernel, all rest "hot" key is realized at the expense of the application @PANEL.
+2) Ctrl + Shift - switching of keyboard layout.
+3) Win - start of the application MENU.
+4) Alt + Ctrl + F12 - start of the application END.
+5) Alt + F4 - terminate the active application.
+6) Alt + Tab - switch to the next (in the window stack) window
+7) Alt + Shift + Tab - switch to the previous (in the window stack) window
+8) Alt + Shift + NumLock - start of the application MOUSEMUL, which emulates mouse with numpad, when NumLock is on (note: mousEmul does not create window or pictures to indicate its work!)

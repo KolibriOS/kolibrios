@@ -1,0 +1,8 @@
+define gcc_compile
+	win32-gcc -c -Os -DAUTOBUILD -DLANG_ENG=1 -o $@ $<
+endef
+define gcc_link
+	win32-ld -nostdlib -T $(1) -o "$@" $^
+	win32-objcopy "$@" -O binary
+	kpack --nologo "$@"
+endef
