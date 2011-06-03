@@ -317,7 +317,7 @@ Start_Enum:
 	test	al, al
 	js	nextDev
 	test	byte [V_Dev], 7
-	jz	nextDev
+	jnz	nextDev
 	or	byte [V_Dev], 7
 nextDev:
 	inc	byte [V_Dev]		; next device on this bus
