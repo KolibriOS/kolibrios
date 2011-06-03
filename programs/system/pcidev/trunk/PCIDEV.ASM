@@ -306,9 +306,19 @@ Start_Enum:
 	mov	cl, 0x3c		; Register to read (Get IRQ)
 @@:	mcall	62			; Read it
 	mov	[PCI_IRQ], al		; Save it
-;
+; by CleverMouse juny 2011
+	mov	cl, 0x0e
+	mcall	62
+	push	eax
 	inc	byte [total]		; one more device found
 	call	Print_New_Device	; print device info to screen
+; don't scan for nonzero functions if zero function says "not multifunction device"
+	pop	eax
+	test	al, al
+	js	nextDev
+	test	byte [V_Dev], 7
+	jz	nextDev
+	or	byte [V_Dev], 7
 nextDev:
 	inc	byte [V_Dev]		; next device on this bus
 	jnz	Start_Enum		; jump until we reach zero
