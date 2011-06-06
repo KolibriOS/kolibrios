@@ -48,6 +48,7 @@ macro _clear_ op
 
 fs_execute_from_sysdir:
     xor ebx, ebx
+fs_execute_from_sysdir_param:
     xor edx, edx
     mov esi, sysdir_path
 

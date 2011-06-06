@@ -191,6 +191,14 @@ unknown_interrupt:
 
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 show_error_parameters:
+        cmp     bl, 0x06
+        jnz     .no_ud
+        push    ebx
+        mov     ebx, ud_user_message
+        mov     ebp, notifyapp
+        call    fs_execute_from_sysdir_param
+        pop     ebx
+.no_ud:
         mov     edx,[TASK_BASE] ;not scratched below
         DEBUGF  1, "K : Process - forced terminate PID: %x\n", [edx+TASKDATA.pid]
         cmp     bl, 0x08
