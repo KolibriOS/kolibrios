@@ -5121,7 +5121,7 @@ yes_shutdown_param:
            mov  ecx,1000
            rep  movsb
 
-           mov  esi,OS_BASE+0x2F0000    ; restore 0x0 - 0xffff
+           mov  esi, BOOT_VAR    ; restore 0x0 - 0xffff
            mov  edi, OS_BASE
            mov  ecx,0x10000/4
            cld
