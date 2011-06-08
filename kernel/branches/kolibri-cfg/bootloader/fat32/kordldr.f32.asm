@@ -206,9 +206,11 @@ get_next_cluster:
 ; out: if there is next cluster: CF=1, eax = next cluster
 ; out: if there is no next cluster: CF=0
         push    di bx
-        push    ds
+        push    ds es
         push    ss
         pop     ds
+        push    ss
+        pop     es
         push    ax
         shr     eax, 7
 ; eax = FAT sector number; look in cache
@@ -248,10 +250,9 @@ get_next_cluster:
 .cache_append:
 ; read FAT
         mov     [di+4], eax
-        push    es
         pushad
-        lea     cx, [di + 0x10000 - 0x8400 + (0x6000 shr (9-3))]        ; +0x10000 - for FASM
-        shl     cx, 9-3
+        lea     cx, [di + 0x10000 - 0x8400 + (0x6000 shr (9-4-3))]      ; +0x10000 - for FASM
+        shl     cx, 9-4-3
         mov     es, cx
         xor     bx, bx
         mov     cx, 1
@@ -259,7 +260,6 @@ get_next_cluster:
         sub     eax, [bp-10]
         call    [read_sectors2]
         popad
-        pop     es
 @@:
 ; add new sector to the end of list
         mov     bx, di
@@ -269,15 +269,15 @@ get_next_cluster:
         mov     [bx], di
         mov     [di+2], bx
 ; get requested item
-        lea     ax, [di + 0x10000 - 0x8400 + (0x6000 shr (9-3))]
+        lea     ax, [di + 0x10000 - 0x8400 + (0x6000 shr (9-4-3))]
         pop     di
         and     di, 0x7F
         shl     di, 2
-        shl     ax, 9-3
+        shl     ax, 9-4-3
         mov     ds, ax
         and     byte [di+3], 0x0F
         mov     eax, [di]
-        pop     ds
+        pop     es ds
         pop     bx di
         ;and    eax, 0x0FFFFFFF
         cmp     eax, 0x0FFFFFF7
@@ -557,16 +557,17 @@ nextclus:
         pushf
         pop     [flags]
         jnc     @f      ; no next cluster => return
-        mov     dl, 1   ; dh=0 in any case
+        mov     dl, 1
         test    di, di
         jz      @f      ; if there is next cluster but current limit is 0 => return: limit exceeded
         push    di
         jmp     clusloop        ; all is ok, continue
 hooked_err:
         mov     sp, 7C00h-14-2  ; restore stack
-        mov     dx, 3           ; return: read error
+        mov     dl, 3           ; return: read error
 @@:
-        mov     bx, dx
+        mov     bl, dl
+        mov     bh, 0
         mov     ax, [filesize]
         mov     dx, [filesize+2]
         ret
@@ -656,8 +657,8 @@ callback_ret:
 secondary_loader_info:
         dw      0, 0x1000
         dw      0x30000 / 0x1000
-        db      'kord/loader',0
-aKernelNotFound db      'Fatal error: cannot load the secondary loader',0
+        db      'kernel.mnt',0
+aKernelNotFound db      'Fatal error: cannot load the kernel',0
 
 ;if $ > 0x8200
 ;error 'total size of kordldr.f32 must not exceed 1024 bytes!'
