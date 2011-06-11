@@ -1,0 +1,1710 @@
+;---------------------------------------------------------------------
+; DATA AREA
+;---------------------------------------------------------------------
+lsz labelt1,\
+   en,  'File',\
+   ru,  'Файл',\
+   de,  'Datei'
+        db 0
+
+;---------------------------------------------------------------------
+lsz labelt2,\
+    en,   'File info',\
+    ru,   'Информация о файле',\
+    de,   'Dateiinfo'
+        db 0
+
+lsz fitext,\
+    en, 'File name     ',\
+    en, 'File size     ',\
+    en, 'X size        ',\
+    en, 'Y size        ',\
+    en, 'Resolution    ',\
+    en, 'Frames total  ',\
+                          \
+    ru, 'Имя файла     ',\
+    ru, 'Размер файла  ',\
+    ru, 'Ширина        ',\
+    ru, 'Высота        ',\
+    ru, 'Бит на пиксел ',\
+    ru, 'Всего кадров  ',\
+                          \
+    de, 'Datei Namen   ',\
+    de, 'Fateigroesse  ',\
+    de, 'X groesse     ',\
+    de, 'Y groesse     ',\
+    de, 'Die Tiefe     ',\
+    de, 'Zahl Frames   '
+        db 0
+;---------------------------------------------------------------------
+Authors_text:
+.1:	db 'zSea version: 1.00 RC3 Date: 12/06/2011',0
+.2:	db 'Authors:',0
+.3:	db 'Marat Zakiyanov aka Mario(Mario79)',0
+.4:	db 'zSea program, modules: cnv_bmp.obj,',0
+.5:	db 'cnv_png.obj, convert.obj, rotate.obj  ',0
+.6:	db 'scaling.obj, box_lib.obj, OpenDialog',0
+.7:	db 'proc_lib.obj',0
+
+.8:	db 'Evgeny Grechnikov aka Diamond',0
+.9:	db 'modules: cnv_jpeg.obj, cnv_gif.obj,',0
+.10:	db 'archiver.obj, sort.obj ',0
+
+.11:	db 'Alexey Teplov aka <Lrz>',0
+.12:	db 'modules: box_lib.obj, load_lib.mac',0
+
+.13:	db 'Mihail Semenyako aka Mike.dld',0
+.14:	db 'modules: libini.obj, libio.obj',0
+;---------------------------------------------------------------------
+status   dd 0  ;bit0=1 if file thread is created
+;process  dd 0
+
+bWasDraw db 0
+vflag: db 'x'
+bgrmode: dd 1
+
+wnd_width dd 210
+wnd_height dd 53
+;---------------------------------
+lsz labelt3,\
+    en, 'About program',\
+    ru, 'О программе',\
+    de, 'Uber das programm'
+        db 0
+;---------------------------------
+lsz labelt4,\
+    en, 'Set wallpaper',\
+    ru, 'Установка фона',\
+    de, 'Installation hintergrund'
+        db 0
+;---------------------------------
+lsz labelt5,\
+    en, 'Select sorting mode',\
+    ru, 'Сортировка директории',\
+    de, 'Regimes der Sortierung'
+        db 0
+;---------------------------------
+lsz bgrdtext,\
+    en, 'Set as background:',\
+    ru, 'Тип обоев:',\
+    de, 'Als hintergrund'
+        db 0
+;---------------------------------
+lsz sorttext,\
+    en, 'Directory sorting mode:',\
+    ru, 'Режим сортировки директории:',\
+    de, 'Regime der Sortierung des Verzeichnisses:'
+        db 0
+;---------------------------------
+lsz errortext,\
+    en, 'File system error:',\
+        ru,     'Ошибка файловой системы:',\
+    de, 'Fehler files systemes:'
+        db 0
+;---------------------------------
+lsz optiontext,\
+    en, 'Options:',\
+    ru, 'Настройки:',\
+    de, 'Optionen:'
+        db 0
+;---------------------------------
+;lsz tiled,\
+;    en, 'Tiled',\
+;    ru, 'Замостить',\
+;    de, 'Gekachelt'
+
+;lsz stretch,\
+;    en, 'Stretch',\
+;    ru, 'Растянуть',\
+;    de, 'Gestreckt'
+;---------------------------------
+lsz ok_btn,\
+    en, 'Ok',\
+    ru, 'Ok',\
+    de, 'Ok'
+        db 0
+;---------------------------------
+lsz slide_show_delay_title,\
+    en, 'Slide show delay:',\
+    ru, 'Задержка слайдшоу:',\
+    de, 'Verzug der schau:'
+        db 0
+;---------------------------------
+lsz arrows_offset_title,\
+    en, 'Arrows offset:',\
+    ru, 'Смещение стрелками:',\
+    de, 'Bewegung von den zeigern:'
+        db 0
+;---------------------------------
+slide_show_delay_text:
+    db '+         -',0
+;---------------------------------------------------------------------
+zoom_auto_factor:
+		dd  0
+zoom_auto_text:
+        db 'auto',0
+zoom_factors:
+        dd      zoom_factors.100
+.1:     dd  0
+.min:
+        dd      1
+        dd      2
+        dd      3
+        dd      4
+        dd      5
+        dd      7
+        dd      10
+        dd      17
+        dd      25
+        dd      37
+        dd      50
+        dd      62
+        dd      75
+        dd      87
+.100:
+        dd      100
+        dd      125
+        dd      150
+        dd      175
+        dd      200
+        dd      225
+        dd      250
+        dd      275
+        dd      300
+        dd      350
+        dd      400
+        dd      450
+        dd      500
+        dd      600
+        dd      700
+        dd      800
+        dd      900
+        dd      1000
+        dd      1100
+        dd      1200
+        dd      1300
+        dd      1400
+        dd      1500
+        dd      1750
+        dd      2000
+        dd      2250
+        dd      2500
+        dd      2750
+        dd      3000
+        dd      3500
+        dd      4000
+        dd      4500
+.max:
+        dd      5000
+
+zoom_factors_old dd 0
+;---------------------------------------------------------------------
+; not change this section!!!
+; start section
+;---------------------------------------------------------------------
+align 4
+image_file     dd 0 ;+0
+raw_pointer    dd 0 ;+4
+return_code    dd 0 ;+8
+img_size       dd 0 ;+12
+deflate_unpack dd 0 ;+16
+raw_pointer_2  dd 0 ;+20
+;---------------------------------------------------------------------
+; end section
+;---------------------------------------------------------------------
+test1 dd 0 ;+24
+test2 dd 0 ;+28
+test3 dd 0 ;+32
+test4 dd 0 ;+36
+test5 dd 0 ;+40
+test6 dd 0 ;+44
+test7 dd 0 ;+48
+;---------------------------------------------------------------------
+align 4
+soi                                     dd 0
+img_width				dd 0
+img_width_2				dd 0
+img_high				dd 0
+img_high_2				dd 0
+img_resolution          dd 0
+img_resolution_2        dd 0
+img_palette				dd 0
+
+background_color dd 0xffffff
+
+RAW1_pointer			dd 0
+RAW1_size_x				dd 0
+RAW1_size				dd 0
+Repeat_N				dd 0
+Total_Repeat_N			dd 1
+previous_frame_pointer	dd 0
+Animation_timer			dd 0
+Frame_delay				dw 0
+Transp_flag				db 0
+Transp_index            db 0
+Disposal_Method			db 0
+RAW1_flag				db 0
+no_fill					db 0
+redraw_wallpaper_flag	db 0
+
+calc_next_value_plus		db 0
+calc_next_value_minus		db 0
+;---------------------------------------------------------------------
+align 4
+;plugin       dd 0
+;plugin_1     dd 0
+;plugin_2     dd 0
+;plugin_3     dd 0
+
+;plugin_validate         dd 0
+;plugin_validate_1       dd 0
+;plugin_validate_2       dd 0
+;plugin_validate_3       dd 0
+
+;plugin_format           dd 0
+;plugin_format_1         dd 0
+;plugin_format_2         dd 0
+;plugin_format_3         dd 0
+
+;plugin_convert  dd 0
+;plugin_convert_background dd 0
+;plugin_sort             dd 0
+;plugin_rotate   dd 0
+;plugin_scaling  dd 0
+
+slide_show_delay dd 500 ; cost of 0,01 sec.
+slide_show_delay_old dd 0
+
+sort_type dd 2
+sort_type_old dd 0
+;---------------------------------------------------------------------
+expansion_length        dd      0
+expansion_start         dd      0
+
+timer                           dd      0
+;---------------------------------------------------------------------
+mouse_scroll_data:
+    .vertical   dw 0
+    .horizontal dw 0
+
+mouse_position:
+    .y                  dw 0
+    .x                  dw 0
+
+mouse_position_old:
+    .y                  dw 0
+    .x                  dw 0
+
+mouse_keys              dd 0
+mouse_keys_old  dd 0
+
+arrows_offset dd 10
+arrows_offset_old dd 10
+
+option_pointer dd 0
+plus_pointer  dd 0
+minus_pointer  dd 0
+space_pointer  dd 0
+
+;---------------------------------------------------------------------
+pos: dd 6
+
+work_area_LR_old dd 0
+work_area_TB_old dd 0
+
+scaling_mode dd 100
+scaling_mode_old dd 100
+
+window_start_x_old dd 0
+window_start_y_old dd 0
+window_high_old dd 0
+window_width_old dd 0
+
+window_start_x dd 0
+window_start_y dd 0
+window_high dd 0
+window_width dd 0
+;skin_high dd 0
+window_status dd 0
+draw_SB db 0
+draw_SB1 db 0
+correct_w db 0
+correct_h db 0
+wa_width dw 0
+wa_high dw 0
+
+wa_width_1 dw 0
+wa_width_2 dw 0
+
+wa_high_1 dw 0
+wa_high_2 dw 0
+
+image_start_coordinates dd 0
+image_draw_size:
+.y:     dw 0
+.x: dw 0
+
+vertical_position_coorect dd 0
+horizontal_position_coorect dd 0
+
+fill_color dd 0xffffff
+fill_color_old dd 0xffffff
+
+position_coorect        db 0
+
+open_file_flag db 0
+sort_directory_flag db 0
+redraw_flag db 0
+
+press_Enter_flag db 0
+
+capture_image_area_flag db 0
+
+correct_scrollbar_100_flag db 0
+;---------------------------------------------------------------------
+;test_area:
+;dd  test_area.end - test_area
+;db 'BMP',0
+;.end:
+;db 0,0,0,0,0,0,0,0,0,0,0,0,0
+;---------------------------------------------------------------------
+aApplicationsPaths		db 'ApplicationsPaths',0
+aOther		db 'Other',0
+
+aHelp		db 'Help',0
+aEditor		db 'Editor',0
+aOpenDialog	db 'OpenDialog',0
+akey_help	db 'HelpFile',0
+
+aConvertPlugins			db 'ConvertPlugins',0
+
+ConvertPlugins_no_key db 'NoKey',0
+
+aCP0		db 'CP0',0
+aCP1		db 'CP1',0
+aCP2		db 'CP2',0
+aCP3		db 'CP3',0
+aCP4		db 'CP4',0
+aCP5		db 'CP5',0
+aCP6		db 'CP6',0
+aCP7		db 'CP7',0
+aCP8		db 'CP8',0
+aCP9		db 'CP9',0
+;---------------------------------------------------------------------
+plugin_BMP_name                 db 'cnv_bmp.obj',0
+plugin_PNG_name                 db 'cnv_png.obj',0
+plugin_JPEG_name                db 'cnv_jpeg.obj',0
+plugin_GIF_name                 db 'cnv_gif.obj',0
+
+;plugin_convert_name             db 'convert.obj',0
+;plugin_sort_name                db 'sort.obj',0
+;plugin_rotate_name              db 'rotate.obj',0
+;plugin_scaling_name             db 'scaling.obj',0
+;plugin_UNPACK_name              db 'archiver.obj',0
+;boxlib_name                             db 'box_lib.obj',0
+;Libini_name                             db 'libini.obj',0
+plugins_directory               db 'plugins/',0
+ini_file_name                   db 'zsea.ini',0
+
+button_name					db 'buttons.png',0
+;buttons_passive_name		db '1.png',0
+;buttons_active_name			db '2.png',0
+;buttons_click_name			db '3.png',0
+
+buttons_directory			db 'buttons/',0
+;UNPACK_function_name db 'deflate_unpack',0
+;UNPACK_function_name_end:
+;UNPACK_function_name    db 'deflate_unpack2',0
+;UNPACK_function_name_end:
+
+system_dir_Boxlib			db '/sys/lib/box_lib.obj',0
+system_dir_Libini			db '/sys/lib/libini.obj',0
+system_dir_Sort				db '/sys/lib/sort.obj',0
+system_dir_UNPACK			db '/sys/lib/archiver.obj',0
+system_dir_Convert			db '/sys/lib/convert.obj',0
+system_dir_Rotate			db '/sys/lib/rotate.obj',0
+system_dir_Scaling			db '/sys/lib/scaling.obj',0
+system_dir_ProcLib			db '/sys/lib/proc_lib.obj',0
+
+err_message_found_lib1		db 'box_lib.obj - Not found!',0
+err_message_found_lib2		db 'libini.obj - Not found!',0
+err_message_found_lib3		db 'sort.obj - Not found!',0
+err_message_found_lib4		db 'archiver.obj - Not found!',0
+err_message_found_lib5		db 'convert.obj - Not found!',0
+err_message_found_lib6		db 'rotate.obj - Not found!',0
+err_message_found_lib7		db 'scaling.obj - Not found!',0
+err_message_found_lib8		db 'proc_lib.obj - Not found!',0
+
+err_message_import1			db 'box_lib.obj - Wrong import!',0
+err_message_import2			db 'libini.obj - Wrong import!',0
+err_message_import3			db 'sort.obj - Wrong import!',0
+err_message_import4			db 'archiver.obj - Wrong import!',0
+err_message_import5			db 'convert.obj - Wrong import!',0
+err_message_import6			db 'rotate.obj - Wrong import!',0
+err_message_import7			db 'scaling.obj - Wrong import!',0
+err_message_import8			db 'proc_lib.obj - Wrong import!',0
+
+head_f_i:
+head_f_l        db 'Errors of PLugins:',0
+
+;---------------------------------------------------------------------
+l_libs_start:
+library01  l_libs system_dir_Boxlib+9, path, library_path, system_dir_Boxlib, \
+err_message_found_lib1, head_f_l, Box_lib_import, err_message_import1, head_f_i, plugins_directory
+
+library02  l_libs system_dir_Libini+9, path, library_path, system_dir_Libini, \
+err_message_found_lib2, head_f_l, Libini_import, err_message_import2, head_f_i, plugins_directory
+
+library03  l_libs system_dir_Sort+9, path, library_path, system_dir_Sort, \
+err_message_found_lib3, head_f_l, Sort_import, err_message_import3, head_f_i, plugins_directory
+
+library04  l_libs system_dir_UNPACK+9, path, library_path, system_dir_UNPACK, \
+err_message_found_lib4, head_f_l, UNPACK_import, err_message_import4, head_f_i, plugins_directory
+
+library05  l_libs system_dir_Convert+9, path, library_path, system_dir_Convert, \
+err_message_found_lib5, head_f_l, Convert_import, err_message_import5, head_f_i, plugins_directory
+
+library06  l_libs system_dir_Rotate+9, path, library_path, system_dir_Rotate, \
+err_message_found_lib6, head_f_l, Rotate_import, err_message_import6, head_f_i, plugins_directory
+
+library07  l_libs system_dir_Scaling+9, path, library_path, system_dir_Scaling, \
+err_message_found_lib7, head_f_l, Scaling_import, err_message_import7, head_f_i, plugins_directory
+
+library08  l_libs system_dir_ProcLib+9, path, library_path, system_dir_ProcLib, \
+err_message_found_lib8, head_f_l, ProcLib_import, err_message_import8, head_f_i, plugins_directory
+
+end_l_libs:
+;---------------------------------------------------------------------
+align 4
+cnv_plugin_name_pointer dd plugin_0_name
+cnv_plugin_import_pointer dd Convert_plugin_0
+
+system_path db '/sys/lib/'
+.1:			rb 128
+err_message_found_lib db 'Not found - '
+.1:			rb 128
+err_message_import db 'Wrong import - '
+.1:			rb 128
+;---------------------------------------------------------------------
+Convert_plugin_0:
+.Start			dd aCP_Start
+.Version		dd aCP_Version
+.Check			dd aCP_Check
+.Assoc			dd aCP_Assoc
+        dd      0
+        dd      0
+Convert_plugin_1:
+.Start			dd aCP_Start
+.Version		dd aCP_Version
+.Check			dd aCP_Check
+.Assoc			dd aCP_Assoc
+        dd      0
+        dd      0
+Convert_plugin_2:
+.Start			dd aCP_Start
+.Version		dd aCP_Version
+.Check			dd aCP_Check
+.Assoc			dd aCP_Assoc
+        dd      0
+        dd      0
+Convert_plugin_3:
+.Start			dd aCP_Start
+.Version		dd aCP_Version
+.Check			dd aCP_Check
+.Assoc			dd aCP_Assoc
+        dd      0
+        dd      0
+Convert_plugin_4:
+.Start			dd aCP_Start
+.Version		dd aCP_Version
+.Check			dd aCP_Check
+.Assoc			dd aCP_Assoc
+        dd      0
+        dd      0		
+Convert_plugin_5:
+.Start			dd aCP_Start
+.Version		dd aCP_Version
+.Check			dd aCP_Check
+.Assoc			dd aCP_Assoc
+        dd      0
+        dd      0	
+Convert_plugin_6:
+.Start			dd aCP_Start
+.Version		dd aCP_Version
+.Check			dd aCP_Check
+.Assoc			dd aCP_Assoc
+        dd      0
+        dd      0	
+Convert_plugin_7:
+.Start			dd aCP_Start
+.Version		dd aCP_Version
+.Check			dd aCP_Check
+.Assoc			dd aCP_Assoc
+        dd      0
+        dd      0		
+Convert_plugin_8:
+.Start			dd aCP_Start
+.Version		dd aCP_Version
+.Check			dd aCP_Check
+.Assoc			dd aCP_Assoc
+        dd      0
+        dd      0
+Convert_plugin_9:
+.Start			dd aCP_Start
+.Version		dd aCP_Version
+.Check			dd aCP_Check
+.Assoc			dd aCP_Assoc
+        dd      0
+        dd      0
+aCP_Start		db 'START',0
+aCP_Version		db 'version',0
+aCP_Check		db 'Check_Header',0
+aCP_Assoc		db 'Associations',0
+;---------------------------------------------------------------------
+
+file_mount:             db 'File N: Amount: Zoom:',0
+.end:
+
+current_key_code db 0
+old_key_code db 0
+;---------------------------------------------------------------------
+; Tokens
+;---------------------------------------------------------------------
+aSortMode       db 'SortMode',0
+aSlideShowDelay db 'SlideShowDelay',0
+aArrowsOffset db 'ArrowsOffset',0
+aShowFileName db 'ShowFileName',0
+aFilteringFlag db 'FilteringFlag',0
+;---------------------------------------------------------------------
+;Sections
+;---------------------------------------------------------------------
+aVariables      db 'Variables',0
+;aVar   db 'Var',0
+;aTemp  db 'Temp',0
+;---------------------------------------------------------------------
+align 4
+ProcLib_import:
+OpenDialog_Init		dd aOpenDialog_Init
+OpenDialog_Start	dd aOpenDialog_Start
+;OpenDialog__Version	dd aOpenDialog_Version
+        dd      0
+        dd      0
+aOpenDialog_Init	db 'OpenDialog_init',0
+aOpenDialog_Start	db 'OpenDialog_start',0
+;aOpenDialog_Version	db 'Version_OpenDialog',0
+;---------------------------------------------------------------------
+align 4
+Scaling_import:
+Scaling_Start		dd aScaling_Start
+Scaling_Version		dd aScaling_Version
+        dd      0
+        dd      0
+aScaling_Start		db 'START',0
+aScaling_Version	db 'version',0
+;---------------------------------------------------------------------
+align 4
+Rotate_import:
+rotate_Start		dd aRotate_Start
+rotate_Version		dd aRotate_Version
+        dd      0
+        dd      0
+aRotate_Start		db 'START',0
+aRotate_Version		db 'version',0
+;---------------------------------------------------------------------
+align 4
+Convert_import:
+convert_Start		dd aConvert_Start
+convert_Version		dd aConvert_Version
+convert_Conv_24b	dd aConvert_Conv_24b
+        dd      0
+        dd      0
+aConvert_Start		db 'START',0
+aConvert_Version	db 'version',0
+aConvert_Conv_24b	db 'Convert24b',0
+;---------------------------------------------------------------------
+align 4
+UNPACK_import:
+;unpack_Version				dd aUnpack_Version
+;unpack_PluginLoad			dd aUnpack_PluginLoad 
+;unpack_OpenFilePlugin		dd aUnpack_OpenFilePlugin
+;unpack_ClosePlugin			dd aUnpack_ClosePlugin
+;unpack_ReadFolder			dd aUnpack_ReadFolder 
+;unpack_SetFolder			dd aUnpack_SetFolder
+;unpack_GetFiles				dd aUnpack_GetFiles
+;unpack_GetOpenPluginInfo	dd aUnpack_GetOpenPluginInfo
+;unpack_Getattr				dd aUnpack_Getattr
+;unpack_Open					dd aUnpack_Open
+;unpack_Read					dd aUnpack_Read
+;unpack_Setpos				dd aUnpack_Setpos
+;unpack_Close				dd aUnpack_Close
+;unpack_DeflateUnpack		dd aUnpack_DeflateUnpack
+unpack_DeflateUnpack2		dd aUnpack_DeflateUnpack2
+        dd      0
+        dd      0
+
+;aUnpack_Version        db      'version',0
+;aUnpack_PluginLoad     db      'plugin_load',0
+;aUnpack_OpenFilePlugin db      'OpenFilePlugin',0
+;aUnpack_ClosePlugin    db      'ClosePlugin',0
+;aUnpack_ReadFolder     db      'ReadFolder',0
+;aUnpack_SetFolder      db      'SetFolder',0
+;aUnpack_GetFiles       db      'GetFiles',0
+;aUnpack_GetOpenPluginInfo db   'GetOpenPluginInfo',0
+;aUnpack_Getattr        db      'getattr',0
+;aUnpack_Open           db      'open',0
+;aUnpack_Read           db      'read',0
+;aUnpack_Setpos         db      'setpos',0
+;aUnpack_Close          db      'close',0
+;aUnpack_DeflateUnpack  db      'deflate_unpack',0
+aUnpack_DeflateUnpack2 db      'deflate_unpack2',0
+
+;---------------------------------------------------------------------
+align 4
+Sort_import:
+sort_init 		dd aSort_init
+sort_version	dd aSort_version
+sort_dir		dd aSort_SortDir
+sort_strcmpi	dd aSort_strcmpi
+        dd      0
+        dd      0
+
+aSort_init		db 'START',0
+aSort_version	db 'version',0
+aSort_SortDir	db 'SortDir',0
+aSort_strcmpi	db 'strcmpi',0
+
+;---------------------------------------------------------------------
+align 4
+Libini_import:
+lib_init                        dd      aLib_init
+version_lib_ini         dd      aVersion_lib_ini
+ini_enum_sections       dd      aIni_enum_sections
+ini_enum_keys           dd      aIni_enum_keys
+ini_get_str                     dd      aIni_get_str
+ini_get_int                     dd      aIni_get_int
+ini_get_color           dd      aIni_get_color
+ini_set_str                     dd      aIni_set_str
+ini_set_int                     dd      aIni_set_int
+ini_set_color           dd      aIni_set_color
+        dd      0
+        dd      0
+
+aLib_init                       db      'lib_init',0
+aVersion_lib_ini        db      'version',0
+aIni_enum_sections      db      'ini_enum_sections',0
+aIni_enum_keys          db      'ini_enum_keys',0
+aIni_get_str            db      'ini_get_str',0
+aIni_get_int            db      'ini_get_int',0
+aIni_get_color          db      'ini_get_color',0
+aIni_set_str            db      'ini_set_str',0
+aIni_set_int            db      'ini_set_int',0
+aIni_set_color          db      'ini_set_color',0
+
+;---------------------------------------------------------------------
+align 4
+Box_lib_import:
+;init_lib            dd      a_init
+;version_lib         dd      a_version
+
+edit_box_draw   dd      aEdit_box_draw
+edit_box_key    dd      aEdit_box_key
+edit_box_mouse  dd      aEdit_box_mouse
+;version_ed      dd      aVersion_ed
+
+check_box_draw  dd      aCheck_box_draw
+check_box_mouse dd      aCheck_box_mouse
+;version_ch      dd      aVersion_ch
+
+option_box_draw  dd      aOption_box_draw
+option_box_mouse dd      aOption_box_mouse
+;version_op       dd      aVersion_op
+
+scrollbar_ver_draw	dd aScrollbar_ver_draw
+scrollbar_ver_mouse	dd aScrollbar_ver_mouse
+scrollbar_hor_draw	dd aScrollbar_hor_draw
+scrollbar_hor_mouse	dd aScrollbar_hor_mouse
+;version_scrollbar	dd aVersion_scrollbar
+
+dinamic_button_draw	dd      aDbutton_draw
+dinamic_button_mouse	dd      aDbutton_mouse
+;version_dbutton		dd      aVersion_dbutton
+
+menu_bar_draw		dd      aMenu_bar_draw
+menu_bar_mouse		dd      aMenu_bar_mouse
+menu_bar_activate	dd      aMenu_bar_activate
+;version_menu_bar	dd      aVersion_menu_bar
+
+;FileBrowser_draw	dd      aFileBrowser_draw
+;FileBrowser_mouse	dd      aFileBrowser_mouse
+;FileBrowser_key		dd      aFileBrowser_key
+;Version_FileBrowser	dd      aVersion_FileBrowser
+                dd      0
+                dd      0
+
+;a_init          db 'lib_init',0
+;a_version       db 'version',0
+
+aEdit_box_draw  db 'edit_box',0
+aEdit_box_key   db 'edit_box_key',0
+aEdit_box_mouse db 'edit_box_mouse',0
+;aVersion_ed     db 'version_ed',0
+
+aCheck_box_draw  db 'check_box_draw',0
+aCheck_box_mouse db 'check_box_mouse',0
+;aVersion_ch      db 'version_ch',0
+
+aOption_box_draw  db 'option_box_draw',0
+aOption_box_mouse db 'option_box_mouse',0
+;aVersion_op       db 'version_op',0
+
+aScrollbar_ver_draw             db 'scrollbar_v_draw',0
+aScrollbar_ver_mouse    db 'scrollbar_v_mouse',0
+aScrollbar_hor_draw             db 'scrollbar_h_draw',0
+aScrollbar_hor_mouse    db 'scrollbar_h_mouse',0
+;aVersion_scrollbar              db 'version_scrollbar',0
+
+aDbutton_draw                   db 'dbutton_draw',0
+aDbutton_mouse                  db 'dbutton_mouse',0
+;aVersion_dbutton                db 'version_dbutton',0
+
+aMenu_bar_draw                  db 'menu_bar_draw',0
+aMenu_bar_mouse                 db 'menu_bar_mouse',0
+aMenu_bar_activate              db 'menu_bar_activate',0
+;aVersion_menu_bar               db 'version_menu_bar',0
+
+;aFileBrowser_draw             db 'FileBrowser_draw',0
+;aFileBrowser_mouse            db 'FileBrowser_mouse',0
+;aFileBrowser_key              db 'FileBrowser_key',0
+;aVersion_FileBrowser          db 'version_FileBrowser',0
+;---------------------------------------------------------------------
+align 4
+load_directory_pointer dd 0
+file_name_length dd 0
+load_file_number dd 0
+error_fs dd 0
+error_pointer dd 0
+;error_locate   dd 0
+error_window_x: dd 100 shl 16 + 300
+error_window_y: dd 100 shl 16 + 100
+
+PID  dd 0
+PID1 dd 0
+PID2 dd 0
+PID3 dd 0
+PID4 dd 0
+PID5 dd 0
+PID6 dd 0
+PID7 dd 0
+active_process dd 0
+timer_counter dd 0
+draw_scrollbar_counter dd 0
+;---------------------------------------------------------------------
+align 4
+error_fs_text_pointers:
+  dd  error_fs_text_0
+  dd  error_fs_text_1
+  dd  error_fs_text_2
+  dd  error_fs_text_3
+  dd  error_fs_text_4
+  dd  error_fs_text_5
+  dd  error_fs_text_6
+  dd  error_fs_text_7
+  dd  error_fs_text_8
+  dd  error_fs_text_9
+  dd  error_fs_text_10
+  dd  error_fs_text_11
+
+error_fs_text_0:        db 'Success full',0
+error_fs_text_1:        db 'Base and/or partition of a hard disk is not defined',0
+error_fs_text_2:        db 'Function is not supported for the given file system',0
+error_fs_text_3:        db 'Unknown file system',0
+error_fs_text_4:        db 'Reserved, is never returned in the current implementation',0
+error_fs_text_5:        db 'File not found',0
+error_fs_text_6:        db 'End of file, EOF',0
+error_fs_text_7:        db 'Pointer lies outside of application memory',0
+error_fs_text_8:        db 'Disk is full',0
+error_fs_text_9:        db 'FAT table is destroyed',0
+error_fs_text_10:       db 'Access denied',0
+error_fs_text_11:       db 'Device error',0
+;---------------------------------------------------------------------
+error_type:
+     db 'File system error',0
+;---------------------------------------------------------------------
+error_not_supported_file:
+     db 'Unsupported file or corrupt data',0
+;---------------------------------------------------------------------
+error_not_enough_memory:
+     db 'Not_enough_memory',0
+;---------------------------------------------------------------------
+error_unknown:
+     db 'Unknown error',0
+;---------------------------------------------------------------------
+extended_key db 0
+no_draw_window db 0
+
+shift_flag	db 0
+ctrl_flag	db 0
+alt_flag	db 0
+;---------------------------------------------------------------------
+; for EDITBOX
+align 4
+name_editboxes:
+edit1 edit_box 200,10,30,0xffffff,0xbbddff,0,0,0,255,string,mouse_dd,ed_focus+ed_always_focus,0
+name_editboxes_end:
+
+;mouse_flag: dd 0x0
+
+mouse_dd	rd 1
+;---------------------------------------------------------------------
+align 4
+; option_boxes_bcgr:
+op1 option_box option_group1,60,40,6,12,0xFFFFFF,0,0xffffff,op_text.1,op_text.e1-op_text.1
+op2 option_box option_group1,60,55,6,12,0xFFFFFF,0,0xffffff,op_text.2,op_text.e2-op_text.2
+option_boxes_bcgr_end:
+
+op_text:
+.1 db 'Tiled'
+.e1:
+.2 db 'Stretch'
+.e2:
+
+option_group1   dd op1
+
+option_boxes_bcgr:      dd op1, op2,0
+;---------------------------------------------------------------------
+align 4
+;option_boxes_sort:
+sort0 option_box option_group2,60,40,6,12,0xFFFFFF,0,0xffffff,op_text_1.1,op_text_1.e1-op_text_1.1
+sort2 option_box option_group2,60,55,6,12,0xFFFFFF,0,0xffffff,op_text_1.2,op_text_1.e2-op_text_1.2
+sort4 option_box option_group2,60,70,6,12,0xFFFFFF,0,0xffffff,op_text_1.3,op_text_1.e3-op_text_1.3
+sort6 option_box option_group2,60,85,6,12,0xFFFFFF,0,0xffffff,op_text_1.4,op_text_1.e4-op_text_1.4
+option_boxes_sort_end:
+
+op_text_1:
+.1 db 'Name'
+.e1:
+.2 db 'Type'
+.e2:
+.3 db 'Date'
+.e3:
+.4 db 'Size'
+.e4:
+
+option_group2   dd sort2
+option_group2_old dd 0
+
+option_boxes_sort       dd sort0, sort2, sort4, sort6,0
+;---------------------------------------------------------------------
+check1 check_box 120,50,6,12,0xFFFFFF,0,0xffffff,check_text1,14,0  ;ch_flag_en
+
+check_text1 db 'Show file name'
+
+show_file_name_old dd 0
+;---------------------------------------------------------------------
+check2 check_box 120,70,6,12,0xFFFFFF,0,0xffffff,check_text2,14,0  ;ch_flag_en
+
+check_text2 db 'Bilinear filtering'
+
+filtering_flag	dd 0
+filtering_flag_old	dd 0
+;---------------------------------------------------------------------
+align 4
+scroll_bar_data_vertical:
+.x:
+.size_x     dw 15 ;+0
+.start_x    dw 500 ;+2
+.y:
+.size_y     dw 300 ;+4
+.start_y    dw 30 ;+6
+.btn_high   dd 15 ;+8
+.type       dd 1  ;+12
+.max_area   dd 10  ;+16
+.cur_area   dd 2  ;+20
+.position   dd 0  ;+24
+.bckg_col   dd 0xeeeeee ;+28
+.frnt_col   dd 0x8aeaa0   ;0xbbddff ;+32
+.line_col   dd 0  ;+36
+.redraw     dd 0  ;+40
+.delta      dw 0  ;+44
+.delta2     dw 0  ;+46
+.run_x:
+.r_size_x   dw 0  ;+48
+.r_start_x  dw 0  ;+50
+.run_y:
+.r_size_y   dw 0 ;+52
+.r_start_y  dw 0 ;+54
+.m_pos      dd 0 ;+56
+.m_pos_2    dd 0 ;+60
+.m_keys     dd 0 ;+64
+.run_size   dd 0 ;+68
+.position2  dd 0 ;+72
+.work_size  dd 0 ;+76
+.all_redraw dd 0 ;+80
+.ar_offset      dd 10 ;+84
+;---------------------------------------------------------------------
+align 4
+scroll_bar_data_horizontal:
+.x:
+.size_x     dw 300  ;0 ;+0
+.start_x    dw 10   ;0 ;+2
+.y:
+.size_y     dw 15   ;0 ;+4
+.start_y    dw 300    ;0 ;+6
+.btn_high   dd 15 ;+8
+.type       dd 1  ;+12
+.max_area   dd 10  ;+16
+.cur_area   dd 2  ;+20
+.position   dd 0  ;+24
+.bckg_col   dd 0xeeeeee ;+28
+.frnt_col   dd 0x8aeaa0  ;0xbbddff ;+32
+.line_col   dd 0  ;+36
+.redraw     dd 0  ;+40
+.delta      dw 0  ;+44
+.delta2     dw 0  ;+46
+.run_x:
+.r_size_x   dw 0  ;+48
+.r_start_x  dw 0  ;+50
+.run_y:
+.r_size_y   dw 0 ;+52
+.r_start_y  dw 0 ;+54
+.m_pos      dd 0 ;+56
+.m_pos_2    dd 0 ;+60
+.m_keys     dd 0 ;+64
+.run_size   dd 0 ;+68
+.position2  dd 0 ;+72
+.work_size  dd 0 ;+76
+.all_redraw dd 0 ;+80
+.ar_offset      dd 10 ;+84
+;---------------------------------------------------------------------
+align 4
+menu_data_1:
+.type:                  dd 0   ;+0
+.x:
+.size_x                 dw 35  ;+4
+.start_x                dw 5   ;+6
+.y:
+.size_y                 dw 15   ;+8
+.start_y                dw 3  ;+10
+.text_pointer:  dd menu_text_area_1  ;0 ;+12
+.pos_pointer:   dd menu_text_area_1.1 ;0 ;+16
+.text_end               dd menu_text_area_1.end ;0 ;+20
+.ret_key	dd 0  ;+24
+.mouse_keys             dd 0  ;+28
+.x1:
+.size_x1                dw 70  ;+32
+.start_x1               dw 5   ;+34
+.y1:
+.size_y1                dw 100   ;+36
+.start_y1               dw 18  ;+38
+.bckg_col       dd 0xe5e5e5 ;+40
+.frnt_col       dd 0xff ;+44
+.menu_col       dd 0xeef0ff  ;0xffffff ;+48
+.select         dd 0 ;+52
+.out_select     dd 0 ;+56
+.buf_adress             dd 0 ;+60
+.procinfo               dd 0 ;+64
+.click                  dd 0 ;+68
+.cursor                 dd 0 ;+72
+.cursor_old             dd 0 ;+76
+.interval               dd 16 ;+80
+.cursor_max             dd 0 ;+84
+.extended_key   dd 0 ;+88
+.menu_sel_col   dd 0x00cc00 ;+92
+.bckg_text_col  dd 0 ; +96
+.frnt_text_col  dd 0xffffff ;+100
+.mouse_keys_old dd 0 ;+104
+.font_height    dd 8 ;+108
+.cursor_out             dd 0 ;+112
+.get_mouse_flag dd 0 ;+116
+;---------------------------------------------------------------------
+menu_text_area_1:
+db 'File',0
+.1:
+db 'Open',0
+db 'Properties',0
+db 'Exit',0
+.end:
+db 0
+;---------------------------------------------------------------------
+align 4
+menu_data_2:
+.type:                  dd 0   ;+0
+.x:
+.size_x                 dw 35  ;+4
+.start_x                dw 40   ;+6
+.y:
+.size_y                 dw 15   ;+8
+.start_y                dw 3  ;+10
+.text_pointer:  dd menu_text_area_2  ;0 ;+12
+.pos_pointer:   dd menu_text_area_2.1 ;0 ;+16
+.text_end               dd menu_text_area_2.end ;0 ;+20
+.ret_key	dd 0  ;+24
+.mouse_keys             dd 0  ;+28
+.x1:
+.size_x1                dw 90  ;+32
+.start_x1               dw 40   ;+34
+.y1:
+.size_y1                dw 100   ;+36
+.start_y1               dw 18  ;+38
+.bckg_col       dd 0xe5e5e5 ;+40
+.frnt_col       dd 0xff ;+44
+.menu_col       dd 0xeef0ff  ;0xffffff ;+48
+.select         dd 0 ;+52
+.out_select     dd 0 ;+56
+.buf_adress             dd 0 ;+60
+.procinfo               dd 0 ;+64
+.click                  dd 0 ;+68
+.cursor                 dd 0 ;+72
+.cursor_old             dd 0 ;+76
+.interval               dd 16 ;+80
+.cursor_max             dd 0 ;+84
+.extended_key   dd 0 ;+88
+.menu_sel_col   dd 0x00cc00 ;+92
+.bckg_text_col  dd 0 ; +96
+.frnt_text_col  dd 0xffffff ;+100
+.mouse_keys_old dd 0 ;+104
+.font_height    dd 8 ;+108
+.cursor_out             dd 0 ;+112
+.get_mouse_flag dd 0 ;+116
+;---------------------------------------------------------------------
+menu_text_area_2:
+db 'Edit',0
+.1:
+db 'Rotate Clock.',0
+db 'Rotate CClock.',0
+db 'Invert L to R',0
+db 'Invert U to D',0
+.end:
+db 0
+;---------------------------------------------------------------------
+align 4
+menu_data_3:
+.type:                  dd 0   ;+0
+.x:
+.size_x                 dw 35  ;+4
+.start_x                dw 75   ;+6
+.y:
+.size_y                 dw 15   ;+8
+.start_y                dw 3  ;+10
+.text_pointer:  dd menu_text_area_3  ;0 ;+12
+.pos_pointer:   dd menu_text_area_3.1 ;0 ;+16
+.text_end               dd menu_text_area_3.end ;0 ;+20
+.ret_key	dd 0  ;+24
+.mouse_keys             dd 0  ;+28
+.x1:
+.size_x1                dw 90  ;+32
+.start_x1               dw 75   ;+34
+.y1:
+.size_y1                dw 100   ;+36
+.start_y1               dw 18  ;+38
+.bckg_col       dd 0xe5e5e5 ;+40
+.frnt_col       dd 0xff ;+44
+.menu_col       dd 0xeef0ff  ;0xffffff ;+48
+.select         dd 0 ;+52
+.out_select     dd 0 ;+56
+.buf_adress             dd 0 ;+60
+.procinfo               dd 0 ;+64
+.click                  dd 0 ;+68
+.cursor                 dd 0 ;+72
+.cursor_old             dd 0 ;+76
+.interval               dd 16 ;+80
+.cursor_max             dd 0 ;+84
+.extended_key   dd 0 ;+88
+.menu_sel_col   dd 0x00cc00 ;+92
+.bckg_text_col  dd 0 ; +96
+.frnt_text_col  dd 0xffffff ;+100
+.mouse_keys_old dd 0 ;+104
+.font_height    dd 8 ;+108
+.cursor_out             dd 0 ;+112
+.get_mouse_flag dd 0 ;+116
+;---------------------------------------------------------------------
+menu_text_area_3:
+db 'View',0
+.1:
+db 'Sort Directory',0
+db 'Full Screen',0
+db 'Reload',0
+.end:
+db 0
+;---------------------------------------------------------------------
+align 4
+menu_data_4:
+.type:                  dd 0   ;+0
+.x:
+.size_x                 dw 35  ;+4
+.start_x                dw 110   ;+6
+.y:
+.size_y                 dw 15   ;+8
+.start_y                dw 3  ;+10
+.text_pointer:  dd menu_text_area_4  ;0 ;+12
+.pos_pointer:   dd menu_text_area_4.1 ;0 ;+16
+.text_end               dd menu_text_area_4.end ;0 ;+20
+.ret_key	dd 0  ;+24
+.mouse_keys             dd 0  ;+28
+.x1:
+.size_x1                dw 40  ;+32
+.start_x1               dw 110   ;+34
+.y1:
+.size_y1                dw 100   ;+36
+.start_y1               dw 18  ;+38
+.bckg_col       dd 0xe5e5e5 ;+40
+.frnt_col       dd 0xff ;+44
+.menu_col       dd 0xeef0ff  ;0xffffff ;+48
+.select         dd 0 ;+52
+.out_select     dd 0 ;+56
+.buf_adress             dd 0 ;+60
+.procinfo               dd 0 ;+64
+.click                  dd 0 ;+68
+.cursor                 dd 0 ;+72
+.cursor_old             dd 0 ;+76
+.interval               dd 16 ;+80
+.cursor_max             dd 0 ;+84
+.extended_key   dd 0 ;+88
+.menu_sel_col   dd 0x00cc00 ;+92
+.bckg_text_col  dd 0 ; +96
+.frnt_text_col  dd 0xffffff ;+100
+.mouse_keys_old dd 0 ;+104
+.font_height    dd 8 ;+108
+.cursor_out             dd 0 ;+112
+.get_mouse_flag dd 0 ;+116
+;---------------------------------------------------------------------
+menu_text_area_4:
+db 'Zoom',0
+.1:
+db 'Normal',0
+db 'More',0
+db 'Less',0
+db 'Auto',0
+.end:
+db 0
+;---------------------------------------------------------------------
+align 4
+menu_data_5:
+.type:                  dd 0   ;+0
+.x:
+.size_x                 dw 40  ;+4
+.start_x                dw 145   ;+6
+.y:
+.size_y                 dw 15   ;+8
+.start_y                dw 3  ;+10
+.text_pointer:  dd menu_text_area_5  ;0 ;+12
+.pos_pointer:   dd menu_text_area_5.1 ;0 ;+16
+.text_end               dd menu_text_area_5.end ;0 ;+20
+.ret_key	dd 0  ;+24
+.mouse_keys             dd 0  ;+28
+.x1:
+.size_x1                dw 80  ;+32
+.start_x1               dw 145   ;+34
+.y1:
+.size_y1                dw 100   ;+36
+.start_y1               dw 18  ;+38
+.bckg_col       dd 0xe5e5e5 ;+40
+.frnt_col       dd 0xff ;+44
+.menu_col       dd 0xeef0ff  ;0xffffff ;+48
+.select         dd 0 ;+52
+.out_select     dd 0 ;+56
+.buf_adress             dd 0 ;+60
+.procinfo               dd 0 ;+64
+.click                  dd 0 ;+68
+.cursor                 dd 0 ;+72
+.cursor_old             dd 0 ;+76
+.interval               dd 16 ;+80
+.cursor_max             dd 0 ;+84
+.extended_key   dd 0 ;+88
+.menu_sel_col   dd 0x00cc00 ;+92
+.bckg_text_col  dd 0 ; +96
+.frnt_text_col  dd 0xffffff ;+100
+.mouse_keys_old dd 0 ;+104
+.font_height    dd 8 ;+108
+.cursor_out             dd 0 ;+112
+.get_mouse_flag dd 0 ;+116
+;---------------------------------------------------------------------
+menu_text_area_5:
+db 'Tools',0
+.1:
+db 'Image Editor',0
+db 'Wallpaper',0
+db 'Slide Show',0
+db 'Options',0
+.end:
+db 0
+;---------------------------------------------------------------------
+align 4
+menu_data_6:
+.type:                  dd 0   ;+0
+.x:
+.size_x                 dw 35  ;+4
+.start_x                dw 185   ;+6
+.y:
+.size_y                 dw 15   ;+8
+.start_y                dw 3  ;+10
+.text_pointer:  dd menu_text_area_6  ;0 ;+12
+.pos_pointer:   dd menu_text_area_6.1 ;0 ;+16
+.text_end               dd menu_text_area_6.end ;0 ;+20
+.ret_key	dd 0  ;+24
+.mouse_keys             dd 0  ;+28
+.x1:
+.size_x1                dw 50  ;+32
+.start_x1               dw 185   ;+34
+.y1:
+.size_y1                dw 100   ;+36
+.start_y1               dw 18  ;+38
+.bckg_col       dd 0xe5e5e5 ;+40
+.frnt_col       dd 0xff ;+44
+.menu_col       dd 0xeef0ff  ;0xffffff ;+48
+.select         dd 0 ;+52
+.out_select     dd 0 ;+56
+.buf_adress             dd 0 ;+60
+.procinfo               dd 0 ;+64
+.click                  dd 0 ;+68
+.cursor                 dd 0 ;+72
+.cursor_old             dd 0 ;+76
+.interval               dd 16 ;+80
+.cursor_max             dd 0 ;+84
+.extended_key   dd 0 ;+88
+.menu_sel_col   dd 0x00cc00 ;+92
+.bckg_text_col  dd 0 ; +96
+.frnt_text_col  dd 0xffffff ;+100
+.mouse_keys_old dd 0 ;+104
+.font_height    dd 8 ;+108
+.cursor_out             dd 0 ;+112
+.get_mouse_flag dd 0 ;+116
+;---------------------------------------------------------------------
+menu_text_area_6:
+db 'Help',0
+.1:
+db 'Help',0
+db 'About',0
+.end:
+db 0
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_1: ; open file
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 230 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_2: ; reload file
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 255 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_3: ; left limit
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 285 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_4: ; left arrow
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 310 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_5: ; slide show
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 335 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_6: ; right arrow
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 360 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_7: ; right limit
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 385 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_8: ; zoom +
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 415 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_9: ; zoom -
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 440 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_10: ; zoom 100%
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 465 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_11: ; rotate clockwise
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 495 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_12: ; rotate counter-clockwise
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 520 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_13: ; file information
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 550 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_14: ; wallpaper
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 575 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dinamic_button_data_15: ; settings
+.type                   dd 0 ;+0
+.x:
+.size_x                 dw 20 ;+4
+.start_x                dw 600 ;+6
+.y:
+.size_y                 dw 20 ;+8
+.start_y                dw 3 ;+10
+.mouse_pos              dd 0 ;+12
+.mouse_keys             dd 0 ;+16
+.mouse_keys_old dd 0 ;+20
+.active_raw             dd 0 ;+24
+.passive_raw    dd 0 ;+28
+.click_raw              dd 0 ;+32
+.resolution_raw dd 0 ;+36
+.palette_raw    dd 0 ;+40
+.offset_raw             dd 0 ;+44
+.select                 dd 0 ;+48
+.click                  dd 0 ;+52
+;---------------------------------------------------------------------
+align 4
+dirinfo:
+.subfunction	dd 1
+.start			dd 0
+.flags			dd 0
+.size			dd 0
+.return			dd procinfo
+				db      0
+.name:			dd      plugin_pach
+;---------------------------------------------------------------------
+align 4
+fileinfo:
+.subfunction	dd 5
+.Offset			dd 0
+.Offset_1		dd 0
+.size			dd 0
+.return			dd process_info
+				db 0
+.name:			dd string
+;---------------------------------------------------------------------
+align 4
+start_appl:
+.subfunction	dd 7
+.flags		dd 0
+.parameter	dd library_path
+.reserved1	dd 0
+.reserved2	dd 0
+		db 0
+.name:		dd Help_path
+;---------------------------------------------------------------------
+align 4
+dir_header:
+.version		dd 0 ;+0
+.curn_blocks	dd 0 ;+4
+.totl_blocks	dd 0 ;+8
+.other			rb 20
+;---------------------------------------------------------------------
+OpenDialog_data:
+.type			dd 0
+.procinfo		dd procinfo ;+4
+.com_area_name		dd communication_area_name ;+8
+.com_area		dd 0 ;+12
+.opendir_pach		dd plugin_pach ;+16
+.dir_default_pach	dd communication_area_default_pach ;+20
+.start_path		dd library_path ;+24
+.draw_window		dd draw_window ;+28
+.status			dd 0 ;+32
+.openfile_pach		dd string ;+36
+.filename_area		dd 0	;+40
+.filter_area		dd Filter
+.x:
+.x_size			dw 420 ;+48 ; Window X size
+.x_start		dw 10 ;+50 ; Window X position
+.y:
+.y_size			dw 320 ;+52 ; Window y size
+.y_start		dw 10 ;+54 ; Window Y position
+
+communication_area_name:
+	db 'FFFFFFFF_open_dialog',0
+open_dialog_name:
+	db 'opendial',0
+communication_area_default_pach:
+	db '/rd/1',0
+;communication_area dd 0
+;---------------------------------------------------------------------
+; clear bacground thread
+clear_thread_stack:
+	dd 0
+;----------------------
+; window option
+thread_stack_7:
+	dd 0
+;----------------------
+; window error message
+thread_stack_6:
+	dd 0
+;----------------------
+; window set sort mode
+thread_stack_5:
+	dd 0
+;----------------------
+; window background
+thread_stack_4:
+	dd 0
+;----------------------
+; window about
+thread_stack_3:
+	dd 0
+;----------------------
+; file info
+thread_stack_2:
+	dd 0
+;----------------------
+; file open
+thread_stack:
+	dd 0
+;---------------------------------------------------------------------
+;size_before_open_dir:
+;	dd 0
+;size_before_open_file:
+;	dd 0
+;size_after_open_file:
+;	dd 0
+;size_after_convert:
+;	dd 0
+;size_after_convert_2:
+;	dd 0
+;size_before_draw_image:
+;	dd 0
+;size_after_draw_image:
+;	dd 0
+;size_before_scaling:
+;	dd 0
+;size_after_scaling:
+;	dd 0

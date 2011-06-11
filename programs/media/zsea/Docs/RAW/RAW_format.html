@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=windows-1251">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 3.2  (Win32)">
+	<META NAME="CREATED" CONTENT="20080921;16173700">
+	<META NAME="CHANGED" CONTENT="20081002;1473200">
+	<META NAME="Поле 1" CONTENT="">
+	<META NAME="Поле 2" CONTENT="">
+	<META NAME="Поле 3" CONTENT="">
+	<META NAME="Поле 4" CONTENT="">
+</HEAD>
+<BODY LANG="ru-RU" LINK="#000080" VLINK="#800000" DIR="LTR">
+<P><FONT SIZE=4><B>Спецификация RAW (наш внутренний стандарт).</B></FONT></P>
+<P><BR><BR>
+</P>
+<P>Формат:</P>
+<TABLE WIDTH=100% CELLPADDING=4 CELLSPACING=0>
+	<COL WIDTH=45*>
+	<COL WIDTH=36*>
+	<COL WIDTH=175*>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% HEIGHT=8 STYLE="; border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0.1cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P>Смещение, байт</TD>
+		<TD WIDTH=14% STYLE="; border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0.1cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P>Длинна, байт</TD>
+		<TD WIDTH=68% STYLE="; border: 1px solid #000000; padding: 0.1cm">
+			<P>Описание</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>0</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>Заголовок '<B>RAW</B>' и <B>пробел</B></TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>Размер по <B>X</B> (по горизонтали), в пикселах</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>8</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>Размер по <B>Y</B> (по вертикали), в пикселах</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>12</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<DL>
+				<DT>Общая глубина пиксела = Глубина канала * Количество каналов<DT>
+				Возможные значения: <B>1, 4, 8, 16, 24, 32, 48, 64</B></DL>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>16</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>2</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<DL>
+				<DT>Глубина канала<DT>
+				Для Grayscale: <B>1, 4, 8, 16</B><DT>
+				Для R, G, B и T (<FONT COLOR="#000000"><FONT SIZE=2>Transparency
+				&mdash; Прозрачность):</FONT></FONT><FONT COLOR="#000000"><FONT SIZE=2><B>
+				5, 8, 16</B></FONT></FONT></DL>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>18</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>2</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<DL>
+				<DT>Количество каналов:<DT>
+				Для Grayscale: <B>1, 2</B> (значение 2 при наличии T и глубине не
+				менее 8)<DT>
+				Для R, G, B: <B>1</B>, (при общей глубине меньше 16 бит), <B>3</B><DT>
+				Для R, G, B и T (<FONT COLOR="#000000"><FONT SIZE=2>Transparency
+				&mdash; Прозрачность): </FONT></FONT><FONT COLOR="#000000"><FONT SIZE=2><B>4</B></FONT></FONT></DL>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>20</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>Указатель на палитру (смещение от начала файла), если палитры
+			нет то значение <B>0</B></TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>24</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>Размер области палитры, максимальное значение <B>256*4=1024</B>
+			байт.</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>28</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>Указатель на данные пикселей для R, G, B. Возможно значение <B>0</B>,
+			в этом случае выводимая область заполняется цветом из палитры.</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>32</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>Размер области данных для пикселей.</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>36</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>Указатель на T (<FONT COLOR="#000000"><FONT SIZE=2>Transparency
+			&mdash; Прозрачность)</FONT></FONT></TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=18% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>40</TD>
+		<TD WIDTH=14% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=68% STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>Размер области данных для T.</TD>
+	</TR>
+	<TR>
+		<TD COLSPAN=3 WIDTH=100% VALIGN=TOP STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P ALIGN=CENTER>Область данных палитры</TD>
+	</TR>
+	<TR>
+		<TD COLSPAN=3 WIDTH=100% VALIGN=TOP STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P ALIGN=CENTER>Область данных R, G, B.</TD>
+	</TR>
+	<TR>
+		<TD COLSPAN=3 WIDTH=100% VALIGN=TOP STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P ALIGN=CENTER>Область данных T (<FONT COLOR="#000000"><FONT SIZE=2>Transparency
+			&mdash; Прозрачность)</FONT></FONT></TD>
+	</TR>
+</TABLE>
+<P><BR>
+</BODY>
+</HTML>

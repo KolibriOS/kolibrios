@@ -1,0 +1,209 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=windows-1251">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 3.2  (Win32)">
+	<META NAME="CREATED" CONTENT="20090304;23535200">
+	<META NAME="CHANGED" CONTENT="20090630;22142000">
+	<META NAME="Поле 1" CONTENT="">
+	<META NAME="Поле 2" CONTENT="">
+	<META NAME="Поле 3" CONTENT="">
+	<META NAME="Поле 4" CONTENT="">
+</HEAD>
+<BODY LANG="ru-RU" TEXT="#000000" LINK="#000080" VLINK="#800000" DIR="LTR">
+<DL>
+	<DT><FONT SIZE=3><B>Спецификация RAW</B></FONT><DT>
+	<BR>
+	<DT>При загрузке gif-файла функция START возвращает указатель на
+	следующую структуру:<DT>
+	<BR>
+</DL>
+<TABLE WIDTH=643 CELLPADDING=4 CELLSPACING=0>
+	<COL WIDTH=101>
+	<COL WIDTH=82>
+	<COL WIDTH=434>
+	<TR VALIGN=TOP>
+		<TD WIDTH=101 STYLE="; border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0.1cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P>Смещение, байт 
+		</TD>
+		<TD WIDTH=82 STYLE="; border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0.1cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P>Длинна, байт</TD>
+		<TD WIDTH=434 STYLE="; border: 1px solid #000000; padding: 0.1cm">
+			<P>Описание</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=101 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>0</TD>
+		<TD WIDTH=82 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=434 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>Заголовок '<B>RAW1</B>'</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=101 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=82 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=434 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>n = число изображений</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=101 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>8</TD>
+		<TD WIDTH=82 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=434 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>ширина логического экрана (на котором будут показываться все
+			изображения), в пикселах</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=101 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>12</TD>
+		<TD WIDTH=82 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=434 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>высота логического экрана (на котором будут показываться все
+			изображения), в пикселах</TD>
+	</TR>
+	<TR>
+		<TD COLSPAN=3 WIDTH=633 VALIGN=TOP STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P ALIGN=CENTER><B>Repeat 0</B> ; repeat n &mdash; повторяющиеся
+			блоки, 1 в случае статичного GIF, нумерация <B>N</B> начинается с
+			<B>0</B></TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=101 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>16+N*16</TD>
+		<TD WIDTH=82 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=434 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>указатель на очередное изображение - с заголовком '<B>RAW</B>
+			'<SUP><FONT SIZE=3><B>**3</B></FONT></SUP></TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=101 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>20+N*16</TD>
+		<TD WIDTH=82 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=434 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>x-координата изображения на логическом экране, в пикселах</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=101 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>24+N*16</TD>
+		<TD WIDTH=82 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>4</TD>
+		<TD WIDTH=434 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>y-координата изображения на логическом на экране, в пикселах</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=101 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>28+N*16</TD>
+		<TD WIDTH=82 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>2</TD>
+		<TD WIDTH=434 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P> задержка, измеряется в <B>0.01</B> секунды<SUP><FONT SIZE=3><B>**2</B></FONT></SUP></TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=101 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>30+N*16</TD>
+		<TD WIDTH=82 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER><FONT FACE="Arial"><FONT SIZE=2>1</FONT></FONT></TD>
+		<TD WIDTH=434 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<DL>
+				<DT><FONT FACE="Arial"><FONT SIZE=2>&lt;Packed Fields&gt;</FONT></FONT><DT>
+				<BR>
+				<DT><FONT FACE="Arial"><FONT SIZE=2><B>0 bit</B></FONT></FONT><FONT FACE="Arial"><FONT SIZE=2>
+				- Прозрачность</FONT></FONT><DT>
+				        <FONT FACE="Arial"><FONT SIZE=2>0 - нет прозрачного
+				цвета, 1 - есть прозрачный цвет</FONT></FONT><DT>
+				<BR>
+				<DT><FONT FACE="Arial"><FONT SIZE=2><B>1 bit</B></FONT></FONT><FONT FACE="Arial"><FONT SIZE=2>
+				&mdash; Флаг пользователя</FONT></FONT><DT>
+				<FONT FACE="Arial"><FONT SIZE=2>Значения:</FONT></FONT></DL>
+			<OL>
+				<P>
+				<FONT FACE="Arial"><FONT SIZE=2>0 - Не ожидать ввод от
+				пользователя для продолжения.</FONT></FONT></OL>
+			<DL>
+				<DT><FONT COLOR="#000000"> </FONT><FONT COLOR="#000000"><FONT FACE="Arial"><FONT SIZE=2><SPAN LANG="ru-RU">1
+				- Ожидать ввод от пользователя.</SPAN></FONT></FONT></FONT><DT>
+				<BR>
+				<DT><FONT FACE="Arial"><FONT SIZE=2><B>2,3,4 bit</B></FONT></FONT><FONT FACE="Arial"><FONT SIZE=2>
+				&mdash; Метод размещения</FONT></FONT><DT>
+				<FONT FACE="Arial"><FONT SIZE=2>Значения:</FONT></FONT><DT>
+				 <FONT FACE="Arial"><FONT SIZE=2>0 - Никакое размещение не
+				определено. Декодер не обязан предпринимать любое действие.</FONT></FONT><DT>
+				 <FONT FACE="Arial"><FONT SIZE=2>1 - Не располагать. Графику
+				нужно оставить на месте</FONT></FONT><DT>
+				 <FONT FACE="Arial"><FONT SIZE=2>2 - Восстановить к цвет фона.
+				Область, используемая графикой, должна быть восстановлена к цвету
+				фона.</FONT></FONT><DT>
+				 <FONT FACE="Arial"><FONT SIZE=2>3 - Восстановить к предыдущему.
+				Декодер обязан восстанавливать область, записанную поверх
+				графическим символом с тем, что было там до предоставления
+				графического символа.</FONT></FONT><DT>
+				 <FONT FACE="Arial"><FONT SIZE=2>4-7 -Зарезервировано.</FONT></FONT><DT>
+				<BR>
+				<DT><FONT COLOR="#000000"><FONT FACE="Arial"><FONT SIZE=2><B>5,6,7
+				bit</B></FONT></FONT></FONT><FONT COLOR="#000000"><FONT FACE="Arial"><FONT SIZE=2>
+				- Зарезервировано</FONT></FONT></FONT><DT>
+				<BR>
+			</DL>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=101 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>31+N*16</TD>
+		<TD WIDTH=82 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0cm">
+			<P ALIGN=CENTER>1</TD>
+		<TD WIDTH=434 STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P>индекс прозрачного цвета<SUP><FONT SIZE=3><B>**1</B></FONT></SUP>
+			(игнорируется, если предыдущее поле нулевое)</TD>
+	</TR>
+	<TR>
+		<TD COLSPAN=3 WIDTH=633 VALIGN=TOP STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P ALIGN=CENTER><B>end repeat 0</B></TD>
+	</TR>
+	<TR>
+		<TD COLSPAN=3 WIDTH=633 VALIGN=TOP STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P ALIGN=CENTER><B>Repeat 1</B></TD>
+	</TR>
+	<TR>
+		<TD COLSPAN=3 WIDTH=633 VALIGN=TOP STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P ALIGN=CENTER><B>Repeat 2</B></TD>
+	</TR>
+	<TR>
+		<TD COLSPAN=3 WIDTH=633 VALIGN=TOP STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P ALIGN=CENTER><B>Repeat 3</B></TD>
+	</TR>
+	<TR>
+		<TD COLSPAN=3 WIDTH=633 VALIGN=TOP STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P ALIGN=CENTER><B>...</B></TD>
+	</TR>
+	<TR>
+		<TD COLSPAN=3 WIDTH=633 VALIGN=TOP STYLE="; border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0cm; padding-bottom: 0.1cm; padding-left: 0.1cm; padding-right: 0.1cm">
+			<P ALIGN=CENTER><B>Repeat Nmax</B></TD>
+	</TR>
+</TABLE>
+<DL>
+	<DT><BR>
+	<DT>Примечания:</DL>
+<OL>
+	<LI>
+	**1 индекс прозрачного цвета - пиксели с таким цветом нужно не
+	закрашивать, а оставлять прозрачными. Если следующий экран
+	начинается не со смещения 0, а прозрачного цвета нет, то
+	незатрагиваемая область влюбом случае отсается незатрагиваемой.<LI>
+	**2  задержка - задержка для кадого кадра индивидуальна<LI>
+	**3 указатели на RAW &mdash; абсолютные адреса, каждый  RAW
+	независимая от заголовка область, при смене файла их все надо
+	освобождать.</OL>
+<DL>
+	<DT><BR>
+	<DT><BR>
+	<DT><BR>
+</DL>
+</BODY>
+</HTML>

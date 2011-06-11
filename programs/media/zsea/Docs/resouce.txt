@@ -1,0 +1,10 @@
+Use variable "status":
+
+1	1h	1 		open file
+2	2h	10		file info
+4	4h	100		window about
+8	8h	1000		window background
+16	10h	10000		window set sort mode
+32	20h	100000	window error
+64	40h	1000000	window option
+128	80h	10000000	
