@@ -344,6 +344,8 @@ include 'detect/biosmem.inc'
 
 ; READ DISKETTE TO MEMORY
 
+if 0
+----
 	cmp	[boot_dev],0
 	jne	no_sys_on_floppy
 	xor	ax, ax		  ; reset drive
@@ -648,6 +650,8 @@ no_sys_on_floppy:
 	mov	dx, 0x3f2	; floppy motor off
 	mov	al, 0
 	out	dx, al
+---
+end if
 
 
 ; SET GRAPHICS

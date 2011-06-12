@@ -194,74 +194,78 @@ TASK_BASE	    equ (OS_BASE+0x0003010)
 TASK_DATA	    equ (OS_BASE+0x0003020)
 TASK_EVENT	    equ (OS_BASE+0x0003020)
 
-FLOPPY_BUFF	    equ (OS_BASE+0x0005000)
-
-idts		    equ (OS_BASE+0x0007400)	; sys32.inc
-
-mouseunder	    equ (OS_BASE+0x0007900)
-SB16_Status	    equ (OS_BASE+0x0007F00)	; <<
-
-RAMDISK_FAT	    equ (OS_BASE+0x0008000)
-FLOPPY_FAT	    equ (OS_BASE+0x000A000)	; fs/fat12.inc
-
+mouseunder	    equ (OS_BASE+0x0006900)
+CDDataBuf	    equ (OS_BASE+0x0007000)
+FLOPPY_BUFF	    equ (OS_BASE+0x0008000)
+;ACTIVE_PROC_STACK   equ (OS_BASE+0x000A400) ;unused
+idts		    equ (OS_BASE+0x000B100)
 WIN_STACK	    equ (OS_BASE+0x000C000)
 WIN_POS 	    equ (OS_BASE+0x000C400)
 FDD_BUFF	    equ (OS_BASE+0x000D000)
 
+;unused ? only one reference
+;ENABLE_TASKSWITCH   equ (OS_BASE+0x000E000)
 
-KEY_COUNT	    equ (OS_BASE+0x000FA00)
-KEY_BUFF	    equ (OS_BASE+0x000FA01)
+PUTPIXEL	    equ (OS_BASE+0x000E020)
+GETPIXEL	    equ (OS_BASE+0x000E024)
 
-BTN_COUNT	    equ (OS_BASE+0x000FB00)
-BTN_BUFF	    equ (OS_BASE+0x000FB01)
+;unused ? only one reference
+; BANK_SWITCH         equ (OS_BASE+0x000E030)   ; VESA 1.2 - not used
 
+;unused ? store mousepointer
+;MOUSE_PICTURE       equ (OS_BASE+0x000F200)    ; mousedrv.inc - not used
 
-;reserved ? mouse buffer space 0xFC00-FCFF
+MOUSE_VISIBLE	    equ (OS_BASE+0x000F204)
+WIN_TEMP_XY	    equ (OS_BASE+0x000F300)
+KEY_COUNT	    equ (OS_BASE+0x000F400)
+KEY_BUFF	    equ (OS_BASE+0x000F401)
+
+BTN_COUNT	    equ (OS_BASE+0x000F500)
+BTN_BUFF	    equ (OS_BASE+0x000F501)
+
+CPU_FREQ	    equ (OS_BASE+0x000F600)
+
+;unused ? no active references
+MOUSE_PORT	    equ (OS_BASE+0x000F604)
+
+;unused
+PS2_CHUNK	    equ (OS_BASE+0x000FB00)
+
+MOUSE_SCROLL_H	    equ (OS_BASE+0x000FB08)
+MOUSE_X 	    equ (OS_BASE+0x000FB0A)
+MOUSE_Y 	    equ (OS_BASE+0x000FB0C)
+MOUSE_SCROLL_V	    equ (OS_BASE+0x000FB0E)
+
+MOUSE_COLOR_MEM     equ (OS_BASE+0x000FB10)
+COLOR_TEMP	    equ (OS_BASE+0x000FB30)
+BTN_DOWN	    equ (OS_BASE+0x000FB40)
+MOUSE_DOWN	    equ (OS_BASE+0x000FB44)
+X_UNDER 	    equ (OS_BASE+0x000FB4A)
+Y_UNDER 	    equ (OS_BASE+0x000FB4C)
+ScreenBPP	    equ (OS_BASE+0x000FBF1)
+
+;unused ? only one reference
 MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
 
-;unused ?
-PS2_CHUNK	    equ (OS_BASE+0x000FE00)
-MOUSE_SCROLL_H	    equ (OS_BASE+0x000FE08)
-MOUSE_X 	    equ (OS_BASE+0x000FE0A)
-MOUSE_Y 	    equ (OS_BASE+0x000FE0C)
-MOUSE_SCROLL_V	    equ (OS_BASE+0x000FE0E)
+Screen_Max_X	    equ (OS_BASE+0x000FE00)
+Screen_Max_Y	    equ (OS_BASE+0x000FE04)
+BytesPerScanLine    equ (OS_BASE+0x000FE08)
+SCR_MODE	    equ (OS_BASE+0x000FE0C)
 
-MOUSE_COLOR_MEM     equ (OS_BASE+0x000FE10)
-COLOR_TEMP	    equ (OS_BASE+0x000FE30)
-BTN_DOWN	    equ (OS_BASE+0x000FE40)
-MOUSE_DOWN	    equ (OS_BASE+0x000FE44)
-X_UNDER 	    equ (OS_BASE+0x000FE4A)
-Y_UNDER 	    equ (OS_BASE+0x000FE4C)
+KERNEL_ALLOC_FLAG   equ (OS_BASE+0x000FE70)
+mmio_pcie_cfg_addr  equ (OS_BASE+0x000FE74)
+mmio_pcie_cfg_lim   equ (OS_BASE+0x000FE78)
+mmio_pcie_cfg_pdes  equ (OS_BASE+0x000FE7C)
+PCIe_bus_range	    equ (OS_BASE+0x000FE7E)
 
-PUTPIXEL	    equ (OS_BASE+0x000FEB8)
-GETPIXEL	    equ (OS_BASE+0x000FEBC)
-ScreenBPP	    equ (OS_BASE+0x000FEC1)
-MOUSE_VISIBLE	    equ (OS_BASE+0x000FEC4)
-WIN_TEMP_XY	    equ (OS_BASE+0x000FEC8)
-CPU_FREQ	    equ (OS_BASE+0x000FECC)
-
-Screen_Max_X	    equ (OS_BASE+0x000FED0)
-Screen_Max_Y	    equ (OS_BASE+0x000FED4)
-BytesPerScanLine    equ (OS_BASE+0x000FED8)
-SCR_MODE	    equ (OS_BASE+0x000FEDC)
-
-KERNEL_ALLOC_FLAG   equ (OS_BASE+0x000FEE0)
-mmio_pcie_cfg_addr  equ (OS_BASE+0x000FEE4)
-mmio_pcie_cfg_lim   equ (OS_BASE+0x000FEE8)
-mmio_pcie_cfg_pdes  equ (OS_BASE+0x000FEEC)
-PCIe_bus_range	    equ (OS_BASE+0x000FEEE)
-
-UserDMAaddr	    equ (OS_BASE+0x000FEF0)
-LFBAddress	    equ (OS_BASE+0x000FEF4)
-BTN_ADDR	    equ (OS_BASE+0x000FEF8)
-MEM_AMOUNT	    equ (OS_BASE+0x000FEFC)
+UserDMAaddr	    equ (OS_BASE+0x000FE80)
+LFBAddress	    equ (OS_BASE+0x000FE84)
+BTN_ADDR	    equ (OS_BASE+0x000FE88)
+MEM_AMOUNT	    equ (OS_BASE+0x000FE8C)
 
 SYS_SHUTDOWN	    equ (OS_BASE+0x000FF00)
 TASK_ACTIVATE	    equ (OS_BASE+0x000FF01)
 
-BgrDrawMode	    equ (OS_BASE+0x000FFE4)
-BgrDataWidth	    equ (OS_BASE+0x000FFE8)
-BgrDataHeight	    equ (OS_BASE+0x000FFEC)
 REDRAW_BACKGROUND   equ (OS_BASE+0x000FFF0)
 BACKGROUND_CHANGED  equ (OS_BASE+0x000FFF1)
 BANK_RW 	    equ (OS_BASE+0x000FFF2)
@@ -280,38 +284,48 @@ DRIVE_DATA	    equ (OS_BASE+0x0070000)
 
 SLOT_BASE	    equ (OS_BASE+0x0080000)
 
-SB16Buffer	    equ (OS_BASE+0x0090000)	; <<
+;unused
+TMP_BUFF	    equ (OS_BASE+0x0090000)
 
 VGABasePtr	    equ (OS_BASE+0x00A0000)
 
 RAMDISK 	    equ (OS_BASE+0x0100000)
+RAMDISK_FAT	    equ (OS_BASE+0x0280000)
+FLOPPY_FAT	    equ (OS_BASE+0x0282000)
 
-CLEAN_ZONE	    equ 0x3f0000
+CLEAN_ZONE          equ 0x280000
+IDE_DMA 	    equ 0x284000
 
-IDE_DMA 	    equ 0x03F4000
+BgrAuxTable	    equ (OS_BASE+0x0298000)
+; unused?
+SB16Buffer	    equ (OS_BASE+0x2A0000)
+SB16_Status	    equ (OS_BASE+0x02B0000)
 
-BgrAuxTable	    equ (OS_BASE+0x0408000)
-
-BUTTON_INFO	   equ (OS_BASE+0x0430000)
-RESERVED_PORTS	   equ (OS_BASE+0x0440000)
-IRQ_SAVE	   equ (OS_BASE+0x0450000)
-BOOT_VAR	   equ (OS_BASE+0x0460000)
-
-stack_data_start   equ (OS_BASE+0x0470000)
-eth_data_start	   equ (OS_BASE+0x0470000)
-stack_data	   equ (OS_BASE+0x0474000)
-stack_data_end	   equ (OS_BASE+0x048ffff)
-resendQ 	   equ (OS_BASE+0x0490000)
-VMODE_BASE	   equ (OS_BASE+0x0498000)
-skin_data	   equ (OS_BASE+0x04A0000)
-draw_data	   equ (OS_BASE+0x04A8000);
+BUTTON_INFO	    equ (OS_BASE+0x02C0000)
+RESERVED_PORTS	    equ (OS_BASE+0x02D0000)
+IRQ_SAVE	    equ (OS_BASE+0x02E0000)
+;BOOT_VAR	    equ (OS_BASE+0x02F0000)
 
 
-sys_pgmap	   equ (OS_BASE+0x04B0000)    ; <<
+stack_data_start    equ (OS_BASE+0x0300000)
+eth_data_start	    equ (OS_BASE+0x0300000)
+stack_data	    equ (OS_BASE+0x0304000)
+stack_data_end	    equ (OS_BASE+0x031ffff)
+resendQ 	    equ (OS_BASE+0x0320000)
+VMODE_BASE	    equ (OS_BASE+0x0328000)
+skin_data	    equ (OS_BASE+0x0330000)
+draw_data	    equ (OS_BASE+0x0338000);
 
-;UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
+BgrDrawMode	    equ (OS_BASE+0x033BFF4)
+BgrDataWidth	    equ (OS_BASE+0x033BFF8)
+BgrDataHeight	    equ (OS_BASE+0x033BFFC)
+BOOT_VAR	    equ (OS_BASE+0x0340000)
 
-virtual at		(OS_BASE+0x06FFF80)
+sys_pgmap	    equ (OS_BASE+0x0350000)
+
+UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
+
+virtual at		(OS_BASE+0x05FFF80)
   tss  TSS
 end virtual
 

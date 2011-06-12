@@ -16,9 +16,9 @@ MEM_UC	   equ 0	       ;uncached memory
 align 4
 preinit_mem:
 
-; clear [0x280000..HEAP_BASE]
+; clear [CLEAN_ZONE..HEAP_BASE]
 	   xor	 eax,eax
-	   mov	 edi, CLEAN_ZONE			; 0x280000 = ramdisk FAT ?
+	   mov	 edi,CLEAN_ZONE			; 0x280000 = ramdisk FAT ?
 	   mov	 ecx,(HEAP_BASE-OS_BASE-CLEAN_ZONE) / 4
 	   cld
 	   rep	 stosd
@@ -35,7 +35,7 @@ preinit_mem:
 
 ; save [0..0xffff]
 	   xor	 esi, esi
-	   mov	 edi,(BOOT_VAR-OS_BASE) 		; low mem storage area
+	   mov	 edi, (BOOT_VAR	- OS_BASE)		; low mem storage area
 	   mov	 ecx, 0x10000 / 4
 	   rep	 movsd
 ; clear [0x1000..0x0ffff]
@@ -83,24 +83,20 @@ proc init_mem
 	   mov eax, PG_LARGE+PG_SW
 	   mov cr4, ebx
 	   dec [pg_data.kernel_tables-OS_BASE]
-	   sub [pg_data.kernel_pages -OS_BASE], 1024	; 1 large page = 1024 ordinary pages
 
 	   mov [edx], eax				; map first (physical) 4M bytes
 	   add edx, 4
 
 	   mov edi, [tmp_page_tabs]
-	   mov ecx, [pg_data.kernel_pages -OS_BASE]	; map the rest of kernel space
-	   mov eax, 0x00400000+PG_SW
-.map_kernel_pages:
-	   stosd
-	   add	eax, 4096
-	   dec	ecx
-	   jnz	.map_kernel_pages
+	   mov ecx, [pg_data.kernel_pages -OS_BASE]	; safety cleaning of already-zeroed space
+	   xor eax, eax
+	   rep stosd
 
 	   mov ecx, [pg_data.kernel_tables-OS_BASE]	; build some PDEs to hold empty PTEs
 	   mov eax, [tmp_page_tabs]
 	   or  eax, PG_SW
 	   mov edi, edx 		; edi = sys_pgdir+0x804
+
 .map_kernel_tabs:
 	   stosd
 	   add eax, 0x1000
