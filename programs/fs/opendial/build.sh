@@ -5,6 +5,7 @@
 	echo "lang fix en"
 	echo "lang fix en" > lang.inc
 	fasm -m 16384 opendial.asm opendial
+	kpack opendial
 	rm -f lang.inc
 	exit 0
 

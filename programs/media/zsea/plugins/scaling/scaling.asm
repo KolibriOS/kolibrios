@@ -33,7 +33,7 @@ public EXPORTS
 
 section '.flat' code readable align 16
 
-include	'macros.inc'
+;include	'macros.inc'
 include	'../../../../macros.inc'
 ;---------------------------------------------------------------------
 START:
