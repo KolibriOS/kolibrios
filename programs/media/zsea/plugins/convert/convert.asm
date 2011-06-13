@@ -41,11 +41,12 @@ include    '../../../../macros.inc'
 ;---------------------------------------------------------------------
 START:
 	pushad
+	mov	eax,dword [esp+36]
 	mov [pointer],eax
 	mov eax,[eax+4]
 	mov [image_file],eax
-    mov  esi,[eax+28]
-    add  esi,eax
+	mov  esi,[eax+28]
+	add  esi,eax
 	mov  edi,esi
 	mov  ecx,[eax+32]
 ;	xor  ebx,ebx
@@ -80,7 +81,7 @@ START:
 @@:
 	
 	popad
-	ret
+	ret	4
 ;---------------------------------------------------------------------	
 .less_8b:
 	mov edx,[image_file]
@@ -94,8 +95,8 @@ START:
 	mov  eax,ecx
 	shr  ecx,2
 	test eax,3
-    jz  @f
-    inc  ecx
+	jz  @f
+	inc  ecx
 @@:
 	mov  esi,[raw_area]
 	mov  edi,[image_file]
@@ -109,15 +110,15 @@ START:
 	mov ebx,[pointer]
 	mov [ebx+4],eax
 	popad
-	ret
+	ret	4
 ;---------------------------------------------------------------------	
 .16b:
-    cmp  [eax+18],word 3
+	cmp  [eax+18],word 3
 	je   @f   ;.convert_16_in_8
-    cmp  [eax+18],word 4
+	cmp  [eax+18],word 4
 	jne  .16b_1
 @@:
-    xor  ebx,ebx
+	xor  ebx,ebx
 	mov  bx,[eax+18]
 	
 	xchg  eax,ecx
@@ -128,7 +129,7 @@ START:
 	shr  ecx,1
 	
 	mov  [eax+16],word 8
-    mov  ebx,[eax+12]
+	mov  ebx,[eax+12]
 	shr  ebx,1
 	mov  [eax+12],ebx
 
@@ -160,29 +161,29 @@ START:
 	jmp .16b_end
 ;---------------------------------------------------------------------
 .16b_1:
-    cmp  [eax+18],word 1
+	cmp  [eax+18],word 1
 	je   @f  ;.convert_16_in_8_1
-    cmp  [eax+18],word 2
+	cmp  [eax+18],word 2
 	jne  .16b_end
 @@:
 	shr  ecx,1
 	
 	mov  [eax+16],word 8
-    mov  ebx,[eax+12]
+	mov  ebx,[eax+12]
 	shr  ebx,1
 	mov  [eax+12],ebx
 	
 .convert_16_in_8_1:
-   cld
-   lodsw
-;   shr ax,8
+	cld
+	lodsw
+;	shr ax,8
 ;	mov al,ah
-   stosb
-   dec ecx
-   jnz .convert_16_in_8_1
+	stosb
+	dec ecx
+	jnz .convert_16_in_8_1
 ;---------------------------------------------------------------------
 .16b_end:
-    xor  eax,eax
+	xor  eax,eax
 	mov  [raw_area],eax
 	jmp .ret_ok
 ;---------------------------------------------------------------------	
@@ -213,14 +214,14 @@ START:
 ;---------------------------------------------------------------------
 .2b:
 	call .get_memory
-;    jmp .ret_ok
+;	jmp .ret_ok
 ;	shr  ecx,1
 	mov  edx,ebx
 	mov  eax,ebx
 	shr  ebx,2
 	test eax,3
-    jz  @f
-    inc  ebx
+	jz  @f
+	inc  ebx
 @@:
 	mov  ebp,ebx
 .2b_1:
@@ -266,8 +267,8 @@ START:
 	mov  eax,ebx
 	shr  ebx,3
 	test eax,7
-    jz  @f
-    inc  ebx
+	jz  @f
+	inc  ebx
 @@:
 	mov  ebp,ebx
 .1b_1:
@@ -353,11 +354,11 @@ Convert24b:
 	mov eax,[eax+4]
 	mov [image_file],eax
 
-    mov  esi,[eax+28]
-    add  esi,eax
+	mov  esi,[eax+28]
+	add  esi,eax
 
 	mov  ebp,[eax+20]
-    add  ebp,eax
+	add  ebp,eax
 	
 	mov  ecx,[eax+4]
 	imul ecx,[eax+8]
@@ -382,7 +383,7 @@ Convert24b:
 	mov  eax,[raw_area]
 	mov  [ebx+20],eax  ; store RAW pointer
 	popad
-	ret
+	ret	4
 
 ;---------------------------------------------------------------------
 .32b:

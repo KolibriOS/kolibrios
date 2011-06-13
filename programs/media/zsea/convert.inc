@@ -145,9 +145,10 @@ convert:
 ;-------------------------------
 ;	xor  eax,eax
 ;	mov  [raw_pointer_2],eax
-	mov eax,image_file
+;	mov eax,image_file
 ;	call [plugin_convert]
-	call [convert_Start]
+	push	dword image_file
+	call	[convert_Start]
 
 	mov  ebx,[raw_pointer]
 	mov  eax,[ebx+12]
