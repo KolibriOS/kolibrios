@@ -126,7 +126,7 @@ FASM_PROGRAMS:=\
  drivers/vt8235.obj:DRIVERS/VT8235.OBJ:$(KERNEL)/drivers/vt823x.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
- File|Managers/OpenDial:File|Managers/OPENDIAL:$(PROGS)/develop/libraries/box_lib/asm/trunk/OpenDial.asm \
+ File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \
  fonts/bgitest:FONTS/BGITEST:$(PROGS)/demos/bgitest/trunk/bgitest.asm \
  games/15:GAMES/15:$(PROGS)/games/15/trunk/15.ASM \
  games/arcanii:GAMES/ARCANII:$(PROGS)/games/arcanii/trunk/arcanii.asm \
@@ -161,6 +161,7 @@ FASM_PROGRAMS:=\
  lib/libio.obj:LIB/LIBIO.OBJ:$(PROGS)/develop/libraries/libs-dev/libio/libio.asm \
  lib/network.obj:LIB/NETWORK.OBJ:$(PROGS)/develop/libraries/network/network.asm \
  lib/proc_lib.obj:LIB/PROC_LIB.OBJ:$(PROGS)/develop/libraries/proc_lib/trunk/proc_lib.asm \
+ lib/cnv_png.obj:LIB/CNV_PNG.OBJ:$(PROGS)/media/zsea/plugins/png/cnv_png.asm \
  media/animage:MEDIA/ANIMAGE:$(PROGS)/media/animage/trunk/animage.asm \
  media/cdp:MEDIA/CDP:$(PROGS)/media/cdp/trunk/cdp.asm \
  media/kiv:MEDIA/KIV:$(PROGS)/media/kiv/trunk/kiv.asm \
@@ -199,7 +200,7 @@ COPY_FILES:=\
  macros.inc:MACROS.INC:$(PROGS)/macros.inc \
  config.inc:CONFIG.INC:$(PROGS)/config.inc \
  struct.inc:STRUCT.INC:$(PROGS)/struct.inc \
- File|Managers/z_icons.png:File|Managers/Z_ICONS.PNG:$(PROGS)/develop/libraries/box_lib/asm/trunk/z_icons.png \
+ File|Managers/z_icons.png:File|Managers/Z_ICONS.PNG:$(PROGS)/fs/opendial/z_icons.png \
  File|Managers/kfm_keys.txt:File|Managers/KFM_KEYS.TXT:$(PROGS)/fs/kfm/trunk/docs/russian/dos_kolibri/kfm_keys.txt \
  File|Managers/buttons.bmp:File|Managers/BUTTONS.BMP:$(PROGS)/fs/kfm/trunk/buttons.bmp \
  File|Managers/icons.bmp:File|Managers/ICONS.BMP:$(PROGS)/fs/kfm/trunk/icons.bmp \
@@ -269,7 +270,7 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  games/megamaze:GAMES/MEGAMAZE games/padenie:GAMES/PADENIE \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/whowtbam:GAMES/WHOWTBAM games/xonix:GAMES/XONIX \
- lib/cnv_png.obj:LIB/CNV_PNG.OBJ lib/msgbox.obj:LIB/MSGBOX.OBJ \
+ lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
  media/ac97snd:MEDIA/AC97SND \
  network/jmail:NETWORK/JMAIL network/zeroconf.ini:NETWORK/ZEROCONF.INI \
