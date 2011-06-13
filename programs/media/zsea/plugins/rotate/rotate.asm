@@ -38,6 +38,8 @@ include	'../../../../macros.inc'
 ;---------------------------------------------------------------------
 START:
 	pushad
+	mov	ebx,dword [esp+40]
+	mov	eax,dword [esp+36]
 	mov [pointer],eax
 ; ebx - direction
 ; 1 - clockwise, 2 - counter clockwise
@@ -132,7 +134,7 @@ START:
 	call  .XY_data_exchange
 .exit:
 	popad
-	ret
+	ret	8
 ;---------------------------------------------------------------------
 .XY_data_exchange:
 	mov ecx,[image_file]

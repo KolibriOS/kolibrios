@@ -32,7 +32,12 @@ rotate_counter_clockwise:
 	mov  [horizontal_position_coorect],eax
 	mov  [vertical_position_coorect],ebx
 	pop  ebx
-	mov eax,image_file
+;	mov eax,image_file
+; ebx - direction
+; 1 - clockwise, 2 - counter clockwise
+; 3 - Left&Right, 4 - Up&Down
+	push	ebx
+	push	dword image_file
 ;	call [plugin_rotate]
 	call [rotate_Start]
     mov  ebx,[raw_pointer]
