@@ -350,6 +350,7 @@ START:
 ;---------------------------------------------------------------------
 Convert24b:
 	pushad
+	mov	eax,dword [esp+36]
 	mov [pointer],eax
 	mov eax,[eax+4]
 	mov [image_file],eax
@@ -481,8 +482,8 @@ Convert24b:
 align 16
 EXPORTS:
 	dd      szStart,	START
-	dd      szVersion,	0x00010001
-	dd		szConv_24b,	Convert24b
+	dd      szVersion,	0x00010002
+	dd	szConv_24b,	Convert24b
 	dd      0
 
 szStart		db 'START',0

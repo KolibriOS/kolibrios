@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-;	v.1.0 rñ3 12.06.2011
+;	v.1.0 rñ3 13.06.2011
 ;******************************************************************************
 	use32
 	org 0x0
@@ -373,7 +373,8 @@ background:
 
 	cmp	[img_resolution],24
 	je	@f
-	mov	eax,image_file
+;	mov	eax,image_file
+	push	dword image_file
 ;	call	[plugin_convert_background]
 	call	[convert_Conv_24b]
 	mov	ecx,[raw_pointer_2]

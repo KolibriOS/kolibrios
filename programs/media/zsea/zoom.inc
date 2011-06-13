@@ -217,17 +217,22 @@ scaling:
 ;	shr  eax,16
 ;	mov  [test4],eax
 
-	mov eax,image_file
-	mov  edx,[scaling_mode]
+;	mov eax,image_file
+;	mov  edx,[scaling_mode]
 	movzx  esi,byte [filtering_flag]
-	mov  edi,[background_color]
+;	mov  edi,[background_color]
+
+	push	dword [background_color]	;edi - background color
+	push	esi	; esi - filtering
+	push	dword [scaling_mode]	;edx - scaling mode
+	push	ecx	; ecx - start_coordinates
+	push	ebx	; ebx - new_size
+	push	dword image_file	;eax -  convert data table
 	
 ;	pusha
 ;	mcall 26,9
 ;	mov  [test1],eax
 ;	popa
-
-;	call [plugin_scaling]
 
 	call [Scaling_Start]
 

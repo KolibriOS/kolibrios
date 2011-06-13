@@ -285,7 +285,7 @@ START:
 align 16
 EXPORTS:
 	dd      szStart,	START
-	dd      szVersion,	0x00010001
+	dd      szVersion,	0x00010002
 	dd      0
 
 szStart		db 'START',0

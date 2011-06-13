@@ -38,6 +38,12 @@ include	'../../../../macros.inc'
 ;---------------------------------------------------------------------
 START:
 	pushad
+	mov	edi,dword [esp+56]
+	mov	esi,dword [esp+52]
+	mov	edx,dword [esp+48]
+	mov	ecx,dword [esp+44]
+	mov	ebx,dword [esp+40]
+	mov	eax,dword [esp+36]	
 	mov [pointer],eax
 	test bx,bx
 	jnz  @f
@@ -141,7 +147,7 @@ START:
 ;	mov [ebx+44],eax
 .exit:
 	popad
-	ret
+	ret	24
 ;---------------------------------------------------------------------
 align 4
 .scaling:
@@ -426,7 +432,7 @@ include 'b_filter.inc'
 align 4
 EXPORTS:
 	dd      szStart,	START
-	dd      szVersion,	0x00010001
+	dd      szVersion,	0x00010002
 	dd      0
 
 szStart		db 'START',0
