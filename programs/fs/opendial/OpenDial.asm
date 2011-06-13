@@ -38,9 +38,9 @@
 	dd param
 	dd path
 
-include '../../../../../macros.inc'
-include '../../load_lib.mac'
-include '../../trunk/box_lib.mac'
+include '../../macros.inc'
+include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include 'macros.inc'
 ;include 'load_lib.mac'
 ;include 'box_lib.mac'
@@ -1660,7 +1660,8 @@ get_window_param:
 convert_icons:
 	xor	eax,eax
 	mov	[return_code],eax
-	mov	eax,image_file
+;	mov	eax,image_file
+	push	image_file
 	call	[cnv_png_import.Start]
 
 	mov	ecx,[image_file]

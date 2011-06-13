@@ -450,7 +450,7 @@ OpenDialog_data:
 .com_area		dd 0	;+12
 .opendir_pach		dd plugin_pach	;+16
 .dir_default_pach	dd communication_area_default_pach	;+20
-.start_path		dd library_path	;+24
+.start_path		dd od_path	;+24
 .draw_window		dd draw_window	;+28
 .status			dd 0	;+32
 .openfile_pach		dd openfile_pach	;+36
@@ -465,8 +465,12 @@ OpenDialog_data:
 
 communication_area_name:
 	db 'FFFFFFFF_open_dialog',0
-open_dialog_name:
-	db 'opendial',0
+;open_dialog_name:
+;	db 'opendial',0
+
+od_path:
+	db '/sys/File Managers/OpenDial',0
+	
 communication_area_default_pach:
 	db '/rd/1',0
 

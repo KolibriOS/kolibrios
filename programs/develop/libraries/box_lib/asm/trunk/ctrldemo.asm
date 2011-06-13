@@ -105,7 +105,8 @@ load_libraries	l_libs_start,end_l_libs
 	
 	xor	eax,eax
 	mov	[return_code],eax
-	mov	eax,image_file
+;	mov	eax,image_file
+	push	image_file
 	call	[cnv_png_import.Start]
 	
 	mov	ecx,[image_file]
@@ -300,8 +301,7 @@ OpenDialog_start:
 ;	mov	edi,library_path
 ;	call	copy_file_path
 
-	copy_path	open_dialog_name,path,library_path,0
-
+;	copy_path	open_dialog_name,path,library_path,0
 
 	push    dword OpenDialog_data
 	call    [OpenDialog_Start]
