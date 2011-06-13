@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-;	v.1.0 rñ3 13.06.2011
+;	v.1.0 rñ3 14.06.2011
 ;******************************************************************************
 	use32
 	org 0x0
