@@ -16,10 +16,6 @@ API_VERSION     equ 0  ;debug
 include 'proc32.inc'
 include 'imports.inc'
 
-OS_BASE         equ 0;
-new_app_base    equ 0x60400000
-PROC_BASE       equ OS_BASE+0x0080000
-
 struc IOCTL
 {  .handle      dd ?
    .io_code     dd ?
