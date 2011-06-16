@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: $
+$Revision$
 
 ; All parsers are called with ds:si -> value of the variable,
 ; possibly with spaces before, and dx = limit of config file.

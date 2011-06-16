@@ -638,11 +638,14 @@ include 'detect/disks.inc'
 
   call Parser_params
 
+if ~ defined extended_primary_loader
+; ramdisk image should be loaded by extended primary loader if it exists
 ; READ RAMDISK IMAGE FROM HD
 
 ;!!!!!!!!!!!!!!!!!!!!!!!
 include 'boot/rdload.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
+end if
 ;    mov    [dma_hdd],1
 ; CALCULATE FAT CHAIN FOR RAMDISK
 
@@ -5108,6 +5111,7 @@ system_shutdown:          ; shut down the system
 yes_shutdown_param:
            cli
 
+if ~ defined extended_primary_loader
            mov  eax, kernel_file ; load kernel.mnt to 0x7000:0
            push 12
            pop  esi
@@ -5120,6 +5124,7 @@ yes_shutdown_param:
            mov  edi,OS_BASE+0x40000
            mov  ecx,1000
            rep  movsb
+end if
 
            mov  esi, BOOT_VAR    ; restore 0x0 - 0xffff
            mov  edi, OS_BASE

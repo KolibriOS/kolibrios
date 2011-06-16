@@ -40,11 +40,15 @@ vrrmprint db      "Apply VRR? (picture frequency greater than 60Hz"
 
 ask_bd     db      "Add disks visible by BIOS emulated in V86-mode? [1-yes, 2-no]: ",0
 
+if defined extended_primary_loader
 bdev      db      "Load ramdisk from [1-floppy; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
           db      "3-use preloaded ram-image from kernel restart;"
           db      13,10,186,"                    "
           db      "4-create blank image]: ",0
+else
+bdev      db      "Load ramdisk from [1-floppy; 2-kolibri.img]: ",0
+end if
 probetext db      13,10,13,10,186," Use standart graphics mode? [1-yes, "
           db      "2-probe bios (Vesa 3.0)]: ",0
 ;memokz256 db      13,10,186," RAM 256 Mb",0
@@ -88,14 +92,22 @@ off_msg   db      " off",13,10,0
 ;readonly_msg db   " only for reading",13,10,0
 vrrm_msg  db      " [c] Use VRR:",0
 preboot_device_msg db " [d] Floppy image: ",0
+if defined extended_primary_loader
+preboot_device_msgs dw 0,pdm1,pdm2,0
+pdm1      db      "real floppy",13,10,0
+pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
+else
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3
 pdm1      db      "real floppy",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "use already loaded image",13,10,0
 pdm4      db      "create blank image",13,10,0
+end if
 loading_msg db    "Loading KolibriOS...",0
+if ~ defined extended_primary_loader
 save_quest db     "Remember current settings? [y/n]: ",0
 loader_block_error db "Bootloader data invalid, I cannot continue. Stopped.",0
+end if
 
 _st db 186,'                   ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄ¿',13,10,0
 _r1 db 186,'                   ³  320x200  EGA/CGA 256 colors  ³ ³',13,10,0

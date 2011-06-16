@@ -33,11 +33,15 @@ vrrmprint db      "Использовать VRR? (частота кадров выше 60 Гц"
           db      186," 1024*768>800*600 и 800*600>640*480) [1-да, 2-нет]: ",0
 ;ask_dma   db      "Использовать DMA для доступа к HDD? [1-да, 2-только чтение, 3-нет]: ",0
 ask_bd     db      "Добавить диски, видимые через BIOS в режиме V86? [1-да, 2-нет]: ",0
+if defined extended_primary_loader
+bdev      db      "Загрузить образ из [1-дискета; 2-kolibri.img из папки загрузки]: ",0
+else
 bdev      db      "Загрузить образ из [1-дискета; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
           db      "3-использовать уже загруженный образ;"
           db      13,10,186,"                    "
           db      "4-создать чистый образ]: ",0
+end if
 prnotfnd  db      "Ошибка - Видеорежим не найден.",0
 not386    db      "Ошибка - Требуется процессор 386+.",0
 fatalsel  db      "Ошибка - Выбранный видеорежим не поддерживается.",0
@@ -67,14 +71,22 @@ off_msg   db      " выкл",13,10,0
 readonly_msg db   " только чтение",13,10,0
 vrrm_msg  db      " [c] Использование VRR:",0
 preboot_device_msg db " [d] Образ дискеты: ",0
+if defined extended_primary_loader
+preboot_device_msgs dw 0,pdm1,pdm2,0
+pdm1      db      "настоящая дискета",13,10,0
+pdm2      db      "kolibri.img из папки загрузки",13,10,0
+else
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3,pdm4
 pdm1      db      "настоящая дискета",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "использовать уже загруженный образ",13,10,0
 pdm4      db      "создать чистый образ",13,10,0
+end if
 loading_msg db    "Идёт загрузка KolibriOS...",0
+if ~ defined extended_primary_loader ; saving not supported in this case
 save_quest db     "Запомнить текущие настройки? [y/n]: ",0
 loader_block_error db "Ошибка в данных начального загрузчика, продолжение невозможно.",0
+end if
 
 
 _st db 186,'                   ┌───────────────────────────────┬─┐  ',13,10,0

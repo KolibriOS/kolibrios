@@ -98,8 +98,10 @@ nbw32:
         jmp  $
 no_apm_off:
 
+if ~ defined extended_primary_loader ; kernel restarting is not supported
         dec  ax    ; 3 = reboot
         jnz  restart_kernel        ; 4 = restart kernel
+end if
         push 0x40
         pop  ds
         mov  word[0x0072],0x1234
@@ -150,6 +152,7 @@ APM_PowerOff:
 ;!!!!!!!!!!!!!!!!!!!!!!!!
         ret
 
+if ~ defined extended_primary_loader
 restart_kernel:
 
         mov     ax,0x0003      ; set text mode for screen
@@ -205,5 +208,5 @@ restart_kernel_4000:
         mov    si, kernel_restart_bootblock
         mov    ax, 'KL'
         jmp     0x1000:0000
-
+end if
 
