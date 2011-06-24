@@ -27,6 +27,7 @@ NAME_SRCS:=  				\
 		linux/list_sort.c	\
 		linux/dmapool.c		\
 		linux/ctype.c		\
+		linux/string.c		\
 		malloc/malloc.c		\
 		stdio/vsprintf.c	\
 		string/_memmove.S 	\
