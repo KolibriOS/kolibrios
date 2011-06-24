@@ -148,3 +148,6 @@ $(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(HFILES) $(LIBPATH)/libcore.a $
 fwblob.o:  fwblob.asm $(FW_BINS) Makefile
 	$(FASM) $< $@
 
+clean: 
+	-rm -f */*.o
+

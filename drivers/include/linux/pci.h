@@ -14,11 +14,13 @@
  *	PCI System Design Guide
  */
 
+#ifndef LINUX_PCI_H
+#define LINUX_PCI_H
+
 #include <types.h>
 #include <list.h>
 
-#ifndef __PCI_H__
-#define __PCI_H__
+
 
 #define PCI_ANY_ID (~0)
 

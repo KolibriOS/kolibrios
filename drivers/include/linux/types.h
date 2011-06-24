@@ -150,6 +150,12 @@ typedef unsigned long blkcnt_t;
 #define pgoff_t unsigned long
 #endif
 
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
+typedef u64 dma_addr_t;
+#else
+typedef u32 dma_addr_t;
+#endif /* dma_addr_t */
+
 #endif /* __KERNEL__ */
 
 /*
@@ -370,8 +376,3 @@ struct timeval
 #define PCI_DEVICE_ID_ATI_RADEON_QY 0x5159
 
 #endif /* _LINUX_TYPES_H */
-
-
-
-
-

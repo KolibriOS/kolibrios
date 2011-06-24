@@ -8,13 +8,13 @@
  *
  * on SMP builds:
  *
- *  asm/spinlock_types.h: contains the raw_spinlock_t/raw_rwlock_t and the
+ *  asm/spinlock_types.h: contains the arch_spinlock_t/arch_rwlock_t and the
  *                        initializers
  *
  *  linux/spinlock_types.h:
  *                        defines the generic type and initializers
  *
- *  asm/spinlock.h:       contains the __raw_spin_*()/etc. lowlevel
+ *  asm/spinlock.h:       contains the arch_spin_*()/etc. lowlevel
  *                        implementations, mostly inline assembly code
  *
  *   (also included on UP-debug builds:)
@@ -34,7 +34,7 @@
  *                        defines the generic type and initializers
  *
  *  linux/spinlock_up.h:
- *                        contains the __raw_spin_*()/etc. version of UP
+ *                        contains the arch_spin_*()/etc. version of UP
  *                        builds. (which are NOPs on non-debug, non-preempt
  *                        builds)
  *
@@ -60,7 +60,7 @@
 /*
  * Must define these before including other files, inline functions need them
  */
-#define LOCK_SECTION_NAME ".text.lock."KBUILD_BASENAME
+#define LOCK_SECTION_NAME ".text..lock."KBUILD_BASENAME
 
 #define LOCK_SECTION_START(extra)               \
         ".subsection 1\n\t"                     \
@@ -75,12 +75,12 @@
 #define __lockfunc __attribute__((section(".spinlock.text")))
 
 /*
- * Pull the raw_spinlock_t and raw_rwlock_t definitions:
+ * Pull the arch_spinlock_t and arch_rwlock_t definitions:
  */
 #include <linux/spinlock_types.h>
 
 /*
- * Pull the __raw*() functions/declarations (UP-nondebug doesnt need them):
+ * Pull the arch_spin*() functions/declarations (UP-nondebug doesn't need them):
  */
 #ifdef CONFIG_SMP
 # include <asm/spinlock.h>

@@ -1,10 +1,10 @@
 #ifndef _LINUX_FIRMWARE_H
 #define _LINUX_FIRMWARE_H
 
+#include <linux/module.h>
 #include <linux/types.h>
 #include <linux/compiler.h>
 #include <linux/kernel.h>
-#include <linux/module.h>
 
 #define FW_ACTION_NOHOTPLUG 0
 #define FW_ACTION_HOTPLUG 1
