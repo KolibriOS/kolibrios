@@ -12,9 +12,9 @@
 #include <linux/types.h>
 #include <linux/compiler.h>
 
-#define USHORT_MAX  ((u16)(~0U))
-#define SHORT_MAX   ((s16)(USHORT_MAX>>1))
-#define SHORT_MIN   (-SHORT_MAX - 1)
+#define USHRT_MAX	((u16)(~0U))
+#define SHRT_MAX	((s16)(USHRT_MAX>>1))
+#define SHRT_MIN	((s16)(-SHRT_MAX - 1))
 #define INT_MAX     ((int)(~0U>>1))
 #define INT_MIN     (-INT_MAX - 1)
 #define UINT_MAX    (~0U)
@@ -45,7 +45,6 @@
  * @n: the number we're accessing
  */
 #define lower_32_bits(n) ((u32)(n))
-
 
 #define KERN_EMERG      "<0>"   /* system is unusable                   */
 #define KERN_ALERT      "<1>"   /* action must be taken immediately     */
@@ -113,18 +112,6 @@ static inline void *kcalloc(size_t n, size_t size, uint32_t flags)
         return kzalloc(n * size, 0);
 }
 
-extern const char hex_asc[];
-#define hex_asc_lo(x)   hex_asc[((x) & 0x0f)]
-#define hex_asc_hi(x)   hex_asc[((x) & 0xf0) >> 4]
-
-static inline char *pack_hex_byte(char *buf, u8 byte)
-{
-    *buf++ = hex_asc_hi(byte);
-    *buf++ = hex_asc_lo(byte);
-    return buf;
-}
-
-
 void free (void *ptr);
 
 #endif /* __KERNEL__ */
@@ -162,6 +149,7 @@ static inline void *dev_get_drvdata(struct device *dev)
 #define preempt_enable_no_resched_notrace() do { } while (0)
 #define preempt_enable_notrace()        do { } while (0)
 
+#define in_dbg_master() (0)
 
 #endif
 

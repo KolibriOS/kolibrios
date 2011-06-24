@@ -8,7 +8,10 @@
 
 #define DECLARE_BITMAP(name,bits) \
         unsigned long name[BITS_TO_LONGS(bits)]
-
+#else
+#ifndef __EXPORTED_HEADERS__
+#warning "Attempt to use kernel headers from user space, see http://kernelnewbies.org/KernelHeaders"
+#endif /* __EXPORTED_HEADERS__ */
 #endif
 
 #include <linux/posix_types.h>
@@ -175,6 +178,19 @@ typedef __u64 __bitwise __be64;
 typedef __u16 __bitwise __sum16;
 typedef __u32 __bitwise __wsum;
 
+/*
+ * aligned_u64 should be used in defining kernel<->userspace ABIs to avoid
+ * common 32/64-bit compat problems.
+ * 64-bit values align to 4-byte boundaries on x86_32 (and possibly other
+ * architectures) and to 8-byte boundaries on 64-bit architetures.  The new
+ * aligned_64 type enforces 8-byte alignment so that structs containing
+ * aligned_64 values have the same alignment on 32-bit and 64-bit architectures.
+ * No conversions are necessary between 32-bit user-space and a 64-bit kernel.
+ */
+#define __aligned_u64 __u64 __attribute__((aligned(8)))
+#define __aligned_be64 __be64 __attribute__((aligned(8)))
+#define __aligned_le64 __le64 __attribute__((aligned(8)))
+
 #ifdef __KERNEL__
 typedef unsigned __bitwise__ gfp_t;
 typedef unsigned __bitwise__ fmode_t;
@@ -188,14 +204,26 @@ typedef u32 phys_addr_t;
 typedef phys_addr_t resource_size_t;
 
 typedef struct {
-	volatile int counter;
+	int counter;
 } atomic_t;
 
 #ifdef CONFIG_64BIT
 typedef struct {
-	volatile long counter;
+	long counter;
 } atomic64_t;
 #endif
+
+struct list_head {
+	struct list_head *next, *prev;
+};
+
+struct hlist_head {
+	struct hlist_node *first;
+};
+
+struct hlist_node {
+	struct hlist_node *next, **pprev;
+};
 
 struct ustat {
 	__kernel_daddr_t	f_tfree;
@@ -243,8 +271,6 @@ typedef unsigned int         count_t;
 
 #define BUILD_BUG_ON_ZERO(e) (sizeof(char[1 - 2 * !!(e)]) - 1)
 
-#define __must_be_array(a) \
-    BUILD_BUG_ON_ZERO(__builtin_types_compatible_p(typeof(a), typeof(&a[0])))
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
 
@@ -274,6 +300,7 @@ typedef unsigned int         count_t;
 int dbgprintf(const char* format, ...);
 
 #define GFP_KERNEL           0
+#define GFP_ATOMIC           0
 
 //#include <stdio.h>
 
@@ -328,6 +355,16 @@ struct drm_file;
     __mod;                          \
 })
 
+
+
+#define ENTER()   dbgprintf("enter %s\n",__FUNCTION__)
+#define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
+
+struct timeval
+{
+  __kernel_time_t         tv_sec;         /* seconds */
+  __kernel_suseconds_t    tv_usec;        /* microseconds */
+};
 
 
 #define PCI_DEVICE_ID_ATI_RADEON_QY 0x5159

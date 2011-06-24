@@ -10,7 +10,6 @@
 #ifndef __LINUX_MUTEX_H
 #define __LINUX_MUTEX_H
 
-#include <kernel.h>
 #include <linux/list.h>
 #include <asm/atomic.h>
 
@@ -44,7 +43,7 @@
  */
 struct mutex {
 	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
-    atomic_t            count;
+	atomic_t		count;
 	struct list_head	wait_list;
 };
 
@@ -56,14 +55,6 @@ struct mutex_waiter {
 	struct list_head	list;
     int                *task;
 };
-
-
-#define __MUTEX_INITIALIZER(lockname) \
-                { .count = ATOMIC_INIT(1) \
-                , .wait_list = LIST_HEAD_INIT(lockname.wait_list) }
-
-#define DEFINE_MUTEX(mutexname) \
-        struct mutex mutexname = __MUTEX_INITIALIZER(mutexname)
 
 void __attribute__ ((fastcall)) __attribute__ ((dllimport))
      mutex_init(struct mutex*)__asm__("MutexInit");

@@ -12,10 +12,8 @@
 #ifndef __IDR_H__
 #define __IDR_H__
 
-#include <types.h>
-#include <errno-base.h>
-
-//#include <linux/bitops.h>
+#include <linux/types.h>
+#include <linux/bitops.h>
 //#include <linux/init.h>
 //#include <linux/rcupdate.h>
 
@@ -25,12 +23,23 @@ struct rcu_head {
 };
 
 
+#if BITS_PER_LONG == 32
 # define IDR_BITS 5
 # define IDR_FULL 0xfffffffful
 /* We can only use two of the bits in the top level because there is
    only one possible bit in the top level (5 bits * 7 levels = 35
    bits, but you only use 31 bits in the id). */
 # define TOP_LEVEL_FULL (IDR_FULL >> 30)
+#elif BITS_PER_LONG == 64
+# define IDR_BITS 6
+# define IDR_FULL 0xfffffffffffffffful
+/* We can only use two of the bits in the top level because there is
+   only one possible bit in the top level (6 bits * 6 levels = 36
+   bits, but you only use 31 bits in the id). */
+# define TOP_LEVEL_FULL (IDR_FULL >> 62)
+#else
+# error "BITS_PER_LONG is not 32 or 64"
+#endif
 
 #define IDR_SIZE (1 << IDR_BITS)
 #define IDR_MASK ((1 << IDR_BITS)-1)
@@ -47,14 +56,14 @@ struct rcu_head {
 
 struct idr_layer {
 	unsigned long		 bitmap; /* A zero bit means "space here" */
-	struct idr_layer	*ary[1<<IDR_BITS];
+	struct idr_layer __rcu	*ary[1<<IDR_BITS];
 	int			 count;	 /* When zero, we can release it */
 	int			 layer;	 /* distance from leaf */
     struct rcu_head      rcu_head;
 };
 
 struct idr {
-	struct idr_layer *top;
+	struct idr_layer __rcu *top;
 	struct idr_layer *id_free;
 	int		  layers; /* only valid without concurrent changes */
 	int		  id_free_cnt;
@@ -78,6 +87,7 @@ struct idr {
 #define _idr_rc_to_errno(rc) ((rc) == -1 ? -EAGAIN : -ENOSPC)
 
 /**
+ * DOC: idr sync
  * idr synchronization (stolen from radix-tree.h)
  *
  * idr_find() is able to be called locklessly, using RCU. The caller must
@@ -98,7 +108,7 @@ struct idr {
  */
 
 void *idr_find(struct idr *idp, int id);
-int idr_pre_get(struct idr *idp, u32_t gfp_mask);
+int idr_pre_get(struct idr *idp, gfp_t gfp_mask);
 int idr_get_new(struct idr *idp, void *ptr, int *id);
 int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id);
 int idr_for_each(struct idr *idp,
@@ -114,9 +124,12 @@ void idr_init(struct idr *idp);
 /*
  * IDA - IDR based id allocator, use when translation from id to
  * pointer isn't necessary.
+ *
+ * IDA_BITMAP_LONGS is calculated to be one less to accommodate
+ * ida_bitmap->nr_busy so that the whole struct fits in 128 bytes.
  */
 #define IDA_CHUNK_SIZE		128	/* 128 bytes per chunk */
-#define IDA_BITMAP_LONGS	(128 / sizeof(long) - 1)
+#define IDA_BITMAP_LONGS	(IDA_CHUNK_SIZE / sizeof(long) - 1)
 #define IDA_BITMAP_BITS		(IDA_BITMAP_LONGS * sizeof(long) * 8)
 
 struct ida_bitmap {
@@ -132,7 +145,7 @@ struct ida {
 #define IDA_INIT(name)		{ .idr = IDR_INIT(name), .free_bitmap = NULL, }
 #define DEFINE_IDA(name)	struct ida name = IDA_INIT(name)
 
-int ida_pre_get(struct ida *ida, u32_t gfp_mask);
+int ida_pre_get(struct ida *ida, gfp_t gfp_mask);
 int ida_get_new_above(struct ida *ida, int starting_id, int *p_id);
 int ida_get_new(struct ida *ida, int *p_id);
 void ida_remove(struct ida *ida, int id);

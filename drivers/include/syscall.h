@@ -226,6 +226,19 @@ static inline void udelay(u32_t delay)
     }
 }
 
+static inline void msleep(unsigned int msecs)
+{
+    msecs /= 10;
+    if(!msecs) msecs = 1;
+
+     __asm__ __volatile__ (
+     "call *__imp__Delay"
+     ::"b" (msecs));
+     __asm__ __volatile__ (
+     "":::"ebx");
+
+};
+
 static inline void mdelay(u32_t time)
 {
     time /= 10;
@@ -238,7 +251,6 @@ static inline void mdelay(u32_t time)
      "":::"ebx");
 
 };
-
 
 static inline u32_t __PciApi(int cmd)
 {

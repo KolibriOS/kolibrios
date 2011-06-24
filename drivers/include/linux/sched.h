@@ -1,6 +1,7 @@
 /* stub */
 
-static inline void mdelay(unsigned long time)
+/*
+static inline void mdelay(u32_t time)
 {
     time /= 10;
     if(!time) time = 1;
@@ -13,7 +14,7 @@ static inline void mdelay(unsigned long time)
 
 };
 
-static inline void udelay(unsigned long delay)
+static inline void udelay(u32_t delay)
 {
     if(!delay) delay++;
     delay*= 500;
@@ -26,4 +27,4 @@ static inline void udelay(unsigned long delay)
         :::"eax","ebx","ecx","edx" );
     }
 }
-
+*/

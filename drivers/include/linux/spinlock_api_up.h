@@ -16,7 +16,7 @@
 
 #define in_lock_functions(ADDR)		0
 
-#define assert_spin_locked(lock)	do { (void)(lock); } while (0)
+#define assert_raw_spin_locked(lock)	do { (void)(lock); } while (0)
 
 /*
  * In the UP-nondebug case there's no real locking going on, so the
@@ -40,7 +40,8 @@
   do { preempt_enable(); __release(lock); (void)(lock); } while (0)
 
 #define __UNLOCK_BH(lock) \
-  do { preempt_enable_no_resched(); local_bh_enable(); __release(lock); (void)(lock); } while (0)
+  do { preempt_enable_no_resched(); local_bh_enable(); \
+	  __release(lock); (void)(lock); } while (0)
 
 #define __UNLOCK_IRQ(lock) \
   do { local_irq_enable(); __UNLOCK(lock); } while (0)
