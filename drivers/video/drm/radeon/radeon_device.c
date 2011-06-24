@@ -32,7 +32,6 @@
 #include <drm/radeon_drm.h>
 #include "radeon_reg.h"
 #include "radeon.h"
-#include "radeon_asic.h"
 #include "atom.h"
 #include "display.h"
 
@@ -53,6 +52,10 @@ int radeon_tv = 1;
 int radeon_new_pll = -1;
 int radeon_dynpm = -1;
 int radeon_audio = 1;
+int radeon_hw_i2c = 0;
+int radeon_pcie_gen2 = 0;
+int radeon_disp_priority = 0;
+
 
 
 extern display_t *rdisplay;
@@ -76,6 +79,58 @@ int r100_2D_test(struct radeon_device *rdev);
 #define VGA_RSRC_NORMAL_MEM    0x08
 
 
+static const char radeon_family_name[][16] = {
+	"R100",
+	"RV100",
+	"RS100",
+	"RV200",
+	"RS200",
+	"R200",
+	"RV250",
+	"RS300",
+	"RV280",
+	"R300",
+	"R350",
+	"RV350",
+	"RV380",
+	"R420",
+	"R423",
+	"RV410",
+	"RS400",
+	"RS480",
+	"RS600",
+	"RS690",
+	"RS740",
+	"RV515",
+	"R520",
+	"RV530",
+	"RV560",
+	"RV570",
+	"R580",
+	"R600",
+	"RV610",
+	"RV630",
+	"RV670",
+	"RV620",
+	"RV635",
+	"RS780",
+	"RS880",
+	"RV770",
+	"RV730",
+	"RV710",
+	"RV740",
+	"CEDAR",
+	"REDWOOD",
+	"JUNIPER",
+	"CYPRESS",
+	"HEMLOCK",
+	"PALM",
+	"BARTS",
+	"TURKS",
+	"CAICOS",
+	"CAYMAN",
+	"LAST",
+};
 
 /*
  * Clear GPU surface registers.
@@ -107,9 +162,10 @@ void radeon_scratch_init(struct radeon_device *rdev)
     } else {
         rdev->scratch.num_reg = 7;
     }
+	rdev->scratch.reg_base = RADEON_SCRATCH_REG0;
     for (i = 0; i < rdev->scratch.num_reg; i++) {
         rdev->scratch.free[i] = true;
-        rdev->scratch.reg[i] = RADEON_SCRATCH_REG0 + (i * 4);
+		rdev->scratch.reg[i] = rdev->scratch.reg_base + (i * 4);
     }
 }
 
@@ -161,7 +217,7 @@ void radeon_scratch_free(struct radeon_device *rdev, uint32_t reg)
  * Note: GTT start, end, size should be initialized before calling this
  * function on AGP platform.
  *
- * Note: We don't explictly enforce VRAM start to be aligned on VRAM size,
+ * Note: We don't explicitly enforce VRAM start to be aligned on VRAM size,
  * this shouldn't be a problem as we are using the PCI aperture as a reference.
  * Otherwise this would be needed for rv280, all r3xx, and all r4xx, but
  * not IGP.
@@ -189,13 +245,13 @@ void radeon_vram_location(struct radeon_device *rdev, struct radeon_mc *mc, u64 
 		mc->mc_vram_size = mc->aper_size;
 	}
 	mc->vram_end = mc->vram_start + mc->mc_vram_size - 1;
-	if (rdev->flags & RADEON_IS_AGP && mc->vram_end > mc->gtt_start && mc->vram_end <= mc->gtt_end) {
+	if (rdev->flags & RADEON_IS_AGP && mc->vram_end > mc->gtt_start && mc->vram_start <= mc->gtt_end) {
 		dev_warn(rdev->dev, "limiting VRAM to PCI aperture size\n");
 		mc->real_vram_size = mc->aper_size;
 		mc->mc_vram_size = mc->aper_size;
 		}
 	mc->vram_end = mc->vram_start + mc->mc_vram_size - 1;
-	dev_info(rdev->dev, "VRAM: %lluM 0x%08llX - 0x%08llX (%lluM used)\n",
+	dev_info(rdev->dev, "VRAM: %lluM 0x%016llX - 0x%016llX (%lluM used)\n",
 			mc->mc_vram_size >> 20, mc->vram_start,
 			mc->vram_end, mc->real_vram_size >> 20);
 }
@@ -216,23 +272,23 @@ void radeon_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
 {
 	u64 size_af, size_bf;
 
-	size_af = 0xFFFFFFFF - mc->vram_end;
-	size_bf = mc->vram_start;
+	size_af = ((0xFFFFFFFF - mc->vram_end) + mc->gtt_base_align) & ~mc->gtt_base_align;
+	size_bf = mc->vram_start & ~mc->gtt_base_align;
 	if (size_bf > size_af) {
 		if (mc->gtt_size > size_bf) {
 			dev_warn(rdev->dev, "limiting GTT\n");
 			mc->gtt_size = size_bf;
 		}
-		mc->gtt_start = mc->vram_start - mc->gtt_size;
+		mc->gtt_start = (mc->vram_start & ~mc->gtt_base_align) - mc->gtt_size;
 	} else {
 		if (mc->gtt_size > size_af) {
 			dev_warn(rdev->dev, "limiting GTT\n");
 			mc->gtt_size = size_af;
 		}
-		mc->gtt_start = mc->vram_end + 1;
+		mc->gtt_start = (mc->vram_end + 1 + mc->gtt_base_align) & ~mc->gtt_base_align;
 	}
 	mc->gtt_end = mc->gtt_start + mc->gtt_size - 1;
-	dev_info(rdev->dev, "GTT: %lluM 0x%08llX - 0x%08llX\n",
+	dev_info(rdev->dev, "GTT: %lluM 0x%016llX - 0x%016llX\n",
 			mc->gtt_size >> 20, mc->gtt_start, mc->gtt_end);
 }
 
@@ -244,7 +300,12 @@ bool radeon_card_posted(struct radeon_device *rdev)
 	uint32_t reg;
 
 	/* first check CRTCs */
-	if (ASIC_IS_DCE4(rdev)) {
+	if (ASIC_IS_DCE41(rdev)) {
+		reg = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET) |
+			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET);
+		if (reg & EVERGREEN_CRTC_MASTER_EN)
+			return true;
+	} else if (ASIC_IS_DCE4(rdev)) {
 		reg = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET) |
 			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET) |
 			RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET) |
@@ -278,6 +339,26 @@ bool radeon_card_posted(struct radeon_device *rdev)
 
 	return false;
 
+}
+
+void radeon_update_bandwidth_info(struct radeon_device *rdev)
+{
+	fixed20_12 a;
+	u32 sclk = rdev->pm.current_sclk;
+	u32 mclk = rdev->pm.current_mclk;
+
+	/* sclk/mclk in Mhz */
+		a.full = dfixed_const(100);
+		rdev->pm.sclk.full = dfixed_const(sclk);
+		rdev->pm.sclk.full = dfixed_div(rdev->pm.sclk, a);
+		rdev->pm.mclk.full = dfixed_const(mclk);
+		rdev->pm.mclk.full = dfixed_div(rdev->pm.mclk, a);
+
+	if (rdev->flags & RADEON_IS_IGP) {
+		a.full = dfixed_const(16);
+		/* core_bandwidth = sclk(Mhz) * 16 */
+		rdev->pm.core_bandwidth.full = dfixed_div(rdev->pm.sclk, a);
+	}
 }
 
 bool radeon_boot_test_post_card(struct radeon_device *rdev)
@@ -322,181 +403,6 @@ void radeon_dummy_page_fini(struct radeon_device *rdev)
 	rdev->dummy_page.page = NULL;
 }
 
-
-/*
- * Registers accessors functions.
- */
-uint32_t radeon_invalid_rreg(struct radeon_device *rdev, uint32_t reg)
-{
-    DRM_ERROR("Invalid callback to read register 0x%04X\n", reg);
-    BUG_ON(1);
-    return 0;
-}
-
-void radeon_invalid_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v)
-{
-    DRM_ERROR("Invalid callback to write register 0x%04X with 0x%08X\n",
-          reg, v);
-    BUG_ON(1);
-}
-
-void radeon_register_accessor_init(struct radeon_device *rdev)
-{
-    rdev->mc_rreg = &radeon_invalid_rreg;
-    rdev->mc_wreg = &radeon_invalid_wreg;
-    rdev->pll_rreg = &radeon_invalid_rreg;
-    rdev->pll_wreg = &radeon_invalid_wreg;
-    rdev->pciep_rreg = &radeon_invalid_rreg;
-    rdev->pciep_wreg = &radeon_invalid_wreg;
-
-    /* Don't change order as we are overridding accessor. */
-    if (rdev->family < CHIP_RV515) {
-		rdev->pcie_reg_mask = 0xff;
-	} else {
-		rdev->pcie_reg_mask = 0x7ff;
-    }
-    /* FIXME: not sure here */
-    if (rdev->family <= CHIP_R580) {
-        rdev->pll_rreg = &r100_pll_rreg;
-        rdev->pll_wreg = &r100_pll_wreg;
-    }
-	if (rdev->family >= CHIP_R420) {
-		rdev->mc_rreg = &r420_mc_rreg;
-		rdev->mc_wreg = &r420_mc_wreg;
-	}
-    if (rdev->family >= CHIP_RV515) {
-        rdev->mc_rreg = &rv515_mc_rreg;
-        rdev->mc_wreg = &rv515_mc_wreg;
-    }
-    if (rdev->family == CHIP_RS400 || rdev->family == CHIP_RS480) {
-        rdev->mc_rreg = &rs400_mc_rreg;
-        rdev->mc_wreg = &rs400_mc_wreg;
-    }
-    if (rdev->family == CHIP_RS690 || rdev->family == CHIP_RS740) {
-        rdev->mc_rreg = &rs690_mc_rreg;
-        rdev->mc_wreg = &rs690_mc_wreg;
-    }
-    if (rdev->family == CHIP_RS600) {
-        rdev->mc_rreg = &rs600_mc_rreg;
-        rdev->mc_wreg = &rs600_mc_wreg;
-    }
-	if ((rdev->family >= CHIP_R600) && (rdev->family <= CHIP_RV740)) {
-		rdev->pciep_rreg = &r600_pciep_rreg;
-		rdev->pciep_wreg = &r600_pciep_wreg;
-	}
-}
-
-
-/*
- * ASIC
- */
-int radeon_asic_init(struct radeon_device *rdev)
-{
-    radeon_register_accessor_init(rdev);
-	switch (rdev->family) {
-	case CHIP_R100:
-	case CHIP_RV100:
-	case CHIP_RS100:
-	case CHIP_RV200:
-	case CHIP_RS200:
-		rdev->asic = &r100_asic;
-		break;
-	case CHIP_R200:
-	case CHIP_RV250:
-	case CHIP_RS300:
-	case CHIP_RV280:
-		rdev->asic = &r200_asic;
-		break;
-	case CHIP_R300:
-	case CHIP_R350:
-	case CHIP_RV350:
-	case CHIP_RV380:
-		if (rdev->flags & RADEON_IS_PCIE)
-			rdev->asic = &r300_asic_pcie;
-		else
-        rdev->asic = &r300_asic;
-		break;
-	case CHIP_R420:
-	case CHIP_R423:
-	case CHIP_RV410:
-        rdev->asic = &r420_asic;
-		break;
-	case CHIP_RS400:
-	case CHIP_RS480:
-       rdev->asic = &rs400_asic;
-		break;
-	case CHIP_RS600:
-        rdev->asic = &rs600_asic;
-		break;
-	case CHIP_RS690:
-	case CHIP_RS740:
-        rdev->asic = &rs690_asic;
-		break;
-	case CHIP_RV515:
-        rdev->asic = &rv515_asic;
-		break;
-	case CHIP_R520:
-	case CHIP_RV530:
-	case CHIP_RV560:
-	case CHIP_RV570:
-	case CHIP_R580:
-        rdev->asic = &r520_asic;
-		break;
-	case CHIP_R600:
-	case CHIP_RV610:
-	case CHIP_RV630:
-	case CHIP_RV620:
-	case CHIP_RV635:
-	case CHIP_RV670:
-	case CHIP_RS780:
-	case CHIP_RS880:
-		rdev->asic = &r600_asic;
-		break;
-	case CHIP_RV770:
-	case CHIP_RV730:
-	case CHIP_RV710:
-	case CHIP_RV740:
-		rdev->asic = &rv770_asic;
-		break;
-	case CHIP_CEDAR:
-	case CHIP_REDWOOD:
-	case CHIP_JUNIPER:
-	case CHIP_CYPRESS:
-	case CHIP_HEMLOCK:
-		rdev->asic = &evergreen_asic;
-		break;
-	default:
-		/* FIXME: not supported yet */
-		return -EINVAL;
-	}
-
-	if (rdev->flags & RADEON_IS_IGP) {
-		rdev->asic->get_memory_clock = NULL;
-		rdev->asic->set_memory_clock = NULL;
-	}
-
-	return 0;
-}
-
-
-/*
- * Wrapper around modesetting bits.
- */
-int radeon_clocks_init(struct radeon_device *rdev)
-{
-	int r;
-
-    r = radeon_static_clocks_init(rdev->ddev);
-	if (r) {
-		return r;
-	}
-	DRM_INFO("Clocks initialized !\n");
-	return 0;
-}
-
-void radeon_clocks_fini(struct radeon_device *rdev)
-{
-}
 
 /* ATOM accessor methods */
 static uint32_t cail_pll_read(struct card_info *info, uint32_t reg)
@@ -547,6 +453,22 @@ static uint32_t cail_reg_read(struct card_info *info, uint32_t reg)
     return r;
 }
 
+static void cail_ioreg_write(struct card_info *info, uint32_t reg, uint32_t val)
+{
+	struct radeon_device *rdev = info->dev->dev_private;
+
+	WREG32_IO(reg*4, val);
+}
+
+static uint32_t cail_ioreg_read(struct card_info *info, uint32_t reg)
+{
+	struct radeon_device *rdev = info->dev->dev_private;
+	uint32_t r;
+
+	r = RREG32_IO(reg*4);
+	return r;
+}
+
 int radeon_atombios_init(struct radeon_device *rdev)
 {
 	struct card_info *atom_card_info =
@@ -559,6 +481,15 @@ int radeon_atombios_init(struct radeon_device *rdev)
 	atom_card_info->dev = rdev->ddev;
 	atom_card_info->reg_read = cail_reg_read;
 	atom_card_info->reg_write = cail_reg_write;
+	/* needed for iio ops */
+	if (rdev->rio_mem) {
+		atom_card_info->ioreg_read = cail_ioreg_read;
+		atom_card_info->ioreg_write = cail_ioreg_write;
+	} else {
+		DRM_ERROR("Unable to find PCI I/O BAR; using MMIO for ATOM IIO\n");
+		atom_card_info->ioreg_read = cail_reg_read;
+		atom_card_info->ioreg_write = cail_reg_write;
+	}
 	atom_card_info->mc_read = cail_mc_read;
 	atom_card_info->mc_write = cail_mc_write;
 	atom_card_info->pll_read = cail_pll_read;
@@ -600,29 +531,6 @@ static unsigned int radeon_vga_set_decode(void *cookie, bool state)
 		       VGA_RSRC_NORMAL_IO | VGA_RSRC_NORMAL_MEM;
 	else
 		return VGA_RSRC_NORMAL_IO | VGA_RSRC_NORMAL_MEM;
-}
-
-void radeon_agp_disable(struct radeon_device *rdev)
-{
-	rdev->flags &= ~RADEON_IS_AGP;
-	if (rdev->family >= CHIP_R600) {
-		DRM_INFO("Forcing AGP to PCIE mode\n");
-		rdev->flags |= RADEON_IS_PCIE;
-	} else if (rdev->family >= CHIP_RV515 ||
-			rdev->family == CHIP_RV380 ||
-			rdev->family == CHIP_RV410 ||
-			rdev->family == CHIP_R423) {
-		DRM_INFO("Forcing AGP to PCIE mode\n");
-		rdev->flags |= RADEON_IS_PCIE;
-		rdev->asic->gart_tlb_flush = &rv370_pcie_gart_tlb_flush;
-		rdev->asic->gart_set_page = &rv370_pcie_gart_set_page;
-	} else {
-		DRM_INFO("Forcing AGP to PCI mode\n");
-		rdev->flags |= RADEON_IS_PCI;
-		rdev->asic->gart_tlb_flush = &r100_pci_gart_tlb_flush;
-		rdev->asic->gart_set_page = &r100_pci_gart_set_page;
-	}
-	rdev->mc.gtt_size = radeon_gart_size * 1024 * 1024;
 }
 
 void radeon_check_arguments(struct radeon_device *rdev)
@@ -696,10 +604,9 @@ int radeon_device_init(struct radeon_device *rdev,
                struct pci_dev *pdev,
                uint32_t flags)
 {
-	int r;
+	int r, i;
 	int dma_bits;
 
-    DRM_INFO("radeon: Initializing kernel modesetting.\n");
     rdev->shutdown = false;
     rdev->ddev = ddev;
     rdev->pdev = pdev;
@@ -710,21 +617,37 @@ int radeon_device_init(struct radeon_device *rdev,
     rdev->mc.gtt_size = radeon_gart_size * 1024 * 1024;
     rdev->gpu_lockup = false;
 	rdev->accel_working = false;
+
+	DRM_INFO("initializing kernel modesetting (%s 0x%04X:0x%04X).\n",
+		radeon_family_name[rdev->family], pdev->vendor, pdev->device);
+
     /* mutex initialization are all done here so we
      * can recall function without having locking issues */
     mutex_init(&rdev->cs_mutex);
     mutex_init(&rdev->ib_pool.mutex);
     mutex_init(&rdev->cp.mutex);
 	mutex_init(&rdev->dc_hw_i2c_mutex);
+//   if (rdev->family >= CHIP_R600)
+//       spin_lock_init(&rdev->ih.lock);
 	mutex_init(&rdev->gem.mutex);
 	mutex_init(&rdev->pm.mutex);
+	mutex_init(&rdev->vram_mutex);
  //   rwlock_init(&rdev->fence_drv.lock);
+	INIT_LIST_HEAD(&rdev->gem.objects);
 
 	/* Set asic functions */
 	r = radeon_asic_init(rdev);
 	if (r)
 		return r;
 	radeon_check_arguments(rdev);
+
+	/* all of the newer IGP chips have an internal gart
+	 * However some rs4xx report as AGP, so remove that here.
+	 */
+	if ((rdev->family >= CHIP_RS400) &&
+	    (rdev->flags & RADEON_IS_IGP)) {
+		rdev->flags &= ~RADEON_IS_AGP;
+	}
 
 	if (rdev->flags & RADEON_IS_AGP && radeon_agpmode == -1) {
 		radeon_agp_disable(rdev);
@@ -751,7 +674,6 @@ int radeon_device_init(struct radeon_device *rdev,
     /* Registers mapping */
     /* TODO: block userspace mapping of io register */
     rdev->rmmio_base = pci_resource_start(rdev->pdev, 2);
-
     rdev->rmmio_size = pci_resource_len(rdev->pdev, 2);
 
     rdev->rmmio =  (void*)MapIoMem(rdev->rmmio_base, rdev->rmmio_size,
@@ -765,13 +687,13 @@ int radeon_device_init(struct radeon_device *rdev,
 
 	r = radeon_init(rdev);
 	if (r)
-            return r;
+        return r;
 
 	if (rdev->flags & RADEON_IS_AGP && !rdev->accel_working) {
 		/* Acceleration not working on AGP card try again
 		 * with fallback to PCI or PCIE GART
 		 */
-		radeon_gpu_reset(rdev);
+		radeon_asic_reset(rdev);
 		radeon_fini(rdev);
 		radeon_agp_disable(rdev);
 		r = radeon_init(rdev);
@@ -874,7 +796,6 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     INIT_LIST_HEAD(&dev->maplist);
 
     spin_lock_init(&dev->count_lock);
-    spin_lock_init(&dev->drw_lock);
     mutex_init(&dev->struct_mutex);
     mutex_init(&dev->ctxlist_mutex);
 
@@ -883,9 +804,9 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     if (ret)
         goto err_g4;
 
-    if( radeon_modeset )
-        init_display_kms(dev->dev_private, &usermode);
-    else
+//    if( radeon_modeset )
+//        init_display_kms(dev->dev_private, &usermode);
+//    else
         init_display(dev->dev_private, &usermode);
 
     LEAVE();
@@ -1013,12 +934,7 @@ int _stdcall display_handler(ioctl_t *io)
 static char  log[256];
 static pci_dev_t device;
 
-u32_t
-#if defined(__GNUC__) && __GNUC__ >= 4
-// has sense only if -fwhole-program is used, like Makefile.lto
-__attribute__((externally_visible))
-#endif
-drvEntry(int action, char *cmdline)
+u32_t drvEntry(int action, char *cmdline)
 {
     struct radeon_device *rdev = NULL;
 
@@ -1038,7 +954,7 @@ drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
-        strcpy(log, "/rd/1/drivers/atikms.log");
+        strcpy(log, "/hd2/1/atikms.log");
 
         if(!dbg_open(log))
         {
@@ -1046,9 +962,10 @@ drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("Radeon RC10 cmdline %s\n", cmdline);
+    dbgprintf("Radeon RC11 cmdline %s\n", cmdline);
 
     enum_pci_devices();
+
     ent = find_pci_device(&device, pciidlist);
 
     if( unlikely(ent == NULL) )
@@ -1064,11 +981,11 @@ drvEntry(int action, char *cmdline)
 
     rdev = rdisplay->ddev->dev_private;
 
-    if( (rdev->asic == &r600_asic) ||
-        (rdev->asic == &rv770_asic))
-        r600_2D_test(rdev);
-    else if (rdev->asic != &evergreen_asic)
-        r100_2D_test(rdev);
+//    if( (rdev->asic == &r600_asic) ||
+//        (rdev->asic == &rv770_asic))
+//        r600_2D_test(rdev);
+//    else if (rdev->asic != &evergreen_asic)
+//        r100_2D_test(rdev);
 
     err = RegService("DISPLAY", display_handler);
 

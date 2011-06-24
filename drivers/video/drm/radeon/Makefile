@@ -15,7 +15,7 @@ DRV_INCLUDES = $(DRV_TOPDIR)/include
 INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/drm	\
 		-I$(DRV_INCLUDES)/linux
 
-CFLAGS   = -c -Os $(INCLUDES) $(DEFINES) -march=i486 -fomit-frame-pointer -fno-builtin-printf
+CFLAGS   = -c -Os $(INCLUDES) $(DEFINES) -march=i686 -fomit-frame-pointer -fno-builtin-printf
 
 LIBPATH:= $(DRV_TOPDIR)/ddk
 
@@ -43,6 +43,7 @@ HFILES:=     		$(DRV_INCLUDES)/linux/types.h		\
 NAME_SRC=							\
 			pci.c					\
 			$(DRM_TOPDIR)/drm_mm.c			\
+			$(DRM_TOPDIR)/drm_irq.c			\
 			$(DRM_TOPDIR)/drm_edid.c		\
 			$(DRM_TOPDIR)/drm_modes.c		\
 			$(DRM_TOPDIR)/drm_crtc.c		\
@@ -51,13 +52,13 @@ NAME_SRC=							\
 			$(DRM_TOPDIR)/drm_dp_i2c_helper.c	\
 			$(DRM_TOPDIR)/i2c/i2c-core.c		\
 			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
-			evergreen.c				\
 			radeon_device.c				\
 			radeon_clocks.c				\
 			radeon_i2c.c				\
 			atom.c					\
 			radeon_atombios.c			\
 			radeon_agp.c				\
+			radeon_asic.c				\
 			atombios_crtc.c				\
 			atombios_dp.c				\
 			radeon_encoders.c			\
@@ -71,7 +72,7 @@ NAME_SRC=							\
 			radeon_gart.c				\
 			radeon_ring.c				\
 			radeon_object_kos.c			\
-			radeon_gem.c				\
+			radeon_pm.c				\
 			r100.c					\
 			r200.c					\
 			r300.c					\
@@ -88,7 +89,6 @@ NAME_SRC=							\
 			radeon_fb.c				\
 			rdisplay.c				\
 			rdisplay_kms.c				\
-			radeon_pm.c				\
 			cmdline.c				\
 			fwblob.asm
 #			cursor.S

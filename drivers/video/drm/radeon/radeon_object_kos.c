@@ -101,9 +101,10 @@ void ttm_bo_unreserve(struct ttm_buffer_object *bo)
     bo->reserved.counter = 1;
 }
 
-int radeon_bo_create(struct radeon_device *rdev, struct drm_gem_object *gobj,
-            unsigned long size, bool kernel, u32 domain,
-            struct radeon_bo **bo_ptr)
+int radeon_bo_create(struct radeon_device *rdev,
+                unsigned long size, int byte_align,
+                bool kernel, u32 domain,
+                struct radeon_bo **bo_ptr)
 {
     enum ttm_bo_type type;
 
@@ -143,7 +144,6 @@ int radeon_bo_create(struct radeon_device *rdev, struct drm_gem_object *gobj,
         return -ENOMEM;
 
     bo->rdev = rdev;
-    bo->gobj = gobj;
     bo->surface_reg = -1;
     bo->tbo.num_pages = num_pages;
     bo->domain = domain;
@@ -359,7 +359,7 @@ int radeon_fb_bo_create(struct radeon_device *rdev, struct drm_gem_object *gobj,
         return -ENOMEM;
 
     bo->rdev = rdev;
-    bo->gobj = gobj;
+//    bo->gobj = gobj;
     bo->surface_reg = -1;
     bo->tbo.num_pages = num_pages;
     bo->domain = domain;
@@ -371,7 +371,6 @@ int radeon_fb_bo_create(struct radeon_device *rdev, struct drm_gem_object *gobj,
 
     vm_node = kzalloc(sizeof(*vm_node),0);
 
-    vm_node->free = 0;
     vm_node->size = 0xC00000 >> 12;
     vm_node->start = 0;
     vm_node->mm = NULL;

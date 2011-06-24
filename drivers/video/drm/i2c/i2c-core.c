@@ -64,27 +64,12 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
      */
 
     if (adap->algo->master_xfer) {
-#ifdef DEBUG
-        for (ret = 0; ret < num; ret++) {
-            dev_dbg(&adap->dev, "master_xfer[%d] %c, addr=0x%02x, "
-                "len=%d%s\n", ret, (msgs[ret].flags & I2C_M_RD)
-                ? 'R' : 'W', msgs[ret].addr, msgs[ret].len,
-                (msgs[ret].flags & I2C_M_RECV_LEN) ? "+" : "");
-        }
-#endif
 
-//        if (in_atomic() || irqs_disabled()) {
-//            ret = mutex_trylock(&adap->bus_lock);
-//            if (!ret)
-//                /* I2C activity is ongoing. */
-//                return -EAGAIN;
-//        } else {
-//            mutex_lock_nested(&adap->bus_lock, adap->level);
-//        }
 
         /* Retry automatically on arbitration loss */
-//        orig_jiffies = jiffies;
+        orig_jiffies = 0;
         for (ret = 0, try = 0; try <= adap->retries; try++) {
+
             ret = adap->algo->master_xfer(adap, msgs, num);
             if (ret != -EAGAIN)
                 break;
@@ -93,7 +78,6 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
                 delay(1);
         }
 //        mutex_unlock(&adap->bus_lock);
-
         return ret;
     } else {
 //        dev_dbg(&adap->dev, "I2C level transfers not supported\n");
@@ -103,6 +87,42 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 EXPORT_SYMBOL(i2c_transfer);
 
 
+/**
+ * i2c_new_device - instantiate an i2c device
+ * @adap: the adapter managing the device
+ * @info: describes one I2C device; bus_num is ignored
+ * Context: can sleep
+ *
+ * Create an i2c device. Binding is handled through driver model
+ * probe()/remove() methods.  A driver may be bound to this device when we
+ * return from this function, or any later moment (e.g. maybe hotplugging will
+ * load the driver module).  This call is not appropriate for use by mainboard
+ * initialization logic, which usually runs during an arch_initcall() long
+ * before any i2c_adapter could exist.
+ *
+ * This returns the new i2c client, which may be saved for later use with
+ * i2c_unregister_device(); or NULL to indicate an error.
+ */
+struct i2c_client *
+i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
+{
+    struct i2c_client   *client;
+    int         status;
+
+    client = kzalloc(sizeof *client, GFP_KERNEL);
+    if (!client)
+        return NULL;
+
+    client->adapter = adap;
+
+    client->flags = info->flags;
+    client->addr = info->addr;
+    client->irq = info->irq;
+
+    strlcpy(client->name, info->type, sizeof(client->name));
+
+    return client;
+}
 
 
 

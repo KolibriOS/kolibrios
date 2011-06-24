@@ -15,8 +15,7 @@ display_t *rdisplay;
 static cursor_t*  __stdcall select_cursor(cursor_t *cursor);
 static void       __stdcall move_cursor(cursor_t *cursor, int x, int y);
 
-extern void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor);
-//extern void destroy_cursor(void);
+extern void destroy_cursor(void);
 
 void disable_mouse(void)
 {};
@@ -33,8 +32,8 @@ int init_cursor(cursor_t *cursor)
 
     rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
 
-    r = radeon_bo_create(rdev, NULL, CURSOR_WIDTH*CURSOR_HEIGHT*4,
-                     false, RADEON_GEM_DOMAIN_VRAM, &cursor->robj);
+    r = radeon_bo_create(rdev, CURSOR_WIDTH*CURSOR_HEIGHT*4,
+                     PAGE_SIZE, false, RADEON_GEM_DOMAIN_VRAM, &cursor->robj);
 
     if (unlikely(r != 0))
         return r;
@@ -67,13 +66,12 @@ int init_cursor(cursor_t *cursor)
 
     radeon_bo_kunmap(cursor->robj);
 
-    cursor->header.destroy = destroy_cursor;
+ //   cursor->header.destroy = destroy_cursor;
 
     return 0;
 };
 
-//void __attribute__((externally_visible)) fini_cursor(cursor_t *cursor)
-void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor)
+void fini_cursor(cursor_t *cursor)
 {
     list_del(&cursor->list);
     radeon_bo_unpin(cursor->robj);
@@ -271,6 +269,8 @@ void framebuffer_release(struct fb_info *info)
 {
     kfree(info);
 }
+
+#if 0
 
 #define PACKET3_PAINT_MULTI             0x9A
 #       define R5XX_GMC_CLR_CMP_CNTL_DIS        (1    << 28)
@@ -2244,8 +2244,8 @@ int r600_2D_test(struct radeon_device *rdev)
     obj_size += 32*4;
     obj_size = ALIGN(obj_size, 256);
 
-    r = radeon_bo_create(rdev, NULL, obj_size, true, RADEON_GEM_DOMAIN_VRAM,
-                &state_obj);
+    r = radeon_bo_create(rdev, NULL, obj_size, PAGE_SIZE, true,
+                         RADEON_GEM_DOMAIN_VRAM, &state_obj);
     if (r) {
         DRM_ERROR("r600 failed to allocate state buffer\n");
         return r;
@@ -2414,3 +2414,5 @@ int r600_2D_test(struct radeon_device *rdev)
     LEAVE();
     return r;
 }
+
+#endif

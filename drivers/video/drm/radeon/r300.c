@@ -26,10 +26,13 @@
  *          Jerome Glisse
  */
 #include <linux/seq_file.h>
-#include "drmP.h"
-#include "drm.h"
+#include <linux/slab.h>
+#include <drm/drmP.h>
+#include <drm/drm.h>
+#include <drm/drm_crtc_helper.h>
 #include "radeon_reg.h"
 #include "radeon.h"
+#include "radeon_asic.h"
 #include "radeon_drm.h"
 
 #include "r300d.h"
@@ -66,6 +69,9 @@ void rv370_pcie_gart_tlb_flush(struct radeon_device *rdev)
 		mb();
 }
 
+#define R300_PTE_WRITEABLE (1 << 2)
+#define R300_PTE_READABLE  (1 << 3)
+
 int rv370_pcie_gart_set_page(struct radeon_device *rdev, int i, uint64_t addr)
 {
 	void __iomem *ptr = (void *)rdev->gart.table.vram.ptr;
@@ -75,7 +81,7 @@ int rv370_pcie_gart_set_page(struct radeon_device *rdev, int i, uint64_t addr)
 	}
 	addr = (lower_32_bits(addr) >> 8) |
 	       ((upper_32_bits(addr) & 0xff) << 24) |
-	       0xc;
+	       R300_PTE_WRITEABLE | R300_PTE_READABLE;
 	/* on x86 we want this to be CPU endian, on powerpc
 	 * on powerpc without HW swappers, it'll get swapped on way
 	 * into VRAM - so no need for cpu_to_le32 on VRAM tables */
@@ -88,7 +94,7 @@ int rv370_pcie_gart_init(struct radeon_device *rdev)
 	int r;
 
 	if (rdev->gart.table.vram.robj) {
-		WARN(1, "RV370 PCIE GART already initialized.\n");
+		WARN(1, "RV370 PCIE GART already initialized\n");
 		return 0;
 	}
 	/* Initialize common gart structure */
@@ -132,7 +138,7 @@ int rv370_pcie_gart_enable(struct radeon_device *rdev)
 	WREG32_PCIE(RADEON_PCIE_TX_DISCARD_RD_ADDR_LO, rdev->mc.vram_start);
 	WREG32_PCIE(RADEON_PCIE_TX_DISCARD_RD_ADDR_HI, 0);
 	/* Clear error */
-	WREG32_PCIE(0x18, 0);
+	WREG32_PCIE(RADEON_PCIE_TX_GART_ERROR, 0);
 	tmp = RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
 	tmp |= RADEON_PCIE_TX_GART_EN;
 	tmp |= RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD;
@@ -149,6 +155,10 @@ void rv370_pcie_gart_disable(struct radeon_device *rdev)
 	u32 tmp;
 	int r;
 
+	WREG32_PCIE(RADEON_PCIE_TX_GART_START_LO, 0);
+	WREG32_PCIE(RADEON_PCIE_TX_GART_END_LO, 0);
+	WREG32_PCIE(RADEON_PCIE_TX_GART_START_HI, 0);
+	WREG32_PCIE(RADEON_PCIE_TX_GART_END_HI, 0);
 	tmp = RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
 	tmp |= RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD;
 	WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp & ~RADEON_PCIE_TX_GART_EN);
@@ -164,9 +174,9 @@ void rv370_pcie_gart_disable(struct radeon_device *rdev)
 
 void rv370_pcie_gart_fini(struct radeon_device *rdev)
 {
+	radeon_gart_fini(rdev);
 			rv370_pcie_gart_disable(rdev);
 	radeon_gart_table_vram_free(rdev);
-	radeon_gart_fini(rdev);
 }
 
 void r300_fence_ring_emit(struct radeon_device *rdev,
@@ -321,13 +331,12 @@ void r300_gpu_init(struct radeon_device *rdev)
 {
 	uint32_t gb_tile_config, tmp;
 
-	r100_hdp_reset(rdev);
-	/* FIXME: rv380 one pipes ? */
-	if ((rdev->family == CHIP_R300) || (rdev->family == CHIP_R350)) {
+	if ((rdev->family == CHIP_R300 && rdev->pdev->device != 0x4144) ||
+	    (rdev->family == CHIP_R350 && rdev->pdev->device != 0x4148)) {
 		/* r300,r350 */
 		rdev->num_gb_pipes = 2;
 	} else {
-		/* rv350,rv370,rv380 */
+		/* rv350,rv370,rv380,r300 AD, r350 AH */
 		rdev->num_gb_pipes = 1;
 	}
 	rdev->num_z_pipes = 1;
@@ -373,88 +382,85 @@ void r300_gpu_init(struct radeon_device *rdev)
 		 rdev->num_gb_pipes, rdev->num_z_pipes);
 }
 
-int r300_ga_reset(struct radeon_device *rdev)
+bool r300_gpu_is_lockup(struct radeon_device *rdev)
 {
-	uint32_t tmp;
-	bool reinit_cp;
-	int i;
+	u32 rbbm_status;
+	int r;
 
-	reinit_cp = rdev->cp.ready;
-	rdev->cp.ready = false;
-	for (i = 0; i < rdev->usec_timeout; i++) {
-		WREG32(RADEON_CP_CSQ_MODE, 0);
-		WREG32(RADEON_CP_CSQ_CNTL, 0);
-		WREG32(RADEON_RBBM_SOFT_RESET, 0x32005);
-		(void)RREG32(RADEON_RBBM_SOFT_RESET);
-		udelay(200);
-		WREG32(RADEON_RBBM_SOFT_RESET, 0);
-		/* Wait to prevent race in RBBM_STATUS */
-		mdelay(1);
-		tmp = RREG32(RADEON_RBBM_STATUS);
-		if (tmp & ((1 << 20) | (1 << 26))) {
-			DRM_ERROR("VAP & CP still busy (RBBM_STATUS=0x%08X)", tmp);
-			/* GA still busy soft reset it */
-			WREG32(0x429C, 0x200);
-			WREG32(R300_VAP_PVS_STATE_FLUSH_REG, 0);
-			WREG32(R300_RE_SCISSORS_TL, 0);
-			WREG32(R300_RE_SCISSORS_BR, 0);
-			WREG32(0x24AC, 0);
+	rbbm_status = RREG32(R_000E40_RBBM_STATUS);
+	if (!G_000E40_GUI_ACTIVE(rbbm_status)) {
+		r100_gpu_lockup_update(&rdev->config.r300.lockup, &rdev->cp);
+		return false;
 		}
-		/* Wait to prevent race in RBBM_STATUS */
-		mdelay(1);
-		tmp = RREG32(RADEON_RBBM_STATUS);
-		if (!(tmp & ((1 << 20) | (1 << 26)))) {
-			break;
-		}
+	/* force CP activities */
+	r = radeon_ring_lock(rdev, 2);
+	if (!r) {
+		/* PACKET2 NOP */
+		radeon_ring_write(rdev, 0x80000000);
+		radeon_ring_write(rdev, 0x80000000);
+		radeon_ring_unlock_commit(rdev);
 	}
-	for (i = 0; i < rdev->usec_timeout; i++) {
-		tmp = RREG32(RADEON_RBBM_STATUS);
-		if (!(tmp & ((1 << 20) | (1 << 26)))) {
-			DRM_INFO("GA reset succeed (RBBM_STATUS=0x%08X)\n",
-				 tmp);
-			if (reinit_cp) {
-				return r100_cp_init(rdev, rdev->cp.ring_size);
-			}
-			return 0;
-		}
-		DRM_UDELAY(1);
-	}
-	tmp = RREG32(RADEON_RBBM_STATUS);
-	DRM_ERROR("Failed to reset GA ! (RBBM_STATUS=0x%08X)\n", tmp);
-	return -1;
+	rdev->cp.rptr = RREG32(RADEON_CP_RB_RPTR);
+	return r100_gpu_cp_is_lockup(rdev, &rdev->config.r300.lockup, &rdev->cp);
 }
 
-int r300_gpu_reset(struct radeon_device *rdev)
+int r300_asic_reset(struct radeon_device *rdev)
 {
-	uint32_t status;
+	struct r100_mc_save save;
+	u32 status, tmp;
+	int ret = 0;
 
-	/* reset order likely matter */
-	status = RREG32(RADEON_RBBM_STATUS);
-	/* reset HDP */
-	r100_hdp_reset(rdev);
-	/* reset rb2d */
-	if (status & ((1 << 17) | (1 << 18) | (1 << 27))) {
-		r100_rb2d_reset(rdev);
+	status = RREG32(R_000E40_RBBM_STATUS);
+	if (!G_000E40_GUI_ACTIVE(status)) {
+		return 0;
 	}
-	/* reset GA */
-	if (status & ((1 << 20) | (1 << 26))) {
-		r300_ga_reset(rdev);
-	}
-	/* reset CP */
-	status = RREG32(RADEON_RBBM_STATUS);
-	if (status & (1 << 16)) {
-		r100_cp_reset(rdev);
-	}
+	r100_mc_stop(rdev, &save);
+	status = RREG32(R_000E40_RBBM_STATUS);
+	dev_info(rdev->dev, "(%s:%d) RBBM_STATUS=0x%08X\n", __func__, __LINE__, status);
+	/* stop CP */
+	WREG32(RADEON_CP_CSQ_CNTL, 0);
+	tmp = RREG32(RADEON_CP_RB_CNTL);
+	WREG32(RADEON_CP_RB_CNTL, tmp | RADEON_RB_RPTR_WR_ENA);
+	WREG32(RADEON_CP_RB_RPTR_WR, 0);
+	WREG32(RADEON_CP_RB_WPTR, 0);
+	WREG32(RADEON_CP_RB_CNTL, tmp);
+	/* save PCI state */
+//   pci_save_state(rdev->pdev);
+	/* disable bus mastering */
+	r100_bm_disable(rdev);
+	WREG32(R_0000F0_RBBM_SOFT_RESET, S_0000F0_SOFT_RESET_VAP(1) |
+					S_0000F0_SOFT_RESET_GA(1));
+	RREG32(R_0000F0_RBBM_SOFT_RESET);
+	mdelay(500);
+	WREG32(R_0000F0_RBBM_SOFT_RESET, 0);
+	mdelay(1);
+	status = RREG32(R_000E40_RBBM_STATUS);
+	dev_info(rdev->dev, "(%s:%d) RBBM_STATUS=0x%08X\n", __func__, __LINE__, status);
+	/* resetting the CP seems to be problematic sometimes it end up
+	 * hard locking the computer, but it's necessary for successful
+	 * reset more test & playing is needed on R3XX/R4XX to find a
+	 * reliable (if any solution)
+	 */
+	WREG32(R_0000F0_RBBM_SOFT_RESET, S_0000F0_SOFT_RESET_CP(1));
+	RREG32(R_0000F0_RBBM_SOFT_RESET);
+	mdelay(500);
+	WREG32(R_0000F0_RBBM_SOFT_RESET, 0);
+	mdelay(1);
+	status = RREG32(R_000E40_RBBM_STATUS);
+	dev_info(rdev->dev, "(%s:%d) RBBM_STATUS=0x%08X\n", __func__, __LINE__, status);
+	/* restore PCI & busmastering */
+//   pci_restore_state(rdev->pdev);
+	r100_enable_bm(rdev);
 	/* Check if GPU is idle */
-	status = RREG32(RADEON_RBBM_STATUS);
-	if (status & RADEON_RBBM_ACTIVE) {
-		DRM_ERROR("Failed to reset GPU (RBBM_STATUS=0x%08X)\n", status);
-		return -1;
-	}
-	DRM_INFO("GPU reset succeed (RBBM_STATUS=0x%08X)\n", status);
-	return 0;
+	if (G_000E40_GA_BUSY(status) || G_000E40_VAP_BUSY(status)) {
+		dev_err(rdev->dev, "failed to reset GPU\n");
+		rdev->gpu_lockup = true;
+		ret = -1;
+	} else
+		dev_info(rdev->dev, "GPU reset succeed\n");
+	r100_mc_resume(rdev, &save);
+	return ret;
 }
-
 
 /*
  * r300,r350,rv350,rv380 VRAM info
@@ -479,8 +485,10 @@ void r300_mc_init(struct radeon_device *rdev)
 	if (rdev->flags & RADEON_IS_IGP)
 		base = (RREG32(RADEON_NB_TOM) & 0xffff) << 16;
 	radeon_vram_location(rdev, &rdev->mc, base);
+	rdev->mc.gtt_base_align = 0;
 	if (!(rdev->flags & RADEON_IS_AGP))
 		radeon_gtt_location(rdev, &rdev->mc);
+	radeon_update_bandwidth_info(rdev);
 }
 
 void rv370_set_pcie_lanes(struct radeon_device *rdev, int lanes)
@@ -554,10 +562,7 @@ int rv370_get_pcie_lanes(struct radeon_device *rdev)
 
 	/* FIXME wait for idle */
 
-	if (rdev->family < CHIP_R600)
 		link_width_cntl = RREG32_PCIE(RADEON_PCIE_LC_LINK_WIDTH_CNTL);
-	else
-		link_width_cntl = RREG32_PCIE_P(RADEON_PCIE_LC_LINK_WIDTH_CNTL);
 
 	switch ((link_width_cntl & RADEON_PCIE_LC_LINK_WIDTH_RD_MASK) >> RADEON_PCIE_LC_LINK_WIDTH_RD_SHIFT) {
 	case RADEON_PCIE_LC_LINK_WIDTH_X0:
@@ -665,6 +670,7 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		}
 		track->cb[i].robj = reloc->robj;
 		track->cb[i].offset = idx_value;
+		track->cb_dirty = true;
 		ib[idx] = idx_value + ((u32)reloc->lobj.gpu_offset);
 		break;
 	case R300_ZB_DEPTHOFFSET:
@@ -677,6 +683,7 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		}
 		track->zb.robj = reloc->robj;
 		track->zb.offset = idx_value;
+		track->zb_dirty = true;
 		ib[idx] = idx_value + ((u32)reloc->lobj.gpu_offset);
 		break;
 	case R300_TX_OFFSET_0:
@@ -715,6 +722,7 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		tmp |= tile_flags;
 		ib[idx] = tmp;
 		track->textures[i].robj = reloc->robj;
+		track->tex_dirty = true;
 		break;
 	/* Tracked registers */
 	case 0x2084:
@@ -729,16 +737,30 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		/* VAP_VF_MAX_VTX_INDX */
 		track->max_indx = idx_value & 0x00FFFFFFUL;
 		break;
+	case 0x2088:
+		/* VAP_ALT_NUM_VERTICES - only valid on r500 */
+		if (p->rdev->family < CHIP_RV515)
+			goto fail;
+		track->vap_alt_nverts = idx_value & 0xFFFFFF;
+		break;
 	case 0x43E4:
 		/* SC_SCISSOR1 */
 		track->maxy = ((idx_value >> 13) & 0x1FFF) + 1;
 		if (p->rdev->family < CHIP_RV515) {
 			track->maxy -= 1440;
 		}
+		track->cb_dirty = true;
+		track->zb_dirty = true;
 		break;
 	case 0x4E00:
 		/* RB3D_CCTL */
+		if ((idx_value & (1 << 10)) && /* CMASK_ENABLE */
+		    p->rdev->cmask_filp != p->filp) {
+			DRM_ERROR("Invalid RB3D_CCTL: Cannot enable CMASK.\n");
+			return -EINVAL;
+		}
 		track->num_cb = ((idx_value >> 5) & 0x3) + 1;
+		track->cb_dirty = true;
 		break;
 	case 0x4E38:
 	case 0x4E3C:
@@ -766,7 +788,6 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		tmp = idx_value & ~(0x7 << 16);
 		tmp |= tile_flags;
 		ib[idx] = tmp;
-
 		i = (reg - 0x4E38) >> 2;
 		track->cb[i].pitch = idx_value & 0x3FFE;
 		switch (((idx_value >> 21) & 0xF)) {
@@ -781,6 +802,13 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		case 15:
 			track->cb[i].cpp = 2;
 			break;
+		case 5:
+			if (p->rdev->family < CHIP_RV515) {
+				DRM_ERROR("Invalid color buffer format (%d)!\n",
+					  ((idx_value >> 21) & 0xF));
+				return -EINVAL;
+			}
+			/* Pass through. */
 		case 6:
 			track->cb[i].cpp = 4;
 			break;
@@ -795,6 +823,7 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 				  ((idx_value >> 21) & 0xF));
 			return -EINVAL;
 		}
+		track->cb_dirty = true;
 		break;
 	case 0x4F00:
 		/* ZB_CNTL */
@@ -803,6 +832,7 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		} else {
 			track->z_enabled = false;
 		}
+		track->zb_dirty = true;
 		break;
 	case 0x4F10:
 		/* ZB_FORMAT */
@@ -819,6 +849,7 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 				  (idx_value & 0xF));
 			return -EINVAL;
 		}
+		track->zb_dirty = true;
 		break;
 	case 0x4F24:
 		/* ZB_DEPTHPITCH */
@@ -842,14 +873,17 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		ib[idx] = tmp;
 
 		track->zb.pitch = idx_value & 0x3FFC;
+		track->zb_dirty = true;
 		break;
 	case 0x4104:
+		/* TX_ENABLE */
 		for (i = 0; i < 16; i++) {
 			bool enabled;
 
 			enabled = !!(idx_value & (1 << i));
 			track->textures[i].enabled = enabled;
 		}
+		track->tex_dirty = true;
 		break;
 	case 0x44C0:
 	case 0x44C4:
@@ -876,8 +910,10 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		case R300_TX_FORMAT_Y4X4:
 		case R300_TX_FORMAT_Z3Y3X2:
 			track->textures[i].cpp = 1;
+			track->textures[i].compress_format = R100_TRACK_COMP_NONE;
 			break;
 		case R300_TX_FORMAT_X16:
+		case R300_TX_FORMAT_FL_I16:
 		case R300_TX_FORMAT_Y8X8:
 		case R300_TX_FORMAT_Z5Y6X5:
 		case R300_TX_FORMAT_Z6Y5X5:
@@ -887,8 +923,10 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		case R300_TX_FORMAT_B8G8_B8G8:
 		case R300_TX_FORMAT_G8R8_G8B8:
 			track->textures[i].cpp = 2;
+			track->textures[i].compress_format = R100_TRACK_COMP_NONE;
 			break;
 		case R300_TX_FORMAT_Y16X16:
+		case R300_TX_FORMAT_FL_I16A16:
 		case R300_TX_FORMAT_Z11Y11X10:
 		case R300_TX_FORMAT_Z10Y11X11:
 		case R300_TX_FORMAT_W8Z8Y8X8:
@@ -897,14 +935,17 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		case R300_TX_FORMAT_FL_I32:
 		case 0x1e:
 			track->textures[i].cpp = 4;
+			track->textures[i].compress_format = R100_TRACK_COMP_NONE;
 			break;
 		case R300_TX_FORMAT_W16Z16Y16X16:
 		case R300_TX_FORMAT_FL_R16G16B16A16:
 		case R300_TX_FORMAT_FL_I32A32:
 			track->textures[i].cpp = 8;
+			track->textures[i].compress_format = R100_TRACK_COMP_NONE;
 			break;
 		case R300_TX_FORMAT_FL_R32G32B32A32:
 			track->textures[i].cpp = 16;
+			track->textures[i].compress_format = R100_TRACK_COMP_NONE;
 			break;
 		case R300_TX_FORMAT_DXT1:
 			track->textures[i].cpp = 1;
@@ -927,8 +968,8 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 			DRM_ERROR("Invalid texture format %u\n",
 				  (idx_value & 0x1F));
 			return -EINVAL;
-			break;
 		}
+		track->tex_dirty = true;
 		break;
 	case 0x4400:
 	case 0x4404:
@@ -956,6 +997,7 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		if (tmp == 2 || tmp == 4 || tmp == 6) {
 			track->textures[i].roundup_h = false;
 		}
+		track->tex_dirty = true;
 		break;
 	case 0x4500:
 	case 0x4504:
@@ -993,6 +1035,7 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 			DRM_ERROR("Forbidden bit TXFORMAT_MSB\n");
 			return -EINVAL;
 		}
+		track->tex_dirty = true;
 		break;
 	case 0x4480:
 	case 0x4484:
@@ -1022,6 +1065,7 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 		track->textures[i].use_pitch = !!tmp;
 		tmp = (idx_value >> 22) & 0xF;
 		track->textures[i].txdepth = tmp;
+		track->tex_dirty = true;
 		break;
 	case R300_ZB_ZPASS_ADDR:
 		r = r100_cs_packet_next_reloc(p, &reloc);
@@ -1036,14 +1080,70 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 	case 0x4e0c:
 		/* RB3D_COLOR_CHANNEL_MASK */
 		track->color_channel_mask = idx_value;
+		track->cb_dirty = true;
 		break;
-	case 0x4d1c:
+	case 0x43a4:
+		/* SC_HYPERZ_EN */
+		/* r300c emits this register - we need to disable hyperz for it
+		 * without complaining */
+		if (p->rdev->hyperz_filp != p->filp) {
+			if (idx_value & 0x1)
+				ib[idx] = idx_value & ~1;
+		}
+		break;
+	case 0x4f1c:
 		/* ZB_BW_CNTL */
-		track->fastfill = !!(idx_value & (1 << 2));
+		track->zb_cb_clear = !!(idx_value & (1 << 5));
+		track->cb_dirty = true;
+		track->zb_dirty = true;
+		if (p->rdev->hyperz_filp != p->filp) {
+			if (idx_value & (R300_HIZ_ENABLE |
+					 R300_RD_COMP_ENABLE |
+					 R300_WR_COMP_ENABLE |
+					 R300_FAST_FILL_ENABLE))
+				goto fail;
+		}
 		break;
 	case 0x4e04:
 		/* RB3D_BLENDCNTL */
 		track->blend_read_enable = !!(idx_value & (1 << 2));
+		track->cb_dirty = true;
+		break;
+	case R300_RB3D_AARESOLVE_OFFSET:
+		r = r100_cs_packet_next_reloc(p, &reloc);
+		if (r) {
+			DRM_ERROR("No reloc for ib[%d]=0x%04X\n",
+				  idx, reg);
+			r100_cs_dump_packet(p, pkt);
+			return r;
+		}
+		track->aa.robj = reloc->robj;
+		track->aa.offset = idx_value;
+		track->aa_dirty = true;
+		ib[idx] = idx_value + ((u32)reloc->lobj.gpu_offset);
+		break;
+	case R300_RB3D_AARESOLVE_PITCH:
+		track->aa.pitch = idx_value & 0x3FFE;
+		track->aa_dirty = true;
+		break;
+	case R300_RB3D_AARESOLVE_CTL:
+		track->aaresolve = idx_value & 0x1;
+		track->aa_dirty = true;
+		break;
+	case 0x4f30: /* ZB_MASK_OFFSET */
+	case 0x4f34: /* ZB_ZMASK_PITCH */
+	case 0x4f44: /* ZB_HIZ_OFFSET */
+	case 0x4f54: /* ZB_HIZ_PITCH */
+		if (idx_value && (p->rdev->hyperz_filp != p->filp))
+			goto fail;
+		break;
+	case 0x4028:
+		if (idx_value && (p->rdev->hyperz_filp != p->filp))
+			goto fail;
+		/* GB_Z_PEQ_CONFIG */
+		if (p->rdev->family >= CHIP_RV350)
+			break;
+		goto fail;
 		break;
 	case 0x4be8:
 		/* valid register only on RV530 */
@@ -1051,11 +1151,13 @@ static int r300_packet0_check(struct radeon_cs_parser *p,
 			break;
 		/* fallthrough do not move */
 	default:
-		printk(KERN_ERR "Forbidden register 0x%04X in cs at %d\n",
-		       reg, idx);
-		return -EINVAL;
+		goto fail;
 	}
 	return 0;
+fail:
+	printk(KERN_ERR "Forbidden register 0x%04X in cs at %d (val=%08x)\n",
+	       reg, idx, idx_value);
+		return -EINVAL;
 }
 
 static int r300_packet3_check(struct radeon_cs_parser *p,
@@ -1148,6 +1250,15 @@ static int r300_packet3_check(struct radeon_cs_parser *p,
 			return r;
 		}
 		break;
+	case PACKET3_3D_CLEAR_HIZ:
+	case PACKET3_3D_CLEAR_ZMASK:
+		if (p->rdev->hyperz_filp != p->filp)
+			return -EINVAL;
+		break;
+	case PACKET3_3D_CLEAR_CMASK:
+		if (p->rdev->cmask_filp != p->filp)
+			return -EINVAL;
+		break;
 	case PACKET3_NOP:
 		break;
 	default:
@@ -1164,6 +1275,8 @@ int r300_cs_parse(struct radeon_cs_parser *p)
 	int r;
 
 	track = kzalloc(sizeof(*track), GFP_KERNEL);
+	if (track == NULL)
+		return -ENOMEM;
 	r100_cs_track_clear(p->rdev, track);
 	p->track = track;
 	do {
@@ -1281,18 +1394,17 @@ static int r300_startup(struct radeon_device *rdev)
 		if (r)
 			return r;
 	}
+
+
 	/* Enable IRQ */
 //	r100_irq_set(rdev);
 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
     r = r100_cp_init(rdev, 1024 * 1024);
     if (r) {
-       dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
+		dev_err(rdev->dev, "failed initializing CP (%d).\n", r);
        return r;
     }
-//   r = r100_wb_init(rdev);
-//   if (r)
-//       dev_err(rdev->dev, "failled initializing WB (%d).\n", r);
 //   r = r100_ib_init(rdev);
 //   if (r) {
 //       dev_err(rdev->dev, "failled initializing IB (%d).\n", r);
@@ -1316,6 +1428,8 @@ int r300_init(struct radeon_device *rdev)
 	/* Initialize surface registers */
 	radeon_surface_init(rdev);
 	/* TODO: disable VGA need to use VGA request */
+	/* restore some register to sane defaults */
+	r100_restore_sanity(rdev);
 	/* BIOS*/
 	if (!radeon_get_bios(rdev)) {
 		if (ASIC_IS_AVIVO(rdev))
@@ -1330,7 +1444,7 @@ int r300_init(struct radeon_device *rdev)
 			return r;
 	}
 	/* Reset gpu before posting otherwise ATOM will enter infinite loop */
-	if (radeon_gpu_reset(rdev)) {
+	if (radeon_asic_reset(rdev)) {
 		dev_warn(rdev->dev,
 			"GPU reset failed ! (0xE40=0x%08X, 0x7C0=0x%08X)\n",
 			RREG32(R_000E40_RBBM_STATUS),
@@ -1343,8 +1457,6 @@ int r300_init(struct radeon_device *rdev)
 	r300_errata(rdev);
 	/* Initialize clocks */
 	radeon_get_clock_info(rdev->ddev);
-	/* Initialize power management */
-	radeon_pm_init(rdev);
 	/* initialize AGP */
 	if (rdev->flags & RADEON_IS_AGP) {
 		r = radeon_agp_init(rdev);
@@ -1381,14 +1493,10 @@ int r300_init(struct radeon_device *rdev)
 	if (r) {
 		/* Somethings want wront with the accel init stop accel */
 		dev_err(rdev->dev, "Disabling GPU acceleration\n");
-//		r100_cp_fini(rdev);
-//		r100_wb_fini(rdev);
-//		r100_ib_fini(rdev);
 		if (rdev->flags & RADEON_IS_PCIE)
 			rv370_pcie_gart_fini(rdev);
 		if (rdev->flags & RADEON_IS_PCI)
 			r100_pci_gart_fini(rdev);
-//		radeon_agp_fini(rdev);
 		rdev->accel_working = false;
 	}
 	return 0;

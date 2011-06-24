@@ -24,23 +24,14 @@
 #include "radeon.h"
 #include "avivod.h"
 
+#define DRM_DEBUG_DRIVER(fmt, args...)
+
 #define RADEON_IDLE_LOOP_MS 100
 #define RADEON_RECLOCK_DELAY_MS 200
 #define RADEON_WAIT_VBLANK_TIMEOUT 200
+#define RADEON_WAIT_IDLE_TIMEOUT 200
 
-static void radeon_pm_set_clocks_locked(struct radeon_device *rdev);
-static void radeon_pm_set_clocks(struct radeon_device *rdev);
-static void radeon_pm_idle_work_handler(struct work_struct *work);
-static int radeon_debugfs_pm_init(struct radeon_device *rdev);
-
-static const char *pm_state_names[4] = {
-	"PM_STATE_DISABLED",
-	"PM_STATE_MINIMUM",
-	"PM_STATE_PAUSED",
-	"PM_STATE_ACTIVE"
-};
-
-static const char *pm_state_types[5] = {
+static const char *radeon_pm_state_type_name[5] = {
 	"Default",
 	"Powersave",
 	"Battery",
@@ -48,376 +39,589 @@ static const char *pm_state_types[5] = {
 	"Performance",
 };
 
-static void radeon_print_power_mode_info(struct radeon_device *rdev)
-{
-	int i, j;
-	bool is_default;
+static void radeon_dynpm_idle_work_handler(struct work_struct *work);
+static int radeon_debugfs_pm_init(struct radeon_device *rdev);
+static bool radeon_pm_in_vbl(struct radeon_device *rdev);
+static bool radeon_pm_debug_check_in_vbl(struct radeon_device *rdev, bool finish);
+static void radeon_pm_update_profile(struct radeon_device *rdev);
+static void radeon_pm_set_clocks(struct radeon_device *rdev);
 
-	DRM_INFO("%d Power State(s)\n", rdev->pm.num_power_states);
-	for (i = 0; i < rdev->pm.num_power_states; i++) {
-		if (rdev->pm.default_power_state == &rdev->pm.power_state[i])
-			is_default = true;
+static inline int power_supply_is_system_supplied(void) { return -ENOSYS; }
+
+#define ACPI_AC_CLASS           "ac_adapter"
+
+#ifdef CONFIG_ACPI
+static int radeon_acpi_event(struct notifier_block *nb,
+			     unsigned long val,
+			     void *data)
+{
+	struct radeon_device *rdev = container_of(nb, struct radeon_device, acpi_nb);
+	struct acpi_bus_event *entry = (struct acpi_bus_event *)data;
+
+	if (strcmp(entry->device_class, ACPI_AC_CLASS) == 0) {
+		if (power_supply_is_system_supplied() > 0)
+			DRM_DEBUG_DRIVER("pm: AC\n");
 		else
-			is_default = false;
-		DRM_INFO("State %d %s %s\n", i,
-			 pm_state_types[rdev->pm.power_state[i].type],
-			 is_default ? "(default)" : "");
-		if ((rdev->flags & RADEON_IS_PCIE) && !(rdev->flags & RADEON_IS_IGP))
-			DRM_INFO("\t%d PCIE Lanes\n", rdev->pm.power_state[i].non_clock_info.pcie_lanes);
-		DRM_INFO("\t%d Clock Mode(s)\n", rdev->pm.power_state[i].num_clock_modes);
-		for (j = 0; j < rdev->pm.power_state[i].num_clock_modes; j++) {
-			if (rdev->flags & RADEON_IS_IGP)
-				DRM_INFO("\t\t%d engine: %d\n",
-					 j,
-					 rdev->pm.power_state[i].clock_info[j].sclk * 10);
+			DRM_DEBUG_DRIVER("pm: DC\n");
+
+		if (rdev->pm.pm_method == PM_METHOD_PROFILE) {
+			if (rdev->pm.profile == PM_PROFILE_AUTO) {
+				mutex_lock(&rdev->pm.mutex);
+				radeon_pm_update_profile(rdev);
+				radeon_pm_set_clocks(rdev);
+				mutex_unlock(&rdev->pm.mutex);
+		}
+	}
+	}
+
+	return NOTIFY_OK;
+}
+#endif
+
+static void radeon_pm_update_profile(struct radeon_device *rdev)
+{
+	switch (rdev->pm.profile) {
+	case PM_PROFILE_DEFAULT:
+		rdev->pm.profile_index = PM_PROFILE_DEFAULT_IDX;
+		break;
+	case PM_PROFILE_AUTO:
+		if (power_supply_is_system_supplied() > 0) {
+			if (rdev->pm.active_crtc_count > 1)
+				rdev->pm.profile_index = PM_PROFILE_HIGH_MH_IDX;
 			else
-				DRM_INFO("\t\t%d engine/memory: %d/%d\n",
-					 j,
-					 rdev->pm.power_state[i].clock_info[j].sclk * 10,
-					 rdev->pm.power_state[i].clock_info[j].mclk * 10);
-		}
-	}
-}
-
-static struct radeon_power_state * radeon_pick_power_state(struct radeon_device *rdev,
-							   enum radeon_pm_state_type type)
-{
-	int i, j;
-	enum radeon_pm_state_type wanted_types[2];
-	int wanted_count;
-
-	switch (type) {
-	case POWER_STATE_TYPE_DEFAULT:
-	default:
-		return rdev->pm.default_power_state;
-	case POWER_STATE_TYPE_POWERSAVE:
-		if (rdev->flags & RADEON_IS_MOBILITY) {
-			wanted_types[0] = POWER_STATE_TYPE_POWERSAVE;
-			wanted_types[1] = POWER_STATE_TYPE_BATTERY;
-			wanted_count = 2;
+				rdev->pm.profile_index = PM_PROFILE_HIGH_SH_IDX;
 		} else {
-			wanted_types[0] = POWER_STATE_TYPE_PERFORMANCE;
-			wanted_count = 1;
+			if (rdev->pm.active_crtc_count > 1)
+				rdev->pm.profile_index = PM_PROFILE_MID_MH_IDX;
+			else
+				rdev->pm.profile_index = PM_PROFILE_MID_SH_IDX;
 		}
 		break;
-	case POWER_STATE_TYPE_BATTERY:
-		if (rdev->flags & RADEON_IS_MOBILITY) {
-			wanted_types[0] = POWER_STATE_TYPE_BATTERY;
-			wanted_types[1] = POWER_STATE_TYPE_POWERSAVE;
-			wanted_count = 2;
-		} else {
-			wanted_types[0] = POWER_STATE_TYPE_PERFORMANCE;
-			wanted_count = 1;
-		}
-		break;
-	case POWER_STATE_TYPE_BALANCED:
-	case POWER_STATE_TYPE_PERFORMANCE:
-		wanted_types[0] = type;
-		wanted_count = 1;
-		break;
-	}
-
-	for (i = 0; i < wanted_count; i++) {
-		for (j = 0; j < rdev->pm.num_power_states; j++) {
-			if (rdev->pm.power_state[j].type == wanted_types[i])
-				return &rdev->pm.power_state[j];
-		}
-	}
-
-	return rdev->pm.default_power_state;
-}
-
-static struct radeon_pm_clock_info * radeon_pick_clock_mode(struct radeon_device *rdev,
-							    struct radeon_power_state *power_state,
-							    enum radeon_pm_clock_mode_type type)
-{
-	switch (type) {
-	case POWER_MODE_TYPE_DEFAULT:
-	default:
-		return power_state->default_clock_mode;
-	case POWER_MODE_TYPE_LOW:
-		return &power_state->clock_info[0];
-	case POWER_MODE_TYPE_MID:
-		if (power_state->num_clock_modes > 2)
-			return &power_state->clock_info[1];
+	case PM_PROFILE_LOW:
+		if (rdev->pm.active_crtc_count > 1)
+			rdev->pm.profile_index = PM_PROFILE_LOW_MH_IDX;
 		else
-			return &power_state->clock_info[0];
+			rdev->pm.profile_index = PM_PROFILE_LOW_SH_IDX;
 		break;
-	case POWER_MODE_TYPE_HIGH:
-		return &power_state->clock_info[power_state->num_clock_modes - 1];
+	case PM_PROFILE_MID:
+		if (rdev->pm.active_crtc_count > 1)
+			rdev->pm.profile_index = PM_PROFILE_MID_MH_IDX;
+		else
+			rdev->pm.profile_index = PM_PROFILE_MID_SH_IDX;
+		break;
+	case PM_PROFILE_HIGH:
+		if (rdev->pm.active_crtc_count > 1)
+			rdev->pm.profile_index = PM_PROFILE_HIGH_MH_IDX;
+		else
+			rdev->pm.profile_index = PM_PROFILE_HIGH_SH_IDX;
+		break;
 	}
 
+	if (rdev->pm.active_crtc_count == 0) {
+		rdev->pm.requested_power_state_index =
+			rdev->pm.profiles[rdev->pm.profile_index].dpms_off_ps_idx;
+		rdev->pm.requested_clock_mode_index =
+			rdev->pm.profiles[rdev->pm.profile_index].dpms_off_cm_idx;
+	} else {
+		rdev->pm.requested_power_state_index =
+			rdev->pm.profiles[rdev->pm.profile_index].dpms_on_ps_idx;
+		rdev->pm.requested_clock_mode_index =
+			rdev->pm.profiles[rdev->pm.profile_index].dpms_on_cm_idx;
+		}
 }
 
-static void radeon_get_power_state(struct radeon_device *rdev,
-				   enum radeon_pm_action action)
+static void radeon_unmap_vram_bos(struct radeon_device *rdev)
 {
-	switch (action) {
-	case PM_ACTION_MINIMUM:
-		rdev->pm.requested_power_state = radeon_pick_power_state(rdev, POWER_STATE_TYPE_BATTERY);
-		rdev->pm.requested_clock_mode =
-			radeon_pick_clock_mode(rdev, rdev->pm.requested_power_state, POWER_MODE_TYPE_LOW);
-		break;
-	case PM_ACTION_DOWNCLOCK:
-		rdev->pm.requested_power_state = radeon_pick_power_state(rdev, POWER_STATE_TYPE_POWERSAVE);
-		rdev->pm.requested_clock_mode =
-			radeon_pick_clock_mode(rdev, rdev->pm.requested_power_state, POWER_MODE_TYPE_MID);
-		break;
-	case PM_ACTION_UPCLOCK:
-		rdev->pm.requested_power_state = radeon_pick_power_state(rdev, POWER_STATE_TYPE_DEFAULT);
-		rdev->pm.requested_clock_mode =
-			radeon_pick_clock_mode(rdev, rdev->pm.requested_power_state, POWER_MODE_TYPE_HIGH);
-		break;
-	case PM_ACTION_NONE:
-	default:
-		DRM_ERROR("Requested mode for not defined action\n");
+	struct radeon_bo *bo, *n;
+
+	if (list_empty(&rdev->gem.objects))
 		return;
-	}
-	DRM_INFO("Requested: e: %d m: %d p: %d\n",
-		 rdev->pm.requested_clock_mode->sclk,
-		 rdev->pm.requested_clock_mode->mclk,
-		 rdev->pm.requested_power_state->non_clock_info.pcie_lanes);
+
 }
+
 
 static void radeon_set_power_state(struct radeon_device *rdev)
 {
-	/* if *_clock_mode are the same, *_power_state are as well */
-	if (rdev->pm.requested_clock_mode == rdev->pm.current_clock_mode)
+	u32 sclk, mclk;
+	bool misc_after = false;
+
+	if ((rdev->pm.requested_clock_mode_index == rdev->pm.current_clock_mode_index) &&
+	    (rdev->pm.requested_power_state_index == rdev->pm.current_power_state_index))
 		return;
 
-	DRM_INFO("Setting: e: %d m: %d p: %d\n",
-		 rdev->pm.requested_clock_mode->sclk,
-		 rdev->pm.requested_clock_mode->mclk,
-		 rdev->pm.requested_power_state->non_clock_info.pcie_lanes);
-	/* set pcie lanes */
-	/* set voltage */
-	/* set engine clock */
-	radeon_set_engine_clock(rdev, rdev->pm.requested_clock_mode->sclk);
-	/* set memory clock */
+	if (radeon_gui_idle(rdev)) {
+		sclk = rdev->pm.power_state[rdev->pm.requested_power_state_index].
+			clock_info[rdev->pm.requested_clock_mode_index].sclk;
+		if (sclk > rdev->pm.default_sclk)
+			sclk = rdev->pm.default_sclk;
 
-	rdev->pm.current_power_state = rdev->pm.requested_power_state;
-	rdev->pm.current_clock_mode = rdev->pm.requested_clock_mode;
+		mclk = rdev->pm.power_state[rdev->pm.requested_power_state_index].
+			clock_info[rdev->pm.requested_clock_mode_index].mclk;
+		if (mclk > rdev->pm.default_mclk)
+			mclk = rdev->pm.default_mclk;
+
+		/* upvolt before raising clocks, downvolt after lowering clocks */
+		if (sclk < rdev->pm.current_sclk)
+			misc_after = true;
+
+//       radeon_sync_with_vblank(rdev);
+
+		if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
+			if (!radeon_pm_in_vbl(rdev))
+				return;
+		}
+
+		radeon_pm_prepare(rdev);
+
+		if (!misc_after)
+			/* voltage, pcie lanes, etc.*/
+			radeon_pm_misc(rdev);
+
+	/* set engine clock */
+		if (sclk != rdev->pm.current_sclk) {
+	radeon_pm_debug_check_in_vbl(rdev, false);
+			radeon_set_engine_clock(rdev, sclk);
+	radeon_pm_debug_check_in_vbl(rdev, true);
+			rdev->pm.current_sclk = sclk;
+			DRM_DEBUG_DRIVER("Setting: e: %d\n", sclk);
+		}
+
+	/* set memory clock */
+		if (rdev->asic->set_memory_clock && (mclk != rdev->pm.current_mclk)) {
+		radeon_pm_debug_check_in_vbl(rdev, false);
+			radeon_set_memory_clock(rdev, mclk);
+		radeon_pm_debug_check_in_vbl(rdev, true);
+			rdev->pm.current_mclk = mclk;
+			DRM_DEBUG_DRIVER("Setting: m: %d\n", mclk);
+		}
+
+		if (misc_after)
+			/* voltage, pcie lanes, etc.*/
+			radeon_pm_misc(rdev);
+
+		radeon_pm_finish(rdev);
+
+		rdev->pm.current_power_state_index = rdev->pm.requested_power_state_index;
+		rdev->pm.current_clock_mode_index = rdev->pm.requested_clock_mode_index;
+	} else
+		DRM_DEBUG_DRIVER("pm: GUI not idle!!!\n");
+}
+
+static void radeon_pm_set_clocks(struct radeon_device *rdev)
+{
+	int i;
+
+	/* no need to take locks, etc. if nothing's going to change */
+	if ((rdev->pm.requested_clock_mode_index == rdev->pm.current_clock_mode_index) &&
+	    (rdev->pm.requested_power_state_index == rdev->pm.current_power_state_index))
+		return;
+
+	mutex_lock(&rdev->ddev->struct_mutex);
+	mutex_lock(&rdev->vram_mutex);
+	mutex_lock(&rdev->cp.mutex);
+
+	/* gui idle int has issues on older chips it seems */
+	if (rdev->family >= CHIP_R600) {
+		if (rdev->irq.installed) {
+			/* wait for GPU idle */
+			rdev->pm.gui_idle = false;
+			rdev->irq.gui_idle = true;
+        }
+	} else {
+		if (rdev->cp.ready) {
+//           struct radeon_fence *fence;
+//           radeon_ring_alloc(rdev, 64);
+//           radeon_fence_create(rdev, &fence);
+//           radeon_fence_emit(rdev, fence);
+//           radeon_ring_commit(rdev);
+//           radeon_fence_wait(fence, false);
+//           radeon_fence_unref(&fence);
+		}
+	}
+	radeon_unmap_vram_bos(rdev);
+
+	if (rdev->irq.installed) {
+		for (i = 0; i < rdev->num_crtc; i++) {
+			if (rdev->pm.active_crtcs & (1 << i)) {
+				rdev->pm.req_vblank |= (1 << i);
+//               drm_vblank_get(rdev->ddev, i);
+			}
+		}
+	}
+
+	radeon_set_power_state(rdev);
+
+	if (rdev->irq.installed) {
+		for (i = 0; i < rdev->num_crtc; i++) {
+			if (rdev->pm.req_vblank & (1 << i)) {
+				rdev->pm.req_vblank &= ~(1 << i);
+//               drm_vblank_put(rdev->ddev, i);
+			}
+		}
+	}
+
+	/* update display watermarks based on new power state */
+	radeon_update_bandwidth_info(rdev);
+	if (rdev->pm.active_crtc_count)
+		radeon_bandwidth_update(rdev);
+
+	rdev->pm.dynpm_planned_action = DYNPM_ACTION_NONE;
+
+	mutex_unlock(&rdev->cp.mutex);
+	mutex_unlock(&rdev->vram_mutex);
+	mutex_unlock(&rdev->ddev->struct_mutex);
+}
+
+static void radeon_pm_print_states(struct radeon_device *rdev)
+{
+	int i, j;
+	struct radeon_power_state *power_state;
+	struct radeon_pm_clock_info *clock_info;
+
+	DRM_DEBUG_DRIVER("%d Power State(s)\n", rdev->pm.num_power_states);
+	for (i = 0; i < rdev->pm.num_power_states; i++) {
+		power_state = &rdev->pm.power_state[i];
+		DRM_DEBUG_DRIVER("State %d: %s\n", i,
+			radeon_pm_state_type_name[power_state->type]);
+		if (i == rdev->pm.default_power_state_index)
+			DRM_DEBUG_DRIVER("\tDefault");
+		if ((rdev->flags & RADEON_IS_PCIE) && !(rdev->flags & RADEON_IS_IGP))
+			DRM_DEBUG_DRIVER("\t%d PCIE Lanes\n", power_state->pcie_lanes);
+		if (power_state->flags & RADEON_PM_STATE_SINGLE_DISPLAY_ONLY)
+			DRM_DEBUG_DRIVER("\tSingle display only\n");
+		DRM_DEBUG_DRIVER("\t%d Clock Mode(s)\n", power_state->num_clock_modes);
+		for (j = 0; j < power_state->num_clock_modes; j++) {
+			clock_info = &(power_state->clock_info[j]);
+			if (rdev->flags & RADEON_IS_IGP)
+				DRM_DEBUG_DRIVER("\t\t%d e: %d%s\n",
+					j,
+					clock_info->sclk * 10,
+					clock_info->flags & RADEON_PM_MODE_NO_DISPLAY ? "\tNo display only" : "");
+			else
+				DRM_DEBUG_DRIVER("\t\t%d e: %d\tm: %d\tv: %d%s\n",
+					j,
+					clock_info->sclk * 10,
+					clock_info->mclk * 10,
+					clock_info->voltage.voltage,
+					clock_info->flags & RADEON_PM_MODE_NO_DISPLAY ? "\tNo display only" : "");
+		}
+	}
+}
+
+static ssize_t radeon_get_pm_profile(struct device *dev,
+				     struct device_attribute *attr,
+				     char *buf)
+{
+
+    return snprintf(buf, PAGE_SIZE, "%s\n", "default");
+}
+
+static ssize_t radeon_set_pm_profile(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf,
+				     size_t count)
+{
+	struct drm_device *ddev = pci_get_drvdata(to_pci_dev(dev));
+	struct radeon_device *rdev = ddev->dev_private;
+
+	mutex_lock(&rdev->pm.mutex);
+
+    rdev->pm.profile = PM_PROFILE_DEFAULT;
+
+    radeon_pm_update_profile(rdev);
+    radeon_pm_set_clocks(rdev);
+fail:
+	mutex_unlock(&rdev->pm.mutex);
+
+	return count;
+}
+
+static ssize_t radeon_get_pm_method(struct device *dev,
+				    struct device_attribute *attr,
+				    char *buf)
+{
+	struct drm_device *ddev = pci_get_drvdata(to_pci_dev(dev));
+	struct radeon_device *rdev = ddev->dev_private;
+	int pm = rdev->pm.pm_method;
+
+	return snprintf(buf, PAGE_SIZE, "%s\n",
+			(pm == PM_METHOD_DYNPM) ? "dynpm" : "profile");
+}
+
+static ssize_t radeon_set_pm_method(struct device *dev,
+				    struct device_attribute *attr,
+				    const char *buf,
+				    size_t count)
+{
+	struct drm_device *ddev = pci_get_drvdata(to_pci_dev(dev));
+	struct radeon_device *rdev = ddev->dev_private;
+
+
+	if (strncmp("dynpm", buf, strlen("dynpm")) == 0) {
+		mutex_lock(&rdev->pm.mutex);
+		rdev->pm.pm_method = PM_METHOD_DYNPM;
+		rdev->pm.dynpm_state = DYNPM_STATE_PAUSED;
+		rdev->pm.dynpm_planned_action = DYNPM_ACTION_DEFAULT;
+		mutex_unlock(&rdev->pm.mutex);
+	} else if (strncmp("profile", buf, strlen("profile")) == 0) {
+		mutex_lock(&rdev->pm.mutex);
+		/* disable dynpm */
+		rdev->pm.dynpm_state = DYNPM_STATE_DISABLED;
+		rdev->pm.dynpm_planned_action = DYNPM_ACTION_NONE;
+		rdev->pm.pm_method = PM_METHOD_PROFILE;
+		mutex_unlock(&rdev->pm.mutex);
+//		cancel_delayed_work_sync(&rdev->pm.dynpm_idle_work);
+	} else {
+		DRM_ERROR("invalid power method!\n");
+		goto fail;
+	}
+	radeon_pm_compute_clocks(rdev);
+fail:
+	return count;
+}
+
+static ssize_t radeon_hwmon_show_temp(struct device *dev,
+				      struct device_attribute *attr,
+				      char *buf)
+{
+	struct drm_device *ddev = pci_get_drvdata(to_pci_dev(dev));
+	struct radeon_device *rdev = ddev->dev_private;
+	u32 temp;
+
+	switch (rdev->pm.int_thermal_type) {
+	case THERMAL_TYPE_RV6XX:
+		temp = rv6xx_get_temp(rdev);
+		break;
+	case THERMAL_TYPE_RV770:
+		temp = rv770_get_temp(rdev);
+		break;
+	case THERMAL_TYPE_EVERGREEN:
+	case THERMAL_TYPE_NI:
+		temp = evergreen_get_temp(rdev);
+		break;
+	default:
+		temp = 0;
+		break;
+	}
+
+	return snprintf(buf, PAGE_SIZE, "%d\n", temp);
+}
+
+static ssize_t radeon_hwmon_show_name(struct device *dev,
+				      struct device_attribute *attr,
+				      char *buf)
+{
+	return sprintf(buf, "radeon\n");
+}
+
+static int radeon_hwmon_init(struct radeon_device *rdev)
+{
+	int err = 0;
+
+	rdev->pm.int_hwmon_dev = NULL;
+
+	return err;
+}
+
+static void radeon_hwmon_fini(struct radeon_device *rdev)
+{
+}
+
+void radeon_pm_suspend(struct radeon_device *rdev)
+{
+	mutex_lock(&rdev->pm.mutex);
+	if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
+		if (rdev->pm.dynpm_state == DYNPM_STATE_ACTIVE)
+			rdev->pm.dynpm_state = DYNPM_STATE_SUSPENDED;
+	}
+	mutex_unlock(&rdev->pm.mutex);
+
+//	cancel_delayed_work_sync(&rdev->pm.dynpm_idle_work);
+}
+
+void radeon_pm_resume(struct radeon_device *rdev)
+{
+	/* asic init will reset the default power state */
+	mutex_lock(&rdev->pm.mutex);
+	rdev->pm.current_power_state_index = rdev->pm.default_power_state_index;
+	rdev->pm.current_clock_mode_index = 0;
+	rdev->pm.current_sclk = rdev->pm.default_sclk;
+	rdev->pm.current_mclk = rdev->pm.default_mclk;
+	rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
+	if (rdev->pm.pm_method == PM_METHOD_DYNPM
+	    && rdev->pm.dynpm_state == DYNPM_STATE_SUSPENDED) {
+		rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
+//		schedule_delayed_work(&rdev->pm.dynpm_idle_work,
+//					msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
+	}
+	mutex_unlock(&rdev->pm.mutex);
+	radeon_pm_compute_clocks(rdev);
 }
 
 int radeon_pm_init(struct radeon_device *rdev)
 {
-	rdev->pm.state = PM_STATE_DISABLED;
-	rdev->pm.planned_action = PM_ACTION_NONE;
-	rdev->pm.downclocked = false;
+	int ret;
+
+	/* default to profile method */
+	rdev->pm.pm_method = PM_METHOD_PROFILE;
+	rdev->pm.profile = PM_PROFILE_DEFAULT;
+	rdev->pm.dynpm_state = DYNPM_STATE_DISABLED;
+	rdev->pm.dynpm_planned_action = DYNPM_ACTION_NONE;
+	rdev->pm.dynpm_can_upclock = true;
+	rdev->pm.dynpm_can_downclock = true;
+	rdev->pm.default_sclk = rdev->clock.default_sclk;
+	rdev->pm.default_mclk = rdev->clock.default_mclk;
+	rdev->pm.current_sclk = rdev->clock.default_sclk;
+	rdev->pm.current_mclk = rdev->clock.default_mclk;
+	rdev->pm.int_thermal_type = THERMAL_TYPE_NONE;
 
 	if (rdev->bios) {
 		if (rdev->is_atom_bios)
 			radeon_atombios_get_power_modes(rdev);
 		else
 			radeon_combios_get_power_modes(rdev);
-		radeon_print_power_mode_info(rdev);
+		radeon_pm_print_states(rdev);
+		radeon_pm_init_profile(rdev);
 	}
 
-	if (radeon_debugfs_pm_init(rdev)) {
-		DRM_ERROR("Failed to register debugfs file for PM!\n");
+	/* set up the internal thermal sensor if applicable */
+	ret = radeon_hwmon_init(rdev);
+	if (ret)
+		return ret;
+
+	if (rdev->pm.num_power_states > 1) {
+
+		DRM_INFO("radeon: power management initialized\n");
 	}
-
-//   INIT_DELAYED_WORK(&rdev->pm.idle_work, radeon_pm_idle_work_handler);
-
-	if (radeon_dynpm != -1 && radeon_dynpm) {
-		rdev->pm.state = PM_STATE_PAUSED;
-		DRM_INFO("radeon: dynamic power management enabled\n");
-	}
-
-	DRM_INFO("radeon: power management initialized\n");
 
 	return 0;
+}
+
+void radeon_pm_fini(struct radeon_device *rdev)
+{
+	if (rdev->pm.num_power_states > 1) {
+		mutex_lock(&rdev->pm.mutex);
+		if (rdev->pm.pm_method == PM_METHOD_PROFILE) {
+			rdev->pm.profile = PM_PROFILE_DEFAULT;
+			radeon_pm_update_profile(rdev);
+			radeon_pm_set_clocks(rdev);
+		} else if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
+			/* reset default clocks */
+			rdev->pm.dynpm_state = DYNPM_STATE_DISABLED;
+			rdev->pm.dynpm_planned_action = DYNPM_ACTION_DEFAULT;
+			radeon_pm_set_clocks(rdev);
+		}
+		mutex_unlock(&rdev->pm.mutex);
+
+//		cancel_delayed_work_sync(&rdev->pm.dynpm_idle_work);
+
+    }
+
+	radeon_hwmon_fini(rdev);
 }
 
 void radeon_pm_compute_clocks(struct radeon_device *rdev)
 {
 	struct drm_device *ddev = rdev->ddev;
-	struct drm_connector *connector;
+	struct drm_crtc *crtc;
 	struct radeon_crtc *radeon_crtc;
-	int count = 0;
 
-	if (rdev->pm.state == PM_STATE_DISABLED)
+	if (rdev->pm.num_power_states < 2)
 		return;
 
 	mutex_lock(&rdev->pm.mutex);
 
 	rdev->pm.active_crtcs = 0;
-	list_for_each_entry(connector,
-		&ddev->mode_config.connector_list, head) {
-		if (connector->encoder &&
-			connector->dpms != DRM_MODE_DPMS_OFF) {
-			radeon_crtc = to_radeon_crtc(connector->encoder->crtc);
+	rdev->pm.active_crtc_count = 0;
+	list_for_each_entry(crtc,
+		&ddev->mode_config.crtc_list, head) {
+		radeon_crtc = to_radeon_crtc(crtc);
+		if (radeon_crtc->enabled) {
 			rdev->pm.active_crtcs |= (1 << radeon_crtc->crtc_id);
-			++count;
+			rdev->pm.active_crtc_count++;
 		}
 	}
 
-	if (count > 1) {
-		if (rdev->pm.state == PM_STATE_ACTIVE) {
+	if (rdev->pm.pm_method == PM_METHOD_PROFILE) {
+		radeon_pm_update_profile(rdev);
+		radeon_pm_set_clocks(rdev);
+	} else if (rdev->pm.pm_method == PM_METHOD_DYNPM) {
+		if (rdev->pm.dynpm_state != DYNPM_STATE_DISABLED) {
+			if (rdev->pm.active_crtc_count > 1) {
+				if (rdev->pm.dynpm_state == DYNPM_STATE_ACTIVE) {
+//                   cancel_delayed_work(&rdev->pm.dynpm_idle_work);
 
-			rdev->pm.state = PM_STATE_PAUSED;
-			rdev->pm.planned_action = PM_ACTION_UPCLOCK;
-			if (rdev->pm.downclocked)
+					rdev->pm.dynpm_state = DYNPM_STATE_PAUSED;
+					rdev->pm.dynpm_planned_action = DYNPM_ACTION_DEFAULT;
+					radeon_pm_get_dynpm_state(rdev);
 				radeon_pm_set_clocks(rdev);
 
-			DRM_DEBUG("radeon: dynamic power management deactivated\n");
+					DRM_DEBUG_DRIVER("radeon: dynamic power management deactivated\n");
 		}
-	} else if (count == 1) {
+			} else if (rdev->pm.active_crtc_count == 1) {
 		/* TODO: Increase clocks if needed for current mode */
 
-		if (rdev->pm.state == PM_STATE_MINIMUM) {
-			rdev->pm.state = PM_STATE_ACTIVE;
-			rdev->pm.planned_action = PM_ACTION_UPCLOCK;
+				if (rdev->pm.dynpm_state == DYNPM_STATE_MINIMUM) {
+					rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
+					rdev->pm.dynpm_planned_action = DYNPM_ACTION_UPCLOCK;
+					radeon_pm_get_dynpm_state(rdev);
 			radeon_pm_set_clocks(rdev);
+
+//					schedule_delayed_work(&rdev->pm.dynpm_idle_work,
+//							   msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
+				} else if (rdev->pm.dynpm_state == DYNPM_STATE_PAUSED) {
+					rdev->pm.dynpm_state = DYNPM_STATE_ACTIVE;
+//					schedule_delayed_work(&rdev->pm.dynpm_idle_work,
+//							   msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
+					DRM_DEBUG_DRIVER("radeon: dynamic power management activated\n");
         }
-		else if (rdev->pm.state == PM_STATE_PAUSED) {
-			rdev->pm.state = PM_STATE_ACTIVE;
-			DRM_DEBUG("radeon: dynamic power management activated\n");
+			} else { /* count == 0 */
+				if (rdev->pm.dynpm_state != DYNPM_STATE_MINIMUM) {
+//					cancel_delayed_work(&rdev->pm.dynpm_idle_work);
+
+					rdev->pm.dynpm_state = DYNPM_STATE_MINIMUM;
+					rdev->pm.dynpm_planned_action = DYNPM_ACTION_MINIMUM;
+					radeon_pm_get_dynpm_state(rdev);
+					radeon_pm_set_clocks(rdev);
 		}
 	}
-	else { /* count == 0 */
-		if (rdev->pm.state != PM_STATE_MINIMUM) {
-			rdev->pm.state = PM_STATE_MINIMUM;
-			rdev->pm.planned_action = PM_ACTION_MINIMUM;
-			radeon_pm_set_clocks(rdev);
 		}
 	}
 
 	mutex_unlock(&rdev->pm.mutex);
+}
+
+static bool radeon_pm_in_vbl(struct radeon_device *rdev)
+{
+	int  crtc, vpos, hpos, vbl_status;
+	bool in_vbl = true;
+
+	/* Iterate over all active crtc's. All crtc's must be in vblank,
+	 * otherwise return in_vbl == false.
+	 */
+	for (crtc = 0; (crtc < rdev->num_crtc) && in_vbl; crtc++) {
+		if (rdev->pm.active_crtcs & (1 << crtc)) {
+			vbl_status = radeon_get_crtc_scanoutpos(rdev->ddev, crtc, &vpos, &hpos);
+			if ((vbl_status & DRM_SCANOUTPOS_VALID) &&
+			    !(vbl_status & DRM_SCANOUTPOS_INVBL))
+				in_vbl = false;
+		}
+		}
+
+	return in_vbl;
 }
 
 static bool radeon_pm_debug_check_in_vbl(struct radeon_device *rdev, bool finish)
 {
-	u32 stat_crtc1 = 0, stat_crtc2 = 0;
-	bool in_vbl = true;
+	u32 stat_crtc = 0;
+	bool in_vbl = radeon_pm_in_vbl(rdev);
 
-	if (ASIC_IS_AVIVO(rdev)) {
-		if (rdev->pm.active_crtcs & (1 << 0)) {
-			stat_crtc1 = RREG32(D1CRTC_STATUS);
-			if (!(stat_crtc1 & 1))
-				in_vbl = false;
-		}
-		if (rdev->pm.active_crtcs & (1 << 1)) {
-			stat_crtc2 = RREG32(D2CRTC_STATUS);
-			if (!(stat_crtc2 & 1))
-				in_vbl = false;
-		}
-	}
 	if (in_vbl == false)
-		DRM_INFO("not in vbl for pm change %08x %08x at %s\n", stat_crtc1,
-			 stat_crtc2, finish ? "exit" : "entry");
+		DRM_DEBUG_DRIVER("not in vbl for pm change %08x at %s\n", stat_crtc,
+			 finish ? "exit" : "entry");
 	return in_vbl;
 }
-static void radeon_pm_set_clocks_locked(struct radeon_device *rdev)
-{
-	/*radeon_fence_wait_last(rdev);*/
-	switch (rdev->pm.planned_action) {
-	case PM_ACTION_UPCLOCK:
-		rdev->pm.downclocked = false;
-		break;
-	case PM_ACTION_DOWNCLOCK:
-		rdev->pm.downclocked = true;
-		break;
-	case PM_ACTION_MINIMUM:
-		break;
-	case PM_ACTION_NONE:
-		DRM_ERROR("%s: PM_ACTION_NONE\n", __func__);
-		break;
-	}
 
-	/* check if we are in vblank */
-	radeon_pm_debug_check_in_vbl(rdev, false);
-	radeon_set_power_state(rdev);
-	radeon_pm_debug_check_in_vbl(rdev, true);
-	rdev->pm.planned_action = PM_ACTION_NONE;
-}
-
-static void radeon_pm_set_clocks(struct radeon_device *rdev)
-{
-	radeon_get_power_state(rdev, rdev->pm.planned_action);
-	mutex_lock(&rdev->cp.mutex);
-
-	if (rdev->pm.active_crtcs & (1 << 0)) {
-		rdev->pm.req_vblank |= (1 << 0);
-//       drm_vblank_get(rdev->ddev, 0);
-	}
-	if (rdev->pm.active_crtcs & (1 << 1)) {
-		rdev->pm.req_vblank |= (1 << 1);
-//       drm_vblank_get(rdev->ddev, 1);
-	}
-	if (rdev->pm.active_crtcs)
-//       wait_event_interruptible_timeout(
-//           rdev->irq.vblank_queue, 0,
-//           msecs_to_jiffies(RADEON_WAIT_VBLANK_TIMEOUT));
-	if (rdev->pm.req_vblank & (1 << 0)) {
-		rdev->pm.req_vblank &= ~(1 << 0);
-//       drm_vblank_put(rdev->ddev, 0);
-	}
-	if (rdev->pm.req_vblank & (1 << 1)) {
-		rdev->pm.req_vblank &= ~(1 << 1);
-//       drm_vblank_put(rdev->ddev, 1);
-	}
-
-	radeon_pm_set_clocks_locked(rdev);
-	mutex_unlock(&rdev->cp.mutex);
-}
-
-#if 0
-static void radeon_pm_idle_work_handler(struct work_struct *work)
-{
-	struct radeon_device *rdev;
-	rdev = container_of(work, struct radeon_device,
-				pm.idle_work.work);
-
-	mutex_lock(&rdev->pm.mutex);
-	if (rdev->pm.state == PM_STATE_ACTIVE) {
-		unsigned long irq_flags;
-		int not_processed = 0;
-
-		read_lock_irqsave(&rdev->fence_drv.lock, irq_flags);
-		if (!list_empty(&rdev->fence_drv.emited)) {
-			struct list_head *ptr;
-			list_for_each(ptr, &rdev->fence_drv.emited) {
-				/* count up to 3, that's enought info */
-				if (++not_processed >= 3)
-					break;
-			}
-		}
-		read_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
-
-		if (not_processed >= 3) { /* should upclock */
-			if (rdev->pm.planned_action == PM_ACTION_DOWNCLOCK) {
-				rdev->pm.planned_action = PM_ACTION_NONE;
-			} else if (rdev->pm.planned_action == PM_ACTION_NONE &&
-				rdev->pm.downclocked) {
-				rdev->pm.planned_action =
-					PM_ACTION_UPCLOCK;
-				rdev->pm.action_timeout = jiffies +
-				msecs_to_jiffies(RADEON_RECLOCK_DELAY_MS);
-			}
-		} else if (not_processed == 0) { /* should downclock */
-			if (rdev->pm.planned_action == PM_ACTION_UPCLOCK) {
-				rdev->pm.planned_action = PM_ACTION_NONE;
-			} else if (rdev->pm.planned_action == PM_ACTION_NONE &&
-				!rdev->pm.downclocked) {
-				rdev->pm.planned_action =
-					PM_ACTION_DOWNCLOCK;
-				rdev->pm.action_timeout = jiffies +
-				msecs_to_jiffies(RADEON_RECLOCK_DELAY_MS);
-			}
-		}
-
-		if (rdev->pm.planned_action != PM_ACTION_NONE &&
-		    jiffies > rdev->pm.action_timeout) {
-			radeon_pm_set_clocks(rdev);
-		}
-	}
-	mutex_unlock(&rdev->pm.mutex);
-
-	queue_delayed_work(rdev->wq, &rdev->pm.idle_work,
-					msecs_to_jiffies(RADEON_IDLE_LOOP_MS));
-}
-#endif
 
 /*
  * Debugfs info
@@ -430,12 +634,13 @@ static int radeon_debugfs_pm_info(struct seq_file *m, void *data)
 	struct drm_device *dev = node->minor->dev;
 	struct radeon_device *rdev = dev->dev_private;
 
-	seq_printf(m, "state: %s\n", pm_state_names[rdev->pm.state]);
-	seq_printf(m, "default engine clock: %u0 kHz\n", rdev->clock.default_sclk);
+	seq_printf(m, "default engine clock: %u0 kHz\n", rdev->pm.default_sclk);
 	seq_printf(m, "current engine clock: %u0 kHz\n", radeon_get_engine_clock(rdev));
-	seq_printf(m, "default memory clock: %u0 kHz\n", rdev->clock.default_mclk);
+	seq_printf(m, "default memory clock: %u0 kHz\n", rdev->pm.default_mclk);
 	if (rdev->asic->get_memory_clock)
 		seq_printf(m, "current memory clock: %u0 kHz\n", radeon_get_memory_clock(rdev));
+	if (rdev->pm.current_vddc)
+		seq_printf(m, "voltage: %u mV\n", rdev->pm.current_vddc);
 	if (rdev->asic->get_pcie_lanes)
 		seq_printf(m, "PCIE lanes: %d\n", radeon_get_pcie_lanes(rdev));
 

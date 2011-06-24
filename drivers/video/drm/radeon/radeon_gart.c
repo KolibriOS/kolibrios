@@ -90,8 +90,8 @@ int radeon_gart_table_vram_alloc(struct radeon_device *rdev)
     int r;
 
     if (rdev->gart.table.vram.robj == NULL) {
-		r = radeon_bo_create(rdev, NULL, rdev->gart.table_size,
-					true, RADEON_GEM_DOMAIN_VRAM,
+		r = radeon_bo_create(rdev, rdev->gart.table_size,
+				     PAGE_SIZE, true, RADEON_GEM_DOMAIN_VRAM,
 					&rdev->gart.table.vram.robj);
         if (r) {
             return r;
@@ -190,7 +190,7 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
                offset, pages, pagelist);
 
     if (!rdev->gart.ready) {
-        DRM_ERROR("trying to bind memory to unitialized GART !\n");
+		WARN(1, "trying to bind memory to unitialized GART !\n");
         return -EINVAL;
     }
 	t = offset / RADEON_GPU_PAGE_SIZE;
@@ -283,5 +283,3 @@ void radeon_gart_fini(struct radeon_device *rdev)
 	rdev->gart.pages = NULL;
 	rdev->gart.pages_addr = NULL;
 }
-
-

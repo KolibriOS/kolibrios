@@ -26,9 +26,11 @@
  *          Jerome Glisse
  */
 #include <linux/seq_file.h>
+#include <linux/slab.h>
 #include "drmP.h"
 #include "radeon_reg.h"
 #include "radeon.h"
+#include "radeon_asic.h"
 #include "atom.h"
 #include "r100d.h"
 #include "r420d.h"
@@ -55,8 +57,14 @@ void r420_pipes_init(struct radeon_device *rdev)
 		       "programming pipes. Bad things might happen.\n");
 	}
 	/* get max number of pipes */
-	gb_pipe_select = RREG32(0x402C);
+	gb_pipe_select = RREG32(R400_GB_PIPE_SELECT);
 	num_pipes = ((gb_pipe_select >> 12) & 3) + 1;
+
+	/* SE chips have 1 pipe */
+	if ((rdev->pdev->device == 0x5e4c) ||
+	    (rdev->pdev->device == 0x5e4f))
+		num_pipes = 1;
+
 	rdev->num_gb_pipes = num_pipes;
 	tmp = 0;
 	switch (num_pipes) {
@@ -202,24 +210,14 @@ static int r420_startup(struct radeon_device *rdev)
 	}
 	r420_pipes_init(rdev);
 	/* Enable IRQ */
-//	r100_irq_set(rdev);
 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
 	r = r100_cp_init(rdev, 1024 * 1024);
 	if (r) {
-		dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
+		dev_err(rdev->dev, "failed initializing CP (%d).\n", r);
 		return r;
 	}
 	r420_cp_errata_init(rdev);
-//	r = r100_wb_init(rdev);
-//	if (r) {
-//		dev_err(rdev->dev, "failled initializing WB (%d).\n", r);
-//	}
-//	r = r100_ib_init(rdev);
-//	if (r) {
-//		dev_err(rdev->dev, "failled initializing IB (%d).\n", r);
-//		return r;
-//	}
 	return 0;
 }
 
@@ -233,7 +231,7 @@ int r420_resume(struct radeon_device *rdev)
 	/* Resume clock before doing reset */
 	r420_clock_resume(rdev);
 	/* Reset gpu before posting otherwise ATOM will enter infinite loop */
-	if (radeon_gpu_reset(rdev)) {
+	if (radeon_asic_reset(rdev)) {
 		dev_warn(rdev->dev, "GPU reset failed ! (0xE40=0x%08X, 0x7C0=0x%08X)\n",
 			RREG32(R_000E40_RBBM_STATUS),
 			RREG32(R_0007C0_CP_STAT));
@@ -262,6 +260,8 @@ int r420_init(struct radeon_device *rdev)
 	/* Initialize surface registers */
 	radeon_surface_init(rdev);
 	/* TODO: disable VGA need to use VGA request */
+	/* restore some register to sane defaults */
+	r100_restore_sanity(rdev);
 	/* BIOS*/
 	if (!radeon_get_bios(rdev)) {
 		if (ASIC_IS_AVIVO(rdev))
@@ -279,7 +279,7 @@ int r420_init(struct radeon_device *rdev)
 		}
 	}
 	/* Reset gpu before posting otherwise ATOM will enter infinite loop */
-	if (radeon_gpu_reset(rdev)) {
+	if (radeon_asic_reset(rdev)) {
 		dev_warn(rdev->dev,
 			"GPU reset failed ! (0xE40=0x%08X, 0x7C0=0x%08X)\n",
 			RREG32(R_000E40_RBBM_STATUS),
@@ -291,8 +291,6 @@ int r420_init(struct radeon_device *rdev)
 
 	/* Initialize clocks */
 	radeon_get_clock_info(rdev->ddev);
-	/* Initialize power management */
-	radeon_pm_init(rdev);
 	/* initialize AGP */
 	if (rdev->flags & RADEON_IS_AGP) {
 		r = radeon_agp_init(rdev);
@@ -304,14 +302,7 @@ int r420_init(struct radeon_device *rdev)
 	r300_mc_init(rdev);
 	r420_debugfs(rdev);
 	/* Fence driver */
-//	r = radeon_fence_driver_init(rdev);
-//	if (r) {
-//		return r;
-//	}
-//	r = radeon_irq_kms_init(rdev);
-//	if (r) {
-//		return r;
-//	}
+
 	/* Memory manager */
 	r = radeon_bo_init(rdev);
 	if (r) {
@@ -336,14 +327,10 @@ int r420_init(struct radeon_device *rdev)
 	if (r) {
 		/* Somethings want wront with the accel init stop accel */
 		dev_err(rdev->dev, "Disabling GPU acceleration\n");
-//		r100_cp_fini(rdev);
-//		r100_wb_fini(rdev);
-//		r100_ib_fini(rdev);
 		if (rdev->flags & RADEON_IS_PCIE)
 			rv370_pcie_gart_fini(rdev);
 		if (rdev->flags & RADEON_IS_PCI)
 			r100_pci_gart_fini(rdev);
-//		radeon_agp_fini(rdev);
 		rdev->accel_working = false;
 	}
 	return 0;

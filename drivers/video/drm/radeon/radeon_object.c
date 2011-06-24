@@ -30,6 +30,7 @@
  *    Dave Airlie
  */
 #include <linux/list.h>
+#include <linux/slab.h>
 #include <drm/drmP.h>
 #include "radeon_drm.h"
 #include "radeon.h"
@@ -88,15 +89,11 @@ static inline uint32_t radeon_object_flags_from_domain(uint32_t domain)
 }
 
 
-int radeon_object_create(struct radeon_device *rdev,
-             struct drm_gem_object *gobj,
-             unsigned long size,
-             bool kernel,
-             uint32_t domain,
-             bool interruptible,
-             struct radeon_object **robj_ptr)
+int radeon_bo_create(struct radeon_device *rdev,
+        unsigned long size, int byte_align, bool kernel, u32 domain,
+             struct radeon_bo **bo_ptr)
 {
-    struct radeon_object *robj;
+    struct radeon_bo *bo;
     enum ttm_bo_type type;
     uint32_t flags;
     int r;
@@ -106,18 +103,17 @@ int radeon_object_create(struct radeon_device *rdev,
     } else {
         type = ttm_bo_type_device;
     }
-    *robj_ptr = NULL;
-    robj = kzalloc(sizeof(struct radeon_object), GFP_KERNEL);
-    if (robj == NULL) {
+    *bo_ptr = NULL;
+    bo = kzalloc(sizeof(struct radeon_object), GFP_KERNEL);
+    if (bo == NULL) {
         return -ENOMEM;
     }
-    robj->rdev = rdev;
-//    robj->gobj = gobj;
-    INIT_LIST_HEAD(&robj->list);
+    bo->rdev = rdev;
+    INIT_LIST_HEAD(&bo->list);
 
     flags = radeon_object_flags_from_domain(domain);
 
-    robj->flags = flags;
+    bo->flags = flags;
 
     if( flags & TTM_PL_FLAG_VRAM)
     {
@@ -144,13 +140,13 @@ retry_pre_get:
             return r;
         }
 
-        robj->mm_node =  drm_mm_get_block_atomic(vm_node, num_pages, 0);
+        bo->mm_node =  drm_mm_get_block_atomic(vm_node, num_pages, 0);
 
-        if (unlikely(robj->mm_node == NULL)) {
+        if (unlikely(bo->mm_node == NULL)) {
             goto retry_pre_get;
         }
 
-        robj->vm_addr = ((uint32_t)robj->mm_node->start);
+        bo->vm_addr = ((uint32_t)bo->mm_node->start);
 
 //        dbgprintf("alloc vram: base %x size %x\n",
 //                   robj->vm_addr << PAGE_SHIFT, num_pages  << PAGE_SHIFT);
@@ -188,7 +184,7 @@ retry_pre_get1:
             goto retry_pre_get1;
         }
 
-        robj->vm_addr = ((uint32_t)robj->mm_node->start) ;
+        bo->vm_addr = ((uint32_t)bo->mm_node->start) ;
 
 //        dbgprintf("alloc gtt: base %x size %x\n",
 //                   robj->vm_addr << PAGE_SHIFT, num_pages  << PAGE_SHIFT);

@@ -243,8 +243,8 @@ do_set:
         encoder = connector->encoder;
         crtc = encoder->crtc;
 
-        fb = list_first_entry(&dev->mode_config.fb_kernel_list,
-                              struct drm_framebuffer, filp_head);
+//        fb = list_first_entry(&dev->mode_config.fb_kernel_list,
+//                              struct drm_framebuffer, filp_head);
 
 //        memcpy(con_edid, connector->edid_blob_ptr->data, 128);
 
@@ -309,6 +309,8 @@ static int count_connector_modes(struct drm_connector* connector)
 static struct drm_connector* get_def_connector(struct drm_device *dev)
 {
     struct drm_connector  *connector;
+    struct drm_connector_helper_funcs *connector_funcs;
+
     struct drm_connector  *def_connector = NULL;
 
     list_for_each_entry(connector, &dev->mode_config.connector_list, head)
@@ -316,14 +318,22 @@ static struct drm_connector* get_def_connector(struct drm_device *dev)
         struct drm_encoder  *encoder;
         struct drm_crtc     *crtc;
 
+        dbgprintf("CONNECTOR %x ID:  %d status %d encoder %x\n", connector,
+                   connector->base.id, connector->status, connector->encoder);
+
         if( connector->status != connector_status_connected)
             continue;
 
-        encoder = connector->encoder;
+        connector_funcs = connector->helper_private;
+        encoder = connector_funcs->best_encoder(connector);
         if( encoder == NULL)
             continue;
 
+        connector->encoder = encoder;
+
         crtc = encoder->crtc;
+        dbgprintf("encoder %x crtc %x\n", encoder, crtc);
+
         if(crtc == NULL)
             continue;
 

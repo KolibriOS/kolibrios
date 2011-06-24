@@ -51,6 +51,12 @@
 #define PTE_READABLE				(1 << 5)
 #define PTE_WRITEABLE				(1 << 6)
 
+/* tiling bits */
+#define     ARRAY_LINEAR_GENERAL              0x00000000
+#define     ARRAY_LINEAR_ALIGNED              0x00000001
+#define     ARRAY_1D_TILED_THIN1              0x00000002
+#define     ARRAY_2D_TILED_THIN1              0x00000004
+
 /* Registers */
 #define	ARB_POP						0x2418
 #define 	ENABLE_TC128					(1 << 30)
@@ -77,6 +83,55 @@
 #define CB_COLOR0_FRAG                                  0x280e0
 #define CB_COLOR0_MASK                                  0x28100
 
+#define SQ_ALU_CONST_CACHE_PS_0				0x28940
+#define SQ_ALU_CONST_CACHE_PS_1				0x28944
+#define SQ_ALU_CONST_CACHE_PS_2				0x28948
+#define SQ_ALU_CONST_CACHE_PS_3				0x2894c
+#define SQ_ALU_CONST_CACHE_PS_4				0x28950
+#define SQ_ALU_CONST_CACHE_PS_5				0x28954
+#define SQ_ALU_CONST_CACHE_PS_6				0x28958
+#define SQ_ALU_CONST_CACHE_PS_7				0x2895c
+#define SQ_ALU_CONST_CACHE_PS_8				0x28960
+#define SQ_ALU_CONST_CACHE_PS_9				0x28964
+#define SQ_ALU_CONST_CACHE_PS_10			0x28968
+#define SQ_ALU_CONST_CACHE_PS_11			0x2896c
+#define SQ_ALU_CONST_CACHE_PS_12			0x28970
+#define SQ_ALU_CONST_CACHE_PS_13			0x28974
+#define SQ_ALU_CONST_CACHE_PS_14			0x28978
+#define SQ_ALU_CONST_CACHE_PS_15			0x2897c
+#define SQ_ALU_CONST_CACHE_VS_0				0x28980
+#define SQ_ALU_CONST_CACHE_VS_1				0x28984
+#define SQ_ALU_CONST_CACHE_VS_2				0x28988
+#define SQ_ALU_CONST_CACHE_VS_3				0x2898c
+#define SQ_ALU_CONST_CACHE_VS_4				0x28990
+#define SQ_ALU_CONST_CACHE_VS_5				0x28994
+#define SQ_ALU_CONST_CACHE_VS_6				0x28998
+#define SQ_ALU_CONST_CACHE_VS_7				0x2899c
+#define SQ_ALU_CONST_CACHE_VS_8				0x289a0
+#define SQ_ALU_CONST_CACHE_VS_9				0x289a4
+#define SQ_ALU_CONST_CACHE_VS_10			0x289a8
+#define SQ_ALU_CONST_CACHE_VS_11			0x289ac
+#define SQ_ALU_CONST_CACHE_VS_12			0x289b0
+#define SQ_ALU_CONST_CACHE_VS_13			0x289b4
+#define SQ_ALU_CONST_CACHE_VS_14			0x289b8
+#define SQ_ALU_CONST_CACHE_VS_15			0x289bc
+#define SQ_ALU_CONST_CACHE_GS_0				0x289c0
+#define SQ_ALU_CONST_CACHE_GS_1				0x289c4
+#define SQ_ALU_CONST_CACHE_GS_2				0x289c8
+#define SQ_ALU_CONST_CACHE_GS_3				0x289cc
+#define SQ_ALU_CONST_CACHE_GS_4				0x289d0
+#define SQ_ALU_CONST_CACHE_GS_5				0x289d4
+#define SQ_ALU_CONST_CACHE_GS_6				0x289d8
+#define SQ_ALU_CONST_CACHE_GS_7				0x289dc
+#define SQ_ALU_CONST_CACHE_GS_8				0x289e0
+#define SQ_ALU_CONST_CACHE_GS_9				0x289e4
+#define SQ_ALU_CONST_CACHE_GS_10			0x289e8
+#define SQ_ALU_CONST_CACHE_GS_11			0x289ec
+#define SQ_ALU_CONST_CACHE_GS_12			0x289f0
+#define SQ_ALU_CONST_CACHE_GS_13			0x289f4
+#define SQ_ALU_CONST_CACHE_GS_14			0x289f8
+#define SQ_ALU_CONST_CACHE_GS_15			0x289fc
+
 #define	CONFIG_MEMSIZE					0x5428
 #define CONFIG_CNTL					0x5424
 #define	CP_STAT						0x8680
@@ -99,13 +154,14 @@
 #define		ROQ_IB2_START(x)				((x) << 8)
 #define	CP_RB_BASE					0xC100
 #define	CP_RB_CNTL					0xC104
-#define		RB_BUFSZ(x)					((x)<<0)
-#define		RB_BLKSZ(x)					((x)<<8)
-#define		RB_NO_UPDATE					(1<<27)
-#define		RB_RPTR_WR_ENA					(1<<31)
+#define		RB_BUFSZ(x)					((x) << 0)
+#define		RB_BLKSZ(x)					((x) << 8)
+#define		RB_NO_UPDATE					(1 << 27)
+#define		RB_RPTR_WR_ENA					(1 << 31)
 #define		BUF_SWAP_32BIT					(2 << 16)
 #define	CP_RB_RPTR					0x8700
 #define	CP_RB_RPTR_ADDR					0xC10C
+#define		RB_RPTR_SWAP(x)					((x) << 0)
 #define	CP_RB_RPTR_ADDR_HI				0xC110
 #define	CP_RB_RPTR_WR					0xC108
 #define	CP_RB_WPTR					0xC114
@@ -190,12 +246,18 @@
 #define	GRBM_SOFT_RESET					0x8020
 #define		SOFT_RESET_CP					(1<<0)
 
+#define	CG_THERMAL_STATUS				0x7F4
+#define		ASIC_T(x)			        ((x) << 0)
+#define		ASIC_T_MASK			        0x1FF
+#define		ASIC_T_SHIFT			        0
+
 #define	HDP_HOST_PATH_CNTL				0x2C00
 #define	HDP_NONSURFACE_BASE				0x2C04
 #define	HDP_NONSURFACE_INFO				0x2C08
 #define	HDP_NONSURFACE_SIZE				0x2C0C
 #define HDP_REG_COHERENCY_FLUSH_CNTL			0x54A0
 #define	HDP_TILING_CONFIG				0x2F3C
+#define HDP_DEBUG1                                      0x2F34
 
 #define MC_VM_AGP_TOP					0x2184
 #define MC_VM_AGP_BOT					0x2188
@@ -419,6 +481,7 @@
 #define	VGT_VERTEX_REUSE_BLOCK_CNTL			0x28C58
 #define		VTX_REUSE_DEPTH_MASK				0x000000FF
 #define VGT_EVENT_INITIATOR                             0x28a90
+#       define CACHE_FLUSH_AND_INV_EVENT_TS                     (0x14 << 0)
 #       define CACHE_FLUSH_AND_INV_EVENT                        (0x16 << 0)
 
 #define VM_CONTEXT0_CNTL				0x1410
@@ -666,6 +729,54 @@
 /* DCE 3.2 */
 #       define DC_HPDx_EN                                 (1 << 28)
 
+#define D1GRPH_INTERRUPT_STATUS                           0x6158
+#define D2GRPH_INTERRUPT_STATUS                           0x6958
+#       define DxGRPH_PFLIP_INT_OCCURRED                  (1 << 0)
+#       define DxGRPH_PFLIP_INT_CLEAR                     (1 << 8)
+#define D1GRPH_INTERRUPT_CONTROL                          0x615c
+#define D2GRPH_INTERRUPT_CONTROL                          0x695c
+#       define DxGRPH_PFLIP_INT_MASK                      (1 << 0)
+#       define DxGRPH_PFLIP_INT_TYPE                      (1 << 8)
+
+/* PCIE link stuff */
+#define PCIE_LC_TRAINING_CNTL                             0xa1 /* PCIE_P */
+#       define LC_POINT_7_PLUS_EN                         (1 << 6)
+#define PCIE_LC_LINK_WIDTH_CNTL                           0xa2 /* PCIE_P */
+#       define LC_LINK_WIDTH_SHIFT                        0
+#       define LC_LINK_WIDTH_MASK                         0x7
+#       define LC_LINK_WIDTH_X0                           0
+#       define LC_LINK_WIDTH_X1                           1
+#       define LC_LINK_WIDTH_X2                           2
+#       define LC_LINK_WIDTH_X4                           3
+#       define LC_LINK_WIDTH_X8                           4
+#       define LC_LINK_WIDTH_X16                          6
+#       define LC_LINK_WIDTH_RD_SHIFT                     4
+#       define LC_LINK_WIDTH_RD_MASK                      0x70
+#       define LC_RECONFIG_ARC_MISSING_ESCAPE             (1 << 7)
+#       define LC_RECONFIG_NOW                            (1 << 8)
+#       define LC_RENEGOTIATION_SUPPORT                   (1 << 9)
+#       define LC_RENEGOTIATE_EN                          (1 << 10)
+#       define LC_SHORT_RECONFIG_EN                       (1 << 11)
+#       define LC_UPCONFIGURE_SUPPORT                     (1 << 12)
+#       define LC_UPCONFIGURE_DIS                         (1 << 13)
+#define PCIE_LC_SPEED_CNTL                                0xa4 /* PCIE_P */
+#       define LC_GEN2_EN_STRAP                           (1 << 0)
+#       define LC_TARGET_LINK_SPEED_OVERRIDE_EN           (1 << 1)
+#       define LC_FORCE_EN_HW_SPEED_CHANGE                (1 << 5)
+#       define LC_FORCE_DIS_HW_SPEED_CHANGE               (1 << 6)
+#       define LC_SPEED_CHANGE_ATTEMPTS_ALLOWED_MASK      (0x3 << 8)
+#       define LC_SPEED_CHANGE_ATTEMPTS_ALLOWED_SHIFT     3
+#       define LC_CURRENT_DATA_RATE                       (1 << 11)
+#       define LC_VOLTAGE_TIMER_SEL_MASK                  (0xf << 14)
+#       define LC_CLR_FAILED_SPD_CHANGE_CNT               (1 << 21)
+#       define LC_OTHER_SIDE_EVER_SENT_GEN2               (1 << 23)
+#       define LC_OTHER_SIDE_SUPPORTS_GEN2                (1 << 24)
+#define MM_CFGREGS_CNTL                                   0x544c
+#       define MM_WR_TO_CFG_EN                            (1 << 3)
+#define LINK_CNTL2                                        0x88 /* F0 */
+#       define TARGET_LINK_SPEED_MASK                     (0xf << 0)
+#       define SELECTABLE_DEEMPHASIS                      (1 << 6)
+
 /*
  * PM4
  */
@@ -720,7 +831,27 @@
 #define		PACKET3_ME_INITIALIZE_DEVICE_ID(x) ((x) << 16)
 #define	PACKET3_COND_WRITE				0x45
 #define	PACKET3_EVENT_WRITE				0x46
+#define		EVENT_TYPE(x)                           ((x) << 0)
+#define		EVENT_INDEX(x)                          ((x) << 8)
+                /* 0 - any non-TS event
+		 * 1 - ZPASS_DONE
+		 * 2 - SAMPLE_PIPELINESTAT
+		 * 3 - SAMPLE_STREAMOUTSTAT*
+		 * 4 - *S_PARTIAL_FLUSH
+		 * 5 - TS events
+		 */
 #define	PACKET3_EVENT_WRITE_EOP				0x47
+#define		DATA_SEL(x)                             ((x) << 29)
+                /* 0 - discard
+		 * 1 - send low 32bit data
+		 * 2 - send 64bit data
+		 * 3 - send 64bit counter value
+		 */
+#define		INT_SEL(x)                              ((x) << 24)
+                /* 0 - none
+		 * 1 - interrupt only (DATA_SEL = 0)
+		 * 2 - interrupt when data write is confirmed
+		 */
 #define	PACKET3_ONE_REG_WRITE				0x57
 #define	PACKET3_SET_CONFIG_REG				0x68
 #define		PACKET3_SET_CONFIG_REG_OFFSET			0x00008000
@@ -1105,6 +1236,10 @@
 #define   S_038000_TILE_MODE(x)                        (((x) & 0xF) << 3)
 #define   G_038000_TILE_MODE(x)                        (((x) >> 3) & 0xF)
 #define   C_038000_TILE_MODE                           0xFFFFFF87
+#define     V_038000_ARRAY_LINEAR_GENERAL              0x00000000
+#define     V_038000_ARRAY_LINEAR_ALIGNED              0x00000001
+#define     V_038000_ARRAY_1D_TILED_THIN1              0x00000002
+#define     V_038000_ARRAY_2D_TILED_THIN1              0x00000004
 #define   S_038000_TILE_TYPE(x)                        (((x) & 0x1) << 7)
 #define   G_038000_TILE_TYPE(x)                        (((x) >> 7) & 0x1)
 #define   C_038000_TILE_TYPE                           0xFFFFFF7F
@@ -1169,6 +1304,14 @@
 #define     V_038004_FMT_16_16_16_FLOAT                0x0000002E
 #define     V_038004_FMT_32_32_32                      0x0000002F
 #define     V_038004_FMT_32_32_32_FLOAT                0x00000030
+#define     V_038004_FMT_BC1                           0x00000031
+#define     V_038004_FMT_BC2                           0x00000032
+#define     V_038004_FMT_BC3                           0x00000033
+#define     V_038004_FMT_BC4                           0x00000034
+#define     V_038004_FMT_BC5                           0x00000035
+#define     V_038004_FMT_BC6                           0x00000036
+#define     V_038004_FMT_BC7                           0x00000037
+#define     V_038004_FMT_32_AS_32_32_32_32             0x00000038
 #define R_038010_SQ_TEX_RESOURCE_WORD4_0             0x038010
 #define   S_038010_FORMAT_COMP_X(x)                    (((x) & 0x3) << 0)
 #define   G_038010_FORMAT_COMP_X(x)                    (((x) >> 0) & 0x3)
@@ -1308,6 +1451,8 @@
 #define   S_028010_ARRAY_MODE(x)                       (((x) & 0xF) << 15)
 #define   G_028010_ARRAY_MODE(x)                       (((x) >> 15) & 0xF)
 #define   C_028010_ARRAY_MODE                          0xFFF87FFF
+#define     V_028010_ARRAY_1D_TILED_THIN1              0x00000002
+#define     V_028010_ARRAY_2D_TILED_THIN1              0x00000004
 #define   S_028010_TILE_SURFACE_ENABLE(x)              (((x) & 0x1) << 25)
 #define   G_028010_TILE_SURFACE_ENABLE(x)              (((x) >> 25) & 0x1)
 #define   C_028010_TILE_SURFACE_ENABLE                 0xFDFFFFFF

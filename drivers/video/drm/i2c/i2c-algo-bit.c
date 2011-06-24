@@ -43,7 +43,6 @@
 	do {} while (0)
 #endif /* DEBUG */
 
-
 /* ----- global variables ---------------------------------------------	*/
 
 static int bit_test;	/* see if the line-setting functions work	*/
@@ -165,8 +164,8 @@ static int i2c_outb(struct i2c_adapter *i2c_adap, unsigned char c)
 		setsda(adap, sb);
 		udelay((adap->udelay + 1) / 2);
 		if (sclhi(adap) < 0) { /* timed out */
-//           bit_dbg(1, &i2c_adap->dev, "i2c_outb: 0x%02x, "
-//               "timeout at bit #%d\n", (int)c, i);
+			bit_dbg(1, &i2c_adap->dev, "i2c_outb: 0x%02x, "
+				"timeout at bit #%d\n", (int)c, i);
 			return -ETIMEDOUT;
 		}
 		/* FIXME do arbitration here:
@@ -179,8 +178,8 @@ static int i2c_outb(struct i2c_adapter *i2c_adap, unsigned char c)
 	}
 	sdahi(adap);
 	if (sclhi(adap) < 0) { /* timeout */
-//       bit_dbg(1, &i2c_adap->dev, "i2c_outb: 0x%02x, "
-//           "timeout at ack\n", (int)c);
+		bit_dbg(1, &i2c_adap->dev, "i2c_outb: 0x%02x, "
+			"timeout at ack\n", (int)c);
 		return -ETIMEDOUT;
 	}
 
@@ -188,8 +187,8 @@ static int i2c_outb(struct i2c_adapter *i2c_adap, unsigned char c)
 	 * NAK (usually to report problems with the data we wrote).
 	 */
 	ack = !getsda(adap);    /* ack: sda is pulled low -> success */
-//   bit_dbg(2, &i2c_adap->dev, "i2c_outb: 0x%02x %s\n", (int)c,
-//       ack ? "A" : "NA");
+	bit_dbg(2, &i2c_adap->dev, "i2c_outb: 0x%02x %s\n", (int)c,
+		ack ? "A" : "NA");
 
 	scllo(adap);
 	return ack;
@@ -227,9 +226,17 @@ static int i2c_inb(struct i2c_adapter *i2c_adap)
  * Sanity check for the adapter hardware - check the reaction of
  * the bus lines only if it seems to be idle.
  */
-static int test_bus(struct i2c_algo_bit_data *adap, char *name)
+static int test_bus(struct i2c_adapter *i2c_adap)
 {
-	int scl, sda;
+	struct i2c_algo_bit_data *adap = i2c_adap->algo_data;
+	const char *name = i2c_adap->name;
+	int scl, sda, ret;
+
+	if (adap->pre_xfer) {
+		ret = adap->pre_xfer(i2c_adap);
+		if (ret < 0)
+			return -ENODEV;
+	}
 
 	if (adap->getscl == NULL)
 		pr_info("%s: Testing SDA only, SCL is not readable\n", name);
@@ -292,11 +299,19 @@ static int test_bus(struct i2c_algo_bit_data *adap, char *name)
 		       "while pulling SCL high!\n", name);
 		goto bailout;
 	}
+
+	if (adap->post_xfer)
+		adap->post_xfer(i2c_adap);
+
 	pr_info("%s: Test OK\n", name);
 	return 0;
 bailout:
 	sdahi(adap);
 	sclhi(adap);
+
+	if (adap->post_xfer)
+		adap->post_xfer(i2c_adap);
+
 	return -ENODEV;
 }
 
@@ -429,11 +444,11 @@ static int readbytes(struct i2c_adapter *i2c_adap, struct i2c_msg *msg)
 			msg->len += inval;
 		}
 
-//       bit_dbg(2, &i2c_adap->dev, "readbytes: 0x%02x %s\n",
-//           inval,
-//           (flags & I2C_M_NO_RD_ACK)
-//               ? "(no ack/nak)"
-//               : (count ? "A" : "NA"));
+		bit_dbg(2, &i2c_adap->dev, "readbytes: 0x%02x %s\n",
+			inval,
+			(flags & I2C_M_NO_RD_ACK)
+				? "(no ack/nak)"
+				: (count ? "A" : "NA"));
 
 		if (!(flags & I2C_M_NO_RD_ACK)) {
 			inval = acknak(i2c_adap, count);
@@ -516,6 +531,13 @@ static int bit_xfer(struct i2c_adapter *i2c_adap,
 	int i, ret;
 	unsigned short nak_ok;
 
+	//ENTER();
+	if (adap->pre_xfer) {
+		ret = adap->pre_xfer(i2c_adap);
+		if (ret < 0)
+			return ret;
+	}
+
 	bit_dbg(3, &i2c_adap->dev, "emitting start condition\n");
 	i2c_start(adap);
 	for (i = 0; i < num; i++) {
@@ -564,6 +586,10 @@ static int bit_xfer(struct i2c_adapter *i2c_adap,
 bailout:
 	bit_dbg(3, &i2c_adap->dev, "emitting stop condition\n");
 	i2c_stop(adap);
+//    LEAVE();
+
+	if (adap->post_xfer)
+		adap->post_xfer(i2c_adap);
 	return ret;
 }
 
@@ -586,15 +612,17 @@ static const struct i2c_algorithm i2c_bit_algo = {
 /*
  * registering functions to load algorithms at runtime
  */
-static int i2c_bit_prepare_bus(struct i2c_adapter *adap)
+static int __i2c_bit_add_bus(struct i2c_adapter *adap,
+			     int (*add_adapter)(struct i2c_adapter *))
 {
 	struct i2c_algo_bit_data *bit_adap = adap->algo_data;
+	int ret;
 
-//   if (bit_test) {
-//       int ret = test_bus(bit_adap, adap->name);
-//       if (ret < 0)
-//           return -ENODEV;
-//   }
+	if (bit_test) {
+		ret = test_bus(adap);
+		if (ret < 0)
+			return -ENODEV;
+	}
 
 	/* register new adapter to i2c module... */
 	adap->algo = &i2c_bit_algo;
@@ -605,12 +633,7 @@ static int i2c_bit_prepare_bus(struct i2c_adapter *adap)
 
 int i2c_bit_add_bus(struct i2c_adapter *adap)
 {
-	int err;
-
-	err = i2c_bit_prepare_bus(adap);
-	if (err)
-		return err;
-
-    return 0; //i2c_add_adapter(adap);
+	return __i2c_bit_add_bus(adap, NULL);
 }
+
 
