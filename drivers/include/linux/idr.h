@@ -13,6 +13,7 @@
 #define __IDR_H__
 
 #include <linux/types.h>
+#include <errno-base.h>
 #include <linux/bitops.h>
 //#include <linux/init.h>
 //#include <linux/rcupdate.h>

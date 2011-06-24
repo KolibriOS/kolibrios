@@ -56,6 +56,14 @@ struct mutex_waiter {
     int                *task;
 };
 
+
+#define __MUTEX_INITIALIZER(lockname) \
+                { .count = ATOMIC_INIT(1) \
+                , .wait_list = LIST_HEAD_INIT(lockname.wait_list) }
+
+#define DEFINE_MUTEX(mutexname) \
+        struct mutex mutexname = __MUTEX_INITIALIZER(mutexname)
+
 void __attribute__ ((fastcall)) __attribute__ ((dllimport))
      mutex_init(struct mutex*)__asm__("MutexInit");
 void __attribute__ ((fastcall)) __attribute__ ((dllimport))
