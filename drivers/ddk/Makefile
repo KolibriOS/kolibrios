@@ -78,6 +78,6 @@ libcore.a: core.S Makefile
 %.o: %.S Makefile
 	$(CC) $(CFLAGS) -o $@ $<
 
-%.o: %.c Makefile
+%.o: %.c Makefile ../include/*.h ../include/linux/*.h
 	$(CC) $(CFLAGS) -o $@ $<
 
