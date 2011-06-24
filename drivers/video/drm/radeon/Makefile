@@ -133,8 +133,6 @@ SRC_DEP:=
 NAME_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
             $(patsubst %.c, %.o, $(NAME_SRC))))
 
-
-
 all: $(NAME).dll
 
 $(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(HFILES) $(LIBPATH)/libcore.a $(LIBPATH)/libddk.a atikms.lds Makefile
