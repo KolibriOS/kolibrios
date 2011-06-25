@@ -233,6 +233,7 @@ CMM_PROGRAMS:=\
  games/clicks:GAMES/CLICKS:$(PROGS)/games/clicks/trunk/clicks.c-- \
  games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
+ HTMLv:HTMLv:$(PROGS)/network/htmlv/browser/HTMLv.c-- \
 #develop/c--:DEVELOP/C--:$(PROGS)/develop/c--/trunk/32.c-- \
 # end of list
 
@@ -242,7 +243,7 @@ CMM_PROGRAMS:=\
 # Spaces should be represented as |.
 OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  background.gif:background.gif default.skn:DEFAULT.SKN \
- e80:E80 graph:GRAPH hdread:HDREAD htmlv:HTMLV \
+ e80:E80 graph:GRAPH hdread:HDREAD \
  icons.dat:ICONS.DAT iconstrp.gif:ICONSTRP.GIF index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
