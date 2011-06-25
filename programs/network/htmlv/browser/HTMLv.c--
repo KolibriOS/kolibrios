@@ -1,0 +1,149 @@
+//HTML Viewer in C--
+//Copyright 2007-2009 by Veliant & Leency
+//Asper, Lrz, Nable, lev.
+
+#include "..\lib\kolibri.h--"
+#include "..\lib\memory.h--"
+#include "..\lib\file_system.h--"
+#include "include\some_code.h--"
+#include "img\toolbar_icons.c--"
+#include "img\URLgoto.txt";
+//Asper
+#include "..\lib\mem.h--"
+#include "..\lib\libio_lib.h--"
+#include "..\lib\libimg_lib.h--"
+#include "..\lib\edit_box_lib.h--"
+#include "..\lib\dll.h--"
+
+//переменные
+byte URL[4096]="/sys/html/index.htm",
+	editURL[4096],
+	page_links[12000],
+	header[512];
+
+dword max_kolvo_strok,
+	 max_kolvo_stolbcov,
+	 kolichestvo;
+
+int 	za_kadrom,
+	razm_scrl,
+	mouse_dd;
+
+edit_box edit1= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,248,#editURL,#mouse_dd,2,19,19};
+
+
+#include "TWB.h--"
+
+proc_info Form;
+
+
+void main()
+{
+	mouse m; dword btn; byte key;
+	IF (param) copystr(#param,#URL);
+	BrowserHistory.AddUrl();
+	copystr(#URL,#editURL);
+    //Asper [
+        mem_Init();
+        $or      eax, eax
+        $jnz      loc00
+        return;
+      @loc00:
+      load_dll2(libio, #libio_init,1);
+      load_dll2(libimg, #libimg_init,1);
+      load_dll2(boxlib, #edit_box_draw,0);
+    //] Asper
+	SetEventMask(0x27);
+	loop()
+	{
+		switch(WaitEvent())
+		{
+			CASE evMouse: 	
+				m.get();
+				IF (m.vert==65535) //прокрутка колёсиком
+				{
+					IF (za_kadrom==0) break;
+					IF (za_kadrom>3) za_kadrom-=2; ELSE za_kadrom=1;
+					WB1.Scan(ID1);
+				} 
+				IF (m.vert==1)
+				{
+					IF(max_kolvo_strok+za_kadrom+3>=kolichestvo) WB1.Scan(181);
+					ELSE	{
+						za_kadrom+=2;
+						WB1.Scan(ID2);
+					}
+				}
+				//IF (kolichestvo<max_kolvo_strok) break;
+				if (m.x>=WB1.width-14) && (m.x<=WB1.width+6) && (kolichestvo>max_kolvo_strok) while (m.lkm)
+				{
+					IF (razm_scrl/2+WB1.top>m.y) || (m.y<0) || (m.y>4000) m.y=razm_scrl/2+WB1.top; //если курсор над окном
+					btn=za_kadrom; //сохраняем старое количество
+					j= razm_scrl/2;
+					za_kadrom = m.y -j -WB1.top * kolichestvo / WB1.height;
+					IF (max_kolvo_strok+za_kadrom>kolichestvo) za_kadrom=kolichestvo-max_kolvo_strok;
+					IF (btn<>za_kadrom) WB1.ParseHTML(buf, filesize); //чтоб лишний раз не перерисовывать
+					m.get();
+				}				
+				break;
+			case evButton:
+				btn=GetButtonID();
+				IF (btn==1) ExitProcess();
+				ELSE
+				{
+					WB1.Scan(btn);
+					//WB1.HttpLoad(#URL);
+				}
+				break;
+			case evKey:
+				key = GetKey();
+				WB1.Scan(key);
+				if (key<>0x0d) && (key<>183) && (key<>184) && (key<>173) {EAX=key<<8; edit_box_key stdcall(#edit1);} //адресная строка
+				break;
+			case evReDraw:
+				Draw_Window();
+				break;
+		}
+		edit_box_mouse stdcall (#edit1);
+	}
+}
+
+
+void Draw_Window()
+{
+	WindowRedrawStatus(1);
+	DefineAndDrawWindow(215,100,640,480,0x73,0x00E4DFE1,0,0,0);
+	Form.GetInfo(SelfInfo); 
+	IF (Form.height==GetSkinWidth()+3) //если свернуто в заголовок, ничего не рисуем
+	{
+		DrawTitle(#header);
+		WindowRedrawStatus(2);
+		return;
+	}
+	IF (Form.height<120) MoveSize(OLD,OLD,OLD,120);
+	IF (Form.width<280) MoveSize(OLD,OLD,280,OLD);
+	//
+  PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
+  DrawBar(200,0,onLeft(200,9),43,0xE4DFE1); //закрашиваем фон под тулбаром
+	DrawBar(0,42,onLeft(5,4),1,0xE2DBDC); //выпуклость
+	DrawBar(0,43,onLeft(5,4),1,0xD2CED0); //выпуклость
+	FOR (j=0; j<5; j++) DefineButton(j*37+11, 7, 29, 29, 300+j+BT_HIDE, 0x00E4DFE1);
+	PutImage(#URLgoto,40,19,onLeft(57,0),14);
+	DefineButton(onLeft(38,0),14, 20, 18, GOTOURL+BT_HIDE, 0xE4DFE1);
+	DefineButton(onLeft(57,0),14, 19, 18, SEARCHWEB+BT_HIDE, 0xE4DFE1);
+	DrawRegion_3D(205,14,onLeft(58,205),18,0x94AECE,0x94AECE); //ободок полосы адреса
+	DrawRegion_3D(206,15,onLeft(59,205),16,0xE4ECF3,0xE4ECF3);
+	edit1.width=Form.width-266;
+	WB1.top=44;
+	WB1.width=Form.width-11;
+	WB1.height=onTop(43,5);
+	WB1.Load(#URL);
+	//
+	WindowRedrawStatus(2);
+}
+ 
+int onLeft(dword right,left) {EAX=Form.width-right-left;}
+int onTop(dword down,up) {EAX=Form.height-GetSkinWidth()-down-up;}
+
+
+stop:

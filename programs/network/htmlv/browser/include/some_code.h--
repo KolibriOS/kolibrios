@@ -1,0 +1,62 @@
+//кнопки
+#define BACK		300
+#define FORWARD	301
+#define REFRESH	302
+#define HOME		303
+#define GOTOURL	305
+#define SEARCHWEB	306
+#define ID1		178
+#define ID2		177
+
+#define WINDOWS	0
+#define DOS		1
+#define KOI		2
+#define UTF		3
+
+#define DONT_LOAD	0
+#define LETS_LOAD	1
+                      
+byte utf100tmmv_mas[77] = "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяЁёhгsi\244j";
+
+
+dword get_URL_part(byte len) {
+	char temp1[1000];
+	copystr(#URL, #temp1);
+	temp1[len] = 0x00;
+	return #temp1;
+}
+
+
+inline byte chTag(dword text) {return strcmp(#tag,text);}
+
+//У нас нет наклонных шрифтов, поэтому делаем костыль из
+//палочек для мороженого и жевательной резинки:
+//Снимаем область экрана и выводим её обратно полосками со смещением,
+//что даёт перекос картинки
+//При наличии фона и т.п. проявится вся костыльность решения :)
+
+//часть данных уже получена в TBW - skin_width, Form.top, подключение memory 
+inline void Skew(dword x,y,w,h)
+{
+dword italic_buf;
+int tile_height=2,//будем выводить двухпиксельными полосками
+i, skin_width,
+shift=-2;
+
+  skin_width = GetSkinWidth();
+  Form.GetInfo(SelfInfo);
+  italic_buf = malloc(w*h*3);
+  //ebx = указатель на предварительно выделенную область памяти, куда будет помещено изображение в формате BBGGRRBBGGRR...
+  EBX = italic_buf;
+  //ecx = [размер по оси x]*65536 + [размер по оси y]
+  ECX = w * 65536 + h;
+  //edx = [координата по оси x]*65536 + [координата по оси y]
+  EDX = x + Form.left * 65536 + y + Form.top + skin_width;
+  EAX = 36;
+  $int  0x40;
+
+  FOR (i=0;i*tile_height<h;i++){
+    PutImage(w*3*tile_height*i+italic_buf,w,tile_height,x+shift-i,i*tile_height+y);
+  }
+  free(italic_buf);
+}

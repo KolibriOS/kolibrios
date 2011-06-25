@@ -42,7 +42,7 @@ set __CPU_type=p5 p6 k6
 set BIN=bin
 
 echo Build KolibriOS apps
-echo Enter valide language
+echo Enter valid language
 echo     [%languages%]
 call :input_value res %languages%
 echo lang fix %res% > lang.inc
@@ -255,7 +255,7 @@ echo *
 kpack /nologo 2> nul
 if "%errorlevel%"=="9009" (
 echo   *** NOTICE ***
-echo If you want pack all applications you may 
+echo If you want to pack all applications you may 
 echo place "kpack" in accessible directory.
 echo You can download that tool from http://diamondz.land.ru/
 goto END
@@ -455,6 +455,6 @@ echo *
 
 :END
 echo *
-echo Done. Thanks for your choise ;)
+echo Done. Thanks for your choice ;)
 echo *
 pause

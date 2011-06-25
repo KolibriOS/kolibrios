@@ -1,0 +1,64 @@
+//mem.Init
+dword mem_Init()
+{
+        $push    ebx
+        $mov     eax, 68
+        $mov     ebx, 11
+        $int     0x40
+        
+        $pop     ebx
+        return  EAX;
+}
+
+//mem.Alloc
+dword mem_Alloc(dword size)
+{
+        $push    ebx
+        $push    ecx
+        $mov     eax, 68
+        $mov     ebx, 12
+        $mov     ecx, size
+        $int     0x40
+        
+        $pop     ecx
+        $pop     ebx
+        return  EAX;
+}
+
+//mem.ReAlloc
+stdcall dword mem_ReAlloc(dword mptr, size)
+{
+        //$push    ebx ecx edx
+        $push    ebx
+        $push    ecx
+        $push    edx
+        $mov     eax, 68
+        $mov     ebx, 20
+        $mov     ecx, size
+        $mov     edx, mptr
+        $int     0x40
+
+        $pop     edx
+        $pop     ecx
+        $pop     ebx
+        //$pop     edx ecx ebx
+        return   EAX;
+}
+
+//mem.Free
+void mem_Free(dword mptr)
+{
+        $push    eax
+        $push    ebx
+        $push    ecx
+        $mov     eax, 68
+        $mov     ebx, 13
+        $mov     ecx, mptr
+        $test    ecx, ecx
+        $jz      end0
+        $int     0x40
+   @end0:
+        $pop     ecx
+        $pop     ebx
+        $pop     eax
+}

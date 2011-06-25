@@ -1,0 +1,692 @@
+//http://jsbeautifier.org/
+//Web-component, Leency & Veliant 2007-2009
+//lev
+//идея - левые файлы открывать соответствующими прогами
+
+//	wintodos(buf); -> в парсе хтмл как и все кодировки
+
+//ol - циферки
+
+
+//ускорена загрузка страницы, содержащей изображения
+//уменьшено количество перерисовок заголовка окна при загрузке страницы
+
+dword j,
+	buf,
+	filesize,
+	blink = 400;
+ int i;
+
+ char download_path[]="/rd/1/.download";
+//char search_path[]="http://nova.rambler.ru/search?words=";
+ char search_path[]="http://nigma.ru/index.php?s=";
+
+
+
+struct TWebBrowser {
+	dword left,
+	top,
+	width,
+	height;
+	void DrawScroller();
+	void Load();
+	void ParseHTML(dword, dword);
+	void Scan(dword);
+	void WhatTextStyle(int left1, top1, width1);
+};
+
+TWebBrowser WB1;
+
+#include "include\history.h--"
+#include "include\colors.h--"
+
+void TWebBrowser::Scan(dword id) {
+	int i=0;
+	if (id > 399) {
+		j = 0;
+		FOR(i = 0; i <= id - 401; i++) {
+			do j++;
+			while (page_links[j] <>'|');
+		}
+		page_links[j] = 0x00;
+		copystr(#page_links[find_symbol(#page_links, '|')], #URL);
+		Load(#URL);
+		Draw_Window();
+		return;
+	}
+	//edit1.flags=64;
+	IF(kolichestvo < max_kolvo_strok) SWITCH(id) {
+		CASE 183: CASE 184: CASE 180: CASE 181: return;
+	} //если мало строк игнорируем некоторые кнопки
+	switch (id) {
+	case 011:
+	case 004:
+		ReadHtml();
+		break;
+	case BACK:
+		BrowserHistory.GoBack();
+		return;
+	/*case FORWARD:
+		WriteDebug(#UrlHistory);
+		return;*/
+	case 054: //F5
+		IF(edit1.flags == 66) break;
+  case REFRESH:
+		copystr(#URL, #editURL);
+		Draw_Window();
+		return;
+	case HOME:
+		copystr("/sys/index.htm", #editURL);
+	case GOTOURL:
+	case 0x0D: //enter
+		copystr(#editURL, #URL);
+		Load(#URL);
+		return;
+	case 052:  //Нажата F3
+		IF(edit1.flags <> 66) 
+		IF (strcmp(get_URL_part(5),"http:")<>0) RunProgram("tinypad", #URL); ELSE RunProgram("tinypad", #download_path);
+		break;
+	case 173:	//ctrl+enter
+	case SEARCHWEB:
+		copystr(#search_path, #URL);
+		copystr(#editURL, #URL + strlen(#URL));
+		Load(#URL);
+		return;
+	case ID1: //мотаем вверх
+		IF(za_kadrom > 0) za_kadrom--;
+		ELSE return;
+		break; 
+	case ID2: //мотаем вниз
+		IF(max_kolvo_strok + za_kadrom >= kolichestvo) return;
+		za_kadrom++;
+		break; 
+	case 183: //PgDown
+		IF(za_kadrom == kolichestvo - max_kolvo_strok) return;
+		za_kadrom = za_kadrom + max_kolvo_strok + 2;
+		IF(max_kolvo_strok + za_kadrom > kolichestvo) za_kadrom = kolichestvo - max_kolvo_strok;
+		break;
+	case 184: //PgUp
+		IF(za_kadrom == 0) return;
+    za_kadrom = za_kadrom - max_kolvo_strok - 2;
+		IF(za_kadrom < 0) za_kadrom = 0;
+		break;
+	case 180: //home
+		IF (za_kadrom <>0) za_kadrom = 0;
+		ELSE return;
+		break; 
+	case 181: //end
+		za_kadrom = kolichestvo - max_kolvo_strok;
+		break; 
+	default:
+		return;
+	}
+	IF(id == 11) koitodos(buf);
+	ParseHTML(buf, filesize);
+}
+
+//скролл
+void TWebBrowser::DrawScroller() {
+	dword on_y;
+	DrawBar(left + width - 15, top + 17, 1, height - 34, 0x94AECE); //линия слева от прокрутки 
+	DrawFlatButton(left + width - 15, top + height - 17, 16, 16, ID2, 0xE4DFE1, "\x19");
+	DrawFlatButton(left + width - 15, top, 16, 16, ID1, 0xE4DFE1, "\x18");
+
+	IF(kolichestvo <= max_kolvo_strok) {
+		DrawBar(left + width - 14, top + 17, 16, height - 34, 0xCED0D0);
+		return;
+	}
+
+	razm_scrl = height - 16 * max_kolvo_strok / kolichestvo - 3;
+	IF(razm_scrl < 10) razm_scrl = 10;
+	IF(za_kadrom + max_kolvo_strok >= kolichestvo) on_y = height - razm_scrl + top - 17;
+	ELSE on_y = height - 32 * za_kadrom / kolichestvo + top + 16;
+	DrawFlatButton(left + width - 15, on_y, 16, razm_scrl, 0, 0xE4DFE1, ""); //ползунок
+  IF(on_y > top + 17) DrawBar(left + width - 14, top + 17, 16, on_y - top - 17, 0xCED0D0); //поле до ползунка
+	IF(height - razm_scrl + top - 17 > on_y)
+		DrawBar(left + width - 14, on_y + razm_scrl + 1, 16, height - razm_scrl - on_y + top - 18, 0xCED0D0); //поле после ползунка
+}
+
+
+void GetNewUrl(){
+  IF (!strcmp(get_URL_part(2),"./")) copystr(#URL+1,#URL);
+	//IF (!strcmp(get_URL_part(3),"../"))
+	//{
+ 	//	//DrawTitle(#URL+7);
+	//}
+ 	if (strcmp(get_URL_part(3),"/rd")<>0) && (strcmp(get_URL_part(5),"/sys/")<>0) && (strcmp(get_URL_part(3),"/hd")<>0)
+	&& (strcmp(get_URL_part(3),"/bd")<>0) && (strcmp(get_URL_part(3),"/fd")<>0) && (strcmp(get_URL_part(3),"/cd")<>0)
+	&& (strcmp(get_URL_part(5),"http:")<>0)	&& (strcmp(get_URL_part(5),"mailt")<>0)	&& (strcmp(get_URL_part(5),"ftp:/")<>0) 
+	{
+		copystr(BrowserHistory.CurrentUrl(), #editURL); //достаём адрес текущей страницы
+		
+		IF (editURL[find_symbol(#editURL, '/')-2]<>'/')  // если не http://test.ua
+		{
+			editURL[find_symbol(#editURL, '/')] = 0x00; //обрезаем её урл до последнего /
+			IF (URL[0]=='/') copystr(#URL+1,#URL);
+		}
+		copystr(#URL, #editURL + strlen(#editURL)); //клеим новый адрес
+		copystr(#editURL, #URL);
+	}
+}
+
+
+
+void ReadHtml(byte DO_LOAD) {
+	IF(buf) free(buf);
+	buf = malloc(1048576);
+
+	if (!strcmp(get_URL_part(5),"http:"))) 
+	{
+		if (DO_LOAD) && (!WindowRePaint)
+		{
+			DeleteFile(#download_path);
+			IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
+			RunProgram("/sys/downloader", #URL);
+			return;
+		}
+		ReadFile(0, 1048576, buf, #download_path);
+	} 
+	ELSE ReadFile(0, 1048576, buf, #URL);
+
+	filesize = EBX;
+}
+
+
+
+void TWebBrowser::Load(dword adress) {
+	if (URL[0] == '#') {  //мы не умеем переходить по ссылке внутри документа. Пока что...
+		copystr(#editURL, #URL);
+		return;
+	}
+
+	URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка, лучше, чем ничего (хабр, например, будет работать)
+
+	GetNewUrl();
+
+	max_kolvo_stolbcov = width - 30 / 6;
+	max_kolvo_strok = height - 3 / 10 - 2;
+	copystr(" HTML Viewer v0.63", #header);
+	if (!WindowRePaint) {
+		za_kadrom = 0;
+		copystr(#URL, #editURL);
+		BrowserHistory.AddUrl();
+	}
+	edit1.size = edit1.pos = strlen(#editURL);
+	edit_box_draw stdcall(#edit1); //рисуем строку адреса
+
+	ReadHtml(LETS_LOAD);
+	wintodos(buf);
+	ParseHTML(buf, filesize);
+	IF(!strlen(buf)) {
+		IF (strcmp(get_URL_part(5),"http:")==0)
+		{
+			PutImage(#stop_btn, 24, 24, 88, 10);
+			WriteText(left + 10, top + 18, 0x80, 0, "Loading...", 0);
+		}
+		ELSE
+			WriteText(left + 10, top + 18, 0x80, 0, "Page not found. May be, URL contains some errors.", 0);
+	}
+
+	IF (!strcmp(" HTML Viewer v0.63", #header)) DrawTitle(#header);
+}
+
+
+
+byte rez, b_text, i_text, u_text, s_text, w_title, pre_text, blq_text, li_text, link, ignor_text, li_tab;
+dword text_colors[10],
+	text_color_index = 0,
+	link_color;
+int stroka,
+	stolbec;
+	byte line[330],
+	tag[100],
+	tagparam[10000],
+	parametr[1200],
+	options[1000];
+
+	byte ignor_param = 0;
+	
+	byte rtf_text;
+
+void TWebBrowser::ParseHTML(dword bword, fsize){
+	word bukva[1];
+	char temp[768];
+	stroka = -za_kadrom;
+	stolbec = 0;
+	FOR(j = 400; j < blink + 1; j++;) DeleteButton(j);
+	b_text = i_text = u_text = s_text = w_title = pre_text = blq_text = 
+	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 0; //обнуляем теги
+	link_color = 0x0000FF;
+	blink = 400;
+	line = '';
+	copystr("|", #page_links);
+	IF(!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1; //зачётное отображение текста 
+	IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
+	IF(za_kadrom == 0) || (WindowRePaint) DrawBar(left, top, width - 15, 15, 0xFFFFFF); //закрашиваем первую строку
+	for (; buf + fsize > bword; bword++;) {
+	  bukva = ESBYTE[bword];
+	  switch (bukva) {
+		case 0x0a:
+			IF(pre_text == 1) {
+				bukva = '';
+				temp = '';
+				goto NEXT_MARK;
+			}
+		case '\9':
+		case 0x0d:
+			//IF(pre_text == 1) {copystr("   ", #line + strlen(#line)); break;} ELSE
+			bukva = ' ';
+			goto DEFAULT_MARK;
+		case '<':
+			bword++; //промотаем символ <
+			IF(ESBYTE[bword] == '!') //фильтрация внутри <!-- -->, дерзко
+			{
+				bword++;
+				IF(ESBYTE[bword] == '-') {
+					HH_: do {
+						bword++;
+						IF(bword >= buf + fsize) break 1;
+					} while (ESBYTE[bword] <>'-');
+					bword++;
+					IF(ESBYTE[bword] <>'-') GOTO HH_;
+				}
+			}
+			while (ESBYTE[bword] <>'>') && (bword < buf + fsize) //получаем тег и его параметры
+			{
+				bukva = ESBYTE[bword];
+				IF(bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
+				IF(!ignor_param) && (bukva <>' ') copystr(#bukva, #tag + strlen(#tag));
+				ELSE {
+					ignor_param = true;
+					copystr(#bukva, #tagparam + strlen(#tagparam));
+				}
+				bword++;
+			}
+			lowcase(#tag);
+			lowcase(#tagparam);
+			//WriteDebug(#tagparam);
+			//WriteDebug(#tag); Pause(50);
+			//
+			IF (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=''; //небольшой фикс для работы с XHTML-тегами типа br/
+			IF(strlen(#tagparam) > 0) && (strlen(#tagparam) < 4000) GetNextParam();
+			WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //обработка тегов
+
+			line = tag = parametr = tagparam = ignor_param = 0; //всё обнуляем
+			break;
+		case '=': //поддержка шайтанской кодировки страниц, сохранённых через ИЕ7
+			IF(strcmp(#URL + strlen(#URL) - 4, ".mht")<>0) goto DEFAULT_MARK;
+
+			bword++;
+			bukva=ESBYTE[bword];
+			copystr(#bukva, #temp);
+
+			bword++;
+			bukva=ESBYTE[bword];
+			copystr(#bukva, #temp + strlen(#temp));
+			
+			bukva=Hex2Symb(#temp);
+			IF (bukva) goto DEFAULT_MARK;
+			break; 
+		/*case '\\': //поддержка RTF, http://dev.rembish.ru/rtf.phps
+			IF(strcmp(#URL + strlen(#URL) - 4, ".rtf")<>0) goto DEFAULT_MARK;
+			rtf_text='';
+			
+			//
+               bword++;
+			j = 0;
+
+			IF (ESBYTE[bword]=='\'')
+			{
+				bword++;
+				bukva=ESBYTE[bword];
+				copystr(#bukva, #rtf_text);
+	
+				bword++;
+				bukva=ESBYTE[bword];
+				copystr(#bukva, #rtf_text + strlen(#rtf_text));
+
+				bukva=Hex2Symb(#rtf_text);
+				IF (bukva) goto DEFAULT_MARK;
+			}
+
+			WHILE ((ESBYTE[bword] <>' ') && (j < 25) && (ESBYTE[bword] <>'\\') && (ESBYTE[bword] <>0x0d)) {
+				bukva = ESBYTE[bword];
+				copystr(#bukva, #rtf_text + strlen(#rtf_text));
+				bword++;
+				j++;
+			}
+			
+			IF (strcmp(#rtf_text,"par")==0) goto NEXT_MARK;
+			break;*/						
+		case '&':
+			IF(ignor_text) break;
+			bword++;
+			j = 0;
+			WHILE(ESBYTE[bword] <>';') && (j < 7) {
+				bukva = ESBYTE[bword];
+				copystr(#bukva, #tag + strlen(#tag));
+				bword++;
+				j++;
+			}
+			bukva = ''; //всю эту хрень надо залабать через масив
+			IF(!strcmp("nbsp", #tag)) copystr(" ", #line + strlen(#line));
+			IF(!strcmp("copy", #tag)) || (!strcmp("#169", #tag)) copystr("(c)", #line + strlen(#line));
+			IF(!strcmp("reg", #tag)) || (!strcmp("#174", #tag)) copystr("(r)", #line + strlen(#line));
+			rez = StrToInt(#tag + 1) - 1040;
+			IF(tag[1] == '1') && (strlen(#tag) == 5) bukva = utf100tmmv_mas[rez];
+			IF(!strcmp("bdquo", #tag)) copystr(",,", #line + strlen(#line));
+			IF(!strcmp("amp", #tag)) || (!strcmp("#38", #tag)) bukva = '&';
+			IF(!strcmp("lt", #tag)) || (!strcmp("#60", #tag)) bukva = '<';
+			IF(!strcmp("gt", #tag)) || (!strcmp("#62", #tag)) bukva = '>';
+			IF(!strcmp("minus", #tag)) || (!strcmp("#8722", #tag)) bukva = '-';
+			IF(!strcmp("#151", #tag)) || (!strcmp("#149", #tag)) || (!strcmp("ndash", #tag)) bukva = '-';
+			IF(!strcmp("#39", #tag)) || (!strcmp("#96", #tag)) bukva = '\'';
+			IF(!strcmp("quot", #tag)) || (!strcmp("#34", #tag)) || (!strcmp("ldquo", #tag)) || (!strcmp("rdquo", #tag)) bukva = '"';
+			tag = '';
+			//break;
+		default:
+			DEFAULT_MARK:
+			IF(ignor_text) break;
+			IF(pre_text == 0) && (bukva == ' ') && (strcmp(#line + strlen(#line) - 1, " ") == 0) continue;
+			//
+			if (stolbec + strlen(#line) > max_kolvo_stolbcov) && (w_title == 0) {
+				copystr(#line + find_symbol(#line, ' '), #temp); //перенос по словам
+				line[find_symbol(#line, ' ')] = 0x00;
+				NEXT_MARK: IF(stroka - 1 > max_kolvo_strok) && (za_kadrom <>0) break 1; //уходим...
+				WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //вывод строки
+				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем строку вконце
+				copystr(#temp, #line);
+			}
+			IF(pre_text == 0) && (bukva == ' ') && (stolbec == 0) && (strlen(#line) == 0) continue;
+			copystr(#bukva, #line + strlen(#line));
+	  }
+	}
+	IF(max_kolvo_strok * 10 + 25 <= height)
+		DrawBar(left, max_kolvo_strok * 10 + top + 25, width - 15, -max_kolvo_strok * 10 + height - 25, 0xFFFFFF);
+	IF(stroka * 10 + 15 <= height)
+		DrawBar(left, stroka * 10 + top + 15, width - 15, -stroka * 10 + height - 15, 0xFFFFFF); //закрашиваем всё до конца
+	IF(za_kadrom == 0) kolichestvo = stroka;
+	DrawScroller(); //рисуем скролл
+}
+
+
+void GetNextParam() {
+	dword	kavichki = false,
+			i = strlen(#tagparam) - 1;
+
+	WHILE((i > 0) && (tagparam[i] == '"') || (tagparam[i] == ' ') || (tagparam[i] == '\'') || (tagparam[i] == '/'))
+	{
+		IF (tagparam[i] == '"') kavichki=1;
+		IF (tagparam[i] == '\'') kavichki=2;
+		tagparam[i] = 0x00;
+		i--;
+	}
+
+	if (kavichki==1)  // "
+	{
+		i=find_symbol(#tagparam, '"');
+		copystr(#tagparam + i, #options);
+	}
+	else if (kavichki==2) // '
+	{
+		i=find_symbol(#tagparam, '\'');
+		copystr(#tagparam + i, #options);
+	}
+
+	else
+	{
+		//i=find_symbol(#tagparam, '=');
+		WHILE((i > 0) && (tagparam[i] <>'=')) i--;
+		i+=1;
+		copystr(#tagparam + i, #options); //копируем опцию
+		WHILE (options[0] == ' ') copystr(#options + 1, #options);
+	}
+	tagparam[i] = 0x00;
+
+	//
+	WHILE((tagparam[i] <>' ') && (i > 0)) {
+		IF(tagparam[i] == '=') //дерзкая заглушка
+		{
+			//copystr(#tagparam+i+2,#options);
+			tagparam[i + 1] = 0x00;
+		}
+		i--;
+	}
+	copystr(#tagparam + i + 1, #parametr); //копируем параметр
+	tagparam[i] = 0x00;
+}
+
+
+
+char oldtag[100];
+void TWebBrowser::WhatTextStyle(word left1, top1, width1) {
+	dword hr_color;
+
+    dword image=0;
+    char temp[1024];
+    int w, h;
+
+	IF(tag[0] == '/') {
+		rez = 0;
+		copystr(#tag + 1, #tag);
+	} ELSE rez = 1;
+	//
+	IF(!chTag("html")) {
+		IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) IF (rez==0) ignor_text = 1; ELSE ignor_text = 0;
+		return;
+	}
+	IF(!chTag("script")) || (!chTag("style")) ignor_text = rez;
+	IF (ignor_text == 1) return;
+	//
+
+	IF(!chTag("title")) IF(w_title == 0) {
+		copystr(" ", #line);
+		w_title = 1;
+	}
+	ELSE {
+		w_title = 0;
+		stolbec = 0;
+		copystr(#line, #header);
+		copystr(" - HTML Viewer v0.63", #header + strlen(#header));
+		IF(stroka == 0) || (WindowRePaint == 1) DrawTitle(#header);
+		//да, знаю, 2 раза выходит, но, если большая страница, то труъ
+		return;
+	}
+	//
+	IF(!chTag("q")) copystr("\"", #line + strlen(#line));
+	if (stroka > -1) && (stroka - 2 < max_kolvo_strok) && (line) {
+		WriteText(stolbec * 6 + left1, top1, 0x80, text_colors[text_color_index], #line, 0);
+		IF(b_text) WriteText(stolbec * 6 + left1 + 1, top1, 0x80, text_colors[text_color_index], #line, 0);
+		IF(i_text) Skew(stolbec * 6 + left1, top1, strlen(#line)+1*6, 10);
+		IF(s_text) DrawBar(stolbec * 6 + left1, top1 + 4, strlen(#line) * 6, 1, text_colors[text_color_index]); //зачёркнутый
+		IF(u_text) DrawBar(stolbec * 6 + left1, top1 + 8, strlen(#line) * 6, 1, text_colors[text_color_index]); //подчёркнутый
+		IF(link) {
+			DefineButton(stolbec * 6 + left1 - 2, top1, strlen(#line) * 6 + 3, 9, blink + BT_HIDE, 0xB5BFC9); //
+			DrawBar(stolbec * 6 + left1, top1 + 8, strlen(#line) * 6, 1, text_colors[text_color_index]);
+		}
+	}
+	//
+	IF(!tag) return;
+	stolbec += strlen(#line);
+	//////////////////////////
+	if (!chTag("a")) {
+		IF (stroka - 1 > max_kolvo_strok) || (stroka < -2) return;
+		if (rez) {
+			HREF: IF(strcmp(#parametr, "href=") == 0) {
+				IF(link == 1) text_color_index--; //если какой-то долбоёб не закрыл тэг
+				link = 1;
+				blink++;
+				text_color_index++;
+				text_colors[text_color_index] = link_color;
+				copystr(#options, #page_links + strlen(#page_links));
+				copystr("|", #page_links + strlen(#page_links));
+			}
+			IF(tagparam) {
+				GetNextParam();
+				GOTO HREF;
+			}
+		}
+		ELSE {
+			link = 0;
+			IF(text_color_index > 0) text_color_index--;
+		}
+		return;
+	}
+	/////////////////////////
+	if (!chTag("font")) {
+		IF(stroka <= 0) && (stroka - 1 > max_kolvo_strok) return;
+		COL_MARK: IF(strcmp(#parametr, "color=") == 0) //&& (parametr[1] == '#')
+		{
+      text_color_index++;
+      IF (options[0] == '#'){
+        text_colors[text_color_index] = StrToCol(#options);
+			}
+			ELSE {
+             FOR (i=0;color_names[i]!=0;i++){
+              IF(!strcmp(#options, color_names[i])) {text_colors[text_color_index] = colors[i]; BREAK;}
+            }
+          }
+			
+		}
+		IF(tagparam[0] <>'') {
+			GetNextParam();
+			GOTO COL_MARK;
+		}
+		IF(!rez) && (text_color_index > 0) text_color_index--;
+		return;
+	}
+	//////////////////////////
+	IF(!chTag("tr")) || (!chTag("br")) {
+		TextGoDown(left1, top1, width1);
+		return;
+	}
+	IF(!chTag("div")) {
+		IF(oldtag[0] <>'h') TextGoDown(left1, top1, width1);
+		return;
+	}
+	IF(!chTag("p")) {
+		IF(oldtag[0] == 'h') return;
+		TextGoDown(left1, top1, width1);
+		IF(rez) TextGoDown(left1, top1 + 10, width1);
+		return;
+	}
+	////////////////////////////
+	IF(!chTag("h1")) || (!chTag("h2")) || (!chTag("h3")) || (!chTag("h4")) {
+		TextGoDown(left1, top1, width1);
+		IF(rez) TextGoDown(left1, top1 + 10, width1);
+		b_text = rez;
+		copystr(#tag, #oldtag);
+		return;
+	} ELSE copystr("", #oldtag);
+	IF(!chTag("b")) || (!chTag("strong")) || (!chTag("big")) {
+		b_text = rez;
+		return;
+	}
+	////////////////////////////
+	IF(!chTag("i")) || (!chTag("em")) {
+		i_text = rez;
+		return;
+	}	
+	////////////////////////////
+	if(!chTag("li")) || (!chTag("dt")) //надо сделать вложенные списки
+	{
+		li_text = rez;
+		IF(rez == 0) return;
+		TextGoDown(left1, top1, width1);
+		IF(stroka > -1) && (stroka - 2 < max_kolvo_strok) IF(!chTag("li")) DrawBar(li_tab * 5 * 6 + left1 - 5, top1 + 12, 2, 2, 0);
+		return;
+	}
+	////////////////////////////
+	IF(!chTag("u")) || (!chTag("ins")) u_text = rez;
+	IF(!chTag("s")) || (!chTag("strike")) || (!chTag("del")) s_text = rez;
+	IF(!chTag("ul")) || (!chTag("ol")) IF(!rez) {
+		li_text = rez;
+		li_tab--;
+		TextGoDown(left1, top1, width1);
+	} ELSE li_tab++;
+	IF(!chTag("dd")) stolbec += 5;
+	IF(!chTag("blockquote")) blq_text = rez;
+	IF(!chTag("body")) IF(strcmp(#parametr, "link=") == 0) link_color = StrToCol(#options);
+	IF(!chTag("pre")) pre_text = rez; 
+	IF(!chTag("hr")) {
+		TextGoDown(left1, top1, width1);
+		TextGoDown(left1, top1 + 10, width1);
+		IF(strcmp(#parametr, "color=") == 0) hr_color = StrToCol(#options);
+		ELSE hr_color = 0x999999;
+		IF(stroka > 0) DrawBar(left1, top1 + 14, width1 - 8, 1, hr_color);
+	}
+
+	if (!chTag("img"))
+	{
+		//IF (GetFileInfo(#libimg)<>0) return;  //если библиотеки нет
+		IMG_TAG:
+			if (strcmp(#parametr,"src=")==0)   //надо объединить с GetNewUrl()
+	          {
+				copystr(BrowserHistory.CurrentUrl(), #temp); //достаём адрес текущей страницы
+				temp[find_symbol(#temp, '/')] = 0x00; //обрезаем её урл до последнего /
+				copystr(#options,#temp+strlen(#temp));
+				image=load_image(#temp);
+	
+	                w=DSWORD[image+4];
+	                h=DSWORD[image+8]; 
+	          }
+		IF(tagparam) {
+			GetNextParam();
+			GOTO IMG_TAG;
+		}
+
+        if (image)
+        {
+			if (width1<w) w=width1;
+			if (WB1.height<h) h=WB1.height;
+		IF (top1<WB1.top) {h=h-top1+WB1.top; top1=WB1.top;}
+		TextGoDown2(left1+w,top1,width1-w,h);
+        IF (stroka - 2 < max_kolvo_strok) img_draw stdcall (image,left1-5,top1+10,w,-stroka * 10 + WB1.height -15 + h,0,0);
+        }
+        //else WriteDebug(#options);
+	}
+
+	if (!chTag("meta")) {
+		META:
+		if (!strcmp(#parametr, "charset=")) || (!strcmp(#parametr, "content="))
+		{
+			copystr(#options[find_symbol(#options, '=')],#options); //поиск в content=
+
+      IF (!strcmp(#options,"utf-8"))
+			{
+				ReadHtml(DONT_LOAD);
+   	    utf8rutodos(buf);
+			}
+			IF(!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))
+			{
+				ReadHtml(DONT_LOAD);
+				koitodos(buf);
+			}
+			IF(!strcmp(#options, "dos")) || (!strcmp(#options, "cp-866"))
+			{
+				ReadHtml(DONT_LOAD);
+			}
+		}
+		IF(tagparam[0] <>'') {
+			GetNextParam();
+			goto META;
+		}
+	}
+}
+
+
+void TextGoDown(int left1, top1, width1) {
+	stroka++;
+	IF(blq_text == 1) stolbec = 8;
+	ELSE stolbec = 0;
+	IF(li_text == 1) stolbec = li_tab * 5;
+	IF(stroka >= 0) && (stroka - 2 < max_kolvo_strok) DrawBar(left1 - 5, top1 + 10, width1 + 5, 10, 0xFFFFFF);
+}
+
+void TextGoDown2(int left1,top1,width1,height1)//ASPER: Надо заменить эту функцию более правильной.
+{
+  stroka+=height1/10;
+  IF (blq_text==1) stolbec=8; ELSE stolbec=0;
+  IF (li_text==1) stolbec=5;
+  IF (stroka>=0) && (stroka-2<max_kolvo_strok) DrawBar(left1 - 5, top1 + 10, width1 + 5, height1, 0xFFFFFF);
+}
