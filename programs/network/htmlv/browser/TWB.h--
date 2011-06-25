@@ -6,7 +6,7 @@
 //	wintodos(buf); -> в парсе хтмл как и все кодировки
 
 //ol - циферки
-#define HTMLV_VERSION	"HTML Viewer v0.63"
+#define version " HTML Viewer v0.63"
 
 //ускорена загрузка страницы, содержащей изображения
 //уменьшено количество перерисовок заголовка окна при загрузке страницы
@@ -205,7 +205,7 @@ void TWebBrowser::Load(dword adress) {
 
 	max_kolvo_stolbcov = width - 30 / 6;
 	max_kolvo_strok = height - 3 / 10 - 2;
-	copystr(" " + HTMLV_VERSION, #header);
+	copystr(version, #header);
 	IF (!WindowRePaint) {
 		za_kadrom = 0;
 		copystr(#URL, #editURL);
@@ -227,7 +227,7 @@ void TWebBrowser::Load(dword adress) {
 			WriteText(left + 10, top + 18, 0x80, 0, "Page not found. May be, URL contains some errors.", 0);
 	}
 
-	IF (!strcmp(" " + HTMLV_VERSION, #header)) DrawTitle(#header);
+	IF (!strcmp(version, #header)) DrawTitle(#header);
 }
 
 
@@ -487,7 +487,7 @@ void TWebBrowser::WhatTextStyle(word left1, top1, width1) {
 		w_title = 0;
 		stolbec = 0;
 		copystr(#line, #header);
-		copystr(" - " + HTMLV_VERSION, #header + strlen(#header));
+		copystr(" -" + version, #header + strlen(#header));
 		IF(stroka == 0) || (WindowRePaint == 1) DrawTitle(#header);
 		//да, знаю, 2 раза выходит, но, если большая страница, то труъ
 		return;

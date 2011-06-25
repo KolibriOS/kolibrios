@@ -85,7 +85,7 @@ void main()
 					IF (btn<>za_kadrom) WB1.ParseHTML(buf, filesize); //чтоб лишний раз не перерисовывать
 					m.get();
 				}				
-				break;
+				BREAK;
 			case evButton:
 				btn=GetButtonID();
 				IF (btn==1) ExitProcess();
