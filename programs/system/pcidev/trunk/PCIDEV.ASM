@@ -2,7 +2,7 @@
 ; project name:    PCI Device Enumeration
 ; target platform: KolibriOS
 ; compiler:        flat assembler 1.68
-; version:         2.2
+; version:         2.21
 ; last update:     December 2007
 ; maintained by:   Jason Delozier (cordata51@hotmail.com)
 ;                  Sergey Kuzmin (kuzmin_serg@list.ru)
@@ -14,140 +14,6 @@
 ;        and display basic information about each device
 ;        connected to the PCI Bus.
 ;***************************************************************
-;HISTORY:
-;keep dates in european format (dd/mm/yyyy), please
-; '!' means big changes
-;
-;to-do:
-; more vendors
-; vendor's website
-; Subsystem id and Subsystem vendor id detection
-
-; Full device detection (like "ATI Radeon 9200") will increase app
-; size a lot and probably it is function of particular drivers
-;----------------------------------------------------------------
-;2.2: PCIDEV   03/01/2010
-;Author:    Artem Jerdev <art_zh@yahoo.com>
-;Features:
-;           fixed
-;                 * English in some comments ;)
-;           added
-;                 * ! user-accessible MMIO channels detection
-;                 * ! ASCII-dump as PCI memory access demonstration
-;           optimization
-;                 * (yet needed)
-;----------------------------------------------------------------
-;2.1: PCIDEV   ??/04/2007
-;Author:    Mihailov Ilia aka Ghost <ghost.nsk@gmail.com>
-;Features:
-;           fixed
-;                 * Some little bugs
-;                 * Source code formating
-;                 * PCI version normalized 0210 -> 2.10
-;           added
-;                 * + 13 vendor (total now 1000!)
-;                 * + 3 class type
-;                 * Fast call source ready
-;                 * Device IRQ detection
-;           optimized
-;                 * ! size optimized (61025 -> 32501 see added)
-;                 * easy to add new vendor & class names
-;----------------------------------------------------------------
-;2.0: PCIDEV   30/08/2006
-;(it differs a lot from the version 1.0, which was introduced 19 months ago)
-;Author:    Marat Zakiyanov aka Mario79 <mario79@bk.ru>
-;           Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Features:
-;           added
-;                 * Detection of Interface by Mario79
-;                 * 122 vendor id's by Wildwest
-;                 * Description is based on Class, SubClass and Interface now (PCI 3.0) by Wildwest
-;----------------------------------------------------------------
-;1.31: PCIDEV   13/05/2006
-;Author:    Jason Delozier <cordata51@hotmail.com>
-;Features:
-;           fixed
-;                 * ! bug in Company Name look up code that would cause Unknown Name errors.
-;                 * ! possible bugs, many instructions missing byte, word, dword prefixes
-;                 * ! possible bug which could have occured after removing  "PREVIOUSVERSIONLIST"
-;                     entry in loop up code and not fixing jump parameters.
-;           added
-;                 *  comments to various parts of the code
-;           optimized
-;                 * various parts of the source, too many to remember and mention.
-;                 * changed entries for Subclasses in vendors.inc to Byte format, saves a little space.
-;----------------------------------------------------------------
-;1.30: PCIDEV   11/05/2006
-;Author:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Features:
-;           added
-;                * 3 new vendor id's (ESS from Madis Kalme and 2 id's
-;                  forgotten from 1.15 release: Broadcom -SiByte and Chaintech Comp.)
-;           changed
-;                * I don't know why other devs (Jason or Victor) changed window style
-;                  to old ugly one, so I changed it back to skinned type 3.
-;                * the same goes to the use of macroc.inc - it is enabled again.
-;           deleted
-;                * there is no more label "PREVIOUSVERSIONLIST" - id's moved to the
-;                  appropriate parts of global list.
-;----------------------------------------------------------------
-;1.29: PCIDEV   30/04/2006
-;Author:    Jason Delozier <cordata51@hotmail.com>
-;Features:
-;           fixed
-;                 * ! bug that would not allow devices with device
-;                   numbers > 16 to be displayed.
-;           added
-;                 * ! another heading called "FNC" (function) which allows
-;                   the multipurpose Device/Function varible to be split and
-;                   displayed to the user properly.
-;                 * horizontal bars to display for easier reading.
-;           optimized
-;                 * vendor/description search routines for speed and space.
-;----------------------------------------------------------------
-;1.25: PCIDEV   02/10/2005
-;Author:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Features:
-;            changed
-;                  * ! Description is based on Class and SubClass
-;                     now (PCI 3.0). The Names of Classes and SubClasses
-;                     are in the end of Vendors.inc
-;            deleted
-;                  * label "Descriptions" (names of Classes)
-;
-;----------------------------------------------------------------
-;1.20: PCIDEV   16/08/2005
-;Author:    Victor Alberto Gil Hanla a.k.a. vhanla <vhanla@gmail.com>
-;Features:
-;           added
-;                  * ! many vendor lists (865)
-;           deleted
-;                  * previous version's list
-;           changed
-;                  * previous Company Name searching and printing
-;----------------------------------------------------------------
-;1.15: PCIDEV   03/06/2005
-;Author:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Features:
-;           added
-;                 * quantity of devices,
-;                 * ! detection of Company Name based on Vendor ID,
-;                 * database of VenID (35 ID's),
-;                 * macros.inc for smaller size,
-;           changed
-;                 * interface+(skinned window),
-;                 * VenID before DevID in 'table'(was DevID before VenID)
-;----------------------------------------------------------------
-;1.0: PCIDEV    30/01/2005
-;Author:    Jason Delozier
-;Features:
-;          able to
-;                 * detect PCI version,
-;                 * quantity of PCI buses,
-;                 * Vendor&Device ID for appropriate Device on Bus;
-;                 * detect Revision, Class and Subclass of Device,
-;                 * and make Description based on Class
-;-------------------------------------------------------------
 include '../../../macros.inc'
 ;include 'macros.inc'
 
@@ -550,7 +416,7 @@ Form:	dw 800 ; window width (no more, special for 800x600)
 	dw 620 ; window height
 	dw 20 ; window y start
 
-title	db 'PCI Device Enumerator v 2.2 by J.Delozier, S.Kuzmin, V.Hanla, M.Zakiyanov, A.Jerdev', 0
+title	db 'PCI Device Enumerator v 2.21 by J.Delozier, S.Kuzmin, V.Hanla, M.Zakiyanov, A.Jerdev', 0
 
 PCIWin mls \
 	'   Don`t forget to enable PCI Access to Applications in Setup Menu.',\
