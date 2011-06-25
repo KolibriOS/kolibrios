@@ -6,7 +6,6 @@
 //	wintodos(buf); -> в парсе хтмл как и все кодировки
 
 //ol - циферки
-#define version " HTML Viewer v0.63"
 
 //ускорена загрузка страницы, содержащей изображения
 //уменьшено количество перерисовок заголовка окна при загрузке страницы
@@ -20,7 +19,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
-
+ char version " HTML Viewer v0.63"
 
 
 struct TWebBrowser {
@@ -41,7 +40,6 @@ TWebBrowser WB1;
 #include "include\colors.h--"
 
 void TWebBrowser::Scan(dword id) {
-	int i=0;
 	IF (id > 399) {
 		j = 0;
 		FOR(i = 0; i <= id - 401; i++) {
@@ -205,7 +203,7 @@ void TWebBrowser::Load(dword adress) {
 
 	max_kolvo_stolbcov = width - 30 / 6;
 	max_kolvo_strok = height - 3 / 10 - 2;
-	copystr(version, #header);
+	copystr(#version, #header);
 	IF (!WindowRePaint) {
 		za_kadrom = 0;
 		copystr(#URL, #editURL);
@@ -227,7 +225,7 @@ void TWebBrowser::Load(dword adress) {
 			WriteText(left + 10, top + 18, 0x80, 0, "Page not found. May be, URL contains some errors.", 0);
 	}
 
-	IF (!strcmp(version, #header)) DrawTitle(#header);
+	IF (!strcmp(#version, #header)) DrawTitle(#header);
 }
 
 
@@ -487,7 +485,7 @@ void TWebBrowser::WhatTextStyle(word left1, top1, width1) {
 		w_title = 0;
 		stolbec = 0;
 		copystr(#line, #header);
-		copystr(" -" + version, #header + strlen(#header));
+		copystr(" -" + #version, #header + strlen(#header));
 		IF(stroka == 0) || (WindowRePaint == 1) DrawTitle(#header);
 		//да, знаю, 2 раза выходит, но, если большая страница, то труъ
 		return;
