@@ -477,7 +477,7 @@ void TWebBrowser::WhatTextStyle(word left1, top1, width1) {
 	IF (ignor_text == 1) return;
 	//
 
-	IF(!chTag("title")) IF(w_title == 0) {
+	if(!chTag("title")) IF(w_title == 0) {
 		copystr(" ", #line);
 		w_title = 1;
 	}
