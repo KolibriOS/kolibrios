@@ -1,8 +1,11 @@
-View3ds 0.057 - tiny viewer to .3ds files.
+View3ds 0.059 - tiny viewer to .3ds files.
 
 What's new?
-1. By opening file bigger then ~18 KB, and choosing env mode program terminate.
-   I remove this bug
+1. Bump and pararell two texture  mapping functions optimizations.
+   (files bump_cat.inc & two_tex.inc)
+   On my P4 changes are rather non visable, but on dual core in KlbrInWin
+   optimizations runs preety nice.
+   
 
 Buttons description:
 1. rotary: choosing rotary axle: x, y, x+y.
@@ -30,4 +33,4 @@ Buttons description:
 18. re-map tex -> re-map texture and bump map coordinates, to change spherical mapping 
     around axle use 'xchg' and 'mirror' buttons, then press 're-map tex' button.
 
-			 Macgub 		 April 2011
+			 Macgub 		 Jun 2011

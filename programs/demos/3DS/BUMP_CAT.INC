@@ -805,7 +805,7 @@ end if
 	mov	ebx,.x2
 	sub	ebx,.x1
 
-if Ext >= SSE
+if  0 ;Ext >= SSE
 
        sub	 esp,16
        cvtsi2ss  xmm3,ebx	     ;rcps
@@ -913,29 +913,15 @@ end if
 
 	push	.z1		 ; current z shl CATMULL_SHIFT
 	push	esi
-; It's my first attempt at MMX :), have mercy - Macgub
-
-;;     if Ext = MMX
-;      mov     dword[.temp1],esi
-;      mov     dword[.temp1+4],esi
-;;        movq    mm0,.cbyq          ; mm0 - current bump coords
-;;        movq    mm1,.ceyq          ; mm1 - current env  coords
-;;        movq    mm2,.dbyq          ; mm2 - delta bump
-;;        movq    mm3,.deyq          ; mm3 - delta env
-;     movd    mm6,.z1            ; mm6 - cur z
-;     movq    mm7,qword.[temp1]  ; mm7 = lo = hi dword = current z buff
-;;        mov     dword [.temp2],1
-;;        mov     dword [.temp2+4],-1
-;;        mov     dword [.temp3],TEXTURE_SIZE
-;;        mov     dword [.temp3+4],TEXTURE_SIZE
-;;        mov     esi,.bmap
-;;        mov     dword [.temp4],esi
-;;        mov     dword [.temp4+4],esi
-;;        mov     dword [.temp5],TEX_X
-;;        mov     dword [.temp5+4],- TEX_X
-;     mov     dword [.temp1],TEX_SHIFT
-;     mov     dword [.temp1+4],0
-;;     end if
+;if Ext = SSE2
+;        movups  xmm1,.dey
+;end if
+if Ext>=MMX
+	movq	mm0,.cby
+	movq	mm1,.cey
+	movq	mm2,.dby
+	movq	mm3,.dey
+end if
 
      .draw:
     ; if TEX = SHIFTING   ;bump drawing only in shifting mode
@@ -943,29 +929,22 @@ end if
 	mov	ebx,.cz 	 ; .cz - cur z position
 	cmp	ebx,dword[esi]
 	jge	.skip
-;;      if Ext=NON
+
+if Ext>=MMX
+	movq	mm6,mm0
+	psrld	mm6,ROUND
+	movd	eax,mm6
+	psrlq	mm6,32
+	movd	esi,mm6
+else
 	mov	eax,.cby
 	sar	eax,ROUND
 	mov	esi,.cbx
 	sar	esi,ROUND
-;;      else
-;;        movq    mm4,mm0          ; mm4 - copies of cur bump coords
-;;        psrad   mm4,ROUND        ; mm4 =  lo dword = y b coord, hi dword = x b coord
-;;        movd    eax,mm4    ; -
-;;        psrlq   mm4,32     ; -
-;;        movd    esi,mm4    ; -
-;;
-;;;       punpckldq  mm5,mm4     ;
-;;;       psllq   mm5,TEX_SHIFT
-;;;       paddq   mm4,mm5   ; mm4 - lo dword index to b. map
-;;
-;; ;       packqd  mm4,mm5
- ;       movq    mm5,mm4       ; mm5 ~~ current bump map index?
-
-;;      end if
+end if
 	shl	eax,TEX_SHIFT	;-
 	add	esi,eax 	;-  ; esi - current bump map index
-;;     if  Ext = NON
+
 	mov	ebx,esi
 	dec	ebx
 	and	ebx,TEXTURE_SIZE
@@ -977,21 +956,9 @@ end if
 	and	ebx,TEXTURE_SIZE
 	add	ebx,.bmap
 	movzx	ebx,byte [ebx]
-;;      else                   ;-------------------------------------------
-;;        mov     dword [.temp1],esi       ;-
-;;        mov     dword [.temp1+4],esi     ;-
-;;        movq    mm5, qword[.temp1]       ;-
-;;        paddd   mm5, qword[.temp2]  ; .temp2 == low dword = 1, high dword = -1
-;;        pand    mm5, qword[.temp3]  ; .temp3 == low = high dword = TEX_SIZE
-;;        paddd   mm5, qword[.temp4]  ; .temp4 == low = high dword = .bmap
-;;        movd    ebx,mm5
-;;        psrlq   mm5,32
-;;        movd    eax,mm5
-;;        movzx   ebx,byte[ebx]
-;;        movzx   eax,byte[eax]
-;;     end if
+
 	sub	eax,ebx
-;;     if Ext=NON
+
 	mov	ebx,esi
 	sub	ebx,TEX_X
 	and	ebx,TEXTURE_SIZE
@@ -1003,21 +970,11 @@ end if
 	and	ebx,TEXTURE_SIZE
 	add	ebx,.bmap
 	movzx	ebx,byte [ebx]
-;;     else
-;;        movq    mm5, qword[.temp1]  ;-
-;;        paddd   mm5, qword[.temp5]  ; .temp5 == low dword = TEX_X, high dword = -TEX_X
-;;        pand    mm5, qword[.temp3]  ; .temp3 == low = high dword = TEX_SIZE
-;;        paddd   mm5, qword[.temp4]  ; .temp4 == low = high dword = offset .bmap
-;;        movd    ebx,mm5
-;;        psrlq   mm5,32
-;;        movd    edx,mm5
-;;        movzx   ebx,byte[ebx]
-;;        movzx   edx,byte[edx]
-;;     end if
+
 	sub	edx,ebx
      ;  eax - horizontal sub
      ;  edx - vertical   sub
-;;    if Ext=NON
+if Ext = NON
 	mov	ebx,.cex       ;.cex - current env map X
 	sar	ebx,ROUND
 	add	eax,ebx        ; eax - modified x coord
@@ -1025,19 +982,15 @@ end if
 	mov	ebx,.cey       ;.cey - current  env map y
 	sar	ebx,ROUND
 	add	edx,ebx        ; edx - modified y coord
-;;    else
-;;        movq    mm5,mm1        ; mm5 - copy of cur env coords
-;;        psrad   mm5,ROUND
-;;        movq    qword[.temp1],mm5
-;;        add     eax,dword [.temp1]
-;;        add     edx,dword [.temp1+4]
-;;      ;  movd    ebx,mm5
-;;      ;  add     eax,ebx
-;;      ;  psrlq   mm5,32
-;;      ;  movd    ebx,mm5
-      ;  add     edx,ebx
-;;    end if
-
+else
+	movq	mm6,mm1        ; mm5 - copy of cur env coords
+	psrld	mm6,ROUND
+	movd	ebx,mm6
+	psrlq	mm6,32
+	add	eax,ebx
+	movd	ebx,mm6
+	add	edx,ebx
+end if
 	or	eax,eax
 	jl	.black
 	cmp	eax,TEX_X
@@ -1049,9 +1002,9 @@ end if
 
 	shl	edx,TEX_SHIFT
 	add	edx,eax
-	lea	edx,[edx*3]
-	add	edx,.emap
-	mov	eax,dword[edx]
+	lea	esi,[edx*3]
+	add	esi,.emap
+	lodsd
 	jmp	.put_pixel
      .black:
 	xor	eax,eax
@@ -1066,15 +1019,19 @@ end if
 	add	edi,3
      .no_skip:
 	add	.czbuff,4
-;;   if Ext = NON
+
+;if Ext = SSE2
+;        movups  xmm0,.cey
+;        paddd   xmm0,xmm1
+;        movups  .cey,xmm0
+;
+;end if
 if Ext >= MMX
-	movq	mm0,.cby
-	movq	mm1,.cey
-	paddd	mm0,.dby
-	paddd	mm1,.dey
-	movq	.cby,mm0
-	movq	.cey,mm1
-else
+	paddd	mm0,mm2
+	paddd	mm1,mm3
+end if
+
+if Ext=NON
 	mov	eax,.dbx
 	add	.cbx,eax
 	mov	eax,.dby
@@ -1084,10 +1041,6 @@ else
 	mov	eax,.dey
 	add	.cey,eax
 end if
-;;    else
-;;        paddd   mm0,mm2
-;;        paddd   mm1,mm3
-;;    end if
 	mov	eax,.dz
 	add	.cz,eax
 

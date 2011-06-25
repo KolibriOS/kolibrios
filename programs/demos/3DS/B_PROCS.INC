@@ -739,7 +739,93 @@ blur_screen:	;blur n times  ; blur or fire
 ;in - ecx  times count
 ;.counter equ dword[esp-4]
 .counter1 equ dword[esp-8]
-if Ext>=MMX
+if Ext>=SSE2
+	 push	    ebp
+	 mov	    ebp,esp
+	 push	    dword 0x01010101
+	 movss	    xmm5,[esp]
+	 shufps     xmm5,xmm5,0
+     .again_blur:
+	 push	    ecx
+	 mov	    edi,screen
+	 mov	    ecx,SIZE_X*3/4
+	 xor	    eax,eax
+	 rep	    stosd
+
+	 mov	    ecx,(SIZE_X*(SIZE_Y-3))*3/16
+     .blr:
+     @@:
+	 movups     xmm0,[edi+SIZE_X*3]
+	 movups     xmm1,[edi-SIZE_X*3]
+	 movups     xmm2,[edi-3]
+	 movups     xmm3,[edi+3]
+
+	 pavgb	    xmm0,xmm1
+	 pavgb	    xmm2,xmm3
+	 pavgb	    xmm0,xmm2
+
+	 psubusb    xmm0,xmm5  ; importand if fire
+
+	 movups     [edi],xmm0
+	 add	    edi,16
+	 add	    esi,16
+
+	 loop	    .blr
+
+	 xor	    eax,eax
+	 mov	    ecx,SIZE_X*3/4
+	 rep	    stosd
+	 pop	    ecx
+	 loop	    .again_blur
+	 mov	    esp,ebp
+	 pop	    ebp
+end if
+
+if Ext=SSE
+	 emms
+	 push	    ebp
+	 mov	    ebp,esp
+	 push	    dword 0x01010101
+	 push	    dword 0x01010101
+	 movq	    mm4,[esp]
+     .again_blur:
+	 push	    ecx
+	 mov	    edi,screen
+	 mov	    ecx,SIZE_X*3/4
+     ;    pxor       mm5,mm5
+	 xor	    eax,eax
+	 rep	    stosd
+
+	 mov	    ecx,(SIZE_X*(SIZE_Y-3))*3/8
+     .blr:
+     @@:
+	 movq	    mm0,[edi+SIZE_X*3]
+	 movq	    mm1,[edi-SIZE_X*3]
+	 movq	    mm2,[edi-3]
+	 movq	    mm3,[edi+3]
+
+	 pavgb	    mm0,mm1
+	 pavgb	    mm2,mm3
+	 pavgb	    mm0,mm2
+
+	 psubusb    mm0,mm4  ; importand if fire
+
+	 movq	    [edi],mm0
+	 add	     edi,8
+	 add	     esi,8
+
+	 loop	     .blr
+
+	 xor	    eax,eax
+	 mov	    ecx,SIZE_X*3/4
+	 rep	    stosd
+	 pop	     ecx
+	 loop	    .again_blur
+	 mov	    esp,ebp
+	 pop	    ebp
+end if
+
+if Ext=MMX
 	 emms
 	 push	    ebp
 	 mov	    ebp,esp

@@ -268,7 +268,10 @@ base_vector:
       if Ext=SSE
 	db   ' (SSE)'
       end if
-	db   ' 0.057'
+      if Ext=SSE2
+	db   ' (SSE2)'
+      end if
+	db   ' 0.059'
     labellen:
 	STRdata db '-1        '
 
@@ -294,7 +297,7 @@ else
 		dd workarea
 		dd hash_table
 	file_name:
-		db   '/rd/1/house.3ds',0
+		db   '/rd/1/teapot.3ds',0
 end if
 
 I_END:

@@ -990,10 +990,10 @@ if Ext=NON
 
 
 else
-	movq	mm5,.cey
+	movq	mm5,mm4 ;.cey
 	psrad	mm5,ROUND
 	pslld	mm5,TEX_SHIFT
-	movq	mm6,.cex
+	movq	mm6,mm3 ;.cex
 	psrad	mm6,ROUND
 	paddd	mm5,mm6
 	movq	mm6,mm5
@@ -1061,8 +1061,8 @@ end if
   ;      movq    mm6,mm4
   ;      psrad   mm5,ROUND
   ;      psrad   mm6,ROUND
-	movq	.cex,mm3
-	movq	.cey,mm4
+     ;   movq    .cex,mm3
+     ;   movq    .cey,mm4
     end if
 	mov	eax,.dz
 	add	.cz,eax

@@ -1,3 +1,14 @@
+View3ds 0.059 - June 2011.
+1. Bump and pararell two texture  mapping functions optimizations.
+   (files bump_cat.inc & two_tex.inc)
+   On my P4 changes are rather non visable, but on dual core in KlbrInWin
+   optimizations runs preety nice.
+-----------------------------------------------------------------------------------
+
+View3ds 0.058 - June 2011.
+1. Blur function optimization on SSE and SSE2 (buttons 'blur' and 'fire').   
+-----------------------------------------------------------------------------------
+   
 View3ds 0.057 - April 2011.
 1. By opening file bigger then ~18 KB, and choosing env mode program terminate.
    I remove this bug

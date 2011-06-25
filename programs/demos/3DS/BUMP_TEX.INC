@@ -1593,6 +1593,19 @@ end if
 	push	dword .tx1	;         .ctx
 	push	dword .ty1	;         .cty
 	push	edi	  ;         .c_scr
+;if Ext = SSE2
+;        mov    eax,TEXTURE_SIZE
+;        movd   xmm1,eax
+;        shufps xmm1,xmm1,0
+;        push   dword  TEX_X
+;        push   dword  -TEX_X
+;        push   dword  1
+;        push   dword  -1
+;        movups xmm2,[esp]
+;        movd   xmm3,.bmap
+;        shufps xmm3,xmm3,0
+;end if
+
 if Ext>=MMX
 	movq	mm7,.cty
 	movq	mm6,.cby
@@ -1620,10 +1633,35 @@ else
 	movd	esi,mm1
 end if
 
-
 	shl	eax,TEX_SHIFT
 	add	esi,eax 	;-  ; esi - current bump map index
 
+;if Ext = SSE2
+;
+;        movd    xmm0,esi
+;        shufps  xmm0,xmm0,0
+;        paddd   xmm0,xmm2
+;        pand    xmm0,xmm1
+;        paddd   xmm0,xmm3
+;
+;        movd    ebx,xmm0
+;        movzx   eax,byte[ebx]
+;
+;        shufps  xmm0,xmm0,11100001b
+;        movd    ebx,xmm0
+;        movzx   ebx,byte[ebx]
+;        sub     eax,ebx
+;
+;        shufps  xmm0,xmm0,11111110b
+;        movd    ebx,xmm0
+;        movzx   edx, byte [ebx]
+;
+;        shufps  xmm0,xmm0,11111111b
+;        movd    ebx,xmm0
+;        movzx   ebx, byte [ebx]
+;        sub     edx,ebx
+;
+;else
 	mov	ebx,esi
 	dec	ebx
 	and	ebx,TEXTURE_SIZE
@@ -1649,7 +1687,7 @@ end if
 	add	ebx,.bmap
 	movzx	ebx,byte [ebx]
 	sub	edx,ebx
-
+;end if
 
      ;  eax - horizontal sub    modificated x coord
      ;  edx - vertical   sub    modificated y coord
