@@ -19,7 +19,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version " HTML Viewer v0.63"
+ char version[]=" HTML Viewer v0.63";
 
 
 struct TWebBrowser {
@@ -485,7 +485,8 @@ void TWebBrowser::WhatTextStyle(word left1, top1, width1) {
 		w_title = 0;
 		stolbec = 0;
 		copystr(#line, #header);
-		copystr(" -" + #version, #header + strlen(#header));
+		copystr(" -", #header + strlen(#header));
+		copystr(#version, #header + strlen(#header));
 		IF(stroka == 0) || (WindowRePaint == 1) DrawTitle(#header);
 		//да, знаю, 2 раза выходит, но, если большая страница, то труъ
 		return;
