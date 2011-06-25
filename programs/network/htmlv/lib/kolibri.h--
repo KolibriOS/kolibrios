@@ -376,7 +376,7 @@ dword Hex2Symb(char* htmlcolor)
   FOR (;j<2;j++)
   {
     ch=ESBYTE[htmlcolor+j];
-    IF (ch==0x0d) || (ch=='\9') return '';
+    IF (ch==0x0d) || (ch=='\9') RETURN '';
     IF ((ch>='0') && (ch<='9')) ch -= '0';
     IF ((ch>='A') && (ch<='F')) ch -= 'A'-10;
     IF ((ch>='a') && (ch<='f')) ch -= 'a'-10;
@@ -430,32 +430,32 @@ inline fastcall int utf8rutodos(dword ESI) //-
           EDI+=2;
           ESI++;
         }  
-        else IF (BL == 0xC2) && ((ESBYTE[ESI+1]==0xAB) || (ESBYTE[ESI+1]==0xBB))  // "
+        ELSE IF (BL == 0xC2) && ((ESBYTE[ESI+1]==0xAB) || (ESBYTE[ESI+1]==0xBB))  // "
         {
           ESBYTE[EDI] = '\"';
           ESI++;
         }  
-        else IF (BL == 0xC2) && (ESBYTE[ESI+1]==0xB7)  // _
+        ELSE IF (BL == 0xC2) && (ESBYTE[ESI+1]==0xB7)  // _
         {
           ESBYTE[EDI] = '_';
           ESI++;
         }  
-        else IF (BL >= 0x90) && (BL <= 0xAF)
+        ELSE IF (BL >= 0x90) && (BL <= 0xAF)
 		{
             BL -= 0x10;
 			ESBYTE[EDI] = BL;
 		}
-        else IF (BL >= 0x80) && (BL <= 0x8F)
+        ELSE IF (BL >= 0x80) && (BL <= 0x8F)
 		{
             BL += 0x60;
 			ESBYTE[EDI] = BL;            
 		}
-        else IF (BL >= 0xB0) && (BL <= 0xBF)
+        ELSE IF (BL >= 0xB0) && (BL <= 0xBF)
 		{
             BL -= 0x10;
 			ESBYTE[EDI] = BL;
 		}
-        else ESBYTE[EDI] = BL;
+        ELSE ESBYTE[EDI] = BL;
 		ESI++;
         EDI++;
 	}
@@ -574,7 +574,7 @@ void DrawFlatButton(dword x,y,width,height,id,color,text)
 void DrawCircle(int x, y, r)
 {
 	int i; float px=0, py=r, ii = r * 3.1415926 * 2;
-	for (i = 0; i < ii; i++)
+	FOR (i = 0; i < ii; i++)
 	{
         PutPixel(px + x, y - py, 0);
         px = py / r + px;
