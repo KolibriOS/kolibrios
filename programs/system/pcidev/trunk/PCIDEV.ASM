@@ -50,7 +50,7 @@ load_libraries l_libs_start,end_l_libs
 	mov	esi,start_temp_file_name
 	call	copy_file_name_path
 ;-----------------------------------------------------------------------------
-	mcall	68,12,4096
+	mcall	68,12,4096*4 ; 16 Kb - I hope this will be enough for store of data
 	mov	[store_text_area_start],eax
 ;-----------------------------------------------------------------------------	
 	call draw_window
@@ -146,7 +146,7 @@ prepare_text_area:
 	mov	edi,[store_text_area_start]
 
 	push	edi
-	mov	ecx,4096/4 ; I hope this will be enough for store of data
+	mov	ecx,4096 ; 16 Kb - I hope this will be enough for store of data
 	mov	eax,dword '    '
 	cld
 	rep	stosd
