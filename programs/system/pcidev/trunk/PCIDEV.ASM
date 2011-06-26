@@ -4,14 +4,13 @@
 ; compiler:        flat assembler 1.68
 ; version:         2.3
 ; last update:     June 2011
-; maintained by:   Jason Delozier (cordata51@hotmail.com)
-;                  Sergey Kuzmin (kuzmin_serg@list.ru)
-;                  Mihailov Ilia (ghost.nsk@gmail.com)
+; maintained by:   Jason Delozier <cordata51@hotmail.com>
+;                  Sergey Kuzmin <kuzmin_serg@list.ru>
+;                  Mihailov Ilia <ghost.nsk@gmail.com>
 ;                  Marat Zakiyanov <mario79@bk.ru>
-;                  Artem Jerdev  (art_zh@yahoo.com)
-;                  Evgeny Grechnikov
-;                  Veroniña (Clever Mouse)
-;                  Yogev Ezra
+;                  Artem Jerdev  <art_zh@yahoo.com>
+;                  Evgeny Grechnikov (diamond)
+;                  Veronica (CleverMouse)
 ; old project site:  http://www.coolthemes.narod.ru/pcidev.html
 ; new project site:  http://board.kolibrios.org/viewtopic.php?f=42&t=73
 ;***************************************************************
@@ -33,7 +32,7 @@ include	'../../../develop/libraries/box_lib/load_lib.mac'
 	dd I_END	; memory for app
 	dd stacktop	; esp
 	dd 0	; I_Param
-	dd path		; APPLICATION PACH
+	dd path		; APPLICATION PATH
 ;-----------------------------------------------------------------------------
 @use_library	; load_lib macro
 ;-----------------------------------------------------------------------------
@@ -699,7 +698,7 @@ Form:	dw 800 ; window width (no more, special for 800x600)
 	dw 620 ; window height
 	dw 20 ; window y start
 
-title	db 'PCI Device Enumerator v 2.3 by J.Delozier, S.Kuzmin, V.Hanla, M.Zakiyanov, A.Jerdev, E.Grechnikov, V.Clever Mouse, Y.Ezra', 0
+title	db 'PCI Device Enumerator v 2.3 by J.Delozier, S.Kuzmin, V.Hanla, M.Zakiyanov, A.Jerdev, E.Grechnikov, CleverMouse', 0
 
 PCIWin mls \
 	'   Don`t forget to enable PCI Access to Applications in Setup Menu.',\
