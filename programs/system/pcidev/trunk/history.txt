@@ -9,11 +9,42 @@ to-do:
 
  Full device detection (like "ATI Radeon 9200") will increase app
  size a lot and probably it is function of particular drivers
-----------------------------------------------------------------
-2.21: PCIDEV   03/06/2011
-Author:    CleverMouse
-Features:  don't scan for other functions on single-function devices
-----------------------------------------------------------------
+;-----------------------------------------------------------------------------
+2.3: PCIDEV   26/06/2011
+Author:    Marat Zakiyanov aka Mario79 <mario79@bk.ru>
+Features:
+           added
+                 * Save PCI devices list to disk
+                 * Using OpenDialog for select of path
+
+;------------------------------------
+Author:    Veronica aka Clever Mouse
+Features:
+           fixed
+                 * Don't scan for other functions on single-function devices
+                 * Some little bugs
+
+;------------------------------------
+Author:    Artem Jerdev aka art_zh <art_zh@yahoo.com>
+Features:
+           fixed
+                 * pcidev post-enumeration bug fixed
+           optimized
+                 * pci vendors database splitted to reduce PCIDEV code downto 10kB.
+
+;------------------------------------
+Author:    Yogev Ezra
+Features:
+           added
+                 * HDA controller recognition and 17F3 RDC Semiconductor vendor
+
+;------------------------------------
+Author:    Evgeny Grechnikov aka Diamond
+Features:
+           fixed
+                 * Some little bugs
+
+;-----------------------------------------------------------------------------
 2.2: PCIDEV   03/01/2010
 Author:    Artem Jerdev <art_zh@yahoo.com>
 Features:
