@@ -698,7 +698,7 @@ Form:	dw 800 ; window width (no more, special for 800x600)
 	dw 620 ; window height
 	dw 20 ; window y start
 
-title	db 'PCI Device Enumerator v 2.3 by J.Delozier, S.Kuzmin, V.Hanla, M.Zakiyanov, A.Jerdev, E.Grechnikov, CleverMouse', 0
+title	db 'PCI Device Enumerator v 2.3', 0
 
 PCIWin mls \
 	'   Don`t forget to enable PCI Access to Applications in Setup Menu.',\
