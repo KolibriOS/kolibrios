@@ -151,14 +151,14 @@ align 4
 ; .irq_13:
 ;	   push 13
 ;	   jmp .main
-; align 4
-; .irq_14:
-;	   push 14
-;	   jmp .main
-; align 4
-; .irq_15:
-;	   push 15
-;	   jmp .main
+align 4
+.irq_14:
+	   push 14
+	   jmp .main
+align 4
+.irq_15:
+	   push 15
+	   jmp .main
 
 align 16
 .main:
@@ -170,6 +170,19 @@ align 16
 
 	   cmp	 [v86_irqhooks+eax*8], 0
 	   jnz	 v86_irq
+
+	   cmp   al, 14
+	   jnz   @f
+	   push  eax
+	   call  [irq14_func]
+	   pop   eax
+@@:
+	   cmp   al, 15
+	   jnz   @f
+	   push  eax
+	   call  [irq15_func]
+	   pop   eax
+@@:
 
 	   mov ebx, [irq_tab+eax*4]
 	   test ebx, ebx

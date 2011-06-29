@@ -3804,8 +3804,8 @@ f_irqs:
      dd p_irq11
      dd 0x0
      dd 0x0
-     dd p_irq14
-     dd p_irq15
+     dd 0x0
+     dd 0x0
 
 endg
 

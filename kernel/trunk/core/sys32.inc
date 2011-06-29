@@ -47,7 +47,7 @@ iglobal
     end if
         dd      irq_serv.irq_5,  p_irq6,          irq_serv.irq_7
         dd      irq_serv.irq_8,  irq_serv.irq_9,  irq_serv.irq_10
-        dd      irq_serv.irq_11, irq_serv.irq_12, irqD,p_irq14,p_irq15
+        dd      irq_serv.irq_11, irq_serv.irq_12, irqD, irq_serv.irq_14, irq_serv.irq_15
         times   16 dd unknown_interrupt ;int_0x30..int_0x3F
 
     ;int_0x40 gate trap (for directly copied)
@@ -258,33 +258,6 @@ p_irq6:
         restore_ring3_context
         iret
 
-
-p_irq14:
-        save_ring3_context
-        mov     ax, app_data  ;os_data
-        mov     ds, ax
-        mov     es, ax
-        mov     edi, 14
-        cmp     [v86_irqhooks+edi*8], 0
-        jnz     v86_irq2
-;       mov     byte [BOOT_VAR + 0x48E], 0xFF
-        call    [irq14_func]
-        call    ready_for_next_irq_1
-        restore_ring3_context
-        iret
-p_irq15:
-        save_ring3_context
-        mov     ax, app_data  ;os_data
-        mov     ds, ax
-        mov     es, ax
-        mov     edi, 15
-        cmp     [v86_irqhooks+edi*8], 0
-        jnz     v86_irq2
-;       mov     byte [BOOT_VAR + 0x48E], 0xFF
-        call    [irq15_func]
-        call    ready_for_next_irq_1
-        restore_ring3_context
-        iret
 
 ready_for_next_irq:
 	mov	eax,5
