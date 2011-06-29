@@ -15,7 +15,7 @@ DRV_INCLUDES = $(DRV_TOPDIR)/include
 INCLUDES = 	-I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/drm	\
 		-I$(DRV_INCLUDES)/linux
 
-CFLAGS_OPT = -Os -march=i486 -fomit-frame-pointer -fno-builtin-printf -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -flto
+CFLAGS_OPT = -Os -march=i686 -fomit-frame-pointer -fno-builtin-printf -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -flto
 CFLAGS   = -c $(INCLUDES) $(DEFINES) $(CFLAGS_OPT)
 
 LIBPATH:= $(DRV_TOPDIR)/ddk
@@ -53,9 +53,12 @@ NAME_SRC=							\
 			$(DRM_TOPDIR)/i2c/i2c-core.c		\
 			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
 			radeon_device.c				\
+			evergreen.c				\
+			evergreen_blit_shaders.c		\
 			radeon_clocks.c				\
 			radeon_i2c.c				\
 			atom.c					\
+			radeon_gem.c				\
 			radeon_atombios.c			\
 			radeon_agp.c				\
 			radeon_asic.c				\
