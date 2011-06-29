@@ -520,6 +520,8 @@ struct drm_connector {
 	uint32_t encoder_ids[DRM_CONNECTOR_MAX_ENCODER];
 	uint32_t force_encoder_id;
 	struct drm_encoder *encoder; /* currently active encoder */
+
+	int null_edid_counter; /* needed to workaround some HW bugs where we get all 0s */
 };
 
 /**
@@ -655,7 +657,7 @@ extern char *drm_get_dvi_i_subconnector_name(int val);
 extern char *drm_get_dvi_i_select_name(int val);
 extern char *drm_get_tv_subconnector_name(int val);
 extern char *drm_get_tv_select_name(int val);
-//extern void drm_fb_release(struct drm_file *file_priv);
+extern void drm_fb_release(struct drm_file *file_priv);
 extern int drm_mode_group_init_legacy_group(struct drm_device *dev, struct drm_mode_group *group);
 extern struct edid *drm_get_edid(struct drm_connector *connector,
 				 struct i2c_adapter *adapter);

@@ -248,93 +248,93 @@ FIRMWARE_JUNIPER_RLC    db 'radeon/JUNIPER_rlc.bin',0
 
 align 16
 R100CP_START:
-        file 'firmware/r100_cp.bin'
+        file 'firmware/R100_cp.bin'
 R100CP_END:
 
 align 16
 R200CP_START:
-        file 'firmware/r200_cp.bin'
+        file 'firmware/R200_cp.bin'
 R200CP_END:
 
 align 16
 R300CP_START:
-        file 'firmware/r300_cp.bin'
+        file 'firmware/R300_cp.bin'
 R300CP_END:
 
 align 16
 R420CP_START:
-        file 'firmware/r420_cp.bin'
+        file 'firmware/R420_cp.bin'
 R420CP_END:
 
 align 16
 R520CP_START:
-        file 'firmware/r520_cp.bin'
+        file 'firmware/R520_cp.bin'
 R520CP_END:
 
 align 16
 RS600CP_START:
-        file 'firmware/rs600_cp.bin'
+        file 'firmware/RS600_cp.bin'
 RS600CP_END:
 
 align 16
 RS690CP_START:
-        file 'firmware/rs690_cp.bin'
+        file 'firmware/RS690_cp.bin'
 RS690CP_END:
 
 align 16
 RS780ME_START:
-        file 'firmware/rs780_me.bin'
+        file 'firmware/RS780_me.bin'
 RS780ME_END:
 
 align 16
 RS780PFP_START:
-        file 'firmware/rs780_pfp.bin'
+        file 'firmware/RS780_pfp.bin'
 RS780PFP_END:
 
 align 16
 R600ME_START:
-        file 'firmware/r600_me.bin'
+        file 'firmware/R600_me.bin'
 R600ME_END:
 
 align 16
 RV610ME_START:
-        file 'firmware/rv610_me.bin'
+        file 'firmware/RV610_me.bin'
 RV610ME_END:
 
 align 16
 RV620ME_START:
-        file 'firmware/rv620_me.bin'
+        file 'firmware/RV620_me.bin'
 RV620ME_END:
 
 align 16
 RV630ME_START:
-        file 'firmware/rv630_me.bin'
+        file 'firmware/RV630_me.bin'
 RV630ME_END:
 
 align 16
 RV635ME_START:
-        file 'firmware/rv635_me.bin'
+        file 'firmware/RV635_me.bin'
 RV635ME_END:
 
 align 16
 RV670ME_START:
-        file 'firmware/rv670_me.bin'
+        file 'firmware/RV670_me.bin'
 RV670ME_END:
 
 
 align 16
 RV710ME_START:
-        file 'firmware/rv710_me.bin'
+        file 'firmware/RV710_me.bin'
 RV710ME_END:
 
 align 16
 RV730ME_START:
-        file 'firmware/rv730_me.bin'
+        file 'firmware/RV730_me.bin'
 RV730ME_END:
 
 align 16
 RV770ME_START:
-        file 'firmware/rv770_me.bin'
+        file 'firmware/RV770_me.bin'
 RV770ME_END:
 
 align 16
@@ -365,45 +365,45 @@ PALMME_END:
 
 align 16
 RV610PFP_START:
-        file 'firmware/rv610_pfp.bin'
+        file 'firmware/RV610_pfp.bin'
 RV610PFP_END:
 
 
 align 16
 RV620PFP_START:
-        file 'firmware/rv620_pfp.bin'
+        file 'firmware/RV620_pfp.bin'
 RV620PFP_END:
 
 align 16
 RV630PFP_START:
-        file 'firmware/rv630_pfp.bin'
+        file 'firmware/RV630_pfp.bin'
 RV630PFP_END:
 
 
 align 16
 RV635PFP_START:
-        file 'firmware/rv635_pfp.bin'
+        file 'firmware/RV635_pfp.bin'
 RV635PFP_END:
 
 align 16
 RV670PFP_START:
-        file 'firmware/rv670_pfp.bin'
+        file 'firmware/RV670_pfp.bin'
 RV670PFP_END:
 
 align 16
 RV710PFP_START:
-        file 'firmware/rv710_pfp.bin'
+        file 'firmware/RV710_pfp.bin'
 RV710PFP_END:
 
 align 16
 RV730PFP_START:
-        file 'firmware/rv730_pfp.bin'
+        file 'firmware/RV730_pfp.bin'
 RV730PFP_END:
 
 
 align 16
 RV770PFP_START:
-        file 'firmware/rv770_pfp.bin'
+        file 'firmware/RV770_pfp.bin'
 RV770PFP_END:
 
 
@@ -435,12 +435,12 @@ PALMPFP_END:
 
 align 16
 R600RLC_START:
-        file 'firmware/r600_rlc.bin'
+        file 'firmware/R600_rlc.bin'
 R600RLC_END:
 
 align 16
 R700RLC_START:
-        file 'firmware/r700_rlc.bin'
+        file 'firmware/R700_rlc.bin'
 R700RLC_END:
 
 align 16

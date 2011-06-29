@@ -130,58 +130,7 @@ extern void drm_ut_debug_printk(unsigned int request_level,
 #define dev_info(dev, format, arg...)       \
         printk("Info %s " format , __func__, ## arg)
 
-/**
- * This structure defines the drm_mm memory object, which will be used by the
- * DRM for its buffer objects.
- */
-struct drm_gem_object {
-    /** Reference count of this object */
-    struct kref refcount;
 
-    /** Handle count of this object. Each handle also holds a reference */
-    struct kref handlecount;
-
-    /** Related drm device */
-    struct drm_device *dev;
-
-    /** File representing the shmem storage */
-//    struct file *filp;
-
-    /* Mapping info for this object */
-//    struct drm_map_list map_list;
-
-    /**
-     * Size of the object, in bytes.  Immutable over the object's
-     * lifetime.
-     */
-    size_t size;
-
-    /**
-     * Global name for this object, starts at 1. 0 means unnamed.
-     * Access is covered by the object_name_lock in the related drm_device
-     */
-    int name;
-
-    /**
-     * Memory domains. These monitor which caches contain read/write data
-     * related to the object. When transitioning from one set of domains
-     * to another, the driver is called to ensure that caches are suitably
-     * flushed and invalidated
-     */
-    uint32_t read_domains;
-    uint32_t write_domain;
-
-    /**
-     * While validating an exec operation, the
-     * new read/write domain values are computed here.
-     * They will be transferred to the above values
-     * at the point that any cache flushing occurs
-     */
-    uint32_t pending_read_domains;
-    uint32_t pending_write_domain;
-
-    void *driver_private;
-};
 
 static inline int drm_sysfs_connector_add(struct drm_connector *connector)
 { return 0; };
@@ -668,6 +617,8 @@ struct drm_gem_mm {
 	struct drm_open_hash offset_hash; /**< User token hash table for maps */
 };
 
+#endif
+
 /**
  * This structure defines the drm_mm memory object, which will be used by the
  * DRM for its buffer objects.
@@ -686,7 +637,7 @@ struct drm_gem_object {
 	struct file *filp;
 
 	/* Mapping info for this object */
-	struct drm_map_list map_list;
+//	struct drm_map_list map_list;
 
 	/**
 	 * Size of the object, in bytes.  Immutable over the object's
@@ -720,6 +671,8 @@ struct drm_gem_object {
 
 	void *driver_private;
 };
+
+#if 0
 
 #include "drm_crtc.h"
 
@@ -1633,12 +1586,13 @@ drm_gem_object_unreference(struct drm_gem_object *obj)
 int drm_gem_handle_create(struct drm_file *file_priv,
 			  struct drm_gem_object *obj,
 			  u32 *handlep);
+int drm_gem_handle_delete(struct drm_file *filp, u32 handle);
 
 static inline void
 drm_gem_object_handle_reference(struct drm_gem_object *obj)
 {
 	drm_gem_object_reference(obj);
-	kref_get(&obj->handlecount);
+	atomic_inc(&obj->handle_count);
 }
 
 static inline void
@@ -1647,6 +1601,8 @@ drm_gem_object_handle_unreference(struct drm_gem_object *obj)
 	if (obj == NULL)
 		return;
 
+	if (atomic_read(&obj->handle_count) == 0)
+		return;
 	/*
 	 * Must bump handle count first as this may be the last
 	 * ref, in which case the object would disappear before we
@@ -1681,7 +1637,6 @@ static __inline__ struct drm_local_map *drm_core_findmap(struct drm_device *dev,
 		return _entry->map;
 	return NULL;
 }
-
 
 static __inline__ void drm_core_dropmap(struct drm_local_map *map)
 {
