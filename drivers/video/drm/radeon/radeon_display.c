@@ -870,19 +870,6 @@ radeon_framebuffer_init(struct drm_device *dev,
 	drm_helper_mode_fill_fb_struct(&rfb->base, mode_cmd);
 }
 
-static struct drm_framebuffer *
-radeon_user_framebuffer_create(struct drm_device *dev,
-			       struct drm_file *file_priv,
-			       struct drm_mode_fb_cmd *mode_cmd)
-{
-	struct drm_gem_object *obj;
-
-    return NULL;
-
-//   obj = drm_gem_object_lookup(dev, file_priv, mode_cmd->handle);
-//
-//   return radeon_framebuffer_create(dev, mode_cmd, obj);
-}
 
 
 static const struct drm_mode_config_funcs radeon_mode_funcs = {

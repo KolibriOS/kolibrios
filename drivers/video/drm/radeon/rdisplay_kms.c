@@ -6,6 +6,16 @@
 #include "radeon.h"
 #include "radeon_object.h"
 #include "display.h"
+#include "drm_fb_helper.h"
+
+struct radeon_fbdev {
+    struct drm_fb_helper        helper;
+    struct radeon_framebuffer   rfb;
+    struct list_head fbdev_list;
+    struct radeon_device        *rdev;
+};
+
+struct radeon_fbdev *kos_rfbdev;
 
 
 static cursor_t*  __stdcall select_cursor_kms(cursor_t *cursor);
@@ -197,6 +207,11 @@ bool set_mode(struct drm_device *dev, struct drm_connector *connector,
 {
     struct drm_display_mode  *mode = NULL, *tmpmode;
 
+    struct drm_fb_helper *fb_helper;
+
+    fb_helper = &kos_rfbdev->helper;
+
+
     bool ret = false;
 
     ENTER();
@@ -260,9 +275,12 @@ do_set:
         dbgprintf("set mode %d %d connector %s encoder %s\n",
                    reqmode->width, reqmode->height, con_name, enc_name);
 
+        fb = fb_helper->fb;
+
         fb->width  = reqmode->width;
         fb->height = reqmode->height;
         fb->pitch  = radeon_align_pitch(dev->dev_private, reqmode->width, 32, false) * ((32 + 1) / 8);
+        fb->bits_per_pixel = 32;
 
         crtc->fb = fb;
         crtc->enabled = true;
@@ -318,9 +336,6 @@ static struct drm_connector* get_def_connector(struct drm_device *dev)
         struct drm_encoder  *encoder;
         struct drm_crtc     *crtc;
 
-        dbgprintf("CONNECTOR %x ID:  %d status %d encoder %x\n", connector,
-                   connector->base.id, connector->status, connector->encoder);
-
         if( connector->status != connector_status_connected)
             continue;
 
@@ -332,17 +347,24 @@ static struct drm_connector* get_def_connector(struct drm_device *dev)
         connector->encoder = encoder;
 
         crtc = encoder->crtc;
-        dbgprintf("encoder %x crtc %x\n", encoder, crtc);
 
-        if(crtc == NULL)
-            continue;
+        dbgprintf("CONNECTOR %x ID:  %d status %d encoder %x\n crtc %x",
+                   connector, connector->base.id,
+                   connector->status, connector->encoder,
+                   crtc);
+
+//        if (crtc == NULL)
+//            continue;
 
         def_connector = connector;
+
         break;
     };
 
     return def_connector;
 };
+
+
 
 bool init_display_kms(struct radeon_device *rdev, videomode_t *usermode)
 {
@@ -351,6 +373,11 @@ bool init_display_kms(struct radeon_device *rdev, videomode_t *usermode)
     cursor_t            *cursor;
     bool                 retval = false;
     u32_t                ifl;
+
+    struct radeon_fbdev  *rfbdev;
+    struct drm_fb_helper *fb_helper;
+
+    int i;
 
     ENTER();
 
@@ -367,6 +394,32 @@ bool init_display_kms(struct radeon_device *rdev, videomode_t *usermode)
     };
     safe_sti(ifl);
 
+
+
+    rfbdev    = rdev->mode_info.rfbdev;
+    fb_helper = &rfbdev->helper;
+
+
+//    for (i = 0; i < fb_helper->crtc_count; i++)
+//    {
+        struct drm_mode_set *mode_set = &fb_helper->crtc_info[0].mode_set;
+        struct drm_crtc *crtc;
+        struct drm_display_mode *mode;
+
+        crtc = mode_set->crtc;
+
+//        if (!crtc->enabled)
+//            continue;
+
+        mode = mode_set->mode;
+
+        dbgprintf("crtc %d width %d height %d vrefresh %d\n",
+               crtc->base.id,
+               drm_mode_width(mode), drm_mode_height(mode),
+               drm_mode_vrefresh(mode));
+//    }
+
+
     rdisplay->connector = get_def_connector(dev);
     if( rdisplay->connector == 0 )
     {
@@ -374,7 +427,9 @@ bool init_display_kms(struct radeon_device *rdev, videomode_t *usermode)
         return false;
     };
 
-    rdisplay->crtc = rdisplay->connector->encoder->crtc;
+
+    rdisplay->crtc = rdisplay->connector->encoder->crtc = crtc;
+
     rdisplay->supported_modes = count_connector_modes(rdisplay->connector);
 
     dbgprintf("current mode %d x %d x %d\n",
@@ -477,40 +532,72 @@ int set_user_mode(videomode_t *mode)
     return err;
 };
 
-#if 0
-void drm_helper_disable_unused_functions(struct drm_device *dev)
+
+
+int radeonfb_create_object(struct radeon_fbdev *rfbdev,
+                     struct drm_mode_fb_cmd *mode_cmd,
+                     struct drm_gem_object **gobj_p)
 {
-    struct drm_encoder *encoder;
-    struct drm_connector *connector;
-    struct drm_encoder_helper_funcs *encoder_funcs;
-    struct drm_crtc *crtc;
+    struct radeon_device *rdev = rfbdev->rdev;
+    struct drm_gem_object *gobj = NULL;
+    struct radeon_bo *rbo = NULL;
+    bool fb_tiled = false; /* useful for testing */
+    u32 tiling_flags = 0;
+    int ret;
+    int aligned_size, size;
+    int height = mode_cmd->height;
 
-    list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
-        if (!connector->encoder)
-            continue;
-        if (connector->status == connector_status_disconnected)
-            connector->encoder = NULL;
+    static struct radeon_bo kos_bo;
+    static struct drm_mm_node  vm_node;
+
+    /* need to align pitch with crtc limits */
+    mode_cmd->pitch = radeon_align_pitch(rdev, mode_cmd->width, mode_cmd->bpp, fb_tiled) * ((mode_cmd->bpp + 1) / 8);
+
+    if (rdev->family >= CHIP_R600)
+        height = ALIGN(mode_cmd->height, 8);
+    size = mode_cmd->pitch * height;
+    aligned_size = ALIGN(size, PAGE_SIZE);
+
+    ret = drm_gem_object_init(rdev->ddev, &kos_bo.gem_base, aligned_size);
+    if (unlikely(ret)) {
+        return ret;
     }
 
-    list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
-        encoder_funcs = encoder->helper_private;
-        if (!drm_helper_encoder_in_use(encoder)) {
-            if (encoder_funcs->disable)
-                (*encoder_funcs->disable)(encoder);
-            else
-            (*encoder_funcs->dpms)(encoder, DRM_MODE_DPMS_OFF);
-            /* disconnector encoder from any connector */
-            encoder->crtc = NULL;
-        }
+    kos_bo.rdev = rdev;
+    kos_bo.gem_base.driver_private = NULL;
+    kos_bo.surface_reg = -1;
+    kos_bo.domain = RADEON_GEM_DOMAIN_VRAM;
+
+    INIT_LIST_HEAD(&kos_bo.list);
+
+    gobj = &kos_bo.gem_base;
+    rbo = gem_to_radeon_bo(gobj);
+
+    if (fb_tiled)
+        tiling_flags = RADEON_TILING_MACRO;
+
+    if (tiling_flags) {
+        rbo->tiling_flags = tiling_flags | RADEON_TILING_SURFACE;
+        rbo->pitch = mode_cmd->pitch;
     }
 
-    list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
-        struct drm_crtc_helper_funcs *crtc_funcs = crtc->helper_private;
-        crtc->enabled = drm_helper_crtc_in_use(crtc);
-        if (!crtc->enabled) {
-            crtc_funcs->dpms(crtc, DRM_MODE_DPMS_OFF);
-            crtc->fb = NULL;
-        }
-    }
+    vm_node.size = 0xC00000 >> 12;
+    vm_node.start = 0;
+    vm_node.mm = NULL;
+
+    rbo->tbo.vm_node = &vm_node;
+    rbo->tbo.offset  = rbo->tbo.vm_node->start << PAGE_SHIFT;
+    rbo->tbo.offset += (u64)rbo->rdev->mc.vram_start;
+    rbo->kptr        = (void*)0xFE000000;
+    rbo->pin_count   = 1;
+
+//    if (fb_tiled)
+//        radeon_bo_check_tiling(rbo, 0, 0);
+
+    *gobj_p = gobj;
+    return 0;
 }
-#endif
+
+
+
+

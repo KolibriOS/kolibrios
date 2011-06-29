@@ -33,6 +33,7 @@
 #include <linux/wait.h>
 #include <linux/list.h>
 #include <linux/kref.h>
+#include <linux/slab.h>
 #include "drmP.h"
 #include "drm.h"
 #include "radeon_reg.h"
@@ -56,9 +57,9 @@ int radeon_fence_emit(struct radeon_device *rdev, struct radeon_fence *fence)
 	} else
 		radeon_fence_ring_emit(rdev, fence);
 
+	trace_radeon_fence_emit(rdev->ddev, fence->seq);
 	fence->emited = true;
-	list_del(&fence->list);
-	list_add_tail(&fence->list, &rdev->fence_drv.emited);
+	list_move_tail(&fence->list, &rdev->fence_drv.emited);
 	write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
 	return 0;
 }
@@ -77,7 +78,7 @@ static bool radeon_fence_poll_locked(struct radeon_device *rdev)
 			scratch_index = R600_WB_EVENT_OFFSET + rdev->fence_drv.scratch_reg - rdev->scratch.reg_base;
 		else
 			scratch_index = RADEON_WB_SCRATCH_OFFSET + rdev->fence_drv.scratch_reg - rdev->scratch.reg_base;
-		seq = rdev->wb.wb[scratch_index/4];
+		seq = le32_to_cpu(rdev->wb.wb[scratch_index/4]);
 	} else
 	seq = RREG32(rdev->fence_drv.scratch_reg);
 	if (seq != rdev->fence_drv.last_seq) {
@@ -118,8 +119,7 @@ static bool radeon_fence_poll_locked(struct radeon_device *rdev)
 		i = n;
 		do {
 			n = i->prev;
-			list_del(i);
-			list_add_tail(i, &rdev->fence_drv.signaled);
+			list_move_tail(i, &rdev->fence_drv.signaled);
 			fence = list_entry(i, struct radeon_fence, list);
 			fence->signaled = true;
 			i = n;
@@ -212,6 +212,7 @@ int radeon_fence_wait(struct radeon_fence *fence, bool intr)
 retry:
 	/* save current sequence used to check for GPU lockup */
 	seq = rdev->fence_drv.last_seq;
+	trace_radeon_fence_wait_begin(rdev->ddev, seq);
 	if (intr) {
 		radeon_irq_kms_sw_irq_get(rdev);
 		r = wait_event_interruptible_timeout(rdev->fence_drv.queue,
@@ -226,6 +227,7 @@ retry:
 			 radeon_fence_signaled(fence), timeout);
 		radeon_irq_kms_sw_irq_put(rdev);
 	}
+	trace_radeon_fence_wait_end(rdev->ddev, seq);
 	if (unlikely(!radeon_fence_signaled(fence))) {
 		/* we were interrupted for some reason and fence isn't
 		 * isn't signaled yet, resume wait
@@ -319,7 +321,7 @@ void radeon_fence_unref(struct radeon_fence **fence)
 
 	*fence = NULL;
 	if (tmp) {
-		kref_put(&tmp->kref, &radeon_fence_destroy);
+		kref_put(&tmp->kref, radeon_fence_destroy);
 	}
 }
 

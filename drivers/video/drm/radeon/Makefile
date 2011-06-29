@@ -53,9 +53,12 @@ NAME_SRC=							\
 			$(DRM_TOPDIR)/i2c/i2c-core.c		\
 			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
 			radeon_device.c				\
+			evergreen.c				\
+			evergreen_blit_shaders.c		\
 			radeon_clocks.c				\
 			radeon_i2c.c				\
 			atom.c					\
+			radeon_gem.c				\
 			radeon_atombios.c			\
 			radeon_agp.c				\
 			radeon_asic.c				\
@@ -133,6 +136,8 @@ SRC_DEP:=
 NAME_OBJS =  $(patsubst %.S, %.o, $(patsubst %.asm, %.o,\
             $(patsubst %.c, %.o, $(NAME_SRC))))
 
+
+
 all: $(NAME).dll
 
 $(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(HFILES) $(LIBPATH)/libcore.a $(LIBPATH)/libddk.a atikms.lds Makefile
@@ -147,6 +152,7 @@ $(NAME).dll: $(NAME_OBJS) $(FW_BINS) $(SRC_DEP) $(HFILES) $(LIBPATH)/libcore.a $
 
 fwblob.o:  fwblob.asm $(FW_BINS) Makefile
 	$(FASM) $< $@
+
 
 clean: 
 	-rm -f */*.o

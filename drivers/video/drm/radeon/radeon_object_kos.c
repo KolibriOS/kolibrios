@@ -8,6 +8,26 @@
 static struct drm_mm   mm_gtt;
 static struct drm_mm   mm_vram;
 
+
+/**
+ * Initialize an already allocate GEM object of the specified size with
+ * shmfs backing store.
+ */
+int drm_gem_object_init(struct drm_device *dev,
+            struct drm_gem_object *obj, size_t size)
+{
+    BUG_ON((size & (PAGE_SIZE - 1)) != 0);
+
+    obj->dev = dev;
+    obj->filp = NULL;
+
+    atomic_set(&obj->handle_count, 0);
+    obj->size = size;
+
+    return 0;
+}
+
+
 int drm_mm_alloc(struct drm_mm *mm, size_t num_pages,
                  struct drm_mm_node **node)
 {
@@ -36,6 +56,7 @@ retry_pre_get:
 
     return 0;
 };
+
 
 
 void radeon_ttm_placement_from_domain(struct radeon_bo *rbo, u32 domain)
@@ -102,13 +123,12 @@ void ttm_bo_unreserve(struct ttm_buffer_object *bo)
 }
 
 int radeon_bo_create(struct radeon_device *rdev,
-                unsigned long size, int byte_align,
-                bool kernel, u32 domain,
+		     unsigned long size, int byte_align, bool kernel, u32 domain,
                 struct radeon_bo **bo_ptr)
 {
+	struct radeon_bo *bo;
     enum ttm_bo_type type;
 
-    struct radeon_bo   *bo;
     size_t num_pages;
     struct drm_mm      *mman;
     u32                 bo_domain;
@@ -143,7 +163,13 @@ int radeon_bo_create(struct radeon_device *rdev,
     if (bo == NULL)
         return -ENOMEM;
 
+	r = drm_gem_object_init(rdev->ddev, &bo->gem_base, size);
+    if (unlikely(r)) {
+		kfree(bo);
+		return r;
+	}
     bo->rdev = rdev;
+	bo->gem_base.driver_private = NULL;
     bo->surface_reg = -1;
     bo->tbo.num_pages = num_pages;
     bo->domain = domain;

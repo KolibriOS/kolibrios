@@ -1548,6 +1548,14 @@ int r600_init_microcode(struct radeon_device *rdev)
 		chip_name = "PALM";
 		rlc_chip_name = "SUMO";
 		break;
+	case CHIP_SUMO:
+		chip_name = "SUMO";
+		rlc_chip_name = "SUMO";
+		break;
+	case CHIP_SUMO2:
+		chip_name = "SUMO2";
+		rlc_chip_name = "SUMO";
+		break;
 	default: BUG();
 	}
 

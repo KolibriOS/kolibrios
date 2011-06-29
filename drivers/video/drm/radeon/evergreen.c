@@ -32,12 +32,14 @@
 #include "atom.h"
 #include "avivod.h"
 #include "evergreen_reg.h"
+#include "evergreen_blit_shaders.h"
 
 #define EVERGREEN_PFP_UCODE_SIZE 1120
 #define EVERGREEN_PM4_UCODE_SIZE 1376
 
 static void evergreen_gpu_init(struct radeon_device *rdev);
 void evergreen_fini(struct radeon_device *rdev);
+static void evergreen_pcie_gen2_enable(struct radeon_device *rdev);
 
 bool evergreen_hpd_sense(struct radeon_device *rdev, enum radeon_hpd_id hpd)
 {
@@ -217,11 +219,455 @@ void evergreen_hpd_fini(struct radeon_device *rdev)
 }
 
 #endif
+/* watermark setup */
 
+static u32 evergreen_line_buffer_adjust(struct radeon_device *rdev,
+					struct radeon_crtc *radeon_crtc,
+					struct drm_display_mode *mode,
+					struct drm_display_mode *other_mode)
+{
+	u32 tmp;
+	/*
+	 * Line Buffer Setup
+	 * There are 3 line buffers, each one shared by 2 display controllers.
+	 * DC_LB_MEMORY_SPLIT controls how that line buffer is shared between
+	 * the display controllers.  The paritioning is done via one of four
+	 * preset allocations specified in bits 2:0:
+	 * first display controller
+	 *  0 - first half of lb (3840 * 2)
+	 *  1 - first 3/4 of lb (5760 * 2)
+	 *  2 - whole lb (7680 * 2), other crtc must be disabled
+	 *  3 - first 1/4 of lb (1920 * 2)
+	 * second display controller
+	 *  4 - second half of lb (3840 * 2)
+	 *  5 - second 3/4 of lb (5760 * 2)
+	 *  6 - whole lb (7680 * 2), other crtc must be disabled
+	 *  7 - last 1/4 of lb (1920 * 2)
+	 */
+	/* this can get tricky if we have two large displays on a paired group
+	 * of crtcs.  Ideally for multiple large displays we'd assign them to
+	 * non-linked crtcs for maximum line buffer allocation.
+	 */
+	if (radeon_crtc->base.enabled && mode) {
+		if (other_mode)
+			tmp = 0; /* 1/2 */
+		else
+			tmp = 2; /* whole */
+	} else
+		tmp = 0;
+
+	/* second controller of the pair uses second half of the lb */
+	if (radeon_crtc->crtc_id % 2)
+		tmp += 4;
+	WREG32(DC_LB_MEMORY_SPLIT + radeon_crtc->crtc_offset, tmp);
+
+	if (radeon_crtc->base.enabled && mode) {
+		switch (tmp) {
+		case 0:
+		case 4:
+		default:
+			if (ASIC_IS_DCE5(rdev))
+				return 4096 * 2;
+			else
+				return 3840 * 2;
+		case 1:
+		case 5:
+			if (ASIC_IS_DCE5(rdev))
+				return 6144 * 2;
+			else
+				return 5760 * 2;
+		case 2:
+		case 6:
+			if (ASIC_IS_DCE5(rdev))
+				return 8192 * 2;
+			else
+				return 7680 * 2;
+		case 3:
+		case 7:
+			if (ASIC_IS_DCE5(rdev))
+				return 2048 * 2;
+			else
+				return 1920 * 2;
+		}
+	}
+
+	/* controller not enabled, so no lb used */
+	return 0;
+}
+
+static u32 evergreen_get_number_of_dram_channels(struct radeon_device *rdev)
+{
+	u32 tmp = RREG32(MC_SHARED_CHMAP);
+
+	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
+	case 0:
+	default:
+		return 1;
+	case 1:
+		return 2;
+	case 2:
+		return 4;
+	case 3:
+		return 8;
+	}
+}
+
+struct evergreen_wm_params {
+	u32 dram_channels; /* number of dram channels */
+	u32 yclk;          /* bandwidth per dram data pin in kHz */
+	u32 sclk;          /* engine clock in kHz */
+	u32 disp_clk;      /* display clock in kHz */
+	u32 src_width;     /* viewport width */
+	u32 active_time;   /* active display time in ns */
+	u32 blank_time;    /* blank time in ns */
+	bool interlaced;    /* mode is interlaced */
+	fixed20_12 vsc;    /* vertical scale ratio */
+	u32 num_heads;     /* number of active crtcs */
+	u32 bytes_per_pixel; /* bytes per pixel display + overlay */
+	u32 lb_size;       /* line buffer allocated to pipe */
+	u32 vtaps;         /* vertical scaler taps */
+};
+
+static u32 evergreen_dram_bandwidth(struct evergreen_wm_params *wm)
+{
+	/* Calculate DRAM Bandwidth and the part allocated to display. */
+	fixed20_12 dram_efficiency; /* 0.7 */
+	fixed20_12 yclk, dram_channels, bandwidth;
+	fixed20_12 a;
+
+	a.full = dfixed_const(1000);
+	yclk.full = dfixed_const(wm->yclk);
+	yclk.full = dfixed_div(yclk, a);
+	dram_channels.full = dfixed_const(wm->dram_channels * 4);
+	a.full = dfixed_const(10);
+	dram_efficiency.full = dfixed_const(7);
+	dram_efficiency.full = dfixed_div(dram_efficiency, a);
+	bandwidth.full = dfixed_mul(dram_channels, yclk);
+	bandwidth.full = dfixed_mul(bandwidth, dram_efficiency);
+
+	return dfixed_trunc(bandwidth);
+}
+
+static u32 evergreen_dram_bandwidth_for_display(struct evergreen_wm_params *wm)
+{
+	/* Calculate DRAM Bandwidth and the part allocated to display. */
+	fixed20_12 disp_dram_allocation; /* 0.3 to 0.7 */
+	fixed20_12 yclk, dram_channels, bandwidth;
+	fixed20_12 a;
+
+	a.full = dfixed_const(1000);
+	yclk.full = dfixed_const(wm->yclk);
+	yclk.full = dfixed_div(yclk, a);
+	dram_channels.full = dfixed_const(wm->dram_channels * 4);
+	a.full = dfixed_const(10);
+	disp_dram_allocation.full = dfixed_const(3); /* XXX worse case value 0.3 */
+	disp_dram_allocation.full = dfixed_div(disp_dram_allocation, a);
+	bandwidth.full = dfixed_mul(dram_channels, yclk);
+	bandwidth.full = dfixed_mul(bandwidth, disp_dram_allocation);
+
+	return dfixed_trunc(bandwidth);
+}
+
+static u32 evergreen_data_return_bandwidth(struct evergreen_wm_params *wm)
+{
+	/* Calculate the display Data return Bandwidth */
+	fixed20_12 return_efficiency; /* 0.8 */
+	fixed20_12 sclk, bandwidth;
+	fixed20_12 a;
+
+	a.full = dfixed_const(1000);
+	sclk.full = dfixed_const(wm->sclk);
+	sclk.full = dfixed_div(sclk, a);
+	a.full = dfixed_const(10);
+	return_efficiency.full = dfixed_const(8);
+	return_efficiency.full = dfixed_div(return_efficiency, a);
+	a.full = dfixed_const(32);
+	bandwidth.full = dfixed_mul(a, sclk);
+	bandwidth.full = dfixed_mul(bandwidth, return_efficiency);
+
+	return dfixed_trunc(bandwidth);
+}
+
+static u32 evergreen_dmif_request_bandwidth(struct evergreen_wm_params *wm)
+{
+	/* Calculate the DMIF Request Bandwidth */
+	fixed20_12 disp_clk_request_efficiency; /* 0.8 */
+	fixed20_12 disp_clk, bandwidth;
+	fixed20_12 a;
+
+	a.full = dfixed_const(1000);
+	disp_clk.full = dfixed_const(wm->disp_clk);
+	disp_clk.full = dfixed_div(disp_clk, a);
+	a.full = dfixed_const(10);
+	disp_clk_request_efficiency.full = dfixed_const(8);
+	disp_clk_request_efficiency.full = dfixed_div(disp_clk_request_efficiency, a);
+	a.full = dfixed_const(32);
+	bandwidth.full = dfixed_mul(a, disp_clk);
+	bandwidth.full = dfixed_mul(bandwidth, disp_clk_request_efficiency);
+
+	return dfixed_trunc(bandwidth);
+}
+
+static u32 evergreen_available_bandwidth(struct evergreen_wm_params *wm)
+{
+	/* Calculate the Available bandwidth. Display can use this temporarily but not in average. */
+	u32 dram_bandwidth = evergreen_dram_bandwidth(wm);
+	u32 data_return_bandwidth = evergreen_data_return_bandwidth(wm);
+	u32 dmif_req_bandwidth = evergreen_dmif_request_bandwidth(wm);
+
+	return min(dram_bandwidth, min(data_return_bandwidth, dmif_req_bandwidth));
+}
+
+static u32 evergreen_average_bandwidth(struct evergreen_wm_params *wm)
+{
+	/* Calculate the display mode Average Bandwidth
+	 * DisplayMode should contain the source and destination dimensions,
+	 * timing, etc.
+	 */
+	fixed20_12 bpp;
+	fixed20_12 line_time;
+	fixed20_12 src_width;
+	fixed20_12 bandwidth;
+	fixed20_12 a;
+
+	a.full = dfixed_const(1000);
+	line_time.full = dfixed_const(wm->active_time + wm->blank_time);
+	line_time.full = dfixed_div(line_time, a);
+	bpp.full = dfixed_const(wm->bytes_per_pixel);
+	src_width.full = dfixed_const(wm->src_width);
+	bandwidth.full = dfixed_mul(src_width, bpp);
+	bandwidth.full = dfixed_mul(bandwidth, wm->vsc);
+	bandwidth.full = dfixed_div(bandwidth, line_time);
+
+	return dfixed_trunc(bandwidth);
+}
+
+static u32 evergreen_latency_watermark(struct evergreen_wm_params *wm)
+{
+	/* First calcualte the latency in ns */
+	u32 mc_latency = 2000; /* 2000 ns. */
+	u32 available_bandwidth = evergreen_available_bandwidth(wm);
+	u32 worst_chunk_return_time = (512 * 8 * 1000) / available_bandwidth;
+	u32 cursor_line_pair_return_time = (128 * 4 * 1000) / available_bandwidth;
+	u32 dc_latency = 40000000 / wm->disp_clk; /* dc pipe latency */
+	u32 other_heads_data_return_time = ((wm->num_heads + 1) * worst_chunk_return_time) +
+		(wm->num_heads * cursor_line_pair_return_time);
+	u32 latency = mc_latency + other_heads_data_return_time + dc_latency;
+	u32 max_src_lines_per_dst_line, lb_fill_bw, line_fill_time;
+	fixed20_12 a, b, c;
+
+	if (wm->num_heads == 0)
+		return 0;
+
+	a.full = dfixed_const(2);
+	b.full = dfixed_const(1);
+	if ((wm->vsc.full > a.full) ||
+	    ((wm->vsc.full > b.full) && (wm->vtaps >= 3)) ||
+	    (wm->vtaps >= 5) ||
+	    ((wm->vsc.full >= a.full) && wm->interlaced))
+		max_src_lines_per_dst_line = 4;
+	else
+		max_src_lines_per_dst_line = 2;
+
+	a.full = dfixed_const(available_bandwidth);
+	b.full = dfixed_const(wm->num_heads);
+	a.full = dfixed_div(a, b);
+
+	b.full = dfixed_const(1000);
+	c.full = dfixed_const(wm->disp_clk);
+	b.full = dfixed_div(c, b);
+	c.full = dfixed_const(wm->bytes_per_pixel);
+	b.full = dfixed_mul(b, c);
+
+	lb_fill_bw = min(dfixed_trunc(a), dfixed_trunc(b));
+
+	a.full = dfixed_const(max_src_lines_per_dst_line * wm->src_width * wm->bytes_per_pixel);
+	b.full = dfixed_const(1000);
+	c.full = dfixed_const(lb_fill_bw);
+	b.full = dfixed_div(c, b);
+	a.full = dfixed_div(a, b);
+	line_fill_time = dfixed_trunc(a);
+
+	if (line_fill_time < wm->active_time)
+		return latency;
+	else
+		return latency + (line_fill_time - wm->active_time);
+
+}
+
+static bool evergreen_average_bandwidth_vs_dram_bandwidth_for_display(struct evergreen_wm_params *wm)
+{
+	if (evergreen_average_bandwidth(wm) <=
+	    (evergreen_dram_bandwidth_for_display(wm) / wm->num_heads))
+		return true;
+	else
+		return false;
+};
+
+static bool evergreen_average_bandwidth_vs_available_bandwidth(struct evergreen_wm_params *wm)
+{
+	if (evergreen_average_bandwidth(wm) <=
+	    (evergreen_available_bandwidth(wm) / wm->num_heads))
+		return true;
+	else
+		return false;
+};
+
+static bool evergreen_check_latency_hiding(struct evergreen_wm_params *wm)
+{
+	u32 lb_partitions = wm->lb_size / wm->src_width;
+	u32 line_time = wm->active_time + wm->blank_time;
+	u32 latency_tolerant_lines;
+	u32 latency_hiding;
+	fixed20_12 a;
+
+	a.full = dfixed_const(1);
+	if (wm->vsc.full > a.full)
+		latency_tolerant_lines = 1;
+	else {
+		if (lb_partitions <= (wm->vtaps + 1))
+			latency_tolerant_lines = 1;
+		else
+			latency_tolerant_lines = 2;
+	}
+
+	latency_hiding = (latency_tolerant_lines * line_time + wm->blank_time);
+
+	if (evergreen_latency_watermark(wm) <= latency_hiding)
+		return true;
+	else
+		return false;
+}
+
+static void evergreen_program_watermarks(struct radeon_device *rdev,
+					 struct radeon_crtc *radeon_crtc,
+					 u32 lb_size, u32 num_heads)
+{
+	struct drm_display_mode *mode = &radeon_crtc->base.mode;
+	struct evergreen_wm_params wm;
+	u32 pixel_period;
+	u32 line_time = 0;
+	u32 latency_watermark_a = 0, latency_watermark_b = 0;
+	u32 priority_a_mark = 0, priority_b_mark = 0;
+	u32 priority_a_cnt = PRIORITY_OFF;
+	u32 priority_b_cnt = PRIORITY_OFF;
+	u32 pipe_offset = radeon_crtc->crtc_id * 16;
+	u32 tmp, arb_control3;
+	fixed20_12 a, b, c;
+
+	if (radeon_crtc->base.enabled && num_heads && mode) {
+		pixel_period = 1000000 / (u32)mode->clock;
+		line_time = min((u32)mode->crtc_htotal * pixel_period, (u32)65535);
+		priority_a_cnt = 0;
+		priority_b_cnt = 0;
+
+		wm.yclk = rdev->pm.current_mclk * 10;
+		wm.sclk = rdev->pm.current_sclk * 10;
+		wm.disp_clk = mode->clock;
+		wm.src_width = mode->crtc_hdisplay;
+		wm.active_time = mode->crtc_hdisplay * pixel_period;
+		wm.blank_time = line_time - wm.active_time;
+		wm.interlaced = false;
+		if (mode->flags & DRM_MODE_FLAG_INTERLACE)
+			wm.interlaced = true;
+		wm.vsc = radeon_crtc->vsc;
+		wm.vtaps = 1;
+		if (radeon_crtc->rmx_type != RMX_OFF)
+			wm.vtaps = 2;
+		wm.bytes_per_pixel = 4; /* XXX: get this from fb config */
+		wm.lb_size = lb_size;
+		wm.dram_channels = evergreen_get_number_of_dram_channels(rdev);
+		wm.num_heads = num_heads;
+
+		/* set for high clocks */
+		latency_watermark_a = min(evergreen_latency_watermark(&wm), (u32)65535);
+		/* set for low clocks */
+		/* wm.yclk = low clk; wm.sclk = low clk */
+		latency_watermark_b = min(evergreen_latency_watermark(&wm), (u32)65535);
+
+		/* possibly force display priority to high */
+		/* should really do this at mode validation time... */
+		if (!evergreen_average_bandwidth_vs_dram_bandwidth_for_display(&wm) ||
+		    !evergreen_average_bandwidth_vs_available_bandwidth(&wm) ||
+		    !evergreen_check_latency_hiding(&wm) ||
+		    (rdev->disp_priority == 2)) {
+			DRM_INFO("force priority to high\n");
+			priority_a_cnt |= PRIORITY_ALWAYS_ON;
+			priority_b_cnt |= PRIORITY_ALWAYS_ON;
+		}
+
+		a.full = dfixed_const(1000);
+		b.full = dfixed_const(mode->clock);
+		b.full = dfixed_div(b, a);
+		c.full = dfixed_const(latency_watermark_a);
+		c.full = dfixed_mul(c, b);
+		c.full = dfixed_mul(c, radeon_crtc->hsc);
+		c.full = dfixed_div(c, a);
+		a.full = dfixed_const(16);
+		c.full = dfixed_div(c, a);
+		priority_a_mark = dfixed_trunc(c);
+		priority_a_cnt |= priority_a_mark & PRIORITY_MARK_MASK;
+
+		a.full = dfixed_const(1000);
+		b.full = dfixed_const(mode->clock);
+		b.full = dfixed_div(b, a);
+		c.full = dfixed_const(latency_watermark_b);
+		c.full = dfixed_mul(c, b);
+		c.full = dfixed_mul(c, radeon_crtc->hsc);
+		c.full = dfixed_div(c, a);
+		a.full = dfixed_const(16);
+		c.full = dfixed_div(c, a);
+		priority_b_mark = dfixed_trunc(c);
+		priority_b_cnt |= priority_b_mark & PRIORITY_MARK_MASK;
+	}
+
+	/* select wm A */
+	arb_control3 = RREG32(PIPE0_ARBITRATION_CONTROL3 + pipe_offset);
+	tmp = arb_control3;
+	tmp &= ~LATENCY_WATERMARK_MASK(3);
+	tmp |= LATENCY_WATERMARK_MASK(1);
+	WREG32(PIPE0_ARBITRATION_CONTROL3 + pipe_offset, tmp);
+	WREG32(PIPE0_LATENCY_CONTROL + pipe_offset,
+	       (LATENCY_LOW_WATERMARK(latency_watermark_a) |
+		LATENCY_HIGH_WATERMARK(line_time)));
+	/* select wm B */
+	tmp = RREG32(PIPE0_ARBITRATION_CONTROL3 + pipe_offset);
+	tmp &= ~LATENCY_WATERMARK_MASK(3);
+	tmp |= LATENCY_WATERMARK_MASK(2);
+	WREG32(PIPE0_ARBITRATION_CONTROL3 + pipe_offset, tmp);
+	WREG32(PIPE0_LATENCY_CONTROL + pipe_offset,
+	       (LATENCY_LOW_WATERMARK(latency_watermark_b) |
+		LATENCY_HIGH_WATERMARK(line_time)));
+	/* restore original selection */
+	WREG32(PIPE0_ARBITRATION_CONTROL3 + pipe_offset, arb_control3);
+
+	/* write the priority marks */
+	WREG32(PRIORITY_A_CNT + radeon_crtc->crtc_offset, priority_a_cnt);
+	WREG32(PRIORITY_B_CNT + radeon_crtc->crtc_offset, priority_b_cnt);
+
+}
 
 void evergreen_bandwidth_update(struct radeon_device *rdev)
 {
-	/* XXX */
+	struct drm_display_mode *mode0 = NULL;
+	struct drm_display_mode *mode1 = NULL;
+	u32 num_heads = 0, lb_size;
+	int i;
+
+	radeon_update_display_priority(rdev);
+
+	for (i = 0; i < rdev->num_crtc; i++) {
+		if (rdev->mode_info.crtcs[i]->base.enabled)
+			num_heads++;
+	}
+	for (i = 0; i < rdev->num_crtc; i += 2) {
+		mode0 = &rdev->mode_info.crtcs[i]->base.mode;
+		mode1 = &rdev->mode_info.crtcs[i+1]->base.mode;
+		lb_size = evergreen_line_buffer_adjust(rdev, rdev->mode_info.crtcs[i], mode0, mode1);
+		evergreen_program_watermarks(rdev, rdev->mode_info.crtcs[i], lb_size, num_heads);
+		lb_size = evergreen_line_buffer_adjust(rdev, rdev->mode_info.crtcs[i+1], mode1, mode0);
+		evergreen_program_watermarks(rdev, rdev->mode_info.crtcs[i+1], lb_size, num_heads);
+	}
 }
 
 int evergreen_mc_wait_for_idle(struct radeon_device *rdev)
@@ -608,10 +1054,25 @@ void evergreen_mc_program(struct radeon_device *rdev)
 	rv515_vga_render_disable(rdev);
 }
 
-#if 0
 /*
  * CP.
  */
+void evergreen_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib)
+{
+	/* set to DX10/11 mode */
+	radeon_ring_write(rdev, PACKET3(PACKET3_MODE_CONTROL, 0));
+	radeon_ring_write(rdev, 1);
+	/* FIXME: implement */
+	radeon_ring_write(rdev, PACKET3(PACKET3_INDIRECT_BUFFER, 2));
+	radeon_ring_write(rdev,
+#ifdef __BIG_ENDIAN
+			  (2 << 0) |
+#endif
+			  (ib->gpu_addr & 0xFFFFFFFC));
+	radeon_ring_write(rdev, upper_32_bits(ib->gpu_addr) & 0xFF);
+	radeon_ring_write(rdev, ib->length_dw);
+}
+
 
 static int evergreen_cp_load_microcode(struct radeon_device *rdev)
 {
@@ -930,7 +1391,48 @@ static u32 evergreen_get_tile_pipe_to_backend_map(struct radeon_device *rdev,
 
 	return backend_map;
 }
-#endif
+
+static void evergreen_program_channel_remap(struct radeon_device *rdev)
+{
+	u32 tcp_chan_steer_lo, tcp_chan_steer_hi, mc_shared_chremap, tmp;
+
+	tmp = RREG32(MC_SHARED_CHMAP);
+	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
+	case 0:
+	case 1:
+	case 2:
+	case 3:
+	default:
+		/* default mapping */
+		mc_shared_chremap = 0x00fac688;
+		break;
+	}
+
+	switch (rdev->family) {
+	case CHIP_HEMLOCK:
+	case CHIP_CYPRESS:
+	case CHIP_BARTS:
+		tcp_chan_steer_lo = 0x54763210;
+		tcp_chan_steer_hi = 0x0000ba98;
+		break;
+	case CHIP_JUNIPER:
+	case CHIP_REDWOOD:
+	case CHIP_CEDAR:
+	case CHIP_PALM:
+	case CHIP_SUMO:
+	case CHIP_SUMO2:
+	case CHIP_TURKS:
+	case CHIP_CAICOS:
+	default:
+		tcp_chan_steer_lo = 0x76543210;
+		tcp_chan_steer_hi = 0x0000ba98;
+		break;
+	}
+
+	WREG32(TCP_CHAN_STEER_LO, tcp_chan_steer_lo);
+	WREG32(TCP_CHAN_STEER_HI, tcp_chan_steer_hi);
+	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
+}
 
 static void evergreen_gpu_init(struct radeon_device *rdev)
 {
@@ -1359,9 +1861,9 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
 		rdev->config.evergreen.tile_config |= (3 << 0);
 		break;
 	}
-	/* num banks is 8 on all fusion asics */
+	/* num banks is 8 on all fusion asics. 0 = 4, 1 = 8, 2 = 16 */
 	if (rdev->flags & RADEON_IS_IGP)
-		rdev->config.evergreen.tile_config |= 8 << 4;
+		rdev->config.evergreen.tile_config |= 1 << 4;
 	else
 		rdev->config.evergreen.tile_config |=
 			((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT) << 4;
@@ -1641,8 +2143,30 @@ int evergreen_mc_init(struct radeon_device *rdev)
 
 bool evergreen_gpu_is_lockup(struct radeon_device *rdev)
 {
-	/* FIXME: implement for evergreen */
+	u32 srbm_status;
+	u32 grbm_status;
+	u32 grbm_status_se0, grbm_status_se1;
+	struct r100_gpu_lockup *lockup = &rdev->config.evergreen.lockup;
+	int r;
+
+	srbm_status = RREG32(SRBM_STATUS);
+	grbm_status = RREG32(GRBM_STATUS);
+	grbm_status_se0 = RREG32(GRBM_STATUS_SE0);
+	grbm_status_se1 = RREG32(GRBM_STATUS_SE1);
+	if (!(grbm_status & GUI_ACTIVE)) {
+		r100_gpu_lockup_update(lockup, &rdev->cp);
 	return false;
+	}
+	/* force CP activities */
+	r = radeon_ring_lock(rdev, 2);
+	if (!r) {
+		/* PACKET2 NOP */
+		radeon_ring_write(rdev, 0x80000000);
+		radeon_ring_write(rdev, 0x80000000);
+		radeon_ring_unlock_commit(rdev);
+	}
+	rdev->cp.rptr = RREG32(CP_RB_RPTR);
+	return r100_gpu_cp_is_lockup(rdev, lockup, &rdev->cp);
 }
 
 static int evergreen_gpu_soft_reset(struct radeon_device *rdev)
@@ -1807,13 +2331,6 @@ static int evergreen_startup(struct radeon_device *rdev)
 #endif
 
 	/* Enable IRQ */
-	r = r600_irq_init(rdev);
-	if (r) {
-		DRM_ERROR("radeon: IH init failed (%d).\n", r);
-		radeon_irq_kms_fini(rdev);
-		return r;
-	}
-//	evergreen_irq_set(rdev);
 
     r = radeon_ring_init(rdev, rdev->cp.ring_size);
 	if (r)
@@ -1824,79 +2341,15 @@ static int evergreen_startup(struct radeon_device *rdev)
 	r = evergreen_cp_resume(rdev);
 	if (r)
 		return r;
-	/* write back buffer are not vital so don't worry about failure */
-	r600_wb_enable(rdev);
 
 	return 0;
 }
 
-int evergreen_resume(struct radeon_device *rdev)
-{
-	int r;
 
-	/* Do not reset GPU before posting, on rv770 hw unlike on r500 hw,
-	 * posting will perform necessary task to bring back GPU into good
-	 * shape.
-	 */
-	/* post card */
-	atom_asic_init(rdev->mode_info.atom_context);
 
-	r = evergreen_startup(rdev);
-	if (r) {
-		DRM_ERROR("r600 startup failed on resume\n");
-		return r;
-	}
-#if 0
-	r = r600_ib_test(rdev);
-	if (r) {
-		DRM_ERROR("radeon: failled testing IB (%d).\n", r);
-		return r;
-	}
-#endif
-	return r;
 
-}
 
-int evergreen_suspend(struct radeon_device *rdev)
-{
-	int r;
 
-	/* FIXME: we should wait for ring to be empty */
-	r700_cp_stop(rdev);
-	rdev->cp.ready = false;
-	r600_wb_disable(rdev);
-	evergreen_pcie_gart_disable(rdev);
-#if 0
-	/* unpin shaders bo */
-	r = radeon_bo_reserve(rdev->r600_blit.shader_obj, false);
-	if (likely(r == 0)) {
-		radeon_bo_unpin(rdev->r600_blit.shader_obj);
-		radeon_bo_unreserve(rdev->r600_blit.shader_obj);
-	}
-#endif
-	return 0;
-}
-
-static bool evergreen_card_posted(struct radeon_device *rdev)
-{
-	u32 reg;
-
-	/* first check CRTCs */
-	reg = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET) |
-		RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET) |
-		RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET) |
-		RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET) |
-		RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET) |
-		RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET);
-	if (reg & EVERGREEN_CRTC_MASTER_EN)
-		return true;
-
-	/* then check MEM_SIZE, in case the crtcs are off */
-	if (RREG32(CONFIG_MEMSIZE))
-		return true;
-
-	return false;
-}
 
 /* Plan is to move initialization in that function and use
  * helper function so that radeon_device_init pretty much
@@ -1908,9 +2361,6 @@ int evergreen_init(struct radeon_device *rdev)
 {
 	int r;
 
-	r = radeon_dummy_page_init(rdev);
-	if (r)
-		return r;
 	/* This don't do much */
 	r = radeon_gem_init(rdev);
 	if (r)
@@ -1922,14 +2372,19 @@ int evergreen_init(struct radeon_device *rdev)
 	}
 	/* Must be an ATOMBIOS */
 	if (!rdev->is_atom_bios) {
-		dev_err(rdev->dev, "Expecting atombios for R600 GPU\n");
+		dev_err(rdev->dev, "Expecting atombios for evergreen GPU\n");
 		return -EINVAL;
 	}
 	r = radeon_atombios_init(rdev);
 	if (r)
 		return r;
+	/* reset the asic, the gfx blocks are often in a bad state
+	 * after the driver is unloaded or after a resume
+	 */
+	if (radeon_asic_reset(rdev))
+		dev_warn(rdev->dev, "GPU reset failed !\n");
 	/* Post card if necessary */
-	if (!evergreen_card_posted(rdev)) {
+	if (!radeon_card_posted(rdev)) {
 		if (!rdev->bios) {
 			dev_err(rdev->dev, "Card not posted and no BIOS - ignoring\n");
 			return -EINVAL;
@@ -1944,9 +2399,6 @@ int evergreen_init(struct radeon_device *rdev)
 	/* Initialize clocks */
 	radeon_get_clock_info(rdev->ddev);
 	/* Fence driver */
-//	r = radeon_fence_driver_init(rdev);
-//	if (r)
-//		return r;
     /* initialize AGP */
 	if (rdev->flags & RADEON_IS_AGP) {
 		r = radeon_agp_init(rdev);
@@ -1962,9 +2414,6 @@ int evergreen_init(struct radeon_device *rdev)
 	if (r)
 		return r;
 
-	r = radeon_irq_kms_init(rdev);
-	if (r)
-		return r;
 
 	rdev->cp.ring_obj = NULL;
 	r600_ring_init(rdev, 1024 * 1024);
@@ -1980,41 +2429,62 @@ int evergreen_init(struct radeon_device *rdev)
 	r = evergreen_startup(rdev);
 	if (r) {
 		dev_err(rdev->dev, "disabling GPU acceleration\n");
-		r700_cp_fini(rdev);
-		r600_irq_fini(rdev);
-		radeon_irq_kms_fini(rdev);
-		evergreen_pcie_gart_fini(rdev);
 		rdev->accel_working = false;
 	}
 	if (rdev->accel_working) {
-		r = radeon_ib_pool_init(rdev);
-		if (r) {
-			DRM_ERROR("radeon: failed initializing IB pool (%d).\n", r);
-			rdev->accel_working = false;
-		}
-		r = r600_ib_test(rdev);
-		if (r) {
-			DRM_ERROR("radeon: failed testing IB (%d).\n", r);
-			rdev->accel_working = false;
-		}
 	}
 	return 0;
 }
 
-void evergreen_fini(struct radeon_device *rdev)
+
+static void evergreen_pcie_gen2_enable(struct radeon_device *rdev)
 {
-	/*r600_blit_fini(rdev);*/
-	r700_cp_fini(rdev);
-	r600_irq_fini(rdev);
-	radeon_wb_fini(rdev);
-	radeon_irq_kms_fini(rdev);
-	evergreen_pcie_gart_fini(rdev);
-	radeon_gem_fini(rdev);
-	radeon_fence_driver_fini(rdev);
-	radeon_agp_fini(rdev);
-	radeon_bo_fini(rdev);
-	radeon_atombios_fini(rdev);
-    kfree(rdev->bios);
-	rdev->bios = NULL;
-	radeon_dummy_page_fini(rdev);
+	u32 link_width_cntl, speed_cntl;
+
+	if (radeon_pcie_gen2 == 0)
+		return;
+
+	if (rdev->flags & RADEON_IS_IGP)
+		return;
+
+	if (!(rdev->flags & RADEON_IS_PCIE))
+		return;
+
+	/* x2 cards have a special sequence */
+	if (ASIC_IS_X2(rdev))
+		return;
+
+	speed_cntl = RREG32_PCIE_P(PCIE_LC_SPEED_CNTL);
+	if ((speed_cntl & LC_OTHER_SIDE_EVER_SENT_GEN2) ||
+	    (speed_cntl & LC_OTHER_SIDE_SUPPORTS_GEN2)) {
+
+		link_width_cntl = RREG32_PCIE_P(PCIE_LC_LINK_WIDTH_CNTL);
+		link_width_cntl &= ~LC_UPCONFIGURE_DIS;
+		WREG32_PCIE_P(PCIE_LC_LINK_WIDTH_CNTL, link_width_cntl);
+
+		speed_cntl = RREG32_PCIE_P(PCIE_LC_SPEED_CNTL);
+		speed_cntl &= ~LC_TARGET_LINK_SPEED_OVERRIDE_EN;
+		WREG32_PCIE_P(PCIE_LC_SPEED_CNTL, speed_cntl);
+
+		speed_cntl = RREG32_PCIE_P(PCIE_LC_SPEED_CNTL);
+		speed_cntl |= LC_CLR_FAILED_SPD_CHANGE_CNT;
+		WREG32_PCIE_P(PCIE_LC_SPEED_CNTL, speed_cntl);
+
+		speed_cntl = RREG32_PCIE_P(PCIE_LC_SPEED_CNTL);
+		speed_cntl &= ~LC_CLR_FAILED_SPD_CHANGE_CNT;
+		WREG32_PCIE_P(PCIE_LC_SPEED_CNTL, speed_cntl);
+
+		speed_cntl = RREG32_PCIE_P(PCIE_LC_SPEED_CNTL);
+		speed_cntl |= LC_GEN2_EN_STRAP;
+		WREG32_PCIE_P(PCIE_LC_SPEED_CNTL, speed_cntl);
+
+	} else {
+		link_width_cntl = RREG32_PCIE_P(PCIE_LC_LINK_WIDTH_CNTL);
+		/* XXX: only disable it if gen1 bridge vendor == 0x111d or 0x1106 */
+		if (1)
+			link_width_cntl |= LC_UPCONFIGURE_DIS;
+		else
+			link_width_cntl &= ~LC_UPCONFIGURE_DIS;
+		WREG32_PCIE_P(PCIE_LC_LINK_WIDTH_CNTL, link_width_cntl);
+	}
 }

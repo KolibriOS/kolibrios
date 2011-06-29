@@ -590,8 +590,6 @@ int drm_fb_helper_single_fb_probe(struct drm_fb_helper *fb_helper,
 
 	info = fb_helper->fbdev;
 
-#if 0
-
 	/* set the fb pointer */
 	for (i = 0; i < fb_helper->crtc_count; i++) {
 		fb_helper->crtc_info[i].mode_set.fb = fb_helper->fb;
@@ -611,7 +609,6 @@ int drm_fb_helper_single_fb_probe(struct drm_fb_helper *fb_helper,
 	if (new_fb)
         list_add(&fb_helper->kernel_fb_list, &kernel_fb_helper_list);
 
-#endif
 
     LEAVE();
 
@@ -926,9 +923,9 @@ static void drm_setup_crtcs(struct drm_fb_helper *fb_helper)
 	height = dev->mode_config.max_height;
 
 	/* clean out all the encoder/crtc combos */
-//   list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
+   list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
 //       encoder->crtc = NULL;
-//   }
+   }
 
 	crtcs = kcalloc(dev->mode_config.num_connector,
 			sizeof(struct drm_fb_helper_crtc *), GFP_KERNEL);
@@ -1016,8 +1013,6 @@ bool drm_fb_helper_initial_config(struct drm_fb_helper *fb_helper, int bpp_sel)
 		printk(KERN_INFO "No connectors reported connected with modes\n");
 	}
 	drm_setup_crtcs(fb_helper);
-
-
 
 	return drm_fb_helper_single_fb_probe(fb_helper, bpp_sel);
 }

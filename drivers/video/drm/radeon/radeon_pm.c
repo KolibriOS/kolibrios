@@ -23,6 +23,7 @@
 #include "drmP.h"
 #include "radeon.h"
 #include "avivod.h"
+#include "atom.h"
 
 #define DRM_DEBUG_DRIVER(fmt, args...)
 

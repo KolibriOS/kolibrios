@@ -795,8 +795,6 @@ static int radeon_hw_i2c_xfer(struct i2c_adapter *i2c_adap,
 	struct radeon_i2c_bus_rec *rec = &i2c->rec;
 	int ret = 0;
 
-    ENTER();
-
 	switch (rdev->family) {
 	case CHIP_R100:
 	case CHIP_RV100:
@@ -862,7 +860,6 @@ static int radeon_hw_i2c_xfer(struct i2c_adapter *i2c_adap,
 		ret = -EIO;
 		break;
 	}
-    LEAVE();
 
 	return ret;
 }
