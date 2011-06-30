@@ -41,6 +41,150 @@ static void evergreen_gpu_init(struct radeon_device *rdev);
 void evergreen_fini(struct radeon_device *rdev);
 static void evergreen_pcie_gen2_enable(struct radeon_device *rdev);
 
+
+
+u32 evergreen_page_flip(struct radeon_device *rdev, int crtc_id, u64 crtc_base)
+{
+	struct radeon_crtc *radeon_crtc = rdev->mode_info.crtcs[crtc_id];
+	u32 tmp = RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset);
+
+	/* Lock the graphics update lock */
+	tmp |= EVERGREEN_GRPH_UPDATE_LOCK;
+	WREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset, tmp);
+
+	/* update the scanout addresses */
+	WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS_HIGH + radeon_crtc->crtc_offset,
+	       upper_32_bits(crtc_base));
+	WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS + radeon_crtc->crtc_offset,
+	       (u32)crtc_base);
+
+	WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS_HIGH + radeon_crtc->crtc_offset,
+	       upper_32_bits(crtc_base));
+	WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS + radeon_crtc->crtc_offset,
+	       (u32)crtc_base);
+
+	/* Wait for update_pending to go high. */
+	while (!(RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset) & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING));
+	DRM_DEBUG("Update pending now high. Unlocking vupdate_lock.\n");
+
+	/* Unlock the lock, so double-buffering can take place inside vblank */
+	tmp &= ~EVERGREEN_GRPH_UPDATE_LOCK;
+	WREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset, tmp);
+
+	/* Return current update_pending status: */
+	return RREG32(EVERGREEN_GRPH_UPDATE + radeon_crtc->crtc_offset) & EVERGREEN_GRPH_SURFACE_UPDATE_PENDING;
+}
+
+/* get temperature in millidegrees */
+int evergreen_get_temp(struct radeon_device *rdev)
+{
+	u32 temp, toffset;
+	int actual_temp = 0;
+
+	if (rdev->family == CHIP_JUNIPER) {
+		toffset = (RREG32(CG_THERMAL_CTRL) & TOFFSET_MASK) >>
+			TOFFSET_SHIFT;
+		temp = (RREG32(CG_TS0_STATUS) & TS0_ADC_DOUT_MASK) >>
+			TS0_ADC_DOUT_SHIFT;
+
+		if (toffset & 0x100)
+			actual_temp = temp / 2 - (0x200 - toffset);
+		else
+			actual_temp = temp / 2 + toffset;
+
+		actual_temp = actual_temp * 1000;
+
+	} else {
+		temp = (RREG32(CG_MULT_THERMAL_STATUS) & ASIC_T_MASK) >>
+			ASIC_T_SHIFT;
+
+		if (temp & 0x400)
+			actual_temp = -256;
+		else if (temp & 0x200)
+			actual_temp = 255;
+		else if (temp & 0x100) {
+			actual_temp = temp & 0x1ff;
+			actual_temp |= ~0x1ff;
+		} else
+			actual_temp = temp & 0xff;
+
+		actual_temp = (actual_temp * 1000) / 2;
+	}
+
+	return actual_temp;
+}
+
+int sumo_get_temp(struct radeon_device *rdev)
+{
+	u32 temp = RREG32(CG_THERMAL_STATUS) & 0xff;
+	int actual_temp = temp - 49;
+
+	return actual_temp * 1000;
+}
+
+void evergreen_pm_misc(struct radeon_device *rdev)
+{
+	int req_ps_idx = rdev->pm.requested_power_state_index;
+	int req_cm_idx = rdev->pm.requested_clock_mode_index;
+	struct radeon_power_state *ps = &rdev->pm.power_state[req_ps_idx];
+	struct radeon_voltage *voltage = &ps->clock_info[req_cm_idx].voltage;
+
+	if (voltage->type == VOLTAGE_SW) {
+		/* 0xff01 is a flag rather then an actual voltage */
+		if (voltage->voltage == 0xff01)
+			return;
+		if (voltage->voltage && (voltage->voltage != rdev->pm.current_vddc)) {
+			radeon_atom_set_voltage(rdev, voltage->voltage, SET_VOLTAGE_TYPE_ASIC_VDDC);
+			rdev->pm.current_vddc = voltage->voltage;
+			DRM_DEBUG("Setting: vddc: %d\n", voltage->voltage);
+		}
+		/* 0xff01 is a flag rather then an actual voltage */
+		if (voltage->vddci == 0xff01)
+			return;
+		if (voltage->vddci && (voltage->vddci != rdev->pm.current_vddci)) {
+			radeon_atom_set_voltage(rdev, voltage->vddci, SET_VOLTAGE_TYPE_ASIC_VDDCI);
+			rdev->pm.current_vddci = voltage->vddci;
+			DRM_DEBUG("Setting: vddci: %d\n", voltage->vddci);
+		}
+	}
+}
+
+void evergreen_pm_prepare(struct radeon_device *rdev)
+{
+	struct drm_device *ddev = rdev->ddev;
+	struct drm_crtc *crtc;
+	struct radeon_crtc *radeon_crtc;
+	u32 tmp;
+
+	/* disable any active CRTCs */
+	list_for_each_entry(crtc, &ddev->mode_config.crtc_list, head) {
+		radeon_crtc = to_radeon_crtc(crtc);
+		if (radeon_crtc->enabled) {
+			tmp = RREG32(EVERGREEN_CRTC_CONTROL + radeon_crtc->crtc_offset);
+			tmp |= EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
+			WREG32(EVERGREEN_CRTC_CONTROL + radeon_crtc->crtc_offset, tmp);
+		}
+	}
+}
+
+void evergreen_pm_finish(struct radeon_device *rdev)
+{
+	struct drm_device *ddev = rdev->ddev;
+	struct drm_crtc *crtc;
+	struct radeon_crtc *radeon_crtc;
+	u32 tmp;
+
+	/* enable any active CRTCs */
+	list_for_each_entry(crtc, &ddev->mode_config.crtc_list, head) {
+		radeon_crtc = to_radeon_crtc(crtc);
+		if (radeon_crtc->enabled) {
+			tmp = RREG32(EVERGREEN_CRTC_CONTROL + radeon_crtc->crtc_offset);
+			tmp &= ~EVERGREEN_CRTC_DISP_READ_REQUEST_DISABLE;
+			WREG32(EVERGREEN_CRTC_CONTROL + radeon_crtc->crtc_offset, tmp);
+		}
+	}
+}
+
 bool evergreen_hpd_sense(struct radeon_device *rdev, enum radeon_hpd_id hpd)
 {
 	bool connected = false;
@@ -2299,12 +2443,31 @@ static int evergreen_startup(struct radeon_device *rdev)
 {
 	int r;
 
+	/* enable pcie gen2 link */
+	if (!ASIC_IS_DCE5(rdev))
+		evergreen_pcie_gen2_enable(rdev);
+
+	if (ASIC_IS_DCE5(rdev)) {
+		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw || !rdev->mc_fw) {
+			r = ni_init_microcode(rdev);
+			if (r) {
+				DRM_ERROR("Failed to load firmware!\n");
+				return r;
+			}
+		}
+		r = ni_mc_load_microcode(rdev);
+		if (r) {
+			DRM_ERROR("Failed to load MC firmware!\n");
+			return r;
+		}
+	} else {
 	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
 		r = r600_init_microcode(rdev);
 		if (r) {
 			DRM_ERROR("Failed to load firmware!\n");
 			return r;
 		}
+	}
 	}
 
 	evergreen_mc_program(rdev);

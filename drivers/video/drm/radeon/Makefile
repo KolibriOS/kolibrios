@@ -58,6 +58,7 @@ NAME_SRC=							\
 			radeon_clocks.c				\
 			radeon_i2c.c				\
 			atom.c					\
+			ni.c					\
 			radeon_gem.c				\
 			radeon_atombios.c			\
 			radeon_agp.c				\

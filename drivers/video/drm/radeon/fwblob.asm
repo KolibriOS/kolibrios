@@ -110,6 +110,14 @@ ___start_builtin_fw:
         dd PALMME_START
         dd (PALMME_END - PALMME_START)
 
+        dd FIRMWARE_SUMO_ME
+        dd SUMOME_START
+        dd (SUMOME_END - SUMOME_START)
+
+
+        dd FIRMWARE_SUMO2_ME
+        dd SUMO2ME_START
+        dd (SUMO2ME_END - SUMO2ME_START)
 
         dd FIRMWARE_RV610_PFP
         dd RV610PFP_START
@@ -164,6 +172,14 @@ ___start_builtin_fw:
         dd PALMPFP_START
         dd (PALMPFP_END - PALMPFP_START)
 
+        dd FIRMWARE_SUMO_PFP
+        dd SUMOPFP_START
+        dd (SUMOPFP_END - SUMOPFP_START)
+
+        dd FIRMWARE_SUMO2_PFP
+        dd SUMO2PFP_START
+        dd (SUMO2PFP_END - SUMO2PFP_START)
+
 
 
         dd FIRMWARE_R600_RLC
@@ -190,6 +206,9 @@ ___start_builtin_fw:
         dd JUNIPERRLC_START
         dd (JUNIPERRLC_END - JUNIPERRLC_START)
 
+        dd FIRMWARE_SUMO_RLC
+        dd SUMORLC_START
+        dd (SUMORLC_END - SUMORLC_START)
 
 ___end_builtin_fw:
 
@@ -220,6 +239,8 @@ FIRMWARE_REDWOOD_ME     db 'radeon/REDWOOD_me.bin',0
 FIRMWARE_CEDAR_ME       db 'radeon/CEDAR_me.bin',0
 FIRMWARE_JUNIPER_ME     db 'radeon/JUNIPER_me.bin',0
 FIRMWARE_PALM_ME        db 'radeon/PALM_me.bin',0
+FIRMWARE_SUMO_ME        db 'radeon/SUMO_me.bin',0
+FIRMWARE_SUMO2_ME       db 'radeon/SUMO2_me.bin',0
 
 
 FIRMWARE_R600_PFP       db 'radeon/R600_pfp.bin',0
@@ -236,6 +257,8 @@ FIRMWARE_REDWOOD_PFP    db 'radeon/REDWOOD_pfp.bin',0
 FIRMWARE_CEDAR_PFP      db 'radeon/CEDAR_pfp.bin',0
 FIRMWARE_JUNIPER_PFP    db 'radeon/JUNIPER_pfp.bin',0
 FIRMWARE_PALM_PFP       db 'radeon/PALM_pfp.bin',0
+FIRMWARE_SUMO_PFP       db 'radeon/SUMO_pfp.bin',0
+FIRMWARE_SUMO2_PFP      db 'radeon/SUMO2_pfp.bin',0
 
 
 FIRMWARE_R600_RLC       db 'radeon/R600_rlc.bin',0
@@ -244,6 +267,7 @@ FIRMWARE_CYPRESS_RLC    db 'radeon/CYPRESS_rlc.bin',0
 FIRMWARE_REDWOOD_RLC    db 'radeon/REDWOOD_rlc.bin',0
 FIRMWARE_CEDAR_RLC      db 'radeon/CEDAR_rlc.bin',0
 FIRMWARE_JUNIPER_RLC    db 'radeon/JUNIPER_rlc.bin',0
+FIRMWARE_SUMO_RLC       db 'radeon/SUMO_rlc.bin',0
 
 
 align 16
@@ -362,6 +386,16 @@ PALMME_START:
         file 'firmware/PALM_me.bin'
 PALMME_END:
 
+align 16
+SUMOME_START:
+        file 'firmware/SUMO_me.bin'
+SUMOME_END:
+
+align 16
+SUMO2ME_START:
+        file 'firmware/SUMO2_me.bin'
+SUMO2ME_END:
+
 
 align 16
 RV610PFP_START:
@@ -432,6 +466,17 @@ PALMPFP_START:
         file 'firmware/PALM_pfp.bin'
 PALMPFP_END:
 
+align 16
+SUMOPFP_START:
+        file 'firmware/SUMO_pfp.bin'
+SUMOPFP_END:
+
+align 16
+SUMO2PFP_START:
+        file 'firmware/SUMO2_pfp.bin'
+SUMO2PFP_END:
+
+
 
 align 16
 R600RLC_START:
@@ -463,3 +508,7 @@ JUNIPERRLC_START:
         file 'firmware/JUNIPER_rlc.bin'
 JUNIPERRLC_END:
 
+align 16
+SUMORLC_START:
+        file 'firmware/SUMO_rlc.bin'
+SUMORLC_END:

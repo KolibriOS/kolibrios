@@ -957,7 +957,7 @@ u32_t drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
-        strcpy(log, "/hd2/1/atikms.log");
+        strcpy(log, "/RD/1/DRIVERS/atikms.log");
 
         if(!dbg_open(log))
         {
