@@ -45,7 +45,7 @@ iglobal
     else
         dd      p_irq3, p_irq4 ;??? нестыковка
     end if
-        dd      irq_serv.irq_5,  p_irq6,          irq_serv.irq_7
+        dd      irq_serv.irq_5,  irq_serv.irq_6,  irq_serv.irq_7
         dd      irq_serv.irq_8,  irq_serv.irq_9,  irq_serv.irq_10
         dd      irq_serv.irq_11, irq_serv.irq_12, irqD, irq_serv.irq_14, irq_serv.irq_15
         times   16 dd unknown_interrupt ;int_0x30..int_0x3F
@@ -245,20 +245,6 @@ macro irqh [num] {
 
 
 
-p_irq6:
-        save_ring3_context
-        mov     ax, app_data  ;os_data
-        mov     ds, ax
-        mov     es, ax
-        mov     edi, 6
-        cmp     [v86_irqhooks+edi*8], 0
-        jnz     v86_irq2
-        call    fdc_irq
-        call    ready_for_next_irq
-        restore_ring3_context
-        iret
-
-
 ready_for_next_irq:
 	mov	eax,5
         mov     [check_idle_semaphore],eax
@@ -288,7 +274,7 @@ irqD:
         iret
 
 
-irqh 2,3,4,5,7,8,9,10,11
+irqh 2,3,4,5,6,7,8,9,10,11
 
 irqhandler:
 
