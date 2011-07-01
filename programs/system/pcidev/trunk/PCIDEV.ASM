@@ -3,7 +3,7 @@
 ; target platform: KolibriOS
 ; compiler:        flat assembler 1.68
 ; version:         2.3
-; last update:     June 2011
+; last update:     Jule 2011
 ; maintained by:   Jason Delozier <cordata51@hotmail.com>
 ;                  Sergey Kuzmin <kuzmin_serg@list.ru>
 ;                  Mihailov Ilia <ghost.nsk@gmail.com>
@@ -450,17 +450,19 @@ no_ummio_here:
 	
 ;
 ; from Ghost april 2007                 ;*****************************************
+	and	edx, 0xFFFF
+	or	edx, 310 * 65536	; X start becomes 310
 	movzx	ecx, [PCI_IRQ]		; get Interface
 	cmp	cl, 0x0f		; IRQ between 0..15
 	ja	@f
-	
-	and	edx, 0xFFFF
-	or	edx, 310 * 65536	; X start becomes 310
+
 	mcall
-	
+
 	call	store_2_digits
-	
-@@:
+	jmp	.PCI_Vendor
+@@:	
+	call	store_NA
+.PCI_Vendor:
 	;Write Names
 	movzx	ebx, dx 	; Set y position
 	or	ebx, 340 * 65536	; set Xposition to 340
@@ -644,15 +646,14 @@ store_text:
 	popa
 	ret	
 ;-----------------------------------------------------------------------------
-store_4_digits:
+store_NA:
 	pusha
-	mov	ebx,ecx
-	mov	ecx,4
+	mov	ebx,edx
+	mcall	4,,0x80000000,text_NA
 	mov	edi,[store_text_area_end]
-	call	binary_to_hex_string
-	add	[store_text_area_end],dword 6
-	popa
-	ret
+	mov	ax,[edx]
+	mov	[edi+1],ax
+	jmp	store_2_digits.1
 ;-----------------------------------------------------------------------------
 store_2_digits:
 	pusha
@@ -661,7 +662,18 @@ store_2_digits:
 	mov	ecx,2
 	mov	edi,[store_text_area_end]
 	call	binary_to_hex_string
+.1:
 	add	[store_text_area_end],dword 4
+	popa
+	ret
+;-----------------------------------------------------------------------------
+store_4_digits:
+	pusha
+	mov	ebx,ecx
+	mov	ecx,4
+	mov	edi,[store_text_area_end]
+	call	binary_to_hex_string
+	add	[store_text_area_end],dword 6
 	popa
 	ret
 ;-----------------------------------------------------------------------------
@@ -719,6 +731,9 @@ bar_rom db 'BAR6: Expansion ROM', 0
 text_save_button:
 	db 'Save PCI list',0
 .1:	db '(Press S key)',0
+
+text_NA:
+	db 'NA',0
 ;---------------------------------------------------------------------
 system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 
