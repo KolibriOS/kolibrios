@@ -234,6 +234,15 @@ nomo:					;done drawing bars here
 	movzx	ecx, byte [total]	; number to draw
 	mcall	47, 0x00020000,,150 * 65536 + 65, 0x224466
 	
+	mov	ebx,ecx
+	mov	ecx,2
+	mov	edi,[store_text_area_start]
+	add	edi,157
+	push	edi
+	call	binary_to_hex_string
+	pop	edi
+	mov	[edi+2],byte 'h'
+	
 	mov	ah, [MMIO_allowed]
 	or 	ah, ah
 	jz 	@f
@@ -653,7 +662,9 @@ store_NA:
 	mov	edi,[store_text_area_end]
 	mov	ax,[edx]
 	mov	[edi+1],ax
-	jmp	store_2_digits.1
+	add	[store_text_area_end],dword 5
+	popa
+	ret
 ;-----------------------------------------------------------------------------
 store_2_digits:
 	pusha
@@ -662,7 +673,6 @@ store_2_digits:
 	mov	ecx,2
 	mov	edi,[store_text_area_end]
 	call	binary_to_hex_string
-.1:
 	add	[store_text_area_end],dword 4
 	popa
 	ret
@@ -717,7 +727,7 @@ PCIWin mls \
 	'',\
 	'PCI Version  = x.xx; Last PCI Bus = x',\
 	'User MMIO channel = 0F.F:F ',\
-	'Number of PCI units =',\
+	'Number of PCI units =    ',\
 	'',\
 	'VenID DevID Bus# Dev# Fnc Rev  Class  Subclass/ IRQ                 Company                      Description',\
 	'                                      Interface',\
@@ -733,7 +743,7 @@ text_save_button:
 .1:	db '(Press S key)',0
 
 text_NA:
-	db 'NA',0
+	db '--',0
 ;---------------------------------------------------------------------
 system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 

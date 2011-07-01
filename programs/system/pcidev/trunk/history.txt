@@ -10,11 +10,12 @@ to-do:
  Full device detection (like "ATI Radeon 9200") will increase app
  size a lot and probably it is function of particular drivers
 ;-----------------------------------------------------------------------------
-2.3: PCIDEV   01/07/2011
+2.3: PCIDEV   02/07/2011
 Author:    Marat Zakiyanov aka Mario79 <mario79@bk.ru>
 Features:
            fixed
-                 * Show the message "NA" if the IRQ is not assigned
+                 * Show the message "--" if the IRQ is not assigned
+				 * Show number of PCI units for saving device list
 				 
  ;-----------------------------------------------------------------------------
 2.3: PCIDEV   26/06/2011
