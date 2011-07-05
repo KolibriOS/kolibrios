@@ -25,7 +25,7 @@ include 'lang.inc'
    dd	  I_END 		  ; size of image
    dd	  i_end+0x2000			; memory for app (4 Kb)
    dd	  i_end+0x2000			; esp
-   dd	  0x0 , 0x0		  ; I_Param , I_Icon
+   dd	  filename , 0x0	  ; I_Param , I_Icon
 include '../../../macros.inc'
 include 'debug.inc'
 purge newline
@@ -33,6 +33,16 @@ MAXSTRINGS = 16
 TMP = 80*(MAXSTRINGS+1)
 
 START:				; start of execution
+	mov	edi, filename
+	cmp	byte [edi], 0
+	jnz	param
+	mov	esi, default_filename
+@@:
+	lodsb
+	stosb
+	test	al, al
+	jnz	@b
+param:
 
      mcall 60,1,ipcbuff,IPC_BUF+20
      mcall 40,1000111b
@@ -588,7 +598,7 @@ InfoStructure:
 		     dd      0	     ; pointer to the filename
 
 filepos  dd 0
-filename db '/sys/boardlog.txt',0
+default_filename db '/sys/boardlog.txt',0
 tmp	 db 0
 end if
 
@@ -639,3 +649,5 @@ I_END:
      dump_len dd ?
      sc system_colors
 i_end:
+
+filename	rb	256
