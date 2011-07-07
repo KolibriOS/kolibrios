@@ -1,8 +1,8 @@
 ;---------------------------------------------------------------------
 clear_thread:
-	call	get_memory_for_tread_stack
+	call	get_memory_for_thread_stack
 	mov	[clear_thread_stack],eax
-	mcall	51, 1, clear_thread_start	;, clear_thread_stack
+	mcall	51,1,clear_thread_start	;, clear_thread_stack
 	ret
 ;---------------------------------------------------------------------
 clear_thread_start:

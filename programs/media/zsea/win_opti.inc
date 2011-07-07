@@ -4,12 +4,12 @@ k_option:
 	jnz	still
 	or	dword [status],64
 
-	call	get_memory_for_tread_stack
+	call	get_memory_for_thread_stack
 	mov	[thread_stack_7],eax
-	mcall	51,1,thread7	;,thread_stack_7
+	mcall	51,1,thread7	; thread_stack_7
 	jmp	still
 ;---------------------------------------------------------------------
-get_memory_for_tread_stack:
+get_memory_for_thread_stack:
 	mcall	68,12,4096
 	mov	edx,eax
 	add	edx,4096
@@ -19,7 +19,7 @@ thread7:				; start of bgrd thread
 	mcall	9, procinfo_threads, -1
 	mov	eax,[ebx+30]
 	mov	[PID7],eax
-	mcall	40, 0x27
+	mcall	40,0x27
 	mov	eax,[slide_show_delay]
 	mov	[slide_show_delay_old],eax
 	mov	eax,[arrows_offset]
@@ -31,24 +31,27 @@ thread7:				; start of bgrd thread
 	xor	eax,eax
 	mov	[option_pointer],eax
 	call	.set_pointers
+;-----------------------------------------
 .red:
 	call	.draw_window
-
+;-----------------------------------------
 .still:
-
-	mov	eax,10 		; wait here for event
-	mcall
+	mcall	10 		; wait here for event
 
 	cmp	eax,1			; redraw request ?
 	je	.red
+	
 	cmp	eax,2			; key in buffer ?
 	je	.key
+	
 	cmp	eax,3			; button in buffer ?
 	je	.button
+	
 	cmp	eax,6	; mouse in buffer ?
 	je	.mouse
+	
 	jmp	.still
-
+;---------------------------------------------------------------------
 .mouse:
 	mov	ebx,[check1+32]
 	and	ebx,10b
@@ -58,10 +61,12 @@ thread7:				; start of bgrd thread
 	and	eax,10b
 	cmp	ebx,eax
 	je	@f	;.still
+	
 	mov	[option_pointer],2
 	call	.set_pointers
 	call	.draw_all_options_values
 	jmp	.still
+;---------------------------------------------------------------------
 @@:
 	mov	ebx,[check2+32]
 	and	ebx,10b
@@ -71,6 +76,7 @@ thread7:				; start of bgrd thread
 	and	eax,10b
 	cmp	ebx,eax
 	je	.still
+	
 	mov	[option_pointer],3
 	call	.set_pointers
 	call	.draw_all_options_values
@@ -80,26 +86,37 @@ thread7:				; start of bgrd thread
 	mcall
 	cmp	ah,27
 	je	.close
+	
 	cmp	ah,13
 	je	.kok
+	
 	cmp	ah,32
 	je	.select_space
+	
 	cmp	ah,56 ;plus
 	je	.select_plus	;.plus_slide_show_delay
+	
 	cmp	ah,43 ;plus
 	je	.select_plus	;.plus_slide_show_delay
+	
 	cmp	ah,61 ;plus
 	je	.select_plus ;.plus_slide_show_delay
+	
 	cmp	ah,54 ;minus
 	je	.select_minus ;.minus_slide_show_delay
+	
 	cmp	ah,45 ;minus
 	je	.select_minus	;.minus_slide_show_delay
+	
 	cmp	ah,95 ;minus
 	je	.select_minus ;.minus_slide_show_delay
+	
 	cmp	ah,178 ;up arrow
 	je	.up_arrow
+	
 	cmp	ah,177 ;down arrow
 	je	.down_arrow
+	
 	jmp	.still
 ;---------------------------------------------------------------------
 .button:			 ; button
@@ -120,6 +137,7 @@ thread7:				; start of bgrd thread
 
 	cmp	ah,1			; button id=1 ?
 	jne	.noclose
+;-----------------------------------
 .close:
 	mov	eax,[slide_show_delay_old]
 	mov	[slide_show_delay],eax
@@ -130,12 +148,15 @@ thread7:				; start of bgrd thread
 	mov	eax,[filtering_flag_old]
 	mov	[check2+32],eax
 	jmp	.close_all
+;---------------------------------------------------------------------
 .close_1:
 	mov	eax,[check2+32]
 	test	eax,10b
 	jz	@f
+	
 	mov	[filtering_flag],1
 	jmp	.redraw_flag
+;---------------------------------------------------------------------
 @@:
 	mov	[filtering_flag],0
 .redraw_flag:
@@ -144,15 +165,11 @@ thread7:				; start of bgrd thread
 	xor	dword [status],64
 	xor	eax,eax
 	mov	[PID7],eax
-
 	mcall	68,13,[thread_stack_7]
-
-	mov	eax,-1 		; close this program
-	mcall
+	mcall	-1 		; close this program
+;---------------------------------------------------------------------
 .noclose:
-
 .kok:
-
 	jmp	.close_1
 ;---------------------------------------------------------------------
 .select_plus:
@@ -167,11 +184,13 @@ thread7:				; start of bgrd thread
 .plus_slide_show_delay:
 	cmp	[option_pointer],0
 	je	@f
+	
 	mov	[option_pointer],0
 	call	.draw_all_options_values
 @@:
 	cmp	[slide_show_delay],99990
 	je	.still
+	
 	add	[slide_show_delay],10
 	call	.draw_slide_show_delay
 	jmp	.still
@@ -179,11 +198,13 @@ thread7:				; start of bgrd thread
 .minus_slide_show_delay:
 	cmp	[option_pointer],0
 	je	@f
+	
 	mov	[option_pointer],0
 	call	.draw_all_options_values
 @@:
 	cmp	[slide_show_delay],0
 	je	.still
+	
 	sub	[slide_show_delay],10
 	call	.draw_slide_show_delay
 	jmp	.still
@@ -191,11 +212,13 @@ thread7:				; start of bgrd thread
 .plus_arrows_offset:
 	cmp	[option_pointer],1
 	je	@f
+	
 	mov	[option_pointer],1
 	call	.draw_all_options_values
 @@:
 	cmp	[arrows_offset],100
 	je	.still
+	
 	inc	[arrows_offset]
 	call	.draw_arrows_offset
 	call	calculate_arrows_offset
@@ -204,11 +227,13 @@ thread7:				; start of bgrd thread
 .minus_arrows_offset:
 	cmp	[option_pointer],1
 	je	@f
+	
 	mov	[option_pointer],1
 	call	.draw_all_options_values
 @@:
 	cmp	[arrows_offset],1
 	je	.still
+	
 	dec	[arrows_offset]
 	call	.draw_arrows_offset
 	call	calculate_arrows_offset
@@ -217,8 +242,10 @@ thread7:				; start of bgrd thread
 .space_check1:
 	test	[check1+32],dword 10b
 	jnz	@f
+	
 	or	[check1+32],dword 10b
 	jmp	.space_check1_1
+;---------------------------------------------------------------------
 @@:
 	xor	[check1+32],dword 10b
 .space_check1_1:
@@ -228,8 +255,10 @@ thread7:				; start of bgrd thread
 .space_check2:
 	test	[check2+32],dword 10b
 	jnz	@f
+	
 	or	[check2+32],dword 10b
 	jmp	.space_check2_1
+;---------------------------------------------------------------------
 @@:
 	xor	[check2+32],dword 10b
 .space_check2_1:
@@ -239,6 +268,7 @@ thread7:				; start of bgrd thread
 .down_arrow:
 	cmp	[option_pointer],3
 	je	.still
+	
 	inc	[option_pointer]
 .draw_all_points:
 	call	.set_pointers
@@ -248,12 +278,14 @@ thread7:				; start of bgrd thread
 .up_arrow:
 	cmp	[option_pointer],0
 	je	.still
+	
 	dec	[option_pointer]
 	jmp	.draw_all_points
 ;---------------------------------------------------------------------	
 .set_pointers:
 	cmp	[option_pointer],0
 	jne	@f
+	
 	mov	[plus_pointer],thread7.plus_slide_show_delay
 	mov	[minus_pointer],thread7.minus_slide_show_delay
 	mov	[space_pointer],thread7.still
@@ -261,6 +293,7 @@ thread7:				; start of bgrd thread
 @@:
 	cmp	[option_pointer],1
 	jne	@f
+	
 	mov	[plus_pointer],thread7.plus_arrows_offset
 	mov	[minus_pointer],thread7.minus_arrows_offset
 	mov	[space_pointer],thread7.still
@@ -268,6 +301,7 @@ thread7:				; start of bgrd thread
 @@:
 	cmp	[option_pointer],2
 	jne	@f
+	
 	mov	[plus_pointer],thread7.still
 	mov	[minus_pointer],thread7.still
 	mov	[space_pointer],thread7.space_check1
@@ -288,17 +322,11 @@ thread7:				; start of bgrd thread
 ;	*********************************************
 ;	*******	WINDOW DEFINITIONS AND DRAW ********
 ;	*********************************************
-
-
 .draw_window:
 	mcall	12,1
-					; DRAW WINDOW
 	xor	eax,eax			; function 0 : define and draw window
-	mov	ebx,100*65536+300		; [x start] *65536 + [x size]
-	mov	ecx,100*65536+120		; [y start] *65536 + [y size]
-	mov	edx,0x03909090 		; color of work area RRGGBB,8->color gl
-	mcall
-
+	xor	esi,esi
+	mcall	,<100,300>,<100,120>,0x13909090,,optiontext
 	mcall	8,<15,10>,<50,11>,2,0xdddddd
 	inc	edx
 	mcall	,<77,10>
@@ -311,43 +339,21 @@ thread7:				; start of bgrd thread
 	inc	edx
 	mcall	,<250,40>,<50,20>
 ;---------------------------------
-
-;	mcall	13,<50,45>,<25,12>,0xffffff
-;	mov	ecx,[ch_flag_en]
-;	mcall	47,0x800a0000,,<72,27>,0x10000000;	0x40000000,0xffffff
-					; WINDOW LABEL
-	mcall	71,1, optiontext
-	
-;	mov	eax,4				; function 4 : write text to window
-;	mov	ebx,46*65536+28			; [x start] *65536 + [y start]
-;	mov	ecx,0xffffff
-;	mov	edx, sorttext
-;	mov	esi, sorttext.size
-;	mcall
-;	mov	ebx,135*65536+57
-;	mov	edx, ok_btn
-;	mov	esi, ok_btn.size ;2
 	mcall	4,<10,35>,0x80ffffff,slide_show_delay_title
 	mcall	,<17,53>,0x90000000,slide_show_delay_text
 	mcall	,<10,75>,0x80ffffff,arrows_offset_title
 	mcall	,<17,93>,0x90000000,slide_show_delay_text
 	mcall	,<265,57>, ,ok_btn
-	
 	call	.draw_all_options_values
-
 ;	mcall	47,0x80000,[PID5],<200, 5>,0xffffff
 	mcall	12,2
-
 	ret
-;---------------------------------------------------------------------
-;.draw_opt_boxes:
-;	draw_option_boxes	option_boxes_sort,option_boxes_sort_end
-;	ret
 ;---------------------------------------------------------------------
 .draw_slide_show_delay:
 	mov	edx,0xffffff
 	cmp	[option_pointer],0
 	jne	@f
+	
 	mov	edx,0xffff80
 @@:
 	mcall	13,<29,45>,<50,12>,
@@ -358,6 +364,7 @@ thread7:				; start of bgrd thread
 	mov	edx,0xffffff
 	cmp	[option_pointer],1
 	jne	@f
+	
 	mov	edx,0xffff80
 @@:
 	mcall	13,<29,45>,<90,12>,
@@ -368,6 +375,7 @@ thread7:				; start of bgrd thread
 	mov	[check1+12],dword 0xffffff
 	cmp	[option_pointer],2
 	jne	@f
+	
 	mov	[check1+12],dword 0xffff80
 @@:
 	push	dword check1
@@ -378,6 +386,7 @@ thread7:				; start of bgrd thread
 	mov	[check2+12],dword 0xffffff
 	cmp	[option_pointer],3
 	jne	@f
+	
 	mov	[check2+12],dword 0xffff80
 @@:
 	push	dword check2

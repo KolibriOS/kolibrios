@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-;	v.1.0 rñ3 14.06.2011
+;	v.1.0 rñ3 07.07.2011
 ;******************************************************************************
 	use32
 	org 0x0
@@ -303,6 +303,42 @@ button:			; button
 	je	slide_show.3	;still
 	jmp	slide_show
 ;---------------------------------------------------------------------
+get_filter_data:
+	mov	edi,Filter+4
+	xor	eax,eax
+	mov	ecx,10
+	cld
+@@:
+	mov	esi,10
+	sub	esi,ecx
+	lea     esi,[esi+esi*2] ; x 3
+	shl	esi,3  ; x 8
+	add	esi,dword Convert_plugin_0.Assoc
+	mov	esi,[esi]
+	add	esi,4
+
+	test	esi,esi
+	jz	@f
+	call	.start
+	dec	ecx
+	jnz	@r
+@@:
+	mov	[edi],byte 0
+	mov	eax,Filter
+	sub	edi,eax
+	mov	[eax],edi
+
+	ret
+.start:
+@@:
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@r
+	cmp	[esi],ah
+	jne	@r
+	ret
+;---------------------------------------------------------------------
 kopen_1:
 
 	mov	[open_file_flag],0
@@ -351,51 +387,6 @@ getappinfo:
 	mcall
 	ret
 ;---------------------------------------------------------------------
-; ÓÑÒÀÍÎÂÈÒÜ ÔÎÍ
-background:
-	cmp	[soi],0
-	je	.end
-	mov	ecx,[img_width]	;	øèðèíà
-	test	ecx,ecx
-	jz	.end
-	mov	edx,[img_high]	; âûñîòà 
-	test	edx,edx
-	jz	.end
-	mcall	15,1	; set size
-
-	mov	esi,ecx
-	imul	esi,edx
-	lea	esi,[esi*3]
-;	mov	ebx,5
-	mov	ecx,[soi]
-
-	xor	edx,edx
-
-	cmp	[img_resolution],24
-	je	@f
-;	mov	eax,image_file
-	push	dword image_file
-;	call	[plugin_convert_background]
-	call	[convert_Conv_24b]
-	mov	ecx,[raw_pointer_2]
-	mcall	15,5	;15,5 set data
-	mov	ecx,[raw_pointer_2]
-	mcall	68,13
-	jmp	.set_mode
-@@:
-
-	mcall	15,5	; 15,5 set data
-.set_mode:
-;	dec	ebx	;tile/stretch
-	mov	ecx,[bgrmode]
-	mcall	15,4 ; 15,4 set mode
-
-	dec	ebx ; 15,3 redraw background
-	mcall
-
-.end:
-	ret
-;---------------------------------------------------------------------
 get_window_param:
 	mcall	9, procinfo, -1
 	mov	eax,[ebx+34]
@@ -422,6 +413,7 @@ get_window_param:
 ;	popa
 ;	ret
 ;---------------------------------------------------------------------
+include	'backgrnd.inc'
 include	'draw_win.inc'
 include	'full_win.inc'
 include	'mouse.inc'

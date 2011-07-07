@@ -38,7 +38,7 @@ lsz fitext,\
         db 0
 ;---------------------------------------------------------------------
 Authors_text:
-.1:	db 'zSea version: 1.00 RC3 Date: 14/06/2011',0
+.1:	db 'zSea version: 1.00 RC3 Date: 07/07/2011',0
 .2:	db 'Authors:',0
 .3:	db 'Marat Zakiyanov aka Mario(Mario79)',0
 .4:	db 'zSea program, modules: cnv_bmp.obj,',0
@@ -860,6 +860,8 @@ align 4
 ; option_boxes_bcgr:
 op1 option_box option_group1,60,40,6,12,0xFFFFFF,0,0xffffff,op_text.1,op_text.e1-op_text.1
 op2 option_box option_group1,60,55,6,12,0xFFFFFF,0,0xffffff,op_text.2,op_text.e2-op_text.2
+op3 option_box option_group1,60,70,6,12,0xFFFFFF,0,0xffffff,op_text.3,op_text.e3-op_text.3
+op4 option_box option_group1,60,85,6,12,0xFFFFFF,0,0xffffff,op_text.4,op_text.e4-op_text.4
 option_boxes_bcgr_end:
 
 op_text:
@@ -867,10 +869,14 @@ op_text:
 .e1:
 .2 db 'Stretch'
 .e2:
+.3 db 'Stretch + V crop'
+.e3:
+.4 db 'Stretch + H crop'
+.e4:
 
 option_group1   dd op1
 
-option_boxes_bcgr:      dd op1, op2,0
+option_boxes_bcgr:      dd op1,op2,op3,op4,0
 ;---------------------------------------------------------------------
 align 4
 ;option_boxes_sort:
