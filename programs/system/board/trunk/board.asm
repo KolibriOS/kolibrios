@@ -106,7 +106,7 @@ still:
      mov  esi, filename
      mov  [filepos], 0
      call CreateFile
-     jmp  .write_to_logfile
+     jnc  .write_to_logfile
   @@:
      inc  [filepos]
      popa
@@ -282,7 +282,6 @@ CreateFile:
     mov      dword [InfoStructure+20], 0   ; reserved
     mov      dword [InfoStructure+21], esi ; pointer to the file name
     mcall    70, InfoStructure
-    clc
     test     eax, eax
     jz	     .out
     stc
