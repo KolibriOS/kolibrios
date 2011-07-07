@@ -115,18 +115,32 @@ START:                           ; start of execution
 ;dpd esi
 ;dps <13,10>
    add  esi, file_data
+   cmp  byte [esi], '"'
+   jz   .quoted
   .start:
    cmp  esi, [fileend]
    jae  exit
    lodsb
    cmp  al, ' '
-   je   .finish
+   jbe  .finish
    stosb
    inc  [position]
    jmp  .start
   .finish:
    popad
- ret
+   ret
+  .quoted:
+   inc  esi
+   inc  [position]
+  .quoted.start:
+   cmp  esi, [fileend]
+   jae  exit
+   lodsb
+   inc  [position]
+   cmp  al, '"'
+   je   .finish
+   stosb
+   jmp  .quoted.start
 
 
  get_number:
@@ -176,7 +190,7 @@ START:                           ; start of execution
    jae  .finish
    lodsb
    cmp  al, ' '
-   jne  .finish
+   ja   .finish
    inc  [position]
    jmp  .start
   .finish:
