@@ -69,7 +69,7 @@ tp_obj tp_iter(TP,tp_obj self, tp_obj k) {
 tp_obj tp_get(TP,tp_obj self, tp_obj k) {
     int type = self.type;
     tp_obj r;
-    /*con_printf("tp_get %s %s\n", TP_CSTR(self), TP_CSTR(k));*/
+
     if (type == TP_DICT) {
         return _tp_dict_get(tp,self.dict.val,k,"tp_get");
     } else if (type == TP_LIST) {
@@ -142,8 +142,6 @@ tp_obj tp_get(TP,tp_obj self, tp_obj k) {
         }
     }
 
-
-    con_printf("Raising exception\n");
     tp_raise(tp_None,"tp_get(%s,%s)",TP_CSTR(self),TP_CSTR(k));
 }
 
@@ -162,7 +160,7 @@ int tp_iget(TP,tp_obj *r, tp_obj self, tp_obj k) {
 
 void tp_set(TP,tp_obj self, tp_obj k, tp_obj v) {
     int type;
-    con_printf("vm is %x self is %x k is %x v is %x", tp, self, k, v);
+
     type = self.type;
     if (type == TP_DICT) {
         _tp_dict_set(tp,self.dict.val,k,v);

@@ -15,6 +15,7 @@ void main(void) {
     argv[1][strlen(argv[1]) - 1] = '\0';
     con_printf("Running file %s\n", argv[1]);
     tp_vm *tp = tp_init(argc, argv);
+    kolibri_init(tp);
     /* INIT */
     tp_call(tp,"py2bc","tinypy",tp_None);
     tp_deinit(tp);
