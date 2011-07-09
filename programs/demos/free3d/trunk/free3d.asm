@@ -1097,7 +1097,7 @@ copy_file_path:
 convert_icons:
 	xor	eax,eax
 	mov	[return_code],eax
-	mov	eax,image_file
+	push	image_file
 	call	[cnv_png_import.Start]
 
 	mov	ecx,[image_file]
