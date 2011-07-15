@@ -53,7 +53,8 @@ struct ttm_backend_func {
 	 */
 	int (*populate) (struct ttm_backend *backend,
 			 unsigned long num_pages, struct page **pages,
-			 struct page *dummy_read_page);
+			 struct page *dummy_read_page,
+			 dma_addr_t *dma_addrs);
 	/**
 	 * struct ttm_backend_func member clear
 	 *
@@ -113,12 +114,11 @@ struct ttm_backend {
 	struct ttm_backend_func *func;
 };
 
-#define TTM_PAGE_FLAG_VMALLOC         (1 << 0)
 #define TTM_PAGE_FLAG_USER            (1 << 1)
 #define TTM_PAGE_FLAG_USER_DIRTY      (1 << 2)
 #define TTM_PAGE_FLAG_WRITE           (1 << 3)
 #define TTM_PAGE_FLAG_SWAPPED         (1 << 4)
-#define TTM_PAGE_FLAG_PERSISTANT_SWAP (1 << 5)
+#define TTM_PAGE_FLAG_PERSISTENT_SWAP (1 << 5)
 #define TTM_PAGE_FLAG_ZERO_ALLOC      (1 << 6)
 #define TTM_PAGE_FLAG_DMA32           (1 << 7)
 
@@ -147,6 +147,7 @@ enum ttm_caching_state {
  * @swap_storage: Pointer to shmem struct file for swap storage.
  * @caching_state: The current caching state of the pages.
  * @state: The current binding state of the pages.
+ * @dma_address: The DMA (bus) addresses of the pages (if TTM_PAGE_FLAG_DMA32)
  *
  * This is a structure holding the pages, caching- and aperture binding
  * status for a buffer object that isn't backed by fixed (VRAM / AGP)
@@ -171,12 +172,11 @@ struct ttm_tt {
 		tt_unbound,
 		tt_unpopulated,
 	} state;
+	dma_addr_t *dma_address;
 };
 
 #define TTM_MEMTYPE_FLAG_FIXED         (1 << 0)	/* Fixed (on-card) PCI memory */
 #define TTM_MEMTYPE_FLAG_MAPPABLE      (1 << 1)	/* Memory mappable */
-#define TTM_MEMTYPE_FLAG_NEEDS_IOREMAP (1 << 2)	/* Fixed memory needs ioremap
-						   before kernel access. */
 #define TTM_MEMTYPE_FLAG_CMA           (1 << 3)	/* Can't map aperture */
 
 /**
@@ -188,29 +188,29 @@ struct ttm_tt {
  * managed by this memory type.
  * @gpu_offset: If used, the GPU offset of the first managed page of
  * fixed memory or the first managed location in an aperture.
- * @io_offset: The io_offset of the first managed page of IO memory or
- * the first managed location in an aperture. For TTM_MEMTYPE_FLAG_CMA
- * memory, this should be set to NULL.
- * @io_size: The size of a managed IO region (fixed memory or aperture).
- * @io_addr: Virtual kernel address if the io region is pre-mapped. For
- * TTM_MEMTYPE_FLAG_NEEDS_IOREMAP there is no pre-mapped io map and
- * @io_addr should be set to NULL.
  * @size: Size of the managed region.
  * @available_caching: A mask of available caching types, TTM_PL_FLAG_XX,
  * as defined in ttm_placement_common.h
  * @default_caching: The default caching policy used for a buffer object
  * placed in this memory type if the user doesn't provide one.
- * @manager: The range manager used for this memory type. FIXME: If the aperture
- * has a page size different from the underlying system, the granularity
- * of this manager should take care of this. But the range allocating code
- * in ttm_bo.c needs to be modified for this.
+ * @func: structure pointer implementing the range manager. See above
+ * @priv: Driver private closure for @func.
+ * @io_reserve_mutex: Mutex optionally protecting shared io_reserve structures
+ * @use_io_reserve_lru: Use an lru list to try to unreserve io_mem_regions
+ * reserved by the TTM vm system.
+ * @io_reserve_lru: Optional lru list for unreserving io mem regions.
+ * @io_reserve_fastpath: Only use bdev::driver::io_mem_reserve to obtain
+ * static information. bdev::driver::io_mem_free is never used.
  * @lru: The lru list for this memory type.
  *
  * This structure is used to identify and manage memory types for a device.
  * It's set up by the ttm_bo_driver::init_mem_type method.
  */
 
+
+
 struct ttm_mem_type_manager {
+	struct ttm_bo_device *bdev;
 
 	/*
 	 * No protection. Constant from start.
@@ -220,20 +220,25 @@ struct ttm_mem_type_manager {
 	bool use_type;
 	uint32_t flags;
 	unsigned long gpu_offset;
-	unsigned long io_offset;
-	unsigned long io_size;
-	void *io_addr;
 	uint64_t size;
 	uint32_t available_caching;
 	uint32_t default_caching;
+	const struct ttm_mem_type_manager_func *func;
+	void *priv;
+	struct mutex io_reserve_mutex;
+	bool use_io_reserve_lru;
+	bool io_reserve_fastpath;
 
 	/*
-	 * Protected by the bdev->lru_lock.
-	 * TODO: Consider one lru_lock per ttm_mem_type_manager.
-	 * Plays ill with list removal, though.
+	 * Protected by @io_reserve_mutex:
 	 */
 
-	struct drm_mm manager;
+	struct list_head io_reserve_lru;
+
+	/*
+	 * Protected by the global->lru_lock.
+	 */
+
 	struct list_head lru;
 };
 

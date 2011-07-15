@@ -34,7 +34,14 @@
   do { local_irq_disable(); __LOCK(lock); } while (0)
 
 #define __LOCK_IRQSAVE(lock, flags) \
-  do { local_irq_save(flags); __LOCK(lock); } while (0)
+  do {                              \
+     __asm__ __volatile__ (         \
+     "pushf\n\t"                    \
+     "popl %0\n\t"                  \
+     "cli\n"                        \
+     : "=r" (flags));               \
+      __LOCK(lock);                 \
+       } while (0)                  \
 
 #define __UNLOCK(lock) \
   do { preempt_enable(); __release(lock); (void)(lock); } while (0)
@@ -46,8 +53,12 @@
 #define __UNLOCK_IRQ(lock) \
   do { local_irq_enable(); __UNLOCK(lock); } while (0)
 
-#define __UNLOCK_IRQRESTORE(lock, flags) \
-  do { local_irq_restore(flags); __UNLOCK(lock); } while (0)
+#define __UNLOCK_IRQRESTORE(lock, flags)    \
+  do {                                      \
+     if (flags & (1<<9))                    \
+        __asm__ __volatile__ ("sti");       \
+      __UNLOCK(lock);                       \
+     } while (0)
 
 #define _spin_lock(lock)			__LOCK(lock)
 #define _spin_lock_nested(lock, subclass)	__LOCK(lock)
