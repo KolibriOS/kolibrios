@@ -518,8 +518,8 @@ static struct radeon_asic r600_asic = {
 	.gart_set_page = &rs600_gart_set_page,
 	.ring_test = &r600_ring_test,
 //	.ring_ib_execute = &r600_ring_ib_execute,
-//	.irq_set = &r600_irq_set,
-//	.irq_process = &r600_irq_process,
+	.irq_set = &r600_irq_set,
+	.irq_process = &r600_irq_process,
 	.fence_ring_emit = &r600_fence_ring_emit,
 //	.cs_parse = &r600_cs_parse,
 //	.copy_blit = &r600_copy_blit,
@@ -555,8 +555,8 @@ static struct radeon_asic rs780_asic = {
 	.gart_set_page = &rs600_gart_set_page,
 	.ring_test = &r600_ring_test,
 //	.ring_ib_execute = &r600_ring_ib_execute,
-//	.irq_set = &r600_irq_set,
-//	.irq_process = &r600_irq_process,
+	.irq_set = &r600_irq_set,
+	.irq_process = &r600_irq_process,
 	.fence_ring_emit = &r600_fence_ring_emit,
 //	.cs_parse = &r600_cs_parse,
 //	.copy_blit = &r600_copy_blit,
@@ -589,9 +589,9 @@ static struct radeon_asic rv770_asic = {
 	.gart_tlb_flush = &r600_pcie_gart_tlb_flush,
 	.gart_set_page = &rs600_gart_set_page,
 	.ring_test = &r600_ring_test,
-//	.ring_ib_execute = &r600_ring_ib_execute,
-//	.irq_set = &r600_irq_set,
-//	.irq_process = &r600_irq_process,
+	.ring_ib_execute = &r600_ring_ib_execute,
+	.irq_set = &r600_irq_set,
+	.irq_process = &r600_irq_process,
 	.fence_ring_emit = &r600_fence_ring_emit,
 //	.cs_parse = &r600_cs_parse,
 //	.copy_blit = &r600_copy_blit,
@@ -706,26 +706,24 @@ static struct radeon_asic btc_asic = {
 	.set_surface_reg = r600_set_surface_reg,
 	.clear_surface_reg = r600_clear_surface_reg,
 	.bandwidth_update = &evergreen_bandwidth_update,
+	.hpd_init = &evergreen_hpd_init,
+	.hpd_sense = &evergreen_hpd_sense,
 };
 
-
-#if 0
 static struct radeon_asic cayman_asic = {
 	.init = &cayman_init,
-	.fini = &cayman_fini,
-	.suspend = &cayman_suspend,
-	.resume = &cayman_resume,
+//	.fini = &evergreen_fini,
+//	.suspend = &evergreen_suspend,
+//	.resume = &evergreen_resume,
 	.cp_commit = &r600_cp_commit,
-	.gpu_is_lockup = &cayman_gpu_is_lockup,
 	.asic_reset = &cayman_asic_reset,
 	.vga_set_state = &r600_vga_set_state,
 	.gart_tlb_flush = &cayman_pcie_gart_tlb_flush,
 	.gart_set_page = &rs600_gart_set_page,
 	.ring_test = &r600_ring_test,
-	.ring_ib_execute = &evergreen_ring_ib_execute,
-	.irq_set = &evergreen_irq_set,
-	.irq_process = &evergreen_irq_process,
-	.get_vblank_counter = &evergreen_get_vblank_counter,
+//	.ring_ib_execute = &r600_ring_ib_execute,
+//	.irq_set = &r600_irq_set,
+//	.irq_process = &r600_irq_process,
 	.fence_ring_emit = &r600_fence_ring_emit,
 //	.cs_parse = &r600_cs_parse,
 //	.copy_blit = &r600_copy_blit,
@@ -735,22 +733,13 @@ static struct radeon_asic cayman_asic = {
 	.set_engine_clock = &radeon_atom_set_engine_clock,
 	.get_memory_clock = &radeon_atom_get_memory_clock,
 	.set_memory_clock = &radeon_atom_set_memory_clock,
+	.get_pcie_lanes = NULL,
 	.set_pcie_lanes = NULL,
 	.set_clock_gating = NULL,
 	.set_surface_reg = r600_set_surface_reg,
 	.clear_surface_reg = r600_clear_surface_reg,
 	.bandwidth_update = &evergreen_bandwidth_update,
-	.gui_idle = &r600_gui_idle,
-	.pm_misc = &evergreen_pm_misc,
-	.pm_prepare = &evergreen_pm_prepare,
-	.pm_finish = &evergreen_pm_finish,
-	.pm_init_profile = &r600_pm_init_profile,
-	.pm_get_dynpm_state = &r600_pm_get_dynpm_state,
-	.pre_page_flip = &evergreen_pre_page_flip,
-	.page_flip = &evergreen_page_flip,
-	.post_page_flip = &evergreen_post_page_flip,
 };
-#endif
 
 int radeon_asic_init(struct radeon_device *rdev)
 {
@@ -863,7 +852,11 @@ int radeon_asic_init(struct radeon_device *rdev)
 			rdev->num_crtc = 6;
 		rdev->asic = &btc_asic;
 		break;
-
+	case CHIP_CAYMAN:
+		rdev->asic = &cayman_asic;
+		/* set num crtcs */
+		rdev->num_crtc = 6;
+		break;
 	default:
 		/* FIXME: not supported yet */
 		return -EINVAL;

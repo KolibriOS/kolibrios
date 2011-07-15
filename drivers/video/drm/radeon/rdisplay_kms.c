@@ -30,7 +30,11 @@ static void radeon_show_cursor_kms(struct drm_crtc *crtc)
     struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
     struct radeon_device *rdev = crtc->dev->dev_private;
 
-    if (ASIC_IS_AVIVO(rdev)) {
+    if (ASIC_IS_DCE4(rdev)) {
+        WREG32(RADEON_MM_INDEX, EVERGREEN_CUR_CONTROL + radeon_crtc->crtc_offset);
+        WREG32(RADEON_MM_DATA, EVERGREEN_CURSOR_EN |
+               EVERGREEN_CURSOR_MODE(EVERGREEN_CURSOR_24_8_PRE_MULT));
+    } else if (ASIC_IS_AVIVO(rdev)) {
         WREG32(RADEON_MM_INDEX, AVIVO_D1CUR_CONTROL + radeon_crtc->crtc_offset);
         WREG32(RADEON_MM_DATA, AVIVO_D1CURSOR_EN |
                  (AVIVO_D1CURSOR_MODE_24BPP << AVIVO_D1CURSOR_MODE_SHIFT));
@@ -58,7 +62,14 @@ static void radeon_lock_cursor_kms(struct drm_crtc *crtc, bool lock)
     struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
     uint32_t cur_lock;
 
-    if (ASIC_IS_AVIVO(rdev)) {
+    if (ASIC_IS_DCE4(rdev)) {
+        cur_lock = RREG32(EVERGREEN_CUR_UPDATE + radeon_crtc->crtc_offset);
+        if (lock)
+            cur_lock |= EVERGREEN_CURSOR_UPDATE_LOCK;
+        else
+            cur_lock &= ~EVERGREEN_CURSOR_UPDATE_LOCK;
+        WREG32(EVERGREEN_CUR_UPDATE + radeon_crtc->crtc_offset, cur_lock);
+    } else if (ASIC_IS_AVIVO(rdev)) {
         cur_lock = RREG32(AVIVO_D1CUR_UPDATE + radeon_crtc->crtc_offset);
         if (lock)
             cur_lock |= AVIVO_D1CURSOR_UPDATE_LOCK;
@@ -90,8 +101,16 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     rdisplay->cursor = cursor;
     gpu_addr = radeon_bo_gpu_offset(cursor->robj);
 
-    if (ASIC_IS_AVIVO(rdev))
+    if (ASIC_IS_DCE4(rdev)) {
+        WREG32(EVERGREEN_CUR_SURFACE_ADDRESS_HIGH + radeon_crtc->crtc_offset,
+               0);
+        WREG32(EVERGREEN_CUR_SURFACE_ADDRESS + radeon_crtc->crtc_offset,
+               gpu_addr);
+    } else if (ASIC_IS_AVIVO(rdev)) {
+        if (rdev->family >= CHIP_RV770)
+            WREG32(R700_D1CUR_SURFACE_ADDRESS_HIGH, 0);
         WREG32(AVIVO_D1CUR_SURFACE_ADDRESS + radeon_crtc->crtc_offset, gpu_addr);
+    }
     else {
         radeon_crtc->legacy_cursor_offset = gpu_addr - rdev->mc.vram_start;
         /* offset is from DISP(2)_BASE_ADDRESS */
@@ -110,44 +129,18 @@ void __stdcall move_cursor_kms(cursor_t *cursor, int x, int y)
 
     int hot_x = cursor->hot_x;
     int hot_y = cursor->hot_y;
+    int w = 32;
 
     radeon_lock_cursor_kms(crtc, true);
-    if (ASIC_IS_AVIVO(rdev))
-    {
-        int w = 32;
-        int i = 0;
-        struct drm_crtc *crtc_p;
 
-        /* avivo cursor are offset into the total surface */
-//        x += crtc->x;
-//        y += crtc->y;
-
-//        DRM_DEBUG("x %d y %d c->x %d c->y %d\n", x, y, crtc->x, crtc->y);
-#if 0
-        /* avivo cursor image can't end on 128 pixel boundry or
-         * go past the end of the frame if both crtcs are enabled
-         */
-        list_for_each_entry(crtc_p, &crtc->dev->mode_config.crtc_list, head) {
-            if (crtc_p->enabled)
-                i++;
-        }
-        if (i > 1) {
-            int cursor_end, frame_end;
-
-            cursor_end = x + w;
-            frame_end = crtc->x + crtc->mode.crtc_hdisplay;
-            if (cursor_end >= frame_end) {
-                w = w - (cursor_end - frame_end);
-                if (!(frame_end & 0x7f))
-                    w--;
-            } else {
-                if (!(cursor_end & 0x7f))
-                    w--;
-            }
-            if (w <= 0)
-                w = 1;
-        }
-#endif
+    if (ASIC_IS_DCE4(rdev)) {
+        WREG32(EVERGREEN_CUR_POSITION + radeon_crtc->crtc_offset,
+               (x << 16) | y);
+        WREG32(EVERGREEN_CUR_HOT_SPOT + radeon_crtc->crtc_offset,
+               (hot_x << 16) | hot_y);
+        WREG32(EVERGREEN_CUR_SIZE + radeon_crtc->crtc_offset,
+               ((w - 1) << 16) | 31);
+    } else if (ASIC_IS_AVIVO(rdev)) {
         WREG32(AVIVO_D1CUR_POSITION + radeon_crtc->crtc_offset,
                (x << 16) | y);
         WREG32(AVIVO_D1CUR_HOT_SPOT + radeon_crtc->crtc_offset,

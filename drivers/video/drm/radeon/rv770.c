@@ -498,6 +498,12 @@ static void rv770_program_channel_remap(struct radeon_device *rdev)
 	else
 		tcp_chan_steer = 0x00fac688;
 
+	/* RV770 CE has special chremap setup */
+	if (rdev->pdev->device == 0x944e) {
+		tcp_chan_steer = 0x00b08b08;
+		mc_shared_chremap = 0x00b08b08;
+	}
+
 	WREG32(TCP_CHAN_STEER, tcp_chan_steer);
 	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
 }
@@ -1082,6 +1088,20 @@ static int rv770_startup(struct radeon_device *rdev)
 	if (r)
 		return r;
 	rv770_gpu_init(rdev);
+	/* allocate wb buffer */
+	r = radeon_wb_init(rdev);
+	if (r)
+		return r;
+
+	/* Enable IRQ */
+	r = r600_irq_init(rdev);
+	if (r) {
+		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+//		radeon_irq_kms_fini(rdev);
+		return r;
+	}
+	r600_irq_set(rdev);
+
 	r = radeon_ring_init(rdev, rdev->cp.ring_size);
 	if (r)
 		return r;
@@ -1111,6 +1131,10 @@ int rv770_init(struct radeon_device *rdev)
 {
 	int r;
 
+	/* This don't do much */
+	r = radeon_gem_init(rdev);
+	if (r)
+		return r;
 	/* Read BIOS */
 	if (!radeon_get_bios(rdev)) {
 		if (ASIC_IS_AVIVO(rdev))
@@ -1140,9 +1164,9 @@ int rv770_init(struct radeon_device *rdev)
 	/* Initialize clocks */
 	radeon_get_clock_info(rdev->ddev);
 	/* Fence driver */
-//	r = radeon_fence_driver_init(rdev);
-//	if (r)
-//		return r;
+	r = radeon_fence_driver_init(rdev);
+	if (r)
+		return r;
 	/* initialize AGP */
 	if (rdev->flags & RADEON_IS_AGP) {
 		r = radeon_agp_init(rdev);
@@ -1157,10 +1181,15 @@ int rv770_init(struct radeon_device *rdev)
 	if (r)
 		return r;
 
+	r = radeon_irq_kms_init(rdev);
+	if (r)
+		return r;
 
 	rdev->cp.ring_obj = NULL;
 	r600_ring_init(rdev, 1024 * 1024);
 
+	rdev->ih.ring_obj = NULL;
+	r600_ih_ring_init(rdev, 64 * 1024);
 
 	r = r600_pcie_gart_init(rdev);
 	if (r)
@@ -1170,22 +1199,21 @@ int rv770_init(struct radeon_device *rdev)
 	r = rv770_startup(rdev);
 	if (r) {
 		dev_err(rdev->dev, "disabling GPU acceleration\n");
-
 		rv770_pcie_gart_fini(rdev);
         rdev->accel_working = false;
 	}
 	if (rdev->accel_working) {
-//		r = radeon_ib_pool_init(rdev);
-//		if (r) {
-//			dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
-//			rdev->accel_working = false;
-//		} else {
-//			r = r600_ib_test(rdev);
-//			if (r) {
-//				dev_err(rdev->dev, "IB test failed (%d).\n", r);
-//				rdev->accel_working = false;
-//			}
-//		}
+		r = radeon_ib_pool_init(rdev);
+		if (r) {
+			dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
+			rdev->accel_working = false;
+		} else {
+			r = r600_ib_test(rdev);
+			if (r) {
+				dev_err(rdev->dev, "IB test failed (%d).\n", r);
+				rdev->accel_working = false;
+			}
+		}
 	}
 
 	return 0;

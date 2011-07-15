@@ -281,7 +281,6 @@ void evergreen_hpd_set_polarity(struct radeon_device *rdev,
 	}
 }
 
-#if 0
 void evergreen_hpd_init(struct radeon_device *rdev)
 {
 	struct drm_device *dev = rdev->ddev;
@@ -320,9 +319,11 @@ void evergreen_hpd_init(struct radeon_device *rdev)
 			break;
 		}
 	}
-	if (rdev->irq.installed)
-		evergreen_irq_set(rdev);
+//	if (rdev->irq.installed)
+//		evergreen_irq_set(rdev);
 }
+
+#if 0
 
 void evergreen_hpd_fini(struct radeon_device *rdev)
 {
@@ -2240,6 +2241,9 @@ int evergreen_mc_init(struct radeon_device *rdev)
 
 	/* Get VRAM informations */
 	rdev->mc.vram_is_ddr = true;
+	if (rdev->flags & RADEON_IS_IGP)
+		tmp = RREG32(FUS_MC_ARB_RAMCFG);
+	else
 	tmp = RREG32(MC_ARB_RAMCFG);
 	if (tmp & CHANSIZE_OVERRIDE) {
 		chansize = 16;

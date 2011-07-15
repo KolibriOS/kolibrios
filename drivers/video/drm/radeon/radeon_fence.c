@@ -30,7 +30,7 @@
  */
 #include <linux/seq_file.h>
 #include <asm/atomic.h>
-#include <linux/wait.h>
+//#include <linux/wait.h>
 #include <linux/list.h>
 #include <linux/kref.h>
 #include <linux/slab.h>
@@ -38,6 +38,35 @@
 #include "drm.h"
 #include "radeon_reg.h"
 #include "radeon.h"
+
+static void radeon_fence_write(struct radeon_device *rdev, u32 seq)
+{
+	if (rdev->wb.enabled) {
+		u32 scratch_index;
+		if (rdev->wb.use_event)
+			scratch_index = R600_WB_EVENT_OFFSET + rdev->fence_drv.scratch_reg - rdev->scratch.reg_base;
+		else
+			scratch_index = RADEON_WB_SCRATCH_OFFSET + rdev->fence_drv.scratch_reg - rdev->scratch.reg_base;
+		rdev->wb.wb[scratch_index/4] = cpu_to_le32(seq);;
+	} else
+		WREG32(rdev->fence_drv.scratch_reg, seq);
+}
+
+static u32 radeon_fence_read(struct radeon_device *rdev)
+{
+	u32 seq;
+
+	if (rdev->wb.enabled) {
+		u32 scratch_index;
+		if (rdev->wb.use_event)
+			scratch_index = R600_WB_EVENT_OFFSET + rdev->fence_drv.scratch_reg - rdev->scratch.reg_base;
+		else
+			scratch_index = RADEON_WB_SCRATCH_OFFSET + rdev->fence_drv.scratch_reg - rdev->scratch.reg_base;
+		seq = le32_to_cpu(rdev->wb.wb[scratch_index/4]);
+	} else
+		seq = RREG32(rdev->fence_drv.scratch_reg);
+	return seq;
+}
 
 int radeon_fence_emit(struct radeon_device *rdev, struct radeon_fence *fence)
 {
@@ -49,15 +78,15 @@ int radeon_fence_emit(struct radeon_device *rdev, struct radeon_fence *fence)
 		return 0;
 	}
 	fence->seq = atomic_add_return(1, &rdev->fence_drv.seq);
-	if (!rdev->cp.ready) {
+	if (!rdev->cp.ready)
 		/* FIXME: cp is not running assume everythings is done right
 		 * away
 		 */
-		WREG32(rdev->fence_drv.scratch_reg, fence->seq);
-	} else
+		radeon_fence_write(rdev, fence->seq);
+	else
 		radeon_fence_ring_emit(rdev, fence);
 
-	trace_radeon_fence_emit(rdev->ddev, fence->seq);
+//   trace_radeon_fence_emit(rdev->ddev, fence->seq);
 	fence->emited = true;
 	list_move_tail(&fence->list, &rdev->fence_drv.emited);
 	write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
@@ -72,19 +101,12 @@ static bool radeon_fence_poll_locked(struct radeon_device *rdev)
 	bool wake = false;
 	unsigned long cjiffies;
 
-	if (rdev->wb.enabled) {
-		u32 scratch_index;
-		if (rdev->wb.use_event)
-			scratch_index = R600_WB_EVENT_OFFSET + rdev->fence_drv.scratch_reg - rdev->scratch.reg_base;
-		else
-			scratch_index = RADEON_WB_SCRATCH_OFFSET + rdev->fence_drv.scratch_reg - rdev->scratch.reg_base;
-		seq = le32_to_cpu(rdev->wb.wb[scratch_index/4]);
-	} else
-	seq = RREG32(rdev->fence_drv.scratch_reg);
+#if 0
+	seq = radeon_fence_read(rdev);
 	if (seq != rdev->fence_drv.last_seq) {
 		rdev->fence_drv.last_seq = seq;
 		rdev->fence_drv.last_jiffies = jiffies;
-		rdev->fence_drv.last_timeout = RADEON_FENCE_JIFFIES_TIMEOUT;
+//       rdev->fence_drv.last_timeout = RADEON_FENCE_JIFFIES_TIMEOUT;
 	} else {
 		cjiffies = jiffies;
 		if (time_after(cjiffies, rdev->fence_drv.last_jiffies)) {
@@ -126,6 +148,7 @@ static bool radeon_fence_poll_locked(struct radeon_device *rdev)
 		} while (i != &rdev->fence_drv.emited);
 		wake = true;
 	}
+#endif
 	return wake;
 }
 
@@ -150,7 +173,7 @@ int radeon_fence_create(struct radeon_device *rdev, struct radeon_fence **fence)
 	if ((*fence) == NULL) {
 		return -ENOMEM;
 	}
-	kref_init(&((*fence)->kref));
+//	kref_init(&((*fence)->kref));
 	(*fence)->rdev = rdev;
 	(*fence)->emited = false;
 	(*fence)->signaled = false;
@@ -208,11 +231,13 @@ int radeon_fence_wait(struct radeon_fence *fence, bool intr)
 	if (radeon_fence_signaled(fence)) {
 		return 0;
 	}
+
+#if 0
 	timeout = rdev->fence_drv.last_timeout;
 retry:
 	/* save current sequence used to check for GPU lockup */
 	seq = rdev->fence_drv.last_seq;
-	trace_radeon_fence_wait_begin(rdev->ddev, seq);
+//   trace_radeon_fence_wait_begin(rdev->ddev, seq);
 	if (intr) {
 		radeon_irq_kms_sw_irq_get(rdev);
 		r = wait_event_interruptible_timeout(rdev->fence_drv.queue,
@@ -227,7 +252,7 @@ retry:
 			 radeon_fence_signaled(fence), timeout);
 		radeon_irq_kms_sw_irq_put(rdev);
 	}
-	trace_radeon_fence_wait_end(rdev->ddev, seq);
+//   trace_radeon_fence_wait_end(rdev->ddev, seq);
 	if (unlikely(!radeon_fence_signaled(fence))) {
 		/* we were interrupted for some reason and fence isn't
 		 * isn't signaled yet, resume wait
@@ -250,19 +275,21 @@ retry:
 			r = radeon_gpu_reset(rdev);
 			if (r)
 				return r;
-				WREG32(rdev->fence_drv.scratch_reg, fence->seq);
+			radeon_fence_write(rdev, fence->seq);
 			rdev->gpu_lockup = false;
 			}
-		timeout = RADEON_FENCE_JIFFIES_TIMEOUT;
+//       timeout = RADEON_FENCE_JIFFIES_TIMEOUT;
 		write_lock_irqsave(&rdev->fence_drv.lock, irq_flags);
-		rdev->fence_drv.last_timeout = RADEON_FENCE_JIFFIES_TIMEOUT;
-		rdev->fence_drv.last_jiffies = jiffies;
+//       rdev->fence_drv.last_timeout = RADEON_FENCE_JIFFIES_TIMEOUT;
+//       rdev->fence_drv.last_jiffies = jiffies;
 		write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
 		goto retry;
 	}
+#endif
 	return 0;
 }
 
+#if 0
 int radeon_fence_wait_next(struct radeon_device *rdev)
 {
 	unsigned long irq_flags;
@@ -315,16 +342,16 @@ struct radeon_fence *radeon_fence_ref(struct radeon_fence *fence)
 	return fence;
 }
 
+#endif
+
 void radeon_fence_unref(struct radeon_fence **fence)
 {
 	struct radeon_fence *tmp = *fence;
 
 	*fence = NULL;
-	if (tmp) {
-		kref_put(&tmp->kref, radeon_fence_destroy);
-	}
 }
 
+#if 0
 void radeon_fence_process(struct radeon_device *rdev)
 {
 	unsigned long irq_flags;
@@ -338,6 +365,8 @@ void radeon_fence_process(struct radeon_device *rdev)
 	}
 }
 
+#endif
+
 int radeon_fence_driver_init(struct radeon_device *rdev)
 {
 	unsigned long irq_flags;
@@ -350,31 +379,15 @@ int radeon_fence_driver_init(struct radeon_device *rdev)
 		write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
 		return r;
 	}
-	WREG32(rdev->fence_drv.scratch_reg, 0);
+	radeon_fence_write(rdev, 0);
 	atomic_set(&rdev->fence_drv.seq, 0);
 	INIT_LIST_HEAD(&rdev->fence_drv.created);
 	INIT_LIST_HEAD(&rdev->fence_drv.emited);
 	INIT_LIST_HEAD(&rdev->fence_drv.signaled);
-	init_waitqueue_head(&rdev->fence_drv.queue);
+//   init_waitqueue_head(&rdev->fence_drv.queue);
 	rdev->fence_drv.initialized = true;
 	write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
-	if (radeon_debugfs_fence_init(rdev)) {
-		dev_err(rdev->dev, "fence debugfs file creation failed\n");
-	}
-	return 0;
-}
-
-void radeon_fence_driver_fini(struct radeon_device *rdev)
-{
-	unsigned long irq_flags;
-
-	if (!rdev->fence_drv.initialized)
-		return;
-	wake_up_all(&rdev->fence_drv.queue);
-	write_lock_irqsave(&rdev->fence_drv.lock, irq_flags);
-	radeon_scratch_free(rdev, rdev->fence_drv.scratch_reg);
-	write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
-	rdev->fence_drv.initialized = false;
+    return 0;
 }
 
 
@@ -390,7 +403,7 @@ static int radeon_debugfs_fence_info(struct seq_file *m, void *data)
 	struct radeon_fence *fence;
 
 	seq_printf(m, "Last signaled fence 0x%08X\n",
-		   RREG32(rdev->fence_drv.scratch_reg));
+		   radeon_fence_read(rdev));
 	if (!list_empty(&rdev->fence_drv.emited)) {
 		   fence = list_entry(rdev->fence_drv.emited.prev,
 				      struct radeon_fence, list);

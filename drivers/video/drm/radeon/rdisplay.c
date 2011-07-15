@@ -79,12 +79,16 @@ void fini_cursor(cursor_t *cursor)
     __DestroyObject(cursor);
 };
 
-
 static void radeon_show_cursor()
 {
     struct radeon_device *rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
 
-    if (ASIC_IS_AVIVO(rdev)) {
+
+    if (ASIC_IS_DCE4(rdev)) {
+        WREG32(RADEON_MM_INDEX, EVERGREEN_CUR_CONTROL);
+        WREG32(RADEON_MM_DATA, EVERGREEN_CURSOR_EN |
+               EVERGREEN_CURSOR_MODE(EVERGREEN_CURSOR_24_8_PRE_MULT));
+    } else if (ASIC_IS_AVIVO(rdev)) {
         WREG32(RADEON_MM_INDEX, AVIVO_D1CUR_CONTROL);
         WREG32(RADEON_MM_DATA, AVIVO_D1CURSOR_EN |
                  (AVIVO_D1CURSOR_MODE_24BPP << AVIVO_D1CURSOR_MODE_SHIFT));
@@ -109,8 +113,17 @@ cursor_t* __stdcall select_cursor(cursor_t *cursor)
     rdisplay->cursor = cursor;
     gpu_addr = radeon_bo_gpu_offset(cursor->robj);
 
-    if (ASIC_IS_AVIVO(rdev))
+    if (ASIC_IS_DCE4(rdev))
+    {
+        WREG32(EVERGREEN_CUR_SURFACE_ADDRESS_HIGH, 0);
+        WREG32(EVERGREEN_CUR_SURFACE_ADDRESS, gpu_addr);
+    }
+    else if (ASIC_IS_AVIVO(rdev))
+    {
+        if (rdev->family >= CHIP_RV770)
+            WREG32(R700_D1CUR_SURFACE_ADDRESS_HIGH, 0);
         WREG32(AVIVO_D1CUR_SURFACE_ADDRESS,  gpu_addr);
+    }
     else {
         WREG32(RADEON_CUR_OFFSET, gpu_addr - rdev->mc.vram_start);
     }
@@ -126,7 +139,14 @@ static void radeon_lock_cursor(bool lock)
 
     uint32_t cur_lock;
 
-    if (ASIC_IS_AVIVO(rdev)) {
+	if (ASIC_IS_DCE4(rdev)) {
+		cur_lock = RREG32(EVERGREEN_CUR_UPDATE);
+		if (lock)
+			cur_lock |= EVERGREEN_CURSOR_UPDATE_LOCK;
+		else
+			cur_lock &= ~EVERGREEN_CURSOR_UPDATE_LOCK;
+        WREG32(EVERGREEN_CUR_UPDATE, cur_lock);
+	} else if (ASIC_IS_AVIVO(rdev)) {
         cur_lock = RREG32(AVIVO_D1CUR_UPDATE);
         if (lock)
             cur_lock |= AVIVO_D1CURSOR_UPDATE_LOCK;
@@ -151,12 +171,15 @@ void __stdcall move_cursor(cursor_t *cursor, int x, int y)
 
     int hot_x = cursor->hot_x;
     int hot_y = cursor->hot_y;
+    int w     = 32;
 
     radeon_lock_cursor(true);
-    if (ASIC_IS_AVIVO(rdev))
-    {
-        int w = 32;
 
+    if (ASIC_IS_DCE4(rdev)) {
+        WREG32(EVERGREEN_CUR_POSITION,(x << 16) | y);
+        WREG32(EVERGREEN_CUR_HOT_SPOT, (hot_x << 16) | hot_y);
+        WREG32(EVERGREEN_CUR_SIZE, ((w - 1) << 16) | 31);
+    } else if (ASIC_IS_AVIVO(rdev)) {
         WREG32(AVIVO_D1CUR_POSITION, (x << 16) | y);
         WREG32(AVIVO_D1CUR_HOT_SPOT, (hot_x << 16) | hot_y);
         WREG32(AVIVO_D1CUR_SIZE, ((w - 1) << 16) | 31);

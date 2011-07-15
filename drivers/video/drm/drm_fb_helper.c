@@ -924,7 +924,7 @@ static void drm_setup_crtcs(struct drm_fb_helper *fb_helper)
 
 	/* clean out all the encoder/crtc combos */
    list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
-//       encoder->crtc = NULL;
+		encoder->crtc = NULL;
    }
 
 	crtcs = kcalloc(dev->mode_config.num_connector,

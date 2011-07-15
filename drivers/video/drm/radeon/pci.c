@@ -208,7 +208,7 @@ static void pci_read_irq(struct pci_dev *dev)
     irq = PciRead8(dev->bus, dev->devfn, PCI_INTERRUPT_PIN);
     dev->pin = irq;
     if (irq)
-        PciRead8(dev->bus, dev->devfn, PCI_INTERRUPT_LINE);
+        irq = PciRead8(dev->bus, dev->devfn, PCI_INTERRUPT_LINE);
     dev->irq = irq;
 };
 

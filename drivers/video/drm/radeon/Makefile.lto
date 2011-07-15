@@ -55,20 +55,23 @@ NAME_SRC=							\
 			radeon_device.c				\
 			evergreen.c				\
 			evergreen_blit_shaders.c		\
+			cayman_blit_shaders.c			\
 			radeon_clocks.c				\
-			radeon_i2c.c				\
 			atom.c					\
 			ni.c					\
-			radeon_gem.c				\
-			radeon_atombios.c			\
 			radeon_agp.c				\
 			radeon_asic.c				\
+			radeon_atombios.c			\
+			radeon_bios.c				\
+			radeon_combios.c			\
+			radeon_connectors.c			\
 			atombios_crtc.c				\
 			atombios_dp.c				\
 			radeon_encoders.c			\
-			radeon_connectors.c			\
-			radeon_bios.c				\
-			radeon_combios.c			\
+			radeon_fence.c				\
+			radeon_gem.c				\
+			radeon_i2c.c				\
+			radeon_irq_kms.c			\
 			radeon_legacy_crtc.c			\
 			radeon_legacy_encoders.c		\
 			radeon_legacy_tv.c			\

@@ -70,7 +70,7 @@
 #include <ttm/ttm_placement.h>
 #include <ttm/ttm_module.h>
 
-
+#include <linux/irqreturn.h>
 #include <pci.h>
 
 #include <errno-base.h>
@@ -263,6 +263,7 @@ void radeon_pm_resume(struct radeon_device *rdev);
 void radeon_combios_get_power_modes(struct radeon_device *rdev);
 void radeon_atombios_get_power_modes(struct radeon_device *rdev);
 void radeon_atom_set_voltage(struct radeon_device *rdev, u16 voltage_level, u8 voltage_type);
+int radeon_atom_get_max_vddc(struct radeon_device *rdev, u16 *voltage);
 void rs690_pm_info(struct radeon_device *rdev);
 extern int rv6xx_get_temp(struct radeon_device *rdev);
 extern int rv770_get_temp(struct radeon_device *rdev);
@@ -375,6 +376,15 @@ int radeon_gem_object_pin(struct drm_gem_object *obj, uint32_t pin_domain,
 			  uint64_t *gpu_addr);
 void radeon_gem_object_unpin(struct drm_gem_object *obj);
 
+int radeon_mode_dumb_create(struct drm_file *file_priv,
+			    struct drm_device *dev,
+			    struct drm_mode_create_dumb *args);
+int radeon_mode_dumb_mmap(struct drm_file *filp,
+			  struct drm_device *dev,
+			  uint32_t handle, uint64_t *offset_p);
+int radeon_mode_dumb_destroy(struct drm_file *file_priv,
+			     struct drm_device *dev,
+			     uint32_t handle);
 
 /*
  * GART structures, functions & helpers
@@ -524,6 +534,8 @@ int radeon_irq_kms_init(struct radeon_device *rdev);
 void radeon_irq_kms_fini(struct radeon_device *rdev);
 void radeon_irq_kms_sw_irq_get(struct radeon_device *rdev);
 void radeon_irq_kms_sw_irq_put(struct radeon_device *rdev);
+void radeon_irq_kms_pflip_irq_get(struct radeon_device *rdev, int crtc);
+void radeon_irq_kms_pflip_irq_put(struct radeon_device *rdev, int crtc);
 
 /*
  * CP & ring.
@@ -638,7 +650,7 @@ struct radeon_cs_chunk {
 struct radeon_cs_parser {
 	struct device		*dev;
 	struct radeon_device	*rdev;
-//	struct drm_file		*filp;
+	struct drm_file		*filp;
 	/* chunks */
 	unsigned		nchunks;
 	struct radeon_cs_chunk	*chunks;
@@ -1229,8 +1241,7 @@ struct radeon_device {
 	struct r600_blit r600_blit;
 	struct r700_vram_scratch vram_scratch;
 	int msi_enabled; /* msi enabled */
-//	struct r600_ih ih; /* r6/700 interrupt ring */
-//	struct workqueue_struct *wq;
+	struct r600_ih ih; /* r6/700 interrupt ring */
 //	struct work_struct hotplug_work;
 	int num_crtc; /* number of crtcs */
 	struct mutex dc_hw_i2c_mutex; /* display controller hw i2c mutex */
@@ -1310,6 +1321,7 @@ static inline void r100_io_wreg(struct radeon_device *rdev, u32 reg, u32 v)
 #define RREG16(reg) readw(((void __iomem *)rdev->rmmio) + (reg))
 #define WREG16(reg, v) writew(v, ((void __iomem *)rdev->rmmio) + (reg))
 #define RREG32(reg) r100_mm_rreg(rdev, (reg))
+#define DREG32(reg) printk(KERN_INFO "REGISTER: " #reg " : 0x%08X\n", r100_mm_rreg(rdev, (reg)))
 #define WREG32(reg, v) r100_mm_wreg(rdev, (reg), (v))
 #define REG_SET(FIELD, v) (((v) << FIELD##_SHIFT) & FIELD##_MASK)
 #define REG_GET(FIELD, v) (((v) << FIELD##_SHIFT) & FIELD##_MASK)

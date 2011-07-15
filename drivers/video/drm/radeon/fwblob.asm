@@ -114,10 +114,28 @@ ___start_builtin_fw:
         dd SUMOME_START
         dd (SUMOME_END - SUMOME_START)
 
-
         dd FIRMWARE_SUMO2_ME
         dd SUMO2ME_START
         dd (SUMO2ME_END - SUMO2ME_START)
+
+
+macro ni_code [arg]
+{
+        dd FIRMWARE_#arg#_ME
+        dd arg#ME_START
+        dd (arg#ME_END - arg#ME_START)
+
+        dd FIRMWARE_#arg#_PFP
+        dd arg#PFP_START
+        dd (arg#PFP_END - arg#PFP_START)
+
+        dd FIRMWARE_#arg#_MC
+        dd arg#MC_START
+        dd (arg#MC_END - arg#MC_START)
+
+}
+
+ni_code BARTS, TURKS, CAICOS, CAYMAN
 
         dd FIRMWARE_RV610_PFP
         dd RV610PFP_START
@@ -180,6 +198,9 @@ ___start_builtin_fw:
         dd SUMO2PFP_START
         dd (SUMO2PFP_END - SUMO2PFP_START)
 
+        dd FIRMWARE_BARTS_PFP
+        dd BARTSPFP_START
+        dd (BARTSPFP_END - BARTSPFP_START)
 
 
         dd FIRMWARE_R600_RLC
@@ -206,9 +227,14 @@ ___start_builtin_fw:
         dd JUNIPERRLC_START
         dd (JUNIPERRLC_END - JUNIPERRLC_START)
 
+        dd FIRMWARE_BTC_RLC
+        dd BTCRLC_START
+        dd (BTCRLC_END - BTCRLC_START)
+
         dd FIRMWARE_SUMO_RLC
         dd SUMORLC_START
         dd (SUMORLC_END - SUMORLC_START)
+
 
 ___end_builtin_fw:
 
@@ -223,7 +249,6 @@ FIRMWARE_RS600_CP       db 'radeon/RS600_cp.bin',0
 FIRMWARE_RS690_CP       db 'radeon/RS690_cp.bin',0
 
 FIRMWARE_RS780_ME       db 'radeon/RS780_me.bin',0
-FIRMWARE_RS780_PFP      db 'radeon/RS780_pfp.bin',0
 
 FIRMWARE_R600_ME        db 'radeon/RV600_me.bin',0
 FIRMWARE_RV610_ME       db 'radeon/RV610_me.bin',0
@@ -234,6 +259,7 @@ FIRMWARE_RV670_ME       db 'radeon/RV670_me.bin',0
 FIRMWARE_RV710_ME       db 'radeon/RV710_me.bin',0
 FIRMWARE_RV730_ME       db 'radeon/RV730_me.bin',0
 FIRMWARE_RV770_ME       db 'radeon/RV770_me.bin',0
+
 FIRMWARE_CYPRESS_ME     db 'radeon/CYPRESS_me.bin',0
 FIRMWARE_REDWOOD_ME     db 'radeon/REDWOOD_me.bin',0
 FIRMWARE_CEDAR_ME       db 'radeon/CEDAR_me.bin',0
@@ -242,7 +268,13 @@ FIRMWARE_PALM_ME        db 'radeon/PALM_me.bin',0
 FIRMWARE_SUMO_ME        db 'radeon/SUMO_me.bin',0
 FIRMWARE_SUMO2_ME       db 'radeon/SUMO2_me.bin',0
 
+FIRMWARE_BARTS_ME       db 'radeon/BARTS_me.bin',0
+FIRMWARE_TURKS_ME       db 'radeon/TURKS_me.bin',0
+FIRMWARE_CAICOS_ME      db 'radeon/CAICOS_me.bin',0
+FIRMWARE_CAYMAN_ME      db 'radeon/CAYMAN_me.bin',0
 
+
+FIRMWARE_RS780_PFP      db 'radeon/RS780_pfp.bin',0
 FIRMWARE_R600_PFP       db 'radeon/R600_pfp.bin',0
 FIRMWARE_RV610_PFP      db 'radeon/RV610_pfp.bin',0
 FIRMWARE_RV620_PFP      db 'radeon/RV620_pfp.bin',0
@@ -252,6 +284,7 @@ FIRMWARE_RV670_PFP      db 'radeon/RV670_pfp.bin',0
 FIRMWARE_RV710_PFP      db 'radeon/RV710_pfp.bin',0
 FIRMWARE_RV730_PFP      db 'radeon/RV730_pfp.bin',0
 FIRMWARE_RV770_PFP      db 'radeon/RV770_pfp.bin',0
+
 FIRMWARE_CYPRESS_PFP    db 'radeon/CYPRESS_pfp.bin',0
 FIRMWARE_REDWOOD_PFP    db 'radeon/REDWOOD_pfp.bin',0
 FIRMWARE_CEDAR_PFP      db 'radeon/CEDAR_pfp.bin',0
@@ -259,6 +292,11 @@ FIRMWARE_JUNIPER_PFP    db 'radeon/JUNIPER_pfp.bin',0
 FIRMWARE_PALM_PFP       db 'radeon/PALM_pfp.bin',0
 FIRMWARE_SUMO_PFP       db 'radeon/SUMO_pfp.bin',0
 FIRMWARE_SUMO2_PFP      db 'radeon/SUMO2_pfp.bin',0
+
+FIRMWARE_BARTS_PFP      db 'radeon/BARTS_pfp.bin',0
+FIRMWARE_TURKS_PFP      db 'radeon/TURKS_pfp.bin',0
+FIRMWARE_CAICOS_PFP     db 'radeon/CAICOS_pfp.bin',0
+FIRMWARE_CAYMAN_PFP     db 'radeon/CAYMAN_pfp.bin',0
 
 
 FIRMWARE_R600_RLC       db 'radeon/R600_rlc.bin',0
@@ -268,6 +306,14 @@ FIRMWARE_REDWOOD_RLC    db 'radeon/REDWOOD_rlc.bin',0
 FIRMWARE_CEDAR_RLC      db 'radeon/CEDAR_rlc.bin',0
 FIRMWARE_JUNIPER_RLC    db 'radeon/JUNIPER_rlc.bin',0
 FIRMWARE_SUMO_RLC       db 'radeon/SUMO_rlc.bin',0
+FIRMWARE_BTC_RLC        db 'radeon/BTC_rlc.bin',0
+FIRMWARE_CAYMAN_RLC     db 'radeon/CAYMAN_rlc.bin',0
+
+
+FIRMWARE_BARTS_MC       db 'radeon/BARTS_mc.bin',0
+FIRMWARE_TURKS_MC       db 'radeon/TURKS_mc.bin',0
+FIRMWARE_CAICOS_MC      db 'radeon/CAICOS_mc.bin',0
+FIRMWARE_CAYMAN_MC      db 'radeon/CAYMAN_mc.bin',0
 
 
 align 16
@@ -396,6 +442,26 @@ SUMO2ME_START:
         file 'firmware/SUMO2_me.bin'
 SUMO2ME_END:
 
+align 16
+BARTSME_START:
+        file 'firmware/BARTS_me.bin'
+BARTSME_END:
+
+align 16
+TURKSME_START:
+        file 'firmware/TURKS_me.bin'
+TURKSME_END:
+
+align 16
+CAICOSME_START:
+        file 'firmware/CAICOS_me.bin'
+CAICOSME_END:
+
+align 16
+CAYMANME_START:
+        file 'firmware/CAYMAN_me.bin'
+CAYMANME_END:
+
 
 align 16
 RV610PFP_START:
@@ -476,7 +542,25 @@ SUMO2PFP_START:
         file 'firmware/SUMO2_pfp.bin'
 SUMO2PFP_END:
 
+align 16
+BARTSPFP_START:
+        file 'firmware/BARTS_pfp.bin'
+BARTSPFP_END:
 
+align 16
+TURKSPFP_START:
+        file 'firmware/TURKS_pfp.bin'
+TURKSPFP_END:
+
+align 16
+CAICOSPFP_START:
+        file 'firmware/CAICOS_pfp.bin'
+CAICOSPFP_END:
+
+align 16
+CAYMANPFP_START:
+        file 'firmware/CAYMAN_pfp.bin'
+CAYMANPFP_END:
 
 align 16
 R600RLC_START:
@@ -512,3 +596,34 @@ align 16
 SUMORLC_START:
         file 'firmware/SUMO_rlc.bin'
 SUMORLC_END:
+
+align 16
+BTCRLC_START:
+        file 'firmware/BTC_rlc.bin'
+BTCRLC_END:
+
+align 16
+CAYMANRLC_START:
+        file 'firmware/CAYMAN_rlc.bin'
+CAYMANRLC_END:
+
+
+align 16
+BARTSMC_START:
+        file 'firmware/BARTS_mc.bin'
+BARTSMC_END:
+
+align 16
+TURKSMC_START:
+        file 'firmware/TURKS_mc.bin'
+TURKSMC_END:
+
+align 16
+CAICOSMC_START:
+        file 'firmware/CAICOS_mc.bin'
+CAICOSMC_END:
+
+align 16
+CAYMANMC_START:
+        file 'firmware/CAYMAN_mc.bin'
+CAYMANMC_END:
