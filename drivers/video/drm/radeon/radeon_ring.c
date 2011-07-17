@@ -71,21 +71,21 @@ int radeon_ib_get(struct radeon_device *rdev, struct radeon_ib **ib)
 	}
 	rdev->ib_pool.head_id = (nib->idx + 1) & (RADEON_IB_POOL_SIZE - 1);
 	nib->free = false;
-//   if (nib->fence) {
-//       mutex_unlock(&rdev->ib_pool.mutex);
-//   r = radeon_fence_wait(nib->fence, false);
-//   if (r) {
-//           dev_err(rdev->dev, "error waiting fence of IB(%u:0x%016lX:%u)\n",
-//               nib->idx, (unsigned long)nib->gpu_addr, nib->length_dw);
-//           mutex_lock(&rdev->ib_pool.mutex);
-//           nib->free = true;
-//           mutex_unlock(&rdev->ib_pool.mutex);
-//           radeon_fence_unref(&fence);
-//           return r;
-//       }
-//       mutex_lock(&rdev->ib_pool.mutex);
-//   }
-	radeon_fence_unref(&nib->fence);
+	if (nib->fence) {
+		mutex_unlock(&rdev->ib_pool.mutex);
+		r = radeon_fence_wait(nib->fence, false);
+		if (r) {
+			dev_err(rdev->dev, "error waiting fence of IB(%u:0x%016lX:%u)\n",
+				nib->idx, (unsigned long)nib->gpu_addr, nib->length_dw);
+			mutex_lock(&rdev->ib_pool.mutex);
+			nib->free = true;
+			mutex_unlock(&rdev->ib_pool.mutex);
+            radeon_fence_unref(&fence);
+			return r;
+		}
+		mutex_lock(&rdev->ib_pool.mutex);
+	}
+    radeon_fence_unref(&nib->fence);
 	nib->fence = fence;
 	nib->length_dw = 0;
 	mutex_unlock(&rdev->ib_pool.mutex);

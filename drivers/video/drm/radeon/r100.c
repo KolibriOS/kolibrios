@@ -151,17 +151,17 @@ void r100_hpd_init(struct radeon_device *rdev)
 		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
 		switch (radeon_connector->hpd.hpd) {
 		case RADEON_HPD_1:
-//           rdev->irq.hpd[0] = true;
+			rdev->irq.hpd[0] = true;
 			break;
 		case RADEON_HPD_2:
-//           rdev->irq.hpd[1] = true;
+			rdev->irq.hpd[1] = true;
 			break;
 		default:
 			break;
 		}
 	}
-//   if (rdev->irq.installed)
-//   r100_irq_set(rdev);
+	if (rdev->irq.installed)
+		r100_irq_set(rdev);
 }
 
 void r100_hpd_fini(struct radeon_device *rdev)
@@ -173,10 +173,10 @@ void r100_hpd_fini(struct radeon_device *rdev)
 		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
 		switch (radeon_connector->hpd.hpd) {
 		case RADEON_HPD_1:
-//           rdev->irq.hpd[0] = false;
+			rdev->irq.hpd[0] = false;
 			break;
 		case RADEON_HPD_2:
-//           rdev->irq.hpd[1] = false;
+			rdev->irq.hpd[1] = false;
 			break;
 		default:
 			break;
@@ -269,6 +269,38 @@ void r100_pci_gart_fini(struct radeon_device *rdev)
 	radeon_gart_table_ram_free(rdev);
 }
 
+int r100_irq_set(struct radeon_device *rdev)
+{
+	uint32_t tmp = 0;
+
+	if (!rdev->irq.installed) {
+		WARN(1, "Can't enable IRQ/MSI because no handler is installed\n");
+		WREG32(R_000040_GEN_INT_CNTL, 0);
+		return -EINVAL;
+	}
+	if (rdev->irq.sw_int) {
+		tmp |= RADEON_SW_INT_ENABLE;
+	}
+	if (rdev->irq.gui_idle) {
+		tmp |= RADEON_GUI_IDLE_MASK;
+	}
+	if (rdev->irq.crtc_vblank_int[0] ||
+	    rdev->irq.pflip[0]) {
+		tmp |= RADEON_CRTC_VBLANK_MASK;
+	}
+	if (rdev->irq.crtc_vblank_int[1] ||
+	    rdev->irq.pflip[1]) {
+		tmp |= RADEON_CRTC2_VBLANK_MASK;
+	}
+	if (rdev->irq.hpd[0]) {
+		tmp |= RADEON_FP_DETECT_MASK;
+	}
+	if (rdev->irq.hpd[1]) {
+		tmp |= RADEON_FP2_DETECT_MASK;
+	}
+	WREG32(RADEON_GEN_INT_CNTL, tmp);
+	return 0;
+}
 
 void r100_irq_disable(struct radeon_device *rdev)
 {
@@ -281,7 +313,6 @@ void r100_irq_disable(struct radeon_device *rdev)
 	WREG32(R_000044_GEN_INT_STATUS, tmp);
 }
 
-#if 0
 static inline uint32_t r100_irq_ack(struct radeon_device *rdev)
 {
 	uint32_t irqs = RREG32(RADEON_GEN_INT_STATUS);
@@ -301,8 +332,82 @@ static inline uint32_t r100_irq_ack(struct radeon_device *rdev)
 	return irqs & irq_mask;
 }
 
-#endif
+int r100_irq_process(struct radeon_device *rdev)
+{
+	uint32_t status, msi_rearm;
+	bool queue_hotplug = false;
 
+	/* reset gui idle ack.  the status bit is broken */
+	rdev->irq.gui_idle_acked = false;
+
+	status = r100_irq_ack(rdev);
+	if (!status) {
+		return IRQ_NONE;
+	}
+	if (rdev->shutdown) {
+		return IRQ_NONE;
+	}
+	while (status) {
+		/* SW interrupt */
+		if (status & RADEON_SW_INT_TEST) {
+			radeon_fence_process(rdev);
+		}
+		/* gui idle interrupt */
+		if (status & RADEON_GUI_IDLE_STAT) {
+			rdev->irq.gui_idle_acked = true;
+			rdev->pm.gui_idle = true;
+//			wake_up(&rdev->irq.idle_queue);
+		}
+		/* Vertical blank interrupts */
+		if (status & RADEON_CRTC_VBLANK_STAT) {
+			if (rdev->irq.crtc_vblank_int[0]) {
+//				drm_handle_vblank(rdev->ddev, 0);
+				rdev->pm.vblank_sync = true;
+//				wake_up(&rdev->irq.vblank_queue);
+			}
+//			if (rdev->irq.pflip[0])
+//				radeon_crtc_handle_flip(rdev, 0);
+		}
+		if (status & RADEON_CRTC2_VBLANK_STAT) {
+			if (rdev->irq.crtc_vblank_int[1]) {
+//				drm_handle_vblank(rdev->ddev, 1);
+				rdev->pm.vblank_sync = true;
+//				wake_up(&rdev->irq.vblank_queue);
+			}
+//			if (rdev->irq.pflip[1])
+//				radeon_crtc_handle_flip(rdev, 1);
+		}
+		if (status & RADEON_FP_DETECT_STAT) {
+			queue_hotplug = true;
+			DRM_DEBUG("HPD1\n");
+		}
+		if (status & RADEON_FP2_DETECT_STAT) {
+			queue_hotplug = true;
+			DRM_DEBUG("HPD2\n");
+		}
+		status = r100_irq_ack(rdev);
+	}
+	/* reset gui idle ack.  the status bit is broken */
+	rdev->irq.gui_idle_acked = false;
+//	if (queue_hotplug)
+//		schedule_work(&rdev->hotplug_work);
+	if (rdev->msi_enabled) {
+		switch (rdev->family) {
+		case CHIP_RS400:
+		case CHIP_RS480:
+			msi_rearm = RREG32(RADEON_AIC_CNTL) & ~RS400_MSI_REARM;
+			WREG32(RADEON_AIC_CNTL, msi_rearm);
+			WREG32(RADEON_AIC_CNTL, msi_rearm | RS400_MSI_REARM);
+			break;
+		default:
+			msi_rearm = RREG32(RADEON_MSI_REARM_EN) & ~RV370_MSI_REARM_EN;
+			WREG32(RADEON_MSI_REARM_EN, msi_rearm);
+			WREG32(RADEON_MSI_REARM_EN, msi_rearm | RV370_MSI_REARM_EN);
+			break;
+		}
+	}
+	return IRQ_HANDLED;
+}
 
 u32 r100_get_vblank_counter(struct radeon_device *rdev, int crtc)
 {
@@ -337,8 +442,6 @@ void r100_fence_ring_emit(struct radeon_device *rdev,
 	radeon_ring_write(rdev, PACKET0(RADEON_GEN_INT_STATUS, 0));
 	radeon_ring_write(rdev, RADEON_SW_INT_FIRE);
 }
-
-#if 0
 
 int r100_copy_blit(struct radeon_device *rdev,
 		   uint64_t src_offset,
@@ -412,9 +515,6 @@ int r100_copy_blit(struct radeon_device *rdev,
 	radeon_ring_unlock_commit(rdev);
 	return r;
 }
-
-#endif
-
 
 static int r100_cp_wait_for_idle(struct radeon_device *rdev)
 {
@@ -1617,7 +1717,7 @@ int r100_mc_wait_for_idle(struct radeon_device *rdev)
 void r100_gpu_lockup_update(struct r100_gpu_lockup *lockup, struct radeon_cp *cp)
 {
 	lockup->last_cp_rptr = cp->rptr;
-    lockup->last_jiffies = 0; //jiffies;
+    lockup->last_jiffies = GetTimerTicks();
 }
 
 /**
@@ -1645,18 +1745,17 @@ bool r100_gpu_cp_is_lockup(struct radeon_device *rdev, struct r100_gpu_lockup *l
 {
 	unsigned long cjiffies, elapsed;
 
-#if 0
-	cjiffies = jiffies;
+	cjiffies = GetTimerTicks();
 	if (!time_after(cjiffies, lockup->last_jiffies)) {
 		/* likely a wrap around */
 		lockup->last_cp_rptr = cp->rptr;
-		lockup->last_jiffies = jiffies;
+		lockup->last_jiffies = GetTimerTicks();
 		return false;
 	}
 	if (cp->rptr != lockup->last_cp_rptr) {
 		/* CP is still working no lockup */
 		lockup->last_cp_rptr = cp->rptr;
-		lockup->last_jiffies = jiffies;
+		lockup->last_jiffies = GetTimerTicks();
 		return false;
 	}
 	elapsed = jiffies_to_msecs(cjiffies - lockup->last_jiffies);
@@ -1664,8 +1763,6 @@ bool r100_gpu_cp_is_lockup(struct radeon_device *rdev, struct r100_gpu_lockup *l
 		dev_err(rdev->dev, "GPU lockup CP stall for more than %lumsec\n", elapsed);
 		return true;
 	}
-#endif
-
 	/* give a chance to the GPU ... */
 	return false;
 }
@@ -3195,8 +3292,6 @@ int r100_ring_test(struct radeon_device *rdev)
 	return r;
 }
 
-#if 0
-
 void r100_ring_ib_execute(struct radeon_device *rdev, struct radeon_ib *ib)
 {
 	radeon_ring_write(rdev, PACKET0(RADEON_CP_IB_BASE, 1));
@@ -3283,7 +3378,6 @@ int r100_ib_init(struct radeon_device *rdev)
 	}
 	return 0;
 }
-#endif
 
 void r100_mc_stop(struct radeon_device *rdev, struct r100_mc_save *save)
 {
@@ -3436,8 +3530,14 @@ static int r100_startup(struct radeon_device *rdev)
 		if (r)
 			return r;
 	}
+
+	/* allocate wb buffer */
+	r = radeon_wb_init(rdev);
+	if (r)
+		return r;
+
 	/* Enable IRQ */
-//   r100_irq_set(rdev);
+	r100_irq_set(rdev);
 	rdev->config.r100.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
    r = r100_cp_init(rdev, 1024 * 1024);
@@ -3445,11 +3545,11 @@ static int r100_startup(struct radeon_device *rdev)
 		dev_err(rdev->dev, "failed initializing CP (%d).\n", r);
        return r;
    }
-//   r = r100_ib_init(rdev);
-//   if (r) {
-//       dev_err(rdev->dev, "failled initializing IB (%d).\n", r);
-//       return r;
-//   }
+	r = r100_ib_init(rdev);
+	if (r) {
+		dev_err(rdev->dev, "failed initializing IB (%d).\n", r);
+		return r;
+	}
 	return 0;
 }
 
@@ -3530,12 +3630,12 @@ int r100_init(struct radeon_device *rdev)
 	/* initialize VRAM */
 	r100_mc_init(rdev);
 	/* Fence driver */
-//	r = radeon_fence_driver_init(rdev);
-//	if (r)
-//		return r;
-//	r = radeon_irq_kms_init(rdev);
-//	if (r)
-//		return r;
+	r = radeon_fence_driver_init(rdev);
+	if (r)
+		return r;
+	r = radeon_irq_kms_init(rdev);
+	if (r)
+		return r;
 	/* Memory manager */
 	r = radeon_bo_init(rdev);
 	if (r)

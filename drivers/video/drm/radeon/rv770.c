@@ -1088,6 +1088,13 @@ static int rv770_startup(struct radeon_device *rdev)
 	if (r)
 		return r;
 	rv770_gpu_init(rdev);
+	r = r600_blit_init(rdev);
+	if (r) {
+//		r600_blit_fini(rdev);
+		rdev->asic->copy = NULL;
+		dev_warn(rdev->dev, "failed blitter (%d) falling back to memcpy\n", r);
+	}
+
 	/* allocate wb buffer */
 	r = radeon_wb_init(rdev);
 	if (r)

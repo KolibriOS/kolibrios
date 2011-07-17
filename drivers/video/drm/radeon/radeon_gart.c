@@ -184,11 +184,8 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
     uint64_t page_base;
     int i, j;
 
-    ENTER();
-
-    dbgprintf("offset %x pages %x list %x\n",
-               offset, pages, pagelist);
-
+//    dbgprintf("offset %x pages %d list %x\n",
+//               offset, pages, pagelist);
     if (!rdev->gart.ready) {
 		WARN(1, "trying to bind memory to unitialized GART !\n");
         return -EINVAL;

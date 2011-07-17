@@ -716,12 +716,12 @@ int radeon_device_init(struct radeon_device *rdev,
     mutex_init(&rdev->ib_pool.mutex);
     mutex_init(&rdev->cp.mutex);
 	mutex_init(&rdev->dc_hw_i2c_mutex);
-//   if (rdev->family >= CHIP_R600)
-//       spin_lock_init(&rdev->ih.lock);
+	if (rdev->family >= CHIP_R600)
+		spin_lock_init(&rdev->ih.lock);
 	mutex_init(&rdev->gem.mutex);
 	mutex_init(&rdev->pm.mutex);
 	mutex_init(&rdev->vram_mutex);
- //   rwlock_init(&rdev->fence_drv.lock);
+	rwlock_init(&rdev->fence_drv.lock);
 	INIT_LIST_HEAD(&rdev->gem.objects);
 
 	/* Set asic functions */
@@ -793,9 +793,9 @@ int radeon_device_init(struct radeon_device *rdev,
 //	if (radeon_testing) {
 //		radeon_test_moves(rdev);
 //    }
-//	if (radeon_benchmarking) {
-//		radeon_benchmark(rdev);
-//    }
+   if (radeon_benchmarking) {
+       radeon_benchmark(rdev);
+    }
 	return 0;
 }
 
@@ -1070,12 +1070,6 @@ u32_t drvEntry(int action, char *cmdline)
     err = drm_get_dev(&device.pci_dev, ent);
 
     rdev = rdisplay->ddev->dev_private;
-
-//    if( (rdev->asic == &r600_asic) ||
-//        (rdev->asic == &rv770_asic))
-//        r600_2D_test(rdev);
-//    else if (rdev->asic != &evergreen_asic)
-//        r100_2D_test(rdev);
 
     err = RegService("DISPLAY", display_handler);
 

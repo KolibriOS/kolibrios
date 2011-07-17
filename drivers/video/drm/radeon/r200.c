@@ -82,6 +82,7 @@ static int r200_get_vtx_size_0(uint32_t vtx_fmt_0)
 		vtx_size += 3;
 	return vtx_size;
 }
+#endif
 
 int r200_copy_dma(struct radeon_device *rdev,
 		  uint64_t src_offset,
@@ -126,7 +127,7 @@ int r200_copy_dma(struct radeon_device *rdev,
 	radeon_ring_unlock_commit(rdev);
 	return r;
 }
-
+#if 0
 
 static int r200_get_vtx_size_1(uint32_t vtx_fmt_1)
 {

@@ -1871,6 +1871,26 @@ void r600_fence_ring_emit(struct radeon_device *rdev,
 	}
 }
 
+int r600_copy_blit(struct radeon_device *rdev,
+		   uint64_t src_offset, uint64_t dst_offset,
+		   unsigned num_pages, struct radeon_fence *fence)
+{
+	int r;
+
+	mutex_lock(&rdev->r600_blit.mutex);
+	rdev->r600_blit.vb_ib = NULL;
+	r = r600_blit_prepare_copy(rdev, num_pages * RADEON_GPU_PAGE_SIZE);
+	if (r) {
+//       if (rdev->r600_blit.vb_ib)
+//           radeon_ib_free(rdev, &rdev->r600_blit.vb_ib);
+		mutex_unlock(&rdev->r600_blit.mutex);
+		return r;
+	}
+	r600_kms_blit_copy(rdev, src_offset, dst_offset, num_pages * RADEON_GPU_PAGE_SIZE);
+	r600_blit_done_copy(rdev, fence);
+	mutex_unlock(&rdev->r600_blit.mutex);
+	return 0;
+}
 
 int r600_set_surface_reg(struct radeon_device *rdev, int reg,
 			 uint32_t tiling_flags, uint32_t pitch,
@@ -1909,6 +1929,26 @@ int r600_startup(struct radeon_device *rdev)
 			return r;
 	}
 	r600_gpu_init(rdev);
+	r = r600_blit_init(rdev);
+	if (r) {
+//		r600_blit_fini(rdev);
+		rdev->asic->copy = NULL;
+		dev_warn(rdev->dev, "failed blitter (%d) falling back to memcpy\n", r);
+	}
+
+	/* allocate wb buffer */
+	r = radeon_wb_init(rdev);
+	if (r)
+		return r;
+
+	/* Enable IRQ */
+	r = r600_irq_init(rdev);
+	if (r) {
+		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+//		radeon_irq_kms_fini(rdev);
+		return r;
+	}
+	r600_irq_set(rdev);
 
 	r = radeon_ring_init(rdev, rdev->cp.ring_size);
 	if (r)
@@ -2028,19 +2068,19 @@ int r600_init(struct radeon_device *rdev)
 		rdev->accel_working = false;
 	}
 	if (rdev->accel_working) {
-//		r = radeon_ib_pool_init(rdev);
-//		if (r) {
-//			DRM_ERROR("radeon: failled initializing IB pool (%d).\n", r);
-//			rdev->accel_working = false;
-//		}
-//		r = r600_ib_test(rdev);
-//		if (r) {
-//			DRM_ERROR("radeon: failled testing IB (%d).\n", r);
-//			rdev->accel_working = false;
-//		}
+		r = radeon_ib_pool_init(rdev);
+		if (r) {
+			dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
+			rdev->accel_working = false;
+		} else {
+			r = r600_ib_test(rdev);
+			if (r) {
+				dev_err(rdev->dev, "IB test failed (%d).\n", r);
+				rdev->accel_working = false;
+			}
 	}
-	if (r)
-		return r; /* TODO error handling */
+	}
+
 	return 0;
 }
 
@@ -2423,8 +2463,6 @@ int r600_irq_set(struct radeon_device *rdev)
 	u32 hdmi1, hdmi2;
 	u32 d1grph = 0, d2grph = 0;
 
-    ENTER();
-
 	if (!rdev->irq.installed) {
 		WARN(1, "Can't enable IRQ/MSI because no handler is installed\n");
 		return -EINVAL;
@@ -2529,8 +2567,6 @@ int r600_irq_set(struct radeon_device *rdev)
 		WREG32(DC_HOT_PLUG_DETECT2_INT_CONTROL, hpd2);
 		WREG32(DC_HOT_PLUG_DETECT3_INT_CONTROL, hpd3);
 	}
-
-    LEAVE();
 
 	return 0;
 }
@@ -2825,11 +2861,11 @@ restart_ih:
 		case 177: /* CP_INT in IB1 */
 		case 178: /* CP_INT in IB2 */
 			DRM_DEBUG("IH: CP int: 0x%08x\n", src_data);
-//           radeon_fence_process(rdev);
+            radeon_fence_process(rdev);
 			break;
 		case 181: /* CP EOP event */
 			DRM_DEBUG("IH: CP EOP\n");
-//           radeon_fence_process(rdev);
+			radeon_fence_process(rdev);
 			break;
 		case 233: /* GUI IDLE */
 			DRM_DEBUG("IH: GUI idle\n");
@@ -2998,9 +3034,9 @@ void r600_set_pcie_lanes(struct radeon_device *rdev, int lanes)
 
 	WREG32_PCIE_P(RADEON_PCIE_LC_LINK_WIDTH_CNTL, link_width_cntl);
 
-        /* some northbridges can renegotiate the link rather than requiring                                  
-         * a complete re-config.                                                                             
-         * e.g., AMD 780/790 northbridges (pci ids: 0x5956, 0x5957, 0x5958, etc.)                            
+        /* some northbridges can renegotiate the link rather than requiring
+         * a complete re-config.
+         * e.g., AMD 780/790 northbridges (pci ids: 0x5956, 0x5957, 0x5958, etc.)
          */
         if (link_width_cntl & R600_PCIE_LC_RENEGOTIATION_SUPPORT)
 		link_width_cntl |= R600_PCIE_LC_RENEGOTIATE_EN | R600_PCIE_LC_UPCONFIGURE_SUPPORT;

@@ -1395,9 +1395,13 @@ static int r300_startup(struct radeon_device *rdev)
 			return r;
 	}
 
+	/* allocate wb buffer */
+	r = radeon_wb_init(rdev);
+	if (r)
+		return r;
 
 	/* Enable IRQ */
-//	r100_irq_set(rdev);
+	r100_irq_set(rdev);
 	rdev->config.r300.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
 	/* 1M ring buffer */
     r = r100_cp_init(rdev, 1024 * 1024);
@@ -1405,11 +1409,11 @@ static int r300_startup(struct radeon_device *rdev)
 		dev_err(rdev->dev, "failed initializing CP (%d).\n", r);
        return r;
     }
-//   r = r100_ib_init(rdev);
-//   if (r) {
-//       dev_err(rdev->dev, "failled initializing IB (%d).\n", r);
-//       return r;
-//   }
+	r = r100_ib_init(rdev);
+	if (r) {
+		dev_err(rdev->dev, "failed initializing IB (%d).\n", r);
+		return r;
+	}
 	return 0;
 }
 
@@ -1467,12 +1471,12 @@ int r300_init(struct radeon_device *rdev)
 	/* initialize memory controller */
 	r300_mc_init(rdev);
 	/* Fence driver */
-//	r = radeon_fence_driver_init(rdev);
-//	if (r)
-//		return r;
-//	r = radeon_irq_kms_init(rdev);
-//	if (r)
-//		return r;
+	r = radeon_fence_driver_init(rdev);
+	if (r)
+		return r;
+	r = radeon_irq_kms_init(rdev);
+	if (r)
+		return r;
 	/* Memory manager */
 	r = radeon_bo_init(rdev);
 	if (r)

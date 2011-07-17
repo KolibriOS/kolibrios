@@ -295,6 +295,7 @@ struct radeon_fence {
 	uint32_t			seq;
 	bool				emited;
 	bool				signaled;
+    evhandle_t              evnt;
 };
 
 int radeon_fence_driver_init(struct radeon_device *rdev);

@@ -6,6 +6,8 @@
 #include "radeon.h"
 #include "radeon_object.h"
 
+extern int radeon_benchmarking;
+
 static int my_atoi(char **cmd)
 {
     char* p = *cmd;
@@ -74,12 +76,16 @@ void parse_cmdline(char *cmdline, videomode_t *mode, char *log, int *kms)
         {
             switch(*p++)
             {
-                case 'm':
-                    p = parse_mode(p, mode);
+                case 'b':
+                    radeon_benchmarking = 1;
                     break;
 
                 case 'l':
                     p = parse_path(p, log);
+                    break;
+
+                case 'm':
+                    p = parse_mode(p, mode);
                     break;
 
                 case 'n':

@@ -136,6 +136,8 @@ int radeon_bo_create(struct radeon_device *rdev,
 
     num_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
+    size = num_pages << PAGE_SHIFT;
+
     if (num_pages == 0) {
         dbgprintf("Illegal buffer object size.\n");
         return -EINVAL;

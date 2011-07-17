@@ -1376,10 +1376,26 @@ static int cayman_startup(struct radeon_device *rdev)
 		return r;
 	cayman_gpu_init(rdev);
 
+	r = evergreen_blit_init(rdev);
+	if (r) {
+//		evergreen_blit_fini(rdev);
+		rdev->asic->copy = NULL;
+		dev_warn(rdev->dev, "failed blitter (%d) falling back to memcpy\n", r);
+	}
 
 	/* allocate wb buffer */
+	r = radeon_wb_init(rdev);
+	if (r)
+		return r;
 
 	/* Enable IRQ */
+	r = r600_irq_init(rdev);
+	if (r) {
+		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+//		radeon_irq_kms_fini(rdev);
+		return r;
+	}
+	evergreen_irq_set(rdev);
 
 	r = radeon_ring_init(rdev, rdev->cp.ring_size);
 	if (r)
@@ -1442,6 +1458,9 @@ int cayman_init(struct radeon_device *rdev)
 	/* Initialize clocks */
 	radeon_get_clock_info(rdev->ddev);
 	/* Fence driver */
+	r = radeon_fence_driver_init(rdev);
+	if (r)
+		return r;
 	/* initialize memory controller */
 	r = evergreen_mc_init(rdev);
 	if (r)
@@ -1451,10 +1470,15 @@ int cayman_init(struct radeon_device *rdev)
 	if (r)
 		return r;
 
+	r = radeon_irq_kms_init(rdev);
+	if (r)
+		return r;
 
 	rdev->cp.ring_obj = NULL;
 	r600_ring_init(rdev, 1024 * 1024);
 
+	rdev->ih.ring_obj = NULL;
+	r600_ih_ring_init(rdev, 64 * 1024);
 
 	r = r600_pcie_gart_init(rdev);
 	if (r)
@@ -1467,6 +1491,16 @@ int cayman_init(struct radeon_device *rdev)
 		rdev->accel_working = false;
 	}
 	if (rdev->accel_working) {
+		r = radeon_ib_pool_init(rdev);
+		if (r) {
+			DRM_ERROR("radeon: failed initializing IB pool (%d).\n", r);
+			rdev->accel_working = false;
+		}
+		r = r600_ib_test(rdev);
+		if (r) {
+			DRM_ERROR("radeon: failed testing IB (%d).\n", r);
+			rdev->accel_working = false;
+		}
 	}
 
 	/* Don't start up if the MC ucode is missing.

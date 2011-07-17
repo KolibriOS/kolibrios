@@ -55,6 +55,7 @@ NAME_SRC=							\
 			radeon_device.c				\
 			evergreen.c				\
 			evergreen_blit_shaders.c		\
+			evergreen_blit_kms.c			\
 			cayman_blit_shaders.c			\
 			radeon_clocks.c				\
 			atom.c					\
@@ -62,6 +63,7 @@ NAME_SRC=							\
 			radeon_agp.c				\
 			radeon_asic.c				\
 			radeon_atombios.c			\
+			radeon_benchmark.c			\
 			radeon_bios.c				\
 			radeon_combios.c			\
 			radeon_connectors.c			\
@@ -88,6 +90,8 @@ NAME_SRC=							\
 			r520.c					\
 			r600.c					\
 			r600_audio.c				\
+			r600_blit_kms.c				\
+			r600_blit_shaders.c			\
 			r600_hdmi.c				\
 			rs400.c					\
 			rs600.c					\

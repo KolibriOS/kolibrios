@@ -213,5 +213,13 @@ static inline void *dev_get_drvdata(struct device *dev)
 
 #define in_dbg_master() (0)
 
+#define HZ 100
+
+#define time_after(a,b)         \
+        (typecheck(unsigned long, a) && \
+        typecheck(unsigned long, b) && \
+        ((long)(b) - (long)(a) < 0))
+
+
 #endif
 

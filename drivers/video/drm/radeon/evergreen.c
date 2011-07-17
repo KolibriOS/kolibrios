@@ -319,11 +319,9 @@ void evergreen_hpd_init(struct radeon_device *rdev)
 			break;
 		}
 	}
-//	if (rdev->irq.installed)
-//		evergreen_irq_set(rdev);
+	if (rdev->irq.installed)
+		evergreen_irq_set(rdev);
 }
-
-#if 0
 
 void evergreen_hpd_fini(struct radeon_device *rdev)
 {
@@ -363,7 +361,6 @@ void evergreen_hpd_fini(struct radeon_device *rdev)
 	}
 }
 
-#endif
 /* watermark setup */
 
 static u32 evergreen_line_buffer_adjust(struct radeon_device *rdev,
@@ -978,17 +975,19 @@ void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *sav
 {
 	save->vga_control[0] = RREG32(D1VGA_CONTROL);
 	save->vga_control[1] = RREG32(D2VGA_CONTROL);
-	save->vga_control[2] = RREG32(EVERGREEN_D3VGA_CONTROL);
-	save->vga_control[3] = RREG32(EVERGREEN_D4VGA_CONTROL);
-	save->vga_control[4] = RREG32(EVERGREEN_D5VGA_CONTROL);
-	save->vga_control[5] = RREG32(EVERGREEN_D6VGA_CONTROL);
 	save->vga_render_control = RREG32(VGA_RENDER_CONTROL);
 	save->vga_hdp_control = RREG32(VGA_HDP_CONTROL);
 	save->crtc_control[0] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET);
 	save->crtc_control[1] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET);
-	if (!(rdev->flags & RADEON_IS_IGP)) {
+	if (rdev->num_crtc >= 4) {
+		save->vga_control[2] = RREG32(EVERGREEN_D3VGA_CONTROL);
+		save->vga_control[3] = RREG32(EVERGREEN_D4VGA_CONTROL);
 	save->crtc_control[2] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET);
 	save->crtc_control[3] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET);
+	}
+	if (rdev->num_crtc >= 6) {
+		save->vga_control[4] = RREG32(EVERGREEN_D5VGA_CONTROL);
+		save->vga_control[5] = RREG32(EVERGREEN_D6VGA_CONTROL);
 	save->crtc_control[4] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET);
 	save->crtc_control[5] = RREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET);
 	}
@@ -997,35 +996,45 @@ void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *sav
 	WREG32(VGA_RENDER_CONTROL, 0);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 1);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 1);
-	if (!(rdev->flags & RADEON_IS_IGP)) {
+	if (rdev->num_crtc >= 4) {
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 1);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 1);
+	}
+	if (rdev->num_crtc >= 6) {
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 1);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 1);
 	}
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
-	if (!(rdev->flags & RADEON_IS_IGP)) {
+	if (rdev->num_crtc >= 4) {
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
+	}
+	if (rdev->num_crtc >= 6) {
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
 	}
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
-	if (!(rdev->flags & RADEON_IS_IGP)) {
+	if (rdev->num_crtc >= 4) {
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
+	}
+	if (rdev->num_crtc >= 6) {
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
 	}
 
 	WREG32(D1VGA_CONTROL, 0);
 	WREG32(D2VGA_CONTROL, 0);
+	if (rdev->num_crtc >= 4) {
 	WREG32(EVERGREEN_D3VGA_CONTROL, 0);
 	WREG32(EVERGREEN_D4VGA_CONTROL, 0);
+	}
+	if (rdev->num_crtc >= 6) {
 	WREG32(EVERGREEN_D5VGA_CONTROL, 0);
 	WREG32(EVERGREEN_D6VGA_CONTROL, 0);
+	}
 }
 
 void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *save)
@@ -1048,7 +1057,7 @@ void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *s
 	WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS + EVERGREEN_CRTC1_REGISTER_OFFSET,
 	       (u32)rdev->mc.vram_start);
 
-	if (!(rdev->flags & RADEON_IS_IGP)) {
+	if (rdev->num_crtc >= 4) {
 	WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC2_REGISTER_OFFSET,
 	       upper_32_bits(rdev->mc.vram_start));
 	WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC2_REGISTER_OFFSET,
@@ -1066,7 +1075,8 @@ void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *s
 	       (u32)rdev->mc.vram_start);
 	WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS + EVERGREEN_CRTC3_REGISTER_OFFSET,
 	       (u32)rdev->mc.vram_start);
-
+	}
+	if (rdev->num_crtc >= 6) {
 	WREG32(EVERGREEN_GRPH_PRIMARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC4_REGISTER_OFFSET,
 	       upper_32_bits(rdev->mc.vram_start));
 	WREG32(EVERGREEN_GRPH_SECONDARY_SURFACE_ADDRESS_HIGH + EVERGREEN_CRTC4_REGISTER_OFFSET,
@@ -1094,31 +1104,41 @@ void evergreen_mc_resume(struct radeon_device *rdev, struct evergreen_mc_save *s
 	/* Restore video state */
 	WREG32(D1VGA_CONTROL, save->vga_control[0]);
 	WREG32(D2VGA_CONTROL, save->vga_control[1]);
+	if (rdev->num_crtc >= 4) {
 	WREG32(EVERGREEN_D3VGA_CONTROL, save->vga_control[2]);
 	WREG32(EVERGREEN_D4VGA_CONTROL, save->vga_control[3]);
+	}
+	if (rdev->num_crtc >= 6) {
 	WREG32(EVERGREEN_D5VGA_CONTROL, save->vga_control[4]);
 	WREG32(EVERGREEN_D6VGA_CONTROL, save->vga_control[5]);
+	}
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 1);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 1);
-	if (!(rdev->flags & RADEON_IS_IGP)) {
+	if (rdev->num_crtc >= 4) {
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 1);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 1);
+	}
+	if (rdev->num_crtc >= 6) {
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 1);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 1);
 	}
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, save->crtc_control[0]);
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, save->crtc_control[1]);
-	if (!(rdev->flags & RADEON_IS_IGP)) {
+	if (rdev->num_crtc >= 4) {
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, save->crtc_control[2]);
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, save->crtc_control[3]);
+	}
+	if (rdev->num_crtc >= 6) {
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, save->crtc_control[4]);
 	WREG32(EVERGREEN_CRTC_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, save->crtc_control[5]);
 	}
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
-	if (!(rdev->flags & RADEON_IS_IGP)) {
+	if (rdev->num_crtc >= 4) {
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
+	}
+	if (rdev->num_crtc >= 6) {
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
 	WREG32(EVERGREEN_CRTC_UPDATE_LOCK + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
 	}
@@ -1970,7 +1990,7 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
 			gb_backend_map = 0x66442200;
 			break;
 		case CHIP_JUNIPER:
-			gb_backend_map = 0x00006420;
+			gb_backend_map = 0x00002200;
 			break;
 		default:
 			gb_backend_map =
@@ -2410,18 +2430,22 @@ void evergreen_disable_interrupt_state(struct radeon_device *rdev)
 	WREG32(GRBM_INT_CNTL, 0);
 	WREG32(INT_MASK + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
 	WREG32(INT_MASK + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
-	if (!(rdev->flags & RADEON_IS_IGP)) {
+	if (rdev->num_crtc >= 4) {
 	WREG32(INT_MASK + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
 	WREG32(INT_MASK + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
+	}
+	if (rdev->num_crtc >= 6) {
 	WREG32(INT_MASK + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
 	WREG32(INT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
 	}
 
 	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, 0);
 	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, 0);
-	if (!(rdev->flags & RADEON_IS_IGP)) {
+	if (rdev->num_crtc >= 4) {
 	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, 0);
 	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, 0);
+	}
+	if (rdev->num_crtc >= 6) {
 	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, 0);
 	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, 0);
 	}
@@ -2443,6 +2467,526 @@ void evergreen_disable_interrupt_state(struct radeon_device *rdev)
 	WREG32(DC_HPD6_INT_CONTROL, tmp);
 
 }
+
+int evergreen_irq_set(struct radeon_device *rdev)
+{
+	u32 cp_int_cntl = CNTX_BUSY_INT_ENABLE | CNTX_EMPTY_INT_ENABLE;
+	u32 crtc1 = 0, crtc2 = 0, crtc3 = 0, crtc4 = 0, crtc5 = 0, crtc6 = 0;
+	u32 hpd1, hpd2, hpd3, hpd4, hpd5, hpd6;
+	u32 grbm_int_cntl = 0;
+	u32 grph1 = 0, grph2 = 0, grph3 = 0, grph4 = 0, grph5 = 0, grph6 = 0;
+
+	if (!rdev->irq.installed) {
+		WARN(1, "Can't enable IRQ/MSI because no handler is installed\n");
+		return -EINVAL;
+	}
+	/* don't enable anything if the ih is disabled */
+	if (!rdev->ih.enabled) {
+		r600_disable_interrupts(rdev);
+		/* force the active interrupt state to all disabled */
+		evergreen_disable_interrupt_state(rdev);
+		return 0;
+	}
+
+	hpd1 = RREG32(DC_HPD1_INT_CONTROL) & ~DC_HPDx_INT_EN;
+	hpd2 = RREG32(DC_HPD2_INT_CONTROL) & ~DC_HPDx_INT_EN;
+	hpd3 = RREG32(DC_HPD3_INT_CONTROL) & ~DC_HPDx_INT_EN;
+	hpd4 = RREG32(DC_HPD4_INT_CONTROL) & ~DC_HPDx_INT_EN;
+	hpd5 = RREG32(DC_HPD5_INT_CONTROL) & ~DC_HPDx_INT_EN;
+	hpd6 = RREG32(DC_HPD6_INT_CONTROL) & ~DC_HPDx_INT_EN;
+
+	if (rdev->irq.sw_int) {
+		DRM_DEBUG("evergreen_irq_set: sw int\n");
+		cp_int_cntl |= RB_INT_ENABLE;
+		cp_int_cntl |= TIME_STAMP_INT_ENABLE;
+	}
+	if (rdev->irq.crtc_vblank_int[0] ||
+	    rdev->irq.pflip[0]) {
+		DRM_DEBUG("evergreen_irq_set: vblank 0\n");
+		crtc1 |= VBLANK_INT_MASK;
+	}
+	if (rdev->irq.crtc_vblank_int[1] ||
+	    rdev->irq.pflip[1]) {
+		DRM_DEBUG("evergreen_irq_set: vblank 1\n");
+		crtc2 |= VBLANK_INT_MASK;
+	}
+	if (rdev->irq.crtc_vblank_int[2] ||
+	    rdev->irq.pflip[2]) {
+		DRM_DEBUG("evergreen_irq_set: vblank 2\n");
+		crtc3 |= VBLANK_INT_MASK;
+	}
+	if (rdev->irq.crtc_vblank_int[3] ||
+	    rdev->irq.pflip[3]) {
+		DRM_DEBUG("evergreen_irq_set: vblank 3\n");
+		crtc4 |= VBLANK_INT_MASK;
+	}
+	if (rdev->irq.crtc_vblank_int[4] ||
+	    rdev->irq.pflip[4]) {
+		DRM_DEBUG("evergreen_irq_set: vblank 4\n");
+		crtc5 |= VBLANK_INT_MASK;
+	}
+	if (rdev->irq.crtc_vblank_int[5] ||
+	    rdev->irq.pflip[5]) {
+		DRM_DEBUG("evergreen_irq_set: vblank 5\n");
+		crtc6 |= VBLANK_INT_MASK;
+	}
+	if (rdev->irq.hpd[0]) {
+		DRM_DEBUG("evergreen_irq_set: hpd 1\n");
+		hpd1 |= DC_HPDx_INT_EN;
+	}
+	if (rdev->irq.hpd[1]) {
+		DRM_DEBUG("evergreen_irq_set: hpd 2\n");
+		hpd2 |= DC_HPDx_INT_EN;
+	}
+	if (rdev->irq.hpd[2]) {
+		DRM_DEBUG("evergreen_irq_set: hpd 3\n");
+		hpd3 |= DC_HPDx_INT_EN;
+	}
+	if (rdev->irq.hpd[3]) {
+		DRM_DEBUG("evergreen_irq_set: hpd 4\n");
+		hpd4 |= DC_HPDx_INT_EN;
+	}
+	if (rdev->irq.hpd[4]) {
+		DRM_DEBUG("evergreen_irq_set: hpd 5\n");
+		hpd5 |= DC_HPDx_INT_EN;
+	}
+	if (rdev->irq.hpd[5]) {
+		DRM_DEBUG("evergreen_irq_set: hpd 6\n");
+		hpd6 |= DC_HPDx_INT_EN;
+	}
+	if (rdev->irq.gui_idle) {
+		DRM_DEBUG("gui idle\n");
+		grbm_int_cntl |= GUI_IDLE_INT_ENABLE;
+	}
+
+	WREG32(CP_INT_CNTL, cp_int_cntl);
+	WREG32(GRBM_INT_CNTL, grbm_int_cntl);
+
+	WREG32(INT_MASK + EVERGREEN_CRTC0_REGISTER_OFFSET, crtc1);
+	WREG32(INT_MASK + EVERGREEN_CRTC1_REGISTER_OFFSET, crtc2);
+	if (rdev->num_crtc >= 4) {
+		WREG32(INT_MASK + EVERGREEN_CRTC2_REGISTER_OFFSET, crtc3);
+		WREG32(INT_MASK + EVERGREEN_CRTC3_REGISTER_OFFSET, crtc4);
+	}
+	if (rdev->num_crtc >= 6) {
+		WREG32(INT_MASK + EVERGREEN_CRTC4_REGISTER_OFFSET, crtc5);
+		WREG32(INT_MASK + EVERGREEN_CRTC5_REGISTER_OFFSET, crtc6);
+	}
+
+	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC0_REGISTER_OFFSET, grph1);
+	WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC1_REGISTER_OFFSET, grph2);
+	if (rdev->num_crtc >= 4) {
+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC2_REGISTER_OFFSET, grph3);
+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC3_REGISTER_OFFSET, grph4);
+	}
+	if (rdev->num_crtc >= 6) {
+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC4_REGISTER_OFFSET, grph5);
+		WREG32(GRPH_INT_CONTROL + EVERGREEN_CRTC5_REGISTER_OFFSET, grph6);
+	}
+
+	WREG32(DC_HPD1_INT_CONTROL, hpd1);
+	WREG32(DC_HPD2_INT_CONTROL, hpd2);
+	WREG32(DC_HPD3_INT_CONTROL, hpd3);
+	WREG32(DC_HPD4_INT_CONTROL, hpd4);
+	WREG32(DC_HPD5_INT_CONTROL, hpd5);
+	WREG32(DC_HPD6_INT_CONTROL, hpd6);
+
+	return 0;
+}
+
+static inline void evergreen_irq_ack(struct radeon_device *rdev)
+{
+	u32 tmp;
+
+	rdev->irq.stat_regs.evergreen.disp_int = RREG32(DISP_INTERRUPT_STATUS);
+	rdev->irq.stat_regs.evergreen.disp_int_cont = RREG32(DISP_INTERRUPT_STATUS_CONTINUE);
+	rdev->irq.stat_regs.evergreen.disp_int_cont2 = RREG32(DISP_INTERRUPT_STATUS_CONTINUE2);
+	rdev->irq.stat_regs.evergreen.disp_int_cont3 = RREG32(DISP_INTERRUPT_STATUS_CONTINUE3);
+	rdev->irq.stat_regs.evergreen.disp_int_cont4 = RREG32(DISP_INTERRUPT_STATUS_CONTINUE4);
+	rdev->irq.stat_regs.evergreen.disp_int_cont5 = RREG32(DISP_INTERRUPT_STATUS_CONTINUE5);
+	rdev->irq.stat_regs.evergreen.d1grph_int = RREG32(GRPH_INT_STATUS + EVERGREEN_CRTC0_REGISTER_OFFSET);
+	rdev->irq.stat_regs.evergreen.d2grph_int = RREG32(GRPH_INT_STATUS + EVERGREEN_CRTC1_REGISTER_OFFSET);
+	if (rdev->num_crtc >= 4) {
+		rdev->irq.stat_regs.evergreen.d3grph_int = RREG32(GRPH_INT_STATUS + EVERGREEN_CRTC2_REGISTER_OFFSET);
+		rdev->irq.stat_regs.evergreen.d4grph_int = RREG32(GRPH_INT_STATUS + EVERGREEN_CRTC3_REGISTER_OFFSET);
+	}
+	if (rdev->num_crtc >= 6) {
+		rdev->irq.stat_regs.evergreen.d5grph_int = RREG32(GRPH_INT_STATUS + EVERGREEN_CRTC4_REGISTER_OFFSET);
+		rdev->irq.stat_regs.evergreen.d6grph_int = RREG32(GRPH_INT_STATUS + EVERGREEN_CRTC5_REGISTER_OFFSET);
+	}
+
+	if (rdev->irq.stat_regs.evergreen.d1grph_int & GRPH_PFLIP_INT_OCCURRED)
+		WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC0_REGISTER_OFFSET, GRPH_PFLIP_INT_CLEAR);
+	if (rdev->irq.stat_regs.evergreen.d2grph_int & GRPH_PFLIP_INT_OCCURRED)
+		WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC1_REGISTER_OFFSET, GRPH_PFLIP_INT_CLEAR);
+	if (rdev->irq.stat_regs.evergreen.disp_int & LB_D1_VBLANK_INTERRUPT)
+		WREG32(VBLANK_STATUS + EVERGREEN_CRTC0_REGISTER_OFFSET, VBLANK_ACK);
+	if (rdev->irq.stat_regs.evergreen.disp_int & LB_D1_VLINE_INTERRUPT)
+		WREG32(VLINE_STATUS + EVERGREEN_CRTC0_REGISTER_OFFSET, VLINE_ACK);
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont & LB_D2_VBLANK_INTERRUPT)
+		WREG32(VBLANK_STATUS + EVERGREEN_CRTC1_REGISTER_OFFSET, VBLANK_ACK);
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont & LB_D2_VLINE_INTERRUPT)
+		WREG32(VLINE_STATUS + EVERGREEN_CRTC1_REGISTER_OFFSET, VLINE_ACK);
+
+	if (rdev->num_crtc >= 4) {
+		if (rdev->irq.stat_regs.evergreen.d3grph_int & GRPH_PFLIP_INT_OCCURRED)
+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC2_REGISTER_OFFSET, GRPH_PFLIP_INT_CLEAR);
+		if (rdev->irq.stat_regs.evergreen.d4grph_int & GRPH_PFLIP_INT_OCCURRED)
+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC3_REGISTER_OFFSET, GRPH_PFLIP_INT_CLEAR);
+		if (rdev->irq.stat_regs.evergreen.disp_int_cont2 & LB_D3_VBLANK_INTERRUPT)
+			WREG32(VBLANK_STATUS + EVERGREEN_CRTC2_REGISTER_OFFSET, VBLANK_ACK);
+		if (rdev->irq.stat_regs.evergreen.disp_int_cont2 & LB_D3_VLINE_INTERRUPT)
+			WREG32(VLINE_STATUS + EVERGREEN_CRTC2_REGISTER_OFFSET, VLINE_ACK);
+		if (rdev->irq.stat_regs.evergreen.disp_int_cont3 & LB_D4_VBLANK_INTERRUPT)
+			WREG32(VBLANK_STATUS + EVERGREEN_CRTC3_REGISTER_OFFSET, VBLANK_ACK);
+		if (rdev->irq.stat_regs.evergreen.disp_int_cont3 & LB_D4_VLINE_INTERRUPT)
+			WREG32(VLINE_STATUS + EVERGREEN_CRTC3_REGISTER_OFFSET, VLINE_ACK);
+	}
+
+	if (rdev->num_crtc >= 6) {
+		if (rdev->irq.stat_regs.evergreen.d5grph_int & GRPH_PFLIP_INT_OCCURRED)
+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC4_REGISTER_OFFSET, GRPH_PFLIP_INT_CLEAR);
+		if (rdev->irq.stat_regs.evergreen.d6grph_int & GRPH_PFLIP_INT_OCCURRED)
+			WREG32(GRPH_INT_STATUS + EVERGREEN_CRTC5_REGISTER_OFFSET, GRPH_PFLIP_INT_CLEAR);
+		if (rdev->irq.stat_regs.evergreen.disp_int_cont4 & LB_D5_VBLANK_INTERRUPT)
+			WREG32(VBLANK_STATUS + EVERGREEN_CRTC4_REGISTER_OFFSET, VBLANK_ACK);
+		if (rdev->irq.stat_regs.evergreen.disp_int_cont4 & LB_D5_VLINE_INTERRUPT)
+			WREG32(VLINE_STATUS + EVERGREEN_CRTC4_REGISTER_OFFSET, VLINE_ACK);
+		if (rdev->irq.stat_regs.evergreen.disp_int_cont5 & LB_D6_VBLANK_INTERRUPT)
+			WREG32(VBLANK_STATUS + EVERGREEN_CRTC5_REGISTER_OFFSET, VBLANK_ACK);
+		if (rdev->irq.stat_regs.evergreen.disp_int_cont5 & LB_D6_VLINE_INTERRUPT)
+			WREG32(VLINE_STATUS + EVERGREEN_CRTC5_REGISTER_OFFSET, VLINE_ACK);
+	}
+
+	if (rdev->irq.stat_regs.evergreen.disp_int & DC_HPD1_INTERRUPT) {
+		tmp = RREG32(DC_HPD1_INT_CONTROL);
+		tmp |= DC_HPDx_INT_ACK;
+		WREG32(DC_HPD1_INT_CONTROL, tmp);
+	}
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont & DC_HPD2_INTERRUPT) {
+		tmp = RREG32(DC_HPD2_INT_CONTROL);
+		tmp |= DC_HPDx_INT_ACK;
+		WREG32(DC_HPD2_INT_CONTROL, tmp);
+	}
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont2 & DC_HPD3_INTERRUPT) {
+		tmp = RREG32(DC_HPD3_INT_CONTROL);
+		tmp |= DC_HPDx_INT_ACK;
+		WREG32(DC_HPD3_INT_CONTROL, tmp);
+	}
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont3 & DC_HPD4_INTERRUPT) {
+		tmp = RREG32(DC_HPD4_INT_CONTROL);
+		tmp |= DC_HPDx_INT_ACK;
+		WREG32(DC_HPD4_INT_CONTROL, tmp);
+	}
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont4 & DC_HPD5_INTERRUPT) {
+		tmp = RREG32(DC_HPD5_INT_CONTROL);
+		tmp |= DC_HPDx_INT_ACK;
+		WREG32(DC_HPD5_INT_CONTROL, tmp);
+	}
+	if (rdev->irq.stat_regs.evergreen.disp_int_cont5 & DC_HPD6_INTERRUPT) {
+		tmp = RREG32(DC_HPD5_INT_CONTROL);
+		tmp |= DC_HPDx_INT_ACK;
+		WREG32(DC_HPD6_INT_CONTROL, tmp);
+	}
+}
+static inline u32 evergreen_get_ih_wptr(struct radeon_device *rdev)
+{
+	u32 wptr, tmp;
+
+	if (rdev->wb.enabled)
+		wptr = le32_to_cpu(rdev->wb.wb[R600_WB_IH_WPTR_OFFSET/4]);
+	else
+		wptr = RREG32(IH_RB_WPTR);
+
+	if (wptr & RB_OVERFLOW) {
+		/* When a ring buffer overflow happen start parsing interrupt
+		 * from the last not overwritten vector (wptr + 16). Hopefully
+		 * this should allow us to catchup.
+		 */
+		dev_warn(rdev->dev, "IH ring buffer overflow (0x%08X, %d, %d)\n",
+			wptr, rdev->ih.rptr, (wptr + 16) + rdev->ih.ptr_mask);
+		rdev->ih.rptr = (wptr + 16) & rdev->ih.ptr_mask;
+		tmp = RREG32(IH_RB_CNTL);
+		tmp |= IH_WPTR_OVERFLOW_CLEAR;
+		WREG32(IH_RB_CNTL, tmp);
+	}
+	return (wptr & rdev->ih.ptr_mask);
+}
+
+int evergreen_irq_process(struct radeon_device *rdev)
+{
+	u32 wptr;
+	u32 rptr;
+	u32 src_id, src_data;
+	u32 ring_index;
+	unsigned long flags;
+	bool queue_hotplug = false;
+
+	if (!rdev->ih.enabled || rdev->shutdown)
+		return IRQ_NONE;
+
+	wptr = evergreen_get_ih_wptr(rdev);
+	rptr = rdev->ih.rptr;
+	DRM_DEBUG("r600_irq_process start: rptr %d, wptr %d\n", rptr, wptr);
+
+	spin_lock_irqsave(&rdev->ih.lock, flags);
+	if (rptr == wptr) {
+		spin_unlock_irqrestore(&rdev->ih.lock, flags);
+		return IRQ_NONE;
+	}
+restart_ih:
+	/* display interrupts */
+	evergreen_irq_ack(rdev);
+
+	rdev->ih.wptr = wptr;
+	while (rptr != wptr) {
+		/* wptr/rptr are in bytes! */
+		ring_index = rptr / 4;
+		src_id =  le32_to_cpu(rdev->ih.ring[ring_index]) & 0xff;
+		src_data = le32_to_cpu(rdev->ih.ring[ring_index + 1]) & 0xfffffff;
+
+		switch (src_id) {
+		case 1: /* D1 vblank/vline */
+			switch (src_data) {
+			case 0: /* D1 vblank */
+				if (rdev->irq.stat_regs.evergreen.disp_int & LB_D1_VBLANK_INTERRUPT) {
+					if (rdev->irq.crtc_vblank_int[0]) {
+				//		drm_handle_vblank(rdev->ddev, 0);
+						rdev->pm.vblank_sync = true;
+				//		wake_up(&rdev->irq.vblank_queue);
+					}
+				//	if (rdev->irq.pflip[0])
+				//		radeon_crtc_handle_flip(rdev, 0);
+					rdev->irq.stat_regs.evergreen.disp_int &= ~LB_D1_VBLANK_INTERRUPT;
+					DRM_DEBUG("IH: D1 vblank\n");
+				}
+				break;
+			case 1: /* D1 vline */
+				if (rdev->irq.stat_regs.evergreen.disp_int & LB_D1_VLINE_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int &= ~LB_D1_VLINE_INTERRUPT;
+					DRM_DEBUG("IH: D1 vline\n");
+				}
+				break;
+			default:
+				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
+				break;
+			}
+			break;
+		case 2: /* D2 vblank/vline */
+			switch (src_data) {
+			case 0: /* D2 vblank */
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont & LB_D2_VBLANK_INTERRUPT) {
+					if (rdev->irq.crtc_vblank_int[1]) {
+				//		drm_handle_vblank(rdev->ddev, 1);
+						rdev->pm.vblank_sync = true;
+				//		wake_up(&rdev->irq.vblank_queue);
+					}
+			//		if (rdev->irq.pflip[1])
+			//			radeon_crtc_handle_flip(rdev, 1);
+					rdev->irq.stat_regs.evergreen.disp_int_cont &= ~LB_D2_VBLANK_INTERRUPT;
+					DRM_DEBUG("IH: D2 vblank\n");
+				}
+				break;
+			case 1: /* D2 vline */
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont & LB_D2_VLINE_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int_cont &= ~LB_D2_VLINE_INTERRUPT;
+					DRM_DEBUG("IH: D2 vline\n");
+				}
+				break;
+			default:
+				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
+				break;
+			}
+			break;
+		case 3: /* D3 vblank/vline */
+			switch (src_data) {
+			case 0: /* D3 vblank */
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont2 & LB_D3_VBLANK_INTERRUPT) {
+					if (rdev->irq.crtc_vblank_int[2]) {
+				//		drm_handle_vblank(rdev->ddev, 2);
+						rdev->pm.vblank_sync = true;
+				//		wake_up(&rdev->irq.vblank_queue);
+					}
+				//	if (rdev->irq.pflip[2])
+				//		radeon_crtc_handle_flip(rdev, 2);
+					rdev->irq.stat_regs.evergreen.disp_int_cont2 &= ~LB_D3_VBLANK_INTERRUPT;
+					DRM_DEBUG("IH: D3 vblank\n");
+				}
+				break;
+			case 1: /* D3 vline */
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont2 & LB_D3_VLINE_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int_cont2 &= ~LB_D3_VLINE_INTERRUPT;
+					DRM_DEBUG("IH: D3 vline\n");
+				}
+				break;
+			default:
+				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
+				break;
+			}
+			break;
+		case 4: /* D4 vblank/vline */
+			switch (src_data) {
+			case 0: /* D4 vblank */
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont3 & LB_D4_VBLANK_INTERRUPT) {
+					if (rdev->irq.crtc_vblank_int[3]) {
+					//	drm_handle_vblank(rdev->ddev, 3);
+						rdev->pm.vblank_sync = true;
+					//	wake_up(&rdev->irq.vblank_queue);
+					}
+		//			if (rdev->irq.pflip[3])
+		//				radeon_crtc_handle_flip(rdev, 3);
+					rdev->irq.stat_regs.evergreen.disp_int_cont3 &= ~LB_D4_VBLANK_INTERRUPT;
+					DRM_DEBUG("IH: D4 vblank\n");
+				}
+				break;
+			case 1: /* D4 vline */
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont3 & LB_D4_VLINE_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int_cont3 &= ~LB_D4_VLINE_INTERRUPT;
+					DRM_DEBUG("IH: D4 vline\n");
+				}
+				break;
+			default:
+				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
+				break;
+			}
+			break;
+		case 5: /* D5 vblank/vline */
+			switch (src_data) {
+			case 0: /* D5 vblank */
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont4 & LB_D5_VBLANK_INTERRUPT) {
+					if (rdev->irq.crtc_vblank_int[4]) {
+//						drm_handle_vblank(rdev->ddev, 4);
+						rdev->pm.vblank_sync = true;
+//						wake_up(&rdev->irq.vblank_queue);
+					}
+//					if (rdev->irq.pflip[4])
+//						radeon_crtc_handle_flip(rdev, 4);
+					rdev->irq.stat_regs.evergreen.disp_int_cont4 &= ~LB_D5_VBLANK_INTERRUPT;
+					DRM_DEBUG("IH: D5 vblank\n");
+				}
+				break;
+			case 1: /* D5 vline */
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont4 & LB_D5_VLINE_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int_cont4 &= ~LB_D5_VLINE_INTERRUPT;
+					DRM_DEBUG("IH: D5 vline\n");
+				}
+				break;
+			default:
+				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
+				break;
+			}
+			break;
+		case 6: /* D6 vblank/vline */
+			switch (src_data) {
+			case 0: /* D6 vblank */
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont5 & LB_D6_VBLANK_INTERRUPT) {
+					if (rdev->irq.crtc_vblank_int[5]) {
+				//		drm_handle_vblank(rdev->ddev, 5);
+						rdev->pm.vblank_sync = true;
+				//		wake_up(&rdev->irq.vblank_queue);
+					}
+			//		if (rdev->irq.pflip[5])
+			//			radeon_crtc_handle_flip(rdev, 5);
+					rdev->irq.stat_regs.evergreen.disp_int_cont5 &= ~LB_D6_VBLANK_INTERRUPT;
+					DRM_DEBUG("IH: D6 vblank\n");
+				}
+				break;
+			case 1: /* D6 vline */
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont5 & LB_D6_VLINE_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int_cont5 &= ~LB_D6_VLINE_INTERRUPT;
+					DRM_DEBUG("IH: D6 vline\n");
+				}
+				break;
+			default:
+				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
+				break;
+			}
+			break;
+		case 42: /* HPD hotplug */
+			switch (src_data) {
+			case 0:
+				if (rdev->irq.stat_regs.evergreen.disp_int & DC_HPD1_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int &= ~DC_HPD1_INTERRUPT;
+					queue_hotplug = true;
+					DRM_DEBUG("IH: HPD1\n");
+				}
+				break;
+			case 1:
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont & DC_HPD2_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int_cont &= ~DC_HPD2_INTERRUPT;
+					queue_hotplug = true;
+					DRM_DEBUG("IH: HPD2\n");
+				}
+				break;
+			case 2:
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont2 & DC_HPD3_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int_cont2 &= ~DC_HPD3_INTERRUPT;
+					queue_hotplug = true;
+					DRM_DEBUG("IH: HPD3\n");
+				}
+				break;
+			case 3:
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont3 & DC_HPD4_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int_cont3 &= ~DC_HPD4_INTERRUPT;
+					queue_hotplug = true;
+					DRM_DEBUG("IH: HPD4\n");
+				}
+				break;
+			case 4:
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont4 & DC_HPD5_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int_cont4 &= ~DC_HPD5_INTERRUPT;
+					queue_hotplug = true;
+					DRM_DEBUG("IH: HPD5\n");
+				}
+				break;
+			case 5:
+				if (rdev->irq.stat_regs.evergreen.disp_int_cont5 & DC_HPD6_INTERRUPT) {
+					rdev->irq.stat_regs.evergreen.disp_int_cont5 &= ~DC_HPD6_INTERRUPT;
+					queue_hotplug = true;
+					DRM_DEBUG("IH: HPD6\n");
+				}
+				break;
+			default:
+				DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
+				break;
+			}
+			break;
+		case 176: /* CP_INT in ring buffer */
+		case 177: /* CP_INT in IB1 */
+		case 178: /* CP_INT in IB2 */
+			DRM_DEBUG("IH: CP int: 0x%08x\n", src_data);
+			radeon_fence_process(rdev);
+			break;
+		case 181: /* CP EOP event */
+			DRM_DEBUG("IH: CP EOP\n");
+			radeon_fence_process(rdev);
+			break;
+		case 233: /* GUI IDLE */
+			DRM_DEBUG("IH: GUI idle\n");
+			rdev->pm.gui_idle = true;
+//			wake_up(&rdev->irq.idle_queue);
+			break;
+		default:
+			DRM_DEBUG("Unhandled interrupt: %d %d\n", src_id, src_data);
+			break;
+		}
+
+		/* wptr/rptr are in bytes! */
+		rptr += 16;
+		rptr &= rdev->ih.ptr_mask;
+	}
+	/* make sure wptr hasn't changed while processing */
+	wptr = evergreen_get_ih_wptr(rdev);
+	if (wptr != rdev->ih.wptr)
+		goto restart_ih;
+//	if (queue_hotplug)
+//		schedule_work(&rdev->hotplug_work);
+	rdev->ih.rptr = rptr;
+	WREG32(IH_RB_RPTR, rdev->ih.rptr);
+	spin_unlock_irqrestore(&rdev->ih.lock, flags);
+	return IRQ_HANDLED;
+}
+
 static int evergreen_startup(struct radeon_device *rdev)
 {
 	int r;
@@ -2483,7 +3027,7 @@ static int evergreen_startup(struct radeon_device *rdev)
 			return r;
 	}
 	evergreen_gpu_init(rdev);
-#if 0
+
 	r = evergreen_blit_init(rdev);
 	if (r) {
 		evergreen_blit_fini(rdev);
@@ -2495,9 +3039,15 @@ static int evergreen_startup(struct radeon_device *rdev)
 	r = radeon_wb_init(rdev);
 	if (r)
 		return r;
-#endif
 
 	/* Enable IRQ */
+	r = r600_irq_init(rdev);
+	if (r) {
+		DRM_ERROR("radeon: IH init failed (%d).\n", r);
+//		radeon_irq_kms_fini(rdev);
+		return r;
+	}
+	evergreen_irq_set(rdev);
 
     r = radeon_ring_init(rdev, rdev->cp.ring_size);
 	if (r)
@@ -2516,7 +3066,26 @@ static int evergreen_startup(struct radeon_device *rdev)
 
 
 
+int evergreen_copy_blit(struct radeon_device *rdev,
+			uint64_t src_offset, uint64_t dst_offset,
+			unsigned num_pages, struct radeon_fence *fence)
+{
+	int r;
 
+	mutex_lock(&rdev->r600_blit.mutex);
+	rdev->r600_blit.vb_ib = NULL;
+	r = evergreen_blit_prepare_copy(rdev, num_pages * RADEON_GPU_PAGE_SIZE);
+	if (r) {
+		if (rdev->r600_blit.vb_ib)
+			radeon_ib_free(rdev, &rdev->r600_blit.vb_ib);
+		mutex_unlock(&rdev->r600_blit.mutex);
+		return r;
+	}
+	evergreen_kms_blit_copy(rdev, src_offset, dst_offset, num_pages * RADEON_GPU_PAGE_SIZE);
+	evergreen_blit_done_copy(rdev, fence);
+	mutex_unlock(&rdev->r600_blit.mutex);
+	return 0;
+}
 
 /* Plan is to move initialization in that function and use
  * helper function so that radeon_device_init pretty much
@@ -2566,6 +3135,9 @@ int evergreen_init(struct radeon_device *rdev)
 	/* Initialize clocks */
 	radeon_get_clock_info(rdev->ddev);
 	/* Fence driver */
+	r = radeon_fence_driver_init(rdev);
+	if (r)
+		return r;
     /* initialize AGP */
 	if (rdev->flags & RADEON_IS_AGP) {
 		r = radeon_agp_init(rdev);
@@ -2581,12 +3153,15 @@ int evergreen_init(struct radeon_device *rdev)
 	if (r)
 		return r;
 
+	r = radeon_irq_kms_init(rdev);
+	if (r)
+		return r;
 
 	rdev->cp.ring_obj = NULL;
 	r600_ring_init(rdev, 1024 * 1024);
 
-//   rdev->ih.ring_obj = NULL;
-//   r600_ih_ring_init(rdev, 64 * 1024);
+	rdev->ih.ring_obj = NULL;
+	r600_ih_ring_init(rdev, 64 * 1024);
 
 	r = r600_pcie_gart_init(rdev);
 	if (r)
@@ -2599,6 +3174,16 @@ int evergreen_init(struct radeon_device *rdev)
 		rdev->accel_working = false;
 	}
 	if (rdev->accel_working) {
+		r = radeon_ib_pool_init(rdev);
+		if (r) {
+			DRM_ERROR("radeon: failed initializing IB pool (%d).\n", r);
+			rdev->accel_working = false;
+		}
+		r = r600_ib_test(rdev);
+		if (r) {
+			DRM_ERROR("radeon: failed testing IB (%d).\n", r);
+			rdev->accel_working = false;
+		}
 	}
 	return 0;
 }

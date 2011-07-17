@@ -101,7 +101,7 @@ static inline evhandle_t CreateEvent(kevent_t *ev, u32_t flags)
      :"=A"(evh.raw)
      :"S" (ev), "c"(flags)
      :"memory");
-     __asm__ __volatile__ ("":::"ebx","ecx", "esi", "edi");
+     __asm__ __volatile__ ("":::"ebx","ecx","edx","esi", "edi");
 
      return evh;
 };
@@ -112,16 +112,16 @@ static inline void RaiseEvent(evhandle_t evh, u32_t flags, kevent_t *ev)
      "call *__imp__RaiseEvent"
      ::"a"(evh.handle),"b"(evh.euid),"d"(flags),"S" (ev)
      :"memory");
-     __asm__ __volatile__ ("":::"ebx","ecx", "esi", "edi");
+     __asm__ __volatile__ ("":::"ebx","ecx","edx","esi","edi");
 
 };
 
-static inline void WaitEvent(u32_t handle, u32_t euid)
+static inline void WaitEvent(evhandle_t evh)
 {
      __asm__ __volatile__ (
      "call *__imp__WaitEvent"
-     ::"a"(handle),"b"(euid));
-     __asm__ __volatile__ ("":::"ecx","edx", "esi");
+     ::"a"(evh.handle),"b"(evh.euid));
+     __asm__ __volatile__ ("":::"ebx","ecx","edx","esi","edi");
 };
 
 static inline u32_t GetEvent(kevent_t *ev)

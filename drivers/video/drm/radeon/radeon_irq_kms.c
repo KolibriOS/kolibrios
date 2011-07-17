@@ -88,7 +88,7 @@ void radeon_driver_irq_uninstall_kms(struct drm_device *dev)
 
 void irq_handler_kms()
 {
-    dbgprintf("%s\n",__FUNCTION__);
+//    dbgprintf("%s\n",__FUNCTION__);
     radeon_irq_process(main_device);
 }
 
