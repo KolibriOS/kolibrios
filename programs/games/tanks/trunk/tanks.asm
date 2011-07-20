@@ -1,6 +1,12 @@
 ;************************************************************
 ;*GAME TANKS CRETED BY ANDREW_PROGRAMMER AKA ANDREY IGNATYEV*
 ;*********************/8/2005********************************
+;Leency aka Lipatov Kirill 19.07.2011: update and some fixes
+;                      v1.02
+
+; bug: window can't end redraw untill new game wasn't start
+; if press close button it goes to infinite loop
+
 use32
 org 0x0
 include 'lang.inc'
@@ -890,34 +896,17 @@ action:
 	 ;-------------------------------------------------
 	 ;-------------end of tanks logic------------------
 	 ;-------------------------------------------------
-	 mov eax,13
-	 mov ebx,180*65536+220
-	 mov ecx,425*65536+17
-	 mov edx,0xdfffff
-	 mcall
-	 mov eax,4
-	 mov ebx,190*65536+430
-	 mov ecx,0x1ded00;0
-	 mov edx,Level
-	 mov esi,5
-	 mcall
-	 mov eax,4
-	 mov ebx,260*65536+430
-	 mov ecx,0x3558ff
-	 mov edx,Lifes
-	 mov esi,5
-	 mcall
-	 mov eax,4
-	 mov ebx,330*65536+430
-	 mov ecx,0xf93500
-	 mov edx,Score
-	 mov esi,5
-	 mcall
+	 mcall 13, 190*65536+192, 5*65536+7, 0
+
+	 mcall 4,190*65536+5,0x1ded00,Level,5 
+	 mcall 4,260*65536+5,0x3558ff,Lifes,5
+	 mcall 4,330*65536+5,0xf93500,Score,5
+	 
 	 mov eax,47
 	 mov ebx,3*65536
 	 mov ecx,[number_level]
 	 inc ecx
-	 mov edx,225*65536+430
+	 mov edx,225*65536+5
 	 mov esi,0x1ded00
 	 mcall
 	 mov eax,47
@@ -925,14 +914,14 @@ action:
 	 xor ecx,ecx
 	 mov cl,[LifesPlayer]
 	 shr ecx,2
-	 mov edx,295*65536+430
+	 mov edx,295*65536+5
 	 mov esi,0x3558ff
 	 mcall
 	 mov eax,47
 	 mov ebx,3*65536
 	 xor ecx,ecx
 	 mov cl,byte[score]
-	 mov edx,365*65536+430
+	 mov edx,365*65536+5
 	 mov esi,0xf93500
 	 mcall
 	 jmp maincycle
@@ -1179,45 +1168,22 @@ end_game:
 	ret
 ;----------------------------------------------------------
 drawwin:
-	mov eax,12
-	mov ebx,1
-	mcall
+	mcall	12,1
 	;рисуем окно задавая все необходимые цвета
-	mov eax,0
-	mov ebx,50*65536+640
-	mov ecx,50*65536+480
-	mov edx,0x03AABBCC
-	mov esi,0x805080d0
-	mov edi,0x005080d0
-	mcall
-	;пишем заголовок окна
-	mov eax,4
-	mov ebx,5*65536+5
-	mov ecx,0x10ffffff
-	mov edx,name
-	mov esi,42
-	mcall
+	mcall	0,100*65536+649,50*65536+446,(0x74000000+0xffffff),,name
+	mcall	12,2
+	mcall	13, 0*65536+640,  0*65536+20, 0
 	ret
 ;----------------------------------------------------------
 menu:
    cycle_menu:
-	mov eax,13
-	mov ebx,235*65536+140
-	mov ecx,230*65536+20
-	mov edx,0xed16
-	mcall
-	mov eax,4
-	mov ebx,255*65536+235
-	mov ecx,0xff0200
-	mov edx,start_menu
-	mov esi,11
-	mcall
-	mov eax,47
-	mov ebx,3*65536
-	mov ecx,[number_level]
-	mov edx,345*65536+235
-	mov esi,0xff0200
-	mcall
+
+	mcall 13,238*65536+141,229*65536+20,0xed16
+	mcall 4,255*65536+235,0xff0200,start_menu,11
+	mcall 47,3*65536,[number_level],345*65536+235, 0xff0200
+	
+	mcall 4,186*65536+5,0x888888,description,49
+	
 	still:
 	mov eax,10
 	mcall
@@ -1292,12 +1258,13 @@ _dy		dd 0
 strike_action	dd 0
 end_bum 	db 0
 bazas		db 0
-name		db '  game *TANKS* creted by andrew_programmer'
+name		db 'Tanks v1.02' ,0
+description db 'SPACE - New Game        Left/Right - Change level' ,0
 won1		db '*****************************'
 won2		db '*    YOU WON LEVEL   !!!    *'
 won3		db '*****************************'
 game_over	db 'GAME OVER'
-Lifes		db 'LIFES'
+Lifes		db 'LIVES'
 Level		db 'LEVEL'
 Score		db 'SCORE'
 start_menu	db 'START LEVEL'

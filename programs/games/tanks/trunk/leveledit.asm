@@ -11,6 +11,7 @@ org 0x0
   dd  0x0
 include 'lang.inc'
 include 'pixengin.inc'
+include '../../../macros.inc'
 START:
    mov eax,40
    mov ebx,111b
