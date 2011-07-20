@@ -340,6 +340,7 @@ struct radeon_bo {
 	struct ttm_bo_kmap_obj		kmap;
     unsigned                    pin_count;
     void                       *kptr;
+    void                       *uptr;
     u32                         cpu_addr;
     u32                         tiling_flags;
     u32                         pitch;

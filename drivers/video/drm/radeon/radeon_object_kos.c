@@ -294,6 +294,48 @@ int radeon_bo_kmap(struct radeon_bo *bo, void **ptr)
     return 0;
 }
 
+int radeon_bo_user_map(struct radeon_bo *bo, void **ptr)
+{
+    bool is_iomem;
+
+    if (bo->uptr) {
+        if (ptr) {
+            *ptr = bo->uptr;
+        }
+        return 0;
+    }
+
+    if(bo->domain & RADEON_GEM_DOMAIN_VRAM)
+    {
+        return -1;
+    }
+    else
+    {
+        bo->uptr = UserAlloc(bo->tbo.num_pages << PAGE_SHIFT);
+        if(bo->uptr)
+        {
+            u32_t *src, *dst;
+            int count;
+            src =  &((u32_t*)page_tabs)[(u32_t)bo->kptr >> 12];
+            dst =  &((u32_t*)page_tabs)[(u32_t)bo->uptr >> 12];
+            count = bo->tbo.num_pages;
+
+            while(count--)
+            {
+              *dst++ = (0xFFFFF000 & *src++) | 0x207 ; // map as shared page
+            };
+        }
+        else
+            return -1;
+    }
+
+    if (ptr) {
+        *ptr = bo->uptr;
+    }
+
+    return 0;
+}
+
 void radeon_bo_kunmap(struct radeon_bo *bo)
 {
     if (bo->kptr == NULL)

@@ -843,3 +843,132 @@ void r600_kms_blit_copy(struct radeon_device *rdev,
 	}
 }
 
+
+void r600_kms_video_blit(struct radeon_device *rdev,
+            u64 src_gpu_addr, int dstx, int dsty, int w, int h, int pitch)
+{
+    u64 vb_gpu_addr;
+    u32 *vb;
+
+    DRM_DEBUG("emitting video copy\n");
+    vb = (u32 *)(rdev->r600_blit.vb_ib->ptr + rdev->r600_blit.vb_used);
+
+    if ((rdev->r600_blit.vb_used + 48) > rdev->r600_blit.vb_total) {
+              // WARN_ON(1);
+    }
+
+    vb[0] = i2f(dstx);
+    vb[1] = i2f(dsty);
+    vb[2] = 0;
+    vb[3] = 0;
+
+    vb[4] = i2f(dstx);
+    vb[5] = i2f(dsty+h);
+    vb[6] = 0;
+    vb[7] = i2f(h);
+
+    vb[8] = i2f(dstx + w);
+    vb[9] = i2f(dsty + h);
+    vb[10] = i2f(w);
+    vb[11] = i2f(h);
+
+    /* src 9 */
+    set_tex_resource(rdev, FMT_8_8_8_8,
+                     w, h, pitch/4, src_gpu_addr);
+    /* 5 */
+    cp_set_surface_sync(rdev,
+                        PACKET3_TC_ACTION_ENA, pitch * h, src_gpu_addr);
+
+    /* dst 23 */
+    set_render_target(rdev, COLOR_8_8_8_8,
+                     1024, 768, rdev->mc.vram_start);
+
+            /* scissors 12  */
+    set_scissors(rdev, 0, 0, 1024, 768);
+
+    /* Vertex buffer setup 14 */
+    vb_gpu_addr = rdev->r600_blit.vb_ib->gpu_addr + rdev->r600_blit.vb_used;
+    set_vtx_resource(rdev, vb_gpu_addr);
+
+    /* draw 10 */
+    draw_auto(rdev);
+
+    /* 5 */
+    cp_set_surface_sync(rdev,
+                PACKET3_CB_ACTION_ENA | PACKET3_CB0_DEST_BASE_ENA,
+                1024*4*768, rdev->mc.vram_start);
+
+    /* 78 ring dwords per loop */
+    vb += 12;
+    rdev->r600_blit.vb_used += 12 * 4;
+
+}
+
+extern struct radeon_device *main_device;
+
+int r600_video_blit(uint64_t src_offset, int  x, int y,
+                    int w, int h, int pitch)
+{
+    int r;
+    struct radeon_device *rdev = main_device;
+
+    mutex_lock(&rdev->r600_blit.mutex);
+    rdev->r600_blit.vb_ib = NULL;
+    r = r600_blit_prepare_copy(rdev, h*pitch);
+    if (r) {
+//       if (rdev->r600_blit.vb_ib)
+//           radeon_ib_free(rdev, &rdev->r600_blit.vb_ib);
+        mutex_unlock(&rdev->r600_blit.mutex);
+        return r;
+    }
+
+
+    r600_kms_video_blit(rdev, src_offset,x,y,w,h,pitch);
+    r600_blit_done_copy(rdev, NULL);
+    mutex_unlock(&rdev->r600_blit.mutex);
+};
+
+int r600_create_video(int w, int h, u32_t *outp)
+{
+    int r;
+    struct radeon_device *rdev = main_device;
+    struct radeon_bo *sobj = NULL;
+    uint64_t saddr;
+    void   *uaddr;
+
+    size_t size;
+    size_t pitch;
+
+    pitch = radeon_align_pitch(rdev, w, 32, false) * 4;
+
+    size = pitch * h;
+    r = radeon_bo_create(rdev, size, PAGE_SIZE, true,
+                         RADEON_GEM_DOMAIN_GTT, &sobj);
+    if (r) {
+        goto fail;
+    }
+    r = radeon_bo_reserve(sobj, false);
+    if (unlikely(r != 0))
+        goto fail;
+    r = radeon_bo_pin(sobj, RADEON_GEM_DOMAIN_GTT, &saddr);
+//   radeon_bo_unreserve(sobj);
+    if (r) {
+        goto fail;
+    }
+
+    r = radeon_bo_user_map(sobj, &uaddr);
+    if (r) {
+        goto fail;
+    }
+
+    ((uint64_t*)outp)[0] = saddr;
+    outp[2] = uaddr;
+    outp[3] = pitch;
+
+    dbgprintf("Create video surface %x, mapped at %x pitch %d\n",
+              (uint32_t)saddr, uaddr, pitch);
+    return 0;
+
+fail:
+    return -1;
+};

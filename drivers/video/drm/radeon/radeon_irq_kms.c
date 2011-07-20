@@ -32,7 +32,7 @@
 #include "radeon.h"
 #include "atom.h"
 
-static struct radeon_device *main_device;
+struct radeon_device *main_device;
 
 #if 0
 

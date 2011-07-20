@@ -51,6 +51,8 @@
     .global _SetScreen
     .global _SysMsgBoardStr
 
+    .global _UserAlloc
+
     .global _WaitEvent
 
 
@@ -100,6 +102,8 @@
     .def  _SetMouseData;      .scl  2;  .type 32; .endef
     .def  _SetKeyboardData;   .scl  2;  .type 32; .endef
     .def  _SysMsgBoardStr;    .scl  2;  .type 32; .endef
+
+    .def  _UserAlloc;         .scl  2;  .type 32; .endef
 
     .def  _WaitEvent;         .scl  2;  .type 32; .endef
 
@@ -153,6 +157,7 @@ _SetKeyboardData:
 _SetScreen:
 _SysMsgBoardStr:
 
+_UserAlloc:
 _WaitEvent:
 
         ret
@@ -208,6 +213,8 @@ _WaitEvent:
 
         .ascii " -export:SetScreen"            # stdcall
         .ascii " -export:SysMsgBoardStr"       # stdcall
+
+        .ascii " -export:UserAlloc"            # stdcall
 
         .ascii " -export:WaitEvent"            # stdcall
 

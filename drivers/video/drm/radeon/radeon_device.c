@@ -974,6 +974,12 @@ static struct pci_device_id pciidlist[] = {
 #define SRV_ENUM_MODES  1
 #define SRV_SET_MODE    2
 
+#define SRV_CREATE_VIDEO 9
+#define SRV_BLIT_VIDEO   10
+
+int r600_video_blit(uint64_t src_offset, int  x, int y,
+                    int w, int h, int pitch);
+
 int _stdcall display_handler(ioctl_t *io)
 {
     int    retval = -1;
@@ -1016,6 +1022,18 @@ int _stdcall display_handler(ioctl_t *io)
                 retval = set_user_mode((videomode_t*)inp);
             };
             break;
+
+        case SRV_CREATE_VIDEO:
+            retval = r600_create_video(inp[0], inp[1], outp);
+            break;
+
+        case SRV_BLIT_VIDEO:
+            r600_video_blit( ((uint64_t*)inp)[0], inp[2], inp[3],
+                    inp[4], inp[5], inp[6]);
+
+            retval = 0;
+            break;
+
     };
 
     return retval;

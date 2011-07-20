@@ -48,7 +48,7 @@ void radeon_benchmark_move(struct radeon_device *rdev, unsigned bsize,
     ENTER();
 
 	size = bsize;
-    n = 2; //1024;
+    n = 4; //1024;
 
     dbgprintf("source domain %x\n", sdomain);
 
@@ -99,12 +99,14 @@ void radeon_benchmark_move(struct radeon_device *rdev, unsigned bsize,
 			if (r) {
 				goto out_cleanup;
 			}
+		}
+
 			r = radeon_fence_wait(fence, false);
 			if (r) {
 				goto out_cleanup;
 			}
 			radeon_fence_unref(&fence);
-		}
+
         end_jiffies = GetTimerTicks();
 		time = end_jiffies - start_jiffies;
 		time = jiffies_to_msecs(time);
@@ -128,12 +130,14 @@ void radeon_benchmark_move(struct radeon_device *rdev, unsigned bsize,
 		if (r) {
 			goto out_cleanup;
 		}
+	}
+
 		r = radeon_fence_wait(fence, false);
 		if (r) {
 			goto out_cleanup;
 		}
 		radeon_fence_unref(&fence);
-	}
+
     end_jiffies = GetTimerTicks();
 	time = end_jiffies - start_jiffies;
 	time = jiffies_to_msecs(time);
@@ -176,10 +180,10 @@ out_cleanup:
 
 void radeon_benchmark(struct radeon_device *rdev)
 {
-   radeon_benchmark_move(rdev, 8192*4096, RADEON_GEM_DOMAIN_GTT,
+   radeon_benchmark_move(rdev, 4096*4096, RADEON_GEM_DOMAIN_GTT,
                  RADEON_GEM_DOMAIN_VRAM);
-   radeon_benchmark_move(rdev, 8192*4096, RADEON_GEM_DOMAIN_VRAM,
+   radeon_benchmark_move(rdev, 4096*4096, RADEON_GEM_DOMAIN_VRAM,
                  RADEON_GEM_DOMAIN_GTT);
-   radeon_benchmark_move(rdev, 8192*4096, RADEON_GEM_DOMAIN_VRAM,
+   radeon_benchmark_move(rdev, 4096*4096, RADEON_GEM_DOMAIN_VRAM,
                  RADEON_GEM_DOMAIN_VRAM);
 }
