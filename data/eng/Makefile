@@ -555,6 +555,7 @@ $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll: \
  $(REPOSITORY)/drivers/include/*/*/*/*.h
 $(REPOSITORY)/drivers/ddk/libddk.a: \
  $(REPOSITORY)/drivers/ddk/Makefile \
+ $(REPOSITORY)/drivers/ddk/core.S \
  $(REPOSITORY)/drivers/ddk/*/* \
  $(REPOSITORY)/drivers/include/*.h \
  $(REPOSITORY)/drivers/include/*/*.h \
