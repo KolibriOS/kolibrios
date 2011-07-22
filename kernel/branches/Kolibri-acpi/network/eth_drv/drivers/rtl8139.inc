@@ -323,14 +323,14 @@ rtl8139_reset:
 	out	dx, al
 ; 32k Rxbuffer, unlimited dma burst, no wrapping, no rx threshold
 ; accept broadcast packets, accept physical match packets
-	mov	ax, RTL8139_RX_CONFIG
+	mov	eax, RTL8139_RX_CONFIG
 	add	edx, RTL8139_REG_RXCONFIG - RTL8139_REG_COMMAND
-	out	dx, ax
+	out	dx, eax
 ; 1024 bytes DMA burst, total retries = 16 + 8 * 16 = 144
-	mov	ax, (RTL8139_TX_MXDMA shl RTL8139_BIT_TX_MXDMA) \
+	mov	eax, (RTL8139_TX_MXDMA shl RTL8139_BIT_TX_MXDMA) \
 		    or (RTL8139_TXRR shl RTL8139_BIT_TXRR)
 	add	edx, RTL8139_REG_TXCONFIG - RTL8139_REG_RXCONFIG
-	out	dx, ax
+	out	dx, eax
 ; enable auto negotiation
 	add	edx, RTL8139_REG_BMCR - RTL8139_REG_TXCONFIG
 	in	ax, dx

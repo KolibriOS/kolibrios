@@ -17,6 +17,9 @@ PID_KERNEL  equ 1    ;os_idle thread
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
 
+         pushfd
+         cli
+
          push ebx
 
          mov  ebx, [irq]                   ;irq num
@@ -46,10 +49,12 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
          stdcall enable_irq, [irq]
          pop ebx
          mov eax, 1
+         popfd
          ret
 .err:
          pop ebx
          xor eax, eax
+         popfd
          ret
 endp
 
@@ -100,7 +105,7 @@ align 4
 	   jmp .main
 }
 
-irq_serv_h 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12
+irq_serv_h 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15
 
 ; I don`t known how to use IRQ_RESERVE
 if IRQ_RESERVE > 16
@@ -117,6 +122,26 @@ align 16
 
 	   cmp	 [v86_irqhooks+eax*8], 0
 	   jnz	 v86_irq
+
+	   cmp   al, 6
+	   jnz   @f
+	   push  eax
+	   call  [fdc_irq_func]
+	   pop   eax
+@@:
+
+	   cmp   al, 14
+	   jnz   @f
+	   push  eax
+	   call  [irq14_func]
+	   pop   eax
+@@:
+	   cmp   al, 15
+	   jnz   @f
+	   push  eax
+	   call  [irq15_func]
+	   pop   eax
+@@:
 
 	   mov ebx, [irq_tab+eax*4]
 	   test ebx, ebx

@@ -67,9 +67,11 @@ free_cd_channel:
     jne   .IDE_Channel_2
 .IDE_Channel_1:
     mov [IDE_Channel_1],0
+    sti
     ret
 .IDE_Channel_2:
     mov [IDE_Channel_2],0
+    sti
     ret
 
 uglobal

@@ -49,6 +49,12 @@ hd_read:
 ; Read through BIOS?
         cmp     [hdpos], 0x80
         jae     .bios
+; hd_read_{dma,pio} use old ATA with 28 bit for sector number
+        cmp     eax, 0x10000000
+        jb      @f
+        inc     [hd_error]
+        jmp     return_01
+@@:
 ; DMA read is permitted if [allow_dma_access]=1 or 2
         cmp     [allow_dma_access], 2
         ja      .nodma
@@ -235,6 +241,8 @@ hd_write:
 
 align 4
 cache_write_pio:
+    cmp   dword[esi],0x10000000
+    jae   .bad
 ;    call  disable_ide_int
 
     call  wait_for_hd_idle
@@ -294,6 +302,9 @@ cache_write_pio:
 ;    call  enable_ide_int
     pop   esi ecx
 
+    ret
+.bad:
+    inc   [hd_error]
     ret
 
 save_hd_wait_timeout:
@@ -686,6 +697,9 @@ write_cache_sector:
 write_cache_chain:
         cmp     [hdpos], 0x80
         jae     bd_write_cache_chain
+        mov     eax,[cache_chain_ptr]
+        cmp     dword[eax],0x10000000
+        jae     .bad
         push    esi
         mov     eax, IDE_descriptor_table
         mov     edx,eax
@@ -778,6 +792,9 @@ write_cache_chain:
         cmp     [hd_error], 0
         jnz     hd_write_error_dma
         pop     esi
+        ret
+.bad:
+        inc     [hd_error]
         ret
 
 uglobal
@@ -916,7 +933,9 @@ int13_call:
         mov     [ebx+v86_regs.eflags], 20200h
         mov     esi, [sys_v86_machine]
         mov     ecx, 0x502
+        push fs
         call    v86_start
+        pop  fs
         and     [bios_hdpos], 0
         pop     edi esi ecx ebx
         movzx   edx, byte [OS_BASE + 512h]

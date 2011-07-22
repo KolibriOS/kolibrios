@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -19,6 +19,17 @@
 ;; SPraid (simba)
 ;; Hidnplayr
 ;; Alexey Teplov (<Lrz>)
+;; Rus
+;; Nable
+;; shurf
+;; Alver
+;; Maxis
+;; Galkov
+;; CleverMouse
+;; tsdima
+;; turbanoff
+;; Asper
+;; art_zh
 ;;
 ;; Data in this file was originally part of MenuetOS project which is
 ;; distributed under the terms of GNU GPL. It is modified and redistributed as
@@ -220,8 +231,8 @@ B32:
 ; CLEAR 0x280000 - HEAP_BASE
 
            xor   eax,eax
-           mov   edi,0x280000
-           mov   ecx,(HEAP_BASE-OS_BASE-0x280000) / 4
+           mov   edi,CLEAN_ZONE
+           mov   ecx,(HEAP_BASE-OS_BASE-CLEAN_ZONE) / 4
            cld
            rep   stosd
 
@@ -237,7 +248,7 @@ B32:
 ; SAVE & CLEAR 0-0xffff
 
            xor   esi, esi
-           mov   edi,0x2F0000
+           mov   edi,(BOOT_VAR-OS_BASE)
            mov   ecx,0x10000 / 4
            rep   movsd
            mov   edi,0x1000
@@ -605,6 +616,8 @@ high_code:
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
 	call	unmask_timer
+	stdcall enable_irq, 12
+        stdcall enable_irq, 1	
 	stdcall enable_irq, 14
 	stdcall enable_irq, 15
 
@@ -621,11 +634,14 @@ include 'detect/disks.inc'
 
   call Parser_params
 
+if ~ defined extended_primary_loader
+; ramdisk image should be loaded by extended primary loader if it exists
 ; READ RAMDISK IMAGE FROM HD
 
 ;!!!!!!!!!!!!!!!!!!!!!!!
 include 'boot/rdload.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
+end if
 ;    mov    [dma_hdd],1
 ; CALCULATE FAT CHAIN FOR RAMDISK
 
@@ -780,6 +796,9 @@ end if
         mov   [CPU_FREQ],eax          ; save tsc / sec
 ;       mov ebx, 1000000
 ;       div ebx
+; вообще-то производительность в данном конкретном месте
+; совершенно некритична, но чтобы заткнуть любителей
+; оптимизирующих компиляторов ЯВУ...
         mov     edx, 2251799814
         mul     edx
         shr     edx, 19
@@ -960,7 +979,7 @@ if defined debug_com_base
 
 end if
 
-;-=-=-=-=-=-=- START MULTITASKING -=-=-=-=-=-=-=-=-
+; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need
 if preboot_blogesc
@@ -2774,6 +2793,10 @@ sys_cpuusage:
     ; Window state
         mov     al, [ecx+window_data+WDATA.fl_wstate]
         stosb
+
+    ; Event mask (+71)
+        mov     EAX, dword [ECX+CURRENT_TASK+TASKDATA.event_mask]
+        stosd
 
         pop     esi
         pop     edi
@@ -5051,6 +5074,7 @@ system_shutdown:          ; shut down the system
 yes_shutdown_param:
            cli
 
+if ~ defined extended_primary_loader
            mov  eax, kernel_file ; load kernel.mnt to 0x7000:0
            push 12
            pop  esi
@@ -5063,8 +5087,9 @@ yes_shutdown_param:
            mov  edi,OS_BASE+0x40000
            mov  ecx,1000
            rep  movsb
+end if
 
-           mov  esi,OS_BASE+0x2F0000    ; restore 0x0 - 0xffff
+           mov  esi, BOOT_VAR    ; restore 0x0 - 0xffff
            mov  edi, OS_BASE
            mov  ecx,0x10000/4
            cld

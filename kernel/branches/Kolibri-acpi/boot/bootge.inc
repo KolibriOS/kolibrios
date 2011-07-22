@@ -55,11 +55,15 @@ ask_bd     db      "Add disks visible by BIOS emulated in V86-mode? [1-yes, 2-no
 ;mem_model db      13,10,186," Hauptspeicher [1-16 Mb / 2-32 Mb / "
 ;          db      "3-64Mb / 4-128 Mb / 5-256 Mb] ? ",0
 ;bootlog   db      13,10,186," After bootlog display [1-continue/2-pause] ? ",0
+if defined extended_primary_loader
+bdev      db      "Lade die Ramdisk von [1-Diskette; 2-kolibri.img]: ",0
+else
 bdev      db      "Lade die Ramdisk von [1-Diskette; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
           db      "3-benutze ein bereits geladenes Kernel image;"
           db      13,10,186,"                    "
           db      "4-create blank image]: ",0
+end if
 probetext db      13,10,13,10,186," Nutze Standardgrafikmodi? [1-ja, "
           db      "2-BIOS Test (Vesa 3.0)]: ",0
 ;memokz256 db      13,10,186," RAM 256 Mb",0
@@ -104,14 +108,22 @@ off_msg   db      " aus",13,10,0
 ;readonly_msg db   " fur Lesen",13,10,0
 vrrm_msg  db      " [c] Nutze VRR:",0
 preboot_device_msg db " [d] Diskettenimage: ",0
+if defined extended_primary_loader
+preboot_device_msgs dw 0,pdm1,pdm2,0
+pdm1      db      "Echte Diskette",13,10,0
+pdm2      db      "kolibri.img",13,10,0
+else
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3
 pdm1      db      "Echte Diskette",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "Nutze bereits geladenes Image",13,10,0
 pdm4      db      "create blank image",13,10,0
+end if
 loading_msg db    "Lade KolibriOS...",0
+if ~ defined extended_primary_loader
 save_quest db     "Aktuelle Einstellungen speichern? [y/n]: ",0
 loader_block_error db "Bootloader Daten ungueltig, Kann nicht fortfahren. Angehalten.",0
+end if
 
 remark1 db      "Default values were selected to match most of configurations, but not all.",0
 remark2 db      "If you have CRT-monitor, enable VRR in the item [c].",0

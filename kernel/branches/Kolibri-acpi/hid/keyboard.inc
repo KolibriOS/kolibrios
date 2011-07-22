@@ -94,12 +94,34 @@ hotkey_do_test:
 	pop	eax
 	ret
 
+
+align 4
+
+set_keyboard_data:
+
+           movzx eax,word[TASK_COUNT] ; top window process
+           movzx eax,word[WIN_POS+eax*2]
+           shl   eax,8
+           mov   al,[SLOT_BASE+eax+APPDATA.keyboard_mode]
+           mov   [keyboard_mode],al
+
+           mov eax, ecx
+
+           push ebx
+           push esi
+           push edi
+           push ebp
+
+           call send_scancode
+
+           pop ebp
+           pop edi
+           pop esi
+           pop ebx
+           ret
+
 align 4
 irq1:
-;       save_ring3_context
-;       mov   ax, os_data
-;       mov   ds, ax
-;       mov   es, ax
 
        movzx eax,word[TASK_COUNT] ; top window process
        movzx eax,word[WIN_POS+eax*2]
@@ -108,6 +130,9 @@ irq1:
        mov   [keyboard_mode],al
 
        in    al,0x60
+
+send_scancode:
+
        mov   [keyboard_data],al
 
 ; ch = scancode
@@ -310,11 +335,6 @@ irq1:
    .exit.irq1:
        mov   [check_idle_semaphore],5
 
-;       mov   al,0x20                  ; ready for next irq
-;       out   0x20,al
-
-;       restore_ring3_context
-;       iret
 	ret
 
 set_lights:

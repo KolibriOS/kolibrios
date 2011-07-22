@@ -55,6 +55,7 @@ MANUAL_DESTROY    equ 0x80000000
 DEV_PLAY          equ 1
 DEV_STOP          equ 2
 DEV_CALLBACK      equ 3
+DEV_GET_POS	  equ 9
 
 struc IOCTL
 {  .handle        dd ?
@@ -159,14 +160,65 @@ inp_size   equ  IOCTL.inp_size
 output     equ  IOCTL.output
 out_size   equ  IOCTL.out_size
 
+
+
 align 4
+
+srv_calls  dd service_proc.srv_getversion	; 0
+	   dd service_proc.snd_create_buff	; 1
+	   dd service_proc.snd_destroy_buff	; 2
+	   dd service_proc.snd_setformat	; 3
+	   dd service_proc.snd_getformat	; 4
+	   dd service_proc.snd_reset		; 5
+	   dd service_proc.snd_setpos		; 6
+	   dd service_proc.snd_getpos		; 7
+	   dd service_proc.snd_setbuff		; 8
+	   dd service_proc.snd_out		; 9
+	   dd service_proc.snd_play		; 10
+	   dd service_proc.snd_stop		; 11
+	   dd service_proc.snd_setvolume	; 12
+	   dd service_proc.snd_getvolume	; 13
+	   dd service_proc.snd_setpan		; 14
+	   dd service_proc.snd_getpan		; 15
+	   dd service_proc.snd_getbuffsize	; 16
+	   dd service_proc.snd_getfreespace	; 17
+	   dd service_proc.snd_settimebase	; 18
+	   dd service_proc.snd_gettimestamp	; 19
+srv_calls_end:
+
 proc service_proc stdcall, ioctl:dword
 
            mov edi, [ioctl]
            mov eax, [edi+io_code]
 
-           cmp eax, SRV_GETVERSION
-           jne @F
+	   cmp eax, (srv_calls_end-srv_calls)/4
+	   ja  .fail
+
+	   cmp eax, SND_DESTROY_BUFF
+	   jb @F
+
+;           cmp [edi+inp_size], 4
+;           jb .fali
+
+	   mov ebx, [edi+input]
+	   mov edx, [ebx]
+
+	   cmp [edx+STREAM.magic], 'WAVE'
+	   jne .fail
+
+	   cmp [edx+STREAM.size], STREAM.sizeof
+	   jne .fail
+
+@@:
+	   jmp [srv_calls+eax*4]
+
+
+.fail:
+	   mov eax, -1
+	   ret
+
+align 4
+.srv_getversion:
            mov eax, [edi+output]
            cmp [edi+out_size], 4
            jne .fail
@@ -174,9 +226,9 @@ proc service_proc stdcall, ioctl:dword
            mov [eax], dword API_VERSION
            xor eax, eax
            ret
-@@:
-           cmp eax, SND_CREATE_BUFF
-           jne @F
+
+align 4
+.snd_create_buff:
            mov ebx, [edi+input]
            stdcall CreateBuffer,[ebx],[ebx+4]
            mov edi, [ioctl]
@@ -184,121 +236,105 @@ proc service_proc stdcall, ioctl:dword
            mov ecx, [ecx]
            mov [ecx], ebx
            ret
-@@:
-           mov ebx, [edi+input]
-           mov edx, [ebx]
 
-           cmp [edx+STREAM.magic], 'WAVE'
-           jne .fail
-
-           cmp [edx+STREAM.size], STREAM_SIZE
-           jne .fail
-
-           cmp eax, SND_DESTROY_BUFF
-           jne @F
+align 4
+.snd_destroy_buff:
            mov eax, edx
-           call DestroyBuffer    ;edx= stream
+	   call DestroyBuffer
            ret
-@@:
-           cmp eax, SND_SETFORMAT
-           jne @F
-           stdcall SetFormat,edx,[ebx+4]
-           ret
-@@:
-           cmp eax, SND_GETFORMAT
-           jne @F
 
+align 4
+.snd_setformat:
+	   stdcall SetFormat, edx,[ebx+4]
+           ret
+
+align 4
+.snd_getformat:
            movzx eax, word [edx+STREAM.format]
            mov ecx, [edi+output]
            mov ecx, [ecx]
            mov [ecx], eax
            xor eax, eax
            ret
-@@:
-           cmp eax, SND_RESET
-           jne @F
+
+align 4
+.snd_reset:
            stdcall ResetBuffer,edx,[ebx+4]
            ret
-@@:
-           cmp eax, SND_SETPOS
-           jne @F
+
+align 4
+.snd_setpos:
            stdcall SetBufferPos,edx,[ebx+4]
            ret
-@@:
-           cmp eax, SND_GETPOS
-           jne @F
+
+align 4
+.snd_getpos:
            stdcall GetBufferPos, edx
            mov edi, [ioctl]
            mov ecx, [edi+output]
            mov ecx, [ecx]
            mov [ecx], ebx
            ret
-@@:
-           cmp eax, SND_SETBUFF
-           jne @F
+
+align 4
+.snd_setbuff:
            mov eax, [ebx+4]
            stdcall set_buffer, edx,eax,[ebx+8],[ebx+12]
            ret
-@@:
-           cmp eax, SND_SETVOLUME
-           jne @F
+
+align 4
+.snd_out:
+	   mov eax, [ebx+4]
+	   stdcall wave_out, edx,eax,[ebx+8]
+	   ret
+
+align 4
+.snd_play:
+	   stdcall play_buffer, edx,[ebx+4]
+	   ret
+
+align 4
+.snd_stop:
+	   stdcall stop_buffer, edx
+	   ret
+
+align 4
+.snd_setvolume:
            stdcall SetBufferVol,edx,[ebx+4],[ebx+8]
            ret
-@@:
-           cmp eax, SND_GETVOLUME
-           jne @F
 
+align 4
+.snd_getvolume:
            mov eax, [edi+output]
            mov ecx, [eax]
            mov eax, [eax+4]
            stdcall GetBufferVol,edx,ecx,eax
            ret
-@@:
-           cmp eax, SND_SETPAN
-           jne @F
+align 4
+.snd_setpan:
            stdcall SetBufferPan,edx,[ebx+4]
            ret
-@@:
-           cmp eax, SND_GETPAN
-           jne @F
+
+align 4
+.snd_getpan:
            mov eax, [edx+STREAM.pan]
            mov ebx, [edi+output]
            mov ebx, [ebx]
            mov [ebx], eax
            xor eax, eax
            ret
-@@:
-           cmp eax, SND_OUT
-           jne @F
 
-           mov eax, [ebx+4]
-           stdcall wave_out, edx,eax,[ebx+8]
-           ret
-@@:
-           cmp eax, SND_PLAY
-           jne @F
-
-           stdcall play_buffer, edx,[ebx+4]
-           ret
-@@:
-           cmp eax, SND_STOP
-           jne @F
-
-           stdcall stop_buffer, edx
-           ret
-@@:
-           cmp eax, SND_GETBUFFSIZE
-           jne @F
+align 4
+.snd_getbuffsize:
            mov eax, [edx+STREAM.in_size]
            mov ecx, [edi+output]
            mov ecx, [ecx]
            mov [ecx], eax
            xor eax, eax
            ret
-@@:
-           cmp eax, SND_GETFREESPACE
-           jne @F
 
+align 4
+.snd_getfreespace:
            test [edx+STREAM.format], PCM_OUT
            jz .fail
 
@@ -307,11 +343,72 @@ proc service_proc stdcall, ioctl:dword
            mov [ecx], ebx
            xor eax, eax
            ret
+align 4
+.snd_settimebase:
+	   cmp [edi+inp_size], 12
+	   jne .fail
+
+	   mov eax, [ebx]
+	   mov ebx, [ebx+4]
+	   mov dword [edx+STREAM.time_base], eax
+	   mov dword [edx+STREAM.time_base+4], ebx
+	   xor eax, eax
+	   ret
+
+.snd_gettimestamp:
+	   cmp [edi+out_size], 8
+	   jne .fail
+
+	   pushfd
+	   cli
+
+	   xor ebx, ebx
+	   push 48
+	   push ebx	       ; local storage
+
+	   cmp [edx+STREAM.flags], SND_STOP
+	   je @F
+
+	   mov eax, esp
+
+	   push edx
+	   push edi
+
+	   push 4	       ;.out_size
+	   push eax	       ;.output
+	   push ebx	       ;.inp_size
+	   push ebx	       ;.input
+	   push DEV_GET_POS    ;.code
+	   push dword [hSound] ;.handle
+	   mov eax, esp
+
+	   stdcall ServiceHandler, eax
+	   add esp, 6*4
+
+	   pop edi
+	   pop edx
+
+	   test eax, eax
+	   jz @F
+
+	   mov dword [esp], 0	; clear offset
 @@:
-.fail:
-           or eax, -1
+	   mov edi, [edi+output]
+
+	   emms
+	   fild  qword [edx+STREAM.time_stamp]
+	   fiadd dword [esp]	; primary buffer offset
+	   fidiv dword [esp+4]	; total_samples / frequency
+	   fadd  qword [edx+STREAM.time_base]
+	   fstp  qword [edi]
+	   add esp, 8
+
+	   popfd
+
+	   xor eax, eax
            ret
 endp
+
 
 restore   handle
 restore   io_code
@@ -352,7 +449,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
 
            call GetPid
            mov ebx, eax
-           mov eax, STREAM_SIZE
+	   mov eax, STREAM.sizeof
 
            call CreateObject
            test eax, eax
@@ -412,7 +509,6 @@ proc CreateBuffer stdcall, format:dword, size:dword
            mov [edi+STREAM.in_base], eax
            mov [edi+STREAM.in_size], ecx
            add eax, 128
-        ;   sub ecx, 128
            mov [edi+STREAM.in_wp], eax
            mov [edi+STREAM.in_rp], eax
            mov [edi+STREAM.in_count], 0
@@ -443,12 +539,21 @@ proc CreateBuffer stdcall, format:dword, size:dword
            stdcall AllocKernelSpace, dword 128*1024
 
            mov edi, [str]
+	   xor ebx, ebx
+
            mov [edi+STREAM.out_base], eax
            mov [edi+STREAM.out_wp], eax
            mov [edi+STREAM.out_rp], eax
-           mov [edi+STREAM.out_count], 0
+	   mov [edi+STREAM.out_count], ebx
            add eax, 64*1024
            mov [edi+STREAM.out_top], eax
+
+	   mov dword [edi+STREAM.time_base],   ebx
+	   mov dword [edi+STREAM.time_base+4], ebx
+
+	   mov dword [edi+STREAM.time_stamp],	ebx
+	   mov dword [edi+STREAM.time_stamp+4], ebx
+	   mov dword [edi+STREAM.last_ts], ebx
 
            stdcall AllocPages, dword 64/4
            mov edi, [str]
@@ -488,7 +593,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
 
            mov [ebx+STREAM.magic], 'WAVE'
            mov [ebx+STREAM.destroy], DestroyBuffer.destroy
-           mov [ebx+STREAM.size], STREAM_SIZE
+	   mov [ebx+STREAM.size], STREAM.sizeof
            mov [ebx+STREAM.flags], SND_STOP
 
            pushf
@@ -857,6 +962,26 @@ proc SetBufferVol stdcall, str:dword,l_vol:dword,r_vol:dword
            ret
 endp
 
+
+proc minw stdcall, arg1:dword, arg2:dword
+	   mov ax, word [arg1]
+	   cmp ax, word [arg2]
+	   jle @f
+	   mov eax, [arg2]
+@@:
+	   ret
+endp
+
+proc maxw stdcall, arg1:dword, arg2:dword
+	   mov ax, word [arg1]
+	   cmp ax, word [arg2]
+	   jge @f
+	   mov eax, [arg2]
+@@:
+	   ret
+endp
+
+
 proc set_vol_param stdcall, l_vol:dword,r_vol:dword,pan:dword
            locals
              _600    dd ?
@@ -870,31 +995,34 @@ proc set_vol_param stdcall, l_vol:dword,r_vol:dword,pan:dword
            lea ebx, [state]
            fnsave [ebx]
 
-           movq mm0, qword [l_vol]
-           pminsw mm0, qword [vol_max]
-           pmaxsw mm0, qword [vol_min]
-           movq qword [l_vol], mm0
-           movq qword [edx+STREAM.l_vol], mm0
+	   stdcall minw, [l_vol], [vol_max]
+	   stdcall maxw, eax, [vol_min]
+	   mov	   [l_vol], eax
+	   mov	[edx+STREAM.l_vol], eax
+	   stdcall minw, [r_vol], [vol_max+4]
+	   stdcall maxw, eax, [vol_min+4]
+	   mov	   [r_vol], eax
+	   mov	[edx+STREAM.r_vol], eax
 
-           movd mm1,[pan]
-           pminsw mm1, qword [pan_max]
-           pmaxsw mm1, qword [vol_min]
-           movd [edx+STREAM.pan], mm1
+	   stdcall minw, [pan], [pan_max]
+	   stdcall maxw, eax, [vol_min]
+	   mov	[edx+STREAM.pan], eax
 
            cmp word [edx+STREAM.pan], 0
-           jl @F
+	   jl  @f
 
-           psubsw mm0,mm1
-           pminsw mm0, qword [vol_max]
-           pmaxsw mm0, qword [vol_min]
-           movd [l_vol],mm0
+	   mov ebx, [l_vol]
+	   sub ebx, eax
+	   stdcall minw, ebx, [vol_max]
+	   stdcall maxw, eax, [vol_min]
+	   mov [l_vol], eax
            jmp .calc_amp
 @@:
-           punpckhdq mm0,mm0
-           paddsw mm0,mm1
-           pminsw mm0, qword [vol_max]
-           pmaxsw mm0, qword [vol_min]
-           movd [r_vol], mm0
+	   mov ebx, [r_vol]
+	   add ebx, [pan]
+	   stdcall minw, ebx, [vol_max+4]
+	   stdcall maxw, eax, [vol_min+4]
+	   mov [r_vol], eax
 .calc_amp:
            emms
            fild word [l_vol]
@@ -934,6 +1062,7 @@ proc set_vol_param stdcall, l_vol:dword,r_vol:dword,pan:dword
            fimul dword [_32767]
            ret 0
 endp
+
 
 align 4
 proc GetBufferVol stdcall, str:dword,p_lvol:dword,p_rvol:dword
@@ -1039,7 +1168,7 @@ do_mix_list:
            cmp [ebx+STREAM.magic], 'WAVE'
            jne .next
 
-           cmp [ebx+STREAM.size], STREAM_SIZE
+	   cmp [ebx+STREAM.size], STREAM.sizeof
            jne .next
 
            cmp [ebx+STREAM.flags], SND_PLAY;
@@ -1108,7 +1237,7 @@ prepare_playlist:
            cmp [edi+STREAM.magic], 'WAVE'
            jne .next
 
-           cmp [edi+STREAM.size], STREAM_SIZE
+	   cmp [edi+STREAM.size], STREAM.sizeof
            jne .next
 
            cmp [edi+STREAM.flags], SND_PLAY;

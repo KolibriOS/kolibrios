@@ -30,6 +30,9 @@ preboot_device	    db	0 ; boot device
 			  ;!!!! 0 - autodetect !!!!
 preboot_blogesc = 0       ; start immediately after bootlog
 preboot_biosdisk    db	0 ; use V86 to access disks through BIOS (1-yes, 2-no)
+if defined extended_primary_loader
+preboot_timeout     dw  5*18 ; timeout in 1/18th of second for config settings screen
+end if
 
       if $>0x200
 ERROR: prebooting parameters must fit in first sector!!!

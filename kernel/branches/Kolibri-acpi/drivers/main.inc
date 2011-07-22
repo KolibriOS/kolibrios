@@ -91,6 +91,8 @@ SND_SETPAN          equ 14
 SND_GETPAN          equ 15
 SND_GETBUFFSIZE     equ 16
 SND_GETFREESPACE    equ 17
+SND_SETTIMEBASE     equ 18
+SND_GETTIMESTAMP    equ 19
 
 struc STREAM
 {
@@ -113,6 +115,23 @@ struc STREAM
     .out_count     dd ?
     .out_top       dd ?          ;16*4
 
+    .in_base       dd ?
+    .in_size       dd ?
+    .in_wp         dd ?
+    .in_rp         dd ?
+    .in_count      dd ?
+    .in_free       dd ?
+    .in_top        dd ?
+
+align 8
+
+    .time_base     dq ?
+    .time_stamp    dq ?
+    .last_ts       dd ?
+
+    .notify_event  dd ?
+    .notify_id     dd ?
+
     .r_size        dd ?
     .r_dt          dd ?
     .r_silence     dd ?
@@ -125,19 +144,9 @@ struc STREAM
     .l_amp_f       dd ? ;float point left
     .r_amp_f       dd ? ;float point right
 
-    .in_base       dd ?
-    .in_size       dd ?
-    .in_wp         dd ?
-    .in_rp         dd ?
-    .in_count      dd ?
-    .in_free       dd ?
-    .in_top        dd ?
-
-    .notify_event  dd ?
-    .notify_id     dd ?
+    .sizeof:
 }
 
-STREAM_SIZE    equ 36*4
 FD_OFFSET      equ 24
 
 virtual at 0

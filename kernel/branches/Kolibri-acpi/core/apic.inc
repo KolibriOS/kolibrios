@@ -8,7 +8,7 @@
 IRQ_RESERVE = 24	; 16 or 24
 
 iglobal
-IRQ_COUNT	dd	16
+IRQ_COUNT	dd	24
 endg
 
 uglobal
@@ -45,18 +45,18 @@ IOAPIC_REDTBL	equ	0x10
 APIC_init:
 	mov	dword[APIC], 0
 	; jmp	.no_apic		; NO APIC
-	bt	[cpu_caps], CAPS_APIC
-	jnc	.no_apic
+;	bt	[cpu_caps], CAPS_APIC
+;	jnc	.no_apic
 	; Check for MP table
 	;.....
-	
+
 	call	IRQ_mask_all
-	
+
 	; IOAPIC init
 	; 0xfec00000 - may be relocated, see chip reference... & MP table
 	stdcall	map_io_mem, 0xfec00000, 0x20, PG_SW
 	mov	[IOAPIC_base], eax
-	
+
 	mov	eax, IOAPIC_VER
 	call	IOAPIC_read
 	shr	eax, 16
@@ -94,12 +94,18 @@ APIC_init:
 	jb	@b
 
 	call	LAPIC_init
-	
+
 	mov	dword[APIC], 0xffffffff
+
+    mov al, 0x70
+    out 0x22, al
+    mov al, 1
+    out 0x23, al
+
 	; mov	dword[irq_type_to_set], IRQ_TYPE_APIC
 .no_apic:
 	ret
-	
+
 ;===========================================================
 align 4
 LAPIC_init:
@@ -109,24 +115,24 @@ LAPIC_init:
 	mov	ecx, 0x1b
 	rdmsr				; it may be replaced to
 	and	ax, 0xf000		; mov	eax, 0xfee00000
-	
+
 	stdcall	map_io_mem, eax, 0x1000, PG_SW
 	mov	[LAPIC_BASE], eax
 	mov	esi, eax
-	
+
 	; Program Destination Format Register for Flat mode.
 	mov	eax, [esi + APIC_DFR]
 	or	eax, 0xf0000000
 	mov	[esi + APIC_DFR], eax
-	
-	
+
+
 	; Program Logical Destination Register.
 	mov	eax, [esi + APIC_LDR]
 	;and	eax, 0xff000000
 	and	eax, 0x00ffffff
 	or	eax, 0x01000000	;!!!!!!!!!!!!
 	mov	[esi + APIC_LDR], eax
-	
+
 	; Task Priority Register initialization.
 	mov	eax, [esi + APIC_TPR]
 	and	eax, 0xffffff00
@@ -163,7 +169,7 @@ LAPIC_init:
 	mov	eax, [esi + APIC_LVT_err]
 	or	eax, 0x10000		; bit 16
 	mov	[esi + APIC_LVT_err], eax
-	
+
 	; LAPIC timer
 	; pre init
 	mov	dword[esi + APIC_timer_div], 1011b	; 1
@@ -175,11 +181,11 @@ LAPIC_init:
 	mov	eax, [esi + APIC_timer_cur]		; read current tick couner
 	xor	eax, 0xffffffff				; eax = 0xffffffff - eax
 	shr	eax, 6					; eax /= 64; APIC ticks per 0.01 sec
-	
+
 	; Start (every 0.01 sec)
 	mov	dword[esi + APIC_LVT_timer], 0x30020	; periodic int 0x20
 	mov	dword[esi + APIC_timer_init], eax
-	
+
 	ret
 ;===========================================================
 ; IOAPIC implementation

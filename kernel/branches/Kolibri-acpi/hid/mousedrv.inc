@@ -292,21 +292,20 @@ __sys_disable_mouse:
       add  ecx,eax
       add  ecx, [_WinMapAddress]
       mov   eax, [CURRENT_TASK]
-      movzx ebx, byte [ecx]
-      cmp   eax,ebx
+      cmp   al, [ecx]
       je    yes_mouse_disable
-      movzx ebx, byte [ecx+16]
-      cmp   eax,ebx
+      cmp   al, [ecx+16]
       je    yes_mouse_disable
+      add   ebx, 10
+      cmp   ebx, [Screen_Max_Y]
+      jae   no_mouse_disable
       mov   ebx,[Screen_Max_X]
       inc   ebx
       imul  ebx,10
       add   ecx,ebx
-      movzx ebx, byte [ecx]
-      cmp   eax,ebx
+      cmp   al, [ecx]
       je    yes_mouse_disable
-      movzx ebx, byte [ecx+16]
-      cmp   eax,ebx
+      cmp   al, [ecx+16]
       je    yes_mouse_disable
       jmp   no_mouse_disable
 yes_mouse_disable:

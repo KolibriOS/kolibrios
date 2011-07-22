@@ -50,11 +50,15 @@ ask_bd     db      "Add disks visible by BIOS emulated in V86-mode? [1-yes, 2-no
 ;mem_model db      13,10,186," Motherboard memory [1-16 Mb / 2-32 Mb / "
 ;          db      "3-64Mb / 4-128 Mb / 5-256 Mb] ? ",0
 ;bootlog   db      13,10,186," After bootlog display [1-continue/2-pause] ? ",0
+if defined extended_primary_loader
+bdev      db      "Paigalda mäluketas [1-diskett; 2-kolibri.img]: ",0
+else
 bdev      db      "Paigalda mäluketas [1-diskett; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
           db      "3-kasuta eellaaditud mäluketast kerneli restardist;"
           db      13,10,186,"                    "
           db      "4-loo tühi pilt]: ",0
+end if
 probetext db      13,10,13,10,186," Kasuta standartset graafika reziimi? [1-jah, "
           db      "2-leia biosist (Vesa 3.0)]: ",0
 ;memokz256 db      13,10,186," RAM 256 Mb",0
@@ -99,14 +103,22 @@ off_msg   db      " väljas",13,10,0
 ;readonly_msg db   " ainult lugemiseks",13,10,0
 vrrm_msg  db      " [c] Kasuta VRR:",0
 preboot_device_msg db " [d] Disketi kujutis: ",0
+if defined extended_primary_loader
+preboot_device_msgs dw 0,pdm1,pdm2,0
+pdm1      db      "reaalne diskett",13,10,0
+pdm2      db      "kolibri.img",13,10,0
+else
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3
 pdm1      db      "reaalne diskett",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "kasuta juba laaditud kujutist",13,10,0
 pdm4      db      "loo tühi pilt",13,10,0
+end if
 loading_msg db    "Laadin KolibriOS...",0
+if ~ defined extended_primary_loader
 save_quest db     "Jäta meelde praegused seaded? [y/n]: ",0
 loader_block_error db "Alglaaduri andmed vigased, ei saa jätkata. Peatatud.",0
+end if
 
 remark1 db      "Default values were selected to match most of configurations, but not all.",0
 remark2 db      "If you have CRT-monitor, enable VRR in the item [c].",0

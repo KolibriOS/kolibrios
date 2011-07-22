@@ -138,6 +138,7 @@ DEV_NOTIFY	      equ  5
 DEV_SET_MASTERVOL     equ  6
 DEV_GET_MASTERVOL     equ  7
 DEV_GET_INFO	      equ  8
+DEV_GET_POS           equ  9
 
 struc AC_CNTRL		    ;AC controller base class
 { .bus		      dd ?
@@ -333,46 +334,7 @@ proc START stdcall, state:dword
 	   mov esi, msgDone
 	   call SysMsgBoardStr
 
-  if IRQ_REMAP
-	   pushf
-	   cli
-
-	   mov ebx, [ctrl.int_line]
-	   in al, 0xA1
-	   mov ah, al
-	   in al, 0x21
-	   test ebx, ebx
-	   jz .skip
-	   bts ax, bx			   ;mask old line
-.skip
-	   bts ax, IRQ_LINE		   ;mask new ine
-	   out 0x21, al
-	   mov al, ah
-	   out 0xA1, al
-					   ;remap IRQ
-	   stdcall PciWrite8, 0, 0xF8, 0x61, IRQ_LINE
-
-	   mov dx, 0x4d0		   ;8259 ELCR1
-	   in al, dx
-	   bts ax, IRQ_LINE
-	   out dx, al			   ;set level-triggered mode
-	   mov [ctrl.int_line], IRQ_LINE
-	   popf
-	   mov esi, msgRemap
-	   call SysMsgBoardStr
-  end if
-
-	   mov eax, VALID_IRQ
-	   mov ebx, [ctrl.int_line]
-	   mov esi, msgInvIRQ
-	   bt eax, ebx
-	   jnc .fail_msg
-	   mov eax, ATTCH_IRQ
-	   mov esi, msgAttchIRQ
-	   bt eax, ebx
-	   jnc .fail_msg
-
-	   stdcall AttachIntHandler, ebx, ac97_irq, dword 0
+	   stdcall AttachIntHandler, 17, ac97_irq, dword 0
 .reg:
 	   stdcall RegService, sz_sound_srv, service_proc
 	   ret
@@ -453,6 +415,21 @@ proc service_proc stdcall, ioctl:dword
 	   mov ebx, [edi+output]
 	   stdcall get_master_vol, ebx
 	   ret
+
+@@:
+           cmp eax, DEV_GET_POS
+           jne @F
+
+           mov ebx, 8192
+           mov edx, 0x18
+           xor eax, eax
+           call [ctrl.ctrl_read16]
+           sub ebx, eax
+           shr ebx, 1
+           mov edx, [edi+output]
+           mov [edx], ebx
+           xor eax, eax
+           ret
 ;@@:
 ;           cmp eax, DEV_GET_INFO
 ;           jne @F
@@ -480,6 +457,22 @@ proc ac97_irq
 	   call SysMsgBoardStr
      end if
 
+           mov edx, CTRL_STAT
+           call [ctrl.ctrl_read32]
+
+           push eax
+
+           test eax, 0x40
+           jnz .do_intr
+
+           test eax, eax
+           jz .done
+
+           mov edx, CTRL_STAT
+           call [ctrl.ctrl_write32]
+           jmp .done
+
+.do_intr:
 	   mov edx, PCM_OUT_CR_REG
 	   mov al, 0x10;               0x10
 	   call [ctrl.ctrl_write8]
@@ -512,18 +505,22 @@ proc ac97_irq
 	   and eax, 31
 	   mov ebx, dword [buff_list+eax*4]
 
-	   cmp [ctrl.user_callback], 0
-	   je @f
+           cmp [ctrl.user_callback], 0
+           je .done
 
-	   stdcall [ctrl.user_callback], ebx
-@@:
+           stdcall [ctrl.user_callback], ebx
+.done:
+           pop eax
+           and eax, 0x40
+           mov edx, CTRL_STAT
+           call [ctrl.ctrl_write32]
 	   ret
-
 .skip:
 	   mov edx, PCM_OUT_CR_REG
 	   mov ax, 0x11 	      ;0x1D
 	   call [ctrl.ctrl_write8]
-	   ret
+           jmp .done
+
 endp
 
 align 4
@@ -775,6 +772,8 @@ end if
 	   stdcall PciRead8, [ctrl.bus], [ctrl.devfn], dword 0x41
 	   and eax, 0xFF
 	   mov [ctrl.cfg_reg], eax
+
+           mov [ctrl.user_callback], 0
 
 	   call [ctrl.ctrl_setup]
 	   xor eax, eax

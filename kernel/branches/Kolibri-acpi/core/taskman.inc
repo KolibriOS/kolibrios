@@ -48,6 +48,7 @@ macro _clear_ op
 
 fs_execute_from_sysdir:
     xor ebx, ebx
+fs_execute_from_sysdir_param:
     xor edx, edx
     mov esi, sysdir_path
 
@@ -1165,5 +1166,14 @@ proc set_app_params stdcall,slot:dword, params:dword,\
        ;call   sys_msg_board_str     ;output information about succefull startup
        ret
 endp
+
+
+align 4
+
+get_stack_base:
+       mov eax,[current_slot]
+       mov eax,[eax+APPDATA.pl0_stack]
+       ret
+
 
 include "debug.inc"

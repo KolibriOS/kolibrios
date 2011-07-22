@@ -46,11 +46,9 @@ iglobal
     else
         dd      p_irq3, p_irq4 ;??? нестыковка
     end if
-        dd      irq_serv.irq_5,  p_irq6,          irq_serv.irq_7
+        dd      irq_serv.irq_5,  irq_serv.irq_6,  irq_serv.irq_7
         dd      irq_serv.irq_8,  irq_serv.irq_9,  irq_serv.irq_10
-        dd irq_serv.irq_11, irq_serv.irq_12
-	dd irq13
-	dd p_irq14,p_irq15
+        dd      irq_serv.irq_11, irq_serv.irq_12, irqD, irq_serv.irq_14, irq_serv.irq_15
 	; I don`t known how to use IRQ_RESERVE
 if IRQ_RESERVE > 16
 	dd irq_serv.irq_16
@@ -208,6 +206,14 @@ unknown_interrupt:
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 ; bl - error vector
 show_error_parameters:
+        cmp     bl, 0x06
+        jnz     .no_ud
+        push    ebx
+        mov     ebx, ud_user_message
+        mov     ebp, notifyapp
+        call    fs_execute_from_sysdir_param
+        pop     ebx
+.no_ud:
         mov     edx,[TASK_BASE] ;not scratched below
         DEBUGF  1, "K : Process - forced terminate PID: %x\n", [edx+TASKDATA.pid]
         cmp     bl, 0x08

@@ -98,6 +98,12 @@ szIMPORTS      db 'IMPORTS',0
 
 read_firstapp  db '/sys/'
 firstapp       db  'LAUNCHER',0
+notifyapp      db '@notify',0
+if lang eq ru
+ud_user_message db 'Ошибка: неподдерживаемая инструкция процессора',0
+else
+ud_user_message db 'Error: unsupported processor instruction',0
+end if
 
 char    db '/sys/FONTS/CHAR.MT',0
 char2   db '/sys/FONTS/CHAR2.MT',0

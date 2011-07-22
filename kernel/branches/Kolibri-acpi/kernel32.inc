@@ -144,7 +144,7 @@ struc APPDATA
   .ev_count_       dd ? ;unused    ;+20
   .exc_handler     dd ?            ;+24
   .except_mask     dd ?            ;+28
-  .pl0_stack       dd ? ;unused    ;+32
+  .pl0_stack       dd ?            ;+32
   .heap_base       dd ?            ;+36
   .heap_top        dd ?            ;+40
   .cursor          dd ?            ;+44
@@ -250,6 +250,7 @@ include "sound/playnote.inc" ; player Note for Speaker PC
 
 include "video/vesa12.inc"   ; Vesa 1.2 functions
 include "video/vesa20.inc"   ; Vesa 2.0 functions
+include "video/blitter.inc"  ;
 include "video/vga.inc"      ; VGA 16 color functions
 include "video/cursors.inc"  ; cursors functions
 

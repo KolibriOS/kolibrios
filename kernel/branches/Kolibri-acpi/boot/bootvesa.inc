@@ -314,7 +314,11 @@ draw_current_vmode:
         cmp     word [es:si+6],0x13
         je      .no_vesa_0x13
 
+if defined extended_primary_loader
+        mov     di,config_file_variables
+else
         mov     di,loader_block_error
+end if
         movzx   eax,word[es:si+0]
         mov     ecx,10
         call    int2strnz
@@ -327,7 +331,11 @@ draw_current_vmode:
         movzx   eax,word[es:si+8]
         call    int2strnz
         mov     dword[es:di],0x00000d0a
+if defined extended_primary_loader
+        mov     si,config_file_variables
+else
         mov     si,loader_block_error
+end if
         push    ds
         push    es
         pop     ds
@@ -344,9 +352,34 @@ draw_current_vmode:
         ret        
 ;-----------------------------------------------------------------------------
 check_first_parm:
+if defined extended_primary_loader
+        mov     cx, [number_vm]
+        jcxz    .novbemode
+        mov     si, modes_table
+.findvbemode:
+        cmp     [es:si+6], cx
+        jnz     @f
+        cmp     word [es:si+8],32
+        je      .ok_found_mode
+        cmp     word [es:si+8],24
+        je      .ok_found_mode
+@@:     add     si,size_of_step
+        cmp     word [es:si],-1
+        jnz     .findvbemode
+.novbemode:
+        mov     ax, [x_save]
+        test    ax, ax
+        jz      .zerro
+        mov     bx, [y_save]
+        mov     si, modes_table
+        call    .loops
+        test    ax, ax
+        jz      .ok_found_mode
+else
         mov     si,word [preboot_graph]
         test    si,si
         jnz      .no_zero        ;if no zero
+end if
 .zerro:
 ;        mov     ax,modes_table
 ;        mov     word [cursor_pos],ax
@@ -374,6 +407,7 @@ check_first_parm:
         jz     .ok_found_mode
 
         mov     si,modes_table
+if ~ defined extended_primary_loader
         jmp     .ok_found_mode
 
 
@@ -394,6 +428,7 @@ check_first_parm:
 ;        jb      .zerro           ;check on correct if bellow
 ;        cmp     ax,word [end_cursor]
 ;        ja      .zerro           ;check on correct if anymore
+end if
 
 .ok_found_mode:
         mov     word [home_cursor],si
