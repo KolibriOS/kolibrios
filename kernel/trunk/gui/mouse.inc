@@ -306,6 +306,7 @@ mouse._.left_button_release_handler: ;/////////////////////////////////////////
         call    sys_window_end_moving_handler
 
   .exit:
+        and     [mouse.active_sys_window.action], 0
         ret
 
 align 4
