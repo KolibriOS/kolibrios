@@ -26,6 +26,11 @@ CPU_PENTIUM    equ 5
 CPU_P6	       equ 6
 CPU_PENTIUM4   equ 0x0F
 
+PLATFORM        equ     0x14
+PLATFORM_RS780  equ     0x0F
+PLATFORM_RS880  equ     0x10
+PLATFORM_FUSION equ     0x14
+
 CAPS_FPU       equ    00 ;on-chip x87 floating point unit
 CAPS_VME       equ    01 ;virtual-mode enhancements
 CAPS_DE        equ    02 ;debugging extensions

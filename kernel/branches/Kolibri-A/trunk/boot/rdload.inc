@@ -10,9 +10,9 @@ $Revision$
 
 ; READ RAMDISK IMAGE FROM HD
 
-	cmp   [boot_dev+OS_BASE+0x10000],1
-;	jne   no_sys_on_hd
-
+;        cmp   [boot_dev+OS_BASE+0x10000],1
+       jmp   no_sys_on_hd
+if 0
 	test  [DRIVE_DATA+1],byte 0x40
 	jz    position_2
 	mov   [hdbase],0x1f0
@@ -97,6 +97,7 @@ read_image:
 	mov   edi, 12
 	call  file_read
 	ret
+end if
 
 image_retrieved  db 0
 counter_of_partitions db 0

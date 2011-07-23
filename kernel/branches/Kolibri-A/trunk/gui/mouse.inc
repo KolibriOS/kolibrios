@@ -381,7 +381,7 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
 	mov	[mouse.active_sys_window.new_box.left], eax
 	mov	eax, [mouse.state.pos.y]
 	sub	eax, [mouse.active_sys_window.delta.y]
-	mov	[mouse.active_sys_window.new_box.top],  eax
+	mov	[mouse.active_sys_window.new_box.top],	eax
 
 	mov	eax, [mouse.active_sys_window.new_box.left]
 	or	eax, eax
@@ -513,11 +513,11 @@ mouse._.find_sys_window_under_cursor: ;////////////////////////////////////////
 ;< esi = process slot
 ;< edi = pointer to WDATA struct
 ;------------------------------------------------------------------------------
-        mov     esi, [Screen_Max_X]
-        inc     esi
-        imul    esi, [mouse.state.pos.y]
-        add     esi, [_WinMapAddress]
-        add     esi, [mouse.state.pos.x]
+	mov	esi, [Screen_Max_X]
+	inc	esi
+	imul	esi, [mouse.state.pos.y]
+	add	esi, [_WinMapAddress]
+	add	esi, [mouse.state.pos.x]
 	movzx	esi, byte[esi]
 	mov	edi, esi
 	shl	edi, 5
@@ -700,5 +700,5 @@ mouse._.check_sys_window_actions: ;////////////////////////////////////////////
   .exit:
 	ret
 
-diff16 "mouse code end ",0,$
+;diff16 "mouse code end ",0,$
 diff10 "mouse code size",mouse_check_events,$

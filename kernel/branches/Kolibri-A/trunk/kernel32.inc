@@ -15,7 +15,7 @@
 
 $Revision$
 
- 
+
 
 struc POINT {
   .x dd ?
@@ -220,13 +220,13 @@ include "fs/ext2.inc"	  ; read / write for ext2 filesystem
 ; sound
 
 include "sound/playnote.inc"	; player Note for Speaker PC
-;include "sound/FHT.inc" 	; fast Fourier transform routines
+;include "sound/FHT.inc"        ; fast Fourier transform routines
 
 ; display
 
-;include "video/graph32.inc"   	; 32bpp graphics
-include "video/vesa20.inc"   	; older graphics engine
-include "video/cursors.inc"  	; cursors functions
+;include "video/graph32.inc"    ; 32bpp graphics
+include "video/vesa20.inc"	; older graphics engine
+include "video/cursors.inc"	; cursors functions
 
 ; Network Interface & TCPIP Stack
 
@@ -247,6 +247,7 @@ include "gui/skincode.inc"
 include "bus/pci/pci32.inc"
 ;include "bus/pci/PCIe.inc"
 include "bus/HT.inc"		; AMD HyperTransport bus control
+include "bus/SB/SB.inc"
 
 ; Floppy drive controller
 

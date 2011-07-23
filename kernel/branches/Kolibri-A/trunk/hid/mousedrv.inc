@@ -7,7 +7,7 @@
 
 $Revision$
 
- 
+
 ;   check mouse
 ;
 ;
@@ -93,21 +93,21 @@ save_draw_mouse:
 	movzx  ebx,word [MOUSE_X]
 	push eax
 	push ebx
-	
+
 	mov ecx, [Screen_Max_X]
 	inc ecx
 	mul ecx
     add eax, [_WinMapAddress]
     movzx edx, byte [ebx+eax]
 	shl edx, 8
-        mov esi, [edx+SLOT_BASE+APPDATA.cursor]
+	mov esi, [edx+SLOT_BASE+APPDATA.cursor]
 
-        cmp esi, [current_cursor]
+	cmp esi, [current_cursor]
 	je .draw
 
-        push esi
+	push esi
     call [_display.select_cursor]
-        mov [current_cursor], esi
+	mov [current_cursor], esi
 .draw:
     stdcall [_display.move_cursor], esi
 	popad
@@ -115,7 +115,7 @@ save_draw_mouse:
 .fail:
 	mov ecx, [def_cursor]
 	mov [edx+SLOT_BASE+APPDATA.cursor], ecx
-    stdcall [_display.move_cursor], ecx            ; stdcall: [esp]=ebx,eax
+    stdcall [_display.move_cursor], ecx 	   ; stdcall: [esp]=ebx,eax
 	popad
 	ret
 
@@ -156,7 +156,7 @@ drm:
 	mov    esi, edi
 	add    edi, esi
 	add    edi, esi       ; *3
-	add    edi, mousepointer	;[MOUSE_PICTURE]	; we have our str address
+	add    edi, mousepointer	;[MOUSE_PICTURE]        ; we have our str address
 	mov    esi, edi
 	add    esi, 16*24*3
 	push   ecx
@@ -439,5 +439,5 @@ mouse_acceleration:
 @@:
 	ret
 
-diff16 "window code end",0,$
+;diff16 "window code end",0,$
 diff10 "mousedrv  size ",draw_mouse_under,$

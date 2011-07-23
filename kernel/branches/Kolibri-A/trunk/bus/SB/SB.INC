@@ -1,9 +1,16 @@
 $Revision: 1598 $
 
-SMBUS_PCIE_ADDR		equ	0xF00A0000    	; bdf0:20.0  = SB7xx SMBus PCI Config Registers
-LPC_PCIE_ADDR		equ	0xF00A3000    	; bdf0:20.3  = SB7xx LPC ISA bridge Config Registers
+SMBUS_PCIE_ADDR 	equ	0xF00A0000	; bdf0:20.0  = SB7xx SMBus PCI Config Registers
+LPC_PCIE_ADDR		equ	0xF00A3000	; bdf0:20.3  = SB7xx LPC ISA bridge Config Registers
 
-SB_SIO_INDEX	equ	0x2e
+SB_SIO_INDEX	equ	0x2E
+SB_PM_INDEX	equ	0xCD6
+
+if PLATFORM>PLATFORM_RS780
+include "bus/sb/hudson.inc"
+else
+include "bus/sb/sb710.inc"
+end if
 
 ;---------------------------------------------------------------------
 align 4
@@ -43,10 +50,38 @@ lpc_write_pciconfig:
 align 4
 read_sio_cfg:
 ; in:  al = reg#  |  out: al =  data
+	push	edx
 	mov	dx,  SB_SIO_INDEX
 	out	dx, al
 	inc	dl
 	in	al, dx
+	pop	edx
+	ret
+
+;------------------------------------------------
+align 4
+write_pm_cfg:
+; in:  al = reg#; ah = data
+;------------------------------------------------
+	push	edx
+	mov	dx,  SB_PM_INDEX
+	out	dx, al
+	inc	dl
+	xchg	al, ah
+	out	dx, al
+	xchg	al, ah
+	pop	edx
+	ret
+;--------------------------------------------------------------------
+align 4
+read_pm_cfg:
+; in:  al = reg#  |  out: al =  data
+	push	edx
+	mov	dx,  SB_PM_INDEX
+	out	dx, al
+	inc	dl
+	in	al, dx
+	pop	edx
 	ret
 
 ;------------------------------------------------
@@ -54,12 +89,14 @@ align 4
 write_sio_cfg:
 ; in:  al = reg#; ah = data
 ;------------------------------------------------
+	push	edx
 	mov	dx,  SB_SIO_INDEX
 	out	dx, al
 	inc	dl
 	xchg	al, ah
 	out	dx, al
 	xchg	al, ah
+	pop	edx
 	ret
 ;------------------------------------------------
 align 4
@@ -78,12 +115,12 @@ enter_sio_cfg_mode:
 	ret
 
 ;-----------------------------------------------------------------------
-; ATTENTION: the functions assume that RESET# signals use pins 84 and 34 
-; of IT8712F SuperIO chip. These signals may be (and will be!) different 
+; ATTENTION: the functions assume that RESET# signals use pins 84 and 34
+; of IT8712F SuperIO chip. These signals may be (and will be!) different
 ; for every particular motherboard and SIO. Please refer to your m/board
-; documentation to define the correct pins and GPIO lines! 
+; documentation to define the correct pins and GPIO lines!
 ;
-;   Note this example DOES NOT PRETEND to be 100% correct implementation 
+;   Note this example DOES NOT PRETEND to be 100% correct implementation
 ;   of PCIe hotplug techniques !!
 ;-----------------------------------------------------------------------
 align 4
@@ -111,7 +148,7 @@ init_pcie_slot_control:
 	mov	ax, 0x0202	; Lock SIO config ports
 	call	write_sio_cfg
 	ret
- 
+
 align 4
 reset_pcie_slot:
 ;------------------------------------------------
@@ -122,7 +159,7 @@ reset_pcie_slot:
 	call	read_sio_cfg	; ah = regB0h (Pin polarity)
 	and	ah, 0xFC	; invert bits 0, 1
 	call	write_sio_cfg
-	or	ah, 3		; restore bits 0, 1 
+	or	ah, 3		; restore bits 0, 1
 	call	write_sio_cfg
 	mov	ax, 0x0202	; Lock SIO config ports
 	call	write_sio_cfg

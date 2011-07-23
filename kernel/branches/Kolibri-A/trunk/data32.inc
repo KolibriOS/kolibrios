@@ -7,7 +7,7 @@
 
 $Revision$
 
- 
+
 keymap:
 
      db   '6',27
@@ -47,28 +47,26 @@ keymap_alt:
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
-  boot_memdetect    db	 'Determining amount of memory',0
-  boot_fonts	    db	 'Fonts loaded',0
-  boot_tss	    db	 'Setting TSSs',0
-  boot_cpuid	    db	 'Reading CPUIDs',0
-  boot_devices	    db	 'Detecting devices',0
+;  boot_memdetect    db   'Determining amount of memory',0
+;  boot_fonts        db   'Fonts loaded',0
+;  boot_tss          db   'Setting TSSs',0
+;  boot_cpuid        db   'Reading CPUIDs',0
+;  boot_devices      db   'Detecting devices',0
   boot_timer	    db	 'Setting timer',0
   boot_irqs	    db	 'Reprogramming IRQs',0
-  boot_setmouse     db	 'Setting mouse',0
+;  boot_setmouse     db   'Setting mouse',0
   boot_windefs	    db	 'Setting window defaults',0
-  boot_bgr	    db	 'Calculating background',0
-;  boot_resirqports  db  'Reserving IRQs & ports',0
-; boot_setrports    db   'Setting addresses for IRQs',0
-  boot_setostask    db	 'Setting OS task',0
+;  boot_bgr          db   'Calculating background',0
+;  boot_setostask    db   'Setting OS task',0
   boot_allirqs	    db	 'Unmasking all IRQs',0
-  boot_tsc	    db	 'Reading TSC',0
+;  boot_tsc          db   'Reading TSC',0
   boot_cpufreq	    db	 'CPU frequency is ','    ',' MHz',0
-  boot_failed	    db	 'Failed to start first app',0
-  boot_mtrr	    db	 'Setting MTRR',0
-  boot_uDMA_ok	    db	 'Set user DMA OK',0
-if preboot_blogesc
-  boot_tasking	    db	 'All set - press ESC to start',0
-end if
+;  boot_failed       db   'Failed to start first app',0
+;  boot_mtrr         db   'Setting MTRR',0
+;  boot_uDMA_ok      db   'Set user DMA OK',0
+;if preboot_blogesc
+;  boot_tasking      db   'All set - press ESC to start',0
+;end if
 
 ;new_process_loading db 'K : New Process - loading',13,10,0
 ;new_process_running db 'K : New Process - done',13,10,0
@@ -90,7 +88,7 @@ szHwMouse	db 'ATI2D',0
 szPS2MDriver	db 'PS2MOUSE',0
 ;szCOM_MDriver   db 'COM_MOUSE',0
 szUSB		db 'USB',0
-szAtiHW 	db '/rd/1/drivers/ati2d.drv',0
+;szAtiHW         db '/rd/1/drivers/ati2d.drv',0
 
 szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
@@ -318,23 +316,23 @@ srv.bk		  rd 1
 ;align 64
 ;img_draw_core_fn  rd 1         ; putimage variables & helpers
 ;img_draw_edge_fn  rd 1
-;img_lfb_origin	  rd 1
-;img_buf_origin	  rd 1
+;img_lfb_origin   rd 1
+;img_buf_origin   rd 1
 ;img_buf_line_size rd 1
-;img_palette	  rd 1
-;img_bitoffset	  rd 1
-;img_edgeoffset	  rd 1
+;img_palette      rd 1
+;img_bitoffset    rd 1
+;img_edgeoffset   rd 1
 ;img_bytes_per_pix rd 1
-;img_map_right	  rd 1
-;img_map_x	  rd 1
-;img_pix_x	  rd 1          ; real Xsize
-;img_pix_y	  rd 1          ; real Ysize
-;img_screen_x	  rd 1
-;img_screen_y	  rd 1
+;img_map_right    rd 1
+;img_map_x        rd 1
+;img_pix_x        rd 1          ; real Xsize
+;img_pix_y        rd 1          ; real Ysize
+;img_screen_x     rd 1
+;img_screen_y     rd 1
 
 align 64
-;_WinMapWidth	  rd 1
-;_WinMapHeight	  rd 1
+;_WinMapWidth     rd 1
+;_WinMapHeight    rd 1
 _WinMapAddress	  rd 1
 _WinMapSize	  rd 1
 

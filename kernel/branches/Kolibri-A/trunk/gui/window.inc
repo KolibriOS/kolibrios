@@ -1637,25 +1637,25 @@ window._.set_screen: ;/////////////////////////////////////////////////////////
 	imul	edi, ebx
 	add	edi, eax
 	add	edi, [_WinMapAddress]
-	pop	eax             ; al = process#
+	pop	eax		; al = process#
 	mov	ah, al
 	push	ax
 	shl	eax, 16
-	pop	ax              ; eax = 4 dup PROCESS_NUM
+	pop	ax		; eax = 4 dup PROCESS_NUM
 
   .next_line:
 	push	ecx
-        shr     ecx, 2          
-	rep	stosd           ; filling the screen map
+	shr	ecx, 2
+	rep	stosd		; filling the screen map
 	mov	ecx,[esp]
-	and	ecx, 3          
+	and	ecx, 3
 	rep	stosb
 	pop	ecx
-	add	edi, esi        
+	add	edi, esi
 	sub	edi, ecx
 	dec	edx
-        jnz	.next_line
-;	jmp	.exit
+	jnz	.next_line
+;       jmp     .exit
 
   .shaped_window:
 	;  (not supported any more)
@@ -1947,5 +1947,5 @@ window._.draw_negative_box: ;//////////////////////////////////////////////////
 	pop	esi ebx eax
 	ret
 
-diff16 "window code end",0,$
+;diff16 "window code end",0,$
 diff10 "window.inc size",syscall_draw_window,$

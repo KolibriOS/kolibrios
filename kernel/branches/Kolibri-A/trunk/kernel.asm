@@ -219,8 +219,17 @@ diff16 "32-bit code start ",0,$
 	   call init_BIOS32	; (init.inc - to be removed later)
 
 ; PCIe extended config space access
-;           call rs7xx_pcie_init ; (bus/HT.inc)
-	   call fusion_pcie_init	; (bus/HT.inc)
+
+	display '** Platform chosen (const.inc): '
+if PLATFORM>PLATFORM_RS780
+	call fusion_pcie_init	; (bus/HT.inc)
+	display 'RS880/Fusion '
+else
+	call rs7xx_pcie_init	; (bus/HT.inc)
+	display 'RS780 '
+end if
+	display 10,13
+
 
 ; MEMORY MODEL
 	   call init_mem	; (init.inc)
@@ -242,10 +251,11 @@ align 4
 bios32_entry	dd ?
 tmp_page_tabs	dd ?
 
-use16
-org $-0x10000
-include "boot/shutdown.inc" ; shutdown or restart
-org $+0x10000
+;use16
+;org $-0x10000
+;include "boot/shutdown.inc" ; shutdown or restart
+;org $+0x10000
+
 use32
 
 __DEBUG__ fix 1
@@ -572,28 +582,18 @@ include 'detect/disks.inc'
 include 'vmodeld.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
 
-if 0
-  mov ax,[OS_BASE+0x10000+bx_from_load]
-  cmp ax,'r1'		; if using not ram disk, then load librares and parameters {SPraid.simba}
-  je  no_lib_load
-; LOADING LIBRARES
-   stdcall dll.Load,@IMPORT		    ; loading librares for kernel (.obj files)
-   call load_file_parse_table		    ; prepare file parse table
-   call set_kernel_conf 		    ; configure devices and gui
-no_lib_load:
-end if
 
 ; LOAD FONTS I and II
 
 	stdcall read_file, char, FONT_I, 0, 2304
 	stdcall read_file, char2, FONT_II, 0, 2560
 
-	mov   esi,boot_fonts
-	call  boot_log
+;        mov   esi,boot_fonts
+;        call  boot_log
 
 ; PRINT AMOUNT OF MEMORY
-	mov	esi, boot_memdetect
-	call	boot_log
+;        mov     esi, boot_memdetect
+;        call    boot_log
 
 	movzx	ecx, word [boot_y]
 	or	ecx, (10+29*6) shl 16 ; "Determining amount of memory"
@@ -610,8 +610,8 @@ end if
 
 	call   build_scheduler ; sys32.inc
 
-	mov    esi,boot_devices
-	call   boot_log
+;        mov    esi,boot_devices
+;        call   boot_log
 
 	mov  [pci_access_enabled],1
 
@@ -624,15 +624,15 @@ end if
 
 ; SET BACKGROUND DEFAULTS
 
-	mov   esi,boot_bgr
-	call  boot_log
+;        mov   esi,boot_bgr
+;        call  boot_log
 	call  init_background	;
 	call  calculatebackground
 
 ; SET UP OS TASK
 
-	mov  esi,boot_setostask
-	call boot_log
+;        mov  esi,boot_setostask
+;        call boot_log
 
 	xor  eax, eax
 	mov  dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
@@ -683,8 +683,8 @@ end if
 
   ; READ TSC / SECOND
 
-	mov   esi,boot_tsc
-	call  boot_log
+;        mov   esi,boot_tsc
+;        call  boot_log
 	cli
 	rdtsc ;call  _rdtsc
 	mov   ecx,eax
@@ -724,8 +724,8 @@ end if
 	;call   detect_devices
 	stdcall load_driver, szPS2MDriver
 
-	mov   esi,boot_setmouse
-	call  boot_log
+;        mov   esi,boot_setmouse
+;        call  boot_log
 ;       call  setmouse
 ;     mov     [MOUSE_PICTURE],dword mousepointer
 	cli
@@ -754,8 +754,8 @@ end if
 
 
 	call init_userDMA	; <<<<<<<<< ============== core/memory.inc =================
-	mov	esi, boot_uDMA_ok
-	call	boot_log
+;        mov     esi, boot_uDMA_ok
+;        call    boot_log
 
 ; LOAD FIRST APPLICATION
 	cli
@@ -779,8 +779,8 @@ no_load_vrr_m:
 	sub   eax,2
 	jz    first_app_found
 
-	mov	esi, boot_failed
-	call	boot_log
+;        mov     esi, boot_failed
+;        call    boot_log
 
 	mov   eax, 0xDEADBEEF	     ; otherwise halt
 	hlt
@@ -825,13 +825,13 @@ first_app_found:
 
 ; START MULTITASKING
 
-if preboot_blogesc
-	mov	esi, boot_tasking
-	call	boot_log
-.bll1:	in	al, 0x60	; wait for ESC key press
-	cmp	al, 129
-	jne	.bll1
-end if
+;if preboot_blogesc
+;        mov     esi, boot_tasking
+;        call    boot_log
+;.bll1:  in      al, 0x60        ; wait for ESC key press
+;        cmp     al, 129
+;        jne     .bll1
+;end if
 
 
 	stdcall attach_int_handler, 1, irq1, 0
@@ -4468,230 +4468,50 @@ system_shutdown:	  ; shut down the system
 yes_shutdown_param:
 	   cli
 
-	   mov	eax, kernel_file ; load kernel.mnt to 0x7000:0
-	   push 12
-	   pop	esi
-	   xor	ebx,ebx
-	   or	ecx,-1
-	   mov	edx, OS_BASE+0x70000
-	   call fileread
-
-	   mov	esi, restart_kernel_4000+OS_BASE+0x10000 ; move kernel re-starter to 0x4000:0
-	   mov	edi,OS_BASE+0x40000
-	   mov	ecx,1000
-	   rep	movsb
-
-	   mov	esi,OS_BASE+0x2F0000	; restore 0x0 - 0xffff
-	   mov	edi, OS_BASE
-	   mov	ecx,0x10000/4
-	   cld
-	   rep movsd
-
-	   call restorefatchain
 
 	   mov al, 0xFF
-	   out 0x21, al
-	   out 0xA1, al
+	   out 0x21, al 	;IntrCntrl1Reg2
+	   out 0xA1, al 	;IntrCntrl2Reg2
 
+	cmp	byte [BOOT_VAR + 0x9030], 2
+	jnz	pm_restart
 if 0
-	   mov	word [OS_BASE+0x467+0],pr_mode_exit
-	   mov	word [OS_BASE+0x467+2],0x1000
-
-	   mov	al,0x0F
-	   out	0x70,al
-	   mov	al,0x05
-	   out	0x71,al
-
-	   mov	al,0xFE
-	   out	0x64,al
-
-	   hlt
-	   jmp $-1
-
-else
-	cmp	byte [OS_BASE + 0x9030], 2
-	jnz	no_acpi_power_off
-
-; scan for RSDP
-; 1) The first 1 Kb of the Extended BIOS Data Area (EBDA).
-	movzx	eax, word [OS_BASE + 0x40E]
-	shl	eax, 4
-	jz	@f
-	mov	ecx, 1024/16
-	call	scan_rsdp
-	jnc	.rsdp_found
-@@:
-; 2) The BIOS read-only memory space between 0E0000h and 0FFFFFh.
-	mov	eax, 0xE0000
-	mov	ecx, 0x2000
-	call	scan_rsdp
-	jc	no_acpi_power_off
-.rsdp_found:
-	mov	esi, [eax+16]	; esi contains physical address of the RSDT
-	mov	ebp, [ipc_tmp]
-	stdcall map_page, ebp, esi, PG_MAP
-	lea	eax, [esi+1000h]
-	lea	edx, [ebp+1000h]
-	stdcall map_page, edx, eax, PG_MAP
-	and	esi, 0xFFF
-	add	esi, ebp
-	cmp	dword [esi], 'RSDT'
-	jnz	no_acpi_power_off
-	mov	ecx, [esi+4]
-	sub	ecx, 24h
-	jbe	no_acpi_power_off
-	shr	ecx, 2
-	add	esi, 24h
-.scan_fadt:
-	lodsd
-	mov	ebx, eax
-	lea	eax, [ebp+2000h]
-	stdcall map_page, eax, ebx, PG_MAP
-	lea	eax, [ebp+3000h]
-	add	ebx, 0x1000
-	stdcall map_page, eax, ebx, PG_MAP
-	and	ebx, 0xFFF
-	lea	ebx, [ebx+ebp+2000h]
-	cmp	dword [ebx], 'FACP'
-	jz	.fadt_found
-	loop	.scan_fadt
-	jmp	no_acpi_power_off
-.fadt_found:
-; ebx is linear address of FADT
-	mov	edi, [ebx+40] ; physical address of the DSDT
-	lea	eax, [ebp+4000h]
-	stdcall map_page, eax, edi, PG_MAP
-	lea	eax, [ebp+5000h]
-	lea	esi, [edi+0x1000]
-	stdcall map_page, eax, esi, PG_MAP
-	and	esi, 0xFFF
-	sub	edi, esi
-	cmp	dword [esi+ebp+4000h], 'DSDT'
-	jnz	no_acpi_power_off
-	mov	eax, [esi+ebp+4004h] ; DSDT length
-	sub	eax, 36+4
-	jbe	no_acpi_power_off
-	add	esi, 36
-.scan_dsdt:
-	cmp	dword [esi+ebp+4000h], '_S5_'
-	jnz	.scan_dsdt_cont
-	cmp	byte [esi+ebp+4000h+4], 12h ; DefPackage opcode
-	jnz	.scan_dsdt_cont
-	mov	dl, [esi+ebp+4000h+6]
-	cmp	dl, 4 ; _S5_ package must contain 4 bytes
-		      ; ...in theory; in practice, VirtualBox has 2 bytes
-	ja	.scan_dsdt_cont
-	cmp	dl, 1
-	jb	.scan_dsdt_cont
-	lea	esi, [esi+ebp+4000h+7]
-	xor	ecx, ecx
-	cmp	byte [esi], 0 ; 0 means zero byte, 0Ah xx means byte xx
-	jz	@f
-	cmp	byte [esi], 0xA
-	jnz	no_acpi_power_off
-	inc	esi
-	mov	cl, [esi]
-@@:
-	inc	esi
-	cmp	dl, 2
-	jb	@f
-	cmp	byte [esi], 0
-	jz	@f
-	cmp	byte [esi], 0xA
-	jnz	no_acpi_power_off
-	inc	esi
-	mov	ch, [esi]
-@@:
-	jmp	do_acpi_power_off
-.scan_dsdt_cont:
-	inc	esi
-	cmp	esi, 0x1000
-	jb	@f
-	sub	esi, 0x1000
-	add	edi, 0x1000
-	push	eax
-	lea	eax, [ebp+4000h]
-	stdcall map_page, eax, edi, PG_MAP
-	push	PG_MAP
-	lea	eax, [edi+1000h]
-	push	eax
-	lea	eax, [ebp+5000h]
-	push	eax
-	stdcall map_page
-	pop	eax
-@@:
-	dec	eax
-	jnz	.scan_dsdt
-	jmp	no_acpi_power_off
-do_acpi_power_off:
-	mov	edx, [ebx+48]
-	test	edx, edx
-	jz	.nosmi
-	mov	al, [ebx+52]
+	mov	al, SB_PM_CTRL_BLK
+	mov	ah, al
+	inc	ah
+	mov	dx, 0x0CD6
 	out	dx, al
-	mov	edx, [ebx+64]
-@@:
-	in	ax, dx
-	test	al, 1
-	jz	@b
-.nosmi:
-	and	cx, 0x0707
-	shl	cx, 2
-	or	cx, 0x2020
-	mov	edx, [ebx+64]
-	in	ax, dx
-	and	ax, 203h
-	or	ah, cl
+	inc	dl
+	in	al, dx
+	mov	cl, al
+	dec	dl
+	mov	al, ah
+	out	dx, al
+	inc	dl
+	in	al, dx
+	mov	ch, al
+end if
+	mov	dx, 0x0804	;cx
+	mov	ax, 0x03400
 	out	dx, ax
-	mov	edx, [ebx+68]
-	test	edx, edx
-	jz	@f
-	in	ax, dx
-	and	ax, 203h
-	or	ah, ch
-	out	dx, ax
-@@:
-	jmp	$
+; THE END...
+	jmp	$	; just to be absolutely sure
 
 
-no_acpi_power_off:
-	   mov	word [OS_BASE+0x467+0],pr_mode_exit
-	   mov	word [OS_BASE+0x467+2],0x1000
+pm_restart:
 
 	   mov	al,0x0F
-	   out	0x70,al
+	   out	0x70,al 	; NmiEnable
 	   mov	al,0x05
-	   out	0x71,al
+	   out	0x71,al 	; RtcData
 
-	   mov	al,0xFE
-	   out	0x64,al
+	   mov	ax, 6
+	   mov	dx, 0xCF9	; reset reg
+	   out	dx, ax
 
 	   hlt
 	   jmp $-1
 
-scan_rsdp:
-	add	eax, OS_BASE
-.s:
-	cmp	dword [eax], 'RSD '
-	jnz	.n
-	cmp	dword [eax+4], 'PTR '
-	jnz	.n
-	xor	edx, edx
-	xor	esi, esi
-@@:
-	add	dl, [eax+esi]
-	inc	esi
-	cmp	esi, 20
-	jnz	@b
-	test	dl, dl
-	jz	.ok
-.n:
-	add	eax, 10h
-	loop	.s
-	stc
-.ok:
-	ret
-end if
 
 diff16 "End of 32-code ",0,$
 

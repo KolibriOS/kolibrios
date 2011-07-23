@@ -174,29 +174,29 @@ map_pcie_pages:
 ; ---- stepping 10h CPUs and Fusion APUs: the configspace is stored in MSR_C001_0058 ----
 align 4
 fusion_pcie_init:
-        mov     ecx, 0xC0010058
-        rdmsr
-        or      edx, edx
-        jnz     $                               ; PCIe is in the upper memory. Stop.
-        xchg    dl, al
+	mov	ecx, 0xC0010058
+	rdmsr
+	or	edx, edx
+	jnz	$				; PCIe is in the upper memory. Stop.
+	xchg	dl, al
 	mov	dword[mmio_pcie_cfg_addr-OS_BASE], eax	; store the physical address
-        mov     ecx, edx
-        and     dl, 1
-        jz      $                               ; bit[0] = 1 means no PCIe mapping allowed. Stop.
-        shr     cl, 2                           ; ecx = log2(number of buses)
-	mov	word[PCIe_bus_range-OS_BASE], cx	
-        sub     cl, 2
-        jae     @f
-        xor     cl, cl
+	mov	ecx, edx
+	and	dl, 1
+	jz	$				; bit[0] = 1 means no PCIe mapping allowed. Stop.
+	shr	cl, 2				; ecx = log2(number of buses)
+	mov	word[PCIe_bus_range-OS_BASE], cx
+	sub	cl, 2
+	jae	@f
+	xor	cl, cl
 @@:
-        shl     edx, cl                         ; edx = number of 4M pages to map
-	mov	word[mmio_pcie_cfg_pdes-OS_BASE], dx	
-        shl     edx, 22
-        dec     edx
-        add     edx, eax                        ; the upper configspace limit
+	shl	edx, cl 			; edx = number of 4M pages to map
+	mov	word[mmio_pcie_cfg_pdes-OS_BASE], dx
+	shl	edx, 22
+	dec	edx
+	add	edx, eax			; the upper configspace limit
 	mov	dword[mmio_pcie_cfg_lim-OS_BASE], edx
 
-        jmp     map_pcie_pages  
+	jmp	map_pcie_pages
 
 ; ================================================================================
 
@@ -315,12 +315,11 @@ sys_rdmsr:
 ; out: [esp+8] = MSR[63:32]
 ;        [eax] = MSR[31: 0]
 ;------------------------------------------------
-        push    ecx edx
-        mov     ecx, [esp+16]
-        rdmsr
-        mov     [esp+16], edx
-        pop     edx ecx
-        ret
-
+	push	ecx edx
+	mov	ecx, [esp+16]
+	rdmsr
+	mov	[esp+16], edx
+	pop	edx ecx
+	ret
 
 

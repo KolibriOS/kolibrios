@@ -149,11 +149,11 @@
 ;       in the current version:
 ;            ->  00B3C   16-bit code end
 ;            ->  00C40   16-bit data end
-;            ->  10C40   32-bit code start
-;            ->  2D07E   32-bit code end
-;            ->  30418..end_of_kernel    zero-filled zone after preinit_mem
-;            ->  33D63   uninitialized globals start
-;            ->  3BF52   end_of_kernel
+;            ->  105F0   32-bit code start
+;            ->  2C889   32-bit code end
+;            ->  2FC28..end_of_kernel    zero-filled zone after preinit_mem
+;            ->  33563   uninitialized globals start
+;            ->  3B752   end_of_kernel
 ;            ->  3C000   not used (>200k)
 ; 0x80050000 -> 090000   zero-filled zone after preinit_mem
 ; 0x8006CC00 ->  6DBFF   stack at boot time (4Kb)

@@ -463,7 +463,7 @@ align 4
      ret
 align 4
 .drawtable:
-dd	.check_overlap  ; general case
+dd	.check_overlap	; general case
 dd	.invert_color
 dd	.putpixel	; force to draw it
 dd	.invert_force
@@ -497,18 +497,18 @@ vline:
      shl     eax, 1
      add     eax, ebx
      add     eax, LFB_BASE
-     pop     ebx        		; restore ebx = y1
+     pop     ebx			; restore ebx = y1
      cmp     edx, [Screen_Max_Y]	; the last check
      jb     .draw
      mov     edx, [Screen_Max_Y]	; to prevent off-screen drawing
 
-.draw:	  
-     jmp     dword [vline.drawtable + edi*4]	
+.draw:
+     jmp     dword [vline.drawtable + edi*4]
 align 4
 .invert_color:
      mov     ecx, [eax]
      xor     ecx, 0x00FFFFFF
-     or      ecx, 0x01000000		
+     or      ecx, 0x01000000
 align 4
 .check_overlap:
      movzx   esi, byte [ebp]
@@ -520,7 +520,7 @@ align 4
 .invert_force:
      mov     ecx, [eax]
      xor     ecx, 0x00FFFFFF
-     or      ecx, 0x01000000		
+     or      ecx, 0x01000000
 align 4
 .putpixel:
      mov     [eax], ecx
@@ -531,7 +531,7 @@ align 4
      inc     ebx
      cmp     ebx, edx
      ja     .exit
-     jmp     dword [vline.drawtable + edi*4]	
+     jmp     dword [vline.drawtable + edi*4]
 .exit:
      shr     edi, 1
      pop     edx ebx esi ebp eax
@@ -539,7 +539,7 @@ align 4
      ret
 align 4
 .drawtable:
-dd	.check_overlap  ; general case
+dd	.check_overlap	; general case
 dd	.invert_color
 dd	.putpixel	; force to draw it
 dd	.invert_force
@@ -576,9 +576,9 @@ vesa20_drawbar:
      sub     esp, drbar.stack_data
      mov     [drbar.color], edi
      sub     edx, ebx
-     jle     .exit	    
+     jle     .exit
      sub     ecx, eax
-     jle     .exit	    
+     jle     .exit
      mov     [drbar.bar_sy], edx
      mov     [drbar.bar_sx], ecx
      mov     [drbar.bar_cx], eax
@@ -594,7 +594,7 @@ vesa20_drawbar:
      inc     ebx
      sub     ebx, [drbar.bar_cx]
      ja      @f
-.exit:			     
+.exit:
      add     esp, drbar.stack_data
      popad
      xor     eax, eax
@@ -755,7 +755,7 @@ nbgp:
 	add	esi, 3
 	add	edi, 3
 @@:
-	inc	edi   	 	; +1 for 32 bpp
+	inc	edi		; +1 for 32 bpp
 	add	ebp, edx
 	add	eax, edx
 	cmp	eax, [draw_data+32+RECT.right]
@@ -1042,23 +1042,23 @@ init_background:
 
 align 16
 overlapping_of_points_mmx:
-        movd    mm0, eax
-        movd    mm4, eax
-        movd    mm1, ebx
-        pxor    mm2, mm2
-        punpcklbw mm0, mm2
-        punpcklbw mm1, mm2
-        psubw   mm1, mm0
-        movd    mm3, ecx
-        psrld   mm3, 24
-        packuswb mm3, mm3
-        packuswb mm3, mm3
-        pmullw  mm1, mm3
-        psrlw   mm1, 8
-        packuswb mm1, mm2
-        paddb   mm4, mm1
-        movd    eax, mm4
-        ret
-diff16 "VESA2 code end ",0,$
-diff16 "VESA2 code size",get_pixel,$
+	movd	mm0, eax
+	movd	mm4, eax
+	movd	mm1, ebx
+	pxor	mm2, mm2
+	punpcklbw mm0, mm2
+	punpcklbw mm1, mm2
+	psubw	mm1, mm0
+	movd	mm3, ecx
+	psrld	mm3, 24
+	packuswb mm3, mm3
+	packuswb mm3, mm3
+	pmullw	mm1, mm3
+	psrlw	mm1, 8
+	packuswb mm1, mm2
+	paddb	mm4, mm1
+	movd	eax, mm4
+	ret
+;diff16 "VESA2 code end ",0,$
+diff10 "VESA2 code size",get_pixel,$
 

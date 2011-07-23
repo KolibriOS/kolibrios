@@ -1441,5 +1441,5 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
 .fail:
 	   ret
 endp
-diff16 "memman code end",0,$
-diff16 "memman code sze",alloc_page,$
+;diff16 "memman code end",0,$
+diff10 "memman code sze",alloc_page,$
