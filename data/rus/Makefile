@@ -214,7 +214,6 @@ COPY_FILES:=\
  fonts/trip.chr:FONTS/TRIP.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TRIP.CHR \
  fonts/tscr.chr:FONTS/TSCR.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TSCR.CHR \
  games/snake.ini:GAMES/SNAKE.INI:$(PROGS)/games/snake/trunk/snake.ini \
- games/skin.raw:GAMES/SKIN.RAW:$(PROGS)/games/soko/trunk/SKIN.RAW \
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
  .shell:.shell:$(PROGS)/system/shell/bin/rus/.shell \
  mykey.ini:MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey.ini \
