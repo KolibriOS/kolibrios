@@ -145,7 +145,6 @@ FASM_PROGRAMS:=\
  games/pong:GAMES/PONG:$(PROGS)/games/pong/trunk/pong.asm \
  games/pong3:GAMES/PONG3:$(PROGS)/games/pong3/trunk/pong3.asm \
  games/rsquare:GAMES/RSQUARE:$(PROGS)/games/rsquare/trunk/rsquare.asm \
- games/soko:GAMES/SOKO:$(PROGS)/games/soko/trunk/SOKO.ASM \
  games/snake:GAMES/SNAKE:$(PROGS)/games/snake/trunk/snake.asm \
  games/sq_game:GAMES/SQ_GAME:$(PROGS)/games/sq_game/trunk/SQ_GAME.ASM \
  games/sudoku:GAMES/SUDOKU:$(PROGS)/games/sudoku/trunk/sudoku.asm \
@@ -216,12 +215,6 @@ COPY_FILES:=\
  fonts/tscr.chr:FONTS/TSCR.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TSCR.CHR \
  games/snake.ini:GAMES/SNAKE.INI:$(PROGS)/games/snake/trunk/snake.ini \
  games/skin.raw:GAMES/SKIN.RAW:$(PROGS)/games/soko/trunk/SKIN.RAW \
- games/soko-4.lev:GAMES/SOKO-4.LEV:$(PROGS)/games/soko/trunk/SOKO-4.LEV \
- games/soko-5.lev:GAMES/SOKO-5.LEV:$(PROGS)/games/soko/trunk/SOKO-5.LEV \
- games/soko-6.lev:GAMES/SOKO-6.LEV:$(PROGS)/games/soko/trunk/SOKO-6.LEV \
- games/soko-7.lev:GAMES/SOKO-7.LEV:$(PROGS)/games/soko/trunk/SOKO-7.LEV \
- games/soko-8.lev:GAMES/SOKO-8.LEV:$(PROGS)/games/soko/trunk/SOKO-8.LEV \
- games/soko-9.lev:GAMES/SOKO-9.LEV:$(PROGS)/games/soko/trunk/SOKO-9.LEV \
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
  .shell:.shell:$(PROGS)/system/shell/bin/rus/.shell \
  mykey.ini:MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey.ini \
