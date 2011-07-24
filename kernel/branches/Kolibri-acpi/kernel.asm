@@ -563,7 +563,7 @@ high_code:
 
            mov edi, irq_tab
            xor eax, eax
-           mov ecx, 16
+           mov ecx, IRQ_RESERVE
            rep stosd
 
 ;Set base of graphic segment to linear address of LFB
@@ -613,11 +613,13 @@ high_code:
 ; Try to Initialize APIC
 	call	APIC_init
 
+        call pci_irq_fixup
+
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
 	call	unmask_timer
 	stdcall enable_irq, 12
-        stdcall enable_irq, 1	
+        stdcall enable_irq, 1
 	stdcall enable_irq, 14
 	stdcall enable_irq, 15
 

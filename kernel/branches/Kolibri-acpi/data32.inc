@@ -63,7 +63,7 @@ keymap_alt:
   boot_failed       db   'Failed to start first app',0
   boot_APIC_found   db	 'APIC enabled', 0
   boot_APIC_nfound  db	 'APIC not found', 0
-  
+
 if preboot_blogesc
   boot_tasking      db   'All set - press ESC to start',0
 end if
@@ -114,6 +114,7 @@ vmode          db  '/sys/drivers/VMODE.MDR',0
 vrr_m          db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'
 
+dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
 
 align 4
 

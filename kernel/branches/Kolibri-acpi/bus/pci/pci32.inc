@@ -652,3 +652,47 @@ sys_pcibios:
 .return_a:
 	mov	dword[esp + 32], eax
 	ret
+
+align 4
+
+pci_irq_fixup:
+
+        push ebp
+
+        stdcall load_file, dev_data_path
+        test eax, eax
+        jz .fail
+
+        push eax
+
+        mov esi, eax
+        lea edi, [eax+ebx]
+
+.iterate:
+
+        cmp esi, edi
+        jae .done
+
+        mov eax, [esi]
+        cmp eax, -1
+        je .done
+
+        movzx ebx, al
+        movzx ebp, ah
+
+        stdcall pci_read32, ebp, ebx, 0
+
+        cmp eax, [esi+4]
+        jne .skip
+
+        mov eax, [esi+8]
+        stdcall pci_write8, ebp, ebx, 0x3C, eax
+.skip:
+        add esi, 16
+        jmp .iterate
+
+.done:
+        call kernel_free  ;and pop file base from stack
+.fail:
+        pop ebp
+        ret

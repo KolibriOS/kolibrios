@@ -334,7 +334,37 @@ proc START stdcall, state:dword
 	   mov esi, msgDone
 	   call SysMsgBoardStr
 
-	   stdcall AttachIntHandler, 17, ac97_irq, dword 0
+  if IRQ_REMAP
+	   pushf
+	   cli
+
+	   mov ebx, [ctrl.int_line]
+	   in al, 0xA1
+	   mov ah, al
+	   in al, 0x21
+	   test ebx, ebx
+	   jz .skip
+	   bts ax, bx			   ;mask old line
+.skip
+	   bts ax, IRQ_LINE		   ;mask new ine
+	   out 0x21, al
+	   mov al, ah
+	   out 0xA1, al
+					   ;remap IRQ
+	   stdcall PciWrite8, 0, 0xF8, 0x61, IRQ_LINE
+
+	   mov dx, 0x4d0		   ;8259 ELCR1
+	   in al, dx
+	   bts ax, IRQ_LINE
+	   out dx, al			   ;set level-triggered mode
+	   mov [ctrl.int_line], IRQ_LINE
+	   popf
+	   mov esi, msgRemap
+	   call SysMsgBoardStr
+  end if
+
+	   mov ebx, [ctrl.int_line]
+	   stdcall AttachIntHandler, ebx, ac97_irq, dword 0
 .reg:
 	   stdcall RegService, sz_sound_srv, service_proc
 	   ret
@@ -511,7 +541,7 @@ proc ac97_irq
            stdcall [ctrl.user_callback], ebx
 .done:
            pop eax
-           and eax, 0x40
+;           and eax, 0x40
            mov edx, CTRL_STAT
            call [ctrl.ctrl_write32]
 	   ret
