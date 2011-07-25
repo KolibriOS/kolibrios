@@ -1,26 +1,26 @@
 ;
 ;   application     :  3d shaking waved spiral
 ;   compilator      :  fasm
-;   system          :  MenuetOS
+;   system          :  KolibriOS
 ;   author          :  macgub
 ;   email           :  macgub3@wp
 
 timeout equ 3
-maxx equ 600        ; window size
+maxx equ 616	    ; window size
 maxy equ 420
 use32
 
-               org    0x0
+	       org    0x0
 
-               db     'MENUET01'              ; 8 byte id
-               dd     0x01                    ; header version
-               dd     START                   ; start of code
-               dd     I_END                   ; size of image
-               dd     0x100000                ; memory for app
-               dd     0xbffff                 ; esp
-               dd     0x0 , 0x0               ; I_Param , I_Icon
+	       db     'MENUET01'	      ; 8 byte id
+	       dd     0x01		      ; header version
+	       dd     START		      ; start of code
+	       dd     I_END		      ; size of image
+	       dd     0x100000		      ; memory for app
+	       dd     0xbffff		      ; esp
+	       dd     0x0 , 0x0 	      ; I_Param , I_Icon
 
-START:                          ; start of execution
+START:				; start of execution
 
      call draw_window
 
@@ -29,35 +29,40 @@ still:
 ;    mov  eax,23                 ; wait here for event
 ;    mov  ebx,timeout
 ;    int  0x40
-    mov eax,11                   ; check for event no wait
+    mov eax,11			 ; check for event no wait
     int 0x40
 
-    cmp  eax,1                  ; redraw request ?
-    je   red
-    cmp  eax,2                  ; key in buffer ?
-    je   key
-    cmp  eax,3                  ; button in buffer ?
-    je   button
+    cmp  eax,1			; redraw request ?
+    je	 red
+    cmp  eax,2			; key in buffer ?
+    je	 key
+    cmp  eax,3			; button in buffer ?
+    je	 button
 
     jmp  noclose
 
-  red:                          ; redraw
+  red:				; redraw
     call draw_window
     jmp  still
 
-  key:                          ; key
-    mov  eax,2                  ; just read it and ignore
+  key:				; key
+    mov  eax,2			; just read it and ignore
     int  0x40
-    jmp  still
-
-  button:                       ; button
-    mov  eax,17                 ; get id
+    shr  eax,8
+    cmp  eax, 27
+    jne  still
+    mov  eax, -1
     int  0x40
 
-    cmp  ah,1                   ; button id=1 ?
+
+  button:			; button
+    mov  eax,17 		; get id
+    int  0x40
+
+    cmp  ah,1			; button id=1 ?
     jne  noclose
 
-    mov  eax,-1                 ; close this program
+    mov  eax,-1 		; close this program
     int  0x40
   noclose:
 
@@ -85,13 +90,13 @@ oopz:
 oop:
   push [x]
 ;  call getcol  ;(x,z)
-  call fun                       ; calculates y and y1
+  call fun			 ; calculates y and y1
 ;  call rotateY
   mov eax,[sin_variable]
-  add eax,[vector_x]                     ;  vector_x
+  add eax,[vector_x]			 ;  vector_x
   add [x],eax
   mov eax,[vector_y]
-  add [y],eax                     ;  vector_y
+  add [y],eax			  ;  vector_y
   add [y1],eax
   call point_perspective
   call draw_point_3d
@@ -109,7 +114,7 @@ oop:
  mov eax,7
  mov ebx,screen_buf
  mov ecx,maxx*65536+maxy
- mov edx,20*65536+20
+ mov edx,0*65536+0
  int 0x40
 
  call set_elipse_dim
@@ -282,7 +287,7 @@ point_perspective:
   fistp [y1]
 ret
 calc_sin_variable:
-                     ;calculate sinus variable
+		     ;calculate sinus variable
  fldpi
  fidiv [sin_gran]
  fimul [sin_counter]
@@ -360,34 +365,19 @@ ret
 ;   *********************************************
 draw_window:
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,1			   ; 1, start of draw
     int  0x40
-                                   ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
-    mov  ebx,100*65536+maxx+25         ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+maxy+25         ; [y start] *65536 + [y size]
-    mov  edx,0x02000000            ; color of work area RRGGBB,8->color gl
-    mov  esi,0x805080d0            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x005080d0            ; color of frames    RRGGBB
+								   ; DRAW WINDOW
+    mov  eax,0			   		   ; function 0 : define and draw window
+    mov  ebx,100*65536+maxx+9	   ; [x start] *65536 + [x size]
+    mov  ecx,100*65536+maxy+25	   ; [y start] *65536 + [y size]
+    mov  edx,0x74000000 	  	   ; color of work area RRGGBB,8->color gl
+    mov  edi,labelt
     int  0x40
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-                                   ; CLOSE BUTTON
-    mov  eax,8                     ; function 8 : define and draw button
-    mov  ebx,(maxx+25-19)*65536+12 ; [x start] *65536 + [x size]
-    mov  ecx,5*65536+12            ; [y start] *65536 + [y size]
-    mov  edx,1                     ; button id
-    mov  esi,0x6688dd              ; button color RRGGBB
-    int  0x40
-
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
+				   ; WINDOW LABEL
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,2			   ; 2, end of draw
     int  0x40
 
     ret
@@ -411,8 +401,8 @@ current_deg dd ?
 ;suby dd ?
 ;subz dd ?
 
-xobs dd maxx/2    ; 320     observer variables
-yobs dd maxy/2    ; 175
+xobs dd maxx/2	  ; 320     observer variables
+yobs dd maxy/2	  ; 175
 zobs dd -200
 xobssub dd ?
 yobssub dd ?
@@ -422,21 +412,21 @@ zobssub dd ?
 sin_variable dd ?
 sin_mul dd 60
 sin_gran dd 30
-sin_counter dd  0
-sq dd 724          ; round( (sqrt2)/2*1024 )
+sin_counter dd	0
+sq dd 724	   ; round( (sqrt2)/2*1024 )
 z dd ?
 x dd ?
 y dd ?
 y1 dd ?
-xo dd 70           ; center point  , (loop counter-1)/2
+xo dd 70	   ; center point  , (loop counter-1)/2
 yo dd 20
-a dd 70            ; vertical half-axle
-b dd 20            ; horizontal half-axle
+a dd 70 	   ; vertical half-axle
+b dd 20 	   ; horizontal half-axle
 loop_counter dd 141 ; axle granularity
 col dd 0x00ffffff
 
 labelt:
-     db   ' 3D SHAKING WAVED SPIRAL'
+     db   ' 3D shaking waved spiral',0
 labellen:
 screen_buf:
 
