@@ -475,7 +475,7 @@ still:
     mov     eax,7	    ; put image
     mov     ebx,screen
     mov     ecx,SIZE_X shl 16 + SIZE_Y
-    mov     edx,5 shl 16 + 20
+    mov     edx,5 shl 16 + 22
     int     0x40
 
 
@@ -2641,28 +2641,8 @@ ret
 	mov	cx,[size_y]
 	add	cx,30
 	mov	edx,0x14000000	; color of work area RRGGBB,8->color gl
-	mov	esi,0x805080d0	; color of grab bar  RRGGBB,8->color gl
-	mov	edi,0x005080d0	; color of frames    RRGGBB
+	mov	edi,labelt	; WINDOW LABEL
 	int	0x40
-
-	; WINDOW LABEL
-	mov	eax,4		; function 4 : write text to window
-	mov	ebx,8*65536+8	; [x start] *65536 + [y start]
-	mov	ecx,0x20ddeeff	; font 1 & color ( 0xF0RRGGBB )
-	mov	edx,labelt	; pointer to text beginning
-	mov	esi,labellen-labelt	; text length
-	int	0x40
-
-	; CLOSE BUTTON
-;       mov     eax,8           ; function 8 : define and draw button
-;       movzx   ebx,[size_x]
-;       shl     ebx,16
-;       add     ebx, 91 shl 16 + 12
-;;        mov     ebx,(SIZE_X+80+30-19)*65536+12     ; [x start] *65536 + [x size]
-;       mov     ecx,5*65536+12  ; [y start] *65536 + [y size]
-;       mov     edx,1           ; button id
-;       mov     esi,0x6688dd    ; button color RRGGBB
-;       int     0x40
 
 	call	buttons 	; more buttons
 
