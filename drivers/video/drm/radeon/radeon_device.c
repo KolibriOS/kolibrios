@@ -1042,7 +1042,12 @@ int _stdcall display_handler(ioctl_t *io)
 static char  log[256];
 static pci_dev_t device;
 
-u32_t drvEntry(int action, char *cmdline)
+u32_t
+#if defined(__GNUC__) && __GNUC__ >= 4
+// has sense only if -fwhole-program is used, like Makefile.lto
+__attribute__((externally_visible))
+#endif
+drvEntry(int action, char *cmdline)
 {
     struct radeon_device *rdev = NULL;
 
