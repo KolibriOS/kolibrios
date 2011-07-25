@@ -351,7 +351,6 @@ maincycle:
 	 je .button
 	 jmp action
 .button:
-	mcall 63,1,'o'
 	 mcall -1
 .redraw:
 	 call drawwin
@@ -1201,7 +1200,6 @@ menu:
 	jz .key
 ;	jmp .button
 ;.button:
-	mcall 63,1,'l'
 	mcall -1
 .redraw:
 	pop eax
