@@ -114,7 +114,6 @@ FASM_PROGRAMS:=\
  develop/test_gets:DEVELOP/test_gets:$(PROGS)/develop/libraries/console/examples/test_gets.asm \
  develop/testcon2:DEVELOP/TESTCON2:$(PROGS)/develop/libraries/console/examples/testcon2.asm \
  develop/thread:DEVELOP/THREAD:$(PROGS)/develop/examples/thread/trunk/thread.asm \
- drivers/atikms:DRIVERS/ATIKMS:$(REPOSITORY)/drivers/video/drm/radeon/atikms.asm \
  drivers/com_mouse.obj:DRIVERS/COM_MOUSE.OBJ:$(KERNEL)/drivers/com_mouse.asm \
  drivers/emu10k1x.obj:DRIVERS/EMU10K1X.OBJ:$(KERNEL)/drivers/emu10k1x.asm \
  drivers/fm801.obj:DRIVERS/FM801.OBJ:$(KERNEL)/drivers/fm801.asm \
@@ -185,6 +184,11 @@ FASM_PROGRAMS:=\
  network/VNCclient:NETWORK/VNCclient:$(PROGS)/network/VNCclient/VNCclient.asm \
  network/ym:NETWORK/YM:$(PROGS)/network/ym/trunk/ym.asm \
  network/zeroconf:NETWORK/ZEROCONF:$(PROGS)/network/zeroconf/trunk/zeroconf.asm \
+# end of list
+# The list of all FASM programs with one main FASM file for CD image.
+# Format of an item is exactly the same as in the previous list.
+FASM_PROGRAMS_CD:=\
+ drivers/atikms:DRIVERS/ATIKMS:$(REPOSITORY)/drivers/video/drm/radeon/atikms.asm \
 # end of list
 
 # The list of all NASM programs with one main NASM file.
@@ -258,7 +262,6 @@ OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
  demos/barge.lif:DEMOS/BARGE.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
  demos/use_mb:DEMOS/USE_MB \
- drivers/atikms.dll:DRIVERS/ATIKMS.DLL \
  File|Managers/eolite.ini:File|Managers/EOLITE.INI \
  File|Managers/icons.ini:File|Managers/ICONS.INI \
  File|Managers/kfar.ini:File|Managers/KFAR.INI \
@@ -281,6 +284,8 @@ MKISOFS_EXTRA:=\
  dosbox/=$(PROGS)/emulator/DosBox/dosbox \
  dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
  dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
+ /=drivers/atikms \
+ /=drivers/atikms.dll \
 #end of list
 
 # Some macro for convenient work.
