@@ -533,11 +533,15 @@ $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll: $(REPOSITORY)/drivers/video/d
 	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/video/drm/radeon -f Makefile.lto
 $(REPOSITORY)/drivers/ddk/libddk.a: $(REPOSITORY)/drivers/ddk/Makefile
 	flock $(REPOSITORY)/drivers/ddk/.lock \
-	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/ddk
+	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/ddk libddk.a
+$(REPOSITORY)/drivers/ddk/libcore.a: $(REPOSITORY)/drivers/ddk/Makefile
+	flock $(REPOSITORY)/drivers/ddk/.lock \
+	$(MAKE) CC=win32-gcc45 AS=win32-as LD=win32-ld AR=win32-ar FASM=fasm -C $(REPOSITORY)/drivers/ddk libcore.a
 # dependencies
 $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll: \
  $(REPOSITORY)/drivers/video/drm/radeon/atikms.lds \
  $(REPOSITORY)/drivers/ddk/libddk.a \
+ $(REPOSITORY)/drivers/ddk/libcore.a \
  $(REPOSITORY)/drivers/video/drm/radeon/*.[Sch] \
  $(REPOSITORY)/drivers/video/drm/radeon/*.asm \
  $(REPOSITORY)/drivers/video/drm/radeon/Makefile \
@@ -547,10 +551,10 @@ $(REPOSITORY)/drivers/video/drm/radeon/atikms.dll: \
  $(REPOSITORY)/drivers/include/*/*/*.h \
  $(REPOSITORY)/drivers/include/*/*/*/*.h
 $(REPOSITORY)/drivers/ddk/libddk.a: \
- $(REPOSITORY)/drivers/ddk/Makefile \
- $(REPOSITORY)/drivers/ddk/core.S \
  $(REPOSITORY)/drivers/ddk/*/* \
  $(REPOSITORY)/drivers/include/*.h \
  $(REPOSITORY)/drivers/include/*/*.h \
  $(REPOSITORY)/drivers/include/*/*/*.h \
  $(REPOSITORY)/drivers/include/*/*/*/*.h
+$(REPOSITORY)/drivers/ddk/libcore.a: \
+ $(REPOSITORY)/drivers/ddk/core.S
