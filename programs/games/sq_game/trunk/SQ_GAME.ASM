@@ -133,8 +133,7 @@ Draw_Window:
     mcall 12, 1
     mcall 0, 200*65536+FieldSize,\
 	     200*65536+FieldSize+20+20+20,\
-	     0x03AABBCC, 0x805080D0, 0x005080D0
-    mcall 4, 8*65536+8, 0x10DDEEFF, header, header_e - header
+	     0x14AABBCC, 0x805080D0, header
 
     mcall 8, BtnSpace*2*65536 + 83,\
 	     (FieldSize+BtnSpace+20)*65536+ 15, 2
@@ -226,14 +225,14 @@ moves		dd 0
 generator	dd 0
 
 if lang eq ru
-header		db 'Game'
+header		db 'CQ game',0
 header_e:
 strMovs 	db 'ХОД'	; 'ХОД'
 strMovs_e:
 strNew		db 'Новая игра' ; 'Новая игра'
 strNew_e:
 else
-header		db 'Game'
+header		db 'CQ game',0
 header_e:
 strMovs 	db 'MOVE'
 strMovs_e:
