@@ -44,9 +44,9 @@ CODE
     mcall
 
     xor eax,eax
-    mov ebx,(100 shl 16)+(WND_SIZE_X+8)
-    mov ecx,(100 shl 16)+(WND_SIZE_Y+25)
-    mov edx,0x34000000
+    mov ebx,(110 shl 16)+(WND_SIZE_X+9)
+    mov ecx,(110 shl 16)+(WND_SIZE_Y+26)
+    mov edx,0x74000000
     mov edi,title
     mcall
 
