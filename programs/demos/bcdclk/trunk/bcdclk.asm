@@ -35,20 +35,28 @@ still:
     cmp  eax,1 ; redraw ?
     je red
 
+    cmp  eax, 2 ; key
+    je key
+
     cmp  eax,3 ; button in buffer ?
     je button
 
     call  drawclock
 
     jmp still
- 
+
+key:
+    mov eax, 2
+    int     0x40
+    jmp still
+
 button:
-    mov  al,17   ; get id
+    mov  al,17	 ; get id
     mcall
 
     cmp  ah,1 ; button id=1 ?
     jne  noclose
-    or   eax,-1   ; close this program
+    or	 eax,-1   ; close this program
     mcall
   noclose:
 
@@ -133,6 +141,6 @@ call drawclock
 
     ret
 
-title   db   'BCD Clock',0
+title	db   'BCD Clock',0
 I_END:
 dg1:   db  ?
