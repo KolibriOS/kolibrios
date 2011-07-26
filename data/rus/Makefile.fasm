@@ -39,7 +39,7 @@ endef
 
 progname=$(call respace,$(basename $(notdir $(call binarypart,$(f)))))
 binarydir=$(subst ./,,$(dir $(call binarypart,$(f))))
-$(foreach f,$(FASM_PROGRAMS),$(eval $(call fasm_meta_rule,$(fbinary),$(fsource),$(binarydir),$(progname))))
+$(foreach f,$(FASM_PROGRAMS) $(FASM_PROGRAMS_CD),$(eval $(call fasm_meta_rule,$(fbinary),$(fsource),$(binarydir),$(progname))))
 
 # Rule for the kernel differs: it uses kerpack instead of kpack.
 kernel.mnt: $(KERNEL)/kernel.asm Makefile.fasm .deps/.dir
