@@ -108,7 +108,8 @@ button:
 	jmp	MAIN
 
 draw_window:
-	start_draw_window 100,70,SCREEN_WIDTH+9,SCREEN_HEIGHT+4,0x74224466,labelt;, 14;labellen-labelt
+	start_draw_window 100,70,SCREEN_WIDTH+9,SCREEN_HEIGHT+4,0x54224466,labelt;, 14;labellen-labelt
+	mov	dword [skin_h], eax
 	end_draw_window
 ret
 
@@ -130,8 +131,8 @@ copy_buffer_to_video:
 	mov	ebx, dword [delay]
 	int	0x40
 
-	mov	eax, 0 ;dword [skin_h]
-	lea	edx, [0*65536+eax]
+	mov	eax, dword [skin_h]
+	lea	edx, [5*65536+eax]
 
 	mov	eax, 65
 	mov	ebx, img
