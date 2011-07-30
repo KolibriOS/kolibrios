@@ -47,7 +47,7 @@ void ReadFile(dword pos, file_size, read_buffer, file_path)
 //    ірочитать папку    //
 ///////////////////////////
 f70 read_dir_70;
-void ReadDir(dword file_count, read_buffer, read_dir_path)
+int ReadDir(dword file_count, read_buffer, read_dir_path)
 {    
 	read_dir_70.func = 1;
 	read_dir_70.param1 = 0;
@@ -65,7 +65,7 @@ void ReadDir(dword file_count, read_buffer, read_dir_path)
 //   іапуск программv    //
 ///////////////////////////
 f70 run_file_70;
-void RunProgram(dword run_path, run_param)
+int RunProgram(dword run_path, run_param)
 {    
     run_file_70.func = 7;
     run_file_70.param1 = 
@@ -83,7 +83,7 @@ void RunProgram(dword run_path, run_param)
 //    Tоздание папки     //
 ///////////////////////////
 f70 create_dir_70;
-void CreateFolder(dword new_folder_path)
+int CreateFolder(dword new_folder_path)
 {
 	create_dir_70.func = 9;
 	create_dir_70.param1 = 
@@ -101,7 +101,7 @@ void CreateFolder(dword new_folder_path)
 //  Lдаление файла/папки  //
 ////////////////////////////
 f70 del_file_70;	
-void DeleleFile(dword del_file_path)
+int DeleleFile(dword del_file_path)
 {    
 	del_file_70.func = 8;
 	del_file_70.param1 = 

@@ -1,20 +1,23 @@
-//Leency - 2008
+//Leency - 2011
 
 #include "imgs\logo.txt"
 
-?define ONLY_SHOW	0
-?define WITH_REDRAW	1
-?define ONLY_OPEN	2
+#define ONLY_SHOW	0
+#define WITH_REDRAW	1
+#define ONLY_OPEN	2
 
-?define REDRAW	1
-?define ANIM	2 
-?define NOTIP	3
+#define REDRAW	1
+#define ANIM	2 
+#define NOTIP	3
+
+#define BROWSER_PATH	"/sys/htmlv"
+#define BROWSER_LINK	"http://www.kolibrios.org"
 
 
 void authors()
 {   
 	mouse mm;
-	byte letitclose=0;
+	byte id, letitclose=0;
 	SetEventMask(100111b); 
 	loop() switch(WaitEvent())
 	{
@@ -26,24 +29,37 @@ void authors()
 				ELSE {IF (letitclose) {DrawRegion_3D(86,191,68,20,0xFFFFFF,0xC7C7C7); Pause(7); ExitProcess();}}
 				ELSE IF (letitclose) {letitclose=0; DrawRegion_3D(86,191,68,20,0xFFFFFF,0xC7C7C7);}
 				break; 
-		case evButton: ExitProcess();
-		case evKey: IF (GetKey()==27) ExitProcess(); break;
+		case evButton: 
+				id=GetButtonID();
+				IF (id==1) ExitProcess();
+				IF (id==23) RunProgram(BROWSER_PATH, BROWSER_LINK);
+				break;
+		case evKey:
+				IF (GetKey()==27) ExitProcess();
+				break;
 		case evReDraw:
 			WindowRedrawStatus(1);
 			DefineAndDrawWindow(500,200,181,256,0x34,0x10EFEBEF,0,0,"About Eolite");
 			DrawBar(0,0,172,50,0x8494C4); //голубое сзади
 			PutPaletteImage(#logo,85,85,43,7,#logo_pal);
-			WriteText(33,100,0x80,0xBF40BF,"Eolite v0.98.5 RC2",0);
+			WriteText(33,100,0x80,0xBF40BF,"Eolite v0.98.9 RC2",0);
 			WriteText(55,120,0x80,0,"Developers:",0); 
 			WriteText(39,130,0x80,0,"Leency & Veliant",0); 
 			WriteText(30,140,0x80,0,"Diamond, Lrz, Nable",0);
-			WriteText(21,160,0x80,0,"Made using C-- in 2008",0);
-			WriteText(18,170,0x80,0,"Visit www.kolibrios.org",0);
+			WriteText(55,150,0x80,0," 2008-2011 ",0);
+			WriteText(18,170,0x80,0,"Visit",0);
+			DrawLink(54,170,23, "www.kolibrios.org"); //ссылкa
 			DrawFlatButton(85,190,70,22,0,0xE4DFE1, "Close");
 			WindowRedrawStatus(2);
 	}
 }
 
+void DrawLink(dword x,y,btn_id, inscription)
+{
+	WriteText(x,y,0x80,0x4E00E7,inscription,0);
+	DrawBar(x,y+8,strlen(inscription)*6,1,0x4E00E7); //подчеркнуть ссылку
+	DefineButton(x-1,y-1,strlen(inscription)*6,10,btn_id+BT_HIDE,0);
+}
 
 
 ?define add_new_path 1
@@ -75,6 +91,14 @@ void HistoryPath(byte action)
 
 dword onLeft(dword right,left) {EAX=Form.width-right-left;}
 dword onTop(dword down,up) {EAX=Form.height-GetSkinWidth()-down-up;}
+
+
+void ShowMessage(dword message)
+{
+	DrawFlatButton(Form.width/2-13,160,200,80,0,0xFFB6B5, message);
+	Pause(150);
+	List_ReDraw();
+}
 
 
 dword ConvertSize(dword bytes)

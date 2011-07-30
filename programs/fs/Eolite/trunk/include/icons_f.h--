@@ -1,17 +1,35 @@
-//Leency - 2008
-//GPL licence.
-
 void IconFairing(int filenum, y)
 {
 	switch(filenum)
 	{
-		case 0...4: //файлик
+		case 0...2: //файлик
 			DrawBar(195,y,2,15,videlenie);
 			DrawBar(209,y,2,15,videlenie);
 			DrawBar(205,y,4,1,videlenie);
 			DrawBar(206,y+1,3,1,videlenie);
 			DrawBar(207,y+2,2,1,videlenie);
 			PutPixel(208,y+3,videlenie);
+			return;
+		case 3: //настройки
+			DrawBar(195,y,2,7,videlenie);
+			DrawBar(195,y+7,1,2,videlenie);
+			DrawBar(195,y+12,1,3,videlenie);
+			DrawBar(209,y,2,15,videlenie);
+			DrawBar(205,y,4,1,videlenie);
+			DrawBar(206,y+1,3,1,videlenie);
+			DrawBar(207,y+2,2,1,videlenie);
+			PutPixel(208,y+3,videlenie);
+			PutPixel(196,y+14,videlenie);
+			return;
+		case 11: //asm
+			DrawBar(195,y,1,15,videlenie);
+			return;
+		case 13: //skin
+			PutPixel(210,y,videlenie); 
+			return;
+		case 14...15: //video, book
+			DrawBar(195,y,1,15,videlenie);
+			DrawBar(210,y,1,15,videlenie);
 			return;
 		case 16...17: //папка
 			DrawBar(195,y,1,15,videlenie);
@@ -24,33 +42,15 @@ void IconFairing(int filenum, y)
 			PutPixel(196,y+12,videlenie);
 			PutPixel(210,y+12,videlenie);
 			return;
-		case 13: //skin
-			PutPixel(210,y,videlenie); 
-			return;
-		case 11: //asm
-			DrawBar(196,y,1,15,videlenie);
-		case 14: //video
-			DrawBar(195,y,1,15,videlenie);
-			DrawBar(210,y,1,15,videlenie);
-			return;
-		case 15: //архив
-			PutPixel(195,y,videlenie); //справа справа
-			DrawBar(208,y,3,1,videlenie);
-			DrawBar(209,y+1,2,1,videlenie);
-			PutPixel(210,y+2,videlenie);
-			PutPixel(195,y+11,videlenie);
-			DrawBar(195,y+12,2,1,videlenie);
-			DrawBar(195,y+13,3,1,videlenie);
-			DrawBar(195,y+14,4,1,videlenie);
-			return;
-		case 19: //изображение
-			DrawBar(195,y+14,16,1,videlenie);
-			return;
-		case 20: //картридж
+		case 18: //картридж
 			DrawBar(195,y,16,2,videlenie);
 			DrawBar(195,y+11,1,2,videlenie);
 			DrawBar(210,y+11,1,2,videlenie);
 			DrawBar(195,y+13,16,2,videlenie);
+			return;
+		case 19: //изображение
+		case 20: //изображение
+			DrawBar(195,y+14,16,1,videlenie);
 			return;
 		case 21: //дискета
 			PutPixel(195,y,videlenie);
@@ -66,6 +66,52 @@ void IconFairing(int filenum, y)
 			DrawBar(208,y+13,3,1,videlenie);
 			DrawBar(207,y+14,4,1,videlenie);
 			return;
+		case 23: //архив
+			PutPixel(195,y+3,videlenie);
+			PutPixel(195,y+11,videlenie);
+			PutPixel(210,y+3,videlenie);
+			PutPixel(210,y+11,videlenie);
+
+			DrawBar(195,y,7,1,videlenie);
+			DrawBar(204,y,7,1,videlenie);
+			DrawBar(195,y+14,7,1,videlenie);
+			DrawBar(204,y+14,7,1,videlenie);
+
+			DrawBar(195,y+1,5,1,videlenie);
+			DrawBar(206,y+1,5,1,videlenie);
+			DrawBar(195,y+13,5,1,videlenie);
+			DrawBar(206,y+13,5,1,videlenie);
+
+			DrawBar(195,y+2,3,1,videlenie);
+			DrawBar(208,y+2,3,1,videlenie);
+			DrawBar(195,y+12,3,1,videlenie);
+			DrawBar(208,y+12,3,1,videlenie);
+			return;
+		case 24: //образ
+			DrawBar(195,y,6,1,videlenie);
+			DrawBar(195,y+1,4,1,videlenie);
+			DrawBar(195,y+2,3,1,videlenie);
+			DrawBar(195,y+3,2,2,videlenie);
+			
+			DrawBar(195,y+5,1,5,videlenie);
+			
+			DrawBar(195,y+10,2,2,videlenie);
+			DrawBar(195,y+12,3,1,videlenie);
+			DrawBar(195,y+13,4,1,videlenie);
+			DrawBar(195,y+14,6,1,videlenie);			
+
+			
+			DrawBar(195+11,y,5,1,videlenie);
+			DrawBar(195+13,y+1,3,1,videlenie);
+			DrawBar(195+14,y+2,2,1,videlenie);
+			DrawBar(195+15,y+3,1,2,videlenie);
+			
+			DrawBar(195+15,y+10,1,2,videlenie);
+			DrawBar(195+14,y+12,2,1,videlenie);
+			DrawBar(195+13,y+13,3,1,videlenie);
+			DrawBar(195+11,y+14,5,1,videlenie);			
+
+			return;
 	}
 }
 
@@ -74,43 +120,54 @@ void IconFairing(int filenum, y)
 dword Put_icon(dword extension, yy)
 { 
 	dword ftype="", fnum=0; //еши неизвесный файл
-	IF (!strcmp(extension,".kex")) {fnum = 6; ftype="Program";}
-	IF (!strcmp(extension,".cvs")) {fnum = 18; ftype="Graph";}
-	IF (!strcmp(extension,".cmd")) || (!strcmp(extension,".bat")) {fnum = 5; ftype="Script";}
-	IF (!strcmp(extension,".skn")) {fnum = 13; ftype="Skin";}
-	IF (!strcmp(extension,".chr"))|| (!strcmp(extension+1,".mt")) || (!strcmp(extension,".ttf")) || (!strcmp(extension,".fon")) {fnum = 10; ftype="Font";}
-	IF (!strcmp(extension,".asm")) {fnum = 11; ftype="Source";}
-	IF (!strcmp(extension,".inc"))  fnum = 9;
-	IF (!strcmp(extension,".exe")) || (!strcmp(extension,".msi")) {fnum = 7; ftype="Win32 Exec";}
-	IF (!strcmp(extension,".com")) {fnum = 5; ftype="DOS Exec";}
-	IF (!strcmp(extension,".cpp")) {fnum = 3; ftype="C++ code";}
-	IF (!strcmp(extension,".nes")) {fnum = 20; ftype="Cartridge";}
-	IF (!strcmp(extension,".img")) || (!strcmp(extension,".ima")) {fnum = 21; ftype="Image";}
-	IF (!strcmp(extension,".dll")) || (!strcmp(extension,".obj")) {fnum = 22; ftype="Library";}
-	IF (!strcmp(extension,".sys")) || (!strcmp(extension,".ocx")) || (!strcmp(extension,".drv"))  fnum = 8;
-	IF (!strcmp(extension,".ini")) || (!strcmp(extension,"conf")) {fnum = 4; ftype="Config";}
-	IF (!strcmp(extension,".htm")) || (!strcmp(extension,"html")) {fnum = 2; ftype="Web-page";}
+
+	IF (!strcmp(extension,"htm")) || (!strcmp(extension,"html")) {fnum = 2; ftype="Web-page";}
+	IF (!strcmp(extension,"ini")) || (!strcmp(extension,"conf")) {fnum = 3; ftype="Config";}
+	IF (!strcmp(extension,"xlt")) || (!strcmp(extension,"xls")) ||
+		(!strcmp(extension,"ods")) || (!strcmp(extension,"xlsx")) {fnum = 4; ftype="Table";}
+	IF (!strcmp(extension,"cmd")) || (!strcmp(extension,"bat")) || (!strcmp(extension,"sh")) {fnum = 5; ftype="Script";}
+	IF (!strcmp(extension,"com")) {fnum = 5; ftype="DOS Exec";}
+	IF (!strcmp(extension,"kex")) {fnum = 6; ftype="Program";}
+	IF (!strcmp(extension,"exe")) || (!strcmp(extension,"msi")) {fnum = 7; ftype="Win32 Exec";}
+	IF (!strcmp(extension,"sys")) || (!strcmp(extension,"ocx")) ||
+       (!strcmp(extension,"drv")) || (!strcmp(extension,"so")) fnum = 8;
+	IF (!strcmp(extension,"inc"))  fnum = 9;
+	IF (!strcmp(extension,"chr")) || (!strcmp(extension,"mt")) ||
+	   (!strcmp(extension,"ttf")) || (!strcmp(extension,"fon")) {fnum = 10; ftype="Font";}
+	IF (!strcmp(extension,"asm")) {fnum = 11; ftype="Source";}
+	IF (!strcmp(extension,"skn")) {fnum = 13; ftype="Skin";}
+	IF (!strcmp(extension,"djvu")) || (!strcmp(extension,"pdf")) {fnum = 15; ftype="Book";}
+	IF (!strcmp(extension,"nes")) {fnum = 18; ftype="Cartridge";}
+	IF (!strcmp(extension,"img")) || (!strcmp(extension,"ima")) {fnum = 21; ftype="Image";}
+	IF (!strcmp(extension,"dll")) || (!strcmp(extension,"obj")) {fnum = 22; ftype="Library";}
+	IF (!strcmp(extension,"iso")) || (!strcmp(extension,"cue")) ||
+	   (!strcmp(extension,"nrg")) || (!strcmp(extension,"mdf")) {fnum = 24; ftype="Disc image";}
+	
 	//text
-	IF (!strcmp(extension,".txt")) || (!strcmp(extension,".doc")) ||
-	   (!strcmp(extension,".rtf")) || (!strcmp(extension,".pdf")) {fnum = 1; ftype="Text";}
+	IF (!strcmp(extension,"txt")) || (!strcmp(extension,"doc")) ||
+	   (!strcmp(extension,"rtf")) || (!strcmp(extension,"odt")) ||
+	   (!strcmp(extension,"docx")) {fnum = 1; ftype="Text";}
 	//изображения
-	IF (!strcmp(extension,".gif")) || (!strcmp(extension,".bmp")) ||
-	   (!strcmp(extension,".tga")) || (!strcmp(extension,".pcx")) ||
-	   (!strcmp(extension,".png")) || (!strcmp(extension,".jpg")) ||
-	   (!strcmp(extension,"jpeg")) || (!strcmp(extension,".raw")) {fnum = 19; ftype="Image";}
+	IF (!strcmp(extension,"gif")) || (!strcmp(extension,"bmp")) ||
+	   (!strcmp(extension,"tga")) || (!strcmp(extension,"pcx")) ||
+	   (!strcmp(extension,"png")) || (!strcmp(extension,"jpg")) ||
+	   (!strcmp(extension,"jpeg")) || (!strcmp(extension,"raw")) {fnum = 19; ftype="Image";}
+	//пиктограммы
+	IF (!strcmp(extension,"ico")) || (!strcmp(extension,"cur")) {fnum = 20; ftype="Icon";}
 	//архивы
-	IF (!strcmp(extension,".rar")) || (!strcmp(extension,".zip")) ||
-	   (!strcmp(extension,".cab")) || (!strcmp(extension,".tar")) ||
-	   (!strcmp(extension,".ajr")) || (!strcmp(extension,".jar")) || 
-	   (!strcmp(extension+1,".7z")){fnum = 15; ftype="Archive";}
+	IF (!strcmp(extension,"rar")) || (!strcmp(extension,"zip")) ||
+	   (!strcmp(extension,"cab")) || (!strcmp(extension,"tar")) ||
+	   (!strcmp(extension,"ajr")) || (!strcmp(extension,"jar")) || 
+	   (!strcmp(extension,"7z")) ||(!strcmp(extension,"gz")) {fnum = 23; ftype="Archive";}
 	//audio
-	IF (!strcmp(extension,".mp3")) {fnum = 12; ftype="Music";}
-	IF (!strcmp(extension,".wav")) || (!strcmp(extension,".mid")) ||
-	   (!strcmp(extension,"midi")) || (!strcmp(extension,".ogg")) ||
-	   (!strcmp(extension,".wma")) {fnum = 12; ftype="Audio";}
+	IF (!strcmp(extension,"mp3")) {fnum = 12; ftype="Music";}
+	IF (!strcmp(extension,"wav")) || (!strcmp(extension,"mid")) ||
+	   (!strcmp(extension,"midi")) || (!strcmp(extension,"ogg")) ||
+	   (!strcmp(extension,"wma")) {fnum = 12; ftype="Audio";}
 	//video
-	IF (!strcmp(extension,".avi")) || (!strcmp(extension,".flv")) || (!strcmp(extension,".mpg")) ||
-       (!strcmp(extension,".wmv")) || (!strcmp(extension,".mov")) {fnum = 14; ftype="Video";}	
+	IF (!strcmp(extension,"avi")) || (!strcmp(extension,"flv")) || (!strcmp(extension,"mpg")) ||
+       (!strcmp(extension,"wmv")) || (!strcmp(extension,"mov"))  || (!strcmp(extension,"mkv")) ||
+	  (!strcmp(extension,"mp4")) {fnum = 14; ftype="Video";}	
 	//папки
 	IF (!strcmp(extension,"<DIR>"))	{ fnum=16;  WriteText(onLeft(145,0),yy+4,0x80,0,extension,0);}
 	IF (!strcmp(extension,"..")) fnum=17;

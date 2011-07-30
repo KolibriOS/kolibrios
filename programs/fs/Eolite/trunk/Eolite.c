@@ -1,5 +1,9 @@
-//Leency & Veliant -=- KolibriOS Team -=- 2010
+//Leency & Veliant -=- KolibriOS Team -=- 2011
 //GNU GPL licence.
+
+
+//не выделяет, если переименовать в /rd/1/ -----   строчка 392
+//при открытии программы с параметром выделяет последний файл в папке
 
 #codesize  
 #include "lib\kolibri.h--"
@@ -9,8 +13,13 @@
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
 
+//
+#define NOTIFY_PATH	"@notify"
+#define INI_PATH	"/sys/File managers/Eolite.ini"
+
+
 //переменные
-#define title "Eolite File Manager v0.98.7"
+#define title "Eolite File Manager v0.98.9"
 #define videlenie 0x94AECE //0xFEA4B7,0x8BCDFF,0xB8C9B8}; //цвет выделенного элемента из списка файлов
 byte toolbar_buttons_x[6]={9,46,85,134,167,203};
 //
@@ -23,7 +32,6 @@ byte cut_active,
      rename_active,
      del_active;
 byte show_actions=1,
-     show_preview=0,
      sort_num=2,
      isdir;
 char path[4096]="/rd/1/",
@@ -56,12 +64,16 @@ word key, id;
 mouse m;
 int pressed_y;
 {
+	GetIni(1);
 	load_editbox_lib();
 	devbuf= malloc(3112); //буфер где-то на 10 девайсов в левой панели
 	ReadDir(10, devbuf, "/");
 	dev_num=EBX;
-	IF (param[0]<>'') {copystr(#param,#edit_path); Goto_edit_path();} ELSE Open_Dir(#path,2); //был ли запуск с параметром
-	//GetIni("/sys/File managers/Eolite.ini");
+	IF (param[0]<>'')
+	{
+		copystr(#param,#edit_path);
+		Goto_edit_path();
+	} ELSE Open_Dir(#path,2); //был ли запуск с параметром
 	loop()
 	{
 		switch(WaitEvent())
@@ -136,10 +148,6 @@ int pressed_y;
 					case 30: //about
 						CreateThread(#authors,#stak); 
 						break;
-					case 78: //preview
-						IF (show_preview==1) show_preview=0; ELSE show_preview=1;
-						Preview(ANIM);
-						break;
 					case 77: //actions
 						IF (show_actions==1) show_actions=0; ELSE show_actions=1;
 						Actions();
@@ -154,8 +162,12 @@ int pressed_y;
 						copystr(#path, #temp);
 						copystr("New folder", #temp+strlen(#temp));
 						CreateFolder(#temp);
-						SelectFile("New folder");
-						goto REN_MARK;
+						IF (EAX==0){
+							SelectFile("New folder");
+							goto REN_MARK;
+						}
+						ELSE  ShowMessage("Folder can not be created.");
+						break;
 					case 100...120:
 						DEVICE_MARK:
 						copystr(id-100*304+ devbuf+72, #path);
@@ -169,7 +181,7 @@ int pressed_y;
 						if (id<200) break; //кнопки из списка файлов
 						IF (curbtn!=id-201) {FileList_ReDraw(id-201-curbtn); break;}
 						else OPEN_MARK:
-						if (!isdir) GetIni("/sys/File managers/Eolite.ini"); ELSE //Run_File(#file_path); ELSE
+						if (!isdir) GetIni(0); ELSE
 						IF (strcmp(#file_name,"..")==0) Dir_Up(); ELSE
 						{	OPEN_DEV:
 								copystr(#file_path, #path);
@@ -249,6 +261,9 @@ int pressed_y;
 						case 052: //Нажата F3
 								IF (isdir==false) RunProgram("/sys/tinypad", #file_path);
 								break;
+						case 053: //Нажата F4
+								IF (isdir==false) RunProgram("/sys/develop/heed", #file_path);
+								break;
 						case 054: //F5
 								Open_Dir(#path,1);
 								break;
@@ -256,8 +271,13 @@ int pressed_y;
 								Del_Form();
 								break; 
 						default:    
-								FOR (i=curbtn+za_kadrom+1; i<count; i++)
+								//FOR (i=curbtn+za_kadrom+1; i<count; i++)
+								WriteDebug(IntToStr(curbtn));
+								WriteDebug(IntToStr(za_kadrom));
+								WriteDebug(IntToStr(count));
+								for (i=curbtn+za_kadrom+1; i<count; i++)
 								{
+									WriteDebug(IntToStr(i));
 									copystr(file_mas[i]*304+buf+72,#temp);
 									AL=DSBYTE[#temp]; 
 									IF(AL>='A')&&(AL<='Z')DSBYTE[#temp]=AL|0x20;
@@ -352,16 +372,28 @@ void FileList_ReDraw(int curbtn_)
 	else  //вниз
 	{
 		IF (za_kadrom==count-but_num) && (curbtn==but_num-1) return;
-		IF (but_num-curbtn>curbtn_)
+		IF (but_num-curbtn>curbtn_) // 18-0>33?
 		{
 			Line_ReDraw(0xFFFFFF, curbtn); //белая полоса
 			curbtn+=curbtn_;
 			Line_ReDraw(videlenie, curbtn); //выделение
 			return;
 		}
+		//WriteDebug(IntToStr(curbtn)); =0
+		//WriteDebug(IntToStr(za_kadrom)); =0
+		//WriteDebug(IntToStr(count)); =41
 		ELSE
 		{
-			IF(but_num+za_kadrom+curbtn_>=count) za_kadrom=count-but_num;  ELSE za_kadrom+=curbtn_+curbtn-but_num+1;
+			IF(but_num+za_kadrom+curbtn_>=count) //18+0+33>=41
+			{
+				za_kadrom=count-but_num; //41-18=23
+				//curbtn=but_num+curbtn_-count; //11=33-18
+				}
+			ELSE
+			{
+				za_kadrom+=curbtn_+curbtn-but_num+1;
+				//curbtn=but_num-1;
+			}
 			curbtn=but_num-1;
 			List_ReDraw();
 		}
@@ -393,10 +425,11 @@ void Line_ReDraw(dword color, filenum){
 	DrawBar(192+19,y,onLeft(46,192),18,color); DrawBar(195,y+17,16,1,color);
 	//
 	off=file_mas[filenum+za_kadrom]*304 + buf+72;
-	if (TestBit(ESDWORD[off-40],2)) text_col=0xA6A6B7;
+	if (TestBit(ESDWORD[off-40],1)) || (TestBit(ESDWORD[off-40],2)) text_col=0xA6A6B7;
 	if (!TestBit(ESDWORD[off-40],4))
 	{
-		temp_int = Put_icon(off+strlen(off)-4, y+2);
+		copystr(off,#temp);
+		temp_int = Put_icon(#temp+find_symbol(#temp,'.'), y+2);
 		WriteText(7-strlen(ConvertSize(ESDWORD[off-8]))*6+onLeft(75,0),y+6,0x80,0,ConvertSize(ESDWORD[off-8]),0); //size
 	} ELSE IF (!strcmp("..",off)) temp_int=Put_icon("..", y+2); ELSE temp_int=Put_icon("<DIR>", y+2);
 	if (color==videlenie)
@@ -406,7 +439,6 @@ void Line_ReDraw(dword color, filenum){
 		copystr(off,#file_name);
 		copystr(#path,#file_path);
 		copystr(#file_name,#file_path+strlen(#file_path)); //полный путь к файлу
-		Preview(NOTIP);
 		IF (text_col==0xA6A6B7) text_col=0xFFFFFF;
 	}
 	temp_int = onLeft(215,165)/6;
@@ -416,8 +448,11 @@ void Line_ReDraw(dword color, filenum){
 	DrawBar(onLeft(95,0),y,1,18,0xE4DFE1); //полоса серая вертикальная 2
 }
 
+
 void Open_Dir(dword temp_, redraw){
-	byte path_[256], somelen=strlen(temp_)-1;
+	int errornum;
+	byte path_[256],
+	somelen=strlen(temp_)-1;
 	if (redraw<>ONLY_SHOW)
 	{
 		copystr(temp_, #path_);
@@ -425,14 +460,14 @@ void Open_Dir(dword temp_, redraw){
 		//
 		IF (buf) free(buf);
     		buf = malloc(32);
-		ReadDir(0, buf, #path_);
-		$push eax;
-		IF (EAX==0)
-			WriteDebug("Eolite: folder readed well");
-		ELSE {
-			WriteDebug("Eolite: filesystem ERROR number");
-			$pop eax;
-			WriteDebug(IntToStr(EAX));
+		errornum=ReadDir(0, buf, #path_);
+		if (errornum<>0) //ошибка при чтении папки
+		{
+			WriteDebug(#path_);
+			Write_Debug_Error(errornum);
+			HistoryPath(add_new_path);
+			GoBack();
+			return;
 		}
     		count = ESDWORD[buf+8];
     		buf = realloc(count * 304 + 32, buf);
@@ -442,6 +477,9 @@ void Open_Dir(dword temp_, redraw){
 	}  
 	if (count<>-1)
 	{
+		copystr(temp_,#edit_path);
+		KEdit();
+		HistoryPath(add_new_path);
 		IF (!strcmp(".",buf+72)) {memmov(buf,buf+304,count-1*304); count--;} //фильтруем элемент "."
 		FOR (j=0;j<but_num;j++) DeleteButton(201+j); //удаляем старые
 		but_num=onTop(6,57)/18;                                                                                             
@@ -453,9 +491,6 @@ void Open_Dir(dword temp_, redraw){
 		IF (sort_num==3) WriteText(Form.width-44,45,0x80,0x4E78AC,"\x19",0);
 		IF (redraw<>ONLY_SHOW) Sorting(); //для больших папок при репеинте окна
 		IF (redraw<>ONLY_OPEN) List_ReDraw();
-		copystr(temp_,#edit_path);
-		KEdit();
-		HistoryPath(add_new_path);
 	}
 	IF (count==-1) && (redraw<>ONLY_OPEN) {but_num=count=0; List_ReDraw();}
 }
@@ -508,10 +543,16 @@ void Del_Form()
 	
 void Del_File(byte dodel)
 {    
+	int del_file_rez;
 	IF (dodel==true)
 	{
-		DeleleFile(#file_path);
-		IF (EAX<>0) && (isdir==true) {DrawFlatButton(Form.width/2-13,160,200,80,0,0xFFB6B5, "Error. Folder isn't empty."); Pause(200);}
+		del_file_rez=DeleleFile(#file_path);
+		IF (del_file_rez<>0)
+		{
+			Write_Debug_Error(del_file_rez);
+		IF (isdir==true) ShowMessage("Error. Folder isn't empty.");
+			IF (isdir==false) ShowMessage("Error. Filesystem read-only.");
+		}
  	}
 	del_active=0;
 	DeleteButton(301); DeleteButton(302); //удаляем кнопочки Yes/No
@@ -531,6 +572,12 @@ void Paste()
 			copystr(#copy_file+find_symbol(#copy_file,'/'),#temp+strlen(#temp));
 		}
 	CopyFile(#copy_file,#temp);
+	IF (EAX<>0) //ошибка
+	{
+		Write_Debug_Error(EAX);
+		DrawFlatButton(Form.width/2-13,160,200,80,0,0xFFB6B5, "Error. You can't paste here.");
+		Pause(150);
+	}
 	IF (cut_active==1) //если мы выбрали вырезать
 		{
 			copystr(#copy_file,#file_path);
@@ -564,8 +611,7 @@ void ReName(byte rename)
 		if (strcmp(#file_path,#temp)<>0) && (file_name)
 		IF (isdir)
 		{
-			DeleleFile(#file_path);
-			IF (EAX) {DrawFlatButton(Form.width-8/2,160,200,80,0,0xFFB6B5, "Error. Folder isn't empty."); Pause(200);}
+			IF (DeleleFile(#file_path)<>0) ShowMessage("Error. Folder isn't empty.");
 			ELSE CreateFolder(#temp);
 			Open_Dir(#path,1);
 		}
@@ -613,67 +659,40 @@ void Devices()
 
 void Actions()
 {
-	DrawBar(17,dev_num*16+75,160,15,0x00699C); //синий прямоугольник - под девайсами
+	int actions_y=dev_num*16;
+	DrawBar(17,actions_y+75,160,15,0x00699C); //синий прямоугольник - под девайсами
 	if (show_actions==1)
 	{
-		Tip(dev_num*16+90, "Actions", 77, "\x19");
-		DrawBar(17,dev_num*16+108,160,51,0xFFFFFF); //белое
-		PutImage(#factions,16,44,21,dev_num*16+113); //пиктограмки
+		Tip(actions_y+90, "Actions", 77, "\x19");
+		DrawBar(17,actions_y+108,160,51,0xFFFFFF); //белое
+		PutImage(#factions,16,44,21,actions_y+113); //пиктограмки
 		//rename file 
-		DefineButton(22,dev_num*16+108,159,16,80+BT_HIDE,0xE4DFE1);
-		WriteText(42,dev_num*16+113,0x80,0,"Rename file <F2>",0);
+		DefineButton(22,actions_y+108,159,16,80+BT_HIDE,0xE4DFE1);
+		WriteText(42,actions_y+113,0x80,0,"Rename file <F2>",0);
 		//delete file
-		DefineButton(17,dev_num*16+125,159,16,81+BT_HIDE,0xE4DFE1);
-		WriteText(42,dev_num*16+130,0x80,0,"Delete file <Del>",0);
+		DefineButton(17,actions_y+125,159,16,81+BT_HIDE,0xE4DFE1);
+		WriteText(42,actions_y+130,0x80,0,"Delete file <Del>",0);
 		//create folder
-		DefineButton(17,dev_num*16+142,159,16,82+BT_HIDE,0xE4DFE1);
-		WriteText(42,dev_num*16+147,0x80,0,"Create folder <F6>",0);
-		DrawBar(17,dev_num*16+159,160,15,0x00699C); //синее после Actions
+		DefineButton(17,actions_y+142,159,16,82+BT_HIDE,0xE4DFE1);
+		WriteText(42,actions_y+147,0x80,0,"Create folder <F6>",0);
 	}
 	ELSE
 	{
 		DeleteButton(80);	DeleteButton(81);	DeleteButton(82);
-		Tip(dev_num*16+90, "Actions", 77, "\x18");
-		DrawBar(17,dev_num*16+108,160,51,0x00699C); //синее
+		Tip(actions_y+90, "Actions", 77, "\x18");
 	}
-	Preview(REDRAW);
+	DrawBar(17,show_actions*51+actions_y+108,160,onTop(show_actions*51+actions_y+108,6),0x00699C); //синее в конце
 }
 
 
-void Preview(byte param)
-{        
-	dword ti, text_buf, top_pr=dev_num*16+123;
-	top_pr+=show_actions*51; //начинаем ниже, если Экшнс видимы
-	IF (param<>NOTIP) DeleteButton(78);
-	if (show_preview==1)
-	{
-		IF (param<>NOTIP) Tip(top_pr,"Preview",78,"\x19");
-		DrawBar(17,top_pr+18,160,5,0xFFFFFF); //белое
-		DrawBar(17,top_pr+113,160,onTop(top_pr+113,6),0x00699C); //синее  
-		//
-		text_buf = malloc(256);
-		ReadFile(0, 256, text_buf, #file_path);
-		FOR (ti=0;ti<9; ti++) 
-		{
-			DrawBar(17,ti*10+top_pr+23,160,10,0xFFFFFF); //белое
-			WriteText(22,ti*10+top_pr+23,0x00,0,ti*25+text_buf,25);
-			IF (param==ANIM) Pause(2);
-		}
-		//
+
 		/*WriteDebug(""); 
-		WriteDebug("");
 		WriteDebug(#path);
 		WriteDebug("Number of files:"); WriteDebug(IntToStr(count)); 
 		WriteDebug("but_num:");	 		WriteDebug(IntToStr(but_num));
 		WriteDebug("curbtn");		 	WriteDebug(IntToStr(curbtn));
 		WriteDebug("ra_kadrom:");	 	WriteDebug(IntToStr(za_kadrom));*/
-	} 
-	ELSE
-	{
-		IF (param<>NOTIP) Tip(top_pr,"Preview",78,"\x18");
-		DrawBar(17,top_pr+18,160,onTop(top_pr+18,6),0x00699C); //синее
-	}
-}
+
 
 
 void Goto_edit_path()
