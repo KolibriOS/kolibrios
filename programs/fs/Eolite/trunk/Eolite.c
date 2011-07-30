@@ -272,12 +272,8 @@ int pressed_y;
 								break; 
 						default:    
 								//FOR (i=curbtn+za_kadrom+1; i<count; i++)
-								WriteDebug(IntToStr(curbtn));
-								WriteDebug(IntToStr(za_kadrom));
-								WriteDebug(IntToStr(count));
 								for (i=curbtn+za_kadrom+1; i<count; i++)
 								{
-									WriteDebug(IntToStr(i));
 									copystr(file_mas[i]*304+buf+72,#temp);
 									AL=DSBYTE[#temp]; 
 									IF(AL>='A')&&(AL<='Z')DSBYTE[#temp]=AL|0x20;
@@ -463,7 +459,7 @@ void Open_Dir(dword temp_, redraw){
 		errornum=ReadDir(0, buf, #path_);
 		if (errornum<>0) //ошибка при чтении папки
 		{
-			WriteDebug(#path_);
+			//WriteDebug(#path_);
 			Write_Debug_Error(errornum);
 			HistoryPath(add_new_path);
 			GoBack();
