@@ -1,7 +1,16 @@
 ;************************************************************************
+; v.016 30.07.2011
+; Start with open file path
+; Show working file path
+; Some optimization
+;
+; Marat Zakiyanov aka Mario79, aka Mario
+;************************************************************************
 ; v.015 08.03.2010
 ; Support for OpenDialog - Open and Save
 ; Some optimization
+;
+; Marat Zakiyanov aka Mario79, aka Mario
 ;************************************************************************
 ; v.014 05.02.2010
 ; 
@@ -45,10 +54,10 @@ use32
 	dd	I_END	;program image	size
 	dd	(D_END+0x600) and not 3	;required amount of memory
 	dd	(D_END+0x600) and not 3	;stack
-	dd	0x0	;buf_cmd_lin
+	dd	fname_buf
 	dd	cur_dir_path
 
-_title	equ 'HeEd 0.15', 0
+_title	equ 'HeEd 0.16', 0
 
 include	'lang.inc'
 include '../../../config.inc'		;for nightbuild
@@ -95,13 +104,33 @@ START:
 	mcall	68,11
 
 load_libraries l_libs_start,end_l_libs
-
+;--------------------------------------------------------------------
 ;OpenDialog	initialisation
 	push    dword OpenDialog_data
 	call    [OpenDialog_Init]
-
-	mov	edi,filename_area
+;--------------------------------------------------------------------	
+	mov	esi,fname_buf
+	cmp	[esi],byte 0
+	je	.start_temp_file_name
+	
+	cld
+@@:
+	lodsb
+	test	al,al
+	jne	@b
+	
+	std
+@@:
+	lodsb
+	cmp	al,'/'	
+	jne	@b
+	add	esi,2
+	jmp	.selected_start_file_name
+;--------------------------------------------------------------------	
+.start_temp_file_name:
 	mov	esi,start_temp_file_name
+.selected_start_file_name:
+	mov	edi,filename_area
 	xor	eax,eax
 	cld
 @@:
@@ -115,16 +144,9 @@ load_libraries l_libs_start,end_l_libs
 	mcall	68,12,32*1024	;страничный буфер
 	mov	[screen_table],eax
 	mcall	68,12,4*1024
-;	mov	[blocks_table],eax
-	mov	[file_buffer],eax
-;	mov	esi,eax
-;	mcall	68,12,4*1024
-;	mov	[esi],eax
-;	mov	[blocks_counter],1
 
-;	mcall	68,12,1024	;Procinfo area for function 9 in MenuBar
-;	mov	[menu_data_1.procinfo],eax
-;	mov	[menu_data_2.procinfo],eax
+	mov	[file_buffer],eax
+
 	mcall	68,12,1024
 	mov	[copy_buf],eax
 
@@ -153,7 +175,11 @@ load_libraries l_libs_start,end_l_libs
 	mov	ecx,[ebx+30]	; PID
 	mcall	18,21
 	mov	[active_process],eax	; WINDOW SLOT
-
+;--------------------------------------------------------------------
+; open the file if program has a file path, when it was launched
+	cmp	[fname_buf],byte 0
+	jne	open_dialog.start
+;--------------------------------------------------------------------
 redraw_all:
 	call	control_minimal_window_size
 	call	draw_window_1
@@ -1310,12 +1336,31 @@ show_file_size:
 	mov	ecx,8
 	call	hex_output
 	ret
-
-
+;---------------------------------------------------------------------
+align	4
+create_title:
+	mov	edi,title_buf
+	mov	esi,title
+	cld
+@@:
+	lodsb
+	stosb
+	test	al,al
+	jne	@b
+	mov	[edi-1],byte ' '
+	mov	esi,fname_buf
+@@:
+	lodsb
+	stosb
+	test	al,al
+	jne	@b
+	ret
+;---------------------------------------------------------------------
 align	4
 draw_window:
+	call	create_title
 	xor	esi,esi
-	mcall	0,100*65536+653,100*65536+360,((0x73 shl 24) + frgrd_color),,title
+	mcall	0,100*65536+653,100*65536+360,((0x73 shl 24) + frgrd_color),,title_buf	;title
 	mcall	9,threath_buf,-1
 	cmp	byte [threath_buf+70],3	;окно свёрнуто в заголовок?
 	jnae	@f
@@ -2816,6 +2861,7 @@ open_dialog:
 ;	je	.sysxtree	; some kind of alternative, instead OpenDialog
 	cmp	[OpenDialog_data.status],1
 	jne	still
+.start:
 	mov	esi,fname_buf
 .load:
 	mov	edi,file_name
@@ -3409,6 +3455,9 @@ help_is_open_already	db ?  ;если окно справки открыто, то здесь 1
 help_window_pid 	dd ?
 
 func_70	f70
+;---------------------------------------------------------------------
+title_buf:
+	rb 4096
 ;---------------------------------------------------------------------
 fname_buf:
 	rb 4096
