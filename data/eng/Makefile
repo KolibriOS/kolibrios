@@ -235,7 +235,7 @@ COPY_FILES:=\
 # Format of an item is exactly the same as in the previous list,
 # except that there can be fourth field with parameters for a compiler.
 CMM_PROGRAMS:=\
- File|Managers/eolite:File|Managers/EOLITE:$(PROGS)/fs/Eolite/trunk/Eolite.c \
+ File|Managers/eolite:File|Managers/EOLITE:$(PROGS)/fs/Eolite/trunk/Eolite.c-- \
  games/clicks:GAMES/CLICKS:$(PROGS)/games/clicks/trunk/clicks.c-- \
  games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
