@@ -338,6 +338,17 @@ free_img_data:
 update_image_sizes:
     pushf
     mov edx, [eax + Image.Width]
+    test    [eax + Image.Flags], Image.IsAnimated
+    jnz .not_in_row
+    push eax
+@@: cmp [eax + Image.Next], 0
+    jz  @f
+    mov eax, [eax + Image.Next]
+    add edx, [eax + Image.Width]
+    inc edx
+    jmp @b
+@@: pop eax
+.not_in_row:
     mov [draw_width], edx
     add edx, 19
     cmp edx, 40 + 25*9
@@ -346,6 +357,18 @@ update_image_sizes:
 @@:
     mov [wnd_width], edx
     mov esi, [eax + Image.Height]
+    test    [eax + Image.Flags], Image.IsAnimated
+    jnz .max_equals_first
+    push eax
+@@: cmp [eax + Image.Next], 0
+    jz  @f
+    mov eax, [eax + Image.Next]
+    cmp esi, [eax + Image.Height]
+    jae @b
+    mov esi, [eax + Image.Height]
+    jmp @b
+@@: pop eax
+.max_equals_first:
     mov [draw_height], esi
     add esi, 44
     mov [wnd_height], esi
@@ -688,7 +711,9 @@ draw_window:
     mcall   13, , <0, 35>, 0xFFFFFF
     mov ecx, [procinfo + 66]
     inc ecx
-    mov esi, [draw_height]
+;    mov esi, [draw_height]          ; we can not use [draw_height] here because for *.ico files containing several frames
+    mov esi, [image]                 ; with different size window height should depend on maximum frame height, not the first one
+    mov esi, [esi+Image.Height]      ; 
     add esi, 35
     sub ecx, esi
     jbe @f
@@ -703,7 +728,9 @@ draw_window:
     add ecx, 35*10000h - 35
     __mov   ebx, 0, 5
     mcall
-    mov esi, [draw_width]
+;    mov esi, [draw_width]           ; we can not use [draw_width] here because for *.ico files containing several frames
+    mov esi, [image]                 ; with different size window width should depend on the sum of width of all frames
+    mov esi, [esi + Image.Width]     ; 
     add esi, ebx
     mov ebx, [procinfo+62]
     inc ebx
