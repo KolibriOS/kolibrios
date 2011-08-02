@@ -49,13 +49,13 @@ no_znak2:
 
 	mcall	12,1
 ;------------------------------------------------
-	mov	ebx,[Window_CordinatX]
-	mov	ecx,[Window_CordinatY]
+	mov	ebx,50 ;[Window_CordinatX]
+	mov	ecx,50 ;[Window_CordinatY]
 	shl	ebx,16
 	shl	ecx,16
 	add	ebx,[Window_SizeX]
 	add	ecx,[Window_SizeY]
-	xor	esi,esi	;0x805080d0
+	;xor	esi,esi	;0x805080d0
 ;	xor	edi,edi	;0x005080d0
 	mcall	0,,,0x53aabbcc,,name_of_program
 ;------------------------------------------------
