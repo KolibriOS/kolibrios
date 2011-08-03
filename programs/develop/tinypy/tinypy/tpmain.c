@@ -19,6 +19,7 @@ void main(void) {
     /* INIT */
     tp_call(tp,"py2bc","tinypy",tp_None);
     tp_deinit(tp);
+    kol_exit();
     return;
 }
 

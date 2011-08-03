@@ -1,12 +1,20 @@
 import kolibri
+
+def onshow():
+    print("Show window")
+
+def onkey():
+    print("Key pressed")
+
+def onbtn():
+    print("Button pressed")
+
 if __name__=="__main__":
-  print("ok!")
-  f = kolibri.open("/hd0/1/tinypy/test.txt", "a")
-  l=[]
-  s=""
-  for i in range(10):
-      s = s + 'A'
-      l.append(s+'\n')
-  print(l)
-  f.writelines(l)
-  f.close()
+  w = kolibri.window(10,10,400, 400, False)
+  w.on_show = onshow
+  w.on_key = onkey
+  w.on_button = onbtn
+  w.show()
+  print("running")
+  w.run()
+  print("Exit")

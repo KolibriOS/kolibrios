@@ -1,6 +1,6 @@
 export MENUETDEV=../../libraries/menuetlibc
 OUTFILE = tpmain
-OBJS = tpmain.o kolibri_init.o kolibri_fs.o
+OBJS = tpmain.o kolibri_init.o kolibri_fs.o kolibri_gui.o
 include $(MENUETDEV)/makefiles/Makefile_for_program
 #testmod.o: fasm_modules/testmod.s
 #	fasm fasm_modules/testmod.s
