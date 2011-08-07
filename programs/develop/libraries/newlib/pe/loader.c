@@ -561,7 +561,75 @@ void* get_entry_point(void *raw)
     nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
 
     return  MakePtr(void*, raw, nt->OptionalHeader.AddressOfEntryPoint);
-}
+};
+
+
+void *get_proc_address(module_t *module, char *proc_name)
+{
+
+    PIMAGE_DOS_HEADER        expdos;
+    PIMAGE_NT_HEADERS32      expnt;
+    PIMAGE_EXPORT_DIRECTORY  exp;
+
+    uint32_t   *exp_functions;
+    uint16_t   *exp_ordinals;
+    char      **exp_names;
+
+    int minn, maxn;
+    char *export_name;
+    uint16_t   ordinal;
+    void *function=NULL;
+
+    exp = module->img_exp;
+
+    exp_functions = MakePtr(uint32_t*,exp->AddressOfFunctions,module->start);
+    exp_ordinals = MakePtr(uint16_t*,  exp->AddressOfNameOrdinals,module->start);
+    exp_names = MakePtr(char**, exp->AddressOfNames,module->start);
+
+    minn = 0;
+    maxn = exp->NumberOfNames - 1;
+    while (minn <= maxn)
+    {
+        int mid;
+        int res;
+
+        mid = (minn + maxn) / 2;
+
+        export_name = MakePtr(char*,exp_names[mid],module->start);
+
+        res = strcmp(export_name, proc_name);
+        if (res == 0)
+        {
+            ordinal  = exp_ordinals[mid];
+            function = MakePtr(void*,exp_functions[ordinal], module->start);
+
+            if((uint32_t)function >= (uint32_t)exp)
+            {
+                printf("forward %s\n", function);
+            }
+            else
+            {
+                DBG(" \t\tat %x\n", function);
+            };
+            break;
+        }
+        else if (minn == maxn)
+        {
+            DBG(" unresolved %s\n",proc_name);
+            break;
+        }
+        else if (res > 0)
+        {
+            maxn = mid - 1;
+        }
+        else
+        {
+            minn = mid + 1;
+        }
+    };
+
+    return function;
+};
 
 
 module_t* load_module(const char *name)
@@ -642,7 +710,18 @@ module_t* load_module(const char *name)
         list_add_tail(&module->list, &dll_list);
 
         if( link_image(img_base))
+        {
+            int (*dll_startup)(module_t *mod, uint32_t reason);
+
+            dll_startup = get_proc_address(module, "DllStartup");
+            if( dll_startup )
+            {
+                if( 0 == dll_startup(module, 1))
+                    return 0;
+            }
             return module;
+        };
+
         return NULL;
     };
 

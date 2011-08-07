@@ -18,6 +18,7 @@ AMZ_SRCS:=					\
 			crt/chkstk.S		\
 			crt/exit.S		\
 			crt/pseudo-reloc.c	\
+			crt/dllstart.c		\
 			crt/setjmp.S
 			
 STATIC_SRCS:=					\
@@ -204,6 +205,7 @@ STDIO_SRCS=				\
 			fdopen.c	\
 			fflush.c	\
 			flags.c		\
+			fileno.c	\
 			findfp.c	\
 			fiprintf.c	\
 			fiscanf.c	\
