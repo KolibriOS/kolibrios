@@ -89,8 +89,7 @@ SECTIONS
         ___cmdline = .;
         . = . + 256;
         ___pgmname = .;
-        ___menuet__app_path_area = .;
-        . = . + 1024 + __size_of_stack_reserve__;
+        . = . + 1024 + 16;
         ___stacktop = .;
         ___memsize = . ;
     }
