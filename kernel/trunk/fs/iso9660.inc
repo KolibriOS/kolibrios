@@ -54,12 +54,14 @@ reserve_cd_channel:
     je	  .reserve_ok_2
     sti
     call  change_task
-    jmp   .IDE_Channel_1
+    jmp   .IDE_Channel_2
 .reserve_ok_1:
     mov [IDE_Channel_1],1
+    sti
     ret
 .reserve_ok_2:
     mov [IDE_Channel_2],1
+    sti
     ret
 
 free_cd_channel:

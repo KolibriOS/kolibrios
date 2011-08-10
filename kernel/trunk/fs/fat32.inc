@@ -2787,7 +2787,7 @@ fs_HdSetFileInfo:
 fs_HdDelete:
         cmp     [fs_type], 1
         jz      ntfs_HdDelete
-        cmp     [fs_type], 1
+        cmp     [fs_type], 2
         jz      ext2_HdDelete
         cmp     [fs_type], 16
         jz      @f
