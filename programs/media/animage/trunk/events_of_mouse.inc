@@ -2,6 +2,13 @@
 ;-------------interraction MOUSE--------------
 ;---------------------------------------------
 mouse:
+	or	ecx,-1
+	mcall	9,procinfo
+	
+	mov	eax,[procinfo+70] ;staus of window
+	test	eax,100b
+	jne	still
+	
 	call	GetMouseCoordinats
 ;panel
 	mov	edx,[Window_SizeX]

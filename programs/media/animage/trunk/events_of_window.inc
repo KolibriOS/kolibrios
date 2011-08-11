@@ -58,6 +58,11 @@ no_znak2:
 	;xor	esi,esi	;0x805080d0
 ;	xor	edi,edi	;0x005080d0
 	mcall	0,,,0x53aabbcc,,name_of_program
+	
+	mov	eax,[procinfo+70] ;staus of window
+	test	eax,100b
+	jne	.end
+	
 ;------------------------------------------------
 	mov	eax,5
 	mov	ebx,20
@@ -162,6 +167,7 @@ no_znak2:
 	sub	ebx,25+10
 	call	draw_volume_rectangle	; down and right small area
 ;------------------------------------------------
+.end:
 	mcall	12,2
 	ret
 ;-----------------------------------------------------------------------------
