@@ -152,6 +152,15 @@ struct tp_vm
   steps    rd     1
 ends
 
+macro push_tp_none
+{
+    local .push_more
+    mov ecx, 4
+.push_more:
+    push 0
+    loop .push_more
+}
+
 macro push_tp_obj obj
 {
     local .push_more

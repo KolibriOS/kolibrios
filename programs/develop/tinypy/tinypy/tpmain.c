@@ -2,7 +2,8 @@
 /* INCLUDE */
 const char header[]="TinyPy for kolibriOS";
 const int argc = 2;
-extern _stdcall void testmod_init(tp_vm *tp);
+extern _stdcall void kolibri_dbg_init(tp_vm *tp);
+
 void main(void) {
     char *argv[2]={"tpmain", "test.py"};
 
@@ -15,6 +16,7 @@ void main(void) {
     argv[1][strlen(argv[1]) - 1] = '\0';
     con_printf("Running file %s\n", argv[1]);
     tp_vm *tp = tp_init(argc, argv);
+    kolibri_dbg_init(tp);
     kolibri_init(tp);
     /* INIT */
     tp_call(tp,"py2bc","tinypy",tp_None);
