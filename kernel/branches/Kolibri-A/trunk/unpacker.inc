@@ -8,89 +8,89 @@
 $Revision$
 
 
-; void __stdcall unpack(void* packed_data, void* unpacked_data); 
+; void __stdcall unpack(void* packed_data, void* unpacked_data);
 unpack:
-        pushad
-        mov     esi, [esp+32+4]
-        mov     edi, [esp+32+8]
-        mov     eax, [esi+8]
-        and     al, 0xC0
-        cmp     al, 0xC0
-        jz      .failed
-        mov     eax, [esi+8]
-        push    eax
-        add     esi, 12
-        and     al, not 0xC0
-        dec     al
-        jz      .lzma
+	pushad
+	mov	esi, [esp+32+4]
+	mov	edi, [esp+32+8]
+	mov	eax, [esi+8]
+	and	al, 0xC0
+	cmp	al, 0xC0
+	jz	.failed
+	mov	eax, [esi+8]
+	push	eax
+	add	esi, 12
+	and	al, not 0xC0
+	dec	al
+	jz	.lzma
 .failed:
-        pop     eax
-        popad
-        ret     8
+	pop	eax
+	popad
+	ret	8
 .lzma:
-        call    .lzma_unpack
+	call	.lzma_unpack
 .common:
-        pop     eax
-        test    al, 0x80
-        jnz     .ctr1
-        test    al, 0x40
-        jz      .ok
-        lodsd
-        mov     ecx, eax
-        jecxz   .ok
-        mov     dl, [esi]
-        mov     esi, [esp+32+8]
+	pop	eax
+	test	al, 0x80
+	jnz	.ctr1
+	test	al, 0x40
+	jz	.ok
+	lodsd
+	mov	ecx, eax
+	jecxz	.ok
+	mov	dl, [esi]
+	mov	esi, [esp+32+8]
 .c1:
-        lodsb
-        sub     al, 0E8h
-        cmp     al, 1
-        ja      .c1
-        cmp     byte [esi], dl
-        jnz     .c1
-        lodsd
+	lodsb
+	sub	al, 0E8h
+	cmp	al, 1
+	ja	.c1
+	cmp	byte [esi], dl
+	jnz	.c1
+	lodsd
 ; "bswap eax" is not supported on i386
-        shr     ax, 8
-        ror     eax, 16
-        xchg    al, ah
-        sub     eax, esi
-        add     eax, [esp+32+8]
-        mov     [esi-4], eax
-        loop    .c1
+	shr	ax, 8
+	ror	eax, 16
+	xchg	al, ah
+	sub	eax, esi
+	add	eax, [esp+32+8]
+	mov	[esi-4], eax
+	loop	.c1
 .ok:
-        popad
-        ret     8
+	popad
+	ret	8
 .ctr1:
-        lodsd
-        mov     ecx, eax
-        jecxz   .ok
-        mov     dl, [esi]
-        mov     esi, [esp+32+8]
+	lodsd
+	mov	ecx, eax
+	jecxz	.ok
+	mov	dl, [esi]
+	mov	esi, [esp+32+8]
 .c2:
-        lodsb
+	lodsb
 @@:
-        cmp     al, 0xF
-        jnz     .f
-        lodsb
-        cmp     al, 80h
-        jb      @b
-        cmp     al, 90h
-        jb      @f
+	cmp	al, 0xF
+	jnz	.f
+	lodsb
+	cmp	al, 80h
+	jb	@b
+	cmp	al, 90h
+	jb	@f
 .f:
-        sub     al, 0E8h
-        cmp     al, 1
-        ja      .c2
+	sub	al, 0E8h
+	cmp	al, 1
+	ja	.c2
 @@:
-        cmp     byte [esi], dl
-        jnz     .c2
-        lodsd
-        shr     ax, 8
-        ror     eax, 16
-        xchg    al, ah
-        sub     eax, esi
-        add     eax, [esp+32+8]
-        mov     [esi-4], eax
-        loop    .c2
-        jmp     .ok
+	cmp	byte [esi], dl
+	jnz	.c2
+	lodsd
+	shr	ax, 8
+	ror	eax, 16
+	xchg	al, ah
+	sub	eax, esi
+	add	eax, [esp+32+8]
+	mov	[esi-4], eax
+	loop	.c2
+	jmp	.ok
 
 .lzma_unpack:
 
@@ -98,22 +98,22 @@ unpack:
 .lp	=	0	; literal pos state bits
 .lc	=	3	; literal context bits
 .posStateMask	=	((1 shl .pb)-1)
-.literalPosMask	=	((1 shl .lp)-1)
+.literalPosMask =	((1 shl .lp)-1)
 
-.kNumPosBitsMax	=	4
+.kNumPosBitsMax =	4
 .kNumPosStatesMax =	(1 shl .kNumPosBitsMax)
 
-.kLenNumLowBits         =       3
-.kLenNumLowSymbols      =       (1 shl .kLenNumLowBits)
-.kLenNumMidBits         =       3
-.kLenNumMidSymbols      =       (1 shl .kLenNumMidBits)
-.kLenNumHighBits        =       8
-.kLenNumHighSymbols     =       (1 shl .kLenNumHighBits)
+.kLenNumLowBits 	=	3
+.kLenNumLowSymbols	=	(1 shl .kLenNumLowBits)
+.kLenNumMidBits 	=	3
+.kLenNumMidSymbols	=	(1 shl .kLenNumMidBits)
+.kLenNumHighBits	=	8
+.kLenNumHighSymbols	=	(1 shl .kLenNumHighBits)
 
 .LenChoice	=	0
 .LenChoice2	=	1
-.LenLow		=	2
-.LenMid		=	(.LenLow + (.kNumPosStatesMax shl .kLenNumLowBits))
+.LenLow 	=	2
+.LenMid 	=	(.LenLow + (.kNumPosStatesMax shl .kLenNumLowBits))
 .LenHigh	=	(.LenMid + (.kNumPosStatesMax shl .kLenNumMidBits))
 .kNumLenProbs	=	(.LenHigh + .kLenNumHighSymbols)
 
@@ -136,22 +136,22 @@ unpack:
 .IsRep0Long	=	(.IsRepG2 + .kNumStates)
 .PosSlot	=	(.IsRep0Long + (.kNumStates shl .kNumPosBitsMax))
 .SpecPos	=	(.PosSlot + (.kNumLenToPosStates shl .kNumPosSlotBits))
-.Align_		=	(.SpecPos + .kNumFullDistances - .kEndPosModelIndex)
+.Align_ 	=	(.SpecPos + .kNumFullDistances - .kEndPosModelIndex)
 .Lencoder	=	(.Align_ + .kAlignTableSize)
 .RepLencoder	=	(.Lencoder + .kNumLenProbs)
 .Literal	=	(.RepLencoder + .kNumLenProbs)
 
-.LZMA_BASE_SIZE	=	1846	; must be ==Literal
+.LZMA_BASE_SIZE =	1846	; must be ==Literal
 .LZMA_LIT_SIZE	=	768
 
 .kNumTopBits	=	24
 .kTopValue	=	(1 shl .kNumTopBits)
 
 .kNumBitModelTotalBits =	11
-.kBitModelTotal	=	(1 shl .kNumBitModelTotalBits)
+.kBitModelTotal =	(1 shl .kNumBitModelTotalBits)
 .kNumMoveBits	=	5
 
-        push    edi
+	push	edi
 ; int state=0;
 	xor	ebx, ebx
 	mov	[.previousByte], bl
@@ -173,7 +173,7 @@ unpack:
 ; rd->Buffer = stream
 ; rd->BufferLim = stream+bufferSize
 ; rd->Range = 0xFFFFFFFF
-        pop     edi
+	pop	edi
 	mov	ebp, [esi-8]	; dest_length
 	add	ebp, edi	; ebp = destination limit
 	lodsd
@@ -515,7 +515,8 @@ end if
 
 uglobal
 align 4
-;unpack.p	rd	unpack.LZMA_BASE_SIZE + (unpack.LZMA_LIT_SIZE shl (unpack.lc+unpack.lp))
+diff16	"unpacker.inc structures", 0, $
+;unpack.p       rd      unpack.LZMA_BASE_SIZE + (unpack.LZMA_LIT_SIZE shl (unpack.lc+unpack.lp))
 unpack.p	dd	?
 unpack.code_	dd	?
 unpack.range	dd	?

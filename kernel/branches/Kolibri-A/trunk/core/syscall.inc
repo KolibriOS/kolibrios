@@ -46,8 +46,10 @@ align 32
 syscall_entry:
 ;        sti
 	push ecx
-	and   eax, 3
-	call	dword [servetable3 + eax * 4]
+	xor	ecx, ecx
+	mov	cl, al
+	and	cl, 7
+	call	dword [servetable3 + ecx * 4]
 	pop	ecx
 	sysret
 
@@ -156,8 +158,13 @@ align 4
 servetable3:	; Kolibri-A special service
 
 	dd	sys_rdmsr	 ; 0  = read MSR
-	dd	sys_map1 	 ; 1  = map any page (test only)
+	dd	sys_map1	 ; 1  = get sys data (test only)
 	dd	paleholder	 ; 2
+	dd	paleholder	 ; 3
+	dd	paleholder	 ; 4
+	dd	paleholder	 ; 5
+	dd	paleholder	 ; 6
+	dd	special_srv	 ; 7  = special service
 	dd	sys_end ; last
 
 endg

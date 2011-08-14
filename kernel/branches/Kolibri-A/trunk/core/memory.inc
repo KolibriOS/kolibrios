@@ -337,7 +337,7 @@ endp
 
 align 4
 proc init_LFB
-	   call init_mtrr
+	   stdcall set_mtrr, [LFBAddress],[LFBSize],MEM_WC
 
 	   mov edx, LFB_BASE
 	   mov esi, [LFBAddress]
@@ -364,16 +364,16 @@ endp
 
 align 4
 init_userDMA:
-	   stdcall alloc_pages, 4096	; 16M <<<<<<<<<<+++++++++++++++++++++++++++++++++
-	   add eax, 0x007FFFF0		; terrible mess, sorry ...
-	   and eax, 0xFF800000		; align at 8M boundary
-	   mov [UserDMAaddr], eax
-	   or  eax, PG_LARGE + PG_UW + PG_NOCACHE
+	   stdcall set_mtrr, [UserDMAaddr], USER_DMA_SIZE, MEM_UC   ; <<<<<<<<<<+++++++++++++++++++++++++++++++++
+
+	   mov	eax, [UserDMAaddr]	; phys. addr, 8M-aligned
+	   or  eax, PG_GLOBAL+PG_LARGE + PG_UW + PG_NOCACHE
 	   mov ebx, sys_pgdir + (USER_DMA_BUFFER shr 20)
 	   mov [ebx], eax
 	   add ebx, 4
 	   add eax, 0x00400000
 	   mov [ebx], eax
+
 	   mov eax, cr3       ;flush TLB
 	   mov cr3, eax
 	   ret
@@ -1249,75 +1249,6 @@ endp
 
 
 align 4
-proc init_mtrr
-
-	   cmp [BOOT_VAR+0x901c],byte 2
-	   je  .exit
-
-	   bt [cpu_caps], CAPS_MTRR
-	   jnc .exit
-
-	   mov eax, cr0
-	   or eax, 0x60000000	;disable caching
-	   mov cr0, eax
-	   wbinvd		;invalidate cache
-
-	   mov ecx, 0x2FF
-	   rdmsr		;
-; has BIOS already initialized MTRRs?
-	   test ah, 8
-	   jnz .skip_init
-; rarely needed, so mainly placeholder
-; main memory - cached
-	   push eax
-
-	   mov eax, [MEM_AMOUNT]
-; round eax up to next power of 2
-	   dec eax
-	   bsr ecx, eax
-	   mov ebx, 2
-	   shl ebx, cl
-	   dec ebx
-; base of memory range = 0, type of memory range = MEM_WB
-	   xor edx, edx
-	   mov eax, MEM_WB
-	   mov ecx, 0x200
-	   wrmsr
-; mask of memory range = 0xFFFFFFFFF - (size - 1), ebx = size - 1
-	   mov eax, 0xFFFFFFFF
-	   mov edx, 0x0000000F
-	   sub eax, ebx
-	   sbb edx, 0
-	   or eax, 0x800
-	   inc ecx
-	   wrmsr
-; clear unused MTRRs
-	   xor eax, eax
-	   xor edx, edx
-@@:
-	   wrmsr
-	   inc ecx
-	   cmp ecx, 0x210
-	   jb @b
-; enable MTRRs
-	   pop eax
-	   or ah, 8
-	   and al, 0xF0 ; default memtype = UC
-	   mov ecx, 0x2FF
-	   wrmsr
-.skip_init:
-	   stdcall set_mtrr, [LFBAddress],[LFBSize],MEM_WC
-
-	   wbinvd		;again invalidate
-
-	   mov eax, cr0
-	   and eax, not 0x60000000
-	   mov cr0, eax 	; enable caching
-.exit:
-	   ret
-endp
-
-align 4
 proc set_mtrr stdcall, base:dword,size:dword,mem_type:dword
 ; find unused register
 	   mov ecx, 0x201
@@ -1337,7 +1268,11 @@ proc set_mtrr stdcall, base:dword,size:dword,mem_type:dword
 .ret:
 	   ret
 .found:
-; found, write values
+	   mov eax, cr0
+	   or eax, 0x60000000	;disable caching
+	   mov cr0, eax
+	   wbinvd		;invalidate cache
+
 	   xor edx, edx
 	   mov eax, [base]
 	   or eax, [mem_type]
@@ -1352,6 +1287,12 @@ proc set_mtrr stdcall, base:dword,size:dword,mem_type:dword
 	   or eax, 0x800
 	   inc ecx
 	   wrmsr
+
+	   wbinvd		;again invalidate
+	   mov eax, cr0
+	   and eax, not 0x60000000
+	   mov cr0, eax 	; enable caching
+
 	   ret
 endp
 

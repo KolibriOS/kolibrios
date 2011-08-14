@@ -255,6 +255,7 @@ endofcode:
 gdte:
 
 align 16
+diff16 "cur_saved_data (data32.inc) ", 0, $
 cur_saved_data	  rb 4096
 fpu_data:	  rb 512
 
@@ -282,11 +283,14 @@ irq15read	  rd 16
 
 irq_tab 	  rd 16
 
+diff16 "mem_block_map  (data32.inc) ", 0, $
 mem_block_map	  rb 512
 mem_block_list	  rd 64
 large_block_list  rd 31
 mem_block_mask	  rd 2
 large_block_mask  rd 1
+
+diff16 "mem_used       (data32.inc) ", 0, $
 
 mem_used.fd	  rd 1
 mem_used.bk	  rd 1
@@ -302,6 +306,7 @@ heap_blocks	  rd 1
 free_blocks	  rd 1
 
 mst MEM_STATE
+diff16 "page_start     (data32.inc) ", 0, $
 
 page_start	  rd 1
 page_end	  rd 1
@@ -331,6 +336,8 @@ srv.bk		  rd 1
 ;img_screen_y     rd 1
 
 align 64
+diff16 "_WinMapAddress (data32.inc) ", 0, $
+
 ;_WinMapWidth     rd 1
 ;_WinMapHeight    rd 1
 _WinMapAddress	  rd 1
@@ -362,6 +369,8 @@ proc_mem_tab	  rd 1
 
 tmp_task_pdir	  rd 1
 tmp_task_ptab	  rd 1
+
+diff16 "default_io_map (data32.inc) ", 0, $
 
 default_io_map	  rd 1
 

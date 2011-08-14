@@ -248,6 +248,7 @@ include "bus/pci/pci32.inc"
 ;include "bus/pci/PCIe.inc"
 include "bus/HT.inc"		; AMD HyperTransport bus control
 include "bus/SB/SB.inc"
+include "bus/user/special.inc"
 
 ; Floppy drive controller
 

@@ -499,10 +499,10 @@ v20ga32:
 	mov	[graph_data_l+4],al
 	mov	[graph_data_l+7],ah
 
-;       or      [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
+;       or      [KERNEL_ALLOC_FLAG], dword PG_NOCACHE	;<<<<<<<<<<<<<<<<
 	stdcall kernel_alloc, [_WinMapSize]
 	mov	[_WinMapAddress], eax
-;       xor     [KERNEL_ALLOC_FLAG], dword PG_NOCACHE
+;       xor     [KERNEL_ALLOC_FLAG], dword PG_NOCACHE	;<<<<<<<<<<<<<<<<
 
 	xor  eax,eax
 	inc  eax

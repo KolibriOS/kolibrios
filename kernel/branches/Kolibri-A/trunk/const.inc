@@ -26,10 +26,10 @@ CPU_PENTIUM    equ 5
 CPU_P6	       equ 6
 CPU_PENTIUM4   equ 0x0F
 
-PLATFORM        equ     0x14
-PLATFORM_RS780  equ     0x0F
-PLATFORM_RS880  equ     0x10
-PLATFORM_FUSION equ     0x14
+PLATFORM	equ	0x14
+PLATFORM_RS780	equ	0x0F
+PLATFORM_RS880	equ	0x10
+PLATFORM_FUSION equ	0x14
 
 CAPS_FPU       equ    00 ;on-chip x87 floating point unit
 CAPS_VME       equ    01 ;virtual-mode enhancements
@@ -298,7 +298,7 @@ RAMDISK 	    equ (OS_BASE+0x0100000)
 RAMDISK_FAT	    equ (OS_BASE+0x0280000)
 FLOPPY_FAT	    equ (OS_BASE+0x0282000)
 
-CLEAN_ZONE          equ 0x280000
+CLEAN_ZONE	    equ 0x280000
 IDE_DMA 	    equ 0x284000
 
 BgrAuxTable	    equ (OS_BASE+0x0298000)
@@ -309,7 +309,7 @@ SB16_Status	    equ (OS_BASE+0x02B0000)
 BUTTON_INFO	    equ (OS_BASE+0x02C0000)
 RESERVED_PORTS	    equ (OS_BASE+0x02D0000)
 IRQ_SAVE	    equ (OS_BASE+0x02E0000)
-;BOOT_VAR	    equ (OS_BASE+0x02F0000)
+;BOOT_VAR           equ (OS_BASE+0x02F0000)
 
 
 stack_data_start    equ (OS_BASE+0x0300000)
@@ -335,10 +335,11 @@ virtual at		(OS_BASE+0x05FFF80)
 end virtual
 
 HEAP_BASE	    equ (OS_BASE+0x0800000)
-HEAP_MIN_SIZE	    equ 0x01000000
+HEAP_MIN_SIZE	    equ 0x02000000
 
 PCIe_CONFIG_SPACE   equ 0xF0000000
 USER_DMA_BUFFER     equ 0xFD000000    ; linear addr.
+USER_DMA_SIZE	    equ 0x00800000
 
 page_tabs	    equ 0xFDC00000
 app_page_tabs	    equ 0xFDC00000

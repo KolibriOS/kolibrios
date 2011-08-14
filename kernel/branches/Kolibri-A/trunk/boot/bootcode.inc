@@ -1,13 +1,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  BOOTCODE.INC                                                ;;
 ;;                                                              ;;
-;;  KolibriOS 16-bit loader,                                    ;;
-;;                        based on bootcode for MenuetOS        ;;
+;;  Kolibri-A auxiliary 16-bit code,                            ;;
+;;                        based on bootcode for KolibriOS       ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -119,17 +119,6 @@ no_hd_load:
 	push	cs
 	pop	es
 
-if 0
-; set videomode
-	mov	ax, 3
-	int	0x10
-
-; draw frames
-	push	0xb800
-	pop	es
-	xor	di, di
-	mov	ah, 1*16+15
-end if
 
 cpugood:
 
@@ -297,12 +286,6 @@ cfgmanager:
 	mov	al, [preboot_device]
 	dec	al
 	mov	[boot_dev], al
-
-; GET MEMORY MAP
-include 'detect/biosmem.inc'
-
-; READ DISKETTE TO MEMORY
-
 
 
 ; SET GRAPHICS

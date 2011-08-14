@@ -18,7 +18,7 @@ preinit_mem:
 
 ; clear [CLEAN_ZONE..HEAP_BASE]
 	   xor	 eax,eax
-	   mov	 edi,CLEAN_ZONE			; 0x280000 = ramdisk FAT ?
+	   mov	 edi,CLEAN_ZONE 		; 0x280000 = ramdisk FAT ?
 	   mov	 ecx,(HEAP_BASE-OS_BASE-CLEAN_ZONE) / 4
 	   cld
 	   rep	 stosd
@@ -35,7 +35,7 @@ preinit_mem:
 
 ; save [0..0xffff]
 	   xor	 esi, esi
-	   mov	 edi, (BOOT_VAR	- OS_BASE)		; low mem storage area
+	   mov	 edi, (BOOT_VAR - OS_BASE)		; low mem storage area
 	   mov	 ecx, 0x10000 / 4
 	   rep	 movsd
 ; clear [0x1000..0x0ffff]
@@ -53,11 +53,32 @@ preinit_mem:
 align 4
 proc init_mem
 
-	   mov esi, (PCIe_CONFIG_SPACE-OS_BASE) 	; esi will hold total amount of memory
-	   mov edx, esi 				; edx will hold maximum allocatable address
+	   mov	ecx, 0xC001001A 			; Top of Memory MSR
+	   xor	edi, edi
+	   rdmsr
+	   mov	esi, eax				; esi = total amount of memory
+	   mov	ecx, 0x0200
+.read_mtrr:
+	   rdmsr
+	   and	eax, 0xFFF00000 			; not just bitcleaning
+	   jz	.next_mtrr				; ignore the main memory and free MTRRs
+	   cmp	esi, eax
+	   jb	.next_mtrr				; ignore MMIO blocks
+	   mov	esi, eax
+.next_mtrr:
+	   add	cl, 2
+	   cmp	cl, 0x10
+	   jb	.read_mtrr
 
-	   mov [MEM_AMOUNT-OS_BASE], esi
-	   mov [pg_data.mem_amount-OS_BASE], esi
+	   mov	eax, USER_DMA_SIZE
+	   sub	esi, eax				; exclude the Global DMA block...
+	   and	esi, 0xFF800000 			; ...and the hole above it
+	   mov	eax, esi
+	   mov	[MEM_AMOUNT-OS_BASE], eax
+	   mov	[pg_data.mem_amount-OS_BASE], eax	; the true MEMTOP
+	   mov	[UserDMAaddr-OS_BASE], eax
+
+	   mov edx, esi 				; edx will hold maximum allocatable address
 	   shr esi, 12
 	   mov [pg_data.pages_count-OS_BASE], esi	; max number of PTEs   ?
 
