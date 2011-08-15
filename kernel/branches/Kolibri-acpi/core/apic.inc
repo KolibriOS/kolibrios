@@ -103,6 +103,28 @@ APIC_init:
     out 0x23, al
 
 	; mov	dword[irq_type_to_set], IRQ_TYPE_APIC
+
+;init handlers table
+
+    mov ecx, IRQ_RESERVE
+    mov edi, irqh_tab
+@@:
+    mov eax, edi
+    stosd
+    stosd
+    loop @B
+
+    mov ecx, 48
+    mov eax, irqh_array+IRQH.sizeof
+    mov [next_irqh], irqh_array
+
+@@:
+    mov [eax-IRQH.sizeof], eax
+    add eax, IRQH.sizeof
+    loop @B
+
+    mov [eax-IRQH.sizeof], dword 0
+
 .no_apic:
 	ret
 
@@ -268,7 +290,7 @@ unmask_timer:
 	jnz	@f
 	stdcall enable_irq, 0
 	ret
-@@:	
+@@:
 	; use PIT
 	; in some systems PIT no connected to IOAPIC
 	; mov	eax, 0x14
@@ -281,7 +303,7 @@ unmask_timer:
 	; call	IOAPIC_write
 	; stdcall enable_irq, 2
 	; ret
-	
+
 	; use LAPIC timer
 	mov	esi, [LAPIC_BASE]
 	mov	eax, [esi + APIC_LVT_timer]
@@ -327,11 +349,11 @@ IRQ_EOI:
 	out	0xa0, al
 @@:	out	0x20, al
 	ret
-.APIC:	
+.APIC:
 	mov	eax, [LAPIC_BASE]
 	mov	dword [eax + APIC_EOI], 0	; EOI
 	ret
-	
+
 ; -----------------------------------------
 ; from dll.inc
 align 4
@@ -491,3 +513,94 @@ endp
 	; popa
 	; ret
 ; endp
+
+
+macro __list_add new, prev, next
+{
+    mov [next+LHEAD.prev], new
+    mov [new+LHEAD.next], next
+    mov [new+LHEAD.prev], prev
+    mov [prev+LHEAD.next], new
+}
+
+macro list_add new, head
+{
+    mov eax, [head+LHEAD.next]
+    __list_add new, head, eax
+}
+
+macro list_add_tail new, head
+{
+    mov eax, [head+LHEAD.prev]
+    __list_add new, eax, head
+}
+
+
+align 4
+proc attach_int_handler_ex stdcall, irq:dword, handler:dword, user_data:dword
+         locals
+           .irqh dd ?
+         endl
+
+         and [.irqh], 0
+
+         push ebx
+
+         mov  ebx, [irq]            ;irq num
+         test ebx, ebx
+         jz   .err
+
+         cmp  ebx, IRQ_RESERVE
+         jae  .err
+
+         mov  edx, [handler]
+         test edx, edx
+         jz   .err
+
+         pushfd
+         cli
+
+;allocate handler
+
+         mov ecx, [next_irqh]
+         test ecx, ecx
+         jz .fail
+
+         mov eax, [ecx]
+         mov [next_irqh], eax
+
+         mov [.irqh], ecx
+
+         mov eax, [user_data]
+         mov [ecx+IRQH.handler], edx
+         mov [ecx+IRQH.data],    eax
+
+         mov eax, [irqh_set]
+         bt [pci_irq_set], ebx      ;check irq type
+         jc .pci_irq
+
+.isa_irq:
+         bts eax, ebx               ;check for installed handler
+         jc .fail
+
+.set_handler:
+         mov [irqh_set], eax
+
+         lea edx, [irqh_tab+ebx*8]
+         list_add_tail ecx, edx     ;clobber eax
+
+         stdcall enable_irq, [irq]
+
+.fail:
+         popfd
+.err:
+         pop ebx
+         mov eax, [.irqh]
+         ret
+
+.pci_irq:
+         bts ecx, ebx               ;check for installed handler
+         jmp .set_handler
+
+endp
+

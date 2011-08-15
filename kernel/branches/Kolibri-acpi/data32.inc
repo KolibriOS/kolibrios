@@ -271,6 +271,11 @@ irq_owner	  rd IRQ_RESERVE ; process id
 irq00read	  rd 16 * IRQ_RESERVE
 irq_tab 	  rd IRQ_RESERVE
 
+irqh_tab      rd LHEAD.sizeof * IRQ_RESERVE / 4
+
+irqh_array    rd IRQH.sizeof *48 /4
+next_irqh     rd 1
+
 mem_block_map     rb 512
 mem_block_list    rd 64
 large_block_list  rd 31
@@ -301,6 +306,8 @@ os_stack_seg      rd 1
 srv.fd            rd 1
 srv.bk            rd 1
 
+irqh_set          rd 1
+pci_irq_set       rd 1
 
 align 16
 

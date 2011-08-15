@@ -1017,8 +1017,7 @@ end if
    	     stdcall enable_irq, 6		; FDD
 	     stdcall enable_irq, 13		; co-processor
 
-       	stdcall attach_int_handler, dword 1, irq1, dword 0	; keyboard
-
+        stdcall attach_int_handler_ex, 1, irq1, 0
 ;        mov    [dma_hdd],1
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
