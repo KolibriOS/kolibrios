@@ -992,33 +992,11 @@ if preboot_blogesc
         jne     .bll1
 end if
 
-
-; UNMASK ALL IRQ'S
-
-;        mov   esi,boot_allirqs
-;        call  boot_log
-;
-;        cli                          ;guarantee forbidance of interrupts.
-;        mov   al,0                   ; unmask all irq's
-;        out   0xA1,al
-;        out   0x21,al
-;
-;        mov   ecx,32
-;
-;     ready_for_irqs:
-;
-;        mov   al,0x20                ; ready for irqs
-;        out   0x20,al
-;        out   0xa0,al
-;
-;        loop  ready_for_irqs         ; flush the queue
-         cli                          ;guarantee forbidance of interrupts.
-	stdcall enable_irq, 2		; @#$%! PIC
-   	     stdcall enable_irq, 6		; FDD
-	     stdcall enable_irq, 13		; co-processor
-
+        cli                                     ;guarantee forbidance of interrupts.
+        stdcall enable_irq, 2                   ; @#$%! PIC
+        stdcall enable_irq, 6                   ; FDD
+        stdcall enable_irq, 13                  ; co-processor
         stdcall attach_int_handler_ex, 1, irq1, 0
-;        mov    [dma_hdd],1
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
         mov [timer_ticks_enable],1              ; for cd driver
@@ -3789,7 +3767,7 @@ reserve_free_irq:
 
      mov   ebx, [f_irqs + 4 * eax]
 
-     stdcall attach_int_handler, eax, ebx, dword 0
+     stdcall attach_int_handler_ex, eax, ebx, dword 0
 
      mov   [ecx], edi
 

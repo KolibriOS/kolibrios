@@ -262,25 +262,29 @@ endofcode:
 gdte:
 
 align 16
-cur_saved_data    rb 4096
-fpu_data:         rb 512
+cur_saved_data      rb 4096
+fpu_data:           rb 512
 
 ; device irq owners
-irq_owner	  rd IRQ_RESERVE ; process id
+irq_owner           rd IRQ_RESERVE ; process id
 ; on irq read ports
-irq00read	  rd 16 * IRQ_RESERVE
-irq_tab 	  rd IRQ_RESERVE
+irq00read           rd 16 * IRQ_RESERVE
+irq_tab             rd IRQ_RESERVE
 
-irqh_tab      rd LHEAD.sizeof * IRQ_RESERVE / 4
+irqh_tab            rd LHEAD.sizeof * IRQ_RESERVE / 4
 
-irqh_array    rd IRQH.sizeof *48 /4
-next_irqh     rd 1
+irqh_array          rd IRQH.sizeof *48 /4
+bogus_irq           rd IRQ_RESERVE
+next_irqh           rd 1
+pending_irq_set     rd 1
 
-mem_block_map     rb 512
-mem_block_list    rd 64
-large_block_list  rd 31
-mem_block_mask    rd 2
-large_block_mask  rd 1
+align 16
+
+mem_block_map       rb 512
+mem_block_list      rd 64
+large_block_list    rd 31
+mem_block_mask      rd 2
+large_block_mask    rd 1
 
 mem_used.fd       rd 1
 mem_used.bk       rd 1
@@ -305,9 +309,6 @@ os_stack_seg      rd 1
 
 srv.fd            rd 1
 srv.bk            rd 1
-
-irqh_set          rd 1
-pci_irq_set       rd 1
 
 align 16
 

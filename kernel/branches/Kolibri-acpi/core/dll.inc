@@ -14,49 +14,6 @@ DRV_CURRENT  equ  5  ;current drivers model version
 DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 PID_KERNEL  equ 1    ;os_idle thread
 
-align 4
-proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
-
-         pushfd
-         cli
-
-         push ebx
-
-         mov  ebx, [irq]                   ;irq num
-         test ebx, ebx
-         jz   .err
-	cmp	ebx, [IRQ_COUNT]		; hidnplayr says: we only have 16 IRQ's
-						; Ghost says: we can have more...
-	jae	.err
-         mov  eax, [handler]
-         test eax, eax
-         jz   .err
-         cmp  [irq_owner + 4 * ebx], 0
-         je   @f
-
-         mov  ecx, [irq_rights + 4 * ebx]  ; Rights : 0 - full access, 1 - read only, 2 - forbidden
-         test ecx, ecx
-         jnz  .err
-
-@@:
-         mov  [irq_tab+ebx*4], eax
-
-         mov  eax, [access_rights]
-         mov  [irq_rights + 4 * ebx], eax
-
-         mov  [irq_owner + 4 * ebx], PID_KERNEL  ; all handlers belong to a kernel
-
-         stdcall enable_irq, [irq]
-         pop ebx
-         mov eax, 1
-         popfd
-         ret
-.err:
-         pop ebx
-         xor eax, eax
-         popfd
-         ret
-endp
 
 uglobal
 
@@ -95,8 +52,8 @@ irq_serv:
 ; .irq_1:
 	   ; push 1
 ;	   jmp .main
-; etc...	   
-	   
+; etc...
+
 macro irq_serv_h [num] {
 	forward
 align 4
@@ -115,43 +72,71 @@ end if
 align 16
 .main:
 	   save_ring3_context
-	   mov	 eax, [esp + 32]
+       mov   ebp, [esp + 32]
 	   mov	 bx, app_data  ;os_data
 	   mov	 ds, bx
 	   mov	 es, bx
 
-	   cmp	 [v86_irqhooks+eax*8], 0
+       cmp   [v86_irqhooks+ebp*8], 0
 	   jnz	 v86_irq
 
-	   cmp   al, 6
+       cmp   bp, 6
 	   jnz   @f
-	   push  eax
+       push  ebp
 	   call  [fdc_irq_func]
-	   pop   eax
+       pop   ebp
 @@:
 
-	   cmp   al, 14
+       cmp   bp, 14
 	   jnz   @f
-	   push  eax
+       push  ebp
 	   call  [irq14_func]
-	   pop   eax
+       pop   ebp
 @@:
-	   cmp   al, 15
+       cmp   bp, 15
 	   jnz   @f
-	   push  eax
+       push  ebp
 	   call  [irq15_func]
-	   pop   eax
+       pop   ebp
 @@:
+       bts [pending_irq_set], ebp
 
-	   mov ebx, [irq_tab+eax*4]
-	   test ebx, ebx
-	   jz .exit
+       lea esi, [irqh_tab+ebp*8]        ; esi= list head
+       mov ebx, esi
+.next:
+       mov ebx, [ebx+IRQH.list.next]    ; ebx= irqh pointer
+       cmp ebx, esi
+       je .done
 
-	   call ebx
-	   mov	[check_idle_semaphore],5
+       push ebx                         ; FIX THIS
+       push edi
+       push esi
 
-.exit:	mov	eax, [esp + 32]
-	call	IRQ_EOI
+       push [ebx+IRQH.data]
+       call [ebx+IRQH.handler]
+       add esp, 4
+
+       pop esi
+       pop edi
+       pop ebx
+
+       test eax, eax
+       jz .next
+
+       btr [pending_irq_set], ebp
+       jmp .next
+
+.done:
+       btr [pending_irq_set], ebp
+       jnc .exit
+
+       inc [bogus_irq+ebp*4]
+.exit:
+       mov  [check_idle_semaphore],5
+
+       mov eax, ebp
+
+       call    IRQ_EOI
 	   restore_ring3_context
 	   add	 esp, 4
 

@@ -91,7 +91,7 @@ kernel_export:
   dd szRegService      , reg_service
   dd szGetService      , get_service
   dd szServiceHandler  , srv_handler
-  dd szAttachIntHandler, attach_int_handler
+  dd szAttachIntHandler, attach_int_handler_ex
   dd szGetIntHandler   , get_int_handler
   dd szFpuSave         , fpu_save
   dd szFpuRestore      , fpu_restore

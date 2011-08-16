@@ -575,17 +575,6 @@ proc attach_int_handler_ex stdcall, irq:dword, handler:dword, user_data:dword
          mov [ecx+IRQH.handler], edx
          mov [ecx+IRQH.data],    eax
 
-         mov eax, [irqh_set]
-         bt [pci_irq_set], ebx      ;check irq type
-         jc .pci_irq
-
-.isa_irq:
-         bts eax, ebx               ;check for installed handler
-         jc .fail
-
-.set_handler:
-         mov [irqh_set], eax
-
          lea edx, [irqh_tab+ebx*8]
          list_add_tail ecx, edx     ;clobber eax
 
@@ -598,9 +587,4 @@ proc attach_int_handler_ex stdcall, irq:dword, handler:dword, user_data:dword
          mov eax, [.irqh]
          ret
 
-.pci_irq:
-         bts ecx, ebx               ;check for installed handler
-         jmp .set_handler
-
 endp
-
