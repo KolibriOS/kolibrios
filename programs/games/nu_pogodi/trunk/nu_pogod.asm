@@ -75,9 +75,7 @@ fn_icon0 rb FILE_NAME_MAX ;имя файла с декорациями
 fn_icon1 rb FILE_NAME_MAX ;имя файла с волком и зайцем
 fn_icon2 rb FILE_NAME_MAX ;имя файла с яйцами
 fn_icon3 rb FILE_NAME_MAX ;имя файла с циплятами
-fn_font db 'font8x9.bmp',0
 
-fn_icon_tl_sys db 'tl_sys_16.png',0
 TREE_ICON_SYS16_BMP_SIZE equ 256*3*11+54 ;размер bmp файла с системными иконками
 
 ini_m_name db 'main.ini',0
@@ -124,7 +122,18 @@ color_but_sm dd 0x808080 ;цвет маленьких кнопок
 color_but_te dd 0xffffff ;цвет текста на кнопках
 
 macro load_image_file path,buf,size { ;макрос для загрузки изображений
-	copy_path path,sys_path,file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+	;path - может быть переменной или строковым параметром
+	if path eqtype '' ;проверяем задан ли строкой параметр path
+		jmp @f
+			local .path_str
+			.path_str db path ;формируем локальную переменную
+			db 0
+		@@:
+		;32 - стандартный адрес по которому должен быть буфер с системным путем
+		copy_path .path_str,[32],file_name,0x0
+	else
+		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+	end if
 
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
 	mov [buf],eax
@@ -711,7 +720,7 @@ InitAll:
 	stdcall LoadArrayBuffer, fn_icon2, buf_egg,22 ;считываем 22 буферов с яйцами
 	stdcall LoadArrayBuffer, fn_icon3, buf_chi,13 ;считываем 13 буферов с циплятами
 
-	load_image_file fn_font, image_data_gray,IMAGE_FONT_SIZE
+	load_image_file 'font8x9.bmp', image_data_gray,IMAGE_FONT_SIZE
 	stdcall [buf2d_create_f_img], buf_font,[image_data_gray] ;создаем буфер
 	stdcall mem.Free,[image_data_gray] ;освобождаем память
 
@@ -765,7 +774,7 @@ start:
 ;******************************************************************************
 	stdcall dword[tl_data_init], tree1
 
-	load_image_file fn_icon_tl_sys, image_data_gray,TREE_ICON_SYS16_BMP_SIZE
+	load_image_file 'tl_sys_16.png', image_data_gray,TREE_ICON_SYS16_BMP_SIZE
 	stdcall [buf2d_create_f_img], buf_tree_sys,[image_data_gray] ;создаем буфер
 	stdcall mem.Free,[image_data_gray] ;освобождаем память
 
@@ -791,7 +800,7 @@ start:
 	stdcall dword[tl_cur_beg], tree1 ;переносим курсор вверх
 
 	mcall 26,9
-	mov [last_time],ebx
+	mov [last_time],eax
 
 
 
@@ -814,7 +823,6 @@ still: ;главный цикл
 	test ebx,ebx
 	jz it_is_time_now
 	mcall 23
-
 	cmp eax,0
 	je it_is_time_now
 
@@ -847,8 +855,8 @@ it_is_time_now:
 	mcall 26,9
 	mov [last_time],eax
 
-	cmp byte[game_select_mode],0
-	jne still
+	;cmp byte[game_select_mode],0
+	;jne still
 
 	;...здесь идут действия, вызываемые каждые delay сотых долей секунд...
 	call MoveEggs
@@ -1218,7 +1226,7 @@ align 4
   ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 
-last_time dd ?
+last_time dd 0
 image_data dd 0 ;память для преобразования картинки функциями libimg
 image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
 
