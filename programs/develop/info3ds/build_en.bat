@@ -1,7 +1,7 @@
 if not exist bin mkdir bin
 @erase lang.inc
 @echo lang fix en >lang.inc
-if not exist bin\objects.png @copy objects.png bin\objects.png
+@copy objects.png bin\objects.png
 if not exist bin\tl_sys_16.png @copy tl_sys_16.png bin\tl_sys_16.png
 if not exist bin\toolbar.png @copy toolbar.png bin\toolbar.png
 if not exist bin\font8x9.bmp @copy ..\..\fs\kfar\trunk\font8x9.bmp bin\font8x9.bmp

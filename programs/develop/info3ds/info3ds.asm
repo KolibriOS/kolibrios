@@ -20,7 +20,7 @@ include 'lang.inc'
 debug equ 0
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-capt db 'info 3ds 17.08.11',0 ;подпись окна
+capt db 'info 3ds 18.08.11',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -45,7 +45,7 @@ image_data_toolbar dd 0
 TREE_ICON_SYS16_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*11+54 ;размер bmp файла с системными иконками
 icon_tl_sys dd 0 ;указатеель на память для хранения системных иконок
 icon_toolbar dd 0 ;указатеель на память для хранения иконок объектов
-TOOLBAR_ICON_BMP_SIZE equ 256*5 ;размер bmp файла с иконками объектов
+TOOLBAR_ICON_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*6+54 ;размер bmp файла с иконками объектов
 ;
 IMAGE_FILE1_SIZE equ 128*144*3 ;размер файла с изображением 640 x 480
 
@@ -101,7 +101,6 @@ macro block_3ds id,icon,par
 CHUNK_MAIN                equ 0x4D4D ; [-] сцена
 CHUNK_color_1             equ 0x0011 ; [+] цвет rgb (byte format)
 CHUNK_ambient_color       equ 0x2100 ; [-] ambient color
-CHUNK_VERSIONF            equ 0x0002 ; [+] информация о версии файла
   CHUNK_OBJMESH           equ 0x3D3D ; [-] всяческие объекты
     CHUNK_OBJBLOCK        equ 0x4000 ; [+] объект
       CHUNK_TRIMESH       equ 0x4100 ; [-] trimesh-объект
@@ -134,15 +133,21 @@ MAX_FILE_SIZE equ 150*0x400 ;максимальный размер файла (50 Kb)
 level_stack dd 0
 offs_last_timer dd 0 ;последний сдвиг показаный в функции таймера
 
-ID_ICON_CHUNK_MAIN equ 0
-ID_ICON_CHUNK_NOT_FOUND equ 1
-ID_ICON_DATA equ 2
+ID_ICON_CHUNK_MAIN equ 0 ;иконка главного блока
+ID_ICON_CHUNK_NOT_FOUND equ 1 ;иконка не известного блока
+ID_ICON_DATA equ 2 ;иконка для данных блока, не определенной структуры
+
+FILE_ERROR_CHUNK_SIZE equ -3 ;ошибка в размере блока
 
 align 4
 type_bloks:
+block_3ds 0x0002,5,1 ;информация о версии файла
+block_3ds 0x3d3e,5,1 ;mesh version
+block_3ds 0xA010,4,0 ;material ambient color
+block_3ds 0xA020,4,0 ;material diffuse color
+block_3ds 0xA030,4,0 ;material specular color
 block_3ds CHUNK_color_1,     4,1 ; [+] цвет rgb (byte format)
 block_3ds CHUNK_ambient_color,3,0 ; [-] ambient color
-block_3ds CHUNK_VERSIONF,    3,1 ; [+] Информация о версии файла
 block_3ds CHUNK_OBJMESH,     3,0 ; [-] всяческие объекты
 block_3ds CHUNK_OBJBLOCK,    3,1 ; [+] объект
 block_3ds CHUNK_TRIMESH,     3,0 ; [-] trimesh-объект
@@ -181,6 +186,7 @@ if lang eq ru
 txt_open_3ds db 'Открыт файл:',0
 txt_no_3ds db 'Открытый файл не в формате *.3ds',0
 txt_3ds_big_file db 'Размер файла больше MAX_FILE_SIZE',0
+txt_3ds_err_sizes db 'Возможно файл поврежден',0
 txt_3ds_offs:
 	db 'Смещение: '
 	.dig: rb 8
@@ -189,6 +195,7 @@ else
 txt_open_3ds db 'Open file:',0
 txt_no_3ds db 'Открытый файл не в формате *.3ds',0
 txt_3ds_big_file db 'Размер файла больше MAX_FILE_SIZE',0
+txt_3ds_err_sizes db 'Возможно файл поврежден',0
 txt_3ds_offs:
 	db 'Offset: '
 	.dig: rb 8
@@ -311,6 +318,10 @@ buf_draw_beg:
 	stdcall [buf2d_clear], buf_0, [buf_0.color] ;чистим буфер
 	stdcall [buf2d_draw_text], buf_0, buf_1,txt_open_3ds,5,5,0xff
 	stdcall [buf2d_draw_text], buf_0, buf_1,openfile_path,5,15,0xff
+	cmp dword[level_stack],FILE_ERROR_CHUNK_SIZE ;возможна ошибка файла
+	jne @f
+		stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_err_sizes,5,25,0xff0000
+	@@:
 	ret
 
 align 4
@@ -321,7 +332,6 @@ proc buf_draw_hex_table, offs:dword, size_line:dword
 	endl
 		mov esi,dword[offs]
 		mov edi,dword[open_file_lif]
-		add edi,6
 		add edi,dword[file_3ds+4] ;edi - указатель на конец файла в памяти
 		mov dword[txt_3ds_offs.dig],0
 		cld
@@ -375,7 +385,7 @@ draw_window:
 pushad
 	mcall 12,1
 	xor eax,eax
-	mov ebx,(20 shl 16)+510
+	mov ebx,(20 shl 16)+560
 	mov ecx,(20 shl 16)+315
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x10000000+0x20000000
@@ -394,10 +404,10 @@ pushad
 	mov edx,4
 	int 0x40
 
-	mov ebx,(55 shl 16)+20
-	mov ecx,(5 shl 16)+20
-	mov edx,5
-	int 0x40
+	;mov ebx,(55 shl 16)+20
+	;mov ecx,(5 shl 16)+20
+	;mov edx,5
+	;int 0x40
 
 
 	mov eax,7
@@ -410,9 +420,9 @@ pushad
 	mov edx,(32 shl 16)+7 ;open
 	int 0x40
 
-	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	mov edx,(57 shl 16)+7 ;open
-	int 0x40
+	;add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	;mov edx,(57 shl 16)+7 ;save
+	;int 0x40
 
 	mov dword[w_scr_t1.all_redraw],1
 	stdcall [tl_draw],dword tree1
@@ -518,13 +528,17 @@ but_open_file:
 	stdcall add_3ds_object, ID_ICON_CHUNK_MAIN,0,dword[esi+2]
 	call block_children ;вход в дочерний блок
 
+	mov edi,dword[file_3ds.offs]
+	add edi,dword[file_3ds.size]
 	.cycle_main:
 		cmp dword[level_stack],0
-		je .end_cycle
+		jle .end_cycle
+		
+		cmp esi,edi ;если конец файла
+		jge .end_cycle
 
 		call block_analiz
-		mov edx,dword[esi+2] ;размер блока без заголовка
-		add edx,6 ;размер блока вместе с заголовком
+		mov edx,dword[esi+2] ;размер блока
 
 		cmp dword[eax],0
 		jne @f
@@ -564,7 +578,8 @@ align 4
 block_analiz_data:
 	pushad
 		mov ax,word[esi]
-		mov ecx,dword[esi+2] ;размер блока
+		mov ecx,dword[esi+2]
+		sub ecx,6 ;размер данных в блоке
 		add esi,6
 		mov ebx,dword[level_stack]
 		inc ebx
@@ -583,15 +598,32 @@ block_analiz_data:
 	popad
 	ret
 
-;вход в дочерний блок
+;вход в 1-й дочерний блок
+;output:
+; edx - destroy
 align 4
 block_children:
-	mov dword[eax],esi ;указатель на начало блока
-	mov ebx,dword[esi+2]
-	mov dword[eax+4],ebx ;размер блока
-	add esi,6 ;переходим к данным блока
-	inc dword[level_stack]
-	add eax,8
+	push ecx
+		;проверка правильности размеров дочернего блока
+		mov ebx,esi ;смещение начала родительского блока
+		add ebx,6 ;переход на начало дочернего блока
+		add ebx,dword[ebx+2] ;добавляем размер дочернего блока
+		mov ecx,esi ;смещение начала родительского блока
+		add ecx,dword[esi+2] ;добавляем размер родительского блока
+		cmp ebx,ecx ;учитывать заголовки не нужно, т. к. сравниваются только данные блоков
+		jle @f
+			;диагностировали ошибку файла, дочерний блок выходит за пределы родительского
+			mov dword[level_stack],FILE_ERROR_CHUNK_SIZE
+			jmp .end_f
+		@@:
+		mov dword[eax],esi ;указатель на начало блока
+		mov ebx,dword[esi+2]
+		mov dword[eax+4],ebx ;размер блока
+		add esi,6 ;переходим к данным блока
+		inc dword[level_stack]
+		add eax,8
+	.end_f:
+	pop ecx
 	ret
 
 ;переход к следущему блоку текущего уровня
@@ -599,12 +631,10 @@ align 4
 block_next:
 push ebx
 	add esi,dword[esi+2] ;пропускаем данные блока
-	add esi,6
 
 	;проверка размеров родительского блока, для возможного выхода на верхний уровень если конец блока
 	mov ebx,dword[eax-8]
 	add ebx,dword[eax-4]
-	add ebx,6
 	cmp esi,ebx
 	jl @f
 		dec dword[level_stack]
@@ -1080,7 +1110,7 @@ procinfo process_information
 
 align 4
 buf_0: dd 0 ;указатель на буфер изображения
-	dw 155 ;+4 left
+	dw 205 ;+4 left
 	dw 35 ;+6 top
 .w: dd 340 ;+8 w
 .h: dd 250 ;+12 h
@@ -1099,7 +1129,7 @@ buf_1:
 
 el_focus dd tree1
 tree1 tree_list size_one_list,100+2, tl_key_no_edit+tl_draw_par_line,\
-	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,35,145-16,250, 0,8,0, el_focus,\
+	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,35,195-16,250, 0,8,0, el_focus,\
 	w_scr_t1,0
 
 align 4
