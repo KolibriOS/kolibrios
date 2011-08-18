@@ -285,7 +285,7 @@ lev_next:
   .ex:
     pop  eax
     ret
-
+;---------------------------------------------------------------------
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
@@ -300,11 +300,18 @@ draw_window:
     imul  ecx,[Ces]
     add   ecx,10 shl 16+YFOFS+30
     mcall 0,,,WNDCOLOR
-    mov   esi,edx
-    and   esi,0xffffff
-    mcall 9,prc_info,-1
-    mov   ebx,[esp]
-    pop   ebx
+    
+	push	edx
+	mcall	4,<8,8>,0x10ffffff,header,header.size
+	pop	esi
+	and	esi,0xffffff
+	mcall	9,prc_info,-1
+	pop	ebx
+    
+	mov	eax,[prc_info+70] ;status of window
+	test	eax,100b
+	jne	.end
+    
     add   ebx,XFOFS shl 16+XFOFS*2
 
     mcall 8,,<25,12>,2
@@ -313,7 +320,7 @@ draw_window:
     add   ebx,14 shl 16
     inc   edx
     mcall
-    mcall 4,<8,8>,0x10ffffff,header,header.size
+
     mov   ecx,ebp
     mov   edx,game_names+4
     call  get_mstr
@@ -325,10 +332,11 @@ draw_window:
     mcall 47,0x020001,levnum,,0x8000
 
     mcall 4,<XFOFS+3,43>,0x108000,next_msg,3
+.end:
     mcall 12,2
     popa
     ret
-
+;---------------------------------------------------------------------
 unpack_level:
     mov   ecx,[cell_count]
     mov   edi,field
@@ -340,7 +348,7 @@ unpack_level:
     stosw
     loop  .lp
     ret
-
+;---------------------------------------------------------------------
 get_xy:
 ; eax-coord
 ; out: [lx]-[x+2][CS-4],[ly]-[y+2][CS-4]
