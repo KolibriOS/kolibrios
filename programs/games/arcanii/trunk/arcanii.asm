@@ -8,7 +8,7 @@ VERSION equ 'ARCANOID II v. 0.30'
 ;----------------------------------------
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include '../../../macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
 include 'asjc.inc'
@@ -46,6 +46,11 @@ START:                          ; start of execution
     call draw_window
 
 still:
+    cmp  [is_rolled_up], 1
+    jne  @f
+    jmp  .no_game
+  @@:
+
     if_e dword [level],0,.no_intro
        call intro
        jmp .no_game
@@ -77,6 +82,12 @@ still:
     jmp  still
 
   red:                          ; redraw
+    mov  [is_rolled_up], 0
+    mcall 9,proc_info,-1
+    test [proc_info+process_information.wnd_state], 0x04
+    jz   @f
+    mov  [is_rolled_up], 1
+  @@:
     call draw_window
     jmp  still
 
@@ -402,6 +413,10 @@ ret
 
 ;___________________
 intro:  ; INTRO    ;
+    cmp  [is_rolled_up], 1
+    jne  @f
+    ret
+  @@:
     label 140,200,VERSION,0x100000FF
     label 120,220,'by jj (jacek jerzy malinowski)',0x050505
     label 100,240,'press SPACE to start a new game',0x10FF0800
@@ -412,6 +427,10 @@ ret
 
 ;___________________
 level_info:
+    cmp  [is_rolled_up], 1
+    jne  @f
+    ret
+  @@:
     label 170,230,'L E V E L',0x100000FF
     outcount [level],195,250,0x100000FF,2*65536
     label 100,270,'press SPACE to start the level',0x10FF0800
@@ -790,7 +809,10 @@ draw_window:
     label 200,8,'LIVES:',0x10ddeeff
     outcount dword [lives],250,8,0x10ddeeff,65536
 
+    cmp [is_rolled_up], 1
+    je  @f
     call fast_gfx
+  @@:
 
     endwd
 
@@ -799,6 +821,8 @@ draw_window:
 ;-----------;####################
 ; DATA AREA ;####################
 ;-----------;####################
+
+is_rolled_up dd 0
 
  lives dd 5
  mode dd 0
@@ -917,6 +941,7 @@ screen_img:
     dd Y_SIZE
 screen:
     rb X_SIZE*Y_SIZE*3
-
+proc_info:
+    rb 1024
 I_END:
 
