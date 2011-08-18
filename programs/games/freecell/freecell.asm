@@ -7,7 +7,7 @@
 ; e-mail:       gorsash@mail.ru
 
 
-include "macros.inc"
+include "../../macros.inc"
 include "lang.inc"
 meos_app_start
 
@@ -616,6 +616,9 @@ code
     mov     ecx, -1          ; we want to know info of our window
     mcall
 
+    test    [process_info.wnd_state], 0x04
+    jnz     draw_window.end_draw
+
 
     mov     eax, [process_info.box.height]
     mov     [WindowHeight], ax
@@ -968,7 +971,7 @@ code
 
 
  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+    draw_window.end_draw:
 
     mov     eax, 12          ; finish drawing
     mov     ebx, 2
