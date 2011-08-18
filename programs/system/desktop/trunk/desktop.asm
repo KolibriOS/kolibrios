@@ -460,76 +460,6 @@ save_file:
         mcall   70
         ret
 ;---------------------------------------------------------------------
-;read_string:
-;
-;    pusha
-;
-;    mov  edi,fname
-;    mov  al,'_'
-;    mov  ecx,87
-;    cld
-;    rep  stosb
-;
-;    call print_text
-;
-;    mov  edi,fname
-;
-;  f11:
-;    mov  eax,10
-;    mcall
-;    cmp  eax,2
-;    jne  read_done
-;;    mov  eax,2
-;    mcall
-;    shr  eax,8
-;    cmp  eax,13
-;    je   read_done
-;    cmp  eax,8
-;    jne  nobsl
-;    cmp  edi,fname
-;    je   f11
-;    dec  edi
-;    mov  [edi],byte '_'
-;    call print_text
-;    jmp  f11
-;   nobsl:
-;    mov  [edi],al
-;
-;    call print_text
-;
-;    inc  edi
-;    cmp  edi, fname+87
-;    jne  f11
-;
-;  read_done:
-;
-;    mov  ecx, fname+88
-;    sub  ecx, edi
-;    mov  eax, 0
-;    cld
-;    rep  stosb
-;
-;    call print_text
-;
-;    popa
-;
-;    ret
-
-
-;print_text:
-;    pushad
-;
-;    mpack ebx,15,6*87+4
-;    mpack ecx,(30+18*10+2),11
-;    mcall 13,,,[w_work]
-;
-;    mpack ebx,17,(30+18*10+4)
-;    mcall 4,,[w_work_text],fname,87
-;
-;    popad
-;ret
-
-
 draw_color:
 
     pusha
@@ -554,10 +484,8 @@ draw_color:
     mcall
 
     popa
-
     ret
-
-
+;----------------------------------------------------------------------
 draw_colours:
 
     pusha
@@ -576,10 +504,8 @@ draw_colours:
     jbe  newcol
 
     popa
-
     ret
-
-
+;----------------------------------------------------------------------
 draw_framerect: ; ebx,ecx
         push    ebx ecx
         add     bx,[esp+6]
@@ -604,7 +530,7 @@ draw_framerect: ; ebx,ecx
         mcall
         add     esp,8
         ret
-
+;----------------------------------------------------------------------
 find_bitmap:
         mov     edi,[ebp+SKIN_HEADER.bitmaps]
         add     edi,ebp
@@ -621,7 +547,7 @@ find_bitmap:
   .lp2: ret
     @@: add     edi,8
         jmp     .lp1
-
+;----------------------------------------------------------------------
 dec_edx:
         sub     dl,4
         jnc     @f
@@ -635,7 +561,7 @@ dec_edx:
         xor     dl,dl
     @@: rol     edx,16
         ret
-
+;----------------------------------------------------------------------
 area:
   .x      = 345
   .y      = 20
@@ -666,7 +592,7 @@ wnd4:
 virtual at edi+SKIN_PARAMS.dtp.data
   dtp system_colors
 end virtual
-
+;----------------------------------------------------------------------
 draw_skin:
         mcall   13,<area.x,area.width>,<area.y+2,area.height-2>,0x00FFFFFF
 
@@ -916,32 +842,23 @@ draw_PathShow:
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
-
-
 draw_window:
+	mcall	12,1
+	mcall	48,3,app_colours,10*4
+	mcall	14
+; DRAW WINDOW
+	xor	eax,eax		; function 0 : define and draw window
+	xor	esi,esi
+	mov	edx,[w_work]	; color of work area RRGGBB,8->color
+	or	edx,0x14000000
+	mcall	,<110,555>,<50,275>,,,title
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
-    mcall
-
-    mov  eax,48
-    mov  ebx,3
-    mov  ecx,app_colours
-    mov  edx,10*4
-    mcall
-
-    mov  eax,14
-    mcall
-
-                                      ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
-    mov  ebx,110*65536+555         ; [x start] *65536 + [x size]
-    mov  ecx,50*65536+275          ; [y start] *65536 + [y size]
-    mov  edx,[w_work]              ; color of work area RRGGBB,8->color
-    or   edx,0x14000000
-    mov  edi,title                ; WINDOW LABEL
-    mcall
-
+	mcall	9,procinfo,-1
+	
+	mov	eax,[procinfo+70] ;status of window
+	test	eax,100b
+	jne	.end
+    
 if lang eq ru
   load_w  = (5*2+6*9)
   save_w  = (5*2+6*9)
@@ -954,153 +871,106 @@ else
   apply_w = (5*2+6*7)
 end if
 
-;    mov  eax,8                    ; FILENAME BUTTON
-;    mov  ebx,5*65536+545
-;    mov  ecx,212*65536+10
-;    mov  edx,0x4000000B
-;    mov  esi,[w_grab_button]       ; button color RRGGBB
-;    mcall
-
-    mov  eax,8                    ; LOAD BUTTON
-    mov  ebx,15*65536+load_w
-    mov  ecx,(35+18*12)*65536+14
-    mov  edx,12
-    mov  esi,[w_work_button]
-    mcall
-
-;   mov  eax,8                    ; SAVE BUTTON
-    add  ebx,(load_w+2)*65536-load_w+save_w
-    inc  edx
-    mcall
-
-;   mov  eax,8                    ; 3D
-;   mov  ebx,15*65536+35
-;   mov  ecx,(30+18*12)*65536+14
-    mov  ebx,(340-t1.size*6-13)*65536+(5*2+6*4)
-    inc  edx
-    mcall
-
-;   mov  eax,8                    ; FLAT
-    add  ebx,(5*2+6*4+2)*65536-(5*2+6*4)+flat_w
-    inc  edx
-    mcall
-
-;   mov  eax,8                    ; APPLY BUTTON
-    add  ebx,(flat_w+6+2)*65536-flat_w+apply_w
-    inc  edx
-    mcall
-
-;   mov  eax,8                    ; LOAD SKIN BUTTON
-    mov  ebx,(336+(555-335)/2-t2.size*6/2)*65536+load_w
-    inc  edx
-    mcall
-
-;   mov  eax,8                    ; APPLY SKIN BUTTON
-    add  ebx,(load_w+6+2)*65536-load_w+apply_w
-    inc  edx
-    mcall
-
-    mov  eax, 4
-    mov  ebx, (339-t1.size*6-12)*65536+(35+18*12+4)
-    mov  ecx, [w_work_button_text]
-    mov  edx, t1
-    mov  esi, t1.size
-    mcall
-
-    mov  ebx,(336+(555-335)/2-t2.size*6/2)*65536+(35+18*12+4)
-    mov  edx,t2
-    mov  esi,t2.size
-    mcall
-
-    mov  ebx,(15+(load_w+save_w+2-t3.size*6)/2)*65536+(35+18*12+4)
-    mov  edx,t3
-    mov  esi,t3.size
-    mcall
-
-;   mov  eax, 4
-;    mov  ebx, 277*65536+(30+18*12+4)
-;    mov  edx, t2
-;    mov  esi, t2.size
-;    mcall
-
-    mov  eax,38                    ; R G B COLOR GLIDES
-    mov  ebx,266*65536+285
-    mov  ecx,30*65536+30
-    mov  edx,0xff0000
-  .newl:
-    mcall
-    pusha
-    add  ebx,20*65536+20
-    shr  edx,8
-    mcall
-    add  ebx,20*65536+20
-    shr  edx,8
-    mcall
-    popa
-    sub  edx,0x020000
-    add  ecx,0x00010001
-    cmp  ecx,158*65536+158
-    jnz  .newl
-
-    call draw_color
-
-    mov  edx,31                    ; BUTTON ROW
-    mov  ebx,15*65536+200
-    mov  ecx,30*65536+14
-    mov  esi,[w_work_button]
-  newb:
-    mov  eax,8
-    mcall
-    add  ecx,18*65536
-    inc  edx
-    cmp  edx,40
-    jbe  newb
-
-    mov  ebx,15*65536+34           ; ROW OF TEXTS
-    mov  ecx,[w_work_button_text]
-    mov  edx,text
-    mov  esi,32
-  newline:
-    mov  eax,4
-    mcall
-    add  ebx,18
-    add  edx,32
-    cmp  [edx],byte 'x'
-    jne  newline
-
-    call draw_colours
-
-	call	draw_PathShow	
+; LOAD BUTTON
+;	mov  ebx,15*65536+load_w
+;	mov  ecx,(35+18*12)*65536+14
+	mcall	8,<15,load_w>,<35+18*12,14>,12,[w_work_button]
+; SAVE BUTTON
+	add	ebx,(load_w+2)*65536-load_w+save_w
+	inc	edx
+	mcall
+; 3D
+	mov	ebx,(340-t1.size*6-13)*65536+(5*2+6*4)
+	inc	edx
+	mcall
+; FLAT
+	add	ebx,(5*2+6*4+2)*65536-(5*2+6*4)+flat_w
+	inc	edx
+	mcall
+; APPLY BUTTON
+	add	ebx,(flat_w+6+2)*65536-flat_w+apply_w
+	inc	edx
+	mcall
+; LOAD SKIN BUTTON
+	mov	ebx,(336+(555-335)/2-t2.size*6/2)*65536+load_w
+	inc	edx
+	mcall
+; APPLY SKIN BUTTON
+	add	ebx,(load_w+6+2)*65536-load_w+apply_w
+	inc	edx
+	mcall
 	
-;    mcall 13,<5,546>,<212,11>,[w_work]
-;    mcall 13,<337,7>,<2,250>,[w_frame]
-;    shr   edx,1
-;    and   edx,0x007F7F7F
-;    mcall 38,<336,336>,<20,250>
-;    add   ebx,0x00080008
-;    mcall
-;    sub   ebx,0x00040004
-;    mcall ,,<0,255>
-;    mcall ,<5,550>,<211,211>
-;    add   ecx,0x000C000C
-;    mcall
+	mov	ebx,(339-t1.size*6-12)*65536+(35+18*12+4)
+	mcall	4,,[w_work_button_text],t1,t1.size
+	
+	mov	ebx,(336+(555-335)/2-t2.size*6/2)*65536+(35+18*12+4)
+	mcall	,,,t2,t2.size
+	
+	mov	ebx,(15+(load_w+save_w+2-t3.size*6)/2)*65536+(35+18*12+4)
+	mcall	,,,t3,t3.size
+	
+	mov	eax,38                    ; R G B COLOR GLIDES
+	mov	ebx,266*65536+285
+	mov	ecx,30*65536+30
+	mov	edx,0xff0000
+;----------------------------------- 
+.newl:
+	mcall
+	pusha
+	add	ebx,20*65536+20
+	shr	edx,8
+	mcall
+	add	ebx,20*65536+20
+	shr	edx,8
+	mcall
+	popa
+	sub	edx,0x020000
+	add	ecx,0x00010001
+	cmp	ecx,158*65536+158
+	jnz	.newl
+;-----------------------------------	
+	call	draw_color
+	
+	mov	edx,31                    ; BUTTON ROW
+	mov	ebx,15*65536+200
+	mov	ecx,30*65536+14
+	mov	esi,[w_work_button]
 
-;    call print_text
+	mov	eax,8
+;-----------------------------------
+.newb:
+	mcall
+	add	ecx,18*65536
+	inc	edx
+	cmp	edx,40
+	jbe	.newb
+;-----------------------------------	
+	mov	ebx,15*65536+34           ; ROW OF TEXTS
+	mov	ecx,[w_work_button_text]
+	mov	edx,text
+	mov	esi,32
 
-    cmp  dword[not_packed_area+SKIN_HEADER.ident],'SKIN'
-    jne  @f
-    call draw_skin
-  @@:
-
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
-    mcall
-
-    ret
-
-
+	mov	eax,4
+;-----------------------------------
+.newline:
+	mcall
+	add	ebx,18
+	add	edx,32
+	cmp	[edx],byte 'x'
+	jne	.newline
+;-----------------------------------
+	call	draw_colours
+	call	draw_PathShow	
+	cmp	dword[not_packed_area+SKIN_HEADER.ident],'SKIN'
+	jne	@f
+	call	draw_skin
+@@:
+.end:
+	mcall	12,2
+	ret
+;---------------------------------------------------------------------
 ; DATA AREA
-
+;---------------------------------------------------------------------
 lsz text,\
     ru,  ' êÄåäÄ éäçÄ                     ',\
     ru,  ' èéãéëÄ áÄÉéãéÇäÄ               ',\
