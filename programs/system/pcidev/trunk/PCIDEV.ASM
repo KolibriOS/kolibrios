@@ -65,7 +65,7 @@ still:
 	jmp	still
 ;-----------------------------------------------------------------------------
 red:					; redraw
-	mcall	9, Proc_Info, -1	; window redraw requested so get new window coordinates and size
+	call	get_window_param
 	mov	eax, [Proc_Info.box.left]; store the window coordinates into the Form Structure
 	mov	[Form + 2], ax		; x start position
 	mov	eax, [Proc_Info.box.top];
@@ -167,6 +167,11 @@ prepare_text_area:
 	
 	xor	edi,edi
 	ret
+;-----------------------------------------------------------------------------		
+get_window_param:
+	mcall	9, Proc_Info, -1	; window redraw requested so get 
+					; new window coordinates and size
+	ret
 ;-----------------------------------------------------------------------------	
 draw_window:
 	call	prepare_text_area
@@ -175,6 +180,13 @@ draw_window:
 	mcall	12, 1			; start of draw
 	; DRAW WINDOW
 	mcall	0,dword [Form],dword [Form + 4],0x13ffffff,0x805080d0,title
+	
+	call	get_window_param
+	
+	mov	eax,[Proc_Info+70] ;status of window
+	test	eax,100b
+	jne	.end
+	
 	mcall	8,<450,100>,<25,25>,2,0xC0C0C0
 	shr	ecx,16
 	mov	bx,cx
@@ -190,18 +202,18 @@ draw_window:
 	sub	bx, 32			; bar is 32 pixels shorter then window width
 	mov	ecx, 119 * 65536 + 10	; set Ystart(109) and Height(10) of bar   109
 	mov	edx, 0xC0C0C0		; set color of bar
-again:	;begin draw bar loop
+.again:	;begin draw bar loop
 	mcall				; draw bar to window area
 	shr	ecx, 16 		; move the Ystart position to working area
 	add	ecx, 34 		; add 34 pixels to Y Start (moves bar down)
 	cmp	cx, word [Form + 4]	; is the Ystart position outside of window area
-	jae	nomo			; if so stop drawing bars
+	jae	.nomo			; if so stop drawing bars
 	sub	ecx, 14 		; if not, we only need 20 pixels between bar tops
 	shl	ecx, 16 		; set that values as Ystart
 	add	ecx, 10 		; Bar Height is always 10 pixels
-	jmp	again			; draw another bar
+	jmp	.again			; draw another bar
 ;-----------------------------------------------------------------------------
-nomo:					;done drawing bars here
+.nomo:					;done drawing bars here
 	; start PCI stuff
 	call	Get_PCI_Info		; get pci version and last bus, scan for and draw each pci device
 
@@ -252,6 +264,7 @@ nomo:					;done drawing bars here
 	jo	@f	
 	call	Try_MMIO
 @@:
+.end:
 	mcall	12, 2			; end of draw
 	ret
 ;-----------------------------------------------------------------------------
