@@ -22,7 +22,7 @@
 
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include '../../../macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
 include 'ascml.inc'
@@ -403,6 +403,11 @@ buttonm:
 
 draw_logowindow:
     call draw_window
+    mcall 9,proc_info,-1
+    test [proc_info+process_information.wnd_state], 0x04
+    jz   @f
+    ret
+  @@:
     setimg 5,21,canvas
     drawlbut 300,300,60,14,'START',2,0x990000,cl_Black
     drawlbut 300,320,60,14,'HELP',3,0x990000,cl_Black
@@ -443,6 +448,9 @@ buttonh:
 
 draw_helpwindow:
     call draw_window
+    mcall 9,proc_info,-1
+    test [proc_info+process_information.wnd_state], 0x04
+    jnz  stillh
     setimg 5,21,canvas
 
     drawfbox 40,50,580,380,cl_Grey
@@ -524,6 +532,9 @@ still:
 
     timeevent 1,no_event,red,key,button
 no_event:
+    mcall 9,proc_info,-1
+    test [proc_info+process_information.wnd_state], 0x04
+    jnz  still
     setimg 5,21,canvas
 
     cmp [pause_on],0
@@ -1050,6 +1061,12 @@ rest:
 
 draw_gowindow:
     startwd
+    call draw_window
+    mcall 9,proc_info,-1
+    test [proc_info+process_information.wnd_state], 0x04
+    jz   @f
+    ret
+  @@:
     drawfbox 170,160,300,120,cl_Grey
     drawlbut 180,260,80,14,'(X) EXIT',4,0x990000,cl_Black
     drawlbut 280,260,80,14,'<MENU>',5,0x990000,cl_Black
@@ -1118,6 +1135,11 @@ next_lev:
 
 draw_scorewindow:
     call draw_window
+    mcall 9,proc_info,-1
+    test [proc_info+process_information.wnd_state], 0x04
+    jz   @f
+    ret
+  @@:
     startwd
     drawfbox 170,130,300,190,cl_Grey
     drawlbut 180,300,80,14,'(X) EXIT',4,0x990000,cl_Black
@@ -1319,4 +1341,7 @@ canvas_x:
 canvas_y:
  rd 1
 rb (640*440*3)+2000
+
+proc_info:
+rb 1024
 I_END:
