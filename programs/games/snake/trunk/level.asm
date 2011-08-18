@@ -19,13 +19,14 @@ mcall     26, 9
       call      Set_geometry
       mcall     12,1
       mcall     0, , ,[window_style], ,window_title
-    
+    test [proc_info.wnd_state], 0x04		; is rolled up?
+     jnz Pause_mode
+   
       call      Draw_decorations
       call      Draw_stones
       call      Draw_snake
       call      Draw_eat
       call      Draw_level_strings
-
       mcall     12,2
     
   .still:

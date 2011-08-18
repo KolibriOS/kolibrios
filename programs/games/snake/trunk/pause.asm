@@ -12,14 +12,14 @@ Pause_mode:
       call      Set_geometry
       mcall     12,1
       mcall     0, , ,[window_style], ,window_title
+    test [proc_info.wnd_state], 0x04		; is rolled up?
+     jnz @f
 
       call      Draw_decorations
       call      Draw_pause_picture
       call      Draw_pause_strings
-
       mcall     12,2
-    
-    
+  @@:
   .still:
       mcall     10                              ; wait for event
                                                 ; ok, what an event?

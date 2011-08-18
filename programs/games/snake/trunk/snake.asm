@@ -12,7 +12,7 @@ include '../../../macros.inc'
 include '../../../system/launch/trunk/mem.inc'
 include '../../../develop/libraries/libs-dev/.test/dll.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../system/board/trunk/debug.inc'
+;include '../../../system/board/trunk/debug.inc'
 
 ;;===Define_chapter============================================================================================================
 
@@ -188,7 +188,7 @@ align 4
 
     mov  eax, WINDOW_MODE_WINDOWED
       call      Set_window_mode
-      mcall     0,0,0,0x51000000                    ; create empty window. Set_geometry will set all parameters
+      mcall     0,0,0,[window_style_windowed]       ; create empty window. Set_geometry will set all parameters
       call      Set_geometry.by_hotkey
       mcall     71,1,window_title
 
@@ -249,6 +249,14 @@ Set_geometry:
      jnz .by_hotkey
 
       mcall     9,proc_info,-1
+    test [proc_info.wnd_state], 0x04		; is rolled up?
+     jz  @f
+    mov  eax, [proc_info.box.width]
+    mov  [window_width], eax
+    mov  eax, [proc_info.box.height]
+    mov  [window_height], eax
+     jmp .quit
+  @@:
     mov  eax, [proc_info.box.width]
     cmp  eax, [window_width]
      jne @f
@@ -328,7 +336,14 @@ Set_geometry:
   .by_hotkey:
       mcall     9,proc_info,-1
     mov  [resized_by_hotkey],   0
-
+    test [proc_info.wnd_state], 0x04		; is rolled up?
+     jz  @f
+    mov  eax, [proc_info.box.width]
+    mov  [window_width], eax
+    mov  eax, [proc_info.box.height]
+    mov  [window_height], eax
+     jmp .quit
+  @@:
     mov  eax, [square_side_length]
     inc  eax                                            ; space between squares
     mov  [g_s],   eax
