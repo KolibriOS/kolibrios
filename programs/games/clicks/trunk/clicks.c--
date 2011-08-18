@@ -1,9 +1,12 @@
 /*
-Just Clicks v0.76
-Copyright (C) 2008 Leency
+Just Clicks v0.8
+Copyright (C) 2011 Leency
+
+Just Clicks v0.79
+Copyright (C) 2011 clevermouse
+
 Clickomania v0.3
 Copyright (C) 2005 Александр Мушиков aka Olaf
-Compiled by C--Sphinx v0.239 b26
 */
 
 #pragma option meos
@@ -18,6 +21,7 @@ Compiled by C--Sphinx v0.239 b26
 
 byte i,j, XX, YY;
 system_colors sc;
+proc_info Form;
 
 struct
 {
@@ -208,11 +212,11 @@ void main()
 				}    
 				break;
 			case evReDraw:
-				WindowRedrawStatus(1);
-				DefineAndDrawWindow(400,276,177,201+GetSkinWidth(),0x74,0x10B2B4BF,0,0,"Just Clicks v0.77");
-				WindowRedrawStatus(2);
-				sc.get();
+				DefineAndDrawWindow(400,276,177,201+GetSkinWidth(),0x74,0x10B2B4BF,0,0,"Just Clicks v0.8");
 				DefineButton(150,-18,18,18,255+BT_HIDE+BT_NOFRAME,0); //кнопочка закрытия :]
+				Form.GetInfo(SelfInfo);
+				IF (Form.height==GetSkinWidth()+3) BREAK;
+				sc.get();
 				DrawBar(0,168,168,29,sc.work); //панелька снизу
 #ifdef LANG_RUS
 				DefineButton(9,172,76,19,254,sc.work_button);

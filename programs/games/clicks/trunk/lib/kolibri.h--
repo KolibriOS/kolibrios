@@ -18,6 +18,27 @@ dword  I_Icon       = 0x0;
 #define BT_NOFRAME	0x20000000
 
 
+struct proc_info{
+	dword	use_cpu;
+	word	pos_in_stack,num_slot,rezerv1;
+	char	name[11];
+	char	rezerv2;
+	dword	adress,use_memory,ID,left,top,width,height;
+	word	status_slot,rezerv3;
+	dword	work_left,work_top,work_width,work_height;
+	char	status_window;
+	void	GetInfo(dword ECX);
+	byte    reserved[1024-71];
+#define SelfInfo -1
+};
+
+void proc_info::GetInfo(dword ECX)
+{
+	EAX = 9;
+	EBX = #use_cpu;
+	$int  0x40
+}
+
 struct system_colors{
 	dword frame,grab,grab_button,grab_button_text,grab_text,work,work_button,work_button_text,work_text,work_graph;
 	void get();
@@ -61,12 +82,22 @@ inline fastcall dword GetSkinWidth()
 	$int 0x40
 }
 
+
+void DefineButton(dword x,y,w,h,EDX,ESI)
+{
+ 	EAX = 8;
+	EBX = x<<16+w;
+	ECX = y<<16+h;
+ 	$int 0x40
+}
+
 inline fastcall void DeleteButton(dword EDX)
 {
 	EAX = 8;
 	EDX += BT_DEL;
 	$int 0x40;
 }
+
 
 
 inline fastcall void WindowRedrawStatus(dword EBX){
@@ -77,21 +108,16 @@ inline fastcall void WindowRedrawStatus(dword EBX){
 
 void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,byte headerType,dword headerColour,EDI)
 {
+	WindowRedrawStatus(1);
  	EAX = 0;
 	EBX = x << 16 + sizeX;
 	ECX = y << 16 + sizeY;
 	EDX = mainAreaType << 24 | mainAreaColour;
 	ESI = headerType << 24 | headerColour;
 	$int 0x40
+	WindowRedrawStatus(2);
 }
 
-void DefineButton(dword x,y,w,h,EDX,ESI)
-{
- 	EAX = 8;
-	EBX = x<<16+w;
-	ECX = y<<16+h;
- 	$int 0x40
-}
 
 void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 {
