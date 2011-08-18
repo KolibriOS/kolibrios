@@ -1261,7 +1261,11 @@ draw_window:
 ;	add	ecx,4096+4+4
 	call	type_title
 	call	get_window_param
-
+	
+	mov	eax,[procinfo+70] ;status of window
+	test	eax,100b
+	jne	.end
+	
 	mov	eax,[window_high]
 	sub	eax,25+45
 	mov	[file_browser_data_1.size_y],ax
@@ -1390,6 +1394,7 @@ draw_window:
 	
 ;	mcall	47,0x80000,[file_browser_data_1.ini_file_start],<250,0>,0x0
 ;	mcall	4,<3,420>,0,fb_extension_start,3
+.end:
 	mcall	12,2
 
 	ret
