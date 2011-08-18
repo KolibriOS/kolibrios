@@ -13,10 +13,6 @@
 #include "imgs\toolbar.txt"
 #include "imgs\left_p.txt"
 
-//
-#define NOTIFY_PATH	"@notify"
-#define INI_PATH	"/sys/File managers/Eolite.ini"
-
 
 //переменные
 #define title "Eolite File Manager v0.98.9"
@@ -59,16 +55,54 @@ dword devbuf, dev_num;
 #include "include\ini.h--"
 
 
+void Devices()
+{    
+	//on load
+	/*devbuf= malloc(3112); //буфер где-то на 10 девайсов в левой панели
+	ReadDir(10, devbuf, "/");
+	dev_num=EBX;
+	*/
+      
+	byte dev_icon; dword drive_name[30]; char dev_name[4];
+	DrawBar(2,41,190,15,0x00699C);		//синий прямоугольник - сверху
+	DrawBar(2,56,15,onTop(21,41),0x00699C);	//синий прямоугольник - слева       
+	DrawBar(177,56,15,onTop(21,41),0x00699C);	//синий прямоугольник - справа
+	//список дисков
+	Tip(56, "Goto:", 0, "");
+	for (i=0;i<dev_num;i++)
+	{
+		DrawBar(17,i*16+74,160,17,0xFFFFFF); //белое
+		DefineButton(17,i*16+74,159,16,100+i+BT_HIDE,0xFFFFFF); //создаём кнопки, а потом выводим названия дисков
+		copystr("Unknown drive",#drive_name); //изначально неизвесный носитель
+		dev_icon=3; //по-умолчанию устройство выглядит как жестяк
+		copystr(i*304+ devbuf+72, #dev_name);
+		IF (dev_name[0]=='r')  { dev_icon=0; copystr("RAM-disk /rd/1",#drive_name); }
+		IF (dev_name[0]=='c')  { dev_icon=1; copystr("CD-drive /",#drive_name); }
+		IF (dev_name[0]=='f')  { dev_icon=2; copystr("Floppy disk /",#drive_name); }
+		IF (dev_name[0]=='h')   copystr("Hard disk drive /",#drive_name); 
+		IF (dev_name[0]=='b')   copystr("SATA disk drive /",#drive_name); 
+		//
+		IF (dev_icon<>0) copystr(#dev_name,#drive_name+strlen(#drive_name));
+		copystr("/",#drive_name+strlen(#drive_name));
+		//
+		WriteText(45,i*16+79,0x80,0,#drive_name,0);
+		PutImage(dev_icon*14*13*3+#devices,14,13,21,i*16+76);
+	}
+	Actions();  //функции файлов и папок
+}
+
 void main() 
 word key, id; 
 mouse m;
 int pressed_y;
 {
 	GetIni(1);
+	//
 	load_editbox_lib();
 	devbuf= malloc(3112); //буфер где-то на 10 девайсов в левой панели
 	ReadDir(10, devbuf, "/");
 	dev_num=EBX;
+	//
 	IF (param[0]<>'')
 	{
 		copystr(#param,#edit_path);
@@ -236,10 +270,14 @@ int pressed_y;
 								FileList_ReDraw(1);
 								break;
 						case 180: //home
-								FileList_ReDraw(-za_kadrom-curbtn);
+								za_kadrom=0;
+								curbtn=0;
+								List_ReDraw();
 								break;
 						case 181: //end
-								FileList_ReDraw(count-za_kadrom-curbtn+but_num-1);
+								za_kadrom=count-but_num;
+								curbtn=but_num-1;
+								List_ReDraw();
 								break;
 						case 183: //Page Down
 								FileList_ReDraw(but_num-1);
@@ -277,7 +315,11 @@ int pressed_y;
 									copystr(file_mas[i]*304+buf+72,#temp);
 									AL=DSBYTE[#temp]; 
 									IF(AL>='A')&&(AL<='Z')DSBYTE[#temp]=AL|0x20;
-									IF (temp[0]==key) {FileList_ReDraw(i-curbtn-za_kadrom); break;}
+									IF (temp[0]==key)
+									{
+										FileList_ReDraw(i-curbtn-za_kadrom);
+										break;
+									}
 								}
 				}                         
 				BREAK;
@@ -291,7 +333,7 @@ int pressed_y;
 inline fastcall void draw_window()
 {                
 	WindowRedrawStatus(1);
-	DefineAndDrawWindow(100,100,600,410,0x73,0x10E4DFE1,0,0,title); 
+	DefineAndDrawWindow(98,90,560,481,0x73,0x10E4DFE1,0,0,title); 
 	WindowRedrawStatus(2);
 	Form.GetInfo(SelfInfo);
 	IF (Form.height==GetSkinWidth()+3) return; //ничего не делать если окно схлопнуто в заголовок
@@ -375,23 +417,38 @@ void FileList_ReDraw(int curbtn_)
 			Line_ReDraw(videlenie, curbtn); //выделение
 			return;
 		}
-		//WriteDebug(IntToStr(curbtn)); =0
-		//WriteDebug(IntToStr(za_kadrom)); =0
-		//WriteDebug(IntToStr(count)); =41
-		ELSE
+		else
 		{
 			IF(but_num+za_kadrom+curbtn_>=count) //18+0+33>=41
 			{
-				za_kadrom=count-but_num; //41-18=23
-				//curbtn=but_num+curbtn_-count; //11=33-18
+				//WriteDebug("1");
+				za_kadrom=count-but_num;
+				curbtn=curbtn_-za_kadrom+curbtn;
 				}
 			ELSE
 			{
+				//WriteDebug("2");
 				za_kadrom+=curbtn_+curbtn-but_num+1;
 				//curbtn=but_num-1;
+				curbtn=but_num-1;
 			}
-			curbtn=but_num-1;
+			IF (curbtn<0) || (curbtn>but_num)
+			{
+				//ShowMessage("Bug found! Tell it Leency!");
+				curbtn=but_num-1;
+			}
 			List_ReDraw();
+			//WriteDebug(IntToStr(curbtn)); //=0
+			//WriteDebug(IntToStr(za_kadrom)); //=0
+			//WriteDebug(IntToStr(but_num)); //=41
+			//WriteDebug(IntToStr(count)); //=41
+			
+			/*WriteDebug(""); 
+			WriteDebug(#path);
+			WriteDebug("Number of files:"); WriteDebug(IntToStr(count)); 
+			WriteDebug("but_num:");	 		WriteDebug(IntToStr(but_num));
+			WriteDebug("curbtn");		 	WriteDebug(IntToStr(curbtn));
+			WriteDebug("ra_kadrom:");	 	WriteDebug(IntToStr(za_kadrom));*/
 		}
 	}
 }
@@ -622,37 +679,6 @@ void ReName(byte rename)
 }
 
 
-void Devices()
-{          
-	byte dev_icon; dword drive_name[30]; char dev_name[4];
-	DrawBar(2,41,190,15,0x00699C);		//синий прямоугольник - сверху
-	DrawBar(2,56,15,onTop(21,41),0x00699C);	//синий прямоугольник - слева       
-	DrawBar(177,56,15,onTop(21,41),0x00699C);	//синий прямоугольник - справа
-	//список дисков
-	Tip(56, "Goto:", 0, "");
-	for (i=0;i<dev_num;i++)
-	{
-		DrawBar(17,i*16+74,160,17,0xFFFFFF); //белое
-		DefineButton(17,i*16+74,159,16,100+i+BT_HIDE,0xFFFFFF); //создаём кнопки, а потом выводим названия дисков
-		copystr("Unknown drive",#drive_name); //изначально неизвесный носитель
-		dev_icon=3; //по-умолчанию устройство выглядит как жестяк
-		copystr(i*304+ devbuf+72, #dev_name);
-		IF (dev_name[0]=='r')  { dev_icon=0; copystr("RAM-disk /rd/1",#drive_name); }
-		IF (dev_name[0]=='c')  { dev_icon=1; copystr("CD-drive /",#drive_name); }
-		IF (dev_name[0]=='f')  { dev_icon=2; copystr("Floppy disk /",#drive_name); }
-		IF (dev_name[0]=='h')   copystr("Hard disk drive /",#drive_name); 
-		IF (dev_name[0]=='b')   copystr("SATA disk drive /",#drive_name); 
-		//
-		IF (dev_icon<>0) copystr(#dev_name,#drive_name+strlen(#drive_name));
-		copystr("/",#drive_name+strlen(#drive_name));
-		//
-		WriteText(45,i*16+79,0x80,0,#drive_name,0);
-		PutImage(dev_icon*14*13*3+#devices,14,13,21,i*16+76);
-	}
-	Actions();  //функции файлов и папок
-}
-
-
 void Actions()
 {
 	int actions_y=dev_num*16;
@@ -679,15 +705,6 @@ void Actions()
 	}
 	DrawBar(17,show_actions*51+actions_y+108,160,onTop(show_actions*51+actions_y+108,6),0x00699C); //синее в конце
 }
-
-
-
-		/*WriteDebug(""); 
-		WriteDebug(#path);
-		WriteDebug("Number of files:"); WriteDebug(IntToStr(count)); 
-		WriteDebug("but_num:");	 		WriteDebug(IntToStr(but_num));
-		WriteDebug("curbtn");		 	WriteDebug(IntToStr(curbtn));
-		WriteDebug("ra_kadrom:");	 	WriteDebug(IntToStr(za_kadrom));*/
 
 
 

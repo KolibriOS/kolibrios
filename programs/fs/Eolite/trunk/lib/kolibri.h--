@@ -10,8 +10,10 @@ dword  final_addr   = #stop+32;
 dword  alloc_mem    = 0x00100000;
 dword  x86esp_reg   = 0x00100000;   // 0x0007fff0; 
 dword  I_Param      = #param;
-dword  I_Icon       = 0x0;
-char param[256]="";
+dword  I_Path       = #program_path;
+char param[4096]="";
+char program_path[4096]="";
+
 
 //Events
 #define evMouse		6
@@ -272,7 +274,7 @@ inline fastcall ChangeCase(dword EDX)
 	do{
 		EDX++;
 		AL=DSBYTE[EDX];
-		IF(AL>='A')&&(AL<='Z'){DSBYTE[EDX]=AL|0x20; continue;}
+		IF(AL>='A')&&(AL<='Z'){DSBYTE[EDX]=AL|0x20; CONTINUE;}
 		IF(AL>='€')&&(AL<='')DSBYTE[EDX]=AL|0x20; // -¯
 		IF (AL>=144) && (AL<=159) DSBYTE[EDX] = AL + 80;	//à-ï
 	}while(AL!=0);

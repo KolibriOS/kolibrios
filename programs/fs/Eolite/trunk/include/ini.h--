@@ -6,6 +6,9 @@
 #define PARAM	2
 #define OPTION	3
 
+char NOTIFY_PATH[7]="@notify";
+
+
 void GetIni(byte onload)
 {
 	byte section[32]='', parametr[32]='', option[256]='', InfType=0;
@@ -14,10 +17,13 @@ void GetIni(byte onload)
 	dword buff, fsize, tj;
 	//читаем файл
 	buff = malloc(1048576);
-	ReadFile(0, 1048576, buff, INI_PATH);
-	IF (EAX<>6) //если файл с настройками не найден
+	IF (onload==1) copystr(".ini", #program_path+strlen(#program_path)); //facepalm
+	ReadFile(0, 1048576, buff, #program_path);
+	IF (EAX<>6) //если файла с настройками нет в папке с программой смотрим в папке по-умолчанию
+		ReadFile(0, 1048576, buff, "/sys/File managers/Eolite.ini");
+	IF (EAX<>6) //если файла с настройками тупо нет печалька
 	{
-		IF (onload==1) RunProgram(NOTIFY_PATH, "Eolite.ini not found. Defaults will be used.");
+		IF (onload==1) RunProgram(#NOTIFY_PATH, "Eolite.ini not found. Defaults will be used.");
 		IF (onload==0) goto RUN_AS_PROGRAM;
 	}
 	fsize=EBX;
@@ -80,30 +86,30 @@ void Write_Debug_Error(int error_number){
 	IF (error_number<0) error_number=-1*error_number;
 	switch (error_number) //извесная ошибка - пишем какая и уходим
 	{
-		CASE 2:	RunProgram(NOTIFY_PATH, "Eolite: error 2 - Function is not supported for the given file system");
+		CASE 2:	RunProgram(#NOTIFY_PATH, "Eolite: error 2 - Function is not supported for the given file system");
 				return;				
-		CASE 3:	RunProgram(NOTIFY_PATH, "Eolite: error 3 - Unknown file system");
+		CASE 3:	RunProgram(#NOTIFY_PATH, "Eolite: error 3 - Unknown file system");
 				return;
-		CASE 5: RunProgram(NOTIFY_PATH, "Eolite: error 5 - File or folder not found");
+		CASE 5: RunProgram(#NOTIFY_PATH, "Eolite: error 5 - File or folder not found");
 				return;
-		CASE 6:	RunProgram(NOTIFY_PATH, "Eolite: error 6 - End of file, EOF");
+		CASE 6:	RunProgram(#NOTIFY_PATH, "Eolite: error 6 - End of file, EOF");
 				return;
-		CASE 7:	RunProgram(NOTIFY_PATH, "Eolite: error 7 - Pointer lies outside of application memory");
+		CASE 7:	RunProgram(#NOTIFY_PATH, "Eolite: error 7 - Pointer lies outside of application memory");
 				return;		
-		case 8:	RunProgram(NOTIFY_PATH, "Eolite: error 8 - FAT table is destroyed");
+		case 8:	RunProgram(#NOTIFY_PATH, "Eolite: error 8 - FAT table is destroyed");
 				return;		
-		case 9: RunProgram(NOTIFY_PATH, "Eolite: error 9 - FAT table is destroyed");
+		case 9: RunProgram(#NOTIFY_PATH, "Eolite: error 9 - FAT table is destroyed");
 				RETURN;
-		case 10:RunProgram(NOTIFY_PATH, "Eolite: error 10 - Access denied");
+		case 10:RunProgram(#NOTIFY_PATH, "Eolite: error 10 - Access denied");
 				RETURN;				
-		case 11:RunProgram(NOTIFY_PATH, "Eolite: error 11 - Device error");
+		case 11:RunProgram(#NOTIFY_PATH, "Eolite: error 11 - Device error");
 				RETURN;
-		case 30:RunProgram(NOTIFY_PATH, "Eolite: error 30 - Not enough memory");
+		case 30:RunProgram(#NOTIFY_PATH, "Eolite: error 30 - Not enough memory");
 				RETURN;
-		case 31:RunProgram(NOTIFY_PATH, "Eolite: error 31 - File is not executable");
+		case 31:RunProgram(#NOTIFY_PATH, "Eolite: error 31 - File is not executable");
 				RETURN;
-		case 32:RunProgram(NOTIFY_PATH, "Eolite: error 32 - Too many processes");
+		case 32:RunProgram(#NOTIFY_PATH, "Eolite: error 32 - Too many processes");
 				RETURN;
-		default:RunProgram(NOTIFY_PATH, "Unknown error number O_o");
+		default:RunProgram(#NOTIFY_PATH, "Unknown error number O_o");
 	}
 }
