@@ -130,7 +130,7 @@ FASM_PROGRAMS:=\
  games/15:GAMES/15:$(PROGS)/games/15/trunk/15.ASM \
  games/arcanii:GAMES/ARCANII:$(PROGS)/games/arcanii/trunk/arcanii.asm \
  games/bnc:GAMES/BNC:$(PROGS)/games/bnc/trunk/bnc.asm \
- games/freecell:GAMES/FREECELL:$(PROGS)/games/freecell/freecell.ASM \
+ games/freecell:GAMES/FREECELL:$(PROGS)/games/freecell/freecell.asm \
  games/gomoku:GAMES/GOMOKU:$(PROGS)/games/gomoku/trunk/gomoku.asm \
  games/invaders:GAMES/INVADERS:$(PROGS)/games/invaders/invaders.asm \
  games/klavisha:GAMES/KLAVISHA:$(PROGS)/games/klavisha/trunk/klavisha.asm \
