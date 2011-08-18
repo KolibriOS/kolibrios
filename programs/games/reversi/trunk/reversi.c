@@ -529,12 +529,12 @@ void paint_win(void)
 {
  __menuet__window_redraw(1);
  __menuet__define_window(100,100,330,400,0x33777777,0,"Reversi");
- __menuet__make_button(2,2,40,20,3,0xe0e0e0);
+ __menuet__make_button(4,4,40,20,3,0xe0e0e0);
  __menuet__write_text(8,8,0x333333,"New",3);
  __menuet__window_redraw(2);
 }
 
-void app_main(void)
+void main(void)
 {
  int i;
  u32 mouse_coord;
