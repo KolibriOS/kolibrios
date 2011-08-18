@@ -1,6 +1,11 @@
 ; kpack = Kolibri Packer
 ;---------------------------------------------------------------------
 ; version:	0.20
+; last update:  08/18/2011
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Checking for "rolled up" window
+;---------------------------------------------------------------------
+; version:	0.20
 ; last update:  07/12/2010
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      Added code for packing the kernel.mnt
@@ -428,6 +433,10 @@ draw_window:
 	xor	edi,edi
 	mcall	,<100,436>,,,,caption_str
 	mcall	9,procinfo,-1
+	
+	mov	eax,[procinfo+70] ;status of window
+	test	eax,100b
+	jne	.end	
 ;--------------------------------------
 ; draw lines and frame
 	call	draw_lines
@@ -444,6 +453,7 @@ draw_window:
 
 	call	draw_editbox
 ; end redraw
+.end:
 	mcall	12,2
 	ret
 ;*********************************************************************
