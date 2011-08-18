@@ -27,6 +27,12 @@ START:
 	mov	[rsx2],ax
 
 redraw_all:
+	mcall	9,proc_info,-1
+	test	[proc_info.wnd_state], 0x04		; is rolled_up?
+	jz	@f
+	mcall	0,100*65536+(16*N+12),,0x34FFFFFF,,title
+	jmp	still
+  @@:
 	mcall	12,1
 	mcall	48,4
 	xchg	eax,ecx
@@ -726,6 +732,7 @@ flags rw 1
 ;3: ходы исчерпаны
 ;4: в print_board - выделение красным цветом 5-ти в ряд клеток
 
+proc_info process_information	; it should be after I_END, but i'm afraid of lines 11-12. dunkaist
 I_END:
 align 16
 Board	rb N*N
