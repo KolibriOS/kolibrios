@@ -21,13 +21,18 @@
 
 void draw_window() // Процедура отрисовки окна
 {
-  sys_window_redraw(1);
   sys_get_colors(#colors, 40);
 
   // WINDOW
+  sys_window_redraw(1);
   EBX = xpos << 16 + xsize;
   ECX = ypos << 16 + ysize;
   sys_draw_window(EBX, ECX, 0x14CCCCCC, colors.w_grab | 0x80000000, "MineSweeper");
+  sys_window_redraw(2);
+  
+  // Leency ROLLED UP FIX
+  sys_process_info(#procinfo, -1);
+  IF (procinfo.ysize<70) return;  
 
    // <NEW GAME> BUTTON (911)
   EBX = xsize / 2 - 10;
@@ -43,8 +48,6 @@ void draw_window() // Процедура отрисовки окна
   draw_time();     // draw timer
   draw_minesi();   // draw mines
   draw_squares();  // draw field
-
-  sys_window_redraw(2);
 }
 
 dword num_colors[8]=

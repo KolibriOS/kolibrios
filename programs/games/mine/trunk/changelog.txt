@@ -1,5 +1,8 @@
 ====Leency====
 
+v0.52 (16/12/2008)
+- window rolling up fix
+
 v0.51 (16/12/2008)
 - fixed one small bug with changing window mode
 
