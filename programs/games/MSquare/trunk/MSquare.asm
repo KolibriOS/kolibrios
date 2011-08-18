@@ -96,9 +96,9 @@ redraw_all:
 	add	ebx,len_kub*65536+len_kub
 	mcall	,,,Brdr_line_clr
 
-	mcall	8,<3,78>,<3,13>,2,0xbbbbbb
+	mcall	8,<4,78>,<4,13>,2,0xbbbbbb
 	mcall	4,<7,5>,(0x80000000+Text_clr),txt.clear
-	mcall	,<105,5>,,txt.dif
+	mcall	,<105,6>,,txt.dif
 
 
 	call	show_level
