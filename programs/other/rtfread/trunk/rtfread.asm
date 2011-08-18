@@ -69,7 +69,7 @@ include '../../../develop/libraries/box_lib/load_lib.mac'
 
 @use_library
 
-include 'debug.inc'
+;include 'debug.inc'
 
 if ~ RENDER eq PIX
   TOP=TOP+4
@@ -482,6 +482,11 @@ mouse:
 draw_window:
 
     mcall 9, procinfo2, -1
+    test [procinfo2.wnd_state], 0x04
+    jz   @f
+    mcall 0, <10,WINW>, <100,WINH>, WIN_COLOR,0x80000000, window_title
+    ret
+  @@:
     mov  edx, -1
     mov  esi, -1
     
