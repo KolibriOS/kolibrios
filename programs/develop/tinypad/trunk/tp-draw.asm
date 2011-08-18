@@ -27,6 +27,11 @@ proc drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 	mcall	0,,,,,s_title
 
 	mcall	9,p_info,-1
+	
+	mov	eax,[p_info+70] ;status of window
+	test	eax,100b
+	jne	.exit.2	
+	
 	mov	esi,p_info.box.left
 	mov	edi,mainwnd_pos
 	mov	ecx,4
@@ -234,6 +239,12 @@ proc draw_statusbar ;///// DRAW POSITION, MODIFIED STATE, HINT ///////////////
 	jae	.exit
 	pusha
 
+       mcall   9,p_info,-1
+
+	mov	eax,[p_info+70] ;status of window
+	test	eax,100b
+	jne	.exit_1	
+	
 	mov	ecx,[p_info.client_box.height-2]
 	mov	cx,word[p_info.client_box.height]
 	sub	ecx,STATH*65536+STATH
@@ -297,7 +308,7 @@ proc draw_statusbar ;///// DRAW POSITION, MODIFIED STATE, HINT ///////////////
 	add	ebx,6*(s_modified.size+16)*65536
 	or	ecx, 80000000h
 	mcall	,,,[s_status]
-
+.exit_1:
     @@: popa
 
   .exit:

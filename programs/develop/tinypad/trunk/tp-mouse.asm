@@ -58,6 +58,13 @@ endp
 mouse_ev dd mouse.l_down,mouse.l_up,mouse.r_down,mouse.r_up,mouse.wheel,mouse.move
 
 mouse:
+
+	mcall	9,p_info,-1
+	
+	mov	eax,[p_info+70] ;status of window
+	test	eax,100b
+	jne	still.skip_write	
+	
 	mov	ecx,mst
 	call	get_mouse_event
 	cmp	[bot_mode],0
