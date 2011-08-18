@@ -15,7 +15,6 @@ def _import(name):
         return MODULES[name]
     py = name+".py"
     tpc = name+".tpc"
-    print("CP")
     if exists(py):
         if not exists(tpc) or mtime(py) > mtime(tpc):
             s = load(py)
@@ -43,7 +42,6 @@ def import_fname(fname,name):
     return g
 
 def tinypy():
-    print("tinypy called")
     return import_fname(ARGV[0],'__main__')
 
 def main(src,dest):
@@ -52,5 +50,4 @@ def main(src,dest):
     save(dest,r)
 
 if __name__ == '__main__':
-    print("Running main")
     main(ARGV[1],ARGV[2])
