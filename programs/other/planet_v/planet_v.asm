@@ -174,6 +174,7 @@ align 4
 red_win:
   call draw_window
   call but_MetLoad
+  call but_Refresh ; Auto Refresh after program start
 
 align 4
 still:
