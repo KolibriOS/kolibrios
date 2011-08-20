@@ -1,9 +1,10 @@
 //кнопки
 #define BACK		300
-#define FORWARD	301
-#define REFRESH	302
+#define FORWARD		301
+#define REFRESH		302
 #define HOME		303
-#define GOTOURL	305
+#define NEWTAB		304
+#define GOTOURL		305
 #define SEARCHWEB	306
 #define ID1		178
 #define ID2		177
@@ -26,6 +27,11 @@ dword get_URL_part(byte len) {
 	return #temp1;
 }
 
+inline fastcall CopyScreen(dword EBX, ECX, EDX)
+{
+  EAX = 36;
+  $int  0x40;
+}
 
 inline byte chTag(dword text) {return strcmp(#tag,text);}
 
@@ -43,20 +49,14 @@ int tile_height=2,//будем выводить двухпиксельными полосками
 i, skin_width,
 shift=-2;
 
-  skin_width = GetSkinWidth();
-  Form.GetInfo(SelfInfo);
   italic_buf = malloc(w*h*3);
-  //ebx = указатель на предварительно выделенную область памяти, куда будет помещено изображение в формате BBGGRRBBGGRR...
-  EBX = italic_buf;
-  //ecx = [размер по оси x]*65536 + [размер по оси y]
-  ECX = w * 65536 + h;
-  //edx = [координата по оси x]*65536 + [координата по оси y]
-  EDX = x + Form.left * 65536 + y + Form.top + skin_width;
-  EAX = 36;
-  $int  0x40;
+  skin_width = GetSkinWidth();
 
+  CopyScreen(italic_buf, w * 65536 + h, x + Form.left + 2 * 65536 + y + Form.top + skin_width);
+
+  
   FOR (i=0;i*tile_height<h;i++){
-    PutImage(w*3*tile_height*i+italic_buf,w,tile_height,x+shift-i,i*tile_height+y);
+    PutImage(w*3*tile_height*i+italic_buf,w,tile_height,x+shift-i+1,i*tile_height+y);
   }
   free(italic_buf);
 }

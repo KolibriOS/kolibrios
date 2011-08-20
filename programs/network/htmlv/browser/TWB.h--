@@ -1,14 +1,12 @@
 //http://jsbeautifier.org/
 //Web-component, Leency & Veliant 2007-2009
 //lev
+
+
 //идея - левые файлы открывать соответствующими прогами
-
-//	wintodos(buf); -> в парсе хтмл как и все кодировки
-
+//wintodos(buf); -> в парсе хтмл как и все кодировки
 //ol - циферки
 
-//ускорена загрузка страницы, содержащей изображения
-//уменьшено количество перерисовок заголовка окна при загрузке страницы
 
 dword j,
 	buf,
@@ -19,11 +17,11 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" HTML Viewer v0.63";
+ char version[]=" Text-based Browser 23.67";
 
 
 struct TWebBrowser {
-	dword left,
+	int left,
 	top,
 	width,
 	height;
@@ -64,14 +62,20 @@ void TWebBrowser::Scan(dword id) {
 	case BACK:
 		BrowserHistory.GoBack();
 		return;
-	/*case FORWARD:
-		WriteDebug(#UrlHistory);
-		return;*/
+	case FORWARD:
+		//RunProgram("@notify", "Forward button is not realized yet");
+		return;
 	case 054: //F5
 		IF(edit1.flags == 66) break;
   case REFRESH:
 		copystr(#URL, #editURL);
 		Draw_Window();
+		return;
+	case 014: //Ctrl+N новое окно
+	case 020: //Ctrl+T новая вкладка
+	case NEWTAB:
+		MoveSize(190,80,OLD,OLD);
+		RunProgram(#program_path, #URL);
 		return;
 	case HOME:
 		copystr("/sys/index.htm", #editURL);
@@ -235,7 +239,8 @@ dword text_colors[10],
 	text_color_index = 0,
 	link_color;
 int stroka,
-	stolbec;
+	stolbec,
+	tab_len;
 	byte line[330],
 	tag[100],
 	tagparam[10000],
@@ -271,11 +276,18 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 				goto NEXT_MARK;
 			}
 		CASE '\9':
-		CASE 0x0d:
-			//IF(pre_text == 1) {copystr("   ", #line + strlen(#line)); break;} ELSE
+			if (pre_text == 1) //иначе идём на 0x0d	
+			{
+				tab_len=strlen(#line)/8;
+				tab_len=tab_len*8;
+				tab_len=8+tab_len-strlen(#line);
+				for (i=0; i<tab_len; i++;) copystr(" ", #line + strlen(#line));
+				break;
+			}		
+		case 0x0d:
 			bukva = ' ';
 			goto DEFAULT_MARK;
-		CASE '<':
+		case '<':
 			bword++; //промотаем символ <
 			IF(ESBYTE[bword] == '!') //фильтрация внутри <!-- -->, дерзко
 			{
@@ -325,37 +337,6 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 			bukva=Hex2Symb(#temp);
 			IF (bukva) goto DEFAULT_MARK;
 			break; 
-		/*case '\\': //поддержка RTF, http://dev.rembish.ru/rtf.phps
-			IF(strcmp(#URL + strlen(#URL) - 4, ".rtf")<>0) goto DEFAULT_MARK;
-			rtf_text='';
-			
-			//
-               bword++;
-			j = 0;
-
-			IF (ESBYTE[bword]=='\'')
-			{
-				bword++;
-				bukva=ESBYTE[bword];
-				copystr(#bukva, #rtf_text);
-	
-				bword++;
-				bukva=ESBYTE[bword];
-				copystr(#bukva, #rtf_text + strlen(#rtf_text));
-
-				bukva=Hex2Symb(#rtf_text);
-				IF (bukva) goto DEFAULT_MARK;
-			}
-
-			WHILE ((ESBYTE[bword] <>' ') && (j < 25) && (ESBYTE[bword] <>'\\') && (ESBYTE[bword] <>0x0d)) {
-				bukva = ESBYTE[bword];
-				copystr(#bukva, #rtf_text + strlen(#rtf_text));
-				bword++;
-				j++;
-			}
-			
-			IF (strcmp(#rtf_text,"par")==0) goto NEXT_MARK;
-			break;*/						
 		case '&':
 			IF(ignor_text) break;
 			bword++;
@@ -457,7 +438,7 @@ void GetNextParam() {
 
 
 char oldtag[100];
-void TWebBrowser::WhatTextStyle(word left1, top1, width1) {
+void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	dword hr_color;
 
     dword image=0;
@@ -636,13 +617,28 @@ void TWebBrowser::WhatTextStyle(word left1, top1, width1) {
 
         if (image)
         {
-			IF (width1<w) w=width1;
-			IF (WB1.height<h) h=WB1.height;
-		IF (top1<WB1.top) {h=h-top1+WB1.top; top1=WB1.top;}
-		TextGoDown2(left1+w,top1,width1-w,h);
-        IF (stroka - 2 < max_kolvo_strok) img_draw stdcall (image,left1-5,top1+10,w,-stroka * 10 + WB1.height -15 + h,0,0);
+			stroka+=h/10;
+			
+			if (top1+h<WB1.top) || (top1>WB1.top+WB1.height-10) //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
+				return;
+			
+			if (top1<WB1.top) //если часть изображения сверху
+			{
+				h=h-WB1.top+top1;
+				top1=WB1.top-5;
+			}
+			
+			if (top1>WB1.top+WB1.height-h-10) //если часть изображения снизу     IF (stroka - 2 < max_kolvo_strok)
+			{
+				//WriteDebug(IntToStr(top1));
+				//WriteDebug(IntToStr(WB1.top));
+				//WriteDebug(IntToStr(h));
+				h=WB1.top+WB1.height-top1-10;
+			}			 
+			
+			img_draw stdcall (image,left1-5,top1+10,w, h,0,0);
+			DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, 0xFFFFFF);
         }
-        //else WriteDebug(#options);
 	}
 
 	if (!chTag("meta")) {
@@ -651,7 +647,7 @@ void TWebBrowser::WhatTextStyle(word left1, top1, width1) {
 		{
 			copystr(#options[find_symbol(#options, '=')],#options); //поиск в content=
 
-      IF (!strcmp(#options,"utf-8"))
+      IF (!strcmp(#options,"utf-8")) || (!strcmp(#options,"utf8"))
 			{
 				ReadHtml(DONT_LOAD);
    	    utf8rutodos(buf);
@@ -680,12 +676,4 @@ void TextGoDown(int left1, top1, width1) {
 	ELSE stolbec = 0;
 	IF(li_text == 1) stolbec = li_tab * 5;
 	IF(stroka >= 0) && (stroka - 2 < max_kolvo_strok) DrawBar(left1 - 5, top1 + 10, width1 + 5, 10, 0xFFFFFF);
-}
-
-void TextGoDown2(int left1,top1,width1,height1)//ASPER: Надо заменить эту функцию более правильной.
-{
-  stroka+=height1/10;
-  IF (blq_text==1) stolbec=8; ELSE stolbec=0;
-  IF (li_text==1) stolbec=5;
-  IF (stroka>=0) && (stroka-2<max_kolvo_strok) DrawBar(left1 - 5, top1 + 10, width1 + 5, height1, 0xFFFFFF);
 }

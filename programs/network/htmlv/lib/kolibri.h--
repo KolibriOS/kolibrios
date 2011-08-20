@@ -10,8 +10,9 @@ dword  final_addr   = #stop+32;
 dword  alloc_mem    = #0x00100000;
 dword  x86esp_reg   = #0x00100000;
 dword  I_Param      = #param;
-dword  I_Icon       = 0x0;
-char param[256]="";
+dword  I_Path       = #program_path;
+char param[4096]="";
+char program_path[4096]="";
 
 //Events
 #define evMouse	6
@@ -121,10 +122,22 @@ inline fastcall ScancodesGeting(){
 	$int 0x40
 }
 
-inline fastcall word GetKey(){
- EAX = 2;              // just read this key from buffer
- $int  0x40
- EAX = EAX >> 8;
+
+inline fastcall word GetKey(){ //Gluk fix
+		$push edx
+@getkey:
+		$mov  eax,2
+		$int  0x40
+		$cmp eax,1
+		$jne getkeyi
+		$mov ah,dh
+		$jmp getkeyii //jz?
+@getkeyi:
+		$mov dh,ah
+		$jmp getkey
+@getkeyii:
+		$pop edx
+		EAX = EAX >> 8;		 
 }
 
 inline fastcall word GetButtonID(){
@@ -356,13 +369,14 @@ inline fastcall wintodos (dword ESI)
 	IF (BL==178) ESBYTE[ESI] = 73;  //I
 	IF (BL==179) ESBYTE[ESI] = 105; //i
 	IF (BL==175) ESBYTE[ESI] = 244; //J
-          IF (BL==191) ESBYTE[ESI] = 245; //j
+    IF (BL==191) ESBYTE[ESI] = 245; //j
 	IF (BL==170) ESBYTE[ESI] = 242; //E
 	IF (BL==186) ESBYTE[ESI] = 243; //e
-          IF (BL==168) ESBYTE[ESI] = 240; //ð
-          IF (BL==184) ESBYTE[ESI] = 'e'; //e
-          IF ((BL==147) || (BL==148) || (BL==171) || (BL==187)) ESBYTE[ESI] = 34;
-          IF ((BL==150) || (BL==151)) ESBYTE[ESI] = 45;
+    IF (BL==168) ESBYTE[ESI] = 240; //ð
+    IF (BL==184) ESBYTE[ESI] = 'e'; //e
+	IF (BL==180) ESBYTE[ESI] = 254; //ã
+    IF ((BL==147) || (BL==148) || (BL==171) || (BL==187)) ESBYTE[ESI] = 34;
+    IF ((BL==150) || (BL==151)) ESBYTE[ESI] = 45;
         }
         ESI++;
    }

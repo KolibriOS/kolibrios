@@ -16,7 +16,7 @@
 #include "../lib/dll.h--"
 
 //переменные
-byte URL[4096]="/sys/html/index.htm",
+byte URL[4096]="/sys/index.htm",
 	editURL[4096],
 	page_links[12000],
 	header[512];
@@ -75,7 +75,9 @@ void main()
 					}
 				}
 				//IF (kolichestvo<max_kolvo_strok) break;
-				if (m.x>=WB1.width-14) && (m.x<=WB1.width+6) && (kolichestvo>max_kolvo_strok) while (m.lkm)
+				if (m.x>=WB1.width-14) && (m.x<=WB1.width+6)
+				&& (m.y>WB1.top+16) && (m.y<WB1.top+WB1.height-16)
+				&& (kolichestvo>max_kolvo_strok) while (m.lkm)
 				{
 					IF (razm_scrl/2+WB1.top>m.y) || (m.y<0) || (m.y>4000) m.y=razm_scrl/2+WB1.top; //если курсор над окном
 					btn=za_kadrom; //сохраняем старое количество
