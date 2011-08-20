@@ -204,11 +204,11 @@ tree1 tree_list 264,count_of_dir_list_files+2, tl_key_no_edit+tl_draw_par_line+t
 
 ;dir_list memory
 tree_file_struct:
-  dd 1
-  dd 0,0,count_of_dir_list_files
-  dd dir_mem
-  db 0
-  dd file_name ;sys_path
+	dd 1
+	dd 0,0,count_of_dir_list_files
+	dd dir_mem
+	db 0
+	dd file_name
 
 dir_mem rb 32+304*count_of_dir_list_files
 
@@ -222,7 +222,7 @@ ends
 ;------------------------------------------------------------------------------
 align 4
 tedit0: ;структура текстового редактора
-	.wnd BOX 195,5+20,325,260 ;+ 0
+	.wnd BOX 195,5+40,325,240 ;+ 0
 	.rec BOX 30,13,7,10   ;+16
 	.drag_m db 0 ;+32 выделение от мыши
 	.drag_k db 0 ;+33 выделение от клавиатуры

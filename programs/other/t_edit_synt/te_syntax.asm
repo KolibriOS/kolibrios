@@ -6,12 +6,13 @@ use32
   dd i_end ; размер приложения
   dd mem
   dd stacktop
-  dd file_name;buf_cmd_lin
+  dd file_name
   dd sys_path
 
 MAX_COLOR_WORD_LEN equ 40
 BUF_SIZE equ 1000 ;buffer for copy|paste
 maxSyntaxFileSize equ 310000
+CAPT_PATH_WIDTH equ 50 ;ширина подписи перед текстовым полем
 
 include '../../macros.inc'
 include '../../proc32.inc'
@@ -128,65 +129,11 @@ mov ecx,ebx
 
 ;--- load color option file ---
 stdcall [ted_init], tedit0
+mov byte[file_name],0
 
 align 4
 red_win:
-  pushad
-  mcall 12,1
-
-  xor eax,eax
-  mov ebx,10*65536+555
-  mov ecx,10*65536+333
-  mov edx,[sc.work]
-  or  edx,0x33000000
-  mov edi,hed
-  mcall
-
-  mcall 9,procinfo,-1
-
-  mov eax,8 ;кнопка
-  mov ebx,5*65536+90
-  mov ecx,195*65536+20
-  mov edx,200
-  mov esi,[sc.work_button];0xd0
-  mcall
-
-;  mov eax,8
-  mov ebx,100*65536+85
-  mov ecx,195*65536+20
-  mov edx,201
-  mov esi,0xd00000
-  mcall
-
-  mov eax,4 ;рисование текста
-  mov ebx,10*65536+200
-  mov ecx,[sc.work_button_text]
-  or  ecx,0x80000000
-  mov edx,txt122
-  mcall
-
-  mov ebx,105*65536+200
-  mov ecx,0xffff00
-  or  ecx,0x80000000
-  mov edx,txt148
-  mcall
-
-  mov ebx,195*65536+10
-  mov ecx,[sc.work_text]
-  or  ecx,0x80000000
-  mov edx,txt_out_file
-  mcall
-
-  stdcall [edit_box_draw],dword edit1
-  stdcall [tl_draw],dword tree1
-
-  ;scroll 1
-  mov [ws_dir_lbox.all_redraw],1
-  stdcall [scrollbar_ver_draw],dword ws_dir_lbox
-  stdcall [ted_draw], tedit0
-
-  mcall 12,2
-  popad
+	call draw_window
 
 align 4
 still:
@@ -203,6 +150,71 @@ still:
 
   jmp still
 
+
+align 4
+draw_window:
+	pushad
+	mcall 12,1
+
+	mov edx,[sc.work]
+	or  edx,0x33000000
+	mov edi,hed
+	mcall 0,<10,555>,<10,333>
+
+	mcall 9,procinfo,-1
+
+	mov eax,8 ;кнопка
+	mov ebx,5*65536+90
+	mov ecx,195*65536+20
+	mov edx,200
+	mov esi,[sc.work_button];0xd0
+	mcall
+
+	;mov eax,8
+	mov ebx,100*65536+85
+	mov ecx,195*65536+20
+	mov edx,201
+	mov esi,0xd00000
+	mcall
+
+	mov eax,4 ;рисование текста
+	mov ebx,10*65536+200
+	mov ecx,[sc.work_button_text]
+	or  ecx,0x80000000
+	mov edx,txt122
+	mcall
+
+	mov ebx,105*65536+200
+	mov ecx,0xffff00
+	or  ecx,0x80000000
+	mov edx,txt148
+	mcall
+
+	mov ebx,195*65536+10
+	mov ecx,[sc.work_text]
+	or  ecx,0x80000000
+	mov edx,txt_inp_file
+	int 0x40
+
+	add ebx,20
+	mov edx,txt_out_file
+	int 0x40
+
+	mov ebx,(215+CAPT_PATH_WIDTH) shl 16 + 10
+	mov edx,file_name
+	int 0x40
+
+	stdcall [edit_box_draw],dword edit1
+	stdcall [tl_draw],dword tree1
+
+	;scroll 1
+	mov [ws_dir_lbox.all_redraw],1
+	stdcall [scrollbar_ver_draw],dword ws_dir_lbox
+	stdcall [ted_draw], tedit0
+
+	mcall 12,2
+	popad
+	ret
 
 align 4
 mouse:
@@ -300,18 +312,14 @@ get_wnd_in_focus:
 	;@@:
 	ret
 
-hed db 'TextEditor syntax file converter 09.06.10',0 ;подпись окна
-
-txtErrOpen db 'Не найден файл, проверьте правильность имени',0
-txtErrIni0 db 'Не открылся файл с иконками',0
-err_ini0 db 0
+hed db 'TextEditor syntax file converter 20.08.11',0 ;подпись окна
 
 txt122 db 'Загр. файл',0
 txt148 db 'Сохр. файл',0
+txt_inp_file db 'Исх. файл:',0
 txt_out_file db 'Вых. файл:',0
 
-CAPT_PATH_WIDTH equ 50
-edit1 edit_box 305+16-CAPT_PATH_WIDTH, 215+CAPT_PATH_WIDTH, 5, 0xffffff, 0xff, 0xff0000, 0, 0x80, MAX_COLOR_WORD_LEN, ed_buffer.127, mouse_dd, 0
+edit1 edit_box 305+16-CAPT_PATH_WIDTH, 215+CAPT_PATH_WIDTH, 25, 0xffffff, 0xff, 0xff0000, 0, 0x80, MAX_COLOR_WORD_LEN, ed_buffer.127, mouse_dd, 0
 
 ed_buffer: ;текст для edit
   .127: rb MAX_COLOR_WORD_LEN+2

@@ -150,8 +150,9 @@ InitColText:
 		add eax,sizeof.TexColViv
 	loop @b
 	
-	stdcall [ted_init_scroll_bars], tedit0,4
-	stdcall [ted_draw], tedit0
+	;stdcall [ted_init_scroll_bars], tedit0,4
+	;stdcall [ted_draw], tedit0
+	call draw_window
 
 	.no_colors:
 	popad
