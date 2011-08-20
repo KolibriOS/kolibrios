@@ -20,7 +20,7 @@ include 'lang.inc'
 debug equ 0
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-capt db 'info 3ds 18.08.11',0 ;подпись окна
+capt db 'info 3ds 20.08.11',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -45,9 +45,9 @@ image_data_toolbar dd 0
 TREE_ICON_SYS16_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*11+54 ;размер bmp файла с системными иконками
 icon_tl_sys dd 0 ;указатеель на память для хранения системных иконок
 icon_toolbar dd 0 ;указатеель на память для хранения иконок объектов
-TOOLBAR_ICON_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*6+54 ;размер bmp файла с иконками объектов
+TOOLBAR_ICON_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*7+54 ;размер bmp файла с иконками объектов
 ;
-IMAGE_FILE1_SIZE equ 128*144*3 ;размер файла с изображением 640 x 480
+IMAGE_FILE1_SIZE equ 128*144*3+54 ;размер файла с изображением
 
 macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	;path - может быть переменной или строковым параметром
@@ -89,41 +89,42 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 }
 
 ;--------------------------------------
-sizeof.block_3ds equ 5
+sizeof.block_3ds equ 9
 
-macro block_3ds id,icon,par
+macro block_3ds id,icon,par,caption
 {
-	dw id ;идентификатор блока в файле 3ds
-	dw icon ;номер иконки для блока
-	db par ;содержит ли блок подблоки (0-да 1-нет)
+	dw id ;+0 идентификатор блока в файле 3ds
+	dw icon ;+2 номер иконки для блока
+	db par ;+4 содержит ли блок подблоки (0-да 1-нет)
+	dd caption+0 ;+5 описание блока
 }
 
-CHUNK_MAIN                equ 0x4D4D ; [-] сцена
-CHUNK_color_1             equ 0x0011 ; [+] цвет rgb (byte format)
-CHUNK_ambient_color       equ 0x2100 ; [-] ambient color
-  CHUNK_OBJMESH           equ 0x3D3D ; [-] всяческие объекты
-    CHUNK_OBJBLOCK        equ 0x4000 ; [+] объект
-      CHUNK_TRIMESH       equ 0x4100 ; [-] trimesh-объект
-        CHUNK_VERTLIST    equ 0x4110 ; [+] список вершин
-        CHUNK_FACELIST    equ 0x4120 ; [+] список граней
-        CHUNK_FACEMAT     equ 0x4130 ; [+] материалы граней
-        CHUNK_MAPLIST     equ 0x4140 ; [+] текстурные координаты
-        CHUNK_TRMATRIX    equ 0x4160 ; [+] матрица перевода
-      CHUNK_CAMERA        equ 0x4700 ; [+] объект-камера
-  CHUNK_MATERIAL          equ 0xAFFF ; [-] материал
-    CHUNK_MATNAME         equ 0xA000 ; [+] название материала
-    CHUNK_TEXTURE         equ 0xA200 ; [-] текстура материала
-      CHUNK_MAPFILE       equ 0xA300 ; [+] имя файла текстуры
-  CHUNK_KEYFRAMER         equ 0xB000 ; [-] информация об анимации
-  CHUNK_TRACKINFO         equ 0xB002 ; [-] поведение объекта
-    CHUNK_TRACKOBJNAME    equ 0xB010 ; [+] название этого объекта
-    CHUNK_TRACKPIVOT      equ 0xB013 ; [+] центр вращения объекта
-    CHUNK_TRACKPOS        equ 0xB020 ; [+] траектория объекта
-    CHUNK_TRACKROTATE     equ 0xB021 ; [+] траектория вращения объекта
-  CHUNK_TRACKCAMERA       equ 0xB003 ; [-] поведение камеры
-    CHUNK_TRACKFOV        equ 0xB023 ; [+] поведение FOV камеры
-    CHUNK_TRACKROLL       equ 0xB024 ; [+] поведение roll камеры
-  CHUNK_TRACKCAMTGT       equ 0xB004 ; [-] поведение "цели" камеры
+CHUNK_MAIN		  equ 0x4D4D ; [-] сцена
+CHUNK_color_1		  equ 0x0011 ; [+] цвет rgb (byte format)
+CHUNK_ambient_color	  equ 0x2100 ; [-] ambient color
+  CHUNK_OBJMESH 	  equ 0x3D3D ; [-] всяческие объекты
+    CHUNK_OBJBLOCK	  equ 0x4000 ; [+] объект
+      CHUNK_TRIMESH	  equ 0x4100 ; [-] trimesh-объект
+	CHUNK_VERTLIST	  equ 0x4110 ; [+] список вершин
+	CHUNK_FACELIST	  equ 0x4120 ; [+] список граней
+	CHUNK_FACEMAT	  equ 0x4130 ; [+] материалы граней
+	CHUNK_MAPLIST	  equ 0x4140 ; [+] текстурные координаты
+	CHUNK_TRMATRIX	  equ 0x4160 ; [+] матрица перевода
+      CHUNK_CAMERA	  equ 0x4700 ; [+] объект-камера
+  CHUNK_MATERIAL	  equ 0xAFFF ; [-] материал
+    CHUNK_MATNAME	  equ 0xA000 ; [+] название материала
+    CHUNK_TEXTURE	  equ 0xA200 ; [-] текстура материала
+      CHUNK_MAPFILE	  equ 0xA300 ; [+] имя файла текстуры
+  CHUNK_KEYFRAMER	  equ 0xB000 ; [-] информация об анимации
+  CHUNK_TRACKINFO	  equ 0xB002 ; [-] поведение объекта
+    CHUNK_TRACKOBJNAME	  equ 0xB010 ; [+] название этого объекта
+    CHUNK_TRACKPIVOT	  equ 0xB013 ; [+] центр вращения объекта
+    CHUNK_TRACKPOS	  equ 0xB020 ; [+] траектория объекта
+    CHUNK_TRACKROTATE	  equ 0xB021 ; [+] траектория вращения объекта
+  CHUNK_TRACKCAMERA	  equ 0xB003 ; [-] поведение камеры
+    CHUNK_TRACKFOV	  equ 0xB023 ; [+] поведение FOV камеры
+    CHUNK_TRACKROLL	  equ 0xB024 ; [+] поведение roll камеры
+  CHUNK_TRACKCAMTGT	  equ 0xB004 ; [-] поведение "цели" камеры
 
 ;данные содержат лишь блоки, отмеченные плюсом, остальные блоки
 ; состоят лишь из подблоков
@@ -141,7 +142,7 @@ FILE_ERROR_CHUNK_SIZE equ -3 ;ошибка в размере блока
 
 align 4
 type_bloks:
-block_3ds 0x0002,5,1 ;информация о версии файла
+block_3ds 0x0002,5,1,txt_0002
 block_3ds 0x3d3e,5,1 ;mesh version
 block_3ds 0xA010,4,0 ;material ambient color
 block_3ds 0xA020,4,0 ;material diffuse color
@@ -149,22 +150,23 @@ block_3ds 0xA030,4,0 ;material specular color
 block_3ds CHUNK_color_1,     4,1 ; [+] цвет rgb (byte format)
 block_3ds CHUNK_ambient_color,3,0 ; [-] ambient color
 block_3ds CHUNK_OBJMESH,     3,0 ; [-] всяческие объекты
-block_3ds CHUNK_OBJBLOCK,    3,1 ; [+] объект
+block_3ds CHUNK_OBJBLOCK,    3,1,txt_4000
 block_3ds CHUNK_TRIMESH,     3,0 ; [-] trimesh-объект
-block_3ds CHUNK_VERTLIST,    3,1 ; [+] список вершин
-block_3ds CHUNK_FACELIST,    3,1 ; [+] список граней
+block_3ds CHUNK_VERTLIST,    3,1,txt_4110
+block_3ds CHUNK_FACELIST,    3,1,txt_4120
 block_3ds CHUNK_FACEMAT,     3,1 ; [+] материалы граней
 block_3ds CHUNK_MAPLIST,     3,1 ; [+] текстурные координаты
 block_3ds CHUNK_TRMATRIX,    3,1 ; [+] матрица перевода
 block_3ds CHUNK_CAMERA,      3,1 ; [+] объект-камера
-block_3ds CHUNK_MATERIAL,    3,0 ; [-] материал
-block_3ds CHUNK_MATNAME,     3,1 ; [+] название материала
-block_3ds CHUNK_TEXTURE,     3,0 ; [-] текстура материала
-block_3ds CHUNK_MAPFILE,     3,1 ; [+] имя файла текстуры
-block_3ds CHUNK_KEYFRAMER,   3,0 ; [-] информация об анимации
-block_3ds CHUNK_TRACKINFO,   3,0 ; [-] поведение объекта
-block_3ds CHUNK_TRACKOBJNAME,3,1 ; [+] название этого объекта
-block_3ds CHUNK_TRACKPIVOT,  3,1 ; [+] центр вращения объекта
+block_3ds 0x4600,3,1,txt_4600
+block_3ds CHUNK_MATERIAL,    3,0,txt_afff
+block_3ds CHUNK_MATNAME,     3,1,txt_a000
+block_3ds CHUNK_TEXTURE,     3,0,txt_a200
+block_3ds CHUNK_MAPFILE,     6,1,txt_a300
+block_3ds CHUNK_KEYFRAMER,   3,0,txt_b000
+block_3ds CHUNK_TRACKINFO,   3,0,txt_b002
+block_3ds CHUNK_TRACKOBJNAME,3,1,txt_b010
+block_3ds CHUNK_TRACKPIVOT,  3,1,txt_b013
 block_3ds CHUNK_TRACKPOS,    3,1 ; [+] траектория объекта
 block_3ds CHUNK_TRACKROTATE, 3,1 ; [+] траектория вращения объекта
 block_3ds CHUNK_TRACKCAMERA, 3,0 ; [-] поведение камеры
@@ -173,13 +175,44 @@ block_3ds CHUNK_TRACKROLL,   3,1 ; [+] поведение roll камеры
 block_3ds CHUNK_TRACKCAMTGT, 3,0 ; [-] поведение "цели" камеры
 .end:
 
+if lang eq ru
+txt_0002 db '3ds версия',0
+txt_4000 db 'Объект (с именем)',0
+txt_4110 db 'Список вершин',0
+txt_4120 db 'Список граней',0
+txt_4600 db 'Свет',0
+txt_a000 db 'Название материала',0
+txt_a200 db 'Текстура материала 1',0
+txt_a300 db 'Имя файла текстуры',0
+txt_afff db 'Материал',0
+txt_b000 db 'Информация об анимации',0
+txt_b002 db 'Поведение объекта',0
+txt_b010 db 'Название объекта',0
+txt_b013 db 'Центр вращения объекта',0
+else
+txt_0002 db '3ds version',0
+txt_4000 db 'Object (with name)',0
+txt_4110 db 'Vertices list',0
+txt_4120 db 'Faces description',0
+txt_4600 db 'Light',0
+txt_a000 db 'Material name',0
+txt_a200 db 'Texture map 1',0
+txt_a300 db 'Mapping filename',0
+txt_afff db 'Meterial',0
+txt_b000 db 'Keyframer',0
+txt_b002 db 'Mesh information',0
+txt_b010 db 'Object name',0
+txt_b013 db 'Object pivot point',0
+end if
+
 align 4
 file_3ds:
 .offs: dd 0 ;+0 указатель на начало блока
 .size: dd 0 ;+4 размер блока (для 1-го параметра = размер файла 3ds)
-rb 8*MAX_FILE_LEVEL+4
+rb 8*MAX_FILE_LEVEL
 
-size_one_list equ 14
+size_one_list equ 40
+list_offs_text equ 12 ;сдвиг начала текста в листе
 buffer rb size_one_list ;буфер для добавления структур в список tree1
 
 if lang eq ru
@@ -288,6 +321,13 @@ mouse:
 align 4
 timer_funct:
 	pushad
+if debug
+	mov eax,4
+	mov ebx,(5 shl 16)+8
+	mov ecx,0xff+0x80000000
+	mov edx,txt_0002
+	int 0x40
+end if
 	mcall 26,9
 	mov [last_time],eax
 
@@ -305,7 +345,12 @@ timer_funct:
 		je @f
 			mov dword[offs_last_timer],eax
 			call buf_draw_beg
-			stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_offs,5,35,0xd000
+			stdcall [buf2d_draw_text], buf_0, buf_1,txt_3ds_offs,5,35,0xb000
+			mov edx,dword[ebx+8]
+			cmp edx,0 ;смотрим есть ли описание блока
+			je .no_info
+				stdcall [buf2d_draw_text], buf_0, buf_1,edx,5,45,0xb000
+			.no_info:
 			add ecx,eax ;получаем размер блока
 			stdcall buf_draw_hex_table,eax,ecx ;добавление 16-ричных данных
 			stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
@@ -328,11 +373,11 @@ align 4
 proc buf_draw_hex_table, offs:dword, size_line:dword
 	pushad
 	locals
-		coord_y dd 45
+		coord_y dd 55 ;координата y для начала вывода таблицы
 	endl
 		mov esi,dword[offs]
 		mov edi,dword[open_file_lif]
-		add edi,dword[file_3ds+4] ;edi - указатель на конец файла в памяти
+		add edi,dword[file_3ds.size] ;edi - указатель на конец файла в памяти
 		mov dword[txt_3ds_offs.dig],0
 		cld
 		.cycle_rows:
@@ -525,7 +570,7 @@ but_open_file:
 	mov dword[level_stack],0 ;обнуляем уровень стека
 	mov dword[offs_last_timer],0
 	;--- добавление главного блока в список
-	stdcall add_3ds_object, ID_ICON_CHUNK_MAIN,0,dword[esi+2]
+	stdcall add_3ds_object, ID_ICON_CHUNK_MAIN,0,dword[esi+2],0
 	call block_children ;вход в дочерний блок
 
 	mov edi,dword[file_3ds.offs]
@@ -537,20 +582,19 @@ but_open_file:
 		cmp esi,edi ;если конец файла
 		jge .end_cycle
 
-		call block_analiz
 		mov edx,dword[esi+2] ;размер блока
-
-		cmp dword[eax],0
+		call block_analiz
+		cmp dword[bl_found],0
 		jne @f
 			;объект не известного вида
-			stdcall add_3ds_object, ID_ICON_CHUNK_NOT_FOUND,dword[level_stack],edx
+			stdcall add_3ds_object, ID_ICON_CHUNK_NOT_FOUND,dword[level_stack],edx,0
 			call block_next
 			jmp .cycle_main
 		@@:
 			;объект известного вида
-			mov ecx,dword[eax]
+			mov ecx,dword[bl_found]
 			mov bx,word[ecx+2] ;номер иконки для объекта
-			stdcall add_3ds_object, ebx,dword[level_stack],edx
+			stdcall add_3ds_object, ebx,dword[level_stack],edx,dword[ecx+5]
 			cmp byte[ecx+4],1
 			je .bl_data
 				;блок содержит дочерние блоки
@@ -559,7 +603,6 @@ but_open_file:
 			.bl_data:
 				;блок содержит данные
 				call block_analiz_data
-				call block_next
 				jmp .cycle_main
 	.end_cycle:
 		stdcall [tl_cur_beg], tree1
@@ -574,28 +617,48 @@ but_open_file:
 ;анализ данных блока
 ;input:
 ; esi - memory pointer
+;output:
+; eax - new stack pointer
+; esi - new memory pointer
 align 4
 block_analiz_data:
-	pushad
-		mov ax,word[esi]
+	push ebx ecx edx edi
+		mov dx,word[esi]
 		mov ecx,dword[esi+2]
 		sub ecx,6 ;размер данных в блоке
 		add esi,6
 		mov ebx,dword[level_stack]
 		inc ebx
-		;cmp ax,CHUNK_color_1
-		;jne @f
-		;	.cycle_0:
-		;		stdcall add_3ds_object, ID_ICON_DATA,ebx,3
-		;		add esi,3
-		;		sub ecx,3
-		;		cmp ecx,0
-		;		jg .cycle_0
-		;	jmp .end_f
-		;@@:
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx
+		; *** анализ блоков с разными данными и выделением подблоков
+		cmp dx,CHUNK_OBJBLOCK ;объект
+		jne @f
+			.cycle_0:
+				push ax
+					cld
+					xor al,al
+					mov edi,esi
+					repne scasb
+				pop ax
+				sub edi,esi ;edi - strlen
+				stdcall add_3ds_object, ID_ICON_DATA,ebx,edi,0 ;название объекта
+				add esi,edi
+				sub ecx,edi
+			jmp .next_bl
+		@@:
+		; *** анализ блока с данными по умолчанию (без выделения подблоков)
+			stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0
+			sub esi,6 ;восстановление esi
+			call block_next
+			jmp .end_f
+		.next_bl:
+		; *** настройки для анализа оставшихся подблоков
+			mov dword[eax],esi ;указатель на начало блока
+			mov ebx,dword[esi+2]
+			mov dword[eax+4],ebx ;размер блока
+			inc dword[level_stack]
+			add eax,8
 		.end_f:
-	popad
+	pop edi edx ecx ebx
 	ret
 
 ;вход в 1-й дочерний блок
@@ -633,25 +696,29 @@ push ebx
 	add esi,dword[esi+2] ;пропускаем данные блока
 
 	;проверка размеров родительского блока, для возможного выхода на верхний уровень если конец блока
+	@@:
 	mov ebx,dword[eax-8]
 	add ebx,dword[eax-4]
 	cmp esi,ebx
 	jl @f
 		dec dword[level_stack]
 		sub eax,8
+		cmp dword[level_stack],0
+		jg @b
 	@@:
 pop ebx
 	ret
 
+;функция поиска структуры описывающей блок
 ;input:
-;eax - pointer to stack
 ;esi - memory pointer
 ;output:
-;dword[eax] - pointer to chunk struct (= 0 if not found)
+;dword[bl_found] - pointer to chunk struct (= 0 if not found)
 align 4
+bl_found dd 0
 block_analiz:
 pushad
-	mov dword[eax],0
+	mov dword[bl_found],0
 	mov ecx,type_bloks
 	@@:
 		mov bx,word[ecx]
@@ -662,7 +729,7 @@ pushad
 		jl @b
 	jmp .no_found
 	.found:
-		mov dword[eax],ecx
+		mov dword[bl_found],ecx
 	.no_found:
 popad
 	ret
@@ -670,7 +737,7 @@ popad
 ;input:
 ; esi - указатель на анализируемые данные
 align 4
-proc add_3ds_object, icon:dword,level:dword,size_bl:dword
+proc add_3ds_object, icon:dword,level:dword,size_bl:dword,info_bl:dword
 	pushad
 		mov bx,word[icon]
 		shl ebx,16
@@ -681,13 +748,27 @@ proc add_3ds_object, icon:dword,level:dword,size_bl:dword
 		mov dword[buffer],eax ;смещение блока
 		mov ecx,dword[size_bl]
 		mov dword[buffer+4],ecx ;размер блока (используется в функции buf_draw_hex_table для рисования линии)
-		stdcall hex_in_str, buffer+8,dword[esi+1],2
-		stdcall hex_in_str, buffer+10,dword[esi],2 ;код 3ds блока
-		mov byte[buffer+12],0
+		mov ecx,dword[info_bl]
+		mov dword[buffer+8],ecx
+		stdcall hex_in_str, buffer+list_offs_text,dword[esi+1],2
+		stdcall hex_in_str, buffer+list_offs_text+2,dword[esi],2 ;код 3ds блока
+		cmp ecx,0
+		jne @f
+			mov byte[buffer+list_offs_text+4],0 ;0 - символ конеца строки
+			jmp .no_capt
+		@@:
+			mov byte[buffer+list_offs_text+4],' '
+			mov esi,ecx
+			mov edi,buffer+list_offs_text+5
+			mov ecx,size_one_list-(list_offs_text+5)
+			cld
+			rep movsb
+			mov byte[buffer+size_one_list-1],0 ;0 - символ конеца строки
+		.no_capt:
 		stdcall [tl_node_add], buffer, ebx, tree1
 		stdcall [tl_cur_next], tree1
 		if debug
-			stdcall print_err,sz_add_3ds_object,buffer+8
+			stdcall print_err,sz_add_3ds_object,buffer+list_offs_text
 		end if
 	popad
 	ret
@@ -1128,8 +1209,8 @@ buf_1:
 	db 24 ;+20 bit in pixel
 
 el_focus dd tree1
-tree1 tree_list size_one_list,100+2, tl_key_no_edit+tl_draw_par_line,\
-	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,35,195-16,250, 0,8,0, el_focus,\
+tree1 tree_list size_one_list,200+2, tl_key_no_edit+tl_draw_par_line,\
+	16,16, 0xffffff,0xb0d0ff,0xd000ff, 5,35,195-16,250, 16,list_offs_text,0, el_focus,\
 	w_scr_t1,0
 
 align 4
