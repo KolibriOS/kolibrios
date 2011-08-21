@@ -45,6 +45,7 @@ FASM_PROGRAMS:=\
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
  @rb:@RB:$(PROGS)/system/rb/trunk/@RB.ASM \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm\
+ asciivju:ASCIIVJU:$(PROGS)/develop/asciivju/trunk/asciivju.asm \
  calc:CALC:$(PROGS)/other/calc/trunk/calc.asm \
  calendar:CALENDAR:$(PROGS)/system/calendar/trunk/calendar.asm \
  commouse:COMMOUSE:$(PROGS)/system/commouse/trunk/commouse.asm \
@@ -247,7 +248,7 @@ CMM_PROGRAMS:=\
 # Some of them are auto-built with special rules, some just exist before build.
 # Each item is of the form <local name>:<name inside image>.
 # Spaces should be represented as |.
-OTHER_FILES:=asciivju:ASCIIVJU autorun.dat:AUTORUN.DAT \
+OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  background.gif:background.gif default.skn:DEFAULT.SKN \
  e80:E80 graph:GRAPH hdread:HDREAD \
  icons.dat:ICONS.DAT iconstrp.gif:ICONSTRP.GIF index_htm:INDEX.HTM \
