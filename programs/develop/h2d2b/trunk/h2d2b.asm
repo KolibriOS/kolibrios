@@ -1,22 +1,19 @@
+;;      h2d2b v0.3 system colors by Leency  ;;
+;;      21.08.2011                          ;;
+
 ;;      hex2dec2bin 0.2 by Alexei Ershov    ;;
 ;;      16.11.2006                          ;;
 
-  use32 	     ; включить 32-битный режим ассемблера
-  org	 0x0	     ; адресация с нуля
+use32
+    org 0x0
+    db  'MENUET01'
+    dd  0x01,start,i_end,e_end,e_end,0,0
 
-  db	 'MENUET01'  ; 8-байтный идентификатор MenuetOS
-  dd	 0x01	     ; версия заголовка (всегда 1)
-  dd	 START	     ; адрес первой команды
-  dd	 I_END	     ; размер программы
-  dd	 0x1000      ; количество памяти
-  dd	 0x1000      ; адрес вершины стэка
-  dd	 0x0	     ; адрес буфера для параметров (не используется)
-  dd	 0x0	     ; зарезервировано
-
-include '..\..\..\MACROS.INC' ; макросы облегчают жизнь ассемблерщиков!
+include '../../../proc32.inc'
+include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
 
 
-START:
+start:
 red:
 
     call draw_window
@@ -35,7 +32,7 @@ still:
 
 ;---------------------------------------------------------------------
 
- key:		       ; нажата клавиша на клавиатуре
+key:		       ; нажата клавиша на клавиатуре
     mov   eax, 2
     mcall
     mov   edi, [index]
@@ -146,27 +143,39 @@ next_digit:
 ;------------------------------------------------
     draw_window:
 ;------------------------------------------------
-    mcall 12, 1
-    mcall 0, 200*65536+300, 200*65536+175, 0x14AABBCC,,title
+	mcall	48, 3, sys_colors, 40
 
-    mcall  8, 15      *65536+ 38, 90*65536+ 15, 2, 0x6688DD ; кнопка shl
+    mcall 12, 1
+	mov	edx, 0x14000000
+	or	edx, [sys_colors.work]
+	;mov	esi, 0x80000000
+	;or	esi, [sys_colors.grab_text]
+    mcall 0, 200*65536+300, 200*65536+175, ,,title
+
+	
+    mcall  8, 15      *65536+ 38, 90*65536+ 15, 2, [sys_colors.work_button] ; кнопка shl
     mcall  ,		       ,110*65536+ 15,	,	   ; кнопка sal
     mcall  , (300-53)*65536+ 38, 90*65536+ 15, 3,	   ; кнопка shr
     mcall  ,		       ,110*65536+ 15, 4,	   ; кнопка sar
 
-    mcall  4, 15*65536+30,   0x80000000, binstr,
+	mov	ecx, 0x80000000
+	or	ecx, [sys_colors.work_text]
+    mcall  4, 15*65536+30,   , binstr,
     mcall  , 15*65536+44,   , decstr,
     mcall  , 15*65536+58,   ,sdecstr,
     mcall  , 15*65536+72,   , hexstr,
     mcall  , 15*65536+150,  , numstr,
 
-    mcall  ,	   25*65536+93,0x10000000,shlstr,3
-    mcall  , (300-43)*65536+93, 	, shrstr,
-    mcall  ,	   25*65536+113,	, salstr,
-    mcall  , (300-43)*65536+113,	, sarstr,
+	mov	ecx, 0x80000000
+	or	ecx, [sys_colors.work_button_text]
+    mcall  ,	   26*65536+94, 	, shlstr,3
+    mcall  , (300-42)*65536+94, 	, shrstr,
+    mcall  ,	   26*65536+114,	, salstr,
+    mcall  , (300-42)*65536+114,	, sarstr,
     mov    ecx, [num]
 
-    mcall  47, 8*65536+256,,240*65536+72,0    ; 16-ная
+	
+    mcall  47, 8*65536+256,,240*65536+72,[sys_colors.work_text]    ; 16-ная
     mcall    , 10*65536,   ,228*65536+44,     ; 10-ная
     mcall    , 8*65536+512,,240*65536+30,     ; 2-ная
     ror    ecx, 8
@@ -183,7 +192,7 @@ next_digit:
 @@:
     mcall   ,  10*65536,,228*65536+58,	      ; 10-ная со знаком
     mcall  4, 222*65536+58, 0, minus, 1
-    mcall 38, 15*65536+300-15, 137*65536+137, 0x006688DD
+    mcall 38, 15*65536+300-15, 137*65536+137, [sys_colors.work_graph]
     call   Draw_String
     mcall 12, 2 		   ; функция 12: сообщить ОС об отрисовке окна
 
@@ -239,16 +248,20 @@ string1_end:
   num	dd  0
 
 
- title db 'hex2dec2bin 0.2',0
- minus	db '-'
+ title db 'hex2dec2bin 0.3',0
+ minus	db '-',0
  numstr db 'Number:',0
  hexstr db 'hex:',0
  binstr db 'bin:',0
  decstr db 'dec:',0
 sdecstr db 'signed dec:',0
- shlstr db 'shl'
- salstr db 'sal'
- shrstr db 'shr'
- sarstr db 'sar'
+ shlstr db 'shl',0
+ salstr db 'sal',0
+ shrstr db 'shr',0
+ sarstr db 'sar',0
 
-I_END:				   ; метка конца программы
+i_end:
+ sys_colors		system_colors
+ rb 0x400					;stack
+ 
+e_end:				   ; метка конца программы
