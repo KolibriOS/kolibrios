@@ -136,10 +136,10 @@ draw_magnify:
 ;---------------------------------------------------------------------
 if lang eq ru
 labelt:
-    db   'MAGNIFIER - ДВИГАЙТЕ КУРСОР МЫШИ', 0
+    db   'Magnifier - Экранная лупа', 0
 else
 labelt:
-    db   'MAGNIFIER - MOVE MOUSE POINTER', 0
+    db   'Magnifier', 0
 end if
 
 I_END:
