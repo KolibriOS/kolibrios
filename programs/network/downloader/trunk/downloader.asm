@@ -1588,7 +1588,7 @@ str2:		db "GotIP",0
 str4:		db "GotResponse",0
 end	if
 ;---------------------------------------------------------------------
-button_text	db ' RELOAD    STOP       SAVE    '
+button_text	db ' RELOAD    STOP     SAVE      '
 dpx		dd 25	; x - start of html page in pixels in window
 dpy		dd 65	; for	y
 lastletter	db 0
