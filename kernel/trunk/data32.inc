@@ -267,9 +267,6 @@ align 16
 cur_saved_data    rb 4096
 fpu_data:         rb 512
 
-; device irq owners
-irq_owner         rd 16 ; process id
-
 ; on irq read ports
 
 irq00read         rd 16

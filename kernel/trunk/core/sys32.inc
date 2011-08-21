@@ -675,25 +675,6 @@ term9:
         and     [bgrlock], 0
 @@:
 
-    pusha ; remove all irq reservations
-    mov   eax,esi
-    shl   eax, 5
-    mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
-    mov   edi,irq_owner
-    xor   ebx, ebx
-    xor   edx, edx
-  newirqfree:
-    cmp   [edi + 4 * ebx], eax
-    jne   nofreeirq
-    mov   [edi + 4 * ebx], edx                          ; remove irq reservation
-    mov   [irq_tab + 4 * ebx], edx                      ; remove irq handler
-    mov   [irq_rights + 4 * ebx], edx                   ; set access rights to full access
-  nofreeirq:
-    inc   ebx
-    cmp   ebx, 16
-    jb    newirqfree
-    popa
-
     pusha                     ; remove all port reservations
     mov   edx,esi
     shl   edx, 5

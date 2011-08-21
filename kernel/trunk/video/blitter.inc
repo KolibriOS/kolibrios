@@ -70,7 +70,6 @@ block_clip:
         mov ebp, ecx
         mov ecx, [ecx]
         mov edx, [edx]
-        mov eax, ebx
         call  __L1OutCode
 
         mov esi, eax

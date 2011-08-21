@@ -363,16 +363,7 @@ proc START stdcall, state:dword
 	   call SysMsgBoardStr
   end if
 
-	   mov eax, VALID_IRQ
 	   mov ebx, [ctrl.int_line]
-	   mov esi, msgInvIRQ
-	   bt eax, ebx
-	   jnc .fail_msg
-	   mov eax, ATTCH_IRQ
-	   mov esi, msgAttchIRQ
-	   bt eax, ebx
-	   jnc .fail_msg
-
 	   stdcall AttachIntHandler, ebx, ac97_irq, dword 0
 .reg:
 	   stdcall RegService, sz_sound_srv, service_proc
@@ -496,6 +487,27 @@ proc ac97_irq
 	   call SysMsgBoardStr
      end if
 
+           mov edx, CTRL_STAT
+           call [ctrl.ctrl_read32]
+
+           cmp eax, 0xffffffff
+           je .exit
+
+           test eax, 0x40
+           jnz .do_intr
+
+           test eax, eax
+           jz .exit
+
+           mov edx, CTRL_STAT
+           call [ctrl.ctrl_write32]
+.exit:
+           xor eax, eax
+           ret
+
+.do_intr:
+           push eax
+
 	   mov edx, PCM_OUT_CR_REG
 	   mov al, 0x10;               0x10
 	   call [ctrl.ctrl_write8]
@@ -528,18 +540,22 @@ proc ac97_irq
 	   and eax, 31
 	   mov ebx, dword [buff_list+eax*4]
 
-	   cmp [ctrl.user_callback], 0
-	   je @f
+           cmp [ctrl.user_callback], 0
+           je .done
 
-	   stdcall [ctrl.user_callback], ebx
-@@:
-	   ret
-
+           stdcall [ctrl.user_callback], ebx
+.done:
+           pop eax
+           and eax, 0x40
+           mov edx, CTRL_STAT
+           call [ctrl.ctrl_write32]
+           or eax, 1
+           ret
 .skip:
 	   mov edx, PCM_OUT_CR_REG
 	   mov ax, 0x11 	      ;0x1D
 	   call [ctrl.ctrl_write8]
-	   ret
+           jmp .done
 endp
 
 align 4
@@ -791,6 +807,8 @@ end if
 	   stdcall PciRead8, [ctrl.bus], [ctrl.devfn], dword 0x41
 	   and eax, 0xFF
 	   mov [ctrl.cfg_reg], eax
+
+           mov [ctrl.user_callback], 0
 
 	   call [ctrl.ctrl_setup]
 	   xor eax, eax

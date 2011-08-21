@@ -9,13 +9,16 @@ $Revision$
 
 
 DRV_COMPAT   equ  5  ;minimal required drivers version
-DRV_CURRENT  equ  5  ;current drivers model version
+DRV_CURRENT  equ  6  ;current drivers model version
 
 DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 PID_KERNEL  equ 1    ;os_idle thread
 
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
+
+         pushfd
+         cli
 
          push ebx
 
@@ -27,51 +30,26 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
          mov  eax, [handler]
          test eax, eax
          jz   .err
-         cmp  [irq_owner + 4 * ebx], 0
-         je   @f
 
-         mov  ecx, [irq_rights + 4 * ebx]  ; Rights : 0 - full access, 1 - read only, 2 - forbidden
-         test ecx, ecx
-         jnz  .err
-
-@@:
          mov  [irq_tab+ebx*4], eax
-
-         mov  eax, [access_rights]
-         mov  [irq_rights + 4 * ebx], eax
-
-         mov  [irq_owner + 4 * ebx], PID_KERNEL  ; all handlers belong to a kernel
-
          stdcall enable_irq, [irq]
          pop ebx
          mov eax, 1
+         popfd
          ret
 .err:
          pop ebx
          xor eax, eax
+         popfd
          ret
 endp
-
-uglobal
-
-	irq_rights	 rd	 16
-
-endg
 
 proc get_int_handler stdcall, irq:dword
 
 	mov	eax, [irq]
 
-	cmp	[irq_rights + 4 * eax], dword 1
-	ja	.err
-
 	mov	eax, [irq_tab + 4 * eax]
 	ret
-
-     .err:
-	xor	eax, eax
-	ret
-
 endp
 
 align 4
@@ -200,10 +178,10 @@ align 16
 
 .exit:
 
-	   cmp dword [esp + 32], 8
+       cmp dword [esp + 32], 8
 	   mov al, 0x20
 	   jb @f
-	   out 0xa0, al
+       out 0xa0, al
 @@:
 	   out 0x20, al
 
