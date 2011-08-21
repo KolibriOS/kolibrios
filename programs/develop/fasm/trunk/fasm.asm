@@ -195,7 +195,7 @@ draw_window:
 	mov	ecx,90*65536+260
 	mov	edx,[sc.work]
 	or	edx,0x33000000
-	mov	edi,title	       ; Draw Window Label Text
+	mov	edi,fullpath_open	;title	       ; Draw Window Label Text
 	mcall
 
 	mcall	9,PROCESSINFO,-1
@@ -269,7 +269,7 @@ draw_window:
 
 	call	draw_messages
 	
-	mov	eax,dword[pinfo.box.width]
+	mov	eax,dword [pinfo.box.width]
 	sub	eax,127
 	mov	dword[edit1.width],eax ; єёЄрэртыштрхь °шЁшэє ЄхъёЄют√ї яюыхщ
 	mov	dword[edit2.width],eax
@@ -297,8 +297,8 @@ fun_opn_dlg: ;функция для вызова OpenFile диалога
 	mov	[OpenDialog_data.type],0
 
 	xor	al,al
-	mov	edi,dword[edit3.text]
-	mov	ecx,dword[edit3.max]
+	mov	edi,dword [edit3.text]
+	mov	ecx,dword [edit3.max]
 	cld
 	repne	scasb
 	cmp	byte[edi-2],'/'
@@ -311,9 +311,9 @@ fun_opn_dlg: ;функция для вызова OpenFile диалога
 	je	@f
 
 	xor	al,al
-	mov	edi,dword[edit3.text]
+	mov	edi,dword [edit3.text]
 	mov	ebx,edi ;copy text pointer
-	mov	ecx,dword[edit3.max]
+	mov	ecx,dword [edit3.max]
 	cld
 	repne	scasb
 	cmp	byte[edi-2],'/'
@@ -343,7 +343,7 @@ fun_opn_dlg: ;функция для вызова OpenFile диалога
 	test	eax,eax
 	jnz	.cycle
 
-	sub	esi,4
+	sub	esi,5
 	cmp	esi,[edit2.text]
 	jle	.short_fn
 	
@@ -626,10 +626,8 @@ display_bytes_count:
 	je	@f
 	mov	edx,outfile
 	call	make_fullpaths
-	mov	eax,70
-	mov	ebx,file_info_start
 	xor	ecx,ecx
-	mcall
+	mcall	70,file_info_start
 @@:
 	jmp	exit_program
 ;---------------------------------------------------------------------
