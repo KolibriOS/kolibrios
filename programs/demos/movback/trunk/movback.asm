@@ -1,5 +1,5 @@
 include "lang.inc"
-include "..\..\..\macros.inc"
+include "../../../macros.inc"
 
 WND_SIZE_X		= 320
 WND_SIZE_Y		= 200
@@ -32,6 +32,8 @@ CODE
     mcall
 
 .draw_screen:
+    test [proc_info.wnd_state], 0x04
+    jnz .event_loop
     add word [ver_counter],VC_DELTA
     add word [hor_counter],HC_DELTA
     call handle_animation
@@ -43,6 +45,7 @@ CODE
     jmp .event_loop
 
 .paint_window:
+	mcall	9,proc_info,-1
     mov eax,12
     mov ebx,1
     mcall
@@ -54,12 +57,15 @@ CODE
     mov edi,title
     mcall
 
+    test [proc_info.wnd_state], 0x04
+    jnz @f
+
     mov eax,7
     mov ebx,virtual_screen_32
     mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
     xor edx,edx
     mcall
-
+  @@:
     mov eax,12
     mov ebx,2
     mcall
@@ -176,5 +182,7 @@ UDATA
 
   sinetable:
   	rw 256
+
+  proc_info	process_information
 
 MEOS_APP_END
