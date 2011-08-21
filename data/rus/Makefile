@@ -49,7 +49,6 @@ FASM_PROGRAMS:=\
  calc:CALC:$(PROGS)/other/calc/trunk/calc.asm \
  calendar:CALENDAR:$(PROGS)/system/calendar/trunk/calendar.asm \
  commouse:COMMOUSE:$(PROGS)/system/commouse/trunk/commouse.asm \
- copyr:COPYR:$(PROGS)/fs/copyr/trunk/copyr.asm \
  cpu:CPU:$(PROGS)/system/cpu/trunk/cpu.asm \
  cpuid:CPUID:$(PROGS)/system/cpuid/trunk/CPUID.ASM \
  desktop:DESKTOP:$(PROGS)/system/desktop/trunk/desktop.asm \
