@@ -3,401 +3,308 @@ use32
     db  'MENUET01'
     dd  0x01,start,i_end,e_end,e_end,0,0
 
+include '../../../proc32.inc'
+include '../../../macros.inc'
 
-BUTTON_SIDE		equ	16		; button are squares
-BUTTON_SPACE		equ	19		; space between cols and rows
+BUTTON_SIDE			equ	16	; button are squares
+BUTTON_SPACE			equ	19	; space between cols and rows
+BUTTON_ID_SHIFT			equ	2	; button_id = character + BUTTON_ID_SHIFT
+TABLE_BEGIN_X			equ	2
+TABLE_BEGIN_Y			equ	2
+
+FOCUS_SQUARE_COLOR		equ	0x000080FF
+PAGE_SWITCHER_BLINK_COLOR	equ	0x00808080
 
 
 start:
-	call	get_skin_height
-
 still:
-	mov	eax, 10
-	int	0x40
-
+	mcall	10
 	dec	eax
-	jnz	@f
-	call	redraw
-    @@:	dec	eax
-	jnz	@f
-	call	key
-    @@:	dec	eax
-	jnz	@f
-	call	button
-    @@:	jmp	still
-
-
-get_skin_height:
-
-	mov	eax, 48
-	mov	ebx, 4
-	int	0x40
-
-	mov	[skin_height], eax
-	ret
-
-
-redraw:
-	mov	eax, 12
-	mov	ebx, 1
-	int	0x40
-
-	mov	eax, 0
-	mov	ebx, 300*0x10000+317
-	mov	ecx, 300*0x10000+184
-	add	ecx, [skin_height]
-	mov	edx, 0x33F0F0F0			; skinned, resizeable
-	mov	esi, 0x80808080			; title color
-	mov	edi, window_title
-	int	0x40
-
-	call	draw_table
-	call	draw_codes
-	call	draw_page_switcher
-
-	mov	eax, 12
-	mov	ebx, 2
-	int	0x40
-	ret
-
-
-key:
-	mov	eax, 2
-	int	0x40
-	ret
+	jz	redraw
+	dec	eax
+	jz	key
 
 button:
-	mov	eax, 17
-	int	0x40
-	cmp	eax, 1
-	jnz	@f
-	ret
-    @@:	shr	eax, 8
-	cmp	eax, 1
-	jz	quit
-	cmp	ax, 0xFFAA
-	jnz	.change_focus
-	xor	bx, bx
-	mov	bl, [symbol_start]
-	add	bx, 2
-	mov	cx, bx
-	add	cx, 128
-    @@:	mov	eax, 8
-	mov	edx, 0x80000000
-	add	dx, bx
-	int	0x40
-	cmp	bx, cx
-	jz	@f
-	inc	bx
-	jmp	@b
+	mcall	17
+	shr	eax, 8
 
-    @@:	add	[symbol_start], 128		; change page
-	add	[symbol_focused], 128
-	call	draw_table
-	call	draw_codes
-	mov	[redraw_flag], 1		; for page_switcher this means visual blink (color changing)
-	call	draw_page_switcher
-	mov	eax, 5
-	mov	ebx, 10
-	int	0x40
-	mov	[redraw_flag], 0
-	call	draw_page_switcher
-	ret
-
+	cmp	eax, 1
+	je	quit
+	cmp	ax, 0xFFAA			; page switcher
+	je	.switch_page			; any button with a character
   .change_focus:
 	mov	bl, [symbol_focused]
 	mov	[symbol_unfocused], bl
-	shl	eax, 8
-	sub	ah, 2
-	mov	[symbol_focused], ah
-	mov	[redraw_flag], 1		; for table this means redraw only focused and unfocused buttons
-	call	draw_table
+	sub	ax, BUTTON_ID_SHIFT		; get the corresponding character
+	mov	[symbol_focused], al
+	stdcall	draw_table, 0
 	call	draw_codes
-	mov	[redraw_flag], 0
-	ret
+	jmp	still
+  .switch_page:
+	movzx	bx, [symbol_start]
+	add	bx, BUTTON_ID_SHIFT
+	mov	cx, 128				; half of page
+	mov	edx, 0x80000000
+	mov	dx, bx
+    @@:	mcall	8
+	inc	edx
+	dec	cx
+	jnz	@b
+
+    @@:	add	[symbol_start], 128		; change page
+	add	[symbol_focused], 128
+	stdcall	draw_table, 1			; 1 means redraw the whole table
+	call	draw_codes
+	stdcall	draw_page_switcher, 1		; 1 means dark color, for blinking
+	mcall	5, 10
+	stdcall	draw_page_switcher, 0		; 0 means usual light color
+	jmp	still
+
+redraw:
+	mcall	9, proc_info, -1
+	mcall	48, 3, sys_colors, 40
+
+	mcall	12, 1
+
+	mcall	48, 4				; get skin height
+	mov	ecx, 300*0x10000+184
+	add	ecx, eax
+	mov	edx, 0x34000000
+	or	edx, [sys_colors.work]
+	mov	esi, 0x80000000
+	or	esi, [sys_colors.grab_text]
+	mcall	0, <300,315>, , , , window_title
+	test	[proc_info.wnd_state], 0x04
+	jnz	@f
+
+	stdcall	draw_table, 1
+	call	draw_codes
+	stdcall	draw_page_switcher, 0
+
+    @@:
+	mcall	12, 2
+	jmp	still
+
+key:
+	mcall	2
+	cmp	ah, 0x09			; TAB key
+	je	button.switch_page
+
+	cmp	ah, 0xB0			; left
+	jne	@f
+	mov	bl, [symbol_focused]
+	mov	[symbol_unfocused], bl
+	dec	bl
+	and	bl, 0x0f
+	and	[symbol_focused], 0xf0
+	or	[symbol_focused], bl
+	stdcall	draw_table, 0
+	call	draw_codes
+	jmp	still
+
+    @@:	cmp	ah, 0xB1			; down
+	jne	@f
+	mov	bl, [symbol_focused]
+	mov	[symbol_unfocused], bl
+	add	bl, 16
+	and	bl, 0x70
+	and	[symbol_focused], 0x8f
+	or	[symbol_focused], bl
+	stdcall	draw_table, 0
+	call	draw_codes
+	jmp	still
+
+    @@:	cmp	ah, 0xB2			; up
+	jne	@f
+	mov	bl, [symbol_focused]
+	mov	[symbol_unfocused], bl
+	sub	bl, 16
+	and	bl, 0x70
+	and	[symbol_focused], 0x8f
+	or	[symbol_focused], bl
+	stdcall	draw_table, 0
+	call	draw_codes
+	jmp	still
+
+    @@:	cmp	ah, 0xB3			; righ
+	jne	@f
+	mov	bl, [symbol_focused]
+	mov	[symbol_unfocused], bl
+	inc	bl
+	and	bl, 0x0f
+	and	[symbol_focused], 0xf0
+	or	[symbol_focused], bl
+	stdcall	draw_table, 0
+	call	draw_codes
+	jmp	still
+	jne	@f
+
+    @@:
+	jmp	still
 
 
-draw_table:
+
+proc	draw_table _full_redraw
 
 	mov	al, [symbol_start]
 	mov	[symbol_current], al
 
   .next_button:
-	push	[button_x]
-	pop	[button_cur_x]
-	push	[button_y]
-	pop	[button_cur_y]
 
+	xor	edi, edi			; character focus flag
 	mov	al, [symbol_current]
-	mov	[button_cur_id], al
-
-	mov	[is_active], 0
-
-	mov	al, [symbol_focused]
-	cmp	[symbol_current], al
-	jnz	@f
-	mov	byte[is_active], 1
-    @@:	cmp	[redraw_flag], 1
-	jnz	.draw				; if redraw_flag is zero, we should redraw the whole table
-	mov	al, [symbol_focused]
-	cmp	[symbol_current], al
-	jz	.draw
-	mov	al, [symbol_unfocused]
-	cmp	[symbol_current], al
-	jz	.draw
+	cmp	al, [symbol_focused]
+	jne	@f
+	inc	edi
+    @@:	cmp	[_full_redraw], 1
+	je	.draw
+	cmp	al, [symbol_focused]
+	je	.draw
+	cmp	al, [symbol_unfocused]		; previously focused, should redraw to clear focus
+	je	.draw
 	jmp	.skip				; skip button if it isn't (un)focused
 
   .draw:
 	call	draw_button
   .skip:
-	mov	al, [symbol_start]
-	add	al, 127				; end of current page
-	cmp	[symbol_current], al		; the last on page?
-	jb	@f
-	mov	[button_x], 2
-	mov	[button_y], 2
+	mov	bl, [symbol_start]
+	add	bl, 127				; end of current page
+	cmp	[symbol_current], bl		; the last on page?
+	jne	@f
+	mov	[button_x], TABLE_BEGIN_X
+	mov	[button_y], TABLE_BEGIN_Y
 	ret
     @@:	inc	[symbol_current]
 	add	[button_x], BUTTON_SPACE
 	cmp	[button_x], 306			; the last in row?
-	jae	@f
+	jne	.next_button
+	add	[button_y], BUTTON_SPACE	; next row
+	mov	[button_x], TABLE_BEGIN_X
 	jmp	.next_button
-    @@:	add	[button_y], BUTTON_SPACE	; next row
-	mov	[button_x], 2
-	jmp	.next_button
-
-
 	ret
+endp
 
 
-draw_button:
-	mov	eax, 8
-	mov	ebx, [button_cur_x]
+proc	draw_button
+	mov	ebx, [button_x]
 	shl	ebx, 16
-	add	ebx, BUTTON_SIDE
-	mov	ecx, [button_cur_y]
+	mov	bx, BUTTON_SIDE
+	mov	ecx, [button_y]
 	shl	ecx, 16
-	add	ecx, BUTTON_SIDE
+	mov	cx, BUTTON_SIDE
 	mov	edx, 0x80000000
-	add	dl, [button_cur_id]
-	add	edx, 2
-	mov	eax, 8
-	int	0x40
-
+	mov	dl, [symbol_current]
+	add	edx, BUTTON_ID_SHIFT
+	mcall	8, , ,
+	and	edx, 0x7FFFFFFF
 	or	edx, 0x20000000
-	add	edx, 0x80000000
-	mov	esi, 0x00F0F0F0			; button color
-	int	0x40
+	mcall	, , , , [sys_colors.work_button]
 
-	cmp	byte[is_active], 1
-	jz	@f
+	test	edi, edi			; is focused?
+	jz	.symbol				; draw only character, not selection square
+  .focus_frame:					; draw a blue square (selection), 8 segments
+	mov	esi, [button_x]
+	mov	edi, [button_y]
+
+	mov	bx, si
+	shl	ebx, 16
+	mov	bx, si
+	add	bx, BUTTON_SIDE
+	mov	cx, di
+	shl	ecx, 16
+	mov	cx, di
+	mcall	38, , , FOCUS_SQUARE_COLOR
+	add	ecx, 0x00010001
+	mcall
+	add	ecx, (BUTTON_SIDE-2)*0x10000+(BUTTON_SIDE-2)
+	mcall
+	add	ecx, 0x00010001
+	mcall
+
+	mov	bx, si
+	shl	ebx, 16
+	mov	bx, si
+	mov	cx, di
+	shl	ecx, 16
+	mov	cx, di
+	add	ecx, 2*0x10000+(BUTTON_SIDE-2)
+	mcall	38, , ,
+	add	ebx, 0x00010001
+	mcall
+	add	ebx, (BUTTON_SIDE-2)*0x10000+(BUTTON_SIDE-2)
+	mcall
+	add	ebx, 0x00010001
+	mcall
+
   .symbol:
-	mov	eax, 4
-	mov	ebx, [button_cur_x]
+	mov	ebx, [button_x]
 	add	ebx, 6
 	shl	ebx, 16
-	add	ebx, [button_cur_y]
+	add	ebx, [button_y]
 	add	ebx, 5
-	xor	ecx, ecx
-	mov	edx, symbol_current
-	mov	esi, 1
-	int	0x40	
+	mcall	4, , [sys_colors.work_button_text], symbol_current, 1
+
 	ret
-    @@:						; draw a blue square (selection), 8 lines
-	mov	eax, 38
-	mov	ebx, [button_cur_x]
-	shl	ebx, 16
-	add	ebx, [button_cur_x]
-	add	ebx, BUTTON_SIDE-1
-	mov	ecx, [button_cur_y]
-	shl	ecx, 16
-	add	ecx, [button_cur_y]
-	mov	edx, 0x000080FF			; square color
-	int	0x40
-
-	mov	ebx, [button_cur_x]
-	shl	ebx, 16
-	add	ebx, [button_cur_x]
-	mov	ecx, [button_cur_y]
-	shl	ecx, 16
-	add	ecx, [button_cur_y]
-	add	ecx, BUTTON_SIDE-1
-	int	0x40
-
-	mov	ebx, [button_cur_x]
-	inc	ebx
-	shl	ebx, 16
-	add	ebx, [button_cur_x]
-	inc	ebx
-	add	ebx, BUTTON_SIDE-1
-	mov	ecx, [button_cur_y]
-	inc	ecx
-	shl	ecx, 16
-	add	ecx, [button_cur_y]
-	inc	ecx
-	int	0x40
-
-	mov	ebx, [button_cur_x]
-	inc	ebx
-	shl	ebx, 16
-	add	ebx, [button_cur_x]
-	inc	ebx
-	mov	ecx, [button_cur_y]
-	inc	ecx
-	shl	ecx, 16
-	add	ecx, [button_cur_y]
-	inc	ecx
-	add	ecx, BUTTON_SIDE-2
-	int	0x40
-
-	mov	ebx, [button_cur_x]
-	add	ebx, BUTTON_SIDE-1
-	shl	ebx, 16
-	add	ebx, [button_cur_x]
-	add	ebx, BUTTON_SIDE-1
-	mov	ecx, [button_cur_y]
-	inc	ecx
-	shl	ecx, 16
-	add	ecx, [button_cur_y]
-	add	ecx, BUTTON_SIDE-1
-	int	0x40
-
-	mov	ebx, [button_cur_x]
-	inc	ebx
-	shl	ebx, 16
-	add	ebx, [button_cur_x]
-	add	ebx, BUTTON_SIDE-2
-	mov	ecx, [button_cur_y]
-	add	ecx, BUTTON_SIDE-1
-	shl	ecx, 16
-	add	ecx, [button_cur_y]
-	add	ecx, BUTTON_SIDE-1
-	int	0x40
-
-	mov	ebx, [button_cur_x]
-	add	ebx, BUTTON_SIDE
-	shl	ebx, 16
-	add	ebx, [button_cur_x]
-	add	ebx, BUTTON_SIDE
-	mov	ecx, [button_cur_y]
-	shl	ecx, 16
-	add	ecx, [button_cur_y]
-	add	ecx, BUTTON_SIDE-1
-	int	0x40
-
-	mov	ebx, [button_cur_x]
-	shl	ebx, 16
-	add	ebx, [button_cur_x]
-	add	ebx, BUTTON_SIDE
-	mov	ecx, [button_cur_y]
-	add	ecx, BUTTON_SIDE
-	shl	ecx, 16
-	add	ecx, [button_cur_y]
-	add	ecx, BUTTON_SIDE
-	int	0x40
-
-	jmp	.symbol
+endp
 
 
-draw_page_switcher:
+proc	draw_page_switcher _blinking
 
-	mov	eax, 8
-	mov	edx, 0x8000FFAA
-	int	0x40
+	mcall	8, , , 0x8000FFAA
 
-	mov	esi, 0x00F0F0F0
-	cmp	[redraw_flag], 1
-	jnz	@f
-	mov	esi, 0x00808080
-    @@:	mov	eax, 8
-	mov	ebx, 2*0x10000+60
-	mov	ecx, 157*0x10000+19
-	mov	edx, 0x2000FFAA
-	int	0x40
+	mov	esi, [sys_colors.work_button]
+	cmp	[_blinking], 1			; blinking?
+	jne	@f
+	mov	esi, PAGE_SWITCHER_BLINK_COLOR
+    @@:	mcall	, <2,60>, <157,19>, 0x2000FFAA
 
-	cmp	[symbol_start], 0
-	jnz	@f
-	mov	eax, 4
-	mov	ebx, 11*0x10000+164
 	mov	ecx, 0x80000000
+	or	ecx, [sys_colors.work_button_text]
 	mov	edx, string_000_127
-	int	0x40
+	cmp	[symbol_start], 0		; first page?
+	je	@f
+	mov	edx, string_128_255		; ok, the second one
+    @@:	mcall	4, <11,164>,
 	ret
+endp
 
-    @@:	mov	eax, 4
-	mov	ebx, 11*0x10000+164
+
+proc	draw_codes
+
 	mov	ecx, 0x80000000
-	mov	edx, string_128_255
-	int	0x40
-	ret
-
-
-draw_codes:
-
-	mov	eax, 13
-	mov	ebx, 80*0x10000+220
-	mov	ecx, 164*0x10000+9
-	mov	edx, 0x00F0F0F0
-	int	0x40
-
-	mov	eax, 4
-	mov	ebx, 80*0x10000+164
-	mov	ecx, 0x80000000
-	mov	edx, string_ASCII_CODE
-	int	0x40
-
-	mov	ebx, 180*0x10000+164
-	mov	ecx, 0x80000000
-	mov	edx, string_ASCII_HEX_CODE
-	int	0x40
-
-	mov	eax, 47
-	mov	ebx, 0x00030000			; 3 digits, dec
-	xor	ecx, ecx
-	add	cl, [symbol_focused]
-	mov	edx, 152*0x10000+164
-	xor	esi, esi
-	int	0x40
-
-	mov	ebx, 0x00020100			; 2 digits, hex
-	mov	edx, 276*0x10000+164
-	int	0x40
+	or	ecx, [sys_colors.work_text]
+	mcall	4, <80,164>, , string_ASCII_CODE
+	mcall	, <180,164>, , string_ASCII_HEX_CODE
+	movzx	ecx, [symbol_focused]
+	mov	esi, 0x40000000
+	or	esi, [sys_colors.work_text]
+	mcall	47, 0x00030000, , <152,164>, , [sys_colors.work]
+	mcall	, 0x00020100, , <276,164>,
 
 	ret
+endp
 
 
 quit:
-	mov	eax, -1
-	int	0x40
+	mcall	-1
 
-window_title		db 'ASCIIVju v0.3 R3',0
 
-string_000_127		db '000-127',0
-string_128_255		db '128-255',0
-string_ASCII_CODE	db 'ASCII Code:    ',0
-string_ASCII_HEX_CODE	db 'ASCII Hex-Code:   ',0
-
-skin_height		dd 0
+szZ window_title		,'ASCIIVju v0.4'
+szZ string_000_127		,'000-127'
+szZ string_128_255		,'128-255'
+szZ string_ASCII_CODE		,'ASCII Code:    '
+szZ string_ASCII_HEX_CODE	,'ASCII Hex-Code:   '
 
 button_x		dd 2
 button_y		dd 2
 
 symbol_current		db 0
 symbol_start		db 0
-button_cur_x		dd 0
-button_cur_y		dd 0
-button_cur_id		db 0
-
-db 0,0,0					; unused
-
-is_active		dd 0			; is current symbol selected?
 
 symbol_unfocused	db 0
 symbol_focused		db 0
-redraw_flag		dd 0
-
-db 0,0,0,0					; unused
 i_end:
-
-rb 0x500					;stack
+proc_info		process_information
+sys_colors		system_colors
+rb 0x400					;stack
 e_end:
