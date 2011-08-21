@@ -19,6 +19,7 @@ use32
 	dd	0x100000	; required amount of memory
 	dd	0x00000000	; reserved=no extended header
 
+include '../../../macros.inc'
 include "aspapi.inc"
 SCREEN_WIDTH   equ    320
 SCREEN_HEIGHT  equ    200
@@ -160,8 +161,11 @@ end virtual
 
 
 red:
+	mcall	9,proc_info,-1
    draw_window
 MAIN:
+	test	[proc_info.wnd_state], 0x04
+	jnz	still
    mov ecx, NUM_PARTS 
    mov ebp, particles 
    .advance_particles: 
@@ -363,6 +367,7 @@ particles: times NUM_PARTS dd 0, 0, 0,	      0,       0
 blur_right_flag: dd 0 
 ;include 'Dex.inc'
 I_END:
+proc_info	process_information
 pal	     rb 256*4	;dup(0)
 ;pal             dd      256   dup(0)
 ;buffer       rb 1024*64
