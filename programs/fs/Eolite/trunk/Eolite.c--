@@ -4,8 +4,8 @@
 
 //не выделяет, если переименовать в /rd/1/ -----   строчка 392
 //при открытии программы с параметром выделяет последний файл в папке
+//немного кривая прокрутка
 
-#codesize  
 #include "lib\kolibri.h--"
 #include "lib\memory.h--"
 #include "lib\edit_box_lib.h--"
@@ -15,7 +15,7 @@
 
 
 //переменные
-#define title "Eolite File Manager v0.98.9"
+#define title "Eolite File Manager v0.99"
 #define videlenie 0x94AECE //0xFEA4B7,0x8BCDFF,0xB8C9B8}; //цвет выделенного элемента из списка файлов
 byte toolbar_buttons_x[6]={9,46,85,134,167,203};
 //
@@ -105,6 +105,7 @@ int pressed_y;
 	//
 	IF (param[0]<>'')
 	{
+		IF (strcmp(#path,#param)==0) copystr("/sys/",#path); //это потому что если запустить Eolite '/rd/1/' будет пустое окно
 		copystr(#param,#edit_path);
 		Goto_edit_path();
 	} ELSE Open_Dir(#path,2); //был ли запуск с параметром
@@ -146,7 +147,7 @@ int pressed_y;
 					IF (m.vert==65535) IF (curbtn==0) FileList_ReDraw(-3); ELSE FileList_ReDraw(-1);
 					IF (m.vert==1) IF (curbtn==but_num-1) FileList_ReDraw(3); ELSE FileList_ReDraw(1);
 					//скролл
-					if (m.x>=Form.width-21) && (m.x<=Form.width-6) while (m.lkm)
+					if (m.x>=Form.width-21) && (m.x<=Form.width-6) && (m.y>56) while (m.lkm)
 					{
 						IF (scroll_size/2+57>m.y) || (m.y<0) || (m.y>4000) m.y=scroll_size/2+57; //если курсор над окном
 						id=za_kadrom; //сохраняем старое количество
@@ -165,12 +166,22 @@ int pressed_y;
 				IF (del_active==1) {IF (id==301) || (id==302) Del_File(302-id); break;}
 				switch(id) 
 				{
-					CASE 21: GoBack(); break;//Назад
-					CASE 23: IF (strcmp(#path,"/")<>0) Dir_Up(); break;//up!
-					CASE 24: key=24; //cut
-					CASE 25: goto CTRLC_MARK; //copy
-					CASE 26: Paste(); break;//paste
-					CASE 27: Goto_edit_path(); break; //goto edit_path
+					CASE 21: //Назад
+							GoBack();
+							break;
+					CASE 23: //up!
+							IF (strcmp(#path,"/")<>0) Dir_Up();
+							break;
+					CASE 24: //cut
+							key=24; 
+					CASE 25: //copy
+							goto CTRLC_MARK;
+					CASE 26: //paste
+							Paste();
+							break;
+					CASE 27: //goto edit_path
+							Goto_edit_path();
+							break; 
 					CASE 31...33: //sort
 							IF (sort_num==id-30) break;
 							IF(sort_num==1)DrawBar(onLeft(192,168)/2+210,45,6,9,0xE4DFE1);
@@ -180,49 +191,49 @@ int pressed_y;
 							Open_Dir(#path,1);
 							break; 
 					case 30: //about
-						CreateThread(#authors,#stak); 
-						break;
+							CreateThread(#authors,#stak); 
+							break;
 					case 77: //actions
-						IF (show_actions==1) show_actions=0; ELSE show_actions=1;
-						Actions();
-						break;
+							IF (show_actions==1) show_actions=0; ELSE show_actions=1;
+							Actions();
+							break;
 					case 80: //rename
-						goto REN_MARK; 
+							goto REN_MARK; 
 					case 81: //Delete file
-						Del_Form();
-						break;
+							Del_Form();
+							break;
 					case 82: //create folder
-						NEW_FOLDER_MARK:
-						copystr(#path, #temp);
-						copystr("New folder", #temp+strlen(#temp));
-						CreateFolder(#temp);
-						IF (EAX==0){
-							SelectFile("New folder");
-							goto REN_MARK;
-						}
-						ELSE  ShowMessage("Folder can not be created.");
-						break;
+							NEW_FOLDER_MARK:
+							copystr(#path, #temp);
+							copystr("New folder", #temp+strlen(#temp));
+							CreateFolder(#temp);
+							IF (EAX==0){
+								SelectFile("New folder");
+								goto REN_MARK;
+							}
+							ELSE  ShowMessage("Folder can not be created.");
+							break;
 					case 100...120:
-						DEVICE_MARK:
-						copystr(id-100*304+ devbuf+72, #path);
-						IF (path[0]=='r') copystr("/rd/1",#file_path);
-						ELSE {
-								copystr("/", #file_path);
-								copystr(#path, #file_path+strlen(#file_path));
-							 }
-						GOTO OPEN_DEV;
+							DEVICE_MARK:
+							copystr(id-100*304+ devbuf+72, #path);
+							IF (path[0]=='r') copystr("/rd/1",#file_path);
+							ELSE {
+									copystr("/", #file_path);
+									copystr(#path, #file_path+strlen(#file_path));
+								 }
+							GOTO OPEN_DEV;
 					default:
-						if (id<200) break; //кнопки из списка файлов
-						IF (curbtn!=id-201) {FileList_ReDraw(id-201-curbtn); break;}
-						else OPEN_MARK:
-						if (!isdir) GetIni(0); ELSE
-						IF (strcmp(#file_name,"..")==0) Dir_Up(); ELSE
-						{	OPEN_DEV:
-								copystr(#file_path, #path);
-								copystr("/", #path+strlen(#path));
-								za_kadrom=curbtn=0;
-								Open_Dir(#path,1);
-						}
+							if (id<200) break; //кнопки из списка файлов
+							IF (curbtn!=id-201) {FileList_ReDraw(id-201-curbtn); break;}
+							else OPEN_MARK:
+							if (!isdir) GetIni(0); ELSE
+							IF (strcmp(#file_name,"..")==0) Dir_Up(); ELSE
+							{	OPEN_DEV:
+									copystr(#file_path, #path);
+									copystr("/", #path+strlen(#path));
+									za_kadrom=curbtn=0;
+									Open_Dir(#path,1);
+							}
 				}
 				break;
 //Key pressed-----------------------------------------------------------------------------
@@ -242,8 +253,19 @@ int pressed_y;
 								id=key-110;
 								IF (id-100>=dev_num) break;
 								GOTO DEVICE_MARK;
-						case   8: GoBack(); break; //Назад
-						case 014: MoveSize(80,80,OLD,OLD); RunProgram("/sys/File Managers/Eolite", #path); break; //новое окно
+						case   8: //Назад
+								GoBack();
+								break; 
+						case 004: //Ctrl+D рис на раб стол растянуть
+								copystr("\\S__", #temp);
+								copystr(#file_path, #temp+strlen(#temp));
+								RunProgram("/sys/media/kiv", #temp);
+								WriteDebug(#temp);
+								break;
+						case 014: //Ctrl+N новое окно
+								IF (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
+								RunProgram("/sys/File Managers/Eolite", #path);
+								break; 
 						case 024: //Ctrl+X cut
 						case 003: //Ctrl+C copy
 								CTRLC_MARK:
@@ -341,7 +363,8 @@ inline fastcall void draw_window()
 	  IF (Form.width<480) MoveSize(OLD,OLD,480,OLD);
 	//toolbar buttons
 	PutPaletteImage(#toolbar,246,39,0,0,#toolbar_pal);
-	FOR (j=0; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,0xE4DFE1);
+	FOR (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,0xE4DFE1);
+	FOR (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,0xE4DFE1);
 	//полоса адреса
 	edit1.width=Form.width-314;
 	DrawBar(246,0,onLeft(246,60),12,0xE4DFE1); //фон над полосой адреса
@@ -423,17 +446,18 @@ void FileList_ReDraw(int curbtn_)
 			{
 				//WriteDebug("1");
 				za_kadrom=count-but_num;
+				//WriteDebug(IntToStr(curbtn));
+				//WriteDebug(IntToStr(curbtn_));
 				curbtn=curbtn_-za_kadrom+curbtn;
 				}
 			ELSE
 			{
-				//WriteDebug("2");
 				za_kadrom+=curbtn_+curbtn-but_num+1;
-				//curbtn=but_num-1;
 				curbtn=but_num-1;
 			}
 			IF (curbtn<0) || (curbtn>but_num)
 			{
+				//WriteDebug(IntToStr(curbtn));
 				//ShowMessage("Bug found! Tell it Leency!");
 				curbtn=but_num-1;
 			}

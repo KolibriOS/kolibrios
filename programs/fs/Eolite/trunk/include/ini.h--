@@ -54,7 +54,7 @@ void GetIni(byte onload)
 					errornum=RunProgram(#option,#file_path);
 					IF (errornum<0) //если ошибочка вышла при запуске
 					{
-						WriteDebug(#option);
+						//WriteDebug(#option);
 						Write_Debug_Error(errornum); 
 					}
 					return;
@@ -71,7 +71,7 @@ void GetIni(byte onload)
 	IF (file_path) errornum=RunProgram(#file_path,''); 
 	IF (errornum<0) //если ошибочка вышла при запуске
 	{
-		WriteDebug(#file_path);
+		//WriteDebug(#file_path);
 		Write_Debug_Error(errornum); 
 	}
 }
