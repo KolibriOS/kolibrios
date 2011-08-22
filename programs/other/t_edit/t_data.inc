@@ -89,7 +89,7 @@ boxlib_import:
 	ted_but_reverse dd sz_ted_but_reverse
 	ted_but_find_next dd sz_ted_but_find_next
 	ted_text_colored dd sz_ted_text_colored
-	;version_text_edit dd sz_ted_version
+	version_text_edit dd sz_ted_version
 
 dd 0,0
 	alib_init2 db 'lib_init',0
@@ -164,7 +164,7 @@ dd 0,0
 	sz_ted_but_reverse		db 'ted_but_reverse',0
 	sz_ted_but_find_next	db 'ted_but_find_next',0
 	sz_ted_text_colored		db 'ted_text_colored',0
-	;sz_ted_version db 'version_text_edit',0
+	sz_ted_version db 'version_text_edit',0
 
 align 4
 proclib_import:
@@ -570,6 +570,14 @@ msgbox_9:
   db 0
   db 'Закрыть',0
   db 0
+msgbox_10:
+  db 1,0
+  db 'Внимание',0
+  db 'Вы используете старую версию библиотеки ',39,'box_lib.obj',39,'.',13,\
+	'Попробуйте найти библиотеку в которой',13,\
+	'элемент ',39,'t_edit',39,' имеет версию 3.',0
+  db 'Закрыть',0
+  db 0
 
 txtFile db 'Файл:',0
 txtFindCapt db 'Поиск',0
@@ -676,6 +684,14 @@ msgbox_9:
   .fdp:
   rb 100
   db 0
+  db 'Close',0
+  db 0
+msgbox_10:
+  db 1,0
+  db 'Warning',0
+  db 'You are using an older version of the library ',39,'box_lib.obj',39,'.',13,\
+	'Try to find a library in which the element',13,\
+	39,'t_edit',39,' has a version 3.',13,0
   db 'Close',0
   db 0
 

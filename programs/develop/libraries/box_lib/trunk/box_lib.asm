@@ -48,7 +48,7 @@ use_checkbox_mouse	;macro reveals processing function of the mouse.
 ;CheckBox2
 ;----------------------------------------------------
 align 16
-_init_checkbox2		;macro for init checkbox
+_init_checkbox2 	;macro for init checkbox
 align 16
 use_checkbox_draw2	;macro reveals the function of the display.
 align 16
@@ -227,7 +227,7 @@ dd	sz_ted_but_redo,		ted_but_redo
 dd	sz_ted_but_reverse,		ted_but_reverse
 dd	sz_ted_but_find_next,		ted_but_find_next
 dd	sz_ted_text_colored,		ted_text_colored
-dd	sz_ted_version, 		0x00000002
+dd	sz_ted_version, 		0x00000003
 
 dd	0,0
 

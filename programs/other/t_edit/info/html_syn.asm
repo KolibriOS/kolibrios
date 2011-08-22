@@ -2,10 +2,12 @@ macro wo txt,lf1,p1,p2,p3{
 @@: db txt
 rb @b+40-$
 dd lf1
-db p1,p2+0,p3
+db p1
+dw p2+0
+db p3
 }
 count_colors_text dd (text-color_wnd_text)/4
-count_key_words dd (f1-text)/47
+count_key_words dd (f1-text)/48
 color_cursor dd 0xffd000
 color_wnd_capt dd 0x008080
 color_wnd_work dd 0xffffff

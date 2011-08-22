@@ -361,9 +361,9 @@ align 4
 buf db BUF_SIZE dup(0) ;буфер для копирования | вставки
 
 capt_header db 'macro wo txt,lf1,p1,p2,p3{',13
-	db '@@: db txt',13,'rb @b+40-$',13,'dd lf1',13,'db p1,p2+0,p3',13,'}',13
+	db '@@: db txt',13,'rb @b+40-$',13,'dd lf1',13,'db p1',13,'dw p2+0',13,'db p3',13,'}',13
 	db 'count_colors_text dd (text-color_wnd_text)/4',13
-	db 'count_key_words dd (f1-text)/47',13,0
+	db 'count_key_words dd (f1-text)/48',13,0
 col_1 db 'color_cursor dd ',0	;+ 98 цвет курсора
 col_2 db 'color_wnd_capt dd ',0 ;+102 цвет полей вокруг окна
 col_3 db 'color_wnd_work dd ',0 ;+106 цвет фона окна

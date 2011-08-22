@@ -125,6 +125,7 @@ mov ecx,ebx
   .filter:
   add eax,304
   loop @b
+  stdcall dword[tl_cur_beg],tree1 ;ставим курсор на начало списка
 .end_dir_init:
 
 ;--- load color option file ---
@@ -312,7 +313,7 @@ get_wnd_in_focus:
 	;@@:
 	ret
 
-hed db 'TextEditor syntax file converter 20.08.11',0 ;подпись окна
+hed db 'TextEditor syntax file converter 22.08.11',0 ;подпись окна
 
 txt122 db 'Загр. файл',0
 txt148 db 'Сохр. файл',0

@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 09.06.2010 IgorA
+; файл последний раз изменялся 22.08.2011 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -37,11 +37,12 @@ struct TexSelect
 ends
 
 struct TexColViv
-  Text rb MAX_COLOR_WORD_LEN ; слово для подсветки
-  f1 dd 0 ; справка по слову
-  wwo db ? ; whole words only
-  endc db ? ; символ конца выделения (wwo&4)
-  color db ? ; номер цвета
+	Text  rb MAX_COLOR_WORD_LEN ; слово для подсветки
+	f1    dd 0 ; справка по слову
+	flags db ? ; f1+4 флаги используемые при выделении
+	endc  db ? ; f1+5 символ конца выделения (используется при flags&4)
+	escc  db ? ; f1+6 экранирующий символ (используется при flags&4)
+	color db ? ; f1+7 номер цвета
 ends
 
 struct symbol
@@ -807,10 +808,10 @@ proc ted_init_syntax_file, edit:dword, file:dword, f_name:dword
 	loop @b
 
 	;init: ted_help_text_f1
-	mov ecx,ted_key_words_count
-	imul ecx,sizeof.TexColViv
-	add ecx,ted_key_words_data
-	mov ted_help_text_f1,ecx
+	mov ecx,ted_key_words_count ;количество ключевых слов
+	imul ecx,sizeof.TexColViv   ;размер структуры с 1-м кл. сл.
+	add ecx,ted_key_words_data  ;начало файла с кл. сл.
+	mov ted_help_text_f1,ecx    ;метка в памяти, где начинется текст со справкой
 
 	stdcall ted_init_scroll_bars,edi,1 ;меняем цвета скроллингов
 	.no_colors:
@@ -972,21 +973,30 @@ ted_iterat_next:
 
 ;input:
 ; bl = symbol end of select
+; bh = экранирующий символ (= 0 если нет проверки на них)
 ; edx = pointer to symbol struct
 ; edi = pointer to tedit struct
 ;description:
 ; найти следующую позицию указанного символа
 align 4
 ted_iterat_next_pos_char:
+	push ax
+	mov al,1 ;предыдущий символ, служит для сравнения с символом bh
 	@@:
 		cmp bl,byte[edx]
-		je @f
+		je .found
+		.no_found:
 		cmp edx,ted_tex_1
 		jle @f
+			mov al,byte[edx]
 			call ted_iterat_next
 			jmp @b
+	.found:
+		cmp bh,al
+		je .no_found
 	@@:
 	call ted_iterat_next
+	pop ax
 	ret
 
 ;input:
@@ -2121,7 +2131,7 @@ endl
       jne .if_0 ;if(Col[word_n].Text[pos]==0){
 	mov dword[endPos],edx ;eP=i;
 	ColToIndexOffset eax,ebx
-	mov bl,byte[ebx+MAX_COLOR_WORD_LEN+6]
+	mov bl,byte[ebx+MAX_COLOR_WORD_LEN+7]
 	mov byte[f_color],bl ;f_color=Col[word_n].color;
 
 mov byte[find],1
@@ -2171,7 +2181,7 @@ mov byte[find],1
 	    btr bx,2 ;3-1
 	    jae .if_7e ;if(Col[word_n].wwo&4)
 	    ColToIndexOffset eax,ebx
-	    mov bl,byte[ebx+MAX_COLOR_WORD_LEN+5]
+	    mov bx,word[ebx+MAX_COLOR_WORD_LEN+5]
 	    call ted_iterat_next_pos_char
        cmp edx,ted_tex_1
        jle .if_7e
@@ -3308,7 +3318,7 @@ proc ted_draw_help_f1
 
 		;SetTextColor
 		xor eax,eax
-		mov al,byte[edx+MAX_COLOR_WORD_LEN+6]
+		mov al,byte[edx+MAX_COLOR_WORD_LEN+7]
 		shl ax,2
 		mov ecx,ted_text_colors
 		add ecx,eax
@@ -3947,7 +3957,7 @@ proc ted_but_save_file, edit:dword, file:dword, f_name:dword
 
   stdcall ted_can_save,edi
   cmp al,0
-  je .no_save
+;  je .no_save
 
   mov ecx,ted_max_chars
   invoke mem.alloc,ecx

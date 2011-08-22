@@ -53,7 +53,7 @@ start:
 
 load_libraries l_libs_start,load_lib_end
 
-;проверка на сколько удачно загузилась наша либа
+;проверка на сколько удачно загузились библиотеки
 	mov	ebp,lib0
 	cmp	dword [ebp+ll_struc_size-4],0
 	jz	@f
@@ -64,6 +64,12 @@ load_libraries l_libs_start,load_lib_end
 	jz	@f
 	mcall -1 ;exit not correct
 @@:
+
+	cmp dword[version_text_edit],3
+	jge @f
+		stdcall [mb_create],msgbox_10,thread
+		mcall -1
+	@@:
 
 ;---------------------------------------------------------------------
 	stdcall [ted_init], tedit0
@@ -164,6 +170,7 @@ mov ecx,ebx
   .filter:
   add eax,304
   loop @b
+  stdcall dword[tl_cur_beg],tree1 ;ставим курсор на начало списка
 .end_dir_init:
 
 ;--- load color option file ---

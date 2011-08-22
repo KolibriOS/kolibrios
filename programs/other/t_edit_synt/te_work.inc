@@ -9,11 +9,12 @@ struct FileInfoBlock
 ends
 
 struct TexColViv
-  Text rb MAX_COLOR_WORD_LEN ; слово
-  f1 dd 0
-  wwo db ? ; whole words only
-  endc db ? ; символ конца выделения (wwo&4)
-  color db ? ; номер цвета
+	Text  rb MAX_COLOR_WORD_LEN ; слово для подсветки
+	f1    dd 0 ; справка по слову
+	flags db ? ; f1+4 флаги используемые при выделении
+	endc  db ? ; f1+5 символ конца выделения (используется при flags&4)
+	escc  db ? ; f1+6 экранирующий символ (используется при flags&4)
+	color db ? ; f1+7 номер цвета
 ends
 
 count_colors_text dd 1
@@ -251,8 +252,8 @@ mov byte[edi],0
 	inc edi
 
 	xor eax,eax
-	mov al,byte[ecx+MAX_COLOR_WORD_LEN+4+1] ;endc
-	cmp al,0
+	mov ax,word[ecx+MAX_COLOR_WORD_LEN+4+1] ;(escc shl 8)+endc
+	cmp ax,0 ;проверяем есть ли завершающий и экранинующий символ
 	je @f
 		stdcall str_cat_value,edi,eax
 		stdcall str_len,edi

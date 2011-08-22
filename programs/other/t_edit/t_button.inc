@@ -8,14 +8,6 @@ struct FileInfoBlock
 	FileName dd ?
 ends
 
-struct TexColViv
-  Text rb MAX_COLOR_WORD_LEN ; слово для подсветки
-  f1 dd 0 ; справка по слову
-  wwo db ? ; whole words only
-  endc db ? ; символ конца выделения (wwo&4)
-  color db ? ; номер цвета
-ends
-
 struct symbol
   c db ?    ;  +0 символ
   col db ?  ;  +1 цвет
@@ -26,7 +18,7 @@ struct symbol
 ends
 
 
-hed db 'TextEditor 25.08.10',0 ;подпись окна
+hed db 'TextEditor 22.08.11',0 ;подпись окна
 sc system_colors
 
 fn_icon db 'te_icon.bmp',0
@@ -82,7 +74,7 @@ On_SaveAndNewFile:
   ret
 
 ;description:
-; функция открытия файла без окона сообщения
+; функция открытия файла без окна сообщения
 align 4
 but_no_msg_OpenFile:
 	push eax ebx
@@ -132,6 +124,8 @@ ted_but_open_file:
 	popad
 	ret
 
+;description:
+; копирование памяти
 align 4
 proc mem_copy, source:dword, destination:dword, len:dword
   push ecx esi edi
@@ -144,6 +138,8 @@ proc mem_copy, source:dword, destination:dword, len:dword
   ret
 endp
 
+;description:
+; заполнение памяти пробелами
 align 4
 proc mem_spac, mem:dword, len:dword
   push eax ecx edi
@@ -196,6 +192,8 @@ ted_save_err_msg:
 	stdcall [mb_create],msgbox_6,thread ;message: Can-t save text file!
 	ret
 
+;description:
+; функция нажатия на кнопку [Применить] в панели синтаксиса
 align 4
 proc ted_but_open_syntax, edit:dword
   push ebx edi
@@ -216,8 +214,10 @@ proc ted_but_open_syntax, edit:dword
   ret
 endp
 
+;description:
+; вызов/скрытие панели поиска
 align 4
-proc ted_but_find ;вызов/скрытие панели поиска
+proc ted_but_find
   push edi
   mov edi,tedit0
 
@@ -241,14 +241,22 @@ ted_on_find_err:
 	stdcall [mb_create],msgbox_7,thread ;message: Can not find text
 	ret
 
+;description:
+; кнопка [Заменить] на панели
 align 4
 but_replace:
-  ret
+	; пока не сделано
+	ret
 
+;description:
+; функция поиска информации в списке ключевых слов
 align 4
 but_find_key_w:
-  ret
+	; пока не сделано
+	ret
 
+;description:
+; выделение/скрытие непечатаемых символов
 align 4
 proc but_sumb_invis, edit:dword
   push edi
@@ -261,6 +269,8 @@ proc but_sumb_invis, edit:dword
   ret
 endp
 
+;description:
+; выделение/скрытие ключевых слов
 align 4
 proc but_k_words_show, edit:dword
   push edi
@@ -277,6 +287,8 @@ proc but_k_words_show, edit:dword
   ret
 endp
 
+;description:
+; вызов/скрытие панели с файлами синтаксиса
 align 4
 proc but_synt_show, edit:dword
   push edi
