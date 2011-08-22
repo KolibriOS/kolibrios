@@ -268,24 +268,6 @@ cur_saved_data    rb 4096
 fpu_data:         rb 512
 
 ; on irq read ports
-
-irq00read         rd 16
-irq01read         rd 16
-irq02read         rd 16
-irq03read         rd 16
-irq04read         rd 16
-irq05read         rd 16
-irq06read         rd 16
-irq07read         rd 16
-irq08read         rd 16
-irq09read         rd 16
-irq10read         rd 16
-irq11read         rd 16
-irq12read         rd 16
-irq13read         rd 16
-irq14read         rd 16
-irq15read         rd 16
-
 irq_tab           rd 16
 
 mem_block_map     rb 512

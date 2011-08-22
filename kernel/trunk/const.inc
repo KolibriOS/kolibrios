@@ -771,3 +771,27 @@ end virtual
 virtual at 0
   CSYM COFF_SYM
 end virtual
+
+struc LHEAD
+{
+   .next            dd ?   ;next object in list
+   .prev            dd ?   ;prev object in list
+   .sizeof:
+}
+
+virtual at 0
+  LHEAD LHEAD
+end virtual
+
+struc IRQH
+{
+   .list            LHEAD
+   .handler         dd ?   ;handler roututine
+   .data            dd ?   ;user-specific data
+   .sizeof:
+}
+
+virtual at 0
+  IRQH IRQH
+end virtual
+

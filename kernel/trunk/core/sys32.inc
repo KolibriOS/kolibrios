@@ -40,11 +40,11 @@ iglobal
 
     ;interrupt handlers addresses (for interrupt gate construction)
         dd      irq0, irq_serv.irq_1, irq_serv.irq_2
-    if  USE_COM_IRQ
+;    if  USE_COM_IRQ
         dd      irq_serv.irq_3, irq_serv.irq_4
-    else
-        dd      p_irq3, p_irq4 ;??? нестыковка
-    end if
+;    else
+;        dd      p_irq3, p_irq4 ;??? нестыковка
+;    end if
         dd      irq_serv.irq_5,  irq_serv.irq_6,  irq_serv.irq_7
         dd      irq_serv.irq_8,  irq_serv.irq_9,  irq_serv.irq_10
         dd      irq_serv.irq_11, irq_serv.irq_12, irqD, irq_serv.irq_14, irq_serv.irq_15
@@ -190,6 +190,7 @@ unknown_interrupt:
         iretd
 
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+; bl - error vector
 show_error_parameters:
         cmp     bl, 0x06
         jnz     .no_ud
@@ -236,36 +237,11 @@ show_error_parameters:
   restore  reg_esi
   restore  reg_edi
 
-; irq1  ->  hid/keyboard.inc
-macro irqh [num] {
-  p_irq#num :
-        mov     edi, num
-        jmp     irqhandler
-}
 
-
-
-ready_for_next_irq:
-	mov	eax,5
-        mov     [check_idle_semaphore],eax
-;        mov     al, 0x20
-	add 	eax,(0x20-0x5)
-
-        out     0x20, al
-        ret
-;destroy eax
-ready_for_next_irq_1:
-	mov	eax,5
-        mov     [check_idle_semaphore],eax
-;        mov     al, 0x20
-	add 	eax,(0x20-0x5)
-        out     0xa0,al
-        out     0x20, al
-        ret
-
+align 4
 irqD:
         push  eax
-	xor   eax,eax
+        xor   eax,eax
         out   0xf0,al
         mov   al,0x20
         out   0xa0,al
@@ -274,75 +250,7 @@ irqD:
         iret
 
 
-irqh 2,3,4,5,6,7,8,9,10,11
-
-irqhandler:
-
-     mov    esi,edi          ; 1
-     shl    esi,6            ; 1
-     add    esi,irq00read    ; 1
-     shl    edi,12           ; 1
-     add    edi,IRQ_SAVE
-     mov    ecx,16
-
-   irqnewread:
-     dec    ecx
-     js     irqover
-
-     movzx  edx, word [esi]        ; 2+
-
-     test   edx, edx               ; 1
-     jz     irqover
-
-
-     mov    ebx, [edi]             ; address of begin of buffer in edi      ; + 0x0 dword - data size
-     mov    eax, 4000                                                       ; + 0x4 dword - data begin offset
-     cmp    ebx, eax
-     je     irqfull
-     add    ebx, [edi + 0x4]       ; add data size to data begin offset
-     cmp    ebx, eax               ; if end of buffer, begin cycle again
-     jb     @f
-
-     xor    ebx, ebx
-
-  @@:
-     add    ebx, edi
-     movzx  eax, byte[esi + 3]     ; get type of data being received 1 - byte, 2 - word
-     dec    eax
-     jz     irqbyte
-     dec    eax
-     jnz    noirqword
-
-     in     ax,dx
-     cmp    ebx, 3999              ; check for address odd in the end of buffer
-     jne    .odd
-     mov    [ebx + 0x10], ax
-     jmp    .add_size
-  .odd:
-     mov    [ebx + 0x10], al       ; I could make mistake here :)
-     mov    [edi + 0x10], ah
-  .add_size:
-     add    dword [edi], 2
-     jmp    nextport
-
-
-  irqbyte:
-     in     al,dx
-     mov    [ebx + 0x10],al
-     inc    dword [edi]
-  nextport:
-     add    esi,4
-     jmp    irqnewread
-
-
-   noirqword:
-   irqfull:
-   irqover:
-
-     ret
-
-
-
+align 4
 set_application_table_status:
         push eax
 
@@ -357,7 +265,7 @@ set_application_table_status:
 
         ret
 
-
+align 4
 clear_application_table_status:
         push eax
 
@@ -383,6 +291,7 @@ clear_application_table_status:
 ;  * eax = 0 - успешно
 ;  * eax = 1 - недостаточно памяти
 
+align 4
 sys_resize_app_memory:
         ; ebx = 1 - resize
         ; ecx = new amount of memory
@@ -404,6 +313,7 @@ endg
 ; param
 ;  esi= slot
 
+align 4
 terminate: ; terminate application
 
            .slot equ esp   ;locals

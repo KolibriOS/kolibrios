@@ -44,12 +44,17 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
          ret
 endp
 
+align 4
 proc get_int_handler stdcall, irq:dword
 
-	mov	eax, [irq]
-
-	mov	eax, [irq_tab + 4 * eax]
-	ret
+        mov eax, [irq]
+        cmp eax, 15
+        ja .fail
+        mov eax, [irq_tab + 4 * eax]
+        ret
+.fail:
+        xor eax, eax
+        ret
 endp
 
 align 4
