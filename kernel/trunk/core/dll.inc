@@ -158,6 +158,7 @@ align 16
 	   jnz   @f
 	   push  eax
 	   call  [fdc_irq_func]
+	   mov	[check_idle_semaphore],5
 	   pop   eax
 @@:
 
