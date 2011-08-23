@@ -16,7 +16,7 @@ iglobal
   szGetService        db 'GetService',0
   szServiceHandler    db 'ServiceHandler',0
   szAttachIntHandler  db 'AttachIntHandler',0
-  szGetIntHandler     db 'GetIntHandler', 0
+;  szGetIntHandler     db 'GetIntHandler', 0
   szFpuSave           db 'FpuSave',0
   szFpuRestore        db 'FpuRestore',0
   szReservePortArea   db 'ReservePortArea',0
@@ -91,8 +91,8 @@ kernel_export:
   dd szRegService      , reg_service
   dd szGetService      , get_service
   dd szServiceHandler  , srv_handler
-  dd szAttachIntHandler, attach_int_handler_ex
-  dd szGetIntHandler   , get_int_handler
+  dd szAttachIntHandler, attach_int_handler
+;  dd szGetIntHandler   , get_int_handler
   dd szFpuSave         , fpu_save
   dd szFpuRestore      , fpu_restore
   dd szReservePortArea , r_f_port_area

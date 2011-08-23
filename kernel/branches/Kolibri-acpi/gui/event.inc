@@ -435,10 +435,8 @@ get_event_for_app:                                 ;; used from f10,f11,f23
         jz      .no_events     ; исчерпали все биты маски, но ничего не нашли ???
         btr     ecx,eax        ; сбрасываем проверяемый бит маски
        ; переходим на обработчик этого (eax) бита
-        cmp     eax,16
-        jae     .IRQ           ; eax=[16..31]=retvals, events irq0..irq15
         cmp     eax,9
-        jae     .loop          ; eax=[9..15], ignored
+        jae     .loop          ; eax=[9..31], ignored
         cmp     eax,3
         je      .loop          ; eax=3, ignored
         ja      .FlagAutoReset ; eax=[4..8], retvals=eax+1
@@ -451,16 +449,7 @@ get_event_for_app:                                 ;; used from f10,f11,f23
   .no_events:
         xor     eax,eax
         ret
-.IRQ:
-;TODO: сделать так же, как и для FlagAutoReset (BgrRedraw,Mouse,IPC,Stack,Debug)
-        mov     edx,[irq_owner+eax*4-64] ; eax==16+irq
-        cmp     edx,[edi+TASKDATA.pid]
-        jne     .loop
-        mov     edx,eax
-        shl     edx,12
-        cmp     dword[IRQ_SAVE+edx-0x10000],0 ; edx==(16+irq)*0x1000
-        je      .loop          ; empty ???
-        ret     ; retval = eax
+
 .FlagAutoReset: ; retvals: BgrRedraw=5, Mouse=6, IPC=7, Stack=8, Debug=9
         cmp     eax,5 ; Mouse 5+1=6
         jne     @f

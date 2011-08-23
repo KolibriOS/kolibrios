@@ -316,7 +316,7 @@ __exports:
 \
           get_service,           'GetService',         \      ;
           reg_service,           'RegService',         \      ; stdcall
-          attach_int_handler_ex, 'AttachIntHandler',   \      ; stdcall
+          attach_int_handler,    'AttachIntHandler',   \      ; stdcall
           user_alloc,            'UserAlloc',          \      ; stdcall
           user_free,             'UserFree',           \      ; stdcall
           unmap_pages,           'UnmapPages',         \      ; eax, ecx

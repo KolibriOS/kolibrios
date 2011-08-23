@@ -49,6 +49,8 @@ keymap_alt:
 
   boot_memdetect    db   'Determining amount of memory',0
   boot_fonts        db   'Fonts loaded',0
+  boot_tss          db   'Setting TSSs',0
+  boot_cpuid        db   'Reading CPUIDs',0
   boot_devices      db   'Detecting devices',0
   boot_setmouse     db   'Setting mouse',0
   boot_windefs      db   'Setting window defaults',0
@@ -265,21 +267,6 @@ align 16
 cur_saved_data      rb 4096
 fpu_data:           rb 512
 
-; device irq owners
-irq_owner           rd IRQ_RESERVE ; process id
-; on irq read ports
-irq00read           rd 16 * IRQ_RESERVE
-irq_tab             rd IRQ_RESERVE
-
-irqh_tab            rd LHEAD.sizeof * IRQ_RESERVE / 4
-
-irqh_array          rd IRQH.sizeof *48 /4
-bogus_irq           rd IRQ_RESERVE
-next_irqh           rd 1
-pending_irq_set     rd 1
-
-align 16
-
 mem_block_map       rb 512
 mem_block_list      rd 64
 large_block_list    rd 31
@@ -309,6 +296,7 @@ os_stack_seg      rd 1
 
 srv.fd            rd 1
 srv.bk            rd 1
+
 
 align 16
 

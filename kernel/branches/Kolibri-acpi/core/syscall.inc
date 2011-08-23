@@ -161,11 +161,11 @@ iglobal
       dd syscall_drawline        ; 38-DrawLine
       dd sys_getbackground       ; 39-GetBackgroundSize,ReadBgrData,.
       dd set_app_param           ; 40-WantEvents
-      dd syscall_getirqowner     ; 41-GetIrqOwner
-      dd get_irq_data            ; 42-ReadIrqData
+      dd undefined_syscall       ; 41- deprecated GetIrqOwner
+      dd undefined_syscall       ; 42- deprecated ReadIrqData
       dd sys_outport             ; 43-SendDeviceData
-      dd sys_programirq          ; 44-ProgramIrqs
-      dd reserve_free_irq        ; 45-ReserveIrq and FreeIrq
+      dd undefined_syscall       ; 44- deprecated ProgramIrqs
+      dd undefined_syscall       ; 45- deprecated ReserveIrq and FreeIrq
       dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
       dd display_number          ; 47-WriteNum
       dd syscall_display_settings ; 48-SetRedrawType and SetButtonType

@@ -28,3 +28,10 @@ wait_cmos:
       jnz wait_cmos
       in  al,0x71
       mov [DRIVE_DATA],al
+	test	al,al
+	jz	@f
+	in	al,0x21
+	and	al,10111111b	; Enable IRQ6
+	out	0x21,al
+@@:
+

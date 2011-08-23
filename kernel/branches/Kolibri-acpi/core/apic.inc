@@ -114,9 +114,9 @@ APIC_init:
     stosd
     loop @B
 
-    mov ecx, 48
-    mov eax, irqh_array+IRQH.sizeof
-    mov [next_irqh], irqh_array
+    mov ecx, 47
+    mov eax, irqh_pool+IRQH.sizeof
+    mov [next_irqh], irqh_pool
 
 @@:
     mov [eax-IRQH.sizeof], eax
@@ -515,76 +515,6 @@ endp
 ; endp
 
 
-macro __list_add new, prev, next
-{
-    mov [next+LHEAD.prev], new
-    mov [new+LHEAD.next], next
-    mov [new+LHEAD.prev], prev
-    mov [prev+LHEAD.next], new
-}
-
-macro list_add new, head
-{
-    mov eax, [head+LHEAD.next]
-    __list_add new, head, eax
-}
-
-macro list_add_tail new, head
-{
-    mov eax, [head+LHEAD.prev]
-    __list_add new, eax, head
-}
 
 
-align 4
-proc attach_int_handler_ex stdcall, irq:dword, handler:dword, user_data:dword
-         locals
-           .irqh dd ?
-         endl
 
-         and [.irqh], 0
-
-         push ebx
-
-         mov  ebx, [irq]            ;irq num
-         test ebx, ebx
-         jz   .err
-
-         cmp  ebx, IRQ_RESERVE
-         jae  .err
-
-         mov  edx, [handler]
-         test edx, edx
-         jz   .err
-
-         pushfd
-         cli
-
-;allocate handler
-
-         mov ecx, [next_irqh]
-         test ecx, ecx
-         jz .fail
-
-         mov eax, [ecx]
-         mov [next_irqh], eax
-
-         mov [.irqh], ecx
-
-         mov eax, [user_data]
-         mov [ecx+IRQH.handler], edx
-         mov [ecx+IRQH.data],    eax
-
-         lea edx, [irqh_tab+ebx*8]
-         list_add_tail ecx, edx     ;clobber eax
-
-         stdcall enable_irq, [irq]
-
-.fail:
-         popfd
-.err:
-         pop ebx
-         mov eax, [.irqh]
-         ret
-
-endp

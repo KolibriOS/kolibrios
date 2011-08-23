@@ -490,19 +490,24 @@ proc ac97_irq
            mov edx, CTRL_STAT
            call [ctrl.ctrl_read32]
 
-           push eax
+           cmp eax, 0xffffffff
+           je .exit
 
            test eax, 0x40
            jnz .do_intr
 
            test eax, eax
-           jz .done
+           jz .exit
 
            mov edx, CTRL_STAT
            call [ctrl.ctrl_write32]
-           jmp .done
+.exit:
+           xor eax, eax
+           ret
 
 .do_intr:
+           push eax
+
 	   mov edx, PCM_OUT_CR_REG
 	   mov al, 0x10;               0x10
 	   call [ctrl.ctrl_write8]
@@ -541,16 +546,16 @@ proc ac97_irq
            stdcall [ctrl.user_callback], ebx
 .done:
            pop eax
-;           and eax, 0x40
+           and eax, 0x40
            mov edx, CTRL_STAT
            call [ctrl.ctrl_write32]
+           or eax, 1
 	   ret
 .skip:
 	   mov edx, PCM_OUT_CR_REG
 	   mov ax, 0x11 	      ;0x1D
 	   call [ctrl.ctrl_write8]
            jmp .done
-
 endp
 
 align 4

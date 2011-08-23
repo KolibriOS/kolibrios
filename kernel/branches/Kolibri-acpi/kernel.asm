@@ -561,11 +561,6 @@ high_code:
            mov [srv.fd], eax
            mov [srv.bk], eax
 
-           mov edi, irq_tab
-           xor eax, eax
-           mov ecx, IRQ_RESERVE
-           rep stosd
-
 ;Set base of graphic segment to linear address of LFB
         mov     eax,[LFBAddress]          ; set for gs
         mov     [graph_data_l+2],ax
@@ -615,13 +610,45 @@ high_code:
 
         call pci_irq_fixup
 
+        call    unmask_timer
+
+; SET KEYBOARD PARAMETERS
+        mov   al, 0xf6         ; reset keyboard, scan enabled
+        call  kb_write
+
+        ; wait until 8042 is ready
+        xor ecx,ecx
+      @@:
+        in     al,64h
+        and    al,00000010b
+        loopnz @b
+
+       ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
+       ; call  kb_write
+       ; call  kb_read
+       ; mov   al, 111b
+       ; call  kb_write
+       ; call  kb_read
+
+        mov   al, 0xF3       ; set repeat rate & delay
+        call  kb_write
+;        call  kb_read
+        mov   al, 0 ; 30 250 ;00100010b ; 24 500  ;00100100b  ; 20 500
+        call  kb_write
+;        call  kb_read
+     ;// mike.dld [
+        call  set_lights
+        stdcall attach_int_handler, 1, irq1, 0
+
+     ;// mike.dld ]
+
+
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
-	call	unmask_timer
-	stdcall enable_irq, 12
-        stdcall enable_irq, 1
-	stdcall enable_irq, 14
-	stdcall enable_irq, 15
+
+       stdcall enable_irq, 6                   ; FDD
+       stdcall enable_irq, 14
+       stdcall enable_irq, 15
 
 ; Enable interrupts in IDE controller
         mov     al, 0
@@ -724,12 +751,6 @@ end if
         mov   esi,boot_resirqports
         call  boot_log
         call  reserve_irqs_ports
-
-; SET PORTS FOR IRQ HANDLERS
-
-        ;mov  esi,boot_setrports
-        ;call boot_log
-        ;call setirqreadports
 
 ; SET UP OS TASK
 
@@ -911,34 +932,6 @@ first_app_found:
 	push  1
         pop   dword [CURRENT_TASK]      ; set OS task fisrt
 
-; SET KEYBOARD PARAMETERS
-        mov   al, 0xf6         ; reset keyboard, scan enabled
-        call  kb_write
-
-        ; wait until 8042 is ready
-        xor ecx,ecx
-      @@:
-        in     al,64h
-        and    al,00000010b
-        loopnz @b
-
-       ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
-       ; call  kb_write
-       ; call  kb_read
-       ; mov   al, 111b
-       ; call  kb_write
-       ; call  kb_read
-
-        mov   al, 0xF3       ; set repeat rate & delay
-        call  kb_write
-;        call  kb_read
-        mov   al, 0 ; 30 250 ;00100010b ; 24 500  ;00100100b  ; 20 500
-        call  kb_write
-;        call  kb_read
-     ;// mike.dld [
-        call  set_lights
-     ;// mike.dld ]
-
 
 ; Setup serial output console (if enabled)
 
@@ -994,9 +987,7 @@ end if
 
         cli                                     ;guarantee forbidance of interrupts.
         stdcall enable_irq, 2                   ; @#$%! PIC
-        stdcall enable_irq, 6                   ; FDD
         stdcall enable_irq, 13                  ; co-processor
-        stdcall attach_int_handler_ex, 1, irq1, 0
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
         mov [timer_ticks_enable],1              ; for cd driver
@@ -1105,58 +1096,31 @@ include "kernel32.inc"
 
 reserve_irqs_ports:
 
-        push eax
-        xor	eax,eax
-		inc	eax
-        mov  byte [irq_owner+4*0],al		;1    ; timer
-        ;mov  [irq_owner+4*1], 1    ; keyboard
-        mov  byte [irq_owner+4*6],al		;1    ; floppy diskette
-        mov  byte [irq_owner+4*13],al	;1   ; math co-pros
-        mov  byte [irq_owner+4*14],al	;1   ; ide I
-        mov  byte [irq_owner+4*15],al	;1   ; ide II
-        pop  eax
 
 ; RESERVE PORTS
-	push  4
-        pop   dword [RESERVED_PORTS]	;,edi
+        mov eax, RESERVED_PORTS
+        mov ecx, 1
 
-	push  1
-        pop   dword [RESERVED_PORTS+16+0]	;,dword 1
-        and   dword [RESERVED_PORTS+16+4],0	;,dword 0x0
-        mov   dword [RESERVED_PORTS+16+8],0x2d	;,dword 0x2d
+        mov [eax], dword 4
 
-	push  1
-        pop   dword [RESERVED_PORTS+32+0]	;,dword 1
-        push  0x30
-        pop   dword [RESERVED_PORTS+32+4]	;,dword 0x30
-	push  0x4d
-        pop   dword [RESERVED_PORTS+32+8]	;,dword 0x4d
+        mov [eax+16], ecx
+        mov [eax+16+4], dword 0
+        mov [eax+16+4], dword 0x2D
 
-	push  1
-        pop   dword [RESERVED_PORTS+48+0]	;,dword 1
-	push  0x50
-        pop   dword [RESERVED_PORTS+48+4]	;,dword 0x50
-        mov   dword [RESERVED_PORTS+48+8],0xdf	;,dword 0xdf
+        mov [eax+32], ecx
+        mov [eax+32+4], dword 0x30
+        mov [eax+32+8], dword 0x4D
 
-	push  1
-        pop   dword [RESERVED_PORTS+64+0]	;,dword 1
+        mov [eax+48], ecx
+        mov [eax+48+4], dword 0x50
+        mov [eax+28+8], dword 0xDF
 
-        mov   dword [RESERVED_PORTS+64+4],0xe5	;,dword 0xe5
-        mov   dword [RESERVED_PORTS+64+8],0xff	;,dword 0xff
+        mov [eax+64], ecx
+        mov [eax+64+4], dword 0xE5
+        mov [eax+64+8], dword 0xFF
 
         ret
 
-setirqreadports:
-
-        mov   [irq00read+12*4*16],dword 0x60 + 0x01000000  ; read port 0x60 , byte
-        and   dword [irq00read+12*4*16],0                   ; end of port list
-;        mov   [irq12read+4],dword 0                  ; end of port list
-        ;mov   [irq04read+0],dword 0x3f8 + 0x01000000 ; read port 0x3f8 , byte
-        ;mov   [irq04read+4],dword 0                  ; end of port list
-        ;mov   [irq03read+0],dword 0x2f8 + 0x01000000 ; read port 0x2f8 , byte
-        ;mov   [irq03read+4],dword 0                  ; end of port list
-
-        ret
 
 iglobal
   process_number dd 0x1
@@ -3468,103 +3432,6 @@ memmove:       ; memory move in bytes
 
 
 align 4
-
-sys_programirq:
-
-    mov   eax, [TASK_BASE]
-    add   ebx, [eax + TASKDATA.mem_start]
-
-    cmp   ecx, 16
-    jae   .not_owner
-    mov   edi, [eax + TASKDATA.pid]
-    cmp   edi, [irq_owner + 4 * ecx]
-    je    .spril1
-.not_owner:
-    xor   ecx, ecx
-    inc   ecx
-    jmp   .end
-  .spril1:
-
-    shl   ecx, 6
-    mov   esi, ebx
-    lea   edi, [irq00read + ecx]
-    push  16
-    pop   ecx
-
-    cld
-    rep   movsd
-  .end:
-    mov   [esp+32], ecx
-    ret
-
-
-align 4
-
-get_irq_data:
-     movzx esi, bh                       ; save number of subfunction, if bh = 1, return data size, otherwise, read data
-     xor   bh, bh
-     cmp   ebx, 16
-     jae   .not_owner
-     mov   edx, [4 * ebx + irq_owner]    ; check for irq owner
-
-     mov   eax,[TASK_BASE]
-
-     cmp   edx,[eax+TASKDATA.pid]
-     je    gidril1
-.not_owner:
-     xor   edx, edx
-     dec   edx
-     jmp   gid1
-
-  gidril1:
-
-     shl   ebx, 12
-     lea   eax, [ebx + IRQ_SAVE]         ; calculate address of the beginning of buffer + 0x0 - data size
-     mov   edx, [eax]                    ;                                              + 0x4 - data offset
-     dec   esi
-     jz    gid1
-     test  edx, edx                      ; check if buffer is empty
-     jz    gid1
-
-     mov   ebx, [eax + 0x4]
-     mov   edi, ecx
-
-     mov   ecx, 4000                     ; buffer size, used frequently
-
-     cmp   ebx, ecx                      ; check for the end of buffer, if end of buffer, begin cycle again
-     jb    @f
-
-     xor   ebx, ebx
-
-   @@:
-
-     lea   esi, [ebx + edx]              ; calculate data size and offset
-     cld
-     cmp   esi, ecx                      ; if greater than the buffer size, begin cycle again
-     jbe   @f
-
-     sub   ecx, ebx
-     sub   edx, ecx
-
-     lea   esi, [eax + ebx + 0x10]
-     rep   movsb
-
-     xor   ebx, ebx
-   @@:
-     lea   esi, [eax + ebx + 0x10]
-     mov   ecx, edx
-     add   ebx, edx
-
-     rep   movsb
-     mov   edx, [eax]
-     mov   [eax], ecx                    ; set data size to zero
-     mov   [eax + 0x4], ebx              ; set data offset
-
-   gid1:
-     mov   [esp+32], edx                 ; eax
-     ret
-
-
 set_io_access_rights:
       push edi eax
       mov edi, tss._io_map_0
@@ -3576,13 +3443,13 @@ set_io_access_rights:
 ;     shl   ebx,cl
      test  ebp,ebp
 ;     cmp   ebp,0                ; enable access - ebp = 0
-     jnz   siar1
+     jnz   .siar1
 ;     not   ebx
 ;     and   [edi],byte bl
      btr [edi], eax
      pop eax edi
      ret
-siar1:
+.siar1:
      bts [edi], eax
   ;  or    [edi],byte bl        ; disable access - ebp = 1
      pop eax edi
@@ -3737,78 +3604,7 @@ no_mask_io:
      ret
 
 
-reserve_free_irq:
-
-     xor   esi, esi
-     inc   esi
-     cmp   ecx, 16
-     jae   ril1
-
-     push  ecx
-     lea   ecx, [irq_owner + 4 * ecx]
-     mov   edx, [ecx]		; IRQ owner PID
-     mov   eax, [TASK_BASE]
-     mov   edi, [eax + TASKDATA.pid]	; current task PID
-     pop   eax
-     dec   ebx
-     jnz   reserve_irq
-	; free irq
-     cmp   edx, edi		; check owner
-     jne   ril1
-     dec   esi
-     mov   [ecx], esi		; esi = 0
-
-     jmp   ril1			; return successful
-
-  reserve_irq:
-
-     cmp   dword [ecx], 0
-     jne   ril1
-
-     mov   ebx, [f_irqs + 4 * eax]
-
-     stdcall attach_int_handler_ex, eax, ebx, dword 0
-
-     mov   [ecx], edi
-
-     dec   esi
-   ril1:
-     mov   [esp+32], esi ; return in eax
-     ret
-
-iglobal
-f_irqs:
-     dd 0x0
-     dd 0x0
-     dd p_irq2
-     dd p_irq3
-     dd p_irq4
-     dd p_irq5
-     dd p_irq6
-     dd p_irq7
-     dd p_irq8
-     dd p_irq9
-     dd p_irq10
-     dd p_irq11
-     dd 0x0
-     dd 0x0
-     dd p_irq14
-     dd p_irq15
-
-     ; I don`t known how to use IRQ_RESERVE
-if IRQ_RESERVE > 16
-	dd p_irq16
-	dd p_irq17
-	dd p_irq18
-	dd p_irq19
-	dd p_irq20
-	dd p_irq21
-	dd p_irq22
-	dd p_irq23
-end if
-
-endg
-
+align 4
 drawbackground:
        inc   [mouse_pause]
        cmp   [SCR_MODE],word 0x12
@@ -4836,26 +4632,9 @@ syscall_drawline:                       ; DrawLine
         mov     ecx, edx
         jmp     [draw_line]
 
-align 4
 
-syscall_getirqowner:                    ; GetIrqOwner
-
-     cmp   ebx,16
-     jae   .err
-
-     cmp   [irq_rights + 4 * ebx], dword 2
-     je    .err
-
-     mov   eax,[4 * ebx + irq_owner]
-     mov   [esp+32],eax
-
-     ret
-.err:
-     or    dword [esp+32], -1
-     ret
 
 align 4
-
 syscall_reserveportarea:                ; ReservePortArea and FreePortArea
 
      call  r_f_port_area
@@ -4863,7 +4642,6 @@ syscall_reserveportarea:                ; ReservePortArea and FreePortArea
      ret
 
 align 4
-
 syscall_threads:                        ; CreateThreads
 ; eax=1 create thread
 ;

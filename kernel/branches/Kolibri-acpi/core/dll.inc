@@ -9,138 +9,12 @@ $Revision$
 
 
 DRV_COMPAT   equ  5  ;minimal required drivers version
-DRV_CURRENT  equ  5  ;current drivers model version
+DRV_CURRENT  equ  6  ;current drivers model version
 
 DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 PID_KERNEL  equ 1    ;os_idle thread
 
 
-uglobal
-
-	irq_rights	 rd	 IRQ_RESERVE
-
-endg
-
-proc get_int_handler stdcall, irq:dword
-
-	mov	eax, [irq]
-
-	cmp	[irq_rights + 4 * eax], dword 1
-	ja	.err
-
-	mov	eax, [irq_tab + 4 * eax]
-	ret
-
-     .err:
-	xor	eax, eax
-	ret
-
-endp
-
-align 4
-proc  detach_int_handler
-
-	   ret
-endp
-
-
-align 16
-;; proc irq_serv
-
-irq_serv:
-
-; .irq_1:
-	   ; push 1
-;	   jmp .main
-; etc...
-
-macro irq_serv_h [num] {
-	forward
-align 4
-  .irq_#num :
-	push num
-	   jmp .main
-}
-
-irq_serv_h 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15
-
-; I don`t known how to use IRQ_RESERVE
-if IRQ_RESERVE > 16
-irq_serv_h 16, 17, 18, 19, 20, 21, 22, 23
-end if
-
-align 16
-.main:
-	   save_ring3_context
-       mov   ebp, [esp + 32]
-	   mov	 bx, app_data  ;os_data
-	   mov	 ds, bx
-	   mov	 es, bx
-
-       cmp   [v86_irqhooks+ebp*8], 0
-	   jnz	 v86_irq
-
-       cmp   bp, 6
-	   jnz   @f
-       push  ebp
-	   call  [fdc_irq_func]
-       pop   ebp
-@@:
-
-       cmp   bp, 14
-	   jnz   @f
-       push  ebp
-	   call  [irq14_func]
-       pop   ebp
-@@:
-       cmp   bp, 15
-	   jnz   @f
-       push  ebp
-	   call  [irq15_func]
-       pop   ebp
-@@:
-       bts [pending_irq_set], ebp
-
-       lea esi, [irqh_tab+ebp*8]        ; esi= list head
-       mov ebx, esi
-.next:
-       mov ebx, [ebx+IRQH.list.next]    ; ebx= irqh pointer
-       cmp ebx, esi
-       je .done
-
-       push ebx                         ; FIX THIS
-       push edi
-       push esi
-
-       push [ebx+IRQH.data]
-       call [ebx+IRQH.handler]
-       add esp, 4
-
-       pop esi
-       pop edi
-       pop ebx
-
-       test eax, eax
-       jz .next
-
-       btr [pending_irq_set], ebp
-       jmp .next
-
-.done:
-       btr [pending_irq_set], ebp
-       jnc .exit
-
-       inc [bogus_irq+ebp*4]
-.exit:
-       mov  [check_idle_semaphore],5
-
-       mov eax, ebp
-
-       call    IRQ_EOI
-	   restore_ring3_context
-	   add	 esp, 4
-
-	   iret
 
 align 4
 proc get_notify stdcall, p_ev:dword
@@ -747,6 +621,7 @@ proc fix_coff_relocs stdcall uses ebx esi, coff:dword, sym:dword, \
 	   ret
 endp
 
+align 4
 proc rebase_coff stdcall uses ebx esi, coff:dword, sym:dword, \
 	delta:dword
 	   locals

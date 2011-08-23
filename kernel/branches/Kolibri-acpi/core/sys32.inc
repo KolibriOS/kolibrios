@@ -41,16 +41,10 @@ iglobal
     ;interrupt handlers addresses (for interrupt gate construction)
 	; 0x20 .. 0x2F - IRQ handlers
         dd      irq0, irq_serv.irq_1, irq_serv.irq_2
-    if  USE_COM_IRQ
         dd      irq_serv.irq_3, irq_serv.irq_4
-    else
-        dd      p_irq3, p_irq4 ;??? нестыковка
-    end if
         dd      irq_serv.irq_5,  irq_serv.irq_6,  irq_serv.irq_7
         dd      irq_serv.irq_8,  irq_serv.irq_9,  irq_serv.irq_10
         dd      irq_serv.irq_11, irq_serv.irq_12, irqD, irq_serv.irq_14, irq_serv.irq_15
-	; I don`t known how to use IRQ_RESERVE
-if IRQ_RESERVE > 16
 	dd irq_serv.irq_16
 	dd irq_serv.irq_17
 	dd irq_serv.irq_18
@@ -59,7 +53,6 @@ if IRQ_RESERVE > 16
 	dd irq_serv.irq_21
 	dd irq_serv.irq_22
 	dd irq_serv.irq_23
-end if
 
 	times 32 - IRQ_RESERVE dd unknown_interrupt
     ;int_0x40 gate trap (for directly copied)
@@ -251,101 +244,8 @@ show_error_parameters:
   restore  reg_esi
   restore  reg_edi
 
-; IRQ runtime
 
-; irq1  ->  hid/keyboard.inc
-macro irqh [num] {
-  p_irq#num :
-        mov     edi, num
-        jmp     irqhandler
-}
-
-irqh 2,3,4,5,7,8,9,10,11
-; I don`t known how to use IRQ_RESERVE
-if IRQ_RESERVE > 16
-irqh 16, 17, 18, 19, 20, 21, 22, 23
-end if
-
-p_irq6:	; FDC
-        save_ring3_context
-        mov     ax, app_data  ;os_data
-        mov     ds, ax
-        mov     es, ax
-        mov     edi, 6
-        cmp     [v86_irqhooks+edi*8], 0
-        jnz     v86_irq2
-        call    fdc_irq
-	mov	[check_idle_semaphore], 5
-	mov	al, 6
-	call	IRQ_EOI
-        restore_ring3_context
-        iret
-
-irq13:	; Math coprocessor
-	save_ring3_context
-	mov	ax, app_data  ;os_data
-	mov	ds, ax
-	mov	es, ax
-
-	mov	dx, 0xf0
-	mov	al, 0
-	out	dx, al
-
-	mov	al, 13
-	call	IRQ_EOI
-	restore_ring3_context
-	iret
-
-p_irq14: ; HDD
-        save_ring3_context
-        mov     ax, app_data  ;os_data
-        mov     ds, ax
-        mov     es, ax
-        mov     edi, 14
-        cmp     [v86_irqhooks+edi*8], 0
-        jnz     v86_irq2
-;       mov     byte [BOOT_VAR + 0x48E], 0xFF
-        call    [irq14_func]
-	mov	[check_idle_semaphore], 5
-	mov	al, 14
-	call	IRQ_EOI
-        restore_ring3_context
-        iret
-
-p_irq15: ; HDD2
-        save_ring3_context
-        mov     ax, app_data  ;os_data
-        mov     ds, ax
-        mov     es, ax
-        mov     edi, 15
-        cmp     [v86_irqhooks+edi*8], 0
-        jnz     v86_irq2
-;       mov     byte [BOOT_VAR + 0x48E], 0xFF
-        call    [irq15_func]
-	mov	[check_idle_semaphore], 5
-	mov	al, 15
-	call	IRQ_EOI
-        restore_ring3_context
-        iret
-
-ready_for_next_irq:
-	mov	eax,5
-        mov     [check_idle_semaphore],eax
-;        mov     al, 0x20
-	add 	eax,(0x20-0x5)
-
-        out     0x20, al
-        ret
-;destroy eax
-ready_for_next_irq_1:
-	mov	eax,5
-        mov     [check_idle_semaphore],eax
-;        mov     al, 0x20
-	add 	eax,(0x20-0x5)
-        out     0xa0,al
-        out     0x20, al
-        ret
-
+align 4
 irqD:
         push  eax
 	xor   eax,eax
@@ -358,74 +258,6 @@ irqD:
 
 
 align 4
-
-irqhandler:
-
-     mov    esi,edi          ; 1
-     shl    esi,6            ; 1
-     add    esi,irq00read    ; 1
-     shl    edi,12           ; 1
-     add    edi,IRQ_SAVE
-     mov    ecx,16
-
-   irqnewread:
-     dec    ecx
-     js     irqover
-
-     movzx  edx, word [esi]        ; 2+
-
-     test   edx, edx               ; 1
-     jz     irqover
-
-
-     mov    ebx, [edi]             ; address of begin of buffer in edi      ; + 0x0 dword - data size
-     mov    eax, 4000                                                       ; + 0x4 dword - data begin offset
-     cmp    ebx, eax
-     je     irqfull
-     add    ebx, [edi + 0x4]       ; add data size to data begin offset
-     cmp    ebx, eax               ; if end of buffer, begin cycle again
-     jb     @f
-
-     xor    ebx, ebx
-
-  @@:
-     add    ebx, edi
-     movzx  eax, byte[esi + 3]     ; get type of data being received 1 - byte, 2 - word
-     dec    eax
-     jz     irqbyte
-     dec    eax
-     jnz    noirqword
-
-     in     ax,dx
-     cmp    ebx, 3999              ; check for address odd in the end of buffer
-     jne    .odd
-     mov    [ebx + 0x10], ax
-     jmp    .add_size
-  .odd:
-     mov    [ebx + 0x10], al       ; I could make mistake here :)
-     mov    [edi + 0x10], ah
-  .add_size:
-     add    dword [edi], 2
-     jmp    nextport
-
-
-  irqbyte:
-     in     al,dx
-     mov    [ebx + 0x10],al
-     inc    dword [edi]
-  nextport:
-     add    esi,4
-     jmp    irqnewread
-
-
-   noirqword:
-   irqfull:
-   irqover:
-
-     ret
-
-
-
 set_application_table_status:
         push eax
 
@@ -440,7 +272,7 @@ set_application_table_status:
 
         ret
 
-
+align 4
 clear_application_table_status:
         push eax
 
@@ -466,6 +298,7 @@ clear_application_table_status:
 ;  * eax = 0 - успешно
 ;  * eax = 1 - недостаточно памяти
 
+align 4
 sys_resize_app_memory:
         ; ebx = 1 - resize
         ; ecx = new amount of memory
@@ -487,6 +320,7 @@ endg
 ; param
 ;  esi= slot
 
+align 4
 terminate: ; terminate application
 
            .slot equ esp   ;locals
@@ -757,25 +591,6 @@ term9:
         and     [bgrlockpid], 0
         and     [bgrlock], 0
 @@:
-
-    pusha ; remove all irq reservations
-    mov   eax,esi
-    shl   eax, 5
-    mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
-    mov   edi,irq_owner
-    xor   ebx, ebx
-    xor   edx, edx
-  newirqfree:
-    cmp   [edi + 4 * ebx], eax
-    jne   nofreeirq
-    mov   [edi + 4 * ebx], edx                          ; remove irq reservation
-    mov   [irq_tab + 4 * ebx], edx                      ; remove irq handler
-    mov   [irq_rights + 4 * ebx], edx                   ; set access rights to full access
-  nofreeirq:
-    inc   ebx
-    cmp   ebx, 16
-    jb    newirqfree
-    popa
 
     pusha                     ; remove all port reservations
     mov   edx,esi
