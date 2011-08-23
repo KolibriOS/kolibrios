@@ -20,7 +20,6 @@ include 'lang.inc'
 debug equ 0
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-capt db 'info 3ds 20.08.11',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -89,48 +88,8 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 }
 
 ;--------------------------------------
-sizeof.block_3ds equ 9
+include 'data.inc'
 
-macro block_3ds id,icon,par,caption
-{
-	dw id ;+0 идентификатор блока в файле 3ds
-	dw icon ;+2 номер иконки для блока
-	db par ;+4 содержит ли блок подблоки (0-да 1-нет)
-	dd caption+0 ;+5 описание блока
-}
-
-CHUNK_MAIN		  equ 0x4D4D ; [-] сцена
-CHUNK_color_1		  equ 0x0011 ; [+] цвет rgb (byte format)
-CHUNK_ambient_color	  equ 0x2100 ; [-] ambient color
-  CHUNK_OBJMESH 	  equ 0x3D3D ; [-] всяческие объекты
-    CHUNK_OBJBLOCK	  equ 0x4000 ; [+] объект
-      CHUNK_TRIMESH	  equ 0x4100 ; [-] trimesh-объект
-	CHUNK_VERTLIST	  equ 0x4110 ; [+] список вершин
-	CHUNK_FACELIST	  equ 0x4120 ; [+] список граней
-	CHUNK_FACEMAT	  equ 0x4130 ; [+] материалы граней
-	CHUNK_MAPLIST	  equ 0x4140 ; [+] текстурные координаты
-	CHUNK_TRMATRIX	  equ 0x4160 ; [+] матрица перевода
-      CHUNK_CAMERA	  equ 0x4700 ; [+] объект-камера
-  CHUNK_MATERIAL	  equ 0xAFFF ; [-] материал
-    CHUNK_MATNAME	  equ 0xA000 ; [+] название материала
-    CHUNK_TEXTURE	  equ 0xA200 ; [-] текстура материала
-      CHUNK_MAPFILE	  equ 0xA300 ; [+] имя файла текстуры
-  CHUNK_KEYFRAMER	  equ 0xB000 ; [-] информация об анимации
-  CHUNK_TRACKINFO	  equ 0xB002 ; [-] поведение объекта
-    CHUNK_TRACKOBJNAME	  equ 0xB010 ; [+] название этого объекта
-    CHUNK_TRACKPIVOT	  equ 0xB013 ; [+] центр вращения объекта
-    CHUNK_TRACKPOS	  equ 0xB020 ; [+] траектория объекта
-    CHUNK_TRACKROTATE	  equ 0xB021 ; [+] траектория вращения объекта
-  CHUNK_TRACKCAMERA	  equ 0xB003 ; [-] поведение камеры
-    CHUNK_TRACKFOV	  equ 0xB023 ; [+] поведение FOV камеры
-    CHUNK_TRACKROLL	  equ 0xB024 ; [+] поведение roll камеры
-  CHUNK_TRACKCAMTGT	  equ 0xB004 ; [-] поведение "цели" камеры
-
-;данные содержат лишь блоки, отмеченные плюсом, остальные блоки
-; состоят лишь из подблоков
-
-MAX_FILE_LEVEL equ 20 ;максимальный уровень вложенности блоков для анализа
-MAX_FILE_SIZE equ 150*0x400 ;максимальный размер файла (50 Kb)
 level_stack dd 0
 offs_last_timer dd 0 ;последний сдвиг показаный в функции таймера
 
@@ -139,71 +98,6 @@ ID_ICON_CHUNK_NOT_FOUND equ 1 ;иконка не известного блока
 ID_ICON_DATA equ 2 ;иконка для данных блока, не определенной структуры
 
 FILE_ERROR_CHUNK_SIZE equ -3 ;ошибка в размере блока
-
-align 4
-type_bloks:
-block_3ds 0x0002,5,1,txt_0002
-block_3ds 0x3d3e,5,1 ;mesh version
-block_3ds 0xA010,4,0 ;material ambient color
-block_3ds 0xA020,4,0 ;material diffuse color
-block_3ds 0xA030,4,0 ;material specular color
-block_3ds CHUNK_color_1,     4,1 ; [+] цвет rgb (byte format)
-block_3ds CHUNK_ambient_color,3,0 ; [-] ambient color
-block_3ds CHUNK_OBJMESH,     3,0 ; [-] всяческие объекты
-block_3ds CHUNK_OBJBLOCK,    3,1,txt_4000
-block_3ds CHUNK_TRIMESH,     3,0 ; [-] trimesh-объект
-block_3ds CHUNK_VERTLIST,    3,1,txt_4110
-block_3ds CHUNK_FACELIST,    3,1,txt_4120
-block_3ds CHUNK_FACEMAT,     3,1 ; [+] материалы граней
-block_3ds CHUNK_MAPLIST,     3,1 ; [+] текстурные координаты
-block_3ds CHUNK_TRMATRIX,    3,1 ; [+] матрица перевода
-block_3ds CHUNK_CAMERA,      3,1 ; [+] объект-камера
-block_3ds 0x4600,3,1,txt_4600
-block_3ds CHUNK_MATERIAL,    3,0,txt_afff
-block_3ds CHUNK_MATNAME,     3,1,txt_a000
-block_3ds CHUNK_TEXTURE,     3,0,txt_a200
-block_3ds CHUNK_MAPFILE,     6,1,txt_a300
-block_3ds CHUNK_KEYFRAMER,   3,0,txt_b000
-block_3ds CHUNK_TRACKINFO,   3,0,txt_b002
-block_3ds CHUNK_TRACKOBJNAME,3,1,txt_b010
-block_3ds CHUNK_TRACKPIVOT,  3,1,txt_b013
-block_3ds CHUNK_TRACKPOS,    3,1 ; [+] траектория объекта
-block_3ds CHUNK_TRACKROTATE, 3,1 ; [+] траектория вращения объекта
-block_3ds CHUNK_TRACKCAMERA, 3,0 ; [-] поведение камеры
-block_3ds CHUNK_TRACKFOV,    3,1 ; [+] поведение FOV камеры
-block_3ds CHUNK_TRACKROLL,   3,1 ; [+] поведение roll камеры
-block_3ds CHUNK_TRACKCAMTGT, 3,0 ; [-] поведение "цели" камеры
-.end:
-
-if lang eq ru
-txt_0002 db '3ds версия',0
-txt_4000 db 'Объект (с именем)',0
-txt_4110 db 'Список вершин',0
-txt_4120 db 'Список граней',0
-txt_4600 db 'Свет',0
-txt_a000 db 'Название материала',0
-txt_a200 db 'Текстура материала 1',0
-txt_a300 db 'Имя файла текстуры',0
-txt_afff db 'Материал',0
-txt_b000 db 'Информация об анимации',0
-txt_b002 db 'Поведение объекта',0
-txt_b010 db 'Название объекта',0
-txt_b013 db 'Центр вращения объекта',0
-else
-txt_0002 db '3ds version',0
-txt_4000 db 'Object (with name)',0
-txt_4110 db 'Vertices list',0
-txt_4120 db 'Faces description',0
-txt_4600 db 'Light',0
-txt_a000 db 'Material name',0
-txt_a200 db 'Texture map 1',0
-txt_a300 db 'Mapping filename',0
-txt_afff db 'Meterial',0
-txt_b000 db 'Keyframer',0
-txt_b002 db 'Mesh information',0
-txt_b010 db 'Object name',0
-txt_b013 db 'Object pivot point',0
-end if
 
 align 4
 file_3ds:
@@ -215,25 +109,6 @@ size_one_list equ 40
 list_offs_text equ 12 ;сдвиг начала текста в листе
 buffer rb size_one_list ;буфер для добавления структур в список tree1
 
-if lang eq ru
-txt_open_3ds db 'Открыт файл:',0
-txt_no_3ds db 'Открытый файл не в формате *.3ds',0
-txt_3ds_big_file db 'Размер файла больше MAX_FILE_SIZE',0
-txt_3ds_err_sizes db 'Возможно файл поврежден',0
-txt_3ds_offs:
-	db 'Смещение: '
-	.dig: rb 8
-	db 0
-else
-txt_open_3ds db 'Open file:',0
-txt_no_3ds db 'Открытый файл не в формате *.3ds',0
-txt_3ds_big_file db 'Размер файла больше MAX_FILE_SIZE',0
-txt_3ds_err_sizes db 'Возможно файл поврежден',0
-txt_3ds_offs:
-	db 'Offset: '
-	.dig: rb 8
-	db 0
-end if
 txt_3ds_symb db 0,0
 ;--------------------------------------
 
