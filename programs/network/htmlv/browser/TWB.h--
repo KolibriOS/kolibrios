@@ -183,7 +183,7 @@ void ReadHtml(byte DO_LOAD) {
 		{
 			DeleteFile(#download_path);
 			IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
-			RunProgram("/sys/downloader", #URL);
+			RunProgram("/sys/network/downloader", #URL);
 			RETURN;
 		}
 		ReadFile(0, 1048576, buf, #download_path);

@@ -54,7 +54,6 @@ FASM_PROGRAMS:=\
  desktop:DESKTOP:$(PROGS)/system/desktop/trunk/desktop.asm \
  disptest:DISPTEST:$(PROGS)/system/disptest/trunk/disptest.ASM \
  docpak:DOCPAK:$(PROGS)/system/docpack/trunk/docpack.asm \
- downloader:downloader:$(PROGS)/network/downloader/trunk/downloader.asm \
  end:END:$(PROGS)/system/end/light/end.asm \
  gmon:GMON:$(PROGS)/system/gmon/gmon.asm \
  hdd_info:HDD_INFO:$(PROGS)/system/hdd_info/trunk/hdd_info.asm \
@@ -169,9 +168,9 @@ FASM_PROGRAMS:=\
  network/airc:NETWORK/AIRC:$(PROGS)/network/airc/trunk/airc.asm \
  network/arpstat:NETWORK/ARPSTAT:$(PROGS)/network/arpstat/trunk/arpstat.asm \
  network/chess:NETWORK/CHESS:$(PROGS)/network/chess/trunk/chess.asm \
+ network/downloader:NETWORK/DOWNLOADER:$(PROGS)/network/downloader/trunk/downloader.asm \
  network/ethstat:NETWORK/ETHSTAT:$(PROGS)/network/ethstat/trunk/ethstat.asm \
  network/ftps:NETWORK/FTPS:$(PROGS)/network/ftps/trunk/FTPS.ASM \
- network/httpc:NETWORK/HTTPC:$(PROGS)/network/httpc/trunk/httpc.asm \
  network/https:NETWORK/HTTPS:$(PROGS)/network/https/trunk/https.asm \
  network/nntpc:NETWORK/NNTPC:$(PROGS)/network/nntpc/trunk/nntpc.asm \
  network/nslookup:NETWORK/NSLOOKUP:$(PROGS)/develop/libraries/network/examples/nslookup.asm \

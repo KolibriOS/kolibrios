@@ -144,8 +144,8 @@ FTPS                      /rd/1/network/ftps
 #17   **** CLIENTS ****
 TFTP-клиент               /rd/1/network/tftpc
 Интернет-шахматы          /rd/1/network/chess
-Простой HTTP-клиент       /rd/1/network/httpc
-Просмотр HTML+HTTP        /rd/1/htmlv
+Загрузчик из интернета    /rd/1/network/downloader
+Текстовый браузер HTMLv   /rd/1/htmlv
 NNTP-группы новостей      /rd/1/network/nntpc
 TELNET                    /rd/1/network/telnet
 POP-почта                 /rd/1/network/popc
