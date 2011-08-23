@@ -675,8 +675,13 @@ term9:
 restore .slot
 
 iglobal
+if lang eq ru
+  boot_sched_1    db   'Создание GDT TSS указателя',0
+  boot_sched_2    db   'Создание IDT таблицы',0
+else
   boot_sched_1    db   'Building gdt tss pointer',0
   boot_sched_2    db   'Building IDT table',0
+end if
 endg
 
 
