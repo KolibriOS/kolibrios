@@ -113,9 +113,7 @@ red:	; Redraw
 	call	draw_window
 
 still:	
-	push	10	     ; Wait here for event
-	pop	eax 
-	mcall
+	mcall	10	; Wait here for event
 	cmp	al,6
 	je	call_mouse
 	dec	eax 
@@ -123,8 +121,7 @@ still:
 	dec	eax 
 	jne	button	     ; Button in buffer
 key:		     ; Key
-	mov	al,2	     ; Read it and ignore
-	mcall
+	mcall	2	; Read it and ignore
 	
 	push	dword edit1
 	call	[edit_box_key]
@@ -139,9 +136,7 @@ call_mouse:
 	jmp	still
 ;---------------------------------------------------------------------
 button:    ; Button in Window
-	mov	al,17
-	mcall
-	
+	mcall	17
 	cmp	ah,1
 	jne	noclose
 	or	eax,-1
@@ -190,13 +185,12 @@ draw_window:
 	pusha
 	mcall	12,1 ; Start of draw
 ;get_sys_colors 1,0
-	xor	eax,eax		     
-	mov	ebx,100*65536+280
-	mov	ecx,90*65536+260
+
 	mov	edx,[sc.work]
 	or	edx,0x33000000
-	mov	edi,fullpath_open	;title	       ; Draw Window Label Text
-	mcall
+	xor	eax,eax
+	xor	esi,esi
+	mcall	,<100,280>,<90,260>,,,title	       ; Draw Window Label Text
 
 	mcall	9,PROCESSINFO,-1
 
@@ -229,11 +223,7 @@ draw_window:
 
 	mpack	ebx,6,0    ; Draw Window Text
 	add	ebx,1+ 14/2-3
-	mov	ecx,[sc.work_text]
-	mov	edx,text
-	mov	esi,text.line_size
-	mov	eax,4
-	mcall	;InFile
+	mcall	4,,[sc.work_text],text,text.line_size	;InFile
 
 	add	ebx, 16 ;14
 	add	edx,text.line_size
@@ -363,7 +353,6 @@ fun_opn_dlg: ;функция для вызова OpenFile диалога
 	ret
 ;---------------------------------------------------------------------
 draw_messages:
-	mov	eax,13      ; clear work area
 	mpack	ebx,7-2,[pinfo.box.width]
 	sub	ebx,5*2+7*2-1-2*2
 	mpack	ecx,0,[pinfo.box.height]
@@ -372,8 +361,7 @@ draw_messages:
 	mov	word[bottom_right],cx
 	msub	[bottom_right],7,11
 	add	[bottom_right],7 shl 16 + 53
-	mov	edx,[sc.work]
-	mcall
+	mcall	13,,,[sc.work]	; clear work area
 _cy = 0
 _sy = 2
 _cx = 4
