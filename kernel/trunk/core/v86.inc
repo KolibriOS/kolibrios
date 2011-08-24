@@ -328,7 +328,7 @@ v86_start:
         cmp     edx, -1
         jz      .noirqhook
 uglobal
-v86_irqhooks    rd      16*2
+v86_irqhooks    rd      IRQ_RESERVED * 2
 endg
         cmp     [v86_irqhooks+edx*8], 0
         jz      @f

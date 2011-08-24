@@ -39,17 +39,15 @@ iglobal
         times   12 dd unknown_interrupt ;int_20..int_31
 
     ;interrupt handlers addresses (for interrupt gate construction)
+	; 0x20 .. 0x2F - IRQ handlers
         dd      irq0, irq_serv.irq_1, irq_serv.irq_2
-;    if  USE_COM_IRQ
         dd      irq_serv.irq_3, irq_serv.irq_4
-;    else
-;        dd      p_irq3, p_irq4 ;??? нестыковка
-;    end if
         dd      irq_serv.irq_5,  irq_serv.irq_6,  irq_serv.irq_7
         dd      irq_serv.irq_8,  irq_serv.irq_9,  irq_serv.irq_10
         dd      irq_serv.irq_11, irq_serv.irq_12, irqD, irq_serv.irq_14, irq_serv.irq_15
-        times   16 dd unknown_interrupt ;int_0x30..int_0x3F
 
+
+    times 32 - IRQ_RESERVED dd unknown_interrupt
     ;int_0x40 gate trap (for directly copied)
         dw      i40 and 0xFFFF, os_code, 11101111b shl 8, i40 shr 16
 
@@ -186,6 +184,7 @@ IRetToUserHook:
         stosd
         mov     [edi], ebx
         restore_ring3_context
+; simply return control to interrupted process
 unknown_interrupt:
         iretd
 

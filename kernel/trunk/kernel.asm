@@ -561,11 +561,6 @@ high_code:
            mov [srv.fd], eax
            mov [srv.bk], eax
 
-           mov edi, irq_tab
-           xor eax, eax
-           mov ecx, 16
-           rep stosd
-
 ;Set base of graphic segment to linear address of LFB
         mov     eax,[LFBAddress]          ; set for gs
         mov     [graph_data_l+2],ax
@@ -602,6 +597,7 @@ high_code:
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 
+        call  init_irqs
         call  rerouteirqs
 
 ; Initialize system V86 machine
@@ -723,12 +719,6 @@ end if
         mov   esi,boot_resirqports
         call  boot_log
         call  reserve_irqs_ports
-
-; SET PORTS FOR IRQ HANDLERS
-
-        ;mov  esi,boot_setrports
-        ;call boot_log
-        ;call setirqreadports
 
 ; SET UP OS TASK
 
@@ -987,6 +977,7 @@ end if
 
 ; START MULTITASKING
 
+; A 'All set - press ESC to start' messages if need
 if preboot_blogesc
         mov     esi, boot_tasking
         call    boot_log
@@ -2302,10 +2293,14 @@ window_minimize db 0
 sound_flag      db 0
 endg
 
+UID_NONE=0
+UID_MENUETOS=1   ;official
+UID_KOLIBRI=2    ;russian
+
 iglobal
 version_inf:
   db 0,7,7,0  ; version 0.7.7.0
-  db 0		;reserved
+  db UID_KOLIBRI
   dd __REV__
 version_end:
 endg

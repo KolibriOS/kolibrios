@@ -221,6 +221,8 @@ include "core/peload.inc"   ;
 include "core/exports.inc"
 include "core/string.inc"
 include "core/v86.inc"      ; virtual-8086 manager
+;include "core/apic.inc"     ; Interrupt Controller functions
+include "core/irq.inc"      ; irq handling functions
 
 ; GUI stuff
 include "gui/window.inc"

@@ -98,6 +98,9 @@ if preboot_blogesc
 end if
 end if
 
+  boot_APIC_found   db	 'APIC enabled', 0
+  boot_APIC_nfound  db	 'APIC not found', 0
+
 ;new_process_loading db 'K : New Process - loading',13,10,0
 ;new_process_running db 'K : New Process - done',13,10,0
 start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
@@ -293,9 +296,6 @@ gdte:
 align 16
 cur_saved_data    rb 4096
 fpu_data:         rb 512
-
-; on irq read ports
-irq_tab           rd 16
 
 mem_block_map     rb 512
 mem_block_list    rd 64
