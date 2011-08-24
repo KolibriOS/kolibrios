@@ -121,6 +121,7 @@ bool mouse_handler(udev_t *dev, struct tag_request *rq)
         struct boot_packet *pkt;
         pkt = (struct boot_packet *)rq->data;
         SetMouseData(pkt->buttons, pkt->x, -pkt->y, -pkt->z, 0);
+        memset(pkt,0, sizeof(*pkt));
     };
     td->status = TD_CTRL_ACTIVE | TD_CTRL_IOC | dev->speed;
     td->token ^= DATA1;

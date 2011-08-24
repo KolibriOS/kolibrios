@@ -2,6 +2,7 @@
 
 #include <ddk.h>
 #include <mutex.h>
+#include <linux/errno.h>
 #include <pci.h>
 #include <linux/dmapool.h>
 #include <linux/string.h>

@@ -1,13 +1,11 @@
 
 CC = gcc
 
-
 DRV_DIR   = $(CURDIR)/../..
 
 DRV_INCLUDES = $(DRV_DIR)/include
 
-
-INCLUDES = -I$(DRV_INCLUDES) -I$(DRV_DIR)/include/linux
+INCLUDES = -I$(DRV_INCLUDES) -I$(DRV_INCLUDES)/linux
 
 DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32
 
@@ -42,10 +40,10 @@ $(NAME).dll: $(NAME_OBJS) usb.lds Makefile
 	ld $(LIBPATH) $(LDFLAGS) -T usb.lds -o $@ $(NAME_OBJS) $(LIBS)
 	kpack $(NAME).dll $(NAME).drv  
 
-%.o : %.c $(HFILES) $(SRC_DEP) Makefile
+%.o: %.c $(HFILES) $(SRC_DEP) Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ $<
 
-%.o : %.S $(HFILES) Makefile
+%.o: %.S $(HFILES) Makefile
 	as -o $@ $<
 
 

@@ -1,4 +1,22 @@
 
+#define PCI_MAP_REG_START   0x10
+#define PCI_MAP_ROM_REG     0x30
+
+#define PCI_MAP_MEMORY          0x00000000
+#define PCI_MAP_IO          0x00000001
+
+#define PCI_MAP_MEMORY_TYPE     0x00000007
+#define PCI_MAP_IO_TYPE         0x00000003
+
+#define PCI_MAP_MEMORY_TYPE_32BIT   0x00000000
+#define PCI_MAP_MEMORY_TYPE_32BIT_1M    0x00000002
+#define PCI_MAP_MEMORY_TYPE_64BIT   0x00000004
+#define PCI_MAP_MEMORY_TYPE_MASK    0x00000006
+#define PCI_MAP_MEMORY_CACHABLE     0x00000008
+#define PCI_MAP_MEMORY_ATTR_MASK    0x0000000e
+#define PCI_MAP_MEMORY_ADDRESS_MASK 0xfffffff0
+
+#define PCI_MAP_IO_ATTR_MASK        0x00000003
 
 u32_t pciGetBaseSize(int bus, int devfn, int index,
                      bool destructive, bool *min)

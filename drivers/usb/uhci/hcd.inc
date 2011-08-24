@@ -54,6 +54,10 @@ void uhci_reset_hc(hc_t *hc)
 	/* Turn off PIRQ enable and SMI enable.  (This also turns off the
 	 * BIOS's USB Legacy Support.)  Turn off all the R/WC bits too.
 	 */
+
+    out16(hc->iobase + UHCI_USBCMD, 0);
+    out16(hc->iobase + UHCI_USBINTR, 0);
+
     pciWriteWord(hc->PciTag, UHCI_USBLEGSUP, UHCI_USBLEGSUP_RWC);
 
 	/* Reset the HC - this will force us to get a
@@ -120,49 +124,42 @@ reset_needed:
 	return 1;
 }
 
-void hc_interrupt()
+int hc_interrupt(void *data)
 {
-    hc_t   *hc;
+    hc_t   *hc = (hc_t*)data;
 
-//    printf("USB interrupt\n");
+   // printf("USB interrupt\n");
 
-    hc = (hc_t*)hc_list.next;
+    request_t  *rq;
+    u16_t  status;
 
-    while( &hc->list != &hc_list)
+    status = in16(hc->iobase + USBSTS);
+    if (!(status & ~USBSTS_HCH))            /* shared interrupt, not mine */
+        return 0;
+
+    out16(hc->iobase + USBSTS, status);     /* Clear it */
+
+    rq = (request_t*)hc->rq_list.next;
+
+    while( &rq->list != &hc->rq_list)
     {
-        hc_t       *htmp;
-        request_t  *rq;
-        u16_t  status;
+        request_t *rtmp;
+        td_t      *td;
 
-        htmp = hc;
+        rtmp = rq;
+        rq = (request_t*)rq->list.next;
 
-        hc = (hc_t*)hc->list.next;
+        td  = rtmp->td_tail;
 
-        status = in16(htmp->iobase + USBSTS);
-        if (!(status & ~USBSTS_HCH))            /* shared interrupt, not mine */
+        if( td->status & TD_CTRL_ACTIVE)
             continue;
-        out16(htmp->iobase + USBSTS, status);     /* Clear it */
 
-        rq = (request_t*)htmp->rq_list.next;
+        list_del(&rtmp->list);
 
-        while( &rq->list != &htmp->rq_list)
-        {
-            request_t *rtmp;
-            td_t      *td;
+        RaiseEvent(rtmp->evh, 0, &rtmp->event);
+    };
 
-            rtmp = rq;
-            rq = (request_t*)rq->list.next;
-
-            td  = rtmp->td_tail;
-
-            if( td->status & TD_CTRL_ACTIVE)
-                continue;
-
-            list_del(&rtmp->list);
-
-            RaiseEvent(rtmp->evh, 0, &rtmp->event);
-        };
-    }
+    return 1;
 };
 
 
@@ -263,7 +260,13 @@ bool init_hc(hc_t *hc)
 
     out16(hc->iobase + UHCI_USBINTR, 4);
 
-    AttachIntHandler(hc->irq_line, hc_interrupt, 0);
+    printf("set handler %d  ", hc->irq_line);
+    delay(100/10);
+    AttachIntHandler(hc->irq_line, hc_interrupt, hc);
+    printf("done\n");
+
+    delay(100/10);
+
 
     pciWriteWord(hc->PciTag, UHCI_USBLEGSUP, UHCI_USBLEGSUP_DEFAULT);
 
@@ -588,7 +591,7 @@ bool ctrl_request(udev_t *dev, void *req, u32_t pid,
 
     safe_sti(efl);
 
-    WaitEvent(rq->evh.handle, rq->evh.euid);
+    WaitEvent(rq->evh);
 
     dbgprintf("td0 status 0x%0x\n", td0->status);
     dbgprintf("td  status 0x%0x\n", td->status);
