@@ -42,10 +42,10 @@
     jz   .exit_error ;.exit
     shl  eax,16
     add  eax,[window_high]
-    cmp  ax,50-22
-    jbe  @f
-    sub  ax,50-22
-@@:
+;    cmp  ax,28
+;    jbe  @f
+    sub  ax,28
+;@@:
     mov [wa_high],ax
     mov [wa_high_1],ax
     mov [wa_high_2],ax

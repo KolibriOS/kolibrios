@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-;	v.1.0 rñ3 07.07.2011
+;	v.1.0 rñ3 24.08.2011
 ;******************************************************************************
 	use32
 	org 0x0
@@ -69,6 +69,9 @@ START:				; start of execution
 	jne	@r
 	mov	[active_process],ecx
 
+	mcall	48,4
+	mov	[skin_height],eax
+	
 	mcall	68,12,1024
 	mov	[menu_data_1.procinfo],eax
 	mov	[menu_data_2.procinfo],eax
@@ -247,8 +250,18 @@ red_1:
 ;	mcall 15,3
 ;	jmp  red_1
 still:
+	call	pause_cicle
+	
 	cmp	[RAW1_flag],1
 	je	animation_handler
+	
+	mcall	48,4
+	cmp	[skin_height],eax
+	je	@f
+	mov	[skin_height],eax
+	call	convert.img_resolution_ok
+	jmp	red_1
+@@:
 	mcall	10
 .1:
 	cmp	[open_file_flag],1
@@ -278,6 +291,7 @@ red_sort_directory:
 redraw_window:
 	mov	[redraw_flag],byte 0
 	jmp	red_1
+	
 ;---------------------------------------------------------------------
 ;	red:
 ;	test	dword [status], 4
@@ -302,6 +316,32 @@ button:			; button
 	cmp	ah,2
 	je	slide_show.3	;still
 	jmp	slide_show
+;---------------------------------------------------------------------
+pause_cicle:
+	pusha
+.start:
+	mcall	9,procinfo,-1
+	mov	eax,[procinfo+70] ;status of window
+	test	eax,100b
+	jne	@f
+	popa
+	ret
+@@:
+	mcall	10
+	dec	eax
+	jz	.redraw
+	dec	eax
+	jz	.key
+	dec	eax
+	jnz	.start	
+.button:
+	mcall	-1
+.key:
+	mcall	2
+	jmp	.start
+.redraw:
+	call	draw_window
+	jmp	.start
 ;---------------------------------------------------------------------
 get_filter_data:
 	mov	edi,Filter+4

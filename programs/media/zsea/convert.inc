@@ -218,14 +218,20 @@ convert:
     jae  @f
     mov  eax,770
 @@:
-    add  ebx,54
+    mov  [wnd_width],eax
+	push	ebx
+	mcall	48,4
+	pop	ebx
+	add	ebx,eax
+	mov	[skin_height],eax
+    add  ebx,28+4	;54
     cmp  ebx,150
     jae  @f
     mov  ebx,150
 @@:
-    mov  [wnd_width],eax
     mov  [wnd_height],ebx
-	
+
+    
 	mcall 14
 	
 	mov  ebx,eax
