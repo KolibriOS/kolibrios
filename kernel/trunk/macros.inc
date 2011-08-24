@@ -20,13 +20,16 @@ macro struct name, [arg]
    struc name arg {
  }
 
+macro declare_sizeof xname,value
+{ sizeof.#xname = value }
+
 macro struct_helper name
  {
   match xname,name
   \{
    virtual at 0
    xname xname
-   sizeof.#xname = $ - xname
+   declare_sizeof xname, $ - xname
    name equ sizeof.#xname
    end virtual
   \}
