@@ -239,7 +239,8 @@ else if sb_buffer_size eq full_buffer
 	   stdcall [callback],SB16Buffer0 ;for 64k buffer
 	   stdcall [callback],SB16Buffer1 ;for 64k buffer
 end if
-	   xor	eax,eax
+           xor eax, eax
+           not eax
 	   ret
 
 .fill_second_half:
@@ -249,7 +250,8 @@ else if sb_buffer_size eq full_buffer
 	   stdcall [callback],SB16Buffer2 ;for 64k buffer
 	   stdcall [callback],SB16Buffer3 ;for 64k buffer
 end if
-	   xor	eax,eax
+           xor eax, eax
+           not eax
 	   ret
 endp
 ;-------------------------------------------------------------------------------

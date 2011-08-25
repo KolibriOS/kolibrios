@@ -143,21 +143,6 @@ proc  detach_int_handler
        ret
 endp
 
-align 4
-proc enable_irq stdcall, irq_line:dword
-       mov ebx, [irq_line]
-       mov edx, 0x21
-       cmp ebx, 8
-       jb @F
-       mov edx, 0xA1
-       sub ebx,8
-@@:
-       in al,dx
-       btr eax, ebx
-       out dx, al
-       ret
-endp
-
 
 macro irq_serv_h [num] {
     forward
@@ -246,15 +231,22 @@ align 16
 .exit:
        mov  [check_idle_semaphore],5
 
-       cmp bp, 8
-       mov al, 0x20
-       jb @f
-       out 0xa0, al
-@@:
-       out 0x20, al
+       mov ecx, ebp
+       call irq_eoi
 
        restore_ring3_context
        add   esp, 4
        iret
 
+align 4
+irqD:
+        push  eax
+        push  ecx
+        xor   eax,eax
+        out   0xf0,al
+        mov   cl, 13
+        call  irq_eoi
+        pop   ecx
+        pop   eax
+        iret
 

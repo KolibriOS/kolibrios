@@ -524,7 +524,7 @@ proc ac97_irq
 	   mov	    edx, IPR
 	   call     [ctrl.ctrl_read32]
 	   test     eax, eax
-	   jz	    @f
+           jz      @f
 
 	   mov	    dword [status], eax
 

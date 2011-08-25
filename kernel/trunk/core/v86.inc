@@ -839,6 +839,7 @@ end if
 ;        mov     byte [BOOT_VAR + 48Eh], 0FFh
 ;        ret
 
+align 4
 v86_irq:
 ; push irq/pushad/jmp v86_irq
 ; eax = irq
@@ -898,12 +899,8 @@ v86_irq2:
         pop     ecx
 .cont:
         loop    .scan
-        mov     al, 20h
-        out     20h, al
-        cmp     edi, 8
-        jb      @f
-        out     0A0h, al
-@@:
+        mov     ecx, edi
+        call    irq_eoi
         popad
         iretd
 .found:
