@@ -234,6 +234,7 @@ include "gui/button.inc"
 
 ; file system
 
+include "fs/disk.inc"     ; support for plug-n-play disks
 include "fs/fs.inc"       ; syscall
 include "fs/fat32.inc"    ; read / write for fat32 filesystem
 include "fs/ntfs.inc"     ; read / write for ntfs filesystem

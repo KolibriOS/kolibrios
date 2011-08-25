@@ -85,6 +85,7 @@ virtual_root_query:
 
 fs_additional_handlers:
         dd      biosdisk_handler, biosdisk_enum_root
+        dd      dyndisk_handler, dyndisk_enum_root
 ; add new handlers here
         dd      0
 
@@ -383,7 +384,8 @@ file_system_lfn:
 .notfounda:
         cmp     edi, esp
         jnz     .notfound
-        add     esp, 8
+        call    dword [edi+4]
+        add     esp, 16
         jmp     .notfound
 
 .found1:
@@ -850,6 +852,8 @@ biosdisk_handler:
         jmp     file_system_lfn.maindir_noesi
 @@:
         push    ecx
+        push    ecx
+        push    biosdisk_cleanup
         push    fs_OnBd
         mov     edi, esp
         jmp     file_system_lfn.found2
@@ -858,10 +862,11 @@ fs_BdNext:
         cmp     eax, [BiosDiskPartitions+ecx*4]
 	inc	eax
 	cmc
+biosdisk_cleanup:
 	ret
 
 fs_OnBd:
-        pop     edx edx
+        pop     edx edx edx edx
 ; edx = disk number, ecx = partition number
 ; esi+ebp = name
 	call	reserve_hd1
