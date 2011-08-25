@@ -85,6 +85,10 @@ iglobal
   szStrchr            db 'strchr',0
   szStrrchr           db 'strrchr',0
 
+  szDiskAdd           db 'DiskAdd',0
+  szDiskDel           db 'DiskDel',0
+  szDiskMediaChanged  db 'DiskMediaChanged',0
+
 
 align 16
 kernel_export:
@@ -159,6 +163,10 @@ kernel_export:
   dd szStrnlen         , strnlen
   dd szStrchr          , strchr
   dd szStrrchr         , strrchr
+
+  dd szDiskAdd         , disk_add
+  dd szDiskDel         , disk_del
+  dd szDiskMediaChanged, disk_media_changed
 
 exp_lfb:
   dd szLFBAddress      , 0

@@ -633,10 +633,12 @@ lock    dec     [partition_buffer_users]        ; no, we must allocate
 ; Note that 'read' callback operates with 64-bit sector numbers, so we must
 ; push additional zero as a high dword of sector number.
         mov     al, DISKFUNC.read
-        stdcall disk_call_driver, ebx, ebp, 0, 1
+        push    1
+        stdcall disk_call_driver, ebx, ebp, 0, esp
+        pop     ecx
 ; 6. If the read has failed, abort the loop.
-        test    eax, eax
-        jz      .mbr_failed
+        dec     ecx
+        jnz     .mbr_failed
 ; 7. Check the MBR/EBR signature. If it is wrong, abort the loop.
 ; Soon we will access the partition table which starts at ebx+0x1BE,
 ; so we can fill its address right now. If we do it now, then the addressing
