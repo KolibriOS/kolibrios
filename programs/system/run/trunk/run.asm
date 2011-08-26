@@ -253,7 +253,7 @@ out_of_memory db 'Недостаточно памяти',0	 ; 30
 file_not_executable db 'Файл не является исполняемым',0 ; 31
 many_processes db 'Слишком много процессов',0	 ; 32
 run_ok db 'Программа успешно запущена',0
-grab_text db 'ЗАПУСК ПРОГРАММЫ',0
+grab_text db 'Запуск программы',0
 run_but_text db 'ЗАПУСТИТЬ',0
 else
 hello db 'Enter full path to file and press <Enter>',0
