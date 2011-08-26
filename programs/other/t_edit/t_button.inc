@@ -9,16 +9,16 @@ struct FileInfoBlock
 ends
 
 struct symbol
-  c db ?    ;  +0 символ
-  col db ?  ;  +1 цвет
-  perv dd ? ;  +2
-  next dd ? ;  +6 указатели
-  tc dd ?   ; +10 врем. создания
-  td dd ?   ; +14 врем. удаления
+	c db ?    ; +0 символ
+	col db ?  ; +1 цвет
+	perv dd ? ; +2
+	next dd ? ; +6 указатели
+	tc dd ?   ;+10 врем. создания
+	td dd ?   ;+14 врем. удаления
 ends
 
 
-hed db 'TextEditor 22.08.11',0 ;подпись окна
+hed db 'TextEditor 26.08.11',0 ;подпись окна
 sc system_colors
 
 fn_icon db 'te_icon.bmp',0
@@ -230,7 +230,7 @@ proc ted_but_find
     mov ted_panel_id,TED_PANEL_FIND
     mov ted_wnd_l,TED_PANEL_WIDTH
   .e_if:
-  stdcall EvSize,edi
+  call EvSize
   stdcall [ted_draw],edi
   pop edi
   ret
@@ -303,7 +303,7 @@ proc but_synt_show, edit:dword
     mov ted_panel_id,TED_PANEL_SYNTAX
     mov ted_wnd_l,TED_PANEL_WIDTH
   .e_if:
-  stdcall EvSize,edi
+  call EvSize
   stdcall [ted_draw],edi
   pop edi
   ret

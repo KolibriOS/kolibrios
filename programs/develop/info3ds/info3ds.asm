@@ -183,7 +183,10 @@ still:
 	cmp al,3
 	jz button
 	cmp al,6
-	jne @f 
+	jne @f
+		mcall 9,procinfo,-1
+		cmp ax,word[procinfo+4]
+		jne @f ;окно не активно
 		call mouse
 	@@:
 	jmp still
@@ -212,8 +215,9 @@ end if
 	cmp ebx,0
 	je @f
 		mov eax,dword[ebx] ;получаем значение сдвига выбранного блока относительно начала файла
-		mov ecx,dword[ebx+4]
+		mov ecx,dword[ebx+4] ;размер блока
 		stdcall hex_in_str, txt_3ds_offs.dig, eax,8
+		stdcall hex_in_str, txt_3ds_offs.siz, ecx,8
 
 		add eax,dword[open_file_lif] ;получаем значение сдвига в памяти
 		cmp dword[offs_last_timer],eax
@@ -311,6 +315,16 @@ pushad
 	or  edx,(3 shl 24)+0x10000000+0x20000000
 	mov edi,capt
 	int 0x40
+
+	mcall 9,procinfo,-1
+	mov eax,dword[procinfo.box.height]
+	cmp eax,250
+	jge @f
+		mov eax,250
+	@@:
+	sub eax,65
+	mov dword[tree1.box_height],eax
+	mov word[w_scr_t1+4],ax ;новые размеры скроллинга
 
 	mov eax,8
 	mov ebx,(5 shl 16)+20
@@ -519,6 +533,22 @@ block_analiz_data:
 				add esi,edi
 				sub ecx,edi
 			jmp .next_bl
+		@@:
+		cmp dx,CHUNK_VERTLIST ;список вершин
+		je .vertexes
+		cmp dx,0x4111 ;флаги вершин
+		je .vertexes
+		cmp dx,CHUNK_FACELIST ;список граней
+		je .vertexes
+		jmp @f
+		.vertexes: ;обработка блоков, содержащих данные вершин
+			stdcall add_3ds_object, ID_ICON_DATA,ebx,2,txt_count ;число вершин или граней
+			add esi,2
+			sub ecx,2
+			stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0 ;данные вершин
+			sub esi,8 ;восстановление esi
+			call block_next
+			jmp .end_f		
 		@@:
 		; *** анализ блока с данными по умолчанию (без выделения подблоков)
 			stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0

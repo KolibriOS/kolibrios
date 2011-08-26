@@ -11,7 +11,7 @@ fn_icon_tl_nod db 'tl_nod_16.bmp',0
 
 align 4
 boxlib_import:
-dd alib_init2 ;функция запускается макросом 1 раз при подключении бибилиотеки, потому в программе метка на нее не нужна
+dd alib_init2 ;дг­ЄжЁп § ЇгбЄ Ґвбп ¬ Єа®б®¬ 1 а § ЇаЁ Ї®¤Є«озҐ­ЁЁ ЎЁЎЁ«Ё®вҐЄЁ, Ї®в®¬г ў Їа®Ја ¬¬Ґ ¬ҐвЄ  ­  ­ҐҐ ­Ґ ­г¦­ 
 
 edit_box_draw  dd aEdit_box_draw
 edit_box_key   dd aEdit_box_key
@@ -83,6 +83,10 @@ ted_but_reverse dd sz_ted_but_reverse
 ted_but_find_next dd sz_ted_but_find_next
 ted_text_colored dd sz_ted_text_colored
 ;version_text_edit dd sz_ted_version
+
+PathShow_prepare dd sz_PathShow_prepare
+PathShow_draw    dd sz_PathShow_draw
+;Version_path_show dd szVersion_path_show
 
 dd 0,0
 alib_init2 db 'lib_init',0
@@ -157,9 +161,13 @@ sz_ted_but_reverse		db 'ted_but_reverse',0
 sz_ted_but_find_next	db 'ted_but_find_next',0
 sz_ted_text_colored		db 'ted_text_colored',0
 ;sz_ted_version db 'version_text_edit',0
+
+sz_PathShow_prepare db 'PathShow_prepare',0
+sz_PathShow_draw db 'PathShow_draw',0
+;szVersion_path_show db 'version_PathShow',0
 ;---------------------------------------------------------------------
 align 4
-ws_dir_lbox: ;дочерний скроллинг для элемента ListBox
+ws_dir_lbox: ;¤®зҐа­Ё© бЄа®««Ё­Ј ¤«п н«Ґ¬Ґ­в  ListBox
 .x:
 .size_x     dw 16 ;+0
 .start_x    dw 0 ;+2
@@ -169,8 +177,7 @@ ws_dir_lbox: ;дочерний скроллинг для элемента ListBox
 .btn_high   dd 15 ;+8
 .type	    dd 1  ;+12
 .max_area   dd 100  ;+16
-.cur_area   dd 30  ;+20
-.position   dd 0  ;+24
+rb 4+4
 .bckg_col   dd 0xeeeeee ;+28
 .frnt_col   dd 0xbbddff ;+32
 .line_col   dd 0  ;+36
@@ -178,17 +185,7 @@ ws_dir_lbox: ;дочерний скроллинг для элемента ListBox
 .delta	    dw 0  ;+44
 .delta2     dw 0  ;+46
 .run_x:
-.r_size_x   dw 0  ;+48
-.r_start_x  dw 0  ;+50
-.run_y:
-.r_size_y   dw 0 ;+52
-.r_start_y  dw 0 ;+54
-.m_pos	    dd 0 ;+56
-.m_pos_2    dd 0 ;+60
-.m_keys     dd 0 ;+64
-.run_size   dd 0 ;+68
-.position2  dd 0 ;+72
-.work_size  dd 0 ;+76
+rb 2*4+4*6
 .all_redraw dd 0 ;+80
 .ar_offset  dd 1 ;+84
 ;---------------------------------------------------------------------
@@ -212,6 +209,10 @@ tree_file_struct:
 
 dir_mem rb 32+304*count_of_dir_list_files
 
+edit1 edit_box 310+16-CAPT_PATH_WIDTH, 210+CAPT_PATH_WIDTH, 25, 0xffffff, 0xff, 0xff0000, 0, 0x80, MAX_COLOR_WORD_LEN, ed_buffer.127, mouse_dd, 0
+
+ed_buffer: ;вҐЄбв ¤«п edit
+  .127: rb MAX_COLOR_WORD_LEN+2
 ;------------------------------------------------------------------------------
 struct TexSelect
   x0 dd ?
@@ -292,8 +293,7 @@ scrol_w1:
 .btn_high dd  15 ; +8
 .type	  dd   1 ;+12
 .max_area dd 100 ;+16
-.cur_area dd  30 ;+20
-.position dd   0 ;+24
+rb 4+4
 .bckg_col dd 0xeeeeee ;+28
 .frnt_col dd 0xbbddff ;+32
 .line_col dd 0x808080 ;+36
@@ -301,17 +301,7 @@ scrol_w1:
 .delta	  dw   0 ;+44
 .delta2   dw   0 ;+46
 .run_x:
-.r_size_x  dw 0 ;+48
-.r_start_x dw 0 ;+50
-.run_y:
-.r_size_y   dw 0 ;+52
-.r_start_y  dw 0 ;+54
-.m_pos	    dd 0 ;+56
-.m_pos_2    dd 0 ;+60
-.m_keys     dd 0 ;+64
-.run_size   dd 0 ;+68
-.position2  dd 0 ;+72
-.work_size  dd 0 ;+76
+rb 2*4+4*6
 .all_redraw dd 0 ;+80
 .ar_offset  dd 1 ;+84
 ;---------------------------------------------------------------------
@@ -326,8 +316,7 @@ scrol_h1:
 .btn_high   dd 15 ;+8
 .type	    dd 1  ;+12
 .max_area   dd 100 ;+16
-.cur_area   dd 30  ;+20
-.position   dd 0  ;+24
+rb 4+4
 .bckg_col   dd 0xeeeeee ;+28
 .frnt_col   dd 0xbbddff ;+32
 .line_col   dd 0x808080 ;+36
@@ -335,20 +324,23 @@ scrol_h1:
 .delta	    dw 0  ;+44
 .delta2     dw 0  ;+46
 .run_x:
-.r_size_x   dw 0  ;+48
-.r_start_x  dw 0  ;+50
-.run_y:
-.r_size_y   dw 0 ;+52
-.r_start_y  dw 0 ;+54
-.m_pos	    dd 0 ;+56
-.m_pos_2    dd 0 ;+60
-.m_keys     dd 0 ;+64
-.run_size   dd 0 ;+68
-.position2  dd 0 ;+72
-.work_size  dd 0 ;+76
+rb 2*4+4*6
 .all_redraw dd 0 ;+80
 .ar_offset  dd 1 ;+84
 ;---------------------------------------------------------------------
+PathShow_data_1:
+.type			dd 0 ;+0
+.start_y		dw 10 ;+4
+.start_x		dw 210+CAPT_PATH_WIDTH ;+6
+.font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
+.area_size_x		dw 310+16-CAPT_PATH_WIDTH	;+10
+.font_number		dd 0 ;+12	; 0 - monospace, 1 - variable
+.background_flag	dd 1 ;+16
+.font_color		dd 0x0 ;+20
+.background_color	dd 0xffffff ;+24
+.text_pointer		dd file_name ;+28
+.work_area_pointer	dd file_name_rez ;+32
+.temp_text_length	dd 0 ;+36
 
 align 4
 str_file_70:

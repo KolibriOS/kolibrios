@@ -151,8 +151,9 @@ InitColText:
 		add eax,sizeof.TexColViv
 	loop @b
 	
-	;stdcall [ted_init_scroll_bars], tedit0,4
-	;stdcall [ted_draw], tedit0
+	; подготовка для  PathShow
+	push dword PathShow_data_1
+	call [PathShow_prepare]
 	call draw_window
 
 	.no_colors:

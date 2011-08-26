@@ -260,11 +260,12 @@ proc draw_panel_syntax
   ret
 endp
 
-MIN_M_WND_H equ 100
+MIN_M_WND_H equ 100 ;минимальная высота главного окна
+;input:
+; edi = pointer to tedit struct
 align 4
-proc EvSize, edit:dword
+EvSize:
   pushad
-  mov edi,dword[edit]
   mov ebx,ted_scr_h
   mov esi,ted_scr_w
 
@@ -299,7 +300,6 @@ proc EvSize, edit:dword
 
   popad
   ret
-endp
 
 ;input:
 ;  ecx = 0x4000____

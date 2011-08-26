@@ -194,43 +194,42 @@ red_win:
 
 align 4
 still:
-  mov eax,10
-  mcall
+	mcall 10
 
-  cmp al,1 ;изм. положение окна
-  jz red_win
-  cmp al,2
-  jz key
-  cmp al,3
-  jz button
-  cmp al,6
-  jz mouse
-
-  jmp still
+	cmp al,1 ;изменилось положение окна
+	jz red_win
+	cmp al,2
+	jz key
+	cmp al,3
+	jz button
+	cmp al,6 ;мышь
+	jne @f
+		mcall 9,procinfo,-1
+		cmp ax,word[procinfo+4]
+		jne @f ;окно не активно
+		jmp mouse
+	@@:
+	jmp still
 
 align 4
 draw_window:
-  mcall 12,1
+	mcall 12,1
 
-  xor eax,eax
-  mov ebx,10*65536+485
-  mov ecx,10*65536+320
-  mov edx,[sc.work]
-  or  edx,0x73000000
-  mov edi,hed
-  int 0x40
+	mov edx,[sc.work]
+	or  edx,0x73000000
+	mov edi,hed
+	mcall 0,(10 shl 16)+485,(10 shl 16)+320
 
-  mov edi,tedit0
+	mcall 9,procinfo,-1
+	mov edi,tedit0 ;значение edi нужно для EvSize и ted_wnd_t
+	call EvSize
 
-  mcall 9,procinfo,-1
-  stdcall EvSize,edi
-
-  mov eax,13 ;верхний прямоугольник, для очистки верхней панели
-  xor ebx,ebx
-  mov ecx,ted_wnd_t
-  mov bx,word [procinfo.client_box.width]
-  inc bx
-  int 0x40
+	mov eax,13 ;верхний прямоугольник, для очистки верхней панели
+	xor ebx,ebx
+	mov ecx,ted_wnd_t
+	mov bx,word[procinfo.client_box.width]
+	inc bx
+	int 0x40
 
 	mov eax,4
 	mov ebx,185*65536+9
@@ -272,46 +271,43 @@ draw_window:
 
 align 4
 mouse:
-  stdcall [edit_box_mouse], dword edit1
+	stdcall [edit_box_mouse], dword edit1
 
-  test word [edit1.flags],10b;ed_focus ; если не в фокусе, выходим
-  jne still
+	test word [edit1.flags],10b ;ed_focus ;если не в фокусе, выходим
+	jne still
 
-  stdcall [ted_mouse], tedit0
+	stdcall [ted_mouse], tedit0
 
-  cmp byte[tedit0.panel_id],TED_PANEL_FIND ;if not panel
-  jne @f
-    stdcall [edit_box_mouse], dword edit2
-  @@:
-  cmp byte[tedit0.panel_id],TED_PANEL_SYNTAX ;if not panel
-  jne .menu_bar_1 ;@f
-  stdcall [tl_mouse], tree1
+	cmp byte[tedit0.panel_id],TED_PANEL_FIND ;if not panel
+	jne @f
+		stdcall [edit_box_mouse], dword edit2
+	@@:
+	cmp byte[tedit0.panel_id],TED_PANEL_SYNTAX ;if not panel
+	jne .menu_bar_1 ;@f
+	stdcall [tl_mouse], tree1
 ;-----------------------------------------------
 .menu_bar_1:
-  mov [menu_data_1.get_mouse_flag],1
+	mov [menu_data_1.get_mouse_flag],1
 ; mouse event for Menu 1
-  push	dword menu_data_1
-  call	[menu_bar_mouse]
-  cmp	[menu_data_1.click],dword 1
-  jne	.mnu_1
-  cmp [menu_data_1.cursor_out],dword 4
-  je	button.exit	
-  cmp [menu_data_1.cursor_out],dword 3
-  jne	@f
-    stdcall [ted_but_save_file], tedit0,run_file_70,[edit1.text]
-  @@:
-  cmp [menu_data_1.cursor_out],dword 2
-  jne	@f
-    call ted_but_open_file
-  @@:
-  cmp [menu_data_1.cursor_out],dword 1
-  jne	@f
-    call ted_but_new_file
-  @@:
-  ;cmp [menu_data_1.cursor_out],dword 0
-  ;jne @f
+	stdcall [menu_bar_mouse],dword menu_data_1
+	cmp dword[menu_data_1.click],1
+	jne .mnu_1
+	cmp dword[menu_data_1.cursor_out],4
+	je button.exit	
+	cmp dword[menu_data_1.cursor_out],3
+	jne @f
+		stdcall [ted_but_save_file], tedit0,run_file_70,[edit1.text]
+	@@:
+	cmp dword[menu_data_1.cursor_out],2
+	jne @f
+		call ted_but_open_file
+	@@:
+	cmp dword[menu_data_1.cursor_out],1
+	jne @f
+		call ted_but_new_file
+	@@:
 .mnu_1:
-  jmp still
+	jmp still
 ;---------------------------------------------------------------------
 
 ;output:

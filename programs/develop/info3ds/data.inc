@@ -1,7 +1,7 @@
 if lang eq ru
-capt db 'info 3ds версия 23.08.11',0 ;подпись окна
+capt db 'info 3ds версия 26.08.11',0 ;подпись окна
 else
-capt db 'info 3ds version 23.08.11',0 ;window caption
+capt db 'info 3ds version 26.08.11',0 ;window caption
 end if
 
 MAX_FILE_LEVEL equ 20 ;максимальный уровень вложенности блоков для анализа
@@ -81,6 +81,7 @@ block_3ds CHUNK_TRACKROLL,   3,1,txt_b024
 block_3ds CHUNK_TRACKCAMTGT, 3,0,txt_b004
 
 ;--- далее не во всех блоках смог найти описание на русском языке
+block_3ds 0x4111, 3,1,txt_4111
 block_3ds 0x4150, 3,1,txt_4150
 block_3ds 0x4165, 3,1,txt_4165
 block_3ds 0x4610, 3,1,txt_4610
@@ -153,6 +154,7 @@ txt_b024 db 'Поведение roll камеры',0
 txt_b004 db 'Поведение "цели" камеры',0
 
 ;--- далее не во всех блоках смог найти описание на русском языке
+txt_4111 db 'Флаги вершин',0
 txt_4150 db 'Smoothing group list',0
 txt_4165 db 'Object color in editor',0
 txt_4610 db 'Направленный свет',0
@@ -224,6 +226,7 @@ txt_b024 db 'Roll track',0
 txt_b004 db 'Camera target information',0
 
 ;---
+txt_4111 db 'Vertex flags',0
 txt_4150 db 'Smoothing group list',0
 txt_4165 db 'Object color in editor',0
 txt_4610 db 'Spotlight',0
@@ -269,17 +272,23 @@ txt_open_3ds db 'Открыт файл:',0
 txt_no_3ds db 'Открытый файл не в формате *.3ds',0
 txt_3ds_big_file db 'Размер файла больше MAX_FILE_SIZE',0
 txt_3ds_err_sizes db 'Возможно файл поврежден',0
+txt_count db 'Количество',0
 txt_3ds_offs:
 	db 'Смещение: '
 	.dig: rb 8
+	db '  Размер: '
+	.siz: rb 8
 	db 0
 else
 txt_open_3ds db 'Open file:',0
 txt_no_3ds db 'Открытый файл не в формате *.3ds',0
 txt_3ds_big_file db 'Размер файла больше MAX_FILE_SIZE',0
 txt_3ds_err_sizes db 'Возможно файл поврежден',0
+txt_count db 'Count',0
 txt_3ds_offs:
 	db 'Offset: '
 	.dig: rb 8
+	db '  Size: '
+	.siz: rb 8
 	db 0
 end if

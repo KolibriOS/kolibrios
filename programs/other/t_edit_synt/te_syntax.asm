@@ -201,10 +201,9 @@ draw_window:
 	mov edx,txt_out_file
 	int 0x40
 
-	mov ebx,(215+CAPT_PATH_WIDTH) shl 16 + 10
-	mov edx,file_name
-	int 0x40
-
+	push dword PathShow_data_1
+	call [PathShow_draw]
+	
 	stdcall [edit_box_draw],dword edit1
 	stdcall [tl_draw],dword tree1
 
@@ -313,17 +312,12 @@ get_wnd_in_focus:
 	;@@:
 	ret
 
-hed db 'TextEditor syntax file converter 22.08.11',0 ;подпись окна
+hed db 'TextEditor syntax file converter 26.08.11',0 ;подпись окна
 
 txt122 db 'Загр. файл',0
 txt148 db 'Сохр. файл',0
 txt_inp_file db 'Исх. файл:',0
 txt_out_file db 'Вых. файл:',0
-
-edit1 edit_box 305+16-CAPT_PATH_WIDTH, 215+CAPT_PATH_WIDTH, 25, 0xffffff, 0xff, 0xff0000, 0, 0x80, MAX_COLOR_WORD_LEN, ed_buffer.127, mouse_dd, 0
-
-ed_buffer: ;текст для edit
-  .127: rb MAX_COLOR_WORD_LEN+2
 
 err_message_found_lib0	 db 'Sorry I cannot found library box_lib.obj',0
 head_f_i0:
@@ -350,6 +344,4 @@ stacktop:
     rb 4096
   file_name_rez:
     rb 4096
-  file_info:
-    rb 40
 mem:

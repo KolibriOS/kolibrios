@@ -1,0 +1,64 @@
+<html>
+<head>
+<title>элемент PathShow</title>
+<meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251">
+<link href="../style.css" type=text/css rel=stylesheet>
+</head>
+
+<body>
+<p><a href="../box_lib.htm">На главную &uarr;</a></p>
+<h1>Оглавление</h1>
+<p><a href="#vveden">Введение</a></p>
+<p><a href="#funct">Функции</a></p>
+<ul>
+<li><a href="#fun_prepare">PathShow_prepare</a></li>
+<li><a href="#fun_draw">PathShow_draw</a></li>
+</ul>
+<p><a href="#struc_pathshow">Структура PathShow</a></p>
+
+<h1><a name="vveden">Введение</a></h1>
+<p>Компонент <b>PathShow</b> - предназначен для отображения пути к файлу или директории, с усечением имени похожим на усечение выводимое FAR'ом, если не влазит в область выделенную для вывода. В текущем виде поддерживает оба системных шрифта.</p>
+
+<h1><a name="funct">Функции</a></h1>
+
+<h4><a name="fun_prepare">PathShow_prepare</a></h4>
+<p>Подготавливает строку перед выводом на экран. Нужно вызывать эту функцию каждый раз когда меняется путь к файлу.</p>
+<p>Пример использования:</p>
+<pre>; подготовка PathShow
+push dword PathShow_data_1
+call [PathShow_prepare]</pre>
+
+<h4><a name="fun_draw">PathShow_draw</a></h4>
+<p>Рисует элемент на экране.</p>
+<p>Пример использования:</p>
+<pre>; рисование PathShow
+push dword PathShow_data_1
+call [PathShow_draw]</pre>
+
+<h1><a name="struc_pathshow">Структура PathShow</a></h1>
+
+<pre>PathShow_data_1:
+.type			dd 0	;+0
+.start_y		dw 28	;+4
+.start_x		dw 172	;+6
+.font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
+.area_size_x		dw 200	;+10
+.font_number		dd 0	;+12	; 0 - monospace, 1 - variable
+.background_flag	dd 0	;+16
+.font_color		dd 0x0	;+20
+.background_color	dd 0x0	;+24
+.text_pointer		dd openfile_pach	;+28
+.work_area_pointer	dd text_work_area	;+32
+.temp_text_length	dd 0	;+36</pre>
+
+<p><b>.start_y</b> - отступ сверху</p>
+<p><b>.start_x</b> - отступ слева</p>
+<p><b>.background_flag</b> - если 1 то использовать <i>.background_color</i> для заливки</p>
+<p><b>.background_color</b> - цвет фоновой заливки</p>
+<p><b>.text_pointer</b> - указатель на область данных с исходной строкой символов</p>
+<p><b>.work_area_pointer</b> - указатель на область данных, где будет сформирована выводимая строка символов</p>
+<hr>
+<p>Документация обновлялась последний раз 26.08.11.</p>
+
+</body>
+</html>
