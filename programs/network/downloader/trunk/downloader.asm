@@ -533,7 +533,7 @@ newline
 ;dps	"eoh "
 ;newline
 	sub	edi,[buf_ptr]
-	add	edi,3
+	add	edi,4
 	mov	[body_pos],edi	; store position where document body starts
 	mov	[is_chunked],0
 ; find content-length in headers
