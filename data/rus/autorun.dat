@@ -4,7 +4,6 @@
 # If delay is negative, wait for termination of the spawned process. Otherwise, simply wait
 #
 /RD/1/COMMOUSE        ""          1    # COM mice detector
-/RD/1/DRIVERS/ATIKMS -l/rd/1/drivers/ati.log -1 #ATI videodriver loader
 /RD/1/MEDIA/KIV \T__background.gif -1  # Desktop background image
 /RD/1/@CLIP           ""          1    # Clipboard
 /RD/1/@RB             ""          1    # Desktop right-click menu
