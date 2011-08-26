@@ -605,7 +605,6 @@ newline
 	
 .cl_found:	
 	call	read_number	; eax = number from *esi
-	inc	eax	; bugfix :)
 
 .write_final_size:
 	mov	[final_size],eax	; if this works, i will b very happy...
