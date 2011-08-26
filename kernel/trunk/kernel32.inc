@@ -223,6 +223,7 @@ include "core/string.inc"
 include "core/v86.inc"      ; virtual-8086 manager
 include "core/apic.inc"     ; Interrupt Controller functions
 include "core/irq.inc"      ; irq handling functions
+include "core/timers.inc"
 
 ; GUI stuff
 include "gui/window.inc"
