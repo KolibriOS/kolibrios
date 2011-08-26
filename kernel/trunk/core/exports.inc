@@ -89,6 +89,9 @@ iglobal
   szDiskDel           db 'DiskDel',0
   szDiskMediaChanged  db 'DiskMediaChanged',0
 
+  szTimerHS           db 'TimerHS',0
+  szCancelTimerHS     db 'CancelTimerHS',0
+
 
 align 16
 kernel_export:
@@ -167,6 +170,9 @@ kernel_export:
   dd szDiskAdd         , disk_add
   dd szDiskDel         , disk_del
   dd szDiskMediaChanged, disk_media_changed
+
+  dd szTimerHS         , timer_hs
+  dd szCancelTimerHS   , cancel_timer_hs
 
 exp_lfb:
   dd szLFBAddress      , 0

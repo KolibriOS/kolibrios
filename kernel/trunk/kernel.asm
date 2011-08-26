@@ -1062,6 +1062,7 @@ osloop:
         call   checkidle
         call   check_fdd_motor_status
         call   check_ATAPI_device_event
+        call   check_timers
         jmp    osloop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                    ;

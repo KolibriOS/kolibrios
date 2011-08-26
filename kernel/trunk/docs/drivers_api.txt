@@ -73,3 +73,22 @@ void DiskMediaChanged(void* hDisk, int newstate);
 ; and nonzero in the other case. This function must not be called with nonzero
 ; 'newstate' from any of callbacks. This function must not be called if another
 ; call to this function is active.
+
+=== Timers ===
+Timers allow to schedule a function call to some time in the future, once
+or periodically. A timer function can do anything, including adding/removing
+other timers and itself, but it should not run time-consuming tasks, since that
+would block the processing thread for a long time; for such tasks it is
+recommended to create new thread.
+
+void* TimerHS(unsigned int deltaStart, unsigned int interval,
+              void* timerFunc, void* userData);
+; Registers a timer which is activated in (deltaStart == 0 ? deltaStart :
+; interval) 1/100ths of second starting from the current time. If interval
+; is zero, this timer is automatically deleted when activated. Otherwise,
+; this timer will be activated every (interval) 1/100ths of second from the
+; first activation. Activated timer calls timerFunc(userData) as stdcall.
+; Returned value: NULL = failed, otherwise = timer handle which can be passed
+; to CancelTimerHS.
+void CancelTimerHS(void* hTimer);
+; Cancels previously registered timer.
