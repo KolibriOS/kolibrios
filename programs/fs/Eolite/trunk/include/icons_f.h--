@@ -33,8 +33,10 @@ dword Put_icon(dword extension, yy)
 	//изображения
 	IF (!strcmp(extension,"gif")) || (!strcmp(extension,"bmp")) ||
 	   (!strcmp(extension,"tga")) || (!strcmp(extension,"pcx")) ||
-	   (!strcmp(extension,"png")) || (!strcmp(extension,"jpg")) ||
-	   (!strcmp(extension,"jpeg")) || (!strcmp(extension,"raw")) {fnum = 19; ftype="Image";}
+	   (!strcmp(extension,"png")) || (!strcmp(extension,"jpg")) {fnum = 19; ftype="Image";}
+	IF (!strcmp(extension,"xcf")) || (!strcmp(extension,"ai")) ||
+	   (!strcmp(extension,"jpeg")) || (!strcmp(extension,"raw")) ||
+	   (!strcmp(extension,"psd")) {fnum = 19; ftype="Image";}
 	//пиктограммы
 	IF (!strcmp(extension,"ico")) || (!strcmp(extension,"cur")) {fnum = 20; ftype="Icon";}
 	//архивы
@@ -46,11 +48,12 @@ dword Put_icon(dword extension, yy)
 	IF (!strcmp(extension,"mp3")) {fnum = 12; ftype="Music";}
 	IF (!strcmp(extension,"wav")) || (!strcmp(extension,"mid")) ||
 	   (!strcmp(extension,"midi")) || (!strcmp(extension,"ogg")) ||
-	   (!strcmp(extension,"wma")) {fnum = 12; ftype="Audio";}
+	   (!strcmp(extension,"wma"))  || (!strcmp(extension,"flac")) {fnum = 12; ftype="Audio";}
 	//video
-	IF (!strcmp(extension,"avi")) || (!strcmp(extension,"flv")) || (!strcmp(extension,"mpg")) ||
-       (!strcmp(extension,"wmv")) || (!strcmp(extension,"mov"))  || (!strcmp(extension,"mkv")) ||
-	  (!strcmp(extension,"mp4")) {fnum = 14; ftype="Video";}	
+	IF (!strcmp(extension,"avi")) || (!strcmp(extension,"flv")) ||
+	   (!strcmp(extension,"mpg")) || (!strcmp(extension,"wmv")) ||
+	   (!strcmp(extension,"mov")) || (!strcmp(extension,"mkv")) ||
+	   (!strcmp(extension,"mp4")) || (!strcmp(extension,"vob")) {fnum = 14; ftype="Video";}	
 	//папки
 	IF (!strcmp(extension,"<DIR>"))	{ fnum=16;  WriteText(onLeft(145,0),yy+4,0x80,0,extension,0);}
 	IF (!strcmp(extension,"..")) fnum=17;
@@ -76,10 +79,10 @@ void IconFairing(int filenum, y)
 			PutPixel(208,y+3,videlenie);
 			return;
 		case 2: //html
-			DrawBar(195,y,1,9,videlenie);
-			DrawBar(196,y,1,7,videlenie);
-			DrawBar(195,y+12,1,3,videlenie);
-			DrawBar(196,y+13,1,2,videlenie);
+			DrawBar(195,y,1,7,videlenie);
+			DrawBar(196,y,1,6,videlenie);
+			DrawBar(195,y+10,1,5,videlenie);
+			DrawBar(196,y+11,1,4,videlenie);
 			GOTO RIGHT_PAINT;
 		case 3: //настройки
 			DrawBar(195,y,2,7,videlenie);
@@ -115,8 +118,41 @@ void IconFairing(int filenum, y)
 			DrawBar(208,y+6,2,7,videlenie);
 			PutPixel(209,y+5,videlenie);
 			return;
+		case 10: //font
+			DrawRegion_3D(195,y,15,14,videlenie,videlenie);
+			DrawBar(196,y+1,1,13,videlenie);
+			DrawBar(197,y+1,1,11,videlenie);
+			DrawBar(198,y+1,1,10,videlenie);
+			DrawBar(199,y+1,1,9,videlenie);
+			DrawBar(200,y+1,1,7,videlenie);
+			DrawBar(201,y+1,1,5,videlenie);
+			DrawBar(202,y+1,1,4,videlenie);
+			DrawBar(203,y+1,1,2,videlenie);
+			DrawBar(209,y+1,1,13,videlenie);
+			DrawBar(208,y+1,1,11,videlenie);
+			PutPixel(204,y+6,videlenie);
+			DrawBar(203,y+10,2,1,videlenie);
+			DrawBar(202,y+11,2,3,videlenie);
+			return;
 		case 11: //asm
 			DrawBar(195,y,1,15,videlenie);
+			return;
+		case 12: //audio
+			DrawBar(195,y,16,1,videlenie);
+			DrawBar(195,y,1,15,videlenie);
+			DrawBar(196,y+1,4,8,videlenie);
+			DrawBar(196,y+9,1,2,videlenie);
+			PutPixel(197,y+9,videlenie);
+			PutPixel(196,y+14,videlenie);
+			DrawBar(210,y+1,1,14,videlenie);
+			DrawBar(202,y+4,6,4,videlenie);
+			DrawBar(202,y+8,4,1,videlenie);
+			DrawBar(202,y+9,3,1,videlenie);
+			DrawBar(202,y+10,2,3,videlenie);
+			DrawBar(201,y+13,4,1,videlenie);
+			DrawBar(200,y+14,14,1,videlenie);
+			DrawBar(209,y+12,1,2,videlenie);
+			PutPixel(208,y+13,videlenie);
 			return;
 		case 13: //skin
 			PutPixel(210,y,videlenie); 

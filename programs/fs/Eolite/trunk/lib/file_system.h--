@@ -119,7 +119,7 @@ int DeleleFile(dword del_file_path)
 //   Tкопировать файл    //
 ///////////////////////////
 f70	CopyFile_f;
-inline fastcall dword CopyFile(dword EBX,ECX)
+inline fastcall int CopyFile(dword EBX,ECX)
 {
 	BDVK CopyFile_atr;
 	dword s=EBX, d=ECX, cBufer=0;
@@ -153,6 +153,7 @@ inline fastcall dword CopyFile(dword EBX,ECX)
 			$int 0x40
 		}
 	}
+	return EAX;
 
 }
 
