@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-IRQ_RESERVE = 24	; 16 or 24
+IRQ_RESERVED = 24   ; 16 or 24
 
 iglobal
 IRQ_COUNT	dd	24
@@ -62,10 +62,11 @@ APIC_init:
 	shr	eax, 16
 	inc	al
 	movzx	eax, al
-	cmp	al, IRQ_RESERVE
+    cmp al, IRQ_RESERVED
 	jbe	@f
-	mov	al, IRQ_RESERVE
-@@:	mov	[IRQ_COUNT], eax
+    mov al, IRQ_RESERVED
+@@:
+    mov [IRQ_COUNT], eax
 
 	; Reroute IOAPIC & mask all interrupts
 	xor	ecx, ecx
@@ -106,7 +107,7 @@ APIC_init:
 
 ;init handlers table
 
-    mov ecx, IRQ_RESERVE
+    mov ecx, IRQ_RESERVED
     mov edi, irqh_tab
 @@:
     mov eax, edi

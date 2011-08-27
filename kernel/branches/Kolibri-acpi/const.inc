@@ -645,7 +645,7 @@ virtual at 0
 end virtual
 
 struc MEM_STATE
-{  .mutex             rd 1
+{  .mutex             MUTEX
    .smallmap          rd 1
    .treemap           rd 1
    .topsize           rd 1
@@ -664,7 +664,7 @@ struc PG_DATA
   .kernel_pages      dd ?
   .kernel_tables     dd ?
   .sys_page_dir      dd ?
-  .pg_mutex          dd ?
+  .mutex             MUTEX
 }
 
 ;struc LIB

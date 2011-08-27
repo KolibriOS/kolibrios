@@ -20,7 +20,7 @@ $Revision$
 ;  esi= nb
 ;  ebx= idx
 ;
-align 16 
+align 4
 malloc:
            push esi
 
@@ -31,8 +31,8 @@ malloc:
            and esi, -8
            add esi, 8
 
-           mov ebx, mst.mutex
-           call wait_mutex    ;ebx
+           mov ecx, mst.mutex
+           call mutex_lock
 
            cmp esi, 256
            jae .large
@@ -92,9 +92,13 @@ malloc:
            pop edi
            pop ebp
 .done:
+           mov esi, eax
+           mov ecx, mst.mutex
+           call mutex_unlock
+           mov eax, esi
            pop esi
-           mov [mst.mutex], 0
            ret
+
 .split:
            lea ebx, [edx+8]               ;ebx=mem
 
@@ -133,10 +137,10 @@ malloc:
            mov [edx+12], eax              ; F->bk = r;
            mov [eax+8], edx               ; r->fd = F;
            mov [eax+12], ecx              ; r->bk = B;
+
            mov eax, ebx
-           pop esi
-           mov [mst.mutex], 0
-           ret
+           jmp .done
+
 .small:
 
 ; if (ms.treemap != 0 && (mem = malloc_small(nb)) != 0)
@@ -150,9 +154,8 @@ malloc:
            call malloc_small
            test eax, eax
            jz .from_top
-           pop esi
-           and [mst.mutex], 0
-           ret
+           jmp .done
+
 .large:
 
 ; if (ms.treemap != 0 && (mem = malloc_large(nb)) != 0)
@@ -189,18 +192,15 @@ malloc:
            mov [edx+4], eax
            mov [ecx+4], esi
            lea eax, [ecx+8]
-           pop esi
-           and [mst.mutex], 0
-           ret
+           jmp .done
+
 .fail:
            xor eax, eax
-           pop esi
-           and [mst.mutex], 0
-           ret
+           jmp .done
 
 ; param
 ;  eax= mem
-
+align 4
 free:
            push edi
            mov edi, eax
@@ -211,8 +211,8 @@ free:
            test byte [edi+4], 2
            je .fail
 
-           mov ebx, mst.mutex
-           call wait_mutex    ;ebx
+           mov ecx, mst.mutex
+           call mutex_lock
 
 ; psize = p->head & (~3);
 
@@ -289,7 +289,10 @@ free:
            mov [mst.top], edi
            mov [edi+4], eax
 .fail2:
-           and [mst.mutex], 0
+           mov esi, eax
+           mov ecx, mst.mutex
+           call mutex_unlock
+           mov eax, esi
            pop esi
 .fail:
            pop edi
@@ -410,13 +413,15 @@ insert_chunk:
            mov [esi+8], edx            ;P->fd = F
            mov [esi+12], eax           ;P->bk = B
            pop esi
-           and [mst.mutex], 0
+           mov ecx, mst.mutex
+           call mutex_unlock
            ret
 .large:
            mov ebx, eax
            call insert_large_chunk
            pop esi
-           and [mst.mutex], 0
+           mov ecx, mst.mutex
+           call mutex_unlock
            ret
 
 
@@ -1024,6 +1029,9 @@ init_malloc:
            add eax, 16
            cmp eax, mst.smallbins+512
            jb @B
+
+           mov ecx, mst.mutex
+           call mutex_init
 
            ret
 

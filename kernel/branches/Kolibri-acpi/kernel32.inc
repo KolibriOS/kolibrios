@@ -223,6 +223,7 @@ include "core/string.inc"
 include "core/v86.inc"      ; virtual-8086 manager
 include "core/apic.inc"     ; Interrupt Controller functions
 include "core/irq.inc"      ; irq handling functions
+include "core/timers.inc"
 
 ; GUI stuff
 include "gui/window.inc"
@@ -234,6 +235,7 @@ include "gui/button.inc"
 
 ; file system
 
+include "fs/disk.inc"     ; support for plug-n-play disks
 include "fs/fs.inc"       ; syscall
 include "fs/fat32.inc"    ; read / write for fat32 filesystem
 include "fs/ntfs.inc"     ; read / write for ntfs filesystem

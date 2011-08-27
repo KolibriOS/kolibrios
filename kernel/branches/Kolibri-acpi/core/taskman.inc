@@ -360,8 +360,8 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
          app_tabs    dd ?
        endl
 
-       mov ebx, pg_data.pg_mutex
-       call wait_mutex   ;ebx
+       mov ecx, pg_data.mutex
+       call mutex_lock
 
        xor eax, eax
        mov [dir_addr], eax
@@ -387,11 +387,11 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
        shr ecx, 12
        mov [img_pages], ecx
 
-     if GREEDY_KERNEL
+if GREEDY_KERNEL
        lea eax, [ecx+ebx+2]    ;only image size
-     else
+else
        lea eax, [eax+ebx+2]    ;all requested memory
-     end if
+end if
        cmp eax, [pg_data.pages_free]
        ja .fail
 
@@ -480,11 +480,13 @@ end if
 .done:
        stdcall map_page,[tmp_task_pdir],dword 0,dword PG_UNMAP
 
-       dec [pg_data.pg_mutex]
+       mov ecx, pg_data.mutex
+       call mutex_unlock
        mov eax, [dir_addr]
        ret
 .fail:
-       dec [pg_data.pg_mutex]
+       mov ecx, pg_data.mutex
+       call mutex_unlock
        cmp [dir_addr], 0
        je @f
        stdcall destroy_app_space, [dir_addr], 0
@@ -554,10 +556,10 @@ proc destroy_app_space stdcall, pg_dir:dword, dlls_list:dword
        jg    .ret
 ;if there isn't threads then clear memory.
        mov esi, [dlls_list]
-       call destroy_all_hdlls
+       call destroy_all_hdlls  ;ecx=APPDATA
 
-       mov ebx, pg_data.pg_mutex
-       call wait_mutex   ;ebx
+       mov ecx, pg_data.mutex
+       call mutex_lock
 
        mov eax, [pg_dir]
        and eax, not 0xFFF
@@ -583,7 +585,8 @@ proc destroy_app_space stdcall, pg_dir:dword, dlls_list:dword
 .exit:
        stdcall map_page,[tmp_task_ptab],0,PG_UNMAP
        stdcall map_page,[tmp_task_pdir],0,PG_UNMAP
-       dec [pg_data.pg_mutex]
+       mov ecx, pg_data.mutex
+       call mutex_unlock
 .ret:
        ret
 endp
@@ -955,24 +958,6 @@ proc new_sys_threads
        dec    eax	;-1
        ret
 endp
-
-; param
-;  ebx=mutex
-
-align 4
-wait_mutex:
-;;Maxis use atomic bts for mutex 4.4.2009
-       push eax
-       push ebx
-.do_wait:
-           bts dword [ebx],0
-           jnc .locked
-       call change_task
-       jmp .do_wait
-.locked:
-       pop ebx
-       pop eax
-       ret
 
 align 4
 tls_app_entry:

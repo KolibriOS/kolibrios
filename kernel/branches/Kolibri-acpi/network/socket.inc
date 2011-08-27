@@ -54,7 +54,7 @@ struct SOCKET
   .SEG_LEN	  dd ? ; segment length
   .SEG_WND	  dd ? ; segment window
   .wndsizeTimer   dd ? ; window size timer
-  .lock           dd ? ; lock mutex
+  .lock       MUTEX ; lock mutex
   .rxData	  dd ? ; receive data buffer here
 ends
 
@@ -98,6 +98,11 @@ proc net_socket_alloc stdcall uses ebx ecx edx edi
 	xor	eax, eax
 	rep	stosd
 	pop	eax
+
+    mov ebx, eax
+    lea ecx, [eax+SOCKET.lock]
+    call mutex_init
+    mov eax, ebx
 
 	; add socket to the list by changing pointers
 	mov	ebx, net_sockets
@@ -703,10 +708,10 @@ proc socket_read stdcall
 	or	eax, eax
 	jz	.error
 
-	lea	ebx, [eax + SOCKET.lock]
-	call	wait_mutex
+    mov ebx, eax
+    lea ecx, [eax + SOCKET.lock]
+    call mutex_lock
 
-	mov	ebx, eax
 	mov	eax, [ebx + SOCKET.rxDataCount] 	; get count of bytes
 	test	eax, eax
 	jz	.error_release
@@ -727,15 +732,18 @@ proc socket_read stdcall
 	and	ecx, 3
 	rep	movsb
 
-	mov	[ebx + SOCKET.lock], 0
+    lea ecx, [ebx + SOCKET.lock]
 	mov	ebx, eax
-
+    call mutex_unlock
+    mov eax, ebx
 	ret
 
   .error_release:
-	mov	[ebx + SOCKET.lock], 0
+    lea ecx, [ebx + SOCKET.lock]
+    call mutex_unlock
   .error:
 	xor	ebx, ebx
+    xor eax, eax
 	ret
 endp
 
@@ -756,10 +764,11 @@ proc socket_read_packet stdcall
 	or	eax, eax
 	jz	.error
 
-	lea	ebx, [eax + SOCKET.lock]
-	call	wait_mutex
+    mov ebx, eax
 
-	mov	ebx, eax
+    lea ecx, [eax + SOCKET.lock]
+    call mutex_lock
+
 	mov	eax, [ebx + SOCKET.rxDataCount] 	   ; get count of bytes
 	test	eax, eax				   ; if count of bytes is zero..
 	jz	.exit					   ; exit function (eax will be zero)
@@ -789,7 +798,9 @@ proc socket_read_packet stdcall
 	rep	movsb					   ; copy remaining bytes
 
   .exit:
-	mov	[ebx + SOCKET.lock], 0
+    lea ecx, [ebx + SOCKET.lock]
+    call mutex_unlock
+    mov eax, edx
 	ret						   ; at last, exit
 
   .error:
@@ -800,7 +811,9 @@ proc socket_read_packet stdcall
 	xor	esi, esi
 	mov	[ebx + SOCKET.rxDataCount], esi 	   ; store new count (zero)
 	call	.start_copy
-	mov	[ebx + SOCKET.lock], 0
+    lea ecx, [ebx + SOCKET.lock]
+    call mutex_unlock
+    mov eax, edx
 	ret
 
   .start_copy:

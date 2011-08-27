@@ -54,7 +54,7 @@ iglobal
 	dd irq_serv.irq_22
 	dd irq_serv.irq_23
 
-	times 32 - IRQ_RESERVE dd unknown_interrupt
+    times 32 - IRQ_RESERVED dd unknown_interrupt
     ;int_0x40 gate trap (for directly copied)
         dw      i40 and 0xFFFF, os_code, 11101111b shl 8, i40 shr 16
 
@@ -243,18 +243,6 @@ show_error_parameters:
   restore  reg_ebp
   restore  reg_esi
   restore  reg_edi
-
-
-align 4
-irqD:
-        push  eax
-	xor   eax,eax
-        out   0xf0,al
-        mov   al,0x20
-        out   0xa0,al
-        out   0x20,al
-        pop   eax
-        iret
 
 
 align 4
@@ -682,8 +670,13 @@ term9:
 restore .slot
 
 iglobal
+if lang eq ru
+  boot_sched_1    db   'Создание GDT TSS указателя',0
+  boot_sched_2    db   'Создание IDT таблицы',0
+else
   boot_sched_1    db   'Building gdt tss pointer',0
   boot_sched_2    db   'Building IDT table',0
+end if
 endg
 
 

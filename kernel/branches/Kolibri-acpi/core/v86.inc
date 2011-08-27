@@ -328,7 +328,7 @@ v86_start:
         cmp     edx, -1
         jz      .noirqhook
 uglobal
-v86_irqhooks    rd      IRQ_RESERVE * 2
+v86_irqhooks    rd      IRQ_RESERVED * 2
 endg
         cmp     [v86_irqhooks+edx*8], 0
         jz      @f
@@ -839,6 +839,7 @@ end if
 ;        mov     byte [BOOT_VAR + 48Eh], 0FFh
 ;        ret
 
+align 4
 v86_irq:
 ; push irq/pushad/jmp v86_irq
 ; eax = irq

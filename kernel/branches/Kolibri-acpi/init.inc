@@ -266,7 +266,6 @@ proc init_page_map
            add ebx, [pg_data.pagemap_size-OS_BASE]
            mov [page_end-OS_BASE], ebx
 
-           mov [pg_data.pg_mutex-OS_BASE], 0
            ret
 endp
 

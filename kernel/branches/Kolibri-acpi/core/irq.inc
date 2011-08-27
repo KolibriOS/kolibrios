@@ -5,6 +5,10 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+IRQ_POOL_SIZE  equ 48
+
+
 macro __list_add new, prev, next
 {
     mov [next+LHEAD.prev], new
@@ -28,13 +32,13 @@ macro list_add_tail new, head
 uglobal
 
 align 16
-irqh_tab            rd LHEAD.sizeof * IRQ_RESERVE / 4
+irqh_tab            rd LHEAD.sizeof * IRQ_RESERVED / 4
 
-irqh_pool           rd IRQH.sizeof *48 /4
+irqh_pool           rd IRQH.sizeof * IRQ_POOL_SIZE /4
 next_irqh           rd 1
 
 irq_active_set      rd 1
-irq_failed          rd IRQ_RESERVE
+irq_failed          rd IRQ_RESERVED
 
 endg
 
@@ -44,8 +48,6 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
            .irqh dd ?
          endl
 
-         xchg bx, bx
-
          and [.irqh], 0
 
          push ebx
@@ -54,7 +56,7 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
          test ebx, ebx
          jz   .err
 
-         cmp  ebx, IRQ_RESERVE
+         cmp  ebx, IRQ_RESERVED
          jae  .err
 
          mov  edx, [handler]
@@ -72,8 +74,9 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
 
          mov eax, [ecx]
          mov [next_irqh], eax
-
          mov [.irqh], ecx
+
+         mov [irq_failed+ebx*4], 0  ;clear counter
 
          mov eax, [user_data]
          mov [ecx+IRQH.handler], edx
@@ -81,8 +84,7 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
 
          lea edx, [irqh_tab+ebx*8]
          list_add_tail ecx, edx     ;clobber eax
-
-         stdcall enable_irq, [irq]
+         stdcall enable_irq, ebx
 
 .fail:
          popfd
@@ -116,7 +118,6 @@ proc  detach_int_handler
 endp
 
 
-
 macro irq_serv_h [num] {
     forward
 align 4
@@ -141,8 +142,6 @@ purge irq_serv_h
 align 16
 .main:
        save_ring3_context
-
-       xchg bx, bx
 
        mov   ebp, [esp + 32]
        mov   bx, app_data  ;os_data
@@ -212,4 +211,15 @@ align 16
        add   esp, 4
        iret
 
+align 4
+irqD:
+        push  eax
+        push  ecx
+        xor   eax,eax
+        out   0xf0,al
+        mov   eax, 13
+        call  IRQ_EOI
+        pop   ecx
+        pop   eax
+        iret
 

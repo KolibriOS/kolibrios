@@ -332,7 +332,7 @@ irq_handler:
 
 	mov	[esi+COM_MOUSE_DATA.MouseByteNumber],0
 .EndMouseInterrupt:
-
+        mov al, 1
 	ret
 
 ;all initialized data place here

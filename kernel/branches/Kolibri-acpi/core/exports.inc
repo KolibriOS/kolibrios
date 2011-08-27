@@ -85,6 +85,13 @@ iglobal
   szStrchr            db 'strchr',0
   szStrrchr           db 'strrchr',0
 
+  szDiskAdd           db 'DiskAdd',0
+  szDiskDel           db 'DiskDel',0
+  szDiskMediaChanged  db 'DiskMediaChanged',0
+
+  szTimerHS           db 'TimerHS',0
+  szCancelTimerHS     db 'CancelTimerHS',0
+
 
 align 16
 kernel_export:

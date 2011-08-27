@@ -321,6 +321,12 @@ high_code:
            mov eax, cr3
            mov cr3, eax           ; flush TLB
 
+           mov ecx, pg_data.mutex
+           call mutex_init
+
+           mov ecx, disk_list_mutex
+           call mutex_init
+
 ; SAVE REAL MODE VARIABLES
         mov     ax, [BOOT_VAR + 0x9031]
         mov     [IDEContrRegsBaseAddr], ax
@@ -713,7 +719,11 @@ end if
         call    boot_log
 
         movzx   ecx, word [boot_y]
-        or      ecx, (10+29*6) shl 16 ; "Determining amount of memory"
+        if lang eq ru
+		or      ecx, (10+30*6) shl 16
+		else
+		or      ecx, (10+29*6) shl 16
+		end if
         sub     ecx, 10
         mov     edx, 0xFFFFFF
         mov     ebx, [MEM_AMOUNT]
@@ -832,7 +842,11 @@ end if
 
         mov     ebx, edx
         movzx   ecx, word [boot_y]
-        add     ecx, (10+17*6) shl 16 - 10 ; 'CPU frequency is '
+        if lang eq ru
+		add      ecx, (10+19*6) shl 16 - 10; 'Determining amount of memory'
+		else
+		add      ecx, (10+17*6) shl 16 - 10; 'Determining amount of memory'
+		end if
         mov     edx, 0xFFFFFF
         xor     edi,edi
         mov     eax, 0x00040000
@@ -2270,17 +2284,17 @@ window_minimize db 0
 sound_flag      db 0
 endg
 
-iglobal
-version_inf:
-  db 0,7,7,0  ; version 0.7.7.0
-  db UID_KOLIBRI
-  dd __REV__
-version_end:
-endg
-
 UID_NONE=0
 UID_MENUETOS=1   ;official
 UID_KOLIBRI=2    ;russian
+
+iglobal
+version_inf:
+  db 0,7,7,0  ; version 0.7.7.0
+  db 0
+  dd __REV__
+version_end:
+endg
 
 sys_cachetodiskette:
         cmp     ebx, 1

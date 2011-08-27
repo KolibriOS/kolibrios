@@ -47,8 +47,34 @@ keymap_alt:
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
-  boot_memdetect    db   'Determining amount of memory',0
+
+if lang eq ru
+  boot_fonts        db   'Шрифты загружены',0
+  boot_memdetect    db   'Количество оперативной памяти','     ',' Мб',0
+  boot_tss          db   'Установка TSSs',0
+  boot_cpuid        db   'Чтение CPUIDs',0
+  boot_devices      db   'Поиск устройств',0
+  boot_timer        db   'Установка таймера',0
+  boot_irqs         db   'Переопределение IRQ',0
+  boot_setmouse     db   'Установка мыши',0
+  boot_windefs      db   'Установка настроек окон по умолчанию',0
+  boot_bgr          db   'Установка фона',0
+  boot_resirqports  db   'Резервирование IRQ и портов',0
+  boot_setrports    db   'Установка адресов IRQ',0
+  boot_setostask    db   'Создание процесса ядра',0
+  boot_allirqs      db   'Открытие всех IRQ',0
+  boot_tsc          db   'Чтение TSC',0
+  boot_cpufreq      db   'Частота процессора ','    ',' МГц',0
+  boot_pal_ega      db   'Установка EGA/CGA 320x200 палитры',0
+  boot_pal_vga      db   'Установка VGA 640x480 палитры',0
+  boot_failed       db   'Загрузка первого приложения не удалась',0
+  boot_mtrr         db   'Установка MTRR',0
+if preboot_blogesc
+  boot_tasking      db   'Все готово для запуска, нажмитре ESC для старта',0
+end if
+else
   boot_fonts        db   'Fonts loaded',0
+  boot_memdetect    db   'Determining amount of memory',0
   boot_tss          db   'Setting TSSs',0
   boot_cpuid        db   'Reading CPUIDs',0
   boot_devices      db   'Detecting devices',0
@@ -63,12 +89,14 @@ keymap_alt:
   boot_pal_ega      db   'Setting EGA/CGA 320x200 palette',0
   boot_pal_vga      db   'Setting VGA 640x480 palette',0
   boot_failed       db   'Failed to start first app',0
-  boot_APIC_found   db	 'APIC enabled', 0
-  boot_APIC_nfound  db	 'APIC not found', 0
-
+  boot_mtrr         db   'Setting MTRR',0
 if preboot_blogesc
   boot_tasking      db   'All set - press ESC to start',0
 end if
+end if
+
+  boot_APIC_found   db	 'APIC enabled', 0
+  boot_APIC_nfound  db	 'APIC not found', 0
 
 ;new_process_loading db 'K : New Process - loading',13,10,0
 ;new_process_running db 'K : New Process - done',13,10,0
@@ -280,7 +308,7 @@ mem_block_arr     rd 1
 mem_block_start   rd 1
 mem_block_end     rd 1
 
-heap_mutex        rd 1
+heap_mutex        MUTEX
 heap_size         rd 1
 heap_free         rd 1
 heap_blocks       rd 1

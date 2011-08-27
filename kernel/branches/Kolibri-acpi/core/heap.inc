@@ -151,7 +151,8 @@ proc init_kernel_heap
 
            mov [mem_block_list+63*4], ebx
            mov byte [mem_block_map], 0xFC
-           and [heap_mutex], 0
+           mov ecx, heap_mutex
+           call mutex_init
            mov [heap_blocks], 4095
            mov [free_blocks], 4094
            ret
@@ -272,13 +273,13 @@ proc alloc_kernel_space stdcall, size:dword
            push esi
            push edi
 
+           mov ecx, heap_mutex
+           call mutex_lock
+
            mov eax, [size]
            add eax, 4095
            and eax, not 4095
            mov [size], eax
-
-           mov ebx, heap_mutex
-           call wait_mutex    ;ebx
 
            cmp eax, [heap_free]
            ja .error
@@ -355,10 +356,11 @@ proc alloc_kernel_space stdcall, size:dword
            mov [edx+list_bk], esi
 
            mov [esi+block_flags], USED_BLOCK
-           mov eax, [esi+block_base]
            mov ebx, [size]
            sub [heap_free], ebx
-           and [heap_mutex], 0
+           mov ecx, heap_mutex
+           call mutex_unlock
+           mov eax, [esi+block_base]
            pop edi
            pop esi
            pop ebx
@@ -378,17 +380,19 @@ proc alloc_kernel_space stdcall, size:dword
            mov [edx+list_bk], edi
 
            mov [edi+block_flags], USED_BLOCK
-           mov eax, [edi+block_base]
            mov ebx, [size]
            sub [heap_free], ebx
-           and [heap_mutex], 0
+           mov ecx, heap_mutex
+           call mutex_unlock
+           mov eax, [edi+block_base]
            pop edi
            pop esi
            pop ebx
            ret
 .error:
+           mov ecx, heap_mutex
+           call mutex_unlock
            xor eax, eax
-           mov [heap_mutex], eax
            pop edi
            pop esi
            pop ebx
@@ -400,8 +404,9 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
            push ebx
            push esi
            push edi
-           mov ebx, heap_mutex
-           call wait_mutex    ;ebx
+
+           mov ecx, heap_mutex
+           call mutex_lock
 
            mov eax, [base]
            mov esi, [mem_used.fd]
@@ -491,9 +496,10 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
 @@:
            bts [mem_block_mask], eax
 .m_eq:
+           mov ecx, heap_mutex
+           call mutex_unlock
            xor eax, eax
-           mov [heap_mutex], eax
-           dec eax
+           not eax
            pop edi
            pop esi
            pop ebx
@@ -513,16 +519,18 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
 @@:
            bts [mem_block_mask], eax
            mov [esi+block_flags],FREE_BLOCK
+           mov ecx, heap_mutex
+           call mutex_unlock
            xor eax, eax
-           mov [heap_mutex], eax
-           dec eax
+           not eax
            pop edi
            pop esi
            pop ebx
            ret
 .fail:
+           mov ecx, heap_mutex
+           call mutex_unlock
            xor eax, eax
-           mov [heap_mutex], eax
            pop edi
            pop esi
            pop ebx
@@ -607,8 +615,8 @@ align 4
 proc kernel_free stdcall, base:dword
            push ebx esi
 
-           mov ebx, heap_mutex
-           call wait_mutex    ;ebx
+           mov ecx, heap_mutex
+           call mutex_lock
 
            mov eax, [base]
            mov esi, [mem_used.fd]
@@ -624,19 +632,17 @@ proc kernel_free stdcall, base:dword
            cmp [esi+block_flags], USED_BLOCK
            jne .fail
 
-           and [heap_mutex], 0
+           call mutex_unlock
 
-           push ecx
            mov ecx, [esi+block_size];
            shr ecx, 12
            call release_pages   ;eax, ecx
-           pop ecx
            stdcall free_kernel_space, [base]
            pop esi ebx
            ret
 .fail:
+           call mutex_unlock
            xor eax, eax
-           mov [heap_mutex], eax
            pop esi ebx
            ret
 endp
