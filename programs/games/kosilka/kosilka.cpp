@@ -35,7 +35,7 @@ bool skin_available=false;
 bool w_redraw=true;
 
 const char windowTitle[]="Косилка для Колибри";
-const char version[]="Версия 1.11";
+const char version[]="Версия 1.12";
 int levelcount=7; //╫шёыю єЁютэхщ
 
 char gamearea[20][20]; //╩рЁЄр
