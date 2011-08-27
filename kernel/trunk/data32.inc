@@ -310,7 +310,7 @@ mem_block_arr     rd 1
 mem_block_start   rd 1
 mem_block_end     rd 1
 
-heap_mutex        rd 1
+heap_mutex        MUTEX
 heap_size         rd 1
 heap_free         rd 1
 heap_blocks       rd 1

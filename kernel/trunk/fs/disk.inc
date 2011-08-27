@@ -119,7 +119,7 @@ struct DISK
 ; The structure is destroyed when the reference count decrements to zero:
 ; this usually occurs in 'disk_del', but can be delayed to the end of last
 ; filesystem operation, if one is active.
-.MediaLock              dd      ?
+.MediaLock              MUTEX
 ; Lock to protect the MEDIA structure. See the description after
 ; 'disk_list_mutex' for the locking strategy.
 ; Fields of media object
@@ -150,7 +150,7 @@ ends
 
 ; This structure represents one partition for the kernel. This is a base
 ; template, the actual contents after common fields is determined by the
-; file system code for this partition. 
+; file system code for this partition.
 struct PARTITION
 .FirstSector    dq      ?
 ; First sector of the partition.
@@ -198,7 +198,7 @@ disk_list:
 endg
 uglobal
 ; This mutex guards all operations with the global list of DISK structures.
-disk_list_mutex dd      0
+disk_list_mutex MUTEX
 ; * There are two dependent objects, a disk and a media. In the simplest case
 ;   disk and media are both non-removable. However, in the general case both
 ;   can be removed at any time, simultaneously or only media, this makes things
@@ -345,27 +345,24 @@ disk_add:
 ; 4. Initialize other fields of the DISK structure.
 ; Media is not inserted, initialized state of mutex is zero,
 ; reference counter is 1.
+        lea     ecx, [ebx+DISK.MediaLock]
+        call    mutex_init
         xor     eax, eax
         mov     dword [ebx+DISK.MediaInserted], eax
-        mov     [ebx+DISK.MediaLock], eax
         inc     eax
         mov     [ebx+DISK.RefCount], eax
 ; The DISK structure is initialized.
 ; 5. Insert the new structure to the global list.
-        xchg    eax, ebx        ; now eax = pointer to DISK
 ; 5a. Acquire the mutex.
-        mov     ebx, disk_list_mutex
-        call    wait_mutex
+        mov     ecx, disk_list_mutex
+        call    mutex_lock
 ; 5b. Insert item to the tail of double-linked list.
         mov     edx, disk_list
-        mov     ecx, [edx+DISK.Prev]
-        mov     [eax+DISK.Prev], ecx
-        mov     [eax+DISK.Next], edx
-        mov     [edx+DISK.Prev], eax
-        mov     [ecx+DISK.Next], eax
+        list_add_tail ebx, edx     ;ebx= new edx= list head
 ; 5c. Release the mutex.
-        mov     dword [ebx], 0
+        call mutex_unlock
 ; 6. Return with eax = pointer to DISK.
+        xchg    eax, ebx
         jmp     .nothing
 .free:
 ; Memory allocation for DISK structure succeeded, but for disk name failed.
@@ -388,28 +385,28 @@ disk_add:
 ; [esp+4] = handle of the disk, i.e. the pointer to the DISK structure.
 ; Return value: none.
 disk_del:
-        push    ebx esi         ; save used registers to be stdcall
+        push    esi         ; save used registers to be stdcall
 ; 1. Force media to be removed. If the media is already removed, the
 ; call does nothing.
         mov     esi, [esp+4+8]  ; esi = handle of the disk
         stdcall disk_media_changed, esi, 0
 ; 2. Delete the structure from the global list.
 ; 2a. Acquire the mutex.
-        mov     ebx, disk_list_mutex
-        call    wait_mutex
+        mov     ecx, disk_list_mutex
+        call    mutex_lock
 ; 2b. Delete item from double-linked list.
         mov     eax, [esi+DISK.Next]
         mov     edx, [esi+DISK.Prev]
         mov     [eax+DISK.Prev], edx
         mov     [edx+DISK.Next], eax
 ; 2c. Release the mutex.
-        mov     dword [ebx], 0
+        call    mutex_unlock
 ; 3. The structure still has one reference created in disk_add. Remove this
 ; reference. If there are no other references, disk_dereference will free the
 ; structure.
         call    disk_dereference
 ; 4. Return.
-        pop     esi ebx         ; restore used registers to be stdcall
+        pop     esi             ; restore used registers to be stdcall
         ret     4               ; purge 1 dword argument to be stdcall
 
 ; This is an internal function which removes a previously obtained reference
@@ -502,12 +499,12 @@ disk_media_changed:
         jz      .noremove
 ; We really need to remove the media.
 ; 1b. Acquire mutex.
-        lea     ebx, [esi+DISK.MediaLock]
-        call    wait_mutex
+        lea     ecx, [esi+DISK.MediaLock]
+        call    mutex_lock
 ; 1c. Clear the flag.
         mov     [esi+DISK.MediaInserted], 0
 ; 1d. Release mutex.
-        mov     dword [ebx], 0
+        call    mutex_unlock
 ; 1e. Remove the "lifetime" reference and possibly destroy the structure.
         call    disk_media_dereference
 .noremove:
@@ -968,19 +965,19 @@ end virtual
 dyndisk_handler:
         push    ebx edi         ; save registers used in file_system_lfn
 ; 1. Acquire the mutex.
-        mov     ebx, disk_list_mutex
-        call    wait_mutex
+        mov     ecx, disk_list_mutex
+        call    mutex_lock
 ; 2. Loop over the list of DISK structures.
 ; 2a. Initialize.
-        mov     ecx, disk_list
+        mov     ebx, disk_list
 .scan:
 ; 2b. Get the next item.
-        mov     ecx, [ecx+DISK.Next]
+        mov     ebx, [ebx+DISK.Next]
 ; 2c. Check whether the list is done. If so, go to 3.
-        cmp     ecx, disk_list
+        cmp     ebx, disk_list
         jz      .notfound
 ; 2d. Compare names. If names match, go to 5.
-        mov     edi, [ecx+DISK.Name]
+        mov     edi, [ebx+DISK.Name]
         push    esi
 @@:
 ; esi points to the name from fs operation; it is terminated by zero or slash.
@@ -1005,7 +1002,7 @@ dyndisk_handler:
 .notfound:
 ; The loop is done and no name matches.
 ; 3. Release the mutex.
-        mov     dword [ebx], 0
+        call mutex_unlock
 ; 4. Return normally.
         pop     edi ebx         ; restore registers used in file_system_lfn
         ret
@@ -1018,24 +1015,25 @@ dyndisk_handler:
         jnz     .wrongname
 ; We found the addressed DISK structure.
 ; 5. Reference the disk.
-lock    inc     [ecx+DISK.RefCount]
+lock    inc     [ebx+DISK.RefCount]
 ; 6. Now we are sure that the DISK structure is not going to die at least
 ; while we are working with it, so release the global mutex.
-        mov     dword [ebx], 0
+        call    mutex_unlock
 ; 7. Acquire the mutex for media object.
         pop     edi             ; restore edi
-        lea     ebx, [ecx+DISK.MediaLock]
-        call    wait_mutex
+        lea     ecx, [ebx+DISK.MediaLock]
+        call    mutex_lock
 ; 8. Get the media object. If it is not NULL, reference it.
         xor     edx, edx
-        cmp     [ecx+DISK.MediaInserted], dl
+        cmp     [ebx+DISK.MediaInserted], dl
         jz      @f
-        mov     edx, ecx
-        inc     [ecx+DISK.MediaRefCount]
+        mov     edx, ebx
+        inc     [ebx+DISK.MediaRefCount]
 @@:
 ; 9. Now we are sure that the media object, if it exists, is not going to die
 ; at least while we are working with it, so release the mutex for media object.
-        mov     dword [ebx], 0
+        call    mutex_unlock
+        mov     ecx, ebx
         pop     ebx eax         ; restore ebx, pop return address
 ; 10. Check whether the fs operation wants to enumerate partitions (go to 11)
 ; or work with some concrete partition (go to 12).
@@ -1152,24 +1150,25 @@ fs_dyndisk:
 ; if the driver does not support insert notifications and we are the only fs
 ; operation with this disk, issue the fake insert notification; if media is
 ; still not inserted, 'disk_media_changed' will detect this and do nothing
-        push    ebx
-        lea     ebx, [edx+DISK.MediaLock]
-        call    wait_mutex
+;;;        push    ebx
+        lea     ecx, [edx+DISK.MediaLock]
+        call    mutex_lock
         cmp     [edx+DISK.MediaRefCount], 1
         jnz     .noluck
-        mov     dword [ebx], 0
+        call    mutex_unlock
         push    edx
         stdcall disk_media_changed, edx, 1
         pop     edx
-        call    wait_mutex
+        lea     ecx, [edx+DISK.MediaLock]
+        call    mutex_lock
         cmp     [edx+DISK.MediaInserted], 0
         jz      .noluck
 lock    inc     [edx+DISK.MediaRefCount]
-        mov     dword [ebx], 0
+        call    mutex_unlock
         xor     ecx, ecx
         jmp     .main
 .noluck:
-        mov     dword [ebx], 0
+        call    mutex_unlock
 .deverror:
         mov     dword [esp+32], ERROR_DEVICE
         mov     esi, edx
@@ -1185,11 +1184,11 @@ lock    inc     [edx+DISK.MediaRefCount]
 ;      eax != 0 => buffer pointed to by edi contains name of item
 dyndisk_enum_root:
         push    ebx             ; save register used in file_system_lfn
-        mov     ebx, disk_list_mutex    ; it will be useful
+        mov     ecx, disk_list_mutex    ; it will be useful
 ; 1. If this is the first call, acquire the mutex and initialize.
         test    eax, eax
         jnz     .notfirst
-        call    wait_mutex
+        call    mutex_lock
         mov     eax, disk_list
 .notfirst:
 ; 2. Get next item.
@@ -1211,7 +1210,7 @@ dyndisk_enum_root:
         ret
 .last:
 ; 6. Release the mutex and return with eax = 0.
+        call    mutex_unlock
         xor     eax, eax
-        mov     dword [ebx], eax
         pop     ebx             ; restore register used in file_system_lfn
         ret

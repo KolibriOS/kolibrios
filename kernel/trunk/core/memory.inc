@@ -214,30 +214,32 @@ endp
 
 align 4
 commit_pages:
-           push edi
            test ecx, ecx
            jz .fail
 
-           mov edi, ebx
-           mov ebx, pg_data.pg_mutex
-           call wait_mutex      ;ebx
+           push edi
+           push eax
+           push ecx
+           mov ecx, pg_data.mutex
+           call mutex_lock
+           pop ecx
+           pop eax
 
-           mov edx, 0x1000
-           mov ebx, edi
-           shr ebx, 12
+           mov edi, ebx
+           shr edi, 12
+           lea edi, [page_tabs+edi*4]
 @@:
-           mov [page_tabs+ebx*4], eax
-          ; push eax
-           invlpg [edi]
-          ; pop eax
-           add edi, edx
-           add eax, edx
-           inc ebx
-           dec ecx
-           jnz @B
-           mov [pg_data.pg_mutex],ecx
-.fail:
+           stosd
+           invlpg [ebx]
+           add eax, 0x1000
+           add ebx, 0x1000
+           loop @B
+
            pop edi
+
+           mov ecx, pg_data.mutex
+           call mutex_unlock
+.fail:
            ret
 
 
@@ -248,15 +250,21 @@ commit_pages:
 align 4
 release_pages:
 
-           pushad
-           mov ebx, pg_data.pg_mutex
-           call wait_mutex      ;ebx
+           push ebp
+           push esi
+           push edi
+           push ebx
 
            mov esi, eax
            mov edi, eax
 
-           shr esi, 10
-           add esi, page_tabs
+           shr esi, 12
+           lea esi, [page_tabs+esi*4]
+
+           push ecx
+           mov ecx, pg_data.mutex
+           call mutex_lock
+           pop ecx
 
            mov ebp, [pg_data.pages_free]
            mov ebx, [page_start]
@@ -264,9 +272,7 @@ release_pages:
 @@:
            xor eax, eax
            xchg eax, [esi]
-           push eax
            invlpg [edi]
-           pop eax
 
            test eax, 1
            jz .next
@@ -285,11 +291,16 @@ release_pages:
 .next:
            add edi, 0x1000
            add esi, 4
-           dec ecx
-           jnz @B
+           loop @B
+
            mov [pg_data.pages_free], ebp
-           and [pg_data.pg_mutex],0
-           popad
+           mov ecx, pg_data.mutex
+           call mutex_unlock
+
+           pop ebx
+           pop edi
+           pop esi
+           pop ebp
            ret
 
 ; param
@@ -423,8 +434,8 @@ endp
 align 4
 proc new_mem_resize stdcall, new_size:dword
 
-           mov ebx, pg_data.pg_mutex
-           call wait_mutex    ;ebx
+           mov ecx, pg_data.mutex
+           call mutex_lock
 
            mov edi, [new_size]
            add edi,4095
@@ -464,8 +475,10 @@ proc new_mem_resize stdcall, new_size:dword
            mov     ebx, [new_size]
            call    update_mem_size
 
+           mov ecx, pg_data.mutex
+           call mutex_unlock
+
            xor eax, eax
-           dec [pg_data.pg_mutex]
            ret
 .expand:
 
@@ -539,9 +552,11 @@ proc new_mem_resize stdcall, new_size:dword
            pop edi
            pop esi
 .exit:
+           mov ecx, pg_data.mutex
+           call mutex_unlock
+
            xor eax, eax
            inc eax
-           dec [pg_data.pg_mutex]
            ret
 endp
 

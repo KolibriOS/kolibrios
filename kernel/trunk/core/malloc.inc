@@ -20,7 +20,7 @@ $Revision$
 ;  esi= nb
 ;  ebx= idx
 ;
-align 16 
+align 4
 malloc:
            push esi
 
@@ -31,8 +31,8 @@ malloc:
            and esi, -8
            add esi, 8
 
-           mov ebx, mst.mutex
-           call wait_mutex    ;ebx
+           mov ecx, mst.mutex
+           call mutex_lock
 
            cmp esi, 256
            jae .large
@@ -92,9 +92,13 @@ malloc:
            pop edi
            pop ebp
 .done:
+           mov esi, eax
+           mov ecx, mst.mutex
+           call mutex_unlock
+           mov eax, esi
            pop esi
-           mov [mst.mutex], 0
            ret
+
 .split:
            lea ebx, [edx+8]               ;ebx=mem
 
@@ -133,10 +137,10 @@ malloc:
            mov [edx+12], eax              ; F->bk = r;
            mov [eax+8], edx               ; r->fd = F;
            mov [eax+12], ecx              ; r->bk = B;
+
            mov eax, ebx
-           pop esi
-           mov [mst.mutex], 0
-           ret
+           jmp .done
+
 .small:
 
 ; if (ms.treemap != 0 && (mem = malloc_small(nb)) != 0)
@@ -150,9 +154,8 @@ malloc:
            call malloc_small
            test eax, eax
            jz .from_top
-           pop esi
-           and [mst.mutex], 0
-           ret
+           jmp .done
+
 .large:
 
 ; if (ms.treemap != 0 && (mem = malloc_large(nb)) != 0)
@@ -189,18 +192,15 @@ malloc:
            mov [edx+4], eax
            mov [ecx+4], esi
            lea eax, [ecx+8]
-           pop esi
-           and [mst.mutex], 0
-           ret
+           jmp .done
+
 .fail:
            xor eax, eax
-           pop esi
-           and [mst.mutex], 0
-           ret
+           jmp .done
 
 ; param
 ;  eax= mem
-
+align 4
 free:
            push edi
            mov edi, eax
@@ -211,8 +211,8 @@ free:
            test byte [edi+4], 2
            je .fail
 
-           mov ebx, mst.mutex
-           call wait_mutex    ;ebx
+           mov ecx, mst.mutex
+           call mutex_lock
 
 ; psize = p->head & (~3);
 
@@ -289,7 +289,10 @@ free:
            mov [mst.top], edi
            mov [edi+4], eax
 .fail2:
-           and [mst.mutex], 0
+           mov esi, eax
+           mov ecx, mst.mutex
+           call mutex_unlock
+           mov eax, esi
            pop esi
 .fail:
            pop edi
@@ -410,13 +413,15 @@ insert_chunk:
            mov [esi+8], edx            ;P->fd = F
            mov [esi+12], eax           ;P->bk = B
            pop esi
-           and [mst.mutex], 0
+           mov ecx, mst.mutex
+           call mutex_unlock
            ret
 .large:
            mov ebx, eax
            call insert_large_chunk
            pop esi
-           and [mst.mutex], 0
+           mov ecx, mst.mutex
+           call mutex_unlock
            ret
 
 
@@ -591,21 +596,21 @@ unlink_large_chunk:
            btr [mst.treemap], ecx
            pop edi
            ret
- 
+
 .l3:
            cmp [edi+16], edx
            jne @F
 
            mov [edi+16], eax
            jmp .l4
- 
+
 @@:
            mov [edi+20], eax
- 
+
 .l4:
            test eax, eax
            je .done
- 
+
 .l5:
            mov [eax+24], edi
            mov ecx, [edx+16]
@@ -614,7 +619,7 @@ unlink_large_chunk:
 
            mov [eax+16], ecx
            mov [ecx+24], eax
- 
+
 .l6:
            mov edx, [edx+20]
            test edx, edx
@@ -622,7 +627,7 @@ unlink_large_chunk:
 
            mov [eax+20], edx
            mov [edx+24], eax
- 
+
 .done:
            pop edi
            ret
@@ -644,10 +649,10 @@ malloc_small:
            mov edi, [ecx+4]
            and edi, -4
            sub edi, esi
- 
+
 .loop:
            mov ebx, ecx
- 
+
 .loop_1:
 
 ; while ((t = leftmost_child(t)) != 0)
@@ -657,10 +662,10 @@ malloc_small:
            jz @F
            mov ecx, eax
            jmp .l1
- 
+
 @@:
            mov ecx, [ecx+20]
- 
+
 .l1:
            test ecx, ecx
            jz .unlink
@@ -711,7 +716,7 @@ malloc_small:
 
            lea eax, [ebx+8]
            ret
- 
+
 .split:
 
 ; v->head = nb|PINUSE_BIT|CINUSE_BIT;
@@ -744,7 +749,7 @@ malloc_small:
            pop ebp
            lea eax, [ebx+8]
            ret
- 
+
 .large:
            lea eax, [ebx+8]
            push eax
@@ -798,20 +803,20 @@ malloc_large:
            jne @F
            xor ecx, ecx
            jmp .l1
- 
+
 @@:
            mov edx, ecx
            shr edx, 1
            mov ecx, 37
            sub ecx, edx
- 
+
 .l1:
            mov edx, ebx
            shl edx, cl
 
 ; rst = 0;
            mov [.rst], ebp
- 
+
 .loop:
 
 ; trem = (t->head & ~INUSE_BITS) - nb;
@@ -831,7 +836,7 @@ malloc_large:
            mov ebp, eax
            mov edi, ecx
            je .l2
- 
+
 @@:
 
 ; rt = t->child[1];
@@ -853,7 +858,7 @@ malloc_large:
 
 ; rst = rt;
            mov [.rst], ecx
- 
+
 @@:
 ; if (t == 0)
 
@@ -864,11 +869,11 @@ malloc_large:
 
            add edx, edx
            jmp .loop
- 
+
 @@:
 ; t = rst;
            mov eax, [.rst]
- 
+
 .l2:
 ; if (t == 0 && v == 0)
 
@@ -877,7 +882,7 @@ malloc_large:
            test ebp, ebp
            jne .l7
            mov ecx, [.idx]
- 
+
 .l3:
 
 ; leftbits = (-1<<idx) & ms.treemap;
@@ -891,13 +896,13 @@ malloc_large:
            bsf eax, edx
 ; t = ms.treebins[i];
            mov eax, [mst.treebins+eax*4]
- 
+
 @@:
 
 ; while (t != 0)
            test eax, eax
            jz .l5
- 
+
 .l4:
 
 ; trem = (t->head & ~INUSE_BITS) - nb;
@@ -915,7 +920,7 @@ malloc_large:
            mov edi, ecx
 ; v = t;
            mov ebp, eax
- 
+
 @@:
 
 ; t = leftmost_child(t);
@@ -925,24 +930,24 @@ malloc_large:
            je @F
            mov eax, ecx
            jmp .l6
- 
+
 @@:
            mov eax, [eax+20]
- 
+
 .l6:
 
 ; while (t != 0)
 
            test eax, eax
            jne .l4
- 
+
 .l5:
 
 ; if (v != 0)
 
            test ebp, ebp
            jz .done
- 
+
 .l7:
 
 ; r = chunk_plus_offset((mchunkptr)v, nb);
@@ -974,7 +979,7 @@ malloc_large:
            pop esi
            pop ebp
            ret
- 
+
 .large:
 
 ; v->head = nb|PINUSE_BIT|CINUSE_BIT;
@@ -1000,7 +1005,7 @@ malloc_large:
            pop esi
            pop ebp
            ret
- 
+
 .done:
            add esp, 8
            pop edi
@@ -1017,13 +1022,16 @@ init_malloc:
            mov [mst.topsize], 128*1024
            mov dword [eax+4], (128*1024) or 1
            mov eax, mst.smallbins
- 
+
 @@:
            mov [eax+8], eax
            mov [eax+12], eax
            add eax, 16
            cmp eax, mst.smallbins+512
            jb @B
+
+           mov ecx, mst.mutex
+           call mutex_init
 
            ret
 

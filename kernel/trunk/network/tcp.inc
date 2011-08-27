@@ -697,7 +697,7 @@ endp
 ;
 ;   Description
 ;       Signals about network event to socket owner
-;       This is a kernel function, called from TCP handler 
+;       This is a kernel function, called from TCP handler
 ;
 ;          Socket/TCB address in ebx
 ;***************************************************************************
@@ -925,7 +925,7 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	test	[edx + 20 + TCP_PACKET.Flags], TH_RST
 	je      @f
 	mov	[ebx + SOCKET.TCBState], TCB_CLOSED
-    @@:	
+    @@:
 	call	signal_network_event
 	lea	esi, [ebx + SOCKET.RCV_NXT]
 	mov	eax, [esi]		; save original
@@ -963,12 +963,10 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	jmp	.exit
 
   .data:
-	push	ebx
-	add	ebx, SOCKET.lock
-	call	wait_mutex
-	pop	ebx
+    push    ecx
+    lea     ecx, [ebx+SOCKET.lock]
+    call    mutex_lock
 
-	push	ecx
 	push	ebx
 	mov	eax, [ebx + SOCKET.rxDataCount]
 	add	eax, ecx
@@ -986,7 +984,9 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 
 	cld
 	rep	movsb	       ; copy the data across
-	mov	[ebx + SOCKET.lock], 0	; release mutex
+
+    lea ecx,[ebx + SOCKET.lock]
+    call mutex_unlock
 
 	; flag an event to the application
 	pop	ebx
@@ -1031,9 +1031,10 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
   .overflow:
 	; no place in buffer
 	; so simply restore stack and exit
-	pop	eax ecx
-	mov	[ebx + SOCKET.lock], 0
-	ret
+    lea ecx, [ebx + SOCKET.lock]
+    call mutex_unlock
+    pop eax ecx
+    ret
 endp
 
 

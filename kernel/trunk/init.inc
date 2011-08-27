@@ -141,7 +141,7 @@ proc init_mem
            mov [edx], eax
            add edx, 4
 
-           mov edi, [tmp_page_tabs] 
+           mov edi, [tmp_page_tabs]
            jmp .map_kernel_heap		; new kernel fits to the first 4Mb - nothing to do with ".map_low"
 .no_PSE:
            mov eax, PG_SW
@@ -165,7 +165,7 @@ proc init_mem
            mov eax, [tmp_page_tabs]
            or  eax, PG_SW
            mov edi, edx
- 
+
 .map_kernel_tabs:
            stosd
            add eax, 0x1000
@@ -266,7 +266,6 @@ proc init_page_map
            add ebx, [pg_data.pagemap_size-OS_BASE]
            mov [page_end-OS_BASE], ebx
 
-           mov [pg_data.pg_mutex-OS_BASE], 0
            ret
 endp
 
@@ -331,7 +330,7 @@ init_BIOS32:
 	; здесь должна заполнятся pci_emu_dat
 .BIOS32_not_found:
 .end:
-           ret	
+           ret
 
 align 4
 proc test_cpu

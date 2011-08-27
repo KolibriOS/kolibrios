@@ -72,8 +72,6 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
            .irqh dd ?
          endl
 
-         xchg bx, bx
-
          and [.irqh], 0
 
          push ebx
@@ -100,8 +98,9 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
 
          mov eax, [ecx]
          mov [next_irqh], eax
-
          mov [.irqh], ecx
+
+         mov [irq_failed+ebx*4], 0  ;clear counter
 
          mov eax, [user_data]
          mov [ecx+IRQH.handler], edx
@@ -109,8 +108,7 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
 
          lea edx, [irqh_tab+ebx*8]
          list_add_tail ecx, edx     ;clobber eax
-
-         stdcall enable_irq, [irq]
+         stdcall enable_irq, ebx
 
 .fail:
          popfd

@@ -321,6 +321,12 @@ high_code:
            mov eax, cr3
            mov cr3, eax           ; flush TLB
 
+           mov ecx, pg_data.mutex
+           call mutex_init
+
+           mov ecx, disk_list_mutex
+           call mutex_init
+
 ; SAVE REAL MODE VARIABLES
         mov     ax, [BOOT_VAR + 0x9031]
         mov     [IDEContrRegsBaseAddr], ax
