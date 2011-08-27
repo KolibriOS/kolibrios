@@ -12,13 +12,13 @@
 	STACK_SIZE=1024
 	offset_y=22		; Correction for skin
 	offset_x=5
-  db	 'MENUET01'		 ; 8 byte id
-  dd	 0x01			 ; header version
-  dd	 START			 ; start of code
-  dd	 I_END			 ; size of image
-  dd	 U_END+STACK_SIZE	 ; memory for app
-  dd	 U_END+STACK_SIZE	 ; esp
-  dd	 0x0 , 0x0		 ; I_Param , I_Icon
+  db	 'MENUET01'			; 8 byte id
+  dd	 0x01				; header version
+  dd	 START				; start of code
+  dd	 I_END				; size of image
+  dd	 U_END+STACK_SIZE	; memory for app
+  dd	 U_END+STACK_SIZE	; esp
+  dd	 0x0 , 0x0			; I_Param , I_Icon
 
 include 'lang.inc'
 include '../../../macros.inc'
@@ -40,16 +40,14 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
 ;main loop when process name isn't edited.    
 red:	
 	mcall	48,3,sc,40
-	edit_boxes_set_sys_color edit1,edit1_end,sc	;set color
+	edit_boxes_set_sys_color edit1,edit1_end,sc		;set color
 	check_boxes_set_sys_color check1,check1_end,sc	;set color
 	xor	ebp,ebp
 	inc	ebp
 ;    mov  ebp,1
     call draw_window		; redraw all window
 still:
-    mov  eax,23 		; wait here for event
-    mov  ebx,100		; 1 sec.
-    mcall
+    mcall 23,100		; wait here for event 1 sec.
 
     dec  eax		      ; redraw request ?
     jz	 red
@@ -77,8 +75,7 @@ still_end:
 
 
   key:				; key
-    mov  eax,2			
-    mcall
+    mcall 2
 
     cmp  ah,184 		; PageUp
     jz	 pgdn
@@ -193,8 +190,9 @@ draw_next_process:
 .nodelete:
 ;create terminate process button
     mov   eax,8
-    mov   ebx,(15-offset_x)*65536+100-offset_y
+    mov   ebx,(15-offset_x)*65536+121-offset_y
     mov   ecx,[curposy]
+	;sub   ecx,1
     shl   ecx,16
     mov   cx,10
     mov   edx,[index]
@@ -541,23 +539,19 @@ draw_window:
     test ebp,ebp
     jz	 .show_process_info
     
-    mov  eax,12 		   ; function 12:tell os about windowdraw
-;    mov  ebx,1                     ; 1, start of draw
-    xor  ebx,ebx
-    inc  ebx
-    mcall		       
+    mcall 12, 1		       
 
-				   ; DRAW WINDOW
-    xor  eax,eax		   ; function 0 : define and draw window
-    mov  ebx,[winxpos]		   ; [x start] *65536 + [x size]
-    mov  ecx,[winypos]		   ; [y start] *65536 + [y size]
-    mov  edx,0x34ddffdd  ;ffffff   ; color of work area RRGGBB,8->color
-    mov  edi,title		  ; WINDOW CAPTION;
+	; DRAW WINDOW
+    xor  eax,eax				; function 0 : define and draw window
+    mov  ebx,[winxpos]			; [x start] *65536 + [x size]
+    mov  ecx,[winypos]			; [y start] *65536 + [y size]
+    mov  edx,0x34ddffdd			; color of work area RRGGBB,8->color
+    mov  edi,title				; WINDOW CAPTION;
     mcall
 
 				   
-    add  eax,4			   ; function 4 : write text to window
-    mov  ebx,(22-offset_x)*65536+35-offset_y	       ; draw info text with function 4
+    add  eax,4					; function 4 : write text to window
+    mov  ebx,(22-offset_x)*65536+35-offset_y
     xor  ecx,ecx
     mov  edx,text
     mov  esi,text_len
@@ -643,9 +637,7 @@ align 16
 ;print application name in text box
 ;    call print_text
 
-    mov  eax,12 		   ; function 12:tell os about windowdraw
-    mov  ebx,2			   ; 2, end of draw
-    mcall
+    mcall 12, 2
     
 .end_redraw:
     ret
@@ -708,7 +700,7 @@ sys_reboot:
 if lang eq de
 text:
   db 'NAME/BEENDEN        PID     CPU-LAST   % '
-  db 'SPEICHER START/NUTZUNG  W-STACK  W-SIZE'
+  db 'SPEICHER START/NUTZUNG  W-STACK   W-SIZE'
 text_len = $-text
 
 tbts:	db  'SEITE ZURUECK       SEITE VOR                      REBOOT SYSTEM'
@@ -738,7 +730,7 @@ title  db   'Protsessid - Ctrl/Alt/Del'
 else
 text:
   db 'NAME/TERMINATE      PID     CPU-USAGE  %   '
-  db 'MEMORY START/USAGE  W-STACK   W-SIZE'
+  db 'MEMORY START/USAGE  W-STACK    W-SIZE'
 text_len = $-text
 
 tbts:	db  'PREV PAGE       NEXT PAGE                         REBOOT SYSTEM'
