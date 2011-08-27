@@ -364,7 +364,7 @@ DATA
   strtbl startapps	 ,\
     <"/sys/PIC4",0>	,\
     <"/sys/DESKTOP",0>	,\
-    <"/sys/ICONMNGR",0>,\
+    <"/sys/ICON",0>,\
     <"/sys/SETUP",0>	,\
     <"/sys/VRR",0> ,\
     <"/sys/CPU",0> 
