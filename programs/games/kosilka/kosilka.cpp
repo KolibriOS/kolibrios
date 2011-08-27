@@ -515,14 +515,19 @@ void animate(int initcellx, int initcelly, int direction){ //анимация движения к
 
 void draw_window(void){ //Перерисовка окна
 	//----Leency
+	sProcessInfo sPI;
+	
 	if (w_redraw)
 	{
 		kos_WindowRedrawStatus(1); //Начало перерисовки
 		//kos_DefineAndDrawWindow(50,50,640,506,0x74,0xEEEEEE,0,0,(Dword)windowTitle);
 		kos_DefineAndDrawWindow(50,50,640,506-22+kos_GetSkinWidth(),0x74,0xEEEEEE,0,0,(Dword)windowTitle);
+		kos_WindowRedrawStatus(2); //Конец перерисовки
 	}
 	w_redraw=false;
 
+	kos_ProcessInfo( &sPI );
+	if (sPI.processInfo.y_size==kos_GetSkinWidth()+3) return; //ничего не делать если окно схлопнуто в заголовок
 
 	//Перерисовка карты
 	if ((status!=0)&&(status!=-1)&&(status!=4))
@@ -669,9 +674,6 @@ void draw_window(void){ //Перерисовка окна
                 kos_WriteTextToWindow(215, 240,0x80, 0xFFFFFF ,"2. ‚­Ґи­Ё© ­ Ў®а га®ў­Ґ©",0);
 
 	}
-
-	
-	kos_WindowRedrawStatus(2); //Конец перерисовки
 
 }
 
