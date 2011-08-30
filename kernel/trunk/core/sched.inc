@@ -303,8 +303,9 @@ mutex_unlock:
         pushfd
         cli
 
-        lea eax, [ecx+MUTEX.next]
-        cmp eax, [ecx+MUTEX.next]
+        lea edx, [ecx+MUTEX.next]
+        mov eax, [edx]
+        cmp eax, edx
         mov [ecx+MUTEX.count], 1
         je @F
 
