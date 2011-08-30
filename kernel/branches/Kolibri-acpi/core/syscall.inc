@@ -193,7 +193,8 @@ iglobal
       dd file_system_lfn         ; 70-Common file system interface, version 2
       dd syscall_window_settings ; 71-Window settings
       dd sys_sendwindowmsg       ; 72-Send window message
-      dd blit_32                 ; blitter;
+      dd blit_32                 ; 73-blitter;
+      dd sys_perf                ; 74 for debug purposes only
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application
 
