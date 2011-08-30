@@ -911,10 +911,37 @@ endp
 
 align 4
 proc buf_delete, buf_struc:dword
-	push edi
+	push eax edi
 	mov edi,dword[buf_struc]
 	invoke mem.free,buf2d_data
-	pop edi
+	pop edi eax
+	ret
+endp
+
+align 4
+proc buf_resize, buf_struc:dword, new_w:dword, new_h:dword
+	pushad
+	mov edi,dword[buf_struc]
+	cmp buf2d_bits,24
+	jne .24bit
+		mov eax,dword[new_w]
+		cmp eax,1
+		jl @f
+			mov buf2d_w,eax
+		@@:
+		mov ecx,buf2d_w
+		mov eax,dword[new_h]
+		cmp eax,1
+		jl @f
+			mov buf2d_h,eax
+		@@:
+		mov ebx,buf2d_h
+		imul ecx,ebx
+		lea ecx,[ecx+ecx*2] ; 24 bit = 3
+		invoke mem.realloc,buf2d_data,ecx ;изменяем память занимаемую буфером
+		mov buf2d_data,eax ;на случай если изменился указатель на данные
+	.24bit:
+	popad
 	ret
 endp
 
@@ -2310,6 +2337,7 @@ EXPORTS:
 	dd sz_buf2d_clear, buf_clear
 	dd sz_buf2d_draw, buf_draw_buf
 	dd sz_buf2d_delete, buf_delete
+	dd sz_buf2d_resize, buf_resize
 	dd sz_buf2d_line, buf_line_brs
 	dd sz_buf2d_rect_by_size, buf_rect_by_size
 	dd sz_buf2d_filled_rect_by_size, buf_filled_rect_by_size
@@ -2335,6 +2363,7 @@ EXPORTS:
 	sz_buf2d_clear db 'buf2d_clear',0 ;очистка буфера указанным цветом
 	sz_buf2d_draw db 'buf2d_draw',0
 	sz_buf2d_delete db 'buf2d_delete',0
+	sz_buf2d_resize db 'buf2d_resize',0
 	sz_buf2d_line db 'buf2d_line',0 ;рисование линии
 	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0 ;рисование рамки прямоугольника, 2-я координата задана по размеру
 	sz_buf2d_filled_rect_by_size db 'buf2d_filled_rect_by_size',0 ;рисование залитого прямоугольника, 2-я координата задана по размеру

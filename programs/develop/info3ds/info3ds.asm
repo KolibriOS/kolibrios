@@ -325,6 +325,24 @@ pushad
 	sub eax,65
 	mov dword[tree1.box_height],eax
 	mov word[w_scr_t1+4],ax ;новые размеры скроллинга
+	cmp eax,dword[buf_0.h] ;увеличиваем высоту буфера
+	jle @f
+		stdcall [buf2d_resize],buf_0,0,eax
+		mov dword[offs_last_timer],0 ;для обновления буфера в таймере
+	@@:
+
+	mov eax,dword[procinfo.box.width]
+	cmp eax,400
+	jge @f
+		mov eax,400
+	@@:
+	sub eax,[buf_0.w]
+	sub eax,41
+	mov dword[tree1.box_width],eax
+	add ax,word[tree1.box_left]
+	mov word[w_scr_t1.start_x],ax
+	add ax,16+5
+	mov word[buf_0.l],ax
 
 	mov eax,8
 	mov ebx,(5 shl 16)+20
@@ -521,34 +539,80 @@ block_analiz_data:
 		; *** анализ блоков с разными данными и выделением подблоков
 		cmp dx,CHUNK_OBJBLOCK ;объект
 		jne @f
-			.cycle_0:
-				push ax
-					cld
-					xor al,al
-					mov edi,esi
-					repne scasb
-				pop ax
-				sub edi,esi ;edi - strlen
-				stdcall add_3ds_object, ID_ICON_DATA,ebx,edi,0 ;название объекта
-				add esi,edi
-				sub ecx,edi
+			push ax
+				cld
+				xor al,al
+				mov edi,esi
+				repne scasb
+			pop ax
+			sub edi,esi ;edi - strlen
+			stdcall add_3ds_object, ID_ICON_DATA,ebx,edi,0 ;название объекта
+			add esi,edi
+			;sub ecx,edi ;уже сделано в repne
 			jmp .next_bl
 		@@:
 		cmp dx,CHUNK_VERTLIST ;список вершин
 		je .vertexes
 		cmp dx,0x4111 ;флаги вершин
 		je .vertexes
-		cmp dx,CHUNK_FACELIST ;список граней
+		cmp dx,CHUNK_MAPLIST ;текстурные координаты
 		je .vertexes
 		jmp @f
 		.vertexes: ;обработка блоков, содержащих данные вершин
-			stdcall add_3ds_object, ID_ICON_DATA,ebx,2,txt_count ;число вершин или граней
+			stdcall add_3ds_object, ID_ICON_DATA,ebx,2,txt_count ;число вершин
 			add esi,2
 			sub ecx,2
 			stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0 ;данные вершин
 			sub esi,8 ;восстановление esi
 			call block_next
 			jmp .end_f		
+		@@:
+		cmp dx,CHUNK_FACELIST ;список граней
+		jne @f
+			stdcall add_3ds_object, ID_ICON_DATA,ebx,2,txt_count ;число граней
+			push eax
+			xor eax,eax
+			mov ax,[esi]
+			shl eax,3
+			add esi,2
+			sub ecx,2
+			stdcall add_3ds_object, ID_ICON_DATA,ebx,eax,0 ;данные вершин
+
+			sub ecx,eax
+			cmp ecx,1
+			jl .data_3 ;проверяем есть ли блок описывающий материал, применяемый к объекту
+				add esi,eax
+				pop eax
+				jmp .next_bl
+				;stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0 ;данные материала
+				;sub esi,eax ;восстановление esi
+			.data_3:
+
+			sub esi,8 ;восстановление esi
+			pop eax
+			call block_next
+			jmp .end_f		
+		@@:
+		cmp dx,CHUNK_FACEMAT ;материалы граней
+		jne @f
+			push ax
+				cld
+				xor al,al
+				mov edi,esi
+				repne scasb
+			pop ax
+			sub edi,esi ;edi - strlen
+			stdcall add_3ds_object, ID_ICON_DATA,ebx,edi,0 ;название объекта
+			add esi,edi
+			;sub ecx,edi ;уже сделано в repne
+			stdcall add_3ds_object, ID_ICON_DATA,ebx,2,txt_count ;число граней
+			add esi,2
+			sub ecx,2
+			stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0 ;номера граней, к которым применен материал
+			sub esi,edi ;восстановление esi (1)
+			sub esi,8   ;восстановление esi (2)
+			call block_next
+			jmp .end_f
 		@@:
 		; *** анализ блока с данными по умолчанию (без выделения подблоков)
 			stdcall add_3ds_object, ID_ICON_DATA,ebx,ecx,0
@@ -949,19 +1013,6 @@ dd 0,0
 	aOpenDialog_Init db 'OpenDialog_init',0
 	aOpenDialog_Start db 'OpenDialog_start',0
 
-;       file.find_first db 'file_find_first',0
-;       file.find_next  db 'file_find_next',0
-;       file.find_close db 'file_find_close',0
-;       file.size      db 'file_size',0
-;       file.open      db 'file_open',0
-;       file.read      db 'file_read',0
-;       file.write     db 'file_write',0
-;       file.seek      db 'file_seek',0
-;       file.tell      db 'file_tell',0
-;       file.eof?      db 'file_iseof',0
-;       file.truncate  db 'file_truncate',0
-;       file.close     db 'file_close',0
-
 align 4
 import_buf2d:
 	dd sz_init0
@@ -970,6 +1021,7 @@ import_buf2d:
 	buf2d_clear dd sz_buf2d_clear
 	buf2d_draw dd sz_buf2d_draw
 	buf2d_delete dd sz_buf2d_delete
+	buf2d_resize dd sz_buf2d_resize
 	buf2d_line dd sz_buf2d_line
 	buf2d_rect_by_size dd sz_buf2d_rect_by_size
 	buf2d_filled_rect_by_size dd sz_buf2d_filled_rect_by_size
@@ -995,6 +1047,7 @@ import_buf2d:
 	sz_buf2d_clear db 'buf2d_clear',0
 	sz_buf2d_draw db 'buf2d_draw',0
 	sz_buf2d_delete db 'buf2d_delete',0
+	sz_buf2d_resize db 'buf2d_resize',0
 	sz_buf2d_line db 'buf2d_line',0
 	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0
 	sz_buf2d_filled_rect_by_size db 'buf2d_filled_rect_by_size',0
@@ -1096,7 +1149,7 @@ procinfo process_information
 
 align 4
 buf_0: dd 0 ;указатель на буфер изображения
-	dw 205 ;+4 left
+.l: dw 205 ;+4 left
 	dw 35 ;+6 top
 .w: dd 340 ;+8 w
 .h: dd 250 ;+12 h
@@ -1121,7 +1174,8 @@ tree1 tree_list size_one_list,200+2, tl_key_no_edit+tl_draw_par_line,\
 align 4
 w_scr_t1:
 .size_x     dw 16 ;+0
-rb 2+2+2
+.start_x    dw 0
+rb 2+2
 .btn_high   dd 15 ;+8
 .type	    dd 1  ;+12
 .max_area   dd 100  ;+16

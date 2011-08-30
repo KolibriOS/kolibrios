@@ -108,6 +108,11 @@ buf_0:
 <h4>buf2d_delete</h4>
 <p>Освобождает память занятую изображением буфера.</p>
 
+<h4>buf2d_resize</h4>
+<p>Изменяет размеры буфера. Пока поддерживаются буфера с глубиной цвета 24 бита. Пример:</p>
+<pre>stdcall [buf2d_resize], buf_0, 0,300 ;изменяем высоту буфера</pre>
+<p>где buf_0 - структура буфера в котором будет рисоваться линия; 0 - новая ширина буфера (0 означает не изменять размер); 300 - новая высота буфера.</p>
+
 <h4>buf2d_line</h4>
 <p>Рисует в буфере линию с заданным цветом и координатами. Пример:</p>
 <pre>stdcall [buf2d_line], buf_0, 30,10, 110,70, 0xffff00 ;рисуем линию</pre>
@@ -225,6 +230,7 @@ import_buf2d_lib:
 	buf2d_clear dd sz_buf2d_clear
 	buf2d_draw dd sz_buf2d_draw
 	buf2d_delete dd sz_buf2d_delete
+	buf2d_resize dd sz_buf2d_resize
 	buf2d_line dd sz_buf2d_line
 	buf2d_rect_by_size dd sz_buf2d_rect_by_size
 	buf2d_filled_rect_by_size dd sz_buf2d_filled_rect_by_size
@@ -251,6 +257,7 @@ import_buf2d_lib:
 	sz_buf2d_clear db 'buf2d_clear',0
 	sz_buf2d_draw db 'buf2d_draw',0
 	sz_buf2d_delete db 'buf2d_delete',0
+	sz_buf2d_resize db 'buf2d_resize',0
 	sz_buf2d_line db 'buf2d_line',0
 	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0
 	sz_buf2d_filled_rect_by_size db 'buf2d_filled_rect_by_size',0
@@ -285,5 +292,6 @@ import_buf2d_lib:
 <p>02.11.10 - добавлена функция buf2d_flood_fill.</p>
 <p>22.12.10 - изменено имя функции buf2d_cruve_bezier на buf2d_curve_bezier.</p>
 <p>25.03.11 - добавлена функция рисования для точки buf2d_set_pixel.</p>
+<p>30.08.11 - добавлена функция изменения размеров буфера buf2d_resize.</p>
  </body>
 </html>
