@@ -5,6 +5,8 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+$Revision$
+
 ; =============================================================================
 ; ================================= Constants =================================
 ; =============================================================================
@@ -76,6 +78,11 @@ struct DISKFUNC
 ; Note that read/write are called by the cache manager, so a driver should not
 ; create a software cache. This function is implemented for flushing a hardware
 ; cache, if it exists.
+.adjust_cache_size      dd      ?
+; The pointer to the function which returns the cache size for this device.
+; Optional, may be NULL.
+; unsigned int adjust_cache_size(unsigned int suggested_size);
+; Return value: 0 = disable cache, otherwise = used cache size in bytes.
 ends
 
 ; This structure holds an information about a media.
@@ -88,6 +95,20 @@ struct DISKMEDIAINFO
 ; Size of the sector.
 .Capacity       dq      ?
 ; Size of the media in sectors.
+ends
+
+; This structure represents disk cache. To follow the old implementation,
+; there are two distinct caches for a disk, one for "system" data, other
+; for "application" data.
+struct DISKCACHE
+.Lock           MUTEX
+; Lock to protect the cache.
+; The following fields are inherited from data32.inc:cache_ideX.
+.pointer     rd 1
+.data_size   rd 1   ; not use
+.data        rd 1
+.sad_size    rd 1
+.search_start       rd 1
 ends
 
 ; This structure represents a disk device and its media for the kernel.
@@ -146,6 +167,11 @@ struct DISK
 ; Number of partitions on this media.
 .Partitions     dd      ?
 ; Pointer to array of .NumPartitions pointers to PARTITION structures.
+.cache_size     dd      ?
+; inherited from cache_ideX_size
+.SysCache       DISKCACHE
+.AppCache       DISKCACHE
+; Two caches for the disk.
 ends
 
 ; This structure represents one partition for the kernel. This is a base
@@ -156,6 +182,8 @@ struct PARTITION
 ; First sector of the partition.
 .Length         dq      ?
 ; Length of the partition in sectors.
+.Disk           dd      ?
+; Pointer to parent DISK structure.
 .FSUserFunctions        dd      ?
 ; Handlers for the sysfunction 70h. This field is a pointer to the following
 ; array. The first dword is a number of supported subfunctions, other dwords
@@ -242,12 +270,13 @@ disk_list_mutex MUTEX
 endg
 
 iglobal
-; The function 'disk_scan_partitions' needs two 512-byte buffers for
-; MBR and bootsectors data. It can not use the static buffers always,
-; since it can be called for two or more disks in parallel. However, this
-; case is not typical. We reserve two static 512-byte buffers and a flag
-; that these buffers are currently used. If 'disk_scan_partitions' detects that
-; the buffers are currently used, it allocates buffers from the heap.
+; The function 'disk_scan_partitions' needs three 512-byte buffers for
+; MBR, bootsector and fs-temporary sector data. It can not use the static
+; buffers always, since it can be called for two or more disks in parallel.
+; However, this case is not typical. We reserve three static 512-byte buffers
+; and a flag that these buffers are currently used. If 'disk_scan_partitions'
+; detects that the buffers are currently used, it allocates buffers from the
+; heap.
 ; The flag is implemented as a global dword variable. When the static buffers
 ; are not used, the value is -1. When the static buffers are used, the value
 ; is normally 0 and temporarily can become greater. The function increments
@@ -258,10 +287,11 @@ iglobal
 partition_buffer_users  dd      -1
 endg
 uglobal
-; The static buffers for MBR and bootsectors data.
+; The static buffers for MBR, bootsector and fs-temporary sector data.
 align 16
 mbr_buffer      rb      512
 bootsect_buffer rb      512
+fs_tmp_buffer   rb      512
 endg
 
 iglobal
@@ -276,6 +306,7 @@ disk_default_callbacks:
         dd      disk_default_read
         dd      disk_default_write
         dd      disk_default_flush
+        dd      disk_default_adjust_cache_size
 endg
 
 ; =============================================================================
@@ -312,45 +343,44 @@ disk_add:
         jz      .nothing
 ; 2. Copy disk name to the DISK structure.
 ; 2a. Get length of the name, including the terminating zero.
-        mov     esi, [esp+8+8]  ; esi = pointer to name
+        mov     ebx, [esp+8+8]  ; ebx = pointer to name
         push    eax             ; save allocated pointer to DISK
         xor     eax, eax        ; the argument of malloc() is in eax
 @@:
         inc     eax
-        cmp     byte [esi+eax-1], 0
+        cmp     byte [ebx+eax-1], 0
         jnz     @b
 ; 2b. Call the heap manager.
         call    malloc
 ; 2c. Check the result. If allocation failed, go to 7.
-        pop     ebx             ; restore allocated pointer to DISK
+        pop     esi             ; restore allocated pointer to DISK
         test    eax, eax
         jz      .free
 ; 2d. Store the allocated pointer to the DISK structure.
-        mov     [ebx+DISK.Name], eax
+        mov     [esi+DISK.Name], eax
 ; 2e. Copy the name.
 @@:
-        mov     dl, [esi]
+        mov     dl, [ebx]
         mov     [eax], dl
-        inc     esi
+        inc     ebx
         inc     eax
         test    dl, dl
         jnz     @b
 ; 3. Copy other arguments of the function to the DISK structure.
         mov     eax, [esp+4+8]
-        mov     [ebx+DISK.Functions], eax
+        mov     [esi+DISK.Functions], eax
         mov     eax, [esp+12+8]
-        mov     [ebx+DISK.UserData], eax
+        mov     [esi+DISK.UserData], eax
         mov     eax, [esp+16+8]
-        mov     [ebx+DISK.DriverFlags], eax
+        mov     [esi+DISK.DriverFlags], eax
 ; 4. Initialize other fields of the DISK structure.
-; Media is not inserted, initialized state of mutex is zero,
-; reference counter is 1.
-        lea     ecx, [ebx+DISK.MediaLock]
+; Media is not inserted, reference counter is 1.
+        lea     ecx, [esi+DISK.MediaLock]
         call    mutex_init
         xor     eax, eax
-        mov     dword [ebx+DISK.MediaInserted], eax
+        mov     dword [esi+DISK.MediaInserted], eax
         inc     eax
-        mov     [ebx+DISK.RefCount], eax
+        mov     [esi+DISK.RefCount], eax
 ; The DISK structure is initialized.
 ; 5. Insert the new structure to the global list.
 ; 5a. Acquire the mutex.
@@ -358,16 +388,16 @@ disk_add:
         call    mutex_lock
 ; 5b. Insert item to the tail of double-linked list.
         mov     edx, disk_list
-        list_add_tail ebx, edx     ;ebx= new edx= list head
+        list_add_tail esi, edx     ;esi= new edx= list head
 ; 5c. Release the mutex.
-        call mutex_unlock
+        call    mutex_unlock
 ; 6. Return with eax = pointer to DISK.
-        xchg    eax, ebx
+        xchg    eax, esi
         jmp     .nothing
 .free:
 ; Memory allocation for DISK structure succeeded, but for disk name failed.
 ; 7. Free the DISK structure.
-        xchg    eax, ebx
+        xchg    eax, esi
         call    free
 ; 8. Return with eax = 0.
         xor     eax, eax
@@ -474,10 +504,12 @@ lock    dec     [esi+DISK.MediaRefCount]
         jnz     .freeloop
 .nofree:
         pop     edi esi
-; 3b. Call the driver.
+; 3b. Free the cache.
+        call    disk_free_cache
+; 3c. Call the driver.
         mov     al, DISKFUNC.closemedia
         stdcall disk_call_driver
-; 3c. Clear the flag.
+; 3d. Clear the flag.
         mov     [esi+DISK.MediaUsed], 0
 .nothing:
         ret
@@ -525,12 +557,16 @@ disk_media_changed:
 ; 3b. Check the result of the callback. Abort if it failed.
         test    eax, eax
         jnz     .noinsert
-; 3c. Acquire the lifetime reference for the media object.
+; 3c. Allocate the cache unless disabled by the driver. Abort if failed.
+        call    disk_init_cache
+        test    al, al
+        jz      .noinsert
+; 3d. Acquire the lifetime reference for the media object.
         inc     [esi+DISK.MediaRefCount]
-; 3d. Scan for partitions. Ignore result; the list of partitions is valid even
+; 3e. Scan for partitions. Ignore result; the list of partitions is valid even
 ; on errors.
         call    disk_scan_partitions
-; 3e. Media is inserted and available for use.
+; 3f. Media is inserted and available for use.
         inc     [esi+DISK.MediaInserted]
 .noinsert:
 ; 4. Return.
@@ -586,6 +622,11 @@ disk_default_flush:
         xor     eax, eax
         ret     4
 
+; The default implementation of DISKFUNC.adjust_cache_size.
+disk_default_adjust_cache_size:
+        mov     eax, [esp+4]
+        ret     4
+
 ; This is an internal function called from 'disk_media_changed' when new media
 ; is detected. It creates the list of partitions for the media.
 ; If media is not partitioned, then the list consists of one partition which
@@ -609,7 +650,7 @@ disk_scan_partitions:
 lock    inc     [partition_buffer_users]
         jz      .buffer_acquired        ; yes, it is free
 lock    dec     [partition_buffer_users]        ; no, we must allocate
-        stdcall kernel_alloc, 1024
+        stdcall kernel_alloc, 512*3
         test    eax, eax
         jz      .nothing
         xchg    eax, ebx
@@ -712,6 +753,7 @@ lock    dec     [partition_buffer_users]        ; no, we must allocate
 ; compatibility problems.
         pop     eax     ; load extended partition
         add     ebp, eax
+        jc      .mbr_failed
 ; 12c. If extended partition has not yet started, start it.
         test    eax, eax
         jnz     @f
@@ -849,7 +891,7 @@ proc disk_add_partition stdcall uses ebx edi, start:qword, length:qword
 ; The range [.FirstSector, .FirstSector+.Length) must be either entirely to
 ; the left of [start, start+length) or entirely to the right.
 ; 2c. Subtract .FirstSector - start. The possible overflow distinguish between
-; cases "to the left" (2?) and "to the right" (2d).
+; cases "to the left" (2e) and "to the right" (2d).
         mov     eax, dword [ecx+PARTITION.FirstSector]
         mov     edx, dword [ecx+PARTITION.FirstSector+4]
         sub     eax, dword [start]

@@ -53,6 +53,10 @@ struc DISKFUNC
 ; Flushes the hardware cache, if it exists. Note that a driver should not
 ; implement a software cache for read/write, since they are called from the
 ; kernel cache manager.
+  .adjust_cache_size dd ?
+; unsigned int adjust_cache_size(unsigned int suggested_size);
+; Optional.
+; Returns the cache size for this device in bytes. 0 = disable cache.
 }
 struc DISKMEDIAINFO
 {
