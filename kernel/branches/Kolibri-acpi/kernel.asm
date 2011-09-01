@@ -905,8 +905,6 @@ first_app_found:
 	push  1
         pop   dword [CURRENT_TASK]      ; set OS task fisrt
 
-;       stdcall enable_irq, 1
-
 ; SET KEYBOARD PARAMETERS
         mov   al, 0xf6         ; reset keyboard, scan enabled
         call  kb_write
@@ -1048,6 +1046,7 @@ osloop:
         call   checkidle
         call   check_fdd_motor_status
         call   check_ATAPI_device_event
+        call   check_timers
         jmp    osloop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                    ;

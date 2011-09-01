@@ -167,6 +167,13 @@ kernel_export:
   dd szStrchr          , strchr
   dd szStrrchr         , strrchr
 
+  dd szDiskAdd         , disk_add
+  dd szDiskDel         , disk_del
+  dd szDiskMediaChanged, disk_media_changed
+
+  dd szTimerHS         , timer_hs
+  dd szCancelTimerHS   , cancel_timer_hs
+
 exp_lfb:
   dd szLFBAddress      , 0
   dd 0                      ;terminator, must be zero
