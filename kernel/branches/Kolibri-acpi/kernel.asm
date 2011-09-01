@@ -616,45 +616,14 @@ high_code:
 
         call pci_irq_fixup
 
-        call    unmask_timer
-
-; SET KEYBOARD PARAMETERS
-        mov   al, 0xf6         ; reset keyboard, scan enabled
-        call  kb_write
-
-        ; wait until 8042 is ready
-        xor ecx,ecx
-      @@:
-        in     al,64h
-        and    al,00000010b
-        loopnz @b
-
-       ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
-       ; call  kb_write
-       ; call  kb_read
-       ; mov   al, 111b
-       ; call  kb_write
-       ; call  kb_read
-
-        mov   al, 0xF3       ; set repeat rate & delay
-        call  kb_write
-;        call  kb_read
-        mov   al, 0 ; 30 250 ;00100010b ; 24 500  ;00100100b  ; 20 500
-        call  kb_write
-;        call  kb_read
-     ;// mike.dld [
-        call  set_lights
-        stdcall attach_int_handler, 1, irq1, 0
-
-     ;// mike.dld ]
-
-
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
-
-       stdcall enable_irq, 6                   ; FDD
-       stdcall enable_irq, 14
-       stdcall enable_irq, 15
+        call unmask_timer
+        stdcall enable_irq, 2               ; @#$%! PIC
+        stdcall enable_irq, 6               ; FDD
+        stdcall enable_irq, 13              ; co-processor
+        stdcall enable_irq, 14
+        stdcall enable_irq, 15
 
 ; Enable interrupts in IDE controller
         mov     al, 0
@@ -857,16 +826,6 @@ end if
 
         call  set_variables
 
-; SET MOUSE
-
-        stdcall load_driver, szPS2MDriver
-;        stdcall load_driver, szCOM_MDriver
-
-        mov   esi,boot_setmouse
-        call  boot_log
-        call  setmouse
-
-
 ; STACK AND FDC
 
         call  stack_init
@@ -946,6 +905,45 @@ first_app_found:
 	push  1
         pop   dword [CURRENT_TASK]      ; set OS task fisrt
 
+;       stdcall enable_irq, 1
+
+; SET KEYBOARD PARAMETERS
+        mov   al, 0xf6         ; reset keyboard, scan enabled
+        call  kb_write
+
+        ; wait until 8042 is ready
+        xor ecx,ecx
+      @@:
+        in     al,64h
+        and    al,00000010b
+        loopnz @b
+
+       ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
+       ; call  kb_write
+       ; call  kb_read
+       ; mov   al, 111b
+       ; call  kb_write
+       ; call  kb_read
+
+        mov   al, 0xF3       ; set repeat rate & delay
+        call  kb_write
+;        call  kb_read
+        mov   al, 0 ; 30 250 ;00100010b ; 24 500  ;00100100b  ; 20 500
+        call  kb_write
+;        call  kb_read
+     ;// mike.dld [
+        call  set_lights
+     ;// mike.dld ]
+        stdcall attach_int_handler, 1, irq1, 0
+
+; SET MOUSE
+
+        stdcall load_driver, szPS2MDriver
+;        stdcall load_driver, szCOM_MDriver
+
+        mov   esi,boot_setmouse
+        call  boot_log
+        call  setmouse
 
 ; Setup serial output console (if enabled)
 
@@ -999,9 +997,6 @@ if preboot_blogesc
         jne     .bll1
 end if
 
-        cli                                     ;guarantee forbidance of interrupts.
-        stdcall enable_irq, 2                   ; @#$%! PIC
-        stdcall enable_irq, 13                  ; co-processor
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
         mov [timer_ticks_enable],1              ; for cd driver
@@ -1142,8 +1137,9 @@ endg
 
 set_variables:
 
-        mov   ecx,0x100                       ; flush port 0x60
-.fl60:  in    al,0x60
+        mov   ecx,0x16                       ; flush port 0x60
+.fl60:
+        in    al,0x60
         loop  .fl60
         push  eax
 

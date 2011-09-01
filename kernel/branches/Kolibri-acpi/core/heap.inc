@@ -286,7 +286,7 @@ align 4
 proc alloc_kernel_space stdcall, size:dword
            local block_ind:DWORD
 
-           xchg bx, bx
+;           xchg bx, bx
 
            push ebx
            push esi
@@ -438,7 +438,7 @@ endp
 align 4
 proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
 
-           xchg bx, bx
+;           xchg bx, bx
 
            mov ecx, heap_mutex
            call mutex_lock
