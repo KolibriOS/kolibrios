@@ -7,33 +7,6 @@
 
 $Revision$
 
-macro __list_add new, prev, next
-{
-    mov [next+LHEAD.prev], new
-    mov [new+LHEAD.next], next
-    mov [new+LHEAD.prev], prev
-    mov [prev+LHEAD.next], new
-}
-
-macro list_add new, head
-{
-    mov eax, [head+LHEAD.next]
-    __list_add new, head, eax
-}
-
-macro list_add_tail new, head
-{
-    mov eax, [head+LHEAD.prev]
-    __list_add new, eax, head
-}
-
-macro list_del entry
-{
-    mov edx, [entry+list_fd]
-    mov ecx, [entry+list_bk]
-    mov [edx+list_bk], ecx
-    mov [ecx+list_fd], edx
-}
 
 struc MEM_BLOCK
 {
@@ -85,9 +58,9 @@ macro remove_from_used op
 
 ;Initial heap state
 ;
-;+heap_size             terminator        USED_BLOCK
+;+heap_size               terminator        USED_BLOCK
 ;+4096*MEM_BLOCK_SIZE   free space        FREE_BLOCK
-;HEAP_BASE              heap_descriptors  USED_BLOCK
+;HEAP_BASE                heap_descriptors  USED_BLOCK
 ;
 
 align 4
@@ -312,7 +285,7 @@ proc alloc_kernel_space stdcall, size:dword
            cmp [edi+block_flags], FREE_BLOCK
            jne .error_unlock
 
-           mov [block_ind], ebx   ;index of allocated block
+           mov [block_ind], ebx         ;index of allocated block
 
            mov eax, [edi+block_size]
            cmp eax, [size]

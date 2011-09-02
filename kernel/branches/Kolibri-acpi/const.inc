@@ -593,20 +593,6 @@ virtual at 0
   display_t display_t
 end virtual
 
-struc HEAP_DATA
-{
-   .mutex         rd 1
-   .refcount      rd 1
-   .heap_base     rd 1
-   .heap_top      rd 1
-   .app_mem       rd 1
-}
-
-HEAP_DATA_SIZE  equ 20
-virtual at 0
-  HEAP_DATA HEAP_DATA
-end virtual
-
 struc BOOT_DATA
 { .bpp            dd ?
   .scanline       dd ?

@@ -292,15 +292,12 @@ endofcode:
 gdte:
 
 align 16
-cur_saved_data      rb 4096
-fpu_data:           rb 512
+cur_saved_data    rb 4096
+fpu_data:         rb 512
 
 mem_block_map       rb 512
-mem_block_list      rd 64*2
-mem_block_mask      rd 2
-large_block_mask    rd 1
-
-mem_hash_cnt      rd 64
+mem_block_list    rd 64*2
+mem_block_mask    rd 2
 
 mem_used.fd       rd 1
 mem_used.bk       rd 1
@@ -308,6 +305,8 @@ mem_used.bk       rd 1
 mem_block_arr     rd 1
 mem_block_start   rd 1
 mem_block_end     rd 1
+
+mem_hash_cnt      rd 64
 
 heap_mutex        MUTEX
 heap_size         rd 1
