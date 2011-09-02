@@ -68,6 +68,10 @@ load_libraries	l_libs_start,end_l_libs
 	mov	eax,[unpack_DeflateUnpack2]
 	mov	[deflate_unpack],eax
 
+	mov	esi,start_pach
+	mov	edi,previous_dir_path
+	call	copy_dir_name.1
+	
 	call	load_root_directory
 	call	load_start_directory
 	call	sort_directory
@@ -351,7 +355,7 @@ key_ASCII:
 ;	mcall	66,1,1
 
 ;	xor	eax,eax
-;	mov	esi,dir_pach
+;	mov	esi,dir_path
 ;	cld
 ;@@:
 ;	lodsb
@@ -375,8 +379,8 @@ user_selected_name_action:
 	ret
 @@:
 	add	eax,16	;12
-;copy_path	user_selected_name,dir_pach,eax,0
-	mov	esi,dir_pach
+;copy_path	user_selected_name,dir_path,eax,0
+	mov	esi,dir_path
 	mov	edi,eax
 	call	copy_dir_name
 	mov	[edi-1],byte '/'
@@ -630,7 +634,7 @@ thread_start:
 	cmp	al,5
 	jne	@f
 	mov	[N_error],load_directory_error_type
-	mov	[error_path],dir_pach
+	mov	[error_path],dir_path
 	jmp	.error_type
 @@:
 	cmp	al,6
@@ -895,7 +899,7 @@ analyse_out_menu_1:
 	dec	eax
 	imul	esi,eax,10
 	add	esi,retrieved_devices_table
-	mov	edi,dir_pach
+	mov	edi,dir_path
 	call	copy_dir_name
 	call	load_next_dir.1
 	jmp	still
@@ -984,7 +988,7 @@ load_start_directory:
 .1:
 	mov	esi,start_pach
 .2:
-	mov	edi,dir_pach
+	mov	edi,dir_path
 	call	copy_dir_name
 	
 ;	call	load_directory
@@ -1011,7 +1015,7 @@ load_next_dir:
 	cmp	[ebx+2],byte 0
 	je	.exit_dir
 @@:
-	mov	esi,dir_pach
+	mov	esi,dir_path
 	call	copy_dir_path
 
 @@:
@@ -1037,7 +1041,7 @@ load_next_dir:
 	call	draw_draw_file_browser1
 	ret
 .exit_dir:
-	mov	esi,dir_pach
+	mov	esi,dir_path
 	call	copy_exit_dir
 	jmp	.1
 ;---------------------------------------------------------------------
@@ -1094,13 +1098,16 @@ error_handler:
 	jmp	button.exit
 ;------------------------------------
 .exit:
+	mov	esi,previous_dir_path
+	mov	edi,dir_path
+	call	copy_dir_name.1
 	mov	esi,start_pach
-	mov	edi,dir_pach
-	call	copy_dir_name
+	mov	edi,previous_dir_path
+	call	copy_dir_name.1
 	ret
 ;---------------------------------------------------------------------
 file_no_folder:
-	mov	esi,dir_pach
+	mov	esi,dir_path
 	mov	edi,file_name
 	call	copy_dir_name
 	push	ebx
@@ -1143,7 +1150,7 @@ file_no_folder:
 ;---------------------------------------------------------------------
 load_root_directory:
 	mov	esi,root_pach
-	mov	edi,dir_pach
+	mov	edi,dir_path
 	call	copy_dir_name
 	call	load_directory
 	mov	eax,[N_error]
@@ -1165,7 +1172,7 @@ load_root_directory:
 	imul	esi,[temp_counter_1],304
 	add	esi,[root_folder_area]
 	add	esi,32+40
-	mov	edi,dir_pach+1
+	mov	edi,dir_path+1
 	mov	[edi-1],byte '/'
 	call	copy_dir_name
 	call	load_directory
@@ -1245,7 +1252,7 @@ type_title:
 	mov	ecx,[ecx]
 	test	ecx,ecx
 	jz	@f
-	mcall	71,1,; title ;;param ;file_name ;dir_pach
+	mcall	71,1,; title ;;param ;file_name ;dir_path
 @@:
 	ret
 ;---------------------------------------------------------------------
@@ -1400,7 +1407,7 @@ draw_window:
 	ret
 ;---------------------------------------------------------------------
 draw_for_fs_errors:
-	call	draw_dir_pach
+	call	draw_dir_path
 
 	mov	ebx,[file_browser_data_1.x]
 	mov	ecx,[file_browser_data_1.y]
@@ -1419,7 +1426,7 @@ draw_for_fs_errors:
 	mcall	4,,0x90ffffff,load_directory_error_type
 
 	add	ebx,20
-	mcall	4,,,dir_pach	
+	mcall	4,,,dir_path	
 
 	mov	eax,[error_type]
 	shl	eax,2
@@ -1502,7 +1509,7 @@ draw_file_name:
 	mcall	4,,0x80000000,message_file_name
 	ret
 ;---------------------------------------------------------------------
-draw_dir_pach:
+draw_dir_path:
 	mov	eax,[file_browser_data_1.x]
 	mov	ebx,eax
 	shr	ebx,16
@@ -1550,16 +1557,16 @@ draw_dir_pach:
 	
 	ret
 	
-;draw_dir_pach_1:
+;draw_dir_path_1:
 ;	mov	ebx,[file_browser_data_1.x]
 ;	mcall	13,,<7,15>,0xffffb0
 ;	mov	bx,10
 ;	add	ebx,4 shl 16
-;	mcall	4,,0xC0000000,dir_pach,,0xffffb0
+;	mcall	4,,0xC0000000,dir_path,,0xffffb0
 ;	ret
 ;---------------------------------------------------------------------
 draw_draw_file_browser1:
-	call	draw_dir_pach
+	call	draw_dir_path
 	cmp	[open_dialog_type],1
 	jne	@f	
 	call	draw_file_name
@@ -1825,6 +1832,12 @@ load_directory:
 	mcall	70,dirinfo
 	test	eax,eax
 	jz	@f
+;	mov	esi,previous_dir_path
+;	mov	edi,dir_path
+;	call	copy_dir_name.1
+;	mcall	70,dirinfo
+;	test	eax,eax
+;	jz	@f	
 	xor	ebx,ebx
 	mov	[file_browser_data_1.folder_data],ebx
 	jmp	.error
@@ -2239,6 +2252,12 @@ copy_exit_dir:
 	ret
 ;---------------------------------------------------------------------
 copy_dir_name:
+	push	esi edi
+	mov	esi,edi
+	mov	edi,previous_dir_path
+	call	.1
+	pop	edi esi
+.1:
 	xor	eax,eax
 	cld
 @@:
@@ -2518,7 +2537,7 @@ dirinfo:
 .size		dd 0
 .return		dd 0
 		db 0
-.name:		dd dir_pach
+.name:		dd dir_path
 ;---------------------------------------------------------------------
 align	4
 dir_header:
@@ -2883,7 +2902,7 @@ PathShow_data_1:
 .background_flag	dd 0	;+16
 .font_color		dd 0x0	;+20
 .background_color	dd 0x0	;+24
-.text_pointer		dd dir_pach	;+28
+.text_pointer		dd dir_path	;+28
 .work_area_pointer	dd text_work_area	;+32
 .temp_text_length	dd 0	;+36
 ;---------------------------------------------------------------------
@@ -2949,7 +2968,10 @@ path:
 file_name:
 	rb 4096
 ;---------------------------------------------------------------------
-dir_pach:
+previous_dir_path:
+	rb 4096
+;---------------------------------------------------------------------
+dir_path:
 	rb 4096
 ;---------------------------------------------------------------------
 text_work_area:
