@@ -196,9 +196,8 @@ end virtual
 
 struc MUTEX
 {
+    .wait   LHEAD
     .count  rd 1
-    .next   rd 1
-    .prev   rd 1
 }
 
 virtual at 0

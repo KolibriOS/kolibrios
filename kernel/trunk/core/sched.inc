@@ -221,8 +221,7 @@ do_change_task:
 
 struc MUTEX_WAITER
 {
-    .next   rd 1
-    .prev   rd 1
+    .list   LHEAD
     .task   rd 1
     .sizeof:
 };
@@ -235,10 +234,9 @@ end virtual
 
 align 4
 mutex_init:
-        lea eax, [ecx+MUTEX.next]
+        mov [ecx+MUTEX.wait.next], ecx
+        mov [ecx+MUTEX.wait.prev], ecx
         mov [ecx+MUTEX.count],1
-        mov [ecx+MUTEX.next], eax
-        mov [ecx+MUTEX.prev], eax
         ret
 
 
@@ -253,16 +251,9 @@ mutex_lock:
         pushfd
         cli
 
-        push esi
         sub esp, MUTEX_WAITER.sizeof
 
-        mov eax, [ecx+MUTEX.prev]
-        lea esi, [ecx+MUTEX.next]
-
-        mov [ecx+MUTEX.prev], esp
-        mov [esp+MUTEX_WAITER.next],  esi
-        mov [esp+MUTEX_WAITER.prev],  eax
-        mov [eax], esp
+        list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
 
         mov edx, [TASK_BASE]
         mov [esp+MUTEX_WAITER.task], edx
@@ -278,19 +269,18 @@ mutex_lock:
         call change_task
         jmp .forever
 @@:
-        mov edx, [esp+MUTEX_WAITER.next]
-        mov eax, [esp+MUTEX_WAITER.prev]
+        mov edx, [esp+MUTEX_WAITER.list.next]
+        mov eax, [esp+MUTEX_WAITER.list.prev]
 
-        mov [eax+MUTEX_WAITER.next], edx
-        cmp [ecx+MUTEX.next], esi
-        mov [edx+MUTEX_WAITER.prev], eax
+        mov [eax+MUTEX_WAITER.list.next], edx
+        mov [edx+MUTEX_WAITER.list.prev], eax
+        cmp [ecx+MUTEX.wait.next], ecx
         jne @F
 
         mov [ecx+MUTEX.count], 0
 @@:
         add  esp, MUTEX_WAITER.sizeof
 
-        pop esi
         popfd
 .done:
         ret
@@ -303,9 +293,8 @@ mutex_unlock:
         pushfd
         cli
 
-        lea edx, [ecx+MUTEX.next]
-        mov eax, [edx]
-        cmp eax, edx
+        mov eax, [ecx+MUTEX.wait.next]
+        cmp eax, ecx
         mov [ecx+MUTEX.count], 1
         je @F
 
