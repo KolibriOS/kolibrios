@@ -1225,7 +1225,7 @@ lock    inc     [edx+DISK.MediaRefCount]
 ; out: eax = 0 => no more items
 ;      eax != 0 => buffer pointed to by edi contains name of item
 dyndisk_enum_root:
-        push    ebx             ; save register used in file_system_lfn
+        push    edx             ; save register used in file_system_lfn
         mov     ecx, disk_list_mutex    ; it will be useful
 ; 1. If this is the first call, acquire the mutex and initialize.
         test    eax, eax
@@ -1248,11 +1248,11 @@ dyndisk_enum_root:
         jnz     @b
         pop     esi eax
 ; 5. Return with eax = item.
-        pop     ebx             ; restore register used in file_system_lfn
+        pop     edx             ; restore register used in file_system_lfn
         ret
 .last:
 ; 6. Release the mutex and return with eax = 0.
         call    mutex_unlock
         xor     eax, eax
-        pop     ebx             ; restore register used in file_system_lfn
+        pop     edx             ; restore register used in file_system_lfn
         ret
