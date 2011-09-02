@@ -766,8 +766,10 @@ proc socket_read_packet stdcall
 
     mov ebx, eax
 
+        push    ecx edx
     lea ecx, [eax + SOCKET.lock]
     call mutex_lock
+        pop     edx ecx
 
 	mov	eax, [ebx + SOCKET.rxDataCount] 	   ; get count of bytes
 	test	eax, eax				   ; if count of bytes is zero..
