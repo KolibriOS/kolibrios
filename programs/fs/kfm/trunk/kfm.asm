@@ -53,17 +53,21 @@ include   'files.inc'
 STRLEN = 1024
 ;---------------------------------------------------------------------
 START:
-    mcall 9, procinfo, -1
-    mov   eax,[ebx+30]
-    mov   [PID],eax
-    xor   ecx,ecx
-@@:
-    inc   ecx
-    mcall 9, procinfo
-    mov   eax,[PID]
-    cmp   eax,[ebx+30]
-    jne   @r
-    mov  [active_process],ecx
+;    mcall 9, procinfo, -1
+;    mov   eax,[ebx+30]
+;    mov   [PID],eax
+;    xor   ecx,ecx
+;@@:
+;    inc   ecx
+;    mcall 9, procinfo
+;    mov   eax,[PID]
+;    cmp   eax,[ebx+30]
+;    jne   @r
+;    mov  [active_process],ecx
+	mcall	9,procinfo,-1
+	mov	ecx,[ebx+30]	; PID
+	mcall	18,21
+	mov	[active_process],eax	; WINDOW SLOT
     mov   [appl_memory],mem
     mov   ax,[select_disk_char]
     mov   [read_folder_name],ax
