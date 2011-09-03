@@ -842,14 +842,14 @@ end if
 align 4
 v86_irq:
 ; push irq/pushad/jmp v86_irq
-; eax = irq
+; ebp = irq
         lea     esi, [esp+1Ch]
         lea     edi, [esi+4]
         mov     ecx, 8
         std
         rep     movsd
         cld
-        mov     edi, eax
+        mov     edi, ebp
         pop     eax
 v86_irq2:
         mov     esi, [v86_irqhooks+edi*8]       ; get VM handle
