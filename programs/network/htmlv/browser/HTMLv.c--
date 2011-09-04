@@ -131,8 +131,8 @@ void Draw_Window()
 	DrawBar(0,43,onLeft(5,4),1,0xD2CED0); //выпуклость
 	FOR (j=0; j<5; j++) DefineButton(j*37+11, 7, 29, 29, 300+j+BT_HIDE, 0x00E4DFE1);
 	PutImage(#URLgoto,40,19,onLeft(57,0),14);
-	DefineButton(onLeft(38,0),14, 20, 18, GOTOURL+BT_HIDE, 0xE4DFE1);
-	DefineButton(onLeft(57,0),14, 19, 18, SEARCHWEB+BT_HIDE, 0xE4DFE1);
+	DefineButton(onLeft(37,0),15, 18, 16, GOTOURL+BT_HIDE, 0xE4DFE1);
+	DefineButton(onLeft(56,0),15, 17, 16, SEARCHWEB+BT_HIDE, 0xE4DFE1);
 	DrawRegion_3D(205,14,onLeft(58,205),18,0x94AECE,0x94AECE); //ободок полосы адреса
 	DrawRegion_3D(206,15,onLeft(59,205),16,0xE4ECF3,0xE4ECF3);
 	edit1.width=Form.width-266;

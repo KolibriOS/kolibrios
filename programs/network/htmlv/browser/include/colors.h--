@@ -142,7 +142,8 @@ char *color_names[]={
 "white",
 "whitesmoke",
 "yellow",
-"yellowgreen"}; 
+"yellowgreen",
+0}; 
 
 //соответствующие им значения
 dword *colors[]={

@@ -17,7 +17,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 23.67";
+ char version[]=" Text-based Browser 23.68";
 
 
 struct TWebBrowser {
@@ -513,19 +513,29 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 	/////////////////////////
-	if (!chTag("font")) {
-		IF(stroka <= 0) && (stroka - 1 > max_kolvo_strok) return;
-		COL_MARK: IF(strcmp(#parametr, "color=") == 0) //&& (parametr[1] == '#')
+	if (!chTag("font"))
+	{
+		IF(stroka < 0) || (stroka - 1 > max_kolvo_strok) return;
+		COL_MARK:
+		if (strcmp(#parametr, "color=") == 0) //&& (parametr[1] == '#')
 		{
-      text_color_index++;
-      IF (options[0] == '#'){
-        text_colors[text_color_index] = StrToCol(#options);
+			text_color_index++;
+			IF (options[0] == '#')
+			{
+				text_colors[text_color_index] = StrToCol(#options);
 			}
-			ELSE {
-             FOR (i=0;color_names[i]!=0;i++){
-              IF(!strcmp(#options, color_names[i])) {text_colors[text_color_index] = colors[i]; BREAK;}
-            }
-          }
+			ELSE
+			{
+				FOR (i=0; color_names[i]!=0; i++)
+				{
+					IF(!strcmp(#options, color_names[i]))
+					{
+						text_colors[text_color_index] = colors[i];
+						BREAK;
+					}
+					text_colors[text_color_index] = text_colors[0];
+				}
+			}
 			
 		}
 		IF(tagparam[0] <>'') {
