@@ -805,7 +805,6 @@ end if
         mov     dword [SLOT_BASE+ecx+APPDATA.io_map], ebx
         mov     dword [page_tabs + (tss._io_map_0 shr 10)], ebx
         mov     cr3, eax
-;        mov     [irq_tab+5*4], 0
         sti
 
         popad
@@ -899,7 +898,7 @@ v86_irq2:
         pop     ecx
 .cont:
         loop    .scan
-	
+
 	mov	eax, edi
 	call	IRQ_EOI
 

@@ -7,6 +7,7 @@
 
 $Revision$
 
+HASH_IT  = 1
 
 struc MEM_BLOCK
 {
@@ -17,6 +18,7 @@ struc MEM_BLOCK
    .size        dd ? ;+20
    .flags       dd ? ;+24
    .handle      dd ? ;+28
+   .sizeof:
 }
 
 FREE_BLOCK      equ  4
@@ -27,7 +29,6 @@ virtual at 0
   MEM_BLOCK MEM_BLOCK
 end virtual
 
-MEM_BLOCK_SIZE equ 8*4
 
 block_next   equ MEM_BLOCK.next_block
 block_prev   equ MEM_BLOCK.prev_block
@@ -59,7 +60,7 @@ macro remove_from_used op
 ;Initial heap state
 ;
 ;+heap_size               terminator        USED_BLOCK
-;+4096*MEM_BLOCK_SIZE   free space        FREE_BLOCK
+;+4096*MEM_BLOCK.sizeof   free space        FREE_BLOCK
 ;HEAP_BASE                heap_descriptors  USED_BLOCK
 ;
 
@@ -73,15 +74,6 @@ proc init_kernel_heap
             stosd
             stosd
             loop @B
-
-            mov ecx, 512/4
-            mov edi, mem_block_map
-            not eax
-            rep stosd
-
-            mov [mem_block_start], mem_block_map
-            mov [mem_block_end], mem_block_map+512
-            mov [mem_block_arr], HEAP_BASE
 
             mov eax, mem_used.fd
             mov [mem_used.fd], eax
@@ -99,8 +91,8 @@ proc init_kernel_heap
             jnz .l1
 
             mov edi, HEAP_BASE                     ;descriptors
-            mov ebx, HEAP_BASE+MEM_BLOCK_SIZE      ;free space
-            mov ecx, HEAP_BASE+MEM_BLOCK_SIZE*2    ;terminator
+            mov ebx, HEAP_BASE+MEM_BLOCK.sizeof      ;free space
+            mov ecx, HEAP_BASE+MEM_BLOCK.sizeof*2    ;terminator
 
             xor eax, eax
             mov [edi+block_next], ebx
@@ -108,26 +100,24 @@ proc init_kernel_heap
             mov [edi+list_fd], eax
             mov [edi+list_bk], eax
             mov [edi+block_base], HEAP_BASE
-            mov [edi+block_size], 4096*MEM_BLOCK_SIZE
+            mov [edi+block_size], 4096*MEM_BLOCK.sizeof
             mov [edi+block_flags], USED_BLOCK
 
             mov [ecx+block_next], eax
             mov [ecx+block_prev], ebx
             mov [edi+list_fd], eax
             mov [edi+list_bk], eax
-            mov [edi+block_base], 0
-            mov [edi+block_size], 0
+            mov [edi+block_base], eax
+            mov [edi+block_size], eax
             mov [edi+block_flags], USED_BLOCK
 
             mov [ebx+block_next], ecx
             mov [ebx+block_prev], edi
-            mov [ebx+list_fd], eax
-            mov [ebx+list_bk], eax
-            mov [ebx+block_base], HEAP_BASE+4096*MEM_BLOCK_SIZE
+            mov [ebx+block_base], HEAP_BASE+4096*MEM_BLOCK.sizeof
 
             mov ecx, [pg_data.kernel_pages]
             shl ecx, 12
-            sub ecx, HEAP_BASE-OS_BASE+4096*MEM_BLOCK_SIZE
+            sub ecx, HEAP_BASE-OS_BASE+4096*MEM_BLOCK.sizeof
             mov [heap_size], ecx
             mov [heap_free], ecx
             mov [ebx+block_size], ecx
@@ -139,11 +129,22 @@ proc init_kernel_heap
             mov ecx, mem_block_list+63*8
             list_add ebx, ecx
 
-            mov byte [mem_block_map], 0xFC
+            mov ecx, 4096-3-1
+            mov eax, HEAP_BASE+MEM_BLOCK.sizeof*4
+
+            mov [next_memblock], HEAP_BASE+MEM_BLOCK.sizeof*3
+@@:
+            mov [eax-MEM_BLOCK.sizeof], eax
+            add eax, MEM_BLOCK.sizeof
+            loop @B
+
+            mov [eax-MEM_BLOCK.sizeof], dword 0
+
+
             mov ecx, heap_mutex
             call mutex_init
-            mov [heap_blocks], 4095
-            mov [free_blocks], 4094
+            mov [heap_blocks], 4094
+            mov [free_blocks], 4093
             ret
 endp
 
@@ -201,58 +202,22 @@ get_small_block:
            mov edx, [esi]
            jmp .find
 
-align 4
-alloc_mem_block:
-
-           mov ebx, [mem_block_start]
-           mov ecx, [mem_block_end]
-.l1:
-           bsf eax,[ebx];
-           jnz found
-           add ebx,4
-           cmp ebx, ecx
-           jb .l1
-           xor eax,eax
-           ret
-
-found:
-           btr [ebx], eax
-           mov [mem_block_start],ebx
-           sub ebx, mem_block_map
-           lea eax,[eax+ebx*8]
-           shl eax, 5
-           add eax, [mem_block_arr]
-           dec [free_blocks]
-           ret
 
 align 4
 free_mem_block:
-           mov dword [eax], 0
-           mov dword [eax+4], 0
-           mov dword [eax+8], 0
-           mov dword [eax+12], 0
-           mov dword [eax+16], 0
-;           mov dword [eax+20], 0
-           mov dword [eax+24], 0
-           mov dword [eax+28], 0
+           mov ebx, [next_memblock]
+           mov [eax], ebx
+           mov [next_memblock], eax
+           xor ebx, ebx
 
-           sub eax, [mem_block_arr]
-           shr eax, 5
-
-           mov ebx, mem_block_map
-           bts [ebx], eax
+           mov dword [eax+4], ebx
+           mov dword [eax+8], ebx
+           mov dword [eax+12], ebx
+           mov dword [eax+16], ebx
+;           mov dword [eax+20], 0     ;don't clear block size
+           mov dword [eax+24], ebx
+           mov dword [eax+28], ebx
            inc [free_blocks]
-           shr eax, 3
-           and eax, not 3
-           add eax, ebx
-           cmp [mem_block_start], eax
-           ja @f
-           ret
-@@:
-           mov [mem_block_start], eax
-           ret
-.err:
-           xor eax, eax
            ret
 
 align 4
@@ -291,11 +256,13 @@ proc alloc_kernel_space stdcall, size:dword
            cmp eax, [size]
            je .m_eq_size
 
-           call alloc_mem_block
-           and eax, eax
+           mov esi, [next_memblock]     ;new memory block
+           test esi, esi
            jz .error_unlock
 
-           mov esi, eax           ;esi - splitted block
+           dec [free_blocks]
+           mov eax, [esi]
+           mov [next_memblock], eax
 
            mov [esi+block_next], edi
            mov eax, [edi+block_prev]
@@ -340,17 +307,19 @@ proc alloc_kernel_space stdcall, size:dword
            mov ebx, [size]
            sub [heap_free], ebx
 
-;           pushad
-;           mov eax, [esi+block_base]
-;           mov ebx, [esi+block_base]
-;           shr ebx, 6
-;           add eax, ebx
-;           shr ebx, 6
-;           add eax, ebx
-;           shr eax, 12
-;           and eax, 63
-;           inc [mem_hash_cnt+eax*4]
-;           popad
+if HASH_IT
+           pushad
+           mov eax, [esi+block_base]
+           mov ebx, [esi+block_base]
+           shr ebx, 6
+           add eax, ebx
+           shr ebx, 6
+           add eax, ebx
+           shr eax, 12
+           and eax, 63
+           inc [mem_hash_cnt+eax*4]
+           popad
+end if
 
            mov ecx, heap_mutex
            call mutex_unlock
@@ -377,17 +346,19 @@ proc alloc_kernel_space stdcall, size:dword
            mov ebx, [size]
            sub [heap_free], ebx
 
-;           pushad
-;           mov eax, [edi+block_base]
-;           mov ebx, [edi+block_base]
-;           shr ebx, 6
-;           add eax, ebx
-;           shr ebx, 6
-;           add eax, ebx
-;           shr eax, 12
-;           and eax, 63
-;           inc [mem_hash_cnt+eax*4]
-;           popad
+if HASH_IT
+           pushad
+           mov eax, [edi+block_base]
+           mov ebx, [edi+block_base]
+           shr ebx, 6
+           add eax, ebx
+           shr ebx, 6
+           add eax, ebx
+           shr eax, 12
+           and eax, 63
+           inc [mem_hash_cnt+eax*4]
+           popad
+end if
 
            mov ecx, heap_mutex
            call mutex_unlock
@@ -430,19 +401,19 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
            cmp [esi+block_flags], USED_BLOCK
            jne .fail
 
-
-;           pushad
-;           mov eax, [esi+block_base]
-;           mov ebx, [esi+block_base]
-;           shr ebx, 6
-;           add eax, ebx
-;           shr ebx, 6
-;           add eax, ebx
-;           shr eax, 12
-;           and eax, 63
-;           dec [mem_hash_cnt+eax*4]
-;           popad
-
+if HASH_IT
+           pushad
+           mov eax, [esi+block_base]
+           mov ebx, [esi+block_base]
+           shr ebx, 6
+           add eax, ebx
+           shr ebx, 6
+           add eax, ebx
+           shr eax, 12
+           and eax, 63
+           dec [mem_hash_cnt+eax*4]
+           popad
+end if
            mov eax, [esi+block_size]
            add [heap_free], eax
 
