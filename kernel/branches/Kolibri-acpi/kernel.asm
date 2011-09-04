@@ -226,7 +226,7 @@ B32:
            mov   fs,ax
            mov   gs,ax
            mov   ss,ax
-           mov   esp,0x3ec00       ; Set stack
+           mov   esp,0x5ec00       ; Set stack
 
 ; CLEAR 0x280000 - HEAP_BASE
 

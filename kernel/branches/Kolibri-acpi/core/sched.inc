@@ -294,7 +294,7 @@ mutex_unlock:
         cli
 
         mov eax, [ecx+MUTEX.wait.next]
-        cmp eax, [ecx]
+        cmp eax, ecx
         mov [ecx+MUTEX.count], 1
         je @F
 
