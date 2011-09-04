@@ -128,3 +128,11 @@ macro list_add_tail new, head
     __list_add new, eax, head
 }
 
+macro list_del entry
+{
+    mov edx, [entry+list_fd]
+    mov ecx, [entry+list_bk]
+    mov [edx+list_bk], ecx
+    mov [ecx+list_fd], edx
+}
+
