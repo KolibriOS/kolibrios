@@ -3,7 +3,6 @@
 //Asper, Lrz, Nable, lev.
 
 #include "../lib/kolibri.h--"
-#include "../lib/memory.h--"
 #include "../lib/file_system.h--"
 #include "include/some_code.h--"
 #include "img/toolbar_icons.c--"
@@ -39,10 +38,14 @@ proc_info Form;
 
 void main()
 {
-	mouse m; dword btn; byte key;
+	mouse m;
+	int btn;
+	byte key;
+	
 	IF (param) copystr(#param,#URL);
 	BrowserHistory.AddUrl();
 	copystr(#URL,#editURL);
+	
     //Asper [
         mem_Init();
         $or      eax, eax

@@ -62,3 +62,34 @@ void mem_Free(dword mptr)
         $pop     ebx
         $pop     eax
 }
+
+//stdcall dword ??
+inline fastcall mem_Move( EDI, ESI, ECX)
+{
+  asm {
+    mov eax, ecx
+    cmp edi, esi
+    jg l1
+    je l2
+    sar ecx, 2
+    js l2
+    rep movsd
+    mov ecx, eax
+    and ecx, 3
+    rep movsb
+    jmp short l2
+l1: lea esi, dsdword[ esi+ecx-4]
+    lea edi, dsdword[ edi+ecx-4]
+    sar ecx, 2
+    js l2
+    std
+    rep movsd
+    mov ecx, eax
+    and ecx, 3
+    add esi, 3
+    add edi, 3
+    rep movsb
+    cld
+l2:
+  }
+}

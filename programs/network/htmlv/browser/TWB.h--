@@ -173,9 +173,11 @@ void GetNewUrl(){
 
 
 
-void ReadHtml(byte DO_LOAD) {
-	IF(buf) free(buf);
-	buf = malloc(1048576);
+void ReadHtml(byte DO_LOAD)
+{
+	mem_Free(buf);
+	
+	buf = mem_Alloc(1048576);
 
 	IF (!strcmp(get_URL_part(5),"http:"))) 
 	{
@@ -192,6 +194,36 @@ void ReadHtml(byte DO_LOAD) {
 
 	filesize = EBX;
 }
+
+/*void ReadHtml(byte DO_LOAD)
+{
+	char FileAdress[4096];
+	
+	IF (!strcmp(get_URL_part(5),"http:"))
+	{
+		IF (DO_LOAD) //&& (!WindowRePaint)
+		{
+			DeleteFile(#download_path);
+			IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
+			RunProgram("/sys/network/downloader", #URL);
+			RETURN;
+		}
+		copystr(#download_path, #FileAdress);
+		//ReadFile(0, 1048576, buf, #download_path);
+	} 
+	ELSE copystr(#URL, #FileAdress);//ReadFile(0, 1048576, buf, #URL);
+	
+	mem_Free(buf);
+    file_size stdcall (#FileAdress);
+    $mov     filesize, ebx
+    buf = mem_Alloc(filesize);
+	WriteDebug(IntToStr(filesize));
+	//$mov     buf, eax
+	//buf = malloc(1048576);
+
+	//filesize = EBX;
+}*/
+
 
 
 
