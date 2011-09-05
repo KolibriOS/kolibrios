@@ -312,7 +312,7 @@ get_wnd_in_focus:
 	;@@:
 	ret
 
-hed db 'TextEditor syntax file converter 26.08.11',0 ;подпись окна
+hed db 'TextEditor syntax file converter 06.09.11',0 ;подпись окна
 
 txt122 db 'Загр. файл',0
 txt148 db 'Сохр. файл',0

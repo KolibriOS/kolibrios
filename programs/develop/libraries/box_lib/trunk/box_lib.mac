@@ -80,8 +80,8 @@ macro edit_boxes_set_sys_color start,end,color_table
         mov     ecx,((end-start)/ed_struc_size)
         mov     esi,color_table
 @@:
-        mov     eax,dword [esi+36]
-        mov     ebx,dword [esi+20]
+        mov     eax,dword [esi+36] ;цвет графики в окне (разделительные линии и т.п.)
+        mov     ebx,dword [esi+20] ;цвет рабочей области окна
         push	dword eax
 	pop     dword ed_focus_border_color
         shr     bh,1
@@ -98,6 +98,8 @@ macro edit_boxes_set_sys_color start,end,color_table
         ror     eax,16
 	mov	dword ed_blur_border_color,eax
 	mov	dword shift_color,eax
+	push 	dword [esi+32] ;цвет текста в рабочей области окна
+	pop 	dword ed_text_color
         add     edi,ed_struc_size
         loop    @b
 }
@@ -257,18 +259,36 @@ op_flag_en=10b
 .flags: dd flags+0   ; флаги
 }
 
+;op_struc_size equ
 option_group equ [edi]
 op_left equ [edi+4]    ;координата начала рисования по х
 op_top equ [edi+6]     ;координата начала рисования по у
 op_text_margin equ [edi+8]      ;=4 расстояние от прямоугольника чек бокса до надписи 
 op_size equ [edi+12]             ;12 размер квадрата чек бокса 
 op_color equ [edi+16]
-op_border_color equ [edi+20] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
+op_border_color equ [edi+20] ; or [edi+4] ;цвет рамки optionbox ее можно задать самостоятельно
 op_text_color equ   [edi+24];[edi+4]  ;цвет текста
 op_text_ptr equ [edi+28]    ;указатель на начало текстовой строки 
 op_text_length equ [edi+32]
 op_flags equ [edi+36]       ;флаги
 
+macro option_boxes_set_sys_color color_table,group
+{
+	mov	ecx,group
+        mov	esi,color_table
+        mov	edi,[ecx]
+        mov	eax,[esi+24] ;цвет кнопки в рабочей области окна
+        mov	ebx,[esi+28] ;цвет текста на кнопке
+@@:
+	mov	op_border_color,eax
+	mov	op_color,ebx
+	push	dword [esi+32] ;цвет текста в рабочей области окна
+	pop	dword op_text_color
+        add     ecx,4
+        mov     edi,[ecx]
+	cmp	edi,0
+        jne	@b
+}
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Basic macros for use TreeList                            ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

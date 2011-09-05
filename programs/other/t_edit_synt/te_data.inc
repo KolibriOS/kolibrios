@@ -18,23 +18,11 @@ edit_box_key   dd aEdit_box_key
 edit_box_mouse dd aEdit_box_mouse
 version_ed     dd aVersion_ed
 
-;check_box_draw	dd aCheck_box_draw
-;check_box_mouse dd aCheck_box_mouse
-;version_ch	dd aVersion_ch
-
-;option_box_draw  dd aOption_box_draw
-;option_box_mouse dd aOption_box_mouse
-;version_op	 dd aVersion_op
-
 scrollbar_ver_draw  dd aScrollbar_ver_draw
 scrollbar_ver_mouse dd aScrollbar_ver_mouse
 scrollbar_hor_draw  dd aScrollbar_hor_draw
 scrollbar_hor_mouse dd aScrollbar_hor_mouse
 version_scrollbar   dd aVersion_scrollbar
-
-;dinamic_button_draw  dd aDbutton_draw
-;dinamic_button_mouse dd aDbutton_mouse
-;version_dbutton      dd aVersion_dbutton
 
 tl_data_init dd sz_tl_data_init
 tl_data_clear dd sz_tl_data_clear
@@ -96,23 +84,11 @@ aEdit_box_key	db 'edit_box_key',0
 aEdit_box_mouse db 'edit_box_mouse',0
 aVersion_ed	db 'version_ed',0
 
-;aCheck_box_draw  db 'check_box_draw',0
-;aCheck_box_mouse db 'check_box_mouse',0
-;aVersion_ch	 db 'version_ch',0
-
-;aOption_box_draw  db 'option_box_draw',0
-;aOption_box_mouse db 'option_box_mouse',0
-;aVersion_op	  db 'version_op',0
-
 aScrollbar_ver_draw  db 'scrollbar_v_draw',0
 aScrollbar_ver_mouse db 'scrollbar_v_mouse',0
 aScrollbar_hor_draw  db 'scrollbar_h_draw',0
 aScrollbar_hor_mouse db 'scrollbar_h_mouse',0
 aVersion_scrollbar   db 'version_scrollbar',0
-
-;aDbutton_draw    db 'dbutton_draw',0
-;aDbutton_mouse   db 'dbutton_mouse',0
-;aVersion_dbutton  db 'version_dbutton',0
 
 sz_tl_data_init db 'tl_data_init',0
 sz_tl_data_clear db 'tl_data_clear',0
@@ -213,13 +189,7 @@ edit1 edit_box 310+16-CAPT_PATH_WIDTH, 210+CAPT_PATH_WIDTH, 25, 0xffffff, 0xff, 
 
 ed_buffer: ;текст для edit
   .127: rb MAX_COLOR_WORD_LEN+2
-;------------------------------------------------------------------------------
-struct TexSelect
-  x0 dd ?
-  y0 dd ?
-  x1 dd ?
-  y1 dd ?
-ends
+
 ;------------------------------------------------------------------------------
 align 4
 tedit0: ;структура текстового редактора
@@ -227,8 +197,8 @@ tedit0: ;структура текстового редактора
 	.rec BOX 30,13,7,10   ;+16
 	.drag_m db 0 ;+32 выделение от мыши
 	.drag_k db 0 ;+33 выделение от клавиатуры
-	.sel  TexSelect 0,0,0,0 ;+34 структура выделения
-	.seln TexSelect ;+50 дополнительная структура выделения
+	.sel rb 16 ;+34 структура выделения
+	.seln rb 16 ;+50 дополнительная структура выделения
 	.tex	  dd 0 ;+66 text memory pointer
 	.tex_1	  dd 0 ;+70 text first symbol pointer
 	.tex_end  dd 0 ;+74 text end memory pointer
@@ -352,8 +322,8 @@ align 4
 ;conv_tabl rb 128 ;таблица для конвертирования scan-кода в ascii-код
 buf db BUF_SIZE dup(0) ;буфер для копирования | вставки
 
-capt_header db 'macro wo txt,lf1,p1,p2,p3{',13
-	db '@@: db txt',13,'rb @b+40-$',13,'dd lf1',13,'db p1',13,'dw p2+0',13,'db p3',13,'}',13
+capt_header db 'macro wo txt,f1,p1,p2,p3{',13
+	db '@@: db txt',13,'rb @b+40-$',13,'dd f1+0',13,'db p1',13,'dw p2+0',13,'db p3',13,'}',13
 	db 'count_colors_text dd (text-color_wnd_text)/4',13
 	db 'count_key_words dd (f1-text)/48',13,0
 col_1 db 'color_cursor dd ',0	;+ 98 цвет курсора

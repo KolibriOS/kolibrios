@@ -69,19 +69,18 @@ InitColText:
 	mov dword[ColWords],0
 	mov dword[tex_help_f1],0
 
-  cmp eax,6
-  je @f
-  cmp eax,0
-  je @f
-    cmp ax,10
-    jl .zifra_0_9
-      mov al,'?'
-      sub ax,48
-    .zifra_0_9:
-    add ax,48
-
-    jmp .no_colors
-  @@:
+	cmp eax,6
+	je @f
+	cmp eax,0
+	je @f
+		cmp ax,10
+		jl .zifra_0_9
+			mov al,'?'
+			sub ax,48
+		.zifra_0_9:
+		add ax,48
+		jmp .no_colors
+	@@:
 
 	mov esi,[options_file]
 	mov edi,count_colors_text
@@ -230,10 +229,7 @@ proc print_word, text:dword, index:dword
 		stdcall str_cat,esi,capt_calc_f1
 		stdcall str_cat_value,esi,[index]
 		stdcall str_cat,esi,capt_lbl_f1_use
-		jmp .end_f1_calc
 	@@:
-		stdcall str_cat,esi,capt_null
-	.end_f1_calc:
 
 	mov esi,text_buffer
 	stdcall str_len,esi ;узнаем длинну всей строки
@@ -264,7 +260,7 @@ mov byte[edi],0
 	inc edi
 
 	xor eax,eax
-	mov al,byte[ecx+MAX_COLOR_WORD_LEN+4+2] ;color
+	mov al,byte[ecx+MAX_COLOR_WORD_LEN+4+3] ;color
 	stdcall str_cat_value,edi,eax
 	stdcall str_len,edi
 	add edi,eax
