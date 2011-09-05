@@ -81,9 +81,11 @@ void GetIni(byte onload)
 /// нужно чтобы просто возвращало текст ///
 ///////////////////////////////////////////
 
-void Write_Debug_Error(int error_number){
-
-	IF (error_number<0) error_number=-1*error_number;
+void Write_Debug_Error(int error_number)
+{
+	char unknown_error[8];
+	
+	if (error_number<0) error_number=-1*error_number;
 	switch (error_number) //извесная ошибка - пишем какая и уходим
 	{
 		CASE 2:	RunProgram(#NOTIFY_PATH, "Eolite: error 2 - Function is not supported for the given file system");
@@ -99,7 +101,7 @@ void Write_Debug_Error(int error_number){
 		case 8:	RunProgram(#NOTIFY_PATH, "Eolite: error 8 - FAT table is destroyed");
 				return;		
 		case 9: RunProgram(#NOTIFY_PATH, "Eolite: error 9 - FAT table is destroyed");
-				RETURN;
+				return;
 		case 10:RunProgram(#NOTIFY_PATH, "Eolite: error 10 - Access denied");
 				RETURN;				
 		case 11:RunProgram(#NOTIFY_PATH, "Eolite: error 11 - Device error");
@@ -110,6 +112,8 @@ void Write_Debug_Error(int error_number){
 				RETURN;
 		case 32:RunProgram(#NOTIFY_PATH, "Eolite: error 32 - Too many processes");
 				RETURN;
-		default:RunProgram(#NOTIFY_PATH, "Unknown error number O_o");
+		default:copystr(IntToStr(error_number), #unknown_error);
+				copystr(" - Unknown error number O_o", #unknown_error+strlen(#unknown_error));
+				RunProgram(#NOTIFY_PATH, #unknown_error);
 	}
 }

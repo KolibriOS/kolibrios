@@ -4,7 +4,8 @@ dword Put_icon(dword extension, yy)
 { 
 	dword ftype="", fnum=0; //еши неизвесный файл
 
-	IF (!strcmp(extension,"htm")) || (!strcmp(extension,"html")) {fnum = 2; ftype="Web-page";}
+	IF (!strcmp(extension,"htm")) || (!strcmp(extension,"html")) ||
+	   (!strcmp(extension,"mht")) {fnum = 2; ftype="Web-page";}
 	IF (!strcmp(extension,"ini")) || (!strcmp(extension,"conf")) {fnum = 3; ftype="Config";}
 	IF (!strcmp(extension,"xlt")) || (!strcmp(extension,"xls")) ||
 		(!strcmp(extension,"ods")) || (!strcmp(extension,"xlsx")) {fnum = 4; ftype="Table";}
@@ -29,7 +30,7 @@ dword Put_icon(dword extension, yy)
 	//text
 	IF (!strcmp(extension,"txt")) || (!strcmp(extension,"doc")) ||
 	   (!strcmp(extension,"rtf")) || (!strcmp(extension,"odt")) ||
-	   (!strcmp(extension,"docx")) {fnum = 1; ftype="Text";}
+	   (!strcmp(extension,"log")) || (!strcmp(extension,"docx")) {fnum = 1; ftype="Text";}
 	//изображения
 	IF (!strcmp(extension,"gif")) || (!strcmp(extension,"bmp")) ||
 	   (!strcmp(extension,"tga")) || (!strcmp(extension,"pcx")) ||
@@ -38,7 +39,8 @@ dword Put_icon(dword extension, yy)
 	   (!strcmp(extension,"jpeg")) || (!strcmp(extension,"raw")) ||
 	   (!strcmp(extension,"psd")) {fnum = 19; ftype="Image";}
 	//пиктограммы
-	IF (!strcmp(extension,"ico")) || (!strcmp(extension,"cur")) {fnum = 20; ftype="Icon";}
+	IF (!strcmp(extension,"ico")) {fnum = 20; ftype="Icon";}
+	IF (!strcmp(extension,"cur")) || (!strcmp(extension,"ani")) {fnum = 20; ftype="Cursor";}
 	//архивы
 	IF (!strcmp(extension,"rar")) || (!strcmp(extension,"zip")) ||
 	   (!strcmp(extension,"cab")) || (!strcmp(extension,"tar")) ||
