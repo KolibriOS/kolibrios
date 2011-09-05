@@ -7,6 +7,7 @@
 //wintodos(buf); -> в парсе хтмл как и все кодировки
 //ol - циферки
 
+int	downloader_id;
 
 dword j,
 	buf,
@@ -179,13 +180,14 @@ void ReadHtml(byte DO_LOAD)
 	
 	buf = mem_Alloc(1048576);
 
-	IF (!strcmp(get_URL_part(5),"http:"))) 
+	if (!strcmp(get_URL_part(5),"http:"))) 
 	{
 		IF (DO_LOAD) && (!WindowRePaint)
 		{
 			DeleteFile(#download_path);
 			IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
-			RunProgram("/sys/network/downloader", #URL);
+			downloader_id = RunProgram("/sys/network/downloader", #URL);
+			IF (downloader_id<0) RunProgram("@notify", "Error running Downloader. Internet unavilable.");
 			RETURN;
 		}
 		ReadFile(0, 1048576, buf, #download_path);
@@ -281,8 +283,6 @@ int stroka,
 
 	byte ignor_param = 0;
 	
-	byte rtf_text;
-
 void TWebBrowser::ParseHTML(dword bword, fsize){
 	word bukva[1];
 	char temp[768];
@@ -657,6 +657,8 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			GOTO IMG_TAG;
 		}
 
+		if (w>width1) w=width1;
+		
         if (image)
         {
 			stroka+=h/10;
@@ -676,23 +678,32 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				//WriteDebug(IntToStr(WB1.top));
 				//WriteDebug(IntToStr(h));
 				h=WB1.top+WB1.height-top1-10;
-			}			 
+			}	
+
+			
+			//WriteDebug(IntToStr(h));
+			//Pause(10);
+			
+			IF (h<=0) return;
 			
 			img_draw stdcall (image,left1-5,top1+10,w, h,0,0);
+			//WriteDebug("Good");
 			DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, 0xFFFFFF);
         }
+		return;
 	}
 
-	if (!chTag("meta")) {
+	if (!chTag("meta")) 
+	{
 		META:
 		if (!strcmp(#parametr, "charset=")) || (!strcmp(#parametr, "content="))
 		{
 			copystr(#options[find_symbol(#options, '=')],#options); //поиск в content=
 
-      IF (!strcmp(#options,"utf-8")) || (!strcmp(#options,"utf8"))
+			IF (!strcmp(#options,"utf-8")) || (!strcmp(#options,"utf8"))
 			{
 				ReadHtml(DONT_LOAD);
-   	    utf8rutodos(buf);
+				utf8rutodos(buf);
 			}
 			IF(!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))
 			{
@@ -704,10 +715,12 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				ReadHtml(DONT_LOAD);
 			}
 		}
-		IF(tagparam[0] <>'') {
+		IF(tagparam[0] <>'')
+		{
 			GetNextParam();
 			goto META;
 		}
+		return;
 	}
 }
 

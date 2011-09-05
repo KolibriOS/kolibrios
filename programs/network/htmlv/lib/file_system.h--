@@ -51,7 +51,7 @@ dword GetFileInfo(dword file_name)
 //   Запуск программы    //
 ///////////////////////////
 f70 run_file_70;
-void RunProgram(dword run_path, run_param)
+int RunProgram(dword run_path, run_param)
 {    
     run_file_70.func = 7;
     run_file_70.param1 = 
@@ -62,7 +62,8 @@ void RunProgram(dword run_path, run_param)
     run_file_70.name = run_path;
     $mov eax,70
     $mov ebx,#run_file_70.func
-    $int 0x40 
+    $int 0x40
+	RETURN EAX;
 }
 
 ///////////////////////////

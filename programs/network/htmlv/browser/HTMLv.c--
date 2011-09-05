@@ -127,9 +127,9 @@ void Draw_Window()
 	}
 	IF (Form.height<120) MoveSize(OLD,OLD,OLD,120);
 	IF (Form.width<280) MoveSize(OLD,OLD,280,OLD);
-	//
-  PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
-  DrawBar(200,0,onLeft(200,9),43,0xE4DFE1); //закрашиваем фон под тулбаром
+	
+	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
+	DrawBar(200,0,onLeft(200,9),43,0xE4DFE1); //закрашиваем фон под тулбаром
 	DrawBar(0,42,onLeft(5,4),1,0xE2DBDC); //выпуклость
 	DrawBar(0,43,onLeft(5,4),1,0xD2CED0); //выпуклость
 	FOR (j=0; j<5; j++) DefineButton(j*37+11, 7, 29, 29, 300+j+BT_HIDE, 0x00E4DFE1);
@@ -143,7 +143,7 @@ void Draw_Window()
 	WB1.width=Form.width-11;
 	WB1.height=onTop(43,5);
 	WB1.Load(#URL);
-	//
+	
 	WindowRedrawStatus(2);
 }
  
