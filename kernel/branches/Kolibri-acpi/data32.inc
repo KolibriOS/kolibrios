@@ -296,20 +296,18 @@ cur_saved_data    rb 4096
 fpu_data:         rb 512
 
 mem_block_list    rd 64*2
-mem_block_mask    rd 2
-
-mem_used.fd       rd 1
-mem_used.bk       rd 1
-
+mem_used_list     rd 64*2
 mem_hash_cnt      rd 64
-
-next_memblock     rd 1
 
 heap_mutex        MUTEX
 heap_size         rd 1
 heap_free         rd 1
 heap_blocks       rd 1
 free_blocks       rd 1
+
+mem_block_mask    rd 2
+next_memblock     rd 1
+
 
 mst MEM_STATE
 
