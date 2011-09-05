@@ -127,7 +127,7 @@ proc fs_execute
 @@:
        lea eax, [filename]
        stdcall load_file, eax
-       mov  ecx, -ERROR_FILE_NOT_FOUND
+       mov  esi, -ERROR_FILE_NOT_FOUND
        test eax, eax
        jz .err_file
 
@@ -136,12 +136,9 @@ proc fs_execute
 
        lea ebx, [hdr_cmdline]
        call test_app_header
-       mov ecx, -0x1F
+       mov esi, -0x1F
        test eax, eax
        jz .err_hdr
-
-       ;mov esi, new_process_loading
-       ;call sys_msg_board_str       ; write message to message board
 
 .wait_lock:
        cmp [application_table_status],0
@@ -159,7 +156,7 @@ proc fs_execute
 
        call get_new_process_place
        test eax, eax
-       mov ecx, -0x20      ; too many processes
+       mov esi, -0x20      ; too many processes
        jz .err
 
        mov [slot], eax
@@ -194,7 +191,7 @@ proc fs_execute
        mov [save_cr3], ebx
 
        stdcall create_app_space,[hdr_mem],[file_base],[file_size]
-       mov ecx, -30  ; no memory
+       mov esi, -30  ; no memory
        test eax, eax
        jz .failed
 
@@ -250,7 +247,7 @@ end if
 .err_file:
        xor eax, eax
        mov [application_table_status],eax
-       mov eax, ecx
+       mov eax, esi
        ret
 endp
 
