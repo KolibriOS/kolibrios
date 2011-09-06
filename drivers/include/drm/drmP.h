@@ -44,6 +44,7 @@
 #endif				/* __alpha__ */
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <errno-base.h>
 #include <linux/kref.h>
 #include <linux/spinlock.h>
 

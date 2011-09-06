@@ -43,8 +43,8 @@
  */
 struct mutex {
 	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
-	atomic_t		count;
 	struct list_head	wait_list;
+    atomic_t            count;
 };
 
 /*
@@ -58,8 +58,9 @@ struct mutex_waiter {
 
 
 #define __MUTEX_INITIALIZER(lockname) \
-                { .count = ATOMIC_INIT(1) \
-                , .wait_list = LIST_HEAD_INIT(lockname.wait_list) }
+                { .wait_list = LIST_HEAD_INIT(lockname.wait_list), \
+                  .count = ATOMIC_INIT(1) \
+                }
 
 #define DEFINE_MUTEX(mutexname) \
         struct mutex mutexname = __MUTEX_INITIALIZER(mutexname)
