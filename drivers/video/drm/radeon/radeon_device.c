@@ -38,7 +38,7 @@
 #include <drm/drm_pciids.h>
 
 
-int radeon_no_wb;
+int radeon_no_wb   =  1;
 int radeon_modeset = -1;
 int radeon_dynclks = -1;
 int radeon_r4xx_atom = 0;
@@ -56,6 +56,7 @@ int radeon_hw_i2c = 0;
 int radeon_pcie_gen2 = 0;
 int radeon_disp_priority = 0;
 
+int irq_override = 0;
 
 
 extern display_t *rdisplay;
@@ -899,6 +900,16 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     else
         init_display(dev->dev_private, &usermode);
 
+
+    uint32_t route0 = PciRead32(0, 31<<3, 0x60);
+
+    uint32_t route1 = PciRead32(0, 31<<3, 0x68);
+
+    uint8_t elcr0 = in8(0x4D0);
+    uint8_t elcr1 = in8(0x4D1);
+
+    dbgprintf("pci route: %x %x elcr: %x %x\n", route0, route1, elcr0, elcr1);
+
     LEAVE();
 
     return 0;
@@ -1042,12 +1053,7 @@ int _stdcall display_handler(ioctl_t *io)
 static char  log[256];
 static pci_dev_t device;
 
-u32_t
-#if defined(__GNUC__) && __GNUC__ >= 4
-// has sense only if -fwhole-program is used, like Makefile.lto
-__attribute__((externally_visible))
-#endif
-drvEntry(int action, char *cmdline)
+u32_t drvEntry(int action, char *cmdline)
 {
     struct radeon_device *rdev = NULL;
 

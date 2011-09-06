@@ -483,8 +483,6 @@ int r600_blit_init(struct radeon_device *rdev)
 	u32 packet2s[16];
 	int num_packet2s = 0;
 
-    ENTER();
-
 	/* pin copy shader into vram if already initialized */
 	if (rdev->r600_blit.shader_obj)
 		goto done;
@@ -562,7 +560,6 @@ done:
 	}
 //   radeon_ttm_set_active_vram_size(rdev, rdev->mc.real_vram_size);
 
-    LEAVE();
 
 	return 0;
 }
@@ -850,7 +847,7 @@ void r600_kms_video_blit(struct radeon_device *rdev,
     u64 vb_gpu_addr;
     u32 *vb;
 
-    DRM_DEBUG("emitting video copy\n");
+//    DRM_DEBUG("emitting video copy\n");
     vb = (u32 *)(rdev->r600_blit.vb_ib->ptr + rdev->r600_blit.vb_used);
 
     if ((rdev->r600_blit.vb_used + 48) > rdev->r600_blit.vb_total) {
@@ -909,8 +906,22 @@ extern struct radeon_device *main_device;
 int r600_video_blit(uint64_t src_offset, int  x, int y,
                     int w, int h, int pitch)
 {
-    int r;
     struct radeon_device *rdev = main_device;
+    static struct radeon_fence *fence;
+    unsigned long irq_flags;
+
+    int r;
+
+    if(fence == NULL)
+    {
+        r = radeon_fence_create(rdev, &fence);
+        if (r) {
+            printf("%s epic fail", __FUNCTION__);
+            return r;
+        }
+    };
+
+    fence->evnt = CreateEvent(NULL, 0);
 
     mutex_lock(&rdev->r600_blit.mutex);
     rdev->r600_blit.vb_ib = NULL;
@@ -922,10 +933,19 @@ int r600_video_blit(uint64_t src_offset, int  x, int y,
         return r;
     }
 
-
     r600_kms_video_blit(rdev, src_offset,x,y,w,h,pitch);
-    r600_blit_done_copy(rdev, NULL);
+    r600_blit_done_copy(rdev, fence);
     mutex_unlock(&rdev->r600_blit.mutex);
+
+    r = radeon_fence_wait(fence, false);
+
+    write_lock_irqsave(&rdev->fence_drv.lock, irq_flags);
+    list_del(&fence->list);
+    fence->emited = false;
+    fence->signaled = false;
+    write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
+
+    return r;
 };
 
 int r600_create_video(int w, int h, u32_t *outp)
@@ -965,8 +985,8 @@ int r600_create_video(int w, int h, u32_t *outp)
     outp[2] = uaddr;
     outp[3] = pitch;
 
-    dbgprintf("Create video surface %x, mapped at %x pitch %d\n",
-              (uint32_t)saddr, uaddr, pitch);
+//    dbgprintf("Create video surface %x, mapped at %x pitch %d\n",
+//              (uint32_t)saddr, uaddr, pitch);
     return 0;
 
 fail:

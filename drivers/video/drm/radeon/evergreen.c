@@ -733,7 +733,7 @@ static void evergreen_program_watermarks(struct radeon_device *rdev,
 		    !evergreen_average_bandwidth_vs_available_bandwidth(&wm) ||
 		    !evergreen_check_latency_hiding(&wm) ||
 		    (rdev->disp_priority == 2)) {
-			DRM_INFO("force priority to high\n");
+			DRM_DEBUG_KMS("force priority to high\n");
 			priority_a_cnt |= PRIORITY_ALWAYS_ON;
 			priority_b_cnt |= PRIORITY_ALWAYS_ON;
 		}
@@ -1347,6 +1347,7 @@ int evergreen_cp_resume(struct radeon_device *rdev)
 				 SOFT_RESET_PA |
 				 SOFT_RESET_SH |
 				 SOFT_RESET_VGT |
+				 SOFT_RESET_SPI |
 				 SOFT_RESET_SX));
 	RREG32(GRBM_SOFT_RESET);
 	mdelay(15);
@@ -1372,9 +1373,6 @@ int evergreen_cp_resume(struct radeon_device *rdev)
 
 	/* set the wb address wether it's enabled or not */
 	WREG32(CP_RB_RPTR_ADDR,
-#ifdef __BIG_ENDIAN
-	       RB_RPTR_SWAP(2) |
-#endif
 	       ((rdev->wb.gpu_addr + RADEON_WB_CP_RPTR_OFFSET) & 0xFFFFFFFC));
 	WREG32(CP_RB_RPTR_ADDR_HI, upper_32_bits(rdev->wb.gpu_addr + RADEON_WB_CP_RPTR_OFFSET) & 0xFF);
 	WREG32(SCRATCH_ADDR, ((rdev->wb.gpu_addr + RADEON_WB_SCRATCH_OFFSET) >> 8) & 0xFFFFFFFF);
@@ -2037,6 +2035,7 @@ static void evergreen_gpu_init(struct radeon_device *rdev)
 	rdev->config.evergreen.tile_config |=
 		((gb_addr_config & 0x30000000) >> 28) << 12;
 
+	rdev->config.evergreen.backend_map = gb_backend_map;
 	WREG32(GB_BACKEND_MAP, gb_backend_map);
 	WREG32(GB_ADDR_CONFIG, gb_addr_config);
 	WREG32(DMIF_ADDR_CONFIG, gb_addr_config);

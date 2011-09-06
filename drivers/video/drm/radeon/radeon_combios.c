@@ -779,7 +779,8 @@ void radeon_combios_i2c_init(struct radeon_device *rdev)
 				}
 			}
 		}
-	} else if (rdev->family >= CHIP_R200) {
+	} else if ((rdev->family == CHIP_R200) ||
+		   (rdev->family >= CHIP_R300)) {
 		/* 0x68 */
 		i2c = combios_setup_i2c_bus(rdev, DDC_MONID, 0, 0);
 		rdev->i2c_bus[3] = radeon_i2c_create(dev, &i2c, "MONID");
@@ -2556,6 +2557,7 @@ void radeon_combios_get_power_modes(struct radeon_device *rdev)
 	u16 offset, misc, misc2 = 0;
 	u8 rev, blocks, tmp;
 	int state_index = 0;
+	struct radeon_i2c_bus_rec i2c_bus;
 
 	rdev->pm.default_power_state_index = -1;
 
@@ -2574,7 +2576,6 @@ void radeon_combios_get_power_modes(struct radeon_device *rdev)
 	offset = combios_get_table_offset(dev, COMBIOS_OVERDRIVE_INFO_TABLE);
 	if (offset) {
 		u8 thermal_controller = 0, gpio = 0, i2c_addr = 0, clk_bit = 0, data_bit = 0;
-		struct radeon_i2c_bus_rec i2c_bus;
 
 		rev = RBIOS8(offset);
 

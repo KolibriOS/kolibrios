@@ -2,8 +2,8 @@
 #include <linux/kernel.h>
 #include <linux/mutex.h>
 #include <linux/mod_devicetable.h>
-#include <pci.h>
 #include <errno-base.h>
+#include <pci.h>
 #include <syscall.h>
 
 static LIST_HEAD(devices);
@@ -95,10 +95,10 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
         res  = &dev->resource[pos];
 
         reg = PCI_BASE_ADDRESS_0 + (pos << 2);
-        l = PciRead32(dev->bus, dev->devfn, reg);
-        PciWrite32(dev->bus, dev->devfn, reg, ~0);
-        sz = PciRead32(dev->bus, dev->devfn, reg);
-        PciWrite32(dev->bus, dev->devfn, reg, l);
+        l = PciRead32(dev->busnr, dev->devfn, reg);
+        PciWrite32(dev->busnr, dev->devfn, reg, ~0);
+        sz = PciRead32(dev->busnr, dev->devfn, reg);
+        PciWrite32(dev->busnr, dev->devfn, reg, l);
 
         if (!sz || sz == 0xffffffff)
             continue;
@@ -134,10 +134,10 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
         {
             u32_t szhi, lhi;
 
-            lhi = PciRead32(dev->bus, dev->devfn, reg+4);
-            PciWrite32(dev->bus, dev->devfn, reg+4, ~0);
-            szhi = PciRead32(dev->bus, dev->devfn, reg+4);
-            PciWrite32(dev->bus, dev->devfn, reg+4, lhi);
+            lhi = PciRead32(dev->busnr, dev->devfn, reg+4);
+            PciWrite32(dev->busnr, dev->devfn, reg+4, ~0);
+            szhi = PciRead32(dev->busnr, dev->devfn, reg+4);
+            PciWrite32(dev->busnr, dev->devfn, reg+4, lhi);
             sz64 = ((u64_t)szhi << 32) | raw_sz;
             l64 = ((u64_t)lhi << 32) | l;
             sz64 = pci_size64(l64, sz64, PCI_BASE_ADDRESS_MEM_MASK);
@@ -162,9 +162,9 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
             else if (lhi)
             {
                 /* 64-bit wide address, treat as disabled */
-                PciWrite32(dev->bus, dev->devfn, reg,
+                PciWrite32(dev->busnr, dev->devfn, reg,
                         l & ~(u32_t)PCI_BASE_ADDRESS_MEM_MASK);
-                PciWrite32(dev->bus, dev->devfn, reg+4, 0);
+                PciWrite32(dev->busnr, dev->devfn, reg+4, 0);
                 res->start = 0;
                 res->end = sz;
             }
@@ -177,10 +177,10 @@ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
         dev->rom_base_reg = rom;
         res = &dev->resource[PCI_ROM_RESOURCE];
 
-        l = PciRead32(dev->bus, dev->devfn, rom);
-        PciWrite32(dev->bus, dev->devfn, rom, ~PCI_ROM_ADDRESS_ENABLE);
-        sz = PciRead32(dev->bus, dev->devfn, rom);
-        PciWrite32(dev->bus, dev->devfn, rom, l);
+        l = PciRead32(dev->busnr, dev->devfn, rom);
+        PciWrite32(dev->busnr, dev->devfn, rom, ~PCI_ROM_ADDRESS_ENABLE);
+        sz = PciRead32(dev->busnr, dev->devfn, rom);
+        PciWrite32(dev->busnr, dev->devfn, rom, l);
 
         if (l == 0xffffffff)
             l = 0;
@@ -205,19 +205,19 @@ static void pci_read_irq(struct pci_dev *dev)
 {
     u8_t irq;
 
-    irq = PciRead8(dev->bus, dev->devfn, PCI_INTERRUPT_PIN);
+    irq = PciRead8(dev->busnr, dev->devfn, PCI_INTERRUPT_PIN);
     dev->pin = irq;
     if (irq)
-        irq = PciRead8(dev->bus, dev->devfn, PCI_INTERRUPT_LINE);
+        irq = PciRead8(dev->busnr, dev->devfn, PCI_INTERRUPT_LINE);
     dev->irq = irq;
 };
 
 
-static int pci_setup_device(struct pci_dev *dev)
+int pci_setup_device(struct pci_dev *dev)
 {
     u32_t  class;
 
-    class = PciRead32(dev->bus, dev->devfn, PCI_CLASS_REVISION);
+    class = PciRead32(dev->busnr, dev->devfn, PCI_CLASS_REVISION);
     dev->revision = class & 0xff;
     class >>= 8;                                /* upper 3 bytes */
     dev->class = class;
@@ -236,8 +236,8 @@ static int pci_setup_device(struct pci_dev *dev)
                 goto bad;
             pci_read_irq(dev);
             pci_read_bases(dev, 6, PCI_ROM_ADDRESS);
-            dev->subsystem_vendor = PciRead16(dev->bus, dev->devfn,PCI_SUBSYSTEM_VENDOR_ID);
-            dev->subsystem_device = PciRead16(dev->bus, dev->devfn, PCI_SUBSYSTEM_ID);
+            dev->subsystem_vendor = PciRead16(dev->busnr, dev->devfn,PCI_SUBSYSTEM_VENDOR_ID);
+            dev->subsystem_device = PciRead16(dev->busnr, dev->devfn, PCI_SUBSYSTEM_ID);
 
             /*
              *      Do the ugly legacy mode stuff here rather than broken chip
@@ -249,7 +249,7 @@ static int pci_setup_device(struct pci_dev *dev)
             {
                 u8_t progif;
 
-                progif = PciRead8(dev->bus, dev->devfn,PCI_CLASS_PROG);
+                progif = PciRead8(dev->busnr, dev->devfn,PCI_CLASS_PROG);
                 if ((progif & 1) == 0)
                 {
                     dev->resource[0].start = 0x1F0;
@@ -287,11 +287,11 @@ static int pci_setup_device(struct pci_dev *dev)
                         goto bad;
                 pci_read_irq(dev);
                 pci_read_bases(dev, 1, 0);
-                dev->subsystem_vendor = PciRead16(dev->bus,
+                dev->subsystem_vendor = PciRead16(dev->busnr,
                                                   dev->devfn,
                                                   PCI_CB_SUBSYSTEM_VENDOR_ID);
 
-                dev->subsystem_device = PciRead16(dev->bus,
+                dev->subsystem_device = PciRead16(dev->busnr,
                                                   dev->devfn,
                                                   PCI_CB_SUBSYSTEM_ID);
                 break;
@@ -312,7 +312,7 @@ static int pci_setup_device(struct pci_dev *dev)
     return 0;
 };
 
-static pci_dev_t* pci_scan_device(u32_t bus, int devfn)
+static pci_dev_t* pci_scan_device(u32_t busnr, int devfn)
 {
     pci_dev_t  *dev;
 
@@ -321,7 +321,7 @@ static pci_dev_t* pci_scan_device(u32_t bus, int devfn)
 
     int     timeout = 10;
 
-    id = PciRead32(bus,devfn, PCI_VENDOR_ID);
+    id = PciRead32(busnr, devfn, PCI_VENDOR_ID);
 
     /* some broken boards return 0 or ~0 if a slot is empty: */
     if (id == 0xffffffff || id == 0x00000000 ||
@@ -334,18 +334,18 @@ static pci_dev_t* pci_scan_device(u32_t bus, int devfn)
         delay(timeout/10);
         timeout *= 2;
 
-        id = PciRead32(bus, devfn, PCI_VENDOR_ID);
+        id = PciRead32(busnr, devfn, PCI_VENDOR_ID);
 
         /* Card hasn't responded in 60 seconds?  Must be stuck. */
         if (timeout > 60 * 100)
         {
             printk(KERN_WARNING "Device %04x:%02x:%02x.%d not "
-                   "responding\n", bus,PCI_SLOT(devfn),PCI_FUNC(devfn));
+                   "responding\n", busnr,PCI_SLOT(devfn),PCI_FUNC(devfn));
             return NULL;
         }
     };
 
-    hdr = PciRead8(bus, devfn, PCI_HEADER_TYPE);
+    hdr = PciRead8(busnr, devfn, PCI_HEADER_TYPE);
 
     dev = (pci_dev_t*)kzalloc(sizeof(pci_dev_t), 0);
 
@@ -354,7 +354,7 @@ static pci_dev_t* pci_scan_device(u32_t bus, int devfn)
     if(unlikely(dev == NULL))
         return NULL;
 
-    dev->pci_dev.bus      = bus;
+    dev->pci_dev.busnr    = busnr;
     dev->pci_dev.devfn    = devfn;
     dev->pci_dev.hdr_type = hdr & 0x7f;
     dev->pci_dev.multifunction    = !!(hdr & 0x80);
@@ -505,9 +505,9 @@ int pci_find_capability(struct pci_dev *dev, int cap)
 {
     int pos;
 
-    pos = __pci_bus_find_cap_start(dev->bus, dev->devfn, dev->hdr_type);
+    pos = __pci_bus_find_cap_start(dev->busnr, dev->devfn, dev->hdr_type);
     if (pos)
-        pos = __pci_find_next_cap(dev->bus, dev->devfn, pos, cap);
+        pos = __pci_find_next_cap(dev->busnr, dev->devfn, pos, cap);
 
     return pos;
 }
@@ -646,7 +646,7 @@ int pcibios_enable_resources(struct pci_dev *dev, int mask)
     int  idx;
     struct resource *r;
 
-    cmd = PciRead16(dev->bus, dev->devfn, PCI_COMMAND);
+    cmd = PciRead16(dev->busnr, dev->devfn, PCI_COMMAND);
     old_cmd = cmd;
     for (idx = 0; idx < PCI_NUM_RESOURCES; idx++)
     {
@@ -674,7 +674,7 @@ int pcibios_enable_resources(struct pci_dev *dev, int mask)
     if (cmd != old_cmd) {
         printk("PCI: Enabling device %s (%04x -> %04x)\n",
                 pci_name(dev), old_cmd, cmd);
-        PciWrite16(dev->bus, dev->devfn, PCI_COMMAND, cmd);
+        PciWrite16(dev->busnr, dev->devfn, PCI_COMMAND, cmd);
     }
     return 0;
 }

@@ -580,10 +580,6 @@ int drm_fb_helper_single_fb_probe(struct drm_fb_helper *fb_helper,
 	}
 
 	/* push down into drivers */
-
-    DRM_INFO("enter fb probe\n");
-
-
     new_fb = (*fb_helper->funcs->fb_probe)(fb_helper, &sizes);
 	if (new_fb < 0)
 		return new_fb;
@@ -608,9 +604,6 @@ int drm_fb_helper_single_fb_probe(struct drm_fb_helper *fb_helper,
 
 	if (new_fb)
         list_add(&fb_helper->kernel_fb_list, &kernel_fb_helper_list);
-
-
-    LEAVE();
 
 	return 0;
 }

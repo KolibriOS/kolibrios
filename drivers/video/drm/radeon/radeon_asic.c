@@ -320,6 +320,7 @@ static struct radeon_asic r420_asic = {
 	.hpd_sense = &r100_hpd_sense,
 	.hpd_set_polarity = &r100_hpd_set_polarity,
 	.ioctl_wait_idle = NULL,
+	.gui_idle = &r100_gui_idle,
 };
 
 static struct radeon_asic rs400_asic = {
@@ -358,6 +359,7 @@ static struct radeon_asic rs400_asic = {
 	.hpd_sense = &r100_hpd_sense,
 	.hpd_set_polarity = &r100_hpd_set_polarity,
 	.ioctl_wait_idle = NULL,
+	.gui_idle = &r100_gui_idle,
 };
 
 static struct radeon_asic rs600_asic = {
@@ -396,6 +398,7 @@ static struct radeon_asic rs600_asic = {
 	.hpd_sense = &rs600_hpd_sense,
 	.hpd_set_polarity = &rs600_hpd_set_polarity,
 	.ioctl_wait_idle = NULL,
+	.gui_idle = &r100_gui_idle,
 };
 
 static struct radeon_asic rs690_asic = {
@@ -434,6 +437,7 @@ static struct radeon_asic rs690_asic = {
 	.hpd_sense = &rs600_hpd_sense,
 	.hpd_set_polarity = &rs600_hpd_set_polarity,
 	.ioctl_wait_idle = NULL,
+	.gui_idle = &r100_gui_idle,
 };
 
 static struct radeon_asic rv515_asic = {
@@ -472,6 +476,7 @@ static struct radeon_asic rv515_asic = {
 	.hpd_sense = &rs600_hpd_sense,
 	.hpd_set_polarity = &rs600_hpd_set_polarity,
 	.ioctl_wait_idle = NULL,
+	.gui_idle = &r100_gui_idle,
 };
 
 static struct radeon_asic r520_asic = {
@@ -510,6 +515,7 @@ static struct radeon_asic r520_asic = {
 	.hpd_sense = &rs600_hpd_sense,
 	.hpd_set_polarity = &rs600_hpd_set_polarity,
 	.ioctl_wait_idle = NULL,
+	.gui_idle = &r100_gui_idle,
 };
 
 static struct radeon_asic r600_asic = {
@@ -529,7 +535,7 @@ static struct radeon_asic r600_asic = {
 	.fence_ring_emit = &r600_fence_ring_emit,
 //	.cs_parse = &r600_cs_parse,
 	.copy_blit = &r600_copy_blit,
-	.copy_dma = &r600_copy_blit,
+	.copy_dma = NULL,
 	.copy = &r600_copy_blit,
 	.get_engine_clock = &radeon_atom_get_engine_clock,
 	.set_engine_clock = &radeon_atom_set_engine_clock,
@@ -566,7 +572,7 @@ static struct radeon_asic rs780_asic = {
 	.fence_ring_emit = &r600_fence_ring_emit,
 //	.cs_parse = &r600_cs_parse,
 	.copy_blit = &r600_copy_blit,
-	.copy_dma = &r600_copy_blit,
+	.copy_dma = NULL,
 	.copy = &r600_copy_blit,
 	.get_engine_clock = &radeon_atom_get_engine_clock,
 	.set_engine_clock = &radeon_atom_set_engine_clock,
@@ -601,7 +607,7 @@ static struct radeon_asic rv770_asic = {
 	.fence_ring_emit = &r600_fence_ring_emit,
 //	.cs_parse = &r600_cs_parse,
 	.copy_blit = &r600_copy_blit,
-	.copy_dma = &r600_copy_blit,
+	.copy_dma = NULL,
 	.copy = &r600_copy_blit,
 	.get_engine_clock = &radeon_atom_get_engine_clock,
 	.set_engine_clock = &radeon_atom_set_engine_clock,
@@ -636,7 +642,7 @@ static struct radeon_asic evergreen_asic = {
 	.fence_ring_emit = &r600_fence_ring_emit,
 //	.cs_parse = &evergreen_cs_parse,
 	.copy_blit = &evergreen_copy_blit,
-	.copy_dma = &evergreen_copy_blit,
+	.copy_dma = NULL,
 	.copy = &evergreen_copy_blit,
 	.get_engine_clock = &radeon_atom_get_engine_clock,
 	.set_engine_clock = &radeon_atom_set_engine_clock,
@@ -672,7 +678,7 @@ static struct radeon_asic sumo_asic = {
 	.fence_ring_emit = &r600_fence_ring_emit,
 //	.cs_parse = &r600_cs_parse,
 	.copy_blit = &evergreen_copy_blit,
-	.copy_dma = &evergreen_copy_blit,
+	.copy_dma = NULL,
 	.copy = &evergreen_copy_blit,
 	.get_engine_clock = &radeon_atom_get_engine_clock,
 	.set_engine_clock = &radeon_atom_set_engine_clock,
@@ -707,7 +713,7 @@ static struct radeon_asic btc_asic = {
 	.fence_ring_emit = &r600_fence_ring_emit,
 //	.cs_parse = &evergreen_cs_parse,
 	.copy_blit = &evergreen_copy_blit,
-	.copy_dma = &evergreen_copy_blit,
+	.copy_dma = NULL,
 	.copy = &evergreen_copy_blit,
 	.get_engine_clock = &radeon_atom_get_engine_clock,
 	.set_engine_clock = &radeon_atom_set_engine_clock,
@@ -742,7 +748,7 @@ static struct radeon_asic cayman_asic = {
 	.fence_ring_emit = &r600_fence_ring_emit,
 //	.cs_parse = &evergreen_cs_parse,
 	.copy_blit = &evergreen_copy_blit,
-	.copy_dma = &evergreen_copy_blit,
+	.copy_dma = NULL,
 	.copy = &evergreen_copy_blit,
 	.get_engine_clock = &radeon_atom_get_engine_clock,
 	.set_engine_clock = &radeon_atom_set_engine_clock,
