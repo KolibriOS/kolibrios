@@ -77,6 +77,7 @@ thread2:			    ; start of info thread
 	
 	add	edx,10
 	mcall	,,[Total_Repeat_N]
+
 ;	mcall 47,0x80000,[PID2],<200, 5>,0xffffff
 ;	mcall 47,0x800a0000,[error_locate],<140,5>,0x10ffffff
 	mcall	12,2

@@ -42,449 +42,448 @@ include    '../../../../macros.inc'
 START:
 	pushad
 	mov	eax,dword [esp+36]
-	mov [pointer],eax
-	mov eax,[eax+4]
-	mov [image_file],eax
-	mov  esi,[eax+28]
-	add  esi,eax
-	mov  edi,esi
-	mov  ecx,[eax+32]
-;	xor  ebx,ebx
-;	mov  [raw_area],ebx
-
-;	mov  ebx,[pointer]
-;	movzx  eax,word [eax+18]
-;	mov  [ebx+24],eax
-;	jmp  .ret_ok
+	mov	[pointer],eax
+	mov	eax,[eax+4]
+	mov	[image_file],eax
+	mov	esi,[eax+28]
+	add	esi,eax
+	mov	edi,esi
+	mov	ecx,[eax+32]
 	
-	cmp [eax+16],word 16
-	je  .16b
-	cmp [eax+12],dword 1
-	je  .1b
-	cmp [eax+12],dword 2
-	je  .2b
-	cmp [eax+12],dword 4
-	je  .4b
+	cmp	[eax+16],word 16
+	je	.16b
+	cmp	[eax+12],dword 1
+	je	.1b
+	cmp	[eax+12],dword 2
+	je	.2b
+	cmp	[eax+12],dword 4
+	je	.4b
 ;---------------------------------------------------------------------
 .ret_ok:
-;	mov ebx,[pointer]	
-;	mov  eax,[raw_area]
-;	mov  [ebx+20],eax  ; store RAW pointer
-;	mov  [ebx+24],ecx
-
-	mov  ebx,[image_file]
-	cmp  [ebx+18],word 2
-	jne  @f
-	mov  eax,[ebx+12]
-	shr  eax,1
-	mov  [ebx+12],eax
+	mov	ebx,[image_file]
+	cmp	[ebx+18],word 2
+	jne	@f
+	mov	eax,[ebx+12]
+	shr	eax,1
+	mov	[ebx+12],eax
 @@:
-	
 	popad
 	ret	4
 ;---------------------------------------------------------------------	
 .less_8b:
-	mov edx,[image_file]
-	mov ecx,[area_size]
-	add ecx,[edx+28]
-	mcall 68,20
-	mov  [image_file],eax
+	mov	edx,[image_file]
+	mov	ecx,[area_size]
+	add	ecx,[edx+28]
+	mcall	68,20
+	mov	[image_file],eax
 
-	
-	mov ecx,[area_size]
-	mov  eax,ecx
-	shr  ecx,2
-	test eax,3
-	jz  @f
-	inc  ecx
+	mov	ecx,[area_size]
+	mov	eax,ecx
+	shr	ecx,2
+	test	eax,3
+	jz	@f
+	inc	ecx
 @@:
-	mov  esi,[raw_area]
-	mov  edi,[image_file]
-	add  edi,[edi+28]
+	mov	esi,[raw_area]
+	mov	edi,[image_file]
+	add	edi,[edi+28]
 	cld  
-	rep movsd
-		
-	mov  ecx,[raw_area]
-	mcall 68,13
-	mov eax,[image_file]
-	mov ebx,[pointer]
-	mov [ebx+4],eax
+	rep	movsd
+
+	mcall	68,13,[raw_area]
+	mov	eax,[image_file]
+	mov	ebx,[pointer]
+	mov	[ebx+4],eax
 	popad
 	ret	4
 ;---------------------------------------------------------------------	
 .16b:
-	cmp  [eax+18],word 3
-	je   @f   ;.convert_16_in_8
-	cmp  [eax+18],word 4
-	jne  .16b_1
+; eax - RAW image_file
+	cmp	[eax+18],word 3
+	je	@f
+	cmp	[eax+18],word 4
+	jne	.16b_1
 @@:
-	xor  ebx,ebx
-	mov  bx,[eax+18]
+	xor	ebx,ebx
+	mov	bx,[eax+18]
 	
-	xchg  eax,ecx
-	xor  edx,edx
-	div  ebx
-	xchg  ecx,eax
+	xchg	eax,ecx
+	xor	edx,edx
+	div	ebx
+	xchg	ecx,eax
 	
-	shr  ecx,1
+	shr	ecx,1
 	
-	mov  [eax+16],word 8
-	mov  ebx,[eax+12]
-	shr  ebx,1
-	mov  [eax+12],ebx
+	mov	[eax+16],word 8
+	mov	ebx,[eax+12]
+	shr	ebx,1
+	mov	[eax+12],ebx
 
-	mov  ebx,eax
-;	jmp  .ret_ok
+	mov	ebx,eax
 	
 .convert_16_in_8:   ; converting 16 bit sample to 8 bit
 	cld
 	lodsw
-	mov al,ah
+	mov	al,ah
 	stosb
 	
 	lodsw
-	mov al,ah
+	mov	al,ah
 	stosb
 	
 	lodsw
-	mov al,ah
+	mov	al,ah
 	stosb
 	
-	cmp [ebx+18],word 4
-	jne @f
+	cmp	[ebx+18],word 4
+	jne	@f
 	lodsw
-	mov al,ah
+	mov	al,ah
 	stosb
 @@:   
-	dec ecx
-	jnz .convert_16_in_8 
-	jmp .16b_end
+	dec	ecx
+	jnz	.convert_16_in_8
+	
+	jmp	.16b_end
 ;---------------------------------------------------------------------
 .16b_1:
-	cmp  [eax+18],word 1
-	je   @f  ;.convert_16_in_8_1
-	cmp  [eax+18],word 2
-	jne  .16b_end
+; eax - RAW image_file
+	cmp	[eax+18],word 1
+	je	@f
+	cmp	[eax+18],word 2
+	jne	.16b_end
 @@:
-	shr  ecx,1
+	shr	ecx,1
 	
-	mov  [eax+16],word 8
-	mov  ebx,[eax+12]
-	shr  ebx,1
-	mov  [eax+12],ebx
+	mov	[eax+16],word 8
+	mov	ebx,[eax+12]
+	shr	ebx,1
+	mov	[eax+12],ebx
 	
 .convert_16_in_8_1:
 	cld
 	lodsw
-;	shr ax,8
-;	mov al,ah
 	stosb
-	dec ecx
-	jnz .convert_16_in_8_1
+	dec	ecx
+	jnz	.convert_16_in_8_1
 ;---------------------------------------------------------------------
 .16b_end:
-	xor  eax,eax
-	mov  [raw_area],eax
-	jmp .ret_ok
+	xor	eax,eax
+	mov	[raw_area],eax
+	jmp	.ret_ok
 ;---------------------------------------------------------------------	
 .4b:
-	call .get_memory
-	mov  edx,ebx
-	inc  ebx
-	shr  ebx,1
+	call	.get_memory
+	mov	edx,ebx
+	inc	ebx
+	shr	ebx,1
 .4b_1:
-	push ebx edi
+	push	ebx edi
 @@:
 	cld
 	lodsb
-	shl  eax,8
-	mov  al,ah
-	and  ah,0xf
-	shr  al,4
+	shl	eax,8
+	mov	al,ah
+	and	ah,0xf
+	shr	al,4
 	stosw
 	
-	dec  ebx
-	jnz  @b
-	pop  edi ebx
-	add  edi,edx
-	dec  ecx
-	jnz  .4b_1
+	dec	ebx
+	jnz	@b
+	pop	edi ebx
+	add	edi,edx
+	dec	ecx
+	jnz	.4b_1
 	
-	jmp .less_8b  ;.ret_ok
+	jmp	.less_8b
 ;---------------------------------------------------------------------
 .2b:
-	call .get_memory
-;	jmp .ret_ok
-;	shr  ecx,1
-	mov  edx,ebx
-	mov  eax,ebx
-	shr  ebx,2
-	test eax,3
-	jz  @f
-	inc  ebx
+	call	.get_memory
+	mov	edx,ebx
+	mov	eax,ebx
+	shr	ebx,2
+	test	eax,3
+	jz	@f
+	inc	ebx
 @@:
-	mov  ebp,ebx
+	mov	ebp,ebx
 .2b_1:
-	push ebp edi
+	push	ebp edi
 @@:
 	cld
 	lodsb
 	
-	mov  bl,al
+	mov	bl,al
 	
-	and  al,11b
-	shl  ax,8
+	and	al,11b
+	shl	ax,8
 	
-	mov  al,bl
-	shr  al,2
-	and  al,11b
-	shl  eax,8
+	mov	al,bl
+	shr	al,2
+	and	al,11b
+	shl	eax,8
 	
-	mov  al,bl
-	shr  al,4
-	and  al,11b
-	shl  eax,8
+	mov	al,bl
+	shr	al,4
+	and	al,11b
+	shl	eax,8
 	
-	mov  al,bl
-	shr  al,6
-	and  al,11b
+	mov	al,bl
+	shr	al,6
+	and	al,11b
 	
 	stosd
 
-	dec  ebp
-	jnz  @b
-	pop  edi ebp
+	dec	ebp
+	jnz	@b
+	pop	edi ebp
 	
-	add  edi,edx
-	dec  ecx
-	jnz  .2b_1
+	add	edi,edx
+	dec	ecx
+	jnz	.2b_1
 	
-	jmp .less_8b  ;.ret_ok
+	jmp	.less_8b
 ;---------------------------------------------------------------------
 .1b:
-	call .get_memory
-	mov  edx,ebx
-	mov  eax,ebx
-	shr  ebx,3
-	test eax,7
-	jz  @f
-	inc  ebx
+	call	.get_memory
+	mov	edx,ebx
+	mov	eax,ebx
+	shr	ebx,3
+	test	eax,7
+	jz	@f
+	inc	ebx
 @@:
-	mov  ebp,ebx
+	mov	ebp,ebx
 .1b_1:
-	push ebp edi
+	push	ebp edi
 @@:
 	cld
 	lodsb
 	
-	mov  bl,al
-	shr  al,4
-	and  al,1b
-	shl  ax,8
+	mov	bl,al
+	shr	al,4
+	and	al,1b
+	shl	ax,8
 	
-	mov  al,bl
-	shr  al,5
-	and  al,1b
-	shl  eax,8
+	mov	al,bl
+	shr	al,5
+	and	al,1b
+	shl	eax,8
 	
-	mov  al,bl
-	shr  al,6
-	and  al,1b
-	shl  eax,8
+	mov	al,bl
+	shr	al,6
+	and	al,1b
+	shl	eax,8
 	
-	mov  al,bl
-	shr  al,7
-;	and  al,1b
-;	shl  eax,8
+	mov	al,bl
+	shr	al,7
 	
 	stosd
 	
-	mov  al,bl
-	and  al,1b
-	shl  ax,8
+	mov	al,bl
+	and	al,1b
+	shl	ax,8
 	
-	mov  al,bl
-	shr  al,1
-	and  al,1b
-	shl  eax,8
+	mov	al,bl
+	shr	al,1
+	and	al,1b
+	shl	eax,8
 
-	mov  al,bl
-	shr  al,2
-	and  al,1b
-	shl  eax,8
+	mov	al,bl
+	shr	al,2
+	and	al,1b
+	shl	eax,8
 	
-	mov  al,bl
-	shr  al,3
-	and  al,1b
+	mov	al,bl
+	shr	al,3
+	and	al,1b
 	
 	stosd
 	
-	dec  ebp
-	jnz  @b
-	pop  edi ebp
+	dec	ebp
+	jnz	@b
+	pop	edi ebp
 	
-	add  edi,edx
-	dec  ecx
-	jnz  .1b_1
-	jmp .less_8b  ;.ret_ok	
+	add	edi,edx
+	dec	ecx
+	jnz	.1b_1
+
+	jmp	.less_8b
 ;---------------------------------------------------------------------
 .get_memory:
-	mov  ebx,dword 8
-	mov  [eax+16],bx
-	mov  [eax+12],ebx
-;	mov  esi,[eax+28]
-;	add  esi,eax
-;	push ecx
-	mov  ecx,[eax+4]
-	imul ecx,[eax+8]
-	push eax
-	mov  [area_size],ecx
-	mcall 68,12
-;	pop  ecx
-	mov  [raw_area],eax
-	mov  edi,eax
-	pop  eax
-	mov  ebx,[eax+4]
-	mov  ecx,[eax+8]
+; eax - RAW image_file
+	mov	ebx,dword 8
+	mov	[eax+16],bx
+	mov	[eax+12],ebx
+	mov	ecx,[eax+4]
+	imul	ecx,[eax+8]
+	push	eax
+	mov	[area_size],ecx
+	mcall	68,12
+	mov	[raw_area],eax
+	mov	edi,eax
+	pop	eax
+	mov	ebx,[eax+4]
+	mov	ecx,[eax+8]
 	ret
 ;---------------------------------------------------------------------
 Convert24b:
 	pushad
 	mov	eax,dword [esp+36]
-	mov [pointer],eax
-	mov eax,[eax+4]
-	mov [image_file],eax
+	mov	[pointer],eax
+	mov	eax,[eax+4]
+	mov	[image_file],eax
 
-	mov  esi,[eax+28]
-	add  esi,eax
+	mov	esi,[eax+28]
+	add	esi,eax
 
-	mov  ebp,[eax+20]
-	add  ebp,eax
+	mov	ebp,[eax+20]
+	add	ebp,eax
 	
-	mov  ecx,[eax+4]
-	imul ecx,[eax+8]
-	push eax ecx
-	lea  ecx,[ecx*3]
-	mcall 68,12
-	mov  [raw_area],eax
-	mov  edi,eax
-	pop  ecx eax
+	mov	ecx,[eax+4]
+	imul	ecx,[eax+8]
+	push	eax ecx
+	lea	ecx,[ecx*3]
+	mov	edx,ecx
+	add	ecx,44		; header
+	mcall	68,12		;get new RAW area
+	mov	[raw_area],eax
+	mov	edi,eax
+	
+	push	esi
+	mov	esi,[image_file]
+	mov	ecx,3
+	cld
+	rep	movsd			;copy the 3 first dword for the structure of RAW
+	pop	esi
+	
+	sub	edi,12
+	mov	[edi+12],dword 24	;overall depth of the pixel
+	mov	[edi+16],word 8		;channel depth of the pixel
+	xor	eax,eax
+	mov	[edi+20],eax		;palette area pointer
+	mov	[edi+24],eax		;palette area size
+	mov	[edi+28],dword 44	;rgb area pointer
+	mov	[edi+32],edx		;rgb area size
+	mov	[edi+36],eax		;transparency area pointer
+	mov	[edi+40],eax		;transparency area size
+	pop	ecx eax
+	
+	add	edi,44
 
-	cmp [eax+12],dword 32
-	je  .32b
-	cmp [eax+12],dword 16
-	je  .16b
-	cmp [eax+12],dword 15
-	je  .15b
-	cmp [eax+12],dword 8
-	je  .8b
+	cmp	[eax+12],dword 32
+	je	.32b
+	cmp	[eax+12],dword 16
+	je	.16b
+	cmp	[eax+12],dword 15
+	je	.15b
+	cmp	[eax+12],dword 8
+	je	.8b
 	
 .ret_ok:
-	mov ebx,[pointer]
-	mov  eax,[raw_area]
-	mov  [ebx+20],eax  ; store RAW pointer
+	mov	ebx,[pointer]
+	mov	eax,[raw_area]
+	mov	[ebx+20],eax  ; store RAW pointer
 	popad
 	ret	4
-
 ;---------------------------------------------------------------------
 .32b:
 	cld
 	lodsd
-	
 	stosw
-	shr eax,16
+	shr	eax,16
 	stosb
 	
-	dec  ecx
-	jnz  .32b
+	dec	ecx
+	jnz	.32b
 	
-	jmp  .ret_ok
+	jmp	.ret_ok
 ;---------------------------------------------------------------------
 .16b:
 	cld
 	lodsw
 	
-	xor ebx,ebx
-	ror ax,11
-	mov bl,al
-	and bl,11111b
-	shl bl,3
-	shl ebx,8
-	rol ax,6
-	mov bl,al
-	and bl,111111b
-	shl bl,2
-	shl ebx,8
-	rol ax,5
-	mov bl,al
-	and bl,11111b
-	shl bl,3
-	mov eax,ebx
+	xor	ebx,ebx
+	ror	ax,11
+	mov	bl,al
+	and	bl,11111b
+	shl	bl,3
+	shl	ebx,8
+	rol	ax,6
+	mov	bl,al
+	and	bl,111111b
+	shl	bl,2
+	shl	ebx,8
+	rol	ax,5
+	mov	bl,al
+	and	bl,11111b
+	shl	bl,3
+	mov	eax,ebx
 	
 	cld
 	stosw
-	shr eax,16
+	shr	eax,16
 	stosb
 	
-	dec  ecx
-	jnz  .16b
+	dec	ecx
+	jnz	.16b
 	
-	jmp  .ret_ok
+	jmp	.ret_ok
 ;---------------------------------------------------------------------
 .15b:
 	cld
 	lodsw
 	
-	xor ebx,ebx
-	ror ax,10
-	mov bl,al
-	and bl,11111b
-	shl bl,3
-	shl ebx,8
-	rol ax,5
-	mov bl,al
-	and bl,11111b
-	shl bl,3
-	shl ebx,8
-	rol ax,5
-	mov bl,al
-	and bl,11111b
-	shl bl,3
-	mov eax,ebx
+	xor	ebx,ebx
+	ror	ax,10
+	mov	bl,al
+	and	bl,11111b
+	shl	bl,3
+	shl	ebx,8
+	rol	ax,5
+	mov	bl,al
+	and	bl,11111b
+	shl	bl,3
+	shl	ebx,8
+	rol	ax,5
+	mov	bl,al
+	and	bl,11111b
+	shl	bl,3
+	mov	eax,ebx
 	
 	cld
 	stosw
-	shr eax,16
+	shr	eax,16
 	stosb
 	
-	dec  ecx
-	jnz  .15b
+	dec	ecx
+	jnz	.15b
 	
-	jmp  .ret_ok
+	jmp	.ret_ok
 ;---------------------------------------------------------------------
 .8b:
-	xor  eax,eax
+	xor	eax,eax
 	cld
 	lodsb
-	shl  eax,2
-	mov  eax,[eax+ebp]
+	shl	eax,2
+	mov	eax,[eax+ebp]
 	
 	cld
 	stosw
-	shr eax,16
+	shr	eax,16
 	stosb
 	
-	dec  ecx
-	jnz  .8b
+	dec	ecx
+	jnz	.8b
 	
-	jmp  .ret_ok
+	jmp	.ret_ok
 ;---------------------------------------------------------------------
 align 16
 EXPORTS:
-	dd      szStart,	START
-	dd      szVersion,	0x00010002
-	dd	szConv_24b,	Convert24b
-	dd      0
+	dd szStart,	START
+	dd szVersion,	0x00010003
+	dd szConv_24b,	Convert24b
+	dd 0
 
 szStart		db 'START',0
 szVersion	db 'version',0

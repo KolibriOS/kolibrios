@@ -38,7 +38,7 @@ lsz fitext,\
         db 0
 ;---------------------------------------------------------------------
 Authors_text:
-.1:	db 'zSea version: 1.00 RC3 Date: 24/08/2011',0
+.1:	db 'zSea version: 1.00 RC4 Date: 07/09/2011',0
 .2:	db 'Authors:',0
 .3:	db 'Marat Zakiyanov aka Mario(Mario79)',0
 .4:	db 'zSea program, modules: cnv_bmp.obj,',0
@@ -198,6 +198,22 @@ zoom_factors:
         dd      5000
 
 zoom_factors_old dd 0
+
+;---------------------------------------------------------------------
+; not change this section!!!
+; start section
+;---------------------------------------------------------------------
+align 4
+crop_image_file     dd 0 ;+0
+crop_raw_pointer    dd 0 ;+4
+crop_return_code    dd 0 ;+8
+crop_img_size       dd 0 ;+12
+crop_deflate_unpack dd 0 ;+16
+crop_raw_pointer_2  dd 0 ;+20
+;---------------------------------------------------------------------
+; end section
+;---------------------------------------------------------------------
+
 ;---------------------------------------------------------------------
 ; not change this section!!!
 ; start section
@@ -234,23 +250,36 @@ background_color dd 0xffffff
 
 skin_height	dd 0
 
-RAW1_pointer			dd 0
-RAW1_size_x				dd 0
-RAW1_size				dd 0
-Repeat_N				dd 0
-Total_Repeat_N			dd 1
+screen_high	dd 0
+screen_width	dd 0
+
+stretch_start_coordinates:
+.y	dw 0
+.x	dw 0
+
+screen_relation		dd 0
+picture_relation	dd 0
+
+stretch_img_high	dd 0
+stretch_img_width	dd 0
+
+RAW1_pointer		dd 0
+RAW1_size_x		dd 0
+RAW1_size		dd 0
+Repeat_N		dd 0
+Total_Repeat_N		dd 1
 previous_frame_pointer	dd 0
-Animation_timer			dd 0
-Frame_delay				dw 0
-Transp_flag				db 0
+Animation_timer		dd 0
+Frame_delay		dw 0
+Transp_flag		db 0
 Transp_index            db 0
-Disposal_Method			db 0
-RAW1_flag				db 0
-no_fill					db 0
+Disposal_Method		db 0
+RAW1_flag		db 0
+no_fill			db 0
 redraw_wallpaper_flag	db 0
 
-calc_next_value_plus		db 0
-calc_next_value_minus		db 0
+calc_next_value_plus	db 0
+calc_next_value_minus	db 0
 ;---------------------------------------------------------------------
 align 4
 ;plugin       dd 0
@@ -871,9 +900,9 @@ op_text:
 .e1:
 .2 db 'Stretch'
 .e2:
-.3 db 'Stretch + V crop'
+.3 db 'Stretch + Crop'
 .e3:
-.4 db 'Stretch + H crop'
+.4 db 'Stretch + Inscribe'
 .e4:
 
 option_group1   dd op1

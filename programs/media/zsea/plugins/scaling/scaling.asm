@@ -38,220 +38,215 @@ include	'../../../../macros.inc'
 ;---------------------------------------------------------------------
 START:
 	pushad
-	mov	edi,dword [esp+56]
-	mov	esi,dword [esp+52]
-	mov	edx,dword [esp+48]
-	mov	ecx,dword [esp+44]
-	mov	ebx,dword [esp+40]
-	mov	eax,dword [esp+36]	
-	mov [pointer],eax
-	test bx,bx
-	jnz  @f
-	inc  bx
+	mov	eax,dword [esp+60]	; eax - crop size
+	mov	ebx,eax
+	and	eax,0xffff
+	shr	ebx,16
+	mov	[crop_x],ebx
+	mov	[crop_y],eax
+	mov	edi,dword [esp+56]	; edi - background color
+	mov	esi,dword [esp+52]	; esi - filtering
+	mov	edx,dword [esp+48]	; edx - scaling mode
+	mov	ecx,dword [esp+44]	; ecx - start_coordinates
+	mov	ebx,dword [esp+40]	; ebx - new_size
+	mov	eax,dword [esp+36]	; eax -  convert data table	
+	mov	[pointer],eax
+	test	bx,bx
+	jnz	@f
+	
+	inc	bx
 @@:
-	ror ebx,16
-	test bx,bx
-	jnz  @f
-	inc  bx
+	ror	ebx,16
+	test	bx,bx
+	jnz	@f
+	
+	inc	bx
 @@:
-	rol ebx,16
-	mov [new_size],ebx
-	mov [start_coordinates],ecx
-	mov [scaling_mode],edx
-	mov [filtering],esi
-	mov [background_color],edi
-	mov eax,[eax+4]
-	mov [image_file],eax
+	rol	ebx,16
+	mov	[new_size],ebx
+	mov	[start_coordinates],ecx
+	mov	[scaling_mode],edx
+	mov	[filtering],esi
+	mov	[background_color],edi
+	mov	eax,[eax+4]
+	mov	[image_file],eax
 
-	mov  esi,[eax+28]
-    add  esi,eax
+	mov	esi,[eax+28]
+	add	esi,eax
 	
-	mov  ebx,[eax+20]
-	add  ebx,eax
-	mov  [palette],ebx
+	mov	ebx,[eax+20]
+	add	ebx,eax
+	mov	[palette],ebx
 	
-	mov ebx,[eax+12]
-	mov [resolution],ebx
-	cmp  ebx,32
-	jne  @f
-	mov  ebp,dword START.32
-	jmp  .1
+	mov	ebx,[eax+12]
+	mov	[resolution],ebx
+	cmp	ebx,32
+	jne	@f
+	mov	ebp,dword START.32
+	jmp	.1
 @@:
-	cmp  ebx,24
-	jne  @f
-	mov  ebp,dword START.24
-	jmp  .1
+	cmp	ebx,24
+	jne	@f
+	mov	ebp,dword START.24
+	jmp	.1
 @@:
-	cmp  ebx,16
-	jne  @f
-	mov  ebp,dword START.16
-	jmp  .1
+	cmp	ebx,16
+	jne	@f
+	mov	ebp,dword START.16
+	jmp	.1
 @@:
-	cmp  ebx,15
-	jne  @f
-	inc  ebx
-	mov  ebp,dword START.16
-	jmp  .1
+	cmp	ebx,15
+	jne	@f
+	inc	ebx
+	mov	ebp,dword START.16
+	jmp	.1
 @@:
-	cmp  ebx,8
-	jne  @f
-	mov  ebp,dword START.8
+	cmp	ebx,8
+	jne	@f
+	mov	ebp,dword START.8
 @@:
 .1:
-	shr  ebx,3
-	mov  [bytes_to_pixel],ebx
+	shr	ebx,3
+	mov	[bytes_to_pixel],ebx
 	
-	mov  ebx,[eax+8]
-	mov  [y],ebx
-	mov  ebx,[eax+4]
-	mov  [x],ebx
-	imul ebx,[bytes_to_pixel]
-	mov  [size_x],ebx
+	mov	ebx,[eax+8]
+	mov	[y],ebx
+	mov	ebx,[eax+4]
+	mov	[x],ebx
+	imul	ebx,[bytes_to_pixel]
+	mov	[size_x],ebx
 	
-	mov  eax,100
-	shl  eax,12
-	mov  ebx,[scaling_mode]
-	test ebx,ebx
-	jnz  @f
-	inc  ebx
+	mov	eax,[crop_y]
+	test	eax,eax
+	jz	@f
+	mov	[y],eax
 @@:
-	xor  edx,edx
-	div  ebx
-	mov  [scaling_delta],eax
-	
-	call .get_memory
-	cmp  [scaling_mode],0
-	jne  @f
-	call .scaling
-	jmp  .ret_ok
+	mov	eax,[crop_x]
+	test	eax,eax
+	jz	@f
+	mov	[x],eax	
 @@:
-	call .scaling_2	
+	mov	eax,100
+	shl	eax,12
+	mov	ebx,[scaling_mode]
+	test	ebx,ebx
+	jnz	@f
+	inc	ebx
+@@:
+	xor	edx,edx
+	div	ebx
+	mov	[scaling_delta],eax
 	
+	call	.get_memory
+	call	.scaling	
 ;---------------------------------------------------------------------
 .ret_ok:
-	mcall 68,13,[area_for_x]
-	mov ebx,[pointer]
-	mov  eax,[raw_area]
-	mov  [ebx+20],eax  ; store RAW pointer
-;	movzx eax,word [new_size.x1]
-;	mov [ebx+24],esi  ;eax
-;	movzx eax,word [new_size.y1]
-;	mov [ebx+28],eax
-;	mov eax,[size_x]
-;	mov [ebx+32],eax
-;	mov eax,[bytes_to_pixel]
-;	mov [ebx+36],eax
-;	mov eax,[x]
-;	mov [ebx+40],eax
-;	mov eax,[y]
-;	mov [ebx+44],eax
+	mcall	68,13,[area_for_x]
+	mov	ebx,[pointer]
+	mov	eax,[raw_area]
+	mov	[ebx+20],eax  ; store RAW pointer
+;	movzx	eax,word [new_size.x1]
+;	mov	[ebx+24],esi  ;eax
+;	movzx	eax,word [new_size.y1]
+;	mov	[ebx+28],eax
+;	mov	eax,[size_x]
+;	mov	[ebx+32],eax
+;	mov	eax,[bytes_to_pixel]
+;	mov	[ebx+36],eax
+;	mov	eax,[x]
+;	mov	[ebx+40],eax
+;	mov	eax,[y]
+;	mov	[ebx+44],eax
 .exit:
 	popad
-	ret	24
+	ret	28
 ;---------------------------------------------------------------------
 align 4
 .scaling:
-	xor ecx,ecx
-.y:
-	xor ebx,ebx
-;-------------------------
-.x:
-	call ebp
-	inc  ebx
-	cmp  bx,[new_size.x1]
-	jb   .x
-;-------------------------
-	inc  ecx
-	cmp  cx,[new_size.y1]
-	jb   .y
-	ret
-;---------------------------------------------------------------------
-align 4
-.scaling_2:
-	xor  eax,eax
-	mov  ax,[start_coordinates.y]
-	imul eax,[size_x]
-	add  esi,eax
-	xor  eax,eax
-	mov  ax,[start_coordinates.x]
-	imul eax,[bytes_to_pixel]
-	add  esi,eax
+	xor	eax,eax
+	mov	ax,[start_coordinates.y]
+	imul	eax,[size_x]
+	add	esi,eax
+	xor	eax,eax
+	mov	ax,[start_coordinates.x]
+	imul	eax,[bytes_to_pixel]
+	add	esi,eax
 	
-	xor  eax,eax
-	dec  eax
-	mov [temp_y],eax
+	xor	eax,eax
+	dec	eax
+	mov	[temp_y],eax
 	
-	xor ecx,ecx
+	xor	ecx,ecx
 align 4
 .y_2:
-	xor ebx,ebx
+	xor	ebx,ebx
 ;-------------------------
 align 4
 .x_2:
-	call ebp
-	inc  ebx
-	cmp  bx,[new_size.x1]
-	jb   .x_2
+	call	ebp
+	inc	ebx
+	cmp	bx,[new_size.x1]
+	jb	.x_2
 ;-------------------------
-	inc  ecx
-	cmp  cx,[new_size.y1]
-	jb   .y_2
+	inc	ecx
+	cmp	cx,[new_size.y1]
+	jb	.y_2
 	ret
 ;---------------------------------------------------------------------
 align 4
 .32:
-	push ecx ebx
-	call .calculate_pixel
-	mov  eax,[ecx]
-	call .check_filtering_32
-	pop  ebx ecx
+	push	ecx ebx
+	call	.calculate_pixel
+	mov	eax,[ecx]
+	call	.check_filtering_32
+	pop	ebx ecx
 	cld 
 	stosd
 	ret
 ;---------------------------------------------------------------------
 align 4
 .24:
-	push ecx ebx
-	call .calculate_pixel
-	mov  eax,[ecx]	
-	call .check_filtering_24
+	push	ecx ebx
+	call	.calculate_pixel
+	mov	eax,[ecx]	
+	call	.check_filtering_24
 	cld
 	stosw
-	shr  eax,16	
-	pop  ebx ecx
+	shr	eax,16	
+	pop	ebx ecx
 	cld
 	stosb
 	ret
 ;---------------------------------------------------------------------
 align 4
 .16:
-	push ecx ebx
-	call .calculate_pixel
-	xor  eax,eax
-	mov  ax,[ecx]
-	call .check_filtering_16
-	pop  ebx ecx
+	push	ecx ebx
+	call	.calculate_pixel
+	xor	eax,eax
+	mov	ax,[ecx]
+	call	.check_filtering_16
+	pop	ebx ecx
 	cld 
 	stosw
 	ret
 ;---------------------------------------------------------------------
 align 4
 .8:
-	push ecx ebx
-	call .calculate_pixel
-	cmp  [filtering],0
-	jne   @f
-	mov  al,[ecx]
-	pop  ebx ecx
+	push	ecx ebx
+	call	.calculate_pixel
+	cmp	[filtering],0
+	jne	@f
+	mov	al,[ecx]
+	pop	ebx ecx
 	cld
 	stosb
 	ret
 @@:
-	call .check_filtering_8
+	call	.check_filtering_8
 	cld
 	stosw
-	shr  eax,16	
-	pop  ebx ecx
+	shr	eax,16	
+	pop	ebx ecx
 	cld
 	stosb
 	ret	
@@ -259,181 +254,240 @@ align 4
 ;---------------------------------------------------------------------
 align 4
 .calculate_pixel:
-	test ecx,ecx
-	jz   .offset_x
+	test	ecx,ecx
+	jz	.offset_x
 ;.offset_y:
-	mov  eax,ecx
+	mov	eax,ecx
 	
-	mov  ecx,[temp_y]
-	cmp  eax,ecx
-	jne  .new_y
-	mov  eax,[temp_y_offset]
-	mov  ecx,eax
-	jmp  .offset_x
+	mov	ecx,[temp_y]
+	cmp	eax,ecx
+	jne	.new_y
+	mov	eax,[temp_y_offset]
+	mov	ecx,eax
+	jmp	.offset_x
 ;--------------------------------
 align 4
 .new_y:
-	mov  [temp_y],eax
-
-	mov  ebx,[scaling_mode]
-	test ebx,ebx
-	jz  @f
-	imul eax,[scaling_delta]
+	mov	[temp_y],eax
+	mov	ebx,[scaling_mode]
+	test	ebx,ebx
+	jz	@f
+	
+	imul	eax,[scaling_delta]
 ;--------------------------------
-	push ebx
-	mov  ebx,eax
-	shr  eax,12
-	and  ebx,0xFFF
-	shl  ebx,7  ;multiply 128
-	shr  ebx,12
-	mov  [next_pixel_y],ebx
-	pop  ebx
+	push	ebx
+	mov	ebx,eax
+	shr	eax,12
+	and	ebx,0xFFF
+	shl	ebx,7		;multiply 128
+	shr	ebx,12
+	mov	[next_pixel_y],ebx
+	pop	ebx
 ;--------------------------------
-	jmp  .ex_1
+	jmp	.ex_1
+;--------------------------------
 align 4
 @@:
+	imul	eax,dword [y]
 ;--------------------------------
-	imul eax,dword [y]
-	mov bx,word [new_size.y1]
+align 4
+@@:
+	mov	bx,word [new_size.y1]
 ;--------------------------------
 align 4
 .y_div:
-	test ebx,ebx
-	jnz  @f
-	inc  ebx
+	test	ebx,ebx
+	jnz	@f
+	inc	ebx
+;--------------------------------
 align 4
 @@:
-	xor  edx,edx
-	div  ebx
+	xor	edx,edx
+	div	ebx
 ;--------------------------------
-	push eax
-	mov  eax,edx
-	shl  eax,7  ;multiply 128
-	xor  edx,edx
-	div  ebx
-	mov  [next_pixel_y],eax
-	pop  eax
+	push	eax
+	mov	eax,edx
+	shl	eax,7		;multiply 128
+	xor	edx,edx
+	div	ebx
+	mov	[next_pixel_y],eax
+	pop	eax
 ;--------------------------------
 align 4
 .ex_1:
-	mov  [temp_y1],eax
-	imul eax,[size_x]
+	mov	[temp_y1],eax
+	imul	eax,[size_x]
 
-	mov  [temp_y_offset],eax
-	mov  ecx,eax
+	mov	[temp_y_offset],eax
+	mov	ecx,eax
 align 4
 .offset_x:
-	test ebx,ebx
-	jz   .finish
-	mov  eax,[esp+4]   ;ebx
+	test	ebx,ebx
+	jz	.finish
+	mov	eax,[esp+4]   ;ebx
 	
-	mov edx,[esp+8]
-	test edx,edx
-	jz  .continue
-	shl eax,3
-	add eax,[area_for_x]
-	mov edx,[eax+4]
-	mov [next_pixel_x],edx
-	mov eax,[eax]
-	jmp .ex_3
+	mov	edx,[esp+8]
+	test	edx,edx
+	jz	.continue
+	shl	eax,3
+	add	eax,[area_for_x]
+	mov	edx,[eax+4]
+	mov	[next_pixel_x],edx
+	mov	eax,[eax]
+	jmp	.ex_3
 ;--------------------------------
 align 4
 .continue:
-	mov  ebx,[scaling_mode]
-	test ebx,ebx
-	jz  @f
-	imul eax,[scaling_delta]
+	mov	ebx,[scaling_mode]
+	test	ebx,ebx
+	jz	@f
+	imul	eax,[scaling_delta]
 ;--------------------------------
-	mov  ebx,eax
-	shr  eax,12
-	and  ebx,0xFFF
-	shl  ebx,7  ;multiply 128
-	shr  ebx,12
-	mov  [next_pixel_x],ebx
+	mov	ebx,eax
+	shr	eax,12
+	and	ebx,0xFFF
+	shl	ebx,7  ;multiply 128
+	shr	ebx,12
+	mov	[next_pixel_x],ebx
 ;--------------------------------
-	jmp  .ex_2
+	jmp	.ex_2
 ;--------------------------------
 align 4
 @@:
-	imul eax,dword [x]
-	mov  bx,word [new_size.x1]
+	imul	eax,dword [x]
+;--------------------------------
+align 4
+@@:	
+	mov	bx,word [new_size.x1]
 ;--------------------------------
 align 4
 .x_div:
-	test ebx,ebx
-	jnz  @f
-	inc  ebx
+	test	ebx,ebx
+	jnz	@f
+	inc	ebx
 align 4
 @@:
-	xor  edx,edx
-	div  ebx
+	xor	edx,edx
+	div	ebx
 ;--------------------------------
-	push eax
-	mov  eax,edx
-	shl  eax,7  ;multiply 128
-	xor  edx,edx
-	div  ebx
-	mov  [next_pixel_x],eax
-	pop  eax
+	push	eax
+	mov	eax,edx
+	shl	eax,7  ;multiply 128
+	xor	edx,edx
+	div	ebx
+	mov	[next_pixel_x],eax
+	pop	eax
 ;--------------------------------
 align 4
 .ex_2:
-	mov  edx,[bytes_to_pixel]
-	mov  ebx,eax
-	xor  eax,eax
+	mov	edx,[bytes_to_pixel]
+	mov	ebx,eax
+	xor	eax,eax
 align 4
 @@:
-	add eax,ebx
-	dec  edx
-	jnz   @r
+	add	eax,ebx
+	dec	edx
+	jnz	@r
 	
-	mov ebx,[esp+4]
-	shl ebx,3
-	add ebx,[area_for_x]
-	mov [ebx],eax
-	mov edx,[next_pixel_x]
-	mov [ebx+4],edx
+	mov	ebx,[esp+4]
+	shl	ebx,3
+	add	ebx,[area_for_x]
+	mov	[ebx],eax
+	mov	edx,[next_pixel_x]
+	mov	[ebx+4],edx
 align 4
 .ex_3:
-	mov [temp_x1],eax
-	add  ecx,eax
+	mov	[temp_x1],eax
+	add	ecx,eax
 align 4
 .finish:
-	add  ecx,esi
+	add	ecx,esi
 	ret
 ;---------------------------------------------------------------------
 align 4
 .get_memory:
-
-	xor  ecx,ecx
-	mov  cx,[new_size.x1]
-	shl  ecx,3
-	mcall 68,12
-	mov  [area_for_x],eax
+	xor	ecx,ecx
+	mov	cx,[new_size.x1]
+	shl	ecx,3
+	mcall	68,12
+	mov	[area_for_x],eax
 	
-	xor   ecx,ecx
-	mov   ebx,[new_size]
-	mov   cx,bx
-	shr   ebx,16
-	imul ecx,ebx  ;[eax+8]
-	mov  eax,[bytes_to_pixel]
-	cmp  eax,1
-	jne  @f
-	mov  eax,3
+	xor	ecx,ecx
+	mov	ebx,[new_size]
+	mov	cx,bx
+	shr	ebx,16
+	imul	ecx,ebx  ;[eax+8]
+	mov	eax,[bytes_to_pixel]
+	cmp	eax,1
+	jne	@f
+	mov	eax,3
 @@:
-	imul ecx,eax
-	mcall 68,12
-	mov  [raw_area],eax
-	mov  edi,eax
+	imul	ecx,eax
+	mov	edx,ecx
+	add	ecx,44
+	mov	eax,[image_file]
+	add	ecx,[eax+24]	;palette area size
+	mcall	68,12
+	mov	[raw_area],eax
+	mov	edi,eax
+	
+; create RAW header
+	push	esi
+	mov	esi,[image_file]
+	mov	ecx,44/4
+	cld
+	rep	movsd			;copy the 3 first dword for the structure of RAW
+	mov	edi,[raw_area]
+	movzx	eax,word [new_size.x1]
+	mov	[edi+4],eax
+	movzx	eax,word [new_size.y1]
+	mov	[edi+8],eax
+	mov	[edi+32],edx		;rgb area size
+	xor	eax,eax
+	mov	[edi+36],eax		;transparency area pointer
+	mov	[edi+40],eax		;transparency area size
+	
+	cmp	[filtering],eax		;0 or 1
+	je	@f
+
+	mov	[edi+20],eax		;palette area pointer
+	mov	[edi+24],eax		;palette area size
+	mov	[edi+28],dword 44	;rgb area pointer
+	cmp	[edi+12],dword 8	;overall depth of the pixel
+	ja	.not_overall_depth_8
+	
+	mov	[edi+12],dword 24	;overall depth of the pixel
+	mov	[edi+16],word 8		;channel depth of the pixel
+.not_overall_depth_8:
+	add	edi,44
+	jmp	.end
+@@:
+	mov	eax,[edi+24]
+	add	edi,44
+	test	eax,eax		;palette area is present?
+	jz	@f
+	
+	sub	esi,44
+	
+	mov	ecx,[esi+24]
+	shr	ecx,2
+	add	esi,[esi+20]
+	cld
+	rep	movsd		;copy palette area
+@@:
+
+.end:
+	pop	esi
+	
 	ret
 ;---------------------------------------------------------------------
 include 'b_filter.inc'
 ;---------------------------------------------------------------------
 align 4
 EXPORTS:
-	dd      szStart,	START
-	dd      szVersion,	0x00010002
-	dd      0
+	dd szStart,	START
+	dd szVersion,	0x00010003
+	dd 0
 
 szStart		db 'START',0
 szVersion	db 'version',0
@@ -442,14 +496,17 @@ align 4
 pointer		dd 0
 image_file	dd 0
 new_size:
-.y1:			dw 0
-.x1:			dw 0
+.y1:		dw 0
+.x1:		dw 0
 
-x:  dd 0
-y:  dd 0
+x:	dd 0
+y:	dd 0
+
+crop_x	dd 0
+crop_y	dd 0
 
 size_x		dd 0
-bytes_to_pixel dd 0
+bytes_to_pixel	dd 0
 
 start_coordinates:
 .y	dw 0
@@ -457,31 +514,31 @@ start_coordinates:
 
 scaling_mode	dd 0
 raw_area	dd 0
-scaling_delta dd 0
+scaling_delta	dd 0
 
-area_for_x dd 0
+area_for_x	dd 0
 
-temp_y dd 0
-temp_y_offset dd 0
+temp_y		dd 0
+temp_y_offset	dd 0
 
-resolution dd 0
+resolution	dd 0
 
-filtering dd 0
+filtering	dd 0
 
-next_pixel_y dd 0
-next_pixel_x dd 0
+next_pixel_y	dd 0
+next_pixel_x	dd 0
 
-temp_y1 dd 0
-temp_x1 dd 0
+temp_y1		dd 0
+temp_x1		dd 0
 
-B_sample dd 0
-G_sample dd 0
-R_sample dd 0
+B_sample	dd 0
+G_sample	dd 0
+R_sample	dd 0
 
-B_sample_1 dd 0
-G_sample_1 dd 0
-R_sample_1 dd 0
+B_sample_1	dd 0
+G_sample_1	dd 0
+R_sample_1	dd 0
 
-palette dd 0
+palette	dd 0
 
-background_color dd 0
+background_color	dd 0

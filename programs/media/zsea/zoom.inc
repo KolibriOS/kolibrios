@@ -40,11 +40,11 @@ rotate_counter_clockwise:
 	push	dword image_file
 ;	call [plugin_rotate]
 	call [rotate_Start]
-    mov  ebx,[raw_pointer]
-    mov  eax,[ebx+4]
-    mov  [img_width],eax
-    mov  eax,[ebx+8]
-    mov  [img_high],eax
+	mov  ebx,[raw_pointer]
+	mov  eax,[ebx+4]
+	mov  [img_width],eax
+	mov  eax,[ebx+8]
+	mov  [img_high],eax
 	call convert.img_resolution_ok
 	jmp  kopen.1
 ;---------------------------------------------------------------------
@@ -67,10 +67,6 @@ no_scaling:
 	mov  [zoom_factors],dword zoom_factors.100
 	mov  eax,[eax]
 	jmp   zoom_plus.2
-	
-;	call calculate_arrows_offset
-;	call draw_zoom_factors
-;	jmp  red
 ;---------------------------------------------------------------------
 scaling:
 	mov  eax,[soi]
@@ -114,10 +110,6 @@ scaling:
 .fill_for_L_R:
 	cmp   [no_fill],1
 	je   @f
-;	xor  eax,eax
-;	mov  [no_fill],al
-;	ret
-;@@:
 	pusha
 	mov   ebx,[image_start_coordinates]
 	mov   ecx,ebx
@@ -130,7 +122,6 @@ scaling:
 	add   bx,ax
 	add   bx,[wa_width_2]
 	mov   ax,[wa_width_1]
-;	add   ax,5
 	sub   ax,bx
 	rol   ebx,16
 	mov   bx,ax
@@ -142,10 +133,6 @@ scaling:
 .fill_for_U_D:
 	cmp   [no_fill],1
 	je   @f
-;	xor  eax,eax
-;	mov  [no_fill],al
-;	ret
-;@@:
 	pusha
 	mov   ebx,[image_start_coordinates]
 	mov   ecx,ebx
@@ -222,13 +209,14 @@ scaling:
 	movzx  esi,byte [filtering_flag]
 ;	mov  edi,[background_color]
 
-	push	dword [background_color]	;edi - background color
-	push	esi	; esi - filtering
-	push	dword [scaling_mode]	;edx - scaling mode
-	push	ecx	; ecx - start_coordinates
-	push	ebx	; ebx - new_size
-	push	dword image_file	;eax -  convert data table
-	
+	push	dword 0				; eax - crop size
+	push	dword [background_color]	; edi - background color
+	push	esi				; esi - filtering
+	push	dword [scaling_mode]		; edx - scaling mode
+	push	ecx				; ecx - start_coordinates
+	push	ebx				; ebx - new_size
+	push	dword image_file		; eax -  convert data table
+
 ;	pusha
 ;	mcall 26,9
 ;	mov  [test1],eax
@@ -255,16 +243,16 @@ scaling:
 
 	mov  edx,[image_start_coordinates]
 
-    mov  eax,edx
-    shl  eax,16
-    mov  ax,cx
-    mov  [scroll_bar_data_vertical.y],eax
-
-    mov  eax,edx
-    mov  ebx,ecx
-    shr  ebx,16
-    mov  ax,bx
-    mov  [scroll_bar_data_horizontal.x],eax
+	mov  eax,edx
+	shl  eax,16
+	mov  ax,cx
+	mov  [scroll_bar_data_vertical.y],eax
+	
+	mov  eax,edx
+	mov  ebx,ecx
+	shr  ebx,16
+	mov  ax,bx
+	mov  [scroll_bar_data_horizontal.x],eax
 
 ;	call correct_cur_area
 
@@ -297,18 +285,24 @@ scaling:
 	add  edx,eax
 	call .fill_for_U_D
 @@:
-	mov   esi,[img_resolution]
-    cmp   [img_resolution_2],15
-    jne  @f
-	mov  esi,15
-@@:
+;	mov   esi,[img_resolution]
+;	cmp   [img_resolution_2],15
+;	jne  @f
+;	mov  esi,15
+;@@:
+	mov	eax,[raw_pointer_2]
+	mov	esi,[eax+12]
+	
 	mov  eax,[raw_pointer]
 	mov  edi,[eax+20]
 	add  edi,eax
 ;	mov  edi,[img_palette]
+
 	xor  ebp,ebp
 
 	mov  ebx,[raw_pointer_2]
+	mov	eax,[ebx+28]
+	add	ebx,eax
 
 	mov  eax,ecx
 	test ax,ax
@@ -316,13 +310,13 @@ scaling:
 	shr  eax,16
 	test eax,eax
 	jz   .no_draw ;@f
-	
-	cmp  [filtering_flag],0
-	je   @f
-	cmp  esi,8
-	jne  @f
-	mov  esi,24
-@@:
+
+;	cmp  [filtering_flag],0
+;	je   @f
+;	cmp  esi,8
+;	jne  @f
+;	mov  esi,24
+;@@:
 	mcall 65
 .no_draw:
 ;	mov  eax,ecx
@@ -341,34 +335,40 @@ scaling:
 ;	and  eax,0xffff
 ;	mov  [test4],eax
 
-	push ebx
 	call draw_file_name_to_work_area
-	pop  ebx
-	mov  ecx,ebx  ;[raw_pointer_2]
-	mcall 68,13
+	mcall 68,13,[raw_pointer_2]
 	
 	
 	xor  eax,eax
 	mov  ax,[wa_width_2]
-;	imul eax,100
-; ЕАХ = ЕАХ * 100
-    shl eax,2      ; умножение на 4
-    lea eax,[eax+eax*4] ; умножение на 5
-    lea eax,[eax+eax*4] ; умножение на 5
+	
 	mov  ebx,[img_width]
-	test ebx,ebx
-	jnz  @f
-	inc  ebx
-@@:
-	xor  edx,edx
-	div  ebx
-	shl  edx,1
-	cmp  ebx,edx
-	jb   @f
-	inc  eax
-@@:
+;	imul eax,100
+	call	calculate_relation
 	mov  [zoom_auto_factor],eax
 	
+	ret
+;---------------------------------------------------------------------
+calculate_relation:
+; relation = X*100/Y
+; eax = eax*100/ebx
+; ЕАХ = ЕАХ * 100
+	shl	eax,2      ; умножение на 4
+	lea	eax,[eax+eax*4] ; умножение на 5
+	lea	eax,[eax+eax*4] ; умножение на 5
+integer_division:
+; eax = eax/ebx
+	test	ebx,ebx
+	jnz	@f
+	inc	ebx
+@@:
+	xor	edx,edx
+	div	ebx
+;	shl	edx,1
+;	cmp	ebx,edx
+;	jb	@f
+;	inc	eax
+;@@:
 	ret
 ;---------------------------------------------------------------------
 calculation_next_value_plus:

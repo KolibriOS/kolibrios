@@ -44,7 +44,21 @@ thread4:	; start of bgrd thread
 	jmp	.still
 ;---------------------------------------------------------------------
 @@:
+	cmp	[option_group1],op2
+	jne	@f
 	mov	[bgrmode],dword 2
+	jmp	.still
+;---------------------------------------------------------------------
+@@:
+	cmp	[option_group1],op3
+	jne	@f
+	mov	[bgrmode],dword 3
+	jmp	.still
+;---------------------------------------------------------------------
+@@:
+;	cmp	[option_group1],op4
+;	jne	.still
+	mov	[bgrmode],dword 4
 	jmp	.still
 ;---------------------------------------------------------------------
 .key:
