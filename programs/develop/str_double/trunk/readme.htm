@@ -1,0 +1,57 @@
+<html>
+<head>
+<title>String to Double</title>
+<meta http-equiv="content-type" content="text/html; charset=WINDOWS-1251">
+<style>
+body
+{
+  font-size: 15px;
+  font-family: "Bookman Old Style";
+  color: black;
+  text-align: justify;
+  width: 750px;
+}
+h1 {
+  color: white;
+  background-color: 808080;
+  font-size: 25px;
+  text-align: center;
+}
+h2 { color: green; font-size: 21px; }
+h3 { color: green; font-size: 19px; }
+h4 { color: #803f00; font-size: 17px; }
+i { color: #0099cc; }
+b { color: #0099cc; }
+p {
+  text-indent: 2em;
+  margin-top: 3px;
+  margin-bottom: 2px;
+  margin-left: 0px;
+  margin-right: 0px;
+}
+ol, ul, dl{
+  margin-top: 3px;
+  margin-bottom: 2px;
+}
+</style>
+</head>
+<body>
+<h1>String to Double 07.09.2011</h1>
+<p>Программа для преобразования чисел из строки в формат float, double, а также из 10 или 16 ричного во float.</p>
+
+<p>Сделана на основе программы <b>hex2dec2bin</b> и примеров из файла list2_05.inc (автор Кулаков Владимир Геннадьевич 24.05.2002), которые <b>ChE</b> переделал с 16 на 32 бита на ассемблер fasm.</p>
+<p>Программа позволяет решать такие задачи:</p>
+<p>1) число в строковом виде перевести в 4 байта (float) в машинный вид</p>
+<p>2) число в строковом виде перевести в 8 байт (double) в машинный вид</p>
+<p>3) число в машинном виде (float) перевести в строковый вид (5 знаков после запятой).</p>
+
+<h2>Пример</h2>
+<p>Мы знаем что есть некоторое число <b>float</b>, сохраненное в машинном виде, например <b>3fa00000</b>. Что бы узнать как это число будет смотреться в десятичном виде делаем такие действия:</p>
+<p>1) включаем опцию <b>float(dec,hex) -&gt; str</b>,
+2) вводим текст <b>0x3fa00000</b>,
+3) нажимаем <b>Ввод</b> (в англ. версии <b>Ok</b>).</p>
+<p>В результате узнаем что это число <b>1.25</b>:</p>
+<img src="str_do_opt3.png">
+<p>Рис. 1. Использование опции <b>float(dec,hex) -&gt; str</b></p>
+</body>
+</html>
