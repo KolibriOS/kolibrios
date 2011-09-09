@@ -16,6 +16,7 @@ include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'mem.inc'
 include 'dll.inc'
 include 'lang.inc'
+include 'info_fun_float.inc'
 
 debug equ 0
 
@@ -112,6 +113,7 @@ buffer rb size_one_list ;буфер для добавления структур в список tree1
 txt_3ds_symb db 0,0
 ;--------------------------------------
 
+include 'info_wnd_coords.inc'
 
 align 4
 start:
@@ -361,6 +363,10 @@ pushad
 	;mov edx,5
 	;int 0x40
 
+	mov ebx,(85 shl 16)+20
+	mov ecx,(5 shl 16)+20
+	mov edx,6 ;окно с координатами
+	int 0x40
 
 	mov eax,7
 	mov ebx,[image_data_toolbar]
@@ -406,6 +412,10 @@ button:
 	cmp ah,5
 	jne @f
 		call but_save_file
+	@@:
+	cmp ah,6
+	jne @f
+		call but_wnd_coords
 	@@:
 
 	cmp ah,1
@@ -808,6 +818,15 @@ if debug
 end if
 	ret
 
+align 4
+but_wnd_coords:
+	cmp byte[prop_wnd_run],0
+	jne @f
+		pushad
+		mcall 51,1,prop_start,thread_coords
+		popad
+	@@:
+	ret
 
 
 ;input:
@@ -1222,6 +1241,8 @@ align 4
 	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 i_end:
+	rb 1024
+thread_coords:
 	rb 1024
 stacktop:
 	sys_path rb 1024
