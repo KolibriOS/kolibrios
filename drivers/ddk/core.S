@@ -10,8 +10,9 @@
     .global _AttachIntHandler
 
     .global _CreateEvent
-
+    .global _CreateObject
     .global _CreateRingBuffer
+
     .global _Delay
     .global _DestroyObject
 
@@ -20,6 +21,7 @@
     .global _GetDisplay
     .global _GetEvent
     .global _GetPgAddr
+    .global _GetPid
     .global _GetService
     .global _GetTimerTicks
     .global _GetStackBase
@@ -62,7 +64,7 @@
     .def  _AttachIntHandler;  .scl  2;  .type 32; .endef
 
     .def  _CreateEvent;       .scl  2;  .type 32; .endef
-
+    .def  _CreateObject;      .scl  2;  .type 32; .endef
     .def  _CreateRingBuffer;  .scl  2;  .type 32; .endef
 
     .def  _Delay;             .scl  2;  .type 32; .endef
@@ -72,6 +74,7 @@
 
     .def  _GetDisplay;        .scl  2;  .type 32; .endef
     .def  _GetEvent;          .scl  2;  .type 32; .endef
+    .def  _GetPid;            .scl  2;  .type 32; .endef
     .def  _GetPgAddr;         .scl  2;  .type 32; .endef
     .def  _GetService;        .scl  2;  .type 32; .endef
     .def  _GetTimerTicks;     .scl  2;  .type 32; .endef
@@ -115,7 +118,7 @@ _AllocPages:
 _AttachIntHandler:
 
 _CreateEvent:
-
+_CreateObject:
 _CreateRingBuffer:
 
 _Delay:
@@ -126,6 +129,7 @@ _FreeKernelSpace:
 
 _GetDisplay:
 _GetEvent:
+_GetPid:
 _GetPgAddr:
 _GetService:
 _GetTimerTicks:
@@ -170,6 +174,7 @@ _WaitEvent:
         .ascii " -export:AttachIntHandler"     # stdcall
 
         .ascii " -export:CreateEvent"          #
+        .ascii " -export:CreateObject"         #
 
         .ascii " -export:CreateRingBuffer"     # stdcall
 
@@ -181,6 +186,7 @@ _WaitEvent:
 
         .ascii " -export:GetDisplay"           # stdcall
         .ascii " -export:GetEvent"             #
+        .ascii " -export:GetPid"               #
         .ascii " -export:GetPgAddr"            # stdcall
         .ascii " -export:GetService"           # stdcall
         .ascii " -export:GetTimerTicks"        #

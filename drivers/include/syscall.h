@@ -49,6 +49,7 @@ void  FASTCALL MutexLock(struct mutex*)__asm__("MutexLock");
 void  FASTCALL MutexUnlock(struct mutex*)__asm__("MutexUnlock");
 
 addr_t IMPORT  GetStackBase(void)__asm__("GetStackBase");
+u32_t  IMPORT  GetPid(void)__asm__("GetPid");
 
 ///////////////////////////////////////////////////////////////////////////////
 
