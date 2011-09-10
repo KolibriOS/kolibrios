@@ -35,7 +35,6 @@ extern "C" {
 #define __have_long64 1
 #elif __STDINT_EXP(LONG_MAX) == 0x7fffffff && !defined(__SPU__)
 #define __have_long32 1
-#define __have_long64 0
 #endif
 
 #if __STDINT_EXP(SCHAR_MAX) == 0x7f
@@ -76,23 +75,23 @@ typedef uint16_t  	uint_least8_t;
 #endif
 #endif
 
-#if __have_long32
-typedef signed long int32_t;
-typedef unsigned long uint32_t;
-#define __int32_t_defined 1
-#elif __STDINT_EXP(INT_MAX) == 0x7fffffffL
+//#if __have_long32
+//typedef signed long int32_t;
+//typedef unsigned long uint32_t;
+//#define __int32_t_defined 1
+//#elif __STDINT_EXP(INT_MAX) == 0x7fffffffL
 typedef signed int int32_t;
 typedef unsigned int uint32_t;
 #define __int32_t_defined 1
-#elif __STDINT_EXP(SHRT_MAX) == 0x7fffffffL
-typedef signed short int32_t;
-typedef unsigned short uint32_t;
-#define __int32_t_defined 1
-#elif __STDINT_EXP(SCHAR_MAX) == 0x7fffffffL
-typedef signed char int32_t;
-typedef unsigned char uint32_t;
-#define __int32_t_defined 1
-#endif
+//#elif __STDINT_EXP(SHRT_MAX) == 0x7fffffffL
+//typedef signed short int32_t;
+//typedef unsigned short uint32_t;
+//#define __int32_t_defined 1
+//#elif __STDINT_EXP(SCHAR_MAX) == 0x7fffffffL
+//typedef signed char int32_t;
+//typedef unsigned char uint32_t;
+//#define __int32_t_defined 1
+//#endif
 
 #if __int32_t_defined
 typedef int32_t   	int_least32_t;
@@ -178,8 +177,6 @@ typedef uint64_t  	uint_least32_t;
   typedef signed int int_fast64_t;
   typedef unsigned int uint_fast64_t;
 #define __int_fast64_t_defined 1
-#else
-#define __int_fast64_t_defined 0
 #endif
 
 /*
@@ -215,7 +212,6 @@ typedef uint64_t  	uint_least32_t;
 #if __int_least64_t_defined
   typedef int_least64_t int_fast64_t;
   typedef uint_least64_t uint_fast64_t;
-#undef  __int_fast64_t_defined
 #define __int_fast64_t_defined 1
 #endif
 #endif
