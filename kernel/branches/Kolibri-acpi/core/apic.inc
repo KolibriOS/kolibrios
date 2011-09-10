@@ -339,17 +339,19 @@ IRQ_mask_all:
 	ret
 ; -----------------------------------------
 ; End Of Interrupt
-; al - IRQ number
+; cl - IRQ number
 align 16
-IRQ_EOI:
+irq_eoi:         ; __fastcall
 	test	dword[APIC], 0xffffffff
 	jnz	.APIC
-	cmp	al, 8
+    cmp cl, 8
 	mov	al, 0x20
 	jb	@f
 	out	0xa0, al
-@@:	out	0x20, al
+@@:
+    out 0x20, al
 	ret
+
 .APIC:
 	mov	eax, [LAPIC_BASE]
 	mov	dword [eax + APIC_EOI], 0	; EOI

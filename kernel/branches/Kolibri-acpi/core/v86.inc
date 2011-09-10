@@ -898,10 +898,8 @@ v86_irq2:
         pop     ecx
 .cont:
         loop    .scan
-
-	mov	eax, edi
-	call	IRQ_EOI
-
+        mov     ecx, edi
+        call    irq_eoi
         popad
         iretd
 .found:

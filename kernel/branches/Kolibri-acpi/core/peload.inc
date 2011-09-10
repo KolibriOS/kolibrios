@@ -314,6 +314,7 @@ __exports:
           pci_write16,           'PciWrite16',         \      ; stdcall
           pci_write32,           'PciWrite32',         \      ; stdcall
 \
+          get_pid,               'GetPid',             \
           get_service,           'GetService',         \      ;
           reg_service,           'RegService',         \      ; stdcall
           attach_int_handler,    'AttachIntHandler',   \      ; stdcall

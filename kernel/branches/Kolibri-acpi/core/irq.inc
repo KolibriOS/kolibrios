@@ -184,8 +184,9 @@ align 16
 .exit:
        mov  [check_idle_semaphore],5
 
-       mov eax, ebp
-       call    IRQ_EOI
+       mov ecx, ebp
+       call irq_eoi
+
        restore_ring3_context
        add   esp, 4
        iret
@@ -196,8 +197,8 @@ irqD:
         push  ecx
         xor   eax,eax
         out   0xf0,al
-        mov   eax, 13
-        call  IRQ_EOI
+        mov   cl, 13
+        call  irq_eoi
         pop   ecx
         pop   eax
         iret

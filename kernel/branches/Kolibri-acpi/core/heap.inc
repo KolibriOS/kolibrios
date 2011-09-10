@@ -7,7 +7,6 @@
 
 $Revision$
 
-HASH_IT  = 1
 
 struc MEM_BLOCK
 {
@@ -279,8 +278,6 @@ align 4
 proc alloc_kernel_space stdcall, size:dword
            local block_ind:DWORD
 
-;           xchg bx, bx
-
            push ebx
            push esi
            push edi
@@ -385,8 +382,6 @@ endp
 
 align 4
 proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
-
-;           xchg bx, bx
 
            mov ecx, heap_mutex
            call mutex_lock
@@ -566,7 +561,8 @@ proc kernel_free stdcall, base:dword
 
            call mutex_unlock
 
-           mov ecx, [esi+block_size];
+           mov eax, [esi+block_base]
+           mov ecx, [esi+block_size]
            shr ecx, 12
            call release_pages   ;eax, ecx
            stdcall free_kernel_space, [base]
