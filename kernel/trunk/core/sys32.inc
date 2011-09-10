@@ -120,8 +120,9 @@ exc_c:                          ; исключения (все, кроме 7-го - #NM)
   reg_esi       equ esp+0x04
   reg_edi       equ esp+0x00
 
-        Mov     ds,ax,app_data  ; загрузим правильные значени
-        mov     es,ax           ; в сегментные регистры
+	    mov	ax, app_data	    ;исключение
+	    mov	ds, ax		        ;загрузим правильные значения
+	    mov	es, ax		        ;в регистры
         cld                     ; и приводим DF к стандарту
         movzx   ebx,bl
 ; redirect to V86 manager? (EFLAGS & 0x20000) != 0?

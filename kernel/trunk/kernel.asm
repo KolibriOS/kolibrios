@@ -922,7 +922,7 @@ first_app_found:
         and    al,00000010b
         loopnz @b
 
-       ; mov   al, 0xED       ; svetodiody - only for testing!
+       ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
        ; call  kb_write
        ; call  kb_read
        ; mov   al, 111b
@@ -992,27 +992,6 @@ if preboot_blogesc
         jne     .bll1
 end if
 
-;       mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
-
-; UNMASK ALL IRQ'S
-
-;        mov   esi,boot_allirqs
-;        call  boot_log
-;
-;        cli                          ;guarantee forbidance of interrupts.
-;        mov   al,0                   ; unmask all irq's
-;        out   0xA1,al
-;        out   0x21,al
-;
-;        mov   ecx,32
-;
-;     ready_for_irqs:
-;
-;        mov   al,0x20                ; ready for irqs
-;        out   0x20,al
-;        out   0xa0,al
-;
-;        loop  ready_for_irqs         ; flush the queue
 
         stdcall attach_int_handler, 1, irq1, 0
 
@@ -1158,8 +1137,9 @@ endg
 
 set_variables:
 
-        mov   ecx,0x100                       ; flush port 0x60
-.fl60:  in    al,0x60
+        mov   ecx,0x16                       ; flush port 0x60
+.fl60:
+        in    al,0x60
         loop  .fl60
         push  eax
 
@@ -4125,8 +4105,6 @@ _rdtsc:
      mov   eax,0xffffffff
      ret
 end if
-
-
 
 sys_msg_board_str:
 

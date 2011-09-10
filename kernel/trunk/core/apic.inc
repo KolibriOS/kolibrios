@@ -6,59 +6,34 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 align 4
-pic_delay:
-
-        jmp     pdl1
-pdl1:   ret
-
-align 4
 rerouteirqs:
 
         cli
-
         mov     al,0x11         ;  icw4, edge triggered
         out     0x20,al
-        call    pic_delay
         out     0xA0,al
-        call    pic_delay
 
         mov     al,0x20         ;  generate 0x20 +
         out     0x21,al
-        call    pic_delay
         mov     al,0x28         ;  generate 0x28 +
         out     0xA1,al
-        call    pic_delay
 
         mov     al,0x04         ;  slave at irq2
         out     0x21,al
-        call    pic_delay
         mov     al,0x02         ;  at irq9
         out     0xA1,al
-        call    pic_delay
 
         mov     al,0x01         ;  8086 mode
         out     0x21,al
-        call    pic_delay
         out     0xA1,al
-        call    pic_delay
 
         mov     al,255          ; mask all irq's
         out     0xA1,al
-        call    pic_delay
         out     0x21,al
-        call    pic_delay
-
-        mov     ecx,0x1000
-        cld
-picl1:  call    pic_delay
-        loop    picl1
 
         mov     al,255          ; mask all irq's
         out     0xA1,al
-        call    pic_delay
         out     0x21,al
-        call    pic_delay
-
         ret
 
 

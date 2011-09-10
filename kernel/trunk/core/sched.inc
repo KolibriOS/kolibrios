@@ -27,7 +27,7 @@ irq0:
         add     [next_usage_update],100
         call    updatecputimes
   .nocounter:
-        xor     ecx, ecx
+	    xor     ecx, ecx	; send End Of Interrupt signal
         call    irq_eoi
         btr     dword[DONT_SWITCH], 0
         jc      .return
