@@ -60,7 +60,20 @@ key:
 
   .lp0: test	al,0x80
 	jnz	still.skip_write
-
+;--------------------------------------
+; it is CAPS LOCK correct processing for chars
+	test	[shi], 0x00000040 ; CAPS LOCK is on?
+	jz	.no_caps_lock
+	cmp	ecx,1
+	jnz	@f
+	inc	ecx
+	jmp	.no_caps_lock
+@@:
+	cmp	ecx,2
+	jnz	.no_caps_lock
+	dec	ecx
+.no_caps_lock:
+;--------------------------------------
 	push	eax
 	mcall	26,2,,key1
 	pop	eax
