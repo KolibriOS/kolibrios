@@ -38,19 +38,21 @@ con_init:
         pop     [con.scr_height]
         pop     [con.title]
         push    eax
+
+        push ebx
+
         mov     ecx, 4
         mov     eax, con.wnd_width
-        mov     esi, con.def_wnd_width
+        mov     edx, con.def_wnd_width
 .1:
         cmp     dword [eax], -1
         jnz     @f
-        mov     ebx, [esi]
+        mov     ebx, [edx]
         mov     [eax], ebx
 @@:
         add     eax, 4
-        add     esi, 4
+        add     edx, 4
         loop    .1
-        push    ebx
 ; allocate memory for console data & bitmap data
         mov     eax, [con.scr_width]
         mul     [con.scr_height]
