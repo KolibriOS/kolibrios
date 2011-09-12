@@ -1068,19 +1068,44 @@ proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword
 		cmp buf2d_bits,24
 		jne .end24
 
-		mov ebx,dword[coord_x0]
 		mov ecx,dword[coord_y0]
-		mov edx,dword[color]
+		bt ecx,31
+		jc .end24 ;если координата y0 отрицательная
+		cmp ecx,buf2d_h
+		jge .end24 ;если координата y0 больше высоты буфера
+
+		mov ebx,dword[coord_x0]
 		mov esi,dword[coord_x1]
 		cmp ebx,esi
 		jle @f
 			xchg ebx,esi ;если x0 > x1 то меняем местами x0 и x1
+		@@:
+		cmp esi,buf2d_w
+		jl @f
+			mov esi,buf2d_w
+			;dec esi
+		@@:
 
+		;в eax вычисляем начало 1-й точки линии в буфере изображения
+		mov eax,buf2d_w ;size x
+		imul eax,ecx ;size_x*y
+		add eax,ebx	 ;size_x*y+x
+		lea eax,[eax+eax*2] ;(size_x*y+x)*3
+		add eax,buf2d_data  ;ptr+(size_x*y+x)*3
+
+		mov edx,dword[color]
 		@@: ;цикл по оси x от x0 до x1
 			cmp ebx,esi
 			jge @f
-			call draw_pixel
-			inc ebx
+			bt ebx,31
+			jc .otr_x
+				mov word[eax],dx ;copy pixel color
+				ror edx,16
+				mov byte[eax+2],dl
+				ror edx,16
+			.otr_x:
+				add eax,3
+				inc ebx
 			jmp @b
 		@@:
 		.end24:
