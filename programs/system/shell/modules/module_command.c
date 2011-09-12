@@ -74,6 +74,13 @@ for (;;)
 			default:
 				if (CMD_POS < 255)
 					{
+					
+					if ( kol_key_control() & 0x40 ) // если включён CapsLock
+						if ( (kol_key_control() & 1) || (kol_key_control() & 2)) // если нажаты шифты 
+							key = tolower(key);
+						else
+							key = toupper(key);
+
 					CMD[CMD_POS] = key;
 					CMD_POS++;
 					printf("%c", key);

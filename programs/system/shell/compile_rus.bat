@@ -6,7 +6,8 @@ gcc -c shell.c
 gcc -c system/kolibri.c
 gcc -c system/stdlib.c
 gcc -c system/string.c
-ld -nostdlib -T kolibri.ld -o shell start.o kolibri.o stdlib.o string.o shell.o
+gcc -c system/ctype.c
+ld -nostdlib -T kolibri.ld -o shell start.o kolibri.o stdlib.o string.o ctype.o shell.o
 objcopy shell -O binary
 erase lang.h start.o shell.o kolibri.o stdlib.o string.o
 kpack shell

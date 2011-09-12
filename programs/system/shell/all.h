@@ -10,6 +10,7 @@
 #include "system/kolibri.h"
 #include "system/stdlib.h"
 #include "system/string.h"
+#include "system/ctype.h"
 
 #include "globals.h"
 #include "prototypes.h"
