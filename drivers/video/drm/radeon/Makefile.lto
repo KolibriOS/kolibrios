@@ -52,6 +52,9 @@ NAME_SRC=							\
 			$(DRM_TOPDIR)/drm_dp_i2c_helper.c	\
 			$(DRM_TOPDIR)/i2c/i2c-core.c		\
 			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
+			tracker/bitmap.c			\
+			r700_vs.c				\
+			r600_video.c				\
 			radeon_device.c				\
 			evergreen.c				\
 			evergreen_blit_shaders.c		\
@@ -102,7 +105,6 @@ NAME_SRC=							\
 			rdisplay_kms.c				\
 			cmdline.c				\
 			fwblob.asm
-#			cursor.S
 
 FW_BINS=							\
 			firmware/R100_cp.bin			\

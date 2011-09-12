@@ -1096,6 +1096,13 @@ static int rv770_startup(struct radeon_device *rdev)
 		dev_warn(rdev->dev, "failed blitter (%d) falling back to memcpy\n", r);
 	}
 
+    r = r600_video_init(rdev);
+    if (r) {
+//      r600_video_fini(rdev);
+//        rdev->asic->copy = NULL;
+        dev_warn(rdev->dev, "failed video blitter (%d) falling back to memcpy\n", r);
+    }
+
 	/* allocate wb buffer */
 	r = radeon_wb_init(rdev);
 	if (r)

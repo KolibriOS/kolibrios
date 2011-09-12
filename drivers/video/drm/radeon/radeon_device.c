@@ -987,9 +987,19 @@ static struct pci_device_id pciidlist[] = {
 
 #define SRV_CREATE_VIDEO 9
 #define SRV_BLIT_VIDEO   10
+#define SRV_CREATE_BITMAP  11
+
 
 int r600_video_blit(uint64_t src_offset, int  x, int y,
                     int w, int h, int pitch);
+
+#define check_input(size) \
+    if( unlikely((inp==NULL)||(io->inp_size != (size))) )   \
+        break;
+
+#define check_output(size) \
+    if( unlikely((outp==NULL)||(io->out_size != (size))) )   \
+        break;
 
 int _stdcall display_handler(ioctl_t *io)
 {
@@ -1003,35 +1013,26 @@ int _stdcall display_handler(ioctl_t *io)
     switch(io->io_code)
     {
         case SRV_GETVERSION:
-            if(io->out_size==4)
-            {
+            check_output(4);
                 *outp  = API_VERSION;
                 retval = 0;
-            }
             break;
 
         case SRV_ENUM_MODES:
             dbgprintf("SRV_ENUM_MODES inp %x inp_size %x out_size %x\n",
                        inp, io->inp_size, io->out_size );
-
-            if( radeon_modeset &&
-                (outp != NULL) && (io->out_size == 4) &&
-                (io->inp_size == *outp * sizeof(videomode_t)) )
-            {
+            check_output(4);
+            check_input(*outp * sizeof(videomode_t));
+            if( radeon_modeset)
                 retval = get_modes((videomode_t*)inp, outp);
-            };
             break;
 
         case SRV_SET_MODE:
             dbgprintf("SRV_SET_MODE inp %x inp_size %x\n",
                        inp, io->inp_size);
-
-            if(  radeon_modeset   &&
-                (inp != NULL) &&
-                (io->inp_size == sizeof(videomode_t)) )
-            {
+            check_input(sizeof(videomode_t));
+            if( radeon_modeset )
                 retval = set_user_mode((videomode_t*)inp);
-            };
             break;
 
         case SRV_CREATE_VIDEO:
@@ -1043,6 +1044,12 @@ int _stdcall display_handler(ioctl_t *io)
                     inp[4], inp[5], inp[6]);
 
             retval = 0;
+            break;
+
+        case SRV_CREATE_BITMAP:
+            check_input(8);
+            check_output(4);
+            retval = create_bitmap(outp, inp[0], inp[1]);
             break;
 
     };
