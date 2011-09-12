@@ -1,13 +1,14 @@
 if lang eq ru
-capt db 'info 3ds версия 09.09.11',0 ;подпись окна
+capt db 'info 3ds версия 12.09.11',0 ;подпись окна
 else
-capt db 'info 3ds version 09.09.11',0 ;window caption
+capt db 'info 3ds version 12.09.11',0 ;window caption
 end if
 
 MAX_FILE_LEVEL equ 20 ;максимальный уровень вложенности блоков для анализа
 MAX_FILE_SIZE equ 150*0x400 ;максимальный размер файла (0x400=1Kb)
 
 sizeof.block_3ds equ 9
+can_save db 0 ;изменялся ли файл
 
 macro block_3ds id,icon,par,caption
 {

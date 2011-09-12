@@ -358,10 +358,13 @@ pushad
 	mov edx,4
 	int 0x40
 
-	;mov ebx,(55 shl 16)+20
-	;mov ecx,(5 shl 16)+20
-	;mov edx,5
-	;int 0x40
+	cmp byte[can_save],0
+	je @f
+		mov ebx,(55 shl 16)+20
+		mov ecx,(5 shl 16)+20
+		mov edx,5
+		int 0x40
+	@@:
 
 	mov ebx,(85 shl 16)+20
 	mov ecx,(5 shl 16)+20
@@ -378,9 +381,12 @@ pushad
 	mov edx,(32 shl 16)+7 ;open
 	int 0x40
 
-	;add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	;mov edx,(57 shl 16)+7 ;save
-	;int 0x40
+	cmp byte[can_save],0
+	je @f
+		add ebx,IMAGE_TOOLBAR_ICON_SIZE
+		mov edx,(57 shl 16)+7 ;save
+		int 0x40
+	@@:
 
 	mov dword[w_scr_t1.all_redraw],1
 	stdcall [tl_draw],dword tree1
@@ -433,6 +439,7 @@ button:
 
 align 4
 but_new_file:
+	mov byte[can_save],0
 	stdcall [tl_info_clear], tree1 ;очистка списка объектов
 	stdcall [buf2d_clear], buf_0, [buf_0.color] ;чистим буфер
 	;;;call draw_window
@@ -467,6 +474,7 @@ but_open_file:
 	;mov byte[ebx],0 ;на случай если ранее был открыт файл большего размера чистим конец буфера с файлом
 	;mcall 71,1,openfile_path
 
+	mov byte[can_save],0
 	stdcall [tl_info_clear], tree1 ;очистка списка объектов
 
 	mov esi,dword[open_file_lif]
@@ -813,9 +821,31 @@ endp
 
 align 4
 but_save_file:
-if debug
-	stdcall buf_draw_hex_table,dword[open_file_lif],3 ;добавление 16-ричных данных
-end if
+	pushad
+	copy_path open_dialog_name,communication_area_default_path,file_name,0
+	mov [OpenDialog_data.type],1
+	stdcall [OpenDialog_Start],OpenDialog_data
+	cmp [OpenDialog_data.status],2
+	je .end_save_file
+	;код при удачном открытии диалога
+
+	mov eax,70 ;70-я функция работа с файлами
+	mov [run_file_70.Function], 2
+	mov [run_file_70.Position], 0
+	mov [run_file_70.Flags], 0
+	mov ebx, dword[open_file_lif]
+	mov [run_file_70.Buffer], ebx
+	mov ebx,dword[ebx+2]
+	mov dword[run_file_70.Count], ebx ;размер файла
+	mov byte[run_file_70+20], 0
+	mov dword[run_file_70.FileName], openfile_path
+	mov ebx,run_file_70
+	int 0x40 ;загружаем файл изображения
+	cmp ebx,0xffffffff
+	je .end_save_file
+
+	.end_save_file:
+	popad
 	ret
 
 align 4
@@ -1169,7 +1199,7 @@ procinfo process_information
 align 4
 buf_0: dd 0 ;указатель на буфер изображения
 .l: dw 205 ;+4 left
-	dw 35 ;+6 top
+.t: dw 35 ;+6 top
 .w: dd 340 ;+8 w
 .h: dd 250 ;+12 h
 .color: dd 0xffffd0 ;+16 color
