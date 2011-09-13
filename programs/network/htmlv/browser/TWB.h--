@@ -176,9 +176,6 @@ void GetNewUrl(){
 
 void ReadHtml(byte DO_LOAD)
 {
-	mem_Free(buf);
-	
-	buf = mem_Alloc(1048576);
 
 	if (!strcmp(get_URL_part(5),"http:"))) 
 	{
@@ -190,42 +187,15 @@ void ReadHtml(byte DO_LOAD)
 			IF (downloader_id<0) RunProgram("@notify", "Error running Downloader. Internet unavilable.");
 			RETURN;
 		}
-		ReadFile(0, 1048576, buf, #download_path);
+		file_size stdcall (#download_path);
 	} 
-	ELSE ReadFile(0, 1048576, buf, #URL);
-
+	ELSE file_size stdcall (#URL);
+	
 	filesize = EBX;
-}
-
-/*void ReadHtml(byte DO_LOAD)
-{
-	char FileAdress[4096];
-	
-	IF (!strcmp(get_URL_part(5),"http:"))
-	{
-		IF (DO_LOAD) //&& (!WindowRePaint)
-		{
-			DeleteFile(#download_path);
-			IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
-			RunProgram("/sys/network/downloader", #URL);
-			RETURN;
-		}
-		copystr(#download_path, #FileAdress);
-		//ReadFile(0, 1048576, buf, #download_path);
-	} 
-	ELSE copystr(#URL, #FileAdress);//ReadFile(0, 1048576, buf, #URL);
-	
 	mem_Free(buf);
-    file_size stdcall (#FileAdress);
-    $mov     filesize, ebx
-    buf = mem_Alloc(filesize);
-	WriteDebug(IntToStr(filesize));
-	//$mov     buf, eax
-	//buf = malloc(1048576);
-
-	//filesize = EBX;
-}*/
-
+	buf = mem_Alloc(filesize);
+	ReadFile(0, filesize, buf, #URL);
+}
 
 
 
