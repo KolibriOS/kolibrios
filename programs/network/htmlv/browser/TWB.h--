@@ -18,7 +18,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 23.68";
+ char version[]=" Text-based Browser 23.69";
 
 
 struct TWebBrowser {
@@ -421,48 +421,42 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 }
 
 
-void GetNextParam() {
-	dword	kavichki = false,
-			i = strlen(#tagparam) - 1;
-
-	WHILE((i > 0) && (tagparam[i] == '"') || (tagparam[i] == ' ') || (tagparam[i] == '\'') || (tagparam[i] == '/'))
+void GetNextParam()
+{
+	byte	kavichki = false;
+	int		i = strlen(#tagparam) - 1;
+	
+	WHILE((i > 0) && ((tagparam[i] == '"') || (tagparam[i] == ' ') || (tagparam[i] == '\'') || (tagparam[i] == '/')))
 	{
-		IF (tagparam[i] == '"') kavichki=1;
-		IF (tagparam[i] == '\'') kavichki=2;
+		IF (tagparam[i] == '"') || (tagparam[i] == '\'') kavichki=tagparam[i];
 		tagparam[i] = 0x00;
 		i--;
 	}
 
-	IF (kavichki==1)  // "
+	IF (kavichki)
 	{
-		i=find_symbol(#tagparam, '"');
+		i=find_symbol(#tagparam, kavichki);
 		copystr(#tagparam + i, #options);
 	}
-	ELSE IF (kavichki==2) // '
-	{
-		i=find_symbol(#tagparam, '\'');
-		copystr(#tagparam + i, #options);
-	}
-
 	ELSE
 	{
-		//i=find_symbol(#tagparam, '=');
-		WHILE((i > 0) && (tagparam[i] <>'=')) i--;
-		i+=1;
+		WHILE((i > 0) && (tagparam[i] <>'=')) i--; //i=find_symbol(#tagparam, '=')+1;
+		i++;
+		
 		copystr(#tagparam + i, #options); //копируем опцию
 		WHILE (options[0] == ' ') copystr(#options + 1, #options);
 	}
 	tagparam[i] = 0x00;
 
-	//
-	WHILE((tagparam[i] <>' ') && (i > 0)) {
-		IF(tagparam[i] == '=') //дерзкая заглушка
+	FOR ( ; ((tagparam[i] <>' ') && (i > 0); i--)
+	{
+		IF (tagparam[i] == '=') //дерзкая заглушка
 		{
 			//copystr(#tagparam+i+2,#options);
 			tagparam[i + 1] = 0x00;
 		}
-		i--;
 	}
+
 	copystr(#tagparam + i + 1, #parametr); //копируем параметр
 	tagparam[i] = 0x00;
 }
@@ -474,8 +468,8 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	dword hr_color;
 
     dword image=0;
-    char temp[1024];
-    int w, h;
+    char temp[4096];
+    int w, h, img_za_kadrom=0;
 
 	IF(tag[0] == '/') {
 		rez = 0;
@@ -665,29 +659,22 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			
 			if (top1+h<WB1.top) || (top1>WB1.top+WB1.height-10) //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
 				return;
-			
+
 			if (top1<WB1.top) //если часть изображения сверху
 			{
-				h=h-WB1.top+top1;
+				img_za_kadrom=WB1.top-top1;
+				h=h-img_za_kadrom;
 				top1=WB1.top-5;
 			}
 			
 			if (top1>WB1.top+WB1.height-h-10) //если часть изображения снизу     IF (stroka - 2 < max_kolvo_strok)
 			{
-				//WriteDebug(IntToStr(top1));
-				//WriteDebug(IntToStr(WB1.top));
-				//WriteDebug(IntToStr(h));
 				h=WB1.top+WB1.height-top1-10;
 			}	
 
-			
-			//WriteDebug(IntToStr(h));
-			//Pause(10);
-			
 			IF (h<=0) return;
 			
-			img_draw stdcall (image,left1-5,top1+10,w, h,0,0);
-			//WriteDebug("Good");
+			img_draw stdcall (image,left1-5,top1+10,w, h,0,img_za_kadrom);
 			DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, 0xFFFFFF);
         }
 		return;
