@@ -8,7 +8,7 @@ ins_mode db 1
 s_status dd 0
 
 sz app_fasm    ,'/rd/1/develop/fasm',0
-sz app_board   ,'/rd/1/board',0
+sz app_board   ,'/rd/1/develop/board',0
 sz app_tinypad ,'/rd/1/tinypad',0
 sz app_docpak  ,'/rd/1/docpak',0
 
