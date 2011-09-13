@@ -1080,11 +1080,19 @@ proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword
 		jle @f
 			xchg ebx,esi ;если x0 > x1 то меняем местами x0 и x1
 		@@:
+		bt ebx,31
+		jae @f
+			;если координата x0 отрицательная
+			xor ebx,ebx
+		@@:
 		cmp esi,buf2d_w
 		jl @f
+			;если координата x0 больше ширины буфера
 			mov esi,buf2d_w
 			;dec esi
 		@@:
+		cmp ebx,esi
+		jge .end24 ;если x0 >= x1 может возникнуть когда обе координаты x0, x1 находились за одним из пределов буфера
 
 		;в eax вычисляем начало 1-й точки линии в буфере изображения
 		mov eax,buf2d_w ;size x
@@ -1093,21 +1101,17 @@ proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword
 		lea eax,[eax+eax*2] ;(size_x*y+x)*3
 		add eax,buf2d_data  ;ptr+(size_x*y+x)*3
 
+		mov ecx,esi
+		sub ecx,ebx ;в ecx колличество точек линии выводимых в буфер
 		mov edx,dword[color]
+		mov ebx,edx ;координата x0 в ebx уже не нужна
+		ror edx,16 ;поворачиваем регистр что бы 3-й байт попал в dl
+		cld
 		@@: ;цикл по оси x от x0 до x1
-			cmp ebx,esi
-			jge @f
-			bt ebx,31
-			jc .otr_x
-				mov word[eax],dx ;copy pixel color
-				ror edx,16
-				mov byte[eax+2],dl
-				ror edx,16
-			.otr_x:
-				add eax,3
-				inc ebx
-			jmp @b
-		@@:
+			mov word[eax],bx ;copy pixel color
+			mov byte[eax+2],dl
+			add eax,3
+			loop @b
 		.end24:
 	popad
 	ret
