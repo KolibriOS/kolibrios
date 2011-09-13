@@ -444,7 +444,7 @@ $(KOSILKA_OBJECTS): .obj.kosilka/%.obj: $(PROGS)/games/kosilka/%.cpp $(KOSILKA_H
 include Makefile.gcc
 
 # Rules for shell
-shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o \
+shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o .obj.shell/ctype.o \
  $(PROGS)/system/shell/kolibri.ld
 	$(call gcc_link,$(PROGS)/system/shell/kolibri.ld)
 .obj.shell/shell.o: $(PROGS)/system/shell/shell.c \
@@ -455,7 +455,7 @@ shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/std
  $(PROGS)/system/shell/locale/rus/globals.h \
  Makefile.gcc | .obj.shell
 	$(gcc_compile)
-.obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o: .obj.shell/%.o: \
+.obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o .obj.shell/ctype.o: .obj.shell/%.o: \
  $(PROGS)/system/shell/system/%.c $(PROGS)/system/shell/system/*.h \
  Makefile.gcc | .obj.shell
 	$(gcc_compile)
