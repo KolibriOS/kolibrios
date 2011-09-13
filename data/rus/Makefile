@@ -460,7 +460,7 @@ shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/std
  $(PROGS)/system/shell/locale/rus/globals.h \
  Makefile.gcc | .obj.shell
 	$(gcc_compile)
-.obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o: .obj.shell/%.o: \
+.obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o .obj.shell/ctype.o: .obj.shell/%.o: \
  $(PROGS)/system/shell/system/%.c $(PROGS)/system/shell/system/*.h \
  Makefile.gcc | .obj.shell
 	$(gcc_compile)
