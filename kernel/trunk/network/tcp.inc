@@ -964,8 +964,10 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 
   .data:
     push    ecx
+	push    ecx edx
     lea     ecx, [ebx+SOCKET.lock]
     call    mutex_lock
+        pop     edx ecx
 
 	push	ebx
 	mov	eax, [ebx + SOCKET.rxDataCount]
