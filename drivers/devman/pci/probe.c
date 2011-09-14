@@ -3,6 +3,7 @@
 #include <linux/errno.h>
 #include <mutex.h>
 #include <pci.h>
+#include <list.h>
 #include <syscall.h>
 
 LIST_HEAD(pci_root_buses);

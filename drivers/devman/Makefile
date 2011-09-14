@@ -1,8 +1,10 @@
 
+
 CC = gcc
 FASM = e:/fasm/fasm.exe
 
 CFLAGS = -c -O2 -fomit-frame-pointer -fno-builtin-printf 
+
 
 DRV_DIR   = $(CURDIR)/..
 

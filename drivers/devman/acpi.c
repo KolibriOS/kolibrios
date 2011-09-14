@@ -90,6 +90,8 @@ static void create_dm_list();
 
 static void print_dm_list();
 
+int write_device_dat(char *path);
+
 
 static void set_pic_mode(enum pic_mode mode)
 {
@@ -110,10 +112,6 @@ static void set_pic_mode(enum pic_mode mode)
     if (ACPI_SUCCESS(as))
         dbgprintf(PREFIX "machine set to %s mode\n", mode ? "APIC" : "PIC");
 }
-
-
-
-
 
 
 
@@ -263,7 +261,6 @@ static ACPI_STATUS setup_resource(ACPI_RESOURCE *acpi_res, void *data)
     struct acpi_resource_address64 addr;
     ACPI_STATUS status;
     unsigned long flags;
-    struct resource *root, *conflict;
     u64 start, end;
 
     status = resource_to_addr(acpi_res, &addr);
@@ -272,14 +269,12 @@ static ACPI_STATUS setup_resource(ACPI_RESOURCE *acpi_res, void *data)
 
     if (addr.ResourceType == ACPI_MEMORY_RANGE)
     {
-        root = &iomem_resource;
         flags = IORESOURCE_MEM;
         if (addr.Info.Mem.Caching == ACPI_PREFETCHABLE_MEMORY)
             flags |= IORESOURCE_PREFETCH;
     }
     else if (addr.ResourceType == ACPI_IO_RANGE)
     {
-        root = &ioport_resource;
         flags = IORESOURCE_IO;
     } else
         return AE_OK;
@@ -299,27 +294,17 @@ static ACPI_STATUS setup_resource(ACPI_RESOURCE *acpi_res, void *data)
         return AE_OK;
     }
 
-#if 0
-    conflict = insert_resource_conflict(root, res);
-    if (conflict) {
-        dev_err(&info->bridge->dev,
-            "address space collision: host bridge window %pR "
-            "conflicts with %s %pR\n",
-            res, conflict->name, conflict);
-    } else {
-        pci_bus_add_resource(info->bus, res, 0);
-        info->res_num++;
-        if (addr.translation_offset)
-            dev_info(&info->bridge->dev, "host bridge window %pR "
-                 "(PCI address [%#llx-%#llx])\n",
-                 res, res->start - addr.translation_offset,
-                 res->end - addr.translation_offset);
-        else
-            dev_info(&info->bridge->dev,
-                 "host bridge window %pR\n", res);
-    }
+    info->res_num++;
+    if (addr.TranslationOffset)
+        dev_info(NULL, "host bridge window %pR "
+             "(PCI address [%#llx-%#llx])\n",
+             res, res->start - addr.TranslationOffset,
+             res->end - addr.TranslationOffset);
+    else
+        dev_info(NULL,
+             "host bridge window %pR\n", res);
+
     return AE_OK;
-#endif
 }
 
 
@@ -368,8 +353,6 @@ res_alloc_fail:
 }
 
 
-
-
 struct pci_ops pci_root_ops = {
     .read = NULL,
     .write = NULL,
@@ -383,7 +366,7 @@ struct pci_bus*  pci_acpi_scan_root(struct acpi_pci_root *root)
     int busnum = root->secondary.start;
     struct pci_bus *bus;
     struct pci_sysdata *sd;
-    int node = 0;
+	int node = 0;
 
     if (domain ) {
         printk(KERN_WARNING "pci_bus %04x:%02x: "
@@ -392,6 +375,7 @@ struct pci_bus*  pci_acpi_scan_root(struct acpi_pci_root *root)
         return NULL;
     }
 
+	node = -1;
     /* Allocate per-root-bus (not per bus) arch-specific data.
      * TODO: leak; this memory is never freed.
      * It's arguable whether it's worth the trouble to care.
@@ -632,14 +616,14 @@ u32_t drvEntry(int action, char *cmdline)
 
 //    u32_t mode = ACPI_NO_HARDWARE_INIT | ACPI_NO_ACPI_ENABLE;
 
-    status = AcpiEnableSubsystem(0);
+    status = AcpiEnableSubsystem(ACPI_NO_HANDLER_INIT | ACPI_NO_HARDWARE_INIT);
     if (status != AE_OK) {
         dbgprintf("AcpiEnableSubsystem failed (%s)\n",
             AcpiFormatException(status));
         goto err;
     }
 
-    status = AcpiInitializeObjects (0);
+    status = AcpiInitializeObjects (ACPI_FULL_INITIALIZATION);
     if (ACPI_FAILURE (status))
     {
         dbgprintf("AcpiInitializeObjects failed (%s)\n",
@@ -659,6 +643,8 @@ u32_t drvEntry(int action, char *cmdline)
     create_dm_list();
 
     print_dm_list();
+
+    write_device_dat("/RD/1/DRIVERS/DEVICES.DAT");
 
 err:
 
@@ -921,3 +907,137 @@ static void print_dm_list()
 };
 
 
+typedef struct
+{
+    uint32_t  busaddr;
+    uint32_t  devid;
+    uint32_t  irq;
+    uint32_t  unused;
+}devinfo_t;
+
+#pragma pack(push, 1)
+typedef struct
+{
+  char sec;
+  char min;
+  char hour;
+  char rsv;
+}detime_t;
+
+typedef struct
+{
+  char  day;
+  char  month;
+  short year;
+}dedate_t;
+
+typedef struct
+{
+  unsigned    attr;
+  unsigned    flags;
+  union
+  {
+     detime_t  ctime;
+     unsigned  cr_time;
+  };
+  union
+  {
+     dedate_t  cdate;
+     unsigned  cr_date;
+  };
+  union
+  {
+     detime_t  atime;
+     unsigned  acc_time;
+  };
+  union
+  {
+     dedate_t  adate;
+     unsigned  acc_date;
+  };
+  union
+  {
+     detime_t  mtime;
+     unsigned  mod_time;
+  };
+  union
+  {
+     dedate_t  mdate;
+     unsigned  mod_date;
+  };
+  unsigned    size;
+  unsigned    size_high;
+} FILEINFO;
+
+#pragma pack(pop)
+
+
+int write_device_dat(char *path)
+{
+    struct pci_dev   *pcidev;
+    dmdev_t          *dmdev;
+    devinfo_t        *data;
+    int               writes;
+    int               len;
+    int i = 0;
+
+    list_for_each_entry(dmdev, &dmdev_tree, list)
+    {
+        if(dmdev->type ==1)
+        {
+            if(dmdev->pci_dev != NULL)
+            {
+                pcidev = dmdev->pci_dev;
+                if(pcidev->pin)
+                    i++;
+            };
+        };
+    };
+
+    len = sizeof(devinfo_t)*i + 4;
+    data = (devinfo_t*)malloc(len);
+
+    i = 0;
+
+    list_for_each_entry(dmdev, &dmdev_tree, list)
+    {
+        if(dmdev->type == 1)
+        {
+
+            if(dmdev->pci_dev != NULL)
+            {
+                pcidev = dmdev->pci_dev;
+                if(pcidev->pin && (acpi_get_irq(pcidev) != -1) )
+                {
+                    data[i].busaddr = (pcidev->busnr<<8)|pcidev->devfn;
+                    data[i].devid   = ((uint32_t)pcidev->device<<16) |
+                                       pcidev->vendor;
+                    data[i].irq     =  acpi_get_irq(pcidev);
+                    data[i].unused  =  0;
+                    i++;
+                }
+            };
+        };
+    };
+
+    data[i].busaddr = -1;
+
+    FILEINFO info;
+
+    int offset = 0;
+
+    if(get_fileinfo(path,&info))
+    {
+        if( create_file(path))
+        {
+            free(data);
+            return false;
+        }
+    }
+    else
+        set_file_size(path, 0);
+
+    write_file(path, data, 0, len, &writes);
+
+    return true;
+};

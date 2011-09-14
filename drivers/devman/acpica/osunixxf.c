@@ -702,7 +702,7 @@ AcpiOsInstallInterruptHandler (
     ACPI_OSD_HANDLER        ServiceRoutine,
     void                    *Context)
 {
-
+    dbgprintf("%s irq %d\n", InterruptNumber );
     return (AE_OK);
 }
 
@@ -995,6 +995,8 @@ AcpiOsReadPort (
         return (AE_BAD_PARAMETER);
     }
 
+    dbgprintf("%s %x, %x\n",__FUNCTION__, Address, *Value);
+
     return (AE_OK);
 }
 
@@ -1037,6 +1039,8 @@ AcpiOsWritePort (
 			return (AE_ERROR);
 	}
 
+    dbgprintf("%s %x, %x\n",__FUNCTION__, Address, Value);
+
 	return (AE_OK);
 };
 
@@ -1060,23 +1064,59 @@ AcpiOsReadMemory (
     UINT32                  *Value,
     UINT32                  Width)
 {
+    void        *memptr;
+    ACPI_STATUS  status = AE_ERROR;
 
-	if( Address > 0x400000)
-		return (AE_BAD_PARAMETER);
+    dbgprintf("%s %x\n",__FUNCTION__, Address);
 
+    if( Address >= 0x400000)
+    {
+        memptr = AcpiOsMapMemory(Address, Width);
+
+        if(memptr)
+        {
+            status = AE_OK;
+
+            switch (Width)
+            {
+                case 8:
+                    *Value = *(UINT8*)Address;
+                    break;
+
+                case 16:
+                    *Value = *(UINT16*)Address;
+                    break;
+
+                case 32:
+                    *Value = *(UINT32*)Address;
+                    break;
+
+                default:
+                    status = (AE_BAD_PARAMETER);
+            }
+            FreeKernelSpace(memptr);
+        }
+        return status;
+    }
 	else
 		Address+= 0x80000000;
 
     switch (Width)
     {
-    case 8:
-    case 16:
-    case 32:
-        *Value = *(UINT32*)Address;
-        break;
+        case 8:
+            *Value = *(UINT8*)Address;
+            break;
 
-    default:
-        return (AE_BAD_PARAMETER);
+        case 16:
+            *Value = *(UINT16*)Address;
+            break;
+
+        case 32:
+            *Value = *(UINT32*)Address;
+            break;
+
+        default:
+            return (AE_BAD_PARAMETER);
     }
     return (AE_OK);
 }
@@ -1103,16 +1143,53 @@ AcpiOsWriteMemory (
     UINT32                  Width)
 {
 
-	if( Address > 0x400000)
-		return (AE_BAD_PARAMETER);
+    void        *memptr;
+    ACPI_STATUS  status = AE_ERROR;
 
+    dbgprintf("%s %x, %x\n",__FUNCTION__, Address, Value);
+
+    if( Address >= 0x400000)
+    {
+        memptr = AcpiOsMapMemory(Address, Width);
+
+        if(memptr)
+        {
+            status = AE_OK;
+
+            switch (Width)
+            {
+                case 8:
+                    *(UINT8*)Address = (UINT8)Value;
+                    break;
+
+                case 16:
+                    *(UINT16*)Address = (UINT16)Value;
+                    break;
+
+                case 32:
+                    *(UINT32*)Address = Value;
+                    break;
+
+                default:
+                    status = (AE_BAD_PARAMETER);
+            }
+            FreeKernelSpace(memptr);
+        }
+        return status;
+    }
 	else
 		Address+= 0x80000000;
 
     switch (Width)
     {
     case 8:
+        *(UINT8*)Address = (UINT8)Value;
+        break;
+
     case 16:
+        *(UINT16*)Address = (UINT16)Value;
+        break;
+
     case 32:
         *(UINT32*)Address = Value;
         break;

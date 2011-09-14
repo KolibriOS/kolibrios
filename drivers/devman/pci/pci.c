@@ -5,6 +5,7 @@
 #include <pci.h>
 #include <syscall.h>
 
+extern struct list_head pci_root_buses;
 
 #define IO_SPACE_LIMIT          0xffff
 #define PCIBIOS_SUCCESSFUL      0x00
