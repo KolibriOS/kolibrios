@@ -893,7 +893,7 @@ op1 option_box option_group1,60,40,6,12,0xFFFFFF,0,0xffffff,op_text.1,op_text.e1
 op2 option_box option_group1,60,55,6,12,0xFFFFFF,0,0xffffff,op_text.2,op_text.e2-op_text.2
 op3 option_box option_group1,60,70,6,12,0xFFFFFF,0,0xffffff,op_text.3,op_text.e3-op_text.3
 op4 option_box option_group1,60,85,6,12,0xFFFFFF,0,0xffffff,op_text.4,op_text.e4-op_text.4
-option_boxes_bcgr_end:
+;option_boxes_bcgr_end:
 
 op_text:
 .1 db 'Tiled'
@@ -908,6 +908,26 @@ op_text:
 option_group1   dd op1
 
 option_boxes_bcgr:      dd op1,op2,op3,op4,0
+
+;---------------------------------------------------------------------
+align 4
+op_UL option_box option_group3,200,40,20,20,0xFFFFFF,0,0xffffff,0,0
+op_UC option_box option_group3,223,40,20,20,0xFFFFFF,0,0xffffff,0,0
+op_UR option_box option_group3,246,40,20,20,0xFFFFFF,0,0xffffff,0,0
+op_CL option_box option_group3,200,63,20,20,0xFFFFFF,0,0xffffff,0,0
+op_CC option_box option_group3,223,63,20,20,0xFFFFFF,0,0xffffff,0,0
+op_CR option_box option_group3,246,63,20,20,0xFFFFFF,0,0xffffff,0,0
+op_DL option_box option_group3,200,86,20,20,0xFFFFFF,0,0xffffff,0,0
+op_DC option_box option_group3,223,86,20,20,0xFFFFFF,0,0xffffff,0,0
+op_DR option_box option_group3,246,86,20,20,0xFFFFFF,0,0xffffff,0,0
+;option_boxes_bcgr_end:
+
+option_group3   dd op_CC
+
+Stretch_Crop_Corner	dd 1 shl 16+1
+option_boxes_SCC:      dd op_UL,op_UC,op_UR,op_CL,op_CC,op_CR,op_DL,op_DC,op_DR,0
+
+bcgr_group_pointer	db 0
 ;---------------------------------------------------------------------
 align 4
 ;option_boxes_sort:

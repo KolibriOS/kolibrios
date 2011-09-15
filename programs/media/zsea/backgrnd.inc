@@ -78,10 +78,6 @@ background:
 	mov	ebx,[screen_high]
 	call	integer_division	
 	mov	[stretch_img_width],eax
-	mov	ebx,[img_width]
-	sub	ebx,eax
-	shr	ebx,1
-	mov	[stretch_start_coordinates.x],bx
 	jmp	.continue
 @@:
 ; X = Ximg
@@ -93,11 +89,18 @@ background:
 	mov	ebx,[screen_width]
 	call	integer_division
 	mov	[stretch_img_high],eax
-	mov	ebx,[img_high]
-	sub	ebx,eax
-	shr	ebx,1
-	mov	[stretch_start_coordinates.y],bx
 .continue:
+	mov	eax,[Stretch_Crop_Corner]
+	mov	ebx,eax
+	shr	eax,16
+	shl	eax,2
+	mov	eax,[eax+call_to_calculate_stretch_start_coordinates_Y]
+	call	eax
+	and	ebx,0xffff
+	shl	ebx,2
+	mov	ebx,[ebx+call_to_calculate_stretch_start_coordinates_X]	
+	call	ebx
+	
 	mov	ebx,[screen_width]
 	shl	ebx,16
 	add	ebx,[screen_high]
@@ -118,6 +121,52 @@ background:
 	call	background_1
 	ret
 	
+;---------------------------------------------------------------------
+call_to_calculate_stretch_start_coordinates_X:
+	dd	calculate_stretch_start_coordinates_XL
+	dd	calculate_stretch_start_coordinates_XC
+	dd	calculate_stretch_start_coordinates_XR
+;---------------------------------------------------------------------
+call_to_calculate_stretch_start_coordinates_Y:
+	dd	calculate_stretch_start_coordinates_YU
+	dd	calculate_stretch_start_coordinates_YC
+	dd	calculate_stretch_start_coordinates_YD
+;---------------------------------------------------------------------
+calculate_stretch_start_coordinates_XC:
+	xor	ecx,ecx
+.1:
+	mov	eax,[img_width]
+	sub	eax,[stretch_img_width]
+	test	ecx,ecx
+	jnz	@f
+	shr	eax,1
+@@:
+	mov	[stretch_start_coordinates.x],ax
+calculate_stretch_start_coordinates_XL:
+	ret
+;---------------------------------------------------------------------
+calculate_stretch_start_coordinates_XR:
+	xor	ecx,ecx
+	inc	ecx
+	jmp	calculate_stretch_start_coordinates_XC.1
+;---------------------------------------------------------------------
+calculate_stretch_start_coordinates_YC:
+	xor	ecx,ecx
+.1:
+	mov	eax,[img_high]
+	sub	eax,[stretch_img_high]
+	test	ecx,ecx
+	jnz	@f
+	shr	eax,1
+@@:
+	mov	[stretch_start_coordinates.y],ax
+calculate_stretch_start_coordinates_YU:
+	ret
+;---------------------------------------------------------------------
+calculate_stretch_start_coordinates_YD:
+	xor	ecx,ecx
+	inc	ecx
+	jmp	calculate_stretch_start_coordinates_YC.1
 ;---------------------------------------------------------------------
 ;.stretch_inscribe:
 ;	ret

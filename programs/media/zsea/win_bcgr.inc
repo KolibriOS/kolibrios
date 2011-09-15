@@ -35,30 +35,58 @@ thread4:	; start of bgrd thread
 	jmp	.still
 ;---------------------------------------------------------------------
 .mouse:
+	mov	eax,option_group1
+	mov	ecx,[eax]
 	push	dword option_boxes_bcgr
 	call	[option_box_mouse]
+	cmp	ecx,[eax]
+	je	.option_boxes_SCC
 	
-	cmp	[option_group1],op1
+	mov	ebx,bgrmode
+	cmp	[eax],dword op1
 	jne	@f
-	mov	[bgrmode],dword 1
-	jmp	.still
+	mov	[ebx],dword 1
+	jmp	.option_group1_color_set
 ;---------------------------------------------------------------------
 @@:
-	cmp	[option_group1],op2
+	cmp	[eax],dword op2
 	jne	@f
-	mov	[bgrmode],dword 2
-	jmp	.still
+	mov	[ebx],dword 2
+	jmp	.option_group1_color_set
 ;---------------------------------------------------------------------
 @@:
-	cmp	[option_group1],op3
+	cmp	[eax],dword op3
 	jne	@f
-	mov	[bgrmode],dword 3
-	jmp	.still
+	mov	[ebx],dword 3
+	jmp	.option_group1_color_set
 ;---------------------------------------------------------------------
 @@:
-;	cmp	[option_group1],op4
-;	jne	.still
-	mov	[bgrmode],dword 4
+	cmp	[eax],dword op4
+	jne	.option_boxes_SCC
+	mov	[ebx],dword 4
+.option_group1_color_set:
+	mov	[bcgr_group_pointer],0
+	call	.option_boxes_redraw
+	jmp	.still
+;---------------------------------------------------------------------
+.option_boxes_SCC:
+	mov	eax,[option_group3]
+	push	dword option_boxes_SCC
+	call	[option_box_mouse]
+	cmp	eax,[option_group3]
+	je	.still
+	
+	call	.convert_1
+	mov	[bcgr_group_pointer],1
+	call	.option_boxes_redraw
+	jmp	.still
+;---------------------------------------------------------------------
+.tab:
+	mov	al,[bcgr_group_pointer]
+	inc	al
+	and	al,1
+	mov	[bcgr_group_pointer],al
+	call	.option_boxes_redraw
 	jmp	.still
 ;---------------------------------------------------------------------
 .key:
@@ -69,56 +97,215 @@ thread4:	; start of bgrd thread
 	cmp	ah,13
 	je	.kok
 	
+	cmp	ah,9
+	je	.tab
+	
+	cmp	[bcgr_group_pointer],1
+	je	.key_option_group3
+;---------------------------------------------------------------------
+.key_option_group1:
+	mov	ebx,bgrmode
+	
 	cmp	ah,178 ;up
 	jne	.nofup
 	
-	cmp	dword [bgrmode],1
+	cmp	[ebx],dword 1
 	je	.fdn
 .fup:
-	dec	dword [bgrmode]
+	dec	dword [ebx]
 	jmp	.flagcont
-;---------------------------------------------------------------------
+;--------------------------------------
 .nofup:
 	cmp	ah,177 ;down
 	jne	.still
 	
-	cmp	dword [bgrmode],4
+	cmp	[ebx],dword 4
 	je	.fup
 .fdn:
-	inc	dword [bgrmode]
+	inc	dword [ebx]
 .flagcont:
-	cmp	[bgrmode],dword 1
+	mov	eax,option_group1
+	cmp	[ebx],dword 1
 	jne	@f
 	
-	mov	[option_group1],op1
-	call	.draw_opt_boxes
+	mov	[eax],dword op1
+	call	.draw_opt_boxes_bcgr
 	jmp	.still
-;---------------------------------------------------------------------
+;---------------------------------------
 @@:
-	cmp	[bgrmode],dword 2
+	cmp	[ebx],dword 2
 	jne	@f
 	
-	mov	[option_group1],op2
-	call	.draw_opt_boxes
+	mov	[eax],dword op2
+	call	.draw_opt_boxes_bcgr
 	jmp	.still
-;---------------------------------------------------------------------
+;----------------------------------------
 @@:
-	cmp	[bgrmode],dword 3
+	cmp	[ebx],dword 3
 	jne	@f
 	
-	mov	[option_group1],op3
-	call	.draw_opt_boxes
+	mov	[eax],dword op3
+	call	.draw_opt_boxes_bcgr
+	jmp	.still
+;-----------------------------------------
+@@:
+	mov	[eax],dword op4
+	call	.draw_opt_boxes_bcgr
 	jmp	.still
 ;---------------------------------------------------------------------
+.key_option_group3:
+	push	eax
+	call	.convert_1
+	pop	eax
+
+	cmp	ah,178	;up
+	jne	@f
+
+	dec	word [ebx+2]
+	jmp	.flagcont_1
+;------------------------------------------
 @@:
-	mov	[option_group1],op4
-	call	.draw_opt_boxes
+	cmp	ah,177	;down
+	jne	@f
+
+	inc	word [ebx+2]
+	jmp	.flagcont_1	
+;------------------------------------------	
+@@:
+	cmp	ah,176	;left
+	jne	@f
+
+	dec	word [ebx]
+	jmp	.flagcont_1
+;------------------------------------------
+@@:
+	cmp	ah,179	;right
+	jne	.still
+
+	inc	word [ebx]
+;------------------------------------------
+.flagcont_1:	
+	call	.convert_2
+	call	.convert_1	;for additional check
+	call	.draw_opt_boxes_SCC
 	jmp	.still
+;---------------------------------------------------------------------
+.convert_1:
+	mov	eax,option_group3
+	mov	ebx,Stretch_Crop_Corner
+	cmp	[eax],dword op_UL
+	jne	@f
+	mov	[ebx],dword 0 shl 16+0
+	jmp	.option_group3_color_set
+;----------------------------------------
+@@:
+	cmp	[eax],dword op_UC
+	jne	@f
+	mov	[ebx],dword 0 shl 16+1
+	jmp	.option_group3_color_set
+;-----------------------------------------
+@@:
+	cmp	[eax],dword op_UR
+	jne	@f
+	mov	[ebx],dword 0 shl 16+2
+	jmp	.option_group3_color_set
+;-----------------------------------------
+@@:
+	cmp	[eax],dword op_CL
+	jne	@f
+	mov	[ebx],dword 1 shl 16+0
+	jmp	.option_group3_color_set
+;------------------------------------------
+@@:
+	cmp	[eax],dword op_CC
+	jne	@f
+	mov	[ebx],dword 1 shl 16+1
+	jmp	.option_group3_color_set
+;-------------------------------------------
+@@:
+	cmp	[eax],dword op_CR
+	jne	@f
+	mov	[ebx],dword 1 shl 16+2
+	jmp	.option_group3_color_set
+;--------------------------------------------
+@@:
+	cmp	[eax],dword op_DL
+	jne	@f
+	mov	[ebx],dword 2 shl 16+0
+	jmp	.option_group3_color_set
+;--------------------------------------------
+@@:
+	cmp	[eax],dword op_DC
+	jne	@f
+	mov	[ebx],dword 2 shl 16+1
+	jmp	.option_group3_color_set
+;--------------------------------------------
+@@:
+	cmp	[eax],dword op_DR
+	jne	.option_group3_color_set
+	mov	[ebx],dword 2 shl 16+2
+.option_group3_color_set:
+	ret
+;---------------------------------------------------------------------	
+.convert_2:
+	mov	eax,Stretch_Crop_Corner
+	mov	ebx,option_group3
+	cmp	[eax],dword 0 shl 16+0
+	jne	@f
+	mov	[ebx],dword op_UL
+	jmp	.Stretch_Crop_Corner_set
+;----------------------------------------
+@@:
+	cmp	[eax],dword 0 shl 16+1
+	jne	@f
+	mov	[ebx],dword op_UC
+	jmp	.Stretch_Crop_Corner_set
+;-----------------------------------------
+@@:
+	cmp	[eax],dword 0 shl 16+2
+	jne	@f
+	mov	[ebx],dword op_UR
+	jmp	.Stretch_Crop_Corner_set
+;-----------------------------------------
+@@:
+	cmp	[eax],dword 1 shl 16+0
+	jne	@f
+	mov	[ebx],dword op_CL
+	jmp	.Stretch_Crop_Corner_set
+;------------------------------------------
+@@:
+	cmp	[eax],dword 1 shl 16+1
+	jne	@f
+	mov	[ebx],dword op_CC
+	jmp	.Stretch_Crop_Corner_set
+;-------------------------------------------
+@@:
+	cmp	[eax],dword 1 shl 16+2
+	jne	@f
+	mov	[ebx],dword op_CR
+	jmp	.Stretch_Crop_Corner_set
+;--------------------------------------------
+@@:
+	cmp	[eax],dword 2 shl 16+0
+	jne	@f
+	mov	[ebx],dword op_DL
+	jmp	.Stretch_Crop_Corner_set
+;--------------------------------------------
+@@:
+	cmp	[eax],dword 2 shl 16+1
+	jne	@f
+	mov	[ebx],dword op_DC
+	jmp	.Stretch_Crop_Corner_set
+;--------------------------------------------
+@@:
+	cmp	[eax],dword 2 shl 16+2
+	jne	.Stretch_Crop_Corner_set
+	mov	[ebx],dword op_DR
+.Stretch_Crop_Corner_set:
+	ret	
 ;---------------------------------------------------------------------
 .button:		; button
-	mov	eax,17	; get id
-	mcall
-
+	mcall	17	; get id
 	cmp	ah,1	; button id=1 ?
 	jne	.noclose
 .close:
@@ -141,18 +328,42 @@ thread4:	; start of bgrd thread
 	mcall	12,1
 	xor	eax,eax
 	xor	esi,esi
-	mcall	,<100,200>,<100,200>,0x13909090,,labelt4
+	mcall	,<100,300>,<100,150>,0x13909090,,labelt4
 	mcall	8,<70,40>,<110,20>,4,0xdddddd
 	mcall	4,<46,28>,0xffffff,bgrdtext,bgrdtext.size
 	add	ebx,40*65536+88
 	xor	ecx,ecx
 	mcall	,,,ok_btn,ok_btn.size
-	call	.draw_opt_boxes
+	call	.option_boxes_redraw
 ;	mcall	47,0x80000,[PID4],<200, 5>,0xffffff
 	mcall	12,2
 	ret
 ;---------------------------------------------------------------------
-.draw_opt_boxes:
+.option_boxes_redraw:
+	call	.draw_opt_boxes_bcgr
+	call	.draw_opt_boxes_SCC
+	ret
+;---------------------------------------------------------------------
+.draw_opt_boxes_bcgr:
+	mov	edx,0x13909090
+	cmp	[bcgr_group_pointer],0
+	jne	@f
+	
+	mov	edx,0xffff80
+@@:
+	mcall	13,<59,14>,<39,59>,
 	push	dword option_boxes_bcgr
+	call	[option_box_draw]
+	ret
+;---------------------------------------------------------------------
+.draw_opt_boxes_SCC:
+	mov	edx,0x13909090
+	cmp	[bcgr_group_pointer],1
+	jne	@f
+	
+	mov	edx,0xffff80
+@@:
+	mcall	13,<198,70>,<38,70>,
+	push	dword option_boxes_SCC
 	call	[option_box_draw]
 	ret
