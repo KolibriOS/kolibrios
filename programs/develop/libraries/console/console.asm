@@ -2278,6 +2278,7 @@ EXPORTS:
         dd      szVersion,              0x00020007
         dd      szcon_init,             con_init
         dd      szcon_write_asciiz,     con_write_asciiz
+	dd	szcon_write_string,	con_write_length
         dd      szcon_printf,           con_printf
         dd      szcon_exit,             con_exit
         dd      szcon_get_flags,        con_get_flags
@@ -2313,6 +2314,7 @@ szStart                 db 'START',0
 
 szcon_init              db 'con_init',0
 szcon_write_asciiz      db 'con_write_asciiz',0
+szcon_write_string	db 'con_write_string',0
 szcon_printf            db 'con_printf',0
 szcon_exit              db 'con_exit',0
 szVersion               db 'version',0
