@@ -151,9 +151,7 @@ START:				       ; start of execution
 
     DEBUGF 1,'Drawing window\n'
 
-    mov     eax,12
-    mov     ebx,1
-    mcall
+    mcall 12, 1
 
     mov     eax,0		      ; draw window
     mov     ebx,dword[framebuffer]
@@ -162,7 +160,7 @@ START:				       ; start of execution
     shr     ebx,16
     add     ebx,2*xpos
     add     ecx,ypos+xpos
-    mov     edx,0x03ffffff
+    mov     edx,0xffffff
     mcall
 
     mov     eax,4		      ; label
@@ -175,9 +173,7 @@ START:				       ; start of execution
 
     call    drawbuffer
 
-    mov     eax,12
-    mov     ebx,2
-    mcall
+    mcall 12, 2
 
     jmp     mainloop
 

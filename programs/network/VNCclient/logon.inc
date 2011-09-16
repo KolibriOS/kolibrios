@@ -123,7 +123,7 @@ pusha
 
     mov  eax, 8
     mov  ebx, 105*65536+200
-    mov  ecx, 33*65536+12
+    mov  ecx, 31*65536+13
     mov  edx, 4
     mov  esi, 0xEBEBEB
     mcall
@@ -174,9 +174,7 @@ connect_logon:
 
 draw_window_logon:
 
-    mov  eax, 12			; function 12_logon:tell os about windowdraw
-    mov  ebx, 1 			; 1, start of draw
-    mcall
+    mcall 12, 1      ; start window draw
     pusha
 					; DRAW WINDOW
     xor  eax, eax			; function 0 _logon: define and draw window
@@ -193,6 +191,7 @@ draw_window_logon:
     mov  esi, 0xCCCCCC
     mcall
 
+    
     call print_text_logon
 					
     cmp  byte[mode],0
@@ -205,7 +204,7 @@ draw_window_logon:
     mov  esi, passstr-userstr		; text length
     mcall
 
-    add  bl,16
+    add  bl,19
     mov  edx, passstr			; pointer to text beginning
     mov  esi, connect-passstr		; text length
     mcall
