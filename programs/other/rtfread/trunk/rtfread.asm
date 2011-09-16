@@ -165,8 +165,19 @@ still:
 ;---------------------------------------------------------------------
 
 
-  key:                  ; нажата клавиша на клавиатуре
-    mcall 2             ; функция 2 - считать код символа (в ah)
+key:                  ; нажата клавиша на клавиатуре
+    mcall 2           ; функция 2 - считать код символа (в ah)
+	;Leency[
+	cmp eax,1
+	jne .getkeyi
+	mov ah,dh
+	jmp .next
+
+.getkeyi:
+	mov dh,ah
+	jmp key
+
+.next: 	;]Leency
     cmp  ah,104         ; HELP
     jne  .nohelp
   .help:
