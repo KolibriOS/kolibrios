@@ -1,3 +1,7 @@
+View3ds 0.060 - Aug 2011.
+1. Header fix by Leency.
+2. SSE2 optimizations by me. (Most visable in BUMP_TEX mode.)
+
 View3ds 0.059 - June 2011.
 1. Bump and pararell two texture  mapping functions optimizations.
    (files bump_cat.inc & two_tex.inc)
