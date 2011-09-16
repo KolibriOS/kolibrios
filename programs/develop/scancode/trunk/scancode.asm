@@ -155,14 +155,12 @@ still:
 draw_window:
 
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
-    mcall
+    mcall 12, 1                        ; start window redraw
 
                                    ; DRAW WINDOW
     mov  eax, 0                    ; function 0 : define and draw window
     mov  ebx, 100*65536+200        ; [x start] *65536 + [x size]
-    mov  ecx, 100*65536+275        ; [y start] *65536 + [y size]
+    mov  ecx, 100*65536+267        ; [y start] *65536 + [y size]
     mov  edx, [sc.work]            ; color of work area RRGGBB,8->color gl
     or   edx, 0x34000000
     mov  edi, title                ; WINDOW LABEL
@@ -177,9 +175,7 @@ draw_window:
 
     call draw_codes
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
-    mcall
+    mcall 12, 2                        ; end window redraw
 
     ret
 
@@ -293,13 +289,13 @@ if lang eq ru
       db 'СЧИТЫВАЮ ДАННЫЕ С КЛАВИАТУРЫ'
   .len = $ - text
 
-  title      db   'СКАНКОДЫ КЛАВИАТУРЫ',0
+  title      db   'Сканкоды клавиатуры',0
 else
   text:
       db 'READING RAW SCANCODE DATA'
   .len = $ - text
 
-  title      db   'KEYBOARD SCANCODES',0
+  title      db   'Keyboard scancodes',0
 end if
 
 ext  db 0x0
