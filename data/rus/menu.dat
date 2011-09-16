@@ -29,7 +29,7 @@ C4                        /rd/1/games/c4
 Just Clicks               /rd/1/games/clicks
 Шашки                     /rd/1/games/checkers
 SQ_Game                   /rd/1/games/sq_game
-Color Lines               /rd/1/games/lines
+Цветные линии             /rd/1/games/lines
 Lights                    /rd/1/games/lights
 Крестики-нолики           /rd/1/games/kox
 Быки и Коровы             /rd/1/games/bnc
@@ -37,14 +37,14 @@ Lights                    /rd/1/games/lights
 Лабиринт                  /rd/1/games/megamaze
 Морской бой               /rd/1/games/sw
 Судоку                    /rd/1/games/sudoku
-Го-моку                   /rd/1/games/gomoku
+Гомоку                    /rd/1/games/gomoku
 Реверси                   /rd/1/games/reversi
 #3    **** АРКАДЫ ****
 Тетрис                    /rd/1/games/tetris
 Понг                      /rd/1/games/pong
 Новый Понг                /rd/1/games/pong3
 Red Square                /rd/1/games/rsquare
-XONIX                     /rd/1/games/xonix
+Xonix                     /rd/1/games/xonix
 ArcanII                   /rd/1/games/arcanii
 PheniX                    /rd/1/games/phenix
 Падение                   /rd/1/games/padenie
@@ -70,9 +70,8 @@ UnvWater                  /rd/1/demos/unvwater
 3D-Лабиринт               /rd/1/3d/free3d04
 3D-Textured Cube          /rd/1/3d/3dtcub10
 3DSHeart                  /rd/1/3d/3dsheart
-View3DS                   /rd/1/3d/view3ds
+Просмотрщик 3DS           /rd/1/3d/view3ds
 CubeLine                  /rd/1/3d/cubeline
-3D-Куб с текстурой        /rd/1/3d/cubetext
 Шестерёнки                /rd/1/3d/gears
 FlatWave                  /rd/1/3d/flatwav
 3D-Спираль                /rd/1/3d/3dspiral
@@ -80,17 +79,18 @@ FlatWave                  /rd/1/3d/flatwav
 Просмотр изображений      /rd/1/media/kiv
 Редактор Animage          /rd/1/media/animage
 #7    **** AUDIO ****
-MidAMP                    /rd/1/media/midamp
+Midi-плеер                /rd/1/media/midamp
 CD-плейер                 /rd/1/media/cdp
 #8    **** PROGRAMMING ****
 Примеры            >      /@9
 Инструменты        >      /@20
 #9    **** EXAMPLES ****
-Потоки (демо)             /rd/1/develop/thread
+Потоки                    /rd/1/develop/thread
 IPC                       /rd/1/develop/ipc
 Color Slider              /rd/1/demos/cslide
 Консольный пример 1       /rd/1/develop/testcon2
 Консольный пример 2       /rd/1/develop/test_gets
+BGI-шрифты (демо)         /rd/1/fonts/bgitest
 Окна сообщений            /rd/1/demos/use_mb
 #10   **** SYSTEM ****
 Настройка          >      /@11
@@ -111,7 +111,6 @@ MyKey                     /rd/1/mykey
 #12   **** SENSORS ****
 Диспетчер процессов       /rd/1/cpu
 PCI-устройства            /rd/1/pcidev
-Тест скорости граф.       /rd/1/mgb
 CPUID                     /rd/1/cpuid
 GHOST Monitor             /rd/1/gmon
 K. Bus disconnected       /rd/1/kbd
@@ -122,7 +121,6 @@ KFAR                      /rd/1/File Managers/kfar
 KFM                       /rd/1/File Managers/kfm
 Eolite                    /rd/1/File Managers/Eolite
 Консоль SHELL             /rd/1/shell
-SysXTree                  /rd/1/sysxtree
 Сохранение образа         /rd/1/rdsave
 #14   **** ОБРАБОТКА ДАННЫХ ****
 Калькулятор               /rd/1/calc
@@ -160,20 +158,20 @@ DNS resolver              /rd/1/network/nslookup
 Таймер                    /rd/1/demos/timer
 Создание скриншотов       /rd/1/scrshoot
 Календарь                 /rd/1/calendar
-BGI-шрифты (демо)         /rd/1/fonts/bgitest
 Просмотр RTF              /rd/1/rtfread
 Таблица Менделеева        /rd/1/period
-Пипетка                   /rd/1/pipetka
 Тренажёр KJ|ABuIIIA       /rd/1/games/klavisha
 #19   **** SYSTEM TESTS ****
 Тест защиты               /rd/1/test
 Тест монитора             /rd/1/disptest
+Графический бенчмарк      /rd/1/mgb
 #20   **** DEVELOP TOOLS ****
 Упаковщик KPack           /rd/1/kpack
 Flat Assembler            /rd/1/develop/fasm
 ASCII-коды                /rd/1/develop/keyascii
 SCAN-коды                 /rd/1/develop/scancode
 Hex2Dec2Bin               /rd/1/develop/h2d2b
+Пипетка                   /rd/1/pipetka
 Доска отладки             /rd/1/develop/board
 Отладчик                  /rd/1/develop/mtdbg
 #21   **** SYSTEM SPECIAL ****
