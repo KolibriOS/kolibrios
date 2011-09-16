@@ -112,10 +112,7 @@ context_menu_start:
 
 func  draw_ctx_menu
 
-    mov        eax, 12
-    xor        ebx, ebx 	; mov        ebx, 1
-    inc        ebx
-    int        0x40
+    mcall 12, 1
 
     xor        eax, eax 	; mov        eax, 0
     movzx      ebx, [x_coord]
@@ -133,16 +130,19 @@ func  draw_ctx_menu
 
     mov        eax, 8
     mov        ebx, 0 * 65536 + 133
-    mov        ecx, 22 * 65536 + 16
+    mov        ecx, 22 * 65536 + 17
     mov        edx, 0x40000001
     int        0x40
 
-    mov        eax, 8
-    mov        ebx, 0 * 65536 + 133
-    mov        ecx, 40 * 65536 + 18
-    mov        edx, 0x40000002
+    ;mov        eax, 8
+    ;mov        ebx, 0 * 65536 + 133
+    ;mov        ecx, 40 * 65536 + 17
+    ;mov        edx, 0x40000002
+    ;int        0x40
+	mov        ecx, 40 * 65536 + 17
+	inc        edx
     int        0x40
-
+	
     shr        eax, 1	; mov   eax, 4
     mov        ebx, 36 * 65536 + 7
     mov        ecx, [system_colours + 16]    ; sc.grab_text
@@ -159,21 +159,19 @@ func  draw_ctx_menu
     mov        ebx, 4 * 65536 + 28
     mov        ecx, 0x80000000
     mov        edx, ctx_menu_text
-; // Alver 26.08.2007 // {
+
     int        0x40
     add        bx, 18
     mov        edx, ctx_menu_text2
-; \begin{diamond}[20.09.2007]
+
     test       byte [procinfo_for_detect+70], 2
     jz         @f
     mov        edx, ctx_menu_text3
 @@:
-; \end{diamond}[20.09.2007]
+
     int        0x40
-; } \\ Alver \\
-    mov        eax, 12
-    mov        ebx, ebp 	; mov     ebx, 2
-    int        0x40
+
+    mcall 12, 2
 
     ret
 
@@ -185,17 +183,15 @@ n_slot	rd	1
 lsz ctx_menu_text,\
   ru, <"X Закрыть    Alt + F4",0>,\
   en, <"X Close      Alt + F4",0>,\
-  et, <"X Sulge      Alt + F4",0>      ; Now correct
-; // Alver 26.08.2007 // {
+
 lsz ctx_menu_text2,\
   ru, <25," Свернуть           ",0>,\
   en, <25," Minimize           ",0>,\
-; } \\ Alver \\
-; \begin{diamond}[20.09.2007]
+
 lsz ctx_menu_text3,\
   ru, <24," Восстановить       ",0>,\
   en, <24," Restore            ",0>
-; \end{diamond}[20.09.2007]
+
 ctx_menu_PID	rd	1
 
 ctx_menu_title:

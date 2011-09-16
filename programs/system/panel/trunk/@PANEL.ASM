@@ -1988,27 +1988,20 @@ draw_info:    ; draw cpu usage, time, date
     add  ecx,[b_size_y]
 ;    dec  ecx
     sub  cx,5
-    mov  edx,2+0x20000000
+    mov  edx,0x40000002
     mov  esi,[wcolor]
     int  0x40
-    pusha
-    mov  eax,13
-    add  ebx,10*65536-16
-    add  ecx,5*65536-8
-    mov  edx,[wcolor]
-    int  0x40
-    popa
     and  edx,0xffff
     add  edx,[button_frames]
     int  0x40
 
-    mov  eax,8
+    mov  eax,8                 ;other tray buttons
     mov  ebx,[maxx]
     sub  ebx,77 ;80
     shl  ebx,16
-    add  ebx,12
-    mov  ecx,5 shl 16+10
-    mov  edx,16+0x20000000  ;button 16
+    add  ebx,14
+    mov  ecx,4 shl 16+12
+    mov  edx,16+0x40000000+0x20000000  ;button 16
     mov  esi,[wcolor]
     int  0x40
     sub  ebx,17 shl 16
