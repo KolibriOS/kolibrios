@@ -486,7 +486,7 @@ end if
       ; pop      ebp ebx eax
        popad
 
-if Ext >= MMX
+if (Ext = MMX)|(Ext=SSE)
        movq	mm0,.cur1b
        movq	mm1,.cur1r
        movq	mm2,.scan_y1
@@ -505,7 +505,25 @@ if Ext >= MMX
        movq	.cur2b,mm3
        movq	.cur2r,mm4
        movq	.scan_y2,mm5
-else
+end if
+if Ext >= SSE2
+       movups	xmm0,.cur1b
+       movups	xmm1,.dc13b
+       movups	xmm2,.cur2b
+       movups	xmm3,.dc12b
+       movq	mm2,.scan_y1
+       movq	mm5,.scan_y2
+       paddd	xmm0,xmm1
+       paddd	xmm2,xmm3
+       paddd	mm2,.tex_dy13
+       paddd	mm5,.tex_dy12
+       movq	.scan_y1,mm2
+       movq	.scan_y2,mm5
+       movups	.cur1b,xmm0
+       movups	.cur2b,xmm2
+end if
+
+if Ext = NON
        mov	edx,.dc13b
        add	.cur1b,edx
        mov	esi,.dc13g
@@ -602,7 +620,7 @@ end if
 
        popad
 
-if Ext >= MMX
+if (Ext = MMX)|(Ext=SSE)
        movq	mm0,.cur1b
        movq	mm1,.cur1r
        movq	mm2,.scan_y1
@@ -621,7 +639,24 @@ if Ext >= MMX
        movq	.cur2b,mm3
        movq	.cur2r,mm4
        movq	.scan_y2,mm5
-else
+end if
+if Ext >= SSE2
+       movups	xmm0,.cur1b
+       movups	xmm1,.dc13b
+       movups	xmm2,.cur2b
+       movups	xmm3,.dc23b
+       movq	mm2,.scan_y1
+       movq	mm5,.scan_y2
+       paddd	xmm0,xmm1
+       paddd	xmm2,xmm3
+       paddd	mm2,.tex_dy13
+       paddd	mm5,.tex_dy23
+       movq	.scan_y1,mm2
+       movq	.scan_y2,mm5
+       movups	.cur1b,xmm0
+       movups	.cur2b,xmm2
+end if
+if Ext = NON
        mov	edx,.dc13b
        add	.cur1b,edx
        mov	esi,.dc13g
@@ -740,8 +775,8 @@ if Ext=NON
 	mov	ecx,dword .z1
 	xchg	ecx, .z2
 	mov	dword .z1, ecx
-
-else
+end if
+if (Ext=MMX)
 	movq	mm0,.b1        ; b, g
 	movq	mm1,.b2
 	movq	.b1, mm1
@@ -755,6 +790,16 @@ else
 	movq	.tex_x1,mm5
 	movq	.tex_x2,mm4
 
+end if
+if Ext>=SSE
+       movups  xmm0,.b1
+       movups  xmm1,.b2
+       movups  .b1,xmm1
+       movups  .b2,xmm0
+       movq    mm4,.tex_x1    ; x, z
+       movq    mm5,.tex_x2
+       movq    .tex_x1,mm5
+       movq    .tex_x2,mm4
 end if
 
     @@:

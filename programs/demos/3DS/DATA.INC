@@ -271,7 +271,7 @@ base_vector:
       if Ext=SSE2
 	db   ' (SSE2)'
       end if
-	db   ' 0.059',0
+	db   ' 0.060',0
     labellen:
 	STRdata db '-1        '
 

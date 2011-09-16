@@ -1,11 +1,8 @@
-View3ds 0.059 - tiny viewer to .3ds files.
+View3ds 0.060 - tiny viewer to .3ds files.
 
 What's new?
-1. Bump and pararell two texture  mapping functions optimizations.
-   (files bump_cat.inc & two_tex.inc)
-   On my P4 changes are rather non visable, but on dual core in KlbrInWin
-   optimizations runs preety nice.
-   
+1. Header fix by Leency.
+2. SSE2 optimizations by me. (Most visable in BUMP_TEX mode.)
 
 Buttons description:
 1. rotary: choosing rotary axle: x, y, x+y.
@@ -33,4 +30,4 @@ Buttons description:
 18. re-map tex -> re-map texture and bump map coordinates, to change spherical mapping 
     around axle use 'xchg' and 'mirror' buttons, then press 're-map tex' button.
 
-			 Macgub 		 Jun 2011
+			 Macgub 		 Aug 2011

@@ -1,5 +1,5 @@
 
-; application : View3ds ver. 0.059 - tiny .3ds files viewer.
+; application : View3ds ver. 0.060 - tiny .3ds files viewer.
 ; compiler    : FASM
 ; system      : KolibriOS
 ; author      : Macgub aka Maciej Guba
@@ -35,7 +35,7 @@ NON   =   0				       ;     -/  \-
 MMX   =   1
 SSE   =   2
 SSE2  =   3
-Ext   =   MMX		    ;Ext={ NON | MMX | SSE | SSE2 }
+Ext   =   MMX		   ;Ext={ NON | MMX | SSE | SSE2 }
 
 ; 0 for short names (Menuet-compatible), 1 for long names (Kolibri features)
 USE_LFN = 1

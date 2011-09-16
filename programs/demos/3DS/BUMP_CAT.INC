@@ -81,10 +81,10 @@ bump_triangle_z:
 .cz2   equ	[ebp-108]
 .cbx1  equ dword[ebp-112]
 .cby1  equ	[ebp-116]
-.cbx2  equ dword[ebp-120]
-.cby2  equ	[ebp-124]
-.cex1  equ dword[ebp-128]
-.cey1  equ	[ebp-132]
+.cex1  equ dword[ebp-120]
+.cey1  equ	[ebp-124]
+.cbx2  equ dword[ebp-128]
+.cby2  equ	[ebp-132]
 .cex2  equ dword[ebp-136]
 .cey2  equ	[ebp-140]
 
@@ -533,8 +533,25 @@ end if
        jge	.loop12_done
   .loop12:
        call	.call_bump_line
+if Ext >= SSE2
+       movups	xmm0,.cey2
+       movups	xmm1,.cey1
+       movups	xmm2,.dey12
+       movups	xmm3,.dey13
+       paddd	xmm0,xmm2
+       paddd	xmm1,xmm3
+       movups	.cey2,xmm0
+       movups	.cey1,xmm1
+       movq	mm4,.cz1
+       movq	mm5,.cz2
+       paddd	mm4,.dz13
+       paddd	mm5,.dz12
+       movq	.cz1,mm4
+       movq	.cz2,mm5
+end if
 
-if Ext >= MMX
+
+if (Ext = MMX) | (Ext = SSE)
        movq	mm0,.cby2
        movq	mm1,.cby1
        movq	mm2,.cey2
@@ -553,7 +570,7 @@ if Ext >= MMX
        movq	.cey2,mm2
        movq	.cz1,mm4
        movq	.cz2,mm5
-else
+else if Ext = NON
        mov	edx,.dbx13
        add	.cbx1,edx
        mov	eax,.dbx12
@@ -617,8 +634,23 @@ end if
 
      .loop23:
        call	.call_bump_line
-
-if Ext >= MMX
+if Ext >=  SSE2
+       movups	xmm0,.cey2
+       movups	xmm1,.cey1
+       movups	xmm2,.dey23
+       movups	xmm3,.dey13
+       paddd	xmm0,xmm2
+       paddd	xmm1,xmm3
+       movups	.cey2,xmm0
+       movups	.cey1,xmm1
+       movq	mm4,.cz1
+       movq	mm5,.cz2
+       paddd	mm4,.dz13
+       paddd	mm5,.dz23
+       movq	.cz1,mm4
+       movq	.cz2,mm5
+end if
+if (Ext = MMX) | (Ext = SSE)
        movq	mm0,.cby2
        movq	mm1,.cby1
        movq	mm2,.cey2
@@ -637,7 +669,7 @@ if Ext >= MMX
        movq	.cey2,mm2
        movq	.cz1,mm4
        movq	.cz2,mm5
-else
+else if Ext = NON
        mov	eax,.dx13
        add	.cx1,eax
        mov	ebx,.dx23
