@@ -53,8 +53,15 @@ still:
 
 key:		       ; нажата клавиша на клавиатуре
     mcall 2
-	stdcall [edit_box_key], dword edit1
-    jmp  still		; вернуться к началу цикла
+	cmp ah,13 ;обработка кнопки Enter
+	je @f
+		stdcall [edit_box_key], dword edit1
+		jmp still
+	@@:
+	mov edi,string1
+	add edi,[edit1.size] ;устанавливаем в edi конец строки
+	jmp read_str
+    jmp still		; вернуться к началу цикла
 
 read_str:
     dec   edi
