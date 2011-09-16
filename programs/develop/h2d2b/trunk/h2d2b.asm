@@ -177,7 +177,7 @@ mouse:
     mcall  , (300-42)*65536+94, 	, shrstr,
     mcall  ,	   26*65536+114,	, salstr,
     mcall  , (300-42)*65536+114,	, sarstr,
-	mcall  , (300-42)*65536+149,	, Okstr,
+	mcall  , (300-42-3)*65536+149,	, Okstr,
     mov    ecx, [num]
 
 	
