@@ -42,7 +42,7 @@ Tetris                    /rd/1/games/tetris
 Pong                      /rd/1/games/pong
 New Pong                  /rd/1/games/pong3
 Red Square                /rd/1/games/rsquare
-XONIX                     /rd/1/games/xonix
+Xonix                     /rd/1/games/xonix
 ArcanII                   /rd/1/games/arcanii
 Phenix                    /rd/1/games/phenix
 Snake                     /rd/1/games/snake
@@ -89,6 +89,7 @@ Color slider              /rd/1/demos/cslide
 Console example 1         /rd/1/develop/testcon2
 Console example 2         /rd/1/develop/test_gets
 Message Boxes example     /rd/1/demos/use_mb
+BGI Font demo             /rd/1/fonts/bgitest
 #10    **** SYSTEM ****
 Settings           >      /@11
 System sensors     >      /@12
@@ -119,7 +120,6 @@ KFAR                      /rd/1/File Managers/kfar
 KFM                       /rd/1/File Managers/kfm
 Eolite                    /rd/1/File Managers/Eolite
 SHELL console             /rd/1/shell
-SysXTree                  /rd/1/sysxtree
 Save RD image             /rd/1/rdsave
 #14 **** DATA PROCESSING ****
 Calculator                /rd/1/calc
@@ -157,7 +157,6 @@ Binary clock              /rd/1/demos/bcdclk
 Timer                     /rd/1/demos/timer
 ScrShoot                  /rd/1/scrshoot
 Calendar                  /rd/1/calendar
-BGI Font demo             /rd/1/fonts/bgitest
 RTF reader                /rd/1/rtfread
 #19    **** SYSTEM TESTS ****
 Protection test           /rd/1/test
