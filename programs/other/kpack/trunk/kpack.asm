@@ -71,6 +71,8 @@ load_libraries l_libs_start,load_lib_end
 ; get system window info
 	mcall	48,3,color_table,40
 ;--------------------------------------
+edit_boxes_set_sys_color edit1,editboxes_end,color_table
+;--------------------------------------
 	xor	eax,eax
 	cmp	[params],al
 	je	default
