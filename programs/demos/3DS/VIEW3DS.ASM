@@ -475,7 +475,7 @@ still:
     mov     eax,7	    ; put image
     mov     ebx,screen
     mov     ecx,SIZE_X shl 16 + SIZE_Y
-    mov     edx,5 shl 16 + 22
+    mov     edx,5 shl 16 + 23
     int     0x40
 
 
