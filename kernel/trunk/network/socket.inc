@@ -801,8 +801,9 @@ proc socket_read_packet stdcall
 
   .exit:
     lea ecx, [ebx + SOCKET.lock]
+	mov	ebx,eax
     call mutex_unlock
-    mov eax, edx
+	mov	eax,ebx
     ret                        ; at last, exit
 
   .error:
@@ -814,8 +815,9 @@ proc socket_read_packet stdcall
 	mov	[ebx + SOCKET.rxDataCount], esi 	   ; store new count (zero)
 	call	.start_copy
     lea ecx, [ebx + SOCKET.lock]
+	mov	ebx,eax
     call mutex_unlock
-    mov eax, edx
+	mov	eax,ebx
 	ret
 
   .start_copy:
