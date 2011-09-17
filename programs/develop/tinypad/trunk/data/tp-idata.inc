@@ -152,6 +152,8 @@ dd	Filter.end - Filter
 db	'TXT',0
 db	'ASM',0
 db	'INC',0
+db	'MAC',0
+db	'DBG',0
 db	'INI',0
 db	'LOG',0
 db	'DAT',0
