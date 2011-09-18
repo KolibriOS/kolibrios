@@ -79,7 +79,7 @@ end if
 ;{
     include "..\..\..\macros.inc"
 ;    purge mov
-    include "debug.inc"
+    include "..\..\debug.inc"
     include 'dump.inc'
 ;}
 end if

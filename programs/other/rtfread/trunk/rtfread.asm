@@ -69,7 +69,7 @@ include '../../../develop/libraries/box_lib/load_lib.mac'
 
 @use_library
 
-;include 'debug.inc'
+;include '../../debug.inc'
 
 if ~ RENDER eq PIX
   TOP=TOP+4
