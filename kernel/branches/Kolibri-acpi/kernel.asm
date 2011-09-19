@@ -258,6 +258,7 @@ B32:
            call test_cpu
            bts [cpu_caps-OS_BASE], CAPS_TSC     ;force use rdtsc
 
+           call check_acpi
            call init_BIOS32
 ; MEMORY MODEL
            call mem_test

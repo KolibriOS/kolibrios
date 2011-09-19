@@ -538,7 +538,6 @@ proc kernel_alloc stdcall, size:dword
 
            push ebx
            push edi
-           push edx
 
            mov eax, [size]
            add eax, 4095
@@ -594,13 +593,11 @@ proc kernel_alloc stdcall, size:dword
            jnz @B
 .end:
            mov eax, [lin_addr]
-           pop edx
            pop edi
            pop ebx
            ret
 .err:
            xor eax, eax
-           pop edx
            pop edi
            pop ebx
            ret

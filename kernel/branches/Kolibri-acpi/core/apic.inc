@@ -12,9 +12,9 @@ IRQ_COUNT	dd	24
 endg
 
 uglobal
-APIC:		dd	0
-LAPIC_BASE:	dd	0
-IOAPIC_base:	dd	0
+APIC         rd  1
+IOAPIC_base  rd  1
+LAPIC_BASE   rd  1
 endg
 
 APIC_ID		equ	0x20
@@ -44,17 +44,15 @@ IOAPIC_REDTBL	equ	0x10
 
 APIC_init:
 	mov	dword[APIC], 0
-	; jmp	.no_apic		; NO APIC
-;	bt	[cpu_caps], CAPS_APIC
-;	jnc	.no_apic
-	; Check for MP table
-	;.....
+
+  mov eax, [acpi_ioapic_base]
+  test eax, eax
+  jz .no_apic
 
 	call	IRQ_mask_all
 
 	; IOAPIC init
-	; 0xfec00000 - may be relocated, see chip reference... & MP table
-	stdcall	map_io_mem, 0xfec00000, 0x20, PG_SW
+  stdcall map_io_mem, [acpi_ioapic_base], 0x20, PG_SW
 	mov	[IOAPIC_base], eax
 
 	mov	eax, IOAPIC_VER
@@ -135,11 +133,11 @@ LAPIC_init:
 	; Check MSR support
 	;....
 	; Get LAPIC base address
-	mov	ecx, 0x1b
-	rdmsr				; it may be replaced to
-	and	ax, 0xf000		; mov	eax, 0xfee00000
+; mov ecx, 0x1b
+; rdmsr       ; it may be replaced to
+; and ax, 0xf000    ; mov eax, 0xfee00000
 
-	stdcall	map_io_mem, eax, 0x1000, PG_SW
+  stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW
 	mov	[LAPIC_BASE], eax
 	mov	esi, eax
 

@@ -141,7 +141,7 @@ proc init_mem
            mov [edx], eax
            add edx, 4
 
-           mov edi, [tmp_page_tabs] 
+           mov edi, [tmp_page_tabs]
            jmp .map_kernel_heap		; new kernel fits to the first 4Mb - nothing to do with ".map_low"
 .no_PSE:
            mov eax, PG_SW
@@ -165,7 +165,7 @@ proc init_mem
            mov eax, [tmp_page_tabs]
            or  eax, PG_SW
            mov edi, edx
- 
+
 .map_kernel_tabs:
            stosd
            add eax, 0x1000
@@ -330,7 +330,7 @@ init_BIOS32:
 	; здесь должна заполнятся pci_emu_dat
 .BIOS32_not_found:
 .end:
-           ret	
+           ret
 
 align 4
 proc test_cpu
@@ -431,4 +431,122 @@ proc test_cpu
            ret
 endp
 
+uglobal
+align 4
+acpi_rsdp         rd 1
+acpi_rsdt         rd 1
+acpi_madt         rd 1
 
+acpi_rsdt_base    rd 1
+acpi_madt_base    rd 1
+acpi_lapic_base   rd 1
+acpi_ioapic_base  rd 1
+endg
+
+ACPI_HI_RSDP_WINDOW_START  equ 0x000E0000
+ACPI_HI_RSDP_WINDOW_END    equ 0x00100000
+ACPI_RSDP_CHECKSUM_LENGTH  equ 20
+ACPI_MADT_SIGN             equ 0x43495041
+
+
+acpi_locate:
+        push ebx
+        mov ebx, ACPI_HI_RSDP_WINDOW_START
+.check:
+        cmp [ebx], dword 0x20445352
+        jne .next
+        cmp [ebx+4], dword 0x20525450
+        jne .next
+
+        mov edx, ebx
+        mov ecx, ACPI_RSDP_CHECKSUM_LENGTH
+        xor eax, eax
+.sum:
+        add al, [edx]
+        inc edx
+        loop .sum
+
+        test al, al
+        jnz .next
+
+        mov eax, ebx
+        pop ebx
+        ret
+.next:
+        add ebx, 16
+        cmp ebx, ACPI_HI_RSDP_WINDOW_END
+        jb .check
+
+        pop ebx
+        xor eax, eax
+        ret
+
+align 4
+rsdt_find:           ;ecx= rsdt edx= SIG
+        push ebx
+        push esi
+
+        lea ebx, [ecx+36]
+        mov esi, [ecx+4]
+        add esi, ecx
+.next:
+        mov eax, [ebx]
+        cmp [eax], edx
+        je .done
+
+        add ebx, 4
+        cmp ebx, esi
+        jb .next
+
+        xor eax, eax
+        pop esi
+        pop ebx
+        ret
+
+.done:
+        mov eax, [ebx]
+        pop esi
+        pop ebx
+        ret
+
+
+align 4
+
+check_acpi:
+
+        xchg bx, bx
+
+        call acpi_locate
+        test eax, eax
+        jz .done
+
+        mov ecx, [eax+16]
+        mov edx, ACPI_MADT_SIGN
+        mov [acpi_rsdt_base-OS_BASE], ecx
+        call rsdt_find
+        test eax, eax
+        jz .done
+
+        mov [acpi_madt_base-OS_BASE], eax
+        mov ecx, [eax+36]
+        mov [acpi_lapic_base-OS_BASE], ecx
+
+        lea edx, [eax+44]
+        mov ecx, [eax+4]
+        add ecx, eax
+.check:
+        mov eax, [edx]
+        cmp al, 1
+        je .ioapic
+
+.next:
+        movzx eax, ah
+        add edx, eax
+        cmp edx, ecx
+        jb .check
+.done:
+        ret
+.ioapic:
+        mov eax, [edx+4]
+        mov [acpi_ioapic_base-OS_BASE], eax
+        ret
