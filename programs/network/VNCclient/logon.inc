@@ -166,7 +166,7 @@ popa
     ret
 
 close_logon:
-    or  eax,-1
+    or	eax,-1
     mcall
 
 connect_logon:
@@ -181,7 +181,7 @@ draw_window_logon:
     mov  ebx, 160*65536+330		; [x start] *65536 + [x size]
     mov  ecx, 160*65536+100		; [y start] *65536 + [y size]
     mov  edx, 0x13DDDDDD		; color of work area RRGGBB
-    mov  edi, title                     ; WINDOW LABEL
+    mov  edi, title			; WINDOW LABEL
     mcall
 
     mov  eax, 8 			; LOGON BUTTON
@@ -194,10 +194,10 @@ draw_window_logon:
     
     call print_text_logon
 					
-    cmp  byte[mode],0
+    cmp  byte[mode], 0
     je	 servermode_
 
-    mov  eax, 4 			; function 4 _logon: write text to window
+    mov  eax, 4 			; function 4 write text to window
     mov  ebx, 25*65536+33		; [x start] *65536 + [y start]
     xor  ecx, ecx
     mov  edx, userstr			; pointer to text beginning
@@ -213,6 +213,7 @@ draw_window_logon:
 
    servermode_:
 
+    mov  eax, 4 			; function 4 write text to window
     mov  ebx, 25*65536+33		; [x start] *65536 + [y start]
     xor  ecx, ecx
     mov  edx, serverstr 		; pointer to text beginning
