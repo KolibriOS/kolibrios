@@ -1306,7 +1306,18 @@ end if
 	mov	ecx, 4
 	repz	cmpsd
 	pop	edi
-	jz	.exit
+	jnz	@f
+	
+	mov	edi,eax
+        mov     eax, [edi + BOX.left - 2]
+        mov     ax, word[edi + BOX.left]
+        add     ax, word[edi + BOX.width]
+        mov     ebx, [edi + BOX.top - 2]
+        mov     bx, word[edi + BOX.top]
+        add     bx, word[edi + BOX.height]
+        xor     esi,esi
+        call    draw_rectangle.forced
+	jmp	.exit
 @@:
 
         add     esp, -BOX.sizeof
