@@ -25,7 +25,7 @@ use32
 
 include '../../macros.inc'
 include '../debug.inc'
-include 'FHT4i.inc'
+include 'fht4code.asm'
 
 
 START:				; start of execution

@@ -185,6 +185,45 @@ step1:
 	jnz	.loop
 ret
 
+;=================================================================
+; SSE3 version:	Step1
+;
+;==========================
+
+align 4
+step1_sse:
+	mov	ebx, [esp+8]
+	mov	esi, [esp+4]
+	shl	esi, 3
+	add	esi, ebx
+
+.loop:
+	movddup     xmm0, [ebx]     ;   xmm0: f0 ; f0
+	movddup     xmm1, [ebx+8]   ;   xmm1: f1 ; f1
+	addsubpd    xmm0, xmm1      ;   xmm0: t1 ; t2   ( + - )
+    movddup     xmm1, [ebx+16]  ;   xmm1: f2 ; f2
+    movddup     xmm2, [ebx+24]  ;   xmm2: f3 ; f3
+	addsubpd    xmm1, xmm2      ;   xmm1: t3 ; t4   ( + - )
+
+    movddup     xmm2, xmm0      ;   xmm2: t2 ; t2
+    movddup     xmm3, xmm1      ;   xmm3: t4 ; t4
+	addsubpd    xmm2, xmm3      ;   xmm2: 2+4; 2-4  
+    shufpd      xmm2, xmm2, 1   ;   xmm2: 2-4; 2+4
+    movapd      [ebx+16], xmm2
+
+    shufpd      xmm0, xmm0, 1   ;   xmm0: t2 ; t1
+    shufpd      xmm1, xmm1, 1   ;   xmm1: t4 ; t3
+    movddup     xmm2, xmm0      ;   xmm2: t1 ; t1
+    movddup     xmm3, xmm1      ;   xmm3: t3 ; t3
+	addsubpd    xmm2, xmm3      ;   xmm2: 1+3; 1-3  
+    shufpd      xmm2, xmm2, 1   ;   xmm2: 1-3; 1+3
+    movapd      [ebx], xmm2
+
+	add	ebx, 32
+	cmp	ebx, esi
+	jnz	.loop
+ret
+
 ;       local stack definitions
 ;===========================================================================
 _t0	equ	dword [esp]
