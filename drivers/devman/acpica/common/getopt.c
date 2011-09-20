@@ -9,7 +9,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -114,19 +114,18 @@
  *
  *****************************************************************************/
 
-#include "acpi.h"
-#include "accommon.h"
-#include "acapps.h"
 
 #include <stdio.h>
 #include <string.h>
+#include "acpi.h"
+#include "accommon.h"
+#include "acapps.h"
 
 #define ERR(szz,czz) if(AcpiGbl_Opterr){fprintf(stderr,"%s%s%c\n",argv[0],szz,czz);}
 
 
 int   AcpiGbl_Opterr = 1;
 int   AcpiGbl_Optind = 1;
-int   AcpiGbl_Optopt;
 char  *AcpiGbl_Optarg;
 
 
@@ -171,9 +170,7 @@ AcpiGetopt(
 
     /* Get the option */
 
-    CurrentChar =
-    AcpiGbl_Optopt =
-    argv[AcpiGbl_Optind][CurrentCharPtr];
+    CurrentChar = argv[AcpiGbl_Optind][CurrentCharPtr];
 
     /* Make sure that the option is legal */
 

@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -180,11 +180,7 @@ LsDoOnePathname (
     void                    *Context,
     void                    **ReturnValue);
 
-void
-LsSetupNsList (
-    void                    *Handle);
-
-ACPI_PARSE_OBJECT *
+static ACPI_PARSE_OBJECT *
 LkGetNameOp (
     ACPI_PARSE_OBJECT       *Op);
 
@@ -623,7 +619,7 @@ LkObjectExists (
  *
  ******************************************************************************/
 
-ACPI_PARSE_OBJECT *
+static ACPI_PARSE_OBJECT *
 LkGetNameOp (
     ACPI_PARSE_OBJECT       *Op)
 {
@@ -1327,8 +1323,8 @@ LkNamespaceLocateBegin (
             SpaceIdOp = OwningOp->Asl.Child->Asl.Next;
             switch ((UINT32) SpaceIdOp->Asl.Value.Integer)
             {
-            case REGION_EC:
-            case REGION_CMOS:
+            case ACPI_ADR_SPACE_EC:
+            case ACPI_ADR_SPACE_CMOS:
 
                 if ((UINT8) Op->Asl.Parent->Asl.Value.Integer != AML_FIELD_ACCESS_BYTE)
                 {
@@ -1336,8 +1332,8 @@ LkNamespaceLocateBegin (
                 }
                 break;
 
-            case REGION_SMBUS:
-            case REGION_IPMI:
+            case ACPI_ADR_SPACE_SMBUS:
+            case ACPI_ADR_SPACE_IPMI:
 
                 if ((UINT8) Op->Asl.Parent->Asl.Value.Integer != AML_FIELD_ACCESS_BUFFER)
                 {

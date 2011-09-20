@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -139,6 +139,50 @@ AcpiDbDumpParserDescriptor (
 static void *
 AcpiDbGetPointer (
     void                    *Target);
+
+
+/*
+ * System handler information.
+ * Used for Handlers command, in AcpiDbDisplayHandlers.
+ */
+#define ACPI_PREDEFINED_PREFIX          "%25s (%.2X) : "
+#define ACPI_HANDLER_NAME_STRING               "%30s : "
+#define ACPI_HANDLER_PRESENT_STRING                    "%-9s (%p)\n"
+#define ACPI_HANDLER_NOT_PRESENT_STRING                "%-9s\n"
+
+/* All predefined Address Space IDs */
+
+static ACPI_ADR_SPACE_TYPE  AcpiGbl_SpaceIdList[] =
+{
+    ACPI_ADR_SPACE_SYSTEM_MEMORY,
+    ACPI_ADR_SPACE_SYSTEM_IO,
+    ACPI_ADR_SPACE_PCI_CONFIG,
+    ACPI_ADR_SPACE_EC,
+    ACPI_ADR_SPACE_SMBUS,
+    ACPI_ADR_SPACE_CMOS,
+    ACPI_ADR_SPACE_PCI_BAR_TARGET,
+    ACPI_ADR_SPACE_IPMI,
+    ACPI_ADR_SPACE_DATA_TABLE,
+    ACPI_ADR_SPACE_FIXED_HARDWARE
+};
+
+/* Global handler information */
+
+typedef struct acpi_handler_info
+{
+    void                    *Handler;
+    char                    *Name;
+
+} ACPI_HANDLER_INFO;
+
+static ACPI_HANDLER_INFO    AcpiGbl_HandlerList[] =
+{
+    {&AcpiGbl_SystemNotify.Handler,     "System Notifications"},
+    {&AcpiGbl_DeviceNotify.Handler,     "Device Notifications"},
+    {&AcpiGbl_TableHandler,             "ACPI Table Events"},
+    {&AcpiGbl_ExceptionHandler,         "Control Method Exceptions"},
+    {&AcpiGbl_InterfaceHandler,         "OSI Invocations"}
+};
 
 
 /*******************************************************************************
@@ -896,7 +940,8 @@ AcpiDbDisplayGpes (
                     GpeIndex = (i * ACPI_GPE_REGISTER_WIDTH) + j;
                     GpeEventInfo = &GpeBlock->EventInfo[GpeIndex];
 
-                    if (!(GpeEventInfo->Flags & ACPI_GPE_DISPATCH_MASK))
+                    if ((GpeEventInfo->Flags & ACPI_GPE_DISPATCH_MASK) ==
+                        ACPI_GPE_DISPATCH_NONE)
                     {
                         /* This GPE is not used (no method or handler), ignore it */
 
@@ -904,10 +949,9 @@ AcpiDbDisplayGpes (
                     }
 
                     AcpiOsPrintf (
-                        "        GPE %.2X: %p  RunRefs %2.2X   WakeRefs %2.2X Flags %2.2X (",
+                        "        GPE %.2X: %p  RunRefs %2.2X Flags %2.2X (",
                         GpeBlock->BlockBaseNumber + GpeIndex, GpeEventInfo,
-                        GpeEventInfo->RuntimeCount, GpeEventInfo->WakeupCount,
-                        GpeEventInfo->Flags);
+                        GpeEventInfo->RuntimeCount, GpeEventInfo->Flags);
 
                     /* Decode the flags byte */
 
@@ -931,14 +975,17 @@ AcpiDbDisplayGpes (
 
                     switch (GpeEventInfo->Flags & ACPI_GPE_DISPATCH_MASK)
                     {
-                    case ACPI_GPE_DISPATCH_NOT_USED:
+                    case ACPI_GPE_DISPATCH_NONE:
                         AcpiOsPrintf ("NotUsed");
+                        break;
+                    case ACPI_GPE_DISPATCH_METHOD:
+                        AcpiOsPrintf ("Method");
                         break;
                     case ACPI_GPE_DISPATCH_HANDLER:
                         AcpiOsPrintf ("Handler");
                         break;
-                    case ACPI_GPE_DISPATCH_METHOD:
-                        AcpiOsPrintf ("Method");
+                    case ACPI_GPE_DISPATCH_NOTIFY:
+                        AcpiOsPrintf ("Notify");
                         break;
                     default:
                         AcpiOsPrintf ("UNKNOWN: %X",
@@ -956,5 +1003,101 @@ AcpiDbDisplayGpes (
     }
 }
 
-#endif /* ACPI_DEBUGGER */
 
+/*******************************************************************************
+ *
+ * FUNCTION:    AcpiDbDisplayHandlers
+ *
+ * PARAMETERS:  None
+ *
+ * RETURN:      None
+ *
+ * DESCRIPTION: Display the currently installed global handlers
+ *
+ ******************************************************************************/
+
+void
+AcpiDbDisplayHandlers (
+    void)
+{
+    ACPI_OPERAND_OBJECT     *ObjDesc;
+    ACPI_OPERAND_OBJECT     *HandlerObj;
+    ACPI_ADR_SPACE_TYPE     SpaceId;
+    UINT32                  i;
+
+
+    /* Operation region handlers */
+
+    AcpiOsPrintf ("\nOperation Region Handlers:\n");
+
+    ObjDesc = AcpiNsGetAttachedObject (AcpiGbl_RootNode);
+    if (ObjDesc)
+    {
+        for (i = 0; i < ACPI_ARRAY_LENGTH (AcpiGbl_SpaceIdList); i++)
+        {
+            SpaceId = AcpiGbl_SpaceIdList[i];
+            HandlerObj = ObjDesc->Device.Handler;
+
+            AcpiOsPrintf (ACPI_PREDEFINED_PREFIX,
+                AcpiUtGetRegionName ((UINT8) SpaceId), SpaceId);
+
+            while (HandlerObj)
+            {
+                if (i == HandlerObj->AddressSpace.SpaceId)
+                {
+                    AcpiOsPrintf (ACPI_HANDLER_PRESENT_STRING,
+                        (HandlerObj->AddressSpace.HandlerFlags &
+                            ACPI_ADDR_HANDLER_DEFAULT_INSTALLED) ? "Default" : "User",
+                        HandlerObj->AddressSpace.Handler);
+                    goto FoundHandler;
+                }
+
+                HandlerObj = HandlerObj->AddressSpace.Next;
+            }
+
+            /* There is no handler for this SpaceId */
+
+            AcpiOsPrintf ("None\n");
+
+        FoundHandler:;
+        }
+    }
+
+    /* Fixed event handlers */
+
+    AcpiOsPrintf ("\nFixed Event Handlers:\n");
+
+    for (i = 0; i < ACPI_NUM_FIXED_EVENTS; i++)
+    {
+        AcpiOsPrintf (ACPI_PREDEFINED_PREFIX, AcpiUtGetEventName (i), i);
+        if (AcpiGbl_FixedEventHandlers[i].Handler)
+        {
+            AcpiOsPrintf (ACPI_HANDLER_PRESENT_STRING, "User",
+                AcpiGbl_FixedEventHandlers[i].Handler);
+        }
+        else
+        {
+            AcpiOsPrintf (ACPI_HANDLER_NOT_PRESENT_STRING, "None");
+        }
+    }
+
+    /* Miscellaneous global handlers */
+
+    AcpiOsPrintf ("\nMiscellaneous Global Handlers:\n");
+
+    for (i = 0; i < ACPI_ARRAY_LENGTH (AcpiGbl_HandlerList); i++)
+    {
+        AcpiOsPrintf (ACPI_HANDLER_NAME_STRING, AcpiGbl_HandlerList[i].Name);
+        if (AcpiGbl_HandlerList[i].Handler)
+        {
+            AcpiOsPrintf (ACPI_HANDLER_PRESENT_STRING, "User",
+                AcpiGbl_HandlerList[i].Handler);
+        }
+        else
+        {
+            AcpiOsPrintf (ACPI_HANDLER_NOT_PRESENT_STRING, "None");
+        }
+    }
+}
+
+#endif /* ACPI_DEBUGGER */

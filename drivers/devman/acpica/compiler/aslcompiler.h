@@ -9,7 +9,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -118,6 +118,10 @@
 #ifndef __ASLCOMPILER_H
 #define __ASLCOMPILER_H
 
+#include "acpi.h"
+#include "accommon.h"
+#include "amlresrc.h"
+#include "acdebug.h"
 
 /* Microsoft-specific */
 
@@ -137,16 +141,11 @@
 #include <errno.h>
 #include <ctype.h>
 
-
-#include "acpi.h"
-#include "accommon.h"
-#include "amlresrc.h"
-#include "acdebug.h"
-
 /* Compiler headers */
 
 #include "asldefine.h"
 #include "asltypes.h"
+#include "aslmessages.h"
 #include "aslglobal.h"
 
 
@@ -189,11 +188,20 @@ AslPushInputFileStack (
     char                    *Filename);
 
 /*
- * aslstartup - called from main
+ * aslstartup - entered from main()
  */
+void
+AslInitializeGlobals (
+    void);
+
+typedef
+ACPI_STATUS (*ASL_PATHNAME_CALLBACK) (
+    char *);
+
 ACPI_STATUS
 AslDoOnePathname (
-    char                    *Pathname);
+    char                    *Pathname,
+    ASL_PATHNAME_CALLBACK   Callback);
 
 ACPI_STATUS
 AslDoOneFile (
@@ -228,7 +236,7 @@ FlCheckForAscii (
 
 
 /*
- * aslanalyze - semantic analysis
+ * aslwalks - semantic analysis and parse tree walks
  */
 ACPI_STATUS
 AnOtherSemanticAnalysisWalkBegin (
@@ -238,12 +246,6 @@ AnOtherSemanticAnalysisWalkBegin (
 
 ACPI_STATUS
 AnOtherSemanticAnalysisWalkEnd (
-    ACPI_PARSE_OBJECT       *Op,
-    UINT32                  Level,
-    void                    *Context);
-
-ACPI_STATUS
-AnOperandTypecheckWalkBegin (
     ACPI_PARSE_OBJECT       *Op,
     UINT32                  Level,
     void                    *Context);
@@ -267,16 +269,77 @@ AnMethodAnalysisWalkEnd (
     void                    *Context);
 
 ACPI_STATUS
-AnMethodTypingWalkBegin (
-    ACPI_PARSE_OBJECT       *Op,
-    UINT32                  Level,
-    void                    *Context);
-
-ACPI_STATUS
 AnMethodTypingWalkEnd (
     ACPI_PARSE_OBJECT       *Op,
     UINT32                  Level,
     void                    *Context);
+
+
+/*
+ * aslbtypes - bitfield data types
+ */
+UINT32
+AnMapObjTypeToBtype (
+    ACPI_PARSE_OBJECT       *Op);
+
+UINT32
+AnMapArgTypeToBtype (
+    UINT32                  ArgType);
+
+UINT32
+AnGetBtype (
+    ACPI_PARSE_OBJECT       *Op);
+
+void
+AnFormatBtype (
+    char                    *Buffer,
+    UINT32                  Btype);
+
+
+/*
+ * aslanalyze - Support functions for parse tree walks
+ */
+void
+AnCheckId (
+    ACPI_PARSE_OBJECT       *Op,
+    ACPI_NAME               Type);
+
+/* Values for Type argument above */
+
+#define ASL_TYPE_HID        0
+#define ASL_TYPE_CID        1
+
+BOOLEAN
+AnIsInternalMethod (
+    ACPI_PARSE_OBJECT       *Op);
+
+UINT32
+AnGetInternalMethodReturnType (
+    ACPI_PARSE_OBJECT       *Op);
+
+BOOLEAN
+AnLastStatementIsReturn (
+    ACPI_PARSE_OBJECT       *Op);
+
+void
+AnCheckMethodReturnValue (
+    ACPI_PARSE_OBJECT       *Op,
+    const ACPI_OPCODE_INFO  *OpInfo,
+    ACPI_PARSE_OBJECT       *ArgOp,
+    UINT32                  RequiredBtypes,
+    UINT32                  ThisNodeBtype);
+
+BOOLEAN
+AnIsResultUsed (
+    ACPI_PARSE_OBJECT       *Op);
+
+void
+ApCheckForGpeNameConflict (
+    ACPI_PARSE_OBJECT       *Op);
+
+void
+ApCheckRegMethod (
+    ACPI_PARSE_OBJECT       *Op);
 
 
 /*
@@ -298,7 +361,7 @@ AslCoreSubsystemError (
 
 int
 AslCompilererror(
-    char                    *s);
+    const char              *s);
 
 void
 AslCommonError (
@@ -470,7 +533,7 @@ AslMapNamedOpcodeToDataType (
 /*
  * aslpredef - ACPI predefined names support
  */
-void
+BOOLEAN
 ApCheckForPredefinedMethod (
     ACPI_PARSE_OBJECT       *Op,
     ASL_METHOD_INFO         *MethodInfo);
@@ -550,6 +613,10 @@ ACPI_PARSE_OBJECT *
 TrCreateValuedLeafNode (
     UINT32                  ParseOpcode,
     UINT64                  Value);
+
+ACPI_PARSE_OBJECT *
+TrCreateConstantLeafNode (
+    UINT32                  ParseOpcode);
 
 ACPI_PARSE_OBJECT *
 TrLinkChildren (
@@ -677,6 +744,10 @@ ACPI_STATUS
 LsDisplayNamespace (
     void);
 
+void
+LsSetupNsList (
+    void                    *Handle);
+
 
 /*
  * aslutils - common compiler utilites
@@ -692,6 +763,10 @@ DbgPrint (
 #define ASL_DEBUG_OUTPUT    0
 #define ASL_PARSE_OUTPUT    1
 #define ASL_TREE_OUTPUT     2
+
+void
+UtDisplaySupportedTables (
+    void);
 
 void
 UtDisplayConstantOpcodes (
@@ -764,6 +839,29 @@ UINT64
 UtDoConstant (
     char                    *String);
 
+ACPI_STATUS
+UtStrtoul64 (
+    char                    *String,
+    UINT32                  Base,
+    UINT64                  *RetInteger);
+
+
+/*
+ * asluuid - UUID support
+ */
+ACPI_STATUS
+AuValidateUuid (
+    char                    *InString);
+
+ACPI_STATUS
+AuConvertStringToUuid (
+    char                    *InString,
+    char                    *UuIdBuffer);
+
+ACPI_STATUS
+AuConvertUuidToString (
+    char                    *UuIdBuffer,
+    char                    *OutString);
 
 /*
  * aslresource - Resource template generation utilities
@@ -778,7 +876,8 @@ RsSmallAddressCheck (
     ACPI_PARSE_OBJECT       *MinOp,
     ACPI_PARSE_OBJECT       *MaxOp,
     ACPI_PARSE_OBJECT       *LengthOp,
-    ACPI_PARSE_OBJECT       *AlignOp);
+    ACPI_PARSE_OBJECT       *AlignOp,
+    ACPI_PARSE_OBJECT       *Op);
 
 void
 RsLargeAddressCheck (
@@ -790,7 +889,8 @@ RsLargeAddressCheck (
     ACPI_PARSE_OBJECT       *MinOp,
     ACPI_PARSE_OBJECT       *MaxOp,
     ACPI_PARSE_OBJECT       *LengthOp,
-    ACPI_PARSE_OBJECT       *GranOp);
+    ACPI_PARSE_OBJECT       *GranOp,
+    ACPI_PARSE_OBJECT       *Op);
 
 UINT16
 RsGetStringDataLength (
@@ -1023,6 +1123,10 @@ RsDoWordBusNumberDescriptor (
 ACPI_STATUS
 DtDoCompile(
     void);
+
+ACPI_STATUS
+DtCreateTemplates (
+    char                    *Signature);
 
 #endif /*  __ASLCOMPILER_H */
 

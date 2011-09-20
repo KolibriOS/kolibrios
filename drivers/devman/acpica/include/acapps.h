@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -120,6 +120,38 @@
 #ifdef _MSC_VER                 /* disable some level-4 warnings */
 #pragma warning(disable:4100)   /* warning C4100: unreferenced formal parameter */
 #endif
+
+/* Common info for tool signons */
+
+#define ACPICA_NAME                 "Intel ACPI Component Architecture"
+#define ACPICA_COPYRIGHT            "Copyright (c) 2000 - 2011 Intel Corporation"
+
+#if ACPI_MACHINE_WIDTH == 64
+#define ACPI_WIDTH          "-64"
+
+#elif ACPI_MACHINE_WIDTH == 32
+#define ACPI_WIDTH          "-32"
+
+#else
+#error unknown ACPI_MACHINE_WIDTH
+#define ACPI_WIDTH          "-??"
+
+#endif
+
+/* Macros for signons and file headers */
+
+#define ACPI_COMMON_SIGNON(UtilityName) \
+    "\n%s\n%s version %8.8X%s [%s]\n%s\n\n", \
+    ACPICA_NAME, \
+    UtilityName, ((UINT32) ACPI_CA_VERSION), ACPI_WIDTH, __DATE__, \
+    ACPICA_COPYRIGHT
+
+#define ACPI_COMMON_HEADER(UtilityName, Prefix) \
+    "%s%s\n%s%s version %8.8X%s [%s]\n%s%s\n%s\n", \
+    Prefix, ACPICA_NAME, \
+    Prefix, UtilityName, ((UINT32) ACPI_CA_VERSION), ACPI_WIDTH, __DATE__, \
+    Prefix, ACPICA_COPYRIGHT, \
+    Prefix
 
 #define FILE_SUFFIX_DISASSEMBLY     "dsl"
 #define ACPI_TABLE_FILE_SUFFIX      ".dat"

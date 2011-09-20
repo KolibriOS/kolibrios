@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -216,10 +216,10 @@ AcpiOsGetRootPointer (
  *
  * FUNCTION:    AcpiOsPredefinedOverride
  *
- * PARAMETERS:  InitVal     - Initial value of the predefined object
- *              NewVal      - The new value for the object
+ * PARAMETERS:  InitVal             - Initial value of the predefined object
+ *              NewVal              - The new value for the object
  *
- * RETURN:      Status, pointer to value.  Null pointer returned if not
+ * RETURN:      Status, pointer to value. Null pointer returned if not
  *              overriding.
  *
  * DESCRIPTION: Allow the OS to override predefined names
@@ -246,10 +246,11 @@ AcpiOsPredefinedOverride (
  *
  * FUNCTION:    AcpiOsTableOverride
  *
- * PARAMETERS:  ExistingTable   - Header of current table (probably firmware)
- *              NewTable        - Where an entire new table is returned.
+ * PARAMETERS:  ExistingTable       - Header of current table (probably
+ *                                    firmware)
+ *              NewTable            - Where an entire new table is returned.
  *
- * RETURN:      Status, pointer to new table.  Null pointer returned if no
+ * RETURN:      Status, pointer to new table. Null pointer returned if no
  *              table is available to override
  *
  * DESCRIPTION: Return a different version of a table if one is available
@@ -305,7 +306,7 @@ AcpiOsRedirectOutput (
  *
  * FUNCTION:    AcpiOsPrintf
  *
- * PARAMETERS:  fmt, ...            Standard printf format
+ * PARAMETERS:  fmt, ...            - Standard printf format
  *
  * RETURN:      None
  *
@@ -331,8 +332,8 @@ AcpiOsPrintf (
  *
  * FUNCTION:    AcpiOsVprintf
  *
- * PARAMETERS:  fmt                 Standard printf format
- *              args                Argument list
+ * PARAMETERS:  fmt                 - Standard printf format
+ *              args                - Argument list
  *
  * RETURN:      None
  *
@@ -358,10 +359,10 @@ AcpiOsVprintf (
  *
  * FUNCTION:    AcpiOsMapMemory
  *
- * PARAMETERS:  where               Physical address of memory to be mapped
- *              length              How much memory to map
+ * PARAMETERS:  where               - Physical address of memory to be mapped
+ *              length              - How much memory to map
  *
- * RETURN:      Pointer to mapped memory.  Null on error.
+ * RETURN:      Pointer to mapped memory. Null on error.
  *
  * DESCRIPTION: Map physical memory into caller's address space
  *
@@ -374,9 +375,13 @@ AcpiOsMapMemory (
 {
 
 
-    void* retval;
+    void* retval=NULL;
 
-    retval = (void*)MapIoMem((UINT32)where, (UINT32)length, 0x03);
+    if( (UINT64)where+length <= 0x100000000ULL)
+        retval = (void*)MapIoMem(where, 4096+(UINT32)length, 0x07);
+
+//    dbgprintf("%s %x-> %x %x\n",__FUNCTION__,
+//              where, retval, length);
 
     return retval;
 }
@@ -386,12 +391,12 @@ AcpiOsMapMemory (
  *
  * FUNCTION:    AcpiOsUnmapMemory
  *
- * PARAMETERS:  where               Logical address of memory to be unmapped
- *              length              How much memory to unmap
+ * PARAMETERS:  where               - Logical address of memory to be unmapped
+ *              length              - How much memory to unmap
  *
  * RETURN:      None.
  *
- * DESCRIPTION: Delete a previously created mapping.  Where and Length must
+ * DESCRIPTION: Delete a previously created mapping. Where and Length must
  *              correspond to a previous mapping exactly.
  *
  *****************************************************************************/
@@ -401,7 +406,7 @@ AcpiOsUnmapMemory (
     void                    *where,
     ACPI_SIZE               length)
 {
-
+    FreeKernelSpace( 0xFFFFF000 & (UINT32)where);
     return;
 }
 
@@ -410,11 +415,11 @@ AcpiOsUnmapMemory (
  *
  * FUNCTION:    AcpiOsAllocate
  *
- * PARAMETERS:  Size                Amount to allocate, in bytes
+ * PARAMETERS:  Size                - Amount to allocate, in bytes
  *
- * RETURN:      Pointer to the new allocation.  Null on error.
+ * RETURN:      Pointer to the new allocation. Null on error.
  *
- * DESCRIPTION: Allocate memory.  Algorithm is dependent on the OS.
+ * DESCRIPTION: Allocate memory. Algorithm is dependent on the OS.
  *
  *****************************************************************************/
 
@@ -434,7 +439,7 @@ AcpiOsAllocate (
  *
  * FUNCTION:    AcpiOsFree
  *
- * PARAMETERS:  mem                 Pointer to previously allocated memory
+ * PARAMETERS:  mem                 - Pointer to previously allocated memory
  *
  * RETURN:      None.
  *
@@ -766,7 +771,7 @@ AcpiOsExecute (
  *
  * FUNCTION:    AcpiOsStall
  *
- * PARAMETERS:  microseconds        To sleep
+ * PARAMETERS:  microseconds        - Time to sleep
  *
  * RETURN:      Blocks until sleep is completed.
  *
@@ -790,7 +795,7 @@ AcpiOsStall (
  *
  * FUNCTION:    AcpiOsSleep
  *
- * PARAMETERS:  milliseconds        To sleep
+ * PARAMETERS:  milliseconds        - Time to sleep
  *
  * RETURN:      Blocks until sleep is completed.
  *
@@ -835,34 +840,12 @@ AcpiOsGetTimer (void)
 
 /******************************************************************************
  *
- * FUNCTION:    AcpiOsValidateInterface
- *
- * PARAMETERS:  Interface           - Requested interface to be validated
- *
- * RETURN:      AE_OK if interface is supported, AE_SUPPORT otherwise
- *
- * DESCRIPTION: Match an interface string to the interfaces supported by the
- *              host. Strings originate from an AML call to the _OSI method.
- *
- *****************************************************************************/
-
-ACPI_STATUS
-AcpiOsValidateInterface (
-    char                    *Interface)
-{
-
-    return (AE_SUPPORT);
-}
-
-
-/******************************************************************************
- *
  * FUNCTION:    AcpiOsReadPciConfiguration
  *
- * PARAMETERS:  PciId               Seg/Bus/Dev
- *              Register            Device Register
- *              Value               Buffer where value is placed
- *              Width               Number of bits
+ * PARAMETERS:  PciId               - Seg/Bus/Dev
+ *              Register            - Device Register
+ *              Value               - Buffer where value is placed
+ *              Width               - Number of bits
  *
  * RETURN:      Status
  *
@@ -874,7 +857,7 @@ ACPI_STATUS
 AcpiOsReadPciConfiguration (
     ACPI_PCI_ID             *PciId,
     UINT32                  Register,
-    void                    *Value,
+    UINT64                  *Value,
     UINT32                  Width)
 {
     UINT32 devfn = ((PciId->Device & 0x1f)<<3)|(PciId->Function & 0x07);
@@ -897,7 +880,6 @@ AcpiOsReadPciConfiguration (
 	}
 
     return (AE_OK);
-
 }
 
 
@@ -905,10 +887,10 @@ AcpiOsReadPciConfiguration (
  *
  * FUNCTION:    AcpiOsWritePciConfiguration
  *
- * PARAMETERS:  PciId               Seg/Bus/Dev
- *              Register            Device Register
- *              Value               Value to be written
- *              Width               Number of bits
+ * PARAMETERS:  PciId               - Seg/Bus/Dev
+ *              Register            - Device Register
+ *              Value               - Value to be written
+ *              Width               - Number of bits
  *
  * RETURN:      Status.
  *
@@ -960,9 +942,9 @@ AcpiOsDerivePciId(
  *
  * FUNCTION:    AcpiOsReadPort
  *
- * PARAMETERS:  Address             Address of I/O port/register to read
- *              Value               Where value is placed
- *              Width               Number of bits
+ * PARAMETERS:  Address             - Address of I/O port/register to read
+ *              Value               - Where value is placed
+ *              Width               - Number of bits
  *
  * RETURN:      Value read from port
  *
@@ -995,7 +977,7 @@ AcpiOsReadPort (
         return (AE_BAD_PARAMETER);
     }
 
-    dbgprintf("%s %x, %x\n",__FUNCTION__, Address, *Value);
+//    dbgprintf("%s %x, %x\n",__FUNCTION__, Address, *Value);
 
     return (AE_OK);
 }
@@ -1005,9 +987,9 @@ AcpiOsReadPort (
  *
  * FUNCTION:    AcpiOsWritePort
  *
- * PARAMETERS:  Address             Address of I/O port/register to write
- *              Value               Value to write
- *              Width               Number of bits
+ * PARAMETERS:  Address             - Address of I/O port/register to write
+ *              Value               - Value to write
+ *              Width               - Number of bits
  *
  * RETURN:      None
  *
@@ -1039,7 +1021,7 @@ AcpiOsWritePort (
 			return (AE_ERROR);
 	}
 
-    dbgprintf("%s %x, %x\n",__FUNCTION__, Address, Value);
+//    dbgprintf("%s %x, %x\n",__FUNCTION__, Address, Value);
 
 	return (AE_OK);
 };
@@ -1048,9 +1030,9 @@ AcpiOsWritePort (
  *
  * FUNCTION:    AcpiOsReadMemory
  *
- * PARAMETERS:  Address             Physical Memory Address to read
- *              Value               Where value is placed
- *              Width               Number of bits
+ * PARAMETERS:  Address             - Physical Memory Address to read
+ *              Value               - Where value is placed
+ *              Width               - Number of bits
  *
  * RETURN:      Value read from physical memory address
  *
@@ -1067,7 +1049,10 @@ AcpiOsReadMemory (
     void        *memptr;
     ACPI_STATUS  status = AE_ERROR;
 
-    dbgprintf("%s %x\n",__FUNCTION__, Address);
+//    dbgprintf("%s %x\n",__FUNCTION__, Address);
+
+    if( (UINT64)Address+Width > 0x100000000ULL)
+        return (AE_BAD_PARAMETER);
 
     if( Address >= 0x400000)
     {
@@ -1126,9 +1111,9 @@ AcpiOsReadMemory (
  *
  * FUNCTION:    AcpiOsWriteMemory
  *
- * PARAMETERS:  Address             Physical Memory Address to write
- *              Value               Value to write
- *              Width               Number of bits
+ * PARAMETERS:  Address             - Physical Memory Address to write
+ *              Value               - Value to write
+ *              Width               - Number of bits
  *
  * RETURN:      None
  *
@@ -1146,7 +1131,10 @@ AcpiOsWriteMemory (
     void        *memptr;
     ACPI_STATUS  status = AE_ERROR;
 
-    dbgprintf("%s %x, %x\n",__FUNCTION__, Address, Value);
+//    dbgprintf("%s %x, %x\n",__FUNCTION__, Address, Value);
+
+    if( (UINT64)Address+Width > 0x100000000ULL)
+        return (AE_BAD_PARAMETER);
 
     if( Address >= 0x400000)
     {
@@ -1276,8 +1264,8 @@ AcpiOsGetThreadId (void)
  *
  * FUNCTION:    AcpiOsSignal
  *
- * PARAMETERS:  Function            ACPI CA signal function code
- *              Info                Pointer to function-dependent structure
+ * PARAMETERS:  Function            - ACPI CA signal function code
+ *              Info                - Pointer to function-dependent structure
  *
  * RETURN:      Status
  *

@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -395,8 +395,8 @@ AcpiEvPciConfigRegionSetup (
     }
 
     /*
-     * Get the PCI device and function numbers from the _ADR object contained
-     * in the parent's scope.
+     * Get the PCI device and function numbers from the _ADR object
+     * contained in the parent's scope.
      */
     Status = AcpiUtEvaluateNumericObject (METHOD_NAME__ADR,
                 PciDeviceNode, &PciValue);
@@ -429,9 +429,14 @@ AcpiEvPciConfigRegionSetup (
         PciId->Bus = ACPI_LOWORD (PciValue);
     }
 
-    /* Complete this device's PciId */
+    /* Complete/update the PCI ID for this device */
 
-    AcpiOsDerivePciId (PciRootNode, RegionObj->Region.Node, &PciId);
+    Status = AcpiHwDerivePciId (PciId, PciRootNode, RegionObj->Region.Node);
+    if (ACPI_FAILURE (Status))
+    {
+        ACPI_FREE (PciId);
+        return_ACPI_STATUS (Status);
+    }
 
     *RegionContext = PciId;
     return_ACPI_STATUS (AE_OK);
@@ -724,9 +729,9 @@ AcpiEvInitializeRegion (
                  *
                  * See AcpiNsExecModuleCode
                  */
-                if (ObjDesc->Method.Flags & AOPOBJ_MODULE_LEVEL)
+                if (ObjDesc->Method.InfoFlags & ACPI_METHOD_MODULE_LEVEL)
                 {
-                    HandlerObj = ObjDesc->Method.Extra.Handler;
+                    HandlerObj = ObjDesc->Method.Dispatch.Handler;
                 }
                 break;
 
@@ -763,7 +768,7 @@ AcpiEvInitializeRegion (
                         }
                     }
 
-                    Status = AcpiEvExecuteRegMethod (RegionObj, 1);
+                    Status = AcpiEvExecuteRegMethod (RegionObj, ACPI_REG_CONNECT);
 
                     if (AcpiNsLocked)
                     {

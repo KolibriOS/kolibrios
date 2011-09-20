@@ -9,7 +9,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -202,7 +202,7 @@ static void
 LsDoHexOutputAsl (
     void);
 
-ACPI_STATUS
+static ACPI_STATUS
 LsTreeWriteWalk (
     ACPI_PARSE_OBJECT       *Op,
     UINT32                  Level,
@@ -222,7 +222,7 @@ LsTreeWriteWalk (
  *
  ******************************************************************************/
 
-ACPI_STATUS
+static ACPI_STATUS
 LsTreeWriteWalk (
     ACPI_PARSE_OBJECT       *Op,
     UINT32                  Level,

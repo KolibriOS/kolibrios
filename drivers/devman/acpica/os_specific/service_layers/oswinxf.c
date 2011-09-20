@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -113,6 +113,8 @@
  *
  *****************************************************************************/
 
+#include "acpi.h"
+#include "accommon.h"
 
 #ifdef WIN32
 #pragma warning(disable:4115)   /* warning C4115: named type definition in parentheses (caused by rpcasync.h> */
@@ -130,12 +132,40 @@
 #include <process.h>
 #include <time.h>
 
-#include "acpi.h"
-#include "accommon.h"
-
 #define _COMPONENT          ACPI_OS_SERVICES
         ACPI_MODULE_NAME    ("oswinxf")
 
+
+extern FILE                 *AcpiGbl_DebugFile;
+extern BOOLEAN              AcpiGbl_DebugTimeout;
+
+FILE                        *AcpiGbl_OutputFile;
+UINT64                      TimerFrequency;
+char                        TableName[ACPI_NAME_SIZE + 1];
+
+#define ACPI_OS_DEBUG_TIMEOUT   30000 /* 30 seconds */
+
+
+/* Upcalls to application */
+
+ACPI_PHYSICAL_ADDRESS
+AeLocalGetRootPointer (
+    void);
+
+void
+AeTableOverride (
+    ACPI_TABLE_HEADER       *ExistingTable,
+    ACPI_TABLE_HEADER       **NewTable);
+
+ACPI_TABLE_HEADER *
+OsGetTable (
+    char                    *Signature);
+
+
+/*
+ * Real semaphores are only used for a multi-threaded application
+ */
+#ifndef ACPI_SINGLE_THREADED
 
 /* Semaphore information structure */
 
@@ -153,31 +183,7 @@ typedef struct acpi_os_semaphore_info
 
 ACPI_OS_SEMAPHORE_INFO          AcpiGbl_Semaphores[ACPI_OS_MAX_SEMAPHORES];
 
-
-/* Upcalls to AcpiExec */
-
-ACPI_PHYSICAL_ADDRESS
-AeLocalGetRootPointer (
-    void);
-
-void
-AeTableOverride (
-    ACPI_TABLE_HEADER       *ExistingTable,
-    ACPI_TABLE_HEADER       **NewTable);
-
-ACPI_TABLE_HEADER *
-OsGetTable (
-    char                    *Signature);
-
-
-extern FILE                 *AcpiGbl_DebugFile;
-extern BOOLEAN              AcpiGbl_DebugTimeout;
-
-FILE                        *AcpiGbl_OutputFile;
-UINT64                      TimerFrequency;
-char                        TableName[ACPI_NAME_SIZE + 1];
-
-#define ACPI_OS_DEBUG_TIMEOUT   30000 /* 30 seconds */
+#endif /* ACPI_SINGLE_THREADED */
 
 
 /******************************************************************************
@@ -186,16 +192,17 @@ char                        TableName[ACPI_NAME_SIZE + 1];
  *
  * PARAMETERS:  None
  *
- * RETURN:      None
+ * RETURN:      Status
  *
  * DESCRIPTION: Nothing to do for windows
  *
  *****************************************************************************/
 
 ACPI_STATUS
-AcpiOsTerminate (void)
+AcpiOsTerminate (
+    void)
 {
-    return AE_OK;
+    return (AE_OK);
 }
 
 
@@ -212,16 +219,19 @@ AcpiOsTerminate (void)
  *****************************************************************************/
 
 ACPI_STATUS
-AcpiOsInitialize (void)
+AcpiOsInitialize (
+    void)
 {
     LARGE_INTEGER           LocalTimerFrequency;
 
 
-    AcpiGbl_OutputFile = stdout;
-
+#ifndef ACPI_SINGLE_THREADED
     /* Clear the semaphore info array */
 
     memset (AcpiGbl_Semaphores, 0x00, sizeof (AcpiGbl_Semaphores));
+#endif
+
+    AcpiGbl_OutputFile = stdout;
 
     /* Get the timer frequency for use in AcpiOsGetTimer */
 
@@ -233,7 +243,7 @@ AcpiOsInitialize (void)
         TimerFrequency = LocalTimerFrequency.QuadPart;
     }
 
-    return AE_OK;
+    return (AE_OK);
 }
 
 
@@ -262,10 +272,10 @@ AcpiOsGetRootPointer (
  *
  * FUNCTION:    AcpiOsPredefinedOverride
  *
- * PARAMETERS:  InitVal     - Initial value of the predefined object
- *              NewVal      - The new value for the object
+ * PARAMETERS:  InitVal             - Initial value of the predefined object
+ *              NewVal              - The new value for the object
  *
- * RETURN:      Status, pointer to value.  Null pointer returned if not
+ * RETURN:      Status, pointer to value. Null pointer returned if not
  *              overriding.
  *
  * DESCRIPTION: Allow the OS to override predefined names
@@ -292,10 +302,10 @@ AcpiOsPredefinedOverride (
  *
  * FUNCTION:    AcpiOsTableOverride
  *
- * PARAMETERS:  ExistingTable   - Header of current table (probably firmware)
- *              NewTable        - Where an entire new table is returned.
+ * PARAMETERS:  ExistingTable       - Header of current table (probably firmware)
+ *              NewTable            - Where an entire new table is returned.
  *
- * RETURN:      Status, pointer to new table.  Null pointer returned if no
+ * RETURN:      Status, pointer to new table. Null pointer returned if no
  *              table is available to override
  *
  * DESCRIPTION: Return a different version of a table if one is available
@@ -460,7 +470,7 @@ AcpiOsRedirectOutput (
  *
  * FUNCTION:    AcpiOsPrintf
  *
- * PARAMETERS:  fmt, ...            Standard printf format
+ * PARAMETERS:  Fmt, ...            - Standard printf format
  *
  * RETURN:      None
  *
@@ -489,8 +499,8 @@ AcpiOsPrintf (
  *
  * FUNCTION:    AcpiOsVprintf
  *
- * PARAMETERS:  fmt                 Standard printf format
- *              args                Argument list
+ * PARAMETERS:  Fmt                 - Standard printf format
+ *              Args                - Argument list
  *
  * RETURN:      None
  *
@@ -539,18 +549,21 @@ AcpiOsVprintf (
  *
  * FUNCTION:    AcpiOsGetLine
  *
- * PARAMETERS:  fmt                 Standard printf format
- *              args                Argument list
+ * PARAMETERS:  Buffer              - Where to return the command line
+ *              BufferLength        - Maximum length of Buffer
+ *              BytesRead           - Where the actual byte count is returned
  *
- * RETURN:      Actual bytes read
+ * RETURN:      Status and actual bytes read
  *
  * DESCRIPTION: Formatted input with argument list pointer
  *
  *****************************************************************************/
 
-UINT32
+ACPI_STATUS
 AcpiOsGetLine (
-    char                    *Buffer)
+    char                    *Buffer,
+    UINT32                  BufferLength,
+    UINT32                  *BytesRead)
 {
     char                    Temp;
     UINT32                  i;
@@ -558,6 +571,11 @@ AcpiOsGetLine (
 
     for (i = 0; ; i++)
     {
+        if (i >= BufferLength)
+        {
+            return (AE_BUFFER_OVERFLOW);
+        }
+
         scanf ("%1c", &Temp);
         if (!Temp || Temp == '\n')
         {
@@ -573,7 +591,11 @@ AcpiOsGetLine (
 
     /* Return the number of bytes in the string */
 
-    return (i);
+    if (BytesRead)
+    {
+        *BytesRead = i;
+    }
+    return (AE_OK);
 }
 
 
@@ -581,10 +603,10 @@ AcpiOsGetLine (
  *
  * FUNCTION:    AcpiOsMapMemory
  *
- * PARAMETERS:  where               Physical address of memory to be mapped
- *              length              How much memory to map
+ * PARAMETERS:  Where               - Physical address of memory to be mapped
+ *              Length              - How much memory to map
  *
- * RETURN:      Pointer to mapped memory.  Null on error.
+ * RETURN:      Pointer to mapped memory. Null on error.
  *
  * DESCRIPTION: Map physical memory into caller's address space
  *
@@ -592,11 +614,11 @@ AcpiOsGetLine (
 
 void *
 AcpiOsMapMemory (
-    ACPI_PHYSICAL_ADDRESS   where,
-    ACPI_SIZE               length)
+    ACPI_PHYSICAL_ADDRESS   Where,
+    ACPI_SIZE               Length)
 {
 
-    return (ACPI_TO_POINTER ((ACPI_SIZE) where));
+    return (ACPI_TO_POINTER ((ACPI_SIZE) Where));
 }
 
 
@@ -604,20 +626,20 @@ AcpiOsMapMemory (
  *
  * FUNCTION:    AcpiOsUnmapMemory
  *
- * PARAMETERS:  where               Logical address of memory to be unmapped
- *              length              How much memory to unmap
+ * PARAMETERS:  Where               - Logical address of memory to be unmapped
+ *              Length              - How much memory to unmap
  *
  * RETURN:      None.
  *
- * DESCRIPTION: Delete a previously created mapping.  Where and Length must
+ * DESCRIPTION: Delete a previously created mapping. Where and Length must
  *              correspond to a previous mapping exactly.
  *
  *****************************************************************************/
 
 void
 AcpiOsUnmapMemory (
-    void                    *where,
-    ACPI_SIZE               length)
+    void                    *Where,
+    ACPI_SIZE               Length)
 {
 
     return;
@@ -628,24 +650,24 @@ AcpiOsUnmapMemory (
  *
  * FUNCTION:    AcpiOsAllocate
  *
- * PARAMETERS:  Size                Amount to allocate, in bytes
+ * PARAMETERS:  Size                - Amount to allocate, in bytes
  *
- * RETURN:      Pointer to the new allocation.  Null on error.
+ * RETURN:      Pointer to the new allocation. Null on error.
  *
- * DESCRIPTION: Allocate memory.  Algorithm is dependent on the OS.
+ * DESCRIPTION: Allocate memory. Algorithm is dependent on the OS.
  *
  *****************************************************************************/
 
 void *
 AcpiOsAllocate (
-    ACPI_SIZE               size)
+    ACPI_SIZE               Size)
 {
     void                    *Mem;
 
 
-    Mem = (void *) malloc ((size_t) size);
+    Mem = (void *) malloc ((size_t) Size);
 
-    return Mem;
+    return (Mem);
 }
 
 
@@ -653,7 +675,7 @@ AcpiOsAllocate (
  *
  * FUNCTION:    AcpiOsFree
  *
- * PARAMETERS:  mem                 Pointer to previously allocated memory
+ * PARAMETERS:  Mem                 - Pointer to previously allocated memory
  *
  * RETURN:      None.
  *
@@ -670,6 +692,52 @@ AcpiOsFree (
 }
 
 
+#ifdef ACPI_SINGLE_THREADED
+/******************************************************************************
+ *
+ * FUNCTION:    Semaphore stub functions
+ *
+ * DESCRIPTION: Stub functions used for single-thread applications that do
+ *              not require semaphore synchronization. Full implementations
+ *              of these functions appear after the stubs.
+ *
+ *****************************************************************************/
+
+ACPI_STATUS
+AcpiOsCreateSemaphore (
+    UINT32              MaxUnits,
+    UINT32              InitialUnits,
+    ACPI_HANDLE         *OutHandle)
+{
+    *OutHandle = (ACPI_HANDLE) 1;
+    return (AE_OK);
+}
+
+ACPI_STATUS
+AcpiOsDeleteSemaphore (
+    ACPI_HANDLE         Handle)
+{
+    return (AE_OK);
+}
+
+ACPI_STATUS
+AcpiOsWaitSemaphore (
+    ACPI_HANDLE         Handle,
+    UINT32              Units,
+    UINT16              Timeout)
+{
+    return (AE_OK);
+}
+
+ACPI_STATUS
+AcpiOsSignalSemaphore (
+    ACPI_HANDLE         Handle,
+    UINT32              Units)
+{
+    return (AE_OK);
+}
+
+#else
 /******************************************************************************
  *
  * FUNCTION:    AcpiOsCreateSemaphore
@@ -690,12 +758,10 @@ AcpiOsCreateSemaphore (
     UINT32              InitialUnits,
     ACPI_SEMAPHORE      *OutHandle)
 {
-#ifdef _MULTI_THREADED
     void                *Mutex;
     UINT32              i;
 
     ACPI_FUNCTION_NAME (OsCreateSemaphore);
-#endif
 
 
     if (MaxUnits == ACPI_UINT32_MAX)
@@ -710,10 +776,8 @@ AcpiOsCreateSemaphore (
 
     if (InitialUnits > MaxUnits)
     {
-        return AE_BAD_PARAMETER;
+        return (AE_BAD_PARAMETER);
     }
-
-#ifdef _MULTI_THREADED
 
     /* Find an empty slot */
 
@@ -728,7 +792,7 @@ AcpiOsCreateSemaphore (
     {
         ACPI_EXCEPTION ((AE_INFO, AE_LIMIT,
             "Reached max semaphores (%u), could not create", ACPI_OS_MAX_SEMAPHORES));
-        return AE_LIMIT;
+        return (AE_LIMIT);
     }
 
     /* Create an OS semaphore */
@@ -737,7 +801,7 @@ AcpiOsCreateSemaphore (
     if (!Mutex)
     {
         ACPI_ERROR ((AE_INFO, "Could not create semaphore"));
-        return AE_NO_MEMORY;
+        return (AE_NO_MEMORY);
     }
 
     AcpiGbl_Semaphores[i].MaxUnits = (UINT16) MaxUnits;
@@ -748,9 +812,7 @@ AcpiOsCreateSemaphore (
             i, MaxUnits, InitialUnits, Mutex));
 
     *OutHandle = (void *) i;
-#endif
-
-    return AE_OK;
+    return (AE_OK);
 }
 
 
@@ -776,17 +838,12 @@ AcpiOsDeleteSemaphore (
     if ((Index >= ACPI_OS_MAX_SEMAPHORES) ||
         !AcpiGbl_Semaphores[Index].OsHandle)
     {
-        return AE_BAD_PARAMETER;
+        return (AE_BAD_PARAMETER);
     }
-
-
-#ifdef _MULTI_THREADED
 
     CloseHandle (AcpiGbl_Semaphores[Index].OsHandle);
     AcpiGbl_Semaphores[Index].OsHandle = NULL;
-#endif
-
-    return AE_OK;
+    return (AE_OK);
 }
 
 
@@ -810,7 +867,6 @@ AcpiOsWaitSemaphore (
     UINT32              Units,
     UINT16              Timeout)
 {
-#ifdef _MULTI_THREADED
     UINT32              Index = (UINT32) Handle;
     UINT32              WaitStatus;
     UINT32              OsTimeout = Timeout;
@@ -822,13 +878,13 @@ AcpiOsWaitSemaphore (
     if ((Index >= ACPI_OS_MAX_SEMAPHORES) ||
         !AcpiGbl_Semaphores[Index].OsHandle)
     {
-        return AE_BAD_PARAMETER;
+        return (AE_BAD_PARAMETER);
     }
 
     if (Units > 1)
     {
         printf ("WaitSemaphore: Attempt to receive %u units\n", Units);
-        return AE_NOT_IMPLEMENTED;
+        return (AE_NOT_IMPLEMENTED);
     }
 
     if (Timeout == ACPI_WAIT_FOREVER)
@@ -857,7 +913,7 @@ AcpiOsWaitSemaphore (
                 "Debug timeout on semaphore 0x%04X (%ums)\n",
                 Index, ACPI_OS_DEBUG_TIMEOUT));
         }
-        return AE_TIME;
+        return (AE_TIME);
     }
 
     if (AcpiGbl_Semaphores[Index].CurrentUnits == 0)
@@ -865,13 +921,11 @@ AcpiOsWaitSemaphore (
         ACPI_ERROR ((AE_INFO, "%s - No unit received. Timeout 0x%X, OS_Status 0x%X",
             AcpiUtGetMutexName (Index), Timeout, WaitStatus));
 
-        return AE_OK;
+        return (AE_OK);
     }
 
     AcpiGbl_Semaphores[Index].CurrentUnits--;
-#endif
-
-    return AE_OK;
+    return (AE_OK);
 }
 
 
@@ -893,8 +947,6 @@ AcpiOsSignalSemaphore (
     ACPI_SEMAPHORE      Handle,
     UINT32              Units)
 {
-#ifdef _MULTI_THREADED
-
     UINT32              Index = (UINT32) Handle;
 
 
@@ -904,19 +956,19 @@ AcpiOsSignalSemaphore (
     if (Index >= ACPI_OS_MAX_SEMAPHORES)
     {
         printf ("SignalSemaphore: Index/Handle out of range: %2.2X\n", Index);
-        return AE_BAD_PARAMETER;
+        return (AE_BAD_PARAMETER);
     }
 
     if (!AcpiGbl_Semaphores[Index].OsHandle)
     {
         printf ("SignalSemaphore: Null OS handle, Index %2.2X\n", Index);
-        return AE_BAD_PARAMETER;
+        return (AE_BAD_PARAMETER);
     }
 
     if (Units > 1)
     {
         printf ("SignalSemaphore: Attempt to signal %u units, Index %2.2X\n", Units, Index);
-        return AE_NOT_IMPLEMENTED;
+        return (AE_NOT_IMPLEMENTED);
     }
 
     if ((AcpiGbl_Semaphores[Index].CurrentUnits + 1) >
@@ -933,13 +985,19 @@ AcpiOsSignalSemaphore (
     AcpiGbl_Semaphores[Index].CurrentUnits++;
     ReleaseSemaphore (AcpiGbl_Semaphores[Index].OsHandle, Units, NULL);
 
-#endif
-
     return (AE_OK);
 }
 
+#endif /* ACPI_SINGLE_THREADED */
 
-/* Spinlock interfaces, just implement with a semaphore */
+
+/******************************************************************************
+ *
+ * FUNCTION:    Spinlock interfaces
+ *
+ * DESCRIPTION: Map these interfaces to semaphore interfaces
+ *
+ *****************************************************************************/
 
 ACPI_STATUS
 AcpiOsCreateLock (
@@ -1012,13 +1070,13 @@ AcpiOsReleaseMutex (
  *
  * FUNCTION:    AcpiOsInstallInterruptHandler
  *
- * PARAMETERS:  InterruptNumber     Level handler should respond to.
- *              Isr                 Address of the ACPI interrupt handler
- *              ExceptPtr           Where status is returned
+ * PARAMETERS:  InterruptNumber     - Level handler should respond to.
+ *              ServiceRoutine      - Address of the ACPI interrupt handler
+ *              Context             - User context
  *
  * RETURN:      Handle to the newly installed handler.
  *
- * DESCRIPTION: Install an interrupt handler.  Used to install the ACPI
+ * DESCRIPTION: Install an interrupt handler. Used to install the ACPI
  *              OS-independent handler.
  *
  *****************************************************************************/
@@ -1030,7 +1088,7 @@ AcpiOsInstallInterruptHandler (
     void                    *Context)
 {
 
-    return AE_OK;
+    return (AE_OK);
 }
 
 
@@ -1038,7 +1096,7 @@ AcpiOsInstallInterruptHandler (
  *
  * FUNCTION:    AcpiOsRemoveInterruptHandler
  *
- * PARAMETERS:  Handle              Returned when handler was installed
+ * PARAMETERS:  Handle              - Returned when handler was installed
  *
  * RETURN:      Status
  *
@@ -1052,61 +1110,7 @@ AcpiOsRemoveInterruptHandler (
     ACPI_OSD_HANDLER        ServiceRoutine)
 {
 
-    return AE_OK;
-}
-
-
-/******************************************************************************
- *
- * FUNCTION:    AcpiOsGetThreadId
- *
- * PARAMETERS:  None
- *
- * RETURN:      Id of the running thread
- *
- * DESCRIPTION: Get the Id of the current (running) thread
- *
- *****************************************************************************/
-
-ACPI_THREAD_ID
-AcpiOsGetThreadId (
-    void)
-{
-    DWORD                   ThreadId;
-
-    /* Ensure ID is never 0 */
-
-    ThreadId = GetCurrentThreadId ();
-    return (ThreadId + 1);
-}
-
-
-/******************************************************************************
- *
- * FUNCTION:    AcpiOsExecute
- *
- * PARAMETERS:  Type            - Type of execution
- *              Function        - Address of the function to execute
- *              Context         - Passed as a parameter to the function
- *
- * RETURN:      Status
- *
- * DESCRIPTION: Execute a new thread
- *
- *****************************************************************************/
-
-ACPI_STATUS
-AcpiOsExecute (
-    ACPI_EXECUTE_TYPE       Type,
-    ACPI_OSD_EXEC_CALLBACK  Function,
-    void                    *Context)
-{
-
-#ifdef _MULTI_THREADED
-    _beginthread (Function, (unsigned) 0, Context);
-#endif
-
-    return 0;
+    return (AE_OK);
 }
 
 
@@ -1114,9 +1118,9 @@ AcpiOsExecute (
  *
  * FUNCTION:    AcpiOsStall
  *
- * PARAMETERS:  microseconds        To sleep
+ * PARAMETERS:  Microseconds        - Time to stall
  *
- * RETURN:      Blocks until sleep is completed.
+ * RETURN:      None. Blocks until stall is completed.
  *
  * DESCRIPTION: Sleep at microsecond granularity
  *
@@ -1124,10 +1128,10 @@ AcpiOsExecute (
 
 void
 AcpiOsStall (
-    UINT32                  microseconds)
+    UINT32                  Microseconds)
 {
 
-    Sleep ((microseconds / 1000) + 1);
+    Sleep ((Microseconds / 1000) + 1);
     return;
 }
 
@@ -1136,9 +1140,9 @@ AcpiOsStall (
  *
  * FUNCTION:    AcpiOsSleep
  *
- * PARAMETERS:  milliseconds        To sleep
+ * PARAMETERS:  Milliseconds        - Time to sleep
  *
- * RETURN:      Blocks until sleep is completed.
+ * RETURN:      None. Blocks until sleep is completed.
  *
  * DESCRIPTION: Sleep at millisecond granularity
  *
@@ -1146,35 +1150,13 @@ AcpiOsStall (
 
 void
 AcpiOsSleep (
-    UINT64                  milliseconds)
+    UINT64                  Milliseconds)
 {
 
     /* Add 10ms to account for clock tick granularity */
 
-    Sleep (((unsigned long) milliseconds) + 10);
+    Sleep (((unsigned long) Milliseconds) + 10);
     return;
-}
-
-
-/******************************************************************************
- *
- * FUNCTION:    AcpiOsValidateInterface
- *
- * PARAMETERS:  Interface           - Requested interface to be validated
- *
- * RETURN:      AE_OK if interface is supported, AE_SUPPORT otherwise
- *
- * DESCRIPTION: Match an interface string to the interfaces supported by the
- *              host. Strings originate from an AML call to the _OSI method.
- *
- *****************************************************************************/
-
-ACPI_STATUS
-AcpiOsValidateInterface (
-    char                    *Interface)
-{
-
-    return (AE_SUPPORT);
 }
 
 
@@ -1182,10 +1164,10 @@ AcpiOsValidateInterface (
  *
  * FUNCTION:    AcpiOsReadPciConfiguration
  *
- * PARAMETERS:  PciId               Seg/Bus/Dev
- *              Register            Device Register
- *              Value               Buffer where value is placed
- *              Width               Number of bits
+ * PARAMETERS:  PciId               - Seg/Bus/Dev
+ *              Register            - Device Register
+ *              Value               - Buffer where value is placed
+ *              Width               - Number of bits
  *
  * RETURN:      Status
  *
@@ -1197,7 +1179,7 @@ ACPI_STATUS
 AcpiOsReadPciConfiguration (
     ACPI_PCI_ID             *PciId,
     UINT32                  Register,
-    void                    *Value,
+    UINT64                  *Value,
     UINT32                  Width)
 {
 
@@ -1209,12 +1191,12 @@ AcpiOsReadPciConfiguration (
  *
  * FUNCTION:    AcpiOsWritePciConfiguration
  *
- * PARAMETERS:  PciId               Seg/Bus/Dev
- *              Register            Device Register
- *              Value               Value to be written
- *              Width               Number of bits
+ * PARAMETERS:  PciId               - Seg/Bus/Dev
+ *              Register            - Device Register
+ *              Value               - Value to be written
+ *              Width               - Number of bits
  *
- * RETURN:      Status.
+ * RETURN:      Status
  *
  * DESCRIPTION: Write data to PCI configuration space
  *
@@ -1231,25 +1213,14 @@ AcpiOsWritePciConfiguration (
     return (AE_OK);
 }
 
-/* TEMPORARY STUB FUNCTION */
-void
-AcpiOsDerivePciId(
-    ACPI_HANDLE             Device,
-    ACPI_HANDLE             Region,
-    ACPI_PCI_ID             **PciId)
-{
-
-    return;
-}
-
 
 /******************************************************************************
  *
  * FUNCTION:    AcpiOsReadPort
  *
- * PARAMETERS:  Address             Address of I/O port/register to read
- *              Value               Where value is placed
- *              Width               Number of bits
+ * PARAMETERS:  Address             - Address of I/O port/register to read
+ *              Value               - Where value is placed
+ *              Width               - Number of bits
  *
  * RETURN:      Value read from port
  *
@@ -1290,9 +1261,9 @@ AcpiOsReadPort (
  *
  * FUNCTION:    AcpiOsWritePort
  *
- * PARAMETERS:  Address             Address of I/O port/register to write
- *              Value               Value to write
- *              Width               Number of bits
+ * PARAMETERS:  Address             - Address of I/O port/register to write
+ *              Value               - Value to write
+ *              Width               - Number of bits
  *
  * RETURN:      None
  *
@@ -1315,11 +1286,11 @@ AcpiOsWritePort (
  *
  * FUNCTION:    AcpiOsReadMemory
  *
- * PARAMETERS:  Address             Physical Memory Address to read
- *              Value               Where value is placed
- *              Width               Number of bits
+ * PARAMETERS:  Address             - Physical Memory Address to read
+ *              Value               - Where value is placed
+ *              Width               - Number of bits
  *
- * RETURN:      Value read from physical memory address.  Always returned
+ * RETURN:      Value read from physical memory address. Always returned
  *              as a 32-bit integer, regardless of the read width.
  *
  * DESCRIPTION: Read data from a physical memory address
@@ -1354,9 +1325,9 @@ AcpiOsReadMemory (
  *
  * FUNCTION:    AcpiOsWriteMemory
  *
- * PARAMETERS:  Address             Physical Memory Address to write
- *              Value               Value to write
- *              Width               Number of bits
+ * PARAMETERS:  Address             - Physical Memory Address to write
+ *              Value               - Value to write
+ *              Width               - Number of bits
  *
  * RETURN:      None
  *
@@ -1379,8 +1350,8 @@ AcpiOsWriteMemory (
  *
  * FUNCTION:    AcpiOsSignal
  *
- * PARAMETERS:  Function            ACPI CA signal function code
- *              Info                Pointer to function-dependent structure
+ * PARAMETERS:  Function            - ACPI CA signal function code
+ *              Info                - Pointer to function-dependent structure
  *
  * RETURN:      Status
  *
@@ -1483,4 +1454,61 @@ AcpiOsReleaseObject (
     return (AE_OK);
 }
 
-#endif
+#endif /* ACPI_USE_LOCAL_CACHE */
+
+
+/* Optional multi-thread support */
+
+#ifndef ACPI_SINGLE_THREADED
+/******************************************************************************
+ *
+ * FUNCTION:    AcpiOsGetThreadId
+ *
+ * PARAMETERS:  None
+ *
+ * RETURN:      Id of the running thread
+ *
+ * DESCRIPTION: Get the Id of the current (running) thread
+ *
+ *****************************************************************************/
+
+ACPI_THREAD_ID
+AcpiOsGetThreadId (
+    void)
+{
+    DWORD                   ThreadId;
+
+    /* Ensure ID is never 0 */
+
+    ThreadId = GetCurrentThreadId ();
+    return ((ACPI_THREAD_ID) (ThreadId + 1));
+}
+
+
+/******************************************************************************
+ *
+ * FUNCTION:    AcpiOsExecute
+ *
+ * PARAMETERS:  Type                - Type of execution
+ *              Function            - Address of the function to execute
+ *              Context             - Passed as a parameter to the function
+ *
+ * RETURN:      Status
+ *
+ * DESCRIPTION: Execute a new thread
+ *
+ *****************************************************************************/
+
+ACPI_STATUS
+AcpiOsExecute (
+    ACPI_EXECUTE_TYPE       Type,
+    ACPI_OSD_EXEC_CALLBACK  Function,
+    void                    *Context)
+{
+
+    _beginthread (Function, (unsigned) 0, Context);
+    return (0);
+}
+
+#endif /* ACPI_SINGLE_THREADED */
+

@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -704,8 +704,8 @@ AcpiDmUpdateResourceName (
 
     Name[0] = '_';
     Name[1] = AcpiGbl_Prefix[AcpiGbl_NextPrefix];
-    Name[2] = AcpiUtHexToAsciiChar (AcpiGbl_NextResourceId, 4);
-    Name[3] = AcpiUtHexToAsciiChar (AcpiGbl_NextResourceId, 0);
+    Name[2] = AcpiUtHexToAsciiChar ((UINT64) AcpiGbl_NextResourceId, 4);
+    Name[3] = AcpiUtHexToAsciiChar ((UINT64) AcpiGbl_NextResourceId, 0);
 
     /* Update globals for next name */
 

@@ -7,7 +7,7 @@ INCLUDES = -I./include -I$(DRV_DIR)/include -I$(DRV_DIR)/include/linux
 
 DEFINES = -DACPI_LIBRARY -D_SINGLE_THREADED -D__KERNEL__ -DCONFIG_X86_32
 
-CFLAGS= -Wall -c -O2 -fomit-frame-pointer -fno-builtin-printf -Wstrict-prototypes 
+CFLAGS= -Wall -c -O2 -fomit-frame-pointer -fno-builtin-printf -Wstrict-prototypes
 
 NAME=	ACPICA
 
@@ -31,6 +31,7 @@ ACPICA_SRCS=	\
         	disassembler/dmutils.c \
         	disassembler/dmwalk.c \
         	events/evevent.c \
+                events/evglock.c \
         	events/evgpe.c \
         	events/evgpeblk.c \
         	events/evgpeinit.c \
@@ -44,10 +45,13 @@ ACPICA_SRCS=	\
         	events/evxfregn.c \
         	hardware/hwacpi.c \
         	hardware/hwgpe.c \
+                hardware/hwpci.c \
         	hardware/hwregs.c \
         	hardware/hwsleep.c \
         	hardware/hwvalid.c \
         	hardware/hwxface.c \
+                dispatcher/dsargs.c \
+                dispatcher/dscontrol.c \
         	dispatcher/dsfield.c \
         	dispatcher/dsinit.c \
         	dispatcher/dsmethod.c \
@@ -57,6 +61,7 @@ ACPICA_SRCS=	\
         	dispatcher/dsutils.c \
         	dispatcher/dswexec.c \
         	dispatcher/dswload.c \
+                dispatcher/dswload2.c \
         	dispatcher/dswscope.c \
         	dispatcher/dswstate.c \
         	executer/exconfig.c \
@@ -148,6 +153,9 @@ ACPICA_SRCS=	\
         	utilities/utstate.c \
         	utilities/uttrack.c \
         	utilities/utxface.c \
+                utilities/utxferror.c \
+                utilities/utdecode.c  \
+                utilities/utosi.c  \
         	osunixxf.c
 
 ACPICA_OBJS =  $(patsubst %.c,%.o, $(ACPICA_SRCS))

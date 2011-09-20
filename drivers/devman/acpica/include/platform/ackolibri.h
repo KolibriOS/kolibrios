@@ -1,7 +1,5 @@
 /******************************************************************************
  *
- * Name: achaiku.h - OS specific defines, etc.
- *       $Revision: 1.1 $
  *
  *****************************************************************************/
 
@@ -134,7 +132,6 @@
 #define asm         __asm__
 
 #define ACPI_USE_DO_WHILE_0
-#define ACPI_THREAD_ID              UINT32
 
 #define ACPI_USE_NATIVE_DIVIDE
 

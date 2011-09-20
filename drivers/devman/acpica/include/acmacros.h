@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -400,8 +400,8 @@
  * the plist contains a set of parens to allow variable-length lists.
  * These macros are used for both the debug and non-debug versions of the code.
  */
-#define ACPI_ERROR_NAMESPACE(s, e)      AcpiNsReportError (AE_INFO, s, e);
-#define ACPI_ERROR_METHOD(s, n, p, e)   AcpiNsReportMethodError (AE_INFO, s, n, p, e);
+#define ACPI_ERROR_NAMESPACE(s, e)      AcpiUtNamespaceError (AE_INFO, s, e);
+#define ACPI_ERROR_METHOD(s, n, p, e)   AcpiUtMethodError (AE_INFO, s, n, p, e);
 #define ACPI_WARN_PREDEFINED(plist)     AcpiUtPredefinedWarning plist
 #define ACPI_INFO_PREDEFINED(plist)     AcpiUtPredefinedInfo plist
 

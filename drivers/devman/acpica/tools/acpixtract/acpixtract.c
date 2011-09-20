@@ -9,7 +9,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -122,54 +122,54 @@
 
 /* Note: This is a 32-bit program only */
 
-#define VERSION             0x20100107
+#define VERSION             0x20110330
 #define FIND_HEADER         0
 #define EXTRACT_DATA        1
 #define BUFFER_SIZE         256
-
+#define MIN_HEADER_LENGTH   6   /* strlen ("DSDT @") */
 
 /* Local prototypes */
 
-void
+static void
 CheckAscii (
     char                    *Name,
     int                     Count);
 
-void
+static void
 NormalizeSignature (
     char                    *Signature);
 
-unsigned int
+static unsigned int
 GetNextInstance (
     char                    *InputPathname,
     char                    *Signature);
 
-int
+static int
 ExtractTables (
     char                    *InputPathname,
     char                    *Signature,
     unsigned int            MinimumInstances);
 
-size_t
+static size_t
 GetTableHeader (
     FILE                    *InputFile,
     unsigned char           *OutputData);
 
-unsigned int
+static unsigned int
 CountTableInstances (
     char                    *InputPathname,
     char                    *Signature);
 
-int
+static int
 ListTables (
     char                    *InputPathname);
 
-size_t
+static size_t
 ConvertLine (
     char                    *InputLine,
     unsigned char           *OutputData);
 
-void
+static void
 DisplayUsage (
     void);
 
@@ -196,9 +196,9 @@ struct TableInfo
     struct TableInfo        *Next;
 };
 
-struct TableInfo            *ListHead = NULL;
-char                        Filename[16];
-unsigned char               Data[16];
+static struct TableInfo     *ListHead = NULL;
+static char                 Filename[16];
+static unsigned char        Data[16];
 
 
 /******************************************************************************
@@ -209,7 +209,7 @@ unsigned char               Data[16];
  *
  ******************************************************************************/
 
-void
+static void
 DisplayUsage (
     void)
 {
@@ -240,7 +240,7 @@ DisplayUsage (
  *
  ******************************************************************************/
 
-void
+static void
 CheckAscii (
     char                    *Name,
     int                     Count)
@@ -270,7 +270,7 @@ CheckAscii (
  *
  ******************************************************************************/
 
-void
+static void
 NormalizeSignature (
     char                    *Signature)
 {
@@ -295,7 +295,7 @@ NormalizeSignature (
  *
  ******************************************************************************/
 
-size_t
+static size_t
 ConvertLine (
     char                    *InputLine,
     unsigned char           *OutputData)
@@ -353,7 +353,7 @@ ConvertLine (
  *
  ******************************************************************************/
 
-size_t
+static size_t
 GetTableHeader (
     FILE                    *InputFile,
     unsigned char           *OutputData)
@@ -401,7 +401,7 @@ GetTableHeader (
  *
  ******************************************************************************/
 
-unsigned int
+static unsigned int
 CountTableInstances (
     char                    *InputPathname,
     char                    *Signature)
@@ -459,7 +459,7 @@ CountTableInstances (
  *
  ******************************************************************************/
 
-unsigned int
+static unsigned int
 GetNextInstance (
     char                    *InputPathname,
     char                    *Signature)
@@ -520,7 +520,7 @@ GetNextInstance (
  *
  ******************************************************************************/
 
-int
+static int
 ExtractTables (
     char                    *InputPathname,
     char                    *Signature,
@@ -577,10 +577,30 @@ ExtractTables (
         {
         case FIND_HEADER:
 
+            /* Ignore lines that are too short to be header lines */
+
+            if (strlen (Buffer) < MIN_HEADER_LENGTH)
+            {
+                continue;
+            }
+
             /* Ignore empty lines and lines that start with a space */
 
             if ((Buffer[0] == ' ') ||
                 (Buffer[0] == '\n'))
+            {
+                continue;
+            }
+
+            /*
+             * Ignore lines that are not of the form <sig> @ <addr>. Examples:
+             *
+             * DSDT @ 0x737e4000
+             * XSDT @ 0x737f2fff
+             * RSD PTR @ 0xf6cd0
+             * SSDT @ (nil)
+             */
+            if (!strstr (Buffer, " @ "))
             {
                 continue;
             }
@@ -639,8 +659,8 @@ ExtractTables (
                 OutputFile = NULL;
                 State = FIND_HEADER;
 
-                printf ("Acpi table [%4.4s] - % 7d bytes written to %s\n",
-                    ThisSignature, TotalBytesWritten, Filename);
+                printf ("Acpi table [%4.4s] - %u bytes written to %s\n",
+                    ThisSignature, (unsigned int) TotalBytesWritten, Filename);
                 continue;
             }
 
@@ -684,8 +704,8 @@ CleanupAndExit:
         {
             /* Received an EOF while extracting data */
 
-            printf ("Acpi table [%4.4s] - % 7d bytes written to %s\n",
-                ThisSignature, TotalBytesWritten, Filename);
+            printf ("Acpi table [%4.4s] - %u bytes written to %s\n",
+                ThisSignature, (unsigned int) TotalBytesWritten, Filename);
         }
     }
 
@@ -707,7 +727,7 @@ CleanupAndExit:
  *
  ******************************************************************************/
 
-int
+static int
 ListTables (
     char                    *InputPathname)
 {

@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -792,6 +792,7 @@ AcpiDmXrefDescendingOp (
     ACPI_PARSE_OBJECT       *NextOp;
     ACPI_NAMESPACE_NODE     *Node;
     ACPI_OPERAND_OBJECT     *Object;
+    UINT32                  ParamCount = 0;
 
 
     WalkState = Info->WalkState;
@@ -880,18 +881,13 @@ AcpiDmXrefDescendingOp (
         if (Object)
         {
             ObjectType2 = Object->Common.Type;
-        }
-
         if (ObjectType2 == ACPI_TYPE_METHOD)
         {
-            AcpiDmAddToExternalList (Op, Path, ACPI_TYPE_METHOD,
-                Object->Method.ParamCount);
+                ParamCount = Object->Method.ParamCount;
         }
-        else
-        {
-            AcpiDmAddToExternalList (Op, Path, (UINT8) ObjectType2, 0);
         }
 
+        AcpiDmAddToExternalList (Op, Path, (UINT8) ObjectType2, ParamCount);
         Op->Common.Node = Node;
     }
     else

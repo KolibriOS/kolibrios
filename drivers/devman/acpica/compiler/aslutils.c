@@ -9,7 +9,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -117,32 +117,21 @@
 
 #include "aslcompiler.h"
 #include "aslcompiler.y.h"
+#include "acdisasm.h"
 #include "acnamesp.h"
 #include "amlcode.h"
+#include <acapps.h>
 
 #define _COMPONENT          ACPI_COMPILER
         ACPI_MODULE_NAME    ("aslutils")
 
-#ifdef _USE_BERKELEY_YACC
-extern const char * const       AslCompilername[];
-static const char * const       *yytname = &AslCompilername[254];
-#else
-extern const char * const       yytname[];
-#endif
-
-char                    HexLookup[] =
+char                        AslHexLookup[] =
 {
     '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
 };
 
 
 /* Local prototypes */
-
-static ACPI_STATUS
-UtStrtoul64 (
-    char                    *String,
-    UINT32                  Base,
-    UINT64                  *RetInteger);
 
 static void
 UtPadNameWithUnderscores (
@@ -153,6 +142,50 @@ static void
 UtAttachNameseg (
     ACPI_PARSE_OBJECT       *Op,
     char                    *Name);
+
+
+/*******************************************************************************
+ *
+ * FUNCTION:    UtDisplaySupportedTables
+ *
+ * PARAMETERS:  None
+ *
+ * RETURN:      None
+ *
+ * DESCRIPTION: Print all supported ACPI table names.
+ *
+ ******************************************************************************/
+
+void
+UtDisplaySupportedTables (
+    void)
+{
+    ACPI_DMTABLE_DATA       *TableData;
+    UINT32                  i = 6;
+
+
+    printf ("\nACPI tables supported by iASL subsystems in "
+        "version %8.8X:\n"
+        "  ASL and Data Table compilers\n"
+        "  AML and Data Table disassemblers\n"
+        "  ACPI table template generator\n\n", ACPI_CA_VERSION);
+
+    /* Special tables */
+
+    printf ("%8u) %s    %s\n", 1, ACPI_SIG_DSDT, "Differentiated System Description Table");
+    printf ("%8u) %s    %s\n", 2, ACPI_SIG_SSDT, "Secondary System Description Table");
+    printf ("%8u) %s    %s\n", 3, ACPI_SIG_FADT, "Fixed ACPI Description Table (FADT)");
+    printf ("%8u) %s    %s\n", 4, ACPI_SIG_FACS, "Firmware ACPI Control Structure");
+    printf ("%8u) %s    %s\n", 5, ACPI_RSDP_NAME, "Root System Description Pointer");
+
+    /* All data tables with common table header */
+
+    for (TableData = AcpiDmTableData; TableData->Signature; TableData++)
+    {
+        printf ("%8u) %s    %s\n", i, TableData->Signature, TableData->Name);
+        i++;
+    }
+}
 
 
 /*******************************************************************************
@@ -340,8 +373,8 @@ UtConvertByteToHex (
     Buffer[0] = '0';
     Buffer[1] = 'x';
 
-    Buffer[2] = (UINT8) HexLookup[(RawByte >> 4) & 0xF];
-    Buffer[3] = (UINT8) HexLookup[RawByte & 0xF];
+    Buffer[2] = (UINT8) AslHexLookup[(RawByte >> 4) & 0xF];
+    Buffer[3] = (UINT8) AslHexLookup[RawByte & 0xF];
 }
 
 
@@ -366,8 +399,8 @@ UtConvertByteToAsmHex (
 {
 
     Buffer[0] = '0';
-    Buffer[1] = (UINT8) HexLookup[(RawByte >> 4) & 0xF];
-    Buffer[2] = (UINT8) HexLookup[RawByte & 0xF];
+    Buffer[1] = (UINT8) AslHexLookup[(RawByte >> 4) & 0xF];
+    Buffer[2] = (UINT8) AslHexLookup[RawByte & 0xF];
     Buffer[3] = 'h';
 }
 
@@ -476,32 +509,6 @@ UtSetParseOpName (
 
 /*******************************************************************************
  *
- * FUNCTION:    UtGetOpName
- *
- * PARAMETERS:  ParseOpcode         - Parser keyword ID
- *
- * RETURN:      Pointer to the opcode name
- *
- * DESCRIPTION: Get the ascii name of the parse opcode
- *
- ******************************************************************************/
-
-char *
-UtGetOpName (
-    UINT32                  ParseOpcode)
-{
-
-    /*
-     * First entries (ASL_YYTNAME_START) in yytname are special reserved names.
-     * Ignore first 8 characters of the name
-     */
-    return ((char *) yytname
-        [(ParseOpcode - ASL_FIRST_PARSE_OPCODE) + ASL_YYTNAME_START] + 8);
-}
-
-
-/*******************************************************************************
- *
  * FUNCTION:    UtDisplaySummary
  *
  * PARAMETERS:  FileID          - ID of outpout file
@@ -521,8 +528,8 @@ UtDisplaySummary (
     {
         /* Compiler name and version number */
 
-        FlPrintFile (FileId, "%s version %X [%s]\n",
-            CompilerId, (UINT32) ACPI_CA_VERSION, __DATE__);
+        FlPrintFile (FileId, "%s version %X%s [%s]\n",
+            ASL_COMPILER_NAME, (UINT32) ACPI_CA_VERSION, ACPI_WIDTH, __DATE__);
     }
 
     if (Gbl_FileType == ASL_INPUT_TYPE_ASCII_DATA)
@@ -910,7 +917,7 @@ UtDoConstant (
  *
  ******************************************************************************/
 
-static ACPI_STATUS
+ACPI_STATUS
 UtStrtoul64 (
     char                    *String,
     UINT32                  Base,

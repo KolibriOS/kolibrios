@@ -9,7 +9,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -124,23 +124,18 @@
 
 
 #define ASL_MAX_FILES   256
-char                    *FileList[ASL_MAX_FILES];
-int                     FileCount;
-BOOLEAN                 AslToFile = TRUE;
+static char             *FileList[ASL_MAX_FILES];
+static BOOLEAN          AslToFile = TRUE;
 
 
 /* Local prototypes */
-
-static void
-AslInitializeGlobals (
-    void);
 
 static char **
 AsDoWildcard (
     char                    *DirectoryPathname,
     char                    *FileSpecifier);
 
-UINT8
+static UINT8
 AslDetectSourceFileType (
     ASL_FILE_INFO           *Info);
 
@@ -158,7 +153,7 @@ AslDetectSourceFileType (
  *
  ******************************************************************************/
 
-static void
+void
 AslInitializeGlobals (
     void)
 {
@@ -187,6 +182,9 @@ AslInitializeGlobals (
 
     Gbl_Files[ASL_FILE_AML_OUTPUT].Filename = NULL;
     Gbl_Files[ASL_FILE_AML_OUTPUT].Handle = NULL;
+
+    Gbl_Files[ASL_FILE_SOURCE_OUTPUT].Filename = NULL;
+    Gbl_Files[ASL_FILE_SOURCE_OUTPUT].Handle = NULL;
 }
 
 
@@ -211,6 +209,7 @@ AsDoWildcard (
 #ifdef WIN32
     void                    *DirInfo;
     char                    *Filename;
+    int                     FileCount;
 
 
     FileCount = 0;
@@ -278,7 +277,7 @@ AsDoWildcard (
  *
  ******************************************************************************/
 
-UINT8
+static UINT8
 AslDetectSourceFileType (
     ASL_FILE_INFO           *Info)
 {
@@ -398,7 +397,7 @@ AslDoOneFile (
         /* Shutdown compiler and ACPICA subsystem */
 
         AeClearErrorLog ();
-        AcpiTerminate ();
+        (void) AcpiTerminate ();
 
         /*
          * Gbl_Files[ASL_FILE_INPUT].Filename was replaced with the
@@ -464,17 +463,6 @@ AslDoOneFile (
      */
     case ASL_INPUT_TYPE_ASCII_DATA:
 
-        /*
-         * Require use of command-line option to enable the data table
-         * compiler -- for now, until development of the compiler is
-         * complete.
-         */
-        if (!Gbl_DataTableCompilerAvailable)
-        {
-            printf ("Data Table Compiler is not available yet\n");
-            return (AE_SUPPORT);
-        }
-
         Status = DtDoCompile ();
 
         if (Gbl_Signature)
@@ -490,7 +478,6 @@ AslDoOneFile (
      */
     case ASL_INPUT_TYPE_ASCII_ASL:
 
-
         /* ACPICA subsystem initialization */
 
         Status = AdInitialize ();
@@ -500,7 +487,7 @@ AslDoOneFile (
         }
 
         Status = CmDoCompile ();
-        AcpiTerminate ();
+        (void) AcpiTerminate ();
 
         /*
          * Return non-zero exit code if there have been errors, unless the
@@ -542,10 +529,11 @@ AslDoOneFile (
 
 ACPI_STATUS
 AslDoOnePathname (
-    char                    *Pathname)
+    char                    *Pathname,
+    ASL_PATHNAME_CALLBACK   PathCallback)
 {
     ACPI_STATUS             Status = AE_OK;
-    char                    **FileList;
+    char                    **WildcardList;
     char                    *Filename;
     char                    *FullPathname;
 
@@ -560,16 +548,16 @@ AslDoOnePathname (
 
     /* Expand possible wildcard into a file list (Windows/DOS only) */
 
-    FileList = AsDoWildcard (Gbl_DirectoryPath, Filename);
-    while (*FileList)
+    WildcardList = AsDoWildcard (Gbl_DirectoryPath, Filename);
+    while (*WildcardList)
     {
         FullPathname = ACPI_ALLOCATE (
-            strlen (Gbl_DirectoryPath) + strlen (*FileList) + 1);
+            strlen (Gbl_DirectoryPath) + strlen (*WildcardList) + 1);
 
         /* Construct a full path to the file */
 
         strcpy (FullPathname, Gbl_DirectoryPath);
-        strcat (FullPathname, *FileList);
+        strcat (FullPathname, *WildcardList);
 
         /*
          * If -p not specified, we will use the input filename as the
@@ -582,12 +570,12 @@ AslDoOnePathname (
 
         /* Save status from all compiles */
 
-        Status |= AslDoOneFile (FullPathname);
+        Status |= (*PathCallback) (FullPathname);
 
         ACPI_FREE (FullPathname);
-        ACPI_FREE (*FileList);
-        *FileList = NULL;
-        FileList++;
+        ACPI_FREE (*WildcardList);
+        *WildcardList = NULL;
+        WildcardList++;
     }
 
     ACPI_FREE (Gbl_DirectoryPath);

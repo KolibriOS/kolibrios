@@ -9,7 +9,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -116,7 +116,6 @@
 
 
 #include "aslcompiler.h"
-#include "aslcompiler.y.h"
 
 #define _COMPONENT          ACPI_COMPILER
         ACPI_MODULE_NAME    ("aslrestype2e")
@@ -295,7 +294,7 @@ RsDoExtendedIoDescriptor (
         Descriptor->ExtAddress64.AddressLength,
         Descriptor->ExtAddress64.Granularity,
         Descriptor->ExtAddress64.Flags,
-        MinOp, MaxOp, LengthOp, GranOp);
+        MinOp, MaxOp, LengthOp, GranOp, Op);
 
     Rnode->BufferLength = sizeof (AML_RESOURCE_EXTENDED_ADDRESS64) + StringLength;
     return (Rnode);
@@ -476,7 +475,7 @@ RsDoExtendedMemoryDescriptor (
         Descriptor->ExtAddress64.AddressLength,
         Descriptor->ExtAddress64.Granularity,
         Descriptor->ExtAddress64.Flags,
-        MinOp, MaxOp, LengthOp, GranOp);
+        MinOp, MaxOp, LengthOp, GranOp, Op);
 
     Rnode->BufferLength = sizeof (AML_RESOURCE_EXTENDED_ADDRESS64) + StringLength;
     return (Rnode);
@@ -639,7 +638,7 @@ RsDoExtendedSpaceDescriptor (
         Descriptor->ExtAddress64.AddressLength,
         Descriptor->ExtAddress64.Granularity,
         Descriptor->ExtAddress64.Flags,
-        MinOp, MaxOp, LengthOp, GranOp);
+        MinOp, MaxOp, LengthOp, GranOp, Op);
 
     Rnode->BufferLength = sizeof (AML_RESOURCE_EXTENDED_ADDRESS64) + StringLength;
     return (Rnode);

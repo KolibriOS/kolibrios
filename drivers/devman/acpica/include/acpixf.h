@@ -9,7 +9,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -120,7 +120,7 @@
 
 /* Current ACPICA subsystem version in YYYYMMDD format */
 
-#define ACPI_CA_VERSION                 0x20100528
+#define ACPI_CA_VERSION                 0x20110623
 
 #include "actypes.h"
 #include "actbl.h"
@@ -130,6 +130,7 @@
  */
 extern UINT32               AcpiCurrentGpeCount;
 extern ACPI_TABLE_FADT      AcpiGbl_FADT;
+extern BOOLEAN              AcpiGbl_SystemAwakeAndRunning;
 
 /* Runtime configuration of debug print levels */
 
@@ -141,17 +142,17 @@ extern UINT32               AcpiDbgLayer;
 extern UINT8                AcpiGbl_EnableInterpreterSlack;
 extern UINT8                AcpiGbl_AllMethodsSerialized;
 extern UINT8                AcpiGbl_CreateOsiMethod;
-extern UINT8                AcpiGbl_LeaveWakeGpesDisabled;
 extern UINT8                AcpiGbl_UseDefaultRegisterWidths;
 extern ACPI_NAME            AcpiGbl_TraceMethodName;
 extern UINT32               AcpiGbl_TraceFlags;
 extern UINT8                AcpiGbl_EnableAmlDebugObject;
 extern UINT8                AcpiGbl_CopyDsdtLocally;
 extern UINT8                AcpiGbl_TruncateIoAddresses;
+extern UINT8                AcpiGbl_DisableAutoRepair;
 
 
 /*
- * Global interfaces
+ * Initialization
  */
 ACPI_STATUS
 AcpiInitializeTables (
@@ -175,16 +176,20 @@ ACPI_STATUS
 AcpiTerminate (
     void);
 
-ACPI_STATUS
-AcpiSubsystemStatus (
-    void);
 
+/*
+ * Miscellaneous global interfaces
+ */
 ACPI_STATUS
 AcpiEnable (
     void);
 
 ACPI_STATUS
 AcpiDisable (
+    void);
+
+ACPI_STATUS
+AcpiSubsystemStatus (
     void);
 
 ACPI_STATUS
@@ -203,9 +208,17 @@ ACPI_STATUS
 AcpiPurgeCachedObjects (
     void);
 
+ACPI_STATUS
+AcpiInstallInterface (
+    ACPI_STRING             InterfaceName);
+
+ACPI_STATUS
+AcpiRemoveInterface (
+    ACPI_STRING             InterfaceName);
+
 
 /*
- * ACPI Memory managment
+ * ACPI Memory management
  */
 void *
 AcpiAllocate (
@@ -373,6 +386,11 @@ AcpiInstallInitializationHandler (
     UINT32                  Function);
 
 ACPI_STATUS
+AcpiInstallGlobalEventHandler (
+    ACPI_GBL_EVENT_HANDLER  Handler,
+    void                    *Context);
+
+ACPI_STATUS
 AcpiInstallFixedEventHandler (
     UINT32                  AcpiEvent,
     ACPI_EVENT_HANDLER      Handler,
@@ -382,6 +400,20 @@ ACPI_STATUS
 AcpiRemoveFixedEventHandler (
     UINT32                  AcpiEvent,
     ACPI_EVENT_HANDLER      Handler);
+
+ACPI_STATUS
+AcpiInstallGpeHandler (
+    ACPI_HANDLE             GpeDevice,
+    UINT32                  GpeNumber,
+    UINT32                  Type,
+    ACPI_GPE_HANDLER        Address,
+    void                    *Context);
+
+ACPI_STATUS
+AcpiRemoveGpeHandler (
+    ACPI_HANDLE             GpeDevice,
+    UINT32                  GpeNumber,
+    ACPI_GPE_HANDLER        Address);
 
 ACPI_STATUS
 AcpiInstallNotifyHandler (
@@ -411,26 +443,16 @@ AcpiRemoveAddressSpaceHandler (
     ACPI_ADR_SPACE_HANDLER  Handler);
 
 ACPI_STATUS
-AcpiInstallGpeHandler (
-    ACPI_HANDLE             GpeDevice,
-    UINT32                  GpeNumber,
-    UINT32                  Type,
-    ACPI_EVENT_HANDLER      Address,
-    void                    *Context);
-
-ACPI_STATUS
-AcpiRemoveGpeHandler (
-    ACPI_HANDLE             GpeDevice,
-    UINT32                  GpeNumber,
-    ACPI_EVENT_HANDLER      Address);
-
-ACPI_STATUS
 AcpiInstallExceptionHandler (
     ACPI_EXCEPTION_HANDLER  Handler);
 
+ACPI_STATUS
+AcpiInstallInterfaceHandler (
+    ACPI_INTERFACE_HANDLER  Handler);
+
 
 /*
- * Event interfaces
+ * Global Lock interfaces
  */
 ACPI_STATUS
 AcpiAcquireGlobalLock (
@@ -441,6 +463,10 @@ ACPI_STATUS
 AcpiReleaseGlobalLock (
     UINT32                  Handle);
 
+
+/*
+ * Fixed Event interfaces
+ */
 ACPI_STATUS
 AcpiEnableEvent (
     UINT32                  Event,
@@ -462,8 +488,27 @@ AcpiGetEventStatus (
 
 
 /*
- * GPE Interfaces
+ * General Purpose Event (GPE) Interfaces
  */
+ACPI_STATUS
+AcpiUpdateAllGpes (
+    void);
+
+ACPI_STATUS
+AcpiEnableGpe (
+    ACPI_HANDLE             GpeDevice,
+    UINT32                  GpeNumber);
+
+ACPI_STATUS
+AcpiDisableGpe (
+    ACPI_HANDLE             GpeDevice,
+    UINT32                  GpeNumber);
+
+ACPI_STATUS
+AcpiClearGpe (
+    ACPI_HANDLE             GpeDevice,
+    UINT32                  GpeNumber);
+
 ACPI_STATUS
 AcpiSetGpe (
     ACPI_HANDLE             GpeDevice,
@@ -471,21 +516,21 @@ AcpiSetGpe (
     UINT8                   Action);
 
 ACPI_STATUS
-AcpiEnableGpe (
-    ACPI_HANDLE             GpeDevice,
-    UINT32                  GpeNumber,
-    UINT8                   GpeType);
-
-ACPI_STATUS
-AcpiDisableGpe (
-    ACPI_HANDLE             GpeDevice,
-    UINT32                  GpeNumber,
-    UINT8                   GpeType);
-
-ACPI_STATUS
-AcpiClearGpe (
+AcpiFinishGpe (
     ACPI_HANDLE             GpeDevice,
     UINT32                  GpeNumber);
+
+ACPI_STATUS
+AcpiSetupGpeForWake (
+    ACPI_HANDLE             ParentDevice,
+    ACPI_HANDLE             GpeDevice,
+    UINT32                  GpeNumber);
+
+ACPI_STATUS
+AcpiSetGpeWakeMask (
+    ACPI_HANDLE             GpeDevice,
+    UINT32                  GpeNumber,
+    UINT8                   Action);
 
 ACPI_STATUS
 AcpiGetGpeStatus (

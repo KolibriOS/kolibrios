@@ -68,6 +68,7 @@ static ACPI_HANDLE pci_root_handle;
 #define acpi_remap( addr ) MapIoMem((void*)(addr),4096, 0x01)
 
 char* strdup(const char *str);
+int sprintf(char *buf, const char *fmt, ...);
 
 void print_pci_irqs();
 
@@ -334,7 +335,8 @@ get_current_resources(struct acpi_device *device, int busnum,
     if (!info.res)
         goto res_alloc_fail;
 
-    vsprintf(buf,"PCI Bus %04x:%02x", domain, busnum);
+    sprintf(buf,"PCI Bus %04x:%02x", domain, busnum);
+
     info.name = strdup(buf);
 
     if (!info.name)
@@ -587,12 +589,6 @@ u32_t drvEntry(int action, char *cmdline)
         return 0;
     }
 
-    status = AcpiReallocateRootTable();
-    if (ACPI_FAILURE(status)) {
-        dbgprintf("Unable to reallocate ACPI tables\n");
-        goto err;
-    }
-
     status = AcpiInitializeSubsystem();
     if (status != AE_OK) {
           dbgprintf("AcpiInitializeSubsystem failed (%s)\n",
@@ -600,7 +596,7 @@ u32_t drvEntry(int action, char *cmdline)
           goto err;
     }
 
-    status = AcpiInitializeTables(NULL, 0, TRUE);
+    status = AcpiInitializeTables (NULL, 16, FALSE);
     if (status != AE_OK) {
           dbgprintf("AcpiInitializeTables failed (%s)\n",
                      AcpiFormatException(status));

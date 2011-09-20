@@ -9,7 +9,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -161,9 +161,9 @@ ACPI_STRING_TABLE           StandardDataTypes[] = {
  *
  ******************************************************************************/
 
-char                        LinuxHeader[] =
+char                        DualLicenseHeader[] =
 "/*\n"
-" * Copyright (C) 2000 - 2010, Intel Corp.\n"
+" * Copyright (C) 2000 - 2011, Intel Corp.\n"
 " * All rights reserved.\n"
 " *\n"
 " * Redistribution and use in source and binary forms, with or without\n"
@@ -208,40 +208,44 @@ ACPI_STRING_TABLE           LinuxDataTypes[] = {
 
     /* Declarations first - ACPI types and standard C types */
 
-    {"INT64       ",             "s64         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"UINT64      ",             "u64         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"UINT32      ",             "u32         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"INT32       ",             "s32         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"UINT16      ",             "u16         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"INT16       ",             "s16         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"UINT8       ",             "u8          ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"BOOLEAN     ",             "u8          ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"char        ",             "char        ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"void        ",             "void        ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"char *      ",             "char *      ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"void *      ",             "void *      ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"int         ",             "int         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"FILE        ",             "FILE        ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
-    {"size_t      ",             "size_t      ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"INT64       ",            "s64         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"UINT64      ",            "u64         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"UINT32      ",            "u32         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"INT32       ",            "s32         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"UINT16      ",            "u16         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"INT16       ",            "s16         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"UINT8       ",            "u8          ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"BOOLEAN     ",            "u8          ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"char        ",            "char        ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"void        ",            "void        ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"char *      ",            "char *      ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"void *      ",            "void *      ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"int         ",            "int         ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"FILE        ",            "FILE        ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
+    {"size_t      ",            "size_t      ",     REPLACE_WHOLE_WORD | EXTRA_INDENT_C},
 
     /* Now do embedded typecasts */
 
-    {"UINT64",                   "u64",                      REPLACE_WHOLE_WORD},
-    {"UINT32",                   "u32",                      REPLACE_WHOLE_WORD},
-    {"UINT16",                   "u16",                      REPLACE_WHOLE_WORD},
-    {"UINT8",                    "u8",                       REPLACE_WHOLE_WORD},
-    {"BOOLEAN",                  "u8",                       REPLACE_WHOLE_WORD},
+    {"UINT64",                  "u64",              REPLACE_WHOLE_WORD},
+    {"UINT32",                  "u32",              REPLACE_WHOLE_WORD},
+    {"UINT16",                  "u16",              REPLACE_WHOLE_WORD},
+    {"UINT8",                   "u8",               REPLACE_WHOLE_WORD},
+    {"BOOLEAN",                 "u8",               REPLACE_WHOLE_WORD},
 
-    {"INT64  ",                  "s64    ",                  REPLACE_WHOLE_WORD},
-    {"INT64",                    "s64",                      REPLACE_WHOLE_WORD},
-    {"INT32  ",                  "s32    ",                  REPLACE_WHOLE_WORD},
-    {"INT32",                    "s32",                      REPLACE_WHOLE_WORD},
-    {"INT16  ",                  "s16    ",                  REPLACE_WHOLE_WORD},
-    {"INT8   ",                  "s8     ",                  REPLACE_WHOLE_WORD},
-    {"INT16",                    "s16",                      REPLACE_WHOLE_WORD},
-    {"INT8",                     "s8",                       REPLACE_WHOLE_WORD},
+    {"INT64  ",                 "s64    ",          REPLACE_WHOLE_WORD},
+    {"INT64",                   "s64",              REPLACE_WHOLE_WORD},
+    {"INT32  ",                 "s32    ",          REPLACE_WHOLE_WORD},
+    {"INT32",                   "s32",              REPLACE_WHOLE_WORD},
+    {"INT16  ",                 "s16    ",          REPLACE_WHOLE_WORD},
+    {"INT8   ",                 "s8     ",          REPLACE_WHOLE_WORD},
+    {"INT16",                   "s16",              REPLACE_WHOLE_WORD},
+    {"INT8",                    "s8",               REPLACE_WHOLE_WORD},
 
-    {NULL,                       NULL,                       0},
+    /* Include file paths */
+
+    {"\"acpi.h\"",              "<acpi/acpi.h>",    REPLACE_WHOLE_WORD},
+
+    {NULL,                      NULL,               0}
 };
 
 ACPI_TYPED_IDENTIFIER_TABLE           AcpiIdentifiers[] = {
@@ -283,6 +287,7 @@ ACPI_TYPED_IDENTIFIER_TABLE           AcpiIdentifiers[] = {
     {"ACPI_EXECUTE_TYPE",                   SRC_TYPE_SIMPLE},
     {"ACPI_EXECUTE_WALK",                   SRC_TYPE_STRUCT},
     {"ACPI_EXTERNAL_LIST",                  SRC_TYPE_STRUCT},
+    {"ACPI_EXTERNAL_FILE",                  SRC_TYPE_STRUCT},
     {"ACPI_FADT_INFO",                      SRC_TYPE_STRUCT},
     {"ACPI_FADT_PM_INFO",                   SRC_TYPE_STRUCT},
     {"ACPI_FIELD_INFO",                     SRC_TYPE_STRUCT},
@@ -297,6 +302,7 @@ ACPI_TYPED_IDENTIFIER_TABLE           AcpiIdentifiers[] = {
     {"ACPI_GPE_DEVICE_INFO",                SRC_TYPE_STRUCT},
     {"ACPI_GPE_EVENT_INFO",                 SRC_TYPE_STRUCT},
     {"ACPI_GPE_HANDLER",                    SRC_TYPE_SIMPLE},
+    {"ACPI_GPE_HANDLER_INFO",               SRC_TYPE_STRUCT},
     {"ACPI_GPE_INDEX_INFO",                 SRC_TYPE_STRUCT},
     {"ACPI_GPE_REGISTER_INFO",              SRC_TYPE_STRUCT},
     {"ACPI_GPE_WALK_INFO",                  SRC_TYPE_STRUCT},
@@ -377,6 +383,7 @@ ACPI_TYPED_IDENTIFIER_TABLE           AcpiIdentifiers[] = {
     {"ACPI_PARSE_STATE",                    SRC_TYPE_STRUCT},
     {"ACPI_PARSE_UPWARDS",                  SRC_TYPE_SIMPLE},
     {"ACPI_PARSE_VALUE",                    SRC_TYPE_UNION},
+    {"ACPI_PCI_DEVICE",                     SRC_TYPE_STRUCT},
     {"ACPI_PCI_ID",                         SRC_TYPE_STRUCT},
     {"ACPI_PCI_ROUTING_TABLE",              SRC_TYPE_STRUCT},
     {"ACPI_PHYSICAL_ADDRESS",               SRC_TYPE_SIMPLE},
@@ -600,39 +607,19 @@ ACPI_TYPED_IDENTIFIER_TABLE           AcpiIdentifiers[] = {
     {"ACPI_MADT_PROCESSOR_APIC",            SRC_TYPE_STRUCT},
     {"ACPI_MCFG_ALLOCATION",                SRC_TYPE_STRUCT},
     {"ACPI_MSCT_PROXIMITY",                 SRC_TYPE_STRUCT},
+    {"ACPI_RSDP_COMMON",                    SRC_TYPE_STRUCT},
+    {"ACPI_RSDP_EXTENSION",                 SRC_TYPE_STRUCT},
     {"ACPI_SRAT_CPU_AFFINITY",              SRC_TYPE_STRUCT},
     {"ACPI_SRAT_HEADER",                    SRC_TYPE_STRUCT},
     {"ACPI_SRAT_MEM_AFFINITY",              SRC_TYPE_STRUCT},
     {"ACPI_SRAT_X2APIC_CPU_AFFINITY",       SRC_TYPE_STRUCT},
     {"ACPI_WDAT_ENTRY",                     SRC_TYPE_STRUCT},
 
+    /* Data Table compiler */
 
-    /* Legacy names, should be removed  */
+    {"DT_FIELD",                            SRC_TYPE_STRUCT},
+    {"DT_SUBTABLE",                         SRC_TYPE_STRUCT},
 
-    {"EC_BOOT_RESOURCES",                   SRC_TYPE_STRUCT},
-    {"HPET_TABLE",                          SRC_TYPE_STRUCT},
-    {"MADT_ADDRESS_OVERRIDE",               SRC_TYPE_STRUCT},
-    {"MADT_INTERRUPT_OVERRIDE",             SRC_TYPE_STRUCT},
-    {"MADT_INTERRUPT_SOURCE",               SRC_TYPE_STRUCT},
-    {"MADT_IO_APIC",                        SRC_TYPE_STRUCT},
-    {"MADT_IO_SAPIC",                       SRC_TYPE_STRUCT},
-    {"MADT_LOCAL_APIC_NMI",                 SRC_TYPE_STRUCT},
-    {"MADT_LOCAL_SAPIC",                    SRC_TYPE_STRUCT},
-    {"MADT_NMI_SOURCE",                     SRC_TYPE_STRUCT},
-    {"MADT_PROCESSOR_APIC",                 SRC_TYPE_STRUCT},
-    {"MEMORY_AFFINITY",                     SRC_TYPE_STRUCT},
-    {"MULTIPLE_APIC_TABLE",                 SRC_TYPE_STRUCT},
-    {"SMART_BATTERY_TABLE",                 SRC_TYPE_STRUCT},
-    {"STATIC_RESOURCE_ALLOC",               SRC_TYPE_STRUCT},
-    {"SYSTEM_RESOURCE_AFFINITY",            SRC_TYPE_STRUCT},
-    {"SYSTEM_LOCALITY_INFO",                SRC_TYPE_STRUCT},
-    {"FACS_DESCRIPTOR",                     SRC_TYPE_STRUCT},
-    {"FADT_DESCRIPTOR_REV1",                SRC_TYPE_STRUCT},
-    {"FADT_DESCRIPTOR",                     SRC_TYPE_STRUCT},
-    {"FADT_DESCRIPTOR_REV2_MINUS",          SRC_TYPE_STRUCT},
-    {"RSDP_DESCRIPTOR",                     SRC_TYPE_STRUCT},
-    {"RSDT_DESCRIPTOR",                     SRC_TYPE_STRUCT},
-    {"XSDT_DESCRIPTOR",                     SRC_TYPE_STRUCT},
     {NULL, 0}
 };
 
@@ -677,7 +664,7 @@ ACPI_IDENTIFIER_TABLE       LinuxConditionalIdentifiers[] = {
 
 ACPI_CONVERSION_TABLE       LinuxConversionTable = {
 
-    LinuxHeader,
+    DualLicenseHeader,
     FLG_NO_CARRIAGE_RETURNS | FLG_LOWERCASE_DIRNAMES,
 
     AcpiIdentifiers,
@@ -714,7 +701,6 @@ ACPI_CONVERSION_TABLE       LinuxConversionTable = {
  * Code cleanup translation tables
  *
  ******************************************************************************/
-
 
 ACPI_CONVERSION_TABLE       CleanupConversionTable = {
 
@@ -773,6 +759,40 @@ ACPI_CONVERSION_TABLE       StatsConversionTable = {
 
 /******************************************************************************
  *
+ * Dual License injection translation table
+ *
+ ******************************************************************************/
+
+ACPI_CONVERSION_TABLE       LicenseConversionTable = {
+
+    DualLicenseHeader,
+    FLG_DEFAULT_FLAGS,
+    NULL,
+
+    /* C source files */
+
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    (CVT_COUNT_TABS | CVT_COUNT_NON_ANSI_COMMENTS | CVT_COUNT_LINES |
+     CVT_COUNT_SHORTMULTILINE_COMMENTS),
+
+    /* C header files */
+
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    (CVT_COUNT_TABS | CVT_COUNT_NON_ANSI_COMMENTS | CVT_COUNT_LINES |
+     CVT_COUNT_SHORTMULTILINE_COMMENTS),
+};
+
+
+/******************************************************************************
+ *
  * Customizable translation tables
  *
  ******************************************************************************/
@@ -780,14 +800,14 @@ ACPI_CONVERSION_TABLE       StatsConversionTable = {
 ACPI_STRING_TABLE           CustomReplacements[] = {
 
 
-    {"ACPI_INTEGER_MAX", "ACPI_UINT64_MAX",   REPLACE_WHOLE_WORD},
+    {"(c) 1999 - 2010",      "(c) 1999 - 2011",         REPLACE_WHOLE_WORD}, /* Main ACPICA source */
+    {"(c) 2006 - 2010",      "(c) 2006 - 2011",         REPLACE_WHOLE_WORD}, /* Test suites */
 
 #if 0
     {"(ACPI_INTEGER)", "(UINT64)",   REPLACE_WHOLE_WORD},
     {"ACPI_INTEGER        ", "UINT64              ",   REPLACE_WHOLE_WORD},
     {"ACPI_INTEGER", "UINT64",   REPLACE_WHOLE_WORD},
-    {"(c) 1999 - 2009",      "(c) 1999 - 2010",         REPLACE_WHOLE_WORD}, /* Main ACPICA source */
-    {"(c) 2006 - 2009",      "(c) 2006 - 2010",         REPLACE_WHOLE_WORD}, /* Test suites */
+    {"ACPI_INTEGER_MAX", "ACPI_UINT64_MAX",   REPLACE_WHOLE_WORD},
     {"#include \"acpi.h\"",   "#include \"acpi.h\"\n#include \"accommon.h\"",  REPLACE_SUBSTRINGS},
     {"AcpiTbSumTable", "AcpiTbSumTable",  REPLACE_WHOLE_WORD},
     {"ACPI_SIG_BOOT", "ACPI_SIG_BOOT",   REPLACE_WHOLE_WORD},

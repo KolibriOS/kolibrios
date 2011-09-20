@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -512,22 +512,6 @@ AcpiNsGetType (
 UINT32
 AcpiNsLocal (
     ACPI_OBJECT_TYPE        Type);
-
-void
-AcpiNsReportError (
-    const char              *ModuleName,
-    UINT32                  LineNumber,
-    const char              *InternalName,
-    ACPI_STATUS             LookupStatus);
-
-void
-AcpiNsReportMethodError (
-    const char              *ModuleName,
-    UINT32                  LineNumber,
-    const char              *Message,
-    ACPI_NAMESPACE_NODE     *Node,
-    const char              *Path,
-    ACPI_STATUS             LookupStatus);
 
 void
 AcpiNsPrintNodePathname (

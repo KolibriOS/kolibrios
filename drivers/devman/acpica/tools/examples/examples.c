@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -504,3 +504,18 @@ AeLocalGetRootPointer (
     return (0);
 }
 
+ACPI_THREAD_ID
+AcpiOsGetThreadId (
+    void)
+{
+    return (0xFFFF);
+}
+
+ACPI_STATUS
+AcpiOsExecute (
+    ACPI_EXECUTE_TYPE       Type,
+    ACPI_OSD_EXEC_CALLBACK  Function,
+    void                    *Context)
+{
+    return (AE_SUPPORT);
+}

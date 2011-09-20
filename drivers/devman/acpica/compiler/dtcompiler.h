@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -142,6 +142,10 @@
 #define DT_FIELD_TYPE_FLAG              4
 #define DT_FIELD_TYPE_FLAGS_INTEGER     5
 #define DT_FIELD_TYPE_INLINE_SUBTABLE   6
+#define DT_FIELD_TYPE_UUID              7
+#define DT_FIELD_TYPE_UNICODE           8
+#define DT_FIELD_TYPE_DEVICE_PATH       9
+#define DT_FIELD_TYPE_LABEL             10
 
 
 /*
@@ -149,13 +153,15 @@
  */
 typedef struct dt_field
 {
-    char                    *Name;
-    char                    *Value;
-    struct dt_field         *Next;
+    char                    *Name;      /* Field name (from name : value) */
+    char                    *Value;     /* Field value (from name : value) */
+    struct dt_field         *Next;      /* Next field */
+    struct dt_field         *NextLabel; /* If field is a label, next label */
     UINT32                  Line;       /* Line number for this field */
     UINT32                  ByteOffset; /* Offset in source file for field */
     UINT32                  NameColumn; /* Start column for field name */
     UINT32                  Column;     /* Start column for field value */
+    UINT32                  TableOffset;/* Binary offset within ACPI table */
     UINT8                   Flags;
 
 } DT_FIELD;
@@ -200,6 +206,14 @@ DT_EXTERN DT_SUBTABLE       DT_INIT_GLOBAL (*Gbl_RootTable, NULL);
 
 DT_EXTERN DT_SUBTABLE       DT_INIT_GLOBAL (*Gbl_SubtableStack, NULL);
 
+/* List for defined labels */
+
+DT_EXTERN DT_FIELD          DT_INIT_GLOBAL (*Gbl_LabelList, NULL);
+
+/* Current offset within the binary output table */
+
+DT_EXTERN UINT32            DT_INIT_GLOBAL (Gbl_CurrentTableOffset, 0);
+
 
 /* dtcompiler - main module */
 
@@ -220,6 +234,16 @@ DtScanFile (
 void
 DtOutputBinary (
     DT_SUBTABLE             *RootTable);
+
+void
+DtWriteFieldToListing (
+    UINT8                   *Buffer,
+    DT_FIELD                *Field,
+    UINT32                  Length);
+
+void
+DtWriteTableToListing (
+    void);
 
 
 /* dtsubtable - compile subtables */
@@ -266,6 +290,28 @@ DtGetParentSubtable (
     DT_SUBTABLE             *Subtable);
 
 
+/* dtexpress - Integer expressions and labels */
+
+ACPI_STATUS
+DtResolveIntegerExpression (
+    DT_FIELD                *Field,
+    UINT64                  *ReturnValue);
+
+UINT64
+DtDoOperator (
+    UINT64                  LeftValue,
+    UINT32                  Operator,
+    UINT64                  RightValue);
+
+UINT64
+DtResolveLabel (
+    char                    *LabelString);
+
+void
+DtDetectAllLabels (
+    DT_FIELD                *FieldList);
+
+
 /* dtfield - Compile individual fields within a table */
 
 void
@@ -290,12 +336,30 @@ DtCompileBuffer (
     DT_FIELD                *Field,
     UINT32                  ByteLength);
 
-UINT32
+void
 DtCompileFlag (
     UINT8                   *Buffer,
     DT_FIELD                *Field,
-    ACPI_DMTABLE_INFO       *Info,
-    UINT32                  BitPosition);
+    ACPI_DMTABLE_INFO       *Info);
+
+
+/* dtparser - lex/yacc files */
+
+UINT64
+DtEvaluateExpression (
+    char                    *ExprString);
+
+int
+DtInitLexer (
+    char                    *String);
+
+void
+DtTerminateLexer (
+    void);
+
+char *
+DtGetOpName (
+    UINT32                  ParseOpcode);
 
 
 /* dtutils - Miscellaneous utilities */
@@ -344,8 +408,7 @@ DtGetFileSize (
 
 char*
 DtGetFieldValue (
-    DT_FIELD                *Field,
-    char                    *Name);
+    DT_FIELD                *Field);
 
 UINT8
 DtGetFieldType (
@@ -432,11 +495,19 @@ DtCompileRsdt (
     void                    **PFieldList);
 
 ACPI_STATUS
+DtCompileSlic (
+    void                    **PFieldList);
+
+ACPI_STATUS
 DtCompileSlit (
     void                    **PFieldList);
 
 ACPI_STATUS
 DtCompileSrat (
+    void                    **PFieldList);
+
+ACPI_STATUS
+DtCompileUefi (
     void                    **PFieldList);
 
 ACPI_STATUS
@@ -447,9 +518,46 @@ ACPI_STATUS
 DtCompileXsdt (
     void                    **PFieldList);
 
+ACPI_STATUS
+DtCompileGeneric (
+    void                    **PFieldList);
 
-/* Debug */
+ACPI_DMTABLE_INFO *
+DtGetGenericTableInfo (
+    char                    *Name);
 
-#define MYDEBUG         printf
+/* ACPI Table templates */
+
+extern const unsigned char  TemplateAsf[];
+extern const unsigned char  TemplateBoot[];
+extern const unsigned char  TemplateBert[];
+extern const unsigned char  TemplateCpep[];
+extern const unsigned char  TemplateDbgp[];
+extern const unsigned char  TemplateDmar[];
+extern const unsigned char  TemplateEcdt[];
+extern const unsigned char  TemplateEinj[];
+extern const unsigned char  TemplateErst[];
+extern const unsigned char  TemplateFadt[];
+extern const unsigned char  TemplateHest[];
+extern const unsigned char  TemplateHpet[];
+extern const unsigned char  TemplateIvrs[];
+extern const unsigned char  TemplateMadt[];
+extern const unsigned char  TemplateMcfg[];
+extern const unsigned char  TemplateMchi[];
+extern const unsigned char  TemplateMsct[];
+extern const unsigned char  TemplateRsdt[];
+extern const unsigned char  TemplateSbst[];
+extern const unsigned char  TemplateSlic[];
+extern const unsigned char  TemplateSlit[];
+extern const unsigned char  TemplateSpcr[];
+extern const unsigned char  TemplateSpmi[];
+extern const unsigned char  TemplateSrat[];
+extern const unsigned char  TemplateTcpa[];
+extern const unsigned char  TemplateUefi[];
+extern const unsigned char  TemplateWaet[];
+extern const unsigned char  TemplateWdat[];
+extern const unsigned char  TemplateWddt[];
+extern const unsigned char  TemplateWdrt[];
+extern const unsigned char  TemplateXsdt[];
 
 #endif

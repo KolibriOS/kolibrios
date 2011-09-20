@@ -9,7 +9,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -114,9 +114,11 @@
  *
  *****************************************************************************/
 
+#include "aslcompiler.h"
+
 #include <stdio.h>
 #include <time.h>
-#include "aslcompiler.h"
+#include <acapps.h>
 
 #define _COMPONENT          ACPI_COMPILER
         ACPI_MODULE_NAME    ("aslcompile")
@@ -127,12 +129,12 @@ static void
 CmFlushSourceCode (
     void);
 
-void
+static void
 FlConsumeAnsiComment (
     ASL_FILE_INFO           *FileInfo,
     ASL_FILE_STATUS         *Status);
 
-void
+static void
 FlConsumeNewComment (
     ASL_FILE_INFO           *FileInfo,
     ASL_FILE_STATUS         *Status);
@@ -155,6 +157,7 @@ AslCompilerSignon (
     UINT32                  FileId)
 {
     char                    *Prefix = "";
+    char                    *UtilityName;
 
 
     /* Set line prefix depending on the destination file type */
@@ -192,36 +195,21 @@ AslCompilerSignon (
         break;
     }
 
-    /*
-     * Compiler signon with copyright
-     */
-    FlPrintFile (FileId,
-        "%s\n%s%s\n%s",
-        Prefix,
-        Prefix, IntelAcpiCA,
-        Prefix);
-
     /* Running compiler or disassembler? */
 
     if (Gbl_DisasmFlag)
     {
-        FlPrintFile (FileId,
-            "%s", DisassemblerId);
+        UtilityName = AML_DISASSEMBLER_NAME;
     }
     else
     {
-        FlPrintFile (FileId,
-            "%s", CompilerId);
+        UtilityName = ASL_COMPILER_NAME;
     }
 
-    /* Version, build date, copyright, compliance */
+    /* Compiler signon with copyright */
 
-    FlPrintFile (FileId,
-        " version %X [%s]\n%s%s\n%s%s\n%s\n",
-        (UINT32) ACPI_CA_VERSION, __DATE__,
-        Prefix, CompilerCopyright,
-        Prefix, CompilerCompliance,
-        Prefix);
+    FlPrintFile (FileId, "%s\n", Prefix);
+    FlPrintFile (FileId, ACPI_COMMON_HEADER (UtilityName, Prefix));
 }
 
 
@@ -345,7 +333,7 @@ CmFlushSourceCode (
  *
  ******************************************************************************/
 
-void
+static void
 FlConsumeAnsiComment (
     ASL_FILE_INFO           *FileInfo,
     ASL_FILE_STATUS         *Status)
@@ -389,7 +377,7 @@ FlConsumeAnsiComment (
 }
 
 
-void
+static void
 FlConsumeNewComment (
     ASL_FILE_INFO           *FileInfo,
     ASL_FILE_STATUS         *Status)
@@ -684,27 +672,25 @@ CmDoCompile (
 
     Event = UtBeginEvent ("Determine object types returned by methods");
     DbgPrint (ASL_DEBUG_OUTPUT, "\nSemantic analysis - Method typing\n\n");
-    TrWalkParseTree (RootNode, ASL_WALK_VISIT_TWICE,
-        AnMethodTypingWalkBegin,
-        AnMethodTypingWalkEnd, NULL);
+    TrWalkParseTree (RootNode, ASL_WALK_VISIT_UPWARD,
+        NULL, AnMethodTypingWalkEnd, NULL);
     UtEndEvent (Event);
 
     /* Semantic error checking part three - operand type checking */
 
     Event = UtBeginEvent ("Analyze AML operand types");
     DbgPrint (ASL_DEBUG_OUTPUT, "\nSemantic analysis - Operand type checking\n\n");
-    TrWalkParseTree (RootNode, ASL_WALK_VISIT_TWICE,
-        AnOperandTypecheckWalkBegin,
-        AnOperandTypecheckWalkEnd, &AnalysisWalkInfo);
+    TrWalkParseTree (RootNode, ASL_WALK_VISIT_UPWARD,
+        NULL, AnOperandTypecheckWalkEnd, &AnalysisWalkInfo);
     UtEndEvent (Event);
 
     /* Semantic error checking part four - other miscellaneous checks */
 
     Event = UtBeginEvent ("Miscellaneous analysis");
     DbgPrint (ASL_DEBUG_OUTPUT, "\nSemantic analysis - miscellaneous\n\n");
-    TrWalkParseTree (RootNode, ASL_WALK_VISIT_TWICE,
+    TrWalkParseTree (RootNode, ASL_WALK_VISIT_DOWNWARD,
         AnOtherSemanticAnalysisWalkBegin,
-        AnOtherSemanticAnalysisWalkEnd, &AnalysisWalkInfo);
+        NULL, &AnalysisWalkInfo);
     UtEndEvent (Event);
 
     /* Calculate all AML package lengths */
@@ -903,10 +889,19 @@ CmCleanupAndExit (
 
     /*
      * Delete intermediate ("combined") source file (if -ls flag not set)
+     * This file is created during normal ASL/AML compiles. It is not
+     * created by the data table compiler.
+     *
+     * If the -ls flag is set, then the .SRC file should not be deleted.
+     * In this case, Gbl_SourceOutputFlag is set to TRUE.
+     *
+     * Note: Handles are cleared by FlCloseFile above, so we look at the
+     * filename instead, to determine if the .SRC file was actually
+     * created.
      *
      * TBD: SourceOutput should be .TMP, then rename if we want to keep it?
      */
-    if (!Gbl_SourceOutputFlag)
+    if (!Gbl_SourceOutputFlag && Gbl_Files[ASL_FILE_SOURCE_OUTPUT].Filename)
     {
         if (remove (Gbl_Files[ASL_FILE_SOURCE_OUTPUT].Filename))
         {

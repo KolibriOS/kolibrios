@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -130,16 +130,22 @@ DtCompileString (
     DT_FIELD                *Field,
     UINT32                  ByteLength);
 
-static char *
-DtPciPathToBuffer (
-    char                    *PciPath);
-
 static void
-DtCompilePciPath (
+DtCompileUnicode (
     UINT8                   *Buffer,
-    char                    *StringValue,
     DT_FIELD                *Field,
     UINT32                  ByteLength);
+
+static ACPI_STATUS
+DtCompileUuid (
+    UINT8                   *Buffer,
+    DT_FIELD                *Field,
+    UINT32                  ByteLength);
+
+static char *
+DtNormalizeBuffer (
+    char                    *Buffer,
+    UINT32                  *Count);
 
 
 /******************************************************************************
@@ -165,6 +171,7 @@ DtCompileOneField (
     UINT8                   Type,
     UINT8                   Flags)
 {
+    ACPI_STATUS             Status;
 
     switch (Type)
     {
@@ -176,12 +183,24 @@ DtCompileOneField (
         DtCompileString (Buffer, Field, ByteLength);
         break;
 
+    case DT_FIELD_TYPE_UUID:
+        Status = DtCompileUuid (Buffer, Field, ByteLength);
+        if (ACPI_SUCCESS (Status))
+        {
+            break;
+        }
+
+        /* Fall through. */
+
     case DT_FIELD_TYPE_BUFFER:
         DtCompileBuffer (Buffer, Field->Value, Field, ByteLength);
         break;
 
-    case DT_FIELD_TYPE_PCI_PATH:
-        DtCompilePciPath (Buffer, Field->Value, Field, ByteLength);
+    case DT_FIELD_TYPE_UNICODE:
+        DtCompileUnicode (Buffer, Field, ByteLength);
+        break;
+
+    case DT_FIELD_TYPE_DEVICE_PATH:
         break;
 
     default:
@@ -225,10 +244,90 @@ DtCompileString (
         Length = ByteLength;
     }
 
-    /* If input string is shorter than ByteLength, pad with blanks */
-
-    ACPI_MEMSET (Buffer, 0x20, ByteLength);
     ACPI_MEMCPY (Buffer, Field->Value, Length);
+}
+
+
+/******************************************************************************
+ *
+ * FUNCTION:    DtCompileUnicode
+ *
+ * PARAMETERS:  Buffer              - Output buffer
+ *              Field               - String to be copied to buffer
+ *              ByteLength          - Maximum length of string
+ *
+ * RETURN:      None
+ *
+ * DESCRIPTION: Convert ASCII string to Unicode string
+ *
+ * Note:  The Unicode string is 16 bits per character, no leading signature,
+ *        with a 16-bit terminating NULL.
+ *
+ *****************************************************************************/
+
+static void
+DtCompileUnicode (
+    UINT8                   *Buffer,
+    DT_FIELD                *Field,
+    UINT32                  ByteLength)
+{
+    UINT32                  Count;
+    UINT32                  i;
+    char                    *AsciiString;
+    UINT16                  *UnicodeString;
+
+
+    AsciiString = Field->Value;
+    UnicodeString = (UINT16 *) Buffer;
+    Count = ACPI_STRLEN (AsciiString) + 1;
+
+    /* Convert to Unicode string (including null terminator) */
+
+    for (i = 0; i < Count; i++)
+    {
+        UnicodeString[i] = (UINT16) AsciiString[i];
+    }
+}
+
+
+/*******************************************************************************
+ *
+ * FUNCTION:    DtCompileUuid
+ *
+ * PARAMETERS:  Buffer              - Output buffer
+ *              Field               - String to be copied to buffer
+ *              ByteLength          - Maximum length of string
+ *
+ * RETURN:      None
+ *
+ * DESCRIPTION: Convert UUID string to 16-byte buffer
+ *
+ ******************************************************************************/
+
+static ACPI_STATUS
+DtCompileUuid (
+    UINT8                   *Buffer,
+    DT_FIELD                *Field,
+    UINT32                  ByteLength)
+{
+    char                    *InString;
+    ACPI_STATUS             Status;
+
+
+    InString = Field->Value;
+
+    Status = AuValidateUuid (InString);
+    if (ACPI_FAILURE (Status))
+    {
+        sprintf (MsgBuffer, "%s", Field->Value);
+        DtNameError (ASL_ERROR, ASL_MSG_INVALID_UUID, Field, MsgBuffer);
+    }
+    else
+    {
+        Status = AuConvertStringToUuid (InString, (char *) Buffer);
+    }
+
+    return (Status);
 }
 
 
@@ -239,10 +338,12 @@ DtCompileString (
  * PARAMETERS:  Buffer              - Output buffer
  *              Field               - Field obj with Integer to be compiled
  *              ByteLength          - Byte length of the integer
+ *              Flags               - Additional compile info
  *
  * RETURN:      None
  *
- * DESCRIPTION: Compile an integer
+ * DESCRIPTION: Compile an integer. Supports integer expressions with C-style
+ *              operators.
  *
  *****************************************************************************/
 
@@ -253,15 +354,12 @@ DtCompileInteger (
     UINT32                  ByteLength,
     UINT8                   Flags)
 {
-    UINT64                  Value = 0;
+    UINT64                  Value;
     UINT64                  MaxValue;
-    UINT8                   *Hex;
-    char                    *Message = NULL;
     ACPI_STATUS             Status;
-    int                     i;
 
 
-    /* Byte length must be in range 1-8 */
+    /* Output buffer byte length must be in range 1-8 */
 
     if ((ByteLength > 8) || (ByteLength == 0))
     {
@@ -270,22 +368,12 @@ DtCompileInteger (
         return;
     }
 
-    /* Convert string to an actual integer */
+    /* Resolve integer expression to a single integer value */
 
-    Status = DtStrtoul64 (Field->Value, &Value);
+    Status = DtResolveIntegerExpression (Field, &Value);
     if (ACPI_FAILURE (Status))
     {
-        if (Status == AE_LIMIT)
-        {
-            Message = "Constant larger than 64 bits";
-        }
-        else if (Status == AE_BAD_CHARACTER)
-        {
-            Message = "Invalid character in constant";
-        }
-
-        DtError (ASL_ERROR, ASL_MSG_INVALID_HEX_INTEGER, Field, Message);
-        goto Exit;
+        return;
     }
 
     /* Ensure that reserved fields are set to zero */
@@ -317,29 +405,10 @@ DtCompileInteger (
 
     if (Value > MaxValue)
     {
-        sprintf (MsgBuffer, "Maximum %u bytes", ByteLength);
+        sprintf (MsgBuffer, "%8.8X%8.8X", ACPI_FORMAT_UINT64 (Value));
         DtError (ASL_ERROR, ASL_MSG_INTEGER_SIZE, Field, MsgBuffer);
     }
 
-    /*
-     * TBD: hard code for ASF! Capabilites field.
-     *
-     * This field is actually a buffer, not a 56-bit integer --
-     * so, the ordering is reversed. Something should be fixed
-     * so we don't need this code.
-     */
-    if (ByteLength == 7)
-    {
-        Hex = ACPI_CAST_PTR (UINT8, &Value);
-        for (i = 6; i >= 0; i--)
-        {
-            Buffer[i] = *Hex;
-            Hex++;
-        }
-        return;
-    }
-
-Exit:
     ACPI_MEMCPY (Buffer, &Value, ByteLength);
     return;
 }
@@ -347,33 +416,68 @@ Exit:
 
 /******************************************************************************
  *
- * FUNCTION:    DtPciPathToBuffer
+ * FUNCTION:    DtNormalizeBuffer
  *
- * PARAMETERS:  PciPath             - DMAR "PCI Path" field
+ * PARAMETERS:  Buffer              - Input buffer
+ *              Count               - Output the count of hex number in
+ *                                    the Buffer
  *
- * RETURN:      Strings of PCI path
+ * RETURN:      The normalized buffer, freed by caller
  *
- * DESCRIPTION: Remove brackets and comma from DMAR "PCI Path" string, for
- *              example: [1D, 01] ==> 1D 01
+ * DESCRIPTION: [1A,2B,3C,4D] or 1A, 2B, 3C, 4D will be normalized
+ *              to 1A 2B 3C 4D
  *
  *****************************************************************************/
 
 static char *
-DtPciPathToBuffer (
-    char                    *PciPath)
+DtNormalizeBuffer (
+    char                    *Buffer,
+    UINT32                  *Count)
 {
-    char                    *Buffer;
+    char                    *NewBuffer;
+    char                    *TmpBuffer;
+    UINT32                  BufferCount = 0;
+    BOOLEAN                 Separator = TRUE;
+    char                    c;
 
 
-    Buffer = UtLocalCalloc (6);
+    NewBuffer = UtLocalCalloc (ACPI_STRLEN (Buffer) + 1);
+    TmpBuffer = NewBuffer;
 
-    Buffer[0] = PciPath[1];
-    Buffer[1] = PciPath[2];
-    Buffer[2] = ' ';
-    Buffer[3] = PciPath[5];
-    Buffer[4] = PciPath[6];
+    while ((c = *Buffer++))
+    {
+        switch (c)
+        {
+        /* Valid separators */
 
-    return (Buffer);
+        case '[':
+        case ']':
+        case ' ':
+        case ',':
+            Separator = TRUE;
+            break;
+
+        default:
+            if (Separator)
+            {
+                /* Insert blank as the standard separator */
+
+                if (NewBuffer[0])
+                {
+                    *TmpBuffer++ = ' ';
+                    BufferCount++;
+                }
+
+                Separator = FALSE;
+            }
+
+            *TmpBuffer++ = c;
+            break;
+        }
+    }
+
+    *Count = BufferCount + 1;
+    return (NewBuffer);
 }
 
 
@@ -407,13 +511,17 @@ DtCompileBuffer (
     UINT32                  Count;
 
 
-    Count = ACPI_STRLEN (StringValue) / 3 + 1;
+    /* Allow several different types of value separators */
+
+    StringValue = DtNormalizeBuffer (StringValue, &Count);
 
     Hex[2] = 0;
     for (i = 0; i < Count; i++)
     {
-        Hex[0] = StringValue[0];
-        Hex[1] = StringValue[1];
+        /* Each element of StringValue is three chars */
+
+        Hex[0] = StringValue[(3 * i)];
+        Hex[1] = StringValue[(3 * i) + 1];
 
         /* Convert one hex byte */
 
@@ -426,43 +534,10 @@ DtCompileBuffer (
         }
 
         Buffer[i] = (UINT8) Value;
-        StringValue += 3;
     }
 
+    ACPI_FREE (StringValue);
     return (ByteLength - Count);
-}
-
-
-/******************************************************************************
- *
- * FUNCTION:    DtCompilePciPath
- *
- * PARAMETERS:  Buffer              - Output buffer
- *              StringValue         - DMAR pci path string
- *              ByteLength          - Byte length of DMAR pci path string, 2
- *
- * RETURN:      None
- *
- * DESCRIPTION: Compile DMAR PCI path string to binary
- *
- *****************************************************************************/
-
-static void
-DtCompilePciPath (
-    UINT8                   *Buffer,
-    char                    *StringValue,
-    DT_FIELD                *Field,
-    UINT32                  ByteLength)
-{
-    char                    *PciPathBuffer;
-
-
-    /* Parse path to simple hex digits, then convert to binary */
-
-    PciPathBuffer = DtPciPathToBuffer (StringValue);
-
-    DtCompileBuffer (Buffer, PciPathBuffer, Field, ByteLength);
-    ACPI_FREE (PciPathBuffer);
 }
 
 
@@ -473,23 +548,22 @@ DtCompilePciPath (
  * PARAMETERS:  Buffer              - Output buffer
  *              Field               - Field to be compiled
  *              Info                - Flag info
- *              BitPosition         - Flag bit position
  *
- * RETURN:      Next flag bit position
+ * RETURN:
  *
  * DESCRIPTION: Compile a flag
  *
  *****************************************************************************/
 
-UINT32
+void
 DtCompileFlag (
     UINT8                   *Buffer,
     DT_FIELD                *Field,
-    ACPI_DMTABLE_INFO       *Info,
-    UINT32                  BitPosition)
+    ACPI_DMTABLE_INFO       *Info)
 {
     UINT64                  Value = 0;
     UINT32                  BitLength = 1;
+    UINT8                   BitPosition = 0;
     ACPI_STATUS             Status;
 
 
@@ -510,12 +584,20 @@ DtCompileFlag (
     case ACPI_DMT_FLAG6:
     case ACPI_DMT_FLAG7:
 
+        BitPosition = Info->Opcode;
         BitLength = 1;
         break;
 
     case ACPI_DMT_FLAGS0:
+
+        BitPosition = 0;
+        BitLength = 2;
+        break;
+
+
     case ACPI_DMT_FLAGS2:
 
+        BitPosition = 2;
         BitLength = 2;
         break;
 
@@ -534,10 +616,5 @@ DtCompileFlag (
         Value = 0;
     }
 
-    /* Insert the flag, return next flag bit position */
-
-    Buffer += ACPI_DIV_8 (BitPosition);
-    *Buffer |= (UINT8) (Value << ACPI_MOD_8 (BitPosition));
-
-    return (BitPosition + BitLength);
+    *Buffer |= (UINT8) (Value << BitPosition);
 }

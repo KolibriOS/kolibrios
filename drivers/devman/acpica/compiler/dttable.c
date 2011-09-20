@@ -8,7 +8,7 @@
  *
  * 1. Copyright Notice
  *
- * Some or all of this work - Copyright (c) 1999 - 2010, Intel Corp.
+ * Some or all of this work - Copyright (c) 1999 - 2011, Intel Corp.
  * All rights reserved.
  *
  * 2. License
@@ -264,9 +264,12 @@ DtCompileRsdp (
     DT_FIELD                **PFieldList)
 {
     DT_SUBTABLE             *Subtable;
-    ACPI_TABLE_RSDP         *Table;
+    ACPI_TABLE_RSDP         *Rsdp;
+    ACPI_RSDP_EXTENSION     *RsdpExtension;
     ACPI_STATUS             Status;
 
+
+    /* Compile the "common" RSDP (ACPI 1.0) */
 
     Status = DtCompileTable (PFieldList, AcpiDmTableInfoRsdp1,
                 &Gbl_RootTable, TRUE);
@@ -275,11 +278,13 @@ DtCompileRsdp (
         return (Status);
     }
 
-    Table = ACPI_CAST_PTR (ACPI_TABLE_RSDP, Gbl_RootTable->Buffer);
-    DtSetTableChecksum (&Table->Checksum);
+    Rsdp = ACPI_CAST_PTR (ACPI_TABLE_RSDP, Gbl_RootTable->Buffer);
+    DtSetTableChecksum (&Rsdp->Checksum);
 
-    if (Table->Revision > 0)
+    if (Rsdp->Revision > 0)
     {
+        /* Compile the "extended" part of the RSDP as a subtable */
+
         Status = DtCompileTable (PFieldList, AcpiDmTableInfoRsdp2,
                     &Subtable, TRUE);
         if (ACPI_FAILURE (Status))
@@ -288,7 +293,12 @@ DtCompileRsdp (
         }
 
         DtInsertSubtable (Gbl_RootTable, Subtable);
-        DtSetTableChecksum (&Table->ExtendedChecksum);
+
+        /* Set length and extended checksum for entire RSDP */
+
+        RsdpExtension = ACPI_CAST_PTR (ACPI_RSDP_EXTENSION, Subtable->Buffer);
+        RsdpExtension->Length = Gbl_RootTable->Length + Subtable->Length;
+        DtSetTableChecksum (&RsdpExtension->ExtendedChecksum);
     }
 
     return (AE_OK);
@@ -1196,6 +1206,75 @@ DtCompileRsdt (
 
 /******************************************************************************
  *
+ * FUNCTION:    DtCompileSlic
+ *
+ * PARAMETERS:  List                - Current field list pointer
+ *
+ * RETURN:      Status
+ *
+ * DESCRIPTION: Compile SLIC.
+ *
+ *****************************************************************************/
+
+ACPI_STATUS
+DtCompileSlic (
+    void                    **List)
+{
+    ACPI_STATUS             Status;
+    DT_SUBTABLE             *Subtable;
+    DT_SUBTABLE             *ParentTable;
+    DT_FIELD                **PFieldList = (DT_FIELD **) List;
+    DT_FIELD                *SubtableStart;
+    ACPI_SLIC_HEADER        *SlicHeader;
+    ACPI_DMTABLE_INFO       *InfoTable;
+
+
+    while (*PFieldList)
+    {
+        SubtableStart = *PFieldList;
+        Status = DtCompileTable (PFieldList, AcpiDmTableInfoSlicHdr,
+                    &Subtable, TRUE);
+        if (ACPI_FAILURE (Status))
+        {
+            return (Status);
+        }
+
+        ParentTable = DtPeekSubtable ();
+        DtInsertSubtable (ParentTable, Subtable);
+        DtPushSubtable (Subtable);
+
+        SlicHeader = ACPI_CAST_PTR (ACPI_SLIC_HEADER, Subtable->Buffer);
+
+        switch (SlicHeader->Type)
+        {
+        case ACPI_SLIC_TYPE_PUBLIC_KEY:
+            InfoTable = AcpiDmTableInfoSlic0;
+            break;
+        case ACPI_SLIC_TYPE_WINDOWS_MARKER:
+            InfoTable = AcpiDmTableInfoSlic1;
+            break;
+        default:
+            DtFatal (ASL_MSG_UNKNOWN_SUBTABLE, SubtableStart, "SLIC");
+            return (AE_ERROR);
+        }
+
+        Status = DtCompileTable (PFieldList, InfoTable, &Subtable, TRUE);
+        if (ACPI_FAILURE (Status))
+        {
+            return (Status);
+        }
+
+        ParentTable = DtPeekSubtable ();
+        DtInsertSubtable (ParentTable, Subtable);
+        DtPopSubtable ();
+    }
+
+    return (AE_OK);
+}
+
+
+/******************************************************************************
+ *
  * FUNCTION:    DtCompileSlit
  *
  * PARAMETERS:  List                - Current field list pointer
@@ -1217,7 +1296,6 @@ DtCompileSlit (
     DT_FIELD                *FieldList;
     UINT32                  Localities;
     UINT8                   *LocalityBuffer;
-    UINT32                  RemainingData;
 
 
     Status = DtCompileTable (PFieldList, AcpiDmTableInfoSlit,
@@ -1233,22 +1311,17 @@ DtCompileSlit (
     Localities = *ACPI_CAST_PTR (UINT32, Subtable->Buffer);
     LocalityBuffer = UtLocalCalloc (Localities);
 
+    /* Compile each locality buffer */
+
     FieldList = *PFieldList;
     while (FieldList)
     {
-        /* Handle multiple-line buffer */
-
-        RemainingData = Localities;
-        while (RemainingData && FieldList)
-        {
-            RemainingData = DtCompileBuffer (
-                LocalityBuffer + (Localities - RemainingData),
-                FieldList->Value, FieldList, RemainingData);
-            FieldList = FieldList->Next;
-        }
+        DtCompileBuffer (LocalityBuffer,
+            FieldList->Value, FieldList, Localities);
 
         DtCreateSubtable (LocalityBuffer, Localities, &Subtable);
         DtInsertSubtable (ParentTable, Subtable);
+        FieldList = FieldList->Next;
     }
 
     ACPI_FREE (LocalityBuffer);
@@ -1340,6 +1413,102 @@ DtCompileSrat (
 
 /******************************************************************************
  *
+ * FUNCTION:    DtGetGenericTableInfo
+ *
+ * PARAMETERS:  Name                - Generic type name
+ *
+ * RETURN:      Info entry
+ *
+ * DESCRIPTION: Obtain table info for a generic name entry
+ *
+ *****************************************************************************/
+
+ACPI_DMTABLE_INFO *
+DtGetGenericTableInfo (
+    char                    *Name)
+{
+    ACPI_DMTABLE_INFO       *Info;
+    UINT32                  i;
+
+
+    if (!Name)
+    {
+        return (NULL);
+    }
+
+    /* Search info table for name match */
+
+    for (i = 0; ; i++)
+    {
+        Info = AcpiDmTableInfoGeneric[i];
+        if (Info->Opcode == ACPI_DMT_EXIT)
+        {
+            Info = NULL;
+            break;
+        }
+
+        if (!ACPI_STRCMP (Name, Info->Name))
+        {
+            break;
+        }
+    }
+
+    return (Info);
+}
+
+
+/******************************************************************************
+ *
+ * FUNCTION:    DtCompileUefi
+ *
+ * PARAMETERS:  List                - Current field list pointer
+ *
+ * RETURN:      Status
+ *
+ * DESCRIPTION: Compile UEFI.
+ *
+ *****************************************************************************/
+
+ACPI_STATUS
+DtCompileUefi (
+    void                    **List)
+{
+    ACPI_STATUS             Status;
+    DT_SUBTABLE             *Subtable;
+    DT_SUBTABLE             *ParentTable;
+    DT_FIELD                **PFieldList = (DT_FIELD **) List;
+    UINT16                  *DataOffset;
+
+
+    /* Compile the predefined portion of the UEFI table */
+
+    Status = DtCompileTable (PFieldList, AcpiDmTableInfoUefi,
+                &Subtable, TRUE);
+    if (ACPI_FAILURE (Status))
+    {
+        return (Status);
+    }
+
+    DataOffset = (UINT16 *) (Subtable->Buffer + 16);
+    *DataOffset = sizeof (ACPI_TABLE_UEFI);
+
+    ParentTable = DtPeekSubtable ();
+    DtInsertSubtable (ParentTable, Subtable);
+
+    /*
+     * Compile the "generic" portion of the UEFI table. This
+     * part of the table is not predefined and any of the generic
+     * operators may be used.
+     */
+
+    DtCompileGeneric ((void **) PFieldList);
+
+    return (AE_OK);
+}
+
+
+/******************************************************************************
+ *
  * FUNCTION:    DtCompileWdat
  *
  * PARAMETERS:  List                - Current field list pointer
@@ -1393,6 +1562,81 @@ DtCompileXsdt (
         DtCreateSubtable ((UINT8 *) &Address, 8, &Subtable);
         DtInsertSubtable (ParentTable, Subtable);
         FieldList = FieldList->Next;
+    }
+
+    return (AE_OK);
+}
+
+
+/******************************************************************************
+ *
+ * FUNCTION:    DtCompileGeneric
+ *
+ * PARAMETERS:  List                - Current field list pointer
+ *
+ * RETURN:      Status
+ *
+ * DESCRIPTION: Compile generic unknown table.
+ *
+ *****************************************************************************/
+
+ACPI_STATUS
+DtCompileGeneric (
+    void                    **List)
+{
+    ACPI_STATUS             Status;
+    DT_SUBTABLE             *Subtable;
+    DT_SUBTABLE             *ParentTable;
+    DT_FIELD                **PFieldList = (DT_FIELD **) List;
+    ACPI_DMTABLE_INFO       *Info;
+
+
+    ParentTable = DtPeekSubtable ();
+
+    /*
+     * Compile the "generic" portion of the table. This
+     * part of the table is not predefined and any of the generic
+     * operators may be used.
+     */
+
+    /* Find any and all labels in the entire generic portion */
+
+    DtDetectAllLabels (*PFieldList);
+
+    /* Now we can actually compile the parse tree */
+
+    while (*PFieldList)
+    {
+        Info = DtGetGenericTableInfo ((*PFieldList)->Name);
+        if (!Info)
+        {
+            sprintf (MsgBuffer, "Generic data type \"%s\" not found",
+                (*PFieldList)->Name);
+            DtNameError (ASL_ERROR, ASL_MSG_INVALID_FIELD_NAME,
+                (*PFieldList), MsgBuffer);
+
+            *PFieldList = (*PFieldList)->Next;
+            continue;
+        }
+
+        Status = DtCompileTable (PFieldList, Info,
+                    &Subtable, TRUE);
+        if (ACPI_SUCCESS (Status))
+        {
+            DtInsertSubtable (ParentTable, Subtable);
+        }
+        else
+        {
+            *PFieldList = (*PFieldList)->Next;
+
+            if (Status == AE_NOT_FOUND)
+            {
+                sprintf (MsgBuffer, "Generic data type \"%s\" not found",
+                    (*PFieldList)->Name);
+                DtNameError (ASL_ERROR, ASL_MSG_INVALID_FIELD_NAME,
+                    (*PFieldList), MsgBuffer);
+            }
+        }
     }
 
     return (AE_OK);
