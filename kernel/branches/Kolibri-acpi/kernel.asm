@@ -691,9 +691,9 @@ end if
         movzx   ecx, word [boot_y]
         if lang eq ru
 		or      ecx, (10+30*6) shl 16
-		else
+        else
 		or      ecx, (10+29*6) shl 16
-		end if
+        end if
         sub     ecx, 10
         mov     edx, 0xFFFFFF
         mov     ebx, [MEM_AMOUNT]
@@ -814,9 +814,9 @@ end if
         movzx   ecx, word [boot_y]
         if lang eq ru
 		add      ecx, (10+19*6) shl 16 - 10; 'Determining amount of memory'
-		else
+        else
 		add      ecx, (10+17*6) shl 16 - 10; 'Determining amount of memory'
-		end if
+        end if
         mov     edx, 0xFFFFFF
         xor     edi,edi
         mov     eax, 0x00040000
@@ -1013,15 +1013,15 @@ include 'fdo.inc'
 
 align 4
 boot_log:
-         pushad
+        pushad
 
         mov   ebx,10*65536
         mov   bx,word [boot_y]
         add   [boot_y],dword 10
         mov   ecx,0x80ffffff   ; ASCIIZ string with white color
-		xor	  edi,edi
+        xor   edi,edi
         mov   edx,esi
-		inc	  edi
+        inc   edi
         call  dtext
 
         mov   [novesachecksum],1000
@@ -1039,8 +1039,8 @@ boot_log:
 align 32
 osloop:
         call   [draw_pointer]
-        call    window_check_events
-        call    mouse_check_events
+        call   window_check_events
+        call   mouse_check_events
         call   checkmisc
         call   checkVga_N13
         call   stack_handler
