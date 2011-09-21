@@ -8,11 +8,11 @@
 IRQ_RESERVED = 24   ; 16 or 24
 
 iglobal
-IRQ_COUNT	dd	24
+IRQ_COUNT    dd 24
 endg
 
 uglobal
-APIC         rd  1
+irq_mode     rd  1
 IOAPIC_base  rd  1
 LAPIC_BASE   rd  1
 endg
@@ -44,15 +44,22 @@ IOAPIC_REDTBL   equ 0x10
 
 align 4
 APIC_init:
-        mov dword[APIC], 0
+        mov [irq_mode], IRQ_PIC
 
-        mov eax, [acpi_ioapic_base]
+        cmp [acpi_ioapic_base], 0
+        jz .no_apic
+
+        cmp [acpi_lapic_base], 0
+        jz .no_apic
+
+        stdcall load_file, dev_data_path
         test eax, eax
+        mov [acpi_dev_data], eax
         jz .no_apic
 
         call  IRQ_mask_all
 
-	; IOAPIC init
+; IOAPIC init
         stdcall map_io_mem, [acpi_ioapic_base], 0x20, PG_SW
         mov [IOAPIC_base], eax
 
@@ -98,14 +105,12 @@ APIC_init:
 
         call  LAPIC_init
 
-        mov dword[APIC], 0xffffffff
+        mov [irq_mode], IRQ_APIC
 
         mov al, 0x70
         out 0x22, al
         mov al, 1
         out 0x23, al
-
-	; mov	dword[irq_type_to_set], IRQ_TYPE_APIC
 
 .no_apic:
 
@@ -242,6 +247,7 @@ IOAPIC_write:
 ;===========================================================
 ; Remap all IRQ to 0x20+ Vectors
 ; IRQ0 to vector 0x20, IRQ1 to vector 0x21....
+align 4
 PIC_init:
         cli
         mov al,0x11   ;  icw4, edge triggered
@@ -268,6 +274,7 @@ PIC_init:
 
 ; -----------------------------------------
 ; TIMER SET TO 1/100 S
+align 4
 PIT_init:
         mov   al,0x34      ; set to 100Hz
         out   0x43,al
@@ -278,9 +285,11 @@ PIT_init:
         ret
 
 ; -----------------------------------------
+align 4
 unmask_timer:
-        test  dword[APIC], 0xffffffff
-        jnz @f
+        cmp  [irq_mode], IRQ_APIC
+        je @f
+
         stdcall enable_irq, 0
         ret
 @@:
@@ -306,9 +315,11 @@ unmask_timer:
 
 ; -----------------------------------------
 ; Disable all IRQ
+align 4
 IRQ_mask_all:
-        test  dword[APIC], 0xffffffff
-        jnz .APIC
+        cmp [irq_mode], IRQ_APIC
+        je .APIC
+
         mov al, 0xFF
         out 0x21, al
         out 0xA1, al
@@ -331,10 +342,10 @@ IRQ_mask_all:
 ; -----------------------------------------
 ; End Of Interrupt
 ; cl - IRQ number
-align 16
+align 4
 irq_eoi:         ; __fastcall
-        test  dword[APIC], 0xffffffff
-        jnz .APIC
+        cmp [irq_mode], IRQ_APIC
+        je .APIC
 
         cmp cl, 8
         mov al, 0x20
@@ -354,8 +365,8 @@ irq_eoi:         ; __fastcall
 align 4
 proc enable_irq stdcall, irq_line:dword
         mov ebx, [irq_line]
-        test  dword[APIC], 0xffffffff
-        jnz .APIC
+        cmp [irq_mode], IRQ_APIC
+        je .APIC
 
         mov edx, 0x21
         cmp ebx, 8
@@ -379,6 +390,44 @@ proc enable_irq stdcall, irq_line:dword
         ret
 endp
 
+align 4
+pci_irq_fixup:
+
+        push ebp
+
+        mov esi, [acpi_dev_data]
+        mov ebx, [acpi_dev_size]
+
+        lea edi, [esi+ebx]
+
+.iterate:
+
+        cmp esi, edi
+        jae .done
+
+        mov eax, [esi]
+
+        cmp eax, -1
+        je .done
+
+        movzx ebx, al
+        movzx ebp, ah
+
+        stdcall pci_read32, ebp, ebx, 0
+
+        cmp eax, [esi+4]
+        jne .skip
+
+        mov eax, [esi+8]
+        stdcall pci_write8, ebp, ebx, 0x3C, eax
+.skip:
+        add esi, 16
+        jmp .iterate
+
+.done:
+.fail:
+        pop ebp
+        ret
 
 
 ; IRQ_TYPE_DISABLE	equ	0

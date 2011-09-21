@@ -679,10 +679,12 @@ end if
 
 ; Display APIC status
 	mov	esi, boot_APIC_found
-	test	dword[APIC], 0xffffffff
-	jnz	@f
+        cmp     [irq_mode], IRQ_APIC
+        jne    @f
+
 	mov	esi, boot_APIC_nfound
-@@:	call	boot_log
+@@:
+        call    boot_log
 
 ; PRINT AMOUNT OF MEMORY
         mov     esi, boot_memdetect

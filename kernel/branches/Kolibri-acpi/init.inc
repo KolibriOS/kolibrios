@@ -437,6 +437,9 @@ acpi_rsdp         rd 1
 acpi_rsdt         rd 1
 acpi_madt         rd 1
 
+acpi_dev_data     rd 1
+acpi_dev_size     rd 1
+
 acpi_rsdt_base    rd 1
 acpi_madt_base    rd 1
 acpi_lapic_base   rd 1
@@ -513,8 +516,6 @@ rsdt_find:           ;ecx= rsdt edx= SIG
 align 4
 
 check_acpi:
-
-        xchg bx, bx
 
         call acpi_locate
         test eax, eax
