@@ -171,9 +171,14 @@ proc map_io_mem stdcall, base:dword, size:dword, flags:dword
            push ebx
            push edi
            mov eax, [size]
+           add eax, [base]
            add eax, 4095
            and eax, -4096
+           mov ecx, [base]
+           and ecx, -4096
+           sub eax, ecx
            mov [size], eax
+
            stdcall alloc_kernel_space, eax
            test eax, eax
            jz .fail
@@ -189,9 +194,7 @@ proc map_io_mem stdcall, base:dword, size:dword, flags:dword
            or edx, [flags]
 @@:
            mov [page_tabs+eax*4], edx
-          ; push eax
            invlpg [ebx]
-          ; pop eax
            inc eax
            add ebx, edi
            add edx, edi
