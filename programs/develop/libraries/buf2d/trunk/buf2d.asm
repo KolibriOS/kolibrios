@@ -128,6 +128,55 @@ get_pixel_24:
 	@@:
 	ret
 
+;input:
+; ebx = coord x
+; ecx = coord y
+; edx = pixel color + transparent
+; edi = pointer to buffer struct
+; t_prop, m_prop - коэфициенты необходимые для вычисления степени прозрачности
+align 4
+transp_32 dd 0 ;цвет рисуемой точки + прозрачность
+align 4
+proc draw_pixel_transp, t_prop:dword, m_prop:dword
+	;cmp buf2d_bits,24
+	;jne @f
+	bt ebx,31
+	jc @f
+	bt ecx,31
+	jc @f
+	cmp ebx,buf2d_w
+	jge @f
+	cmp ecx,buf2d_h
+	jge @f
+	push eax ebx edx edi esi
+		mov esi,buf2d_w ;size x
+		imul esi,ecx ;size_x*y
+		add esi,ebx	 ;size_x*y+x
+		lea esi,[esi+esi*2] ;(size_x*y+x)*3
+		add esi,buf2d_data  ;ptr+(size_x*y+x)*3
+
+		mov edi,esi ;указатель на цвет фона
+		mov dword[transp_32],edx ;цвет рисуемой точки
+
+		xor edx,edx
+		mov eax,[t_prop]
+		shl eax,8 ;*=256
+		mov ebx,[m_prop]
+		div ebx ;вычисляем коэф. прозрачности (должен быть от 0 до 255)
+		bt ax,8
+		jnc .over_255
+			;если коеф. прозрачности >=256 то уменьшаем его до 255
+			mov al,0xff
+		.over_255:
+
+		mov byte[transp_32+3],al ;прозрачность рисуемой точки
+		mov esi,dword transp_32 ;указатель на цвет рисуемой точки
+
+		call combine_colors
+	pop esi edi edx ebx eax
+	@@:
+	ret
+endp
 
 ;создание буфера
 align 4
@@ -953,8 +1002,6 @@ locals
 	napravl db ?
 endl
 	pushad
-		mov edx,dword[color]
-
 		mov eax,dword[coord_x1]
 		sub eax,dword[coord_x0]
 		bt eax,31
@@ -964,11 +1011,17 @@ endl
 		@@:
 		mov ebx,dword[coord_y1]
 		sub ebx,dword[coord_y0]
+		jnz @f
+			;если задана горизонтальная линия y0=y1
+			stdcall buf_line_h, [buf_struc], [coord_x0], [coord_y0], [coord_x1], [color]
+			jmp .coord_end
+		@@:
 		bt ebx,31
 		jae @f
 			neg ebx
 			inc ebx
 		@@:
+		mov edx,dword[color]
 
 		mov [napravl],byte 0 ;bool steep=false
 		cmp eax,ebx
@@ -1045,6 +1098,140 @@ endl
 				cmp ebx,dword[coord_y1]
 				jg @f ;jge ???
 				call draw_pixel
+
+				sub dword[loc_1],eax ;error -= deltay
+				cmp dword[loc_1],0 ;if(error<0)
+				jge .if1
+					add ecx,[loc_2] ;y += ystep
+					add [loc_1],esi ;error += deltax
+				.if1:
+				inc ebx
+				jmp @b
+			@@:
+	.coord_end:
+	popad
+	ret
+endp
+
+;рисование сглаженной линии
+align 4
+proc buf_line_brs_sm, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword, coord_y1:dword, color:dword
+locals
+	loc_1 dd ?
+	loc_2 dd ?
+	napravl db ?
+endl
+	pushad
+		mov eax,dword[coord_x1]
+		sub eax,dword[coord_x0]
+		bt eax,31
+		jae @f
+			neg eax
+			inc eax
+		@@:
+		mov ebx,dword[coord_y1]
+		sub ebx,dword[coord_y0]
+		jnz @f
+			;если задана горизонтальная линия y0=y1
+			stdcall buf_line_h, [buf_struc], [coord_x0], [coord_y0], [coord_x1], [color]
+			jmp .coord_end
+		@@:
+		bt ebx,31
+		jae @f
+			neg ebx
+			inc ebx
+		@@:
+		mov edx,dword[color]
+
+		mov [napravl],byte 0 ;bool steep=false
+		cmp eax,ebx
+		jle @f
+			mov [napravl],byte 1 ;bool steep=true
+			swap dword[coord_x0],dword[coord_y0] ;swap(x0, y0);
+			swap dword[coord_x1],dword[coord_y1] ;swap(x1, y1);
+		@@:
+		mov eax,dword[coord_y0] ;x0
+		cmp eax,dword[coord_y1] ;if(x0>x1)
+		jle @f
+			swap dword[coord_y0],dword[coord_y1] ;swap(x0, x1);
+			swap dword[coord_x0],dword[coord_x1] ;swap(y0, y1);
+		@@:
+
+; int deltax esi
+; int deltay edi
+; int error  ebp-6
+; int ystep  ebp-8
+
+		mov eax,dword[coord_y0]
+		mov esi,dword[coord_y1]
+		sub esi,eax ;deltax = y1-y0
+		mov ebx,esi
+		shr ebx,1
+		mov [loc_1],ebx ;error = deltax/2
+
+		mov eax,dword[coord_x0]
+		mov edi,dword[coord_x1]
+		mov [loc_2],dword -1 ;ystep = -1
+		cmp eax,edi ;if (x0<x1) ystep = 1;
+		jge @f
+			mov [loc_2],dword 1 ;ystep = 1
+		@@:
+		sub edi,eax ;x1-x0
+
+		bts edi,31
+		jae @f
+			neg edi
+			inc edi
+		@@:
+		and edi,0x7fffffff ;deltay = abs(x1-x0)
+
+		mov eax,edi
+		mov edi,[buf_struc]
+		cmp buf2d_bits,24
+		jne .coord_end
+
+		cmp [napravl],0
+		jne .coord_yx
+			mov ebx,dword[coord_x0]
+			mov ecx,dword[coord_y0]
+
+			@@: ;for (x=x0 ; x<x1; x++) ;------------------------------------
+				cmp ecx,dword[coord_y1]
+				jg @f ;jge ???
+				push eax
+					mov eax,esi
+					sub eax,[loc_1]
+					stdcall draw_pixel_transp, eax,esi
+				pop eax
+				add ebx,[loc_2]
+				stdcall draw_pixel_transp, [loc_1],esi
+				sub ebx,[loc_2]
+
+				sub dword[loc_1],eax ;error -= deltay
+				cmp dword[loc_1],0 ;if(error<0)
+				jge .if0
+					add ebx,[loc_2] ;y += ystep
+					add [loc_1],esi ;error += deltax
+				.if0:
+				inc ecx
+				jmp @b
+			@@:
+			jmp .coord_end
+		.coord_yx:
+			mov ebx,dword[coord_y0]
+			mov ecx,dword[coord_x0]
+
+			@@: ;for (x=x0 ; x<x1; x++) ;------------------------------------
+				cmp ebx,dword[coord_y1]
+				jg @f ;jge ???
+				push eax
+					mov eax,esi
+					sub eax,[loc_1]
+					stdcall draw_pixel_transp, eax,esi
+				pop eax
+				add ecx,[loc_2]
+				stdcall draw_pixel_transp, [loc_1],esi
+				sub ecx,[loc_2]
 
 				sub dword[loc_1],eax ;error -= deltay
 				cmp dword[loc_1],0 ;if(error<0)
@@ -2368,6 +2555,7 @@ EXPORTS:
 	dd sz_buf2d_delete, buf_delete
 	dd sz_buf2d_resize, buf_resize
 	dd sz_buf2d_line, buf_line_brs
+	dd sz_buf2d_line_sm, buf_line_brs_sm
 	dd sz_buf2d_rect_by_size, buf_rect_by_size
 	dd sz_buf2d_filled_rect_by_size, buf_filled_rect_by_size
 	dd sz_buf2d_circle, buf_circle
@@ -2394,6 +2582,7 @@ EXPORTS:
 	sz_buf2d_delete db 'buf2d_delete',0
 	sz_buf2d_resize db 'buf2d_resize',0
 	sz_buf2d_line db 'buf2d_line',0 ;рисование линии
+	sz_buf2d_line_sm db 'buf2d_line_sm',0 ;рисование сглаженной линии
 	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0 ;рисование рамки прямоугольника, 2-я координата задана по размеру
 	sz_buf2d_filled_rect_by_size db 'buf2d_filled_rect_by_size',0 ;рисование залитого прямоугольника, 2-я координата задана по размеру
 	sz_buf2d_circle db 'buf2d_circle',0 ;рисование окружности
