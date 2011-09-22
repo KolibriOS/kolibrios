@@ -44,26 +44,6 @@ iglobal
 	ETH_BROADCAST	dp  0xffffffffffff
 endg
 
-align 4
-uglobal
-	ETH_RUNNING	dd  ?
-endg
-
-
-;-----------------------------------------------------------------
-;
-; ETH_init
-;
-;  This function resets all ethernet variables
-;
-;-----------------------------------------------------------------
-macro	ETH_init {
-
-	mov	[ETH_RUNNING], 0
-
-}
-
-
 ;-----------------------------------------------------------------
 ;
 ; ETH_input

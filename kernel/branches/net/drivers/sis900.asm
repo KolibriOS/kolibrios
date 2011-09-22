@@ -436,7 +436,7 @@ probe:
 
 ; Get Card Revision
 	stdcall PciRead8, dword [device.pci_bus], dword [device.pci_dev], 0x08
-	mov	[pci_revision], al							; save the revision for later use
+	mov	[device.pci_revision], al						       ; save the revision for later use
 
 ; Look up through the specific_table
 	mov	esi, specific_table
@@ -1255,7 +1255,8 @@ transmit:
 	jl	transmit_finish
 
 	movzx	ecx, [device.cur_tx]
-	mov	ecx, [device.txd+ecx*16]
+	shl	ecx, 4
+	mov	ecx, [device.txd+ecx]
 
 ;; TODO: check if desc is empty (for example: check for eax, 0x6200000  at [ecx+4]
 ;;; or: count number of available descriptors

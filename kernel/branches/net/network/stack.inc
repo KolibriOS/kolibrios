@@ -176,7 +176,7 @@ align 4
 uglobal
 
 	NET_RUNNING	dd  ?
-	NET_DRV_LIST	rd  MAX_NET_DEVICES
+	NET_DRV_LIST	rd  (MAX_NET_DEVICES + 1)	; device 0 is a link to the default device
 
 endg
 
@@ -197,10 +197,9 @@ stack_init:
 ; Init the network drivers list
 	xor	eax, eax
 	mov	edi, NET_RUNNING
-	mov	ecx, MAX_NET_DEVICES + 1
+	mov	ecx, (MAX_NET_DEVICES + 2)
 	rep	stosd
 
-	ETH_init
 ;        SLIP_init
 ;        PPPOE_init
 
@@ -259,7 +258,7 @@ stack_handler:
 
 ;-----------------------------------------------------------------
 ;
-; NET_add_Device:
+; NET_add_device:
 ;
 ;  This function is called by the network drivers,
 ;  to register each running NIC to the kernel
@@ -271,7 +270,7 @@ stack_handler:
 align 4
 NET_add_device:
 
-	DEBUGF	1,"NET_Add_Device: %x\n", ebx
+	DEBUGF	1,"NET_Add_Device: %x\n", ebx	;;; TODO: use mutex to lock net device list
 
 	mov	eax, [NET_RUNNING]
 	cmp	eax, MAX_NET_DEVICES
@@ -280,57 +279,41 @@ NET_add_device:
 ;----------------------------------
 ; Check if device is already listed
 	mov	eax, ebx
-	mov	ecx, MAX_NET_DEVICES	  ; We need to check whole list because a device may be removed without re-organizing list
-	mov	edi, NET_DRV_LIST
+	mov	ecx, MAX_NET_DEVICES	; We need to check whole list because a device may be removed without re-organizing list
+	mov	edi, NET_DRV_LIST+4
 
-	repne	scasd			  ; See if device is already in the list
+	repne	scasd			; See if device is already in the list
 	jz	.error
 
 ;----------------------------
 ; Find empty slot in the list
 	xor	eax, eax
 	mov	ecx, MAX_NET_DEVICES
-	mov	edi, NET_DRV_LIST
+	mov	edi, NET_DRV_LIST+4
 
 	repne	scasd
 	jnz	.error
 
 	sub	edi, 4
 
-	cmp	[ebx + NET_DEVICE.type], NET_TYPE_ETH
-	je	.ethernet
-
-	cmp	[ebx + NET_DEVICE.type], NET_TYPE_SLIP
-	je	.slip
-
-	DEBUGF	1,"Unknown network device type: %u\n", [ebx + NET_DEVICE.type]
-	jmp	.error
-
-  .ethernet:
-	DEBUGF	1,"Trying to add an ethernet device\n"
-
-	inc	[ETH_RUNNING]		  ; Indicate that one more ethernet device is up and running
-	jmp	.add_it
-
-  .slip:
-	DEBUGF	1,"Trying to add a slip device\n"
-	;;;;
-	jmp	.error
-
-
-  .add_it:
-
 ;-----------------------------
 ; Add device to the found slot
-	mov	[edi], ebx		  ; add device to list
+	mov	[edi], ebx		; add device to list
 
-	sub	edi, NET_DRV_LIST	  ; Calculate device number in eax
-	mov	eax, edi		  ;
+	mov	eax, edi		; Calculate device number in eax
+	sub	eax, NET_DRV_LIST
 	shr	eax, 2
 
-	inc	[NET_RUNNING]		  ; Indicate that one more network device is up and running
+	inc	[NET_RUNNING]		; Indicate that one more network device is up and running
 
-	DEBUGF	1,"Device number: %u\n",eax
+	cmp	eax, 1			; If it's the first network device, try to set it as default
+	jne	@f
+	push	eax
+	call	NET_set_default
+	pop	eax
+       @@:
+
+	DEBUGF	1,"Device number: %u\n", eax
 	ret
 
   .error:
@@ -342,11 +325,44 @@ NET_add_device:
 
 ;-----------------------------------------------------------------
 ;
+; NET_set_default
+;
+;  API to set the default interface
+;
+;  IN:  Device num in eax
+;  OUT: Device num in eax, -1 on error
+;
+;-----------------------------------------------------------------
+align 4
+NET_set_default:
+
+	DEBUGF	1,"NET_set_default %x\n", eax
+
+	cmp	eax, MAX_NET_DEVICES
+	jge	.error
+
+	cmp	[NET_DRV_LIST+eax*4], 0
+	je	.error
+
+	push	[NET_DRV_LIST+eax*4]
+	pop	[NET_DRV_LIST]
+
+	DEBUGF	1,"Device number %u is now default!\n", eax
+	ret
+
+  .error:
+	or	eax, -1
+	DEBUGF	2,"Setting default network device failed\n"
+	ret
+
+
+;-----------------------------------------------------------------
+;
 ; NET_Remove_Device:
 ;
 ;  This function is called by etwork drivers,
 ;  to unregister network devices from the kernel
-;
+;                                                                                                                                d
 ;  IN:  Pointer to device structure in ebx
 ;  OUT: eax: -1 on error
 ;
@@ -357,12 +373,27 @@ NET_remove_device:
 	cmp	[NET_RUNNING], 0
 	je	.error
 
+	cmp	[NET_DRV_LIST], ebx
+	jne	@f
+	mov	[NET_DRV_LIST], 0
+	cmp	[NET_RUNNING], 1
+	je	@f
+	; there are still active devices, find one and make it default
+	xor	eax, eax
+	mov	ecx, MAX_NET_DEVICES
+	mov	edi, NET_DRV_LIST+4
+	repe	scasd
+	jz	@f
+	push	dword [edi-4]
+	pop	[NET_DRV_LIST]
+       @@:
+
 ;----------------------------
 ; Find the driver in the list
 
 	mov	eax, ebx
 	mov	ecx, MAX_NET_DEVICES
-	mov	edi, NET_DRV_LIST
+	mov	edi, NET_DRV_LIST+4
 
 	repne	scasd
 	jnz	.error
@@ -395,7 +426,7 @@ NET_ptr_to_num:
 	push	ecx
 
 	mov	ecx, MAX_NET_DEVICES
-	mov	edi, NET_DRV_LIST
+	mov	edi, NET_DRV_LIST+4
 
   .loop:
 	cmp	ebx, [edi]
@@ -551,17 +582,19 @@ sys_network:
 	jmp	.return
 
    @@:
-	cmp	bh, MAX_NET_DEVICES		 ; Check if device number exists
+	cmp	bh, MAX_NET_DEVICES		; Check if device number exists
 	jge	.doesnt_exist
 
 	mov	esi, ebx
 	and	esi, 0x0000ff00
 	shr	esi, 6
 
-	cmp	dword [esi + NET_DRV_LIST], 0 ; check if driver is running
+	cmp	dword [esi + NET_DRV_LIST], 0	; check if driver is running
 	je	.doesnt_exist
 
-	test	bl, bl			 ; 0 = Get device type (ethernet/token ring/...)
+
+
+	test	bl, bl			; 0 = Get device type (ethernet/token ring/...)
 	jnz	@f
 
 	xor	eax, eax
@@ -605,10 +638,29 @@ sys_network:
 	jnz	@f
 
 	; ..;
+	xor	eax, eax
+	jmp	.return
 
 
   @@:
-;  ...                                   ; 5 Get driver name
+	dec	bl			; 5 = Get driver name
+	jnz	@f
+
+	; ..;
+	xor	eax, eax
+	jmp	.return
+
+
+  @@:
+	dec	bl			; 6 = Set default device
+	jnz	@f
+
+	mov	eax, esi
+	call	NET_set_default
+	jmp	.return
+
+
+  @@:
 
   .doesnt_exist:
 	DEBUGF	1,"sys_network: invalid device/function specified!\n"
