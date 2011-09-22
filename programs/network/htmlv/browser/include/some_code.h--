@@ -17,8 +17,6 @@
 #define DONT_LOAD	0
 #define LETS_LOAD	1
                       
-byte utf100tmmv_mas[77] = "€‚ƒ„…†‡‰‹‘’“”•–—™› ΅Ά£¤¥¦§¨©ª«¬­®―ΰαβγδεζηθικλμνξοπρh£si\244j";
-
 
 dword get_URL_part(byte len) {
 	char temp1[1000];

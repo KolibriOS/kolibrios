@@ -24,7 +24,7 @@ dword max_kolvo_strok,
 	 max_kolvo_stolbcov,
 	 kolichestvo;
 
-int 	za_kadrom,
+int za_kadrom,
 	razm_scrl,
 	mouse_dd;
 

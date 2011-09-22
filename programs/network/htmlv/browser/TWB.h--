@@ -18,7 +18,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 23.69";
+ char version[]=" Text-based Browser 23.70";
 
 
 struct TWebBrowser {
@@ -37,6 +37,7 @@ TWebBrowser WB1;
 
 #include "include\history.h--"
 #include "include\colors.h--"
+#include "include\unicode_tags.h--"
 
 void TWebBrowser::Scan(dword id) {
 	IF (id > 399) {
@@ -57,7 +58,6 @@ void TWebBrowser::Scan(dword id) {
 	} //если мало строк игнорируем некоторые кнопки
 	switch (id) {
 	case 011:
-	case 004:
 		ReadHtml();
 		break;
 	case BACK:
@@ -185,6 +185,7 @@ void ReadHtml(byte DO_LOAD)
 			IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
 			downloader_id = RunProgram("/sys/network/downloader", #URL);
 			IF (downloader_id<0) RunProgram("@notify", "Error running Downloader. Internet unavilable.");
+			RunProgram("/sys/network/downloader", #URL);
 			RETURN;
 		}
 		file_size stdcall (#download_path);
@@ -192,6 +193,7 @@ void ReadHtml(byte DO_LOAD)
 	ELSE file_size stdcall (#URL);
 	
 	filesize = EBX;
+	IF (!filesize) return; //Lee 22.09
 	mem_Free(buf);
 	buf = mem_Alloc(filesize);
 	ReadFile(0, filesize, buf, #URL);
@@ -221,6 +223,9 @@ void TWebBrowser::Load(dword adress) {
 	edit_box_draw stdcall(#edit1); //рисуем строку адреса
 
 	ReadHtml(LETS_LOAD);
+	
+	IF (!filesize) return; //Lee 22.09
+	
 	wintodos(buf);
 	ParseHTML(buf, filesize);
 	IF(!strlen(buf)) {
@@ -266,6 +271,7 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 	line = '';
 	copystr("|", #page_links);
 	IF(!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1; //зачётное отображение текста 
+	//IF(!strcmp(#URL + strlen(#URL) - 4, ".rtf")) pre_text = 1;
 	IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
 	IF(za_kadrom == 0) || (WindowRePaint) DrawBar(left, top, width - 15, 15, 0xFFFFFF); //закрашиваем первую строку
 	for (; buf + fsize > bword; bword++;) {
@@ -338,44 +344,80 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 			
 			bukva=Hex2Symb(#temp);
 			IF (bukva) goto DEFAULT_MARK;
-			break; 
-		case '&':
+			break;
+		/*case '\\': //поддержка rtf
+			IF(strcmp(#URL + strlen(#URL) - 4, ".rtf")<>0) goto DEFAULT_MARK;
+
+			bword++;
+			IF (ESBYTE[bword] =='\'')
+			{
+				bword++;
+				bukva=ESBYTE[bword];
+				copystr(#bukva, #temp);
+
+				bword++;
+				bukva=ESBYTE[bword];
+				copystr(#bukva, #temp + strlen(#temp));
+				
+				bukva=Hex2Symb(#temp);
+				IF (bukva) goto DEFAULT_MARK;
+			}
+			else
+			{
+				FOR (j=0;   (ESBYTE[bword] <>'\\') && (buf + fsize < bword);     j++; bword++;)
+				{
+					bukva = ESBYTE[bword];
+					copystr(#bukva, #tag + strlen(#tag));
+				}
+				IF ((!strcmp(#tag, "par\0x0a")) || (!strcmp(#tag, "par\0x0b"))) stroka++;
+				tag='';
+				bword--;
+			}
+			break;*/
+			
+		case '&': //обработка тегов типа &nbsp;
 			IF(ignor_text) break;
 			bword++;
-			j = 0;
-			WHILE(ESBYTE[bword] <>';') && (j < 7) {
+			tag='';
+			FOR (j=0;   (ESBYTE[bword] <>';') && (j < 7);     j++; bword++;)
+			{
 				bukva = ESBYTE[bword];
 				copystr(#bukva, #tag + strlen(#tag));
-				bword++;
-				j++;
 			}
-			bukva = ''; //всю эту хрень надо залабать через масив
-			IF(!strcmp("nbsp", #tag)) copystr(" ", #line + strlen(#line));
-			IF(!strcmp("copy", #tag)) || (!strcmp("#169", #tag)) copystr("(c)", #line + strlen(#line));
-			IF(!strcmp("reg", #tag)) || (!strcmp("#174", #tag)) copystr("(r)", #line + strlen(#line));
+			
+			FOR (j=0; unicode_tags[j]!=0; j+=2;) 
+			{
+				IF(!strcmp(#tag, unicode_tags[j]))
+				{
+					copystr(unicode_tags[j+1], #line + strlen(#line));
+					break 1;
+				}
+			}
+			
 			rez = StrToInt(#tag + 1) - 1040;
-			IF(tag[1] == '1') && (strlen(#tag) == 5) bukva = utf100tmmv_mas[rez];
-			IF(!strcmp("bdquo", #tag)) copystr(",,", #line + strlen(#line));
-			IF(!strcmp("amp", #tag)) || (!strcmp("#38", #tag)) bukva = '&';
-			IF(!strcmp("lt", #tag)) || (!strcmp("#60", #tag)) bukva = '<';
-			IF(!strcmp("gt", #tag)) || (!strcmp("#62", #tag)) bukva = '>';
-			IF(!strcmp("minus", #tag)) || (!strcmp("#8722", #tag)) bukva = '-';
-			IF(!strcmp("#151", #tag)) || (!strcmp("#149", #tag)) || (!strcmp("ndash", #tag)) bukva = '-';
-			IF(!strcmp("#39", #tag)) || (!strcmp("#96", #tag)) bukva = '\'';
-			IF(!strcmp("quot", #tag)) || (!strcmp("#34", #tag)) || (!strcmp("ldquo", #tag)) || (!strcmp("rdquo", #tag)) bukva = '"';
-			tag = '';
-			//break;
+			IF(tag[1] == '1') && (rez>1040) && (rez<1118) && (strlen(#tag) == 5)
+				{
+					bukva = utf100tmmv_mas[rez];
+					copystr(#bukva, #line + strlen(#line));
+					break;
+				}
+			
+			WriteDebug("Unknown tag");
+			WriteDebug(#tag);
+			copystr(#tag, #line + strlen(#line)); //выводим на экран необработанный тег, так браузеры зачем-то делают
+			break;
 		default:
 			DEFAULT_MARK:
 			IF(ignor_text) break;
 			IF(pre_text == 0) && (bukva == ' ') && (strcmp(#line + strlen(#line) - 1, " ") == 0) continue;
 			//
-			if (stolbec + strlen(#line) > max_kolvo_stolbcov) && (w_title == 0) {
+			if (stolbec + strlen(#line) > max_kolvo_stolbcov) && (w_title == 0)
+			{
 				copystr(#line + find_symbol(#line, ' '), #temp); //перенос по словам
 				line[find_symbol(#line, ' ')] = 0x00;
 				NEXT_MARK: IF(stroka - 1 > max_kolvo_strok) && (za_kadrom <>0) break 1; //уходим...
 				WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //вывод строки
-				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем строку вконце
+				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем следущую строку
 				copystr(#temp, #line);
 			}
 			IF(pre_text == 0) && (bukva == ' ') && (stolbec == 0) && (strlen(#line) == 0) CONTINUE;
