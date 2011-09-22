@@ -226,7 +226,7 @@ B32:
            mov   fs,ax
            mov   gs,ax
            mov   ss,ax
-           mov   esp,0x5ec00       ; Set stack
+           mov   esp,0x006CC00       ; Set stack
 
 ; CLEAR 0x280000 - HEAP_BASE
 
@@ -236,13 +236,11 @@ B32:
            cld
            rep   stosd
 
-           mov   edi,0x40000
-           mov   ecx,(0x90000-0x40000)/4
-           rep   stosd
-
 ; CLEAR KERNEL UNDEFINED GLOBALS
            mov   edi, endofcode-OS_BASE
-           mov   ecx, (uglobals_size/4)+4
+           mov   ecx, 0x90000
+           sub   ecx, edi
+           shr   ecx, 2
            rep   stosd
 
 ; SAVE & CLEAR 0-0xffff
@@ -604,7 +602,8 @@ high_code:
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 
-	call	PIC_init
+        call  init_irqs
+        call  PIC_init
 
 ; Initialize system V86 machine
         call    init_sys_v86
@@ -614,8 +613,6 @@ high_code:
 
 ; Try to Initialize APIC
 	call	APIC_init
-
-        call pci_irq_fixup
 
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
@@ -680,11 +677,9 @@ end if
 ; Display APIC status
 	mov	esi, boot_APIC_found
         cmp     [irq_mode], IRQ_APIC
-        jne    @f
-
+        je    @f
 	mov	esi, boot_APIC_nfound
 @@:
-        call    boot_log
 
 ; PRINT AMOUNT OF MEMORY
         mov     esi, boot_memdetect
@@ -822,7 +817,7 @@ end if
         mov     edx, 0xFFFFFF
         xor     edi,edi
         mov     eax, 0x00040000
-		inc		edi
+        inc     edi
         call    display_number_force
 
 ; SET VARIABLES

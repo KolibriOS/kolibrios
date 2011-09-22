@@ -5,6 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+IRQ_RESERVED   equ 24
 
 IRQ_POOL_SIZE  equ 48
 
@@ -20,6 +21,29 @@ irq_active_set      rd 1
 irq_failed          rd IRQ_RESERVED
 
 endg
+
+align 4
+init_irqs:
+
+    mov ecx, IRQ_RESERVED
+    mov edi, irqh_tab
+@@:
+    mov eax, edi
+    stosd
+    stosd
+    loop @B
+
+    mov ecx, IRQ_POOL_SIZE-1
+    mov eax, irqh_pool+IRQH.sizeof
+    mov [next_irqh], irqh_pool
+@@:
+    mov [eax-IRQH.sizeof], eax
+    add eax, IRQH.sizeof
+    loop @B
+
+    mov [eax-IRQH.sizeof], dword 0
+    ret
+
 
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword

@@ -5,7 +5,6 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-IRQ_RESERVED = 24   ; 16 or 24
 
 iglobal
 IRQ_COUNT    dd 24
@@ -54,8 +53,10 @@ APIC_init:
 
         stdcall load_file, dev_data_path
         test eax, eax
-        mov [acpi_dev_data], eax
         jz .no_apic
+
+        mov [acpi_dev_data], eax
+        mov [acpi_dev_size], ebx
 
         call  IRQ_mask_all
 
@@ -112,27 +113,8 @@ APIC_init:
         mov al, 1
         out 0x23, al
 
+        call pci_irq_fixup
 .no_apic:
-
-;init handlers table
-
-        mov ecx, IRQ_RESERVED
-        mov edi, irqh_tab
-@@:
-        mov eax, edi
-        stosd
-        stosd
-        loop @B
-
-        mov ecx, 47
-        mov eax, irqh_pool+IRQH.sizeof
-        mov [next_irqh], irqh_pool
-@@:
-        mov [eax-IRQH.sizeof], eax
-        add eax, IRQH.sizeof
-        loop @B
-
-        mov [eax-IRQH.sizeof], dword 0
 
         ret
 
@@ -428,137 +410,6 @@ pci_irq_fixup:
 .fail:
         pop ebp
         ret
-
-
-; IRQ_TYPE_DISABLE	equ	0
-; IRQ_TYPE_PIC		equ	1
-; IRQ_TYPE_APIC		equ	2
-
-; uglobal
-; irq_type_to_set	rd	1
-; irq_types	rd	IRQ_RESERVE
-; endg
-
-; -----------------------------------------
-; End Of Interrupt
-; al - IRQ number
-; align 16
-; IRQ_EOI:
-	; movzx	eax, al
-	; cmp	dword[irq_types + eax * 4], IRQ_TYPE_APIC
-	; jne	@f
-	; mov	eax, [LAPIC_BASE]
-	; mov	dword [eax + APIC_EOI], 0	; EOI
-	; ret
-; @@:
-	; cmp	al, 8
-	; mov	al, 0x20
-	; jb	@f
-	; out	0xa0, al
-; @@:	out	0x20, al
-	; ret
-
-; align 4
-; proc enable_irq stdcall, irq_line:dword
-	; cmp	dword[irq_type_to_set], IRQ_TYPE_APIC
-	; jne	@f
-	; stdcall	APIC_enable_irq, [irq_line]
-	; ret
-; @@:	stdcall	PIC_enable_irq, [irq_line]
-	; ret
-; endp
-
-; align 4
-; proc disable_irq stdcall, irq_line:dword
-	; push	eax
-	; mov	eax, [irq_line]
-	; cmp	dword[irq_types + eax * 4], IRQ_TYPE_APIC
-	; jne	@f
-	; stdcall	APIC_disable_irq, eax
-	; pop	eax
-	; ret
-; @@:	stdcall	PIC_disable_irq, eax
-	; pop	eax
-	; ret
-; endp
-
-; align 4
-; proc PIC_enable_irq stdcall, irq_line:dword
-	; pusha
-	; mov	ebx, [irq_line]
-	; mov	eax, [irq_types + ebx * 4]
-	; cmp	eax, IRQ_TYPE_DISABLE
-	; je	@f
-	; cmp	eax, IRQ_TYPE_PIC
-	; je	@f
-	; stdcall	disable_irq, ebx
-; @@:	mov	dword[irq_types + ebx * 4], IRQ_TYPE_PIC
-	; mov	edx, 0x21
-	; cmp	ebx, 8
-	; jb	@F
-	; mov	edx, 0xA1
-	; sub	ebx,8
-; @@:	in	al,dx
-	; btr	eax, ebx
-	; out	dx, al
-	; popa
-	; ret
-; endp
-
-; align 4
-; proc PIC_disable_irq stdcall, irq_line:dword
-	; pusha
-	; mov	ebx, [irq_line]
-	; mov	dword[irq_types + ebx * 4], IRQ_TYPE_DISABLE
-	; mov	edx, 0x21
-	; cmp	ebx, 8
-	; jb	@F
-	; mov	edx, 0xA1
-	; sub	ebx,8
-; @@:	in	al,dx
-	; bts	eax, ebx
-	; out	dx, al
-	; popa
-	; ret
-; endp
-
-; align 4
-; proc APIC_enable_irq stdcall, irq_line:dword
-	; pusha
-	; mov	ebx, [irq_line]
-	; mov	eax, [irq_types + ebx * 4]
-	; cmp	eax, IRQ_TYPE_DISABLE
-	; je	@f
-	; cmp	eax, IRQ_TYPE_APIC
-	; je	@f
-	; stdcall	disable_irq, ebx
-; @@:	mov	dword[irq_types + ebx * 4], IRQ_TYPE_APIC
-	; shl	ebx, 1
-	; add	ebx, 0x10
-	; mov	eax, ebx
-	; call	IOAPIC_read
-	; and	eax, 0xfffeffff		; bit 16
-	; xchg	eax, ebx
-	; call	IOAPIC_write
-	; popa
-	; ret
-; endp
-
-; align 4
-; proc APIC_disable_irq stdcall, irq_line:dword
-	; pusha
-	; mov	ebx, [irq_line]
-	; mov	dword[irq_types + ebx * 4], IRQ_TYPE_DISABLE
-	; shl	ebx, 1
-	; add	ebx, 0x10
-	; mov	eax, ebx
-	; call	IOAPIC_read
-	; or	eax, 0x10000
-	; xchg	eax, ebx
-	; call	IOAPIC_write
-	; popa
-	; ret
-; endp
 
 
 
