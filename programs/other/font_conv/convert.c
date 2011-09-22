@@ -1,49 +1,57 @@
+/*
+    Copyright 2011 dunkaist <dunkaist@gmail.com>
+    Distributed under the terms of the GNU General Public License v3.
+    See http://www.gnu.org/licenses/gpl.txt for the full license text.
+*/
+
+
 #include <stdio.h>
+
+#define	FONT_HEIGHT	    9
+#define FONT_WIDTH_MONO	    5
+#define FONT_WIDTH_VAR	    7   /* max symbol width */
+
+    short int   char_num, row, col;
+    char        ch, data;
+
+
+int do_symbol(short int font_width)
+{
+    for(row=FONT_HEIGHT; row; row--)
+    {
+        data    =   0;
+        for(col=0; col<font_width; col++)
+        {
+            data    |=  getchar()==' '? 0 : 1<<col;
+        }
+        putchar(data);
+        fseek(stdin, 3, SEEK_CUR);
+    }
+    return 0;
+}
+
 
 int main()
 {
-    const   int     font_height     =   9;
-            int     font_width[2]   =   {5,7},
-                    char_num,i,e;
-            char    ch,data;
+    freopen("char.txt", "rt", stdin);
+    freopen("CHAR.MT", "wb", stdout);
 
-    freopen("char.txt","rt",stdin);
-    freopen("CHAR.MT","wb",stdout);
-
-    for(char_num=256;char_num;char_num--)
+    for(char_num=256; char_num; char_num--)
     {
-        fseek(stdin,8,SEEK_CUR);
-        for(e=font_height;e;e--)
-        {
-            data    =   0;
-            for(i=0;i<font_width[0];i++)
-            {
-                data    |=  getchar()==' '?0:1<<i;
-            }
-            fseek(stdin,3,SEEK_CUR);
-            putchar(data);
-        }
+        fseek(stdin, 8, SEEK_CUR);
+        do_symbol(FONT_WIDTH_MONO);
     }
 
-    freopen("char2.txt","rt",stdin);
-    freopen("CHAR2.MT","wb",stdout);
+    freopen("char2.txt", "rt", stdin);
+    freopen("CHAR2.MT", "wb", stdout);
 
-    for(char_num=256;char_num;char_num--)
+    for(char_num=256; char_num; char_num--)
     {
-        fseek(stdin,6,SEEK_CUR);
+        fseek(stdin, 6, SEEK_CUR);
         ch  =   getchar();
-        putchar(ch==' '?0x08:ch-47);
-        fseek(stdin,3,SEEK_CUR);
-        for(e=font_height;e;e--)
-        {
-            data    =   0;
-            for(i=0;i<font_width[1];i++)
-            {
-                data    |=  getchar()==' '?0:1<<i;
-            }
-            putchar(data);
-            fseek(stdin,3,SEEK_CUR);
-        }
+        putchar(ch==' '? 0x08 : ch-47);
+        fseek(stdin, 3, SEEK_CUR);
+        do_symbol(FONT_WIDTH_VAR);
     }
     return 0;
 }
