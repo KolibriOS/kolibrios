@@ -104,16 +104,10 @@ pusha
 	mov eax,0
 	mov ebx,30*65536+400
 	mov ecx,30*65536+170
-	mov edx,0x03cccccc
-	mov edi,0x00777777
+	mov edx,0x14cccccc
+	mov edi,win_header
 	int 0x40
 
-	mov eax,4
-	mov ebx,8*65536+8
-	mov ecx,0xf0ffffff
-	mov edx,win_header
-	mov esi,win_header_l-win_header;8
-	int 0x40
 
 	mov eax,4
 	mov ebx,10*65536+41
@@ -122,23 +116,23 @@ pusha
 	mov esi,txtWord_l-txtWord ; 6
 	int 0x40
 
-	mov eax,4
+	;mov eax,4
 	mov ebx,10*65536+67
-	mov ecx,0x00000000
+	;mov ecx,0x00000000
 	mov edx,txtVariants
 	mov esi,txtVariants_l-txtVariants ;9
 	int 0x40
 
-	mov eax,4
+	;mov eax,4
 	mov ebx,10*65536+91
-	mov ecx,0x00000000
+	;mov ecx,0x00000000
 	mov edx,txtTranslate
 	mov esi,txtTranslate_l-txtTranslate ;8
 	int 0x40
 
-	mov eax,4
+	;mov eax,4
 	mov ebx,10*65536+115
-	mov ecx,0x00000000
+	;mov ecx,0x00000000
 	mov edx,txtTranscript
 	mov esi,txtTranscript_l-txtTranscript ;9
 	int 0x40
@@ -149,6 +143,7 @@ pusha
 	mov edx,3
 	mov esi,0x00dddddd
 	int 0x40
+	
 	mov eax,4
 	mov ebx,168*65536+142
 	mov ecx,0x00000000
@@ -723,7 +718,7 @@ ret
 
 
 win_header:
-db 'Словарик'
+db 'Словарик', 0
 win_header_l:
 
 tr_not_found_text:

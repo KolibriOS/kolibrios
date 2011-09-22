@@ -1056,15 +1056,15 @@ Fkeys	  db 210,211,212,213,214,215,216,217,208,209,228,159
 
 title: 	 ; строка заголовка
 if lang eq ru
-     db   'КАЛЕНДАРЬ',0
+     db   'Календарь',0
 else if lang eq ge
-     db   'KALENDER',0
+     db   'Kalender',0
 else if lang eq fr
-     db   'CALENDRIER',0
+     db   'Calendrier',0
 else if lang eq et
-     db   'KALENDER',0
+     db   'Kalender',0
 else
-     db   'CALENDAR',0
+     db   'Calendar',0
 end if
 
 if SKIP eq 0
