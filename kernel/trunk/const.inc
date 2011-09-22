@@ -143,6 +143,8 @@ SSE_FZ         equ    0x8000
 
 SSE_INIT equ (SSE_IM+SSE_DM+SSE_ZM+SSE_OM+SSE_UM+SSE_PM)
 
+IRQ_PIC        equ    0
+IRQ_APIC       equ    1
 
 struc TSS
 {

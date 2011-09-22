@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-IRQ_RESERVED   equ 16
+IRQ_RESERVED   equ 24
 
 IRQ_POOL_SIZE  equ 48
 

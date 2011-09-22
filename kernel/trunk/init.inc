@@ -437,6 +437,9 @@ acpi_rsdp         rd 1
 acpi_rsdt         rd 1
 acpi_madt         rd 1
 
+acpi_dev_data     rd 1
+acpi_dev_size     rd 1
+
 acpi_rsdt_base    rd 1
 acpi_madt_base    rd 1
 acpi_lapic_base   rd 1

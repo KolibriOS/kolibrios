@@ -45,7 +45,14 @@ iglobal
         dd      irq_serv.irq_5,  irq_serv.irq_6,  irq_serv.irq_7
         dd      irq_serv.irq_8,  irq_serv.irq_9,  irq_serv.irq_10
         dd      irq_serv.irq_11, irq_serv.irq_12, irqD, irq_serv.irq_14, irq_serv.irq_15
-
+	dd irq_serv.irq_16
+	dd irq_serv.irq_17
+	dd irq_serv.irq_18
+	dd irq_serv.irq_19
+	dd irq_serv.irq_20
+	dd irq_serv.irq_21
+	dd irq_serv.irq_22
+	dd irq_serv.irq_23
 
     times 32 - IRQ_RESERVED dd unknown_interrupt
     ;int_0x40 gate trap (for directly copied)

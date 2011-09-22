@@ -78,15 +78,12 @@ else
   boot_tss          db   'Setting TSSs',0
   boot_cpuid        db   'Reading CPUIDs',0
   boot_devices      db   'Detecting devices',0
-  boot_timer        db   'Setting timer',0
-  boot_irqs         db   'Reprogramming IRQs',0
   boot_setmouse     db   'Setting mouse',0
   boot_windefs      db   'Setting window defaults',0
   boot_bgr          db   'Calculating background',0
   boot_resirqports  db   'Reserving IRQs & ports',0
-  boot_setrports    db   'Setting addresses for IRQs',0
   boot_setostask    db   'Setting OS task',0
-  boot_allirqs      db   'Unmasking all IRQs',0
+  boot_allirqs	    db	 'Unmasking IRQs',0
   boot_tsc          db   'Reading TSC',0
   boot_cpufreq      db   'CPU frequency is ','    ',' MHz',0
   boot_pal_ega      db   'Setting EGA/CGA 320x200 palette',0
@@ -147,6 +144,7 @@ vmode          db  '/sys/drivers/VMODE.MDR',0
 vrr_m          db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'
 
+dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
 
 align 4
 

@@ -226,7 +226,7 @@ B32:
            mov   fs,ax
            mov   gs,ax
            mov   ss,ax
-           mov   esp,0x5ec00       ; Set stack
+           mov   esp,0x006CC00       ; Set stack
 
 ; CLEAR 0x280000 - HEAP_BASE
 
@@ -236,13 +236,11 @@ B32:
            cld
            rep   stosd
 
-           mov   edi,0x40000
-           mov   ecx,(0x90000-0x40000)/4
-           rep   stosd
-
 ; CLEAR KERNEL UNDEFINED GLOBALS
            mov   edi, endofcode-OS_BASE
-           mov   ecx, (uglobals_size/4)+4
+           mov   ecx, 0x90000
+           sub   ecx, edi
+           shr   ecx, 2
            rep   stosd
 
 ; SAVE & CLEAR 0-0xffff
@@ -605,28 +603,25 @@ high_code:
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 
         call  init_irqs
-        call  rerouteirqs
+        call  PIC_init
 
 ; Initialize system V86 machine
         call    init_sys_v86
 
-; TIMER SET TO 1/100 S
+; Initialize system timer (IRQ0)
+	call	PIT_init
 
-        mov   al,0x34              ; set to 100Hz
-        out   0x43,al
-        mov   al,0x9b              ; lsb    1193180 / 1193
-        out   0x40,al
-        mov   al,0x2e              ; msb
-        out   0x40,al
+; Try to Initialize APIC
+	call	APIC_init
 
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
-; Also enable IRQ2, because in some configurations
-; IRQs from slave controller are not delivered until IRQ2 on master is enabled
-        mov     al, 0xFA
-        out     0x21, al
-        mov     al, 0x3F
-        out     0xA1, al
+        call unmask_timer
+        stdcall enable_irq, 2               ; @#$%! PIC
+        stdcall enable_irq, 6               ; FDD
+        stdcall enable_irq, 13              ; co-processor
+        stdcall enable_irq, 14
+        stdcall enable_irq, 15
 
 ; Enable interrupts in IDE controller
         mov     al, 0
@@ -678,6 +673,13 @@ end if
 
         mov   esi,boot_fonts
         call  boot_log
+
+; Display APIC status
+	mov	esi, boot_APIC_found
+        cmp     [irq_mode], IRQ_APIC
+        je    @f
+	mov	esi, boot_APIC_nfound
+@@:
 
 ; PRINT AMOUNT OF MEMORY
         mov     esi, boot_memdetect
@@ -822,17 +824,6 @@ end if
 
         call  set_variables
 
-; SET MOUSE
-
-        ;call   detect_devices
-        stdcall load_driver, szPS2MDriver
-;        stdcall load_driver, szCOM_MDriver
-
-        mov   esi,boot_setmouse
-        call  boot_log
-        call  setmouse
-
-
 ; STACK AND FDC
 
         call  stack_init
@@ -939,7 +930,16 @@ first_app_found:
      ;// mike.dld [
         call  set_lights
      ;// mike.dld ]
+        stdcall attach_int_handler, 1, irq1, 0
 
+; SET MOUSE
+
+        stdcall load_driver, szPS2MDriver
+;        stdcall load_driver, szCOM_MDriver
+
+        mov   esi,boot_setmouse
+        call  boot_log
+        call  setmouse
 
 ; Setup serial output console (if enabled)
 
@@ -993,10 +993,6 @@ if preboot_blogesc
         jne     .bll1
 end if
 
-
-        stdcall attach_int_handler, 1, irq1, 0
-
-;        mov    [dma_hdd],1
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
         mov [timer_ticks_enable],1              ; for cd driver
@@ -4865,9 +4861,7 @@ end if
 
            call restorefatchain
 
-           mov al, 0xFF
-           out 0x21, al
-           out 0xA1, al
+	       call IRQ_mask_all
 
 if 0
            mov  word [OS_BASE+0x467+0],pr_mode_exit
