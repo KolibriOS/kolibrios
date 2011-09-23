@@ -1163,7 +1163,7 @@ sys_window_end_moving_handler: ;///////////////////////////////////////////////
 ;> esi = process slot
 ;------------------------------------------------------------------------------
         mov     edi, ebx
-        call    window._.draw_negative_box
+        call    window._.end_moving__box
 
         mov     edi, esi
         shl     edi, 5
@@ -1306,18 +1306,7 @@ end if
 	mov	ecx, 4
 	repz	cmpsd
 	pop	edi
-	jnz	@f
-	
-	mov	edi,eax
-        mov     eax, [edi + BOX.left - 2]
-        mov     ax, word[edi + BOX.left]
-        add     ax, word[edi + BOX.width]
-        mov     ebx, [edi + BOX.top - 2]
-        mov     bx, word[edi + BOX.top]
-        add     bx, word[edi + BOX.height]
-        xor     esi,esi
-        call    draw_rectangle.forced
-	jmp	.exit
+	jz	.exit
 @@:
 
         add     esp, -BOX.sizeof
@@ -2084,13 +2073,24 @@ window._.draw_negative_box: ;//////////////////////////////////////////////////
 ;> edi = pointer to BOX struct
 ;------------------------------------------------------------------------------
         push    eax ebx esi
+        mov     esi, 0x01000000
+.1:
         mov     eax, [edi + BOX.left - 2]
         mov     ax, word[edi + BOX.left]
         add     ax, word[edi + BOX.width]
         mov     ebx, [edi + BOX.top - 2]
         mov     bx, word[edi + BOX.top]
         add     bx, word[edi + BOX.height]
-        mov     esi, 0x01000000
         call    draw_rectangle.forced
         pop     esi ebx eax
         ret
+;------------------------------------------------------------------------------
+window._.end_moving__box: ;//////////////////////////////////////////////////
+;------------------------------------------------------------------------------
+;? Draw positive box
+;------------------------------------------------------------------------------
+;> edi = pointer to BOX struct
+;------------------------------------------------------------------------------
+        push    eax ebx esi
+	xor	esi,esi
+	jmp	window._.draw_negative_box.1
