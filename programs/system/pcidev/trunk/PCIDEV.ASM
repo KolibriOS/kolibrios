@@ -475,7 +475,7 @@ no_ummio_here:
 	and	edx, 0xFFFF
 	or	edx, 310 * 65536	; X start becomes 310
 	movzx	ecx, [PCI_IRQ]		; get Interface
-	cmp	cl, 0x0f		; IRQ between 0..15
+	cmp	cl, 23   		; IRQ between 0..23
 	ja	@f
 
 	mcall
