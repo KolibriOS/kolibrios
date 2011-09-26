@@ -269,19 +269,6 @@ inline fastcall dword StrToInt()
 }
 
 
-/*int strcmp(char* string1, char* string2)
-{
-	loop ()
-	{
-		IF (*string1<*string2) RETURN -1;
-		IF (*string1>*string2) RETURN 1;
-		IF (*string1=='\0') RETURN 0;
-		string1++;
-		string2++;
-	}
-}*/
-
-
 inline fastcall int strcmp(ESI, EDI)
 {
 	loop()
@@ -305,21 +292,6 @@ inline fastcall unsigned int find_symbol(ESI,BL)
 	return last;
 }
 
-
-dword StrToCol(char* htmlcolor)
-{
-  dword j=1, color=0; char ch=0x00;
-  IF (ESBYTE[htmlcolor]<>'#') RETURN;
-  FOR (;j<7;j++)
-  {
-    ch=ESBYTE[htmlcolor+j];
-    IF ((ch>='0') && (ch<='9')) ch -= '0';
-    IF ((ch>='A') && (ch<='F')) ch -= 'A'-10;
-    IF ((ch>='a') && (ch<='f')) ch -= 'a'-10;
-    color = color*0x10 + ch;
-  }
-  EAX=color;
-}
 
 inline fastcall dword upcase(dword ESI)
 {
