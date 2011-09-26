@@ -366,9 +366,7 @@ int pressed_y;
 
 inline fastcall void draw_window()
 {                
-	WindowRedrawStatus(1);
 	DefineAndDrawWindow(98,90,582,482,0x73,0x10E4DFE1,0,0,title); 
-	WindowRedrawStatus(2);
 	Form.GetInfo(#Form, SelfInfo);
 	IF (Form.height==GetSkinWidth()+3) return; //ничего не делать если окно схлопнуто в заголовок
 	  IF (Form.height<280) MoveSize(OLD,OLD,OLD,280);

@@ -159,7 +159,9 @@ inline fastcall void Pause(dword EBX){
 void DefineAndDrawWindow(dword x,y,sizeX,sizeY,
 byte mainAreaType, dword mainAreaColor,byte headerType,dword headerColor,EDI)
 {
-	WindowRedrawStatus(1);
+	EAX = 12;
+	EBX = 1;
+	$int 0x40
 	
 	EBX = x << 16 + sizeX;
 	ECX = y << 16 + sizeY;
@@ -168,7 +170,9 @@ byte mainAreaType, dword mainAreaColor,byte headerType,dword headerColor,EDI)
 	$xor eax,eax
 	$int 0x40
 	
-	WindowRedrawStatus(2);
+	EAX = 12;
+	EBX = 2;
+	$int 0x40
 }
 
 inline fastcall void CreateThread(dword ECX,EDX)
@@ -182,12 +186,6 @@ inline fastcall void DrawTitle(dword ECX){
 	EAX = 71;
 	EBX = 1;
 	$int 0x40;
-}
-
-
-inline fastcall void WindowRedrawStatus(dword EBX){
-	EAX = 12;
-	$int 0x40
 }
 
 inline fastcall dword GetSkinWidth(){
