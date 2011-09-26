@@ -35,6 +35,24 @@ struct TWebBrowser {
 
 TWebBrowser WB1;
 
+byte rez, b_text, i_text, u_text, s_text, w_title, pre_text, blq_text, li_text, link, ignor_text, li_tab;
+
+
+dword text_colors[10],
+	text_color_index = 0,
+	link_color;
+
+int stroka,
+	stolbec,
+	tab_len;
+	
+char line[330],
+	tag[100],
+	tagparam[10000],
+	parametr[1200],
+	options[1000];
+
+
 #include "include\history.h--"
 #include "include\colors.h--"
 #include "include\unicode_tags.h--"
@@ -53,7 +71,7 @@ void TWebBrowser::Scan(dword id) {
 		return;
 	}
 	//edit1.flags=64;
-	IF(kolichestvo < max_kolvo_strok) SWITCH(id) {
+	IF(count < max_kolvo_strok) SWITCH(id) {
 		CASE 183: CASE 184: CASE 180: CASE 181: return;
 	} //если мало строк игнорируем некоторые кнопки
 	switch (id) {
@@ -100,13 +118,13 @@ void TWebBrowser::Scan(dword id) {
 		ELSE return;
 		break; 
 	case ID2: //мотаем вниз
-		IF(max_kolvo_strok + za_kadrom >= kolichestvo) return;
+		IF(max_kolvo_strok + za_kadrom >= count) return;
 		za_kadrom++;
 		break; 
 	case 183: //PgDown
-		IF(za_kadrom == kolichestvo - max_kolvo_strok) return;
+		IF(za_kadrom == count - max_kolvo_strok) return;
 		za_kadrom = za_kadrom + max_kolvo_strok + 2;
-		IF(max_kolvo_strok + za_kadrom > kolichestvo) za_kadrom = kolichestvo - max_kolvo_strok;
+		IF(max_kolvo_strok + za_kadrom > count) za_kadrom = count - max_kolvo_strok;
 		BREAK;
 	case 184: //PgUp
 		IF(za_kadrom == 0) RETURN;
@@ -118,7 +136,7 @@ void TWebBrowser::Scan(dword id) {
 		ELSE RETURN;
 		BREAK; 
 	case 181: //end
-		za_kadrom = kolichestvo - max_kolvo_strok;
+		za_kadrom = count - max_kolvo_strok;
 		BREAK; 
 	default:
 		RETURN;
@@ -134,19 +152,19 @@ void TWebBrowser::DrawScroller() {
 	DrawFlatButton(left + width - 15, top + height - 17, 16, 16, ID2, 0xE4DFE1, "\x19");
 	DrawFlatButton(left + width - 15, top, 16, 16, ID1, 0xE4DFE1, "\x18");
 
-	IF(kolichestvo <= max_kolvo_strok) {
+	IF(count <= max_kolvo_strok) {
 		DrawBar(left + width - 14, top + 17, 16, height - 34, 0xCED0D0);
 		return;
 	}
 
-	razm_scrl = height - 16 * max_kolvo_strok / kolichestvo - 3;
-	IF(razm_scrl < 10) razm_scrl = 10;
-	IF(za_kadrom + max_kolvo_strok >= kolichestvo) on_y = height - razm_scrl + top - 17;
-	ELSE on_y = height - 32 * za_kadrom / kolichestvo + top + 16;
-	DrawFlatButton(left + width - 15, on_y, 16, razm_scrl, 0, 0xE4DFE1, ""); //ползунок
+	scroll_size = height - 16 * max_kolvo_strok / count - 3;
+	IF(scroll_size < 10) scroll_size = 10;
+	IF(za_kadrom + max_kolvo_strok >= count) on_y = height - scroll_size + top - 17;
+	ELSE on_y = height - 32 * za_kadrom / count + top + 16;
+	DrawFlatButton(left + width - 15, on_y, 16, scroll_size, 0, 0xE4DFE1, ""); //ползунок
   IF(on_y > top + 17) DrawBar(left + width - 14, top + 17, 16, on_y - top - 17, 0xCED0D0); //поле до ползунка
-	IF(height - razm_scrl + top - 17 > on_y)
-		DrawBar(left + width - 14, on_y + razm_scrl + 1, 16, height - razm_scrl - on_y + top - 18, 0xCED0D0); //поле после ползунка
+	IF(height - scroll_size + top - 17 > on_y)
+		DrawBar(left + width - 14, on_y + scroll_size + 1, 16, height - scroll_size - on_y + top - 18, 0xCED0D0); //поле после ползунка
 }
 
 
@@ -162,7 +180,7 @@ void GetNewUrl(){
 	{
 		copystr(BrowserHistory.CurrentUrl(), #editURL); //достаём адрес текущей страницы
 		
-		IF (editURL[find_symbol(#editURL, '/')-2]<>'/')  // если не http://test.ua
+		IF (editURL[find_symbol(#editURL, '/')-2]<>'/')  // если не http://pagename.ua
 		{
 			editURL[find_symbol(#editURL, '/')] = 0x00; //обрезаем её урл до последнего /
 			IF (URL[0]=='/') copystr(#URL+1,#URL);
@@ -192,6 +210,7 @@ void ReadHtml(byte DO_LOAD)
 	} 
 	ELSE file_size stdcall (#URL);
 	
+		
 	filesize = EBX;
 	IF (!filesize) return; //Lee 22.09
 	mem_Free(buf);
@@ -243,23 +262,9 @@ void TWebBrowser::Load(dword adress) {
 
 
 
-byte rez, b_text, i_text, u_text, s_text, w_title, pre_text, blq_text, li_text, link, ignor_text, li_tab;
-dword text_colors[10],
-	text_color_index = 0,
-	link_color;
-int stroka,
-	stolbec,
-	tab_len;
-	byte line[330],
-	tag[100],
-	tagparam[10000],
-	parametr[1200],
-	options[1000];
-
-	byte ignor_param = 0;
-	
 void TWebBrowser::ParseHTML(dword bword, fsize){
 	word bukva[1];
+	byte ignor_param = 0;
 	char temp[768];
 	stroka = -za_kadrom;
 	stolbec = 0;
@@ -428,7 +433,7 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 		DrawBar(left, max_kolvo_strok * 10 + top + 25, width - 15, -max_kolvo_strok * 10 + height - 25, 0xFFFFFF);
 	IF(stroka * 10 + 15 <= height)
 		DrawBar(left, stroka * 10 + top + 15, width - 15, -stroka * 10 + height - 15, 0xFFFFFF); //закрашиваем всё до конца
-	IF(za_kadrom == 0) kolichestvo = stroka;
+	IF(za_kadrom == 0) count = stroka;
 	DrawScroller(); //рисуем скролл
 }
 
@@ -483,10 +488,15 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
     char temp[4096];
     int w, h, img_za_kadrom=0;
 
-	IF(tag[0] == '/') {
+	//проверяем тег открывается или закрывается
+	IF(tag[0] == '/') 
+	{
 		rez = 0;
 		copystr(#tag + 1, #tag);
-	} ELSE rez = 1;
+	}
+	ELSE
+		rez = 1;
+
 	//
 	IF(!chTag("html")) {
 		IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) IF (rez==0) ignor_text = 1; ELSE ignor_text = 0;
@@ -496,7 +506,8 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	IF (ignor_text == 1) return;
 	//
 
-	if(!chTag("title")) IF(w_title == 0) {
+	if(!chTag("title")) IF(w_title == 0)
+	{
 		copystr(" ", #line);
 		w_title = 1;
 	}
@@ -510,15 +521,19 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		//да, знаю, 2 раза выходит, но, если большая страница, то труъ
 		return;
 	}
+	
 	//
 	IF(!chTag("q")) copystr("\"", #line + strlen(#line));
-	if (stroka > -1) && (stroka - 2 < max_kolvo_strok) && (line) {
+	
+	//вывод на экран
+	if (stroka >= 0) && (stroka - 2 < max_kolvo_strok) && (line) 
+	{
 		WriteText(stolbec * 6 + left1, top1, 0x80, text_colors[text_color_index], #line, 0);
-		IF(b_text) WriteText(stolbec * 6 + left1 + 1, top1, 0x80, text_colors[text_color_index], #line, 0);
-		IF(i_text) Skew(stolbec * 6 + left1, top1, strlen(#line)+1*6, 10);
-		IF(s_text) DrawBar(stolbec * 6 + left1, top1 + 4, strlen(#line) * 6, 1, text_colors[text_color_index]); //зачёркнутый
-		IF(u_text) DrawBar(stolbec * 6 + left1, top1 + 8, strlen(#line) * 6, 1, text_colors[text_color_index]); //подчёркнутый
-		IF(link) {
+		IF (b_text) WriteText(stolbec * 6 + left1 + 1, top1, 0x80, text_colors[text_color_index], #line, 0);
+		IF (i_text) Skew(stolbec * 6 + left1, top1, strlen(#line)+1*6, 10); //наклонный текст
+		IF (s_text) DrawBar(stolbec * 6 + left1, top1 + 4, strlen(#line) * 6, 1, text_colors[text_color_index]); //зачёркнутый
+		IF (u_text) DrawBar(stolbec * 6 + left1, top1 + 8, strlen(#line) * 6, 1, text_colors[text_color_index]); //подчёркнутый
+		IF (link) {
 			DefineButton(stolbec * 6 + left1 - 2, top1, strlen(#line) * 6 + 3, 9, blink + BT_HIDE, 0xB5BFC9); //
 			DrawBar(stolbec * 6 + left1, top1 + 8, strlen(#line) * 6, 1, text_colors[text_color_index]);
 		}
@@ -526,6 +541,31 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	//
 	IF(!tag) return;
 	stolbec += strlen(#line);
+	////////////////////////// <body bgcolor="#000000" text="#FFFFFF">
+	if (!chTag("body"))
+	{
+		BODY_MARK:
+		
+		if (strcmp(#parametr, "link=") == 0)
+			link_color = GetColor(#options);
+		
+		/*if (strcmp(#parametr, "text=") == 0)
+		{
+			text_colors[0]=GetColor(#options);
+		}
+		
+		if (strcmp(#parametr, "bgcolor=") == 0)
+		{
+			//text_colors[0]=GetColor(#options);
+			WriteDebug("bgcolor=");
+			WriteDebug(#options);
+		}*/
+		
+		IF(tagparam) {
+			GetNextParam();
+			GOTO BODY_MARK;
+		}		
+	}
 	//////////////////////////
 	if (!chTag("a")) {
 		IF (stroka - 1 > max_kolvo_strok) || (stroka < -2) return;
@@ -558,25 +598,9 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		if (strcmp(#parametr, "color=") == 0) //&& (parametr[1] == '#')
 		{
 			text_color_index++;
-			IF (options[0] == '#')
-			{
-				text_colors[text_color_index] = StrToCol(#options);
-			}
-			ELSE
-			{
-				FOR (i=0; color_names[i]!=0; i++)
-				{
-					IF(!strcmp(#options, color_names[i]))
-					{
-						text_colors[text_color_index] = colors[i];
-						BREAK;
-					}
-					text_colors[text_color_index] = text_colors[0];
-				}
-			}
-			
+			text_colors[text_color_index] = GetColor(#options);
 		}
-		IF(tagparam[0] <>'') {
+		IF(tagparam) {
 			GetNextParam();
 			GOTO COL_MARK;
 		}
@@ -634,12 +658,11 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	} ELSE li_tab++;
 	IF(!chTag("dd")) stolbec += 5;
 	IF(!chTag("blockquote")) blq_text = rez;
-	IF(!chTag("body")) IF(strcmp(#parametr, "link=") == 0) link_color = StrToCol(#options);
 	IF(!chTag("pre")) pre_text = rez; 
 	IF(!chTag("hr")) {
 		TextGoDown(left1, top1, width1);
 		TextGoDown(left1, top1 + 10, width1);
-		IF(strcmp(#parametr, "color=") == 0) hr_color = StrToCol(#options);
+		IF(strcmp(#parametr, "color=") == 0) hr_color = GetColor(#options);
 		ELSE hr_color = 0x999999;
 		IF(stroka > 0) DrawBar(left1, top1 + 14, width1 - 8, 1, hr_color);
 	}
@@ -714,7 +737,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				ReadHtml(DONT_LOAD);
 			}
 		}
-		IF(tagparam[0] <>'')
+		IF(tagparam)
 		{
 			GetNextParam();
 			goto META;

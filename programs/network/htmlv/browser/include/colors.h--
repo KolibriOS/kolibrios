@@ -287,3 +287,40 @@ dword *colors[]={
 0xf5f5f5,
 0xffff00,
 0x9acd32};
+
+dword StrToCol(char* htmlcolor)
+{
+  dword j=1, color=0;
+  char ch=0x00;
+  
+  IF (ESBYTE[htmlcolor]<>'#') RETURN;
+  
+  FOR (;j<7;j++)
+  {
+    ch=ESBYTE[htmlcolor+j];
+    IF ((ch>='0') && (ch<='9')) ch -= '0';
+    IF ((ch>='A') && (ch<='F')) ch -= 'A'-10;
+    IF ((ch>='a') && (ch<='f')) ch -= 'a'-10;
+    color = color*0x10 + ch;
+  }
+  
+  return color;
+}
+
+dword GetColor(char* color_str)
+{
+	int ii;
+
+	IF (ESBYTE[color_str] == '#')
+		return StrToCol(color_str);
+
+	ELSE
+		FOR (ii=0; color_names[ii]!=0; ii++)
+		{
+			IF(!strcmp(color_str, color_names[ii]))
+			{
+				return colors[ii];
+			}
+		}
+	return text_colors[0];
+}
