@@ -35,7 +35,7 @@ struct TWebBrowser {
 
 TWebBrowser WB1;
 
-byte rez, b_text, i_text, u_text, s_text, w_title, pre_text, blq_text, li_text, link, ignor_text, li_tab;
+byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, link, ignor_text, li_tab;
 
 
 dword text_colors[10],
@@ -74,74 +74,75 @@ void TWebBrowser::Scan(dword id) {
 	IF(count < max_kolvo_strok) SWITCH(id) {
 		CASE 183: CASE 184: CASE 180: CASE 181: return;
 	} //если мало строк игнорируем некоторые кнопки
-	switch (id) {
-	case 011:
-		ReadHtml();
-		break;
-	case BACK:
-		BrowserHistory.GoBack();
-		return;
-	case FORWARD:
-		//RunProgram("@notify", "Forward button is not realized yet");
-		return;
-	case 054: //F5
-		IF(edit1.flags == 66) break;
-  case REFRESH:
-		copystr(#URL, #editURL);
-		Draw_Window();
-		return;
-	case 014: //Ctrl+N новое окно
-	case 020: //Ctrl+T нова€ вкладка
-	case NEWTAB:
-		MoveSize(190,80,OLD,OLD);
-		RunProgram(#program_path, #URL);
-		return;
-	case HOME:
-		copystr("/sys/index.htm", #editURL);
-	case GOTOURL:
-	case 0x0D: //enter
-		copystr(#editURL, #URL);
-		Load(#URL);
-		return;
-	case 052:  //Ќажата F3
-		IF(edit1.flags <> 66) 
-		IF (strcmp(get_URL_part(5),"http:")<>0) RunProgram("tinypad", #URL); ELSE RunProgram("tinypad", #download_path);
-		break;
-	case 173:	//ctrl+enter
-	case SEARCHWEB:
-		copystr(#search_path, #URL);
-		copystr(#editURL, #URL + strlen(#URL));
-		Load(#URL);
-		return;
-	case ID1: //мотаем вверх
-		IF(za_kadrom > 0) za_kadrom--;
-		ELSE return;
-		break; 
-	case ID2: //мотаем вниз
-		IF(max_kolvo_strok + za_kadrom >= count) return;
-		za_kadrom++;
-		break; 
-	case 183: //PgDown
-		IF(za_kadrom == count - max_kolvo_strok) return;
-		za_kadrom = za_kadrom + max_kolvo_strok + 2;
-		IF(max_kolvo_strok + za_kadrom > count) za_kadrom = count - max_kolvo_strok;
-		BREAK;
-	case 184: //PgUp
-		IF(za_kadrom == 0) RETURN;
-    za_kadrom = za_kadrom - max_kolvo_strok - 2;
-		IF(za_kadrom < 0) za_kadrom = 0;
-		BREAK;
-	case 180: //home
-		IF (za_kadrom <>0) za_kadrom = 0;
-		ELSE RETURN;
-		BREAK; 
-	case 181: //end
-		za_kadrom = count - max_kolvo_strok;
-		BREAK; 
-	default:
-		RETURN;
+	switch (id)
+	{
+		case 011: //Ctrk+K 
+			ReadHtml();
+			koitodos(buf);
+			break;
+		case BACK:
+			BrowserHistory.GoBack();
+			return;
+		case FORWARD:
+			//RunProgram("@notify", "Forward button is not realized yet");
+			return;
+		case 054: //F5
+			IF(edit1.flags == 66) break;
+		case REFRESH:
+			copystr(#URL, #editURL);
+			Draw_Window();
+			return;
+		case 014: //Ctrl+N новое окно
+		case 020: //Ctrl+T нова€ вкладка
+		case NEWTAB:
+			MoveSize(190,80,OLD,OLD);
+			RunProgram(#program_path, #URL);
+			return;
+		case HOME:
+			copystr("/sys/index.htm", #editURL);
+		case GOTOURL:
+		case 0x0D: //enter
+			copystr(#editURL, #URL);
+			Load(#URL);
+			return;
+		case 052:  //Ќажата F3
+			IF(edit1.flags <> 66) 
+			IF (strcmp(get_URL_part(5),"http:")<>0) RunProgram("tinypad", #URL); ELSE RunProgram("tinypad", #download_path);
+			break;
+		case 173:	//ctrl+enter
+		case SEARCHWEB:
+			copystr(#search_path, #URL);
+			copystr(#editURL, #URL + strlen(#URL));
+			Load(#URL);
+			return;
+		case ID1: //мотаем вверх
+			IF(za_kadrom > 0) za_kadrom--;
+			ELSE return;
+			break; 
+		case ID2: //мотаем вниз
+			IF(max_kolvo_strok + za_kadrom >= count) return;
+			za_kadrom++;
+			break; 
+		case 183: //PgDown
+			IF(za_kadrom == count - max_kolvo_strok) return;
+			za_kadrom = za_kadrom + max_kolvo_strok + 2;
+			IF(max_kolvo_strok + za_kadrom > count) za_kadrom = count - max_kolvo_strok;
+			BREAK;
+		case 184: //PgUp
+			IF(za_kadrom == 0) RETURN;
+			za_kadrom = za_kadrom - max_kolvo_strok - 2;
+			IF(za_kadrom < 0) za_kadrom = 0;
+			BREAK;
+		case 180: //home
+			IF (za_kadrom <>0) za_kadrom = 0;
+			ELSE RETURN;
+			BREAK; 
+		case 181: //end
+			za_kadrom = count - max_kolvo_strok;
+			BREAK; 
+		default:
+			RETURN;
 	}
-	IF(id == 11) koitodos(buf);
 	ParseHTML(buf, filesize);
 }
 
@@ -190,29 +191,36 @@ void GetNewUrl(){
 	}
 }
 
-
-
-void ReadHtml(byte DO_LOAD)
+void HttpLoad()
 {
+	DeleteFile(#download_path);
+	IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
+	downloader_id = RunProgram("/sys/network/downloader", #URL);
+	IF (downloader_id<0) RunProgram("@notify", "Error running Downloader. Internet unavilable.");
+	RunProgram("/sys/network/downloader", #URL);
+}
 
-	if (!strcmp(get_URL_part(5),"http:"))) 
+/*	if (!strcmp(get_URL_part(5),"http:"))) 
 	{
 		IF (DO_LOAD) && (!WindowRePaint)
 		{
-			DeleteFile(#download_path);
-			IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
-			downloader_id = RunProgram("/sys/network/downloader", #URL);
-			IF (downloader_id<0) RunProgram("@notify", "Error running Downloader. Internet unavilable.");
-			RunProgram("/sys/network/downloader", #URL);
-			RETURN;
+			HttpLoad();
+			//RETURN;
 		}
 		file_size stdcall (#download_path);
 	} 
 	ELSE file_size stdcall (#URL);
+*/
 	
-		
+void ReadHtml(byte DO_LOAD)
+{
+	if (!strcmp(get_URL_part(5),"http:"))) 
+		file_size stdcall (#download_path);
+	else
+		file_size stdcall (#URL);
+	
 	filesize = EBX;
-	IF (!filesize) return; //Lee 22.09
+	if (!filesize) /*{Pause(200); ReadHtml();}*/ return; //Lee 22.09
 	mem_Free(buf);
 	buf = mem_Alloc(filesize);
 	ReadFile(0, filesize, buf, #URL);
@@ -269,7 +277,7 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 	stroka = -za_kadrom;
 	stolbec = 0;
 	FOR(j = 400; j < blink + 1; j++;) DeleteButton(j);
-	b_text = i_text = u_text = s_text = w_title = pre_text = blq_text = 
+	b_text = i_text = u_text = s_text = pre_text = blq_text = 
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 0; //обнул€ем теги
 	link_color = 0x0000FF;
 	blink = 400;
@@ -400,15 +408,13 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 			}
 			
 			rez = StrToInt(#tag + 1) - 1040;
-			IF(tag[1] == '1') && (rez>1040) && (rez<1118) && (strlen(#tag) == 5)
+			IF(tag[1] == '1') && (rez>=0) && (rez<=72) && (strlen(#tag) == 5)
 				{
-					bukva = utf100tmmv_mas[rez];
-					copystr(#bukva, #line + strlen(#line));
-					break;
+					bukva = unicode_chars[rez];
+					GOTO DEFAULT_MARK; //обрабатываем букву
 				}
 			
-			WriteDebug("Unknown tag");
-			WriteDebug(#tag);
+			WriteDebug(#tag); //тэг не найден - выводим на доску отладки
 			copystr(#tag, #line + strlen(#line)); //выводим на экран необработанный тег, так браузеры зачем-то делают
 			break;
 		default:
@@ -416,7 +422,7 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 			IF(ignor_text) break;
 			IF(pre_text == 0) && (bukva == ' ') && (strcmp(#line + strlen(#line) - 1, " ") == 0) continue;
 			//
-			if (stolbec + strlen(#line) > max_kolvo_stolbcov) && (w_title == 0)
+			if (stolbec + strlen(#line) > max_kolvo_stolbcov)
 			{
 				copystr(#line + find_symbol(#line, ' '), #temp); //перенос по словам
 				line[find_symbol(#line, ' ')] = 0x00;
@@ -506,19 +512,12 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	IF (ignor_text == 1) return;
 	//
 
-	if(!chTag("title")) IF(w_title == 0)
+	if(!chTag("title")) && (!rez) && (stroka == 0)
 	{
-		copystr(" ", #line);
-		w_title = 1;
-	}
-	ELSE {
-		w_title = 0;
-		stolbec = 0;
 		copystr(#line, #header);
 		copystr(" -", #header + strlen(#header));
 		copystr(#version, #header + strlen(#header));
-		IF(stroka == 0) || (WindowRePaint == 1) DrawTitle(#header);
-		//да, знаю, 2 раза выходит, но, если больша€ страница, то труъ
+		DrawTitle(#header);
 		return;
 	}
 	
