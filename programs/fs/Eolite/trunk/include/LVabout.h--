@@ -44,7 +44,6 @@ void authors()
 				IF (GetKey()==27) ExitProcess();
 				break;
 		case evReDraw:
-				WindowRedrawStatus(1);
 				DefineAndDrawWindow(500,200,181,256,0x34,0x10EFEBEF,0,0,"About Eolite");
 				DrawBar(0,0,172,50,0x8494C4); //голубое сзади
 				PutPaletteImage(#logo,85,85,43,7,#logo_pal);
@@ -56,7 +55,6 @@ void authors()
 				WriteText(12,170,0x80,0,"Visit",0);
 				DrawLink(48,170,23, "kolibri-os.narod.ru"); //ссылкa
 				DrawFlatButton(85,190,70,22,0,0xE4DFE1, "Close");
-				WindowRedrawStatus(2);
 	}
 }
 

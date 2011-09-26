@@ -156,15 +156,19 @@ inline fastcall void Pause(dword EBX){
 }
 
 //------------------------------------------------------------------------------
-void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword
-	mainAreaColor,byte headerType,dword headerColor,EDI)
+void DefineAndDrawWindow(dword x,y,sizeX,sizeY,
+byte mainAreaType, dword mainAreaColor,byte headerType,dword headerColor,EDI)
 {
+	WindowRedrawStatus(1);
+	
 	EBX = x << 16 + sizeX;
 	ECX = y << 16 + sizeY;
 	EDX = mainAreaType << 24 | mainAreaColor;
 	ESI = headerType << 24 | headerColor;
 	$xor eax,eax
 	$int 0x40
+	
+	WindowRedrawStatus(2);
 }
 
 inline fastcall void CreateThread(dword ECX,EDX)
