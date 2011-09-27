@@ -1941,7 +1941,7 @@ sys_end:
 iglobal
 align 4
 sys_system_table:
-        dd      exit_for_anyone         ; 1 = obsolete
+        dd      sysfn_deactivate        ; 1 = deactivate window
         dd      sysfn_terminate         ; 2 = terminate thread
         dd      sysfn_activate          ; 3 = activate window
         dd      sysfn_getidletime       ; 4 = get idle time
@@ -1966,7 +1966,7 @@ sys_system_table:
         dd      sysfn_min_rest_window   ; 22 = minimize and restore any window
 sysfn_num = ($ - sys_system_table)/4
 endg
-
+;------------------------------------------------------------------------------
 sys_system:
         dec     ebx
         cmp     ebx, sysfn_num
@@ -1974,8 +1974,7 @@ sys_system:
         jmp     dword [sys_system_table + ebx*4]
 @@:
         ret
-
-
+;------------------------------------------------------------------------------
 sysfn_shutdown:          ; 18.9 = system shutdown
      cmp  ecx,1
      jl   exit_for_anyone
@@ -1992,7 +1991,7 @@ sysfn_shutdown:          ; 18.9 = system shutdown
   uglobal
    shutdown_processes: dd 0x0
   endg
-
+;------------------------------------------------------------------------------
 sysfn_terminate:        ; 18.2 = TERMINATE
      cmp  ecx,2
      jb   noprocessterminate
@@ -2016,7 +2015,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
    noatsc:
    noprocessterminate:
      ret
-
+;------------------------------------------------------------------------------
 sysfn_terminate2:
 ;lock application_table_status mutex
 .table_status:
@@ -2043,7 +2042,34 @@ sysfn_terminate2:
     mov    [application_table_status],0
     or     dword [esp+32],-1
     ret
+;------------------------------------------------------------------------------
+sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
+	cmp	ecx,2
+	jb	.nowindowdeactivate
+	cmp	ecx,[TASK_COUNT]
+	ja	.nowindowdeactivate	
+	
+	movzx	esi, word [WIN_STACK + ecx*2]
+	cmp	esi, 1
+	je	.nowindowdeactivate ; already deactive
 
+	mov	edi, ecx
+	shl	edi, 5
+	add	edi, window_data
+	movzx	esi, word [WIN_STACK + ecx * 2]
+	lea	esi, [WIN_POS + esi * 2]
+	call	window._.window_deactivate
+	
+	xor	eax, eax
+	mov	byte[MOUSE_BACKGROUND], al
+	mov	byte[DONT_DRAW_MOUSE], al
+	mov	byte[MOUSE_DOWN], 0
+
+	call	syscall_display_settings._.calculate_whole_screen
+	call	syscall_display_settings._.redraw_whole_screen
+.nowindowdeactivate:
+	ret
+ ;------------------------------------------------------------------------------   
 sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
      cmp  ecx,2
      jb   .nowindowactivate
@@ -2064,28 +2090,29 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
      call  waredraw
 .nowindowactivate:
      ret
-
+;------------------------------------------------------------------------------
 sysfn_getidletime:              ; 18.4 = GET IDLETIME
      mov  eax,[idleusesec]
      mov  [esp+32], eax
      ret
-
+;------------------------------------------------------------------------------
 sysfn_getcpuclock:              ; 18.5 = GET TSC/SEC
      mov  eax,[CPU_FREQ]
      mov  [esp+32], eax
      ret
-
+;------------------------------------------------------------------------------
 ;  SAVE ramdisk to /hd/1/menuet.img
 ;!!!!!!!!!!!!!!!!!!!!!!!!
    include 'blkdev/rdsave.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!
+;------------------------------------------------------------------------------
 align 4
 sysfn_getactive:        ; 18.7 = get active window
      mov  eax, [TASK_COUNT]
    movzx  eax, word [WIN_POS + eax*2]
      mov  [esp+32],eax
      ret
-
+;------------------------------------------------------------------------------
 sysfn_sound_flag:       ; 18.8 = get/set sound_flag
 ;     cmp  ecx,1
      dec  ecx
@@ -2100,10 +2127,11 @@ sysfn_sound_flag:       ; 18.8 = get/set sound_flag
      xor  byte [sound_flag], 1
  nosoundflag:
      ret
-
+;------------------------------------------------------------------------------
 sysfn_minimize:         ; 18.10 = minimize window
      mov   [window_minimize],1
      ret
+;------------------------------------------------------------------------------
 align 4
 sysfn_getdiskinfo:      ; 18.11 = get disk info table
 ;     cmp  ecx,1
@@ -2128,18 +2156,18 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
      cld
      rep movsd
      ret
-
+;------------------------------------------------------------------------------
 sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)
         and     dword [esp+32], 0
         ret
-
+;------------------------------------------------------------------------------
 sysfn_getversion:       ; 18.13 = get kernel ID and version
      mov edi,ecx
      mov esi,version_inf
      mov ecx,version_end-version_inf
      rep movsb
      ret
-
+;------------------------------------------------------------------------------
 sysfn_waitretrace:     ; 18.14 = sys wait retrace
      ;wait retrace functions
  sys_wait_retrace:
@@ -2150,7 +2178,7 @@ sysfn_waitretrace:     ; 18.14 = sys wait retrace
      jz WaitRetrace_loop
      and [esp+32],dword 0
      ret
-
+;------------------------------------------------------------------------------
 align 4
 sysfn_centermouse:      ; 18.15 = mouse centered
 ; removed here by <Lrz>
@@ -2169,8 +2197,8 @@ sysfn_centermouse:      ; 18.15 = mouse centered
 	xor   eax,eax
         and   [esp+32],eax
 ;        pop   eax
-
      ret
+;------------------------------------------------------------------------------
 align 4
 sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
      test ecx,ecx  ; get mouse speed factor
@@ -2217,7 +2245,7 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
      mov   [mouse_active],1
  .end:
      ret
-
+;------------------------------------------------------------------------------
 sysfn_getfreemem:
      mov eax, [pg_data.pages_free]
      shl eax, 2

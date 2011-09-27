@@ -1812,6 +1812,9 @@ window._.window_activate: ;////////////////////////////////////////////////////
 
         ; if type of current active window is 3 or 4, it must be redrawn
         mov     ebx, [TASK_COUNT]
+	
+;	DEBUGF	1, "K : TASK_COUNT (0x%x)\n", ebx
+	
         movzx   ebx, word[WIN_POS + ebx * 2]
         shl     ebx, 5
         add     eax, window_data
@@ -1838,6 +1841,13 @@ window._.window_activate: ;////////////////////////////////////////////////////
         cmp     eax, [TASK_COUNT]
         jae     .move_self_up
         inc     eax
+	
+;	push	ebx
+;	xor	ebx,ebx
+;	mov	bx,[WIN_STACK + eax * 2]
+;	DEBUGF	1, "K : DEC WIN_STACK (0x%x)\n",ebx
+;	pop	ebx
+	
         cmp     [WIN_STACK + eax * 2], bx
         jbe     .next_stack_window
         dec     word[WIN_STACK + eax * 2]
@@ -1870,6 +1880,53 @@ window._.window_activate: ;////////////////////////////////////////////////////
         pop     ebx eax
         ret
 
+;------------------------------------------------------------------------------
+window._.window_deactivate: ;////////////////////////////////////////////////////
+;------------------------------------------------------------------------------
+;? Deactivate window
+;------------------------------------------------------------------------------
+;> esi = pointer to WIN_POS+ window data
+;------------------------------------------------------------------------------
+	push	eax ebx
+;------------------------------------------------------------------------------
+.move_others_up:
+	; ax <- process no
+	movzx	ebx, word[esi]
+	; ax <- position in window stack
+	movzx	ebx, word[WIN_STACK + ebx * 2]
+	; up others
+	xor	eax, eax
+.next_stack_window:
+	cmp	eax, [TASK_COUNT]
+	jae	.move_self_down
+	inc	eax
+	cmp	[WIN_STACK + eax * 2], bx
+	jae	.next_stack_window
+	inc	word[WIN_STACK + eax * 2]
+	jmp	.next_stack_window
+;----------------------------------------------
+.move_self_down:
+	movzx	ebx, word[esi]
+	; this is the last (and the low)
+	mov	[WIN_STACK + ebx * 2], word 1
+	; update on screen - window stack
+	xor	eax, eax
+.next_window_pos:
+	cmp	eax, [TASK_COUNT]
+	jae	.reset_vars
+	inc	eax
+	movzx	ebx, word[WIN_STACK + eax * 2]
+	mov	[WIN_POS + ebx * 2], ax
+	jmp	.next_window_pos
+;-----------------------------------------------
+.reset_vars:
+	mov	byte[KEY_COUNT], 0
+	mov	byte[BTN_COUNT], 0
+	mov	word[MOUSE_SCROLL_H], 0
+	mov	word[MOUSE_SCROLL_V], 0
+	pop	ebx eax
+	ret
+;------------------------------------------------------------------------------	
 align 4
 ;------------------------------------------------------------------------------
 window._.check_window_draw: ;//////////////////////////////////////////////////
