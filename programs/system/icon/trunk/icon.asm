@@ -955,7 +955,6 @@ thread:
     mcall
 
 still2:
-
     mov  eax,10
     mcall
 
@@ -991,7 +990,8 @@ still2:
     @@: call    get_bg_info
         mcall   67,[ebp+0],[ebp+4],51,51
 
-  .lp1: call    draw_window2
+  .lp1:
+	call    draw_window2
         jmp     still2
 
   button2:
@@ -1001,6 +1001,18 @@ still2:
 	cmp	ah, 2
 	jnz	still2
 
+	mcall	9,I_END,-1
+	mov	ecx,[ebx+30]	; PID
+	mcall	18,21
+	mov	edx,eax	; SLOT
+	mcall	18,7
+	cmp	edx,eax	; compare with active SLOT
+	jne	@f
+	mov	ecx,edx
+	mcall	18,1	; set to down
+	call	draw_window2
+@@:
+	
     mov  esi,[ebp+8]
           mov  ebx,1
           mov  edi,finfo.path
@@ -1352,10 +1364,9 @@ create_thread_event db 0
 image          dd  0x3000
 
 I_Param:
-
  icon_data = I_END+0x1400
  process_table = I_END+0x2400
-
+ 
 bgrx dd ?
 bgry dd ?
 param_str rb 31
