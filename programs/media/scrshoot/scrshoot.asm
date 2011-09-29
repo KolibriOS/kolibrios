@@ -1,7 +1,7 @@
 ;
 ;   Screenshooter for Kolibri
 ;
-; version:	1.0
+; version:	1.2
 ; last update:  08/09/2010
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      select path for save with OpenDialog,
@@ -14,7 +14,7 @@
 ; 31.01.07 - всё теперь рисуется относительно клиентской области
 ; 02.11.10 - Используется checkbox версии 2
 
-title equ 'Screenshooter v 1.0' ; Заголовок окна
+title equ 'Screenshooter v 1.2' ; Заголовок окна
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include '../../develop/examples/editbox/trunk/editbox.inc'
@@ -749,13 +749,13 @@ but7 txt_button 40,205,10,150,8,0,0,but_text.7,show_set_rect_window ; задать обл
 buttons_end:
 ;---------------------------------------------------------------------
 check_boxes:
-ch1 check_box2 (5 shl 16+11),(105 shl 16 +11),5,cl_white,0,0x80000000,ch_text.1,ch_flag_en+ch_flag_bottom	; свернуть окно
-ch2 check_box2 (5 shl 16+11),(120 shl 16 +11),5,cl_white,0,0x80000000,ch_text.2,ch_flag_en+ch_flag_bottom	; затем сделать активным
-ch3 check_box2 (1455 shl 16+11),(105 shl 16 +11),5,cl_white,0,0x80000000,ch_text.3,ch_flag_en+ch_flag_bottom	; показать снимок
-ch4 check_box2 (5 shl 16+11),(135 shl 16 +11),5,cl_white,0,0x80000000,ch_text.4,ch_flag_en+ch_flag_bottom	; задержка
-ch5 check_box2 (5 shl 16+11),(150 shl 16 +11),5,cl_white,0,0x80000000,ch_text.5,ch_flag_en+ch_flag_bottom
-ch6 check_box2 (5 shl 16+11),(165 shl 16 +11),5,cl_white,0,0x80000000,ch_text.6,ch_flag_en+ch_flag_bottom
-use_rect check_box2 (145 shl 16+11),(150 shl 16 +11),5,cl_white,0,0x80000000,ch_text.7,ch_flag_bottom		; исп. область
+ch1 check_box2 (5 shl 16+11),(105 shl 16 +11),5,cl_white,0,0x80000000,ch_text.1,ch_flag_en+ch_flag_middle	; свернуть окно
+ch2 check_box2 (5 shl 16+11),(120 shl 16 +11),5,cl_white,0,0x80000000,ch_text.2,ch_flag_en+ch_flag_middle	; затем сделать активным
+ch3 check_box2 (1455 shl 16+11),(105 shl 16 +11),5,cl_white,0,0x80000000,ch_text.3,ch_flag_en+ch_flag_middle	; показать снимок
+ch4 check_box2 (5 shl 16+11),(135 shl 16 +11),5,cl_white,0,0x80000000,ch_text.4,ch_flag_en+ch_flag_middle	; задержка
+ch5 check_box2 (5 shl 16+11),(150 shl 16 +11),5,cl_white,0,0x80000000,ch_text.5,ch_flag_en+ch_flag_middle
+ch6 check_box2 (5 shl 16+11),(165 shl 16 +11),5,cl_white,0,0x80000000,ch_text.6,ch_flag_en+ch_flag_middle
+use_rect check_box2 (145 shl 16+11),(150 shl 16 +11),5,cl_white,0,0x80000000,ch_text.7,ch_flag_middle		; исп. область
 ; автонумерация
 check_boxes_end:
 ;---------------------------------------------------------------------
