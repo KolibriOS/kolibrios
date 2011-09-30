@@ -13,9 +13,6 @@
 #define DOS		1
 #define KOI		2
 #define UTF		3
-
-#define DONT_LOAD	0
-#define LETS_LOAD	1
                       
 
 dword get_URL_part(byte len) {

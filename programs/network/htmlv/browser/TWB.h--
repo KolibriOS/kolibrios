@@ -58,7 +58,8 @@ char line[330],
 #include "include\unicode_tags.h--"
 
 void TWebBrowser::Scan(dword id) {
-	IF (id > 399) {
+	IF (id > 399)
+	{
 		j = 0;
 		FOR(i = 0; i <= id - 401; i++) {
 			do j++;
@@ -70,10 +71,11 @@ void TWebBrowser::Scan(dword id) {
 		Draw_Window();
 		return;
 	}
+	
 	//edit1.flags=64;
-	IF(count < max_kolvo_strok) SWITCH(id) {
-		CASE 183: CASE 184: CASE 180: CASE 181: return;
-	} //если мало строк игнорируем некоторые кнопки
+	IF(count < max_kolvo_strok) SWITCH(id) //если мало строк игнорируем некоторые кнопки
+	{ CASE 183: CASE 184: CASE 180: CASE 181: return; } 
+	
 	switch (id)
 	{
 		case 011: //Ctrk+K 
@@ -100,24 +102,26 @@ void TWebBrowser::Scan(dword id) {
 			return;
 		case HOME:
 			copystr("/sys/index.htm", #editURL);
+		case 052:  //Нажата F3
+			IF(edit1.flags <> 66) 
+			IF (strcmp(get_URL_part(5),"http:")<>0) RunProgram("tinypad", #URL); ELSE RunProgram("tinypad", #download_path);
+			return;
+
 		case GOTOURL:
 		case 0x0D: //enter
 			copystr(#editURL, #URL);
 			Load(#URL);
 			return;
-		case 052:  //Нажата F3
-			IF(edit1.flags <> 66) 
-			IF (strcmp(get_URL_part(5),"http:")<>0) RunProgram("tinypad", #URL); ELSE RunProgram("tinypad", #download_path);
-			break;
 		case 173:	//ctrl+enter
 		case SEARCHWEB:
 			copystr(#search_path, #URL);
 			copystr(#editURL, #URL + strlen(#URL));
 			Load(#URL);
 			return;
+
 		case ID1: //мотаем вверх
-			IF(za_kadrom > 0) za_kadrom--;
-			ELSE return;
+			IF(za_kadrom <= 0) return;
+			za_kadrom--;
 			break; 
 		case ID2: //мотаем вниз
 			IF(max_kolvo_strok + za_kadrom >= count) return;
@@ -125,19 +129,20 @@ void TWebBrowser::Scan(dword id) {
 			break; 
 		case 183: //PgDown
 			IF(za_kadrom == count - max_kolvo_strok) return;
-			za_kadrom = za_kadrom + max_kolvo_strok + 2;
+			za_kadrom += max_kolvo_strok + 2;
 			IF(max_kolvo_strok + za_kadrom > count) za_kadrom = count - max_kolvo_strok;
 			BREAK;
 		case 184: //PgUp
 			IF(za_kadrom == 0) RETURN;
-			za_kadrom = za_kadrom - max_kolvo_strok - 2;
+			za_kadrom -= max_kolvo_strok - 2;
 			IF(za_kadrom < 0) za_kadrom = 0;
 			BREAK;
 		case 180: //home
-			IF (za_kadrom <>0) za_kadrom = 0;
-			ELSE RETURN;
+			IF(za_kadrom == 0) RETURN;
+			za_kadrom = 0;
 			BREAK; 
 		case 181: //end
+			IF (za_kadrom == count - max_kolvo_strok) RETURN;
 			za_kadrom = count - max_kolvo_strok;
 			BREAK; 
 		default:
@@ -163,7 +168,7 @@ void TWebBrowser::DrawScroller() {
 	IF(za_kadrom + max_kolvo_strok >= count) on_y = height - scroll_size + top - 17;
 	ELSE on_y = height - 32 * za_kadrom / count + top + 16;
 	DrawFlatButton(left + width - 15, on_y, 16, scroll_size, 0, 0xE4DFE1, ""); //ползунок
-  IF(on_y > top + 17) DrawBar(left + width - 14, top + 17, 16, on_y - top - 17, 0xCED0D0); //поле до ползунка
+	IF(on_y > top + 17) DrawBar(left + width - 14, top + 17, 16, on_y - top - 17, 0xCED0D0); //поле до ползунка
 	IF(height - scroll_size + top - 17 > on_y)
 		DrawBar(left + width - 14, on_y + scroll_size + 1, 16, height - scroll_size - on_y + top - 18, 0xCED0D0); //поле после ползунка
 }
@@ -212,7 +217,7 @@ void HttpLoad()
 	ELSE file_size stdcall (#URL);
 */
 	
-void ReadHtml(byte DO_LOAD)
+void ReadHtml()
 {
 	if (!strcmp(get_URL_part(5),"http:"))) 
 		file_size stdcall (#download_path);
@@ -249,7 +254,8 @@ void TWebBrowser::Load(dword adress) {
 	edit1.size = edit1.pos = strlen(#editURL);
 	edit_box_draw stdcall(#edit1); //рисуем строку адреса
 
-	ReadHtml(LETS_LOAD);
+	//LETS_LOAD
+	ReadHtml();
 	
 	IF (!filesize) return; //Lee 22.09
 	
@@ -723,17 +729,17 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 			IF (!strcmp(#options,"utf-8")) || (!strcmp(#options,"utf8"))
 			{
-				ReadHtml(DONT_LOAD);
+				ReadHtml();
 				utf8rutodos(buf);
 			}
 			IF(!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))
 			{
-				ReadHtml(DONT_LOAD);
+				ReadHtml();
 				koitodos(buf);
 			}
 			IF(!strcmp(#options, "dos")) || (!strcmp(#options, "cp-866"))
 			{
-				ReadHtml(DONT_LOAD);
+				ReadHtml();
 			}
 		}
 		IF(tagparam)

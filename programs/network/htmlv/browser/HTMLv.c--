@@ -42,10 +42,6 @@ void main()
 	int btn;
 	byte key;
 	
-	IF (param) copystr(#param,#URL);
-	BrowserHistory.AddUrl();
-	copystr(#URL,#editURL);
-	
     //Asper [
         mem_Init();
         $or      eax, eax
@@ -56,6 +52,11 @@ void main()
       load_dll2(libimg, #libimg_init,1);
       load_dll2(boxlib, #edit_box_draw,0);
     //] Asper
+	
+	IF (param) copystr(#param,#URL);
+	BrowserHistory.AddUrl();
+	copystr(#URL,#editURL);
+	
 	SetEventMask(0x27);
 	loop()
 	{
@@ -118,11 +119,12 @@ void Draw_Window()
 {
 	WindowRedrawStatus(1);
 	DefineAndDrawWindow(215,100,640,480,0x73,0x00E4DFE1,0,0,0);
+	WindowRedrawStatus(2);
+	
 	Form.GetInfo(SelfInfo); 
 	IF (Form.height==GetSkinWidth()+3) //если свернуто в заголовок, ничего не рисуем
 	{
 		DrawTitle(#header);
-		WindowRedrawStatus(2);
 		return;
 	}
 	IF (Form.height<120) MoveSize(OLD,OLD,OLD,120);
@@ -143,8 +145,6 @@ void Draw_Window()
 	WB1.width=Form.width-11;
 	WB1.height=onTop(43,5);
 	WB1.Load(#URL);
-	
-	WindowRedrawStatus(2);
 }
  
 int onLeft(dword right,left) {return Form.width-right-left;}
