@@ -159,6 +159,14 @@ inline fastcall Pause(dword EBX)
 
 //------------------------------------------------------------------------------
 
+//eax = ÿçûê ñèñòåìû (1=eng, 2=fi, 3=ger, 4=rus)
+inline fastcall int GetSystemLanguage(){
+ EAX = 26;
+ EBX = 5;
+ $int 0x40
+ RETURN EAX; 
+}
+
 inline fastcall void DrawTitle(dword ECX)
 {
 	EAX = 71;
@@ -218,6 +226,7 @@ l1:
 	$test al,al
 	$jnz l1
 }
+
 
 byte fastcall TestBit(EAX, CL)
 {
@@ -371,6 +380,22 @@ dword Hex2Symb(char* htmlcolor)
   wintodos(#symbol);
   AL=symbol;
 }
+
+/*int hex2char(char c)
+{
+  if (c <=9)
+    return (c+48);
+
+  return (c - 10 + 'a');
+}
+
+int hex2char(dword c)
+{
+  if (c <=9)
+    return (c+48);
+
+  return (c - 10 + 'a');
+}*/
 
 byte mas[66] = "î ¡æ¤¥ä£å¨©ª«¬­®¯ïàáâã¦¢ìë§èíéçêž€–„…”ƒ•ˆ‰Š‹ŒŽŸ‘’“†‚œ›‡˜™—š";
 inline fastcall void koitodos(dword EDI)
@@ -532,7 +557,7 @@ inline fastcall void DeleteButton(dword EDX)
 	$int 0x40;
 }
 
-void DrawRegion(dword x,y,width,height,color1)
+:void DrawRegion(dword x,y,width,height,color1)
 {
 	DrawBar(x,y,width,1,color1); //¯®«®á  £®à á¢¥àåã
 	DrawBar(x,y+height,width,1,color1); //¯®«®á  £®à á­¨§ã
@@ -540,7 +565,7 @@ void DrawRegion(dword x,y,width,height,color1)
 	DrawBar(x+width,y,1,height+1,color1); //¯®«®á  ¢¥àåã á¯à ¢ 
 }
 
-void DrawRegion_3D(dword x,y,width,height,color1,color2)
+:void DrawRegion_3D(dword x,y,width,height,color1,color2)
 {
 	DrawBar(x,y,width+1,1,color1); //¯®«®á  £®à á¢¥àåã
 	DrawBar(x,y+1,1,height-1,color1); //¯®«®á  á«¥¢ 
@@ -557,7 +582,7 @@ void DrawFlatButton(dword x,y,width,height,id,color,text)
 	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
 }
 
-void DrawCircle(int x, y, r)
+:void DrawCircle(int x, y, r)
 {
 	int i; float px=0, py=r, ii = r * 3.1415926 * 2;
 	FOR (i = 0; i < ii; i++)
