@@ -97,7 +97,10 @@ option_box_draw_box:
         add   ebx,dword op_text_margin;добавить размер стороны и расстояние на котором начнется вывод текста
         shl   ebx,16                ;сдвинем на 16 разрядов в лево (умножим на 65536)
         mov   bx,word op_top        ;загрузим значение по y
-        add   ebx,op_size
+        mov   eax,op_size
+        shr   eax,1
+        add   eax,4
+        add   ebx,eax
         mov   ecx,dword op_text_color        ;загрузим цвет надписи + flags
         sub   ebx,7        ;добавим значение длины стороны -9+2
         
