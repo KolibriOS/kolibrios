@@ -214,7 +214,7 @@ void main()
 			case evReDraw:
 				DefineAndDrawWindow(400,276,177,201+GetSkinWidth(),0x74,0x10B2B4BF,0,0,"Just Clicks v0.8");
 				DefineButton(150,-18,18,18,255+BT_HIDE+BT_NOFRAME,0); //кнопочка закрытия :]
-				Form.GetInfo(SelfInfo);
+				GetProcessInfo(#Form, SelfInfo);
 				IF (Form.height==GetSkinWidth()+3) BREAK;
 				sc.get();
 				DrawBar(0,168,168,29,sc.work); //панелька снизу

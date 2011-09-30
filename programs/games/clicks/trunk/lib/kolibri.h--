@@ -32,10 +32,9 @@ struct proc_info{
 #define SelfInfo -1
 };
 
-void proc_info::GetInfo(dword ECX)
+void GetProcessInfo(dword EBX, ECX)
 {
 	EAX = 9;
-	EBX = #use_cpu;
 	$int  0x40
 }
 

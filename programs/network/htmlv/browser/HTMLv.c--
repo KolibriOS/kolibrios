@@ -121,7 +121,7 @@ void Draw_Window()
 	DefineAndDrawWindow(215,100,640,480,0x73,0x00E4DFE1,0,0,0);
 	WindowRedrawStatus(2);
 	
-	Form.GetInfo(SelfInfo); 
+	GetProcessInfo(#Form, SelfInfo);
 	IF (Form.height==GetSkinWidth()+3) //если свернуто в заголовок, ничего не рисуем
 	{
 		DrawTitle(#header);
