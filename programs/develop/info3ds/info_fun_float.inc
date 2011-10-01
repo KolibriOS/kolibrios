@@ -92,7 +92,7 @@ DoubleFloat_to_String:
 	stosb
 .NoSign:
 ; Распаковать число в код ASCII
-	mov	BX,8	 ;смещение последней пары цифр
+	mov	ebx,8	 ;смещение последней пары цифр
 	mov	ecx,9	 ;счетчик пар цифр
 	; Определить позицию десятичной точки в числе
 	mov	DX,18
@@ -101,7 +101,7 @@ DoubleFloat_to_String:
 	jz	.Error	;или нулевая позиция
 .NextPair:
 	; Загрузить очередную пару разрядов
-	mov	AL, byte [BX + Data_BCD]
+	mov	AL, byte [ebx + Data_BCD]
 	mov	AH,AL
 	; Выделить, перевести в ASCII и
 	; сохранить старшую тетраду
