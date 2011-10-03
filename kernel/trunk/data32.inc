@@ -141,7 +141,7 @@ char2   db '/sys/FONTS/CHAR2.MT',0
 bootpath       db  '/KOLIBRI    '
 bootpath2      db  0
 vmode          db  '/sys/drivers/VMODE.MDR',0
-vrr_m          db  'VRR_M',0
+;vrr_m          db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'
 
 dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0

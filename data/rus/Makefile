@@ -76,8 +76,6 @@ FASM_PROGRAMS:=\
  spanel:SPANEL:$(PROGS)/system/spanel/trunk/spanel.asm \
  test:TEST:$(PROGS)/system/test/trunk/test.asm \
  tinypad:TINYPAD:$(PROGS)/develop/tinypad/trunk/tinypad.asm \
- vrr:VRR:$(PROGS)/system/vrr/trunk/vrr.asm \
- vrr_m:VRR_M:$(PROGS)/system/vrr_m/trunk/vrr_m.asm \
  zkey:ZKEY:$(PROGS)/system/zkey/trunk/ZKEY.ASM \
  3d/3dcube2:3D/3DCUBE2:$(PROGS)/demos/3dcube2/trunk/3DCUBE2.ASM \
  3d/3dspiral:3D/3DSPIRAL:$(PROGS)/demos/3dspiral/trunk/3dspiral.asm \
@@ -120,7 +118,6 @@ FASM_PROGRAMS:=\
  drivers/ps2mouse.obj:DRIVERS/PS2MOUSE.OBJ:$(REPOSITORY)/drivers/mouse/ps2mouse4d/trunk/ps2mouse.asm \
  drivers/sb16.obj:DRIVERS/SB16.OBJ:$(KERNEL)/drivers/sb16/sb16.asm \
  drivers/sound.obj:DRIVERS/SOUND.OBJ:$(KERNEL)/drivers/sound.asm \
- drivers/vmode.mdr:DRIVERS/VMODE.MDR:$(KERNEL)/drivers/vmode.asm \
  drivers/vt8235.obj:DRIVERS/VT8235.OBJ:$(KERNEL)/drivers/vt823x.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \

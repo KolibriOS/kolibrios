@@ -649,12 +649,6 @@ end if
 
         call  calculatefatchain
 
-; LOAD VMODE DRIVER
-
-;!!!!!!!!!!!!!!!!!!!!!!!
-include 'vmodeld.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!
-
 if 0
   mov ax,[OS_BASE+0x10000+bx_from_load]
   cmp ax,'r1'           ; if using not ram disk, then load librares and parameters {SPraid.simba}
@@ -870,17 +864,17 @@ end if
 ; LOAD FIRST APPLICATION
         cli
 
-        cmp   byte [BOOT_VAR+0x9030],1
-        jne   no_load_vrr_m
+;        cmp   byte [BOOT_VAR+0x9030],1
+;        jne   no_load_vrr_m
 
-        mov     ebp, vrr_m
-        call    fs_execute_from_sysdir
-
-;        cmp   eax,2                  ; if vrr_m app found (PID=2)
-	sub   eax,2
-        jz    first_app_found
-
-no_load_vrr_m:
+;        mov     ebp, vrr_m
+;        call    fs_execute_from_sysdir
+;
+;;        cmp   eax,2                  ; if vrr_m app found (PID=2)
+;	sub   eax,2
+;        jz    first_app_found
+;
+;no_load_vrr_m:
 
         mov     ebp, firstapp
         call    fs_execute_from_sysdir
@@ -1608,10 +1602,6 @@ no_set_lba_read:
     	mov  [pci_access_enabled],ecx
     	ret
 no_set_pci_access:
-
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-include 'vmodeint.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 sys_setup_err:
      	or  [esp+32],dword -1
