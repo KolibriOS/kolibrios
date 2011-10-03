@@ -6,7 +6,7 @@ BB-KFAR    -024-/SYS/File Managers/KFAR       -                              *
 AC-RDSAVE  -017-/SYS/RDSAVE                   -                              *
 BC-CALC    -004-/SYS/CALC                     -                              *
 CB-KFM     -005-/SYS/File Managers/KFM        -                              *
-JA-VRR     -007-/SYS/VRR                      -                              *
+JA-HEXEDIT -010-/SYS/DEVELOP/HEED             -                              *
 II-C4      -003-/SYS/GAMES/C4                 -                              *
 JI-MINE    -014-/SYS/GAMES/MINE               -                              *
 IH-TETRIS  -018-/SYS/GAMES/TETRIS             -                              *
@@ -25,3 +25,4 @@ BH-XONIX   -021-/SYS/GAMES/XONIX              -                              *
 GH-CHECKERS-001-/SYS/GAMES/CHECKERS           -                              *
 CI-KOSILKA -023-/SYS/GAMES/KOSILKA            -                              *
 CH-GOMOKU  -029-/SYS/GAMES/GOMOKU             -                              *
+IB-KPACK   -010-/RD/1/KPACK                   -                              *
