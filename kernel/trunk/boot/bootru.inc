@@ -15,8 +15,8 @@ $Revision$
 
 
 d80x25_bottom:
-          db       186,' Kolibri OS основана на Menuet OS и не предоставляет '
-          db       'никаких гарaнтий.        ',186
+          db       186,' KolibriOS основана на MenuetOS и НЕ ПРЕДОСТАВЛЯЕТ НИ'
+          db       'КАКИХ ГАРAНТИЙ.          ',186
           db       186,' Подробнее смотрите в файле COPYING.TXT              '
           db       '                         ',186
           line_full_bottom
@@ -28,11 +28,9 @@ s_vesa    db      "Версия VESA: "
   .ver    db      "?.?",13,10,0
 
 gr_mode   db      "Выберите видеорежим: ",13,10,0
-vrrmprint db      "Использовать VRR? (частота кадров выше 60 Гц"
-          db      " только для переходов:",13,10
-          db      186," 1024*768>800*600 и 800*600>640*480) [1-да, 2-нет]: ",0
-;ask_dma   db      "Использовать DMA для доступа к HDD? [1-да, 2-только чтение, 3-нет]: ",0
+
 ask_bd     db      "Добавить диски, видимые через BIOS в режиме V86? [1-да, 2-нет]: ",0
+
 if defined extended_primary_loader
 bdev      db      "Загрузить образ из [1-дискета; 2-kolibri.img из папки загрузки]: ",0
 else
@@ -42,7 +40,9 @@ bdev      db      "Загрузить образ из [1-дискета; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
           db      "4-создать чистый образ]: ",0
 end if
+
 prnotfnd  db      "Ошибка - Видеорежим не найден.",0
+
 not386    db      "Ошибка - Требуется процессор 386+.",0
 fatalsel  db      "Ошибка - Выбранный видеорежим не поддерживается.",0
 pres_key  db      "Нажимите любую клавишу, для перехода в выбор режимов.",0
@@ -61,16 +61,15 @@ time_str  db      " 5 секунд "
 current_cfg_msg db "Текущие настройки:",13,10,0
 curvideo_msg db   " [a] Видеорежим: ",0
 
-
 mode0     db      "320x200, EGA/CGA 256 цветов",13,10,0
 mode9     db      "640x480, VGA 16 цветов",13,10,0  
 
 usebd_msg db      " [b] Добавить диски, видимые через BIOS:",0
 on_msg    db      " вкл",13,10,0
 off_msg   db      " выкл",13,10,0
-readonly_msg db   " только чтение",13,10,0
-vrrm_msg  db      " [c] Использование VRR:",0
-preboot_device_msg db " [d] Образ дискеты: ",0
+
+preboot_device_msg db " [c] Образ дискеты: ",0
+
 if defined extended_primary_loader
 preboot_device_msgs dw 0,pdm1,pdm2,0
 pdm1      db      "настоящая дискета",13,10,0
@@ -82,12 +81,13 @@ pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "использовать уже загруженный образ",13,10,0
 pdm4      db      "создать чистый образ",13,10,0
 end if
+
 loading_msg db    "Идёт загрузка KolibriOS...",0
+
 if ~ defined extended_primary_loader ; saving not supported in this case
 save_quest db     "Запомнить текущие настройки? [y/n]: ",0
 loader_block_error db "Ошибка в данных начального загрузчика, продолжение невозможно.",0
 end if
-
 
 _st db 186,'                   ┌───────────────────────────────┬─┐  ',13,10,0
 _r1 db 186,'                   │  320x200  EGA/CGA 256 цветов  │ │  ',13,10,0
@@ -95,9 +95,7 @@ _r2 db 186,'                   │  640x480  VGA 16 цветов       │ │  ',13,10,0
 _rs db 186,'                   │  ????x????@??  SVGA VESA      │ │  ',13,10,0
 _bt db 186,'                   └───────────────────────────────┴─┘  ',13,10,0
 
-
 remark1 db      "Значения по умолчанию выбраны для удобства большинства, но не всех.",0
-remark2 db      "Если у Вас ЭЛТ-монитор, включите VRR в пункте [c].",0
-remark3 db      "Если у Вас не грузится система, попробуйте отключить пункт [b].",0
-remarks dw      remark1, remark2, remark3
-num_remarks = 3
+remark2 db      "Если у Вас не грузится система, попробуйте отключить пункт [b].",0
+remarks dw      remark1, remark2
+num_remarks = 2

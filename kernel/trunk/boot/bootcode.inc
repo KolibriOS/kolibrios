@@ -552,11 +552,11 @@ end if
         adc     byte [di+preboot_dma-preboot_device], 0
         cmp     byte [di+preboot_biosdisk-preboot_device], 1
         adc     byte [di+preboot_biosdisk-preboot_device], 0
-; default value for VRR is OFF
-        cmp     byte [di+preboot_vrrm-preboot_device], 0
-        jnz	@f
-        mov	byte [di+preboot_vrrm-preboot_device], 2
-@@:
+;; default value for VRR is OFF
+;        cmp     byte [di+preboot_vrrm-preboot_device], 0
+;        jnz	@f
+;        mov	byte [di+preboot_vrrm-preboot_device], 2
+;@@:
 ; notify user
         _setcursor 5,2
 
@@ -584,9 +584,9 @@ end if
         mov     si, usebd_msg
         cmp     [preboot_biosdisk], 1
         call    .say_on_off
-        mov     si, vrrm_msg
-        cmp     [preboot_vrrm], 1
-        call    .say_on_off
+;        mov     si, vrrm_msg
+;        cmp     [preboot_vrrm], 1
+;        call    .say_on_off
         mov     si, preboot_device_msg
         call    print
         mov     al, [preboot_device]
@@ -674,9 +674,9 @@ end if
         jz      .change_a
         cmp     al, 'b'
         jz      .change_b
-        cmp     al, 'c'
-        jz      .change_c
-        cmp     al, 'd'
+;        cmp     al, 'c'
+;        jz      .change_c
+        cmp     al, 'c'		; 'd'
         jnz     .show_remarks
         _setcursor 15,0
         mov     si, bdev
@@ -784,15 +784,15 @@ end if
         mov     [preboot_biosdisk], al
         _setcursor 11,0
         jmp     .d
-.change_c:
-        _setcursor 15,0
-        mov     si, vrrmprint
-        call    print
-        mov     bx, '12'
-        call    getkey
-        mov     [preboot_vrrm], al
-        _setcursor 12,0
-        jmp     .d
+;.change_c:
+;        _setcursor 15,0
+;        mov     si, vrrmprint
+;        call    print
+;        mov     bx, '12'
+;        call    getkey
+;        mov     [preboot_vrrm], al
+;        _setcursor 12,0
+;        jmp     .d
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .say_on_off:
         pushf
@@ -947,10 +947,10 @@ end if
         mov     al, [preboot_dma]
         mov     [es:0x901F], al
 
-; VRR_M USE
-
-        mov     al,[preboot_vrrm]
-        mov     [es:0x9030], al
+;; VRR_M USE
+;
+;        mov     al,[preboot_vrrm]
+;        mov     [es:0x9030], al
         mov     [es:0x901E], byte 1
 
 ; BOOT DEVICE

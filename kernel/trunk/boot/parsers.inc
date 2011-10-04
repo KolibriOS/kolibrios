@@ -57,16 +57,16 @@ parse_vbemode:
 .nothing:
         ret
 
-parse_vrr:
-; vrr is a boolean setting
-        call    parse_bool
-        jc      .nothing
-; convert 0 to 2, 1 to 1
-        inc     ax
-        xor     al, 3
-        mov     [es:preboot_vrrm], al
-.nothing:
-        ret
+;parse_vrr:
+;; vrr is a boolean setting
+;        call    parse_bool
+;        jc      .nothing
+;; convert 0 to 2, 1 to 1
+;        inc     ax
+;        xor     al, 3
+;        mov     [es:preboot_vrrm], al
+;.nothing:
+;        ret
 
 parse_biosdisks:
 ; using biosdisks is a boolean setting

@@ -78,7 +78,7 @@ config_file_variables:
         config_variable 'timeout', parse_timeout
         config_variable 'resolution', parse_resolution
         config_variable 'vbemode', parse_vbemode
-        config_variable 'vrr', parse_vrr
+;        config_variable 'vrr', parse_vrr
         config_variable 'biosdisks', parse_biosdisks
         config_variable 'imgfrom', parse_imgfrom
         dw      0
