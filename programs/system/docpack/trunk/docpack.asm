@@ -189,18 +189,16 @@ end if
   embed_file 'FASM.TXT'          ;d
   embed_file 'MTDBG.TXT'         ;e
 if lang eq ru
-  embed_file 'VRR_RUS.TXT'       ;f
-  embed_file 'SYSFUNCR.TXT'      ;g
-  embed_file 'STACK_RU.TXT'      ;h
-  embed_file 'GROBFAR.TXT'       ;i
+  embed_file 'SYSFUNCR.TXT'      ;f
+  embed_file 'STACK_RU.TXT'      ;g
+  embed_file 'GROBFAR.TXT'       ;h
 else
-  embed_file 'VRR_ENG.TXT'       ;f
-  embed_file 'SYSFUNCS.TXT'      ;g
-  embed_file 'STACK.TXT'         ;h
-  embed_file 'FARA.TXT'          ;i
+  embed_file 'SYSFUNCS.TXT'      ;f
+  embed_file 'STACK.TXT'         ;g
+  embed_file 'FARA.TXT'          ;h
 end if
-  embed_file 'KFAR_KEYS.TXT'     ;j
-  embed_file 'INI.TXT'           ;k
+  embed_file 'KFAR_KEYS.TXT'     ;i
+  embed_file 'INI.TXT'           ;j
 ; -- End of embedding area  -------
 
   dd 0
