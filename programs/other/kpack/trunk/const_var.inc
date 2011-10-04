@@ -202,7 +202,8 @@ editboxes_end:
 mouse_dd dd 0
 ;---------------------------------------------------------------------
 
-check1 check_box 353,40,4,10,0x80ffffff,0,0,check_text,6
+check1 check_box 353,40,4,10,0x80FFFFFF,0,0,check_text,6
+check1_end:
 
 check_text db 'Kernel',0
 ;*********************************************************************
