@@ -649,12 +649,6 @@ end if
 
         call  calculatefatchain
 
-; LOAD VMODE DRIVER
-
-;!!!!!!!!!!!!!!!!!!!!!!!
-include 'vmodeld.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!
-
 if 0
   mov ax,[OS_BASE+0x10000+bx_from_load]
   cmp ax,'r1'           ; if using not ram disk, then load librares and parameters {SPraid.simba}
@@ -867,6 +861,9 @@ end if
         call set_network_conf
   no_st_network:
 
+        xchg bx, bx
+        stdcall load_driver, ahci_driver
+
 ; LOAD FIRST APPLICATION
         cli
 
@@ -1007,6 +1004,8 @@ end if
 
 include 'unpacker.inc'
 include 'fdo.inc'
+
+ahci_driver db 'AHCI',0
 
 align 4
 boot_log:
@@ -1604,14 +1603,9 @@ nsyse8:
 no_set_lba_read:
 ;     cmp  eax,12                     ; ENABLE PCI ACCESS
     	dec  ebx
-    	jnz  no_set_pci_access
+        jnz  sys_setup_err
     	mov  [pci_access_enabled],ecx
     	ret
-no_set_pci_access:
-
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-include 'vmodeint.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 sys_setup_err:
      	or  [esp+32],dword -1

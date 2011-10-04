@@ -59,6 +59,9 @@ kernel_export \
 	      Kfree,\
 	      CreateRingBuffer,\
 \
+        DiskAdd, \
+        DiskMediaChanged, \
+\
 	      GetPid,\
 	      CreateObject,\
 	      DestroyObject,\

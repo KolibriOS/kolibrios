@@ -1472,15 +1472,3 @@ proc shmem_close stdcall, name:dword
 .fail:
            ret
 endp
-
-align 4
-sys_perf:
-           test ecx, ecx
-           jz .fail
-
-           mov edi, ecx
-           mov esi, mem_hash_cnt
-           mov ecx, 64
-           rep movsd
-.fail:
-           ret

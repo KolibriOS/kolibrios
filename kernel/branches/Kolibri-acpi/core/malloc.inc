@@ -202,6 +202,9 @@ malloc:
 ;  eax= mem
 align 4
 free:
+           test eax, eax
+           jz .exit
+
            push edi
            mov edi, eax
            add edi, -8
@@ -296,7 +299,9 @@ free:
            pop esi
 .fail:
            pop edi
+.exit:
            ret
+
 @@:
 
 ; nsize = next->head & ~INUSE_BITS;
@@ -596,21 +601,21 @@ unlink_large_chunk:
            btr [mst.treemap], ecx
            pop edi
            ret
- 
+
 .l3:
            cmp [edi+16], edx
            jne @F
 
            mov [edi+16], eax
            jmp .l4
- 
+
 @@:
            mov [edi+20], eax
- 
+
 .l4:
            test eax, eax
            je .done
- 
+
 .l5:
            mov [eax+24], edi
            mov ecx, [edx+16]
@@ -619,7 +624,7 @@ unlink_large_chunk:
 
            mov [eax+16], ecx
            mov [ecx+24], eax
- 
+
 .l6:
            mov edx, [edx+20]
            test edx, edx
@@ -627,7 +632,7 @@ unlink_large_chunk:
 
            mov [eax+20], edx
            mov [edx+24], eax
- 
+
 .done:
            pop edi
            ret
@@ -649,10 +654,10 @@ malloc_small:
            mov edi, [ecx+4]
            and edi, -4
            sub edi, esi
- 
+
 .loop:
            mov ebx, ecx
- 
+
 .loop_1:
 
 ; while ((t = leftmost_child(t)) != 0)
@@ -662,10 +667,10 @@ malloc_small:
            jz @F
            mov ecx, eax
            jmp .l1
- 
+
 @@:
            mov ecx, [ecx+20]
- 
+
 .l1:
            test ecx, ecx
            jz .unlink
