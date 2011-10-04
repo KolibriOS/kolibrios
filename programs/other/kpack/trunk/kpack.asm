@@ -443,7 +443,7 @@ draw_window:
 ; draw lines and frame
 	call	draw_lines
 ; draw buttons
-	call	draw_bittons
+	call	draw_buttons
 ; draw messages
 	call	draw_messages
 ; draw editbox's
@@ -501,10 +501,10 @@ draw_lines:
 	pop	ecx
 	ret
 ;*********************************************************************
-draw_bittons:
+draw_buttons:
 ; define compress button
 	mov	cx,18
-	mcall	8,<351,72>,,2,[color_table+36]
+	mcall	8,<351,72>,,2,[color_table+24]
 ; uncompress button
 	add	ecx,18 shl 16
 	inc	edx
