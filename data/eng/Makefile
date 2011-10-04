@@ -73,7 +73,6 @@ FASM_PROGRAMS:=\
  run:RUN:$(PROGS)/system/run/trunk/run.asm \
  scrshoot:SCRSHOOT:$(PROGS)/media/scrshoot/scrshoot.asm \
  setup:SETUP:$(PROGS)/system/setup/trunk/setup.asm \
- spanel:SPANEL:$(PROGS)/system/spanel/trunk/spanel.asm \
  test:TEST:$(PROGS)/system/test/trunk/test.asm \
  tinypad:TINYPAD:$(PROGS)/develop/tinypad/trunk/tinypad.asm \
  zkey:ZKEY:$(PROGS)/system/zkey/trunk/ZKEY.ASM \
