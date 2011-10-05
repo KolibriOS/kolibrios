@@ -42,7 +42,7 @@ byte PathHistory[4096];
 dword file_mas[6898];
 int j, i, mouse_dd;
 
-dword stak[100]=0; //окно About 
+dword stak[100]; //окно About 
 
 edit_box edit1= {250,247,13,0xffffff,videlenie,0xD3DDEB,0xffffff,0,248,#edit_path,#mouse_dd,64,6,6};
 edit_box edit2= {250,213,80,0xFFFFCC,videlenie,0xFFFFCC,0xffffff,0,248,#file_name,#mouse_dd,64,6,6};
@@ -51,7 +51,8 @@ proc_info Form;
 dword buf, off; //для текста и буфера
 dword devbuf, dev_num;
 
-#include "include\LVabout.h--"
+#include "include\about_dialog.h--"
+#include "include\some_code.h--"
 #include "include\sorting.h--"
 #include "include\icons_f.h--"
 #include "include\ini.h--"
@@ -87,7 +88,6 @@ void Devices()
 		WriteText(45,i*16+79,0x80,0,#drive_name,0);
 		PutImage(dev_icon*14*13*3+#devices,14,13,21,i*16+76);
 	}
-	Actions();  //функции файлов и папок
 }
 
 void main() 
@@ -387,6 +387,7 @@ inline fastcall void draw_window()
 	DrawRegion_3D(1,40,Form.width-12,onTop(46,0),0x94AECE,0x94AECE); //синий ободок
 	DrawRegion_3D(0,39,Form.width-10,onTop(44,0),0xE4DFE1,0xE4DFE1); //фон
 	Devices(); //панель слева на синем фоне
+	Actions();  //функции файлов и папок
 	//SortButtons
 	DrawFlatButton(192,40,onLeft(192,168),16,31,0xE4DFE1,"File");
 	DrawFlatButton(onLeft(168,0),40,73,16,32,0xE4DFE1,"Type");
@@ -598,7 +599,7 @@ inline Sorting()
 	//Собственно сортировка: вначале папки, потом файлы
 	Sort_by_Name(0,k-1);
 	IF (sort_num==1) Sort_by_Name(k,count-1);
-	IF (sort_num==2) Sort_by_Type(k, count-1);
+	IF (sort_num==2) Sort_by_Type(k,count-1);
 	IF (sort_num==3) Sort_by_Size(k,count-1);
 	//если папка ".." не первая, ставим её туда
 	IF (k>0) && (strcmp(file_mas[0]*304+buf+72,"..")<>0) FOR(k=k-1; k>0; k--;) IF (!strcmp(file_mas[k]*304+buf+72,"..")) file_mas[k]><file_mas[0];

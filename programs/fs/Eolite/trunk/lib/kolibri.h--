@@ -11,6 +11,7 @@ dword  alloc_mem    = 0x00100000;
 dword  x86esp_reg   = 0x00100000;   // 0x0007fff0; 
 dword  I_Param      = #param;
 dword  I_Path       = #program_path;
+
 char param[4096]="";
 char program_path[4096]="";
 
@@ -37,7 +38,7 @@ struct mouse{
 	void get();
 };
 
-int TestBit(EAX, CL)
+inline fastcall int TestBit(EAX, CL)
 {
 	$shr eax,cl
 	$and eax,1
@@ -95,14 +96,14 @@ void proc_info::GetInfo(dword EBX, ECX)
 	$int  0x40
 }
 
-int GetSlot(dword ECX)
+inline fastcall int GetSlot(dword ECX)
 {
 	EAX = 18;
 	EBX = 21;
 	$int 0x40
 }
 
-int ActiveProcess()
+inline fastcall int ActiveProcess()
 {
 	EAX = 18;
 	EBX = 7;
@@ -156,21 +157,21 @@ inline fastcall void Pause(dword EBX){
 }
 
 //------------------------------------------------------------------------------
-void DefineAndDrawWindow(dword x,y,sizeX,sizeY,
-byte mainAreaType, dword mainAreaColor,byte headerType,dword headerColor,EDI)
+void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,
+dword mainAreaColour,byte headerType,dword headerColour,EDI)
 {
-	EAX = 12;
+	EAX = 12;              // function 12:tell os about windowdraw
 	EBX = 1;
 	$int 0x40
 	
 	EBX = x << 16 + sizeX;
 	ECX = y << 16 + sizeY;
-	EDX = mainAreaType << 24 | mainAreaColor;
-	ESI = headerType << 24 | headerColor;
+	EDX = mainAreaType << 24 | mainAreaColour;
+	ESI = headerType << 24 | headerColour;
 	$xor eax,eax
 	$int 0x40
-	
-	EAX = 12;
+
+	EAX = 12;              // function 12:tell os about windowdraw
 	EBX = 2;
 	$int 0x40
 }
@@ -366,7 +367,7 @@ void PutImage(dword EBX,w,h,x,y)
 }
 
 //------------------------------------------------------------------------------
-/*void WriteDebug(dword EDX)
+inline fastcall void WriteDebug(dword EDX)
 {
 	$mov eax, 63
 	$mov ebx, 1
@@ -402,4 +403,4 @@ inline fastcall void WriteFullDebug(dword ESI)
 	WriteDebug(IntToStr(za_kadrom));
 	
 	Pause(200);
-}*/
+}

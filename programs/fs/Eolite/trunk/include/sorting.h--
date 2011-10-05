@@ -2,7 +2,7 @@
 
 void Sort_by_Size(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
 {                                        
-	int i= a;
+	int i = a;
 	IF (a >= b) return;
 	FOR (j = a; j <= b; j++)
 		IF (ESDWORD[file_mas[j]*304 + buf+64] <= ESDWORD[file_mas[b]*304 + buf+64])
@@ -25,7 +25,11 @@ void Sort_by_Name(int a, b)   // для первого вызова: a = 0, b = <элементов в мас
  
 void Sort_by_Type(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
 {                                        
-	int i=a; dword offset=buf+72;  byte filename1[256], filename2[256]; int n;
+	int i=a;
+	int n;
+	dword offset=buf+72;
+	byte filename1[256], filename2[256];
+	
 	IF (a >= b) return;
 	for (j = a; j <= b; j++)
 	{
