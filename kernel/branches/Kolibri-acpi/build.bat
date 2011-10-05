@@ -1,7 +1,7 @@
 @echo off
 cls
 set languages=en ru ge et
-set drivers=com_mouse emu10k1x ensoniq fm801 infinity sis sound viasound vt823x
+set drivers=com_mouse emu10k1x fm801 infinity sis sound viasound vt823x
 set targets=all kernel drivers skins clean
 
 call :Check_Target %1
@@ -73,8 +73,6 @@ goto :eof
      if not %errorlevel%==0 goto :Error_FasmFailed
    )
    cd ..
-   move bin\drivers\vmode.obj bin\drivers\vmode.mdr
-
 
 kpack >nul 2>&1
 

@@ -627,6 +627,17 @@ Remarks:
     of button press, excluding lower bit, which is cleared.
 
 ======================================================================
+===================== Function 18, subfunction 1 =====================
+============= Make deactive the window of the given thread. ==========
+======================================================================
+Parameters:
+  * eax = 18 - function number
+  * ebx = 1 - subfunction number
+  * ecx = number of the thread slot
+Returned value:
+  * function does not return value
+	
+======================================================================
 = Function 18, subfunction 2 - terminate process/thread by the slot. =
 ======================================================================
 Parameters:
