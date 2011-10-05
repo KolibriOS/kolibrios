@@ -202,6 +202,9 @@ malloc:
 ;  eax= mem
 align 4
 free:
+           test eax, eax
+           jz .exit
+
            push edi
            mov edi, eax
            add edi, -8
@@ -296,7 +299,9 @@ free:
            pop esi
 .fail:
            pop edi
+.exit:
            ret
+
 @@:
 
 ; nsize = next->head & ~INUSE_BITS;

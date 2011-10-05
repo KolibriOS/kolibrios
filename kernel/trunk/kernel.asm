@@ -1598,10 +1598,9 @@ nsyse8:
 no_set_lba_read:
 ;     cmp  eax,12                     ; ENABLE PCI ACCESS
     	dec  ebx
-    	jnz  no_set_pci_access
+        jnz  sys_setup_err
     	mov  [pci_access_enabled],ecx
     	ret
-no_set_pci_access:
 
 sys_setup_err:
      	or  [esp+32],dword -1
