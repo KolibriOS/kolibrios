@@ -77,7 +77,7 @@ FASM_PROGRAMS:=\
  tinypad:TINYPAD:$(PROGS)/develop/tinypad/trunk/tinypad.asm \
  zkey:ZKEY:$(PROGS)/system/zkey/trunk/ZKEY.ASM \
  3d/3dcube2:3D/3DCUBE2:$(PROGS)/demos/3dcube2/trunk/3DCUBE2.ASM \
- 3d/3dspiral:3D/3DSPIRAL:$(PROGS)/demos/3dspiral/trunk/3dspiral.asm \
+  3d/3dwav:3D/3DWAV:$(PROGS)/demos/3dwav/trunk/3dwav.asm \
  3d/3dtcub10:3D/3DTCUB10:$(PROGS)/demos/3dtcub10/trunk/3DTCUB10.ASM \
  3d/crownscr:3D/CROWNSCR:$(PROGS)/demos/crownscr/trunk/crownscr.asm  \
  3d/flatwav:3D/FLATWAV:$(PROGS)/demos/flatwav/trunk/FLATWAV.ASM \
