@@ -1,17 +1,17 @@
-;************************************************************************
+;--------------------------------------------------------------------
 ; v.016 30.07.2011
 ; Start with open file path
 ; Show working file path
 ; Some optimization
 ;
 ; Marat Zakiyanov aka Mario79, aka Mario
-;************************************************************************
+;--------------------------------------------------------------------
 ; v.015 08.03.2010
 ; Support for OpenDialog - Open and Save
 ; Some optimization
 ;
 ; Marat Zakiyanov aka Mario79, aka Mario
-;************************************************************************
+;--------------------------------------------------------------------
 ; v.014 05.02.2010
 ; 
 ; PageUp, PageDown      - страница вверх/вниз
@@ -45,7 +45,7 @@
 ;
 ; staper@inbox.ru
 ; babalbes@yandex.ru
-
+;--------------------------------------------------------------------
 use32
 	org	0x0
 	db	'MENUET01'
@@ -56,7 +56,7 @@ use32
 	dd	(D_END+0x600) and not 3	;stack
 	dd	fname_buf
 	dd	cur_dir_path
-
+;--------------------------------------------------------------------
 _title	equ 'HeEd 0.16', 0
 
 include	'lang.inc'
@@ -66,7 +66,7 @@ include	'../../libraries/box_lib/trunk/box_lib.mac'
 include	'../../libraries/box_lib/load_lib.mac'
 
 @use_library
-
+;--------------------------------------------------------------------
 times	16	dd	0
 
 frgrd_color	equ	0xfefefe
@@ -78,18 +78,17 @@ text_color	equ	0xaaaaaa
 panel_clr1	equ	0xe9e9e2
 panel_clr2	equ	0x8b8b89
 panel_clr3	equ	0x777777;eaeae3
-
-
+;--------------------------------------------------------------------
 palitra:
 .1	dd	frgrd_color,bkgrd_color	;цвет невыделенного символа
 .2	dd	frgrd_color,text_color	;левый,правый столбцы,часть нижней строки
 .3	dd	kursred_color,frgrd_color	;курсора
 .4	dd	kurstxt_color,bkgrd_color	;курсора в текстовой области
 .5	dd	panel_clr1,not	text_color	;нижняя панель
-
+;--------------------------------------------------------------------
 FIRST_HEX equ 0*65536+24
 scroll_width_size equ 15
-
+;--------------------------------------------------------------------
 struct	f70
 	func_n	rd 1
 	param1	rd 1
@@ -99,7 +98,7 @@ struct	f70
 	rezerv	rb 1
 	name	rd 1
 ends
-
+;--------------------------------------------------------------------
 START:
 	mcall	68,11
 
@@ -158,6 +157,7 @@ load_libraries l_libs_start,end_l_libs
 	je	@f
 	inc	esi
 	jmp	@b
+;-------------------------------------
 @@:
 	sub	esi,cur_dir_path
 	mov	[edit1.pos],esi
@@ -199,27 +199,27 @@ still:
 control_minimal_window_size:
 	pusha
 	mcall	9,procinfo,-1
-	mov		eax,[ebx+70]
+	mov	eax,[ebx+70]
 	test	eax,10b
-	jnz		.end
+	jnz	.end
 	test	eax,100b
-	jnz		.end
+	jnz	.end
 	test	eax,1b
-	jnz		.end
-	mov		esi,-1
-	mov		eax,procinfo
-	mov		eax,[eax+46]
-	cmp		eax,299
-	jae		@f
-	mov		esi,299
+	jnz	.end
+	mov	esi,-1
+	mov	eax,procinfo
+	mov	eax,[eax+46]
+	cmp	eax,299
+	jae	@f
+	mov	esi,299
 	mcall	67,-1,ebx,ebx
 @@:
-	mov		edx,-1
-	mov		eax,procinfo
-	mov		eax,[eax+42]
-	cmp		eax,399
-	jae		@f
-	mov		edx,399
+	mov	edx,-1
+	mov	eax,procinfo
+	mov	eax,[eax+42]
+	cmp	eax,399
+	jae	@f
+	mov	edx,399
 	mcall	67,-1,ebx,,ebx
 @@:
 .end:
@@ -279,16 +279,19 @@ key:
 	jne	@f
 	call	Ctrl_DOWN
 	jmp	red
+;--------------------------------------
 @@:
 	cmp	ah,82
 	jne	@f
 	call	Ctrl_UP
 	jmp	red
+;--------------------------------------
 @@:
 	cmp	ah,84
 	jne	@f
 	call	Ctrl_HOME
 	jmp	red
+;--------------------------------------
 @@:
 	cmp	ah,85
 	je	Ctrl_END
@@ -302,6 +305,7 @@ key:
 	jne	@f
 	xor	ah,ah
 	jmp	change_codepage	;Shift+~, koi8-r
+;--------------------------------------
 @@:
 	cmp	ah,110
 	je	invert_byte ;n
@@ -309,11 +313,13 @@ key:
 	jne	@f
 	call	LEFT
 	jmp	red
+;--------------------------------------
 @@:
 	cmp	ah,177
 	jne	@f
 	call	DOWN
 	jmp	red
+;--------------------------------------
 @@:
 	cmp	ah,178
 	je	UP
@@ -323,6 +329,7 @@ key:
 	jne	@f
 	call	HOME
 	jmp	red
+;--------------------------------------
 @@:
 	cmp	ah,181
 	je	END_
@@ -335,20 +342,21 @@ key:
 	cmp	ah,185
 	je	Insert
 	jmp	still
+;--------------------------------------
 .syst:
 	cmp	ah,72
 	cmp	ah,75
 	cmp	ah,77
 	cmp	ah,80
 	jmp	still
-
+;--------------------------------------------------------------------
 button:
 	mcall	17
 	dec	ah
 	jnz	still
 
 	jmp	close_prog
-
+;--------------------------------------------------------------------
 align	4
 mouse:
 	mcall	18,7
@@ -366,6 +374,7 @@ mouse:
 	call	Ctrl_DOWN
 	loop	.1
 	jmp	red
+;--------------------------------------
 @@:
 	xor	ecx,ecx
 	sub	cx,ax
@@ -374,7 +383,7 @@ mouse:
 	call	Ctrl_UP
 	loop	.2
 	jmp	red
-
+;--------------------------------------------------------------------
 .menu_bar_1:
 	call	.set_mouse_flag
 @@:
@@ -385,6 +394,7 @@ mouse:
 	cmp	[menu_data_1.cursor_out],dword 0
 	jne	.analyse_out_menu_1
 	jmp	.menu_bar_1
+;--------------------------------------------------------------------
 .menu_bar_2:
 	push	dword menu_data_2
 	call	[menu_bar_mouse]
@@ -393,6 +403,7 @@ mouse:
 	cmp	[menu_data_2.cursor_out],dword 0
 	jne	.analyse_out_menu_2
 	jmp	.menu_bar_1
+;--------------------------------------------------------------------
 .menu_bar_3:
 	push	dword menu_data_3
 	call	[menu_bar_mouse]
@@ -401,7 +412,7 @@ mouse:
 	cmp	[menu_data_3.cursor_out],dword 0
 	jne	.analyse_out_menu_3
 	jmp	.menu_bar_1
-
+;--------------------------------------------------------------------
 .set_mouse_flag:
 	xor	eax,eax
 	inc	eax
@@ -409,7 +420,7 @@ mouse:
 	mov	[menu_data_2.get_mouse_flag],eax
 	mov	[menu_data_3.get_mouse_flag],eax
 	ret
-
+;--------------------------------------------------------------------
 .analyse_out_menu_1:
 	cmp	[menu_data_1.cursor_out],dword 1
 	je	open_dialog
@@ -418,17 +429,19 @@ mouse:
 	cmp	[menu_data_1.cursor_out],dword 3
 	je	close_prog
 	jmp	still
-
+;--------------------------------------------------------------------
 .analyse_out_menu_2:
 	cmp	[menu_data_2.cursor_out],dword 1
 	jne	@f
 	add	[bytes_per_line],4
 	jmp	redraw_all
+;--------------------------------------
 @@:
 	cmp	[menu_data_2.cursor_out],dword 2
 	jne	@f
 	add	[bytes_per_line],8
 	jmp	redraw_all
+;--------------------------------------
 @@:
 	cmp	[menu_data_2.cursor_out],dword 3
 	jne	@f
@@ -436,6 +449,7 @@ mouse:
 	je	still
 	sub	[bytes_per_line],4
 	jmp	redraw_all
+;--------------------------------------
 @@:
 	cmp	[menu_data_2.cursor_out],dword 4
 	jne	still
@@ -443,13 +457,13 @@ mouse:
 	jbe	still
 	sub	[bytes_per_line],8
 	jmp	redraw_all
-
+;--------------------------------------------------------------------
 .analyse_out_menu_3:	;analyse result of Menu 2
 	cmp	[menu_data_3.cursor_out],dword 1
 	jne	still
 	call	create_help_window
 	jmp	still
-
+;--------------------------------------------------------------------
 .scroll_bar:
 ;	mcall	37,2
 ;	test	eax,eax
@@ -466,6 +480,7 @@ mouse:
 	btr	[flags],5
 	btr	[flags],7
 	jmp	still
+;--------------------------------------
 @@:
 	bt	[flags],5
 	jc	@f
@@ -522,6 +537,7 @@ mouse:
 	sub	ecx,esi;[bytes_per_line]
 	sub	eax,esi;[bytes_per_line]
 	jmp	@b
+;--------------------------------------
 @@:
 	mov	[begin_offset],eax
 	bts	[flags],5
@@ -532,6 +548,7 @@ mouse:
 ;	je	@f
 	mov	[eax],ebx
 	jmp	red
+;--------------------------------------------------------------------
 ;@@:
 ;	cmp	[scroll_bar_data_vertical.delta2],0
 ;	jne	still
@@ -603,20 +620,14 @@ mouse:
 	call	main_area
 	bts	[flags],7
 	jmp	still
+;--------------------------------------------------------------------
 .other:
 ;	cmp	[scroll_bar_data_vertical.delta2],0
 ;	jne	still
 ;	cmp	[scroll_bar_data_horizontal.delta2],0
 ;	jne	still
 	jmp	still
-
-
-
-;------------------------------------------------
-
-;------------------------------------------------
-
-
+;--------------------------------------------------------------------
 align	4
 ready_screen_buffer:
 	mov	[.fl],0
@@ -766,14 +777,14 @@ ready_screen_buffer:
 	dec	[.number_strings]
 	jnz	.next_string
 	ret
-
+;---------------------------------------------------------------------
 .fl	db 0
 .fl_buf	dd 0
 .to_null:
 	dec	[.fl]
 	mov	[.fl_buf],edi
 	jmp	.pre_next_byte0
-
+;--------------------------------------------------------------------
 .pre_next_string:
 	mov	word [esi],0x2020
 	add	esi,2
@@ -863,7 +874,7 @@ ready_screen_buffer:
 	dec	[.number_strings]
 	jnz	.pre_next_string
 	ret
-
+;---------------------------------------------------------------------
 ;корректно обрабатываем финальную строку файла, длина которой вариативна
 .last_ascii:
 	mov	ebx,[.fl_buf]
@@ -890,7 +901,7 @@ ready_screen_buffer:
 	jnz	@b
 	inc	ecx
 	jmp	.1
-
+;--------------------------------------------------------------------
 .string_size	dd 16
 .number_strings	dw 0
 .length_to_end	dd 0
@@ -900,8 +911,7 @@ ready_screen_buffer:
 .cursor_temp	dd 0
 .shblock_beg	dd 0
 .shblock_end	dd 0
-
-
+;--------------------------------------------------------------------
 align	4
 main_area:
 	mov	ecx,[number_strings]
@@ -1008,12 +1018,12 @@ main_area:
 	jz	.loop_str
 	dec	[.string_size]
 	jnz	.out
-	jz	.next_string
-
+	jz	.next_string	; WTF?
+;--------------------------------------------------------------------
 .string_size	dd 0
 .number_strings	dw 0
 .len_str_scr	dd 0
-
+;--------------------------------------------------------------------
 @@:
 	pushad
 	mov	ecx,edx
@@ -1031,6 +1041,7 @@ main_area:
 .ls1:
 	popad
 	jmp	@f
+;--------------------------------------------------------------------
 .loop_str:
 	bt	[flags],6
 	jc	@b
@@ -1040,7 +1051,7 @@ main_area:
 	add	edi,2
 	add	edx,8*65536
 	jmp	@b
-
+;--------------------------------------
 @@:;очистка фоновым цветом незакрашенных областей
 	pushad
 	ror	edx,16
@@ -1048,6 +1059,12 @@ main_area:
 	mov	ecx,edx
 	mov	edx,frgrd_color
 	movzx	ebx,[scroll_bar_data_vertical.start_x]
+	
+	mov	ax,[scroll_bar_data_vertical.size_x]
+	test	ax,ax
+	jnz	.no_inc_ebx
+	inc	ebx
+.no_inc_ebx:
 	sub	ecx,2*65536
 	mov	cx,2
 	mcall	13
@@ -1065,10 +1082,17 @@ main_area:
 	shl	ebx,16
 	mov	bx,ax
 	mov	cx,16
+	
+	mov	ax,[scroll_bar_data_vertical.size_x]
+	test	ax,ax
+	jnz	.no_inc_ebx_2
+	inc	ebx
+.no_inc_ebx_2:
 	mcall	13,,,frgrd_color
 .10:
 	popad
 	jmp	@f
+;--------------------------------------------------------------------
 .next_string:
 	bt	[flags],6
 	jc	@b
@@ -1091,8 +1115,7 @@ main_area:
 	jnz	.out
 	btr	[flags],6
 	jmp	end_draw
-
-
+;--------------------------------------------------------------------
 align	4
 show_current_offset:
 	pushad
@@ -1165,6 +1188,7 @@ show_current_offset:
 	jb	.1
 	mov	ebp,3
 	jmp	@f
+;--------------------------------------
 .1:
 	mov	ebp,1
 	cmp	byte [edx],10
@@ -1208,8 +1232,7 @@ show_current_offset:
 	pop	edx
 	popad
 	ret
-
-
+;---------------------------------------------------------------------
 align	4
 hex_output:	;вывод hex строки из 8 символов
 	pushad
@@ -1276,6 +1299,7 @@ input_from_keyboard:
 	mov	[esi+1],bl
 	dec	esi
 	jmp	@b
+;--------------------------------------
 @@:
 	call	show_file_size
 	mov	ebx,[current_offset]
@@ -1291,6 +1315,7 @@ input_from_keyboard:
 	jnz	.hi_half_byte ;чёт - старший
 	and	dl,0xf0	;обнуляем мл. п-байт оригинального байта
 	jmp	.patch_byte
+;--------------------------------------
 .hi_half_byte:	;одновременно сдвигаем нужное значение в ст п-т и обнуляем младший
 	shl	ax,4
 	and	dl,0x0f	;обнуляем старший полубайт у оригинального байта
@@ -1298,7 +1323,7 @@ input_from_keyboard:
 	or	ah,dl
 	mov	[ecx],ah
 	jmp	RIGHT
-
+;--------------------------------------------------------------------
 raspred_mem:
 	pushad
 	xor	edx,edx
@@ -1316,6 +1341,7 @@ raspred_mem:
 	mul	ecx
 	mov	ecx,eax
 	jmp	.1
+;--------------------------------------
 @@:
 	mov	[prev_f_size_bl],eax
 	xor	edx,edx
@@ -1326,8 +1352,7 @@ raspred_mem:
 .ret:
 	popad
 	ret
-;---------------------------------------
-
+;--------------------------------------------------------------------
 align	4
 show_file_size:
 	mov	ebx,[file_size]
@@ -1368,6 +1393,7 @@ draw_window:
 	call	end_draw
 	add	esp,4
 	jmp	still
+;--------------------------------------
 @@:
 	cmp	dword [threath_buf+66],(24*4)	;проверка минимальной высоты
 	jae	@f
@@ -1376,6 +1402,7 @@ draw_window:
 	add	esi,24*4
 	mcall	67,-1,-1,-1,
 	jmp	.@d
+;--------------------------------------
 @@:
 	cmp	dword [threath_buf+62],(26*6)	;проверка минимальной ширины
 	jae	@f
@@ -1384,6 +1411,7 @@ draw_window:
 	add	edx,26*6
 	mcall	67,-1,-1,,-1
 	jmp	.@d
+;--------------------------------------
 @@:
 	mov	eax,[file_size]
 	mov	ebx,[bytes_per_line]
@@ -1431,7 +1459,7 @@ draw_window:
 
 	mcall	,,18,panel_clr1	;верхняя панель
 
-	dec	ebx
+;	dec	ebx
 	mcall	38,,<18,18>,panel_clr2
 	mov	ecx,dword [threath_buf+66]
 	sub	cx,18
@@ -1441,7 +1469,6 @@ draw_window:
 	mcall	,,,panel_clr3	;нижняя панель
 	add	ecx,1*65536
 	mov	cx,18
-;	inc	ebx
 	mcall	13,,,panel_clr1
 
 
@@ -1478,6 +1505,7 @@ draw_window:
 	add	cx,dx
 	sub	ecx,1*65536
 	movzx	ebx,	word [scroll_bar_data_vertical.start_x]
+	inc	ebx
 	mcall	13,,,frgrd_color
 
 	pop	eax
@@ -1561,22 +1589,23 @@ draw_window:
 	sub	[cursor],ecx
 	sub	ebx,esi
 	jmp	@b
+;--------------------------------------
 @@:
 	bts	[flags],6
 	ret
-
+;--------------------------------------------------------------------
 align	4
 start_draw:
 	mcall	12,1
 	ret
-
+;--------------------------------------------------------------------
 end_draw:
 	mcall	12,2
 	ret
-
+;--------------------------------------------------------------------
 close_prog:
 	mcall	-1
-;-------------------------------------------------------------------------------
+;--------------------------------------------------------------------
 change_codepage:	;меняем вторую половину таблицы
 	test	ah,ah
 	jnz	@f
@@ -1586,21 +1615,24 @@ change_codepage:	;меняем вторую половину таблицы
 	pop	[codepage_offset_previous]
 	mov	[codepage_offset],2*128
 	jmp	.end
+;--------------------------------------
 .1:
 	push	[codepage_offset_previous]
 	pop	[codepage_offset]
 	jmp	.end
+;--------------------------------------
 @@:
 	cmp	[codepage_offset],0
 	jne	@f
 	add	[codepage_offset],128
 	jmp	.end
+;--------------------------------------
 @@:
 	mov	[codepage_offset],0
 .end:
 	call	show_codepage
 	jmp	red
-
+;--------------------------------------------------------------------
 show_codepage:
 	mov	ebp,6
 	mov	edx,dword [threath_buf+62]
@@ -1634,7 +1666,7 @@ show_codepage:
 	jnz	@b
 	add	esp,4
 	ret
-
+;--------------------------------------------------------------------
 show_insert:	;отображение режима вставки/замены
 	mov	ebp,3
 	mov	edx,dword [threath_buf+62]
@@ -1676,14 +1708,17 @@ create_help_window:
         mcall   18, 3
 	popad
         ret
+;---------------------------------------------------------------------
 @@:
 	mcall	51,1,.thread,(.threat_stack+16*4)
         mov     [help_is_open_already], 1
         mov     [help_window_pid], EAX
 	popad
 	ret
+;--------------------------------------------------------------------
 .thread:
 	call	.window
+;--------------------------------------------------------------------
 .still:
 	mcall	10
 	dec	al
@@ -1693,6 +1728,7 @@ create_help_window:
 	dec	al
 	jz	.button
 	jmp	.still
+;--------------------------------------------------------------------
         and	[help_is_open_already], 0
 	mcall	-1
 .button:
@@ -1711,6 +1747,7 @@ create_help_window:
 	jz	.still
 	inc	[cur_help_string]
 	jmp	.red
+;--------------------------------------
 @@:
 	cmp	ah,3
 	jne	.still
@@ -1718,15 +1755,15 @@ create_help_window:
 	je	.still
 	dec	[cur_help_string]
 	jmp	.red
-
+;--------------------------------------------------------------------
 .key:
 	mcall	2
 	jmp	.still
-
+;--------------------------------------------------------------------
 .red:
 	call	.window
 	jmp	.still
-
+;--------------------------------------------------------------------
 .window:
 	pushad
 	mcall	12,1
@@ -1753,10 +1790,9 @@ create_help_window:
 	mcall	12,2
 	popad
 	ret
-
+;--------------------------------------------------------------------
 .threat_stack:	times	16	dd	0
-;-------------------------------------------------
-
+;--------------------------------------------------------------------
 open_file:
 	mov	[func_70.func_n],5
 	mov	[func_70.param1],0
@@ -1771,6 +1807,7 @@ open_file:
 	jz	@f
 	mcall	4,400*65536+31,0x80CC0000,error_open_file_string
 	jmp	open_file
+;--------------------------------------------------------------------
 @@:
 ;	mov	edx,[blocks_counter]
 ;	mov	edi,[blocks_table]
@@ -1872,6 +1909,7 @@ open_dialog_save:
 	je	@f
 	movsb
 	jmp	@b
+;--------------------------------------
 @@:
 	mov	byte [edi],0
 	sub	esi,path
@@ -1944,7 +1982,7 @@ draw_ed_box:	;рисование edit box'а
 	call	[option_box_draw]
 @@:
 	jmp	.1
-
+;--------------------------------------------------------------------
 .mouse:
 	bt	[flags],2
 	jnc	@f
@@ -1957,7 +1995,7 @@ draw_ed_box:	;рисование edit box'а
 	call	[option_box_mouse]
 @@:
 	jmp	.2
-
+;--------------------------------------------------------------------
 .keys:
 	mcall	2
 	cmp	ah,13
@@ -1976,17 +2014,20 @@ draw_ed_box:	;рисование edit box'а
 	jne	@f
 	mov	edx,op2
 	jmp	.eb1_2
+;--------------------------------------
 @@:
 	cmp	edx,op2
 	jne	@f
 	mov	edx,op3
 	jmp	.eb1_2
+;--------------------------------------
 @@:
 	mov	edx,op1
 .eb1_2:
 	mov	[option_group1],edx
 	pop	edx
 	jmp	.1
+;--------------------------------------
 .eb1_1:
 	cmp	ah,48
 	jb	.eb1_3
@@ -2011,7 +2052,7 @@ draw_ed_box:	;рисование edit box'а
 	push	dword [ed_box_data+4];	[esp]
 	call	[edit_box_draw]
 	jmp	.2
-
+;--------------------------------------
 .eb2:
 	bt	[flags],3
 	jnc	.eb3
@@ -2023,12 +2064,14 @@ draw_ed_box:	;рисование edit box'а
 	jne	@f
 	mov	edx,op12
 	jmp	.eb2_1
+;--------------------------------------
 @@:
 	mov	edx,op11
 .eb2_1:
 	mov	[option_group2],edx
 	pop	edx
 	jmp	.1
+;--------------------------------------
 .eb2_2:
 	cmp	ah,182
 	je	.eb
@@ -2055,6 +2098,7 @@ draw_ed_box:	;рисование edit box'а
 	push	dword [ed_box_data+4];[esp]
 	call	[edit_box_draw]
 	jmp	.2
+;--------------------------------------
 .eb3:
 	bt	[flags],9
 	jnc	.eb
@@ -2085,11 +2129,13 @@ draw_ed_box:	;рисование edit box'а
 	dec	[edit4.shift]
 	dec	[edit4.shift+4]
 	jmp	.2
+;--------------------------------------
 @@:
 	pop	edx
 	dec	[edit5.shift]
 	dec	[edit5.shift+4]
 	jmp	.2
+;--------------------------------------
 .eb3_1:
 	push	edx
 	mov	edx,[edit4.flags]
@@ -2099,6 +2145,7 @@ draw_ed_box:	;рисование edit box'а
 	mov	[edit5.flags],2
 	mov	[edit4.flags],0
 	jmp	.eb3_2
+;--------------------------------------
 @@:
 	pop	edx
 	mov	[edit4.flags],2
@@ -2109,12 +2156,12 @@ draw_ed_box:	;рисование edit box'а
 	push	dword [ed_box_data+8]
 	call	[edit_box_key]
 	jmp	.1
-
+;--------------------------------------
 .eb:
 	push	dword [ed_box_data+4];[esp]
 	call	[edit_box_key]
 	jmp	.2
-
+;--------------------------------------------------------------------
 .button:
 	mcall	17
 	cmp	ah,1
@@ -2128,12 +2175,7 @@ draw_ed_box:	;рисование edit box'а
 .4:
 	mcall	13,180*65536+220,25*65536+70,frgrd_color
 	ret
-
-
-;-------------------------------------------------
-;-------------------------------------------------
-;-------------------------------------------------
-
+;--------------------------------------------------------------------
 strtohex:
 ;enter: edi - pointer to string,ebx - pointer to size of string; exit: eax in hex
 	mov	esi,hex8_string
@@ -2200,7 +2242,7 @@ Ctrl_G:
 	inc	eax
 	mov	[cursor],eax
 	jmp	.end
-
+;--------------------------------------------------------------------
 .back:
 	cmp	eax,[current_offset]	;back
 	jg	Ctrl_G
@@ -2221,6 +2263,7 @@ Ctrl_G:
 	inc	edx
 	mov	[cursor],edx
 	jmp	.end
+;--------------------------------------------------------------------
 .abs:
 	mov	esi,[screen_table]
 	mov	esi,[esi]
@@ -2239,7 +2282,7 @@ Ctrl_G:
 	mov	[cursor],eax
 .end:
 	jmp	red
-
+;--------------------------------------------------------------------
 Ctrl_B:
 	bts	[flags],9
 	mov	dword [ed_box_data],2
@@ -2275,6 +2318,7 @@ Ctrl_B:
 	jb	@f
 	pop	eax
 	jmp	Ctrl_B
+
 @@:
 	pop	[shblock_beg]
 	cmp	eax,[shblock_beg]
@@ -2285,7 +2329,7 @@ Ctrl_B:
 	bts	[flags],8
 .end:
 	jmp	red
-
+;--------------------------------------------------------------------
 Ctrl_F:
 	bts	[flags],3
 	mov	dword [ed_box_data],1
@@ -2342,6 +2386,7 @@ Ctrl_F:
 	je	.8
 	mov	edi,find_string
 	jmp	.5
+;--------------------------------------
 .8:
 	loop	@b
 	sub	esi,[file_buffer]
@@ -2377,7 +2422,7 @@ Ctrl_F:
 	btr	[flags],0
 @@:
 	jmp	red
-
+;--------------------------------------------------------------------
 invert_byte:
 	mov	ebx,[current_offset]
 	cmp	ebx,[file_size]
@@ -2385,14 +2430,12 @@ invert_byte:
 	add	ebx,[file_buffer]
 	not	byte [ebx]
 	jmp	red
-
-
+;--------------------------------------------------------------------
 Insert:	;переключение	режима	вставки/замены
 	btc	[flags],1	;not [insert_mod]
 	call	show_insert
 	jmp	red
-
-
+;--------------------------------------------------------------------
 DEL:
 	bt	[flags],1
 	jnc	still
@@ -2422,8 +2465,7 @@ DEL:
 	dec	[file_size]
 	call	show_file_size
 	jmp	red
-
-
+;--------------------------------------------------------------------
 BackSpace:
 	bt	[flags],1	;cmp [insert_mod],0
 	jnc	still	;je still
@@ -2448,12 +2490,12 @@ BackSpace:
 	mov	[edi+esi-1],al
 	inc	edi
 	jmp	@b
+;--------------------------------------
 @@:
 	dec	[file_size]
 	call	show_file_size
 	jmp	red
-
-
+;--------------------------------------------------------------------
 Ctrl_UP:
 	cmp	[begin_offset],0
 	je	@f
@@ -2461,8 +2503,7 @@ Ctrl_UP:
 	sub	[begin_offset],eax
 @@:
 	ret
-
-
+;--------------------------------------------------------------------
 Ctrl_DOWN:
 	mov	eax,[cursor]
 	dec	eax
@@ -2475,8 +2516,7 @@ Ctrl_DOWN:
 	add	[begin_offset],ebx
 @@:
 	ret
-
-
+;--------------------------------------------------------------------
 UP:
 	mov	eax,[current_offset]
 	cmp	eax,[bytes_per_line]
@@ -2494,8 +2534,7 @@ UP:
 	shl	ax,1
 	sub	[cursor],eax
 	jmp	red
-
-
+;--------------------------------------------------------------------
 DOWN:	;на	строку	вниз
 	mov	eax,[current_offset]
 	add	eax,[bytes_per_line]
@@ -2521,18 +2560,19 @@ DOWN:	;на	строку	вниз
 	mov	eax,[bytes_per_line]
 	add	[begin_offset],eax
 	ret
-
-
+;--------------------------------------------------------------------
 LEFT:
 	cmp	[cursor],1
 	jbe	@f
 	dec	[cursor]
 	jmp	.end
+;--------------------------------------
 @@:
 	cmp	[begin_offset],0	;курсор	на первой строке со смещением 0?
 	jne	@f	;иначе смещаем с прокруткой вверх вверх и в конец строки
 ;	inc	[cursor]
 	jmp	.end;still	;тогда стоп
+;--------------------------------------
 @@:
 	mov	eax,[bytes_per_line]
 	sub	[begin_offset],eax
@@ -2541,8 +2581,7 @@ LEFT:
 	add	[cursor],eax
 .end:
 	ret
-
-
+;--------------------------------------------------------------------
 RIGHT:
 	mov	ecx,[begin_offset]	;вычисляем смещение курсора
 	mov	edx,[cursor]	;для проверки существования
@@ -2563,6 +2602,7 @@ RIGHT:
 	jbe	@f
 	inc	[cursor]	;курсор вправо
 	jmp	red
+;--------------------------------------
 @@:
 	mov	ecx,[bytes_per_line]	;смещаемся на строчку вниз
 	add	[begin_offset],ecx	;с прокруткой
@@ -2570,8 +2610,7 @@ RIGHT:
 	dec	cx
 	sub	[cursor],ecx
 	jmp	red
-
-
+;--------------------------------------------------------------------
 PGDN:
 	mov	edi,[screen_table]
 	mov	eax,[edi]
@@ -2599,8 +2638,7 @@ PGDN:
 ;	add	ebx,ecx
 ;	mov	[cursor],ebx
 	jmp	red
-
-
+;--------------------------------------------------------------------
 PGUP:
 	mov	eax,[screen_table]
 	mov	eax,[eax]
@@ -2609,11 +2647,11 @@ PGUP:
 	jbe	@f
 	call	Ctrl_HOME
 	jmp	red
+;--------------------------------------
 @@:
 	sub	[begin_offset],eax
 	jmp	red
-
-
+;--------------------------------------------------------------------
 HOME:
 	mov	eax,[cursor]
 	dec	ax
@@ -2628,8 +2666,7 @@ HOME:
 	dec	[cursor]
 @@:
 	ret
-
-
+;--------------------------------------------------------------------
 END_:
 	mov	eax,[cursor]
 	dec	ax
@@ -2653,14 +2690,12 @@ END_:
 	dec	eax
 	mov	[cursor],eax
 	jmp	red
-
-
+;--------------------------------------------------------------------
 Ctrl_HOME:
 	mov	[begin_offset],0
 	mov	[cursor],1
 	ret
-
-
+;--------------------------------------------------------------------
 Ctrl_END:
 	mov	eax,[file_size]
 	mov	ecx,[screen_table]
@@ -2687,12 +2722,11 @@ Ctrl_END:
 	mov	[begin_offset],eax
 	mov	[cursor],edx
 	jmp	red
-
-
+;--------------------------------------------------------------------
 ESC:
 	btr	[flags],8
 	jmp	red
-
+;--------------------------------------------------------------------
 copy_to_buf:
 	bt	[flags],8
 	jnc	.1
@@ -2713,16 +2747,17 @@ copy_to_buf:
 	bts	[flags],10
 	xor	eax,eax
 	ret
+;---------------------------------------------------------------------
 .1:
 	or	eax,-1
 	ret
-
+;--------------------------------------------------------------------
 Ctrl_C:
 	call	copy_to_buf
 	jmp	still
-
+;--------------------------------------------------------------------
 shblock_sz	dd	0
-
+;--------------------------------------------------------------------
 Ctrl_V:
 	bt	[flags],10
 	jnc	still
@@ -2774,6 +2809,7 @@ Ctrl_V:
 	dec	eax
 	mov	[shblock_end],eax
 	jmp	red
+;--------------------------------------
 .del:
 	dec	ebx
 	jz	red
@@ -2783,7 +2819,8 @@ Ctrl_V:
 	mov	esi,edi
 	add	esi,ebx
 	cld
-@@:	movsb
+@@:
+	movsb
 	loop	@b
 	sub	[file_size],ebx
 	call	raspred_mem
@@ -2792,7 +2829,7 @@ Ctrl_V:
 	dec	eax
 	mov	[shblock_end],eax
 	jmp	red
-
+;--------------------------------------------------------------------
 ;если блок не выделен, то вставляем блок перед курсором 
 .past_kurs:
 ;	bt	[flags],1
@@ -2801,7 +2838,7 @@ Ctrl_V:
 ;	add	esi,[current_offset]
 ;	jmp	red
 	jmp	still
-
+;--------------------------------------------------------------------
 Ctrl_X:
 	bt	[flags],1
 	jnc	still
@@ -2849,7 +2886,6 @@ Ctrl_X:
 	inc	eax
 	mov	[cursor],eax
 	jmp	red
-
 ;---------------------------------------------------------------------
 open_dialog:
 	mov	[OpenDialog_data.type],0	; Open
@@ -2878,13 +2914,8 @@ open_dialog:
 	mov	[edit1.pos],esi
 	jmp	open_file
 ;---------------------------------------------------------------------
-
-;	DATA	AREA
-
-
-;---------------------------------------------------------
 ;----------------------- DATA AREA------------------------
-;---------------------------------------------------------
+;--------------------------------------------------------------------
 align 4
 ProcLib_import:
 OpenDialog_Init		dd aOpenDialog_Init
@@ -3228,8 +3259,7 @@ op_text2:
 .e11:
 .21	db 'ASCII'
 .e21:
-
-
+;--------------------------------------------------------------------
 system_dir_Boxlib			db '/sys/lib/box_lib.obj',0
 system_dir_ProcLib			db '/sys/lib/proc_lib.obj',0
 
@@ -3290,7 +3320,7 @@ flags	dw 001000010b
 ;8:	1 - выделен блок
 ;9:	в edit_box - обработка Ctrl_B
 ;10:	в памяти "висит" скопированный блок
-
+;--------------------------------------------------------------------
 help_text:
 if lang eq ru
  db 'Ctrl+O              - открыть файл                 '
@@ -3338,10 +3368,7 @@ else
  db 'Ctrl+X              - cut area into buffer         '
 end if
 help_end:
-
-
-
-
+;--------------------------------------------------------------------
 ;align	4096
 font_buffer	file 'cp866-8x16'	;ASCII+cp866	(+Ё,ё)
 cp1251		file 'cp1251-8x16'
@@ -3403,8 +3430,8 @@ db	0
 start_temp_file_name:	db 'temp.bin',0
 
 ;---------------------------------------------------------------------
-
 I_END:
+;--------------------------------------------------------------------
 file_name:
 cur_dir_path	rb 4096
 buf_cmd_lin	rb 0
