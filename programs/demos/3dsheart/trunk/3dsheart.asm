@@ -305,11 +305,11 @@ macro show
 ;--------------------------------------------------------------------------------
 ;-------------------------PROCEDURES---------------------------------------------
 ;--------------------------------------------------------------------------------
-include "tex3.asm"
-include "flat_cat.asm"
-include "grd_cat.asm"
-include "tex_cat.asm"
-include "bump_cat.asm"
+include "tex3.ASM"
+include "flat_cat.ASM"
+include "grd_cat.ASM"
+include "tex_cat.ASM"
+include "bump_cat.ASM"
 include "3dmath.asm"
 include "grd3.asm"
 include "flat3.asm"
