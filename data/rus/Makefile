@@ -77,8 +77,8 @@ FASM_PROGRAMS:=\
  tinypad:TINYPAD:$(PROGS)/develop/tinypad/trunk/tinypad.asm \
  zkey:ZKEY:$(PROGS)/system/zkey/trunk/ZKEY.ASM \
  3d/3dcube2:3D/3DCUBE2:$(PROGS)/demos/3dcube2/trunk/3DCUBE2.ASM \
+ 3d/3dsheart:3D/3DSHEART:$(PROGS)/demos/3dsheart/trunk/3dsheart.asm \
  3d/3dwav:3D/3DWAV:$(PROGS)/demos/3dwav/trunk/3dwav.asm \
- 3d/3dtcub10:3D/3DTCUB10:$(PROGS)/demos/3dtcub10/trunk/3DTCUB10.ASM \
  3d/crownscr:3D/CROWNSCR:$(PROGS)/demos/crownscr/trunk/crownscr.asm  \
  3d/flatwav:3D/FLATWAV:$(PROGS)/demos/flatwav/trunk/FLATWAV.ASM \
  3d/free3d04:3D/FREE3D04:$(PROGS)/demos/free3d04/trunk/free3d04.asm \
@@ -124,7 +124,6 @@ FASM_PROGRAMS:=\
  fonts/bgitest:FONTS/BGITEST:$(PROGS)/demos/bgitest/trunk/bgitest.asm \
  games/15:GAMES/15:$(PROGS)/games/15/trunk/15.ASM \
  games/arcanii:GAMES/ARCANII:$(PROGS)/games/arcanii/trunk/arcanii.asm \
- games/bnc:GAMES/BNC:$(PROGS)/games/bnc/trunk/bnc.asm \
  games/freecell:GAMES/FREECELL:$(PROGS)/games/freecell/freecell.asm \
  games/gomoku:GAMES/GOMOKU:$(PROGS)/games/gomoku/trunk/gomoku.asm \
  games/invaders:GAMES/INVADERS:$(PROGS)/games/invaders/invaders.asm \

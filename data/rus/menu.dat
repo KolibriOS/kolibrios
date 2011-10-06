@@ -32,7 +32,6 @@ SQ_Game                   /rd/1/games/sq_game
 Цветные линии             /rd/1/games/lines
 Lights                    /rd/1/games/lights
 Крестики-нолики           /rd/1/games/kox
-Быки и Коровы             /rd/1/games/bnc
 Миллионер                 /rd/1/games/whowtbam
 Лабиринт                  /rd/1/games/megamaze
 Морской бой               /rd/1/games/sw
@@ -68,13 +67,12 @@ UnvWater                  /rd/1/demos/unvwater
 Скринсейвер               /rd/1/3d/crownscr
 3D-Куб                    /rd/1/3d/3dcube2
 3D-Лабиринт               /rd/1/3d/free3d04
-3D-Textured Cube          /rd/1/3d/3dtcub10
-3DSHeart                  /rd/1/3d/3dsheart
+Сердце                    /rd/1/3d/3dsheart
 Просмотрщик 3DS           /rd/1/3d/view3ds
 CubeLine                  /rd/1/3d/cubeline
 Шестерёнки                /rd/1/3d/gears
 FlatWave                  /rd/1/3d/flatwav
-3D-Спираль                /rd/1/3d/3dspiral
+3D-Волны                  /rd/1/3d/3dwav
 #6    **** GRAPHICS ****
 Просмотр изображений      /rd/1/media/kiv
 Редактор Animage          /rd/1/media/animage
