@@ -527,18 +527,20 @@ draw_buttons:
 ; text on settings buttons
 	mov	ebx,9 shl 16+5
 	mov	al,4
-	mov	ecx,[color_table+28]
+	mov	ecx,[color_table+32]
 	push	buttons1names
 	pop	edx
 	push	8
 	pop	esi
 ;--------------------------------------
-@@:
 	mcall
 	add	edx,esi
 	add	ebx,16
-	cmp	[edx-6],byte ' '
-	jnz	@b
+	mcall
+	add	edx,esi
+	add	ebx,16
+	mov	ecx,[color_table+28]
+	mcall
 ; text on compress and decompress buttons
 	or	ecx,80000000h
 	mcall	,<367,7>,,aCompress
