@@ -7,6 +7,9 @@
 ;
 ;
 TIMEOUT EQU 2
+IMG_X equ 512
+IMG_Y equ 384
+
 use32
 
                org    0x0
@@ -96,7 +99,7 @@ still:
 
     mov eax,7    ;put image
     mov ebx,the_mem
-    mov ecx,512*65536+384
+    mov ecx,IMG_X*65536+IMG_Y
     mov edx,0
     int 0x40
 
@@ -204,14 +207,14 @@ draw_window:
     mov  ebx,1                     ; 1, start of draw
     int  0x40
 
-	mov  eax,48
+	mov  eax,48  ;get skin width
 	mov  ebx,4
 	int  0x40
 	mov  esi, eax
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
-    mov  ebx,100*65536+512+9         ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+384+4         ; [y start] *65536 + [y size]
+    mov  ebx,100*65536+IMG_X+9         ; [x start] *65536 + [x size]
+    mov  ecx,100*65536+IMG_Y+4         ; [y start] *65536 + [y size]
 	add  ecx, esi
 	mov  edx,0x74000000 	  	   ; color of work area RRGGBB,8->color gl
     mov  edi,labelt

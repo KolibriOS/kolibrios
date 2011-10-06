@@ -1,0 +1,1 @@
+fasm 3dsheart.asm 3dsheart
