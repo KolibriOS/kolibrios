@@ -1,0 +1,1 @@
+fasm 3dwav.asm 3dwav
