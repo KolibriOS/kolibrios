@@ -97,8 +97,8 @@ redraw_all:
 	mcall	,,,Brdr_line_clr
 
 	mcall	8,<4,78>,<4,13>,2,0xbbbbbb
-	mcall	4,<7,5>,(0x80000000+Text_clr),txt.clear
-	mcall	,<105,6>,,txt.dif
+	mcall	4,<8,7>,(0x80000000+Text_clr),txt.clear
+	mcall	,<105,7>,,txt.dif
 
 
 	call	show_level
