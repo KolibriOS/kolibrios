@@ -226,6 +226,7 @@ CMM_PROGRAMS:=\
  File|Managers/eolite:File|Managers/EOLITE:$(PROGS)/fs/Eolite/trunk/Eolite.c-- \
  games/clicks:GAMES/CLICKS:$(PROGS)/games/clicks/trunk/clicks.c-- \
  games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
+ games/flood-it:GAMES/flood-it:$(PROGS)/games/flood-it/trunk/flood-it.c \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
  HTMLv:HTMLv:$(PROGS)/network/htmlv/browser/HTMLv.c-- \
 #develop/c--:DEVELOP/C--:$(PROGS)/develop/c--/trunk/32.c-- \
