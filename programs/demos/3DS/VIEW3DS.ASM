@@ -2637,7 +2637,7 @@ ret
 	mov	ebx,100*65536;+SIZE_X;+80+30 ; [x start] *65536 + [x size]
 	mov	ecx,100*65536;+SIZE_Y;+30    ; [y start] *65536 + [y size]
 	mov	bx,[size_x]
-	add	bx,110
+	add	bx,114
 	mov	cx,[size_y]
 	add	cx,30
 	mov	edx,0x14000000	; color of work area RRGGBB,8->color gl
