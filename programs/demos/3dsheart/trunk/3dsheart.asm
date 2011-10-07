@@ -2016,7 +2016,7 @@ draw_window:
 	db 'on/off'
     labelonoffend:
     labelt:
-	db   '3D Heart',0
+	db   'Ave cruce salus mea',0
 align 8
 	@col	dd	?
 	@y1	dw	?
