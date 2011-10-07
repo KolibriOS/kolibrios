@@ -1,4 +1,4 @@
-//Leency 06.10.2011, Flood-it! v2.0, GPL
+//Leency 06.10.2011, Flood-it! v2.1, GPL
 
 #include "lib\kolibri.h" 
 #include "lib\random.h"
@@ -43,7 +43,12 @@ char *BOARD_SIZES[]={ "S", "L", 0 };
 	"квадратиков слева, и клетки окрасятся этим цветом - так вы присоедините",
 	"соседние клетки той же окраски. Захватить поле нужно за минимальное",
 	"число ходов. Пошаговая стратегия с интересным принципом - изменись,",
-	"чтобы победить!", 0}; 
+	"чтобы победить!",
+	"",
+	"Играть также можно клавишами:",
+	"[Q] [W] [E]",
+	"[A] [S] [D]",
+	0}; 
 #else
 	char *BUTTON_CAPTIONS[]={ "New Game [F2]", "Help     [F1]", "Exit    [Esc]", 0}; 
 	char CLICKS_TEXT[]="Clicks:   /";
@@ -54,11 +59,16 @@ char *BOARD_SIZES[]={ "S", "L", 0 };
 	"",
 	"Flood the whole board with one color within the allowed steps.",
 	"You start from the top left corner and progress by selecting one",
-	"of the colored balls on the left. When you change your current area",
+	"of the colored buttons on the left. When you change your current area",
 	"color, every adjacent square with the same color also changes, that",
 	"way you can flood other areas of the board. Select from 3 sizes of",
 	"the board and try to flood-it in the least amount of steps!",
-	"Addictive and Fun!", 0};
+	"Addictive and Fun!",
+	"",
+	"You can also play with keyboard:",
+	"[Q] [W] [E]",
+	"[A] [S] [D]",
+	0}; 
 #endif
 
 
@@ -113,19 +123,7 @@ void main()
 				if (id==1) || (id==4) ExitProcess();
 				if (id==2) goto _NEW_GAME_MARK;
 				if (id==3) goto _HELP_MARK;
-				if (id>=100)
-				{
-					if (color_matrix[0]==id-100) break; //хёыш ЎтхЄ яхЁтющ Їш°ъш Єръющ цх, шуэюЁшЁєхь схёёь√ёыхээ√щ їюф
-					if (CLICKS>=MAX_CLICKS) break; //хёыш шуЁр чръюэўхэр
-					
-					CLICKS++;
-					draw_clicks_num();
-					
-					fill_field(id-100);
-					draw_field();
-					check_for_end(); //хёыш шуЁр чръюэўхэр
-					break;
-				}
+				if (id>=100) make_turn(id-100);
 				if (id>=10)
 				{
 					id=id-10*3;
@@ -139,7 +137,6 @@ void main()
 					new_game();
 					
 					MoveSize(-1, -1, BLOCK_SIZE*BLOCKS_NUM +14+USER_PANEL_WIDTH, BLOCK_SIZE*BLOCKS_NUM +GetSkinWidth()+14);
-					break;
 				}
 				break;
 			case evKey:
@@ -158,11 +155,31 @@ void main()
 						draw_clicks_num();
 						draw_field();
 				}
+				if (key==113) make_turn(0); //Q
+				if (key==119) make_turn(1); //W
+				if (key==101) make_turn(2); //E
+				if (key==097) make_turn(3); //A
+				if (key==115) make_turn(4); //S
+				if (key==100) make_turn(5); //D
 				break;
 			case evReDraw:
 				draw_window();
 		}
 	}
+}
+
+
+void make_turn(int turn_id)
+{
+	if (color_matrix[0]==turn_id) return; //хёыш ЎтхЄ яхЁтющ Їш°ъш Єръющ цх, шуэюЁшЁєхь схёёь√ёыхээ√щ їюф
+	if (CLICKS>=MAX_CLICKS) return; //хёыш шуЁр чръюэўхэр
+	
+	CLICKS++;
+	draw_clicks_num();
+	
+	fill_field(turn_id);
+	draw_field();
+	check_for_end(); //хёыш шуЁр чръюэўхэр	
 }
 
 
@@ -398,7 +415,7 @@ void help()
 		CASE evReDraw:
 				for (i=0; HELP_TEXT[i]<>0; i++;) {};
 				
-				DefineAndDrawWindow(500,200,450,i*13+50,0x34,sc.work,0,0,#HELP_WINDOW_CAPTION);
+				DefineAndDrawWindow(500,200,450,i*13+44,0x34,sc.work,0,0,#HELP_WINDOW_CAPTION);
 				
 				WriteText(6,12,0x80,sc.work_text,HELP_TEXT[0],0); //¤Єю фы  цшЁэюую °ЁшЇЄр
 				for (i=0; HELP_TEXT[i]<>0; i++;) WriteText(5,i*13+12,0x80,sc.work_text,HELP_TEXT[i],0);
