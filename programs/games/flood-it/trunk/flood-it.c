@@ -120,15 +120,15 @@ void main()
 		{
 			case evButton:
 				id = GetButtonID(); 
-				if (id==1) || (id==4) ExitProcess();
-				if (id==2) goto _NEW_GAME_MARK;
-				if (id==3) goto _HELP_MARK;
-				if (id>=100) make_turn(id-100);
+				IF (id==1) || (id==4) ExitProcess();
+				IF (id==2) goto _NEW_GAME_MARK;
+				IF (id==3) goto _HELP_MARK;
+				IF (id>=100) make_turn(id-100);
 				if (id>=10)
 				{
 					id=id-10*3;
 					
-					if (BLOCK_SIZE == DIFFICULTY_LEV_PARAMS[id]) break; //выбран тот же размер
+					IF (BLOCK_SIZE == DIFFICULTY_LEV_PARAMS[id]) break; //выбран тот же размер
 					
 					BLOCK_SIZE = DIFFICULTY_LEV_PARAMS[id]; //размер квадратика
 					BLOCKS_NUM = DIFFICULTY_LEV_PARAMS[id+1]; //количество квадратиков по Х и по Y
@@ -141,26 +141,26 @@ void main()
 				break;
 			case evKey:
 				key = GetKey();
-				if (key==027) //Escape
+				IF (key==027) //Escape
 					 ExitProcess();
-				if (key==050) //F1
+				IF (key==050) //F1
 				{
 					_HELP_MARK:
 						CreateThread(#help,#stak); 
 				}
-				if (key==051) //F2
+				IF (key==051) //F2
 				{
 					_NEW_GAME_MARK:
 						new_game();
 						draw_clicks_num();
 						draw_field();
 				}
-				if (key==113) make_turn(0); //Q
-				if (key==119) make_turn(1); //W
-				if (key==101) make_turn(2); //E
-				if (key==097) make_turn(3); //A
-				if (key==115) make_turn(4); //S
-				if (key==100) make_turn(5); //D
+				IF (key==113) make_turn(0); //Q
+				IF (key==119) make_turn(1); //W
+				IF (key==101) make_turn(2); //E
+				IF (key==097) make_turn(3); //A
+				IF (key==115) make_turn(4); //S
+				IF (key==100) make_turn(5); //D
 				break;
 			case evReDraw:
 				draw_window();
@@ -171,8 +171,8 @@ void main()
 
 void make_turn(int turn_id)
 {
-	if (color_matrix[0]==turn_id) return; //если цвет первой фишки такой же, игнорируем бессмысленный ход
-	if (CLICKS>=MAX_CLICKS) return; //если игра закончена
+	IF (color_matrix[0]==turn_id) return; //если цвет первой фишки такой же, игнорируем бессмысленный ход
+	IF (CLICKS>=MAX_CLICKS) return; //если игра закончена
 	
 	CLICKS++;
 	draw_clicks_num();
@@ -194,12 +194,12 @@ void draw_window()
 	
 	//проверяем не схлопнуто ли окно в заголовок
 	GetProcessInfo(#Form, SelfInfo);
-	if (Form.height==GetSkinWidth()+3) return;
+	IF (Form.height==GetSkinWidth()+3) return;
 	
 	//закрашиваем фон -> уменьшает перерисовку
 	for (i=0;i<=4;i++)
 	{
-		if (i<>4)
+		IF (i<>4)
 			DrawRegion(USER_PANEL_WIDTH+i-5,i, BLOCK_SIZE*BLOCKS_NUM +9-i-i, BLOCK_SIZE*BLOCKS_NUM+9-i-i, sc.work);
 		else
 			DrawRegion(USER_PANEL_WIDTH+i-5,i, BLOCK_SIZE*BLOCKS_NUM +9-i-i, BLOCK_SIZE*BLOCKS_NUM+9-i-i, sc.work_graph); //ободок
@@ -224,7 +224,7 @@ void draw_window()
 	{
 		DefineButton(j*25+56,BLOCKS_NUM*BLOCK_SIZE-20, 20,20, j+10,sc.work_button);
 		
-		if (BLOCK_SIZE == DIFFICULTY_LEV_PARAMS[j*3]) EDI=0x800080;
+		IF (BLOCK_SIZE == DIFFICULTY_LEV_PARAMS[j*3]) EDI=0x800080;
 			else EDI=sc.work_button_text;
 		
 		WriteText(j*25+56+8,BLOCKS_NUM*BLOCK_SIZE-20+7,0x80,EDI,BOARD_SIZES[j],0);
@@ -268,21 +268,21 @@ void fill_field(int new_color_id)
 	for (i=0;i<BLOCKS_NUM;i++)
 		for (j=0;j<BLOCKS_NUM;j++)
 		{
-			if (color_matrix[i*BLOCKS_NUM+j]<>old_color_id) continue; //если фишка не нужного цвета идём дальше
-			if (color_matrix[i*BLOCKS_NUM+j]==MARKED) continue; //если фишка уже отмечена, идём далее
+			IF (color_matrix[i*BLOCKS_NUM+j]<>old_color_id) continue; //если фишка не нужного цвета идём дальше
+			IF (color_matrix[i*BLOCKS_NUM+j]==MARKED) continue; //если фишка уже отмечена, идём далее
 			
-			if (j>0) && (color_matrix[i*BLOCKS_NUM+j-1]==MARKED) color_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим левый
-			if (i>0) && (color_matrix[i-1*BLOCKS_NUM+j]==MARKED) color_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим верхний
-			if (j<BLOCKS_NUM-1) && (color_matrix[i*BLOCKS_NUM+j+1]==MARKED) color_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим правый
-			if (i<BLOCKS_NUM-1) && (color_matrix[i+1*BLOCKS_NUM+j]==MARKED) color_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим нижний
+			IF (j>0) && (color_matrix[i*BLOCKS_NUM+j-1]==MARKED) color_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим левый
+			IF (i>0) && (color_matrix[i-1*BLOCKS_NUM+j]==MARKED) color_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим верхний
+			IF (j<BLOCKS_NUM-1) && (color_matrix[i*BLOCKS_NUM+j+1]==MARKED) color_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим правый
+			IF (i<BLOCKS_NUM-1) && (color_matrix[i+1*BLOCKS_NUM+j]==MARKED) color_matrix[i*BLOCKS_NUM+j]=MARKED; //смотрим нижний
 			
-			if (color_matrix[i*BLOCKS_NUM+j]==MARKED) restart=1; //если фишку отметили, то потом цикл нужно будет прокрутить сначала - мож ещё чё отметим
+			IF (color_matrix[i*BLOCKS_NUM+j]==MARKED) restart=1; //если фишку отметили, то потом цикл нужно будет прокрутить сначала - мож ещё чё отметим
 		}
-	if (restart) goto _RESTART_MARK;
+	IF (restart) goto _RESTART_MARK;
 
 	for (i=0;i<BLOCKS_NUM;i++)
 		for (j=0;j<BLOCKS_NUM;j++)
-			if (color_matrix[i*BLOCKS_NUM+j]==MARKED)	color_matrix[i*BLOCKS_NUM+j]=new_color_id;
+			IF (color_matrix[i*BLOCKS_NUM+j]==MARKED)	color_matrix[i*BLOCKS_NUM+j]=new_color_id;
 }
 
 
@@ -292,11 +292,11 @@ int check_for_end()
 
 	if (CLICKS>=MAX_CLICKS) //если проигрыш
 	{
-		if (CLICKS==MAX_CLICKS) //выигрышь на последнем ходе
+		IF (CLICKS==MAX_CLICKS) //выигрышь на последнем ходе
 		{
 			for (i=0;i<BLOCKS_NUM;i++) //проверяем всё ли поле одного цвета, если нет уходим
 				for (j=0;j<BLOCKS_NUM;j++)
-					if (color_matrix[i*BLOCKS_NUM+j]<>color_matrix[0]) goto _LOOSE_MARK;
+					IF (color_matrix[i*BLOCKS_NUM+j]<>color_matrix[0]) goto _LOOSE_MARK;
 			goto _WIN_MARK;
 		}
 		
@@ -305,7 +305,7 @@ int check_for_end()
 		for (i=0;i<14;i++)
 			for (j=0;j<14;j++)
 			{
-				if (BLOCK_SIZE == DIFFICULTY_LEV_PARAMS[0])
+				IF (BLOCK_SIZE == DIFFICULTY_LEV_PARAMS[0])
 				{
 					ii=i;
 					jj=j;
@@ -328,7 +328,7 @@ int check_for_end()
 	
 	for (i=0;i<BLOCKS_NUM;i++) //проверяем всё ли поле одного цвета, если нет уходим
 		for (j=0;j<BLOCKS_NUM;j++)
-			if (color_matrix[i*BLOCKS_NUM+j]<>color_matrix[0]) return 0;
+			IF (color_matrix[i*BLOCKS_NUM+j]<>color_matrix[0]) return 0;
 
 	//всё поле одного цвета и фишек меньше MAX_CLICKS -> победа
 	
@@ -346,7 +346,7 @@ int check_for_end()
 	for (i=0;i<14;i++)
 		for (j=0;j<14;j++)
 		{
-			if (BLOCK_SIZE == DIFFICULTY_LEV_PARAMS[0]) //заливка для полей разного размера разная
+			IF (BLOCK_SIZE == DIFFICULTY_LEV_PARAMS[0]) //заливка для полей разного размера разная
 			{
 				ii=i;
 				jj=j;
@@ -376,7 +376,7 @@ void draw_clicks_num()
 	
 	WriteText(TEXT_X,TEXT_Y,0x80,sc.work_text,#CLICKS_TEXT,0);
 
-	if (CLICKS<10) EBX=9*6+TEXT_X;
+	IF (CLICKS<10) EBX=9*6+TEXT_X;
 		else EBX=8*6+TEXT_X;
 	
 	WriteText(EBX,TEXT_Y,0x80,sc.work_text,IntToStr(CLICKS),0);
@@ -407,10 +407,10 @@ void help()
 	switch (WaitEvent())
 	{
 		CASE evButton: 
-				if (GetButtonID()==1) ExitProcess();
+				IF (GetButtonID()==1) ExitProcess();
 				break;
 		CASE evKey:
-				if (GetKey()==27) ExitProcess(); //Esc
+				IF (GetKey()==27) ExitProcess(); //Esc
 				break;
 		CASE evReDraw:
 				for (i=0; HELP_TEXT[i]<>0; i++;) {};
