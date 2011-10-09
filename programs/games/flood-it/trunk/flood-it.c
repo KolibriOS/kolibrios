@@ -1,4 +1,4 @@
-//Leency 06.10.2011, Flood-it! v2.1, GPL
+//Leency 06.10.2011, Flood-it! v2.2, GPL
 
 #include "lib\kolibri.h" 
 #include "lib\random.h"
@@ -31,7 +31,7 @@ char *BOARD_SIZES[]={ "S", "L", 0 };
 
 
 #ifdef LANG_RUS
-	char *BUTTON_CAPTIONS[]={ " НЃҐ†п  [F2]", " ПЃђЃйм [F1]", " ВлеЃ§ [Esc]", 0}; 
+	char *BUTTON_CAPTIONS[]={ " З†≠ЃҐЃ [F2]", " ПЃђЃйм [F1]", " ВлеЃ§ [Esc]", 0}; 
 	char CLICKS_TEXT[]=" КЂ®™®:   /";
 	char LEVELS_TEXT[]="ПЃЂ•:";
 	
@@ -72,9 +72,9 @@ char *BOARD_SIZES[]={ "S", "L", 0 };
 #endif
 
 
-int color_matrix[28*28]; //цвета дл€ пол€ с квадратиками
+unsigned char color_matrix[28*28]; //цвета дл€ пол€ с квадратиками
 
-int loose_matrix[14*14]={
+unsigned char loose_matrix[14*14]={
 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 2, 3, 2, 2,
@@ -91,7 +91,7 @@ int loose_matrix[14*14]={
 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2
 };
 
-int win_matrix[14*14]={
+unsigned char win_matrix[14*14]={
 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 4, 1, 4, 1, 4, 1, 4, 1, 4, 1, 4, 4, 1, 4,
@@ -123,7 +123,11 @@ void main()
 				IF (id==1) || (id==4) ExitProcess();
 				IF (id==2) goto _NEW_GAME_MARK;
 				IF (id==3) goto _HELP_MARK;
-				IF (id>=100) make_turn(id-100);
+				IF (id>=100)
+				{
+					make_turn(id-100);
+					break;
+				}
 				if (id>=10)
 				{
 					id=id-10*3;
@@ -240,21 +244,18 @@ void draw_window()
 
 void new_game()
 {
-	int i, j;
+	int i;
 	
-	//randomize();
-
 	CLICKS = 0;
 	
-	for (i=0;i<BLOCKS_NUM;i++)
-		for (j=0;j<BLOCKS_NUM;j++)
-			color_matrix[i*BLOCKS_NUM+j] = random(6);
+	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++) 
+			color_matrix[i] = random(6);
 }
 
 
 void fill_field(int new_color_id)
 {
-	int i=0, j=0,
+	int i, j,
 	old_color_id=color_matrix[0],
 	restart;
 	#define MARKED 6
@@ -280,9 +281,8 @@ void fill_field(int new_color_id)
 		}
 	IF (restart) goto _RESTART_MARK;
 
-	for (i=0;i<BLOCKS_NUM;i++)
-		for (j=0;j<BLOCKS_NUM;j++)
-			IF (color_matrix[i*BLOCKS_NUM+j]==MARKED)	color_matrix[i*BLOCKS_NUM+j]=new_color_id;
+	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++) 
+			IF (color_matrix[i]==MARKED) color_matrix[i]=new_color_id;
 }
 
 
@@ -294,9 +294,8 @@ int check_for_end()
 	{
 		IF (CLICKS==MAX_CLICKS) //выигрышь на последнем ходе
 		{
-			for (i=0;i<BLOCKS_NUM;i++) //провер€ем всЄ ли поле одного цвета, если нет уходим
-				for (j=0;j<BLOCKS_NUM;j++)
-					IF (color_matrix[i*BLOCKS_NUM+j]<>color_matrix[0]) goto _LOOSE_MARK;
+			for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++) //провер€ем всЄ ли поле одного цвета, если нет уходим
+					IF (color_matrix[i]<>color_matrix[0]) goto _LOOSE_MARK;
 			goto _WIN_MARK;
 		}
 		
@@ -326,9 +325,8 @@ int check_for_end()
 		return 1;
 	}
 	
-	for (i=0;i<BLOCKS_NUM;i++) //провер€ем всЄ ли поле одного цвета, если нет уходим
-		for (j=0;j<BLOCKS_NUM;j++)
-			IF (color_matrix[i*BLOCKS_NUM+j]<>color_matrix[0]) return 0;
+	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++) //провер€ем всЄ ли поле одного цвета, если нет уходим
+			IF (color_matrix[i]<>color_matrix[0]) return 0;
 
 	//всЄ поле одного цвета и фишек меньше MAX_CLICKS -> победа
 	
