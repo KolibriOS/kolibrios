@@ -321,6 +321,7 @@ img.decode.ico._.decode_icon_mask:
 	pop	eax
 	push	eax
 	mov	ecx, [eax + Image.Width]
+	mov	edi, [eax + Image.Data]
 .bpp24:
 	mov	edx, [esp+16]	; get background color
 .bpp24.extloop:
@@ -337,7 +338,7 @@ img.decode.ico._.decode_icon_mask:
 	mov	[edi+2], dl
 	ror	edx, 16
 @@:
-	add	edi, 4
+	add	edi, 3
 	dec	ecx
 	jz	@f
 	dec	dword [esp]
