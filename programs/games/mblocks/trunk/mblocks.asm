@@ -258,37 +258,31 @@ first_click:
 	jmp	@b
 
 draw_window:
-	push	48
-	pop	eax
-	push	3
-	pop	ebx
-	mov	ecx, color_table
-	push	4*10
-	pop	edx
-	int	0x40	; get color table
-	push	12
-	pop	eax
-	push	1
-	pop	ebx
+	mov eax, 48
+	mov ebx, 3
+	mov ecx, color_table
+	mov edx, 40
+	int	0x40 	; get color table
+
+	mov eax, 12
+	mov ebx, 1
 	int	0x40	; start redraw
-	push	ebx
+	
 	xor	eax, eax
 	mov	ebx, 100*65536 + WindowWidth
 	mov	ecx, 100*65536 + WindowHeight
 	add	ecx, [SkinHeight]
-	mov	edx, 4C0C0C0h
-	int	0x40	; define window
-	mov	al, 71
-	pop	ebx
-	mov	ecx, caption
-	int	0x40	; set caption
+	mov	edx, 0x14C0C0C0
+	mov	edi, caption
+	int	0x40
+	
 	call	draw_aux
 	call	draw_field
-	push	12
-	pop	eax
-	push	2
-	pop	ebx
-	int	0x40
+	
+	mov eax, 12
+	mov ebx, 2
+	int	0x40	; end redraw
+	
 	ret
 
 caption	db	'Memory Blocks L&V Edition',0
