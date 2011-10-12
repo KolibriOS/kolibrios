@@ -1459,7 +1459,7 @@ draw_window:
 
 	mcall	,,18,panel_clr1	;верхняя панель
 
-;	dec	ebx
+	dec	ebx
 	mcall	38,,<18,18>,panel_clr2
 	mov	ecx,dword [threath_buf+66]
 	sub	cx,18
@@ -1467,6 +1467,7 @@ draw_window:
 	shl	ecx,16
 	pop	cx
 	mcall	,,,panel_clr3	;нижняя панель
+	inc	ebx
 	add	ecx,1*65536
 	mov	cx,18
 	mcall	13,,,panel_clr1
