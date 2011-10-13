@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2009, Tomasz Grysztar.
+; Copyright (c) 1999-2011, Tomasz Grysztar.
 ; All rights reserved.
 
 _out_of_memory db 'out of memory',0

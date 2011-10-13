@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2009, Tomasz Grysztar.
+; Copyright (c) 1999-2011, Tomasz Grysztar.
 ; All rights reserved.
 
 preprocessor:
@@ -96,6 +96,8 @@ preprocess_file:
 	call	preprocess_line
 	pop	edx ebx
       next_line:
+	cmp	byte [esi-1],0
+	je	file_end
 	cmp	byte [esi-1],1Ah
 	jne	preprocess_source
       file_end:
@@ -219,6 +221,8 @@ convert_line:
 	je	concatenate_lines
 	cmp	al,1Ah
 	je	unexpected_end_of_file
+	or	al,al
+	jz	unexpected_end_of_file
 	cmp	al,0Ah
 	je	concatenate_lf
 	cmp	al,0Dh
@@ -241,6 +245,8 @@ convert_line:
       backslashed_symbol:
 	cmp	al,1Ah
 	je	unexpected_end_of_file
+	or	al,al
+	jz	unexpected_end_of_file
 	cmp	al,0Ah
 	je	extra_characters_on_line
 	cmp	al,0Dh
@@ -283,6 +289,8 @@ convert_line:
 	je	concatenate_lines
 	cmp	al,1Ah
 	je	unexpected_end_of_file
+	or	al,al
+	jz	unexpected_end_of_file
 	cmp	al,0Ah
 	je	concatenate_lf
 	cmp	al,0Dh
@@ -1594,6 +1602,7 @@ use_instant_macro:
 	stosb
 	push	esi
 	mov	esi,[esp+4]
+	mov	[value_size],8
 	call	calculate_expression
 	mov	eax,[edi]
 	mov	ecx,[edi+4]
@@ -1887,6 +1896,12 @@ process_macro:
 	je	process_macro_line
 	inc	[counter]
       process_macro_line:
+	lods	byte [esi]
+	or	al,al
+	jz	process_next_line
+	cmp	al,'}'
+	je	macro_block_processed
+	dec	esi
 	mov	[current_line],edi
 	lea	eax,[edi+10h]
 	cmp	eax,[memory_end]

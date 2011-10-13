@@ -1,14 +1,15 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2009, Tomasz Grysztar.
+; Copyright (c) 1999-2011, Tomasz Grysztar.
 ; All rights reserved.
 
 assembler:
 	xor	eax,eax
 	mov	[stub_size],eax
-	mov	[number_of_sections],eax
 	mov	[current_pass],ax
 	mov	[resolver_flags],eax
+	mov	[number_of_sections],eax
+	mov	[actual_fixups_size],eax
       assembler_loop:
 	mov	eax,[labels_list]
 	mov	[display_buffer],eax
@@ -115,6 +116,14 @@ assembler:
 	or	eax,eax
 	jz	assemble_ok
 	mov	[current_line],eax
+	cmp	[error],undefined_symbol
+	jne	error_confirmed
+	mov	eax,[error_info]
+	or	eax,eax
+	jz	error_confirmed
+	test	byte [eax+8],1
+	jnz	next_pass
+      error_confirmed:
 	call	error_handler
       error_handler:
 	mov	eax,[error]
@@ -360,10 +369,13 @@ assemble_line:
 ;        mov     [operand_size],0
 ;        mov     [size_override],0
 ;        mov     [operand_prefix],0
-;        mov     [rex_prefix],0
+;        mov     [opcode_prefix],0
 	mov	dword [operand_size],0
-	mov	[opcode_prefix],0
-	mov	[immediate_size],0
+;        mov     [rex_prefix],0
+;        mov     [vex_required],0
+;        mov     [vex_register],0
+;        mov     [immediate_size],0
+	mov	dword [rex_prefix],0
 	call	instruction_handler
       instruction_handler:
 	movzx	ebx,word [esi]
@@ -381,87 +393,6 @@ assemble_line:
 	clc
 	ret
       source_end:
-	dec	esi
-	stc
-	ret
-skip_line:
-	call	skip_symbol
-	jnc	skip_line
-	ret
-skip_symbol:
-	lods	byte [esi]
-	or	al,al
-	jz	nothing_to_skip
-	cmp	al,0Fh
-	je	nothing_to_skip
-	cmp	al,1
-	je	skip_instruction
-	cmp	al,2
-	je	skip_label
-	cmp	al,3
-	je	skip_label
-	cmp	al,20h
-	jb	skip_assembler_symbol
-	cmp	al,'('
-	je	skip_expression
-	cmp	al,'['
-	je	skip_address
-      skip_done:
-	clc
-	ret
-      skip_label:
-	add	esi,2
-      skip_instruction:
-	add	esi,2
-      skip_assembler_symbol:
-	inc	esi
-	jmp	skip_done
-      skip_address:
-	mov	al,[esi]
-	and	al,11110000b
-	cmp	al,60h
-	jb	skip_expression
-	cmp	al,70h
-	ja	skip_expression
-	inc	esi
-	jmp	skip_address
-      skip_expression:
-	lods	byte [esi]
-	or	al,al
-	jz	skip_string
-	cmp	al,'.'
-	je	skip_fp_value
-	cmp	al,')'
-	je	skip_done
-	cmp	al,']'
-	je	skip_done
-	cmp	al,'!'
-	je	skip_expression
-	cmp	al,0Fh
-	je	skip_expression
-	cmp	al,10h
-	je	skip_register
-	cmp	al,11h
-	je	skip_label_value
-	cmp	al,80h
-	jae	skip_expression
-	movzx	eax,al
-	add	esi,eax
-	jmp	skip_expression
-      skip_label_value:
-	add	esi,3
-      skip_register:
-	inc	esi
-	jmp	skip_expression
-      skip_fp_value:
-	add	esi,12
-	jmp	skip_done
-      skip_string:
-	lods	dword [esi]
-	add	esi,eax
-	inc	esi
-	jmp	skip_done
-      nothing_to_skip:
 	dec	esi
 	stc
 	ret
@@ -576,7 +507,6 @@ label_directive:
 	mov	[ebx+4],edx
 	setne	al
 	or	ah,al
-	jmp	finish_label
       finish_label:
 	cmp	cl,[ebx+10]
 	mov	[ebx+10],cl
@@ -818,15 +748,9 @@ times_directive:
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_dword_value
-	cmp	[next_pass_needed],0
-	jne	times_value_ok
-	cmp	[value_type],0
-	jne	invalid_use_of_symbol
-      times_value_ok:
+	call	get_count_value
 	cmp	eax,0
 	je	zero_times
-	jl	negative_times
 	cmp	byte [esi],':'
 	jne	times_argument_ok
 	inc	esi
@@ -855,14 +779,9 @@ times_directive:
 	pop	[counter_limit]
 	pop	[counter]
 	jmp	instruction_assembled
-      negative_times:
-	cmp	[error_line],0
-	jne	zero_times
-	mov	eax,[current_line]
-	mov	[error_line],eax
-	mov	[error],invalid_value
       zero_times:
-	call	skip_line
+	call	skip_symbol
+	jnc	zero_times
 	jmp	instruction_assembled
 
 virtual_directive:
@@ -973,13 +892,15 @@ virtual_directive:
 	mov	edi,[ebx+8]
       remove_structure_data:
 	push	esi edi
-	mov	esi,[structures_buffer]
 	mov	ecx,ebx
-	sub	ecx,esi
-	lea	edi,[esi+20h]
-	mov	[structures_buffer],edi
+	sub	ecx,[structures_buffer]
 	shr	ecx,2
+	lea	esi,[ebx-4]
+	lea	edi,[esi+20h]
+	std
 	rep	movs dword [edi],[esi]
+	cld
+	add	[structures_buffer],20h
 	pop	edi esi
 	ret
 repeat_directive:
@@ -990,15 +911,9 @@ repeat_directive:
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_dword_value
-	cmp	[next_pass_needed],0
-	jne	repeat_value_ok
-	cmp	[value_type],0
-	jne	invalid_use_of_symbol
-      repeat_value_ok:
+	call	get_count_value
 	cmp	eax,0
 	je	zero_repeat
-	jl	negative_repeat
 	call	allocate_structure_data
 	mov	word [ebx],repeat_directive-instruction_handler
 	xchg	eax,[counter_limit]
@@ -1029,12 +944,6 @@ repeat_directive:
       continue_repeating:
 	mov	esi,[ebx+8]
 	jmp	instruction_assembled
-      negative_repeat:
-	cmp	[error_line],0
-	jne	zero_repeat
-	mov	eax,[current_line]
-	mov	[error_line],eax
-	mov	[error],invalid_value
       zero_repeat:
 	mov	al,[esi]
 	or	al,al
@@ -1187,7 +1096,8 @@ if_directive:
 	mov	eax,[current_line]
 	mov	[error_line],eax
       find_end_directive:
-	call	skip_line
+	call	skip_symbol
+	jnc	find_end_directive
 	lods	byte [esi]
 	cmp	al,0Fh
 	jne	no_end_directive
@@ -1358,23 +1268,10 @@ data_bytes:
 	cmp	byte [ebx],81h
 	jne	simple_data_value
 	inc	esi
-	call	get_dword_value
-	cmp	[next_pass_needed],0
-	jne	dup_value_ok
-	cmp	[value_type],0
-	jne	invalid_use_of_symbol
-      dup_value_ok:
+	call	get_count_value
 	inc	esi
-	cmp	eax,0
-	jg	dup_positive
-	cmp	[error_line],0
-	jne	dup_invalid
-	mov	eax,[current_line]
-	mov	[error_line],eax
-	mov	[error],invalid_value
-      dup_invalid:
-	mov	eax,1
-      dup_positive:
+	or	eax,eax
+	jz	duplicate_zero_times
 	cmp	byte [esi],'{'
 	jne	duplicate_single_data_value
 	inc	esi
@@ -1404,6 +1301,20 @@ data_bytes:
 	jz	data_defined
 	mov	esi,ebx
 	jmp	duplicate_single_data_value
+      duplicate_zero_times:
+	cmp	byte [esi],'{'
+	jne	skip_single_data_value
+	inc	esi
+      skip_data_value:
+	call	skip_symbol
+	jc	invalid_argument
+	cmp	byte [esi],'}'
+	jne	skip_data_value
+	inc	esi
+	jmp	data_defined
+      skip_single_data_value:
+	call	skip_symbol
+	jmp	data_defined
       simple_data_value:
 	cmp	edi,[display_buffer]
 	jae	out_of_memory
@@ -1691,7 +1602,7 @@ data_file:
 	cmp	byte [esi],'.'
 	je	invalid_value
 	push	ebx
-	call	get_dword_value
+	call	get_count_value
 	pop	ebx
 	mov	edx,eax
 	sub	[esp],edx
@@ -1706,7 +1617,7 @@ data_file:
 	cmp	byte [esi],'.'
 	je	invalid_value
 	push	ebx edx
-	call	get_dword_value
+	call	get_count_value
 	pop	edx ebx
 	cmp	eax,[esp]
 	ja	value_out_of_range
@@ -1731,8 +1642,13 @@ data_file:
       open_binary_file:
 	push	esi
 	push	edi
-	mov	esi,[current_line]
-	mov	esi,[esi]
+	mov	eax,[current_line]
+      find_current_source_path: 
+	mov	esi,[eax] 
+	test	byte [eax+7],80h 
+	jz	get_current_path 
+	mov	eax,[eax+12] 
+	jmp	find_current_source_path
       get_current_path:
 	lodsb
 	stosb
@@ -1772,14 +1688,7 @@ reserve_bytes:
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_dword_value
-	cmp	[next_pass_needed],0
-	jne	rb_value_ok
-	cmp	[value_type],0
-	jne	invalid_use_of_symbol
-      rb_value_ok:
-	cmp	eax,0
-	jl	reserve_negative
+	call	get_count_value
 	mov	ecx,eax
 	mov	edx,ecx
 	add	edx,edi
@@ -1806,27 +1715,13 @@ reserve_bytes:
 	pop	eax
 	call	undefined_data
 	jmp	instruction_assembled
-      reserve_negative:
-	cmp	[error_line],0
-	jne	instruction_assembled
-	mov	eax,[current_line]
-	mov	[error_line],eax
-	mov	[error],invalid_value
-	jmp	instruction_assembled
 reserve_words:
 	lods	byte [esi]
 	cmp	al,'('
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_dword_value
-	cmp	[next_pass_needed],0
-	jne	rw_value_ok
-	cmp	[value_type],0
-	jne	invalid_use_of_symbol
-      rw_value_ok:
-	cmp	eax,0
-	jl	reserve_negative
+	call	get_count_value
 	mov	ecx,eax
 	mov	edx,ecx
 	shl	edx,1
@@ -1854,14 +1749,7 @@ reserve_dwords:
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_dword_value
-	cmp	[next_pass_needed],0
-	jne	rd_value_ok
-	cmp	[value_type],0
-	jne	invalid_use_of_symbol
-      rd_value_ok:
-	cmp	eax,0
-	jl	reserve_negative
+	call	get_count_value
 	mov	ecx,eax
 	mov	edx,ecx
 	shl	edx,1
@@ -1887,14 +1775,7 @@ reserve_pwords:
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_dword_value
-	cmp	[next_pass_needed],0
-	jne	rp_value_ok
-	cmp	[value_type],0
-	jne	invalid_use_of_symbol
-      rp_value_ok:
-	cmp	eax,0
-	jl	reserve_negative
+	call	get_count_value
 	mov	ecx,eax
 	shl	ecx,1
 	jc	out_of_memory
@@ -1917,14 +1798,7 @@ reserve_qwords:
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_dword_value
-	cmp	[next_pass_needed],0
-	jne	rq_value_ok
-	cmp	[value_type],0
-	jne	invalid_use_of_symbol
-      rq_value_ok:
-	cmp	eax,0
-	jl	reserve_negative
+	call	get_count_value
 	mov	ecx,eax
 	shl	ecx,1
 	jc	out_of_memory
@@ -1948,14 +1822,7 @@ reserve_twords:
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_dword_value
-	cmp	[next_pass_needed],0
-	jne	rt_value_ok
-	cmp	[value_type],0
-	jne	invalid_use_of_symbol
-      rt_value_ok:
-	cmp	eax,0
-	jl	reserve_negative
+	call	get_count_value
 	mov	ecx,eax
 	shl	ecx,2
 	jc	out_of_memory
@@ -1978,15 +1845,13 @@ align_directive:
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_dword_value
-	cmp	[value_type],0
-	jne	invalid_use_of_symbol
+	call	get_count_value
 	mov	edx,eax
 	dec	edx
 	test	eax,edx
-	jnz	negative_times
+	jnz	invalid_align_value
 	or	eax,eax
-	jz	negative_times
+	jz	invalid_align_value
 	cmp	eax,1
 	je	instruction_assembled
 	mov	ecx,edi
@@ -2023,6 +1888,13 @@ align_directive:
 	je	nops
 	add	edi,ecx
 	jmp	reserved_data
+      invalid_align_value:
+	cmp	[error_line],0
+	jne	instruction_assembled
+	mov	eax,[current_line]
+	mov	[error_line],eax
+	mov	[error],invalid_value
+	jmp	instruction_assembled
       nops:
 	mov	eax,90909090h
 	shr	ecx,1

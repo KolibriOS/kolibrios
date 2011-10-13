@@ -622,14 +622,16 @@ display_bytes_count:
 include 'system.inc'
 include 'version.inc'
 include 'errors.inc'
-include 'expressi.inc'
+include 'symbdump.inc'
 include 'preproce.inc'
 include 'parser.inc'
+include 'exprpars.inc'
 include 'assemble.inc'
+include 'exprcalc.inc'
 include 'formats.inc'
 include 'x86_64.inc'
+include 'avx.inc'
 include 'tables.inc'
-include 'symbdump.inc'
 include 'messages.inc'
 ;---------------------------------------------------------------------
 title db appname,VERSION_STRING,0

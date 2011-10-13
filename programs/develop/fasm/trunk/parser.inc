@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2009, Tomasz Grysztar.
+; Copyright (c) 1999-2011, Tomasz Grysztar.
 ; All rights reserved.
 
 parser:
@@ -33,6 +33,7 @@ parser:
 	inc	[parsed_lines]
 	add	esi,16
       parse_line:
+	mov	[formatter_symbols_allowed],0
 	cmp	byte [esi],1Ah
 	jne	empty_instruction
 	push	edi
@@ -461,13 +462,22 @@ parse_line_contents:
 	cmp	bx,label_directive-instruction_handler
 	je	parse_label_directive
 	cmp	bx,segment_directive-instruction_handler
-	je	parse_label_directive
+	je	parse_segment_directive
 	cmp	bx,load_directive-instruction_handler
 	je	parse_load_directive
 	cmp	bx,extrn_directive-instruction_handler
 	je	parse_extrn_directive
 	cmp	bx,public_directive-instruction_handler
 	je	parse_public_directive
+	cmp	bx,section_directive-instruction_handler
+	je	parse_formatter_argument
+	cmp	bx,format_directive-instruction_handler
+	je	parse_formatter_argument
+	cmp	bx,data_directive-instruction_handler
+	je	parse_formatter_argument
+	jmp	parse_argument
+      parse_formatter_argument:
+	or	[formatter_symbols_allowed],-1
       parse_argument:
 	lea	eax,[edi+100h]
 	cmp	eax,[labels_list]
@@ -536,6 +546,8 @@ parse_line_contents:
 	stos	byte [edi]
 	cmp	al,80h
 	je	forced_expression
+	cmp	al,8Ch
+	je	forced_expression
 	cmp	al,81h
 	je	forced_parenthesis
 	cmp	al,82h
@@ -577,6 +589,8 @@ parse_line_contents:
 	jne	allow_embedded_instruction
 	movs	byte [edi],[esi]
 	jmp	allow_embedded_instruction
+      parse_segment_directive:
+	or	[formatter_symbols_allowed],-1
       parse_label_directive:
 	cmp	byte [esi],1Ah
 	jne	argument_parsed
@@ -623,7 +637,9 @@ parse_line_contents:
 	inc	esi
 	push	esi ecx
 	push	edi
+	or	[formatter_symbols_allowed],-1
 	call	get_symbol
+	mov	[formatter_symbols_allowed],0
 	pop	edi
 	jc	parse_public_label
 	cmp	al,1Dh
@@ -787,11 +803,16 @@ parse_line_contents:
 	stos	byte [edi]
 	jmp	expression_parsed
       forced_expression:
+	xor	al,al
+	xchg	al,[formatter_symbols_allowed]
+	push	eax
 	mov	al,'('
 	stos	byte [edi]
 	call	convert_expression
 	mov	al,')'
 	stos	byte [edi]
+	pop	eax
+	mov	[formatter_symbols_allowed],al
 	jmp	argument_parsed
       address_argument:
 	call	parse_address
@@ -1009,9 +1030,16 @@ get_symbol:
 	repe	cmps byte [esi],[edi]
 	ja	symbols_up
 	jb	symbols_down
+	mov	ax,[edi]
+
+	cmp	al,18h
+	jb	symbol_ok
+	cmp	[formatter_symbols_allowed],0
+	je	no_symbol
+
+      symbol_ok:
 	pop	esi
 	add	esi,ebp
-	mov	ax,[edi]
 	clc
 	ret
       no_symbol:
@@ -1047,7 +1075,7 @@ get_instruction:
 	mov	ebp,ecx
 	call	lower_case
 	mov	ecx,ebp
-	cmp	cl,11
+	cmp	cl,16
 	ja	no_instruction
 	sub	cl,2
 	jc	no_instruction
@@ -1157,9 +1185,13 @@ get_label_id:
 	ret
       anonymous_back:
 	mov	eax,[anonymous_reverse]
-	or	eax,eax
-	jz	new_anonymous
 	add	esi,2
+	or	eax,eax
+	jz	bogus_anonymous
+	jmp	anonymous_ok
+      bogus_anonymous:
+	call	allocate_label
+	mov	[anonymous_reverse],eax
 	jmp	anonymous_ok
       new_anonymous:
 	add	esi,2
@@ -1175,7 +1207,15 @@ get_label_id:
 	cmp	byte [esi],'%'
 	je	get_predefined_id
 	cmp	byte [esi],'$'
+	je	current_address_label
+	cmp	byte [esi],'?'
 	jne	find_label
+	cmp	ecx,1
+	jne	find_label
+	inc	esi
+	mov	eax,0Fh
+	ret
+      current_address_label:
 	cmp	ecx,2
 	ja	find_label
 	inc	esi
