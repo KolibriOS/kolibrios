@@ -67,7 +67,8 @@ uglobal
 endg
 
 iglobal
-  NumARP:        dd    ARP_TABLE_ENTRIES
+  NumARP:
+                 dd    ARP_TABLE_ENTRIES
   ARPTable_ptr   dd    ARPTable   ;pointer to ARPTable
 endg
 
@@ -122,23 +123,23 @@ align 4
 proc arp_table_manager stdcall uses ebx esi edi ecx edx,\
     Opcode:DWORD,Index:DWORD,Extra:DWORD
 
-    mov     ebx, dword[ARPTable_ptr]   ;ARPTable base
-    mov     ecx, dword[NumARP]         ;ARP-entries counter
+        mov     ebx, dword[ARPTable_ptr];ARPTable base
+        mov     ecx, dword[NumARP]     ;ARP-entries counter
 
-    mov     eax, dword[Opcode]
-    cmp     eax, ARP_TABLE_TIMER
-    je      .timer
-    cmp     eax, ARP_TABLE_ADD
-    je      .add
-    cmp     eax, ARP_TABLE_DEL
-    je      .del
-    cmp     eax, ARP_TABLE_GET
-    je      .get
-    cmp     eax, ARP_TABLE_IP_TO_MAC
-    je      .ip_to_mac
-    cmp     eax, ARP_TABLE_GET_ENTRIES_NUMBER
-    je      .get_entries_number
-    jmp     .exit     ;if unknown opcode
+        mov     eax, dword[Opcode]
+        cmp     eax, ARP_TABLE_TIMER
+        je      .timer
+        cmp     eax, ARP_TABLE_ADD
+        je      .add
+        cmp     eax, ARP_TABLE_DEL
+        je      .del
+        cmp     eax, ARP_TABLE_GET
+        je      .get
+        cmp     eax, ARP_TABLE_IP_TO_MAC
+        je      .ip_to_mac
+        cmp     eax, ARP_TABLE_GET_ENTRIES_NUMBER
+        je      .get_entries_number
+        jmp     .exit ;if unknown opcode
 
 
 ;;BEGIN TIMER
@@ -150,47 +151,47 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx,\
 ;;  EAX=not defined
 ;;
 .timer:
-    test    ecx, ecx
-    jz      .exit    ;if NumARP=0 nothing to do
-    sub     ecx, ARP_TABLE_ENTRIES  ;ecx=dynamic entries number
-    jz      .exit    ;if NumARP=number of static entries then exit
+        test    ecx, ecx
+        jz      .exit;if NumARP=0 nothing to do
+        sub     ecx, ARP_TABLE_ENTRIES;ecx=dynamic entries number
+        jz      .exit;if NumARP=number of static entries then exit
 
-    add     ebx, ARP_TABLE_ENTRIES*ARP_ENTRY_SIZE  ;ebx=dynamic entries base
+        add     ebx, ARP_TABLE_ENTRIES*ARP_ENTRY_SIZE;ebx=dynamic entries base
 
   .timer_loop:
-    movsx   esi, word [ebx + ARP_ENTRY.TTL]
-    cmp     esi, 0xFFFFFFFF
-    je      .timer_loop_end  ;if TTL==0xFFFF then it's static entry
+        movsx   esi, word [ebx + ARP_ENTRY.TTL]
+        cmp     esi, 0xFFFFFFFF
+        je      .timer_loop_end;if TTL==0xFFFF then it's static entry
 
-    test    esi, esi
-    jnz     .timer_loop_end_with_dec  ;if TTL!=0
+        test    esi, esi
+        jnz     .timer_loop_end_with_dec;if TTL!=0
 
     ; Ok, TTL is 0
     ;if Status==AWAITING_RESPONSE and TTL==0
     ;then we have to change it to ARP_RESPONSE_TIMEOUT
-    cmp     word [ebx + ARP_ENTRY.Status], ARP_AWAITING_RESPONSE
-    jne     @f
+        cmp     word [ebx + ARP_ENTRY.Status], ARP_AWAITING_RESPONSE
+        jne     @f
 
-    mov     word [ebx + ARP_ENTRY.Status], ARP_RESPONSE_TIMEOUT
-    mov     word [ebx + ARP_ENTRY.TTL], word 0x000A   ;10 sec
-    jmp     .timer_loop_end
+        mov     word [ebx + ARP_ENTRY.Status], ARP_RESPONSE_TIMEOUT
+        mov     word [ebx + ARP_ENTRY.TTL], word 0x000A;10 sec
+        jmp     .timer_loop_end
 
   @@:
     ;if TTL==0 and Status==VALID_MAPPING, we have to delete it
     ;if TTL==0 and Status==RESPONSE_TIMEOUT, delete too
-    mov     esi, dword[NumARP]
-    sub     esi, ecx          ;esi=index of entry, will be deleted
-    stdcall arp_table_manager,ARP_TABLE_DEL,esi,0 ;opcode,index,extra
-    jmp     .timer_loop_end
+        mov     esi, dword[NumARP]
+        sub     esi, ecx      ;esi=index of entry, will be deleted
+        stdcall arp_table_manager, ARP_TABLE_DEL, esi, 0;opcode,index,extra
+        jmp     .timer_loop_end
 
 
   .timer_loop_end_with_dec:
-    dec     word [ebx + ARP_ENTRY.TTL]  ;decrease TTL
+        dec     word [ebx + ARP_ENTRY.TTL];decrease TTL
   .timer_loop_end:
-    add     ebx, ARP_ENTRY_SIZE
-    loop    .timer_loop
+        add     ebx, ARP_ENTRY_SIZE
+        loop    .timer_loop
 
-    jmp     .exit
+        jmp     .exit
 ;;END TIMER
 
 ;;BEGIN ADD
@@ -206,69 +207,69 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx,\
 ;;
 .add:
 
-    sub     esp, ARP_ENTRY_SIZE   ;Allocate ARP_ENTRY_SIZE byte in stack
+        sub     esp, ARP_ENTRY_SIZE;Allocate ARP_ENTRY_SIZE byte in stack
 
-    mov     esi, [Extra]   ;pointer
-    mov     edi, [Index]   ;opcode
+        mov     esi, [Extra];pointer
+        mov     edi, [Index];opcode
 
-    cmp     edi, EXTRA_IS_ARP_PACKET_PTR
-    je      .arp_packet_to_entry ;if Extra contain ptr to ARP_PACKET and we have to form arp-entry
+        cmp     edi, EXTRA_IS_ARP_PACKET_PTR
+        je      .arp_packet_to_entry;if Extra contain ptr to ARP_PACKET and we have to form arp-entry
                                  ;else it contain ptr to arp-entry
 
-    cld
+        cld
           ; esi already has been loaded
-    mov     edi, esp      ;ebx + eax=ARPTable_base + ARP-entry_base(where we will add)
-    mov     ecx,ARP_ENTRY_SIZE/2  ;ARP_ENTRY_SIZE must be even number!!!
-    rep     movsw    ;copy
-    jmp     .search
+        mov     edi, esp  ;ebx + eax=ARPTable_base + ARP-entry_base(where we will add)
+        mov     ecx, ARP_ENTRY_SIZE/2;ARP_ENTRY_SIZE must be even number!!!
+        rep movsw    ;copy
+        jmp     .search
 
   .arp_packet_to_entry:
-    mov     edx, dword[esi + ARP_PACKET.SenderIP] ;esi=base of ARP_PACKET
-    mov     [esp + ARP_ENTRY.IP], edx
+        mov     edx, dword[esi + ARP_PACKET.SenderIP];esi=base of ARP_PACKET
+        mov     [esp + ARP_ENTRY.IP], edx
 
-    cld
-    lea     esi, [esi + ARP_PACKET.SenderMAC]
-    lea     edi, [esp + ARP_ENTRY.MAC]
-    movsd
-    movsw
-    mov     word[esp + ARP_ENTRY.Status], ARP_VALID_MAPPING  ; specify the type - a valid entry
-    mov     word[esp + ARP_ENTRY.TTL], 0x0E10    ; = 1 hour
+        cld
+        lea     esi, [esi + ARP_PACKET.SenderMAC]
+        lea     edi, [esp + ARP_ENTRY.MAC]
+        movsd
+        movsw
+        mov     word[esp + ARP_ENTRY.Status], ARP_VALID_MAPPING; specify the type - a valid entry
+        mov     word[esp + ARP_ENTRY.TTL], 0x0E10; = 1 hour
 
   .search:
-    mov     edx, dword[esp + ARP_ENTRY.IP]  ;edx=IP-address, which we'll search
-    mov     ecx, dword[NumARP]              ;ecx=ARP-entries counter
-    jecxz   .add_to_end                     ;if ARP-entries number == 0
-    imul    eax, ecx, ARP_ENTRY_SIZE        ;eax=current table size(in bytes)
+        mov     edx, dword[esp + ARP_ENTRY.IP];edx=IP-address, which we'll search
+        mov     ecx, dword[NumARP]          ;ecx=ARP-entries counter
+        jecxz   .add_to_end                 ;if ARP-entries number == 0
+        imul    eax, ecx, ARP_ENTRY_SIZE    ;eax=current table size(in bytes)
   @@:
-    sub     eax, ARP_ENTRY_SIZE
-    cmp     dword[ebx + eax + ARP_ENTRY.IP], edx
-    loopnz  @b
-    jz      .replace       ; found, replace existing entry, ptr to it is in eax
+        sub     eax, ARP_ENTRY_SIZE
+        cmp     dword[ebx + eax + ARP_ENTRY.IP], edx
+        loopnz  @b
+        jz      .replace   ; found, replace existing entry, ptr to it is in eax
 
   .add_to_end:
     ;else add to end
-    or      eax,-1    ;set eax=0xFFFFFFFF if adding is impossible
-    mov     ecx, dword[NumARP]
-    cmp     ecx, ARP_TABLE_SIZE
-    je      .add_exit   ;if arp-entries number is equal to arp-table maxsize
+        or      eax, -1;set eax=0xFFFFFFFF if adding is impossible
+        mov     ecx, dword[NumARP]
+        cmp     ecx, ARP_TABLE_SIZE
+        je      .add_exit;if arp-entries number is equal to arp-table maxsize
 
-    imul    eax, dword[NumARP], ARP_ENTRY_SIZE ;eax=ptr to end of ARPTable
-    inc     dword [NumARP]    ;increase ARP-entries counter
+        imul    eax, dword[NumARP], ARP_ENTRY_SIZE;eax=ptr to end of ARPTable
+        inc     dword [NumARP];increase ARP-entries counter
 
   .replace:
-    cld
-    mov     esi, esp              ;esp=base of ARP-entry, that will be added
-    lea     edi, [ebx + eax]      ;ebx + eax=ARPTable_base + ARP-entry_base(where we will add)
-    mov     ecx,ARP_ENTRY_SIZE/2  ;ARP_ENTRY_SIZE must be even number!!!
-    rep     movsw
+        cld
+        mov     esi, esp          ;esp=base of ARP-entry, that will be added
+        lea     edi, [ebx + eax]  ;ebx + eax=ARPTable_base + ARP-entry_base(where we will add)
+        mov     ecx, ARP_ENTRY_SIZE/2;ARP_ENTRY_SIZE must be even number!!!
+        rep movsw
 
-    mov     ecx, ARP_ENTRY_SIZE
-    xor     edx, edx  ;"div" takes operand from EDX:EAX
-    div     ecx       ;eax=index of entry, which has been added
+        mov     ecx, ARP_ENTRY_SIZE
+        xor     edx, edx;"div" takes operand from EDX:EAX
+        div     ecx   ;eax=index of entry, which has been added
 
 .add_exit:
-    add     esp, ARP_ENTRY_SIZE   ;free stack
-    jmp     .exit
+        add     esp, ARP_ENTRY_SIZE;free stack
+        jmp     .exit
 ;;END ADD
 
 ;;BEGIN DEL
@@ -280,21 +281,21 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx,\
 ;;  EAX=not defined
 ;;
 .del:
-    mov     esi, [Index]
-    imul    esi, ARP_ENTRY_SIZE
+        mov     esi, [Index]
+        imul    esi, ARP_ENTRY_SIZE
 
-    mov     ecx, (ARP_TABLE_SIZE - 1) * ARP_ENTRY_SIZE
-    sub     ecx, esi
+        mov     ecx, (ARP_TABLE_SIZE - 1) * ARP_ENTRY_SIZE
+        sub     ecx, esi
 
-    lea     edi, [ebx + esi]            ;edi=ptr to entry that should be deleted
-    lea     esi, [edi + ARP_ENTRY_SIZE] ;esi=ptr to next entry
+        lea     edi, [ebx + esi]        ;edi=ptr to entry that should be deleted
+        lea     esi, [edi + ARP_ENTRY_SIZE];esi=ptr to next entry
 
-    shr     ecx,1      ;ecx/2 => ARP_ENTRY_SIZE MUST BE EVEN NUMBER!
-    cld
-    rep     movsw
+        shr     ecx, 1 ;ecx/2 => ARP_ENTRY_SIZE MUST BE EVEN NUMBER!
+        cld
+        rep movsw
 
-    dec     dword[NumARP] ;decrease arp-entries counter
-    jmp     .exit
+        dec     dword[NumARP];decrease arp-entries counter
+        jmp     .exit
 ;;END DEL
 
 ;;BEGIN GET
@@ -306,13 +307,13 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx,\
 ;;  EAX=not defined
 ;;
 .get:
-    mov     esi, [Index]
-    imul    esi, ARP_ENTRY_SIZE   ;esi=ptr to required ARP_ENTRY
-    mov     edi, [Extra]          ;edi=buffer for reading
-    mov     ecx, ARP_ENTRY_SIZE/2 ; must be even number!!!
-    cld
-    rep     movsw
-    jmp     .exit
+        mov     esi, [Index]
+        imul    esi, ARP_ENTRY_SIZE;esi=ptr to required ARP_ENTRY
+        mov     edi, [Extra]      ;edi=buffer for reading
+        mov     ecx, ARP_ENTRY_SIZE/2; must be even number!!!
+        cld
+        rep movsw
+        jmp     .exit
 ;;END GET
 
 ;;BEGIN IP_TO_MAC
@@ -335,11 +336,11 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx,\
 ;;  
 .ip_to_mac:
 
-    xor     eax, eax
-    mov     edi, dword[Extra]
-    cld
-    stosd
-    stosw
+        xor     eax, eax
+        mov     edi, dword[Extra]
+        cld
+        stosd
+        stosw
 
 
     ; first, check destination IP to see if it is on 'this' network.
@@ -349,45 +350,45 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx,\
     ; else
     ;  destination is remote, so pass to gateway
 
-    mov     eax, [Index]       ;eax=required IP
-    mov     esi, eax
-    and     esi, [subnet_mask]
-    mov     ecx, [stack_ip]
-    and     ecx, [subnet_mask]
-    cmp     esi, ecx
-    je      @f        ;if we and target IP are located in the same network
-    mov     eax, [gateway_ip]
-    mov     [Index], eax
+        mov     eax, [Index]   ;eax=required IP
+        mov     esi, eax
+        and     esi, [subnet_mask]
+        mov     ecx, [stack_ip]
+        and     ecx, [subnet_mask]
+        cmp     esi, ecx
+        je      @f    ;if we and target IP are located in the same network
+        mov     eax, [gateway_ip]
+        mov     [Index], eax
   @@:
 
-    cmp     dword[NumARP], 0
-    je      .ip_to_mac_send_request ;if ARP-table not contain an entries, we have to request IP.
+        cmp     dword[NumARP], 0
+        je      .ip_to_mac_send_request;if ARP-table not contain an entries, we have to request IP.
                                     ;EAX will be containing a zero, it's equal to ARP_NO_ENTRY
 
-    mov     ecx, dword[NumARP]
-    imul    esi, ecx, ARP_ENTRY_SIZE  ;esi=current ARP-table size
+        mov     ecx, dword[NumARP]
+        imul    esi, ecx, ARP_ENTRY_SIZE;esi=current ARP-table size
 
   @@:
-    sub     esi, ARP_ENTRY_SIZE
-    cmp     [ebx + esi], eax         ; ebx=ARPTable base
-    loopnz  @b                       ; Return back if non match
-    jnz     .ip_to_mac_send_request  ; and request IP->MAC if none found in the table
+        sub     esi, ARP_ENTRY_SIZE
+        cmp     [ebx + esi], eax     ; ebx=ARPTable base
+        loopnz  @b                   ; Return back if non match
+        jnz     .ip_to_mac_send_request; and request IP->MAC if none found in the table
 
     ; Return the entry status in eax
-    movzx   eax, word[ebx + esi + ARP_ENTRY.Status]
+        movzx   eax, word[ebx + esi + ARP_ENTRY.Status]
 
     ; esi holds index
-    cld
-    lea     esi, [ebx + esi + ARP_ENTRY.MAC]
-    mov     edi, [Extra]   ;edi=ptr to buffer for write MAC
-    movsd
-    movsw
-    jmp     .exit
+        cld
+        lea     esi, [ebx + esi + ARP_ENTRY.MAC]
+        mov     edi, [Extra];edi=ptr to buffer for write MAC
+        movsd
+        movsw
+        jmp     .exit
 
   .ip_to_mac_send_request:
-    stdcall arp_request,[Index],stack_ip,node_addr  ;TargetIP,SenderIP_ptr,SenderMAC_ptr
-    mov     eax, ARP_NO_ENTRY
-    jmp     .exit
+        stdcall arp_request, [Index], stack_ip, node_addr;TargetIP,SenderIP_ptr,SenderMAC_ptr
+        mov     eax, ARP_NO_ENTRY
+        jmp     .exit
 
 ;;END IP_TO_MAC
 
@@ -399,12 +400,12 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx,\
 ;;OUT:
 ;;  EAX=ARP-entries number in the ARPTable
   .get_entries_number:
-    mov     eax, dword[NumARP]
-    jmp     .exit
+        mov     eax, dword[NumARP]
+        jmp     .exit
 ;;END GET_ENTRIES_NUMBER
 
 .exit:
-    ret
+        ret
 endp
 
 
@@ -428,52 +429,52 @@ arp_handler:
     ; Yes - So construct a response message.
     ; Send this message to the ethernet card for transmission
 
-    stdcall arp_table_manager,ARP_TABLE_ADD,EXTRA_IS_ARP_PACKET_PTR,ETH_FRAME.Data + ARP_PACKET
+        stdcall arp_table_manager, ARP_TABLE_ADD, EXTRA_IS_ARP_PACKET_PTR, ETH_FRAME.Data + ARP_PACKET
 
-    inc     dword[arp_rx_count] ;increase ARP-packets counter
+        inc     dword[arp_rx_count];increase ARP-packets counter
 
-    cmp     word[ETH_FRAME.Data + ARP_PACKET.Opcode], ARP_REQ_OPCODE  ; Is this a request packet?
-    jne     .exit            ; No - so exit
+        cmp     word[ETH_FRAME.Data + ARP_PACKET.Opcode], ARP_REQ_OPCODE; Is this a request packet?
+        jne     .exit        ; No - so exit
 
-    mov     eax, [stack_ip] 
-    cmp     eax, dword[ETH_FRAME.Data + ARP_PACKET.TargetIP]         ; Is it looking for my IP address?
-    jne     .exit            ; No - so quit now
+        mov     eax, [stack_ip]
+        cmp     eax, dword[ETH_FRAME.Data + ARP_PACKET.TargetIP]     ; Is it looking for my IP address?
+        jne     .exit        ; No - so quit now
 
     ; OK, it is a request for my MAC address. Build the frame and send it
     ; We can reuse the packet.
 
-    mov     word[ETH_FRAME.Data + ARP_PACKET.Opcode], ARP_REP_OPCODE
+        mov     word[ETH_FRAME.Data + ARP_PACKET.Opcode], ARP_REP_OPCODE
 
-    cld
-    mov     esi, ETH_FRAME.Data + ARP_PACKET.SenderMAC
-    mov     edi, ETH_FRAME.Data + ARP_PACKET.TargetMAC
-    movsd
-    movsw
+        cld
+        mov     esi, ETH_FRAME.Data + ARP_PACKET.SenderMAC
+        mov     edi, ETH_FRAME.Data + ARP_PACKET.TargetMAC
+        movsd
+        movsw
 
-    mov     esi, ETH_FRAME.Data + ARP_PACKET.SenderIP
-    mov     edi, ETH_FRAME.Data + ARP_PACKET.TargetIP
-    movsd
+        mov     esi, ETH_FRAME.Data + ARP_PACKET.SenderIP
+        mov     edi, ETH_FRAME.Data + ARP_PACKET.TargetIP
+        movsd
 
-    mov     esi, node_addr
-    mov     edi, ETH_FRAME.Data + ARP_PACKET.SenderMAC
-    movsd
-    movsw
+        mov     esi, node_addr
+        mov     edi, ETH_FRAME.Data + ARP_PACKET.SenderMAC
+        movsd
+        movsw
 
-    mov     esi, stack_ip
-    mov     edi, ETH_FRAME.Data + ARP_PACKET.SenderIP
-    movsd
+        mov     esi, stack_ip
+        mov     edi, ETH_FRAME.Data + ARP_PACKET.SenderIP
+        movsd
 
     ; Now, send it!
-    mov     edi, ETH_FRAME.Data + ARP_PACKET.TargetMAC   ;ptr to destination MAC address
-    mov     bx, ETHER_ARP               ;type of protocol
-    mov     ecx, 28                     ;data size
-    mov     esi, ETH_FRAME.Data + ARP_PACKET             ;ptr to data
-    push    ebp
-    call    dword [drvr_transmit]       ;transmit packet
-    pop     ebp
+        mov     edi, ETH_FRAME.Data + ARP_PACKET.TargetMAC;ptr to destination MAC address
+        mov     bx, ETHER_ARP           ;type of protocol
+        mov     ecx, 28                 ;data size
+        mov     esi, ETH_FRAME.Data + ARP_PACKET         ;ptr to data
+        push    ebp
+        call    dword [drvr_transmit]   ;transmit packet
+        pop     ebp
 
   .exit:
-    ret
+        ret
 
 
 ;***************************************************************************
@@ -495,62 +496,62 @@ arp_handler:
 proc arp_request stdcall uses ebx esi edi,\
     TargetIP:DWORD, SenderIP_ptr:DWORD, SenderMAC_ptr:DWORD
 
-    inc     dword[arp_tx_count]  ; increase counter
+        inc     dword[arp_tx_count]; increase counter
 
-    sub     esp, 28  ; allocate memory for ARP_PACKET
+        sub     esp, 28; allocate memory for ARP_PACKET
 
-    mov     word[esp + ARP_PACKET.HardwareType],0x0100 ;Ethernet
-    mov     word[esp + ARP_PACKET.ProtocolType],0x0008 ;IP
-    mov     byte[esp + ARP_PACKET.HardwareSize],0x06   ;MAC-addr length
-    mov     byte[esp + ARP_PACKET.ProtocolSize],0x04   ;IP-addr length
-    mov     word[esp + ARP_PACKET.Opcode],0x0100       ;Request
+        mov     word[esp + ARP_PACKET.HardwareType], 0x0100;Ethernet
+        mov     word[esp + ARP_PACKET.ProtocolType], 0x0008;IP
+        mov     byte[esp + ARP_PACKET.HardwareSize], 0x06;MAC-addr length
+        mov     byte[esp + ARP_PACKET.ProtocolSize], 0x04;IP-addr length
+        mov     word[esp + ARP_PACKET.Opcode], 0x0100  ;Request
 
-    cld
-    mov     esi,[SenderMAC_ptr]
-    lea     edi,[esp + ARP_PACKET.SenderMAC]       ;Our MAC-addr
-    movsd
-    movsw
+        cld
+        mov     esi, [SenderMAC_ptr]
+        lea     edi, [esp + ARP_PACKET.SenderMAC]  ;Our MAC-addr
+        movsd
+        movsw
 
-    mov     esi,[SenderIP_ptr]
-    lea     edi,[esp + ARP_PACKET.SenderIP]        ;Our IP-addr
-    movsd
+        mov     esi, [SenderIP_ptr]
+        lea     edi, [esp + ARP_PACKET.SenderIP]   ;Our IP-addr
+        movsd
 
-    xor     eax, eax
-    lea     edi, [esp + ARP_PACKET.TargetMAC]      ;Required MAC-addr(zeroed)
-    stosd
-    stosw
+        xor     eax, eax
+        lea     edi, [esp + ARP_PACKET.TargetMAC]  ;Required MAC-addr(zeroed)
+        stosd
+        stosw
 
-    mov     esi, dword[TargetIP]
-    mov     dword[esp + ARP_PACKET.TargetIP],esi   ;Required IP-addr(we get it as function parameter)
+        mov     esi, dword[TargetIP]
+        mov     dword[esp + ARP_PACKET.TargetIP], esi;Required IP-addr(we get it as function parameter)
 
     ; Now, send it!
-    mov     edi, broadcast_add     ; Pointer to 48 bit destination address
-    mov     bx, ETHER_ARP          ; Type of packet
-    mov     ecx, 28                ; size of packet
-    lea     esi, [esp + ARP_PACKET]; pointer to packet data
-    push    ebp
-    call    dword [drvr_transmit]  ; Call the drivers transmit function
-    pop     ebp
+        mov     edi, broadcast_add ; Pointer to 48 bit destination address
+        mov     bx, ETHER_ARP      ; Type of packet
+        mov     ecx, 28            ; size of packet
+        lea     esi, [esp + ARP_PACKET]; pointer to packet data
+        push    ebp
+        call    dword [drvr_transmit]; Call the drivers transmit function
+        pop     ebp
 
-    add     esp, 28  ; free memory, allocated before for ARP_PACKET
+        add     esp, 28; free memory, allocated before for ARP_PACKET
 
     ; Add an entry in the ARP table, awaiting response
-    sub     esp, ARP_ENTRY_SIZE    ;allocate memory for ARP-entry
+        sub     esp, ARP_ENTRY_SIZE;allocate memory for ARP-entry
 
-    mov     esi, dword[TargetIP]
-    mov     dword[esp + ARP_ENTRY.IP],esi
+        mov     esi, dword[TargetIP]
+        mov     dword[esp + ARP_ENTRY.IP], esi
 
-    lea     edi, [esp + ARP_ENTRY.MAC]
-    xor     eax, eax
-    stosd
-    stosw
+        lea     edi, [esp + ARP_ENTRY.MAC]
+        xor     eax, eax
+        stosd
+        stosw
 
-    mov     word[esp + ARP_ENTRY.Status], ARP_AWAITING_RESPONSE
-    mov     word[esp + ARP_ENTRY.TTL], 0x000A  ; 10 seconds
+        mov     word[esp + ARP_ENTRY.Status], ARP_AWAITING_RESPONSE
+        mov     word[esp + ARP_ENTRY.TTL], 0x000A; 10 seconds
 
-    stdcall arp_table_manager,ARP_TABLE_ADD,EXTRA_IS_ARP_ENTRY_PTR,esp
-    add     esp, ARP_ENTRY_SIZE  ; free memory
+        stdcall arp_table_manager, ARP_TABLE_ADD, EXTRA_IS_ARP_ENTRY_PTR, esp
+        add     esp, ARP_ENTRY_SIZE; free memory
 
 .exit:
-    ret
+        ret
 endp

@@ -1,94 +1,94 @@
 ; Listing generator
 ; LocoDelAssembly 2007.06.01
 
-INSTRUCTIONS equ bt in ja jb jc je jg jl jo jp js jz or 		       \
-		 aaa aad aam aas adc add and bsf bsr btc btr bts cbw cdq clc   \
-		 cld cli cmc cmp cqo cwd daa das dec div fld fst hlt inc ins   \
-		 int jae jbe jge jle jmp jna jnb jnc jne jng jnl jno jnp jns   \
-		 jnz jpe jpo lar lds lea les lfs lgs lsl lss ltr mov mul neg   \
-		 nop not out pop por rcl rcr ret rol ror rsm sal sar sbb shl   \
-		 shr stc std sti str sub ud2 xor			       \
-		 arpl call cdqe clgi clts cmps cwde emms fabs fadd fbld fchs   \
-		 fcom fcos fdiv feni fild fist fld1 fldz fmul fnop fsin fstp   \
-		 fsub ftst fxam fxch idiv imul insb insd insw int1 int3 into   \
-		 invd iret jcxz jnae jnbe jnge jnle lahf lgdt lidt lldt lmsw   \
-		 lods loop movd movq movs orpd orps outs pand popa popd popf   \
-		 popq popw push pxor retd retf retn retq retw sahf salc scas   \
-		 seta setb setc sete setg setl seto setp sets setz sgdt shld   \
-		 shrd sidt sldt smsw stgi stos test verr verw wait xadd xchg   \
-		 xlat							       \
-		 addpd addps addsd addss andpd andps bound bswap cmova cmovb   \
-		 cmovc cmove cmovg cmovl cmovo cmovp cmovs cmovz cmppd cmpps   \
-		 cmpsb cmpsd cmpsq cmpss cmpsw cpuid divpd divps divsd divss   \
-		 enter f2xm1 faddp fbstp fclex fcomi fcomp fdisi fdivp fdivr   \
-		 femms ffree fiadd ficom fidiv fimul finit fistp fisub fldcw   \
-		 fldpi fmulp fneni fprem fptan fsave fsqrt fstcw fstsw fsubp   \
-		 fsubr fucom fwait fyl2x icebp iretd iretq iretw jecxz jrcxz   \
-		 lddqu leave lodsb lodsd lodsq lodsw loopd loope loopq loopw   \
-		 loopz maxpd maxps maxsd maxss minpd minps minsd minss movsb   \
-		 movsd movsq movss movsw movsx movzx mulpd mulps mulsd mulss   \
-		 mwait outsb outsd outsw pabsb pabsd pabsw paddb paddd paddq   \
-		 paddw pandn pause pavgb pavgw pf2id pf2iw pfacc pfadd pfmax   \
-		 pfmin pfmul pfrcp pfsub pi2fd pi2fw popad popaw popfd popfq   \
-		 popfw pslld psllq psllw psrad psraw psrld psrlq psrlw psubb   \
-		 psubd psubq psubw pusha pushd pushf pushq pushw rcpps rcpss   \
-		 rdmsr rdpmc rdtsc retfd retfq retfw retnd retnq retnw scasb   \
-		 scasd scasq scasw setae setbe setge setle setna setnb setnc   \
-		 setne setng setnl setno setnp setns setnz setpe setpo stosb   \
-		 stosd stosq stosw subpd subps subsd subss vmrun vmxon wrmsr   \
-		 xlatb xorpd xorps					       \
-		 andnpd andnps cmovae cmovbe cmovge cmovle cmovna cmovnb cmovnc\
-		 cmovne cmovng cmovnl cmovno cmovnp cmovns cmovnz cmovpe cmovpo\
-		 comisd comiss fcmovb fcmove fcmovu fcomip fcompp fdivrp ffreep\
-		 ficomp fidivr fisttp fisubr fldenv fldl2e fldl2t fldlg2 fldln2\
-		 fnclex fndisi fninit fnsave fnstcw fnstsw fpatan fprem1 frstor\
-		 frstpm fscale fsetpm fstenv fsubrp fucomi fucomp fxsave haddpd\
-		 haddps hsubpd hsubps invlpg lfence looped loopeq loopew loopne\
-		 loopnz loopzd loopzq loopzw mfence movapd movaps movdqa movdqu\
-		 movhpd movhps movlpd movlps movnti movntq movsxd movupd movups\
-		 paddsb paddsw pextrw pfnacc pfsubr phaddd phaddw phsubd phsubw\
-		 pinsrw pmaxsw pmaxub pminsw pminub pmulhw pmullw psadbw pshufb\
-		 pshufd pshufw psignb psignd psignw pslldq psrldq psubsb psubsw\
-		 pswapd pushad pushaw pushfd pushfq pushfw rdmsrq rdtscp setalc\
-		 setnae setnbe setnge setnle sfence shufpd shufps skinit sqrtpd\
-		 sqrtps sqrtsd sqrtss swapgs sysret vmcall vmload vmread vmsave\
-		 vmxoff wbinvd wrmsrq					       \
-		 clflush cmovnae cmovnbe cmovnge cmovnle cmpeqpd cmpeqps       \
-		 cmpeqsd cmpeqss cmplepd cmpleps cmplesd cmpless cmpltpd       \
-		 cmpltps cmpltsd cmpltss cmpxchg fcmovbe fcmovnb fcmovne       \
-		 fcmovnu fdecstp fincstp fnstenv frndint fsincos fucomip       \
-		 fucompp fxrstor fxtract fyl2xp1 invlpga ldmxcsr loopned       \
-		 loopneq loopnew loopnzd loopnzq loopnzw monitor movddup       \
-		 movdq2q movhlps movlhps movntdq movntpd movntps movq2dq       \
-		 paddusb paddusw palignr pavgusb pcmpeqb pcmpeqd pcmpeqw       \
-		 pcmpgtb pcmpgtd pcmpgtw pfcmpeq pfcmpge pfcmpgt pfpnacc       \
-		 pfrsqrt phaddsw phsubsw pmaddwd pmulhrw pmulhuw pmuludq       \
-		 pshufhw pshuflw psubusb psubusw rsqrtps rsqrtss stmxcsr       \
-		 syscall sysexit sysretq ucomisd ucomiss vmclear vmmcall       \
-		 vmptrld vmptrst vmwrite				       \
-		 addsubpd addsubps cmpneqpd cmpneqps cmpneqsd cmpneqss cmpnlepd\
-		 cmpnleps cmpnlesd cmpnless cmpnltpd cmpnltps cmpnltsd cmpnltss\
-		 cmpordpd cmpordps cmpordsd cmpordss cvtdq2pd cvtdq2ps cvtpd2dq\
-		 cvtpd2pi cvtpd2ps cvtpi2pd cvtpi2ps cvtps2dq cvtps2pd cvtps2pi\
-		 cvtsd2si cvtsd2ss cvtsi2sd cvtsi2ss cvtss2sd cvtss2si fcmovnbe\
-		 maskmovq movmskpd movmskps movshdup movsldup packssdw packsswb\
-		 packuswb pfrcpit1 pfrcpit2 pfrsqit1 pmovmskb pmulhrsw prefetch\
-		 sysenter sysexitq unpckhpd unpckhps unpcklpd unpcklps vmlaunch\
-		 vmresume						       \
-		 cmpxchg8b cvttpd2dq cvttpd2pi cvttps2dq cvttps2pi cvttsd2si   \
-		 cvttss2si pmaddubsw prefetchw punpckhbw punpckhdq punpckhwd   \
-		 punpcklbw punpckldq punpcklwd				       \
-		 cmpunordpd cmpunordps cmpunordsd cmpunordss cmpxchg16b        \
-		 loadall286 loadall386 maskmovdqu prefetcht0 prefetcht1        \
-		 prefetcht2 punpckhqdq punpcklqdq prefetchnta
+INSTRUCTIONS equ bt in ja jb jc je jg jl jo jp js jz or                        \
+        aaa     aad aam aas adc add and bsf bsr btc btr bts cbw cdq clc \
+                cld cli cmc cmp cqo cwd daa das dec div fld fst hlt inc ins   \
+                int jae jbe jge jle jmp jna jnb jnc jne jng jnl jno jnp jns   \
+                jnz jpe jpo lar lds lea les lfs lgs lsl lss ltr mov mul neg   \
+                nop not out pop por rcl rcr ret rol ror rsm sal sar sbb shl   \
+                shr stc std sti str sub ud2 xor                               \
+                arpl call cdqe clgi clts cmps cwde emms fabs fadd fbld fchs   \
+                fcom fcos fdiv feni fild fist fld1 fldz fmul fnop fsin fstp   \
+                fsub ftst fxam fxch idiv imul insb insd insw int1 int3 into   \
+                invd iret jcxz jnae jnbe jnge jnle lahf lgdt lidt lldt lmsw   \
+                lods loop movd movq movs orpd orps outs pand popa popd popf   \
+                popq popw push pxor retd retf retn retq retw sahf salc scas   \
+                seta setb setc sete setg setl seto setp sets setz sgdt shld   \
+                shrd sidt sldt smsw stgi stos test verr verw wait xadd xchg   \
+                xlat                                                          \
+                addpd addps addsd addss andpd andps bound bswap cmova cmovb   \
+                cmovc cmove cmovg cmovl cmovo cmovp cmovs cmovz cmppd cmpps   \
+                cmpsb cmpsd cmpsq cmpss cmpsw cpuid divpd divps divsd divss   \
+                enter f2xm1 faddp fbstp fclex fcomi fcomp fdisi fdivp fdivr   \
+                femms ffree fiadd ficom fidiv fimul finit fistp fisub fldcw   \
+                fldpi fmulp fneni fprem fptan fsave fsqrt fstcw fstsw fsubp   \
+                fsubr fucom fwait fyl2x icebp iretd iretq iretw jecxz jrcxz   \
+                lddqu leave lodsb lodsd lodsq lodsw loopd loope loopq loopw   \
+                loopz maxpd maxps maxsd maxss minpd minps minsd minss movsb   \
+                movsd movsq movss movsw movsx movzx mulpd mulps mulsd mulss   \
+                mwait outsb outsd outsw pabsb pabsd pabsw paddb paddd paddq   \
+                paddw pandn pause pavgb pavgw pf2id pf2iw pfacc pfadd pfmax   \
+                pfmin pfmul pfrcp pfsub pi2fd pi2fw popad popaw popfd popfq   \
+                popfw pslld psllq psllw psrad psraw psrld psrlq psrlw psubb   \
+                psubd psubq psubw pusha pushd pushf pushq pushw rcpps rcpss   \
+                rdmsr rdpmc rdtsc retfd retfq retfw retnd retnq retnw scasb   \
+                scasd scasq scasw setae setbe setge setle setna setnb setnc   \
+                setne setng setnl setno setnp setns setnz setpe setpo stosb   \
+                stosd stosq stosw subpd subps subsd subss vmrun vmxon wrmsr   \
+                xlatb xorpd xorps                                             \
+                andnpd andnps cmovae cmovbe cmovge cmovle cmovna cmovnb cmovnc\
+                cmovne cmovng cmovnl cmovno cmovnp cmovns cmovnz cmovpe cmovpo\
+                comisd comiss fcmovb fcmove fcmovu fcomip fcompp fdivrp ffreep\
+                ficomp fidivr fisttp fisubr fldenv fldl2e fldl2t fldlg2 fldln2\
+                fnclex fndisi fninit fnsave fnstcw fnstsw fpatan fprem1 frstor\
+                frstpm fscale fsetpm fstenv fsubrp fucomi fucomp fxsave haddpd\
+                haddps hsubpd hsubps invlpg lfence looped loopeq loopew loopne\
+                loopnz loopzd loopzq loopzw mfence movapd movaps movdqa movdqu\
+                movhpd movhps movlpd movlps movnti movntq movsxd movupd movups\
+                paddsb paddsw pextrw pfnacc pfsubr phaddd phaddw phsubd phsubw\
+                pinsrw pmaxsw pmaxub pminsw pminub pmulhw pmullw psadbw pshufb\
+                pshufd pshufw psignb psignd psignw pslldq psrldq psubsb psubsw\
+                pswapd pushad pushaw pushfd pushfq pushfw rdmsrq rdtscp setalc\
+                setnae setnbe setnge setnle sfence shufpd shufps skinit sqrtpd\
+                sqrtps sqrtsd sqrtss swapgs sysret vmcall vmload vmread vmsave\
+                vmxoff wbinvd wrmsrq                                          \
+                clflush cmovnae cmovnbe cmovnge cmovnle cmpeqpd cmpeqps       \
+                cmpeqsd cmpeqss cmplepd cmpleps cmplesd cmpless cmpltpd       \
+                cmpltps cmpltsd cmpltss cmpxchg fcmovbe fcmovnb fcmovne       \
+                fcmovnu fdecstp fincstp fnstenv frndint fsincos fucomip       \
+                fucompp fxrstor fxtract fyl2xp1 invlpga ldmxcsr loopned       \
+                loopneq loopnew loopnzd loopnzq loopnzw monitor movddup       \
+                movdq2q movhlps movlhps movntdq movntpd movntps movq2dq       \
+                paddusb paddusw palignr pavgusb pcmpeqb pcmpeqd pcmpeqw       \
+                pcmpgtb pcmpgtd pcmpgtw pfcmpeq pfcmpge pfcmpgt pfpnacc       \
+                pfrsqrt phaddsw phsubsw pmaddwd pmulhrw pmulhuw pmuludq       \
+                pshufhw pshuflw psubusb psubusw rsqrtps rsqrtss stmxcsr       \
+                syscall sysexit sysretq ucomisd ucomiss vmclear vmmcall       \
+                vmptrld vmptrst vmwrite                                       \
+                addsubpd addsubps cmpneqpd cmpneqps cmpneqsd cmpneqss cmpnlepd\
+                cmpnleps cmpnlesd cmpnless cmpnltpd cmpnltps cmpnltsd cmpnltss\
+                cmpordpd cmpordps cmpordsd cmpordss cvtdq2pd cvtdq2ps cvtpd2dq\
+                cvtpd2pi cvtpd2ps cvtpi2pd cvtpi2ps cvtps2dq cvtps2pd cvtps2pi\
+                cvtsd2si cvtsd2ss cvtsi2sd cvtsi2ss cvtss2sd cvtss2si fcmovnbe\
+                maskmovq movmskpd movmskps movshdup movsldup packssdw packsswb\
+                packuswb pfrcpit1 pfrcpit2 pfrsqit1 pmovmskb pmulhrsw prefetch\
+                sysenter sysexitq unpckhpd unpckhps unpcklpd unpcklps vmlaunch\
+                vmresume                                                      \
+                cmpxchg8b cvttpd2dq cvttpd2pi cvttps2dq cvttps2pi cvttsd2si   \
+                cvttss2si pmaddubsw prefetchw punpckhbw punpckhdq punpckhwd   \
+                punpcklbw punpckldq punpcklwd                                 \
+                cmpunordpd cmpunordps cmpunordsd cmpunordss cmpxchg16b        \
+                loadall286 loadall386 maskmovdqu prefetcht0 prefetcht1        \
+                prefetcht2 punpckhqdq punpcklqdq prefetchnta
 
-PREFIXES equ	 rep lock repe repz repne repnz
+PREFIXES equ     rep lock repe repz repne repnz
 
 DATA_DEFINITORS  equ db dw du dd dp df dq dt file
-DATA_RESERVERS	 equ rb rw rd rp rf rq rt
+DATA_RESERVERS   equ rb rw rd rp rf rq rt
 
-CRLF		  equ 13, 10  ; Remove 13 for Linux
-MAX_BYTES	  equ 13
+CRLF              equ 13, 10  ; Remove 13 for Linux
+MAX_BYTES         equ 13
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MODE MACROSES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -118,7 +118,7 @@ local aux
   _USE = 32
 
   virtual at 0
-    xchg  eax, eax
+        xchg    eax, eax
     load aux byte from 0
 
     if aux = $66
@@ -234,25 +234,25 @@ forward
     \{
       match args, args
       \\{
-	if ~args eqtype ""
-	  irps arg, args
-	  \\\{
-	      display ' ', \\\`arg
-	  \\\}
-	else
-	  display " '", args, "'"
-	end if
+        if ~args eqtype ""
+          irps arg, args
+          \\\{
+              display ' ', \\\`arg
+          \\\}
+        else
+          display " '", args, "'"
+        end if
       \\}
     \}
     match =OFF, _RESOLVE_EQUATES
     \{
       if ~args eqtype ""
-	irps arg, args
-	\\{
-	    display ' ', \\`arg
-	\\}
+        irps arg, args
+        \\{
+            display ' ', \\`arg
+        \\}
       else
-	display " '", args, "'"
+        display " '", args, "'"
       end if
     \}
   end if
@@ -334,10 +334,10 @@ local aux
       display \`mnemonic
 
       virtual at 0
-	db \`mnemonic
-	repeat 11 - $
-	  display ' '
-	end repeat
+        db \`mnemonic
+        repeat 11 - $
+          display ' '
+        end repeat
       end virtual
 
       display_args args
@@ -384,11 +384,11 @@ local aux
       aux = aux + MAX_BYTES
 
       repeat ($ - aux + MAX_BYTES - 1) / MAX_BYTES
-	display_address aux
-	display_bytes aux
-	display CRLF
+        display_address aux
+        display_bytes aux
+        display CRLF
 
-	aux = aux + MAX_BYTES
+        aux = aux + MAX_BYTES
       end repeat
     \\}
 
@@ -424,11 +424,11 @@ local aux
       aux = aux + MAX_BYTES
 
       repeat ($ - aux + MAX_BYTES - 1) / MAX_BYTES
-	display_address aux
-	display_bytes aux
-	display CRLF
+        display_address aux
+        display_bytes aux
+        display CRLF
 
-	aux = aux + MAX_BYTES
+        aux = aux + MAX_BYTES
       end repeat
     \\}
 
@@ -532,7 +532,7 @@ macro enable_listing
     \\{
       irps ins, instructions
       \\\{
-	instruction ins
+        instruction ins
       \\\}
     \\}
 
@@ -540,7 +540,7 @@ macro enable_listing
     \\{
       irps prefix, prefixes
       \\\{
-	def_prefix prefix
+        def_prefix prefix
       \\\}
     \\}
 
@@ -548,7 +548,7 @@ macro enable_listing
     \\{
       irps def, data_definitors
       \\\{
-	data_define def
+        data_define def
       \\\}
     \\}
 
@@ -556,13 +556,13 @@ macro enable_listing
     \\{
       irps def, data_reservers
       \\\{
-	data_reserve def
+        data_reserve def
       \\\}
     \\}
   \}
 
   _MACROSES_INSTALLED equ 1
-  _LISTING	      equ 1
+  _LISTING            equ 1
 }
 
 macro disable_listing
@@ -630,6 +630,6 @@ macro disable [feature*]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 _MACROSES_INSTALLED equ 0
-_ON_VIRTUAL	    equ 0
+_ON_VIRTUAL         equ 0
 
 disable resolve_equates

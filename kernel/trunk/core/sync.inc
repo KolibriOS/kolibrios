@@ -26,34 +26,34 @@ macro WaitSimpleMutex name
 {
   local start_wait,ok
 start_wait=$
-  cli
-  cmp  [name],dword 0
-  jz   ok
-  sti
-  call change_task
-  jmp  start_wait
+        cli
+        cmp     [name], dword 0
+        jz      ok
+        sti
+        call    change_task
+        jmp     start_wait
 ok=$
-  push eax
-  mov  eax,dword [TASK_BASE+second_base_address]
-  mov  eax,[eax+TASKDATA.pid]
-  mov  [name],eax
-  pop  eax
-  sti
+        push    eax
+        mov     eax, dword [TASK_BASE+second_base_address]
+        mov     eax, [eax+TASKDATA.pid]
+        mov     [name], eax
+        pop     eax
+        sti
 }
 macro ReleaseSimpleMutex name
 {
-  mov  [name],dword 0
+        mov     [name], dword 0
 }
 macro TryWaitSimpleMutex name  ;result in eax and in flags
 {
   local ok,try_end
-  cmp  [name],dword 0
-  jz   ok
-  xor  eax,eax
-  jmp  try_end
+        cmp     [name], dword 0
+        jz      ok
+        xor     eax, eax
+        jmp     try_end
 ok=$
-  xor  eax,eax
-  inc  eax
+        xor     eax, eax
+        inc     eax
 try_end=$
 }
 macro SimpleCriticalSection name
@@ -67,50 +67,50 @@ macro SimpleCriticalSection name
 macro WaitSimpleCriticalSection name
 {
   local start_wait,first_wait,inc_counter,end_wait
-  push  eax
-  mov   eax,[TASK_BASE+second_base_address]
-  mov   eax,[eax+TASKDATA.pid]
+        push    eax
+        mov     eax, [TASK_BASE+second_base_address]
+        mov     eax, [eax+TASKDATA.pid]
 start_wait=$
-  cli
-  cmp   [name],dword 0
-  jz    first_wait
-  cmp   [name],eax
-  jz    inc_counter
-  sti
-  call  change_task
-  jmp   start_wait
+        cli
+        cmp     [name], dword 0
+        jz      first_wait
+        cmp     [name], eax
+        jz      inc_counter
+        sti
+        call    change_task
+        jmp     start_wait
 first_wait=$
-  mov   [name],eax
-  mov   [name+4],dword 1
-  jmp   end_wait
+        mov     [name], eax
+        mov     [name+4], dword 1
+        jmp     end_wait
 inc_counter=$
-  inc   dword [name+4]
+        inc     dword [name+4]
 end_wait=$
-  sti
-  pop   eax
+        sti
+        pop     eax
 }
 macro ReleaseSimpleCriticalSection name
 {
   local release_end
-  dec   dword [name+4]
-  jnz   release_end
-  mov   [name],dword 0
+        dec     dword [name+4]
+        jnz     release_end
+        mov     [name], dword 0
 release_end=$
 }
 macro TryWaitSimpleCriticalSection name ;result in eax and in flags
 {
   local ok,try_end
-  mov   eax,[CURRENT_TASK+second_base_address]
-  mov   eax,[eax+TASKDATA.pid]
-  cmp   [name],eax
-  jz    ok
-  cmp   [name],0
-  jz    ok
-  xor   eax,eax
-  jmp   try_end
+        mov     eax, [CURRENT_TASK+second_base_address]
+        mov     eax, [eax+TASKDATA.pid]
+        cmp     [name], eax
+        jz      ok
+        cmp     [name], 0
+        jz      ok
+        xor     eax, eax
+        jmp     try_end
 ok=$
-  xor   eax,eax
-  inc   eax
+        xor     eax, eax
+        inc     eax
 try_end=$
 }
 _cli equ call MEM_HeapLock

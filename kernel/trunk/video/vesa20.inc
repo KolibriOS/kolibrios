@@ -42,27 +42,27 @@ $Revision$
 ; ecx = 00 RR GG BB
 
 getpixel:
-     push    eax ebx edx edi
-     call    dword [GETPIXEL]
-     pop     edi edx ebx eax
-     ret
+        push    eax ebx edx edi
+        call    dword [GETPIXEL]
+        pop     edi edx ebx eax
+        ret
 
 Vesa20_getpixel24:
 ; eax = x
 ; ebx = y
-     imul    ebx, [BytesPerScanLine]    ; ebx = y * y multiplier
-     lea     edi, [eax+eax*2] ; edi = x*3
-     add     edi, ebx         ; edi = x*3+(y*y multiplier)
-     mov     ecx, [LFB_BASE+edi]
-     and     ecx, 0xffffff
-     ret
+        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
+        lea     edi, [eax+eax*2]; edi = x*3
+        add     edi, ebx      ; edi = x*3+(y*y multiplier)
+        mov     ecx, [LFB_BASE+edi]
+        and     ecx, 0xffffff
+        ret
 
 Vesa20_getpixel32:
-     imul    ebx, [BytesPerScanLine]    ; ebx = y * y multiplier
-     lea     edi, [ebx+eax*4] ; edi = x*4+(y*y multiplier)
-     mov     ecx, [LFB_BASE+edi]
-     and     ecx, 0xffffff
-     ret
+        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
+        lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
+        mov     ecx, [LFB_BASE+edi]
+        and     ecx, 0xffffff
+        ret
 
 ;*************************************************
 
@@ -102,195 +102,195 @@ align 16
 ; edi = parameter for 'get' function
 
 vesa20_putimage:
-     pushad
-     call    [_display.disable_mouse]
-     sub     esp, putimg.stack_data
+        pushad
+        call    [_display.disable_mouse]
+        sub     esp, putimg.stack_data
 ; save pointer to image
-     mov     [putimg.pti], ebx
+        mov     [putimg.pti], ebx
 ; unpack the size
-     mov     eax, ecx
-     and     ecx, 0xFFFF
-     shr     eax, 16
-     mov     [putimg.image_sx], eax
-     mov     [putimg.image_sy], ecx
+        mov     eax, ecx
+        and     ecx, 0xFFFF
+        shr     eax, 16
+        mov     [putimg.image_sx], eax
+        mov     [putimg.image_sy], ecx
 ; unpack the coordinates
-     mov     eax, edx
-     and     edx, 0xFFFF
-     shr     eax, 16
-     mov     [putimg.image_cx], eax
-     mov     [putimg.image_cy], edx
+        mov     eax, edx
+        and     edx, 0xFFFF
+        shr     eax, 16
+        mov     [putimg.image_cx], eax
+        mov     [putimg.image_cy], edx
 ; calculate absolute (i.e. screen) coordinates
-     mov     eax, [TASK_BASE]
-     mov     ebx, [eax-twdw + WDATA.box.left]
-     add     ebx, [putimg.image_cx]
-     mov     [putimg.abs_cx], ebx
-     mov     ebx, [eax-twdw + WDATA.box.top]
-     add     ebx, [putimg.image_cy]
-     mov     [putimg.abs_cy], ebx
+        mov     eax, [TASK_BASE]
+        mov     ebx, [eax-twdw + WDATA.box.left]
+        add     ebx, [putimg.image_cx]
+        mov     [putimg.abs_cx], ebx
+        mov     ebx, [eax-twdw + WDATA.box.top]
+        add     ebx, [putimg.image_cy]
+        mov     [putimg.abs_cy], ebx
 ; real_sx = MIN(wnd_sx-image_cx, image_sx);
-     mov     ebx, [eax-twdw + WDATA.box.width] ; ebx = wnd_sx
+        mov     ebx, [eax-twdw + WDATA.box.width]; ebx = wnd_sx
 ; \begin{diamond}[20.08.2006]
 ; note that WDATA.box.width is one pixel less than real window x-size
-     inc     ebx
+        inc     ebx
 ; \end{diamond}[20.08.2006]
-     sub     ebx, [putimg.image_cx]
-     ja      @f
-     add     esp, putimg.stack_data
-     popad
-     ret
+        sub     ebx, [putimg.image_cx]
+        ja      @f
+        add     esp, putimg.stack_data
+        popad
+        ret
 @@:
-     cmp     ebx, [putimg.image_sx]
-     jbe     .end_x
-     mov     ebx, [putimg.image_sx]
+        cmp     ebx, [putimg.image_sx]
+        jbe     .end_x
+        mov     ebx, [putimg.image_sx]
 .end_x:
-     mov     [putimg.real_sx], ebx
+        mov     [putimg.real_sx], ebx
 ; init real_sy
-     mov     ebx, [eax-twdw + WDATA.box.height] ; ebx = wnd_sy
+        mov     ebx, [eax-twdw + WDATA.box.height]; ebx = wnd_sy
 ; \begin{diamond}[20.08.2006]
-     inc     ebx
+        inc     ebx
 ; \end{diamond}[20.08.2006]
-     sub     ebx, [putimg.image_cy]
-     ja      @f
-     add     esp, putimg.stack_data
-     popad
-     ret
+        sub     ebx, [putimg.image_cy]
+        ja      @f
+        add     esp, putimg.stack_data
+        popad
+        ret
 @@:
-     cmp     ebx, [putimg.image_sy]
-     jbe     .end_y
-     mov     ebx, [putimg.image_sy]
+        cmp     ebx, [putimg.image_sy]
+        jbe     .end_y
+        mov     ebx, [putimg.image_sy]
 .end_y:
-     mov     [putimg.real_sy], ebx
+        mov     [putimg.real_sy], ebx
 ; line increment
-     mov     eax, [putimg.image_sx]
-     mov     ecx, [putimg.real_sx]
-     sub     eax, ecx
+        mov     eax, [putimg.image_sx]
+        mov     ecx, [putimg.real_sx]
+        sub     eax, ecx
 ;;     imul    eax, [putimg.source_bpp]
 ;     lea     eax, [eax + eax * 2]
-     call    esi
-     add     eax, [putimg.arg_0]
-     mov     [putimg.line_increment], eax
+        call    esi
+        add     eax, [putimg.arg_0]
+        mov     [putimg.line_increment], eax
 ; winmap new line increment
-     mov     eax, [Screen_Max_X]
-     inc     eax
-     sub     eax, [putimg.real_sx]
-     mov     [putimg.winmap_newline], eax
+        mov     eax, [Screen_Max_X]
+        inc     eax
+        sub     eax, [putimg.real_sx]
+        mov     [putimg.winmap_newline], eax
 ; screen new line increment
-     mov     eax, [BytesPerScanLine]
-     movzx   ebx, byte [ScreenBPP]
-     shr     ebx, 3
-     imul    ecx, ebx
-     sub     eax, ecx
-     mov     [putimg.screen_newline], eax
+        mov     eax, [BytesPerScanLine]
+        movzx   ebx, byte [ScreenBPP]
+        shr     ebx, 3
+        imul    ecx, ebx
+        sub     eax, ecx
+        mov     [putimg.screen_newline], eax
 ; pointer to image
-     mov     esi, [putimg.pti]
+        mov     esi, [putimg.pti]
 ; pointer to screen
-     mov     edx, [putimg.abs_cy]
-     imul    edx, [BytesPerScanLine]
-     mov     eax, [putimg.abs_cx]
-     movzx   ebx, byte [ScreenBPP]
-     shr     ebx, 3
-     imul    eax, ebx
-     add     edx, eax
+        mov     edx, [putimg.abs_cy]
+        imul    edx, [BytesPerScanLine]
+        mov     eax, [putimg.abs_cx]
+        movzx   ebx, byte [ScreenBPP]
+        shr     ebx, 3
+        imul    eax, ebx
+        add     edx, eax
 ; pointer to pixel map
-     mov     eax, [putimg.abs_cy]
-     imul    eax, [Screen_Max_X]
-     add     eax, [putimg.abs_cy]
-     add     eax, [putimg.abs_cx]
-     add     eax, [_WinMapAddress]
-     xchg    eax, ebp
+        mov     eax, [putimg.abs_cy]
+        imul    eax, [Screen_Max_X]
+        add     eax, [putimg.abs_cy]
+        add     eax, [putimg.abs_cx]
+        add     eax, [_WinMapAddress]
+        xchg    eax, ebp
 ; get process number
-     mov     ebx, [CURRENT_TASK]
-     cmp     byte [ScreenBPP], 32
-     je      put_image_end_32
+        mov     ebx, [CURRENT_TASK]
+        cmp     byte [ScreenBPP], 32
+        je      put_image_end_32
 ;put_image_end_24:
-     mov     edi, [putimg.real_sy]
+        mov     edi, [putimg.real_sy]
 align   4
 .new_line:
-     mov     ecx, [putimg.real_sx]
+        mov     ecx, [putimg.real_sx]
 ;     push    ebp edx
 align   4
 .new_x:
-     push    [putimg.edi]
-     mov     eax, [putimg.ebp+4]
-     call    eax
-     cmp     [ebp], bl
-     jne     .skip
+        push    [putimg.edi]
+        mov     eax, [putimg.ebp+4]
+        call    eax
+        cmp     [ebp], bl
+        jne     .skip
 ;     mov     eax, [esi]        ; eax = RRBBGGRR
-     mov     [LFB_BASE+edx], ax
-     shr     eax, 16
-     mov     [LFB_BASE+edx+2], al
+        mov     [LFB_BASE+edx], ax
+        shr     eax, 16
+        mov     [LFB_BASE+edx+2], al
 .skip:
 ;     add     esi, 3 ;[putimg.source_bpp]
-     add     edx, 3
-     inc     ebp
-     dec     ecx
-     jnz     .new_x
+        add     edx, 3
+        inc     ebp
+        dec     ecx
+        jnz     .new_x
 ;     pop     edx ebp
-     add     esi, [putimg.line_increment]
-     add     edx, [putimg.screen_newline] ;[BytesPerScanLine]
-     add     ebp, [putimg.winmap_newline] ;[Screen_Max_X]
+        add     esi, [putimg.line_increment]
+        add     edx, [putimg.screen_newline];[BytesPerScanLine]
+        add     ebp, [putimg.winmap_newline];[Screen_Max_X]
 ;     inc     ebp
-     cmp     [putimg.ebp], putimage_get1bpp
-     jz      .correct
-     cmp     [putimg.ebp], putimage_get2bpp
-     jz      .correct
-     cmp     [putimg.ebp], putimage_get4bpp
-     jnz     @f
+        cmp     [putimg.ebp], putimage_get1bpp
+        jz      .correct
+        cmp     [putimg.ebp], putimage_get2bpp
+        jz      .correct
+        cmp     [putimg.ebp], putimage_get4bpp
+        jnz     @f
 .correct:
-     mov     eax, [putimg.edi]
-     mov     byte [eax], 80h
+        mov     eax, [putimg.edi]
+        mov     byte [eax], 80h
 @@:
-     dec     edi
-     jnz     .new_line
+        dec     edi
+        jnz     .new_line
 .finish:
-     add     esp, putimg.stack_data
-     popad
-     ret
+        add     esp, putimg.stack_data
+        popad
+        ret
 
 put_image_end_32:
-     mov     edi, [putimg.real_sy]
+        mov     edi, [putimg.real_sy]
 align   4
 .new_line:
-     mov     ecx, [putimg.real_sx]
+        mov     ecx, [putimg.real_sx]
 ;     push    ebp edx
 align   4
 .new_x:
-     push    [putimg.edi]
-     mov     eax, [putimg.ebp+4]
-     call    eax
-     cmp     [ebp], bl
-     jne     .skip
+        push    [putimg.edi]
+        mov     eax, [putimg.ebp+4]
+        call    eax
+        cmp     [ebp], bl
+        jne     .skip
 ;     mov     eax, [esi]        ; ecx = RRBBGGRR
-     mov     [LFB_BASE+edx], eax
+        mov     [LFB_BASE+edx], eax
 .skip:
 ;     add     esi, [putimg.source_bpp]
-     add     edx, 4
-     inc     ebp
-     dec     ecx
-     jnz     .new_x
+        add     edx, 4
+        inc     ebp
+        dec     ecx
+        jnz     .new_x
 ;     pop     edx ebp
-     add     esi, [putimg.line_increment]
-     add     edx, [putimg.screen_newline] ;[BytesPerScanLine]
-     add     ebp, [putimg.winmap_newline] ;[Screen_Max_X]
+        add     esi, [putimg.line_increment]
+        add     edx, [putimg.screen_newline];[BytesPerScanLine]
+        add     ebp, [putimg.winmap_newline];[Screen_Max_X]
 ;     inc     ebp
-     cmp     [putimg.ebp], putimage_get1bpp
-     jz      .correct
-     cmp     [putimg.ebp], putimage_get2bpp
-     jz      .correct
-     cmp     [putimg.ebp], putimage_get4bpp
-     jnz     @f
+        cmp     [putimg.ebp], putimage_get1bpp
+        jz      .correct
+        cmp     [putimg.ebp], putimage_get2bpp
+        jz      .correct
+        cmp     [putimg.ebp], putimage_get4bpp
+        jnz     @f
 .correct:
-     mov     eax, [putimg.edi]
-     mov     byte [eax], 80h
+        mov     eax, [putimg.edi]
+        mov     byte [eax], 80h
 @@:
-     dec     edi
-     jnz     .new_line
+        dec     edi
+        jnz     .new_line
 .finish:
-     add     esp, putimg.stack_data
-     popad
-     call   VGA__putimage
-     mov     [EGA_counter],1
-     ret
+        add     esp, putimg.stack_data
+        popad
+        call    VGA__putimage
+        mov     [EGA_counter], 1
+        ret
 
 
 ;*************************************************
@@ -303,71 +303,71 @@ __sys_putpixel:
 ; edi = 0x00000001 force
 
 ;;;        mov  [novesachecksum], dword 0
-     pushad
-     cmp   [Screen_Max_X], eax
-     jb    .exit
-     cmp   [Screen_Max_Y], ebx
-     jb    .exit
-     test  edi,1                 ; force ?
-     jnz   .forced
+        pushad
+        cmp     [Screen_Max_X], eax
+        jb      .exit
+        cmp     [Screen_Max_Y], ebx
+        jb      .exit
+        test    edi, 1           ; force ?
+        jnz     .forced
 
 ; not forced:
 
-     push eax
-     mov  edx,[_display.width]     ; screen x size
-     imul edx, ebx
-     add  eax, [_WinMapAddress]
-     movzx  edx, byte [eax+edx]
-     cmp edx, [CURRENT_TASK]
-     pop eax
-     jne .exit
+        push    eax
+        mov     edx, [_display.width]; screen x size
+        imul    edx, ebx
+        add     eax, [_WinMapAddress]
+        movzx   edx, byte [eax+edx]
+        cmp     edx, [CURRENT_TASK]
+        pop     eax
+        jne     .exit
 
 .forced:
 ; check if negation
-     test  ecx,0x01000000
-     jz    .noneg
-     call  getpixel
-     not   ecx
-     mov   [esp+32-8],ecx
+        test    ecx, 0x01000000
+        jz      .noneg
+        call    getpixel
+        not     ecx
+        mov     [esp+32-8], ecx
 .noneg:
 ; OK to set pixel
-     call  dword [PUTPIXEL]    ; call the real put_pixel function
+        call    dword [PUTPIXEL]; call the real put_pixel function
 .exit:
-     popad
-     ret
+        popad
+        ret
 
 align 4
 Vesa20_putpixel24:
 ; eax = x
 ; ebx = y
-     imul    ebx, [BytesPerScanLine]     ; ebx = y * y multiplier
-     lea     edi, [eax+eax*2]  ; edi = x*3
-     mov     eax, [esp+32-8+4]
-     mov     [LFB_BASE+ebx+edi], ax
-     shr     eax, 16
-     mov     [LFB_BASE+ebx+edi+2], al
-     ret
+        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+        lea     edi, [eax+eax*2]; edi = x*3
+        mov     eax, [esp+32-8+4]
+        mov     [LFB_BASE+ebx+edi], ax
+        shr     eax, 16
+        mov     [LFB_BASE+ebx+edi+2], al
+        ret
 
 
 align 4
 Vesa20_putpixel32:
 ; eax = x
 ; ebx = y
-     imul    ebx, [BytesPerScanLine]     ; ebx = y * y multiplier
-     lea     edi, [ebx+eax*4]  ; edi = x*4+(y*y multiplier)
-     mov     eax, [esp+32-8+4] ; eax = color
-     mov     [LFB_BASE+edi], eax
-     ret
+        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+        lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
+        mov     eax, [esp+32-8+4]; eax = color
+        mov     [LFB_BASE+edi], eax
+        ret
 
 ;*************************************************
 
 ;align 4
 calculate_edi:
-     mov     edi, ebx
-     imul    edi, [Screen_Max_X]
-     add     edi, ebx
-     add     edi, eax
-     ret
+        mov     edi, ebx
+        imul    edi, [Screen_Max_X]
+        add     edi, ebx
+        add     edi, eax
+        ret
 
 ;*************************************************
 
@@ -376,7 +376,7 @@ calculate_edi:
 align 4
 __sys_draw_line:
 ;     inc   [mouse_pause]
-     call    [_display.disable_mouse]
+        call    [_display.disable_mouse]
 
 ; draw a line
 ; eax = HIWORD = x1
@@ -394,107 +394,107 @@ dl_y2 equ esp+8
 dl_dx equ esp+4
 dl_dy equ esp+0
 
-     xor     edx, edx      ; clear edx
-     xor     esi, esi      ; unpack arguments
-     xor     ebp, ebp
-     mov     si, ax        ; esi = x2
-     mov     bp, bx        ; ebp = y2
-     shr     eax, 16       ; eax = x1
-     shr     ebx, 16       ; ebx = y1
-     push    eax           ; save x1
-     push    ebx           ; save y1
-     push    esi           ; save x2
-     push    ebp           ; save y2
+        xor     edx, edx   ; clear edx
+        xor     esi, esi   ; unpack arguments
+        xor     ebp, ebp
+        mov     si, ax     ; esi = x2
+        mov     bp, bx     ; ebp = y2
+        shr     eax, 16    ; eax = x1
+        shr     ebx, 16    ; ebx = y1
+        push    eax        ; save x1
+        push    ebx        ; save y1
+        push    esi        ; save x2
+        push    ebp        ; save y2
 ; checking x-axis...
-     sub     esi, eax      ; esi = x2-x1
-     push    esi           ; save y2-y1
-     jl      .x2lx1        ; is x2 less than x1 ?
-     jg      .no_vline     ; x1 > x2 ?
-     mov     edx, ebp      ; else (if x1=x2)
-     call    vline
-     push    edx    ; necessary to rightly restore stack frame at .exit
-     jmp     .exit
+        sub     esi, eax   ; esi = x2-x1
+        push    esi        ; save y2-y1
+        jl      .x2lx1     ; is x2 less than x1 ?
+        jg      .no_vline  ; x1 > x2 ?
+        mov     edx, ebp   ; else (if x1=x2)
+        call    vline
+        push    edx ; necessary to rightly restore stack frame at .exit
+        jmp     .exit
 .x2lx1:
-     neg     esi            ; get esi absolute value
+        neg     esi         ; get esi absolute value
 .no_vline:
 ; checking y-axis...
-     sub     ebp, ebx       ; ebp = y2-y1
-     push    ebp            ; save y2-y1
-     jl      .y2ly1         ; is y2 less than y1 ?
-     jg      .no_hline      ; y1 > y2 ?
-     mov     edx, [dl_x2]   ; else (if y1=y2)
-     call    hline
-     jmp     .exit
+        sub     ebp, ebx    ; ebp = y2-y1
+        push    ebp         ; save y2-y1
+        jl      .y2ly1      ; is y2 less than y1 ?
+        jg      .no_hline   ; y1 > y2 ?
+        mov     edx, [dl_x2]; else (if y1=y2)
+        call    hline
+        jmp     .exit
 
 .y2ly1:
-     neg     ebp            ; get ebp absolute value
+        neg     ebp         ; get ebp absolute value
 .no_hline:
-     cmp     ebp, esi
-     jle     .x_rules       ; |y2-y1| < |x2-x1|  ?
-     cmp     [dl_y2], ebx   ; make sure y1 is at the begining
-     jge     .no_reverse1
-     neg     dword [dl_dx]
-     mov     edx, [dl_x2]
-     mov     [dl_x2], eax
-     mov     [dl_x1], edx
-     mov     edx, [dl_y2]
-     mov     [dl_y2], ebx
-     mov     [dl_y1], edx
+        cmp     ebp, esi
+        jle     .x_rules    ; |y2-y1| < |x2-x1|  ?
+        cmp     [dl_y2], ebx; make sure y1 is at the begining
+        jge     .no_reverse1
+        neg     dword [dl_dx]
+        mov     edx, [dl_x2]
+        mov     [dl_x2], eax
+        mov     [dl_x1], edx
+        mov     edx, [dl_y2]
+        mov     [dl_y2], ebx
+        mov     [dl_y1], edx
 .no_reverse1:
-     mov     eax, [dl_dx]
-     cdq                    ; extend eax sing to edx
-     shl     eax, 16        ; using 16bit fix-point maths
-     idiv    ebp            ; eax = ((x2-x1)*65536)/(y2-y1)
-     mov     edx, ebp       ; edx = counter (number of pixels to draw)
-     mov     ebp, 1 *65536  ; <<16   ; ebp = dy = 1.0
-     mov     esi, eax       ; esi = dx
-     jmp     .y_rules
+        mov     eax, [dl_dx]
+        cdq                 ; extend eax sing to edx
+        shl     eax, 16     ; using 16bit fix-point maths
+        idiv    ebp         ; eax = ((x2-x1)*65536)/(y2-y1)
+        mov     edx, ebp    ; edx = counter (number of pixels to draw)
+        mov     ebp, 1 *65536; <<16   ; ebp = dy = 1.0
+        mov     esi, eax    ; esi = dx
+        jmp     .y_rules
 
 .x_rules:
-     cmp     [dl_x2], eax    ; make sure x1 is at the begining
-     jge     .no_reverse2
-     neg     dword [dl_dy]
-     mov     edx, [dl_x2]
-     mov     [dl_x2], eax
-     mov     [dl_x1], edx
-     mov     edx, [dl_y2]
-     mov     [dl_y2], ebx
-     mov     [dl_y1], edx
+        cmp     [dl_x2], eax ; make sure x1 is at the begining
+        jge     .no_reverse2
+        neg     dword [dl_dy]
+        mov     edx, [dl_x2]
+        mov     [dl_x2], eax
+        mov     [dl_x1], edx
+        mov     edx, [dl_y2]
+        mov     [dl_y2], ebx
+        mov     [dl_y1], edx
 .no_reverse2:
-     xor     edx, edx
-     mov     eax, [dl_dy]
-     cdq                    ; extend eax sing to edx
-     shl     eax, 16        ; using 16bit fix-point maths
-     idiv    esi            ; eax = ((y2-y1)*65536)/(x2-x1)
-     mov     edx, esi       ; edx = counter (number of pixels to draw)
-     mov     esi, 1 *65536  ;<< 16   ; esi = dx = 1.0
-     mov     ebp, eax       ; ebp = dy
+        xor     edx, edx
+        mov     eax, [dl_dy]
+        cdq                 ; extend eax sing to edx
+        shl     eax, 16     ; using 16bit fix-point maths
+        idiv    esi         ; eax = ((y2-y1)*65536)/(x2-x1)
+        mov     edx, esi    ; edx = counter (number of pixels to draw)
+        mov     esi, 1 *65536;<< 16   ; esi = dx = 1.0
+        mov     ebp, eax    ; ebp = dy
 .y_rules:
-     mov     eax, [dl_x1]
-     mov     ebx, [dl_y1]
-     shl     eax, 16
-     shl     ebx, 16
+        mov     eax, [dl_x1]
+        mov     ebx, [dl_y1]
+        shl     eax, 16
+        shl     ebx, 16
 align 4
 .draw:
-     push    eax ebx
-     shr     eax, 16
-     shr     ebx, 16
-     call    [putpixel]
-     pop     ebx eax
-     add     ebx, ebp        ; y = y+dy
-     add     eax, esi        ; x = x+dx
-     dec     edx
-     jnz     .draw
+        push    eax ebx
+        shr     eax, 16
+        shr     ebx, 16
+        call    [putpixel]
+        pop     ebx eax
+        add     ebx, ebp     ; y = y+dy
+        add     eax, esi     ; x = x+dx
+        dec     edx
+        jnz     .draw
 ; force last drawn pixel to be at (x2,y2)
-     mov     eax, [dl_x2]
-     mov     ebx, [dl_y2]
-     call    [putpixel]
+        mov     eax, [dl_x2]
+        mov     ebx, [dl_y2]
+        call    [putpixel]
 .exit:
-     add     esp, 6*4
-     popa
+        add     esp, 6*4
+        popa
 ;     dec   [mouse_pause]
-     call   [draw_pointer]
-     ret
+        call    [draw_pointer]
+        ret
 
 
 hline:
@@ -504,18 +504,18 @@ hline:
 ; ebx = y
 ; ecx = color
 ; edi = force ?
-     push    eax edx
-     cmp     edx, eax      ; make sure x2 is above x1
-     jge     @f
-     xchg    eax, edx
+        push    eax edx
+        cmp     edx, eax   ; make sure x2 is above x1
+        jge     @f
+        xchg    eax, edx
 align   4
 @@:
-     call    [putpixel]
-     inc     eax
-     cmp     eax, edx
-     jle     @b
-     pop     edx eax
-     ret
+        call    [putpixel]
+        inc     eax
+        cmp     eax, edx
+        jle     @b
+        pop     edx eax
+        ret
 
 
 vline:
@@ -525,18 +525,18 @@ vline:
 ; edx = y2
 ; ecx = color
 ; edi = force ?
-     push    ebx edx
-     cmp     edx, ebx      ; make sure y2 is above y1
-     jge     @f
-     xchg    ebx, edx
+        push    ebx edx
+        cmp     edx, ebx   ; make sure y2 is above y1
+        jge     @f
+        xchg    ebx, edx
 align   4
 @@:
-     call    [putpixel]
-     inc     ebx
-     cmp     ebx, edx
-     jle     @b
-     pop     edx ebx
-     ret
+        call    [putpixel]
+        inc     ebx
+        cmp     ebx, edx
+        jle     @b
+        pop     edx ebx
+        ret
 
 
 ;*************************************************
@@ -565,97 +565,97 @@ align 4
 ; edx   ye
 ; edi   color
 vesa20_drawbar:
-     pushad
-     call    [_display.disable_mouse]
-     sub     esp, drbar.stack_data
-     mov     [drbar.color], edi
-     sub     edx, ebx
-     jle     .exit          ;// mike.dld, 2005-01-29
-     sub     ecx, eax
-     jle     .exit          ;// mike.dld, 2005-01-29
-     mov     [drbar.bar_sy], edx
-     mov     [drbar.bar_sx], ecx
-     mov     [drbar.bar_cx], eax
-     mov     [drbar.bar_cy], ebx
-     mov     edi, [TASK_BASE]
-     add     eax, [edi-twdw + WDATA.box.left] ; win_cx
-     add     ebx, [edi-twdw + WDATA.box.top] ; win_cy
-     mov     [drbar.abs_cx], eax
-     mov     [drbar.abs_cy], ebx
+        pushad
+        call    [_display.disable_mouse]
+        sub     esp, drbar.stack_data
+        mov     [drbar.color], edi
+        sub     edx, ebx
+        jle     .exit       ;// mike.dld, 2005-01-29
+        sub     ecx, eax
+        jle     .exit       ;// mike.dld, 2005-01-29
+        mov     [drbar.bar_sy], edx
+        mov     [drbar.bar_sx], ecx
+        mov     [drbar.bar_cx], eax
+        mov     [drbar.bar_cy], ebx
+        mov     edi, [TASK_BASE]
+        add     eax, [edi-twdw + WDATA.box.left]; win_cx
+        add     ebx, [edi-twdw + WDATA.box.top]; win_cy
+        mov     [drbar.abs_cx], eax
+        mov     [drbar.abs_cy], ebx
 ; real_sx = MIN(wnd_sx-bar_cx, bar_sx);
-     mov     ebx, [edi-twdw + WDATA.box.width] ; ebx = wnd_sx
+        mov     ebx, [edi-twdw + WDATA.box.width]; ebx = wnd_sx
 ; \begin{diamond}[20.08.2006]
 ; note that WDATA.box.width is one pixel less than real window x-size
-     inc     ebx
+        inc     ebx
 ; \end{diamond}[20.08.2006]
-     sub     ebx, [drbar.bar_cx]
-     ja      @f
+        sub     ebx, [drbar.bar_cx]
+        ja      @f
 .exit:                       ;// mike.dld, 2005-01-29
-     add     esp, drbar.stack_data
-     popad
-     xor     eax, eax
-     inc     eax
-     ret
+        add     esp, drbar.stack_data
+        popad
+        xor     eax, eax
+        inc     eax
+        ret
 @@:
-     cmp     ebx, [drbar.bar_sx]
-     jbe     .end_x
-     mov     ebx, [drbar.bar_sx]
+        cmp     ebx, [drbar.bar_sx]
+        jbe     .end_x
+        mov     ebx, [drbar.bar_sx]
 .end_x:
-     mov     [drbar.real_sx], ebx
+        mov     [drbar.real_sx], ebx
 ; real_sy = MIN(wnd_sy-bar_cy, bar_sy);
-     mov     ebx, [edi-twdw + WDATA.box.height] ; ebx = wnd_sy
+        mov     ebx, [edi-twdw + WDATA.box.height]; ebx = wnd_sy
 ; \begin{diamond}[20.08.2006]
-     inc     ebx
+        inc     ebx
 ; \end{diamond}
-     sub     ebx, [drbar.bar_cy]
-     ja      @f
-     add     esp, drbar.stack_data
-     popad
-     xor     eax, eax
-     inc     eax
-     ret
+        sub     ebx, [drbar.bar_cy]
+        ja      @f
+        add     esp, drbar.stack_data
+        popad
+        xor     eax, eax
+        inc     eax
+        ret
 @@:
-     cmp     ebx, [drbar.bar_sy]
-     jbe     .end_y
-     mov     ebx, [drbar.bar_sy]
+        cmp     ebx, [drbar.bar_sy]
+        jbe     .end_y
+        mov     ebx, [drbar.bar_sy]
 .end_y:
-     mov     [drbar.real_sy], ebx
+        mov     [drbar.real_sy], ebx
 ; line_inc_map
-     mov     eax, [Screen_Max_X]
-     sub     eax, [drbar.real_sx]
-     inc     eax
-     mov     [drbar.line_inc_map], eax
+        mov     eax, [Screen_Max_X]
+        sub     eax, [drbar.real_sx]
+        inc     eax
+        mov     [drbar.line_inc_map], eax
 ; line_inc_scr
-     mov     eax, [drbar.real_sx]
-     movzx   ebx, byte [ScreenBPP]
-     shr     ebx, 3
-     imul    eax, ebx
-     neg     eax
-     add     eax, [BytesPerScanLine]
-     mov     [drbar.line_inc_scr], eax
+        mov     eax, [drbar.real_sx]
+        movzx   ebx, byte [ScreenBPP]
+        shr     ebx, 3
+        imul    eax, ebx
+        neg     eax
+        add     eax, [BytesPerScanLine]
+        mov     [drbar.line_inc_scr], eax
 ; pointer to screen
-     mov     edx, [drbar.abs_cy]
-     imul    edx, [BytesPerScanLine]
-     mov     eax, [drbar.abs_cx]
+        mov     edx, [drbar.abs_cy]
+        imul    edx, [BytesPerScanLine]
+        mov     eax, [drbar.abs_cx]
 ;     movzx   ebx, byte [ScreenBPP]
 ;     shr     ebx, 3
-     imul    eax, ebx
-     add     edx, eax
+        imul    eax, ebx
+        add     edx, eax
 ; pointer to pixel map
-     mov     eax, [drbar.abs_cy]
-     imul    eax, [Screen_Max_X]
-     add     eax, [drbar.abs_cy]
-     add     eax, [drbar.abs_cx]
-     add     eax, [_WinMapAddress]
-     xchg    eax, ebp
+        mov     eax, [drbar.abs_cy]
+        imul    eax, [Screen_Max_X]
+        add     eax, [drbar.abs_cy]
+        add     eax, [drbar.abs_cx]
+        add     eax, [_WinMapAddress]
+        xchg    eax, ebp
 ; get process number
-     mov     ebx, [CURRENT_TASK]
-     cmp     byte [ScreenBPP], 24
-     jne     draw_bar_end_32
+        mov     ebx, [CURRENT_TASK]
+        cmp     byte [ScreenBPP], 24
+        jne     draw_bar_end_32
 draw_bar_end_24:
-     mov     eax, [drbar.color]    ;; BBGGRR00
-     mov     bh, al                ;; bh  = BB
-     shr     eax, 8                ;; eax = RRGG
+        mov     eax, [drbar.color] ;; BBGGRR00
+        mov     bh, al             ;; bh  = BB
+        shr     eax, 8             ;; eax = RRGG
 ; eax - color high   RRGG
 ; bl - process num
 ; bh - color low    BB
@@ -663,78 +663,78 @@ draw_bar_end_24:
 ; edx - pointer to screen
 ; esi - counter
 ; edi - counter
-     mov     esi, [drbar.real_sy]
+        mov     esi, [drbar.real_sy]
 align   4
 .new_y:
-     mov     edi, [drbar.real_sx]
+        mov     edi, [drbar.real_sx]
 align   4
 .new_x:
-     cmp     byte [ebp], bl
-     jne     .skip
+        cmp     byte [ebp], bl
+        jne     .skip
 
-     mov     [LFB_BASE+edx], bh
-     mov     [LFB_BASE+edx + 1], ax
+        mov     [LFB_BASE+edx], bh
+        mov     [LFB_BASE+edx + 1], ax
 .skip:
 ; add pixel
-     add     edx, 3
-     inc     ebp
-     dec     edi
-     jnz     .new_x
+        add     edx, 3
+        inc     ebp
+        dec     edi
+        jnz     .new_x
 ; add line
-     add     edx, [drbar.line_inc_scr]
-     add     ebp, [drbar.line_inc_map]
+        add     edx, [drbar.line_inc_scr]
+        add     ebp, [drbar.line_inc_map]
 ; <Ivan 15.10.04> drawing gradient bars
-     test    eax, 0x00800000
-     jz      @f
-     test    bh, bh
-     jz      @f
-     dec     bh
+        test    eax, 0x00800000
+        jz      @f
+        test    bh, bh
+        jz      @f
+        dec     bh
 @@:
 ; </Ivan 15.10.04>
-     dec     esi
-     jnz     .new_y
-     add     esp, drbar.stack_data
-     popad
-     xor     eax, eax
-     ret
+        dec     esi
+        jnz     .new_y
+        add     esp, drbar.stack_data
+        popad
+        xor     eax, eax
+        ret
 
 draw_bar_end_32:
-     mov     eax, [drbar.color]    ;; BBGGRR00
-     mov     esi, [drbar.real_sy]
+        mov     eax, [drbar.color] ;; BBGGRR00
+        mov     esi, [drbar.real_sy]
 align   4
 .new_y:
-     mov     edi, [drbar.real_sx]
+        mov     edi, [drbar.real_sx]
 align   4
 .new_x:
-     cmp     byte [ebp], bl
-     jne     .skip
+        cmp     byte [ebp], bl
+        jne     .skip
 
-     mov     [LFB_BASE+edx], eax
+        mov     [LFB_BASE+edx], eax
 .skip:
 ; add pixel
-     add     edx, 4
-     inc     ebp
-     dec     edi
-     jnz     .new_x
+        add     edx, 4
+        inc     ebp
+        dec     edi
+        jnz     .new_x
 ; add line
-     add     edx, [drbar.line_inc_scr]
-     add     ebp, [drbar.line_inc_map]
+        add     edx, [drbar.line_inc_scr]
+        add     ebp, [drbar.line_inc_map]
 ; <Ivan 15.10.04> drawing gradient bars
-     test    eax, 0x80000000
-     jz      @f
-     test    al, al
-     jz      @f
-     dec     al
+        test    eax, 0x80000000
+        jz      @f
+        test    al, al
+        jz      @f
+        dec     al
 @@:
 ; </Ivan 15.10.04>
-     dec     esi
-     jnz     .new_y
-     add     esp, drbar.stack_data
-     popad
-     call    VGA_draw_bar
-     xor     eax, eax
-     mov     [EGA_counter],1
-     ret
+        dec     esi
+        jnz     .new_y
+        add     esp, drbar.stack_data
+        popad
+        call    VGA_draw_bar
+        xor     eax, eax
+        mov     [EGA_counter], 1
+        ret
 
 align 4
 vesa20_drawbackground_tiled:
@@ -760,7 +760,7 @@ dp2:
 ; ebp:=Y*BytesPerScanLine+X*BytesPerPixel+AddrLFB
         call    calculate_edi
         xchg    edi, ebp
-        add ebp, [_WinMapAddress]
+        add     ebp, [_WinMapAddress]
 ; Now eax=x, ebx=y, edi->output, ebp=offset in WinMapAddress
 ; 2) Calculate offset in background memory block
         push    eax
@@ -931,7 +931,7 @@ sdp3:
 ; qword [esp+28] = 2^32*(BgrDataHeight-1)/(ScreenHeight-1)
 ; qword [esp+36] = 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
 sdp3a:
-        mov eax, [_WinMapAddress]
+        mov     eax, [_WinMapAddress]
         cmp     [ebp+eax], byte 1
         jnz     snbgp
         mov     eax, [bgr_cur_line+esi]
@@ -997,12 +997,12 @@ sdp4:
         mov     edi, bgr_cur_line
         mov     ecx, [Screen_Max_X]
         inc     ecx
-        rep     movsd
+        rep movsd
         jmp     bgr_resmooth1
 sdpdone:
         add     esp, 44
         popad
-        mov     [EGA_counter],1
+        mov     [EGA_counter], 1
         call    VGA_drawbackground
         ret
 

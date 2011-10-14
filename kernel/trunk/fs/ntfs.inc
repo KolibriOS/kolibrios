@@ -95,7 +95,7 @@ ntfs_test_bootsec:
 
 ntfs_setup:             ; CODE XREF: part_set.inc
 ; By given bootsector, initialize some NTFS variables
-;        call    ntfs_test_bootsec			; checking boot sector was already
+;        call    ntfs_test_bootsec                      ; checking boot sector was already
 ;        jc      problem_fat_dec_count
         movzx   eax, byte [ebx+13]
         mov     [ntfs_data.sectors_per_cluster], eax
@@ -256,7 +256,7 @@ ntfs_setup:             ; CODE XREF: part_set.inc
         mov     edi, eax
         mov     ecx, [ntfs_data.mft_retrieval_size]
         add     ecx, ecx
-        rep     movsd
+        rep movsd
         push    [ntfs_data.mft_retrieval]
         mov     [ntfs_data.mft_retrieval], eax
         call    kernel_free
@@ -639,7 +639,7 @@ ntfs_read_attr:
         mov     edi, ntfs_attrlist_mft_buf
 @@:
         mov     ecx, 0x200/4
-        rep     movsd
+        rep movsd
         mov     eax, edi
         pop     edi esi
         sub     esi, 0x200
@@ -915,7 +915,7 @@ ntfs_decode_mcb_entry:
         cmp     ecx, 8
         ja      .end
         push    ecx
-        rep     movsb
+        rep movsb
         pop     ecx
         sub     ecx, 8
         neg     ecx
@@ -923,20 +923,20 @@ ntfs_decode_mcb_entry:
         jae     .end
         push    eax
         xor     eax, eax
-        rep     stosb
+        rep stosb
         pop     ecx
         shr     ecx, 4
         cmp     ecx, 8
         ja      .end
         push    ecx
-        rep     movsb
+        rep movsb
         pop     ecx
         sub     ecx, 8
         neg     ecx
         cmp     byte [esi-1], 80h
         cmc
         sbb     eax, eax
-        rep     stosb
+        rep stosb
         stc
 .end:
         pop     edi ecx eax
@@ -1019,7 +1019,7 @@ ntfs_find_lfn:
         mov     edi, eax
         mov     ecx, [ntfs_data.cur_index_size]
         shl     ecx, 9-2
-        rep     movsd
+        rep movsd
         mov     esi, eax
         mov     [ntfs_data.cur_index_size], ebp
         push    esi ebp
@@ -1199,7 +1199,7 @@ ntfs_HdRead:
 @@:
         mov     [esp+10h+4], ecx
         mov     edi, edx
-        rep     movsb
+        rep movsb
         mov     edx, edi
         pop     ecx
         sub     ecx, [esp+10h]
@@ -1253,7 +1253,7 @@ ntfs_HdRead:
         mov     edi, edx
         mov     esi, ntfs_bitmap_buf
         add     [esp+10h+4], ecx
-        rep     movsb
+        rep movsb
         pop     ecx
         xor     eax, eax
         cmp     ecx, [ntfs_cur_read]
@@ -1370,7 +1370,7 @@ ntfs_HdReadFolder:
         mov     edi, eax
         mov     ecx, [ntfs_data.cur_index_size]
         shl     ecx, 9-2
-        rep     movsd
+        rep movsd
         mov     esi, eax
         mov     [ntfs_data.cur_index_size], ebp
         push    esi ebp
@@ -1388,7 +1388,7 @@ ntfs_HdReadFolder:
         mov     edi, edx
         mov     ecx, 32/4
         xor     eax, eax
-        rep     stosd
+        rep stosd
         mov     byte [edx], 1   ; version
         mov     ecx, [esp+4+18h]
         push    edx
@@ -1422,7 +1422,7 @@ ntfs_HdReadFolder:
         mov     [ntfs_cur_buf], edi
         mov     ecx, 0x400/4
         xor     eax, eax
-        rep     stosd
+        rep stosd
         mov     [ntfs_cur_attr], 0xB0   ; $BITMAP
         and     [ntfs_cur_offs], 0
         mov     [ntfs_cur_size], 2
@@ -1478,7 +1478,7 @@ ntfs_HdReadFolder:
         mov     [ntfs_cur_buf], edi
         mov     ecx, 0x400/4
         xor     eax, eax
-        rep     stosd
+        rep stosd
         pop     edi ecx
         pop     eax
         push    [ntfs_cur_offs]
@@ -1540,7 +1540,7 @@ ntfs_HdReadFolder:
         lea     ecx, [esi+1]
         test    byte [edi-0x24], 1
         jz      @f
-        rep     stosw
+        rep stosw
         pop     ecx
         xor     eax, eax
         stosw
@@ -1548,7 +1548,7 @@ ntfs_HdReadFolder:
         add     edi, 520
         ret
 @@:
-        rep     stosb
+        rep stosb
         pop     ecx
         xor     eax, eax
         stosb
@@ -1580,9 +1580,9 @@ ntfs_HdReadFolder:
         test    byte [edi-0x24], 1
         jz      .ansi
         shr     ecx, 1
-        rep     movsd
+        rep movsd
         adc     ecx, ecx
-        rep     movsw
+        rep movsw
         and     word [edi], 0
         pop     edi
         add     edi, 520

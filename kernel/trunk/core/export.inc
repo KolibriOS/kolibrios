@@ -28,7 +28,8 @@ macro export dllname,[label,string]
     local name
     dd (name-OS_BASE)
    common
-    ordinal: count = 0
+    ordinal:
+             count = 0
    forward
     dw count
     count = count+1

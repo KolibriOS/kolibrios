@@ -161,7 +161,7 @@ end virtual
 
         mov     edi, ebx
         mov     ecx, 512/4
-        rep     movsd           ; move data
+        rep movsd               ; move data
         xor     eax, eax        ; successful read
 .read_done:
         mov     ecx, [.cache]
@@ -313,7 +313,7 @@ end virtual
 
         mov     esi, ebx
         mov     ecx, 512/4
-        rep     movsd           ; move data
+        rep movsd               ; move data
         xor     eax, eax        ; success
 .hd_write_access_denied:
         mov     ecx, [.cache]
@@ -548,7 +548,7 @@ disk_init_cache:
         mov     edi, [esi+DISK.SysCache.pointer]
         lea     ecx, [ecx*3]
         xor     eax, eax
-        rep     stosd
+        rep stosd
         pop     edi
 
         mov     eax, [esi+DISK.AppCache.data_size]
@@ -563,7 +563,7 @@ disk_init_cache:
         mov     edi, [esi+DISK.AppCache.pointer]
         lea     ecx, [ecx*3]
         xor     eax, eax
-        rep     stosd
+        rep stosd
         pop     edi
 
 ; 4. Return with nonzero al.

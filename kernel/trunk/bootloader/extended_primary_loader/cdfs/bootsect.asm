@@ -417,7 +417,7 @@ parse_dir:
         jbe     @f
         push    cx
         mov     cx, 8000h
-        rep     movsw
+        rep movsw
         mov     cx, ds
         add     cx, 1000h
         mov     ds, cx
@@ -429,7 +429,7 @@ parse_dir:
 @@:
         add     cx, 1000h
         shl     cx, 3
-        rep     movsw
+        rep movsw
         pop     si
         pop     ds
 ; correct positions in cache for existing items
@@ -491,7 +491,7 @@ parse_dir:
         xor     di, di
         mov     cx, 0x1800
         sub     cx, si
-        rep     movsb
+        rep movsb
         pop     ax
         push    di
         popa
@@ -879,7 +879,7 @@ read_many_bytes.with_first:
 @@:
         pop     di
         sub     [cur_limit], ecx
-        rep     movsb
+        rep movsb
         mov     esi, ebx
         mov     bx, di
         call    normalize
@@ -921,7 +921,7 @@ read_many_bytes.with_first:
         mov     si, 1000h
         sub     word [cur_limit], cx
         sbb     word [cur_limit+2], 0
-        rep     movsb
+        rep movsb
         mov     bx, di
         call    normalize
 .nopost:

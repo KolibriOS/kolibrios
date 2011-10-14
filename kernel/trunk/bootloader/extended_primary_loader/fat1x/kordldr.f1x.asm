@@ -106,7 +106,7 @@ chs_noloader = 7CAEh
 ;       mov     [err], lba_err
 ;       mov     [noloader], lba_noloader
 @@:
-        rep     movsb
+        rep movsb
         mov     cl, [BPB_SecsPerClus]
         mov     [sect_per_clus], cx
         xor     bx, bx
@@ -144,7 +144,7 @@ init_fat16:
         mov     di, 0x8200
         xor     ax, ax
         mov     cx, 0x100/2
-        rep     stosw
+        rep stosw
         jmp     init_fat_done
 init_fat12:
 ; read FAT
@@ -319,7 +319,7 @@ parse_dir_loop:
         push    di
         mov     cx, 8+3
         mov     al, ' '
-        rep     stosb
+        rep stosb
         pop     di
         mov     cl, 8   ; 8 symbols per name
         mov     bl, 1
@@ -453,7 +453,7 @@ folder_next_sector:
         push    si di
         mov     cx, 0x100
         xor     si, si
-        rep     movsw
+        rep movsw
         mov     di, es
         shr     di, 8
         add     [ss:foldcache_size+di-0x92], 0x10       ; 0x10 new entries in the cache
@@ -684,5 +684,6 @@ foldcache_mark  rw      7
 foldcache_size  rw      7
 filename        rb      11
 if $ > 0x8200
-error: table overwritten
+error:
+       table overwritten
 end if

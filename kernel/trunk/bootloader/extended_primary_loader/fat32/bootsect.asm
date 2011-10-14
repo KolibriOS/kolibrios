@@ -284,7 +284,7 @@ sloop:
         jnz     scont                   ; ignore volume labels
         pusha
         mov     cx, 11
-        repz    cmpsb
+        repz cmpsb
         popa
         jz      sdone
 scont:

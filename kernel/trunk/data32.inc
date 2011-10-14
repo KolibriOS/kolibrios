@@ -83,7 +83,7 @@ else
   boot_bgr          db   'Calculating background',0
   boot_resirqports  db   'Reserving IRQs & ports',0
   boot_setostask    db   'Setting OS task',0
-  boot_allirqs	    db	 'Unmasking IRQs',0
+  boot_allirqs      db   'Unmasking IRQs',0
   boot_tsc          db   'Reading TSC',0
   boot_cpufreq      db   'CPU frequency is ','    ',' MHz',0
   boot_pal_ega      db   'Setting EGA/CGA 320x200 palette',0
@@ -95,8 +95,8 @@ if preboot_blogesc
 end if
 end if
 
-  boot_APIC_found   db	 'APIC enabled', 0
-  boot_APIC_nfound  db	 'APIC not found', 0
+  boot_APIC_found   db   'APIC enabled', 0
+  boot_APIC_nfound  db   'APIC not found', 0
 
 ;new_process_loading db 'K : New Process - loading',13,10,0
 ;new_process_running db 'K : New Process - done',13,10,0
@@ -293,7 +293,8 @@ gdte:
 
 align 16
 cur_saved_data    rb 4096
-fpu_data:         rb 512
+fpu_data:
+                  rb 512
 
 mem_block_list    rd 64*2
 mem_used_list     rd 64*2

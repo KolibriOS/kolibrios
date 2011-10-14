@@ -36,10 +36,14 @@ $Revision$
 uglobal
 StackCounters:
   dumped_rx_count     dd  0
-  arp_tx_count:       dd  0
-  arp_rx_count:       dd  0
-  ip_rx_count:        dd  0
-  ip_tx_count:        dd  0
+  arp_tx_count:
+                      dd  0
+  arp_rx_count:
+                      dd  0
+  ip_rx_count:
+                      dd  0
+  ip_tx_count:
+                      dd  0
 endg
 
 ; socket buffers
@@ -141,12 +145,12 @@ macro _memset_dw adr,value,amount
         mov     edi, adr
         mov     ecx, amount
         if value = 0
-                xor     eax, eax
+        xor     eax, eax
         else
-                mov     eax, value
+        mov     eax, value
         end if
         cld
-        rep     stosd
+        rep stosd
 }
 
 
@@ -185,7 +189,7 @@ stack_init:
         out     0x70, al
         in      al, 0x71
         mov     [last_1sTick], al
-ret
+        ret
 
 
 
@@ -201,34 +205,34 @@ ret
 align 4
 stack_handler:
 
-    call    ethernet_driver
-    call    ip_rx
+        call    ethernet_driver
+        call    ip_rx
 
 
     ; Test for 10ms tick, call tcp timer
-    mov     eax, [timer_ticks] ;[0xfdf0]
-    cmp     eax, [last_1hsTick]
-    je      sh_001
+        mov     eax, [timer_ticks];[0xfdf0]
+        cmp     eax, [last_1hsTick]
+        je      sh_001
 
-    mov     [last_1hsTick], eax
-    call    tcp_tx_handler
+        mov     [last_1hsTick], eax
+        call    tcp_tx_handler
 
 sh_001:
 
     ; Test for 1 second event, call 1s timer functions
-    mov     al, 0x0   ;second
-    out     0x70, al
-    in      al, 0x71
-    cmp     al, [last_1sTick]
-    je      sh_exit
+        mov     al, 0x0;second
+        out     0x70, al
+        in      al, 0x71
+        cmp     al, [last_1sTick]
+        je      sh_exit
 
-    mov     [last_1sTick], al
+        mov     [last_1sTick], al
 
-    stdcall arp_table_manager, ARP_TABLE_TIMER, 0, 0
-    call    tcp_tcb_handler
+        stdcall arp_table_manager, ARP_TABLE_TIMER, 0, 0
+        call    tcp_tcb_handler
 
 sh_exit:
-    ret
+        ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Checksum [by Johnny_B]
@@ -242,28 +246,28 @@ sh_exit:
 proc checksum_jb stdcall uses ebx esi ecx,\
      buf_ptr:DWORD, buf_size:DWORD
 
-    xor     eax, eax
-    xor     ebx, ebx  ;accumulator
-    mov     esi, dword[buf_ptr]
-    mov     ecx, dword[buf_size]
-    shr     ecx, 1  ; ecx=ecx/2
-    jnc     @f      ; if CF==0 then size is even number
-    mov     bh, byte[esi + ecx*2]
+        xor     eax, eax
+        xor     ebx, ebx;accumulator
+        mov     esi, dword[buf_ptr]
+        mov     ecx, dword[buf_size]
+        shr     ecx, 1; ecx=ecx/2
+        jnc     @f  ; if CF==0 then size is even number
+        mov     bh, byte[esi + ecx*2]
   @@:
-    cld
+        cld
 
   .loop:
-    lodsw   ;eax=word[esi],esi=esi+2
-    xchg    ah,al    ;cause must be a net byte-order
-    add     ebx, eax
-    loop    .loop
+        lodsw   ;eax=word[esi],esi=esi+2
+        xchg    ah, al;cause must be a net byte-order
+        add     ebx, eax
+        loop    .loop
 
-    mov     eax, ebx
-    shr     eax, 16
-    add     ax, bx
-    not     ax
+        mov     eax, ebx
+        shr     eax, 16
+        add     ax, bx
+        not     ax
 
-    ret
+        ret
 endp
 
 ;***************************************************************************
@@ -280,74 +284,74 @@ endp
 
 
 checksum:
-    pusha
-    mov     eax, [checkAdd1]
-    xor     edx, edx                  ; edx is the accumulative checksum
-    xor     ebx, ebx
-    mov     cx, [checkSize1]
-    shr     cx, 1
-    jz      cs1_1
+        pusha
+        mov     eax, [checkAdd1]
+        xor     edx, edx              ; edx is the accumulative checksum
+        xor     ebx, ebx
+        mov     cx, [checkSize1]
+        shr     cx, 1
+        jz      cs1_1
 
 cs1:
-    mov     bh, [eax]
-    mov     bl, [eax + 1]
+        mov     bh, [eax]
+        mov     bl, [eax + 1]
 
-    add     eax, 2
-    add     edx, ebx
+        add     eax, 2
+        add     edx, ebx
 
-    loopw   cs1
+        loopw   cs1
 
 cs1_1:
-    and     word [checkSize1], 0x01
-    jz      cs_test2
+        and     word [checkSize1], 0x01
+        jz      cs_test2
 
-    mov     bh, [eax]
-    xor     bl, bl
+        mov     bh, [eax]
+        xor     bl, bl
 
-    add     edx, ebx
+        add     edx, ebx
 
 cs_test2:
-    mov     cx, [checkSize2]
-    cmp     cx, 0
-    jz      cs_exit                     ; Finished if no 2nd buffer
+        mov     cx, [checkSize2]
+        cmp     cx, 0
+        jz      cs_exit                 ; Finished if no 2nd buffer
 
-    mov     eax, [checkAdd2]
+        mov     eax, [checkAdd2]
 
-    shr     cx, 1
-    jz      cs2_1
+        shr     cx, 1
+        jz      cs2_1
 
 cs2:
-    mov     bh, [eax]
-    mov     bl, [eax + 1]
+        mov     bh, [eax]
+        mov     bl, [eax + 1]
 
-    add     eax, 2
-    add     edx, ebx
+        add     eax, 2
+        add     edx, ebx
 
-    loopw   cs2
+        loopw   cs2
 
 cs2_1:
-    and     word [checkSize2], 0x01
-    jz      cs_exit
+        and     word [checkSize2], 0x01
+        jz      cs_exit
 
-    mov     bh, [eax]
-    xor     bl, bl
+        mov     bh, [eax]
+        xor     bl, bl
 
-    add     edx, ebx
+        add     edx, ebx
 
 cs_exit:
-    mov     ebx, edx
+        mov     ebx, edx
 
-    shr     ebx, 16
-    and     edx, 0xffff
-    add     edx, ebx
-    mov     eax, edx
-    shr     eax, 16
-    add     edx, eax
-    not     dx
+        shr     ebx, 16
+        and     edx, 0xffff
+        add     edx, ebx
+        mov     eax, edx
+        shr     eax, 16
+        add     edx, eax
+        not     dx
 
-    mov     [checkResult], dx
-    popa
-    ret
+        mov     [checkResult], dx
+        popa
+        ret
 
 
 
@@ -364,45 +368,45 @@ cs_exit:
 iglobal
 align 4
 f52call:
-	dd	app_stack_handler.00
-	dd	app_stack_handler.01
-	dd	app_stack_handler.02
-	dd	app_stack_handler.03
-	dd	app_stack_handler.fail	;04
-	dd	app_stack_handler.fail	;05
-	dd	stack_insert_packet	;app_stack_handler.06
-	dd	app_stack_handler.fail	;07
-	dd	stack_get_packet	;app_stack_handler.08
-	dd	app_stack_handler.09
-	dd	app_stack_handler.10
-	dd	app_stack_handler.11
-	dd	app_stack_handler.12
-	dd	app_stack_handler.13
-	dd	app_stack_handler.14
-	dd	app_stack_handler.15
+        dd      app_stack_handler.00
+        dd      app_stack_handler.01
+        dd      app_stack_handler.02
+        dd      app_stack_handler.03
+        dd      app_stack_handler.fail  ;04
+        dd      app_stack_handler.fail  ;05
+        dd      stack_insert_packet     ;app_stack_handler.06
+        dd      app_stack_handler.fail  ;07
+        dd      stack_get_packet        ;app_stack_handler.08
+        dd      app_stack_handler.09
+        dd      app_stack_handler.10
+        dd      app_stack_handler.11
+        dd      app_stack_handler.12
+        dd      app_stack_handler.13
+        dd      app_stack_handler.14
+        dd      app_stack_handler.15
 endg
 app_stack_handler:
 ;in ebx,ecx
 ;out eax
-	cmp	ebx,15
-	ja	.fail			;if more than 15 then exit
+        cmp     ebx, 15
+        ja      .fail                   ;if more than 15 then exit
 
-	jmp	dword [f52call+ebx*4]
+        jmp     dword [f52call+ebx*4]
 
 
 .00:
 ; Read the configuration word
-	mov	eax, [stack_config]
-	ret
+        mov     eax, [stack_config]
+        ret
 
 .01:
 ; read the IP address
-	mov     eax, [stack_ip]
-	ret
+        mov     eax, [stack_ip]
+        ret
 
 .02:
 ; write the configuration word
-	mov     [stack_config], ecx
+        mov     [stack_config], ecx
 
 ; <Slip shouldn't be active anyway - thats an operational issue.>
 ; If ethernet now enabled, probe for the card, reset it and empty
@@ -412,85 +416,85 @@ app_stack_handler:
 ; empty the tcpip data area too.
 
 ; ethernet interface is '3' in ls 7 bits
-	and     cl, 0x7f
-	cmp     cl, 3
-	je      ash_eth_enable
+        and     cl, 0x7f
+        cmp     cl, 3
+        je      ash_eth_enable
 ; Ethernet isn't enabled, so make sure that the card is disabled
-	mov     [ethernet_active], byte 0
-	ret
+        mov     [ethernet_active], byte 0
+        ret
 
 .03:
 ; write the IP Address
-	mov     [stack_ip], ecx
-	ret
+        mov     [stack_ip], ecx
+        ret
 ;old functions was deleted
 ;.06:
 ; Insert an IP packet into the stacks received packet queue
-;	call    stack_insert_packet
-;	ret
+;       call    stack_insert_packet
+;       ret
 
 ; Test for any packets queued for transmission over the network
 
 ;.08:
-;	call    stack_get_packet
+;       call    stack_get_packet
 ; Extract a packet queued for transmission by the network
-;	ret
+;       ret
 
 .09:
 ; read the gateway IP address
-	mov     eax, [gateway_ip]
-	ret
+        mov     eax, [gateway_ip]
+        ret
 
 .10:
 ; read the subnet mask
-	mov     eax, [subnet_mask]
-	ret
+        mov     eax, [subnet_mask]
+        ret
 .11:
 ; write the gateway IP Address
-	mov     [gateway_ip], ecx
-	ret
+        mov     [gateway_ip], ecx
+        ret
 
 .12:
 ; write the subnet mask
-	mov     [subnet_mask], ecx
-	ret
+        mov     [subnet_mask], ecx
+        ret
 
 .13:
 ; read the dns
-	mov     eax, [dns_ip]
-	ret
+        mov     eax, [dns_ip]
+        ret
 
 .14:
 ; write the dns IP Address
-	mov     [dns_ip], ecx
-	ret
+        mov     [dns_ip], ecx
+        ret
 
 .15:
 ;<added by Frank Sommer>
 ; in ecx we need 4 to read the last 2 bytes
 ; or we need 0 to read the first 4 bytes
-	cmp     ecx,4
-        ja	.param_error
+        cmp     ecx, 4
+        ja      .param_error
 
 ; read MAC, returned (in mirrored byte order) in eax
         mov     eax, [node_addr + ecx]
         ret
 
 .param_error:
-        or     	eax, -1		; params not accepted
+        or      eax, -1         ; params not accepted
         ret
 
 .16:
 ; 0 -> arp_probe
 ; 1 -> arp_announce
 ; 2 -> arp_responce (not supported yet)
-        test    ecx,ecx
+        test    ecx, ecx
         je      a_probe
 
         dec     ebx
         jz      a_ann                   ; arp announce
 .fail:
-        or	eax, -1
+        or      eax, -1
         ret
 
 ;       cmp     ebx,2
@@ -525,21 +529,21 @@ a_ann:
 ;<added by Johnny_B>
 ; ARPTable manager interface
     ;see "proc arp_table_manager" for more details
-    stdcall arp_table_manager,ecx,edx,esi  ;Opcode,Index,Extra
-    ret
+        stdcall arp_table_manager, ecx, edx, esi;Opcode,Index,Extra
+        ret
 ;</added by Johnny_B>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ash_eth_enable:
 ; Probe for the card. This will reset it and enable the interface
 ; if found
-	call	eth_probe
-	test	eax,eax
-	jz	ash_eth_done            ; Abort if no hardware found
+        call    eth_probe
+        test    eax, eax
+        jz      ash_eth_done            ; Abort if no hardware found
 
-	mov     [ethernet_active], byte 1
+        mov     [ethernet_active], byte 1
 ash_eth_done:
-	ret
+        ret
 ;***************************************************************************
 ;   Function
 ;      app_socket_handler
@@ -553,43 +557,43 @@ ash_eth_done:
 iglobal
 align 4
 f53call:
-	dd	socket_open			;00
-	dd	socket_close			;01
-	dd	socket_poll			;02
-	dd	socket_read			;03
-	dd	socket_write			;04
-	dd	socket_open_tcp			;05
-	dd	socket_status			;06
-	dd	socket_write_tcp		;07
-	dd	socket_close_tcp		;08
-	dd	is_localport_unused		;09
-	dd	app_socket_handler.10
-	dd	socket_read_packet		;11
+        dd      socket_open                     ;00
+        dd      socket_close                    ;01
+        dd      socket_poll                     ;02
+        dd      socket_read                     ;03
+        dd      socket_write                    ;04
+        dd      socket_open_tcp                 ;05
+        dd      socket_status                   ;06
+        dd      socket_write_tcp                ;07
+        dd      socket_close_tcp                ;08
+        dd      is_localport_unused             ;09
+        dd      app_socket_handler.10
+        dd      socket_read_packet              ;11
 endg
 
 app_socket_handler:
 ;in ebx,ecx,edx,wsi
 ;out eax
-	cmp	eax,255
-	je	stack_internal_status
+        cmp     eax, 255
+        je      stack_internal_status
 
-	cmp	eax,11
-	ja	.fail			;if more than 15 then exit
+        cmp     eax, 11
+        ja      .fail                   ;if more than 15 then exit
 
-	jmp	dword [f53call+eax*4]
+        jmp     dword [f53call+eax*4]
 
 .10:
-	mov     eax,dword[drvr_cable]
-	test    eax,eax
-	jnz     @f                	; if function is not implented, return -1
-	or      al,-1
-	ret
+        mov     eax, dword[drvr_cable]
+        test    eax, eax
+        jnz     @f                      ; if function is not implented, return -1
+        or      al, -1
+        ret
 @@:
-	jmp    dword[drvr_cable]
+        jmp     dword[drvr_cable]
 
 .fail:
-	or	eax,-1
-	ret
+        or      eax, -1
+        ret
 uglobal
   ARPTmp:
   times 14 db 0
@@ -632,163 +636,163 @@ endg
 
 
 stack_internal_status:
-    cmp     ebx, 100
-    jnz     notsis100
+        cmp     ebx, 100
+        jnz     notsis100
 
     ;  100 : return length of EMPTY QUEUE
-    mov     ebx, EMPTY_QUEUE
-    call    queueSize
-    ret
+        mov     ebx, EMPTY_QUEUE
+        call    queueSize
+        ret
 
 notsis100:
-    cmp     ebx, 101
-    jnz     notsis101
+        cmp     ebx, 101
+        jnz     notsis101
 
     ;  101 : return length of IPOUT QUEUE
-    mov     ebx, IPOUT_QUEUE
-    call    queueSize                       
-    ret
+        mov     ebx, IPOUT_QUEUE
+        call    queueSize
+        ret
 
 notsis101:
-    cmp     ebx, 102
-    jnz     notsis102
+        cmp     ebx, 102
+        jnz     notsis102
 
     ;  102 : return length of IPIN QUEUE
-    mov     ebx, IPIN_QUEUE
-    call    queueSize
-    ret
+        mov     ebx, IPIN_QUEUE
+        call    queueSize
+        ret
 
 notsis102:
-    cmp     ebx, 103
-    jnz     notsis103
+        cmp     ebx, 103
+        jnz     notsis103
 
     ;  103 : return length of NET1OUT QUEUE
-    mov     ebx, NET1OUT_QUEUE
-    call    queueSize
-    ret
+        mov     ebx, NET1OUT_QUEUE
+        call    queueSize
+        ret
 
 notsis103:
-    cmp     ebx, 200
-    jnz     notsis200
+        cmp     ebx, 200
+        jnz     notsis200
 
     ; 200 : return num entries in arp table
-    movzx   eax, byte [NumARP]
-    ret
+        movzx   eax, byte [NumARP]
+        ret
 
 notsis200:
-    cmp     ebx, 201
-    jnz     notsis201
+        cmp     ebx, 201
+        jnz     notsis201
 
     ; 201 : return arp table size
-    mov     eax, 20 ; ARP_TABLE_SIZE
-    ret
+        mov     eax, 20; ARP_TABLE_SIZE
+        ret
 
 notsis201:
-    cmp     ebx, 202
-    jnz     notsis202
+        cmp     ebx, 202
+        jnz     notsis202
 
     ; 202 - read the requested table entry
     ; into a temporary buffer
     ; ecx holds the entry number
 
-    mov     eax, ecx
-    mov     ecx, 14 ; ARP_ENTRY_SIZE
-    mul     ecx
+        mov     eax, ecx
+        mov     ecx, 14; ARP_ENTRY_SIZE
+        mul     ecx
 
-    mov     ecx, [eax + ARPTable]
-    mov     [ARPTmp], ecx
-    mov     ecx, [eax + ARPTable+4]
-    mov     [ARPTmp+4], ecx
-    mov     ecx, [eax + ARPTable+8]
-    mov     [ARPTmp+8], ecx
-    mov     cx, [eax + ARPTable+12]
-    mov     [ARPTmp+12], cx
-    ret
+        mov     ecx, [eax + ARPTable]
+        mov     [ARPTmp], ecx
+        mov     ecx, [eax + ARPTable+4]
+        mov     [ARPTmp+4], ecx
+        mov     ecx, [eax + ARPTable+8]
+        mov     [ARPTmp+8], ecx
+        mov     cx, [eax + ARPTable+12]
+        mov     [ARPTmp+12], cx
+        ret
 
 notsis202:
-    cmp     ebx, 203
-    jnz     notsis203
+        cmp     ebx, 203
+        jnz     notsis203
 
     ; 203 - return IP address
-    mov     eax, [ARPTmp]
-    ret
+        mov     eax, [ARPTmp]
+        ret
 
 notsis203:
-    cmp     ebx, 204
-    jnz     notsis204
+        cmp     ebx, 204
+        jnz     notsis204
 
     ; 204 - return MAC high dword
-    mov     eax, [ARPTmp+4]
-    ret
+        mov     eax, [ARPTmp+4]
+        ret
 
 notsis204:
-    cmp     ebx, 205
-    jnz     notsis205
+        cmp     ebx, 205
+        jnz     notsis205
 
     ; 205 - return MAC ls word
-    movzx   eax, word [ARPTmp+8]
-    ret
+        movzx   eax, word [ARPTmp+8]
+        ret
 
 notsis205:
-    cmp     ebx, 206
-    jnz     notsis206
+        cmp     ebx, 206
+        jnz     notsis206
 
     ; 206 - return status word
-    movzx   eax, word [ARPTmp+10]
-    ret
+        movzx   eax, word [ARPTmp+10]
+        ret
 
 notsis206:
-    cmp     ebx, 207
-    jnz     notsis207
+        cmp     ebx, 207
+        jnz     notsis207
 
     ; 207 - return ttl word
-    movzx   eax, word [ARPTmp+12]
-    ret
+        movzx   eax, word [ARPTmp+12]
+        ret
 
 notsis207:
-    cmp     ebx, 2
-    jnz     notsis2
+        cmp     ebx, 2
+        jnz     notsis2
 
     ;  2 : return number of IP packets received
-    mov     eax, [ip_rx_count]
-    ret
+        mov     eax, [ip_rx_count]
+        ret
 
 notsis2:
-    cmp     ebx, 3
-    jnz     notsis3
+        cmp     ebx, 3
+        jnz     notsis3
 
     ;  3 : return number of packets transmitted
-    mov     eax, [ip_tx_count]
-    ret
+        mov     eax, [ip_tx_count]
+        ret
 
 notsis3:
-    cmp     ebx, 4
-    jnz     notsis4
+        cmp     ebx, 4
+        jnz     notsis4
 
     ;  4 : return number of received packets dumped
-    mov     eax, [dumped_rx_count]
-    ret
+        mov     eax, [dumped_rx_count]
+        ret
 
 notsis4:
-    cmp     ebx, 5
-    jnz     notsis5
+        cmp     ebx, 5
+        jnz     notsis5
 
     ;  5 : return number of arp packets received
-    mov     eax, [arp_rx_count]
-    ret
+        mov     eax, [arp_rx_count]
+        ret
 
 notsis5:
-    cmp     ebx, 6
-    jnz     notsis6
+        cmp     ebx, 6
+        jnz     notsis6
 
     ;  6 : return status of packet driver
     ;  ( 0 == not active, FFFFFFFF = successful )
-    mov     eax, [eth_status]
-    ret
+        mov     eax, [eth_status]
+        ret
 
 notsis6:
-    xor     eax, eax
-    ret
+        xor     eax, eax
+        ret
 
 
 
@@ -805,43 +809,43 @@ notsis6:
 ;***************************************************************************
 stack_get_packet:
     ; Look for a buffer to tx
-    mov     eax, NET1OUT_QUEUE
-    call    dequeue
-    cmp     ax, NO_BUFFER
-    je      sgp_non_exit            ; Exit if no buffer available
+        mov     eax, NET1OUT_QUEUE
+        call    dequeue
+        cmp     ax, NO_BUFFER
+        je      sgp_non_exit        ; Exit if no buffer available
 
-    push    eax                     ; Save buffer number for freeing at end
+        push    eax                 ; Save buffer number for freeing at end
 
-    push    edx
+        push    edx
     ; convert buffer pointer eax to the absolute address
-    mov     ecx, IPBUFFSIZE
-    mul     ecx
-    add     eax, IPbuffs
-    pop     edx
+        mov     ecx, IPBUFFSIZE
+        mul     ecx
+        add     eax, IPbuffs
+        pop     edx
 
-    push    eax                     ; save address of IP data
+        push    eax                 ; save address of IP data
     ; Get the address of the callers data
-    mov     edi,[TASK_BASE]
-    add     edi,TASKDATA.mem_start
-    add     edx,[edi]
-    mov     edi, edx
-    pop     eax
+        mov     edi, [TASK_BASE]
+        add     edi, TASKDATA.mem_start
+        add     edx, [edi]
+        mov     edi, edx
+        pop     eax
 
-    mov     ecx, 1500           ; should get the actual number of bytes to write
-    mov     esi, eax
-    cld
-    rep     movsb               ; copy the data across
+        mov     ecx, 1500       ; should get the actual number of bytes to write
+        mov     esi, eax
+        cld
+        rep movsb               ; copy the data across
 
     ; And finally, return the buffer to the free queue
-    pop     eax
-    call    freeBuff
+        pop     eax
+        call    freeBuff
 
-    mov     eax, 1500
-    ret
+        mov     eax, 1500
+        ret
 
 sgp_non_exit:
-    xor     eax, eax
-    ret
+        xor     eax, eax
+        ret
 
 
 
@@ -858,51 +862,51 @@ sgp_non_exit:
 ;***************************************************************************
 stack_insert_packet:
 
-    mov     eax, EMPTY_QUEUE
-    call    dequeue
-    cmp     ax, NO_BUFFER
-    je      sip_err_exit
+        mov     eax, EMPTY_QUEUE
+        call    dequeue
+        cmp     ax, NO_BUFFER
+        je      sip_err_exit
 
-    push    eax
+        push    eax
 
     ; save the pointers to the data buffer & size
-    push    edx
-    push    ecx
+        push    edx
+        push    ecx
 
     ; convert buffer pointer eax to the absolute address
-    mov     ecx, IPBUFFSIZE
-    mul     ecx
-    add     eax, IPbuffs
+        mov     ecx, IPBUFFSIZE
+        mul     ecx
+        add     eax, IPbuffs
 
-    mov     edx, eax
+        mov     edx, eax
 
     ; So, edx holds the IPbuffer ptr
 
-    pop     ecx                     ; count of bytes to send
-    mov     ebx, ecx                ; need the length later
-    pop     eax                     ; get callers ptr to data to send
+        pop     ecx                 ; count of bytes to send
+        mov     ebx, ecx            ; need the length later
+        pop     eax                 ; get callers ptr to data to send
 
     ; Get the address of the callers data
-    mov     edi,[TASK_BASE]
-    add     edi,TASKDATA.mem_start
-    add     eax,[edi]
-    mov     esi, eax
+        mov     edi, [TASK_BASE]
+        add     edi, TASKDATA.mem_start
+        add     eax, [edi]
+        mov     esi, eax
 
-    mov     edi, edx
-    cld
-    rep     movsb               ; copy the data across
+        mov     edi, edx
+        cld
+        rep movsb               ; copy the data across
 
-    pop     ebx
+        pop     ebx
 
-    mov     eax, IPIN_QUEUE
-    call    queue
+        mov     eax, IPIN_QUEUE
+        call    queue
 
-    inc     dword [ip_rx_count]
+        inc     dword [ip_rx_count]
 
-    mov     eax, 0
-    ret
+        mov     eax, 0
+        ret
 
 sip_err_exit:
-    mov     eax, 0xFFFFFFFF
-    ret
+        mov     eax, 0xFFFFFFFF
+        ret
 

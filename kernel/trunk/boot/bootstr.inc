@@ -30,7 +30,7 @@ macro line_space {
           db      186
 }
 d80x25_top:
-		line_full_top
+                line_full_top
 cur_line_pos = 75
         store byte ' ' at d80x25_top+cur_line_pos+1
 rev_var = __REV__
@@ -42,21 +42,22 @@ end while
         store byte ' ' at d80x25_top+cur_line_pos
         store dword ' SVN' at d80x25_top+cur_line_pos-4
 
-space_msg:	line_space
+space_msg:
+                line_space
 verstr:
-;		line_space
+;               line_space
 ; version string
-	db 186,32
-	repeat 78
-		load a byte from version+%-1
-		if a = 13
-			break
-		end if
-		db a
-	end repeat
-	repeat 78 - ($-verstr)
-		db	' '
-	end repeat
-	db 32,186
-		line_half
+        db 186,32
+        repeat 78
+                load a byte from version+%-1
+                if a = 13
+                        break
+                end if
+                db a
+        end repeat
+        repeat 78 - ($-verstr)
+                db      ' '
+        end repeat
+        db 32,186
+                line_half
 d80x25_top_num = 4

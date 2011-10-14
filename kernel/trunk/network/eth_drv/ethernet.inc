@@ -40,15 +40,15 @@ $Revision$
 ;
 ;********************************************************************
 
-ETHER_IP		    equ     0x0008	; Reversed from 0800 for intel
-ETHER_ARP		    equ     0x0608	; Reversed from 0806 for intel
-ETHER_RARP		    equ     0x3580
+ETHER_IP                    equ     0x0008      ; Reversed from 0800 for intel
+ETHER_ARP                   equ     0x0608      ; Reversed from 0806 for intel
+ETHER_RARP                  equ     0x3580
 
 struc ETH_FRAME
-{  .DstMAC	 dp   ?  ;destination MAC-address [6 bytes]
-   .SrcMAC	 dp   ?  ;source MAC-address [6 bytes]
-   .Type	 dw   ?  ;type of the upper-layer protocol [2 bytes]
-   .Data	 db   ?  ;data [46-1500 bytes]
+{  .DstMAC       dp   ?  ;destination MAC-address [6 bytes]
+   .SrcMAC       dp   ?  ;source MAC-address [6 bytes]
+   .Type         dw   ?  ;type of the upper-layer protocol [2 bytes]
+   .Data         db   ?  ;data [46-1500 bytes]
  }
 
 virtual at Ether_buffer
@@ -117,7 +117,7 @@ include "drivers/r6040.inc"
 ; be several lines which refer to the same functions.
 ; The first driver found on the PCI bus will be the one used.
 
-PCICARDS_ENTRY_SIZE	    equ     24	  ; Size of each PCICARDS entry
+PCICARDS_ENTRY_SIZE         equ     24    ; Size of each PCICARDS entry
 
 iglobal
 PCICards:
@@ -238,36 +238,54 @@ dd  0x0d7d10de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_tran
 
 dd  0x604017F3, r6040_probe, r6040_reset, r6040_poll, r6040_transmit, 0
 
-rb PCICARDS_ENTRY_SIZE	; end of list marker, do not remove
+rb PCICARDS_ENTRY_SIZE  ; end of list marker, do not remove
 endg
 
 uglobal
 ;Net-stack's interface's settings
-  node_addr:	      db  0,0,0,0,0,0
-  gateway_ip:	      dd  0
-  dns_ip:	      dd  0
+  node_addr:
+                      db  0,0,0,0,0,0
+  gateway_ip:
+                      dd  0
+  dns_ip:
+                      dd  0
 
-  eth_rx_data_len:    dw  0
-  eth_status:	      dd  0
-  io_addr:	      dd  0
-  hdrtype:	      db  0
-  vendor_device:      dd  0
-  pci_data:	      dd  0
-  pci_dev:	      dd  0
-  pci_bus:	      dd  0
+  eth_rx_data_len:
+                      dw  0
+  eth_status:
+                      dd  0
+  io_addr:
+                      dd  0
+  hdrtype:
+                      db  0
+  vendor_device:
+                      dd  0
+  pci_data:
+                      dd  0
+  pci_dev:
+                      dd  0
+  pci_bus:
+                      dd  0
 
   ; These will hold pointers to the selected driver functions
-  drvr_probe:	      dd  0
-  drvr_reset:	      dd  0
-  drvr_poll:	      dd  0
-  drvr_transmit:      dd  0
-  drvr_cable:	      dd  0
+  drvr_probe:
+                      dd  0
+  drvr_reset:
+                      dd  0
+  drvr_poll:
+                      dd  0
+  drvr_transmit:
+                      dd  0
+  drvr_cable:
+                      dd  0
 
 endg
 
 iglobal
-  broadcast_add:      db  0xff,0xff,0xff,0xff,0xff,0xff
-  subnet_mask:	      dd  0x00ffffff   ; 255.255.255.0
+  broadcast_add:
+                      db  0xff,0xff,0xff,0xff,0xff,0xff
+  subnet_mask:
+                      dd  0x00ffffff   ; 255.255.255.0
 endg
 
 include "arp.inc"    ;arp-protocol functions
@@ -292,70 +310,70 @@ proc eth_tx stdcall uses ebx esi edi
 local MACAddress  dp  ?  ;allocate 6 bytes in the stack
 
     ; Look for a buffer to tx
-    mov     eax, NET1OUT_QUEUE
-    call    dequeue
-    cmp     ax, NO_BUFFER
-    je	    .exit	     ; Exit if no buffer available
+        mov     eax, NET1OUT_QUEUE
+        call    dequeue
+        cmp     ax, NO_BUFFER
+        je      .exit        ; Exit if no buffer available
 
-    push    eax  ;save buffer number
+        push    eax;save buffer number
 
     ; convert buffer pointer eax to the absolute address
-    imul    eax, IPBUFFSIZE
-    add     eax, IPbuffs
+        imul    eax, IPBUFFSIZE
+        add     eax, IPbuffs
 
     ; Extract the destination IP
     ; find the destination IP in the ARP table, get MAC
     ; store this MAC in 'MACAddress'
-    mov     ebx, eax		   ; Save buffer address
-    mov     edx, [ebx + 16]	   ; get destination address
+        mov     ebx, eax           ; Save buffer address
+        mov     edx, [ebx + 16]    ; get destination address
 
     ; If the destination address is 255.255.255.255,
     ; set the MACAddress to all ones ( broadcast )
-    cld
-    mov     esi, broadcast_add
-    lea     edi, [MACAddress]
-    movsd
-    movsw
-    cmp     edx, 0xffffffff
-    je	    .send		 ; If it is broadcast, just send
+        cld
+        mov     esi, broadcast_add
+        lea     edi, [MACAddress]
+        movsd
+        movsw
+        cmp     edx, 0xffffffff
+        je      .send            ; If it is broadcast, just send
 
-    lea     eax, [MACAddress]	 ;cause this is local variable
-    stdcall arp_table_manager, ARP_TABLE_IP_TO_MAC, edx, eax ;opcode,IP,MAC_ptr - Get the MAC address.
+        lea     eax, [MACAddress];cause this is local variable
+        stdcall arp_table_manager, ARP_TABLE_IP_TO_MAC, edx, eax;opcode,IP,MAC_ptr - Get the MAC address.
 
-    cmp     eax, ARP_VALID_MAPPING
-    je	    .send
+        cmp     eax, ARP_VALID_MAPPING
+        je      .send
 
     ; No valid entry. Has the request been sent, but timed out?
-    cmp     eax, ARP_RESPONSE_TIMEOUT
-    je	    .freebuf
+        cmp     eax, ARP_RESPONSE_TIMEOUT
+        je      .freebuf
 
-  .wait_response:		    ;we wait arp-response
-				    ; Re-queue the packet, and exit
-    pop     ebx
-    mov     eax, NET1OUT_QUEUE
-    call    queue			 ; Get the buffer back
-    jmp     .exit
+  .wait_response:                   ;we wait arp-response
+                                    ; Re-queue the packet, and exit
+        pop     ebx
+        mov     eax, NET1OUT_QUEUE
+        call    queue                    ; Get the buffer back
+        jmp     .exit
 
   .send:    ;if ARP_VALID_MAPPING then send the packet
-    lea     edi, [MACAddress]	  ; Pointer to 48 bit destination address
-    movzx   ecx, word[ebx+2]	  ; Size of IP packet to send
-    xchg    ch, cl		  ; because mirror byte-order
-    mov     esi, ebx		  ; Pointer to packet data
-    mov     bx, ETHER_IP	  ; Type of packet
-    push    ebp
-    call    dword [drvr_transmit] ; Call the drivers transmit function
-    pop     ebp
+        lea     edi, [MACAddress] ; Pointer to 48 bit destination address
+        movzx   ecx, word[ebx+2]  ; Size of IP packet to send
+        xchg    ch, cl            ; because mirror byte-order
+        mov     esi, ebx          ; Pointer to packet data
+        mov     bx, ETHER_IP      ; Type of packet
+        push    ebp
+        call    dword [drvr_transmit]; Call the drivers transmit function
+        pop     ebp
 
     ; OK, we have sent a packet, so increment the count
-    inc     dword [ip_tx_count]
+        inc     dword [ip_tx_count]
 
     ; And finally, return the buffer to the free queue
   .freebuf:
-    pop     eax
-    call    freeBuff
+        pop     eax
+        call    freeBuff
 
   .exit:
-    ret
+        ret
 endp
 
 ;***************************************************************************
@@ -376,38 +394,38 @@ endp
 ;  ether_IP_handler_cnt dd ?
 ;endg
 ether_IP_handler:
-    mov     eax, EMPTY_QUEUE
-    call    dequeue
-    cmp     ax, NO_BUFFER
-    je	    eiph00x
+        mov     eax, EMPTY_QUEUE
+        call    dequeue
+        cmp     ax, NO_BUFFER
+        je      eiph00x
 
     ; convert buffer pointer eax to the absolute address
-    push    eax
-    mov     ecx, IPBUFFSIZE
-    mul     ecx
-    add     eax, IPbuffs
+        push    eax
+        mov     ecx, IPBUFFSIZE
+        mul     ecx
+        add     eax, IPbuffs
 
-    mov     edi, eax
+        mov     edi, eax
 
     ; get a pointer to the start of the DATA
-    mov     esi, ETH_FRAME.Data
+        mov     esi, ETH_FRAME.Data
 
     ; Now store it all away
-    mov     ecx, IPBUFFSIZE / 4     ; Copy all of the available
-			      ; data across - worse case
-    cld
-    rep     movsd
+        mov     ecx, IPBUFFSIZE / 4 ; Copy all of the available
+                              ; data across - worse case
+        cld
+        rep movsd
 
 ;        inc     [ether_IP_handler_cnt]
 ;        DEBUGF  1, "K : ether_IP_handler (%u)\n", [ether_IP_handler_cnt]
 
     ; And finally, place the buffer in the IPRX queue
-    pop     ebx
-    mov     eax, IPIN_QUEUE
-    call    queue
+        pop     ebx
+        mov     eax, IPIN_QUEUE
+        call    queue
 
 eiph00x:
-    ret
+        ret
 
 ;***************************************************************************
 ;   Function
@@ -423,17 +441,17 @@ eiph00x:
 ;***************************************************************************
 eth_probe:
     ; Find a card on the PCI bus, and get it's address
-    call    scan_bus			; Find the ethernet cards PIC address
-    xor     eax, eax
-    cmp     [io_addr], eax
-    je	    ep_00x			; Return 0 in eax if no cards found
+        call    scan_bus                ; Find the ethernet cards PIC address
+        xor     eax, eax
+        cmp     [io_addr], eax
+        je      ep_00x                  ; Return 0 in eax if no cards found
 
-    call    dword [drvr_probe]		; Call the drivers probe function
+        call    dword [drvr_probe]      ; Call the drivers probe function
 
-    mov     eax, [io_addr]		; return a non zero value
+        mov     eax, [io_addr]          ; return a non zero value
 
 ep_00x:
-    ret
+        ret
 
 ;***************************************************************************
 ;   Function
@@ -446,14 +464,14 @@ ep_00x:
 ;***************************************************************************
 ethernet_driver:
     ; Do nothing if the driver is inactive
-    cmp     [ethernet_active], byte 0
-    je	    eth_exit
+        cmp     [ethernet_active], byte 0
+        je      eth_exit
 
-    call    eth_rx
-    call    eth_tx
+        call    eth_rx
+        call    eth_tx
 
 eth_exit:
-    ret
+        ret
 
 ;***************************************************************************
 ;   Function
@@ -468,39 +486,39 @@ eth_exit:
 ;
 ;***************************************************************************
 eth_rx:
-    xor     ax, ax
-    mov     [eth_rx_data_len], ax
-    call    dword [drvr_poll]	    ; Call the drivers poll function
+        xor     ax, ax
+        mov     [eth_rx_data_len], ax
+        call    dword [drvr_poll]   ; Call the drivers poll function
 
-    mov     ax, [eth_rx_data_len]
-    cmp     ax, 0
-    je	    .exit
+        mov     ax, [eth_rx_data_len]
+        cmp     ax, 0
+        je      .exit
 
 
     ; Check the protocol. Call appropriate handler
 
-    mov     ax, [ETH_FRAME.Type]    ; The address of the protocol word
+        mov     ax, [ETH_FRAME.Type]; The address of the protocol word
 
-    cmp     ax, ETHER_IP
-    je	    .is_ip		     ; It's IP
+        cmp     ax, ETHER_IP
+        je      .is_ip               ; It's IP
 
-    cmp     ax, ETHER_ARP
-    je	    .is_arp		     ; It is ARP
+        cmp     ax, ETHER_ARP
+        je      .is_arp              ; It is ARP
 
     DEBUGF  1,"K : eth_rx - dumped (%u)\n", ax
-    inc     [dumped_rx_count]
-    jmp     .exit		; If not IP or ARP, ignore
+        inc     [dumped_rx_count]
+        jmp     .exit           ; If not IP or ARP, ignore
 
   .is_ip:
 ;    DEBUGF  1,"K : eth_rx - IP packet\n"
-    inc     dword [ip_rx_count]
-    call    ether_IP_handler
-    jmp     .exit
+        inc     dword [ip_rx_count]
+        call    ether_IP_handler
+        jmp     .exit
 
   .is_arp:
 ;    DEBUGF  1,"K : eth_rx - ARP packet\n"
     ; At this point, the packet is still in the Ether_buffer
-    call    arp_handler
+        call    arp_handler
 
   .exit:
-    ret
+        ret

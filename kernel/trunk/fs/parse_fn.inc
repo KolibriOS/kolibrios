@@ -38,66 +38,66 @@ endg
 ; use bx_from_load and init system directory /sys
 proc Parser_params
 locals
-  buff db 4 dup(?)		; for test cd
+  buff db 4 dup(?)              ; for test cd
 endl
-  mov eax,[OS_BASE+0x10000+bx_from_load]
-  mov ecx,sysdir_path
-  mov [ecx-64],dword 'sys'
-  cmp al,'r' ; if ram disk
-  jnz @f
-  mov [ecx],dword 'RD/?'
-  mov [ecx+3],byte ah
-  mov [ecx+4],byte 0
-  ret
+        mov     eax, [OS_BASE+0x10000+bx_from_load]
+        mov     ecx, sysdir_path
+        mov     [ecx-64], dword 'sys'
+        cmp     al, 'r'; if ram disk
+        jnz     @f
+        mov     [ecx], dword 'RD/?'
+        mov     [ecx+3], byte ah
+        mov     [ecx+4], byte 0
+        ret
 @@:
-  cmp al,'m' ; if ram disk
-  jnz @f
-  mov [ecx],dword 'CD?/'	; if cd disk {m}
-  mov [ecx+4],byte '1'
-  mov [ecx+5],dword '/KOL'
-  mov [ecx+9],dword 'IBRI'
-  mov [ecx+13],byte 0
+        cmp     al, 'm'; if ram disk
+        jnz     @f
+        mov     [ecx], dword 'CD?/'; if cd disk {m}
+        mov     [ecx+4], byte '1'
+        mov     [ecx+5], dword '/KOL'
+        mov     [ecx+9], dword 'IBRI'
+        mov     [ecx+13], byte 0
 .next_cd:
-  mov [ecx+2],byte ah
-  inc ah
-  cmp ah,'5'
-  je  .not_found_cd
-  lea edx,[buff]
-  pushad
-  stdcall read_file,read_firstapp,edx,0,4
-  popad
-  cmp [edx],dword 'MENU'
-  jne .next_cd
-  jmp .ok
+        mov     [ecx+2], byte ah
+        inc     ah
+        cmp     ah, '5'
+        je      .not_found_cd
+        lea     edx, [buff]
+        pushad
+        stdcall read_file, read_firstapp, edx, 0, 4
+        popad
+        cmp     [edx], dword 'MENU'
+        jne     .next_cd
+        jmp     .ok
   
 @@:
-  sub al,49
-  mov [ecx],dword 'HD?/'	; if hard disk
-  mov [ecx+2],byte al
-  mov [ecx+4],byte ah
-  mov [ecx+5],dword '/KOL'
-  mov [ecx+9],dword 'IBRI'
-  mov [ecx+13],byte 0
+        sub     al, 49
+        mov     [ecx], dword 'HD?/'; if hard disk
+        mov     [ecx+2], byte al
+        mov     [ecx+4], byte ah
+        mov     [ecx+5], dword '/KOL'
+        mov     [ecx+9], dword 'IBRI'
+        mov     [ecx+13], byte 0
 .ok:
 .not_found_cd:
-  ret
+        ret
 endp
 
 proc load_file_parse_table
-  stdcall kernel_alloc,0x1000
-  mov [tmp_file_name_table],eax
-  mov edi,eax
-  mov esi,sysdir_name
-  mov ecx,128/4
-  rep movsd
+        stdcall kernel_alloc, 0x1000
+        mov     [tmp_file_name_table], eax
+        mov     edi, eax
+        mov     esi, sysdir_name
+        mov     ecx, 128/4
+        rep movsd
 
-  invoke ini.enum_keys,conf_fname,conf_path_sect,get_every_key
+        invoke  ini.enum_keys, conf_fname, conf_path_sect, get_every_key
 
-  mov eax,[tmp_file_name_table]
-  mov [full_file_name_table],eax
-  mov eax,[tmp_file_name_size]
-  mov [full_file_name_table.size],eax
-  ret
+        mov     eax, [tmp_file_name_table]
+        mov     [full_file_name_table], eax
+        mov     eax, [tmp_file_name_size]
+        mov     [full_file_name_table.size], eax
+        ret
 endp
 
 uglobal
@@ -129,14 +129,14 @@ proc get_every_key stdcall, f_name, sec_name, key_name
 @@:
         stosb
 
-        invoke  ini.get_str, [f_name],[sec_name],ecx,ebx,64,def_val_1
+        invoke  ini.get_str, [f_name], [sec_name], ecx, ebx, 64, def_val_1
 
         cmp     byte [ebx], '/'
         jnz     @f
         lea     esi, [ebx+1]
         mov     edi, ebx
         mov     ecx, 63
-        rep     movsb
+        rep movsb
 @@:
         push    ebp
         mov     ebp, [tmp_file_name_table]

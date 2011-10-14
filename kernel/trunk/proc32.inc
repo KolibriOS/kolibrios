@@ -4,53 +4,53 @@ $Revision$
 
 ; Macroinstructions for defining and calling procedures
 
-macro stdcall proc,[arg]		; directly call STDCALL procedure
+macro stdcall proc,[arg]                ; directly call STDCALL procedure
  { common
     if ~ arg eq
    reverse
-    pushd arg
+        pushd   arg
    common
     end if
-    call proc }
+        call    proc }
 
-macro invoke proc,[arg] 		; indirectly call STDCALL procedure
+macro invoke proc,[arg]                 ; indirectly call STDCALL procedure
  { common
     if ~ arg eq
    reverse
-     pushd arg
+        pushd   arg
    common
     end if
-    call [proc] }
+        call    [proc] }
 
-macro ccall proc,[arg]			; directly call CDECL procedure
- { common
-    size@ccall = 0
-    if ~ arg eq
-   reverse
-    pushd arg
-    size@ccall = size@ccall+4
-   common
-    end if
-    call proc
-    if size@ccall
-    add esp,size@ccall
-    end if }
-
-macro cinvoke proc,[arg]		; indirectly call CDECL procedure
+macro ccall proc,[arg]                  ; directly call CDECL procedure
  { common
     size@ccall = 0
     if ~ arg eq
    reverse
-    pushd arg
+        pushd   arg
     size@ccall = size@ccall+4
    common
     end if
-    call [proc]
+        call    proc
     if size@ccall
-    add esp,size@ccall
+        add     esp, size@ccall
     end if }
 
-macro proc [args]			; define procedure
+macro cinvoke proc,[arg]                ; indirectly call CDECL procedure
+ { common
+    size@ccall = 0
+    if ~ arg eq
+   reverse
+        pushd   arg
+    size@ccall = size@ccall+4
+   common
+    end if
+        call    [proc]
+    if size@ccall
+        add     esp, size@ccall
+    end if }
+
+macro proc [args]                       ; define procedure
  { common
     match name params, args>
     \{ define@proc name,<params \} }
@@ -59,10 +59,10 @@ prologue@proc equ prologuedef
 
 macro prologuedef procname,flag,parmbytes,localbytes,reglist
  { if parmbytes | localbytes
-    push ebp
-    mov ebp,esp
+        push    ebp
+        mov     ebp, esp
     if localbytes
-     sub esp,localbytes
+        sub     esp, localbytes
     end if
    end if
    irps reg, reglist \{ push reg \} }
@@ -72,12 +72,12 @@ epilogue@proc equ epiloguedef
 macro epiloguedef procname,flag,parmbytes,localbytes,reglist
  { irps reg, reglist \{ reverse pop reg \}
    if parmbytes | localbytes
-    leave
+        leave
    end if
    if (flag and 10000b) | (parmbytes=0)
-    retn
+        retn
    else
-    retn parmbytes
+        retn    parmbytes
    end if }
 
 macro define@proc name,statement
@@ -85,20 +85,20 @@ macro define@proc name,statement
    if used name
    name:
    match =stdcall args, statement \{ params equ args
-				     flag = 11b \}
+                                     flag = 11b \}
    match =stdcall, statement \{ params equ
-				flag = 11b \}
+                                flag = 11b \}
    match =c args, statement \{ params equ args
-			       flag = 10001b \}
+                               flag = 10001b \}
    match =c, statement \{ params equ
-			  flag = 10001b \}
+                          flag = 10001b \}
    match =params, params \{ params equ statement
-			    flag = 0 \}
+                            flag = 0 \}
    virtual at ebp+8
    match =uses reglist=,args, params \{ regs equ reglist
-					params equ args \}
+                                        params equ args \}
    match =regs =uses reglist, regs params \{ regs equ reglist
-					     params equ \}
+                                             params equ \}
    match =regs, regs \{ regs equ \}
    match =,args, params \{ defargs@proc args \}
    match =args@proc args, args@proc params \{ defargs@proc args \}
@@ -133,9 +133,9 @@ macro define@proc name,statement
    macro ret operand
    \{ match any, operand \\{ retn operand \\}
       match , operand \\{ match epilogue:reglist, epilogue@proc:<regs>
-			  \\\{ epilogue name,flag,parmbytes,localbytes,reglist \\\} \\} \}
+                          \\\{ epilogue name,flag,parmbytes,localbytes,reglist \\\} \\} \}
    macro finish@proc \{ localbytes = (((current-1) shr 2)+1) shl 2
-			end if \} }
+                        end if \} }
 
 macro defargs@proc [arg]
  { common
@@ -144,21 +144,21 @@ macro defargs@proc [arg]
      local ..arg,current@arg
      match argname:type, arg
       \{ current@arg equ argname
-	 label ..arg type
-	 argname equ ..arg
-	 if dqword eq type
-	   dd ?,?,?,?
-	 else if tbyte eq type
-	   dd ?,?,?
-	 else if qword eq type | pword eq type
-	   dd ?,?
-	 else
-	   dd ?
-	 end if \}
+         label ..arg type
+         argname equ ..arg
+         if dqword eq type
+           dd ?,?,?,?
+         else if tbyte eq type
+           dd ?,?,?
+         else if qword eq type | pword eq type
+           dd ?,?
+         else
+           dd ?
+         end if \}
      match =current@arg,current@arg
       \{ current@arg equ arg
-	 arg equ ..arg
-	 ..arg dd ? \}
+         arg equ ..arg
+         ..arg dd ? \}
    common
      args@proc equ current@arg
    forward
@@ -177,8 +177,8 @@ macro deflocal@proc name,def,[val]
     match any =dup (=?), val \{ ..tmp equ \}
     match tmp : value, ..tmp : val
      \{ tmp: end virtual
-	initlocal@proc ..var,def value
-	virtual at tmp\}
+        initlocal@proc ..var,def value
+        virtual at tmp\}
    common
     match first rest, ..var, \{ name equ first \} }
 
@@ -203,11 +203,11 @@ macro initlocal@proc name,def
      end if
     end virtual
     if current@initlocal = 1
-     mov byte [name+position@initlocal],byte@initlocal
+        mov     byte [name+position@initlocal], byte@initlocal
     else if current@initlocal = 2
-     mov word [name+position@initlocal],word@initlocal
+        mov     word [name+position@initlocal], word@initlocal
     else
-     mov dword [name+position@initlocal],dword@initlocal
+        mov     dword [name+position@initlocal], dword@initlocal
     end if
     position@initlocal = position@initlocal + current@initlocal
    end while }
@@ -227,43 +227,43 @@ macro local [var]
    forward done@local equ
     match varname[count]:vartype, var
     \{ match =BYTE, vartype \\{ varname rb count
-				restore done@local \\}
+                                restore done@local \\}
        match =WORD, vartype \\{ varname rw count
-				restore done@local \\}
+                                restore done@local \\}
        match =DWORD, vartype \\{ varname rd count
-				 restore done@local \\}
+                                 restore done@local \\}
        match =PWORD, vartype \\{ varname rp count
-				 restore done@local \\}
+                                 restore done@local \\}
        match =QWORD, vartype \\{ varname rq count
-				 restore done@local \\}
+                                 restore done@local \\}
        match =TBYTE, vartype \\{ varname rt count
-				 restore done@local \\}
+                                 restore done@local \\}
        match =DQWORD, vartype \\{ label varname dqword
-				  rq count+count
-				  restore done@local \\}
+                                  rq count+count
+                                  restore done@local \\}
        match , done@local \\{ virtual
-			       varname vartype
-			      end virtual
-			      rb count*sizeof.\#vartype
-			      restore done@local \\} \}
+                               varname vartype
+                              end virtual
+                              rb count*sizeof.\#vartype
+                              restore done@local \\} \}
     match :varname:vartype, done@local:var
     \{ match =BYTE, vartype \\{ varname db ?
-				restore done@local \\}
+                                restore done@local \\}
        match =WORD, vartype \\{ varname dw ?
-				restore done@local \\}
+                                restore done@local \\}
        match =DWORD, vartype \\{ varname dd ?
-				 restore done@local \\}
+                                 restore done@local \\}
        match =PWORD, vartype \\{ varname dp ?
-				 restore done@local \\}
+                                 restore done@local \\}
        match =QWORD, vartype \\{ varname dq ?
-				 restore done@local \\}
+                                 restore done@local \\}
        match =TBYTE, vartype \\{ varname dt ?
-				 restore done@local \\}
+                                 restore done@local \\}
        match =DQWORD, vartype \\{ label varname dqword
-				  dq ?,?
-				  restore done@local \\}
+                                  dq ?,?
+                                  restore done@local \\}
        match , done@local \\{ varname vartype
-			      restore done@local \\} \}
+                              restore done@local \\} \}
     match ,done@local
     \{ var
        restore done@local \}

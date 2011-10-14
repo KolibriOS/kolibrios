@@ -143,29 +143,46 @@ MEM_32768         equ      128
 ISA_MAX_ADDR      equ      0x400
 
 uglobal
-eth_flags:        db   0
-eth_vendor:       db   0
-eth_nic_base:     dw   0
-eth_asic_base:    dw   0
-eth_memsize:      db   0
-eth_rx_start:     db   0
-eth_tx_start:     db   0
-eth_bmem:         dd   0
-eth_rmem:         dd   0
-romdata:          db   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+eth_flags:
+                  db   0
+eth_vendor:
+                  db   0
+eth_nic_base:
+                  dw   0
+eth_asic_base:
+                  dw   0
+eth_memsize:
+                  db   0
+eth_rx_start:
+                  db   0
+eth_tx_start:
+                  db   0
+eth_bmem:
+                  dd   0
+eth_rmem:
+                  dd   0
+romdata:
+                  db   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 endg
 
 iglobal
-test_data:        db   'NE*000 memory',0
-test_buffer:      db   '             ',0
+test_data:
+                  db   'NE*000 memory',0
+test_buffer:
+                  db   '             ',0
 endg
 
 uglobal
-eth_type:         dw   0
-pkthdr:           db   0,0,0,0  ; status, next, (short) len
-pktoff:           dw   0
-eth_rx_data_ptr:  dd   0
-eth_tmp_len:      dw   0
+eth_type:
+                  dw   0
+pkthdr:
+                  db   0,0,0,0  ; status, next, (short) len
+pktoff:
+                  dw   0
+eth_rx_data_ptr:
+                  dd   0
+eth_tmp_len:
+                  dw   0
 endg
 
 
@@ -181,70 +198,70 @@ endg
 ;       dst in edi
 ;***************************************************************************
 eth_pio_read:
-   mov      al, [eth_flags]
-   and      al, FLAG_16BIT
-   cmp      al, 0
-   je      epr_001
+        mov     al, [eth_flags]
+        and     al, FLAG_16BIT
+        cmp     al, 0
+        je      epr_001
 
-   inc      ecx
-   and      ecx, 0xFFFFFFFE
+        inc     ecx
+        and     ecx, 0xFFFFFFFE
 
 epr_001:
-   mov      al,   D8390_COMMAND_RD2_STA
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_COMMAND
-   out      dx, al
+        mov     al, D8390_COMMAND_RD2_STA
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_COMMAND
+        out     dx, al
 
-   mov      al,   cl
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_RBCR0
-   out      dx, al
+        mov     al, cl
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_RBCR0
+        out     dx, al
 
-   mov      al,   ch
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_RBCR1
-   out      dx, al
+        mov     al, ch
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_RBCR1
+        out     dx, al
 
-   mov      al,   bl
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_RSAR0
-   out      dx, al
+        mov     al, bl
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_RSAR0
+        out     dx, al
 
-   mov      al,   bh
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_RSAR1
-   out      dx, al
+        mov     al, bh
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_RSAR1
+        out     dx, al
 
-   mov      al, D8390_COMMAND_RD0_STA
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_COMMAND
-   out      dx, al
+        mov     al, D8390_COMMAND_RD0_STA
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_COMMAND
+        out     dx, al
 
-   mov      dx, [eth_asic_base]
-   add      dx, ASIC_PIO
+        mov     dx, [eth_asic_base]
+        add     dx, ASIC_PIO
 
-   mov      al, [eth_flags]
-   and      al, FLAG_16BIT
-   cmp      al, 0
-   je       epr_003
+        mov     al, [eth_flags]
+        and     al, FLAG_16BIT
+        cmp     al, 0
+        je      epr_003
 
-   shr      ecx, 1
+        shr     ecx, 1
 
 epr_002:
    ; 2 bytes at a time
-   in     ax, dx
-   mov    [edi], ax
-   add    edi, 2
-   loop   epr_002
-   ret
+        in      ax, dx
+        mov     [edi], ax
+        add     edi, 2
+        loop    epr_002
+        ret
 
 epr_003:
    ; 1 byte at a time
-   in     al, dx
-   mov    [edi], al
-   inc    edi
-   loop   epr_003
-   ret
+        in      al, dx
+        mov     [edi], al
+        inc     edi
+        loop    epr_003
+        ret
 
 
 
@@ -260,88 +277,88 @@ epr_003:
 ;       src in esi
 ;***************************************************************************
 eth_pio_write:
-   mov      al, [eth_flags]
-   and      al, FLAG_16BIT
-   cmp      al, 0
-   je      epw_001
+        mov     al, [eth_flags]
+        and     al, FLAG_16BIT
+        cmp     al, 0
+        je      epw_001
 
-   inc      ecx
-   and      ecx, 0xFFFFFFFE
+        inc     ecx
+        and     ecx, 0xFFFFFFFE
 
 epw_001:
-   mov      al,   D8390_COMMAND_RD2_STA
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_COMMAND
-   out      dx, al
+        mov     al, D8390_COMMAND_RD2_STA
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_COMMAND
+        out     dx, al
 
-   mov      al,   D8390_ISR_RDC
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_ISR
-   out      dx, al
+        mov     al, D8390_ISR_RDC
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_ISR
+        out     dx, al
 
 
-   mov      al,   cl
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_RBCR0
-   out      dx, al
+        mov     al, cl
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_RBCR0
+        out     dx, al
 
-   mov      al,   ch
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_RBCR1
-   out      dx, al
+        mov     al, ch
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_RBCR1
+        out     dx, al
 
-   mov      al,   bl
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_RSAR0
-   out      dx, al
+        mov     al, bl
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_RSAR0
+        out     dx, al
 
-   mov      al,   bh
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_RSAR1
-   out      dx, al
+        mov     al, bh
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_RSAR1
+        out     dx, al
 
-   mov      al,   D8390_COMMAND_RD1_STA
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_COMMAND
-   out      dx, al
+        mov     al, D8390_COMMAND_RD1_STA
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_COMMAND
+        out     dx, al
 
-   mov      dx, [eth_asic_base]
-   add      dx, ASIC_PIO
+        mov     dx, [eth_asic_base]
+        add     dx, ASIC_PIO
 
-   mov      al, [eth_flags]
-   and      al, FLAG_16BIT
-   cmp      al, 0
-   je      epw_003
+        mov     al, [eth_flags]
+        and     al, FLAG_16BIT
+        cmp     al, 0
+        je      epw_003
 
-   shr      ecx, 1
+        shr     ecx, 1
 
 epw_002:
    ; 2 bytes at a time
-   mov      ax, [esi]
-   add      esi, 2
-   out      dx, ax
+        mov     ax, [esi]
+        add     esi, 2
+        out     dx, ax
 
-   loop    epw_002
-   jmp     epw_004
+        loop    epw_002
+        jmp     epw_004
 
 epw_003:
    ; 1 byte at a time
-   mov      al, [esi]
-   inc      esi
-   out      dx, al
-   loop     epw_003
+        mov     al, [esi]
+        inc     esi
+        out     dx, al
+        loop    epw_003
 
 epw_004:
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_ISR
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_ISR
 
 epw_005:
-   in       al, dx
-   and      al, D8390_ISR_RDC
-   cmp      al, D8390_ISR_RDC
-   jne      epw_005
+        in      al, dx
+        and     al, D8390_ISR_RDC
+        cmp     al, D8390_ISR_RDC
+        jne     epw_005
 
-   ret
+        ret
 
 
 
@@ -355,135 +372,135 @@ epw_005:
 ;
 ;***************************************************************************
 rtl8029_reset:
-   mov      bx, [eth_nic_base]
+        mov     bx, [eth_nic_base]
 
-   mov      dx, bx
-   add      dx, D8390_P0_COMMAND
-   mov      al, D8390_COMMAND_PS0_RD2_STP
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_COMMAND
+        mov     al, D8390_COMMAND_PS0_RD2_STP
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_DCR
-   mov      al, [eth_flags]
-   and      al, FLAG_16BIT
-   cmp      al, FLAG_16BIT
-   jne      nsr_001
+        mov     dx, bx
+        add     dx, D8390_P0_DCR
+        mov     al, [eth_flags]
+        and     al, FLAG_16BIT
+        cmp     al, FLAG_16BIT
+        jne     nsr_001
 
-   mov      al, 0x49
-   jmp      nsr_002
+        mov     al, 0x49
+        jmp     nsr_002
 
 nsr_001:
-   mov      al, 0x48
+        mov     al, 0x48
 
 nsr_002:
-   out      dx, al
+        out     dx, al
 
-   xor      al, al
+        xor     al, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_RBCR0
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_RBCR0
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_RBCR1
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_RBCR1
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_RCR
-   mov      al, 0x20
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_RCR
+        mov     al, 0x20
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_TCR
-   mov      al, 2
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_TCR
+        mov     al, 2
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_TPSR
-   mov      al, [eth_tx_start]
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_TPSR
+        mov     al, [eth_tx_start]
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_PSTART
-   mov      al, [eth_rx_start]
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_PSTART
+        mov     al, [eth_rx_start]
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_PSTOP
-   mov      al, [eth_memsize]
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_PSTOP
+        mov     al, [eth_memsize]
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_BOUND
-   mov      al, [eth_memsize]
-   dec      al
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_BOUND
+        mov     al, [eth_memsize]
+        dec     al
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_ISR
-   mov      al, 0xff
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_ISR
+        mov     al, 0xff
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_IMR
-   xor      al, al
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_IMR
+        xor     al, al
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_COMMAND
-   mov      al, D8390_COMMAND_PS1_RD2_STP
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_COMMAND
+        mov     al, D8390_COMMAND_PS1_RD2_STP
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P1_PAR0
-   mov      esi, node_addr
-   mov      ecx, ETH_ALEN
+        mov     dx, bx
+        add     dx, D8390_P1_PAR0
+        mov     esi, node_addr
+        mov     ecx, ETH_ALEN
 
 nsr_003:
-   mov      al, [esi]
-   out      dx, al
+        mov     al, [esi]
+        out     dx, al
 
-   inc      esi
-   inc      dx
-   loop   nsr_003
+        inc     esi
+        inc     dx
+        loop    nsr_003
 
-   mov      dx, bx
-   add      dx, D8390_P1_MAR0
-   mov      ecx, ETH_ALEN
+        mov     dx, bx
+        add     dx, D8390_P1_MAR0
+        mov     ecx, ETH_ALEN
 
-   mov      al, 0xff
+        mov     al, 0xff
 
 nsr_004:
-   out      dx, al
-   inc      dx
-   loop   nsr_004
+        out     dx, al
+        inc     dx
+        loop    nsr_004
 
-   mov      dx, bx
-   add      dx, D8390_P1_CURR
-   mov      al, [eth_rx_start]
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P1_CURR
+        mov     al, [eth_rx_start]
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_COMMAND
-   mov      al, D8390_COMMAND_PS0_RD2_STA
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_COMMAND
+        mov     al, D8390_COMMAND_PS0_RD2_STA
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_ISR
-   mov      al, 0xff
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_ISR
+        mov     al, 0xff
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_TCR
-   mov      al, 0
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_TCR
+        mov     al, 0
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_RCR
-   mov      al, 4
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_RCR
+        mov     al, 4
+        out     dx, al
 
-   ret
+        ret
 
 
 
@@ -496,197 +513,197 @@ nsr_004:
 ;
 ;***************************************************************************
 rtl8029_probe:
-   mov      eax, [io_addr]
-   mov      [eth_nic_base], ax      ; The IO address space is 16 bit only
+        mov     eax, [io_addr]
+        mov     [eth_nic_base], ax  ; The IO address space is 16 bit only
 
-   mov      al, VENDOR_NONE
-   mov      [eth_vendor], al
+        mov     al, VENDOR_NONE
+        mov     [eth_vendor], al
 
-   mov      al, [eth_vendor]
-   cmp      al, VENDOR_NONE
+        mov     al, [eth_vendor]
+        cmp     al, VENDOR_NONE
 
-   jne      ep_check_have_vendor
-   xor      eax, eax
-   mov      [eth_bmem], eax
+        jne     ep_check_have_vendor
+        xor     eax, eax
+        mov     [eth_bmem], eax
 
-   mov      al, FLAG_PIO
-   mov      [eth_flags], al
+        mov     al, FLAG_PIO
+        mov     [eth_flags], al
 
-   mov      ax, [eth_nic_base]
-   add      ax, NE_ASIC_OFFSET
-   mov      [eth_asic_base], ax
+        mov     ax, [eth_nic_base]
+        add     ax, NE_ASIC_OFFSET
+        mov     [eth_asic_base], ax
 
-   mov      al, MEM_16384
-   mov      [eth_memsize], al
+        mov     al, MEM_16384
+        mov     [eth_memsize], al
 
-   mov      al, 32
-   mov      [eth_tx_start], al
+        mov     al, 32
+        mov     [eth_tx_start], al
 
-   add      al, D8390_TXBUF_SIZE
-   mov      [eth_rx_start], al
+        add     al, D8390_TXBUF_SIZE
+        mov     [eth_rx_start], al
 
-   mov      dx, [eth_asic_base]
-   add      dx, NE_RESET
+        mov     dx, [eth_asic_base]
+        add     dx, NE_RESET
 
-   in      al, dx
-   out      dx, al
+        in      al, dx
+        out     dx, al
 
-   in      al, 0x84
+        in      al, 0x84
 
-   mov      bx, [eth_nic_base]
+        mov     bx, [eth_nic_base]
 
-   mov      dx, bx
-   add      dx, D8390_P0_COMMAND
-   mov      al, D8390_COMMAND_RD2_STP
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_COMMAND
+        mov     al, D8390_COMMAND_RD2_STP
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_RCR
-   mov      al, D8390_RCR_MON
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_RCR
+        mov     al, D8390_RCR_MON
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_DCR
-   mov      al, D8390_DCR_FT1_LS
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_DCR
+        mov     al, D8390_DCR_FT1_LS
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_PSTART
-   mov      al, MEM_8192
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_PSTART
+        mov     al, MEM_8192
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_PSTOP
-   mov      al, MEM_16384
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_PSTOP
+        mov     al, MEM_16384
+        out     dx, al
 
-   mov      esi, test_data
-   mov      ebx, 8192
-   mov      ecx, 14
-   call   eth_pio_write
+        mov     esi, test_data
+        mov     ebx, 8192
+        mov     ecx, 14
+        call    eth_pio_write
 
-   mov      ebx, 8192
-   mov      ecx, 14
-   mov      edi, test_buffer
-   call   eth_pio_read
+        mov     ebx, 8192
+        mov     ecx, 14
+        mov     edi, test_buffer
+        call    eth_pio_read
 
-   mov      esi, test_buffer
-   mov      edi, test_data
-    mov       ecx, 13
-    cld
-    rep       cmpsb
+        mov     esi, test_buffer
+        mov     edi, test_data
+        mov     ecx, 13
+        cld
+        rep cmpsb
 
-    je      ep_set_vendor
+        je      ep_set_vendor
 
-    mov      al, [eth_flags]
-    or      al, FLAG_16BIT
-    mov      [eth_flags], al
+        mov     al, [eth_flags]
+        or      al, FLAG_16BIT
+        mov     [eth_flags], al
 
-    mov      al, MEM_32768
-    mov      [eth_memsize], al
+        mov     al, MEM_32768
+        mov     [eth_memsize], al
 
-    mov      al, 64
-    mov      [eth_tx_start], al
+        mov     al, 64
+        mov     [eth_tx_start], al
 
-   add      al, D8390_TXBUF_SIZE
-   mov      [eth_rx_start], al
+        add     al, D8390_TXBUF_SIZE
+        mov     [eth_rx_start], al
 
-   mov      bx, [eth_nic_base]
+        mov     bx, [eth_nic_base]
 
-   mov      dx, bx
-   add      dx, D8390_P0_DCR
-   mov      al, D8390_DCR_WTS_FT1_LS
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_DCR
+        mov     al, D8390_DCR_WTS_FT1_LS
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_PSTART
-   mov      al, MEM_16384
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_PSTART
+        mov     al, MEM_16384
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_PSTOP
-   mov      al, MEM_32768
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_PSTOP
+        mov     al, MEM_32768
+        out     dx, al
 
-   mov      esi, test_data
-   mov      ebx, 16384
-   mov      ecx, 14
-   call   eth_pio_write
+        mov     esi, test_data
+        mov     ebx, 16384
+        mov     ecx, 14
+        call    eth_pio_write
 
-   mov      ebx, 16384
-   mov      ecx, 14
-   mov      edi, test_buffer
-   call     eth_pio_read
+        mov     ebx, 16384
+        mov     ecx, 14
+        mov     edi, test_buffer
+        call    eth_pio_read
 
-   mov      esi, test_buffer
-   mov      edi, test_data
-   mov      ecx, 13
-   cld
-   rep      cmpsb
+        mov     esi, test_buffer
+        mov     edi, test_data
+        mov     ecx, 13
+        cld
+        rep cmpsb
 
 ep_set_vendor:
    ; this bit is odd - probably left over from my hacking
-   mov      ax, [eth_nic_base]
-   cmp      ax, 0
-   je       rtl8029_exit
-   cmp      ax, ISA_MAX_ADDR
-   jbe      ep_001
-   mov      al, [eth_flags]
-   or       al, FLAG_16BIT
-   mov      [eth_flags], al
+        mov     ax, [eth_nic_base]
+        cmp     ax, 0
+        je      rtl8029_exit
+        cmp     ax, ISA_MAX_ADDR
+        jbe     ep_001
+        mov     al, [eth_flags]
+        or      al, FLAG_16BIT
+        mov     [eth_flags], al
 
 ep_001:
-   mov      al, VENDOR_NOVELL
-   mov      [eth_vendor], al
+        mov     al, VENDOR_NOVELL
+        mov     [eth_vendor], al
 
-   mov      ebx, 0
-   mov      ecx, 16
-   mov      edi, romdata
-   call     eth_pio_read
+        mov     ebx, 0
+        mov     ecx, 16
+        mov     edi, romdata
+        call    eth_pio_read
 
 
-   mov      ecx, ETH_ALEN
-   mov      esi, romdata
-   mov      edi, node_addr
+        mov     ecx, ETH_ALEN
+        mov     esi, romdata
+        mov     edi, node_addr
 
-   mov      bl, [eth_flags]
-   and      bl, FLAG_16BIT
+        mov     bl, [eth_flags]
+        and     bl, FLAG_16BIT
 
 ep_002:
-   mov      al, [esi]
-   mov      [edi], al
+        mov     al, [esi]
+        mov     [edi], al
 
-   inc      edi
-   inc      esi
-   cmp      bl, FLAG_16BIT
-   jne      ep_003
+        inc     edi
+        inc     esi
+        cmp     bl, FLAG_16BIT
+        jne     ep_003
 
-   inc      esi
+        inc     esi
 
 ep_003:
-   loop     ep_002
+        loop    ep_002
 
 ep_check_have_vendor:
-   mov      al, [eth_vendor]
-   cmp      al, VENDOR_NONE
-   je       rtl8029_exit
+        mov     al, [eth_vendor]
+        cmp     al, VENDOR_NONE
+        je      rtl8029_exit
 
-   cmp      al, VENDOR_3COM
-   je       ep_reset_card
+        cmp     al, VENDOR_3COM
+        je      ep_reset_card
 
-   mov      eax, [eth_bmem]
-   mov      [eth_rmem], eax
+        mov     eax, [eth_bmem]
+        mov     [eth_rmem], eax
 
 ep_reset_card:
    ; Reset the card
-   call     rtl8029_reset
+        call    rtl8029_reset
 
    ; Indicate that we have successfully reset the card
-   mov      eax, [pci_data]
-   mov      [eth_status], eax
+        mov     eax, [pci_data]
+        mov     [eth_status], eax
 
 rtl8029_exit:
-   ret
+        ret
 
 
 
@@ -700,174 +717,174 @@ rtl8029_exit:
 ;
 ;***************************************************************************
 rtl8029_poll:
-   mov      eax, Ether_buffer
-   mov      [eth_rx_data_ptr], eax
+        mov     eax, Ether_buffer
+        mov     [eth_rx_data_ptr], eax
 
-   mov      bx, [eth_nic_base]
+        mov     bx, [eth_nic_base]
 
-   mov      dx, bx
-   add      dx, D8390_P0_RSR
-   in       al, dx
+        mov     dx, bx
+        add     dx, D8390_P0_RSR
+        in      al, dx
 
-   and      al, D8390_RSTAT_PRX
-   cmp      al, D8390_RSTAT_PRX
-   jne      nsp_exit
+        and     al, D8390_RSTAT_PRX
+        cmp     al, D8390_RSTAT_PRX
+        jne     nsp_exit
 
-   mov      dx, bx
-   add      dx, D8390_P0_BOUND
-   in       al, dx
-   inc      al
+        mov     dx, bx
+        add     dx, D8390_P0_BOUND
+        in      al, dx
+        inc     al
 
-   cmp      al, [eth_memsize]
-   jb       nsp_001
+        cmp     al, [eth_memsize]
+        jb      nsp_001
 
-   mov      al, [eth_rx_start]
+        mov     al, [eth_rx_start]
 
 nsp_001:
-   mov      ch, al
+        mov     ch, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_COMMAND
-   mov      al, D8390_COMMAND_PS1
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_COMMAND
+        mov     al, D8390_COMMAND_PS1
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P1_CURR
-   in       al, dx               ; get current page
-   mov      cl, al
+        mov     dx, bx
+        add     dx, D8390_P1_CURR
+        in      al, dx           ; get current page
+        mov     cl, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_COMMAND
-   mov      al, D8390_COMMAND_PS0
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_COMMAND
+        mov     al, D8390_COMMAND_PS0
+        out     dx, al
 
-   cmp      cl, [eth_memsize]
-   jb       nsp_002
+        cmp     cl, [eth_memsize]
+        jb      nsp_002
 
-   mov      cl, [eth_rx_start]
+        mov     cl, [eth_rx_start]
 
 nsp_002:
-   cmp      cl, ch
-   je       nsp_exit
+        cmp     cl, ch
+        je      nsp_exit
 
-   xor      ax, ax
-   mov      ah, ch
+        xor     ax, ax
+        mov     ah, ch
 
-   mov      [pktoff], ax
+        mov     [pktoff], ax
 
-   mov      al, [eth_flags]
-   and      al, FLAG_PIO
-   cmp      al, FLAG_PIO
-   jne      nsp_003
+        mov     al, [eth_flags]
+        and     al, FLAG_PIO
+        cmp     al, FLAG_PIO
+        jne     nsp_003
 
-   movzx    ebx, word [pktoff]
-   mov      edi, pkthdr
-   mov      ecx, 4
-   call     eth_pio_read
-   jmp      nsp_004
+        movzx   ebx, word [pktoff]
+        mov     edi, pkthdr
+        mov     ecx, 4
+        call    eth_pio_read
+        jmp     nsp_004
 
 nsp_003:
-   mov      edi, [eth_rmem]
-   movzx    eax, word [pktoff]
-   add      edi, eax
-   mov      eax, [edi]
-   mov      [pkthdr], eax
+        mov     edi, [eth_rmem]
+        movzx   eax, word [pktoff]
+        add     edi, eax
+        mov     eax, [edi]
+        mov     [pkthdr], eax
 
 nsp_004:
-   mov      ax, [pktoff]
-   add      ax, 4
-   mov      [pktoff], ax
+        mov     ax, [pktoff]
+        add     ax, 4
+        mov     [pktoff], ax
 
-   mov      ax, [pkthdr + 2]
-   sub      ax, 4
+        mov     ax, [pkthdr + 2]
+        sub     ax, 4
 
-   mov      [eth_tmp_len], ax
+        mov     [eth_tmp_len], ax
 
-   cmp      ax, ETH_ZLEN
-   jb       nsp_exit
+        cmp     ax, ETH_ZLEN
+        jb      nsp_exit
 
-   cmp      ax, ETH_FRAME_LEN
-   ja       nsp_exit
+        cmp     ax, ETH_FRAME_LEN
+        ja      nsp_exit
 
-   mov      al, [pkthdr]
-   and      al, D8390_RSTAT_PRX
-   cmp      al, D8390_RSTAT_PRX
-   jne      nsp_exit
+        mov     al, [pkthdr]
+        and     al, D8390_RSTAT_PRX
+        cmp     al, D8390_RSTAT_PRX
+        jne     nsp_exit
 
    ; Right, we can now get the data
 
-   mov      ax, [eth_tmp_len]
-   mov      [eth_rx_data_len], ax
+        mov     ax, [eth_tmp_len]
+        mov     [eth_rx_data_len], ax
 
-   xor      ebx, ebx
-   mov      bh, [eth_memsize]
-   sub      bx, [pktoff]
+        xor     ebx, ebx
+        mov     bh, [eth_memsize]
+        sub     bx, [pktoff]
 
-   cmp      [eth_tmp_len], bx
-   jbe      nsp_005
+        cmp     [eth_tmp_len], bx
+        jbe     nsp_005
 
-   mov      al, [eth_flags]
-   and      al, FLAG_PIO
-   cmp      al, FLAG_PIO
-   jne      nsp_006
+        mov     al, [eth_flags]
+        and     al, FLAG_PIO
+        cmp     al, FLAG_PIO
+        jne     nsp_006
 
-   push     ebx
-   mov      ecx, ebx
-   xor      ebx, ebx
-   mov      bx, [pktoff]
-   mov      edi, [eth_rx_data_ptr]
-   call     eth_pio_read
-   pop      ebx
-   jmp      nsp_007
+        push    ebx
+        mov     ecx, ebx
+        xor     ebx, ebx
+        mov     bx, [pktoff]
+        mov     edi, [eth_rx_data_ptr]
+        call    eth_pio_read
+        pop     ebx
+        jmp     nsp_007
 
 nsp_006:
    ; Not implemented, as we are using PIO mode on this card
 
 nsp_007:
-   xor      ax, ax
-   mov      ah, [eth_rx_start]
-   mov      [pktoff], ax
+        xor     ax, ax
+        mov     ah, [eth_rx_start]
+        mov     [pktoff], ax
 
-   mov      eax, [eth_rx_data_ptr]
-   add      eax, ebx
-   mov      [eth_rx_data_ptr], eax
+        mov     eax, [eth_rx_data_ptr]
+        add     eax, ebx
+        mov     [eth_rx_data_ptr], eax
 
-   mov      ax, [eth_tmp_len]
-   sub      ax, bx
-   mov      [eth_tmp_len], ax
+        mov     ax, [eth_tmp_len]
+        sub     ax, bx
+        mov     [eth_tmp_len], ax
 
 nsp_005:
-   mov      al, [eth_flags]
-   and      al, FLAG_PIO
-   cmp      al, FLAG_PIO
-   jne      nsp_008
+        mov     al, [eth_flags]
+        and     al, FLAG_PIO
+        cmp     al, FLAG_PIO
+        jne     nsp_008
 
-   xor      ebx, ebx
-   mov      bx, [pktoff]
-   xor      ecx, ecx
-   mov      cx, [eth_tmp_len]
-   mov      edi, [eth_rx_data_ptr]
-   call     eth_pio_read
-   jmp      nsp_009
+        xor     ebx, ebx
+        mov     bx, [pktoff]
+        xor     ecx, ecx
+        mov     cx, [eth_tmp_len]
+        mov     edi, [eth_rx_data_ptr]
+        call    eth_pio_read
+        jmp     nsp_009
 
 nsp_008:
    ; Not implemented, as we are using PIO mode on this card
 
 nsp_009:
-   mov      al, [pkthdr+1]
-   cmp      al, [eth_rx_start]
-   jne      nsp_010
+        mov     al, [pkthdr+1]
+        cmp     al, [eth_rx_start]
+        jne     nsp_010
 
-   mov      al, [eth_memsize]
+        mov     al, [eth_memsize]
 
 nsp_010:
-   mov      dx, [eth_nic_base]
-   add      dx, D8390_P0_BOUND
-   dec      al
-   out      dx, al
+        mov     dx, [eth_nic_base]
+        add     dx, D8390_P0_BOUND
+        dec     al
+        out     dx, al
 
 nsp_exit:
-   ret
+        ret
 
 
 
@@ -884,76 +901,76 @@ nsp_exit:
 ;
 ;***************************************************************************
 rtl8029_transmit:
-   mov      [eth_type], bx
+        mov     [eth_type], bx
 
-   pusha
+        pusha
 
-   mov      esi, edi
-   xor      bx, bx
-   mov      bh, [eth_tx_start]
-   mov      ecx, ETH_ALEN
-   call     eth_pio_write
+        mov     esi, edi
+        xor     bx, bx
+        mov     bh, [eth_tx_start]
+        mov     ecx, ETH_ALEN
+        call    eth_pio_write
 
-   mov      esi, node_addr
-   xor      bx, bx
-   mov      bh, [eth_tx_start]
-   add      bx, ETH_ALEN
-   mov      ecx, ETH_ALEN
-   call     eth_pio_write
+        mov     esi, node_addr
+        xor     bx, bx
+        mov     bh, [eth_tx_start]
+        add     bx, ETH_ALEN
+        mov     ecx, ETH_ALEN
+        call    eth_pio_write
 
-   mov      esi, eth_type
-   xor      bx, bx
-   mov      bh, [eth_tx_start]
-   add      bx, ETH_ALEN
-   add      bx, ETH_ALEN
-   mov      ecx, 2
-   call     eth_pio_write
+        mov     esi, eth_type
+        xor     bx, bx
+        mov     bh, [eth_tx_start]
+        add     bx, ETH_ALEN
+        add     bx, ETH_ALEN
+        mov     ecx, 2
+        call    eth_pio_write
 
-   popa
+        popa
 
-   xor      bx, bx
-   mov      bh, [eth_tx_start]
-   add      bx, ETH_HLEN
-   push     ecx
-   call     eth_pio_write
-   pop      ecx
+        xor     bx, bx
+        mov     bh, [eth_tx_start]
+        add     bx, ETH_HLEN
+        push    ecx
+        call    eth_pio_write
+        pop     ecx
 
-   add      ecx, ETH_HLEN
-   cmp      ecx, ETH_ZLEN
-   jae      nst_001
+        add     ecx, ETH_HLEN
+        cmp     ecx, ETH_ZLEN
+        jae     nst_001
 
-   mov      ecx, ETH_ZLEN
+        mov     ecx, ETH_ZLEN
 
 nst_001:
-   push     ecx
+        push    ecx
 
-   mov      bx, [eth_nic_base]
+        mov     bx, [eth_nic_base]
 
-   mov      dx, bx
-   add      dx, D8390_P0_COMMAND
-   mov      al, D8390_COMMAND_PS0_RD2_STA
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_COMMAND
+        mov     al, D8390_COMMAND_PS0_RD2_STA
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_TPSR
-   mov      al, [eth_tx_start]
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_TPSR
+        mov     al, [eth_tx_start]
+        out     dx, al
 
-   pop      ecx
+        pop     ecx
 
-   mov      dx, bx
-   add      dx, D8390_P0_TBCR0
-   mov      al, cl
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_TBCR0
+        mov     al, cl
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_TBCR1
-   mov      al, ch
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_TBCR1
+        mov     al, ch
+        out     dx, al
 
-   mov      dx, bx
-   add      dx, D8390_P0_COMMAND
-   mov      al, D8390_COMMAND_PS0_TXP_RD2_STA
-   out      dx, al
+        mov     dx, bx
+        add     dx, D8390_P0_COMMAND
+        mov     al, D8390_COMMAND_PS0_TXP_RD2_STA
+        out     dx, al
 
-   ret
+        ret

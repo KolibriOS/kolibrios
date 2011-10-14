@@ -22,7 +22,7 @@ d80x25_bottom:
           line_full_bottom
 d80x25_bottom_num = 3
 
-msg_apm	  db      " APM x.x ", 0
+msg_apm   db      " APM x.x ", 0
 novesa    db      "Anzeige: EGA/CGA ",13,10,0
 s_vesa    db      "Vesa-Version: "
   .ver    db      "?.?",13,10,0

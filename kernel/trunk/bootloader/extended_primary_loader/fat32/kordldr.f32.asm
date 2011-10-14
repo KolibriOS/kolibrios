@@ -111,7 +111,7 @@ nomem:
         mov     di, foldcache_clus
         mov     cx, 8*4/2 + 1
         xor     ax, ax
-        rep     stosw
+        rep stosw
 ; bootsector code caches one FAT sector, [bp-14], in 6000:0000
 ; initialize our (more advanced) FAT caching from this
         mov     di, 8400h
@@ -167,7 +167,7 @@ kordldr_full:
         pop     es
         xor     si, si
         xor     di, di
-        rep     movsw
+        rep movsw
         pop     ds
 ; ...continue loading...
         mov     di, secondary_loader_info
@@ -310,7 +310,7 @@ filename equ bp
         push    di
         mov     cx, 8+3
         mov     al, ' '
-        rep     stosb
+        rep stosb
         pop     di
         mov     cl, 8   ; 8 symbols per name
         mov     bl, 1
@@ -434,7 +434,7 @@ folder_next_sector:
         pusha
         mov     cx, 0x100
         xor     si, si
-        rep     movsw
+        rep movsw
         mov     di, es
         shr     di, 8
         add     [ss:foldcache_size+di-0x90], 0x10       ; 0x10 new entries in the cache
@@ -592,7 +592,7 @@ sloop:
         jnz     scont                   ; ignore volume labels
         pusha
         mov     cx, 11
-        repz    cmps byte [ss:si], byte [es:di]
+        repz cmps byte [ss:si], byte [es:di]
         popa
         jz      sdone
 scont:

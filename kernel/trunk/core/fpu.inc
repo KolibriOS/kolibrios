@@ -9,172 +9,172 @@ $Revision$
 
 
 init_fpu:
-           clts
-           fninit
+        clts
+        fninit
 
-           bt [cpu_caps], CAPS_SSE
-           jnc .no_SSE
+        bt      [cpu_caps], CAPS_SSE
+        jnc     .no_SSE
 
-           mov ebx, cr4
-           mov ecx, cr0
-           or ebx, CR4_OSFXSR+CR4_OSXMMEXPT
-           mov cr4, ebx
+        mov     ebx, cr4
+        mov     ecx, cr0
+        or      ebx, CR4_OSFXSR+CR4_OSXMMEXPT
+        mov     cr4, ebx
 
-           and ecx, not (CR0_MP+CR0_EM)
-           or ecx, CR0_NE
-           mov cr0, ecx
+        and     ecx, not (CR0_MP+CR0_EM)
+        or      ecx, CR0_NE
+        mov     cr0, ecx
 
-           mov dword [esp-4], SSE_INIT
-           ldmxcsr [esp-4]
+        mov     dword [esp-4], SSE_INIT
+        ldmxcsr [esp-4]
 
-           xorps xmm0, xmm0
-           xorps xmm1, xmm1
-           xorps xmm2, xmm2
-           xorps xmm3, xmm3
-           xorps xmm4, xmm4
-           xorps xmm5, xmm5
-           xorps xmm6, xmm6
-           xorps xmm7, xmm7
-           fxsave [fpu_data]  ;[eax]
-           ret
+        xorps   xmm0, xmm0
+        xorps   xmm1, xmm1
+        xorps   xmm2, xmm2
+        xorps   xmm3, xmm3
+        xorps   xmm4, xmm4
+        xorps   xmm5, xmm5
+        xorps   xmm6, xmm6
+        xorps   xmm7, xmm7
+        fxsave  [fpu_data]    ;[eax]
+        ret
 .no_SSE:
-           mov ecx, cr0
-           and ecx, not CR0_EM
-           or ecx, CR0_MP+CR0_NE
-           mov cr0, ecx
-           fnsave [fpu_data]
-           ret
+        mov     ecx, cr0
+        and     ecx, not CR0_EM
+        or      ecx, CR0_MP+CR0_NE
+        mov     cr0, ecx
+        fnsave  [fpu_data]
+        ret
 
 ; param
 ;  eax= 512 bytes memory area
 
 align 4
 fpu_save:
-           push ecx
-           push esi
-           push edi
+        push    ecx
+        push    esi
+        push    edi
 
-           pushfd
-           cli
+        pushfd
+        cli
 
-           clts
-           mov edi, eax
+        clts
+        mov     edi, eax
 
-           mov ecx, [fpu_owner]
-           mov esi, [CURRENT_TASK]
-           cmp ecx, esi
-           jne .save
+        mov     ecx, [fpu_owner]
+        mov     esi, [CURRENT_TASK]
+        cmp     ecx, esi
+        jne     .save
 
-           call save_context
-           jmp .exit
+        call    save_context
+        jmp     .exit
 .save:
-           mov [fpu_owner], esi
+        mov     [fpu_owner], esi
 
-           shl ecx, 8
-           mov eax, [ecx+SLOT_BASE+APPDATA.fpu_state]
+        shl     ecx, 8
+        mov     eax, [ecx+SLOT_BASE+APPDATA.fpu_state]
 
-           call save_context
+        call    save_context
 
-           shl esi, 8
-           mov esi, [esi+SLOT_BASE+APPDATA.fpu_state]
-           mov ecx, 512/4
-           cld
-           rep movsd
-           fninit
+        shl     esi, 8
+        mov     esi, [esi+SLOT_BASE+APPDATA.fpu_state]
+        mov     ecx, 512/4
+        cld
+        rep movsd
+        fninit
 .exit:
-           popfd
-           pop edi
-           pop esi
-           pop ecx
-           ret
+        popfd
+        pop     edi
+        pop     esi
+        pop     ecx
+        ret
 
 align 4
 save_context:
-           bt [cpu_caps], CAPS_SSE
-           jnc .no_SSE
+        bt      [cpu_caps], CAPS_SSE
+        jnc     .no_SSE
 
-           fxsave [eax]
-           ret
+        fxsave  [eax]
+        ret
 .no_SSE:
-           fnsave [eax]
-           ret
+        fnsave  [eax]
+        ret
 
 align 4
 fpu_restore:
-           push ecx
-           push esi
+        push    ecx
+        push    esi
 
-           mov esi, eax
+        mov     esi, eax
 
-           pushfd
-           cli
+        pushfd
+        cli
 
-           mov ecx, [fpu_owner]
-           mov eax, [CURRENT_TASK]
-           cmp ecx, eax
-           jne .copy
+        mov     ecx, [fpu_owner]
+        mov     eax, [CURRENT_TASK]
+        cmp     ecx, eax
+        jne     .copy
 
-           clts
-           bt [cpu_caps], CAPS_SSE
-           jnc .no_SSE
+        clts
+        bt      [cpu_caps], CAPS_SSE
+        jnc     .no_SSE
 
-           fxrstor [esi]
-           popfd
-           pop esi
-           pop ecx
-           ret
+        fxrstor [esi]
+        popfd
+        pop     esi
+        pop     ecx
+        ret
 .no_SSE:
-           fnclex               ;fix possible problems
-           frstor [esi]
-           popfd
-           pop esi
-           pop ecx
-           ret
+        fnclex                  ;fix possible problems
+        frstor  [esi]
+        popfd
+        pop     esi
+        pop     ecx
+        ret
 .copy:
-           shl eax, 8
-           mov edi, [eax+SLOT_BASE+APPDATA.fpu_state]
-           mov ecx, 512/4
-           cld
-           rep movsd
-           popfd
-           pop esi
-           pop ecx
-           ret
+        shl     eax, 8
+        mov     edi, [eax+SLOT_BASE+APPDATA.fpu_state]
+        mov     ecx, 512/4
+        cld
+        rep movsd
+        popfd
+        pop     esi
+        pop     ecx
+        ret
 
 align 4
 except_7:                  ;#NM exception handler
         save_ring3_context
         clts
-        mov ax, app_data  ;
-        mov ds, ax
-        mov es, ax
+        mov     ax, app_data;
+        mov     ds, ax
+        mov     es, ax
 
-        mov ebx, [fpu_owner]
-        cmp ebx, [CURRENT_TASK]
-        je .exit
+        mov     ebx, [fpu_owner]
+        cmp     ebx, [CURRENT_TASK]
+        je      .exit
 
-        shl ebx, 8
-        mov eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
-        bt [cpu_caps], CAPS_SSE
-        jnc .no_SSE
+        shl     ebx, 8
+        mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
+        bt      [cpu_caps], CAPS_SSE
+        jnc     .no_SSE
 
-        fxsave [eax]
-        mov ebx, [CURRENT_TASK]
-        mov [fpu_owner], ebx
-        shl ebx, 8
-        mov eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
+        fxsave  [eax]
+        mov     ebx, [CURRENT_TASK]
+        mov     [fpu_owner], ebx
+        shl     ebx, 8
+        mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
         fxrstor [eax]
 .exit:
         restore_ring3_context
         iret
 
 .no_SSE:
-        fnsave [eax]
-        mov ebx, [CURRENT_TASK]
-        mov [fpu_owner], ebx
-        shl ebx, 8
-        mov eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
-        frstor [eax]
+        fnsave  [eax]
+        mov     ebx, [CURRENT_TASK]
+        mov     [fpu_owner], ebx
+        shl     ebx, 8
+        mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
+        frstor  [eax]
         restore_ring3_context
         iret
 

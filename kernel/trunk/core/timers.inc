@@ -52,7 +52,7 @@ lock_timer_list:
         mov     edx, [CURRENT_TASK]
 @@:
         xor     eax, eax
-lock    cmpxchg [timer_list_owner], edx
+        lock cmpxchg [timer_list_owner], edx
         jz      @f
         cmp     eax, edx
         jz      @f

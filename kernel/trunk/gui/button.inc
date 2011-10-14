@@ -131,7 +131,8 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         call    button._.incecx2
 
         ; set button height counter
-    @@: mov     edx, edi
+    @@:
+        mov     edx, edi
 
   .next_line:
         call    button._.button_dececx
@@ -380,14 +381,17 @@ button._.dececx: ;/////////////////////////////////////////////////////////////
         sub     cl, 0x20
         jnc     @f
         xor     cl, cl
-    @@: sub     ch, 0x20
+    @@:
+        sub     ch, 0x20
         jnc     @f
         xor     ch, ch
-    @@: rol     ecx, 16
+    @@:
+        rol     ecx, 16
         sub     cl, 0x20
         jnc     @f
         xor     cl, cl
-    @@: rol     ecx, 16
+    @@:
+        rol     ecx, 16
         ret
 
 ;------------------------------------------------------------------------------
@@ -398,14 +402,17 @@ button._.incecx: ;/////////////////////////////////////////////////////////////
         add     cl, 0x20
         jnc     @f
         or      cl, -1
-    @@: add     ch, 0x20
+    @@:
+        add     ch, 0x20
         jnc     @f
         or      ch, -1
-    @@: rol     ecx, 16
+    @@:
+        rol     ecx, 16
         add     cl, 0x20
         jnc     @f
         or      cl, -1
-    @@: rol     ecx, 16
+    @@:
+        rol     ecx, 16
         ret
 
 ;------------------------------------------------------------------------------
@@ -416,14 +423,17 @@ button._.incecx2: ;////////////////////////////////////////////////////////////
         add     cl, 0x14
         jnc     @f
         or      cl, -1
-    @@: add     ch, 0x14
+    @@:
+        add     ch, 0x14
         jnc     @f
         or      ch, -1
-    @@: rol     ecx, 16
+    @@:
+        rol     ecx, 16
         add     cl, 0x14
         jnc     @f
         or      cl, -1
-    @@: rol     ecx, 16
+    @@:
+        rol     ecx, 16
         ret
 
 ;------------------------------------------------------------------------------
@@ -440,17 +450,21 @@ button._.button_dececx: ;//////////////////////////////////////////////////////
         jg      @f
         mov     al, 2
 
-    @@: sub     cl, al
-        jnc     @f
-        xor     cl, cl
-    @@: sub     ch, al
-        jnc     @f
-        xor     ch, ch
-    @@: rol     ecx, 16
+    @@:
         sub     cl, al
         jnc     @f
         xor     cl, cl
-    @@: rol     ecx, 16
+    @@:
+        sub     ch, al
+        jnc     @f
+        xor     ch, ch
+    @@:
+        rol     ecx, 16
+        sub     cl, al
+        jnc     @f
+        xor     cl, cl
+    @@:
+        rol     ecx, 16
 
         pop     eax
 

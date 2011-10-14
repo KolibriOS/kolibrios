@@ -45,27 +45,27 @@ macro use_any_sec
 
 if DEBUG        
         pusha
-        mov     ax,word [value_timeout] ;идет проверка на наличее значения timeout, для более быстрой работы, этот параметр должен быть уже обработан,т.е. в этом случае при его =0 будет сформирован указатель только на дефолтную секцию, иначе информация будет собрана по всем секциям и составлены указатели в блоке памяти
+        mov     ax, word [value_timeout];идет проверка на наличее значения timeout, для более быстрой работы, этот параметр должен быть уже обработан,т.е. в этом случае при его =0 будет сформирован указатель только на дефолтную секцию, иначе информация будет собрана по всем секциям и составлены указатели в блоке памяти
 ;        mov     ax,cx
-        mov     cx,0x0a
-        mov     di,show_db1
-        mov     dword[ds:di],'    '
-        mov     word [ds:di+4],'  '
+        mov     cx, 0x0a
+        mov     di, show_db1
+        mov     dword[ds:di], '    '
+        mov     word [ds:di+4], '  '
         call    decode
 ;Show size
-        mov     si,show_db1
+        mov     si, show_db1
         call    printplain
 ;
         popa
 end if  
 
-        test    ax,ax
+        test    ax, ax
         jz      .parse_run_only
 
 ;отобразим полный список всех найденых секций.
 if DEBUG
         pusha
-        mov     si,show_all_sect
+        mov     si, show_all_sect
         call    printplain
         popa
 end if
@@ -99,9 +99,9 @@ end if
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; get start time
         call    gettime
-        mov     dword [start_timer],eax
-        mov     word [timer_],newtimer
-        mov     word [timer_+2],cs
+        mov     dword [start_timer], eax
+        mov     word [timer_], newtimer
+        mov     word [timer_+2], cs
 ;установить свое прерывание на таймер т.е. код будет перрываться ~18 раз в сек и переходить на обработчик
         cli
         push    0
@@ -109,7 +109,7 @@ end if
         push    dword [es:8*4]
         pop     dword [old_timer]
         push    dword [timer_]
-        pop     dword [es:8*4]    
+        pop     dword [es:8*4]
         sti
 
 ;процедура формирования буфера для скролинга секций
@@ -131,7 +131,7 @@ end if
 ;        popa
 ;end if  
 ;;;;;;;;;;;;;размер предыдущей сеции установим =0
-        mov     save_descript_size,18
+        mov     save_descript_size, 18
 ;отобразить black screen
 show_bl_sc      ;es=0xb800
 .show_all_scr:
@@ -144,62 +144,62 @@ show_act_cursor
 show_descript   ;макрос по отображению описания секции
 
 ;отобразить Press any key ....
-        mov     eax,dword [old_timer]
-        cmp     eax,dword [timer_]
+        mov     eax, dword [old_timer]
+        cmp     eax, dword [timer_]
         jz      .interrupt_16
 
 show_timer_message
-        mov word [start_stack],sp
+        mov     word [start_stack], sp
 .interrupt_16:
-        xor     ax,ax   ;получим информацию о том что нажато
+        xor     ax, ax  ;получим информацию о том что нажато
         int     0x16
 ;check on change
-        mov     ebx,dword [old_timer]
-        cmp     ebx,dword [timer_]
+        mov     ebx, dword [old_timer]
+        cmp     ebx, dword [timer_]
         jz      @f
 ;restore timer interrupt
         cli
         push    0
         pop     es
 ;        mov     eax,dword [old_timer]  ; восстановим прежднее прерывание
-        mov     [es:8*4],ebx
-        mov     dword [timer_],ebx
+        mov     [es:8*4], ebx
+        mov     dword [timer_], ebx
         sti
         
-        push    ax      
+        push    ax
 clear_timer_msg
         pop     ax
 @@:
         call    clean_active_cursor   ;clean old cursor   ;es=0xb800
 
-        cmp     ah,0x48  ;реакция системы на события
+        cmp     ah, 0x48 ;реакция системы на события
         jz      .up
-        cmp     ah,0x50
+        cmp     ah, 0x50
         jz      .down
-        cmp     ah,0x49
+        cmp     ah, 0x49
         jz      .pgup
-        cmp     ah,0x51
+        cmp     ah, 0x51
         jz      .pgdown
-        cmp     ah,0x47
+        cmp     ah, 0x47
         jz      .home
-        cmp     ah,0x4f
+        cmp     ah, 0x4f
         jz      .end
 
-        cmp     al,0xD
+        cmp     al, 0xD
         jnz     .show_active_cursor
 
         jmp     .end_show_all           ;парсинг секции которая указана в point_default
 .up:
-        mov     si,point_to_point_def   ;значение указателя
-        add     si,2
-        lea     ax,point_to_hframe
+        mov     si, point_to_point_def  ;значение указателя
+        add     si, 2
+        lea     ax, point_to_hframe
 
-        cmp     si,ax
+        cmp     si, ax
         ja      @f
 
-        mov     point_to_point_def,si
-        mov     ax,[si]
-        mov     point_default,ax
+        mov     point_to_point_def, si
+        mov     ax, [si]
+        mov     point_default, ax
         jmp     .show_active_cursor
 @@:     
         call    find_before_sect
@@ -208,22 +208,23 @@ clear_timer_msg
 
 
 .down:
-        mov     si,point_to_point_def   ;значение указателя
-        mov     ax,point_to_eframe      ;указатель на последний элемент
-        sub     si,2
-        cmp     si,ax
+        mov     si, point_to_point_def  ;значение указателя
+        mov     ax, point_to_eframe     ;указатель на последний элемент
+        sub     si, 2
+        cmp     si, ax
         jb      @f
 
-        mov     point_to_point_def,si
-        mov     ax,[si]
-        mov     point_default,ax
+        mov     point_to_point_def, si
+        mov     ax, [si]
+        mov     point_default, ax
         jmp     .show_active_cursor
 
-@@:     call    find_next_sect
+@@:
+        call    find_next_sect
         jmp     .show_all_scr
 
 .pgup:
-        mov     cx,size_show_section
+        mov     cx, size_show_section
 @@:
         push    cx
         call    find_before_sect
@@ -233,7 +234,7 @@ clear_timer_msg
 
 
 .pgdown:
-        mov     cx,size_show_section
+        mov     cx, size_show_section
 @@:
         push    cx
         call    find_next_sect
@@ -242,12 +243,12 @@ clear_timer_msg
         jmp     .show_all_scr
 
 .home:
-        xor     di,di
-        call    find_next_sect.h        
+        xor     di, di
+        call    find_next_sect.h
         jmp     .show_all_scr
 
 .end:
-        mov     di,save_cx
+        mov     di, save_cx
         call    find_before_sect.e
         jmp     .show_all_scr
 
@@ -258,7 +259,7 @@ clear_timer_msg
 .parse_run_only:
 if DEBUG
         pusha
-        mov     si,no_show_only_w
+        mov     si, no_show_only_w
         call    printplain
         popa
 end if
@@ -287,63 +288,63 @@ macro show_bl_sc
 ;;;;;;;;;;;;;;;
 ;очистим экран и выведем меню 
 ; draw frames
-        xor     ax,ax
+        xor     ax, ax
 if DEBUG
-        mov     ax,0x0720
+        mov     ax, 0x0720
 end if
         push    0xb800
         pop     es
         xor     di, di
 ; draw top
         mov     cx, 25 * 80
-        rep     stosw
+        rep stosw
 ;;;;;;;;;;;;;;;;;;;;;;; show 'Secondary Loader v0.xxx'
-        mov     di,164
-        mov     si,version
-        mov     cx,version_end-version
-        mov     ah,color_sym_yellow
+        mov     di, 164
+        mov     si, version
+        mov     cx, version_end-version
+        mov     ah, color_sym_yellow
 @@:
         lodsb
         stosw
-        loop @b 
+        loop    @b
 ;;;;;;;;;;;;;;;;;;;;;;; show firm ))
-        mov     di,(2*160-(2*(soft_mes_end-soft_mes+4)))        ;286
-        mov     ah,color_sym_pink;color_sym_red
-        mov     al,'K'
+        mov     di, (2*160-(2*(soft_mes_end-soft_mes+4)))       ;286
+        mov     ah, color_sym_pink;color_sym_red
+        mov     al, 'K'
         stosw
-        mov     al,' '
+        mov     al, ' '
         stosw
-        mov     ah,color_sym_lightgray;color_sym_lightblue;color_sym_pink
-        mov     si,soft_mes
-        mov     cx,soft_mes_end- soft_mes
+        mov     ah, color_sym_lightgray;color_sym_lightblue;color_sym_pink
+        mov     si, soft_mes
+        mov     cx, soft_mes_end- soft_mes
 @@:
         lodsb
         stosw
-        loop @b 
+        loop    @b
 ;;;;;;;;;;;;;;;;;;;;;;; show '__________________________'
-        mov     di,480
-        mov     ah,color_sym_yellow
-        mov     al,'Д'
-        mov     cx,61
-        rep     stosw
+        mov     di, 480
+        mov     ah, color_sym_yellow
+        mov     al, 'Д'
+        mov     cx, 61
+        rep stosw
 ;;;;;;;;;;;;;;;;;;;;;;; show 'Select section'
-        mov     di,804
-        mov     si,select_section
-        mov     cx,select_section_end - select_section
-        mov     ah,color_sym_lightgray
+        mov     di, 804
+        mov     si, select_section
+        mov     cx, select_section_end - select_section
+        mov     ah, color_sym_lightgray
 @@:
         lodsb
         stosw
-        loop @b 
+        loop    @b
 ;;;;;;;;;;;;;;;;;;;;;;; show 'Section description'
-        mov     di,880
-        mov     si,section_description
-        mov     cx,section_description_end - section_description
+        mov     di, 880
+        mov     si, section_description
+        mov     cx, section_description_end - section_description
 ;       mov     ah,color_sym_lightgray
 @@:
         lodsb
         stosw
-        loop @b 
+        loop    @b
 
 }
 
@@ -352,54 +353,54 @@ macro show_timer_message
 ;;;;;;;;;;;;;;;;;;;;; show Press any key
 ;;;;;;;;;;;;;;;;;;;;; show ramk
 
-        xor     ax,ax
-        mov     di,3360
-        mov     cx,80*4
-        rep     stosw
+        xor     ax, ax
+        mov     di, 3360
+        mov     cx, 80*4
+        rep stosw
 
-        mov     di,3362     
-        mov     ah,color_sym_pink
-        mov     al,0xDA
+        mov     di, 3362
+        mov     ah, color_sym_pink
+        mov     al, 0xDA
         stosw
-        mov     al,0xc4
-        mov     cx,76
-        rep     stosw
-        mov     al,0xBF
+        mov     al, 0xc4
+        mov     cx, 76
+        rep stosw
+        mov     al, 0xBF
         stosw
-        add     di,4
-        mov     al,0xb3
+        add     di, 4
+        mov     al, 0xb3
         stosw
-        add     di,152
+        add     di, 152
         stosw
-        add     di,4
+        add     di, 4
         stosw
-        add     di,152
+        add     di, 152
         stosw
-        add     di,4
-        mov     al,0xc0
+        add     di, 4
+        mov     al, 0xc0
         stosw
-        mov     al,0xc4
-        mov     cx,76
-        rep     stosw
-        mov     al,0xd9
+        mov     al, 0xc4
+        mov     cx, 76
+        rep stosw
+        mov     al, 0xd9
         stosw
 ;;;;;;;;;;;;;;;;;;;;;;;;ramk is complete show
 ;show first message
-        mov     si,start_msg
-        mov     cx,start_msg_e-start_msg
-        mov     di,3526
+        mov     si, start_msg
+        mov     cx, start_msg_e-start_msg
+        mov     di, 3526
 @@:
         lodsb
         stosw
-        loop @b 
+        loop    @b
 ;;;;;;;;;;;;;;;;;;;; show press Enter to....
-        add     di,44
-        mov     si,time_msg
-        mov     cx,time_msg_e-time_msg
+        add     di, 44
+        mov     si, time_msg
+        mov     cx, time_msg_e-time_msg
 @@:
         lodsb
         stosw
-        loop @b 
+        loop    @b
 }
 
 
@@ -411,17 +412,17 @@ macro show_timer_message
 
 macro get_frame_buffer
 {
-        mov     cx,save_cx      ;it's placed size of ini file
-        les     di,dword [file_data]
+        mov     cx, save_cx     ;it's placed size of ini file
+        les     di, dword [file_data]
 
-        mov     si,di   ;point frame
-        mov     bx,cx
-        mov     dx,size_show_section
+        mov     si, di  ;point frame
+        mov     bx, cx
+        mov     dx, size_show_section
 ;       mov     point_to_hframe,di      ; внесем значение, так подстраховка не более
 
-        mov     al,byte [es:di]
+        mov     al, byte [es:di]
         push    word .first_ret_bl_sc
-        cmp     al,' '
+        cmp     al, ' '
         jz      .first_bl_sc
         jmp     get_firs_sym.not_space
 .first_bl_sc:
@@ -429,31 +430,31 @@ macro get_frame_buffer
 
 .start_hbl:              
         call    get_firs_sym    ;get first symbol on new line
-        test    cx,cx
+        test    cx, cx
         jz      error.correct_exit_bl   ;critical error not found default point it's not possible because it's param chacking before
-        cmp     al,'['
+        cmp     al, '['
         jnz     .start_hbl
 
-        mov     si,di    ;point frame
-        mov     bx,cx
-        mov     dx,size_show_section
+        mov     si, di   ;point frame
+        mov     bx, cx
+        mov     dx, size_show_section
         jmp     .analisist_al
 
 
 .start_bl:
         call    get_firs_sym    ;get first symbol on new line
 .first_ret_bl_sc:                     ;первый возврат
-        test    cx,cx
+        test    cx, cx
         jz      error.correct_exit_bl   ;critical error not found default point it's not possible because it's param chacking before
 .analisist_al:
-        cmp     al,'['
+        cmp     al, '['
         jnz     .start_bl
 ;просматриваем ini файл с начала в поисках секции указаной как default 
 ;поиск фрейма в котором содержиться значение default
 .found_sect_bl:
-        cmp     di,point_loader
+        cmp     di, point_loader
         jz      .start_bl
-        cmp     di,point_default
+        cmp     di, point_default
         jz      .save_point_def
 
         dec     dx
@@ -464,14 +465,14 @@ macro get_frame_buffer
 
 .save_point_def:
 ;итак далее мы должны заполнить frame буфер адресов секций, что бы потом по нему быстро перемещаться не вычисляя снова адреса
-        mov     di,si   ;указатель на начало 
-        mov     cx,bx
-        lea     si,point_to_hframe
-        mov     dx,size_show_section+1   ;т.к. у нас структура содержит размер между первым и вторым указателем, то нам нужно на 1 адрес больше обсчитать секций.
+        mov     di, si  ;указатель на начало 
+        mov     cx, bx
+        lea     si, point_to_hframe
+        mov     dx, size_show_section+1  ;т.к. у нас структура содержит размер между первым и вторым указателем, то нам нужно на 1 адрес больше обсчитать секций.
 ;переходим на обработку значения указателя
-        mov     al,byte [es:di]
+        mov     al, byte [es:di]
         push    word .first_ret_mfb
-        cmp     al,' '
+        cmp     al, ' '
         jz      .first_bl_mbf
         jmp     get_firs_sym.not_space
 .first_bl_mbf:
@@ -481,16 +482,16 @@ macro get_frame_buffer
         call    get_firs_sym    ;get first symbol on new line
 .first_ret_mfb:                     ;первый возврат
         jcxz    .val_buff_comp  ;.end_loader     ;found or not found parametrs in section  exit in section
-        cmp     al,'['
+        cmp     al, '['
         jnz     .start_mfb
 
 .found_sect_mfb:
-        cmp     di,point_loader     ;if we have section loader
+        cmp     di, point_loader    ;if we have section loader
         jz      .start_mfb
 
-        mov     [si],di
+        mov     [si], di
 
-        sub     si,2
+        sub     si, 2
         dec     dx
         jnz     .start_mfb
 ;bufer is full
@@ -498,36 +499,36 @@ macro get_frame_buffer
 .val_buff_comp:
         push    save_cx
         pop     word [si]
-        sub     si,2
+        sub     si, 2
 @@:
 
-        add     si,4
-        mov     point_to_eframe,si
+        add     si, 4
+        mov     point_to_eframe, si
 
 }
 
 macro show_act_cursor
 {
 ;отображение курсора по умолчанию
-        lea     si,point_to_hframe
-        mov     di,962-160
-        mov     ax,point_default
-        mov     cx,size_show_section
+        lea     si, point_to_hframe
+        mov     di, 962-160
+        mov     ax, point_default
+        mov     cx, size_show_section
 .home_show_cur:
-        mov     bx,[si]
-        add     di,160
-        cmp     bx,ax
+        mov     bx, [si]
+        add     di, 160
+        cmp     bx, ax
         jz      .show_cursor_activ
-        sub     si,2
+        sub     si, 2
         loop    .home_show_cur
 
 .show_cursor_activ:
 ;        push   0xb800
 ;       pop     es
-        mov     point_to_point_def,si
-        mov     ax,(color_sym_red*0x100+0x10)
+        mov     point_to_point_def, si
+        mov     ax, (color_sym_red*0x100+0x10)
         stosw
-        add     di,68
+        add     di, 68
         inc     ax
         stosw
 }
@@ -536,14 +537,14 @@ macro clear_timer_msg
 {
         push    0xb800
         pop     es
-        xor     ax,ax
+        xor     ax, ax
 if DEBUG
-        mov     ax,0x0720
+        mov     ax, 0x0720
 end if
 ;;;;;;;;;;;;;;;;;;;;; show Press any key
-        mov     di,3360
-        mov     cx,80*4
-        rep     stosw
+        mov     di, 3360
+        mov     cx, 80*4
+        rep stosw
 
 ;show sect
         push    ini_data_
@@ -562,43 +563,43 @@ local .rest_value_loop_sh_d
 local .end_sh_desc_sec
 local .loop_message
 local .show_mess_prev_eq
-        mov     di,point_default
+        mov     di, point_default
         push    ini_data_
-        mov     si,point_to_point_def
+        mov     si, point_to_point_def
         pop     es
-        sub     si,2
-        mov     cx,[si]         ;загрузим указатель наследующию секцию
-        sub     cx,di           ;вот теперь имеем истиный размер
+        sub     si, 2
+        mov     cx, [si]        ;загрузим указатель наследующию секцию
+        sub     cx, di          ;вот теперь имеем истиный размер
 ;di - указатель на дефолтную секцию т.е. выбранную cx - размер области. для просмотра
 
 .start_p_sh_d:
         call    get_firs_sym    ;get first symbol on new line
-        test    cx,cx
+        test    cx, cx
         jz      .exit   ;нету? ну ладно - следующее значение тогда ) 
-        cmp     al,'d'
+        cmp     al, 'd'
         jnz     .start_p_sh_d
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        mov     bx,cx
-        mov     ax,di
+        mov     bx, cx
+        mov     ax, di
 
-        mov     si,parse_descript
-        mov     cx,parse_descript_e - parse_descript
-        repe    cmpsb
+        mov     si, parse_descript
+        mov     cx, parse_descript_e - parse_descript
+        repe cmpsb
         jnz     .rest_value_loop_sh_d      ;is not compare
 
-        sub     bx,parse_descript_e - parse_descript ;correct cx
-        add     bx,cx
-        mov     cx,bx
+        sub     bx, parse_descript_e - parse_descript;correct cx
+        add     bx, cx
+        mov     cx, bx
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; разбор аля ' = '
-        mov     ax,0x3d20          ;cut al=' ' ah='='
-        repe    scasb 
+        mov     ax, 0x3d20         ;cut al=' ' ah='='
+        repe scasb
         jcxz    .rest_value_loop_sh_d          ;not found param timeout
         
-        cmp     ah,byte [es:di-1]    ;find '='
+        cmp     ah, byte [es:di-1]   ;find '='
         jnz     .rest_value_loop_sh_d
         
-        repe    scasb              ;cut ' '
+        repe scasb                 ;cut ' '
         inc     cx
         dec     di
 ;;;;;;;;;;;;;;;;;;;;di указывает на строчку, которую нам нужно выводить.
@@ -614,55 +615,57 @@ local .show_mess_prev_eq
         push    0xb800
         pop     es
         
-        mov     di,1040
-        mov     bx,18
-        mov     find_sec_di,di
-        mov     save_cx_d,bx
+        mov     di, 1040
+        mov     bx, 18
+        mov     find_sec_di, di
+        mov     save_cx_d, bx
 ;;;;;;;;;;;;;;;;;;;;;;;;;;      
 ;clean string
 
         push    di
-        xor     ax,ax
+        xor     ax, ax
 
-@@:     mov     cx,38
+@@:
+        mov     cx, 38
         push    di
-        rep     stosw
+        rep stosw
         pop     di
 
-        cmp     save_descript_size,bx
+        cmp     save_descript_size, bx
         jz      @f
 
 
-        add     di,160
+        add     di, 160
         dec     bx
         jnz     @b
 
-@@:     pop     di
+@@:
+        pop     di
 ;enter in mess
 .show_mess_prev_eq:
         lodsb
-        mov     ah,color_sym_lettuce;color_sym_turquoise
+        mov     ah, color_sym_lettuce;color_sym_turquoise
 ;       sub     di,2
-        cmp     al,'"'
+        cmp     al, '"'
         jz      .loop_message
-        cmp     al,"'"
+        cmp     al, "'"
         jnz     .end_sh_desc_sec
 
 .loop_message:        
-        mov     cx,38
+        mov     cx, 38
 @@:
         lodsb
-        cmp     al,'"'
+        cmp     al, '"'
         jz      .end_sh_desc_sec
-        cmp     al,"'"
+        cmp     al, "'"
         jz      .end_sh_desc_sec
         stosw
         loop    @b
         
-        add     find_sec_di,160
-        mov     di,find_sec_di
+        add     find_sec_di, 160
+        mov     di, find_sec_di
         dec     save_cx_d
-        cmp     save_cx_d,0
+        cmp     save_cx_d, 0
         jnz     .loop_message
 
 .end_sh_desc_sec:
@@ -675,8 +678,8 @@ local .show_mess_prev_eq
 
 
 .rest_value_loop_sh_d:
-        mov     di,ax
-        mov     cx,bx
+        mov     di, ax
+        mov     cx, bx
         jmp     .start_p_sh_d
 
 .exit:

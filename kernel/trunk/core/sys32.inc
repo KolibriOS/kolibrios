@@ -20,7 +20,8 @@ build_interrupt_table:
         mov     esi, sys_int
         mov     ecx, 0x40
         mov     eax, (10001110b shl 24) + os_code
-  @@:   movsw   ;low word of code-entry
+  @@:
+        movsw   ;low word of code-entry
         stosd   ;interrupt gate type : os_code selector
         movsw   ;high word of code-entry
         loop    @b
@@ -39,20 +40,20 @@ iglobal
         times   12 dd unknown_interrupt ;int_20..int_31
 
     ;interrupt handlers addresses (for interrupt gate construction)
-	; 0x20 .. 0x2F - IRQ handlers
+        ; 0x20 .. 0x2F - IRQ handlers
         dd      irq0, irq_serv.irq_1, irq_serv.irq_2
         dd      irq_serv.irq_3, irq_serv.irq_4
         dd      irq_serv.irq_5,  irq_serv.irq_6,  irq_serv.irq_7
         dd      irq_serv.irq_8,  irq_serv.irq_9,  irq_serv.irq_10
         dd      irq_serv.irq_11, irq_serv.irq_12, irqD, irq_serv.irq_14, irq_serv.irq_15
-	dd irq_serv.irq_16
-	dd irq_serv.irq_17
-	dd irq_serv.irq_18
-	dd irq_serv.irq_19
-	dd irq_serv.irq_20
-	dd irq_serv.irq_21
-	dd irq_serv.irq_22
-	dd irq_serv.irq_23
+        dd irq_serv.irq_16
+        dd irq_serv.irq_17
+        dd irq_serv.irq_18
+        dd irq_serv.irq_19
+        dd irq_serv.irq_20
+        dd irq_serv.irq_21
+        dd irq_serv.irq_22
+        dd irq_serv.irq_23
 
     times 32 - IRQ_RESERVED dd unknown_interrupt
     ;int_0x40 gate trap (for directly copied)
@@ -108,7 +109,7 @@ endg
 page_fault_exc:                 ; дуракоусточивость: селекторы испорчены...
         pop     [ss:pf_err_code]; действительно до следующего #PF
         save_ring3_context
-        mov     bl,14
+        mov     bl, 14
 
 exc_c:                          ; исключения (все, кроме 7-го - #NM)
 ; Фрэйм стека при исключении/прерывании из 3-го кольца + pushad (т.е., именно здесь)
@@ -127,24 +128,26 @@ exc_c:                          ; исключения (все, кроме 7-го - #NM)
   reg_esi       equ esp+0x04
   reg_edi       equ esp+0x00
 
-	    mov	ax, app_data	    ;исключение
-	    mov	ds, ax		        ;загрузим правильные значения
-	    mov	es, ax		        ;в регистры
+        mov     ax, app_data        ;исключение
+        mov     ds, ax                  ;загрузим правильные значения
+        mov     es, ax                  ;в регистры
         cld                     ; и приводим DF к стандарту
-        movzx   ebx,bl
+        movzx   ebx, bl
 ; redirect to V86 manager? (EFLAGS & 0x20000) != 0?
-        test    byte[reg_eflags+2],2
+        test    byte[reg_eflags+2], 2
         jnz     v86_exc_c
-        cmp     bl,14           ; #PF
+        cmp     bl, 14          ; #PF
         jne     @f
         call    page_fault_handler ; SEE: core/memory.inc
-  @@:   mov     esi, [current_slot]
+  @@:
+        mov     esi, [current_slot]
         btr     [esi+APPDATA.except_mask], ebx
         jnc     @f
-        mov     eax,[esi+APPDATA.exc_handler]
+        mov     eax, [esi+APPDATA.exc_handler]
         test    eax, eax
         jnz     IRetToUserHook
-  @@:   cli
+  @@:
+        cli
         mov     eax, [esi+APPDATA.debugger_slot]
         test    eax, eax
         jnz     .debug
@@ -157,18 +160,20 @@ exc_c:                          ; исключения (все, кроме 7-го - #NM)
 .debug:
 ; we are debugged process, notify debugger and suspend ourself
 ; eax=debugger PID
-        mov     ecx,1           ; debug_message code=other_exception
-        cmp     bl,1            ; #DB
+        mov     ecx, 1          ; debug_message code=other_exception
+        cmp     bl, 1           ; #DB
         jne     .notify         ; notify debugger and suspend ourself
         mov     ebx, dr6        ; debug_message data=DR6_image
         xor     edx, edx
         mov     dr6, edx
         mov     edx, dr7
         mov     cl, not 8
-  .l1:  shl     dl,2
+  .l1:
+        shl     dl, 2
         jc      @f
         and     bl, cl
-  @@:   sar     cl,1
+  @@:
+        sar     cl, 1
         jc      .l1
         mov     cl, 3           ; debug_message code=debug_exception
 .notify:
@@ -178,7 +183,7 @@ exc_c:                          ; исключения (все, кроме 7-го - #NM)
         push    ecx             ; debug_message code ((here: ecx==1/3))
         mov     cl, 12          ; debug_message size
         call    debugger_notify ;; only ONE using, inline ??? SEE: core/debug.inc
-        add     esp,12
+        add     esp, 12
         mov     edx, [TASK_BASE]
         mov     byte [edx+TASKDATA.state], 1 ; suspended
         call    change_task     ; SEE: core/shed.inc
@@ -207,14 +212,16 @@ show_error_parameters:
         call    fs_execute_from_sysdir_param
         pop     ebx
 .no_ud:
-        mov     edx,[TASK_BASE] ;not scratched below
+        mov     edx, [TASK_BASE];not scratched below
         DEBUGF  1, "K : Process - forced terminate PID: %x\n", [edx+TASKDATA.pid]
         cmp     bl, 0x08
         jb      .l0
         cmp     bl, 0x0e
         jbe     .l1
-  .l0:  mov     bl, 0x09
-  .l1:  mov     eax,[msg_fault_sel+ebx*4 - 0x08*4]
+  .l0:
+        mov     bl, 0x09
+  .l1:
+        mov     eax, [msg_fault_sel+ebx*4 - 0x08*4]
         DEBUGF  1, "K : %s\n", eax
         mov     eax, [reg_cs3+4]
         mov     edi, msg_sel_app
@@ -223,7 +230,8 @@ show_error_parameters:
         je      @f
         mov     edi, msg_sel_ker
         mov     ebx, [reg_esp0+4]
-    @@: DEBUGF  1, "K : EAX : %x EBX : %x ECX : %x\n", [reg_eax+4], [reg_ebx+4], [reg_ecx+4]
+    @@:
+        DEBUGF  1, "K : EAX : %x EBX : %x ECX : %x\n", [reg_eax+4], [reg_ebx+4], [reg_ecx+4]
         DEBUGF  1, "K : EDX : %x ESI : %x EDI : %x\n", [reg_edx+4], [reg_esi+4], [reg_edi+4]
         DEBUGF  1, "K : EBP : %x EIP : %x ESP : %x\n", [reg_ebp+4], [reg_eip+4], ebx
         DEBUGF  1, "K : Flags : %x CS : %x (%s)\n", [reg_eflags+4], eax, edi
@@ -247,35 +255,35 @@ show_error_parameters:
 
 align 4
 set_application_table_status:
-        push eax
+        push    eax
 
-        mov  eax,[CURRENT_TASK]
-        shl  eax, 5
-        add  eax,CURRENT_TASK+TASKDATA.pid
-        mov  eax,[eax]
+        mov     eax, [CURRENT_TASK]
+        shl     eax, 5
+        add     eax, CURRENT_TASK+TASKDATA.pid
+        mov     eax, [eax]
 
-        mov  [application_table_status],eax
+        mov     [application_table_status], eax
 
-        pop  eax
+        pop     eax
 
         ret
 
 align 4
 clear_application_table_status:
-        push eax
+        push    eax
 
-        mov  eax,[CURRENT_TASK]
-        shl  eax, 5
-        add  eax,CURRENT_TASK+TASKDATA.pid
-        mov  eax,[eax]
+        mov     eax, [CURRENT_TASK]
+        shl     eax, 5
+        add     eax, CURRENT_TASK+TASKDATA.pid
+        mov     eax, [eax]
 
-        cmp  eax,[application_table_status]
-        jne  apptsl1
-	xor  eax,eax
-        mov  [application_table_status],eax
+        cmp     eax, [application_table_status]
+        jne     apptsl1
+        xor     eax, eax
+        mov     [application_table_status], eax
       apptsl1:
 
-        pop  eax
+        pop     eax
 
         ret
 
@@ -292,10 +300,10 @@ sys_resize_app_memory:
         ; ecx = new amount of memory
 
 ;        cmp    eax,1
-	dec	ebx
-        jnz    .no_application_mem_resize
+        dec     ebx
+        jnz     .no_application_mem_resize
         stdcall new_mem_resize, ecx
-        mov [esp+32], eax
+        mov     [esp+32], eax
 .no_application_mem_resize:
         ret
 
@@ -313,27 +321,27 @@ terminate: ; terminate application
 
            .slot equ esp   ;locals
 
-           push   esi      ;save .slot
+        push    esi        ;save .slot
 
-           shl esi, 8
-           cmp [SLOT_BASE+esi+APPDATA.dir_table], 0
-           jne @F
-           pop    esi
-           shl    esi, 5
-           mov    [CURRENT_TASK+esi+TASKDATA.state], 9
-           ret
+        shl     esi, 8
+        cmp     [SLOT_BASE+esi+APPDATA.dir_table], 0
+        jne     @F
+        pop     esi
+        shl     esi, 5
+        mov     [CURRENT_TASK+esi+TASKDATA.state], 9
+        ret
 @@:
            ;mov    esi,process_terminating
            ;call   sys_msg_board_str
 @@:
-           cli
-           cmp   [application_table_status],0
-           je    term9
-           sti
-           call  change_task
-           jmp   @b
+        cli
+        cmp     [application_table_status], 0
+        je      term9
+        sti
+        call    change_task
+        jmp     @b
 term9:
-           call  set_application_table_status
+        call    set_application_table_status
 
 ; if the process is in V86 mode...
         mov     eax, [.slot]
@@ -353,46 +361,46 @@ term9:
         mov     [eax+SLOT_BASE+APPDATA.io_map+4], ecx
 .nov86:
 
-           mov esi, [.slot]
-           shl esi,8
-           add esi, SLOT_BASE+APP_OBJ_OFFSET
+        mov     esi, [.slot]
+        shl     esi, 8
+        add     esi, SLOT_BASE+APP_OBJ_OFFSET
 @@:
-           mov eax, [esi+APPOBJ.fd]
-           test eax, eax
-           jz @F
+        mov     eax, [esi+APPOBJ.fd]
+        test    eax, eax
+        jz      @F
 
-           cmp eax, esi
-           je @F
+        cmp     eax, esi
+        je      @F
 
-           push esi
-           call [eax+APPOBJ.destroy]
+        push    esi
+        call    [eax+APPOBJ.destroy]
            DEBUGF 1,"%s",msg_obj_destroy
-           pop esi
-           jmp @B
+        pop     esi
+        jmp     @B
 @@:
 
-           mov eax, [.slot]
-           shl eax, 8
-           stdcall destroy_app_space, [SLOT_BASE+eax+APPDATA.dir_table], [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
+        mov     eax, [.slot]
+        shl     eax, 8
+        stdcall destroy_app_space, [SLOT_BASE+eax+APPDATA.dir_table], [SLOT_BASE+eax+APPDATA.dlls_list_ptr]
 
-           mov esi, [.slot]
-           cmp [fpu_owner],esi   ; if user fpu last -> fpu user = 1
-           jne @F
+        mov     esi, [.slot]
+        cmp     [fpu_owner], esi ; if user fpu last -> fpu user = 1
+        jne     @F
 
-           mov [fpu_owner],1
-           mov eax, [256+SLOT_BASE+APPDATA.fpu_state]
-           clts
-           bt [cpu_caps], CAPS_SSE
-           jnc .no_SSE
-           fxrstor [eax]
-           jmp @F
+        mov     [fpu_owner], 1
+        mov     eax, [256+SLOT_BASE+APPDATA.fpu_state]
+        clts
+        bt      [cpu_caps], CAPS_SSE
+        jnc     .no_SSE
+        fxrstor [eax]
+        jmp     @F
 .no_SSE:
-           fnclex
-           frstor [eax]
+        fnclex
+        frstor  [eax]
 @@:
 
-    mov   [KEY_COUNT],byte 0           ; empty keyboard buffer
-    mov   [BTN_COUNT],byte 0           ; empty button buffer
+        mov     [KEY_COUNT], byte 0    ; empty keyboard buffer
+        mov     [BTN_COUNT], byte 0    ; empty button buffer
 
 
 ; remove defined hotkeys
@@ -429,129 +437,129 @@ term9:
         cmp     eax, hotkey_buffer+120*8
         jb      .loop2
 
-    mov   ecx,esi                 ; remove buttons
+        mov     ecx, esi          ; remove buttons
   bnewba2:
-    mov   edi,[BTN_ADDR]
-    mov   eax,edi
-    cld
-    movzx ebx,word [edi]
-    inc   bx
+        mov     edi, [BTN_ADDR]
+        mov     eax, edi
+        cld
+        movzx   ebx, word [edi]
+        inc     bx
   bnewba:
-    dec   bx
-    jz    bnmba
-    add   eax,0x10
-    cmp   cx,[eax]
-    jnz   bnewba
-    pusha
-    mov   ecx,ebx
-    inc   ecx
-    shl   ecx,4
-    mov   ebx,eax
-    add   eax,0x10
-    call  memmove
-    dec   dword [edi]
-    popa
-    jmp   bnewba2
+        dec     bx
+        jz      bnmba
+        add     eax, 0x10
+        cmp     cx, [eax]
+        jnz     bnewba
+        pusha
+        mov     ecx, ebx
+        inc     ecx
+        shl     ecx, 4
+        mov     ebx, eax
+        add     eax, 0x10
+        call    memmove
+        dec     dword [edi]
+        popa
+        jmp     bnewba2
   bnmba:
 
-    pusha     ; save window coordinates for window restoring
-    cld
-    shl   esi,5
-    add   esi,window_data
-    mov   eax,[esi+WDATA.box.left]
-    mov   [draw_limits.left],eax
-    add   eax,[esi+WDATA.box.width]
-    mov   [draw_limits.right],eax
-    mov   eax,[esi+WDATA.box.top]
-    mov   [draw_limits.top],eax
-    add   eax,[esi+WDATA.box.height]
-    mov   [draw_limits.bottom],eax
+        pusha   ; save window coordinates for window restoring
+        cld
+        shl     esi, 5
+        add     esi, window_data
+        mov     eax, [esi+WDATA.box.left]
+        mov     [draw_limits.left], eax
+        add     eax, [esi+WDATA.box.width]
+        mov     [draw_limits.right], eax
+        mov     eax, [esi+WDATA.box.top]
+        mov     [draw_limits.top], eax
+        add     eax, [esi+WDATA.box.height]
+        mov     [draw_limits.bottom], eax
 
-    xor   eax, eax
-    mov   [esi+WDATA.box.left],eax
-    mov   [esi+WDATA.box.width],eax
-    mov   [esi+WDATA.box.top],eax
-    mov   [esi+WDATA.box.height],eax
-    mov   [esi+WDATA.cl_workarea],eax
-    mov   [esi+WDATA.cl_titlebar],eax
-    mov   [esi+WDATA.cl_frames],eax
-    mov   dword [esi+WDATA.reserved],eax ; clear all flags: wstate, redraw, wdrawn
-    lea   edi, [esi-window_data+draw_data]
-    mov   ecx,32/4
-    rep   stosd
-    popa
+        xor     eax, eax
+        mov     [esi+WDATA.box.left], eax
+        mov     [esi+WDATA.box.width], eax
+        mov     [esi+WDATA.box.top], eax
+        mov     [esi+WDATA.box.height], eax
+        mov     [esi+WDATA.cl_workarea], eax
+        mov     [esi+WDATA.cl_titlebar], eax
+        mov     [esi+WDATA.cl_frames], eax
+        mov     dword [esi+WDATA.reserved], eax; clear all flags: wstate, redraw, wdrawn
+        lea     edi, [esi-window_data+draw_data]
+        mov     ecx, 32/4
+        rep stosd
+        popa
 
 ; debuggee test
-    pushad
-    mov  edi, esi
-    shl  edi, 5
-    mov  eax, [SLOT_BASE+edi*8+APPDATA.debugger_slot]
-    test eax, eax
-    jz   .nodebug
-    push 8
-    pop  ecx
-    push dword [CURRENT_TASK+edi+TASKDATA.pid]   ; PID
-    push 2
-    call debugger_notify
-    pop  ecx
-    pop  ecx
+        pushad
+        mov     edi, esi
+        shl     edi, 5
+        mov     eax, [SLOT_BASE+edi*8+APPDATA.debugger_slot]
+        test    eax, eax
+        jz      .nodebug
+        push    8
+        pop     ecx
+        push    dword [CURRENT_TASK+edi+TASKDATA.pid]; PID
+        push    2
+        call    debugger_notify
+        pop     ecx
+        pop     ecx
 .nodebug:
-    popad
+        popad
 
-           mov ebx, [.slot]
-           shl ebx, 8
-           push ebx
-           mov ebx,[SLOT_BASE+ebx+APPDATA.pl0_stack]
+        mov     ebx, [.slot]
+        shl     ebx, 8
+        push    ebx
+        mov     ebx, [SLOT_BASE+ebx+APPDATA.pl0_stack]
 
-           stdcall kernel_free, ebx
+        stdcall kernel_free, ebx
 
-           pop ebx
-           mov ebx,[SLOT_BASE+ebx+APPDATA.cur_dir]
-           stdcall kernel_free, ebx
+        pop     ebx
+        mov     ebx, [SLOT_BASE+ebx+APPDATA.cur_dir]
+        stdcall kernel_free, ebx
 
-           mov edi, [.slot]
-           shl edi,8
-           add edi,SLOT_BASE
+        mov     edi, [.slot]
+        shl     edi, 8
+        add     edi, SLOT_BASE
 
-           mov eax, [edi+APPDATA.io_map]
-           cmp eax, [SLOT_BASE+256+APPDATA.io_map]
-           je @F
-           call free_page
+        mov     eax, [edi+APPDATA.io_map]
+        cmp     eax, [SLOT_BASE+256+APPDATA.io_map]
+        je      @F
+        call    free_page
 @@:
-           mov eax, [edi+APPDATA.io_map+4]
-           cmp eax, [SLOT_BASE+256+APPDATA.io_map+4]
-           je @F
-           call free_page
+        mov     eax, [edi+APPDATA.io_map+4]
+        cmp     eax, [SLOT_BASE+256+APPDATA.io_map+4]
+        je      @F
+        call    free_page
 @@:
-           mov eax, 0x20202020
-           stosd
-           stosd
-           stosd
-           mov ecx,244/4
-           xor eax, eax
-           rep stosd
+        mov     eax, 0x20202020
+        stosd
+        stosd
+        stosd
+        mov     ecx, 244/4
+        xor     eax, eax
+        rep stosd
 
   ; activate window
-        movzx  eax, word [WIN_STACK + esi*2]
-        cmp    eax, [TASK_COUNT]
-        jne    .dont_activate
+        movzx   eax, word [WIN_STACK + esi*2]
+        cmp     eax, [TASK_COUNT]
+        jne     .dont_activate
         pushad
  .check_next_window:
-        dec    eax
-        cmp    eax, 1
-        jbe    .nothing_to_activate
-        lea    esi, [WIN_POS+eax*2]
-        movzx  edi, word [esi]               ; edi = process
-        shl    edi, 5
-        cmp    [CURRENT_TASK + edi + TASKDATA.state], byte 9  ; skip dead slots
-        je     .check_next_window
-        add    edi, window_data
+        dec     eax
+        cmp     eax, 1
+        jbe     .nothing_to_activate
+        lea     esi, [WIN_POS+eax*2]
+        movzx   edi, word [esi]              ; edi = process
+        shl     edi, 5
+        cmp     [CURRENT_TASK + edi + TASKDATA.state], byte 9 ; skip dead slots
+        je      .check_next_window
+        add     edi, window_data
 ; \begin{diamond}[19.09.2006]
 ; skip minimized windows
-        test   [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
-        jnz    .check_next_window
+        test    [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
+        jnz     .check_next_window
 ; \end{diamond}
-        call   waredraw
+        call    waredraw
  .nothing_to_activate:
         popad
  .dont_activate:
@@ -580,93 +588,93 @@ term9:
         and     [bgrlock], 0
 @@:
 
-    pusha                     ; remove all port reservations
-    mov   edx,esi
-    shl   edx, 5
-    add   edx,CURRENT_TASK
-    mov   edx,[edx+TASKDATA.pid]
+        pusha                 ; remove all port reservations
+        mov     edx, esi
+        shl     edx, 5
+        add     edx, CURRENT_TASK
+        mov     edx, [edx+TASKDATA.pid]
 
   rmpr0:
 
-    mov   esi,[RESERVED_PORTS]
+        mov     esi, [RESERVED_PORTS]
 
-    test  esi,esi
-    jz    rmpr9
+        test    esi, esi
+        jz      rmpr9
 
   rmpr3:
 
-    mov   edi,esi
-    shl   edi,4
-    add   edi,RESERVED_PORTS
+        mov     edi, esi
+        shl     edi, 4
+        add     edi, RESERVED_PORTS
 
-    cmp   edx,[edi]
-    je    rmpr4
+        cmp     edx, [edi]
+        je      rmpr4
 
-    dec   esi
-    jnz   rmpr3
+        dec     esi
+        jnz     rmpr3
 
-    jmp   rmpr9
+        jmp     rmpr9
 
   rmpr4:
 
-    mov   ecx,256
-    sub   ecx,esi
-    shl   ecx,4
+        mov     ecx, 256
+        sub     ecx, esi
+        shl     ecx, 4
 
-    mov   esi,edi
-    add   esi,16
-    cld
-    rep   movsb
+        mov     esi, edi
+        add     esi, 16
+        cld
+        rep movsb
 
-    dec   dword [RESERVED_PORTS]
+        dec     dword [RESERVED_PORTS]
 
-    jmp   rmpr0
+        jmp     rmpr0
 
   rmpr9:
 
-    popa
-    mov  edi,esi         ; do not run this process slot
-    shl  edi, 5
-    mov  [edi+CURRENT_TASK + TASKDATA.state],byte 9
+        popa
+        mov     edi, esi ; do not run this process slot
+        shl     edi, 5
+        mov     [edi+CURRENT_TASK + TASKDATA.state], byte 9
 ; debugger test - terminate all debuggees
-    mov  eax, 2
-    mov  ecx, SLOT_BASE+2*0x100+APPDATA.debugger_slot
+        mov     eax, 2
+        mov     ecx, SLOT_BASE+2*0x100+APPDATA.debugger_slot
 .xd0:
-    cmp  eax, [TASK_COUNT]
-    ja   .xd1
-    cmp  dword [ecx], esi
-    jnz  @f
-    and  dword [ecx], 0
-    pushad
-    xchg eax, ecx
-    mov  ebx, 2
-    call sys_system
-    popad
+        cmp     eax, [TASK_COUNT]
+        ja      .xd1
+        cmp     dword [ecx], esi
+        jnz     @f
+        and     dword [ecx], 0
+        pushad
+        xchg    eax, ecx
+        mov     ebx, 2
+        call    sys_system
+        popad
 @@:
-    inc  eax
-    add  ecx, 0x100
-    jmp  .xd0
+        inc     eax
+        add     ecx, 0x100
+        jmp     .xd0
 .xd1:
 ;    call  systest
-    sti  ; .. and life goes on
+        sti     ; .. and life goes on
 
-    mov   eax, [draw_limits.left]
-    mov   ebx, [draw_limits.top]
-    mov   ecx, [draw_limits.right]
-    mov   edx, [draw_limits.bottom]
-    call  calculatescreen
-    xor   eax, eax
-    xor   esi, esi
-    call  redrawscreen
+        mov     eax, [draw_limits.left]
+        mov     ebx, [draw_limits.top]
+        mov     ecx, [draw_limits.right]
+        mov     edx, [draw_limits.bottom]
+        call    calculatescreen
+        xor     eax, eax
+        xor     esi, esi
+        call    redrawscreen
 
-    mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
-    mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
+        mov     [MOUSE_BACKGROUND], byte 0; no mouse background
+        mov     [DONT_DRAW_MOUSE], byte 0; draw mouse
 
-    and   [application_table_status],0
+        and     [application_table_status], 0
     ;mov   esi,process_terminated
     ;call  sys_msg_board_str
-    add esp, 4
-    ret
+        add     esp, 4
+        ret
 restore .slot
 
 iglobal
@@ -682,8 +690,8 @@ endg
 
 build_scheduler:
 
-        mov    esi,boot_sched_1
-        call   boot_log
+        mov     esi, boot_sched_1
+        call    boot_log
   ;      call   build_process_gdt_tss_pointer
 
   ;      mov    esi,boot_sched_2

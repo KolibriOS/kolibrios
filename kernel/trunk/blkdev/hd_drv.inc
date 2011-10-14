@@ -19,33 +19,33 @@ hd_read:
 ;          ebx = destination
 ;-----------------------------------------------------------
         and     [hd_error], 0
-    push  ecx esi edi           ; scan cache
+        push    ecx esi edi     ; scan cache
 
 ;    mov   ecx,cache_max         ; entries in cache
 ;    mov   esi,HD_CACHE+8
-    call  calculate_cache
-    add   esi,8
+        call    calculate_cache
+        add     esi, 8
 
-    mov   edi,1
+        mov     edi, 1
 
   hdreadcache:
 
-    cmp   dword [esi+4],0       ; empty
-    je    nohdcache
+        cmp     dword [esi+4], 0; empty
+        je      nohdcache
 
-    cmp   [esi],eax             ; correct sector
-    je    yeshdcache
+        cmp     [esi], eax      ; correct sector
+        je      yeshdcache
 
   nohdcache:
 
-    add   esi,8
-    inc   edi
-    dec   ecx
-    jnz   hdreadcache
+        add     esi, 8
+        inc     edi
+        dec     ecx
+        jnz     hdreadcache
 
-    call  find_empty_slot       ; ret in edi
-    cmp   [hd_error],0
-    jne   return_01
+        call    find_empty_slot ; ret in edi
+        cmp     [hd_error], 0
+        jne     return_01
 ; Read through BIOS?
         cmp     [hdpos], 0x80
         jae     .bios
@@ -72,90 +72,90 @@ hd_read:
         jne     return_01
 ;    lea   esi,[edi*8+HD_CACHE]
 ;    push  eax
-    call  calculate_cache_1
-    lea   esi,[edi*8+esi]
+        call    calculate_cache_1
+        lea     esi, [edi*8+esi]
 ;    pop   eax
 
-    mov   [esi],eax             ; sector number
-    mov   dword [esi+4],1       ; hd read - mark as same as in hd
+        mov     [esi], eax      ; sector number
+        mov     dword [esi+4], 1; hd read - mark as same as in hd
 
   yeshdcache:
 
-    mov   esi,edi
-    shl   esi,9
+        mov     esi, edi
+        shl     esi, 9
 ;    add   esi,HD_CACHE+65536
-    push  eax
-    call  calculate_cache_2
-    add   esi,eax
-    pop   eax
+        push    eax
+        call    calculate_cache_2
+        add     esi, eax
+        pop     eax
 
-    mov   edi,ebx
-    mov   ecx,512/4
-    cld
-    rep   movsd                 ; move data
+        mov     edi, ebx
+        mov     ecx, 512/4
+        cld
+        rep movsd               ; move data
  return_01:
-    pop   edi esi ecx
-    ret
+        pop     edi esi ecx
+        ret
 
 align 4
 hd_read_pio:
-    push  eax edx
+        push    eax edx
 
-    call  wait_for_hd_idle
-    cmp   [hd_error],0
-    jne   hd_read_error
+        call    wait_for_hd_idle
+        cmp     [hd_error], 0
+        jne     hd_read_error
 
-    cli
-    xor   eax,eax
-    mov   edx,[hdbase]
-    inc   edx
-    out   dx,al   ; ATAFeatures регистр "особенностей"
-    inc   edx
-    inc   eax
-    out   dx,al   ; ATASectorCount счётчик секторов
-    inc   edx
-    mov   eax,[esp+4]
-    out   dx,al   ; ATASectorNumber регистр номера сектора
-    shr   eax,8
-    inc   edx
-    out   dx,al   ; ATACylinder номер цилиндра (младший байт)
-    shr   eax,8
-    inc   edx
-    out   dx,al   ; номер цилиндра (старший байт)
-    shr   eax,8
-    inc   edx
-    and   al,1+2+4+8
-    add   al,byte [hdid]
-    add   al,128+64+32
-    out   dx,al   ; номер головки/номер диска
-    inc   edx
-    mov   al,20h
-    out   dx,al   ; ATACommand регистр команд
-    sti
+        cli
+        xor     eax, eax
+        mov     edx, [hdbase]
+        inc     edx
+        out     dx, al; ATAFeatures регистр "особенностей"
+        inc     edx
+        inc     eax
+        out     dx, al; ATASectorCount счётчик секторов
+        inc     edx
+        mov     eax, [esp+4]
+        out     dx, al; ATASectorNumber регистр номера сектора
+        shr     eax, 8
+        inc     edx
+        out     dx, al; ATACylinder номер цилиндра (младший байт)
+        shr     eax, 8
+        inc     edx
+        out     dx, al; номер цилиндра (старший байт)
+        shr     eax, 8
+        inc     edx
+        and     al, 1+2+4+8
+        add     al, byte [hdid]
+        add     al, 128+64+32
+        out     dx, al; номер головки/номер диска
+        inc     edx
+        mov     al, 20h
+        out     dx, al; ATACommand регистр команд
+        sti
 
-    call  wait_for_sector_buffer
+        call    wait_for_sector_buffer
 
-    cmp   [hd_error],0
-    jne   hd_read_error
+        cmp     [hd_error], 0
+        jne     hd_read_error
 
-    cli
-    push  edi
-    shl   edi,9
+        cli
+        push    edi
+        shl     edi, 9
 ;    add   edi,HD_CACHE+65536
-    push  eax
-    call  calculate_cache_2
-    add   edi,eax
-    pop   eax
+        push    eax
+        call    calculate_cache_2
+        add     edi, eax
+        pop     eax
 
-    mov   ecx,256
-    mov   edx,[hdbase]
-    cld
-    rep   insw
-    pop   edi
-    sti
+        mov     ecx, 256
+        mov     edx, [hdbase]
+        cld
+        rep insw
+        pop     edi
+        sti
 
-    pop   edx eax
-    ret
+        pop     edx eax
+        ret
 
 disable_ide_int:
 ;        mov edx,[hdbase]
@@ -179,153 +179,153 @@ hd_write:
 ; input  : eax = block
 ;          ebx = pointer to memory
 ;-----------------------------------------------------------
-    push  ecx esi edi
+        push    ecx esi edi
 
     ; check if the cache already has the sector and overwrite it
 
 ;    mov   ecx,cache_max
 ;    mov   esi,HD_CACHE+8
-    call  calculate_cache
-    add   esi,8
+        call    calculate_cache
+        add     esi, 8
 
-    mov   edi,1
+        mov     edi, 1
 
   hdwritecache:
 
-    cmp   dword [esi+4],0       ; if cache slot is empty
-    je    not_in_cache_write
+        cmp     dword [esi+4], 0; if cache slot is empty
+        je      not_in_cache_write
 
-    cmp   [esi],eax             ; if the slot has the sector
-    je    yes_in_cache_write
+        cmp     [esi], eax      ; if the slot has the sector
+        je      yes_in_cache_write
 
   not_in_cache_write:
 
-    add   esi,8
-    inc   edi
-    dec   ecx
-    jnz   hdwritecache
+        add     esi, 8
+        inc     edi
+        dec     ecx
+        jnz     hdwritecache
 
     ; sector not found in cache
     ; write the block to a new location
 
-    call  find_empty_slot       ; ret in edi
-    cmp   [hd_error],0
-    jne   hd_write_access_denied
+        call    find_empty_slot ; ret in edi
+        cmp     [hd_error], 0
+        jne     hd_write_access_denied
 
 ;    lea   esi,[edi*8+HD_CACHE]
 ;    push  eax
-    call  calculate_cache_1
-    lea   esi,[edi*8+esi]
+        call    calculate_cache_1
+        lea     esi, [edi*8+esi]
 ;    pop   eax
 
-    mov   [esi],eax             ; sector number
+        mov     [esi], eax      ; sector number
 
   yes_in_cache_write:
 
-    mov   dword [esi+4],2       ; write - differs from hd
+        mov     dword [esi+4], 2; write - differs from hd
 
-    shl   edi,9
+        shl     edi, 9
 ;    add   edi,HD_CACHE+65536
-    push  eax
-    call  calculate_cache_2
-    add   edi,eax
-    pop   eax
+        push    eax
+        call    calculate_cache_2
+        add     edi, eax
+        pop     eax
 
-    mov   esi,ebx
-    mov   ecx,512/4
-    cld
-    rep   movsd                 ; move data
+        mov     esi, ebx
+        mov     ecx, 512/4
+        cld
+        rep movsd               ; move data
  hd_write_access_denied:
-    pop   edi esi ecx
-    ret
+        pop     edi esi ecx
+        ret
 
 align 4
 cache_write_pio:
-    cmp   dword[esi],0x10000000
-    jae   .bad
+        cmp     dword[esi], 0x10000000
+        jae     .bad
 ;    call  disable_ide_int
 
-    call  wait_for_hd_idle
-    cmp   [hd_error],0
-    jne   hd_write_error
+        call    wait_for_hd_idle
+        cmp     [hd_error], 0
+        jne     hd_write_error
 
-    cli
-    xor   eax,eax
-    mov   edx,[hdbase]
-    inc   edx
-    out   dx,al
-    inc   edx
-    inc   eax
-    out   dx,al
-    inc   edx
-    mov   eax,[esi]             ; eax = sector to write
-    out   dx,al
-    shr   eax,8
-    inc   edx
-    out   dx,al
-    shr   eax,8
-    inc   edx
-    out   dx,al
-    shr   eax,8
-    inc   edx
-    and   al,1+2+4+8
-    add   al,byte [hdid]
-    add   al,128+64+32
-    out   dx,al
-    inc   edx
-    mov   al,30h
-    out   dx,al
-    sti
+        cli
+        xor     eax, eax
+        mov     edx, [hdbase]
+        inc     edx
+        out     dx, al
+        inc     edx
+        inc     eax
+        out     dx, al
+        inc     edx
+        mov     eax, [esi]      ; eax = sector to write
+        out     dx, al
+        shr     eax, 8
+        inc     edx
+        out     dx, al
+        shr     eax, 8
+        inc     edx
+        out     dx, al
+        shr     eax, 8
+        inc     edx
+        and     al, 1+2+4+8
+        add     al, byte [hdid]
+        add     al, 128+64+32
+        out     dx, al
+        inc     edx
+        mov     al, 30h
+        out     dx, al
+        sti
 
-    call  wait_for_sector_buffer
+        call    wait_for_sector_buffer
 
-    cmp   [hd_error],0
-    jne   hd_write_error
+        cmp     [hd_error], 0
+        jne     hd_write_error
 
-    push  ecx esi
+        push    ecx esi
 
-    cli
-    mov   esi,edi
-    shl   esi,9
+        cli
+        mov     esi, edi
+        shl     esi, 9
 ;    add   esi,HD_CACHE+65536    ; esi = from memory position
-    push  eax
-    call  calculate_cache_2
-    add   esi,eax
-    pop   eax
+        push    eax
+        call    calculate_cache_2
+        add     esi, eax
+        pop     eax
 
-    mov   ecx,256
-    mov   edx,[hdbase]
-    cld
-    rep   outsw
-    sti
+        mov     ecx, 256
+        mov     edx, [hdbase]
+        cld
+        rep outsw
+        sti
 
 ;    call  enable_ide_int
-    pop   esi ecx
+        pop     esi ecx
 
-    ret
+        ret
 .bad:
-    inc   [hd_error]
-    ret
+        inc     [hd_error]
+        ret
 
 save_hd_wait_timeout:
 
-    push  eax
-    mov   eax,[timer_ticks]
-    add   eax,300               ; 3 sec timeout
-    mov   [hd_wait_timeout],eax
-    pop   eax
-    ret
+        push    eax
+        mov     eax, [timer_ticks]
+        add     eax, 300        ; 3 sec timeout
+        mov     [hd_wait_timeout], eax
+        pop     eax
+        ret
 
 align 4
 check_hd_wait_timeout:
 
-    push  eax
-    mov   eax,[hd_wait_timeout]
-    cmp   [timer_ticks], eax
-    jg    hd_timeout_error
-    pop   eax
-    mov   [hd_error],0
-    ret
+        push    eax
+        mov     eax, [hd_wait_timeout]
+        cmp     [timer_ticks], eax
+        jg      hd_timeout_error
+        pop     eax
+        mov     [hd_error], 0
+        ret
 
 ;iglobal
 ;  hd_timeout_str   db 'K : FS - HD timeout',0
@@ -342,9 +342,9 @@ hd_timeout_error:
 ;    call  sys_msg_board_str
     DEBUGF 1,"K : FS - HD timeout\n"
 
-    mov   [hd_error],1
-    pop   eax
-    ret
+        mov     [hd_error], 1
+        pop     eax
+        ret
 
 hd_read_error:
 
@@ -353,8 +353,8 @@ hd_read_error:
 ;    mov   esi,hd_read_str
 ;    call  sys_msg_board_str
     DEBUGF 1,"K : FS - HD read error\n"
-    pop   edx eax
-    ret
+        pop     edx eax
+        ret
 
 hd_write_error:
 
@@ -363,7 +363,7 @@ hd_write_error:
 ;     mov   esi,hd_write_str
 ;     call  sys_msg_board_str
     DEBUGF 1,"K : FS - HD write error\n"
-     ret
+        ret
 
 hd_write_error_dma:
 ;        call    clear_hd_cache
@@ -380,69 +380,69 @@ hd_lba_error:
 ;    mov   esi,hd_lba_str
 ;    call  sys_msg_board_str
      DEBUGF 1,"K : FS - HD LBA error\n"
-     jmp   LBA_read_ret
+        jmp     LBA_read_ret
 
 
 align 4
 wait_for_hd_idle:
 
-    push  eax edx
+        push    eax edx
 
-    call  save_hd_wait_timeout
+        call    save_hd_wait_timeout
 
-    mov   edx,[hdbase]
-    add   edx,0x7
+        mov     edx, [hdbase]
+        add     edx, 0x7
 
   wfhil1:
 
-    call  check_hd_wait_timeout
-    cmp   [hd_error],0
-    jne   @f
+        call    check_hd_wait_timeout
+        cmp     [hd_error], 0
+        jne     @f
 
-    in    al,dx
-    test  al,128
-    jnz   wfhil1
+        in      al, dx
+        test    al, 128
+        jnz     wfhil1
 
  @@:
 
-    pop   edx eax
-    ret
+        pop     edx eax
+        ret
 
 
 align 4
 wait_for_sector_buffer:
 
-    push  eax edx
+        push    eax edx
 
-    mov   edx,[hdbase]
-    add   edx,0x7
+        mov     edx, [hdbase]
+        add     edx, 0x7
 
-    call  save_hd_wait_timeout
+        call    save_hd_wait_timeout
 
   hdwait_sbuf:                  ; wait for sector buffer to be ready
 
-    call  check_hd_wait_timeout
-    cmp   [hd_error],0
-    jne   @f
+        call    check_hd_wait_timeout
+        cmp     [hd_error], 0
+        jne     @f
 
-    in    al,dx
-    test  al,8
-    jz    hdwait_sbuf
+        in      al, dx
+        test    al, 8
+        jz      hdwait_sbuf
 
-    mov   [hd_error],0
+        mov     [hd_error], 0
 
-    cmp   [hd_setup],1          ; do not mark error for setup request
-    je    buf_wait_ok
+        cmp     [hd_setup], 1   ; do not mark error for setup request
+        je      buf_wait_ok
 
-    test  al,1                  ; previous command ended up with an error
-    jz    buf_wait_ok
+        test    al, 1           ; previous command ended up with an error
+        jz      buf_wait_ok
  @@:
-    mov   [hd_error],1
+        mov     [hd_error], 1
 
   buf_wait_ok:
 
-    pop   edx eax
-    ret
+        pop     edx eax
+        ret
 
 ; \begin{Mario79}
 align 4
@@ -578,8 +578,8 @@ align 4
 hd_read_dma:
         push    eax
         push    edx
-        mov     edx,[dma_hdpos]
-        cmp     edx,[hdpos]
+        mov     edx, [dma_hdpos]
+        cmp     edx, [hdpos]
         jne     .notread
         mov     edx, [dma_cur_sector]
         cmp     eax, edx
@@ -595,21 +595,21 @@ hd_read_dma:
         mov     esi, eax
         shl     edi, 9
 ;        add     edi, HD_CACHE+0x10000
-        push  eax
-        call  calculate_cache_2
-        add   edi,eax
-        pop   eax
+        push    eax
+        call    calculate_cache_2
+        add     edi, eax
+        pop     eax
 
         mov     ecx, 512/4
         cld
-        rep     movsd
+        rep movsd
         pop     edi esi ecx
         pop     edx
         pop     eax
         ret
 .notread:
         mov     eax, IDE_descriptor_table
-        mov     dword [eax],  IDE_DMA
+        mov     dword [eax], IDE_DMA
         mov     word [eax+4], 0x2000
         sub     eax, OS_BASE
         mov     dx, [IDEContrRegsBaseAddr]
@@ -683,8 +683,8 @@ hd_read_dma:
 @@:
         cmp     [hd_error], 0
         jnz     hd_read_error
-        mov     eax,[hdpos]
-        mov     [dma_hdpos],eax
+        mov     eax, [hdpos]
+        mov     [dma_hdpos], eax
         pop     edx
         pop     eax
         mov     [dma_cur_sector], eax
@@ -692,28 +692,28 @@ hd_read_dma:
 
 align 4
 write_cache_sector:
-        mov     [cache_chain_size],1
-        mov     [cache_chain_pos],edi
+        mov     [cache_chain_size], 1
+        mov     [cache_chain_pos], edi
 write_cache_chain:
         cmp     [hdpos], 0x80
         jae     bd_write_cache_chain
-        mov     eax,[cache_chain_ptr]
-        cmp     dword[eax],0x10000000
+        mov     eax, [cache_chain_ptr]
+        cmp     dword[eax], 0x10000000
         jae     .bad
         push    esi
         mov     eax, IDE_descriptor_table
-        mov     edx,eax
+        mov     edx, eax
         pusha
-        mov     esi,[cache_chain_pos]
+        mov     esi, [cache_chain_pos]
         shl     esi, 9
         call    calculate_cache_2
-        add     esi,eax
+        add     esi, eax
         mov     edi, (OS_BASE+IDE_DMA)
         mov     dword [edx], IDE_DMA
         movzx   ecx, [cache_chain_size]
         shl     ecx, 9
         mov     word [edx+4], cx
-        shr     ecx,2
+        shr     ecx, 2
         cld
         rep movsd
         popa
@@ -828,14 +828,14 @@ bd_read:
         mov     esi, eax
         shl     edi, 9
 ;        add     edi, HD_CACHE+0x10000
-        push  eax
-        call  calculate_cache_2
-        add   edi,eax
-        pop   eax
+        push    eax
+        call    calculate_cache_2
+        add     edi, eax
+        pop     eax
 
         mov     ecx, 512/4
         cld
-        rep     movsd
+        rep movsd
         pop     edi esi ecx
         pop     edx
         pop     eax
@@ -872,7 +872,7 @@ bd_write_cache_chain:
         movzx   ecx, [cache_chain_size]
         push    ecx
         shl     ecx, 9-2
-        rep     movsd
+        rep movsd
         pop     ecx
         mov     dl, 43h
         mov     eax, [cache_chain_ptr]
@@ -909,7 +909,7 @@ int13_call:
         mov     edi, ebx
         mov     ecx, v86_regs.size/4
         xor     eax, eax
-        rep     stosd
+        rep stosd
         mov     byte [ebx+v86_regs.eax+1], dl
         mov     eax, [hdpos]
         lea     eax, [BiosDisksData+(eax-80h)*4]
@@ -933,9 +933,9 @@ int13_call:
         mov     [ebx+v86_regs.eflags], 20200h
         mov     esi, [sys_v86_machine]
         mov     ecx, 0x502
-        push fs
+        push    fs
         call    v86_start
-        pop  fs
+        pop     fs
         and     [bios_hdpos], 0
         pop     edi esi ecx ebx
         movzx   edx, byte [OS_BASE + 512h]

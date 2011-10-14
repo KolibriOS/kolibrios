@@ -88,23 +88,23 @@ section '.flat' code readable align 16
 
 proc START stdcall, state:dword
 
-           cmp [state], 1
-           jne .exit
+        cmp     [state], 1
+        jne     .exit
 .entry:
 
      if DEBUG
-           mov esi, msgInit
-           call SysMsgBoardStr
+        mov     esi, msgInit
+        call    SysMsgBoardStr
      end if
 
-           call init
+        call    init
 
-           stdcall RegService, my_service, service_proc
-           ret
+        stdcall RegService, my_service, service_proc
+        ret
 .fail:
 .exit:
-           xor eax, eax
-           ret
+        xor     eax, eax
+        ret
 endp
 
 handle     equ  IOCTL.handle
@@ -117,21 +117,21 @@ out_size   equ  IOCTL.out_size
 align 4
 proc service_proc stdcall, ioctl:dword
 
-           mov ebx, [ioctl]
-           mov eax, [ebx+io_code]
-           cmp eax, SRV_GETVERSION
-           jne @F
+        mov     ebx, [ioctl]
+        mov     eax, [ebx+io_code]
+        cmp     eax, SRV_GETVERSION
+        jne     @F
 
-           mov eax, [ebx+output]
-           cmp [ebx+out_size], 4
-           jne .fail
-           mov [eax], dword API_VERSION
-           xor eax, eax
-           ret
+        mov     eax, [ebx+output]
+        cmp     [ebx+out_size], 4
+        jne     .fail
+        mov     [eax], dword API_VERSION
+        xor     eax, eax
+        ret
 @@:
 .fail:
-           or eax, -1
-           ret
+        or      eax, -1
+        ret
 endp
 
 restore   handle
@@ -149,66 +149,66 @@ proc detect
             devfn      dd ?
            endl
 
-           xor eax, eax
-           mov [bus], eax
-           inc eax
-           call PciApi
-           cmp eax, -1
-           je .err
+        xor     eax, eax
+        mov     [bus], eax
+        inc     eax
+        call    PciApi
+        cmp     eax, -1
+        je      .err
 
-           mov [last_bus], eax
+        mov     [last_bus], eax
 
 .next_bus:
-           and [devfn], 0
+        and     [devfn], 0
 .next_dev:
-           stdcall PciRead32, [bus], [devfn], dword 0
-           test eax, eax
-           jz .next
-           cmp eax, -1
-           je .next
+        stdcall PciRead32, [bus], [devfn], dword 0
+        test    eax, eax
+        jz      .next
+        cmp     eax, -1
+        je      .next
 
-           mov edi, devices
+        mov     edi, devices
 @@:
-           mov ebx, [edi]
-           test ebx, ebx
-           jz .next
+        mov     ebx, [edi]
+        test    ebx, ebx
+        jz      .next
 
-           cmp eax, ebx
-           je .found
+        cmp     eax, ebx
+        je      .found
 
-           add edi, STRIDE
-           jmp @B
+        add     edi, STRIDE
+        jmp     @B
 .next:
-           inc [devfn]
-           cmp [devfn], 256
-           jb  .next_dev
-           mov eax, [bus]
-           inc eax
-           mov [bus], eax
-           cmp eax, [last_bus]
-           jna .next_bus
-           xor eax, eax
-           ret
+        inc     [devfn]
+        cmp     [devfn], 256
+        jb      .next_dev
+        mov     eax, [bus]
+        inc     eax
+        mov     [bus], eax
+        cmp     eax, [last_bus]
+        jna     .next_bus
+        xor     eax, eax
+        ret
 .found:
-           mov eax, UHCI.sizeof
-           call Kmalloc
-           test eax, eax
-           jz .mem_fail
+        mov     eax, UHCI.sizeof
+        call    Kmalloc
+        test    eax, eax
+        jz      .mem_fail
 
-           mov ebx, [bus]
-           mov [eax+UHCI.bus], ebx
+        mov     ebx, [bus]
+        mov     [eax+UHCI.bus], ebx
 
-           mov ecx, [devfn]
-           mov [eax+UHCI.devfn], ecx
-           ret
+        mov     ecx, [devfn]
+        mov     [eax+UHCI.devfn], ecx
+        ret
 .mem_fail:
      if DEBUG
-           mov esi, msgMemFail
-           call SysMsgBoardStr
+        mov     esi, msgMemFail
+        call    SysMsgBoardStr
      end if
 .err:
-           xor eax, eax
-           ret
+        xor     eax, eax
+        ret
 endp
 
 PCI_BASE    equ 0x20
@@ -220,27 +220,27 @@ proc init
             uhci       dd ?
            endl
 
-           call detect
-           test eax, eax
-           jz .fail
+        call    detect
+        test    eax, eax
+        jz      .fail
 
-           mov [uhci], eax
+        mov     [uhci], eax
 
-           stdcall PciRead32, [eax+UHCI.bus], [eax+UHCI.devfn], PCI_BASE
-           and eax, 0xFFC0
-           mov esi, [uhci]
-           mov [esi+UHCI.io_base], eax
+        stdcall PciRead32, [eax+UHCI.bus], [eax+UHCI.devfn], PCI_BASE
+        and     eax, 0xFFC0
+        mov     esi, [uhci]
+        mov     [esi+UHCI.io_base], eax
 
-           stdcall uhci_reset, esi
+        stdcall uhci_reset, esi
 
-           stdcall finish_reset, [uhci]
+        stdcall finish_reset, [uhci]
 
 .fail:
      if DEBUG
-           mov esi, msgDevNotFound
-           call SysMsgBoardStr
+        mov     esi, msgDevNotFound
+        call    SysMsgBoardStr
      end if
-           ret
+        ret
 endp
 
 UHCI_USBINTR            equ  4             ; interrupt register
@@ -276,100 +276,100 @@ UHCI_IS_STOPPED         equ 9999
 
 align 4
 proc uhci_reset stdcall, uhci:dword
-           mov esi, [uhci]
-           stdcall PciRead16, [esi+UHCI.bus], [esi+UHCI.devfn], USB_LEGKEY
-           test eax, not (UHCI_USBLEGSUP_RO or UHCI_USBLEGSUP_RWC)
-           jnz .reset
+        mov     esi, [uhci]
+        stdcall PciRead16, [esi+UHCI.bus], [esi+UHCI.devfn], USB_LEGKEY
+        test    eax, not (UHCI_USBLEGSUP_RO or UHCI_USBLEGSUP_RWC)
+        jnz     .reset
 
-           mov edx, [esi+UHCI.io_base]
-           in ax, dx
-           test ax, UHCI_USBCMD_RUN
-           jnz .reset
+        mov     edx, [esi+UHCI.io_base]
+        in      ax, dx
+        test    ax, UHCI_USBCMD_RUN
+        jnz     .reset
 
-           test ax, UHCI_USBCMD_CONFIGURE
-           jz .reset
+        test    ax, UHCI_USBCMD_CONFIGURE
+        jz      .reset
 
-           test ax, UHCI_USBCMD_EGSM
-           jz .reset
+        test    ax, UHCI_USBCMD_EGSM
+        jz      .reset
 
-           add edx, UHCI_USBINTR
-           in ax, dx
-           test ax, not UHCI_USBINTR_RESUME
-           jnz .reset
-           ret
+        add     edx, UHCI_USBINTR
+        in      ax, dx
+        test    ax, not UHCI_USBINTR_RESUME
+        jnz     .reset
+        ret
 .reset:
-           stdcall PciWrite16, [esi+UHCI.bus], [esi+UHCI.devfn], USB_LEGKEY, UHCI_USBLEGSUP_RWC
+        stdcall PciWrite16, [esi+UHCI.bus], [esi+UHCI.devfn], USB_LEGKEY, UHCI_USBLEGSUP_RWC
 
-           mov edx, [esi+UHCI.io_base]
-           mov ax, UHCI_USBCMD_HCRESET
-           out dx, ax
+        mov     edx, [esi+UHCI.io_base]
+        mov     ax, UHCI_USBCMD_HCRESET
+        out     dx, ax
 
-           xor eax, eax
-           out dx, ax
-           add edx, UHCI_USBINTR
-           out dx, ax
-           ret
+        xor     eax, eax
+        out     dx, ax
+        add     edx, UHCI_USBINTR
+        out     dx, ax
+        ret
 endp
 
 proc finish_reset stdcall, uhci:dword
 
-           mov esi, [uhci]
-           mov edx, [esi+UHCI.io_base]
-           add edx, PORTSC0
-           xor eax, eax
-           out dx, ax
-           add edx, (PORTSC1-PORTSC0)
-           out dx, ax
+        mov     esi, [uhci]
+        mov     edx, [esi+UHCI.io_base]
+        add     edx, PORTSC0
+        xor     eax, eax
+        out     dx, ax
+        add     edx, (PORTSC1-PORTSC0)
+        out     dx, ax
 
-           mov [esi+UHCI.port_c_suspend], eax
-           mov [esi+UHCI.resuming_ports], eax
-           mov [esi+UHCI.rh_state], UHCI_RH_RESET
-           mov [esi+UHCI.rh_numports], 2
+        mov     [esi+UHCI.port_c_suspend], eax
+        mov     [esi+UHCI.resuming_ports], eax
+        mov     [esi+UHCI.rh_state], UHCI_RH_RESET
+        mov     [esi+UHCI.rh_numports], 2
 
-           mov [esi+UHCI.is_stopped], UHCI_IS_STOPPED
+        mov     [esi+UHCI.is_stopped], UHCI_IS_STOPPED
      ;      mov [ uhci_to_hcd(uhci)->state = HC_STATE_HALT;
      ;      uhci_to_hcd(uhci)->poll_rh = 0;
 
-           mov [esi+UHCI.dead], eax  ; Full reset resurrects the controller
+        mov     [esi+UHCI.dead], eax ; Full reset resurrects the controller
 
-           ret
+        ret
 endp
 
 proc insert_td stdcall, td:dword, frame:dword
 
-           mov edi, [td]
-           mov eax, [frame]
-           and eax, -1024
-           mov [edi+TD.frame], eax
+        mov     edi, [td]
+        mov     eax, [frame]
+        and     eax, -1024
+        mov     [edi+TD.frame], eax
 
-           mov ebx, [framelist]
-           mov edx, [dma_framelist]
-           shl eax, 5
+        mov     ebx, [framelist]
+        mov     edx, [dma_framelist]
+        shl     eax, 5
 
-           mov ecx, [eax+ebx]
-           test ecx, ecx
-           jz .empty
+        mov     ecx, [eax+ebx]
+        test    ecx, ecx
+        jz      .empty
 
-           mov ecx, [ecx+TD.bk]               ;last TD
+        mov     ecx, [ecx+TD.bk]              ;last TD
 
-           mov edx, [ecx+TD.fd]
-           mov [edi+TD.fd], edx
-           mov [edi+TD.bk], ecx
-           mov [ecx+TD.fd], edi
-           mov [edx+TD.bk], edi
+        mov     edx, [ecx+TD.fd]
+        mov     [edi+TD.fd], edx
+        mov     [edi+TD.bk], ecx
+        mov     [ecx+TD.fd], edi
+        mov     [edx+TD.bk], edi
 
-           mov eax, [ecx+TD.link]
-           mov [edi+TD.link], eax
-           mov ebx, [edi+TD.addr]
-           mov [ecx+TD.link], ebx
-           ret
+        mov     eax, [ecx+TD.link]
+        mov     [edi+TD.link], eax
+        mov     ebx, [edi+TD.addr]
+        mov     [ecx+TD.link], ebx
+        ret
 .empty:
-           mov ecx, [eax+edx]
-           mov [edi+TD.link], ecx
-           mov [ebx+eax], edi
-           mov ecx, [edi+TD.addr]
-           mov [eax+edx], ecx
-           ret
+        mov     ecx, [eax+edx]
+        mov     [edi+TD.link], ecx
+        mov     [ebx+eax], edi
+        mov     ecx, [edi+TD.addr]
+        mov     [eax+edx], ecx
+        ret
 endp
 
 
@@ -381,31 +381,31 @@ proc usb_get_descriptor stdcall, dev:dword, type:dword, index:dword,\
              count        dd ?
            endl
 
-           mov esi, [buf]
-           mov ecx, [size]
-           xor eax, eax
-           cld
-           rep stosb
+        mov     esi, [buf]
+        mov     ecx, [size]
+        xor     eax, eax
+        cld
+        rep stosb
 
-           mov [count], 3
+        mov     [count], 3
 @@:
-           mov eax, [type]
-           shl eax, 8
-           add eax, [index]
-           stdcall usb_control_msg, [dev],pipe,USB_REQ_GET_DESCRIPTOR,\
-                                    USB_DIR_IN, eax,0,[buf], [size],\
-                                    USB_CTRL_GET_TIMEOUT
-           test eax, eax
-           jz .next
-           cmp eax, -1
-           je .next
+        mov     eax, [type]
+        shl     eax, 8
+        add     eax, [index]
+        stdcall usb_control_msg, [dev], pipe, USB_REQ_GET_DESCRIPTOR, \
+                USB_DIR_IN, eax,0,[buf], [size],\
+                USB_CTRL_GET_TIMEOUT
+        test    eax, eax
+        jz      .next
+        cmp     eax, -1
+        je      .next
            jmp. ok
 .next:
-           dec [count]
-           jnz @B
-           mov eax, -1
+        dec     [count]
+        jnz     @B
+        mov     eax, -1
 .ok:
-           ret
+        ret
 endp
 
 DEVICE_ID    equ  0x24D2     ;  pci device id

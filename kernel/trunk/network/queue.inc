@@ -47,18 +47,18 @@ $Revision$
 freeBuff:
 ;        inc     [freeBuff_cnt]
 ;        DEBUGF  1, "K : freeBuff (%u)\n", [freeBuff_cnt]
-    push    ebx
-    push    ecx
-    mov     ebx, queues + EMPTY_QUEUE * 2
-    cli     ; Ensure that another process does not interfer
-    mov     cx, [ebx]
-    mov     [ebx], ax
-    mov     [queueList + eax * 2], cx
-    sti
-    pop     ecx
-    pop     ebx
+        push    ebx
+        push    ecx
+        mov     ebx, queues + EMPTY_QUEUE * 2
+        cli     ; Ensure that another process does not interfer
+        mov     cx, [ebx]
+        mov     [ebx], ax
+        mov     [queueList + eax * 2], cx
+        sti
+        pop     ecx
+        pop     ebx
 
-    ret
+        ret
 
 
 ;***************************************************************************
@@ -72,24 +72,24 @@ freeBuff:
 ;    This always works, so no error returned
 ;***************************************************************************
 queueSize:
-    xor     eax, eax
-    shl     ebx, 1
-    add     ebx, queues
-    movzx   ecx, word [ebx]
-    cmp     cx, NO_BUFFER
-    je	    qs_exit
+        xor     eax, eax
+        shl     ebx, 1
+        add     ebx, queues
+        movzx   ecx, word [ebx]
+        cmp     cx, NO_BUFFER
+        je      qs_exit
 
 qs_001:
-    inc     eax
-    shl     ecx, 1
-    add     ecx, queueList
-    movzx   ecx, word [ecx]
-    cmp     cx, NO_BUFFER
-    je	    qs_exit
-    jmp     qs_001
+        inc     eax
+        shl     ecx, 1
+        add     ecx, queueList
+        movzx   ecx, word [ecx]
+        cmp     cx, NO_BUFFER
+        je      qs_exit
+        jmp     qs_001
 
 qs_exit:
-    ret
+        ret
 
 
 ;***************************************************************************
@@ -110,40 +110,40 @@ qs_exit:
 queue:
 ;        inc     [queue_cnt]
 ;        DEBUGF  1, "K : queue (%u)\n", [queue_cnt]
-    push    ebx
-    shl     ebx, 1
-    add     ebx, queueList	  ; eax now holds address of queue entry
-    mov     [ebx], word NO_BUFFER    ; This buffer will be the last
+        push    ebx
+        shl     ebx, 1
+        add     ebx, queueList    ; eax now holds address of queue entry
+        mov     [ebx], word NO_BUFFER; This buffer will be the last
 
-    cli
-    shl     eax, 1
-    add     eax, queues 	   ; eax now holds address of queue
-    movzx   ebx, word [eax]
+        cli
+        shl     eax, 1
+        add     eax, queues        ; eax now holds address of queue
+        movzx   ebx, word [eax]
 
-    cmp     bx, NO_BUFFER
-    jne     qu_001
+        cmp     bx, NO_BUFFER
+        jne     qu_001
 
-    pop     ebx
+        pop     ebx
     ; The list is empty, so add this to the head
-    mov     [eax], bx
-    jmp     qu_exit
+        mov     [eax], bx
+        jmp     qu_exit
 
 qu_001:
     ; Find the last entry
-    shl     ebx, 1
-    add     ebx, queueList
-    mov     eax, ebx
-    movzx   ebx, word [ebx]
-    cmp     bx, NO_BUFFER
-    jne     qu_001
+        shl     ebx, 1
+        add     ebx, queueList
+        mov     eax, ebx
+        movzx   ebx, word [ebx]
+        cmp     bx, NO_BUFFER
+        jne     qu_001
 
-    mov     ebx, eax
-    pop     eax
-    mov     [ebx], ax
+        mov     ebx, eax
+        pop     eax
+        mov     [ebx], ax
 
 qu_exit:
-    sti
-    ret
+        sti
+        ret
 
 
 
@@ -163,27 +163,27 @@ qu_exit:
 ;  dequeue_cnt dd ?
 ;endg
 dequeue:
-    push    ebx
-    shl     eax, 1
-    add     eax, queues 	   ; eax now holds address of queue
-    mov     ebx, eax
-    cli
-    movzx   eax, word [eax]
-    cmp     ax, NO_BUFFER
-    je	    dq_exit
+        push    ebx
+        shl     eax, 1
+        add     eax, queues        ; eax now holds address of queue
+        mov     ebx, eax
+        cli
+        movzx   eax, word [eax]
+        cmp     ax, NO_BUFFER
+        je      dq_exit
 ;        inc     [dequeue_cnt]
 ;        DEBUGF  1, "K : dequeue (%u)\n", [dequeue_cnt]
-    push    eax
-    shl     eax, 1
-    add     eax, queueList	  ; eax now holds address of queue entry
-    mov     ax, [eax]
-    mov     [ebx], ax
-    pop     eax
+        push    eax
+        shl     eax, 1
+        add     eax, queueList    ; eax now holds address of queue entry
+        mov     ax, [eax]
+        mov     [ebx], ax
+        pop     eax
 
 dq_exit:
-    sti
-    pop     ebx
-    ret
+        sti
+        pop     ebx
+        ret
 
 
 ;***************************************************************************
@@ -196,34 +196,34 @@ dq_exit:
 ;
 ;***************************************************************************
 queueInit:
-    mov     esi, queues
-    mov     ecx, NUMQUEUES
-    mov     ax, NO_BUFFER
+        mov     esi, queues
+        mov     ecx, NUMQUEUES
+        mov     ax, NO_BUFFER
 
 qi001:
-    mov     [esi], ax
-    inc     esi
-    inc     esi
-    loop    qi001
+        mov     [esi], ax
+        inc     esi
+        inc     esi
+        loop    qi001
 
-    mov     esi, queues + ( 2 * EMPTY_QUEUE )
+        mov     esi, queues + ( 2 * EMPTY_QUEUE )
 
     ; Initialise empty queue list
 
-    xor     ax, ax
-    mov     [esi], ax
+        xor     ax, ax
+        mov     [esi], ax
 
-    mov     ecx, NUMQUEUEENTRIES - 1
-    mov     esi, queueList
+        mov     ecx, NUMQUEUEENTRIES - 1
+        mov     esi, queueList
 
 qi002:
-    inc     ax
-    mov     [esi], ax
-    inc     esi
-    inc     esi
-    loop    qi002
+        inc     ax
+        mov     [esi], ax
+        inc     esi
+        inc     esi
+        loop    qi002
 
-    mov     ax, NO_BUFFER
-    mov     [esi], ax
+        mov     ax, NO_BUFFER
+        mov     [esi], ax
 
-    ret
+        ret

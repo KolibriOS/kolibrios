@@ -73,14 +73,14 @@ iglobal_nested
 a db 'K : ',string,13,10,0
 endg_nested
 if ~ f eq
-	pushfd
+        pushfd
 end if
-	push	esi
-	mov	esi, a
-	call	sys_msg_board_str
-	pop	esi
+        push    esi
+        mov     esi, a
+        call    sys_msg_board_str
+        pop     esi
 if ~ f eq
-	popfd
+        popfd
 end if
 }
 ; \end{diamond}[29.09.2006]

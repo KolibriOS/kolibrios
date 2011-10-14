@@ -72,7 +72,8 @@ mouse_check_events: ;//////////////////////////////////////////////////////////
         jmp     .exit
 
         ; is there any system button under cursor?
-    @@: call    mouse._.find_sys_button_under_cursor
+    @@:
+        call    mouse._.find_sys_button_under_cursor
         or      eax, eax
         jz      .check_buttons_released
 
@@ -119,12 +120,14 @@ mouse_check_events: ;//////////////////////////////////////////////////////////
         mov     eax, [esp + 4]
         call    .call_left_button_handler
 
-    @@: test    byte[esp], mouse.RIGHT_BUTTON_FLAG
+    @@:
+        test    byte[esp], mouse.RIGHT_BUTTON_FLAG
         jz      @f
         mov     eax, [esp + 4]
         call    .call_right_button_handler
 
-    @@: test    byte[esp], mouse.MIDDLE_BUTTON_FLAG
+    @@:
+        test    byte[esp], mouse.MIDDLE_BUTTON_FLAG
         jz      .check_position
         mov     eax, [esp + 4]
         call    .call_middle_button_handler
@@ -222,7 +225,8 @@ mouse._.left_button_press_handler: ;///////////////////////////////////////////
         call    sys_window_maximize_handler
         jmp     .exit
 
-    @@: test    [edi + WDATA.fl_wstate], WSTATE_MAXIMIZED
+    @@:
+        test    [edi + WDATA.fl_wstate], WSTATE_MAXIMIZED
         jnz     .exit
         mov     [mouse.active_sys_window.pslot], esi
         lea     eax, [edi + WDATA.box]
@@ -238,15 +242,18 @@ mouse._.left_button_press_handler: ;///////////////////////////////////////////
         call    .calculate_w_delta
         jmp     .call_window_handler
 
-    @@: test    dl, mouse.WINDOW_RESIZE_W_FLAG
+    @@:
+        test    dl, mouse.WINDOW_RESIZE_W_FLAG
         jz      @f
         call    .calculate_w_delta
 
-    @@: test    dl, mouse.WINDOW_RESIZE_S_FLAG
+    @@:
+        test    dl, mouse.WINDOW_RESIZE_S_FLAG
         jz      @f
         call    .calculate_s_delta
 
-    @@: test    dl, mouse.WINDOW_RESIZE_E_FLAG
+    @@:
+        test    dl, mouse.WINDOW_RESIZE_E_FLAG
         jz      .call_window_handler
         call    .calculate_e_delta
 
@@ -389,17 +396,20 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         jge     @f
         xor     eax, eax
         mov     [mouse.active_sys_window.new_box.left], eax
-    @@: add     eax, [mouse.active_sys_window.new_box.width]
+    @@:
+        add     eax, [mouse.active_sys_window.new_box.width]
         cmp     eax, [Screen_Max_X]
         jl      @f
         sub     eax, [Screen_Max_X]
         sub     [mouse.active_sys_window.new_box.left], eax
-    @@: mov     eax, [mouse.active_sys_window.new_box.top]
+    @@:
+        mov     eax, [mouse.active_sys_window.new_box.top]
         or      eax, eax
         jge     @f
         xor     eax, eax
         mov     [mouse.active_sys_window.new_box.top], eax
-    @@: add     eax, [mouse.active_sys_window.new_box.height]
+    @@:
+        add     eax, [mouse.active_sys_window.new_box.height]
         cmp     eax, [Screen_Max_Y]
         jle     .call_window_handler
         sub     eax, [Screen_Max_Y]
@@ -421,7 +431,8 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         jge     @f
         add     [mouse.active_sys_window.new_box.left], eax
         mov     [mouse.active_sys_window.new_box.width], 127
-    @@: mov     eax, [mouse.active_sys_window.new_box.left]
+    @@:
+        mov     eax, [mouse.active_sys_window.new_box.left]
         or      eax, eax
         jge     .check_resize_s
         add     [mouse.active_sys_window.new_box.width], eax
@@ -449,7 +460,8 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         jge     @f
         mov     eax, ecx
         mov     [mouse.active_sys_window.new_box.height], eax
-    @@: add     eax, [mouse.active_sys_window.new_box.top]
+    @@:
+        add     eax, [mouse.active_sys_window.new_box.top]
         cmp     eax, [Screen_Max_Y]
         jle     .check_resize_e
         sub     eax, [Screen_Max_Y]
@@ -474,7 +486,8 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         jge     @f
         mov     eax, 127
         mov     [mouse.active_sys_window.new_box.width], eax
-    @@: add     eax, [mouse.active_sys_window.new_box.left]
+    @@:
+        add     eax, [mouse.active_sys_window.new_box.left]
         cmp     eax, [Screen_Max_X]
         jle     .call_window_handler
         sub     eax, [Screen_Max_X]

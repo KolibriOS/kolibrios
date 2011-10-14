@@ -21,13 +21,13 @@ irq0:
         inc     [timer_ticks]
         mov     eax, [timer_ticks]
         call    playNote       ; <<<--- Speaker driver
-        sub     eax,[next_usage_update]
-        cmp     eax,100
+        sub     eax, [next_usage_update]
+        cmp     eax, 100
         jb      .nocounter
-        add     [next_usage_update],100
+        add     [next_usage_update], 100
         call    updatecputimes
   .nocounter:
-	    xor     ecx, ecx	; send End Of Interrupt signal
+        xor     ecx, ecx        ; send End Of Interrupt signal
         call    irq_eoi
         btr     dword[DONT_SWITCH], 0
         jc      .return
@@ -60,7 +60,8 @@ if 0
 end if
         call    find_next_task
         jz      .return  ; the same task -> skip switch
-  @@:   mov     byte[DONT_SWITCH], 1
+  @@:
+        mov     byte[DONT_SWITCH], 1
         call    do_change_task
   .return:
         popad
@@ -88,16 +89,16 @@ update_counters:
         ret
 align 4
 updatecputimes:
-        xor     eax,eax
-        xchg    eax,[idleuse]
-        mov     [idleusesec],eax
+        xor     eax, eax
+        xchg    eax, [idleuse]
+        mov     [idleusesec], eax
         mov     ecx, [TASK_COUNT]
         mov     edi, TASK_DATA
   .newupdate:
-        xor     eax,eax
-        xchg    eax,[edi+TASKDATA.counter_sum]
-        mov     [edi+TASKDATA.cpu_usage],eax
-        add     edi,0x20
+        xor     eax, eax
+        xchg    eax, [edi+TASKDATA.counter_sum]
+        mov     [edi+TASKDATA.cpu_usage], eax
+        add     edi, 0x20
         loop    .newupdate
         ret
 
@@ -117,12 +118,13 @@ find_next_task:
         call    update_counters ; edi := [TASK_BASE]
         Mov     esi, ebx, [current_slot]
   .loop:
-        cmp     bh,[TASK_COUNT]
+        cmp     bh, [TASK_COUNT]
         jb      @f
         xor     bh, bh
-        mov     edi,CURRENT_TASK
-  @@:   inc     bh       ; ebx += APPDATA.size
-        add     edi,0x20 ; edi += TASKDATA.size
+        mov     edi, CURRENT_TASK
+  @@:
+        inc     bh       ; ebx += APPDATA.size
+        add     edi, 0x20; edi += TASKDATA.size
         mov     al, [edi+TASKDATA.state]
         test    al, al
         jz      .found   ; state == 0
@@ -131,22 +133,23 @@ find_next_task:
       ; state == 5
         pushad  ; more freedom for [APPDATA.wait_test]
         call    [ebx+APPDATA.wait_test]
-        mov     [esp+28],eax
+        mov     [esp+28], eax
         popad
-        or      eax,eax
+        or      eax, eax
         jnz     @f
       ; testing for timeout
         mov     ecx, [timer_ticks]
         sub     ecx, [ebx+APPDATA.wait_begin]
         cmp     ecx, [ebx+APPDATA.wait_timeout]
         jb      .loop
-  @@:   mov     [ebx+APPDATA.wait_param], eax  ; retval for wait
+  @@:
+        mov     [ebx+APPDATA.wait_param], eax  ; retval for wait
         mov     [edi+TASKDATA.state], 0
   .found:
-        mov     [CURRENT_TASK],bh
-        mov     [TASK_BASE],edi
+        mov     [CURRENT_TASK], bh
+        mov     [TASK_BASE], edi
         rdtsc   ;call  _rdtsc
-        mov     [edi+TASKDATA.counter_add],eax ; for next using update_counters
+        mov     [edi+TASKDATA.counter_add], eax; for next using update_counters
         cmp     ebx, esi ;esi - previous slot-base
         ret
 ;TODO: Надо бы убрать использование do_change_task из V86...
@@ -160,8 +163,8 @@ do_change_task:
 ;   [CURRENT_TASK] and [TASK_BASE] must be changed before (e.g. in find_next_task)
 ;   [current_slot] is the outcoming (old), and set here to a new value (ebx)
 ;scratched: eax,ecx,esi
-        mov     esi,ebx
-        xchg    esi,[current_slot]
+        mov     esi, ebx
+        xchg    esi, [current_slot]
 ; set new stack after saving old
         mov     [esi+APPDATA.saved_esp], esp
         mov     esp, [ebx+APPDATA.saved_esp]
@@ -179,17 +182,17 @@ do_change_task:
 
         Mov     [tss._esp0],eax,[ebx+APPDATA.saved_esp0]
 
-        mov edx, [ebx+APPDATA.tls_base]
-        cmp edx, [esi+APPDATA.tls_base]
-        je @f
+        mov     edx, [ebx+APPDATA.tls_base]
+        cmp     edx, [esi+APPDATA.tls_base]
+        je      @f
 
-        mov     [tls_data_l+2],dx
-        shr     edx,16
-        mov     [tls_data_l+4],dl
-        mov     [tls_data_l+7],dh
+        mov     [tls_data_l+2], dx
+        shr     edx, 16
+        mov     [tls_data_l+4], dl
+        mov     [tls_data_l+7], dh
 
-        mov dx, app_tls
-        mov fs, dx
+        mov     dx, app_tls
+        mov     fs, dx
 @@:
 ; set gs selector unconditionally
         Mov     gs,ax,graph_data
@@ -207,14 +210,15 @@ do_change_task:
         jz      @f
         xor     eax, eax
         mov     dr6, eax
-        lea     esi,[ebx+ecx+APPDATA.dbg_regs-APPDATA.dir_table] ;offset>0x7F
+        lea     esi, [ebx+ecx+APPDATA.dbg_regs-APPDATA.dir_table];offset>0x7F
         cld
   macro lodsReg [reg] {
         lodsd
-        mov     reg,eax
+        mov     reg, eax
   }     lodsReg dr0, dr1, dr2, dr3, dr7
   purge lodsReg
-  @@:   ret
+  @@:
+        ret
 ;end.
 
 
@@ -234,9 +238,9 @@ end virtual
 
 align 4
 mutex_init:
-        mov [ecx+MUTEX.wait.next], ecx
-        mov [ecx+MUTEX.wait.prev], ecx
-        mov [ecx+MUTEX.count],1
+        mov     [ecx+MUTEX.wait.next], ecx
+        mov     [ecx+MUTEX.wait.prev], ecx
+        mov     [ecx+MUTEX.count], 1
         ret
 
 
@@ -245,41 +249,41 @@ mutex_init:
 align 4
 mutex_lock:
 
-        dec [ecx+MUTEX.count]
-        jns .done
+        dec     [ecx+MUTEX.count]
+        jns     .done
 
         pushfd
         cli
 
-        sub esp, MUTEX_WAITER.sizeof
+        sub     esp, MUTEX_WAITER.sizeof
 
         list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
 
-        mov edx, [TASK_BASE]
-        mov [esp+MUTEX_WAITER.task], edx
+        mov     edx, [TASK_BASE]
+        mov     [esp+MUTEX_WAITER.task], edx
 
 .forever:
 
-        mov eax, -1
-        xchg eax, [ecx+MUTEX.count]
-        dec eax
-        jz @F
+        mov     eax, -1
+        xchg    eax, [ecx+MUTEX.count]
+        dec     eax
+        jz      @F
 
-        mov [edx+TASKDATA.state], 1
-        call change_task
-        jmp .forever
+        mov     [edx+TASKDATA.state], 1
+        call    change_task
+        jmp     .forever
 @@:
-        mov edx, [esp+MUTEX_WAITER.list.next]
-        mov eax, [esp+MUTEX_WAITER.list.prev]
+        mov     edx, [esp+MUTEX_WAITER.list.next]
+        mov     eax, [esp+MUTEX_WAITER.list.prev]
 
-        mov [eax+MUTEX_WAITER.list.next], edx
-        mov [edx+MUTEX_WAITER.list.prev], eax
-        cmp [ecx+MUTEX.wait.next], ecx
-        jne @F
+        mov     [eax+MUTEX_WAITER.list.next], edx
+        mov     [edx+MUTEX_WAITER.list.prev], eax
+        cmp     [ecx+MUTEX.wait.next], ecx
+        jne     @F
 
-        mov [ecx+MUTEX.count], 0
+        mov     [ecx+MUTEX.count], 0
 @@:
-        add  esp, MUTEX_WAITER.sizeof
+        add     esp, MUTEX_WAITER.sizeof
 
         popfd
 .done:
@@ -293,13 +297,13 @@ mutex_unlock:
         pushfd
         cli
 
-        mov eax, [ecx+MUTEX.wait.next]
-        cmp eax, ecx
-        mov [ecx+MUTEX.count], 1
-        je @F
+        mov     eax, [ecx+MUTEX.wait.next]
+        cmp     eax, ecx
+        mov     [ecx+MUTEX.count], 1
+        je      @F
 
-        mov eax, [eax+MUTEX_WAITER.task]
-        mov [eax+TASKDATA.state], 0
+        mov     eax, [eax+MUTEX_WAITER.task]
+        mov     [eax+TASKDATA.state], 0
 @@:
         popfd
         ret
@@ -332,21 +336,21 @@ endg
 align 4
 pick_task:
 
-       xor eax, eax
+        xor     eax, eax
   .pick:
-       mov ebx, [rdy_head+eax*4]
-       test ebx, ebx
-       jz .next
+        mov     ebx, [rdy_head+eax*4]
+        test    ebx, ebx
+        jz      .next
 
-       mov [next_task], ebx
-       test [ebx+flags.billable]
-       jz @F
-       mov [bill_task], ebx
+        mov     [next_task], ebx
+        test    [ebx+flags.billable]
+        jz      @F
+        mov     [bill_task], ebx
   @@:
-       ret
+        ret
   .next:
-       inc eax
-       jmp .pick
+        inc     eax
+        jmp     .pick
 
 ; param
 ;  eax= task
@@ -357,46 +361,46 @@ pick_task:
 ;  ecx= front if 1 or back if 0
 align 4
 shed:
-       cmp [eax+.tics_left], 0 ;signed compare
-       mov ebx, [eax+.priority]
-       setg ecx
-       jg @F
+        cmp     [eax+.tics_left], 0;signed compare
+        mov     ebx, [eax+.priority]
+        setg    ecx
+        jg      @F
 
-       mov edx, [eax+.tics_quantum]
-       mov [eax+.ticks_left], edx
-       cmp ebx, (IDLE_PRIORITY-1)
-       je @F
-       inc ebx
+        mov     edx, [eax+.tics_quantum]
+        mov     [eax+.ticks_left], edx
+        cmp     ebx, (IDLE_PRIORITY-1)
+        je      @F
+        inc     ebx
   @@:
-       ret
+        ret
 
 ; param
 ;  eax= task
 align 4
 enqueue:
-      call shed  ;eax
-      cmp [rdy_head+ebx*4],0
-      jnz @F
+        call    shed;eax
+        cmp     [rdy_head+ebx*4], 0
+        jnz     @F
 
-      mov [rdy_head+ebx*4], eax
-      mov [rdy_tail+ebx*4], eax
-      mov [eax+.next_ready], 0
-      jmp .pick
+        mov     [rdy_head+ebx*4], eax
+        mov     [rdy_tail+ebx*4], eax
+        mov     [eax+.next_ready], 0
+        jmp     .pick
   @@:
-      test ecx, ecx
-      jz .back
+        test    ecx, ecx
+        jz      .back
 
-      mov ecx, [rdy_head+ebx*4]
-      mov [eax+.next_ready], ecx
-      mov [rdy_head+ebx*4], eax
-      jmp .pick
+        mov     ecx, [rdy_head+ebx*4]
+        mov     [eax+.next_ready], ecx
+        mov     [rdy_head+ebx*4], eax
+        jmp     .pick
   .back:
-      mov ecx, [rdy_tail+ebx*4]
-      mov [ecx+.next_ready], eax
-      mov [rdy_tail+ebx*4], eax
-      mov [eax+.next_ready], 0
+        mov     ecx, [rdy_tail+ebx*4]
+        mov     [ecx+.next_ready], eax
+        mov     [rdy_tail+ebx*4], eax
+        mov     [eax+.next_ready], 0
   .pick:
-      call pick_proc     ;select next task
-      ret
+        call    pick_proc;select next task
+        ret
 
 end if

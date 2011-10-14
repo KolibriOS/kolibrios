@@ -26,24 +26,24 @@ flp_label   rb 15 ; Label and ID of inserted floppy disk
 
 reserve_flp:
 
-    cli
-    cmp   [flp_status],0
-    je    reserve_flp_ok
+        cli
+        cmp     [flp_status], 0
+        je      reserve_flp_ok
 
-    sti
-    call  change_task
-    jmp   reserve_flp
+        sti
+        call    change_task
+        jmp     reserve_flp
 
   reserve_flp_ok:
 
-    push  eax
-    mov   eax,[CURRENT_TASK]
-    shl   eax,5
-    mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
-    mov   [flp_status],eax
-    pop   eax
-    sti
-    ret
+        push    eax
+        mov     eax, [CURRENT_TASK]
+        shl     eax, 5
+        mov     eax, [eax+CURRENT_TASK+TASKDATA.pid]
+        mov     [flp_status], eax
+        pop     eax
+        sti
+        ret
 
 
 floppy_fileread:
@@ -63,455 +63,455 @@ floppy_fileread:
 ;            10 = access denied
 ;--------------------------------------------------------------
 
-    mov    [save_flag],0
-    mov    [path_pointer_flp],edi
-    test   esi,esi           ; return ramdisk root
-    jnz    fr_noroot_1
-    cmp    ebx,224/16
-    jbe    fr_do_1
-    mov    eax,5
-    xor    ebx,ebx
-    mov   [flp_status],ebx
-    ret
+        mov     [save_flag], 0
+        mov     [path_pointer_flp], edi
+        test    esi, esi     ; return ramdisk root
+        jnz     fr_noroot_1
+        cmp     ebx, 224/16
+        jbe     fr_do_1
+        mov     eax, 5
+        xor     ebx, ebx
+        mov     [flp_status], ebx
+        ret
 
 fr_do_1:
-    push ebx ecx edx
-    call  read_flp_root
-    pop edx ecx ebx
-    cmp    [FDC_Status],0
-    jne    fdc_status_error_1
-    mov    edi,edx
-    dec    ebx
-    shl    ebx,9
-    mov    esi,FLOPPY_BUFF
-    add    esi,ebx
-    shl    ecx,9
-    cld
-    rep    movsb
-	xor	eax,eax
-	xor	ebx,ebx
+        push    ebx ecx edx
+        call    read_flp_root
+        pop     edx ecx ebx
+        cmp     [FDC_Status], 0
+        jne     fdc_status_error_1
+        mov     edi, edx
+        dec     ebx
+        shl     ebx, 9
+        mov     esi, FLOPPY_BUFF
+        add     esi, ebx
+        shl     ecx, 9
+        cld
+        rep movsb
+        xor     eax, eax
+        xor     ebx, ebx
 ;    mov    eax,0 ; ok read
 ;    mov    ebx,0
-    mov   [flp_status],eax
-    ret
+        mov     [flp_status], eax
+        ret
 fdc_status_error_1:
-	xor	eax,eax
-    mov   [flp_status],eax
-    mov    eax,10
-    or    ebx,-1
-    ret
+        xor     eax, eax
+        mov     [flp_status], eax
+        mov     eax, 10
+        or      ebx, -1
+        ret
 
 fr_noroot_1:
-    sub    esp,32
-    call   expand_filename
+        sub     esp, 32
+        call    expand_filename
 frfloppy_1:
-    test   ebx,ebx
-    jnz    frfl5_1
-    mov    ebx,1
+        test    ebx, ebx
+        jnz     frfl5_1
+        mov     ebx, 1
 frfl5_1:
-    test   ecx,ecx
-    jnz    frfl6_1
-    mov    ecx,1
+        test    ecx, ecx
+        jnz     frfl6_1
+        mov     ecx, 1
 frfl6_1:
-    dec    ebx
-    push   eax
-    push   eax ebx ecx edx esi edi
-    call   read_flp_fat
-    cmp    [FDC_Status],0
-    jne    fdc_status_error_3_1
-    mov    [FDD_Track],0      ; Цилиндр
-    mov    [FDD_Head],1      ; Сторона
-    mov    [FDD_Sector],2      ; Сектор
-    call    SeekTrack
-    mov     dh,14
+        dec     ebx
+        push    eax
+        push    eax ebx ecx edx esi edi
+        call    read_flp_fat
+        cmp     [FDC_Status], 0
+        jne     fdc_status_error_3_1
+        mov     [FDD_Track], 0; Цилиндр
+        mov     [FDD_Head], 1; Сторона
+        mov     [FDD_Sector], 2; Сектор
+        call    SeekTrack
+        mov     dh, 14
 l.20_1:
-    call    ReadSectWithRetr
-    cmp    [FDC_Status],0
-    jne    fdc_status_error_3_1
-    mov     dl,16
-    mov     edi,FDD_BUFF
-    inc     [FDD_Sector]
+        call    ReadSectWithRetr
+        cmp     [FDC_Status], 0
+        jne     fdc_status_error_3_1
+        mov     dl, 16
+        mov     edi, FDD_BUFF
+        inc     [FDD_Sector]
 l.21_1:
-    mov    esi,eax            ;Name of file we want
-    mov    ecx,11
-    cld
-    rep    cmpsb            ;Found the file?
-    je     fifound_1          ;Yes
-    add    ecx,21
-    add    edi, ecx         ;Advance to next entry
-    dec    dl
-    test   dl,dl
-    jnz    l.21_1
-    dec    dh
-    test   dh,dh
-    jnz    l.20_1
+        mov     esi, eax      ;Name of file we want
+        mov     ecx, 11
+        cld
+        rep cmpsb           ;Found the file?
+        je      fifound_1     ;Yes
+        add     ecx, 21
+        add     edi, ecx    ;Advance to next entry
+        dec     dl
+        test    dl, dl
+        jnz     l.21_1
+        dec     dh
+        test    dh, dh
+        jnz     l.20_1
 fdc_status_error_3:
-    mov    eax,5            ; file not found ?
-    or     ebx,-1
-    add    esp,32+28
-    mov   [flp_status],0
-    ret
+        mov     eax, 5      ; file not found ?
+        or      ebx, -1
+        add     esp, 32+28
+        mov     [flp_status], 0
+        ret
 fdc_status_error_3_2:
-    cmp    [FDC_Status],0
-    je    fdc_status_error_3
+        cmp     [FDC_Status], 0
+        je      fdc_status_error_3
 fdc_status_error_3_1:
-    add    esp,32+28
-    jmp    fdc_status_error_1
+        add     esp, 32+28
+        jmp     fdc_status_error_1
 
 fifound_1:
-    mov    eax,[path_pointer_flp]
-    cmp    [eax+36],byte 0
-    je     fifound_2
-    add    edi,0xf
-    mov    eax,[edi]
-    and    eax,65535
-    mov    ebx,[path_pointer_flp]
-    add    ebx,36
-    call   get_cluster_of_a_path_flp
-    jc     fdc_status_error_3_2
-    mov    ebx,[ebx-11+28]        ;file size
-    mov    [esp+20],ebx
-    mov    [esp+24],ebx
-    jmp     fifound_3
+        mov     eax, [path_pointer_flp]
+        cmp     [eax+36], byte 0
+        je      fifound_2
+        add     edi, 0xf
+        mov     eax, [edi]
+        and     eax, 65535
+        mov     ebx, [path_pointer_flp]
+        add     ebx, 36
+        call    get_cluster_of_a_path_flp
+        jc      fdc_status_error_3_2
+        mov     ebx, [ebx-11+28]  ;file size
+        mov     [esp+20], ebx
+        mov     [esp+24], ebx
+        jmp     fifound_3
 fifound_2:
-    mov    ebx,[edi-11+28]        ;file size
-    mov    [esp+20],ebx
-    mov    [esp+24],ebx
-    add    edi,0xf
-    mov    eax,[edi]
+        mov     ebx, [edi-11+28]  ;file size
+        mov     [esp+20], ebx
+        mov     [esp+24], ebx
+        add     edi, 0xf
+        mov     eax, [edi]
 fifound_3:
-    and    eax,65535
-    mov    [n_sector],eax            ;eax=cluster
+        and     eax, 65535
+        mov     [n_sector], eax      ;eax=cluster
 frnew_1:
-    add    eax,31            ;bootsector+2*fat+filenames
-    cmp    [esp+16],dword 0     ; wanted cluster ?
-    jne    frfl7_1
-    call   read_chs_sector
-    cmp    [FDC_Status],0
-    jne    fdc_status_error_5
-    mov    edi,[esp+8]
-    call    give_back_application_data_1
-    add    [esp+8],dword 512
-    dec    dword [esp+12]        ; last wanted cluster ?
-    cmp    [esp+12],dword 0
-    je     frnoread_1
-    jmp    frfl8_1
+        add     eax, 31      ;bootsector+2*fat+filenames
+        cmp     [esp+16], dword 0; wanted cluster ?
+        jne     frfl7_1
+        call    read_chs_sector
+        cmp     [FDC_Status], 0
+        jne     fdc_status_error_5
+        mov     edi, [esp+8]
+        call    give_back_application_data_1
+        add     [esp+8], dword 512
+        dec     dword [esp+12]   ; last wanted cluster ?
+        cmp     [esp+12], dword 0
+        je      frnoread_1
+        jmp     frfl8_1
 frfl7_1:
-    dec    dword [esp+16]
+        dec     dword [esp+16]
 frfl8_1:
-    mov    edi,[n_sector]
-    shl    edi,1            ;find next cluster from FAT
-    add    edi,FLOPPY_FAT
-    mov    eax,[edi]
-    and    eax,4095
-    mov    edi,eax
-    mov    [n_sector],edi
-    cmp    edi,4095         ;eof  - cluster
-    jz     frnoread2_1
-    cmp    [esp+24],dword 512    ;eof  - size
-    jb     frnoread_1
-    sub    [esp+24],dword 512
-    jmp    frnew_1
+        mov     edi, [n_sector]
+        shl     edi, 1      ;find next cluster from FAT
+        add     edi, FLOPPY_FAT
+        mov     eax, [edi]
+        and     eax, 4095
+        mov     edi, eax
+        mov     [n_sector], edi
+        cmp     edi, 4095   ;eof  - cluster
+        jz      frnoread2_1
+        cmp     [esp+24], dword 512;eof  - size
+        jb      frnoread_1
+        sub     [esp+24], dword 512
+        jmp     frnew_1
 
 read_chs_sector:
-    call    calculate_chs
-    call    ReadSectWithRetr
-    ret
+        call    calculate_chs
+        call    ReadSectWithRetr
+        ret
 
 frnoread2_1:
-    cmp    [esp+16],dword 0     ; eof without read ?
-    je     frnoread_1
-    mov    [fdc_irq_func],fdc_null
-    pop    edi esi edx ecx
-    add    esp,4
-    pop    ebx     ; ebx <- eax : size of file
-    add    esp,36
-    mov    eax,6   ; end of file
-    mov    [flp_status],0
-    ret
+        cmp     [esp+16], dword 0; eof without read ?
+        je      frnoread_1
+        mov     [fdc_irq_func], fdc_null
+        pop     edi esi edx ecx
+        add     esp, 4
+        pop     ebx; ebx <- eax : size of file
+        add     esp, 36
+        mov     eax, 6; end of file
+        mov     [flp_status], 0
+        ret
 
 frnoread_1:
-    pop    edi esi edx ecx
-    add    esp,4
-    pop    ebx     ; ebx <- eax : size of file
-    add    esp,36
-    xor    eax,eax
-    mov    [flp_status],eax
-    ret
+        pop     edi esi edx ecx
+        add     esp, 4
+        pop     ebx; ebx <- eax : size of file
+        add     esp, 36
+        xor     eax, eax
+        mov     [flp_status], eax
+        ret
 
 fdc_status_error_5:
-    pop    edi esi edx ecx
-    add    esp,4
-    pop    ebx     ; ebx <- eax : size of file
-    add    esp,36
-    jmp    fdc_status_error_1
+        pop     edi esi edx ecx
+        add     esp, 4
+        pop     ebx; ebx <- eax : size of file
+        add     esp, 36
+        jmp     fdc_status_error_1
 
 read_flp_root:
-    pusha
-    call  check_label
-    cmp    [FDC_Status],0
-    jne    unnecessary_root_read
-    cmp   [root_read],1
-    je    unnecessary_root_read
-    mov    [FDD_Track],0      ; Цилиндр
-    mov    [FDD_Head],1      ; Сторона
-    mov    [FDD_Sector],2      ; Сектор
-    mov    edi,FLOPPY_BUFF
-    call   SeekTrack
+        pusha
+        call    check_label
+        cmp     [FDC_Status], 0
+        jne     unnecessary_root_read
+        cmp     [root_read], 1
+        je      unnecessary_root_read
+        mov     [FDD_Track], 0; Цилиндр
+        mov     [FDD_Head], 1; Сторона
+        mov     [FDD_Sector], 2; Сектор
+        mov     edi, FLOPPY_BUFF
+        call    SeekTrack
 read_flp_root_1:
-    call   ReadSectWithRetr
-    cmp    [FDC_Status],0
-    jne    unnecessary_root_read
-    push   edi
-    call   give_back_application_data_1
-    pop    edi
-    add    edi,512
-    inc    [FDD_Sector]
-    cmp    [FDD_Sector],16
-    jne    read_flp_root_1
-    mov    [root_read],1
+        call    ReadSectWithRetr
+        cmp     [FDC_Status], 0
+        jne     unnecessary_root_read
+        push    edi
+        call    give_back_application_data_1
+        pop     edi
+        add     edi, 512
+        inc     [FDD_Sector]
+        cmp     [FDD_Sector], 16
+        jne     read_flp_root_1
+        mov     [root_read], 1
 unnecessary_root_read:
-    popa
-    ret
+        popa
+        ret
 
 
 read_flp_fat:
-    pusha
-    call  check_label
-    cmp    [FDC_Status],0
-    jne    unnecessary_flp_fat
-    cmp   [flp_fat],1
-    je    unnecessary_flp_fat
-    mov    [FDD_Track],0      ; Цилиндр
-    mov    [FDD_Head],0      ; Сторона
-    mov    [FDD_Sector],2      ; Сектор
-    mov    edi,FLOPPY_BUFF
-    call   SeekTrack
+        pusha
+        call    check_label
+        cmp     [FDC_Status], 0
+        jne     unnecessary_flp_fat
+        cmp     [flp_fat], 1
+        je      unnecessary_flp_fat
+        mov     [FDD_Track], 0; Цилиндр
+        mov     [FDD_Head], 0; Сторона
+        mov     [FDD_Sector], 2; Сектор
+        mov     edi, FLOPPY_BUFF
+        call    SeekTrack
 read_flp_fat_1:
-    call   ReadSectWithRetr
-    cmp    [FDC_Status],0
-    jne    unnecessary_flp_fat
-    push   edi
-    call   give_back_application_data_1
-    pop    edi
-    add    edi,512
-    inc    [FDD_Sector]
-    cmp    [FDD_Sector],19
-    jne    read_flp_fat_1
-    mov    [FDD_Sector],1
-    mov    [FDD_Head],1
-    call   ReadSectWithRetr
-    cmp    [FDC_Status],0
-    jne    unnecessary_flp_fat
-    call   give_back_application_data_1
-    call   calculatefatchain_flp
-    mov    [root_read],0
-    mov    [flp_fat],1
+        call    ReadSectWithRetr
+        cmp     [FDC_Status], 0
+        jne     unnecessary_flp_fat
+        push    edi
+        call    give_back_application_data_1
+        pop     edi
+        add     edi, 512
+        inc     [FDD_Sector]
+        cmp     [FDD_Sector], 19
+        jne     read_flp_fat_1
+        mov     [FDD_Sector], 1
+        mov     [FDD_Head], 1
+        call    ReadSectWithRetr
+        cmp     [FDC_Status], 0
+        jne     unnecessary_flp_fat
+        call    give_back_application_data_1
+        call    calculatefatchain_flp
+        mov     [root_read], 0
+        mov     [flp_fat], 1
 unnecessary_flp_fat:
-    popa
-    ret
+        popa
+        ret
 
 calculatefatchain_flp:
-   pushad
+        pushad
 
-   mov  esi,FLOPPY_BUFF
-   mov  edi,FLOPPY_FAT
+        mov     esi, FLOPPY_BUFF
+        mov     edi, FLOPPY_FAT
 
  fcnew_1:
-   mov  eax,dword [esi]
-   mov  ebx,dword [esi+4]
-   mov  ecx,dword [esi+8]
-   mov  edx,ecx
-   shr  edx,4   ;8 ok
-   shr  dx,4    ;7 ok
-   xor  ch,ch
-   shld ecx,ebx,20 ;6 ok
-   shr  cx,4     ;5 ok
-   shld ebx,eax,12
-   and  ebx,0x0fffffff  ;4 ok
-   shr  bx,4    ;3 ok
-   shl  eax,4
-   and  eax,0x0fffffff  ;2 ok
-   shr  ax,4  ;1 ok
-   mov dword [edi],eax
-   add  edi,4
-   mov dword [edi],ebx
-   add  edi,4
-   mov dword [edi],ecx
-   add  edi,4
-   mov dword [edi],edx
-   add  edi,4
-   add  esi,12
+        mov     eax, dword [esi]
+        mov     ebx, dword [esi+4]
+        mov     ecx, dword [esi+8]
+        mov     edx, ecx
+        shr     edx, 4;8 ok
+        shr     dx, 4;7 ok
+        xor     ch, ch
+        shld    ecx, ebx, 20;6 ok
+        shr     cx, 4;5 ok
+        shld    ebx, eax, 12
+        and     ebx, 0x0fffffff;4 ok
+        shr     bx, 4;3 ok
+        shl     eax, 4
+        and     eax, 0x0fffffff;2 ok
+        shr     ax, 4;1 ok
+        mov     dword [edi], eax
+        add     edi, 4
+        mov     dword [edi], ebx
+        add     edi, 4
+        mov     dword [edi], ecx
+        add     edi, 4
+        mov     dword [edi], edx
+        add     edi, 4
+        add     esi, 12
 
-   cmp  edi,FLOPPY_FAT+2856*2   ;2849 clusters
-   jnz  fcnew_1
+        cmp     edi, FLOPPY_FAT+2856*2;2849 clusters
+        jnz     fcnew_1
 
-   popad
-   ret
+        popad
+        ret
 
 check_label:
-    pushad
-    mov    [FDD_Track],0      ; Цилиндр
-    mov    [FDD_Head],0      ; Сторона
-    mov    [FDD_Sector],1      ; Сектор
-    call   SetUserInterrupts
-    call   FDDMotorON
-    call   RecalibrateFDD
-    cmp    [FDC_Status],0
-    jne    fdc_status_error
-    call   SeekTrack
-    cmp    [FDC_Status],0
-    jne    fdc_status_error
-    call   ReadSectWithRetr
-    cmp    [FDC_Status],0
-    jne    fdc_status_error
-    mov    esi,flp_label
-    mov    edi,FDD_BUFF+39
-    mov    ecx,15
-    cld
-    rep    cmpsb
-    je     same_label
-    mov    [root_read],0
-    mov    [flp_fat],0
+        pushad
+        mov     [FDD_Track], 0; Цилиндр
+        mov     [FDD_Head], 0; Сторона
+        mov     [FDD_Sector], 1; Сектор
+        call    SetUserInterrupts
+        call    FDDMotorON
+        call    RecalibrateFDD
+        cmp     [FDC_Status], 0
+        jne     fdc_status_error
+        call    SeekTrack
+        cmp     [FDC_Status], 0
+        jne     fdc_status_error
+        call    ReadSectWithRetr
+        cmp     [FDC_Status], 0
+        jne     fdc_status_error
+        mov     esi, flp_label
+        mov     edi, FDD_BUFF+39
+        mov     ecx, 15
+        cld
+        rep cmpsb
+        je      same_label
+        mov     [root_read], 0
+        mov     [flp_fat], 0
 same_label:
-    mov    esi,FDD_BUFF+39
-    mov    edi,flp_label
-    mov    ecx,15
-    cld
-    rep    movsb
-    popad
-    ret
+        mov     esi, FDD_BUFF+39
+        mov     edi, flp_label
+        mov     ecx, 15
+        cld
+        rep movsb
+        popad
+        ret
 fdc_status_error:
-    popad
-    ret
+        popad
+        ret
 
 save_flp_root:
-    pusha
-    call  check_label
-    cmp    [FDC_Status],0
-    jne    unnecessary_root_save
-    cmp   [root_read],0
-    je    unnecessary_root_save
-    mov    [FDD_Track],0      ; Цилиндр
-    mov    [FDD_Head],1      ; Сторона
-    mov    [FDD_Sector],2      ; Сектор
-    mov    esi,FLOPPY_BUFF
-    call   SeekTrack
+        pusha
+        call    check_label
+        cmp     [FDC_Status], 0
+        jne     unnecessary_root_save
+        cmp     [root_read], 0
+        je      unnecessary_root_save
+        mov     [FDD_Track], 0; Цилиндр
+        mov     [FDD_Head], 1; Сторона
+        mov     [FDD_Sector], 2; Сектор
+        mov     esi, FLOPPY_BUFF
+        call    SeekTrack
 save_flp_root_1:
-    push   esi
-    call   take_data_from_application_1
-    pop    esi
-    add    esi,512
-    call   WriteSectWithRetr
-    cmp    [FDC_Status],0
-    jne    unnecessary_root_save
-    inc    [FDD_Sector]
-    cmp    [FDD_Sector],16
-    jne    save_flp_root_1
+        push    esi
+        call    take_data_from_application_1
+        pop     esi
+        add     esi, 512
+        call    WriteSectWithRetr
+        cmp     [FDC_Status], 0
+        jne     unnecessary_root_save
+        inc     [FDD_Sector]
+        cmp     [FDD_Sector], 16
+        jne     save_flp_root_1
 unnecessary_root_save:
-    mov    [fdc_irq_func],fdc_null
-    popa
-    ret
+        mov     [fdc_irq_func], fdc_null
+        popa
+        ret
 
 save_flp_fat:
-    pusha
-    call  check_label
-    cmp    [FDC_Status],0
-    jne    unnecessary_flp_fat_save
-    cmp   [flp_fat],0
-    je    unnecessary_flp_fat_save
-    call   restorefatchain_flp
-    mov    [FDD_Track],0      ; Цилиндр
-    mov    [FDD_Head],0      ; Сторона
-    mov    [FDD_Sector],2      ; Сектор
-    mov    esi,FLOPPY_BUFF
-    call   SeekTrack
+        pusha
+        call    check_label
+        cmp     [FDC_Status], 0
+        jne     unnecessary_flp_fat_save
+        cmp     [flp_fat], 0
+        je      unnecessary_flp_fat_save
+        call    restorefatchain_flp
+        mov     [FDD_Track], 0; Цилиндр
+        mov     [FDD_Head], 0; Сторона
+        mov     [FDD_Sector], 2; Сектор
+        mov     esi, FLOPPY_BUFF
+        call    SeekTrack
 save_flp_fat_1:
-    push   esi
-    call   take_data_from_application_1
-    pop    esi
-    add    esi,512
-    call   WriteSectWithRetr
-    cmp    [FDC_Status],0
-    jne    unnecessary_flp_fat_save
-    inc    [FDD_Sector]
-    cmp    [FDD_Sector],19
-    jne    save_flp_fat_1
-    mov    [FDD_Sector],1
-    mov    [FDD_Head],1
-    call   take_data_from_application_1
-    call   WriteSectWithRetr
-    cmp    [FDC_Status],0
-    jne    unnecessary_flp_fat_save
-    mov    [root_read],0
+        push    esi
+        call    take_data_from_application_1
+        pop     esi
+        add     esi, 512
+        call    WriteSectWithRetr
+        cmp     [FDC_Status], 0
+        jne     unnecessary_flp_fat_save
+        inc     [FDD_Sector]
+        cmp     [FDD_Sector], 19
+        jne     save_flp_fat_1
+        mov     [FDD_Sector], 1
+        mov     [FDD_Head], 1
+        call    take_data_from_application_1
+        call    WriteSectWithRetr
+        cmp     [FDC_Status], 0
+        jne     unnecessary_flp_fat_save
+        mov     [root_read], 0
 unnecessary_flp_fat_save:
-    mov    [fdc_irq_func],fdc_null
-    popa
-    ret
+        mov     [fdc_irq_func], fdc_null
+        popa
+        ret
 
 
 restorefatchain_flp:   ; restore fat chain
-   pushad
+        pushad
 
-   mov  esi,FLOPPY_FAT
-   mov  edi,FLOPPY_BUFF
+        mov     esi, FLOPPY_FAT
+        mov     edi, FLOPPY_BUFF
 
   fcnew2_1:
-   mov  eax,dword [esi]
-   mov  ebx,dword [esi+4]
-   shl  ax,4
-   shl  eax,4
-   shl  bx,4
-   shr  ebx,4
-   shrd eax,ebx,8
-   shr  ebx,8
-   mov dword [edi],eax
-   add  edi,4
-   mov word [edi],bx
-   add  edi,2
-   add  esi,8
+        mov     eax, dword [esi]
+        mov     ebx, dword [esi+4]
+        shl     ax, 4
+        shl     eax, 4
+        shl     bx, 4
+        shr     ebx, 4
+        shrd    eax, ebx, 8
+        shr     ebx, 8
+        mov     dword [edi], eax
+        add     edi, 4
+        mov     word [edi], bx
+        add     edi, 2
+        add     esi, 8
 
-   cmp  edi,FLOPPY_BUFF+0x1200     ;4274 bytes - all used FAT
-   jb   fcnew2_1
+        cmp     edi, FLOPPY_BUFF+0x1200;4274 bytes - all used FAT
+        jb      fcnew2_1
 
-   mov  esi,FLOPPY_BUFF           ; duplicate fat chain
-   mov  edi,FLOPPY_BUFF+0x1200
-   mov  ecx,0x1200/4
-   cld
-   rep  movsd
+        mov     esi, FLOPPY_BUFF  ; duplicate fat chain
+        mov     edi, FLOPPY_BUFF+0x1200
+        mov     ecx, 0x1200/4
+        cld
+        rep movsd
 
-   popad
-   ret
+        popad
+        ret
 
 
 save_chs_sector:
-    call    calculate_chs
-    call    WriteSectWithRetr
-    ret
+        call    calculate_chs
+        call    WriteSectWithRetr
+        ret
 
 calculate_chs:
-    mov    bl,[FDD_Track]
-    mov    [old_track],bl
-    mov    ebx,18
-    xor    edx,edx
-    div    ebx
-    inc    edx
-    mov    [FDD_Sector],dl
-    xor    edx,edx
-    mov    ebx,2
-    div    ebx
-    mov    [FDD_Track],al
-    mov    [FDD_Head],0
-    test   edx,edx
-    jz     no_head_2
-    inc    [FDD_Head]
+        mov     bl, [FDD_Track]
+        mov     [old_track], bl
+        mov     ebx, 18
+        xor     edx, edx
+        div     ebx
+        inc     edx
+        mov     [FDD_Sector], dl
+        xor     edx, edx
+        mov     ebx, 2
+        div     ebx
+        mov     [FDD_Track], al
+        mov     [FDD_Head], 0
+        test    edx, edx
+        jz      no_head_2
+        inc     [FDD_Head]
 no_head_2:
-    mov     dl,[old_track]
-    cmp     dl,[FDD_Track]
-    je      no_seek_track_1
-    call    SeekTrack
+        mov     dl, [old_track]
+        cmp     dl, [FDD_Track]
+        je      no_seek_track_1
+        call    SeekTrack
 no_seek_track_1:
-    ret
+        ret
 
 
 get_cluster_of_a_path_flp:
@@ -525,40 +525,40 @@ get_cluster_of_a_path_flp:
 ;          if (CARRY=0) -> EAX=cluster
 ;---------------------------------------------------------
 
-    push  edx
-    mov   edx,ebx
+        push    edx
+        mov     edx, ebx
 
 search_end_of_path_flp:
-    cmp   [save_flag],0
-    jne   search_end_of_path_flp_1
-    cmp   byte [edx],0
-    je    found_end_of_path_flp
-    jmp   search_end_of_path_flp_2
+        cmp     [save_flag], 0
+        jne     search_end_of_path_flp_1
+        cmp     byte [edx], 0
+        je      found_end_of_path_flp
+        jmp     search_end_of_path_flp_2
 search_end_of_path_flp_1:
-    cmp   byte [edx+12],0
-    je    found_end_of_path_flp
+        cmp     byte [edx+12], 0
+        je      found_end_of_path_flp
 search_end_of_path_flp_2:
-    inc   edx ; '/'
-    call  analyze_directory_flp
-    jc    directory_not_found_flp
+        inc     edx; '/'
+        call    analyze_directory_flp
+        jc      directory_not_found_flp
 
-    mov   eax,[ebx+20-2]        ; read the HIGH 16bit cluster field
-    mov   ax,[ebx+26]           ; read the LOW 16bit cluster field
-    and   eax,0xfff           ;[fatMASK]
-    add   edx,11                ; 8+3 (name+extension)
-    jmp   search_end_of_path_flp
+        mov     eax, [ebx+20-2] ; read the HIGH 16bit cluster field
+        mov     ax, [ebx+26]    ; read the LOW 16bit cluster field
+        and     eax, 0xfff    ;[fatMASK]
+        add     edx, 11         ; 8+3 (name+extension)
+        jmp     search_end_of_path_flp
 
 found_end_of_path_flp:
-    inc   edx
-    mov   [pointer_file_name_flp],edx
-    pop   edx
-    clc                         ; no errors
-    ret
+        inc     edx
+        mov     [pointer_file_name_flp], edx
+        pop     edx
+        clc                     ; no errors
+        ret
 
 directory_not_found_flp:
-    pop   edx
-    stc                         ; errors occour
-    ret
+        pop     edx
+        stc                     ; errors occour
+        ret
 
 analyze_directory_flp:
 ;--------------------------------
@@ -570,62 +570,62 @@ analyze_directory_flp:
 ;                     ECX,EDX,EDI,EDI not changed
 ;          IF CARRY=1
 ;--------------------------------
-   push ebx ;[esp+16]
-   push ecx
-   push edx
-   push esi
-   push edi
+        push    ebx;[esp+16]
+        push    ecx
+        push    edx
+        push    esi
+        push    edi
 
 
 adr56_flp:
-   mov [clust_tmp_flp],eax
-   add    eax,31
-   pusha
-   call   read_chs_sector
-   popa
-   cmp    [FDC_Status],0
-   jne    not_found_file_analyze_flp
+        mov     [clust_tmp_flp], eax
+        add     eax, 31
+        pusha
+        call    read_chs_sector
+        popa
+        cmp     [FDC_Status], 0
+        jne     not_found_file_analyze_flp
 
-   mov ecx,512/32
-   mov ebx,FDD_BUFF
+        mov     ecx, 512/32
+        mov     ebx, FDD_BUFF
 
 adr1_analyze_flp:
-   mov esi,edx   ;[esp+16]
-   mov edi,ebx
-   cld
-   push ecx
-   mov ecx,11
-   rep cmpsb
-   pop ecx
-   je found_file_analyze_flp
+        mov     esi, edx;[esp+16]
+        mov     edi, ebx
+        cld
+        push    ecx
+        mov     ecx, 11
+        rep cmpsb
+        pop     ecx
+        je      found_file_analyze_flp
 
-   add ebx,32
-   loop adr1_analyze_flp
+        add     ebx, 32
+        loop    adr1_analyze_flp
 
-    mov eax,[clust_tmp_flp]
-    shl    eax,1            ;find next cluster from FAT
-    add    eax,FLOPPY_FAT
-    mov    eax,[eax]
-    and    eax,4095
-    cmp eax,0x0ff8
-    jb  adr56_flp
+        mov     eax, [clust_tmp_flp]
+        shl     eax, 1      ;find next cluster from FAT
+        add     eax, FLOPPY_FAT
+        mov     eax, [eax]
+        and     eax, 4095
+        cmp     eax, 0x0ff8
+        jb      adr56_flp
 not_found_file_analyze_flp:
-   pop edi
-   pop esi
-   pop edx
-   pop ecx
-   add esp,4
-   stc        ;file not found
-   ret
+        pop     edi
+        pop     esi
+        pop     edx
+        pop     ecx
+        add     esp, 4
+        stc     ;file not found
+        ret
 
 found_file_analyze_flp:
-   pop edi
-   pop esi
-   pop edx
-   pop ecx
-   add esp,4
-   clc        ;file found
-   ret
+        pop     edi
+        pop     esi
+        pop     edx
+        pop     ecx
+        add     esp, 4
+        clc     ;file found
+        ret
 
 
 ; \begin{diamond}
@@ -789,7 +789,7 @@ flp_notroot_extend_dir:
         xor     eax, eax
         mov     edi, FLOPPY_FAT
         mov     ecx, 2849
-        repnz   scasw
+        repnz scasw
         jnz     .notfound
         mov     word [edi-2], 0xFFF     ; mark as last cluster
         sub     edi, FLOPPY_FAT
@@ -802,7 +802,7 @@ flp_notroot_extend_dir:
         xor     eax, eax
         mov     edi, FDD_BUFF
         mov     ecx, 128
-        rep     stosd
+        rep stosd
         popa
         call    flp_notroot_end_write
         mov     edi, FDD_BUFF
@@ -1007,7 +1007,7 @@ fs_FloppyReadFolder:
         mov     edi, edx
         mov     ecx, 32/4
         xor     eax, eax
-        rep     stosd
+        rep stosd
         pop     ecx eax
         mov     byte [edx], 1   ; version
         mov     esi, edi        ; esi points to BDFE
@@ -1282,7 +1282,7 @@ fs_FloppyRewrite:
         jz      .test_short_name_cont
         mov     ecx, 11
         push    esi edi
-        repz    cmpsb
+        repz cmpsb
         pop     edi esi
         jz      .short_name_found
 .test_short_name_cont:
@@ -1307,7 +1307,7 @@ fs_FloppyRewrite:
         mov     al, '~'
         push    ecx edi
         mov     ecx, 8
-        repnz   scasb
+        repnz scasb
         push    1
         pop     eax     ; 1 entry
         jnz     .notilde
@@ -1433,7 +1433,7 @@ fs_FloppyRewrite:
 .nolfn:
         xchg    esi, [esp]
         mov     ecx, 11
-        rep     movsb
+        rep movsb
         mov     word [edi], 20h         ; attributes
         sub     edi, 11
         pop     esi ecx
@@ -1470,14 +1470,14 @@ fs_FloppyRewrite:
 .write_loop:
 ; allocate new cluster
         xor     eax, eax
-        repnz   scasw
+        repnz scasw
         mov     al, ERROR_DISK_FULL
         jnz     .ret
         dec     edi
         dec     edi
 
-        mov eax, edi
-        sub eax, FLOPPY_FAT
+        mov     eax, edi
+        sub     eax, FLOPPY_FAT
 
         shr     eax, 1                  ; eax = cluster
         mov     word [edi], 0xFFF       ; mark as last cluster
@@ -1502,7 +1502,7 @@ fs_FloppyRewrite:
         cmp     byte [esp+24+28+28], 0
         jnz     .writedir
         push    ecx
-        rep     movsb
+        rep movsb
         pop     ecx
 .writedircont:
         push    ecx
@@ -1510,7 +1510,7 @@ fs_FloppyRewrite:
         neg     ecx
         push    eax
         xor     eax, eax
-        rep     stosb
+        rep stosb
         pop     eax
         add     eax, 31
         pusha
@@ -1561,7 +1561,7 @@ fs_FloppyRewrite:
         push    ecx
         mov     ecx, 32/4
         push    ecx esi
-        rep     movsd
+        rep movsd
         pop     esi ecx
         mov     dword [edi-32], '.   '
         mov     dword [edi-32+4], '    '
@@ -1569,7 +1569,7 @@ fs_FloppyRewrite:
         mov     byte [edi-32+11], 10h
         mov     word [edi-32+26], ax
         push    esi
-        rep     movsd
+        rep movsd
         pop     esi
         mov     dword [edi-32], '..  '
         mov     dword [edi-32+4], '    '
@@ -1749,7 +1749,7 @@ fs_FloppyWrite:
         jbe     @f
         mov     edi, FDD_BUFF
         add     edi, [esp+4+12]
-        rep     stosb
+        rep stosb
 @@:
 ; zero uninitialized data in the last sector
         mov     ecx, 0x200
@@ -1757,7 +1757,7 @@ fs_FloppyWrite:
         jbe     @f
         mov     edi, FDD_BUFF
         add     edi, esi
-        rep     stosb
+        rep stosb
 @@:
         pop     edi ecx eax
 ; copy new data
@@ -1850,7 +1850,7 @@ floppy_extend_file:
         jecxz   .disk_full
         push    eax
         xor     eax, eax
-        repnz   scasw
+        repnz scasw
         pop     eax
         jnz     .disk_full
         mov     word [edi-2], 0xFFF
@@ -2003,7 +2003,7 @@ fs_FloppySetFileEnd:
         add     edi, [esp+8]
         xor     eax, eax
         mov     [esp+8], eax
-        rep     stosb
+        rep stosb
         pop     edi
         lea     eax, [edi+31]
         pusha
@@ -2083,7 +2083,7 @@ fs_FloppySetFileEnd:
         sub     ecx, edi
         push    eax
         xor     eax, eax
-        rep     stosb
+        rep stosb
         pop     eax
         pusha
         call    save_chs_sector

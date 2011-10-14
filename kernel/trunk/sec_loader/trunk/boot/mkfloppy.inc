@@ -82,7 +82,8 @@ findir id
 
 macro stof id, name
 {
-id#_base: file name
+id#_base:
+          file name
 id#_size=$-id#_base
 reset id
 }
