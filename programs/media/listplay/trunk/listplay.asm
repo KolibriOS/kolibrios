@@ -613,7 +613,7 @@ draw_window:
     mov  ecx,100*65536+420	    ; [y start] *65536 + [y size]
     mov  edx,[sc.work]		   ; color of work area RRGGBB,8->color gl
     or	 edx,0x33000000
-    mov  edi,header
+    mov  edi,title
     mcall
     mov  eax,4
     mov  ebx,5*65536+5
@@ -748,7 +748,7 @@ list:
 ; DATA AREA
 
 
-header:        db   'Проигрываем плейлист v 0.20 :)',0
+title:        db   'Проигрываем плейлист v 0.20',0
 play_list:     db   '1.kpl',0
 cd_0:	       db   'c',0
 hd_0:	       db   'h',0
