@@ -19,6 +19,10 @@ use32
 include '../../../macros.inc'
 
 START:			   ; start of execution
+cmp  [playlist],0x00000000
+jne  dprod
+mcall  -1
+dprod:
 or   [trig_sys],40h
 call scandr
 jmp  mmm.seach
@@ -609,7 +613,7 @@ draw_window:
     mov  ecx,100*65536+420	    ; [y start] *65536 + [y size]
     mov  edx,[sc.work]		   ; color of work area RRGGBB,8->color gl
     or	 edx,0x33000000
-    mov  edi,title
+    mov  edi,header
     mcall
     mov  eax,4
     mov  ebx,5*65536+5
@@ -744,7 +748,7 @@ list:
 ; DATA AREA
 
 
-title:         db   'Проигрываем плейлист v 0.19 :)',0
+header:        db   'Проигрываем плейлист v 0.20 :)',0
 play_list:     db   '1.kpl',0
 cd_0:	       db   'c',0
 hd_0:	       db   'h',0
