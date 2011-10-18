@@ -1,4 +1,4 @@
-//Leency 06.10.2011, Flood-it! v2.2, GPL
+//Leency 06.10.2011, Flood-it! v2.4, GPL
 
 #include "lib\kolibri.h" 
 #include "lib\random.h"
@@ -74,7 +74,7 @@ char *BOARD_SIZES[]={ "S", "L", 0 };
 
 unsigned char color_matrix[28*28]; //цвета для поля с квадратиками
 
-unsigned char loose_matrix[14*14]={
+unsigned char loss_matrix[14*14]={
 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 2, 3, 3, 3, 2, 3, 3, 3, 2, 3, 2, 3, 2, 2,
@@ -198,7 +198,7 @@ void draw_window()
 	
 	//проверяем не схлопнуто ли окно в заголовок
 	GetProcessInfo(#Form, SelfInfo);
-	IF (Form.height==GetSkinWidth()+3) return;
+	IF (Form.status_window==4) return;
 	
 	//закрашиваем фон -> уменьшает перерисовку
 	for (i=0;i<=4;i++)
@@ -295,11 +295,11 @@ int check_for_end()
 		IF (CLICKS==MAX_CLICKS) //выигрышь на последнем ходе
 		{
 			for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++) //проверяем всё ли поле одного цвета, если нет уходим
-					IF (color_matrix[i]<>color_matrix[0]) goto _LOOSE_MARK;
+					IF (color_matrix[i]<>color_matrix[0]) goto _loss_MARK;
 			goto _WIN_MARK;
 		}
 		
-		_LOOSE_MARK:
+		_loss_MARK:
 		
 		for (i=0;i<14;i++)
 			for (j=0;j<14;j++)
@@ -314,10 +314,10 @@ int check_for_end()
 					ii=i*2;
 					jj=j*2;
 				}
-				color_matrix[ii*BLOCKS_NUM+jj]=loose_matrix[i*14+j];
-				color_matrix[ii+1*BLOCKS_NUM+jj]=loose_matrix[i*14+j];
-				color_matrix[ii*BLOCKS_NUM+jj+1]=loose_matrix[i*14+j];
-				color_matrix[ii+1*BLOCKS_NUM+jj+1]=loose_matrix[i*14+j];
+				color_matrix[ii*BLOCKS_NUM+jj]=loss_matrix[i*14+j];
+				color_matrix[ii+1*BLOCKS_NUM+jj]=loss_matrix[i*14+j];
+				color_matrix[ii*BLOCKS_NUM+jj+1]=loss_matrix[i*14+j];
+				color_matrix[ii+1*BLOCKS_NUM+jj+1]=loss_matrix[i*14+j];
 				draw_field();
 				//Pause(5);				
 			}	
