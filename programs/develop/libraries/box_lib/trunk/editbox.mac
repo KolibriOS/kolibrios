@@ -1299,26 +1299,3 @@ macro   debug_func
 }
 
 ed_struc_size=76
-struc  edit_box width,left,top,color,shift_color,focus_border_color,\
-       blur_border_color,text_color,max,text,mouse_variable,flags,size,pos
-{
-.width dd width
-.left dd left
-.top dd top
-.color dd color
-.shift_color dd shift_color
-.focus_border_color dd focus_border_color
-.blur_border_color dd blur_border_color
-.text_color dd text_color
-.max dd max
-.text dd text
-.mouse_variable dd mouse_variable
-.flags dd flags+0
-.size dd size+0
-.pos dd pos+0
-.offset dd 0
-.cl_curs_x dd 0
-.cl_curs_y dd 0
-.shift   dd 0
-.shift_old   dd 0
-}
