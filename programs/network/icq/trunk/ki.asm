@@ -1,45 +1,71 @@
-; <--- description --->
 ; compiler:     FASM 1.67.21
-; name:         ICQ for Kolibri
-; version:      0.01
+; name:         ICQ client for Kolibri
+; version:      0.1.30
 ; written by:   LV
-; e-mail:       lv4evil@ya.ru
+; e-mail:       lv4evil@yandex.ru
 
 
-; <--- include all MeOS stuff --->
 include "lang.inc"
-include "../../../macros.inc"
-purge mov
+include "MACROS.INC"
+;purge mov
 ;include "ASCL9/ascl.inc"
 ;include "debug.inc"
-include "EDITBOX.INC"
+include "editbox.inc"
 
-; <--- start of MenuetOS application --->
 MEOS_APP_START
 
 ;include "debug.inc"
 include "2000.inc"
 include "comp.inc"
+;include "fsio.inc"
+include "dos2win.inc"
+include "parser.inc"
+include "ssi.inc"
 
 use_edit_box procinfo,22,5
 
-; <--- start of code --->
+;
+; Если == 0, код для использования контакт листа
+; на сервере не ассемблируется 
+;
+USE_SSI = 1
+;
+;
+
 CODE
     
     
     ;mov eax, 40
     ;mov ebx, 47h
     ;int 40h
+
+    ;
+    ; Загрузка конфигов
+    ;
+
+    mov  eax, fname
+    call    parseconf
+    ;
+    ; Вывод загруженной информации
+    ;
+
+    mov eax, cfg_message
+    xor ebx, ebx
+    call writemsg
+
+    call showcfg
+
    
-    call    loaduin
+    ;call    loaduin
     call    draw_window 	   ; at first create and draw the window
     
     ;call    buttonbox
 
   wait_event:			   ; main cycle
-    mov     eax, 23
-    mov     ebx, 20
-    int     0x40
+    ;mov     eax, 23
+    ;mov     ebx, 20
+    ;int     0x40
+    mcall 23,20
 
     cmp     eax, 1		   ;   if event == 1
     je	    redraw		   ;     jump to redraw handler
@@ -51,20 +77,16 @@ CODE
     ;
     ; Ждем данных
     ;
-    mov     eax, 53
-    mov     ebx, 2
-    push    ecx
-    mov     ecx, [socket]
-    int     0x40
-    pop     ecx
+    
+    mcall 53,2,[socket]
     cmp     eax, 0
     jnz     read_socket
 
     mouse_edit_box inputbox
     ;
     ; Если есть соединение с сервером, посылаем пакеты - подтвеждения каждые 60 с
-    ;
-    call    sendkeep
+    ; не требуется
+;    call    sendkeep
     
     jmp     wait_event		   ;   else return to the start of main cycle
 
@@ -74,11 +96,11 @@ CODE
     jmp     wait_event
 
 
-  key:				   ; key event handler
-    mov     eax, 2		   ;   get key code
-    int     0x40
+  key:				   ; get key code
+    
+    mcall 2
 
-    cmp ah, 0Dh 		   ; Пробел - отправить сообщение
+    cmp ah, 0Dh                    ; Пробел - отправить сообщение
     jz send
 
 
@@ -88,17 +110,18 @@ CODE
 
 
   button:			   ; button event handler
-    mov     eax, 17		   ;   get button identifier
-    int     0x40
+    ;mov     eax, 17		   ;   get button identifier
+    ;int     0x40
+    mcall 17
 
     cmp     ah, 2
-    jz	    connect
+    jz      connect
 
     cmp     ah, 3
-    jz	    disconnect
+    jz      disconnect
 
     cmp     ah, 4
-    jz	    send
+    jz      send
 
     ;
     ; Проверяем, не нажата ли кнопка в КЛ
@@ -127,10 +150,16 @@ CODE
     pop eax
     mov ebx, NAME_LEN
     imul ebx, eax
-    lea eax, [names+ebx]
-    mov [buff+ecx], ' ' ; Пробел
-    lea ebx, [buff+ecx+1]
+    lea eax, [names + ebx]
+    mov [buff + ecx], ' ' ; Пробел
+    lea ebx, [buff + ecx + 1]
     mov ecx, NAME_LEN
+    ;debug
+     push ebx
+     mov ebx, NAME_LEN
+     call print_mem
+     pop ebx
+    ;
     call strcpy
     mov eax, buff
     xor ebx, ebx
@@ -143,29 +172,15 @@ CODE
     cmp     ah, 1
     jne     wait_event		   ;   return if button id != 1
 
-    or	    eax, -1		   ;   exit application
-    int     0x40
+    ;   exit application
+    mcall -1
 
 
   draw_window:
-    mov     eax, 12		   ; start drawing
-    mov     ebx, 1
-    int     0x40
+    ; start drawing
+    mcall 12,1
 
-    mov     eax, 0		   ; create and draw the window
-    mov     ebx, 100*65536+700	   ;   (window_cx)*65536+(window_sx)
-    mov     ecx, 100*65536+500	   ;   (window_cy)*65536+(window_sy)
-    mov     edx, 0x03ffffff	   ;   work area color & window type 3
-;   mov     esi, 0                 ;   grab color (not used)
-;   mov     edi, 0                 ;   frame color (not used)
-    int     0x40
-
-    mov     eax, 4		   ; window header
-    mov     ebx, 8*65536+8	   ;   coordinates
-    mov     ecx, 0x10ffffff	   ;   color & font N1
-    mov     edx, header 	   ;   address of text
-    mov     esi, header.size	   ;   length of text
-    int     0x40
+    mcall 0,(100*65536+700),(100*65536+500),0x14ffffff,0,head
 
     draw_edit_box inputbox
 
@@ -175,13 +190,23 @@ CODE
     ;draw_button 600, 460, 60, 15, 3, 'Disconnect'
     draw_button 530, 460, 60, 15, 4, 'SEND'
 
-    call printbuff
+    call    printbuff
     call    buttonbox
+
+    ;
+    ; Image
+    ;
+    ;mov eax, 7
+    ;mov ebx, redicq
+    ;mov ecx, 15*65536+15
+    ;mov edx, 100*65536+100
+    ;int 40h
+
+
     
 
-    mov     eax, 12		   ; finish drawing
-    mov     ebx, 2
-    int     0x40
+   ; finish drawing
+   mcall 12,2
 
   ret
 
@@ -189,10 +214,15 @@ CODE
 ;  Соединение
 ;
   connect:
-  mov eax, ICQ_IP
+  lea eax, [vtable + vartable.icqip]
+  call ip_parser
+  call htonl
+  data_debug 'IP:', eax
+
+  ;mov eax, ICQ_IP
   mov ebx, ICQ_PORT
   call srv_connect
-  ;call srv_login
+  
 
 
   jmp wait_event
@@ -227,7 +257,7 @@ CODE
     ;cmp al, 20h
     ;jz sd_use_kl
     mov al, [inputbuff+3]
-    cmp al, 20h 	   ; Пробел
+    cmp al, 20h            ; Пробел
     jz sd_use_kl
     ;
     ; Ищем первый пробел, им должен закончиться уин
@@ -238,7 +268,7 @@ CODE
     cmp al, 20h
     jz sd_space
     cmp al, 0
-    jz	wait_event
+    jz  wait_event
     inc ecx
     jmp sd_loop
 
@@ -259,7 +289,7 @@ CODE
     lea eax, [inputbuff+1]
     mov [inputbuff+3], byte 0
     call ascitoint
-    lea eax, [eax-1]	; Т.к. в КЛ отсчет с 0
+    lea eax, [eax-1]    ; Т.к. в КЛ отсчет с 0
     mov [curruser], al
     
 
@@ -306,11 +336,12 @@ CODE
     cmp [hrf], 1
     jz rs_head_recived
 
-
-    mov eax, 53
-    mov ebx, 2
-    mov ecx, [socket]
-    int 40h
+  rs_check_sock:
+    ;mov eax, 53
+    ;mov ebx, 2
+    ;mov ecx, [socket]
+    ;int 40h
+    mcall 53,2,[socket]
     cmp eax, 6 ; Flap head size
     jc r_end
     ;
@@ -320,10 +351,10 @@ CODE
 
     ;mov ecx, [socket]
    rs_loop:
-    mov eax,  53
-    mov ebx, 3
-    
-    int 40h
+    ;mov eax,  53
+    ;mov ebx, 3
+    ;int 40h
+    mcall 53,3,[socket]
 
     mov [mbuff+edx], bl
     inc edx
@@ -365,10 +396,12 @@ CODE
     ;
   rs_head_recived:
 
-    mov eax, 53
-    mov ebx, 2
+    ;mov eax, 53
+    ;mov ebx, 2
     ;mov ecx, [socket]
-    int 40h
+    ;int 40h
+    mcall 53,2,[socket]
+
     cmp ax, [rflap.wDs]   ; Размер данных
     jc r_end
     ;
@@ -390,9 +423,10 @@ CODE
     cmp edx, esi
     jz rs_data_end
 
-    mov eax, 53
-    mov ebx, 3
-    int 40h
+    ;mov eax, 53
+    ;mov ebx, 3
+    ;int 40h
+    mcall 53,3,[socket]
     mov [mbuff+edx], bl
     inc edx
     jmp rs_data_loop
@@ -402,20 +436,25 @@ CODE
     ;
     rs_data_end:
     mov [hrf], 0
-    write_debug 'Some data received'
+    ;write_debug 'Some data recived'
     ;
     ;
     ;
     cmp [login], 0
     jz rs_login
     call main_loop
-    jmp r_end
+    ;
+    ; Есть смысл проверить сокет на наличие следующего заголовка
+    ;
+    ;jmp r_end
+    jmp rs_check_sock
 
 
     rs_login:
     call srv_login
     ;write_debug 'Exited srv_login'
-    jmp r_end
+    ;jmp r_end
+    jmp rs_check_sock
 
     rs_flap_error:
     write_debug 'Invalid Flap'
@@ -432,10 +471,10 @@ CODE
     ;
     rs_big_flap:
 
-    write_debug 'Too BIG FLAP Received'
+    write_debug 'Too BIG FLAP Recived'
     mov [hrf], 0
 
-    mov ecx, [socket]
+    ;mov ecx, [socket]
     mov ax, [rflap.wDs]
     xor esi, esi     
     mov esi, eax
@@ -445,9 +484,10 @@ CODE
     cmp edx, esi
     jz r_end
 
-    mov eax, 53
-    mov ebx, 3
-    int 40h
+    ;mov eax, 53
+    ;mov ebx, 3
+    ;int 40h
+    mcall 53,3,[socket]
     ;mov [mbuff+edx], bl
     inc edx
     jmp rs_data_loop2
@@ -465,71 +505,84 @@ CODE
 ; Соединение с сервером, возвращает в eax - хэндл сокета
 ; передаем в еах IP адрес сервера
 ; в ebx - порт
-  srv_connect:	
+  srv_connect:  
     push ecx 
     push edx 
     push esi 
     push edi
     push ebx
     
-    mov esi, eax	     ; IP - в esi
+    mov esi, eax             ; IP - в esi
     ; find free port
     mov    ecx, 1000	     ; Определяем локальный порт, начинаем с 1000
 
     getlp:
     inc    ecx
     push   ecx
-    mov    eax, 53
-    mov    ebx, 9
-    int    0x40
+    ;mov    eax, 53
+    ;mov    ebx, 9
+    ;int    0x40
+    mcall 53,9,ecx
     pop    ecx
     cmp    eax, 0	     ; этот локальный порт используется?
     jz	   getlp	     ; да - продолжаем перебирать
     ;OK ecx = port number
     ;Open Socket
-    mov eax, 53
-    mov ebx, 5
+    ;mov eax, 53
+    ;mov ebx, 5
     xor edx, edx
     ;mov dx, ICQ_PORT
     pop edx
     ;mov esi,ICQ_IP
-    mov edi, 1;SOCKET_ACTIVE
+    ;mov edi, 1;SOCKET_ACTIVE
 
-    int 040h
+    ;int 40h
+    mcall 53, 5, ecx, edx, esi, 1
     ;
     mov [socket], eax
+
     ;
     ; Ждем установки соедиения
     mov ecx, eax
   srv_loop:
+
+    ;mov eax, 5
+    ;mov ebx, 50
+    ;int 40h
+    mcall 5, 50
+
+
     
-    mov eax, 53
-    mov ebx, 6
-    int 40h
+    ;mov eax, 53
+    ;mov ebx, 6
+    ;int 40h
+    mcall 53, 6, ecx
     cmp eax, TCB_ESTABLISHED 
     jz fin
     cmp eax, 11
-    jae @f
+    jae c_end
     ;
-    mov eax, 5
-    mov ebx, 50
-    int 40h
+    
+    ;inc [timer]
+    ;cmp [timer], 50
+    ;jz srv_err
     jmp srv_loop
 
 
 
-
+  ;srv_err:
+    ;mov [timer], word 0
     ;cmp eax,-1
     ;jnz fin
     ;delay 100
-    write_debug 'CONNECTION FAILED'		      ;Подключение не удалось
-    jmp @f
+    write_debug	'CONNECTION FAILED'                   ;Подключение не удалось
+    jmp c_end
     ;connrcted:  
 					  ;CONNECTED
     
     fin:
     write_debug 'Connected!!!!'
-  @@:
+  c_end:
     pop edi 
     pop esi 
     pop edx 
@@ -540,8 +593,7 @@ CODE
 ;
 ; --> ecx socket handle
 ;
-  buff db 1024 dup 0
-  lbuff db 8 dup 0	 ; Для 1 пакета от сервера
+  
   srv_login:
     pushf
     push eax
@@ -567,7 +619,7 @@ CODE
     cmp eax, 4
     jnz l_len_err
     mov eax, dword [mbuff]
-    cmp eax, 01000000h	    ; 00 00 00 01
+    cmp eax, 01000000h      ; 00 00 00 01
     jnz l_data_err
     ;
     ;Формируем пакет для соединения
@@ -575,12 +627,13 @@ CODE
     ;mov [flap.bId], FLAP_ID
     mov [flap.bCh], NEW_CONNECTION
     
-    mov eax, 26
-    mov ebx, 9
-    int 40h
+    ;mov eax, 26
+    ;mov ebx, 9
+    ;int 40h
+    mcall 26, 9
     mov [seq], ax
 
-    mov [flap.wSn], ax	    ; Sequence number
+    mov [flap.wSn], ax      ; Sequence number
     ;mov [buff],0
     ;mov [buff+1],0
     ;mov [buff+2],0
@@ -588,41 +641,43 @@ CODE
     ;mov[buff+4],0
     mov word [buff+4], 0x0100; TLV.TYPE = UIN     00 01
 
-    mov eax, UIN
+    lea eax, [vtable + vartable.uin]
     call strlen
     mov [buff+6], ah
     mov [buff+7], al ; Length of UIN 
     mov edx, eax
-    add edx, 7		       ; в edx длина заполненного буфера
+    add edx, 7                 ; в edx длина заполненного буфера
     
-    mov ecx, eax	      ;Длина строки
+    mov ecx, eax              ;Длина строки
 
-    mov eax, UIN
-    lea ebx, [buff+8]	      ; + размер данных в буфере + 1 
+    lea eax, [vtable + vartable.uin]
+    lea ebx, [buff+8]         ; + размер данных в буфере + 1 
 
     call strcpy
 
     
-    mov eax, PASS
+    lea eax, [vtable + vartable.pass]
     call roast
     
     mov [buff+edx+2], 2 ; TLV.TYPE - rosted password
     call strlen
-    mov word [buff+edx+4], ax  ; Length of pass
+    mov [buff+edx+4], al
+    mov [buff+edx+3], ah  ; Length of pass
 
     add edx, 4
     mov ebx, buff
-    add ebx, edx	       ; назначение
-    add edx, eax	       ; Сохраняем в EDX длину заполненного буфнра
-    mov ecx, eax	       ; Длина строки
-    mov eax, PASS	       ; Источник
+    add ebx, edx               ; назначение
+    add edx, eax               ; Сохраняем в EDX длину заполненного буфнра
+    mov ecx, eax               ; Длина строки
+    lea eax, [vtable + vartable.pass]              ; Источник
     inc ebx
     call strcpy
     
     mov [buff+edx+2], 3 ; TLV.TYPE - client id string
     mov eax, ID_STRING
     call strlen
-    mov word [buff+edx+4], ax
+    mov [buff+edx+4], al
+    mov [buff+edx+3], ah
 
     add edx, 4
     mov ecx, eax
@@ -633,34 +688,48 @@ CODE
     mov eax, ID_STRING
     call strcpy
 
+    xor eax, eax
+
     mov [buff+edx+2], 016h  ; TLV.TYPE - Client id
     mov [buff+edx+4], 2
-    mov word [buff+edx+6], ID_NUM
+    mov ax, ID_NUM
+    call htons
+    mov word [buff+edx+5], ax
     add edx, 6
 
     mov [buff+edx+2], 017h ; Client major version
     mov [buff+edx+4], 2
-    mov [buff+edx+6], MAJOR
+    mov ax, MAJOR
+    call htons
+    mov word [buff+edx+5], ax
     add edx, 6
 
     mov [buff+edx+2], 018h ; Client minor version
     mov [buff+edx+4], 2
-    mov [buff+edx+6], MINOR
+    mov ax, MINOR
+    call htons
+    mov word [buff+edx+5], ax
     add edx, 6
 
     mov [buff+edx+2], 019h ; Client lesser version
     mov [buff+edx+4], 2
-    mov [buff+edx+6], LESSER
+    mov ax, LESSER
+    call htons
+    mov word [buff+edx+5], ax
     add edx, 6
 
     mov [buff+edx+2], 01Ah ; Client build number
     mov [buff+edx+4], 2
-    mov word [buff+edx+6], BUILD
+    mov ax, BUILD
+    call htons
+    mov word [buff+edx+5], ax
     add edx, 6
     
     mov [buff+edx+2], 014h ; Client distribution number
     mov [buff+edx+4], 4
-    mov [buff+edx+8], DISTR
+    mov eax, DISTR
+    call htonl
+    mov dword [buff+edx+5], eax
     add edx, 8
 
     mov [buff+edx+2], 0Fh ; Client language
@@ -676,7 +745,7 @@ CODE
     mov eax, CL_LANG
     call strcpy
 
-    mov [buff+edx+2], 0Fh ; Client language
+    mov [buff+edx+2], 0Eh ; Client country
     mov eax, CL_COUNTRY
     call strlen
     mov word [buff+edx+4], ax
@@ -716,7 +785,7 @@ CODE
     mov ebx, buff
     call sendflap
     cmp eax, 0
-    jnz l_fin		; Неуспех
+    jnz l_fin           ; Неуспех
     jmp l_end
     
 
@@ -735,9 +804,9 @@ CODE
    uin_loop:
     xor eax, eax
     mov ax, word [mbuff+ebx]
-    cmp ax, 0100h	       ;  00 01 TLV.Type UIN
-    jz l_uin_ok 		 ;  Теперь сервер передает еще данные при соединении, а потом опять
-    add ebx, 5			       ; тот же TLV 1
+    cmp ax, 0100h              ;  00 01 TLV.Type UIN
+    jz l_uin_ok                  ;  Теперь сервер передает еще данные при соединении, а потом опять
+    add ebx, 5                   ; тот же TLV 1  (новый формат пакекта)
     cmp ebx, 5
     ja l_tlvt_err
     jmp uin_loop
@@ -749,8 +818,8 @@ CODE
   l_uin_ok:
     mov eax, ebx
     xor ebx, ebx
-    mov bl, [mbuff+eax+3]	    ;
-    mov bh, [mbuff+eax+2]	    ;  Длина данных
+    mov bl, [mbuff+eax+3]           ;
+    mov bh, [mbuff+eax+2]           ;  Длина данных
     ;
     ;  UIN Пока не проверяется
     ;
@@ -758,9 +827,9 @@ CODE
 
     lea ebx, [ebx+eax+4]
     mov ax, word [mbuff+ebx]
-    cmp ax, 0500h	      ; 00 05 Bos address
+    cmp ax, 0500h             ; 00 05 Bos address
     jz l_all_ok
-    cmp ax, 0400h	      ; UIN incorrect
+    cmp ax, 0400h             ; UIN incorrect
     jz l_uin_err
     cmp ax, 0800h
     jz l_pass_err
@@ -771,8 +840,8 @@ CODE
 
     l_all_ok:
     xor ecx, ecx
-    mov cl, [mbuff+ebx+3]	;length
-    mov ch, [mbuff+ebx+2]	;
+    mov cl, [mbuff+ebx+3]       ;length
+    mov ch, [mbuff+ebx+2]       ;
     
     lea eax, [mbuff+ebx+4]
     push ebx
@@ -780,7 +849,7 @@ CODE
     call strcpy
     pop ebx
     add ebx, ecx
-    lea ebx, [ebx+4]		    ; Размер заголовка                
+    lea ebx, [ebx+4]                ; Размер заголовка                
     ;         
     ; cookie
     ;
@@ -788,45 +857,46 @@ CODE
 
     xor eax, eax
     mov ax, word [mbuff+ebx]
-    cmp ax, 0600h		   ; TLV.Type cookie
+    cmp ax, 0600h                  ; TLV.Type cookie
     jnz l_tlvt_err
-    mov cl, [mbuff+ebx+3]	    ;
-    mov ch, [mbuff+ebx+2]	    ; Length
+    mov cl, [mbuff+ebx+3]           ;
+    mov ch, [mbuff+ebx+2]           ; Length
     mov [cookie_len], cx
     lea eax, [mbuff+ebx+4]
     push ebx
     mov ebx, srv_cookie
     call strcpy
     pop ebx
-	    
+            
     ;                         
     ;  Соединяемся с BOS    
     ;                       
     ;call srv_disconnect
     mov ecx, [socket]
-    ;write_debug 'Closing socket'
+    write_debug 'Closing socket'
     ;call closesocket
     ;
     ;
-    ;mov eax, 53
-    ;mov ebx, 8
-    ;int 40h
+    ;
+    ;FIXME!!!
+    ;Закомменторовано из-за проблемы с сетевым стеком
+    ;закрытие сокета завешивает систему
+    ;mcall 53, 8, ecx
 
 
-
-			
+                        
     mov eax, bos_address
     call ip_parser
     
     call htonl
     data_debug 'BOS Address: ', eax
     data_debug 'BOS Port: ', ebx
-    mov [bos_ip], eax	    
+    mov [bos_ip], eax       
     mov [bos_port], ebx     
     call srv_connect
-    mov [login], 1		  ; Соединение с основным сервером установлено
+    mov [login], 1                ; Соединение с основным сервером установлено
     ;mov [socket], eax
-			    
+                            
 
     
     jmp l_end
@@ -846,7 +916,7 @@ CODE
     jmp l_fin
 
     l_len_err:
-    write_debug 'RECEIVED DATA LENGTH MISMATCH'
+    write_debug 'RECIVED DATA LENGTH MISMATCH'
     jmp l_fin
 
     l_tlvt_err:
@@ -858,7 +928,7 @@ CODE
     jmp l_fin
 
     l_flap_err:
-    write_debug 'FLAP ID MISMATCH / RECEIVE ERROR'
+    write_debug 'FLAP ID MISMATCH / RECIVE ERROR'
 
     l_fin:
 
@@ -866,14 +936,14 @@ CODE
     ; Необходимо закрыть сокет
     ;
     ;call srv_disconnect
-    ;call closesocket
+    call closesocket
     l_end:
     pop edx
     ;pop ecx
     pop ebx
     pop eax
-    popf			  
-  ret		     
+    popf                          
+  ret                
 
 ;
 ; Length of string
@@ -890,7 +960,7 @@ CODE
     loop_s:
     mov cl, [eax+ebx]
     cmp ecx,0
-    jz	nl
+    jz  nl
     inc ebx
     jmp loop_s
 
@@ -916,7 +986,7 @@ CODE
 
     loop_r:
     mov bl, [eax+ecx] ;Символ из массива пароля
-    cmp bl, 0	      ;Конец строки
+    cmp bl, 0         ;Конец строки
     jz r_fin
     
     xor bl, [ROASTING_ARRAY+ecx]
@@ -954,6 +1024,27 @@ CODE
     pop esi
     popf    
   ret
+
+
+;
+; Макрос для сравнения строк
+;
+macro strcmp first, second, len
+{
+   push ecx
+   push esi
+   push edi
+
+   mov ecx, len
+   mov esi, first
+   mov edi, second
+   repe cmpsb
+
+   pop edi
+   pop esi
+   pop ecx
+
+}
 
 
 ;
@@ -1005,56 +1096,59 @@ CODE
 
     xor edx, edx
 
-    mov dl, [eax]	   ; ID byte
+    mov dl, [eax]          ; ID byte
     mov [sbuff], dl
 
-    mov dl, [eax+1]	   ; FLAP channel
+    mov dl, [eax+1]        ; FLAP channel
     mov [sbuff+1], dl
 
-    mov dl, [eax+2]	   ; FLAP datagramm seq number
-    mov [sbuff+3], dl	   ; меняем местами байты для передачи по сети
+    mov dl, [eax+2]        ; FLAP datagramm seq number
+    mov [sbuff+3], dl      ; меняем местами байты для передачи по сети
     mov dl, [eax+3]
     mov [sbuff+2], dl
 
-    mov dl, [eax+4]	   ; FLAP data size
+    mov dl, [eax+4]        ; FLAP data size
     mov [sbuff+5], dl
     mov dl, [eax+5]
     mov [sbuff+4], dl
     mov dx, word [eax+4]
 
-    xchg ecx, edx	    ; ecx - size edx - handle
-    mov eax, ebx	    ; data
-    mov ebx, sbuff	    ; dest
-    add ebx, 6		    ; + header size
+    xchg ecx, edx           ; ecx - size edx - handle
+    mov eax, ebx            ; data
+    mov ebx, sbuff          ; dest
+    add ebx, 6              ; + header size
     call strcpy
 
-    xchg ecx, edx	    ; ecx - handle, edx - data size
+    xchg ecx, edx           ; ecx - handle, edx - data size
 
     s_wait:
-    mov eax, 53 	    ; Проверяем состояние сокета. Если соедиение
-    mov ebx, 6		    ; установлено - посылаем буфер, если сокет закрыт, уходим
-    int 40h
+    ;mov eax, 53             ; Проверяем состояние сокета. Если соедиение
+    ;mov ebx, 6              ; установлено - посылаем буфер, если сокет закрыт, уходим
+    ;int 40h
+    mcall 53, 6, ecx
     cmp eax, TCB_ESTABLISHED ; установлено
     jz s_est
     cmp eax, TCB_CLOSED 
     jz s_fin
-    cmp eax, 12 	   ;  У меня такое было, когда соединение устанавливалось с пустотой :-)
-    jnc s_fin		   ;
+    cmp eax, 12            ;  У меня такое было, когда соединение устанавливалось с пустотой :-)
+    jnc s_fin              ;
 
     
-    mov eax, 5
-    mov ebx, 1
-    int 40h		   ; Ждем
+    ;mov eax, 5
+    ;mov ebx, 1
+    ;int 40h                ; Ждем
+    mcall 5, 1
     jmp s_wait
 
 
     s_est:
-    mov eax, 53
-    mov ebx, 7		   ; писать в сокет
-    ;xchg ecx, edx          ; ecx - handle, edx - data length
-    add edx, 6		   ; + size of header
-    mov esi, sbuff	   ; data
-    int 40h
+    ;mov eax, 53
+    ;mov ebx, 7             ; писать в сокет
+  
+    add edx, 6             ; + size of header
+    ;mov esi, sbuff         ; data
+    ;int 40h
+    mcall 53, 7, ecx, edx, sbuff
  
     s_fin:
     pop ecx
@@ -1065,129 +1159,6 @@ CODE
     popf
   ret
 
-;
-; Принимает пакет из сокета
-; eax - указатель на FLAP_head
-; ebx - указатель на массив
-; ecx - хендл сокета
-; Возвращает в eax количество принятых байт в массиве
-;
-;  recvflap:
-;    pushf
-;
-;    ;push eax
-;    push ebx
-;    push esi
-;    push edi
-;    push edx
-;    mov esi, eax
-;    mov edi, ebx
-;
-;    r_fail:
-;    mov eax, 53         ;  Опрашивааем сокет
-;    mov ebx, 2          ;  в eax количество полученных байт
-;    int 40h             ;
-;    cmp eax, 6          ;  буфер не пустой
-;    jnc r_ok
-;    
-;    mov eax, 53         ;  Получаем состояние сокета 
-;    mov ebx, 6          ;
-;    int 40h             ;
-;
-;    cmp eax, TCB_CLOSED ; закрыт - уходим
-;    jz r_err
-;
-;
-;   ;mov eax, 5         ; ждем
-;    ;mov ebx, 1
-;    ;int 40h
-;    ; уходим
-;
-;    ;jmp r_fail
-;    jmp rf_fin
-;
-;    r_ok:               ; В буфере данные
-;    
-;    mov eax, 53
-;    mov ebx, 3
-;    int 40h
-;    mov [esi], bl       ; flap.bId
-;    cmp bl, FLAP_ID
-;    jnz r_err
-;    
-;    mov eax, 53
-;    mov ebx, 3
-;    int 40h
-;    mov [esi+1], bl   ; flap.bCh
-;   
-;    mov eax, 53
-;    mov ebx, 3
-;    int 40h
-;    mov [esi+3], bl   ; flap.wSn старший байт
-;
-;    mov eax, 53
-;    mov ebx, 3
-;    int 40h
-;    mov [esi+2], bl   ; flap.wSn младший байт
-;
-;    mov eax, 53
-;    mov ebx, 3
-;    int 40h
-;    mov [esi+5], bl   ; flap.wDs старший байт
-;
-;    mov eax, 53
-;    mov ebx, 3
-;    int 40h
-;    mov [esi+4], bl   ; flap.wDs младший байт
-;
-;    r_check:
-;    mov eax, 53       ; Проверяем число полученных байт
-;    mov eax, 2
-;    int 40h
-;    
-;    xor ebx, ebx
-;    mov bx, word [esi+4] ; flap.wDs
-;    cmp eax, ebx
-;    jnc r_drr           ;>=
-;    
-;    mov eax, 68           ; wait
-;    mov ebx, 1
-;    int 40h
-;    jmp r_check
-;    
-;    r_drr:            ; ready for data  recive
-;
-;
-;    xor edx, edx
-;    mov dx, word [esi+4] ; flap.wDs
-;    xor esi, esi
-;    
-;    rf_loop:
-;    mov eax, 53
-;    mov ebx, 3
-;    int 40h
-;    mov [edi+esi], bl
-;    inc esi
-;    cmp esi, edx
-;    jnz rf_loop
-;    mov eax, edx 
-;    jmp rf_fin
-; 
-;    r_err:
-;    ;pop ebx
-;    ;pop eax
-;    mov eax, -1
-;    jmp rf_fin
-;
-;
-;    rf_fin:
-;    pop edx
-;    pop edi
-;    pop esi
-;    pop ebx
-;    ;pop eax
-;    popf
-;  ret
 
 ;
 ; eax - указатель на буфер
@@ -1251,15 +1222,16 @@ CODE
 ;
   closesocket:
     push eax
-    push ebx
+    ;push ebx
 
-    mov eax, 53
-    mov ebx, 8
-    int 40h
+    ;mov eax, 53
+    ;mov ebx, 8
+    ;int 40h
+    mcall 53, 8, ecx
  
     mov ecx, eax
 
-    pop ebx
+    ;pop ebx
     pop eax
   ret
 
@@ -1273,7 +1245,7 @@ CODE
     push eax
     push ebx
     mov [flap.bId], FLAP_ID
-    mov [flap.bCh], 4	   ;Disconnect
+    mov [flap.bCh], 4      ;Disconnect
     xor eax, eax
     mov ax, [seq]
     mov [flap.wSn], ax
@@ -1304,7 +1276,7 @@ par_buff db 9 dup 0
 
     xor ecx, ecx
     ;xor eax, eax
-    xor ebx, ebx
+    mov ebx, eax
     xor edx, edx
     xor esi, esi
     xor edi, edi 
@@ -1312,7 +1284,7 @@ par_buff db 9 dup 0
     ip_loop:
     xor eax, eax
     ;xor edx, edx
-    mov al, [bos_address+ecx]
+    mov al, [ebx+ecx]
     cmp al, '.'
     jz ip_dot
     
@@ -1339,34 +1311,34 @@ par_buff db 9 dup 0
 
     ;data_debug 'Debug eax: ', eax
 
-    cmp ecx, 0	     ; Не может начинаться с точки
+    cmp ecx, 0       ; Не может начинаться с точки
     jz ip_err
-    shl esi, 8	     ; Сдвигаем предыдущий байт
+    shl esi, 8       ; Сдвигаем предыдущий байт
     add esi, eax
     inc ecx
     xor edx, edx     ; Счетчик буфера = 0
     jmp ip_loop
 
 
-    ip_colon:	      ; : В строке адреса
-    inc edi	      ; Было :
+    ip_colon:         ; : В строке адреса
+    inc edi           ; Было :
     jmp ip_dot
     
     ip_end_str:
     cmp edi, 1
     jz @f
-			  ; : Не было
+                          ; : Не было
     mov [par_buff+edx], 0 ; Конец строки
     mov eax, par_buff
     call ascitoint
-    shl esi, 8	     ; Сдвигаем предыдущий байт
+    shl esi, 8       ; Сдвигаем предыдущий байт
     add esi, eax
     ;mov eax, esi     ; IP в 16 ричной форме
-    ;xor ebx, ebx    ; Номера порта нет
+    xor ebx, ebx    ; Номера порта нет
     jmp ip_end
 
-    @@: 			   ; Было :
-    mov [par_buff+edx], 0	   
+    @@:                            ; Было :
+    mov [par_buff+edx], 0          
     mov eax, par_buff
     call ascitoint
     mov ebx, eax
@@ -1405,10 +1377,10 @@ par_buff db 9 dup 0
    
     ati_loop:
     mov bl, [eax+ecx]
-    cmp bl, 0	      ; Конец строки
+    cmp bl, 0         ; Конец строки
     jz ati_str_end
     cmp bl, 39h
-    ja ati_err	      ; Не цифра
+    ja ati_err        ; Не цифра
     cmp bl, 30h
     jb ati_err
 
@@ -1424,7 +1396,7 @@ par_buff db 9 dup 0
     cmp edx, ecx
     jz ati_all
     push eax
-    sub eax, edx	      ; Вычесть счетчик 
+    sub eax, edx              ; Вычесть счетчик 
     movzx ebx, byte [eax]     ; В bl символ
     ;pop eax
     sub bl, 30h       ; Вычисляем 10тичную цифру
@@ -1492,50 +1464,50 @@ snac_buff db 1024 dup 0
     push ebx
     push edx
     ;xor ebx, ebx
-    mov esi, ecx	    ; хендл сокета
-    mov edi, ebx	    ; Указатель на данные
+    mov esi, ecx            ; хендл сокета
+    mov edi, ebx            ; Указатель на данные
 
     xor ebx, ebx
-    mov bl, [eax]	    ;
+    mov bl, [eax]           ;
     mov [snac_buff+1], bl   ; Family ID
-    mov bl, [eax+1]	    ; Конвертируется в BigEndian
+    mov bl, [eax+1]         ; Конвертируется в BigEndian
     mov [snac_buff], bl     ;
 
-    mov bl, [eax+2]	    ;
+    mov bl, [eax+2]         ;
     mov [snac_buff+3], bl   ; Subtype ID
-    mov bl, [eax+3]	    ;
+    mov bl, [eax+3]         ;
     mov [snac_buff+2], bl   ;
     
-    mov bl, [eax+4]	    ;
+    mov bl, [eax+4]         ;
     mov [snac_buff+5], bl   ;
-    mov bl, [eax+5]	    ; Flags
+    mov bl, [eax+5]         ; Flags
     mov [snac_buff+4], bl   ;
 
-    mov bl, [eax+6]	    ;
+    mov bl, [eax+6]         ;
     mov [snac_buff+9], bl   ;
-    mov bl, [eax+7]	    ;
+    mov bl, [eax+7]         ;
     mov [snac_buff+8], bl   ;
-    mov bl, [eax+8]	    ; Reqest ID
+    mov bl, [eax+8]         ; Reqest ID
     mov [snac_buff+7], bl   ;
-    mov bl, [eax+9]	    ;
+    mov bl, [eax+9]         ;
     mov [snac_buff+6], bl   ;
 
-    lea ebx, [snac_buff+10]				 
+    lea ebx, [snac_buff+10]                              
   
-    mov eax, edi	    ; Указатель на данные
+    mov eax, edi            ; Указатель на данные
     ;add ebx, 10             ; + размер заголовка SNAC
-    mov ecx, edx	    ; размер данных
+    mov ecx, edx            ; размер данных
     call strcpy
 
 
-    mov ecx, esi	    ; Хендл сокета
+    mov ecx, esi            ; Хендл сокета
     mov [flap.bId], FLAP_ID
-    mov [flap.bCh], 2	    ; Канал для посылки SNAC
+    mov [flap.bCh], 2       ; Канал для посылки SNAC
     xor ebx, ebx
-    inc [seq]		    ; seq Увеличивается на 1 при каждой посылке
+    inc [seq]               ; seq Увеличивается на 1 при каждой посылке
     mov bx, [seq]
     mov [flap.wSn], bx
-    add edx, 10 	    ; размер данных + размер заголовка SNAC
+    add edx, 10             ; размер данных + размер заголовка SNAC
     mov [flap.wDs], dx
     mov eax, flap
     mov ebx, snac_buff
@@ -1594,21 +1566,21 @@ snac_buff db 1024 dup 0
     ;
     xor ebx, ebx
     mov bl, [rflap.bCh]
-    cmp bl, 1		     ; Установка соединения
-    jz	m_login
+    cmp bl, 1                ; Установка соединения
+    jz  m_login
     cmp bl, 2
-    jz m_snac		     ; Получен SNAC
+    jz m_snac                ; Получен SNAC
     cmp bl, 3
-    jz m_flap_err	     ; FLAP-level error
+    jz m_flap_err            ; FLAP-level error
     cmp bl, 4
-    jz m_close_conn	     ; Закрытие соединения
+    jz m_close_conn          ; Закрытие соединения
     cmp bl, 5
-    jz m_keep_alive	     ;
+    jz m_keep_alive          ;
     ;
     ; Обработка рассоединения
     ;
   m_close_conn:
-    write_debug 'Another Computer is Using YOUR UIN!'
+    write_debug 'Another Computer Use YOUR UIN!'
     call srv_disconnect
     call closesocket
     jmp m_fin
@@ -1622,16 +1594,17 @@ snac_buff db 1024 dup 0
     xor eax, eax
     mov al, [mbuff+3]
     cmp eax, 1
-    jnz m_login_other	 ; Не подходит
+    jnz m_login_other    ; Не подходит
 
 
     ;
     ; генерируем случайный seq
     ; Для этого берем время, прошедшее с момента запуска системы
     ;
-    mov eax, 26
-    mov ebx, 9
-    int 40h
+    ;mov eax, 26
+    ;mov ebx, 9
+    ;int 40h
+    mcall 26, 9
     mov [seq], ax
     ;
     ; Отдаем серверу cookie
@@ -1640,23 +1613,23 @@ snac_buff db 1024 dup 0
     mov [flap.wSn], ax
     xor eax, eax
     mov ax, [cookie_len]
-    add eax, 8		  ; TLV len + protocol version len
+    add eax, 8            ; TLV len + protocol version len
     mov [flap.wDs], ax
     mov dword [buff], 01000000h  ; 00 00 00 01 Номер протокола
-    mov word [buff+4], 0600h	 ; 00 06   TLV.Type
+    mov word [buff+4], 0600h     ; 00 06   TLV.Type
 
     mov ax, [cookie_len]
-    mov [buff+6], ah		 ;
-    mov [buff+7], al		 ; TLV.Length
+    mov [buff+6], ah             ;
+    mov [buff+7], al             ; TLV.Length
 
-    mov edx, ecx		 ; edx <-- socket handle
+    mov edx, ecx                 ; edx <-- socket handle
 
-    mov ecx, eax		 ; ecx <-- cookie len
-    mov eax, srv_cookie 	 ; Src
+    mov ecx, eax                 ; ecx <-- cookie len
+    mov eax, srv_cookie          ; Src
     lea ebx, [buff+8]
     call strcpy
     
-    mov ecx, edx		 ; ecx <-- socket handle
+    mov ecx, edx                 ; ecx <-- socket handle
     mov eax, flap
     mov ebx, buff
     call sendflap
@@ -1692,19 +1665,19 @@ snac_buff db 1024 dup 0
     mov dx, [rsnac.wSid]
 
     cmp bx, 1
-    jz m_snac_1 	     ;Generic service controls
+    jz m_snac_1              ;Generic service controls
     cmp bx, 2
-    jz m_snac_2 	     ;Location services
+    jz m_snac_2              ;Location services
     cmp bx, 3
-    jz m_snac_3 	     ;Buddy List management service
+    jz m_snac_3              ;Buddy List management service
     cmp bx, 4
-    jz m_snac_4 	     ;ICBM (messages) service
+    jz m_snac_4              ;ICBM (messages) service
     cmp bx, 9
-    jz m_snac_9 	     ;Privacy management service
+    jz m_snac_9              ;Privacy management service
     cmp bx, 015h
-    jz m_snac_15	     ;ICQ specific extensions service
+    jz m_snac_15             ;ICQ specific extensions service
     cmp bx, 013h
-    jz m_snac_13	     ;Server Side Information (SSI) service
+    jz m_snac_13             ;Server Side Information (SSI) service
     
     jmp m_other_snac
     ;
@@ -1727,7 +1700,7 @@ snac_buff db 1024 dup 0
     ;
     ; Rate limits information response
     ;
-  m_snac_1_7:		   ; Отвечаем
+  m_snac_1_7:              ; Отвечаем
     mov [ssnac.wFid], 1    ; Family
     mov [ssnac.wSid], 8    ; Subtype
     mov [ssnac.dRi], 8
@@ -1738,7 +1711,7 @@ snac_buff db 1024 dup 0
     mov word [buff+8], 0500h ; 0005
     mov eax, ssnac
     mov ebx, buff
-    mov edx, 10 	     ; Размер данных
+    mov edx, 10              ; Размер данных
     call sendsnac
     ;
     ; Client ask server location service limitations
@@ -1762,7 +1735,7 @@ snac_buff db 1024 dup 0
     ;
 
     ;
-    ;   SNAC(01,17)       
+    ;   SNAC(01,17)	  
     ;   Client ask for services version numbers
     ;
     mov [ssnac.wFid], 1    ; Family
@@ -1771,9 +1744,9 @@ snac_buff db 1024 dup 0
     ;
     ;   Список сервисов, которые нам нужны
     ;
-    ;    xx xx          word            family number #1
-    ;    xx xx          word            family version
-    ;      ...           ...             ...
+    ;    xx xx	 	word	 	family number #1
+    ;    xx xx	 	word	 	family version
+    ;      ...	 	 ...	 	 ...
     ;
 
     ;
@@ -1881,7 +1854,7 @@ snac_buff db 1024 dup 0
 
 
   m_snac_1_other:
-     data_debug 'Unknown SNAC Family 1 received, type ', edx
+     data_debug 'Unknown SNAC Family 1 recived, type ', edx
      jmp m_fin
 
 
@@ -1934,7 +1907,7 @@ snac_buff db 1024 dup 0
 
     mov eax, ssnac
     mov ebx, buff
-    mov edx, C_LEN+4		; Длина данных+размер заголовка TLV
+    mov edx, C_LEN+4            ; Длина данных+размер заголовка TLV
     call sendsnac
 
     ;
@@ -1982,7 +1955,7 @@ snac_buff db 1024 dup 0
     ;
     mov [ssnac.wFid], 4    ; Family
     mov [ssnac.wSid], 4    ; Subtype
-    mov [ssnac.dRi], 4	   ; request-id
+    mov [ssnac.dRi], 4     ; request-id
     mov eax, ssnac
     mov ebx, buff
     xor edx, edx
@@ -1999,21 +1972,21 @@ snac_buff db 1024 dup 0
     ;
     ; Из всей информации пока нужен только статус
     ;
-    xor edx, edx	   ; Счетчик
+    xor edx, edx           ; Счетчик - номер UIN в массиве
     xor ecx, ecx
     xor eax, eax
-    cld 	    ; В направлении увеличения адресов
+    cld             ; В направлении увеличения адресов
 
     dec edx
   m_snac_3_b_loop:
     inc edx
     cmp edx, UINS
-    jnc m_snac_3_b_end	   ;>=
+    jnc m_snac_3_b_end     ;>=
 
-    mov cl, [mbuff+10]	   ; Длина УИН
+    mov cl, [mbuff+10]     ; Длина УИН
     mov eax, ecx
     mov edi, UIN_LEN
-    imul edi ,edx
+    imul edi, edx
     lea edi, [uins+edi]    
     lea esi, [mbuff+11]
     repe cmpsb
@@ -2023,34 +1996,79 @@ snac_buff db 1024 dup 0
     ; UIN Определен
     ;
 
-    lea ecx, [eax+10+11]	   ; +sizeof SNAC_head + offset #2 TLV
-    mov ax, word [mbuff+ecx]		;#2 TLV.Type
-    cmp ax, 0C00h		   ;dc info (optional)
-    jz m_snac_3_b_dc
-    cmp ax, 0A00h		   ;external ip address
-    jz m_snac_3_b_extip
-    jmp m_snac_3_b_bad_tlv
+    ;
+    ; Найти TLV со статусом
+    ; сохранять edx
+
+    xor esi, esi    ; Счетчик TLV
+
+    xor ecx, ecx                      
+    mov ch, byte [mbuff + eax + 13]   ; Кол-во TLV в цепочке
+    mov cl, byte [mbuff + eax + 14]   ;
+
+    lea eax, [eax + 10 + 5]    ; eax указатель на цепочку TLV
+    lea eax, [mbuff + eax]     ;
+
+
+  m_snac_3_b_next_tlv:
+    cmp esi, ecx
+    jz m_snac_3_b_endchain
+
+
+    xor ebx, ebx
+    mov bh, [eax]              ;
+    mov bl, [eax + 1]          ; TLV.Type
+
+    data_debug 'TLV type', ebx
+
+    cmp ebx, 0x06              ;TLV.Type(0x06) - user status
+    jz m_snac_3_b_status
+
+    ;
+    ; Разбираем цепочку дальше
+    ;
+
+    get_next_tlv
+    inc esi
+    jmp m_snac_3_b_next_tlv
+
+
+
+    ; FIXME Неоптимально - код будет удален
+    ;
+    ;lea ecx, [eax+10+11]           ; +sizeof SNAC_head + offset #2 TLV
+    ;mov ax, word [mbuff+ecx]            ;#2 TLV.Type
+    ;cmp ax, 0C00h                  ;dc info (optional)
+    ;jz m_snac_3_b_dc
+    ;cmp ax, 0A00h                  ;external ip address
+    ;jz m_snac_3_b_extip
+    ;jmp m_snac_3_b_bad_tlv
     
 
-  m_snac_3_b_dc:
+  ;m_snac_3_b_dc:
     ;
     ; Пропускаем этот TLV
     ;
-    lea ecx, [ecx+41]
-  m_snac_3_b_extip:
+    ;lea ecx, [ecx+41]
+  ;m_snac_3_b_extip:
     ;
     ; И этот :-)
-    lea ecx, [ecx+8]
-    mov ax, word [mbuff+ecx]
-    cmp ax, 0600h		  ;TLV.Type(0x0A) - external ip address
-    jz m_snac_3_b_status
-    jmp m_snac_3_b_bad_tlv
+    ;lea ecx, [ecx+8]
+    ;mov ax, word [mbuff+ecx]
+    ;cmp ax, 0600h                 ;TLV.Type(0x0A) - external ip address
+    ;jz m_snac_3_b_status
+    ;jmp m_snac_3_b_bad_tlv
+    ;
+    ;
+
 
   m_snac_3_b_status:
     ;
-    ; наконец-то статус 8-)
+    ; статус
     ;
-    mov eax, dword [mbuff+ecx+4]
+    mov ecx, eax
+    mov eax, dword [ecx + 4]
+    ;mov eax, dword [mbuff+ecx+4]
     call ntohl
     ;mov ebx, 4
     ;imul ebx, edx
@@ -2072,6 +2090,9 @@ snac_buff db 1024 dup 0
     write_debug 'UIN not in local Contact List'
     jmp m_fin
 
+  m_snac_3_b_endchain:
+    jmp m_fin
+
 
 
   m_snac_3_c:
@@ -2085,9 +2106,9 @@ snac_buff db 1024 dup 0
     m_snac_3_c_loop:
     inc edx
     cmp edx, UINS
-    jnc m_snac_3_b_end	   ;>=
+    jnc m_snac_3_b_end     ;>=
 
-    mov cl, [mbuff+10]	   ; Длина УИН
+    mov cl, [mbuff+10]     ; Длина УИН
     mov edi, UIN_LEN
     imul edi ,edx
     lea edi, [uins+edi]    
@@ -2115,7 +2136,7 @@ snac_buff db 1024 dup 0
 
 
   m_snac_3_other:
-    write_debug 'Unknown SNAC Family 3 Received'
+    write_debug 'Unknown SNAC Family 3 Recived'
     jmp m_fin
 
 
@@ -2142,7 +2163,7 @@ snac_buff db 1024 dup 0
     ;
     mov [ssnac.wFid], 4    ; Family
     mov [ssnac.wSid], 2    ; Subtype
-    mov [ssnac.dRi], 2	   ; request-id
+    mov [ssnac.dRi], 2     ; request-id
 
     mov eax, ICBM_PARAMS
     mov ebx, buff
@@ -2161,7 +2182,7 @@ snac_buff db 1024 dup 0
     ;
     mov [ssnac.wFid], 9    ; Family
     mov [ssnac.wSid], 2    ; Subtype
-    mov [ssnac.dRi], 2	   ; request-id
+    mov [ssnac.dRi], 2     ; request-id
     mov eax, ssnac
     mov ebx, buff
     xor edx, edx
@@ -2178,9 +2199,9 @@ snac_buff db 1024 dup 0
     ;  Определяем тип сообщения по полю message channel
     ;
     xor eax, eax
-    mov ax, word [mbuff+10+8]		; +10 - размер SNAC
-					; +8 смещение до message channel
-    cmp ax, 0100h			; 00 01 
+    mov ax, word [mbuff+10+8]           ; +10 - размер SNAC
+                                        ; +8 смещение до message channel
+    cmp ax, 0100h                       ; 00 01 
     jz m_snac_ch1
     cmp ax, 0200h
     jz m_snac_ch2
@@ -2195,42 +2216,42 @@ snac_buff db 1024 dup 0
     ; Т.к в очередной раз описание протокола не совпадает с реальностью
     ; разбираем все TLV по порядку
 
-    mov eax, dword [mbuff+10]	       ; cookie
+    mov eax, dword [mbuff+10]          ; cookie
     mov [msg_cookie1], eax
     mov eax, dword [mbuff+10+4]
-    mov [msg_cookie2], eax	       ; Используются для потверждения приема сообщений
+    mov [msg_cookie2], eax             ; Используются для потверждения приема сообщений
 
-    mov al, [mbuff+10+10]	       ; Sender UIN length
+    mov al, [mbuff+10+10]              ; Sender UIN length
     mov [ui.bUinLength], al
 
     push ecx
     movzx ecx, al
 
-    lea eax, [mbuff+10+11]	       ; UIN string 
-    lea ebx, [ui.bUin]		       ; Dest
+    lea eax, [mbuff+10+11]             ; UIN string 
+    lea ebx, [ui.bUin]                 ; Dest
     call strcpy
 
-    lea ecx, [ecx+10+15]	       ; первый TLV
+    lea ecx, [ecx+10+15]               ; первый TLV
     
 
  m_snac_ch1_loop:
 
     movzx eax, word [mbuff+ecx]
-    cmp eax, 0100h		       ;TLV.Type(0x01) - user class
+    cmp eax, 0100h                     ;TLV.Type(0x01) - user class
     jz m_snac_ch1_1
-    cmp eax, 0600h		       ;TLV.Type(0x06) - user status
+    cmp eax, 0600h                     ;TLV.Type(0x06) - user status
     jz m_snac_ch1_6
-    cmp eax, 0800h		       ; Unknown type
+    cmp eax, 0800h                     ; Unknown type
     jz m_snac_ch1_8
-    cmp eax, 0500h		       ; Unknown type
+    cmp eax, 0500h                     ; Unknown type
     jz m_snac_ch1_5
-    cmp eax, 0F00h		       ; TLV.Type(0x0f) - user idle time
+    cmp eax, 0F00h                     ; TLV.Type(0x0f) - user idle time
     jz m_snac_ch1_f
-    cmp eax, 0300h		       ; TLV.Type(0x03) - account creation time
+    cmp eax, 0300h                     ; TLV.Type(0x03) - account creation time
     jz m_snac_ch1_3
-    cmp eax, 0400h		       ; TLV.Type(0x04) - automated response flag
+    cmp eax, 0400h                     ; TLV.Type(0x04) - automated response flag
     jz m_snac_ch1_4
-    cmp eax, 0200h		       ; TLV.Type(0x02) - message data
+    cmp eax, 0200h                     ; TLV.Type(0x02) - message data
     jz m_snac_ch1_mess
     jmp m_snac_msg_tlv_err
 
@@ -2239,19 +2260,19 @@ snac_buff db 1024 dup 0
     ; но пока нет 
 
   m_snac_ch1_1:
-    movzx eax, word [mbuff+ecx+2]	; TLV.Length
+    movzx eax, word [mbuff+ecx+2]       ; TLV.Length
     call ntohs
     lea ecx, [eax+ecx+4]
     jmp m_snac_ch1_loop
 
   m_snac_ch1_6:
 
-    mov eax, dword [mbuff+ecx+4]	    ; User status
+    mov eax, dword [mbuff+ecx+4]            ; User status
     call ntohl
     mov [ui.dUserStatus], eax
 
 
-    movzx eax, word [mbuff+ecx+2]	; TLV.Length
+    movzx eax, word [mbuff+ecx+2]       ; TLV.Length
     call ntohs
     lea ecx, [eax+ecx+4]
     ;
@@ -2261,25 +2282,25 @@ snac_buff db 1024 dup 0
     jmp m_snac_ch1_loop
 
   m_snac_ch1_8:
-    movzx eax, word [mbuff+ecx+2]	; TLV.Length
+    movzx eax, word [mbuff+ecx+2]       ; TLV.Length
     call ntohs
     lea ecx, [eax+ecx+4]
     jmp m_snac_ch1_loop
 
   m_snac_ch1_5:
-    movzx eax, word [mbuff+ecx+2]	; TLV.Length
+    movzx eax, word [mbuff+ecx+2]       ; TLV.Length
     call ntohs
     lea ecx, [eax+ecx+4]
     jmp m_snac_ch1_loop
 
   m_snac_ch1_f:
-    movzx eax, word [mbuff+ecx+2]	; TLV.Length
+    movzx eax, word [mbuff+ecx+2]       ; TLV.Length
     call ntohs
     lea ecx, [eax+ecx+4]
     jmp m_snac_ch1_loop
 
   m_snac_ch1_3:
-    movzx eax, word [mbuff+ecx+2]	; TLV.Length
+    movzx eax, word [mbuff+ecx+2]       ; TLV.Length
     call ntohs
     lea ecx, [eax+ecx+4]
     jmp m_snac_ch1_loop
@@ -2296,24 +2317,24 @@ snac_buff db 1024 dup 0
     ;
     ;
     movzx eax, word [mbuff+ecx+4]    ;
-    cmp eax, 0105h		     ; 05 fragment identifier (array of required capabilities)
-    jnz m_snac_ch1_fr_err	     ; 01 fragment version
+    cmp eax, 0105h                   ; 05 fragment identifier (array of required capabilities)
+    jnz m_snac_ch1_fr_err            ; 01 fragment version
 
     movzx eax, word [mbuff+ecx+6]    ; Length
     call ntohs
 
-    lea ecx, [ecx+eax+8]	     ; Пропускаем  byte array of required capabilities (1 - text)
+    lea ecx, [ecx+eax+8]             ; Пропускаем  byte array of required capabilities (1 - text)
 
-    movzx eax, word [mbuff+ecx]      ;  fragment identifier (message text)
-    cmp eax, 0101h		     ;  fragment version
+    movzx eax, word [mbuff+ecx]      ; 	fragment identifier (message text)
+    cmp eax, 0101h                   ;  fragment version
     jnz m_snac_ch1_fr_err
 
     movzx eax, word [mbuff+ecx+2]    ; TLV Length
     call ntohs
     xchg eax, ecx
 
-    lea eax, [eax+8]		     ; Начало текстового сообщения
-    lea ecx, [ecx-4]		     ; - sizeof Message charset number, Message charset subset
+    lea eax, [eax+8]                 ; Начало текстового сообщения
+    lea ecx, [ecx-4]                 ; - sizeof	Message charset number, Message charset subset
 
     push eax
     push ecx
@@ -2330,12 +2351,66 @@ snac_buff db 1024 dup 0
     mov ebx, buff
     call strcpy
 
-    lea ebx, [ebx+ecx]
+    lea ebx, [ebx + ecx]
+
+    ;
+    ; Неплохо было бы вывести не UIN а Nickname, если он есть в контакт листе
+    ;
+    xor esi, esi    ; Счетчик
+
+   m_snac_ch1_next_uin:
+
+    cmp esi, UINS
+    jz m_snac_ch1_notfound
+
+    mov edx, UIN_LEN
+    imul edx, esi
+
+    lea edx, [uins + edx]
+    movzx ecx, byte [ui.bUinLength] 
+    strcmp edx, ui.bUin, ecx
+    jz m_snac_ch1_uin
+
+    inc esi
+    jmp m_snac_ch1_next_uin
+
+
+    ;
+    ; Подходящий UIN есть в контакт-листе
+    ;
+   m_snac_ch1_uin:
+
+    mov edx, NAME_LEN
+    imul edx, esi
+
+    lea edx, [names + edx]
+    mov eax, edx
+
+
+    call strlen
+    mov ecx, eax
+
+    mov eax, edx
+    call strcpy
+
+    jmp m_snac_ch1_msgfrom
+
+
+    ;
+    ; Если подходящего UIN нет в контакт-листе
+    ;
+   m_snac_ch1_notfound:
+    
     lea eax, [ui.bUin]
     movzx ecx, byte [ui.bUinLength]
     call strcpy
 
-    mov [ebx+ecx], byte 0
+    ;
+    ; Вывод сообщения "от кого"
+    ;
+   m_snac_ch1_msgfrom:
+
+    mov [ebx + ecx], byte 0
 
     mov eax, buff
     xor ebx, ebx
@@ -2394,14 +2469,14 @@ snac_buff db 1024 dup 0
     mov eax, dword [mbuff+10+4]
     mov [msg_cookie2], eax
 
-    mov al, [mbuff+10+10]	       ; Sender UIN length
+    mov al, [mbuff+10+10]              ; Sender UIN length
     mov [ui.bUinLength], al
 
     push ecx
     movzx ecx, al
 
-    lea eax, [mbuff+10+11]	       ; UIN string 
-    lea ebx, [ui.bUin]		       ; Dest
+    lea eax, [mbuff+10+11]             ; UIN string 
+    lea ebx, [ui.bUin]                 ; Dest
     call strcpy
 
 
@@ -2413,7 +2488,7 @@ snac_buff db 1024 dup 0
     mov dword [buff], eax
     mov eax, [msg_cookie2]
     mov dword [buff+4], eax
-    mov word [buff+8], 0200h	  ; Channel 2
+    mov word [buff+8], 0200h      ; Channel 2
 
     mov al, [ui.bUinLength]
     mov [buff+10], al
@@ -2422,7 +2497,7 @@ snac_buff db 1024 dup 0
     call strcpy
     lea ecx, [ecx+11]
 
-    mov word [buff+ecx], 0100h	  ; reason code (1 - unsupported channel, 2 - busted payload, 3 - channel specific)
+    mov word [buff+ecx], 0100h    ; reason code (1 - unsupported channel, 2 - busted payload, 3 - channel specific)
     mov edx, ecx
 
     pop ecx
@@ -2447,7 +2522,7 @@ snac_buff db 1024 dup 0
 
 
   m_snac_4_other:
-    write_debug 'Unknown SNAC Family 4 received'
+    write_debug 'Unknown SNAC Family 4 recived'
     jmp m_fin
 
 
@@ -2467,6 +2542,26 @@ snac_buff db 1024 dup 0
     ;
     ; Обработки пока нет
     ;
+    if USE_SSI <> 0
+
+    ;
+    ; Запрос КЛ с сервера
+    ;
+
+    ;
+    ; Request contact list (first time)
+    ;
+    mov [ssnac.wFid], 13h    ; Family
+    mov [ssnac.wSid], 04h    ; Subtype
+    mov [ssnac.dRi], 04h     ; request-id
+
+    mov eax, ssnac
+    mov ebx, buff
+    xor edx, edx            
+    call sendsnac
+
+
+    else
 
 
     ; Отключено, тк не поддерживается SIQ
@@ -2496,7 +2591,7 @@ snac_buff db 1024 dup 0
 
     mov eax, ssnac
     mov ebx, buff
-    xor edx, edx	     ; TLV head len
+    xor edx, edx             ; TLV head len
     call sendsnac
 
 
@@ -2507,10 +2602,10 @@ snac_buff db 1024 dup 0
     mov [ssnac.wSid], 1Eh    ; Subtype
     mov [ssnac.dRi], 1Eh     ; request-id
 
-    mov [buff], 0	    ;  TLV type 06
-    mov [buff+1], 6h	    ;
-    mov [buff+2], 0	    ;  TLV data length
-    mov [buff+3], 4	    ;
+    mov [buff], 0           ;  TLV type 06
+    mov [buff+1], 6h        ;
+    mov [buff+2], 0         ;  TLV data length
+    mov [buff+3], 4         ;
     ;
     ;
     mov ax, STATUS_DCDISABLED  ; DC disabled
@@ -2522,7 +2617,7 @@ snac_buff db 1024 dup 0
 
     mov eax, ssnac
     mov ebx, buff
-    mov edx, 8		 ; TLV head len+ data len
+    mov edx, 8           ; TLV head len+ data len
     call sendsnac
 
 
@@ -2546,32 +2641,32 @@ snac_buff db 1024 dup 0
     ;
     ; В &RQ Есть пакет установки разрешений. я использую его без изменения
     ;  т.к. не знаю, что он содержит
-    ;
+    ; - возможно, буду использовать позднее
 
-    mov [ssnac.wFid], 15  ; Family
-    mov [ssnac.wSid], 2    ; Subtype
-    mov [ssnac.dRi], 2
+    ;mov [ssnac.wFid], 15  ; Family
+    ;mov [ssnac.wSid], 2    ; Subtype
+    ;mov [ssnac.dRi], 2
 
-    mov word [buff], 0100h   ; 00 01 encapsulated META_DATA
-    mov word [buff+2], 1000h ; 00 10     Len
-    mov word [buff+4], 000Eh ;  LE Len
-    mov word [buff+10], 07D0h ; META_DATA_REQ
+    ;mov word [buff], 0100h   ; 00 01 encapsulated META_DATA
+    ;mov word [buff+2], 1000h ; 00 10     Len
+    ;mov word [buff+4], 000Eh ;  LE Len
+    ;mov word [buff+10], 07D0h ; META_DATA_REQ
 
 
-    mov eax, UIN
-    call ascitoint
-    mov dword [buff+6], eax
+    ;mov eax, UIN
+    ;call ascitoint
+    ;mov dword [buff+6], eax
 
-    mov word [buff+12], 0102h	; request sequence number (incrementing)
-    mov word [buff+14], 0424h	; META_SET_PERMS_USERINFO
-    mov [buff+16], 1		; authorization (1-required, 0-not required)
-    mov [buff+17], byte 0	; webaware (0-no, 1-yes)
-    mov [buff+18], 1		 ; dc_perms (0-any, 1-contact, 2-authorization)
-    mov [buff+19], 0		;unknown
+    ;mov word [buff+12], 0102h   ; request sequence number (incrementing)
+    ;mov word [buff+14], 0424h   ; META_SET_PERMS_USERINFO
+    ;mov [buff+16], 1            ; authorization (1-required, 0-not required)
+    ;mov [buff+17], byte 0       ; webaware (0-no, 1-yes)
+    ;mov [buff+18], 1             ; dc_perms (0-any, 1-contact, 2-authorization)
+    ;mov [buff+19], 0            ;unknown
 
-    mov eax, ssnac
-    mov ebx, buff
-    mov edx, 20
+    ;mov eax, ssnac
+    ;mov ebx, buff
+    ;mov edx, 20
 
 
     ;
@@ -2579,7 +2674,7 @@ snac_buff db 1024 dup 0
     ;
     mov [ssnac.wFid], 1  ; Family
     mov [ssnac.wSid], 2    ; Subtype
-    mov [ssnac.dRi], 2	   ; request-id
+    mov [ssnac.dRi], 2     ; request-id
 
     mov eax, FAMILY_ARR
     mov ebx, buff
@@ -2599,17 +2694,17 @@ snac_buff db 1024 dup 0
     ;
     mov [ssnac.wFid], 15h  ; Family
     mov [ssnac.wSid], 2    ; Subtype
-    mov [ssnac.dRi], 2	   ; request-id
+    mov [ssnac.dRi], 2     ; request-id
 
-    mov word [buff], 0100h	;  TLV type 01
-    mov word [buff+2], 0A00h	;  00 0a Длина
-    mov word [buff+4], 0008h	;  08 00
-    mov eax, UIN
+    mov word [buff], 0100h      ;  TLV type 01
+    mov word [buff+2], 0A00h    ;  00 0a Длина
+    mov word [buff+4], 0008h    ;  08 00
+    lea eax, [vtable + vartable.uin]
     call ascitoint
     mov dword [buff+6], eax
 
-    mov [buff+10],  003Ch ; 3C 00 - Запрос на оффлайновые сообщения
-    mov [buff+12],  0002  ; 02 00 - request sequence number
+    mov word [buff+10],  003Ch ; 3C 00 - Запрос на оффлайновые сообщения
+    mov word [buff+12],  0002  ; 02 00 - request sequence number
    
     mov edx, 14        ; Общий размер данных в буфере
 
@@ -2628,10 +2723,13 @@ snac_buff db 1024 dup 0
     ;
     mov [login], 2
 
+
+    end if   ; USE_SSI = 0
+
     jmp m_fin
 
   m_snac_9_other:
-    write_debug 'Unknown SNAC Family 9 Received'
+    write_debug 'Unknown SNAC Family 9 Recived'
     jmp m_fin
 
 
@@ -2641,6 +2739,8 @@ snac_buff db 1024 dup 0
   m_snac_13:
     cmp dx, 3
     jz m_snac_13_3
+    cmp dx, 6
+    jz m_snac_13_6
     cmp dx, 0fh
     jz m_snac_13_F
 
@@ -2655,20 +2755,23 @@ snac_buff db 1024 dup 0
     ;
 
     ;
-    ;  SNAC(13,05)        Client check if its local SSI copy is up-to-date
+    ;  SNAC(13,05)	  Client check if its local SSI copy is up-to-date
     ;
     mov [ssnac.wFid], 13h  ; Family
     mov [ssnac.wSid], 5    ; Subtype
-    mov [ssnac.dRi], 5	   ; request-id
+    mov [ssnac.dRi], 5     ; request-id
     mov eax, ssnac
-    ;  3D E7 48 17
-    mov [buff], 03Dh	  ;
-    mov [buff+1], 0E7h	  ;     modification date/time of client local SSI copy
-    mov [buff+2], 48h	  ;
-    mov [buff+3], 17h	  ;
-    ; 00 10
-    mov [buff+4], 00	  ;
-    mov [buff+5], 10h	  ;     number of items in client local SSI copy
+    ;
+    ; 
+    ;
+    mov [buff], 03Dh      ;
+    mov [buff+1], 0E7h    ;   	modification date/time of client local SSI copy
+    mov [buff+2], 48h     ;
+    mov [buff+3], 17h     ;
+    ;
+    ;
+    mov [buff+4], 00      ;
+    mov [buff+5], 00h     ;  	number of items in client local SSI copy
     
     mov ebx, buff
     mov edx, 5
@@ -2676,28 +2779,45 @@ snac_buff db 1024 dup 0
 
     jmp m_fin
 
-    ;
-    ;  Server tell client its local copy up-to-date
-    ;
-  m_snac_13_F:
-    ;
-    ;  Обработки нет 
-    ;
 
     ;
-    ;  Client activates server SSI data
+    ; Server contact list reply
     ;
+  m_snac_13_6:
+
+    lea eax, [mbuff+10]     ; В eax загружаем адрес приемного буфера+ размер заголовка snac
+
+    call ssi_process_data   ; Обработка пакета с КЛ
+
+    ;
+    ; Активируем SSI
+    ;
+
     mov [ssnac.wFid], 13h  ; Family
     mov [ssnac.wSid], 7    ; Subtype
-    mov [ssnac.dRi], 7	   ; request-id
+    mov [ssnac.dRi], 7     ; request-id
     mov eax, ssnac
     mov ebx, buff
     xor edx, edx
     call sendsnac
 
+
     ;
     ; последняя стадия соединения
     ;
+
+    ;
+    ; Запрашиваем свою информацию
+    ;
+    mov [ssnac.wFid], 1  ; Family
+    mov [ssnac.wSid], 0Eh    ; Subtype
+    mov [ssnac.dRi], 0Eh     ; request-id
+
+    mov eax, ssnac
+    mov ebx, buff
+    xor edx, edx             ; TLV head len
+    call sendsnac
+
 
     ;
     ; Client sends its DC info and status to server
@@ -2706,10 +2826,10 @@ snac_buff db 1024 dup 0
     mov [ssnac.wSid], 1Eh    ; Subtype
     mov [ssnac.dRi], 1Eh     ; request-id
 
-    mov [buff], 0	    ;  TLV type 06
-    mov [buff+1], 6h	    ;
-    mov [buff+2], 0	    ;  TLV data length
-    mov [buff+3], 4	    ;
+    mov [buff], 0           ;  TLV type 06
+    mov [buff+1], 6h        ;
+    mov [buff+2], 0         ;  TLV data length
+    mov [buff+3], 4         ;
     ;
     ;
     mov ax, STATUS_DCDISABLED  ; DC disabled
@@ -2721,15 +2841,64 @@ snac_buff db 1024 dup 0
 
     mov eax, ssnac
     mov ebx, buff
-    mov edx, 8		 ; TLV head len+ data len
+    mov edx, 8           ; TLV head len+ data len
     call sendsnac
+
+
+    ;
+    ;  Выгружаем на сервер КЛ
+    ;   FIXME Возможно, здесь не нужна эта функция
+    ;call uploadkl
+
+    ;
+    ; Выгружаем инвизибл лист, пока пустой
+    ;
+    ;mov [ssnac.wFid], 9  ; Family
+    ;mov [ssnac.wSid], 7    ; Subtype
+    ;mov [ssnac.dRi], 7
+
+    ;mov eax, ssnac
+    ;mov ebx, buff
+    ;xor edx, edx
+    ;call sendsnac
+
+    ;
+    ; В &RQ Есть пакет установки разрешений. я использую его без изменения
+    ;  т.к. не знаю, что он содержит
+    ; - возможно, буду использовать позднее
+
+    ;mov [ssnac.wFid], 15  ; Family
+    ;mov [ssnac.wSid], 2    ; Subtype
+    ;mov [ssnac.dRi], 2
+
+    ;mov word [buff], 0100h   ; 00 01 encapsulated META_DATA
+    ;mov word [buff+2], 1000h ; 00 10     Len
+    ;mov word [buff+4], 000Eh ;  LE Len
+    ;mov word [buff+10], 07D0h ; META_DATA_REQ
+
+
+    ;mov eax, UIN
+    ;call ascitoint
+    ;mov dword [buff+6], eax
+
+    ;mov word [buff+12], 0102h   ; request sequence number (incrementing)
+    ;mov word [buff+14], 0424h   ; META_SET_PERMS_USERINFO
+    ;mov [buff+16], 1            ; authorization (1-required, 0-not required)
+    ;mov [buff+17], byte 0       ; webaware (0-no, 1-yes)
+    ;mov [buff+18], 1             ; dc_perms (0-any, 1-contact, 2-authorization)
+    ;mov [buff+19], 0            ;unknown
+
+    ;mov eax, ssnac
+    ;mov ebx, buff
+    ;mov edx, 20
+
 
     ;
     ; Client READY command
     ;
     mov [ssnac.wFid], 1  ; Family
     mov [ssnac.wSid], 2    ; Subtype
-    mov [ssnac.dRi], 2	   ; request-id
+    mov [ssnac.dRi], 2     ; request-id
 
     mov eax, FAMILY_ARR
     mov ebx, buff
@@ -2749,12 +2918,121 @@ snac_buff db 1024 dup 0
     ;
     mov [ssnac.wFid], 15h  ; Family
     mov [ssnac.wSid], 2    ; Subtype
-    mov [ssnac.dRi], 2	   ; request-id
+    mov [ssnac.dRi], 2     ; request-id
 
-    mov word [buff], 0100h	;  TLV type 01
-    mov word [buff+2], 0A00h	;  00 0a Длина
-    mov word [buff+4], 0008h	;  08 00
-    mov eax, UIN
+    mov word [buff], 0100h      ;  TLV type 01
+    mov word [buff+2], 0A00h    ;  00 0a Длина
+    mov word [buff+4], 0008h    ;  08 00
+    lea eax, [vtable + vartable.uin]
+    call ascitoint
+    mov dword [buff+6], eax
+
+    mov word [buff+10],  003Ch ; 3C 00 - Запрос на оффлайновые сообщения
+    mov word [buff+12],  0002  ; 02 00 - request sequence number
+   
+    mov edx, 14        ; Общий размер данных в буфере
+
+    mov eax, ssnac
+    mov ebx, buff
+    call sendsnac
+
+    
+
+    ;
+    ; Запрашиваем информацию всех UIN
+    ; FIXME Возможно, здесь не нужна эта функция
+    ;call getinfo
+    ;
+    ; завершено соединение
+    ;
+    mov [login], 2
+
+
+    jmp m_fin
+
+
+
+
+    ;
+    ;  Server tell client its local copy up-to-date
+    ;
+  m_snac_13_F:
+    ;
+    ;  Обработки нет 
+    ;
+
+    ;
+    ;  Client activates server SSI data
+    ;
+    mov [ssnac.wFid], 13h  ; Family
+    mov [ssnac.wSid], 7    ; Subtype
+    mov [ssnac.dRi], 7     ; request-id
+    mov eax, ssnac
+    mov ebx, buff
+    xor edx, edx
+    call sendsnac
+
+    ;
+    ; последняя стадия соединения
+    ;
+
+    ;
+    ; Client sends its DC info and status to server
+    ;
+    mov [ssnac.wFid], 1  ; Family
+    mov [ssnac.wSid], 1Eh    ; Subtype
+    mov [ssnac.dRi], 1Eh     ; request-id
+
+    mov [buff], 0           ;  TLV type 06
+    mov [buff+1], 6h        ;
+    mov [buff+2], 0         ;  TLV data length
+    mov [buff+3], 4         ;
+    ;
+    ;
+    mov ax, STATUS_DCDISABLED  ; DC disabled
+    call htons
+    mov word [buff+4], ax
+    ;
+    ; 
+    mov ax, [status]
+    mov word [buff+6], ax
+
+    mov eax, ssnac
+    mov ebx, buff
+    mov edx, 8           ; TLV head len+ data len
+    call sendsnac
+
+    ;
+    ; Client READY command
+    ;
+    mov [ssnac.wFid], 1  ; Family
+    mov [ssnac.wSid], 2    ; Subtype
+    mov [ssnac.dRi], 2     ; request-id
+
+    mov eax, FAMILY_ARR
+    mov ebx, buff
+    push ecx
+    mov ecx, FA_LEN
+    call strcpy
+    pop ecx
+
+    mov eax, ssnac
+    mov ebx, buff
+    mov edx, FA_LEN
+    call sendsnac
+
+
+    ;
+    ; Запрашиваем offline сообщения
+    ;
+    mov [ssnac.wFid], 15h  ; Family
+    mov [ssnac.wSid], 2    ; Subtype
+    mov [ssnac.dRi], 2     ; request-id
+
+    mov word [buff], 0100h      ;  TLV type 01
+    mov word [buff+2], 0A00h    ;  00 0a Длина
+    mov word [buff+4], 0008h    ;  08 00
+    lea eax, [vtable + vartable.uin]
     call ascitoint
     mov dword [buff+6], eax
 
@@ -2772,7 +3050,7 @@ snac_buff db 1024 dup 0
     jmp m_fin
 
   m_snac_13_other:
-    write_debug 'Unknown SNAC Family 13 Received'
+    write_debug 'Unknown SNAC Family 13 Recived'
     jmp m_fin
 
 
@@ -2802,13 +3080,13 @@ snac_buff db 1024 dup 0
 
     xor eax, eax
     mov ax, word [mbuff+10]  ; + SNAC.head size
-    cmp ax, 0100h	     ; 00 01 TLV type
+    cmp ax, 0100h            ; 00 01 TLV type
     jnz m_snac_tlv_err
 
     mov ax, word [mbuff+10+10]
-    cmp ax, 0041h	      ; Offline Message
+    cmp ax, 0041h             ; Offline Message
     jz m_snac_offline_mes
-    cmp ax, 0042h	      ; End messages
+    cmp ax, 0042h             ; End messages
     jz m_snac_offline_end
     cmp ax, 07DAh
     jz m_snac_meta_data
@@ -2818,24 +3096,24 @@ snac_buff db 1024 dup 0
     jmp m_fin
 
   m_snac_offline_mes:
-    mov eax, MESS		       ;
-    call strlen 		       ;  Выводим строку с сообщением о отправителе и времени отправки
-    push ecx			       ;
-    mov ecx, eax		   ;
+    mov eax, MESS                      ;
+    call strlen                        ;  Выводим строку с сообщением о отправителе и времени отправки
+    push ecx                           ;
+    mov ecx, eax                   ;
     mov eax, MESS
     mov ebx, buff
     call strcpy
 
-    mov eax, dword [mbuff+14+10]	  ; Sender UIN
-    lea ebx, [buff+ecx] 	       ; После строчки о сообщении
+    mov eax, dword [mbuff+14+10]          ; Sender UIN
+    lea ebx, [buff+ecx]                ; После строчки о сообщении
     call int2strd
 
     lea ebx, [ebx+eax]
     mov [ebx], byte ' '
     inc ebx
 
-				       ; + Длина UIN
-    movzx eax, byte [mbuff+21+10]	  ; Day
+                                       ; + Длина UIN
+    movzx eax, byte [mbuff+21+10]         ; Day
     call int2strd
 
     lea ebx, [ebx+eax]
@@ -2843,34 +3121,34 @@ snac_buff db 1024 dup 0
     inc ebx
 
     
-    movzx eax, byte [mbuff+20+10]	  ;Mounth
+    movzx eax, byte [mbuff+20+10]         ;Mounth
     call int2strd
 
     lea ebx, [ebx+eax]
     mov [ebx], byte ' '
     inc ebx
 
-    movzx eax, [mbuff+22+10]		  ; Hour
+    movzx eax, [mbuff+22+10]              ; Hour
     call int2strd
 
     lea ebx, [ebx+eax]
     mov [ebx], byte ':'
     inc ebx
 
-    movzx eax, [mbuff+23+10]		  ; Minute
+    movzx eax, [mbuff+23+10]              ; Minute
     call int2strd
 
     lea ebx, [ebx+eax]
     ;mov [ebx], byte ' '
     ;inc ebx
 
-    mov [ebx], byte 0			   ; Str end
+    mov [ebx], byte 0                      ; Str end
     mov eax, buff
     xor ebx, ebx
 
     call writemsg
 
-    movzx ecx, word [mbuff+26+10]	      ; Длина соообщения
+    movzx ecx, word [mbuff+26+10]             ; Длина соообщения
     lea eax, [mbuff+28+10]
     mov ebx, buff
     call strcpy
@@ -2878,9 +3156,9 @@ snac_buff db 1024 dup 0
     mov [ebx+ecx], byte 0
 
     mov eax, buff
-    call win2dos			      ;перекодируем
+    call win2dos                              ;перекодируем
 
-    mov ebx, 00FF0000h			      ;Цвет
+    mov ebx, 00FF0000h                        ;Цвет
 
     call writemsg
 
@@ -2898,16 +3176,16 @@ snac_buff db 1024 dup 0
     mov [ssnac.wSid], 2    ; Subtype
     mov [ssnac.dRi], 0602h     ; request-id
 
-    mov word [buff], 0100h     ;  00 01 TLV.Type(1) - encapsulated META_DATA1
-    mov word [buff+2], 0A00h   ;  00 0A TLV.Length
-    mov word [buff+4], 0008h   ;  08 00 data chunk size (TLV.Length-2)
-    mov eax, UIN
+    mov word [buff], 0100h     ;  00 01	TLV.Type(1) - encapsulated META_DATA1
+    mov word [buff+2], 0A00h   ;  00 0A	TLV.Length
+    mov word [buff+4], 0008h   ;  08 00	data chunk size (TLV.Length-2)
+    lea eax, [vtable + vartable.uin]
     call ascitoint
     mov dword [buff+6], eax    ; xx xx xx xx (LE) client uin
-    mov word [buff+10], 003Eh  ; 3E 00  (LE) data type: delete offline msgs request cmd
-    mov word [buff+12], 0007h  ;  xx xx (LE) request sequence number
+    mov word [buff+10], 003Eh  ; 3E 00	(LE) data type: delete offline msgs request cmd
+    mov word [buff+12], 0007h  ;  xx xx	(LE) request sequence number
 
-    mov edx, 14 	       ; Размер данных
+    mov edx, 14                ; Размер данных
     mov eax, ssnac
     mov ebx, buff
     call sendsnac
@@ -2924,10 +3202,10 @@ snac_buff db 1024 dup 0
     ; Определяем очередной подтип :-)
     ;
     mov ax, word [mbuff+10+14]
-    cmp ax, 0104h		    ;data subtype: META_SHORT_USERINFO
+    cmp ax, 0104h                   ;data subtype: META_SHORT_USERINFO
     jz m_snac_short_userinfo
     cmp ax, 00C8h
-    jz m_snac_basic_userinfo	    ;data subtype: META_BASIC_USERINFO
+    jz m_snac_basic_userinfo        ;data subtype: META_BASIC_USERINFO
     write_debug 'Unknown META DATA subtype'
     jmp m_fin
 
@@ -2938,13 +3216,13 @@ snac_buff db 1024 dup 0
     ; Из всей информации пока нужен только ник
     ;
     mov al, [mbuff+10+16]
-     cmp al, 0Ah		    ;success byte
+     cmp al, 0Ah                    ;success byte
      jnz m_fin
 
      movzx eax, word [mbuff+10+12]  ;request sequence number
      ;
      ; В запросе я использовал порядковый номер юзера в КЛ
-     lea ebx, [mbuff+10+19]	    ;nickname string
+     lea ebx, [mbuff+10+19]         ;nickname string
      ; Длина строки не нужна, т.к. строка Null-Terminated
      ;Определяем статус
      mov ecx, 4
@@ -2963,13 +3241,13 @@ snac_buff db 1024 dup 0
   ;
   m_snac_basic_userinfo:
      mov al, [mbuff+10+16]
-     cmp al, 0Ah		    ;success byte
+     cmp al, 0Ah                    ;success byte
      jnz m_fin
 
      movzx eax, word [mbuff+10+12]  ;request sequence number
      ;
      ; В запросе я использовал порядковый номер юзера в КЛ
-     lea ebx, [mbuff+10+19]	    ;nickname string
+     lea ebx, [mbuff+10+19]         ;nickname string
      ; Длина строки не нужна, т.к. строка Null-Terminated
      ;Определяем статус
      mov ecx, 4
@@ -2990,13 +3268,13 @@ snac_buff db 1024 dup 0
 
   m_snac_15_other:
 
-    write_debug 'Unknown SNAC Family 15 Received'
+    write_debug 'Unknown SNAC Family 15 Recived'
 
     jmp m_fin
 
 
   m_other_snac:
-    write_debug 'Unknown SNAC received'
+    write_debug 'Unknown SNAC recived'
     jmp m_fin
 
 
@@ -3069,26 +3347,26 @@ snac_buff db 1024 dup 0
     push ecx
     ;push edx
 
-    mov cl, [ebx+1]	; Family (service) id number младший байт
-    mov ch, [ebx]	; старший
+    mov cl, [ebx+1]     ; Family (service) id number младший байт
+    mov ch, [ebx]       ; старший
     mov word [eax], cx
 
-    mov cl, [ebx+3]	; Family subtype id number
-    mov ch, [ebx+2]	;
+    mov cl, [ebx+3]     ; Family subtype id number
+    mov ch, [ebx+2]     ;
     mov word [eax+2], cx
 
-    mov cl, [ebx+5]	 ; SNAC flags
-    mov ch, [ebx+4]	 ;
+    mov cl, [ebx+5]      ; SNAC flags
+    mov ch, [ebx+4]      ;
     mov word [eax+4], cx ;
-			   
-    mov cl, [ebx+7]	    ;
-    mov ch, [ebx+6]	    ;
+                           
+    mov cl, [ebx+7]         ;
+    mov ch, [ebx+6]         ;
     mov word [eax+8], cx    ; SNAC request id
-    mov cl, [ebx+8]	    ;
-    mov ch, [ebx+7]	    ;
+    mov cl, [ebx+8]         ;
+    mov ch, [ebx+7]         ;
     mov word [eax+6], cx    ;
     
-    add ebx, 10 	    ;Размер заголовка
+    add ebx, 10             ;Размер заголовка
     mov eax, ebx
 
 
@@ -3130,9 +3408,10 @@ snac_buff db 1024 dup 0
     ;
     ;  Получаем время с запуска системы, для cookie
     ;
-    mov eax, 26
-    mov ebx, 9
-    int 40h
+    ;mov eax, 26
+    ;mov ebx, 9
+    ;int 40h
+    mcall 26, 9
 
     mov dword [buff], eax      ; Cookie 1
     mov dword [buff+4], eax    ; Cookie 2
@@ -3151,58 +3430,58 @@ snac_buff db 1024 dup 0
     call strcpy
     lea ecx, [ecx+11]
 
-    mov word [buff+ecx], 0200h	  ;     TLV.Type(0x02) - message data
+    mov word [buff+ecx], 0200h    ;  	TLV.Type(0x02) - message data
     
     ;push ecx                      ;
-				   ; TLV.Length
+                                   ; TLV.Length
 
-    mov word [buff+ecx+4], 0105h	 ; 05 01   01 - fragment version, 05 - fragment identifier
+    mov word [buff+ecx+4], 0105h         ; 05 01   01 - fragment version, 05 - fragment identifier
     
-    mov word [buff+ecx+6], 0100h	 ; data length 
+    mov word [buff+ecx+6], 0100h         ; data length 
     
-    mov [buff+ecx+8], 01		 ; byte array of required capabilities (1 - text)
+    mov [buff+ecx+8], 01                 ; byte array of required capabilities (1 - text)
 
-    mov [buff+ecx+9], 01		 ; fragment identifier (text message)
-    mov [buff+ecx+10], 01		  ; fragment version
+    mov [buff+ecx+9], 01                 ; fragment identifier (text message)
+    mov [buff+ecx+10], 01                 ; fragment version
 
     pop ebx
     mov eax, ebx
     call strlen
     mov edx, eax
-    lea eax, [eax+4]			 ; Длина сообщения + Message charset number+ Message language number
+    lea eax, [eax+4]                     ; Длина сообщения + Message charset number+ Message language number
     
     call htons
     mov word [buff+ecx+11], ax
 
     mov eax, edx
-    lea eax, [eax+13]			  ; + длина служебных данных
+    lea eax, [eax+13]                     ; + длина служебных данных
     call htons
     mov word [buff+ecx+2], ax
 
 
-    mov word [buff+ecx+13], 0700h	 ; Message charset number
-    mov word [buff+ecx+15], 0300h	 ; Message language number
+    mov word [buff+ecx+13], 0700h        ; Message charset number
+    mov word [buff+ecx+15], 0300h        ; Message language number
 
     mov eax, ecx
-    mov ecx, edx			 ; Len
+    mov ecx, edx                         ; Len
     lea edx, [eax+17]
 
-    mov eax, ebx			 ;Source
+    mov eax, ebx                         ;Source
     
-    lea ebx, [buff+edx] 		 ;Dest
+    lea ebx, [buff+edx]                  ;Dest
     
     call strcpy
-    lea ecx, [ecx+edx]			 ; +String length
+    lea ecx, [ecx+edx]                   ; +String length
     
     mov [buff+ecx], byte 0
     mov eax, ebx
     call dos2win
 
 
-    mov word [buff+ecx], 0600h		     ; TLV.Type(0x06) - store message if recipient offline
-    mov word [buff+ecx+2], 0		     ; TLV.Length
+    mov word [buff+ecx], 0600h               ; TLV.Type(0x06) - store message if recipient offline
+    mov word [buff+ecx+2], 0                 ; TLV.Length
 
-    lea edx, [ecx+4]			     ; +TLV_head length
+    lea edx, [ecx+4]                         ; +TLV_head length
     mov eax, ssnac
     mov ebx, buff
     mov ecx, [socket]
@@ -3228,30 +3507,30 @@ snac_buff db 1024 dup 0
     mov [ssnac.wSid], 2    ; Subtype
     mov [ssnac.dRi], 702h     ; request-id
 
-    mov word [buff], 0100h	   ;TLV.Type(1) - encapsulated META_DATA
-    mov word [buff+2], 1000h	   ; 00 10  TLV.Length
-    mov word [buff+4], 000Eh	   ; (LE)               data chunk size (TLV.Length-2)
-    mov eax, UIN
+    mov word [buff], 0100h         ;TLV.Type(1) - encapsulated META_DATA
+    mov word [buff+2], 1000h       ; 00 10  TLV.Length
+    mov word [buff+4], 000Eh       ; (LE)	 	data chunk size (TLV.Length-2)
+    lea eax, [vtable + vartable.uin]
     call ascitoint
-    mov dword [buff+6], eax	   ;(LE)                request owner uin
-    mov word [buff+10], 07D0h	   ;data type: META_DATA_REQ
+    mov dword [buff+6], eax        ;(LE)	 	request owner uin
+    mov word [buff+10], 07D0h      ;data type: META_DATA_REQ
     ;mov word [buff+12], 0008h      ; request sequence number <<<-- Может меняться FIXIT
-    mov word [buff+14], 04BAh	   ; data subtype: META_SHORTINFO_REQUEST
+    mov word [buff+14], 04BAh      ; data subtype: META_SHORTINFO_REQUEST
 
     mov ecx, [socket]
     mov edx, 20
 
-    xor esi, esi	; Счетчик
+    xor esi, esi        ; Счетчик
     xor eax, eax
 
   gi_loop:
     mov ebx, esi
-    mov word [buff+12], bx	; request sequence number
+    mov word [buff+12], bx      ; request sequence number
     mov ebx, UIN_LEN
     imul ebx, esi
     mov al,  [uins+ebx]
     cmp al, 0
-    jz	gi_end
+    jz  gi_end
 
     lea eax, [uins+ebx]
     call ascitoint
@@ -3287,10 +3566,10 @@ snac_buff db 1024 dup 0
     ;
     mov [ssnac.wFid], 3   ; Family
     mov [ssnac.wSid], 4   ; Subtype
-    mov [ssnac.dRi], 4	  ; request-id
+    mov [ssnac.dRi], 4    ; request-id
 
-    xor esi, esi	  ; Счетчик
-    xor edx, edx	  ; Заполнено байт
+    xor esi, esi          ; Счетчик
+    xor edx, edx          ; Заполнено байт
 
   ukk_loop:
     mov ebx, UIN_LEN
@@ -3337,11 +3616,11 @@ snac_buff db 1024 dup 0
     cmp [login], 2
     jnz @f
     mov ax, [timer]
-    cmp ax, 300 	  ;60 c
+    cmp ax, 300           ;60 c
     jb @f
     mov [timer], 0
     mov [flap.bId], FLAP_ID
-    mov [flap.bCh], 5	      ;Keep alive
+    mov [flap.bCh], 5         ;Keep alive
     mov [flap.wDs], 0
     inc [seq]
     mov ax, [seq]
@@ -3357,15 +3636,215 @@ snac_buff db 1024 dup 0
     popf
   ret
 
+;
+; Функция для установки статуса
+; статус в переменной status
+ setstatus:
+  push eax
+  push ebx
+  push edx
+    ;
+    ; Client sends its DC info and status to server
+    ;
+    mov [ssnac.wFid], 1  ; Family
+    mov [ssnac.wSid], 1Eh    ; Subtype
+    mov [ssnac.dRi], 1Eh     ; request-id
+
+    mov [buff], 0           ;  TLV type 06
+    mov [buff+1], 6h        ;
+    mov [buff+2], 0         ;  TLV data length
+    mov [buff+3], 4         ;
+    ;
+    ;
+    mov ax, STATUS_DCDISABLED  ; DC disabled
+    call htons
+    mov word [buff+4], ax
+    ;
+    ;
+    mov ax, [status]
+    mov word [buff+6], ax
+
+    mov eax, ssnac
+    mov ebx, buff
+    mov edx, 8           ; TLV head len+ data len
+    call sendsnac
+
+  pop edx
+  pop ebx
+  pop eax
+ ret
+
+
+;
+; Макрос пропускает все пробелы в строке до 
+; 1 го значащего символа
+; eax - указатель на null-terminated строку
+
+macro skip_spaces {
+  local ..sp_end, ..sp_loop
+
+  push ebx
+  push ecx
+
+  xor ebx, ebx
+  xor ecx, ecx
+
+ ..sp_loop:
+ 
+
+  mov bl, [eax + ecx]
+  cmp bl, 0x20
+  jnz ..sp_end
+
+
+  inc ecx
+  jmp ..sp_loop
+
+
+
+ ..sp_end:
+  lea eax, [eax + ecx]
+
+  pop ecx
+  pop ebx
+}
+
+
+
+
+
+;
+; Обработка команд
+; В еax передается указатель на строку. Команда и аргументы разделены пробелом
+; команда начинается с /
+; в eax - результат выполнения команды, -1 команда не существует, 0 ок, другие зависят от команды
+
+ cmd:
+   push ebx
+   push ecx
+   push edi
+   push esi
+
+   ;
+   ; Проверить первый символ 
+   ;
+   xor ebx, ebx
+   mov bl, [eax]
+   cmp bl, '/'
+   jnz cmd_end
+
+   ;
+   ; Разделение по 1й букве команды
+   ;
+   mov bl, [eax + 1]
+
+   cmp bl, 'c'
+   jz cmd_c
+
+   cmp bl, 'e'
+   jz cmd_e
+
+   cmp bl, 's'
+   jz cmd_s
+
+   jmp cmd_no
+
+  cmd_c:
+
+  cmd_e:
+
+   lea ebx, [eax + 1]
+   strcmp ebx, str_exit, str_exit.len
+   jz cmd_exit
+
+   jmp cmd_no
+
+
+
+
+  cmd_s:
+
+   lea ebx, [eax + 1]
+   strcmp ebx, str_status, str_status.len
+   jz cmd_status
+  
+   jmp cmd_no
+
+
+
+  cmd_exit:
+
+
+  cmd_status:
+   ;
+   ; установить статус и послать пакет смены статуса
+   ;
+   lea eax, [eax + 1 + str_status.len]
+   skip_spaces
+
+   strcmp eax, str_online, str_online.len
+   jz cmd_st_online
+
+   strcmp eax, str_away, str_away.len
+   jz cmd_st_away
+
+   strcmp eax, str_na, str_na.len
+   jz cmd_st_na
+
+   strcmp eax, str_dnd, str_dnd.len
+   jz cmd_st_dnd
+
+   strcmp eax, str_bisy, str_bisy.len
+   jz cmd_st_bisy
+
+   strcmp eax, str_free4chat, str_free4chat.len
+   jz cmd_st_free4chat
+
+   ;
+   ; Статус не определен.
+   ; Вывести сообщение  о доступных статусах
+   ;
+   mov eax, str_status_message
+   xor ebx, ebx
+   call writemsg
+
+   jmp cmd_end
+
+
+  cmd_st_online:
+
+  cmd_st_away:
+
+  cmd_st_na:
+
+  cmd_st_dnd:
+
+  cmd_st_bisy:
+
+  cmd_st_free4chat:
+
+
+  cmd_no:
+
+  cmd_end:
+   pop esi
+   pop edi
+   pop ecx
+   pop ebx
+
+ ret
+
 
 
 
 ; <--- initialised data --->
 DATA
-  lsz header,\
-    ru, "KI",\			  
-    en, "KI",\
-    fr, "KI"
+include "parser_data.inc"
+include "ssi_data.inc"
+include "comp_data.inc"
+
+
+head db 'KI',0
 
 
 ;
@@ -3373,9 +3852,14 @@ MESS db 'Message from ', 0
 CUSER db 'Current user: ', 0 
 
 ;
+; Список IP серверов ICQ
 
-;ICQ_IP =  0x0A00A8C0   ; 192.168.0.10
- ICQ_IP =  0x99A10C40
+;205.188.153.121
+;icq_ip db '64.12.200.089',0
+;icq_ip db '64.12.161.185',0 
+;icq_ip db '205.188.179.233',0
+
+ 
 ;
 flap FLAP_head
 rflap FLAP_head
@@ -3383,18 +3867,40 @@ rflap FLAP_head
 ssnac SNAC_head        ; для передачи SNAC
 rsnac SNAC_head        ; для принятого SNAC
 ;
-ui UI_head	       ; User info
+ui UI_head             ; User info
 ;
 procinfo process_information
 ;
-UIN db '123456789',0
-PASS db 'coolpass',0
+;UIN db '362820484',0
+;PASS db 'test',0
 ID_STRING db 'ICQ Inc. - Product of ICQ (TM).2000b.4.65.1.3281.85',0
 ;ID_STRING db 'ICQ Inc. - Product of ICQ (TM).2001b.5.17.1.3642.85',0
-CAPABILITIES db 053h, 054h, 0, 0, 097h, 0B1h, 027h, 051h, 024h, 03Ch, 043h, 034h, 0ADh, 022h, 0D6h, 0ABh,\
-		0F7h, 03Fh, 014h, 092h, 02Eh, 07Ah, 064h, 075h, 0FAh, 0DFh, 04Dh, 0C8h, 088h, 06Fh, 0EAh, 035h,\ 
-		095h, 0FDh, 0B6h, 0DFh, 09h, 046h, 013h, 044h,	04Ch, 07Fh, 011h, 0D1h, 082h, 022h, 044h, 045h,\ 
-		053h, 054h, 0, 0
+
+
+;CAPABILITIES db 0x09, 0x46, 0x13, 0x49, 0x4C, 0x7F, 0x11, 0xD1, 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00,\ 
+                ;0x97, 0xB1, 0x27, 0x51, 0x24, 0x3C, 0x43, 0x34, 0xAD, 0x22, 0xD6, 0xAB, 0xF7, 0x3F, 0x14, 0x92,\ 
+CAPABILITIES db 0x2E, 0x7A, 0x64, 0x75, 0xFA, 0xDF, 0x4D, 0xC8, 0x88, 0x6F, 0xEA, 0x35, 0x95, 0xFD, 0xB6, 0xDF,\
+                'KOLIBRI KI(cq)',0,0
+                ;0x09, 0x46, 0x13, 0x44, 0x4C, 0x7F, 0x11, 0xD1, 0x82, 0x22, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00 
+
+; 1 строка
+; {09461349-4C7F-11D1-8222-444553540000} 
+; Client supports channel 2 extended, TLV(0x2711) based messages. Currently used only by ICQ clients. 
+;ICQ clients and clones use this GUID as message format sign. Trillian client use another GUID 
+; in channel 2 messages to implement its own message format (trillian doesn't use TLV(x2711) in SecureIM channel 2 messages!).
+;
+; 2 строка
+; {97B12751-243C-4334-AD22-D6ABF73F1492}  
+; Client supports RTF messages. This capability currently used by ICQ service and ICQ clients.
+;
+; 4 строка
+; {0946134E-4C7F-11D1-8222-444553540000} 
+; Client supports UTF-8 messages. This capability currently used by AIM service and AIM clients
+;
+
+
+
+                                     
 ;
 ; From &RQ
 ;
@@ -3407,27 +3913,28 @@ CAPABILITIES db 053h, 054h, 0, 0, 097h, 0B1h, 027h, 051h, 024h, 03Ch, 043h, 034h
 ;                0x00, 0x00, 0x00, 0x00                                         
 
 
-C_LEN = 40h
+C_LEN = 32
 ;C_LEN = 80
 ICBM_PARAMS db 0, 0, 0, 0, 0, 0Bh, 01Fh, 040h, 3, 0E7h, 3, 0E7h, 0, 0, 0, 0
-ICBMP_LEN = 16		 ;    ^^^ from &RQ
+ICBMP_LEN = 16           ;    ^^^ from &RQ
 
 
 ;
 ; from &rq
 ;
-FAMILY_ARR db  0x00, 0x01, 0x00, 0x03, 0x01, 0x10, 0x04, 0x7B,	0x00, 0x13, 0x00, 0x02, 0x01, 0x10, 0x04, 0x7B,\    
-	       0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x04, 0x7B,	0x00, 0x03, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,\    
-	       0x00, 0x15, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,	0x00, 0x04, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,\    
-	       0x00, 0x06, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,	0x00, 0x09, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,\    
-	       0x00, 0x0A, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,	0x00, 0x10, 0x00, 0x01, 0x00, 0x10, 0x06, 0x6A	  
+FAMILY_ARR db  0x00, 0x01, 0x00, 0x03, 0x01, 0x10, 0x04, 0x7B,  0x00, 0x13, 0x00, 0x02, 0x01, 0x10, 0x04, 0x7B,\    
+               0x00, 0x02, 0x00, 0x01, 0x01, 0x01, 0x04, 0x7B,  0x00, 0x03, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,\    
+               0x00, 0x15, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,  0x00, 0x04, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,\    
+               0x00, 0x06, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,  0x00, 0x09, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,\    
+               0x00, 0x0A, 0x00, 0x01, 0x01, 0x10, 0x04, 0x7B,  0x00, 0x10, 0x00, 0x01, 0x00, 0x10, 0x06, 0x6A    
 
-
-
- 
+;
+;
+; 
 
 FA_LEN = 50h
-
+;
+;
 ;
 ID_NUM = 010Ah
 MAJOR = 05h
@@ -3438,6 +3945,9 @@ LESSER = 01h
 ;BUILD = 0CD1h
 BUILD = 0E3Ah
 DISTR = 055h
+;
+;
+
 TCB_ESTABLISHED = 4
 TCB_CLOSED = 11
 ;
@@ -3445,39 +3955,79 @@ CL_LANG db 'en',0
 CL_COUNTRY db 'us',0
 
  
-sbuff db 1024 dup 0	; Буфер для передачи используется внутри sendflap
+sbuff db 1024 dup 0     ; Буфер для передачи используется внутри sendflap
 
-rbuff db 1024 dup 0	; Приемный буфер
-tbuff db 512 dup 0	; Для TLV
+;recived db 0              ; Принято данных из тела пакета
+
+;rbuff db 1024 dup 0     ; Приемный буфер
+tbuff db 512 dup 0      ; Для TLV
 srv_cookie db 512 dup 0 ; Куки для авторизации
 bos_address db 128 dup 0 ; Адрес BOS сервера
-cookie_len dw 0 	 ; Длина куки
-seq dw 0		 ; Sequence number
+cookie_len dw 0          ; Длина куки
+seq dw 0                 ; Sequence number
 bos_ip dd 0
 bos_port dd 0
-status dw 0		; status
+status dw 0             ; status
 
-mbuff db 2048 dup 0	; Для приема
-MBUFF_SIZE		= 2048
+mbuff db 2048 dup 0     ; Для приема
+MBUFF_SIZE              = 2048
 
-hrf db 0		; Флаг приема заголовка
+hrf db 0                ; Флаг приема заголовка
 
 mouse_flag dd 0
 socket dd 0
 login db 0
 
-msg_cookie1 dd 0	;   Используются для потверждения приема сообщений
-msg_cookie2 dd 0	;
+msg_cookie1 dd 0        ;   Используются для потверждения приема сообщений
+msg_cookie2 dd 0        ;
 
-curruser    db 0	;  текущий пользователь, которому будут отправляться сообщения
-			; - Номер в КЛ по порядку
+curruser    db 0        ;  текущий пользователь, которому будут отправляться сообщения
+                        ; - Номер в КЛ по порядку
 
 
 timer dw 0
 
 ;ltest db "ADMIN",0
+buff db 1024 dup 0
+;  lbuff db 8 dup 0 	 ; Для 1 пакета от сервера
+
+;
+; Строки команд для сравнения
+;
+str_status db 'status '
+str_status.len = $ - str_status
+str_exit db 'exit '
+str_exit.len = $ - str_exit
+;
+; Строки статусов для сравнения
+;
+str_away db 'away'
+str_away.len = $ - str_away
+
+str_dnd db 'dnd'
+str_dnd.len = $ - str_dnd
+
+str_bisy db 'bisy'
+str_bisy.len = $ - str_bisy
+
+str_na db 'na'
+str_na.len = $ - str_na
+
+str_online db 'online'
+str_online.len = $ - str_online
+
+str_free4chat db 'free4chat'
+str_free4chat.len = $ - str_free4chat
+
+str_status_message db 'Доступные статусы: away, bisy, na, dnd, online, free4chat',0
 
 
+;
+;
+;
+
+cfg_message db 'Config:',0
+                 
 
 ;
 ; EDITBOXES

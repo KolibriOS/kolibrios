@@ -1,0 +1,56 @@
+00 00 08 00 07 36 32 31 38 38 39 37 0A 1E 43 18  .....6218897..C.
+^^ byte 									Version number of SSI protocol (currently 0x00)
+   ^^ ^^ word 									Number of items in this snac
+         ^^ ^^ word 								Length of the item name
+               ^^ ^^ ^^ ^^ ^^ ^^ ^^  string 					Item name string
+                                    ^^ ^^ word					Group ID#
+                                          ^^ ^^ word				Item ID#
+
+
+
+00 00 00 0A 01 31 00 06 46 75 6E 42 6F 6F 00 09  .....1..FunBoo..
+^^ ^^ word  	   							Type of item flag (see list bellow)
+      ^^ ^^ word  	   						Length of the additional data
+            ^^ ^^ word	 						TLV.Type (TLV #1)
+                  ^^ ^^ word	 					TLV.Length
+                        ^^ ^^ ^^ ^^ ^^ ^^				TLV.Value
+
+
+
+
+
+
+31 37 36 33 33 33 30 37 38 17 B7 2A 18 00 00 00  176333078..*....
+09 01 31 00 05 45 2E 53 2E 56 00 07 36 32 31 38  ..1..E.S.V..6218
+38 39 38 23 8C 12 A1 00 00 00 09 01 31 00 05 74  898#........1..t
+68 6F 72 64 00 07 46 72 69 65 6E 64 73 7F ED 00  hord..Friends...
+00 00 01 00 00 00 0A 43 6F 2D 57 6F 72 6B 65 72  .......Co-Worker
+73 55 7F 00 00 00 01 00 00 00 07 36 32 31 38 38  sU.........62188
+39 35 23 8C 08 80 00 00 00 0D 01 31 00 09 52 65  95#........1..Re
+67 72 65 73 73 6F 72 00 07 36 32 35 31 37 32 33  gressor..6251723
+23 8C 05 83 00 00 00 0D 01 31 00 05 47 68 6F 73  #........1..Ghos
+74 00 66 00 00 00 07 36 32 31 33 39 34 39 23 8C  t.f....6213949#.
+26 9A 00 00 00 0D 01 31 00 05 6D 69 63 6B 79 00  &......1..micky.
+66 00 00 3B B7 4B 7D
+
+
+
+
+
+  0x0000 	  Buddy record (name: uin for ICQ and screenname for AIM)
+  0x0001 	  Group record
+  0x0002 	  Permit record ("Allow" list in AIM, and "Visible" list in ICQ)
+  0x0003 	  Deny record ("Block" list in AIM, and "Invisible" list in ICQ)
+  0x0004 	  Permit/deny settings or/and bitmask of the AIM classes
+  0x0005 	  Presence info (if others can see your idle status, etc)
+  0x0009 	  Unknown. ICQ2k shortcut bar items ?
+  0x000E 	  Ignore list record.
+  0x000F 	  Last update date (name: "LastUpdateDate").
+  0x0010 	  Non-ICQ contact (to send SMS). Name: 1#EXT, 2#EXT, etc
+  0x0013 	  Item that contain roster import time (name: "Import time")
+  0x0014 	  Own icon (avatar) info. Name is an avatar id number as text
+
+
+
+
+[TLV(0x0131), itype 0x00, size XX] - This stores the name that the contact should show up as in the contact list. It should initially be set to the contact's nick name, and can be changed to anything by the client.

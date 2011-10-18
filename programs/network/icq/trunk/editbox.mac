@@ -31,9 +31,9 @@ macro use_general_func
         mov     edx,ed_offset
         add     ebx,2
         shl     ebx,16
-        mov     bx,ed_top
-        add     ebx,4
+        add     ebx,ed_top
         mov     ecx,ed_text_color
+        add     ebx,4
         add     edx,ed_text
         mcall
 ret
@@ -47,20 +47,19 @@ ret
 .draw_bg:
         mov     ebx,ed_left
         add     ebx,1
-        shl     ebx,16
-        mov     bx,ed_width
-        sub     ebx,1
         mov     edx,ed_color
+        shl     ebx,16
+        add     ebx,ed_width
+        sub     ebx,1
 .draw_bg_eax:
         mov     ecx,ed_top
         mov     eax,13
         add     ecx,1
         shl     ecx,16
-        mov     cx,ed_height
+        add     ecx,ed_height
         dec     ecx
         mcall   
 ret
-
 ;----------------------------------------------------------
 ;--- процедура получения количества символов в текущей щирине компонента
 ;----------------------------------------------------------
@@ -89,7 +88,7 @@ ret
         lea     ebx,[ebx*2+ebx]
         shl     ebx,1
         ;imul   ebx,6
-        add     bx,ed_left
+        add     ebx,ed_left
         mov     ecx,ed_top
         inc     ebx
         add     ecx,2
@@ -100,7 +99,7 @@ ret
         
         shl     ecx,16
         mov     cx,bp
-        add     cx,ed_height-4
+        add     ecx,ed_height-4
         
         mov     cl_curs_x,ebx
         mov     cl_curs_y,ecx
@@ -123,8 +122,8 @@ ret
         mov     ecx,ebx
         shl     ebx,16
         mov     bx,cx
-        add     bx,ed_width
-        mov     ecx, ed_top
+        add     ebx,ed_width
+        mov     ecx,ed_top
         mov     esi,ecx
         shl     ecx,16
         mov     cx,si
@@ -139,7 +138,7 @@ ret
 ;--- слева ---
         mov     cx,si
         mov     ebp,ebx
-        sub     bx,ed_width
+        sub     ebx,ed_width
         mcall
 ;--- справа ---
         mov     ebx,ebp
@@ -534,7 +533,7 @@ edit_ex
         inc     ebx
         add     ebx,ed_left
         shl     ebx,16
-        mov     bx,6
+        add     ebx,6
         mov     edx,ebp
         call    .draw_bg_eax
         ret
@@ -624,12 +623,15 @@ macro are_key_shift_press
         ;Входные данные edx=ed_size;ecx=ed_pos
         push    eax
         mov     edx,ed_size
-        mov     ecx,ed_pos
+        mov     ecx, ed_pos
         pusha
 ;;;;;;;;;;;;;;;;;;;;;
+;clear input arrea
         mov     ebp,ed_color
         mov     ebx,dword       ed_shift_pos
         call    .sh_cl_
+        mov     ebp,ed_size
+        call    .clear_bg
 ;;;;;;;;;;;;;;;;;;;;;
         popa 
         call    .del_char
@@ -1075,4 +1077,53 @@ macro   debug_func
         stosb       ;записать элемент из регистра al в ячеку памяти es:edi
  
         ret         ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+}
+
+;;;;;;;;;;;;;;;
+;For LibGui
+;;;;;;;;;;;;;;;
+macro srt_ed_libgui
+{
+ed_width        equ [EditBox.ed_width]            ;ширина компонента
+ed_left         equ [EditBox.ed_left]             ;положение по оси х
+ed_top          equ [EditBox.ed_top]              ;положение по оси у
+ed_color        equ [EditBox.ed_color]            ;цвет фона компонента
+shift_color     equ [EditBox.shift_color]         ;=0x6a9480
+ed_focus_border_color   equ [EditBox.ed_focus_border_color]   ;цвет рамки компонента
+ed_blur_border_color    equ [EditBox.ed_blur_border_color]    ;цвет не активного компонента
+ed_text_color   equ [EditBox.ed_text_color]       ;цвет текста
+ed_max          equ [EditBox.ed_max]              ;кол-во символов которые можно максимально ввести
+ed_text         equ [EditBox.ed_text]             ;указатель на буфер
+ed_flags        equ [EditBox.ed_flags]            ;флаги
+ed_size equ [EditBox.ed_size]                     ;кол-во символов
+ed_pos  equ [EditBox.ed_poz]                      ;позиция курсора
+ed_offset       equ [EditBox.ed_offset]           ;смещение
+cl_curs_x       equ [EditBox.cl_curs_x]           ;предыдущее координата курсора по х
+cl_curs_y       equ [EditBox.cl_curs_y]           ;предыдущее координата курсора по у
+ed_shift_pos    equ [EditBox.ed_shift_pos]        ;положение курсора
+ed_shift_pos_old equ [EditBox.ed_shift_pos_old]   ;старое положение курсора
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Bit mask from editbox 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ed_figure_only= 1000000000000000b   ;одни символы 
+ed_always_focus= 100000000000000b
+ed_focus=                     10b   ;фокус приложения
+ed_shift_on=                1000b   ;если не установлен -значит впервые нажат shift,если был установлен, значит мы уже что - то делали удерживая shift
+ed_shift_on_off=1111111111110111b
+ed_shift=                    100b   ;включается при нажатии на shift т.е. если нажимаю
+ed_shift_off=   1111111111111011b
+ed_shift_bac=              10000b   ;бит для очистки выделеного shift т.е. при установке говорит что есть выделение
+ed_shift_bac_cl=1111111111101111b   ;очистка при удалении выделения
+ed_shift_cl=    1111111111100011b
+ed_shift_mcl=   1111111111111011b
+ed_left_fl=               100000b
+ed_right_fl=    1111111111011111b
+ed_offset_fl=            1000000b
+ed_offset_cl=   1111111110111111b
+ed_insert=              10000000b
+ed_insert_cl=   1111111101111111b
+ed_mouse_on =          100000000b
+ed_mous_adn_b=         100011000b
+ed_mouse_on_off=1111111011111111b
+ed_height=14 ; высота
 }
