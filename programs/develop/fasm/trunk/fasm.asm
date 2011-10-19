@@ -101,9 +101,10 @@ load_libraries l_libs_start,load_lib_end
 @@:
 	mcall	40,0x27 ;маска системных событий
 ;---------------------------------------------------------------------
+init_checkboxes2 ch1_dbg,ch1_dbg+ch_struc_size
 get_sys_colors 1,0
 edit_boxes_set_sys_color edit1,editboxes_end,sc
-check_boxes_set_sys_color ch1_dbg,ch1_dbg+ch_struc_size,sc
+check_boxes_set_sys_color2 ch1_dbg,ch1_dbg+ch_struc_size,sc
 ;---------------------------------------------------------------------
 ; OpenDialog initialisation
 	push dword OpenDialog_data
@@ -407,7 +408,7 @@ text:
   s_run     db ' Пуск  '
   s_debug   db 'Отладка'
   s_dbgdescr db 'Создавать отладочную информацию',0
-  s_dbgdescr_end:
+
 
   err_message_found_lib0 db 'Не найдена библиотека box_lib.obj',0  ;строка, которая будет в сформированном окне, если библиотека не будет найдена
   err_message_import0 db 'Ошибка при импорте библиотеки box_lib.obj',0
@@ -427,7 +428,7 @@ text:
   s_run     db '  RUN  '
   s_debug   db ' DEBUG '
   s_dbgdescr db 'Generate debug information',0
-  s_dbgdescr_end:
+
 
   err_message_found_lib0 db 'Sorry I cannot found library box_lib.obj',0
   err_message_import0 db 'Error on load import library box_lib.obj',0
@@ -452,6 +453,7 @@ edit_box_mouse		dd aEdit_box_mouse
 edit_box_set_text	dd aEdit_box_set_text
 ;version_ed		dd aVersion_ed
 
+init_checkbox 		dd aInit_checkbox
 check_box_draw		dd aCheck_box_draw
 check_box_mouse		dd aCheck_box_mouse
 ;version_ch		dd aVersion_ch
@@ -464,9 +466,10 @@ aEdit_box_mouse		db 'edit_box_mouse',0
 aEdit_box_set_text	db 'edit_box_set_text',0
 ;aVersion_ed		db 'version_ed',0
 
-aCheck_box_draw		db 'check_box_draw',0
-aCheck_box_mouse	db 'check_box_mouse',0
-;aVersion_ch		db 'version_ch',0
+aInit_checkbox		db 'init_checkbox2',0
+aCheck_box_draw		db 'check_box_draw2',0
+aCheck_box_mouse	db 'check_box_mouse2',0
+;aVersion_ch		db 'version_ch2',0
 ;---------------------------------------------------------------------
 align 4
 import_proc_lib:
@@ -486,7 +489,7 @@ edit1 edit_box 153, 56, 1, 0xffffff, 0xff, 0x80ff, 0, 0x8000, (outfile-infile-1)
 edit2 edit_box 153, 56, 17, 0xffffff, 0xff, 0x80ff, 0, 0x8000,(path-outfile-1), outfile, mouse_dd, 0, 7,7
 edit3 edit_box 153, 56, 33, 0xffffff, 0xff, 0x80ff, 0, 0x8000,(path_end-path-1), path, mouse_dd, 0, 6,6
 editboxes_end:
-ch1_dbg check_box 5, 49, 6, 12, 0xffffff, 0x80ff, 0, s_dbgdescr,(s_dbgdescr_end-s_dbgdescr)
+ch1_dbg check_box2 (5 shl 16)+12, (49 shl 16)+12, 6, 0xffffff, 0x80ff, 0, s_dbgdescr,ch_flag_bottom
 ;---------------------------------------------------------------------
 align 4
 OpenDialog_data:
