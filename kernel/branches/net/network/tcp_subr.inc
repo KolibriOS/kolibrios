@@ -268,7 +268,7 @@ TCP_respond_socket:
 	mov	eax, [esi + TCP_SOCKET.RCV_NXT]
 	bswap	eax
 	stosd
-	mov	al, 0x50	; Dataoffset: 20 bytes
+	mov	al, 0x50	; Dataoffset: 20 bytes (TCP_segment.DataOffset)
 	stosb
 	mov	al, cl
 	stosb
@@ -323,8 +323,8 @@ TCP_respond_segment:
 ; Create the IP packet
 
 	push	cx edx
-	mov	ebx, [edx - 20 + IPv4_Packet.SourceAddress]	 ;;;; and what if ip packet had options?!
-	mov	eax, [edx - 20 + IPv4_Packet.DestinationAddress]   ;;;
+	mov	ebx, [edx - IPv4_Packet.DataOrOptional + IPv4_Packet.SourceAddress]	 ;;;; FIXME: and what if ip packet had options?!
+	mov	eax, [edx - IPv4_Packet.DataOrOptional + IPv4_Packet.DestinationAddress]   ;;;
 	mov	ecx, TCP_segment.Data
 	mov	di , IP_PROTO_TCP shl 8 + 128
 	call	IPv4_output
@@ -347,7 +347,7 @@ TCP_respond_segment:
 	stosd
 	xor	eax, eax
 	stosd
-	mov	al, 0x50	; Dataoffset: 20 bytes
+	mov	al, 0x50	; Dataoffset: 20 bytes (TCP_segment.Data)
 	stosb
 	mov	al, cl
 	stosb
@@ -363,7 +363,8 @@ TCP_respond_segment:
   .checksum:
 	lea	esi, [edi - TCP_segment.Data]
 	mov	ecx, TCP_segment.Data
-	TCP_checksum (esi - 20 + IPv4_Packet.DestinationAddress), (esi - 20 + IPv4_Packet.DestinationAddress)
+	TCP_checksum (esi - IPv4_Packet.DataOrOptional + IPv4_Packet.DestinationAddress),\	; FIXME
+		     (esi - IPv4_Packet.DataOrOptional + IPv4_Packet.SourceAddress)
 	mov	[esi+TCP_segment.Checksum], dx
 
 ;--------------------

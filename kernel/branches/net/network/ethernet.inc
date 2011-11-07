@@ -23,6 +23,8 @@ struct	ETH_FRAME
 	.Data:		       ; data (46-1500 bytes for a normal packet)
 ends
 
+ETH_FRAME_MINIMUM	equ 60
+
 virtual at NET_DEVICE.end
 
 	ETH_DEVICE:
@@ -63,7 +65,7 @@ ETH_input:
 	mov	ecx, [esp+4]
 
 	DEBUGF	1,"ETH_input - size: %u\n", ecx
-	cmp	ecx, 60    ; check packet length
+	cmp	ecx, ETH_FRAME_MINIMUM
 	jb	.dump
 	sub	ecx, ETH_FRAME.Data
 
@@ -140,13 +142,13 @@ ETH_output:
 
 	pop	ecx			; >> 1
 
-	cmp	edx, 60 		; minimum ethernet packet size
+	cmp	edx, ETH_FRAME_MINIMUM
 	jb	.adjust_size
 	DEBUGF	1,"ETH_output: done: %x total size: %u\n", eax, edx
 	ret
 
   .adjust_size:
-	mov	edx, 60
+	mov	edx, ETH_FRAME_MINIMUM
 	test	edx, edx	; clear zero flag
 	ret
 

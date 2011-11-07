@@ -237,9 +237,25 @@ macro	SOCKET_init {
 ; Socket API (function 74)
 ;
 ;-----------------------------------------------------------------
+align 16
+sock_sysfn_table:
+	dd	SOCKET_open	; 0
+	dd	SOCKET_close	; 1
+	dd	SOCKET_bind	; 2
+	dd	SOCKET_listen	; 3
+	dd	SOCKET_connect	; 4
+	dd	SOCKET_accept	; 5
+	dd	SOCKET_send	; 6
+	dd	SOCKET_receive	; 7
+	dd	SOCKET_set_opt	; 8
+	dd	SOCKET_get_opt	; 9
+
+SOCKET_SYSFUNCS = ($ - sock_sysfn_table)/4
+
+
 align 4
 sys_socket:
-	cmp	ebx, 9		; highest possible number
+	cmp	ebx, SOCKET_SYSFUNCS-1
 	ja	@f
 	jmp	dword [sock_sysfn_table + 4*ebx]
        @@:
@@ -252,18 +268,7 @@ s_error:
 
 	ret
 
-align 4
-sock_sysfn_table:
-	dd	SOCKET_open	; 0
-	dd	SOCKET_close	; 1
-	dd	SOCKET_bind	; 2
-	dd	SOCKET_listen	; 3
-	dd	SOCKET_connect	; 4
-	dd	SOCKET_accept	; 5
-	dd	SOCKET_send	; 6
-	dd	SOCKET_receive	; 7
-	dd	SOCKET_set_opt	; 8
-	dd	SOCKET_get_opt	; 9
+
 
 ;-----------------------------------------------------------------
 ;
@@ -395,10 +400,10 @@ SOCKET_bind:
 	cmp	esi, 6
 	jb	s_error
 
-	push	word [edx + 2]
-	pop	word [eax + UDP_SOCKET.LocalPort]
+	pushw	[edx + 2]
+	pop	[eax + UDP_SOCKET.LocalPort]
 
-	push	dword [edx + 4]
+	pushd	[edx + 4]
 	pop	[eax + IP_SOCKET.LocalIP]
 
 	DEBUGF	1,"local ip: %u.%u.%u.%u\n",\
@@ -463,10 +468,10 @@ align 4
 	lea	ebx, [eax + SOCKET.lock]
 	call	wait_mutex
 
-	push	word [edx + 2]
+	pushw	[edx + 2]
 	pop	[eax + UDP_SOCKET.RemotePort]
 
-	push	dword [edx + 4]
+	pushd	[edx + 4]
 	pop	[eax + IP_SOCKET.RemoteIP]
 
 	cmp	[eax + UDP_SOCKET.LocalPort], 0
@@ -489,10 +494,10 @@ align 4
 	lea	ebx, [eax + SOCKET.lock]
 	call	wait_mutex
 
-	push	word [edx + 2]
+	pushw	[edx + 2]
 	pop	[eax + TCP_SOCKET.RemotePort]
 
-	push	dword [edx + 4]
+	pushd	[edx + 4]
 	pop	[eax + IP_SOCKET.RemoteIP]
 
 	cmp	[eax + TCP_SOCKET.LocalPort], 0
@@ -532,8 +537,8 @@ align 4
 	lea	ebx, [eax + SOCKET.lock]
 	call	wait_mutex
 
-	push	dword [edx + 4]
-	pop	dword [eax + IP_SOCKET.RemoteIP]
+	pushd	[edx + 4]
+	pop	[eax + IP_SOCKET.RemoteIP]
 
 	push	eax
 	init_queue (eax + SOCKET_QUEUE_LOCATION)	; Set up data receiving queue

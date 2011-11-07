@@ -45,7 +45,7 @@ TCP_input:
 
 	DEBUGF	1,"headersize=%u\n", eax
 
-	cmp	eax, 20
+	cmp	eax, TCP_segment.DataOffset
 	jb	.drop_not_locked
 
 ;-------------------------------
@@ -72,7 +72,7 @@ TCP_input:
 ;-----------------------------------------------------------------------------------------
 ; Check if this packet has a timestamp option (We do it here so we can process it quickly)
 
-	cmp	esi, 20 + 12					; Timestamp option is 12 bytes
+	cmp	esi, TCP_segment.DataOffset + 12		; Timestamp option is 12 bytes
 	jb	.no_timestamp
 	je	.is_ok
 
@@ -213,13 +213,13 @@ TCP_input:
 ;--------------------
 ; Process TCP options
 
-	cmp	esi, 20 			; esi is headersize
+	cmp	esi, TCP_segment.DataOffset		; esi is headersize
 	je	.no_options
 
 	DEBUGF	1,"Segment has options\n"
 
-	cmp	[ebx + TCP_SOCKET.t_state], TCPS_LISTEN 	 ; no options when in listen state
-	jz	.not_uni_xfer					; also no header prediction
+	cmp	[ebx + TCP_SOCKET.t_state], TCPS_LISTEN ; no options when in listen state
+	jz	.not_uni_xfer				; also no header prediction
 
 	lea	edi, [edx + TCP_segment.Data]
 	lea	eax, [edx + esi]

@@ -17,17 +17,17 @@
 $Revision$
 
 ; Socket states
-TCPS_CLOSED		 equ 0
-TCPS_LISTEN		 equ 1
-TCPS_SYN_SENT		 equ 2
-TCPS_SYN_RECEIVED	 equ 3
-TCPS_ESTABLISHED	 equ 4
-TCPS_CLOSE_WAIT 	 equ 5
-TCPS_FIN_WAIT_1 	 equ 6
-TCPS_CLOSING		 equ 7
-TCPS_LAST_ACK		 equ 8
-TCPS_FIN_WAIT_2 	 equ 9
-TCPS_TIMED_WAIT 	 equ 10
+TCPS_CLOSED		equ 0
+TCPS_LISTEN		equ 1
+TCPS_SYN_SENT		equ 2
+TCPS_SYN_RECEIVED	equ 3
+TCPS_ESTABLISHED	equ 4
+TCPS_CLOSE_WAIT 	equ 5
+TCPS_FIN_WAIT_1 	equ 6
+TCPS_CLOSING		equ 7
+TCPS_LAST_ACK		equ 8
+TCPS_FIN_WAIT_2 	equ 9
+TCPS_TIMED_WAIT 	equ 10
 
 ; Socket Flags
 TF_ACKNOW		equ 1 shl 0	; ack peer immediately

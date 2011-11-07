@@ -161,7 +161,7 @@ align 4
 ARP_input:
 
 	DEBUGF	1,"ARP_Handler - start\n"
-	cmp	ecx, 28
+	cmp	ecx, ARP_Packet.size
 	jb	.exit
 
 ;---------------------

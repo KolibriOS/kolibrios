@@ -277,7 +277,7 @@ TCP_output:
 	test	[eax + TCP_SOCKET.t_flags], TF_NOOPT
 	jnz	.options_done
 
-	mov	ecx, 1460
+	mov	ecx, 1460			       ;;;; FIXME
 	or	ecx, TCP_OPT_MAXSEG shl 24 + 4 shl 16
 	bswap	ecx
 	push	ecx
@@ -454,7 +454,7 @@ TCP_output:
 
 ; set retransmission timer if not already set, and not doing an ACK or keepalive probe
 
-	cmp	[eax + TCP_SOCKET.timer_retransmission], 1000 ;;;;
+	cmp	[eax + TCP_SOCKET.timer_retransmission], 1000 ;;;; FIXME
 	jb	.retransmit_set
 
 	cmp	edx, [eax + TCP_SOCKET.SND_UNA] 	; edx = [eax + TCP_SOCKET.SND_NXT]

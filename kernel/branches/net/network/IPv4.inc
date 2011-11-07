@@ -240,9 +240,9 @@ IPv4_input:	 ; TODO: implement handler for IP options
 
 	; check for broadcast
 
-	mov	eax, dword[SUBNET_LIST+edi]
+	mov	eax, [SUBNET_LIST+edi]
 	not	eax
-	or	eax, dword[IP_LIST+edi]
+	or	eax, [IP_LIST+edi]
 	cmp	[edx + IPv4_Packet.DestinationAddress], eax
 	je	.ip_ok
 
@@ -672,7 +672,7 @@ IPv4_output_raw:
 
 	DEBUGF 1,"IPv4_output_raw: size=%u ptr=%x socket=%x\n", ecx, esi, eax
 
-	cmp	ecx, 1480		;;;;;
+	cmp	ecx, 1480		;;;;; FIXME
 	ja	.too_large
 
 	sub	esp, 8
@@ -778,10 +778,10 @@ IPv4_fragment:
 	push	eax
 
 
-	push	esi		; ptr to ip header
-	sub	ecx, 20 	; substract header size
-	push	ecx		; max data size
-	push	dword 0 	; offset
+	push	esi				; ptr to ip header
+	sub	ecx, IPv4_Packet.DataOrOptional ; substract header size
+	push	ecx				; max data size
+	push	dword 0 			; offset
 
   .new_fragment:
 	DEBUGF 1,"Ipv4_fragment - new_fragmentn"
@@ -802,7 +802,7 @@ IPv4_fragment:
 
 ; copy data
 	mov	esi, [esp + 2*4]
-	add	esi, 20
+	add	esi, IPv4_Packet.DataOrOptional
 	add	esi, [esp]	; offset
 
 	mov	ecx, [esp + 1*4]
@@ -811,7 +811,7 @@ IPv4_fragment:
 
 ; now, correct header
 	mov	ecx, [esp + 1*4]
-	add	ecx, 20
+	add	ecx, IPv4_Packet.DataOrOptional
 	xchg	cl, ch
 	mov	[edi + IPv4_Packet.TotalLength], cx
 
