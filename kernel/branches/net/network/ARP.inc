@@ -122,7 +122,8 @@ local	.exit
 
   .next:
 	add	esi, ARP_ENTRY.size
-	loop	.loop
+	dec	ecx
+	jnz	.loop
 	jmp	.exit
 
   .time_out:
@@ -161,7 +162,7 @@ ARP_input:
 
 	DEBUGF	1,"ARP_Handler - start\n"
 	cmp	ecx, 28
-	jl	.exit
+	jb	.exit
 
 ;---------------------
 ; Handle Reply packets
@@ -183,7 +184,8 @@ ARP_input:
 	cmp	[esi + ARP_ENTRY.IP], eax
 	je	.gotit
 	add	esi, ARP_ENTRY.size
-	loop	.loop
+	dec	ecx
+	jnz	.loop
 
 	jmp	.exit
 
@@ -349,7 +351,7 @@ ARP_add_entry:
 	test	ecx, ecx		; first entry?
 	jz	.add
 	cmp	ecx, ARP_TABLE_SIZE	; list full ?
-	jge	.error
+	jae	.error
 
 	mov	eax, dword[esi + ARP_ENTRY.MAC]
 	mov	bx , word[esi + ARP_ENTRY.MAC + 4]
@@ -602,7 +604,7 @@ ARP_API:
 
 .read:
 	cmp	ecx, [NumARP]
-	jge	.error
+	jae	.error
 	; edi = pointer to buffer
 	; ecx = # entry
 	imul	ecx, ARP_ENTRY.size
@@ -622,7 +624,7 @@ ARP_API:
 .remove:
 	; ecx = # entry
 	cmp	ecx, [NumARP]
-	jge	.error
+	jae	.error
 	imul	ecx, ARP_ENTRY.size
 	lea	esi, [ARP_table + ecx]
 	call	ARP_del_entry

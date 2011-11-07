@@ -44,7 +44,7 @@ ends
 macro add_to_queue ptr, size, entry_size, failaddr {
 
 	cmp	[ptr + queue.size], size	; Check if queue isnt full
-	jge	failaddr
+	jae	failaddr
 
 	inc	[ptr + queue.size]		; if not full, queue one more
 
@@ -54,7 +54,7 @@ macro add_to_queue ptr, size, entry_size, failaddr {
 
 	lea	ecx, [size*entry_size+ptr+queue.data]
 	cmp	edi, ecx			; entry size
-	jl	.no_wrap
+	jb	.no_wrap
 
 	sub	edi, size*entry_size
 
@@ -79,7 +79,7 @@ macro get_from_queue ptr, size, entry_size,  failaddr {
 
 	lea	ecx, [size*entry_size+ptr+queue.data]
 	cmp	esi, ecx			; entry size
-	jl	.no_wrap
+	jb	.no_wrap
 
 	sub	esi, size*entry_size
 

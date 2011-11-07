@@ -41,7 +41,7 @@ TCP_output:
 
 	mov	ebx, [eax + TCP_SOCKET.t_idle]
 	cmp	ebx, [eax + TCP_SOCKET.t_rxtcur]
-	jle	.not_idle
+	jbe	.not_idle
 
 ; We have been idle for a while and no ACKS are expected to clock out any data we send..
 ; Slow start to get ack "clock" running again.
@@ -56,7 +56,7 @@ TCP_output:
 
 	mov	ecx, [eax + TCP_SOCKET.SND_WND] 	; determine window
 	cmp	ecx, [eax + TCP_SOCKET.SND_CWND]	;
-	jl	@f					;
+	jb	@f					;
 	mov	ecx, [eax + TCP_SOCKET.SND_CWND]	;
        @@:						;
 
@@ -76,7 +76,7 @@ TCP_output:
 	jnz	.no_zero_window
 
 	cmp	ebx, [eax + STREAM_SOCKET.snd + RING_BUFFER.size]
-	jge	@f
+	jae	@f
 
 	and	dl, not (TH_FIN)	  ; clear the FIN flag    ??? how can it be set before?
 
@@ -95,7 +95,7 @@ TCP_output:
 
 	mov	esi, [eax + STREAM_SOCKET.snd + RING_BUFFER.size]
 	cmp	esi, ecx
-	jl	@f
+	jb	@f
 	mov	esi, ecx
        @@:
 	sub	esi, ebx
@@ -132,7 +132,7 @@ TCP_output:
 ; Send one segment at a time (124)
 
 	cmp	esi, [eax + TCP_SOCKET.t_maxseg]
-	jle	@f
+	jbe	@f
 
 	mov	esi, [eax + TCP_SOCKET.t_maxseg]
 
@@ -176,11 +176,11 @@ TCP_output:
 	mov	ebx, [eax + TCP_SOCKET.max_sndwnd]
 	shr	ebx, 1
 	cmp	esi, ebx
-	jge	.send
+	jae	.send
 
 	mov	ebx, [eax + TCP_SOCKET.SND_NXT]
 	cmp	ebx, [eax + TCP_SOCKET.SND_MAX]
-	jl	.send
+	jb	.send
 
   .len_zero:
 
@@ -205,7 +205,7 @@ TCP_output:
 
 	mov	ebx, [eax + TCP_SOCKET.SND_UP]		; when urgent pointer is beyond start of send bufer
 	cmp	ebx, [eax + TCP_SOCKET.SND_UNA]
-	jg	.send
+	ja	.send
 
 	test	dl, TH_FIN
 	jz	.enter_persist	; no reason to send, enter persist state
@@ -347,7 +347,7 @@ TCP_output:
 
 	add	esi, edi			; total TCP segment size
 	cmp	esi, [eax + TCP_SOCKET.t_maxseg]
-	jle	.no_overflow
+	jbe	.no_overflow
 
 	mov	esi, [eax + TCP_SOCKET.t_maxseg]
 
@@ -445,7 +445,7 @@ TCP_output:
 
 	mov	edx, [eax + TCP_SOCKET.SND_NXT]
 	cmp	edx, [eax + TCP_SOCKET.SND_MAX]
-	jle	@f
+	jbe	@f
 	mov	[eax + TCP_SOCKET.SND_MAX], edx
 
 	;;;; TODO: time transmission (420)
@@ -455,7 +455,7 @@ TCP_output:
 ; set retransmission timer if not already set, and not doing an ACK or keepalive probe
 
 	cmp	[eax + TCP_SOCKET.timer_retransmission], 1000 ;;;;
-	jl	.retransmit_set
+	jb	.retransmit_set
 
 	cmp	edx, [eax + TCP_SOCKET.SND_UNA] 	; edx = [eax + TCP_SOCKET.SND_NXT]
 	je	.retransmit_set

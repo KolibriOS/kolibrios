@@ -64,7 +64,7 @@ ETH_input:
 
 	DEBUGF	1,"ETH_input - size: %u\n", ecx
 	cmp	ecx, 60    ; check packet length
-	jl	.dump
+	jb	.dump
 	sub	ecx, ETH_FRAME.Data
 
 	lea	edx, [eax + ETH_FRAME.Data]
@@ -110,7 +110,7 @@ ETH_output:
 	DEBUGF	1,"ETH_output: size=%u device:%x\n", ecx, ebx
 
 	cmp	ecx, [ebx + NET_DEVICE.mtu]
-	jg	.exit
+	ja	.exit
 
 	push	ecx			; << 1
 	push	di eax edx		; << 2
@@ -140,8 +140,8 @@ ETH_output:
 
 	pop	ecx			; >> 1
 
-	cmp	edx, 60-1		; minimum ethernet packet size
-	jle	.adjust_size
+	cmp	edx, 60 		; minimum ethernet packet size
+	jb	.adjust_size
 	DEBUGF	1,"ETH_output: done: %x total size: %u\n", eax, edx
 	ret
 
@@ -181,7 +181,7 @@ align 4
 ETH_API:
 
 	cmp	bh, MAX_NET_DEVICES
-	jg	.error
+	ja	.error
 	movzx	eax, bh
 	shl	eax, 2
 

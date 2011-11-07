@@ -216,17 +216,17 @@ macro	SOCKET_init {
        @@:
 	pseudo_random eax
 	cmp	ax, MIN_EPHEMERAL_PORT
-	jl	@r
+	jb	@r
 	cmp	ax, MAX_EPHEMERAL_PORT
-	jg	@r
+	ja	@r
 	mov	[last_UDP_port], ax
 
        @@:
 	pseudo_random eax
 	cmp	ax, MIN_EPHEMERAL_PORT
-	jl	@r
+	jb	@r
 	cmp	ax, MAX_EPHEMERAL_PORT
-	jg	@r
+	ja	@r
 	mov	[last_TCP_port], ax
 
 }
@@ -240,7 +240,7 @@ macro	SOCKET_init {
 align 4
 sys_socket:
 	cmp	ebx, 9		; highest possible number
-	jg	@f
+	ja	@f
 	jmp	dword [sock_sysfn_table + 4*ebx]
        @@:
 	cmp	ebx, 255
@@ -372,7 +372,7 @@ SOCKET_bind:
 	jz	s_error
 
 	cmp	esi, 2
-	jl	s_error
+	jb	s_error
 
 	cmp	word [edx], AF_INET4
 	je	.af_inet4
@@ -393,7 +393,7 @@ SOCKET_bind:
 	DEBUGF	1,"af_inet4\n"
 
 	cmp	esi, 6
-	jl	s_error
+	jb	s_error
 
 	push	word [edx + 2]
 	pop	word [eax + UDP_SOCKET.LocalPort]
@@ -430,7 +430,7 @@ SOCKET_connect:
 	jz	s_error
 
 	cmp	esi, 8
-	jl	s_error
+	jb	s_error
 
 	cmp	word [edx], AF_INET4
 	je	.af_inet4
@@ -577,7 +577,7 @@ SOCKET_listen:
        @@:
 
 	cmp	edx, MAX_backlog
-	jle	@f
+	jbe	@f
 	mov	edx, MAX_backlog
        @@:
 
@@ -665,7 +665,7 @@ SOCKET_close:
 
   .tcp:
 	cmp	[eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED	 ; state must be LISTEN, SYN_SENT or CLOSED
-	jl	.free
+	jb	.free
 
 	call	TCP_output
 	mov	dword [esp+32], 0
@@ -715,7 +715,7 @@ SOCKET_receive_dgram:
 	DEBUGF	1,"Got %u bytes of data\n", ecx
 
 	cmp	ecx, ebx
-	jg	.too_small
+	ja	.too_small
 
 	push	[esi + socket_queue_entry.buf_ptr]		; save the buffer addr so we can clear it later
 	mov	esi, [esi + socket_queue_entry.data_ptr]
@@ -1119,7 +1119,7 @@ SOCKET_ring_write:
 
 	add	[eax + RING_BUFFER.size], ecx
 	cmp	[eax + RING_BUFFER.size], SOCKET_MAXDATA
-	jg	.too_large
+	ja	.too_large
 
   .copy:
 	mov	edi, [eax + RING_BUFFER.write_ptr]
@@ -1141,7 +1141,7 @@ SOCKET_ring_write:
 	pop	ecx
 
 	cmp	edi, [eax + RING_BUFFER.end_ptr]
-	jge	.wrap
+	jae	.wrap
 	mov	[eax + RING_BUFFER.write_ptr], edi
 
 	ret
@@ -1155,7 +1155,7 @@ SOCKET_ring_write:
   .too_large:
 	mov	ecx, SOCKET_MAXDATA				; calculate number of bytes available in buffer
 	sub	ecx, [eax + RING_BUFFER.size]
-	jge	.full
+	jae	.full
 
 	mov	[eax + RING_BUFFER.size], SOCKET_MAXDATA	; update size, we will fill buffer completely
 	jmp	.copy
@@ -1185,7 +1185,7 @@ SOCKET_ring_read:
 	DEBUGF	1,"SOCKET_ring_read: ringbuff=%x ptr=%x size=%u\n", eax, edi, ecx
 
 	cmp	ecx, [eax + RING_BUFFER.size]
-	jg	.less_data
+	ja	.less_data
 
   .copy:
 	mov	esi, [eax + RING_BUFFER.read_ptr]
@@ -1234,12 +1234,12 @@ SOCKET_ring_free:
 	DEBUGF	1,"SOCKET_ring_free: %u bytes from ring %x\n", ecx, eax
 
 	sub	[eax + RING_BUFFER.size], ecx
-	jl	.sumthinwong
+	jb	.sumthinwong
 	add	[eax + RING_BUFFER.read_ptr], ecx
 
 	mov	edx, [eax + RING_BUFFER.end_ptr]
 	cmp	[eax + RING_BUFFER.read_ptr], edx
-	jl	@f
+	jb	@f
 	sub	[eax + RING_BUFFER.read_ptr], SOCKET_MAXDATA
        @@:
 	ret
@@ -1468,7 +1468,7 @@ SOCKET_fork:
 ; Exit if backlog queue is full
 	mov	eax, [ebx + SOCKET_QUEUE_LOCATION + queue.size]
 	cmp	ax, [ebx + SOCKET.backlog]
-	jge	.fail
+	jae	.fail
 
 ; Allocate new socket
 	call	SOCKET_alloc

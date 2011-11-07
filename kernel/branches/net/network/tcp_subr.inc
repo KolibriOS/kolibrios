@@ -131,7 +131,7 @@ TCP_drop:
 	DEBUGF	1,"TCP_drop\n"
 
 	cmp	[eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
-	jl	.no_syn_received
+	jb	.no_syn_received
 
 	mov	[eax + TCP_SOCKET.t_state], TCPS_CLOSED
 

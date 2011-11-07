@@ -597,7 +597,7 @@ IPv4_output:
 	DEBUGF	1,"IPv4_create_packet: size=%u\n", ecx
 
 	cmp	ecx, 65500		; Max IPv4 packet size
-	jg	.too_large
+	ja	.too_large
 
 	push	ecx eax ebx dx di
 
@@ -673,7 +673,7 @@ IPv4_output_raw:
 	DEBUGF 1,"IPv4_output_raw: size=%u ptr=%x socket=%x\n", ecx, esi, eax
 
 	cmp	ecx, 1480		;;;;;
-	jg	.too_large
+	ja	.too_large
 
 	sub	esp, 8
 	push	esi eax
@@ -761,7 +761,7 @@ IPv4_fragment:
 	and	ecx, not 111b	; align 4
 
 	cmp	ecx, IPv4_Packet.DataOrOptional + 8	; must be able to put at least 8 bytes
-	jl	.err2
+	jb	.err2
 
 	push	esi ecx
 	mov	eax, [esi + IPv4_Packet.DestinationAddress]
@@ -846,7 +846,7 @@ IPv4_fragment:
 	DEBUGF 1,"Ipv4_fragment - bytes remaining: %u\n", ecx
 
 	cmp	ecx, [esp+1*4]
-	jge	.new_fragment
+	jae	.new_fragment
 
 	mov	[esp+4], ecx		; set fragment size to remaining packet size
 	jmp	.new_fragment

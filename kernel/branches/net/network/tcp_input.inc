@@ -46,7 +46,7 @@ TCP_input:
 	DEBUGF	1,"headersize=%u\n", eax
 
 	cmp	eax, 20
-	jl	.drop_not_locked
+	jb	.drop_not_locked
 
 ;-------------------------------
 ; Now, re-calculate the checksum
@@ -66,14 +66,14 @@ TCP_input:
 	DEBUGF	1,"Checksum is correct\n"
 
 	sub	ecx, esi	; update packet size
-	jl	.drop_not_locked
+	jb	.drop_not_locked
 	DEBUGF	1,"we got %u bytes of data\n", ecx
 
 ;-----------------------------------------------------------------------------------------
 ; Check if this packet has a timestamp option (We do it here so we can process it quickly)
 
 	cmp	esi, 20 + 12					; Timestamp option is 12 bytes
-	jl	.no_timestamp
+	jb	.no_timestamp
 	je	.is_ok
 
 	cmp	byte [edx + TCP_segment.Data + 12], TCP_OPT_EOL ; end of option list
@@ -226,7 +226,7 @@ TCP_input:
 
   .opt_loop:
 	cmp	edi, eax
-	jge	.no_options
+	jae	.no_options
 
 	cmp	byte [edi], TCP_OPT_EOL 	; end of option list?
 	jz	.no_options
@@ -349,16 +349,16 @@ TCP_input:
 ;     This test is true only if the window is fully open, that is, the connection is not in the middle of slow start or congestion avoidance.
 	mov	eax, [ebx + TCP_SOCKET.SND_CWND]
 	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
-	jl	.not_uni_xfer
+	jb	.not_uni_xfer
 
 ; - The acknowledgment field in the segment is less than or equal to the maximum sequence number sent.
 	mov	eax, [edx + TCP_segment.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
-	jg	.not_uni_xfer
+	ja	.not_uni_xfer
 
 ; - The acknowledgment field in the segment is greater than the largest unacknowledged sequence number.
 	sub	eax, [ebx + TCP_SOCKET.SND_UNA]
-	jle	.not_uni_xfer
+	jbe	.not_uni_xfer
 
 	DEBUGF	1,"Header prediction: we are sender\n"
 
@@ -527,10 +527,10 @@ align 4
 
 	mov	eax, [edx + TCP_segment.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.ISS]
-	jle	.drop_with_reset
+	jbe	.drop_with_reset
 
 	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
-	jg	.drop_with_reset
+	ja	.drop_with_reset
        @@:
 
 	test	[edx + TCP_segment.Flags], TH_RST
@@ -559,7 +559,7 @@ align 4
 	mov	eax, [edx + TCP_segment.AckNumber]
 	mov	[ebx + TCP_SOCKET.SND_UNA], eax
 	cmp	eax, [ebx + TCP_SOCKET.SND_NXT]
-	jle	@f
+	jbe	@f
 	mov	[ebx + TCP_SOCKET.SND_NXT], eax
        @@:
 
@@ -576,7 +576,7 @@ align 4
 
 	mov	eax, [ebx + TCP_SOCKET.SND_UNA]
 	cmp	eax, [ebx + TCP_SOCKET.ISS]
-	jle	.simultaneous_open
+	jbe	.simultaneous_open
 
 	test	[edx + TCP_segment.Flags], TH_ACK
 	jz	.simultaneous_open
@@ -660,7 +660,7 @@ align 4
 
 	mov	eax, [ebx + TCP_SOCKET.RCV_NXT]
 	sub	eax, [edx + TCP_segment.SequenceNumber]
-	jle	.no_duplicate
+	jbe	.no_duplicate
 
 	DEBUGF	1,"Uh oh.. %u bytes of duplicate data!\n", eax
 
@@ -673,7 +673,7 @@ align 4
 	inc	[edx + TCP_segment.SequenceNumber]
 
 	cmp	[edx + TCP_segment.UrgentPointer], 1
-	jle	@f
+	jbe	@f
 	dec	[edx + TCP_segment.UrgentPointer]
 	jmp	.dup_syn
        @@:
@@ -687,7 +687,7 @@ align 4
 ; Check for entire duplicate packet
 
 	cmp	eax, ecx
-	jge	.duplicate
+	jae	.duplicate
 
 	DEBUGF	1,"Going to drop %u out of %u bytes\n", eax, ecx
 
@@ -743,7 +743,7 @@ align 4
 ;;; TODO
 
 	sub	[edx + TCP_segment.UrgentPointer], ax
-	jg	@f
+	ja	@f
 
 	and	[edx + TCP_segment.Flags], not (TH_URG)
 	mov	[edx + TCP_segment.UrgentPointer], 0
@@ -753,10 +753,10 @@ align 4
 ; Handle data that arrives after process terminates
 
 	cmp	[ebx + SOCKET.PID], 0
-	jg	@f
+	ja	@f
 
 	cmp	[ebx + TCP_SOCKET.t_state], TCPS_CLOSE_WAIT
-	jle	@f
+	jbe	@f
 
 	test	ecx, ecx
 	jz	@f
@@ -777,12 +777,12 @@ align 4
 
 ; eax now holds the number of bytes to drop
 
-	jle	.no_excess_data
+	jbe	.no_excess_data
 
 ;;; TODO: update stats
 
 	cmp	eax, ecx
-	jl	.dont_drop_all
+	jb	.dont_drop_all
 
 ;;; TODO 700-736
 
@@ -898,9 +898,9 @@ align 4
 
 	mov	eax, [edx + TCP_segment.AckNumber]
 	cmp	[ebx + TCP_SOCKET.SND_UNA], eax
-	jg	.drop_with_reset
+	ja	.drop_with_reset
 	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
-	jg	.drop_with_reset
+	ja	.drop_with_reset
 
 	;;; update stats
 	mov	eax, ebx
@@ -931,7 +931,7 @@ align 4
 
 	mov	eax, [edx + TCP_segment.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
-	jg	.not_dup_ack
+	ja	.not_dup_ack
 
 	test	ecx, ecx
 	jnz	.reset_dupacks
@@ -943,7 +943,7 @@ align 4
 	DEBUGF	1,"Processing a duplicate ACK..\n"
 
 	cmp	[ebx + TCP_SOCKET.timer_retransmission], 10000 ;;;;
-	jg	@f
+	ja	@f
 
 	mov	eax, [edx + TCP_segment.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
@@ -968,7 +968,7 @@ align 4
 	xor	edx, edx
 	div	[ebx + TCP_SOCKET.t_maxseg]
 	cmp	eax, 2
-	jge	@f
+	jae	@f
 	mov	ax, 2
        @@:
 	mul	[ebx + TCP_SOCKET.t_maxseg]
@@ -995,7 +995,7 @@ align 4
 
 	pop	eax					; <<<<
 	cmp	eax, [ebx + TCP_SOCKET.SND_NXT]
-	jl	@f
+	jb	@f
 	mov	[ebx + TCP_SOCKET.SND_NXT], eax
        @@:
 
@@ -1003,7 +1003,7 @@ align 4
 
 
   .no_re_xmit:
-	jle	.not_dup_ack
+	jbe	.not_dup_ack
 
 	DEBUGF	1,"Increasing congestion window\n"
 
@@ -1028,9 +1028,9 @@ align 4
 
 	mov	eax, [ebx + TCP_SOCKET.SND_SSTHRESH]
 	cmp	eax, [ebx + TCP_SOCKET.SND_CWND]
-	jg	@f
+	ja	@f
 	cmp	[ebx + TCP_SOCKET.t_dupacks], TCP_re_xmit_thresh
-	jle	@f
+	jbe	@f
 	mov	[ebx + TCP_SOCKET.SND_CWND], eax
        @@:
 
@@ -1038,7 +1038,7 @@ align 4
 
 	mov	eax, [edx + TCP_segment.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
-	jle	@f
+	jbe	@f
 
 	;;; TODO: update stats
 	jmp	.drop_after_ack
@@ -1084,7 +1084,7 @@ align 4
 	mov	eax, [ebx + TCP_SOCKET.t_maxseg]
 
 	cmp	esi, [ebx + TCP_SOCKET.SND_SSTHRESH]
-	jle	@f
+	jbe	@f
 	push	edx
 	push	eax
 	mul	eax
@@ -1135,7 +1135,7 @@ align 4
 	mov	[ebx + TCP_SOCKET.SND_UNA], eax
 
 	cmp	eax, [ebx + TCP_SOCKET.SND_NXT]
-	jl	@f
+	jb	@f
 	mov	[ebx + TCP_SOCKET.SND_NXT], eax
        @@:
 
@@ -1226,13 +1226,13 @@ align 4
 
 	mov	eax, [ebx + TCP_SOCKET.SND_WL1]
 	cmp	eax, [edx + TCP_segment.SequenceNumber]
-	jl	.update_window
-	jg	@f
+	jb	.update_window
+	ja	@f
 
 	mov	eax, [ebx + TCP_SOCKET.SND_WL2]
 	cmp	eax, [edx + TCP_segment.AckNumber]
-	jl	.update_window
-	jg	.no_window_update
+	jb	.update_window
+	ja	.no_window_update
        @@:
 
 	mov	eax, [ebx + TCP_SOCKET.SND_WL2]
@@ -1241,7 +1241,7 @@ align 4
 
 	movzx	eax, [edx + TCP_segment.Window]
 	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
-	jle	.no_window_update
+	jbe	.no_window_update
 
   .update_window:
 
@@ -1258,7 +1258,7 @@ align 4
 ;
 ;        ;; mov eax, tiwin
 ;        cmp     eax, [ebx + TCP_SOCKET.SND_WND]
-;        jle     @f
+;        jbe     @f
 ;
 ;        ;;; update stats
 ;
@@ -1266,7 +1266,7 @@ align 4
 
 	mov	eax, dword [edx + TCP_segment.Window]
 	cmp	eax, [ebx + TCP_SOCKET.max_sndwnd]
-	jle	@f
+	jbe	@f
 	mov	[ebx + TCP_SOCKET.max_sndwnd], eax
        @@:
 	mov	[ebx + TCP_SOCKET.SND_WND], eax
@@ -1306,7 +1306,7 @@ align 4
 	movzx	eax, [edx + TCP_segment.UrgentPointer]
 	add	eax, [ebx + STREAM_SOCKET.rcv + RING_BUFFER.size]
 	cmp	eax, SOCKET_MAXDATA
-	jle	.not_urgent
+	jbe	.not_urgent
 
 	mov	[edx + TCP_segment.UrgentPointer], 0
 	and	[edx + TCP_segment.Flags], not (TH_URG)
@@ -1336,7 +1336,7 @@ align 4
 	jnz	.process_fin
 
 	cmp	[ebx + TCP_SOCKET.t_state], TCPS_FIN_WAIT_1
-	jge	.dont_do_data
+	jae	.dont_do_data
 
 	test	ecx, ecx
 	jz	.final_processing

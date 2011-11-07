@@ -274,7 +274,7 @@ NET_add_device:
 
 	mov	eax, [NET_RUNNING]
 	cmp	eax, MAX_NET_DEVICES
-	jge	.error
+	jae	.error
 
 ;----------------------------------
 ; Check if device is already listed
@@ -339,7 +339,7 @@ NET_set_default:
 	DEBUGF	1,"NET_set_default %x\n", eax
 
 	cmp	eax, MAX_NET_DEVICES
-	jge	.error
+	jae	.error
 
 	cmp	[NET_DRV_LIST+eax*4], 0
 	je	.error
@@ -583,7 +583,7 @@ sys_network:
 
    @@:
 	cmp	bh, MAX_NET_DEVICES		; Check if device number exists
-	jge	.doesnt_exist
+	jae	.doesnt_exist
 
 	mov	esi, ebx
 	and	esi, 0x0000ff00
@@ -679,7 +679,7 @@ sys_network:
 align 4
 sys_protocols:
 	cmp	bh, MAX_NET_DEVICES		; Check if device number exists
-	jge	.doesnt_exist
+	jae	.doesnt_exist
 
 	mov	esi, ebx
 	and	esi, 0x0000ff00
