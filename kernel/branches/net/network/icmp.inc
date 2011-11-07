@@ -192,29 +192,29 @@ ICMP_input:
 	pop	[esi + IPv4_Packet.DestinationAddress]
 
 ; Recalculate ip header checksum
-	movzx	ecx, byte [esi + IPv4_Packet.VersionAndIHL]		    ; Calculate IP Header length by using IHL field
+	movzx	ecx, [esi + IPv4_Packet.VersionAndIHL]		; Calculate IP Header length by using IHL field
 	and	ecx, 0x0f
 	shl	cx, 2
-	mov	edi, ecx						    ; IP header length
-	mov	eax, edx						    ; ICMP packet start addr
+	mov	edi, ecx					; IP header length
+	mov	eax, edx					; ICMP packet start addr
 
-	push	esi							    ; Calculate the IP checksum
-	xor	edx, edx						    ;
-	call	checksum_1						    ;
-	call	checksum_2						    ;
-	pop	esi							    ;
-	mov	word [esi + IPv4_Packet.HeaderChecksum], dx		    ;
+	push	esi						; Calculate the IP checksum
+	xor	edx, edx					;
+	call	checksum_1					;
+	call	checksum_2					;
+	pop	esi						;
+	mov	[esi + IPv4_Packet.HeaderChecksum], dx		;
 
 ; Recalculate ICMP CheckSum
-	movzx	ecx, word[esi + IPv4_Packet.TotalLength]		    ; Find length of IP Packet
-	xchg	ch, cl							    ;
-	sub	ecx, edi						    ; IP packet length - IP header length = ICMP packet length
+	movzx	ecx, [esi + IPv4_Packet.TotalLength]		; Find length of IP Packet
+	xchg	ch, cl						;
+	sub	ecx, edi					; IP packet length - IP header length = ICMP packet length
 
-	mov	esi, eax						    ; Calculate ICMP checksum
-	xor	edx, edx						    ;
-	call	checksum_1						    ;
-	call	checksum_2						    ;
-	mov	word [eax + ICMP_Packet.Checksum], dx			    ;
+	mov	esi, eax					; Calculate ICMP checksum
+	xor	edx, edx					;
+	call	checksum_1					;
+	call	checksum_2					;
+	mov	[eax + ICMP_Packet.Checksum], dx		;
 
 ; Transmit the packet (notice that packet ptr and packet size have been on stack since start of the procedure!)
 	call	[ebx + NET_DEVICE.transmit]

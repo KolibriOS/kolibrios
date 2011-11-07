@@ -383,7 +383,7 @@ NET_remove_device:
 	mov	ecx, MAX_NET_DEVICES
 	mov	edi, NET_DRV_LIST+4
 	repe	scasd
-	jz	@f
+	je	@f
 	push	dword [edi-4]
 	pop	[NET_DRV_LIST]
        @@:

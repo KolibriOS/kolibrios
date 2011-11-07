@@ -566,7 +566,7 @@ SOCKET_listen:
 	call	SOCKET_num_to_ptr
 	jz	s_error
 
-	cmp	word [eax + SOCKET.Domain], AF_INET4
+	cmp	[eax + SOCKET.Domain], AF_INET4
 	jne	s_error
 
 	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP
@@ -620,7 +620,7 @@ SOCKET_accept:
 	test	[eax + SOCKET.options], SO_ACCEPTCON
 	jz	s_error
 
-	cmp	word [eax + SOCKET.Domain], AF_INET4
+	cmp	[eax + SOCKET.Domain], AF_INET4
 	jne	s_error
 
 	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP
@@ -864,11 +864,11 @@ SOCKET_get_opt:
 	jz	s_error
 
 	cmp	dword [edx], IP_PROTO_TCP
-	jnz	s_error
+	jne	s_error
 	cmp	dword [edx+4], -2
-	jz	@f
+	je	@f
 	cmp	dword [edx+4], -3
-	jnz	s_error
+	jne	s_error
 @@:
 ;        mov     eax, [edx+12]
 ;        test    eax, eax
