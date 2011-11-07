@@ -631,7 +631,7 @@ SOCKET_accept:
 	mov	eax, [esi]
 	call	SOCKET_ptr_to_num
 	jz	s_error
-	mov	dword [esp+32], eax
+	mov	[esp+32], eax
 	ret
 
 
@@ -725,7 +725,7 @@ SOCKET_receive_dgram:
 	push	[esi + socket_queue_entry.buf_ptr]		; save the buffer addr so we can clear it later
 	mov	esi, [esi + socket_queue_entry.data_ptr]
 	DEBUGF	1,"Source buffer: %x, real addr: %x\n", [esp], esi
-	mov	dword[esp+32+4], ecx				; return number of bytes copied
+	mov	[esp+32+4], ecx 				; return number of bytes copied
 
 ; copy the data
 	shr	ecx, 1
@@ -760,7 +760,7 @@ SOCKET_receive_tcp:
 	call	SOCKET_ring_read
 	call	SOCKET_ring_free
 
-	mov	dword[esp+32], ecx				; return number of bytes copied
+	mov	[esp+32], ecx					; return number of bytes copied
 
 	ret
 
@@ -798,7 +798,7 @@ SOCKET_send_udp:
 
 	call	UDP_output
 
-	mov	dword [esp+32], 0
+	mov	[esp+32], eax
 	ret
 
 
@@ -835,7 +835,7 @@ SOCKET_send_icmp:
 
 	call	ICMP_output_raw
 
-	mov	dword [esp+32], 0
+	mov	[esp+32], eax
 	ret
 
 
@@ -1058,7 +1058,7 @@ SOCKET_input:
 
 	DEBUGF	1,"SOCKET_input: socket=%x, data=%x size=%u\n", eax, esi, ecx
 
-	mov	dword[esp+4], ecx
+	mov	[esp+4], ecx
 	push	esi
 	mov	esi, esp
 
