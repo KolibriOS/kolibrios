@@ -430,22 +430,26 @@ ret
 align 4
 probe:
 
-	stdcall PciWrite8, dword [device.pci_bus], dword [device.pci_dev], 0x40, 0	; Wake Up Chip
+	movzx	eax, [device.pci_bus]
+	movzx	edx, [device.pci_dev]
+	stdcall PciWrite8, eax, edx, 0x40, 0	; Wake Up Chip
 
 	make_bus_master [device.pci_bus], [device.pci_dev]
 
 ; Get Card Revision
-	stdcall PciRead8, dword [device.pci_bus], dword [device.pci_dev], 0x08
-	mov	[device.pci_revision], al						       ; save the revision for later use
+	movzx	eax, [device.pci_bus]
+	movzx	edx, [device.pci_dev]
+	stdcall PciRead8, eax, edx, 0x08
+	mov	[device.pci_revision], al	; save the revision for later use
 
 ; Look up through the specific_table
 	mov	esi, specific_table
   .loop:
-	cmp	dword [esi], 0		     ; Check if we reached end of the list
+	cmp	dword [esi], 0			; Check if we reached end of the list
 	je	.error
-	cmp	al, [esi]		     ; Check if revision is OK
+	cmp	al, [esi]			; Check if revision is OK
 	je	.ok
-	add	esi, 12 		     ; Advance to next entry
+	add	esi, 12 			; Advance to next entry
 	jmp	.loop
 
   .error:
@@ -456,28 +460,28 @@ probe:
 ; Find Get Mac Function
   .ok:
 	mov	eax, [esi+4]		; Get pointer to "get MAC" function
-	mov	[get_mac_func], eax
+	mov	[device.get_MAC], eax
 	mov	eax, [esi+8]		; Get pointer to special initialization fn
-	mov	[special_func], eax
+	mov	[device.special_func], eax
 
 ; Get MAC
-	call	[get_mac_func]
+	call	[device.get_MAC]
 
 ; Call special initialization fn if requested
 
-	cmp	[special_func],0
+	cmp	[device.special_func],0
 	je	@f
-	call	[special_func]
+	call	[device.special_func]
        @@:
 
 ; Set table entries
 
-	mov	 byte [table_entries], 16
-	cmp	 [pci_revision], SIS635A_900_REV
+	mov	 [device.table_entries], 16
+	cmp	 [device.pci_revision], SIS635A_900_REV
 	jae	 @f
-	cmp	 [pci_revision], SIS900B_900_REV
+	cmp	 [device.pci_revision], SIS900B_900_REV
 	je	 @f
-	mov	 byte [table_entries], 8
+	mov	 [device.table_entries], 8
        @@:
 
 ; TODO: Probe for mii transceiver
@@ -571,9 +575,9 @@ reset:
 
 	set_io	cfg
 	mov	eax, PESEL			; Configuration Register Bit
-	cmp	[pci_revision], SIS635A_900_REV
+	cmp	[device.pci_revision], SIS635A_900_REV
 	je	.match
-	cmp	[pci_revision], SIS900B_900_REV ; Check card revision
+	cmp	[device.pci_revision], SIS900B_900_REV ; Check card revision
 	je	.match
 	out	dx, eax 			; no revision match
 	jmp	.done
@@ -797,7 +801,7 @@ set_rx_mode:
 	out	 dx, ax 		; write value to table in card
 
 	inc	 cl			; next entry
-	cmp	 cl, [table_entries]
+	cmp	 cl, [device.table_entries]
 	jl	 .loop
 
 ;------------------------------------
@@ -921,7 +925,7 @@ SIS960_get_mac_addr:
 ;
 ;***************************************************************************
 align 4
-get_mac_addr:
+SIS900_get_mac_addr:
 
 ;------------------------------------
 ; check to see if we have sane EEPROM
@@ -940,14 +944,14 @@ get_mac_addr:
 
 	mov	ecx, 2
   .loop:
-	mov	eax, EEPROMMACAddr    ;Base Mac Address
-	add	eax, ecx				 ;Current Mac Byte Offset
+	mov	eax, EEPROMMACAddr	; Base Mac Address
+	add	eax, ecx		; Current Mac Byte Offset
 	push	ecx
-	call	read_eeprom	      ;try to read 16 bits
+	call	read_eeprom		; try to read 16 bits
 	pop	ecx
-	mov	word [device.mac+ecx*2], ax	   ;save 16 bits to the MAC ID storage
-	dec	ecx			     ;one less word to read
-	jns	mac_read_loop	      ;if more read more
+	mov	word [device.mac+ecx*2], ax	; save 16 bits to the MAC ID storage
+	dec	ecx				; one less word to read
+	jns	.loop				; if more read more
 
 	DEBUGF	2,"%x-%x-%x-%x-%x-%x\n",[device.mac]:2,[device.mac+1]:2,[device.mac+2]:2,[device.mac+3]:2,[device.mac+4]:2,[device.mac+5]:2
 
@@ -1213,24 +1217,29 @@ int_handler:
   .error_status:
 
 	DEBUGF	1, "Packet error: %x\n", ecx
-	jmp	.continue
+	jmp	.fail
 
   .error_size:
 
 	DEBUGF	1, "Packet too large/small\n"
-	jmp	.continue
+	jmp	.fail
 
   .no_rx:
-	test	ax, TxOk
-	jz	.no_tx
+    ;;    test    ax, TxOk
+   ;;     jz      .no_tx
 
 	;;; TODO: free all unused buffers
-	stdcall   KernelFree, eax
+     ;;   stdcall   KernelFree, eax
 
   .no_tx:
 
 	ret
 
+
+  .fail:
+	DEBUGF	1, "FAILED\n"
+	jmp	$
+	ret
 
 
 ;***************************************************************************
@@ -1249,10 +1258,10 @@ align 4
 transmit:
 
 	cmp	dword [esp+8], MAX_ETH_FRAME_SIZE
-	jg	transmit_finish
+	ja	.finish
 
 	cmp	dword [esp+8], 60
-	jl	transmit_finish
+	jb	.finish
 
 	movzx	ecx, [device.cur_tx]
 	shl	ecx, 4
@@ -1276,6 +1285,8 @@ transmit:
 	add	dword [device.bytes_tx], ecx
 	adc	dword [device.bytes_tx+4], 0
 
+  .finish:
+
 	ret	8
 
 
@@ -1293,7 +1304,7 @@ specific_table:
     dd SIS630ET_900_REV,Get_Mac_SIS635_900_REV,0;SIS630ET_900_REV_SpecialFN
     dd SIS635A_900_REV,Get_Mac_SIS635_900_REV,0
     dd SIS900_960_REV,SIS960_get_mac_addr,0
-    dd SIS900B_900_REV,get_mac_addr,0
+    dd SIS900B_900_REV,SIS900_get_mac_addr,0
     dd 0					; end of list
 
 version 	dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
