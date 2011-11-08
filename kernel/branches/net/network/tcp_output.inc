@@ -260,7 +260,7 @@ TCP_output:
 
 	DEBUGF	1,"Preparing to send a segment\n"
 
-	mov	edi, TCP_segment.Data	; edi will contain headersize
+	mov	edi, sizeof.TCP_header	 ; edi will contain headersize
 
 	sub	esp, 8			; create some space on stack
 	push	eax			; save socket pointer
@@ -435,10 +435,10 @@ TCP_output:
 ;----------------------------------
 ; update sequence number and timers  (400)
 
-	test	[esi + TCP_segment.Flags], TH_SYN + TH_FIN
+	test	[esi + TCP_header.Flags], TH_SYN + TH_FIN
 	jz	@f
 	inc	[eax + TCP_SOCKET.SND_NXT]	; syn and fin take a sequence number
-	test	[esi + TCP_segment.Flags], TH_FIN
+	test	[esi + TCP_header.Flags], TH_FIN
 	jz	@f
 	or	[eax + TCP_SOCKET.t_flags], TF_SENTFIN	; if we sent a fin, set the sentfin flag
        @@:
@@ -475,7 +475,7 @@ TCP_output:
 	DEBUGF	1,"checksum: ptr=%x size=%u\n", esi, ecx
 
 	TCP_checksum (eax + IP_SOCKET.LocalIP), (eax + IP_SOCKET.RemoteIP)
-	mov	[esi+TCP_segment.Checksum], dx
+	mov	[esi + TCP_header.Checksum], dx
 
 ; unlock socket
 

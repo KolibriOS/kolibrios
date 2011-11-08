@@ -18,11 +18,11 @@ $Revision$
 
 
 struct	UDP_Packet
-	.SourcePort		dw  ?
-	.DestinationPort	dw  ?
-	.Length 		dw  ?  ; Length of (UDP Header + Data)
-	.Checksum		dw  ?
-	.Data:
+
+	SourcePort	       dw  ?
+	DestinationPort        dw  ?
+	Length		       dw  ?  ; Length of (UDP Header + Data)
+	Checksum	       dw  ?
 
 ends
 
@@ -84,8 +84,8 @@ macro	UDP_checksum	IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size, des
 	push	esi
 	movzx	ecx, [esi+UDP_Packet.Length]
 	rol	cx , 8
-	sub	cx , UDP_Packet.Data
-	add	esi, UDP_Packet.Data
+	sub	cx , sizeof.UDP_Packet
+	add	esi, sizeof.UDP_Packet
 
 	call	checksum_1
 	call	checksum_2
@@ -183,10 +183,10 @@ UDP_input:
   .updatesock:
 	inc	[UDP_PACKETS_RX]
 	DEBUGF	1,"Found valid UDP packet for socket %x\n", eax
-	lea	esi, [edx + UDP_Packet.Data]
+	lea	esi, [edx + sizeof.UDP_Packet]
 	movzx	ecx, [edx + UDP_Packet.Length]
 	rol	cx , 8
-	sub	cx , UDP_Packet.Data
+	sub	cx , sizeof.UDP_Packet
 
 	jmp	SOCKET_input
 
@@ -247,7 +247,7 @@ UDP_output:
 
 	mov	di, IP_PROTO_UDP shl 8 + 128
 	sub	esp, 8						; Data ptr and data size will be placed here
-	add	ecx, UDP_Packet.Data
+	add	ecx, sizeof.UDP_Packet
 
 ;;; TODO: fragment id
 	push	edx esi
@@ -262,8 +262,8 @@ UDP_output:
 
 	pop	esi
 	push	edi ecx
-	sub	ecx, UDP_Packet.Data
-	add	edi, UDP_Packet.Data
+	sub	ecx, sizeof.UDP_Packet
+	add	edi, sizeof.UDP_Packet
 	shr	ecx, 2
 	rep	movsd
 	mov	ecx, [esp]

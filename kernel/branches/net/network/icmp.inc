@@ -87,13 +87,14 @@ ICMP_PHOTURIS_DECRYPT_FAILED	equ 3		     ; decrypt failed
 
 
 
-struct	ICMP_Packet
-	.Type		db   ?
-	.Code		db   ?
-	.Checksum	dw   ?
-	.Identifier	dw   ?
-	.SequenceNumber dw   ?
-	.Data:
+struct	ICMP_header
+
+	Type			db   ?
+	Code			db   ?
+	Checksum		dw   ?
+	Identifier		dw   ?
+	SequenceNumber		dw   ?
+
 ends
 
 
@@ -146,8 +147,8 @@ ICMP_input:
 ; First, check the checksum (altough some implementations ignore it)
 
 	push	edx esi ecx
-	push	[edx + ICMP_Packet.Checksum]
-	mov	[edx + ICMP_Packet.Checksum], 0
+	push	[edx + ICMP_header.Checksum]
+	mov	[edx + ICMP_header.Checksum], 0
 	mov	esi, edx
 	xor	edx, edx
 	call	checksum_1
@@ -157,14 +158,14 @@ ICMP_input:
 	pop	ecx esi edx
 	jne	.checksum_mismatch
 
-	cmp	byte [edx + ICMP_Packet.Type], ICMP_ECHO		    ; Is this an echo request?
+	cmp	[edx + ICMP_header.Type], ICMP_ECHO		; Is this an echo request?
 	jne	.check_sockets
 
 ; We well re-use the packet sow e can create the response as fast as possible
 ; Notice: this only works on pure ethernet (however, IP packet options are not a problem this time :)
 
 	DEBUGF	1,"ICMP_input - echo request\n"
-	mov	byte [edx + ICMP_Packet.Type], ICMP_ECHOREPLY		    ; Change Packet type to reply
+	mov	[edx + ICMP_header.Type], ICMP_ECHOREPLY	; Change Packet type to reply
 
 ; Update stats (and validate device ptr)
 	call	NET_ptr_to_num
@@ -175,24 +176,24 @@ ICMP_input:
 
 ; exchange dest and source address in IP header
 ; exchange dest and source MAC in ETH header
-	mov	esi, [esp]						    ; Start of buffer
-	push	dword [esi + ETH_FRAME.DstMAC]
-	push	dword [esi + ETH_FRAME.SrcMAC]
-	pop	dword [esi + ETH_FRAME.DstMAC]
-	pop	dword [esi + ETH_FRAME.SrcMAC]
-	push	word [esi + ETH_FRAME.DstMAC + 4]
-	push	word [esi + ETH_FRAME.SrcMAC + 4]
-	pop	word [esi + ETH_FRAME.DstMAC + 4]
-	pop	word [esi + ETH_FRAME.SrcMAC + 4]
+	mov	esi, [esp]					; Start of buffer
+	push	dword [esi + ETH_header.DstMAC]
+	push	dword [esi + ETH_header.SrcMAC]
+	pop	dword [esi + ETH_header.DstMAC]
+	pop	dword [esi + ETH_header.SrcMAC]
+	push	word [esi + ETH_header.DstMAC + 4]
+	push	word [esi + ETH_header.SrcMAC + 4]
+	pop	word [esi + ETH_header.DstMAC + 4]
+	pop	word [esi + ETH_header.SrcMAC + 4]
 
-	add	esi, ETH_FRAME.Data
-	push	[esi + IPv4_Packet.SourceAddress]
-	push	[esi + IPv4_Packet.DestinationAddress]
-	pop	[esi + IPv4_Packet.SourceAddress]
-	pop	[esi + IPv4_Packet.DestinationAddress]
+	add	esi, sizeof.ETH_header
+	push	[esi + IPv4_header.SourceAddress]
+	push	[esi + IPv4_header.DestinationAddress]
+	pop	[esi + IPv4_header.SourceAddress]
+	pop	[esi + IPv4_header.DestinationAddress]
 
 ; Recalculate ip header checksum
-	movzx	ecx, [esi + IPv4_Packet.VersionAndIHL]		; Calculate IP Header length by using IHL field
+	movzx	ecx, [esi + IPv4_header.VersionAndIHL]		; Calculate IP Header length by using IHL field
 	and	ecx, 0x0f
 	shl	cx, 2
 	mov	edi, ecx					; IP header length
@@ -203,10 +204,10 @@ ICMP_input:
 	call	checksum_1					;
 	call	checksum_2					;
 	pop	esi						;
-	mov	[esi + IPv4_Packet.HeaderChecksum], dx		;
+	mov	[esi + IPv4_header.HeaderChecksum], dx		;
 
 ; Recalculate ICMP CheckSum
-	movzx	ecx, [esi + IPv4_Packet.TotalLength]		; Find length of IP Packet
+	movzx	ecx, [esi + IPv4_header.TotalLength]		; Find length of IP Packet
 	xchg	ch, cl						;
 	sub	ecx, edi					; IP packet length - IP header length = ICMP packet length
 
@@ -214,7 +215,7 @@ ICMP_input:
 	xor	edx, edx					;
 	call	checksum_1					;
 	call	checksum_2					;
-	mov	[eax + ICMP_Packet.Checksum], dx		;
+	mov	[eax + ICMP_header.Checksum], dx		;
 
 ; Transmit the packet (notice that packet ptr and packet size have been on stack since start of the procedure!)
 	call	[ebx + NET_DEVICE.transmit]
@@ -229,7 +230,7 @@ ICMP_input:
 
 	mov	ebx, net_sockets
   .try_more:
-;        mov     ax , [edx + ICMP_Packet.Identifier]
+;        mov     ax , [edx + ICMP_header.Identifier]
   .next_socket:
 	mov	ebx, [ebx + SOCKET.NextPtr]
 	or	ebx, ebx
@@ -297,7 +298,7 @@ ICMP_output:
 
 	mov	ebx, [eax + IP_SOCKET.LocalIP]
 	mov	eax, [eax + IP_SOCKET.RemoteIP]
-	add	ecx, ICMP_Packet.Data
+	add	ecx, sizeof.ICMP_header
 	mov	di , IP_PROTO_ICMP SHL 8 + 128	; TTL
 	shr	edx, 16
 
@@ -307,23 +308,23 @@ ICMP_output:
 	DEBUGF	1,"full icmp packet size: %u\n", edx
 
 	pop	eax
-	mov	word [edi + ICMP_Packet.Type], ax	; Write both type and code bytes at once
+	mov	word [edi + ICMP_header.Type], ax	; Write both type and code bytes at once
 	pop	eax
-	mov	[edi + ICMP_Packet.SequenceNumber], ax
+	mov	[edi + ICMP_header.SequenceNumber], ax
 	shr	eax, 16
-	mov	[edi + ICMP_Packet.Identifier], ax
-	mov	[edi + ICMP_Packet.Checksum], 0
+	mov	[edi + ICMP_header.Identifier], ax
+	mov	[edi + ICMP_header.Checksum], 0
 
 	push	eax ebx ecx edx
 	mov	esi, edi
 	xor	edx, edx
 	call	checksum_1
 	call	checksum_2
-	mov	[edi + ICMP_Packet.Checksum], dx
+	mov	[edi + ICMP_header.Checksum], dx
 	pop	edx ecx ebx eax esi
 
-	sub	ecx, ICMP_Packet.Data
-	add	edi, ICMP_Packet.Data
+	sub	ecx, sizeof.ICMP_header
+	add	edi, sizeof.ICMP_header
 	push	cx
 	shr	cx , 2
 	rep	movsd
@@ -376,13 +377,13 @@ ICMP_output_raw:
 	rep	movsb
 	pop	ecx edi
 
-	mov	[edi + ICMP_Packet.Checksum], 0
+	mov	[edi + ICMP_header.Checksum], 0
 
 	mov	esi, edi
 	xor	edx, edx
 	call	checksum_1
 	call	checksum_2
-	mov	[edi + ICMP_Packet.Checksum], dx
+	mov	[edi + ICMP_header.Checksum], dx
 
 	DEBUGF	1,"Sending ICMP Packet\n"
 	call	[ebx + NET_DEVICE.transmit]

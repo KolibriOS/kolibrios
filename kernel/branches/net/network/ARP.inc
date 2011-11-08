@@ -25,40 +25,42 @@ ARP_RESPONSE_TIMEOUT	equ 3
 
 ARP_REQUEST_TTL 	equ 31		; 20 s
 ARP_ENTRY_TTL		equ 937 	; 600 s
+ARP_STATIC_ENTRY	equ -1
 
 ARP_REQ_OPCODE		equ 0x0100	; request
 ARP_REP_OPCODE		equ 0x0200	; reply
 
 ARP_TABLE_SIZE		equ 20		; Size of table
 
-struct ARP_ENTRY
-       .IP		dd  ?
-       .MAC		dp  ?
-       .Status		dw  ?
-       .TTL		dw  ?
-       .size:
+struct ARP_entry
+
+       IP		dd  ?
+       MAC		dp  ?
+       Status		dw  ?
+       TTL		dw  ?
+
 ends
 
-struct ARP_Packet
-       .HardwareType	dw  ?
-       .ProtocolType	dw  ?
-       .HardwareSize	db  ?
-       .ProtocolSize	db  ?
-       .Opcode		dw  ?
-       .SenderMAC	dp  ?
-       .SenderIP	dd  ?
-       .TargetMAC	dp  ?
-       .TargetIP	dd  ?
-       .size:
-ends
+struct ARP_header
 
+       HardwareType	dw  ?
+       ProtocolType	dw  ?
+       HardwareSize	db  ?
+       ProtocolSize	db  ?
+       Opcode		dw  ?
+       SenderMAC	dp  ?
+       SenderIP 	dd  ?
+       TargetMAC	dp  ?
+       TargetIP 	dd  ?
+
+ends
 
 align 4
 uglobal
 
 	NumARP		dd ?
 
-	ARP_table	rb ARP_ENTRY.size * ARP_TABLE_SIZE
+	ARP_table	rb ARP_TABLE_SIZE * sizeof.ARP_entry
 
 	ARP_PACKETS_TX	rd MAX_NET_DEVICES
 	ARP_PACKETS_RX	rd MAX_NET_DEVICES
@@ -114,21 +116,21 @@ local	.exit
 
 	mov	esi, ARP_table
   .loop:
-	cmp	[esi + ARP_ENTRY.TTL], 0xffff	; 0xffff = static entry
+	cmp	[esi + ARP_entry.TTL], ARP_STATIC_ENTRY
 	je	.next
 
-	dec	[esi + ARP_ENTRY.TTL]
+	dec	[esi + ARP_entry.TTL]
 	jz	.time_out
 
   .next:
-	add	esi, ARP_ENTRY.size
+	add	esi, sizeof.ARP_entry
 	dec	ecx
 	jnz	.loop
 	jmp	.exit
 
   .time_out:
-	cmp	[esi + ARP_ENTRY.Status], ARP_AWAITING_RESPONSE
-	jz	.response_timeout
+	cmp	[esi + ARP_entry.Status], ARP_AWAITING_RESPONSE
+	je	.response_timeout
 
 	push	esi ecx
 	call	ARP_del_entry
@@ -137,8 +139,8 @@ local	.exit
 	jmp	.next
 
   .response_timeout:
-	mov	[esi + ARP_ENTRY.Status], ARP_RESPONSE_TIMEOUT
-	mov	[esi + ARP_ENTRY.TTL], 10
+	mov	[esi + ARP_entry.Status], ARP_RESPONSE_TIMEOUT
+	mov	[esi + ARP_entry.TTL], 10
 
 	jmp	.next
 
@@ -161,29 +163,29 @@ align 4
 ARP_input:
 
 	DEBUGF	1,"ARP_Handler - start\n"
-	cmp	ecx, ARP_Packet.size
+	cmp	ecx, sizeof.ARP_header
 	jb	.exit
 
 ;---------------------
 ; Handle Reply packets
 
-	cmp	word [edx + ARP_Packet.Opcode], ARP_REP_OPCODE
+	cmp	[edx + ARP_header.Opcode], ARP_REP_OPCODE
 	jne	.maybe_request
 
 	DEBUGF	1,"ARP_Handler - it's a reply packet from %u.%u.%u.%u\n",\
-	[edx + ARP_Packet.SenderIP]:1,[edx + ARP_Packet.SenderIP+1]:1,[edx + ARP_Packet.SenderIP+2]:1,[edx + ARP_Packet.SenderIP+3]:1,
+	[edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP+1]:1, [edx + ARP_header.SenderIP+2]:1, [edx + ARP_header.SenderIP+3]:1
 
 	mov	ecx, [NumARP]
 	test	ecx, ecx
 	jz	.exit
 
-	mov	eax, [edx + ARP_Packet.SenderIP]
+	mov	eax, [edx + ARP_header.SenderIP]
 	mov	esi, ARP_table
 
   .loop:
-	cmp	[esi + ARP_ENTRY.IP], eax
+	cmp	[esi + ARP_entry.IP], eax
 	je	.gotit
-	add	esi, ARP_ENTRY.size
+	add	esi, sizeof.ARP_entry
 	dec	ecx
 	jnz	.loop
 
@@ -192,18 +194,18 @@ ARP_input:
   .gotit:
 	DEBUGF	1,"ARP_Handler - found matching entry\n"
 
-	cmp	[esi+ARP_ENTRY.TTL], 0xffff		; if it is a static entry, dont touch it
+	cmp	[esi + ARP_entry.TTL], ARP_STATIC_ENTRY 	; if it is a static entry, dont touch it
 	je	.exit
 
 	DEBUGF	1,"ARP_Handler - updating entry\n"
 
-	mov	[esi+ARP_ENTRY.Status], ARP_VALID_MAPPING
-	mov	[esi+ARP_ENTRY.TTL], ARP_ENTRY_TTL
+	mov	[esi + ARP_entry.Status], ARP_VALID_MAPPING
+	mov	[esi + ARP_entry.TTL], ARP_ENTRY_TTL
 
-	mov	eax, dword [edx + ARP_Packet.SenderMAC]
-	mov	dword [esi+ARP_ENTRY.MAC], eax
-	mov	ax , word [edx + ARP_Packet.SenderMAC + 4]
-	mov	word [esi+ARP_ENTRY.MAC+4], ax
+	mov	eax, dword [edx + ARP_header.SenderMAC]
+	mov	dword [esi+ARP_entry.MAC], eax
+	mov	ax , word [edx + ARP_header.SenderMAC + 4]
+	mov	word [esi+ARP_entry.MAC+4], ax
 
 	jmp	.exit
 
@@ -212,7 +214,7 @@ ARP_input:
 ; Handle Request packets
 
   .maybe_request:
-	cmp	word [edx + ARP_Packet.Opcode], ARP_REQ_OPCODE
+	cmp	[edx + ARP_header.Opcode], ARP_REQ_OPCODE
 	jne	.exit
 
 	call	NET_ptr_to_num
@@ -222,7 +224,7 @@ ARP_input:
 	inc	[ARP_PACKETS_RX+4*edi]
 
 	mov	eax, [IP_LIST+4*edi]
-	cmp	eax, [edx + ARP_Packet.TargetIP]		; Is it looking for my IP address?
+	cmp	eax, [edx + ARP_header.TargetIP]		; Is it looking for my IP address?
 	jne	.exit						; TODO: instead of quitting, update local entrys with matching IP's ?
 
 	push	eax
@@ -231,8 +233,8 @@ ARP_input:
 ; OK, it is a request for one of our MAC addresses.
 ; Build the frame and send it. We can reuse the buffer.  (faster then using ARP_create_packet)
 
-	lea	esi, [edx + ARP_Packet.SenderMAC]
-	lea	edi, [edx + ARP_Packet.TargetMAC]
+	lea	esi, [edx + ARP_header.SenderMAC]
+	lea	edi, [edx + ARP_header.TargetMAC]
 	movsd							; Move Sender Mac to Dest MAC
 	movsw							;
 	movsd							; Move sender IP to Dest IP
@@ -240,21 +242,21 @@ ARP_input:
 	pop	esi
 	mov	esi, [NET_DRV_LIST + 4*esi]
 	lea	esi, [esi + ETH_DEVICE.mac]
-	lea	edi, [edx + ARP_Packet.SenderMAC]
+	lea	edi, [edx + ARP_header.SenderMAC]
 	movsd							; Copy MAC address from in MAC_LIST
 	movsw							;
 	pop	eax
 	stosd							; Write our IP
 
-	mov	word [edx + ARP_Packet.Opcode], ARP_REP_OPCODE
+	mov	[edx + ARP_header.Opcode], ARP_REP_OPCODE
 
 ; Now, Fill in ETHERNET header
 
 	mov	edi, [esp]
-	lea	esi, [edx + ARP_Packet.TargetMAC]
+	lea	esi, [edx + ARP_header.TargetMAC]
 	movsd
 	movsw
-	lea	esi, [edx + ARP_Packet.SenderMAC]
+	lea	esi, [edx + ARP_header.SenderMAC]
 	movsd
 	movsw
 ;        mov     ax , ETHER_ARP
@@ -294,20 +296,20 @@ ARP_output_request:
 
 	lea	eax, [ebx + ETH_DEVICE.mac]	; local device mac
 	mov	edx, ETH_BROADCAST		; broadcast mac
-	mov	ecx, ARP_Packet.size
+	mov	ecx, sizeof.ARP_header
 	mov	di, ETHER_ARP
 	call	ETH_output
 	jz	.exit
 
 	mov	ecx, eax
 
-	mov	[edi + ARP_Packet.HardwareType], 0x0100 	; Ethernet
-	mov	[edi + ARP_Packet.ProtocolType], 0x0008 	; IP
-	mov	[edi + ARP_Packet.HardwareSize], 6		; MAC-addr length
-	mov	[edi + ARP_Packet.ProtocolSize], 4		; IP-addr length
-	mov	[edi + ARP_Packet.Opcode], ARP_REQ_OPCODE	; Request
+	mov	[edi + ARP_header.HardwareType], 0x0100 	; Ethernet
+	mov	[edi + ARP_header.ProtocolType], 0x0008 	; IP
+	mov	[edi + ARP_header.HardwareSize], 6		; MAC-addr length
+	mov	[edi + ARP_header.ProtocolSize], 4		; IP-addr length
+	mov	[edi + ARP_header.Opcode], ARP_REQ_OPCODE	; Request
 
-	add	edi, ARP_Packet.SenderMAC
+	add	edi, ARP_header.SenderMAC
 
 	lea	esi, [ebx + ETH_DEVICE.mac]	; SenderMac
 	movsw					;
@@ -353,19 +355,19 @@ ARP_add_entry:
 	cmp	ecx, ARP_TABLE_SIZE	; list full ?
 	jae	.error
 
-	mov	eax, dword[esi + ARP_ENTRY.MAC]
-	mov	bx , word[esi + ARP_ENTRY.MAC + 4]
+	mov	eax, dword [esi + ARP_entry.MAC]
+	mov	bx , word [esi + ARP_entry.MAC + 4]
 	mov	edi, ARP_table
 
   .loop:
-	cmp	dword [edi + ARP_ENTRY.MAC], eax	; Check for duplicate MAC's
+	cmp	dword [edi + ARP_entry.MAC], eax	; Check for duplicate MAC's
 	jne	.maybe_next				;
-	cmp	word [edi + ARP_ENTRY.MAC + 4], bx	;
+	cmp	word [edi + ARP_entry.MAC + 4], bx	;
 	jne	.maybe_next				;
 
-	cmp	dword[edi + ARP_ENTRY.TTL], 0xFFFF	; static entry
+	cmp	[edi + ARP_entry.TTL], ARP_STATIC_ENTRY
 	jne	.notstatic
-	cmp	dword[esi + ARP_ENTRY.TTL], 0xFFFF
+	cmp	[esi + ARP_entry.TTL], ARP_STATIC_ENTRY
 	jne	.error
   .notstatic:
 
@@ -374,18 +376,18 @@ ARP_add_entry:
 	jmp	.add
 
   .maybe_next:
-	add	esi, ARP_ENTRY.size
+	add	esi, sizeof.ARP_entry
 	loop	.loop
 
 	mov	ecx, [NumARP]
   .add:
 	push	ecx
-	imul	ecx, ARP_ENTRY.size
+	imul	ecx, sizeof.ARP_entry
 	lea	edi, [ecx + ARP_table]
-	mov	ecx, ARP_ENTRY.size/2
+	mov	ecx, sizeof.ARP_entry/2
 	rep	movsw
 
-	lea	esi, [edi - ARP_ENTRY.size]
+	lea	esi, [edi - sizeof.ARP_entry]
 	inc	[NumARP]
 	pop	eax
 	DEBUGF 1,"New entry created: %u\n", eax
@@ -413,12 +415,12 @@ ARP_del_entry:
 
 	DEBUGF 1,"ARP del entry %x, total entrys: %u\n", esi, [NumARP]
 
-	mov	ecx, ARP_table + (ARP_TABLE_SIZE - 1) * ARP_ENTRY.size
+	mov	ecx, ARP_table + (ARP_TABLE_SIZE - 1) * sizeof.ARP_entry
 	sub	ecx, esi
 	shr	ecx, 1
 
 	mov	edi, esi
-	lea	esi, [edi + ARP_ENTRY.size]
+	lea	esi, [edi + sizeof.ARP_entry]
 	rep	movsw
 
 	dec	[NumARP]
@@ -474,11 +476,11 @@ ARP_IP_to_MAC:
 	mov	ecx, [NumARP]
 	test	ecx, ecx
 	jz	.not_in_list
-	mov	esi, ARP_table + ARP_ENTRY.IP
+	mov	esi, ARP_table + ARP_entry.IP
   .scan_loop:
 	cmp	[esi], eax
 	je	.found_it
-	add	esi, ARP_ENTRY.size
+	add	esi, sizeof.ARP_entry
 	loop	.scan_loop
 
   .not_in_list:
@@ -496,7 +498,7 @@ ARP_IP_to_MAC:
 	pushd	eax
 	mov	esi, esp
 	call	ARP_add_entry
-	add	esp, ARP_ENTRY.size
+	add	esp, sizeof.ARP_entry
 
 	cmp	eax, -1
 	je	.full
@@ -509,12 +511,12 @@ ARP_IP_to_MAC:
 ;; TODO: check if driver could transmit packet
 
 	pop	esi
-	imul	esi, ARP_ENTRY.size
+	imul	esi, sizeof.ARP_entry
 	add	esi, ARP_table
 
 	mov	ecx, 25
   .wait_loop:
-	cmp	[esi + ARP_ENTRY.Status], 1
+	cmp	[esi + ARP_entry.Status], 1
 	je	.got_it
 	push	esi
 	mov	esi, 10
@@ -527,12 +529,12 @@ ARP_IP_to_MAC:
 
   .found_it:
 	DEBUGF	1,"found IP in ARPTable\n"
-	cmp	[esi + ARP_ENTRY.Status], 1
+	cmp	[esi + ARP_entry.Status], 1
 	jne	.invalid
 
   .got_it:
-	movzx	eax, word [esi+ARP_ENTRY.MAC]
-	mov	ebx, dword[esi+ARP_ENTRY.MAC+2]
+	movzx	eax, word [esi + ARP_entry.MAC]
+	mov	ebx, dword[esi + ARP_entry.MAC+2]
 	ret
 
   .invalid:
@@ -607,10 +609,10 @@ ARP_API:
 	jae	.error
 	; edi = pointer to buffer
 	; ecx = # entry
-	imul	ecx, ARP_ENTRY.size
+	imul	ecx, sizeof.ARP_entry
 	add	ecx, ARP_table
 	mov	esi, ecx
-	mov	ecx, ARP_ENTRY.size/2
+	mov	ecx, sizeof.ARP_entry/2
 	rep	movsw
 
 	xor	eax, eax
@@ -625,7 +627,7 @@ ARP_API:
 	; ecx = # entry
 	cmp	ecx, [NumARP]
 	jae	.error
-	imul	ecx, ARP_ENTRY.size
+	imul	ecx, sizeof.ARP_entry
 	lea	esi, [ARP_table + ecx]
 	call	ARP_del_entry
 	ret

@@ -105,28 +105,24 @@ ECONNABORTED		equ 53
 
 
 
-virtual at 0
+struct	NET_DEVICE
 
-	NET_DEVICE:
+	type		dd ?	; Type field
+	mtu		dd ?	; Maximal Transmission Unit
+	name		dd ?	; Ptr to 0 terminated string
 
-	.type		dd ?	; Type field
-	.mtu		dd ?	; Maximal Transmission Unit
-	.name		dd ?	; Ptr to 0 terminated string
+	unload		dd ?	; Ptrs to driver functions
+	reset		dd ?	;
+	transmit	dd ?	;
 
-	.unload 	dd ?	; Ptrs to driver functions
-	.reset		dd ?	;
-	.transmit	dd ?	;
+	bytes_tx	dq ?	; Statistics, updated by the driver
+	bytes_rx	dq ?	;
+	packets_tx	dd ?	;
+	packets_rx	dd ?	;
 
-	.bytes_tx	dq ?	; Statistics, updated by the driver
-	.bytes_rx	dq ?	;
-	.packets_tx	dd ?	;
-	.packets_rx	dd ?	;
+;       hwacc           dd ?    ; bitmask stating available hardware accelerations (offload engines)
 
-;       .hwacc          dd ?    ; bitmask stating available hardware accelerations (offload engines)
-
-	.end:
-
-end virtual
+ends
 
 
 ; Exactly as it says..
@@ -684,7 +680,7 @@ sys_protocols:
 	mov	esi, ebx
 	and	esi, 0x0000ff00
 	shr	esi, 6				; now we have the device num * 4 in esi
-	cmp	dword [esi + NET_DRV_LIST], 0	; check if driver is running
+	cmp	[esi + NET_DRV_LIST], 0 	; check if driver is running
 	je	.doesnt_exist
 
 	push	.return 			; return address (we will be using jumps instead of calls)

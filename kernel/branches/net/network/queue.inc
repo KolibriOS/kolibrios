@@ -24,10 +24,11 @@ $Revision$
 
 
 struct	queue
-	.size		dd ?	; number of queued packets in this queue
-	.w_ptr		dd ?	; current writing pointer in queue
-	.r_ptr		dd ?	; current reading pointer
-	.data:
+
+	size	       dd ?    ; number of queued packets in this queue
+	w_ptr	       dd ?    ; current writing pointer in queue
+	r_ptr	       dd ?    ; current reading pointer
+
 ends
 
 ; The following macros share these inputs:
@@ -52,7 +53,7 @@ macro add_to_queue ptr, size, entry_size, failaddr {
 	mov	ecx, entry_size/4		; Write the queue entry
 	rep	movsd				;
 
-	lea	ecx, [size*entry_size+ptr+queue.data]
+	lea	ecx, [size*entry_size+ptr+sizeof.queue]
 	cmp	edi, ecx			; entry size
 	jb	.no_wrap
 
@@ -77,7 +78,7 @@ macro get_from_queue ptr, size, entry_size,  failaddr {
 
 	add	esi, entry_size
 
-	lea	ecx, [size*entry_size+ptr+queue.data]
+	lea	ecx, [size*entry_size+ptr+sizeof.queue]
 	cmp	esi, ecx			; entry size
 	jb	.no_wrap
 
@@ -93,7 +94,7 @@ macro get_from_queue ptr, size, entry_size,  failaddr {
 macro init_queue ptr {
 
 	mov	[ptr + queue.size] , 0
-	lea	edi, [ptr + queue.data]
+	lea	edi, [ptr + sizeof.queue]
 	mov	[ptr + queue.w_ptr], edi
 	mov	[ptr + queue.r_ptr], edi
 }

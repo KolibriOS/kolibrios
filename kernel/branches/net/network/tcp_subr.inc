@@ -245,7 +245,7 @@ TCP_respond_socket:
 	push	cx ebx
 	mov	eax, [ebx + IP_SOCKET.RemoteIP]
 	mov	ebx, [ebx + IP_SOCKET.LocalIP]
-	mov	ecx, TCP_segment.Data
+	mov	ecx, sizeof.TCP_header
 	mov	di , IP_PROTO_TCP shl 8 + 128
 	call	IPv4_output
 	test	edi, edi
@@ -268,7 +268,7 @@ TCP_respond_socket:
 	mov	eax, [esi + TCP_SOCKET.RCV_NXT]
 	bswap	eax
 	stosd
-	mov	al, 0x50	; Dataoffset: 20 bytes (TCP_segment.DataOffset)
+	mov	al, 0x50	; Dataoffset: 20 bytes (TCP_header.DataOffset)
 	stosb
 	mov	al, cl
 	stosb
@@ -283,11 +283,11 @@ TCP_respond_socket:
 ; Fill in the checksum
 
   .checksum:
-	sub	edi, TCP_segment.Data
-	mov	ecx, TCP_segment.Data
+	sub	edi, sizeof.TCP_header
+	mov	ecx, sizeof.TCP_header
 	xchg	esi, edi
 	TCP_checksum (edi + IP_SOCKET.LocalIP), (edi + IP_SOCKET.RemoteIP)
-	mov	[esi+TCP_segment.Checksum], dx
+	mov	[esi+TCP_header.Checksum], dx
 
 ;--------------------
 ; And send the segment
@@ -323,9 +323,9 @@ TCP_respond_segment:
 ; Create the IP packet
 
 	push	cx edx
-	mov	ebx, [edx - IPv4_Packet.DataOrOptional + IPv4_Packet.SourceAddress]	 ;;;; FIXME: and what if ip packet had options?!
-	mov	eax, [edx - IPv4_Packet.DataOrOptional + IPv4_Packet.DestinationAddress]   ;;;
-	mov	ecx, TCP_segment.Data
+	mov	ebx, [edx - sizeof.IPv4_header + IPv4_header.SourceAddress]	 ;;;; FIXME: and what if ip packet had options?!
+	mov	eax, [edx - sizeof.IPv4_header + IPv4_header.DestinationAddress]   ;;;
+	mov	ecx, sizeof.TCP_header
 	mov	di , IP_PROTO_TCP shl 8 + 128
 	call	IPv4_output
 	jz	.error
@@ -336,18 +336,18 @@ TCP_respond_segment:
 ;---------------------------------------------------
 ; Fill in the TCP header by using a received segment
 
-	mov	ax, [esi + TCP_segment.DestinationPort]
+	mov	ax, [esi + TCP_header.DestinationPort]
 	rol	ax, 8
 	stosw
-	mov	ax, [esi + TCP_segment.SourcePort]
+	mov	ax, [esi + TCP_header.SourcePort]
 	rol	ax, 8
 	stosw
-	mov	eax, [esi + TCP_segment.AckNumber]
+	mov	eax, [esi + TCP_header.AckNumber]
 	bswap	eax
 	stosd
 	xor	eax, eax
 	stosd
-	mov	al, 0x50	; Dataoffset: 20 bytes (TCP_segment.Data)
+	mov	al, 0x50	; Dataoffset: 20 bytes (sizeof.TCP_header)
 	stosb
 	mov	al, cl
 	stosb
@@ -361,11 +361,11 @@ TCP_respond_segment:
 ; Fill in the checksum
 
   .checksum:
-	lea	esi, [edi - TCP_segment.Data]
-	mov	ecx, TCP_segment.Data
-	TCP_checksum (esi - IPv4_Packet.DataOrOptional + IPv4_Packet.DestinationAddress),\	; FIXME
-		     (esi - IPv4_Packet.DataOrOptional + IPv4_Packet.SourceAddress)
-	mov	[esi+TCP_segment.Checksum], dx
+	lea	esi, [edi - sizeof.TCP_header]
+	mov	ecx, sizeof.TCP_header
+	TCP_checksum (esi - sizeof.IPv4_header + IPv4_header.DestinationAddress),\	; FIXME
+		     (esi - sizeof.IPv4_header + IPv4_header.SourceAddress)
+	mov	[esi+TCP_header.Checksum], dx
 
 ;--------------------
 ; And send the segment

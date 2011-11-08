@@ -16,174 +16,155 @@
 $Revision$
 
 
-virtual at 0
+struct	SOCKET
 
-	SOCKET:
-	.NextPtr		dd ? ; pointer to next socket in list
-	.PrevPtr		dd ? ; pointer to previous socket in list
-	.Number 		dd ? ; socket number
+	NextPtr 		dd ? ; pointer to next socket in list
+	PrevPtr 		dd ? ; pointer to previous socket in list
+	Number			dd ? ; socket number
 
-	.lock			dd ? ; lock mutex
+	lock			dd ? ; lock mutex
 
-	.PID			dd ? ; application process id
-	.Domain 		dd ? ; INET/UNIX/..
-	.Type			dd ? ; RAW/STREAM/DGRAP
-	.Protocol		dd ? ; ICMP/IPv4/ARP/TCP/UDP
-	.errorcode		dd ?
+	PID			dd ? ; application process id
+	Domain			dd ? ; INET/UNIX/..
+	Type			dd ? ; RAW/STREAM/DGRAP
+	Protocol		dd ? ; ICMP/IPv4/ARP/TCP/UDP
+	errorcode		dd ?
 
-	.options		dd ?
-	.state			dd ?
-	.backlog		dw ? ; how many incomming connections that can be queued
+	options 		dd ?
+	state			dd ?
+	backlog 		dw ? ; how many incomming connections that can be queued
 
-	.snd_proc		dd ?
-	.rcv_proc		dd ?
+	snd_proc		dd ?
+	rcv_proc		dd ?
 
-	.end:
-end virtual
+ends
 
-virtual at SOCKET.end
+struct	IP_SOCKET		SOCKET
 
-	IP_SOCKET:
-	.LocalIP		rd 4
-	.RemoteIP		rd 4
+	LocalIP 		rd 4
+	RemoteIP		rd 4
 
-	.end:
-end virtual
+ends
 
-virtual at IP_SOCKET.end
+struct	TCP_SOCKET		IP_SOCKET
 
-	TCP_SOCKET:
+	LocalPort		dw ?
+	RemotePort		dw ?
 
-	.LocalPort		dw ?
-	.RemotePort		dw ?
-
-	.t_state		dd ? ; TCB state
-	.t_rxtshift		dd ?
-	.t_rxtcur		dd ?
-	.t_dupacks		dd ?
-	.t_maxseg		dd ?
-	.t_force		dd ?
-	.t_flags		dd ?
+	t_state 		dd ? ; TCB state
+	t_rxtshift		dd ?
+	t_rxtcur		dd ?
+	t_dupacks		dd ?
+	t_maxseg		dd ?
+	t_force 		dd ?
+	t_flags 		dd ?
 
 ;---------------
 ; RFC783 page 21
 
 ; send sequence
-	.SND_UNA		dd ? ; sequence number of unack'ed sent Packets
-	.SND_NXT		dd ? ; next send sequence number to use
-	.SND_UP 		dd ?
-	.SND_WL1		dd ? ; window minus one
-	.SND_WL2		dd ? ;
-	.ISS			dd ? ; initial send sequence number
-	.SND_WND		dd ? ; send window
+	SND_UNA 		dd ? ; sequence number of unack'ed sent Packets
+	SND_NXT 		dd ? ; next send sequence number to use
+	SND_UP			dd ?
+	SND_WL1 		dd ? ; window minus one
+	SND_WL2 		dd ? ;
+	ISS			dd ? ; initial send sequence number
+	SND_WND 		dd ? ; send window
 
 ; receive sequence
-	.RCV_WND		dw ? ; receive window
-	.RCV_NXT		dd ? ; next receive sequence number to use
-	.RCV_UP 		dd ?
-	.IRS			dd ? ; initial receive sequence number
+	RCV_WND 		dw ? ; receive window
+	RCV_NXT 		dd ? ; next receive sequence number to use
+	RCV_UP			dd ?
+	IRS			dd ? ; initial receive sequence number
 
 ;---------------------
 ; Additional variables
 
 ; receive variables
-	.RCV_ADV		dd ?
+	RCV_ADV 		dd ?
 
 ; retransmit variables
-	.SND_MAX		dd ?
+	SND_MAX 		dd ?
 
 ; congestion control
-	.SND_CWND		dd ?
-	.SND_SSTHRESH		dd ?
+	SND_CWND		dd ?
+	SND_SSTHRESH		dd ?
 
 ;----------------------
 ; Transmit timing stuff
-	.t_idle 		dd ?
-	.t_rtt			dd ?
-	.t_rtseq		dd ?
-	.t_srtt 		dd ?
-	.t_rttvar		dd ?
-	.t_rttmin		dd ?
-	.max_sndwnd		dd ?
+	t_idle			dd ?
+	t_rtt			dd ?
+	t_rtseq 		dd ?
+	t_srtt			dd ?
+	t_rttvar		dd ?
+	t_rttmin		dd ?
+	max_sndwnd		dd ?
 
 ;-----------------
 ; Out-of-band data
-	.t_oobflags		dd ?
-	.t_iobc 		dd ?
-	.t_softerror		dd ?
+	t_oobflags		dd ?
+	t_iobc			dd ?
+	t_softerror		dd ?
 
 
 ;---------
 ; RFC 1323
-	.SND_SCALE		db ? ; Scale factor
-	.RCV_SCALE		db ?
-	.request_r_scale	db ?
-	.requested_s_scale	dd ?
+	SND_SCALE		db ? ; Scale factor
+	RCV_SCALE		db ?
+	request_r_scale 	db ?
+	requested_s_scale	dd ?
 
-	.ts_recent		dd ?
-	.ts_recent_age		dd ?
-	.last_ack_sent		dd ?
+	ts_recent		dd ?
+	ts_recent_age		dd ?
+	last_ack_sent		dd ?
 
 
 ;-------
 ; Timers
-	.timer_retransmission	dw ? ; rexmt
-	.timer_persist		dw ?
-	.timer_keepalive	dw ? ; keepalive/syn timeout
-	.timer_timed_wait	dw ? ; also used as 2msl timer
+	timer_retransmission	dw ? ; rexmt
+	timer_persist		dw ?
+	timer_keepalive 	dw ? ; keepalive/syn timeout
+	timer_timed_wait	dw ? ; also used as 2msl timer
 
-	.end:
-end virtual
+ends
 
-virtual at IP_SOCKET.end
+struct	UDP_SOCKET		IP_SOCKET
 
-	UDP_SOCKET:
+	LocalPort		dw ?
+	RemotePort		dw ?
+	firstpacket		db ?
 
-	.LocalPort		dw ?
-	.RemotePort		dw ?
-	.firstpacket		db ?
+ends
 
-	.end:
-end virtual
 
-virtual at IP_SOCKET.end
+struct	ICMP_SOCKET
 
-	ICMP_SOCKET:
+	Identifier		dw ?
 
-	.Identifier		dw ?
+ends
 
-	.end:
-end virtual
 
-struc	RING_BUFFER {
-	.start_ptr		dd ? ; Pointer to start of buffer
-	.end_ptr		dd ? ; pointer to end of buffer
-	.read_ptr		dd ? ; Read pointer
-	.write_ptr		dd ? ; Write pointer
-	.size			dd ? ; Number of bytes buffered
-	.end:
-}
+struct	RING_BUFFER
+	start_ptr		dd ? ; Pointer to start of buffer
+	end_ptr 		dd ? ; pointer to end of buffer
+	read_ptr		dd ? ; Read pointer
+	write_ptr		dd ? ; Write pointer
+	size			dd ? ; Number of bytes buffered
+ends
 
-virtual at 0
+struct	STREAM_SOCKET		TCP_SOCKET
 
-	RING_BUFFER	RING_BUFFER
+	rcv			rd sizeof.RING_BUFFER/4
+	snd			rd sizeof.RING_BUFFER/4
 
-end virtual
-
-virtual at TCP_SOCKET.end
-
- STREAM_SOCKET:
-	.rcv	rd     RING_BUFFER.end/4
-	.snd	rd     RING_BUFFER.end/4
-	.end:
-
-end virtual
+ends
 
 struct	socket_queue_entry
-	.data_ptr	dd ?
-	.buf_ptr	dd ?
-	.data_size	dd ?
-	.size:
+
+	data_ptr		dd ?
+	buf_ptr 		dd ?
+	data_size		dd ?
+
 ends
 
 
@@ -191,7 +172,7 @@ SOCKETBUFFSIZE		equ 4096     ; in bytes
 
 SOCKET_QUEUE_SIZE	equ 10	     ; maximum number ofincoming packets queued for 1 socket
 ; the incoming packet queue for sockets is placed in the socket struct itself, at this location from start
-SOCKET_QUEUE_LOCATION	equ (SOCKETBUFFSIZE - SOCKET_QUEUE_SIZE*socket_queue_entry.size - queue.data)
+SOCKET_QUEUE_LOCATION	equ (SOCKETBUFFSIZE - SOCKET_QUEUE_SIZE*sizeof.socket_queue_entry - sizeof.queue)
 
 uglobal
 	net_sockets	rd 4
@@ -714,7 +695,7 @@ SOCKET_receive_dgram:
 	mov	ebx, esi
 	mov	edi, edx					; addr to buffer
 
-	get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, socket_queue_entry.size, s_error	; destroys esi and ecx
+	get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, s_error	  ; destroys esi and ecx
 
 	mov	ecx, [esi + socket_queue_entry.data_size]
 	DEBUGF	1,"Got %u bytes of data\n", ecx
@@ -1062,10 +1043,10 @@ SOCKET_input:
 	push	esi
 	mov	esi, esp
 
-	add_to_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, socket_queue_entry.size, SOCKET_input.full
+	add_to_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, SOCKET_input.full
 
 	DEBUGF	1,"SOCKET_input: queued packet successfully\n"
-	add	esp, socket_queue_entry.size
+	add	esp, sizeof.socket_queue_entry
 	mov	[eax + SOCKET.lock], 0
 	jmp	SOCKET_notify_owner
 

@@ -16,29 +16,28 @@
 
 $Revision$
 
-struct	ETH_FRAME
-	.DstMAC 	dp  ?  ; destination MAC-address
-	.SrcMAC 	dp  ?  ; source MAC-address
-	.Type		dw  ?  ; type of the upper-layer protocol
-	.Data:		       ; data (46-1500 bytes for a normal packet)
+struct	ETH_header
+
+	DstMAC		dp  ?  ; destination MAC-address
+	SrcMAC		dp  ?  ; source MAC-address
+	Type		dw  ?  ; type of the upper-layer protocol
+
 ends
 
 ETH_FRAME_MINIMUM	equ 60
 
-virtual at NET_DEVICE.end
+struct	ETH_DEVICE	NET_DEVICE
 
-	ETH_DEVICE:
+	set_mode	dd ?
+	get_mode	dd ?
 
-	.set_mode	dd ?
-	.get_mode	dd ?
+	set_MAC 	dd ?
+	get_MAC 	dd ?
 
-	.set_MAC	dd ?
-	.get_MAC	dd ?
+	mode		dd ?
+	mac		dp ?
 
-	.mode		dd ?
-	.mac		dp ?
-
-end virtual
+ends
 
 align 4
 iglobal
@@ -67,10 +66,10 @@ ETH_input:
 	DEBUGF	1,"ETH_input - size: %u\n", ecx
 	cmp	ecx, ETH_FRAME_MINIMUM
 	jb	.dump
-	sub	ecx, ETH_FRAME.Data
+	sub	ecx, sizeof.ETH_header
 
-	lea	edx, [eax + ETH_FRAME.Data]
-	mov	ax , [eax + ETH_FRAME.Type]
+	lea	edx, [eax + sizeof.ETH_header]
+	mov	ax , [eax + ETH_header.Type]
 
 	cmp	ax, ETHER_IPv4
 	je	IPv4_input
@@ -116,7 +115,7 @@ ETH_output:
 
 	push	ecx			; << 1
 	push	di eax edx		; << 2
-	add	ecx, ETH_FRAME.Data
+	add	ecx, sizeof.ETH_header
 
 	push	ecx			; << 3
 
@@ -137,8 +136,8 @@ ETH_output:
 	pop	ax			; >> 2
 	stosw
 
-	lea	eax, [edi - ETH_FRAME.Data]  ; Set eax to buffer start
-	mov	edx, ecx		     ; Set edx to complete buffer size
+	lea	eax, [edi - sizeof.ETH_header]	; Set eax to buffer start
+	mov	edx, ecx			; Set edx to complete buffer size
 
 	pop	ecx			; >> 1
 
@@ -210,12 +209,12 @@ ETH_API:
 	ret
 
 .packets_tx:
-	mov	eax, dword [eax + NET_DEVICE.packets_tx]
+	mov	eax, [eax + NET_DEVICE.packets_tx]
 
 	ret
 
 .packets_rx:
-	mov	eax, dword [eax + NET_DEVICE.packets_rx]
+	mov	eax, [eax + NET_DEVICE.packets_rx]
 	ret
 
 .bytes_tx:

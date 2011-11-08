@@ -77,23 +77,24 @@ TCP_max_win		equ 65535
 
 TCP_re_xmit_thresh	equ 3
 
-struct	TCP_segment
-	.SourcePort		dw ?
-	.DestinationPort	dw ?
-	.SequenceNumber 	dd ?
-	.AckNumber		dd ?
-	.DataOffset		db ?	; DataOffset[0-3 bits] and Reserved[4-7]
-	.Flags			db ?	; Reserved[0-1 bits]|URG|ACK|PSH|RST|SYN|FIN
-	.Window 		dw ?
-	.Checksum		dw ?
-	.UrgentPointer		dw ?
-	.Data:				; ..or options
+struct	TCP_header
+
+	SourcePort		dw ?
+	DestinationPort 	dw ?
+	SequenceNumber		dd ?
+	AckNumber		dd ?
+	DataOffset		db ?	; DataOffset[0-3 bits] and Reserved[4-7]
+	Flags			db ?	; Reserved[0-1 bits]|URG|ACK|PSH|RST|SYN|FIN
+	Window			dw ?
+	Checksum		dw ?
+	UrgentPointer		dw ?
+
 ends
 
 align 4
 uglobal
-	TCP_segments_tx 	rd IP_MAX_INTERFACES
-	TCP_segments_rx 	rd IP_MAX_INTERFACES
+	TCP_headers_tx	       rd IP_MAX_INTERFACES
+	TCP_headers_rx	       rd IP_MAX_INTERFACES
 	TCP_bytes_rx		rq IP_MAX_INTERFACES
 	TCP_bytes_tx		rq IP_MAX_INTERFACES
 	TCP_sequence_num	dd ?
@@ -110,7 +111,7 @@ endg
 macro	TCP_init {
 
 	xor	eax, eax
-	mov	edi, TCP_segments_tx
+	mov	edi, TCP_headers_tx
 	mov	ecx, (6*IP_MAX_INTERFACES)
 	rep	stosd
 
@@ -155,11 +156,11 @@ TCP_API:
 	ret
 
 .packets_tx:
-	add	eax, TCP_segments_tx
+	add	eax, TCP_headers_tx
 	mov	eax, [eax]
 	ret
 
 .packets_rx:
-	add	eax, TCP_segments_rx
+	add	eax, TCP_headers_rx
 	mov	eax, [eax]
 	ret

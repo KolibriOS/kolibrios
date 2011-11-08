@@ -39,21 +39,21 @@ TCP_input:
        DEBUGF  1,"TCP_input size=%u ", ecx
 ; Offset must be greater than or equal to the size of the standard TCP header (20) and less than or equal to the TCP length.
 
-	movzx	eax, [edx + TCP_segment.DataOffset]
+	movzx	eax, [edx + TCP_header.DataOffset]
 	and	eax, 0xf0
 	shr	al, 2
 
 	DEBUGF	1,"headersize=%u\n", eax
 
-	cmp	eax, TCP_segment.DataOffset
+	cmp	eax, TCP_header.DataOffset
 	jb	.drop_not_locked
 
 ;-------------------------------
 ; Now, re-calculate the checksum
 
 	push	eax ecx edx
-	pushw	[edx + TCP_segment.Checksum]
-	mov	[edx + TCP_segment.Checksum], 0
+	pushw	[edx + TCP_header.Checksum]
+	mov	[edx + TCP_header.Checksum], 0
 	push	esi edi
 	mov	esi, edx
 	TCP_checksum (esp), (esp+4)
@@ -72,18 +72,18 @@ TCP_input:
 ;-----------------------------------------------------------------------------------------
 ; Check if this packet has a timestamp option (We do it here so we can process it quickly)
 
-	cmp	esi, TCP_segment.DataOffset + 12		; Timestamp option is 12 bytes
+	cmp	esi, TCP_header.DataOffset + 12 	       ; Timestamp option is 12 bytes
 	jb	.no_timestamp
 	je	.is_ok
 
-	cmp	byte [edx + TCP_segment.Data + 12], TCP_OPT_EOL ; end of option list
+	cmp	byte [edx + sizeof.TCP_header + 12], TCP_OPT_EOL ; end of option list
 	jne	.no_timestamp
 
   .is_ok:
-	test	[edx + TCP_segment.Flags], TH_SYN		; SYN flag must not be set
+	test	[edx + TCP_header.Flags], TH_SYN	       ; SYN flag must not be set
 	jnz	.no_timestamp
 
-	cmp	dword [edx + TCP_segment.Data], 0x0101080a	; Timestamp header
+	cmp	dword [edx + sizeof.TCP_header], 0x0101080a	 ; Timestamp header
 	jne	.no_timestamp
 
 	DEBUGF	1,"timestamp ok\n"
@@ -96,13 +96,13 @@ TCP_input:
 ;-------------------------------------------
 ; Convert Big-endian values to little endian
 
-	ntohd	[edx + TCP_segment.SequenceNumber]
-	ntohd	[edx + TCP_segment.AckNumber]
+	ntohd	[edx + TCP_header.SequenceNumber]
+	ntohd	[edx + TCP_header.AckNumber]
 
-	ntohw	[edx + TCP_segment.Window]
-	ntohw	[edx + TCP_segment.UrgentPointer]
-	ntohw	[edx + TCP_segment.SourcePort]
-	ntohw	[edx + TCP_segment.DestinationPort]
+	ntohw	[edx + TCP_header.Window]
+	ntohw	[edx + TCP_header.UrgentPointer]
+	ntohw	[edx + TCP_header.SourcePort]
+	ntohw	[edx + TCP_header.DestinationPort]
 
 ;------------------------------------------------------------
 ; Next thing to do is find the TCPS (thus, the socket pointer)
@@ -124,7 +124,7 @@ TCP_input:
 	cmp	[ebx + SOCKET.Protocol], IP_PROTO_TCP
 	jne	.socket_loop
 
-	mov	ax, [edx + TCP_segment.DestinationPort]
+	mov	ax, [edx + TCP_header.DestinationPort]
 	cmp	[ebx + TCP_SOCKET.LocalPort], ax
 	jne	.socket_loop
 
@@ -136,7 +136,7 @@ TCP_input:
        @@:
 
 	mov	ax, [ebx + TCP_SOCKET.RemotePort]
-	cmp	[edx + TCP_segment.SourcePort] , ax
+	cmp	[edx + TCP_header.SourcePort] , ax
 	je	.found_socket
 	test	ax, ax
 	jnz	.socket_loop
@@ -168,11 +168,11 @@ TCP_input:
 ;---------------------------------------
 ; unscale the window into a 32 bit value
 
-	movzx	eax, [edx + TCP_segment.Window]
+	movzx	eax, [edx + TCP_header.Window]
 	push	ecx
 	mov	cl, [ebx + TCP_SOCKET.SND_SCALE]
 	shl	eax, cl
-	mov	dword [edx + TCP_segment.Window], eax	; word after window is checksum, we dont need checksum anymore
+	mov	dword [edx + TCP_header.Window], eax   ; word after window is checksum, we dont need checksum anymore
 	pop	ecx
 
 ;-----------------------------------
@@ -189,10 +189,10 @@ TCP_input:
 	test	eax, eax
 	jz	.drop
 
-	push	[edx - IPv4_Packet.DataOrOptional + IPv4_Packet.DestinationAddress]	;;; FIXME
+	push	[edx - sizeof.IPv4_header + IPv4_header.DestinationAddress]	;;; FIXME
 	pop	[eax + IP_SOCKET.LocalIP]
 
-	push	[edx + TCP_segment.DestinationPort]
+	push	[edx + TCP_header.DestinationPort]
 	pop	[eax + TCP_SOCKET.LocalPort]
 
 	mov	[eax + TCP_SOCKET.t_state], TCPS_LISTEN
@@ -213,7 +213,7 @@ TCP_input:
 ;--------------------
 ; Process TCP options
 
-	cmp	esi, TCP_segment.DataOffset		; esi is headersize
+	cmp	esi, TCP_header.DataOffset	       ; esi is headersize
 	je	.no_options
 
 	DEBUGF	1,"Segment has options\n"
@@ -221,7 +221,7 @@ TCP_input:
 	cmp	[ebx + TCP_SOCKET.t_state], TCPS_LISTEN ; no options when in listen state
 	jz	.not_uni_xfer				; also no header prediction
 
-	lea	edi, [edx + TCP_segment.Data]
+	lea	edi, [edx + sizeof.TCP_header]
 	lea	eax, [edx + esi]
 
   .opt_loop:
@@ -253,7 +253,7 @@ TCP_input:
 	cmp	byte [edi+1], 4
 	jne	.no_options		; error occured, ignore all options!
 
-	test	[edx + TCP_segment.Flags], TH_SYN
+	test	[edx + TCP_header.Flags], TH_SYN
 	jz	@f
 
 	movzx	eax, word[edi+2]
@@ -271,7 +271,7 @@ TCP_input:
 	cmp	byte [edi+1], 3
 	jne	.no_options
 
-	test	[edx + TCP_segment.Flags], TH_SYN
+	test	[edx + TCP_header.Flags], TH_SYN
 	jz	@f
 
 	DEBUGF	1,"Got window option\n"
@@ -318,17 +318,17 @@ TCP_input:
 	cmp	[ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
 	jnz	.not_uni_xfer
 
-	test	[edx + TCP_segment.Flags], TH_SYN + TH_FIN + TH_RST + TH_URG
+	test	[edx + TCP_header.Flags], TH_SYN + TH_FIN + TH_RST + TH_URG
 	jnz	.not_uni_xfer
 
-	test	[edx + TCP_segment.Flags], TH_ACK
+	test	[edx + TCP_header.Flags], TH_ACK
 	jz	.not_uni_xfer
 
-	mov	eax, [edx + TCP_segment.SequenceNumber]
+	mov	eax, [edx + TCP_header.SequenceNumber]
 	cmp	eax, [ebx + TCP_SOCKET.RCV_NXT]
 	jne	.not_uni_xfer
 
-	mov	eax, dword [edx + TCP_segment.Window]
+	mov	eax, dword [edx + TCP_header.Window]
 	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
 	jne	.not_uni_xfer
 
@@ -352,7 +352,7 @@ TCP_input:
 	jb	.not_uni_xfer
 
 ; - The acknowledgment field in the segment is less than or equal to the maximum sequence number sent.
-	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	eax, [edx + TCP_header.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
 	ja	.not_uni_xfer
 
@@ -377,7 +377,7 @@ TCP_input:
 	popa
 
 ; update window pointers
-	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	eax, [edx + TCP_header.AckNumber]
 	mov	[ebx + TCP_SOCKET.SND_UNA], eax
 
 ; Stop retransmit timer
@@ -400,7 +400,7 @@ TCP_input:
 ; - The amount of data in the segment is greater than 0 (data count is in ecx)
 
 ; - The acknowledgment field equals the largest unacknowledged sequence number. This means no data is acknowledged by this segment.
-	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	eax, [edx + TCP_header.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
 	jne	.not_uni_xfer
 
@@ -441,7 +441,15 @@ TCP_input:
 
 ; Calculate receive window size
 
-;;;; TODO: 444
+;        mov     eax, [ebx + STREAM_SOCKET.rcv + RING_BUFFER.size]
+;        neg     eax
+;        add     eax, SOCKETBUFFSIZE
+;        mov     edx, [ebx + TCP_SOCKET.RCV_ADV]
+;        sub     edx, [ebx + TCP_SOCKET.RCV_NXT]
+;        cmp     eax, edx
+;        jae     @f
+;        mov     eax, edx
+;       @@:
 
 	cmp	[ebx + TCP_SOCKET.t_state], TCPS_LISTEN
 	je	.LISTEN
@@ -461,24 +469,24 @@ align 4
 
 	DEBUGF	1,"TCP state: listen\n"
 
-	test	[edx + TCP_segment.Flags], TH_RST	;;; TODO: kill new socket on error
+	test	[edx + TCP_header.Flags], TH_RST       ;;; TODO: kill new socket on error
 	jnz	.drop
 
-	test	[edx + TCP_segment.Flags], TH_ACK
+	test	[edx + TCP_header.Flags], TH_ACK
 	jnz	.drop_with_reset
 
-	test	[edx + TCP_segment.Flags], TH_SYN
+	test	[edx + TCP_header.Flags], TH_SYN
 	jz	.drop
 
 ;;; TODO: check if it's a broadcast or multicast, and drop if so
 
-	push	[edx - IPv4_Packet.DataOrOptional + IPv4_Packet.SourceAddress]	   ;;; FIXME
+	push	[edx - sizeof.IPv4_header + IPv4_header.SourceAddress]	   ;;; FIXME
 	pop	[ebx + IP_SOCKET.RemoteIP]
 
-	push	[edx + TCP_segment.SourcePort]
+	push	[edx + TCP_header.SourcePort]
 	pop	[ebx + TCP_SOCKET.RemotePort]
 
-	push	[edx + TCP_segment.SequenceNumber]
+	push	[edx + TCP_header.SequenceNumber]
 	pop	[ebx + TCP_SOCKET.IRS]
 
 	push	[TCP_sequence_num]     ;;;;;
@@ -522,10 +530,10 @@ align 4
 
 	DEBUGF	1,"TCP state: syn_sent\n"
 
-	test	[edx + TCP_segment.Flags], TH_ACK
+	test	[edx + TCP_header.Flags], TH_ACK
 	jz	@f
 
-	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	eax, [edx + TCP_header.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.ISS]
 	jbe	.drop_with_reset
 
@@ -533,10 +541,10 @@ align 4
 	ja	.drop_with_reset
        @@:
 
-	test	[edx + TCP_segment.Flags], TH_RST
+	test	[edx + TCP_header.Flags], TH_RST
 	jz	@f
 
-	test	[edx + TCP_segment.Flags], TH_ACK
+	test	[edx + TCP_header.Flags], TH_ACK
 	jz	.drop
 
 	mov	eax, ebx
@@ -546,17 +554,17 @@ align 4
 	jmp	.drop
        @@:
 
-	test	[edx + TCP_segment.Flags], TH_SYN
+	test	[edx + TCP_header.Flags], TH_SYN
 	jz	.drop
 
 ; at this point, segment seems to be valid
 
-	test	[edx + TCP_segment.Flags], TH_ACK
+	test	[edx + TCP_header.Flags], TH_ACK
 	jz	.no_syn_ack
 
 ; now, process received SYN in response to an active open
 
-	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	eax, [edx + TCP_header.AckNumber]
 	mov	[ebx + TCP_SOCKET.SND_UNA], eax
 	cmp	eax, [ebx + TCP_SOCKET.SND_NXT]
 	jbe	@f
@@ -567,7 +575,7 @@ align 4
 
 	mov	[ebx + TCP_SOCKET.timer_retransmission], 0	; disable retransmission
 
-	push	[edx + TCP_segment.SequenceNumber]
+	push	[edx + TCP_header.SequenceNumber]
 	pop	[ebx + TCP_SOCKET.IRS]
 
 	TCP_rcvseqinit ebx
@@ -578,7 +586,7 @@ align 4
 	cmp	eax, [ebx + TCP_SOCKET.ISS]
 	jbe	.simultaneous_open
 
-	test	[edx + TCP_segment.Flags], TH_ACK
+	test	[edx + TCP_header.Flags], TH_ACK
 	jz	.simultaneous_open
 
 	DEBUGF	1,"TCP: active open\n"
@@ -613,11 +621,11 @@ align 4
 
   .trim_then_step6:
 
-	inc	[edx + TCP_segment.SequenceNumber]
+	inc	[edx + TCP_header.SequenceNumber]
 
 ;;; TODO: Drop any received data that follows receive window (590)
 
-	mov	eax, [edx + TCP_segment.SequenceNumber]
+	mov	eax, [edx + TCP_header.SequenceNumber]
 	mov	[ebx + TCP_SOCKET.RCV_UP], eax
 	dec	eax
 	mov	[ebx + TCP_SOCKET.SND_WL1], eax
@@ -659,25 +667,25 @@ align 4
 ; check for duplicate data at beginning of segment
 
 	mov	eax, [ebx + TCP_SOCKET.RCV_NXT]
-	sub	eax, [edx + TCP_segment.SequenceNumber]
+	sub	eax, [edx + TCP_header.SequenceNumber]
 	jbe	.no_duplicate
 
 	DEBUGF	1,"Uh oh.. %u bytes of duplicate data!\n", eax
 
-	test	[edx + TCP_segment.Flags], TH_SYN
+	test	[edx + TCP_header.Flags], TH_SYN
 	jz	.no_dup_syn
 
 ; remove duplicate syn
 
-	and	[edx + TCP_segment.Flags], not (TH_SYN)
-	inc	[edx + TCP_segment.SequenceNumber]
+	and	[edx + TCP_header.Flags], not (TH_SYN)
+	inc	[edx + TCP_header.SequenceNumber]
 
-	cmp	[edx + TCP_segment.UrgentPointer], 1
+	cmp	[edx + TCP_header.UrgentPointer], 1
 	jbe	@f
-	dec	[edx + TCP_segment.UrgentPointer]
+	dec	[edx + TCP_header.UrgentPointer]
 	jmp	.dup_syn
        @@:
-	and	[edx + TCP_segment.Flags], not (TH_URG)
+	and	[edx + TCP_header.Flags], not (TH_URG)
   .dup_syn:
 	dec	eax
   .no_dup_syn:
@@ -695,7 +703,7 @@ align 4
 
 ; Check for duplicate FIN
 
-	test	[edx + TCP_segment.Flags], TH_FIN
+	test	[edx + TCP_header.Flags], TH_FIN
 	jz	@f
 	inc	ecx
 	cmp	eax, ecx
@@ -703,7 +711,7 @@ align 4
 	jne	@f
 
 	mov	eax, ecx
-	and	[edx + TCP_segment.Flags], not TH_FIN
+	and	[edx + TCP_header.Flags], not TH_FIN
 	or	[ebx + TCP_SOCKET.t_flags], TF_ACKNOW
 	jmp	.no_duplicate
        @@:
@@ -719,7 +727,7 @@ align 4
 	test	eax, eax
 	jnz	.drop_after_ack
 
-	cmp	[edx + TCP_segment.Flags], TH_ACK
+	cmp	[edx + TCP_header.Flags], TH_ACK
 	jz	.drop_after_ack
 
   .duplicate:
@@ -738,15 +746,15 @@ align 4
 ;-----------------------------------------------
 ; Remove duplicate data and update urgent offset
 
-	add	[edx + TCP_segment.SequenceNumber], eax
+	add	[edx + TCP_header.SequenceNumber], eax
 
 ;;; TODO
 
-	sub	[edx + TCP_segment.UrgentPointer], ax
+	sub	[edx + TCP_header.UrgentPointer], ax
 	ja	@f
 
-	and	[edx + TCP_segment.Flags], not (TH_URG)
-	mov	[edx + TCP_segment.UrgentPointer], 0
+	and	[edx + TCP_header.Flags], not (TH_URG)
+	mov	[edx + TCP_header.UrgentPointer], 0
        @@:
 
 ;--------------------------------------------------
@@ -770,7 +778,7 @@ align 4
 ;----------------------------------------
 ; Remove data beyond right edge of window
 
-	mov	eax, [edx + TCP_segment.SequenceNumber]
+	mov	eax, [edx + TCP_header.SequenceNumber]
 	add	eax, ecx
 	sub	eax, [ebx + TCP_SOCKET.RCV_NXT]
 	sub	ax, [ebx + TCP_SOCKET.RCV_WND]
@@ -809,7 +817,7 @@ align 4
 ;------------------
 ; Process RST flags
 
-	test	[edx + TCP_segment.Flags], TH_RST
+	test	[edx + TCP_header.Flags], TH_RST
 	jz	.rst_skip
 
 	DEBUGF	1,"Got an RST flag"
@@ -870,7 +878,7 @@ align 4
 ;--------------------------------------
 ; handle SYN-full and ACK-less segments
 
-	test	[edx + TCP_segment.Flags], TH_SYN
+	test	[edx + TCP_header.Flags], TH_SYN
 	jz	@f
 
 	mov	eax, ebx
@@ -878,7 +886,7 @@ align 4
 	call	TCP_drop
 	jmp	.drop_with_reset
 
-	test	[edx + TCP_segment.Flags], TH_ACK
+	test	[edx + TCP_header.Flags], TH_ACK
 	jz	.drop
       @@:
 
@@ -896,7 +904,7 @@ align 4
 
 	DEBUGF	1,"TCP state = syn received\n"
 
-	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	eax, [edx + TCP_header.AckNumber]
 	cmp	[ebx + TCP_SOCKET.SND_UNA], eax
 	ja	.drop_with_reset
 	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
@@ -920,7 +928,7 @@ align 4
 
 	;;; 813 ?
 
-	mov	eax, [edx + TCP_segment.SequenceNumber]
+	mov	eax, [edx + TCP_header.SequenceNumber]
 	dec	eax
 	mov	[ebx + TCP_SOCKET.SND_WL1], eax
 	jmp	.not_dup_ack
@@ -929,14 +937,14 @@ align 4
 
 ; check for duplicate ACK
 
-	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	eax, [edx + TCP_header.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
 	ja	.not_dup_ack
 
 	test	ecx, ecx
 	jnz	.reset_dupacks
 
-	mov	eax, dword [edx + TCP_segment.Window]
+	mov	eax, dword [edx + TCP_header.Window]
 	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
 	jne	.reset_dupacks
 
@@ -945,7 +953,7 @@ align 4
 	cmp	[ebx + TCP_SOCKET.timer_retransmission], 10000 ;;;;
 	ja	@f
 
-	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	eax, [edx + TCP_header.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.SND_UNA]
 	je	.dup_ack
 
@@ -977,7 +985,7 @@ align 4
 
 	mov	[ebx + TCP_SOCKET.timer_retransmission], 0	; turn off retransmission timer
 	mov	[ebx + TCP_SOCKET.t_rtt], 0
-	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	eax, [edx + TCP_header.AckNumber]
 	mov	[ebx + TCP_SOCKET.SND_NXT], eax
 	mov	eax, [ebx + TCP_SOCKET.t_maxseg]
 	mov	[ebx + TCP_SOCKET.SND_CWND], eax
@@ -1036,7 +1044,7 @@ align 4
 
 	mov	[ebx + TCP_SOCKET.t_dupacks], 0
 
-	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	eax, [edx + TCP_header.AckNumber]
 	cmp	eax, [ebx + TCP_SOCKET.SND_MAX]
 	jbe	@f
 
@@ -1045,7 +1053,7 @@ align 4
 
        @@:
 
-	mov	edi, [edx + TCP_segment.AckNumber]
+	mov	edi, [edx + TCP_header.AckNumber]
 	sub	edi, [ebx + TCP_SOCKET.SND_UNA] 	; now we got the number of acked bytes in esi
 
 	;;; TODO: update stats
@@ -1066,7 +1074,7 @@ align 4
 	mov	[ebx + TCP_SOCKET.timer_retransmission], 0
 
 	mov	eax, [ebx + TCP_SOCKET.SND_MAX]
-	cmp	eax, [edx + TCP_segment.AckNumber]
+	cmp	eax, [edx + TCP_header.AckNumber]
 	je	.all_outstanding
 	mov	[ebx + TCP_SOCKET.timer_retransmission], 120 ;;;; TODO: correct this value (use a macro for it)
   .all_outstanding:
@@ -1131,7 +1139,7 @@ align 4
 
 ; Update TCPS
 
-	mov	eax, [edx + TCP_segment.AckNumber]
+	mov	eax, [edx + TCP_header.AckNumber]
 	mov	[ebx + TCP_SOCKET.SND_UNA], eax
 
 	cmp	eax, [ebx + TCP_SOCKET.SND_NXT]
@@ -1221,25 +1229,25 @@ align 4
 ;----------------------------------------------
 ; check if we need to update window information
 
-	test	[edx + TCP_segment.Flags], TH_ACK
+	test	[edx + TCP_header.Flags], TH_ACK
 	jz	.no_window_update
 
 	mov	eax, [ebx + TCP_SOCKET.SND_WL1]
-	cmp	eax, [edx + TCP_segment.SequenceNumber]
+	cmp	eax, [edx + TCP_header.SequenceNumber]
 	jb	.update_window
 	ja	@f
 
 	mov	eax, [ebx + TCP_SOCKET.SND_WL2]
-	cmp	eax, [edx + TCP_segment.AckNumber]
+	cmp	eax, [edx + TCP_header.AckNumber]
 	jb	.update_window
 	ja	.no_window_update
        @@:
 
 	mov	eax, [ebx + TCP_SOCKET.SND_WL2]
-	cmp	eax, [edx + TCP_segment.AckNumber]
+	cmp	eax, [edx + TCP_header.AckNumber]
 	jne	.no_window_update
 
-	movzx	eax, [edx + TCP_segment.Window]
+	movzx	eax, [edx + TCP_header.Window]
 	cmp	eax, [ebx + TCP_SOCKET.SND_WND]
 	jbe	.no_window_update
 
@@ -1253,7 +1261,7 @@ align 4
 ;        jz      @f
 ;
 ;        mov     eax, [ebx + TCP_SOCKET.SND_WL2]
-;        cmp     eax, [edx + TCP_segment.AckNumber]
+;        cmp     eax, [edx + TCP_header.AckNumber]
 ;        jne     @f
 ;
 ;        ;; mov eax, tiwin
@@ -1264,17 +1272,17 @@ align 4
 ;
 ;       @@:
 
-	mov	eax, dword [edx + TCP_segment.Window]
+	mov	eax, dword [edx + TCP_header.Window]
 	cmp	eax, [ebx + TCP_SOCKET.max_sndwnd]
 	jbe	@f
 	mov	[ebx + TCP_SOCKET.max_sndwnd], eax
        @@:
 	mov	[ebx + TCP_SOCKET.SND_WND], eax
 
-	push	[edx + TCP_segment.SequenceNumber]
+	push	[edx + TCP_header.SequenceNumber]
 	pop	[ebx + TCP_SOCKET.SND_WL1]
 
-	push	[edx + TCP_segment.AckNumber]
+	push	[edx + TCP_header.AckNumber]
 	pop	[ebx + TCP_SOCKET.SND_WL2]
 
 	;;; needoutput = 1
@@ -1290,10 +1298,10 @@ align 4
 ;-----------------
 ; process URG flag
 
-	test	[edx + TCP_segment.Flags], TH_URG
+	test	[edx + TCP_header.Flags], TH_URG
 	jz	.not_urgent
 
-	cmp	[edx + TCP_segment.UrgentPointer], 0
+	cmp	[edx + TCP_header.UrgentPointer], 0
 	jz	.not_urgent
 
 	cmp	[ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
@@ -1303,13 +1311,13 @@ align 4
 
 	;;; 1040-1050
 
-	movzx	eax, [edx + TCP_segment.UrgentPointer]
+	movzx	eax, [edx + TCP_header.UrgentPointer]
 	add	eax, [ebx + STREAM_SOCKET.rcv + RING_BUFFER.size]
 	cmp	eax, SOCKET_MAXDATA
 	jbe	.not_urgent
 
-	mov	[edx + TCP_segment.UrgentPointer], 0
-	and	[edx + TCP_segment.Flags], not (TH_URG)
+	mov	[edx + TCP_header.UrgentPointer], 0
+	and	[edx + TCP_header.Flags], not (TH_URG)
 	jmp	.do_data
 
   .not_urgent:
@@ -1332,7 +1340,7 @@ align 4
 
 	DEBUGF	1,"TCP: do data (%u)\n", ecx
 
-	test	[edx + TCP_segment.Flags], TH_FIN
+	test	[edx + TCP_header.Flags], TH_FIN
 	jnz	.process_fin
 
 	cmp	[ebx + TCP_SOCKET.t_state], TCPS_FIN_WAIT_1
@@ -1345,7 +1353,7 @@ align 4
 
 ;; TODO: check if data is in sequence !
 
-	movzx	eax, [edx + TCP_segment.DataOffset]		;;; todo: remember this in.. edi ?
+	movzx	eax, [edx + TCP_header.DataOffset]	       ;;; todo: remember this in.. edi ?
 	and	eax, 0xf0
 	shr	al, 2
 
@@ -1487,7 +1495,7 @@ align 4
 
 	DEBUGF	1,"Drop after ACK\n"
 
-	test	[edx + TCP_segment.Flags], TH_RST
+	test	[edx + TCP_header.Flags], TH_RST
 	jnz	.drop
 
 	and	[ebx + TCP_SOCKET.t_flags], TF_ACKNOW
@@ -1524,15 +1532,15 @@ align 4
 
 	DEBUGF	1,"Drop with reset\n"
 
-	test	[edx + TCP_segment.Flags], TH_RST
+	test	[edx + TCP_header.Flags], TH_RST
 	jnz	.drop
 
 	;;; if its a multicast/broadcast, also drop
 
-	test	[edx + TCP_segment.Flags], TH_ACK
+	test	[edx + TCP_header.Flags], TH_ACK
 	jnz	.respond_ack
 
-	test	[edx + TCP_segment.Flags], TH_SYN
+	test	[edx + TCP_header.Flags], TH_SYN
 	jnz	.respond_syn
 
 	call	kernel_free

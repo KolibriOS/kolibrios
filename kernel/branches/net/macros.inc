@@ -11,31 +11,6 @@ macro $Revision a {
 
 $Revision$
 
-
-; structure definition helper
-macro struct name, [arg]
- {
-  common
-   name@struct equ name
-   struc name arg {
- }
-
-macro struct_helper name
- {
-  match xname,name
-  \{
-   virtual at 0
-   xname xname
-   sizeof.#xname = $ - xname
-   name equ sizeof.#xname
-   end virtual
-  \}
- }
-
-ends fix } struct_helper name@struct
-
-;// mike.dld, 2006-29-01 [
-
 ; macros definition
 macro diff16 title,l1,l2
 {
