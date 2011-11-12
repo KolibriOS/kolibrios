@@ -138,7 +138,7 @@ struct  UDP_SOCKET              IP_SOCKET
 ends
 
 
-struct  ICMP_SOCKET
+struct  ICMP_SOCKET             IP_SOCKET
 
         Identifier              dw ?
 
@@ -146,11 +146,13 @@ ends
 
 
 struct  RING_BUFFER
+
         start_ptr               dd ? ; Pointer to start of buffer
         end_ptr                 dd ? ; pointer to end of buffer
         read_ptr                dd ? ; Read pointer
         write_ptr               dd ? ; Write pointer
         size                    dd ? ; Number of bytes buffered
+
 ends
 
 struct  STREAM_SOCKET           TCP_SOCKET
@@ -319,7 +321,6 @@ align 4
         mov     [eax + SOCKET.Protocol], IP_PROTO_TCP
         mov     [eax + SOCKET.snd_proc], SOCKET_send_tcp
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_tcp
-
 
         mov     [eax + TCP_SOCKET.t_maxseg], 1480       ;;;;; FIXME
         ret

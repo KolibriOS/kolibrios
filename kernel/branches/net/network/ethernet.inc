@@ -16,33 +16,33 @@
 
 $Revision$
 
-struct	ETH_header
+struct  ETH_header
 
-	DstMAC		dp  ?  ; destination MAC-address
-	SrcMAC		dp  ?  ; source MAC-address
-	Type		dw  ?  ; type of the upper-layer protocol
+        DstMAC          dp  ?  ; destination MAC-address
+        SrcMAC          dp  ?  ; source MAC-address
+        Type            dw  ?  ; type of the upper-layer protocol
 
 ends
 
-ETH_FRAME_MINIMUM	equ 60
+ETH_FRAME_MINIMUM       equ 60
 
-struct	ETH_DEVICE	NET_DEVICE
+struct  ETH_DEVICE      NET_DEVICE
 
-	set_mode	dd ?
-	get_mode	dd ?
+        set_mode        dd ?
+        get_mode        dd ?
 
-	set_MAC 	dd ?
-	get_MAC 	dd ?
+        set_MAC         dd ?
+        get_MAC         dd ?
 
-	mode		dd ?
-	mac		dp ?
+        mode            dd ?
+        mac             dp ?
 
 ends
 
 align 4
 iglobal
 
-	ETH_BROADCAST	dp  0xffffffffffff
+        ETH_BROADCAST   dp  0xffffffffffff
 endg
 
 ;-----------------------------------------------------------------
@@ -60,33 +60,33 @@ endg
 ;-----------------------------------------------------------------
 align 4
 ETH_input:
-	mov	eax, [esp]
-	mov	ecx, [esp+4]
+        mov     eax, [esp]
+        mov     ecx, [esp+4]
 
-	DEBUGF	1,"ETH_input - size: %u\n", ecx
-	cmp	ecx, ETH_FRAME_MINIMUM
-	jb	.dump
-	sub	ecx, sizeof.ETH_header
+        DEBUGF  1,"ETH_input - size: %u\n", ecx
+        cmp     ecx, ETH_FRAME_MINIMUM
+        jb      .dump
+        sub     ecx, sizeof.ETH_header
 
-	lea	edx, [eax + sizeof.ETH_header]
-	mov	ax , [eax + ETH_header.Type]
+        lea     edx, [eax + sizeof.ETH_header]
+        mov     ax , [eax + ETH_header.Type]
 
-	cmp	ax, ETHER_IPv4
-	je	IPv4_input
+        cmp     ax, ETHER_IPv4
+        je      IPv4_input
 
-	cmp	ax, ETHER_ARP
-	je	ARP_input
+        cmp     ax, ETHER_ARP
+        je      ARP_input
 
 ;        cmp     ax, ETHER_PPP_DISCOVERY
 ;        je      PPPOE_discovery
 
-	DEBUGF	2,"Unknown ethernet packet type %x\n", ax
+        DEBUGF  2,"Unknown ethernet packet type %x\n", ax
 
   .dump:
-	DEBUGF	2,"ETH_input - dumping\n"
-	call	kernel_free
-	add	esp, 4
-	ret
+        DEBUGF  2,"ETH_input - dumping\n"
+        call    kernel_free
+        add     esp, 4
+        ret
 
 ;-----------------------------------------------------------------
 ;
@@ -108,60 +108,53 @@ ETH_input:
 align 4
 ETH_output:
 
-	DEBUGF	1,"ETH_output: size=%u device:%x\n", ecx, ebx
+        DEBUGF  1,"ETH_output: size=%u device:%x\n", ecx, ebx
 
-	cmp	ecx, [ebx + NET_DEVICE.mtu]
-	ja	.exit
+        cmp     ecx, [ebx + NET_DEVICE.mtu]
+        ja      .exit
 
-	push	ecx			; << 1
-	push	di eax edx		; << 2
-	add	ecx, sizeof.ETH_header
+        push    ecx
+        push    di eax edx
 
-	push	ecx			; << 3
+        add     ecx, sizeof.ETH_header
+        stdcall kernel_alloc, ecx
+        test    eax, eax
+        jz      .out_of_ram
+        mov     edi, eax
 
-	push	ecx			; << 4
-	call	kernel_alloc		; >> 4
-	test	eax, eax
-	jz	.out_of_ram
-	mov	edi, eax
+        pop     esi
+        movsd
+        movsw
+        pop     esi
+        movsd
+        movsw
+        pop     ax
+        stosw
 
-	pop	ecx			; >> 3
+        lea     eax, [edi - sizeof.ETH_header]  ; Set eax to buffer start
+        pop     ecx
+        lea     edx, [ecx + sizeof.ETH_header]  ; Set edx to complete buffer size
 
-	pop	esi			; >> 2
-	movsd
-	movsw
-	pop	esi			; >> 2
-	movsd
-	movsw
-	pop	ax			; >> 2
-	stosw
-
-	lea	eax, [edi - sizeof.ETH_header]	; Set eax to buffer start
-	mov	edx, ecx			; Set edx to complete buffer size
-
-	pop	ecx			; >> 1
-
-	cmp	edx, ETH_FRAME_MINIMUM
-	jb	.adjust_size
-	DEBUGF	1,"ETH_output: done: %x total size: %u\n", eax, edx
-	ret
+        cmp     edx, ETH_FRAME_MINIMUM
+        jb      .adjust_size
+        DEBUGF  1,"ETH_output: done: %x total size: %u\n", eax, edx
+        ret
 
   .adjust_size:
-	mov	edx, ETH_FRAME_MINIMUM
-	test	edx, edx	; clear zero flag
-	ret
+        mov     edx, ETH_FRAME_MINIMUM
+        test    edx, edx        ; clear zero flag
+        ret
 
   .out_of_ram:
-	DEBUGF	2,"ETH_output: Out of ram space!!\n"
-	add	esp, 3*4+2+4
-	sub	edi, edi
-	ret
+        DEBUGF  2,"ETH_output: Out of ram space!!\n"
+        add     esp, 4+4+2+4
+        sub     edi, edi
+        ret
 
   .exit:
-	DEBUGF	2,"ETH_output: Packet too large!\n"
-	sub	edi, edi
-;;;        dec     edi
-	ret
+        DEBUGF  2,"ETH_output: Packet too large!\n"
+        sub     edi, edi
+        ret
 
 
 
@@ -181,64 +174,64 @@ ETH_output:
 align 4
 ETH_API:
 
-	cmp	bh, MAX_NET_DEVICES
-	ja	.error
-	movzx	eax, bh
-	shl	eax, 2
+        cmp     bh, MAX_NET_DEVICES
+        ja      .error
+        movzx   eax, bh
+        shl     eax, 2
 
-	mov	eax, dword [NET_DRV_LIST + eax]
-	cmp	[eax + NET_DEVICE.type], NET_TYPE_ETH
-	jne	.error
+        mov     eax, dword [NET_DRV_LIST + eax]
+        cmp     [eax + NET_DEVICE.type], NET_TYPE_ETH
+        jne     .error
 
-	test	bl, bl
-	jz	.packets_tx	; 0
-	dec	bl
-	jz	.packets_rx	; 1
-	dec	bl
-	jz	.bytes_tx	; 2
-	dec	bl
-	jz	.bytes_rx	; 3
-	dec	bl
-	jz	.read_mac	; 4
-	dec	bl
-	jz	.write_mac	; 5
+        test    bl, bl
+        jz      .packets_tx     ; 0
+        dec     bl
+        jz      .packets_rx     ; 1
+        dec     bl
+        jz      .bytes_tx       ; 2
+        dec     bl
+        jz      .bytes_rx       ; 3
+        dec     bl
+        jz      .read_mac       ; 4
+        dec     bl
+        jz      .write_mac      ; 5
 
   .error:
-	DEBUGF	2,"Device is not ethernet type\n"
-	or	eax, -1
-	ret
+        DEBUGF  2,"Device is not ethernet type\n"
+        or      eax, -1
+        ret
 
 .packets_tx:
-	mov	eax, [eax + NET_DEVICE.packets_tx]
+        mov     eax, [eax + NET_DEVICE.packets_tx]
 
-	ret
+        ret
 
 .packets_rx:
-	mov	eax, [eax + NET_DEVICE.packets_rx]
-	ret
+        mov     eax, [eax + NET_DEVICE.packets_rx]
+        ret
 
 .bytes_tx:
-	mov	ebx, dword [eax + NET_DEVICE.bytes_tx + 4]
-	mov	eax, dword [eax + NET_DEVICE.bytes_tx]
-	mov	[esp+20+4], ebx 			; TODO: fix this ugly code
-	ret
+        mov     ebx, dword [eax + NET_DEVICE.bytes_tx + 4]
+        mov     eax, dword [eax + NET_DEVICE.bytes_tx]
+        mov     [esp+20+4], ebx                         ; TODO: fix this ugly code
+        ret
 
 .bytes_rx:
-	mov	ebx, dword [eax + NET_DEVICE.bytes_rx + 4]
-	mov	eax, dword [eax + NET_DEVICE.bytes_rx]
-	mov	[esp+20+4], ebx 			; TODO: fix this ugly code
-	ret
+        mov     ebx, dword [eax + NET_DEVICE.bytes_rx + 4]
+        mov     eax, dword [eax + NET_DEVICE.bytes_rx]
+        mov     [esp+20+4], ebx                         ; TODO: fix this ugly code
+        ret
 
 
 .read_mac:
-	movzx	ebx, word [eax + ETH_DEVICE.mac]
-	mov	eax, dword [eax + ETH_DEVICE.mac + 2]
-	mov	[esp+20+4], ebx 			; TODO: fix this ugly code
-	ret
+        movzx   ebx, word [eax + ETH_DEVICE.mac]
+        mov     eax, dword [eax + ETH_DEVICE.mac + 2]
+        mov     [esp+20+4], ebx                         ; TODO: fix this ugly code
+        ret
 
 .write_mac:
-	push	ecx
-	push	dx
-	call	[eax + ETH_DEVICE.set_MAC]
-	ret
+        push    ecx
+        push    dx
+        call    [eax + ETH_DEVICE.set_MAC]
+        ret
 

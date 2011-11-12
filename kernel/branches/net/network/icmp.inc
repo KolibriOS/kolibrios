@@ -89,19 +89,19 @@ ICMP_PHOTURIS_DECRYPT_FAILED    equ 3                ; decrypt failed
 
 struct  ICMP_header
 
-        Type                    db   ?
-        Code                    db   ?
-        Checksum                dw   ?
-        Identifier              dw   ?
-        SequenceNumber          dw   ?
+        Type                    db ?
+        Code                    db ?
+        Checksum                dw ?
+        Identifier              dw ?
+        SequenceNumber          dw ?
 
 ends
 
 
 align 4
 uglobal
-        ICMP_PACKETS_TX         rd  MAX_IP
-        ICMP_PACKETS_RX         rd  MAX_IP
+        ICMP_PACKETS_TX         rd MAX_IP
+        ICMP_PACKETS_RX         rd MAX_IP
 endg
 
 

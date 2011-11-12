@@ -172,7 +172,7 @@ UDP_input:
        @@:
 
         cmp     [eax + UDP_SOCKET.firstpacket], 0
-        jz      .updateport
+        je      .updateport
 
         cmp     [eax + UDP_SOCKET.RemotePort], cx
         jne     .dump
@@ -197,9 +197,8 @@ UDP_input:
         call    wait_mutex
         pop     ebx
 
-        mov     si, [edx + UDP_header.SourcePort]
-        DEBUGF  1,"Changing remote port to: %u\n", si
-        mov     [eax + UDP_SOCKET.RemotePort], si
+        DEBUGF  1,"Changing remote port to: %u\n", cx
+        mov     [eax + UDP_SOCKET.RemotePort], cx
         inc     [eax + UDP_SOCKET.firstpacket]
 
         jmp     .updatesock
@@ -323,11 +322,9 @@ UDP_API:
         ret
 
 .packets_tx:
-        add     eax, UDP_PACKETS_TX
-        mov     eax, [eax]
+        mov     eax, [UDP_PACKETS_TX + eax]
         ret
 
 .packets_rx:
-        add     eax, UDP_PACKETS_RX
-        mov     eax, [eax]
+        mov     eax, [UDP_PACKETS_RX + eax]
         ret
