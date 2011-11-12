@@ -126,6 +126,7 @@ dd  0x10298086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit, 0
 dd  0x12298086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit, 0
 dd  0x10308086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit, 0
 dd  0x24498086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit, 0
+dd  0x10688086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit, 0
 
 dd  0x802910ec, rtl8029_probe, rtl8029_reset, rtl8029_poll, rtl8029_transmit, 0
 
