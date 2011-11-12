@@ -34,52 +34,47 @@ $Revision$
 align 4
 TCP_input:
 
-       DEBUGF  1,"TCP_input size=%u ", ecx
-; Offset must be greater than or equal to the size of the standard TCP header (20) and less than or equal to the TCP length.
+        DEBUGF  1,"TCP_input size=%u\n", ecx
 
-        movzx   eax, [edx + TCP_header.DataOffset]
-        and     eax, 0xf0
-        shr     al, 2
-
-        DEBUGF  1,"headersize=%u\n", eax
-
-        cmp     eax, TCP_header.DataOffset
-        jb      .drop_not_locked
+        and     [edx + TCP_header.DataOffset], 0xf0                     ; Calculate TCP segment header size (throwing away unused reserved bits in TCP header)
+        shr     [edx + TCP_header.DataOffset], 2
+        cmp     [edx + TCP_header.DataOffset], sizeof.TCP_header        ; Now see if it's at least the size of a standard TCP header
+        jb      .drop_not_locked                                        ; If not, drop the packet
 
 ;-------------------------------
 ; Now, re-calculate the checksum
 
-        push    eax ecx edx
+        push    ecx edx
         pushw   [edx + TCP_header.Checksum]
         mov     [edx + TCP_header.Checksum], 0
         mov     esi, edx
         TCP_checksum (edi), (edi+4)
         pop     cx              ; previous checksum
         cmp     cx, dx
-        pop     edx ecx esi
+        pop     edx ecx
         jnz     .drop_not_locked
 
-        DEBUGF  1,"Checksum is correct\n"
+        DEBUGF  1,"Checksum ok\n"
 
-        sub     ecx, esi        ; substract TCP header size from total segment size
-        jb      .drop_not_locked
+        sub     ecx, [edx + TCP_header.DataOffset]                      ; substract TCP header size from total segment size
+        jb      .drop_not_locked                                        ; If total segment size is less then the advertised header size, drop packet
         DEBUGF  1,"we got %u bytes of data\n", ecx
 
 ;-----------------------------------------------------------------------------------------
 ; Check if this packet has a timestamp option (We do it here so we can process it quickly)
 
-        cmp     esi, TCP_header.DataOffset + 12                ; Timestamp option is 12 bytes
+        cmp     [edx + TCP_header.DataOffset], sizeof.TCP_header + 12           ; Timestamp option is 12 bytes
         jb      .no_timestamp
         je      .is_ok
 
-        cmp     byte [edx + sizeof.TCP_header + 12], TCP_OPT_EOL ; end of option list
+        cmp     byte [edx + sizeof.TCP_header + 12], TCP_OPT_EOL                ; end of option list
         jne     .no_timestamp
 
   .is_ok:
-        test    [edx + TCP_header.Flags], TH_SYN               ; SYN flag must not be set
+        test    [edx + TCP_header.Flags], TH_SYN                                ; SYN flag must not be set
         jnz     .no_timestamp
 
-        cmp     dword [edx + sizeof.TCP_header], 0x0101080a      ; Timestamp header
+        cmp     dword [edx + sizeof.TCP_header], 0x0101080a                     ; Timestamp header
         jne     .no_timestamp
 
         DEBUGF  1,"timestamp ok\n"
@@ -105,9 +100,10 @@ TCP_input:
 
 ; IP Packet TCP Destination Port = local Port
 ; (IP Packet SenderAddress = Remote IP)  OR  (Remote IP = 0)
-; (IP Packet TCP Source Port = remote Port)  OR (remote Port = 0)
+; (IP Packet TCP Source Port = remote Port) OR (remote Port = 0)
 
         mov     ebx, net_sockets
+        mov     si, [edx + TCP_header.DestinationPort]
 
   .socket_loop:
         mov     ebx, [ebx + SOCKET.NextPtr]
@@ -120,8 +116,7 @@ TCP_input:
         cmp     [ebx + SOCKET.Protocol], IP_PROTO_TCP
         jne     .socket_loop
 
-        mov     ax, [edx + TCP_header.DestinationPort]
-        cmp     [ebx + TCP_SOCKET.LocalPort], ax
+        cmp     [ebx + TCP_SOCKET.LocalPort], si
         jne     .socket_loop
 
         mov     eax, [ebx + IP_SOCKET.RemoteIP]
@@ -136,10 +131,9 @@ TCP_input:
         je      .found_socket
         test    ax, ax
         jnz     .socket_loop
-  .found_socket:
+  .found_socket:                                        ; ebx now contains the socketpointer
         DEBUGF  1,"Socket ptr: %x\n", ebx
 
-; ebx now contains the pointer to the socket
 
 ;----------------------------
 ; Check if socket isnt closed
@@ -157,7 +151,6 @@ TCP_input:
         DEBUGF  1,"lock: %x\n", [ebx]
         call    wait_mutex
         sub     ebx, SOCKET.lock
-
 
         DEBUGF  1,"Socket locked\n"
 
@@ -209,7 +202,8 @@ TCP_input:
 ;--------------------
 ; Process TCP options
 
-        cmp     esi, TCP_header.DataOffset              ; Does header contain any options?
+        mov     eax, [edx + TCP_header.DataOffset]
+        cmp     eax, TCP_header.DataOffset              ; Does header contain any options?
         je      .no_options
 
         DEBUGF  1,"Segment has options\n"
@@ -217,7 +211,7 @@ TCP_input:
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_LISTEN ; no options when in listen state
         jz      .not_uni_xfer                           ; also no header prediction
 
-        lea     eax, [edx + esi]
+        add     eax, edx
         lea     esi, [edx + sizeof.TCP_header]
 
   .opt_loop:
@@ -413,8 +407,6 @@ TCP_input:
         add     [ebx + TCP_SOCKET.RCV_NXT], ecx         ; Update sequence number with number of bytes we have copied
 
         movzx   esi, [edx + TCP_header.DataOffset]
-        and     esi, 0xf0
-        shr     esi, 2
         add     esi, edx
         lea     eax, [ebx + STREAM_SOCKET.rcv]
         call    SOCKET_ring_write                       ; Add the data to the socket buffer
@@ -909,7 +901,8 @@ align 4
         cmp     eax, [ebx + TCP_SOCKET.SND_MAX]
         ja      .drop_with_reset
 
-        ;;; update stats
+;;; TODO: update stats
+
         mov     eax, ebx
         call    SOCKET_is_connected
         mov     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
@@ -921,11 +914,11 @@ align 4
         test    [ebx + TCP_SOCKET.t_flags], TF_REQ_SCALE
         jz      @f
 
-        ;;; 810-811
-
+        push    word [ebx + TCP_SOCKET.requested_s_scale]       ; Set send and receive scale factors to the received values
+        pop     word [ebx + TCP_SOCKET.SND_SCALE]
        @@:
 
-        ;;; 813 ?
+;;; TODO: copy the data (if any) into the socket
 
         mov     eax, [edx + TCP_header.SequenceNumber]
         dec     eax
@@ -949,7 +942,7 @@ align 4
 
         DEBUGF  1,"Processing a duplicate ACK..\n"
 
-        cmp     [ebx + TCP_SOCKET.timer_retransmission], 10000 ;;;;
+        cmp     [ebx + TCP_SOCKET.timer_retransmission], 10000 ;;;;  FIXME
         ja      @f
 
         mov     eax, [edx + TCP_header.AckNumber]
@@ -1246,7 +1239,7 @@ align 4
         cmp     eax, [edx + TCP_header.AckNumber]
         jne     .no_window_update
 
-        movzx   eax, [edx + TCP_header.Window]
+        mov     eax, dword [edx + TCP_header.Window]
         cmp     eax, [ebx + TCP_SOCKET.SND_WND]
         jbe     .no_window_update
 
@@ -1353,8 +1346,6 @@ align 4
 ;; TODO: check if data is in sequence !
 
         movzx   esi, [edx + TCP_header.DataOffset]
-        and     esi, 0xf0
-        shr     esi, 2
         add     esi, edx
 
         or      [ebx + TCP_SOCKET.t_flags], TF_DELACK

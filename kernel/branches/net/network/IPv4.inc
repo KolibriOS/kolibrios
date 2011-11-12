@@ -120,7 +120,7 @@ local   .loop
 
 macro IPv4_checksum ptr {
 
-; This is the fast procedure to create or check a IP header without options
+; This is the fast procedure to create or check an IP header without options
 ; To create a new checksum, the checksum field must be set to 0 before computation
 ; To check an existing checksum, leave the checksum as is, and it will be 0 after this procedure, if it was correct
 
