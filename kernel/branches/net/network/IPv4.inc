@@ -18,57 +18,57 @@
 
 $Revision$
 
-MAX_FRAGMENTS	equ 64
-MAX_IP		equ MAX_NET_DEVICES
+MAX_FRAGMENTS   equ 64
+MAX_IP          equ MAX_NET_DEVICES
 IP_MAX_INTERFACES   equ MAX_IP
 
-struct	IPv4_header
+struct  IPv4_header
 
-	VersionAndIHL	       db  ?  ; Version[0-3 bits] and IHL(header length)[4-7 bits]
-	TypeOfService	       db  ?  ; precedence [7-5] minimize delay [4], maximize throughput [3], maximize riliability [2] minimize momentary cost [1] and zero [0]
-	TotalLength	       dw  ?
-	Identification	       dw  ?
-	FlagsAndFragmentOffset dw  ?  ; Flags[0-2] and FragmentOffset[3-15]
-	TimeToLive	       db  ?  ;
-	Protocol	       db  ?
-	HeaderChecksum	       dw  ?
-	SourceAddress	       dd  ?
-	DestinationAddress     dd  ?
-
-ends
-
-struct	FRAGMENT_slot
-
-	ttl		       dw  ?  ; Time to live for this entry, 0 for empty slot's
-	id		       dw  ?  ; Identification field from IP header
-	SrcIP		       dd  ?  ; .. from IP header
-	DstIP		       dd  ?  ; .. from IP header
-	ptr		       dd  ?  ; Pointer to first packet
+        VersionAndIHL          db  ?  ; Version[0-3 bits] and IHL(header length)[4-7 bits]
+        TypeOfService          db  ?  ; precedence [7-5] minimize delay [4], maximize throughput [3], maximize riliability [2] minimize momentary cost [1] and zero [0]
+        TotalLength            dw  ?
+        Identification         dw  ?
+        FlagsAndFragmentOffset dw  ?  ; Flags[0-2] and FragmentOffset[3-15]
+        TimeToLive             db  ?  ;
+        Protocol               db  ?
+        HeaderChecksum         dw  ?
+        SourceAddress          dd  ?
+        DestinationAddress     dd  ?
 
 ends
 
-struct	FRAGMENT_entry		       ; This structure will replace the ethernet header in fragmented ip packets
+struct  FRAGMENT_slot
 
-	PrevPtr 	       dd  ?  ; Pointer to previous fragment entry  (-1 for first packet)
-	NextPtr 	       dd  ?  ; Pointer to next fragment entry (-1 for last packet)
-	Owner		       dd  ?  ; Pointer to structure of driver
-			       rb  2  ; to match ethernet header size          ; TODO: fix this hack
-				      ; Ip header begins here (we will need the IP header to re-construct the complete packet)
+        ttl                    dw  ?  ; Time to live for this entry, 0 for empty slot's
+        id                     dw  ?  ; Identification field from IP header
+        SrcIP                  dd  ?  ; .. from IP header
+        DstIP                  dd  ?  ; .. from IP header
+        ptr                    dd  ?  ; Pointer to first packet
+
+ends
+
+struct  FRAGMENT_entry                 ; This structure will replace the ethernet header in fragmented ip packets
+
+        PrevPtr                dd  ?  ; Pointer to previous fragment entry  (-1 for first packet)
+        NextPtr                dd  ?  ; Pointer to next fragment entry (-1 for last packet)
+        Owner                  dd  ?  ; Pointer to structure of driver
+                               rb  2  ; to match ethernet header size          ; TODO: fix this hack
+                                      ; Ip header begins here (we will need the IP header to re-construct the complete packet)
 ends
 
 
 align 4
 uglobal
 
-	IP_LIST 	rd  MAX_IP
-	SUBNET_LIST	rd  MAX_IP
-	DNS_LIST	rd  MAX_IP
-	GATEWAY_LIST	rd  MAX_IP
+        IP_LIST         rd  MAX_IP
+        SUBNET_LIST     rd  MAX_IP
+        DNS_LIST        rd  MAX_IP
+        GATEWAY_LIST    rd  MAX_IP
 
-	IP_PACKETS_TX	rd  MAX_IP
-	IP_PACKETS_RX	rd  MAX_IP
+        IP_PACKETS_TX   rd  MAX_IP
+        IP_PACKETS_RX   rd  MAX_IP
 
-	FRAGMENT_LIST	rb  MAX_FRAGMENTS * sizeof.FRAGMENT_slot
+        FRAGMENT_LIST   rb  MAX_FRAGMENTS * sizeof.FRAGMENT_slot
 endg
 
 
@@ -79,16 +79,16 @@ endg
 ;  This function resets all IP variables
 ;
 ;-----------------------------------------------------------------
-macro	IPv4_init {
+macro   IPv4_init {
 
-	xor	eax, eax
-	mov	edi, IP_LIST
-	mov	ecx, 4*MAX_IP
-	rep	stosd
+        xor     eax, eax
+        mov     edi, IP_LIST
+        mov     ecx, 4*MAX_IP
+        rep     stosd
 
-	mov	edi, FRAGMENT_LIST
-	mov	ecx, sizeof.FRAGMENT_slot*MAX_FRAGMENTS/4 + 2*MAX_IP
-	rep	stosd
+        mov     edi, FRAGMENT_LIST
+        mov     ecx, sizeof.FRAGMENT_slot*MAX_FRAGMENTS/4 + 2*MAX_IP
+        rep     stosd
 
 }
 
@@ -100,20 +100,20 @@ macro	IPv4_init {
 ;-----------------------------------------------------------------
 macro IPv4_decrease_fragment_ttls {
 
-local	.loop
+local   .loop
 
-	mov	esi, FRAGMENT_LIST
-	mov	ecx, MAX_FRAGMENTS
+        mov     esi, FRAGMENT_LIST
+        mov     ecx, MAX_FRAGMENTS
   .loop:
-	cmp	[esi + FRAGMENT_slot.ttl], 0
-	je	.try_next
-	dec	[esi + FRAGMENT_slot.ttl]
-	jnz	.try_next
-	DEBUGF 1,"Fragment slot timed-out!\n"
+        cmp     [esi + FRAGMENT_slot.ttl], 0
+        je      .try_next
+        dec     [esi + FRAGMENT_slot.ttl]
+        jnz     .try_next
+        DEBUGF 1,"Fragment slot timed-out!\n"
 ;;; TODO: clear all entry's of timed-out slot
   .try_next:
-	add	esi, 4
-	loop	.loop
+        add     esi, 4
+        loop    .loop
 }
 
 
@@ -124,59 +124,59 @@ macro IPv4_checksum ptr {
 ; To create a new checksum, the checksum field must be set to 0 before computation
 ; To check an existing checksum, leave the checksum as is, and it will be 0 after this procedure, if it was correct
 
-	push	ebx
-	xor	ebx, ebx
-	add	bl, [ptr+1]
-	adc	bh, [ptr+0]
+        push    ebx
+        xor     ebx, ebx
+        add     bl, [ptr+1]
+        adc     bh, [ptr+0]
 
-	adc	bl, [ptr+3]
-	adc	bh, [ptr+2]
+        adc     bl, [ptr+3]
+        adc     bh, [ptr+2]
 
-	adc	bl, [ptr+5]
-	adc	bh, [ptr+4]
+        adc     bl, [ptr+5]
+        adc     bh, [ptr+4]
 
-	adc	bl, [ptr+7]
-	adc	bh, [ptr+6]
+        adc     bl, [ptr+7]
+        adc     bh, [ptr+6]
 
-	adc	bl, [ptr+9]
-	adc	bh, [ptr+8]
+        adc     bl, [ptr+9]
+        adc     bh, [ptr+8]
 
 ; we skip 11th and 12th byte, they are the checksum bytes and should be 0 for re-calculation
 
-	adc	bl, [ptr+13]
-	adc	bh, [ptr+12]
+        adc     bl, [ptr+13]
+        adc     bh, [ptr+12]
 
-	adc	bl, [ptr+15]
-	adc	bh, [ptr+14]
+        adc     bl, [ptr+15]
+        adc     bh, [ptr+14]
 
-	adc	bl, [ptr+17]
-	adc	bh, [ptr+16]
+        adc     bl, [ptr+17]
+        adc     bh, [ptr+16]
 
-	adc	bl, [ptr+19]
-	adc	bh, [ptr+18]
+        adc     bl, [ptr+19]
+        adc     bh, [ptr+18]
 
-	adc	ebx, 0
+        adc     ebx, 0
 
-	push	ecx
-	mov	ecx, ebx
-	shr	ecx, 16
-	and	ebx, 0xffff
-	add	ebx, ecx
+        push    ecx
+        mov     ecx, ebx
+        shr     ecx, 16
+        and     ebx, 0xffff
+        add     ebx, ecx
 
-	mov	ecx, ebx
-	shr	ecx, 16
-	add	ebx, ecx
+        mov     ecx, ebx
+        shr     ecx, 16
+        add     ebx, ecx
 
-	not	bx
-	jnz	.not_zero
-	dec	bx
+        not     bx
+        jnz     .not_zero
+        dec     bx
   .not_zero:
-	xchg	bl, bh
-	pop	ecx
+        xchg    bl, bh
+        pop     ecx
 
-	neg	word [ptr+10]		; zero will stay zero so we just get the checksum
-	add	word [ptr+10], bx	;  , else we will get (new checksum - old checksum) in the end, wich should be 0 :)
-	pop	ebx
+        neg     word [ptr+10]           ; zero will stay zero so we just get the checksum
+        add     word [ptr+10], bx       ;  , else we will get (new checksum - old checksum) in the end, wich should be 0 :)
+        pop     ebx
 
 }
 
@@ -199,129 +199,127 @@ macro IPv4_checksum ptr {
 ;
 ;-----------------------------------------------------------------
 align 4
-IPv4_input:	 ; TODO: implement handler for IP options
-		 ; TODO2: add code for raw sockets
+IPv4_input:      ; TODO: implement handler for IP options
+                 ; TODO2: add code for raw sockets
 
-	DEBUGF	1,"IPv4_Handler, packet from: %u.%u.%u.%u ",\
-	[edx + IPv4_header.SourceAddress]:1,[edx + IPv4_header.SourceAddress + 1]:1,[edx + IPv4_header.SourceAddress + 2]:1,[edx + IPv4_header.SourceAddress + 3]:1
-	DEBUGF	1,"to: %u.%u.%u.%u\n",\
-	[edx + IPv4_header.DestinationAddress]:1,[edx + IPv4_header.DestinationAddress + 1]:1,[edx + IPv4_header.DestinationAddress + 2]:1,[edx + IPv4_header.DestinationAddress + 3]:1
+        DEBUGF  1,"IPv4_Handler, packet from: %u.%u.%u.%u ",\
+        [edx + IPv4_header.SourceAddress]:1,[edx + IPv4_header.SourceAddress + 1]:1,[edx + IPv4_header.SourceAddress + 2]:1,[edx + IPv4_header.SourceAddress + 3]:1
+        DEBUGF  1,"to: %u.%u.%u.%u\n",\
+        [edx + IPv4_header.DestinationAddress]:1,[edx + IPv4_header.DestinationAddress + 1]:1,[edx + IPv4_header.DestinationAddress + 2]:1,[edx + IPv4_header.DestinationAddress + 3]:1
 
 ;-------------------------------------------
 ; Check if the packet still has time to live
 
-	cmp	byte [edx + IPv4_header.TimeToLive], 0
-	je	.dump
+        cmp     byte [edx + IPv4_header.TimeToLive], 0
+        je      .dump
 
 ;--------------------------------------
 ; First, check if IP packet has options
 
-	movzx	eax, [edx + IPv4_header.VersionAndIHL]
-	and	al , 0x0f					; get IHL(header length)
-	cmp	al , 0x05					; IHL!= 5*4(20 bytes)
-	jnz	.has_options
+        movzx   eax, [edx + IPv4_header.VersionAndIHL]
+        and     al , 0x0f                                       ; get IHL(header length)
+        cmp     al , 0x05                                       ; IHL!= 5*4(20 bytes)
+        jnz     .has_options
 
 ;-------------------------------
 ; Now, re-calculate the checksum
 
-	IPv4_checksum edx
-	jnz	.dump						; if checksum isn't valid then dump packet
+        IPv4_checksum edx
+        jnz     .dump                                           ; if checksum isn't valid then dump packet
 
-	DEBUGF	1,"IPv4 Checksum is correct\n"
+        DEBUGF  1,"IPv4 Checksum is correct\n"
 
 ;-----------------------------------
 ; Check if destination IP is correct
 
-	call	NET_ptr_to_num
-	shl	edi, 2
+        call    NET_ptr_to_num
+        shl     edi, 2
 
-	; check if it matches local ip
+        ; check if it matches local ip
 
-	mov	eax, [IP_LIST+edi]
-	cmp	[edx + IPv4_header.DestinationAddress], eax
-	je	.ip_ok
+        mov     eax, [IP_LIST+edi]
+        cmp     [edx + IPv4_header.DestinationAddress], eax
+        je      .ip_ok
 
-	; check for broadcast
+        ; check for broadcast
 
-	mov	eax, [SUBNET_LIST+edi]
-	not	eax
-	or	eax, [IP_LIST+edi]
-	cmp	[edx + IPv4_header.DestinationAddress], eax
-	je	.ip_ok
+        mov     eax, [SUBNET_LIST+edi]
+        not     eax
+        or      eax, [IP_LIST+edi]
+        cmp     [edx + IPv4_header.DestinationAddress], eax
+        je      .ip_ok
 
-	; or a special broadcast
+        ; or a special broadcast
 
-	cmp	[edx + IPv4_header.DestinationAddress], -1
-	je	.ip_ok
+        cmp     [edx + IPv4_header.DestinationAddress], -1
+        je      .ip_ok
 
-	; maybe it's a multicast then
+        ; maybe it's a multicast then
 
-	mov	eax, [edx + IPv4_header.DestinationAddress]
-	and	eax, 0xff000000
+        mov     eax, [edx + IPv4_header.DestinationAddress]
+        and     eax, 0xff000000
 ;        cmp     eax, 224 shl 24
 ;        je      .ip_ok
 
-	; or a loopback address
+        ; or a loopback address
 
-	cmp	eax, 127 shl 24
-	je	.ip_ok
+        cmp     eax, 127 shl 24
+        je      .ip_ok
 
-	; or it's not meant for us..
+        ; or it's not meant for us..
 
-	DEBUGF	2,"Destination address does not match!\n"
-	jmp	.dump
+        DEBUGF  2,"Destination address does not match!\n"
+        jmp     .dump
 
 ;------------------------
 ; Now we can update stats
 
   .ip_ok:
-	inc	[IP_PACKETS_RX+edi]
+        inc     [IP_PACKETS_RX+edi]
 
 ;----------------------------------
 ; Check if the packet is fragmented
 
-	test	[edx + IPv4_header.FlagsAndFragmentOffset], 1 shl 5	; Is 'more fragments' flag set ?
-	jnz	.has_fragments						; If so, we definately have a fragmented packet
+        test    [edx + IPv4_header.FlagsAndFragmentOffset], 1 shl 5     ; Is 'more fragments' flag set ?
+        jnz     .has_fragments                                          ; If so, we definately have a fragmented packet
 
-	test	[edx + IPv4_header.FlagsAndFragmentOffset], 0xff1f	; If flag is not set, but there is a fragment offset, the packet is last in series of fragmented packets
-	jnz	.is_last_fragment
+        test    [edx + IPv4_header.FlagsAndFragmentOffset], 0xff1f      ; If flag is not set, but there is a fragment offset, the packet is last in series of fragmented packets
+        jnz     .is_last_fragment
 
 ;-------------------------------------------------------------------
 ; No, it's just a regular IP packet, pass it to the higher protocols
 
-  .handle_it:							; We reach here if packet hasnt been fragmented, or when it already has been re-constructed
-	movzx	eax, [edx + IPv4_header.VersionAndIHL]		; Calculate Header length by using IHL field
-	and	eax, 0x0000000f 				;
-	shl	eax, 2						;
-	movzx	ecx, [edx + IPv4_header.TotalLength]		; Calculate length of encapsulated Packet
-	xchg	cl , ch 					;
-	sub	ecx, eax					;
+  .handle_it:                                                   ; We reach here if packet hasnt been fragmented, or when it already has been re-constructed
 
-	add	eax, edx
-	push	eax
+        movzx   esi, [edx + IPv4_header.VersionAndIHL]          ; Calculate Header length by using IHL field
+        and     esi, 0x0000000f                                 ;
+        shl     esi, 2                                          ;
 
-	mov	esi, [edx + IPv4_header.SourceAddress]		; These values might be of interest to the higher protocols
-	mov	edi, [edx + IPv4_header.DestinationAddress]	;
-	mov	al , [edx + IPv4_header.Protocol]
-	pop	edx						; Offset to data (tcp/udp/icmp/.. Packet)
+        movzx   ecx, [edx + IPv4_header.TotalLength]            ; Calculate length of encapsulated Packet
+        xchg    cl , ch                                         ;
+        sub     ecx, esi                                        ;
 
-	cmp	al , IP_PROTO_TCP
-	je	TCP_input
+        lea     edi, [edx + IPv4_header.SourceAddress]          ; make edi ptr to source and dest IPv4 address
+        mov     al , [edx + IPv4_header.Protocol]
+        add     edx, esi                                        ; make edi ptr to data
 
-	cmp	al , IP_PROTO_UDP
-	je	UDP_input
+        cmp     al , IP_PROTO_TCP
+        je      TCP_input
 
-	cmp	al , IP_PROTO_ICMP
-	je	ICMP_input
+        cmp     al , IP_PROTO_UDP
+        je      UDP_input
 
-	DEBUGF	2,"unknown Internet protocol: %u\n", al
+        cmp     al , IP_PROTO_ICMP
+        je      ICMP_input
+
+        DEBUGF  2,"unknown Internet protocol: %u\n", al
 
   .dump:
-	DEBUGF	2,"IP_Handler - dumping\n"
+        DEBUGF  2,"IP_Handler - dumping\n"
 ;        inc     [dumped_rx_count]
-	call	kernel_free
-	add	esp, 4						; pop (balance stack)
-	ret
+        call    kernel_free
+        add     esp, 4                                          ; pop (balance stack)
+        ret
 
 
 ;---------------------------
@@ -329,204 +327,204 @@ IPv4_input:	 ; TODO: implement handler for IP options
 
 
   .has_fragments:
-	movzx	eax, [edx + IPv4_header.FlagsAndFragmentOffset]
-	xchg	al , ah
-	shl	ax , 3
+        movzx   eax, [edx + IPv4_header.FlagsAndFragmentOffset]
+        xchg    al , ah
+        shl     ax , 3
 
-	DEBUGF	1,"Fragmented packet, offset:%u, id:%x\n", ax, [edx + IPv4_header.Identification]:4
+        DEBUGF  1,"Fragmented packet, offset:%u, id:%x\n", ax, [edx + IPv4_header.Identification]:4
 
-	test	ax , ax 					; Is this the first packet of the fragment?
-	jz	.is_first_fragment
+        test    ax , ax                                         ; Is this the first packet of the fragment?
+        jz      .is_first_fragment
 
 
 ;-------------------------------------------------------
 ; We have a fragmented IP packet, but it's not the first
 
-	DEBUGF	1,"Middle fragmented packet received!\n"
+        DEBUGF  1,"Middle fragmented packet received!\n"
 
-	call	IPv4_find_fragment_slot
-	cmp	esi, -1
-	je	.dump
+        call    IPv4_find_fragment_slot
+        cmp     esi, -1
+        je      .dump
 
-	mov	[esi + FRAGMENT_slot.ttl], 15			; Reset the ttl
-	mov	esi, [esi + FRAGMENT_slot.ptr]
-	or	edi, -1
-  .find_last_entry:						; The following routine will try to find the last entry
-	cmp	edi, [esi + FRAGMENT_entry.PrevPtr]
-	jne	.destroy_slot					; Damn, something screwed up, remove the whole slot (and free buffers too if possible!)
-	mov	edi, esi
-	mov	esi, [esi + FRAGMENT_entry.NextPtr]
-	cmp	esi, -1
-	jne	.find_last_entry
-								; We found the last entry (pointer is now in edi)
-								; We are going to overwrite the ethernet header in received packet with a FRAGMENT_entry structure
+        mov     [esi + FRAGMENT_slot.ttl], 15                   ; Reset the ttl
+        mov     esi, [esi + FRAGMENT_slot.ptr]
+        or      edi, -1
+  .find_last_entry:                                             ; The following routine will try to find the last entry
+        cmp     edi, [esi + FRAGMENT_entry.PrevPtr]
+        jne     .destroy_slot                                   ; Damn, something screwed up, remove the whole slot (and free buffers too if possible!)
+        mov     edi, esi
+        mov     esi, [esi + FRAGMENT_entry.NextPtr]
+        cmp     esi, -1
+        jne     .find_last_entry
+                                                                ; We found the last entry (pointer is now in edi)
+                                                                ; We are going to overwrite the ethernet header in received packet with a FRAGMENT_entry structure
 
-	pop	eax						; pointer to packet
-	mov	[edi + FRAGMENT_entry.NextPtr], eax		; update pointer of previous entry to the new entry
-	mov	[eax + FRAGMENT_entry.NextPtr], -1
-	mov	[eax + FRAGMENT_entry.PrevPtr], edi
-	mov	[eax + FRAGMENT_entry.Owner], ebx
+        pop     eax                                             ; pointer to packet
+        mov     [edi + FRAGMENT_entry.NextPtr], eax             ; update pointer of previous entry to the new entry
+        mov     [eax + FRAGMENT_entry.NextPtr], -1
+        mov     [eax + FRAGMENT_entry.PrevPtr], edi
+        mov     [eax + FRAGMENT_entry.Owner], ebx
 
-	add	esp, 4
-	ret
+        add     esp, 4
+        ret
 
 
 ;------------------------------------
 ; We have received the first fragment
 
   .is_first_fragment:
-	DEBUGF	1,"First fragmented packet received!\n"
-								; try to locate a free slot..
-	mov	ecx, MAX_FRAGMENTS
-	mov	esi, FRAGMENT_LIST
+        DEBUGF  1,"First fragmented packet received!\n"
+                                                                ; try to locate a free slot..
+        mov     ecx, MAX_FRAGMENTS
+        mov     esi, FRAGMENT_LIST
   .find_free_slot:
-	cmp	word [esi + FRAGMENT_slot.ttl], 0
-	je	.found_free_slot
-	add	esi, sizeof.FRAGMENT_slot
-	loop	.find_free_slot
-	jmp	.dump						; If no free slot was found, dump the packet
+        cmp     word [esi + FRAGMENT_slot.ttl], 0
+        je      .found_free_slot
+        add     esi, sizeof.FRAGMENT_slot
+        loop    .find_free_slot
+        jmp     .dump                                           ; If no free slot was found, dump the packet
 
-  .found_free_slot:						; We found a free slot, let's fill in the FRAGMENT_slot structure
-	mov	[esi + FRAGMENT_slot.ttl], 15			; RFC recommends 15 secs as ttl
-	mov	ax , [edx + IPv4_header.Identification]
-	mov	[esi + FRAGMENT_slot.id], ax
-	mov	eax,[edx + IPv4_header.SourceAddress]
-	mov	[esi + FRAGMENT_slot.SrcIP], eax
-	mov	eax, [edx + IPv4_header.DestinationAddress]
-	mov	[esi + FRAGMENT_slot.DstIP], eax
-	pop	eax
-	mov	[esi + FRAGMENT_slot.ptr], eax
-								; Now, replace ethernet header in original buffer with a FRAGMENT_entry structure
-	mov	[eax + FRAGMENT_entry.NextPtr], -1
-	mov	[eax + FRAGMENT_entry.PrevPtr], -1
-	mov	[eax + FRAGMENT_entry.Owner], ebx
+  .found_free_slot:                                             ; We found a free slot, let's fill in the FRAGMENT_slot structure
+        mov     [esi + FRAGMENT_slot.ttl], 15                   ; RFC recommends 15 secs as ttl
+        mov     ax , [edx + IPv4_header.Identification]
+        mov     [esi + FRAGMENT_slot.id], ax
+        mov     eax,[edx + IPv4_header.SourceAddress]
+        mov     [esi + FRAGMENT_slot.SrcIP], eax
+        mov     eax, [edx + IPv4_header.DestinationAddress]
+        mov     [esi + FRAGMENT_slot.DstIP], eax
+        pop     eax
+        mov     [esi + FRAGMENT_slot.ptr], eax
+                                                                ; Now, replace ethernet header in original buffer with a FRAGMENT_entry structure
+        mov     [eax + FRAGMENT_entry.NextPtr], -1
+        mov     [eax + FRAGMENT_entry.PrevPtr], -1
+        mov     [eax + FRAGMENT_entry.Owner], ebx
 
-	add	esp, 4						; balance stack and exit
-	ret
+        add     esp, 4                                          ; balance stack and exit
+        ret
 
 
 ;-----------------------------------
 ; We have received the last fragment
 
   .is_last_fragment:
-	DEBUGF	1,"Last fragmented packet received!\n"
+        DEBUGF  1,"Last fragmented packet received!\n"
 
-	call	IPv4_find_fragment_slot
-	cmp	esi, -1
-	je	.dump
+        call    IPv4_find_fragment_slot
+        cmp     esi, -1
+        je      .dump
 
-	mov	esi, [esi + FRAGMENT_slot.ptr]			; We found the first entry, let's calculate total size of the packet in eax, so we can allocate a buffer
-	push	esi
-	xor	eax, eax
-	or	edi, -1
+        mov     esi, [esi + FRAGMENT_slot.ptr]                  ; We found the first entry, let's calculate total size of the packet in eax, so we can allocate a buffer
+        push    esi
+        xor     eax, eax
+        or      edi, -1
 
   .count_bytes:
-	cmp	[esi + FRAGMENT_entry.PrevPtr], edi
-	jne	.destroy_slot_pop						; Damn, something screwed up, remove the whole slot (and free buffers too if possible!)
-	mov	cx, [esi + sizeof.FRAGMENT_entry + IPv4_header.TotalLength]	  ; Add total length
-	xchg	cl, ch
-	DEBUGF	1,"Packet size: %u\n", cx
-	add	ax, cx
-	movzx	cx, [esi + sizeof.FRAGMENT_entry + IPv4_header.VersionAndIHL]	  ; Sub Header length
-	and	cx, 0x000F
-	shl	cx, 2
-	DEBUGF	1,"Header size: %u\n", cx
-	sub	ax, cx
-	mov	edi, esi
-	mov	esi, [esi + FRAGMENT_entry.NextPtr]
-	cmp	esi, -1
-	jne	.count_bytes
+        cmp     [esi + FRAGMENT_entry.PrevPtr], edi
+        jne     .destroy_slot_pop                                               ; Damn, something screwed up, remove the whole slot (and free buffers too if possible!)
+        mov     cx, [esi + sizeof.FRAGMENT_entry + IPv4_header.TotalLength]       ; Add total length
+        xchg    cl, ch
+        DEBUGF  1,"Packet size: %u\n", cx
+        add     ax, cx
+        movzx   cx, [esi + sizeof.FRAGMENT_entry + IPv4_header.VersionAndIHL]     ; Sub Header length
+        and     cx, 0x000F
+        shl     cx, 2
+        DEBUGF  1,"Header size: %u\n", cx
+        sub     ax, cx
+        mov     edi, esi
+        mov     esi, [esi + FRAGMENT_entry.NextPtr]
+        cmp     esi, -1
+        jne     .count_bytes
 
-	mov	esi, [esp+4]
-	mov	[edi + FRAGMENT_entry.NextPtr], esi			       ; Add this packet to the chain, this simplifies the following code
-	mov	[esi + FRAGMENT_entry.NextPtr], -1
-	mov	[esi + FRAGMENT_entry.PrevPtr], edi
-	mov	[esi + FRAGMENT_entry.Owner], ebx
+        mov     esi, [esp+4]
+        mov     [edi + FRAGMENT_entry.NextPtr], esi                            ; Add this packet to the chain, this simplifies the following code
+        mov     [esi + FRAGMENT_entry.NextPtr], -1
+        mov     [esi + FRAGMENT_entry.PrevPtr], edi
+        mov     [esi + FRAGMENT_entry.Owner], ebx
 
-	mov	cx, [edx + IPv4_header.TotalLength]			       ; Note: This time we dont substract Header length
-	xchg	cl , ch
-	DEBUGF	1,"Packet size: %u\n", cx
-	add	ax , cx
-	DEBUGF	1,"Total Received data size: %u\n", eax
+        mov     cx, [edx + IPv4_header.TotalLength]                            ; Note: This time we dont substract Header length
+        xchg    cl , ch
+        DEBUGF  1,"Packet size: %u\n", cx
+        add     ax , cx
+        DEBUGF  1,"Total Received data size: %u\n", eax
 
-	push	eax
-	mov	ax , [edx + IPv4_header.FlagsAndFragmentOffset]
-	xchg	al , ah
-	shl	ax , 3
-	add	cx , ax
-	pop	eax
-	DEBUGF	1,"Total Fragment size: %u\n", ecx
+        push    eax
+        mov     ax , [edx + IPv4_header.FlagsAndFragmentOffset]
+        xchg    al , ah
+        shl     ax , 3
+        add     cx , ax
+        pop     eax
+        DEBUGF  1,"Total Fragment size: %u\n", ecx
 
-	cmp	ax, cx
-	jne	.destroy_slot_pop
+        cmp     ax, cx
+        jne     .destroy_slot_pop
 
-	push	eax
-	push	eax
-	call	kernel_alloc
-	test	eax, eax
-	je	.destroy_slot_pop							; If we dont have enough space to allocate the buffer, discard all packets in slot
-	mov	edx, [esp+4]								; Get pointer to first fragment entry back in edx
+        push    eax
+        push    eax
+        call    kernel_alloc
+        test    eax, eax
+        je      .destroy_slot_pop                                                       ; If we dont have enough space to allocate the buffer, discard all packets in slot
+        mov     edx, [esp+4]                                                            ; Get pointer to first fragment entry back in edx
 
   .rebuild_packet_loop:
-	movzx	ecx, [edx + sizeof.FRAGMENT_entry + IPv4_header.FlagsAndFragmentOffset]   ; Calculate the fragment offset
-	xchg	cl , ch 								;  intel byte order
-	shl	cx , 3									;   multiply by 8 and clear first 3 bits
-	DEBUGF	1,"Fragment offset: %u\n", cx
+        movzx   ecx, [edx + sizeof.FRAGMENT_entry + IPv4_header.FlagsAndFragmentOffset]   ; Calculate the fragment offset
+        xchg    cl , ch                                                                 ;  intel byte order
+        shl     cx , 3                                                                  ;   multiply by 8 and clear first 3 bits
+        DEBUGF  1,"Fragment offset: %u\n", cx
 
-	lea	edi, [eax + ecx]							; Notice that edi will be equal to eax for first fragment
-	movzx	ebx, [edx + sizeof.FRAGMENT_entry + IPv4_header.VersionAndIHL]		  ; Find header size (in ebx) of fragment
-	and	bx , 0x000F								;
-	shl	bx , 2									;
+        lea     edi, [eax + ecx]                                                        ; Notice that edi will be equal to eax for first fragment
+        movzx   ebx, [edx + sizeof.FRAGMENT_entry + IPv4_header.VersionAndIHL]            ; Find header size (in ebx) of fragment
+        and     bx , 0x000F                                                             ;
+        shl     bx , 2                                                                  ;
 
-	lea	esi, [edx + sizeof.FRAGMENT_entry]					  ; Set esi to the correct begin of fragment
-	movzx	ecx, [edx + sizeof.FRAGMENT_entry + IPv4_header.TotalLength]		  ; Calculate total length of fragment
-	xchg	cl, ch									;  intel byte order
+        lea     esi, [edx + sizeof.FRAGMENT_entry]                                        ; Set esi to the correct begin of fragment
+        movzx   ecx, [edx + sizeof.FRAGMENT_entry + IPv4_header.TotalLength]              ; Calculate total length of fragment
+        xchg    cl, ch                                                                  ;  intel byte order
 
-	cmp	edi, eax								; Is this packet the first fragment ?
-	je	.first_fragment
-	sub	cx, bx									; If not, dont copy the header
-	add	esi, ebx								;
+        cmp     edi, eax                                                                ; Is this packet the first fragment ?
+        je      .first_fragment
+        sub     cx, bx                                                                  ; If not, dont copy the header
+        add     esi, ebx                                                                ;
   .first_fragment:
 
-	push	cx									; First copy dword-wise, then byte-wise
-	shr	cx, 2									;
-	rep	movsd									;
-	pop	cx									;
-	and	cx, 3									;
-	rep	movsb									;
+        push    cx                                                                      ; First copy dword-wise, then byte-wise
+        shr     cx, 2                                                                   ;
+        rep     movsd                                                                   ;
+        pop     cx                                                                      ;
+        and     cx, 3                                                                   ;
+        rep     movsb                                                                   ;
 
-	push	eax
-	push	edx									; Push pointer to fragment onto stack
-	mov	ebx, [edx + FRAGMENT_entry.Owner]					; we need to remeber the owner, in case this is the last packet
-	mov	edx, [edx + FRAGMENT_entry.NextPtr]					; Set edx to the next pointer
-	call	kernel_free								; free the previous fragment buffer (this uses the value from stack)
-	pop	eax
-	cmp	edx, -1 								; Check if it is last fragment in chain
-	jne	.rebuild_packet_loop
+        push    eax
+        push    edx                                                                     ; Push pointer to fragment onto stack
+        mov     ebx, [edx + FRAGMENT_entry.Owner]                                       ; we need to remeber the owner, in case this is the last packet
+        mov     edx, [edx + FRAGMENT_entry.NextPtr]                                     ; Set edx to the next pointer
+        call    kernel_free                                                             ; free the previous fragment buffer (this uses the value from stack)
+        pop     eax
+        cmp     edx, -1                                                                 ; Check if it is last fragment in chain
+        jne     .rebuild_packet_loop
 
-	pop	ecx
-	xchg	cl, ch
-	mov	edx, eax
-	mov	[edx + IPv4_header.TotalLength], cx
-	add	esp, 8
+        pop     ecx
+        xchg    cl, ch
+        mov     edx, eax
+        mov     [edx + IPv4_header.TotalLength], cx
+        add     esp, 8
 
-	xchg	cl, ch		    ;
+        xchg    cl, ch              ;
 
-	push	ecx		   ;;;;
-	push	eax		   ;;;;
+        push    ecx                ;;;;
+        push    eax                ;;;;
 
 ;        mov     esi, edx           ;  This prints the IP packet to the debug board (usefull when using serial output debug..)
 ;                                   ;
 ;        packet_to_debug
 
-	jmp	.handle_it	    ; edx = buf ptr, ecx = size, [esp] buf ptr, [esp+4], total size, ebx=device ptr
+        jmp     .handle_it          ; edx = buf ptr, ecx = size, [esp] buf ptr, [esp+4], total size, ebx=device ptr
 
   .destroy_slot_pop:
-	add	esp, 4
+        add     esp, 4
   .destroy_slot:
-	DEBUGF	1,"Destroy fragment slot!\n"
-	; TODO!
-	jmp	.dump
+        DEBUGF  1,"Destroy fragment slot!\n"
+        ; TODO!
+        jmp     .dump
 
 
 
@@ -535,7 +533,7 @@ IPv4_input:	 ; TODO: implement handler for IP options
 ; The IP packet has some options
 
   .has_options:
-	jmp	.dump
+        jmp     .dump
 
 
 
@@ -552,29 +550,29 @@ IPv4_find_fragment_slot:
 
 ;;; TODO: the RFC says we should check protocol number too
 
-	push	eax ebx ecx edx
-	mov	ax , [edx + IPv4_header.Identification]
-	mov	ecx, MAX_FRAGMENTS
-	mov	esi, FRAGMENT_LIST
-	mov	ebx, [edx + IPv4_header.SourceAddress]
-	mov	edx, [edx + IPv4_header.DestinationAddress]
+        push    eax ebx ecx edx
+        mov     ax , [edx + IPv4_header.Identification]
+        mov     ecx, MAX_FRAGMENTS
+        mov     esi, FRAGMENT_LIST
+        mov     ebx, [edx + IPv4_header.SourceAddress]
+        mov     edx, [edx + IPv4_header.DestinationAddress]
   .find_slot:
-	cmp	[esi + FRAGMENT_slot.id], ax
-	jne	.try_next
-	cmp	[esi + FRAGMENT_slot.SrcIP], ebx
-	jne	.try_next
-	cmp	[esi + FRAGMENT_slot.DstIP], edx
-	je	.found_slot
+        cmp     [esi + FRAGMENT_slot.id], ax
+        jne     .try_next
+        cmp     [esi + FRAGMENT_slot.SrcIP], ebx
+        jne     .try_next
+        cmp     [esi + FRAGMENT_slot.DstIP], edx
+        je      .found_slot
   .try_next:
-	add	esi, sizeof.FRAGMENT_slot
-	loop	.find_slot
+        add     esi, sizeof.FRAGMENT_slot
+        loop    .find_slot
 ;        pop     edx ebx
-	or	esi, -1
+        or      esi, -1
 ;        ret
 
   .found_slot:
-	pop	edx ecx ebx eax
-	ret
+        pop     edx ecx ebx eax
+        ret
 
 
 ;------------------------------------------------------------------
@@ -597,63 +595,63 @@ IPv4_find_fragment_slot:
 align 4
 IPv4_output:
 
-	DEBUGF	1,"IPv4_create_packet: size=%u\n", ecx
+        DEBUGF  1,"IPv4_create_packet: size=%u\n", ecx
 
-	cmp	ecx, 65500		; Max IPv4 packet size
-	ja	.too_large
+        cmp     ecx, 65500              ; Max IPv4 packet size
+        ja      .too_large
 
-	push	ecx eax ebx dx di
+        push    ecx eax ebx dx di
 
-	call	ARP_IP_to_MAC
+        call    ARP_IP_to_MAC
 
-	test	eax, 0xffff0000 	; error bits
-	jnz	.arp_error
+        test    eax, 0xffff0000         ; error bits
+        jnz     .arp_error
 
   .continue:
 
-	push	ebx	; push the mac
-	push	ax
+        push    ebx     ; push the mac
+        push    ax
 
-	call	IPv4_dest_to_dev
-	inc	[IP_PACKETS_TX+edi]
-	mov	ebx, [NET_DRV_LIST+edi]
-	lea	eax, [ebx + ETH_DEVICE.mac]
-	mov	edx, esp
-	mov	ecx, [esp + 18]
-	add	ecx, sizeof.IPv4_header
-	mov	di , ETHER_IPv4
-	call	ETH_output
-	jz	.error
+        call    IPv4_dest_to_dev
+        inc     [IP_PACKETS_TX+edi]
+        mov     ebx, [NET_DRV_LIST+edi]
+        lea     eax, [ebx + ETH_DEVICE.mac]
+        mov     edx, esp
+        mov     ecx, [esp + 18]
+        add     ecx, sizeof.IPv4_header
+        mov     di , ETHER_IPv4
+        call    ETH_output
+        jz      .error
 
-	add	esp, 6	; pop the mac
+        add     esp, 6  ; pop the mac
 
-	mov	[edi + IPv4_header.VersionAndIHL], 0x45 ; IPv4, normal length (no Optional header)
-	mov	[edi + IPv4_header.TypeOfService], 0	; nothing special, just plain ip packet
-	mov	[edi + IPv4_header.TotalLength], cx
-	rol	[edi + IPv4_header.TotalLength], 8	; internet byte order
-	mov	[edi + IPv4_header.FlagsAndFragmentOffset], 0x0000
-	mov	[edi + IPv4_header.HeaderChecksum], 0
-	pop	word [edi + IPv4_header.TimeToLive]	; ttl shl 8 + protocol
+        mov     [edi + IPv4_header.VersionAndIHL], 0x45 ; IPv4, normal length (no Optional header)
+        mov     [edi + IPv4_header.TypeOfService], 0    ; nothing special, just plain ip packet
+        mov     [edi + IPv4_header.TotalLength], cx
+        rol     [edi + IPv4_header.TotalLength], 8      ; internet byte order
+        mov     [edi + IPv4_header.FlagsAndFragmentOffset], 0x0000
+        mov     [edi + IPv4_header.HeaderChecksum], 0
+        pop     word [edi + IPv4_header.TimeToLive]     ; ttl shl 8 + protocol
 ;               [edi + IPv4_header.Protocol]
-	popw	[edi + IPv4_header.Identification]	; fragment id
-	popd	[edi + IPv4_header.SourceAddress]
-	popd	[edi + IPv4_header.DestinationAddress]
+        popw    [edi + IPv4_header.Identification]      ; fragment id
+        popd    [edi + IPv4_header.SourceAddress]
+        popd    [edi + IPv4_header.DestinationAddress]
 
-	pop	ecx
+        pop     ecx
 
-	IPv4_checksum edi
-	add	edi, sizeof.IPv4_header
-	DEBUGF	1,"IPv4 Packet for device %x created successfully\n", ebx
-	ret
+        IPv4_checksum edi
+        add     edi, sizeof.IPv4_header
+        DEBUGF  1,"IPv4 Packet for device %x created successfully\n", ebx
+        ret
 
   .error:
-	add	esp, 6
+        add     esp, 6
   .arp_error:
-	add	esp, 4+4+4+2+2
+        add     esp, 4+4+4+2+2
   .too_large:
-	DEBUGF	1,"IPv4_create_packet: Failed\n"
-	sub	edi, edi
-	ret
+        DEBUGF  1,"IPv4_create_packet: Failed\n"
+        sub     edi, edi
+        ret
 
 
 
@@ -673,46 +671,46 @@ IPv4_output:
 align 4
 IPv4_output_raw:
 
-	DEBUGF 1,"IPv4_output_raw: size=%u ptr=%x socket=%x\n", ecx, esi, eax
+        DEBUGF 1,"IPv4_output_raw: size=%u ptr=%x socket=%x\n", ecx, esi, eax
 
-	cmp	ecx, 1480		;;;;; FIXME
-	ja	.too_large
+        cmp     ecx, 1480               ;;;;; FIXME
+        ja      .too_large
 
-	sub	esp, 8
-	push	esi eax
+        sub     esp, 8
+        push    esi eax
 
-	call	ARP_IP_to_MAC
+        call    ARP_IP_to_MAC
 
-	test	eax, 0xffff0000 	; error bits
-	jnz	.arp_error
+        test    eax, 0xffff0000         ; error bits
+        jnz     .arp_error
 
   .continue:
 
-	push	ebx	; push the mac
-	push	ax
+        push    ebx     ; push the mac
+        push    ax
 
-	call	IPv4_dest_to_dev
-	inc	[IP_PACKETS_TX+edi]
-	mov	ebx, [NET_DRV_LIST+edi]
-	lea	eax, [ebx + ETH_DEVICE.mac]
-	mov	edx, esp
-	mov	ecx, [esp + 6+4]
-	add	ecx, sizeof.IPv4_header
-	mov	di, ETHER_IPv4
-	call	ETH_output
-	jz	.error
+        call    IPv4_dest_to_dev
+        inc     [IP_PACKETS_TX+edi]
+        mov     ebx, [NET_DRV_LIST+edi]
+        lea     eax, [ebx + ETH_DEVICE.mac]
+        mov     edx, esp
+        mov     ecx, [esp + 6+4]
+        add     ecx, sizeof.IPv4_header
+        mov     di, ETHER_IPv4
+        call    ETH_output
+        jz      .error
 
-	add	esp, 6	; pop the mac
+        add     esp, 6  ; pop the mac
 
-	mov	dword[esp+4+4], edx
-	mov	dword[esp+4+4+4], eax
+        mov     dword[esp+4+4], edx
+        mov     dword[esp+4+4+4], eax
 
-	pop	eax esi
+        pop     eax esi
 ;; todo: check socket options if we should add header, or just compute checksum
 
-	push	edi ecx
-	rep	movsb
-	pop	ecx edi
+        push    edi ecx
+        rep     movsb
+        pop     ecx edi
 
 ;        [edi + IPv4_header.VersionAndIHL]              ; IPv4, normal length (no Optional header)
 ;        [edi + IPv4_header.TypeOfService]              ; nothing special, just plain ip packet
@@ -720,7 +718,7 @@ IPv4_output_raw:
 ;        [edi + IPv4_header.TotalLength]                ; internet byte order
 ;        [edi + IPv4_header.FlagsAndFragmentOffset]
 
-	mov	[edi + IPv4_header.HeaderChecksum], 0
+        mov     [edi + IPv4_header.HeaderChecksum], 0
 
 ;        [edi + IPv4_header.TimeToLive]                 ; ttl shl 8 + protocol
 ;        [edi + IPv4_header.Protocol]
@@ -728,20 +726,20 @@ IPv4_output_raw:
 ;        [edi + IPv4_header.SourceAddress]
 ;        [edi + IPv4_header.DestinationAddress]
 
-	IPv4_checksum edi			;;;; todo: checksum for IP packet with options!
-	add	edi, sizeof.IPv4_header
-	DEBUGF	1,"IPv4 Packet for device %x created successfully\n", ebx
-	call	[ebx + NET_DEVICE.transmit]
-	ret
+        IPv4_checksum edi                       ;;;; todo: checksum for IP packet with options!
+        add     edi, sizeof.IPv4_header
+        DEBUGF  1,"IPv4 Packet for device %x created successfully\n", ebx
+        call    [ebx + NET_DEVICE.transmit]
+        ret
 
   .error:
-	add	esp, 6
+        add     esp, 6
   .arp_error:
-	add	esp, 8+4+4
+        add     esp, 8+4+4
   .too_large:
-	DEBUGF	1,"IPv4_output_raw: Failed\n"
-	sub	edi, edi
-	ret
+        DEBUGF  1,"IPv4_output_raw: Failed\n"
+        sub     edi, edi
+        ret
 
 
 ;--------------------------------------------------------
@@ -759,111 +757,111 @@ IPv4_output_raw:
 align 4
 IPv4_fragment:
 
-	DEBUGF 1,"IPv4_fragment\n"
+        DEBUGF 1,"IPv4_fragment\n"
 
-	and	ecx, not 111b	; align 4
+        and     ecx, not 111b   ; align 4
 
-	cmp	ecx, sizeof.IPv4_header + 8	; must be able to put at least 8 bytes
-	jb	.err2
+        cmp     ecx, sizeof.IPv4_header + 8     ; must be able to put at least 8 bytes
+        jb      .err2
 
-	push	esi ecx
-	mov	eax, [esi + IPv4_header.DestinationAddress]
-	call	ARP_IP_to_MAC
-	pop	ecx esi
-	cmp	eax, -1
-	jz	.err2
+        push    esi ecx
+        mov     eax, [esi + IPv4_header.DestinationAddress]
+        call    ARP_IP_to_MAC
+        pop     ecx esi
+        cmp     eax, -1
+        jz      .err2
 
-	push	ebx
-	push	ax
+        push    ebx
+        push    ax
 
-	mov	ebx, [NET_DRV_LIST]
-	lea	eax, [ebx + ETH_DEVICE.mac]
-	push	eax
+        mov     ebx, [NET_DRV_LIST]
+        lea     eax, [ebx + ETH_DEVICE.mac]
+        push    eax
 
 
-	push	esi				; ptr to ip header
-	sub	ecx, sizeof.IPv4_header 	; substract header size
-	push	ecx				; max data size
-	push	dword 0 			; offset
+        push    esi                             ; ptr to ip header
+        sub     ecx, sizeof.IPv4_header         ; substract header size
+        push    ecx                             ; max data size
+        push    dword 0                         ; offset
 
   .new_fragment:
-	DEBUGF 1,"Ipv4_fragment - new_fragmentn"
+        DEBUGF 1,"Ipv4_fragment - new_fragmentn"
 
 
-	mov	eax, [esp + 3*4]
-	lea	ebx, [esp + 4*4]
-	mov	di , ETHER_IPv4
-	call	ETH_output
+        mov     eax, [esp + 3*4]
+        lea     ebx, [esp + 4*4]
+        mov     di , ETHER_IPv4
+        call    ETH_output
 
-	cmp	edi, -1
-	jz	.err
+        cmp     edi, -1
+        jz      .err
 
 ; copy header
-	mov	esi, [esp + 2*4]
-	mov	ecx, 5	; 5 dwords: TODO: use IHL field of the header!
-	rep	movsd
+        mov     esi, [esp + 2*4]
+        mov     ecx, 5  ; 5 dwords: TODO: use IHL field of the header!
+        rep     movsd
 
 ; copy data
-	mov	esi, [esp + 2*4]
-	add	esi, sizeof.IPv4_header
-	add	esi, [esp]	; offset
+        mov     esi, [esp + 2*4]
+        add     esi, sizeof.IPv4_header
+        add     esi, [esp]      ; offset
 
-	mov	ecx, [esp + 1*4]
-	DEBUGF 1,"IPv4_fragment - copying data (%u bytes)\n", ecx
-	rep	movsb
+        mov     ecx, [esp + 1*4]
+        DEBUGF 1,"IPv4_fragment - copying data (%u bytes)\n", ecx
+        rep     movsb
 
 ; now, correct header
-	mov	ecx, [esp + 1*4]
-	add	ecx, sizeof.IPv4_header
-	xchg	cl, ch
-	mov	[edi + IPv4_header.TotalLength], cx
+        mov     ecx, [esp + 1*4]
+        add     ecx, sizeof.IPv4_header
+        xchg    cl, ch
+        mov     [edi + IPv4_header.TotalLength], cx
 
-	mov	ecx, [esp]		; offset
-	xchg	cl, ch
+        mov     ecx, [esp]              ; offset
+        xchg    cl, ch
 
 ;        cmp     dword[esp + 4*4], 0     ; last fragment?;<<<<<<
 ;        je      .last_fragment
-	or	cx, 1 shl 2		; more fragments
+        or      cx, 1 shl 2             ; more fragments
 ;  .last_fragment:
-	mov	[edi + IPv4_header.FlagsAndFragmentOffset], cx
+        mov     [edi + IPv4_header.FlagsAndFragmentOffset], cx
 
-	mov	[edi + IPv4_header.HeaderChecksum], 0
+        mov     [edi + IPv4_header.HeaderChecksum], 0
 
-	;<<<<<<<<<<<<<<<<<<<<<<<<<<<<< send the packet
-	mov	ecx, [esp + 1*4]
+        ;<<<<<<<<<<<<<<<<<<<<<<<<<<<<< send the packet
+        mov     ecx, [esp + 1*4]
 
-	push	edx eax
-	IPv4_checksum edi
+        push    edx eax
+        IPv4_checksum edi
 
-	call	[ebx + NET_DEVICE.transmit]
-	;<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        call    [ebx + NET_DEVICE.transmit]
+        ;<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-	mov	ecx,  [esp+4]
-	add	[esp], ecx
+        mov     ecx,  [esp+4]
+        add     [esp], ecx
 
-	mov	ecx, [esp+3*4+6+4]	; ptr to begin of buff
-	add	ecx, [esp+3*4+6+4+4]	; buff size
-	sub	ecx, [esp+2*4]		; ptr to ip header
-	add	ecx, [esp]		; offset
+        mov     ecx, [esp+3*4+6+4]      ; ptr to begin of buff
+        add     ecx, [esp+3*4+6+4+4]    ; buff size
+        sub     ecx, [esp+2*4]          ; ptr to ip header
+        add     ecx, [esp]              ; offset
 
-	DEBUGF 1,"Ipv4_fragment - bytes remaining: %u\n", ecx
+        DEBUGF 1,"Ipv4_fragment - bytes remaining: %u\n", ecx
 
-	cmp	ecx, [esp+1*4]
-	jae	.new_fragment
+        cmp     ecx, [esp+1*4]
+        jae     .new_fragment
 
-	mov	[esp+4], ecx		; set fragment size to remaining packet size
-	jmp	.new_fragment
+        mov     [esp+4], ecx            ; set fragment size to remaining packet size
+        jmp     .new_fragment
 
       .err:
-	DEBUGF 1,"Ipv4_fragment - failed\n"
+        DEBUGF 1,"Ipv4_fragment - failed\n"
       .done:
-	add	esp, 12 + 4 + 6
+        add     esp, 12 + 4 + 6
       .err2:
-	DEBUGF 1,"Ipv4_fragment - dumping\n"
-	call	kernel_free
-	add	esp, 4
+        DEBUGF 1,"Ipv4_fragment - dumping\n"
+        call    kernel_free
+        add     esp, 4
 
-	ret
+        ret
 
 
 
@@ -878,33 +876,33 @@ IPv4_fragment:
 align 4
 IPv4_dest_to_dev:
 
-	cmp	eax, 0xffffffff
-	je	.invalid
+        cmp     eax, 0xffffffff
+        je      .invalid
 
-	xor	edi, edi
-	mov	ecx, MAX_IP
+        xor     edi, edi
+        mov     ecx, MAX_IP
 
   .loop:
-	mov	ebx, [IP_LIST+edi]
-	and	ebx, [SUBNET_LIST+edi]
-	jz	.next
+        mov     ebx, [IP_LIST+edi]
+        and     ebx, [SUBNET_LIST+edi]
+        jz      .next
 
-	mov	edx, eax
-	and	edx, [SUBNET_LIST+edi]
+        mov     edx, eax
+        and     edx, [SUBNET_LIST+edi]
 
-	cmp	ebx, edx
-	je	.found_it
+        cmp     ebx, edx
+        je      .found_it
   .next:
-	add	edi, 4
-	loop	.loop
+        add     edi, 4
+        loop    .loop
 
   .invalid:
-	xor	edi, edi			; if none found, use device 0 as default device
+        xor     edi, edi                        ; if none found, use device 0 as default device
 
   .found_it:
-	DEBUGF	1,"IPv4_dest_to_dev: %u\n", edi
+        DEBUGF  1,"IPv4_dest_to_dev: %u\n", edi
 
-	ret
+        ret
 
 
 
@@ -918,9 +916,9 @@ IPv4_dest_to_dev:
 ;---------------------------------------------------------------------------
 align 4
 IPv4_get_frgmnt_num:
-	xor	ax, ax	;;; TODO: replace this with real code
+        xor     ax, ax  ;;; TODO: replace this with real code
 
-	ret
+        ret
 
 
 ;---------------------------------------------------------------------------
@@ -939,84 +937,84 @@ IPv4_get_frgmnt_num:
 align 4
 IPv4_API:
 
-	movzx	eax, bh
-	shl	eax, 2
+        movzx   eax, bh
+        shl     eax, 2
 
-	test	bl, bl
-	jz	.packets_tx	; 0
-	dec	bl
-	jz	.packets_rx	; 1
-	dec	bl
-	jz	.read_ip	; 2
-	dec	bl
-	jz	.write_ip	; 3
-	dec	bl
-	jz	.read_dns	; 4
-	dec	bl
-	jz	.write_dns	; 5
-	dec	bl
-	jz	.read_subnet	; 6
-	dec	bl
-	jz	.write_subnet	; 7
-	dec	bl
-	jz	.read_gateway	; 8
-	dec	bl
-	jz	.write_gateway	; 9
+        test    bl, bl
+        jz      .packets_tx     ; 0
+        dec     bl
+        jz      .packets_rx     ; 1
+        dec     bl
+        jz      .read_ip        ; 2
+        dec     bl
+        jz      .write_ip       ; 3
+        dec     bl
+        jz      .read_dns       ; 4
+        dec     bl
+        jz      .write_dns      ; 5
+        dec     bl
+        jz      .read_subnet    ; 6
+        dec     bl
+        jz      .write_subnet   ; 7
+        dec     bl
+        jz      .read_gateway   ; 8
+        dec     bl
+        jz      .write_gateway  ; 9
 
   .error:
-	mov	eax, -1
-	ret
+        mov     eax, -1
+        ret
 
   .packets_tx:
-	add	eax, IP_PACKETS_TX
-	mov	eax, [eax]
-	ret
+        add     eax, IP_PACKETS_TX
+        mov     eax, [eax]
+        ret
 
   .packets_rx:
-	add	eax, IP_PACKETS_RX
-	mov	eax, [eax]
-	ret
+        add     eax, IP_PACKETS_RX
+        mov     eax, [eax]
+        ret
 
   .read_ip:
-	add	eax, IP_LIST
-	mov	eax, [eax]
-	ret
+        add     eax, IP_LIST
+        mov     eax, [eax]
+        ret
 
   .write_ip:
-	add	eax, IP_LIST
-	mov	[eax], ecx
-	xor	eax, eax
-	ret
+        add     eax, IP_LIST
+        mov     [eax], ecx
+        xor     eax, eax
+        ret
 
   .read_dns:
-	add	eax, DNS_LIST
-	mov	eax, [eax]
-	ret
+        add     eax, DNS_LIST
+        mov     eax, [eax]
+        ret
 
   .write_dns:
-	add	eax, DNS_LIST
-	mov	[eax], ecx
-	xor	eax, eax
-	ret
+        add     eax, DNS_LIST
+        mov     [eax], ecx
+        xor     eax, eax
+        ret
 
   .read_subnet:
-	add	eax, SUBNET_LIST
-	mov	eax, [eax]
-	ret
+        add     eax, SUBNET_LIST
+        mov     eax, [eax]
+        ret
 
   .write_subnet:
-	add	eax, SUBNET_LIST
-	mov	[eax], ecx
-	xor	eax, eax
-	ret
+        add     eax, SUBNET_LIST
+        mov     [eax], ecx
+        xor     eax, eax
+        ret
 
   .read_gateway:
-	add	eax, GATEWAY_LIST
-	mov	eax, [eax]
-	ret
+        add     eax, GATEWAY_LIST
+        mov     eax, [eax]
+        ret
 
   .write_gateway:
-	add	eax, GATEWAY_LIST
-	mov	[eax], ecx
-	xor	eax, eax
-	ret
+        add     eax, GATEWAY_LIST
+        mov     [eax], ecx
+        xor     eax, eax
+        ret
