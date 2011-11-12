@@ -17,7 +17,7 @@
 $Revision$
 
 
-struct  UDP_Packet
+struct  UDP_header
 
         SourcePort              dw  ?
         DestinationPort         dw  ?
@@ -65,33 +65,33 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
         adc     dl, [IP2+3]
         adc     dh, [IP2+2]
 
-        adc     dl, cl ; byte[esi+UDP_Packet.Length+1]
-        adc     dh, ch ; byte[esi+UDP_Packet.Length+0]
+        adc     dl, cl ; byte[esi+UDP_header.Length+1]
+        adc     dh, ch ; byte[esi+UDP_header.Length+0]
 
 ; Done with pseudoheader, now do real header
-        adc     dl, byte[esi+UDP_Packet.SourcePort+1]
-        adc     dh, byte[esi+UDP_Packet.SourcePort+0]
+        adc     dl, byte[esi+UDP_header.SourcePort+1]
+        adc     dh, byte[esi+UDP_header.SourcePort+0]
 
-        adc     dl, byte[esi+UDP_Packet.DestinationPort+1]
-        adc     dh, byte[esi+UDP_Packet.DestinationPort+0]
+        adc     dl, byte[esi+UDP_header.DestinationPort+1]
+        adc     dh, byte[esi+UDP_header.DestinationPort+0]
 
-        adc     dl, byte[esi+UDP_Packet.Length+1]
-        adc     dh, byte[esi+UDP_Packet.Length+0]
+        adc     dl, byte[esi+UDP_header.Length+1]
+        adc     dh, byte[esi+UDP_header.Length+0]
 
         adc     edx, 0
 
 ; Done with header, now do data
         push    esi
-        movzx   ecx, [esi+UDP_Packet.Length]
+        movzx   ecx, [esi+UDP_header.Length]
         rol     cx , 8
-        sub     cx , sizeof.UDP_Packet
-        add     esi, sizeof.UDP_Packet
+        sub     cx , sizeof.UDP_header
+        add     esi, sizeof.UDP_header
 
         call    checksum_1
         call    checksum_2
         pop     esi
 
-        add     [esi+UDP_Packet.Checksum], dx   ; this final instruction will set or clear ZF :)
+        add     [esi+UDP_header.Checksum], dx   ; this final instruction will set or clear ZF :)
 
 }
 
@@ -107,7 +107,7 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
 ;       [esp+4] = size of buffer
 ;       ebx = ptr to device struct
 ;       ecx = UDP Packet size
-;       edx = ptr to UDP header
+;       esi = ptr to UDP header
 ;       edi = ptr to ipv4 source and dest address
 ;
 ;  OUT: /
@@ -118,40 +118,46 @@ UDP_input:
 
         DEBUGF  1,"UDP_input, size:%u\n", ecx
 
-; First validate, checksum:
-        neg     [edx+UDP_Packet.Checksum]       ; substract chechksum from 0
+; First validate, checksum
+
+        neg     [esi + UDP_header.Checksum]     ; substract checksum from 0
         jz      .no_checksum                    ; if checksum is zero, it is considered valid and we continue processing
                                                 ; otherwise, we will re-calculate the checksum and add it to this value, thus creating 0 when it is correct
 
-        push    edx
-        push    edi
         push    esi
-        mov     esi, edx
         UDP_checksum (edi), (edi+4)
-        pop     edi
-        pop     esi     ; we dont need it, but it is smaller then add esp, 4
         pop     edx
         jnz     .checksum_mismatch
 
   .no_checksum:
         DEBUGF  1,"UDP Checksum is correct\n"
 
+        ; Convert port numbers to intel format
+
+        rol     [edx + UDP_header.DestinationPort], 8
+        rol     [edx + UDP_header.SourcePort], 8
+        rol     [edx + UDP_header.Length], 8
+
         ; Look for a socket where
         ; IP Packet UDP Destination Port = local Port
         ; IP Packet SA = Remote IP
 
+        mov     si, [edx + UDP_header.DestinationPort]
+        mov     cx, [edx + UDP_header.SourcePort]
+        mov     edi, [edi + 4]                          ; ipv4 source address
         mov     eax, net_sockets
-  .try_more:
-        mov     si , [edx + UDP_Packet.DestinationPort] ; get the local port from the IP Packet's UDP header
-        rol     si , 8
+
   .next_socket:
         mov     eax, [eax + SOCKET.NextPtr]
         or      eax, eax
         jz      .dump
+
         cmp     [eax + SOCKET.Domain], AF_INET4
         jne     .next_socket
+
         cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
         jne     .next_socket
+
         cmp     [eax + UDP_SOCKET.LocalPort], si
         jne     .next_socket
 
@@ -161,17 +167,14 @@ UDP_input:
 
         cmp     [eax + IP_SOCKET.RemoteIP], 0xffffffff
         je      @f
-        mov     edi, [edi + 4]                          ; ipv4 source address
         cmp     [eax + IP_SOCKET.RemoteIP], edi
-        jne     .try_more
+        jne     .next_socket
        @@:
 
         cmp     [eax + UDP_SOCKET.firstpacket], 0
         jz      .updateport
 
-        mov     si, [edx + UDP_Packet.SourcePort]
-        rol     si, 8
-        cmp     [eax + UDP_SOCKET.RemotePort], si
+        cmp     [eax + UDP_SOCKET.RemotePort], cx
         jne     .dump
 
         push    ebx
@@ -182,10 +185,9 @@ UDP_input:
   .updatesock:
         inc     [UDP_PACKETS_RX]
         DEBUGF  1,"Found valid UDP packet for socket %x\n", eax
-        lea     esi, [edx + sizeof.UDP_Packet]
-        movzx   ecx, [edx + UDP_Packet.Length]
-        rol     cx , 8
-        sub     cx , sizeof.UDP_Packet
+        lea     esi, [edx + sizeof.UDP_header]
+        movzx   ecx, [edx + UDP_header.Length]
+        sub     ecx, sizeof.UDP_header
 
         jmp     SOCKET_input
 
@@ -195,8 +197,7 @@ UDP_input:
         call    wait_mutex
         pop     ebx
 
-        mov     si, [edx + UDP_Packet.SourcePort]
-        rol     si, 8
+        mov     si, [edx + UDP_header.SourcePort]
         DEBUGF  1,"Changing remote port to: %u\n", si
         mov     [eax + UDP_SOCKET.RemotePort], si
         inc     [eax + UDP_SOCKET.firstpacket]
@@ -246,7 +247,7 @@ UDP_output:
 
         mov     di, IP_PROTO_UDP shl 8 + 128
         sub     esp, 8                                          ; Data ptr and data size will be placed here
-        add     ecx, sizeof.UDP_Packet
+        add     ecx, sizeof.UDP_header
 
 ;;; TODO: fragment id
         push    edx esi
@@ -256,13 +257,13 @@ UDP_output:
         mov     [esp + 8], eax                                  ; pointer to buffer start
         mov     [esp + 8 + 4], edx                              ; buffer size
 
-        mov     [edi + UDP_Packet.Length], cx
-        rol     [edi + UDP_Packet.Length], 8
+        mov     [edi + UDP_header.Length], cx
+        rol     [edi + UDP_header.Length], 8
 
         pop     esi
         push    edi ecx
-        sub     ecx, sizeof.UDP_Packet
-        add     edi, sizeof.UDP_Packet
+        sub     ecx, sizeof.UDP_header
+        add     edi, sizeof.UDP_header
         shr     ecx, 2
         rep     movsd
         mov     ecx, [esp]
@@ -270,11 +271,11 @@ UDP_output:
         rep     movsb
         pop     ecx edi
 
-        pop     dword [edi + UDP_Packet.SourcePort]
+        pop     dword [edi + UDP_header.SourcePort]
 
 ; Checksum
         mov     esi, edi
-        mov     [edi + UDP_Packet.Checksum], 0
+        mov     [edi + UDP_header.Checksum], 0
         UDP_checksum (edi-4), (edi-8)                           ; TODO: fix this, IPv4 packet could have options..
 
         inc     [UDP_PACKETS_TX]

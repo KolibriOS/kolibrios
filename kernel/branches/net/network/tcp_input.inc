@@ -24,7 +24,7 @@ $Revision$
 ;       [esp+4] = buffer size
 ;       ebx = ptr to device struct
 ;       ecx = segment size
-;       edx = ptr to TCP segment
+;       esi = ptr to TCP segment
 ;       edi = ptr to ipv4 source address, followed by ipv4 dest address
 ;
 ;  OUT: /
@@ -36,18 +36,17 @@ TCP_input:
 
         DEBUGF  1,"TCP_input size=%u\n", ecx
 
-        and     [edx + TCP_header.DataOffset], 0xf0                     ; Calculate TCP segment header size (throwing away unused reserved bits in TCP header)
-        shr     [edx + TCP_header.DataOffset], 2
-        cmp     [edx + TCP_header.DataOffset], sizeof.TCP_header        ; Now see if it's at least the size of a standard TCP header
+        and     [esi + TCP_header.DataOffset], 0xf0                     ; Calculate TCP segment header size (throwing away unused reserved bits in TCP header)
+        shr     [esi + TCP_header.DataOffset], 2
+        cmp     [esi + TCP_header.DataOffset], sizeof.TCP_header        ; Now see if it's at least the size of a standard TCP header
         jb      .drop_not_locked                                        ; If not, drop the packet
 
 ;-------------------------------
 ; Now, re-calculate the checksum
 
-        push    ecx edx
-        pushw   [edx + TCP_header.Checksum]
-        mov     [edx + TCP_header.Checksum], 0
-        mov     esi, edx
+        push    ecx esi
+        pushw   [esi + TCP_header.Checksum]
+        mov     [esi + TCP_header.Checksum], 0
         TCP_checksum (edi), (edi+4)
         pop     cx              ; previous checksum
         cmp     cx, dx
@@ -56,14 +55,15 @@ TCP_input:
 
         DEBUGF  1,"Checksum ok\n"
 
-        sub     ecx, [edx + TCP_header.DataOffset]                      ; substract TCP header size from total segment size
+        movzx   eax, [edx + TCP_header.DataOffset]
+        sub     ecx, eax                                                ; substract TCP header size from total segment size
         jb      .drop_not_locked                                        ; If total segment size is less then the advertised header size, drop packet
         DEBUGF  1,"we got %u bytes of data\n", ecx
 
 ;-----------------------------------------------------------------------------------------
 ; Check if this packet has a timestamp option (We do it here so we can process it quickly)
 
-        cmp     [edx + TCP_header.DataOffset], sizeof.TCP_header + 12           ; Timestamp option is 12 bytes
+        cmp     eax, sizeof.TCP_header + 12                             ; Timestamp option is 12 bytes
         jb      .no_timestamp
         je      .is_ok
 
@@ -202,8 +202,8 @@ TCP_input:
 ;--------------------
 ; Process TCP options
 
-        mov     eax, [edx + TCP_header.DataOffset]
-        cmp     eax, TCP_header.DataOffset              ; Does header contain any options?
+        movzx   eax, [edx + TCP_header.DataOffset]
+        cmp     eax, sizeof.TCP_header                  ; Does header contain any options?
         je      .no_options
 
         DEBUGF  1,"Segment has options\n"

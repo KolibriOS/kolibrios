@@ -301,7 +301,7 @@ IPv4_input:      ; TODO: implement handler for IP options
 
         lea     edi, [edx + IPv4_header.SourceAddress]          ; make edi ptr to source and dest IPv4 address
         mov     al , [edx + IPv4_header.Protocol]
-        add     edx, esi                                        ; make edi ptr to data
+        add     esi, edx                                        ; make esi ptr to data
 
         cmp     al , IP_PROTO_TCP
         je      TCP_input

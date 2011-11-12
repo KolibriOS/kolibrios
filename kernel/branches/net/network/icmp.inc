@@ -133,7 +133,7 @@ macro ICMP_init {
 ;       size of buffer in [esp+4]
 ;       ebx = pointer to device struct
 ;       ecx = ICMP Packet size
-;       edx = ptr to ICMP Packet data
+;       esi = ptr to ICMP Packet data
 ;       edi = ptr to ipv4 source and dest address
 ;
 ;  OUT: /
@@ -146,10 +146,9 @@ ICMP_input:
 
 ; First, check the checksum (altough some implementations ignore it)
 
-        push    edx ecx
+        push    esi ecx
         push    [edx + ICMP_header.Checksum]
         mov     [edx + ICMP_header.Checksum], 0
-        mov     esi, edx
         xor     edx, edx
         call    checksum_1
         call    checksum_2
