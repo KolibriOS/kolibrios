@@ -10,7 +10,7 @@ use32
 	dd	0		; path
 
 
-BUFFERSIZE	equ 1500
+BUFFERSIZE	equ 4096
 ; useful includes
 include '../macros.inc'
 purge mov,add,sub
@@ -116,40 +116,56 @@ mainloop:
 	je	mainloop
 
 	mov	esi, buffer_ptr
-	mov	byte [esi + eax], 0
+	lea	edi, [esi + eax]
+	mov	byte [edi], 0
 
-       @@:
+  .scan_cmd:
 	cmp	byte [esi], 0xff	; Interpret As Command
-	jne	@f
+	jne	.no_cmd
 	; TODO: parse options, for now, we will reply with 'WONT' to everything
 	mov	byte [esi + 1], 252	; WONT
 	add	esi, 3			; a command is always 3 bytes
-	jmp	@r
+	jmp	.scan_cmd
+  .no_cmd:
 
-
-       @@:
-	cmp	byte [esi], 0x1b	; escape character
-	jne	@f
-	cmp	word [esi+1], 0x485b	; move cursor to beginning
-	jne	@f
-	push	0
-	push	0
-	call	[con_set_cursor_pos]
-	add	esi, 3
-
-
-       @@:
 	push	esi
 
 	cmp	esi, buffer_ptr
-	je	.nocommands
+	je	.print_it
 
+	push	edi
 	mov	edx, buffer_ptr
 	sub	esi, buffer_ptr
 	xor	edi, edi
 	mcall	send, [socketnum]
+	pop	edi
 
-  .nocommands:
+  .print_it:
+	mov	esi, [esp]
+
+       @@:
+	cmp	esi, edi
+	jge	.last_print
+
+	cmp	byte [esi], 0x1b	; escape character
+	inc	esi
+	jne	@f
+	cmp	word [esi], 0x485b	; move cursor to beginning
+	jne	@f
+
+	mov	byte [esi - 1], 0
+	call	[con_write_asciiz]
+	push	0
+	push	0
+	call	[con_set_cursor_pos]
+
+	inc	esi
+	inc	esi
+	push	esi
+	jmp	@r
+
+
+  .last_print:
 	call	[con_write_asciiz]
 	jmp	mainloop
 
@@ -221,7 +237,7 @@ import	console,	\
 i_end:
 
 socketnum	dd ?
-buffer_ptr	rb BUFFERSIZE
+buffer_ptr	rb BUFFERSIZE+1
 send_data	rb 100
 
 s	rb	256

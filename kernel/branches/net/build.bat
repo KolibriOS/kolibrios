@@ -1,8 +1,10 @@
 @echo off
 cls
-set languages=en ru ge et
-set drivers=sound sis infinity ensoniq ps2mouse com_mouse uart ati2d vmode
-set targets=all kernel drivers skins clean
+set languages=en
+set drivers=3c59x dec21x4x i8255x mtd80x pcnet32 r6040 rtl8029 rtl8139 rtl8169 sis900
+set apps=arpcfg icmp netcfg netstat nslookup synergyc tcpserv telnet tftpc zeroconf
+set libs=network
+set targets=all kernel apps libs drivers clean
 
 call :Check_Target %1
 for %%a in (all kernel) do if %%a==%target% call :Check_Lang %2
@@ -58,8 +60,37 @@ goto :eof
 
 :Target_all
    call :Target_kernel
+   call :Target_apps
+   call :Target_libs
    call :Target_drivers
-   call :Target_skins
+goto :eof
+
+
+:Target_apps
+   echo *** building applications ...
+
+   if not exist bin\apps mkdir bin\apps
+   cd applications
+   for %%a in (%apps%) do (
+     fasm -m 65536 %%a\%%a.asm ..\bin\apps\%%a
+     if not %errorlevel%==0 goto :Error_FasmFailed
+   )
+   cd ..
+
+goto :eof
+
+
+:Target_libs
+   echo *** building libraries ...
+
+   if not exist bin\lib mkdir bin\lib
+   cd applications\libraries
+   for %%a in (%libs%) do (
+     fasm -m 65536 %%a\%%a.asm ..\..\bin\libs\%%a.obj
+     if not %errorlevel%==0 goto :Error_FasmFailed
+   )
+   cd ..\..
+
 goto :eof
 
 
@@ -73,7 +104,6 @@ goto :eof
      if not %errorlevel%==0 goto :Error_FasmFailed
    )
    cd ..
-   move bin\drivers\vmode.obj bin\drivers\vmode.mdr
 
 
 kpack >nul 2>&1
@@ -101,17 +131,6 @@ if "%res%"=="y" (
   )
 
 )
-goto :eof
-
-
-:Target_skins
-   echo *** building skins ...
-
-   if not exist bin\skins mkdir bin\skins
-   cd skin
-   fasm -m 65536 default.asm ..\bin\skins\default.skn
-   if not %errorlevel%==0 goto :Error_FasmFailed
-   cd ..
 goto :eof
 
 :Target_clean

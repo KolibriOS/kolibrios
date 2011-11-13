@@ -2,12 +2,12 @@ format MS COFF
 
 public @EXPORT as 'EXPORTS'
 
-include '../struct.inc'
-include '../proc32.inc'
-include '../macros.inc'
+include '../../struct.inc'
+include '../../proc32.inc'
+include '../../macros.inc'
 purge section,mov,add,sub
 
-include '../network.inc'
+include '../../network.inc'
 
 section '.flat' code readable align 16
 
