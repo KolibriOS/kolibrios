@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;; i8255x (Intel eepro 100) driver for KolibriOS                   ;;
@@ -20,7 +20,7 @@
 format MS COFF
 
 	API_VERSION		equ 0x01000100
-	DRIVER_VERSION		equ 1
+	DRIVER_VERSION		equ 5
 
 	MAX_DEVICES		equ 16
 
@@ -53,6 +53,8 @@ virtual at ebx
 
 	.ee_bus_width	dd ?
 
+	rb 5+8 ;;;; align
+
 	rxfd:
 	.status 	dw ?
 	.command	dw ?
@@ -61,6 +63,8 @@ virtual at ebx
 	.count		dw ?
 	.size		dw ?
 	.packet 	dd ?
+
+	rb 12 ;;;;
 
 	txfd:
 	.status 	dw ?
@@ -178,7 +182,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-	DEBUGF 1,"Loading I8255x driver\n"
+	DEBUGF 1,"Loading i8255x driver\n"
 	stdcall RegService, my_service, service_proc
 	ret
 
@@ -208,9 +212,9 @@ proc service_proc stdcall, ioctl:dword
 	cmp	eax, 0 ;SRV_GETVERSION
 	jne	@F
 
-	cmp	[edx+IOCTL.out_size], 4
+	cmp	[IOCTL.out_size], 4
 	jl	.fail
-	mov	eax, [edx+IOCTL.output]
+	mov	eax, [IOCTL.output]
 	mov	[eax], dword API_VERSION
 
 	xor	eax, eax
@@ -221,10 +225,10 @@ proc service_proc stdcall, ioctl:dword
 	cmp	eax, 1 ;SRV_HOOK
 	jne	.fail
 
-	cmp	[edx + IOCTL.inp_size], 3		; Data input must be at least 3 bytes
+	cmp	[IOCTL.inp_size], 3		  ; Data input must be at least 3 bytes
 	jl	.fail
 
-	mov	eax, [edx + IOCTL.input]
+	mov	eax, [IOCTL.input]
 	cmp	byte [eax], 1				; 1 means device number and bus number (pci) are given
 	jne	.fail					; other types arent supported for this card yet
 
@@ -347,7 +351,7 @@ unload:
 	;
 	; - Stop the device
 	; - Detach int handler
-	; - Remove device from local list (RTL8139_LIST)
+	; - Remove device from local list (device_list)
 	; - call unregister function in kernel
 	; - Remove all allocated structures and buffers the card used
 
@@ -376,22 +380,22 @@ probe:
 	movzx	edx, [device.pci_dev]
 	stdcall PciRead32, ecx ,edx ,0				      ; get device/vendor id
 
-	DEBUGF	1,"Vendor id: 0x%x\n", ax
+	DEBUGF	1,"Vendor_id=0x%x\n", ax
 
-	cmp	ax , 0x8086
+	cmp	ax, 0x8086
 	jne	.notfound
 	shr	eax, 16
 
-	DEBUGF	1,"Device id: 0x%x\n", ax
+	DEBUGF	1,"Device_id=0x%x\n", ax
 
 	mov	ecx, DEVICE_IDs
-	mov	esi, device_id_list
+	mov	edi, device_id_list
 	repne	scasw
 	jne	.notfound
 	jmp	.found
 
   .notfound:
-	DEBUGF	1,"Device/Vendor ID not found in list!\n"
+	DEBUGF	1,"ERROR: Unsupported device!\n"
 	or	eax, -1
 	ret
 
@@ -574,8 +578,8 @@ reset:
 ;;                                         ;;
 ;; Transmit                                ;;
 ;;                                         ;;
-;; In: buffer pointer in [esp]             ;;
-;;     size of buffer in [esp+4]           ;;
+;; In: buffer pointer in [esp+4]           ;;
+;;     size of buffer in [esp+8]           ;;
 ;;     pointer to device structure in ebx  ;;
 ;;                                         ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -583,16 +587,16 @@ reset:
 align 4
 transmit:
 
-	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n",[esp],[esp+4]
-	mov	eax, [esp]
+	DEBUGF	1,"Transmitting packet, buffer:%x, size:%u\n",[esp+4],[esp+8]
+	mov	eax, [esp+4]
 	DEBUGF	1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
 	[eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
 	[eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
 	[eax+13]:2,[eax+12]:2
 
-	cmp	dword [esp+4], 1500
+	cmp	dword [esp+8], 1500
 	jg	.finish 			; packet is too long
-	cmp	dword [esp+4], 60
+	cmp	dword [esp+8], 60
 	jl	.finish 			; packet is too short
 
 	set_io	0
@@ -610,9 +614,9 @@ transmit:
 	GetRealAddr
 	mov	[txfd.tx_desc_addr], eax
 
-	mov	eax, [esp]
-	mov	[txfd.tx_buf_addr0], eax
 	mov	eax, [esp+4]
+	mov	[txfd.tx_buf_addr0], eax
+	mov	eax, [esp+8]
 	mov	[txfd.tx_buf_size0], eax
 
 	; Copy the buffer address and size in
@@ -630,18 +634,16 @@ transmit:
 
 	call	cmd_wait
 
-	set_io	0
 	in	ax, dx
 
   .I8t_001:
 	cmp	[txfd.status], 0
 	je	.I8t_001
 
-	set_io	0
 	in	ax, dx
 
   .finish:
-	ret
+	ret	8
 
 
 
@@ -737,8 +739,8 @@ int_handler:
 align 4
 cmd_wait:
 
-	in	al , dx
-	test	al , al
+	in	al, dx
+	test	al, al
 	jnz	cmd_wait
 
 	ret
@@ -898,10 +900,6 @@ ee_get_width:
 
   .loop:
 	mov	eax, EE_CS
-	shl	esi
-	jnc	@f
-	or	eax, EE_DI
-       @@:
 	out	dx , eax
 	delay
 
@@ -915,10 +913,6 @@ ee_get_width:
 	test	eax, EE_DO
 	jnz	.loop
 
-	sub	ecx, 3
-
-	DEBUGF	1,"bus width=%u\n", ecx
-
 	mov	[device.ee_bus_width], ecx
 
 ;------------------------------
@@ -926,11 +920,11 @@ ee_get_width:
 
 	mov	ecx, 16
   .loop2:
-	mov	eax, EE_CS
+	mov	eax, EE_CS + EE_SK
 	out	dx , eax
 	delay
 
-	or	eax, EE_SK
+	mov	eax, EE_CS
 	out	dx , eax
 	delay
 	loop	.loop2
