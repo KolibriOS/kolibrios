@@ -269,7 +269,9 @@ SOCKET_open:
 
         DEBUGF  1,"SOCKET_open: domain: %u, type: %u protocol: %x\n", ecx, edx, esi
 
+        push    ecx edx esi
         call    SOCKET_alloc
+        pop     esi edx ecx
         jz      s_error
 
         mov     [esp+32], edi                   ; return socketnumber
@@ -1308,7 +1310,7 @@ SOCKET_notify_owner:
 align 4
 SOCKET_alloc:
 
-        push    ecx ebx
+        push    ebx
 
         stdcall kernel_alloc, SOCKETBUFFSIZE
         DEBUGF  1, "SOCKET_alloc: ptr=%x\n", eax
@@ -1316,23 +1318,23 @@ SOCKET_alloc:
         jz      .exit
 
 ; zero-initialize allocated memory
-        push    eax edi
+        push    eax
         mov     edi, eax
         mov     ecx, SOCKETBUFFSIZE / 4
         xor     eax, eax
         rep     stosd
-        pop     edi eax
+        pop     eax
 
 ; set send-and receive procedures to return -1
         mov     [eax + SOCKET.snd_proc], s_error
         mov     [eax + SOCKET.rcv_proc], s_error
 
 ; find first free socket number and use it
-        mov     ecx, [last_socket_num]
+        mov     edi, [last_socket_num]
   .next_socket_number:
-        inc     ecx
+        inc     edi
         jz      .next_socket_number     ; avoid socket nr 0
-        cmp     ecx, -1
+        cmp     edi, -1
         je      .next_socket_number     ; avoid socket nr -1
         mov     ebx, net_sockets
   .next_socket:
@@ -1340,15 +1342,14 @@ SOCKET_alloc:
         test    ebx, ebx
         jz      .last_socket
 
-        cmp     [ebx + SOCKET.Number], ecx
+        cmp     [ebx + SOCKET.Number], edi
         jne     .next_socket
         jmp     .next_socket_number
 
   .last_socket:
-        mov     [last_socket_num], ecx
-        mov     [eax + SOCKET.Number], ecx
-        DEBUGF  1, "SOCKET_alloc: number=%u\n", ecx
-        mov     edi, ecx
+        mov     [last_socket_num], edi
+        mov     [eax + SOCKET.Number], edi
+        DEBUGF  1, "SOCKET_alloc: number=%u\n", edi
 
 ; Fill in PID
         mov     ebx, [TASK_BASE]
@@ -1373,7 +1374,7 @@ SOCKET_alloc:
         mov     [net_sockets + SOCKET.NextPtr], eax
         or      eax, eax                ; used to clear zero flag
   .exit:
-        pop     ebx ecx
+        pop     ebx
 
         ret
 
@@ -1459,10 +1460,11 @@ SOCKET_fork:
         jae     .fail
 
 ; Allocate new socket
+        push    ebx
         call    SOCKET_alloc
+        pop     ebx
         jz      .fail
 
-        push    esi ecx edi
         push    eax
         mov     esi, esp
         add_to_queue (ebx + SOCKET_QUEUE_LOCATION), MAX_backlog, 4, .fail2
@@ -1476,7 +1478,6 @@ SOCKET_fork:
         rep     movsd
 
         and     [eax + SOCKET.options], not SO_ACCEPTCON
-        pop     edi ecx esi
 
         ret
 

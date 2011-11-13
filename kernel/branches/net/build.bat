@@ -86,7 +86,7 @@ goto :eof
    if not exist bin\lib mkdir bin\lib
    cd applications\libraries
    for %%a in (%libs%) do (
-     fasm -m 65536 %%a\%%a.asm ..\..\bin\libs\%%a.obj
+     fasm -m 65536 %%a\%%a.asm ..\..\bin\lib\%%a.obj
      if not %errorlevel%==0 goto :Error_FasmFailed
    )
    cd ..\..

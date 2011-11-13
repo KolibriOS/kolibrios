@@ -173,7 +173,9 @@ TCP_input:
         DEBUGF  1,"Accepting new connection\n"
 
         mov     [ebx + SOCKET.lock], 0
+        push    ecx edx esi edi         ;;;
         call    SOCKET_fork
+        pop     edi esi edx ecx
 
         test    eax, eax
         jz      .drop
