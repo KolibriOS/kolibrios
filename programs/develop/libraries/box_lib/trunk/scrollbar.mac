@@ -442,6 +442,20 @@ draw_up_arrow_vertical
 ;********************************* 
 draw_runner_center_vertical
 ;********************************* 
+	cmp word sb_type,1
+	jne @f
+		push eax ebx ecx edx
+		movzx eax,word sb_start_x
+		xor ebx,ebx
+		add bx,sb_r_start_y
+		dec ebx
+		movzx ecx,word sb_size_x
+		mov edx,sb_run_size
+		dec edx
+		;рисование стильной рамки на ползунке
+		stdcall draw_edge, eax,ebx,ecx,edx, sb_bckg_col, sb_frnt_col, sb_line_col
+		pop edx ecx ebx eax
+	@@:
 	shr   ecx,16
 	add   ecx,sb_run_size
 	sub   ecx,2
@@ -501,6 +515,21 @@ draw_down_arrow_vertical
 	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; bottom button - extreme line
+	cmp word sb_type,1
+	jne @f
+		movzx eax,word sb_start_x
+		movzx ebx,word sb_start_y
+		movzx ecx,word sb_size_x
+		;рисование стильной рамки на верхней кнопке
+		stdcall draw_edge, eax,ebx,ecx,sb_btn_high,\
+			sb_bckg_col, sb_frnt_col, sb_line_col
+
+		add bx,sb_size_y
+		sub ebx,sb_btn_high
+		dec ebx
+		;рисование стильной рамки на нижней кнопке
+		stdcall draw_edge, eax,ebx,ecx,sb_btn_high,\
+			sb_bckg_col, sb_frnt_col, sb_line_col
 @@:
 	popa
 	ret
@@ -966,6 +995,22 @@ draw_up_arrow_horizontal
 ;********************************* 
 draw_runner_center_horizontal
 ;********************************* 
+	cmp word sb_type,1
+	jne @f
+		push eax ebx ecx edx
+		xor eax,eax
+		add ax,sb_r_start_x
+		dec eax
+		movzx ebx,word sb_start_y
+		mov ecx,sb_run_size
+		dec ecx
+		movzx edx,word sb_size_y
+		;рисование стильной рамки на ползунке
+		stdcall draw_edge, eax,ebx,ecx,edx,\
+			sb_bckg_col, sb_frnt_col, sb_line_col
+		pop edx ecx ebx eax
+	@@:
+
 	shr   ebx,16
 	add   ebx,sb_run_size
 	sub   ebx,2
@@ -1025,6 +1070,22 @@ draw_down_arrow_horizontal
 	cmp  dword sb_all_redraw,0
 	je   @f
 	int   0x40   ; bottom button - extreme line
+	cmp word sb_type,1
+	jne @f
+		;рисование стильной рамки на левой кнопке
+		movzx eax,word sb_start_x
+		movzx ebx,word sb_start_y
+		movzx edx,word sb_size_y
+		stdcall draw_edge, eax,ebx,sb_btn_high,edx,\
+			sb_bckg_col, sb_frnt_col, sb_line_col
+
+		movzx eax,word sb_start_x
+		add ax,sb_size_x
+		sub eax,sb_btn_high
+		dec eax
+		;рисование стильной рамки на правой кнопке
+		stdcall draw_edge, eax,ebx,sb_btn_high,edx,\
+			sb_bckg_col, sb_frnt_col, sb_line_col
 @@:
 	popa
 	ret

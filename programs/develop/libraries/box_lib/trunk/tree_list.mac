@@ -46,11 +46,11 @@ tl_data_init: ;выделние памяти для структур списка и основной информации (констр
       mov eax,tl_p_scrol
       ;*** цветовые настройки ***
       mov ecx,tl_col_bkg
-      mov dword[eax+28],ecx ;+28 .bckg_col
+      mov dword[eax+sb_offs_bckg_col],ecx
       mov ecx,tl_col_zag
-      mov dword[eax+32],ecx ;+32 .frnt_col
+      mov dword[eax+sb_offs_frnt_col],ecx
       mov ecx,tl_col_txt
-      mov dword[eax+36],ecx ;+32 .line_col
+      mov dword[eax+sb_offs_line_col],ecx
       ;*** настройки размеров ***
       mov ecx,tl_box_left
       add ecx,tl_box_width
@@ -107,7 +107,7 @@ tl_info_clear: ;очистка списка (информации)
     cmp tl_p_scrol,0 ;обработка скроллинга
     je @f
       mov eax,tl_p_scrol
-      mov dword[eax+24],0 ;+24 .position
+      mov dword[eax+sb_offs_position],0
       call tb_scrol_resize
     @@:
     pop edi ecx eax
@@ -324,19 +324,19 @@ tl_mouse: ;реакция на мышь
     cmp eax,ebx ;правая граница окна
     jg .no_in_wnd
 
-    mov eax,dword[edx+16] ;+16 .max_area
-    cmp eax,dword[edx+20] ;+20 .cur_area
+    mov eax,dword[edx+sb_offs_max_area]
+    cmp eax,dword[edx+sb_offs_cur_area]
     jbe .no_in_wnd ;все узлы попадают в окно скроллинга
       push dword edx
       call scroll_bar_vertical.mouse ;scrollbar_ver_mouse
 
-      cmp dword[edx+40],0 ;+40 .redraw
+      cmp dword[edx+sb_offs_redraw],0
       je  @f
-        mov dword[edx+40],0 ;+40 .redraw
+        mov dword[edx+sb_offs_redraw],0
         push dword edi
         call tl_draw ;произошли изменения скроллинга
       @@:
-      cmp dword[edx+46],0 ;+46 .delta2
+      cmp dword[edx+sb_offs_delta2],0
       jne .no_draw ;попали на скроллинг - не снимаем фокус с TreeList
 ;-------------------------------------------------------------------------------
     .no_in_wnd:  ;не попали в окно - потеря фокуса (при условии что фокус был на данном эелементе)
@@ -1396,8 +1396,8 @@ tb_scrol_resize:
     .ye_sb:
 
     mov edx,tl_p_scrol
-    mov dword[edx+20],eax ;+20 .cur_area
-    mov dword[edx+16],ecx ;+16 .max_area
+    mov dword[edx+sb_offs_cur_area],eax
+    mov dword[edx+sb_offs_max_area],ecx
     push dword edx ;pointer to scroll struct
     call scroll_bar_vertical.draw
   @@:
@@ -1658,10 +1658,10 @@ tl_cur_next: ;перенести курсор на 1 позицию ниже
     je @f
     call tl_get_rows_count ;eax = rows count
     mov ebx,tl_p_scrol
-    add eax,dword[ebx+24] ;.position +24
+    add eax,dword[ebx+sb_offs_position]
     cmp tl_cur_pos,eax
     jl @f
-      inc dword[ebx+24] ;.position +24
+      inc dword[ebx+sb_offs_position]
       push dword ebx
       call scroll_bar_vertical.draw
 
@@ -2169,7 +2169,7 @@ tl_save_mem:
 
     ;copy scroll position
     mov edx,tl_p_scrol
-    mov eax,dword[edx+24] ;+24 .position
+    mov eax,dword[edx+sb_offs_position]
     mov dword[esi+22],eax
 
     add esi,tl_save_load_heder_size ;add header size
@@ -2300,7 +2300,7 @@ add esi,ebx
         mov ebx,tl_p_scrol
         cmp ebx,0
         je .end_f
-          mov dword[ebx+24],eax ;+24 .position
+          mov dword[ebx+sb_offs_position],eax
           push dword ebx ;pointer to scroll struct
           call scroll_bar_vertical.draw
 

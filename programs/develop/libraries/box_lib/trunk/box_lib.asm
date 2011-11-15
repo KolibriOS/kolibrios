@@ -124,6 +124,117 @@ lib_init:
 ret
 
 
+align 4
+proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dword, box_h:dword,\
+	col_0:dword, col_1:dword, col_2:dword
+
+	mov esi,dword[col_1]
+	and esi,111111101111111011111110b
+
+	mov eax,13
+	;bottom line
+	mov edx,dword[col_2]
+	mov ebx,dword[box_l]
+	shl ebx,16
+	add ebx,dword[box_w]
+	inc ebx ;для заливки диагональных пикселей
+	mov ecx,dword[box_t]
+	add ecx,dword[box_h]
+	shl ecx,16
+	inc ecx
+
+	mov edi,3 ;for cycle
+	@@:
+		;calculate colors
+		and edx,111111101111111011111110b
+		add edx,esi
+		shr edx,1
+		;line move up and ->...<-
+		sub ecx,1 shl 16 ;move up
+		add ebx,1 shl 16 ;->...
+		sub ebx,2 ;...<-
+		;draw line
+		int 0x40
+		dec edi
+	jnz @b
+
+	;right line
+	mov edx,dword[col_2]
+	mov ebx,dword[box_l]
+	add ebx,dword[box_w]
+	shl ebx,16
+	inc ebx
+	mov ecx,dword[box_t]
+	shl ecx,16
+	add ecx,dword[box_h]
+
+	mov edi,3 ;for cycle
+	@@:
+		;calculate colors
+		and edx,111111101111111011111110b
+		add edx,esi
+		shr edx,1
+		;line move left and ...
+		sub ebx,1 shl 16 ;move left
+		add ecx,1 shl 16
+		sub ecx,2
+		;draw line
+		int 0x40
+		dec edi
+	jnz @b
+
+	;top line
+	mov edx,dword[col_0]
+	mov ebx,dword[box_l]
+	shl ebx,16
+	add ebx,dword[box_w]
+	mov ecx,dword[box_t]
+	shl ecx,16
+	inc ecx
+
+	mov edi,3 ;for cycle
+	@@:
+		;calculate colors
+		and edx,111111101111111011111110b
+		add edx,esi
+		shr edx,1
+		;line move down and ->...<-
+		add ecx,1 shl 16 ;move down
+		add ebx,1 shl 16 ;->...
+		sub ebx,2 ;...<-
+		;draw line
+		int 0x40
+		dec edi
+	jnz @b
+
+	;left line
+	mov edx,dword[col_0]
+	mov ebx,dword[box_l]
+	shl ebx,16
+	inc ebx
+	mov ecx,dword[box_t]
+	shl ecx,16
+	add ecx,dword[box_h]
+
+	mov edi,3 ;for cycle
+	@@:
+		;calculate colors
+		and edx,111111101111111011111110b
+		add edx,esi
+		shr edx,1
+		;line move left and ...
+		add ebx,1 shl 16 ;move left
+		add ecx,1 shl 16
+		sub ecx,2
+		;draw line
+		int 0x40
+		dec edi
+	jnz @b
+
+	ret
+endp
+
+
 align 16
 EXPORTS:
 
