@@ -7,19 +7,20 @@
 
 
 macro gptick	origin, r, tick
-{    dw  (origin mod 64) shl 10 + (r mod 8) shl 7 + (tick mod 128) }
+{    dw  (origin mod 32) shl 11 + (r mod 8) shl 8 + (tick mod 256) }
 
 macro ritick	x, y, tick
-{    dw  (x mod 16) shl 12 + (y mod 32) shl 7 + (tick mod 4) shl 4 }
+{    dw  (x mod 16) shl 12 + (y mod 32) shl 8 + (tick mod 2) }
 
 macro cstick	x, y, r, tick
-{    dw  (x mod 16) shl 12 + (y mod 32) shl 7 + (tick mod 4) shl 4 + 2 + (r mod 2)}
-
-macro mstick	x, y, r, tick
-{    dw  (x mod 16) shl 12 + (y mod 32) shl 7 + (rmod 4) shl 5 + (tick mod 32) }
+{    dw  (x mod 16) shl 12 + (y mod 32) shl 8 + 0xC0 + (r mod 2) shl 2 + (tick mod 4) }
 
 macro lntick	x, y, r, len
-{    dw  (x mod 16) shl 12 + (y mod 32) shl 7 + (rmod 4) shl 5 + (len mod 16) }
+{   if  len < 8   
+dw  (x mod 16) shl 12 + (y mod 32) shl 8 + (rmod 4) shl 3 + len 
+    else
+dw  (x mod 16) shl 12 + (y mod 32) shl 8 + (rmod 4) shl 3 + ((len-8) mod 8) + 0xE0
+    end if}
 
 ;align 8
 sdsh_data:
@@ -37,6 +38,13 @@ sdsh_data:
 .pix7       db  60
 .pix8       db  70
 
+align 4
+;   ---- special tickfields ----
+.blank      db  0, 0, 0, 0      ; for straight lines
+.cs2        db  11001100b,  111100b
+.cs3        db  00010100b,  01000101b,  0001b
+.cs0        db  111111b         ; 4-pix square
+.ri1        db  01010101b       ; 8-pix ring (rot-invariant)
 
 align 16
 .info:
@@ -88,6 +96,7 @@ align 4
             db  0x34    ; 27    ×Ó÷
             db  0x38    ; 28    Þé
             db  0x41    ; 29    ó
+            db  0x30    ; 30    
 
 align 4
 .tick_table:
@@ -96,53 +105,83 @@ align 4
             db  01b         ; XX    XX   
             db  11b         ;   X    X  
 .v2:
-                            ;  34    35     36    37    38
-            db  0100b       ; XXX    XXX   XX    XX    XX
-            db  1100b       ;    X     X     X     XX    X
-            db  0001b       ;                 X          X
-            db  1001b       ;
-            db  0101b       ;
-            db  ?
+                            ;      34    35     36    37    38
+            db  0100b       ;34    XXX    XXX   XX    XX    XX
+            db  1100b       ;35       X     X     X     XX    X
+            db  0001b       ;36                    X          X
+            db  1001b       ;37
+            db  0101b       ;38
+            db  0           ;39
+            db  0           ;40
+            db  0           ;41
 .v3:
-                            ;  40    41     42     43    44   45    46     47
-            db  011001b     ; XX     XXX   XXX     XX   XX    XX   XXXX    XX
-            db  001100b     ;   XX     X      X     X     X     X     X     X
-            db  000100b     ;     X    X      X     X      X    X          X
-            db  000011b     ;                       X      X    X         X
-            db  010001b     ;
-            db  000101b     ;
-            db  110000b     ;
-            db  000111b     ;
+                            ;       42   43   44    45    46    47   48
+            db  000100b     ;42    XXX   XX   XX    XX   XXXX   XX   XXX 
+            db  000011b     ;43       X   X     X     X     X    X     X
+            db  010001b     ;44       X   X      X    X         X      X 
+            db  000101b     ;45           X      X    X        X     
+            db  110000b     ;46
+            db  000111b     ;47
+            db  001100b     ;48
+            db  0           ;49
 
 .v4:
-            db  01010001b                       ; f0: ?23S
-            db  01000101b                       ; f0: 35
-            db  01010000b                       ; f0: Ë
-            db  01010010b                       ; f0: ë
-            db  00011101b                       ; f0: úûü
+                            ;       50   51   52    53     54    55
+            db  01010001b   ;50:   XX    XX  XXXX   Y      XX    XX
+            db  01000101b   ;51:     X     X     X  X        X     X   
+            db  01010000b   ;52:      X    X     X   X    XXX    XXX
+            db  01010010b   ;53:      X    X          X
+            db  00011101b   ;54:      X   X           X
+            db  00110101b   ;55:                     X
+            db  0           ;56:      
+            db  0           ;57:      
+
 .v5:
-            db  00000001b, 01b                  ;1f0: )(Þ
-            db  00000001b, 10b                  ; f0: /7X
-            db  01000101b, 01b                  ;3f0: 8uÚÛæ
-            db  01010100b, 00b                  ; f0: BPRa
-            db  00000010b, 01b                  ;5f0: \X&
-            db  00010100b, 00b                  ; f0: ahnu×
-            db  10111000b, 00b                  ;7f0: Æ
+            db  00000001b, 01b          ;58: )(Þ
+            db  00000001b, 10b          ;59: /7X
+            db  01000101b, 01b          ;60: 8uÚÛæ
+            db  01010100b, 00b          ;61: BPRa
+            db  00000010b, 01b          ;62: \X&
+            db  00010100b, 00b          ;63: ahnu×
+            db  10111000b, 00b          ;64: Æ
+            db  0, 0                    ;65:  
 
 .v6:
-            db  01000000b, 0101b                ; f0: Jfg
-            db  01010100b, 0001b                ; f0: ß
+            db  01000000b, 0101b        ;66: Jfg
+            db  01010100b, 0001b        ;67: ß
+            db  0, 0                    ;68: 
+            db  0, 0                    ;69: 
+            db  0, 0                    ;70: 
+            db  0, 0                    ;71: 
+            db  0, 0                    ;72: 
+            db  0, 0                    ;73: 
 .v7:
-            db  11011001b, 011001b              ; f0: ><vVY
-            db  00010001b, 010001b              ; f0: D
-            db  00010100b, 000101b              ; f0: bcdpqg
+            db  11011001b, 011001b      ;74: ><vVY
+            db  00010001b, 010001b      ;75: D
+            db  00010100b, 000101b      ;76: bcdpqg
+            db  0, 0                    ;77: 
+            db  0, 0                    ;78: 
+            db  0, 0                    ;79: 
+            db  0, 0                    ;80: 
+            db  0, 0                    ;81: 
 .v8:
-            db  00110000b, 00001100b            ; f0: 5
+            db  00110000b, 00001100b    ;82: 5
+            db  0, 0                    ;83: 
+            db  0, 0                    ;84: 
+            db  0, 0                    ;85: 
+            times 4 (db  0, 0)          ;86..89 
+.v9:
+            times 8 (db  0, 0, 0)       ;90..97 
 .v10:
-            db  00010100b, 01010000b, 0100b     ; f0: @0CGOQÑÎÝ
-            db  01010100b, 01010001b, 0100b     ; f0: 689
+            db  00010100b, 01010000b, 0100b     ; 98: @0CGOQÑÎÝ
+            db  01010100b, 01010001b, 0100b     ; 99: 689
+            db  0, 0, 0                         ;100: 
+            db  0, 0, 0                         ;101: 
+            times 4 (db  0, 0, 0)               ;102..105 
 .v11:
-            db  10100000b, 01010010b, 000001b   ; f0: $s
+            db  10100000b, 01010010b, 000001b   ;106: $s
+            db  0, 0, 0                         ;107: 
+            times 6 (db  0, 0, 0)               ;108..113 
 
 
 align 4
@@ -291,7 +330,51 @@ align 4
         dw (.ch0_173-.chars)*16 + 3         ; #173 í
         dw (.ch0_174-.chars)*16 + 1         ; #174 î
         dw (.ch0_175-.chars)*16 + 3         ; #175 ï
-   times 48 dw 0                            ; #176-223
+        dw (.ch0_176-.chars)*16 + 4         ; #176 
+        dw (.ch0_177-.chars)*16 + 6         ; #177
+        dw (.ch0_178-.chars)*16 + 8         ; #178
+        dw (.ch0_179-.chars)*16 + 1         ; #179 
+        dw (.ch0_180-.chars)*16 + 2         ; #180 
+        dw (.ch0_181-.chars)*16 + 3         ; #181 
+        dw (.ch0_182-.chars)*16 + 3         ; #182 
+        dw (.ch0_183-.chars)*16 + 3         ; #183 
+        dw (.ch0_184-.chars)*16 + 3         ; #184 
+        dw (.ch0_185-.chars)*16 + 3         ; #185 
+        dw (.ch0_186-.chars)*16 + 2         ; #186 
+        dw (.ch0_187-.chars)*16 + 3         ; #187 
+        dw (.ch0_188-.chars)*16 + 4         ; #188 
+        dw (.ch0_189-.chars)*16 + 3         ; #189 
+        dw (.ch0_190-.chars)*16 + 2         ; #190 
+        dw (.ch0_191-.chars)*16 + 2         ; #191 
+        dw (.ch0_192-.chars)*16 + 2         ; #192 
+        dw (.ch0_193-.chars)*16 + 2         ; #193 
+        dw (.ch0_194-.chars)*16 + 2         ; #194 
+        dw (.ch0_195-.chars)*16 + 2         ; #195 
+        dw (.ch0_196-.chars)*16 + 1         ; #196 
+        dw (.ch0_197-.chars)*16 + 2         ; #197 
+        dw (.ch0_198-.chars)*16 + 2         ; #198 
+        dw (.ch0_199-.chars)*16 + 3         ; #199 
+        dw (.ch0_200-.chars)*16 + 3         ; #200 
+        dw (.ch0_201-.chars)*16 + 3         ; #201 
+        dw (.ch0_202-.chars)*16 + 3         ; #202 
+        dw (.ch0_203-.chars)*16 + 3         ; #203 
+        dw (.ch0_204-.chars)*16 + 3         ; #204 
+        dw (.ch0_205-.chars)*16 + 2         ; #205 
+        dw (.ch0_206-.chars)*16 + 4         ; #206 
+        dw (.ch0_207-.chars)*16 + 3         ; #207 
+        dw (.ch0_208-.chars)*16 + 3         ; #208 
+        dw (.ch0_209-.chars)*16 + 3         ; #209 
+        dw (.ch0_210-.chars)*16 + 3         ; #210 
+        dw (.ch0_211-.chars)*16 + 3         ; #211 
+        dw (.ch0_212-.chars)*16 + 2         ; #212
+        dw (.ch0_213-.chars)*16 + 2         ; #213 
+        dw (.ch0_214-.chars)*16 + 3         ; #214 
+        dw (.ch0_215-.chars)*16 + 4         ; #215 
+        dw (.ch0_216-.chars)*16 + 4         ; #216 
+        dw (.ch0_217-.chars)*16 + 2         ; #217 
+        dw (.ch0_218-.chars)*16 + 2         ; #218 
+
+   times 5 dw 0                             ; #219-223
         dw (.ch0_224-.chars)*16 + 2         ; #224 p
         dw (.ch0_225-.chars)*16 + 2         ; #225 c
         dw (.ch0_226-.chars)*16 + 2         ; #226 ò
@@ -312,8 +395,10 @@ align 4
         dw (.ch0_241-.chars)*16 + 4         ; #241 ¸
    times 14 dw 0                            ; #142-255
 
+; ----------------------------------------------------
 align 4
 .chars:
+    dw  0
 .ch0_33:    !
     ritick      2, 2, 0      
     lntick      2, 4, 2, 5      
@@ -329,12 +414,12 @@ align 4
     lntick      0, 3, 1, 5      
     cstick      3, 3, 0, 0      
 .ch0_38:    ; &
-    gptick      7, 6, v5_5
+    gptick      7, 6, 62
     gptick     19, 4, 38 
 .ch0_40:    ; (
-    gptick      5, 3, v5_1
+    gptick      5, 3, 58
 .ch0_41:    ; )
-    gptick      9, 7, v5_1
+    gptick      9, 7, 58
 .ch0_42:    ; *
     gptick      3, 7, 33
     gptick     10, 3, 33
@@ -357,7 +442,7 @@ align 4
     ritick      1, 1, 0      
 .ch0_47:    ; /
 .ch0_55:    ; 7
-    gptick      1, 2, v5_2
+    gptick      1, 2, 59
     lntick      0, 8, 0, 4
 .ch0_64:    ; @
     cstick      3, 6, 0, 1
@@ -376,13 +461,13 @@ align 4
     lntick      0, 2, 0, 5
     lntick      1, 3, 1, 3
 .ch0_83:    ; S
-    gptick      3, 2, v4_1
+    gptick      3, 2, 50
 .ch0_51:    ; 3
     lntick      1, 5, 0, 3
-    gptick      8, 1, v4_1
+    gptick      8, 1, 50
 .ch0_53:    ; 5
-    gptick     10, 6, v4_2
-    gptick     13, 4, v8_1
+    gptick     10, 6, 51
+    gptick     13, 4, 82
 .ch0_52:    ; 4
     gptick     14, 2, 32
     lntick      0, 4, 0, 5
@@ -391,16 +476,16 @@ align 4
     gptick     14, 0, v10_2 
     gptick      2, 0, 44 
 .ch0_56:    ; 8
-    gptick     10, 6, v5_3
+    gptick     10, 6, 60
 .ch0_57:    ; 9
     gptick      9, 0, v10_2 
     gptick     15, 0, 44 
 .ch0_60:    ; <
-    gptick      7, 4, v7_1
+    gptick      7, 4, 74
 .ch0_62:    ; >
-    gptick      8, 4, v7_1
+    gptick      8, 4, 74
 .ch0_63:    ; ?
-    gptick      7, 1, v4_1
+    gptick      7, 1, 50
 
 .ch0_66:    ; B
 .ch0_130:   ; B
@@ -408,7 +493,7 @@ align 4
 .ch0_80:    ; P
 .ch0_144:   ; Ð
 .ch0_82:    ; R
-    gptick      9, 0, v5_4
+    gptick      9, 0, 61
 .ch0_75:    ; K
 .ch0_138:   ; K
     lntick      0, 2, 2, 7
@@ -421,7 +506,7 @@ align 4
     gptick      5, 4, v10_1
     gptick      4, 5, 43
 .ch0_68:    ; D
-    gptick      9, 0, v7_1
+    gptick      9, 0, 74
 .ch0_76:    ; L
     lntick      0, 2, 2, 7      
     lntick      1, 2, 0, 4      
@@ -441,7 +526,7 @@ align 4
 .ch0_73:    ; I
     lntick      1, 8, 0, 3
 .ch0_74:    ; J
-    gptick     12, 6, v6_1
+    gptick     12, 6, 66
     lntick      3, 8, 0, 3 
 .ch0_84:    ; T
 .ch0_146:   ; Ò
@@ -461,27 +546,27 @@ align 4
 .ch0_87:    ; W
     lntick      0, 3, 2, 6
     lntick      4, 3, 2, 6
-    gptick      0, 2, 1, 41
+    gptick      0, 2, 1, 48
 .ch0_86:    ; V
     lntick      0, 7, 0, 2
     lntick      4, 7, 0, 2
 .ch0_118:   ; v
 .ch0_121:   ; y
-    gptick     12, 6, v7_1       
+    gptick     12, 6, 74       
     lntick      0, 1, 2, 2       
 .ch0_88:    ; X
 .ch0_149:   ; Õ
-    gptick      1, 2, v5_2
-    gptick      4, 6, v5_5
+    gptick      1, 2, 59
+    gptick      4, 6, 62
 .ch0_89:    ; Y
-    gptick     18, 6, v7_1
+    gptick     18, 6, 74
     lntick      3, 2, 2, 2 
 .ch0_90:    ; Z
     lntick      0, 2, 0, 5      
     lntick      0, 8, 0, 5      
     lntick      0, 3, 1, 5      
 .ch0_92:    ; \
-    gptick      4, 6, v5_5
+    gptick      4, 6, 62
 .ch0_91:    ; [
     lntick      1, 3, 2, 5
 .ch0_93:    ; ]
@@ -494,21 +579,21 @@ align 4
     lntick      4, 2, 2, 4
     lntick      1, 4, 0, 3
 .ch0_94:    ; ^
-    gptick      3, 1, 41      
+    gptick      3, 1, 48      
 .ch0_95:    ; _
     lntick      0, 1, 0, 5      
 .ch0_96:    ; `
     lntick      3, 8, 3, 2      
 .ch0_97:    ; a
 .ch0_160:   ; a
-    gptick      5, 4, v5_4
-    gptick     16, 0, v5_6
+    gptick      5, 4, 61
+    gptick     16, 0, 63
 .ch0_129:   ; Á
     lntick      1, 8, 0, 3
 .ch0_98:    ; b
     lntick      0, 2, 2, 7
 .ch0_112:   ; p
-    gptick     16, 0, v7_3
+    gptick     16, 0, 76
     lntick      0, 0, 2, 7
 .ch0_99:    ; c
 .ch0_225:   ; c
@@ -517,7 +602,7 @@ align 4
 .ch0_101:   ; e
 .ch0_165:   ; å
 .ch0_241:   ; ¸
-    gptick      5, 4, v7_3
+    gptick      5, 4, 76
     gptick     15, 6, 43
     ritick      1, 8, 0
     ritick      3, 8, 0
@@ -525,20 +610,20 @@ align 4
     lntick      4, 2, 2, 7
 .ch0_113:   ; p
 .ch0_224:   ; p
-    gptick      5, 4, v7_3
+    gptick      5, 4, 76
     lntick      4, 0, 2, 7
 .ch0_102:   ; f
-    gptick     17, 2, v6_1
+    gptick     17, 2, 66
     ritick      1, 2, 0
     lntick      0, 6, 0, 3
 .ch0_103:   ; g
-    gptick     12, 6, v6_1
-    gptick      5, 4, v7_3 
+    gptick     12, 6, 66
+    gptick      5, 4, 76
 .ch0_104:   ; h
-    gptick     16, 0, v5_6
+    gptick     16, 0, 63
 .ch0_107:   ; k
     lntick      0, 2, 2, 7
-    gptick      5, 3, 41
+    gptick      5, 3, 48
 .ch0_105:   ; i
     lntick      1, 2, 0, 3
 .ch0_106:   ; j
@@ -555,7 +640,7 @@ align 4
     lntick      4, 2, 2, 4
 .ch0_110:   ; n
     lntick      0, 2, 2, 5
-    gptick     16, 0, v5_6
+    gptick     16, 0, 63
 .ch0_114:   ; r
     lntick      1, 2, 2, 5
     gptick     21, 1, 32
@@ -568,7 +653,7 @@ align 4
 .ch0_117:   ; u
 .ch0_227:   ; ó
     lntick      4, 2, 2, 5
-    gptick      5, 4, v5_6
+    gptick      5, 4, 63
     gptick     29, 5, 36
 .ch0_119:   ; w
     lntick      2, 4, 2, 2
@@ -606,8 +691,8 @@ align 4
     ritick      4, 1, 0
     lntick      0, 3, 2, 6
 .ch0_134:   ; Æ
-    gptick      4, 6, v5_7
-    gptick      6, 2, v5_7
+    gptick      4, 6, 64
+    gptick      6, 2, 64
 .ch0_148:   ; Ô
     lntick      2, 2, 2, 7
     cstick      1, 8, 0, 3
@@ -618,7 +703,7 @@ align 4
     lntick      1, 4, 1, 3
 .ch0_139:   ; Ë
     lntick      4, 2, 2, 7
-    gptick     26, 2, v4_3 
+    gptick     26, 2, 52
     lntick      0, 2, 1, 2 
 .ch0_143:   ; Ï
     lntick      0, 2, 2, 7
@@ -626,11 +711,11 @@ align 4
 .ch0_151:   ; ×
     lntick      4, 2, 2, 7
 .ch0_147:   ; Ó
-    gptick     27, 4, v5_6
+    gptick     27, 4, 63
     lntick      4, 3, 2, 6
     lntick      1, 2, 0, 3
 .ch0_155:   ; Û
-    lntick     16, 0, v5_3 
+    lntick     16, 0, 60 
 .ch0_152:   ; Ø
 .ch0_153:   ; Ù
     lntick      0, 3, 2, 6     
@@ -640,22 +725,22 @@ align 4
     lntick      4, 1, 2, 2
 .ch0_154:   ; Ú
 .ch0_156:   ; Ü
-    lntick     26, 0, v5_3 
+    lntick     26, 0, 60 
     lntick      1, 3, 2, 6
     ritick      0, 8, 0
 .ch0_135:   ; Ç
     ritick      3, 5, 0
 .ch0_157:   ; Ý
-    gptick      8, 1, v4_1
-    gptick     10, 6, v4_2
+    gptick      8, 1, 50
+    gptick     10, 6, 51
     lntick      1, 5, 0, 4
 .ch0_158:   ; Þ
-    gptick     28, 7, v5_1
+    gptick     28, 7, 58
     lntick      2, 3, 2, 5
     lntick      0, 2, 2, 7
     ritick      1, 5, 0 
 .ch0_159:   ; ß
-    gptick     13, 4, v6_2 
+    gptick     13, 4, 67
     lntick      4, 2, 2, 7
     lntick      0, 2, 1, 3
 .ch0_161:   ; á
@@ -674,8 +759,8 @@ align 4
     gptick     19, 0, 35
     lntick      0, 1, 2, 2
 .ch0_166:   ; æ
-    gptick     12, 6, v5_3
-    gptick      1, 2, v5_3
+    gptick     12, 6, 60
+    gptick      1, 2, 60
     lntick      2, 2, 2, 5
 .ch0_167:   ; ç
     lntick      2, 4, 0, 2
@@ -690,10 +775,10 @@ align 4
     lntick      1, 3, 1, 3
 .ch0_170:   ; ê
     lntick      2, 2, 2, 5
-    gptick      6, 3, 41 
+    gptick      6, 3, 48 
     ritick      1, 5, 0
 .ch0_171:   ; ë
-    gptick      1, 1, v4_4 
+    gptick      1, 1, 53 
 .ch0_172:   ; ì
     lntick      4, 2, 2, 5
     gptick     13, 5, 33 
@@ -726,19 +811,144 @@ align 4
     lntick      0, 2, 0, 4
     lntick      5, 1, 2, 2
 .ch0_234:   ; ú
-    gptick     24, 0, v4_5 
+    gptick     24, 0, 54 
     gptick      6, 0, 43 
 .ch0_235:   ; û
 .ch0_236:   ; ü
     lntick      0, 3, 2, 4
-    gptick     26, 0, v4_5 
+    gptick     26, 0, 54 
     lntick      4, 2, 2, 5
 .ch0_238:   ; þ
-    gptick     24, 2, v4_5 
+    gptick     24, 2, 54 
     lntick      3, 2, 3, 3
     lntick      0, 2, 2, 5
 .ch0_239:   ; ÿ
     gptick     26, 3, 47 
     lntick      4, 2, 2, 5
     gptick      1, 1, 34
-    
+
+.ch0_178:   ; pseudo-graphics
+    ritick      0, 8, 0
+    lntick      0, 5, 1, 4
+    lntick      0, 2, 1, 5
+    lntick      1, 0, 1, 4
+.ch0_176:   ; 
+    lntick      0, 4, 1, 5
+    lntick      2, 0, 1, 3
+.ch0_177:   ; 
+    lntick      0, 7, 1, 2
+    lntick      0, 1, 1, 5
+    lntick      0, 3, 1, 4
+    lntick      0, 5, 1, 4
+    lntick      1, 0, 1, 4
+    lntick      3, 0, 1, 2
+.ch0_184:   ; 
+    lntick      3, 0, 2, 6
+.ch0_181:   ; 
+    lntick      0, 3, 0, 2
+    lntick      0, 5, 0, 2
+.ch0_179:   ; 
+.ch0_180:   ; 
+    lntick      2, 0, 2, 9
+    lntick      0, 4, 0, 2
+.ch0_183:   ; 
+    lntick      0, 4, 0, 4
+    lntick      1, 0, 2, 4
+    lntick      3, 0, 2, 4
+.ch0_185:   ; 
+    gptick     11, 0, 43
+    gptick      9, 6, 46
+.ch0_182:   ; 
+.ch0_215:   ; 
+    ritick      0, 4, 0
+.ch0_186:   ; 
+.ch0_199:   ; 
+    lntick      1, 0, 2, 9
+    lntick      3, 0, 2, 9
+    ritick      4, 4, 0
+.ch0_204:   ; 
+    gptick     15, 4, 43
+    gptick     30, 2, 46
+.ch0_187:   ; 
+    lntick      4, 0, 2, 5
+    lntick      0, 5, 0, 4
+    gptick     11, 0, 43
+.ch0_188:   ; 
+    ritick      0, 5, 0
+    lntick      0, 3, 0, 4
+.ch0_189:   ; 
+    lntick      4, 4, 2, 5
+    lntick      1, 5, 2, 4
+    lntick      0, 4, 0, 3
+.ch0_190:   ; 
+    gptick      2, 0, 55
+.ch0_192:   ; 
+    lntick      2, 5, 2, 4
+    lntick      2, 4, 0, 3
+.ch0_191:   ; 
+    lntick      0, 4, 0, 3
+.ch0_194:   ; 
+    lntick      2, 0, 2, 4
+.ch0_193:   ; 
+.ch0_196:   ; 
+    lntick      0, 4, 0, 5
+    lntick      2, 5, 2, 4
+.ch0_195:   ; 
+    lntick      0, 3, 0, 2
+.ch0_197:   ; 
+    lntick      2, 0, 2, 9
+    lntick      0, 4, 0, 5
+.ch0_198:   ; 
+    lntick      2, 0, 2, 9
+.ch0_213:   ; 
+    gptick      7, 4, 55
+    lntick      2, 0, 2, 4
+.ch0_200:   ; 
+    gptick     15, 4, 43
+    lntick      1, 3, 0, 4
+    lntick      1, 4, 2, 5
+.ch0_201:   ; 
+    gptick     30, 2, 46
+    lntick      1, 5, 0, 4
+    lntick      1, 0, 2, 5
+.ch0_207:   ; 
+.ch0_216:   ;
+    lntick      2, 6, 2, 3 
+.ch0_205:   ; 
+.ch0_209:   ; 
+    lntick      0, 3, 0, 5
+    lntick      0, 5, 0, 5
+    lntick      2, 0, 2, 3 
+.ch0_202:   ; 
+    lntick      0, 3, 0, 5
+.ch0_206:   ; 
+    gptick      9, 6, 46
+    gptick     15, 4, 43
+.ch0_203:   ; 
+    gptick     30, 2, 46
+    gptick     11, 0, 43
+    lntick      0, 5, 0, 5
+.ch0_211:   ; 
+    lntick      1, 4, 0, 1
+.ch0_208:   ; 
+    lntick      1, 5, 2, 4
+    lntick      3, 5, 2, 4
+.ch0_210:   ; 
+    lntick      0, 4, 0, 5
+.ch0_214:   ; 
+    lntick      1, 0, 2, 4
+    lntick      3, 0, 2, 4
+    lntick      1, 4, 0, 1
+.ch0_212:   ; 
+    gptick      7, 4, 55
+    lntick      2, 6, 2, 3
+.ch0_217:   ; 
+    lntick      0, 4, 0, 3
+    lntick      2, 5, 2, 4
+.ch0_218:   ; 
+    lntick      2, 4, 0, 3
+    lntick      2, 0, 2, 4
+
+
+
+   
