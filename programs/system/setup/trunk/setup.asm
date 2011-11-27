@@ -826,13 +826,22 @@ save_fileinfo:
 file_name:   db '/sys/setup.dat',0
 
 I_PARAM   dd 0
-
-keyboard     dd 0x0
-syslang      dd 0x1
-lba_read     dd 0x1
-pci_acc      dd 0x1
-mouse_speed  dd 0x3
-mouse_delay  dd 0x10
+;-----------------------------------------------------------------------------
+; Note to SVN revision 2299 - some parameters has not used,
+; but keep the order of the parameter has always needed!
+keyboard	dd 0x0
+		dd 0	;midibase  - not use, but...
+		dd 0	;cdbase - not use, but...
+		dd 0	;sb16 - not use, but...
+syslang		dd 0x1
+		dd 0	;hdbase - not use, but...
+		dd 0	;f32p - not use, but...
+		dd 0	;sound_dma - not use, but...
+lba_read	dd 0x1
+pci_acc		dd 0x1
+mouse_speed	dd 0x3
+mouse_delay	dd 0x10
+;-----------------------------------------------------------------------------
 text00:
 
 I_END:
