@@ -23,20 +23,18 @@ dw  (x mod 16) shl 12 + (y mod 32) shl 8 + (rmod 4) shl 3 + ((len-8) mod 8) + 0x
     end if}
 
 ;align 8
-sdsh_data:
+;sdsh_data:
 
 .numfonts   db  2               ; number of system fonts
 .numsptks   db  32              ; number of special ticks
 .numticks   dw  ?               ; total number of ticks
 .sp_ticks   dd  .special_ticks  ; special table
 .ticktble   dd  .tick_table     ; general table
-.origtble   dd  .origs          ; origins table
-.chartble   dd  .chars          ; characters table
 .pix4       db  34
-.pix5       db  40
+.pix5       db  42
 .pix6       db  50
-.pix7       db  60
-.pix8       db  70
+.pix7       db  58
+.pix8       db  66
 
 align 4
 ;   ---- special tickfields ----
@@ -50,17 +48,17 @@ align 16
 .info:
 
 ;    System font #0: 5x9  
-.fnt0.x     db  5       ; X-width
-.fnt0.y     db  9       ; Y-heigth
-.fnt0.rs    dw  0       ; reserved
-.fnt0.tab   dd  .table0
-.fnt0.org   dd  .origs0
+.fnt0.x     db  5           ; + 0: X-width
+.fnt0.y     db  9           ; + 1: Y-heigth
+.fnt0.rs    dw  0           ; + 2: reserved
+.fnt0.tab   dd  .table0     ; + 4
+.fnt0.org   dd  .origs0     ; + 8
 
 align 16
 ;    System font #1: 7x10  
-.fnt1.x     db  7       ; X-width
-.fnt1.y     db  9       ; Y-heigth
-.fnt1.rs    dw  0       ; reserved
+.fnt1.x     db  7           ; X-width
+.fnt1.y     db  9           ; Y-heigth
+.fnt1.rs    dw  0           ; reserved
 .fnt1.tab   dd  .table1
 .fnt1.org   dd  .origs1
 
@@ -171,17 +169,41 @@ align 4
             db  0, 0                    ;85: 
             times 4 (db  0, 0)          ;86..89 
 .v9:
-            times 8 (db  0, 0, 0)       ;90..97 
+            db  0, 0, 0                 ;90: 
+            db  0, 0, 0                 ;91: 
+            db  0, 0, 0                 ;92: 
+            db  0, 0, 0                 ;93: 
 .v10:
-            db  00010100b, 01010000b, 0100b     ; 98: @0CGOQÑÎÝ
-            db  01010100b, 01010001b, 0100b     ; 99: 689
+            db  00010100b, 01010000b, 0100b     ; 94: @0CGOQÑÎÝ
+            db  01010100b, 01010001b, 0100b     ; 95: 689
+            db  0, 0, 0                         ; 96: 
+            db  0, 0, 0                         ; 97: 
+.v11:
+            db  10100000b, 01010010b, 000001b   ; 98: $s
+            db  0, 0, 0                         ; 99: 
             db  0, 0, 0                         ;100: 
             db  0, 0, 0                         ;101: 
-            times 4 (db  0, 0, 0)               ;102..105 
-.v11:
-            db  10100000b, 01010010b, 000001b   ;106: $s
-            db  0, 0, 0                         ;107: 
-            times 6 (db  0, 0, 0)               ;108..113 
+.v12:
+.v13:
+            db  0, 0, 0, 0                      ;106: 
+            db  0, 0, 0, 0                      ;107: 
+            db  0, 0, 0, 0                      ;108: 
+            db  0, 0, 0, 0                      ;109: 
+.v14:
+            db  0, 0, 0, 0                      ;110: 
+            db  0, 0, 0, 0                      ;111: 
+            db  0, 0, 0, 0                      ;112: 
+            db  0, 0, 0, 0                      ;113: 
+.v15:
+            db  0, 0, 0, 0                      ;114: 
+            db  0, 0, 0, 0                      ;115: 
+            db  0, 0, 0, 0                      ;116: 
+            db  0, 0, 0, 0                      ;117: 
+.v16:
+            db  0, 0, 0, 0                      ;118: 
+            db  0, 0, 0, 0                      ;119: 
+            db  0, 0, 0, 0                      ;120: 
+            db  0, 0, 0, 0                      ;121: 
 
 
 align 4
@@ -373,7 +395,6 @@ align 4
         dw (.ch0_216-.chars)*16 + 4         ; #216 
         dw (.ch0_217-.chars)*16 + 2         ; #217 
         dw (.ch0_218-.chars)*16 + 2         ; #218 
-
    times 5 dw 0                             ; #219-223
         dw (.ch0_224-.chars)*16 + 2         ; #224 p
         dw (.ch0_225-.chars)*16 + 2         ; #225 c
@@ -393,7 +414,7 @@ align 4
         dw (.ch0_239-.chars)*16 + 3         ; #239 ÿ
         dw (.ch0_240-.chars)*16 + 5         ; #240 ¨
         dw (.ch0_241-.chars)*16 + 4         ; #241 ¸
-   times 14 dw 0                            ; #142-255
+   times 14 dw 0                            ; #242-255
 
 ; ----------------------------------------------------
 align 4

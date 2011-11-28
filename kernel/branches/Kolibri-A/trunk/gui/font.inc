@@ -170,7 +170,7 @@ sdsh_draw_char:
         mov     edx, [ebp + 4]              ; chartable addr
         mov		cx, word[edx + ecx*2]       ; tick info
         mov		edx, ecx
-        and     ecx, 15                     ; cl = number of ticks
+        and     ecx, 7                      ; cl = number of ticks
         jz      .blank
         shr     edx, 4                      ; offset in the chartable
         add     edx, [sdsh_data.chars]      ; edx -> the char's ticklist 
@@ -191,7 +191,7 @@ parse_tick:
 ; edx ->tickinfo
 ; edi = color 0x0RRGGBB
 ; ebp = font's header 
-        popad
+        pushad    
         xor     ecx, ecx
         mov     dx, word[edx]
         mov     cl, dl
@@ -202,12 +202,87 @@ parse_tick:
         cmp     dl, 0xC0
         jae     .cstick
 .gptick:
-        mov     cl, dh              ; three rotation bits
-        and     cl, 7
-        mov     dh,  ... - origin
-        mov     dl, .... - num_vertices!!
-        mov     esi, ... - tickfield??
-        jmp     .draw
+        push    edx
+        mov     cl, dh
+        shr     cl, 3               ; orig.#
+        mov     edx, [ebp+8]        ; orig. table
+        mov     ch, byte[edx+ecx]   ; orig. coords
+        pop     edx
+        mov     cl, dh
+        and     cl, 7               ; three rotation bits
+        and     edx, 0xFF
+        sub     dl, 32
+        test    dl, (sdsh_data.v5-sdsh_data.v1)
+        jae     .gptick.2
+.gptick.1:
+        mov     esi, sdsh_data.tick_table
+        add     esi, edx            ; the tickfield
+        inc     dh
+        sub     dl, 2               ; .v1
+        jb      .gptick.done
+        inc     dh
+        sub     dl, 8               ; .v2
+        jb      .gptick.done
+        inc     dh
+        sub     dl, 8               ; .v3
+        jb      .gptick.done
+        inc     dh
+        jmp     .gptick.done        ; .v4
+.gptick.2:
+        sub     dl, (sdsh_data.v5-sdsh_data.v1)
+        jae     .gptick.3
+        mov     esi, sdsh_data.v5
+        add     esi, edx*2          ; 2-byte tickfield
+        mov     dh, 5
+        sub     dl, 8               ; .v5
+        jb      .gptick.done
+        inc     dh
+        sub     dl, 8               ; .v6
+        jb      .gptick.done
+        inc     dh
+        sub     dl, 8               ; .v7
+        jb      .gptick.done
+        inc     dh
+        jmp     .gptick.done        ; .v8
+.gptick.3:
+        sub     dl, (sdsh_data.v9-sdsh_data.v5)
+        jae     .gptick.4
+        mov     esi, sdsh_data.v9
+        lea     esi,[esi+edx*2+edx] ; 3-byte tickfield
+        mov     dh, 9
+        sub     dl, 4               ; .v9
+        jb      .gptick.done
+        inc     dh
+        sub     dl, 4               ; .v10
+        jb      .gptick.done
+        inc     dh
+        sub     dl, 4               ; .v11
+        jb      .gptick.done
+        inc     dh
+        jmp     .gptick.done        ; .v12
+.gptick.4:
+        sub     dl, (sdsh_data.v13-sdsh_data.v9)
+        jae     .gptick.5
+        mov     esi, sdsh_data.v13
+        lea     esi,[esi+edx*2+edx] ; 3-byte tickfield
+        mov     dh, 13
+        sub     dl, 4               ; .v13
+        jb      .gptick.done
+        inc     dh
+        sub     dl, 4               ; .v14
+        jb      .gptick.done
+        inc     dh
+        sub     dl, 4               ; .v15
+        jb      .gptick.done
+        inc     dh
+        jmp     .gptick.done        ; .v16
+.gptick.unknown:
+        jmp     .exit
+.gptick.done:
+        mov     dl, dh              ; dl = numvert
+        mov     dh, ch              ; dh = orig.xy
+        call    draw_tick
+        jmp     .exit
         
 .cstick:
         and     cl, 4
@@ -241,15 +316,16 @@ parse_tick:
 .ritick.0:
         mov     cl, dh              ; y
         and     cl, 0x0F
-        and     ebx, ecx
+        sub     ebx, ecx
         mov     cl, dh
         shr     cl, 4               ; x
-        and     eax, ecx
+        add     eax, ecx
         call    ch_putpixel
         jmp     .exit
 .ritick.1:
         mov     esi, sdsh_data.ri1  ; 8pix-ring
         mov     dl, 4 
+        xor     cl, cl
         jmp     .draw 
         
 .lntick.short:
@@ -266,57 +342,63 @@ parse_tick:
         shr     cl, 3
         mov     esi, sdsh_data.blank 
 .draw:
+; cl = rot; dl = numvert; dh = orig.xy 
         push    ecx
         mov     cl, dh              ; y
         and     cl, 0x0F
-        and     ebx, ecx
+        sub     ebx, ecx
         mov     cl, dh
         shr     cl, 4               ; x
-        and     eax, ecx
+        add     eax, ecx
         pop     ecx
         call    draw_tick
+.gptick.5:
 .exit:
         popad
         ret
 
                 
 	
-	
-
-	
 draw_tick:
 ; eax = x-origin
 ; ebx = y-origin
 ; edi = 0x0RRGGBB 
 ;  cl = direction (0..7)  
-;  ch = number of vertices
-; edx -> tick bitfield
+;  dl = number of vertices  (dl)
+; esi -> tick bitfield  
 
 	pushad
-	call	putchpixel		; point 0
-	xor		ecx, ecx
-	mov		edx, ecx
-	mov		dl, byte[esi]
-	and		dl, 7
-	mov		cl, 3
+    inc     dl                      ; -- that's to count down to 0 
+	call	ch_putpixel		        ; the point of origin
+	and		ecx, 7
+	call	[.moves + ecx*4]        ; basic vector
+	call	ch_putpixel		
+    dec     dl
+    jz      .done                   ; 2pix lines only
+    mov     esi, dword [esi]        ; max 16 vertice bitfield limit
+    xchg    esi, edx 
 .move_and_draw:
-	xor		dh, dh
-	call	[.moves + edx*4]
-	call	putchpixel		
-
-	shl		edx, 5			; prepare to move the old value to dh
-	bt		[esi], ecx
-
-	rol		edx, 1
-	inc		ecx
-	bt		[esi], ecx
-	rol		edx, 1
-	inc		ecx
-	bt		[esi], ecx
-	rol		edx, 1
-	inc		ecx
-	xor		dh, dl
-	jnz		.move_and_draw	; any step-back means the end
+    mov     ch, dl
+    and     ch, 3
+    jz      .moved
+    btc     ch, 0
+    jz      .2
+.1:
+    dec     cl                      ; right turns (1 and 3)
+    and     cl, 7
+@@: btc     ch, 1                   ; straight angle (3) ?
+    jc      .1
+    jmp     .moved
+.2:
+    inc     cl                      ; left turn (2)
+    and     cl, 7
+    btc     ch, 1                   ; just to zero ah
+.moved:
+	call	[.moves + ecx*4]        ; go new way
+	call	ch_putpixel	
+    shr     edx, 2	
+    dec     esi
+    jnz     .move_and_draw	         
 .done:
 	popad
 	ret
@@ -326,28 +408,28 @@ draw_tick:
 	ret
 .move001:
 	inc		eax
-	inc		ebx
+	dec		ebx
 	ret
 .move010:
-	inc		ebx
+	dec		ebx
 	ret
 .move011:
 	dec		eax
-	inc		ebx
-	ret
-.move111:
-	dec		eax
-	ret
-.move110:
-	dec		eax
-	dec		ebx
-	ret
-.move101:
 	dec		ebx
 	ret
 .move100:
-	dec		ebx
+	dec		eax
+	ret
+.move101:
+	dec		eax
+	inc		ebx
+	ret
+.move110:
+	inc		ebx
+	ret
+.move111:
 	inc		eax
+	inc		ebx
 	ret
 
 align 4
@@ -407,11 +489,7 @@ ch_putpixel:
      mov   [LFB_BASE+edx], edi
      pop   edx
      ret
-	
 ;)
-
-
-
 
 ;diff16 "font  code end ",0,$
 diff10 "font  code size",dtext,$
