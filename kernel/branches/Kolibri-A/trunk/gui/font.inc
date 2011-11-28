@@ -209,104 +209,80 @@ parse_tick:
         mov     ch, byte[edx+ecx]   ; orig. coords
         pop     edx
         mov     cl, dh
-        and     cl, 7               ; three rotation bits
-        and     edx, 0xFF
+        and     cl, 7                   ; three rotation bits
+        and     edx, 0xFF               ; dl = gptick#
         sub     dl, 32
-        test    dl, (sdsh_data.v5-sdsh_data.v1)
+        cmp     dl, (sdsh_data.v5-sdsh_data.v1)
         jae     .gptick.2
 .gptick.1:
         mov     esi, sdsh_data.tick_table
-        add     esi, edx            ; the tickfield
+        add     esi, edx                ;  1-byte tickgroups .v1-v4:
         inc     dh
-        sub     dl, 2               ; .v1
-        jb      .gptick.done
-        inc     dh
-        sub     dl, 8               ; .v2
-        jb      .gptick.done
-        inc     dh
-        sub     dl, 8               ; .v3
-        jb      .gptick.done
-        inc     dh
-        jmp     .gptick.done        ; .v4
+        sub     dl, 2                   ; .v1 : 2 ticks only (#32, 33) 
+        jae     @f
+        mov     dl, dh
+        jmp     .gptick.done
+@@:     inc     dh
+        shr     dl, 3                   ; tickgroups .v2-v4 : 8 ticks each
+        add     dl, dh
+        jmp     .gptick.done        
 .gptick.2:
         sub     dl, (sdsh_data.v5-sdsh_data.v1)
+        cmp     dl, (sdsh_data.v9-sdsh_data.v5)
         jae     .gptick.3
         mov     esi, sdsh_data.v5
-        add     esi, edx*2          ; 2-byte tickfield
+        lea     esi, [esi+edx*2]        ; 2-byte tickgroups .v5-v8: 8 ticks each
         mov     dh, 5
-        sub     dl, 8               ; .v5
-        jb      .gptick.done
-        inc     dh
-        sub     dl, 8               ; .v6
-        jb      .gptick.done
-        inc     dh
-        sub     dl, 8               ; .v7
-        jb      .gptick.done
-        inc     dh
-        jmp     .gptick.done        ; .v8
+        shr     dl, 3                 
+        add     dl, dh
+        jmp     .gptick.done        
 .gptick.3:
         sub     dl, (sdsh_data.v9-sdsh_data.v5)
+        cmp     dl, (sdsh_data.v13-sdsh_data.v9)
         jae     .gptick.4
         mov     esi, sdsh_data.v9
-        lea     esi,[esi+edx*2+edx] ; 3-byte tickfield
+        lea     esi,[esi+edx*2+edx]     ; 3-byte tickgroups .v9-12: 4 ticks each 
         mov     dh, 9
-        sub     dl, 4               ; .v9
-        jb      .gptick.done
-        inc     dh
-        sub     dl, 4               ; .v10
-        jb      .gptick.done
-        inc     dh
-        sub     dl, 4               ; .v11
-        jb      .gptick.done
-        inc     dh
-        jmp     .gptick.done        ; .v12
+        shr     dl, 2                
+        add     dl, dh
+        jmp     .gptick.done         
 .gptick.4:
         sub     dl, (sdsh_data.v13-sdsh_data.v9)
-        jae     .gptick.5
+        cmp     dl, 16
+        jae     .exit
         mov     esi, sdsh_data.v13
-        lea     esi,[esi+edx*2+edx] ; 3-byte tickfield
+        lea     esi,[esi+edx*4]         ; 4-byte tickgroups .v13-16: 4 ticks each
         mov     dh, 13
-        sub     dl, 4               ; .v13
-        jb      .gptick.done
-        inc     dh
-        sub     dl, 4               ; .v14
-        jb      .gptick.done
-        inc     dh
-        sub     dl, 4               ; .v15
-        jb      .gptick.done
-        inc     dh
-        jmp     .gptick.done        ; .v16
-.gptick.unknown:
-        jmp     .exit
+        shr     dl, 2                 
+        add     dl, dh
 .gptick.done:
-        mov     dl, dh              ; dl = numvert
-        mov     dh, ch              ; dh = orig.xy
-        call    draw_tick
-        jmp     .exit
+        mov     dh, ch                  ; dh = orig.XY;     dl = numvert
+        jmp     .draw                   ; cl = rotation
         
 .cstick:
         and     cl, 4
-        shr     cl, 2               ; only one rotational bit
+        shr     cl, 2                   ; only one rotational bit
         and     dl, 3
+        inc     dl
         dec     dl
-        jb      .cstick.0
-        mov     esi, sdsh_data.cs2  ; the square
+        jz      .cstick.0
         dec     dl
-        jb      .cstick.1
-        dec     dl
-        jb      .cstick.2
+        jnz     @f
+        mov     dl, 6
+        jz      .cstick.1
+@@:     dec     dl
+        jz      .cstick.2
 .cstick.3:
-        mov     esi, sdsh_data.cs3  ; 12pix-ring
+        mov     esi, sdsh_data.cs3      ; 12pix-ring
         mov     dl, 10
         jmp     .draw
 .cstick.2:
         mov     dl, 7
-        jmp     .draw
 .cstick.1:
-        mov     dl, 6
+        mov     esi, sdsh_data.cs2      ; the square
         jmp     .draw
-.cstick.3:
-        mov     esi, sdsh_data.cs0  ; 4pix-square
+.cstick.0:
+        mov     esi, sdsh_data.cs0      ; 4pix-square
         mov     dl, 3
         jmp     .draw
 
