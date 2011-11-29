@@ -133,7 +133,7 @@ iglobal
       dd stack_driver_stat	 ; 52-Stack driver status
       dd cross_order		 ; 53-Socket interface
       dd undefined_syscall	 ; 54-reserved
-      dd sound_interface	 ; 55-Sound interface
+      dd undefined_syscall	 ; sound_interface	 ; 55-Sound interface
       dd undefined_syscall	 ; 56-reserved
       dd sys_pcibios		 ; 57-PCI BIOS32
       dd cross_order		 ; 58-Common file system interface
@@ -159,7 +159,7 @@ servetable3:	; Kolibri-A special service
 
 	dd	sys_rdmsr	 ; 0  = read MSR
 	dd	sys_map1	 ; 1  = get sys data (test only)
-	dd	paleholder	 ; 2
+	dd	draw_char	 ; 2  = hew char (test)
 	dd	paleholder	 ; 3
 	dd	paleholder	 ; 4
 	dd	paleholder	 ; 5

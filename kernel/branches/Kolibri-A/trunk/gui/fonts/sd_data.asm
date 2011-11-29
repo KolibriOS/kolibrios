@@ -10,17 +10,19 @@ macro gptick	origin, r, tick
 {    dw  (origin mod 32) shl 11 + (r mod 8) shl 8 + (tick mod 256) }
 
 macro ritick	x, y, tick
-{    dw  (x mod 16) shl 12 + (y mod 32) shl 8 + (tick mod 2) }
+{    dw  (x mod 16) shl 12 + (y mod 16) shl 8 + (tick mod 2) }
 
 macro cstick	x, y, r, tick
-{    dw  (x mod 16) shl 12 + (y mod 32) shl 8 + 0xC0 + (r mod 2) shl 2 + (tick mod 4) }
+{    dw  (x mod 16) shl 12 + (y mod 16) shl 8 + 0xC0 + (r mod 2) shl 2 + (tick mod 4) }
 
 macro lntick	x, y, r, len
-{   if  len < 8   
-dw  (x mod 16) shl 12 + (y mod 32) shl 8 + (rmod 4) shl 3 + len 
-    else
-dw  (x mod 16) shl 12 + (y mod 32) shl 8 + (rmod 4) shl 3 + ((len-8) mod 8) + 0xE0
-    end if}
+{   
+if  len in <2, 3, 4, 5, 6, 7>   
+dw  ((x mod 16) shl 12 + (y mod 16) shl 8 + (r mod 4) shl 3 + len) 
+else
+dw  ((x mod 16) shl 12 + (y mod 16) shl 8 + (r mod 4) shl 3 + ((len-8) mod 8) + 0xE0)
+end if
+    }
 
 ;align 8
 ;sdsh_data:
@@ -28,13 +30,13 @@ dw  (x mod 16) shl 12 + (y mod 32) shl 8 + (rmod 4) shl 3 + ((len-8) mod 8) + 0x
 .numfonts   db  2               ; number of system fonts
 .numsptks   db  32              ; number of special ticks
 .numticks   dw  ?               ; total number of ticks
-.sp_ticks   dd  .special_ticks  ; special table
+;.sp_ticks   dd  .special_ticks  ; special table
 .ticktble   dd  .tick_table     ; general table
-.pix4       db  34
-.pix5       db  42
-.pix6       db  50
-.pix7       db  58
-.pix8       db  66
+;.pix4       db  34
+;.pix5       db  42
+;.pix6       db  50
+;.pix7       db  58
+;.pix8       db  66
 
 align 4
 ;   ---- special tickfields ----
@@ -54,18 +56,18 @@ align 16
 .fnt0.tab   dd  .table0     ; + 4
 .fnt0.org   dd  .origs0     ; + 8
 
-align 16
-;    System font #1: 7x10  
-.fnt1.x     db  7           ; X-width
-.fnt1.y     db  9           ; Y-heigth
-.fnt1.rs    dw  0           ; reserved
-.fnt1.tab   dd  .table1
-.fnt1.org   dd  .origs1
+;align 16
+;;    System font #1: 7x10  
+;.fnt1.x     db  7           ; X-width
+;.fnt1.y     db  9           ; Y-heigth
+;.fnt1.rs    dw  0           ; reserved
+;.fnt1.tab   dd  .table1
+;.fnt1.org   dd  .origs1
 
 align 4
 .origs0:
             db  0x00    ; zero
-            db  0x02    ; 1     s/7Xæëÿ
+            db  0x02    ; 1     s/7XæëÿW
             db  0x05    ; 2     6W~ç
             db  0x06    ; 3     ^*Sâú
             db  0x08    ; 4     \ÆÚ
@@ -77,7 +79,7 @@ align 4
             db  0x44    ; 10    *8B
             db  0x03    ; 11    $
             db  0x46    ; 12    vJVgæ
-            db  0x35    ; 13    5}ßì
+            db  0x35    ; 13    5}ßìM
             db  0x15    ; 14    4
             db  0x45    ; 15    9e
             db  0x16    ; 16    abphinÛ
@@ -167,7 +169,7 @@ align 4
             db  0, 0                    ;83: 
             db  0, 0                    ;84: 
             db  0, 0                    ;85: 
-            times 4 (db  0, 0)          ;86..89 
+            db  0, 0, 0, 0, 0, 0, 0, 0  ;86..89 
 .v9:
             db  0, 0, 0                 ;90: 
             db  0, 0, 0                 ;91: 
@@ -253,6 +255,7 @@ align 4
         dw (.ch0_74 -.chars)*16 + 2         ; #74 J
         dw (.ch0_75 -.chars)*16 + 3         ; #75 K
         dw (.ch0_76 -.chars)*16 + 2         ; #76 L
+        dw (.ch0_77 -.chars)*16 + 3         ; #77 M
         dw (.ch0_78 -.chars)*16 + 3         ; #78 N
         dw (.ch0_79 -.chars)*16 + 2         ; #79 O
         dw (.ch0_80 -.chars)*16 + 2         ; #80 P
@@ -415,12 +418,13 @@ align 4
         dw (.ch0_240-.chars)*16 + 5         ; #240 ¨
         dw (.ch0_241-.chars)*16 + 4         ; #241 ¸
    times 14 dw 0                            ; #242-255
+diff10 "check font0 table size: ", .table0, $
 
 ; ----------------------------------------------------
 align 4
 .chars:
     dw  0
-.ch0_33:    !
+.ch0_33:    ; !
     ritick      2, 2, 0      
     lntick      2, 4, 2, 5      
 .ch0_34:    ; "
@@ -429,7 +433,7 @@ align 4
     lntick      3, 8, 2, 2      
 .ch0_36:    ; $
     lntick      2, 2, 2, 5
-    gptick     11, 0, v11_1       
+    gptick     11, 0, 98       
 .ch0_37:    ; %
     cstick      0, 9, 0, 0      
     lntick      0, 3, 1, 5      
@@ -471,7 +475,7 @@ align 4
 .ch0_79:    ; O
 .ch0_142:   ; Î
 .ch0_81:    ; Q
-    gptick      5, 4, v10_1
+    gptick      5, 4, 94
     lntick      4, 4, 2, 4 
     lntick      3, 1, 0, 2 
 .ch0_49:    ; 1
@@ -494,12 +498,12 @@ align 4
     lntick      0, 4, 0, 5
     lntick      3, 2, 2, 7
 .ch0_54:    ; 6
-    gptick     14, 0, v10_2 
+    gptick     14, 0, 95 
     gptick      2, 0, 44 
 .ch0_56:    ; 8
     gptick     10, 6, 60
 .ch0_57:    ; 9
-    gptick      9, 0, v10_2 
+    gptick      9, 0, 95 
     gptick     15, 0, 44 
 .ch0_60:    ; <
     gptick      7, 4, 74
@@ -524,7 +528,7 @@ align 4
 .ch0_145:   ; Ñ
     ritick      5, 3, 0
 .ch0_71:    ; G
-    gptick      5, 4, v10_1
+    gptick      5, 4, 94
     gptick      4, 5, 43
 .ch0_68:    ; D
     gptick      9, 0, 74
@@ -556,7 +560,7 @@ align 4
     lntick      0, 8, 0, 5
 .ch0_77:    ; M
 .ch0_140:   ; M
-    gptick      3, 5, 2, 32
+    gptick      13, 2, 32
     ritick      1, 7, 0
 .ch0_78:    ; N
     lntick      0, 2, 2, 7
@@ -567,7 +571,7 @@ align 4
 .ch0_87:    ; W
     lntick      0, 3, 2, 6
     lntick      4, 3, 2, 6
-    gptick      0, 2, 1, 48
+    gptick      1, 1, 48
 .ch0_86:    ; V
     lntick      0, 7, 0, 2
     lntick      4, 7, 0, 2
@@ -666,7 +670,7 @@ align 4
     lntick      1, 2, 2, 5
     gptick     21, 1, 32
 .ch0_115:   ; s
-    gptick      1, 0, v11_1       
+    gptick      1, 0, 98       
 .ch0_116:   ; t
     gptick     16, 0, 43
     gptick     20, 3, 32       
@@ -970,6 +974,7 @@ align 4
     lntick      2, 4, 0, 3
     lntick      2, 0, 2, 4
 
+diff10 "font0 size ", .chars, $
 
 
    

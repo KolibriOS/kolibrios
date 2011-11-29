@@ -1,4 +1,4 @@
-.;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
@@ -131,6 +131,8 @@ dtext:	; Text String Output (rw by Johnny_B[john@kolibrios.org])
 	pop  eax		; << // Alver 22.06.2008 // <<
 	ret
 
+diff10 "old font  code size",dtext,$
+
 ;=====================================================
 ; NEW FONTS
 ;_____________________________________________________
@@ -139,7 +141,7 @@ dtext:	; Text String Output (rw by Johnny_B[john@kolibrios.org])
 align 8
 sdsh_data:
 
-include 'sdsh.inc'
+include 'fonts/sd_data.asm'
 
 sdsh_code:
 
@@ -152,14 +154,25 @@ sdsh_code:
 ;				then dl = single char to write 
 ;				else edx= pointer to asciiz-string
 
-
+draw_char:
+; font test
+; bl=y; bh=x
+; dl=ascii
+        movzx   eax, bh
+        movzx   ebx, bl
+        movzx   ecx, dl
+        xor     edi, edi
+        mov     ebp, edi
+         
 sdsh_draw_char:
 ; eax = left side X
 ; ebx = bottom Y
 ; edi = color 0x0RRGGBB
 ; ebp = font@ 
 ; ecx = ascii, zero-extended to 32bits
-        push    ecx, edx, ebp
+        push    ecx
+        push    edx 
+        push    ebp
         shl     ebp, 4
         add     ebp, sdsh_data.info
         call	ch_checkscreen
@@ -181,7 +194,9 @@ sdsh_draw_char:
         jnz     .next_tick
 .blank:
 .exit:
-        pop     ebp, edx, ecx
+        pop     ebp 
+        pop     edx 
+        pop     ecx
         ret
 
 
@@ -241,7 +256,8 @@ parse_tick:
         cmp     dl, (sdsh_data.v13-sdsh_data.v9)
         jae     .gptick.4
         mov     esi, sdsh_data.v9
-        lea     esi,[esi+edx*2+edx]     ; 3-byte tickgroups .v9-12: 4 ticks each 
+        lea     esi,[esi+edx*2]
+        add     esi, edx                ; 3-byte tickgroups .v9-12: 4 ticks each 
         mov     dh, 9
         shr     dl, 2                
         add     dl, dh
@@ -357,18 +373,18 @@ draw_tick:
     mov     ch, dl
     and     ch, 3
     jz      .moved
-    btc     ch, 0
+    btc     ecx, 8
     jz      .2
 .1:
     dec     cl                      ; right turns (1 and 3)
     and     cl, 7
-@@: btc     ch, 1                   ; straight angle (3) ?
+@@: btc     ecx, 9                  ; straight angle (3) ?
     jc      .1
     jmp     .moved
 .2:
     inc     cl                      ; left turn (2)
     and     cl, 7
-    btc     ch, 1                   ; just to zero ah
+    btc     ecx, 9                  ; just to zero ah
 .moved:
 	call	[.moves + ecx*4]        ; go new way
 	call	ch_putpixel	
@@ -427,7 +443,8 @@ ch_checkwin:
 ; ebx = y coordinate
 ; ebp -> font info
 ;!destroys ch, edx! 
-        push    eax, ebx
+        push    eax
+        push    ebx
         mov     ch,  byte[CURRENT_TASK]
         mov     al,  byte [ebp]	            ; char X-width
         mov     edx, [_display.width]       ; screen X-size
@@ -436,10 +453,10 @@ ch_checkwin:
         add     edx, eax
         cmp     ch,  byte [edx]
         jne     .fail
-        moxzx   eax, byte [ebp]
+        movzx   eax, byte [ebp]
         cmp     ch,  byte [edx+eax]
         jne     .fail
-        moxzx   ebx, byte [ebp+1]
+        movzx   ebx, byte [ebp+1]
         imul    ebx, [_display.width]
         cmp     ch,  byte [edx+ebx]
         jne     .fail
@@ -450,7 +467,8 @@ ch_checkwin:
 .fail:  
         stc                                 ; CF means the charbox is invisible
 .done:
-        pop     ebx, eax
+        pop     ebx
+        pop     eax
         ret
 
 align 4
@@ -463,9 +481,9 @@ ch_putpixel:
      imul	edx, [BytesPerScanLine]
      lea	edx, [edx+eax*4]
      mov   [LFB_BASE+edx], edi
-     pop   edx
+     pop    edx
      ret
 ;)
 
-;diff16 "font  code end ",0,$
-diff10 "font  code size",dtext,$
+
+diff10 "new font  code size",sdsh_code,$
