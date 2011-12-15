@@ -1,5 +1,5 @@
 @echo off
-erase shell.kex lang.h
+erase lang.h
 echo #define LANG_ENG 1 > lang.h
 fasm start.asm start.o
 gcc -c shell.c

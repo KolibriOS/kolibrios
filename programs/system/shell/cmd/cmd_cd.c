@@ -37,10 +37,13 @@ if ( '/' == dir[0])
 else
 	{
 	strcpy(temp, cur_dir);
+	if (cur_dir[strlen(cur_dir)-1] != '/') 
+		strcat(temp, "/");
 	strcat(temp, dir);
 
 	if ( dir_check(temp) )
 		{
+
 		strcpy(cur_dir, temp);
 		return TRUE;
 		}
