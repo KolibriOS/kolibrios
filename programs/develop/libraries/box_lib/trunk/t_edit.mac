@@ -59,10 +59,6 @@ ted_symbol_tab db 26 ;ascii код стрелки вправо, используется для рисования табул
 
 if lang eq ru
 
-txtFindCapt db 'Поиск',0
-txtFindNext db 'Найти далее',0
-txtFormatCapt db 'Формат',0
-txtFormatApply db 'Применить',0
 txtRow db 'Строка',0
 txtCol db 'Знак',0
 txtOtm db 'Отмены',0
@@ -70,10 +66,6 @@ txtBuf db 'Буфер:',0
 
 else
 
-txtFindCapt db 'Search',0
-txtFindNext db 'Find next',0
-txtFormatCapt db 'Format',0
-txtFormatApply db 'Apply',0
 txtRow db 'Rows',0
 txtCol db 'Cols',0
 txtOtm db 'Undo',0
@@ -99,42 +91,6 @@ EvChar db 0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     db 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
     db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-;EvUpper - таблица для преобразования символов к верхнему регистру
-EvUpper db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79
-    db 80,81,82,83,84,85,86,87,88,89,90,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159
-    db 0,240,0,242,0,244,0,246,0,0,0,0,0,0,0,0
-;EvLover - таблица для преобразования символов к нижнему регистру
-EvLover db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111
-    db 112,113,114,115,116,117,118,119,120,121,122,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175
-    db 224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    db 241,0,243,0,245,0,247,0,0,0,0,0,0,0,0,0
-conv_table dd 0
-
 
 KM_SHIFT equ 0x00010000
 KM_CTRL equ 0x00020000
@@ -1236,7 +1192,7 @@ endp
 ;input:
 ;  ecx = position to free insert cell
 ;  edx = pointer to sumbol, when insert
-;  esi = pointer to added symbol
+;  esi = added symbol
 ;  edi = pointer to tedit struct
 ;output:
 ;  ecx = position to inserted cell
@@ -1258,7 +1214,7 @@ ted_char_add:
   push eax ebx
   mov eax,ted_tim_ch
   mov dword[ecx+10],eax
-  mov al,byte[esi]
+  mov ax,si
   mov byte[ecx],al
 
   call ted_get_text_arr_index ; *** eax=pos ***
@@ -1282,14 +1238,13 @@ ted_char_add:
 
 
 ;input:
-; conv_table = pointert to convert table
 ; edi = pointer to tedit struct
 ;output:
 ; esi = count converted symbols
 ;description:
 ; Функция используется для смены регистра выбранных символов
 align 4
-proc ted_convert_sel_text
+proc ted_convert_sel_text, conv_fun:dword
   locals
     conv_cou dd ?
   endl
@@ -1319,10 +1274,12 @@ proc ted_convert_sel_text
     mov edx,eax ;i=p0;
     mov ecx,ted_ptr_free_symb
     @@:
-      mov esi,[edx]
-      and esi,0xff
-      add esi,[conv_table] ;EvUpper
-      cmp byte [esi],0
+      push eax
+      mov al,byte[edx]
+      call dword[conv_fun] ;преобразование символа
+      mov esi,eax
+      cmp byte[edx],al
+      pop eax
       je .no_change
 	m2m dword [edx+14],ted_tim_ch
 	call ted_char_add ;b_pos=ted_char_add(tex[i].c^32,i,false,b_pos);
@@ -2562,33 +2519,27 @@ proc ted_but_paste, edit:dword
 endp
 
 align 4
-proc ted_but_sumb_upper, edit:dword
-  push edi esi
-  mov edi,dword[edit]
+proc ted_but_sumb_upper uses edi esi, edit:dword
+	mov edi,dword[edit]
 
-  mov [conv_table],EvUpper
-  call ted_convert_sel_text
-  cmp esi,0
-  je @f
-    stdcall ted_draw,edi
-  @@:
-  pop esi edi
-  ret
+	stdcall ted_convert_sel_text,fb_char_toupper
+	cmp esi,0
+	je @f
+		stdcall ted_draw,edi
+	@@:
+	ret
 endp
 
 align 4
-proc ted_but_sumb_lover, edit:dword
-  push edi esi
-  mov edi,dword[edit]
+proc ted_but_sumb_lover uses edi esi, edit:dword
+	mov edi,dword[edit]
 
-  mov [conv_table],EvLover
-  call ted_convert_sel_text
-  cmp esi,0
-  je @f
-    stdcall ted_draw,edi
-  @@:
-  pop esi edi
-  ret
+	stdcall ted_convert_sel_text,fb_char_todown
+	cmp esi,0
+	je @f
+		stdcall ted_draw,edi
+	@@:
+	ret
 endp
 
 align 4
