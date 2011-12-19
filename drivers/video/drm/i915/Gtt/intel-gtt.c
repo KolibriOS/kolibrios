@@ -35,9 +35,6 @@ pci_get_device(unsigned int vendor, unsigned int device, struct pci_dev *from);
 static bool intel_enable_gtt(void);
 
 
-#define PG_SW       0x003
-#define PG_NOCACHE  0x018
-
 #define PCI_VENDOR_ID_INTEL             0x8086
 #define PCI_DEVICE_ID_INTEL_82830_HB    0x3575
 #define PCI_DEVICE_ID_INTEL_82845G_HB   0x2560
@@ -49,42 +46,6 @@ static bool intel_enable_gtt(void);
 #define AGP_USER_MEMORY (AGP_USER_TYPES)
 #define AGP_USER_CACHED_MEMORY (AGP_USER_TYPES + 1)
 
-static inline uint8_t __raw_readb(const volatile void __iomem *addr)
-{
-    return *(const volatile uint8_t __force *) addr;
-}
-
-static inline uint16_t __raw_readw(const volatile void __iomem *addr)
-{
-    return *(const volatile uint16_t __force *) addr;
-}
-
-static inline uint32_t __raw_readl(const volatile void __iomem *addr)
-{
-    return *(const volatile uint32_t __force *) addr;
-}
-
-#define readb __raw_readb
-#define readw __raw_readw
-#define readl __raw_readl
-
-
-static inline void __raw_writeb(uint8_t b, volatile void __iomem *addr)
-{    *(volatile uint8_t __force *) addr = b;}
-
-static inline void __raw_writew(uint16_t b, volatile void __iomem *addr)
-{    *(volatile uint16_t __force *) addr = b;}
-
-static inline void __raw_writel(uint32_t b, volatile void __iomem *addr)
-{    *(volatile uint32_t __force *) addr = b;}
-
-static inline void __raw_writeq(__u64 b, volatile void __iomem *addr)
-{    *(volatile __u64 *)addr = b;}
-
-#define writeb __raw_writeb
-#define writew __raw_writew
-#define writel __raw_writel
-#define writeq __raw_writeq
 
 static inline int pci_read_config_word(struct pci_dev *dev, int where,
                     u16 *val)
@@ -798,5 +759,10 @@ int intel_gmch_probe(struct pci_dev *pdev,
         return 0;
 
     return 1;
+}
+
+const struct intel_gtt *intel_gtt_get(void)
+{
+    return &intel_private.base;
 }
 

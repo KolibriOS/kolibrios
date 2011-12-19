@@ -504,7 +504,7 @@ int enum_pci_devices()
         dbgprintf("PCI device %x:%x bus:%x devfn:%x\n",
                 dev->pci_dev.vendor,
                 dev->pci_dev.device,
-                dev->pci_dev.bus,
+                dev->pci_dev.busnr,
                 dev->pci_dev.devfn);
 
     }
@@ -569,3 +569,97 @@ pci_get_device(unsigned int vendor, unsigned int device, struct pci_dev *from)
     }
     return NULL;
 };
+
+
+struct pci_dev * pci_get_bus_and_slot(unsigned int bus, unsigned int devfn)
+{
+    pci_dev_t *dev;
+
+    for(dev = (pci_dev_t*)devices.next;
+        &dev->link != &devices;
+        dev = (pci_dev_t*)dev->link.next)
+    {
+        if ( dev->pci_dev.busnr == bus && dev->pci_dev.devfn == devfn)
+            return &dev->pci_dev;
+    }
+    return NULL;
+}
+
+struct pci_dev *pci_get_class(unsigned int class, struct pci_dev *from)
+{
+    pci_dev_t *dev;
+
+    dev = (pci_dev_t*)devices.next;
+
+    if(from != NULL)
+    {
+        for(; &dev->link != &devices;
+            dev = (pci_dev_t*)dev->link.next)
+        {
+            if( &dev->pci_dev == from)
+            {
+                dev = (pci_dev_t*)dev->link.next;
+                break;
+            };
+        }
+    };
+
+    for(; &dev->link != &devices;
+        dev = (pci_dev_t*)dev->link.next)
+    {
+        if( dev->pci_dev.class == class)
+        {
+            return &dev->pci_dev;
+        }
+    }
+
+   return NULL;
+}
+
+
+#define PIO_OFFSET      0x10000UL
+#define PIO_MASK        0x0ffffUL
+#define PIO_RESERVED    0x40000UL
+
+#define IO_COND(addr, is_pio, is_mmio) do {            \
+    unsigned long port = (unsigned long __force)addr;  \
+    if (port >= PIO_RESERVED) {                        \
+        is_mmio;                                       \
+    } else if (port > PIO_OFFSET) {                    \
+        port &= PIO_MASK;                              \
+        is_pio;                                        \
+    };                                                 \
+} while (0)
+
+/* Create a virtual mapping cookie for an IO port range */
+void __iomem *ioport_map(unsigned long port, unsigned int nr)
+{
+    if (port > PIO_MASK)
+        return NULL;
+    return (void __iomem *) (unsigned long) (port + PIO_OFFSET);
+}
+
+void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
+{
+    resource_size_t start = pci_resource_start(dev, bar);
+    resource_size_t len = pci_resource_len(dev, bar);
+    unsigned long flags = pci_resource_flags(dev, bar);
+
+    if (!len || !start)
+        return NULL;
+    if (maxlen && len > maxlen)
+        len = maxlen;
+    if (flags & IORESOURCE_IO)
+        return ioport_map(start, len);
+    if (flags & IORESOURCE_MEM) {
+        return ioremap(start, len);
+    }
+    /* What? */
+    return NULL;
+}
+
+void pci_iounmap(struct pci_dev *dev, void __iomem * addr)
+{
+    IO_COND(addr, /* nothing */, iounmap(addr));
+}
+

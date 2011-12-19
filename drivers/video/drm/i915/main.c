@@ -53,6 +53,7 @@ u32_t drvEntry(int action, char *cmdline)
 #define PCI_CLASS_REVISION      0x08
 #define PCI_CLASS_DISPLAY_VGA   0x0300
 #define PCI_CLASS_BRIDGE_HOST   0x0600
+#define PCI_CLASS_BRIDGE_ISA    0x0601
 
 int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn)
 {
@@ -69,7 +70,8 @@ int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn)
         class >>= 16;
 
         if( (class == PCI_CLASS_DISPLAY_VGA) ||
-            (class == PCI_CLASS_BRIDGE_HOST) )
+            (class == PCI_CLASS_BRIDGE_HOST) ||
+            (class == PCI_CLASS_BRIDGE_ISA))
             ret = 1;
     }
     return ret;

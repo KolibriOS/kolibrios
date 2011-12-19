@@ -37,17 +37,10 @@
 #include <errno-base.h>
 #include <linux/pci.h>
 
-
-enum {
-    RCS = 0x0,
-    VCS,
-    BCS,
-    I915_NUM_RINGS,
-};
-
-
 #include "i915_drv.h"
 #include <syscall.h>
+
+#define PCI_VENDOR_ID_INTEL        0x8086
 
 #define INTEL_VGA_DEVICE(id, info) {        \
     .class = PCI_CLASS_DISPLAY_VGA << 8,    \
@@ -87,6 +80,109 @@ static const struct pci_device_id pciidlist[] = {       /* aka */
     INTEL_VGA_DEVICE(0x010A, &intel_sandybridge_d_info),
     {0, 0, 0}
 };
+
+#define INTEL_PCH_DEVICE_ID_MASK        0xff00
+#define INTEL_PCH_IBX_DEVICE_ID_TYPE    0x3b00
+#define INTEL_PCH_CPT_DEVICE_ID_TYPE    0x1c00
+#define INTEL_PCH_PPT_DEVICE_ID_TYPE    0x1e00
+
+void intel_detect_pch (struct drm_device *dev)
+{
+    struct drm_i915_private *dev_priv = dev->dev_private;
+    struct pci_dev *pch;
+
+    /*
+     * The reason to probe ISA bridge instead of Dev31:Fun0 is to
+     * make graphics device passthrough work easy for VMM, that only
+     * need to expose ISA bridge to let driver know the real hardware
+     * underneath. This is a requirement from virtualization team.
+     */
+    pch = pci_get_class(PCI_CLASS_BRIDGE_ISA << 8, NULL);
+    if (pch) {
+        if (pch->vendor == PCI_VENDOR_ID_INTEL) {
+            int id;
+            id = pch->device & INTEL_PCH_DEVICE_ID_MASK;
+
+            if (id == INTEL_PCH_IBX_DEVICE_ID_TYPE) {
+                dev_priv->pch_type = PCH_IBX;
+                DRM_DEBUG_KMS("Found Ibex Peak PCH\n");
+            } else if (id == INTEL_PCH_CPT_DEVICE_ID_TYPE) {
+                dev_priv->pch_type = PCH_CPT;
+                DRM_DEBUG_KMS("Found CougarPoint PCH\n");
+            } else if (id == INTEL_PCH_PPT_DEVICE_ID_TYPE) {
+                /* PantherPoint is CPT compatible */
+                dev_priv->pch_type = PCH_CPT;
+                DRM_DEBUG_KMS("Found PatherPoint PCH\n");
+            }
+        }
+    }
+}
+
+static void __gen6_gt_force_wake_get(struct drm_i915_private *dev_priv)
+{
+    int count;
+
+    count = 0;
+    while (count++ < 50 && (I915_READ_NOTRACE(FORCEWAKE_ACK) & 1))
+        udelay(10);
+
+    I915_WRITE_NOTRACE(FORCEWAKE, 1);
+    POSTING_READ(FORCEWAKE);
+
+    count = 0;
+    while (count++ < 50 && (I915_READ_NOTRACE(FORCEWAKE_ACK) & 1) == 0)
+        udelay(10);
+}
+
+/*
+ * Generally this is called implicitly by the register read function. However,
+ * if some sequence requires the GT to not power down then this function should
+ * be called at the beginning of the sequence followed by a call to
+ * gen6_gt_force_wake_put() at the end of the sequence.
+ */
+void gen6_gt_force_wake_get(struct drm_i915_private *dev_priv)
+{
+//    WARN_ON(!mutex_is_locked(&dev_priv->dev->struct_mutex));
+
+    /* Forcewake is atomic in case we get in here without the lock */
+    if (atomic_add_return(1, &dev_priv->forcewake_count) == 1)
+        __gen6_gt_force_wake_get(dev_priv);
+}
+
+static void __gen6_gt_force_wake_put(struct drm_i915_private *dev_priv)
+{
+    I915_WRITE_NOTRACE(FORCEWAKE, 0);
+    POSTING_READ(FORCEWAKE);
+}
+
+/*
+ * see gen6_gt_force_wake_get()
+ */
+void gen6_gt_force_wake_put(struct drm_i915_private *dev_priv)
+{
+//    WARN_ON(!mutex_is_locked(&dev_priv->dev->struct_mutex));
+
+    if (atomic_dec_and_test(&dev_priv->forcewake_count))
+        __gen6_gt_force_wake_put(dev_priv);
+}
+
+void __gen6_gt_wait_for_fifo(struct drm_i915_private *dev_priv)
+{
+    if (dev_priv->gt_fifo_count < GT_FIFO_NUM_RESERVED_ENTRIES ) {
+        int loop = 500;
+        u32 fifo = I915_READ_NOTRACE(GT_FIFO_FREE_ENTRIES);
+        while (fifo <= GT_FIFO_NUM_RESERVED_ENTRIES && loop--) {
+            udelay(10);
+            fifo = I915_READ_NOTRACE(GT_FIFO_FREE_ENTRIES);
+        }
+//        WARN_ON(loop < 0 && fifo <= GT_FIFO_NUM_RESERVED_ENTRIES);
+        dev_priv->gt_fifo_count = fifo;
+    }
+    dev_priv->gt_fifo_count--;
+}
+
+
+
 
 
 int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent);
@@ -156,7 +252,7 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 //int i915_driver_load(struct drm_device *dev, unsigned long flags)
 
-//    ret = radeon_driver_load_kms(dev, ent->driver_data );
+    ret = i915_driver_load(dev, ent->driver_data );
 //    if (ret)
 //        goto err_g4;
 

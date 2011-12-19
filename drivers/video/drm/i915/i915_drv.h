@@ -32,7 +32,7 @@
 
 #include "i915_reg.h"
 //#include "intel_bios.h"
-//#include "intel_ringbuffer.h"
+#include "intel_ringbuffer.h"
 //#include <linux/io-mapping.h>
 //#include <linux/i2c.h>
 //#include <drm/intel-gtt.h>
@@ -274,17 +274,17 @@ typedef struct drm_i915_private {
 	void __iomem *regs;
 	u32 gt_fifo_count;
 
-//   struct intel_gmbus {
-//       struct i2c_adapter adapter;
-//       struct i2c_adapter *force_bit;
-//       u32 reg0;
-//   } *gmbus;
+    struct intel_gmbus {
+        struct i2c_adapter adapter;
+        struct i2c_adapter *force_bit;
+        u32 reg0;
+    } *gmbus;
 
 	struct pci_dev *bridge_dev;
-//   struct intel_ring_buffer ring[I915_NUM_RINGS];
+    struct intel_ring_buffer ring[I915_NUM_RINGS];
 	uint32_t next_seqno;
 
-//   drm_dma_handle_t *status_page_dmah;
+    drm_dma_handle_t *status_page_dmah;
 //   uint32_t counter;
 //   drm_local_map_t hws_map;
 //   struct drm_i915_gem_object *pwrctx;
@@ -367,7 +367,7 @@ typedef struct drm_i915_private {
 //   struct notifier_block lid_notifier;
 
 	int crt_ddc_pin;
-//   struct drm_i915_fence_reg fence_regs[16]; /* assume 965 */
+    struct drm_i915_fence_reg fence_regs[16]; /* assume 965 */
 	int fence_reg_start; /* 4 if userland hasn't ioctl'd us yet */
 	int num_fence_regs; /* 8 on pre-965, 16 otherwise */
 
@@ -667,8 +667,8 @@ typedef struct drm_i915_private {
 	u32 pch_pf_pos, pch_pf_size;
 	int panel_t3, panel_t12;
 
-//   struct drm_crtc *plane_to_crtc_mapping[2];
-//   struct drm_crtc *pipe_to_crtc_mapping[2];
+    struct drm_crtc *plane_to_crtc_mapping[2];
+    struct drm_crtc *pipe_to_crtc_mapping[2];
 //   wait_queue_head_t pending_flip_queue;
 	bool flip_pending_is_done;
 
@@ -1209,7 +1209,7 @@ static inline u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
 	} else { \
 		val = read##y(dev_priv->regs + reg); \
 	} \
-	trace_i915_reg_rw(false, reg, val, sizeof(val)); \
+/*   trace_i915_reg_rw(false, reg, val, sizeof(val)); */\
 	return val; \
 }
 
@@ -1221,7 +1221,7 @@ __i915_read(64, q)
 
 #define __i915_write(x, y) \
 static inline void i915_write##x(struct drm_i915_private *dev_priv, u32 reg, u##x val) { \
-	trace_i915_reg_rw(true, reg, val, sizeof(val)); \
+/*   trace_i915_reg_rw(true, reg, val, sizeof(val));*/ \
 	if (NEEDS_FORCE_WAKE((dev_priv), (reg))) { \
 		__gen6_gt_wait_for_fifo(dev_priv); \
 	} \
