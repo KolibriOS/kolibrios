@@ -766,3 +766,8 @@ const struct intel_gtt *intel_gtt_get(void)
     return &intel_private.base;
 }
 
+
+phys_addr_t get_bus_addr(void)
+{
+    return intel_private.gma_bus_addr;
+};

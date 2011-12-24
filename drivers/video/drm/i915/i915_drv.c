@@ -40,6 +40,12 @@
 #include "i915_drv.h"
 #include <syscall.h>
 
+unsigned int i915_lvds_downclock =  0;
+int i915_vbt_sdvo_panel_type     = -1;
+unsigned int i915_panel_use_ssc  =  1;
+unsigned int i915_powersave      =  1;
+unsigned int i915_enable_fbc     =  1;
+
 #define PCI_VENDOR_ID_INTEL        0x8086
 
 #define INTEL_VGA_DEVICE(id, info) {        \

@@ -81,6 +81,68 @@ static int i915_init_phys_hws(struct drm_device *dev)
     return 0;
 }
 
+static int i915_load_modeset_init(struct drm_device *dev)
+{
+    struct drm_i915_private *dev_priv = dev->dev_private;
+    int ret;
+
+    ret = intel_parse_bios(dev);
+    if (ret)
+        DRM_INFO("failed to find VBIOS tables\n");
+
+//    intel_register_dsm_handler();
+
+    /* IIR "flip pending" bit means done if this bit is set */
+    if (IS_GEN3(dev) && (I915_READ(ECOSKPD) & ECO_FLIP_DONE))
+        dev_priv->flip_pending_is_done = true;
+
+    intel_modeset_init(dev);
+
+#if 0
+
+    ret = i915_load_gem_init(dev);
+    if (ret)
+        goto cleanup_vga_switcheroo;
+
+    intel_modeset_gem_init(dev);
+
+    ret = drm_irq_install(dev);
+    if (ret)
+        goto cleanup_gem;
+
+    /* Always safe in the mode setting case. */
+    /* FIXME: do pre/post-mode set stuff in core KMS code */
+    dev->vblank_disable_allowed = 1;
+
+    ret = intel_fbdev_init(dev);
+    if (ret)
+        goto cleanup_irq;
+
+    drm_kms_helper_poll_init(dev);
+
+    /* We're off and running w/KMS */
+    dev_priv->mm.suspended = 0;
+
+#endif
+
+    return 0;
+
+cleanup_irq:
+//    drm_irq_uninstall(dev);
+cleanup_gem:
+//    mutex_lock(&dev->struct_mutex);
+//    i915_gem_cleanup_ringbuffer(dev);
+//    mutex_unlock(&dev->struct_mutex);
+cleanup_vga_switcheroo:
+//    vga_switcheroo_unregister_client(dev->pdev);
+cleanup_vga_client:
+//    vga_client_register(dev->pdev, NULL, NULL, NULL);
+out:
+    return ret;
+}
+
+
+
 static void i915_pineview_get_mem_freq(struct drm_device *dev)
 {
     drm_i915_private_t *dev_priv = dev->dev_private;
@@ -333,7 +395,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 //    intel_setup_mchbar(dev);
     intel_setup_gmbus(dev);
 
-//    intel_opregion_setup(dev);
+    intel_opregion_setup(dev);
 
     /* Make sure the bios did its job and set up vital registers */
 //    intel_setup_bios(dev);
@@ -384,14 +446,11 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 
     intel_detect_pch(dev);
 
-
-//    if (drm_core_check_feature(dev, DRIVER_MODESET)) {
-//        ret = i915_load_modeset_init(dev);
-//        if (ret < 0) {
-//            DRM_ERROR("failed to init modeset\n");
-//            goto out_gem_unload;
-//        }
-//    }
+    ret = i915_load_modeset_init(dev);
+    if (ret < 0) {
+        DRM_ERROR("failed to init modeset\n");
+            goto out_gem_unload;
+    }
 
     /* Must be done after probing outputs */
 //    intel_opregion_init(dev);

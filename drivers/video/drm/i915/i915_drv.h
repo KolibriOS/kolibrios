@@ -31,7 +31,7 @@
 #define _I915_DRV_H_
 
 #include "i915_reg.h"
-//#include "intel_bios.h"
+#include "intel_bios.h"
 #include "intel_ringbuffer.h"
 //#include <linux/io-mapping.h>
 //#include <linux/i2c.h>
@@ -42,6 +42,9 @@
 
 /* General customization:
  */
+
+#define I915_TILING_NONE    0
+
 
 #define DRIVER_AUTHOR		"Tungsten Graphics, Inc."
 
@@ -332,7 +335,7 @@ typedef struct drm_i915_private {
 	int cfb_y;
 //   struct intel_fbc_work *fbc_work;
 
-//   struct intel_opregion opregion;
+    struct intel_opregion opregion;
 
 	/* overlay */
 //   struct intel_overlay *overlay;
@@ -360,7 +363,7 @@ typedef struct drm_i915_private {
 		bool initialized;
 		bool support;
 		int bpp;
-//       struct edp_power_seq pps;
+        struct edp_power_seq pps;
 	} edp;
 	bool no_aux_handshake;
 
@@ -380,7 +383,7 @@ typedef struct drm_i915_private {
 //   struct workqueue_struct *wq;
 
 	/* Display functions */
-//   struct drm_i915_display_funcs display;
+    struct drm_i915_display_funcs display;
 
 	/* PCH chipset type */
 	enum intel_pch pch_type;
@@ -660,7 +663,7 @@ typedef struct drm_i915_private {
 		size_t object_memory;
 		u32 object_count;
 	} mm;
-//   struct sdvo_device_mapping sdvo_mappings[2];
+    struct sdvo_device_mapping sdvo_mappings[2];
 	/* indicate whether the LVDS_BORDER should be enabled or not */
 	unsigned int lvds_border_bits;
 	/* Panel fitter placement and size for Ironlake+ */
@@ -682,9 +685,9 @@ typedef struct drm_i915_private {
 	bool busy;
 	u16 orig_clock;
 	int child_dev_num;
-//   struct child_device_config *child_dev;
-//   struct drm_connector *int_lvds_connector;
-//   struct drm_connector *int_edp_connector;
+    struct child_device_config *child_dev;
+    struct drm_connector *int_lvds_connector;
+    struct drm_connector *int_edp_connector;
 
 	bool mchbar_need_disable;
 
@@ -730,6 +733,152 @@ enum i915_cache_level {
 	I915_CACHE_NONE,
 	I915_CACHE_LLC,
 	I915_CACHE_LLC_MLC, /* gen6+ */
+};
+
+struct drm_i915_gem_object {
+    struct drm_gem_object base;
+
+    /** Current space allocated to this object in the GTT, if any. */
+    struct drm_mm_node *gtt_space;
+    struct list_head gtt_list;
+
+    /** This object's place on the active/flushing/inactive lists */
+    struct list_head ring_list;
+    struct list_head mm_list;
+    /** This object's place on GPU write list */
+    struct list_head gpu_write_list;
+    /** This object's place in the batchbuffer or on the eviction list */
+    struct list_head exec_list;
+
+    /**
+     * This is set if the object is on the active or flushing lists
+     * (has pending rendering), and is not set if it's on inactive (ready
+     * to be unbound).
+     */
+    unsigned int active : 1;
+
+    /**
+     * This is set if the object has been written to since last bound
+     * to the GTT
+     */
+    unsigned int dirty : 1;
+
+    /**
+     * This is set if the object has been written to since the last
+     * GPU flush.
+     */
+    unsigned int pending_gpu_write : 1;
+
+    /**
+     * Fence register bits (if any) for this object.  Will be set
+     * as needed when mapped into the GTT.
+     * Protected by dev->struct_mutex.
+     *
+     * Size: 4 bits for 16 fences + sign (for FENCE_REG_NONE)
+     */
+    signed int fence_reg : 5;
+
+    /**
+     * Advice: are the backing pages purgeable?
+     */
+    unsigned int madv : 2;
+
+    /**
+     * Current tiling mode for the object.
+     */
+    unsigned int tiling_mode : 2;
+    unsigned int tiling_changed : 1;
+
+    /** How many users have pinned this object in GTT space. The following
+     * users can each hold at most one reference: pwrite/pread, pin_ioctl
+     * (via user_pin_count), execbuffer (objects are not allowed multiple
+     * times for the same batchbuffer), and the framebuffer code. When
+     * switching/pageflipping, the framebuffer code has at most two buffers
+     * pinned per crtc.
+     *
+     * In the worst case this is 1 + 1 + 1 + 2*2 = 7. That would fit into 3
+     * bits with absolutely no headroom. So use 4 bits. */
+    unsigned int pin_count : 4;
+#define DRM_I915_GEM_OBJECT_MAX_PIN_COUNT 0xf
+
+    /**
+     * Is the object at the current location in the gtt mappable and
+     * fenceable? Used to avoid costly recalculations.
+     */
+    unsigned int map_and_fenceable : 1;
+
+    /**
+     * Whether the current gtt mapping needs to be mappable (and isn't just
+     * mappable by accident). Track pin and fault separate for a more
+     * accurate mappable working set.
+     */
+    unsigned int fault_mappable : 1;
+    unsigned int pin_mappable : 1;
+
+    /*
+     * Is the GPU currently using a fence to access this buffer,
+     */
+    unsigned int pending_fenced_gpu_access:1;
+    unsigned int fenced_gpu_access:1;
+
+    unsigned int cache_level:2;
+
+    struct page **pages;
+
+    /**
+     * DMAR support
+     */
+    struct scatterlist *sg_list;
+    int num_sg;
+
+    /**
+     * Used for performing relocations during execbuffer insertion.
+     */
+    struct hlist_node exec_node;
+    unsigned long exec_handle;
+    struct drm_i915_gem_exec_object2 *exec_entry;
+
+    /**
+     * Current offset of the object in GTT space.
+     *
+     * This is the same as gtt_space->start
+     */
+    uint32_t gtt_offset;
+
+    /** Breadcrumb of last rendering to the buffer. */
+    uint32_t last_rendering_seqno;
+    struct intel_ring_buffer *ring;
+
+    /** Breadcrumb of last fenced GPU access to the buffer. */
+    uint32_t last_fenced_seqno;
+    struct intel_ring_buffer *last_fenced_ring;
+
+    /** Current tiling stride for the object, if it's tiled. */
+    uint32_t stride;
+
+    /** Record of address bit 17 of each page at last unbind. */
+    unsigned long *bit_17;
+
+
+    /**
+     * If present, while GEM_DOMAIN_CPU is in the read domain this array
+     * flags which individual pages are valid.
+     */
+    uint8_t *page_cpu_valid;
+
+    /** User space pin count and filp owning the pin */
+    uint32_t user_pin_count;
+    struct drm_file *pin_filp;
+
+    /** for phy allocated objects */
+    struct drm_i915_gem_phys_object *phys_obj;
+
+    /**
+     * Number of crtcs where this object is currently the fb, but
+     * will be page flipped away on the next vblank.  When it
+     * reaches 0, dev_priv->pending_flip_queue will be woken up.
+     */
+    atomic_t pending_flip;
 };
 
 

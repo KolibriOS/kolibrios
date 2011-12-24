@@ -289,7 +289,7 @@ intel_gpio_create(struct drm_i915_private *dev_priv, u32 pin)
 		GPIOF,
 	};
 	struct intel_gpio *gpio;
-    ENTER();
+
 	if (pin >= ARRAY_SIZE(map_pin_to_reg) || !map_pin_to_reg[pin])
 		return NULL;
 
@@ -317,7 +317,7 @@ intel_gpio_create(struct drm_i915_private *dev_priv, u32 pin)
 
     if (i2c_bit_add_bus(&gpio->adapter))
        goto out_free;
-    LEAVE();
+
 	return &gpio->adapter;
 
 out_free:
@@ -502,7 +502,7 @@ int intel_setup_gmbus(struct drm_device *dev)
 	};
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	int ret, i;
-    ENTER();
+
 	dev_priv->gmbus = kcalloc(sizeof(struct intel_gmbus), GMBUS_NUM_PORTS,
 				  GFP_KERNEL);
 	if (dev_priv->gmbus == NULL)
@@ -534,7 +534,7 @@ int intel_setup_gmbus(struct drm_device *dev)
 	}
 
 	intel_i2c_reset(dev_priv->dev);
-    LEAVE();
+
 	return 0;
 
 err:
