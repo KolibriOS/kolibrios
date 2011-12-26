@@ -29,7 +29,7 @@
 #include "linux/bitops.h"
 #include "drmP.h"
 #include "drm.h"
-//#include "i915_drm.h"
+#include "i915_drm.h"
 #include "i915_drv.h"
 
 /** @file i915_gem_tiling.c

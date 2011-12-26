@@ -31,7 +31,7 @@
 #include "drm_crtc_helper.h"
 #include "drm_fb_helper.h"
 #include "intel_drv.h"
-//#include "i915_drm.h"
+#include "i915_drm.h"
 #include "i915_drv.h"
 #include <drm/intel-gtt.h>
 //#include "i915_trace.h"
@@ -41,10 +41,19 @@
 //#include <linux/acpi.h>
 //#include <linux/pnp.h>
 //#include <linux/vga_switcheroo.h>
-//#include <linux/slab.h>
+#include <linux/slab.h>
 //#include <acpi/video.h>
 
 void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen);
+
+static inline int pci_read_config_dword(struct pci_dev *dev, int where,
+                    u32 *val)
+{
+    *val = PciRead32(dev->busnr, dev->devfn, where);
+    return 1;
+}
+
+
 
 static void i915_write_hws_pga(struct drm_device *dev)
 {
@@ -56,7 +65,6 @@ static void i915_write_hws_pga(struct drm_device *dev)
         addr |= (dev_priv->status_page_dmah->busaddr >> 28) & 0xf0;
     I915_WRITE(HWS_PGA, addr);
 }
-
 
 /**
  * Sets up the hardware status page for devices that need a physical address
@@ -81,6 +89,136 @@ static int i915_init_phys_hws(struct drm_device *dev)
     return 0;
 }
 
+
+
+
+
+
+
+
+
+
+#define MCHBAR_I915 0x44
+#define MCHBAR_I965 0x48
+#define MCHBAR_SIZE (4*4096)
+
+#define DEVEN_REG 0x54
+#define   DEVEN_MCHBAR_EN (1 << 28)
+
+
+
+
+/* Setup MCHBAR if possible, return true if we should disable it again */
+static void
+intel_setup_mchbar(struct drm_device *dev)
+{
+	drm_i915_private_t *dev_priv = dev->dev_private;
+	int mchbar_reg = INTEL_INFO(dev)->gen >= 4 ? MCHBAR_I965 : MCHBAR_I915;
+	u32 temp;
+	bool enabled;
+
+	dev_priv->mchbar_need_disable = false;
+
+	if (IS_I915G(dev) || IS_I915GM(dev)) {
+		pci_read_config_dword(dev_priv->bridge_dev, DEVEN_REG, &temp);
+		enabled = !!(temp & DEVEN_MCHBAR_EN);
+	} else {
+		pci_read_config_dword(dev_priv->bridge_dev, mchbar_reg, &temp);
+		enabled = temp & 1;
+	}
+
+	/* If it's already enabled, don't have to do anything */
+	if (enabled)
+		return;
+
+	dbgprintf("Epic fail\n");
+
+#if 0
+	if (intel_alloc_mchbar_resource(dev))
+		return;
+
+	dev_priv->mchbar_need_disable = true;
+
+	/* Space is allocated or reserved, so enable it. */
+	if (IS_I915G(dev) || IS_I915GM(dev)) {
+		pci_write_config_dword(dev_priv->bridge_dev, DEVEN_REG,
+				       temp | DEVEN_MCHBAR_EN);
+	} else {
+		pci_read_config_dword(dev_priv->bridge_dev, mchbar_reg, &temp);
+		pci_write_config_dword(dev_priv->bridge_dev, mchbar_reg, temp | 1);
+	}
+#endif
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+static int i915_load_gem_init(struct drm_device *dev)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	unsigned long prealloc_size, gtt_size, mappable_size;
+	int ret;
+
+	prealloc_size = dev_priv->mm.gtt->stolen_size;
+	gtt_size = dev_priv->mm.gtt->gtt_total_entries << PAGE_SHIFT;
+	mappable_size = dev_priv->mm.gtt->gtt_mappable_entries << PAGE_SHIFT;
+
+    dbgprintf("%s prealloc: %x gtt: %x mappable: %x\n",__FUNCTION__,
+             prealloc_size, gtt_size, mappable_size);
+
+	/* Basic memrange allocator for stolen space */
+	drm_mm_init(&dev_priv->mm.stolen, 0, prealloc_size);
+
+    //0xC00000 >> PAGE_SHIFT
+
+	/* Let GEM Manage all of the aperture.
+	 *
+	 * However, leave one page at the end still bound to the scratch page.
+	 * There are a number of places where the hardware apparently
+	 * prefetches past the end of the object, and we've seen multiple
+	 * hangs with the GPU head pointer stuck in a batchbuffer bound
+	 * at the last page of the aperture.  One page should be enough to
+	 * keep any prefetching inside of the aperture.
+	 */
+//   i915_gem_do_init(dev, 0, mappable_size, gtt_size - PAGE_SIZE);
+
+//   mutex_lock(&dev->struct_mutex);
+//   ret = i915_gem_init_ringbuffer(dev);
+//   mutex_unlock(&dev->struct_mutex);
+//   if (ret)
+//       return ret;
+
+	/* Try to set up FBC with a reasonable compressed buffer size */
+//   if (I915_HAS_FBC(dev) && i915_powersave) {
+//       int cfb_size;
+
+		/* Leave 1M for line length buffer & misc. */
+
+		/* Try to get a 32M buffer... */
+//       if (prealloc_size > (36*1024*1024))
+//           cfb_size = 32*1024*1024;
+//       else /* fall back to 7/8 of the stolen space */
+//           cfb_size = prealloc_size * 7 / 8;
+//       i915_setup_compression(dev, cfb_size);
+//   }
+
+	/* Allow hardware batchbuffers unless told otherwise. */
+	dev_priv->allow_batchbuffer = 1;
+	return 0;
+}
+
 static int i915_load_modeset_init(struct drm_device *dev)
 {
     struct drm_i915_private *dev_priv = dev->dev_private;
@@ -98,11 +236,11 @@ static int i915_load_modeset_init(struct drm_device *dev)
 
     intel_modeset_init(dev);
 
-#if 0
-
     ret = i915_load_gem_init(dev);
     if (ret)
         goto cleanup_vga_switcheroo;
+
+#if 0
 
     intel_modeset_gem_init(dev);
 
@@ -392,13 +530,12 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 //    intel_irq_init(dev);
 
     /* Try to make sure MCHBAR is enabled before poking at it */
-//    intel_setup_mchbar(dev);
+	intel_setup_mchbar(dev);
     intel_setup_gmbus(dev);
-
     intel_opregion_setup(dev);
 
     /* Make sure the bios did its job and set up vital registers */
-//    intel_setup_bios(dev);
+    intel_setup_bios(dev);
 
     i915_gem_load(dev);
 

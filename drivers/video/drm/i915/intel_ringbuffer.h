@@ -109,7 +109,7 @@ struct  intel_ring_buffer {
 	u32 outstanding_lazy_request;
 
 //   wait_queue_head_t irq_queue;
-//   drm_local_map_t map;
+    drm_local_map_t map;
 
 	void *private;
 };

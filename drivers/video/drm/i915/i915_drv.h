@@ -34,7 +34,7 @@
 #include "intel_bios.h"
 #include "intel_ringbuffer.h"
 //#include <linux/io-mapping.h>
-//#include <linux/i2c.h>
+#include <linux/i2c.h>
 //#include <drm/intel-gtt.h>
 //#include <linux/backlight.h>
 
@@ -119,7 +119,10 @@ struct intel_opregion {
 struct intel_overlay;
 struct intel_overlay_error_state;
 
-
+struct drm_i915_master_private {
+	drm_local_map_t *sarea;
+	struct _drm_i915_sarea *sarea_priv;
+};
 #define I915_FENCE_REG_NONE -1
 
 struct drm_i915_fence_reg {
@@ -323,7 +326,7 @@ typedef struct drm_i915_private {
 
 	/* For hangcheck timer */
 #define DRM_I915_HANGCHECK_PERIOD 1500 /* in ms */
-//   struct timer_list hangcheck_timer;
+    struct timer_list hangcheck_timer;
 	int hangcheck_count;
 	uint32_t last_acthd;
 	uint32_t last_instdone;
@@ -547,7 +550,7 @@ typedef struct drm_i915_private {
 		/** Bridge to intel-gtt-ko */
 		const struct intel_gtt *gtt;
 		/** Memory allocator for GTT stolen memory */
-//       struct drm_mm stolen;
+        struct drm_mm stolen;
 		/** Memory allocator for GTT */
 //       struct drm_mm gtt_space;
 		/** List of all objects in gtt_space. Used to restore gtt
@@ -681,7 +684,7 @@ typedef struct drm_i915_private {
 	/* indicates the reduced downclock for LVDS*/
 	int lvds_downclock;
 //   struct work_struct idle_work;
-//   struct timer_list idle_timer;
+    struct timer_list idle_timer;
 	bool busy;
 	u16 orig_clock;
 	int child_dev_num;
@@ -704,7 +707,7 @@ typedef struct drm_i915_private {
 	u64 last_count1;
 	unsigned long last_time1;
 	u64 last_count2;
-//   struct timespec last_time2;
+    struct timespec last_time2;
 	unsigned long gfx_power;
 	int c_m;
 	int r_t;

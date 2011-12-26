@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2006 Dave Airlie <airlied@linux.ie>
  * Copyright © 2006-2008,2010 Intel Corporation
  *   Jesse Barnes <jesse.barnes@intel.com>
@@ -31,9 +31,8 @@
 #include "drmP.h"
 #include "drm.h"
 #include "intel_drv.h"
-//#include "i915_drm.h"
+#include "i915_drm.h"
 #include "i915_drv.h"
-#include <syscall.h>
 
 #define MSEC_PER_SEC    1000L
 #define USEC_PER_MSEC   1000L

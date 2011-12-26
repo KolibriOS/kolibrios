@@ -30,6 +30,7 @@
 #include "drm_crtc.h"
 #include "drm_crtc_helper.h"
 #include "drm_fb_helper.h"
+#include <syscall.h>
 
 #define _wait_for(COND, MS, W) ({ \
 	unsigned long timeout__ = jiffies + msecs_to_jiffies(MS);	\
@@ -39,7 +40,7 @@
 			ret__ = -ETIMEDOUT;				\
 			break;						\
 		}							\
-        if (W && !(/*in_atomic()||*/ in_dbg_master())) msleep(W); \
+        if (W) msleep(W); \
 	}								\
 	ret__;								\
 })

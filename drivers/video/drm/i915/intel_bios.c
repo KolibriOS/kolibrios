@@ -27,11 +27,9 @@
 #include <drm/drm_dp_helper.h>
 #include "drmP.h"
 #include "drm.h"
-//#include "i915_drm.h"
+#include "i915_drm.h"
 #include "i915_drv.h"
 #include "intel_bios.h"
-
-#include <syscall.h>
 
 #define	SLAVE_ADDR1	0x70
 #define	SLAVE_ADDR2	0x72

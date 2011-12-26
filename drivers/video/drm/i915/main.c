@@ -26,7 +26,7 @@ u32_t drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
-        strcpy(log, "/RD/1/DRIVERS/i915.log");
+        strcpy(log, "/HD1/2/i915.log");
 
         if(!dbg_open(log))
         {

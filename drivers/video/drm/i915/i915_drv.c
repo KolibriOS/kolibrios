@@ -28,8 +28,13 @@
  *
  */
 
-#include <drm/drmP.h>
-#include <drm/drm.h>
+//#include <linux/device.h>
+#include "drmP.h"
+#include "drm.h"
+#include "i915_drm.h"
+#include "i915_drv.h"
+#include "intel_drv.h"
+
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -37,14 +42,24 @@
 #include <errno-base.h>
 #include <linux/pci.h>
 
-#include "i915_drv.h"
 #include <syscall.h>
 
-unsigned int i915_lvds_downclock =  0;
-int i915_vbt_sdvo_panel_type     = -1;
-unsigned int i915_panel_use_ssc  =  1;
-unsigned int i915_powersave      =  1;
-unsigned int i915_enable_fbc     =  1;
+#define __read_mostly
+
+
+int i915_panel_ignore_lid __read_mostly = 0;
+
+unsigned int i915_powersave  __read_mostly    =  1;
+
+unsigned int i915_enable_rc6 __read_mostly = 0;
+
+unsigned int i915_enable_fbc __read_mostly = 1;
+
+unsigned int i915_lvds_downclock  __read_mostly =  0;
+
+unsigned int i915_panel_use_ssc __read_mostly =  1;
+
+int i915_vbt_sdvo_panel_type __read_mostly    = -1;
 
 #define PCI_VENDOR_ID_INTEL        0x8086
 
@@ -59,17 +74,14 @@ unsigned int i915_enable_fbc     =  1;
 
 static const struct intel_device_info intel_sandybridge_d_info = {
     .gen = 6,
-    .need_gfx_hws = 1,
-    .has_hotplug  = 1,
+	.need_gfx_hws = 1, .has_hotplug = 1,
     .has_bsd_ring = 1,
     .has_blt_ring = 1,
 };
 
 static const struct intel_device_info intel_sandybridge_m_info = {
-    .gen = 6,
-    .is_mobile    = 1,
-    .need_gfx_hws = 1,
-    .has_hotplug  = 1,
+	.gen = 6, .is_mobile = 1,
+	.need_gfx_hws = 1, .has_hotplug = 1,
     .has_fbc      = 1,
     .has_bsd_ring = 1,
     .has_blt_ring = 1,
@@ -256,7 +268,7 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     mutex_init(&dev->struct_mutex);
     mutex_init(&dev->ctxlist_mutex);
 
-//int i915_driver_load(struct drm_device *dev, unsigned long flags)
+
 
     ret = i915_driver_load(dev, ent->driver_data );
 //    if (ret)
