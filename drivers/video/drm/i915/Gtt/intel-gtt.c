@@ -280,10 +280,11 @@ static unsigned int intel_gtt_stolen_size(void)
     }
 
     if (stolen_size > 0) {
-        dbgprintf("detected %dK %s memory\n",
+		dev_info(&intel_private.bridge_dev->dev, "detected %dK %s memory\n",
                stolen_size / KB(1), local ? "local" : "stolen");
     } else {
-        dbgprintf("no pre-allocated video memory detected\n");
+		dev_info(&intel_private.bridge_dev->dev,
+		       "no pre-allocated video memory detected\n");
         stolen_size = 0;
     }
 
@@ -354,7 +355,8 @@ static unsigned int i965_gtt_total_entries(void)
         size = KB(1024 + 512);
         break;
     default:
-        dbgprintf("unknown page table size, assuming 512KB\n");
+		dev_info(&intel_private.pcidev->dev,
+			 "unknown page table size, assuming 512KB\n");
         size = KB(512);
     }
 
@@ -529,7 +531,8 @@ static bool intel_enable_gtt(void)
         pci_read_config_word(intel_private.bridge_dev,
                      I830_GMCH_CTRL, &gmch_ctrl);
         if ((gmch_ctrl & I830_GMCH_ENABLED) == 0) {
-            dbgprintf("failed to enable the GTT: GMCH_CTRL=%x\n",
+			dev_err(&intel_private.pcidev->dev,
+				"failed to enable the GTT: GMCH_CTRL=%x\n",
                 gmch_ctrl);
             return false;
         }
@@ -544,7 +547,8 @@ static bool intel_enable_gtt(void)
     reg = intel_private.registers+I810_PGETBL_CTL;
     writel(intel_private.PGETBL_save, reg);
     if (HAS_PGTBL_EN && (readl(reg) & I810_PGETBL_ENABLED) == 0) {
-        dbgprintf("failed to enable the GTT: PGETBL=%x [expected %x]\n",
+		dev_err(&intel_private.pcidev->dev,
+			"failed to enable the GTT: PGETBL=%x [expected %x]\n",
             readl(reg), intel_private.PGETBL_save);
         return false;
     }
@@ -555,6 +559,31 @@ static bool intel_enable_gtt(void)
     return true;
 }
 
+
+void intel_gtt_insert_pages(unsigned int first_entry, unsigned int num_entries,
+                struct page **pages, unsigned int flags)
+{
+    int i, j;
+
+    for (i = 0, j = first_entry; i < num_entries; i++, j++) {
+        dma_addr_t addr = (dma_addr_t)(pages[i]);
+        intel_private.driver->write_entry(addr,
+                          j, flags);
+    }
+    readl(intel_private.gtt+j-1);
+}
+
+
+void intel_gtt_clear_range(unsigned int first_entry, unsigned int num_entries)
+{
+	unsigned int i;
+
+	for (i = first_entry; i < (first_entry + num_entries); i++) {
+		intel_private.driver->write_entry(intel_private.scratch_page_dma,
+						  i, 0);
+	}
+	readl(intel_private.gtt+i-1);
+}
 
 
 static void intel_i9xx_setup_flush(void)
@@ -764,6 +793,12 @@ int intel_gmch_probe(struct pci_dev *pdev,
 const struct intel_gtt *intel_gtt_get(void)
 {
     return &intel_private.base;
+}
+
+void intel_gtt_chipset_flush(void)
+{
+	if (intel_private.driver->chipset_flush)
+		intel_private.driver->chipset_flush();
 }
 
 

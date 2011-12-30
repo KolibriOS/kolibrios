@@ -35,7 +35,7 @@
 #include "intel_ringbuffer.h"
 //#include <linux/io-mapping.h>
 #include <linux/i2c.h>
-//#include <drm/intel-gtt.h>
+#include <drm/intel-gtt.h>
 //#include <linux/backlight.h>
 
 #include <linux/spinlock.h>
@@ -293,8 +293,8 @@ typedef struct drm_i915_private {
     drm_dma_handle_t *status_page_dmah;
 //   uint32_t counter;
 //   drm_local_map_t hws_map;
-//   struct drm_i915_gem_object *pwrctx;
-//   struct drm_i915_gem_object *renderctx;
+    struct drm_i915_gem_object *pwrctx;
+    struct drm_i915_gem_object *renderctx;
 
 //   struct resource mch_res;
 
@@ -552,7 +552,7 @@ typedef struct drm_i915_private {
 		/** Memory allocator for GTT stolen memory */
         struct drm_mm stolen;
 		/** Memory allocator for GTT */
-//       struct drm_mm gtt_space;
+        struct drm_mm gtt_space;
 		/** List of all objects in gtt_space. Used to restore gtt
 		 * mappings on resume */
 		struct list_head gtt_list;
@@ -722,7 +722,7 @@ typedef struct drm_i915_private {
 	unsigned long last_gpu_reset;
 
 	/* list of fbdev register on this device */
-//   struct intel_fbdev *fbdev;
+    struct intel_fbdev *fbdev;
 
 //   struct backlight_device *backlight;
 
@@ -1154,14 +1154,14 @@ int i915_gem_dumb_destroy(struct drm_file *file_priv, struct drm_device *dev,
 //   return (int32_t)(seq1 - seq2) >= 0;
 //}
 
-//static inline u32
-//i915_gem_next_request_seqno(struct intel_ring_buffer *ring)
-//{
-//   drm_i915_private_t *dev_priv = ring->dev->dev_private;
-//   return ring->outstanding_lazy_request = dev_priv->next_seqno;
-//}
+static inline u32
+i915_gem_next_request_seqno(struct intel_ring_buffer *ring)
+{
+   drm_i915_private_t *dev_priv = ring->dev->dev_private;
+   return ring->outstanding_lazy_request = dev_priv->next_seqno;
+}
 
-/*
+
 void i915_gem_retire_requests(struct drm_device *dev);
 void i915_gem_reset(struct drm_device *dev);
 void i915_gem_clflush_object(struct drm_i915_gem_object *obj);
@@ -1206,7 +1206,7 @@ i915_gem_get_unfenced_gtt_alignment(struct drm_device *dev,
 
 int i915_gem_object_set_cache_level(struct drm_i915_gem_object *obj,
 				    enum i915_cache_level cache_level);
-*/
+
 
 /* i915_gem_gtt.c */
 void i915_gem_restore_gtt_mappings(struct drm_device *dev);

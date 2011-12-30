@@ -164,6 +164,7 @@ intel_setup_mchbar(struct drm_device *dev)
 
 
 
+#define LFB_SIZE 0xC00000
 
 static int i915_load_gem_init(struct drm_device *dev)
 {
@@ -181,8 +182,6 @@ static int i915_load_gem_init(struct drm_device *dev)
 	/* Basic memrange allocator for stolen space */
 	drm_mm_init(&dev_priv->mm.stolen, 0, prealloc_size);
 
-    //0xC00000 >> PAGE_SHIFT
-
 	/* Let GEM Manage all of the aperture.
 	 *
 	 * However, leave one page at the end still bound to the scratch page.
@@ -192,13 +191,13 @@ static int i915_load_gem_init(struct drm_device *dev)
 	 * at the last page of the aperture.  One page should be enough to
 	 * keep any prefetching inside of the aperture.
 	 */
-//   i915_gem_do_init(dev, 0, mappable_size, gtt_size - PAGE_SIZE);
+    i915_gem_do_init(dev, LFB_SIZE, mappable_size, gtt_size - PAGE_SIZE - LFB_SIZE);
 
-//   mutex_lock(&dev->struct_mutex);
-//   ret = i915_gem_init_ringbuffer(dev);
-//   mutex_unlock(&dev->struct_mutex);
-//   if (ret)
-//       return ret;
+    mutex_lock(&dev->struct_mutex);
+    ret = i915_gem_init_ringbuffer(dev);
+    mutex_unlock(&dev->struct_mutex);
+    if (ret)
+        return ret;
 
 	/* Try to set up FBC with a reasonable compressed buffer size */
 //   if (I915_HAS_FBC(dev) && i915_powersave) {
@@ -240,13 +239,11 @@ static int i915_load_modeset_init(struct drm_device *dev)
     if (ret)
         goto cleanup_vga_switcheroo;
 
-#if 0
-
     intel_modeset_gem_init(dev);
 
-    ret = drm_irq_install(dev);
-    if (ret)
-        goto cleanup_gem;
+//    ret = drm_irq_install(dev);
+//    if (ret)
+//        goto cleanup_gem;
 
     /* Always safe in the mode setting case. */
     /* FIXME: do pre/post-mode set stuff in core KMS code */
@@ -256,12 +253,10 @@ static int i915_load_modeset_init(struct drm_device *dev)
     if (ret)
         goto cleanup_irq;
 
-    drm_kms_helper_poll_init(dev);
+//    drm_kms_helper_poll_init(dev);
 
     /* We're off and running w/KMS */
     dev_priv->mm.suspended = 0;
-
-#endif
 
     return 0;
 

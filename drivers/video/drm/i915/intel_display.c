@@ -5668,9 +5668,26 @@ void intel_crtc_load_lut(struct drm_crtc *crtc)
 
 
 
+/** Sets the color ramps on behalf of RandR */
+void intel_crtc_fb_gamma_set(struct drm_crtc *crtc, u16 red, u16 green,
+				 u16 blue, int regno)
+{
+	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
 
+	intel_crtc->lut_r[regno] = red >> 8;
+	intel_crtc->lut_g[regno] = green >> 8;
+	intel_crtc->lut_b[regno] = blue >> 8;
+}
 
+void intel_crtc_fb_gamma_get(struct drm_crtc *crtc, u16 *red, u16 *green,
+			     u16 *blue, int regno)
+{
+	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
 
+	*red = intel_crtc->lut_r[regno] << 8;
+	*green = intel_crtc->lut_g[regno] << 8;
+	*blue = intel_crtc->lut_b[regno] << 8;
+}
 
 static void intel_crtc_gamma_set(struct drm_crtc *crtc, u16 *red, u16 *green,
 				 u16 *blue, uint32_t start, uint32_t size)
@@ -7103,9 +7120,108 @@ static void cpt_init_clock_gating(struct drm_device *dev)
         I915_WRITE(TRANS_CHICKEN2(pipe), TRANS_AUTOTRAIN_GEN_STALL_DIS);
 }
 
+static void ironlake_teardown_rc6(struct drm_device *dev)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+
+	if (dev_priv->renderctx) {
+//		i915_gem_object_unpin(dev_priv->renderctx);
+//		drm_gem_object_unreference(&dev_priv->renderctx->base);
+		dev_priv->renderctx = NULL;
+	}
+
+	if (dev_priv->pwrctx) {
+//		i915_gem_object_unpin(dev_priv->pwrctx);
+//		drm_gem_object_unreference(&dev_priv->pwrctx->base);
+		dev_priv->pwrctx = NULL;
+	}
+}
 
 
 
+
+
+
+
+static int ironlake_setup_rc6(struct drm_device *dev)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+
+	if (dev_priv->renderctx == NULL)
+//		dev_priv->renderctx = intel_alloc_context_page(dev);
+	if (!dev_priv->renderctx)
+		return -ENOMEM;
+
+	if (dev_priv->pwrctx == NULL)
+//		dev_priv->pwrctx = intel_alloc_context_page(dev);
+	if (!dev_priv->pwrctx) {
+		ironlake_teardown_rc6(dev);
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
+void ironlake_enable_rc6(struct drm_device *dev)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	int ret;
+
+	/* rc6 disabled by default due to repeated reports of hanging during
+	 * boot and resume.
+	 */
+	if (!i915_enable_rc6)
+		return;
+
+	mutex_lock(&dev->struct_mutex);
+	ret = ironlake_setup_rc6(dev);
+	if (ret) {
+		mutex_unlock(&dev->struct_mutex);
+		return;
+	}
+
+	/*
+	 * GPU can automatically power down the render unit if given a page
+	 * to save state.
+	 */
+#if 0
+	ret = BEGIN_LP_RING(6);
+	if (ret) {
+		ironlake_teardown_rc6(dev);
+		mutex_unlock(&dev->struct_mutex);
+		return;
+	}
+
+	OUT_RING(MI_SUSPEND_FLUSH | MI_SUSPEND_FLUSH_EN);
+	OUT_RING(MI_SET_CONTEXT);
+	OUT_RING(dev_priv->renderctx->gtt_offset |
+		 MI_MM_SPACE_GTT |
+		 MI_SAVE_EXT_STATE_EN |
+		 MI_RESTORE_EXT_STATE_EN |
+		 MI_RESTORE_INHIBIT);
+	OUT_RING(MI_SUSPEND_FLUSH);
+	OUT_RING(MI_NOOP);
+	OUT_RING(MI_FLUSH);
+	ADVANCE_LP_RING();
+
+	/*
+	 * Wait for the command parser to advance past MI_SET_CONTEXT. The HW
+	 * does an implicit flush, combined with MI_FLUSH above, it should be
+	 * safe to assume that renderctx is valid
+	 */
+	ret = intel_wait_ring_idle(LP_RING(dev_priv));
+	if (ret) {
+		DRM_ERROR("failed to enable ironlake power power savings\n");
+		ironlake_teardown_rc6(dev);
+		mutex_unlock(&dev->struct_mutex);
+		return;
+	}
+#endif
+
+	I915_WRITE(PWRCTXA, dev_priv->pwrctx->gtt_offset | PWRCTX_EN);
+	I915_WRITE(RSTDBYCTL, I915_READ(RSTDBYCTL) & ~RCX_SW_EXIT);
+	mutex_unlock(&dev->struct_mutex);
+}
 
 void intel_init_clock_gating(struct drm_device *dev)
 {
@@ -7438,6 +7554,17 @@ void intel_modeset_init(struct drm_device *dev)
         gen6_update_ring_freq(dev_priv);
     }
 
+//   INIT_WORK(&dev_priv->idle_work, intel_idle_update);
+//   setup_timer(&dev_priv->idle_timer, intel_gpu_idle_timer,
+//           (unsigned long)dev);
+}
+
+void intel_modeset_gem_init(struct drm_device *dev)
+{
+	if (IS_IRONLAKE_M(dev))
+		ironlake_enable_rc6(dev);
+
+//	intel_setup_overlay(dev);
 }
 
 
