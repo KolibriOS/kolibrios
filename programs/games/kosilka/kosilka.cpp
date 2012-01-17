@@ -527,7 +527,7 @@ void draw_window(void){ //Перерисовка окна
 	w_redraw=false;
 
 	kos_ProcessInfo( &sPI );
-	if (sPI.processInfo.y_size<50) return; //ничего не делать если окно схлопнуто в заголовок
+	if (sPI.rawData[70]&0x04) return; //ничего не делать если окно схлопнуто в заголовок
 
 	//Перерисовка карты
 	if ((status!=0)&&(status!=-1)&&(status!=4))
