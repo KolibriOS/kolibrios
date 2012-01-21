@@ -1314,26 +1314,134 @@ i915_gem_object_set_to_gtt_domain(struct drm_i915_gem_object *obj, bool write)
 	return 0;
 }
 
+#if 0
+int i915_gem_object_set_cache_level(struct drm_i915_gem_object *obj,
+				    enum i915_cache_level cache_level)
+{
+	int ret;
 
+	if (obj->cache_level == cache_level)
+		return 0;
 
+	if (obj->pin_count) {
+		DRM_DEBUG("can not change the cache level of pinned objects\n");
+		return -EBUSY;
+	}
 
+	if (obj->gtt_space) {
+		ret = i915_gem_object_finish_gpu(obj);
+		if (ret)
+			return ret;
 
+		i915_gem_object_finish_gtt(obj);
 
+		/* Before SandyBridge, you could not use tiling or fence
+		 * registers with snooped memory, so relinquish any fences
+		 * currently pointing to our region in the aperture.
+		 */
+		if (INTEL_INFO(obj->base.dev)->gen < 6) {
+			ret = i915_gem_object_put_fence(obj);
+			if (ret)
+				return ret;
+		}
 
+		i915_gem_gtt_rebind_object(obj, cache_level);
+	}
 
+	if (cache_level == I915_CACHE_NONE) {
+		u32 old_read_domains, old_write_domain;
 
+		/* If we're coming from LLC cached, then we haven't
+		 * actually been tracking whether the data is in the
+		 * CPU cache or not, since we only allow one bit set
+		 * in obj->write_domain and have been skipping the clflushes.
+		 * Just set it to the CPU cache for now.
+		 */
+		WARN_ON(obj->base.write_domain & ~I915_GEM_DOMAIN_CPU);
+		WARN_ON(obj->base.read_domains & ~I915_GEM_DOMAIN_CPU);
 
+		old_read_domains = obj->base.read_domains;
+		old_write_domain = obj->base.write_domain;
 
+		obj->base.read_domains = I915_GEM_DOMAIN_CPU;
+		obj->base.write_domain = I915_GEM_DOMAIN_CPU;
 
+		trace_i915_gem_object_change_domain(obj,
+						    old_read_domains,
+						    old_write_domain);
+	}
 
+	obj->cache_level = cache_level;
+	return 0;
+}
+#endif
 
+/*
+ * Prepare buffer for display plane (scanout, cursors, etc).
+ * Can be called from an uninterruptible phase (modesetting) and allows
+ * any flushes to be pipelined (for pageflips).
+ *
+ * For the display plane, we want to be in the GTT but out of any write
+ * domains. So in many ways this looks like set_to_gtt_domain() apart from the
+ * ability to pipeline the waits, pinning and any additional subtleties
+ * that may differentiate the display plane from ordinary buffers.
+ */
+int
+i915_gem_object_pin_to_display_plane(struct drm_i915_gem_object *obj,
+				     u32 alignment,
+				     struct intel_ring_buffer *pipelined)
+{
+	u32 old_read_domains, old_write_domain;
+	int ret;
 
+	ret = i915_gem_object_flush_gpu_write_domain(obj);
+	if (ret)
+		return ret;
 
+	if (pipelined != obj->ring) {
+		ret = i915_gem_object_wait_rendering(obj);
+		if (ret == -ERESTARTSYS)
+			return ret;
+	}
 
+	/* The display engine is not coherent with the LLC cache on gen6.  As
+	 * a result, we make sure that the pinning that is about to occur is
+	 * done with uncached PTEs. This is lowest common denominator for all
+	 * chipsets.
+	 *
+	 * However for gen6+, we could do better by using the GFDT bit instead
+	 * of uncaching, which would allow us to flush all the LLC-cached data
+	 * with that bit in the PTE to main memory with just one PIPE_CONTROL.
+	 */
+//   ret = i915_gem_object_set_cache_level(obj, I915_CACHE_NONE);
+//   if (ret)
+//       return ret;
 
+	/* As the user may map the buffer once pinned in the display plane
+	 * (e.g. libkms for the bootup splash), we have to ensure that we
+	 * always use map_and_fenceable for all scanout buffers.
+	 */
+	ret = i915_gem_object_pin(obj, alignment, true);
+	if (ret)
+		return ret;
 
+	i915_gem_object_flush_cpu_write_domain(obj);
 
+	old_write_domain = obj->base.write_domain;
+	old_read_domains = obj->base.read_domains;
 
+	/* It should now be out of any other write domains, and we can update
+	 * the domain values for our changes.
+	 */
+	BUG_ON((obj->base.write_domain & ~I915_GEM_DOMAIN_GTT) != 0);
+	obj->base.read_domains |= I915_GEM_DOMAIN_GTT;
+
+//   trace_i915_gem_object_change_domain(obj,
+//                       old_read_domains,
+//                       old_write_domain);
+
+	return 0;
+}
 
 
 

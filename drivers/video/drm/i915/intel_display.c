@@ -1920,13 +1920,61 @@ out_disable:
 	}
 }
 
+int
+intel_pin_and_fence_fb_obj(struct drm_device *dev,
+			   struct drm_i915_gem_object *obj,
+			   struct intel_ring_buffer *pipelined)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	u32 alignment;
+	int ret;
 
+	switch (obj->tiling_mode) {
+	case I915_TILING_NONE:
+		if (IS_BROADWATER(dev) || IS_CRESTLINE(dev))
+			alignment = 128 * 1024;
+		else if (INTEL_INFO(dev)->gen >= 4)
+			alignment = 4 * 1024;
+		else
+			alignment = 64 * 1024;
+		break;
+	case I915_TILING_X:
+		/* pin() will align the object as required by fence */
+		alignment = 0;
+		break;
+	case I915_TILING_Y:
+		/* FIXME: Is this true? */
+		DRM_ERROR("Y tiled not allowed for scan out buffers\n");
+		return -EINVAL;
+	default:
+		BUG();
+	}
 
+	dev_priv->mm.interruptible = false;
+	ret = i915_gem_object_pin_to_display_plane(obj, alignment, pipelined);
+	if (ret)
+		goto err_interruptible;
 
+	/* Install a fence for tiled scan-out. Pre-i965 always needs a
+	 * fence, whereas 965+ only requires a fence if using
+	 * framebuffer compression.  For simplicity, we always install
+	 * a fence as the cost is not that onerous.
+	 */
+//	if (obj->tiling_mode != I915_TILING_NONE) {
+//		ret = i915_gem_object_get_fence(obj, pipelined);
+//		if (ret)
+//			goto err_unpin;
+//	}
 
+	dev_priv->mm.interruptible = true;
+	return 0;
 
-
-
+err_unpin:
+//	i915_gem_object_unpin(obj);
+err_interruptible:
+	dev_priv->mm.interruptible = true;
+	return ret;
+}
 
 static int i9xx_update_plane(struct drm_crtc *crtc, struct drm_framebuffer *fb,
                  int x, int y)
@@ -6508,13 +6556,49 @@ static const struct drm_mode_config_funcs intel_mode_funcs = {
 
 
 
+static const struct drm_framebuffer_funcs intel_fb_funcs = {
+//	.destroy = intel_user_framebuffer_destroy,
+//	.create_handle = intel_user_framebuffer_create_handle,
+};
 
+int intel_framebuffer_init(struct drm_device *dev,
+			   struct intel_framebuffer *intel_fb,
+			   struct drm_mode_fb_cmd *mode_cmd,
+			   struct drm_i915_gem_object *obj)
+{
+	int ret;
 
+	if (obj->tiling_mode == I915_TILING_Y)
+		return -EINVAL;
 
+	if (mode_cmd->pitch & 63)
+		return -EINVAL;
 
+	switch (mode_cmd->bpp) {
+	case 8:
+	case 16:
+		/* Only pre-ILK can handle 5:5:5 */
+		if (mode_cmd->depth == 15 && !HAS_PCH_SPLIT(dev))
+			return -EINVAL;
+		break;
 
+	case 24:
+	case 32:
+		break;
+	default:
+		return -EINVAL;
+	}
 
+	ret = drm_framebuffer_init(dev, &intel_fb->base, &intel_fb_funcs);
+	if (ret) {
+		DRM_ERROR("framebuffer init failed %d\n", ret);
+		return ret;
+	}
 
+	drm_helper_mode_fill_fb_struct(&intel_fb->base, mode_cmd);
+	intel_fb->obj = obj;
+	return 0;
+}
 
 
 
@@ -7528,7 +7612,6 @@ void intel_modeset_init(struct drm_device *dev)
         dev->mode_config.max_width = 8192;
         dev->mode_config.max_height = 8192;
     }
-
     dev->mode_config.fb_base = get_bus_addr();
 
     DRM_DEBUG_KMS("%d display pipe%s available.\n",

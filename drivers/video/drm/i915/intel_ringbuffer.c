@@ -1242,7 +1242,7 @@ static int blt_ring_init(struct intel_ring_buffer *ring)
         ptr = ioremap(obj->pages[0], 4096);
 		*ptr++ = MI_BATCH_BUFFER_END;
 		*ptr++ = MI_NOOP;
-        iounmap(obj->pages[0]);
+//        iounmap(obj->pages[0]);
 
 		ret = i915_gem_object_set_to_gtt_domain(obj, false);
 		if (ret) {
