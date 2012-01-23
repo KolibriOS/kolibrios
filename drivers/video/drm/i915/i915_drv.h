@@ -268,7 +268,6 @@ enum intel_pch {
 struct intel_fbdev;
 struct intel_fbc_work;
 
-
 typedef struct drm_i915_private {
 	struct drm_device *dev;
 
@@ -714,7 +713,7 @@ typedef struct drm_i915_private {
 	u8 corr;
 	spinlock_t *mchdev_lock;
 
-//   enum no_fbc_reason no_fbc_reason;
+	enum no_fbc_reason no_fbc_reason;
 
 //   struct drm_mm_node *compressed_fb;
 //   struct drm_mm_node *compressed_llb;

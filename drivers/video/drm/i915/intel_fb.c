@@ -120,12 +120,32 @@ static int intelfb_create(struct intel_fbdev *ifbdev,
 
 	mutex_lock(&dev->struct_mutex);
 
+#if 0
+// skip this part and use existing framebiffer
+
 	/* Flush everything out, we'll be doing GTT only from now on */
 	ret = intel_pin_and_fence_fb_obj(dev, obj, false);
 	if (ret) {
 		DRM_ERROR("failed to pin fb: %d\n", ret);
 		goto out_unref;
 	}
+#endif
+
+/***********************************************************************/
+    {
+#define LFB_SIZE 0xC00000
+
+        static struct drm_mm_node lfb_vm_node;
+
+        lfb_vm_node.size = LFB_SIZE;
+        lfb_vm_node.start = 0;
+        lfb_vm_node.mm = NULL;
+
+        obj->gtt_space = &lfb_vm_node;
+        obj->gtt_offset = 0;
+        obj->pin_count = 1;
+    }
+/***********************************************************************/
 
 	info = framebuffer_alloc(0, device);
 	if (!info) {
