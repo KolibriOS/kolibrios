@@ -332,19 +332,13 @@ create_cursor:
 
         stdcall init_cursor, eax, esi
 
-        mov     eax, [.hcursor]
-        lea     eax, [eax+CURSOR.list_next]
+        mov     ecx, [.hcursor]
+        lea     ecx, [ecx+CURSOR.list_next]
         lea     edx, [_display.cr_list.next]
 
         pushfd
         cli
-        mov     ecx, [edx]
-
-        mov     [eax], ecx
-        mov     [eax+4], edx
-
-        mov     [ecx+4], eax
-        mov     [edx], eax
+        list_add ecx, edx   ;list_add_tail(new, head)
         popfd
 
         mov     eax, [.hcursor]
@@ -458,8 +452,16 @@ destroy_cursor:
 
         push    eax
         stdcall kernel_free, [eax+CURSOR.base]
-        pop     eax
 
+        mov     eax, [esp]
+        lea     eax, [eax+CURSOR.list_next]
+
+        pushfd
+        cli
+        list_del eax
+        popfd
+
+        pop     eax
         call    destroy_kernel_object
         ret
 
@@ -790,14 +792,6 @@ init_display:
         mov     [_display.select_cursor], eax
         mov     [_display.move_cursor], eax
         ret
-
-
-
-
-
-
-
-
 
 
 align 4
