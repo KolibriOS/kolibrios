@@ -1403,5 +1403,12 @@ __i915_write(64, q)
 #define POSTING_READ(reg)	(void)I915_READ_NOTRACE(reg)
 #define POSTING_READ16(reg)	(void)I915_READ16_NOTRACE(reg)
 
+typedef struct
+{
+  int width;
+  int height;
+  int bpp;
+  int freq;
+}videomode_t;
 
 #endif

@@ -46,6 +46,8 @@
 
 #define __read_mostly
 
+int init_display_kms(struct drm_device *dev);
+
 
 int i915_panel_ignore_lid __read_mostly         =  0;
 
@@ -270,165 +272,14 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
 
     ret = i915_driver_load(dev, ent->driver_data );
 
-    {
-        struct drm_connector  *connector;
-        struct drm_connector_helper_funcs *connector_funcs;
+    if (ret)
+        goto err_g4;
 
-        struct drm_connector  *def_connector = NULL;
-        struct drm_encoder    *encoder;
-        struct drm_crtc       *crtc;
+    ret = init_display_kms(dev);
 
-        struct drm_framebuffer   *fb;
-        char *con_name;
-        char *enc_name;
+    if (ret)
+        goto err_g4;
 
-        list_for_each_entry(connector, &dev->mode_config.connector_list, head)
-        {
-            if( connector->status != connector_status_connected)
-                continue;
-
-            connector_funcs = connector->helper_private;
-            encoder = connector_funcs->best_encoder(connector);
-            if( encoder == NULL)
-            {
-                dbgprintf("CONNECTOR %x ID: %d no active encoders\n",
-                          connector, connector->base.id);
-                continue;
-            }
-            connector->encoder = encoder;
-
-            dbgprintf("CONNECTOR %x ID:  %d status %d encoder %x\n crtc %x\n",
-                   connector, connector->base.id,
-                   connector->status, connector->encoder,
-                   encoder->crtc);
-
-            def_connector = connector;
-            crtc = encoder->crtc;
-
-            break;
-        };
-
-
-        if(crtc == NULL)
-        {
-            struct drm_crtc *tmp_crtc;
-            int crtc_mask = 1;
-
-            list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head)
-            {
-                if (encoder->possible_crtcs & crtc_mask)
-                {
-                    crtc = tmp_crtc;
-                    encoder->crtc = crtc;
-                    break;
-                };
-                crtc_mask <<= 1;
-            };
-
-            if(crtc == NULL)
-            {
-                dbgprintf("No CRTC for encoder %d\n", encoder->base.id);
-                goto out;
-            }
-        };
-        DRM_DEBUG_KMS("[CRTC:%d]\n", crtc->base.id);
-
-        drm_i915_private_t *dev_priv = dev->dev_private;
-        struct drm_fb_helper *fb_helper = &dev_priv->fbdev->helper;
-        struct drm_display_mode  *mode = NULL, *tmpmode;
-
-        list_for_each_entry(tmpmode, &connector->modes, head)
-        {
-            if( (drm_mode_width(tmpmode)    == 1024)  &&
-                (drm_mode_height(tmpmode)   == 768) &&
-                (drm_mode_vrefresh(tmpmode) == 60) )
-            {
-                mode = tmpmode;
-                goto do_set;
-            }
-        };
-        if( (mode == NULL) )
-        {
-            list_for_each_entry(tmpmode, &connector->modes, head)
-            {
-                if( (drm_mode_width(tmpmode)  == 1024)  &&
-                    (drm_mode_height(tmpmode) == 768) )
-                {
-                    mode = tmpmode;
-                    goto do_set;
-                }
-            };
-        };
-        goto out;
-
-do_set:
-        {
-
-            typedef struct tag_display display_t;
-
-struct tag_display
-{
-    int  x;
-    int  y;
-    int  width;
-    int  height;
-    int  bpp;
-    int  vrefresh;
-    int  pitch;
-    int  lfb;
-
-    int  supported_modes;
-    struct drm_device    *ddev;
-    struct drm_connector *connector;
-    struct drm_crtc      *crtc;
-
-};
-
-            display_t *rdisplay;
-
-            rdisplay = GetDisplay();
-
-            con_name = drm_get_connector_name(connector);
-            enc_name = drm_get_encoder_name(encoder);
-
-            dbgprintf("set mode %d %d connector %s encoder %s\n",
-                       1024, 768, con_name, enc_name);
-
-            fb = fb_helper->fb;
-
-            fb->width  = 1024;
-            fb->height = 768;
-            fb->pitch  = ALIGN(1024* ((32 + 7) / 8), 64);
-            fb->bits_per_pixel = 32;
-            fb->depth == 24;
-
-            crtc->fb = fb;
-            crtc->enabled = true;
-
-            ret = drm_crtc_helper_set_mode(crtc, mode, 0, 0, fb);
-
-            if (ret == true)
-            {
-                rdisplay->width    = fb->width;
-                rdisplay->height   = fb->height;
-                rdisplay->pitch    = fb->pitch;
-                rdisplay->vrefresh = drm_mode_vrefresh(mode);
-
-                sysSetScreen(fb->width, fb->height, fb->pitch);
-
-                dbgprintf("new mode %d x %d pitch %d\n",
-                           fb->width, fb->height, fb->pitch);
-            }
-            else
-                DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
-                       fb->width, fb->height, crtc);
-        };
-    };
-
-out:
-
-//    if (ret)
-//        goto err_g4;
 
 //    if( radeon_modeset )
 //        init_display_kms(dev->dev_private, &usermode);

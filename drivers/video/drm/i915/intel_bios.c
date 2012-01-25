@@ -633,8 +633,6 @@ intel_parse_bios(struct drm_device *dev)
 	struct bdb_header *bdb = NULL;
 	u8 __iomem *bios = NULL;
 
-    ENTER();
-
 	init_vbt_defaults(dev_priv);
 
     /* XXX Should this validation be moved to intel_opregion.c? */
@@ -686,8 +684,6 @@ intel_parse_bios(struct drm_device *dev)
 
     if (bios)
         pci_unmap_rom(pdev, bios);
-
-    LEAVE();
 
 	return 0;
 }

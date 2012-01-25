@@ -141,7 +141,6 @@ u32 intel_ring_get_active_head(struct intel_ring_buffer *ring)
 	return I915_READ(acthd_reg);
 }
 
-
 static int init_ring_common(struct intel_ring_buffer *ring)
 {
 	drm_i915_private_t *dev_priv = ring->dev->dev_private;
@@ -294,7 +293,6 @@ static int init_render_ring(struct intel_ring_buffer *ring)
     ENTER();
 
 	int ret = init_ring_common(ring);
-
 
 	if (INTEL_INFO(dev)->gen > 3) {
 		int mode = VS_TIMER_DISPATCH << 16 | VS_TIMER_DISPATCH;
@@ -1369,7 +1367,3 @@ int intel_init_blt_ring_buffer(struct drm_device *dev)
 
 	return intel_init_ring_buffer(dev, ring);
 }
-
-
-
-
