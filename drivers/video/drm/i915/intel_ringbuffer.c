@@ -208,8 +208,6 @@ static int init_ring_common(struct intel_ring_buffer *ring)
 	return 0;
 }
 
-#if 0
-
 /*
  * 965+ support PIPE_CONTROL commands, which provide finer grained control
  * over cache flushing.
@@ -241,14 +239,14 @@ init_pipe_control(struct intel_ring_buffer *ring)
 		goto err;
 	}
 
-	i915_gem_object_set_cache_level(obj, I915_CACHE_LLC);
+//   i915_gem_object_set_cache_level(obj, I915_CACHE_LLC);
 
 	ret = i915_gem_object_pin(obj, 4096, true);
 	if (ret)
 		goto err_unref;
 
 	pc->gtt_offset = obj->gtt_offset;
-	pc->cpu_page =  kmap(obj->pages[0]);
+    pc->cpu_page =  (void*)MapIoMem(obj->pages[0], 4096, PG_SW);
 	if (pc->cpu_page == NULL)
 		goto err_unpin;
 
@@ -257,9 +255,9 @@ init_pipe_control(struct intel_ring_buffer *ring)
 	return 0;
 
 err_unpin:
-	i915_gem_object_unpin(obj);
+//   i915_gem_object_unpin(obj);
 err_unref:
-	drm_gem_object_unreference(&obj->base);
+//   drm_gem_object_unreference(&obj->base);
 err:
 	kfree(pc);
 	return ret;
@@ -275,15 +273,13 @@ cleanup_pipe_control(struct intel_ring_buffer *ring)
 		return;
 
 	obj = pc->obj;
-	kunmap(obj->pages[0]);
-	i915_gem_object_unpin(obj);
-	drm_gem_object_unreference(&obj->base);
+//	kunmap(obj->pages[0]);
+//	i915_gem_object_unpin(obj);
+//	drm_gem_object_unreference(&obj->base);
 
 	kfree(pc);
 	ring->private = NULL;
 }
-
-#endif
 
 static int init_render_ring(struct intel_ring_buffer *ring)
 {
@@ -307,7 +303,7 @@ static int init_render_ring(struct intel_ring_buffer *ring)
 
 	if (INTEL_INFO(dev)->gen >= 6) {
 	} else if (IS_GEN5(dev)) {
-//       ret = init_pipe_control(ring);
+		ret = init_pipe_control(ring);
 		if (ret)
 			return ret;
 	}
@@ -316,8 +312,6 @@ static int init_render_ring(struct intel_ring_buffer *ring)
 
 	return ret;
 }
-
-#if 0
 
 static void render_ring_cleanup(struct intel_ring_buffer *ring)
 {
@@ -527,6 +521,7 @@ i915_disable_irq(drm_i915_private_t *dev_priv, u32 mask)
 	POSTING_READ(IMR);
 }
 
+#if 0
 static bool
 render_ring_get_irq(struct intel_ring_buffer *ring)
 {
@@ -616,8 +611,6 @@ bsd_ring_flush(struct intel_ring_buffer *ring,
 	return 0;
 }
 
-#if 0
-
 static int
 ring_add_request(struct intel_ring_buffer *ring,
 		 u32 *result)
@@ -640,6 +633,8 @@ ring_add_request(struct intel_ring_buffer *ring,
 	*result = seqno;
 	return 0;
 }
+
+#if 0
 
 static bool
 gen6_ring_get_irq(struct intel_ring_buffer *ring, u32 gflag, u32 rflag)
@@ -777,8 +772,8 @@ static void cleanup_status_page(struct intel_ring_buffer *ring)
 		return;
 
 	kunmap(obj->pages[0]);
-	i915_gem_object_unpin(obj);
-	drm_gem_object_unreference(&obj->base);
+//   i915_gem_object_unpin(obj);
+//   drm_gem_object_unreference(&obj->base);
 	ring->status_page.obj = NULL;
 
 	memset(&dev_priv->hws_map, 0, sizeof(dev_priv->hws_map));
@@ -798,7 +793,7 @@ static int init_status_page(struct intel_ring_buffer *ring)
 		goto err;
 	}
 
-	i915_gem_object_set_cache_level(obj, I915_CACHE_LLC);
+//   i915_gem_object_set_cache_level(obj, I915_CACHE_LLC);
 
 	ret = i915_gem_object_pin(obj, 4096, true);
 	if (ret != 0) {
@@ -907,7 +902,6 @@ err_hws:
 	return ret;
 }
 
-
 void intel_cleanup_ring_buffer(struct intel_ring_buffer *ring)
 {
 	struct drm_i915_private *dev_priv;
@@ -936,7 +930,6 @@ void intel_cleanup_ring_buffer(struct intel_ring_buffer *ring)
 
 //   cleanup_status_page(ring);
 }
-
 
 static int intel_wrap_ring_buffer(struct intel_ring_buffer *ring)
 {
@@ -1036,7 +1029,6 @@ void intel_ring_advance(struct intel_ring_buffer *ring)
 	ring->write_tail(ring, ring->tail);
 }
 
-
 static const struct intel_ring_buffer render_ring = {
 	.name			= "render ring",
 	.id			= RING_RENDER,
@@ -1045,7 +1037,7 @@ static const struct intel_ring_buffer render_ring = {
 	.init			= init_render_ring,
     .write_tail     = ring_write_tail,
     .flush          = render_ring_flush,
-//   .add_request        = render_ring_add_request,
+    .add_request        = render_ring_add_request,
 //   .get_seqno      = ring_get_seqno,
 //   .irq_get        = render_ring_get_irq,
 //   .irq_put        = render_ring_put_irq,
@@ -1063,7 +1055,7 @@ static const struct intel_ring_buffer bsd_ring = {
 	.init			= init_ring_common,
 	.write_tail		= ring_write_tail,
     .flush          = bsd_ring_flush,
-//   .add_request        = ring_add_request,
+    .add_request        = ring_add_request,
 //   .get_seqno      = ring_get_seqno,
 //   .irq_get        = bsd_ring_get_irq,
 //   .irq_put        = bsd_ring_put_irq,
@@ -1092,7 +1084,6 @@ static void gen6_bsd_ring_write_tail(struct intel_ring_buffer *ring,
 	       GEN6_BSD_SLEEP_PSMI_CONTROL_RC_ILDL_MESSAGE_MODIFY_MASK |
 	       GEN6_BSD_SLEEP_PSMI_CONTROL_RC_ILDL_MESSAGE_ENABLE);
 }
-
 
 static int gen6_ring_flush(struct intel_ring_buffer *ring,
 			   u32 invalidate, u32 flush)
@@ -1177,7 +1168,7 @@ static const struct intel_ring_buffer gen6_bsd_ring = {
 	.init			= init_ring_common,
 	.write_tail		= gen6_bsd_ring_write_tail,
     .flush          = gen6_ring_flush,
-//   .add_request        = gen6_add_request,
+    .add_request        = gen6_add_request,
 //   .get_seqno      = ring_get_seqno,
 //   .irq_get        = gen6_bsd_ring_get_irq,
 //   .irq_put        = gen6_bsd_ring_put_irq,
@@ -1218,7 +1209,6 @@ to_blt_workaround(struct intel_ring_buffer *ring)
 {
 	return ring->private;
 }
-
 
 static int blt_ring_init(struct intel_ring_buffer *ring)
 {
@@ -1302,7 +1292,6 @@ static void blt_ring_cleanup(struct intel_ring_buffer *ring)
 	ring->private = NULL;
 }
 
-
 static const struct intel_ring_buffer gen6_blt_ring = {
        .name			= "blt ring",
        .id			= RING_BLT,
@@ -1311,15 +1300,13 @@ static const struct intel_ring_buffer gen6_blt_ring = {
        .init			= blt_ring_init,
        .write_tail		= ring_write_tail,
        .flush          = blt_ring_flush,
-//       .add_request        = gen6_add_request,
+       .add_request        = gen6_add_request,
 //       .get_seqno      = ring_get_seqno,
 //       .irq_get            = blt_ring_get_irq,
 //       .irq_put            = blt_ring_put_irq,
 //       .dispatch_execbuffer    = gen6_ring_dispatch_execbuffer,
 //       .cleanup            = blt_ring_cleanup,
 };
-
-
 
 int intel_init_render_ring_buffer(struct drm_device *dev)
 {
@@ -1328,11 +1315,11 @@ int intel_init_render_ring_buffer(struct drm_device *dev)
     ENTER();
 	*ring = render_ring;
 	if (INTEL_INFO(dev)->gen >= 6) {
-//       ring->add_request = gen6_add_request;
+       ring->add_request = gen6_add_request;
 //       ring->irq_get = gen6_render_ring_get_irq;
 //       ring->irq_put = gen6_render_ring_put_irq;
 	} else if (IS_GEN5(dev)) {
-//       ring->add_request = pc_render_add_request;
+       ring->add_request = pc_render_add_request;
 //       ring->get_seqno = pc_render_get_seqno;
 	}
 

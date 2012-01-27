@@ -622,7 +622,6 @@ out_mtrrfree:
 
 out_rmmap:
     pci_iounmap(dev->pdev, dev_priv->regs);
-
 put_bridge:
 //    pci_dev_put(dev_priv->bridge_dev);
 free_priv:

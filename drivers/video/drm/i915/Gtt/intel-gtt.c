@@ -38,6 +38,10 @@ static bool intel_enable_gtt(void);
 #define PCI_VENDOR_ID_INTEL             0x8086
 #define PCI_DEVICE_ID_INTEL_82830_HB    0x3575
 #define PCI_DEVICE_ID_INTEL_82845G_HB   0x2560
+#define PCI_DEVICE_ID_INTEL_82915G_IG   0x2582
+#define PCI_DEVICE_ID_INTEL_82915GM_IG  0x2592
+#define PCI_DEVICE_ID_INTEL_82945G_IG   0x2772
+#define PCI_DEVICE_ID_INTEL_82945GM_IG  0x27A2
 
 
 #define AGP_NORMAL_MEMORY 0
@@ -71,10 +75,10 @@ static inline int pci_write_config_word(struct pci_dev *dev, int where,
 /*
  * If we have Intel graphics, we're not going to have anything other than
  * an Intel IOMMU. So make the correct use of the PCI DMA API contingent
- * on the Intel IOMMU support (CONFIG_DMAR).
+ * on the Intel IOMMU support (CONFIG_INTEL_IOMMU).
  * Only newer chipsets need to bother with this, of course.
  */
-#ifdef CONFIG_DMAR
+#ifdef CONFIG_INTEL_IOMMU
 #define USE_PCI_DMA_API 1
 #else
 #define USE_PCI_DMA_API 0
@@ -440,7 +444,7 @@ static void intel_gtt_cleanup(void)
     FreeKernelSpace(intel_private.gtt);
     FreeKernelSpace(intel_private.registers);
 
-  //  intel_gtt_teardown_scratch_page();
+	intel_gtt_teardown_scratch_page();
 }
 
 static int intel_gtt_init(void)
@@ -469,7 +473,8 @@ static int intel_gtt_init(void)
     if (HAS_PGTBL_EN)
         intel_private.PGETBL_save |= I810_PGETBL_ENABLED;
 
-    dbgprintf("detected gtt size: %dK total, %dK mappable\n",
+	dev_info(&intel_private.bridge_dev->dev,
+			"detected gtt size: %dK total, %dK mappable\n",
             intel_private.base.gtt_total_entries * 4,
             intel_private.base.gtt_mappable_entries * 4);
 
@@ -500,6 +505,17 @@ static int intel_gtt_init(void)
     LEAVE();
 
     return 0;
+}
+
+static void i830_write_entry(dma_addr_t addr, unsigned int entry,
+			     unsigned int flags)
+{
+	u32 pte_flags = I810_PTE_VALID;
+
+	if (flags ==  AGP_USER_CACHED_MEMORY)
+		pte_flags |= I830_PTE_SYSTEM_CACHED;
+
+	writel(addr | pte_flags, intel_private.gtt + entry);
 }
 
 static bool intel_enable_gtt(void)
@@ -559,6 +575,18 @@ static bool intel_enable_gtt(void)
     return true;
 }
 
+static bool i830_check_flags(unsigned int flags)
+{
+	switch (flags) {
+	case 0:
+	case AGP_PHYS_MEMORY:
+	case AGP_USER_CACHED_MEMORY:
+	case AGP_USER_MEMORY:
+		return true;
+	}
+
+	return false;
+}
 
 void intel_gtt_insert_pages(unsigned int first_entry, unsigned int num_entries,
                 struct page **pages, unsigned int flags)
@@ -585,7 +613,6 @@ void intel_gtt_clear_range(unsigned int first_entry, unsigned int num_entries)
 	readl(intel_private.gtt+i-1);
 }
 
-
 static void intel_i9xx_setup_flush(void)
 {
     /* return if already configured */
@@ -595,31 +622,55 @@ static void intel_i9xx_setup_flush(void)
     if (INTEL_GTT_GEN == 6)
         return;
 
-#if 0
     /* setup a resource for this object */
-    intel_private.ifp_resource.name = "Intel Flush Page";
-    intel_private.ifp_resource.flags = IORESOURCE_MEM;
+//    intel_private.ifp_resource.name = "Intel Flush Page";
+//    intel_private.ifp_resource.flags = IORESOURCE_MEM;
+
+    intel_private.resource_valid = 0;
 
     /* Setup chipset flush for 915 */
-    if (IS_G33 || INTEL_GTT_GEN >= 4) {
-        intel_i965_g33_setup_chipset_flush();
-    } else {
-        intel_i915_setup_chipset_flush();
-    }
+//    if (IS_G33 || INTEL_GTT_GEN >= 4) {
+//        intel_i965_g33_setup_chipset_flush();
+//    } else {
+//        intel_i915_setup_chipset_flush();
+//    }
 
-    if (intel_private.ifp_resource.start)
-        intel_private.i9xx_flush_page = ioremap_nocache(intel_private.ifp_resource.start, PAGE_SIZE);
+//    if (intel_private.ifp_resource.start)
+//        intel_private.i9xx_flush_page = ioremap_nocache(intel_private.ifp_resource.start, PAGE_SIZE);
     if (!intel_private.i9xx_flush_page)
         dev_err(&intel_private.pcidev->dev,
             "can't ioremap flush page - no chipset flushing\n");
-#endif
+}
 
+static void i9xx_cleanup(void)
+{
+	if (intel_private.i9xx_flush_page)
+		iounmap(intel_private.i9xx_flush_page);
+//	if (intel_private.resource_valid)
+//		release_resource(&intel_private.ifp_resource);
+	intel_private.ifp_resource.start = 0;
+	intel_private.resource_valid = 0;
 }
 
 static void i9xx_chipset_flush(void)
 {
     if (intel_private.i9xx_flush_page)
         writel(1, intel_private.i9xx_flush_page);
+}
+
+static void i965_write_entry(dma_addr_t addr,
+			     unsigned int entry,
+			     unsigned int flags)
+{
+	u32 pte_flags;
+
+	pte_flags = I810_PTE_VALID;
+	if (flags == AGP_USER_CACHED_MEMORY)
+		pte_flags |= I830_PTE_SYSTEM_CACHED;
+
+	/* Shift high bits down */
+	addr |= (addr >> 28) & 0xf0;
+	writel(addr | pte_flags, intel_private.gtt + entry);
 }
 
 static bool gen6_check_flags(unsigned int flags)
@@ -653,6 +704,26 @@ static void gen6_write_entry(dma_addr_t addr, unsigned int entry,
 
 static void gen6_cleanup(void)
 {
+}
+
+/* Certain Gen5 chipsets require require idling the GPU before
+ * unmapping anything from the GTT when VT-d is enabled.
+ */
+static inline int needs_idle_maps(void)
+{
+#ifdef CONFIG_INTEL_IOMMU
+	const unsigned short gpu_devid = intel_private.pcidev->device;
+	extern int intel_iommu_gfx_mapped;
+
+	/* Query intel_iommu to see if we need the workaround. Presumably that
+	 * was loaded first.
+	 */
+	if ((gpu_devid == PCI_DEVICE_ID_INTEL_IRONLAKE_M_HB ||
+	     gpu_devid == PCI_DEVICE_ID_INTEL_IRONLAKE_M_IG) &&
+	     intel_iommu_gfx_mapped)
+		return 1;
+#endif
+	return 0;
 }
 
 static int i9xx_setup(void)
@@ -690,11 +761,74 @@ static int i9xx_setup(void)
         intel_private.gtt_bus_addr = reg_addr + gtt_offset;
     }
 
+	if (needs_idle_maps())
+		intel_private.base.do_idle_maps = 1;
+
     intel_i9xx_setup_flush();
 
     return 0;
 }
 
+static const struct intel_gtt_driver i915_gtt_driver = {
+	.gen = 3,
+	.has_pgtbl_enable = 1,
+	.setup = i9xx_setup,
+	.cleanup = i9xx_cleanup,
+	/* i945 is the last gpu to need phys mem (for overlay and cursors). */
+	.write_entry = i830_write_entry,
+	.dma_mask_size = 32,
+	.check_flags = i830_check_flags,
+	.chipset_flush = i9xx_chipset_flush,
+};
+static const struct intel_gtt_driver g33_gtt_driver = {
+	.gen = 3,
+	.is_g33 = 1,
+	.setup = i9xx_setup,
+	.cleanup = i9xx_cleanup,
+	.write_entry = i965_write_entry,
+	.dma_mask_size = 36,
+	.check_flags = i830_check_flags,
+	.chipset_flush = i9xx_chipset_flush,
+};
+static const struct intel_gtt_driver pineview_gtt_driver = {
+	.gen = 3,
+	.is_pineview = 1, .is_g33 = 1,
+	.setup = i9xx_setup,
+	.cleanup = i9xx_cleanup,
+	.write_entry = i965_write_entry,
+	.dma_mask_size = 36,
+	.check_flags = i830_check_flags,
+	.chipset_flush = i9xx_chipset_flush,
+};
+static const struct intel_gtt_driver i965_gtt_driver = {
+	.gen = 4,
+	.has_pgtbl_enable = 1,
+	.setup = i9xx_setup,
+	.cleanup = i9xx_cleanup,
+	.write_entry = i965_write_entry,
+	.dma_mask_size = 36,
+	.check_flags = i830_check_flags,
+	.chipset_flush = i9xx_chipset_flush,
+};
+static const struct intel_gtt_driver g4x_gtt_driver = {
+	.gen = 5,
+	.setup = i9xx_setup,
+	.cleanup = i9xx_cleanup,
+	.write_entry = i965_write_entry,
+	.dma_mask_size = 36,
+	.check_flags = i830_check_flags,
+	.chipset_flush = i9xx_chipset_flush,
+};
+static const struct intel_gtt_driver ironlake_gtt_driver = {
+	.gen = 5,
+	.is_ironlake = 1,
+	.setup = i9xx_setup,
+	.cleanup = i9xx_cleanup,
+	.write_entry = i965_write_entry,
+	.dma_mask_size = 36,
+	.check_flags = i830_check_flags,
+	.chipset_flush = i9xx_chipset_flush,
+};
 static const struct intel_gtt_driver sandybridge_gtt_driver = {
     .gen = 6,
     .setup = i9xx_setup,
@@ -714,6 +848,58 @@ static const struct intel_gtt_driver_description {
     char *name;
     const struct intel_gtt_driver *gtt_driver;
 } intel_gtt_chipsets[] = {
+	{ PCI_DEVICE_ID_INTEL_E7221_IG, "E7221 (i915)",
+		&i915_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_82915G_IG, "915G",
+		&i915_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_82915GM_IG, "915GM",
+		&i915_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_82945G_IG, "945G",
+		&i915_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_82945GM_IG, "945GM",
+		&i915_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_82945GME_IG, "945GME",
+		&i915_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_82946GZ_IG, "946GZ",
+		&i965_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_82G35_IG, "G35",
+		&i965_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_82965Q_IG, "965Q",
+		&i965_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_82965G_IG, "965G",
+		&i965_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_82965GM_IG, "965GM",
+		&i965_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_82965GME_IG, "965GME/GLE",
+		&i965_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_G33_IG, "G33",
+		&g33_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_Q35_IG, "Q35",
+		&g33_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_Q33_IG, "Q33",
+		&g33_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_PINEVIEW_M_IG, "GMA3150",
+		&pineview_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_PINEVIEW_IG, "GMA3150",
+		&pineview_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_GM45_IG, "GM45",
+		&g4x_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_EAGLELAKE_IG, "Eaglelake",
+		&g4x_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_Q45_IG, "Q45/Q43",
+		&g4x_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_G45_IG, "G45/G43",
+		&g4x_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_B43_IG, "B43",
+		&g4x_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_B43_1_IG, "B43",
+		&g4x_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_G41_IG, "G41",
+		&g4x_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_IRONLAKE_D_IG,
+	    "HD Graphics", &ironlake_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_IRONLAKE_M_IG,
+	    "HD Graphics", &ironlake_gtt_driver },
     { PCI_DEVICE_ID_INTEL_SANDYBRIDGE_GT1_IG,
         "Sandybridge", &sandybridge_gtt_driver },
     { PCI_DEVICE_ID_INTEL_SANDYBRIDGE_GT2_IG,
@@ -728,6 +914,16 @@ static const struct intel_gtt_driver_description {
         "Sandybridge", &sandybridge_gtt_driver },
     { PCI_DEVICE_ID_INTEL_SANDYBRIDGE_S_IG,
         "Sandybridge", &sandybridge_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_IVYBRIDGE_GT1_IG,
+	    "Ivybridge", &sandybridge_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_IVYBRIDGE_GT2_IG,
+	    "Ivybridge", &sandybridge_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_IVYBRIDGE_M_GT1_IG,
+	    "Ivybridge", &sandybridge_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_IVYBRIDGE_M_GT2_IG,
+	    "Ivybridge", &sandybridge_gtt_driver },
+	{ PCI_DEVICE_ID_INTEL_IVYBRIDGE_S_GT1_IG,
+	    "Ivybridge", &sandybridge_gtt_driver },
     { 0, NULL, NULL }
 };
 
@@ -789,17 +985,20 @@ int intel_gmch_probe(struct pci_dev *pdev,
 
     return 1;
 }
+EXPORT_SYMBOL(intel_gmch_probe);
 
 const struct intel_gtt *intel_gtt_get(void)
 {
     return &intel_private.base;
 }
+EXPORT_SYMBOL(intel_gtt_get);
 
 void intel_gtt_chipset_flush(void)
 {
 	if (intel_private.driver->chipset_flush)
 		intel_private.driver->chipset_flush();
 }
+EXPORT_SYMBOL(intel_gtt_chipset_flush);
 
 
 phys_addr_t get_bus_addr(void)

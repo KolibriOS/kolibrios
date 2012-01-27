@@ -2181,9 +2181,6 @@ intel_pipe_set_base(struct drm_crtc *crtc, int x, int y,
 
     ret = intel_pipe_set_base_atomic(crtc, crtc->fb, x, y,
 					 LEAVE_ATOMIC_MODE_SET);
-
-    dbgprintf("set base atomic done ret= %d\n", ret);
-
 	if (ret) {
 //       i915_gem_object_unpin(to_intel_framebuffer(crtc->fb)->obj);
 		mutex_unlock(&dev->struct_mutex);
@@ -7252,11 +7249,25 @@ static void ironlake_teardown_rc6(struct drm_device *dev)
 	}
 }
 
+static void ironlake_disable_rc6(struct drm_device *dev)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
 
+	if (I915_READ(PWRCTXA)) {
+		/* Wake the GPU, prevent RC6, then restore RSTDBYCTL */
+		I915_WRITE(RSTDBYCTL, I915_READ(RSTDBYCTL) | RCX_SW_EXIT);
+		wait_for(((I915_READ(RSTDBYCTL) & RSX_STATUS_MASK) == RSX_STATUS_ON),
+			 50);
 
+		I915_WRITE(PWRCTXA, 0);
+		POSTING_READ(PWRCTXA);
 
+		I915_WRITE(RSTDBYCTL, I915_READ(RSTDBYCTL) & ~RCX_SW_EXIT);
+		POSTING_READ(RSTDBYCTL);
+	}
 
-
+	ironlake_teardown_rc6(dev);
+}
 
 static int ironlake_setup_rc6(struct drm_device *dev)
 {
