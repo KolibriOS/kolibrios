@@ -80,7 +80,6 @@ int i915_gem_gtt_bind_object(struct drm_i915_gem_object *obj)
 	unsigned int agp_type = cache_level_to_agp_type(dev, obj->cache_level);
 	int ret;
 
-    ENTER();
 //   if (dev_priv->mm.gtt->needs_dmar) {
 //       ret = intel_gtt_map_memory(obj->pages,
 //                      obj->base.size >> PAGE_SHIFT,
@@ -98,7 +97,7 @@ int i915_gem_gtt_bind_object(struct drm_i915_gem_object *obj)
 				       obj->base.size >> PAGE_SHIFT,
 				       obj->pages,
 				       agp_type);
-    LEAVE();
+
 	return 0;
 }
 

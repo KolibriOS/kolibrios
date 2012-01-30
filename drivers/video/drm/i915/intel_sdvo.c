@@ -616,8 +616,29 @@ static bool intel_sdvo_set_active_outputs(struct intel_sdvo *intel_sdvo,
 				    &outputs, sizeof(outputs));
 }
 
+static bool intel_sdvo_set_encoder_power_state(struct intel_sdvo *intel_sdvo,
+					       int mode)
+{
+	u8 state = SDVO_ENCODER_STATE_ON;
 
+	switch (mode) {
+	case DRM_MODE_DPMS_ON:
+		state = SDVO_ENCODER_STATE_ON;
+		break;
+	case DRM_MODE_DPMS_STANDBY:
+		state = SDVO_ENCODER_STATE_STANDBY;
+		break;
+	case DRM_MODE_DPMS_SUSPEND:
+		state = SDVO_ENCODER_STATE_SUSPEND;
+		break;
+	case DRM_MODE_DPMS_OFF:
+		state = SDVO_ENCODER_STATE_OFF;
+		break;
+	}
 
+	return intel_sdvo_set_value(intel_sdvo,
+				    SDVO_CMD_SET_ENCODER_POWER_STATE, &state, sizeof(state));
+}
 
 static bool intel_sdvo_get_input_pixel_clock_range(struct intel_sdvo *intel_sdvo,
 						   int *clock_min,

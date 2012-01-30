@@ -1,9 +1,11 @@
+
+#define iowrite32(v, addr)      writel((v), (addr))
+
 #include "drmP.h"
 #include "drm.h"
 #include "i915_drm.h"
 #include "i915_drv.h"
 #include "intel_drv.h"
-
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -13,17 +15,8 @@
 
 #include <syscall.h>
 
-typedef struct tag_object  kobj_t;
-typedef struct tag_display display_t;
+#include "bitmap.h"
 
-struct tag_object
-{
-    uint32_t   magic;
-    void      *destroy;
-    kobj_t    *fd;
-    kobj_t    *bk;
-    uint32_t   pid;
-};
 
 typedef struct
 {
@@ -70,6 +63,9 @@ struct tag_display
 
 
 static display_t *os_display;
+
+u32_t cmd_buffer;
+u32_t cmd_offset;
 
 int init_cursor(cursor_t *cursor);
 static cursor_t*  __stdcall select_cursor_kms(cursor_t *cursor);
@@ -195,6 +191,49 @@ int init_display_kms(struct drm_device *dev)
     };
     safe_sti(ifl);
 
+    {
+#define XY_COLOR_BLT        ((2<<29)|(0x50<<22)|(0x4))
+#define BLT_WRITE_ALPHA     (1<<21)
+#define BLT_WRITE_RGB       (1<<20)
+
+        drm_i915_private_t *dev_priv = dev->dev_private;
+        struct drm_i915_gem_object *obj;
+        struct intel_ring_buffer *ring;
+
+        u32_t br13, cmd, *b;
+
+        int      n=0;
+
+        cmd =  XY_COLOR_BLT | BLT_WRITE_ALPHA | BLT_WRITE_RGB;
+        br13 = os_display->pitch;
+        br13 |= 0xF0 << 16;
+        br13 |= 3 << 24;
+
+        obj = i915_gem_alloc_object(dev, 4096);
+        i915_gem_object_pin(obj, 4096, true);
+
+        cmd_buffer = MapIoMem(obj->pages[0], 4096, PG_SW|PG_NOCACHE);
+        cmd_offset = obj->gtt_offset;
+
+        b = (u32_t*)cmd_buffer;
+        b[n++] = cmd;
+        b[n++] = br13;
+        b[n++] = 0; // top, left
+        b[n++] = (128 << 16) | 128; // bottom, right
+        b[n++] = 0; // dst
+        b[n++] = 0x0000FF00;
+        b[n++] = MI_BATCH_BUFFER_END;
+        if( n & 1)
+            b[n++] = MI_NOOP;
+
+//        cmd_buffer = (u32_t)&b[n];
+//        i915_gem_object_set_to_gtt_domain(obj, false);
+
+
+        ring = &dev_priv->ring[BCS];
+        ring->dispatch_execbuffer(ring,cmd_offset, n*4);
+
+    };
 
     LEAVE();
 
@@ -433,7 +472,7 @@ int init_cursor(cursor_t *cursor)
 
 // release old cursor
 
-//    KernelFree(cursor->data);
+    KernelFree(cursor->data);
 
     cursor->data = bits;
 
@@ -549,62 +588,138 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     return old;
 };
 
-#if 0
-static void intel_crtc_update_cursor(struct drm_crtc *crtc,
-                     bool on)
+extern struct drm_device *main_device;
+
+#define XY_SRC_COPY_BLT_CMD     ((2<<29)|(0x53<<22)|6)
+
+int video_blit(uint64_t src_offset, int  x, int y,
+                    int w, int h, int pitch)
 {
-    struct drm_device *dev = crtc->dev;
-    struct drm_i915_private *dev_priv = dev->dev_private;
-    struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
-    int pipe = intel_crtc->pipe;
-    int x = intel_crtc->cursor_x;
-    int y = intel_crtc->cursor_y;
-    u32 base, pos;
-    bool visible;
 
-    pos = 0;
+    drm_i915_private_t *dev_priv = main_device->dev_private;
+    struct intel_ring_buffer *ring;
 
-    if (on && crtc->enabled && crtc->fb) {
-        base = intel_crtc->cursor_addr;
-        if (x > (int) crtc->fb->width)
-            base = 0;
+    u32_t br13, cmd, *b;
+    u32_t offset;
 
-        if (y > (int) crtc->fb->height)
-            base = 0;
-    } else
-        base = 0;
+    int      n=0;
 
-    if (x < 0) {
-        if (x + intel_crtc->cursor_width < 0)
-            base = 0;
+//    if( cmd_buffer & 0xF80 )
+//        cmd_buffer&= 0xFFFFF000;
 
-        pos |= CURSOR_POS_SIGN << CURSOR_X_SHIFT;
-        x = -x;
-    }
-    pos |= x << CURSOR_X_SHIFT;
+//    b = (u32_t*)ALIGN(cmd_buffer,16);
 
-    if (y < 0) {
-        if (y + intel_crtc->cursor_height < 0)
-            base = 0;
+//    offset = cmd_offset + ((u32_t)b & 0xFFF);
 
-        pos |= CURSOR_POS_SIGN << CURSOR_Y_SHIFT;
-        y = -y;
-    }
-    pos |= y << CURSOR_Y_SHIFT;
+    b = cmd_buffer;
 
-    visible = base != 0;
-    if (!visible && !intel_crtc->cursor_visible)
-        return;
+    cmd =  XY_SRC_COPY_BLT_CMD | BLT_WRITE_RGB;
+    br13 = os_display->pitch;
+    br13 |= 0xCC << 16;
+    br13 |= 3 << 24;
 
-    I915_WRITE(CURPOS(pipe), pos);
-    if (IS_845G(dev) || IS_I865G(dev))
-        i845_update_cursor(crtc, base);
-    else
-        i9xx_update_cursor(crtc, base);
+    b[n++] = cmd;
+    b[n++] = br13;
+    b[n++] = (y << 16) | x;
+    b[n++] = ( (y+h) << 16) | (x+w); // bottom, right
+    b[n++] = 0; // dst_offset
+    b[n++] = 0; //src_top|src_left
 
-    if (visible)
-        intel_mark_busy(dev, to_intel_framebuffer(crtc->fb)->obj);
-}
+    b[n++] = pitch;
+    b[n++] = (u32_t)src_offset;
 
-#endif
+    b[n++] = MI_BATCH_BUFFER_END;
+    if( n & 1)
+        b[n++] = MI_NOOP;
 
+//    i915_gem_object_set_to_gtt_domain(obj, false);
+
+    ring = &dev_priv->ring[BCS];
+    ring->dispatch_execbuffer(ring, cmd_offset, n*4);
+
+    intel_ring_begin(ring, 4);
+//    if (ret)
+//        return ret;
+
+//    cmd = MI_FLUSH_DW;
+//    if (invalidate & I915_GEM_GPU_DOMAINS)
+//        cmd |= MI_INVALIDATE_TLB | MI_INVALIDATE_BSD;
+    intel_ring_emit(ring, MI_FLUSH_DW);
+    intel_ring_emit(ring, 0);
+    intel_ring_emit(ring, 0);
+    intel_ring_emit(ring, MI_NOOP);
+    intel_ring_advance(ring);
+
+
+fail:
+    return -1;
+};
+
+
+int blit_video(u32 hbitmap, int  dst_x, int dst_y,
+               int src_x, int src_y, u32 w, u32 h)
+{
+    drm_i915_private_t *dev_priv = main_device->dev_private;
+    struct intel_ring_buffer *ring;
+
+    bitmap_t  *bitmap;
+    u32_t br13, cmd, *b;
+    u32_t offset;
+
+    int      n=0;
+
+    if(unlikely(hbitmap==0))
+        return -1;
+
+    bitmap = hman_get_data(&bm_man, hbitmap);
+
+    if(unlikely(bitmap==NULL))
+        return -1;
+
+//    if( cmd_buffer & 0xF80 )
+//        cmd_buffer&= 0xFFFFF000;
+
+//    b = (u32_t*)ALIGN(cmd_buffer,16);
+
+//    offset = cmd_offset + ((u32_t)b & 0xFFF);
+
+    b = cmd_buffer;
+
+    cmd =  XY_SRC_COPY_BLT_CMD | BLT_WRITE_RGB;
+    br13 = os_display->pitch;
+    br13 |= 0xCC << 16;
+    br13 |= 3 << 24;
+
+    b[n++] = cmd;
+    b[n++] = br13;
+    b[n++] = (dst_y << 16) | dst_x;
+    b[n++] = ( (dst_y+h) << 16) | (dst_x+w); // bottom, right
+    b[n++] = 0; // dst_offset
+    b[n++] = (src_y << 16) | src_x;
+
+    b[n++] = bitmap->pitch;
+    b[n++] = bitmap->gaddr;
+
+    b[n++] = MI_BATCH_BUFFER_END;
+    if( n & 1)
+        b[n++] = MI_NOOP;
+
+//    i915_gem_object_set_to_gtt_domain(obj, false);
+
+    ring = &dev_priv->ring[BCS];
+    ring->dispatch_execbuffer(ring, cmd_offset, n*4);
+
+    intel_ring_begin(ring, 4);
+//    if (ret)
+//        return ret;
+
+    intel_ring_emit(ring, MI_FLUSH_DW);
+    intel_ring_emit(ring, 0);
+    intel_ring_emit(ring, 0);
+    intel_ring_emit(ring, MI_NOOP);
+    intel_ring_advance(ring);
+
+    return 0;
+fail:
+    return -1;
+};

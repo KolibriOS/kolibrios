@@ -12,8 +12,16 @@
 #include <linux/pci.h>
 #include <syscall.h>
 
+typedef struct bitmap bitmap_t;
+
+void parse_cmdline(char *cmdline, char *log);
 int _stdcall display_handler(ioctl_t *io);
 int init_agp(void);
+
+int create_video(int width, int height, u32_t *outp);
+int create_bitmap(bitmap_t **pbitmap, int width, int height);
+int video_blit(uint64_t src_offset, int  x, int y,
+                    int w, int h, int pitch);
 
 static char  log[256];
 
@@ -31,12 +39,12 @@ u32_t drvEntry(int action, char *cmdline)
     if( GetService("DISPLAY") != 0 )
         return 0;
 
-//    if( cmdline && *cmdline )
-//        parse_cmdline(cmdline, &usermode, log, &radeon_modeset);
+    if( cmdline && *cmdline )
+        parse_cmdline(cmdline, log);
 
     if(!dbg_open(log))
     {
-        strcpy(log, "/HD1/2/i915.log");
+        strcpy(log, "/RD/1/DRIVERS/i915.log");
 
         if(!dbg_open(log))
         {
@@ -44,7 +52,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("i915 RC01 cmdline %s\n", cmdline);
+    dbgprintf("i915_early_preview second edition\n cmdline: %s\n", cmdline);
 
     enum_pci_devices();
 
@@ -102,7 +110,7 @@ int _stdcall display_handler(ioctl_t *io)
         case SRV_ENUM_MODES:
             dbgprintf("SRV_ENUM_MODES inp %x inp_size %x out_size %x\n",
                        inp, io->inp_size, io->out_size );
-//            check_output(4);
+            check_output(4);
 //            check_input(*outp * sizeof(videomode_t));
             if( i915_modeset)
                 retval = get_videomodes((videomode_t*)inp, outp);
@@ -116,13 +124,14 @@ int _stdcall display_handler(ioctl_t *io)
                 retval = set_user_mode((videomode_t*)inp);
             break;
 
-/*
         case SRV_CREATE_VIDEO:
-            retval = r600_create_video(inp[0], inp[1], outp);
+            check_input(2);
+            check_output(4);
+            retval = create_video(inp[0], inp[1], outp);
             break;
 
         case SRV_BLIT_VIDEO:
-            r600_video_blit( ((uint64_t*)inp)[0], inp[2], inp[3],
+            video_blit( ((uint64_t*)inp)[0], inp[2], inp[3],
                     inp[4], inp[5], inp[6]);
 
             retval = 0;
@@ -131,9 +140,9 @@ int _stdcall display_handler(ioctl_t *io)
         case SRV_CREATE_BITMAP:
             check_input(8);
             check_output(4);
-            retval = create_bitmap(outp, inp[0], inp[1]);
+            retval = create_bitmap((bitmap_t**)outp, inp[0], inp[1]);
             break;
-*/
+
     };
 
     return retval;
@@ -166,3 +175,38 @@ int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn)
     }
     return ret;
 };
+
+
+static char* parse_path(char *p, char *log)
+{
+    char  c;
+
+    while( (c = *p++) == ' ');
+        p--;
+    while( (c = *log++ = *p++) && (c != ' '));
+    *log = 0;
+
+    return p;
+};
+
+void parse_cmdline(char *cmdline, char *log)
+{
+    char *p = cmdline;
+
+    char c = *p++;
+
+    while( c )
+    {
+        if( c == '-')
+        {
+            switch(*p++)
+            {
+                case 'l':
+                    p = parse_path(p, log);
+                    break;
+            };
+        };
+        c = *p++;
+    };
+};
+

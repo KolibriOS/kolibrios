@@ -47,6 +47,7 @@
 
 int init_display_kms(struct drm_device *dev);
 
+struct drm_device *main_device;
 
 int i915_panel_ignore_lid __read_mostly         =  0;
 
@@ -375,7 +376,7 @@ int i915_init(void)
 
 int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
-    static struct drm_device *dev;
+    struct drm_device *dev;
     int ret;
 
     ENTER();
@@ -418,11 +419,7 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     if (ret)
         goto err_g4;
 
-
-//    if( radeon_modeset )
-//        init_display_kms(dev->dev_private, &usermode);
-//    else
-//        init_display(dev->dev_private, &usermode);
+    main_device = dev;
 
     LEAVE();
 

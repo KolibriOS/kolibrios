@@ -290,8 +290,8 @@ typedef struct drm_i915_private {
 	uint32_t next_seqno;
 
     drm_dma_handle_t *status_page_dmah;
-//   uint32_t counter;
-//   drm_local_map_t hws_map;
+	uint32_t counter;
+	drm_local_map_t hws_map;
     struct drm_i915_gem_object *pwrctx;
     struct drm_i915_gem_object *renderctx;
 
@@ -883,7 +883,6 @@ struct drm_i915_gem_object {
     atomic_t pending_flip;
 };
 
-
 #define to_intel_bo(x) container_of(x, struct drm_i915_gem_object, base)
 
 /**
@@ -1147,11 +1146,11 @@ int i915_gem_dumb_destroy(struct drm_file *file_priv, struct drm_device *dev,
 /**
  * Returns true if seq1 is later than seq2.
  */
-//static inline bool
-//i915_seqno_passed(uint32_t seq1, uint32_t seq2)
-//{
-//   return (int32_t)(seq1 - seq2) >= 0;
-//}
+static inline bool
+i915_seqno_passed(uint32_t seq1, uint32_t seq2)
+{
+	return (int32_t)(seq1 - seq2) >= 0;
+}
 
 static inline u32
 i915_gem_next_request_seqno(struct intel_ring_buffer *ring)
@@ -1205,7 +1204,6 @@ i915_gem_get_unfenced_gtt_alignment(struct drm_device *dev,
 
 int i915_gem_object_set_cache_level(struct drm_i915_gem_object *obj,
 				    enum i915_cache_level cache_level);
-
 
 /* i915_gem_gtt.c */
 void i915_gem_restore_gtt_mappings(struct drm_device *dev);

@@ -727,8 +727,6 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj,
 	int page_count, i;
 	struct page *page;
 
-    ENTER();
-
 	/* Get the list of pages out of our struct file.  They'll be pinned
 	 * at this point until we release them.
 	 */
@@ -750,7 +748,7 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj,
 //   if (obj->tiling_mode != I915_TILING_NONE)
 //       i915_gem_object_do_bit_17_swizzle(obj);
 
-    LEAVE();
+
 
 	return 0;
 
@@ -1069,8 +1067,6 @@ i915_gem_object_bind_to_gtt(struct drm_i915_gem_object *obj,
 	bool mappable, fenceable;
 	int ret;
 
-    ENTER();
-
 	if (obj->madv != I915_MADV_WILLNEED) {
 		DRM_ERROR("Attempting to bind a purgeable object\n");
 		return -EINVAL;
@@ -1197,7 +1193,6 @@ i915_gem_object_bind_to_gtt(struct drm_i915_gem_object *obj,
 
 	obj->map_and_fenceable = mappable && fenceable;
 
-    LEAVE();
 //   trace_i915_gem_object_bind(obj, map_and_fenceable);
 	return 0;
 }
@@ -1497,8 +1492,6 @@ i915_gem_object_pin(struct drm_i915_gem_object *obj,
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	int ret;
 
-    ENTER();
-
 	BUG_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT);
 //   WARN_ON(i915_verify_lists(dev));
 
@@ -1533,8 +1526,6 @@ i915_gem_object_pin(struct drm_i915_gem_object *obj,
 				       &dev_priv->mm.pinned_list);
 	}
 	obj->pin_mappable |= map_and_fenceable;
-
-    LEAVE();
 
 //   WARN_ON(i915_verify_lists(dev));
 	return 0;
@@ -1586,7 +1577,7 @@ struct drm_i915_gem_object *i915_gem_alloc_object(struct drm_device *dev,
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	struct drm_i915_gem_object *obj;
-    ENTER();
+
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (obj == NULL)
 		return NULL;
@@ -1629,7 +1620,7 @@ struct drm_i915_gem_object *i915_gem_alloc_object(struct drm_device *dev,
 	obj->madv = I915_MADV_WILLNEED;
 	/* Avoid an unnecessary call to unbind on the first bind. */
 	obj->map_and_fenceable = true;
-    LEAVE();
+
 	return obj;
 }
 

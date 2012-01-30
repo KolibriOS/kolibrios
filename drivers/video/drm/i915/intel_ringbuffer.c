@@ -147,8 +147,6 @@ static int init_ring_common(struct intel_ring_buffer *ring)
 	struct drm_i915_gem_object *obj = ring->obj;
 	u32 head;
 
-    ENTER();
-
 	/* Stop the ring if it's running. */
 	I915_WRITE_CTL(ring, 0);
 	I915_WRITE_HEAD(ring, 0);
@@ -203,7 +201,6 @@ static int init_ring_common(struct intel_ring_buffer *ring)
     ring->tail = I915_READ_TAIL(ring) & TAIL_ADDR;
     ring->space = ring_space(ring);
 
-    LEAVE();
 
 	return 0;
 }
@@ -285,9 +282,6 @@ static int init_render_ring(struct intel_ring_buffer *ring)
 {
 	struct drm_device *dev = ring->dev;
 	struct drm_i915_private *dev_priv = dev->dev_private;
-
-    ENTER();
-
 	int ret = init_ring_common(ring);
 
 	if (INTEL_INFO(dev)->gen > 3) {
@@ -307,8 +301,6 @@ static int init_render_ring(struct intel_ring_buffer *ring)
 		if (ret)
 			return ret;
 	}
-
-    LEAVE();
 
 	return ret;
 }
@@ -561,6 +553,7 @@ render_ring_put_irq(struct intel_ring_buffer *ring)
 	}
 	spin_unlock(&ring->irq_lock);
 }
+#endif
 
 void intel_ring_setup_status_page(struct intel_ring_buffer *ring)
 {
@@ -592,7 +585,6 @@ void intel_ring_setup_status_page(struct intel_ring_buffer *ring)
 	I915_WRITE(mmio, (u32)ring->status_page.gfx_addr);
 	POSTING_READ(mmio);
 }
-#endif
 
 static int
 bsd_ring_flush(struct intel_ring_buffer *ring,
@@ -706,6 +698,7 @@ bsd_ring_put_irq(struct intel_ring_buffer *ring)
 	}
 	spin_unlock(&ring->irq_lock);
 }
+#endif
 
 static int
 ring_dispatch_execbuffer(struct intel_ring_buffer *ring, u32 offset, u32 length)
@@ -793,7 +786,7 @@ static int init_status_page(struct intel_ring_buffer *ring)
 		goto err;
 	}
 
-//   i915_gem_object_set_cache_level(obj, I915_CACHE_LLC);
+//    i915_gem_object_set_cache_level(obj, I915_CACHE_LLC);
 
 	ret = i915_gem_object_pin(obj, 4096, true);
 	if (ret != 0) {
@@ -801,7 +794,7 @@ static int init_status_page(struct intel_ring_buffer *ring)
 	}
 
 	ring->status_page.gfx_addr = obj->gtt_offset;
-	ring->status_page.page_addr = kmap(obj->pages[0]);
+    ring->status_page.page_addr = MapIoMem(obj->pages[0], 4096, PG_SW);
 	if (ring->status_page.page_addr == NULL) {
 		memset(&dev_priv->hws_map, 0, sizeof(dev_priv->hws_map));
 		goto err_unpin;
@@ -816,20 +809,19 @@ static int init_status_page(struct intel_ring_buffer *ring)
 	return 0;
 
 err_unpin:
-	i915_gem_object_unpin(obj);
+ //  i915_gem_object_unpin(obj);
 err_unref:
-	drm_gem_object_unreference(&obj->base);
+ //  drm_gem_object_unreference(&obj->base);
 err:
 	return ret;
 }
-#endif
 
 int intel_init_ring_buffer(struct drm_device *dev,
 			   struct intel_ring_buffer *ring)
 {
-    struct drm_i915_gem_object *obj=NULL;
+	struct drm_i915_gem_object *obj;
 	int ret;
-    ENTER();
+
 	ring->dev = dev;
 	INIT_LIST_HEAD(&ring->active_list);
 	INIT_LIST_HEAD(&ring->request_list);
@@ -840,9 +832,9 @@ int intel_init_ring_buffer(struct drm_device *dev,
     ring->irq_mask = ~0;
 
 	if (I915_NEED_GFX_HWS(dev)) {
-//       ret = init_status_page(ring);
-//       if (ret)
-//           return ret;
+       ret = init_status_page(ring);
+       if (ret)
+           return ret;
 	}
 
     obj = i915_gem_alloc_object(dev, ring->size);
@@ -886,7 +878,7 @@ int intel_init_ring_buffer(struct drm_device *dev,
 	ring->effective_size = ring->size;
 	if (IS_I830(ring->dev))
 		ring->effective_size -= 128;
-    LEAVE();
+
 	return 0;
 
 err_unmap:
@@ -936,6 +928,8 @@ static int intel_wrap_ring_buffer(struct intel_ring_buffer *ring)
 	unsigned int *virt;
 	int rem = ring->size - ring->tail;
 
+    ENTER();
+
 	if (ring->space < rem) {
 		int ret = intel_wait_ring_buffer(ring, rem);
 		if (ret)
@@ -952,6 +946,7 @@ static int intel_wrap_ring_buffer(struct intel_ring_buffer *ring)
 	ring->tail = 0;
 	ring->space = ring_space(ring);
 
+    LEAVE();
 	return 0;
 }
 
@@ -962,6 +957,8 @@ int intel_wait_ring_buffer(struct intel_ring_buffer *ring, int n)
 	unsigned long end;
 	u32 head;
 
+    ENTER();
+
 	/* If the reported head position has wrapped or hasn't advanced,
 	 * fallback to the slow and accurate path.
 	 */
@@ -970,7 +967,10 @@ int intel_wait_ring_buffer(struct intel_ring_buffer *ring, int n)
 		ring->head = head;
 		ring->space = ring_space(ring);
 		if (ring->space >= n)
+        {
+            LEAVE();
 			return 0;
+        };
 	}
 
 //   trace_i915_ring_wait_begin(ring);
@@ -980,20 +980,20 @@ int intel_wait_ring_buffer(struct intel_ring_buffer *ring, int n)
 		ring->space = ring_space(ring);
 		if (ring->space >= n) {
 //           trace_i915_ring_wait_end(ring);
+            LEAVE();
 			return 0;
-		}
-
-		if (dev->primary->master) {
-			struct drm_i915_master_private *master_priv = dev->primary->master->driver_priv;
-			if (master_priv->sarea_priv)
-				master_priv->sarea_priv->perf_boxes |= I915_BOX_WAIT;
 		}
 
 		msleep(1);
 		if (atomic_read(&dev_priv->mm.wedged))
+        {
+            LEAVE();
 			return -EAGAIN;
+        };
 	} while (!time_after(jiffies, end));
 //   trace_i915_ring_wait_end(ring);
+    LEAVE();
+
 	return -EBUSY;
 }
 
@@ -1004,8 +1004,8 @@ int intel_ring_begin(struct intel_ring_buffer *ring,
 	int n = 4*num_dwords;
 	int ret;
 
-	if (unlikely(atomic_read(&dev_priv->mm.wedged)))
-		return -EIO;
+//   if (unlikely(atomic_read(&dev_priv->mm.wedged)))
+//       return -EIO;
 
 	if (unlikely(ring->tail + n > ring->effective_size)) {
 		ret = intel_wrap_ring_buffer(ring);
@@ -1041,7 +1041,7 @@ static const struct intel_ring_buffer render_ring = {
 //   .get_seqno      = ring_get_seqno,
 //   .irq_get        = render_ring_get_irq,
 //   .irq_put        = render_ring_put_irq,
-//   .dispatch_execbuffer    = render_ring_dispatch_execbuffer,
+   .dispatch_execbuffer    = render_ring_dispatch_execbuffer,
 //       .cleanup            = render_ring_cleanup,
 };
 
@@ -1059,7 +1059,7 @@ static const struct intel_ring_buffer bsd_ring = {
 //   .get_seqno      = ring_get_seqno,
 //   .irq_get        = bsd_ring_get_irq,
 //   .irq_put        = bsd_ring_put_irq,
-//   .dispatch_execbuffer    = ring_dispatch_execbuffer,
+   .dispatch_execbuffer    = ring_dispatch_execbuffer,
 };
 
 
@@ -1106,7 +1106,6 @@ static int gen6_ring_flush(struct intel_ring_buffer *ring,
 	return 0;
 }
 
-#if 0
 static int
 gen6_ring_dispatch_execbuffer(struct intel_ring_buffer *ring,
 			      u32 offset, u32 len)
@@ -1124,6 +1123,8 @@ gen6_ring_dispatch_execbuffer(struct intel_ring_buffer *ring,
 
        return 0;
 }
+
+#if 0
 
 static bool
 gen6_render_ring_get_irq(struct intel_ring_buffer *ring)
@@ -1172,7 +1173,7 @@ static const struct intel_ring_buffer gen6_bsd_ring = {
 //   .get_seqno      = ring_get_seqno,
 //   .irq_get        = gen6_bsd_ring_get_irq,
 //   .irq_put        = gen6_bsd_ring_put_irq,
-//   .dispatch_execbuffer    = gen6_ring_dispatch_execbuffer,
+   .dispatch_execbuffer    = gen6_ring_dispatch_execbuffer,
 };
 
 #if 0
@@ -1304,7 +1305,7 @@ static const struct intel_ring_buffer gen6_blt_ring = {
 //       .get_seqno      = ring_get_seqno,
 //       .irq_get            = blt_ring_get_irq,
 //       .irq_put            = blt_ring_put_irq,
-//       .dispatch_execbuffer    = gen6_ring_dispatch_execbuffer,
+       .dispatch_execbuffer    = gen6_ring_dispatch_execbuffer,
 //       .cleanup            = blt_ring_cleanup,
 };
 
@@ -1312,7 +1313,7 @@ int intel_init_render_ring_buffer(struct drm_device *dev)
 {
 	drm_i915_private_t *dev_priv = dev->dev_private;
 	struct intel_ring_buffer *ring = &dev_priv->ring[RCS];
-    ENTER();
+
 	*ring = render_ring;
 	if (INTEL_INFO(dev)->gen >= 6) {
        ring->add_request = gen6_add_request;
@@ -1327,7 +1328,7 @@ int intel_init_render_ring_buffer(struct drm_device *dev)
 		ring->status_page.page_addr = dev_priv->status_page_dmah->vaddr;
 		memset(ring->status_page.page_addr, 0, PAGE_SIZE);
 	}
-    LEAVE();
+
 	return intel_init_ring_buffer(dev, ring);
 }
 

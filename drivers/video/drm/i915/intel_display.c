@@ -2196,7 +2196,6 @@ intel_pipe_set_base(struct drm_crtc *crtc, int x, int y,
     return 0;
 
 #if 0
-
 	if (!dev->primary->master)
     {
         LEAVE();
@@ -3203,6 +3202,7 @@ static void intel_crtc_dpms(struct drm_crtc *crtc, int mode)
 
 	dev_priv->display.dpms(crtc, mode);
 
+#if 0
 	if (!dev->primary->master)
 		return;
 
@@ -3225,6 +3225,8 @@ static void intel_crtc_dpms(struct drm_crtc *crtc, int mode)
 		DRM_ERROR("Can't update pipe %c in SAREA\n", pipe_name(pipe));
 		break;
 	}
+#endif
+
 }
 
 static void intel_crtc_disable(struct drm_crtc *crtc)
@@ -6365,8 +6367,6 @@ static void intel_crtc_init(struct drm_device *dev, int pipe)
 	struct intel_crtc *intel_crtc;
 	int i;
 
-    ENTER();
-
 	intel_crtc = kzalloc(sizeof(struct intel_crtc) + (INTELFB_CONN_LIMIT * sizeof(struct drm_connector *)), GFP_KERNEL);
 	if (intel_crtc == NULL)
 		return;
@@ -6408,8 +6408,6 @@ static void intel_crtc_init(struct drm_device *dev, int pipe)
 	drm_crtc_helper_add(&intel_crtc->base, &intel_helper_funcs);
 
 	intel_crtc->busy = false;
-
-    LEAVE();
 
 //	setup_timer(&intel_crtc->idle_timer, intel_crtc_idle_timer,
 //		    (unsigned long)intel_crtc);
@@ -6724,9 +6722,6 @@ void ironlake_enable_drps(struct drm_device *dev)
 	dev_priv->last_count2 = I915_READ(0x112f4);
 //   getrawmonotonic(&dev_priv->last_time2);
 }
-
-
-
 
 
 
