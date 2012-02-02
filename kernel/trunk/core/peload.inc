@@ -306,6 +306,7 @@ __exports:
 \
           get_display,           'GetDisplay',         \
           set_screen,            'SetScreen',          \
+          window._.get_rect,     'GetWindowRect',      \      ; gcc fastcall
           pci_api_drv,           'PciApi',             \
           pci_read8,             'PciRead8',           \      ; stdcall
           pci_read16,            'PciRead16',          \      ; stdcall

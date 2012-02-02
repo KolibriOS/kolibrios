@@ -2190,3 +2190,28 @@ window._.end_moving__box: ;//////////////////////////////////////////////////
         push    eax ebx esi
         xor     esi, esi
         jmp     window._.draw_negative_box.1
+
+
+;------------------------------------------------------------------------------
+window._.get_rect: ;/////////////////////////////////////////////////////
+;------------------------------------------------------------------------------
+;? <description>  void __fastcall get_window_rect(struct RECT* rc);
+;------------------------------------------------------------------------------
+;> ecx = pointer to RECT
+;------------------------------------------------------------------------------
+        mov     eax, [TASK_BASE]
+
+        mov     edx, [eax-twdw + WDATA.box.left]
+        mov     [ecx+RECT.left], edx
+
+        add     edx, [eax-twdw + WDATA.box.width]
+        mov     [ecx+RECT.right], edx
+
+        mov     edx, [eax-twdw + WDATA.box.top]
+        mov     [ecx+RECT.top], edx
+
+        add     edx, [eax-twdw + WDATA.box.height]
+        mov     [ecx+RECT.bottom], edx
+
+        ret
+
