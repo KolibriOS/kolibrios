@@ -55,5 +55,6 @@ struct ubitmap
     void  *data;
 };
 
-int create_bitmap(struct ubitmap *pbitmap, int width, int height);
+int create_bitmap(struct ubitmap *pbitmap);
+int init_bitmaps();
 

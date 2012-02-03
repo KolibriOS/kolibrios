@@ -12,14 +12,13 @@
 #include <linux/pci.h>
 #include <syscall.h>
 
-typedef struct bitmap bitmap_t;
+#include "bitmap.h"
 
 void parse_cmdline(char *cmdline, char *log);
 int _stdcall display_handler(ioctl_t *io);
 int init_agp(void);
 
 int create_video(int width, int height, u32_t *outp);
-int create_bitmap(bitmap_t **pbitmap, int width, int height);
 int video_blit(uint64_t src_offset, int  x, int y,
                     int w, int h, int pitch);
 
@@ -52,7 +51,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("i915_early_preview second edition\n cmdline: %s\n", cmdline);
+    dbgprintf("i915 blitter preview\n cmdline: %s\n", cmdline);
 
     enum_pci_devices();
 
@@ -78,9 +77,9 @@ u32_t drvEntry(int action, char *cmdline)
 #define SRV_ENUM_MODES      1
 #define SRV_SET_MODE        2
 
-#define SRV_CREATE_VIDEO    9
-#define SRV_BLIT_VIDEO     10
-#define SRV_CREATE_BITMAP  11
+#define SRV_CREATE_BITMAP  10
+
+#define SRV_BLIT_VIDEO     20
 
 #define check_input(size) \
     if( unlikely((inp==NULL)||(io->inp_size != (size))) )   \
@@ -124,25 +123,18 @@ int _stdcall display_handler(ioctl_t *io)
                 retval = set_user_mode((videomode_t*)inp);
             break;
 
-        case SRV_CREATE_VIDEO:
-            check_input(2);
-            check_output(4);
-            retval = create_video(inp[0], inp[1], outp);
+        case SRV_CREATE_BITMAP:
+            check_input(5);
+            retval = create_bitmap((struct ubitmap*)inp);
             break;
 
+
         case SRV_BLIT_VIDEO:
-            video_blit( ((uint64_t*)inp)[0], inp[2], inp[3],
-                    inp[4], inp[5], inp[6]);
+            blit_video( inp[0], inp[1], inp[2],
+                    inp[3], inp[4], inp[5], inp[6]);
 
             retval = 0;
             break;
-
-        case SRV_CREATE_BITMAP:
-            check_input(8);
-            check_output(4);
-            retval = create_bitmap((bitmap_t**)outp, inp[0], inp[1]);
-            break;
-
     };
 
     return retval;

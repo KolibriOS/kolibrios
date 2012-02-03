@@ -53,7 +53,7 @@ int i915_panel_ignore_lid __read_mostly         =  0;
 
 unsigned int i915_powersave  __read_mostly      =  0;
 
-unsigned int i915_enable_rc6 __read_mostly      =  0;
+unsigned int i915_enable_rc6 __read_mostly      = -1;
 
 unsigned int i915_enable_fbc __read_mostly      =  0;
 
@@ -66,7 +66,7 @@ int i915_vbt_sdvo_panel_type __read_mostly      = -1;
 #define PCI_VENDOR_ID_INTEL        0x8086
 
 #define INTEL_VGA_DEVICE(id, info) {        \
-    .class = PCI_CLASS_DISPLAY_VGA << 8,    \
+	.class = PCI_BASE_CLASS_DISPLAY << 16,	\
     .class_mask = 0xff0000,                 \
     .vendor = 0x8086,                       \
     .device = id,                           \
@@ -245,7 +245,7 @@ static const struct pci_device_id pciidlist[] = {       /* aka */
 #define INTEL_PCH_CPT_DEVICE_ID_TYPE    0x1c00
 #define INTEL_PCH_PPT_DEVICE_ID_TYPE    0x1e00
 
-void intel_detect_pch (struct drm_device *dev)
+void intel_detect_pch(struct drm_device *dev)
 {
     struct drm_i915_private *dev_priv = dev->dev_private;
     struct pci_dev *pch;
@@ -277,7 +277,7 @@ void intel_detect_pch (struct drm_device *dev)
     }
 }
 
-static void __gen6_gt_force_wake_get(struct drm_i915_private *dev_priv)
+void __gen6_gt_force_wake_get(struct drm_i915_private *dev_priv)
 {
     int count;
 
@@ -293,6 +293,22 @@ static void __gen6_gt_force_wake_get(struct drm_i915_private *dev_priv)
         udelay(10);
 }
 
+void __gen6_gt_force_wake_mt_get(struct drm_i915_private *dev_priv)
+{
+	int count;
+
+	count = 0;
+	while (count++ < 50 && (I915_READ_NOTRACE(FORCEWAKE_MT_ACK) & 1))
+		udelay(10);
+
+	I915_WRITE_NOTRACE(FORCEWAKE_MT, (1<<16) | 1);
+	POSTING_READ(FORCEWAKE_MT);
+
+	count = 0;
+	while (count++ < 50 && (I915_READ_NOTRACE(FORCEWAKE_MT_ACK) & 1) == 0)
+		udelay(10);
+}
+
 /*
  * Generally this is called implicitly by the register read function. However,
  * if some sequence requires the GT to not power down then this function should
@@ -301,17 +317,24 @@ static void __gen6_gt_force_wake_get(struct drm_i915_private *dev_priv)
  */
 void gen6_gt_force_wake_get(struct drm_i915_private *dev_priv)
 {
-//    WARN_ON(!mutex_is_locked(&dev_priv->dev->struct_mutex));
+	unsigned long irqflags;
 
-    /* Forcewake is atomic in case we get in here without the lock */
-    if (atomic_add_return(1, &dev_priv->forcewake_count) == 1)
-        __gen6_gt_force_wake_get(dev_priv);
+	spin_lock_irqsave(&dev_priv->gt_lock, irqflags);
+	if (dev_priv->forcewake_count++ == 0)
+		dev_priv->display.force_wake_get(dev_priv);
+	spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags);
 }
 
-static void __gen6_gt_force_wake_put(struct drm_i915_private *dev_priv)
+void __gen6_gt_force_wake_put(struct drm_i915_private *dev_priv)
 {
     I915_WRITE_NOTRACE(FORCEWAKE, 0);
     POSTING_READ(FORCEWAKE);
+}
+
+void __gen6_gt_force_wake_mt_put(struct drm_i915_private *dev_priv)
+{
+	I915_WRITE_NOTRACE(FORCEWAKE_MT, (1<<16) | 0);
+	POSTING_READ(FORCEWAKE_MT);
 }
 
 /*
@@ -319,15 +342,17 @@ static void __gen6_gt_force_wake_put(struct drm_i915_private *dev_priv)
  */
 void gen6_gt_force_wake_put(struct drm_i915_private *dev_priv)
 {
-//    WARN_ON(!mutex_is_locked(&dev_priv->dev->struct_mutex));
+	unsigned long irqflags;
 
-    if (atomic_dec_and_test(&dev_priv->forcewake_count))
-        __gen6_gt_force_wake_put(dev_priv);
+	spin_lock_irqsave(&dev_priv->gt_lock, irqflags);
+	if (--dev_priv->forcewake_count == 0)
+		dev_priv->display.force_wake_put(dev_priv);
+	spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags);
 }
 
 void __gen6_gt_wait_for_fifo(struct drm_i915_private *dev_priv)
 {
-    if (dev_priv->gt_fifo_count < GT_FIFO_NUM_RESERVED_ENTRIES ) {
+	if (dev_priv->gt_fifo_count < GT_FIFO_NUM_RESERVED_ENTRIES) {
         int loop = 500;
         u32 fifo = I915_READ_NOTRACE(GT_FIFO_FREE_ENTRIES);
         while (fifo <= GT_FIFO_NUM_RESERVED_ENTRIES && loop--) {
@@ -441,3 +466,39 @@ err_g4:
 }
 
 
+#define __i915_read(x, y) \
+u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
+	u##x val = 0; \
+	if (NEEDS_FORCE_WAKE((dev_priv), (reg))) { \
+		unsigned long irqflags; \
+		spin_lock_irqsave(&dev_priv->gt_lock, irqflags); \
+		if (dev_priv->forcewake_count == 0) \
+			dev_priv->display.force_wake_get(dev_priv); \
+		val = read##y(dev_priv->regs + reg); \
+		if (dev_priv->forcewake_count == 0) \
+			dev_priv->display.force_wake_put(dev_priv); \
+		spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags); \
+	} else { \
+		val = read##y(dev_priv->regs + reg); \
+	} \
+	return val; \
+}
+
+__i915_read(8, b)
+__i915_read(16, w)
+__i915_read(32, l)
+__i915_read(64, q)
+#undef __i915_read
+
+#define __i915_write(x, y) \
+void i915_write##x(struct drm_i915_private *dev_priv, u32 reg, u##x val) { \
+	if (NEEDS_FORCE_WAKE((dev_priv), (reg))) { \
+		__gen6_gt_wait_for_fifo(dev_priv); \
+	} \
+	write##y(val, dev_priv->regs + reg); \
+}
+__i915_write(8, b)
+__i915_write(16, w)
+__i915_write(32, l)
+__i915_write(64, q)
+#undef __i915_write

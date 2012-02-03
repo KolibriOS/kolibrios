@@ -191,48 +191,31 @@ int init_display_kms(struct drm_device *dev)
     };
     safe_sti(ifl);
 
-    {
 #define XY_COLOR_BLT        ((2<<29)|(0x50<<22)|(0x4))
 #define BLT_WRITE_ALPHA     (1<<21)
 #define BLT_WRITE_RGB       (1<<20)
 
+#if 1
+    {
+
         drm_i915_private_t *dev_priv = dev->dev_private;
         struct drm_i915_gem_object *obj;
         struct intel_ring_buffer *ring;
-
-        u32_t br13, cmd, *b;
-
-        int      n=0;
-
-        cmd =  XY_COLOR_BLT | BLT_WRITE_ALPHA | BLT_WRITE_RGB;
-        br13 = os_display->pitch;
-        br13 |= 0xF0 << 16;
-        br13 |= 3 << 24;
 
         obj = i915_gem_alloc_object(dev, 4096);
         i915_gem_object_pin(obj, 4096, true);
 
         cmd_buffer = MapIoMem(obj->pages[0], 4096, PG_SW|PG_NOCACHE);
         cmd_offset = obj->gtt_offset;
+    };
+#endif
 
-        b = (u32_t*)cmd_buffer;
-        b[n++] = cmd;
-        b[n++] = br13;
-        b[n++] = 0; // top, left
-        b[n++] = (128 << 16) | 128; // bottom, right
-        b[n++] = 0; // dst
-        b[n++] = 0x0000FF00;
-        b[n++] = MI_BATCH_BUFFER_END;
-        if( n & 1)
-            b[n++] = MI_NOOP;
+    int err;
 
-//        cmd_buffer = (u32_t)&b[n];
-//        i915_gem_object_set_to_gtt_domain(obj, false);
-
-
-        ring = &dev_priv->ring[BCS];
-        ring->dispatch_execbuffer(ring,cmd_offset, n*4);
-
+    err = init_bitmaps();
+    if( !err )
+    {
+        printf("Initialize bitmap manager\n");
     };
 
     LEAVE();
@@ -303,7 +286,11 @@ do_set:
 
         fb->width  = reqmode->width;
         fb->height = reqmode->height;
-        fb->pitch  = ALIGN(reqmode->width * 4, 64);
+        fb->pitches[0]  = ALIGN(reqmode->width * 4, 64);
+        fb->pitches[1]  = ALIGN(reqmode->width * 4, 64);
+        fb->pitches[2]  = ALIGN(reqmode->width * 4, 64);
+        fb->pitches[3]  = ALIGN(reqmode->width * 4, 64);
+
         fb->bits_per_pixel = 32;
         fb->depth == 24;
 
@@ -320,13 +307,13 @@ do_set:
         {
             os_display->width    = fb->width;
             os_display->height   = fb->height;
-            os_display->pitch    = fb->pitch;
+            os_display->pitch    = fb->pitches[0];
             os_display->vrefresh = drm_mode_vrefresh(mode);
 
-            sysSetScreen(fb->width, fb->height, fb->pitch);
+            sysSetScreen(fb->width, fb->height, fb->pitches[0]);
 
             dbgprintf("new mode %d x %d pitch %d\n",
-                       fb->width, fb->height, fb->pitch);
+                       fb->width, fb->height, fb->pitches[0]);
         }
         else
             DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
@@ -406,6 +393,8 @@ int set_user_mode(videomode_t *mode)
 
 void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor)
 {
+/*  FIXME    synchronization */
+
     list_del(&cursor->list);
 //    radeon_bo_unpin(cursor->robj);
 //    KernelFree(cursor->data);
@@ -592,68 +581,36 @@ extern struct drm_device *main_device;
 
 #define XY_SRC_COPY_BLT_CMD     ((2<<29)|(0x53<<22)|6)
 
-int video_blit(uint64_t src_offset, int  x, int y,
-                    int w, int h, int pitch)
+
+typedef struct
 {
-
-    drm_i915_private_t *dev_priv = main_device->dev_private;
-    struct intel_ring_buffer *ring;
-
-    u32_t br13, cmd, *b;
-    u32_t offset;
-
-    int      n=0;
-
-//    if( cmd_buffer & 0xF80 )
-//        cmd_buffer&= 0xFFFFF000;
-
-//    b = (u32_t*)ALIGN(cmd_buffer,16);
-
-//    offset = cmd_offset + ((u32_t)b & 0xFFF);
-
-    b = cmd_buffer;
-
-    cmd =  XY_SRC_COPY_BLT_CMD | BLT_WRITE_RGB;
-    br13 = os_display->pitch;
-    br13 |= 0xCC << 16;
-    br13 |= 3 << 24;
-
-    b[n++] = cmd;
-    b[n++] = br13;
-    b[n++] = (y << 16) | x;
-    b[n++] = ( (y+h) << 16) | (x+w); // bottom, right
-    b[n++] = 0; // dst_offset
-    b[n++] = 0; //src_top|src_left
-
-    b[n++] = pitch;
-    b[n++] = (u32_t)src_offset;
-
-    b[n++] = MI_BATCH_BUFFER_END;
-    if( n & 1)
-        b[n++] = MI_NOOP;
-
-//    i915_gem_object_set_to_gtt_domain(obj, false);
-
-    ring = &dev_priv->ring[BCS];
-    ring->dispatch_execbuffer(ring, cmd_offset, n*4);
-
-    intel_ring_begin(ring, 4);
-//    if (ret)
-//        return ret;
-
-//    cmd = MI_FLUSH_DW;
-//    if (invalidate & I915_GEM_GPU_DOMAINS)
-//        cmd |= MI_INVALIDATE_TLB | MI_INVALIDATE_BSD;
-    intel_ring_emit(ring, MI_FLUSH_DW);
-    intel_ring_emit(ring, 0);
-    intel_ring_emit(ring, 0);
-    intel_ring_emit(ring, MI_NOOP);
-    intel_ring_advance(ring);
+    int left;
+    int top;
+    int right;
+    int bottom;
+}rect_t;
 
 
-fail:
-    return -1;
-};
+#include "clip.inc"
+
+void  FASTCALL GetWindowRect(rect_t *rc)__asm__("GetWindowRect");
+
+#define CURRENT_TASK             (0x80003000)
+
+static u32_t get_display_map()
+{
+    u32_t   addr;
+
+    addr = (u32_t)os_display;
+    addr+= sizeof(display_t);            /*  shoot me  */
+    return *(u32_t*)addr;
+}
+
+#define XY_SRC_COPY_CHROMA_CMD     ((2<<29)|(0x73<<22)|8)
+#define ROP_COPY_SRC               0xCC
+#define FORMAT8888                 3
+
+typedef int v4si __attribute__ ((vector_size (16)));
 
 
 int blit_video(u32 hbitmap, int  dst_x, int dst_y,
@@ -663,42 +620,188 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
     struct intel_ring_buffer *ring;
 
     bitmap_t  *bitmap;
-    u32_t br13, cmd, *b;
-    u32_t offset;
+    rect_t     winrc;
+    clip_t     dst_clip;
+    clip_t     src_clip;
+    u32_t      width;
+    u32_t      height;
 
+    u32_t      br13, cmd, slot_mask, *b;
+    u32_t      offset;
+    u8         slot;
     int      n=0;
 
     if(unlikely(hbitmap==0))
         return -1;
 
-    bitmap = hman_get_data(&bm_man, hbitmap);
+    bitmap = (bitmap_t*)hman_get_data(&bm_man, hbitmap);
 
     if(unlikely(bitmap==NULL))
         return -1;
 
-//    if( cmd_buffer & 0xF80 )
-//        cmd_buffer&= 0xFFFFF000;
 
-//    b = (u32_t*)ALIGN(cmd_buffer,16);
+    GetWindowRect(&winrc);
 
-//    offset = cmd_offset + ((u32_t)b & 0xFFF);
+    dst_clip.xmin   = 0;
+    dst_clip.ymin   = 0;
+    dst_clip.xmax   = winrc.right-winrc.left-1;
+    dst_clip.ymax   = winrc.bottom -winrc.top -1;
 
-    b = cmd_buffer;
+    src_clip.xmin   = 0;
+    src_clip.ymin   = 0;
+    src_clip.xmax   = bitmap->width  - 1;
+    src_clip.ymax   = bitmap->height - 1;
 
-    cmd =  XY_SRC_COPY_BLT_CMD | BLT_WRITE_RGB;
+    width  = w;
+    height = h;
+
+    if( blit_clip(&dst_clip, &dst_x, &dst_y,
+                  &src_clip, &src_x, &src_y,
+                  &width, &height) )
+        return 0;
+
+    dst_x+= winrc.left;
+    dst_y+= winrc.top;
+
+    slot = *((u8*)CURRENT_TASK);
+
+    slot_mask = (u32_t)slot<<24;
+
+    {
+#if 0
+        static v4si write_mask = {0xFF000000, 0xFF000000,
+                                  0xFF000000, 0xFF000000};
+
+        u8* src_offset;
+        u8* dst_offset;
+
+        src_offset = (u8*)(src_y*bitmap->pitch + src_x*4);
+        src_offset += (u32)bitmap->uaddr;
+
+        dst_offset = (u8*)(dst_y*os_display->width + dst_x);
+        dst_offset+= get_display_map();
+
+        u32_t tmp_h = height;
+
+        __asm__ __volatile__ (
+        "movdqa     %[write_mask],  %%xmm7    \n"
+        "movd       %[slot_mask],   %%xmm6    \n"
+        "punpckldq  %%xmm6, %%xmm6            \n"
+        "punpcklqdq %%xmm6, %%xmm6            \n"
+        :: [write_mask] "m" (write_mask),
+           [slot_mask]  "g" (slot_mask)
+        :"xmm7", "xmm6");
+
+        while( tmp_h--)
+        {
+            u32_t tmp_w = width;
+
+            u8* tmp_src = src_offset;
+            u8* tmp_dst = dst_offset;
+
+            src_offset+= bitmap->pitch;
+            dst_offset+= os_display->width;
+
+            while( tmp_w >= 8 )
+            {
+                __asm__ __volatile__ (
+                "movq       (%0),   %%xmm0            \n"
+                "punpcklbw  %%xmm0, %%xmm0            \n"
+                "movdqa     %%xmm0, %%xmm1            \n"
+                "punpcklwd  %%xmm0, %%xmm0            \n"
+                "punpckhwd  %%xmm1, %%xmm1            \n"
+                "pcmpeqb    %%xmm6, %%xmm0            \n"
+                "pcmpeqb    %%xmm6, %%xmm1            \n"
+                "maskmovdqu %%xmm7, %%xmm0            \n"
+                "addl       $16, %%edi                \n"
+                "maskmovdqu %%xmm7, %%xmm1            \n"
+                :: "r" (tmp_dst), "D" (tmp_src)
+                :"xmm0", "xmm1");
+                __asm__ __volatile__ ("":::"edi");
+                tmp_w -= 8;
+                tmp_src += 32;
+                tmp_dst += 8;
+            };
+
+            if( tmp_w >= 4 )
+            {
+                __asm__ __volatile__ (
+                "movd       (%0),   %%xmm0            \n"
+                "punpcklbw  %%xmm0, %%xmm0            \n"
+                "punpcklwd  %%xmm0, %%xmm0            \n"
+                "pcmpeqb    %%xmm6, %%xmm0            \n"
+                "maskmovdqu %%xmm7, %%xmm0            \n"
+                :: "r" (tmp_dst), "D" (tmp_src)
+                :"xmm0");
+                tmp_w -= 4;
+                tmp_src += 16;
+                tmp_dst += 4;
+            };
+
+            while( tmp_w--)
+            {
+                *(tmp_src+3) = (*tmp_dst==slot)?0xFF:0x00;
+                tmp_src+=4;
+                tmp_dst++;
+            };
+        };
+#else
+        u8* src_offset;
+        u8* dst_offset;
+
+        src_offset = (u8*)(src_y*bitmap->pitch + src_x*4);
+        src_offset += (u32)bitmap->uaddr;
+
+        dst_offset = (u8*)(dst_y*os_display->width + dst_x);
+        dst_offset+= get_display_map();
+
+        u32_t tmp_h = height;
+
+        while( tmp_h--)
+        {
+            u32_t tmp_w = width;
+
+            u8* tmp_src = src_offset;
+            u8* tmp_dst = dst_offset;
+
+            src_offset+= bitmap->pitch;
+            dst_offset+= os_display->width;
+
+            while( tmp_w--)
+            {
+                *(tmp_src+3) = (*tmp_dst==slot)?0xFF:0x00;
+                tmp_src+=4;
+                tmp_dst++;
+            };
+        };
+    }
+#endif
+
+    if((cmd_buffer & 0xFC0)==0xFC0)
+        cmd_buffer&= 0xFFFFF000;
+
+    b = (u32_t*)ALIGN(cmd_buffer,16);
+
+    offset = cmd_offset + ((u32_t)b & 0xFFF);
+
+    cmd = XY_SRC_COPY_CHROMA_CMD | BLT_WRITE_RGB | BLT_WRITE_ALPHA;
+    cmd |= 3 << 17;
+
     br13 = os_display->pitch;
-    br13 |= 0xCC << 16;
-    br13 |= 3 << 24;
+    br13|= ROP_COPY_SRC << 16;
+    br13|= FORMAT8888   << 24;
 
     b[n++] = cmd;
     b[n++] = br13;
-    b[n++] = (dst_y << 16) | dst_x;
-    b[n++] = ( (dst_y+h) << 16) | (dst_x+w); // bottom, right
-    b[n++] = 0; // dst_offset
-    b[n++] = (src_y << 16) | src_x;
+    b[n++] = (dst_y << 16) | dst_x;                   // left, top
+    b[n++] = ((dst_y+height-1)<< 16)|(dst_x+width-1); // bottom, right
+    b[n++] = 0;                          // destination
+    b[n++] = (src_y << 16) | src_x;      // source left & top
+    b[n++] = bitmap->pitch;              // source pitch
+    b[n++] = bitmap->gaddr;              // source
 
-    b[n++] = bitmap->pitch;
-    b[n++] = bitmap->gaddr;
+    b[n++] = 0;                          // Transparency Color Low
+    b[n++] = 0x00FFFFFF;                 // Transparency Color High
 
     b[n++] = MI_BATCH_BUFFER_END;
     if( n & 1)
@@ -706,7 +809,11 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
 
 //    i915_gem_object_set_to_gtt_domain(obj, false);
 
-    ring = &dev_priv->ring[BCS];
+    if (HAS_BLT(main_device))
+        ring = &dev_priv->ring[BCS];
+    else
+        ring = &dev_priv->ring[RCS];
+
     ring->dispatch_execbuffer(ring, cmd_offset, n*4);
 
     intel_ring_begin(ring, 4);

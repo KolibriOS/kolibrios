@@ -230,7 +230,7 @@ i915_gem_get_aperture_ioctl(struct drm_device *dev, void *data,
 	mutex_unlock(&dev->struct_mutex);
 
 	args->aper_size = dev_priv->mm.gtt_total;
-	args->aper_available_size = args->aper_size -pinned;
+	args->aper_available_size = args->aper_size - pinned;
 
 	return 0;
 }
@@ -246,6 +246,8 @@ i915_gem_create(struct drm_file *file,
 	u32 handle;
 
 	size = roundup(size, PAGE_SIZE);
+	if (size == 0)
+		return -EINVAL;
 
 	/* Allocate the new object */
 	obj = i915_gem_alloc_object(dev, size);
@@ -1186,7 +1188,7 @@ i915_gem_object_bind_to_gtt(struct drm_i915_gem_object *obj,
 
 	fenceable =
 		obj->gtt_space->size == fence_size &&
-		(obj->gtt_space->start & (fence_alignment -1)) == 0;
+		(obj->gtt_space->start & (fence_alignment - 1)) == 0;
 
 	mappable =
 		obj->gtt_offset + obj->base.size <= dev_priv->mm.gtt_mappable_end;
@@ -1565,13 +1567,6 @@ i915_gem_object_pin(struct drm_i915_gem_object *obj,
 
 
 
-
-
-
-
-
-
-
 struct drm_i915_gem_object *i915_gem_alloc_object(struct drm_device *dev,
 						  size_t size)
 {
@@ -1593,7 +1588,7 @@ struct drm_i915_gem_object *i915_gem_alloc_object(struct drm_device *dev,
 	obj->base.write_domain = I915_GEM_DOMAIN_CPU;
 	obj->base.read_domains = I915_GEM_DOMAIN_CPU;
 
-	if (IS_GEN6(dev)) {
+	if (IS_GEN6(dev) || IS_GEN7(dev)) {
 		/* On Gen6, we can have the GPU use the LLC (the CPU
 		 * cache) for about a 10% performance improvement
 		 * compared to uncached.  Graphics requests other than
@@ -1787,7 +1782,7 @@ i915_gem_load(struct drm_device *dev)
     INIT_LIST_HEAD(&dev_priv->mm.gtt_list);
     for (i = 0; i < I915_NUM_RINGS; i++)
         init_ring_lists(&dev_priv->ring[i]);
-    for (i = 0; i < 16; i++)
+	for (i = 0; i < I915_MAX_NUM_FENCES; i++)
         INIT_LIST_HEAD(&dev_priv->fence_regs[i].lru_list);
 //    INIT_DELAYED_WORK(&dev_priv->mm.retire_work,
 //              i915_gem_retire_work_handler);
