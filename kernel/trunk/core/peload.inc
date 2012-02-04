@@ -293,6 +293,7 @@ __exports:
           create_ring_buffer,    'CreateRingBuffer',   \      ; stdcall
           destroy_kernel_object, 'DestroyObject',      \
           free_kernel_space,     'FreeKernelSpace',    \      ; stdcall
+          free_page,             'FreePage',           \      ; eax
           kernel_alloc,          'KernelAlloc',        \      ; stdcall
           kernel_free,           'KernelFree',         \      ; stdcall
           malloc,                'Kmalloc',            \
