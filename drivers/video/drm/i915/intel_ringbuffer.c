@@ -364,9 +364,9 @@ init_pipe_control(struct intel_ring_buffer *ring)
 	return 0;
 
 err_unpin:
-//   i915_gem_object_unpin(obj);
+	i915_gem_object_unpin(obj);
 err_unref:
-//   drm_gem_object_unreference(&obj->base);
+	drm_gem_object_unreference(&obj->base);
 err:
 	kfree(pc);
 	return ret;
@@ -383,8 +383,8 @@ cleanup_pipe_control(struct intel_ring_buffer *ring)
 
 	obj = pc->obj;
 //	kunmap(obj->pages[0]);
-//	i915_gem_object_unpin(obj);
-//	drm_gem_object_unreference(&obj->base);
+	i915_gem_object_unpin(obj);
+	drm_gem_object_unreference(&obj->base);
 
 	kfree(pc);
 	ring->private = NULL;
@@ -948,8 +948,8 @@ static void cleanup_status_page(struct intel_ring_buffer *ring)
 		return;
 
 	kunmap(obj->pages[0]);
-//   i915_gem_object_unpin(obj);
-//   drm_gem_object_unreference(&obj->base);
+    i915_gem_object_unpin(obj);
+	drm_gem_object_unreference(&obj->base);
 	ring->status_page.obj = NULL;
 
 	memset(&dev_priv->hws_map, 0, sizeof(dev_priv->hws_map));
@@ -992,9 +992,9 @@ static int init_status_page(struct intel_ring_buffer *ring)
 	return 0;
 
 err_unpin:
- //  i915_gem_object_unpin(obj);
+	i915_gem_object_unpin(obj);
 err_unref:
- //  drm_gem_object_unreference(&obj->base);
+	drm_gem_object_unreference(&obj->base);
 err:
 	return ret;
 }
@@ -1065,12 +1065,11 @@ int intel_init_ring_buffer(struct drm_device *dev,
 	return 0;
 
 err_unmap:
-//   drm_core_ioremapfree(&ring->map, dev);
     FreeKernelSpace(ring->virtual_start);
 err_unpin:
-//   i915_gem_object_unpin(obj);
+	i915_gem_object_unpin(obj);
 err_unref:
-//   drm_gem_object_unreference(&obj->base);
+	drm_gem_object_unreference(&obj->base);
 	ring->obj = NULL;
 err_hws:
 //   cleanup_status_page(ring);
@@ -1096,8 +1095,8 @@ void intel_cleanup_ring_buffer(struct intel_ring_buffer *ring)
 
 //   drm_core_ioremapfree(&ring->map, ring->dev);
 
-//   i915_gem_object_unpin(ring->obj);
-//   drm_gem_object_unreference(&ring->obj->base);
+    i915_gem_object_unpin(ring->obj);
+	drm_gem_object_unreference(&ring->obj->base);
 	ring->obj = NULL;
 
 	if (ring->cleanup)
@@ -1156,7 +1155,7 @@ int intel_wait_ring_buffer(struct intel_ring_buffer *ring, int n)
         };
 	}
 
-//   trace_i915_ring_wait_begin(ring);
+
 	end = jiffies + 3 * HZ;
 	do {
 		ring->head = I915_READ_HEAD(ring);
@@ -1174,7 +1173,6 @@ int intel_wait_ring_buffer(struct intel_ring_buffer *ring, int n)
 			return -EAGAIN;
         };
 	} while (!time_after(jiffies, end));
-//   trace_i915_ring_wait_end(ring);
     LEAVE();
 
 	return -EBUSY;
@@ -1411,21 +1409,26 @@ static int blt_ring_init(struct intel_ring_buffer *ring)
 
 		ret = i915_gem_object_pin(obj, 4096, true);
 		if (ret) {
-//           drm_gem_object_unreference(&obj->base);
+			drm_gem_object_unreference(&obj->base);
 			return ret;
 		}
 
-        ptr = ioremap(obj->pages[0], 4096);
+        ptr = MapIoMem(obj->pages[0], 4096, PG_SW);
+        obj->mapped = ptr;
+
 		*ptr++ = MI_BATCH_BUFFER_END;
 		*ptr++ = MI_NOOP;
-//        iounmap(obj->pages[0]);
 
 		ret = i915_gem_object_set_to_gtt_domain(obj, false);
 		if (ret) {
-//           i915_gem_object_unpin(obj);
-//           drm_gem_object_unreference(&obj->base);
+           i915_gem_object_unpin(obj);
+			drm_gem_object_unreference(&obj->base);
+        	FreeKernelSpace(ptr);
+        	obj->mapped = NULL;
 			return ret;
 		}
+        FreeKernelSpace(ptr);
+        obj->mapped = NULL;
 
 		ring->private = obj;
 	}

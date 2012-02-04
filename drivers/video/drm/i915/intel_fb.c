@@ -144,7 +144,7 @@ static int intelfb_create(struct intel_fbdev *ifbdev,
 
         obj->gtt_space = &lfb_vm_node;
         obj->gtt_offset = 0;
-        obj->pin_count = 1;
+        obj->pin_count = 2;
     }
 /***********************************************************************/
 
@@ -200,9 +200,9 @@ static int intelfb_create(struct intel_fbdev *ifbdev,
 	return 0;
 
 out_unpin:
-//   i915_gem_object_unpin(obj);
+	i915_gem_object_unpin(obj);
 out_unref:
-//   drm_gem_object_unreference(&obj->base);
+	drm_gem_object_unreference(&obj->base);
 	mutex_unlock(&dev->struct_mutex);
 out:
 	return ret;

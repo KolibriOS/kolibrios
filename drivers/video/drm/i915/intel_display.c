@@ -2006,7 +2006,7 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
 	return 0;
 
 err_unpin:
-//	i915_gem_object_unpin(obj);
+	i915_gem_object_unpin(obj);
 err_interruptible:
 	dev_priv->mm.interruptible = true;
 	return ret;
@@ -2223,7 +2223,7 @@ intel_pipe_set_base(struct drm_crtc *crtc, int x, int y,
     ret = intel_pipe_set_base_atomic(crtc, crtc->fb, x, y,
 					 LEAVE_ATOMIC_MODE_SET);
 	if (ret) {
-//       i915_gem_object_unpin(to_intel_framebuffer(crtc->fb)->obj);
+		i915_gem_object_unpin(to_intel_framebuffer(crtc->fb)->obj);
 		mutex_unlock(&dev->struct_mutex);
 		DRM_ERROR("failed to update base address\n");
         LEAVE();
@@ -3310,7 +3310,7 @@ static void intel_crtc_disable(struct drm_crtc *crtc)
 
 	if (crtc->fb) {
 		mutex_lock(&dev->struct_mutex);
-//		i915_gem_object_unpin(to_intel_framebuffer(crtc->fb)->obj);
+		i915_gem_object_unpin(to_intel_framebuffer(crtc->fb)->obj);
 		mutex_unlock(&dev->struct_mutex);
 	}
 }
@@ -6299,7 +6299,7 @@ intel_framebuffer_create_for_mode(struct drm_device *dev,
 				  int depth, int bpp)
 {
 	struct drm_i915_gem_object *obj;
-	struct drm_mode_fb_cmd mode_cmd;
+	struct drm_mode_fb_cmd2 mode_cmd;
 
 //	obj = i915_gem_alloc_object(dev,
 //				    intel_framebuffer_size_for_mode(mode, bpp));
@@ -6658,8 +6658,6 @@ static void intel_increase_pllclock(struct drm_crtc *crtc)
     LEAVE();
 
 	/* Schedule downclock */
-//	mod_timer(&intel_crtc->idle_timer, jiffies +
-//		  msecs_to_jiffies(CRTC_IDLE_TIMEOUT));
 }
 
 
@@ -6892,8 +6890,6 @@ static void intel_crtc_init(struct drm_device *dev, int pipe)
 
 	intel_crtc->busy = false;
 
-//	setup_timer(&intel_crtc->idle_timer, intel_crtc_idle_timer,
-//		    (unsigned long)intel_crtc);
 }
 
 

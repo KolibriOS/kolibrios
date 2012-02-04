@@ -36,6 +36,19 @@
 //#include <linux/swap.h>
 #include <linux/pci.h>
 
+extern int x86_clflush_size;
+
+#undef mb
+#undef rmb
+#undef wmb
+#define mb() asm volatile("mfence")
+#define rmb() asm volatile ("lfence")
+#define wmb() asm volatile ("sfence")
+
+static inline void clflush(volatile void *__p)
+{
+    asm volatile("clflush %0" : "+m" (*(volatile char*)__p));
+}
 
 #define MAX_ERRNO       4095
 
@@ -56,6 +69,16 @@ static inline long PTR_ERR(const void *ptr)
     return (long) ptr;
 }
 
+void
+drm_gem_object_free(struct kref *kref)
+{
+    struct drm_gem_object *obj = (struct drm_gem_object *) kref;
+    struct drm_device *dev = obj->dev;
+
+    BUG_ON(!mutex_is_locked(&dev->struct_mutex));
+
+    i915_gem_free_object(obj);
+}
 
 /**
  * Initialize an already allocated GEM object of the specified size with
@@ -67,13 +90,16 @@ int drm_gem_object_init(struct drm_device *dev,
     BUG_ON((size & (PAGE_SIZE - 1)) != 0);
 
     obj->dev = dev;
+    kref_init(&obj->refcount);
     atomic_set(&obj->handle_count, 0);
     obj->size = size;
 
     return 0;
 }
 
-
+void
+drm_gem_object_release(struct drm_gem_object *obj)
+{ }
 
 
 #define I915_EXEC_CONSTANTS_MASK        (3<<6)
@@ -264,7 +290,6 @@ i915_gem_create(struct drm_file *file,
 
 	/* drop reference from allocate - handle holds it now */
 	drm_gem_object_unreference(&obj->base);
-//   trace_i915_gem_object_create(obj);
 
 	*handle_p = handle;
 	return 0;
@@ -755,8 +780,8 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj,
 	return 0;
 
 err_pages:
-//   while (i--)
-//       page_cache_release(obj->pages[i]);
+    while (i--)
+        FreePage(obj->pages[i]);
 
     free(obj->pages);
 	obj->pages = NULL;
@@ -769,6 +794,8 @@ i915_gem_object_put_pages_gtt(struct drm_i915_gem_object *obj)
 	int page_count = obj->base.size / PAGE_SIZE;
 	int i;
 
+    ENTER();
+
 	BUG_ON(obj->madv == __I915_MADV_PURGED);
 
 //   if (obj->tiling_mode != I915_TILING_NONE)
@@ -776,21 +803,16 @@ i915_gem_object_put_pages_gtt(struct drm_i915_gem_object *obj)
 
 	if (obj->madv == I915_MADV_DONTNEED)
 		obj->dirty = 0;
-/*                                           It's a swap!!!
+
 	for (i = 0; i < page_count; i++) {
-		if (obj->dirty)
-			set_page_dirty(obj->pages[i]);
-
-		if (obj->madv == I915_MADV_WILLNEED)
-			mark_page_accessed(obj->pages[i]);
-
-        //page_cache_release(obj->pages[i]);
+        FreePage(obj->pages[i]);
 	}
 	obj->dirty = 0;
-*/
 
     free(obj->pages);
 	obj->pages = NULL;
+
+    LEAVE();
 }
 
 void
@@ -806,7 +828,7 @@ i915_gem_object_move_to_active(struct drm_i915_gem_object *obj,
 
 	/* Add a reference if we're newly entering the active list. */
 	if (!obj->active) {
-//       drm_gem_object_reference(&obj->base);
+		drm_gem_object_reference(&obj->base);
 		obj->active = 1;
 	}
 
@@ -828,8 +850,49 @@ i915_gem_object_move_to_active(struct drm_i915_gem_object *obj,
 	}
 }
 
+static void
+i915_gem_object_move_off_active(struct drm_i915_gem_object *obj)
+{
+	list_del_init(&obj->ring_list);
+	obj->last_rendering_seqno = 0;
+}
+
+static void
+i915_gem_object_move_to_flushing(struct drm_i915_gem_object *obj)
+{
+	struct drm_device *dev = obj->base.dev;
+	drm_i915_private_t *dev_priv = dev->dev_private;
+
+	BUG_ON(!obj->active);
+	list_move_tail(&obj->mm_list, &dev_priv->mm.flushing_list);
+
+	i915_gem_object_move_off_active(obj);
+}
 
 
+
+
+
+/* Immediately discard the backing storage */
+static void
+i915_gem_object_truncate(struct drm_i915_gem_object *obj)
+{
+	struct inode *inode;
+
+	/* Our goal here is to return as much of the memory as
+	 * is possible back to the system as we are called from OOM.
+	 * To do this we must instruct the shmfs to drop all of its
+	 * backing pages, *now*.
+	 */
+
+	obj->madv = __I915_MADV_PURGED;
+}
+
+static inline int
+i915_gem_object_is_purgeable(struct drm_i915_gem_object *obj)
+{
+	return obj->madv == I915_MADV_DONTNEED;
+}
 
 static void
 i915_gem_process_flushing_list(struct intel_ring_buffer *ring,
@@ -848,65 +911,9 @@ i915_gem_process_flushing_list(struct intel_ring_buffer *ring,
 			i915_gem_object_move_to_active(obj, ring,
 						       i915_gem_next_request_seqno(ring));
 
-//			trace_i915_gem_object_change_domain(obj,
-//							    obj->base.read_domains,
-//							    old_write_domain);
 		}
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -963,15 +970,102 @@ i915_gem_object_wait_rendering(struct drm_i915_gem_object *obj)
 	/* If there is rendering queued on the buffer being evicted, wait for
 	 * it.
 	 */
-//	if (obj->active) {
+	if (obj->active) {
 //		ret = i915_wait_request(obj->ring, obj->last_rendering_seqno);
 //		if (ret)
 //			return ret;
-//	}
+	}
 
 	return 0;
 }
 
+static void i915_gem_object_finish_gtt(struct drm_i915_gem_object *obj)
+{
+	u32 old_write_domain, old_read_domains;
+
+	/* Act a barrier for all accesses through the GTT */
+	mb();
+
+	/* Force a pagefault for domain tracking on next user access */
+//	i915_gem_release_mmap(obj);
+
+	if ((obj->base.read_domains & I915_GEM_DOMAIN_GTT) == 0)
+		return;
+
+	old_read_domains = obj->base.read_domains;
+	old_write_domain = obj->base.write_domain;
+	obj->base.read_domains &= ~I915_GEM_DOMAIN_GTT;
+	obj->base.write_domain &= ~I915_GEM_DOMAIN_GTT;
+
+}
+
+/**
+ * Unbinds an object from the GTT aperture.
+ */
+int
+i915_gem_object_unbind(struct drm_i915_gem_object *obj)
+{
+	int ret = 0;
+
+    ENTER();
+	if (obj->gtt_space == NULL)
+		return 0;
+
+	if (obj->pin_count != 0) {
+		DRM_ERROR("Attempting to unbind pinned buffer\n");
+		return -EINVAL;
+	}
+
+	ret = i915_gem_object_finish_gpu(obj);
+	if (ret == -ERESTARTSYS)
+		return ret;
+	/* Continue on if we fail due to EIO, the GPU is hung so we
+	 * should be safe and we need to cleanup or else we might
+	 * cause memory corruption through use-after-free.
+	 */
+
+	i915_gem_object_finish_gtt(obj);
+
+	/* Move the object to the CPU domain to ensure that
+	 * any possible CPU writes while it's not in the GTT
+	 * are flushed when we go to remap it.
+	 */
+	if (ret == 0)
+		ret = i915_gem_object_set_to_cpu_domain(obj, 1);
+	if (ret == -ERESTARTSYS)
+		return ret;
+	if (ret) {
+		/* In the event of a disaster, abandon all caches and
+		 * hope for the best.
+		 */
+		i915_gem_clflush_object(obj);
+		obj->base.read_domains = obj->base.write_domain = I915_GEM_DOMAIN_CPU;
+	}
+
+	/* release the fence reg _after_ flushing */
+	ret = i915_gem_object_put_fence(obj);
+	if (ret == -ERESTARTSYS)
+		return ret;
+
+
+	i915_gem_gtt_unbind_object(obj);
+	i915_gem_object_put_pages_gtt(obj);
+
+	list_del_init(&obj->gtt_list);
+	list_del_init(&obj->mm_list);
+	/* Avoid an unnecessary call to unbind on rebind. */
+	obj->map_and_fenceable = true;
+
+	drm_mm_put_block(obj->gtt_space);
+	obj->gtt_space = NULL;
+	obj->gtt_offset = 0;
+
+	if (i915_gem_object_is_purgeable(obj))
+		i915_gem_object_truncate(obj);
+
+    LEAVE();
+	return ret;
+}
 
 int
 i915_gem_flush_ring(struct intel_ring_buffer *ring,
@@ -983,7 +1077,6 @@ i915_gem_flush_ring(struct intel_ring_buffer *ring,
 	if (((invalidate_domains | flush_domains) & I915_GEM_GPU_DOMAINS) == 0)
 		return 0;
 
-//	trace_i915_gem_ring_flush(ring, invalidate_domains, flush_domains);
 
 	ret = ring->flush(ring, invalidate_domains, flush_domains);
 	if (ret)
@@ -994,6 +1087,141 @@ i915_gem_flush_ring(struct intel_ring_buffer *ring,
 
 	return 0;
 }
+
+static int i915_ring_idle(struct intel_ring_buffer *ring)
+{
+	int ret;
+
+	if (list_empty(&ring->gpu_write_list) && list_empty(&ring->active_list))
+		return 0;
+
+	if (!list_empty(&ring->gpu_write_list)) {
+		ret = i915_gem_flush_ring(ring,
+				    I915_GEM_GPU_DOMAINS, I915_GEM_GPU_DOMAINS);
+		if (ret)
+			return ret;
+	}
+
+	return 0; //i915_wait_request(ring, i915_gem_next_request_seqno(ring));
+}
+
+int
+i915_gpu_idle(struct drm_device *dev)
+{
+	drm_i915_private_t *dev_priv = dev->dev_private;
+	int ret, i;
+
+	/* Flush everything onto the inactive list. */
+	for (i = 0; i < I915_NUM_RINGS; i++) {
+		ret = i915_ring_idle(&dev_priv->ring[i]);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+static bool ring_passed_seqno(struct intel_ring_buffer *ring, u32 seqno)
+{
+	return i915_seqno_passed(ring->get_seqno(ring), seqno);
+}
+
+static int
+i915_gem_object_flush_fence(struct drm_i915_gem_object *obj,
+			    struct intel_ring_buffer *pipelined)
+{
+	int ret;
+
+	if (obj->fenced_gpu_access) {
+		if (obj->base.write_domain & I915_GEM_GPU_DOMAINS) {
+			ret = i915_gem_flush_ring(obj->last_fenced_ring,
+						  0, obj->base.write_domain);
+			if (ret)
+				return ret;
+		}
+
+		obj->fenced_gpu_access = false;
+	}
+
+	if (obj->last_fenced_seqno && pipelined != obj->last_fenced_ring) {
+		if (!ring_passed_seqno(obj->last_fenced_ring,
+				       obj->last_fenced_seqno)) {
+//           ret = i915_wait_request(obj->last_fenced_ring,
+//                       obj->last_fenced_seqno);
+//           if (ret)
+//               return ret;
+		}
+
+		obj->last_fenced_seqno = 0;
+		obj->last_fenced_ring = NULL;
+	}
+
+	/* Ensure that all CPU reads are completed before installing a fence
+	 * and all writes before removing the fence.
+	 */
+	if (obj->base.read_domains & I915_GEM_DOMAIN_GTT)
+		mb();
+
+	return 0;
+}
+
+int
+i915_gem_object_put_fence(struct drm_i915_gem_object *obj)
+{
+	int ret;
+
+//   if (obj->tiling_mode)
+//       i915_gem_release_mmap(obj);
+
+	ret = i915_gem_object_flush_fence(obj, NULL);
+	if (ret)
+		return ret;
+
+	if (obj->fence_reg != I915_FENCE_REG_NONE) {
+		struct drm_i915_private *dev_priv = obj->base.dev->dev_private;
+		i915_gem_clear_fence_reg(obj->base.dev,
+					 &dev_priv->fence_regs[obj->fence_reg]);
+
+		obj->fence_reg = I915_FENCE_REG_NONE;
+	}
+
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1164,7 +1392,7 @@ i915_gem_object_bind_to_gtt(struct drm_i915_gem_object *obj,
 
 	ret = i915_gem_gtt_bind_object(obj);
 	if (ret) {
-//       i915_gem_object_put_pages_gtt(obj);
+        i915_gem_object_put_pages_gtt(obj);
 		drm_mm_put_block(obj->gtt_space);
 		obj->gtt_space = NULL;
 
@@ -1195,7 +1423,6 @@ i915_gem_object_bind_to_gtt(struct drm_i915_gem_object *obj,
 
 	obj->map_and_fenceable = mappable && fenceable;
 
-//   trace_i915_gem_object_bind(obj, map_and_fenceable);
 	return 0;
 }
 
@@ -1220,12 +1447,52 @@ i915_gem_clflush_object(struct drm_i915_gem_object *obj)
 	if (obj->cache_level != I915_CACHE_NONE)
 		return;
 
-//   trace_i915_gem_object_clflush(obj);
+     if(obj->mapped != NULL)
+     {
+        uint8_t *page_virtual;
+        unsigned int i;
 
-//   drm_clflush_pages(obj->pages, obj->base.size / PAGE_SIZE);
-     mb();
-     __asm__ ("wbinvd");   // this is really ugly
-     mb();
+        page_virtual = obj->mapped;
+        asm volatile("mfence");
+        for (i = 0; i < obj->base.size; i += x86_clflush_size)
+            clflush(page_virtual + i);
+        asm volatile("mfence");
+     }
+     else
+     {
+        uint8_t *page_virtual;
+        unsigned int i;
+        page_virtual = AllocKernelSpace(obj->base.size);
+        if(page_virtual != NULL)
+        {
+            u32_t *src, *dst;
+            u32 count;
+
+#define page_tabs  0xFDC00000      /* really dirty hack */
+
+            src =  (u32_t*)obj->pages;
+            dst =  &((u32_t*)page_tabs)[(u32_t)page_virtual >> 12];
+            count = obj->base.size/4096;
+
+            while(count--)
+            {
+                *dst++ = (0xFFFFF000 & *src++) | 0x001 ;
+            };
+
+            asm volatile("mfence");
+            for (i = 0; i < obj->base.size; i += x86_clflush_size)
+                clflush(page_virtual + i);
+            asm volatile("mfence");
+            FreeKernelSpace(page_virtual);
+        }
+        else
+        {
+            asm volatile (
+            "mfence         \n"
+            "wbinvd         \n"                 /* this is really ugly  */
+            "mfence");
+        }
+     }
 }
 
 /** Flushes any GPU write domain for the object if it's dirty. */
@@ -1239,10 +1506,29 @@ i915_gem_object_flush_gpu_write_domain(struct drm_i915_gem_object *obj)
 	return i915_gem_flush_ring(obj->ring, 0, obj->base.write_domain);
 }
 
+/** Flushes the GTT write domain for the object if it's dirty. */
+static void
+i915_gem_object_flush_gtt_write_domain(struct drm_i915_gem_object *obj)
+{
+	uint32_t old_write_domain;
 
+	if (obj->base.write_domain != I915_GEM_DOMAIN_GTT)
+		return;
 
+	/* No actual flushing is required for the GTT write domain.  Writes
+	 * to it immediately go to main memory as far as we know, so there's
+	 * no chipset flush.  It also doesn't land in render cache.
+	 *
+	 * However, we do have to enforce the order so that all writes through
+	 * the GTT land before any writes to the device, such as updates to
+	 * the GATT itself.
+	 */
+	wmb();
 
+	old_write_domain = obj->base.write_domain;
+	obj->base.write_domain = 0;
 
+}
 
 /** Flushes the CPU write domain for the object if it's dirty. */
 static void
@@ -1258,9 +1544,6 @@ i915_gem_object_flush_cpu_write_domain(struct drm_i915_gem_object *obj)
 	old_write_domain = obj->base.write_domain;
 	obj->base.write_domain = 0;
 
-//	trace_i915_gem_object_change_domain(obj,
-//					    obj->base.read_domains,
-//					    old_write_domain);
 }
 
 /**
@@ -1363,10 +1646,7 @@ int i915_gem_object_set_cache_level(struct drm_i915_gem_object *obj,
 		obj->base.read_domains = I915_GEM_DOMAIN_CPU;
 		obj->base.write_domain = I915_GEM_DOMAIN_CPU;
 
-		trace_i915_gem_object_change_domain(obj,
-						    old_read_domains,
-						    old_write_domain);
-	}
+    }
 
 	obj->cache_level = cache_level;
 	return 0;
@@ -1433,34 +1713,110 @@ i915_gem_object_pin_to_display_plane(struct drm_i915_gem_object *obj,
 	BUG_ON((obj->base.write_domain & ~I915_GEM_DOMAIN_GTT) != 0);
 	obj->base.read_domains |= I915_GEM_DOMAIN_GTT;
 
-//   trace_i915_gem_object_change_domain(obj,
-//                       old_read_domains,
-//                       old_write_domain);
 
 	return 0;
 }
 
+int
+i915_gem_object_finish_gpu(struct drm_i915_gem_object *obj)
+{
+	int ret;
+
+	if ((obj->base.read_domains & I915_GEM_GPU_DOMAINS) == 0)
+		return 0;
+
+	if (obj->base.write_domain & I915_GEM_GPU_DOMAINS) {
+		ret = i915_gem_flush_ring(obj->ring, 0, obj->base.write_domain);
+		if (ret)
+			return ret;
+	}
+
+	/* Ensure that we invalidate the GPU's caches and TLBs. */
+	obj->base.read_domains &= ~I915_GEM_GPU_DOMAINS;
+
+	return i915_gem_object_wait_rendering(obj);
+}
+
+/**
+ * Moves a single object to the CPU read, and possibly write domain.
+ *
+ * This function returns when the move is complete, including waiting on
+ * flushes to occur.
+ */
+static int
+i915_gem_object_set_to_cpu_domain(struct drm_i915_gem_object *obj, bool write)
+{
+	uint32_t old_write_domain, old_read_domains;
+	int ret;
+
+	if (obj->base.write_domain == I915_GEM_DOMAIN_CPU)
+		return 0;
+
+	ret = i915_gem_object_flush_gpu_write_domain(obj);
+	if (ret)
+		return ret;
+
+	ret = i915_gem_object_wait_rendering(obj);
+	if (ret)
+		return ret;
+
+	i915_gem_object_flush_gtt_write_domain(obj);
+
+	/* If we have a partially-valid cache of the object in the CPU,
+	 * finish invalidating it and free the per-page flags.
+	 */
+	i915_gem_object_set_to_full_cpu_read_domain(obj);
+
+	old_write_domain = obj->base.write_domain;
+	old_read_domains = obj->base.read_domains;
+
+	/* Flush the CPU cache if it's still invalid. */
+	if ((obj->base.read_domains & I915_GEM_DOMAIN_CPU) == 0) {
+		i915_gem_clflush_object(obj);
+
+		obj->base.read_domains |= I915_GEM_DOMAIN_CPU;
+	}
+
+	/* It should now be out of any other write domains, and we can update
+	 * the domain values for our changes.
+	 */
+	BUG_ON((obj->base.write_domain & ~I915_GEM_DOMAIN_CPU) != 0);
+
+	/* If we're writing through the CPU, then the GPU read domains will
+	 * need to be invalidated at next use.
+	 */
+	if (write) {
+		obj->base.read_domains = I915_GEM_DOMAIN_CPU;
+		obj->base.write_domain = I915_GEM_DOMAIN_CPU;
+	}
 
 
+	return 0;
+}
 
+/**
+ * Moves the object from a partially CPU read to a full one.
+ *
+ * Note that this only resolves i915_gem_object_set_cpu_read_domain_range(),
+ * and doesn't handle transitioning from !(read_domains & I915_GEM_DOMAIN_CPU).
+ */
+static void
+i915_gem_object_set_to_full_cpu_read_domain(struct drm_i915_gem_object *obj)
+{
+	if (!obj->page_cpu_valid)
+		return;
 
+	/* If we're partially in the CPU read domain, finish moving it in.
+	 */
+	if (obj->base.read_domains & I915_GEM_DOMAIN_CPU) {
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	/* Free the page_cpu_valid mappings which are now stale, whether
+	 * or not we've got I915_GEM_DOMAIN_CPU.
+	 */
+	kfree(obj->page_cpu_valid);
+	obj->page_cpu_valid = NULL;
+}
 
 
 
@@ -1495,7 +1851,6 @@ i915_gem_object_pin(struct drm_i915_gem_object *obj,
 	int ret;
 
 	BUG_ON(obj->pin_count == DRM_I915_GEM_OBJECT_MAX_PIN_COUNT);
-//   WARN_ON(i915_verify_lists(dev));
 
 #if 0
 	if (obj->gtt_space != NULL) {
@@ -1529,12 +1884,25 @@ i915_gem_object_pin(struct drm_i915_gem_object *obj,
 	}
 	obj->pin_mappable |= map_and_fenceable;
 
-//   WARN_ON(i915_verify_lists(dev));
 	return 0;
 }
 
+void
+i915_gem_object_unpin(struct drm_i915_gem_object *obj)
+{
+	struct drm_device *dev = obj->base.dev;
+	drm_i915_private_t *dev_priv = dev->dev_private;
 
+	BUG_ON(obj->pin_count == 0);
+	BUG_ON(obj->gtt_space == NULL);
 
+	if (--obj->pin_count == 0) {
+		if (!obj->active)
+			list_move_tail(&obj->mm_list,
+				       &dev_priv->mm.inactive_list);
+		obj->pin_mappable = false;
+	}
+}
 
 
 
@@ -1619,17 +1987,56 @@ struct drm_i915_gem_object *i915_gem_alloc_object(struct drm_device *dev,
 	return obj;
 }
 
+int i915_gem_init_object(struct drm_gem_object *obj)
+{
+	BUG();
+
+	return 0;
+}
+
+static void i915_gem_free_object_tail(struct drm_i915_gem_object *obj)
+{
+	struct drm_device *dev = obj->base.dev;
+	drm_i915_private_t *dev_priv = dev->dev_private;
+	int ret;
+
+    ENTER();
+
+	ret = i915_gem_object_unbind(obj);
+	if (ret == -ERESTARTSYS) {
+		list_move(&obj->mm_list,
+			  &dev_priv->mm.deferred_free_list);
+		return;
+	}
 
 
+//	if (obj->base.map_list.map)
+//		drm_gem_free_mmap_offset(&obj->base);
 
+	drm_gem_object_release(&obj->base);
+	i915_gem_info_remove_obj(dev_priv, obj->base.size);
 
+	kfree(obj->page_cpu_valid);
+	kfree(obj->bit_17);
+	kfree(obj);
+    LEAVE();
+}
 
+void i915_gem_free_object(struct drm_gem_object *gem_obj)
+{
+	struct drm_i915_gem_object *obj = to_intel_bo(gem_obj);
+	struct drm_device *dev = obj->base.dev;
 
+    ENTER();
+	while (obj->pin_count > 0)
+		i915_gem_object_unpin(obj);
 
+//	if (obj->phys_obj)
+//		i915_gem_detach_phys_object(dev, obj);
 
-
-
-
+	i915_gem_free_object_tail(obj);
+    LEAVE();
+}
 
 
 
@@ -1784,9 +2191,6 @@ i915_gem_load(struct drm_device *dev)
         init_ring_lists(&dev_priv->ring[i]);
 	for (i = 0; i < I915_MAX_NUM_FENCES; i++)
         INIT_LIST_HEAD(&dev_priv->fence_regs[i].lru_list);
-//    INIT_DELAYED_WORK(&dev_priv->mm.retire_work,
-//              i915_gem_retire_work_handler);
-//    init_completion(&dev_priv->error_completion);
 
     /* On GEN3 we really need to make sure the ARB C3 LP bit is set */
     if (IS_GEN3(dev)) {
@@ -1811,7 +2215,6 @@ i915_gem_load(struct drm_device *dev)
     }
 
     i915_gem_detect_bit_6_swizzle(dev);
-//    init_waitqueue_head(&dev_priv->pending_flip_queue);
 
     dev_priv->mm.interruptible = true;
 

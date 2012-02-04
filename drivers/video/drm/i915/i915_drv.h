@@ -756,6 +756,8 @@ enum i915_cache_level {
 struct drm_i915_gem_object {
     struct drm_gem_object base;
 
+    void  *mapped;
+
     /** Current space allocated to this object in the GTT, if any. */
     struct drm_mm_node *gtt_space;
     struct list_head gtt_list;

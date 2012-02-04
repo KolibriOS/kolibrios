@@ -36,25 +36,36 @@ typedef struct
 {
     kobj_t   header;
 
-    u32       handle;
-    u32       width;
-    u32       height;
-    u32       pitch;
-    u32       gaddr;
-    void     *uaddr;
+    u32     handle;
+    void    *uaddr;
+
+    u32     pitch;
+    u32     gaddr;
+
+    u32     width;
+    u32     height;
+    u32     max_width;
+    u32     max_height;
+
+    u32     format;
     struct drm_i915_gem_object *obj;
 }bitmap_t;
 
 
-struct ubitmap
+struct  io_call_10         /*     SRV_CREATE_SURFACE    */
 {
-    u32    width;
-    u32    height;
-    u32    pitch;
-    u32    handle;
-    void  *data;
+    u32     handle;       // ignored
+    void   *data;         // ignored
+
+    u32     width;
+    u32     height;
+    u32     pitch;        // ignored
+
+    u32     max_width;
+    u32     max_height;
+    u32     format;       // reserved mbz
 };
 
-int create_bitmap(struct ubitmap *pbitmap);
+int create_surface(struct io_call_10 *pbitmap);
 int init_bitmaps();
 

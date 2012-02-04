@@ -14,6 +14,8 @@
 
 #include "bitmap.h"
 
+void cpu_detect();
+
 void parse_cmdline(char *cmdline, char *log);
 int _stdcall display_handler(ioctl_t *io);
 int init_agp(void);
@@ -23,6 +25,8 @@ int video_blit(uint64_t src_offset, int  x, int y,
                     int w, int h, int pitch);
 
 static char  log[256];
+
+int x86_clflush_size;
 
 int i915_modeset = 1;
 
@@ -71,15 +75,20 @@ u32_t drvEntry(int action, char *cmdline)
     return err;
 };
 
-#define API_VERSION     0x01000100
+#define CURRENT_API     0x0200      /*      2.00     */
+#define COMPATIBLE_API  0x0100      /*      1.00     */
 
-#define SRV_GETVERSION      0
-#define SRV_ENUM_MODES      1
-#define SRV_SET_MODE        2
+#define API_VERSION     (COMPATIBLE_API << 16) | CURRENT_API
+#define DISPLAY_VERSION  CURRENT_API
 
-#define SRV_CREATE_BITMAP  10
 
-#define SRV_BLIT_VIDEO     20
+#define SRV_GETVERSION       0
+#define SRV_ENUM_MODES       1
+#define SRV_SET_MODE         2
+
+#define SRV_CREATE_SURFACE  10
+
+#define SRV_BLIT_VIDEO      20
 
 #define check_input(size) \
     if( unlikely((inp==NULL)||(io->inp_size != (size))) )   \
@@ -102,7 +111,7 @@ int _stdcall display_handler(ioctl_t *io)
     {
         case SRV_GETVERSION:
             check_output(4);
-            *outp  = API_VERSION;
+            *outp  = DISPLAY_VERSION;
             retval = 0;
             break;
 
@@ -123,9 +132,9 @@ int _stdcall display_handler(ioctl_t *io)
                 retval = set_user_mode((videomode_t*)inp);
             break;
 
-        case SRV_CREATE_BITMAP:
-            check_input(5);
-            retval = create_bitmap((struct ubitmap*)inp);
+        case SRV_CREATE_SURFACE:
+//            check_input(8);
+            retval = create_surface((struct io_call_10*)inp);
             break;
 
 
@@ -201,4 +210,38 @@ void parse_cmdline(char *cmdline, char *log)
         c = *p++;
     };
 };
+
+static inline void __cpuid(unsigned int *eax, unsigned int *ebx,
+                           unsigned int *ecx, unsigned int *edx)
+{
+    /* ecx is often an input as well as an output. */
+    asm volatile(
+        "cpuid"
+        : "=a" (*eax),
+          "=b" (*ebx),
+          "=c" (*ecx),
+          "=d" (*edx)
+        : "" (*eax), "2" (*ecx));
+}
+
+static inline void cpuid(unsigned int op,
+                         unsigned int *eax, unsigned int *ebx,
+                         unsigned int *ecx, unsigned int *edx)
+{
+        *eax = op;
+        *ecx = 0;
+        __cpuid(eax, ebx, ecx, edx);
+}
+
+void cpu_detect()
+{
+    u32 junk, tfms, cap0, misc;
+
+    cpuid(0x00000001, &tfms, &misc, &junk, &cap0);
+
+    if (cap0 & (1<<19))
+    {
+        x86_clflush_size = ((misc >> 8) & 0xff) * 8;
+    }
+}
 

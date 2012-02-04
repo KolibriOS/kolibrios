@@ -428,7 +428,7 @@ int init_cursor(cursor_t *cursor)
 
         ret = i915_gem_object_pin(obj, CURSOR_WIDTH*CURSOR_HEIGHT*4, true);
         if (ret) {
-//           drm_gem_object_unreference(&obj->base);
+            drm_gem_object_unreference(&obj->base);
             return ret;
         }
 
@@ -440,8 +440,8 @@ int init_cursor(cursor_t *cursor)
 
         if (unlikely(bits == NULL))
         {
-//          i915_gem_object_unpin(obj);
-//           drm_gem_object_unreference(&obj->base);
+            i915_gem_object_unpin(obj);
+            drm_gem_object_unreference(&obj->base);
             return -ENOMEM;
         };
         cursor->cobj = obj;
@@ -807,7 +807,7 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
     if( n & 1)
         b[n++] = MI_NOOP;
 
-//    i915_gem_object_set_to_gtt_domain(obj, false);
+    i915_gem_object_set_to_gtt_domain(bitmap->obj, false);
 
     if (HAS_BLT(main_device))
         ring = &dev_priv->ring[BCS];
@@ -816,9 +816,11 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
 
     ring->dispatch_execbuffer(ring, cmd_offset, n*4);
 
-    intel_ring_begin(ring, 4);
-//    if (ret)
-//        return ret;
+    int ret;
+
+    ret = intel_ring_begin(ring, 4);
+    if (ret)
+        return ret;
 
     intel_ring_emit(ring, MI_FLUSH_DW);
     intel_ring_emit(ring, 0);

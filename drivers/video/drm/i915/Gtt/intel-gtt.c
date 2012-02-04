@@ -600,6 +600,7 @@ void intel_gtt_insert_pages(unsigned int first_entry, unsigned int num_entries,
     }
     readl(intel_private.gtt+j-1);
 }
+EXPORT_SYMBOL(intel_gtt_insert_pages);
 
 
 void intel_gtt_clear_range(unsigned int first_entry, unsigned int num_entries)
