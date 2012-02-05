@@ -1,5 +1,11 @@
 KFM - Kolibri File Manager
 
+05.02.12  -  v0.47ñ  - 27259b
+Changes:
+1) Navigating by the keyboard:
+   BackSpace - exit from the current directory to the parent directory,
+               regardless of the position of the cursor.
+
 13.10.07  -  v0.47b  - 27271b
 Changes:
 1) Is corrected bug connected with by mistreating of hard disks containing sections

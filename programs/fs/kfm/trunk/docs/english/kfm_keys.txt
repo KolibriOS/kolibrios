@@ -33,6 +33,7 @@ In panels:
    à) Shift + W - set background, mode: tile.
    á) Ctrl + W - set background, mode: stretch.
 20) Alt+Enter - get for files and directories: location, name, size, amount of files and directories (including for a case of selection of separate files and directories).
+21) BackSpace - exit from the current directory to the parent directory, regardless of the position of the cursor.
 
 In the menu of choice of the disk:
 1) Up arrow and down arrow (including keys, located in an additional part of keyboard) - cursor update on one position upwards or downwards.

@@ -31,6 +31,8 @@ key:
     je	  key_shift_up
     cmp   ah,54
     je	  key_shift_up
+    cmp   ah,142
+    je	  exit_dir_1	; BackSpace Up
     cmp   ah,170
     je	  key_shift_down
     cmp   ah,182
