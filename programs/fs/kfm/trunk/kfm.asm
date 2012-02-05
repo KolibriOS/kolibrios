@@ -25,6 +25,8 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
+; KFM v0.47c 05.02.2012
+;---------------------------------------------------------------------
 use32
 org	0x0
 
