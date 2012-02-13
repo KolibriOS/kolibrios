@@ -817,15 +817,16 @@ proc ted_on_open_file
 	add eax,2
 	mov dword [eax],0 ; first sumbol 'perv=0'
 
-	mov edx,ted_tex
+	mov edx,ted_tex ; настройки начального служебного символа
 	; begining sumbol 'perv=0' 'next=2'
 	mov dword [edx+2],0
 	mov dword [edx+6],2
 
-	add edx,sizeof.symbol
+	add edx,sizeof.symbol ; настройки конечного служебного символа
 	mov dword [edx+6],0 ; last sumbol 'next=0'
 	mov dword [edx+2],ebx ; last sumbol 'perv=last'
 	inc dword [edx+2]
+	mov dword [edx+10],0 ; ставим время создания равное 0, что бы символ правильно обрабатывался при открытии файлов больших 28 байт
 
 	mov edx,ebx
 	inc edx ;2 = rezerv sumbols
@@ -1897,62 +1898,65 @@ ted_get_num_lines:
 ; отменяет отмененные действия, перед изменением документа
 align 4
 proc ted_set_undo
-  mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
-  cmp ted_tim_undo,1
-  jl .no_work
+	mov ted_drag_k,0 ;заканчиваем выделение от клавиатуры
+	cmp ted_tim_undo,1
+	jl .no_work
 
-  push eax ebx edx
-  mov edx,ted_tex
-  call ted_get_text_next_pos ;long i=tex[0].next;
-  mov eax,ted_tim_undo
-  sub ted_tim_ch,eax ;ted_tim_ch-=ted_tim_undo;
-  mov eax,ted_tim_ch
-  cmp ted_tim_ls,eax ;if(ted_tim_ls>ted_tim_ch)
-  jle @f
-    mov ted_tim_ls,0
-  @@:
-    cmp edx,ted_tex
-    je @f
+	push eax ebx edx
+	mov edx,ted_tex
+	call ted_get_text_next_pos ;long i=tex[0].next;
+	mov eax,ted_tim_undo
+	sub ted_tim_ch,eax ;ted_tim_ch-=ted_tim_undo;
+	mov eax,ted_tim_ch
+	cmp ted_tim_ls,eax ;if(ted_tim_ls>ted_tim_ch)
+	jle @f
+		mov ted_tim_ls,0
+	@@:
+		cmp edx,ted_tex_1
+		jle @f
 
-    ;if(tex[i].tc>ted_tim_ch){ // если создание символа было отменено
-    cmp [edx+10],eax
-    jle .no_u1
-      mov dword [edx+10],0
-      mov dword [edx+14],0
+		;if(tex[i].tc>ted_tim_ch){ // если создание символа было отменено
+		cmp [edx+10],eax
+		jle .no_u1
+			mov dword [edx+10],0
+			mov dword [edx+14],0
 
-      mov ebx,[edx+2]
-      imul ebx,sizeof.symbol
-      add ebx,ted_tex;.next
-      m2m dword [ebx+6],dword [edx+6] ;tex[tex[i].perv].next=tex[i].next;
+			mov ebx,[edx+2]
+			imul ebx,sizeof.symbol
+			add ebx,ted_tex ;ebx=tex[i].perv
+			m2m dword [ebx+6],dword [edx+6] ;tex[tex[i].perv].next=tex[i].next;
 
-      mov ebx,[edx+6]
-      imul ebx,sizeof.symbol
-      add ebx,ted_tex;.perv
-      m2m dword [ebx+2],dword [edx+2] ;tex[tex[i].next].perv=tex[i].perv;
+			mov ebx,[edx+6]
+			imul ebx,sizeof.symbol
+			add ebx,ted_tex ;ebx=tex[i].next
+			m2m dword [ebx+2],dword [edx+2] ;tex[tex[i].next].perv=tex[i].perv;
 
-cmp ted_ptr_free_symb,edx
-jle .no_u1
-  mov ted_ptr_free_symb,edx ;меняем указатель на свободный символ, для более быстрого поиска памяти
-    .no_u1:
+			cmp ted_ptr_free_symb,edx
+			jle .no_cor_free
+				mov ted_ptr_free_symb,edx ;меняем указатель на свободный символ, для более быстрого поиска памяти
+			.no_cor_free:
+			mov edx,ebx ;оптимизируем по скорости (edx после вызова ted_get_text_next_pos будет равен ebx)
+			jmp @b
+		.no_u1:
 
-    ;else if(tex[i].td>ted_tim_ch) tex[i].td=0; // если удаление символа было отменено
-    cmp [edx+14],eax
-    jle .no_u2
-      mov dword [edx+14],0
-    .no_u2:
+		;else if(tex[i].td>ted_tim_ch) tex[i].td=0; // если удаление символа было отменено
+		cmp [edx+14],eax
+		jle .no_u2
+			mov dword [edx+14],0
+		.no_u2:
 
-    call ted_get_text_next_pos
-    jmp @b
-  @@:
-  mov ted_tim_undo,0
-  mov eax,ted_tim_co
-  cmp ted_tim_ch,eax
-  jge @f
-    mov ted_tim_co,0
-  @@:
-  pop edx ebx eax
-  .no_work:
-  ret
+		call ted_get_text_next_pos
+		jmp @b
+	@@:
+	mov ted_tim_undo,0
+	mov eax,ted_tim_co
+	cmp ted_tim_ch,eax
+	jge @f
+		mov ted_tim_co,0
+	@@:
+	pop edx ebx eax
+	.no_work:
+	ret
 endp
 
 ;input:
