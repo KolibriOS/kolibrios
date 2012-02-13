@@ -74,26 +74,8 @@ extern "C"
 #define SND_SETTIMEBASE    18
 #define SND_GETTIMESTAMP   19
 
+
 #define PLAY_SYNC     0x80000000
-
-typedef struct
-{
-    unsigned int   riff_id;
-    unsigned int   riff_size;
-    unsigned int   riff_format;
-
-    unsigned int   fmt_id;
-    unsigned int   fmt_size;
-
-    unsigned short int wFormatTag;
-    unsigned short int nChannels;
-    unsigned int   nSamplesPerSec;
-    unsigned int   nAvgBytesPerSec;
-    unsigned short int nBlockAlign;
-    unsigned short int wBitsPerSample;
-    unsigned int   data_id;
-    unsigned int   data_size;
-} WAVEHEADER;
 
 typedef unsigned int SNDBUF;
 
@@ -127,6 +109,28 @@ int _stdcall  SetMasterVol(int vol);
 
 int _stdcall  SetTimeBase(SNDBUF hBuff, double base);
 int _stdcall  GetTimeStamp(SNDBUF hBuff, double *stamp);
+int _stdcall  GetDevTime(int *stamp);
+
+
+typedef struct
+{
+    unsigned int   riff_id;
+    unsigned int   riff_size;
+    unsigned int   riff_format;
+
+    unsigned int   fmt_id;
+    unsigned int   fmt_size;
+
+    unsigned short int wFormatTag;
+    unsigned short int nChannels;
+    unsigned int   nSamplesPerSec;
+    unsigned int   nAvgBytesPerSec;
+    unsigned short int nBlockAlign;
+    unsigned short int wBitsPerSample;
+    unsigned int   data_id;
+    unsigned int   data_size;
+} WAVEHEADER;
+
 
 unsigned int _stdcall test_wav(WAVEHEADER *hdr);
 

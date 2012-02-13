@@ -14,32 +14,12 @@ astream_t astream;
 
 static SNDBUF hBuff;
 
+extern uint8_t *decoder_buffer;
+
 extern volatile uint32_t status;
 
-void audio_thread(void *param);
+extern volatile uint32_t driver_lock;
 
-void spinlock_lock(volatile uint32_t *val)
-{
-    uint32_t tmp;
-
-    __asm__ __volatile__ (
-"0:\n\t"
-    "mov %0, %1\n\t"
-    "testl %1, %1\n\t"
-    "jz 1f\n\t"
-
-    "movl $68, %%eax\n\t"
-    "movl $1,  %%ebx\n\t"
-    "int  $0x40\n\t"
-    "jmp 0b\n\t"
-"1:\n\t"
-    "incl %1\n\t"
-    "xchgl %0, %1\n\t"
-    "testl %1, %1\n\t"
-	"jnz 0b\n"
-    : "+m" (*val), "=&r"(tmp)
-    ::"eax","ebx" );
-}
 
 static int snd_format;
 int sample_rate;
@@ -50,11 +30,17 @@ int init_audio(int format)
     int    version =-1;
     char  *errstr;
 
+    mutex_lock(&driver_lock);
+
     if((err = InitSound(&version)) !=0 )
     {
+        mutex_unlock(&driver_lock);
         errstr = "Sound service not installed\n\r";
         goto exit_whith_error;
-    }
+    };
+
+    mutex_unlock(&driver_lock);
+
     printf("sound version 0x%x\n", version);
 
     if( (SOUND_VERSION>(version&0xFFFF)) ||
@@ -65,8 +51,6 @@ int init_audio(int format)
     }
 
     snd_format = format;
-
-    asm volatile ( "xchgw %bx, %bx");
 
     create_thread(audio_thread, 0, 163840);
 
@@ -89,8 +73,51 @@ double get_master_clock()
     return tstamp - audio_delta;
 };
 
+int decode_audio(AVCodecContext  *ctx, queue_t *qa)
+{
+    AVPacket   pkt;
+    AVPacket    pkt_tmp;
 
-void audio_thread(void *param)
+    uint8_t    *audio_data;
+    int         audio_size;
+    int         len;
+    int         data_size=0;
+
+    if( astream.count > AVCODEC_MAX_AUDIO_FRAME_SIZE*7)
+        return 1;
+
+    if( get_packet(qa, &pkt) == 0 )
+        return 0;
+
+ //          __asm__("int3");
+
+    pkt_tmp = pkt;
+
+    while(pkt_tmp.size > 0)
+    {
+        data_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+
+        len = avcodec_decode_audio3(ctx,(int16_t*)decoder_buffer,
+                                   &data_size, &pkt_tmp);
+
+        if(len >= 0)
+        {
+            pkt_tmp.data += len;
+            pkt_tmp.size -= len;
+
+            mutex_lock(&astream.lock);
+            memcpy(astream.buffer+astream.count, decoder_buffer, data_size);
+            astream.count += data_size;
+            mutex_unlock(&astream.lock);
+       }
+       else pkt_tmp.size = 0;
+    }
+    av_free_packet(&pkt);
+    return 1;
+};
+
+
+int audio_thread(void *param)
 {
     SND_EVENT evnt;
     int       buffsize;
@@ -121,13 +148,13 @@ void audio_thread(void *param)
                (status != 0) )
         yield();
 
-    spinlock_lock(&astream.lock);
+    mutex_lock(&astream.lock);
     {
         SetBuffer(hBuff, astream.buffer, 0, buffsize);
         astream.count -= buffsize;
         if(astream.count)
             memcpy(astream.buffer, astream.buffer+buffsize, astream.count);
-        spinlock_unlock(&astream.lock);
+        mutex_unlock(&astream.lock);
     };
 
     if((err = PlayBuffer(hBuff, 0)) !=0 )
@@ -163,13 +190,13 @@ void audio_thread(void *param)
 
         offset = evnt.offset;
 
-        spinlock_lock(&astream.lock);
+        mutex_lock(&astream.lock);
         {
             SetBuffer(hBuff, astream.buffer, offset, buffsize);
             astream.count -= buffsize;
             if(astream.count)
                 memcpy(astream.buffer, astream.buffer+buffsize, astream.count);
-            spinlock_unlock(&astream.lock);
+            mutex_unlock(&astream.lock);
         };
         break;
     };
@@ -221,20 +248,23 @@ void audio_thread(void *param)
         if((too_late == 1) || (status == 0))
             continue;
 
-        spinlock_lock(&astream.lock);
+        mutex_lock(&astream.lock);
         SetBuffer(hBuff, astream.buffer, offset, buffsize);
         astream.count -= buffsize;
         if(astream.count)
             memcpy(astream.buffer, astream.buffer+buffsize, astream.count);
-        spinlock_unlock(&astream.lock);
+        mutex_unlock(&astream.lock);
     }
 
-    return;
+    StopBuffer(hBuff);
+    DestroyBuffer(hBuff);
+
+    return 0;
 
 exit_whith_error:
 
     printf(errstr);
-    return ;
+    return -1;
 
 };
 
