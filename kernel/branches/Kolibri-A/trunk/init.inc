@@ -78,24 +78,21 @@ proc init_mem
 	   mov	[pg_data.mem_amount-OS_BASE], eax	; the true MEMTOP
 	   mov	[UserDMAaddr-OS_BASE], eax
 
-	   mov edx, esi 				; edx will hold maximum allocatable address
 	   shr esi, 12
 	   mov [pg_data.pages_count-OS_BASE], esi	; max number of PTEs   ?
 
-	   shr edx, 12
-	   add edx, 31
-	   and edx, not 31
+	   mov edx, esi 				; edx will hold maximum allocatable address
 	   shr edx, 3
 	   mov [pg_data.pagemap_size-OS_BASE], edx	; size of sys_pgmap structure
 
 	   add edx, (sys_pgmap-OS_BASE)+4095
 	   and edx, not 4095
-	   mov [tmp_page_tabs], edx			; free zone to build PTEs
+	   mov [tmp_page_tabs], edx			; free zone to build PTEs for all available memory
 
 	   mov edx, (HEAP_BASE-OS_BASE+HEAP_MIN_SIZE)/4096
 	   mov [pg_data.kernel_pages -OS_BASE], edx
 	   shr edx, 10
-	   mov [pg_data.kernel_tables-OS_BASE], edx
+	   mov [pg_data.kernel_tables-OS_BASE], edx	; number of Kernel PDEs needed
 
 	   mov edx, (sys_pgdir-OS_BASE)+ 0x800		; (0x800 = OS_BASE shr 20)
 
@@ -136,62 +133,14 @@ endp
 
 align 4
 proc init_page_map
-; mark all memory as unavailable
+; mark all memory as available
 	   mov edi, sys_pgmap-OS_BASE
 	   mov ecx, [pg_data.pagemap_size-OS_BASE]
 	   shr ecx, 2
-	   xor eax, eax
+	   mov eax, -1
 	   cld
 	   rep stosd
 
-; scan through memory map and mark free areas as available
-	   mov ebx, BOOT_VAR-OS_BASE + 0x9104
-	   mov edx, [ebx-4]
-.scanmap:
-	   mov ecx, [ebx+8]
-	   shr ecx, 12 ; ecx = number of pages
-	   jz .next
-	   mov edi, [ebx]
-	   shr edi, 12 ; edi = first page
-	   mov eax, edi
-	   shr edi, 5
-	   shl edi, 2
-	   add edi, sys_pgmap-OS_BASE
-	   and eax, 31
-	   jz .startok
-	   add ecx, eax
-	   sub ecx, 32
-	   jbe .onedword
-	   push ecx
-	   mov ecx, eax
-	   or eax, -1
-	   shl eax, cl
-	   or [edi], eax
-	   add edi, 4
-	   pop ecx
-.startok:
-	   push ecx
-	   shr ecx, 5
-	   or eax, -1
-	   rep stosd
-	   pop ecx
-	   and ecx, 31
-	   neg eax
-	   shl eax, cl
-	   dec eax
-	   or [edi], eax
-	   jmp .next
-.onedword:
-	   add ecx, 32
-	   sub ecx, eax
-@@:
-	   bts [edi], eax
-	   inc eax
-	   loop @b
-.next:
-	   add ebx, 20
-	   dec edx
-	   jnz .scanmap
 
 ; mark kernel memory as allocated (unavailable)
 	   mov ecx, [tmp_page_tabs]
