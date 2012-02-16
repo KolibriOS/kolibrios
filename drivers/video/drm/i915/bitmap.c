@@ -6,19 +6,27 @@
 #include "intel_drv.h"
 #include "bitmap.h"
 
+#define DRIVER_CAPS_0   HW_BIT_BLIT | HW_TEX_BLIT;
+#define DRIVER_CAPS_1   0
+
+extern struct drm_device *main_device;
+
+struct hman bm_man;
+
 void __attribute__((regparm(1))) destroy_bitmap(bitmap_t *bitmap)
 {
     printf("destroy bitmap %d\n", bitmap->handle);
     free_handle(&bm_man, bitmap->handle);
     bitmap->handle = 0;
-    i915_gem_object_unpin(bitmap->obj);
+    bitmap->obj->base.read_domains = I915_GEM_DOMAIN_GTT;
+    bitmap->obj->base.write_domain = I915_GEM_DOMAIN_CPU;
+
+    mutex_lock(&main_device->struct_mutex);
     drm_gem_object_unreference(&bitmap->obj->base);
+    mutex_unlock(&main_device->struct_mutex);
+
     __DestroyObject(bitmap);
 };
-
-extern struct drm_device *main_device;
-
-struct hman bm_man;
 
 int init_bitmaps()
 {
@@ -124,9 +132,11 @@ int create_surface(struct io_call_10 *pbitmap)
         {
             *dst++ = (0xFFFFF000 & *src++) | 0x207 ; // map as shared page
         };
-//        while(max_count--)
-//            *dst++ = 0;                              // cleanup unused space
+        while(max_count--)
+            *dst++ = 0;                              // cleanup unused space
     }
+
+    obj->mapped = uaddr ;
 
     bitmap->handle = handle;
     bitmap->uaddr  = uaddr;
@@ -220,4 +230,84 @@ int free_handle(struct hman *man, u32 handle)
     return ret;
 };
 
+
+void *drm_intel_bo_map(struct drm_i915_gem_object *obj, int write_enable)
+{
+    u8 *kaddr;
+
+    kaddr = AllocKernelSpace(obj->base.size);
+    if( kaddr != NULL)
+    {
+        u32_t *src = (u32_t*)obj->pages;
+        u32_t *dst = &((u32_t*)page_tabs)[(u32_t)kaddr >> 12];
+
+        u32 count  = obj->base.size/4096;
+
+        while(count--)
+        {
+            *dst++ = (0xFFFFF000 & *src++) | 0x003 ;
+        };
+        return kaddr;
+    };
+    return NULL;
+}
+
+void destroy_gem_object(uint32_t handle)
+{
+    struct drm_i915_gem_object *obj = (void*)handle;
+    drm_gem_object_unreference(&obj->base);
+
+};
+
+
+void write_gem_object(uint32_t handle, u32 offset, u32 size, u8* src)
+{
+    struct drm_i915_gem_object *obj = (void*)handle;
+    u8    *dst;
+    int    ret;
+
+    ret = i915_gem_object_pin(obj, 4096, true);
+    if (ret)
+        return;
+
+    dst = drm_intel_bo_map(obj, true);
+    if( dst != NULL )
+    {
+        memmove(dst+offset, src, size);
+        FreeKernelSpace(dst);
+    };
+};
+
+u32 get_buffer_offset(uint32_t handle)
+{
+    struct drm_i915_gem_object *obj = (void*)handle;
+
+    return obj->gtt_offset;
+};
+
+
+int get_driver_caps(hwcaps_t *caps)
+{
+    int ret = 0;
+    ENTER();
+
+    dbgprintf("caps ptr %x\n", caps);
+
+    switch(caps->idx)
+    {
+        case 0:
+            caps->opt[0] = DRIVER_CAPS_0;
+            caps->opt[1] = DRIVER_CAPS_1;
+            break;
+
+        case 1:
+            caps->cap1.max_tex_width  = 4096;
+            caps->cap1.max_tex_height = 4096;
+            break;
+        default:
+            ret = 1;
+    };
+    caps->idx = 1;
+    return ret;
+}
 

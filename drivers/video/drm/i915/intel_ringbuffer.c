@@ -33,7 +33,7 @@
 #include "drm.h"
 #include "i915_drv.h"
 #include "i915_drm.h"
-//#include "i915_trace.h"
+#include "i915_trace.h"
 #include "intel_drv.h"
 
 /*
@@ -826,7 +826,7 @@ gen6_ring_get_irq(struct intel_ring_buffer *ring, u32 gflag, u32 rflag)
 	}
 	spin_unlock(&ring->irq_lock);
 
-	return true;
+    return true;
 }
 
 static void
@@ -1139,8 +1139,6 @@ int intel_wait_ring_buffer(struct intel_ring_buffer *ring, int n)
 	unsigned long end;
 	u32 head;
 
-    ENTER();
-
 	/* If the reported head position has wrapped or hasn't advanced,
 	 * fallback to the slow and accurate path.
 	 */
@@ -1149,10 +1147,7 @@ int intel_wait_ring_buffer(struct intel_ring_buffer *ring, int n)
 		ring->head = head;
 		ring->space = ring_space(ring);
 		if (ring->space >= n)
-        {
-            LEAVE();
 			return 0;
-        };
 	}
 
 
@@ -1161,20 +1156,15 @@ int intel_wait_ring_buffer(struct intel_ring_buffer *ring, int n)
 		ring->head = I915_READ_HEAD(ring);
 		ring->space = ring_space(ring);
 		if (ring->space >= n) {
-//           trace_i915_ring_wait_end(ring);
-            LEAVE();
+			trace_i915_ring_wait_end(ring);
 			return 0;
 		}
 
 		msleep(1);
 		if (atomic_read(&dev_priv->mm.wedged))
-        {
-            LEAVE();
 			return -EAGAIN;
-        };
 	} while (!time_after(jiffies, end));
-    LEAVE();
-
+	trace_i915_ring_wait_end(ring);
 	return -EBUSY;
 }
 

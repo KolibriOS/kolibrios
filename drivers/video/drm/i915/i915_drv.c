@@ -444,8 +444,6 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     if (ret)
         goto err_g4;
 
-    main_device = dev;
-
     LEAVE();
 
     return 0;

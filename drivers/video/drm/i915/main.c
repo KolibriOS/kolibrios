@@ -20,9 +20,11 @@ void parse_cmdline(char *cmdline, char *log);
 int _stdcall display_handler(ioctl_t *io);
 int init_agp(void);
 
-int create_video(int width, int height, u32_t *outp);
-int video_blit(uint64_t src_offset, int  x, int y,
-                    int w, int h, int pitch);
+int blit_video(u32 hbitmap, int  dst_x, int dst_y,
+               int src_x, int src_y, u32 w, u32 h);
+
+int blit_textured(u32 hbitmap, int  dst_x, int dst_y,
+               int src_x, int src_y, u32 w, u32 h);
 
 static char  log[256];
 
@@ -47,7 +49,8 @@ u32_t drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
-        strcpy(log, "/RD/1/DRIVERS/i915.log");
+//        strcpy(log, "/RD/1/DRIVERS/i915.log");
+        strcpy(log, "/HD1/2/i915.log");
 
         if(!dbg_open(log))
         {
@@ -56,6 +59,9 @@ u32_t drvEntry(int action, char *cmdline)
         };
     }
     dbgprintf("i915 blitter preview\n cmdline: %s\n", cmdline);
+
+    cpu_detect();
+    dbgprintf("\ncache line size %d\n", x86_clflush_size);
 
     enum_pci_devices();
 
@@ -79,12 +85,13 @@ u32_t drvEntry(int action, char *cmdline)
 #define COMPATIBLE_API  0x0100      /*      1.00     */
 
 #define API_VERSION     (COMPATIBLE_API << 16) | CURRENT_API
-#define DISPLAY_VERSION  CURRENT_API
+#define DISPLAY_VERSION  API_VERSION
 
 
 #define SRV_GETVERSION       0
 #define SRV_ENUM_MODES       1
 #define SRV_SET_MODE         2
+#define SRV_GET_CAPS         3
 
 #define SRV_CREATE_SURFACE  10
 
@@ -132,6 +139,10 @@ int _stdcall display_handler(ioctl_t *io)
                 retval = set_user_mode((videomode_t*)inp);
             break;
 
+        case SRV_GET_CAPS:
+            retval = get_driver_caps((hwcaps_t*)inp);
+            break;
+
         case SRV_CREATE_SURFACE:
 //            check_input(8);
             retval = create_surface((struct io_call_10*)inp);
@@ -139,7 +150,10 @@ int _stdcall display_handler(ioctl_t *io)
 
 
         case SRV_BLIT_VIDEO:
-            blit_video( inp[0], inp[1], inp[2],
+//            blit_video( inp[0], inp[1], inp[2],
+//                    inp[3], inp[4], inp[5], inp[6]);
+
+            blit_textured( inp[0], inp[1], inp[2],
                     inp[3], inp[4], inp[5], inp[6]);
 
             retval = 0;
@@ -211,18 +225,21 @@ void parse_cmdline(char *cmdline, char *log)
     };
 };
 
+
 static inline void __cpuid(unsigned int *eax, unsigned int *ebx,
-                           unsigned int *ecx, unsigned int *edx)
+                unsigned int *ecx, unsigned int *edx)
 {
     /* ecx is often an input as well as an output. */
-    asm volatile(
-        "cpuid"
+    asm volatile("cpuid"
         : "=a" (*eax),
           "=b" (*ebx),
           "=c" (*ecx),
           "=d" (*edx)
-        : "" (*eax), "2" (*ecx));
+        : "0" (*eax), "2" (*ecx)
+        : "memory");
 }
+
+
 
 static inline void cpuid(unsigned int op,
                          unsigned int *eax, unsigned int *ebx,

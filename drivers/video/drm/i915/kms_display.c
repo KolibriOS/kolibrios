@@ -17,6 +17,8 @@
 
 #include "bitmap.h"
 
+extern struct drm_device *main_device;
+
 
 typedef struct
 {
@@ -66,6 +68,9 @@ static display_t *os_display;
 
 u32_t cmd_buffer;
 u32_t cmd_offset;
+
+void init_render();
+int  sna_init();
 
 int init_cursor(cursor_t *cursor);
 static cursor_t*  __stdcall select_cursor_kms(cursor_t *cursor);
@@ -210,6 +215,8 @@ int init_display_kms(struct drm_device *dev)
     };
 #endif
 
+    main_device = dev;
+
     int err;
 
     err = init_bitmaps();
@@ -217,6 +224,8 @@ int init_display_kms(struct drm_device *dev)
     {
         printf("Initialize bitmap manager\n");
     };
+
+    sna_init();
 
     LEAVE();
 
@@ -577,7 +586,6 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     return old;
 };
 
-extern struct drm_device *main_device;
 
 #define XY_SRC_COPY_BLT_CMD     ((2<<29)|(0x53<<22)|6)
 
@@ -748,6 +756,7 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
 #else
         u8* src_offset;
         u8* dst_offset;
+        u32 ifl;
 
         src_offset = (u8*)(src_y*bitmap->pitch + src_x*4);
         src_offset += (u32)bitmap->uaddr;
@@ -757,6 +766,7 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
 
         u32_t tmp_h = height;
 
+      ifl = safe_cli();
         while( tmp_h--)
         {
             u32_t tmp_w = width;
@@ -774,6 +784,7 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
                 tmp_dst++;
             };
         };
+      safe_sti(ifl);
     }
 #endif
 
@@ -810,25 +821,194 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
     i915_gem_object_set_to_gtt_domain(bitmap->obj, false);
 
     if (HAS_BLT(main_device))
+    {
+        int ret;
+
         ring = &dev_priv->ring[BCS];
+        ring->dispatch_execbuffer(ring, cmd_offset, n*4);
+
+        ret = intel_ring_begin(ring, 4);
+        if (ret)
+            return ret;
+
+        intel_ring_emit(ring, MI_FLUSH_DW);
+        intel_ring_emit(ring, 0);
+        intel_ring_emit(ring, 0);
+        intel_ring_emit(ring, MI_NOOP);
+        intel_ring_advance(ring);
+    }
     else
+    {
         ring = &dev_priv->ring[RCS];
+        ring->dispatch_execbuffer(ring, cmd_offset, n*4);
+        ring->flush(ring, 0, I915_GEM_DOMAIN_RENDER);
+    };
 
-    ring->dispatch_execbuffer(ring, cmd_offset, n*4);
-
-    int ret;
-
-    ret = intel_ring_begin(ring, 4);
-    if (ret)
-        return ret;
-
-    intel_ring_emit(ring, MI_FLUSH_DW);
-    intel_ring_emit(ring, 0);
-    intel_ring_emit(ring, 0);
-    intel_ring_emit(ring, MI_NOOP);
-    intel_ring_advance(ring);
+    bitmap->obj->base.read_domains = I915_GEM_DOMAIN_CPU;
+    bitmap->obj->base.write_domain = I915_GEM_DOMAIN_CPU;
 
     return 0;
 fail:
     return -1;
 };
+
+
+/* For display hotplug interrupt */
+static void
+ironlake_enable_display_irq(drm_i915_private_t *dev_priv, u32 mask)
+{
+    if ((dev_priv->irq_mask & mask) != 0) {
+        dev_priv->irq_mask &= ~mask;
+        I915_WRITE(DEIMR, dev_priv->irq_mask);
+        POSTING_READ(DEIMR);
+    }
+}
+
+static int ironlake_enable_vblank(struct drm_device *dev, int pipe)
+{
+    drm_i915_private_t *dev_priv = (drm_i915_private_t *) dev->dev_private;
+    unsigned long irqflags;
+
+//    if (!i915_pipe_enabled(dev, pipe))
+//        return -EINVAL;
+
+    spin_lock_irqsave(&dev_priv->irq_lock, irqflags);
+    ironlake_enable_display_irq(dev_priv, (pipe == 0) ?
+                    DE_PIPEA_VBLANK : DE_PIPEB_VBLANK);
+    spin_unlock_irqrestore(&dev_priv->irq_lock, irqflags);
+
+    return 0;
+}
+
+
+
+static int i915_interrupt_info(struct drm_device *dev)
+{
+    drm_i915_private_t *dev_priv = dev->dev_private;
+    int ret, i, pipe;
+
+    if (!HAS_PCH_SPLIT(dev)) {
+        dbgprintf("Interrupt enable:    %08x\n",
+               I915_READ(IER));
+        dbgprintf("Interrupt identity:  %08x\n",
+               I915_READ(IIR));
+        dbgprintf("Interrupt mask:      %08x\n",
+               I915_READ(IMR));
+        for_each_pipe(pipe)
+            dbgprintf("Pipe %c stat:         %08x\n",
+                   pipe_name(pipe),
+                   I915_READ(PIPESTAT(pipe)));
+    } else {
+        dbgprintf("North Display Interrupt enable:      %08x\n",
+           I915_READ(DEIER));
+        dbgprintf("North Display Interrupt identity:    %08x\n",
+           I915_READ(DEIIR));
+        dbgprintf("North Display Interrupt mask:        %08x\n",
+           I915_READ(DEIMR));
+        dbgprintf("South Display Interrupt enable:      %08x\n",
+           I915_READ(SDEIER));
+        dbgprintf("South Display Interrupt identity:    %08x\n",
+           I915_READ(SDEIIR));
+        dbgprintf("South Display Interrupt mask:        %08x\n",
+           I915_READ(SDEIMR));
+        dbgprintf("Graphics Interrupt enable:           %08x\n",
+           I915_READ(GTIER));
+        dbgprintf("Graphics Interrupt identity:         %08x\n",
+           I915_READ(GTIIR));
+        dbgprintf("Graphics Interrupt mask:             %08x\n",
+               I915_READ(GTIMR));
+    }
+    dbgprintf("Interrupts received: %d\n",
+           atomic_read(&dev_priv->irq_received));
+    for (i = 0; i < I915_NUM_RINGS; i++) {
+        if (IS_GEN6(dev) || IS_GEN7(dev)) {
+            printf("Graphics Interrupt mask (%s):       %08x\n",
+                   dev_priv->ring[i].name,
+                   I915_READ_IMR(&dev_priv->ring[i]));
+        }
+//        i915_ring_seqno_info(m, &dev_priv->ring[i]);
+    }
+
+    return 0;
+}
+
+void execute_buffer (struct drm_i915_gem_object *buffer, uint32_t offset,
+                     int size)
+{
+    struct intel_ring_buffer *ring;
+    drm_i915_private_t *dev_priv = main_device->dev_private;
+    u32 invalidate;
+    u32 seqno = 2;
+
+    offset += buffer->gtt_offset;
+//    dbgprintf("execute %x size %d\n", offset, size);
+
+//    asm volatile(
+//    "mfence \n"
+//    "wbinvd \n"
+//    "mfence  \n"
+//    :::"memory");
+
+    ring = &dev_priv->ring[RCS];
+    ring->dispatch_execbuffer(ring, offset, size);
+
+    invalidate = I915_GEM_DOMAIN_COMMAND;
+    if (INTEL_INFO(main_device)->gen >= 4)
+        invalidate |= I915_GEM_DOMAIN_SAMPLER;
+    if (ring->flush(ring, invalidate, 0))
+        i915_gem_next_request_seqno(ring);
+
+    ring->irq_get(ring);
+
+    ring->add_request(ring, &seqno);
+
+//    i915_interrupt_info(main_device);
+
+//    ironlake_enable_vblank(main_device, 0);
+};
+
+
+int blit_textured(u32 hbitmap, int  dst_x, int dst_y,
+               int src_x, int src_y, u32 w, u32 h)
+{
+    drm_i915_private_t *dev_priv = main_device->dev_private;
+
+    bitmap_t  *src_bitmap, *dst_bitmap;
+    bitmap_t   screen;
+
+    rect_t     winrc;
+
+//    dbgprintf("  handle: %d dx %d dy %d sx %d sy %d w %d h %d\n",
+//              hbitmap, dst_x, dst_y, src_x, src_y, w, h);
+
+    if(unlikely(hbitmap==0))
+        return -1;
+
+    src_bitmap = (bitmap_t*)hman_get_data(&bm_man, hbitmap);
+//    dbgprintf("bitmap %x\n", src_bitmap);
+
+    if(unlikely(src_bitmap==NULL))
+        return -1;
+
+    GetWindowRect(&winrc);
+
+    screen.pitch  = os_display->pitch;
+    screen.gaddr  = 0;
+    screen.width  = os_display->width;
+    screen.height = os_display->height;
+    screen.obj    = (void*)-1;
+
+    dst_bitmap = &screen;
+
+    dst_x+= winrc.left;
+    dst_y+= winrc.top;
+
+    i915_gem_object_set_to_gtt_domain(src_bitmap->obj, false);
+
+    sna_blit_copy(dst_bitmap, dst_x, dst_y, w, h, src_bitmap, src_x, src_y);
+
+    src_bitmap->obj->base.read_domains = I915_GEM_DOMAIN_CPU;
+    src_bitmap->obj->base.write_domain = I915_GEM_DOMAIN_CPU;
+
+};
+

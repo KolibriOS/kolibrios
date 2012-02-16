@@ -491,7 +491,7 @@ struct drm_i915_gem_relocation_entry {
 	__u32 delta;
 
 	/** Offset in the buffer the relocation entry will be written into */
-	__u64 offset;
+    __u32 offset;
 
 	/**
 	 * Offset value of the target buffer that the relocation entry was last
@@ -501,7 +501,7 @@ struct drm_i915_gem_relocation_entry {
 	 * and writing the relocation.  This value is written back out by
 	 * the execbuffer ioctl when the relocation is written.
 	 */
-	__u64 presumed_offset;
+    __u32 presumed_offset;
 
 	/**
 	 * Target memory domains read by this operation.

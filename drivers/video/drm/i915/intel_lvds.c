@@ -622,7 +622,7 @@ static const struct drm_encoder_funcs intel_lvds_enc_funcs = {
 	.destroy = intel_encoder_destroy,
 };
 
-static int intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
+static int __init intel_no_lvds_dmi_callback(const struct dmi_system_id *id)
 {
 	DRM_DEBUG_KMS("Skipping LVDS initialization for %s\n", id->ident);
 	return 1;
@@ -694,6 +694,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
 			DMI_MATCH(DMI_BOARD_NAME, "i915GMm-HFS"),
 		},
 	},
+	{
+		.callback = intel_no_lvds_dmi_callback,
+                .ident = "AOpen i45GMx-I",
+                .matches = {
+                        DMI_MATCH(DMI_BOARD_VENDOR, "AOpen"),
+                        DMI_MATCH(DMI_BOARD_NAME, "i45GMx-I"),
+                },
+        },
 	{
 		.callback = intel_no_lvds_dmi_callback,
 		.ident = "Aopen i945GTt-VFA",

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006 Intel Corporation
+ * Copyright Â© 2006 Intel Corporation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -640,7 +640,7 @@ intel_parse_bios(struct drm_device *dev)
 
 	init_vbt_defaults(dev_priv);
 
-    /* XXX Should this validation be moved to intel_opregion.c? */
+	/* XXX Should this validation be moved to intel_opregion.c? */
 	if (dev_priv->opregion.vbt) {
 		struct vbt_header *vbt = dev_priv->opregion.vbt;
 		if (memcmp(vbt->signature, "$VBT", 4) == 0) {
@@ -670,7 +670,7 @@ intel_parse_bios(struct drm_device *dev)
 
 		if (!vbt) {
 			DRM_ERROR("VBT signature missing\n");
-            pci_unmap_rom(pdev, bios);
+			pci_unmap_rom(pdev, bios);
 			return -1;
 		}
 
@@ -678,17 +678,17 @@ intel_parse_bios(struct drm_device *dev)
 	}
 
 	/* Grab useful general definitions */
-    parse_general_features(dev_priv, bdb);
-    parse_general_definitions(dev_priv, bdb);
-    parse_lfp_panel_data(dev_priv, bdb);
-    parse_sdvo_panel_data(dev_priv, bdb);
-    parse_sdvo_device_mapping(dev_priv, bdb);
-    parse_device_mapping(dev_priv, bdb);
-    parse_driver_features(dev_priv, bdb);
-    parse_edp(dev_priv, bdb);
+	parse_general_features(dev_priv, bdb);
+	parse_general_definitions(dev_priv, bdb);
+	parse_lfp_panel_data(dev_priv, bdb);
+	parse_sdvo_panel_data(dev_priv, bdb);
+	parse_sdvo_device_mapping(dev_priv, bdb);
+	parse_device_mapping(dev_priv, bdb);
+	parse_driver_features(dev_priv, bdb);
+	parse_edp(dev_priv, bdb);
 
-    if (bios)
-        pci_unmap_rom(pdev, bios);
+	if (bios)
+		pci_unmap_rom(pdev, bios);
 
 	return 0;
 }

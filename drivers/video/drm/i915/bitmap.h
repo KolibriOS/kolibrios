@@ -66,6 +66,25 @@ struct  io_call_10         /*     SRV_CREATE_SURFACE    */
     u32     format;       // reserved mbz
 };
 
+typedef struct
+{
+    uint32_t  idx;
+    union
+    {
+        uint32_t opt[2];
+        struct {
+            uint32_t max_tex_width;
+            uint32_t max_tex_height;
+        }cap1;
+    };
+}hwcaps_t;
+
+#define HW_BIT_BLIT         (1<<0)      /* BGRX blitter             */
+#define HW_TEX_BLIT         (1<<1)      /* stretch blit             */
+#define HW_VID_BLIT         (1<<2)      /* planar and packed video  */
+                                        /*  3 - 63 reserved         */
+
+int get_driver_caps(hwcaps_t *caps);
 int create_surface(struct io_call_10 *pbitmap);
 int init_bitmaps();
 

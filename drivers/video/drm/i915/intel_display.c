@@ -36,9 +36,8 @@
 #include "intel_drv.h"
 #include "i915_drm.h"
 #include "i915_drv.h"
-//#include "i915_trace.h"
+#include "i915_trace.h"
 #include "drm_dp_helper.h"
-
 #include "drm_crtc_helper.h"
 
 phys_addr_t get_bus_addr(void);
@@ -4510,8 +4509,6 @@ void sandybridge_update_wm(struct drm_device *dev)
 	int fbc_wm, plane_wm, cursor_wm;
 	unsigned int enabled;
 
-    ENTER();
-
 	enabled = 0;
 	if (g4x_compute_wm0(dev, 0,
 			    &sandybridge_display_wm_info, latency,
@@ -4794,10 +4791,9 @@ static void sandybridge_update_sprite_wm(struct drm_device *dev, int pipe,
 static void intel_update_watermarks(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
-    ENTER();
+
 	if (dev_priv->display.update_wm)
 		dev_priv->display.update_wm(dev);
-    LEAVE();
 }
 
 void intel_update_sprite_watermarks(struct drm_device *dev, int pipe,

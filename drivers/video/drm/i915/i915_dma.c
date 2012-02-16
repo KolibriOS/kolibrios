@@ -34,7 +34,7 @@
 #include "i915_drm.h"
 #include "i915_drv.h"
 #include <drm/intel-gtt.h>
-//#include "i915_trace.h"
+#include "i915_trace.h"
 //#include "../../../platform/x86/intel_ips.h"
 #include <linux/pci.h>
 //#include <linux/vgaarb.h>
@@ -241,9 +241,9 @@ static int i915_load_modeset_init(struct drm_device *dev)
 
     intel_modeset_gem_init(dev);
 
-//    ret = drm_irq_install(dev);
-//    if (ret)
-//        goto cleanup_gem;
+	ret = drm_irq_install(dev);
+	if (ret)
+		goto cleanup_gem;
 
     /* Always safe in the mode setting case. */
     /* FIXME: do pre/post-mode set stuff in core KMS code */
@@ -521,8 +521,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
     /* enable GEM by default */
     dev_priv->has_gem = 1;
 
-
-//    intel_irq_init(dev);
+	intel_irq_init(dev);
 
     /* Try to make sure MCHBAR is enabled before poking at it */
 	intel_setup_mchbar(dev);

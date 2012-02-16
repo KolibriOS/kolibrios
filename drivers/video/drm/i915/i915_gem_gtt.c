@@ -26,7 +26,7 @@
 #include "drm.h"
 #include "i915_drm.h"
 #include "i915_drv.h"
-//#include "i915_trace.h"
+#include "i915_trace.h"
 #include "intel_drv.h"
 
 #define AGP_USER_TYPES          (1 << 16)

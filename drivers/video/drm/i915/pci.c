@@ -350,11 +350,11 @@ static pci_dev_t* pci_scan_device(u32_t busnr, int devfn)
     hdr = PciRead8(busnr, devfn, PCI_HEADER_TYPE);
 
     dev = (pci_dev_t*)kzalloc(sizeof(pci_dev_t), 0);
+    if(unlikely(dev == NULL))
+        return NULL;
 
     INIT_LIST_HEAD(&dev->link);
 
-    if(unlikely(dev == NULL))
-        return NULL;
 
     dev->pci_dev.busnr    = busnr;
     dev->pci_dev.devfn    = devfn;
