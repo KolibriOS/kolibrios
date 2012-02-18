@@ -970,10 +970,10 @@ static int compact_batch_surface(struct kgem *kgem)
 	return size;
 }
 
-void execute_buffer (struct drm_i915_gem_object *buffer, uint32_t offset,
-                     int size);
+int exec_batch(struct drm_device *dev, struct intel_ring_buffer *ring,
+               batchbuffer_t *exec);
 
-void _kgem_submit(struct kgem *kgem)
+void _kgem_submit(struct kgem *kgem, batchbuffer_t *exb)
 {
 	struct kgem_request *rq;
 	uint32_t batch_end;
@@ -1020,7 +1020,11 @@ void _kgem_submit(struct kgem *kgem)
     };
 #endif
 
-    execute_buffer(kgem->batch_obj, kgem->batch_idx*4096, sizeof(uint32_t)*kgem->nbatch);
+    exb->batch = kgem->batch_obj;
+    exb->exec_start = kgem->batch_obj->gtt_offset+kgem->batch_idx*4096;
+    exb->exec_len   = sizeof(uint32_t)*kgem->nbatch;
+
+    exec_batch(main_device, NULL, exb);
 
 //   if (kgem->wedged)
 //       kgem_cleanup(kgem);

@@ -178,6 +178,15 @@ struct kgem {
     struct drm_i915_gem_relocation_entry reloc[384];
 };
 
+typedef struct
+{
+    struct drm_i915_gem_object *batch;
+    struct list_head  objects;
+    u32    exec_start;
+    u32    exec_len;
+
+}batchbuffer_t;
+
 #define KGEM_BATCH_RESERVED 1
 #define KGEM_RELOC_RESERVED 4
 #define KGEM_EXEC_RESERVED 1
@@ -237,12 +246,12 @@ void kgem_bo_set_binding(struct kgem_bo *bo, uint32_t format, uint16_t offset);
 
 bool kgem_retire(struct kgem *kgem);
 
-void _kgem_submit(struct kgem *kgem);
-static inline void kgem_submit(struct kgem *kgem)
-{
-	if (kgem->nbatch)
-		_kgem_submit(kgem);
-}
+void _kgem_submit(struct kgem *kgem, batchbuffer_t *exb);
+//static inline void kgem_submit(struct kgem *kgem)
+//{
+//   if (kgem->nbatch)
+//       _kgem_submit(kgem);
+//}
 
 /*
 static inline void kgem_bo_submit(struct kgem *kgem, struct kgem_bo *bo)
@@ -328,8 +337,8 @@ static inline bool kgem_check_batch_with_surfaces(struct kgem *kgem,
 
 static inline uint32_t *kgem_get_batch(struct kgem *kgem, int num_dwords)
 {
-	if (!kgem_check_batch(kgem, num_dwords))
-		_kgem_submit(kgem);
+//   if (!kgem_check_batch(kgem, num_dwords))
+//       _kgem_submit(kgem);
 
 	return kgem->batch + kgem->nbatch;
 }

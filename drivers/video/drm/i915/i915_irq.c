@@ -35,6 +35,9 @@
 #include "i915_trace.h"
 #include "intel_drv.h"
 
+#define DRM_WAKEUP( queue ) wake_up( queue )
+#define DRM_INIT_WAITQUEUE( queue ) init_waitqueue_head( queue )
+
 #define MAX_NOPID ((u32)~0)
 
 /**
@@ -84,6 +87,27 @@ ironlake_disable_display_irq(drm_i915_private_t *dev_priv, u32 mask)
         POSTING_READ(DEIMR);
     }
 }
+static void notify_ring(struct drm_device *dev,
+			struct intel_ring_buffer *ring)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	u32 seqno;
+
+	if (ring->obj == NULL)
+		return;
+
+	seqno = ring->get_seqno(ring);
+	trace_i915_gem_request_complete(ring, seqno);
+
+	ring->irq_seqno = seqno;
+	wake_up_all(&ring->irq_queue);
+//   if (i915_enable_hangcheck) {
+//       dev_priv->hangcheck_count = 0;
+//       mod_timer(&dev_priv->hangcheck_timer,
+//             jiffies +
+//             msecs_to_jiffies(DRM_I915_HANGCHECK_PERIOD));
+//   }
+}
 
 
 
@@ -123,12 +147,12 @@ static int ironlake_irq_handler(struct drm_device *dev)
     ret = IRQ_HANDLED;
 
 
-//    if (gt_iir & (GT_USER_INTERRUPT | GT_PIPE_NOTIFY))
-//        notify_ring(dev, &dev_priv->ring[RCS]);
-//    if (gt_iir & bsd_usr_interrupt)
-//        notify_ring(dev, &dev_priv->ring[VCS]);
-//    if (gt_iir & GT_BLT_USER_INTERRUPT)
-//        notify_ring(dev, &dev_priv->ring[BCS]);
+    if (gt_iir & (GT_USER_INTERRUPT | GT_PIPE_NOTIFY))
+        notify_ring(dev, &dev_priv->ring[RCS]);
+    if (gt_iir & bsd_usr_interrupt)
+        notify_ring(dev, &dev_priv->ring[VCS]);
+    if (gt_iir & GT_BLT_USER_INTERRUPT)
+        notify_ring(dev, &dev_priv->ring[BCS]);
 
 //    if (de_iir & DE_GSE)
 //        intel_opregion_gse_intr(dev);
@@ -275,11 +299,11 @@ static int ironlake_irq_postinstall(struct drm_device *dev)
     u32 render_irqs;
     u32 hotplug_mask;
 
-//    DRM_INIT_WAITQUEUE(&dev_priv->ring[RCS].irq_queue);
-//    if (HAS_BSD(dev))
-//        DRM_INIT_WAITQUEUE(&dev_priv->ring[VCS].irq_queue);
-//    if (HAS_BLT(dev))
-//        DRM_INIT_WAITQUEUE(&dev_priv->ring[BCS].irq_queue);
+    DRM_INIT_WAITQUEUE(&dev_priv->ring[RCS].irq_queue);
+    if (HAS_BSD(dev))
+        DRM_INIT_WAITQUEUE(&dev_priv->ring[VCS].irq_queue);
+    if (HAS_BLT(dev))
+        DRM_INIT_WAITQUEUE(&dev_priv->ring[BCS].irq_queue);
 
     dev_priv->vblank_pipe = DRM_I915_VBLANK_PIPE_A | DRM_I915_VBLANK_PIPE_B;
     dev_priv->irq_mask = ~display_mask;

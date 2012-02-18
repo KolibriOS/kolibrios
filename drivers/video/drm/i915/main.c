@@ -88,14 +88,17 @@ u32_t drvEntry(int action, char *cmdline)
 #define DISPLAY_VERSION  API_VERSION
 
 
-#define SRV_GETVERSION       0
-#define SRV_ENUM_MODES       1
-#define SRV_SET_MODE         2
-#define SRV_GET_CAPS         3
+#define SRV_GETVERSION          0
+#define SRV_ENUM_MODES          1
+#define SRV_SET_MODE            2
+#define SRV_GET_CAPS            3
 
-#define SRV_CREATE_SURFACE  10
+#define SRV_CREATE_SURFACE      10
+#define SRV_DESTROY_SURFACE     11
+#define SRV_LOCK_SURFACE        12
+#define SRV_UNLOCK_SURFACE      13
 
-#define SRV_BLIT_VIDEO      20
+#define SRV_BLIT_VIDEO          20
 
 #define check_input(size) \
     if( unlikely((inp==NULL)||(io->inp_size != (size))) )   \
@@ -148,6 +151,9 @@ int _stdcall display_handler(ioctl_t *io)
             retval = create_surface((struct io_call_10*)inp);
             break;
 
+        case SRV_LOCK_SURFACE:
+            retval = lock_surface((struct io_call_12*)inp);
+            break;
 
         case SRV_BLIT_VIDEO:
 //            blit_video( inp[0], inp[1], inp[2],
@@ -155,6 +161,7 @@ int _stdcall display_handler(ioctl_t *io)
 
             blit_textured( inp[0], inp[1], inp[2],
                     inp[3], inp[4], inp[5], inp[6]);
+
 
             retval = 0;
             break;

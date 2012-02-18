@@ -369,29 +369,12 @@ gen6_emit_state_base_address(struct sna *sna)
 	OUT_BATCH(GEN6_STATE_BASE_ADDRESS | (10 - 2));
 	OUT_BATCH(0); /* general */
 
-//   OUT_BATCH(kgem_add_reloc(&sna->kgem, /* surface */
-//                sna->kgem.nbatch,
-//                NULL,
-//                I915_GEM_DOMAIN_INSTRUCTION << 16,
-//                 BASE_ADDRESS_MODIFY));
-
     OUT_BATCH((sna->kgem.batch_obj->gtt_offset+
               sna->kgem.batch_idx*4096)|BASE_ADDRESS_MODIFY);
-
-//   OUT_BATCH(kgem_add_reloc(&sna->kgem, /* instruction */
-//                sna->kgem.nbatch,
-//                sna->render_state.gen6.general_bo,
-//                I915_GEM_DOMAIN_INSTRUCTION << 16,
-//                BASE_ADDRESS_MODIFY));
 
     OUT_BATCH(sna->render_state.gen6.general_bo->gaddr|BASE_ADDRESS_MODIFY);
 
 	OUT_BATCH(0); /* indirect */
-//   OUT_BATCH(kgem_add_reloc(&sna->kgem,
-//                sna->kgem.nbatch,
-//                sna->render_state.gen6.general_bo,
-//                I915_GEM_DOMAIN_INSTRUCTION << 16,
-//                BASE_ADDRESS_MODIFY));
 
     OUT_BATCH(sna->render_state.gen6.general_bo->gaddr|BASE_ADDRESS_MODIFY);
 
@@ -493,7 +476,7 @@ gen6_emit_invariant(struct sna *sna)
 
 	OUT_BATCH(GEN6_3DSTATE_MULTISAMPLE | (3 - 2));
 	OUT_BATCH(GEN6_3DSTATE_MULTISAMPLE_PIXEL_LOCATION_CENTER |
-		  GEN6_3DSTATE_MULTISAMPLE_NUMSAMPLES_1); /* 1 sample/pixel */
+              GEN6_3DSTATE_MULTISAMPLE_NUMSAMPLES_1); /* 1 sample/pixel */
 	OUT_BATCH(0);
 
 	OUT_BATCH(GEN6_3DSTATE_SAMPLE_MASK | (2 - 2));
@@ -980,22 +963,9 @@ static void gen6_vertex_close(struct sna *sna)
 			DBG(("%s: reloc[%d] = %d\n", __FUNCTION__,
 			     i, sna->render.vertex_reloc[i]));
 
-//           sna->kgem.batch[sna->render.vertex_reloc[i]] =
-//               kgem_add_reloc(&sna->kgem,
-//                          sna->render.vertex_reloc[i],
-//                          bo,
-//                          I915_GEM_DOMAIN_VERTEX << 16,
-//                          delta);
             sna->kgem.batch[sna->render.vertex_reloc[i]] =
                             sna->kgem.batch_obj->gtt_offset+delta+
                             sna->kgem.batch_idx*4096;
-
-//           sna->kgem.batch[sna->render.vertex_reloc[i]+1] =
-//               kgem_add_reloc(&sna->kgem,
-//                          sna->render.vertex_reloc[i]+1,
-//                          bo,
-//                          I915_GEM_DOMAIN_VERTEX << 16,
-//                          delta + sna->render.vertex_used * 4 - 1);
 
             sna->kgem.batch[sna->render.vertex_reloc[i]+1] =
                             sna->kgem.batch_obj->gtt_offset+delta+
@@ -1681,7 +1651,7 @@ gen6_render_copy_blt(struct sna *sna,
 		     int16_t dx, int16_t dy)
 {
     if (unlikely(!gen6_get_rectangles(sna, op, 1))) {
-		_kgem_submit(&sna->kgem);
+//       _kgem_submit(&sna->kgem);
         gen6_emit_copy_state(sna, op);
         gen6_get_rectangles(sna, op, 1);
 	}
@@ -1767,8 +1737,6 @@ gen6_render_copy(struct sna *sna, uint8_t alu,
 
     gen6_render_copy_blt(sna, &op, src_x, src_y, w, h, dst_x, dst_y);
     gen6_render_copy_done(sna);
-
-    _kgem_submit(&sna->kgem);
 
 	return TRUE;
 }
@@ -1856,7 +1824,7 @@ gen6_render_clear(struct sna *sna, bitmap_t *dst, struct kgem_bo *bo)
 	gen6_align_vertex(sna, &tmp);
 
 	if (unlikely(!gen6_get_rectangles(sna, &tmp, 1))) {
-		_kgem_submit(&sna->kgem);
+//       _kgem_submit(&sna->kgem);
 		gen6_emit_fill_state(sna, &tmp);
 		gen6_get_rectangles(sna, &tmp, 1);
 	}
@@ -1876,7 +1844,7 @@ gen6_render_clear(struct sna *sna, bitmap_t *dst, struct kgem_bo *bo)
     gen6_vertex_flush(sna);
 //   kgem_bo_destroy(&sna->kgem, tmp.src.bo);
 //    gen6_render_composite_done(sna, &tmp);
-    _kgem_submit(&sna->kgem);
+//    _kgem_submit(&sna->kgem);
 
 	return TRUE;
 }

@@ -6,6 +6,10 @@
 #include "intel_drv.h"
 #include "bitmap.h"
 
+#define memmove __builtin_memmove
+
+int gem_object_lock(struct drm_i915_gem_object *obj);
+
 #define DRIVER_CAPS_0   HW_BIT_BLIT | HW_TEX_BLIT;
 #define DRIVER_CAPS_1   0
 
@@ -174,7 +178,37 @@ err1:
 };
 
 
+int lock_surface(struct io_call_12 *pbitmap)
+{
+    int ret;
 
+    drm_i915_private_t *dev_priv = main_device->dev_private;
+
+    bitmap_t  *bitmap;
+
+    if(unlikely(pbitmap->handle == 0))
+        return -1;
+
+    bitmap = (bitmap_t*)hman_get_data(&bm_man, pbitmap->handle);
+
+    if(unlikely(bitmap==NULL))
+        return -1;
+
+    ret = gem_object_lock(bitmap->obj);
+    if(ret !=0 )
+    {
+        pbitmap->data  = NULL;
+        pbitmap->pitch = 0;
+
+        dbgprintf("%s fail\n", __FUNCTION__);
+        return ret;
+    };
+
+    pbitmap->data  = bitmap->uaddr;
+    pbitmap->pitch = bitmap->pitch;
+
+    return 0;
+};
 
 int init_hman(struct hman *man, u32 count)
 {

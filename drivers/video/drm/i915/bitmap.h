@@ -66,6 +66,17 @@ struct  io_call_10         /*     SRV_CREATE_SURFACE    */
     u32     format;       // reserved mbz
 };
 
+struct  io_call_12         /*     SRV_LOCK_SURFACE    */
+{
+    u32     handle;       // ignored
+    void   *data;         // ignored
+
+    u32     width;
+    u32     height;
+    u32     pitch;        // ignored
+};
+
+
 typedef struct
 {
     uint32_t  idx;
@@ -86,5 +97,7 @@ typedef struct
 
 int get_driver_caps(hwcaps_t *caps);
 int create_surface(struct io_call_10 *pbitmap);
+int lock_surface(struct io_call_12 *pbitmap);
+
 int init_bitmaps();
 

@@ -210,7 +210,7 @@ int init_display_kms(struct drm_device *dev)
         obj = i915_gem_alloc_object(dev, 4096);
         i915_gem_object_pin(obj, 4096, true);
 
-        cmd_buffer = MapIoMem(obj->pages[0], 4096, PG_SW|PG_NOCACHE);
+        cmd_buffer = MapIoMem((addr_t)obj->pages[0], 4096, PG_SW|PG_NOCACHE);
         cmd_offset = obj->gtt_offset;
     };
 #endif
@@ -577,7 +577,7 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     if (!dev_priv->info->cursor_needs_physical)
        intel_crtc->cursor_addr = cursor->cobj->gtt_offset;
     else
-        intel_crtc->cursor_addr = cursor->cobj;
+        intel_crtc->cursor_addr = (addr_t)cursor->cobj;
 
     intel_crtc->cursor_width = 32;
     intel_crtc->cursor_height = 32;
@@ -1003,12 +1003,7 @@ int blit_textured(u32 hbitmap, int  dst_x, int dst_y,
     dst_x+= winrc.left;
     dst_y+= winrc.top;
 
-    i915_gem_object_set_to_gtt_domain(src_bitmap->obj, false);
-
     sna_blit_copy(dst_bitmap, dst_x, dst_y, w, h, src_bitmap, src_x, src_y);
-
-    src_bitmap->obj->base.read_domains = I915_GEM_DOMAIN_CPU;
-    src_bitmap->obj->base.write_domain = I915_GEM_DOMAIN_CPU;
 
 };
 

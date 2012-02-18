@@ -74,26 +74,6 @@ int i915_vbt_sdvo_panel_type __read_mostly      = -1;
     .subdevice = PCI_ANY_ID,                \
     .driver_data = (unsigned long) info }
 
-static const struct intel_device_info intel_i830_info = {
-	.gen = 2, .is_mobile = 1, .cursor_needs_physical = 1,
-	.has_overlay = 1, .overlay_needs_physical = 1,
-};
-
-static const struct intel_device_info intel_845g_info = {
-	.gen = 2,
-	.has_overlay = 1, .overlay_needs_physical = 1,
-};
-
-static const struct intel_device_info intel_i85x_info = {
-	.gen = 2, .is_i85x = 1, .is_mobile = 1,
-	.cursor_needs_physical = 1,
-	.has_overlay = 1, .overlay_needs_physical = 1,
-};
-
-static const struct intel_device_info intel_i865g_info = {
-	.gen = 2,
-	.has_overlay = 1, .overlay_needs_physical = 1,
-};
 
 static const struct intel_device_info intel_i915g_info = {
 	.gen = 3, .is_i915g = 1, .cursor_needs_physical = 1,

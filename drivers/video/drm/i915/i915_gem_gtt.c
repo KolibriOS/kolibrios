@@ -122,7 +122,6 @@ int i915_gem_gtt_bind_object(struct drm_i915_gem_object *obj)
 	return 0;
 }
 
-#if 0
 void i915_gem_gtt_rebind_object(struct drm_i915_gem_object *obj,
 				enum i915_cache_level cache_level)
 {
@@ -130,21 +129,20 @@ void i915_gem_gtt_rebind_object(struct drm_i915_gem_object *obj,
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	unsigned int agp_type = cache_level_to_agp_type(dev, cache_level);
 
-	if (dev_priv->mm.gtt->needs_dmar) {
-		BUG_ON(!obj->sg_list);
+//   if (dev_priv->mm.gtt->needs_dmar) {
+//       BUG_ON(!obj->sg_list);
 
-		intel_gtt_insert_sg_entries(obj->sg_list,
-					    obj->num_sg,
-					    obj->gtt_space->start >> PAGE_SHIFT,
-					    agp_type);
-	} else
+//       intel_gtt_insert_sg_entries(obj->sg_list,
+//                       obj->num_sg,
+//                       obj->gtt_space->start >> PAGE_SHIFT,
+//                       agp_type);
+//   } else
 		intel_gtt_insert_pages(obj->gtt_space->start >> PAGE_SHIFT,
 				       obj->base.size >> PAGE_SHIFT,
 				       obj->pages,
 				       agp_type);
 }
 
-#endif
 
 void i915_gem_gtt_unbind_object(struct drm_i915_gem_object *obj)
 {

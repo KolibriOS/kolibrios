@@ -348,14 +348,14 @@ init_pipe_control(struct intel_ring_buffer *ring)
 		goto err;
 	}
 
-//   i915_gem_object_set_cache_level(obj, I915_CACHE_LLC);
+	i915_gem_object_set_cache_level(obj, I915_CACHE_LLC);
 
 	ret = i915_gem_object_pin(obj, 4096, true);
 	if (ret)
 		goto err_unref;
 
 	pc->gtt_offset = obj->gtt_offset;
-    pc->cpu_page =  (void*)MapIoMem(obj->pages[0], 4096, PG_SW);
+    pc->cpu_page =  (void*)MapIoMem((addr_t)obj->pages[0], 4096, PG_SW);
 	if (pc->cpu_page == NULL)
 		goto err_unpin;
 
@@ -516,7 +516,7 @@ render_ring_sync_to(struct intel_ring_buffer *waiter,
 		    struct intel_ring_buffer *signaller,
 		    u32 seqno)
 {
-//   WARN_ON(signaller->semaphore_register[RCS] == MI_SEMAPHORE_SYNC_INVALID);
+	WARN_ON(signaller->semaphore_register[RCS] == MI_SEMAPHORE_SYNC_INVALID);
 	return intel_ring_sync(waiter,
 			       signaller,
 			       RCS,
@@ -529,7 +529,7 @@ gen6_bsd_ring_sync_to(struct intel_ring_buffer *waiter,
 		      struct intel_ring_buffer *signaller,
 		      u32 seqno)
 {
-//   WARN_ON(signaller->semaphore_register[VCS] == MI_SEMAPHORE_SYNC_INVALID);
+	WARN_ON(signaller->semaphore_register[VCS] == MI_SEMAPHORE_SYNC_INVALID);
 	return intel_ring_sync(waiter,
 			       signaller,
 			       VCS,
@@ -542,7 +542,7 @@ gen6_blt_ring_sync_to(struct intel_ring_buffer *waiter,
 		      struct intel_ring_buffer *signaller,
 		      u32 seqno)
 {
-//   WARN_ON(signaller->semaphore_register[BCS] == MI_SEMAPHORE_SYNC_INVALID);
+	WARN_ON(signaller->semaphore_register[BCS] == MI_SEMAPHORE_SYNC_INVALID);
 	return intel_ring_sync(waiter,
 			       signaller,
 			       BCS,
@@ -969,7 +969,7 @@ static int init_status_page(struct intel_ring_buffer *ring)
 		goto err;
 	}
 
-//    i915_gem_object_set_cache_level(obj, I915_CACHE_LLC);
+	i915_gem_object_set_cache_level(obj, I915_CACHE_LLC);
 
 	ret = i915_gem_object_pin(obj, 4096, true);
 	if (ret != 0) {
@@ -977,7 +977,7 @@ static int init_status_page(struct intel_ring_buffer *ring)
 	}
 
 	ring->status_page.gfx_addr = obj->gtt_offset;
-    ring->status_page.page_addr = MapIoMem(obj->pages[0], 4096, PG_SW);
+    ring->status_page.page_addr = (void*)MapIoMem((addr_t)obj->pages[0], 4096, PG_SW);
 	if (ring->status_page.page_addr == NULL) {
 		memset(&dev_priv->hws_map, 0, sizeof(dev_priv->hws_map));
 		goto err_unpin;
@@ -1010,7 +1010,7 @@ int intel_init_ring_buffer(struct drm_device *dev,
 	INIT_LIST_HEAD(&ring->request_list);
 	INIT_LIST_HEAD(&ring->gpu_write_list);
 
-//   init_waitqueue_head(&ring->irq_queue);
+	init_waitqueue_head(&ring->irq_queue);
     spin_lock_init(&ring->irq_lock);
     ring->irq_mask = ~0;
 
@@ -1175,8 +1175,8 @@ int intel_ring_begin(struct intel_ring_buffer *ring,
 	int n = 4*num_dwords;
 	int ret;
 
-//   if (unlikely(atomic_read(&dev_priv->mm.wedged)))
-//       return -EIO;
+	if (unlikely(atomic_read(&dev_priv->mm.wedged)))
+		return -EIO;
 
 	if (unlikely(ring->tail + n > ring->effective_size)) {
 		ret = intel_wrap_ring_buffer(ring);
@@ -1208,7 +1208,7 @@ static const struct intel_ring_buffer render_ring = {
 	.init			= init_render_ring,
     .write_tail     = ring_write_tail,
     .flush          = render_ring_flush,
-    .add_request        = render_ring_add_request,
+    .add_request     = render_ring_add_request,
     .get_seqno      = ring_get_seqno,
 	.irq_get		= render_ring_get_irq,
 	.irq_put		= render_ring_put_irq,
@@ -1403,7 +1403,7 @@ static int blt_ring_init(struct intel_ring_buffer *ring)
 			return ret;
 		}
 
-        ptr = MapIoMem(obj->pages[0], 4096, PG_SW);
+        ptr = (void*)MapIoMem((addr_t)obj->pages[0], 4096, PG_SW);
         obj->mapped = ptr;
 
 		*ptr++ = MI_BATCH_BUFFER_END;

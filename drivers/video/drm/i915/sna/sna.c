@@ -297,15 +297,19 @@ done:
     return kgem_bo_reference(cache->bo[i]);
 }
 
-
 int sna_blit_copy(bitmap_t *dst_bitmap, int dst_x, int dst_y,
                   int w, int h, bitmap_t *src_bitmap, int src_x, int src_y)
 
 {
+    batchbuffer_t  execbuffer;
+
     struct kgem_bo src_bo, dst_bo;
 
+    memset(&execbuffer,  0, sizeof(execbuffer));
     memset(&src_bo, 0, sizeof(src_bo));
     memset(&dst_bo, 0, sizeof(dst_bo));
+
+    INIT_LIST_HEAD(&execbuffer.objects);
 
     src_bo.gaddr  = src_bitmap->gaddr;
     src_bo.pitch  = src_bitmap->pitch;
@@ -318,6 +322,12 @@ int sna_blit_copy(bitmap_t *dst_bitmap, int dst_x, int dst_y,
     sna_device->render.copy(sna_device, 0, src_bitmap, &src_bo,
                             dst_bitmap, &dst_bo, dst_x, dst_y,
                             src_x, src_y, w, h);
+
+    INIT_LIST_HEAD(&execbuffer.objects);
+    list_add_tail(&src_bitmap->obj->exec_list, &execbuffer.objects);
+
+    _kgem_submit(&sna_device->kgem, &execbuffer);
+
 };
 
 

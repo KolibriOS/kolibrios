@@ -656,7 +656,7 @@ intel_parse_bios(struct drm_device *dev)
 		size_t size;
 		int i;
 
-		bios = pci_map_rom(pdev, &size);
+        bios = (void*)pci_map_rom(pdev, &size);
 		if (!bios)
 			return -1;
 

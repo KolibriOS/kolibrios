@@ -691,7 +691,7 @@ typedef struct drm_i915_private {
 
     struct drm_crtc *plane_to_crtc_mapping[3];
     struct drm_crtc *pipe_to_crtc_mapping[3];
-//   wait_queue_head_t pending_flip_queue;
+	wait_queue_head_t pending_flip_queue;
 	bool flip_pending_is_done;
 
 	/* Reclocking support */
