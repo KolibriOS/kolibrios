@@ -7,7 +7,7 @@ buttons1names	db ' InFile:'
 aCompress	db 'COMPRESS',0
 aDecompress	db 'DECOMPRESS',0
 definoutname	db 0
-defpath		db '/RD/1/'
+defpath		db '/rd/1',0
 ;curedit		dd 0
 
 info_str	db 'KPack - Kolibri Packer, version 0.20',10
