@@ -285,6 +285,7 @@ __exports:
           commit_pages,          'CommitPages',        \      ; eax, ebx, ecx
 \
           create_event,          'CreateEvent',        \      ; ecx, esi
+          destroy_event,         'DestroyEvent',       \      ;
           raise_event,           'RaiseEvent',         \      ; eax, ebx, edx, esi
           wait_event,            'WaitEvent',          \      ; eax, ebx
           get_event_ex,          'GetEvent',           \      ; edi
@@ -328,7 +329,8 @@ __exports:
           get_stack_base,        'GetStackBase',       \
           delay_hs,              'Delay',              \      ; ebx
           set_mouse_data,        'SetMouseData',       \      ;
-          set_keyboard_data,     'SetKeyboardData'            ; gcc fastcall
+          set_keyboard_data,     'SetKeyboardData',    \      ; gcc fastcall
+          timer_hs,              'TimerHs'                   ; stdcall
 
 
 
