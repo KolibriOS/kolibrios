@@ -1291,7 +1291,7 @@ proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword
 		jl @f
 			;если координата x0 больше ширины буфера
 			mov esi,buf2d_w
-			;dec esi
+			dec esi
 		@@:
 		cmp ebx,esi
 		jg .end24 ;если x0 > x1 может возникнуть когда обе координаты x0, x1 находились за одним из пределов буфера
