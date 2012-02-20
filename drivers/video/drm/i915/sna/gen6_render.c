@@ -72,9 +72,12 @@ static const uint32_t ps_kernel_nomask_affine[][4] = {
 #include "exa_wm_write.g6b"
 };
 
-static const uint32_t ps_kernel_nomask_projective[][4] = {
-#include "exa_wm_src_projective.g6b"
+static const uint32_t ps_kernel_masknoca_affine[][4] = {
+#include "exa_wm_src_affine.g6b"
 #include "exa_wm_src_sample_argb.g6b"
+#include "exa_wm_mask_affine.g6b"
+#include "exa_wm_mask_sample_a.g6b"
+#include "exa_wm_noca.g6b"
 #include "exa_wm_write.g6b"
 };
 
@@ -88,8 +91,7 @@ static const struct wm_kernel_info {
 	Bool has_mask;
 } wm_kernels[] = {
 	KERNEL(NOMASK, ps_kernel_nomask_affine, FALSE),
-	KERNEL(NOMASK_PROJECTIVE, ps_kernel_nomask_projective, FALSE),
-
+    KERNEL(MASK, ps_kernel_masknoca_affine, TRUE),
 };
 #undef KERNEL
 
@@ -659,11 +661,6 @@ gen6_emit_drawing_rectangle(struct sna *sna,
 
 	OUT_BATCH(GEN6_PIPE_CONTROL | (4 - 2));
 	OUT_BATCH(GEN6_PIPE_CONTROL_WRITE_TIME);
-//   OUT_BATCH(kgem_add_reloc(&sna->kgem, sna->kgem.nbatch,
-//                sna->render_state.gen6.general_bo,
-//                I915_GEM_DOMAIN_INSTRUCTION << 16 |
-//                I915_GEM_DOMAIN_INSTRUCTION,
-//                64));
 
     OUT_BATCH(sna->render_state.gen6.general_bo->gaddr+64);
 
@@ -1618,7 +1615,6 @@ gen6_emit_copy_state(struct sna *sna,
 	bool dirty;
 
 	gen6_get_batch(sna);
-//   dirty = kgem_bo_is_dirty(op->dst.bo);
 
 	binding_table = gen6_composite_get_binding_table(sna, &offset);
 
@@ -1712,9 +1708,6 @@ gen6_render_copy(struct sna *sna, uint8_t alu,
     op.src.card_format = GEN6_SURFACEFORMAT_B8G8R8X8_UNORM;
     op.src.width  = src->width;
     op.src.height = src->height;
-
-//    src_scale_x = ((float)src_w / frame->width) / (float)drw_w;
-//    src_scale_y = ((float)src_h / frame->height) / (float)drw_h;
 
     op.src.scale[0] = 1.f/w;            //src->width;
     op.src.scale[1] = 1.f/h;            //src->height;

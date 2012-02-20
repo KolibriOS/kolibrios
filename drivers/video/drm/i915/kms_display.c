@@ -1007,3 +1007,120 @@ int blit_textured(u32 hbitmap, int  dst_x, int dst_y,
 
 };
 
+
+void __stdcall run_workqueue(struct workqueue_struct *cwq)
+{
+    unsigned long irqflags;
+
+//    dbgprintf("wq: %x head %x, next %x\n",
+//               cwq, &cwq->worklist, cwq->worklist.next);
+
+    spin_lock_irqsave(&cwq->lock, irqflags);
+
+    while (!list_empty(&cwq->worklist))
+    {
+        struct work_struct *work = list_entry(cwq->worklist.next,
+                                        struct work_struct, entry);
+        work_func_t f = work->func;
+        list_del_init(cwq->worklist.next);
+//        dbgprintf("head %x, next %x\n",
+//                  &cwq->worklist, cwq->worklist.next);
+
+        spin_unlock_irqrestore(&cwq->lock, irqflags);
+        f(work);
+        spin_lock_irqsave(&cwq->lock, irqflags);
+    }
+
+    spin_unlock_irqrestore(&cwq->lock, irqflags);
+}
+
+
+static inline
+int __queue_work(struct workqueue_struct *wq,
+                         struct work_struct *work)
+{
+    unsigned long flags;
+//    ENTER();
+
+//    dbgprintf("wq: %x, work: %x\n",
+//               wq, work );
+
+    if(!list_empty(&work->entry))
+        return 0;
+
+    spin_lock_irqsave(&wq->lock, flags);
+
+    if(list_empty(&wq->worklist))
+        TimerHs(0,0, run_workqueue, wq);
+
+    list_add_tail(&work->entry, &wq->worklist);
+
+    spin_unlock_irqrestore(&wq->lock, flags);
+//    dbgprintf("wq: %x head %x, next %x\n",
+//               wq, &wq->worklist, wq->worklist.next);
+
+//    LEAVE();
+    return 1;
+};
+
+void __stdcall delayed_work_timer_fn(unsigned long __data)
+{
+//    ENTER();
+    struct delayed_work *dwork = (struct delayed_work *)__data;
+    struct workqueue_struct *wq = dwork->work.data;
+
+//    dbgprintf("wq: %x, work: %x\n",
+//               wq, &dwork->work );
+
+    __queue_work(wq, &dwork->work);
+//    LEAVE();
+}
+
+
+int queue_delayed_work_on(struct workqueue_struct *wq,
+                        struct delayed_work *dwork, unsigned long delay)
+{
+    struct work_struct *work = &dwork->work;
+
+    work->data = wq;
+    TimerHs(0,0, delayed_work_timer_fn, dwork);
+    return 1;
+}
+
+int queue_delayed_work(struct workqueue_struct *wq,
+                        struct delayed_work *dwork, unsigned long delay)
+{
+    u32  flags;
+//    ENTER();
+
+//    dbgprintf("wq: %x, work: %x\n",
+//               wq, &dwork->work );
+
+    if (delay == 0)
+        return __queue_work(wq, &dwork->work);
+
+    return queue_delayed_work_on(wq, dwork, delay);
+}
+
+
+struct workqueue_struct *alloc_workqueue(const char *fmt,
+                           unsigned int flags,
+                           int max_active)
+{
+    struct workqueue_struct *wq;
+
+    wq = kzalloc(sizeof(*wq),0);
+    if (!wq)
+        goto err;
+
+    INIT_LIST_HEAD(&wq->worklist);
+
+    return wq;
+err:
+    return NULL;
+}
+
+
+
+
+

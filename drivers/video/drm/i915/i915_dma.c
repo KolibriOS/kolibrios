@@ -508,15 +508,14 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
      * so there is no point in running more than one instance of the
      * workqueue at any time: max_active = 1 and NON_REENTRANT.
      */
-
-//    dev_priv->wq = alloc_workqueue("i915",
-//                       WQ_UNBOUND | WQ_NON_REENTRANT,
-//                       1);
-//    if (dev_priv->wq == NULL) {
-//        DRM_ERROR("Failed to create our workqueue.\n");
-//        ret = -ENOMEM;
-//        goto out_mtrrfree;
-//    }
+      dev_priv->wq = alloc_workqueue("i915",
+                         WQ_UNBOUND | WQ_NON_REENTRANT,
+                         1);
+      if (dev_priv->wq == NULL) {
+          DRM_ERROR("Failed to create our workqueue.\n");
+          ret = -ENOMEM;
+          goto out_mtrrfree;
+      }
 
     /* enable GEM by default */
     dev_priv->has_gem = 1;

@@ -143,7 +143,6 @@ void i915_gem_gtt_rebind_object(struct drm_i915_gem_object *obj,
 				       agp_type);
 }
 
-
 void i915_gem_gtt_unbind_object(struct drm_i915_gem_object *obj)
 {
 	struct drm_device *dev = obj->base.dev;

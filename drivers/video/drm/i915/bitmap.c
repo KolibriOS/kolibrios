@@ -325,8 +325,6 @@ int get_driver_caps(hwcaps_t *caps)
     int ret = 0;
     ENTER();
 
-    dbgprintf("caps ptr %x\n", caps);
-
     switch(caps->idx)
     {
         case 0:

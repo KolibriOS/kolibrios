@@ -40,6 +40,7 @@
 
 #include <linux/spinlock.h>
 
+
 /* General customization:
  */
 
@@ -329,7 +330,7 @@ typedef struct drm_i915_private {
 	u32 pch_irq_mask;
 
 	u32 hotplug_supported_mask;
-//   struct work_struct hotplug_work;
+	struct work_struct hotplug_work;
 
 	int tex_lru_log_granularity;
 	int allow_batchbuffer;
@@ -397,10 +398,10 @@ typedef struct drm_i915_private {
 	unsigned int fsb_freq, mem_freq, is_ddr3;
 
 	spinlock_t error_lock;
-//   struct drm_i915_error_state *first_error;
-//   struct work_struct error_work;
-//   struct completion error_completion;
-//   struct workqueue_struct *wq;
+//	struct drm_i915_error_state *first_error;
+	struct work_struct error_work;
+//	struct completion error_completion;
+    struct workqueue_struct *wq;
 
 	/* Display functions */
     struct drm_i915_display_funcs display;
@@ -642,7 +643,7 @@ typedef struct drm_i915_private {
 		 * fire periodically while the ring is running. When it
 		 * fires, go retire requests.
 		 */
-//       struct delayed_work retire_work;
+		struct delayed_work retire_work;
 
 		/**
 		 * Are we in a non-interruptible section of code like
@@ -699,7 +700,7 @@ typedef struct drm_i915_private {
 	bool lvds_downclock_avail;
 	/* indicates the reduced downclock for LVDS*/
 	int lvds_downclock;
-//   struct work_struct idle_work;
+	struct work_struct idle_work;
     struct timer_list idle_timer;
 	bool busy;
 	u16 orig_clock;
@@ -710,7 +711,7 @@ typedef struct drm_i915_private {
 
 	bool mchbar_need_disable;
 
-//   struct work_struct rps_work;
+	struct work_struct rps_work;
 	spinlock_t rps_lock;
 	u32 pm_iir;
 
@@ -1415,5 +1416,19 @@ typedef struct
   int bpp;
   int freq;
 }videomode_t;
+
+
+static inline int mutex_trylock(struct mutex *lock)
+{
+    if (likely(atomic_cmpxchg(&lock->count, 1, 0) == 1))
+        return 1;
+    return 0;
+}
+
+
+
+
+
+
 
 #endif

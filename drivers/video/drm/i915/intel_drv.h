@@ -276,7 +276,7 @@ intel_get_crtc_for_plane(struct drm_device *dev, int plane)
 }
 
 struct intel_unpin_work {
-//   struct work_struct work;
+	struct work_struct work;
 	struct drm_device *dev;
 	struct drm_i915_gem_object *old_fb_obj;
 	struct drm_i915_gem_object *pending_flip_obj;
@@ -286,7 +286,7 @@ struct intel_unpin_work {
 };
 
 struct intel_fbc_work {
-//   struct delayed_work work;
+	struct delayed_work work;
 	struct drm_crtc *crtc;
 	struct drm_framebuffer *fb;
 	int interval;

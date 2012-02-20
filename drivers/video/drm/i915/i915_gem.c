@@ -960,18 +960,28 @@ i915_add_request(struct intel_ring_buffer *ring,
 
 	ring->outstanding_lazy_request = false;
 
-//	if (!dev_priv->mm.suspended) {
-//		if (i915_enable_hangcheck) {
+	if (!dev_priv->mm.suspended) {
+		if (i915_enable_hangcheck) {
 //			mod_timer(&dev_priv->hangcheck_timer,
 //				  jiffies +
 //				  msecs_to_jiffies(DRM_I915_HANGCHECK_PERIOD));
-//		}
-//		if (was_empty)
-//			queue_delayed_work(dev_priv->wq,
-//					   &dev_priv->mm.retire_work, HZ);
-//	}
+		}
+        if (was_empty)
+           queue_delayed_work(dev_priv->wq,
+                      &dev_priv->mm.retire_work, HZ);
+	}
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1072,14 +1082,57 @@ i915_gem_retire_requests(struct drm_device *dev)
 		i915_gem_retire_requests_ring(&dev_priv->ring[i]);
 }
 
+static void
+i915_gem_retire_work_handler(struct work_struct *work)
+{
+	drm_i915_private_t *dev_priv;
+	struct drm_device *dev;
+	bool idle;
+	int i;
 
+//    ENTER();
 
+	dev_priv = container_of(work, drm_i915_private_t,
+				mm.retire_work.work);
+	dev = dev_priv->dev;
 
+	/* Come back later if the device is busy... */
+	if (!mutex_trylock(&dev->struct_mutex)) {
+        queue_delayed_work(dev_priv->wq, &dev_priv->mm.retire_work, HZ);
+//        LEAVE();
+		return;
+	}
 
+	i915_gem_retire_requests(dev);
 
+	/* Send a periodic flush down the ring so we don't hold onto GEM
+	 * objects indefinitely.
+	 */
+	idle = true;
+	for (i = 0; i < I915_NUM_RINGS; i++) {
+		struct intel_ring_buffer *ring = &dev_priv->ring[i];
 
+		if (!list_empty(&ring->gpu_write_list)) {
+			struct drm_i915_gem_request *request;
+			int ret;
 
+			ret = i915_gem_flush_ring(ring,
+						  0, I915_GEM_GPU_DOMAINS);
+			request = kzalloc(sizeof(*request), GFP_KERNEL);
+			if (ret || request == NULL ||
+			    i915_add_request(ring, NULL, request))
+			    kfree(request);
+		}
 
+		idle &= list_empty(&ring->request_list);
+	}
+
+   if (!dev_priv->mm.suspended && !idle)
+       queue_delayed_work(dev_priv->wq, &dev_priv->mm.retire_work, HZ);
+
+	mutex_unlock(&dev->struct_mutex);
+//    LEAVE();
+}
 
 /**
  * Waits for a sequence number to be signaled, and cleans up the
@@ -1326,7 +1379,7 @@ static int i915_ring_idle(struct intel_ring_buffer *ring)
 			return ret;
 	}
 
-	return 0; //i915_wait_request(ring, i915_gem_next_request_seqno(ring));
+	return i915_wait_request(ring, i915_gem_next_request_seqno(ring));
 }
 
 int
@@ -1923,9 +1976,9 @@ i915_gem_object_pin_to_display_plane(struct drm_i915_gem_object *obj,
 	 * of uncaching, which would allow us to flush all the LLC-cached data
 	 * with that bit in the PTE to main memory with just one PIPE_CONTROL.
 	 */
-//   ret = i915_gem_object_set_cache_level(obj, I915_CACHE_NONE);
-//   if (ret)
-//       return ret;
+	ret = i915_gem_object_set_cache_level(obj, I915_CACHE_NONE);
+	if (ret)
+		return ret;
 
 	/* As the user may map the buffer once pinned in the display plane
 	 * (e.g. libkms for the bootup splash), we have to ensure that we
@@ -2123,6 +2176,7 @@ i915_gem_object_pin(struct drm_i915_gem_object *obj,
 	}
 	obj->pin_mappable |= map_and_fenceable;
 
+	WARN_ON(i915_verify_lists(dev));
 	return 0;
 }
 
@@ -2132,6 +2186,7 @@ i915_gem_object_unpin(struct drm_i915_gem_object *obj)
 	struct drm_device *dev = obj->base.dev;
 	drm_i915_private_t *dev_priv = dev->dev_private;
 
+	WARN_ON(i915_verify_lists(dev));
 	BUG_ON(obj->pin_count == 0);
 	BUG_ON(obj->gtt_space == NULL);
 
@@ -2141,6 +2196,7 @@ i915_gem_object_unpin(struct drm_i915_gem_object *obj)
 				       &dev_priv->mm.inactive_list);
 		obj->pin_mappable = false;
 	}
+	WARN_ON(i915_verify_lists(dev));
 }
 
 
@@ -2424,6 +2480,8 @@ i915_gem_load(struct drm_device *dev)
         init_ring_lists(&dev_priv->ring[i]);
 	for (i = 0; i < I915_MAX_NUM_FENCES; i++)
         INIT_LIST_HEAD(&dev_priv->fence_regs[i].lru_list);
+	INIT_DELAYED_WORK(&dev_priv->mm.retire_work,
+			  i915_gem_retire_work_handler);
 
     /* On GEN3 we really need to make sure the ARB C3 LP bit is set */
     if (IS_GEN3(dev)) {
@@ -2455,6 +2513,5 @@ i915_gem_load(struct drm_device *dev)
 //    dev_priv->mm.inactive_shrinker.seeks = DEFAULT_SEEKS;
 //    register_shrinker(&dev_priv->mm.inactive_shrinker);
 }
-
 
 

@@ -1859,7 +1859,7 @@ static void intel_update_fbc(struct drm_device *dev)
 	if (enable_fbc < 0) {
 		DRM_DEBUG_KMS("fbc set to per-chip default\n");
 		enable_fbc = 1;
-		if (INTEL_INFO(dev)->gen <= 5)
+		if (INTEL_INFO(dev)->gen <= 6)
 			enable_fbc = 0;
 	}
 	if (!enable_fbc) {
@@ -2171,18 +2171,12 @@ intel_pipe_set_base_atomic(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	int ret;
 
-    ENTER();
-
 	ret = dev_priv->display.update_plane(crtc, fb, x, y);
 	if (ret)
-    {
-        LEAVE();
 		return ret;
-    };
 
 	intel_update_fbc(dev);
 	intel_increase_pllclock(crtc);
-    LEAVE();
 
 	return 0;
 }
@@ -2235,31 +2229,6 @@ intel_pipe_set_base(struct drm_crtc *crtc, int x, int y,
     LEAVE();
     return 0;
 
-#if 0
-	if (!dev->primary->master)
-    {
-        LEAVE();
-		return 0;
-    };
-
-	master_priv = dev->primary->master->driver_priv;
-	if (!master_priv->sarea_priv)
-    {
-        LEAVE();
-		return 0;
-    };
-
-	if (intel_crtc->pipe) {
-		master_priv->sarea_priv->pipeB_x = x;
-		master_priv->sarea_priv->pipeB_y = y;
-	} else {
-		master_priv->sarea_priv->pipeA_x = x;
-		master_priv->sarea_priv->pipeA_y = y;
-	}
-    LEAVE();
-
-	return 0;
-#endif
 
 }
 
@@ -2835,8 +2804,8 @@ static void intel_crtc_wait_for_pending_flips(struct drm_crtc *crtc)
 
 	obj = to_intel_framebuffer(crtc->fb)->obj;
 	dev_priv = crtc->dev->dev_private;
-//	wait_event(dev_priv->pending_flip_queue,
-//		   atomic_read(&obj->pending_flip) == 0);
+	wait_event(dev_priv->pending_flip_queue,
+		   atomic_read(&obj->pending_flip) == 0);
 }
 
 static bool intel_crtc_driving_pch(struct drm_crtc *crtc)
@@ -5292,6 +5261,7 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
         }
     }
 
+	pipeconf &= ~PIPECONF_INTERLACE_MASK;
     if (adjusted_mode->flags & DRM_MODE_FLAG_INTERLACE) {
         pipeconf |= PIPECONF_INTERLACE_W_FIELD_INDICATION;
         /* the chip adds 2 halflines automatically */
@@ -5302,7 +5272,7 @@ static int i9xx_crtc_mode_set(struct drm_crtc *crtc,
         adjusted_mode->crtc_vsync_end -= 1;
         adjusted_mode->crtc_vsync_start -= 1;
     } else
-		pipeconf &= ~PIPECONF_INTERLACE_MASK; /* progressive */
+		pipeconf |= PIPECONF_PROGRESSIVE;
 
     I915_WRITE(HTOTAL(pipe),
            (adjusted_mode->crtc_hdisplay - 1) |
@@ -5889,6 +5859,7 @@ static int ironlake_crtc_mode_set(struct drm_crtc *crtc,
     }
 	}
 
+	pipeconf &= ~PIPECONF_INTERLACE_MASK;
     if (adjusted_mode->flags & DRM_MODE_FLAG_INTERLACE) {
         pipeconf |= PIPECONF_INTERLACE_W_FIELD_INDICATION;
         /* the chip adds 2 halflines automatically */
@@ -5899,7 +5870,7 @@ static int ironlake_crtc_mode_set(struct drm_crtc *crtc,
         adjusted_mode->crtc_vsync_end -= 1;
         adjusted_mode->crtc_vsync_start -= 1;
     } else
-        pipeconf &= ~PIPECONF_INTERLACE_W_FIELD_INDICATION; /* progressive */
+		pipeconf |= PIPECONF_PROGRESSIVE;
 
     I915_WRITE(HTOTAL(pipe),
            (adjusted_mode->crtc_hdisplay - 1) |
@@ -7043,10 +7014,6 @@ static void intel_setup_outputs(struct drm_device *dev)
 
 
 
-static const struct drm_mode_config_funcs intel_mode_funcs = {
-	.fb_create = NULL /*intel_user_framebuffer_create*/,
-	.output_poll_changed = NULL /*intel_fb_output_poll_changed*/,
-};
 
 
 
@@ -7100,7 +7067,10 @@ int intel_framebuffer_init(struct drm_device *dev,
 }
 
 
-
+static const struct drm_mode_config_funcs intel_mode_funcs = {
+	.fb_create = NULL /*intel_user_framebuffer_create*/,
+	.output_poll_changed = NULL /*intel_fb_output_poll_changed*/,
+};
 
 
 
