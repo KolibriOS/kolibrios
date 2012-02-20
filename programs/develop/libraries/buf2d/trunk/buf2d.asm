@@ -82,13 +82,19 @@ draw_pixel:
 		mov esi,buf2d_w ;size x
 		imul esi,ecx ;size_x*y
 		add esi,ebx	 ;size_x*y+x
-		lea esi,[esi+esi*2] ;(size_x*y+x)*3
-		add esi,buf2d_data  ;ptr+(size_x*y+x)*3
-
-		mov word[esi],dx ;copy pixel color
-		ror edx,16
-		mov byte[esi+2],dl
-		ror edx,16
+		cmp buf2d_bits,8
+		je .beg8
+			lea esi,[esi+esi*2] ;(size_x*y+x)*3
+			add esi,buf2d_data  ;ptr+(size_x*y+x)*3
+			mov word[esi],dx ;copy pixel color
+			ror edx,16
+			mov byte[esi+2],dl
+			ror edx,16
+			jmp .end_draw
+		.beg8: ;рисование точки в 8 битном буфере
+			add esi,buf2d_data  ;ptr+(size_x*y+x)
+			mov byte[esi],dl
+		.end_draw:
 	pop esi
 	@@:
 	ret
@@ -1067,8 +1073,12 @@ endl
 
 		mov eax,edi
 		mov edi,[buf_struc]
+		cmp buf2d_bits,8
+		je @f
 		cmp buf2d_bits,24
-		jne .coord_end
+		je @f
+			jmp .coord_end
+		@@:
 
 		cmp [napravl],0
 		jne .coord_yx
@@ -1251,9 +1261,14 @@ endp
 align 4
 proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword, color:dword
 	pushad
+	pushfd
 		mov edi,[buf_struc]
+		cmp buf2d_bits,8
+		je @f
 		cmp buf2d_bits,24
-		jne .end24
+		je @f
+			jmp .end24
+		@@: ;определение координат линии относительно буфера
 
 		mov ecx,dword[coord_y0]
 		bt ecx,31
@@ -1279,8 +1294,27 @@ proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword
 			;dec esi
 		@@:
 		cmp ebx,esi
-		jge .end24 ;если x0 >= x1 может возникнуть когда обе координаты x0, x1 находились за одним из пределов буфера
+		jg .end24 ;если x0 > x1 может возникнуть когда обе координаты x0, x1 находились за одним из пределов буфера
 
+		cmp buf2d_bits,24
+		je .beg24
+			;рисование в 8 битном буфере
+			;в edx вычисляем начало 1-й точки линии в буфере изображения
+			mov edx,buf2d_w ;size x
+			imul edx,ecx ;size_x*y
+			add edx,ebx	 ;size_x*y+x
+			add edx,buf2d_data ;ptr+(size_x*y+x)
+			mov edi,edx ;теперь можем портить указатель на буфер
+
+			mov ecx,esi
+			sub ecx,ebx ;в ecx колличество точек линии выводимых в буфер
+			inc ecx ;что-бы последняя точка линии также отображалась
+			mov eax,dword[color] ;будем использовать только значение в al
+			cld
+			rep stosb ;цикл по оси x от x0 до x1 (включая x1)
+			jmp .end24
+
+		.beg24: ;рисование в 24 битном буфере
 		;в eax вычисляем начало 1-й точки линии в буфере изображения
 		mov eax,buf2d_w ;size x
 		imul eax,ecx ;size_x*y
@@ -1290,16 +1324,18 @@ proc buf_line_h, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword
 
 		mov ecx,esi
 		sub ecx,ebx ;в ecx колличество точек линии выводимых в буфер
+		inc ecx ;что-бы последняя точка линии также отображалась
 		mov edx,dword[color]
 		mov ebx,edx ;координата x0 в ebx уже не нужна
 		ror edx,16 ;поворачиваем регистр что бы 3-й байт попал в dl
 		cld
-		@@: ;цикл по оси x от x0 до x1
+		@@: ;цикл по оси x от x0 до x1 (включая x1)
 			mov word[eax],bx ;copy pixel color
 			mov byte[eax+2],dl
 			add eax,3
 			loop @b
 		.end24:
+	popfd
 	popad
 	ret
 endp
@@ -1308,19 +1344,37 @@ align 4
 proc buf_rect_by_size, buf_struc:dword, coord_x:dword,coord_y:dword,w:dword,h:dword, color:dword
 pushad
 	mov edi,[buf_struc]
+	cmp buf2d_bits,8
+	je @f
 	cmp buf2d_bits,24
-	jne .coord_end
+	je @f
+		jmp .coord_end
+	@@:
 
 		mov eax,[coord_x]
 		mov ebx,[coord_y]
 		mov ecx,[w]
-		cmp ecx,1
-		jl .coord_end
+		;cmp ecx,1
+		;jl .coord_end
+		cmp ecx,0
+		je .coord_end
+		jg @f
+			add eax,ecx
+			inc eax
+			neg ecx
+		@@:
 		add ecx,eax
 		dec ecx
 		mov edx,[h]
-		cmp edx,1
-		jl .coord_end
+		;cmp edx,1
+		;jl .coord_end
+		cmp edx,0
+		je .coord_end
+		jg @f
+			add ebx,edx
+			inc ebx
+			neg edx
+		@@:
 
 		add edx,ebx
 		dec edx
@@ -1338,15 +1392,34 @@ align 4
 proc buf_filled_rect_by_size, buf_struc:dword, coord_x:dword,coord_y:dword,w:dword,h:dword, color:dword
 pushad
 	mov edi,[buf_struc]
+	cmp buf2d_bits,8
+	je @f
 	cmp buf2d_bits,24
-	jne .coord_end
+	je @f
+		jmp .coord_end
+	@@:
 		mov eax,[coord_x]
 		mov ebx,[coord_y]
 		mov edx,[w]
+		cmp edx,0
+		je .coord_end ;если высота 0 пикселей
+		jg @f ;если высота положительная
+			add eax,edx
+			inc eax
+			neg edx ;ширину делаем положительной
+			;inc edx ;почему тут не добавляем 1-цу я не знаю, но с ней работает не правильно
+		@@:
 		add edx,eax
+		dec edx
 		mov ecx,[h]
-		cmp ecx,1 ;сравнение с минимально возможной высотой
-		jl .coord_end ;если высота меньше 1-го пикселя
+		cmp ecx,0
+		je .coord_end ;если высота 0 пикселей
+		jg @f ;если высота положительная
+			add ebx,ecx ;сдвигаем верхнюю координату прямоугольника
+			inc ebx
+			neg ecx ;высоту делаем положительной
+			;inc ecx ;почему тут не добавляем 1-цу я не знаю, но с ней работает не правильно
+		@@:
 		mov esi,dword[color]
 		cld
 		@@:
@@ -1366,8 +1439,12 @@ locals
 endl
 	pushad
 	mov edi,dword[buf_struc]
+	cmp buf2d_bits,8
+	je @f
 	cmp buf2d_bits,24
-	jne .error
+	je @f
+		jmp .error
+	@@:
 		mov edx,dword[color]
 
 		finit
@@ -1414,7 +1491,7 @@ endl
 			jge @b
 		jmp .exit_fun
 	.error:
-		stdcall print_err,sz_buf2d_circle,txt_err_n24b
+		stdcall print_err,sz_buf2d_circle,txt_err_n8_24b
 	.exit_fun:
 
 	popad
@@ -1561,8 +1638,12 @@ align 4
 proc buf_set_pixel, buf_struc:dword, coord_x:dword, coord_y:dword, color:dword
 	pushad
 		mov edi,[buf_struc]
+		cmp buf2d_bits,8
+		je @f
 		cmp buf2d_bits,24
-		jne .end24
+		je @f
+			jmp .end24
+		@@:
 			mov ebx,dword[coord_x]
 			mov ecx,dword[coord_y]
 			mov edx,dword[color]
@@ -2544,6 +2625,7 @@ endp
 
 txt_err_n8b db 'need buffer 8 bit',13,10,0
 txt_err_n24b db 'need buffer 24 bit',13,10,0
+txt_err_n8_24b db 'need buffer 8 or 24 bit',13,10,0
 
 align 16
 EXPORTS:
