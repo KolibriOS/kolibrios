@@ -143,13 +143,13 @@ hook:
 
 reset:
 	movzx	ebx, byte[drivernumber]
-	mcall	73,,2
+	mcall	74,,2
 
 	jmp	still
 
 unload:
 	movzx	ebx, byte[drivernumber]
-	mcall	73,,3
+	mcall	74,,3
 
 	jmp	still
 

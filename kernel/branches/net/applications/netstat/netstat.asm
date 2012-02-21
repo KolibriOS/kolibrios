@@ -79,7 +79,7 @@ START:				       ; start of execution
 
     mov     ebx,1337 shl 16 + 4
     mov     bh, [device]
-    mcall   75
+    mcall   76
     push    eax
     push    bx
 
@@ -112,22 +112,22 @@ START:				       ; start of execution
 
     mov     ebx, 0 shl 16 + 8
     mov     bh, [device]
-    mcall   75
+    mcall   76
     push    eax
 
     dec     bl
     dec     bl
-    mcall   75
+    mcall   76
     push    eax
 
     dec     bl
     dec     bl
-    mcall   75
+    mcall   76
     push    eax
 
     dec     bl
     dec     bl
-    mcall   75
+    mcall   76
     push    eax
 
     mov     edx, 135 shl 16 + 75 + 2*18
@@ -199,7 +199,7 @@ START:				       ; start of execution
     mov     bh, [device]
    @@:
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
@@ -211,7 +211,7 @@ START:				       ; start of execution
 
    @@:
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
@@ -252,12 +252,12 @@ START:				       ; start of execution
     mov     ebx, 0 shl 16
     mov     bh, [device]
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
@@ -284,17 +284,17 @@ START:				       ; start of execution
     mov     ebx, 0x0608 shl 16 + 0
     mov     bh, [device]
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
@@ -323,12 +323,12 @@ not_103:
     mov     ebx, 1 shl 16 + 0
     mov     bh, [device]
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
@@ -354,12 +354,12 @@ not_104:
     mov     ebx, 17 shl 16 + 0
     mov     bh, [device]
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
@@ -385,12 +385,12 @@ not_105:
     mov     ebx, 6 shl 16 + 0
     mov     bh, [device]
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl
     push    ebx
-    mcall   75
+    mcall   76
     pop     ebx
     push    eax
     inc     bl

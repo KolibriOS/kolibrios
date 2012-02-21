@@ -129,7 +129,7 @@ START:					    ; start of execution
 
 	DEBUGF	1,">Zero-config service:\n"
 
-	mcall	75, 1337 shl 16 + 4
+	mcall	76, 1337 shl 16 + 4
 
 	cmp	eax, -1
 	je	exit
@@ -169,22 +169,22 @@ START:					    ; start of execution
 	invoke ini.get_str, path, str_ipconfig, str_ip, inibuf, 16, 0
 	mov    edx, inibuf
 	call   Ip2dword
-	mcall  75, 3, edx
+	mcall  76, 3, edx
 
 	invoke ini.get_str, path, str_ipconfig, str_gateway, inibuf, 16, 0
 	mov    edx, inibuf
 	call   Ip2dword
-	mcall  75, 9, edx
+	mcall  76, 9, edx
 
 	invoke ini.get_str, path, str_ipconfig, str_dns, inibuf, 16, 0
 	mov    edx, inibuf
 	call   Ip2dword
-	mcall  75, 5, edx
+	mcall  76, 5, edx
 
 	invoke ini.get_str, path, str_ipconfig, str_subnet, inibuf, 16, 0
 	mov    edx, inibuf
 	call   Ip2dword
-	mcall  75, 7, edx
+	mcall  76, 7, edx
 
 
 	mcall  -1
@@ -194,20 +194,20 @@ skip_ini:
 
 	DEBUGF	1,"->Skip ini\n"
 
-	mcall 74, 0, AF_INET4, SOCK_DGRAM, 0	  ; open socket (parameters: domain, type, reserved)
+	mcall 75, 0, AF_INET4, SOCK_DGRAM, 0	  ; open socket (parameters: domain, type, reserved)
 	cmp   eax, -1
 	je    error
 	mov   [socketNum], eax
 
 	DEBUGF	1,"->socket %x opened\n", eax
 
-	mcall 74, 2, [socketNum], sockaddr1, 18     ; bind socket to local port 68
+	mcall 75, 2, [socketNum], sockaddr1, 18     ; bind socket to local port 68
 	cmp   eax, -1
 	je    error
 
 	DEBUGF	1,"->Socket Bound to local port 68\n"
 
-	mcall 74, 4, [socketNum], sockaddr2, 18     ; connect to 255.255.255.255 on port 67
+	mcall 75, 4, [socketNum], sockaddr2, 18     ; connect to 255.255.255.255 on port 67
 	cmp   eax, -1
 	je    error
 
@@ -283,7 +283,7 @@ request_options:
 	mov	[dhcpMsgLen], dword 268
 
 send_request:
-	mcall	74, 6, [socketNum], [dhcpMsg], [dhcpMsgLen]	; write to socket ( send broadcast request )
+	mcall	75, 6, [socketNum], [dhcpMsg], [dhcpMsgLen]	; write to socket ( send broadcast request )
 
 	mov	eax, [dhcpMsg]				; Setup the DHCP buffer to receive response
 	mov	[dhcpMsgLen], eax			; Used as a pointer to the data
@@ -291,12 +291,12 @@ send_request:
 	mcall	23, TIMEOUT*10				; wait for data
 
 read_data:						; we have data - this will be the response
-	mcall	74, 7, [socketNum], [dhcpMsg], BUFFER	; read data from socket
+	mcall	75, 7, [socketNum], [dhcpMsg], BUFFER	; read data from socket
 
 	DEBUGF	1,"->%d bytes received\n", eax
 
 	push	eax
-	mcall	74, 1, [socketNum]		       ; exit the socket
+	mcall	75, 1, [socketNum]		       ; exit the socket
 	pop	eax
 
 	cmp	eax, -1
@@ -355,7 +355,7 @@ parseResponse:
     mov     edx, [dhcpMsg]
 
     pusha
-    mcall 75, 3, [edx+16]
+    mcall 76, 3, [edx+16]
     mov     eax,[edx]
     mov     [dhcpClientIP],eax
     DEBUGF  1,"Client: %u.%u.%u.%u\n",[edx+16]:1,[edx+17]:1,[edx+18]:1,[edx+19]:1
@@ -409,7 +409,7 @@ pr001:
     jne     @f
 
     pusha
-    mcall 75, 7, [edx]
+    mcall 76, 7, [edx]
     DEBUGF  1,"Subnet: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
     popa
 
@@ -420,7 +420,7 @@ pr001:
     jne     @f
 
     pusha
-    mcall 75, 9, [edx]
+    mcall 76, 9, [edx]
     DEBUGF  1,"Gateway: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
     popa
 
@@ -432,7 +432,7 @@ pr001:
     jne     next_option
 
     pusha
-    mcall 75, 5, [edx]
+    mcall 76, 5, [edx]
     DEBUGF  1,"DNS: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
     popa
 
@@ -452,11 +452,11 @@ link_local:
     call random
     mov  ecx,0xfea9			    ; IP 169.254.0.0 link local net, see RFC3927
     mov  cx,ax
-    mcall 75, 3, ecx			      ; mask is 255.255.0.0
+    mcall 76, 3, ecx			      ; mask is 255.255.0.0
     DEBUGF 1,"Link Local IP assinged: 169.254.%u.%u\n",[generator+2]:1,[generator+3]:1
-    mcall 75, 5, 0xffff
-    mcall 75, 9, 0x0
-    mcall 75, 7, 0x0
+    mcall 76, 5, 0xffff
+    mcall 76, 9, 0x0
+    mcall 76, 7, 0x0
 
     mcall 5, PROBE_WAIT*100
 

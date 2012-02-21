@@ -61,12 +61,12 @@ EAI_BADHINTS	= 12
 EAI_PROTOCOL	= 13
 EAI_OVERFLOW	= 14
 
-socket		fix 74, 0
-close		fix 74, 1
-bind		fix 74, 2
-listen		fix 74, 3
-connect 	fix 74, 4
-accept		fix 74, 5
-send		fix 74, 6
-recv		fix 74, 7
+socket		fix 75, 0
+close		fix 75, 1
+bind		fix 75, 2
+listen		fix 75, 3
+connect 	fix 75, 4
+accept		fix 75, 5
+send		fix 75, 6
+recv		fix 75, 7
 

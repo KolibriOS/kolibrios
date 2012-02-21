@@ -43,7 +43,7 @@ START:				       ; start of execution
 	mov	[last],0
 
     .loop:
-	mcall	75, 0x06080003, [last],,,ARP_ENTRY
+	mcall	76, 0x06080003, [last],,,ARP_ENTRY
 	cmp	eax, -1
 	je	mainloop
 

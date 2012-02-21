@@ -676,13 +676,13 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	mov	eax, 0x01000100
 	stosd
 ; 7. Get DNS server address.
-	mcall	75, 0x00000004 ; protocol IP=0, device number=0, function=get DNS address
+	mcall	76, 0x00000004 ; protocol IP=0, device number=0, function=get DNS address
 	cmp	eax, -1
 	je	.ret.dnserr
 	mov	esi, eax	; put server address to esi
 ; 8. Open UDP socketnum to DNS server, port 53.
 ; 8a. Create new socketnum.
-	mcall	74, 0, AF_INET4, SOCK_DGRAM
+	mcall	75, 0, AF_INET4, SOCK_DGRAM
 	cmp	eax, -1 ; error?
 	jz	.ret.dnserr
 	mov	ecx, eax	; put socketnum handle to ecx
@@ -693,7 +693,7 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	push	AF_INET4 + (53 shl 16)
 			; sin_family and sin_port in network byte order
 ; 8c. Connect.
-	mcall	74, 4, , esp, sizeof.sockaddr_in
+	mcall	75, 4, , esp, sizeof.sockaddr_in
 ; 8d. Restore the stack, undo 8b.
 	add	esp, esi
 ; 8e. Check result.
@@ -703,7 +703,7 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	sub	edi, esp	; get packet length
 	mov	esi, edi
 	xor	edi, edi
-	mcall	74, 6, , esp
+	mcall	75, 6, , esp
 	cmp	eax, -1
 	jz	.ret.close
 	mov	eax, [.reqdata]
@@ -712,7 +712,7 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	pop	eax	; return status: more processing required
 	jmp	.ret.dns
 .ret.close:
-	mcall	74, 1
+	mcall	75, 1
 .ret.dnserr:
 	push	EAI_AGAIN
 	pop	eax
@@ -762,7 +762,7 @@ end virtual
 ; 2. Read UDP datagram.
 	mov	ecx, [edi+__gai_reqdata.socketnum]
 	push	edi
-	mcall	74, 7, , , 512, 0
+	mcall	75, 7, , , 512, 0
 	pop	edi
 ; 3. Ignore events for other socketnums (return if no data read)
 	test	eax, eax
@@ -923,7 +923,7 @@ end virtual
 	push	eax
 	mov	ecx, [.reqdata]
 	mov	ecx, [ecx+__gai_reqdata.socketnum]
-	mcall	74, 1
+	mcall	75, 1
 	pop	eax
 ; 16. Restore used registers, destroy stack frame and return.
 .ret:
@@ -1223,7 +1223,7 @@ getaddrinfo_abort:							     ;;
 ; 1. Allocated resources: only socketnum, so close it and return.
 	mov	eax, [esp+8]
 	mov	ecx, [eax+__gai_reqdata.socketnum]
-	mcall	74, 1
+	mcall	75, 1
 ; 2. Restore used registers and return.
 	pop	ebx
 	ret	4
