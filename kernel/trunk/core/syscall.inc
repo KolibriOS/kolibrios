@@ -194,6 +194,9 @@ iglobal
       dd syscall_window_settings ; 71-Window settings
       dd sys_sendwindowmsg       ; 72-Send window message
       dd blit_32                 ; 73-blitter;
+      dd undefined_syscall       ; 74-reserved for new stack
+      dd undefined_syscall       ; 75-reserved for new stack
+      dd undefined_syscall       ; 76-reserved for new stack
         times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end                 ; -1-end application
 
