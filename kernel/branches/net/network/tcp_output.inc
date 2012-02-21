@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the tcp/ip network stack for KolibriOS                 ;;
@@ -75,7 +75,7 @@ TCP_output:
 	test	ecx, ecx
 	jnz	.no_zero_window
 
-	cmp	ebx, [eax + STREAM_SOCKET.snd + RING_BUFFER.size]
+	cmp	ebx, [eax + STREAM_SOCKET.snd.size]
 	jae	@f
 
 	and	dl, not (TH_FIN)	  ; clear the FIN flag    ??? how can it be set before?
@@ -93,7 +93,7 @@ TCP_output:
 ;--------------------------------
 ; Calculate how much data to send (106)
 
-	mov	esi, [eax + STREAM_SOCKET.snd + RING_BUFFER.size]
+	mov	esi, [eax + STREAM_SOCKET.snd.size]
 	cmp	esi, ecx
 	jb	@f
 	mov	esi, ecx
@@ -146,7 +146,7 @@ TCP_output:
 	mov	edi, [eax + TCP_SOCKET.SND_NXT]
 	add	edi, esi
 	sub	edi, [eax + TCP_SOCKET.SND_UNA]
-	sub	edi, [eax + STREAM_SOCKET.snd + RING_BUFFER.size]
+	sub	edi, [eax + STREAM_SOCKET.snd.size]
 	jns	@f
 
 	and	dl, not (TH_FIN)
@@ -157,7 +157,7 @@ TCP_output:
 ; calculate window advertisement (130)
 
 	mov	ecx, SOCKET_MAXDATA
-	sub	ecx, [eax + STREAM_SOCKET.rcv + RING_BUFFER.size]
+	sub	ecx, [eax + STREAM_SOCKET.rcv.size]
 
 ;------------------------------
 ; Sender silly window avoidance (131)
@@ -168,7 +168,13 @@ TCP_output:
 	cmp	esi, [eax + TCP_SOCKET.t_maxseg]
 	je	.send
 
-;;; if (idle or TF_NODELAY) && (esi + ebx >= so_snd.sb_cc), send
+	test	[eax + TCP_SOCKET.t_flags], TF_NODELAY
+	jnz	@f
+	; TODO: if not 'idle', skip to next codeblock
+       @@:
+	add	ebx, esi
+	cmp	ebx, [eax + STREAM_SOCKET.snd.size]
+	jae	.send
 
 	test	[eax + TCP_SOCKET.t_force], -1	;;;
 	jnz	.send
@@ -190,7 +196,23 @@ TCP_output:
 	test	ecx, ecx
 	jz	.no_window
 
-;;; TODO 167-172
+	push	ecx
+	mov	cl, [eax + TCP_SOCKET.RCV_SCALE]
+	inc	cl					; we want it *2
+	mov	ebx, TCP_max_win
+	shl	ebx, cl
+	pop	ecx
+	cmp	ebx, ecx
+	cmovb	ebx, ecx
+
+	; now ebx is TWICE the amount we can increase the window
+	; (with TCP_max_win shl rcv_scale as the maximum)
+
+	cmp	ebx, [eax + TCP_SOCKET.t_maxseg]
+	jae	.send
+
+  ;;;      cmp     ebx, [eax + ]                        ;;; TODO: check receive buffer high water mark
+    ;;;    jae     .send
 
   .no_window:
 
@@ -224,10 +246,18 @@ TCP_output:
 
   .enter_persist:
 
+	cmp	[eax + STREAM_SOCKET.snd.size], 0	; Data ready to send?
+	jne	@f
+	cmp	[eax + TCP_SOCKET.timer_retransmission], 0
+	jne	@f
+	cmp	[eax + TCP_SOCKET.timer_persist], 0	; Persist timer already expired?
+	jne	@f
+
 	DEBUGF	1,"Entering persist state\n"
 
-
-;;; 213 - 217
+	mov	[eax + TCP_SOCKET.t_rxtshift], 0
+	TCP_set_persist eax
+       @@:
 
 ;----------------------------
 ; No reason to send a segment (219)
@@ -260,7 +290,7 @@ TCP_output:
 
 	DEBUGF	1,"Preparing to send a segment\n"
 
-	mov	edi, sizeof.TCP_header	 ; edi will contain headersize
+	mov	edi, sizeof.TCP_header	; edi will contain headersize
 
 	sub	esp, 8			; create some space on stack
 	push	eax			; save socket pointer
@@ -463,9 +493,11 @@ TCP_output:
 	mov	edx, [eax + TCP_SOCKET.t_rxtcur]
 	mov	[eax + TCP_SOCKET.timer_retransmission], dx
 
+	cmp	[eax + TCP_SOCKET.timer_persist], 0
+	jne	@f
 	mov	[eax + TCP_SOCKET.timer_persist], 0
-	mov	[eax + TCP_SOCKET.t_rxtshift], 0	;;; TODO: only do this if timer_persist was set
-
+	mov	[eax + TCP_SOCKET.t_rxtshift], 0
+       @@:
 
   .retransmit_set:
 

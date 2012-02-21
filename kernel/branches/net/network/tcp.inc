@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the tcp/ip network stack for KolibriOS                 ;;
@@ -93,8 +93,8 @@ ends
 
 align 4
 uglobal
-	TCP_headers_tx	       rd IP_MAX_INTERFACES
-	TCP_headers_rx	       rd IP_MAX_INTERFACES
+	TCP_headers_tx		rd IP_MAX_INTERFACES
+	TCP_headers_rx		rd IP_MAX_INTERFACES
 	TCP_bytes_rx		rq IP_MAX_INTERFACES
 	TCP_bytes_tx		rq IP_MAX_INTERFACES
 	TCP_sequence_num	dd ?
