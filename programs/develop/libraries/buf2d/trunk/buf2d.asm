@@ -2246,6 +2246,16 @@ proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf
 	jge .copy_end     ;если изображение полностью вылазит за правую сторону
 		mov ebx,buf2d_h ;ebx - высота основного буфера
 		mov ecx,[coord_y]
+		cmp ecx,0
+		jge @f
+			;если координата coord_y<0 (1-я настройка)
+			add edx,ecx ;уменьшаем высоту копируемой картинки
+			neg ecx
+			;inc ecx
+			imul ecx,eax
+			add esi,ecx ;сдвигаем указатель с копируемыми данными, с учетом пропушеной части
+			xor ecx,ecx ;обнуляем координату coord_y
+		@@:
 		cmp ecx,ebx
 		jge .copy_end ;если координата 'y' больше высоты буфера
 		add ecx,edx ;ecx - нижняя координата копируемой картинки
@@ -2255,9 +2265,16 @@ proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf
 			sub edx,ecx ;уменьшаем высоту копируемой картинки, в случе когда она вылазит за нижнюю границу
 		@@:
 		mov ebx,buf2d_w
-		mov ecx,ebx ;ecx используем для временных целей
-		imul ecx,[coord_y]
+		mov ecx,[coord_y] ;ecx используем для временных целей
+		cmp ecx,0
+		jge .end_otr_c_y
+			;если координата coord_y<0 (2-я настройка)
+			mov ecx,[coord_x]
+			jmp @f
+		.end_otr_c_y:
+		imul ecx,ebx
 		add ecx,[coord_x]
+		@@:
 		lea ecx,[ecx+ecx*2]
 		add ecx,buf2d_data
 		sub ebx,eax
