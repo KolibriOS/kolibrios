@@ -165,11 +165,13 @@ UDP_input:
 
         ;;; TODO: when packet is processed, check more sockets!
 
-        cmp     [eax + IP_SOCKET.RemoteIP], 0xffffffff
-        je      @f
-        cmp     [eax + IP_SOCKET.RemoteIP], edi
-        jne     .next_socket
-       @@:
+;        cmp     [eax + IP_SOCKET.RemoteIP], 0xffffffff
+;        je      @f
+;        cmp     [eax + IP_SOCKET.RemoteIP], edi
+;        jne     .next_socket
+;       @@:
+;
+; FIXME: UDP should check remote IP, but not under all circumstances!
 
         cmp     [eax + UDP_SOCKET.firstpacket], 0
         je      .updateport

@@ -23,102 +23,102 @@
 
 $Revision$
 
-__DEBUG_LEVEL_OLD__	equ __DEBUG_LEVEL__	; use seperate debug level for network part of kernel
-__DEBUG_LEVEL__ 	equ 1
+__DEBUG_LEVEL_OLD__     equ __DEBUG_LEVEL__     ; use seperate debug level for network part of kernel
+__DEBUG_LEVEL__         equ 1
 
 uglobal
-	net_10ms	dd ?
-	net_tmr_count	dw ?
+        net_10ms        dd ?
+        net_tmr_count   dw ?
 endg
 
-MAX_NET_DEVICES 	equ 16
+MAX_NET_DEVICES         equ 16
 
-MIN_EPHEMERAL_PORT	equ 49152
-MAX_EPHEMERAL_PORT	equ 61000
+MIN_EPHEMERAL_PORT      equ 49152
+MAX_EPHEMERAL_PORT      equ 61000
 
 ; Ethernet protocol numbers
-ETHER_ARP		equ 0x0608
-ETHER_IPv4		equ 0x0008
-ETHER_PPP_DISCOVERY	equ 0x6388
-ETHER_PPP_SESSION	equ 0x6488
+ETHER_ARP               equ 0x0608
+ETHER_IPv4              equ 0x0008
+ETHER_PPP_DISCOVERY     equ 0x6388
+ETHER_PPP_SESSION       equ 0x6488
 
 ;Protocol family
-AF_UNSPEC		equ 0
-AF_UNIX 		equ 1
-AF_INET4		equ 2
-AF_INET6		equ 10
+AF_UNSPEC               equ 0
+AF_UNIX                 equ 1
+AF_INET4                equ 2
+AF_INET6                equ 10
 
 ; Internet protocol numbers
-IP_PROTO_IP		equ 0
-IP_PROTO_ICMP		equ 1
-IP_PROTO_TCP		equ 6
-IP_PROTO_UDP		equ 17
+IP_PROTO_IP             equ 0
+IP_PROTO_ICMP           equ 1
+IP_PROTO_TCP            equ 6
+IP_PROTO_UDP            equ 17
 
 ; Socket types
-SOCK_STREAM		equ 1
-SOCK_DGRAM		equ 2
-SOCK_RAW		equ 3
+SOCK_STREAM             equ 1
+SOCK_DGRAM              equ 2
+SOCK_RAW                equ 3
 
 ; Socket options
-SO_ACCEPTCON		equ 1 shl 0
-SO_BROADCAST		equ 1 shl 1
-SO_DEBUG		equ 1 shl 2
-SO_DONTROUTE		equ 1 shl 3
-SO_KEEPALIVE		equ 1 shl 4
-SO_OOBINLINE		equ 1 shl 5
-SO_REUSEADDR		equ 1 shl 6
-SO_REUSEPORT		equ 1 shl 7
-SO_USELOOPBACK		equ 1 shl 8
+SO_ACCEPTCON            equ 1 shl 0
+SO_BROADCAST            equ 1 shl 1
+SO_DEBUG                equ 1 shl 2
+SO_DONTROUTE            equ 1 shl 3
+SO_KEEPALIVE            equ 1 shl 4
+SO_OOBINLINE            equ 1 shl 5
+SO_REUSEADDR            equ 1 shl 6
+SO_REUSEPORT            equ 1 shl 7
+SO_USELOOPBACK          equ 1 shl 8
 
 
 ; Socket States
-SS_NOFDREF		equ 0x001	; no file table ref any more
-SS_ISCONNECTED		equ 0x002	; socket connected to a peer
-SS_ISCONNECTING 	equ 0x004	; in process of connecting to peer
-SS_ISDISCONNECTING	equ 0x008	; in process of disconnecting
-SS_CANTSENDMORE 	equ 0x010	; can't send more data to peer
-SS_CANTRCVMORE		equ 0x020	; can't receive more data from peer
-SS_RCVATMARK		equ 0x040	; at mark on input
-SS_ISABORTING		equ 0x080	; aborting fd references - close()
-SS_RESTARTSYS		equ 0x100	; restart blocked system calls
-SS_ISDISCONNECTED	equ 0x800	; socket disconnected from peer
+SS_NOFDREF              equ 0x001       ; no file table ref any more
+SS_ISCONNECTED          equ 0x002       ; socket connected to a peer
+SS_ISCONNECTING         equ 0x004       ; in process of connecting to peer
+SS_ISDISCONNECTING      equ 0x008       ; in process of disconnecting
+SS_CANTSENDMORE         equ 0x010       ; can't send more data to peer
+SS_CANTRCVMORE          equ 0x020       ; can't receive more data from peer
+SS_RCVATMARK            equ 0x040       ; at mark on input
+SS_ISABORTING           equ 0x080       ; aborting fd references - close()
+SS_RESTARTSYS           equ 0x100       ; restart blocked system calls
+SS_ISDISCONNECTED       equ 0x800       ; socket disconnected from peer
 
-SS_ASYNC		equ 0x100	; async i/o notify
-SS_ISCONFIRMING 	equ 0x200	; deciding to accept connection req
-SS_MORETOCOME		equ 0x400
+SS_ASYNC                equ 0x100       ; async i/o notify
+SS_ISCONFIRMING         equ 0x200       ; deciding to accept connection req
+SS_MORETOCOME           equ 0x400
 
 
-SOCKET_MAXDATA		equ 4096*32	; must be 4096*(power of 2) where 'power of 2' is at least 8
+SOCKET_MAXDATA          equ 4096*32     ; must be 4096*(power of 2) where 'power of 2' is at least 8
 
 ; Network driver types
-NET_TYPE_ETH		equ 1
-NET_TYPE_SLIP		equ 2
+NET_TYPE_ETH            equ 1
+NET_TYPE_SLIP           equ 2
 
-MAX_backlog		equ 20		; maximum backlog for stream sockets
+MAX_backlog             equ 20          ; maximum backlog for stream sockets
 
 ; Error Codes
-ENOBUFS 		equ 55
-ECONNREFUSED		equ 61
-ECONNRESET		equ 52
-ETIMEDOUT		equ 60
-ECONNABORTED		equ 53
+ENOBUFS                 equ 55
+ECONNREFUSED            equ 61
+ECONNRESET              equ 52
+ETIMEDOUT               equ 60
+ECONNABORTED            equ 53
 
 
 
-struct	NET_DEVICE
+struct  NET_DEVICE
 
-	type		dd ?	; Type field
-	mtu		dd ?	; Maximal Transmission Unit
-	name		dd ?	; Ptr to 0 terminated string
+        type            dd ?    ; Type field
+        mtu             dd ?    ; Maximal Transmission Unit
+        name            dd ?    ; Ptr to 0 terminated string
 
-	unload		dd ?	; Ptrs to driver functions
-	reset		dd ?	;
-	transmit	dd ?	;
+        unload          dd ?    ; Ptrs to driver functions
+        reset           dd ?    ;
+        transmit        dd ?    ;
 
-	bytes_tx	dq ?	; Statistics, updated by the driver
-	bytes_rx	dq ?	;
-	packets_tx	dd ?	;
-	packets_rx	dd ?	;
+        bytes_tx        dq ?    ; Statistics, updated by the driver
+        bytes_rx        dq ?    ;
+        packets_tx      dd ?    ;
+        packets_rx      dd ?    ;
 
 ;       hwacc           dd ?    ; bitmask stating available hardware accelerations (offload engines)
 
@@ -127,26 +127,26 @@ ends
 
 ; Exactly as it says..
 macro pseudo_random reg {
-	add	reg, [esp]
-	rol	reg, 5
-	xor	reg, [timer_ticks]
-	add	reg, [CPU_FREQ]
-	imul	reg, 214013
-	xor	reg, 0xdeadbeef
-	rol	reg, 9
+        add     reg, [esp]
+        rol     reg, 5
+        xor     reg, [timer_ticks]
+        add     reg, [CPU_FREQ]
+        imul    reg, 214013
+        xor     reg, 0xdeadbeef
+        rol     reg, 9
 }
 
 macro ntohd reg {
 
-	rol	word reg, 8
-	rol	dword reg, 16
-	rol	word reg , 8
+        rol     word reg, 8
+        rol     dword reg, 16
+        rol     word reg , 8
 
 }
 
 macro ntohw reg {
 
-	rol	word reg, 8
+        rol     word reg, 8
 
 }
 
@@ -171,8 +171,9 @@ include "socket.inc"
 align 4
 uglobal
 
-	NET_RUNNING	dd  ?
-	NET_DRV_LIST	rd  (MAX_NET_DEVICES + 1)	; device 0 is a link to the default device
+        NET_RUNNING     dd  ?
+        NET_DEFAULT     dd  ?
+        NET_DRV_LIST    rd  MAX_NET_DEVICES
 
 endg
 
@@ -191,26 +192,26 @@ align 4
 stack_init:
 
 ; Init the network drivers list
-	xor	eax, eax
-	mov	edi, NET_RUNNING
-	mov	ecx, (MAX_NET_DEVICES + 2)
-	rep	stosd
+        xor     eax, eax
+        mov     edi, NET_RUNNING
+        mov     ecx, (MAX_NET_DEVICES + 2)
+        rep     stosd
 
 ;        SLIP_init
 ;        PPPOE_init
 
-	IPv4_init
-	ICMP_init
+        IPv4_init
+        ICMP_init
 
-	ARP_init
-	UDP_init
-	TCP_init
+        ARP_init
+        UDP_init
+        TCP_init
 
-	SOCKET_init
+        SOCKET_init
 
-	mov	[net_tmr_count], 0
+        mov     [net_tmr_count], 0
 
-	ret
+        ret
 
 
 ;-----------------------------------------------------------------
@@ -226,29 +227,29 @@ stack_init:
 align 4
 stack_handler:
 
-	cmp	[NET_RUNNING], 0
-	je	.exit
+        cmp     [NET_RUNNING], 0
+        je      .exit
 
-	; Test for 10ms tick
-	mov	eax, [timer_ticks]
-	cmp	eax, [net_10ms]
-	je	.exit
-	mov	[net_10ms], eax
+        ; Test for 10ms tick
+        mov     eax, [timer_ticks]
+        cmp     eax, [net_10ms]
+        je      .exit
+        mov     [net_10ms], eax
 
-	test	[net_10ms], 0x0f	; 160ms
-	jnz	.exit
+        test    [net_10ms], 0x0f        ; 160ms
+        jnz     .exit
 
-	TCP_timer_160ms
+        TCP_timer_160ms
 
-	test	[net_10ms], 0x3f	; 640ms
-	jnz	.exit
+        test    [net_10ms], 0x3f        ; 640ms
+        jnz     .exit
 
-	TCP_timer_640ms
-	ARP_decrease_entry_ttls
-	IPv4_decrease_fragment_ttls
+        TCP_timer_640ms
+        ARP_decrease_entry_ttls
+        IPv4_decrease_fragment_ttls
 
   .exit:
-	ret
+        ret
 
 
 
@@ -266,56 +267,56 @@ stack_handler:
 align 4
 NET_add_device:
 
-	DEBUGF	1,"NET_Add_Device: %x\n", ebx	;;; TODO: use mutex to lock net device list
+        DEBUGF  1,"NET_Add_Device: %x\n", ebx   ;;; TODO: use mutex to lock net device list
 
-	mov	eax, [NET_RUNNING]
-	cmp	eax, MAX_NET_DEVICES
-	jae	.error
+        mov     eax, [NET_RUNNING]
+        cmp     eax, MAX_NET_DEVICES
+        jae     .error
 
 ;----------------------------------
 ; Check if device is already listed
-	mov	eax, ebx
-	mov	ecx, MAX_NET_DEVICES	; We need to check whole list because a device may be removed without re-organizing list
-	mov	edi, NET_DRV_LIST+4
+        mov     eax, ebx
+        mov     ecx, MAX_NET_DEVICES    ; We need to check whole list because a device may be removed without re-organizing list
+        mov     edi, NET_DRV_LIST
 
-	repne	scasd			; See if device is already in the list
-	jz	.error
+        repne   scasd                   ; See if device is already in the list
+        jz      .error
 
 ;----------------------------
 ; Find empty slot in the list
-	xor	eax, eax
-	mov	ecx, MAX_NET_DEVICES
-	mov	edi, NET_DRV_LIST+4
+        xor     eax, eax
+        mov     ecx, MAX_NET_DEVICES
+        mov     edi, NET_DRV_LIST
 
-	repne	scasd
-	jnz	.error
+        repne   scasd
+        jnz     .error
 
-	sub	edi, 4
+        sub     edi, 4
 
 ;-----------------------------
 ; Add device to the found slot
-	mov	[edi], ebx		; add device to list
+        mov     [edi], ebx              ; add device to list
 
-	mov	eax, edi		; Calculate device number in eax
-	sub	eax, NET_DRV_LIST
-	shr	eax, 2
+        mov     eax, edi                ; Calculate device number in eax
+        sub     eax, NET_DRV_LIST
+        shr     eax, 2
 
-	inc	[NET_RUNNING]		; Indicate that one more network device is up and running
+        inc     [NET_RUNNING]           ; Indicate that one more network device is up and running
 
-	cmp	eax, 1			; If it's the first network device, try to set it as default
-	jne	@f
-	push	eax
-	call	NET_set_default
-	pop	eax
+        cmp     eax, 1                  ; If it's the first network device, try to set it as default
+        jne     @f
+        push    eax
+        call    NET_set_default
+        pop     eax
        @@:
 
-	DEBUGF	1,"Device number: %u\n", eax
-	ret
+        DEBUGF  1,"Device number: %u\n", eax
+        ret
 
   .error:
-	or	eax, -1
-	DEBUGF	2,"Adding network device failed\n"
-	ret
+        or      eax, -1
+        DEBUGF  2,"Adding network device failed\n"
+        ret
 
 
 
@@ -332,24 +333,23 @@ NET_add_device:
 align 4
 NET_set_default:
 
-	DEBUGF	1,"NET_set_default %x\n", eax
+        DEBUGF  1,"NET_set_default %x\n", eax
 
-	cmp	eax, MAX_NET_DEVICES
-	jae	.error
+        cmp     eax, MAX_NET_DEVICES
+        jae     .error
 
-	cmp	[NET_DRV_LIST+eax*4], 0
-	je	.error
+        cmp     [NET_DRV_LIST+eax*4], 0
+        je      .error
 
-	push	[NET_DRV_LIST+eax*4]
-	pop	[NET_DRV_LIST]
+        mov     [NET_DEFAULT], eax
 
-	DEBUGF	1,"Device number %u is now default!\n", eax
-	ret
+        DEBUGF  1,"Device number %u is now default!\n", eax
+        ret
 
   .error:
-	or	eax, -1
-	DEBUGF	2,"Setting default network device failed\n"
-	ret
+        or      eax, -1
+        DEBUGF  2,"Setting default network device failed\n"
+        ret
 
 
 ;-----------------------------------------------------------------
@@ -366,46 +366,47 @@ NET_set_default:
 align 4
 NET_remove_device:
 
-	cmp	[NET_RUNNING], 0
-	je	.error
+        cmp     [NET_RUNNING], 0
+        je      .error
 
-	cmp	[NET_DRV_LIST], ebx
-	jne	@f
-	mov	[NET_DRV_LIST], 0
-	cmp	[NET_RUNNING], 1
-	je	@f
-	; there are still active devices, find one and make it default
-	xor	eax, eax
-	mov	ecx, MAX_NET_DEVICES
-	mov	edi, NET_DRV_LIST+4
-	repe	scasd
-	je	@f
-	push	dword [edi-4]
-	pop	[NET_DRV_LIST]
+        cmp     [NET_DRV_LIST], ebx
+        jne     @f
+        mov     [NET_DRV_LIST], 0
+        cmp     [NET_RUNNING], 1
+        je      @f
+        ; there are still active devices, find one and make it default
+        xor     eax, eax
+        mov     ecx, MAX_NET_DEVICES
+        mov     edi, NET_DRV_LIST
+        repe    scasd
+        je      @f
+        shr     edi, 2
+        dec     edi
+        mov     [NET_DEFAULT], edi
        @@:
 
 ;----------------------------
 ; Find the driver in the list
 
-	mov	eax, ebx
-	mov	ecx, MAX_NET_DEVICES
-	mov	edi, NET_DRV_LIST+4
+        mov     eax, ebx
+        mov     ecx, MAX_NET_DEVICES
+        mov     edi, NET_DRV_LIST+4
 
-	repne	scasd
-	jnz	.error
+        repne   scasd
+        jnz     .error
 
 ;------------------------
 ; Remove it from the list
 
-	xor	eax, eax
-	mov	dword [edi-4], eax
+        xor     eax, eax
+        mov     dword [edi-4], eax
 
-	dec	[NET_RUNNING]
-	ret
+        dec     [NET_RUNNING]
+        ret
 
   .error:
-	or	eax, -1
-	ret
+        or      eax, -1
+        ret
 
 
 
@@ -419,31 +420,31 @@ NET_remove_device:
 ;-----------------------------------------------------------------
 align 4
 NET_ptr_to_num:
-	push	ecx
+        push    ecx
 
-	mov	ecx, MAX_NET_DEVICES
-	mov	edi, NET_DRV_LIST+4
+        mov     ecx, MAX_NET_DEVICES
+        mov     edi, NET_DRV_LIST
 
   .loop:
-	cmp	ebx, [edi]
-	jz	.found
-	add	edi, 4
-	dec	ecx
-	jnz	.loop
+        cmp     ebx, [edi]
+        jz      .found
+        add     edi, 4
+        dec     ecx
+        jnz     .loop
 
-	; repnz  scasd could work too if eax is used instead of ebx!
+        ; repnz  scasd could work too if eax is used instead of ebx!
 
-	or	edi, -1
+        or      edi, -1
 
-	pop	ecx
-	ret
+        pop     ecx
+        ret
 
   .found:
-	sub	edi, NET_DRV_LIST
-	shr	edi, 2
+        sub     edi, NET_DRV_LIST
+        shr     edi, 2
 
-	pop	ecx
-	ret
+        pop     ecx
+        ret
 
 ;-----------------------------------------------------------------
 ;
@@ -463,71 +464,71 @@ NET_ptr_to_num:
 align 4
 checksum_1:
 
-	shr	ecx, 1
-	pushf
-	jz	.no_2
+        shr     ecx, 1
+        pushf
+        jz      .no_2
 
-	shr	ecx, 1
-	pushf
-	jz	.no_4
+        shr     ecx, 1
+        pushf
+        jz      .no_4
 
-	shr	ecx, 1
-	pushf
-	jz	.no_8
+        shr     ecx, 1
+        pushf
+        jz      .no_8
 
   .loop:
-	add	dl, [esi+1]
-	adc	dh, [esi+0]
+        add     dl, [esi+1]
+        adc     dh, [esi+0]
 
-	adc	dl, [esi+3]
-	adc	dh, [esi+2]
+        adc     dl, [esi+3]
+        adc     dh, [esi+2]
 
-	adc	dl, [esi+5]
-	adc	dh, [esi+4]
+        adc     dl, [esi+5]
+        adc     dh, [esi+4]
 
-	adc	dl, [esi+7]
-	adc	dh, [esi+6]
+        adc     dl, [esi+7]
+        adc     dh, [esi+6]
 
-	adc	edx, 0
-	add	esi, 8
+        adc     edx, 0
+        add     esi, 8
 
-	dec	ecx
-	jnz	.loop
+        dec     ecx
+        jnz     .loop
 
-	adc	edx, 0
+        adc     edx, 0
 
   .no_8:
-	popf
-	jnc	.no_4
+        popf
+        jnc     .no_4
 
-	add	dl, [esi+1]
-	adc	dh, [esi+0]
+        add     dl, [esi+1]
+        adc     dh, [esi+0]
 
-	adc	dl, [esi+3]
-	adc	dh, [esi+2]
+        adc     dl, [esi+3]
+        adc     dh, [esi+2]
 
-	adc	edx, 0
-	add	esi, 4
+        adc     edx, 0
+        add     esi, 4
 
   .no_4:
-	popf
-	jnc	.no_2
+        popf
+        jnc     .no_2
 
-	add	dl, [esi+1]
-	adc	dh, [esi+0]
+        add     dl, [esi+1]
+        adc     dh, [esi+0]
 
-	adc	edx, 0
-	inc	esi
-	inc	esi
+        adc     edx, 0
+        inc     esi
+        inc     esi
 
   .no_2:
-	popf
-	jnc	.end
+        popf
+        jnc     .end
 
-	add	dh, [esi+0]
-	adc	edx, 0
+        add     dh, [esi+0]
+        adc     edx, 0
   .end:
-	ret
+        ret
 
 ;-----------------------------------------------------------------
 ;
@@ -542,24 +543,24 @@ checksum_1:
 align 4
 checksum_2:
 
-	mov	ecx, edx
-	shr	ecx, 16
-	and	edx, 0xffff
-	add	edx, ecx
+        mov     ecx, edx
+        shr     ecx, 16
+        and     edx, 0xffff
+        add     edx, ecx
 
-	mov	ecx, edx
-	shr	ecx, 16
-	add	dx, cx
-	test	dx, dx		; it seems that ZF is not set when CF is set :(
-	not	dx
-	jnz	.not_zero
-	dec	dx
+        mov     ecx, edx
+        shr     ecx, 16
+        add     dx, cx
+        test    dx, dx          ; it seems that ZF is not set when CF is set :(
+        not     dx
+        jnz     .not_zero
+        dec     dx
   .not_zero:
-	xchg	dl, dh
+        xchg    dl, dh
 
-	DEBUGF 1,"Checksum: %x\n", dx
+        DEBUGF 1,"Checksum: %x\n", dx
 
-	ret
+        ret
 
 
 
@@ -569,102 +570,102 @@ checksum_2:
 ;
 ;----------------------------------------------------------------
 align 4
-sys_network:
+sys_network:                    ; FIXME: make default device easily accessible
 
-	cmp	ebx, -1
-	jne	@f
+        cmp     ebx, -1
+        jne     @f
 
-	mov	eax, [NET_RUNNING]
-	jmp	.return
+        mov     eax, [NET_RUNNING]
+        jmp     .return
 
    @@:
-	cmp	bh, MAX_NET_DEVICES		; Check if device number exists
-	jae	.doesnt_exist
+        cmp     bh, MAX_NET_DEVICES             ; Check if device number exists
+        jae     .doesnt_exist
 
-	mov	esi, ebx
-	and	esi, 0x0000ff00
-	shr	esi, 6
+        mov     esi, ebx
+        and     esi, 0x0000ff00
+        shr     esi, 6
 
-	cmp	dword [esi + NET_DRV_LIST], 0	; check if driver is running
-	je	.doesnt_exist
-
-
-
-	test	bl, bl			; 0 = Get device type (ethernet/token ring/...)
-	jnz	@f
-
-	xor	eax, eax
-	jmp	.return
+        cmp     dword [esi + NET_DRV_LIST], 0   ; check if driver is running
+        je      .doesnt_exist
 
 
-  @@:
-	dec	bl			; 1 = Get device name
-	jnz	@f
 
-	mov	esi, [esi + NET_DRV_LIST]
-	mov	esi, [esi + NET_DEVICE.name]
-	mov	edi, ecx
+        test    bl, bl                  ; 0 = Get device type (ethernet/token ring/...)
+        jnz     @f
 
-	mov	ecx, 64 ; max length
-	repnz	movsb
-
-	xor	eax, eax
-	jmp	.return
-
-  @@:
-
-	dec	bl			; 2 = Reset the device
-	jnz	@f
-
-	mov	esi, [esi + NET_DRV_LIST]
-	call	[esi + NET_DEVICE.reset]
-	jmp	.return
-
-  @@:
-
-	dec	bl			; 3 = Stop driver for this device
-	jnz	@f
-
-	mov	esi, [esi + NET_DRV_LIST]
-	call	[esi + NET_DEVICE.unload]
-	jmp	.return
-
-  @@:
-	dec	bl			; 4 = Get driver pointer
-	jnz	@f
-
-	; ..;
-	xor	eax, eax
-	jmp	.return
+        xor     eax, eax
+        jmp     .return
 
 
   @@:
-	dec	bl			; 5 = Get driver name
-	jnz	@f
+        dec     bl                      ; 1 = Get device name
+        jnz     @f
 
-	; ..;
-	xor	eax, eax
-	jmp	.return
+        mov     esi, [esi + NET_DRV_LIST]
+        mov     esi, [esi + NET_DEVICE.name]
+        mov     edi, ecx
+
+        mov     ecx, 64 ; max length
+        repnz   movsb
+
+        xor     eax, eax
+        jmp     .return
+
+  @@:
+
+        dec     bl                      ; 2 = Reset the device
+        jnz     @f
+
+        mov     esi, [esi + NET_DRV_LIST]
+        call    [esi + NET_DEVICE.reset]
+        jmp     .return
+
+  @@:
+
+        dec     bl                      ; 3 = Stop driver for this device
+        jnz     @f
+
+        mov     esi, [esi + NET_DRV_LIST]
+        call    [esi + NET_DEVICE.unload]
+        jmp     .return
+
+  @@:
+        dec     bl                      ; 4 = Get driver pointer
+        jnz     @f
+
+        ; ..;
+        xor     eax, eax
+        jmp     .return
 
 
   @@:
-	dec	bl			; 6 = Set default device
-	jnz	@f
+        dec     bl                      ; 5 = Get driver name
+        jnz     @f
 
-	mov	eax, esi
-	call	NET_set_default
-	jmp	.return
+        ; ..;
+        xor     eax, eax
+        jmp     .return
+
+
+  @@:
+        dec     bl                      ; 6 = Set default device
+        jnz     @f
+
+        mov     eax, esi
+        call    NET_set_default
+        jmp     .return
 
 
   @@:
 
   .doesnt_exist:
-	DEBUGF	1,"sys_network: invalid device/function specified!\n"
-	mov	eax, -1
+        DEBUGF  1,"sys_network: invalid device/function specified!\n"
+        mov     eax, -1
 
   .return:
-	mov	[esp+28+4], eax
-	ret
+        mov     [esp+28+4], eax
+        ret
 
 
 ;----------------------------------------------------------------
@@ -674,47 +675,47 @@ sys_network:
 ;----------------------------------------------------------------
 align 4
 sys_protocols:
-	cmp	bh, MAX_NET_DEVICES		; Check if device number exists
-	jae	.doesnt_exist
+        cmp     bh, MAX_NET_DEVICES             ; Check if device number exists
+        jae     .doesnt_exist
 
-	mov	esi, ebx
-	and	esi, 0x0000ff00
-	shr	esi, 6				; now we have the device num * 4 in esi
-	cmp	[esi + NET_DRV_LIST], 0 	; check if driver is running
-	je	.doesnt_exist
+        mov     esi, ebx
+        and     esi, 0x0000ff00
+        shr     esi, 6                          ; now we have the device num * 4 in esi
+        cmp     [esi + NET_DRV_LIST], 0         ; check if driver is running
+        je      .doesnt_exist
 
-	push	.return 			; return address (we will be using jumps instead of calls)
+        push    .return                         ; return address (we will be using jumps instead of calls)
 
-	mov	eax, ebx			; set ax to protocol number
-	shr	eax, 16 			;
+        mov     eax, ebx                        ; set ax to protocol number
+        shr     eax, 16                         ;
 
-	cmp	ax , IP_PROTO_IP
-	je	IPv4_API
+        cmp     ax , IP_PROTO_IP
+        je      IPv4_API
 
-	cmp	ax , IP_PROTO_ICMP
-	je	ICMP_API
+        cmp     ax , IP_PROTO_ICMP
+        je      ICMP_API
 
-	cmp	ax , IP_PROTO_UDP
-	je	UDP_API
+        cmp     ax , IP_PROTO_UDP
+        je      UDP_API
 
-	cmp	ax , IP_PROTO_TCP
-	je	TCP_API
+        cmp     ax , IP_PROTO_TCP
+        je      TCP_API
 
-	cmp	ax , ETHER_ARP
-	je	ARP_API
+        cmp     ax , ETHER_ARP
+        je      ARP_API
 
-	cmp	ax , 1337  ;;;;;
-	je	ETH_API
+        cmp     ax , 1337  ;;;;;
+        je      ETH_API
 
-	add	esp, 4				 ; if we reached here, no function was called, so we need to balance stack
+        add     esp, 4                           ; if we reached here, no function was called, so we need to balance stack
 
   .doesnt_exist:
-	DEBUGF	1,"sys_protocols: protocol %u doesnt exist on device %u!\n", ax, bh
-	mov	eax, -1
+        DEBUGF  1,"sys_protocols: protocol %u doesnt exist on device %u!\n", ax, bh
+        mov     eax, -1
 
   .return:
-	mov	[esp+28+4], eax
-	ret
+        mov     [esp+28+4], eax
+        ret
 
 
 __DEBUG_LEVEL__ equ __DEBUG_LEVEL_OLD__
