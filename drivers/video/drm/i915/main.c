@@ -26,6 +26,9 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
 int blit_textured(u32 hbitmap, int  dst_x, int dst_y,
                int src_x, int src_y, u32 w, u32 h);
 
+int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
+             int src_x, int src_y, u32 w, u32 h);
+
 static char  log[256];
 
 int x86_clflush_size;
@@ -159,7 +162,7 @@ int _stdcall display_handler(ioctl_t *io)
 //            blit_video( inp[0], inp[1], inp[2],
 //                    inp[3], inp[4], inp[5], inp[6]);
 
-            blit_textured( inp[0], inp[1], inp[2],
+            blit_tex( inp[0], inp[1], inp[2],
                     inp[3], inp[4], inp[5], inp[6]);
 
 

@@ -61,6 +61,7 @@ struct tag_display
     void      (__stdcall *move_cursor)(cursor_t *cursor, int x, int y);
     void      (__stdcall *restore_cursor)(int x, int y);
     void      (*disable_mouse)(void);
+    u32  mask_seqno;
 };
 
 
@@ -964,7 +965,6 @@ void execute_buffer (struct drm_i915_gem_object *buffer, uint32_t offset,
 
 //    i915_interrupt_info(main_device);
 
-//    ironlake_enable_vblank(main_device, 0);
 };
 
 
@@ -1006,6 +1006,259 @@ int blit_textured(u32 hbitmap, int  dst_x, int dst_y,
     sna_blit_copy(dst_bitmap, dst_x, dst_y, w, h, src_bitmap, src_x, src_y);
 
 };
+
+int sna_blit_tex(bitmap_t *dst_bitmap, int dst_x, int dst_y,
+                  int w, int h, bitmap_t *src_bitmap, int src_x, int src_y,
+                  bitmap_t *mask_bitmap);
+
+int create_context();
+struct context *get_context();
+
+int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
+             int src_x, int src_y, u32 w, u32 h)
+{
+    drm_i915_private_t *dev_priv = main_device->dev_private;
+    struct context *ctx;
+
+    bitmap_t  *src_bitmap, *dst_bitmap;
+    bitmap_t   screen;
+    int        ret;
+
+    bitmap_t *mask_bitmap;
+    rect_t     winrc;
+
+//    dbgprintf("  handle: %d dx %d dy %d sx %d sy %d w %d h %d\n",
+//              hbitmap, dst_x, dst_y, src_x, src_y, w, h);
+
+    if(unlikely(hbitmap==0))
+        return -1;
+
+    src_bitmap = (bitmap_t*)hman_get_data(&bm_man, hbitmap);
+//    dbgprintf("bitmap %x\n", src_bitmap);
+
+    if(unlikely(src_bitmap==NULL))
+        return -1;
+
+    ctx = get_context();
+    if(unlikely(ctx==NULL))
+    {
+        ret = create_context();
+        if(ret!=0)
+            return -1;
+
+        ctx = get_context();
+    };
+
+    mask_bitmap = ctx->mask;
+
+    GetWindowRect(&winrc);
+    dst_x+= winrc.left;
+    dst_y+= winrc.top;
+
+
+    if(ctx->seqno != os_display->mask_seqno)
+    {
+        u8* src_offset;
+        u8* dst_offset;
+        u32 slot = *((u8*)CURRENT_TASK);
+        u32 ifl;
+
+        ret = gem_object_lock(mask_bitmap->obj);
+        if(ret !=0 )
+        {
+            dbgprintf("%s fail\n", __FUNCTION__);
+            return ret;
+        };
+
+        printf("width %d height %d\n", winrc.right, winrc.bottom);
+
+        mask_bitmap->width  = winrc.right;
+        mask_bitmap->height = winrc.bottom;
+        mask_bitmap->pitch =  ALIGN(w,64);
+
+        slot|= (slot<<8)|(slot<<16)|(slot<<24);
+
+
+        __asm__ __volatile__ (
+        "movd       %[slot],   %%xmm6    \n"
+        "punpckldq  %%xmm6, %%xmm6            \n"
+        "punpcklqdq %%xmm6, %%xmm6            \n"
+        :: [slot]  "g" (slot)
+        :"xmm6");
+
+        src_offset = mask_bitmap->uaddr;
+
+        dst_offset = (u8*)(dst_y*os_display->width + dst_x);
+        dst_offset+= get_display_map();
+
+        u32_t tmp_h = mask_bitmap->height;
+
+      ifl = safe_cli();
+        while( tmp_h--)
+        {
+            int tmp_w = mask_bitmap->width;
+
+            u8* tmp_src = src_offset;
+            u8* tmp_dst = dst_offset;
+
+            src_offset+= mask_bitmap->pitch;
+            dst_offset+= os_display->width;
+
+//            while( tmp_w--)
+//            {
+//                *(tmp_src) = (*tmp_dst==slot)?0x1:0x00;
+//                tmp_src++;
+//                tmp_dst++;
+//            };
+            while(tmp_w >= 64)
+            {
+                __asm__ __volatile__ (
+                "movdqu     (%0),   %%xmm0            \n"
+                "movdqu   16(%0),   %%xmm1            \n"
+                "movdqu   32(%0),   %%xmm2            \n"
+                "movdqu   48(%0),   %%xmm3            \n"
+                "pcmpeqb    %%xmm6, %%xmm0            \n"
+                "pcmpeqb    %%xmm6, %%xmm1            \n"
+                "pcmpeqb    %%xmm6, %%xmm2            \n"
+                "pcmpeqb    %%xmm6, %%xmm3            \n"
+                "movdqa     %%xmm0,   (%%edi)         \n"
+                "movdqa     %%xmm1, 16(%%edi)         \n"
+                "movdqa     %%xmm2, 32(%%edi)         \n"
+                "movdqa     %%xmm3, 48(%%edi)         \n"
+
+                :: "r" (tmp_dst), "D" (tmp_src)
+                :"xmm0","xmm1","xmm2","xmm3");
+                tmp_w -= 64;
+                tmp_src += 64;
+                tmp_dst += 64;
+            }
+
+            if( tmp_w >= 32 )
+            {
+                __asm__ __volatile__ (
+                "movdqu     (%0),   %%xmm0            \n"
+                "movdqu   16(%0),   %%xmm1            \n"
+                "pcmpeqb    %%xmm6, %%xmm0            \n"
+                "pcmpeqb    %%xmm6, %%xmm1            \n"
+                "movdqa     %%xmm0,   (%%edi)         \n"
+                "movdqa     %%xmm1, 16(%%edi)         \n"
+
+                :: "r" (tmp_dst), "D" (tmp_src)
+                :"xmm0","xmm1");
+                tmp_w -= 32;
+                tmp_src += 32;
+                tmp_dst += 32;
+            }
+
+            while( tmp_w > 0 )
+            {
+                __asm__ __volatile__ (
+                "movdqu     (%0),   %%xmm0            \n"
+                "pcmpeqb    %%xmm6, %%xmm0            \n"
+                "movdqa     %%xmm0,   (%%edi)         \n"
+                :: "r" (tmp_dst), "D" (tmp_src)
+                :"xmm0");
+                tmp_w -= 16;
+                tmp_src += 16;
+                tmp_dst += 16;
+            }
+        };
+      safe_sti(ifl);
+      ctx->seqno = os_display->mask_seqno;
+    }
+
+    screen.pitch  = os_display->pitch;
+    screen.gaddr  = 0;
+    screen.width  = os_display->width;
+    screen.height = os_display->height;
+    screen.obj    = (void*)-1;
+
+    dst_bitmap = &screen;
+
+
+    sna_blit_tex(dst_bitmap, dst_x, dst_y, w, h, src_bitmap, src_x, src_y,
+                 mask_bitmap);
+
+//    asm volatile ("int3");
+};
+
+
+struct context *context_map[256];
+
+void __attribute__((regparm(1))) destroy_context(struct context *context)
+{
+    printf("destroy context %x\n", context);
+
+    context_map[context->slot] = NULL;
+    __DestroyObject(context);
+};
+
+
+int create_context()
+{
+    struct context *context;
+
+    bitmap_t  *mask;
+    int        slot;
+
+    struct io_call_10 io_10;
+    int    ret;
+
+    slot = *((u8*)CURRENT_TASK);
+
+    if(context_map[slot] != NULL)
+        return 0;
+
+    context = CreateObject(GetPid(), sizeof(*context));
+//    printf("context %x\n", coontext);
+    if( context == NULL)
+        goto err1;
+    context->header.destroy = destroy_context;
+
+    dbgprintf("Create mask surface\n");
+
+    io_10.width  = os_display->width/4;     /* need bitmap format here */
+    io_10.height = os_display->height+1;
+    io_10.max_width  = os_display->width/4;
+    io_10.max_height = os_display->height+1;
+
+    ret = create_surface(&io_10);
+    if(ret)
+        goto err2;
+
+    mask= (bitmap_t*)hman_get_data(&bm_man, io_10.handle);
+    if(unlikely(mask == NULL)) /* something really terrible happend */
+        goto err2;
+    dbgprintf("done\n");
+
+    context->mask  = mask;
+    context->seqno = os_display->mask_seqno-1;
+    context->slot  = slot;
+
+    context_map[slot] = context;
+    return 0;
+
+err2:
+    __DestroyObject(context);
+err1:
+    return -1;
+};
+
+struct context *get_context()
+{
+
+    int slot = *((u8*)CURRENT_TASK);
+
+    return context_map[slot];
+}
+
+
+
+
+
+
+
+
 
 
 void __stdcall run_workqueue(struct workqueue_struct *cwq)

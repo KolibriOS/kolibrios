@@ -95,6 +95,15 @@ typedef struct
 #define HW_VID_BLIT         (1<<2)      /* planar and packed video  */
                                         /*  3 - 63 reserved         */
 
+struct context
+{
+    kobj_t   header;
+
+    bitmap_t *mask;
+    u32       seqno;
+    int       slot;
+};
+
 int get_driver_caps(hwcaps_t *caps);
 int create_surface(struct io_call_10 *pbitmap);
 int lock_surface(struct io_call_12 *pbitmap);

@@ -90,13 +90,14 @@ int create_surface(struct io_call_10 *pbitmap)
         goto err1;
 
     bitmap = CreateObject(GetPid(), sizeof(*bitmap));
+//    printf("bitmap %x\n", bitmap);
+    if( bitmap == NULL)
+        goto err1;
+
     bitmap->handle = handle;
     bitmap->header.destroy = destroy_bitmap;
     bitmap->obj    = NULL;
 
-//    printf("bitmap %x\n", bitmap);
-    if( bitmap == NULL)
-        goto err1;
 
     hman_set_data(&bm_man, handle, bitmap);
 
@@ -209,6 +210,7 @@ int lock_surface(struct io_call_12 *pbitmap)
 
     return 0;
 };
+
 
 int init_hman(struct hman *man, u32 count)
 {

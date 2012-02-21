@@ -141,15 +141,16 @@ struct sna_render {
 	int max_3d_size;
 	int max_3d_pitch;
 
-/*
 	Bool (*composite)(struct sna *sna, uint8_t op,
-			  PicturePtr dst, PicturePtr src, PicturePtr mask,
+              bitmap_t *src, struct kgem_bo *src_bo,
+              bitmap_t *mask, struct kgem_bo *mask_bo,
+              bitmap_t *dst,  struct kgem_bo *dst_bo,
 			  int16_t src_x, int16_t src_y,
 			  int16_t msk_x, int16_t msk_y,
 			  int16_t dst_x, int16_t dst_y,
 			  int16_t w, int16_t h,
 			  struct sna_composite_op *tmp);
-
+/*
 	Bool (*composite_spans)(struct sna *sna, uint8_t op,
 				PicturePtr dst, PicturePtr src,
 				int16_t src_x, int16_t src_y,

@@ -331,3 +331,57 @@ int sna_blit_copy(bitmap_t *dst_bitmap, int dst_x, int dst_y,
 };
 
 
+int sna_blit_tex(bitmap_t *dst_bitmap, int dst_x, int dst_y,
+                  int w, int h, bitmap_t *src_bitmap, int src_x, int src_y,
+                  bitmap_t *mask_bitmap)
+
+{
+    struct sna_composite_op cop;
+    batchbuffer_t  execbuffer;
+    BoxRec box;
+
+    struct kgem_bo src_bo, mask_bo, dst_bo;
+
+    memset(&cop, 0, sizeof(cop));
+    memset(&execbuffer,  0, sizeof(execbuffer));
+    memset(&src_bo, 0, sizeof(src_bo));
+    memset(&dst_bo, 0, sizeof(dst_bo));
+    memset(&mask_bo, 0, sizeof(mask_bo));
+
+    src_bo.gaddr  = src_bitmap->gaddr;
+    src_bo.pitch  = src_bitmap->pitch;
+    src_bo.tiling = 0;
+
+    dst_bo.gaddr  = dst_bitmap->gaddr;
+    dst_bo.pitch  = dst_bitmap->pitch;
+    dst_bo.tiling = 0;
+
+    mask_bo.gaddr  = mask_bitmap->gaddr;
+    mask_bo.pitch  = mask_bitmap->pitch;
+    mask_bo.tiling = 0;
+
+    box.x1 = dst_x;
+    box.y1 = dst_y;
+    box.x2 = dst_x+w;
+    box.y2 = dst_y+h;
+
+    sna_device->render.composite(sna_device, 0,
+                                 src_bitmap, &src_bo,
+                                 mask_bitmap, &mask_bo,
+                                 dst_bitmap, &dst_bo,
+                                 src_x, src_y,
+                                 src_x, src_y,
+                                 dst_x, dst_y,
+                                 w, h, &cop);
+
+    cop.box(sna_device, &cop, &box);
+    cop.done(sna_device, &cop);
+
+    INIT_LIST_HEAD(&execbuffer.objects);
+    list_add_tail(&src_bitmap->obj->exec_list, &execbuffer.objects);
+    list_add_tail(&mask_bitmap->obj->exec_list, &execbuffer.objects);
+
+    _kgem_submit(&sna_device->kgem, &execbuffer);
+
+};
+

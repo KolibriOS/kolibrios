@@ -90,7 +90,9 @@ static const struct wm_kernel_info {
 	unsigned int size;
 	Bool has_mask;
 } wm_kernels[] = {
-	KERNEL(NOMASK, ps_kernel_nomask_affine, FALSE),
+//   KERNEL(NOMASK, ps_kernel_nomask_affine, FALSE),
+//    KERNEL(MASK, ps_kernel_masknoca_affine, TRUE),
+    KERNEL(NOMASK, ps_kernel_masknoca_affine, TRUE),
     KERNEL(MASK, ps_kernel_masknoca_affine, TRUE),
 };
 #undef KERNEL
@@ -171,8 +173,11 @@ static uint32_t gen6_get_blend(int op,
 {
 	uint32_t src, dst;
 
+//    src = GEN6_BLENDFACTOR_ONE; //gen6_blend_op[op].src_blend;
+//    dst = GEN6_BLENDFACTOR_ZERO; //gen6_blend_op[op].dst_blend;
+
     src = GEN6_BLENDFACTOR_ONE; //gen6_blend_op[op].src_blend;
-    dst = GEN6_BLENDFACTOR_ZERO; //gen6_blend_op[op].dst_blend;
+    dst = GEN6_BLENDFACTOR_INV_SRC_ALPHA; //gen6_blend_op[op].dst_blend;
 
 #if 0
 	/* If there's no dst alpha channel, adjust the blend op so that
@@ -1302,6 +1307,50 @@ gen6_get_batch(struct sna *sna)
 		gen6_emit_invariant(sna);
 }
 
+static void gen6_emit_composite_state(struct sna *sna,
+                      const struct sna_composite_op *op)
+{
+    uint32_t *binding_table;
+    uint16_t offset;
+    bool dirty;
+
+    gen6_get_batch(sna);
+    dirty = FALSE;
+
+    binding_table = gen6_composite_get_binding_table(sna, &offset);
+
+    binding_table[0] =
+        gen6_bind_bo(sna,
+                op->dst.bo, op->dst.width, op->dst.height,
+                op->dst.format,
+                TRUE);
+    binding_table[1] =
+        gen6_bind_bo(sna,
+                 op->src.bo, op->src.width, op->src.height,
+                 op->src.card_format,
+                 FALSE);
+    if (op->mask.bo) {
+        binding_table[2] =
+            gen6_bind_bo(sna,
+                     op->mask.bo,
+                     op->mask.width,
+                     op->mask.height,
+                     op->mask.card_format,
+                     FALSE);
+    }
+
+    if (sna->kgem.surface == offset &&
+        *(uint64_t *)(sna->kgem.batch + sna->render_state.gen6.surface_table) == *(uint64_t*)binding_table &&
+        (op->mask.bo == NULL ||
+         sna->kgem.batch[sna->render_state.gen6.surface_table+2] == binding_table[2])) {
+        sna->kgem.surface += sizeof(struct gen6_surface_state_padded) / sizeof(uint32_t);
+        offset = sna->render_state.gen6.surface_table;
+    }
+
+    gen6_emit_state(sna, op, offset | dirty);
+}
+
+
 
 static void
 gen6_align_vertex(struct sna *sna, const struct sna_composite_op *op)
@@ -1586,15 +1635,90 @@ gen6_render_video(struct sna *sna,
 
 #endif
 
-static void gen6_render_composite_done(struct sna *sna,
-				       const struct sna_composite_op *op)
-{
-	DBG(("%s\n", __FUNCTION__));
 
-	if (sna->render_state.gen6.vertex_offset) {
-		gen6_vertex_flush(sna);
-		gen6_magic_ca_pass(sna, op);
-	}
+fastcall static void
+gen6_emit_composite_primitive_identity_source_mask(struct sna *sna,
+                           const struct sna_composite_op *op,
+                           const struct sna_composite_rectangles *r)
+{
+    union {
+        struct sna_coordinate p;
+        float f;
+    } dst;
+    float src_x, src_y;
+    float msk_x, msk_y;
+    float w, h;
+    float *v;
+
+    src_x = r->src.x + op->src.offset[0];
+    src_y = r->src.y + op->src.offset[1];
+    msk_x = r->mask.x + op->mask.offset[0];
+    msk_y = r->mask.y + op->mask.offset[1];
+    w = r->width;
+    h = r->height;
+
+    v = sna->render.vertices + sna->render.vertex_used;
+    sna->render.vertex_used += 15;
+
+    dst.p.x = r->dst.x + r->width;
+    dst.p.y = r->dst.y + r->height;
+    v[0] = dst.f;
+    v[1] = (src_x + w) * op->src.scale[0];
+    v[2] = (src_y + h) * op->src.scale[1];
+    v[3] = (msk_x + w) * op->mask.scale[0];
+    v[4] = (msk_y + h) * op->mask.scale[1];
+
+    dst.p.x = r->dst.x;
+    v[5] = dst.f;
+    v[6] = src_x * op->src.scale[0];
+    v[7] = v[2];
+    v[8] = msk_x * op->mask.scale[0];
+    v[9] = v[4];
+
+    dst.p.y = r->dst.y;
+    v[10] = dst.f;
+    v[11] = v[6];
+    v[12] = src_y * op->src.scale[1];
+    v[13] = v[8];
+    v[14] = msk_y * op->mask.scale[1];
+}
+
+fastcall static void
+gen6_render_composite_box(struct sna *sna,
+              const struct sna_composite_op *op,
+              const BoxRec *box)
+{
+    struct sna_composite_rectangles r;
+
+    if (unlikely(!gen6_get_rectangles(sna, op, 1))) {
+//        _kgem_submit(&sna->kgem);
+//        gen6_emit_composite_state(sna, op);
+//        gen6_get_rectangles(sna, op, 1);
+    }
+
+    DBG(("  %s: (%d, %d), (%d, %d)\n",
+         __FUNCTION__,
+         box->x1, box->y1, box->x2, box->y2));
+
+    r.dst.x = box->x1;
+    r.dst.y = box->y1;
+    r.width  = box->x2 - box->x1;
+    r.height = box->y2 - box->y1;
+    r.src = r.mask = r.dst;
+
+    op->prim_emit(sna, op, &r);
+}
+
+
+static void gen6_render_composite_done(struct sna *sna,
+                       const struct sna_composite_op *op)
+{
+    DBG(("%s\n", __FUNCTION__));
+
+    if (sna->render_state.gen6.vertex_offset) {
+        gen6_vertex_flush(sna);
+        gen6_magic_ca_pass(sna, op);
+    }
 
 //   if (op->mask.bo)
 //       kgem_bo_destroy(&sna->kgem, op->mask.bo);
@@ -1604,6 +1728,94 @@ static void gen6_render_composite_done(struct sna *sna,
 //   sna_render_composite_redirect_done(sna, op);
 }
 
+
+static Bool
+gen6_render_composite(struct sna *sna,
+              uint8_t op,
+              bitmap_t *src,
+              struct kgem_bo *src_bo,
+              bitmap_t *mask,
+              struct kgem_bo *mask_bo,
+              bitmap_t *dst,
+              struct kgem_bo *dst_bo,
+              int16_t src_x, int16_t src_y,
+              int16_t msk_x, int16_t msk_y,
+              int16_t dst_x, int16_t dst_y,
+              int16_t width, int16_t height,
+              struct sna_composite_op *tmp)
+{
+//    if (op >= ARRAY_SIZE(gen6_blend_op))
+//        return FALSE;
+
+//    ENTER();
+
+    DBG(("%s: %dx%d, current mode=%d\n", __FUNCTION__,
+         width, height, sna->kgem.ring));
+
+    tmp->op = PictOpSrc;
+
+    tmp->dst.bo     = dst_bo;
+    tmp->dst.width  = dst->width;
+    tmp->dst.height = dst->height;
+    tmp->dst.format = GEN6_SURFACEFORMAT_B8G8R8A8_UNORM;
+
+
+    tmp->src.bo = src_bo;
+    tmp->src.card_format = GEN6_SURFACEFORMAT_B8G8R8A8_UNORM;
+    tmp->src.width  = src->width;
+    tmp->src.height = src->height;
+
+    tmp->src.scale[0] = 1.f/width;            //src->width;
+    tmp->src.scale[1] = 1.f/height;            //src->height;
+    tmp->src.filter = SAMPLER_FILTER_BILINEAR;
+    tmp->src.repeat = SAMPLER_EXTEND_NONE;
+    tmp->src.offset[0] = -dst_x;
+    tmp->src.offset[1] = -dst_y;
+    tmp->src.is_affine = TRUE;
+
+
+    tmp->mask.bo = mask_bo;
+    tmp->mask.card_format = GEN6_SURFACEFORMAT_A8_UNORM;
+    tmp->mask.width  = mask->width;
+    tmp->mask.height = mask->height;
+
+    tmp->mask.scale[0] = 1.f/mask->width;
+    tmp->mask.scale[1] = 1.f/mask->height;
+    tmp->mask.filter = SAMPLER_FILTER_NEAREST;
+    tmp->mask.repeat = SAMPLER_EXTEND_NONE;
+    tmp->mask.offset[0] = -dst_x;
+    tmp->mask.offset[1] = -dst_y;
+    tmp->mask.is_affine = TRUE;
+
+    tmp->is_affine = TRUE;
+    tmp->has_component_alpha = FALSE;
+    tmp->need_magic_ca_pass = FALSE;
+
+    tmp->prim_emit = gen6_emit_composite_primitive_identity_source_mask;
+
+    tmp->floats_per_vertex = 5 + 2 * !tmp->is_affine;
+
+    tmp->floats_per_rect = 3 * tmp->floats_per_vertex;
+
+    tmp->u.gen6.wm_kernel = GEN6_WM_KERNEL_MASK;
+    tmp->u.gen6.nr_surfaces = 2 + 1;
+    tmp->u.gen6.nr_inputs = 1 + 1;
+    tmp->u.gen6.ve_id = gen6_choose_composite_vertex_buffer(tmp);
+
+    tmp->need_magic_ca_pass = TRUE;
+
+//    tmp->blt   = gen6_render_composite_blt;
+    tmp->box   = gen6_render_composite_box;
+//    tmp->boxes = gen6_render_composite_boxes;
+    tmp->done  = gen6_render_composite_done;
+
+    gen6_emit_composite_state(sna, tmp);
+    gen6_align_vertex(sna, tmp);
+
+//    LEAVE();
+
+    return TRUE;
+}
 
 
 static void
@@ -1930,7 +2142,7 @@ Bool gen6_render_init(struct sna *sna)
 //    sna->kgem.context_switch = gen6_render_context_switch;
       sna->kgem.retire = gen6_render_retire;
 
-//    sna->render.composite = gen6_render_composite;
+    sna->render.composite = gen6_render_composite;
 //    sna->render.video = gen6_render_video;
 
 //    sna->render.copy_boxes = gen6_render_copy_boxes;
