@@ -430,8 +430,8 @@ cfgmanager:
         adc     byte [di+preboot_biosdisk-preboot_device], 0
 ; default value for VRR is OFF
         cmp     byte [di+preboot_vrrm-preboot_device], 0
-        jnz	@f
-        mov	byte [di+preboot_vrrm-preboot_device], 2
+        jnz     @f
+        mov     byte [di+preboot_vrrm-preboot_device], 2
 @@:
 ; notify user
         _setcursor 5,2
@@ -816,7 +816,7 @@ end if
         mov     [boot_dev], al
 
 ; GET MEMORY MAP
-include 'detect/biosmem.inc'
+include '../detect/biosmem.inc'
 
 ; READ DISKETTE TO MEMORY
 
