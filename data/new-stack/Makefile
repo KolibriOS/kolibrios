@@ -140,6 +140,7 @@ COPY_FILES:=\
  File|Managers/buttons.bmp:File|Managers/BUTTONS.BMP:$(PROGS)/fs/kfm/trunk/buttons.bmp \
  File|Managers/icons.bmp:File|Managers/ICONS.BMP:$(PROGS)/fs/kfm/trunk/icons.bmp \
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
+ .shell:.shell:$(PROGS)/system/shell/bin/eng/.shell \
  mykey.ini:MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey.ini \
 # end of list
 
@@ -286,7 +287,7 @@ include Makefile.cmm
 # command lines for compiling and linking, and
 # maintain the list of sources and objects by hand.
 include Makefile.msvc
-
+include Makefile.gcc
 
 # Rules for shell
 shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o .obj.shell/ctype.o \
