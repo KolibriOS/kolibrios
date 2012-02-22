@@ -1,0 +1,15 @@
+# This is similar to Makefile.fasm, look there for comments.
+# No dependency tracking, so force dependencies on all files
+# in dir/* and dir/*/*
+# Also, we cannot set output file name and need to guess
+# whether c-- has created .com file or no-extension file.
+define cmm_meta_rule
+$(1): $(2) Makefile.cmm $$(call respace,$$(addsuffix .dir,$(3))) \
+ $$(wildcard $$(dir $(2))*) $$(wildcard $$(dir $(2))*/*)
+	flock $$(dir $(2)).lock -c '\
+	win32-c-- /D=AUTOBUILD /D=LANG_ENG $(5) /IP=Z:$$(dir $(2)) Z:$$< >&2 && \
+	if [ -e $$(basename $$<) ]; then f=$$(basename $$<); else f=$$(basename $$<).com; fi && \
+	kpack --nologo $$$$f "$$@" && rm $$$$f'
+endef
+
+$(foreach f,$(CMM_PROGRAMS),$(eval $(call cmm_meta_rule,$(fbinary),$(fsource),$(binarydir),$(progname),$(fparam))))
