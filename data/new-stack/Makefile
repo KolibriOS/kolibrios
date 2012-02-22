@@ -127,6 +127,16 @@ FASM_PROGRAMS:=\
  network/telnet:NETWORK/TELNET:$(NETPROGS)/telnet/telnet.asm \
  network/zeroconf:NETWORK/ZEROCONF:$(NETPROGS)/zeroconf/zeroconf.asm \
  lib/network.obj:LIB/NETWORK.OBJ:$(NETPROGS)/libraries/network/network.asm \
+ drivers/3c59x.obj:DRIVERS/3C59X.OBJ:$(KERNEL)/drivers/3c59x.asm \
+ drivers/dec21x4x.obj:DRIVERS/DEC21X4X.OBJ:$(KERNEL)/drivers/dec21x4x.asm \
+ drivers/i8255x.obj:DRIVERS/I8255X.OBJ:$(KERNEL)/drivers/i8255x.asm \
+ drivers/mtd80x.obj:DRIVERS/MTD80X.OBJ:$(KERNEL)/drivers/mtd80x.asm \
+ drivers/pcnet32.obj:DRIVERS/PCNET32.OBJ:$(KERNEL)/drivers/pcnet32.asm \
+ drivers/r6040.obj:DRIVERS/R6040.OBJ:$(KERNEL)/drivers/R6040.asm \
+ drivers/rtl8029.obj:DRIVERS/RTL8029.OBJ:$(KERNEL)/drivers/RTL8029.asm \
+ drivers/rtl8139.obj:DRIVERS/RTL8139.OBJ:$(KERNEL)/drivers/RTL8139.asm \
+ drivers/rtl8169.obj:DRIVERS/RTL8169.OBJ:$(KERNEL)/drivers/RTL8169.asm \
+ drivers/sis900.obj:DRIVERS/SIS900.OBJ:$(KERNEL)/drivers/sis900.asm \
 # end of list
 
 # The list of files which should be copied from somewhere.
