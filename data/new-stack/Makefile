@@ -140,7 +140,6 @@ COPY_FILES:=\
  File|Managers/buttons.bmp:File|Managers/BUTTONS.BMP:$(PROGS)/fs/kfm/trunk/buttons.bmp \
  File|Managers/icons.bmp:File|Managers/ICONS.BMP:$(PROGS)/fs/kfm/trunk/icons.bmp \
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
- .shell:.shell:$(PROGS)/system/shell/bin/eng/.shell \
  mykey.ini:MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey.ini \
 # end of list
 
