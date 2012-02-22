@@ -223,23 +223,17 @@ do_change_task:
 
 
 
-struc MUTEX_WAITER
-{
-    .list   LHEAD
-    .task   rd 1
-    .sizeof:
-};
-
-virtual at 0
- MUTEX_WAITER MUTEX_WAITER
-end virtual
+struct  MUTEX_WAITER
+        list    LHEAD
+        task    dd ?
+ends
 
 ;void  __fastcall mutex_init(struct mutex *lock)
 
 align 4
 mutex_init:
-        mov     [ecx+MUTEX.wait.next], ecx
-        mov     [ecx+MUTEX.wait.prev], ecx
+        mov     [ecx+MUTEX.lhead.next], ecx
+        mov     [ecx+MUTEX.lhead.prev], ecx
         mov     [ecx+MUTEX.count], 1
         ret
 
@@ -255,7 +249,7 @@ mutex_lock:
         pushfd
         cli
 
-        sub     esp, MUTEX_WAITER.sizeof
+        sub     esp, sizeof.MUTEX_WAITER
 
         list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
 
@@ -278,12 +272,12 @@ mutex_lock:
 
         mov     [eax+MUTEX_WAITER.list.next], edx
         mov     [edx+MUTEX_WAITER.list.prev], eax
-        cmp     [ecx+MUTEX.wait.next], ecx
+        cmp     [ecx+MUTEX.lhead.next], ecx
         jne     @F
 
         mov     [ecx+MUTEX.count], 0
 @@:
-        add     esp, MUTEX_WAITER.sizeof
+        add     esp, sizeof.MUTEX_WAITER
 
         popfd
 .done:
@@ -297,7 +291,7 @@ mutex_unlock:
         pushfd
         cli
 
-        mov     eax, [ecx+MUTEX.wait.next]
+        mov     eax, [ecx+MUTEX.lhead.next]
         cmp     eax, ecx
         mov     [ecx+MUTEX.count], 1
         je      @F

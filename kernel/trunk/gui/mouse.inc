@@ -231,7 +231,7 @@ mouse._.left_button_press_handler: ;///////////////////////////////////////////
         mov     [mouse.active_sys_window.pslot], esi
         lea     eax, [edi + WDATA.box]
         mov     ebx, mouse.active_sys_window.old_box
-        mov     ecx, BOX.sizeof
+        mov     ecx, sizeof.BOX
         call    memmove
         mov     ebx, mouse.active_sys_window.new_box
         call    memmove
@@ -305,7 +305,7 @@ mouse._.left_button_release_handler: ;/////////////////////////////////////////
         shl     eax, 5
         add     eax, window_data + WDATA.box
         mov     ebx, mouse.active_sys_window.old_box
-        mov     ecx, BOX.sizeof
+        mov     ecx, sizeof.BOX
         call    memmove
 
         mov     eax, mouse.active_sys_window.old_box
@@ -377,7 +377,7 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
 
         mov     eax, mouse.active_sys_window.new_box
         mov     ebx, mouse.active_sys_window.old_box
-        mov     ecx, BOX.sizeof
+        mov     ecx, sizeof.BOX
         call    memmove
 
         mov     dl, [mouse.active_sys_window.action]
@@ -505,7 +505,7 @@ mouse._.move_handler: ;////////////////////////////////////////////////////////
         push    esi
         mov     esi, mouse.active_sys_window.old_box
         mov     edi, mouse.active_sys_window.new_box
-        mov     ecx, BOX.sizeof / 4
+        mov     ecx, sizeof.BOX / 4
         repe
         cmpsd
         pop     esi

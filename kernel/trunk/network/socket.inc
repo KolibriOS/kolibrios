@@ -30,32 +30,32 @@
 $Revision$
 
 ; socket data structure
-struct SOCKET
-  .PrevPtr        dd ? ; pointer to previous socket in list
-  .NextPtr        dd ? ; pointer to next socket in list
-  .Number         dd ? ; socket number (unique within single process)
-  .PID            dd ? ; application process id
-  .LocalIP        dd ? ; local IP address
-  .LocalPort      dw ? ; local port
-  .RemoteIP       dd ? ; remote IP address
-  .RemotePort     dw ? ; remote port
-  .OrigRemoteIP   dd ? ; original remote IP address (used to reset to LISTEN state)
-  .OrigRemotePort dw ? ; original remote port (used to reset to LISTEN state)
-  .rxDataCount    dd ? ; rx data count
-  .TCBState       dd ? ; TCB state
-  .TCBTimer       dd ? ; TCB timer (seconds)
-  .ISS            dd ? ; initial send sequence
-  .IRS            dd ? ; initial receive sequence
-  .SND_UNA        dd ? ; sequence number of unack'ed sent packets
-  .SND_NXT        dd ? ; bext send sequence number to use
-  .SND_WND        dd ? ; send window
-  .RCV_NXT        dd ? ; next receive sequence number to use
-  .RCV_WND        dd ? ; receive window
-  .SEG_LEN        dd ? ; segment length
-  .SEG_WND        dd ? ; segment window
-  .wndsizeTimer   dd ? ; window size timer
-  .lock       MUTEX ; lock mutex
-  .rxData         dd ? ; receive data buffer here
+struct  SOCKET
+        PrevPtr        dd ? ; pointer to previous socket in list
+        NextPtr        dd ? ; pointer to next socket in list
+        Number         dd ? ; socket number (unique within single process)
+        PID            dd ? ; application process id
+        LocalIP        dd ? ; local IP address
+        LocalPort      dw ? ; local port
+        RemoteIP       dd ? ; remote IP address
+        RemotePort     dw ? ; remote port
+        OrigRemoteIP   dd ? ; original remote IP address (used to reset to LISTEN state)
+        OrigRemotePort dw ? ; original remote port (used to reset to LISTEN state)
+        rxDataCount    dd ? ; rx data count
+        TCBState       dd ? ; TCB state
+        TCBTimer       dd ? ; TCB timer (seconds)
+        ISS            dd ? ; initial send sequence
+        IRS            dd ? ; initial receive sequence
+        SND_UNA        dd ? ; sequence number of unack'ed sent packets
+        SND_NXT        dd ? ; bext send sequence number to use
+        SND_WND        dd ? ; send window
+        RCV_NXT        dd ? ; next receive sequence number to use
+        RCV_WND        dd ? ; receive window
+        SEG_LEN        dd ? ; segment length
+        SEG_WND        dd ? ; segment window
+        wndsizeTimer   dd ? ; window size timer
+        mutex          MUTEX ; lock mutex
+        rxData         dd ? ; receive data buffer here
 ends
 
 ; TCP opening modes
@@ -100,7 +100,7 @@ proc net_socket_alloc stdcall uses ebx ecx edx edi
         pop     eax
 
         mov     ebx, eax
-        lea     ecx, [eax+SOCKET.lock]
+        lea     ecx, [eax+SOCKET.mutex]
         call    mutex_init
         mov     eax, ebx
 
@@ -711,7 +711,7 @@ proc socket_read stdcall
         jz      .error
 
         mov     ebx, eax
-        lea     ecx, [eax + SOCKET.lock]
+        lea     ecx, [eax + SOCKET.mutex]
         call    mutex_lock
 
         mov     eax, [ebx + SOCKET.rxDataCount]         ; get count of bytes
@@ -734,14 +734,14 @@ proc socket_read stdcall
         and     ecx, 3
         rep movsb
 
-        lea     ecx, [ebx + SOCKET.lock]
+        lea     ecx, [ebx + SOCKET.mutex]
         mov     ebx, eax
         call    mutex_unlock
         mov     eax, ebx
         ret
 
   .error_release:
-        lea     ecx, [ebx + SOCKET.lock]
+        lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
   .error:
         xor     ebx, ebx
@@ -769,7 +769,7 @@ proc socket_read_packet stdcall
         mov     ebx, eax
 
         push    ecx edx
-        lea     ecx, [eax + SOCKET.lock]
+        lea     ecx, [eax + SOCKET.mutex]
         call    mutex_lock
         pop     edx ecx
 
@@ -802,7 +802,7 @@ proc socket_read_packet stdcall
         rep movsb                                          ; copy remaining bytes
 
   .exit:
-        lea     ecx, [ebx + SOCKET.lock]
+        lea     ecx, [ebx + SOCKET.mutex]
         mov     ebx, eax
         call    mutex_unlock
         mov     eax, ebx
@@ -816,7 +816,7 @@ proc socket_read_packet stdcall
         xor     esi, esi
         mov     [ebx + SOCKET.rxDataCount], esi            ; store new count (zero)
         call    .start_copy
-        lea     ecx, [ebx + SOCKET.lock]
+        lea     ecx, [ebx + SOCKET.mutex]
         mov     ebx, eax
         call    mutex_unlock
         mov     eax, ebx

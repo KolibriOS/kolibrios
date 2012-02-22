@@ -967,7 +967,7 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
   .data:
         push    ecx
         push    ecx edx
-        lea     ecx, [ebx+SOCKET.lock]
+        lea     ecx, [ebx+SOCKET.mutex]
         call    mutex_lock
         pop     edx ecx
 
@@ -989,7 +989,7 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
         cld
         rep movsb              ; copy the data across
 
-        lea     ecx, [ebx + SOCKET.lock]
+        lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
 
         ; flag an event to the application
@@ -1035,7 +1035,7 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
   .overflow:
         ; no place in buffer
         ; so simply restore stack and exit
-        lea     ecx, [ebx + SOCKET.lock]
+        lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
         pop     eax ecx
         ret

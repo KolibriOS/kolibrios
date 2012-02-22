@@ -520,9 +520,9 @@ disk_init_cache:
 @@:
 ; 3. Fill two DISKCACHE structures.
         mov     [esi+DISK.SysCache.pointer], eax
-        lea     ecx, [esi+DISK.SysCache.Lock]
+        lea     ecx, [esi+DISK.SysCache.mutex]
         call    mutex_init
-        lea     ecx, [esi+DISK.AppCache.Lock]
+        lea     ecx, [esi+DISK.AppCache.mutex]
         call    mutex_init
 ; The following code is inherited from getcache.inc.
         mov     edx, [esi+DISK.SysCache.pointer]

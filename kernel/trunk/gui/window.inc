@@ -354,7 +354,7 @@ syscall_move_window: ;///// system function 67 ////////////////////////////////
         mov     eax, esp
         mov     bl, [edi + WDATA.fl_wstate]
         call    window._.set_window_box
-        add     esp, BOX.sizeof
+        add     esp, sizeof.BOX
 
         ; NOTE: do we really need this? to be reworked
 ;       mov     byte[DONT_DRAW_MOUSE], 0 ; mouse pointer
@@ -518,7 +518,7 @@ repos_windows: ;///////////////////////////////////////////////////////////////
 ;? <description>
 ;------------------------------------------------------------------------------
         mov     ecx, [TASK_COUNT]
-        mov     edi, window_data + WDATA.sizeof * 2
+        mov     edi, window_data + sizeof.WDATA * 2
         call    force_redraw_background
         dec     ecx
         jle     .exit
@@ -573,7 +573,7 @@ repos_windows: ;///////////////////////////////////////////////////////////////
   .fix_client_box:
         call    window._.set_window_clientbox
 
-        add     edi, WDATA.sizeof
+        add     edi, sizeof.WDATA
         loop    .next_window
 
   .exit:
@@ -1111,7 +1111,7 @@ sys_window_maximize_handler: ;/////////////////////////////////////////////////
 
     @@:
         call    window._.set_window_box
-        add     esp, BOX.sizeof
+        add     esp, sizeof.BOX
 
   .exit:
         ret
@@ -1147,7 +1147,7 @@ sys_window_rollup_handler: ;///////////////////////////////////////////////////
   .restore_size:
         test    bl, WSTATE_MAXIMIZED
         jnz     @f
-        add     esp, -BOX.sizeof
+        add     esp, -sizeof.BOX
         lea     eax, [edx + APPDATA.saved_box]
         jmp     .set_box
 
@@ -1162,7 +1162,7 @@ sys_window_rollup_handler: ;///////////////////////////////////////////////////
 
   .set_box:
         call    window._.set_window_box
-        add     esp, BOX.sizeof
+        add     esp, sizeof.BOX
 
         ret
 
@@ -1341,7 +1341,7 @@ end if
         jz      .exit
 @@:
 
-        add     esp, -BOX.sizeof
+        add     esp, -sizeof.BOX
 
         mov     ebx, esp
 if WDATA.box
@@ -1350,7 +1350,7 @@ else
         mov     esi, edi ; optimization for WDATA.box = 0
 end if
         xchg    eax, esi
-        mov     ecx, BOX.sizeof
+        mov     ecx, sizeof.BOX
         call    memmove
         xchg    eax, esi
         xchg    ebx, esi
@@ -1362,7 +1362,7 @@ end if
         call    window._.set_window_clientbox
         call    window._.invalidate_screen
 
-        add     esp, BOX.sizeof
+        add     esp, sizeof.BOX
 
         mov     cl, [esp + 4]
         mov     ch, cl

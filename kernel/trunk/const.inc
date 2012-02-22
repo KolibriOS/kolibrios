@@ -146,43 +146,38 @@ SSE_INIT equ (SSE_IM+SSE_DM+SSE_ZM+SSE_OM+SSE_UM+SSE_PM)
 IRQ_PIC        equ    0
 IRQ_APIC       equ    1
 
-struc TSS
-{
-  ._back       rw 2
-  ._esp0       rd 1
-  ._ss0        rw 2
-  ._esp1       rd 1
-  ._ss1        rw 2
-  ._esp2       rd 1
-  ._ss2        rw 2
-  ._cr3        rd 1
-  ._eip        rd 1
-  ._eflags     rd 1
-  ._eax        rd 1
-  ._ecx        rd 1
-  ._edx        rd 1
-  ._ebx        rd 1
-  ._esp        rd 1
-  ._ebp        rd 1
-  ._esi        rd 1
-  ._edi        rd 1
-  ._es         rw 2
-  ._cs         rw 2
-  ._ss         rw 2
-  ._ds         rw 2
-  ._fs         rw 2
-  ._gs         rw 2
-  ._ldt        rw 2
-  ._trap       rw 1
-  ._io         rw 1
-               rb 24
-  ._io_map_0   rb 4096
-  ._io_map_1   rb 4096
-}
-
-virtual at 0
-  TSS  TSS
-end virtual
+struct  TSS
+        _back       rw 2
+        _esp0       rd 1
+        _ss0        rw 2
+        _esp1       rd 1
+        _ss1        rw 2
+        _esp2       rd 1
+        _ss2        rw 2
+        _cr3        rd 1
+        _eip        rd 1
+        _eflags     rd 1
+        _eax        rd 1
+        _ecx        rd 1
+        _edx        rd 1
+        _ebx        rd 1
+        _esp        rd 1
+        _ebp        rd 1
+        _esi        rd 1
+        _edi        rd 1
+        _es         rw 2
+        _cs         rw 2
+        _ss         rw 2
+        _ds         rw 2
+        _fs         rw 2
+        _gs         rw 2
+        _ldt        rw 2
+        _trap       rw 1
+        _io         rw 1
+                    rb 24
+        _io_map_0   rb 4096
+        _io_map_1   rb 4096
+ends
 
 TSS_SIZE  equ (128+8192)
 

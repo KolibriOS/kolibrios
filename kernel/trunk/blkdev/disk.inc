@@ -33,18 +33,18 @@ MAX_NUM_PARTITIONS = 256
 ; This structure defines all callback functions for working with the physical
 ; device. They are implemented by a driver. Objects with this structure reside
 ; in a driver.
-struct DISKFUNC
-.strucsize      dd      ?
+struct  DISKFUNC
+        strucsize       dd ?
 ; Size of the structure. This field is intended for possible extensions of
 ; this structure. If a new function is added to this structure and a driver
 ; implements an old version, the caller can detect this by checking .strucsize,
 ; so the driver remains compatible.
-.close          dd      ?
+        close           dd ?
 ; The pointer to the function which frees all driver-specific resources for
 ; the disk.
 ; Optional, may be NULL.
 ; void close(void* userdata);
-.closemedia     dd      ?
+        closemedia      dd ?
 ; The pointer to the function which informs the driver that the kernel has
 ; finished all processing with the current media. If media is removed, the
 ; driver should decline all requests to that media with DISK_STATUS_NO_MEDIA,
@@ -53,24 +53,24 @@ struct DISKFUNC
 ; function is called.
 ; Optional, may be NULL (if media is not removable).
 ; void closemedia(void* userdata);
-.querymedia     dd      ?
+        querymedia      dd ?
 ; The pointer to the function which determines capabilities of the media.
 ; int querymedia(void* userdata, DISKMEDIAINFO* info);
 ; Return value: one of DISK_STATUS_*
-.read           dd      ?
+        read            dd ?
 ; The pointer to the function which reads data from the device.
 ; int read(void* userdata, void* buffer, __int64 startsector, int* numsectors);
 ; input: *numsectors = number of sectors to read
 ; output: *numsectors = number of sectors which were successfully read
 ; Return value: one of DISK_STATUS_*
-.write          dd      ?
+        write           dd ?
 ; The pointer to the function which writes data to the device.
 ; Optional, may be NULL.
 ; int write(void* userdata, void* buffer, __int64 startsector, int* numsectors);
 ; input: *numsectors = number of sectors to write
 ; output: *numsectors = number of sectors which were successfully written
 ; Return value: one of DISK_STATUS_*
-.flush          dd      ?
+        flush           dd ?
 ; The pointer to the function which flushes the internal device cache.
 ; Optional, may be NULL.
 ; int flush(void* userdata);
@@ -78,7 +78,7 @@ struct DISKFUNC
 ; Note that read/write are called by the cache manager, so a driver should not
 ; create a software cache. This function is implemented for flushing a hardware
 ; cache, if it exists.
-.adjust_cache_size      dd      ?
+        adjust_cache_size       dd ?
 ; The pointer to the function which returns the cache size for this device.
 ; Optional, may be NULL.
 ; unsigned int adjust_cache_size(unsigned int suggested_size);
@@ -88,51 +88,51 @@ ends
 ; This structure holds information on a medium.
 ; Objects with this structure are allocated by the kernel as a part of the DISK
 ; structure and are filled by a driver in the 'querymedia' callback.
-struct DISKMEDIAINFO
-.Flags          dd      ?
+struct  DISKMEDIAINFO
+        Flags           dd ?
 ; Combination of DISK_MEDIA_* bits.
-.SectorSize     dd      ?
+        SectorSize      dd ?
 ; Size of the sector.
-.Capacity       dq      ?
+        Capacity        dq ?
 ; Size of the media in sectors.
 ends
 
 ; This structure represents the disk cache. To follow the old implementation,
 ; there are two distinct caches for a disk, one for "system" data,and the other
 ; for "application" data.
-struct DISKCACHE
-.Lock           MUTEX
+struct  DISKCACHE
+        mutex           MUTEX
 ; Lock to protect the cache.
 ; The following fields are inherited from data32.inc:cache_ideX.
-.pointer     rd 1
-.data_size   rd 1   ; not use
-.data        rd 1
-.sad_size    rd 1
-.search_start       rd 1
+        pointer         dd ?
+        data_size       dd ?    ; unused
+        data            dd ?
+        sad_size        dd ?
+        search_start    dd ?
 ends
 
 ; This structure represents a disk device and its media for the kernel.
 ; This structure is allocated by the kernel in the 'disk_add' function,
 ; freed in the 'disk_dereference' function.
-struct DISK
+struct  DISK
 ; Fields of disk object
-.Next           dd      ?
-.Prev           dd      ?
+        Next            dd ?
+        Prev            dd ?
 ; All disk devices are linked in one list with these two fields.
 ; Head of the list is the 'disk_list' variable.
-.Functions      dd      ?
+        Functions       dd ?
 ; Pointer to the 'DISKFUNC' structure with driver functions.
-.Name           dd      ?
+        Name            dd ?
 ; Pointer to the string used for accesses through the global filesystem.
-.UserData       dd      ?
+        UserData        dd ?
 ; This field is passed to all callback functions so a driver can decide which
 ; physical device is addressed.
-.DriverFlags    dd      ?
+        DriverFlags     dd ?
 ; Bitfield. Currently only DISK_NO_INSERT_NOTIFICATION bit is defined.
 ; If it is set, the driver will never issue 'disk_media_changed' notification
 ; with argument set to true, so the kernel must try to detect media during
 ; requests from the file system.
-.RefCount       dd      ?
+        RefCount        dd ?
 ; Count of active references to this structure. One reference is kept during
 ; the lifetime of the structure between 'disk_add' and 'disk_del'.
 ; Another reference is taken during any filesystem operation for this disk.
@@ -140,51 +140,51 @@ struct DISK
 ; The structure is destroyed when the reference count decrements to zero:
 ; this usually occurs in 'disk_del', but can be delayed to the end of last
 ; filesystem operation, if one is active.
-.MediaLock              MUTEX
+        MediaLock       MUTEX
 ; Lock to protect the MEDIA structure. See the description after
 ; 'disk_list_mutex' for the locking strategy.
 ; Fields of media object
-.MediaInserted          db      ?
+        MediaInserted   db ?
 ; 0 if media is not inserted, nonzero otherwise.
-.MediaUsed              db      ?
+        MediaUsed       db ?
 ; 0 if media fields are not used, nonzero otherwise. If .MediaRefCount is
 ; nonzero, this field is nonzero too; however, when .MediaRefCount goes
 ; to zero, there is some time interval during which media object is still used.
-                align 4
+        align 4
 ; The following fields are not valid unless either .MediaInserted is nonzero
 ; or they are accessed from a code which has obtained the reference when
 ; .MediaInserted was nonzero.
-.MediaRefCount          dd      ?
+        MediaRefCount   dd ?
 ; Count of active references to the media object. One reference is kept during
 ; the lifetime of the media between two calls to 'disk_media_changed'.
 ; Another reference is taken during any filesystem operation for this media.
 ; The callback 'closemedia' is called when the reference count decrements to
 ; zero: this usually occurs in 'disk_media_changed', but can be delayed to the
 ; end of the last filesystem operation, if one is active.
-.MediaInfo              DISKMEDIAINFO
+        MediaInfo       DISKMEDIAINFO
 ; This field keeps information on the current media.
-.NumPartitions  dd      ?
+        NumPartitions   dd ?
 ; Number of partitions on this media.
-.Partitions     dd      ?
+        Partitions      dd ?
 ; Pointer to array of .NumPartitions pointers to PARTITION structures.
-.cache_size     dd      ?
+        cache_size      dd ?
 ; inherited from cache_ideX_size
-.SysCache       DISKCACHE
-.AppCache       DISKCACHE
+        SysCache        DISKCACHE
+        AppCache        DISKCACHE
 ; Two caches for the disk.
 ends
 
 ; This structure represents one partition for the kernel. This is a base
 ; template, the actual contents after common fields is determined by the
 ; file system code for this partition.
-struct PARTITION
-.FirstSector    dq      ?
+struct  PARTITION
+        FirstSector     dq ?
 ; First sector of the partition.
-.Length         dq      ?
+        Length          dq ?
 ; Length of the partition in sectors.
-.Disk           dd      ?
+        Disk            dd ?
 ; Pointer to parent DISK structure.
-.FSUserFunctions        dd      ?
+        FSUserFunctions dd ?
 ; Handlers for the sysfunction 70h. This field is a pointer to the following
 ; array. The first dword is a number of supported subfunctions, other dwords
 ; point to handlers of corresponding subfunctions.
@@ -193,24 +193,24 @@ struct PARTITION
 ends
 
 ; This is an external structure, it represents an entry in the partition table.
-struct PARTITION_TABLE_ENTRY
-.Bootable       db      ?
+struct  PARTITION_TABLE_ENTRY
+        Bootable        db ?
 ; 80h = bootable partition, 0 = non-bootable partition, other values = invalid
-.FirstHead      db      ?
-.FirstSector    db      ?
-.FirstTrack     db      ?
+        FirstHead       db ?
+        FirstSector     db ?
+        FirstTrack      db ?
 ; Coordinates of first sector in CHS.
-.Type           db      ?
+        Type            db ?
 ; Partition type, one of predefined constants. 0 = empty, several types denote
 ; extended partition (see process_partition_table_entry), we are not interested
 ; in other values.
-.LastHead       db      ?
-.LastSector     db      ?
-.LastTrack      db      ?
+        LastHead        db ?
+        LastSector      db ?
+        LastTrack       db ?
 ; Coordinates of last sector in CHS.
-.FirstAbsSector dd      ?
+        FirstAbsSector  dd ?
 ; Coordinate of first sector in LBA.
-.Length         dd      ?
+        Length          dd ?
 ; Length of the partition in sectors.
 ends
 

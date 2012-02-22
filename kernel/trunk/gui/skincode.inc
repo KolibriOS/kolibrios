@@ -42,44 +42,44 @@ read_skin_file:
         pop     eax
         ret
 
-struct SKIN_HEADER
-  .ident   dd ?
-  .version dd ?
-  .params  dd ?
-  .buttons dd ?
-  .bitmaps dd ?
+struct  SKIN_HEADER
+        ident           dd ?
+        version         dd ?
+        params          dd ?
+        buttons         dd ?
+        bitmaps         dd ?
 ends
 
-struct SKIN_PARAMS
-  .skin_height    dd ?
-  .margin.right   dw ?
-  .margin.left    dw ?
-  .margin.bottom  dw ?
-  .margin.top     dw ?
-  .colors.inner   dd ?
-  .colors.outer   dd ?
-  .colors.frame   dd ?
-  .colors_1.inner dd ?
-  .colors_1.outer dd ?
-  .colors_1.frame dd ?
-  .dtp.size       dd ?
-  .dtp.data       db 40 dup (?)
+struct  SKIN_PARAMS
+        skin_height     dd ?
+        margin.right    dw ?
+        margin.left     dw ?
+        margin.bottom   dw ?
+        margin.top      dw ?
+        colors.inner    dd ?
+        colors.outer    dd ?
+        colors.frame    dd ?
+        colors_1.inner  dd ?
+        colors_1.outer  dd ?
+        colors_1.frame  dd ?
+        dtp.size        dd ?
+        dtp.data        rb 40
 ends
 
-struct SKIN_BUTTONS
-  .type     dd ?
-  .pos:
-    .left   dw ?
-    .top    dw ?
-  .size:
-    .width  dw ?
-    .height dw ?
+struct  SKIN_BUTTONS
+        type    dd ?
+; position
+        left    dw ?
+        top     dw ?
+; size
+        width   dw ?
+        height  dw ?
 ends
 
-struct SKIN_BITMAPS
-  .kind  dw ?
-  .type  dw ?
-  .data  dd ?
+struct  SKIN_BITMAPS
+        kind    dw ?
+        type    dw ?
+        data    dd ?
 ends
 
 load_default_skin:

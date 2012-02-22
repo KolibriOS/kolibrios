@@ -51,97 +51,97 @@ uglobal
     EXT2_read_in_folder     dd ?   ;сколько файлов "считали"
     EXT2_end_block          dd ?   ;конец очередного блока папки
     EXT2_counter_blocks     dd ?
-    EXT2_filename           db 256 dup ?
-    EXT2_parent_name        db 256 dup ?
+    EXT2_filename           rb 256
+    EXT2_parent_name        rb 256
     EXT2_name_len           dd ?
 endg
 
-struct EXT2_INODE_STRUC
-    .i_mode         dw ?
-    .i_uid          dw ?
-    .i_size         dd ?
-    .i_atime        dd ?
-    .i_ctime        dd ?
-    .i_mtime        dd ?
-    .i_dtime        dd ?
-    .i_gid          dw ?
-    .i_links_count  dw ?
-    .i_blocks       dd ?
-    .i_flags        dd ?
-    .i_osd1         dd ?
-    .i_block        dd 15 dup ?
-    .i_generation   dd ?
-    .i_file_acl     dd ?
-    .i_dir_acl      dd ?
-    .i_faddr        dd ?
-    .i_osd2         dd ? ; 1..12
+struct  EXT2_INODE_STRUC
+        i_mode          dw ?
+        i_uid           dw ?
+        i_size          dd ?
+        i_atime         dd ?
+        i_ctime         dd ?
+        i_mtime         dd ?
+        i_dtime         dd ?
+        i_gid           dw ?
+        i_links_count   dw ?
+        i_blocks        dd ?
+        i_flags         dd ?
+        i_osd1          dd ?
+        i_block         rd 15
+        i_generation    dd ?
+        i_file_acl      dd ?
+        i_dir_acl       dd ?
+        i_faddr         dd ?
+        i_osd2          dd ? ; 1..12
 ends
 
-struct EXT2_DIR_STRUC
-    .inode          dd ?
-    .rec_len        dw ?
-    .name_len       db ?
-    .file_type      db ?
-    .name           db ? ; 0..255
+struct  EXT2_DIR_STRUC
+        inode           dd ?
+        rec_len         dw ?
+        name_len        db ?
+        file_type       db ?
+        name            db ? ; 0..255
 ends
 
-struct EXT2_BLOCK_GROUP_DESC
-    .block_bitmap       dd ?
-    .inode_bitmap       dd ?
-    .inode_table        dd ?
-    .free_blocks_count  dw ?
-    .free_inodes_count  dw ?
-    .used_dirs_count    dw ?
+struct  EXT2_BLOCK_GROUP_DESC
+        block_bitmap            dd ?
+        inode_bitmap            dd ?
+        inode_table             dd ?
+        free_blocks_count       dw ?
+        free_inodes_count       dw ?
+        used_dirs_count         dw ?
 ends
 
-struct EXT2_SB_STRUC
-    .inodes_count       dd ? ;+0
-    .blocks_count       dd ? ;+4
-    .r_block_count      dd ? ;+8
-    .free_block_count   dd ? ;+12
-    .free_inodes_count  dd ? ;+16
-    .first_data_block   dd ? ;+20
-    .log_block_size     dd ? ;+24
-    .log_frag_size      dd ? ;+28
-    .blocks_per_group   dd ? ;+32
-    .frags_per_group    dd ? ;+36
-    .inodes_per_group   dd ? ;+40
-    .mtime              dd ? ;+44
-    .wtime              dd ? ;+48
-    .mnt_count          dw ? ;+52
-    .max_mnt_count      dw ? ;+54
-    .magic              dw ? ;+56
-    .state              dw ? ;+58
-    .errors             dw ? ;+60
-    .minor_rev_level    dw ? ;+62
-    .lastcheck          dd ? ;+64
-    .check_intervals    dd ? ;+68
-    .creator_os         dd ? ;+72
-    .rev_level          dd ? ;+76
-    .def_resuid         dw ? ;+80
-    .def_resgid         dw ? ;+82
-    .first_ino          dd ? ;+84
-    .inode_size         dw ? ;+88
-    .block_group_nr     dw ? ;+90
-    .feature_compat     dd ? ;+92
-    .feature_incompat   dd ? ;+96
-    .feature_ro_compat  dd ? ;+100
-    .uuid               db 16 dup ? ;+104
-    .volume_name        db 16 dup ? ;+120
-    .last_mounted       db 64 dup ? ;+136
-    .algo_bitmap        dd ? ;+200
-    .prealloc_blocks    db ? ;+204
-  .preallock_dir_blocks db ? ;+205
-                        dw ? ;+206 alignment
-    .journal_uuid       db 16 dup ? ;+208
-    .journal_inum       dd ? ;+224
-    .journal_dev        dd ? ;+228
-    .last_orphan        dd ? ;+232
-    .hash_seed          dd 4 dup ?  ;+236
-    .def_hash_version   db ? ;+252
-                        db 3 dup ?  ;+253 reserved
- .default_mount_options dd ? ;+256
-    .first_meta_bg      dd ? ;+260
+struct  EXT2_SB_STRUC
+        inodes_count            dd ? ;+0
+        blocks_count            dd ? ;+4
+        r_block_count           dd ? ;+8
+        free_block_count        dd ? ;+12
+        free_inodes_count       dd ? ;+16
+        first_data_block        dd ? ;+20
+        log_block_size          dd ? ;+24
+        log_frag_size           dd ? ;+28
+        blocks_per_group        dd ? ;+32
+        frags_per_group         dd ? ;+36
+        inodes_per_group        dd ? ;+40
+        mtime                   dd ? ;+44
+        wtime                   dd ? ;+48
+        mnt_count               dw ? ;+52
+        max_mnt_count           dw ? ;+54
+        magic                   dw ? ;+56
+        state                   dw ? ;+58
+        errors                  dw ? ;+60
+        minor_rev_level         dw ? ;+62
+        lastcheck               dd ? ;+64
+        check_intervals         dd ? ;+68
+        creator_os              dd ? ;+72
+        rev_level               dd ? ;+76
+        def_resuid              dw ? ;+80
+        def_resgid              dw ? ;+82
+        first_ino               dd ? ;+84
+        inode_size              dw ? ;+88
+        block_group_nr          dw ? ;+90
+        feature_compat          dd ? ;+92
+        feature_incompat        dd ? ;+96
+        feature_ro_compat       dd ? ;+100
+        uuid                    rb 16 ;+104
+        volume_name             rb 16 ;+120
+        last_mounted            rb 64 ;+136
+        algo_bitmap             dd ? ;+200
+        prealloc_blocks         db ? ;+204
+        preallock_dir_blocks    db ? ;+205
+                                dw ? ;+206 alignment
+        journal_uuid            rb 16 ;+208
+        journal_inum            dd ? ;+224
+        journal_dev             dd ? ;+228
+        last_orphan             dd ? ;+232
+        hash_seed               rd 4 ;+236
+        def_hash_version        db ? ;+252
+                                rb 3 ;+253 reserved
+        default_mount_options   dd ? ;+256
+        first_meta_bg           dd ? ;+260
 ends
 
 ext2_test_superblock:
