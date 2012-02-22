@@ -7,6 +7,7 @@
 BUILD_DIR:=build
 REPOSITORY:=../..
 KERNEL:=$(REPOSITORY)/kernel/branches/net
+TRUNKKERNEL:=$(REPOSITORY)/kernel/trunk
 PROGS:=$(REPOSITORY)/programs
 NETPROGS:=$(REPOSITORY)/kernel/branches/net/applications
 
@@ -89,14 +90,14 @@ FASM_PROGRAMS:=\
  develop/test_gets:DEVELOP/test_gets:$(PROGS)/develop/libraries/console/examples/test_gets.asm \
  develop/testcon2:DEVELOP/TESTCON2:$(PROGS)/develop/libraries/console/examples/testcon2.asm \
  develop/thread:DEVELOP/THREAD:$(PROGS)/develop/examples/thread/trunk/thread.asm \
- drivers/com_mouse.obj:DRIVERS/COM_MOUSE.OBJ:$(KERNEL)/drivers/com_mouse.asm \
- drivers/emu10k1x.obj:DRIVERS/EMU10K1X.OBJ:$(KERNEL)/drivers/emu10k1x.asm \
- drivers/fm801.obj:DRIVERS/FM801.OBJ:$(KERNEL)/drivers/fm801.asm \
- drivers/infinity.obj:DRIVERS/INFINITY.OBJ:$(KERNEL)/drivers/infinity.asm \
+ drivers/com_mouse.obj:DRIVERS/COM_MOUSE.OBJ:$(TRUNKKERNEL)/drivers/com_mouse.asm \
+ drivers/emu10k1x.obj:DRIVERS/EMU10K1X.OBJ:$(TRUNKKERNEL)/drivers/emu10k1x.asm \
+ drivers/fm801.obj:DRIVERS/FM801.OBJ:$(TRUNKKERNEL)/drivers/fm801.asm \
+ drivers/infinity.obj:DRIVERS/INFINITY.OBJ:$(TRUNKKERNEL)/drivers/infinity.asm \
  drivers/ps2mouse.obj:DRIVERS/PS2MOUSE.OBJ:$(REPOSITORY)/drivers/mouse/ps2mouse4d/trunk/ps2mouse.asm \
- drivers/sb16.obj:DRIVERS/SB16.OBJ:$(KERNEL)/drivers/sb16/sb16.asm \
- drivers/sound.obj:DRIVERS/SOUND.OBJ:$(KERNEL)/drivers/sound.asm \
- drivers/vt8235.obj:DRIVERS/VT8235.OBJ:$(KERNEL)/drivers/vt823x.asm \
+ drivers/sb16.obj:DRIVERS/SB16.OBJ:$(TRUNKKERNEL)/drivers/sb16/sb16.asm \
+ drivers/sound.obj:DRIVERS/SOUND.OBJ:$(TRUNKKERNEL)/drivers/sound.asm \
+ drivers/vt8235.obj:DRIVERS/VT8235.OBJ:$(TRUNKKERNEL)/drivers/vt823x.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \
@@ -158,13 +159,12 @@ CMM_PROGRAMS:=\
 # Spaces should be represented as |.
 OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  background.gif:background.gif default.skn:DEFAULT.SKN \
- e80:E80 graph:GRAPH hdread:HDREAD \
  icons.dat:ICONS.DAT iconstrp.gif:ICONSTRP.GIF index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
- kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
+ lang.inc:LANG.INC lang.ini:LANG.INI \
  menu.dat:MENU.DAT \
  panel.dat:PANEL.DAT setup.dat:SETUP.DAT \
- shell:SHELL table:TABLE \
+ shell:SHELL \
  vmode:VMODE \
  File|Managers/eolite.ini:File|Managers/EOLITE.INI \
  File|Managers/icons.ini:File|Managers/ICONS.INI \
@@ -225,7 +225,7 @@ mcopy_all_items:=$(foreach f,$(targets_full),$(mcopy_item_command)$(newline))
 mkisofs_extra_targets:=$(foreach f,$(MKISOFS_EXTRA),$(word 2,$(subst =, ,$(f))))
 
 # The main goal: build kolibri.img and kolibri.iso
-all: $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
+all: $(BUILD_DIR)/kolibri.img
 
 # The first goal: floppy image.
 $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
@@ -254,8 +254,8 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 .SUFFIXES: # delete all predefined rules
 
 # The floppy bootsector.
-$(BUILD_DIR)/boot_fat12.bin: $(KERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootloader/floppy1440.inc
-	fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
+$(BUILD_DIR)/boot_fat12.bin: $(TRUNKKERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootloader/floppy1440.inc
+	fasm $(TRUNKKERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
 
 $(BUILD_DIR)/.dir develop/.dir drivers/.dir fonts/.dir \
  lib/.dir media/.dir network/.dir .deps/.dir:
@@ -276,7 +276,7 @@ include Makefile.copy
 
 # Special rules for copying sysfuncs.txt - it isn't directly included in the image.
 docpak: $(DOCDIR)SYSFUNCS.TXT $(wildcard $(DOCDIR)*)
-$(DOCDIR)SYSFUNCS.TXT: $(KERNEL)/docs/sysfuncs.txt
+$(DOCDIR)SYSFUNCS.TXT: $(TRUNKKERNEL)/docs/sysfuncs.txt
 	cp $(KERNEL)/docs/sysfuncs.txt $(DOCDIR)SYSFUNCS.TXT
 
 # Similar for C--.
