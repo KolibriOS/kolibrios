@@ -150,6 +150,13 @@ macro ntohw reg {
 
 }
 
+
+wait_mutex:                     ; stub
+        inc     dword [ebx]
+
+        ret
+
+
 include "queue.inc"
 
 include "ethernet.inc"

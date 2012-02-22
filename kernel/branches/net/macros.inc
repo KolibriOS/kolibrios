@@ -11,6 +11,9 @@ macro $Revision a {
 
 $Revision$
 
+
+;// mike.dld, 2006-29-01 [
+
 ; macros definition
 macro diff16 title,l1,l2
 {
@@ -62,63 +65,49 @@ iglobal_nested
 a db 'K : ',string,13,10,0
 endg_nested
 if ~ f eq
-	pushfd
+        pushfd
 end if
-	push	esi
-	mov	esi, a
-	call	sys_msg_board_str
-	pop	esi
+        push    esi
+        mov     esi, a
+        call    sys_msg_board_str
+        pop     esi
 if ~ f eq
-	popfd
+        popfd
 end if
 }
 ; \end{diamond}[29.09.2006]
 
 macro Mov op1,op2,op3 ; op1 = op2 = op3
  {
-	mov   op2,op3
-	mov   op1,op2
+        mov     op2, op3
+        mov     op1, op2
  }
 
-
-if __CPU_type eq p5		; CMOVcc isnt supported on the P5
-
-cmove	fix	cmovz
-macro cmovz reg1, reg2 {
-
-local	.jumpaddr
-
-	jnz	.jumpaddr
-	mov	reg1, reg2
-       .jumpaddr:
+macro __list_add new, prev, next
+{
+        mov     [next+LHEAD.prev], new
+        mov     [new+LHEAD.next], next
+        mov     [new+LHEAD.prev], prev
+        mov     [prev+LHEAD.next], new
 }
 
-cmovne	fix	cmovnz
-macro cmovnz reg1, reg2 {
-
-local	.jumpaddr
-
-	jz	.jumpaddr
-	mov	reg1, reg2
-       .jumpaddr:
+macro list_add new, head
+{
+        mov     eax, [head+LHEAD.next]
+    __list_add new, head, eax
 }
 
-macro cmovg reg1, reg2 {
-
-local	.jumpaddr
-
-	jle	.jumpaddr
-	mov	reg1, reg2
-       .jumpaddr:
+macro list_add_tail new, head
+{
+        mov     eax, [head+LHEAD.prev]
+    __list_add new, eax, head
 }
 
-macro cmovl reg1, reg2 {
-
-local	.jumpaddr
-
-	jge	.jumpaddr
-	mov	reg1, reg2
-       .jumpaddr:
+macro list_del entry
+{
+        mov     edx, [entry+list_fd]
+        mov     ecx, [entry+list_bk]
+        mov     [edx+list_bk], ecx
+        mov     [ecx+list_fd], edx
 }
 
-end if

@@ -15,58 +15,31 @@
 
 $Revision$
 
+struct  POINT
+        x       dd ?
+        y       dd ?
+ends
 
-;struc db [a] { common . db a
-;  if ~used .
-;    display 'not used db: ',`.,13,10
-;  end if }
-;struc dw [a] { common . dw a
-;  if ~used .
-;    display 'not used dw: ',`.,13,10
-;  end if }
-;struc dd [a] { common . dd a
-;  if ~used .
-;    display 'not used dd: ',`.,13,10
-;  end if }
-;struc dp [a] { common . dp a
-;  if ~used .
-;    display 'not used dp: ',`.,13,10
-;  end if }
-;struc dq [a] { common . dq a
-;  if ~used .
-;    display 'not used dq: ',`.,13,10
-;  end if }
-;struc dt [a] { common . dt a
-;  if ~used .
-;    display 'not used dt: ',`.,13,10
-;  end if }
+struct  RECT
+        left    dd ?
+        top     dd ?
+        right   dd ?
+        bottom  dd ?
+ends
 
-struc RECT {
-  .left   dd ?
-  .top    dd ?
-  .right  dd ?
-  .bottom dd ?
-}
-virtual at 0
- RECT RECT
-end virtual
+struct  BOX
+        left    dd ?
+        top     dd ?
+        width   dd ?
+        height  dd ?
+ends
 
-struc BOX {
-  .left   dd ?
-  .top    dd ?
-  .width  dd ?
-  .height dd ?
-}
-virtual at 0
- BOX BOX
-end virtual
-
-struc DISPMODE {
-  .width   rw 1
-  .height  rw 1
-  .bpp     rw 1
-  .freq    rw 1
-}
+struct  DISPMODE
+        width   dw ?
+        height  dw ?
+        bpp     dw ?
+        freq    dw ?
+ends
 
 ; constants definition
 WSTATE_NORMAL    = 00000000b
@@ -80,24 +53,20 @@ WSTATE_WNDDRAWN  = 00000010b
 WSTYLE_HASCAPTION     = 00010000b
 WSTYLE_CLIENTRELATIVE = 00100000b
 
-struc TASKDATA
-{
-  .event_mask  dd ?
-  .pid         dd ?
-               dw ?
-  .state       db ?
-               db ?
-               dw ?
-  .wnd_number  db ?
-               db ?
-  .mem_start   dd ?
-  .counter_sum dd ?
-  .counter_add dd ?
-  .cpu_usage   dd ?
-}
-virtual at 0
- TASKDATA TASKDATA
-end virtual
+struct  TASKDATA
+        event_mask      dd ?
+        pid             dd ?
+                        dw ?
+        state           db ?
+                        db ?
+                        dw ?
+        wnd_number      db ?
+                        db ?
+        mem_start       dd ?
+        counter_sum     dd ?
+        counter_add     dd ?
+        cpu_usage       dd ?
+ends
 
 TSTATE_RUNNING        = 0
 TSTATE_RUN_SUSPENDED  = 1
@@ -108,80 +77,85 @@ TSTATE_WAITING        = 5
 TSTATE_FREE           = 9
 
 ; structures definition
-struc WDATA {
-  .box             BOX
-  .cl_workarea     dd ?
-  .cl_titlebar     dd ?
-  .cl_frames       dd ?
-  .reserved        db ?
-  .fl_wstate       db ?
-  .fl_wdrawn       db ?
-  .fl_redraw       db ?
-  .sizeof:
-}
-virtual at 0
- WDATA WDATA
-end virtual
+struct  WDATA
+        box             BOX
+        cl_workarea     dd ?
+        cl_titlebar     dd ?
+        cl_frames       dd ?
+        reserved        db ?
+        fl_wstate       db ?
+        fl_wdrawn       db ?
+        fl_redraw       db ?
+ends
+
 label WDATA.fl_wstyle byte at WDATA.cl_workarea + 3
 
-struc APPDATA
-{
-  .app_name        db 11  dup(?)
-                   db 5   dup(?)
+struct  DBG_REGS
+        dr0             dd ?
+        dr1             dd ?
+        dr2             dd ?
+        dr3             dd ?
+        dr7             dd ?
+ends
 
-  .fpu_state       dd ?            ;+16
-  .ev_count_       dd ? ;unused    ;+20
-  .exc_handler     dd ?            ;+24
-  .except_mask     dd ?            ;+28
-  .pl0_stack       dd ? ;unused    ;+32
-  .heap_base       dd ?            ;+36
-  .heap_top        dd ?            ;+40
-  .cursor          dd ?            ;+44
-  .fd_ev           dd ?            ;+48
-  .bk_ev           dd ?            ;+52
-  .fd_obj          dd ?            ;+56
-  .bk_obj          dd ?            ;+60
-  .saved_esp       dd ?            ;+64
-  .io_map          rd 2            ;+68
-  .dbg_state       dd ?            ;+76
-  .cur_dir         dd ?            ;+80
-  .wait_timeout    dd ?            ;+84
-  .saved_esp0      dd ?            ;+88
-  .wait_begin      dd ?            ;+92   +++
-  .wait_test       dd ?            ;+96   +++
-  .wait_param      dd ?            ;+100  +++
-  .tls_base        dd ?            ;+104
-  .dlls_list_ptr   dd ?            ;+108
-                   db 16 dup(?)    ;+112
+struct  APPDATA
+        app_name        rb 11
+                        rb 5
 
-  .wnd_shape       dd ?            ;+128
-  .wnd_shape_scale dd ?            ;+132
-                   dd ?            ;+136
-  .mem_size        dd ?            ;+140
-  .saved_box       BOX
-  .ipc_start       dd ?
-  .ipc_size        dd ?
-  .event_mask      dd ?
-  .debugger_slot   dd ?
-                   dd ?
-  .keyboard_mode   db ?
-                   db 3   dup(?)
-  .dir_table       dd ?
-  .dbg_event_mem   dd ?
-  .dbg_regs:
-  .dbg_regs.dr0    dd ?
-  .dbg_regs.dr1    dd ?
-  .dbg_regs.dr2    dd ?
-  .dbg_regs.dr3    dd ?
-  .dbg_regs.dr7    dd ?
-  .wnd_caption     dd ?
-  .wnd_clientbox   BOX
-}
-virtual at 0
- APPDATA APPDATA
-end virtual
+        fpu_state       dd ?            ;+16
+        ev_count_       dd ? ;unused    ;+20
+        exc_handler     dd ?            ;+24
+        except_mask     dd ?            ;+28
+        pl0_stack       dd ?            ;+32
+        heap_base       dd ?            ;+36
+        heap_top        dd ?            ;+40
+        cursor          dd ?            ;+44
+        fd_ev           dd ?            ;+48
+        bk_ev           dd ?            ;+52
+        fd_obj          dd ?            ;+56
+        bk_obj          dd ?            ;+60
+        saved_esp       dd ?            ;+64
+        io_map          rd 2            ;+68
+        dbg_state       dd ?            ;+76
+        cur_dir         dd ?            ;+80
+        wait_timeout    dd ?            ;+84
+        saved_esp0      dd ?            ;+88
+        wait_begin      dd ?            ;+92   +++
+        wait_test       dd ?            ;+96   +++
+        wait_param      dd ?            ;+100  +++
+        tls_base        dd ?            ;+104
+        dlls_list_ptr   dd ?            ;+108
+                        rb 16           ;+112
+
+        wnd_shape       dd ?            ;+128
+        wnd_shape_scale dd ?            ;+132
+                        dd ?            ;+136
+        mem_size        dd ?            ;+140
+        saved_box       BOX
+        ipc_start       dd ?
+        ipc_size        dd ?
+        event_mask      dd ?
+        debugger_slot   dd ?
+                        dd ?
+        keyboard_mode   db ?
+                        rb 3
+        dir_table       dd ?
+        dbg_event_mem   dd ?
+        dbg_regs        DBG_REGS
+        wnd_caption     dd ?
+        wnd_clientbox   BOX
+
+ends
+
+
+
 
 ;// mike.dld, 2006-29-01 ]
+
+struct  MUTEX
+        lhead   LHEAD
+        count   dd ?
+ends
 
 
 ; Core functions
@@ -199,6 +173,9 @@ include "core/peload.inc"   ;
 include "core/exports.inc"
 include "core/string.inc"
 include "core/v86.inc"      ; virtual-8086 manager
+include "core/irq.inc"      ; irq handling functions
+include "core/apic.inc"     ; Interrupt Controller functions
+include "core/timers.inc"
 
 ; GUI stuff
 include "gui/window.inc"
@@ -210,6 +187,8 @@ include "gui/button.inc"
 
 ; file system
 
+include "blkdev/disk.inc" ; support for plug-n-play disks
+include "blkdev/disk_cache.inc" ; caching for plug-n-play disks
 include "fs/fs.inc"       ; syscall
 include "fs/fat32.inc"    ; read / write for fat32 filesystem
 include "fs/ntfs.inc"     ; read / write for ntfs filesystem
@@ -217,6 +196,7 @@ include "fs/fat12.inc"    ; read / write for fat12 filesystem
 include "blkdev/rd.inc"   ; ramdisk read /write
 include "fs/fs_lfn.inc"    ; syscall, version 2
 include "fs/iso9660.inc"  ; read for iso9660 filesystem CD
+include "fs/ext2.inc"     ; read / write for ext2 filesystem
 
 ; sound
 
@@ -226,6 +206,7 @@ include "sound/playnote.inc" ; player Note for Speaker PC
 
 include "video/vesa12.inc"   ; Vesa 1.2 functions
 include "video/vesa20.inc"   ; Vesa 2.0 functions
+include "video/blitter.inc"  ;
 include "video/vga.inc"      ; VGA 16 color functions
 include "video/cursors.inc"  ; cursors functions
 

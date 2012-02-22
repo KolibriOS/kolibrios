@@ -47,20 +47,43 @@ keymap_alt:
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
-  boot_memdetect    db   'Determining amount of memory',0
+
+if lang eq ru
+  boot_fonts        db   'Шрифты загружены',0
+  boot_memdetect    db   'Количество оперативной памяти','     ',' Мб',0
+  boot_tss          db   'Установка TSSs',0
+  boot_cpuid        db   'Чтение CPUIDs',0
+  boot_devices      db   'Поиск устройств',0
+  boot_timer        db   'Установка таймера',0
+  boot_irqs         db   'Переопределение IRQ',0
+  boot_setmouse     db   'Установка мыши',0
+  boot_windefs      db   'Установка настроек окон по умолчанию',0
+  boot_bgr          db   'Установка фона',0
+  boot_resirqports  db   'Резервирование IRQ и портов',0
+  boot_setrports    db   'Установка адресов IRQ',0
+  boot_setostask    db   'Создание процесса ядра',0
+  boot_allirqs      db   'Открытие всех IRQ',0
+  boot_tsc          db   'Чтение TSC',0
+  boot_cpufreq      db   'Частота процессора ','    ',' МГц',0
+  boot_pal_ega      db   'Установка EGA/CGA 320x200 палитры',0
+  boot_pal_vga      db   'Установка VGA 640x480 палитры',0
+  boot_failed       db   'Загрузка первого приложения не удалась',0
+  boot_mtrr         db   'Установка MTRR',0
+if preboot_blogesc
+  boot_tasking      db   'Все готово для запуска, нажмитре ESC для старта',0
+end if
+else
   boot_fonts        db   'Fonts loaded',0
+  boot_memdetect    db   'Determining amount of memory',0
   boot_tss          db   'Setting TSSs',0
   boot_cpuid        db   'Reading CPUIDs',0
   boot_devices      db   'Detecting devices',0
-  boot_timer        db   'Setting timer',0
-  boot_irqs         db   'Reprogramming IRQs',0
   boot_setmouse     db   'Setting mouse',0
   boot_windefs      db   'Setting window defaults',0
   boot_bgr          db   'Calculating background',0
   boot_resirqports  db   'Reserving IRQs & ports',0
-  boot_setrports    db   'Setting addresses for IRQs',0
   boot_setostask    db   'Setting OS task',0
-  boot_allirqs      db   'Unmasking all IRQs',0
+  boot_allirqs      db   'Unmasking IRQs',0
   boot_tsc          db   'Reading TSC',0
   boot_cpufreq      db   'CPU frequency is ','    ',' MHz',0
   boot_pal_ega      db   'Setting EGA/CGA 320x200 palette',0
@@ -70,6 +93,10 @@ keymap_alt:
 if preboot_blogesc
   boot_tasking      db   'All set - press ESC to start',0
 end if
+end if
+
+  boot_APIC_found   db   'APIC enabled', 0
+  boot_APIC_nfound  db   'APIC not found', 0
 
 ;new_process_loading db 'K : New Process - loading',13,10,0
 ;new_process_running db 'K : New Process - done',13,10,0
@@ -101,6 +128,12 @@ szIMPORTS      db 'IMPORTS',0
 
 read_firstapp  db '/sys/'
 firstapp       db  'LAUNCHER',0
+notifyapp      db '@notify',0
+if lang eq ru
+ud_user_message db 'Ошибка: неподдерживаемая инструкция процессора',0
+else
+ud_user_message db 'Error: unsupported processor instruction',0
+end if
 
 char    db '/sys/FONTS/CHAR.MT',0
 char2   db '/sys/FONTS/CHAR2.MT',0
@@ -108,9 +141,10 @@ char2   db '/sys/FONTS/CHAR2.MT',0
 bootpath       db  '/KOLIBRI    '
 bootpath2      db  0
 vmode          db  '/sys/drivers/VMODE.MDR',0
-vrr_m          db  'VRR_M',0
+;vrr_m          db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'
 
+dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
 
 align 4
 
@@ -259,50 +293,22 @@ gdte:
 
 align 16
 cur_saved_data    rb 4096
-fpu_data:         rb 512
+fpu_data:
+                  rb 512
 
-; device irq owners
-irq_owner         rd 16 ; process id
+mem_block_list    rd 64*2
+mem_used_list     rd 64*2
+mem_hash_cnt      rd 64
 
-; on irq read ports
-
-irq00read         rd 16
-irq01read         rd 16
-irq02read         rd 16
-irq03read         rd 16
-irq04read         rd 16
-irq05read         rd 16
-irq06read         rd 16
-irq07read         rd 16
-irq08read         rd 16
-irq09read         rd 16
-irq10read         rd 16
-irq11read         rd 16
-irq12read         rd 16
-irq13read         rd 16
-irq14read         rd 16
-irq15read         rd 16
-
-irq_tab           rd 16
-
-mem_block_map     rb 512
-mem_block_list    rd 64
-large_block_list  rd 31
-mem_block_mask    rd 2
-large_block_mask  rd 1
-
-mem_used.fd       rd 1
-mem_used.bk       rd 1
-
-mem_block_arr     rd 1
-mem_block_start   rd 1
-mem_block_end     rd 1
-
-heap_mutex        rd 1
+heap_mutex        MUTEX
 heap_size         rd 1
 heap_free         rd 1
 heap_blocks       rd 1
 free_blocks       rd 1
+
+mem_block_mask    rd 2
+next_memblock     rd 1
+
 
 mst MEM_STATE
 
@@ -368,6 +374,7 @@ cdid              rd 1
 hdbase            rd 1    ; for boot 0x1f0
 hdid              rd 1
 hdpos             rd 1    ; for boot 0x1
+label   known_part dword
 fat32part         rd 1    ; for boot 0x1
 cdpos             rd 1
 

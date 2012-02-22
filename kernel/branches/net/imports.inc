@@ -18,10 +18,10 @@ align 4
 @IMPORT:
 
 library \
-	libini,'libini.obj'
+        libini,'libini.obj'
 
-import	libini, \
-	ini.lib_init,'lib_init',\
-	ini.get_str,'ini.get_str',\
-	ini.enum_keys,'ini.enum_keys',\
-	ini.get_int,'ini.get_int'
+import  libini, \
+        ini.lib_init,'lib_init',\
+        ini.get_str,'ini.get_str',\
+        ini.enum_keys,'ini.enum_keys',\
+        ini.get_int,'ini.get_int'

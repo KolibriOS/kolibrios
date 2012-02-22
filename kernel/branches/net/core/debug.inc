@@ -13,7 +13,8 @@ sys_debug_services:
         cmp     ebx, 9
         ja      @f
         jmp     dword [sys_debug_services_table+ebx*4]
-@@:     ret
+@@:
+        ret
 iglobal
 align 4
 sys_debug_services_table:
@@ -76,7 +77,7 @@ debug_terminate:
         shr     ecx, 5
 ;        push    2
 ;        pop     ebx
-        mov	edx,esi
+        mov     edx, esi
         jmp     sysfn_terminate
 
 debug_suspend:
@@ -93,7 +94,8 @@ debug_suspend:
         cmp     cl, 5
         jnz     .ret
         mov     cl, 2
-.2:     mov     [CURRENT_TASK+eax+TASKDATA.state], cl
+.2:
+        mov     [CURRENT_TASK+eax+TASKDATA.state], cl
 .ret:
         sti
         ret
@@ -108,9 +110,12 @@ do_resume:
         cmp     cl, 2
         jnz     .ret
         mov     cl, 5
-.2:     mov     [CURRENT_TASK+eax+TASKDATA.state], cl
-.ret:   ret
-.1:     dec     ecx
+.2:
+        mov     [CURRENT_TASK+eax+TASKDATA.state], cl
+.ret:
+        ret
+.1:
+        dec     ecx
         jmp     .2
 
 debug_resume:
@@ -122,7 +127,8 @@ debug_resume:
         shl     eax, 5
         jz      .ret
         call    do_resume
-.ret:   sti
+.ret:
+        sti
         ret
 
 debug_getcontext:
@@ -142,8 +148,8 @@ debug_getcontext:
         call    get_debuggee_slot
         jc      .ret
         mov     edi, esi
-        mov eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
-        lea esi, [eax+RING0_STACK_SIZE]
+        mov     eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
+        lea     esi, [eax+RING0_STACK_SIZE]
 
 .ring0:
 ; note that following code assumes that all interrupt/exception handlers
@@ -193,8 +199,8 @@ debug_setcontext:
         call    get_debuggee_slot
         jc      .stiret
 ;        mov     esi, edx
-        mov eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
-        lea edi, [eax+RING0_STACK_SIZE]
+        mov     eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
+        lea     edi, [eax+RING0_STACK_SIZE]
 
 .ring0:
         sub     edi, 8+12+20h
@@ -233,15 +239,15 @@ debug_set_drx:
 ; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
 ; [eax+10]=dr7
         cmp     esi, OS_BASE
-        jae      .errret
+        jae     .errret
         cmp     dl, 3
         ja      .errret
         mov     ecx, dr7
 ;fix me
-	xchg	ecx,edx
+        xchg    ecx, edx
         shr     edx, cl
         shr     edx, cl
-	xchg	ecx,edx
+        xchg    ecx, edx
 
         test    ecx, 2          ; bit 1+2*index = G0..G3, global break enable
         jnz     .errret2
@@ -256,7 +262,7 @@ debug_set_drx:
         jnz     .okret
 ;        imul    eax, ebp, tss_step/32
 ;        and     byte [eax + tss_data + TSS._trap], not 1
-        and [ebp*8 + SLOT_BASE+APPDATA.dbg_state], not 1
+        and     [ebp*8 + SLOT_BASE+APPDATA.dbg_state], not 1
 .okret:
         and     dword [esp+32], 0
         sti
@@ -283,7 +289,7 @@ debug_set_drx:
         cmp     cl, 2
         jz      .errret
 
-        mov	ebx,esi
+        mov     ebx, esi
         test    bl, dl
 
         jnz     .errret
@@ -303,7 +309,7 @@ debug_set_drx:
         or      [eax+10h+2], dx         ; set R/W and LEN fields
 ;        imul    eax, ebp, tss_step/32
 ;        or      byte [eax + tss_data + TSS._trap], 1
-        or [ebp*8 + SLOT_BASE+APPDATA.dbg_state], 1
+        or      [ebp*8 + SLOT_BASE+APPDATA.dbg_state], 1
         jmp     .okret
 
 debug_read_process_memory:
@@ -323,7 +329,7 @@ debug_read_process_memory:
         call    get_debuggee_slot
         jc      .err
         shr     eax, 5
-;        mov     ebx, esi
+        mov     ecx, edi
         call    read_process_memory
         sti
         mov     dword [esp+32], eax
@@ -349,7 +355,7 @@ debug_write_process_memory:
         call    get_debuggee_slot
         jc      debug_read_process_memory.err
         shr     eax, 5
-;        mov     ebx, esi
+        mov     ecx, edi
         call    write_process_memory
         sti
         mov     [esp+32], eax
@@ -368,23 +374,23 @@ debugger_notify:
 .1:
         mov     eax, ebp
         shl     eax, 8
-        mov     edx, [SLOT_BASE+eax+APPDATA.dbg_event_mem]
-        test    edx, edx
+        mov     esi, [SLOT_BASE+eax+APPDATA.dbg_event_mem]
+        test    esi, esi
         jz      .ret
 ; read buffer header
         push    ecx
         push    eax
         push    eax
         mov     eax, ebp
-        mov     ebx, esp
-        mov     ecx, 8
+        mov     ecx, esp
+        mov     edx, 8
         call    read_process_memory
-        cmp     eax, ecx
+        cmp     eax, edx
         jz      @f
         add     esp, 12
         jmp     .ret
 @@:
-        cmp     dword [ebx], 0
+        cmp     dword [ecx], 0
         jg      @f
 .2:
         pop     ecx
@@ -400,26 +406,26 @@ debugger_notify:
         cli
         jmp     .1
 @@:
-        mov     ecx, [ebx+8]
-        add     ecx, [ebx+4]
-        cmp     ecx, [ebx]
+        mov     edx, [ecx+8]
+        add     edx, [ecx+4]
+        cmp     edx, [ecx]
         ja      .2
 ; advance buffer position
-        push    ecx
-        mov     ecx, 4
-        sub     ebx, ecx
+        push    edx
+        mov     edx, 4
+        sub     ecx, edx
         mov     eax, ebp
-        add     edx, ecx
+        add     esi, edx
         call    write_process_memory
         pop     eax
 ; write message
         mov     eax, ebp
-        add     edx, ecx
-        add     edx, [ebx+8]
-        add     ebx, 20
-        pop     ecx
-        pop     ecx
-        pop     ecx
+        add     esi, edx
+        add     esi, [ecx+8]
+        add     ecx, 20
+        pop     edx
+        pop     edx
+        pop     edx
         call    write_process_memory
 ; new debug event
         mov     eax, ebp

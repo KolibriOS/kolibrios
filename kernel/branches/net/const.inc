@@ -143,44 +143,41 @@ SSE_FZ         equ    0x8000
 
 SSE_INIT equ (SSE_IM+SSE_DM+SSE_ZM+SSE_OM+SSE_UM+SSE_PM)
 
+IRQ_PIC        equ    0
+IRQ_APIC       equ    1
 
-struc TSS
-{
-  ._back       rw 2
-  ._esp0       rd 1
-  ._ss0        rw 2
-  ._esp1       rd 1
-  ._ss1        rw 2
-  ._esp2       rd 1
-  ._ss2        rw 2
-  ._cr3        rd 1
-  ._eip        rd 1
-  ._eflags     rd 1
-  ._eax        rd 1
-  ._ecx        rd 1
-  ._edx        rd 1
-  ._ebx        rd 1
-  ._esp        rd 1
-  ._ebp        rd 1
-  ._esi        rd 1
-  ._edi        rd 1
-  ._es         rw 2
-  ._cs         rw 2
-  ._ss         rw 2
-  ._ds         rw 2
-  ._fs         rw 2
-  ._gs         rw 2
-  ._ldt        rw 2
-  ._trap       rw 1
-  ._io         rw 1
-               rb 24
-  ._io_map_0   rb 4096
-  ._io_map_1   rb 4096
-}
-
-virtual at 0
-  TSS  TSS
-end virtual
+struct  TSS
+        _back       rw 2
+        _esp0       rd 1
+        _ss0        rw 2
+        _esp1       rd 1
+        _ss1        rw 2
+        _esp2       rd 1
+        _ss2        rw 2
+        _cr3        rd 1
+        _eip        rd 1
+        _eflags     rd 1
+        _eax        rd 1
+        _ecx        rd 1
+        _edx        rd 1
+        _ebx        rd 1
+        _esp        rd 1
+        _ebp        rd 1
+        _esi        rd 1
+        _edi        rd 1
+        _es         rw 2
+        _cs         rw 2
+        _ss         rw 2
+        _ds         rw 2
+        _fs         rw 2
+        _gs         rw 2
+        _ldt        rw 2
+        _trap       rw 1
+        _io         rw 1
+                    rb 24
+        _io_map_0   rb 4096
+        _io_map_1   rb 4096
+ends
 
 TSS_SIZE  equ (128+8192)
 
@@ -247,19 +244,20 @@ ScreenBPP           equ (OS_BASE+0x000FBF1)
 ;unused ? only one reference
 MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
 
-LFBAddress          equ (OS_BASE+0x000FE80)
-MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
-
 Screen_Max_X        equ (OS_BASE+0x000FE00)
 Screen_Max_Y        equ (OS_BASE+0x000FE04)
 BytesPerScanLine    equ (OS_BASE+0x000FE08)
 SCR_MODE            equ (OS_BASE+0x000FE0C)
 
+LFBAddress          equ (OS_BASE+0x000FE80)
 BTN_ADDR            equ (OS_BASE+0x000FE88)
+MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
+
 SYS_SHUTDOWN        equ (OS_BASE+0x000FF00)
 TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
 
 REDRAW_BACKGROUND   equ (OS_BASE+0x000FFF0)
+BACKGROUND_CHANGED  equ (OS_BASE+0x000FFF1)
 BANK_RW             equ (OS_BASE+0x000FFF2)
 MOUSE_BACKGROUND    equ (OS_BASE+0x000FFF4)
 DONT_DRAW_MOUSE     equ (OS_BASE+0x000FFF5)
@@ -285,32 +283,34 @@ RAMDISK             equ (OS_BASE+0x0100000)
 RAMDISK_FAT         equ (OS_BASE+0x0280000)
 FLOPPY_FAT          equ (OS_BASE+0x0282000)
 
+CLEAN_ZONE          equ 0x284000
 IDE_DMA             equ 0x284000
 
 BgrAuxTable         equ (OS_BASE+0x0298000)
 ; unused?
-SB16Buffer          equ (OS_BASE+0x2A0000)
+SB16Buffer          equ (OS_BASE+0x02A0000)
 SB16_Status         equ (OS_BASE+0x02B0000)
 
 BUTTON_INFO         equ (OS_BASE+0x02C0000)
 RESERVED_PORTS      equ (OS_BASE+0x02D0000)
-IRQ_SAVE            equ (OS_BASE+0x02E0000)
-BOOT_VAR            equ (OS_BASE+0x02f0000)
+BOOT_VAR            equ (OS_BASE+0x02E0000)
 
-stack_data_start    equ (OS_BASE+0x0300000)
-eth_data_start      equ (OS_BASE+0x0300000)
-stack_data          equ (OS_BASE+0x0304000)
-stack_data_end      equ (OS_BASE+0x031ffff)
-resendQ             equ (OS_BASE+0x0320000)
-VMODE_BASE          equ (OS_BASE+0x0328000)
-skin_data           equ (OS_BASE+0x0330000)
-draw_data           equ (OS_BASE+0x0338000);
+stack_data_start    equ (OS_BASE+0x02F0000)
+eth_data_start      equ (OS_BASE+0x02F0000)
+stack_data          equ (OS_BASE+0x02F4000)
+stack_data_end      equ (OS_BASE+0x030ffff)
+resendQ             equ (OS_BASE+0x0310000)
 
-BgrDrawMode         equ (OS_BASE+0x033BFF4)
-BgrDataWidth        equ (OS_BASE+0x033BFF8)
-BgrDataHeight       equ (OS_BASE+0x033BFFC)
+skin_data           equ (OS_BASE+0x0318000)
+draw_data           equ (OS_BASE+0x0320000)
 
-sys_pgmap           equ (OS_BASE+0x033C000)
+BgrDrawMode         equ (OS_BASE+0x0323FF4)
+BgrDataWidth        equ (OS_BASE+0x0323FF8)
+BgrDataHeight       equ (OS_BASE+0x0323FFC)
+
+sys_pgmap           equ (OS_BASE+0x0324000)
+
+UPPER_KERNEL_PAGES  equ (OS_BASE+0x0400000)
 
 virtual at              (OS_BASE+0x05FFF80)
   tss  TSS
@@ -587,20 +587,6 @@ virtual at 0
   display_t display_t
 end virtual
 
-struc HEAP_DATA
-{
-   .mutex         rd 1
-   .refcount      rd 1
-   .heap_base     rd 1
-   .heap_top      rd 1
-   .app_mem       rd 1
-}
-
-HEAP_DATA_SIZE  equ 20
-virtual at 0
-  HEAP_DATA HEAP_DATA
-end virtual
-
 struc BOOT_DATA
 { .bpp            dd ?
   .scanline       dd ?
@@ -639,7 +625,7 @@ virtual at 0
 end virtual
 
 struc MEM_STATE
-{  .mutex             rd 1
+{  .mutex             MUTEX
    .smallmap          rd 1
    .treemap           rd 1
    .topsize           rd 1
@@ -658,7 +644,7 @@ struc PG_DATA
   .kernel_pages      dd ?
   .kernel_tables     dd ?
   .sys_page_dir      dd ?
-  .pg_mutex          dd ?
+  .mutex             MUTEX
 }
 
 ;struc LIB
@@ -765,3 +751,27 @@ end virtual
 virtual at 0
   CSYM COFF_SYM
 end virtual
+
+struc LHEAD
+{
+   .next            dd ?   ;next object in list
+   .prev            dd ?   ;prev object in list
+   .sizeof:
+}
+
+virtual at 0
+  LHEAD LHEAD
+end virtual
+
+struc IRQH
+{
+   .list            LHEAD
+   .handler         dd ?   ;handler roututine
+   .data            dd ?   ;user-specific data
+   .sizeof:
+}
+
+virtual at 0
+  IRQH IRQH
+end virtual
+

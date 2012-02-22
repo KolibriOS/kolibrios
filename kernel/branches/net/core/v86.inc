@@ -61,11 +61,11 @@ v86_create:
 ; initialize tables
         mov     ecx, 2000h/4
         xor     eax, eax
-        rep     stosd
+        rep stosd
         mov     [ebx+V86_machine.iopm], edi
         dec     eax
         mov     ecx, 2000h/4
-        rep     stosd
+        rep stosd
         pop     eax
 ; page directory: first entry is page table...
         mov     edi, eax
@@ -80,21 +80,21 @@ v86_create:
         push    esi
         mov     esi, (OS_BASE shr 20) + sys_pgdir
         mov     ecx, 0x80000000 shr 22
-        rep     movsd
+        rep movsd
 
         mov     eax, [ebx+V86_machine.pagedir]   ;root dir also is
         call    get_pg_addr                      ;used as page table
         or      al, PG_SW
-        mov [edi-4096+(page_tabs shr 20)], eax
+        mov     [edi-4096+(page_tabs shr 20)], eax
 
         pop     esi
 ; now V86 specific: initialize known addresses in first Mb
         pop     eax
 ; first page - BIOS data (shared between all machines!)
-; physical address = 0x2f0000
-; linear address = BOOT_VAR = OS_BASE + 0x2f0000
-        mov     dword [eax], (BOOT_VAR - OS_BASE) or 111b
-        mov     dword [eax+800h], BOOT_VAR
+; physical address = 0
+; linear address = OS_BASE
+        mov     dword [eax], 111b
+        mov     dword [eax+800h], OS_BASE
 ; page before 0xA0000 - Extended BIOS Data Area (shared between all machines!)
 ; physical address = 0x9C000
 ; linear address = 0x8009C000
@@ -219,12 +219,12 @@ init_sys_v86:
         mov     [sys_v86_machine], eax
         test    eax, eax
         jz      .ret
-        mov     byte [BOOT_VAR + 0x500], 0xCD
-        mov     byte [BOOT_VAR + 0x501], 0x13
-        mov     byte [BOOT_VAR + 0x502], 0xF4
-        mov     byte [BOOT_VAR + 0x503], 0xCD
-        mov     byte [BOOT_VAR + 0x504], 0x10
-        mov     byte [BOOT_VAR + 0x505], 0xF4
+        mov     byte [OS_BASE + 0x500], 0xCD
+        mov     byte [OS_BASE + 0x501], 0x13
+        mov     byte [OS_BASE + 0x502], 0xF4
+        mov     byte [OS_BASE + 0x503], 0xCD
+        mov     byte [OS_BASE + 0x504], 0x10
+        mov     byte [OS_BASE + 0x505], 0xF4
         mov     esi, eax
         mov     ebx, [eax+V86_machine.pagedir]
 ; one page for stack, two pages for results (0x2000 bytes = 16 sectors)
@@ -240,7 +240,7 @@ if ~DEBUG_SHOW_IO
         xor     eax, eax
         mov     edi, ecx
         mov     ecx, 10000h/8/4
-        rep     stosd
+        rep stosd
 end if
 .ret:
         ret
@@ -323,12 +323,12 @@ v86_start:
         mov     esi, ebx
         mov     edi, esp
         mov     ecx, v86_regs.size/4
-        rep     movsd
+        rep movsd
 
         cmp     edx, -1
         jz      .noirqhook
 uglobal
-v86_irqhooks    rd      16*2
+v86_irqhooks    rd      IRQ_RESERVED * 2
 endg
         cmp     [v86_irqhooks+edx*8], 0
         jz      @f
@@ -367,11 +367,12 @@ endg
 
 v86_exc_c:
 ; Did we all that we have wanted to do?
-        cmp     bl,1
+        cmp     bl, 1
         jne     @f
         xor     eax, eax
         mov     dr6, eax
-  @@:   mov     eax, [esp+v86_regs.size+10h+18h]
+  @@:
+        mov     eax, [esp+v86_regs.size+10h+18h]
         cmp     word [esp+v86_regs.eip], ax
         jnz     @f
         shr     eax, 16
@@ -787,7 +788,7 @@ end if
         mov     edi, [esi+v86_regs.size+10h+10h]
         add     edi, v86_regs.size
         mov     ecx, v86_regs.size/4
-        rep     movsd
+        rep movsd
         mov     esp, esi
 
         cli
@@ -805,7 +806,6 @@ end if
         mov     dword [SLOT_BASE+ecx+APPDATA.io_map], ebx
         mov     dword [page_tabs + (tss._io_map_0 shr 10)], ebx
         mov     cr3, eax
-;        mov     [irq_tab+5*4], 0
         sti
 
         popad
@@ -839,16 +839,17 @@ end if
 ;        mov     byte [BOOT_VAR + 48Eh], 0FFh
 ;        ret
 
+align 4
 v86_irq:
 ; push irq/pushad/jmp v86_irq
-; eax = irq
+; ebp = irq
         lea     esi, [esp+1Ch]
         lea     edi, [esi+4]
         mov     ecx, 8
         std
-        rep     movsd
+        rep movsd
         cld
-        mov     edi, eax
+        mov     edi, ebp
         pop     eax
 v86_irq2:
         mov     esi, [v86_irqhooks+edi*8]       ; get VM handle
@@ -898,12 +899,8 @@ v86_irq2:
         pop     ecx
 .cont:
         loop    .scan
-        mov     al, 20h
-        out     20h, al
-        cmp     edi, 8
-        jb      @f
-        out     0A0h, al
-@@:
+        mov     ecx, edi
+        call    irq_eoi
         popad
         iretd
 .found:

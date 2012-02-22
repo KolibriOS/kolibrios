@@ -21,23 +21,23 @@ $Revision$
 align 4
 sound_interface:
 
-           cmp   eax, edi                      ; this is subfunction #55 ?
-           jne  retFunc55                      ; if no then return.
+        cmp     eax, ebx                        ; this is subfunction #55 ?
+        jne     retFunc55                       ; if no then return.
 
-           cmp   byte [sound_flag],0
-           jne   retFunc55
+        cmp     byte [sound_flag], 0
+        jne     retFunc55
 
-           movzx eax, byte [countDelayNote]
-           or    al, al                        ; player is busy ?
-           jnz  retFunc55                      ; return counter delay Note
+        movzx   eax, byte [countDelayNote]
+        or      al, al                          ; player is busy ?
+        jnz     retFunc55                       ; return counter delay Note
 
-           mov   [memAdrNote],edx
-           call  get_pid
-           mov   [pidProcessNote],eax
-           xor   eax, eax                      ; Ok!  EAX = 0
+        mov     [memAdrNote], esi;edx
+        call    get_pid
+        mov     [pidProcessNote], eax
+        xor     eax, eax                       ; Ok!  EAX = 0
  retFunc55:
-           mov   [esp+36], eax                 ; return value EAX for application
-           ret
+        mov     [esp+32], eax                  ; return value EAX for application
+        ret
 
 iglobal
 align 4
@@ -53,114 +53,114 @@ endg
 
 playNote:
 ;      jmp   NotPlayNotes
-      mov   esi, [memAdrNote]
-      or    esi, esi             ; ESI = 0 ?  - OFF Notes Play ?
-       jz   NotPlayNotes         ; if ESI = 0   -> ignore play pocedure
-      cmp   eax, [count_timer_Note]
-       jb   NotPlayNotes
-      push  eax
-      inc   eax
-      mov   [count_timer_Note], eax
-      mov   al,  [countDelayNote]
-      dec   al                   ; decrement counter Delay for Playing Note
-       jz   NewLoadNote@Delay
-      cmp   al, 0xFF             ; this is first Note Play ?
-       jne  NextDelayNote
+        mov     esi, [memAdrNote]
+        or      esi, esi         ; ESI = 0 ?  - OFF Notes Play ?
+        jz      NotPlayNotes     ; if ESI = 0   -> ignore play pocedure
+        cmp     eax, [count_timer_Note]
+        jb      NotPlayNotes
+        push    eax
+        inc     eax
+        mov     [count_timer_Note], eax
+        mov     al, [countDelayNote]
+        dec     al               ; decrement counter Delay for Playing Note
+        jz      NewLoadNote@Delay
+        cmp     al, 0xFF         ; this is first Note Play ?
+        jne     NextDelayNote
       ;This is FIRST Note, save counter channel 2 chip 8253
-      mov   al, 0xB6             ; control byte to timer chip 8253
-      out   0x43, al             ; Send it to the control port chip 8253
-      in    al, 0x42             ; Read Lower byte counter channel 2 chip 8253
-      mov   ah, al               ; AH = Lower byte counter channel 2
-      in    al, 0x42             ; Read Upper byte counter channel 2 chip 8253
-      mov   [mem8253r42], ax     ; Save counter channel 2 timer chip 8253
+        mov     al, 0xB6         ; control byte to timer chip 8253
+        out     0x43, al         ; Send it to the control port chip 8253
+        in      al, 0x42         ; Read Lower byte counter channel 2 chip 8253
+        mov     ah, al           ; AH = Lower byte counter channel 2
+        in      al, 0x42         ; Read Upper byte counter channel 2 chip 8253
+        mov     [mem8253r42], ax ; Save counter channel 2 timer chip 8253
    NewLoadNote@Delay:
-      cld
+        cld
 ;      lodsb                      ; load AL - counter Delay
-      call  ReadNoteByte
-      or    al, al               ; THE END ?
-       jz   EndPlayNote
-      cmp   al, 0x81
-       jnc  NoteforOctave
-      mov   [countDelayNote], al
+        call    ReadNoteByte
+        or      al, al           ; THE END ?
+        jz      EndPlayNote
+        cmp     al, 0x81
+        jnc     NoteforOctave
+        mov     [countDelayNote], al
 ;      lodsw                      ; load AX - counter for Note!
-      call ReadNoteByte
-      mov  ah,al
-      call ReadNoteByte
-      xchg al,ah
-      jmp  pokeNote
+        call    ReadNoteByte
+        mov     ah, al
+        call    ReadNoteByte
+        xchg    al, ah
+        jmp     pokeNote
 
    EndPlayNote:                  ; THE END Play Notes!
-      in    al, 0x61             ; Get contents of system port B chip 8255
-      and   al, 0xFC             ; Turn OFF timer and speaker
-      out   0x61, al             ; Send out new values to port B chip 8255
-      mov   ax, [mem8253r42]     ; memorize counter channel 2 timer chip 8253
-      xchg  al, ah               ; reverse byte in word
-      out   0x42, al             ; restore Lower byte counter channel 2
-      mov   al, ah               ; AL = Upper byte counter channel 2
-      out   0x42, al             ; restore Upper byte channel 2
-      xor   eax, eax             ; EAX = 0
-      mov   [memAdrNote], eax    ; clear header control Delay-Note string
+        in      al, 0x61         ; Get contents of system port B chip 8255
+        and     al, 0xFC         ; Turn OFF timer and speaker
+        out     0x61, al         ; Send out new values to port B chip 8255
+        mov     ax, [mem8253r42] ; memorize counter channel 2 timer chip 8253
+        xchg    al, ah           ; reverse byte in word
+        out     0x42, al         ; restore Lower byte counter channel 2
+        mov     al, ah           ; AL = Upper byte counter channel 2
+        out     0x42, al         ; restore Upper byte channel 2
+        xor     eax, eax         ; EAX = 0
+        mov     [memAdrNote], eax; clear header control Delay-Note string
    NextDelayNote:
-      mov   [countDelayNote], al ; save new counter delay Note
-      pop   eax
+        mov     [countDelayNote], al; save new counter delay Note
+        pop     eax
    NotPlayNotes:
         RET
 
    NoteforOctave:
-      sub   al, 0x81             ; correction value for delay Note
-      mov   [countDelayNote], al ; save counter delay this new Note
+        sub     al, 0x81         ; correction value for delay Note
+        mov     [countDelayNote], al; save counter delay this new Note
 ;      lodsb                      ; load pack control code
-      call  ReadNoteByte
-      cmp   al, 0xFF             ; this is PAUSE ?
-       jne  packCode             ; no, this is PACK CODE
-      in    al, 0x61             ; Get contents of system port B chip 8255
-      and   al, 0xFC             ; Turn OFF timer and speaker
-      out   0x61, al             ; Send out new values to port B chip 8255
-      jmp  saveESI
+        call    ReadNoteByte
+        cmp     al, 0xFF         ; this is PAUSE ?
+        jne     packCode         ; no, this is PACK CODE
+        in      al, 0x61         ; Get contents of system port B chip 8255
+        and     al, 0xFC         ; Turn OFF timer and speaker
+        out     0x61, al         ; Send out new values to port B chip 8255
+        jmp     saveESI
 
    packCode:
-      mov   cl, al               ; save code
-      and   al, 0xF              ; clear upper bits
-      dec   al                   ; correction
-      add   al, al               ; transform number to offset constant
-      movsx eax, al              ; EAX - offset
-      add   eax, dword kontrOctave ; EAX - address from constant
-      mov   ax, [eax]            ; read constant
-      shr   cl, 4                ; transform for number Octave
-      shr   ax, cl               ; calculate from Note this Octave!
+        mov     cl, al           ; save code
+        and     al, 0xF          ; clear upper bits
+        dec     al               ; correction
+        add     al, al           ; transform number to offset constant
+        movsx   eax, al          ; EAX - offset
+        add     eax, dword kontrOctave; EAX - address from constant
+        mov     ax, [eax]        ; read constant
+        shr     cl, 4            ; transform for number Octave
+        shr     ax, cl           ; calculate from Note this Octave!
    pokeNote:
-      out   0x42, al             ; Lower byte Out to channel 2 timer chip 8253
-      mov   al, ah
-      out   0x42, al             ; Upper byte Out to channel 2 timer chip 8253
-      in    al, 0x61             ; Get contents of system port B chip 8255
-      or    al, 3                ; Turn ON timer and speaker
-      out   0x61, al             ; Send out new values to port B chip 8255
+        out     0x42, al         ; Lower byte Out to channel 2 timer chip 8253
+        mov     al, ah
+        out     0x42, al         ; Upper byte Out to channel 2 timer chip 8253
+        in      al, 0x61         ; Get contents of system port B chip 8255
+        or      al, 3            ; Turn ON timer and speaker
+        out     0x61, al         ; Send out new values to port B chip 8255
    saveESI:
 ;      mov   [memAdrNote], esi    ; save new header control Delay-Note string
-      pop   eax
+        pop     eax
         RET
 ReadNoteByte:
 ;result:
 ;  al - note
-      push  eax
-      push  ecx
-      push  edx
-      push  esi
+        push    eax
+        push    ecx
+        push    edx
+        push    esi
 
-      mov   eax,[pidProcessNote]
-      call  pid_to_slot
-      test  eax,eax
-      jz    .failed
-      lea   ecx,[esp+12]
-      mov   edx,1
-      mov   esi,[memAdrNote]
-      inc   [memAdrNote]
+        mov     eax, [pidProcessNote]
+        call    pid_to_slot
+        test    eax, eax
+        jz      .failed
+        lea     ecx, [esp+12]
+        mov     edx, 1
+        mov     esi, [memAdrNote]
+        inc     [memAdrNote]
 
-      call  read_process_memory
+        call    read_process_memory
 .failed:
-      pop   esi
-      pop   edx
-      pop   ecx
-      pop   eax
-      ret
+        pop     esi
+        pop     edx
+        pop     ecx
+        pop     eax
+        ret
 ;-------------------  END CODE  -------------------
