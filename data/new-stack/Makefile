@@ -235,19 +235,19 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 # SYSXTREE
 # 3d/CUBETEXT
 # 3d/LOGIO.BMP
-        str=`date -u +"[auto-build %d %b %Y %R, r$(REV)]"`; \
-        echo -n $$str|dd of=kernel.mnt bs=1 seek=`expr 279 - length "$$str"` conv=notrunc 2>/dev/null
-        dd if=/dev/zero of=$(BUILD_DIR)/kolibri.img count=2880 bs=512 2>&1
-        mformat -f 1440 -i $(BUILD_DIR)/kolibri.img ::
-        dd if=$(BUILD_DIR)/boot_fat12.bin of=$(BUILD_DIR)/kolibri.img count=1 bs=512 conv=notrunc 2>&1
-        mmd -i $(BUILD_DIR)/kolibri.img ::DEVELOP
-        mmd -i $(BUILD_DIR)/kolibri.img ::DRIVERS
-        mmd -i $(BUILD_DIR)/kolibri.img ::File\ Managers
-        mmd -i $(BUILD_DIR)/kolibri.img ::FONTS
-        mmd -i $(BUILD_DIR)/kolibri.img ::LIB
-        mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA
-        mmd -i $(BUILD_DIR)/kolibri.img ::NETWORK
-        $(mcopy_all_items)
+	str=`date -u +"[auto-build %d %b %Y %R, r$(REV)]"`; \
+	echo -n $$str|dd of=kernel.mnt bs=1 seek=`expr 279 - length "$$str"` conv=notrunc 2>/dev/null
+	dd if=/dev/zero of=$(BUILD_DIR)/kolibri.img count=2880 bs=512 2>&1
+	mformat -f 1440 -i $(BUILD_DIR)/kolibri.img ::
+	dd if=$(BUILD_DIR)/boot_fat12.bin of=$(BUILD_DIR)/kolibri.img count=1 bs=512 conv=notrunc 2>&1
+	mmd -i $(BUILD_DIR)/kolibri.img ::DEVELOP
+	mmd -i $(BUILD_DIR)/kolibri.img ::DRIVERS
+	mmd -i $(BUILD_DIR)/kolibri.img ::File\ Managers
+	mmd -i $(BUILD_DIR)/kolibri.img ::FONTS
+	mmd -i $(BUILD_DIR)/kolibri.img ::LIB
+	mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA
+	mmd -i $(BUILD_DIR)/kolibri.img ::NETWORK
+	$(mcopy_all_items)
 
 # Special targets to modify behaviour of make.
 .DELETE_ON_ERROR:
@@ -255,15 +255,15 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 
 # The floppy bootsector.
 $(BUILD_DIR)/boot_fat12.bin: $(KERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootloader/floppy1440.inc
-        fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
+	fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
 
 $(BUILD_DIR)/.dir develop/.dir drivers/.dir fonts/.dir \
  lib/.dir media/.dir network/.dir .deps/.dir:
-        mkdir -p $(dir $@)
-        touch $@
+	mkdir -p $(dir $@)
+	touch $@
 File\ Managers/.dir:
-        mkdir -p "File Managers"
-        touch "File Managers/.dir"
+	mkdir -p "File Managers"
+	touch "File Managers/.dir"
 
 # FASM black magic goes to Makefile.fasm.
 include Makefile.fasm
@@ -277,7 +277,7 @@ include Makefile.copy
 # Special rules for copying sysfuncs.txt - it isn't directly included in the image.
 docpak: $(DOCDIR)SYSFUNCS.TXT $(wildcard $(DOCDIR)*)
 $(DOCDIR)SYSFUNCS.TXT: $(KERNEL)/docs/sysfuncs.txt
-        cp $(KERNEL)/docs/sysfuncs.txt $(DOCDIR)SYSFUNCS.TXT
+	cp $(KERNEL)/docs/sysfuncs.txt $(DOCDIR)SYSFUNCS.TXT
 
 # Similar for C--.
 include Makefile.cmm
@@ -292,7 +292,7 @@ include Makefile.msvc
 # Rules for shell
 shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o .obj.shell/ctype.o \
  $(PROGS)/system/shell/kolibri.ld
-        $(call gcc_link,$(PROGS)/system/shell/kolibri.ld)
+	$(call gcc_link,$(PROGS)/system/shell/kolibri.ld)
 .obj.shell/shell.o: $(PROGS)/system/shell/shell.c \
  $(PROGS)/system/shell/all.h \
  $(PROGS)/system/shell/system/*.h \
@@ -300,50 +300,50 @@ shell: .obj.shell/start.o .obj.shell/shell.o .obj.shell/kolibri.o .obj.shell/std
  $(PROGS)/system/shell/modules/*.c \
  $(PROGS)/system/shell/locale/rus/globals.h \
  Makefile.gcc | .obj.shell
-        $(gcc_compile)
+	$(gcc_compile)
 .obj.shell/kolibri.o .obj.shell/stdlib.o .obj.shell/string.o .obj.shell/ctype.o: .obj.shell/%.o: \
  $(PROGS)/system/shell/system/%.c $(PROGS)/system/shell/system/*.h \
  Makefile.gcc | .obj.shell
-        $(gcc_compile)
-        win32-gcc -c -Os -o $@ $<
+	$(gcc_compile)
+	win32-gcc -c -Os -o $@ $<
 .obj.shell/start.o: $(PROGS)/system/shell/start.asm | .obj.shell
-        fasm $< $@
+	fasm $< $@
 .obj.shell:
-        mkdir -p .obj.shell
+	mkdir -p .obj.shell
 
 # Rules for sdk/sound, used by media/ac97snd
 SOUNDDIR=$(PROGS)/develop/sdk/trunk/sound/src
 SOUND_OBJECTS:=$(patsubst $(SOUNDDIR)/%.asm,.sdk/%.obj,$(wildcard $(SOUNDDIR)/*.asm))
 SOUND_INC_FILES:=$(wildcard $(SOUNDDIR)/*.inc)
 .sdk/sound.lib: $(SOUND_OBJECTS)
-        win32-link /lib /out:$@ $^
+	win32-link /lib /out:$@ $^
 $(SOUND_OBJECTS): .sdk/%.obj: $(SOUNDDIR)/%.asm $(SOUND_INC_FILES) | .sdk
-        fasm $< $@
+	fasm $< $@
 .sdk:
-        mkdir -p .sdk
+	mkdir -p .sdk
 # Rules for media/ac97snd
 AC97DIR=$(PROGS)/media/ac97snd
 media/ac97snd: .obj.ac97snd/ac97snd.exe
-        $(msvc_final)
+	$(msvc_final)
 .obj.ac97snd/ac97snd.exe: .obj.ac97snd/ac97wav.obj .obj.ac97snd/crt.obj .obj.ac97snd/k_lib.obj \
-        .obj.ac97snd/mpg.lib .sdk/sound.lib $(AC97DIR)/ufmod.obj
-        $(msvc_link)
+	.obj.ac97snd/mpg.lib .sdk/sound.lib $(AC97DIR)/ufmod.obj
+	$(msvc_link)
 .obj.ac97snd/ac97wav.obj: $(AC97DIR)/ac97snd/ac97wav.c \
-        $(AC97DIR)/kolibri.h $(AC97DIR)/ac97snd/ac97wav.h $(AC97DIR)/mpg/mpg123.h \
-        $(AC97DIR)/sound.h $(AC97DIR)/ufmod-codec.h Makefile.msvc | .obj.ac97snd
-        $(msvc_compile)
+	$(AC97DIR)/kolibri.h $(AC97DIR)/ac97snd/ac97wav.h $(AC97DIR)/mpg/mpg123.h \
+	$(AC97DIR)/sound.h $(AC97DIR)/ufmod-codec.h Makefile.msvc | .obj.ac97snd
+	$(msvc_compile)
 .obj.ac97snd/crt.obj: $(AC97DIR)/ac97snd/crt.c $(AC97DIR)/ac97snd/crt.h Makefile.msvc | .obj.ac97snd
-        $(msvc_compile)
+	$(msvc_compile)
 .obj.ac97snd/k_lib.obj: $(AC97DIR)/ac97snd/k_lib.asm $(AC97DIR)/ac97snd/proc32.inc | .obj.ac97snd
-        fasm $< $@
+	fasm $< $@
 AC97SND_MPG_C_FILES:=$(wildcard $(AC97DIR)/mpg/*.c)
 AC97SND_MPG_H_FILES:=$(wildcard $(AC97DIR)/mpg/*.h)
 AC97SND_MPG_C_OBJECTS:=$(patsubst $(AC97DIR)/mpg/%.c,.obj.ac97snd/%.o,$(AC97SND_MPG_C_FILES))
 .obj.ac97snd/mpg.lib: $(AC97SND_MPG_C_OBJECTS) .obj.ac97snd/pow.obj
-        win32-link /lib /ltcg /out:$@ $^
+	win32-link /lib /ltcg /out:$@ $^
 $(AC97SND_MPG_C_OBJECTS): .obj.ac97snd/%.o: $(AC97DIR)/mpg/%.c $(AC97SND_MPG_H_FILES) Makefile.msvc | .obj.ac97snd
-        $(msvc_compile)
+	$(msvc_compile)
 .obj.ac97snd/pow.obj: $(AC97DIR)/mpg/pow.asm $(AC97DIR)/mpg/proc32.inc | .obj.ac97snd
-        fasm $< $@
+	fasm $< $@
 .obj.ac97snd:
-        mkdir -p .obj.ac97snd
+	mkdir -p .obj.ac97snd
