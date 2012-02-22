@@ -126,7 +126,7 @@ UDP_input:
 
         push    esi
         UDP_checksum (edi), (edi+4)
-        pop     edx
+        pop     esi
         jnz     .checksum_mismatch
 
   .no_checksum:
@@ -134,16 +134,16 @@ UDP_input:
 
         ; Convert port numbers to intel format
 
-        rol     [edx + UDP_header.DestinationPort], 8
-        rol     [edx + UDP_header.SourcePort], 8
-        rol     [edx + UDP_header.Length], 8
+        rol     [esi + UDP_header.DestinationPort], 8
+        rol     [esi + UDP_header.SourcePort], 8
+        rol     [esi + UDP_header.Length], 8
 
         ; Look for a socket where
         ; IP Packet UDP Destination Port = local Port
         ; IP Packet SA = Remote IP
 
-        mov     si, [edx + UDP_header.DestinationPort]
-        mov     cx, [edx + UDP_header.SourcePort]
+        mov     cx, [esi + UDP_header.SourcePort]
+        mov     dx, [esi + UDP_header.DestinationPort]
         mov     edi, [edi + 4]                          ; ipv4 source address
         mov     eax, net_sockets
 
@@ -158,7 +158,7 @@ UDP_input:
         cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
         jne     .next_socket
 
-        cmp     [eax + UDP_SOCKET.LocalPort], si
+        cmp     [eax + UDP_SOCKET.LocalPort], dx
         jne     .next_socket
 
         DEBUGF  1,"using socket: %x\n", eax
@@ -187,9 +187,9 @@ UDP_input:
   .updatesock:
         inc     [UDP_PACKETS_RX]
         DEBUGF  1,"Found valid UDP packet for socket %x\n", eax
-        lea     esi, [edx + sizeof.UDP_header]
-        movzx   ecx, [edx + UDP_header.Length]
+        movzx   ecx, [esi + UDP_header.Length]
         sub     ecx, sizeof.UDP_header
+        add     esi, sizeof.UDP_header
 
         jmp     SOCKET_input
 
