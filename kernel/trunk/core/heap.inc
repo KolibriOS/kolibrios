@@ -8,25 +8,19 @@
 $Revision$
 
 
-struc MEM_BLOCK
-{
-   .list        LHEAD
-   .next_block  dd ? ;+8
-   .prev_block  dd ? ;+4
-   .base        dd ? ;+16
-   .size        dd ? ;+20
-   .flags       dd ? ;+24
-   .handle      dd ? ;+28
-   .sizeof:
-}
+struct  MEM_BLOCK
+        list            LHEAD
+        next_block      dd ? ;+8
+        prev_block      dd ? ;+4
+        base            dd ? ;+16
+        size            dd ? ;+20
+        flags           dd ? ;+24
+        handle          dd ? ;+28
+ends
 
 FREE_BLOCK      equ  4
 USED_BLOCK      equ  8
 DONT_FREE_BLOCK equ  10h
-
-virtual at 0
-  MEM_BLOCK MEM_BLOCK
-end virtual
 
 
 block_next   equ MEM_BLOCK.next_block
@@ -146,8 +140,8 @@ proc init_kernel_heap
         jnz     .l1
 
         mov     edi, HEAP_BASE                     ;descriptors
-        mov     ebx, HEAP_BASE+MEM_BLOCK.sizeof      ;free space
-        mov     ecx, HEAP_BASE+MEM_BLOCK.sizeof*2    ;terminator
+        mov     ebx, HEAP_BASE+sizeof.MEM_BLOCK      ;free space
+        mov     ecx, HEAP_BASE+sizeof.MEM_BLOCK*2    ;terminator
 
         xor     eax, eax
         mov     [edi+block_next], ebx
@@ -155,7 +149,7 @@ proc init_kernel_heap
         mov     [edi+list_fd], eax
         mov     [edi+list_bk], eax
         mov     [edi+block_base], HEAP_BASE
-        mov     [edi+block_size], 4096*MEM_BLOCK.sizeof
+        mov     [edi+block_size], 4096*sizeof.MEM_BLOCK
         mov     [edi+block_flags], USED_BLOCK
 
         mov     [ecx+block_next], eax
@@ -168,11 +162,11 @@ proc init_kernel_heap
 
         mov     [ebx+block_next], ecx
         mov     [ebx+block_prev], edi
-        mov     [ebx+block_base], HEAP_BASE+4096*MEM_BLOCK.sizeof
+        mov     [ebx+block_base], HEAP_BASE+4096*sizeof.MEM_BLOCK
 
         mov     ecx, [pg_data.kernel_pages]
         shl     ecx, 12
-        sub     ecx, HEAP_BASE-OS_BASE+4096*MEM_BLOCK.sizeof
+        sub     ecx, HEAP_BASE-OS_BASE+4096*sizeof.MEM_BLOCK
         mov     [heap_size], ecx
         mov     [heap_free], ecx
         mov     [ebx+block_size], ecx
@@ -185,15 +179,15 @@ proc init_kernel_heap
             list_add ebx, ecx
 
         mov     ecx, 4096-3-1
-        mov     eax, HEAP_BASE+MEM_BLOCK.sizeof*4
+        mov     eax, HEAP_BASE+sizeof.MEM_BLOCK*4
 
-        mov     [next_memblock], HEAP_BASE+MEM_BLOCK.sizeof*3
+        mov     [next_memblock], HEAP_BASE+sizeof.MEM_BLOCK *3
 @@:
-        mov     [eax-MEM_BLOCK.sizeof], eax
-        add     eax, MEM_BLOCK.sizeof
+        mov     [eax-sizeof.MEM_BLOCK], eax
+        add     eax, sizeof.MEM_BLOCK
         loop    @B
 
-        mov     [eax-MEM_BLOCK.sizeof], dword 0
+        mov     [eax-sizeof.MEM_BLOCK], dword 0
 
         mov     ecx, heap_mutex
         call    mutex_init
@@ -1292,7 +1286,7 @@ align 4
         and     ecx, -4096
         mov     [size], ecx
 
-        mov     eax, SMEM.sizeof
+        mov     eax, sizeof.SMEM
         call    malloc
         test    eax, eax
         mov     esi, eax
@@ -1354,7 +1348,7 @@ align 4
         mov     ebx, [CURRENT_TASK]
         shl     ebx, 5
         mov     ebx, [CURRENT_TASK+ebx+4]
-        mov     eax, SMAP.sizeof
+        mov     eax, sizeof.SMAP
 
         call    create_kernel_object
         test    eax, eax

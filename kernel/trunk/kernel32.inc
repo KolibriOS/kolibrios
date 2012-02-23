@@ -148,16 +148,6 @@ struct  APPDATA
 ends
 
 
-
-
-;// mike.dld, 2006-29-01 ]
-
-struct  MUTEX
-        lhead   LHEAD
-        count   dd ?
-ends
-
-
 ; Core functions
 include "core/sync.inc"     ; macros for synhronization objects
 include "core/sys32.inc"    ; process management

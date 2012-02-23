@@ -12,9 +12,9 @@ IRQ_POOL_SIZE  equ 48
 uglobal
 
 align 16
-irqh_tab            rd LHEAD.sizeof * IRQ_RESERVED / 4
+irqh_tab            rd sizeof.LHEAD * IRQ_RESERVED / 4
 
-irqh_pool           rd IRQH.sizeof * IRQ_POOL_SIZE /4
+irqh_pool           rd sizeof.IRQH * IRQ_POOL_SIZE /4
 next_irqh           rd 1
 
 irq_active_set      rd 1
@@ -34,14 +34,14 @@ init_irqs:
         loop    @B
 
         mov     ecx, IRQ_POOL_SIZE-1
-        mov     eax, irqh_pool+IRQH.sizeof
+        mov     eax, irqh_pool+sizeof.IRQH
         mov     [next_irqh], irqh_pool
 @@:
-        mov     [eax-IRQH.sizeof], eax
-        add     eax, IRQH.sizeof
+        mov     [eax-sizeof.IRQH], eax
+        add     eax, sizeof.IRQH
         loop    @B
 
-        mov     [eax-IRQH.sizeof], dword 0
+        mov     [eax-sizeof.IRQH], dword 0
         ret
 
 

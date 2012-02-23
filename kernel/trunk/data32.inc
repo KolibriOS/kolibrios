@@ -275,7 +275,7 @@ graph_data_l:
         dw     11010000b *256 +11110010b
         db     0x00
 tss0_l:
-        dw     TSS_SIZE-1
+        dw     sizeof.TSS-1
         dw     tss and 0xFFFF
         db     (tss shr 16) and 0xFF
         db     10001001b

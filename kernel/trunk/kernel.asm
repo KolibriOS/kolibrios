@@ -566,7 +566,7 @@ high_code:
         mov     [unpack.p], eax
 
         call    init_events
-        mov     eax, srv.fd-SRV_FD_OFFSET
+        mov     eax, srv.fd-SRV.fd
         mov     [srv.fd], eax
         mov     [srv.bk], eax
 

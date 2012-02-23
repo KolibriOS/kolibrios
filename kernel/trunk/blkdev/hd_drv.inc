@@ -891,8 +891,8 @@ bd_write_cache_chain:
         jmp     hd_write_error
 
 uglobal
-int13_regs_in   rb      v86_regs.size
-int13_regs_out  rb      v86_regs.size
+int13_regs_in   rb      sizeof.v86_regs
+int13_regs_out  rb      sizeof.v86_regs
 endg
 
 int13_call:
@@ -907,7 +907,7 @@ int13_call:
         push    ebx ecx esi edi
         mov     ebx, int13_regs_in
         mov     edi, ebx
-        mov     ecx, v86_regs.size/4
+        mov     ecx, sizeof.v86_regs/4
         xor     eax, eax
         rep stosd
         mov     byte [ebx+v86_regs.eax+1], dl
