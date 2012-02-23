@@ -579,6 +579,16 @@ load_directory:
     jz  .copy
     cmp ecx, 'xcf'
     jz  .copy
+    cmp ecx, 'pbm'
+    jz  .copy
+    cmp ecx, 'pgm'
+    jz  .copy
+    cmp ecx, 'pnm'
+    jz  .copy
+    cmp ecx, 'tif'
+    jz  .copy
+    cmp ecx, 'tiff'
+    jz  @f
 ; dunkaist ]
     cmp ecx, 'jpeg'
     jz  @f
@@ -1104,6 +1114,11 @@ db 'CUR',0
 ; dunkaist [
 db 'PCX',0
 db 'XCF',0
+db 'PBM',0
+db 'PGM',0
+db 'PNM',0
+db 'TIF',0
+db 'TIFF',0
 ; dunkaist ]
 .end:
 db 0
