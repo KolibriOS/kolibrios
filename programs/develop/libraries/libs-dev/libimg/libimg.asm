@@ -42,6 +42,7 @@ include 'pcx/pcx.asm'
 include 'xcf/xcf.asm'
 include 'tiff/tiff.asm'
 include 'pnm/pnm.asm'
+include 'wbmp/wbmp.asm'
 
 ;;================================================================================================;;
 proc lib_init ;///////////////////////////////////////////////////////////////////////////////////;;
@@ -2003,6 +2004,7 @@ img._.formats_table:
   .xcf dd img.is.xcf, img.decode.xcf, img.encode.xcf
   .tiff dd img.is.tiff, img.decode.tiff, img.encode.tiff
   .pnm dd img.is.pnm, img.decode.pnm, img.encode.pnm
+  .wbmp dd img.is.wbmp, img.decode.wbmp, img.encode.wbmp
   .z80 dd img.is.z80, img.decode.z80, img.encode.z80 ;this must be the last entry as there are no
   ;signatures in z80 screens at all
        dd 0
