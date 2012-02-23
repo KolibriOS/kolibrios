@@ -1,5 +1,5 @@
 ;;================================================================================================;;
-;;//// pcx.inc //// (c) dunkaist, 2010 ///////////////////////////////////////////////////////////;;
+;;//// pcx.inc //// (c) dunkaist, 2010,2012 //////////////////////////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -17,21 +17,21 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 
-struct pcx_header
-    magic_number    rb  1
-    version         rb  1
-    encoding        rb  1
-    bpp             rb  1
-    xmin            rw  1
-    ymin            rw  1
-    xmax            rw  1
-    ymax            rw  1
-    hres            rw  1
-    vres            rw  1
-    colormap        rb  48
-    reserved        rb  1
-    nplanes         rb  1
-    bpl             rw  1
-    palette_info    rw  1
-    filler          rb  58
+struct	pcx_header
+	magic_number	rb	1
+	version		rb	1
+	encoding	rb	1
+	bpp		rb	1
+	xmin		rw	1
+	ymin		rw	1
+	xmax		rw	1
+	ymax		rw	1
+	hres		rw	1
+	vres		rw	1
+	colormap	rb	48
+	reserved	rb	1
+	nplanes		rb	1
+	bpl		rw	1
+	palette_info	rw	1
+	filler		rb	58
 ends

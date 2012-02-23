@@ -46,6 +46,7 @@ Image.bpp32 = 3
 Image.bpp15 = 4
 Image.bpp16 = 5
 Image.bpp1  = 6
+Image.bpp4  = 7
 
 ; bits in Image.Flags
 Image.IsAnimated = 1

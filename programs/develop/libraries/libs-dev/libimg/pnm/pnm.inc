@@ -1,5 +1,5 @@
 ;;================================================================================================;;
-;;//// xcf.inc //// (c) dunkaist, 2011-2012 //////////////////////////////////////////////////////;;
+;;//// pnm.inc //// (c) dunkaist, 2012 ///////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -17,26 +17,10 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 
-XCF_BASETYPE_RGB	=	0
-XCF_BASETYPE_GRAY	=	1
-XCF_BASETYPE_INDEXED	=	2
+PNM_RAW		=	0
+PNM_ASCII	=	1
 
-struct	xcf_header
-	magic_string	rb	9
-	version		rd	1
-	reserved	rb	1
-	width		rd	1
-	height		rd	1
-	base_type	rd	1
-ends
+PNM_PBM		=	0
+PNM_PGM		=	1
+PNM_PPM		=	2
 
-struct	xcf_ext
-	visible		rd	1
-	layer_mode	rd	1
-	offset_x	rd	1
-	offset_y	rd	1
-	opacity		rd	1
-	apply_mask	rd	1
-	type		rd	1
-	planes		rd	1
-ends
