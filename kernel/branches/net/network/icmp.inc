@@ -147,8 +147,8 @@ ICMP_input:
 ; First, check the checksum (altough some implementations ignore it)
 
         push    esi ecx
-        push    [edx + ICMP_header.Checksum]
-        mov     [edx + ICMP_header.Checksum], 0
+        push    [esi + ICMP_header.Checksum]
+        mov     [esi + ICMP_header.Checksum], 0
         xor     edx, edx
         call    checksum_1
         call    checksum_2
