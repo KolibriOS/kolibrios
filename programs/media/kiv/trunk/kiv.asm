@@ -589,6 +589,8 @@ load_directory:
     jz  .copy
     cmp ecx, 'tiff'
     jz  @f
+    cmp ecx, 'wbmp'
+    jz  @f
 ; dunkaist ]
     cmp ecx, 'jpeg'
     jz  @f
@@ -1119,6 +1121,7 @@ db 'PGM',0
 db 'PNM',0
 db 'TIF',0
 db 'TIFF',0
+db 'WBMP',0
 ; dunkaist ]
 .end:
 db 0
