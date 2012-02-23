@@ -2111,6 +2111,19 @@ proc buf_bit_blt_transp, buf_destination:dword, coord_x:dword, coord_y:dword, bu
 	jne .copy_end ;формат буфера не поодерживается
 		mov ebx,buf2d_h ;ebx - высота основного буфера
 		mov ecx,[coord_y]
+		cmp ecx,0
+		jge @f
+			;если координата coord_y<0 (1-я настройка)
+			add edx,ecx ;уменьшаем высоту копируемой картинки
+			cmp edx,0
+			jle .copy_end ;если копируемое изображение находится полностью над верхней границей буфера (coord_y<0 и |coord_y|>buf_source.h)
+			neg ecx
+			;inc ecx
+			imul ecx,eax
+			shl ecx,2 ;по 4 бита на пиксель
+			add esi,ecx ;сдвигаем указатель с копируемыми данными, с учетом пропушеной части
+			xor ecx,ecx ;обнуляем координату coord_y
+		@@:
 		cmp ecx,ebx
 		jge .copy_end ;если координата 'y' больше высоты буфера
 		add ecx,edx ;ecx - нижняя координата копируемой картинки
@@ -2121,8 +2134,15 @@ proc buf_bit_blt_transp, buf_destination:dword, coord_x:dword, coord_y:dword, bu
 		@@:
 		mov ebx,buf2d_w
 		mov ecx,ebx ;ecx используем для временных целей
+		cmp [coord_y],0
+		jg .end_otr_c_y
+			;если координата coord_y<=0 (2-я настройка)
+			mov ecx,[coord_x]
+			jmp @f
+		.end_otr_c_y:
 		imul ecx,[coord_y]
 		add ecx,[coord_x]
+		@@:
 		lea ecx,[ecx+ecx*2]
 		add ecx,buf2d_data
 		sub ebx,eax
@@ -2226,7 +2246,7 @@ combine_colors_2:
 align 4
 proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf_source:dword, color:dword
 	locals
-		right_bytes dd ?
+		lost_bytes dd ? ;число потерянных байтов в строке копируемого изображеня (тех что не влазят в буфер)
 		dest_w_bytes dd ? ;колличество байт в буфере приемнике по ширине - ширина вставляемой картинки
 	endl
 	pushad
@@ -2234,7 +2254,7 @@ proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf
 	mov edi,[buf_source]
 	cmp buf2d_bits,8
 	jne .error1 ;формат буфера не поодерживается
-	mov eax,buf2d_w
+	mov eax,buf2d_w ;ширина копируемой картинки
 	mov edx,buf2d_h ;высота копируемой картинки
 	mov esi,buf2d_data ;данные копируемой картинки
 
@@ -2250,6 +2270,8 @@ proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf
 		jge @f
 			;если координата coord_y<0 (1-я настройка)
 			add edx,ecx ;уменьшаем высоту копируемой картинки
+			cmp edx,0
+			jle .copy_end ;если копируемое изображение находится полностью над верхней границей буфера (coord_y<0 и |coord_y|>buf_source.h)
 			neg ecx
 			;inc ecx
 			imul ecx,eax
@@ -2267,8 +2289,8 @@ proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf
 		mov ebx,buf2d_w
 		mov ecx,[coord_y] ;ecx используем для временных целей
 		cmp ecx,0
-		jge .end_otr_c_y
-			;если координата coord_y<0 (2-я настройка)
+		jg .end_otr_c_y
+			;если координата coord_y<=0 (2-я настройка)
 			mov ecx,[coord_x]
 			jmp @f
 		.end_otr_c_y:
@@ -2276,19 +2298,33 @@ proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf
 		add ecx,[coord_x]
 		@@:
 		lea ecx,[ecx+ecx*2]
-		add ecx,buf2d_data
-		sub ebx,eax
+		add ecx,buf2d_data ;buf2d_data данные основного буфера
+		sub ebx,eax ;ebx - ширина основного буфера минус ширина рисуемого буфера
 		mov edi,ecx ;edi указатель на данные буфера, куда будет производится копирование
 
-	mov [right_bytes],0
+	mov dword[lost_bytes],0
 	mov ecx,[coord_x]
+	cmp ecx,0
+	jge @f
+		neg ecx
+		;inc ecx
+		cmp eax,ecx ;eax - ширина копируемой картинки
+		jle .copy_end ;если копируемое изображение находится полностью за левой границей буфера (coord_x<0 и |coord_x|>buf_source.w)
+		add [lost_bytes],ecx
+		sub eax,ecx ;укорачиваем копируемую строку
+		add ebx,ecx ;удлинняем строку для сдвига главной картинки буфера
+		add esi,ecx
+		lea ecx,[ecx+ecx*2]
+		add edi,ecx ;edi указатель на данные буфера, куда будет производится копирование
+		xor ecx,ecx
+	@@:
 	cmp ecx,ebx
-	jl @f
+	jle @f
 		sub ecx,ebx
 		sub eax,ecx ;укорачиваем копируемую строку
 		add ebx,ecx ;удлинняем строку для сдвига главной картинки буфера
 		;ecx - число пикселей в 1-й строке картинки, которые вылазят за правую сторону
-		mov [right_bytes],ecx
+		add [lost_bytes],ecx
 	@@:
 
 	lea ebx,[ebx+ebx*2] ;колличество байт в 1-й строке буфера минус число байт в 1-й строке копируемой картинки
@@ -2296,7 +2332,7 @@ proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf
 	mov ebx,[color]
 
 	cld
-	cmp [right_bytes],0
+	cmp dword[lost_bytes],0
 	jg .copy_1
 	.copy_0: ;простое копирование
 		mov ecx,eax
@@ -2310,7 +2346,7 @@ proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf
 		cmp edx,0
 		jg .copy_0
 	jmp .copy_end
-	.copy_1: ;не простое копирование (картинка вылазит за правую сторону)
+	.copy_1: ;не простое копирование (картинка вылазит за левую и/или правую сторону)
 		mov ecx,eax
 		@@:
 			call combine_colors_2
@@ -2318,7 +2354,7 @@ proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf
 			inc esi
 			loop @b
 		add edi,[dest_w_bytes]
-		add esi,[right_bytes] ;добавляем байты, которые вылазят за правую границу
+		add esi,[lost_bytes] ;добавляем байты, которые вылазят за правую границу
 		dec edx
 		cmp edx,0
 		jg .copy_1
