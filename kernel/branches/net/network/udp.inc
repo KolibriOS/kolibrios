@@ -118,14 +118,15 @@ UDP_input:
 
         DEBUGF  1,"UDP_input, size:%u\n", ecx
 
-; First validate, checksum
+        ; First validate, checksum
 
         neg     [esi + UDP_header.Checksum]     ; substract checksum from 0
-        jz      .no_checksum                    ; if checksum is zero, it is considered valid and we continue processing
-                                                ; otherwise, we will re-calculate the checksum and add it to this value, thus creating 0 when it is correct
+        jz      .no_checksum                    ; if checksum is zero, it is considered valid
+
+        ; otherwise, we will re-calculate the checksum and add it to this value, thus creating 0 when it is correct
 
         UDP_checksum (edi), (edi+4)
-  ;;;      jnz     .checksum_mismatch
+        jnz     .checksum_mismatch
 
   .no_checksum:
         DEBUGF  1,"UDP Checksum is correct\n"
@@ -287,7 +288,7 @@ UDP_output:
   .fail:
         DEBUGF  1,"UDP_output: failed\n"
         add     esp, 4+4+8
-        xor     eax, eax
+        or      eax, -1
         ret
 
 
