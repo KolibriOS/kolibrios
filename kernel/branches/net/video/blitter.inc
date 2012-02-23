@@ -1,34 +1,25 @@
 
+struct  BLITTER_BLOCK
+        xmin            dd ?
+        ymin            dd ?
+        xmax            dd ?
+        ymax            dd ?
+ends
 
 
-struc BLITTER
-{
-   .dc.xmin    rd  1   ;   0
-   .dc.ymin    rd  1   ;   4
-   .dc.xmax    rd  1   ;   8
-   .dc.ymax    rd  1   ;  12
+struct  BLITTER
+        dc              BLITTER_BLOCK
+        sc              BLITTER_BLOCK
+        dst_x           dd ?            ;  32
+        dst_y           dd ?            ;  36
+        src_x           dd ?            ;  40
+        src_y           dd ?            ;  44
+        w               dd ?            ;  48
+        h               dd ?            ;  52
 
-   .sc:
-   .sc.xmin    rd  1   ;  16
-   .sc.ymin    rd  1   ;  20
-   .sc.xmax    rd  1   ;  24
-   .sc.ymax    rd  1   ;  28
-
-   .dst_x      rd  1   ;  32
-   .dst_y      rd  1   ;  36
-   .src_x      rd  1   ;  40
-   .src_y      rd  1   ;  44
-   .w          rd  1   ;  48
-   .h          rd  1   ;  52
-
-   .bitmap     rd  1   ;  56
-   .stride     rd  1   ;  60
-
-}
-
-virtual at 0
-  BLITTER BLITTER
-end virtual
+        bitmap          dd ?            ;  56
+        stride          dd ?            ;  60
+ends
 
 
 align 4

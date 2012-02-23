@@ -25,7 +25,7 @@ FreeEvents = event_start-EVENT.fd    ; "виртуальный" event, используются только 
                                      ;  FreeEvents.fd=event_start и FreeEvents.bk=event_end
 align 4
 init_events:                                       ;; used from kernel.asm
-        stdcall kernel_alloc, EV_SPACE*EVENT.size
+        stdcall kernel_alloc, EV_SPACE*sizeof.EVENT
         or      eax, eax
         jz      .fail
       ; eax - current event, ebx - previos event below
@@ -36,7 +36,7 @@ init_events:                                       ;; used from kernel.asm
         mov     [ebx+EVENT.fd], eax
         mov     [eax+EVENT.bk], ebx
         mov     ebx, eax             ; previos <- current
-        add     eax, EVENT.size      ; new current
+        add     eax, sizeof.EVENT    ; new current
         loop    @b
         pop     eax                  ; вот оно концом и стало
         mov     [ebx+EVENT.fd], eax
@@ -100,7 +100,7 @@ set_event:                                         ;; INTERNAL use !!! don't use
         or      esi, esi
         jz      RemoveEventTo
         lea     edi, [eax+EVENT.code]
-        mov     ecx, EVENT.codesize/4
+        mov     ecx, (sizeof.EVENT -EVENT.code)/4
         cld
         rep movsd
 
@@ -155,7 +155,7 @@ raise_event:                                       ;; EXPORT use
         or      esi, esi
         jz      @f
         lea     edi, [ebx+EVENT.code]
-        mov     ecx, EVENT.codesize/4
+        mov     ecx, (sizeof.EVENT -EVENT.code)/4
         cld
         rep movsd
   @@:
@@ -299,10 +299,10 @@ get_event_ex:                                      ;; f68:14
         mov     edx, get_event_queue ; wait_test
         call    Wait_events          ; timeout ignored
         lea     esi, [eax+EVENT.code]
-        mov     ecx, EVENT.codesize/4
+        mov     ecx, (sizeof.EVENT-EVENT.code)/4
         cld
         rep movsd
-        mov     [edi-EVENT.codesize+2], cl;clear priority field
+        mov     byte[edi-(sizeof.EVENT-EVENT.code)+2], cl;clear priority field
 wait_finish:
         test    byte[eax+EVENT.state+3], MANUAL_RESET shr 24
         jnz     get_event_queue.ret  ; RET

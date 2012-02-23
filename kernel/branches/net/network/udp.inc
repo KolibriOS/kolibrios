@@ -124,10 +124,8 @@ UDP_input:
         jz      .no_checksum                    ; if checksum is zero, it is considered valid and we continue processing
                                                 ; otherwise, we will re-calculate the checksum and add it to this value, thus creating 0 when it is correct
 
-        push    esi
         UDP_checksum (edi), (edi+4)
-        pop     esi
-        jnz     .checksum_mismatch
+  ;;;      jnz     .checksum_mismatch
 
   .no_checksum:
         DEBUGF  1,"UDP Checksum is correct\n"

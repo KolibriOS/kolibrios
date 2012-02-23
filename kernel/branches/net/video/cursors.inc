@@ -13,23 +13,19 @@ LOAD_FROM_MEM   equ 1
 LOAD_INDIRECT   equ 2
 LOAD_SYSTEM     equ 3
 
-struc BITMAPINFOHEADER {
-  .biSize          dd ? ; DWORD
-  .biWidth         dd ? ; LONG
-  .biHeight        dd ? ; LONG
-  .biPlanes        dw ? ; WORD
-  .biBitCount      dw ? ; WORD
-  .biCompression   dd ? ; DWORD
-  .biSizeImage     dd ? ; DWORD
-  .biXPelsPerMeter dd ? ; LONG
-  .biYPelsPerMeter dd ? ; LONG
-  .biClrUsed       dd ? ; DWORD
-  .biClrImportant  dd ? ; DWORD
-}
-
-virtual at 0
-  BI BITMAPINFOHEADER
-end virtual
+struct  BITMAPINFOHEADER
+        Size                    dd ?
+        Width                   dd ?
+        Height                  dd ?
+        Planes                  dw ?
+        BitCount                dw ?
+        Compression             dd ?
+        SizeImage               dd ?
+        XPelsPerMeter           dd ?
+        YPelsPerMeter           dd ?
+        ClrUsed                 dd ?
+        ClrImportant            dd ?
+ends
 
 align 4
 proc init_cursor stdcall, dst:dword, src:dword
@@ -47,11 +43,11 @@ proc init_cursor stdcall, dst:dword, src:dword
         add     esi, [esi+18]
         mov     eax, esi
 
-        cmp     [esi+BI.biBitCount], 24
+        cmp     [esi+BITMAPINFOHEADER.BitCount], 24
         je      .img_24
-        cmp     [esi+BI.biBitCount], 8
+        cmp     [esi+BITMAPINFOHEADER.BitCount], 8
         je      .img_8
-        cmp     [esi+BI.biBitCount], 4
+        cmp     [esi+BITMAPINFOHEADER.BitCount], 4
         je      .img_4
 
 .img_2:
@@ -226,9 +222,9 @@ proc init_cursor stdcall, dst:dword, src:dword
         mov     [pQuad], eax
         add     eax, 0xC00
         mov     [pAnd], eax
-        mov     eax, [esi+BI.biWidth]
+        mov     eax, [esi+BITMAPINFOHEADER.Width]
         mov     [width], eax
-        mov     ebx, [esi+BI.biHeight]
+        mov     ebx, [esi+BITMAPINFOHEADER.Height]
         shr     ebx, 1
         mov     [height], ebx
 
@@ -300,7 +296,7 @@ create_cursor:
         push    ebx
 
         mov     ebx, eax
-        mov     eax, CURSOR.sizeof
+        mov     eax, sizeof.CURSOR
         call    create_kernel_object
         test    eax, eax
         jz      .fail

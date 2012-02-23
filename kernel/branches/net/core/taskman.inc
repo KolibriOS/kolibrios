@@ -10,34 +10,34 @@ $Revision$
 
 GREEDY_KERNEL  equ 0
 
-struc APP_HEADER_00
-{ .banner      dq ?
-  .version     dd ?    ;+8
-  .start       dd ?    ;+12
-  .i_end       dd ?    ;+16
-  .mem_size    dd ?    ;+20
-  .i_param     dd ?    ;+24
-}
+struct  APP_HEADER_00_
+        banner          dq ?
+        version         dd ?    ;+8
+        start           dd ?    ;+12
+        i_end           dd ?    ;+16
+        mem_size        dd ?    ;+20
+        i_param         dd ?    ;+24
+ends
 
-struc APP_HEADER_01
-{ .banner      dq ?
-  .version     dd ?    ;+8
-  .start       dd ?    ;+12
-  .i_end       dd ?    ;+16
-  .mem_size    dd ?    ;+20
-  .stack_top   dd ?    ;+24
-  .i_param     dd ?    ;+28
-  .i_icon      dd ?    ;+32
-}
+struct  APP_HEADER_01_
+        banner          dq ?
+        version         dd ?    ;+8
+        start           dd ?    ;+12
+        i_end           dd ?    ;+16
+        mem_size        dd ?    ;+20
+        stack_top       dd ?    ;+24
+        i_param         dd ?    ;+28
+        i_icon          dd ?    ;+32
+ends
 
 
-struc APP_PARAMS
-{ .app_cmdline   ;0x00
-  .app_path  ;0x04
-  .app_eip   ;0x08
-  .app_esp   ;0x0C
-  .app_mem   ;0x10
-}
+struct  APP_PARAMS
+        app_cmdline     dd ?    ;0x00
+        app_path        dd ?    ;0x04
+        app_eip         dd ?    ;0x08
+        app_esp         dd ?    ;0x0C
+        app_mem         dd ?    ;0x10
+ends
 
 macro _clear_ op
 {  mov ecx, op/4
@@ -254,10 +254,10 @@ endp
 align 4
 test_app_header:
        virtual at eax
-         APP_HEADER_00 APP_HEADER_00
+         APP_HEADER_00 APP_HEADER_00_
        end virtual
        virtual at eax
-         APP_HEADER_01 APP_HEADER_01
+         APP_HEADER_01 APP_HEADER_01_
        end virtual
 
         cmp     dword [eax], 'MENU'

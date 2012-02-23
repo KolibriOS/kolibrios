@@ -568,16 +568,16 @@ mouse._.find_sys_button_under_cursor: ;////////////////////////////////////////
         ; check if any process button contains cursor
         mov     eax, [BTN_ADDR]
         mov     ecx, [eax]
-        imul    esi, ecx, SYS_BUTTON.sizeof
+        imul    esi, ecx, sizeof.SYS_BUTTON
         add     esi, eax
         inc     ecx
-        add     esi, SYS_BUTTON.sizeof
+        add     esi, sizeof.SYS_BUTTON
 
   .next_button:
         dec     ecx
         jz      .not_found
 
-        add     esi, -SYS_BUTTON.sizeof
+        add     esi, -sizeof.SYS_BUTTON
 
         ; does it belong to our process?
         cmp     dx, [esi + SYS_BUTTON.pslot]

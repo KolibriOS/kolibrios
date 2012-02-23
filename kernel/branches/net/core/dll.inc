@@ -139,7 +139,7 @@ proc srv_handler stdcall, ioctl:dword
         cmp     [edi+SRV.magic], ' SRV'
         jne     .fail
 
-        cmp     [edi+SRV.size], SRV.sizeof
+        cmp     [edi+SRV.size], sizeof.SRV
         jne     .fail
 
         stdcall [edi+SRV.srv_proc], esi
@@ -171,7 +171,7 @@ srv_handlerEx:
         cmp     [eax+SRV.magic], ' SRV'
         jne     .fail
 
-        cmp     [eax+SRV.size], SRV.sizeof
+        cmp     [eax+SRV.size], sizeof.SRV
         jne     .fail
 
         stdcall [eax+SRV.srv_proc], ecx
@@ -196,7 +196,7 @@ proc get_service stdcall, sz_name:dword
 @@:
         mov     edx, [srv.fd]
 @@:
-        cmp     edx, srv.fd-SRV_FD_OFFSET
+        cmp     edx, srv.fd-SRV.fd
         je      .not_load
 
         stdcall strncmp, edx, [sz_name], 16
@@ -226,7 +226,7 @@ proc reg_service stdcall, name:dword, handler:dword
         cmp     [handler], eax
         je      .fail
 
-        mov     eax, SRV.sizeof
+        mov     eax, sizeof.SRV
         call    malloc
         test    eax, eax
         jz      .fail
@@ -243,9 +243,9 @@ proc reg_service stdcall, name:dword, handler:dword
         pop     esi
 
         mov     [eax+SRV.magic], ' SRV'
-        mov     [eax+SRV.size], SRV.sizeof
+        mov     [eax+SRV.size], sizeof.SRV
 
-        mov     ebx, srv.fd-SRV_FD_OFFSET
+        mov     ebx, srv.fd-SRV.fd
         mov     edx, [ebx+SRV.fd]
         mov     [eax+SRV.fd], edx
         mov     [eax+SRV.bk], ebx
@@ -514,10 +514,10 @@ proc fix_coff_symbols stdcall uses ebx esi, sec:dword, symbols:dword,\
         mov     edi, [symbols]
         mov     [retval], 1
 .fix:
-        movzx   ebx, [edi+CSYM.SectionNumber]
+        movzx   ebx, [edi+COFF_SYM.SectionNumber]
         test    ebx, ebx
         jnz     .internal
-        mov     eax, dword [edi+CSYM.Name]
+        mov     eax, dword [edi+COFF_SYM.Name]
         test    eax, eax
         jnz     @F
 
@@ -542,7 +542,7 @@ proc fix_coff_symbols stdcall uses ebx esi, sec:dword, symbols:dword,\
         mov     [retval], 0
 @@:
         mov     edi, [symbols]
-        mov     [edi+CSYM.Value], eax
+        mov     [edi+COFF_SYM.Value], eax
         jmp     .next
 .internal:
         cmp     bx, -1
@@ -555,10 +555,10 @@ proc fix_coff_symbols stdcall uses ebx esi, sec:dword, symbols:dword,\
         lea     ebx, [ebx+ebx*4]
         add     ebx, [sec]
 
-        mov     eax, [ebx+CFS.VirtualAddress]
-        add     [edi+CSYM.Value], eax
+        mov     eax, [ebx+COFF_SECTION.VirtualAddress]
+        add     [edi+COFF_SYM.Value], eax
 .next:
-        add     edi, CSYM_SIZE
+        add     edi, sizeof.COFF_SYM
         mov     [symbols], edi
         dec     [sym_count]
         jnz     .fix
@@ -574,38 +574,38 @@ proc fix_coff_relocs stdcall uses ebx esi, coff:dword, sym:dword, \
            endl
 
         mov     eax, [coff]
-        movzx   ebx, [eax+CFH.nSections]
+        movzx   ebx, [eax+COFF_HEADER.nSections]
         mov     [n_sec], ebx
         lea     esi, [eax+20]
 .fix_sec:
-        mov     edi, [esi+CFS.PtrReloc]
+        mov     edi, [esi+COFF_SECTION.PtrReloc]
         add     edi, [coff]
 
-        movzx   ecx, [esi+CFS.NumReloc]
+        movzx   ecx, [esi+COFF_SECTION.NumReloc]
         test    ecx, ecx
         jz      .next
 .reloc_loop:
-        mov     ebx, [edi+CRELOC.SymIndex]
+        mov     ebx, [edi+COFF_RELOC.SymIndex]
         add     ebx, ebx
         lea     ebx, [ebx+ebx*8]
         add     ebx, [sym]
 
-        mov     edx, [ebx+CSYM.Value]
+        mov     edx, [ebx+COFF_SYM.Value]
 
-        cmp     [edi+CRELOC.Type], 6
+        cmp     [edi+COFF_RELOC.Type], 6
         je      .dir_32
 
-        cmp     [edi+CRELOC.Type], 20
+        cmp     [edi+COFF_RELOC.Type], 20
         jne     .next_reloc
 .rel_32:
-        mov     eax, [edi+CRELOC.VirtualAddress]
-        add     eax, [esi+CFS.VirtualAddress]
+        mov     eax, [edi+COFF_RELOC.VirtualAddress]
+        add     eax, [esi+COFF_SECTION.VirtualAddress]
         sub     edx, eax
         sub     edx, 4
         jmp     .fix
 .dir_32:
-        mov     eax, [edi+CRELOC.VirtualAddress]
-        add     eax, [esi+CFS.VirtualAddress]
+        mov     eax, [edi+COFF_RELOC.VirtualAddress]
+        add     eax, [esi+COFF_SECTION.VirtualAddress]
 .fix:
         add     eax, [delta]
         add     [eax], edx
@@ -614,7 +614,7 @@ proc fix_coff_relocs stdcall uses ebx esi, coff:dword, sym:dword, \
         dec     ecx
         jnz     .reloc_loop
 .next:
-        add     esi, COFF_SECTION_SIZE
+        add     esi, sizeof.COFF_SECTION
         dec     [n_sec]
         jnz     .fix_sec
 .exit:
@@ -629,30 +629,30 @@ proc rebase_coff stdcall uses ebx esi, coff:dword, sym:dword, \
            endl
 
         mov     eax, [coff]
-        movzx   ebx, [eax+CFH.nSections]
+        movzx   ebx, [eax+COFF_HEADER.nSections]
         mov     [n_sec], ebx
         lea     esi, [eax+20]
         mov     edx, [delta]
 .fix_sec:
-        mov     edi, [esi+CFS.PtrReloc]
+        mov     edi, [esi+COFF_SECTION.PtrReloc]
         add     edi, [coff]
 
-        movzx   ecx, [esi+CFS.NumReloc]
+        movzx   ecx, [esi+COFF_SECTION.NumReloc]
         test    ecx, ecx
         jz      .next
 .reloc_loop:
-        cmp     [edi+CRELOC.Type], 6
+        cmp     [edi+COFF_RELOC.Type], 6
         jne     .next_reloc
 .dir_32:
-        mov     eax, [edi+CRELOC.VirtualAddress]
-        add     eax, [esi+CFS.VirtualAddress]
+        mov     eax, [edi+COFF_RELOC.VirtualAddress]
+        add     eax, [esi+COFF_SECTION.VirtualAddress]
         add     [eax+edx], edx
 .next_reloc:
         add     edi, 10
         dec     ecx
         jnz     .reloc_loop
 .next:
-        add     esi, COFF_SECTION_SIZE
+        add     esi, sizeof.COFF_SECTION
         dec     [n_sec]
         jnz     .fix_sec
 .exit:
@@ -700,15 +700,15 @@ proc load_driver stdcall, driver_name:dword
 
         mov     [coff], eax
 
-        movzx   ecx, [eax+CFH.nSections]
+        movzx   ecx, [eax+COFF_HEADER.nSections]
         xor     ebx, ebx
 
         lea     edx, [eax+20]
 @@:
-        add     ebx, [edx+CFS.SizeOfRawData]
+        add     ebx, [edx+COFF_SECTION.SizeOfRawData]
         add     ebx, 15
         and     ebx, not 15
-        add     edx, COFF_SECTION_SIZE
+        add     edx, sizeof.COFF_SECTION
         dec     ecx
         jnz     @B
         mov     [img_size], ebx
@@ -728,32 +728,32 @@ proc load_driver stdcall, driver_name:dword
         rep stosd
 
         mov     edx, [coff]
-        movzx   ebx, [edx+CFH.nSections]
+        movzx   ebx, [edx+COFF_HEADER.nSections]
         mov     edi, [img_base]
         lea     eax, [edx+20]
 @@:
-        mov     [eax+CFS.VirtualAddress], edi
-        mov     esi, [eax+CFS.PtrRawData]
+        mov     [eax+COFF_SECTION.VirtualAddress], edi
+        mov     esi, [eax+COFF_SECTION.PtrRawData]
         test    esi, esi
         jnz     .copy
-        add     edi, [eax+CFS.SizeOfRawData]
+        add     edi, [eax+COFF_SECTION.SizeOfRawData]
         jmp     .next
 .copy:
         add     esi, edx
-        mov     ecx, [eax+CFS.SizeOfRawData]
+        mov     ecx, [eax+COFF_SECTION.SizeOfRawData]
         cld
         rep movsb
 .next:
         add     edi, 15
         and     edi, not 15
-        add     eax, COFF_SECTION_SIZE
+        add     eax, sizeof.COFF_SECTION
         dec     ebx
         jnz     @B
 
-        mov     ebx, [edx+CFH.pSymTable]
+        mov     ebx, [edx+COFF_HEADER.pSymTable]
         add     ebx, edx
         mov     [sym], ebx
-        mov     ecx, [edx+CFH.nSymbols]
+        mov     ecx, [edx+COFF_HEADER.nSymbols]
         add     ecx, ecx
         lea     ecx, [ecx+ecx*8];ecx*=18 = nSymbols*CSYM_SIZE
         add     ecx, [sym]
@@ -764,7 +764,7 @@ proc load_driver stdcall, driver_name:dword
         mov     dword [ebx+4], 0
         lea     eax, [edx+20]
 
-        stdcall fix_coff_symbols, eax, [sym], [edx+CFH.nSymbols], \
+        stdcall fix_coff_symbols, eax, [sym], [edx+COFF_HEADER.nSymbols], \
                 [strings], ebx
         test    eax, eax
         jz      .link_fail
@@ -772,7 +772,7 @@ proc load_driver stdcall, driver_name:dword
         mov     ebx, [coff]
         stdcall fix_coff_relocs, ebx, [sym], 0
 
-        stdcall get_coff_sym, [sym], [ebx+CFH.nSymbols], szVersion
+        stdcall get_coff_sym, [sym], [ebx+COFF_HEADER.nSymbols], szVersion
         test    eax, eax
         jz      .link_fail
 
@@ -785,7 +785,7 @@ proc load_driver stdcall, driver_name:dword
         ja      .ver_fail
 
         mov     ebx, [coff]
-        stdcall get_coff_sym, [sym], [ebx+CFH.nSymbols], szSTART
+        stdcall get_coff_sym, [sym], [ebx+COFF_HEADER.nSymbols], szSTART
         mov     [start], eax
 
         stdcall kernel_free, [coff]
@@ -851,7 +851,7 @@ coff_get_align:
 ; - if alignment is given and is no more than 4K, use it;
 ; - if alignment is more than 4K, revert to 4K.
         push    ecx
-        mov     cl, byte [edx+CFS.Characteristics+2]
+        mov     cl, byte [edx+COFF_SECTION.Characteristics+2]
         mov     eax, 1
         shr     cl, 4
         dec     cl
@@ -955,7 +955,7 @@ proc load_library stdcall, file_name:dword
         xor     eax, eax
         repnz scasb
         not     ecx
-        lea     eax, [ecx+DLLDESCR.sizeof]
+        lea     eax, [ecx+sizeof.DLLDESCR]
         push    ecx
         call    malloc
         pop     ecx
@@ -979,7 +979,7 @@ proc load_library stdcall, file_name:dword
 
 ; calculate size of loaded DLL
         mov     edx, [coff]
-        movzx   ecx, [edx+CFH.nSections]
+        movzx   ecx, [edx+COFF_HEADER.nSections]
         xor     ebx, ebx
 
         add     edx, 20
@@ -988,8 +988,8 @@ proc load_library stdcall, file_name:dword
         add     ebx, eax
         not     eax
         and     ebx, eax
-        add     ebx, [edx+CFS.SizeOfRawData]
-        add     edx, COFF_SECTION_SIZE
+        add     ebx, [edx+COFF_SECTION.SizeOfRawData]
+        add     edx, sizeof.COFF_SECTION
         dec     ecx
         jnz     @B
 ; it must be nonzero and not too big
@@ -1019,7 +1019,7 @@ proc load_library stdcall, file_name:dword
 ; copy sections and set correct values for VirtualAddress'es in headers
         push    esi
         mov     edx, [coff]
-        movzx   ebx, [edx+CFH.nSections]
+        movzx   ebx, [edx+COFF_HEADER.nSections]
         mov     edi, eax
         add     edx, 20
         cld
@@ -1030,11 +1030,11 @@ proc load_library stdcall, file_name:dword
         not     eax
         and     ecx, eax
         and     edi, eax
-        mov     [edx+CFS.VirtualAddress], ecx
-        add     ecx, [edx+CFS.SizeOfRawData]
-        mov     esi, [edx+CFS.PtrRawData]
+        mov     [edx+COFF_SECTION.VirtualAddress], ecx
+        add     ecx, [edx+COFF_SECTION.SizeOfRawData]
+        mov     esi, [edx+COFF_SECTION.PtrRawData]
         push    ecx
-        mov     ecx, [edx+CFS.SizeOfRawData]
+        mov     ecx, [edx+COFF_SECTION.SizeOfRawData]
         test    esi, esi
         jnz     .copy
         xor     eax, eax
@@ -1045,7 +1045,7 @@ proc load_library stdcall, file_name:dword
         rep movsb
 .next:
         pop     ecx
-        add     edx, COFF_SECTION_SIZE
+        add     edx, sizeof.COFF_SECTION
         dec     ebx
         jnz     @B
         pop     esi
@@ -1054,28 +1054,28 @@ proc load_library stdcall, file_name:dword
 ; later we will use COFF header, headers for sections and symbol table
 ; and also relocations table for all sections
         mov     edx, [coff]
-        mov     ebx, [edx+CFH.pSymTable]
+        mov     ebx, [edx+COFF_HEADER.pSymTable]
         mov     edi, dword [fileinfo+32]
         sub     edi, ebx
         jc      .fail_and_free_data
         mov     [esi+DLLDESCR.symbols_lim], edi
         add     ebx, edx
-        movzx   ecx, [edx+CFH.nSections]
+        movzx   ecx, [edx+COFF_HEADER.nSections]
         lea     ecx, [ecx*5]
         lea     edi, [edi+ecx*8+20]
         add     edx, 20
 @@:
-        movzx   eax, [edx+CFS.NumReloc]
+        movzx   eax, [edx+COFF_SECTION.NumReloc]
         lea     eax, [eax*5]
         lea     edi, [edi+eax*2]
-        add     edx, COFF_SECTION_SIZE
+        add     edx, sizeof.COFF_SECTION
         sub     ecx, 5
         jnz     @b
         stdcall kernel_alloc, edi
         test    eax, eax
         jz      .fail_and_free_data
         mov     edx, [coff]
-        movzx   ecx, [edx+CFH.nSections]
+        movzx   ecx, [edx+COFF_HEADER.nSections]
         lea     ecx, [ecx*5]
         lea     ecx, [ecx*2+5]
         mov     [esi+DLLDESCR.coff_hdr], eax
@@ -1086,7 +1086,7 @@ proc load_library stdcall, file_name:dword
         pop     esi
         mov     [esi+DLLDESCR.symbols_ptr], edi
         push    esi
-        mov     ecx, [edx+CFH.nSymbols]
+        mov     ecx, [edx+COFF_HEADER.nSymbols]
         mov     [esi+DLLDESCR.symbols_num], ecx
         mov     ecx, [esi+DLLDESCR.symbols_lim]
         mov     esi, ebx
@@ -1094,27 +1094,27 @@ proc load_library stdcall, file_name:dword
         pop     esi
         mov     ebx, [esi+DLLDESCR.coff_hdr]
         push    esi
-        movzx   eax, [edx+CFH.nSections]
+        movzx   eax, [edx+COFF_HEADER.nSections]
         lea     edx, [ebx+20]
 @@:
-        movzx   ecx, [edx+CFS.NumReloc]
+        movzx   ecx, [edx+COFF_SECTION.NumReloc]
         lea     ecx, [ecx*5]
-        mov     esi, [edx+CFS.PtrReloc]
-        mov     [edx+CFS.PtrReloc], edi
-        sub     [edx+CFS.PtrReloc], ebx
+        mov     esi, [edx+COFF_SECTION.PtrReloc]
+        mov     [edx+COFF_SECTION.PtrReloc], edi
+        sub     [edx+COFF_SECTION.PtrReloc], ebx
         add     esi, [coff]
         shr     ecx, 1
         rep movsd
         adc     ecx, ecx
         rep movsw
-        add     edx, COFF_SECTION_SIZE
+        add     edx, sizeof.COFF_SECTION
         dec     eax
         jnz     @b
         pop     esi
 
 ; fixup symbols
         mov     edx, ebx
-        mov     eax, [ebx+CFH.nSymbols]
+        mov     eax, [ebx+COFF_HEADER.nSymbols]
         add     edx, 20
         mov     ecx, [esi+DLLDESCR.symbols_num]
         lea     ecx, [ecx*9]
@@ -1128,11 +1128,11 @@ proc load_library stdcall, file_name:dword
 ;
 ;@@:
 
-        stdcall get_coff_sym, [esi+DLLDESCR.symbols_ptr], [ebx+CFH.nSymbols], szEXPORTS
+        stdcall get_coff_sym, [esi+DLLDESCR.symbols_ptr], [ebx+COFF_HEADER.nSymbols], szEXPORTS
         test    eax, eax
         jnz     @F
 
-        stdcall get_coff_sym, [esi+DLLDESCR.symbols_ptr], [ebx+CFH.nSymbols], sz_EXPORTS
+        stdcall get_coff_sym, [esi+DLLDESCR.symbols_ptr], [ebx+COFF_HEADER.nSymbols], sz_EXPORTS
 @@:
         mov     [esi+DLLDESCR.exports], eax
 
@@ -1160,7 +1160,7 @@ proc load_library stdcall, file_name:dword
         jz      .fail_and_dereference
 @@:
         mov     [img_base], eax
-        mov     eax, HDLL.sizeof
+        mov     eax, sizeof.HDLL
         call    malloc
         test    eax, eax
         jz      .fail_and_free_user
@@ -1369,11 +1369,11 @@ stop_all_services:
         push    ebp
         mov     edx, [srv.fd]
 .next:
-        cmp     edx, srv.fd-SRV_FD_OFFSET
+        cmp     edx, srv.fd-SRV.fd
         je      .done
         cmp     [edx+SRV.magic], ' SRV'
         jne     .next
-        cmp     [edx+SRV.size], SRV.sizeof
+        cmp     [edx+SRV.size], sizeof.SRV
         jne     .next
 
         mov     ebx, [edx+SRV.entry]
