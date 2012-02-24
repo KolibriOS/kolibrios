@@ -9,10 +9,9 @@
 /RD/1/@RB             ""          1    # Desktop right-click menu
 /RD/1/@SS             ""          1    # Screensaver
 /RD/1/@PANEL          ""          1    # Start panel
-#/RD/1/DEVELOP/BOARD   ""          1    # Load DEBUG board
 /RD/1/SETUP           BOOT        1    # Load device settings
 /RD/1/ICON            BOOT        1    # Multithread icon
-/RD/1/BOARD	""	1	#Debug Board
+/RD/1/DEVELOP/BOARD   ""          1    # Load DEBUG board
 /RD/1/NETWORK/NETCFG F 1 #
 /RD/1/NETWORK/ZEROCONF ""         1000    # Network configuration
 ### Hello, ASM World! ###
