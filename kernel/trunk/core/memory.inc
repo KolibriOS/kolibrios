@@ -358,7 +358,9 @@ proc init_LFB
         cmp     dword [LFBAddress], -1
         jne     @f
         mov     [BOOT_VAR+0x901c], byte 2
-        stdcall alloc_pages, (0x280000 / 4096)
+; max VGA=640*480*4=1228800 bytes
+; + 32*640*4=81920 bytes for mouse pointer
+        stdcall alloc_pages, ((1228800+81920)/4096)
 
         push    eax
         call    alloc_page
@@ -366,7 +368,9 @@ proc init_LFB
         pop     eax
         or      eax, PG_UW
         mov     ebx, LFB_BASE
-        mov     ecx, 0x280000 / 4096
+; max VGA=640*480*4=1228800 bytes
+; + 32*640*4=81920 bytes for mouse pointer
+        mov     ecx, (1228800+81920)/4096
         call    commit_pages
         mov     [LFBAddress], dword LFB_BASE
         ret
