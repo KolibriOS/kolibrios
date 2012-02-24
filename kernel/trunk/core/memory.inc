@@ -1307,6 +1307,11 @@ f68:
 @@:
         ret
 
+.26:
+        stdcall user_unmap, ecx, edx, esi
+        mov     [esp+32], eax
+        ret
+
 .fail:
         xor     eax, eax
         mov     [esp+32], eax
@@ -1329,8 +1334,9 @@ f68call:   ; keep this table closer to main code
            dd f68.21   ; load_driver
            dd f68.22   ; shmem_open
            dd f68.23   ; shmem_close
-           dd f68.24
-           dd f68.25
+           dd f68.24   ; set exception handler
+           dd f68.25   ; unmask exception
+           dd f68.26   ; user_unmap
 
 
 align 4
