@@ -18,7 +18,7 @@ void UrlsHistory::GoBack()
 		j--;
 	}
 	UrlHistory[j] = 0x00;
-	WB1.Load(#URL);
+	WB1.ShowPage(#URL);
 }
 
 void UrlsHistory::AddUrl()

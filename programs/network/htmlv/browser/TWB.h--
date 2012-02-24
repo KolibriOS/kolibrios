@@ -1,4 +1,3 @@
-//http://jsbeautifier.org/
 //Web-component, Leency & Veliant 2007-2009
 //lev
 
@@ -16,7 +15,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 23.71";
+ char version[]=" Text-based Browser 0.71";
 
 
 struct TWebBrowser {
@@ -25,7 +24,7 @@ struct TWebBrowser {
 	width,
 	height;
 	void DrawScroller();
-	void Load();
+	void ShowPage();
 	void ParseHTML(dword, dword);
 	void Scan(dword);
 	void WhatTextStyle(int left1, top1, width1);
@@ -78,7 +77,7 @@ void TWebBrowser::Scan(dword id) {
 		if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
 		//Lee 21.02 }
 		
-		Load(#URL);
+		ShowPage(#URL);
 		Draw_Window();
 		return;
 	}
@@ -97,7 +96,7 @@ void TWebBrowser::Scan(dword id) {
 			BrowserHistory.GoBack();
 			return;
 		case FORWARD:
-			//RunProgram("@notify", "Forward button is not realized yet");
+			RunProgram("@notify", "Forward button is not realized yet");
 			return;
 		case 054: //F5
 			IF(edit1.flags == 66) break;
@@ -111,24 +110,25 @@ void TWebBrowser::Scan(dword id) {
 			MoveSize(190,80,OLD,OLD);
 			RunProgram(#program_path, #URL);
 			return;
-		case HOME:
-			copystr("/sys/index.htm", #editURL);
 		case 052:  //Нажата F3
 			IF(edit1.flags <> 66) 
 			IF (strcmp(get_URL_part(5),"http:")<>0) RunProgram("tinypad", #URL); ELSE RunProgram("tinypad", #download_path);
 			return;
 
+		case HOME:
+			copystr("http://bash.org.ru", #editURL);
 		case GOTOURL:
 		case 0x0D: //enter
 			copystr(#editURL, #URL);
 			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
-			Load(#URL);
+			ShowPage(#URL);
 			return;
 		case 173:	//ctrl+enter
 		case SEARCHWEB:
 			copystr(#search_path, #URL);
 			copystr(#editURL, #URL + strlen(#URL));
-			Load(#URL);
+			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
+			ShowPage(#URL);
 			return;
 
 		case ID1: //мотаем вверх
@@ -213,7 +213,7 @@ void ReadHtml()
 
 
 
-void TWebBrowser::Load(dword adress) {
+void TWebBrowser::ShowPage(dword adress) {
 	max_kolvo_stolbcov = width - 30 / 6;
 	max_kolvo_strok = height - 3 / 10 - 2;
 	copystr(#version, #header);

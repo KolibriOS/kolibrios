@@ -144,7 +144,7 @@ void Draw_Window()
 	WB1.top=44;
 	WB1.width=Form.width-11;
 	WB1.height=onTop(43,5);
-	WB1.Load(#URL);
+	WB1.ShowPage(#URL);
 }
  
 int onLeft(dword right,left) {return Form.width-right-left;}
