@@ -625,7 +625,7 @@ proc tiff._.decompress.packbits _image
   .decode:
 	lodsb
 	dec	edx
-	cmp	al, 0xff
+	cmp	al, 0x7f
 	jbe	.different
 	cmp	al, 0x80
 	jne	.identical
