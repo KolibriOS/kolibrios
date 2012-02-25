@@ -44,27 +44,19 @@ START:
 	inc	eax
 	jz	exit
 	
-	invoke	img.is_img, [img_data], [img_data_len]
-	or	eax, eax
-	jz	exit
-	invoke	img.decode, [img_data], [img_data_len]
+	invoke	img.decode, [img_data], [img_data_len], 0
 	or	eax, eax
 	jz	exit
 	mov	[image], eax
-	invoke	img.to_rgb, eax
-	or	eax, eax
-	jz	exit
-	mov	[rgb_img], eax
-
 ;-----------------------------------------------------------------------------
 
-red:
+redraw:
 	call	draw_window
 
 still:
 	mcall	10
 	cmp	eax, 1
-	je	red
+	je	redraw
 	cmp	eax, 2
 	je	key
 	cmp	eax, 3
@@ -84,35 +76,35 @@ still:
 	jne	@f
 
 	invoke	img.flip, [image], FLIP_HORIZONTAL
-	jmp	redraw_image
+	jmp	redraw
 
 	; flip vertically
     @@: cmp	eax, 'flv'
 	jne	@f
 
 	invoke	img.flip, [image], FLIP_VERTICAL
-	jmp	redraw_image
+	jmp	redraw
 
 	; flip both horizontally and vertically
     @@: cmp	eax, 'flb'
 	jne	@f
 
 	invoke	img.flip, [image], FLIP_BOTH
-	jmp	redraw_image
+	jmp	redraw
 
 	; rotate left
     @@: cmp	eax, 'rtl'
 	jne	@f
 
 	invoke	img.rotate, [image], ROTATE_90_CCW
-	jmp	redraw_image
+	jmp	redraw
 
 	; rotate right
     @@: cmp	eax, 'rtr'
 	jne	@f
 
 	invoke	img.rotate, [image], ROTATE_90_CW
-	jmp	redraw_image
+	jmp	redraw
 
     @@: cmp	eax, 1
 	jne	still
@@ -120,28 +112,11 @@ still:
   exit:
 	mcall	-1
 
-  redraw_image:
-	stdcall mem.Free, [rgb_img]
-	invoke	img.to_rgb, [image]
-	or	eax, eax
-	jz	exit
-	mov	[rgb_img], eax
-	jmp	red
 
 draw_window:
 	invoke	gfx.open, TRUE
 	mov	[ctx], eax
 
-@^
-	mov	edi, [rgb_img]
-	mov	ebx, 200 * 65536
-	mov	bx, [edi + 0]
-	add	bx, 9
-	mov	ecx, 200 * 65536
-	mov	cx, [edi + 4]
-	add	cx, 5 + 21
-	mcall	0, , , 0x33FF0000, , s_header
-^@
 	mcall	0, <100, 640>, <100, 480>, 0x33FFFFFF, , s_header
 
 	invoke	gfx.pen.color, [ctx], 0x007F7F7F
@@ -156,12 +131,8 @@ draw_window:
 	mcall	8, <10 + 25 * 3, 20>, <5, 20>, 'rtl', 0x007F7F7F
 	mcall	8, <10 + 25 * 4, 20>, <5, 20>, 'rtr', 0x007F7F7F
 
-	mov	ebx, [rgb_img]
-	mov	ecx, [ebx + 0]
-	shl	ecx, 16
-	mov	cx, [ebx + 4]
-	add	ebx, 4 * 2
-	mcall	7, , , <5, 35>
+	mov	eax, [image]
+	stdcall	[img.draw], eax, 5, 35, [eax + Image.Width], [eax + Image.Height], 0, 0
 
 	invoke	gfx.close, [ctx]
 	ret
@@ -231,25 +202,24 @@ library 			\
 
 import	libio			  , \
 	libio.init , 'lib_init'   , \
-	file.size  , 'file.size'  , \
-	file.open  , 'file.open'  , \
-	file.read  , 'file.read'  , \
-	file.close , 'file.close'
+	file.size  , 'file_size'  , \
+	file.open  , 'file_open'  , \
+	file.read  , 'file_read'  , \
+	file.close , 'file_close'
 
 import	libgfx				, \
 	libgfx.init   , 'lib_init'	, \
-	gfx.open      , 'gfx.open'	, \
-	gfx.close     , 'gfx.close'	, \
-	gfx.pen.color , 'gfx.pen.color' , \
-	gfx.line      , 'gfx.line'
+	gfx.open      , 'gfx_open'	, \
+	gfx.close     , 'gfx_close'	, \
+	gfx.pen.color , 'gfx_pen_color' , \
+	gfx.line      , 'gfx_line'
 
 import	libimg			   , \
 	libimg.init , 'lib_init'   , \
-	img.is_img  , 'img.is_img' , \
-	img.to_rgb  , 'img.to_rgb' , \
-	img.decode  , 'img.decode' , \
-	img.flip    , 'img.flip'   , \
-	img.rotate  , 'img.rotate'
+	img.draw    , 'img_draw'   , \
+	img.decode  , 'img_decode' , \
+	img.flip    , 'img_flip'   , \
+	img.rotate  , 'img_rotate'
 
 ;-----------------------------------------------------------------------------
 
@@ -258,7 +228,6 @@ I_END:
 img_data     dd ?
 img_data_len dd ?
 fh	     dd ?
-rgb_img      dd ?
 image	     dd ?
 
 ctx dd ?
