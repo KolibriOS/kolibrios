@@ -516,7 +516,7 @@ align 4
         call    SOCKET_ring_create
 
         pusha
-        lea     ecx, [ebx + SOCKET.mutex]
+        lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
         popa
 
@@ -1378,6 +1378,12 @@ SOCKET_alloc:
         mov     ebx, [TASK_BASE]
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.PID], ebx
+
+; init mutex
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_init
+        popa
 
 ; add socket to the list by re-arranging some pointers
         mov     ebx, [net_sockets + SOCKET.NextPtr]
