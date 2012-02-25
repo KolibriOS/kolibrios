@@ -254,9 +254,10 @@ ICMP_input:
 
         DEBUGF 1,"Found valid ICMP packet for socket %x\n", ebx
 
-        mov     eax, ebx
-        add     ebx, SOCKET.lock
-        call    wait_mutex
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
 
         mov     esi, edx
         jmp     SOCKET_input

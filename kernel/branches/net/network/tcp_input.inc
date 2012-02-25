@@ -143,13 +143,10 @@ TCP_input:
 ;----------------
 ; Lock the socket
 
-        cmp     [ebx + SOCKET.lock], 0
-        jne     .drop_not_locked     ;;; HACK ! HACK ! dirty fucking HACK !   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        add     ebx, SOCKET.lock
-        DEBUGF  1,"lock: %x\n", [ebx]
-        call    wait_mutex
-        sub     ebx, SOCKET.lock
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_lock
+        popa
 
         DEBUGF  1,"Socket locked\n"
 
@@ -171,7 +168,11 @@ TCP_input:
 
         DEBUGF  1,"Accepting new connection\n"
 
-        mov     [ebx + SOCKET.lock], 0
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+
         push    ecx edx esi edi         ;;;
         call    SOCKET_fork
         pop     edi esi edx ecx
@@ -375,7 +376,11 @@ TCP_input:
         mov     [ebx + TCP_SOCKET.timer_retransmission], 0
 
 ; Awaken waiting processes
-        mov     [ebx + SOCKET.lock], 0
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+
         mov     eax, ebx
         call    SOCKET_notify_owner
 
@@ -1465,7 +1470,10 @@ align 4
 
   .dumpit:
 
-        mov     [ebx + SOCKET.lock], 0
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
 
         call    kernel_free
         add     esp, 4
@@ -1490,7 +1498,10 @@ align 4
 
         and     [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
 
-        mov     [ebx + SOCKET.lock], 0
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
 
         push    ebx
 ;        mov     cl, TH_ACK
@@ -1516,7 +1527,10 @@ align 4
 align 4
 .drop_with_reset:
 
-        mov     [ebx + SOCKET.lock], 0
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
 
 .drop_with_reset_not_locked:
 
@@ -1568,7 +1582,10 @@ align 4
 align 4
 .drop:
 
-        mov     [ebx + SOCKET.lock], 0
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
 
 .drop_not_locked:
 

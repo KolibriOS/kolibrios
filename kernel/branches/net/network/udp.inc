@@ -178,10 +178,10 @@ UDP_input:
         cmp     [eax + UDP_SOCKET.RemotePort], cx
         jne     .dump
 
-        push    ebx
-        lea     ebx, [eax + SOCKET.lock]
-        call    wait_mutex
-        pop     ebx
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
 
   .updatesock:
         inc     [UDP_PACKETS_RX]
@@ -193,10 +193,10 @@ UDP_input:
         jmp     SOCKET_input
 
   .updateport:
-        push    ebx
-        lea     ebx, [eax + SOCKET.lock]
-        call    wait_mutex
-        pop     ebx
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
 
         DEBUGF  1,"Changing remote port to: %u\n", cx
         mov     [eax + UDP_SOCKET.RemotePort], cx
