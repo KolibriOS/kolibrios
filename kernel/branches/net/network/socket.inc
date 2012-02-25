@@ -1165,15 +1165,14 @@ SOCKET_ring_write:
 
         ret
 
-  .too_large:
-        mov     ecx, SOCKET_MAXDATA                             ; calculate number of bytes available in buffer
+  .too_large:                                                           ; update size, we will fill buffer completely
+        sub     [eax + RING_BUFFER.size], SOCKET_MAXDATA
         sub     ecx, [eax + RING_BUFFER.size]
-        jae     .full
+        mov     [eax + RING_BUFFER.size], SOCKET_MAXDATA
 
-        mov     [eax + RING_BUFFER.size], SOCKET_MAXDATA        ; update size, we will fill buffer completely
-        jmp     .copy
+        test    ecx, ecx
+        jnz     .copy
 
-  .full:
         DEBUGF  2,"SOCKET_ring_write: ring buffer is full!\n"
         xor     ecx, ecx
         ret
