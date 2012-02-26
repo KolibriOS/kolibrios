@@ -125,7 +125,8 @@ struct  APPDATA
         wait_param      dd ?            ;+100  +++
         tls_base        dd ?            ;+104
         dlls_list_ptr   dd ?            ;+108
-                        rb 16           ;+112
+        event_filter    dd ?            ;+112
+                        rb 12           ;+116
 
         wnd_shape       dd ?            ;+128
         wnd_shape_scale dd ?            ;+132

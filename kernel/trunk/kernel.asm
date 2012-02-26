@@ -2045,7 +2045,7 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
         jb      .nowindowdeactivate
         cmp     ecx, [TASK_COUNT]
         ja      .nowindowdeactivate
-        
+
         movzx   esi, word [WIN_STACK + ecx*2]
         cmp     esi, 1
         je      .nowindowdeactivate ; already deactive
@@ -2056,7 +2056,7 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
         movzx   esi, word [WIN_STACK + ecx * 2]
         lea     esi, [WIN_POS + esi * 2]
         call    window._.window_deactivate
-        
+
         xor     eax, eax
         mov     byte[MOUSE_BACKGROUND], al
         mov     byte[DONT_DRAW_MOUSE], al
@@ -3081,10 +3081,20 @@ nocpustart:
         mov     [mouse_active], 0
         xor     edi, edi
         mov     ecx, [TASK_COUNT]
-set_mouse_event:
+        movzx   eax, word [WIN_POS + ecx*2]     ; active window
+        shl     eax, 8
+
+align 4
+.set_mouse_event:
         add     edi, 256
-        or      [edi+SLOT_BASE+APPDATA.event_mask], dword 100000b
-        loop    set_mouse_event
+        test    [edi+SLOT_BASE+APPDATA.event_filter], 1
+        jz      @F
+
+        cmp     eax, edi                        ; skip if filtration active
+        jne     .set_mouse_event
+@@:
+        or      [edi+SLOT_BASE+APPDATA.event_mask], 100000b
+        loop    .set_mouse_event
 
 mouse_not_active:
         cmp     byte[BACKGROUND_CHANGED], 0
@@ -3356,9 +3366,12 @@ delay_ms:     ; delay in 1/1000 sec
 
 set_app_param:
         mov     edi, [TASK_BASE]
-        mov     eax, [edi + TASKDATA.event_mask]
-        mov     [edi + TASKDATA.event_mask], ebx
-        mov     [esp+32], eax
+        mov     eax, ebx
+        btr     eax, 3                           ; move MOUSE_FILTRATION
+        mov     ebx, [current_slot]              ; bit into event_filter
+        setc    byte [ebx+APPDATA.event_filter]
+        xchg    eax, [edi + TASKDATA.event_mask] ; set new event mask
+        mov     [esp+32], eax                    ; return old mask value
         ret
 
 
