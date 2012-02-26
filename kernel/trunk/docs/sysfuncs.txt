@@ -64,7 +64,7 @@ Remarks:
     appropriate coordinate (or, probably, both) is considered as zero,
     and if it does not help too, the appropriate size
     (or, probably, both) is installed in a size of the screen.
-    
+
     Further let us designate xpos,ypos,xsize,ysize - values passed
     in ebx,ecx. The coordinates are resulted concerning
     the left upper corner of the window, which, thus, is set as (0,0),
@@ -636,7 +636,7 @@ Parameters:
   * ecx = number of the thread slot
 Returned value:
   * function does not return value
-	
+
 ======================================================================
 = Function 18, subfunction 2 - terminate process/thread by the slot. =
 ======================================================================
@@ -691,7 +691,7 @@ Returned value:
   * eax = clock rate (modulo 2^32 clock ticks = 4GHz)
 
 ======================================================================
- Function 18, subfunction 6 - save ramdisk to the file on hard drive. 
+ Function 18, subfunction 6 - save ramdisk to the file on hard drive.
 ======================================================================
 Parameters:
   * eax = 18 - function number
@@ -773,7 +773,7 @@ Returned value:
 Remarks:
   * The minimized window from the point of view of function 9
     keeps position and sizes.
-  * Restoring of an application window occurs at its activation by 
+  * Restoring of an application window occurs at its activation by
     subfunction 3.
   * Usually there is no necessity to minimize/restire a window
     obviously: minimization of a window is carried out by the system
@@ -783,7 +783,7 @@ Remarks:
     restore of a window is done by the application '@panel'.
 
 ======================================================================
- Function 18, subfunction 11 - get information on the disk subsystem. 
+ Function 18, subfunction 11 - get information on the disk subsystem.
 ======================================================================
 Parameters:
   * eax = 18 - function number
@@ -1074,7 +1074,7 @@ Returned value (is the same for both subfunctions):
   * eax = 0 - success
   * eax = 1 - base port is not defined
 Remarks:
-  * Previously the base port must be defined by 
+  * Previously the base port must be defined by
     subfunction 1 of function 21.
 
 ======================================================================
@@ -1118,7 +1118,7 @@ Remarks:
     if Alt and Shift are not pressed, but Ctrl is pressed, the normal
     layout is used and then from the code is subtracted 0x60;
     if no control key is pressed, the normal layout is used.
-  * To get layout and country identifier use 
+  * To get layout and country identifier use
     subfunction 2 of function 26.
   * Country identifier is global system variable, which is not used
     by the kernel itself; however the application '@panel' displays
@@ -1172,7 +1172,7 @@ Remarks:
   * Do not change base, when any application works with hard disk.
     If you do not want system bugs.
   * To get HD base use subfunction 7 of function 26.
-  * It is also necessary to define used partition of hard disk by 
+  * It is also necessary to define used partition of hard disk by
     subfunction 8.
 
 ======================================================================
@@ -1194,12 +1194,12 @@ Remarks:
     If you do not want system bugs.
   * To get used partition use subfunction 8 of function 26.
   * There is no correctness checks.
-  * To get the number of partitions of a hard disk use 
+  * To get the number of partitions of a hard disk use
     subfunction 11 of function 18.
   * It is also necessary to define used HD base by subfunction 7.
 
 ======================================================================
- Function 21, subfunction 11 - enable/disable low-level access to HD. 
+ Function 21, subfunction 11 - enable/disable low-level access to HD.
 ======================================================================
 Parameters:
   * eax = 21 - function number
@@ -1213,7 +1213,7 @@ Remarks:
   * To get current status use subfunction 11 of function 26.
 
 ======================================================================
- Function 21, subfunction 12 - enable/disable low-level access to PCI. 
+ Function 21, subfunction 12 - enable/disable low-level access to PCI.
 ======================================================================
 Parameters:
   * eax = 21 - function number
@@ -1280,7 +1280,7 @@ Returned value:
   * ebx = frequency of the vertical scanning (in Hz)
   * ecx = number of current videomode
 Remarks:
-  * Driver must be initialized by call to 
+  * Driver must be initialized by call to
     driver function 1.
   * If only screen sizes are required, it is more expedient to use
     function 14 taking into account that it
@@ -1415,7 +1415,7 @@ Returned value:
   * eax = 0 - success
   * eax = 1 - CD base is not defined
 Remarks:
-  * Previously CD base must be defined by the call to 
+  * Previously CD base must be defined by the call to
     subfunction 3 of function 21.
   * One second includes 75 frames, one minute includes 60 seconds.
   * The function is asynchronous (returns control, when play begins).
@@ -1435,7 +1435,7 @@ Remarks:
   * The format of the table with tracks information is the same as
     for ATAPI-CD command 43h (READ TOC), usual table (subcommand 00h).
     Function returns addresses in MSF.
-  * Previously CD base port must be set by call to 
+  * Previously CD base port must be set by call to
     subfunction 3 of function 21.
   * Function returns information only about no more than 100
     first tracks. In most cases it is enough.
@@ -1450,7 +1450,7 @@ Returned value:
   * eax = 0 - success
   * eax = 1 - CD base is not defined
 Remarks:
-  * Previously CD base port must be defined by call to 
+  * Previously CD base port must be defined by call to
     subfunction 3 of function 21.
 
 ======================================================================
@@ -1525,7 +1525,7 @@ Remarks:
     if Alt and Shift are not pressed, but Ctrl is pressed, the normal
     layout is used and then from the code is subtracted 0x60;
     if no control key is pressed, the normal layout is used.
-  * To set layout and country identifier use 
+  * To set layout and country identifier use
     subfunction 2 of function 21.
   * Country identifier is global system variable, which is not used
     by the kernel itself; however the application '@panel' displays
@@ -1671,7 +1671,7 @@ Remarks:
   * If the buffer is too small to hold all data, only first (edx-1)
     bytes are copied and than terminating 0 is inserted.
   * By default, current folder for the thread is "/rd/1".
-  * At process/thread creation the current folder will be inherited 
+  * At process/thread creation the current folder will be inherited
     from the parent.
 
 ======================================================================
@@ -1853,7 +1853,7 @@ Remarks:
     changed in future kernel versions.
   * Offset for pixel with coordinates (x,y)
     is calculated as (x+y*xsize)*3.
-  * There is a pair function to set pixel on the background image - 
+  * There is a pair function to set pixel on the background image -
     subfunction 2 of function 15.
 
 ======================================================================
@@ -1866,7 +1866,7 @@ Returned value:
   * eax = 1 - tile
   * eax = 2 - stretch
 Remarks:
-  * There is a pair function to set drawing mode - 
+  * There is a pair function to set drawing mode -
     subfunction 4 of function 15.
 
 ======================================================================
@@ -1878,6 +1878,9 @@ Parameters:
   * eax = 40 - function number
   * ebx = mask: bit i corresponds to event i+1 (see list of events)
     (set bit permits notice on event)
+    bit 3: mouse events filtration
+    bit 3 = 1 - inactive window do not receive mouse events
+    bit 3 = 0 - windows always recievs mouse events
 Returned value:
   * eax = previous value of mask
 Remarks:
@@ -2268,7 +2271,7 @@ Parameters:
 Returned value:
   * eax = -1 - error (there is too many threads)
   * otherwise eax = TID - thread identifier
-    </UL>     
+    </UL>
 
 ======================================================================
 === Function 52, subfunction 0 - get network driver configuration. ===
@@ -2346,7 +2349,7 @@ Remarks:
     performs no checks on correctness.
 
 ======================================================================
- Function 52, subfunction 8 - read data from the network output queue. 
+ Function 52, subfunction 8 - read data from the network output queue.
 ======================================================================
 Parameters:
   * eax = 52 - function number
@@ -2625,7 +2628,7 @@ Returned value:
   * ebx destroyed
 
 ======================================================================
-= Function 53, subfunction 255 - debug information of network driver. 
+= Function 53, subfunction 255 - debug information of network driver.
 ======================================================================
 Parameters:
   * eax = 53 - function number
@@ -2656,7 +2659,7 @@ Possible values for ecx:
   * 6: status of packet driver, 0=inactive, nonzero=active
 
 ======================================================================
- Function 55, subfunction 55 - begin to play data on built-in speaker. 
+ Function 55, subfunction 55 - begin to play data on built-in speaker.
 ======================================================================
 Parameters:
   * eax = 55 - function number
@@ -2801,7 +2804,7 @@ Remarks:
       that he requested 1;
     * if one requests more than 14 blocks or starting block is
       not less than 14, function returns eax=5 (not found) и ebx=-1;
-    * size of ramdisk root folder is 14 blocks, 
+    * size of ramdisk root folder is 14 blocks,
       0x1C00=7168 байт; but function returns ebx=0
       (except of the case of previous item);
     * strangely enough, it is possible to read 14th block (which
@@ -2863,8 +2866,8 @@ Remarks:
   * Block size is 512 bytes; function reads one block.
   * Do not depend on returned value, it can be changed
     in future versions.
-  * Function requires that LBA-access to devices is enabled by 
-    subfunction 11 of function 21. To check this one can use 
+  * Function requires that LBA-access to devices is enabled by
+    subfunction 11 of function 21. To check this one can use
     subfunction 11 of function 26.
   * LBA-read of floppy is not supported.
   * Function reads data on physical hard drive; if for any reason
