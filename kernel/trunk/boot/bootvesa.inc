@@ -243,7 +243,8 @@ calc_vmodes_table:
         mov     [es:bx+4], ax              ; +4[2] : attributes
 
         cmp     [s_vesa.ver], '2'
-        jb      .lp1
+;        jb      .lp1
+        jb      @f    ; We do not use Vesa 1.2 mode is now
 
         or      cx, 0x4000 ; use LFB
 .lp1:
@@ -735,8 +736,8 @@ set_vmode:
         je      .mode0x12_0x13
 
 
-        cmp     byte [s_vesa.ver], '2'
-        jb      .vesa12
+;        cmp     byte [s_vesa.ver], '2'
+;        jb      .vesa12
 
 ;  VESA 2 and Vesa 3
 
@@ -769,23 +770,21 @@ set_vmode:
 
 ;  VESA 1.2 PM BANK SWITCH ADDRESS
 
-.vesa12:
-
-
-        mov     ax, 0x4f0A
-        xor     bx, bx
-        int     0x10
-        xor     eax, eax
-        xor     ebx, ebx
-        mov     ax, es
-        shl     eax, 4
-        mov     bx, di
-        add     eax, ebx
-        movzx   ebx, word[es:di]
-        add     eax, ebx
-        push    0x0000
-        pop     es
-        mov     [es:0x9014], eax
+;.vesa12:
+;        mov     ax, 0x4f0A
+;        xor     bx, bx
+;        int     0x10
+;        xor     eax, eax
+;        xor     ebx, ebx
+;        mov     ax, es
+;        shl     eax, 4
+;        mov     bx, di
+;        add     eax, ebx
+;        movzx   ebx, word[es:di]
+;        add     eax, ebx
+;        push    0x0000
+;        pop     es
+;        mov     [es:0x9014], eax
   .exit:
         ret
 

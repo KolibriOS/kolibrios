@@ -388,8 +388,8 @@ high_code:
         mov     [screen_workarea.bottom], eax
         movzx   eax, word [BOOT_VAR+0x9008]; screen mode
         mov     [SCR_MODE], eax
-        mov     eax, [BOOT_VAR+0x9014]    ; Vesa 1.2 bnk sw add
-        mov     [BANK_SWITCH], eax
+;        mov     eax, [BOOT_VAR+0x9014]    ; Vesa 1.2 bnk sw add
+;        mov     [BANK_SWITCH], eax
         mov     [BytesPerScanLine], word 640*4      ; Bytes PerScanLine
         cmp     [SCR_MODE], word 0x13       ; 320x200
         je      @f
@@ -417,30 +417,32 @@ high_code:
 
         cmp     [SCR_MODE], word 0100000000000000b
         jge     setvesa20
-        cmp     [SCR_MODE], word 0x13
+        cmp     [SCR_MODE], word 0x13  ; EGA 320*200 256 colors
         je      v20ga32
-        mov     [PUTPIXEL], dword Vesa12_putpixel24 ; Vesa 1.2
-        mov     [GETPIXEL], dword Vesa12_getpixel24
-        cmp     [ScreenBPP], byte 24
-        jz      ga24
-        mov     [PUTPIXEL], dword Vesa12_putpixel32
-        mov     [GETPIXEL], dword Vesa12_getpixel32
-      ga24:
         jmp     v20ga24
-      setvesa20:
+;        mov     [PUTPIXEL], dword Vesa12_putpixel24 ; Vesa 1.2
+;        mov     [GETPIXEL], dword Vesa12_getpixel24
+;        cmp     [ScreenBPP], byte 24
+;        jz      ga24
+;        mov     [PUTPIXEL], dword Vesa12_putpixel32
+;        mov     [GETPIXEL], dword Vesa12_getpixel32
+;      ga24:
+;        jmp     v20ga24
+setvesa20:
         mov     [PUTPIXEL], dword Vesa20_putpixel24 ; Vesa 2.0
         mov     [GETPIXEL], dword Vesa20_getpixel24
         cmp     [ScreenBPP], byte 24
         jz      v20ga24
-      v20ga32:
+v20ga32:
         mov     [PUTPIXEL], dword Vesa20_putpixel32
         mov     [GETPIXEL], dword Vesa20_getpixel32
-      v20ga24:
+        jmp     no_mode_0x12
+v20ga24:
         cmp     [SCR_MODE], word 0x12               ; 16 C VGA 640x480
         jne     no_mode_0x12
         mov     [PUTPIXEL], dword VGA_putpixel
         mov     [GETPIXEL], dword Vesa20_getpixel32
-      no_mode_0x12:
+no_mode_0x12:
 
 ; -------- Fast System Call init ----------
 ; Intel SYSENTER/SYSEXIT (AMD CPU support it too)
@@ -3640,17 +3642,17 @@ no_mask_io:
 align 4
 drawbackground:
         inc     [mouse_pause]
-        cmp     [SCR_MODE], word 0x12
-        je      dbrv20
-     dbrv12:
-        cmp     [SCR_MODE], word 0100000000000000b
-        jge     dbrv20
-        cmp     [SCR_MODE], word 0x13
-        je      dbrv20
-        call    vesa12_drawbackground
-        dec     [mouse_pause]
-        call    [draw_pointer]
-        ret
+;        cmp     [SCR_MODE], word 0x12
+;        je      dbrv20
+;     dbrv12:
+;        cmp     [SCR_MODE], word 0100000000000000b
+;        jge     dbrv20
+;        cmp     [SCR_MODE], word 0x13
+;        je      dbrv20
+;        call    vesa12_drawbackground
+;        dec     [mouse_pause]
+;        call    [draw_pointer]
+;        ret
      dbrv20:
         cmp     [BgrDrawMode], dword 1
         jne     bgrstr
@@ -3689,14 +3691,14 @@ sys_putimage:
 sys_putimage_bpp:
 ;        call    [disable_mouse] ; this will be done in xxx_putimage
 ;        mov     eax, vga_putimage
-        cmp     [SCR_MODE], word 0x12
-        jz      @f   ;.doit
-        mov     eax, vesa12_putimage
-        cmp     [SCR_MODE], word 0100000000000000b
-        jae     @f
-        cmp     [SCR_MODE], word 0x13
-        jnz     .doit
-@@:
+;        cmp     [SCR_MODE], word 0x12
+;        jz      @f   ;.doit
+;        mov     eax, vesa12_putimage
+;        cmp     [SCR_MODE], word 0100000000000000b
+;        jae     @f
+;        cmp     [SCR_MODE], word 0x13
+;        jnz     .doit
+;@@:
         mov     eax, vesa20_putimage
 .doit:
         inc     [mouse_pause]
@@ -3981,18 +3983,18 @@ __sys_drawbar:
   .forced:
         inc     [mouse_pause]
 ;        call    [disable_mouse]
-        cmp     [SCR_MODE], word 0x12
-        je      dbv20
-   sdbv20:
-        cmp     [SCR_MODE], word 0100000000000000b
-        jge     dbv20
-        cmp     [SCR_MODE], word 0x13
-        je      dbv20
-        call    vesa12_drawbar
-        dec     [mouse_pause]
-        call    [draw_pointer]
-        ret
-  dbv20:
+;        cmp     [SCR_MODE], word 0x12
+;        je      dbv20
+;   sdbv20:
+;        cmp     [SCR_MODE], word 0100000000000000b
+;        jge     dbv20
+;        cmp     [SCR_MODE], word 0x13
+;        je      dbv20
+;        call    vesa12_drawbar
+;        dec     [mouse_pause]
+;        call    [draw_pointer]
+;        ret
+;  dbv20:
         call    vesa20_drawbar
         dec     [mouse_pause]
         call    [draw_pointer]

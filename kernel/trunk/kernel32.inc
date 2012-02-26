@@ -194,7 +194,7 @@ include "sound/playnote.inc" ; player Note for Speaker PC
 
 ; display
 
-include "video/vesa12.inc"   ; Vesa 1.2 functions
+;include "video/vesa12.inc"   ; Vesa 1.2 functions
 include "video/vesa20.inc"   ; Vesa 2.0 functions
 include "video/blitter.inc"  ;
 include "video/vga.inc"      ; VGA 16 color functions
