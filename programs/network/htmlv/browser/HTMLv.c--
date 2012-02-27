@@ -2,17 +2,16 @@
 //Copyright 2007-2009 by Veliant & Leency
 //Asper, Lrz, Nable, lev.
 
-#include "../lib/kolibri.h--"
-#include "../lib/file_system.h--"
-#include "include/some_code.h--"
-#include "img/toolbar_icons.c--"
-#include "img/URLgoto.txt";
+#include "..\lib\kolibri.h--"
+#include "..\lib\file_system.h--"
+#include "img\toolbar_icons.c"
+#include "img\URLgoto.txt";
 //Asper
-#include "../lib/mem.h--"
-#include "../lib/libio_lib.h--"
-#include "../lib/libimg_lib.h--"
-#include "../lib/edit_box_lib.h--"
-#include "../lib/dll.h--"
+#include "..\lib\mem.h--"
+#include "..\lib\libio_lib.h--"
+#include "..\lib\libimg_lib.h--"
+#include "..\lib\edit_box_lib.h--"
+#include "..\lib\dll.h--"
 
 //переменные
 char URL[4096]="/sys/index.htm",
@@ -30,10 +29,10 @@ int za_kadrom,
 
 edit_box edit1= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,248,#editURL,#mouse_dd,2,19,19};
 
-
-#include "TWB.h--"
-
 proc_info Form;
+
+
+#include "TWB.h"
 
 
 void main()
@@ -91,10 +90,14 @@ void main()
 					IF (btn<>za_kadrom) WB1.ParseHTML(buf, filesize); //чтоб лишний раз не перерисовывать
 					m.get();
 				}				
-				BREAK;
+				break;
 			case evButton:
 				btn=GetButtonID();
-				IF (btn==1) ExitProcess();
+				IF (btn==1)
+				{
+					KillProcess(downloader_id);
+					ExitProcess();
+				}
 				ELSE
 				{
 					WB1.Scan(btn);
@@ -117,9 +120,7 @@ void main()
 
 void Draw_Window()
 {
-	WindowRedrawStatus(1);
 	DefineAndDrawWindow(215,100,640,480,0x73,0x00E4DFE1,0,0,0);
-	WindowRedrawStatus(2);
 	
 	GetProcessInfo(#Form, SelfInfo);
 	IF (Form.height==GetSkinWidth()+3) //если свернуто в заголовок, ничего не рисуем
@@ -131,6 +132,8 @@ void Draw_Window()
 	IF (Form.width<280) MoveSize(OLD,OLD,280,OLD);
 	
 	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
+	if (GetProcessSlot(downloader_id)<>0) PutImage(#stop_btn,24,24,88,10);
+	
 	DrawBar(200,0,onLeft(200,9),43,0xE4DFE1); //закрашиваем фон под тулбаром
 	DrawBar(0,42,onLeft(5,4),1,0xE2DBDC); //выпуклость
 	DrawBar(0,43,onLeft(5,4),1,0xD2CED0); //выпуклость

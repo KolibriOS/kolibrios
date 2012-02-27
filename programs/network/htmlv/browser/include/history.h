@@ -1,4 +1,3 @@
-
 struct UrlsHistory {
 	byte UrlHistory[6000];	
 	void AddUrl();
@@ -10,6 +9,9 @@ UrlsHistory BrowserHistory;
 
 void UrlsHistory::GoBack()
 {
+	//WriteDebug(#UrlHistory);
+	
+	
 	j = strlen(#UrlHistory);
 	WHILE(UrlHistory[j] <>'|') && (j > 0) j--;
 	IF (j > 0) UrlHistory[j] = 0x00;
@@ -28,10 +30,7 @@ void UrlsHistory::AddUrl()
 	copystr(#URL, #UrlHistory + strlen(#UrlHistory));
 }
 
-
 dword UrlsHistory::CurrentUrl()
 {
 	EAX=#UrlHistory + find_symbol(#UrlHistory, '|');
 }
-
-

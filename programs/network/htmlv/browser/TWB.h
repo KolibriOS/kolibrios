@@ -4,6 +4,10 @@
 //идея - левые файлы открывать соответствующими прогами
 //ol - циферки
 
+//из хттп-лоад в реадхтмл
+
+//BrowserHistory.AddUrl();  -> проверка не = ли новый адрес старому и добавить поумолчанию везде
+
 int	downloader_id;
 
 dword j,
@@ -15,7 +19,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 0.71";
+ char version[]=" Text-based Browser 0.75";
 
 
 struct TWebBrowser {
@@ -50,29 +54,29 @@ char line[330],
 	options[1000];
 
 
-#include "include\history.h--"
-#include "include\colors.h--"
-#include "include\unicode_tags.h--"
+#include "include\history.h"
+#include "include\colors.h"
+#include "include\unicode_tags.h"
+#include "include\some_code.h"
+
 
 void TWebBrowser::Scan(dword id) {
 	if (id > 399)
 	{
-		j = 0;
-		FOR(i = 0; i <= id - 401; i++) {
-			do j++;
-			while (page_links[j] <>'|');
-		}
-		page_links[j] = 0x00;
-		copystr(#page_links[find_symbol(#page_links, '|')], #URL);
-		
 		//Lee 21.02 {
 		IF (URL[0] == '#') {  //мы не умеем переходить по ссылке внутри документа. Пока что...
 			copystr(#editURL, #URL);
 			return;
 		}
-		URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка, лучше, чем ничего (хабр, например, будет работать)
 
+		GetURLfromPageLinks(id);
+		
+		URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка, лучше, чем ничего (хабр, например, будет работать)
+		
 		GetNewUrl();
+
+		BrowserHistory.AddUrl(); 
+
 		
 		if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
 		//Lee 21.02 }
@@ -101,8 +105,16 @@ void TWebBrowser::Scan(dword id) {
 		case 054: //F5
 			IF(edit1.flags == 66) break;
 		case REFRESH:
+			if (GetProcessSlot(downloader_id)<>0)
+			{
+				KillProcess(downloader_id);
+				Pause(20);
+				Draw_Window();
+				return;
+			}
 			copystr(#URL, #editURL);
-			Draw_Window();
+			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
+			ShowPage(#URL);
 			return;
 		case 014: //Ctrl+N новое окно
 		case 020: //Ctrl+T новая вкладка
@@ -165,6 +177,7 @@ void TWebBrowser::Scan(dword id) {
 
 void GetNewUrl(){
   IF (!strcmp(get_URL_part(2),"./")) copystr(#URL+1,#URL);
+  
 	//IF (!strcmp(get_URL_part(3),"../"))
 	//{
  	//	//DrawTitle(#URL+7);
@@ -185,12 +198,19 @@ void GetNewUrl(){
 	}
 }
 
+
 void HttpLoad()
 {
+	za_kadrom = 0;
+	copystr(#URL, #editURL);
+
+	
+	KillProcess(downloader_id); //убиваем старый процесс
 	DeleteFile(#download_path);
 	IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
 	downloader_id = RunProgram("/sys/network/downloader", #URL);
 	IF (downloader_id<0) RunProgram("@notify", "Error running Downloader. Internet unavilable.");
+	Draw_Window();
 }
 
 	
@@ -202,7 +222,7 @@ void ReadHtml()
 		file_size stdcall (#URL);
 	
 	filesize = EBX;
-	if (!filesize) /*{Pause(200); ReadHtml();}*/ return; //Lee 22.09
+	if (!filesize) /*{Pause(200); ReadHtml();}*/ return;
 	mem_Free(buf);
 	buf = mem_Alloc(filesize);
 	if (!strcmp(get_URL_part(5),"http:"))) 
@@ -217,31 +237,28 @@ void TWebBrowser::ShowPage(dword adress) {
 	max_kolvo_stolbcov = width - 30 / 6;
 	max_kolvo_strok = height - 3 / 10 - 2;
 	copystr(#version, #header);
-	IF (!WindowRePaint) {
-		za_kadrom = 0;
-		copystr(#URL, #editURL);
-		BrowserHistory.AddUrl();
-	}
 	edit1.size = edit1.pos = strlen(#editURL);
 	edit_box_draw stdcall(#edit1); //рисуем строку адреса
-
+	
 	//LETS_LOAD
 	ReadHtml();
-	
-	IF (!filesize) return; //Lee 22.09
-	
-	wintodos(buf);
-	ParseHTML(buf, filesize);
-	IF(!strlen(buf)) {
-		IF (strcmp(get_URL_part(5),"http:")==0)
+
+	if (!filesize)
+	{
+		DrawBar(left, top, width+2, height, 0xFFFFFF); //закрашиваем всё донизу
+		if (GetProcessSlot(downloader_id)<>0) WriteText(left + 10, top + 18, 0x80, 0, "Loading...", 0);
+		else
 		{
-			PutImage(#stop_btn, 24, 24, 88, 10);
-			WriteText(left + 10, top + 18, 0x80, 0, "Loading...", 0);
-		}
-		ELSE
 			WriteText(left + 10, top + 18, 0x80, 0, "Page not found. May be, URL contains some errors.", 0);
+			if (!strcmp(get_URL_part(5),"http:"))) WriteText(left + 10, top + 32, 0x80, 0, "Or Internet unavilable for your configuration.", 0);
+		}
+		DrawTitle(#version); //?
+		return;
 	}
 
+	DrawBar(left, top, width-15, 15, 0xFFFFFF); //закрашиваем первую строку
+	wintodos(buf);
+	ParseHTML(buf, filesize);
 	IF (!strcmp(#version, #header)) DrawTitle(#header);
 }
 
@@ -263,7 +280,6 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 	IF(!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1; //зачётное отображение текста 
 	//IF(!strcmp(#URL + strlen(#URL) - 4, ".rtf")) pre_text = 1;
 	IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
-	IF(za_kadrom == 0) || (WindowRePaint) DrawBar(left, top, width - 15, 15, 0xFFFFFF); //закрашиваем первую строку
 	for (; buf + fsize > bword; bword++;) {
 	  bukva = ESBYTE[bword];
 	  switch (bukva) {
@@ -688,6 +704,10 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			img_draw stdcall (image,left1-5,top1+10,w, h,0,img_za_kadrom);
 			DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, 0xFFFFFF);
         }
+		/*else
+		{
+			IF (strcmp(#parametr,"alt=")==0) copystr(#options,#line+strlen(#line));
+		}*/
 		return;
 	}
 
@@ -740,7 +760,7 @@ void TWebBrowser::DrawScroller() {
 	DrawFlatButton(left + width - 15, top, 16, 16, ID1, 0xE4DFE1, "\x18");
 
 	IF(count <= max_kolvo_strok) {
-		DrawBar(left + width - 14, top + 17, 16, height - 34, 0xCED0D0);
+		DrawBar(left + width - 14, top, 16, height - 17, 0xCED0D0);
 		return;
 	}
 

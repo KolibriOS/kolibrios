@@ -56,3 +56,15 @@ shift=-2;
   }
   mem_Free(italic_buf);
 }
+
+void GetURLfromPageLinks(int id) //столько бреда, потому что нельзя создать массив стрингов
+{
+	j = 0;
+	for (i = 0; i <= id - 401; i++)
+	{
+		do j++;
+		while (page_links[j] <>'|');
+	}
+	page_links[j] = 0x00;
+	copystr(#page_links[find_symbol(#page_links, '|')], #URL);
+}
