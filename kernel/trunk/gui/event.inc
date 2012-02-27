@@ -441,6 +441,7 @@ get_event_for_app:                                 ;; used from f10,f11,f23
         shl     edi, 5
         add     edi, CURRENT_TASK     ; edi is assumed as [TASK_BASE]
         mov     ecx, [edi+TASKDATA.event_mask]
+        and     ecx, 0x7FFFFFFF
 .loop: ; пока не исчерпаем все биты маски
         bsr     eax, ecx       ; находим ненулевой бит маски (31 -> 0)
         jz      .no_events     ; исчерпали все биты маски, но ничего не нашли ???

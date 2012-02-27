@@ -2066,7 +2066,7 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
         call    syscall_display_settings._.redraw_whole_screen
 .nowindowdeactivate:
         ret
- ;------------------------------------------------------------------------------   
+ ;------------------------------------------------------------------------------
 sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
         cmp     ecx, 2
         jb      .nowindowactivate
@@ -3079,7 +3079,10 @@ nocpustart:
         cmp     [mouse_active], 1
         jne     mouse_not_active
         mov     [mouse_active], 0
+
         xor     edi, edi
+        mov     ebx, CURRENT_TASK
+
         mov     ecx, [TASK_COUNT]
         movzx   eax, word [WIN_POS + ecx*2]     ; active window
         shl     eax, 8
@@ -3087,13 +3090,15 @@ nocpustart:
 align 4
 .set_mouse_event:
         add     edi, 256
-        test    [edi+SLOT_BASE+APPDATA.event_filter], 1
-        jz      @F
+        add     ebx, 32
+        test    [ebx+TASKDATA.event_mask], 0x80000000
+        jz      .set
 
         cmp     eax, edi                        ; skip if filtration active
-        jne     .set_mouse_event
-@@:
+        jne     .skip
+.set:
         or      [edi+SLOT_BASE+APPDATA.event_mask], 100000b
+.skip:
         loop    .set_mouse_event
 
 mouse_not_active:
@@ -3363,7 +3368,7 @@ delay_ms:     ; delay in 1/1000 sec
 
         ret
 
-
+align 4
 set_app_param:
         mov     edi, [TASK_BASE]
         mov     eax, ebx
