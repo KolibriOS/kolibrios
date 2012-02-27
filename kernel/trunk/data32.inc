@@ -156,8 +156,8 @@ dll_list:
  .bk           dd dll_list
  .fd           dd dll_list
 
-MAX_DEFAULT_DLL_ADDR = 0x20000000
-MIN_DEFAULT_DLL_ADDR = 0x10000000
+MAX_DEFAULT_DLL_ADDR = 0x80000000
+MIN_DEFAULT_DLL_ADDR = 0x70000000
 dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 ; supported videomodes

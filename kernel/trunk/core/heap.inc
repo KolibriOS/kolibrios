@@ -578,7 +578,7 @@ restore block_flags
 
 ;;;;;;;;;;;;;;      USER     ;;;;;;;;;;;;;;;;;
 
-HEAP_TOP  equ 0x5FC00000
+HEAP_TOP  equ 0x80000000
 
 align 4
 proc init_heap
