@@ -1878,9 +1878,9 @@ Parameters:
   * eax = 40 - function number
   * ebx = mask: bit i corresponds to event i+1 (see list of events)
     (set bit permits notice on event)
-    bit 3: mouse events filtration
-    bit 3 = 1 - inactive window do not receive mouse events
-    bit 3 = 0 - windows always recievs mouse events
+    bit 31: mouse events filtration
+    bit 31 = 1 - inactive window do not receive mouse events
+    bit 31 = 0 - windows always recievs mouse events
 Returned value:
   * eax = previous value of mask
 Remarks:
