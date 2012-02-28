@@ -3086,20 +3086,44 @@ nocpustart:
         mov     ecx, [TASK_COUNT]
         movzx   eax, word [WIN_POS + ecx*2]     ; active window
         shl     eax, 8
+        push    eax
+
+        movzx   eax, word [MOUSE_X]
+        movzx   edx, word [MOUSE_Y]
 
 align 4
 .set_mouse_event:
         add     edi, 256
         add     ebx, 32
         test    [ebx+TASKDATA.event_mask], 0x80000000
+        jz      .pos_filter
+
+        cmp     edi, [esp]                      ; skip if filtration active
+        jne     .skip
+
+.pos_filter:
+        test    [ebx+TASKDATA.event_mask], 0x40000000
         jz      .set
 
-        cmp     eax, edi                        ; skip if filtration active
-        jne     .skip
+        mov     esi, [ebx-twdw+WDATA.box.left]
+        cmp     eax, esi
+        jb      .skip
+        add     esi, [ebx-twdw+WDATA.box.width]
+        cmp     eax, esi
+        ja      .skip
+
+        mov     esi, [ebx-twdw+WDATA.box.top]
+        cmp     edx, esi
+        jb      .skip
+        add     esi, [ebx-twdw+WDATA.box.height]
+        cmp     edx, esi
+        ja      .skip
 .set:
         or      [edi+SLOT_BASE+APPDATA.event_mask], 100000b
 .skip:
         loop    .set_mouse_event
+
+        pop     eax
 
 mouse_not_active:
         cmp     byte[BACKGROUND_CHANGED], 0

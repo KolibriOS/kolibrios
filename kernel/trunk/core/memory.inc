@@ -166,6 +166,7 @@ proc free_page
         ret
 endp
 
+align 4
 proc map_io_mem stdcall, base:dword, size:dword, flags:dword
 
         push    ebx

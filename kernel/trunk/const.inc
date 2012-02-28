@@ -513,6 +513,7 @@ struct  display_t
         move_cursor     dd ?
         restore_cursor  dd ?
         disable_mouse   dd ?
+        mask_seqno      dd ?
 ends
 
 struct  BOOT_DATA
