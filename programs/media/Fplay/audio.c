@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <winlib.h>
 #include "sound.h"
 #include "fplay.h"
 
@@ -78,8 +79,6 @@ int decode_audio(AVCodecContext  *ctx, queue_t *qa)
     AVPacket   pkt;
     AVPacket    pkt_tmp;
 
-    uint8_t    *audio_data;
-    int         audio_size;
     int         len;
     int         data_size=0;
 

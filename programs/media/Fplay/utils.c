@@ -5,6 +5,7 @@
 #include <libswscale/swscale.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <winlib.h>
 #include "fplay.h"
 
 extern uint32_t  hw2d ;

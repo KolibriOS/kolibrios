@@ -3,6 +3,9 @@
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
+#include <libavutil/imgutils.h>
+#include "system.h"
+#include <winlib.h>
 #include "sound.h"
 #include "fplay.h"
 
@@ -21,7 +24,7 @@ struct SwsContext *cvt_ctx = NULL;
 int vfx    = 0;
 int dfx    = 0;
 
-render_t   *render;
+render_t   *main_render;
 
 int width;
 int height;
@@ -43,11 +46,14 @@ int init_video(AVCodecContext *ctx)
 
     printf("w = %d  h = %d\n\r", width, height);
 
-//  __asm__ __volatile__("int3");
+//    __asm__ __volatile__("int3");
 
-    render = create_render(ctx->width, ctx->height,
+    main_render = create_render(ctx->width, ctx->height,
                            ctx->pix_fmt, HW_BIT_BLIT|HW_TEX_BLIT);
-    if( render == NULL)
+//    render = create_render(ctx->width, ctx->height,
+//                           ctx->pix_fmt, 0);
+//
+    if( main_render == NULL)
     {
         printf("Cannot create render\n\r");
         return 0;
@@ -85,14 +91,11 @@ int init_video(AVCodecContext *ctx)
     return 1;
 };
 
-int frameFinished=0;
-static int frame_count;
-
 int decode_video(AVCodecContext  *ctx, queue_t *qv)
 {
     AVPacket   pkt;
     double     pts;
-    double av_time;
+    int frameFinished;
 
     if(frames[dfx].ready != 0 )
         return 1;
@@ -130,7 +133,8 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
 
         dst_pic = &frames[dfx].picture;
 
-        av_image_copy(dst_pic->data, dst_pic->linesize, Frame->data,
+        av_image_copy(dst_pic->data, dst_pic->linesize,
+                      (const uint8_t**)Frame->data,
                       Frame->linesize, ctx->pix_fmt, ctx->width, ctx->height);
 
         frames[dfx].pts = pts*1000.0;
@@ -147,102 +151,116 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
 extern volatile uint32_t status;
 rect_t     win_rect;
 
-int check_events()
+
+int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 {
-    int ev;
+    window_t  *win;
 
-    ev = check_os_event();
+    win = (window_t*)ctrl;
 
-    switch(ev)
+    switch(msg)
     {
-       case 1:
-            render_adjust_size(render);
-            BeginDraw();
-            DrawWindow(0,0,0,0, NULL, 0x000000,0x73);
-            EndDraw();
+        case MSG_SIZE:
+            //printf("MSG_SIZE\n");
+            render_adjust_size(main_render, win);
             break;
 
-        case 3:
-            if(get_os_button()==1)
-                status = 0;
+        case MSG_DRAW_CLIENT:
+            render_draw_client(main_render);
             break;
+
+        case MSG_COMMAND:
+            switch((short)arg1)
+            {
+                case ID_CLOSE:
+                    exit(0);
+            };
+            break;
+
+        default:
+            def_window_proc(ctrl,msg,arg1,arg2);
     };
-    return 1;
-}
+    return 0;
+};
 
+void render_time(render_t *render)
+{
+    double ctime;
+    double fdelay;
+
+    if(status == 0)
+    {
+        render->win->win_command = WIN_CLOSED;
+        return;
+    };
+
+    if(frames[vfx].ready == 1 )
+    {
+        ctime = get_master_clock();
+        fdelay = (frames[vfx].pts - ctime);
+
+//            printf("pts %f time %f delay %f\n",
+//                    frames[vfx].pts, ctime, fdelay);
+
+        if(fdelay < 0.0 )
+        {
+            int  next_vfx;
+            fdelay = 0;
+            next_vfx = (vfx+1) & 3;
+            if( frames[next_vfx].ready == 1 )
+            {
+                if(frames[next_vfx].pts <= ctime)
+                {
+                    frames[vfx].ready = 0;                  // skip this frame
+                    vfx++;
+                    vfx&= 3;
+                }
+                else
+                {
+                    if( (frames[next_vfx].pts - ctime) <
+                        ( ctime - frames[vfx].pts) )
+                    {
+                        frames[vfx].ready = 0;                  // skip this frame
+                        vfx++;
+                        vfx&= 3;
+                        fdelay = (frames[next_vfx].pts - ctime);
+                    }
+                }
+            };
+        };
+
+        if(fdelay > 10.0)
+        {
+            delay( (uint32_t)(fdelay/10.0));
+        };
+
+        main_render->draw(main_render, &frames[vfx].picture);
+        frames[vfx].ready = 0;
+        vfx++;
+        vfx&= 3;
+    };
+}
 
 extern char *movie_file;
 
 int video_thread(void *param)
 {
-    rect_t rc;
-    AVCodecContext *ctx = param;
+    window_t    *MainWindow;
 
-    BeginDraw();
-    DrawWindow(10, 10, width+9, height+26, movie_file, 0x000000,0x73);
-    EndDraw();
+    init_winlib();
 
-    render_adjust_size(render);
+    MainWindow = create_window(movie_file,0,
+                               10,10,width+14,height+29,MainWindowProc);
 
-    while( status != 0)
-    {
-        double ctime;
-        double fdelay;
+//    printf("MainWindow %x\n", MainWindow);
 
-        check_events();
+    main_render->win = MainWindow;
 
-        if(frames[vfx].ready == 1 )
-        {
-            ctime = get_master_clock();
-            fdelay = (frames[vfx].pts - ctime);
+    show_window(MainWindow, NORMAL);
+    run_render(MainWindow, main_render);
 
-//            printf("pts %f time %f delay %f\n",
-//                    frames[vfx].pts, ctime, fdelay);
-
-            if(fdelay < 0.0 )
-            {
-                int  next_vfx;
-                fdelay = 0;
-                next_vfx = (vfx+1) & 3;
-                if( frames[next_vfx].ready == 1 )
-                {
-                    if(frames[next_vfx].pts <= ctime)
-                    {
-                        frames[vfx].ready = 0;                  // skip this frame
-                        vfx++;
-                        vfx&= 3;
-                     }
-                    else
-                    {
-                        if( (frames[next_vfx].pts - ctime) <
-                            ( ctime - frames[vfx].pts) )
-                        {
-                            frames[vfx].ready = 0;                  // skip this frame
-                            vfx++;
-                            vfx&= 3;
-                            fdelay = (frames[next_vfx].pts - ctime);
-                        }
-                    }
-                };
-            };
-
-            if(fdelay > 10.0)
-            {
-                delay( (uint32_t)(fdelay/10.0));
-            };
-
-//            blit_bitmap(&frames[vfx].bitmap, 5, 22, width, height);
-//                    frames[vfx].frame->linesize[0]);
-            render->draw(render, &frames[vfx].picture);
-            frames[vfx].ready = 0;
-            vfx++;
-            vfx&= 3;
-        }
-        else
-        {
-            yield();
-        };
-    };
+//    printf("exit thread\n");
+    status = 0;
     return 0;
 };
 
@@ -253,10 +271,12 @@ void draw_sw_picture(render_t *render, AVPicture *picture);
 render_t *create_render(uint32_t width, uint32_t height,
                         uint32_t ctx_format, uint32_t flags)
 {
-    render_t *ren;
+    render_t *render;
 
-    render = (render_t*)malloc(sizeof(*ren));
-    memset(ren, 0, sizeof(*ren));
+//    __asm__ __volatile__("int3");
+
+    render = (render_t*)malloc(sizeof(render_t));
+    memset(render, 0, sizeof(render_t));
 
     render->ctx_width  = width;
     render->ctx_height = height;
@@ -285,11 +305,51 @@ int render_set_size(render_t *render, int width, int height)
 {
     int i;
 
-    render->win_width  = width;
-    render->win_height = height;
-    render->win_state = NORMAL;
+    render->layout = 0;
+    render->rcvideo.l = 0;
+    render->rcvideo.t = 0;
+    render->rcvideo.r = width;
+    render->rcvideo.b = height;
 
-//    printf("%s %dx%d\n",__FUNCTION__, width, height);
+    if( render->win_height > height )
+    {
+        int yoffs;
+        yoffs = (render->win_height-height)/2;
+        if(yoffs)
+        {
+            render->rctop.t = 0;
+            render->rctop.b = yoffs;
+            render->rcvideo.t  = yoffs;
+            render->layout |= HAS_TOP;
+        }
+
+        yoffs = render->win_height-(render->rcvideo.t+render->rcvideo.b);
+        if(yoffs)
+        {
+            render->rcbottom.t = render->rcvideo.t+render->rcvideo.b;
+            render->rcbottom.b = yoffs;
+            render->layout |= HAS_BOTTOM;
+        }
+    }
+
+    if( render->win_width > width )
+    {
+        int xoffs;
+        xoffs = (render->win_width-width)/2;
+        if(xoffs)
+        {
+            render->rcleft.r  = xoffs;
+            render->rcvideo.l = xoffs;
+            render->layout |= HAS_LEFT;
+        }
+        xoffs = render->win_width-(render->rcvideo.l+render->rcvideo.r);
+        if(xoffs)
+        {
+            render->rcright.l = render->rcvideo.l+render->rcvideo.r;
+            render->rcright.r = xoffs;
+            render->layout |= HAS_RIGHT;
+        }
+    };
 
     if(render->state == EMPTY)
     {
@@ -333,31 +393,22 @@ int render_set_size(render_t *render, int width, int height)
     return 0;
 };
 
-void render_adjust_size(render_t *render)
+void render_adjust_size(render_t *render, window_t *win)
 {
-    char proc_info[1024];
-
     uint32_t right, bottom, new_w, new_h;
     uint32_t s, sw, sh;
     uint8_t  state;
 
-    get_proc_info(proc_info);
 
-    right  = *(uint32_t*)(proc_info+62)+1;
-    bottom = *(uint32_t*)(proc_info+66)+1;
-    state  = *(uint8_t*)(proc_info+70);
+    right  = win->w;
+    bottom = win->h-29;
+    render->win_state  = win->win_state;
 
-    if(state & 2)
-    {   render->win_state = MINIMIZED;
+    if(render->win_state == MINIMIZED)
         return;
-    }
-    if(state & 4)
-    {
-        render->win_state = ROLLED;
-        return;
-    };
 
-    render->win_state = NORMAL;
+    if(render->win_state == ROLLED)
+        return;
 
     if( right  == render->win_width &&
         bottom == render->win_height)
@@ -366,7 +417,6 @@ void render_adjust_size(render_t *render)
     new_w = bottom*render->ctx_width/render->ctx_height;
     new_h = right*render->ctx_height/render->ctx_width;
 
-//    printf("right %d bottom %d\n", right, bottom);
 //    printf("new_w %d new_h %d\n", new_w, new_h);
 
     s  = right * bottom;
@@ -383,22 +433,21 @@ void render_adjust_size(render_t *render)
         new_w = 64;
         new_h = 64*render->ctx_height/render->ctx_width;
     };
-    __asm__ __volatile__(
-    "int $0x40"
-     ::"a"(67), "b"(-1), "c"(-1),
-     "d"(new_w+9),"S"(new_h+26)
-     :"memory" );
-    render_set_size(render, new_w, new_h);
 
+    render->win_width  = win->w;
+    render->win_height = win->h-29;
+    render_set_size(render, new_w, new_h);
 };
 
 void draw_hw_picture(render_t *render, AVPicture *picture)
 {
     int      dst_width, dst_height;
-    uint8_t     *data[4];
+    bitmap_t   *bitmap;
+    uint8_t    *data[4];
     int      linesize[4];
+    int ret;
 
-    if(render->win_state != NORMAL)
+    if(render->win_state == ROLLED)
         return;
 
     if(render->caps & HW_TEX_BLIT)
@@ -421,26 +470,37 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
         printf("Cannot initialize the conversion context!\n");
         return ;
     };
-//    printf("sws_getCachedContext\n");
-    data[0] = render->bitmap[render->target].data;
-    data[1] = render->bitmap[render->target].data+1;
-    data[2] = render->bitmap[render->target].data+2;
-    data[3] = render->bitmap[render->target].data+3;
 
-    linesize[0] = render->bitmap[render->target].pitch;
-    linesize[1] = render->bitmap[render->target].pitch;
-    linesize[2] = render->bitmap[render->target].pitch;
-    linesize[3] = render->bitmap[render->target].pitch;
+    bitmap = &render->bitmap[render->target];
+
+    ret = lock_bitmap(bitmap);
+    if( ret != 0)
+    {
+        printf("Cannot lock the bitmap!\n");
+        return ;
+    }
+
+//    printf("sws_getCachedContext\n");
+    data[0] = bitmap->data;
+    data[1] = bitmap->data+1;
+    data[2] = bitmap->data+2;
+    data[3] = bitmap->data+3;
+
+    linesize[0] = bitmap->pitch;
+    linesize[1] = bitmap->pitch;
+    linesize[2] = bitmap->pitch;
+    linesize[3] = bitmap->pitch;
 
     sws_scale(cvt_ctx, (const uint8_t* const *)picture->data,
               picture->linesize, 0, render->ctx_height, data, linesize);
 //    printf("sws_scale\n");
 
-    blit_bitmap(&render->bitmap[render->target], 5, 22,
-                 render->win_width, render->win_height);
+    blit_bitmap(bitmap, render->rcvideo.l,
+                 29+render->rcvideo.t,
+                 render->rcvideo.r, render->rcvideo.b);
 //    printf("blit_bitmap\n");
 
-    delay(2);
+
     render->target++;
     render->target&= 3;
 }
@@ -450,13 +510,14 @@ void draw_sw_picture(render_t *render, AVPicture *picture)
     uint8_t     *data[4];
     int      linesize[4];
 
-    if(render->win_state != NORMAL)
+    if(render->win_state == MINIMIZED ||
+       render->win_state == ROLLED)
         return;
 
     cvt_ctx = sws_getCachedContext(cvt_ctx,
               render->ctx_width, render->ctx_height,
               render->ctx_format,
-              render->win_width, render->win_height,
+              render->rcvideo.r, render->rcvideo.b,
               PIX_FMT_BGRA, SWS_FAST_BILINEAR, NULL, NULL, NULL);
     if(cvt_ctx == NULL)
     {
@@ -478,11 +539,30 @@ void draw_sw_picture(render_t *render, AVPicture *picture)
     sws_scale(cvt_ctx, (const uint8_t* const *)picture->data,
               picture->linesize, 0, render->ctx_height, data, linesize);
 
-    blit_bitmap(&render->bitmap[0], 5, 22,
-                render->win_width, render->win_height);
+    blit_bitmap(&render->bitmap[0], render->rcvideo.l,
+                render->rcvideo.t+29,
+                render->rcvideo.r, render->rcvideo.b);
 }
 
+void render_draw_client(render_t *render)
+{
+    if(render->win_state == MINIMIZED ||
+       render->win_state == ROLLED)
+        return;
 
+    if(render->layout & HAS_TOP)
+        draw_bar(0, 29, render->win_width,
+                 render->rctop.b, 0);
+    if(render->layout & HAS_LEFT)
+        draw_bar(0, render->rcvideo.t+29, render->rcleft.r,
+                 render->rcvideo.b, 0);
+    if(render->layout & HAS_RIGHT)
+        draw_bar(render->rcright.l, render->rcvideo.t+29,
+                 render->rcright.r, render->rcvideo.b, 0);
+    if(render->layout & HAS_BOTTOM)
+        draw_bar(0, render->rcbottom.t+29,
+                 render->win_width, render->rcbottom.b, 0);
+}
 
 
 

@@ -10,6 +10,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <winlib.h>
 
 #include "sound.h"
 #include "fplay.h"
@@ -51,6 +52,8 @@ int main( int argc, char *argv[])
     movie_file = argv[1];
     /* register all codecs, demux and protocols */
 
+//    av_log_set_level(AV_LOG_INFO);
+
     avcodec_register_all();
     avdevice_register_all();
     av_register_all();
@@ -61,7 +64,7 @@ int main( int argc, char *argv[])
         return -1; // Couldn't open file
     };
 
-    printf("%s\n\r", __FUNCTION__);
+//    printf("%s\n\r", __FUNCTION__);
 
   // Retrieve stream information
     if(avformat_find_stream_info(pFormatCtx, NULL)<0)
@@ -72,7 +75,7 @@ int main( int argc, char *argv[])
 
 //    __asm__ __volatile__("int3");
 
- // dump_format(pFormatCtx, 0, argv[1], 0);
+//  dump_format(pFormatCtx, 0, argv[1], 0);
 
    // Find the first video stream
     videoStream=-1;
@@ -207,7 +210,7 @@ void decoder()
 
 //        __asm__ __volatile__("int3");
 
-        if(q_video.size+q_audio.size < 16*1024*1024)
+        if(q_video.size+q_audio.size < 12*1024*1024)
         {
             err = av_read_frame(pFormatCtx, &packet);
             if( err < 0)
@@ -241,7 +244,7 @@ void decoder()
 
     ret = 1;
 
-    while(status != 0 && ret)
+    while( (status != 0) && ret)
     {
         ret =  decode_video(pCodecCtx, &q_video);
         ret |= decode_audio(aCodecCtx, &q_audio);
@@ -250,6 +253,6 @@ void decoder()
     delay(50);
     status = 0;
     printf("status = 0\n");
-    delay(200);
+    delay(300);
 };
 

@@ -4,6 +4,7 @@
 #include <libswscale/swscale.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <winlib.h>
 #include "fplay.h"
 
 #define DISPLAY_VERSION     0x0200     /*      2.00     */
@@ -12,6 +13,8 @@
 #define SRV_GET_CAPS         3
 
 #define SRV_CREATE_SURFACE  10
+#define SRV_LOCK_SURFACE    12
+
 #define SRV_BLIT_VIDEO      20
 
 #define __ALIGN_MASK(x,mask)  (((x)+(mask))&~(mask))
@@ -195,6 +198,52 @@ int create_bitmap(bitmap_t *bitmap)
     return -1;
 };
 
+int lock_bitmap(bitmap_t *bitmap)
+{
+ //    __asm__ __volatile__("int3");
+
+    if( blit_caps & HW_BIT_BLIT )
+    {
+        struct __attribute__((packed))  /*     SRV_CREATE_SURFACE    */
+        {
+            uint32_t  handle;           // ignored
+            void      *data;            // ignored
+
+            uint32_t  width;
+            uint32_t  height;
+            uint32_t  pitch;            // ignored
+
+        }io_12;
+
+        ioctl_t io;
+        int     err;
+
+        io_12.handle  = bitmap->handle;
+        io_12.pitch   = 0;
+        io_12.data    = 0;
+
+        io.handle   = service;
+        io.io_code  = SRV_LOCK_SURFACE;
+        io.input    = &io_12;
+        io.inp_size = BUFFER_SIZE(5);
+        io.output   = NULL;
+        io.out_size = 0;
+
+        err = call_service(&io);
+        if(err==0)
+        {
+            bitmap->pitch  = io_12.pitch;
+            bitmap->data   = io_12.data;
+//            printf("Lock hardware surface %x pitch %d, buffer %x\n",
+//                     bitmap->handle, bitmap->pitch, bitmap->data);
+            return 0;
+        };
+        return err;
+    };
+
+    return 0;
+};
+
 struct blit_call
 {
     int dstx;
@@ -280,6 +329,8 @@ int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,
     __asm__ __volatile__(
     "int $0x40"
     ::"a"(73),"b"(0),"c"(&bc));
+    
+    return 0;
 };
 
 

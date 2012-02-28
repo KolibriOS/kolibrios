@@ -7,14 +7,6 @@ typedef unsigned int count_t;
 
 typedef struct
 {
-    int  left;
-    int  top;
-    int  right;
-    int  bottom;
-}rect_t;
-
-typedef struct
-{
     uint32_t    width;
     uint32_t    height;
     uint32_t    pitch;
@@ -24,6 +16,11 @@ typedef struct
 
 typedef struct render  render_t;
 
+#define HAS_LEFT        (1<<0)
+#define HAS_TOP         (1<<1)
+#define HAS_RIGHT       (1<<2)
+#define HAS_BOTTOM      (1<<3)
+
 struct render
 {
     uint32_t   caps;
@@ -32,14 +29,22 @@ struct render
     uint32_t   win_width;
     uint32_t   win_height;
 
+    rect_t     rc_client;
+    rect_t     rcvideo;
+    rect_t     rcleft;
+    rect_t     rctop;
+    rect_t     rcright;
+    rect_t     rcbottom;
+
+    uint32_t   layout;
     bitmap_t   bitmap[4];
     uint32_t   ctx_format;
     int        target;
+    
+    window_t   *win;
     enum{
       EMPTY, INIT }state;
-    enum{
-      NORMAL, MINIMIZED, ROLLED
-    }win_state;
+    enum win_state win_state;
 
     void (*draw)(render_t *render, AVPicture *picture);
 };
@@ -90,7 +95,10 @@ render_t *create_render(uint32_t width, uint32_t height,
                         uint32_t ctx_format, uint32_t flags);
 
 int init_render(render_t *render, int width, int height);
-void render_adjust_size(render_t *render);
+void render_adjust_size(render_t *render, window_t *win);
+int render_set_size(render_t *render, int width, int height);
+void render_draw_client(render_t *render);
+
 
 int init_audio(int format);
 int audio_thread(void *param);
@@ -120,16 +128,6 @@ static inline void GetNotify(void *event)
     ::"a"(68),"b"(14),"c"(event));
 }
 
-static inline uint32_t check_os_event()
-{
-    uint32_t val;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(val)
-    :"a"(11));
-    return val;
-};
-
 static inline uint32_t get_os_button()
 {
     uint32_t val;
@@ -154,48 +152,8 @@ static inline void delay(uint32_t time)
     ::"a"(5), "b"(time));
 };
 
-static inline draw_bitmap(void *bitmap, int x, int y, int w, int h)
-{
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(7), "b"(bitmap),
-      "c"((w << 16) | h),
-      "d"((x << 16) | y));
-}
-
-static inline void BeginDraw(void)
-{
-    __asm__ __volatile__(
-    "int $0x40" ::"a"(12),"b"(1));
-};
-
-static inline void EndDraw(void)
-{
-    __asm__ __volatile__(
-    "int $0x40" ::"a"(12),"b"(2));
-};
 
 
-static inline void DrawWindow(int x, int y, int w, int h, char *name,
-                       color_t workcolor, uint32_t style)
-{
-
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(0),
-      "b"((x << 16) | (w & 0xFFFF)),
-      "c"((y << 16) | (h & 0xFFFF)),
-      "d"((style << 24) | (workcolor & 0xFFFFFF)),
-      "D"(name));
-};
-
-static inline void get_proc_info(char *info)
-{
-    __asm__ __volatile__(
-    "int $0x40"
-    ::"a"(9), "b"(info), "c"(-1)
-    :"memory");
-}
 
 #define HW_BIT_BLIT         (1<<0)      /* BGRX blitter             */
 #define HW_TEX_BLIT         (1<<1)      /* stretch blit             */
@@ -204,6 +162,7 @@ static inline void get_proc_info(char *info)
 uint32_t InitPixlib(uint32_t flags);
 
 int create_bitmap(bitmap_t *bitmap);
+int lock_bitmap(bitmap_t *bitmap);
 int resize_bitmap(bitmap_t *bitmap);
 int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,
                 int w, int h);
