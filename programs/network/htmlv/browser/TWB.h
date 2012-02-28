@@ -19,7 +19,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 0.75";
+ char version[]=" Text-based Browser 0.76";
 
 
 struct TWebBrowser {
@@ -76,14 +76,13 @@ void TWebBrowser::Scan(dword id) {
 		GetNewUrl();
 
 		BrowserHistory.AddUrl(); 
-
 		
 		if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
 		//Lee 21.02 }
 		
 		copystr(#URL, #editURL);
-		//ShowPage(#URL);
-		Draw_Window();
+		za_kadrom = count = 0;
+		ShowPage(#URL);
 		return;
 	}
 	
@@ -134,6 +133,7 @@ void TWebBrowser::Scan(dword id) {
 		case 0x0D: //enter
 			copystr(#editURL, #URL);
 			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
+			za_kadrom = count = 0;
 			ShowPage(#URL);
 			return;
 		case 173:	//ctrl+enter
@@ -141,6 +141,7 @@ void TWebBrowser::Scan(dword id) {
 			copystr(#search_path, #URL);
 			copystr(#editURL, #URL + strlen(#URL));
 			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
+			za_kadrom = count = 0;
 			ShowPage(#URL);
 			return;
 
@@ -201,9 +202,8 @@ void GetNewUrl(){
 
 
 void HttpLoad()
-{
-	za_kadrom = 0;
-	
+{	
+	//count = 0; я думаю ему место здесь
 	KillProcess(downloader_id); //убиваем старый процесс
 	DeleteFile(#download_path);
 	IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
@@ -235,7 +235,6 @@ void ReadHtml()
 void TWebBrowser::ShowPage(dword adress) {
 	max_kolvo_stolbcov = width - 30 / 6;
 	max_kolvo_strok = height - 3 / 10 - 2;
-	copystr(#version, #header);
 	edit1.size = edit1.pos = strlen(#editURL);
 	edit_box_draw stdcall(#edit1); //рисуем строку адреса
 	
@@ -276,6 +275,7 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 	blink = 400;
 	line = '';
 	copystr("|", #page_links);
+	copystr(#version, #header);
 	IF(!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1; //зачётное отображение текста 
 	//IF(!strcmp(#URL + strlen(#URL) - 4, ".rtf")) pre_text = 1;
 	IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
@@ -327,9 +327,7 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 			}
 			lowcase(#tag);
 			lowcase(#tagparam);
-			//WriteDebug(#tagparam);
-			//WriteDebug(#tag); Pause(50);
-			//
+
 			IF (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=''; //небольшой фикс для работы с XHTML-тегами типа br/
 			IF(strlen(#tagparam) > 0) && (strlen(#tagparam) < 4000) GetNextParam();
 			WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //обработка тегов
@@ -350,35 +348,6 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 			bukva=Hex2Symb(#temp);
 			IF (bukva) goto DEFAULT_MARK;
 			break;
-		/*case '\\': //поддержка rtf
-			IF(strcmp(#URL + strlen(#URL) - 4, ".rtf")<>0) goto DEFAULT_MARK;
-
-			bword++;
-			IF (ESBYTE[bword] =='\'')
-			{
-				bword++;
-				bukva=ESBYTE[bword];
-				copystr(#bukva, #temp);
-
-				bword++;
-				bukva=ESBYTE[bword];
-				copystr(#bukva, #temp + strlen(#temp));
-				
-				bukva=Hex2Symb(#temp);
-				IF (bukva) goto DEFAULT_MARK;
-			}
-			else
-			{
-				FOR (j=0;   (ESBYTE[bword] <>'\\') && (buf + fsize < bword);     j++; bword++;)
-				{
-					bukva = ESBYTE[bword];
-					copystr(#bukva, #tag + strlen(#tag));
-				}
-				IF ((!strcmp(#tag, "par\0x0a")) || (!strcmp(#tag, "par\0x0b"))) stroka++;
-				tag='';
-				bword--;
-			}
-			break;*/
 			
 		case '&': //обработка тегов типа &nbsp;
 			IF(ignor_text) break;
@@ -501,17 +470,18 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 	IF(!chTag("script")) || (!chTag("style")) ignor_text = rez;
-	IF (ignor_text == 1) return;
-	//
 
-	if(!chTag("title")) && (!rez) && (stroka == 0)
+	if(!chTag("title")) && (!rez)
 	{
 		copystr(#line, #header);
 		copystr(" -", #header + strlen(#header));
 		copystr(#version, #header + strlen(#header));
-		DrawTitle(#header);
+		if (stroka==0) DrawTitle(#header);
 		return;
 	}
+	
+	IF (ignor_text == 1) return;
+	//
 	
 	//
 	IF(!chTag("q")) copystr("\"", #line + strlen(#line));
@@ -759,7 +729,7 @@ void TWebBrowser::DrawScroller() {
 	DrawFlatButton(left + width - 15, top, 16, 16, ID1, 0xE4DFE1, "\x18");
 
 	IF(count <= max_kolvo_strok) {
-		DrawBar(left + width - 14, top, 16, height - 17, 0xCED0D0);
+		DrawBar(left + width - 14, top+17, 16, height - 34, 0xCED0D0);
 		return;
 	}
 

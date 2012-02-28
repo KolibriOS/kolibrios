@@ -20,6 +20,8 @@ void UrlsHistory::GoBack()
 
 void UrlsHistory::AddUrl()
 {
+	if (strcmp(BrowserHistory.CurrentUrl(), #URL)==0) return; //если новый адресс = текущему
+	
 	IF (strlen(#UrlHistory)>6000) copystr(#UrlHistory+5000,#UrlHistory);
 	copystr("|", #UrlHistory + strlen(#UrlHistory));
 	copystr(#URL, #UrlHistory + strlen(#UrlHistory));
