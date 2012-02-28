@@ -9,18 +9,11 @@ UrlsHistory BrowserHistory;
 
 void UrlsHistory::GoBack()
 {
-	WriteDebug(#UrlHistory);
-	//find_symbol(#UrlHistory, '|')
-	
-	j = strlen(#UrlHistory);
-	WHILE(UrlHistory[j] <>'|') && (j > 0) j--;
-	IF (j > 0) UrlHistory[j] = 0x00;
-	WHILE(UrlHistory[j] <>'|') && (j > 0) {
-		copystr(#UrlHistory[j], #URL);
-		j--;
-	}
+	j = find_symbol(#UrlHistory, '|') -1; //текущая страница
+	if (j<=0) return;
 	UrlHistory[j] = 0x00;
-	
+	j = find_symbol(#UrlHistory, '|'); //предыдущая страница -> она нам и нужна
+	copystr(#UrlHistory + j, #URL);
 	copystr(#URL, #editURL);
 	WB1.ShowPage(#URL);
 }
