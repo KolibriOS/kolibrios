@@ -9,8 +9,8 @@ UrlsHistory BrowserHistory;
 
 void UrlsHistory::GoBack()
 {
-	//WriteDebug(#UrlHistory);
-	
+	WriteDebug(#UrlHistory);
+	//find_symbol(#UrlHistory, '|')
 	
 	j = strlen(#UrlHistory);
 	WHILE(UrlHistory[j] <>'|') && (j > 0) j--;
@@ -20,6 +20,8 @@ void UrlsHistory::GoBack()
 		j--;
 	}
 	UrlHistory[j] = 0x00;
+	
+	copystr(#URL, #editURL);
 	WB1.ShowPage(#URL);
 }
 

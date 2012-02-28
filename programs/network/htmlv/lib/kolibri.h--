@@ -64,25 +64,6 @@ void mouse::get()
 	vert = EBX;
 }
 
-struct proc_info{
-	dword	use_cpu;
-	word	pos_in_stack,num_slot,rezerv1;
-	char	name[11];
-	char	rezerv2;
-	dword	adress,use_memory,ID,left,top,width,height;
-	word	status_slot,rezerv3;
-	dword	work_left,work_top,work_width,work_height;
-	char	status_window;
-	void	GetInfo(dword ECX);
-	byte    reserved[1024-71];
-#define SelfInfo -1
-};
-
-void GetProcessInfo(dword EBX, ECX)
-{
-	EAX = 9;
-	$int  0x40
-}
 
 struct system_colors{
 	dword frame,grab,grab_button,grab_button_text,grab_text,work,work_button,work_button_text,work_text,work_graph;
@@ -140,16 +121,6 @@ inline fastcall word GetKey(){ //Gluk fix
 		EAX = EAX >> 8;		 
 }
 
-inline fastcall word GetButtonID(){
- EAX = 17;
- $int  0x40
- EAX = EAX >> 8;
-}
-
-inline fastcall ExitProcess(){
- EAX = -1;              // close this program
- $int 0x40
-}
 
 inline fastcall Pause(dword EBX)
 {					//Пауза, в сотых долях секунды EBX = value
@@ -157,7 +128,53 @@ inline fastcall Pause(dword EBX)
 	$int 0x40
 }
 
-//------------------------------------------------------------------------------
+//==================================================================
+
+inline fastcall word GetButtonID(){
+ EAX = 17;
+ $int  0x40
+ EAX = EAX >> 8;
+}
+
+struct proc_info{
+	dword	use_cpu;
+	word	pos_in_stack,num_slot,rezerv1;
+	char	name[11];
+	char	rezerv2;
+	dword	adress,use_memory,ID,left,top,width,height;
+	word	status_slot,rezerv3;
+	dword	work_left,work_top,work_width,work_height;
+	char	status_window;
+	void	GetInfo(dword ECX);
+	byte    reserved[1024-71];
+#define SelfInfo -1
+};
+
+void GetProcessInfo(dword EBX, ECX)
+{
+	EAX = 9;
+	$int  0x40
+}
+
+int GetProcessSlot(ECX) //ECX = process ID
+{
+	EAX = 18;
+	EBX = 21;
+	$int 0x40;	
+}
+
+inline fastcall ExitProcess(){
+ EAX = -1;              // close this program
+ $int 0x40
+}
+
+inline fastcall KillProcess(dword ECX){
+	$mov eax,18;
+	$mov ebx,18;
+	$int 0x40
+}
+
+//==================================================================
 
 //eax =  ч√ъ ёшёЄхь√ (1=eng, 2=fi, 3=ger, 4=rus)
 inline fastcall int GetSystemLanguage(){
@@ -479,23 +496,25 @@ inline fastcall int utf8rutodos(dword ESI) //-
 
 //------------------------------------------------------------------------------
 
-byte WindowRePaint=0;
-inline fastcall void WindowRedrawStatus(dword EBX)
-{
-	EAX = 12;              // function 12:tell os about windowdraw
-	$int 0x40
-	IF (EBX==1) WindowRePaint=1; ELSE WindowRePaint=0;
-}
 
 void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,byte headerType,dword headerColour,EDI)
 {
+	EAX = 12;              // function 12:tell os about windowdraw
+	EBX = 1;
+	$int 0x40
+	
 	EBX = x << 16 + sizeX;
 	ECX = y << 16 + sizeY;
 	EDX = mainAreaType << 24 | mainAreaColour;
 	ESI = headerType << 24 | headerColour;
 	$xor eax,eax
 	$int 0x40
-}   
+
+	EAX = 12;              // function 12:tell os about windowdraw
+	EBX = 2;
+	$int 0x40
+}
+
 
 inline fastcall dword CreateThread(dword ECX,EDX)
 {

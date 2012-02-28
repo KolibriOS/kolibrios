@@ -81,7 +81,8 @@ void TWebBrowser::Scan(dword id) {
 		if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
 		//Lee 21.02 }
 		
-		ShowPage(#URL);
+		copystr(#URL, #editURL);
+		//ShowPage(#URL);
 		Draw_Window();
 		return;
 	}
@@ -202,8 +203,6 @@ void GetNewUrl(){
 void HttpLoad()
 {
 	za_kadrom = 0;
-	copystr(#URL, #editURL);
-
 	
 	KillProcess(downloader_id); //убиваем старый процесс
 	DeleteFile(#download_path);
