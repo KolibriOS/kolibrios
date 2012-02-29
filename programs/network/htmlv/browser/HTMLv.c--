@@ -1,5 +1,5 @@
 //HTML Viewer in C--
-//Copyright 2007-2009 by Veliant & Leency
+//Copyright 2007-20012 by Veliant & Leency
 //Asper, Lrz, Nable, lev.
 
 #include "..\lib\kolibri.h--"
@@ -56,6 +56,8 @@ void main()
 	BrowserHistory.AddUrl();
 	copystr(#URL,#editURL);
 	
+	if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
+
 	SetEventMask(0x27);
 	loop()
 	{

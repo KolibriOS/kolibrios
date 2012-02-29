@@ -1,4 +1,4 @@
-//Web-component, Leency & Veliant 2007-2009
+//Web-component, Leency & Veliant 2007-20012
 //lev
 
 //идея - левые файлы открывать соответствующими прогами
@@ -17,7 +17,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 0.76";
+ char version[]=" Text-based Browser 0.77";
 
 
 struct TWebBrowser {
@@ -34,12 +34,13 @@ struct TWebBrowser {
 
 TWebBrowser WB1;
 
-byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, link, ignor_text, li_tab;
+byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, link, ignor_text, li_tab, body_present;
 
 
 dword text_colors[10],
 	text_color_index = 0,
-	link_color;
+	link_color,
+	bg_color=0xFFFFFF;
 
 int stroka,
 	stolbec,
@@ -200,6 +201,7 @@ void GetNewUrl(){
 void HttpLoad()
 {	
 	//count = 0; я думаю ему место здесь
+	copystr(#version, #header);
 	KillProcess(downloader_id); //убиваем старый процесс
 	DeleteFile(#download_path);
 	IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
@@ -252,7 +254,6 @@ void TWebBrowser::ShowPage(dword adress) {
 		return;
 	}
 
-	DrawBar(left, top, width-15, 15, 0xFFFFFF); //закрашиваем первую строку
 	wintodos(buf);
 	ParseHTML(buf, filesize);
 	IF (!strcmp(#version, #header)) DrawTitle(#header);
@@ -267,15 +268,19 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 	stroka = -za_kadrom;
 	stolbec = 0;
 	FOR(j = 400; j < blink + 1; j++;) DeleteButton(j);
-	b_text = i_text = u_text = s_text = pre_text = blq_text = 
+	b_text = i_text = u_text = s_text = pre_text = blq_text = body_present =
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 0; //обнуляем теги
 	link_color = 0x0000FF;
+	bg_color = 0xFFFFFF;
 	blink = 400;
 	line = '';
 	copystr("|", #page_links);
 	copystr(#version, #header);
-	IF(!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1; //зачётное отображение текста 
-	//IF(!strcmp(#URL + strlen(#URL) - 4, ".rtf")) pre_text = 1;
+	IF(!strcmp(#URL + strlen(#URL) - 4, ".txt"))
+	{
+		DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку
+		pre_text = 1; //зачётное отображение текста 
+	}
 	IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
 	for (; buf + fsize > bword; bword++;) {
 	  bukva = ESBYTE[bword];
@@ -394,11 +399,14 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 			copystr(#bukva, #line + strlen(#line));
 	  }
 	}
-	IF(max_kolvo_strok * 10 + 25 <= height)
-		DrawBar(left, max_kolvo_strok * 10 + top + 25, width - 15, -max_kolvo_strok * 10 + height - 25, 0xFFFFFF);
-	IF(stroka * 10 + 15 <= height)
-		DrawBar(left, stroka * 10 + top + 15, width - 15, -stroka * 10 + height - 15, 0xFFFFFF); //закрашиваем всё до конца
-	IF(za_kadrom == 0) count = stroka;
+	if (strcmp(#URL + strlen(#URL) - 4, ".txt")<>0) && (body_present==0)
+		DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку если какой-то рахит не создал тег боди
+
+	if (max_kolvo_strok * 10 + 25 <= height)
+		DrawBar(left, max_kolvo_strok * 10 + top + 25, width - 15, -max_kolvo_strok * 10 + height - 25, bg_color);
+	if (stroka * 10 + 15 <= height)
+		DrawBar(left, stroka * 10 + top + 15, width - 15, -stroka * 10 + height - 15, bg_color); //закрашиваем всё до конца
+	if (za_kadrom == 0) count = stroka;
 	DrawScroller(); //рисуем скролл
 }
 
@@ -500,7 +508,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	//
 	IF(!tag) return;
 	stolbec += strlen(#line);
-	////////////////////////// <body bgcolor="#000000" text="#FFFFFF">
+
 	if (!chTag("body"))
 	{
 		BODY_MARK:
@@ -508,22 +516,25 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		if (strcmp(#parametr, "link=") == 0)
 			link_color = GetColor(#options);
 		
-		/*if (strcmp(#parametr, "text=") == 0)
+		if (strcmp(#parametr, "text=") == 0)
 		{
 			text_colors[0]=GetColor(#options);
 		}
 		
 		if (strcmp(#parametr, "bgcolor=") == 0)
 		{
-			//text_colors[0]=GetColor(#options);
-			WriteDebug("bgcolor=");
-			WriteDebug(#options);
-		}*/
+			bg_color=GetColor(#options);
+		}
 		
 		IF(tagparam) {
 			GetNextParam();
 			GOTO BODY_MARK;
-		}		
+		}
+		
+		body_present = 1; //если калич не создал тег боди нужно извращаться
+
+		if (rez) DrawBar(WB1.left, WB1.top, WB1.width-15, 15, bg_color); //закрашиваем первую строку
+		return;
 	}
 	//////////////////////////
 	if (!chTag("a")) {
@@ -669,7 +680,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			IF (h<=0) return;
 			
 			img_draw stdcall (image,left1-5,top1+10,w, h,0,img_za_kadrom);
-			DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, 0xFFFFFF);
+			DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, bg_color);
         }
 		/*else
 		{
@@ -715,7 +726,7 @@ void TextGoDown(int left1, top1, width1) {
 	IF(blq_text == 1) stolbec = 8;
 	ELSE stolbec = 0;
 	IF(li_text == 1) stolbec = li_tab * 5;
-	IF(stroka >= 0) && (stroka - 2 < max_kolvo_strok) DrawBar(left1 - 5, top1 + 10, width1 + 5, 10, 0xFFFFFF);
+	IF(stroka >= 0) && (stroka - 2 < max_kolvo_strok) DrawBar(left1 - 5, top1 + 10, width1 + 5, 10, bg_color);
 }
 
 
