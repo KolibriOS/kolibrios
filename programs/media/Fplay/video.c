@@ -9,6 +9,7 @@
 #include "sound.h"
 #include "fplay.h"
 
+#define CAPTION_HEIGHT      24
 
 typedef struct
 {
@@ -43,6 +44,7 @@ int init_video(AVCodecContext *ctx)
 
     width = ctx->width;
     height = ctx->height;
+
 
     printf("w = %d  h = %d\n\r", width, height);
 
@@ -231,7 +233,9 @@ void render_time(render_t *render)
 
         if(fdelay > 10.0)
         {
-            delay( (uint32_t)(fdelay/10.0));
+           // delay( (uint32_t)(fdelay/10.0));
+            yield();
+            return;
         };
 
         main_render->draw(main_render, &frames[vfx].picture);
@@ -401,7 +405,7 @@ void render_adjust_size(render_t *render, window_t *win)
 
 
     right  = win->w;
-    bottom = win->h-29;
+    bottom = win->h-CAPTION_HEIGHT;
     render->win_state  = win->win_state;
 
     if(render->win_state == MINIMIZED)
@@ -435,7 +439,7 @@ void render_adjust_size(render_t *render, window_t *win)
     };
 
     render->win_width  = win->w;
-    render->win_height = win->h-29;
+    render->win_height = win->h-CAPTION_HEIGHT;
     render_set_size(render, new_w, new_h);
 };
 
@@ -496,7 +500,7 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
 //    printf("sws_scale\n");
 
     blit_bitmap(bitmap, render->rcvideo.l,
-                 29+render->rcvideo.t,
+                 CAPTION_HEIGHT+render->rcvideo.t,
                  render->rcvideo.r, render->rcvideo.b);
 //    printf("blit_bitmap\n");
 
@@ -540,7 +544,7 @@ void draw_sw_picture(render_t *render, AVPicture *picture)
               picture->linesize, 0, render->ctx_height, data, linesize);
 
     blit_bitmap(&render->bitmap[0], render->rcvideo.l,
-                render->rcvideo.t+29,
+                render->rcvideo.t+CAPTION_HEIGHT,
                 render->rcvideo.r, render->rcvideo.b);
 }
 
@@ -551,19 +555,17 @@ void render_draw_client(render_t *render)
         return;
 
     if(render->layout & HAS_TOP)
-        draw_bar(0, 29, render->win_width,
+        draw_bar(0, CAPTION_HEIGHT, render->win_width,
                  render->rctop.b, 0);
     if(render->layout & HAS_LEFT)
-        draw_bar(0, render->rcvideo.t+29, render->rcleft.r,
+        draw_bar(0, render->rcvideo.t+CAPTION_HEIGHT, render->rcleft.r,
                  render->rcvideo.b, 0);
     if(render->layout & HAS_RIGHT)
-        draw_bar(render->rcright.l, render->rcvideo.t+29,
+        draw_bar(render->rcright.l, render->rcvideo.t+CAPTION_HEIGHT,
                  render->rcright.r, render->rcvideo.b, 0);
     if(render->layout & HAS_BOTTOM)
-        draw_bar(0, render->rcbottom.t+29,
+        draw_bar(0, render->rcbottom.t+CAPTION_HEIGHT,
                  render->win_width, render->rcbottom.b, 0);
 }
-
-
 
 
