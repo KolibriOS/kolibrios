@@ -609,6 +609,9 @@ draw_rectangle: ;//////////////////////////////////////////////////////////////
 ;> eax = pack[16(left), 16(right)]
 ;> ebx = pack[16(top), 16(bottom)]
 ;> esi = color
+;       ?? RR GG BB    ; 0x01000000 negation
+;                      ; 0x02000000 used for draw_rectangle without top line
+;                      ;           for example drawwindow_III and drawwindow_IV
 ;------------------------------------------------------------------------------
         push    eax ebx ecx edi
 
@@ -619,14 +622,17 @@ draw_rectangle: ;//////////////////////////////////////////////////////////////
 
         ; set line color
         mov     ecx, esi
-
+        sub     esi, 1 shl 25
         ; draw top border
         rol     ebx, 16
         push    ebx
         rol     ebx, 16
         pop     bx
+        test    ecx, 1 shl 25
+        jnz     @f
+        sub     ecx, 1 shl 25
         call    [draw_line]
-
+@@:
         ; draw bottom border
         mov     ebx, [esp - 2]
         pop     bx
@@ -828,22 +834,28 @@ drawwindow_III: ;//////////////////////////////////////////////////////////////
         mov     esi, [edx + WDATA.cl_frames]
         shr     esi, 1
         and     esi, 0x007f7f7f
+        or      esi, 1 shl 25; 0x02000000 used for draw_rectangle without top line
+        ror     ebx, 16
+        add     ebx, [_skinh]
+        sub     bx, 1
+        rol     ebx, 16
         call    draw_rectangle
 
         push    esi
         mov     ecx, 3
         mov     esi, [edx + WDATA.cl_frames]
+        or      esi, 1 shl 25; 0x02000000 used for draw_rectangle without top line
 
   .next_frame:
         add     eax, 1 * 65536 - 1
-        add     ebx, 1 * 65536 - 1
+        add     ebx, 0 * 65536 - 1
         call    draw_rectangle
         dec     ecx
         jnz     .next_frame
 
         pop     esi
         add     eax, 1 * 65536 - 1
-        add     ebx, 1 * 65536 - 1
+        add     ebx, 0 * 65536 - 1
         call    draw_rectangle
 
         ; window caption

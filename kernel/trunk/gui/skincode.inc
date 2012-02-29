@@ -317,22 +317,29 @@ drawwindow_IV:
 ;        shr   esi,1
 ;        and   esi,0x007f7f7f
         mov     esi, [ebp+SKIN_DATA.colors.outer]
+        or      esi, 1 shl 25 ; 0x02000000 used for draw_rectangle without top line
+        ror     ebx, 16
+        add     ebx, [_skinh]
+        sub     bx, 1
+        rol     ebx, 16
         call    draw_rectangle
         mov     ecx, 3
       _dw3l:
         add     eax, 1*65536-1
-        add     ebx, 1*65536-1
+        add     ebx, 0*65536-1
         test    ax, ax
         js      no_skin_add_button
         test    bx, bx
         js      no_skin_add_button
         mov     esi, [ebp+SKIN_DATA.colors.frame];[edi+24]
+        or      esi, 1 shl 25; 0x02000000 used for draw_rectangle without top line
         call    draw_rectangle
         dec     ecx
         jnz     _dw3l
         mov     esi, [ebp+SKIN_DATA.colors.inner]
+        or      esi, 1 shl 25; 0x02000000 used for draw_rectangle without top line
         add     eax, 1*65536-1
-        add     ebx, 1*65536-1
+        add     ebx, 0*65536-1
         test    ax, ax
         js      no_skin_add_button
         test    bx, bx

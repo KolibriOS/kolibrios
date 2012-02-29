@@ -300,6 +300,8 @@ __sys_putpixel:
 ; eax = x coordinate
 ; ebx = y coordinate
 ; ecx = ?? RR GG BB    ; 0x01000000 negation
+                       ; 0x02000000 used for draw_rectangle without top line
+                       ;            for example drawwindow_III and drawwindow_IV
 ; edi = 0x00000001 force
 
 ;;;        mov  [novesachecksum], dword 0
