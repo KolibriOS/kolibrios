@@ -6,8 +6,6 @@
 
 //из хттп-лоад в реадхтмл
 
-//BrowserHistory.AddUrl();  -> проверка не = ли новый адрес старому и добавить поумолчанию везде
-
 int	downloader_id;
 
 dword j,
@@ -75,8 +73,6 @@ void TWebBrowser::Scan(dword id) {
 		
 		GetNewUrl();
 
-		BrowserHistory.AddUrl(); 
-		
 		if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
 		//Lee 21.02 }
 		
@@ -237,6 +233,8 @@ void TWebBrowser::ShowPage(dword adress) {
 	max_kolvo_strok = height - 3 / 10 - 2;
 	edit1.size = edit1.pos = strlen(#editURL);
 	edit_box_draw stdcall(#edit1); //рисуем строку адреса
+	
+	BrowserHistory.AddUrl();
 	
 	//LETS_LOAD
 	ReadHtml();

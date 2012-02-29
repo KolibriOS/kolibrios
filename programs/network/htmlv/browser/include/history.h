@@ -15,6 +15,7 @@ void UrlsHistory::GoBack()
 	j = find_symbol(#UrlHistory, '|'); //предыдущая страница -> она нам и нужна
 	copystr(#UrlHistory + j, #URL);
 	copystr(#URL, #editURL);
+	if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
 	WB1.ShowPage(#URL);
 }
 
