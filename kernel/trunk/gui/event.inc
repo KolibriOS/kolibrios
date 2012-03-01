@@ -464,15 +464,22 @@ get_event_for_app:                                 ;; used from f10,f11,f23
 
 .FlagAutoReset: ; retvals: BgrRedraw=5, Mouse=6, IPC=7, Stack=8, Debug=9
         cmp     eax, 5; Mouse 5+1=6
-        jne     @f
+        jne     .no_mouse_check
         push    eax
+        mov     eax, [TASK_BASE]
+        mov     eax, [eax + TASKDATA.event_mask]
+        test    eax, 0x80000000 ; bit 31: active/inactive filter f.40
+        jz      @f
+        pop     eax
+        jmp     .no_mouse_check
+@@:
 ; If the window is captured and moved by the user, then no mouse events!!!
         mov     al, [mouse.active_sys_window.action]
         and     al, WINDOW_MOVE_AND_RESIZE_FLAGS
         test    al, al
         pop     eax
         jnz     .loop
-@@:
+.no_mouse_check:
         btr     [ebx+APPDATA.event_mask], eax
         jnc     .loop
   .result:      ; retval = eax+1
