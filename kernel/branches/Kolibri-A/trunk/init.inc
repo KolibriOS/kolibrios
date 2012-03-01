@@ -51,8 +51,8 @@ preinit_mem:
 
 ; ======================================================================
 align 4
-proc init_mem
 
+init_mem:
 	   mov	ecx, 0xC001001A 			; Top of Memory MSR
 	   xor	edi, edi
 	   rdmsr
@@ -128,11 +128,8 @@ proc init_mem
 	   lea esi, [edi+(OS_BASE shr 20)]
 	   movsd
 	   movsd
-	   ret
-endp
 
-align 4
-proc init_page_map
+init_page_map:
 ; mark all memory as available
 	   mov edi, sys_pgmap-OS_BASE
 	   mov ecx, [pg_data.pagemap_size-OS_BASE]
@@ -170,7 +167,7 @@ proc init_page_map
 
 	   mov [pg_data.pg_mutex-OS_BASE], 0
 	   ret
-endp
+
 
 align 4
 

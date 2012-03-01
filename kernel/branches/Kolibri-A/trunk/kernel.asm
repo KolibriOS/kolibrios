@@ -233,7 +233,6 @@ end if
 
 ; MEMORY MODEL
 	   call init_mem	; (init.inc)
-	   call init_page_map	; (init.inc)
 
 ; ENABLE PAGING
 
@@ -499,10 +498,10 @@ v20ga32:
 	mov	[graph_data_l+4],al
 	mov	[graph_data_l+7],ah
 
-;       or      [KERNEL_ALLOC_FLAG], dword PG_NOCACHE	;<<<<<<<<<<<<<<<<
+;       or      [KERNEL_ALLOC_FLAG], dword PG_NOCACHE   ;<<<<<<<<<<<<<<<<
 	stdcall kernel_alloc, [_WinMapSize]
 	mov	[_WinMapAddress], eax
-;       xor     [KERNEL_ALLOC_FLAG], dword PG_NOCACHE	;<<<<<<<<<<<<<<<<
+;       xor     [KERNEL_ALLOC_FLAG], dword PG_NOCACHE   ;<<<<<<<<<<<<<<<<
 
 	xor  eax,eax
 	inc  eax
@@ -681,32 +680,45 @@ include 'vmodeld.inc'
 	mov [SLOT_BASE+APPDATA.cursor+256],eax
 
 
-  ; READ TSC / SECOND
+  ; READ TSC / SECOND == Fusion only!
 
-;        mov   esi,boot_tsc
-;        call  boot_log
 	cli
-	rdtsc ;call  _rdtsc
-	mov   ecx,eax
-	mov   esi,250		    ; wait 1/4 a second
-	call  delay_ms
-	rdtsc ;call  _rdtsc
+	mov	edx, PCIe_CONFIG_SPACE + 0xE0
+	mov	eax, 0x013080F0 	; BIOS timer reg.
+	mov	[edx], eax
+	add	dl, 4
+	mov	edi, edx
+	mov	eax, [edi]		; old microseconds
+	inc	eax			; next precise microsecond
+	mov	esi, eax
+ @@:
+	mov	eax, [edi]
+	cmp	eax, esi
+	jne	@b
+
+	rdtsc
+	mov	ebp, eax		; clockmark
+	add	esi, 20 		; wait 20us
+ @@:
+	mov	eax, [edi]
+	cmp	eax, esi
+	jne	@b
+
+	rdtsc
+	sub	eax, ebp
+	mov	ebx, 50000
+	mul	ebx		      ; clks per second
 	sti
-	sub   eax,ecx
-	shl   eax,2
+
 	mov   [CPU_FREQ],eax	      ; save tsc / sec
-;       mov ebx, 1000000
-;       div ebx
-; faster division possible:
-	mov	edx, 2251799814
-	mul	edx
-	shr	edx, 19
-	mov [stall_mcs], edx
+	mov   ebx, 1000000
+	div   ebx
+	mov [stall_mcs], eax
 ; PRINT CPU FREQUENCY
 	mov	esi, boot_cpufreq
 	call	boot_log
 
-	mov	ebx, edx
+	mov	ebx, eax
 	movzx	ecx, word [boot_y]
 	add	ecx, (10+17*6) shl 16 - 10 ; 'CPU frequency is '
 	mov	edx, 0xFFFFFF
@@ -721,13 +733,8 @@ include 'vmodeld.inc'
 
 ; SET MOUSE
 
-	;call   detect_devices
 	stdcall load_driver, szPS2MDriver
 
-;        mov   esi,boot_setmouse
-;        call  boot_log
-;       call  setmouse
-;     mov     [MOUSE_PICTURE],dword mousepointer
 	cli
 
 ; STACK AND FDC
@@ -804,12 +811,6 @@ first_app_found:
 	and    al,00000010b
 	loopnz @b
 
-       ; mov   al, 0xED       ; svetodiody - only for testing!
-       ; call  kb_write
-       ; call  kb_read
-       ; mov   al, 111b
-       ; call  kb_write
-       ; call  kb_read
 
 	mov   al, 0xF3	     ; set repeat rate & delay
 	call  kb_write
@@ -825,15 +826,6 @@ first_app_found:
 
 ; START MULTITASKING
 
-;if preboot_blogesc
-;        mov     esi, boot_tasking
-;        call    boot_log
-;.bll1:  in      al, 0x60        ; wait for ESC key press
-;        cmp     al, 129
-;        jne     .bll1
-;end if
-
-
 	stdcall attach_int_handler, 1, irq1, 0
 
 	cmp	[IDEContrRegsBaseAddr], 0
@@ -845,9 +837,12 @@ first_app_found:
 
 	jmp osloop				; Fly :)
 
-diff16 "init code end: ",0,$
+diff16 "init code end  ",0,$
 
+unpacker_inc:
 include 'unpacker.inc'
+diff16 "unpacker code  ",unpacker_inc,$
+
 include 'fdo.inc'
 
 align 4
