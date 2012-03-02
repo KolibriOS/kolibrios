@@ -4,7 +4,7 @@
 #include <libswscale/swscale.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <winlib.h>
+#include "../winlib/winlib.h"
 #include "fplay.h"
 
 #define DISPLAY_VERSION     0x0200     /*      2.00     */
@@ -339,7 +339,7 @@ static inline void* user_realloc(void *mem, size_t size)
     void *val;
     __asm__ __volatile__(
     "int $0x40"
-    :"=eax"(val)
+    :"=a"(val)
     :"a"(68),"b"(12),"c"(size),"d"(mem)
     :"memory");
 

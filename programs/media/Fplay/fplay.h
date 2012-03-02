@@ -38,6 +38,8 @@ struct render
 
     uint32_t   layout;
     bitmap_t   bitmap[4];
+    bitmap_t  *last_bitmap;
+    
     uint32_t   ctx_format;
     int        target;
     
@@ -48,6 +50,11 @@ struct render
 
     void (*draw)(render_t *render, AVPicture *picture);
 };
+
+enum player_state
+{  CLOSED=0, STOP, PLAY_RESTART, PLAY, PAUSE, REWIND };
+
+#define ID_PLAY    100
 
 typedef struct
 {
@@ -109,7 +116,7 @@ int video_thread(void *param);
 int decode_video(AVCodecContext  *ctx, queue_t *qv);
 int decode_audio(AVCodecContext  *ctx, queue_t *qa);
 
-double get_master_clock();
+double get_master_clock(void);
 
 
 int create_thread(int (*proc)(void *param), void *param, int stack_size);

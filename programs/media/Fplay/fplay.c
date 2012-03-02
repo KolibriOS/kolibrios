@@ -10,12 +10,12 @@
 #include <string.h>
 #include <fcntl.h>
 #include <ctype.h>
-#include <winlib.h>
+#include "../winlib/winlib.h"
 
 #include "sound.h"
 #include "fplay.h"
 
-volatile uint32_t status = 1;
+volatile enum player_state player_state;
 
 uint32_t win_width, win_height;
 
@@ -101,6 +101,8 @@ int main( int argc, char *argv[])
         printf("Video stream not detected\n\r");
         return -1; // Didn't find a video stream
     }
+
+    player_state = PLAY_RESTART;
 
  //   __asm__ __volatile__("int3");
 
@@ -204,11 +206,17 @@ void decoder()
     AVPacket  packet;
     int       ret;
 
-    while( status != 0 && !eof)
+    while( player_state != CLOSED && !eof)
     {
         int err;
 
 //        __asm__ __volatile__("int3");
+
+        if( player_state == PAUSE )
+        {
+            delay(1);
+            continue;
+        };
 
         if(q_video.size+q_audio.size < 12*1024*1024)
         {
@@ -244,15 +252,14 @@ void decoder()
 
     ret = 1;
 
-    while( (status != 0) && ret)
+    while( (player_state != CLOSED) && ret)
     {
         ret =  decode_video(pCodecCtx, &q_video);
         ret |= decode_audio(aCodecCtx, &q_audio);
         delay(1);
     };
     delay(50);
-    status = 0;
-    printf("status = 0\n");
+    player_state = CLOSED;
     delay(300);
 };
 

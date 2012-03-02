@@ -6,24 +6,25 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <winlib.h>
+#include "../winlib/winlib.h"
 #include "sound.h"
 #include "fplay.h"
 
 
 astream_t astream;
 
-static SNDBUF hBuff;
-
 extern uint8_t *decoder_buffer;
 
-extern volatile uint32_t status;
+extern volatile enum player_state player_state;
 
 extern volatile uint32_t driver_lock;
 
+static SNDBUF hBuff;
 
 static int snd_format;
 int sample_rate;
+
+static uint32_t samples_written = 0;
 
 int init_audio(int format)
 {
@@ -65,8 +66,10 @@ exit_whith_error:
 
 static uint64_t samples_lost;
 static double  audio_delta;
+static double  last_time_stamp;
 
-double get_master_clock()
+
+double get_master_clock(void)
 {
     double tstamp;
 
@@ -116,13 +119,61 @@ int decode_audio(AVCodecContext  *ctx, queue_t *qa)
 };
 
 
+static void sync_audio(SNDBUF hbuff, int buffsize)
+{
+    SND_EVENT   evnt;
+    uint32_t    offset;
+    double      time_stamp;
+
+#ifdef BLACK_MAGIC_SOUND
+
+    while( player_state != CLOSED)
+    {
+        GetNotify(&evnt);
+
+        if(evnt.code != 0xFF000001)
+        {
+            printf("invalid event code %d\n\r", evnt.code);
+            continue;
+        }
+
+        if(evnt.stream != hbuff)
+        {
+            printf("invalid stream %x hBuff= %x\n\r",
+                    evnt.stream, hbuff);
+            continue;
+        }
+
+        GetTimeStamp(hbuff, &time_stamp);
+        audio_delta = time_stamp - last_time_stamp;
+
+        offset = evnt.offset;
+
+        mutex_lock(&astream.lock);
+        {
+            SetBuffer(hbuff, astream.buffer, offset, buffsize);
+            samples_written+= buffsize/4;
+            astream.count -= buffsize;
+            if(astream.count)
+                memcpy(astream.buffer, astream.buffer+buffsize, astream.count);
+            mutex_unlock(&astream.lock);
+        };
+        break;
+    };
+#endif
+
+};
+
+
 int audio_thread(void *param)
 {
     SND_EVENT evnt;
+
     int       buffsize;
     int      samples;
     int       err;
     char     *errstr;
+    int       active;
 
 
     if((err = CreateBuffer(snd_format|PCM_RING,0, &hBuff)) != 0)
@@ -144,70 +195,48 @@ int audio_thread(void *param)
     samples = buffsize/4;
 
     while( (astream.count < buffsize*2) &&
-               (status != 0) )
+               (player_state != CLOSED) )
         yield();
 
     mutex_lock(&astream.lock);
     {
         SetBuffer(hBuff, astream.buffer, 0, buffsize);
+        samples_written+= buffsize/4;
         astream.count -= buffsize;
         if(astream.count)
             memcpy(astream.buffer, astream.buffer+buffsize, astream.count);
         mutex_unlock(&astream.lock);
     };
 
-    if((err = PlayBuffer(hBuff, 0)) !=0 )
-    {
-        errstr = "Cannot play buffer\n\r";
-        goto exit_whith_error;
-    };
-
-
-#ifdef BLACK_MAGIC_SOUND
-
-    while( status != 0)
-    {
-        uint32_t  offset;
-
-        GetNotify(&evnt);
-
-        if(evnt.code != 0xFF000001)
-        {
-            printf("invalid event code %d\n\r", evnt.code);
-            continue;
-        }
-
-        if(evnt.stream != hBuff)
-        {
-            printf("invalid stream %x hBuff= %x\n\r",
-                    evnt.stream, hBuff);
-            continue;
-        }
-
-        GetTimeStamp(hBuff, &audio_delta);
-        samples_lost = audio_delta*sample_rate/1000;
-
-        offset = evnt.offset;
-
-        mutex_lock(&astream.lock);
-        {
-            SetBuffer(hBuff, astream.buffer, offset, buffsize);
-            astream.count -= buffsize;
-            if(astream.count)
-                memcpy(astream.buffer, astream.buffer+buffsize, astream.count);
-            mutex_unlock(&astream.lock);
-        };
-        break;
-    };
-#endif
-
-    printf("initial audio delta %f\n", audio_delta);
-
-    while( status != 0)
+    while( player_state != CLOSED)
     {
         uint32_t  offset;
         double    event_stamp, wait_stamp;
         int       too_late = 0;
+
+        if(player_state == PAUSE)
+        {
+            if( active )
+            {
+                StopBuffer(hBuff);
+                active = 0;
+            }
+            delay(1);
+            continue;
+        }
+        else if(player_state == PLAY_RESTART)
+        {
+            GetTimeStamp(hBuff, &last_time_stamp);
+            if((err = PlayBuffer(hBuff, 0)) !=0 )
+            {
+                errstr = "Cannot play buffer\n\r";
+                goto exit_whith_error;
+            };
+            active = 1;
+            sync_audio(hBuff, buffsize);
+            player_state = PLAY;
+            printf("audio delta %f\n", audio_delta);
+        };
 
         GetNotify(&evnt);
 
@@ -229,7 +258,7 @@ int audio_thread(void *param)
         offset = evnt.offset;
 
         while( (astream.count < buffsize) &&
-               (status != 0) )
+               (player_state != CLOSED) )
         {
             yield();
             GetTimeStamp(hBuff, &wait_stamp);
@@ -244,11 +273,15 @@ int audio_thread(void *param)
             }
         };
 
-        if((too_late == 1) || (status == 0))
+        if((too_late == 1) || (player_state == CLOSED))
+        {
+            too_late = 0;
             continue;
+        };
 
         mutex_lock(&astream.lock);
         SetBuffer(hBuff, astream.buffer, offset, buffsize);
+        samples_written+= buffsize/4;
         astream.count -= buffsize;
         if(astream.count)
             memcpy(astream.buffer, astream.buffer+buffsize, astream.count);

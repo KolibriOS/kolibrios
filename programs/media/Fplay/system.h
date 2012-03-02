@@ -67,7 +67,7 @@ pos_t get_mouse_pos(void)
     __asm__ __volatile__(
     "int $0x40 \n\t"
     "rol $16, %%eax"
-    :"=eax"(val)
+    :"=a"(val)
     :"a"(37),"b"(1));
     return val;
 }
@@ -80,7 +80,7 @@ pos_t get_cursor_pos(void)
     __asm__ __volatile__(
     "int $0x40 \n\t"
     "rol $16, %%eax"
-    :"=eax"(val)
+    :"=a"(val)
     :"a"(37),"b"(0));
     return val;
 }
@@ -137,7 +137,7 @@ uint32_t get_tick_count(void)
     uint32_t val;
     __asm__ __volatile__(
     "int $0x40"
-    :"=eax"(val)
+    :"=a"(val)
     :"a"(26),"b"(9));
     return val;
 };
@@ -148,7 +148,7 @@ oskey_t get_key(void)
     oskey_t val;
     __asm__ __volatile__(
     "int $0x40"
-    :"=eax"(val)
+    :"=a"(val)
     :"a"(2));
     return val;
 }
@@ -201,7 +201,7 @@ void *user_alloc(size_t size)
     void  *val;
     __asm__ __volatile__(
     "int $0x40"
-    :"=eax"(val)
+    :"=a"(val)
     :"a"(68),"b"(12),"c"(size));
     return val;
 }
@@ -212,7 +212,7 @@ int user_free(void *mem)
     int  val;
     __asm__ __volatile__(
     "int $0x40"
-    :"=eax"(val)
+    :"=a"(val)
     :"a"(68),"b"(12),"c"(mem));
     return val;
 }
@@ -223,7 +223,7 @@ int *user_unmap(void *base, size_t offset, size_t size)
     void  *val;
     __asm__ __volatile__(
     "int $0x40"
-    :"=eax"(val)
+    :"=a"(val)
     :"a"(68),"b"(26),"c"(base),"d"(offset),"S"(size));
     return val;
 }
@@ -248,7 +248,7 @@ uint32_t  load_cursor(void *path, uint32_t flags)
     uint32_t  val;
     __asm__ __volatile__(
     "int $0x40"
-    :"=eax"(val)
+    :"=a"(val)
     :"a"(37), "b"(4), "c"(path), "d"(flags));
     return val;
 }
@@ -259,7 +259,7 @@ uint32_t  set_cursor(uint32_t  cursor)
     uint32_t  old;
     __asm__ __volatile__(
     "int $0x40"
-    :"=eax"(old)
+    :"=a"(old)
     :"a"(37), "b"(5), "c"(cursor));
     return old;
 }
@@ -278,7 +278,7 @@ void* user_realloc(void *mem, size_t size)
     void *val;
     __asm__ __volatile__(
     "int $0x40"
-    :"=eax"(val)
+    :"=a"(val)
     :"a"(68),"b"(12),"c"(size),"d"(mem)
     :"memory");
 
@@ -308,4 +308,9 @@ struct blit_call
 void Blit(void *bitmap, int dst_x, int dst_y,
                         int src_x, int src_y, int w, int h,
                         int src_w, int src_h, int stride);
+
+
+
+
+
 
