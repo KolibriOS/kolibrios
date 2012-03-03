@@ -62,23 +62,31 @@ char line[330],
 void TWebBrowser::Scan(dword id) {
 	if (id > 399)
 	{
-		//Lee 21.02 {
+		GetURLfromPageLinks(id);
+		
+		//эту всю хрень нужно в GetNewUrl() переместить
 		IF (URL[0] == '#') {  //мы не умеем переходить по ссылке внутри документа. Пока что...
 			copystr(#editURL, #URL);
 			return;
 		}
-
-		GetURLfromPageLinks(id);
 		
 		URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка, лучше, чем ничего (хабр, например, будет работать)
-		
+
 		GetNewUrl();
 
-		if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
-		//Lee 21.02 }
-		
+		//прыгает изображение полоса, белая рисуется снизу
+		if (!strcmp(#URL + strlen(#URL) - 4, ".gif")) || (!strcmp(#URL + strlen(#URL) - 4, ".png")) || (!strcmp(#URL + strlen(#URL) - 4, ".jpg"))
+		{
+			RunProgram("/sys/media/kiv", #URL);
+			copystr(#editURL, #URL);
+			return;
+		}
+
 		copystr(#URL, #editURL);
 		za_kadrom = count = 0;
+		
+		if (!strcmp(get_URL_part(5),"http:")) HttpLoad();
+		
 		ShowPage(#URL);
 		return;
 	}
@@ -175,23 +183,27 @@ void TWebBrowser::Scan(dword id) {
 }
 
 void GetNewUrl(){
-  IF (!strcmp(get_URL_part(2),"./")) copystr(#URL+1,#URL);
-  
-	//IF (!strcmp(get_URL_part(3),"../"))
-	//{
- 	//	//DrawTitle(#URL+7);
-	//}
- 	if (strcmp(get_URL_part(3),"/rd")<>0) && (strcmp(get_URL_part(5),"/sys/")<>0) && (strcmp(get_URL_part(3),"/hd")<>0)
-	&& (strcmp(get_URL_part(3),"/bd")<>0) && (strcmp(get_URL_part(3),"/fd")<>0) && (strcmp(get_URL_part(3),"/cd")<>0)
+	IF (!strcmp(get_URL_part(2),"./")) copystr(#URL+2,#URL);
+	
+	if (URL[0] <> '/')
 	&& (strcmp(get_URL_part(5),"http:")<>0)	&& (strcmp(get_URL_part(5),"mailt")<>0)	&& (strcmp(get_URL_part(5),"ftp:/")<>0) 
 	{
 		copystr(BrowserHistory.CurrentUrl(), #editURL); //достаём адрес текущей страницы
 		
-		IF (editURL[find_symbol(#editURL, '/')-2]<>'/')  // если не http://pagename.ua
+		_CUT_ST_LEVEL_MARK:
+		
+		IF (editURL[find_symbol(#editURL, '/')-2]<>'/')  // если не http://pagename.ua <-- нахрена эта строка???
 		{
 			editURL[find_symbol(#editURL, '/')] = 0x00; //обрезаем её урл до последнего /
-			IF (URL[0]=='/') copystr(#URL+1,#URL);
 		}
+		
+		IF (!strcmp(get_URL_part(3),"../")) //на уровень вверх
+		{
+			copystr(#URL+3,#URL);
+			editURL[find_symbol(#editURL, '/')-1] = 0x00; //обрезаем её урл до последнего /
+			goto _CUT_ST_LEVEL_MARK;
+		}
+		
 		copystr(#URL, #editURL + strlen(#editURL)); //клеим новый адрес
 		copystr(#editURL, #URL);
 	}
