@@ -1,38 +1,38 @@
 ;
-; Ghost Monitor - єЄшышЄр (ёЄЁхёё) ЄхёЄшЁютрэш  ш ьюэшЄюЁшэур ёшёЄхь√
+; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
 ; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
 ; All Right Reserved
 
 ;
-; ┴шсышюЄхър фы  ўшяют WinBond
+; Библиотека для чипов WinBond
 ;
 ;
-;    ─юяшёрЄ№ яюыєўхэшх шэЇ√ ё фЁєушї фрЄўшъют
-;    W83627DHG ьюэшЄюЁшэу рэрыюушўхэ W83627EHF, фюяшёрЄ№ єў╕Є DIV_B2
-;  + 16.03.06 ╚ёяЁртыхэр ю°шсър т wb_get_cpu_temper ё фхё Є√ї уЁрфєёр (с√ыю 30.5 30.0 31.5 ...)
+;    Дописать получение инфы с других датчиков
+;    W83627DHG мониторинг аналогичен W83627EHF, дописать учёт DIV_B2
+;  + 16.03.06 Исправлена ошибка в wb_get_cpu_temper с десятых градуса (было 30.5 30.0 31.5 ...)
 ;
 ;
-;    ╬ ьрЁъшЁютъх (?) : H - H/W Monitor, G - Pb-free package, T - ACPI, S - Smart Card Reader Interface
+;    О маркировке (?) : H - H/W Monitor, G - Pb-free package, T - ACPI, S - Smart Card Reader Interface
 ;      D - SuperIO supporting Intel* PECI* & SST* interfaces, U - UART
 ;
-;		   | Chip name  	 | ID		Vin	Fanin	PWM	Temp   ISA   SMBus
-msg_wb27HF:	db 'W83627HF', 0	; 0x20|0x21	 9	  3	 2	 3      +      +
-msg_wb27THF:	db 'W83627THF', 0	; 0x90|0x91	 7	  3	 3	 3      +      +
-msg_wb37THF:	db 'W83637THF', 0	; 0x80		 7	  3	 3	 3      +      +
-msg_wb97HF:	db 'W83697HF', 0	; 0x60|0x61	 8	  2	 2	 2      +      -
+;                  | Chip name           | ID           Vin     Fanin   PWM     Temp   ISA   SMBus
+msg_wb27HF:	db 'W83627HF', 0	; 0x20|0x21      9        3      2       3      +      +
+msg_wb27THF:	db 'W83627THF', 0	; 0x90|0x91      7        3      3       3      +      +
+msg_wb37THF:	db 'W83637THF', 0	; 0x80           7        3      3       3      +      +
+msg_wb97HF:	db 'W83697HF', 0	; 0x60|0x61      8        2      2       2      +      -
 msg_wb27THFA:	db 'W83627THF-A', 0	; 0x1A
 
-msg_w83627DHG:	db 'W83627DHG', 0	; 0xC1		 ?	  5	 ?	 3      +      +
-msg_w83627EHF:	db 'W83627EHF', 0	; 0x88		 10	  5	 3	 3      +      +
-msg_w83627EHG:	db 'W83627EHG', 0	; 0xA1		 10	  5	 3	 3      +      +
+msg_w83627DHG:	db 'W83627DHG', 0	; 0xC1           ?        5      ?       3      +      +
+msg_w83627EHF:	db 'W83627EHF', 0	; 0x88           10       5      3       3      +      +
+msg_w83627EHG:	db 'W83627EHG', 0	; 0xA1           10       5      3       3      +      +
 
 
-;		db 'W83781D', 0		; 0x10|0x11	 7	  	 3	 3      +      +
-;		db 'W83782D', 0		; 0x30		 9	   	 3	 3      +      +
-;		db 'AS99127F', 0	; 0x31           7               3       3      -      +
-;		db 'W83783S', 0		; 0x40|0x41	 5-6	   	 3	 1-2    -      +
-;		db 'W83791D', 0		; 0x70|0x71	 10	   	 5	 3      -      +
-msg_wbunk:	db 'Unknown Winbond', 0	; other, non zero ;-)
+;               db 'W83781D', 0         ; 0x10|0x11      7               3       3      +      +
+;               db 'W83782D', 0         ; 0x30           9               3       3      +      +
+;               db 'AS99127F', 0        ; 0x31           7               3       3      -      +
+;               db 'W83783S', 0         ; 0x40|0x41      5-6             3       1-2    -      +
+;               db 'W83791D', 0         ; 0x70|0x71      10              5       3      -      +
+msg_wbunk:	db 'Unknown Winbond', 0 ; other, non zero ;-)
 
 uglobal
 wb_fans_num	db	0
@@ -40,7 +40,7 @@ endg
 
 ;-----------------------------------
 wb_init:
-; ╧ЁютхЁър эрышўш  ш шэшЎшрышчрЎш 
+; Проверка наличия и инициализация
 ; OUT - CF = 1 - error
 	cmp	byte[acc_type], 2	; Only ISA and SMBus
 	jae	wb_no
@@ -53,13 +53,13 @@ wb_init:
 	mov	ah, al		;!
 	mov	al, 0x4e
 	mov	bl, 0x80
-	call	[IO_Write]	
+	call	[IO_Write]
 	mov	al, 0x4f
 	call	[IO_Read]
 	cmp	ax, 0xa35c
-	jne	wb_no		; ¤Єю эх Winbond !!!
+	jne	wb_no		; это не Winbond !!!
 
-	; --- єчэр╕ь шфхэЄшЇшърЄюЁ ўшяр --
+	; --- узнаём идентификатор чипа --
 	mov	al, 0x58
 	call	[IO_Read]
 	and	al, 0xFE	; 0x20 = 0x21, 0x60 = 0x61, etc
@@ -111,13 +111,13 @@ wb_getparam:
 ;-----------------------------------
 wb_get_temp:
 	; temp 1
-	mov	al, 0x4e	; ┬√сшЁрхь bank 1
+	mov	al, 0x4e	; Выбираем bank 1
 	mov	bl, 1
 	call	[IO_Write]
-	mov	al, 0x50	; ╧юыєўрхь ёЄрЁ°шщ срщЄ ЄхьяхЁрЄєЁ√ (уЁрфєё√)
+	mov	al, 0x50	; Получаем старший байт температуры (градусы)
 	call	[IO_Read]
 	mov	[hwm_temps], al
-	mov	al, 0x51	; ╧юыєўрхь ьырф°шщ срщЄ ЄхьяхЁрЄєЁ√  (x.5`C)
+	mov	al, 0x51	; Получаем младший байт температуры  (x.5`C)
 	call	[IO_Read]
 	cmp	al, 0		; if al == 0 then x.0, else x.5
 	je	@f
@@ -125,28 +125,28 @@ wb_get_temp:
 @@:	mov	[hwm_temps + 1], al
 
 	; temp 2 (3 SYSTIN)
-	mov	al, 0x4e	; ┬√сшЁрхь bank 0
+	mov	al, 0x4e	; Выбираем bank 0
 	xor	bl, bl
 	call	[IO_Write]
-	mov	al, 0x27	; ╧юыєўрхь ёЄрЁ°шщ срщЄ ЄхьяхЁрЄєЁ√ (уЁрфєё√)
+	mov	al, 0x27	; Получаем старший байт температуры (градусы)
 	call	[IO_Read]
 	mov	[hwm_temps + 2], al
-	
+
 	; temp 3 (VTIN)
-	mov	al, 0x4e	; ┬√сшЁрхь bank 2
+	mov	al, 0x4e	; Выбираем bank 2
 	mov	bl, 2
 	call	[IO_Write]
-	mov	al, 0x50	; ╧юыєўрхь ёЄрЁ°шщ срщЄ ЄхьяхЁрЄєЁ√ (уЁрфєё√)
+	mov	al, 0x50	; Получаем старший байт температуры (градусы)
 	call	[IO_Read]
 	mov	[hwm_temps + 4], al
-	mov	al, 0x51	; ╧юыєўрхь ьырф°шщ срщЄ ЄхьяхЁрЄєЁ√  (x.5`C)
+	mov	al, 0x51	; Получаем младший байт температуры  (x.5`C)
 	call	[IO_Read]
 	cmp	al, 0		; if al == 0 then x.0, else x.5
 	je	@f
 	mov	al, 5
 @@:	mov	[hwm_temps + 5], al
 
-	; ╧ЁютхЁър ЄхьяхЁрЄєЁ√, фрЄўшъш ё 127.5`C эх шёяюы№чє■Єё 
+	; Проверка температуры, датчики с 127.5`C не используются
 	mov	ecx, 3
 	mov	esi, hwm_temps
 wb_check_temp:
@@ -155,7 +155,7 @@ wb_check_temp:
 	mov	word[esi + ecx * 2 - 2], 0
 wb_temp_ok:
 	loop	wb_check_temp
-	
+
 	ret
 ;-----------------------------------
 wb_get_fan_speed:
@@ -166,7 +166,7 @@ wb_get_fan_speed:
 	shr	al, 4
 	mov	ebx, 1
 	mov	cl, al
-	shl	ebx, cl	; <- div1
+	shl	ebx, cl ; <- div1
 	xor	eax, eax
 	mov	al,  0x28
 	call	[IO_Read]
@@ -178,35 +178,40 @@ wb_get_fan_speed:
 	mov	ebx, eax
 	mov	eax, 1350000
 	xor	edx, edx
+	test	ebx, ebx
+	jz	.div0
 	div	ebx
 	mov	[hwm_rpms], eax
-	
+
 	mov	al, 0x47
 	call	[IO_Read]
 	shr	al, 6
 	mov	ebx, 1
 	mov	cl, al
-	shl	ebx, cl	; <- div2
+	shl	ebx, cl ; <- div2
 	xor	eax, eax
 	mov	al,  0x29
 	call	[IO_Read]
 	cmp	al, 255
 	jne	@f
 	xor	eax, eax
+.div0:
 	ret
 @@:	mul	ebx
 	mov	ebx, eax
 	mov	eax, 1350000
 	xor	edx, edx
+	test	ebx, ebx
+	jz	.div0
 	div	ebx
 	mov	[hwm_rpms + 4], eax
-	
+
 	mov	al, 0x4B
 	call	[IO_Read]
 	shr	al, 6
 	mov	ebx, 1
 	mov	cl, al
-	shl	ebx, cl	; <- div3
+	shl	ebx, cl ; <- div3
 	xor	eax, eax
 	mov	al,  0x2A
 	call	[IO_Read]
@@ -218,6 +223,8 @@ wb_get_fan_speed:
 	mov	ebx, eax
 	mov	eax, 1350000
 	xor	edx, edx
+	test	ebx, ebx
+	jz	.div0
 	div	ebx
 	mov	[hwm_rpms + 8], eax
 
@@ -229,7 +236,7 @@ wb_get_fan_speed:
 	and	al, 3
 	mov	ebx, 1
 	mov	cl, al
-	shl	ebx, cl	; <- div4, фюяшёрЄ№ єў╕Є DIV_B2
+	shl	ebx, cl ; <- div4, дописать учёт DIV_B2
 	xor	eax, eax
 	mov	al,  0x3F
 	call	[IO_Read]
@@ -241,18 +248,20 @@ wb_get_fan_speed:
 	mov	ebx, eax
 	mov	eax, 1350000
 	xor	edx, edx
+	test	ebx, ebx
+	jz	.div0
 	div	ebx
 	mov	[hwm_rpms + 12], eax
-	
+
 	mov	al, 0x59
 	call	[IO_Read]
 	shr	al, 2
 	and	al, 3
 	mov	ebx, 1
 	mov	cl, al
-	shl	ebx, cl	; <- div5, фюяшёрЄ№ єў╕Є DIV_B2
+	shl	ebx, cl ; <- div5, дописать учёт DIV_B2
 	xor	eax, eax
-	mov	al, 0x4e	; ┬√сшЁрхь bank 5
+	mov	al, 0x4e	; Выбираем bank 5
 	mov	bl, 5
 	call	[IO_Write]
 	mov	al,  0x53
@@ -265,6 +274,8 @@ wb_get_fan_speed:
 	mov	ebx, eax
 	mov	eax, 1350000
 	xor	edx, edx
+	test	ebx, ebx
+	jz	.wb_f_e
 	div	ebx
 	mov	[hwm_rpms + 16], eax
 
@@ -272,7 +283,7 @@ wb_get_fan_speed:
 	ret
 ;-----------------------------------
 wb_get_volt:
-	;mov	edi, wb_coeff		; <-- possible differences for miscellaneous chip
+	;mov    edi, wb_coeff           ; <-- possible differences for miscellaneous chip
 	mov	esi, hwm_voltages
 	xor	ecx, ecx
 @@:	mov	eax, ecx
@@ -296,8 +307,8 @@ wb_coeff:	dd 0.016		; Vcore
 		dd 0.0608		; Vin2 (+12V)
 		dd 0.0822857142857145	; -12V
 		dd -0.02408		; -5V ; false
-		
+
 wb_n12v_const	dd -14.9142857142857
 
-	
-	
+
+
