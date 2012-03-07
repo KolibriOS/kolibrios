@@ -50,6 +50,4 @@ ret
 @@:
         jmp	close
 
-.label label 20,20,0x80000000,$+4
-db 'Это ваш снимок. Выход - любая клавиша.',0
-
+.label label 20,20,0x80000000,keyforexit

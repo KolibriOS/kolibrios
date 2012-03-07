@@ -804,6 +804,8 @@ device_er db 'Ошибка устройства',0
 not_shooted db 'Сделайте снимок !!!',0
 no_file_name db 'Введите имя файла !!!',0
 invalid_rect db 'Недопустимые размеры области',0
+keyforexit db 'Это ваш снимок. Выход - любая клавиша.',0
+
 
 else
 text:
@@ -850,8 +852,12 @@ device_er db 'Device error',0
 not_shooted db 'Make a photo !!!',0
 no_file_name db 'Enter file name !!!',0
 invalid_rect db 'Wrong area size',0
+keyforexit db 'This is your screenshot. Press any key to exit.',0
 
 end if
+
+
+
 
 ;---------------------------------------------------------------------
 PathShow_data_1:
