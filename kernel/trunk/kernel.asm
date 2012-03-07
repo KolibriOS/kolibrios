@@ -374,7 +374,6 @@ high_code:
 
         mov     [_display.bpp], eax
         mov     [_display.vrefresh], 60
-        mov     [_display.disable_mouse], __sys_disable_mouse
 
         movzx   eax, word [BOOT_VAR+0x900A]; X max
         mov     [_display.width], eax
@@ -670,6 +669,10 @@ end if
 
         stdcall read_file, char, FONT_I, 0, 2304
         stdcall read_file, char2, FONT_II, 0, 2560
+
+        mov     [MOUSE_PICTURE], dword mousepointer
+        mov     [_display.check_mouse], check_mouse_area_for_putpixel
+        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
 
         mov     esi, boot_fonts
         call    boot_log
@@ -1917,7 +1920,30 @@ detect_devices:
         ret
 
 sys_end:
+;--------------------------------------
+        cmp     [_display.select_cursor], 0
+        je      @f
+; restore default cursor before killing
+        pusha
+        mov     ecx, [current_slot]
+        mov     eax, [def_cursor]
+        mov     [ecx+APPDATA.cursor], eax
 
+        movzx   eax, word [MOUSE_Y]
+        movzx   ebx, word [MOUSE_X]
+        mov     ecx, [Screen_Max_X]
+        inc     ecx
+        mul     ecx
+        add     eax, [_WinMapAddress]
+        movzx   edx, byte [ebx+eax]
+        shl     edx, 8
+        mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
+        push    esi
+        call    [_display.select_cursor]
+        mov     [current_cursor], esi
+        popa
+@@:
+;--------------------------------------
         mov     ecx, [current_slot]
         mov     eax, [ecx+APPDATA.tls_base]
         test    eax, eax
@@ -1996,12 +2022,38 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         cmp     ecx, edx
         ja      noprocessterminate
         mov     eax, [TASK_COUNT]
+        push    ecx
         shl     ecx, 5
         mov     edx, [ecx+CURRENT_TASK+TASKDATA.pid]
         add     ecx, CURRENT_TASK+TASKDATA.state
         cmp     byte [ecx], 9
         jz      noprocessterminate
+;--------------------------------------
+        cmp     [_display.select_cursor], 0
+        je      @f
+; restore default cursor before killing
+        pusha
+        mov     ecx, [esp+32]
+        shl     ecx, 8
+        mov     eax, [def_cursor]
+        mov     [ecx+SLOT_BASE+APPDATA.cursor], eax
 
+        movzx   eax, word [MOUSE_Y]
+        movzx   ebx, word [MOUSE_X]
+        mov     ecx, [Screen_Max_X]
+        inc     ecx
+        mul     ecx
+        add     eax, [_WinMapAddress]
+        movzx   edx, byte [ebx+eax]
+        shl     edx, 8
+        mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
+        push    esi
+        call    [_display.select_cursor]
+        mov     [current_cursor], esi
+        popa
+@@:
+        add     esp, 4
+;--------------------------------------
      ;call MEM_Heap_Lock      ;guarantee that process isn't working with heap
         mov     [ecx], byte 3; clear possible i40's
      ;call MEM_Heap_UnLock
@@ -3181,8 +3233,6 @@ markz:
 
   no_mark_system_shutdown:
 
-        call    [_display.disable_mouse]
-
         dec     byte [SYS_SHUTDOWN]
         je      system_shutdown
 
@@ -3679,37 +3729,23 @@ no_mask_io:
 ;     popad                         ; end disable io map
         xor     eax, eax
         ret
-
-
+;-----------------------------------------------------------------------------
 align 4
 drawbackground:
-        inc     [mouse_pause]
-;        cmp     [SCR_MODE], word 0x12
-;        je      dbrv20
-;     dbrv12:
-;        cmp     [SCR_MODE], word 0100000000000000b
-;        jge     dbrv20
-;        cmp     [SCR_MODE], word 0x13
-;        je      dbrv20
-;        call    vesa12_drawbackground
-;        dec     [mouse_pause]
-;        call    [draw_pointer]
-;        ret
-     dbrv20:
+dbrv20:
         cmp     [BgrDrawMode], dword 1
         jne     bgrstr
         call    vesa20_drawbackground_tiled
-        dec     [mouse_pause]
         call    [draw_pointer]
         ret
-     bgrstr:
-        call    vesa20_drawbackground_stretch
-        dec     [mouse_pause]
-        call    [draw_pointer]
-        ret
-
+;--------------------------------------
 align 4
-
+bgrstr:
+        call    vesa20_drawbackground_stretch
+        call    [draw_pointer]
+        ret
+;-----------------------------------------------------------------------------
+align 4
 syscall_putimage:                       ; PutImage
 sys_putimage:
         test    ecx, 0x80008000
@@ -3718,36 +3754,32 @@ sys_putimage:
         jz      .exit
         test    ecx, 0xFFFF0000
         jnz     @f
-  .exit:
+;--------------------------------------
+align 4
+.exit:
         ret
- @@:
+;--------------------------------------
+align 4
+@@:
         mov     edi, [current_slot]
         add     dx, word[edi+APPDATA.wnd_clientbox.top]
         rol     edx, 16
         add     dx, word[edi+APPDATA.wnd_clientbox.left]
         rol     edx, 16
-  .forced:
+;--------------------------------------
+align 4
+.forced:
         push    ebp esi 0
         mov     ebp, putimage_get24bpp
         mov     esi, putimage_init24bpp
+;--------------------------------------
+align 4
 sys_putimage_bpp:
-;        call    [disable_mouse] ; this will be done in xxx_putimage
-;        mov     eax, vga_putimage
-;        cmp     [SCR_MODE], word 0x12
-;        jz      @f   ;.doit
-;        mov     eax, vesa12_putimage
-;        cmp     [SCR_MODE], word 0100000000000000b
-;        jae     @f
-;        cmp     [SCR_MODE], word 0x13
-;        jnz     .doit
-;@@:
-        mov     eax, vesa20_putimage
-.doit:
-        inc     [mouse_pause]
-        call    eax
-        dec     [mouse_pause]
+        call    vesa20_putimage
         pop     ebp esi ebp
-        jmp     [draw_pointer]
+        ret
+;        jmp     [draw_pointer]
+;-----------------------------------------------------------------------------
 align 4
 sys_putimage_palette:
 ; ebx = pointer to image
@@ -3762,6 +3794,8 @@ sys_putimage_palette:
         rol     edx, 16
         add     dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.left]
         rol     edx, 16
+;--------------------------------------
+align 4
 .forced:
         cmp     esi, 1
         jnz     @f
@@ -3776,6 +3810,8 @@ sys_putimage_palette:
         add     esp, 12
         pop     edi
         ret
+;--------------------------------------
+align 4
 @@:
         cmp     esi, 2
         jnz     @f
@@ -3786,6 +3822,8 @@ sys_putimage_palette:
         pop     eax
         pop     edi
         ret
+;--------------------------------------
+align 4
 @@:
         cmp     esi, 4
         jnz     @f
@@ -3796,6 +3834,8 @@ sys_putimage_palette:
         pop     eax
         pop     edi
         ret
+;--------------------------------------
+align 4
 @@:
         push    ebp esi ebp
         cmp     esi, 8
@@ -3803,55 +3843,71 @@ sys_putimage_palette:
         mov     ebp, putimage_get8bpp
         mov     esi, putimage_init8bpp
         jmp     sys_putimage_bpp
+;--------------------------------------
+align 4
 @@:
         cmp     esi, 15
         jnz     @f
         mov     ebp, putimage_get15bpp
         mov     esi, putimage_init15bpp
         jmp     sys_putimage_bpp
+;--------------------------------------
+align 4
 @@:
         cmp     esi, 16
         jnz     @f
         mov     ebp, putimage_get16bpp
         mov     esi, putimage_init16bpp
         jmp     sys_putimage_bpp
+;--------------------------------------
+align 4
 @@:
         cmp     esi, 24
         jnz     @f
         mov     ebp, putimage_get24bpp
         mov     esi, putimage_init24bpp
         jmp     sys_putimage_bpp
+;--------------------------------------
+align 4
 @@:
         cmp     esi, 32
         jnz     @f
         mov     ebp, putimage_get32bpp
         mov     esi, putimage_init32bpp
         jmp     sys_putimage_bpp
+;--------------------------------------
+align 4
 @@:
         pop     ebp esi ebp
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 put_mono_image:
         push    ebp esi ebp
         mov     ebp, putimage_get1bpp
         mov     esi, putimage_init1bpp
         jmp     sys_putimage_bpp
+;-----------------------------------------------------------------------------
+align 4
 put_2bit_image:
         push    ebp esi ebp
         mov     ebp, putimage_get2bpp
         mov     esi, putimage_init2bpp
         jmp     sys_putimage_bpp
+;-----------------------------------------------------------------------------
+align 4
 put_4bit_image:
         push    ebp esi ebp
         mov     ebp, putimage_get4bpp
         mov     esi, putimage_init4bpp
         jmp     sys_putimage_bpp
-
+;-----------------------------------------------------------------------------
+align 4
 putimage_init24bpp:
         lea     eax, [eax*3]
 putimage_init8bpp:
         ret
-
+;-----------------------------------------------------------------------------
 align 16
 putimage_get24bpp:
         movzx   eax, byte [esi+2]
@@ -3859,6 +3915,7 @@ putimage_get24bpp:
         mov     ax, [esi]
         add     esi, 3
         ret     4
+;-----------------------------------------------------------------------------
 align 16
 putimage_get8bpp:
         movzx   eax, byte [esi]
@@ -3868,7 +3925,8 @@ putimage_get8bpp:
         pop     edx
         inc     esi
         ret     4
-
+;-----------------------------------------------------------------------------
+align 4
 putimage_init1bpp:
         add     eax, ecx
         push    ecx
@@ -3879,6 +3937,7 @@ putimage_init1bpp:
         sub     eax, ecx
         pop     ecx
         ret
+;-----------------------------------------------------------------------------
 align 16
 putimage_get1bpp:
         push    edx
@@ -3895,7 +3954,8 @@ putimage_get1bpp:
         add     eax, [edx+4]
         pop     edx
         ret     4
-
+;-----------------------------------------------------------------------------
+align 4
 putimage_init2bpp:
         add     eax, ecx
         push    ecx
@@ -3906,6 +3966,7 @@ putimage_init2bpp:
         sub     eax, ecx
         pop     ecx
         ret
+;-----------------------------------------------------------------------------
 align 16
 putimage_get2bpp:
         push    edx
@@ -3927,7 +3988,8 @@ putimage_get2bpp:
         mov     eax, [edx+eax*4]
         pop     edx
         ret     4
-
+;-----------------------------------------------------------------------------
+align 4
 putimage_init4bpp:
         add     eax, ecx
         push    ecx
@@ -3938,6 +4000,7 @@ putimage_init4bpp:
         sub     eax, ecx
         pop     ecx
         ret
+;-----------------------------------------------------------------------------
 align 16
 putimage_get4bpp:
         push    edx
@@ -3959,19 +4022,23 @@ putimage_get4bpp:
         mov     eax, [edx+eax*4]
         pop     edx
         ret     4
-
+;-----------------------------------------------------------------------------
+align 4
 putimage_init32bpp:
         shl     eax, 2
         ret
+;-----------------------------------------------------------------------------
 align 16
 putimage_get32bpp:
         lodsd
         ret     4
-
+;-----------------------------------------------------------------------------
+align 4
 putimage_init15bpp:
 putimage_init16bpp:
         add     eax, eax
         ret
+;-----------------------------------------------------------------------------
 align 16
 putimage_get15bpp:
 ; 0RRRRRGGGGGBBBBB -> 00000000RRRRR000GGGGG000BBBBB000
@@ -3990,7 +4057,7 @@ putimage_get15bpp:
         or      eax, edx
         pop     edx ecx
         ret     4
-
+;-----------------------------------------------------------------------------
 align 16
 putimage_get16bpp:
 ; RRRRRGGGGGGBBBBB -> 00000000RRRRR000GGGGGG00BBBBB000
@@ -4009,41 +4076,27 @@ putimage_get16bpp:
         or      eax, edx
         pop     edx ecx
         ret     4
-
+;-----------------------------------------------------------------------------
+;align 4
 ; eax x beginning
 ; ebx y beginning
 ; ecx x end
         ; edx y end
 ; edi color
-
-__sys_drawbar:
-        mov     esi, [current_slot]
-        add     eax, [esi+APPDATA.wnd_clientbox.left]
-        add     ecx, [esi+APPDATA.wnd_clientbox.left]
-        add     ebx, [esi+APPDATA.wnd_clientbox.top]
-        add     edx, [esi+APPDATA.wnd_clientbox.top]
-  .forced:
-        inc     [mouse_pause]
-;        call    [disable_mouse]
-;        cmp     [SCR_MODE], word 0x12
-;        je      dbv20
-;   sdbv20:
-;        cmp     [SCR_MODE], word 0100000000000000b
-;        jge     dbv20
-;        cmp     [SCR_MODE], word 0x13
-;        je      dbv20
-;        call    vesa12_drawbar
-;        dec     [mouse_pause]
+;__sys_drawbar:
+;        mov     esi, [current_slot]
+;        add     eax, [esi+APPDATA.wnd_clientbox.left]
+;        add     ecx, [esi+APPDATA.wnd_clientbox.left]
+;        add     ebx, [esi+APPDATA.wnd_clientbox.top]
+;        add     edx, [esi+APPDATA.wnd_clientbox.top]
+;--------------------------------------
+;align 4
+;.forced:
+;        call    vesa20_drawbar
 ;        call    [draw_pointer]
 ;        ret
-;  dbv20:
-        call    vesa20_drawbar
-        dec     [mouse_pause]
-        call    [draw_pointer]
-        ret
-
-
-
+;-----------------------------------------------------------------------------
+align 4
 kb_read:
 
         push    ecx edx
@@ -4069,8 +4122,8 @@ kb_read:
         pop     edx ecx
 
         ret
-
-
+;-----------------------------------------------------------------------------
+align 4
 kb_write:
 
         push    ecx edx
@@ -4123,8 +4176,8 @@ kb_write:
         pop     edx ecx
 
         ret
-
-
+;-----------------------------------------------------------------------------
+align 4
 kb_cmd:
 
         mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
@@ -4155,7 +4208,7 @@ kb_cmd:
 setmouse:  ; set mousepicture -pointer
            ; ps2 mouse enable
 
-        mov     [MOUSE_PICTURE], dword mousepointer
+;        mov     [MOUSE_PICTURE], dword mousepointer
 
         cli
 
@@ -4460,8 +4513,7 @@ syscall_setpixel:                       ; SetPixel
         add     eax, [edi+APPDATA.wnd_clientbox.left]
         add     ebx, [edi+APPDATA.wnd_clientbox.top]
         xor     edi, edi ; no force
-;       mov     edi, 1
-        call    [_display.disable_mouse]
+        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         jmp     [putpixel]
 
 align 4
@@ -4601,6 +4653,7 @@ syscall_getpixel:                       ; GetPixel
         div     ecx
         mov     ebx, edx
         xchg    eax, ebx
+        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 use mouseunder area
         call    dword [GETPIXEL]; eax - x, ebx - y
         mov     [esp + 32], ecx
         ret
@@ -4613,20 +4666,6 @@ syscall_getarea:
 ;ecx = [size x]*65536 + [size y]
 ;edx = [start x]*65536 + [start y]
         pushad
-        inc     [mouse_pause]
-; Check of use of the hardware cursor.
-        cmp     [_display.disable_mouse], __sys_disable_mouse
-        jne     @f
-; Since the test for the coordinates of the mouse should not be used,
-; then use the call [disable_mouse] is not possible!
-        cmp     dword [MOUSE_VISIBLE], dword 0
-        jne     @f
-        pushf
-        cli
-        call    draw_mouse_under
-        popf
-        mov     [MOUSE_VISIBLE], dword 1
-@@:
         mov     edi, ebx
         mov     eax, edx
         shr     eax, 16
@@ -4663,6 +4702,7 @@ syscall_getarea:
         push    eax ebx ecx
         add     eax, ecx
 
+        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 use mouseunder area
         call    dword [GETPIXEL]; eax - x, ebx - y
 
         mov     [ebp], cx
@@ -4677,12 +4717,6 @@ syscall_getarea:
         dec     ebx
         dec     edx
         jnz     .start_y
-        dec     [mouse_pause]
-; Check of use of the hardware cursor.
-        cmp     [_display.disable_mouse], __sys_disable_mouse
-        jne     @f
-        call    [draw_pointer]
-@@:
         popad
         ret
 

@@ -210,7 +210,7 @@ BANK_SWITCH         equ (OS_BASE+0x000E030)
 ;unused ? store mousepointer
 MOUSE_PICTURE       equ (OS_BASE+0x000F200)
 
-MOUSE_VISIBLE       equ (OS_BASE+0x000F204)
+;MOUSE_VISIBLE       equ (OS_BASE+0x000F204)
 WIN_TEMP_XY         equ (OS_BASE+0x000F300)
 KEY_COUNT           equ (OS_BASE+0x000F400)
 KEY_BUFF            equ (OS_BASE+0x000F401)
@@ -512,8 +512,9 @@ struct  display_t
         show_cursor     dd ?
         move_cursor     dd ?
         restore_cursor  dd ?
-        disable_mouse   dd ?
         mask_seqno      dd ?
+        check_mouse     dd ?
+        check_m_pixel   dd ?
 ends
 
 struct  BOOT_DATA

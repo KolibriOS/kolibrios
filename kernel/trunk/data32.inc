@@ -170,7 +170,8 @@ draw_line       dd __sys_draw_line
 draw_pointer    dd __sys_draw_pointer
 ;//mike.dld, 2006-08-02 [
 ;drawbar         dd __sys_drawbar
-drawbar         dd __sys_drawbar.forced
+;drawbar         dd __sys_drawbar.forced
+drawbar         dd vesa20_drawbar
 ;//mike.dld, 2006-08-02 ]
 putpixel        dd __sys_putpixel
 ; } mike.dld
@@ -292,7 +293,8 @@ endofcode:
 gdte:
 
 align 16
-cur_saved_data    rb 4096
+cur_saved_data:
+                  rb 4096
 fpu_data:
                   rb 512
 
@@ -393,13 +395,8 @@ windowtypechanged rd 1
 
 hd_entries        rd 1     ;unused ? 0xfe10
 
-;* start code - Mario79
-
 mouse_active          rd 1
 mouse_pause           rd 1
-MouseTickCounter      rd 1
-
-;* end code - Mario79
 
 img_background        rd 1
 mem_BACKGROUND        rd 1

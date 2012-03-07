@@ -33,8 +33,6 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
 .1:
 ; } \\ Alver \\
         pushad
-        call    [_display.disable_mouse]
-
         movsx   eax, bx         ; eax=y
         sar     ebx, 16         ; ebx=x
         xchg    eax, ebx        ; eax=x, ebx=y
@@ -71,6 +69,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         shr     dl, 1
         jz      .pixloop1end
         jnc     .nopix
+        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         jmp     .pixloop1cont
 .nopix:
@@ -78,6 +77,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         jz      .pixloop1cont
         push    ecx
         mov     ecx, [esp+4+20h+20h]
+        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         pop     ecx
 .pixloop1cont:
@@ -103,6 +103,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
 .pixloop2:
         shr     dl, 1
         jnc     .nopix2
+        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         jmp     .pixloop2cont
 .nopix2:
@@ -110,6 +111,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         jz      .pixloop2cont
         push    ecx
         mov     ecx, [esp+12+20h+20h]
+        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         pop     ecx
 .pixloop2cont:

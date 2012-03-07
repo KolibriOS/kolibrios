@@ -43,10 +43,7 @@ syscall_draw_window: ;///// system function 0 /////////////////////////////////
         jae     .exit
 
         push    eax
-        inc     [mouse_pause]
-        call    [_display.disable_mouse]
         call    window._.sys_set_window
-        call    [_display.disable_mouse]
         pop     eax
 
         or      al, al
@@ -62,7 +59,6 @@ syscall_draw_window: ;///// system function 0 /////////////////////////////////
 
         ; type II - only reserve area, no draw
         call    sys_window_mouse
-        dec     [mouse_pause]
         call    [draw_pointer]
         jmp     .exit
 
@@ -622,7 +618,7 @@ draw_rectangle: ;//////////////////////////////////////////////////////////////
 
         ; set line color
         mov     ecx, esi
-        sub     esi, 1 shl 25
+;        sub     esi, 1 shl 25
         ; draw top border
         rol     ebx, 16
         push    ebx
@@ -2054,9 +2050,6 @@ window._.draw_window_caption: ;////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? <description>
 ;------------------------------------------------------------------------------
-        inc     [mouse_pause]
-        call    [_display.disable_mouse]
-
         xor     eax, eax
         mov     edx, [TASK_COUNT]
         movzx   edx, word[WIN_POS + edx * 2]
@@ -2168,7 +2161,6 @@ window._.draw_window_caption: ;////////////////////////////////////////////////
         call    dtext_asciiz_esi
 
   .exit:
-        dec     [mouse_pause]
         call    [draw_pointer]
         ret
 

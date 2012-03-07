@@ -324,15 +324,19 @@ blit_32:
         test    eax, eax
         jne     .L57
 
-        inc     [mouse_pause]
-        call    [_display.disable_mouse]
-
         mov     eax, [TASK_BASE]
 
         mov     ebx, [esp+BLITTER.dst_x]
         mov     ebp, [esp+BLITTER.dst_y]
         add     ebx, [eax-twdw + WDATA.box.left]
         add     ebp, [eax-twdw + WDATA.box.top]
+
+        mov     ecx, ebx
+        add     ecx, [esp+BLITTER.w]
+        shl     ecx, 16
+        mov     cx, bp
+        add     ecx, [esp+BLITTER.h]
+
         mov     edi, ebp
 
         imul    edi, [_display.pitch]
@@ -346,6 +350,7 @@ blit_32:
         lea     esi, [eax+esi*4]
         add     esi, [esp+BLITTER.bitmap]
 
+        mov     eax, ecx
         mov     ecx, [esp+BLITTER.h]
         mov     edx, [esp+BLITTER.w]
 
@@ -361,7 +366,6 @@ blit_32:
         lea     edi, [edi+ebx*4]
 
         mov     ebx, [CURRENT_TASK]
-
 align 4
 .outer32:
         xor     ecx, ecx
@@ -370,9 +374,26 @@ align 4
 .inner32:
         cmp     [ebp+ecx], bl
         jne     @F
-
+;--------------------------------------
+        push    eax
         mov     eax, [esi+ecx*4]
+
+        push    ecx
+
+        mov     ecx, [esp+4]
+        ror     ecx, 16
+        sub     ecx, edx
+        rol     ecx, 16
+        sub     ecx, [esp+BLITTER.h + 8]
+
+; check mouse area for putpixel
+        call    [_display.check_mouse]
+        pop     ecx
+; store to real LFB
         mov     [LFB_BASE+edi+ecx*4], eax
+        pop     eax
+;--------------------------------------
+align 4
 @@:
         inc     ecx
         dec     edx
@@ -387,7 +408,6 @@ align 4
         jnz     .outer32
 
 .done:
-        dec     [mouse_pause]
         call    [draw_pointer]
 .L57:
         add     esp, 72
@@ -411,13 +431,31 @@ align 4
 .inner24:
         cmp     [ebp+ecx], bl
         jne     @F
-
+;--------------------------------------
+        push    eax
         mov     eax, [esi+ecx*4]
 
         lea     edi, [edi+ecx*2]
+
+        push    ecx
+
+        mov     ecx, [esp+4]
+        ror     ecx, 16
+        sub     ecx, edx
+        rol     ecx, 16
+        sub     ecx, [esp+BLITTER.h + 8]
+
+; check mouse area for putpixel
+        call    [_display.check_mouse]
+        pop     ecx
+
         mov     [edi+ecx], ax
         shr     eax, 16
         mov     [edi+ecx+2], al
+
+        pop     eax
+;--------------------------------------
+align 4
 @@:
         mov     edi, [esp+64]
         inc     ecx
