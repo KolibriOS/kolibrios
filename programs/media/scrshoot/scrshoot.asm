@@ -852,7 +852,7 @@ device_er db 'Device error',0
 not_shooted db 'Make a photo !!!',0
 no_file_name db 'Enter file name !!!',0
 invalid_rect db 'Wrong area size',0
-keyforexit db 'This is your screenshot. Press any key to exit.',0
+keyforexit db 'This is your screenshot. Press any key.',0
 
 end if
 
