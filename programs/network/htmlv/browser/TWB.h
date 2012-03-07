@@ -1,10 +1,8 @@
-//Web-component, Leency & Veliant 2007-20012
-//lev
-
 //идея - левые файлы открывать соответствующими прогами
 //ol - циферки
 
 //из хттп-лоад в реадхтмл
+
 
 int	downloader_id;
 
@@ -17,7 +15,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 0.77";
+ char version[]=" Text-based Browser 0.78";
 
 
 struct TWebBrowser {
@@ -66,11 +64,18 @@ void TWebBrowser::Scan(dword id) {
 		
 		//эту всю хрень нужно в GetNewUrl() переместить
 		IF (URL[0] == '#') {  //мы не умеем переходить по ссылке внутри документа. Пока что...
-			copystr(#editURL, #URL);
+			copystr(BrowserHistory.CurrentUrl(), #editURL);
+			copystr(#URL, #editURL + strlen(#editURL));
+			
+			//edit1.size = edit1.pos = strlen(#editURL);
+			//edit_box_draw stdcall(#edit1); //рисуем строку адреса
+			
+			copystr(BrowserHistory.CurrentUrl(), #URL);
+			ShowPage(#URL);
 			return;
 		}
 		
-		URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка, лучше, чем ничего (хабр, например, будет работать)
+		URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка, лучше, чем ничего (хабр, например, будет работать)  //это не совсем правильно - в едитурл должно оставаться
 
 		GetNewUrl();
 
@@ -78,7 +83,7 @@ void TWebBrowser::Scan(dword id) {
 		if (!strcmp(#URL + strlen(#URL) - 4, ".gif")) || (!strcmp(#URL + strlen(#URL) - 4, ".png")) || (!strcmp(#URL + strlen(#URL) - 4, ".jpg"))
 		{
 			RunProgram("/sys/media/kiv", #URL);
-			copystr(#editURL, #URL);
+			copystr(BrowserHistory.CurrentUrl(), #URL);
 			return;
 		}
 
@@ -183,7 +188,7 @@ void TWebBrowser::Scan(dword id) {
 }
 
 void GetNewUrl(){
-	IF (!strcmp(get_URL_part(2),"./")) copystr(#URL+2,#URL);
+	IF (!strcmp(get_URL_part(2),"./")) copystr(#URL+2,#URL); //игнорим :)
 	
 	if (URL[0] <> '/')
 	&& (strcmp(get_URL_part(5),"http:")<>0)	&& (strcmp(get_URL_part(5),"mailt")<>0)	&& (strcmp(get_URL_part(5),"ftp:/")<>0) 
@@ -681,7 +686,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			{
 				img_za_kadrom=WB1.top-top1;
 				h=h-img_za_kadrom;
-				top1=WB1.top-5;
+				top1=WB1.top;
 			}
 			
 			if (top1>WB1.top+WB1.height-h-10) //если часть изображения снизу     IF (stroka - 2 < max_kolvo_strok)
@@ -693,6 +698,11 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			
 			img_draw stdcall (image,left1-5,top1+10,w, h,0,img_za_kadrom);
 			DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, bg_color);
+			IF (link)
+			{
+				DefineButton(left1 - 5, top1+10, w, h, blink + BT_HIDE, 0xB5BFC9);
+			}
+
         }
 		/*else
 		{

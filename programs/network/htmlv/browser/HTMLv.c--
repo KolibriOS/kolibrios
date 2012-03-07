@@ -1,5 +1,5 @@
 //HTML Viewer in C--
-//Copyright 2007-20012 by Veliant & Leency
+//Copyright 2007-2012 by Veliant & Leency
 //Asper, Lrz, Nable, lev.
 
 #include "..\lib\kolibri.h--"
@@ -56,6 +56,8 @@ void main()
 	copystr(#URL,#editURL);
 	
 	if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
+	//Draw_Window();  //shis is right
+	//WB1.ShowPage(#URL);  //shis is right
 
 	SetEventMask(0x27);
 	loop()
@@ -144,10 +146,13 @@ void Draw_Window()
 	DrawRegion_3D(205,14,onLeft(58,205),18,0x94AECE,0x94AECE); //ободок полосы адреса
 	DrawRegion_3D(206,15,onLeft(59,205),16,0xE4ECF3,0xE4ECF3);
 	edit1.width=Form.width-266;
+	//edit_box_draw stdcall(#edit1); //рисуем строку адреса  //shis is right
+	
 	WB1.top=44;
 	WB1.width=Form.width-11;
 	WB1.height=onTop(43,5);
 	WB1.ShowPage(#URL);
+	//WB1.ParseHTML(buf, filesize); //shis is right
 }
  
 int onLeft(dword right,left) {return Form.width-right-left;}
