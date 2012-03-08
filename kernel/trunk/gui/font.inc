@@ -7,15 +7,14 @@
 
 $Revision$
 
-; // Alver 22.06.2008 // {
+;------------------------------------------------------------------------------
 align 4
 dtext_asciiz_esi:                          ; for skins title out
         push    eax
         xor     eax, eax
         inc     eax
         jmp     dtext.1
-; } \\ Alver \\
-
+;------------------------------------------------------------------------------
 align 4
 dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         ; ebx x & y
@@ -26,12 +25,11 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         ; B = 1 <=> fill background with color eax
         ; edx start of text
         ; edi 1 force
-
-; // Alver 22.06.2008 // {
         push    eax
         xor     eax, eax
+;--------------------------------------
+align 4
 .1:
-; } \\ Alver \\
         pushad
         movsx   eax, bx         ; eax=y
         sar     ebx, 16         ; ebx=x
@@ -39,21 +37,26 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         cmp     esi, 255
         jb      .loop
         mov     esi, 255
+;--------------------------------------
+align 4
 .loop:
         test    ecx, ecx
         js      .test_asciiz
         dec     esi
         js      .end
         jmp     @f
+;--------------------------------------
+align 4
 .test_asciiz:
         cmp     byte [edx], 0
         jz      .end
-; // Alver 22.06.2008 // {
+
         cmp     byte [esp+28], 1
         jne     @f
         dec     esi
         js      .end
-; } \\ Alver \\
+;--------------------------------------
+align 4
 @@:
         inc     edx
         pushad
@@ -62,9 +65,13 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         jnz     .font2
         mov     esi, 9
         lea     ebp, [FONT_I+8*edx+edx]
+;--------------------------------------
+align 4
 .symloop1:
         mov     dl, byte [ebp]
         or      dl, 1 shl 6
+;--------------------------------------
+align 4
 .pixloop1:
         shr     dl, 1
         jz      .pixloop1end
@@ -72,6 +79,8 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         jmp     .pixloop1cont
+;--------------------------------------
+align 4
 .nopix:
         test    ecx, 0x40000000
         jz      .pixloop1cont
@@ -80,9 +89,13 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         pop     ecx
+;--------------------------------------
+align 4
 .pixloop1cont:
         inc     eax
         jmp     .pixloop1
+;--------------------------------------
+align 4
 .pixloop1end:
         sub     eax, 6
         inc     ebx
@@ -92,20 +105,28 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         popad
         add     eax, 6
         jmp     .loop
+;--------------------------------------
+align 4
 .font2:
         add     edx, edx
         lea     ebp, [FONT_II+4*edx+edx+1]
         push    9
         movzx   esi, byte [ebp-1]
+;--------------------------------------
+align 4
 .symloop2:
         mov     dl, byte [ebp]
         push    esi
+;--------------------------------------
+align 4
 .pixloop2:
         shr     dl, 1
         jnc     .nopix2
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         jmp     .pixloop2cont
+;--------------------------------------
+align 4
 .nopix2:
         test    ecx, 0x40000000
         jz      .pixloop2cont
@@ -114,6 +135,8 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         pop     ecx
+;--------------------------------------
+align 4
 .pixloop2cont:
         inc     eax
         dec     esi
@@ -128,7 +151,10 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         add     dword [esp+28], esi
         popad
         jmp     .loop
+;--------------------------------------
+align 4
 .end:
         popad
-        pop     eax             ; << // Alver 22.06.2008 // <<
+        pop     eax
         ret
+;------------------------------------------------------------------------------

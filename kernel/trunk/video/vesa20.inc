@@ -452,7 +452,12 @@ align 4
 .finish:
         add     esp, putimg.stack_data
         popad
+        cmp     [SCR_MODE], dword 0x12
+        jne     @f
         call    VGA__putimage
+;--------------------------------------
+align 4
+@@:
         mov     [EGA_counter], 1
         ret
 ;--------------------------------------
@@ -600,7 +605,7 @@ Vesa20_putpixel24:
 ; check mouse area for putpixel
         test    eax, 0x04000000
         jnz     @f
-        call    [_display.check_mouse]
+        call    check_mouse_area_for_putpixel
 ;--------------------------------------
 align 4
 @@:
@@ -608,7 +613,48 @@ align 4
         mov     [LFB_BASE+ebx+edi], ax
         shr     eax, 16
         mov     [LFB_BASE+ebx+edi+2], al
+        ret
+;-----------------------------------------------------------------------------
+align 4
+Vesa20_putpixel24_new:
+; eax = x
+; ebx = y
+        mov     ecx, eax
+        shl     ecx, 16
+        mov     cx, bx
+
+        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+        lea     edi, [eax+eax*2]; edi = x*3
+        mov     eax, [esp+32-8+4]
 ;--------------------------------------
+; check mouse area for putpixel
+        test    eax, 0x04000000
+        jnz     @f
+;--------------------------------------
+; check for Y
+        cmp     cx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      @f
+
+        cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
+        jae     @f
+
+        rol     ecx, 16
+;--------------------------------------
+; check for X
+        cmp     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      @f
+
+        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
+        jae     @f
+
+        call    check_mouse_area_for_putpixel_new.1
+;--------------------------------------
+align 4
+@@:
+; store to real LFB
+        mov     [LFB_BASE+ebx+edi], ax
+        shr     eax, 16
+        mov     [LFB_BASE+ebx+edi+2], al
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -626,14 +672,54 @@ Vesa20_putpixel32:
 ; check mouse area for putpixel
         test    eax, 0x04000000
         jnz     @f
-        call    [_display.check_mouse]
+        call    check_mouse_area_for_putpixel
 ;--------------------------------------
 align 4
 @@:
         and     eax, 0xffffff
 ; store to real LFB
         mov     [LFB_BASE+edi], eax
+        ret
+;-----------------------------------------------------------------------------
+align 4
+Vesa20_putpixel32_new:
+; eax = x
+; ebx = y
+        mov     ecx, eax
+        shl     ecx, 16
+        mov     cx, bx
+
+        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+        lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
+        mov     eax, [esp+32-8+4]; eax = color
 ;--------------------------------------
+; check mouse area for putpixel
+        test    eax, 0x04000000
+        jnz     @f
+;--------------------------------------
+; check for Y
+        cmp     cx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      @f
+
+        cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
+        jae     @f
+
+        rol     ecx, 16
+;--------------------------------------
+; check for X
+        cmp     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      @f
+
+        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
+        jae     @f
+
+        call    check_mouse_area_for_putpixel_new.1
+;--------------------------------------
+align 4
+@@:
+        and     eax, 0xffffff
+; store to real LFB
+        mov     [LFB_BASE+edi], eax
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -1208,7 +1294,12 @@ align 4
 .end:
         add     esp, drbar.stack_data
         popad
+        cmp     [SCR_MODE], dword 0x12
+        jne     @f
         call    VGA_draw_bar
+;--------------------------------------
+align 4
+@@:
         xor     eax, eax
         mov     [EGA_counter], 1
         ret
@@ -1391,7 +1482,12 @@ dp4:
         jbe     dp2
         popad
         mov     [EGA_counter], 1
+        cmp     [SCR_MODE], dword 0x12
+        jne     @f
         call    VGA_drawbackground
+;--------------------------------------
+align 4
+@@:
         ret
 ;------------------------------------------------------------------------------
 align 4
@@ -1598,7 +1694,12 @@ sdpdone:
         add     esp, 44
         popad
         mov     [EGA_counter], 1
+        cmp     [SCR_MODE], dword 0x12
+        jne     @f
         call    VGA_drawbackground
+;--------------------------------------
+align 4
+@@:
         ret
 
 uglobal

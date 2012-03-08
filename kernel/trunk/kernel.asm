@@ -419,14 +419,7 @@ high_code:
         cmp     [SCR_MODE], word 0x13  ; EGA 320*200 256 colors
         je      v20ga32
         jmp     v20ga24
-;        mov     [PUTPIXEL], dword Vesa12_putpixel24 ; Vesa 1.2
-;        mov     [GETPIXEL], dword Vesa12_getpixel24
-;        cmp     [ScreenBPP], byte 24
-;        jz      ga24
-;        mov     [PUTPIXEL], dword Vesa12_putpixel32
-;        mov     [GETPIXEL], dword Vesa12_getpixel32
-;      ga24:
-;        jmp     v20ga24
+
 setvesa20:
         mov     [PUTPIXEL], dword Vesa20_putpixel24 ; Vesa 2.0
         mov     [GETPIXEL], dword Vesa20_getpixel24
