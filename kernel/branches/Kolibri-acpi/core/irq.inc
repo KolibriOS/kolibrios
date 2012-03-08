@@ -12,9 +12,9 @@ IRQ_POOL_SIZE  equ 48
 uglobal
 
 align 16
-irqh_tab            rd LHEAD.sizeof * IRQ_RESERVED / 4
+irqh_tab            rd sizeof.LHEAD * IRQ_RESERVED / 4
 
-irqh_pool           rd IRQH.sizeof * IRQ_POOL_SIZE /4
+irqh_pool           rd sizeof.IRQH * IRQ_POOL_SIZE /4
 next_irqh           rd 1
 
 irq_active_set      rd 1
@@ -34,14 +34,14 @@ init_irqs:
     loop @B
 
     mov ecx, IRQ_POOL_SIZE-1
-    mov eax, irqh_pool+IRQH.sizeof
+        mov     eax, irqh_pool+sizeof.IRQH
     mov [next_irqh], irqh_pool
 @@:
-    mov [eax-IRQH.sizeof], eax
-    add eax, IRQH.sizeof
+        mov     [eax-sizeof.IRQH], eax
+        add     eax, sizeof.IRQH
     loop @B
 
-    mov [eax-IRQH.sizeof], dword 0
+        mov     [eax-sizeof.IRQH], dword 0
     ret
 
 
@@ -79,7 +79,7 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
          mov [next_irqh], eax
          mov [.irqh], ecx
 
-         mov [irq_failed+ebx*4], 0  ;clear counter
+        mov     [irq_failed+ebx*4], 0;clear counter
 
          mov eax, [user_data]
          mov [ecx+IRQH.handler], edx
@@ -147,7 +147,7 @@ align 16
        save_ring3_context
 
        mov   ebp, [esp + 32]
-       mov   bx, app_data  ;os_data
+        mov     bx, app_data;os_data
        mov   ds, bx
        mov   es, bx
 
@@ -178,7 +178,7 @@ align 16
        lea esi, [irqh_tab+ebp*8]        ; esi= list head
        mov ebx, esi
 .next:
-       mov ebx, [ebx+IRQH.list.next]    ; ebx= irqh pointer
+        mov     ebx, [ebx+IRQH.list.next]; ebx= irqh pointer
        cmp ebx, esi
        je .done
 
@@ -206,7 +206,7 @@ align 16
 
        inc [irq_failed+ebp*4]
 .exit:
-       mov  [check_idle_semaphore],5
+        mov     [check_idle_semaphore], 5
 
        mov ecx, ebp
        call irq_eoi
@@ -219,8 +219,8 @@ align 4
 irqD:
         push  eax
         push  ecx
-        xor   eax,eax
-        out   0xf0,al
+        xor     eax, eax
+        out     0xf0, al
         mov   cl, 13
         call  irq_eoi
         pop   ecx

@@ -12,31 +12,6 @@ macro $Revision a {
 $Revision$
 
 
-; structure definition helper
-macro struct name, [arg]
- {
-  common
-   name@struct equ name
-   struc name arg {
- }
-
-macro declare_sizeof xname,value
-{ sizeof.#xname = value }
-
-macro struct_helper name
- {
-  match xname,name
-  \{
-   virtual at 0
-   xname xname
-   declare_sizeof xname, $ - xname
-   name equ sizeof.#xname
-   end virtual
-  \}
- }
-
-ends fix } struct_helper name@struct
-
 ;// mike.dld, 2006-29-01 [
 
 ; macros definition
@@ -90,49 +65,49 @@ iglobal_nested
 a db 'K : ',string,13,10,0
 endg_nested
 if ~ f eq
-	pushfd
+        pushfd
 end if
-	push	esi
-	mov	esi, a
-	call	sys_msg_board_str
-	pop	esi
+        push    esi
+        mov     esi, a
+        call    sys_msg_board_str
+        pop     esi
 if ~ f eq
-	popfd
+        popfd
 end if
 }
 ; \end{diamond}[29.09.2006]
 
 macro Mov op1,op2,op3 ; op1 = op2 = op3
  {
-        mov   op2,op3
-        mov   op1,op2
+        mov     op2, op3
+        mov     op1, op2
  }
 
 macro __list_add new, prev, next
 {
-    mov [next+LHEAD.prev], new
-    mov [new+LHEAD.next], next
-    mov [new+LHEAD.prev], prev
-    mov [prev+LHEAD.next], new
+        mov     [next+LHEAD.prev], new
+        mov     [new+LHEAD.next], next
+        mov     [new+LHEAD.prev], prev
+        mov     [prev+LHEAD.next], new
 }
 
 macro list_add new, head
 {
-    mov eax, [head+LHEAD.next]
+        mov     eax, [head+LHEAD.next]
     __list_add new, head, eax
 }
 
 macro list_add_tail new, head
 {
-    mov eax, [head+LHEAD.prev]
+        mov     eax, [head+LHEAD.prev]
     __list_add new, eax, head
 }
 
 macro list_del entry
 {
-    mov edx, [entry+list_fd]
-    mov ecx, [entry+list_bk]
-    mov [edx+list_bk], ecx
-    mov [ecx+list_fd], edx
+        mov     edx, [entry+list_fd]
+        mov     ecx, [entry+list_bk]
+        mov     [edx+list_bk], ecx
+        mov     [ecx+list_fd], edx
 }
 

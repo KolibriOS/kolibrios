@@ -82,21 +82,21 @@ APIC_init:
 @@:
         mov ebx, eax
         call  IOAPIC_read
-        mov ah, 0x09    ; Delivery Mode: Lowest Priority, Destination Mode: Logical
+        mov     ah, 0x09; Delivery Mode: Lowest Priority, Destination Mode: Logical
         mov al, cl
-        add al, 0x20    ; vector
-        or  eax, 0x10000    ; Mask Interrupt
+        add     al, 0x20; vector
+        or      eax, 0x10000; Mask Interrupt
         cmp ecx, 16
         jb  .set
 
-        or  eax, 0xa000   ;<<< level-triggered active-low for IRQ16+
+        or      eax, 0xa000;<<< level-triggered active-low for IRQ16+
 .set:
         xchg  eax, ebx
         call  IOAPIC_write
         inc eax
         mov ebx, eax
         call  IOAPIC_read
-        or  eax, 0xff000000   ; Destination Field
+        or      eax, 0xff000000; Destination Field
         xchg  eax, ebx
         call  IOAPIC_write
         inc eax
@@ -141,7 +141,7 @@ LAPIC_init:
         mov eax, [esi + APIC_LDR]
         ;and  eax, 0xff000000
         and eax, 0x00ffffff
-        or  eax, 0x01000000 ;!!!!!!!!!!!!
+        or      eax, 0x01000000;!!!!!!!!!!!!
         mov [esi + APIC_LDR], eax
 
 	; Task Priority Register initialization.
@@ -157,7 +157,7 @@ LAPIC_init:
 .nxt:
         shr eax, 1
         jnc @f
-        mov dword [esi + APIC_EOI], 0 ; EOI
+        mov     dword [esi + APIC_EOI], 0; EOI
 @@:
         loop  .nxt
 
@@ -182,23 +182,23 @@ LAPIC_init:
 
 	; Initialize LVT Error register.
         mov eax, [esi + APIC_LVT_err]
-        or  eax, 0x10000    ; bit 16
+        or      eax, 0x10000; bit 16
         mov [esi + APIC_LVT_err], eax
 
 	; LAPIC timer
 	; pre init
-        mov dword[esi + APIC_timer_div], 1011b  ; 1
-        mov dword[esi + APIC_timer_init], 0xffffffff  ; max val
+        mov     dword[esi + APIC_timer_div], 1011b; 1
+        mov     dword[esi + APIC_timer_init], 0xffffffff; max val
         push  esi
         mov esi, 640        ; wait 0.64 sec
         call  delay_ms
         pop esi
-        mov eax, [esi + APIC_timer_cur]   ; read current tick couner
+        mov     eax, [esi + APIC_timer_cur]; read current tick couner
         xor eax, 0xffffffff       ; eax = 0xffffffff - eax
         shr eax, 6          ; eax /= 64; APIC ticks per 0.01 sec
 
 	; Start (every 0.01 sec)
-        mov dword[esi + APIC_LVT_timer], 0x30020  ; periodic int 0x20
+        mov     dword[esi + APIC_LVT_timer], 0x30020; periodic int 0x20
         mov dword[esi + APIC_timer_init], eax
         ret
 
@@ -232,23 +232,23 @@ IOAPIC_write:
 align 4
 PIC_init:
         cli
-        mov al,0x11   ;  icw4, edge triggered
-        out 0x20,al
-        out 0xA0,al
+        mov     al, 0x11        ;  icw4, edge triggered
+        out     0x20, al
+        out     0xA0, al
 
-        mov al,0x20   ;  generate 0x20 +
-        out 0x21,al
-        mov al,0x28   ;  generate 0x28 +
-        out 0xA1,al
+        mov     al, 0x20        ;  generate 0x20 +
+        out     0x21, al
+        mov     al, 0x28        ;  generate 0x28 +
+        out     0xA1, al
 
-        mov al,0x04   ;  slave at irq2
-        out 0x21,al
-        mov al,0x02   ;  at irq9
-        out 0xA1,al
+        mov     al, 0x04        ;  slave at irq2
+        out     0x21, al
+        mov     al, 0x02        ;  at irq9
+        out     0xA1, al
 
-        mov al,0x01   ;  8086 mode
-        out 0x21,al
-        out 0xA1,al
+        mov     al, 0x01        ;  8086 mode
+        out     0x21, al
+        out     0xA1, al
 
         call  IRQ_mask_all
 	; mov	dword[irq_type_to_set], IRQ_TYPE_PIC
@@ -258,12 +258,12 @@ PIC_init:
 ; TIMER SET TO 1/100 S
 align 4
 PIT_init:
-        mov   al,0x34      ; set to 100Hz
-        out   0x43,al
-        mov   al,0x9b      ; lsb    1193180 / 1193
-        out   0x40,al
-        mov   al,0x2e      ; msb
-        out   0x40,al
+        mov     al, 0x34   ; set to 100Hz
+        out     0x43, al
+        mov     al, 0x9b   ; lsb    1193180 / 1193
+        out     0x40, al
+        mov     al, 0x2e   ; msb
+        out     0x40, al
         ret
 
 ; -----------------------------------------
@@ -305,7 +305,7 @@ IRQ_mask_all:
         mov al, 0xFF
         out 0x21, al
         out 0xA1, al
-        mov ecx,0x1000
+        mov     ecx, 0x1000
         ret
 .APIC:
         mov ecx, [IRQ_COUNT]
@@ -313,7 +313,7 @@ IRQ_mask_all:
 @@:
         mov ebx, eax
         call  IOAPIC_read
-        or  eax, 0x10000    ; bit 16
+        or      eax, 0x10000; bit 16
         xchg  eax, ebx
         call  IOAPIC_write
         inc eax
@@ -339,7 +339,7 @@ irq_eoi:         ; __fastcall
 
 .APIC:
         mov eax, [LAPIC_BASE]
-        mov dword [eax + APIC_EOI], 0 ; EOI
+        mov     dword [eax + APIC_EOI], 0; EOI
         ret
 
 ; -----------------------------------------
@@ -355,9 +355,9 @@ proc enable_irq stdcall, irq_line:dword
         jb  @F
 
         mov edx, 0xA1
-        sub ebx,8
+        sub     ebx, 8
 @@:
-        in  al,dx
+        in      al, dx
         btr eax, ebx
         out dx, al
         ret
@@ -366,7 +366,7 @@ proc enable_irq stdcall, irq_line:dword
         add ebx, 0x10
         mov eax, ebx
         call  IOAPIC_read
-        and eax, 0xfffeffff   ; bit 16
+        and     eax, 0xfffeffff; bit 16
         xchg  eax, ebx
         call  IOAPIC_write
         ret

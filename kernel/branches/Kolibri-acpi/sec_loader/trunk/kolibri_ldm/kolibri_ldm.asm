@@ -46,10 +46,10 @@ start_of_code:
 ;no_hd_load:
 
 ; set up stack
-	push	cs
-	pop	ss
-	xor	ax,ax
-	mov	sp,ax
+        push    cs
+        pop     ss
+        xor     ax, ax
+        mov     sp, ax
 ;        mov     ax, 3000h
 ;        mov     ss, ax
 ;        mov     sp, 0EC00h
@@ -273,9 +273,9 @@ apm_end:
 
 noloaderblock:
 ; DISPLAY VESA INFORMATION
-         call    print_vesa_info
-         call    calc_vmodes_table
-         call    check_first_parm  ;check and enable cursor_pos
+        call    print_vesa_info
+        call    calc_vmodes_table
+        call    check_first_parm   ;check and enable cursor_pos
 
 
 ; \begin{diamond}[30.11.2005]
@@ -334,7 +334,7 @@ cfgmanager:
         mov     si, curvideo_msg
         call    print
 
-            call    draw_current_vmode
+        call    draw_current_vmode
 
         mov     si, usebd_msg
         cmp     [preboot_biosdisk], 1
@@ -381,14 +381,14 @@ cfgmanager:
         push    dword [es:8*4]
         pop     dword [.oldtimer]
         push    dword [.timer]
-        pop     dword [es:8*4]    
+        pop     dword [es:8*4]
 ;        mov     eax, [es:8*4]
 ;        mov     [.oldtimer], eax
 ;        mov     eax, [.timer]
 ;        mov     [es:8*4], eax
         sti
 ; wait for keypressed
-        xor     ax,ax
+        xor     ax, ax
         int     16h
         push    ax
 ; restore timer interrupt
@@ -410,7 +410,7 @@ cfgmanager:
 @@:
         push    cx
         mov     cx, 76
-        rep     stosw
+        rep stosw
         pop     cx
         add     di, 4*2
         loop    @b
@@ -437,32 +437,34 @@ cfgmanager:
 .d:
         mov     [.bSettingsChanged], 1
         call    clear_vmodes_table             ;clear vmodes_table
-        jmp    .printcfg
+        jmp     .printcfg
 .change_a:
 .loops:
         call    draw_vmodes_table
         _setcursor 25,0         ; out of screen
-        xor     ax,ax
+        xor     ax, ax
         int     0x16
 ;        call    clear_table_cursor             ;clear current position of cursor
 
-        mov     si,word [cursor_pos]
+        mov     si, word [cursor_pos]
 
-        cmp     ah,0x48;x,0x48E0               ; up
+        cmp     ah, 0x48;x,0x48E0               ; up
         jne     .down
-        cmp     si,modes_table
+        cmp     si, modes_table
         jbe     .loops
-        sub     word [cursor_pos],size_of_step
+        sub     word [cursor_pos], size_of_step
         jmp     .loops
 
-.down:  cmp     ah,0x50;x,0x50E0               ; down
+.down:
+        cmp     ah, 0x50;x,0x50E0               ; down
         jne     .pgup
-        cmp     word[es:si+10],-1
-        je      .loops        
-        add     word [cursor_pos],size_of_step
+        cmp     word[es:si+10], -1
+        je      .loops
+        add     word [cursor_pos], size_of_step
         jmp     .loops
 
-.pgup:  cmp     ah,0x49                 ; page up
+.pgup:
+        cmp     ah, 0x49                ; page up
         jne     .pgdn
         sub     si, size_of_step*long_v_table
         cmp     si, modes_table
@@ -479,7 +481,8 @@ cfgmanager:
         mov     word [home_cursor], si
         jmp     .loops
 
-.pgdn:  cmp     ah,0x51                 ; page down
+.pgdn:
+        cmp     ah, 0x51                ; page down
         jne     .enter
         mov     ax, [end_cursor]
         add     si, size_of_step*long_v_table
@@ -499,7 +502,8 @@ cfgmanager:
         mov     word [home_cursor], si
         jmp     .loops
 
-.enter: cmp     al,0x0D;x,0x1C0D               ; enter
+.enter:
+        cmp     al, 0x0D;x,0x1C0D               ; enter
         jne     .loops
         push    word [cursor_pos]
         pop     bp
@@ -509,9 +513,9 @@ cfgmanager:
         pop     word [y_save]
         push    word [es:bp+6]
         pop     word [number_vm]
-        mov     word [preboot_graph],bp           ;save choose
+        mov     word [preboot_graph], bp          ;save choose
         
-        jmp    .d
+        jmp     .d
 
 .change_b:
         _setcursor 15,0
@@ -535,7 +539,8 @@ cfgmanager:
         popf
         jz      @f
         mov     si, off_msg
-@@:     jmp     printplain
+@@:
+        jmp     printplain
 ; novesa and vervesa strings are not used at the moment of executing this code
 virtual at novesa
 .oldtimer dd ?
@@ -576,12 +581,13 @@ if lang eq ru
         mov     cl, 'ã'
         jz      @f
         mov     cl, 'ë'
-@@:     mov     [time_str+9], cl
+@@:
+        mov     [time_str+9], cl
 else if lang eq et
         cmp     al, 1
         ja      @f
         mov     [time_str+9], ' '
-        mov     [time_str+10],' '
+        mov     [time_str+10], ' '
 @@:
 else
 ; wait 5/4/3/2 seconds, 1 second
@@ -589,7 +595,8 @@ else
         mov     cl, 's'
         ja      @f
         mov     cl, ' '
-@@:     mov     [time_str+9], cl
+@@:
+        mov     [time_str+9], cl
 end if
         add     al, '0'
         mov     [time_str+1], al
@@ -672,7 +679,7 @@ end if
 
 ; VRR_M USE
 
-        mov     al,[preboot_vrrm]
+        mov     al, [preboot_vrrm]
         mov     [es:0x9030], al
         mov     [es:0x901E], byte 1
 
@@ -730,7 +737,7 @@ gmok2:
         push    ds
         pop     es
 
-	jmp	$
+        jmp     $
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;data
@@ -741,10 +748,10 @@ include "bootstr.inc"     ; language-independent boot messages
 ;include "booteng.inc"     ; english system boot messages
 ;else if lang eq ru
 include "bootru.inc"      ; russian system boot messages
-include "ru.inc"	       ; Russian font
+include "ru.inc"               ; Russian font
 ;else if lang eq et
 ;include "bootet.inc"      ; estonian system boot messages
-;include "et.inc"	       ; Estonian font
+;include "et.inc"              ; Estonian font
 ;else
 ;include "bootge.inc"      ; german system boot messages
 ;end if

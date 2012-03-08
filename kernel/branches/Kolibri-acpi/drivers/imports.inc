@@ -7,9 +7,9 @@
 macro kernel_export [name]{
 forward
   if used name
-	if DEBUG
-	display 'uses: ',`name,#13,#10
-	end if
+        if DEBUG
+        display 'uses: ',`name,#13,#10
+        end if
     extrn name
   end if
 }
@@ -17,82 +17,79 @@ forward
 
 
 kernel_export \
-	      RegService,\
-	      GetService,\
-	      ServiceHandler,\
-	      AttachIntHandler,\
-	      GetIntHandler,\
-	      FpuSave,\
-	      FpuRestore,\
-	      ReservePortArea,\
-	      Boot_Log,\
+              RegService,\
+              GetService,\
+              ServiceHandler,\
+              AttachIntHandler,\
+              GetIntHandler,\
+              FpuSave,\
+              FpuRestore,\
+              ReservePortArea,\
+              Boot_Log,\
 \
           MutexInit,\
           MutexLock,\
           MutexUnlock,\
 \
-	      PciApi,\
-	      PciRead32,\
-	      PciRead16,\
-	      PciRead8,\
-	      PciWrite8,\
-	      PciWrite16,\
-	      PciWrite32,\
+              PciApi,\
+              PciRead32,\
+              PciRead16,\
+              PciRead8,\
+              PciWrite8,\
+              PciWrite16,\
+              PciWrite32,\
 \
-	      AllocPage,\
-	      AllocPages,\
-	      FreePage,\
-	      MapPage,\
-	      MapSpace,\
-	      MapIoMem,\
-	      GetPgAddr,\
-	      CommitPages,\
-	      ReleasePages,\
+              AllocPage,\
+              AllocPages,\
+              FreePage,\
+              MapPage,\
+              MapSpace,\
+              MapIoMem,\
+              GetPgAddr,\
+              CommitPages,\
+              ReleasePages,\
 \
-	      AllocKernelSpace,\
-	      FreeKernelSpace,\
-	      KernelAlloc,\
-	      KernelFree,\
-	      UserAlloc,\
-	      UserFree,\
-	      Kmalloc,\
-	      Kfree,\
-	      CreateRingBuffer,\
+              AllocKernelSpace,\
+              FreeKernelSpace,\
+              KernelAlloc,\
+              KernelFree,\
+              UserAlloc,\
+              UserFree,\
+              Kmalloc,\
+              Kfree,\
+              CreateRingBuffer,\
 \
-        DiskAdd, \
-        DiskMediaChanged, \
+              GetPid,\
+              CreateObject,\
+              DestroyObject,\
+              CreateEvent,\
+              RaiseEvent,\
+              WaitEvent,\
+              DestroyEvent,\
+              ClearEvent,\
 \
-	      GetPid,\
-	      CreateObject,\
-	      DestroyObject,\
-	      CreateEvent,\
-	      RaiseEvent,\
-	      WaitEvent,\
-	      DestroyEvent,\
-	      ClearEvent,\
+              LoadCursor,\
+              SelectHwCursor,\
+              SetHwCursor,\
+              HwCursorRestore,\
+              HwCursorCreate,\
 \
-	      LoadCursor,\
-	      SelectHwCursor,\
-	      SetHwCursor,\
-	      HwCursorRestore,\
-	      HwCursorCreate,\
+              SysMsgBoardStr,\
+              SysMsgBoardChar,\
+              GetCurrentTask,\
+              LoadFile,\
+              SendEvent,\
+              SetMouseData,\
+              Sleep,\
+              GetTimerTicks,\
 \
-	      SysMsgBoardStr,\
-	      SysMsgBoardChar,\
-	      GetCurrentTask,\
-	      LoadFile,\
-	      SendEvent,\
-	      SetMouseData,\
-	      Sleep,\
-	      GetTimerTicks,\
+              strncat,\
+              strncpy,\
+              strncmp,\
+              strnlen,\
+              strchr,\
+              strrchr,\
 \
-	      strncat,\
-	      strncpy,\
-	      strncmp,\
-	      strnlen,\
-	      strchr,\
-	      strrchr,\
-\
-	      LFBAddress,\
-	      GetDisplay,\
-	      SetScreen
+              LFBAddress,\
+              GetDisplay,\
+              SetScreen

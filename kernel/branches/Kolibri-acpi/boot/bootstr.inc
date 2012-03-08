@@ -42,7 +42,8 @@ end while
         store byte ' ' at d80x25_top+cur_line_pos
         store dword ' SVN' at d80x25_top+cur_line_pos-4
 
-space_msg:	line_space
+space_msg:
+                line_space
 verstr:
 ;		line_space
 ; version string

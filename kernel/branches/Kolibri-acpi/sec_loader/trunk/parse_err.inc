@@ -26,41 +26,41 @@
 
 error:
 .rest_value:    
-        mov     di,ax ;restore value after repe cmpsb
-	mov	cx,bx
-        jmp	ret_on_ch	;return 
+        mov     di, ax;restore value after repe cmpsb
+        mov     cx, bx
+        jmp     ret_on_ch       ;return 
 
 ;///// ошибка при находжении длинны секции в параметре default
 .error_get_size_d_sect: 
-	leave	;clear array in stack 
-	mov	si,not_found_def_sect
-	jmp	err_show_ini
+        leave   ;clear array in stack 
+        mov     si, not_found_def_sect
+        jmp     err_show_ini
 
 ;/////ERROR
 .not_loader:
-	leave	;clear array in stack 
-	mov	si,not_found_sec_loader
-	jmp	err_show_ini
+        leave   ;clear array in stack 
+        mov     si, not_found_sec_loader
+        jmp     err_show_ini
 
-.default_eq_loader:	;критическая ошибка default секция = loader
-	leave
-	mov	si,default_eq_loader
-	jmp	err_show_ini
+.default_eq_loader:     ;критическая ошибка default секция = loader
+        leave
+        mov     si, default_eq_loader
+        jmp     err_show_ini
 .correct_exit_bl:
-	leave
-	mov	si,point_to_default_sec_not_found
-	jmp	err_show_ini
+        leave
+        mov     si, point_to_default_sec_not_found
+        jmp     err_show_ini
 .incorect_section_def:
-	leave
-	mov	si,incorect_section_define
-	jmp	err_show_ini
+        leave
+        mov     si, incorect_section_define
+        jmp     err_show_ini
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;show message error
 .LoaderModule:
-	push	word 0xb800
-	pop	es
-	
+        push    word 0xb800
+        pop     es
+        
 
 
 
-	ret
+        ret

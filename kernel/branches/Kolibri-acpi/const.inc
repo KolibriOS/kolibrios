@@ -146,45 +146,38 @@ SSE_INIT equ (SSE_IM+SSE_DM+SSE_ZM+SSE_OM+SSE_UM+SSE_PM)
 IRQ_PIC        equ    0
 IRQ_APIC       equ    1
 
-struc TSS
-{
-  ._back       rw 2
-  ._esp0       rd 1
-  ._ss0        rw 2
-  ._esp1       rd 1
-  ._ss1        rw 2
-  ._esp2       rd 1
-  ._ss2        rw 2
-  ._cr3        rd 1
-  ._eip        rd 1
-  ._eflags     rd 1
-  ._eax        rd 1
-  ._ecx        rd 1
-  ._edx        rd 1
-  ._ebx        rd 1
-  ._esp        rd 1
-  ._ebp        rd 1
-  ._esi        rd 1
-  ._edi        rd 1
-  ._es         rw 2
-  ._cs         rw 2
-  ._ss         rw 2
-  ._ds         rw 2
-  ._fs         rw 2
-  ._gs         rw 2
-  ._ldt        rw 2
-  ._trap       rw 1
-  ._io         rw 1
-               rb 24
-  ._io_map_0   rb 4096
-  ._io_map_1   rb 4096
-}
-
-virtual at 0
-  TSS  TSS
-end virtual
-
-TSS_SIZE  equ (128+8192)
+struct  TSS
+        _back       rw 2
+        _esp0       rd 1
+        _ss0        rw 2
+        _esp1       rd 1
+        _ss1        rw 2
+        _esp2       rd 1
+        _ss2        rw 2
+        _cr3        rd 1
+        _eip        rd 1
+        _eflags     rd 1
+        _eax        rd 1
+        _ecx        rd 1
+        _edx        rd 1
+        _ebx        rd 1
+        _esp        rd 1
+        _ebp        rd 1
+        _esi        rd 1
+        _edi        rd 1
+        _es         rw 2
+        _cs         rw 2
+        _ss         rw 2
+        _ds         rw 2
+        _fs         rw 2
+        _gs         rw 2
+        _ldt        rw 2
+        _trap       rw 1
+        _io         rw 1
+                    rb 24
+        _io_map_0   rb 4096
+        _io_map_1   rb 4096
+ends
 
 OS_BASE             equ 0x80000000
 
@@ -217,7 +210,7 @@ BANK_SWITCH         equ (OS_BASE+0x000E030)
 ;unused ? store mousepointer
 MOUSE_PICTURE       equ (OS_BASE+0x000F200)
 
-MOUSE_VISIBLE       equ (OS_BASE+0x000F204)
+;MOUSE_VISIBLE       equ (OS_BASE+0x000F204)
 WIN_TEMP_XY         equ (OS_BASE+0x000F300)
 KEY_COUNT           equ (OS_BASE+0x000F400)
 KEY_BUFF            equ (OS_BASE+0x000F401)
@@ -402,381 +395,258 @@ EVENT_EXTENDED     equ 0x00000200
 
 EV_INTR            equ 1
 
-struc THR_DATA
-{
-                  rb (8192-512)
-  .pl0_stack:
-  .fpu_state      rb 512
-  .tls_page       rb 4096
-  .pdbr           rb 4096
-}
+struct  THR_DATA
+                        rb (8192-512)
+;       pl0_stack
+        fpu_state       rb 512
+        tls_page        rb 4096
+        pdbr            rb 4096
+ends
 
-THR_DATA_SIZE     equ 4096*4
-
-virtual at (OS_BASE-THR_DATA_SIZE)
+virtual at (OS_BASE-sizeof.THR_DATA)
   thr_data  THR_DATA
 end virtual
 
-struc SYS_VARS
-{ .bpp            dd ?
-  .scanline       dd ?
-  .vesa_mode      dd ?
-  .x_res          dd ?
-  .y_res          dd ?
-}
+struct  SYS_VARS
+        bpp             dd ?
+        scanline        dd ?
+        vesa_mode       dd ?
+        x_res           dd ?
+        y_res           dd ?
+ends
 
-struc APPOBJ           ;common object header
-{
-   .magic       dd ?   ;
-   .destroy     dd ?   ;internal destructor
-   .fd          dd ?   ;next object in list
-   .bk          dd ?   ;prev object in list
-   .pid         dd ?   ;owner id
-};
-
-virtual at 0
-  APPOBJ APPOBJ
-end virtual
+struct  APPOBJ                  ; common object header
+        magic           dd ?    ;
+        destroy         dd ?    ; internal destructor
+        fd              dd ?    ; next object in list
+        bk              dd ?    ; prev object in list
+        pid             dd ?    ; owner id
+ends
 
 APP_OBJ_OFFSET  equ 48
 APP_EV_OFFSET   equ 40
 
-struc CURSOR
-{
-;common object header
-   .magic       dd ?   ;'CURS'
-   .destroy     dd ?   ;internal destructor
-   .fd          dd ?   ;next object in list
-   .bk          dd ?   ;prev object in list
-   .pid         dd ?   ;owner id
+struct  CURSOR          APPOBJ
+        base            dd ?   ;allocated memory
+        hot_x           dd ?   ;hotspot coords
+        hot_y           dd ?
 
- ;cursor data
-   .base        dd ?   ;allocated memory
-   .hot_x       dd ?   ;hotspot coords
-   .hot_y       dd ?
-
-   .list_next   dd ?   ;next cursor in cursor list
-   .list_prev   dd ?   ;prev cursor in cursor list
-   .dev_obj     dd ?   ;device depended data
-
-   .sizeof:
-}
-virtual at 0
-  CURSOR CURSOR
-end virtual
+        list_next       dd ?   ;next cursor in cursor list
+        list_prev       dd ?   ;prev cursor in cursor list
+        dev_obj         dd ?   ;device depended data
+ends
 
 
-struc EVENT
-{
-   .magic       dd ?   ;'EVNT'
-   .destroy     dd ?   ;internal destructor
-   .fd          dd ?   ;next object in list
-   .bk          dd ?   ;prev object in list
-   .pid         dd ?   ;owner id
-
-   .id          dd ?   ;event uid
-   .state       dd ?   ;internal flags
-   .code        dd ?
-                rd 5
-   .size     =  $ - .magic
-   .codesize =  $ - .code
-}
-
-virtual at 0
-  EVENT EVENT
-end virtual
+struct  EVENT           APPOBJ
+        id              dd ?   ;event uid
+        state           dd ?   ;internal flags
+        code            dd ?
+                        rd 5
+ends
 
 
-struc SMEM
-{
-    .bk         dd ?
-    .fd         dd ?    ;+4
-    .base       dd ?    ;+8
-    .size       dd ?    ;+12
-    .access     dd ?    ;+16
-    .refcount   dd ?    ;+20
-    .name       rb 32   ;+24
-    .sizeof:
-}
+struct  SMEM
+        bk              dd ?
+        fd              dd ?    ;+4
+        base            dd ?    ;+8
+        size            dd ?    ;+12
+        access          dd ?    ;+16
+        refcount        dd ?    ;+20
+        name            rb 32   ;+24
+ends
 
-struc SMAP
-{
-   .magic       dd ?   ; SMAP
-   .destroy     dd ?   ;internal destructor
-   .fd          dd ?   ;next object in list
-   .bk          dd ?   ;prev object in list
-   .pid         dd ?   ;owner id
+struct  SMAP            APPOBJ
+        base            dd ?   ;mapped base
+        parent          dd ?   ;SMEM
+ends
 
-   .base        dd ?   ;mapped base
-   .parent      dd ?   ;SMEM
-   .sizeof:
-}
+struct  DLLDESCR
+        bk              dd ?
+        fd              dd ?    ;+4
+        data            dd ?    ;+8
+        size            dd ?    ;+12
+        timestamp       dq ?
+        refcount        dd ?
+        defaultbase     dd ?
+        coff_hdr        dd ?
+        symbols_ptr     dd ?
+        symbols_num     dd ?
+        symbols_lim     dd ?
+        exports         dd ?   ;export table
+        name            rb 260
+ends
 
-virtual at 0
-  SMEM SMEM
-end virtual
+struct  HDLL
+        fd              dd ?   ;next object in list
+        bk              dd ?   ;prev object in list
+        pid             dd ?   ;owner id
 
-virtual at 0
-  SMAP SMAP
-end virtual
+        base            dd ?   ;mapped base
+        size            dd ?   ;mapped size
+        refcount        dd ?   ;reference counter for this process and this lib
+        parent          dd ?   ;DLLDESCR
+ends
 
-struc DLLDESCR
-{
-    .bk         dd ?
-    .fd         dd ?    ;+4
-    .data       dd ?    ;+8
-    .size       dd ?    ;+12
-    .timestamp  dq ?
-    .refcount   dd ?
-    .defaultbase dd ?
-    .coff_hdr    dd ?
-    .symbols_ptr dd ?
-    .symbols_num dd ?
-    .symbols_lim dd ?
-    .exports     dd ?   ;export table
-    .name:
-    .sizeof:
-}
+struct  display_t
+        x               dd ?
+        y               dd ?
+        width           dd ?
+        height          dd ?
+        bpp             dd ?
+        vrefresh        dd ?
+        pitch           dd ?
+        lfb             dd ?
 
-struc HDLL
-{
-    .fd          dd ?   ;next object in list
-    .bk          dd ?   ;prev object in list
-    .pid         dd ?   ;owner id
+        modes           dd ?
+        ddev            dd ?
+        connector       dd ?
+        crtc            dd ?
 
-    .base        dd ?   ;mapped base
-    .size        dd ?   ;mapped size
-    .refcount    dd ?   ;reference counter for this process and this lib
-    .parent      dd ?   ;DLLDESCR
-    .sizeof:
-}
+        cr_list.next    dd ?
+        cr_list.prev    dd ?
 
-virtual at 0
-  DLLDESCR DLLDESCR
-end virtual
+        cursor          dd ?
 
-virtual at 0
-  HDLL HDLL
-end virtual
+        init_cursor     dd ?
+        select_cursor   dd ?
+        show_cursor     dd ?
+        move_cursor     dd ?
+        restore_cursor  dd ?
+        mask_seqno      dd ?
+        check_mouse     dd ?
+        check_m_pixel   dd ?
+ends
 
-struc display_t
-{
-    .x              dd ?
-    .y              dd ?
-    .width          dd ?
-    .height         dd ?
-    .bpp            dd ?
-    .vrefresh       dd ?
-    .pitch          dd ?
-    .lfb            dd ?
+struct  BOOT_DATA
+        bpp             dd ?
+        scanline        dd ?
+        vesa_mode       dd ?
+        x_res           dd ?
+        y_res           dd ?
+        mouse_port      dd ?
+        bank_switch     dd ?
+        lfb             dd ?
+        vesa_mem        dd ?
+        log             dd ?
+        direct_lfb      dd ?
+        pci_data        dd ?
+                        dd ?
+        vrr             dd ?
+        ide_base        dd ?
+        mem_amount      dd ?
+        pages_count     dd ?
+        pagemap_size    dd ?
+        kernel_max      dd ?
+        kernel_pages    dd ?
+        kernel_tables   dd ?
 
-    .modes          dd ?
-    .ddev           dd ?
-    .connector      dd ?
-    .crtc           dd ?
+        cpu_vendor      dd ?
+                        dd ?
+                        dd ?
+        cpu_sign        dd ?
+        cpu_info        dd ?
+        cpu_caps        dd ?
+                        dd ?
+                        dd ?
+ends
 
-    .cr_list.next   dd ?
-    .cr_list.prev   dd ?
+struct  LHEAD
+        next            dd ?   ;next object in list
+        prev            dd ?   ;prev object in list
+ends
 
-    .cursor         dd ?
+struct  MUTEX
+        lhead   LHEAD
+        count   dd ?
+ends
 
-    .init_cursor    dd ?
-    .select_cursor  dd ?
-    .show_cursor    dd ?
-    .move_cursor    dd ?
-    .restore_cursor dd ?
-    .disable_mouse  dd ?
-}
+struct  MEM_STATE
+        mutex           MUTEX
+        smallmap        dd ?
+        treemap         dd ?
+        topsize         dd ?
+        top             dd ?
+        smallbins       rd 4*32
+        treebins        rd 32
+ends
 
-virtual at 0
-  display_t display_t
-end virtual
+struct  PG_DATA
+        mem_amount      dd ?
+        vesa_mem        dd ?
+        pages_count     dd ?
+        pages_free      dd ?
+        pages_faults    dd ?
+        pagemap_size    dd ?
+        kernel_pages    dd ?
+        kernel_tables   dd ?
+        sys_page_dir    dd ?
+        mutex           MUTEX
+ends
 
-struc BOOT_DATA
-{ .bpp            dd ?
-  .scanline       dd ?
-  .vesa_mode      dd ?
-  .x_res          dd ?
-  .y_res          dd ?
-  .mouse_port     dd ?
-  .bank_switch    dd ?
-  .lfb            dd ?
-  .vesa_mem       dd ?
-  .log            dd ?
-  .direct_lfb     dd ?
-  .pci_data       dd ?
-;                  dd ?
-  .vrr            dd ?
-  .ide_base       dd ?
-  .mem_amount     dd ?
-  .pages_count    dd ?
-  .pagemap_size   dd ?
-  .kernel_max     dd ?
-  .kernel_pages   dd ?
-  .kernel_tables  dd ?
-
-  .cpu_vendor     dd ?
-                  dd ?
-                  dd ?
-  .cpu_sign       dd ?
-  .cpu_info       dd ?
-  .cpu_caps       dd ?
-                  dd ?
-                  dd ?
-}
-
-virtual at 0
-  BOOT_DATA BOOT_DATA
-end virtual
-
-struc MEM_STATE
-{  .mutex             MUTEX
-   .smallmap          rd 1
-   .treemap           rd 1
-   .topsize           rd 1
-   .top               rd 1
-   .smallbins         rd 4*32
-   .treebins          rd 32
-}
-
-struc PG_DATA
-{ .mem_amount        dd ?
-  .vesa_mem          dd ?
-  .pages_count       dd ?
-  .pages_free        dd ?
-  .pages_faults      dd ?
-  .pagemap_size      dd ?
-  .kernel_pages      dd ?
-  .kernel_tables     dd ?
-  .sys_page_dir      dd ?
-  .mutex             MUTEX
-}
-
-;struc LIB
-;{ .lib_name         rb 16
-;  .lib_base         dd ?
-;  .lib_start        dd ?
-;  .export           dd ?
-;  .import           dd ?
-;}
-
-struc SRV
-{
- .srv_name          rb 16           ;ASCIIZ string
-  .magic             dd ?     ;+0x10 ;'SRV '
-  .size              dd ?     ;+0x14 ;size of structure SRV
-  .fd                dd ?     ;+0x18 ;next SRV descriptor
-  .bk                dd ?     ;+0x1C ;prev SRV descriptor
-  .base              dd ?     ;+0x20 ;service base address
-  .entry             dd ?     ;+0x24 ;service START function
-  .srv_proc          dd ?     ;+0x28 ;user mode service handler
-  .srv_proc_ex       dd ?     ;+0x2C ;kernel mode service handler
-  .sizeof:
-}
-
-SRV_FD_OFFSET  equ 0x18
+struct  SRV
+        srv_name        rb 16    ;ASCIIZ string
+        magic           dd ?     ;+0x10 ;'SRV '
+        size            dd ?     ;+0x14 ;size of structure SRV
+        fd              dd ?     ;+0x18 ;next SRV descriptor
+        bk              dd ?     ;+0x1C ;prev SRV descriptor
+        base            dd ?     ;+0x20 ;service base address
+        entry           dd ?     ;+0x24 ;service START function
+        srv_proc        dd ?     ;+0x28 ;user mode service handler
+        srv_proc_ex     dd ?     ;+0x2C ;kernel mode service handler
+ends
 
 DRV_ENTRY    equ  1
 DRV_EXIT     equ -1
 
-struc COFF_HEADER
-{  .machine          dw ?
-   .nSections        dw ?
-   .DataTime         dd ?
-   .pSymTable        dd ?
-   .nSymbols         dd ?
-   .optHeader        dw ?
-   .flags            dw ?
-};
+struct  COFF_HEADER
+        machine         dw ?
+        nSections       dw ?
+        DataTime        dd ?
+        pSymTable       dd ?
+        nSymbols        dd ?
+        optHeader       dw ?
+        flags           dw ?
+ends
 
+struct  COFF_SECTION
+        Name            rb 8
+        VirtualSize     dd ?
+        VirtualAddress  dd ?
+        SizeOfRawData   dd ?
+        PtrRawData      dd ?
+        PtrReloc        dd ?
+        PtrLinenumbers  dd ?
+        NumReloc        dw ?
+        NumLinenum      dw ?
+        Characteristics dd ?
+ends
 
-struc COFF_SECTION
-{  .Name             rb 8
-   .VirtualSize      dd ?
-   .VirtualAddress   dd ?
-   .SizeOfRawData    dd ?
-   .PtrRawData       dd ?
-   .PtrReloc         dd ?
-   .PtrLinenumbers   dd ?
-   .NumReloc         dw ?
-   .NumLinenum       dw ?
-   .Characteristics  dd ?
-}
-COFF_SECTION_SIZE equ 40
+struct  COFF_RELOC
+        VirtualAddress  dd ?
+        SymIndex        dd ?
+        Type            dw ?
+ends
 
-struc COFF_RELOC
-{  .VirtualAddress   dd ?
-   .SymIndex         dd ?
-   .Type             dw ?
-}
+struct  COFF_SYM
+        Name            rb 8
+        Value           dd ?
+        SectionNumber   dw ?
+        Type            dw ?
+        StorageClass    db ?
+        NumAuxSymbols   db ?
+ends
 
-struc COFF_SYM
-{  .Name             rb 8
-   .Value            dd ?
-   .SectionNumber    dw ?
-   .Type             dw ?
-   .StorageClass     db ?
-   .NumAuxSymbols    db ?
-}
-CSYM_SIZE equ 18
+struct  IOCTL
+        handle          dd ?
+        io_code         dd ?
+        input           dd ?
+        inp_size        dd ?
+        output          dd ?
+        out_size        dd ?
+ends
 
-struc IOCTL
-{  .handle           dd ?
-   .io_code          dd ?
-   .input            dd ?
-   .inp_size         dd ?
-   .output           dd ?
-   .out_size         dd ?
-}
-
-virtual at 0
-  IOCTL IOCTL
-end virtual
-
-;virtual at 0
-;  LIB LIB
-;end virtual
-
-virtual at 0
-  SRV SRV
-end virtual
-
-virtual at 0
-  CFH COFF_HEADER
-end virtual
-
-virtual at 0
-  CFS COFF_SECTION
-end virtual
-
-virtual at 0
-  CRELOC COFF_RELOC
-end virtual
-
-virtual at 0
-  CSYM COFF_SYM
-end virtual
-
-struc LHEAD
-{
-   .next            dd ?   ;next object in list
-   .prev            dd ?   ;prev object in list
-   .sizeof:
-}
-
-virtual at 0
-  LHEAD LHEAD
-end virtual
-
-struc IRQH
-{
-   .list            LHEAD
-   .handler         dd ?   ;handler roututine
-   .data            dd ?   ;user-specific data
-   .sizeof:
-}
-
-virtual at 0
-  IRQH IRQH
-end virtual
-
+struct  IRQH
+        list            LHEAD
+        handler         dd ?   ;handler roututine
+        data            dd ?   ;user-specific data
+ends

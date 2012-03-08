@@ -35,7 +35,8 @@ preboot_timeout     dw  5*18 ; timeout in 1/18th of second for config settings s
 end if
 
       if $>0x200
-ERROR: prebooting parameters must fit in first sector!!!
+ERROR:
+       prebooting parameters must fit in first sector!!!
       end if
 hdsysimage	    db	'KOLIBRI IMG' ; load from
 image_save	    db	'KOLIBRI IMG' ; save to

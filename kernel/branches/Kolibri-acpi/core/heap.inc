@@ -8,25 +8,19 @@
 $Revision$
 
 
-struc MEM_BLOCK
-{
-   .list        LHEAD
-   .next_block  dd ? ;+8
-   .prev_block  dd ? ;+4
-   .base        dd ? ;+16
-   .size        dd ? ;+20
-   .flags       dd ? ;+24
-   .handle      dd ? ;+28
-   .sizeof:
-}
+struct  MEM_BLOCK
+        list            LHEAD
+        next_block      dd ? ;+8
+        prev_block      dd ? ;+4
+        base            dd ? ;+16
+        size            dd ? ;+20
+        flags           dd ? ;+24
+        handle          dd ? ;+28
+ends
 
 FREE_BLOCK      equ  4
 USED_BLOCK      equ  8
 DONT_FREE_BLOCK equ  10h
-
-virtual at 0
-  MEM_BLOCK MEM_BLOCK
-end virtual
 
 
 block_next   equ MEM_BLOCK.next_block
@@ -139,15 +133,15 @@ proc init_kernel_heap
             mov edx, eax
             mov edi, HEAP_BASE
 .l1:
-            stdcall map_page,edi,edx,PG_SW
+        stdcall map_page, edi, edx, PG_SW
             add edi, 0x1000
             add edx, 0x1000
             dec ecx
             jnz .l1
 
             mov edi, HEAP_BASE                     ;descriptors
-            mov ebx, HEAP_BASE+MEM_BLOCK.sizeof      ;free space
-            mov ecx, HEAP_BASE+MEM_BLOCK.sizeof*2    ;terminator
+        mov     ebx, HEAP_BASE+sizeof.MEM_BLOCK      ;free space
+        mov     ecx, HEAP_BASE+sizeof.MEM_BLOCK*2    ;terminator
 
             xor eax, eax
             mov [edi+block_next], ebx
@@ -155,7 +149,7 @@ proc init_kernel_heap
             mov [edi+list_fd], eax
             mov [edi+list_bk], eax
             mov [edi+block_base], HEAP_BASE
-            mov [edi+block_size], 4096*MEM_BLOCK.sizeof
+        mov     [edi+block_size], 4096*sizeof.MEM_BLOCK
             mov [edi+block_flags], USED_BLOCK
 
             mov [ecx+block_next], eax
@@ -168,32 +162,32 @@ proc init_kernel_heap
 
             mov [ebx+block_next], ecx
             mov [ebx+block_prev], edi
-            mov [ebx+block_base], HEAP_BASE+4096*MEM_BLOCK.sizeof
+        mov     [ebx+block_base], HEAP_BASE+4096*sizeof.MEM_BLOCK
 
             mov ecx, [pg_data.kernel_pages]
             shl ecx, 12
-            sub ecx, HEAP_BASE-OS_BASE+4096*MEM_BLOCK.sizeof
+        sub     ecx, HEAP_BASE-OS_BASE+4096*sizeof.MEM_BLOCK
             mov [heap_size], ecx
             mov [heap_free], ecx
             mov [ebx+block_size], ecx
             mov [ebx+block_flags], FREE_BLOCK
 
             mov [mem_block_mask], eax
-            mov [mem_block_mask+4],0x80000000
+        mov     [mem_block_mask+4], 0x80000000
 
             mov ecx, mem_block_list+63*8
             list_add ebx, ecx
 
             mov ecx, 4096-3-1
-            mov eax, HEAP_BASE+MEM_BLOCK.sizeof*4
+        mov     eax, HEAP_BASE+sizeof.MEM_BLOCK*4
 
-            mov [next_memblock], HEAP_BASE+MEM_BLOCK.sizeof*3
+        mov     [next_memblock], HEAP_BASE+sizeof.MEM_BLOCK *3
 @@:
-            mov [eax-MEM_BLOCK.sizeof], eax
-            add eax, MEM_BLOCK.sizeof
+        mov     [eax-sizeof.MEM_BLOCK], eax
+        add     eax, sizeof.MEM_BLOCK
             loop @B
 
-            mov [eax-MEM_BLOCK.sizeof], dword 0
+        mov     [eax-sizeof.MEM_BLOCK], dword 0
 
             mov ecx, heap_mutex
             call mutex_init
@@ -512,7 +506,7 @@ proc kernel_alloc stdcall, size:dword
            mov edi, eax
            mov edx, [lin_addr]
 @@:
-           stdcall map_page,edx,edi,dword PG_SW
+        stdcall map_page, edx, edi, dword PG_SW
            add edx, 0x1000
            add edi, 0x1000
            dec ecx
@@ -528,7 +522,7 @@ proc kernel_alloc stdcall, size:dword
            test eax, eax
            jz .err
 
-           stdcall map_page,edx,eax,dword PG_SW
+        stdcall map_page, edx, eax, dword PG_SW
            add edx, 0x1000
            dec ecx
            jnz @B
@@ -584,16 +578,16 @@ restore block_flags
 
 ;;;;;;;;;;;;;;      USER     ;;;;;;;;;;;;;;;;;
 
-HEAP_TOP  equ 0x5FC00000
+HEAP_TOP  equ 0x80000000
 
 align 4
 proc init_heap
 
-           mov ebx,[current_slot]
+        mov     ebx, [current_slot]
            mov eax, [ebx+APPDATA.heap_top]
            test eax, eax
            jz @F
-           sub eax,[ebx+APPDATA.heap_base]
+        sub     eax, [ebx+APPDATA.heap_base]
            sub eax, 4096
            ret
 @@:
@@ -854,6 +848,71 @@ proc user_free stdcall, base:dword
            ret
 endp
 
+
+align 4
+proc user_unmap stdcall, base:dword, offset:dword, size:dword
+
+        push    ebx
+
+        mov     ebx, [base]             ; must be valid pointer
+        test    ebx, ebx
+        jz      .error
+
+        mov     edx, [offset]           ; check offset
+        add     edx, ebx                ; must be below 2Gb app limit
+        js      .error
+
+        shr     ebx, 12                 ; chek block attributes
+        lea     ebx, [page_tabs+ebx*4]
+        mov     eax, [ebx-4]            ; block attributes
+        test    al, USED_BLOCK
+        jz      .error
+        test    al, DONT_FREE_BLOCK
+        jnz     .error
+
+        shr     edx, 12
+        lea     edx, [page_tabs+edx*4]  ; unmap offset
+
+        mov     ecx, [size]
+        add     ecx, 4095
+        shr     ecx, 12                 ; unmap size in pages
+
+        shr     eax, 12                 ; block size + 1 page
+        lea     ebx, [ebx+eax*4-4]      ; block end ptr
+        lea     eax, [edx+ecx*4]        ; unmap end ptr
+
+        cmp     eax, ebx                ; check for overflow
+        ja      .error
+
+        mov     ebx, [offset]
+        and     ebx, not 4095           ; is it required ?
+
+.unmap:
+        mov     eax, [edx]              ; get page addres
+        test    al, 1                   ; page mapped ?
+        jz      @F
+        test    eax, PG_SHARED          ; page shared ?
+        jnz     @F
+        mov     [page_tabs+edx*4], dword 2
+                                        ; mark page as reserved
+        invlpg  [ebx]                   ; when we start using
+        call    free_page               ; empty c-o-w page instead this ?
+@@:
+        add     ebx, 4096
+        add     edx, 4
+        dec     ecx
+        jnz     .unmap
+
+        pop     ebx
+        or      al, 1                   ; return non zero on success
+        ret
+.error:
+        pop     ebx
+        xor     eax, eax                ; something wrong
+        ret
+endp
+
+align 4
 user_normalize:
 ; in: esi=heap_base, edi=heap_top
 ; out: eax=0 <=> OK
@@ -1161,8 +1220,8 @@ proc alloc_service
 .find:
            btr [srv_map], eax
            popf
-           shl eax,0x02
-           lea eax,[srv_tab+eax+eax*8]   ;srv_tab+eax*36
+        shl     eax, 0x02
+        lea     eax, [srv_tab+eax+eax*8] ;srv_tab+eax*36
            ret
 endp
 
@@ -1260,7 +1319,7 @@ align 4
            cmp esi, shmem_list
            je .not_found
 
-           lea edx, [esi+SMEM.name] ; link , base, size
+        lea     edx, [esi+SMEM.name]; link , base, size
            stdcall strncmp, edx, ebx, 32
            test eax, eax
            je .found
@@ -1292,7 +1351,7 @@ align 4
            and ecx, -4096
            mov [size], ecx
 
-           mov eax, SMEM.sizeof
+        mov     eax, sizeof.SMEM
            call malloc
            test eax, eax
            mov esi, eax
@@ -1354,7 +1413,7 @@ align 4
            mov ebx, [CURRENT_TASK]
            shl ebx, 5
            mov ebx, [CURRENT_TASK+ebx+4]
-           mov eax, SMAP.sizeof
+        mov     eax, sizeof.SMAP
 
            call create_kernel_object
            test eax, eax
@@ -1463,7 +1522,7 @@ proc shmem_close stdcall, name:dword
 
            stdcall user_free, [esi+SMAP.base]
 
-           mov eax,esi
+        mov     eax, esi
            call [esi+APPOBJ.destroy]
 @@:
            popfd

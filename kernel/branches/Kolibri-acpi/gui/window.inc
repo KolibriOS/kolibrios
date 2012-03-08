@@ -43,10 +43,7 @@ syscall_draw_window: ;///// system function 0 /////////////////////////////////
         jae     .exit
 
         push    eax
-        inc     [mouse_pause]
-        call    [_display.disable_mouse]
         call    window._.sys_set_window
-        call    [_display.disable_mouse]
         pop     eax
 
         or      al, al
@@ -56,16 +53,17 @@ syscall_draw_window: ;///// system function 0 /////////////////////////////////
         call    drawwindow_I
         jmp     window._.draw_window_caption.2
 
-    @@: dec     al
+    @@:
+        dec     al
         jnz     @f
 
         ; type II - only reserve area, no draw
         call    sys_window_mouse
-        dec     [mouse_pause]
         call    [draw_pointer]
         jmp     .exit
 
-    @@: dec     al
+    @@:
+        dec     al
         jnz     @f
 
         ; type III  - new style
@@ -73,7 +71,8 @@ syscall_draw_window: ;///// system function 0 /////////////////////////////////
         jmp     window._.draw_window_caption.2
 
         ; type IV & V - skinned window (resizable & not)
-    @@: mov     eax, [TASK_COUNT]
+    @@:
+        mov     eax, [TASK_COUNT]
         movzx   eax, word[WIN_POS + eax * 2]
         cmp     eax, [CURRENT_TASK]
         setz    al
@@ -133,7 +132,8 @@ syscall_display_settings: ;///// system function 48 ///////////////////////////
         cmp     ebx, .sizeof.ftable / 4
         ja      @f
         jmp     [.ftable + ebx * 4]
-    @@: ret
+    @@:
+        ret
 
 
 align 4
@@ -167,7 +167,7 @@ syscall_display_settings.02:
         and     edx, 127
         mov     edi, common_colours
         mov     ecx, edx
-        rep     movsb
+        rep movsb
         mov     [windowtypechanged], ebx
         ret
 
@@ -177,7 +177,7 @@ syscall_display_settings.03:
         and     edx, 127
         mov     esi, common_colours
         mov     ecx, edx
-        rep     movsb
+        rep movsb
         ret
 
 align 4
@@ -210,11 +210,13 @@ syscall_display_settings.06:
         or      eax, eax
         jge     @f
         xor     eax, eax
-    @@: mov     [screen_workarea.left], eax
+    @@:
+        mov     [screen_workarea.left], eax
         cmp     ebx, edi
         jle     @f
         mov     ebx, edi
-    @@: mov     [screen_workarea.right], ebx
+    @@:
+        mov     [screen_workarea.right], ebx
 
   .check_horizontal:
         mov     edi, [Screen_Max_Y]
@@ -227,11 +229,13 @@ syscall_display_settings.06:
         or      eax, eax
         jge     @f
         xor     eax, eax
-    @@: mov     [screen_workarea.top], eax
+    @@:
+        mov     [screen_workarea.top], eax
         cmp     ebx, edi
         jle     @f
         mov     ebx, edi
-    @@: mov     [screen_workarea.bottom], ebx
+    @@:
+        mov     [screen_workarea.bottom], ebx
 
   .check_if_redraw_needed:
         or      esi, esi
@@ -328,21 +332,25 @@ syscall_move_window: ;///// system function 67 ////////////////////////////////
         cmp     ebx, -1
         jne     @f
         mov     ebx, [edi + WDATA.box.left]
-    @@: cmp     ecx, -1
+    @@:
+        cmp     ecx, -1
         jne     @f
         mov     ecx, [edi + WDATA.box.top]
-    @@: cmp     edx, -1
+    @@:
+        cmp     edx, -1
         jne     @f
         mov     edx, [edi + WDATA.box.width]
-    @@: cmp     esi, -1
+    @@:
+        cmp     esi, -1
         jne     @f
         mov     esi, [edi + WDATA.box.height]
 
-    @@: push    esi edx ecx ebx
+    @@:
+        push    esi edx ecx ebx
         mov     eax, esp
         mov     bl, [edi + WDATA.fl_wstate]
         call    window._.set_window_box
-        add     esp, BOX.sizeof
+        add     esp, sizeof.BOX
 
         ; NOTE: do we really need this? to be reworked
 ;       mov     byte[DONT_DRAW_MOUSE], 0 ; mouse pointer
@@ -399,7 +407,8 @@ set_window_defaults: ;/////////////////////////////////////////////////////////
         push    eax ecx
         xor     eax, eax
         mov     ecx, WIN_STACK
-    @@: inc     eax
+    @@:
+        inc     eax
         add     ecx, 2
         ; process no
         mov     [ecx + 0x000], ax
@@ -466,17 +475,21 @@ calculatescreen: ;/////////////////////////////////////////////////////////////
         cmp     eax, [esp + RECT.left]
         jae     @f
         mov     eax, [esp + RECT.left]
-    @@: cmp     ebx, [esp + RECT.top]
+    @@:
+        cmp     ebx, [esp + RECT.top]
         jae     @f
         mov     ebx, [esp + RECT.top]
-    @@: cmp     ecx, [esp + RECT.right]
+    @@:
+        cmp     ecx, [esp + RECT.right]
         jbe     @f
         mov     ecx, [esp + RECT.right]
-    @@: cmp     edx, [esp + RECT.bottom]
+    @@:
+        cmp     edx, [esp + RECT.bottom]
         jbe     @f
         mov     edx, [esp + RECT.bottom]
 
-    @@: push    esi
+    @@:
+        push    esi
         movzx   esi, word[WIN_POS + esi * 2]
         call    window._.set_screen
         pop     esi
@@ -490,6 +503,7 @@ calculatescreen: ;/////////////////////////////////////////////////////////////
 
   .exit:
         pop     ebp
+        inc     [_display.mask_seqno]
         popfd
         pop     esi
         ret
@@ -501,7 +515,7 @@ repos_windows: ;///////////////////////////////////////////////////////////////
 ;? <description>
 ;------------------------------------------------------------------------------
         mov     ecx, [TASK_COUNT]
-        mov     edi, window_data + WDATA.sizeof * 2
+        mov     edi, window_data + sizeof.WDATA * 2
         call    force_redraw_background
         dec     ecx
         jle     .exit
@@ -520,7 +534,8 @@ repos_windows: ;///////////////////////////////////////////////////////////////
         sub     eax, ebx
         jle     @f
         mov     [edi + WDATA.box.width], ebx
-    @@: sub     ebx, [edi + WDATA.box.width]
+    @@:
+        sub     ebx, [edi + WDATA.box.width]
         mov     [edi + WDATA.box.left], ebx
 
   .fix_vertical:
@@ -533,7 +548,8 @@ repos_windows: ;///////////////////////////////////////////////////////////////
         sub     eax, ebx
         jle     @f
         mov     [edi + WDATA.box.height], ebx
-    @@: sub     ebx, [edi + WDATA.box.height]
+    @@:
+        sub     ebx, [edi + WDATA.box.height]
         mov     [edi + WDATA.box.top], ebx
         jmp     .fix_client_box
 
@@ -554,7 +570,7 @@ repos_windows: ;///////////////////////////////////////////////////////////////
   .fix_client_box:
         call    window._.set_window_clientbox
 
-        add     edi, WDATA.sizeof
+        add     edi, sizeof.WDATA
         loop    .next_window
 
   .exit:
@@ -590,6 +606,9 @@ draw_rectangle: ;//////////////////////////////////////////////////////////////
 ;> eax = pack[16(left), 16(right)]
 ;> ebx = pack[16(top), 16(bottom)]
 ;> esi = color
+;       ?? RR GG BB    ; 0x01000000 negation
+;                      ; 0x02000000 used for draw_rectangle without top line
+;                      ;           for example drawwindow_III and drawwindow_IV
 ;------------------------------------------------------------------------------
         push    eax ebx ecx edi
 
@@ -600,14 +619,17 @@ draw_rectangle: ;//////////////////////////////////////////////////////////////
 
         ; set line color
         mov     ecx, esi
-
+;        sub     esi, 1 shl 25
         ; draw top border
         rol     ebx, 16
         push    ebx
         rol     ebx, 16
         pop     bx
+        test    ecx, 1 shl 25
+        jnz     @f
+        sub     ecx, 1 shl 25
         call    [draw_line]
-
+@@:
         ; draw bottom border
         mov     ebx, [esp - 2]
         pop     bx
@@ -655,7 +677,8 @@ drawwindow_I_caption: ;////////////////////////////////////////////////////////
         cmp     ebx, eax
         jbe     @f
         mov     ebx, eax
-    @@: push    ebx
+    @@:
+        push    ebx
 
         xor     edi, edi
 
@@ -674,7 +697,8 @@ drawwindow_I_caption: ;////////////////////////////////////////////////////////
         jz      @f
         sub     ecx, 0x00040404
         mov     [esi + WDATA.cl_titlebar], ecx
-    @@: and     ecx, 0x00ffffff
+    @@:
+        and     ecx, 0x00ffffff
         call    [draw_line]
         inc     edx
         cmp     edx, [esp]
@@ -753,7 +777,8 @@ drawwindow_III_caption: ;/////////////////////////////////////////////////////
         cmp     ebx, eax
         jb      @f
         mov     ebx, eax
-    @@: push    ebx
+    @@:
+        push    ebx
 
         xor     edi, edi
 
@@ -770,10 +795,12 @@ drawwindow_III_caption: ;/////////////////////////////////////////////////////
         test    ecx, 0x40000000
         jz      @f
         add     ecx, 0x00040404
-    @@: test    ecx, 0x80000000
+    @@:
+        test    ecx, 0x80000000
         jz      @f
         sub     ecx, 0x00040404
-    @@: mov     [esi + WDATA.cl_titlebar], ecx
+    @@:
+        mov     [esi + WDATA.cl_titlebar], ecx
         and     ecx, 0x00ffffff
         call    [draw_line]
         inc     edx
@@ -804,22 +831,28 @@ drawwindow_III: ;//////////////////////////////////////////////////////////////
         mov     esi, [edx + WDATA.cl_frames]
         shr     esi, 1
         and     esi, 0x007f7f7f
+        or      esi, 1 shl 25; 0x02000000 used for draw_rectangle without top line
+        ror     ebx, 16
+        add     ebx, [_skinh]
+        sub     bx, 1
+        rol     ebx, 16
         call    draw_rectangle
 
         push    esi
         mov     ecx, 3
         mov     esi, [edx + WDATA.cl_frames]
+        or      esi, 1 shl 25; 0x02000000 used for draw_rectangle without top line
 
   .next_frame:
         add     eax, 1 * 65536 - 1
-        add     ebx, 1 * 65536 - 1
+        add     ebx, 0 * 65536 - 1
         call    draw_rectangle
         dec     ecx
         jnz     .next_frame
 
         pop     esi
         add     eax, 1 * 65536 - 1
-        add     ebx, 1 * 65536 - 1
+        add     ebx, 0 * 65536 - 1
         call    draw_rectangle
 
         ; window caption
@@ -895,6 +928,7 @@ waredraw: ;////////////////////////////////////////////////////////////////////
         mov     edi, [TASK_COUNT]
         movzx   esi, word[WIN_POS + edi * 2]
         call    window._.set_screen
+        inc     [_display.mask_seqno]
         popad
 
         ; tell application to redraw itself
@@ -987,14 +1021,15 @@ restore_minimized_window: ;////////////////////////////////////////////////////
         cmp     eax, [TASK_COUNT]
         jz      @f
         mov     ebp, calculatescreen
-    @@: mov     eax, [edi + WDATA.box.left]
+    @@:
+        mov     eax, [edi + WDATA.box.left]
         mov     ebx, [edi + WDATA.box.top]
         mov     ecx, [edi + WDATA.box.width]
         mov     edx, [edi + WDATA.box.height]
         add     ecx, eax
         add     edx, ebx
         call    ebp
-
+        inc     [_display.mask_seqno]
         mov     byte[MOUSE_BACKGROUND], 0
 
   .exit:
@@ -1022,7 +1057,8 @@ window_check_events: ;/////////////////////////////////////////////////////////
         call    minimize_window
         jmp     .exit
 
-    @@: call    restore_minimized_window
+    @@:
+        call    restore_minimized_window
 
   .exit:
         ret
@@ -1083,10 +1119,12 @@ sys_window_maximize_handler: ;/////////////////////////////////////////////////
         mov     [ecx + BOX.height], eax
         xchg    eax, ecx
 
-    @@: call    window._.set_window_box
-        add     esp, BOX.sizeof
+    @@:
+        call    window._.set_window_box
+        add     esp, sizeof.BOX
 
   .exit:
+        inc     [_display.mask_seqno]
         ret
 
 align 4
@@ -1120,11 +1158,12 @@ sys_window_rollup_handler: ;///////////////////////////////////////////////////
   .restore_size:
         test    bl, WSTATE_MAXIMIZED
         jnz     @f
-        add     esp, -BOX.sizeof
+        add     esp, -sizeof.BOX
         lea     eax, [edx + APPDATA.saved_box]
         jmp     .set_box
 
-    @@: mov     eax, [screen_workarea.top]
+    @@:
+        mov     eax, [screen_workarea.top]
         push    [screen_workarea.bottom] \
                 [edi + WDATA.box.width] \
                 eax \
@@ -1134,7 +1173,7 @@ sys_window_rollup_handler: ;///////////////////////////////////////////////////
 
   .set_box:
         call    window._.set_window_box
-        add     esp, BOX.sizeof
+        add     esp, sizeof.BOX
 
         ret
 
@@ -1232,27 +1271,31 @@ window._.invalidate_screen: ;//////////////////////////////////////////////////
         cmp     ecx, edx
         jle     @f
         mov     ecx, edx
-    @@: mov     [draw_limits.left], ecx
+    @@:
+        mov     [draw_limits.left], ecx
         mov     ecx, [eax + BOX.left]
         add     ecx, [eax + BOX.width]
         add     edx, [ebx + BOX.width]
         cmp     ecx, edx
         jae     @f
         mov     ecx, edx
-    @@: mov     [draw_limits.right], ecx
+    @@:
+        mov     [draw_limits.right], ecx
         mov     ecx, [eax + BOX.top]
         mov     edx, [ebx + BOX.top]
         cmp     ecx, edx
         jle     @f
         mov     ecx, edx
-    @@: mov     [draw_limits.top], ecx
+    @@:
+        mov     [draw_limits.top], ecx
         mov     ecx, [eax + BOX.top]
         add     ecx, [eax + BOX.height]
         add     edx, [ebx + BOX.height]
         cmp     ecx, edx
         jae     @f
         mov     ecx, edx
-    @@: mov     [draw_limits.bottom], ecx
+    @@:
+        mov     [draw_limits.bottom], ecx
 
         ; recalculate screen buffer at old position
         push    ebx
@@ -1296,29 +1339,29 @@ window._.set_window_box: ;/////////////////////////////////////////////////////
         push    eax ebx esi
 
 ; don't do anything if the new box is identical to the old
-	cmp	bl, [edi + WDATA.fl_wstate]
-	jnz	@f
-	mov	esi, eax
-	push	edi
+        cmp     bl, [edi + WDATA.fl_wstate]
+        jnz     @f
+        mov     esi, eax
+        push    edi
 if WDATA.box
-	add	edi, WDATA.box
+        add     edi, WDATA.box
 end if
-	mov	ecx, 4
-	repz	cmpsd
-	pop	edi
-	jz	.exit
+        mov     ecx, 4
+        repz cmpsd
+        pop     edi
+        jz      .exit
 @@:
 
-        add     esp, -BOX.sizeof
+        add     esp, -sizeof.BOX
 
         mov     ebx, esp
 if WDATA.box
         lea     esi, [edi + WDATA.box]
 else
-	mov	esi, edi ; optimization for WDATA.box = 0
+        mov     esi, edi ; optimization for WDATA.box = 0
 end if
         xchg    eax, esi
-        mov     ecx, BOX.sizeof
+        mov     ecx, sizeof.BOX
         call    memmove
         xchg    eax, esi
         xchg    ebx, esi
@@ -1330,7 +1373,7 @@ end if
         call    window._.set_window_clientbox
         call    window._.invalidate_screen
 
-        add     esp, BOX.sizeof
+        add     esp, sizeof.BOX
 
         mov     cl, [esp + 4]
         mov     ch, cl
@@ -1477,7 +1520,8 @@ window._.sys_set_window: ;/////////////////////////////////////////////////////
 
         xor     eax, eax
 
-    @@: mov     [edi + APPDATA.wnd_caption], eax
+    @@:
+        mov     [edi + APPDATA.wnd_caption], eax
 
         mov     esi, [esp]
         add     edi, APPDATA.saved_box
@@ -1601,7 +1645,8 @@ window._.get_titlebar_height: ;////////////////////////////////////////////////
         jne     @f
         mov     eax, [_skinh]
         ret
-    @@: mov     eax, 21
+    @@:
+        mov     eax, 21
         ret
 
 align 4
@@ -1619,11 +1664,13 @@ window._.get_rolledup_height: ;////////////////////////////////////////////////
         mov     eax, [_skinh]
         add     eax, 3
         ret
-    @@: or      al, al
+    @@:
+        or      al, al
         jnz     @f
         mov     eax, 21
         ret
-    @@: mov     eax, 21 + 2
+    @@:
+        mov     eax, 21 + 2
         ret
 
 align 4
@@ -1688,10 +1735,10 @@ end virtual
   .next_line:
         push    ecx
         shr     ecx, 2
-        rep     stosd
+        rep stosd
         mov     ecx, [esp]
         and     ecx, 3
-        rep     stosb
+        rep stosb
         pop     ecx
         add     edi, esi
         sub     edi, ecx
@@ -1765,12 +1812,13 @@ end virtual
         pop     edx ebx
         add     eax, edi
         call    .read_byte
-        test    al,al
+        test    al, al
         jz      @f
         mov     eax, esi
         mov     [ebp], al
         ; -- end body --
-    @@: inc     ebp
+    @@:
+        inc     ebp
         inc     edx
         cmp     edx, [ff_xsz]
         jb      .ff_new_x
@@ -1787,6 +1835,7 @@ end virtual
 
   .exit:
         popad
+        inc     [_display.mask_seqno]
         ret
 
   .read_byte:
@@ -1812,9 +1861,9 @@ window._.window_activate: ;////////////////////////////////////////////////////
 
         ; if type of current active window is 3 or 4, it must be redrawn
         mov     ebx, [TASK_COUNT]
-	
-;	DEBUGF	1, "K : TASK_COUNT (0x%x)\n", ebx
-	
+        
+;       DEBUGF  1, "K : TASK_COUNT (0x%x)\n", ebx
+        
         movzx   ebx, word[WIN_POS + ebx * 2]
         shl     ebx, 5
         add     eax, window_data
@@ -1841,13 +1890,13 @@ window._.window_activate: ;////////////////////////////////////////////////////
         cmp     eax, [TASK_COUNT]
         jae     .move_self_up
         inc     eax
-	
-;	push	ebx
-;	xor	ebx,ebx
-;	mov	bx,[WIN_STACK + eax * 2]
-;	DEBUGF	1, "K : DEC WIN_STACK (0x%x)\n",ebx
-;	pop	ebx
-	
+        
+;       push    ebx
+;       xor     ebx,ebx
+;       mov     bx,[WIN_STACK + eax * 2]
+;       DEBUGF  1, "K : DEC WIN_STACK (0x%x)\n",ebx
+;       pop     ebx
+        
         cmp     [WIN_STACK + eax * 2], bx
         jbe     .next_stack_window
         dec     word[WIN_STACK + eax * 2]
@@ -1887,46 +1936,46 @@ window._.window_deactivate: ;///////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;> esi = pointer to WIN_POS+ window data
 ;------------------------------------------------------------------------------
-	push	eax ebx
+        push    eax ebx
 ;------------------------------------------------------------------------------
 .move_others_up:
-	; ax <- process no
-	movzx	ebx, word[esi]
-	; ax <- position in window stack
-	movzx	ebx, word[WIN_STACK + ebx * 2]
-	; up others
-	xor	eax, eax
+        ; ax <- process no
+        movzx   ebx, word[esi]
+        ; ax <- position in window stack
+        movzx   ebx, word[WIN_STACK + ebx * 2]
+        ; up others
+        xor     eax, eax
 .next_stack_window:
-	cmp	eax, [TASK_COUNT]
-	jae	.move_self_down
-	inc	eax
-	cmp	[WIN_STACK + eax * 2], bx
-	jae	.next_stack_window
-	inc	word[WIN_STACK + eax * 2]
-	jmp	.next_stack_window
+        cmp     eax, [TASK_COUNT]
+        jae     .move_self_down
+        inc     eax
+        cmp     [WIN_STACK + eax * 2], bx
+        jae     .next_stack_window
+        inc     word[WIN_STACK + eax * 2]
+        jmp     .next_stack_window
 ;----------------------------------------------
 .move_self_down:
-	movzx	ebx, word[esi]
-	; this is the last (and the low)
-	mov	[WIN_STACK + ebx * 2], word 1
-	; update on screen - window stack
-	xor	eax, eax
+        movzx   ebx, word[esi]
+        ; this is the last (and the low)
+        mov     [WIN_STACK + ebx * 2], word 1
+        ; update on screen - window stack
+        xor     eax, eax
 .next_window_pos:
-	cmp	eax, [TASK_COUNT]
-	jae	.reset_vars
-	inc	eax
-	movzx	ebx, word[WIN_STACK + eax * 2]
-	mov	[WIN_POS + ebx * 2], ax
-	jmp	.next_window_pos
+        cmp     eax, [TASK_COUNT]
+        jae     .reset_vars
+        inc     eax
+        movzx   ebx, word[WIN_STACK + eax * 2]
+        mov     [WIN_POS + ebx * 2], ax
+        jmp     .next_window_pos
 ;-----------------------------------------------
 .reset_vars:
-	mov	byte[KEY_COUNT], 0
-	mov	byte[BTN_COUNT], 0
-	mov	word[MOUSE_SCROLL_H], 0
-	mov	word[MOUSE_SCROLL_V], 0
-	pop	ebx eax
-	ret
-;------------------------------------------------------------------------------	
+        mov     byte[KEY_COUNT], 0
+        mov     byte[BTN_COUNT], 0
+        mov     word[MOUSE_SCROLL_H], 0
+        mov     word[MOUSE_SCROLL_V], 0
+        pop     ebx eax
+        ret
+;------------------------------------------------------------------------------ 
 align 4
 ;------------------------------------------------------------------------------
 window._.check_window_draw: ;//////////////////////////////////////////////////
@@ -2005,16 +2054,14 @@ window._.draw_window_caption: ;////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? <description>
 ;------------------------------------------------------------------------------
-        inc     [mouse_pause]
-        call    [_display.disable_mouse]
-
         xor     eax, eax
         mov     edx, [TASK_COUNT]
         movzx   edx, word[WIN_POS + edx * 2]
         cmp     edx, [CURRENT_TASK]
         jne     @f
         inc     eax
-    @@: mov     edx, [CURRENT_TASK]
+    @@:
+        mov     edx, [CURRENT_TASK]
         shl     edx, 5
         add     edx, window_data
         movzx   ebx, [edx + WDATA.fl_wstyle]
@@ -2045,7 +2092,8 @@ window._.draw_window_caption: ;////////////////////////////////////////////////
 
         call    drawwindow_I_caption
 
-  .2:   mov     edi, [CURRENT_TASK]
+  .2:
+        mov     edi, [CURRENT_TASK]
         shl     edi, 5
         test    [edi + window_data + WDATA.fl_wstyle], WSTYLE_HASCAPTION
         jz      .exit
@@ -2117,7 +2165,6 @@ window._.draw_window_caption: ;////////////////////////////////////////////////
         call    dtext_asciiz_esi
 
   .exit:
-        dec     [mouse_pause]
         call    [draw_pointer]
         ret
 
@@ -2149,5 +2196,30 @@ window._.end_moving__box: ;//////////////////////////////////////////////////
 ;> edi = pointer to BOX struct
 ;------------------------------------------------------------------------------
         push    eax ebx esi
-	xor	esi,esi
-	jmp	window._.draw_negative_box.1
+        xor     esi, esi
+        jmp     window._.draw_negative_box.1
+
+
+;------------------------------------------------------------------------------
+window._.get_rect: ;/////////////////////////////////////////////////////
+;------------------------------------------------------------------------------
+;? <description>  void __fastcall get_window_rect(struct RECT* rc);
+;------------------------------------------------------------------------------
+;> ecx = pointer to RECT
+;------------------------------------------------------------------------------
+        mov     eax, [TASK_BASE]
+
+        mov     edx, [eax-twdw + WDATA.box.left]
+        mov     [ecx+RECT.left], edx
+
+        add     edx, [eax-twdw + WDATA.box.width]
+        mov     [ecx+RECT.right], edx
+
+        mov     edx, [eax-twdw + WDATA.box.top]
+        mov     [ecx+RECT.top], edx
+
+        add     edx, [eax-twdw + WDATA.box.height]
+        mov     [ecx+RECT.bottom], edx
+
+        ret
+

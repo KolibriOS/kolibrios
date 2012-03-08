@@ -37,7 +37,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 use16
                   org   0x0
-                  jmp   start
+        jmp     start
 include 'sl_equ.inc'            ; в файле размещены все equ предопределения
 include 'boot_st.inc'
 include 'debug_msg.inc'         ;here is message from debug
@@ -64,50 +64,50 @@ start:
         mov     word [cs:loader_callback], si
         mov     word [cs:loader_callback+2], ds
 ; Save type of drive
-        mov     word [cs:load_drive],ax
+        mov     word [cs:load_drive], ax
 ; Save type of FT
-        mov     word [cs:load_ft],bx
+        mov     word [cs:load_ft], bx
 ; set up stack
         mov     ax, cs
         mov     ss, ax
         xor     sp, sp
 ; set up segment registers
-        mov     ds,ax
-        mov     es,ax
+        mov     ds, ax
+        mov     es, ax
 ; just to be sure: force DF=0, IF=1
         cld
         sti
 
 ; set videomode
-        mov     ax,3
+        mov     ax, 3
         int     0x10
 
-        mov     si,version
+        mov     si, version
         call    printplain
-        mov     al,'#'
-        mov     cx,80
+        mov     al, '#'
+        mov     cx, 80
 ;input cx=size al=char будет вывден символ сколько раз указано в cx
 @@:
         call    putchar
         loop    @b
 
   if DEBUG
-	pushad
-	mov	ax,cs
-	shl	eax,4	; в десятичной системе  адрес сегмента
-        mov     cx,0xa
-        mov     di,cseg_msg
-        call    decode                                                                    
+        pushad
+        mov     ax, cs
+        shl     eax, 4  ; в десятичной системе  адрес сегмента
+        mov     cx, 0xa
+        mov     di, cseg_msg
+        call    decode
 ;***************
-        mov si,cseg_msg
-        call printplain
-	popad
+        mov     si, cseg_msg
+        call    printplain
+        popad
   end if
 
 
   if DEBUG
-        mov si,stack_msg
-        call printplain
+        mov     si, stack_msg
+        call    printplain
   end if
 
 ; Require 586 or higher processor (cpuid and rdtsc,rdmsr/wrmsr commands)
@@ -162,25 +162,25 @@ cpugood:
 
 
 ; Load  startos.ini
-        mov     cx,loop_read_startos_file       ;кол-во попыток чтения файла конфигурации startos.ini
+        mov     cx, loop_read_startos_file      ;кол-во попыток чтения файла конфигурации startos.ini
 align 4
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;  Load startos.ini                                                           ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 load_startos_file:
 
-        xor     ax,ax 
-        mov     di,file_data
+        xor     ax, ax
+        mov     di, file_data
         inc     ax        ;function 1 - read file
         push    cx
-        call    far  dword [loader_callback]
+        call    far dword [loader_callback]
         pop     cx
         push    cs
         push    cs
         pop     ds
         pop     es
 
-        test    bx,bx
+        test    bx, bx
         jz      check_conf_file
         dec     cx
         jnz     load_startos_file
@@ -203,29 +203,29 @@ err_show_ini:
         mov     si, error_ini_common
         call    printplain
 ; wait for keypress
-        xor     ax,ax
+        xor     ax, ax
         int     16h
 
 ini_loaded:
 
-        jmp $
+        jmp     $
 
 align 4
 check_conf_file:
 ;Check config file in current dir
         push    ax      ;save size file
   if DEBUG
-        mov     cx,0x0a
-        mov     di,show_decode
+        mov     cx, 0x0a
+        mov     di, show_decode
         call    decode
 ;Show size
-        mov     si,show_string
+        mov     si, show_string
         call    printplain
   end if
 
 
 ;Show message
-        mov     si,load_ini
+        mov     si, load_ini
         call    printplain
 
         pop     cx      ;restore size file
@@ -305,7 +305,7 @@ shot_name_fat   rb      11      ;временный буфер для fat12, в нем храняться имен
 if DEBUG
                 rb      1       ;нужен для отладки и вывода имени файла после преобразования
 dest_name_fat   db      24 dup('_');12
-db	0x0
+db      0x0
 end if
 
 value_timeout   rw      1       ;value to timeout

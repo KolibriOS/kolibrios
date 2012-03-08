@@ -42,7 +42,7 @@ printplain:
 @@:
         call    putchar
         lodsb
-        test    al,al
+        test    al, al
         jnz     @b
         popa
         ret
@@ -111,18 +111,18 @@ sayerr_plain:
 ;         dh - head number
 conv_abs_to_THS:
         push    bx
-        mov     bx,word [BPB_SecPerTrk]
-        xor     dx,dx
+        mov     bx, word [BPB_SecPerTrk]
+        xor     dx, dx
         div     bx
         inc     dx
         mov     cl, dl                          ; cl = sector number
-        mov     bx,word [BPB_NumHeads]
-        xor     dx,dx
+        mov     bx, word [BPB_NumHeads]
+        xor     dx, dx
         div     bx
         ; !!!!!!! ax = track number, dx = head number
-        mov     ch,al                           ; ch=track number
-        xchg    dh,dl                           ; dh=head number
-        mov     dl,0                            ; dl=0 (drive 0 (a:))
+        mov     ch, al                          ; ch=track number
+        xchg    dh, dl                          ; dh=head number
+        mov     dl, 0                           ; dl=0 (drive 0 (a:))
         pop     bx
         retn
 ; needed variables
@@ -273,7 +273,7 @@ else
 ; (see comment to bx_from_load)
         cmp     cx, 'HA'
         jnz     no_hd_load
-        cmp     dx,'RD'
+        cmp     dx, 'RD'
         jnz     no_hd_load
         mov     word [cs:bx_from_load], bx              ; {SPraid}[13.03.2007]
 no_hd_load:
@@ -637,7 +637,7 @@ end if
 ;        mov     [es:8*4], eax
         sti
 ; wait for keypressed
-        xor     ax,ax
+        xor     ax, ax
         int     16h
         push    ax
 ; restore timer interrupt
@@ -699,27 +699,29 @@ end if
 .loops:
         call    draw_vmodes_table
         _setcursor 25,0         ; out of screen
-        xor     ax,ax
+        xor     ax, ax
         int     0x16
 ;        call    clear_table_cursor             ;clear current position of cursor
 
-        mov     si,word [cursor_pos]
+        mov     si, word [cursor_pos]
 
-        cmp     ah,0x48;x,0x48E0               ; up
+        cmp     ah, 0x48;x,0x48E0               ; up
         jne     .down
-        cmp     si,modes_table
+        cmp     si, modes_table
         jbe     .loops
-        sub     word [cursor_pos],size_of_step
+        sub     word [cursor_pos], size_of_step
         jmp     .loops
 
-.down:  cmp     ah,0x50;x,0x50E0               ; down
+.down:
+        cmp     ah, 0x50;x,0x50E0               ; down
         jne     .pgup
-        cmp     word[es:si+10],-1
+        cmp     word[es:si+10], -1
         je      .loops        
-        add     word [cursor_pos],size_of_step
+        add     word [cursor_pos], size_of_step
         jmp     .loops
 
-.pgup:  cmp     ah,0x49                 ; page up
+.pgup:
+        cmp     ah, 0x49                ; page up
         jne     .pgdn
         sub     si, size_of_step*long_v_table
         cmp     si, modes_table
@@ -736,7 +738,8 @@ end if
         mov     word [home_cursor], si
         jmp     .loops
 
-.pgdn:  cmp     ah,0x51                 ; page down
+.pgdn:
+        cmp     ah, 0x51                ; page down
         jne     .enter
         mov     ax, [end_cursor]
         add     si, size_of_step*long_v_table
@@ -756,7 +759,8 @@ end if
         mov     word [home_cursor], si
         jmp     .loops
 
-.enter: cmp     al,0x0D;x,0x1C0D               ; enter
+.enter:
+        cmp     al, 0x0D;x,0x1C0D               ; enter
         jne     .loops
         push    word [cursor_pos]
         pop     bp
@@ -766,7 +770,7 @@ end if
         pop     word [y_save]
         push    word [es:bp+6]
         pop     word [number_vm]
-        mov     word [preboot_graph],bp           ;save choose
+        mov     word [preboot_graph], bp          ;save choose
         
         jmp    .d
 
@@ -801,7 +805,8 @@ end if
         popf
         jz      @f
         mov     si, off_msg
-@@:     jmp     printplain
+@@:
+        jmp     printplain
 ; novesa and vervesa strings are not used at the moment of executing this code
 virtual at novesa
 .oldtimer dd ?
@@ -850,12 +855,13 @@ if lang eq ru
         mov     cl, 'ã'
         jz      @f
         mov     cl, 'ë'
-@@:     mov     [time_str+9], cl
+@@:
+        mov     [time_str+9], cl
 else if lang eq et
         cmp     al, 1
         ja      @f
         mov     [time_str+9], ' '
-        mov     [time_str+10],' '
+        mov     [time_str+10], ' '
 @@:
 else
 ; wait 5/4/3/2 seconds, 1 second
@@ -863,7 +869,8 @@ else
         mov     cl, 's'
         ja      @f
         mov     cl, ' '
-@@:     mov     [time_str+9], cl
+@@:
+        mov     [time_str+9], cl
 end if
         add     al, '0'
         mov     [time_str+1], al
@@ -964,9 +971,9 @@ include '../detect/biosmem.inc'
 
 ; READ DISKETTE TO MEMORY
 
-        cmp     [boot_dev],0
+        cmp     [boot_dev], 0
         jne     no_sys_on_floppy
-        mov     si,diskload
+        mov     si, diskload
         call    print
         xor     ax, ax            ; reset drive
         xor     dx, dx

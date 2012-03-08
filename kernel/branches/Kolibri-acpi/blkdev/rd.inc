@@ -18,33 +18,33 @@ calculatefatchain:
 
    pushad
 
-   mov	esi,RAMDISK+512
-   mov	edi,RAMDISK_FAT
+        mov     esi, RAMDISK+512
+        mov     edi, RAMDISK_FAT
 
  fcnew:
-   mov	eax,dword [esi]
-   mov	ebx,dword [esi+4]
-   mov	ecx,dword [esi+8]
-   mov	edx,ecx
-   shr	edx,4	;8 ok
-   shr	dx,4	;7 ok
-   xor	ch,ch
-   shld ecx,ebx,20 ;6 ok
-   shr	cx,4	 ;5 ok
-   shld ebx,eax,12
-   and	ebx,0x0fffffff	;4 ok
-   shr	bx,4	;3 ok
-   shl	eax,4
-   and	eax,0x0fffffff	;2 ok
-   shr	ax,4  ;1 ok
-   mov	dword [edi],eax
-   mov	dword [edi+4],ebx
-   mov	dword [edi+8],ecx
-   mov	dword [edi+12],edx
-   add	edi,16
-   add	esi,12
+        mov     eax, dword [esi]
+        mov     ebx, dword [esi+4]
+        mov     ecx, dword [esi+8]
+        mov     edx, ecx
+        shr     edx, 4;8 ok
+        shr     dx, 4;7 ok
+        xor     ch, ch
+        shld    ecx, ebx, 20;6 ok
+        shr     cx, 4;5 ok
+        shld    ebx, eax, 12
+        and     ebx, 0x0fffffff;4 ok
+        shr     bx, 4;3 ok
+        shl     eax, 4
+        and     eax, 0x0fffffff;2 ok
+        shr     ax, 4;1 ok
+        mov     dword [edi], eax
+        mov     dword [edi+4], ebx
+        mov     dword [edi+8], ecx
+        mov     dword [edi+12], edx
+        add     edi, 16
+        add     esi, 12
 
-   cmp	edi,RAMDISK_FAT+2856*2	 ;2849 clusters
+        cmp     edi, RAMDISK_FAT+2856*2;2849 clusters
    jnz	fcnew
 
    popad
@@ -55,29 +55,29 @@ restorefatchain:   ; restore fat chain
 
    pushad
 
-   mov	esi,RAMDISK_FAT
-   mov	edi,RAMDISK+512
+        mov     esi, RAMDISK_FAT
+        mov     edi, RAMDISK+512
 
   fcnew2:
-   mov	eax,dword [esi]
-   mov	ebx,dword [esi+4]
-   shl	ax,4
-   shl	eax,4
-   shl	bx,4
-   shr	ebx,4
-   shrd eax,ebx,8
-   shr	ebx,8
-   mov	dword [edi],eax
-   mov	word [edi+4],bx
-   add	edi,6
-   add	esi,8
+        mov     eax, dword [esi]
+        mov     ebx, dword [esi+4]
+        shl     ax, 4
+        shl     eax, 4
+        shl     bx, 4
+        shr     ebx, 4
+        shrd    eax, ebx, 8
+        shr     ebx, 8
+        mov     dword [edi], eax
+        mov     word [edi+4], bx
+        add     edi, 6
+        add     esi, 8
 
-   cmp	edi,RAMDISK+512+4278	 ;4274 bytes - all used FAT
+        cmp     edi, RAMDISK+512+4278;4274 bytes - all used FAT
    jb	fcnew2
 
-   mov	esi,RAMDISK+512 	  ; duplicate fat chain
-   mov	edi,RAMDISK+512+0x1200
-   mov	ecx,1069	;4274/4
+        mov     esi, RAMDISK+512  ; duplicate fat chain
+        mov     edi, RAMDISK+512+0x1200
+        mov     ecx, 1069;4274/4
    cld
    rep	movsd
 
@@ -94,10 +94,10 @@ ramdisk_free_space:
 
 	push   eax ebx ecx
 
-	mov  edi,RAMDISK_FAT ;start of FAT
-	xor  ax,ax    ;Free cluster=0x0000 in FAT
-	xor  ebx,ebx  ;counter
-	mov  ecx,2849 ;2849 clusters
+        mov     edi, RAMDISK_FAT;start of FAT
+        xor     ax, ax;Free cluster=0x0000 in FAT
+        xor     ebx, ebx;counter
+        mov     ecx, 2849;2849 clusters
 	cld
     rdfs1:
 	repne scasw
@@ -106,8 +106,8 @@ ramdisk_free_space:
 	test	ecx, ecx
 	jnz	rdfs1
     rdfs2:
-	shl  ebx,9    ;free clusters*512
-	mov  edi,ebx
+        shl     ebx, 9;free clusters*512
+        mov     edi, ebx
 
 	pop    ecx ebx eax
 	ret
@@ -122,38 +122,38 @@ expand_filename:
 
 	push esi edi ebx
 
-	mov  edi,esp		      ; check for '.' in the name
-	add  edi,12+8
+        mov     edi, esp              ; check for '.' in the name
+        add     edi, 12+8
 
-	mov  esi,eax
+        mov     esi, eax
 
-	mov  eax,edi
-	mov  [eax+0],dword '    '
-	mov  [eax+4],dword '    '
-	mov  [eax+8],dword '    '
+        mov     eax, edi
+        mov     [eax+0], dword '    '
+        mov     [eax+4], dword '    '
+        mov     [eax+8], dword '    '
 
       flr1:
 
-	cmp  [esi],byte '.'
+        cmp     [esi], byte '.'
 	jne  flr2
-	mov  edi,eax
-	add  edi,7
+        mov     edi, eax
+        add     edi, 7
 	jmp  flr3
 
       flr2:
 
-	mov  bl,[esi]
-	mov  [edi],bl
+        mov     bl, [esi]
+        mov     [edi], bl
 
       flr3:
 
 	inc  esi
 	inc  edi
 
-	mov  ebx,eax
-	add  ebx,11
+        mov     ebx, eax
+        add     ebx, 11
 
-	cmp  edi,ebx
+        cmp     edi, ebx
 	jbe  flr1
 
 	pop  ebx edi esi
@@ -174,59 +174,59 @@ fileread:
 ;      eax = 0 ok read or other = errormsg
 ;
 ;--------------------------------------------------------------
-	test   ebx,ebx ;if ebx=0 - set to 1
+        test    ebx, ebx;if ebx=0 - set to 1
 	jnz    frfl5
 	inc    ebx
       frfl5:
-	test   ecx,ecx ;if ecx=0 - set to 1
+        test    ecx, ecx;if ecx=0 - set to 1
 	jnz    frfl6
 	inc    ecx
       frfl6:
-	test   esi,esi		; return ramdisk root
+        test    esi, esi        ; return ramdisk root
 	jnz    fr_noroot	;if not root
-	cmp    ebx,14		;14 clusters=root dir
+        cmp     ebx, 14         ;14 clusters=root dir
 	ja     oorr
-	cmp    ecx,14
+        cmp     ecx, 14
 	ja     oorr
 	jmp    fr_do
       oorr:
-	mov    eax,5		;out of root range (fnf)
-	xor    ebx,ebx
+        mov     eax, 5          ;out of root range (fnf)
+        xor     ebx, ebx
 	dec    ebx		;0xffffffff
 	ret
 
       fr_do:			;reading rootdir
-	mov    edi,edx
+        mov     edi, edx
 	dec    ebx
 	push   edx
-	mov    edx,ecx
-	add    edx,ebx
-	cmp    edx,15	  ;ebx+ecx=14+1
+        mov     edx, ecx
+        add     edx, ebx
+        cmp     edx, 15   ;ebx+ecx=14+1
 	pushf
 	jbe    fr_do1
-	sub    edx,14
-	sub    ecx,edx
+        sub     edx, 14
+        sub     ecx, edx
       fr_do1:
-	shl    ebx,9
-	mov    esi,RAMDISK+512*19
-	add    esi,ebx
-	shl    ecx,7
+        shl     ebx, 9
+        mov     esi, RAMDISK+512*19
+        add     esi, ebx
+        shl     ecx, 7
 	cld
 	rep    movsd
 	popf
 	pop    edx
 	jae    fr_do2
-	xor    eax,eax ; ok read
-	xor    ebx,ebx
+        xor     eax, eax; ok read
+        xor     ebx, ebx
 	ret
       fr_do2:	     ;if last cluster
-	mov    eax,6  ;end of file
-	xor    ebx,ebx
+        mov     eax, 6;end of file
+        xor     ebx, ebx
 	ret
 
      fr_noroot:
 
-	sub    esp,32
+        sub     esp, 32
 	call   expand_filename
 
 	dec    ebx
@@ -236,66 +236,66 @@ fileread:
 	push   eax ebx ecx edx esi edi
 	call   rd_findfile
 	je     fifound
-	add    esp,32+28   ;if file not found
+        add     esp, 32+28 ;if file not found
 	ret
 
      fifound:
 
-	mov    ebx,[edi-11+28]		;file size
-	mov    [esp+20],ebx
-	mov    [esp+24],ebx
-	add    edi,0xf
-	movzx  eax,word [edi]
-	mov    edi,eax			;edi=cluster
+        mov     ebx, [edi-11+28]        ;file size
+        mov     [esp+20], ebx
+        mov     [esp+24], ebx
+        add     edi, 0xf
+        movzx   eax, word [edi]
+        mov     edi, eax                ;edi=cluster
 
       frnew:
 
-	add    eax,31			;bootsector+2*fat+filenames
-	shl    eax,9			;*512
-	add    eax,RAMDISK	       ;image base
-	mov    ebx,[esp+8]
-	mov    ecx,512			;[esp+4]
+        add     eax, 31                 ;bootsector+2*fat+filenames
+        shl     eax, 9                  ;*512
+        add     eax, RAMDISK           ;image base
+        mov     ebx, [esp+8]
+        mov     ecx, 512                ;[esp+4]
 
-	cmp    [esp+16],dword 0 	; wanted cluster ?
+        cmp     [esp+16], dword 0       ; wanted cluster ?
 	jne    frfl7
 	call   memmove
-	add    [esp+8],dword 512
+        add     [esp+8], dword 512
 	dec    dword [esp+12]		; last wanted cluster ?
 	je     frnoread
 	jmp    frfl8
       frfl7:
 	dec    dword [esp+16]
       frfl8:
-	movzx  eax,word [edi*2+RAMDISK_FAT]	   ; find next cluster from FAT
-	mov    edi,eax
-	cmp    edi,4095 		;eof  - cluster
+        movzx   eax, word [edi*2+RAMDISK_FAT]      ; find next cluster from FAT
+        mov     edi, eax
+        cmp     edi, 4095               ;eof  - cluster
 	jz     frnoread2
 
-	cmp    [esp+24],dword 512	;eof  - size
+        cmp     [esp+24], dword 512     ;eof  - size
 	jb     frnoread
-	sub    [esp+24],dword 512
+        sub     [esp+24], dword 512
 
 	jmp    frnew
 
       frnoread2:
 
-	cmp    [esp+16],dword 0 	; eof without read ?
+        cmp     [esp+16], dword 0       ; eof without read ?
 	je     frnoread
 
 	pop    edi esi edx ecx
-	add    esp,4
+        add     esp, 4
 	pop    ebx     ; ebx <- eax : size of file
-	add    esp,36
-	mov    eax,6   ; end of file
+        add     esp, 36
+        mov     eax, 6 ; end of file
 	ret
 
       frnoread:
 
 	pop    edi esi edx ecx
-	add    esp,4
+        add     esp, 4
 	pop    ebx     ; ebx <- eax : size of file
-	add    esp,36
-	xor    eax,eax	;read ok
+        add     esp, 36
+        xor     eax, eax;read ok
 	ret
 
 
@@ -304,19 +304,19 @@ fileread:
    ;by Mihasik
    ;IN: eax - pointer to filename OUT: filestring+11 in edi or notZero in flags and fnf in eax,ebx
 
-	mov    edi,RAMDISK+512*18+512  ;Point at directory
+        mov     edi, RAMDISK+512*18+512;Point at directory
 	cld
     rd_newsearch:
-	mov    esi,eax
-	mov    ecx,11
+        mov     esi, eax
+        mov     ecx, 11
 	rep    cmpsb
 	je     rd_ff
-	add    cl,21
-	add    edi,ecx
-	cmp    edi,RAMDISK+512*33
+        add     cl, 21
+        add     edi, ecx
+        cmp     edi, RAMDISK+512*33
 	jb     rd_newsearch
-	mov    eax,5	  ;if file not found - eax=5
-	xor    ebx,ebx
+        mov     eax, 5    ;if file not found - eax=5
+        xor     ebx, ebx
 	dec    ebx    ;ebx=0xffffffff and zf=0
      rd_ff:
 	ret
@@ -1169,7 +1169,8 @@ fat_next_short_name:
 	add	edi, 6
 	cmp	word [edi], '  '
 	jnz	.insert_tilde
-@@:	dec	edi
+@@:
+        dec     edi
 	cmp	byte [edi], ' '
 	jz	@b
 	inc	edi

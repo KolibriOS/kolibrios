@@ -10,10 +10,10 @@ $Revision$
 ; // Alver 22.06.2008 // {
 align 4
 dtext_asciiz_esi:                          ; for skins title out
-    push eax
-    xor eax, eax
-    inc eax
-    jmp    dtext.1
+        push    eax
+        xor     eax, eax
+        inc     eax
+        jmp     dtext.1
 ; } \\ Alver \\
 
 align 4
@@ -28,13 +28,11 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         ; edi 1 force
 
 ; // Alver 22.06.2008 // {
-       push eax
+        push    eax
         xor     eax, eax
 .1:
 ; } \\ Alver \\
         pushad
-        call    [_display.disable_mouse]
-
         movsx   eax, bx         ; eax=y
         sar     ebx, 16         ; ebx=x
         xchg    eax, ebx        ; eax=x, ebx=y
@@ -51,10 +49,10 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         cmp     byte [edx], 0
         jz      .end
 ; // Alver 22.06.2008 // {
-        cmp byte [esp+28], 1
-        jne   @f
+        cmp     byte [esp+28], 1
+        jne     @f
         dec     esi
-        js        .end
+        js      .end
 ; } \\ Alver \\
 @@:
         inc     edx
@@ -71,6 +69,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         shr     dl, 1
         jz      .pixloop1end
         jnc     .nopix
+        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         jmp     .pixloop1cont
 .nopix:
@@ -78,6 +77,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         jz      .pixloop1cont
         push    ecx
         mov     ecx, [esp+4+20h+20h]
+        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         pop     ecx
 .pixloop1cont:
@@ -103,6 +103,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
 .pixloop2:
         shr     dl, 1
         jnc     .nopix2
+        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         jmp     .pixloop2cont
 .nopix2:
@@ -110,6 +111,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         jz      .pixloop2cont
         push    ecx
         mov     ecx, [esp+12+20h+20h]
+        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         call    [putpixel]
         pop     ecx
 .pixloop2cont:
@@ -128,5 +130,5 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         jmp     .loop
 .end:
         popad
-        pop  eax                ; << // Alver 22.06.2008 // <<
+        pop     eax             ; << // Alver 22.06.2008 // <<
         ret

@@ -83,7 +83,7 @@ else
   boot_bgr          db   'Calculating background',0
   boot_resirqports  db   'Reserving IRQs & ports',0
   boot_setostask    db   'Setting OS task',0
-  boot_allirqs	    db	 'Unmasking IRQs',0
+  boot_allirqs      db   'Unmasking IRQs',0
   boot_tsc          db   'Reading TSC',0
   boot_cpufreq      db   'CPU frequency is ','    ',' MHz',0
   boot_pal_ega      db   'Setting EGA/CGA 320x200 palette',0
@@ -95,8 +95,8 @@ if preboot_blogesc
 end if
 end if
 
-  boot_APIC_found   db	 'APIC enabled', 0
-  boot_APIC_nfound  db	 'APIC not found', 0
+  boot_APIC_found   db   'APIC enabled', 0
+  boot_APIC_nfound  db   'APIC not found', 0
 
 ;new_process_loading db 'K : New Process - loading',13,10,0
 ;new_process_running db 'K : New Process - done',13,10,0
@@ -156,8 +156,8 @@ dll_list:
  .bk           dd dll_list
  .fd           dd dll_list
 
-MAX_DEFAULT_DLL_ADDR = 0x20000000
-MIN_DEFAULT_DLL_ADDR = 0x10000000
+MAX_DEFAULT_DLL_ADDR = 0x80000000
+MIN_DEFAULT_DLL_ADDR = 0x70000000
 dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 ; supported videomodes
@@ -170,7 +170,8 @@ draw_line       dd __sys_draw_line
 draw_pointer    dd __sys_draw_pointer
 ;//mike.dld, 2006-08-02 [
 ;drawbar         dd __sys_drawbar
-drawbar         dd __sys_drawbar.forced
+;drawbar         dd __sys_drawbar.forced
+drawbar         dd vesa20_drawbar
 ;//mike.dld, 2006-08-02 ]
 putpixel        dd __sys_putpixel
 ; } mike.dld
@@ -275,7 +276,7 @@ graph_data_l:
         dw     11010000b *256 +11110010b
         db     0x00
 tss0_l:
-        dw     TSS_SIZE-1
+        dw     sizeof.TSS-1
         dw     tss and 0xFFFF
         db     (tss shr 16) and 0xFF
         db     10001001b
@@ -292,8 +293,10 @@ endofcode:
 gdte:
 
 align 16
-cur_saved_data    rb 4096
-fpu_data:         rb 512
+cur_saved_data:
+                  rb 4096
+fpu_data:
+                  rb 512
 
 mem_block_list    rd 64*2
 mem_used_list     rd 64*2
@@ -392,13 +395,8 @@ windowtypechanged rd 1
 
 hd_entries        rd 1     ;unused ? 0xfe10
 
-;* start code - Mario79
-
 mouse_active          rd 1
 mouse_pause           rd 1
-MouseTickCounter      rd 1
-
-;* end code - Mario79
 
 img_background        rd 1
 mem_BACKGROUND        rd 1

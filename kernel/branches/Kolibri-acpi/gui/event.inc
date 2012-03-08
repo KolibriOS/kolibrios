@@ -25,22 +25,24 @@ FreeEvents = event_start-EVENT.fd    ; "виртуальный" event, используются только 
                                      ;  FreeEvents.fd=event_start и FreeEvents.bk=event_end
 align 4
 init_events:                                       ;; used from kernel.asm
-        stdcall kernel_alloc,EV_SPACE*EVENT.size
-        or      eax,eax
+        stdcall kernel_alloc, EV_SPACE*sizeof.EVENT
+        or      eax, eax
         jz      .fail
       ; eax - current event, ebx - previos event below
-        mov     ecx,EV_SPACE         ; current - in allocated space
-        mov     ebx,FreeEvents       ; previos - начало списка
+        mov     ecx, EV_SPACE        ; current - in allocated space
+        mov     ebx, FreeEvents      ; previos - начало списка
         push    ebx                  ; оно же и конец потом будет
-  @@:   mov     [ebx+EVENT.fd],eax
-        mov     [eax+EVENT.bk],ebx
-        mov     ebx,eax              ; previos <- current
-        add     eax,EVENT.size       ; new current
+  @@:
+        mov     [ebx+EVENT.fd], eax
+        mov     [eax+EVENT.bk], ebx
+        mov     ebx, eax             ; previos <- current
+        add     eax, sizeof.EVENT    ; new current
         loop    @b
         pop     eax                  ; вот оно концом и стало
-        mov     [ebx+EVENT.fd],eax
-        mov     [eax+EVENT.bk],ebx
-.fail:  ret
+        mov     [ebx+EVENT.fd], eax
+        mov     [eax+EVENT.bk], ebx
+.fail:
+        ret
 
 EVENT_WATCHED    equ 0x10000000 ;бит 28
 EVENT_SIGNALED   equ 0x20000000 ;бит 29
@@ -59,10 +61,10 @@ create_event:                                      ;; EXPORT use
 ;   eax - event (=0 => fail)
 ;   edx - uid
 ;scratched: ebx,ecx,esi,edi
-        mov     ebx,[current_slot]
-        add     ebx,APP_OBJ_OFFSET
-        mov     edx,[TASK_BASE]
-        mov     edx,[edx+TASKDATA.pid]
+        mov     ebx, [current_slot]
+        add     ebx, APP_OBJ_OFFSET
+        mov     edx, [TASK_BASE]
+        mov     edx, [edx+TASKDATA.pid]
         pushfd
         cli
 
@@ -80,57 +82,59 @@ set_event:                                         ;; INTERNAL use !!! don't use
 ;   eax - event (=0 => fail)
 ;   edx - uid
 ;scratched: ebx,ecx,esi,edi
-        mov     eax,FreeEvents
-        cmp     eax,[eax+EVENT.fd]
+        mov     eax, FreeEvents
+        cmp     eax, [eax+EVENT.fd]
         jne     @f  ; not empty ???
         pushad
         call    init_events
         popad
         jz      RemoveEventTo.break ; POPF+RET
-  @@:   mov     eax,[eax+EVENT.fd]
-        mov     [eax+EVENT.magic],'EVNT'
-        mov     [eax+EVENT.destroy],destroy_event.internal
-        mov     [eax+EVENT.state],ecx
-        mov     [eax+EVENT.pid],edx
+  @@:
+        mov     eax, [eax+EVENT.fd]
+        mov     [eax+EVENT.magic], 'EVNT'
+        mov     [eax+EVENT.destroy], destroy_event.internal
+        mov     [eax+EVENT.state], ecx
+        mov     [eax+EVENT.pid], edx
         inc     [event_uid]
         Mov     [eax+EVENT.id],edx,[event_uid]
-        or      esi,esi
+        or      esi, esi
         jz      RemoveEventTo
-        lea     edi,[eax+EVENT.code]
-        mov     ecx,EVENT.codesize/4
+        lea     edi, [eax+EVENT.code]
+        mov     ecx, (sizeof.EVENT -EVENT.code)/4
         cld
-        rep     movsd
+        rep movsd
 
 RemoveEventTo:                                     ;; INTERNAL use !!! don't use for Call
 ;param:
 ;   eax - указатель на event, КОТОРЫЙ вставляем
 ;   ebx - указатель на event, ПОСЛЕ которого вставляем
 ;scratched: ebx,ecx
-        mov     ecx,eax              ; ecx=eax=Self,      ebx=NewLeft
-        xchg    ecx,[ebx+EVENT.fd]   ; NewLeft.fd=Self,   ecx=NewRight
-        cmp     eax,ecx              ; стоп, себе думаю...
+        mov     ecx, eax             ; ecx=eax=Self,      ebx=NewLeft
+        xchg    ecx, [ebx+EVENT.fd]  ; NewLeft.fd=Self,   ecx=NewRight
+        cmp     eax, ecx             ; стоп, себе думаю...
         je      .break               ; - а не дурак ли я?
-        mov     [ecx+EVENT.bk],eax   ; NewRight.bk=Self
-        xchg    ebx,[eax+EVENT.bk]   ; Self.bk=NewLeft,   ebx=OldLeft
-        xchg    ecx,[eax+EVENT.fd]   ; Self.fd=NewRight,  ecx=OldRight
-        mov     [ebx+EVENT.fd],ecx   ; OldLeft.fd=OldRight
-        mov     [ecx+EVENT.bk],ebx   ; OldRight.bk=OldLeft
-.break: popfd
+        mov     [ecx+EVENT.bk], eax  ; NewRight.bk=Self
+        xchg    ebx, [eax+EVENT.bk]  ; Self.bk=NewLeft,   ebx=OldLeft
+        xchg    ecx, [eax+EVENT.fd]  ; Self.fd=NewRight,  ecx=OldRight
+        mov     [ebx+EVENT.fd], ecx  ; OldLeft.fd=OldRight
+        mov     [ecx+EVENT.bk], ebx  ; OldRight.bk=OldLeft
+.break:
+        popfd
         ret
 
 align 4
 NotDummyTest:                                      ;; INTERNAL use (not returned for fail !!!)
         pop     edi
         call    DummyTest ; not returned for fail !!!
-        mov     ebx,eax
-        mov     eax,[ebx+EVENT.pid]
+        mov     ebx, eax
+        mov     eax, [ebx+EVENT.pid]
         push    edi
 .small: ; криво как-то...
         pop     edi
         pushfd
         cli
         call    pid_to_slot ; saved all registers (eax - retval)
-        shl     eax,8
+        shl     eax, 8
         jz      RemoveEventTo.break ; POPF+RET
         jmp     edi ; штатный возврат
 
@@ -148,23 +152,23 @@ raise_event:                                       ;; EXPORT use
 ;   esi - event data (=0 => skip)
 ;scratched: ebx,ecx,esi,edi
         call    NotDummyTest ; not returned for fail !!!
-        or      esi,esi
+        or      esi, esi
         jz      @f
-        lea     edi,[ebx+EVENT.code]
-        mov     ecx,EVENT.codesize/4
+        lea     edi, [ebx+EVENT.code]
+        mov     ecx, (sizeof.EVENT -EVENT.code)/4
         cld
-        rep     movsd
+        rep movsd
   @@:
         test    byte[ebx+EVENT.state+3], EVENT_SIGNALED shr 24
         jnz     RemoveEventTo.break  ; POPF+RET
         bt      edx, 28 ;EVENT_WATCHED
         jnc     @f
-        test    byte[ebx+EVENT.state+3], EVENT_WATCHED  shr 24
+        test    byte[ebx+EVENT.state+3], EVENT_WATCHED shr 24
         jz      RemoveEventTo.break  ; POPF+RET
   @@:
         or      byte[ebx+EVENT.state+3], EVENT_SIGNALED shr 24
-        add     eax,SLOT_BASE+APP_EV_OFFSET
-        xchg    eax,ebx
+        add     eax, SLOT_BASE+APP_EV_OFFSET
+        xchg    eax, ebx
         jmp     RemoveEventTo
 
 align 4
@@ -176,9 +180,9 @@ clear_event:                                       ;; EXPORT use
 ;   ebx - uid (for Dummy testing)
 ;scratched: ebx,ecx
         call    NotDummyTest ; not returned for fail !!!
-        add     eax,SLOT_BASE+APP_OBJ_OFFSET
+        add     eax, SLOT_BASE+APP_OBJ_OFFSET
         and     byte[ebx+EVENT.state+3], not((EVENT_SIGNALED+EVENT_WATCHED)shr 24)
-        xchg    eax,ebx
+        xchg    eax, ebx
         jmp     RemoveEventTo
 
 align 4
@@ -198,10 +202,10 @@ send_event:                                        ;; EXPORT use
 ;       mov     eax,[esp+4]
 ;   but not as STDCALL :(
 ;scratched: ebx,ecx,esi,edi
-        mov     edx,eax
+        mov     edx, eax
         call    NotDummyTest.small ; not returned for fail !!!
-        lea     ebx,[eax+SLOT_BASE+APP_EV_OFFSET]
-        mov     ecx,EVENT_SIGNALED
+        lea     ebx, [eax+SLOT_BASE+APP_EV_OFFSET]
+        mov     ecx, EVENT_SIGNALED
         jmp     set_event
 
 align 4
@@ -209,18 +213,20 @@ DummyTest:                                         ;; INTERNAL use (not returned
 ;param:
 ;   eax - event
 ;   ebx - uid (for Dummy testing)
-        cmp     [eax+EVENT.magic],'EVNT'
+        cmp     [eax+EVENT.magic], 'EVNT'
         jne     @f
-        cmp     [eax+EVENT.id],ebx
+        cmp     [eax+EVENT.id], ebx
         je      .ret
-  @@:   pop     eax
-        xor     eax,eax
-.ret:   ret
+  @@:
+        pop     eax
+        xor     eax, eax
+.ret:
+        ret
 
 
 align 4
 Wait_events:
-        or      ebx,-1 ; infinite timeout
+        or      ebx, -1; infinite timeout
 Wait_events_ex:
 ;info:
 ;   Ожидание "абстрактного" события через перевод слота в 5-ю позицию.
@@ -235,26 +241,27 @@ Wait_events_ex:
 ;retval:
 ;   eax - результат вызова [wait_test] (=0 => timeout)
 ;scratched: esi
-        mov     esi,[current_slot]
-        mov     [esi+APPDATA.wait_param],ecx
+        mov     esi, [current_slot]
+        mov     [esi+APPDATA.wait_param], ecx
         pushad
-        mov     ebx,esi;пока это вопрос, чего куды сувать..........
+        mov     ebx, esi;пока это вопрос, чего куды сувать..........
         pushfd  ; это следствие общей концепции: пусть ф-я тестирования имеет
         cli     ; право рассчитывать на закрытые прерывания, как при вызове из shed
         call    edx
         popfd
-        mov     [esp+28],eax
+        mov     [esp+28], eax
         popad
-        or      eax,eax
+        or      eax, eax
         jnz     @f   ;RET
-        mov     [esi+APPDATA.wait_test],edx
-        mov     [esi+APPDATA.wait_timeout],ebx
+        mov     [esi+APPDATA.wait_test], edx
+        mov     [esi+APPDATA.wait_timeout], ebx
         Mov     [esi+APPDATA.wait_begin],eax,[timer_ticks]
-        mov     eax,[TASK_BASE]
+        mov     eax, [TASK_BASE]
         mov     [eax+TASKDATA.state], 5
         call    change_task
-        mov     eax,[esi+APPDATA.wait_param]
-  @@:   ret
+        mov     eax, [esi+APPDATA.wait_param]
+  @@:
+        ret
 
 align 4
 wait_event:                                        ;; EXPORT use
@@ -270,7 +277,7 @@ wait_event:                                        ;; EXPORT use
 ;   ebx - uid (for Dummy testing)
 ;scratched: ecx,edx,esi
         call    DummyTest
-        mov     ecx,eax              ; wait_param
+        mov     ecx, eax             ; wait_param
         mov     edx, get_event_alone ; wait_test
         call    Wait_events          ; timeout ignored
         jmp     wait_finish
@@ -291,19 +298,19 @@ get_event_ex:                                      ;; f68:14
 ;scratched: ebx,ecx,edx,esi,edi
         mov     edx, get_event_queue ; wait_test
         call    Wait_events          ; timeout ignored
-        lea     esi,[eax+EVENT.code]
-        mov     ecx,EVENT.codesize/4
+        lea     esi, [eax+EVENT.code]
+        mov     ecx, (sizeof.EVENT-EVENT.code)/4
         cld
-        rep     movsd
-        mov     [edi-EVENT.codesize+2],cl ;clear priority field
+        rep movsd
+        mov     byte[edi-(sizeof.EVENT-EVENT.code)+2], cl;clear priority field
 wait_finish:
         test    byte[eax+EVENT.state+3], MANUAL_RESET shr 24
         jnz     get_event_queue.ret  ; RET
         and     byte[eax+EVENT.state+3], not((EVENT_SIGNALED+EVENT_WATCHED)shr 24)
         test    byte[eax+EVENT.state+3], MANUAL_DESTROY shr 24
         jz      destroy_event.internal
-        mov     ebx,[current_slot]
-        add     ebx,APP_OBJ_OFFSET
+        mov     ebx, [current_slot]
+        add     ebx, APP_OBJ_OFFSET
         pushfd
         cli
         jmp     RemoveEventTo
@@ -320,14 +327,14 @@ destroy_event:                                     ;; EXPORT use
 ;scratched: ebx,ecx
         call    DummyTest ; not returned for fail !!!
 .internal:
-        xor     ecx,ecx   ; clear common header
+        xor     ecx, ecx  ; clear common header
         pushfd
         cli
-        mov     [eax+EVENT.magic],ecx
-        mov     [eax+EVENT.destroy],ecx
-        mov     [eax+EVENT.pid],ecx
-        mov     [eax+EVENT.id],ecx
-        mov     ebx,FreeEvents
+        mov     [eax+EVENT.magic], ecx
+        mov     [eax+EVENT.destroy], ecx
+        mov     [eax+EVENT.pid], ecx
+        mov     [eax+EVENT.id], ecx
+        mov     ebx, FreeEvents
         jmp     RemoveEventTo
 
 align 4
@@ -342,11 +349,12 @@ get_event_queue:
 ;   ebx - адрес APPDATA слота тестирования
 ;retval:
 ;   eax - адрес объекта EVENT (=0 => fail)
-        add     ebx,APP_EV_OFFSET
-        mov     eax,[ebx+APPOBJ.bk]  ; выбираем с конца, по принципу FIFO
-        cmp     eax,ebx  ; empty ???
+        add     ebx, APP_EV_OFFSET
+        mov     eax, [ebx+APPOBJ.bk] ; выбираем с конца, по принципу FIFO
+        cmp     eax, ebx ; empty ???
         je      get_event_alone.ret0
-.ret:   ret
+.ret:
+        ret
 
 align 4
 get_event_alone:
@@ -360,12 +368,14 @@ get_event_alone:
 ;   ebx - адрес APPDATA слота тестирования
 ;retval:
 ;   eax - адрес объекта EVENT (=0 => fail)
-        mov     eax,[ebx+APPDATA.wait_param]
+        mov     eax, [ebx+APPDATA.wait_param]
         test    byte[eax+EVENT.state+3], EVENT_SIGNALED shr 24
         jnz     .ret
         or      byte[eax+EVENT.state+3], EVENT_WATCHED shr 24
-.ret0:  xor     eax,eax ; NO event!!!
-.ret:   ret
+.ret0:
+        xor     eax, eax; NO event!!!
+.ret:
+        ret
 
 align 4
 sys_sendwindowmsg:                                 ;; f72
@@ -373,45 +383,46 @@ sys_sendwindowmsg:                                 ;; f72
         jnz     .ret ;subfunction==1 ?
        ;pushfd  ;а нафига?
         cli
-        sub     ecx,2
+        sub     ecx, 2
         je      .sendkey
         dec     ecx
         jnz     .retf
 .sendbtn:
-        cmp     byte[BTN_COUNT],1
+        cmp     byte[BTN_COUNT], 1
         jae     .result ;overflow
         inc     byte[BTN_COUNT]
         shl     edx, 8
-        mov     [BTN_BUFF],edx
+        mov     [BTN_BUFF], edx
         jmp     .result
 .sendkey:
-        movzx   eax,byte[KEY_COUNT]
-        cmp     al,120
+        movzx   eax, byte[KEY_COUNT]
+        cmp     al, 120
         jae     .result ;overflow
         inc     byte[KEY_COUNT]
-        mov     [KEY_COUNT+1+eax],dl
+        mov     [KEY_COUNT+1+eax], dl
 .result:
         setae   byte[esp+32] ;считаем, что исходно: dword[esp+32]==72
 .retf: ;popfd
-.ret:   ret
+.ret:
+        ret
 
 align 4
 sys_getevent:                                      ;; f11
-        mov     ebx,[current_slot] ;пока это вопрос, чего куды сувать..........
+        mov     ebx, [current_slot];пока это вопрос, чего куды сувать..........
         pushfd  ; это следствие общей концепции: пусть ф-я тестирования имеет
         cli     ; право рассчитывать на закрытые прерывания, как при вызове из shed
         call    get_event_for_app
         popfd
-        mov     [esp+32],eax
+        mov     [esp+32], eax
         ret
 
 align 4
 sys_waitforevent:                                  ;; f10
-        or      ebx,-1 ; infinite timeout
+        or      ebx, -1; infinite timeout
 sys_wait_event_timeout:                            ;; f23
-        mov     edx,get_event_for_app ; wait_test
+        mov     edx, get_event_for_app; wait_test
         call    Wait_events_ex        ; ebx - timeout
-        mov     [esp+32],eax
+        mov     [esp+32], eax
         ret
 
 align 4
@@ -426,71 +437,81 @@ get_event_for_app:                                 ;; used from f10,f11,f23
 ;   ebx - адрес APPDATA слота тестирования
 ;retval:
 ;   eax - номер события (=0 => no events)
-        movzx   edi,bh                ; bh  is assumed as [CURRENT_TASK]
-        shl     edi,5
-        add     edi,CURRENT_TASK      ; edi is assumed as [TASK_BASE]
-        mov     ecx,[edi+TASKDATA.event_mask]
+        movzx   edi, bh               ; bh  is assumed as [CURRENT_TASK]
+        shl     edi, 5
+        add     edi, CURRENT_TASK     ; edi is assumed as [TASK_BASE]
+        mov     ecx, [edi+TASKDATA.event_mask]
+        and     ecx, 0x7FFFFFFF
 .loop: ; пока не исчерпаем все биты маски
-        bsr     eax,ecx        ; находим ненулевой бит маски (31 -> 0)
+        bsr     eax, ecx       ; находим ненулевой бит маски (31 -> 0)
         jz      .no_events     ; исчерпали все биты маски, но ничего не нашли ???
-        btr     ecx,eax        ; сбрасываем проверяемый бит маски
+        btr     ecx, eax       ; сбрасываем проверяемый бит маски
        ; переходим на обработчик этого (eax) бита
-        cmp     eax,9
+        cmp     eax, 9
         jae     .loop          ; eax=[9..31], ignored
-        cmp     eax,3
+        cmp     eax, 3
         je      .loop          ; eax=3, ignored
         ja      .FlagAutoReset ; eax=[4..8], retvals=eax+1
-        cmp     eax,1
+        cmp     eax, 1
         jae     .BtKy          ; eax=[1,2],  retvals=eax+1
 .WndRedraw:                    ; eax=0, retval WndRedraw=1
-        cmp     [edi-twdw+WDATA.fl_redraw],al ;al==0
+        cmp     [edi-twdw+WDATA.fl_redraw], al;al==0
         jne     .result
         jmp     .loop
   .no_events:
-        xor     eax,eax
+        xor     eax, eax
         ret
 
 .FlagAutoReset: ; retvals: BgrRedraw=5, Mouse=6, IPC=7, Stack=8, Debug=9
-        cmp     eax,5 ; Mouse 5+1=6
-        jne     @f
+        cmp     eax, 5; Mouse 5+1=6
+        jne     .no_mouse_check
         push    eax
+        mov     eax, [TASK_BASE]
+        mov     eax, [eax + TASKDATA.event_mask]
+        test    eax, 0x80000000 ; bit 31: active/inactive filter f.40
+        jz      @f
+        pop     eax
+        jmp     .no_mouse_check
+@@:
 ; If the window is captured and moved by the user, then no mouse events!!!
-        mov     al,[mouse.active_sys_window.action]
-		and     al,WINDOW_MOVE_AND_RESIZE_FLAGS
-        test    al,al
+        mov     al, [mouse.active_sys_window.action]
+        and     al, WINDOW_MOVE_AND_RESIZE_FLAGS
+        test    al, al
         pop     eax
         jnz     .loop
-@@:
-        btr     [ebx+APPDATA.event_mask],eax
+.no_mouse_check:
+        btr     [ebx+APPDATA.event_mask], eax
         jnc     .loop
   .result:      ; retval = eax+1
         inc     eax
         ret
   .BtKy:
-        movzx   edx,bh
+        movzx   edx, bh
         movzx   edx, word[WIN_STACK+edx*2]
         je      .Keys          ; eax=1, retval Keys=2
 .Buttons:                      ; eax=2, retval Buttons=3
-        cmp     byte[BTN_COUNT],0
+        cmp     byte[BTN_COUNT], 0
         je      .loop          ; empty ???
-        cmp     edx,[TASK_COUNT]
+        cmp     edx, [TASK_COUNT]
         jne     .loop          ; not Top ???
         mov     edx, [BTN_BUFF]
         shr     edx, 8
         cmp     edx, 0xFFFF    ;-ID for Minimize-Button of Form
         jne     .result
-        mov     [window_minimize],1
+        mov     [window_minimize], 1
         dec     byte[BTN_COUNT]
         jmp     .loop
 .Keys:    ; eax==1
-        cmp     edx,[TASK_COUNT]
+        cmp     edx, [TASK_COUNT]
         jne     @f             ; not Top ???
-        cmp     [KEY_COUNT],al ; al==1
+        cmp     [KEY_COUNT], al; al==1
         jae     .result        ; not empty ???
-  @@:   mov     edx, hotkey_buffer
-  @@:   cmp     [edx],bh       ; bh - slot for testing
+  @@:
+        mov     edx, hotkey_buffer
+  @@:
+        cmp     [edx], bh      ; bh - slot for testing
         je      .result
-        add     edx,8
+        add     edx, 8
         cmp     edx, hotkey_buffer+120*8
         jb      @b
         jmp     .loop

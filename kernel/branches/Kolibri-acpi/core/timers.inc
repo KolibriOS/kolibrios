@@ -5,23 +5,23 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 2122 $
+$Revision: 2381 $
 
 ; Simple implementation of timers. All timers are organized in a double-linked
 ; list, and the OS loop after every timer tick processes the list.
 
 ; This structure describes a timer for the kernel.
-struct TIMER
-.Next           dd      ?
-.Prev           dd      ?
+struct  TIMER
+        Next            dd      ?
+        Prev            dd      ?
 ; These fields organize a double-linked list of all timers.
-.TimerFunc      dd      ?
+        TimerFunc       dd      ?
 ; Function to be called when the timer is activated.
-.UserData       dd      ?
+        UserData        dd      ?
 ; The value that is passed as is to .TimerFunc.
-.Time           dd      ?
+        Time            dd      ?
 ; Time at which the timer should be activated.
-.Interval       dd      ?
+        Interval        dd      ?
 ; Interval between activations of the timer, in 0.01s.
 ends
 
@@ -52,7 +52,7 @@ lock_timer_list:
         mov     edx, [CURRENT_TASK]
 @@:
         xor     eax, eax
-lock    cmpxchg [timer_list_owner], edx
+        lock cmpxchg [timer_list_owner], edx
         jz      @f
         cmp     eax, edx
         jz      @f

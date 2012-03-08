@@ -12,21 +12,16 @@ $Revision$
 
 DEBUG_SHOW_IO = 0
 
-struc V86_machine
-{
+struct  V86_machine
 ; page directory
-        .pagedir dd     ?
+        pagedir         dd ?
 ; translation table: V86 address -> flat linear address
-        .pages  dd      ?
+        pages           dd ?
 ; mutex to protect all data from writing by multiple threads at one time
-        .mutex  dd      ?
+        mutex           dd ?
 ; i/o permission map
-        .iopm   dd      ?
-.size = $
-}
-virtual at 0
-V86_machine V86_machine
-end virtual
+        iopm            dd ?
+ends
 
 ; Create V86 machine
 ; in: nothing
@@ -35,7 +30,7 @@ end virtual
 ; destroys: ebx, ecx, edx (due to malloc)
 v86_create:
 ; allocate V86_machine structure
-        mov     eax, V86_machine.size
+        mov     eax, sizeof.V86_machine
         call    malloc
         test    eax, eax
         jz      .fail
@@ -61,11 +56,11 @@ v86_create:
 ; initialize tables
         mov     ecx, 2000h/4
         xor     eax, eax
-        rep     stosd
+        rep stosd
         mov     [ebx+V86_machine.iopm], edi
         dec     eax
         mov     ecx, 2000h/4
-        rep     stosd
+        rep stosd
         pop     eax
 ; page directory: first entry is page table...
         mov     edi, eax
@@ -80,12 +75,12 @@ v86_create:
         push    esi
         mov     esi, (OS_BASE shr 20) + sys_pgdir
         mov     ecx, 0x80000000 shr 22
-        rep     movsd
+        rep movsd
 
         mov     eax, [ebx+V86_machine.pagedir]   ;root dir also is
         call    get_pg_addr                      ;used as page table
         or      al, PG_SW
-        mov [edi-4096+(page_tabs shr 20)], eax
+        mov     [edi-4096+(page_tabs shr 20)], eax
 
         pop     esi
 ; now V86 specific: initialize known addresses in first Mb
@@ -240,36 +235,31 @@ if ~DEBUG_SHOW_IO
         xor     eax, eax
         mov     edi, ecx
         mov     ecx, 10000h/8/4
-        rep     stosd
+        rep stosd
 end if
 .ret:
         ret
 
-struc v86_regs
-{
+struct  v86_regs
 ; don't change the order, it is important
-        .edi    dd      ?
-        .esi    dd      ?
-        .ebp    dd      ?
-                dd      ?       ; ignored
-        .ebx    dd      ?
-        .edx    dd      ?
-        .ecx    dd      ?
-        .eax    dd      ?
-        .eip    dd      ?
-        .cs     dd      ?
-        .eflags dd      ?       ; VM flag must be set!
-        .esp    dd      ?
-        .ss     dd      ?
-        .es     dd      ?
-        .ds     dd      ?
-        .fs     dd      ?
-        .gs     dd      ?
-.size = $
-}
-virtual at 0
-v86_regs v86_regs
-end virtual
+        edi             dd ?
+        esi             dd ?
+        ebp             dd ?
+                        dd ?    ; ignored
+        ebx             dd ?
+        edx             dd ?
+        ecx             dd ?
+        eax             dd ?
+        eip             dd ?
+        cs              dd ?
+        eflags          dd ?    ; VM flag must be set!
+        esp             dd ?
+        ss              dd ?
+        es              dd ?
+        ds              dd ?
+        fs              dd ?
+        gs              dd ?
+ends
 
 ; Run V86 machine
 ; in: ebx -> registers for V86 (two structures: in and out)
@@ -319,11 +309,11 @@ v86_start:
 ;        sti
 
         mov     eax, esi
-        sub     esp, v86_regs.size
+        sub     esp, sizeof.v86_regs
         mov     esi, ebx
         mov     edi, esp
-        mov     ecx, v86_regs.size/4
-        rep     movsd
+        mov     ecx, sizeof.v86_regs/4
+        rep movsd
 
         cmp     edx, -1
         jz      .noirqhook
@@ -367,11 +357,12 @@ endg
 
 v86_exc_c:
 ; Did we all that we have wanted to do?
-        cmp     bl,1
+        cmp     bl, 1
         jne     @f
         xor     eax, eax
         mov     dr6, eax
-  @@:   mov     eax, [esp+v86_regs.size+10h+18h]
+  @@:
+        mov     eax, [esp+sizeof.v86_regs+10h+18h]
         cmp     word [esp+v86_regs.eip], ax
         jnz     @f
         shr     eax, 16
@@ -443,7 +434,7 @@ v86_exc_c:
         sub     eax, 6
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+4+v86_regs.size+10h+4]
+        mov     esi, [esp+4+sizeof.v86_regs+10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -491,7 +482,7 @@ v86_exc_c:
         movzx   eax, word [esp+v86_regs.esp]
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+v86_regs.size+10h+4]
+        mov     esi, [esp+sizeof.v86_regs+10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -527,7 +518,7 @@ v86_exc_c:
         movzx   eax, ax
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+v86_regs.size+10h+4]
+        mov     esi, [esp+sizeof.v86_regs+10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -559,7 +550,7 @@ v86_exc_c:
         sub     eax, 4
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+v86_regs.size+10h+4]
+        mov     esi, [esp+sizeof.v86_regs+10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -590,7 +581,7 @@ v86_exc_c:
         movzx   eax, word [esp+v86_regs.esp]
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+v86_regs.size+10h+4]
+        mov     esi, [esp+sizeof.v86_regs+10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -621,7 +612,7 @@ v86_exc_c:
         movzx   eax, word [esp+v86_regs.esp]
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+v86_regs.size+10h+4]
+        mov     esi, [esp+sizeof.v86_regs+10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -747,7 +738,7 @@ end if
         shl     edx, 4
         add     edx, [esp+32]
 @@:
-        mov     esi, [esp+v86_regs.size+10h+4]
+        mov     esi, [esp+sizeof.v86_regs+10h+4]
         mov     eax, edx
         call    v86_get_lin_addr
         cmp     eax, 0x1000
@@ -772,10 +763,10 @@ end if
         xor     eax, eax
 
 .exit:
-        mov     [esp+v86_regs.size+10h+1Ch], eax
-        mov     [esp+v86_regs.size+10h+18h], ebx
+        mov     [esp+sizeof.v86_regs+10h+1Ch], eax
+        mov     [esp+sizeof.v86_regs+10h+18h], ebx
 
-        mov     edx, [esp+v86_regs.size+10h+14h]
+        mov     edx, [esp+sizeof.v86_regs+10h+14h]
         cmp     edx, -1
         jz      @f
         dec     [v86_irqhooks+edx*8+4]
@@ -784,10 +775,10 @@ end if
 @@:
 
         mov     esi, esp
-        mov     edi, [esi+v86_regs.size+10h+10h]
-        add     edi, v86_regs.size
-        mov     ecx, v86_regs.size/4
-        rep     movsd
+        mov     edi, [esi+sizeof.v86_regs+10h+10h]
+        add     edi, sizeof.v86_regs
+        mov     ecx, sizeof.v86_regs/4
+        rep movsd
         mov     esp, esi
 
         cli
@@ -846,7 +837,7 @@ v86_irq:
         lea     edi, [esi+4]
         mov     ecx, 8
         std
-        rep     movsd
+        rep movsd
         cld
         mov     edi, ebp
         pop     eax
@@ -873,12 +864,12 @@ v86_irq2:
         jnz     .cont
         push    ecx
         mov     ecx, [ebx+APPDATA.saved_esp0]
-        cmp     word [ecx-v86_regs.size+v86_regs.esp], 6
+        cmp     word [ecx-sizeof.v86_regs+v86_regs.esp], 6
         jb      .cont2
-        movzx   edx, word [ecx-v86_regs.size+v86_regs.ss]
+        movzx   edx, word [ecx-sizeof.v86_regs+v86_regs.ss]
         shl     edx, 4
         push    eax
-        movzx   eax, word [ecx-v86_regs.size+v86_regs.esp]
+        movzx   eax, word [ecx-sizeof.v86_regs+v86_regs.esp]
         sub     eax, 6
         add     edx, eax
         mov     eax, edx
@@ -904,12 +895,12 @@ v86_irq2:
         iretd
 .found:
         mov     cr3, eax
-        sub     word [esi-v86_regs.size+v86_regs.esp], 6
-        mov     ecx, [esi-v86_regs.size+v86_regs.eip]
+        sub     word [esi-sizeof.v86_regs+v86_regs.esp], 6
+        mov     ecx, [esi-sizeof.v86_regs+v86_regs.eip]
         mov     word [edx], cx
-        mov     ecx, [esi-v86_regs.size+v86_regs.cs]
+        mov     ecx, [esi-sizeof.v86_regs+v86_regs.cs]
         mov     word [edx+2], cx
-        mov     ecx, [esi-v86_regs.size+v86_regs.eflags]
+        mov     ecx, [esi-sizeof.v86_regs+v86_regs.eflags]
         mov     word [edx+4], cx
         lea     eax, [edi+8]
         cmp     al, 10h
@@ -917,10 +908,10 @@ v86_irq2:
         add     al, 60h
 @@:
         mov     cx, [eax*4]
-        mov     word [esi-v86_regs.size+v86_regs.eip], cx
+        mov     word [esi-sizeof.v86_regs+v86_regs.eip], cx
         mov     cx, [eax*4+2]
-        mov     word [esi-v86_regs.size+v86_regs.cs], cx
-        and     byte [esi-v86_regs.size+v86_regs.eflags+1], not 3
+        mov     word [esi-sizeof.v86_regs+v86_regs.cs], cx
+        and     byte [esi-sizeof.v86_regs+v86_regs.eflags+1], not 3
         call    update_counters
         lea     edi, [ebx + 0x100000000 - SLOT_BASE]
         shr     edi, 3
