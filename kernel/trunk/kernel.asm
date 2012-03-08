@@ -1926,21 +1926,7 @@ sys_end:
 ; restore default cursor before killing
         pusha
         mov     ecx, [current_slot]
-        mov     eax, [def_cursor]
-        mov     [ecx+APPDATA.cursor], eax
-
-        movzx   eax, word [MOUSE_Y]
-        movzx   ebx, word [MOUSE_X]
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
-        mul     ecx
-        add     eax, [_WinMapAddress]
-        movzx   edx, byte [ebx+eax]
-        shl     edx, 8
-        mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
-        push    esi
-        call    [_display.select_cursor]
-        mov     [current_cursor], esi
+        call    restore_default_cursor_before_killing
         popa
 @@:
 ;--------------------------------------
@@ -1959,7 +1945,25 @@ sys_end:
         mov     ebx, 100
         call    delay_hs
         jmp     waitterm
+;------------------------------------------------------------------------------
+restore_default_cursor_before_killing:
+        mov     eax, [def_cursor]
+        mov     [ecx+APPDATA.cursor], eax
 
+        movzx   eax, word [MOUSE_Y]
+        movzx   ebx, word [MOUSE_X]
+        mov     ecx, [Screen_Max_X]
+        inc     ecx
+        mul     ecx
+        add     eax, [_WinMapAddress]
+        movzx   edx, byte [ebx+eax]
+        shl     edx, 8
+        mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
+        push    esi
+        call    [_display.select_cursor]
+        mov     [current_cursor], esi
+        ret
+;------------------------------------------------------------------------------
 iglobal
 align 4
 sys_system_table:
@@ -2035,21 +2039,8 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         pusha
         mov     ecx, [esp+32]
         shl     ecx, 8
-        mov     eax, [def_cursor]
-        mov     [ecx+SLOT_BASE+APPDATA.cursor], eax
-
-        movzx   eax, word [MOUSE_Y]
-        movzx   ebx, word [MOUSE_X]
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
-        mul     ecx
-        add     eax, [_WinMapAddress]
-        movzx   edx, byte [ebx+eax]
-        shl     edx, 8
-        mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
-        push    esi
-        call    [_display.select_cursor]
-        mov     [current_cursor], esi
+        add     ecx, SLOT_BASE
+        call    restore_default_cursor_before_killing
         popa
 @@:
         add     esp, 4
