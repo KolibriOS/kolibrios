@@ -402,6 +402,8 @@ high_code:
         mul     [_display.height]
         mov     [_WinMapSize], eax
 
+        call    calculate_fast_getting_offset_for_WinMapAddress
+
         mov     esi, BOOT_VAR+0x9080
         movzx   ecx, byte [esi-1]
         mov     [NumBiosDisks], ecx
@@ -4793,7 +4795,22 @@ read_from_hd:                           ; Read from hd - fn not in use
 
 paleholder:
         ret
-
+;------------------------------------------------------------------------------
+align 4
+calculate_fast_getting_offset_for_WinMapAddress:
+; calculate data area for fast getting offset to _WinMapAddress
+        mov     eax, [_display.width]
+        mov     ecx, [_display.height]
+        inc     ecx
+        mov     edi, d_width_calc_area
+        cld
+@@:
+        stosd
+        add     eax, [_display.width]
+        dec     ecx
+        jnz     @r
+        ret
+;------------------------------------------------------------------------------
 align 4
 set_screen:
         cmp     eax, [Screen_Max_X]
@@ -4829,6 +4846,8 @@ set_screen:
         mov     [_WinMapAddress], eax
         test    eax, eax
         jz      .epic_fail
+
+        call    calculate_fast_getting_offset_for_WinMapAddress
 
         popad
 

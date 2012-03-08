@@ -62,7 +62,7 @@
 ;         3c   dword  cpu usage in cpu timer tics
 ;
 ;
-;   5000  ->   68FF   free (6k6)
+;   5000  ->   68FF   display width fast calc area (6k6)
 ;   6900  ->   6EFF   saved picture under mouse pointer (1k5)
 ;
 ;   6F00  ->   6FFF   free (256)

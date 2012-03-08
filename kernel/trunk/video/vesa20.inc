@@ -556,14 +556,10 @@ __sys_putpixel:
         jnz     .forced
 
 ; not forced:
-
-        push    eax
-        mov     edx, [_display.width]; screen x size
-        imul    edx, ebx
-        add     eax, [_WinMapAddress]
+        mov     edx, [d_width_calc_area + ebx*4]
+        add     edx, [_WinMapAddress]
         movzx   edx, byte [eax+edx]
         cmp     edx, [CURRENT_TASK]
-        pop     eax
         jne     .exit
 ;--------------------------------------
 align 4
