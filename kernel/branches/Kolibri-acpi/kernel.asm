@@ -161,6 +161,8 @@ include "detect/biosdisk.inc"
 
 ; CR0 Flags - Protected mode and Paging
 
+align 16
+
         mov     ecx, CR0_PE
 
 ; Enabling 32 bit protected mode
@@ -198,6 +200,20 @@ include "detect/biosdisk.inc"
         mov     cr0, eax
         jmp     pword os_code:B32       ; jmp to enable 32 bit mode
 
+include "boot/shutdown.inc" ; shutdown or restart
+
+include "data16.inc"
+
+align 4096
+__ap_start_16:
+        cli
+        lgdt    [cs:(tmp_gdt-__ap_start_16)]            ; Load GDT
+        mov     eax, cr0                                ; protected mode
+        or      eax, CR0_PE
+        and     eax, 10011111b *65536*256 + 0xffffff    ; caching enabled
+        mov     cr0, eax
+        jmp     pword os_code:__ap_start_32             ; jmp to enable 32 bit mode
+
 align 8
 tmp_gdt:
 
@@ -217,10 +233,36 @@ tmp_gdt:
         dw     11011111b *256 +10010010b
         db     0x00
 
-include "data16.inc"
 
 use32
 org $+0x10000
+
+align 16
+__ap_start_32:
+        mov     ax, os_stack       ; Selector for os
+        mov     ds, ax
+        mov     es, ax
+        mov     fs, ax
+        mov     gs, ax
+        mov     ss, ax
+
+        bt      [cpu_caps-OS_BASE], CAPS_PSE
+        jnc     .no_PSE
+
+        mov     ebx, cr4
+        or      ebx, CR4_PSE
+        mov     eax, PG_LARGE+PG_SW
+        mov     cr4, ebx
+.no_PSE:
+        mov     eax, sys_pgdir-OS_BASE
+        mov     cr3, eax
+
+        mov     eax, cr0
+        or      eax, CR0_PG+CR0_WP
+        mov     cr0, eax
+
+        lgdt    [gdts]
+        jmp     pword os_code:ap_entry
 
 align 4
 B32:
@@ -269,6 +311,8 @@ B32:
 
 ; ENABLE PAGING
 
+        xchg bx, bx
+
         mov     eax, sys_pgdir-OS_BASE
         mov     cr3, eax
 
@@ -283,17 +327,37 @@ align 4
 bios32_entry    dd ?
 tmp_page_tabs   dd ?
 
-use16
-org $-0x10000
-include "boot/shutdown.inc" ; shutdown or restart
-org $+0x10000
-use32
 
 __DEBUG__ fix 1
 __DEBUG_LEVEL__ fix 1
 include 'init.inc'
 
 org OS_BASE+$
+
+ap_entry:
+        bt      [cpu_caps], CAPS_PGE
+        jnc     @F
+
+        mov     ebx, cr4
+        or      ebx, CR4_PGE
+        mov     cr4, ebx
+@@:
+.1:
+        mov ebx, LFB_BASE
+        mov edx, 128
+.2:
+        mov ecx, 128
+        mov edi, ebx
+        mov eax, [_display.width]
+        lea ebx, [ebx+eax*4]
+        mov eax, 0xFF808080
+        rep stosd
+        dec edx
+        jnz .2
+        jmp .1
+
+        hlt
+        jmp ap_entry
 
 align 4
 high_code:
@@ -317,12 +381,12 @@ high_code:
         or      ebx, CR4_PGE
         mov     cr4, ebx
 @@:
-        xor     eax, eax
-        mov     dword [sys_pgdir], eax
-        mov     dword [sys_pgdir+4], eax
+;        xor     eax, eax
+;        mov     dword [sys_pgdir], eax
+;        mov     dword [sys_pgdir+4], eax
 
-        mov     eax, cr3
-        mov     cr3, eax          ; flush TLB
+;        mov     eax, cr3
+;        mov     cr3, eax          ; flush TLB
 
         mov     ecx, pg_data.mutex
         call    mutex_init
@@ -618,6 +682,8 @@ no_mode_0x12:
 
 ; Try to Initialize APIC
         call    APIC_init
+
+        call    LAPIC_init
 
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer

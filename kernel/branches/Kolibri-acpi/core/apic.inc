@@ -36,84 +36,92 @@ APIC_timer_div	equ	0x3e0
 APIC_timer_init	equ	0x380
 APIC_timer_cur	equ	0x390
 ; IOAPIC
-IOAPIC_ID       equ 0x0
-IOAPIC_VER      equ 0x1
-IOAPIC_ARB      equ 0x2
-IOAPIC_REDTBL   equ 0x10
+IOAPIC_ID               equ  0x0
+IOAPIC_VER              equ  0x1
+IOAPIC_ARB              equ  0x2
+IOAPIC_REDTBL           equ  0x10
+
+IPI_INIT                equ  (0x6 shl 8)
+IPI_LEVEL_ASSERT        equ  (0x1 shl 14)
+SHORTHAND_ALL_EXCL      equ  (0x3 shl 18)
+
+CMD_IPI_INIT            equ  (IPI_INIT+SHORTHAND_ALL_EXCL)
+
+
 
 align 4
 APIC_init:
-        mov [irq_mode], IRQ_PIC
+        mov     [irq_mode], IRQ_PIC
 
-        cmp [acpi_ioapic_base], 0
-        jz .no_apic
+        cmp     [acpi_ioapic_base], 0
+        jz      .no_apic
 
-        cmp [acpi_lapic_base], 0
-        jz .no_apic
+        cmp     [acpi_lapic_base], 0
+        jz      .no_apic
 
         stdcall load_file, dev_data_path
-        test eax, eax
-        jz .no_apic
+        test    eax, eax
+        jz      .no_apic
 
-        mov [acpi_dev_data], eax
-        mov [acpi_dev_size], ebx
+        mov     [acpi_dev_data], eax
+        mov     [acpi_dev_size], ebx
 
-        call  IRQ_mask_all
+        call    IRQ_mask_all
 
 ; IOAPIC init
         stdcall map_io_mem, [acpi_ioapic_base], 0x20, PG_SW
-        mov [IOAPIC_base], eax
+        mov     [IOAPIC_base], eax
 
         mov eax, IOAPIC_VER
-        call  IOAPIC_read
-        shr eax, 16
-        inc al
+        call    IOAPIC_read
+        shr     eax, 16
+        inc     al
         movzx eax, al
-        cmp al, IRQ_RESERVED
-        jbe @f
+        cmp     al, IRQ_RESERVED
+        jbe     @f
 
-        mov al, IRQ_RESERVED
+        mov     al, IRQ_RESERVED
 @@:
-        mov [IRQ_COUNT], eax
+        mov     [IRQ_COUNT], eax
 
 	; Reroute IOAPIC & mask all interrupts
-        xor ecx, ecx
-        mov eax, IOAPIC_REDTBL
+        xor     ecx, ecx
+        mov     eax, IOAPIC_REDTBL
 @@:
-        mov ebx, eax
-        call  IOAPIC_read
+        mov     ebx, eax
+        call    IOAPIC_read
         mov     ah, 0x09; Delivery Mode: Lowest Priority, Destination Mode: Logical
-        mov al, cl
+        mov     al, cl
         add     al, 0x20; vector
         or      eax, 0x10000; Mask Interrupt
-        cmp ecx, 16
-        jb  .set
+        cmp     ecx, 16
+        jb      .set
 
         or      eax, 0xa000;<<< level-triggered active-low for IRQ16+
 .set:
-        xchg  eax, ebx
-        call  IOAPIC_write
-        inc eax
-        mov ebx, eax
-        call  IOAPIC_read
+        xchg    eax, ebx
+        call    IOAPIC_write
+        inc     eax
+        mov     ebx, eax
+        call    IOAPIC_read
         or      eax, 0xff000000; Destination Field
-        xchg  eax, ebx
-        call  IOAPIC_write
-        inc eax
-        inc ecx
-        cmp ecx, [IRQ_COUNT]
-        jb  @b
+        xchg    eax, ebx
+        call    IOAPIC_write
+        inc     eax
+        inc     ecx
+        cmp     ecx, [IRQ_COUNT]
+        jb      @b
 
-        call  LAPIC_init
+        call    LAPIC_init
 
-        mov [irq_mode], IRQ_APIC
+        mov     [irq_mode], IRQ_APIC
 
-        mov al, 0x70
-        out 0x22, al
-        mov al, 1
-        out 0x23, al
+        mov     al, 0x70
+        out     0x22, al
+        mov     al, 1
+        out     0x23, al
 
-        call pci_irq_fixup
+        call    pci_irq_fixup
 .no_apic:
 
         ret
@@ -124,82 +132,111 @@ LAPIC_init:
 	; Check MSR support
 	;....
 	; Get LAPIC base address
-; mov ecx, 0x1b
-; rdmsr       ; it may be replaced to
-; and ax, 0xf000    ; mov eax, 0xfee00000
+ ;mov ecx, 0x1b
+ ;rdmsr       ; it may be replaced to
+ ;and ax, 0xf000    ; mov eax, 0xfee00000
+
+        mov [acpi_lapic_base], 0xfee00000
+ ;       xchg bx, bx
 
         stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW
-        mov [LAPIC_BASE], eax
-        mov esi, eax
+        mov     [LAPIC_BASE], eax
+        mov     esi, eax
 
 	; Program Destination Format Register for Flat mode.
-        mov eax, [esi + APIC_DFR]
-        or  eax, 0xf0000000
-        mov [esi + APIC_DFR], eax
+        mov     eax, [esi + APIC_DFR]
+        or      eax, 0xf0000000
+        mov     [esi + APIC_DFR], eax
 
 	; Program Logical Destination Register.
-        mov eax, [esi + APIC_LDR]
+        mov     eax, [esi + APIC_LDR]
         ;and  eax, 0xff000000
-        and eax, 0x00ffffff
+        and     eax, 0x00ffffff
         or      eax, 0x01000000;!!!!!!!!!!!!
-        mov [esi + APIC_LDR], eax
+        mov     [esi + APIC_LDR], eax
 
 	; Task Priority Register initialization.
-        mov eax, [esi + APIC_TPR]
-        and eax, 0xffffff00
-        mov [esi + APIC_TPR], eax
+        mov     eax, [esi + APIC_TPR]
+        and     eax, 0xffffff00
+        mov     [esi + APIC_TPR], eax
 
 	; Flush the queue
-        mov edx, 0
+        mov     edx, 0
 .nxt2:
-        mov ecx, 32
-        mov eax, [esi + APIC_ISR + edx]
+        mov     ecx, 32
+        mov     eax, [esi + APIC_ISR + edx]
 .nxt:
-        shr eax, 1
-        jnc @f
+        shr     eax, 1
+        jnc      @f
         mov     dword [esi + APIC_EOI], 0; EOI
 @@:
-        loop  .nxt
+        loop    .nxt
 
-        add edx, 0x10
-        cmp edx, 0x170
-        jbe .nxt2
+        add     edx, 0x10
+        cmp     edx, 0x170
+        jbe     .nxt2
 
 	; Spurious-Interrupt Vector Register initialization.
-        mov eax, [esi + APIC_SVR]
-        or  eax, 0x1ff
-        and eax, 0xfffffdff
-        mov [esi + APIC_SVR], eax
+        mov     eax, [esi + APIC_SVR]
+        or      eax, 0x1ff
+        and     eax, 0xfffffdff
+        mov     [esi + APIC_SVR], eax
 
 	; Initialize LVT LINT0 register. (INTR)
-        mov eax, 0x00700
+        mov     eax, 0x00700
         ; mov eax, 0x10700
-        mov [esi + APIC_LVT_LINT0], eax
+        mov     [esi + APIC_LVT_LINT0], eax
 
 	; Initialize LVT LINT1 register. (NMI)
-        mov eax, 0x00400
-        mov [esi + APIC_LVT_LINT1], eax
+        mov     eax, 0x00400
+        mov     [esi + APIC_LVT_LINT1], eax
 
 	; Initialize LVT Error register.
-        mov eax, [esi + APIC_LVT_err]
+        mov     eax, [esi + APIC_LVT_err]
         or      eax, 0x10000; bit 16
-        mov [esi + APIC_LVT_err], eax
+        mov     [esi + APIC_LVT_err], eax
 
 	; LAPIC timer
 	; pre init
-        mov     dword[esi + APIC_timer_div], 1011b; 1
-        mov     dword[esi + APIC_timer_init], 0xffffffff; max val
-        push  esi
-        mov esi, 640        ; wait 0.64 sec
-        call  delay_ms
-        pop esi
-        mov     eax, [esi + APIC_timer_cur]; read current tick couner
-        xor eax, 0xffffffff       ; eax = 0xffffffff - eax
-        shr eax, 6          ; eax /= 64; APIC ticks per 0.01 sec
+;        mov     dword[esi + APIC_timer_div], 1011b; 1
+;        mov     dword[esi + APIC_timer_init], 0xffffffff; max val
+;        push  esi
+;        mov esi, 640        ; wait 0.64 sec
+;        call  delay_ms
+;        pop esi
+;        mov     eax, [esi + APIC_timer_cur]; read current tick couner
+;        xor eax, 0xffffffff       ; eax = 0xffffffff - eax
+;        shr eax, 6          ; eax /= 64; APIC ticks per 0.01 sec
 
 	; Start (every 0.01 sec)
-        mov     dword[esi + APIC_LVT_timer], 0x30020; periodic int 0x20
-        mov dword[esi + APIC_timer_init], eax
+;        mov     dword[esi + APIC_LVT_timer], 0x30020; periodic int 0x20
+;        mov dword[esi + APIC_timer_init], eax
+        xchg bx, bx
+
+;        mov     al, 0x0F
+;        out     0x70, al
+;        mov     al, 0x0A
+;        out     0x71, al
+
+;        mov     [OS_BASE+0x469], word (__ap_start_16) shr 4
+;        mov     [OS_BASE+0x469], word 0
+
+        mov     [esi+APIC_ICRH], dword 0
+        mov     [esi+APIC_ICRL], dword 0xc4500
+
+        mov ecx, 1000
+@@:
+        loop @B
+
+        mov     [esi+APIC_ICRH], dword 0
+        mov     [esi+APIC_ICRL], dword 0xC4600+((0x10000+__ap_start_16) shr 12)
+;        mov     [esi+APIC_ICRL], dword 0xC4612
+
+;        mov     [esi+APIC_ICRH], dword 0
+;        mov     [esi+APIC_ICRL], dword CMD_IPI_INIT+IPI_LEVEL_ASSERT+16
+
+
+
         ret
 
 ;===========================================================
