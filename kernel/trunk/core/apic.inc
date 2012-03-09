@@ -61,7 +61,7 @@ APIC_init:
         call    IRQ_mask_all
 
 ; IOAPIC init
-        stdcall map_io_mem, [acpi_ioapic_base], 0x20, PG_SW
+        stdcall map_io_mem, [acpi_ioapic_base], 0x20, PG_SW+PG_NOCACHE
         mov     [IOAPIC_base], eax
 
         mov     eax, IOAPIC_VER
@@ -121,14 +121,11 @@ APIC_init:
 ;===========================================================
 align 4
 LAPIC_init:
-        ; Check MSR support
-        ;....
-        ; Get LAPIC base address
-; mov ecx, 0x1b
-; rdmsr       ; it may be replaced to
-; and ax, 0xf000    ; mov eax, 0xfee00000
 
-        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW
+        cmp     [LAPIC_BASE], 0
+        jne     .done
+
+        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW+PG_NOCACHE
         mov     [LAPIC_BASE], eax
         mov     esi, eax
 
@@ -200,6 +197,8 @@ LAPIC_init:
         ; Start (every 0.01 sec)
         mov     dword[esi + APIC_LVT_timer], 0x30020; periodic int 0x20
         mov     dword[esi + APIC_timer_init], eax
+
+.done:
         ret
 
 ;===========================================================

@@ -548,6 +548,7 @@ align 4
 align 4
 .exit:
         pop     ebp
+        inc     [_display.mask_seqno]
         popfd
         pop     esi
         ret
@@ -998,6 +999,7 @@ waredraw: ;////////////////////////////////////////////////////////////////////
         mov     edi, [TASK_COUNT]
         movzx   esi, word[WIN_POS + edi * 2]
         call    window._.set_screen
+        inc     [_display.mask_seqno]
         popad
 
         ; tell application to redraw itself
@@ -1102,7 +1104,7 @@ align 4
         add     ecx, eax
         add     edx, ebx
         call    ebp
-
+        inc     [_display.mask_seqno]
         mov     byte[MOUSE_BACKGROUND], 0
 ;--------------------------------------
 align 4
@@ -1204,6 +1206,7 @@ align 4
 ;--------------------------------------
 align 4
 .exit:
+        inc     [_display.mask_seqno]
         ret
 ;------------------------------------------------------------------------------
 align 4
@@ -1949,6 +1952,7 @@ align 4
 align 4
 .exit:
         popad
+        inc     [_display.mask_seqno]
         ret
 ;--------------------------------------
 align 4

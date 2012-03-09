@@ -295,6 +295,8 @@ include 'init.inc'
 
 org OS_BASE+$
 
+include 'fdo.inc'
+
 align 4
 high_code:
         mov     ax, os_stack
@@ -980,6 +982,13 @@ if defined debug_com_base
 
 end if
 
+        mov     eax, [cpu_count]
+        test    eax, eax
+        jnz     @F
+        mov     al, 1                             ; at least one CPU
+@@:
+        DEBUGF  1, "K : %d CPU detected\n", eax
+
 ; START MULTITASKING
 
 ; A 'All set - press ESC to start' messages if need
@@ -1005,7 +1014,6 @@ end if
         ; Fly :)
 
 include 'unpacker.inc'
-include 'fdo.inc'
 
 align 4
 boot_log:
