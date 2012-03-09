@@ -557,6 +557,7 @@ __sys_putpixel:
 
 ; not forced:
         mov     edx, [d_width_calc_area + ebx*4]
+        sub     edx, [_display.width]
         add     edx, [_WinMapAddress]
         movzx   edx, byte [eax+edx]
         cmp     edx, [CURRENT_TASK]
