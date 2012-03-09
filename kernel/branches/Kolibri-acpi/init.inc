@@ -432,6 +432,11 @@ proc test_cpu
         ret
 endp
 
+iglobal
+align 4
+acpi_lapic_base   dd 0xfee00000   ; default local apic base
+endg
+
 uglobal
 align 4
 acpi_rsdp         rd 1
@@ -443,8 +448,10 @@ acpi_dev_size     rd 1
 
 acpi_rsdt_base    rd 1
 acpi_madt_base    rd 1
-acpi_lapic_base   rd 1
 acpi_ioapic_base  rd 1
+
+cpu_count         rd 1
+smpt              rd 16
 endg
 
 ACPI_HI_RSDP_WINDOW_START  equ 0x000E0000
@@ -493,6 +500,7 @@ rsdt_find:           ;ecx= rsdt edx= SIG
         lea     ebx, [ecx+36]
         mov     esi, [ecx+4]
         add     esi, ecx
+align 4
 .next:
         mov     eax, [ebx]
         cmp     [eax], edx
@@ -513,9 +521,16 @@ rsdt_find:           ;ecx= rsdt edx= SIG
         pop     ebx
         ret
 
+align 4
+madt_find:
+
+
+
+
+
+        ret
 
 align 4
-
 check_acpi:
 
         call    acpi_locate
@@ -529,26 +544,53 @@ check_acpi:
         test    eax, eax
         jz      .done
 
+        xchg bx, bx
+
         mov     [acpi_madt_base-OS_BASE], eax
         mov     ecx, [eax+36]
         mov     [acpi_lapic_base-OS_BASE], ecx
+
+        mov     edi, smpt-OS_BASE
+        mov     ebx, [ecx+0x20]
+        shr     ebx, 24              ; read APIC ID
+
+        mov     [edi], ebx           ; bootstrap always first
+        inc     [cpu_count]
+        add     edi, 4
 
         lea     edx, [eax+44]
         mov     ecx, [eax+4]
         add     ecx, eax
 .check:
         mov     eax, [edx]
-        cmp     al, 1
-        je      .ioapic
+        cmp     al, 0
+        jne     .io_apic
 
+        shr     eax, 24              ; get APIC ID
+        cmp     eax, ebx             ; skip self
+        je      .next
+
+        test    [edx+4], byte 1      ; is enabled ?
+        jz      .next
+
+        cmp     [cpu_count-OS_BASE], 16
+        jae     .next
+
+        stosd                        ; store APIC ID
+        inc     [cpu_count-OS_BASE]
 .next:
+        mov     eax, [edx]
         movzx   eax, ah
         add     edx, eax
         cmp     edx, ecx
         jb      .check
 .done:
         ret
-.ioapic:
+
+.io_apic:
+        cmp     al, 1
+        jne     .next
+
         mov     eax, [edx+4]
         mov     [acpi_ioapic_base-OS_BASE], eax
-        ret
+        jmp     .next

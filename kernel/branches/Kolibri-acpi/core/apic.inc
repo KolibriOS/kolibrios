@@ -41,7 +41,8 @@ IOAPIC_VER              equ  0x1
 IOAPIC_ARB              equ  0x2
 IOAPIC_REDTBL           equ  0x10
 
-IPI_INIT                equ  (0x6 shl 8)
+IPI_INIT                equ  (0x5 shl 8)
+IPI_START               equ  (0x6 shl 8)
 IPI_LEVEL_ASSERT        equ  (0x1 shl 14)
 SHORTHAND_ALL_EXCL      equ  (0x3 shl 18)
 
@@ -72,11 +73,11 @@ APIC_init:
         stdcall map_io_mem, [acpi_ioapic_base], 0x20, PG_SW
         mov     [IOAPIC_base], eax
 
-        mov eax, IOAPIC_VER
+        mov     eax, IOAPIC_VER
         call    IOAPIC_read
         shr     eax, 16
         inc     al
-        movzx eax, al
+        movzx   eax, al
         cmp     al, IRQ_RESERVED
         jbe     @f
 
@@ -129,15 +130,9 @@ APIC_init:
 ;===========================================================
 align 4
 LAPIC_init:
-	; Check MSR support
-	;....
-	; Get LAPIC base address
- ;mov ecx, 0x1b
- ;rdmsr       ; it may be replaced to
- ;and ax, 0xf000    ; mov eax, 0xfee00000
 
-        mov [acpi_lapic_base], 0xfee00000
- ;       xchg bx, bx
+        cmp     [LAPIC_BASE], 0
+        jne     .done
 
         stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW
         mov     [LAPIC_BASE], eax
@@ -211,32 +206,8 @@ LAPIC_init:
 	; Start (every 0.01 sec)
 ;        mov     dword[esi + APIC_LVT_timer], 0x30020; periodic int 0x20
 ;        mov dword[esi + APIC_timer_init], eax
-        xchg bx, bx
 
-;        mov     al, 0x0F
-;        out     0x70, al
-;        mov     al, 0x0A
-;        out     0x71, al
-
-;        mov     [OS_BASE+0x469], word (__ap_start_16) shr 4
-;        mov     [OS_BASE+0x469], word 0
-
-        mov     [esi+APIC_ICRH], dword 0
-        mov     [esi+APIC_ICRL], dword 0xc4500
-
-        mov ecx, 1000
-@@:
-        loop @B
-
-        mov     [esi+APIC_ICRH], dword 0
-        mov     [esi+APIC_ICRL], dword 0xC4600+((0x10000+__ap_start_16) shr 12)
-;        mov     [esi+APIC_ICRL], dword 0xC4612
-
-;        mov     [esi+APIC_ICRH], dword 0
-;        mov     [esi+APIC_ICRL], dword CMD_IPI_INIT+IPI_LEVEL_ASSERT+16
-
-
-
+.done:
         ret
 
 ;===========================================================
@@ -245,11 +216,11 @@ align 4
 IOAPIC_read:
 ; in : EAX - IOAPIC register
 ; out: EAX - readed value
-        push  esi
-        mov esi, [IOAPIC_base]
-        mov [esi], eax
-        mov eax, [esi + 0x10]
-        pop esi
+        push    esi
+        mov     esi, [IOAPIC_base]
+        mov     [esi], eax
+        mov     eax, [esi + 0x10]
+        pop     esi
         ret
 
 align 4
@@ -257,11 +228,11 @@ IOAPIC_write:
 ; in :	EAX - IOAPIC register
 ;	EBX - value
 ; out:	none
-        push  esi
-        mov esi, [IOAPIC_base]
-        mov [esi], eax
-        mov [esi + 0x10], ebx
-        pop esi
+        push    esi
+        mov     esi, [IOAPIC_base]
+        mov     [esi], eax
+        mov     [esi + 0x10], ebx
+        pop     esi
         ret
 ;===========================================================
 ; Remap all IRQ to 0x20+ Vectors
@@ -287,7 +258,7 @@ PIC_init:
         out     0x21, al
         out     0xA1, al
 
-        call  IRQ_mask_all
+        call    IRQ_mask_all
 	; mov	dword[irq_type_to_set], IRQ_TYPE_PIC
         ret
 
@@ -306,8 +277,8 @@ PIT_init:
 ; -----------------------------------------
 align 4
 unmask_timer:
-        cmp  [irq_mode], IRQ_APIC
-        je @f
+        cmp     [irq_mode], IRQ_APIC
+        je      @f
 
         stdcall enable_irq, 0
         ret
@@ -326,36 +297,36 @@ unmask_timer:
 	; ret
 
 	; use LAPIC timer
-        mov esi, [LAPIC_BASE]
-        mov eax, [esi + APIC_LVT_timer]
-        and eax, 0xfffeffff
-        mov [esi + APIC_LVT_timer], eax
+        mov     esi, [LAPIC_BASE]
+        mov     eax, [esi + APIC_LVT_timer]
+        and     eax, 0xfffeffff
+        mov     [esi + APIC_LVT_timer], eax
         ret
 
 ; -----------------------------------------
 ; Disable all IRQ
 align 4
 IRQ_mask_all:
-        cmp [irq_mode], IRQ_APIC
-        je .APIC
+        cmp     [irq_mode], IRQ_APIC
+        je      .APIC
 
-        mov al, 0xFF
-        out 0x21, al
-        out 0xA1, al
+        mov     al, 0xFF
+        out     0x21, al
+        out     0xA1, al
         mov     ecx, 0x1000
         ret
 .APIC:
-        mov ecx, [IRQ_COUNT]
-        mov eax, 0x10
+        mov     ecx, [IRQ_COUNT]
+        mov     eax, 0x10
 @@:
-        mov ebx, eax
-        call  IOAPIC_read
+        mov     ebx, eax
+        call    IOAPIC_read
         or      eax, 0x10000; bit 16
-        xchg  eax, ebx
-        call  IOAPIC_write
-        inc eax
-        inc eax
-        loop  @b
+        xchg    eax, ebx
+        call    IOAPIC_write
+        inc     eax
+        inc     eax
+        loop    @b
         ret
 
 ; -----------------------------------------
@@ -363,19 +334,19 @@ IRQ_mask_all:
 ; cl - IRQ number
 align 4
 irq_eoi:         ; __fastcall
-        cmp [irq_mode], IRQ_APIC
-        je .APIC
+        cmp     [irq_mode], IRQ_APIC
+        je      .APIC
 
-        cmp cl, 8
-        mov al, 0x20
-        jb  @f
-        out 0xa0, al
+        cmp     cl, 8
+        mov     al, 0x20
+        jb      @f
+        out     0xa0, al
 @@:
-        out 0x20, al
+        out     0x20, al
         ret
 
 .APIC:
-        mov eax, [LAPIC_BASE]
+        mov     eax, [LAPIC_BASE]
         mov     dword [eax + APIC_EOI], 0; EOI
         ret
 
@@ -383,71 +354,99 @@ irq_eoi:         ; __fastcall
 ; from dll.inc
 align 4
 proc enable_irq stdcall, irq_line:dword
-        mov ebx, [irq_line]
-        cmp [irq_mode], IRQ_APIC
-        je .APIC
+        mov     ebx, [irq_line]
+        cmp     [irq_mode], IRQ_APIC
+        je      .APIC
 
-        mov edx, 0x21
-        cmp ebx, 8
-        jb  @F
+        mov     edx, 0x21
+        cmp     ebx, 8
+        jb      @F
 
-        mov edx, 0xA1
+        mov     edx, 0xA1
         sub     ebx, 8
 @@:
         in      al, dx
-        btr eax, ebx
-        out dx, al
+        btr     eax, ebx
+        out     dx, al
         ret
 .APIC:
-        shl ebx, 1
-        add ebx, 0x10
-        mov eax, ebx
-        call  IOAPIC_read
+        shl     ebx, 1
+        add     ebx, 0x10
+        mov     eax, ebx
+        call    IOAPIC_read
         and     eax, 0xfffeffff; bit 16
-        xchg  eax, ebx
-        call  IOAPIC_write
+        xchg    eax, ebx
+        call    IOAPIC_write
         ret
 endp
 
 align 4
 pci_irq_fixup:
 
-        push ebp
+        push    ebp
 
-        mov esi, [acpi_dev_data]
-        mov ebx, [acpi_dev_size]
+        mov     esi, [acpi_dev_data]
+        mov     ebx, [acpi_dev_size]
 
-        lea edi, [esi+ebx]
+        lea     edi, [esi+ebx]
 
 .iterate:
 
-        cmp esi, edi
-        jae .done
+        cmp     esi, edi
+        jae     .done
 
-        mov eax, [esi]
+        mov     eax, [esi]
 
-        cmp eax, -1
-        je .done
+        cmp     eax, -1
+        je      .done
 
-        movzx ebx, al
-        movzx ebp, ah
+        movzx   ebx, al
+        movzx   ebp, ah
 
         stdcall pci_read32, ebp, ebx, 0
 
-        cmp eax, [esi+4]
-        jne .skip
+        cmp     eax, [esi+4]
+        jne     .skip
 
-        mov eax, [esi+8]
+        mov     eax, [esi+8]
         stdcall pci_write8, ebp, ebx, 0x3C, eax
 .skip:
-        add esi, 16
-        jmp .iterate
+        add     esi, 16
+        jmp     .iterate
 
 .done:
 .fail:
         pop ebp
         ret
 
+align 4
+start_ap:
+;eax= cpu id
+
+;        xchg bx, bx
+
+        test    eax, eax              ;do not start self
+        jz      .exit
+
+        cmp     eax, [cpu_count]
+        ja      .exit
+
+        mov     eax, [smpt+eax*4]
+        shl     eax, 24
+
+        mov     [esi+APIC_ICRH], eax
+        mov     [esi+APIC_ICRL], dword (IPI_INIT+IPI_LEVEL_ASSERT)
+
+        mov     ecx, 10000
+@@:
+        loop    @B
+
+CMD_IPI_START equ (IPI_START+IPI_LEVEL_ASSERT)+((0x10000+__ap_start_16) shr 12)
+
+        mov     [esi+APIC_ICRH], eax
+        mov     [esi+APIC_ICRL], dword CMD_IPI_START
+.exit:
+        ret
 
 
 

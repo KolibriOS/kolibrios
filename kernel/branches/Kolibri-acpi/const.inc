@@ -189,6 +189,7 @@ TASK_BASE           equ (OS_BASE+0x0003010)
 TASK_DATA           equ (OS_BASE+0x0003020)
 TASK_EVENT          equ (OS_BASE+0x0003020)
 
+d_width_calc_area   equ (OS_BASE+0x0005000)
 mouseunder          equ (OS_BASE+0x0006900)
 CDDataBuf           equ (OS_BASE+0x0007000)
 FLOPPY_BUFF         equ (OS_BASE+0x0008000)

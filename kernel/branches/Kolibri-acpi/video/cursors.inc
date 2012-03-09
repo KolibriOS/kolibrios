@@ -1000,6 +1000,19 @@ align 4
         mov     [_display.check_mouse], check_mouse_area_for_putpixel_new
         mov     [_display.check_m_pixel], check_mouse_area_for_getpixel_new
 
+        cmp     [PUTPIXEL], dword VGA_putpixel
+        je      @f
+        cmp     [ScreenBPP], byte 32
+        je      .32
+        mov     [PUTPIXEL], dword Vesa20_putpixel24_new
+        jmp     @f
+;--------------------------------------
+align 4
+.32:
+        mov     [PUTPIXEL], dword Vesa20_putpixel32_new
+;--------------------------------------
+align 4
+@@:
         stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
         mov     [def_cursor], eax
         ret

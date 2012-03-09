@@ -342,18 +342,24 @@ ap_entry:
         or      ebx, CR4_PGE
         mov     cr4, ebx
 @@:
+        mov     esi, [LAPIC_BASE]
+        xor     ebp, ebp
 .1:
-        mov ebx, LFB_BASE
-        mov edx, 128
+        mov ebx, [esi+0x20]               ;apic_id
+        shr ebx, 24
+        shl ebx, 6+2
+        add ebx, LFB_BASE
+        mov edx, 32
 .2:
-        mov ecx, 128
+        mov ecx, 32
         mov edi, ebx
         mov eax, [_display.width]
         lea ebx, [ebx+eax*4]
-        mov eax, 0xFF808080
+        mov eax, ebp
         rep stosd
         dec edx
         jnz .2
+        dec ebp
         jmp .1
 
         hlt
@@ -466,6 +472,8 @@ high_code:
         mul     [_display.height]
         mov     [_WinMapSize], eax
 
+        call    calculate_fast_getting_offset_for_WinMapAddress
+
         mov     esi, BOOT_VAR+0x9080
         movzx   ecx, byte [esi-1]
         mov     [NumBiosDisks], ecx
@@ -483,14 +491,7 @@ high_code:
         cmp     [SCR_MODE], word 0x13  ; EGA 320*200 256 colors
         je      v20ga32
         jmp     v20ga24
-;        mov     [PUTPIXEL], dword Vesa12_putpixel24 ; Vesa 1.2
-;        mov     [GETPIXEL], dword Vesa12_getpixel24
-;        cmp     [ScreenBPP], byte 24
-;        jz      ga24
-;        mov     [PUTPIXEL], dword Vesa12_putpixel32
-;        mov     [GETPIXEL], dword Vesa12_getpixel32
-;      ga24:
-;        jmp     v20ga24
+
 setvesa20:
         mov     [PUTPIXEL], dword Vesa20_putpixel24 ; Vesa 2.0
         mov     [GETPIXEL], dword Vesa20_getpixel24
@@ -684,6 +685,9 @@ no_mode_0x12:
         call    APIC_init
 
         call    LAPIC_init
+
+        mov     eax, 1
+        call    start_ap
 
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
@@ -1992,21 +1996,7 @@ sys_end:
 ; restore default cursor before killing
         pusha
         mov     ecx, [current_slot]
-        mov     eax, [def_cursor]
-        mov     [ecx+APPDATA.cursor], eax
-
-        movzx   eax, word [MOUSE_Y]
-        movzx   ebx, word [MOUSE_X]
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
-        mul     ecx
-        add     eax, [_WinMapAddress]
-        movzx   edx, byte [ebx+eax]
-        shl     edx, 8
-        mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
-        push    esi
-        call    [_display.select_cursor]
-        mov     [current_cursor], esi
+        call    restore_default_cursor_before_killing
         popa
 @@:
 ;--------------------------------------
@@ -2025,7 +2015,25 @@ sys_end:
         mov     ebx, 100
         call    delay_hs
         jmp     waitterm
+;------------------------------------------------------------------------------
+restore_default_cursor_before_killing:
+        mov     eax, [def_cursor]
+        mov     [ecx+APPDATA.cursor], eax
 
+        movzx   eax, word [MOUSE_Y]
+        movzx   ebx, word [MOUSE_X]
+        mov     ecx, [Screen_Max_X]
+        inc     ecx
+        mul     ecx
+        add     eax, [_WinMapAddress]
+        movzx   edx, byte [ebx+eax]
+        shl     edx, 8
+        mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
+        push    esi
+        call    [_display.select_cursor]
+        mov     [current_cursor], esi
+        ret
+;------------------------------------------------------------------------------
 iglobal
 align 4
 sys_system_table:
@@ -2101,21 +2109,8 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         pusha
         mov     ecx, [esp+32]
         shl     ecx, 8
-        mov     eax, [def_cursor]
-        mov     [ecx+SLOT_BASE+APPDATA.cursor], eax
-
-        movzx   eax, word [MOUSE_Y]
-        movzx   ebx, word [MOUSE_X]
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
-        mul     ecx
-        add     eax, [_WinMapAddress]
-        movzx   edx, byte [ebx+eax]
-        shl     edx, 8
-        mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
-        push    esi
-        call    [_display.select_cursor]
-        mov     [current_cursor], esi
+        add     ecx, SLOT_BASE
+        call    restore_default_cursor_before_killing
         popa
 @@:
         add     esp, 4
@@ -4875,7 +4870,22 @@ read_from_hd:                           ; Read from hd - fn not in use
 
 paleholder:
         ret
-
+;------------------------------------------------------------------------------
+align 4
+calculate_fast_getting_offset_for_WinMapAddress:
+; calculate data area for fast getting offset to _WinMapAddress
+        mov     eax, [_display.width]
+        mov     ecx, [_display.height]
+        inc     ecx
+        mov     edi, d_width_calc_area
+        cld
+@@:
+        stosd
+        add     eax, [_display.width]
+        dec     ecx
+        jnz     @r
+        ret
+;------------------------------------------------------------------------------
 align 4
 set_screen:
         cmp     eax, [Screen_Max_X]
@@ -4911,6 +4921,8 @@ set_screen:
         mov     [_WinMapAddress], eax
         test    eax, eax
         jz      .epic_fail
+
+        call    calculate_fast_getting_offset_for_WinMapAddress
 
         popad
 
