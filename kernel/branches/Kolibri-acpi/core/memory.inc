@@ -8,6 +8,7 @@
 $Revision$
 
 
+
 align 4
 proc alloc_page
 
@@ -1554,3 +1555,27 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
 .fail:
         ret
 endp
+
+
+align 4
+print_mem:
+        mov     edi, BOOT_VAR + 0x9104
+        mov     ecx, [edi-4]
+        test    ecx, ecx
+        jz     .done
+
+@@:
+        mov eax, [edi]
+        mov edx, [edi+4]
+        add eax, [edi+8]
+        adc edx, [edi+12]
+
+        DEBUGF  1, "K : E820 %x%x - %x%x type %d\n", \
+                    [edi+4], [edi],\
+                    edx, eax, [edi+16]
+        add     edi, 20
+        dec     ecx
+        jnz     @b
+.done:
+        ret
+

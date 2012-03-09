@@ -429,7 +429,7 @@ start_ap:
         jz      .exit
 
         cmp     eax, [cpu_count]
-        ja      .exit
+        jae     .exit
 
         mov     eax, [smpt+eax*4]
         shl     eax, 24

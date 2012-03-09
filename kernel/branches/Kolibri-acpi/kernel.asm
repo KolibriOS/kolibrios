@@ -1056,9 +1056,11 @@ end if
         mov     eax, [cpu_count]
         test    eax, eax
         jnz     @F
-        mov al, 1                               ; at least one CPU
+        mov     al, 1                             ; at least one CPU
 @@:
         DEBUGF  1, "K : %d CPU detected\n", eax
+
+        call    print_mem
 
 ; START MULTITASKING
 

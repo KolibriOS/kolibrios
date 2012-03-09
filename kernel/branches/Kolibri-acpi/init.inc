@@ -45,8 +45,12 @@ proc mem_test
         ret
 endp
 
+
 align 4
 proc init_mem
+
+        xchg bx, bx
+
 ; calculate maximum allocatable address and number of allocatable pages
         mov     edi, BOOT_VAR-OS_BASE + 0x9104
         mov     ecx, [edi-4]
@@ -55,6 +59,9 @@ proc init_mem
 .calcmax:
 ; round all to pages
         mov     eax, [edi]
+        cmp     [edi+16], byte 1
+        jne      .unusable
+
         test    eax, 0xFFF
         jz      @f
         neg     eax
