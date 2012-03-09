@@ -70,7 +70,7 @@ APIC_init:
         call    IRQ_mask_all
 
 ; IOAPIC init
-        stdcall map_io_mem, [acpi_ioapic_base], 0x20, PG_SW
+        stdcall map_io_mem, [acpi_ioapic_base], 0x20, PG_SW+PG_NOCACHE
         mov     [IOAPIC_base], eax
 
         mov     eax, IOAPIC_VER
@@ -134,7 +134,7 @@ LAPIC_init:
         cmp     [LAPIC_BASE], 0
         jne     .done
 
-        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW
+        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_SW+PG_NOCACHE
         mov     [LAPIC_BASE], eax
         mov     esi, eax
 

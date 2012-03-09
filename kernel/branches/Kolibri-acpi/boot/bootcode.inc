@@ -145,7 +145,7 @@ FirstDataSector dw      0                       ; begin of data
 ;
 ;=========================================================================
 
-include 'bootvesa.inc'                 ;Include source for boot vesa 
+include 'bootvesa.inc'                 ;Include source for boot vesa
 if defined extended_primary_loader
 include 'parsers.inc'
 end if
@@ -387,7 +387,7 @@ sayerr:
 
         push    0
         pop     es
-        and     word [es:0x9031], 0
+        and     word [es:BOOT_IDE_BASE_ADDR], 0
 ; \begin{Mario79}
 ; find HDD IDE DMA PCI device
 ; check for PCI BIOS
@@ -424,7 +424,7 @@ sayerr:
         int     0x1A
         jc      .nopci
         and     cx, 0xFFF0      ; clear address decode type
-        mov     [es:0x9031], cx
+        mov     [es:BOOT_IDE_BASE_ADDR], cx
 .nopci:
 ; \end{Mario79}
 
@@ -456,15 +456,15 @@ wait_loop:       ; variant 2
         loopnz  @b
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; --------------- APM ---------------------
-        and     word [es:0x9044], 0     ; ver = 0.0 (APM not found)
+        and     word [es:BOOT_APM_VERSION], 0     ; ver = 0.0 (APM not found)
         mov     ax, 0x5300
         xor     bx, bx
         int     0x15
-        jc      apm_end                 ; APM not found
+        jc      apm_end                           ; APM not found
         test    cx, 2
-        jz      apm_end                 ; APM 32-bit protected-mode interface not supported
-        mov     [es:0x9044], ax         ; Save APM Version
-        mov     [es:0x9046], cx         ; Save APM flags
+        jz      apm_end                           ; APM 32-bit protected-mode interface not supported
+        mov     [es:BOOT_APM_VERSION], ax         ; Save APM Version
+        mov     [es:BOOT_APM_FLAGS], cx           ; Save APM flags
 
         ; Write APM ver ----
         and     ax, 0xf0f
@@ -483,10 +483,10 @@ wait_loop:       ; variant 2
         xor     bx, bx
         int     0x15
 
-        mov     [es:0x9040], ebx
-        mov     [es:0x9050], ax
-        mov     [es:0x9052], cx
-        mov     [es:0x9054], dx
+        mov     [es:BOOT_APM_ENTRY], ebx
+        mov     [es:BOOT_APM_CODE_32], ax
+        mov     [es:BOOT_APM_CODE_16], cx
+        mov     [es:BOOT_APM_DATA_16], dx
 
 apm_end:
         _setcursor d80x25_top_num, 0
@@ -630,7 +630,7 @@ end if
         push    dword [es:8*4]
         pop     dword [.oldtimer]
         push    dword [.timer]
-        pop     dword [es:8*4]    
+        pop     dword [es:8*4]
 ;        mov     eax, [es:8*4]
 ;        mov     [.oldtimer], eax
 ;        mov     eax, [.timer]
@@ -716,7 +716,7 @@ end if
         cmp     ah, 0x50;x,0x50E0               ; down
         jne     .pgup
         cmp     word[es:si+10], -1
-        je      .loops        
+        je      .loops
         add     word [cursor_pos], size_of_step
         jmp     .loops
 
@@ -771,7 +771,7 @@ end if
         push    word [es:bp+6]
         pop     word [number_vm]
         mov     word [preboot_graph], bp          ;save choose
-        
+
         jmp    .d
 
 .change_b:
@@ -947,18 +947,17 @@ end if
 
 ; GRAPHICS ACCELERATION
 ; force yes
-        mov     [es:0x901C], byte 1
+        mov     [es:BOOT_MTRR], byte 1
 
 ; DMA ACCESS TO HD
 
         mov     al, [preboot_dma]
-        mov     [es:0x901F], al
+        mov     [es:BOOT_DMA], al
 
 ;; VRR_M USE
 ;
 ;        mov     al,[preboot_vrrm]
 ;        mov     [es:0x9030], al
-        mov     [es:0x901E], byte 1
 
 ; BOOT DEVICE
 
@@ -1005,7 +1004,7 @@ include '../detect/biosmem.inc'
 ; TODO: !!!! read only first sector and set variables !!!!!
 ; ...
 ; TODO: !!! then read flippy image track by track
-        
+
         mov     cx, 0x0001      ; startcyl,startsector
 .a1:
         push    cx dx
@@ -1097,7 +1096,7 @@ include '../detect/biosmem.inc'
 ; and copy them to extended memory
         mov     si, movedesc
         mov     [si+8*2+3], bh          ; from
-        
+
         mov     ax, word [BPB_BytsPerSec]
         shr     ax, 1                   ; words per sector
         mov     cx, word [BPB_RsvdSecCnt]
@@ -1105,7 +1104,7 @@ include '../detect/biosmem.inc'
         mul     cx
         push    ax                      ; save to stack count of words in boot+FAT
         xchg    ax, cx
-        
+
         push    es
         push    ds
         pop     es
@@ -1131,7 +1130,7 @@ sayerr_memmove:
 ; TODO: BPB_NumFATs !!!!!
         add     bx, word [BPB_BytsPerSec]       ; !!! TODO: may be need multiply by BPB_RsvdSecCnt !!!
         mov     byte [si+8*2+3], bh     ; bx - begin of FAT
-        
+
         mov     ax, word [BPB_BytsPerSec]
         shr     ax, 1                   ; words per sector
         mov     cx, word [BPB_FATSz16]
@@ -1146,12 +1145,12 @@ sayerr_memmove:
         pop     es
         test    ah, ah
         jnz     sayerr_floppy
-        
+
         mov     ax, cx
         shl     ax, 1
         and     eax, 0ffffh             ; ax - count of bytes in FAT
         add     dword [si+8*3+2], eax
-        
+
 ; reading RootDir
 ; TODO: BPB_NumFATs
         add     bx, ax
@@ -1176,7 +1175,7 @@ sayerr_memmove:
         pop     bx
         push    bx
         add     word [FirstDataSector], bx      ; Begin of data region of floppy
-        
+
 ; read RootDir
         call    conv_abs_to_THS
         pop     ax
@@ -1337,7 +1336,7 @@ end if
         xor     ax, ax
         mov     es, ax
 
-        mov     ax, [es:0x9008]         ; vga & 320x200
+        mov     ax, [es:BOOT_VESA_MODE]         ; vga & 320x200
         mov     bx, ax
         cmp     ax, 0x13
         je      setgr

@@ -522,15 +522,6 @@ align 4
         ret
 
 align 4
-madt_find:
-
-
-
-
-
-        ret
-
-align 4
 check_acpi:
 
         call    acpi_locate
@@ -544,7 +535,7 @@ check_acpi:
         test    eax, eax
         jz      .done
 
-        xchg bx, bx
+;        xchg bx, bx
 
         mov     [acpi_madt_base-OS_BASE], eax
         mov     ecx, [eax+36]
@@ -555,7 +546,7 @@ check_acpi:
         shr     ebx, 24              ; read APIC ID
 
         mov     [edi], ebx           ; bootstrap always first
-        inc     [cpu_count]
+        inc     [cpu_count-OS_BASE]
         add     edi, 4
 
         lea     edx, [eax+44]
