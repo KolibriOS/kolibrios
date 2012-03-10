@@ -53,12 +53,22 @@ Vesa20_getpixel24:
 ; eax = x
 ; ebx = y
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], 0
+        je      @f
+        cmp     [_display.select_cursor], select_cursor
+        jne     .no_mouseunder
+;--------------------------------------
+align 4
+@@:
 ; check mouse area for putpixel
         test    ecx, 0x04000000  ; don't load to mouseunder area
         jnz     .no_mouseunder
         call    [_display.check_m_pixel]
         test    ecx, ecx        ;0xff000000
         jnz     @f
+;--------------------------------------
+align 4
 .no_mouseunder:
 ;--------------------------------------
 ;        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
@@ -76,12 +86,22 @@ align 4
 align 4
 Vesa20_getpixel32:
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], 0
+        je      @f
+        cmp     [_display.select_cursor], select_cursor
+        jne     .no_mouseunder
+;--------------------------------------
+align 4
+@@:
 ; check mouse area for putpixel
         test    ecx, 0x04000000  ; don't load to mouseunder area
         jnz     .no_mouseunder
         call    [_display.check_m_pixel]
         test    ecx, ecx        ;0xff000000
         jnz     @f
+;--------------------------------------
+align 4
 .no_mouseunder:
 ;--------------------------------------
 ;        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
@@ -280,6 +300,9 @@ align 4
         cmp     [ebp], bl
         jne     .skip
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder
         push    ecx
 
         neg     ecx
@@ -291,6 +314,9 @@ align 4
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel
         pop     ecx
+;--------------------------------------
+align 4
+.no_mouseunder:
 ; store to real LFB
         mov     [LFB_BASE+edx], ax
         shr     eax, 16
@@ -345,6 +371,10 @@ align 4
         cmp     [ebp], bl
         jne     .skip
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        jne     .no_mouseunder
+
         push    ecx
         mov     ecx, [putimg.real_sy_and_abs_cy + 4]
         sub     ecx, edi
@@ -373,6 +403,9 @@ align 4
 align 4
 .no_mouse_area:
         pop     ecx
+;--------------------------------------
+align 4
+.no_mouseunder:
 ; store to real LFB
         mov     [LFB_BASE+edx], ax
         shr     eax, 16
@@ -425,6 +458,10 @@ align 4
         cmp     [ebp], bl
         jne     .skip
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder
+
         push    ecx
 
         neg     ecx
@@ -436,6 +473,9 @@ align 4
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel
         pop     ecx
+;--------------------------------------
+align 4
+.no_mouseunder:
 ; store to real LFB
         mov     [LFB_BASE+edx], eax
 ;--------------------------------------
@@ -495,6 +535,9 @@ align 4
         cmp     [ebp], bl
         jne     .skip
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        jne     .no_mouseunder
         push    ecx
         mov     ecx, [putimg.real_sy_and_abs_cy + 4]
         sub     ecx, edi
@@ -523,6 +566,9 @@ align 4
 align 4
 .no_mouse_area:
         pop     ecx
+;--------------------------------------
+align 4
+.no_mouseunder:
 ; store to real LFB
         mov     [LFB_BASE+edx], eax
 ;--------------------------------------
@@ -620,6 +666,9 @@ Vesa20_putpixel24:
         lea     edi, [eax+eax*2]; edi = x*3
         mov     eax, [esp+32-8+4]
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], 0
+        jne     @f
 ; check mouse area for putpixel
         test    eax, 0x04000000
         jnz     @f
@@ -648,6 +697,9 @@ Vesa20_putpixel24_new:
         lea     edi, [eax+eax*2]; edi = x*3
         mov     eax, [esp+32-8+4]
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        jne     @f
 ; check mouse area for putpixel
         test    eax, 0x04000000
         jnz     @f
@@ -693,6 +745,9 @@ Vesa20_putpixel32:
         lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
         mov     eax, [esp+32-8+4]; eax = color
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], 0
+        jne     @f
 ; check mouse area for putpixel
         test    eax, 0x04000000
         jnz     @f
@@ -720,6 +775,9 @@ Vesa20_putpixel32_new:
         lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
         mov     eax, [esp+32-8+4]; eax = color
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        jne     @f
 ; check mouse area for putpixel
         test    eax, 0x04000000
         jnz     @f
@@ -1153,6 +1211,10 @@ align 4
         cmp     byte [ebp], bl
         jne     .skip
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder
+
         mov     ecx, [drbar.real_sx_and_abs_cx]
         sub     ecx, edi
         shl     ecx, 16
@@ -1161,6 +1223,9 @@ align 4
 
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel
+;--------------------------------------
+align 4
+.no_mouseunder:
 ; store to real LFB
         mov     [edx], ax
         shr     eax, 16
@@ -1208,6 +1273,10 @@ align 4
         cmp     byte [ebp], bl
         jne     .skip
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        jne     .no_mouse_area
+
         mov     ecx, [drbar.real_sy_and_abs_cy]
         sub     ecx, esi
 ;--------------------------------------
@@ -1288,6 +1357,10 @@ align 4
         cmp     byte [ebp], bl
         jne     .skip
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder
+
         mov     ecx, [drbar.real_sx_and_abs_cx]
         sub     ecx, edi
         shl     ecx, 16
@@ -1296,6 +1369,9 @@ align 4
 
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel
+;--------------------------------------
+align 4
+.no_mouseunder:
 ; store to real LFB
         mov     [edx], eax
         mov     eax, [drbar.color]
@@ -1348,6 +1424,10 @@ align 4
         cmp     byte [ebp], bl
         jne     .skip
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        jne     .no_mouse_area
+
         mov     ecx, [drbar.real_sy_and_abs_cy]
         sub     ecx, esi
 ;--------------------------------------
@@ -1483,9 +1563,21 @@ dp3:
         add     ecx, ebx
 
         mov     eax, [esi]
+
+; check for hardware cursor
+        cmp     [_display.select_cursor], 0
+        je      @f
+        cmp     [_display.select_cursor], select_cursor
+        jne     .no_mouseunder
+;--------------------------------------
+align 4
+@@:
         and     eax, 0xffffff
 ; check mouse area for putpixel
         call    [_display.check_mouse]
+;--------------------------------------
+align 4
+.no_mouseunder:
 ; store to real LFB
         mov     [edi], ax
         shr     eax, 16
@@ -1673,11 +1765,22 @@ sdp3a:
 align 4
 .novert:
         push    ecx
+; check for hardware cursor
+        cmp     [_display.select_cursor], 0
+        jne     @f
+        cmp     [_display.select_cursor], select_cursor
+        jne     .no_mouseunder
+;--------------------------------------
+align 4
+@@:
         mov     ecx, [esp+20+4]        ;x
         shl     ecx, 16
         add     ecx, [esp+24+4]        ;y
 ; check mouse area for putpixel
         call    [_display.check_mouse]
+;--------------------------------------
+align 4
+.no_mouseunder:
 ; store to real LFB
         mov     [LFB_BASE+edi], ax
         shr     eax, 16

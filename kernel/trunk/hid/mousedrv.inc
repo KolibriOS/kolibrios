@@ -427,9 +427,11 @@ redrawmouse:
         call    draw_mouse_under
         call    save_draw_mouse
 
-        mov     eax, [_display.select_cursor]
-        test    eax, eax
-        jz      @f
+;        mov     eax, [_display.select_cursor]
+;        test    eax, eax
+;        jz      @f
+        cmp     [_display.select_cursor], select_cursor
+        jne     @f
 
         xor     eax, eax
         mov     esi, [current_cursor]
