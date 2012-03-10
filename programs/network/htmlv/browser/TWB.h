@@ -79,7 +79,7 @@ void TWebBrowser::Scan(dword id) {
 
 		GetNewUrl();
 
-		//прыгает изображение полоса, белая рисуется снизу
+		//полоса, белая рисуется снизу
 		if (!strcmp(#URL + strlen(#URL) - 4, ".gif")) || (!strcmp(#URL + strlen(#URL) - 4, ".png")) || (!strcmp(#URL + strlen(#URL) - 4, ".jpg"))
 		{
 			RunProgram("/sys/media/kiv", #URL);
@@ -197,7 +197,7 @@ void GetNewUrl(){
 		
 		_CUT_ST_LEVEL_MARK:
 		
-		IF (editURL[find_symbol(#editURL, '/')-2]<>'/')  // если не http://pagename.ua <-- нахрена эта строка???
+		if (editURL[find_symbol(#editURL, '/')-2]<>'/')  // если не http://pagename.ua <-- нахрена эта строка???
 		{
 			editURL[find_symbol(#editURL, '/')] = 0x00; //обрезаем её урл до последнего /
 		}
@@ -209,6 +209,7 @@ void GetNewUrl(){
 			goto _CUT_ST_LEVEL_MARK;
 		}
 		
+		if (editURL[strlen(#editURL)-1]<>'/') copystr("/", #editURL + strlen(#editURL)); 
 		copystr(#URL, #editURL + strlen(#editURL)); //клеим новый адрес
 		copystr(#editURL, #URL);
 	}
@@ -512,7 +513,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	//вывод на экран
 	if (stroka >= 0) && (stroka - 2 < max_kolvo_strok) && (line) 
 	{
-		WriteText(stolbec * 6 + left1, top1, 0x80, text_colors[text_color_index], #line, 0);
+		WriteText(stolbec * 6 + left1, top1, 0x80, text_colors[text_color_index], #line, 0); //может тут рисовать белую строку?
 		IF (b_text) WriteText(stolbec * 6 + left1 + 1, top1, 0x80, text_colors[text_color_index], #line, 0);
 		IF (i_text) Skew(stolbec * 6 + left1, top1, strlen(#line)+1*6, 10); //наклонный текст
 		IF (s_text) DrawBar(stolbec * 6 + left1, top1 + 4, strlen(#line) * 6, 1, text_colors[text_color_index]); //зачёркнутый

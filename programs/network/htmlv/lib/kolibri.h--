@@ -531,6 +531,14 @@ void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 	$int 0x40;
 }
 
+void CopyScreen(dword EBX, x, y, sizeX, sizeY)
+{
+  EAX = 36;
+  ECX = sizeX << 16 + sizeY;
+  EDX = x << 16 + y;
+  $int  0x40;
+}
+
 void PutImage(dword EBX,w,h,x,y)
 {
 	EAX = 7;

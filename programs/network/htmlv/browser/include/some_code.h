@@ -22,13 +22,22 @@ dword get_URL_part(byte len) {
 	return #temp1;
 }
 
-inline fastcall CopyScreen(dword EBX, ECX, EDX)
+inline byte chTag(dword text) {return strcmp(#tag,text);}
+
+
+void GetURLfromPageLinks(int id) //столько бреда, потому что нельз€ создать массив стрингов
 {
-  EAX = 36;
-  $int  0x40;
+	j = 0;
+	for (i = 0; i <= id - 401; i++)
+	{
+		do j++;
+		while (page_links[j] <>'|');
+	}
+	page_links[j] = 0x00;
+	copystr(#page_links[find_symbol(#page_links, '|')], #URL);
 }
 
-inline byte chTag(dword text) {return strcmp(#tag,text);}
+
 
 //У ≠†б ≠•в ≠†™ЂЃ≠≠ле иа®двЃҐ, ѓЃнвЃђг §•Ђ†•ђ ™ЃбвлЂм ®І
 //ѓ†ЂЃз•™ §Ђп ђЃаЃ¶•≠Ѓ£Ѓ ® ¶•Ґ†в•Ђм≠Ѓ© а•І®≠™®:
@@ -48,23 +57,11 @@ shift=-2;
   
   skin_width = GetSkinWidth();
 
-  CopyScreen(italic_buf, w * 65536 + h, x + Form.left + 2 * 65536 + y + Form.top + skin_width);
+  CopyScreen(italic_buf, x+Form.left+2, y+Form.top+skin_width, w, h);
 
   
   FOR (i=0;i*tile_height<h;i++){
     PutImage(w*3*tile_height*i+italic_buf,w,tile_height,x+shift-i+1,i*tile_height+y);
   }
   mem_Free(italic_buf);
-}
-
-void GetURLfromPageLinks(int id) //столько бреда, потому что нельз€ создать массив стрингов
-{
-	j = 0;
-	for (i = 0; i <= id - 401; i++)
-	{
-		do j++;
-		while (page_links[j] <>'|');
-	}
-	page_links[j] = 0x00;
-	copystr(#page_links[find_symbol(#page_links, '|')], #URL);
 }
