@@ -110,9 +110,11 @@ save_draw_mouse:
         push    eax
         push    ebx
 
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
-        mul     ecx
+;        mov     ecx, [Screen_Max_X]
+;        inc     ecx
+;        mul     ecx
+        mov     eax, [d_width_calc_area + eax*4]
+
         add     eax, [_WinMapAddress]
         movzx   edx, byte [ebx+eax]
         shl     edx, 8

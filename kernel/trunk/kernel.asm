@@ -1955,9 +1955,11 @@ restore_default_cursor_before_killing:
 
         movzx   eax, word [MOUSE_Y]
         movzx   ebx, word [MOUSE_X]
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
-        mul     ecx
+;        mov     ecx, [Screen_Max_X]
+;        inc     ecx
+;        mul     ecx
+        mov     eax, [d_width_calc_area + eax*4]
+
         add     eax, [_WinMapAddress]
         movzx   edx, byte [ebx+eax]
         shl     edx, 8
@@ -3083,22 +3085,23 @@ modify_pce:
 
 ; check if pixel is allowed to be drawn
 
-checkpixel:
-        push    eax edx
+;checkpixel:
+;        push    eax edx
 
-        mov     edx, [Screen_Max_X] ; screen x size
-        inc     edx
-        imul    edx, ebx
-        add     eax, [_WinMapAddress]
-        mov     dl, [eax+edx]; lea eax, [...]
+;;        mov     edx, [Screen_Max_X] ; screen x size
+;;        inc     edx
+;;        imul    edx, ebx
+;        mov     edx, [d_width_calc_area + ebx*4]
+;        add     eax, [_WinMapAddress]
+;        mov     dl, [eax+edx]; lea eax, [...]
 
-        xor     ecx, ecx
-        mov     eax, [CURRENT_TASK]
-        cmp     al, dl
-        setne   cl
+;        xor     ecx, ecx
+;        mov     eax, [CURRENT_TASK]
+;        cmp     al, dl
+;        setne   cl
 
-        pop     edx eax
-        ret
+;        pop     edx eax
+;        ret
 
 iglobal
   cpustring db 'CPU',0
@@ -4807,7 +4810,7 @@ paleholder:
 align 4
 calculate_fast_getting_offset_for_WinMapAddress:
 ; calculate data area for fast getting offset to _WinMapAddress
-        mov     eax, [_display.width]
+        xor     eax, eax
         mov     ecx, [_display.height]
         inc     ecx
         mov     edi, d_width_calc_area

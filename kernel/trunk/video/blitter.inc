@@ -340,7 +340,9 @@ blit_32:
         mov     edi, ebp
 
         imul    edi, [_display.pitch]
-        imul    ebp, [_display.width]
+;        imul    ebp, [_display.width]
+        mov     ebp, [d_width_calc_area + ebp*4]
+
         add     ebp, ebx
         add     ebp, [_WinMapAddress]
 

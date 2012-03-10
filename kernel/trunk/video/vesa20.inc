@@ -61,7 +61,9 @@ Vesa20_getpixel24:
         jnz     @f
 .no_mouseunder:
 ;--------------------------------------
-        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
+;        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
+        mov     ebx, [d_width_calc_area + ebx*4]
+        lea     ebx, [ebx + ebx*2]
         lea     edi, [eax+eax*2]; edi = x*3
         add     edi, ebx      ; edi = x*3+(y*y multiplier)
         mov     ecx, [LFB_BASE+edi]
@@ -82,7 +84,9 @@ Vesa20_getpixel32:
         jnz     @f
 .no_mouseunder:
 ;--------------------------------------
-        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
+;        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
+        mov     ebx, [d_width_calc_area + ebx*4]
+        shl     ebx, 2
         lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
         mov     ecx, [LFB_BASE+edi]
 ;--------------------------------------
@@ -218,16 +222,31 @@ align 4
         mov     esi, [putimg.pti]
 ; pointer to screen
         mov     edx, [putimg.abs_cy]
-        imul    edx, [BytesPerScanLine]
+;        imul    edx, [BytesPerScanLine]
+
+        mov     edx, [d_width_calc_area + edx*4]
+        cmp     bl, 4
+        je      .32
+        lea     edx, [edx+edx*2]
+        jmp     @f
+;-------------------------------------
+align 4
+.32:
+        shl     edx, 2
+;-------------------------------------
+align 4
+@@:
         mov     eax, [putimg.abs_cx]
-        movzx   ebx, byte [ScreenBPP]
-        shr     ebx, 3
+;        movzx   ebx, byte [ScreenBPP]
+;        shr     ebx, 3
         imul    eax, ebx
         add     edx, eax
 ; pointer to pixel map
         mov     eax, [putimg.abs_cy]
-        imul    eax, [Screen_Max_X]
-        add     eax, [putimg.abs_cy]
+;        imul    eax, [Screen_Max_X]
+;        add     eax, [putimg.abs_cy]
+        mov     eax, [d_width_calc_area + eax*4]
+
         add     eax, [putimg.abs_cx]
         add     eax, [_WinMapAddress]
         xchg    eax, ebp
@@ -557,7 +576,6 @@ __sys_putpixel:
 
 ; not forced:
         mov     edx, [d_width_calc_area + ebx*4]
-        sub     edx, [_display.width]
         add     edx, [_WinMapAddress]
         movzx   edx, byte [eax+edx]
         cmp     edx, [CURRENT_TASK]
@@ -595,7 +613,10 @@ Vesa20_putpixel24:
         shl     ecx, 16
         mov     cx, bx
 
-        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+        mov     ebx, [d_width_calc_area + ebx*4]
+        lea     ebx, [ebx + ebx*2]
+
         lea     edi, [eax+eax*2]; edi = x*3
         mov     eax, [esp+32-8+4]
 ;--------------------------------------
@@ -620,7 +641,10 @@ Vesa20_putpixel24_new:
         shl     ecx, 16
         mov     cx, bx
 
-        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+        mov     ebx, [d_width_calc_area + ebx*4]
+        lea     ebx, [ebx + ebx*2]
+
         lea     edi, [eax+eax*2]; edi = x*3
         mov     eax, [esp+32-8+4]
 ;--------------------------------------
@@ -662,7 +686,10 @@ Vesa20_putpixel32:
         shl     ecx, 16
         mov     cx, bx
 
-        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+        mov     ebx, [d_width_calc_area + ebx*4]
+        shl     ebx, 2
+
         lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
         mov     eax, [esp+32-8+4]; eax = color
 ;--------------------------------------
@@ -686,7 +713,10 @@ Vesa20_putpixel32_new:
         shl     ecx, 16
         mov     cx, bx
 
-        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
+        mov     ebx, [d_width_calc_area + ebx*4]
+        shl     ebx, 2
+
         lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
         mov     eax, [esp+32-8+4]; eax = color
 ;--------------------------------------
@@ -721,9 +751,10 @@ align 4
 ;-----------------------------------------------------------------------------
 align 4
 calculate_edi:
-        mov     edi, ebx
-        imul    edi, [Screen_Max_X]
-        add     edi, ebx
+;        mov     edi, ebx
+;        imul    edi, [Screen_Max_X]
+;        add     edi, ebx
+        mov     edi, [d_width_calc_area + ebx*4]
         add     edi, eax
         ret
 ;-----------------------------------------------------------------------------
@@ -1056,16 +1087,29 @@ align 4
         mov     [drbar.line_inc_scr], eax
 ; pointer to screen
         mov     edx, [drbar.abs_cy]
-        imul    edx, [BytesPerScanLine]
+;        imul    edx, [BytesPerScanLine]
+
+        mov     edx, [d_width_calc_area + edx*4]
+        cmp     bl, 4
+        je      .32
+        lea     edx, [edx+edx*2]
+        jmp     @f
+;-------------------------------------
+align 4
+.32:
+        shl     edx, 2
+;-------------------------------------
+align 4
+@@:
         mov     eax, [drbar.abs_cx]
-;     movzx   ebx, byte [ScreenBPP]
-;     shr     ebx, 3
         imul    eax, ebx
         add     edx, eax
 ; pointer to pixel map
         mov     eax, [drbar.abs_cy]
-        imul    eax, [Screen_Max_X]
-        add     eax, [drbar.abs_cy]
+;        imul    eax, [Screen_Max_X]
+;        add     eax, [drbar.abs_cy]
+        mov     eax, [d_width_calc_area + eax*4]
+
         add     eax, [drbar.abs_cx]
         add     eax, [_WinMapAddress]
         xchg    eax, ebp
@@ -1080,23 +1124,23 @@ align 4
         add     edx, LFB_BASE
 ;--------------------------------------
 ; get process number
-        mov     ebx, [CURRENT_TASK]
+        mov     ebx, [CURRENT_TASK]  ; bl - process num
+        mov     esi, [drbar.real_sy]
+        mov     eax, [drbar.color] ; BBGGRR00
+        rol     eax, 8
+        mov     bh, al  ; 0x80 drawing gradient bars
+        ror     eax, 8
         cmp     byte [ScreenBPP], 24
         jne     draw_bar_end_32
 ;--------------------------------------
 align 4
 draw_bar_end_24:
-        mov     eax, [drbar.color] ;; BBGGRR00
-        mov     bh, al             ;; bh  = BB
-        shr     eax, 8             ;; eax = RRGG
-; eax - color high   RRGG
+; eax - color high   RRGGBB
 ; bl - process num
-; bh - color low    BB
 ; ecx - temp
 ; edx - pointer to screen
 ; esi - counter
 ; edi - counter
-        mov     esi, [drbar.real_sy]
         cmp     [_display.select_cursor], 0
         jne     draw_bar_end_24_new
 ;--------------------------------------
@@ -1109,23 +1153,19 @@ align 4
         cmp     byte [ebp], bl
         jne     .skip
 ;--------------------------------------
-        push    eax
-
-        mov     ecx, [drbar.real_sx_and_abs_cx + 4]
+        mov     ecx, [drbar.real_sx_and_abs_cx]
         sub     ecx, edi
         shl     ecx, 16
-        add     ecx, [drbar.real_sy_and_abs_cy + 4]
+        add     ecx, [drbar.real_sy_and_abs_cy]
         sub     ecx, esi
 
-        shl     eax, 8
-        mov     al, bh
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel
 ; store to real LFB
         mov     [edx], ax
         shr     eax, 16
         mov     [edx + 2], al
-        pop     eax
+        mov     eax, [drbar.color]
 ;--------------------------------------
 align 4
 .skip:
@@ -1137,16 +1177,15 @@ align 4
 ; add line
         add     edx, [drbar.line_inc_scr]
         add     ebp, [drbar.line_inc_map]
-; <Ivan 15.10.04> drawing gradient bars
-        test    eax, 0x00800000
+; drawing gradient bars
+        test    bh, 0x80
         jz      @f
-        test    bh, bh
+        test    al, al
         jz      @f
-        dec     bh
+        dec     al
 ;--------------------------------------
 align 4
 @@:
-; </Ivan 15.10.04>
         dec     esi
         jnz     .new_y
 ;--------------------------------------
@@ -1191,24 +1230,20 @@ align 4
         jae     .no_mouse_area
 ;--------------------------------------
 ; check mouse area for putpixel
-        push    eax
-
-        shl     eax, 8
-        mov     al, bh
-
         call    check_mouse_area_for_putpixel_new.1
-; store to real LFB
         mov     [edx], ax
         shr     eax, 16
         mov     [edx + 2], al
-        pop     eax
+        mov     eax, [drbar.color]
         jmp     .skip
 ; store to real LFB
 ;--------------------------------------
 align 4
 .no_mouse_area:
-        mov     [edx], bh
-        mov     [edx + 1], ax
+        mov     [edx], ax
+        ror     eax, 16
+        mov     [edx + 2], al
+        rol     eax, 16
 ;--------------------------------------
 align 4
 .skip:
@@ -1220,24 +1255,27 @@ align 4
 ; add line
         add     edx, [drbar.line_inc_scr]
         add     ebp, [drbar.line_inc_map]
-; <Ivan 15.10.04> drawing gradient bars
-        test    eax, 0x00800000
+; drawing gradient bars
+        test    bh, 0x80
         jz      @f
-        test    bh, bh
+        test    al, al
         jz      @f
-        dec     bh
+        dec     al
 ;--------------------------------------
 align 4
 @@:
-; </Ivan 15.10.04>
         dec     esi
         jnz     .new_y
         jmp     draw_bar_end_24.end
 ;--------------------------------------
 align 4
 draw_bar_end_32:
-        mov     eax, [drbar.color] ;; BBGGRR00
-        mov     esi, [drbar.real_sy]
+; eax - color high   RRGGBB
+; bl - process num
+; ecx - temp
+; edx - pointer to screen
+; esi - counter
+; edi - counter
         cmp     [_display.select_cursor], 0
         jne     draw_bar_end_32_new
 ;--------------------------------------
@@ -1250,19 +1288,17 @@ align 4
         cmp     byte [ebp], bl
         jne     .skip
 ;--------------------------------------
-        push    eax
-
-        mov     ecx, [drbar.real_sx_and_abs_cx + 4]
+        mov     ecx, [drbar.real_sx_and_abs_cx]
         sub     ecx, edi
         shl     ecx, 16
-        add     ecx, [drbar.real_sy_and_abs_cy + 4]
+        add     ecx, [drbar.real_sy_and_abs_cy]
         sub     ecx, esi
 
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel
 ; store to real LFB
         mov     [edx], eax
-        pop     eax
+        mov     eax, [drbar.color]
 ;--------------------------------------
 align 4
 .skip:
@@ -1274,8 +1310,8 @@ align 4
 ; add line
         add     edx, [drbar.line_inc_scr]
         add     ebp, [drbar.line_inc_map]
-; <Ivan 15.10.04> drawing gradient bars
-        test    eax, 0x80000000
+; drawing gradient bars
+        test    bh, 0x80
         jz      @f
         test    al, al
         jz      @f
@@ -1283,7 +1319,6 @@ align 4
 ;--------------------------------------
 align 4
 @@:
-; </Ivan 15.10.04>
         dec     esi
         jnz     .new_y
 ;--------------------------------------
@@ -1335,10 +1370,9 @@ align 4
         jae     .no_mouse_area
 ;--------------------------------------
 ; check mouse area for putpixel
-        push    eax
         call    check_mouse_area_for_putpixel_new.1
         mov     [edx], eax
-        pop     eax
+        mov     eax, [drbar.color]
         jmp     .skip
 ; store to real LFB
 ;--------------------------------------
@@ -1356,8 +1390,8 @@ align 4
 ; add line
         add     edx, [drbar.line_inc_scr]
         add     ebp, [drbar.line_inc_map]
-; <Ivan 15.10.04> drawing gradient bars
-        test    eax, 0x80000000
+; drawing gradient bars
+        test    bh, 0x80
         jz      @f
         test    al, al
         jz      @f
@@ -1365,7 +1399,6 @@ align 4
 ;--------------------------------------
 align 4
 @@:
-; </Ivan 15.10.04>
         dec     esi
         jnz     .new_y
         jmp     draw_bar_end_32.end
@@ -1381,8 +1414,20 @@ dp2:
         mov     ebp, [draw_data+32+RECT.left]   ; x start
 ; 1) Calculate pointers in WinMapAddress (does pixel belong to OS thread?) [ebp]
 ;                       and LFB data (output for our function) [edi]
-        mov     eax, [BytesPerScanLine]
-        mul     ebx
+;        mov     eax, [BytesPerScanLine]
+;        mul     ebx
+        mov     eax, [d_width_calc_area + ebx*4]
+        cmp     [ScreenBPP], byte 32
+        je      .32
+        lea     eax, [eax+eax*2]
+        jmp     @f
+;-------------------------------------
+align 4
+.32:
+        shl     eax, 2
+;-------------------------------------
+align 4
+@@:
         xchg    ebp, eax
         add     ebp, eax
         add     ebp, eax
@@ -1514,8 +1559,21 @@ vesa20_drawbackground_stretch:
         mov     ebp, [draw_data+32+RECT.left]   ; x start
 ; 1) Calculate pointers in WinMapAddress (does pixel belong to OS thread?) [ebp]
 ;                       and LFB data (output for our function) [edi]
-        mov     eax, [BytesPerScanLine]
-        mul     ebx
+;        mov     eax, [BytesPerScanLine]
+;        mul     ebx
+        mov     eax, [d_width_calc_area + ebx*4]
+        cmp     [ScreenBPP], byte 32
+        je      .32
+        lea     eax, [eax+eax*2]
+        jmp     @f
+;-------------------------------------
+align 4
+.32:
+        shl     eax, 2
+;-------------------------------------
+align 4
+@@:
+
         xchg    ebp, eax
         add     ebp, eax
         add     ebp, eax

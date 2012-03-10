@@ -1830,10 +1830,14 @@ align 4
 
         ; get WinMap start
         push    esi
-        mov     edi, [Screen_Max_X]
-        inc     edi
-        mov     esi, edi
-        imul    edi, ebx
+;        mov     edi, [Screen_Max_X]
+;        inc     edi
+;        mov     esi, edi
+        mov     esi, [Screen_Max_X]
+        inc     esi
+;        imul    edi, ebx
+        mov     edi, [d_width_calc_area + ebx*4]
+
         add     edi, eax
         add     edi, [_WinMapAddress]
         pop     eax
@@ -1874,9 +1878,11 @@ align 4
 
         ; get WinMap start  -> ebp
         push    eax
-        mov     eax, [Screen_Max_X] ; screen_sx
-        inc     eax
-        imul    eax, ebx
+;        mov     eax, [Screen_Max_X] ; screen_sx
+;        inc     eax
+;        imul    eax, ebx
+        mov     eax, [d_width_calc_area + ebx*4]
+
         add     eax, [esp]
         add     eax, [_WinMapAddress]
         mov     ebp, eax
