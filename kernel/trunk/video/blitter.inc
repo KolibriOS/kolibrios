@@ -375,7 +375,7 @@ align 4
 align 4
 .inner32:
         cmp     [ebp+ecx], bl
-        jne     @F
+        jne     .skip
 ;--------------------------------------
         push    eax
         mov     eax, [esi+ecx*4]
@@ -407,7 +407,7 @@ align 4
         pop     eax
 ;--------------------------------------
 align 4
-@@:
+.skip:
         inc     ecx
         dec     edx
         jnz     .inner32
@@ -443,7 +443,7 @@ align 4
 align 4
 .inner24:
         cmp     [ebp+ecx], bl
-        jne     @F
+        jne     .skip_1
 ;--------------------------------------
         push    eax
         mov     eax, [esi+ecx*4]
@@ -479,7 +479,7 @@ align 4
         pop     eax
 ;--------------------------------------
 align 4
-@@:
+.skip_1:
         mov     edi, [esp+64]
         inc     ecx
         dec     edx
