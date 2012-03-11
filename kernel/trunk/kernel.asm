@@ -1967,6 +1967,8 @@ restore_default_cursor_before_killing:
         push    esi
         call    [_display.select_cursor]
         mov     [current_cursor], esi
+        mov     [redrawmouse_unconditional], 1
+        call    [draw_pointer]
         ret
 ;------------------------------------------------------------------------------
 iglobal

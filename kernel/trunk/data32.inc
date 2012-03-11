@@ -398,6 +398,8 @@ hd_entries        rd 1     ;unused ? 0xfe10
 mouse_active          rd 1
 mouse_pause           rd 1
 
+redrawmouse_unconditional rd 1
+
 img_background        rd 1
 mem_BACKGROUND        rd 1
 static_background_data rd 1

@@ -415,6 +415,13 @@ __sys_draw_pointer:
         movzx   edx, word [Y_UNDER]
         movzx   ebx, word [MOUSE_Y]
         movzx   eax, word [MOUSE_X]
+        cmp     [redrawmouse_unconditional], 0
+        je      @f
+        mov     [redrawmouse_unconditional], 0
+        jmp     redrawmouse
+;--------------------------------------
+align 4
+@@:
         cmp     eax, ecx
         jne     redrawmouse
         cmp     ebx, edx
