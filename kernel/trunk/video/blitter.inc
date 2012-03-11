@@ -381,9 +381,9 @@ align 4
         mov     eax, [esi+ecx*4]
 
 ; check for hardware cursor
-        cmp     [_display.select_cursor], 0
-        je      @f
         cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
 ;--------------------------------------
 align 4
@@ -451,9 +451,9 @@ align 4
         lea     edi, [edi+ecx*2]
 
 ; check for hardware cursor
-        cmp     [_display.select_cursor], 0
-        je      @f
         cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
         jne     .no_mouseunder_1
 ;--------------------------------------
 align 4

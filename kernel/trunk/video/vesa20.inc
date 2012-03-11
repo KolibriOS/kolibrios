@@ -54,9 +54,9 @@ Vesa20_getpixel24:
 ; ebx = y
 ;--------------------------------------
 ; check for hardware cursor
-        cmp     [_display.select_cursor], 0
-        je      @f
         cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
 ;--------------------------------------
 align 4
@@ -87,9 +87,9 @@ align 4
 Vesa20_getpixel32:
 ;--------------------------------------
 ; check for hardware cursor
-        cmp     [_display.select_cursor], 0
-        je      @f
         cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
 ;--------------------------------------
 align 4
@@ -1565,9 +1565,9 @@ dp3:
         mov     eax, [esi]
 
 ; check for hardware cursor
-        cmp     [_display.select_cursor], 0
-        je      @f
         cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
 ;--------------------------------------
 align 4
@@ -1766,9 +1766,9 @@ align 4
 .novert:
         push    ecx
 ; check for hardware cursor
-        cmp     [_display.select_cursor], 0
-        jne     @f
         cmp     [_display.select_cursor], select_cursor
+        jne     @f
+        cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
 ;--------------------------------------
 align 4

@@ -166,6 +166,7 @@ dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 ; mike.dld {
 db 0
 dd servetable-0x10000
+align 4
 draw_line       dd __sys_draw_line
 draw_pointer    dd __sys_draw_pointer
 ;//mike.dld, 2006-08-02 [

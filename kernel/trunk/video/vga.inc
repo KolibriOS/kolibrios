@@ -381,9 +381,9 @@ VGA_putpixel:
         mov     eax, [esp+32-8+4] ; color
 ;--------------------------------------
 ; check for hardware cursor
-        cmp     [_display.select_cursor], 0
-        je      @f
         cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
 ;--------------------------------------
 align 4
