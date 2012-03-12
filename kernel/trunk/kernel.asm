@@ -1949,6 +1949,7 @@ sys_end:
         call    delay_hs
         jmp     waitterm
 ;------------------------------------------------------------------------------
+align 4
 restore_default_cursor_before_killing:
         mov     eax, [def_cursor]
         mov     [ecx+APPDATA.cursor], eax
@@ -1964,9 +1965,14 @@ restore_default_cursor_before_killing:
         movzx   edx, byte [ebx+eax]
         shl     edx, 8
         mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
+
+        cmp     esi, [current_cursor]
+        je      @f
+
         push    esi
         call    [_display.select_cursor]
         mov     [current_cursor], esi
+@@:
         mov     [redrawmouse_unconditional], 1
         call    [draw_pointer]
         ret
@@ -2041,15 +2047,19 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         jz      noprocessterminate
 ;--------------------------------------
         cmp     [_display.select_cursor], 0
-        je      @f
+        je      .restore_end
 ; restore default cursor before killing
         pusha
         mov     ecx, [esp+32]
         shl     ecx, 8
         add     ecx, SLOT_BASE
+        mov     eax, [def_cursor]
+        cmp     [ecx+APPDATA.cursor], eax
+        je      @f
         call    restore_default_cursor_before_killing
-        popa
 @@:
+        popa
+.restore_end:
         add     esp, 4
 ;--------------------------------------
      ;call MEM_Heap_Lock      ;guarantee that process isn't working with heap
