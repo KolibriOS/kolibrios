@@ -802,7 +802,7 @@ proc load_driver stdcall, driver_name:dword
         jnz     @f
         cmp     word [file_name+21], 'j'
         jnz     @f
-        mov     esi, aSis
+        mov     esi, aHDA
         jmp     .redo
 @@:
         xor     eax, eax
