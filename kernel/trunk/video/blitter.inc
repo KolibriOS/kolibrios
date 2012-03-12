@@ -421,7 +421,8 @@ align 4
         jnz     .outer32
 
 .done:
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
 .L57:
         add     esp, 72
         pop     ebx

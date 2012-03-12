@@ -84,7 +84,8 @@ mres:
         pop     eax
         mov     edi, 1 ; force
         or      ecx, 0x04000000  ; don't save to mouseunder area
-        call    [putpixel]
+;        call    [putpixel]
+        call    __sys_putpixel
         pop     edx
         pop     ecx
         inc     ecx
@@ -201,7 +202,8 @@ drm:
         mov     ecx, [MOUSE_COLOR_MEM]
         mov     edi, 1 ; force
         or      ecx, 0x04000000  ; don't save to mouseunder area
-        call    [putpixel]
+;        call    [putpixel]
+        call    __sys_putpixel
         pop     ecx
         mov     ebx, [esp+0]    ; pure y coord again
         mov     eax, [esp+4]    ; and x

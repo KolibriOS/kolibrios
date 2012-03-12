@@ -164,17 +164,17 @@ dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 
 ; mike.dld {
-db 0
-dd servetable-0x10000
-align 4
-draw_line       dd __sys_draw_line
-draw_pointer    dd __sys_draw_pointer
+;db 0
+;dd servetable-0x10000
+;align 4
+;draw_line       dd __sys_draw_line
+;draw_pointer    dd __sys_draw_pointer
 ;//mike.dld, 2006-08-02 [
-;drawbar         dd __sys_drawbar
-;drawbar         dd __sys_drawbar.forced
-drawbar         dd vesa20_drawbar
+;;drawbar         dd __sys_drawbar
+;;drawbar         dd __sys_drawbar.forced
+;drawbar         dd vesa20_drawbar
 ;//mike.dld, 2006-08-02 ]
-putpixel        dd __sys_putpixel
+;putpixel        dd __sys_putpixel
 ; } mike.dld
 
 

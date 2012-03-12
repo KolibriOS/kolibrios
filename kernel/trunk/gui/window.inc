@@ -60,7 +60,8 @@ align 4
 
         ; type II - only reserve area, no draw
 ;        call    sys_window_mouse
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         jmp     .exit
 ;--------------------------------------
 align 4
@@ -681,14 +682,16 @@ align 4
         test    ecx, 1 shl 25
         jnz     @f
         sub     ecx, 1 shl 25
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 ;--------------------------------------
 align 4
 @@:
         ; draw bottom border
         mov     ebx, [esp - 2]
         pop     bx
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 
         pop     ebx
         add     ebx, 1 * 65536 - 1
@@ -698,12 +701,14 @@ align 4
         push    eax
         rol     eax, 16
         pop     ax
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 
         ; draw right border
         mov     eax, [esp - 2]
         pop     ax
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 
         pop     edi ecx ebx eax
         ret
@@ -760,7 +765,8 @@ align 4
 align 4
 @@:
         and     ecx, 0x00ffffff
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
         inc     edx
         cmp     edx, [esp]
         jb      .next_line
@@ -813,7 +819,8 @@ drawwindow_I: ;////////////////////////////////////////////////////////////////
         mov     ebx, 21
         mov     ecx, [esi + WDATA.box.width]
         mov     edx, [esi + WDATA.box.height]
-        call    [drawbar]
+;        call    [drawbar]
+        call    vesa20_drawbar
 ;--------------------------------------
 align 4
 .exit:
@@ -871,7 +878,8 @@ align 4
 @@:
         mov     [esi + WDATA.cl_titlebar], ecx
         and     ecx, 0x00ffffff
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
         inc     edx
         cmp     edx, [esp]
         jb      .next_line
@@ -951,7 +959,8 @@ align 4
         mov     edx, [esi + WDATA.box.height]
         sub     ecx, 4
         sub     edx, 4
-        call    [drawbar]
+;        call    [drawbar]
+        call    vesa20_drawbar
 ;--------------------------------------
 align 4
 .exit:
@@ -2314,7 +2323,8 @@ align 4
 ;--------------------------------------
 align 4
 .exit:
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         ret
 ;------------------------------------------------------------------------------
 align 4

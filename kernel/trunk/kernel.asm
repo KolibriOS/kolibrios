@@ -1042,7 +1042,8 @@ boot_log:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 32
 osloop:
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         call    window_check_events
         call    mouse_check_events
         call    checkmisc
@@ -1974,7 +1975,8 @@ restore_default_cursor_before_killing:
         mov     [current_cursor], esi
 @@:
         mov     [redrawmouse_unconditional], 1
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         ret
 ;------------------------------------------------------------------------------
 iglobal
@@ -3745,13 +3747,15 @@ dbrv20:
         cmp     [BgrDrawMode], dword 1
         jne     bgrstr
         call    vesa20_drawbackground_tiled
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         ret
 ;--------------------------------------
 align 4
 bgrstr:
         call    vesa20_drawbackground_stretch
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -4523,7 +4527,8 @@ syscall_setpixel:                       ; SetPixel
         add     ebx, [edi+APPDATA.wnd_clientbox.top]
         xor     edi, edi ; no force
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-        jmp     [putpixel]
+;        jmp     [putpixel]
+        jmp     __sys_putpixel
 
 align 4
 
@@ -4580,7 +4585,8 @@ syscall_drawrect:                       ; DrawRect
         add     ebx, [esi + APPDATA.wnd_clientbox.top]
         add     ecx, eax
         add     edx, ebx
-        jmp     [drawbar]
+;        jmp     [drawbar]
+        jmp     vesa20_drawbar
 .drectr:
         ret
 
@@ -4751,8 +4757,8 @@ syscall_drawline:                       ; DrawLine
         xor     edi, edi
         add     ebx, ebp
         mov     ecx, edx
-        jmp     [draw_line]
-
+;        jmp     [draw_line]
+        jmp     __sys_draw_line
 
 
 align 4
