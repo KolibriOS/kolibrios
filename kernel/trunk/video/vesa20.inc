@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  VESA20.INC                                                  ;;
@@ -287,10 +287,11 @@ put_image_end_24:
         mov     edi, [putimg.real_sy]
 ;--------------------------------------
 ; check for hardware cursor
-        cmp     [_display.select_cursor], 0
-        je      put_image_end_24_old
-        cmp     [_display.select_cursor], select_cursor
+        mov     ecx, [_display.select_cursor]
+        cmp     ecx, select_cursor
         je      put_image_end_24_new
+        cmp     ecx, 0
+        je      put_image_end_24_old
 ;--------------------------------------
 align 4
 .new_line:
@@ -485,10 +486,11 @@ put_image_end_32:
         mov     edi, [putimg.real_sy]
 ;--------------------------------------
 ; check for hardware cursor
-        cmp     [_display.select_cursor], 0
-        je      put_image_end_32_old
-        cmp     [_display.select_cursor], select_cursor
+        mov     ecx, [_display.select_cursor]
+        cmp     ecx, select_cursor
         je      put_image_end_32_new
+        cmp     ecx, 0
+        je      put_image_end_32_old
 ;--------------------------------------
 align 4
 .new_line:
@@ -1028,6 +1030,8 @@ align 4
         mov     ebx, [dl_y1]
         shl     eax, 16
         shl     ebx, 16
+
+        and     ecx, 0xFBFFFFFF ;negate 0x04000000 save to mouseunder area
 ;-----------------------------------------------------------------------------
 align 4
 .draw:
@@ -1052,7 +1056,7 @@ align 4
 @@:
 ;--------------------------------------
         shr     ebx, 16
-        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
+;        and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
 ;        call    [putpixel]
         call    __sys_putpixel
         pop     ebx eax
@@ -1063,7 +1067,7 @@ align 4
 ; force last drawn pixel to be at (x2,y2)
         mov     eax, [dl_x2]
         mov     ebx, [dl_y2]
-        and     ecx, 0xFBFFFFFF ;negate 0x04000000 save to mouseunder area
+;        and     ecx, 0xFBFFFFFF ;negate 0x04000000 save to mouseunder area
 ;        call    [putpixel]
         call    __sys_putpixel
 ;--------------------------------------
@@ -1090,6 +1094,9 @@ hline:
 align 4
 @@:
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
+;--------------------------------------
+align 4
+@@:
 ;        call    [putpixel]
         call    __sys_putpixel
         inc     eax
@@ -1114,6 +1121,9 @@ vline:
 align 4
 @@:
         and     ecx, 0xFBFFFFFF ;negate 0x04000000 save to mouseunder area
+;--------------------------------------
+align 4
+@@:
 ;        call    [putpixel]
         call    __sys_putpixel
         inc     ebx
@@ -1283,10 +1293,11 @@ draw_bar_end_24:
 ; edi - counter
 ;--------------------------------------
 ; check for hardware cursor
-        cmp     [_display.select_cursor], 0
-        je      draw_bar_end_24_old
-        cmp     [_display.select_cursor], select_cursor
+        mov     ecx, [_display.select_cursor]
+        cmp     ecx, select_cursor
         je      draw_bar_end_24_new
+        cmp     ecx, 0
+        je      draw_bar_end_24_old
 ;--------------------------------------
 align 4
 .new_y:
@@ -1461,10 +1472,11 @@ draw_bar_end_32:
 ; edi - counter
 ;--------------------------------------
 ; check for hardware cursor
-        cmp     [_display.select_cursor], 0
-        je      draw_bar_end_32_old
-        cmp     [_display.select_cursor], select_cursor
+        mov     ecx, [_display.select_cursor]
+        cmp     ecx, select_cursor
         je      draw_bar_end_32_new
+        cmp     ecx, 0
+        je      draw_bar_end_32_old
 ;--------------------------------------
 align 4
 .new_y:
