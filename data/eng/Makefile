@@ -269,6 +269,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  games/xonix:GAMES/XONIX games/megamaze:GAMES/MEGAMAZE \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
+ drivers/intel_hda.obj:DRIVERS/intel_hda.obj \
  media/ac97snd:MEDIA/AC97SND \
  network/jmail:NETWORK/JMAIL network/zeroconf.ini:NETWORK/ZEROCONF.INI \
 #end of list
