@@ -1925,7 +1925,7 @@ align 4
         push    ecx
 ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
-        jne     @f
+        je      @f
         cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
 ;--------------------------------------
