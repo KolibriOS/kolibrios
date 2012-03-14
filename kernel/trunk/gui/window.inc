@@ -908,29 +908,23 @@ drawwindow_III: ;//////////////////////////////////////////////////////////////
         mov     esi, [edx + WDATA.cl_frames]
         shr     esi, 1
         and     esi, 0x007f7f7f
-        or      esi, 1 shl 25; 0x02000000 used for draw_rectangle without top line
-        ror     ebx, 16
-        add     ebx, [_skinh]
-        sub     bx, 1
-        rol     ebx, 16
         call    draw_rectangle
 
         push    esi
         mov     ecx, 3
         mov     esi, [edx + WDATA.cl_frames]
-        or      esi, 1 shl 25; 0x02000000 used for draw_rectangle without top line
 ;--------------------------------------
 align 4
 .next_frame:
         add     eax, 1 * 65536 - 1
-        add     ebx, 0 * 65536 - 1
+        add     ebx, 1 * 65536 - 1
         call    draw_rectangle
         dec     ecx
         jnz     .next_frame
 
         pop     esi
         add     eax, 1 * 65536 - 1
-        add     ebx, 0 * 65536 - 1
+        add     ebx, 1 * 65536 - 1
         call    draw_rectangle
 
         ; window caption
