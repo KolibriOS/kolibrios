@@ -55,6 +55,9 @@ proc init_mem
 .calcmax:
 ; round all to pages
         mov     eax, [edi]
+        cmp     [edi+16], byte 1
+        jne     .unusable
+
         test    eax, 0xFFF
         jz      @f
         neg     eax
@@ -87,7 +90,7 @@ proc init_mem
         add     esi, eax
         jmp     .usable
 .unusable:
-        and     dword [edi+8], 0
+;        and     dword [edi+8], 0
 .usable:
         add     edi, 20
         loop    .calcmax
@@ -195,6 +198,9 @@ proc init_page_map
         mov     ebx, BOOT_VAR-OS_BASE + 0x9104
         mov     edx, [ebx-4]
 .scanmap:
+        cmp     [ebx+16], byte 1
+        jne     .next
+
         mov     ecx, [ebx+8]
         shr     ecx, 12; ecx = number of pages
         jz      .next

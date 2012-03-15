@@ -387,7 +387,7 @@ sayerr:
 
         push    0
         pop     es
-        and     word [es:0x9031], 0
+        and     word [es:BOOT_IDE_BASE_ADDR], 0
 ; \begin{Mario79}
 ; find HDD IDE DMA PCI device
 ; check for PCI BIOS
@@ -424,7 +424,7 @@ sayerr:
         int     0x1A
         jc      .nopci
         and     cx, 0xFFF0      ; clear address decode type
-        mov     [es:0x9031], cx
+        mov     [es:BOOT_IDE_BASE_ADDR], cx
 .nopci:
 ; \end{Mario79}
 
@@ -456,15 +456,15 @@ wait_loop:       ; variant 2
         loopnz  @b
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; --------------- APM ---------------------
-        and     word [es:0x9044], 0     ; ver = 0.0 (APM not found)
+        and     word [es:BOOT_APM_VERSION], 0     ; ver = 0.0 (APM not found)
         mov     ax, 0x5300
         xor     bx, bx
         int     0x15
         jc      apm_end                 ; APM not found
         test    cx, 2
         jz      apm_end                 ; APM 32-bit protected-mode interface not supported
-        mov     [es:0x9044], ax         ; Save APM Version
-        mov     [es:0x9046], cx         ; Save APM flags
+        mov     [es:BOOT_APM_VERSION], ax         ; Save APM Version
+        mov     [es:BOOT_APM_FLAGS], cx           ; Save APM flags
 
         ; Write APM ver ----
         and     ax, 0xf0f
@@ -483,10 +483,10 @@ wait_loop:       ; variant 2
         xor     bx, bx
         int     0x15
 
-        mov     [es:0x9040], ebx
-        mov     [es:0x9050], ax
-        mov     [es:0x9052], cx
-        mov     [es:0x9054], dx
+        mov     [es:BOOT_APM_ENTRY], ebx
+        mov     [es:BOOT_APM_CODE_32], ax
+        mov     [es:BOOT_APM_CODE_16], cx
+        mov     [es:BOOT_APM_DATA_16], dx
 
 apm_end:
         _setcursor d80x25_top_num, 0
@@ -947,18 +947,17 @@ end if
 
 ; GRAPHICS ACCELERATION
 ; force yes
-        mov     [es:0x901C], byte 1
+        mov     [es:BOOT_MTRR], byte 1
 
 ; DMA ACCESS TO HD
 
         mov     al, [preboot_dma]
-        mov     [es:0x901F], al
+        mov     [es:BOOT_DMA], al
 
 ;; VRR_M USE
 ;
 ;        mov     al,[preboot_vrrm]
 ;        mov     [es:0x9030], al
-        mov     [es:0x901E], byte 1
 
 ; BOOT DEVICE
 
@@ -1337,7 +1336,7 @@ end if
         xor     ax, ax
         mov     es, ax
 
-        mov     ax, [es:0x9008]         ; vga & 320x200
+        mov     ax, [es:BOOT_VESA_MODE]         ; vga & 320x200
         mov     bx, ax
         cmp     ax, 0x13
         je      setgr

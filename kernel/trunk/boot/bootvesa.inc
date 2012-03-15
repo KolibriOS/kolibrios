@@ -726,9 +726,9 @@ set_vmode:
         mov     bx, word [es:si+2]           ; resolution Y
 
 
-        mov     word [es:0x900A], ax             ; resolution X
-        mov     word [es:0x900C], bx             ; resolution Y
-        mov     word [es:0x9008], cx             ; number of mode
+        mov     word [es:BOOT_X_RES], ax             ; resolution X
+        mov     word [es:BOOT_Y_RES], bx             ; resolution Y
+        mov     word [es:BOOT_VESA_MODE], cx             ; number of mode
 
         cmp     cx, 0x12
         je      .mode0x12_0x13
@@ -747,11 +747,11 @@ set_vmode:
         int     0x10
         ; LFB
         mov     eax, [es:mi.PhysBasePtr];di+0x28]
-        mov     [es:0x9018], eax
+        mov     [es:BOOT_LFB], eax
         ; ---- vbe voodoo
         BytesPerLine equ 0x10
         mov     ax, [es:di+BytesPerLine]
-        mov     [es:0x9001], ax
+        mov     [es:BOOT_PITCH], ax
         ; BPP
         cmp     [es:mi.BitsPerPixel], 16
         jne     .l0
@@ -760,12 +760,12 @@ set_vmode:
         mov     [es:mi.BitsPerPixel], 15
 .l0:
         mov     al, byte [es:di+0x19]
-        mov     [es:0x9000], al
+        mov     [es:BOOT_BPP], al
         jmp     .exit
 
 .mode0x12_0x13:
-        mov     byte [es:0x9000], 32
-        or      dword [es:0x9018], 0xFFFFFFFF; 0x800000
+        mov     byte [es:BOOT_BPP], 32
+        or      dword [es:BOOT_LFB], 0xFFFFFFFF; 0x800000
 
 
 ;  VESA 1.2 PM BANK SWITCH ADDRESS
@@ -787,10 +787,6 @@ set_vmode:
 ;        mov     [es:0x9014], eax
   .exit:
         ret
-
-
-;        mov     dword[es:0x9018],0x000A0000
-;        ret
 
 ;=============================================================================
 ;=============================================================================

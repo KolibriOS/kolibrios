@@ -358,7 +358,7 @@ proc init_LFB
 
         cmp     dword [LFBAddress], -1
         jne     @f
-        mov     [BOOT_VAR+0x901c], byte 2
+        mov     [BOOT_VAR+BOOT_MTRR], byte 2
 ; max VGA=640*480*4=1228800 bytes
 ; + 32*640*4=81920 bytes for mouse pointer
         stdcall alloc_pages, ((1228800+81920)/4096)
@@ -378,7 +378,7 @@ proc init_LFB
 @@:
         test    [SCR_MODE], word 0100000000000000b
         jnz     @f
-        mov     [BOOT_VAR+0x901c], byte 2
+        mov     [BOOT_VAR+BOOT_MTRR], byte 2
         ret
 @@:
         call    init_mtrr
@@ -1364,7 +1364,7 @@ endp
 align 4
 proc init_mtrr
 
-        cmp     [BOOT_VAR+0x901c], byte 2
+        cmp     [BOOT_VAR+BOOT_MTRR], byte 2
         je      .exit
 
         bt      [cpu_caps], CAPS_MTRR
@@ -1552,5 +1552,29 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
         xor     eax, eax
         pop     ebx
 .fail:
+        ret
+endp
+
+
+align 4
+proc print_mem
+        mov     edi, BOOT_VAR + 0x9104
+        mov     ecx, [edi-4]
+        test    ecx, ecx
+        jz      .done
+
+@@:
+        mov     eax, [edi]
+        mov     edx, [edi+4]
+        add     eax, [edi+8]
+        adc     edx, [edi+12]
+
+        DEBUGF  1, "K : E820 %x%x - %x%x type %d\n", \
+                    [edi+4], [edi],\
+                    edx, eax, [edi+16]
+        add     edi, 20
+        dec     ecx
+        jnz     @b
+.done:
         ret
 endp

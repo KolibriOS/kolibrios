@@ -333,17 +333,17 @@ high_code:
         call    mutex_init
 
 ; SAVE REAL MODE VARIABLES
-        mov     ax, [BOOT_VAR + 0x9031]
+        mov     ax, [BOOT_VAR + BOOT_IDE_BASE_ADDR]
         mov     [IDEContrRegsBaseAddr], ax
 ; --------------- APM ---------------------
 
 ; init selectors
-        mov     ebx, [BOOT_VAR+0x9040]          ; offset of APM entry point
-        movzx   eax, word [BOOT_VAR+0x9050]; real-mode segment base address of
+        mov     ebx, [BOOT_VAR+BOOT_APM_ENTRY]        ; offset of APM entry point
+        movzx   eax, word [BOOT_VAR+BOOT_APM_CODE_32] ; real-mode segment base address of
                                                                                 ; protected-mode 32-bit code segment
-        movzx   ecx, word [BOOT_VAR+0x9052]; real-mode segment base address of
+        movzx   ecx, word [BOOT_VAR+BOOT_APM_CODE_16]; real-mode segment base address of
                                                                                 ; protected-mode 16-bit code segment
-        movzx   edx, word [BOOT_VAR+0x9054]; real-mode segment base address of
+        movzx   edx, word [BOOT_VAR+BOOT_APM_DATA_16]; real-mode segment base address of
                                                                                 ; protected-mode 16-bit data segment
 
         shl     eax, 4
@@ -364,30 +364,28 @@ high_code:
         mov     dword[apm_entry], ebx
         mov     word [apm_entry + 4], apm_code_32 - gdts
 
-        mov     eax, [BOOT_VAR + 0x9044]; version & flags
+        mov     eax, [BOOT_VAR + BOOT_APM_VERSION] ; version & flags
         mov     [apm_vf], eax
 ; -----------------------------------------
-;        movzx eax,byte [BOOT_VAR+0x9010]       ; mouse port
-;        mov   [0xF604],byte 1  ;al
-        mov     al, [BOOT_VAR+0x901F]                   ; DMA access
+        mov     al, [BOOT_VAR+BOOT_DMA]            ; DMA access
         mov     [allow_dma_access], al
-        movzx   eax, byte [BOOT_VAR+0x9000]      ; bpp
+        movzx   eax, byte [BOOT_VAR+BOOT_BPP]      ; bpp
         mov     [ScreenBPP], al
 
         mov     [_display.bpp], eax
         mov     [_display.vrefresh], 60
 
-        movzx   eax, word [BOOT_VAR+0x900A]; X max
+        movzx   eax, word [BOOT_VAR+BOOT_X_RES]; X max
         mov     [_display.width], eax
         dec     eax
         mov     [Screen_Max_X], eax
         mov     [screen_workarea.right], eax
-        movzx   eax, word [BOOT_VAR+0x900C]; Y max
+        movzx   eax, word [BOOT_VAR+BOOT_Y_RES]; Y max
         mov     [_display.height], eax
         dec     eax
         mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
-        movzx   eax, word [BOOT_VAR+0x9008]; screen mode
+        movzx   eax, word [BOOT_VAR+BOOT_VESA_MODE]; screen mode
         mov     [SCR_MODE], eax
 ;        mov     eax, [BOOT_VAR+0x9014]    ; Vesa 1.2 bnk sw add
 ;        mov     [BANK_SWITCH], eax
@@ -396,7 +394,7 @@ high_code:
         je      @f
         cmp     [SCR_MODE], word 0x12       ; VGA 640x480
         je      @f
-        movzx   eax, word[BOOT_VAR+0x9001]      ; for other modes
+        movzx   eax, word[BOOT_VAR+BOOT_PITCH]   ; for other modes
         mov     [BytesPerScanLine], ax
         mov     [_display.pitch], eax
 @@:
@@ -414,8 +412,7 @@ high_code:
 
 ; GRAPHICS ADDRESSES
 
-        and     byte [BOOT_VAR+0x901e], 0x0
-        mov     eax, [BOOT_VAR+0x9018]
+        mov     eax, [BOOT_VAR+BOOT_LFB]
         mov     [LFBAddress], eax
 
         cmp     [SCR_MODE], word 0100000000000000b
@@ -1148,10 +1145,10 @@ set_variables:
         loop    .fl60
         push    eax
 
-        mov     ax, [BOOT_VAR+0x900c]
+        mov     ax, [BOOT_VAR+BOOT_Y_RES]
         shr     ax, 1
         shl     eax, 16
-        mov     ax, [BOOT_VAR+0x900A]
+        mov     ax, [BOOT_VAR+BOOT_X_RES]
         shr     ax, 1
         mov     [MOUSE_X], eax
 

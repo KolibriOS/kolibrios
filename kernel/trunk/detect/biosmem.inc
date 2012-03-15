@@ -23,8 +23,8 @@
         cmp     eax, 0x534D4150
         jnz     no_E820
 e820_mem_loop:
-        cmp     byte [di+16], 1 ; ignore non-free areas
-        jnz     e820_mem_next
+;        cmp     byte [di+16], 1 ; ignore non-free areas
+;        jnz     e820_mem_next
         inc     byte [0x9100]
         add     di, 20
 e820_mem_next:
