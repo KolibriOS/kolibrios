@@ -1949,6 +1949,8 @@ sys_end:
 ;------------------------------------------------------------------------------
 align 4
 restore_default_cursor_before_killing:
+        pushfd
+        cli
         mov     eax, [def_cursor]
         mov     [ecx+APPDATA.cursor], eax
 
@@ -1972,6 +1974,7 @@ restore_default_cursor_before_killing:
         mov     [current_cursor], esi
 @@:
         mov     [redrawmouse_unconditional], 1
+        popfd
 ;        call    [draw_pointer]
         call    __sys_draw_pointer
         ret
@@ -2068,8 +2071,10 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         cmp     edx, [application_table_status]; clear app table stat
         jne     noatsc
         and     [application_table_status], 0
-   noatsc:
-   noprocessterminate:
+noatsc:
+; for guarantee the updating data
+        call    change_task
+noprocessterminate:
         ret
 ;------------------------------------------------------------------------------
 sysfn_terminate2:
