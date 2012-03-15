@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
@@ -60,7 +60,8 @@ align 4
 
         ; type II - only reserve area, no draw
 ;        call    sys_window_mouse
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         jmp     .exit
 ;--------------------------------------
 align 4
@@ -681,14 +682,16 @@ align 4
         test    ecx, 1 shl 25
         jnz     @f
         sub     ecx, 1 shl 25
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 ;--------------------------------------
 align 4
 @@:
         ; draw bottom border
         mov     ebx, [esp - 2]
         pop     bx
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 
         pop     ebx
         add     ebx, 1 * 65536 - 1
@@ -698,12 +701,14 @@ align 4
         push    eax
         rol     eax, 16
         pop     ax
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 
         ; draw right border
         mov     eax, [esp - 2]
         pop     ax
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 
         pop     edi ecx ebx eax
         ret
@@ -760,7 +765,8 @@ align 4
 align 4
 @@:
         and     ecx, 0x00ffffff
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
         inc     edx
         cmp     edx, [esp]
         jb      .next_line
@@ -813,7 +819,8 @@ drawwindow_I: ;////////////////////////////////////////////////////////////////
         mov     ebx, 21
         mov     ecx, [esi + WDATA.box.width]
         mov     edx, [esi + WDATA.box.height]
-        call    [drawbar]
+;        call    [drawbar]
+        call    vesa20_drawbar
 ;--------------------------------------
 align 4
 .exit:
@@ -871,7 +878,8 @@ align 4
 @@:
         mov     [esi + WDATA.cl_titlebar], ecx
         and     ecx, 0x00ffffff
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
         inc     edx
         cmp     edx, [esp]
         jb      .next_line
@@ -900,29 +908,23 @@ drawwindow_III: ;//////////////////////////////////////////////////////////////
         mov     esi, [edx + WDATA.cl_frames]
         shr     esi, 1
         and     esi, 0x007f7f7f
-        or      esi, 1 shl 25; 0x02000000 used for draw_rectangle without top line
-        ror     ebx, 16
-        add     ebx, [_skinh]
-        sub     bx, 1
-        rol     ebx, 16
         call    draw_rectangle
 
         push    esi
         mov     ecx, 3
         mov     esi, [edx + WDATA.cl_frames]
-        or      esi, 1 shl 25; 0x02000000 used for draw_rectangle without top line
 ;--------------------------------------
 align 4
 .next_frame:
         add     eax, 1 * 65536 - 1
-        add     ebx, 0 * 65536 - 1
+        add     ebx, 1 * 65536 - 1
         call    draw_rectangle
         dec     ecx
         jnz     .next_frame
 
         pop     esi
         add     eax, 1 * 65536 - 1
-        add     ebx, 0 * 65536 - 1
+        add     ebx, 1 * 65536 - 1
         call    draw_rectangle
 
         ; window caption
@@ -951,7 +953,8 @@ align 4
         mov     edx, [esi + WDATA.box.height]
         sub     ecx, 4
         sub     edx, 4
-        call    [drawbar]
+;        call    [drawbar]
+        call    vesa20_drawbar
 ;--------------------------------------
 align 4
 .exit:
@@ -1830,10 +1833,14 @@ align 4
 
         ; get WinMap start
         push    esi
-        mov     edi, [Screen_Max_X]
-        inc     edi
-        mov     esi, edi
-        imul    edi, ebx
+;        mov     edi, [Screen_Max_X]
+;        inc     edi
+;        mov     esi, edi
+        mov     esi, [Screen_Max_X]
+        inc     esi
+;        imul    edi, ebx
+        mov     edi, [d_width_calc_area + ebx*4]
+
         add     edi, eax
         add     edi, [_WinMapAddress]
         pop     eax
@@ -1874,9 +1881,11 @@ align 4
 
         ; get WinMap start  -> ebp
         push    eax
-        mov     eax, [Screen_Max_X] ; screen_sx
-        inc     eax
-        imul    eax, ebx
+;        mov     eax, [Screen_Max_X] ; screen_sx
+;        inc     eax
+;        imul    eax, ebx
+        mov     eax, [d_width_calc_area + ebx*4]
+
         add     eax, [esp]
         add     eax, [_WinMapAddress]
         mov     ebp, eax
@@ -2308,7 +2317,8 @@ align 4
 ;--------------------------------------
 align 4
 .exit:
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         ret
 ;------------------------------------------------------------------------------
 align 4

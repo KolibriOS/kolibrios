@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -84,7 +84,8 @@ mres:
         pop     eax
         mov     edi, 1 ; force
         or      ecx, 0x04000000  ; don't save to mouseunder area
-        call    [putpixel]
+;        call    [putpixel]
+        call    __sys_putpixel
         pop     edx
         pop     ecx
         inc     ecx
@@ -110,9 +111,11 @@ save_draw_mouse:
         push    eax
         push    ebx
 
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
-        mul     ecx
+;        mov     ecx, [Screen_Max_X]
+;        inc     ecx
+;        mul     ecx
+        mov     eax, [d_width_calc_area + eax*4]
+
         add     eax, [_WinMapAddress]
         movzx   edx, byte [ebx+eax]
         shl     edx, 8
@@ -199,7 +202,8 @@ drm:
         mov     ecx, [MOUSE_COLOR_MEM]
         mov     edi, 1 ; force
         or      ecx, 0x04000000  ; don't save to mouseunder area
-        call    [putpixel]
+;        call    [putpixel]
+        call    __sys_putpixel
         pop     ecx
         mov     ebx, [esp+0]    ; pure y coord again
         mov     eax, [esp+4]    ; and x
@@ -413,6 +417,13 @@ __sys_draw_pointer:
         movzx   edx, word [Y_UNDER]
         movzx   ebx, word [MOUSE_Y]
         movzx   eax, word [MOUSE_X]
+        cmp     [redrawmouse_unconditional], 0
+        je      @f
+        mov     [redrawmouse_unconditional], 0
+        jmp     redrawmouse
+;--------------------------------------
+align 4
+@@:
         cmp     eax, ecx
         jne     redrawmouse
         cmp     ebx, edx
@@ -425,9 +436,11 @@ redrawmouse:
         call    draw_mouse_under
         call    save_draw_mouse
 
-        mov     eax, [_display.select_cursor]
-        test    eax, eax
-        jz      @f
+;        mov     eax, [_display.select_cursor]
+;        test    eax, eax
+;        jz      @f
+        cmp     [_display.select_cursor], select_cursor
+        jne     @f
 
         xor     eax, eax
         mov     esi, [current_cursor]

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -802,7 +802,7 @@ proc load_driver stdcall, driver_name:dword
         jnz     @f
         cmp     word [file_name+21], 'j'
         jnz     @f
-        mov     esi, aSis
+        mov     esi, aHDA
         jmp     .redo
 @@:
         xor     eax, eax

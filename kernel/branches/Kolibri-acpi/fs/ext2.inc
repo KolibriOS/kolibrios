@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;   02.02.2010  turbanoff  - support 70.5                      ;;
 ;;   23.01.2010  turbanoff  - support 70.0 70.1                 ;;

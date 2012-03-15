@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2006-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2006-2011. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -355,6 +355,7 @@ align 4
         xor     eax, eax
         ret
 
+align 4
 .snd_gettimestamp:
         cmp     [edi+out_size], 8
         jne     .fail
@@ -371,7 +372,10 @@ align 4
 
         mov     eax, esp
 
+        push ebx
+        push ecx
         push    edx
+        push esi
         push    edi
 
         push    4              ;.out_size
@@ -386,7 +390,10 @@ align 4
         add     esp, 6*4
 
         pop     edi
+        pop esi
         pop     edx
+        pop ecx
+        pop ebx
 
         test    eax, eax
         jz      @F

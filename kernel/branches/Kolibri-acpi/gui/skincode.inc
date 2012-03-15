@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -401,7 +401,8 @@ _dw3l:
         inc     ecx
         mov     edx, [_skinh]
         mov     edi, [common_colours+4]; standard grab color
-        call    [drawbar]
+;        call    [drawbar]
+        call    vesa20_drawbar
         jmp     draw_clientbar
 ;--------------------------------------
 align 4
@@ -428,7 +429,8 @@ draw_clientbar:
         mov     edi, [esi+WDATA.cl_workarea]
         test    edi, 0x40000000
         jnz     _noinside2
-        call    [drawbar]
+;        call    [drawbar]
+        call    vesa20_drawbar
 ;--------------------------------------
 align 4
 _noinside2:

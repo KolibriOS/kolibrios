@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,7 +77,8 @@ align 4
         jz      .pixloop1end
         jnc     .nopix
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-        call    [putpixel]
+;        call    [putpixel]
+        call    __sys_putpixel
         jmp     .pixloop1cont
 ;--------------------------------------
 align 4
@@ -87,7 +88,8 @@ align 4
         push    ecx
         mov     ecx, [esp+4+20h+20h]
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-        call    [putpixel]
+;        call    [putpixel]
+        call    __sys_putpixel
         pop     ecx
 ;--------------------------------------
 align 4
@@ -123,7 +125,8 @@ align 4
         shr     dl, 1
         jnc     .nopix2
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-        call    [putpixel]
+;        call    [putpixel]
+        call    __sys_putpixel
         jmp     .pixloop2cont
 ;--------------------------------------
 align 4
@@ -133,7 +136,8 @@ align 4
         push    ecx
         mov     ecx, [esp+12+20h+20h]
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-        call    [putpixel]
+;        call    [putpixel]
+        call    __sys_putpixel
         pop     ecx
 ;--------------------------------------
 align 4

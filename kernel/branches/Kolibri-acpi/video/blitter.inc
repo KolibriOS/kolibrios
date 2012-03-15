@@ -1,3 +1,9 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2011-2012. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 struct  BLITTER_BLOCK
         xmin            dd ?
@@ -340,7 +346,9 @@ blit_32:
         mov     edi, ebp
 
         imul    edi, [_display.pitch]
-        imul    ebp, [_display.width]
+;        imul    ebp, [_display.width]
+        mov     ebp, [d_width_calc_area + ebp*4]
+
         add     ebp, ebx
         add     ebp, [_WinMapAddress]
 
@@ -373,11 +381,19 @@ align 4
 align 4
 .inner32:
         cmp     [ebp+ecx], bl
-        jne     @F
+        jne     .skip
 ;--------------------------------------
         push    eax
         mov     eax, [esi+ecx*4]
 
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder
+;--------------------------------------
+align 4
+@@:
         push    ecx
 
         mov     ecx, [esp+4]
@@ -389,12 +405,15 @@ align 4
 ; check mouse area for putpixel
         call    [_display.check_mouse]
         pop     ecx
+;--------------------------------------
+align 4
+.no_mouseunder:
 ; store to real LFB
         mov     [LFB_BASE+edi+ecx*4], eax
         pop     eax
 ;--------------------------------------
 align 4
-@@:
+.skip:
         inc     ecx
         dec     edx
         jnz     .inner32
@@ -408,7 +427,8 @@ align 4
         jnz     .outer32
 
 .done:
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
 .L57:
         add     esp, 72
         pop     ebx
@@ -430,13 +450,21 @@ align 4
 align 4
 .inner24:
         cmp     [ebp+ecx], bl
-        jne     @F
+        jne     .skip_1
 ;--------------------------------------
         push    eax
         mov     eax, [esi+ecx*4]
 
         lea     edi, [edi+ecx*2]
 
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder_1
+;--------------------------------------
+align 4
+@@:
         push    ecx
 
         mov     ecx, [esp+4]
@@ -448,7 +476,9 @@ align 4
 ; check mouse area for putpixel
         call    [_display.check_mouse]
         pop     ecx
-
+;--------------------------------------
+align 4
+.no_mouseunder_1:
         mov     [edi+ecx], ax
         shr     eax, 16
         mov     [edi+ecx+2], al
@@ -456,7 +486,7 @@ align 4
         pop     eax
 ;--------------------------------------
 align 4
-@@:
+.skip_1:
         mov     edi, [esp+64]
         inc     ecx
         dec     edx

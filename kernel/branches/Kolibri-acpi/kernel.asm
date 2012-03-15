@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -330,11 +330,11 @@ tmp_page_tabs   dd ?
 
 __DEBUG__       fix 1
 __DEBUG_LEVEL__ fix 1
-include 'fdo.inc'
-
 include 'init.inc'
 
 org OS_BASE+$
+
+include 'fdo.inc'
 
 ap_entry:
         bt      [cpu_caps], CAPS_PGE
@@ -1115,7 +1115,8 @@ boot_log:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 32
 osloop:
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         call    window_check_events
         call    mouse_check_events
         call    checkmisc
@@ -2022,22 +2023,33 @@ sys_end:
         call    delay_hs
         jmp     waitterm
 ;------------------------------------------------------------------------------
+align 4
 restore_default_cursor_before_killing:
         mov     eax, [def_cursor]
         mov     [ecx+APPDATA.cursor], eax
 
         movzx   eax, word [MOUSE_Y]
         movzx   ebx, word [MOUSE_X]
-        mov     ecx, [Screen_Max_X]
-        inc     ecx
-        mul     ecx
+;        mov     ecx, [Screen_Max_X]
+;        inc     ecx
+;        mul     ecx
+        mov     eax, [d_width_calc_area + eax*4]
+
         add     eax, [_WinMapAddress]
         movzx   edx, byte [ebx+eax]
         shl     edx, 8
         mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
+
+        cmp     esi, [current_cursor]
+        je      @f
+
         push    esi
         call    [_display.select_cursor]
         mov     [current_cursor], esi
+@@:
+        mov     [redrawmouse_unconditional], 1
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         ret
 ;------------------------------------------------------------------------------
 iglobal
@@ -2110,15 +2122,19 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         jz      noprocessterminate
 ;--------------------------------------
         cmp     [_display.select_cursor], 0
-        je      @f
+        je      .restore_end
 ; restore default cursor before killing
         pusha
         mov     ecx, [esp+32]
         shl     ecx, 8
         add     ecx, SLOT_BASE
+        mov     eax, [def_cursor]
+        cmp     [ecx+APPDATA.cursor], eax
+        je      @f
         call    restore_default_cursor_before_killing
-        popa
 @@:
+        popa
+.restore_end:
         add     esp, 4
 ;--------------------------------------
      ;call MEM_Heap_Lock      ;guarantee that process isn't working with heap
@@ -2501,6 +2517,12 @@ sys_background:
         mov     eax, [BgrDataWidth]
         imul    eax, [BgrDataHeight]
         lea     eax, [eax*3]
+; it is reserved with aligned to the boundary of 4 KB pages,
+; otherwise there may be exceptions a page fault for vesa20_drawbackground_tiled
+; because the 32 bit read is used for  high performance: "mov eax,[esi]"
+        shr     eax, 12
+        inc     eax
+        shl     eax, 12
         mov     [mem_BACKGROUND], eax
 ; get memory for new background
         stdcall kernel_alloc, eax
@@ -3156,22 +3178,23 @@ modify_pce:
 
 ; check if pixel is allowed to be drawn
 
-checkpixel:
-        push    eax edx
+;checkpixel:
+;        push    eax edx
 
-        mov     edx, [Screen_Max_X] ; screen x size
-        inc     edx
-        imul    edx, ebx
-        add     eax, [_WinMapAddress]
-        mov     dl, [eax+edx]; lea eax, [...]
+;;        mov     edx, [Screen_Max_X] ; screen x size
+;;        inc     edx
+;;        imul    edx, ebx
+;        mov     edx, [d_width_calc_area + ebx*4]
+;        add     eax, [_WinMapAddress]
+;        mov     dl, [eax+edx]; lea eax, [...]
 
-        xor     ecx, ecx
-        mov     eax, [CURRENT_TASK]
-        cmp     al, dl
-        setne   cl
+;        xor     ecx, ecx
+;        mov     eax, [CURRENT_TASK]
+;        cmp     al, dl
+;        setne   cl
 
-        pop     edx eax
-        ret
+;        pop     edx eax
+;        ret
 
 iglobal
   cpustring db 'CPU',0
@@ -3803,13 +3826,15 @@ dbrv20:
         cmp     [BgrDrawMode], dword 1
         jne     bgrstr
         call    vesa20_drawbackground_tiled
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         ret
 ;--------------------------------------
 align 4
 bgrstr:
         call    vesa20_drawbackground_stretch
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -4581,7 +4606,8 @@ syscall_setpixel:                       ; SetPixel
         add     ebx, [edi+APPDATA.wnd_clientbox.top]
         xor     edi, edi ; no force
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
-        jmp     [putpixel]
+;        jmp     [putpixel]
+        jmp     __sys_putpixel
 
 align 4
 
@@ -4638,7 +4664,8 @@ syscall_drawrect:                       ; DrawRect
         add     ebx, [esi + APPDATA.wnd_clientbox.top]
         add     ecx, eax
         add     edx, ebx
-        jmp     [drawbar]
+;        jmp     [drawbar]
+        jmp     vesa20_drawbar
 .drectr:
         ret
 
@@ -4809,8 +4836,8 @@ syscall_drawline:                       ; DrawLine
         xor     edi, edi
         add     ebx, ebp
         mov     ecx, edx
-        jmp     [draw_line]
-
+;        jmp     [draw_line]
+        jmp     __sys_draw_line
 
 
 align 4
@@ -4880,7 +4907,7 @@ paleholder:
 align 4
 calculate_fast_getting_offset_for_WinMapAddress:
 ; calculate data area for fast getting offset to _WinMapAddress
-        mov     eax, [_display.width]
+        xor     eax, eax
         mov     ecx, [_display.height]
         inc     ecx
         mov     edi, d_width_calc_area

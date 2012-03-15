@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -45,12 +45,8 @@ proc mem_test
         ret
 endp
 
-
 align 4
 proc init_mem
-
-        xchg bx, bx
-
 ; calculate maximum allocatable address and number of allocatable pages
         mov     edi, BOOT_VAR-OS_BASE + 0x9104
         mov     ecx, [edi-4]
@@ -94,7 +90,7 @@ proc init_mem
         add     esi, eax
         jmp     .usable
 .unusable:
-        and     dword [edi+8], 0
+;        and     dword [edi+8], 0
 .usable:
         add     edi, 20
         loop    .calcmax
@@ -202,6 +198,9 @@ proc init_page_map
         mov     ebx, BOOT_VAR-OS_BASE + 0x9104
         mov     edx, [ebx-4]
 .scanmap:
+        cmp     [ebx+16], byte 1
+        jne     .next
+
         mov     ecx, [ebx+8]
         shr     ecx, 12; ecx = number of pages
         jz      .next
@@ -541,8 +540,6 @@ check_acpi:
         call    rsdt_find
         test    eax, eax
         jz      .done
-
-;        xchg bx, bx
 
         mov     [acpi_madt_base-OS_BASE], eax
         mov     ecx, [eax+36]

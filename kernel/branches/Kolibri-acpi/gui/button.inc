@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
@@ -133,7 +133,8 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         call    button._.button_dececx
         push    edi
         xor     edi, edi
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
         pop     edi
         add     ebx, 0x00010001
         dec     edx
@@ -164,7 +165,8 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         xor     edi, edi
         mov     ecx, esi
         call    button._.incecx
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 
         ; bottom border
         movzx   edx, word[esp + 4 + 0]
@@ -173,7 +175,8 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         add     ebx, edx
         mov     ecx, esi
         call    button._.dececx
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 
         ; left border
         pop     ebx
@@ -188,7 +191,8 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         pop     edx
         mov     ecx, esi
         call    button._.incecx
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 
         ; right border
         mov     dx, [esp + 4]
@@ -198,7 +202,8 @@ syscall_button: ;///// system function 8 //////////////////////////////////////
         add     ebx, 0x00010000
         mov     ecx, esi
         call    button._.dececx
-        call    [draw_line]
+;        call    [draw_line]
+        call    __sys_draw_line
 
         pop     ecx ebx
 

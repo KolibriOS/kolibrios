@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  VGA.INC                                                     ;;
@@ -380,6 +380,14 @@ VGA_putpixel:
         mov     ecx, eax
         mov     eax, [esp+32-8+4] ; color
 ;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder
+;--------------------------------------
+align 4
+@@:
         push    ecx
         shl     ecx, 16
         mov     cx, bx
@@ -391,6 +399,9 @@ VGA_putpixel:
 align 4
 @@:
         pop     ecx
+;--------------------------------------
+align 4
+.no_mouseunder:
         shl     ebx, 9
         lea     ebx, [ebx+ebx*4]   ; умножение на 5
         lea     edx, [ebx+ecx*4]  ; + x*BytesPerPixel (Vesa2.0 32)
