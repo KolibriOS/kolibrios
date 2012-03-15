@@ -47,7 +47,7 @@ syscall_entry:
 ;        sti
 	push ecx
 	xor	ecx, ecx
-	mov	cl, al
+	mov	cl, al		; keep subfn# in ah
 	and	cl, 7
 	call	dword [servetable3 + ecx * 4]
 	pop	ecx

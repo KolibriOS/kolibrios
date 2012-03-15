@@ -141,341 +141,363 @@ diff10 "old font  code size",dtext,$
 align 8
 sdsh_data:
 
+diff16 "sdsh_data      : ",0,$
+
 include 'fonts/sd_data.asm'
 
 sdsh_code:
 
-; eax	=	if (bit[31]) 
-;				then lower 31 bits points to the user-selected font
-;				else ax = number of preloaded system font 
-; ebx	=	x<<16 + y
-; ecx	=	0x00RRGGBB
-; edx	=	if (bits[31:8] == 0)
-;				then dl = single char to write 
-;				else edx= pointer to asciiz-string
+; eax   =       if (bit[31])
+;                               then lower 31 bits points to the user-selected font
+;                               else ax = number of preloaded system font
+; ebx   =       x<<16 + y
+; ecx   =       0x00RRGGBB
+; edx   =       if (bits[31:8] == 0)
+;                               then dl = single char to write
+;                               else edx= pointer to asciiz-string
+
+diff16 "draw_char      : ",0,$
 
 draw_char:
 ; font test
 ; bl=y; bh=x
 ; dl=ascii
-        movzx   eax, bh
-        movzx   ebx, bl
-        movzx   ecx, dl
-        xor     edi, edi
-        mov     ebp, edi
-         
+	movzx	eax, bh
+	movzx	ebx, bl
+	movzx	ecx, dl
+	xor	edi, edi
+	mov	ebp, edi
+
+
 sdsh_draw_char:
 ; eax = left side X
 ; ebx = bottom Y
 ; edi = color 0x0RRGGBB
-; ebp = font@ 
+; ebp = font@
 ; ecx = ascii, zero-extended to 32bits
-        push    ecx
-        push    edx 
-        push    ebp
-        shl     ebp, 4
-        add     ebp, sdsh_data.info
-        call	ch_checkscreen
-        jb		.exit
-        call	ch_checkwin
-        jc		.exit
-        xor		ch, ch
-        mov     edx, [ebp + 4]              ; chartable addr
-        mov		cx, word[edx + ecx*2]       ; tick info
-        mov		edx, ecx
-        and     ecx, 7                      ; cl = number of ticks
-        jz      .blank
-        shr     edx, 4                      ; offset in the chartable
-        add     edx, [sdsh_data.chars]      ; edx -> the char's ticklist 
+	push	ecx
+	push	edx
+	push	ebp
+	shl	ebp, 4
+	add	ebp, sdsh_data.info
+;        call   ch_checkscreen
+;        jb             .exit
+;        call   ch_checkwin
+;        jc             .exit
+	mov	edx, [ebp + 4]		    ; chartable addr
+	mov	cx, word[edx + ecx*2]	    ; tick info
+	mov	edx, ecx
+	and	ecx, 7			    ; cl = number of ticks
+	jz	.blank
+	shr	edx, 4			    ; offset in the chartable
+	add	edx, sdsh_data.chars	    ; edx -> the char's ticklist
 .next_tick:
-        call    parse_tick
-        add     edx, 4
-        dec     cl
-        jnz     .next_tick
+	call	parse_tick
+	add	edx, 2
+	dec	cl
+	jnz	.next_tick
 .blank:
 .exit:
-        pop     ebp 
-        pop     edx 
-        pop     ecx
-        ret
+	pop	ebp
+	pop	edx
+	pop	ecx
+	ret
 
 
 parse_tick:
+diff16 "parse_tick     : ",0,$
 ; eax = left side X
 ; ebx = bottom Y
 ; edx ->tickinfo
 ; edi = color 0x0RRGGBB
-; ebp = font's header 
-        pushad    
-        xor     ecx, ecx
-        mov     dx, word[edx]
-        mov     cl, dl
-        test    dl, 0xE0            ; ticks #32..255
-        jz      .lntick.short
-        cmp     dl, 0xE0
-        jae     .lntick.long
-        cmp     dl, 0xC0
-        jae     .cstick
+; ebp = font's header
+	pushad
+	xor	ecx, ecx
+	mov	dx, word[edx]
+	mov	cl, dl
+	test	dl, 0xE0	    ; ticks #32..255
+	jz	.lntick.short
+	cmp	dl, 0xE0
+	jae	.lntick.long
+	cmp	dl, 0xC0
+	jae	.cstick
 .gptick:
-        push    edx
-        mov     cl, dh
-        shr     cl, 3               ; orig.#
-        mov     edx, [ebp+8]        ; orig. table
-        mov     ch, byte[edx+ecx]   ; orig. coords
-        pop     edx
-        mov     cl, dh
-        and     cl, 7                   ; three rotation bits
-        and     edx, 0xFF               ; dl = gptick#
-        sub     dl, 32
-        cmp     dl, (sdsh_data.v5-sdsh_data.v1)
-        jae     .gptick.2
+	push	edx
+	mov	cl, dh
+	shr	cl, 3		    ; orig.#
+	mov	edx, [ebp+8]	    ; orig. table
+	mov	ch, byte[edx+ecx]   ; orig. coords
+	pop	edx
+	mov	cl, dh
+	and	cl, 7			; three rotation bits
+	and	edx, 0xFF		; dl = gptick#
+	sub	dl, 32
+	cmp	dl, (sdsh_data.v5-sdsh_data.v1)
+	jae	.gptick.2
 .gptick.1:
-        mov     esi, sdsh_data.tick_table
-        add     esi, edx                ;  1-byte tickgroups .v1-v4:
-        inc     dh
-        sub     dl, 2                   ; .v1 : 2 ticks only (#32, 33) 
-        jae     @f
-        mov     dl, dh
-        jmp     .gptick.done
-@@:     inc     dh
-        shr     dl, 3                   ; tickgroups .v2-v4 : 8 ticks each
-        add     dl, dh
-        jmp     .gptick.done        
+	mov	esi, sdsh_data.tick_table
+	add	esi, edx		;  1-byte tickgroups .v1-v4:
+	inc	dh
+	sub	dl, 2			; .v1 : 2 ticks only (#32, 33)
+	jae	@f
+	mov	dl, dh
+	jmp	.gptick.done
+@@:	inc	dh
+	shr	dl, 3			; tickgroups .v2-v4 : 8 ticks each
+	add	dl, dh
+	jmp	.gptick.done
 .gptick.2:
-        sub     dl, (sdsh_data.v5-sdsh_data.v1)
-        cmp     dl, (sdsh_data.v9-sdsh_data.v5)
-        jae     .gptick.3
-        mov     esi, sdsh_data.v5
-        lea     esi, [esi+edx*2]        ; 2-byte tickgroups .v5-v8: 8 ticks each
-        mov     dh, 5
-        shr     dl, 3                 
-        add     dl, dh
-        jmp     .gptick.done        
+	sub	dl, (sdsh_data.v5-sdsh_data.v1)
+	cmp	dl, (sdsh_data.v9-sdsh_data.v5)
+	jae	.gptick.3
+	mov	esi, sdsh_data.v5
+	lea	esi, [esi+edx*2]	; 2-byte tickgroups .v5-v8: 8 ticks each
+	mov	dh, 5
+	shr	dl, 3
+	add	dl, dh
+	jmp	.gptick.done
 .gptick.3:
-        sub     dl, (sdsh_data.v9-sdsh_data.v5)
-        cmp     dl, (sdsh_data.v13-sdsh_data.v9)
-        jae     .gptick.4
-        mov     esi, sdsh_data.v9
-        lea     esi,[esi+edx*2]
-        add     esi, edx                ; 3-byte tickgroups .v9-12: 4 ticks each 
-        mov     dh, 9
-        shr     dl, 2                
-        add     dl, dh
-        jmp     .gptick.done         
+	sub	dl, (sdsh_data.v9-sdsh_data.v5)
+	cmp	dl, (sdsh_data.v13-sdsh_data.v9)
+	jae	.gptick.4
+	mov	esi, sdsh_data.v9
+	lea	esi,[esi+edx*2]
+	add	esi, edx		; 3-byte tickgroups .v9-12: 4 ticks each
+	mov	dh, 9
+	shr	dl, 2
+	add	dl, dh
+	jmp	.gptick.done
 .gptick.4:
-        sub     dl, (sdsh_data.v13-sdsh_data.v9)
-        cmp     dl, 16
-        jae     .exit
-        mov     esi, sdsh_data.v13
-        lea     esi,[esi+edx*4]         ; 4-byte tickgroups .v13-16: 4 ticks each
-        mov     dh, 13
-        shr     dl, 2                 
-        add     dl, dh
+	sub	dl, (sdsh_data.v13-sdsh_data.v9)
+	cmp	dl, 16
+	jae	.exit
+	mov	esi, sdsh_data.v13
+	lea	esi,[esi+edx*4] 	; 4-byte tickgroups .v13-16: 4 ticks each
+	mov	dh, 13
+	shr	dl, 2
+	add	dl, dh
 .gptick.done:
-        mov     dh, ch                  ; dh = orig.XY;     dl = numvert
-        jmp     .draw                   ; cl = rotation
-        
+	mov	dh, ch			; dh = orig.XY;     dl = numvert
+	jmp	.draw			; cl = rotation
+
 .cstick:
-        and     cl, 4
-        shr     cl, 2                   ; only one rotational bit
-        and     dl, 3
-        inc     dl
-        dec     dl
-        jz      .cstick.0
-        dec     dl
-        jnz     @f
-        mov     dl, 6
-        jz      .cstick.1
-@@:     dec     dl
-        jz      .cstick.2
+	and	cl, 4
+	shr	cl, 2			; only one rotational bit
+	and	dl, 3
+	inc	dl
+	dec	dl
+	jz	.cstick.0
+	dec	dl
+	jnz	@f
+	mov	dl, 6
+	jz	.cstick.1
+@@:	dec	dl
+	jz	.cstick.2
 .cstick.3:
-        mov     esi, sdsh_data.cs3      ; 12pix-ring
-        mov     dl, 10
-        jmp     .draw
+	mov	esi, sdsh_data.cs3	; 12pix-ring
+	mov	dl, 10
+	jmp	.draw
 .cstick.2:
-        mov     dl, 7
+	mov	dl, 7
 .cstick.1:
-        mov     esi, sdsh_data.cs2      ; the square
-        jmp     .draw
+	mov	esi, sdsh_data.cs2	; the square
+	jmp	.draw
 .cstick.0:
-        mov     esi, sdsh_data.cs0      ; 4pix-square
-        mov     dl, 3
-        jmp     .draw
+	mov	esi, sdsh_data.cs0	; 4pix-square
+	mov	dl, 3
+	jmp	.draw
 
 .ritick:
-        test    dl, 1
-        jnz     .ritick.1
+	test	dl, 1
+	jnz	.ritick.1
 .ritick.0:
-        mov     cl, dh              ; y
-        and     cl, 0x0F
-        sub     ebx, ecx
-        mov     cl, dh
-        shr     cl, 4               ; x
-        add     eax, ecx
-        call    ch_putpixel
-        jmp     .exit
+	mov	cl, dh		    ; y
+	and	cl, 0x0F
+	sub	ebx, ecx
+	mov	cl, dh
+	shr	cl, 4		    ; x
+	add	eax, ecx
+	call	ch_putpixel
+	jmp	.exit
 .ritick.1:
-        mov     esi, sdsh_data.ri1  ; 8pix-ring
-        mov     dl, 4 
-        xor     cl, cl
-        jmp     .draw 
-        
+	mov	esi, sdsh_data.ri1  ; 8pix-ring
+	mov	dl, 4
+	xor	cl, cl
+	jmp	.draw
+
 .lntick.short:
-        test    dl, 0x06            ; ticks #0, 1 are reserved for 
-        jz      .ritick             ;             rotational invariants     
-        and     dl, 0x07            ; dl = line length
-        jmp     .lntick.both
+	test	dl, 0x06	    ; ticks #0, 1 are reserved for
+	jz	.ritick 	    ;             rotational invariants
+	and	dl, 0x07	    ; dl = line length
+	jmp	.lntick.both
 .lntick.long:
-        and     dl, 0x07
-        add     dl, 8
+	and	dl, 0x07
+	add	dl, 8
 .lntick.both:
-        sub     dl, 2               ; num_vertice = num_points - 2
-        and     cl, 0x18            ; two rotation bits
-        shr     cl, 3
-        mov     esi, sdsh_data.blank 
+	sub	dl, 2		    ; num_vertice = num_points - 2
+	and	cl, 0x18	    ; two (lower) rotation bits
+	shr	cl, 3
+	mov	esi, sdsh_data.blank
 .draw:
-; cl = rot; dl = numvert; dh = orig.xy 
-        push    ecx
-        mov     cl, dh              ; y
-        and     cl, 0x0F
-        sub     ebx, ecx
-        mov     cl, dh
-        shr     cl, 4               ; x
-        add     eax, ecx
-        pop     ecx
-        call    draw_tick
+; cl = rot; dl = numvert; dh = orig.xy
+	push	ecx
+	mov	cl, dh		    ; y
+	and	cl, 0x0F
+	sub	ebx, ecx
+	mov	cl, dh
+	shr	cl, 4		    ; x
+	add	eax, ecx
+	pop	ecx
+	call	draw_tick
 .gptick.5:
 .exit:
-        popad
-        ret
+	popad
+	ret
 
-                
-	
+
+diff16 "draw_tick      : ",0,$
+
 draw_tick:
 ; eax = x-origin
 ; ebx = y-origin
-; edi = 0x0RRGGBB 
-;  cl = direction (0..7)  
-;  dl = number of vertices  (dl)
-; esi -> tick bitfield  
+; edi = 0x0RRGGBB
+;  cl = direction (0..7)
+;  dl = number of vertice  (dl)
+; esi -> tick bitfield
 
 	pushad
-    inc     dl                      ; -- that's to count down to 0 
-	call	ch_putpixel		        ; the point of origin
-	and		ecx, 7
-	call	[.moves + ecx*4]        ; basic vector
-	call	ch_putpixel		
-    dec     dl
-    jz      .done                   ; 2pix lines only
-    mov     esi, dword [esi]        ; max 16 vertice bitfield limit
-    xchg    esi, edx 
+	call	ch_putpixel			; the point of origin
+	and	ecx, 7
+	lea	ebp, [.move000+ ecx*4]
+	call	ebp		      ; basic vector
+	call	ch_putpixel
+        and     edx, 15
+        jz	.done		       ; no vertex (2pix line)
+        mov     esi, dword [esi]       ; 15 vertice will easily fit to 1dw
+        xchg    esi, edx
 .move_and_draw:
-    mov     ch, dl
-    and     ch, 3
-    jz      .moved
-    btc     ecx, 8
-    jz      .2
+        mov     ch, dl
+        and     ch, 3
+        jz	.moved
+        dec     ch
+        jz      .1
+        dec     ch
+        jz      .2
+.3: 
+        dec     cl
 .1:
-    dec     cl                      ; right turns (1 and 3)
-    and     cl, 7
-@@: btc     ecx, 9                  ; straight angle (3) ?
-    jc      .1
-    jmp     .moved
+        dec     cl
+        jmp     .wipe_it
 .2:
-    inc     cl                      ; left turn (2)
-    and     cl, 7
-    btc     ecx, 9                  ; just to zero ah
+        inc     cl
+.wipe_it:
+        and     ecx, 7
 .moved:
-	call	[.moves + ecx*4]        ; go new way
-	call	ch_putpixel	
-    shr     edx, 2	
-    dec     esi
-    jnz     .move_and_draw	         
+diff16 "moved          : ",0,$
+	lea	ebp, [.move000+ ecx*4]
+	call	ebp		    ; go new way
+	call	ch_putpixel
+        shr     edx, 2
+        dec     esi
+        jnz     .move_and_draw
+diff16 "done           : ",0,$
 .done:
 	popad
 	ret
 
+; WARNING! The order matters! ------
+align 4
+diff16 "move000        : ",0,$
 .move000:
 	inc		eax
 	ret
+align 4
 .move001:
 	inc		eax
 	dec		ebx
 	ret
+align 4
 .move010:
 	dec		ebx
 	ret
+align 4
 .move011:
 	dec		eax
 	dec		ebx
 	ret
+align 4
 .move100:
 	dec		eax
 	ret
+align 4
 .move101:
 	dec		eax
 	inc		ebx
 	ret
+align 4
 .move110:
 	inc		ebx
 	ret
+
+align 4
+diff10 "move111-move000 (must be 28!)  : ",.move000,$
 .move111:
 	inc		eax
 	inc		ebx
 	ret
 
-align 4
-.moves dd .move000, .move001, .move010, .move011, .move100, .move101, .move110, .move111
-
-;)
+;) ---------------
 
 align 4
+diff16 "checkscreen    : ",0,$
 ch_checkscreen:
      cmp	[Screen_Max_X], eax
-     jb		.getout
+     jb 	.getout
      cmp	[Screen_Max_Y], ebx
 .getout:
      ret
 
 align 4
+diff16 "checkwin       : ",0,$
 ch_checkwin:
 ; eax = x coordinate
 ; ebx = y coordinate
 ; ebp -> font info
-;!destroys ch, edx! 
-        push    eax
-        push    ebx
-        mov     ch,  byte[CURRENT_TASK]
-        mov     al,  byte [ebp]	            ; char X-width
-        mov     edx, [_display.width]       ; screen X-size
-        imul    edx, ebx
-        add     edx, [_WinMapAddress]
-        add     edx, eax
-        cmp     ch,  byte [edx]
-        jne     .fail
-        movzx   eax, byte [ebp]
-        cmp     ch,  byte [edx+eax]
-        jne     .fail
-        movzx   ebx, byte [ebp+1]
-        imul    ebx, [_display.width]
-        cmp     ch,  byte [edx+ebx]
-        jne     .fail
-        add     edx, eax
-        cmp     ch,  byte [edx+ebx]
-        clc
-        je     .done
-.fail:  
-        stc                                 ; CF means the charbox is invisible
+;!destroys ch, edx!
+	push	eax
+	push	ebx
+	mov	ch,  byte[CURRENT_TASK]
+	mov	al,  byte [ebp] 	    ; char X-width
+	mov	edx, [_display.width]	    ; screen X-size
+	imul	edx, ebx
+	add	edx, [_WinMapAddress]
+	add	edx, eax
+	cmp	ch,  byte [edx]
+	jne	.fail
+	movzx	eax, byte [ebp]
+	cmp	ch,  byte [edx+eax]
+	jne	.fail
+	movzx	ebx, byte [ebp+1]
+	imul	ebx, [_display.width]
+	cmp	ch,  byte [edx+ebx]
+	jne	.fail
+	add	edx, eax
+	cmp	ch,  byte [edx+ebx]
+	clc
+	je     .done
+.fail:
+	stc				    ; CF means the charbox is invisible
 .done:
-        pop     ebx
-        pop     eax
-        ret
+	pop	ebx
+	pop	eax
+	ret
 
 align 4
+diff16 "ch_putpix      : ",0,$
 ch_putpixel:
 ; eax = x coordinate
 ; ebx = y coordinate
-; edi = 0x0RRGGBB    
+; edi = 0x0RRGGBB
      push   edx
 	 mov	edx, ebx
      imul	edx, [BytesPerScanLine]

@@ -99,6 +99,9 @@ align 4
             db  0x30    ; 30    
 
 align 4
+
+diff16 "sdsh_data.tick_table: ",0,$
+
 .tick_table:
 .v1:
                             ;  32   33
@@ -210,6 +213,9 @@ align 4
 
 align 4
 .table0:
+
+diff16 "sdsh_data.table0: ",0,$
+
    times 33 dw 0
         dw (.ch0_33 -.chars)*16 + 2         ; #33 !
         dw (.ch0_34 -.chars)*16 + 2         ; #34 "		
@@ -422,6 +428,9 @@ diff10 "check font0 table size: ", .table0, $
 
 ; ----------------------------------------------------
 align 4
+
+diff16 "sdsh_data.chars: ",0,$
+
 .chars:
     dw  0
 .ch0_33:    ; !
