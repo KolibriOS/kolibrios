@@ -2444,6 +2444,12 @@ sys_background:
         mov     eax, [BgrDataWidth]
         imul    eax, [BgrDataHeight]
         lea     eax, [eax*3]
+; it is reserved with aligned to the boundary of 4 KB pages,
+; otherwise there may be exceptions a page fault for vesa20_drawbackground_tiled
+; because the 32 bit read is used for  high performance: "mov eax,[esi]"
+        shr     eax, 12
+        inc     eax
+        shl     eax, 12
         mov     [mem_BACKGROUND], eax
 ; get memory for new background
         stdcall kernel_alloc, eax
