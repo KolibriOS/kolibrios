@@ -212,9 +212,8 @@ diff16 "parse_tick     : ",0,$
 ; edi = color 0x0RRGGBB
 ; ebp = font's header
 	pushad
-	xor	ecx, ecx
 	mov	dx, word[edx]
-	mov	cl, dl
+	movzx	ecx, dl
 	test	dl, 0xE0	    ; ticks #32..255
 	jz	.lntick.short
 	cmp	dl, 0xE0
@@ -224,73 +223,76 @@ diff16 "parse_tick     : ",0,$
 .gptick:
 	push	edx
 	mov	cl, dh
-	shr	cl, 3		    ; orig.#
+	shr	cl, 3		    ; number of origin 
 	mov	edx, [ebp+8]	    ; orig. table
 	mov	ch, byte[edx+ecx]   ; orig. coords
 	pop	edx
 	mov	cl, dh
-	and	cl, 7			; three rotation bits
-	and	edx, 0xFF		; dl = gptick#
+	and	cl, 7		    ; three rotation bits
+	movzx	edx, dl		    ; dl = gptick#
 	sub	dl, 32
 	cmp	dl, (sdsh_data.v5-sdsh_data.v1)
 	jae	.gptick.2
+
 .gptick.1:
-	mov	esi, sdsh_data.tick_table
-	add	esi, edx		;  1-byte tickgroups .v1-v4:
+	;  1-byte tickgroups .v1-v4:
+	lea	esi, [sdsh_data.v1+edx]
 	inc	dh
 	sub	dl, 2			; .v1 : 2 ticks only (#32, 33)
-	jae	@f
+	jae	.gptick.1v2v4
 	mov	dl, dh
+	mov	dh, ch
+	jmp	.draw
+
+.gptick.1v2v4:
+	; 1-byte tickgroups .v2-v4 : 8 ticks each
+	inc	dh
+	shr	dl, 3			
 	jmp	.gptick.done
-@@:	inc	dh
-	shr	dl, 3			; tickgroups .v2-v4 : 8 ticks each
-	add	dl, dh
-	jmp	.gptick.done
+
 .gptick.2:
+	; 2-byte tickgroups .v5-v8: 8 ticks each
 	sub	dl, (sdsh_data.v5-sdsh_data.v1)
 	cmp	dl, (sdsh_data.v9-sdsh_data.v5)
 	jae	.gptick.3
-	mov	esi, sdsh_data.v5
-	lea	esi, [esi+edx*2]	; 2-byte tickgroups .v5-v8: 8 ticks each
+	lea	esi, [sdsh_data.v5 + edx*2]
 	mov	dh, 5
 	shr	dl, 3
-	add	dl, dh
 	jmp	.gptick.done
+
 .gptick.3:
+	; 3-byte tickgroups .v9-12: 4 ticks each
 	sub	dl, (sdsh_data.v9-sdsh_data.v5)
 	cmp	dl, (sdsh_data.v13-sdsh_data.v9)
 	jae	.gptick.4
-	mov	esi, sdsh_data.v9
-	lea	esi,[esi+edx*2]
-	add	esi, edx		; 3-byte tickgroups .v9-12: 4 ticks each
+	lea	esi, [sdsh_data.v9 + edx*2 + edx]
 	mov	dh, 9
 	shr	dl, 2
-	add	dl, dh
 	jmp	.gptick.done
+
 .gptick.4:
+	; 4-byte tickgroups .v13-16: 4 ticks each
 	sub	dl, (sdsh_data.v13-sdsh_data.v9)
 	cmp	dl, 16
 	jae	.exit
-	mov	esi, sdsh_data.v13
-	lea	esi,[esi+edx*4] 	; 4-byte tickgroups .v13-16: 4 ticks each
+	lea	esi, [sdsh_data.v13 + edx*4]
 	mov	dh, 13
 	shr	dl, 2
-	add	dl, dh
+
 .gptick.done:
+	add	dl, dh
 	mov	dh, ch			; dh = orig.XY;     dl = numvert
-	jmp	.draw			; cl = rotation
+	jmp	.draw			; cl = rotation;   esi-> tickfield
 
 .cstick:
 	and	cl, 4
 	shr	cl, 2			; only one rotational bit
 	and	dl, 3
-	inc	dl
-	dec	dl
 	jz	.cstick.0
 	dec	dl
 	jnz	@f
 	mov	dl, 6
-	jz	.cstick.1
+	jz	.cstick.1		; 8-pix square outline
 @@:	dec	dl
 	jz	.cstick.2
 .cstick.3:
@@ -298,20 +300,20 @@ diff16 "parse_tick     : ",0,$
 	mov	dl, 10
 	jmp	.draw
 .cstick.2:
-	mov	dl, 7
+	mov	dl, 7			; 9-pix filled square
 .cstick.1:
-	mov	esi, sdsh_data.cs2	; the square
+	mov	esi, sdsh_data.cs2	; the square tickfield
 	jmp	.draw
 .cstick.0:
 	mov	esi, sdsh_data.cs0	; 4pix-square
-	mov	dl, 3
+	mov	dl, 2
 	jmp	.draw
 
 .ritick:
 	test	dl, 1
 	jnz	.ritick.1
 .ritick.0:
-	mov	cl, dh		    ; y
+	movzx	ecx, dh		    ; y
 	and	cl, 0x0F
 	sub	ebx, ecx
 	mov	cl, dh
@@ -321,8 +323,7 @@ diff16 "parse_tick     : ",0,$
 	jmp	.exit
 .ritick.1:
 	mov	esi, sdsh_data.ri1  ; 8pix-ring
-	mov	dl, 4
-	xor	cl, cl
+	mov	dl, 6
 	jmp	.draw
 
 .lntick.short:
@@ -338,10 +339,11 @@ diff16 "parse_tick     : ",0,$
 	and	cl, 0x18	    ; two (lower) rotation bits
 	shr	cl, 3
 	mov	esi, sdsh_data.blank
+
 .draw:
 ; cl = rot; dl = numvert; dh = orig.xy
 	push	ecx
-	mov	cl, dh		    ; y
+	movzx	ecx, dh		    ; y
 	and	cl, 0x0F
 	sub	ebx, ecx
 	mov	cl, dh

@@ -40,11 +40,11 @@ end if
 
 align 4
 ;   ---- special tickfields ----
-.blank      db  0, 0, 0, 0      ; for straight lines
+.blank      db  0, 0, 0, 0         ; for straight lines
 .cs2        db  11001100b,  111100b
 .cs3        db  00010100b,  01000101b,  0001b
-.cs0        db  111111b         ; 4-pix square
-.ri1        db  01010101b       ; 8-pix ring (rot-invariant)
+.cs0        db  1111b              ; 4-pix square
+.ri1        db  01010101b, 0101b   ; 8-pix ring (rot-invariant)
 
 align 16
 .info:
