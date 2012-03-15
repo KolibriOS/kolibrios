@@ -1,0 +1,10 @@
+size 80 60
+elements 1
+ 24  24 0 or[3]
+captions 4
+ 10   8 z x1
+ 10  44 z x2
+ 30  44 z x3
+ 56  27 n y1
+points 5
+ 10  25  9   10  27  3   10  44  8   56  27  4   22  44  9
