@@ -1557,7 +1557,7 @@ endp
 
 
 align 4
-print_mem:
+proc print_mem
         mov     edi, BOOT_VAR + 0x9104
         mov     ecx, [edi-4]
         test    ecx, ecx
@@ -1577,4 +1577,4 @@ print_mem:
         jnz     @b
 .done:
         ret
-
+endp

@@ -390,8 +390,12 @@ _dw3l:
         js      no_skin_add_button
         test    bx, bx
         js      no_skin_add_button
+        test    [edi + WDATA.fl_wstate], WSTATE_ROLLEDUP
+        jnz     @f
         call    draw_rectangle
-
+;--------------------------------------
+align 4
+@@:
         cmp     dword[skin_data], 'SKIN'
         je      @f
         xor     eax, eax
