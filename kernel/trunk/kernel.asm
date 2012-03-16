@@ -2035,13 +2035,13 @@ sysfn_shutdown:          ; 18.9 = system shutdown
   endg
 ;------------------------------------------------------------------------------
 sysfn_terminate:        ; 18.2 = TERMINATE
+        push    ecx
         cmp     ecx, 2
         jb      noprocessterminate
         mov     edx, [TASK_COUNT]
         cmp     ecx, edx
         ja      noprocessterminate
         mov     eax, [TASK_COUNT]
-        push    ecx
         shl     ecx, 5
         mov     edx, [ecx+CURRENT_TASK+TASKDATA.pid]
         add     ecx, CURRENT_TASK+TASKDATA.state
@@ -2062,7 +2062,6 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 @@:
         popa
 .restore_end:
-        add     esp, 4
 ;--------------------------------------
      ;call MEM_Heap_Lock      ;guarantee that process isn't working with heap
         mov     [ecx], byte 3; clear possible i40's
@@ -2075,6 +2074,7 @@ noatsc:
 ; for guarantee the updating data
         call    change_task
 noprocessterminate:
+        add     esp, 4
         ret
 ;------------------------------------------------------------------------------
 sysfn_terminate2:
