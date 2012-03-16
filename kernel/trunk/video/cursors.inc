@@ -353,6 +353,8 @@ create_cursor:
 
         stdcall init_cursor, eax, esi
 
+align 4
+.add_cursor:
         mov     ecx, [.hcursor]
         lea     ecx, [ecx+CURSOR.list_next]
         lea     edx, [_display.cr_list.next]
@@ -363,9 +365,6 @@ create_cursor:
         popfd
 
         mov     eax, [.hcursor]
-;--------------------------------------
-align 4
-.check_hw:
         cmp     [_display.init_cursor], 0
         je      .fail
 
@@ -392,7 +391,7 @@ align 4
         mov     ecx, 1024
         cld
         rep movsd
-        jmp     .check_hw
+        jmp     .add_cursor
 ;------------------------------------------------------------------------------
 align 4
 proc load_cursor stdcall, src:dword, flags:dword
