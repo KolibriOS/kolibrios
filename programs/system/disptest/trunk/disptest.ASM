@@ -1,9 +1,15 @@
-; <--- description --->
-; compiler:     FASM 1.50
-; name:         Display Test
-; version:      0.4
-; author:       barsuk
-
+;------------------------------------------------------------------------------
+; Display Test for KolibriOS
+;------------------------------------------------------------------------------
+; version:	0.41
+; last update:  17/03/2012
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      some optimisations and code refactoring
+;------------------------------------------------------------------------------
+; compiler:        FASM 1.50
+; name:            Display Test
+; version:         0.4
+; original author: barsuk
 
 ; <--- include all MeOS stuff --->
 include "lang.inc"
@@ -17,21 +23,17 @@ MEOS_APP_START
 
 ; <--- start of code --->
 CODE
-	mov     eax, 37
-	mov     ebx, 4
-	mov     edx, 2
-	mov     ecx, cursor
-	int     0x40
+	mcall	37,4,cursor,2
 	or      eax, eax
 	jz      exit
 	mov     [cursorID], eax
-
+;------------------------------------------------------------------------------
+redraw:
 	call	draw_window		  ; at first create and draw the window
-
-  wait_event:				  ; main cycle
+;------------------------------------------------------------------------------
+wait_event:				  ; main cycle
 	xor	ebx, ebx
-	mov	eax, 10
-	int	0x40
+	mcall	10
 
 	cmp	eax, 1			  ;   if event == 1
 	je	 redraw 		  ;     jump to redraw handler
@@ -41,16 +43,9 @@ CODE
 	je	 button 		  ;     jump to button handler
 
 	jmp	wait_event		   ;   else return to the start of main cycle
-
-
-  redraw:					 ; redraw event handler
-	call	draw_window
-	jmp	wait_event
-
-
-  key:						; key event handler
-	mov	eax, 2			  ;   get key code
-	int	0x40
+;------------------------------------------------------------------------------
+key:						; key event handler
+	mcall	2			  ;   get key code
 
 	cmp	ah, 27
 	jz	exit
@@ -83,7 +78,7 @@ CODE
 	jz	redraw
 
 	jmp	wait_event
-
+;------------------------------------------------------------------------------
 next_test:
 	cmp	dword [test_done], 1
 	jz	wait_event
@@ -91,7 +86,7 @@ next_test:
 	inc	dword [test_num]
 	call	draw_window
 	jmp	wait_event
-
+;------------------------------------------------------------------------------
 prev_test:
 	cmp	dword [test_num], ebx
 	jz	wait_event
@@ -100,13 +95,12 @@ prev_test:
 	mov	dword [test_done], ebx
 	call	draw_window
 	jmp	wait_event
-
-
+;------------------------------------------------------------------------------
 toggle_info:
 	xor	dword [show_info], 1
 	call	draw_window
 	jmp	wait_event
-
+;------------------------------------------------------------------------------
 toggle_cursor:
 	mov	eax, cursorVisible
 	cmp	dword [eax], 0
@@ -115,34 +109,27 @@ toggle_cursor:
 	mov	dword [eax], 0
 	mov	ecx, [cursorID]
 	jmp	.set
+;--------------------------------------
 .no_cursor:
 	mov	dword [eax], 1
 	xor	ecx, ecx
+;--------------------------------------
 .set:
-	mov	eax, 37
-	mov	ebx, 5
-	int	0x40
-	mov	eax, 18
-	mov	ebx, 15
-	int	0x40			; чтобы обновился
+	mcall	37,5
+	mcall	18,15			; чтобы обновился
 	jmp	wait_event
-
+;------------------------------------------------------------------------------
 button: 				 ; button event handler
-	mov	eax, 17 		 ;   get button identifier
-	int	0x40
-
+	mcall	17		 ;   get button identifier
 	cmp	ah, 1
 	jne	wait_event		   ;   return if button id != 1
-
+;--------------------------------------
 exit:
 	or	 eax, -1			 ;   exit application
-	int	0x40
-
-
+	mcall
+;------------------------------------------------------------------------------
 draw_window:
-	mov	eax, 12 		 ; start drawing
-	mov	ebx, 1
-	int	0x40
+	mcall	12,1
 
 	; курсор
 	;mov     eax, 37
@@ -150,8 +137,8 @@ draw_window:
 	;mov     ecx, cursorID
 	;int     0x40
 
-	mov	eax, 14 		; screen size
-	int	0x40
+	mcall	14 		; screen size
+
 	mov	ebx, eax
 	shr	ebx, 16
 	mov	ecx, eax
@@ -161,16 +148,14 @@ draw_window:
 
 	inc	ebx
 	inc	ecx
-	mov	eax, 0			  ; create and draw the window
+	xor	eax, eax			  ; create and draw the window
 	mov	edx, 0x01000000
 	mov	esi, edx
-	int	0x40
-
+	mcall
 	; стереть границы окна
-
-	mov	eax, 13 		; грубо так
 	xor	edx, edx
-	int	0x40
+	mcall	13 		; грубо так
+
 	dec	ebx
 	dec	ecx
 
@@ -180,30 +165,21 @@ draw_window:
 	jz	end_of_test
 	call	eax
 	jmp	exit_draw
+;--------------------------------------
 end_of_test:
-	mov	eax, 4
-	mov	ebx, 8 * 65536 + 8
-	mov	ecx, 0xffffff
-	mov	edx, test_finish
-	mov	esi, test_finish.size
-	int	0x40
+	mcall	4,<8,8>,0xffffff,test_finish,test_finish.size
 	mov	dword [test_done], 1
 	jmp	no_info
-
+;--------------------------------------
 exit_draw:
-
 	cmp	dword [show_info], 1
 	jnz	no_info
-
 ; снова размеры экрана
 	mov	ebx, [screenx]
 	mov	ecx, [screeny]
-
 ; сгенерить строчку с разрешением экрана. НЕ нужно, потому что ппц
-
 	; прямоугольник 200х40 с инфой
 	mov	edx, 200
-	mov	eax, 13
 	sub	ebx, edx
 	shl	ebx, 15
 	mov	bx, dx
@@ -211,64 +187,60 @@ exit_draw:
 	sub	ecx, edx
 	shl	ecx, 15
 	mov	cx, dx
-	mov	edx, 0xffffff
-	int	0x40
+	mcall	13,,,0xffffff
+
 	xor	edx, edx
 	add	ebx, 0x0000fffe 	; очень удобно :))))
 	add	ecx, 0x0000fffe
-	int	0x40
-
-
+	mcall
 ; текст
-	mov	eax, 4
 	shr	ecx, 16
 	mov	bx, cx
 	add	ebx, 0x00010001
 	mov	ecx, 0x80ffffff
 	mov	edx, [test_num]
 	mov	edx, [test_info + edx*4]
-	int	0x40
-	add	ebx, 8
-	mov	edx, press_space
-	int	0x40
-	add	ebx, 8
-	mov	edx, press_i
-	int	0x40
-	add	ebx, 8
-	mov	edx, press_c
-	int	0x40
+	mcall	4
 
+	add	ebx, 8
+	mcall	,,,press_space
+
+	add	ebx, 8
+	mcall	,,,press_i
+
+	add	ebx, 8
+	mcall	,,,press_c
+;--------------------------------------
 no_info:
-	mov	eax, 12 		 ; finish drawing
-	mov	ebx, 2
-	int	0x40
-
-  ret
-
+	mcall	12,2
+	ret
+;------------------------------------------------------------------------------
 ; <---- procedures for various tests of display ----->
 ; in: ebx = screen_width, ecx = screen_height
-
+;------------------------------------------------------------------------------
 lsz i_image_size, ru, "Image Size and Placement"
 db	0
+;------------------------------------------------------------------------------
 t_image_size:
-	mov	eax, 38
 	mov	esi, ebx
 	mov	edi, ecx
-	mov	edx, 0xffffff
 ; 6 отрезков
 	xor	ecx, ecx
-	int	0x40
+	mcall	38,,,0xffffff
+
 	mov	ecx, edi
 	shl	ecx, 16
 	xor	ebx, ebx
-	int	0x40
+	mcall
+
 	mov	ebx, esi
 	shl	ebx, 16
 	add	ecx, edi
-	int	0x40
+	mcall
+	
 	sub	ecx, edi
 	add	ebx, esi
-	int	0x40
+	mcall
 ; рамка готова
 	mov	ebx, esi
 	shl	ebx, 16
@@ -276,18 +248,19 @@ t_image_size:
 	shl	ecx, 15
 	mov	cx, di
 	shr	cx, 1
-	int	0x40
+	mcall
+
 	shr	ebx, 1
 	mov	bx, si
 	shr	bx, 1
 	mov	ecx, edi
 	shl	ecx, 16
-	int	0x40
-
+	mcall
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_grid, ru, "Grid"
 db	0
+;------------------------------------------------------------------------------
 t_grid:
 ;       сетка размером в 64 пиксела
 	mov	eax, 38
@@ -300,29 +273,32 @@ t_grid:
 ;       горизонтальные линии
 	shl	ebx, 16
 	xor	ecx, ecx
+;--------------------------------------
 grid_next_y:
-	int	0x40
+	mcall
+
 	add	ecx, ebp
 	cmp	cx, di
 	jnae	grid_next_y
 	sub	ecx, 0x00010001
-	int	0x40
+	mcall
 ;       вертикальные линии
 	mov	ecx, edi
 	shl	ecx, 16
 	xor	ebx, ebx
+;--------------------------------------
 grid_next_x:
-	int	0x40
+	mcall
 	add	ebx, ebp
 	cmp	bx, si
 	jnae	grid_next_x
 	sub	ebx, 0x00010001
-	int	0x40
-
+	mcall
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_horstr, ru, "Horizontal Straightness"
 db	0
+;------------------------------------------------------------------------------
 t_horstr:
 	mov	eax, 38
 	mov	edi, ecx
@@ -339,14 +315,17 @@ t_horstr:
 	shr	ecx, 1
 	mov	cx, bp
 	shr	cx, 1
+;--------------------------------------
 hor_next_y:
-	int	0x40
+	mcall
 	add	ecx, ebp
 	cmp	cx, di
 	jnae	hor_next_y
 	ret
+;------------------------------------------------------------------------------
 lsz i_vertstr, ru, "Vertical Straightness",0
 db	0
+;------------------------------------------------------------------------------
 t_vertstr:
 	mov	eax, 38
 	mov	edx, 0xffffff
@@ -361,25 +340,25 @@ t_vertstr:
 	shr	ebx, 1
 	mov	bx, bp
 	shr	bx, 1
+;--------------------------------------
 vert_next_x:
-	int	0x40
+	mcall
 	add	ebx, ebp
 	cmp	bx, si
 	jnae	vert_next_x
-
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_distort, ru, "Distortion",0
 db	0
+;------------------------------------------------------------------------------
 t_distort:
 	mov	edx, 0xffffff
 	mov	esi, ebx
 	mov	edi, ecx
 	mov	ebp, 3
-
 	xor	ebx, ebx
+;--------------------------------------
 dist_next:
-	mov	eax, 38
 	push	ebp
 	mov	ebp, ebx
 	shl	ebx, 16
@@ -388,23 +367,23 @@ dist_next:
 	mov	ecx, edi
 	shl	ecx, 16
 	or	ecx, ebp
-	int	0x40
+	mcall	38
 
 	mov	ebx, esi
 	shl	ebx, 16
 	mov	bx, si
-	int	0x40
+	mcall
 
 	mov	bx, bp
 	mov	ecx, ebp
 	shl	ecx, 16
 	or	ecx, ebp
-	int	0x40
+	mcall
 
 	mov	ecx, edi
 	shl	ecx, 16
 	mov	cx, di
-	int	0x40
+	mcall
 
 	mov	eax, 30
 	sub	esi, eax
@@ -414,11 +393,11 @@ dist_next:
 	pop	ebp
 	dec	ebp
 	jnz	dist_next
-
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_horres, ru, "Horizontal Resolution",0
 db	0
+;------------------------------------------------------------------------------
 t_horres:
 	mov	eax, 38
 	mov	edx, 0xffffff
@@ -428,25 +407,30 @@ t_horres:
 	xor	ebx, ebx
 	mov	edi, 0x003A003A
 	mov	ebp, 0x00030003
-
+;--------------------------------------
 horres_next:
 	add	ebx, edi
-	int	0x40
+	mcall
+
 	add	ebx, ebp
-	int	0x40
+	mcall
+
 	add	ebx, ebp
-	int	0x40
+	mcall
+
 	add	ebx, ebp
-	int	0x40
+	mcall
+
 	add	ebx, ebp
-	int	0x40
+	mcall
+
 	cmp	bx, si
 	jna	horres_next
-
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_vertres, ru, "Vertical Resolution",0
 db	0
+;------------------------------------------------------------------------------
 t_vertres:
 	mov	eax, 38
 	mov	edx, 0xffffff
@@ -456,26 +440,31 @@ t_vertres:
 	xor	ecx, ecx
 	mov	ebp, 0x00030003
 	mov	esi, 0x002A002A
-
+;--------------------------------------
 vertres_next:
 	add	ecx, esi
-	int	0x40
+	mcall
+
 	add	ecx, ebp
-	int	0x40
+	mcall
+
 	add	ecx, ebp
-	int	0x40
+	mcall
+
 	add	ecx, ebp
-	int	0x40
+	mcall
+
 	add	ecx, ebp
-	int	0x40
+	mcall
+
 	add	ecx, 0x00540054
 	cmp	cx, di
 	jna	vertres_next
-
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_moire, ru, "Moire Patterns",0
 db	0
+;------------------------------------------------------------------------------
 t_moire:
 	mov	eax, 38
 	mov	edx, 0xffffff
@@ -484,23 +473,22 @@ t_moire:
 	mov	esi, ebx
 	xor	ebx, ebx
 	mov	ebp, 0x00030003
+;--------------------------------------
 moire_next:
-	int	0x40
+	mcall
 	add	ebx, ebp
 	cmp	bx, si
 	jna	moire_next
-
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_revsharp, ru, "Reverse Video Sharpness",0
 db	0
+;------------------------------------------------------------------------------
 t_revsharp:
 	mov	esi, ebx
 	mov	edi, ecx
 	shr	ecx, 1
-	mov	eax, 13
-	mov	edx, 0xffffff
-	int	0x40
+	mcall	13,,,0xffffff
 ; а теперь - инверсные линии
 	mov	eax, 38
 	mov	ecx, edi
@@ -508,68 +496,71 @@ t_revsharp:
 	xor	ebx, ebx
 	mov	ebp, 0x00010001
 	mov	edi, 0x003F003F
+;--------------------------------------
 revsharp_next:
 	add	ebx, edi
-	int	0x40
+	mcall
+
 	add	ebx, ebp
-	int	0x40
+	mcall
+
 	add	ebx, ebp
-	int	0x40
+	mcall
+
 	add	ebx, edi
 	sub	ebx, ebp
-	int	0x40
+	mcall
+
 	cmp	bx, si
 	jna	revsharp_next
-
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_flicker, ru, "Flicker Severity",0
 db	0
+;------------------------------------------------------------------------------
 t_flicker:
-	mov	eax, 13
-	mov	edx, 0xffffff
-	int	0x40
+	mcall	13,,,0xffffff
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_glare, ru, "Glare Severity",0
 db	0
+;------------------------------------------------------------------------------
 t_glare:		; оптимизировать нечего
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_interlace, ru, "Interlacing Detection",0
 db	0
+;------------------------------------------------------------------------------
 t_interlace:
 	mov	edi, ecx
 	mov	eax, 38
 	mov	edx, 0xffffff
 	xor	ecx, ecx
 	mov	ebp, 0x00020002
+;--------------------------------------
 interlace_next:
 	add	ecx, ebp
-	int	0x40
+	mcall
 	cmp	cx, di
 	jna	interlace_next
-
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_scrreg, ru, "Screen Regulation",0
 db	0
+;------------------------------------------------------------------------------
 t_scrreg:
-	mov	eax, 13
-	mov	edx, 0xffffff
 	add	ebx, 0x0018FFCD ; +25 к началу и -50 от длины
 	shr	ecx, 1
 	add	ecx, 0x0013FFEC ; +19 к началу и -19 от длины
-	int	0x40
+	mcall	13,,,0xffffff
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_pricol, ru, "Primary Color Purity"
 db	0
+;------------------------------------------------------------------------------
 t_pricol:
-
 	mov	esi, ebx
 	mov	edi, ecx
-	mov	eax, 13
 
 	shr	ebx, 4	; /16
 	mov	ebp, ebx
@@ -584,21 +575,20 @@ t_pricol:
 	;shr     cx, 1
 
 	shl	bx, 2
-	mov	edx, 0xff0000
-	int	0x40
+	mcall	13,,,0xff0000
 
 	add	ebx, ebp
 	shr	edx, 8
-	int	0x40
+	mcall
 
 	add	ebx, ebp
 	shr	edx, 8
-	int	0x40
-
+	mcall
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_colint, ru, "Color Intensity Gradient"
 db	0
+;------------------------------------------------------------------------------
 t_colint:
 
 	mov	esi, ebx
@@ -652,15 +642,16 @@ t_colint:
 
 	mov	dword [color_index], 0
 	jmp	colint_next
-
+;------------------------------------------------------------------------------
 color_table	dd	0x00ff0000, 0x0000ff00, 0x00ffff00, \
 			0x000000ff, 0x00ff00ff, 0x0000ffff, 0x00ffffff
 color_index	dd	0
-
+;------------------------------------------------------------------------------
 colint_next:
 	xor	edx, edx
 	xor	ebx, ebx
 	mov	eax, 38
+;--------------------------------------
 colint_next_line:
 	push	edx
 	push	eax
@@ -672,7 +663,7 @@ colint_next_line:
 	mov	eax, [color_table + eax * 4]
 	and	edx, eax
 	pop	eax
-	int	0x40
+	mcall
 	pop	edx
 	add	ebx, 0x00010001
 	add	edx, edi
@@ -683,13 +674,12 @@ colint_next_line:
 	inc	dword [color_index]
 	cmp	dword [color_index], 7
 	jb	colint_next
-
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_colalign, ru, "Color Alignment Grid"
 db	0
+;------------------------------------------------------------------------------
 t_colalign:
-
 ; красная сетка
 	inc	ebx		; так нужно
 	inc	ecx
@@ -707,14 +697,15 @@ t_colalign:
 	pop	edi
 	mov	[yshift], ebp
 	mov	eax, 38
+;--------------------------------------
 cgrid_next_y:
-	int	0x40
+	mcall
 	add	ecx, ebp
 	cmp	cx, di
 	jnae	cgrid_next_y
 	; последняя линия:
 	sub	ecx, 0x00010001
-	int	0x40
+	mcall
 
 ;       вертикальные линии
 	mov	ecx, edi
@@ -728,19 +719,21 @@ cgrid_next_y:
 	mov	[xshift], ebp
 	pop	esi
 	mov	eax, 38
+;--------------------------------------
 cgrid_next_x:
-	int	0x40
+	mcall
 	add	ebx, ebp
 	cmp	bx, si
 	jnae	cgrid_next_x
 	; последняя линия
 	sub	ebx, 0x00010001
-	int	0x40
+	mcall
 	jmp	cgrid_green
-
+;------------------------------------------------------------------------------
 	xshift	dd	0
 	yshift	dd	0
 	shift	dd	0
+;------------------------------------------------------------------------------
 cgrid_green:
 ; зеленые линии: горизонтальные
 	mov	edx, esi
@@ -753,15 +746,17 @@ cgrid_green:
 	mov	edx, 0x00ff00
 	xor	ecx, ecx
 	mov	ebp, [xshift]
+;--------------------------------------
 ggrid_next_yy:
 	mov	ebx, [shift]
+;--------------------------------------
 ggrid_next_yx:
-	int	0x40
+	mcall
 	add	ebx, ebp
 	cmp	bx, si
 	jnae	ggrid_next_yx
 	sub	ebx, 0x00010001
-	int	0x40
+	mcall
 
 	add	ecx, [yshift]
 	cmp	cx, di
@@ -769,8 +764,9 @@ ggrid_next_yx:
 	; last row of lines
 	mov	ebx, [shift]
 	dec	ecx
+;--------------------------------------
 ggrid_last_yx:
-	int	0x40
+	mcall
 	add	ebx, ebp
 	cmp	bx, si
 	jnae	ggrid_last_yx
@@ -787,35 +783,36 @@ ggrid_last_yx:
 	mov	edx, 0x00ff00
 	mov	ecx, [shift]
 	mov	ebp, [xshift]
+;--------------------------------------
 ggrid_next_xy:
 	xor	ebx, ebx
+;--------------------------------------
 ggrid_next_xx:
-	int	0x40
+	mcall
+
 	add	ebx, ebp
 	cmp	bx, si
 	jnae	ggrid_next_xx
 	sub	ebx, 0x00010001
-	int	0x40
+	mcall
 
 	add	ecx, [yshift]
 	cmp	cx, di
 	jnae	ggrid_next_xy
 	xor	ebx, ebx
 	dec	ecx
+;--------------------------------------
 ggrid_last_xy:
 	;int     0x40
 	;add     ebx, ebp
 	;cmp     bx, si
 	;jnae    ggrid_last_xy
-
-
-
 	ret
-
+;------------------------------------------------------------------------------
 lsz i_colsyn, ru, "Color Synchronization"
 db	0
+;------------------------------------------------------------------------------
 t_colsyn:
-
 	inc	ebx
 	inc	ecx
 	mov	esi, ebx
@@ -833,22 +830,19 @@ t_colsyn:
 	mov	edi, 0x0000ffff
 	add	ecx, 0x003FFF7F
 	mov	edx, edi
-	mov	eax, 13
-	int	0x40
+	mcall	13
 
 	mov	edx, 0x00ff0000
 	add	ebx, ebp
-	int	0x40
+	mcall
 
 	mov	edx, edi
 	add	ebx, ebp
-	int	0x40
-
+	mcall
 	ret
-
+;------------------------------------------------------------------------------
 ; <--- initialised data --->
 DATA
-
 	screenx 	dd	0
 	screeny 	dd	0
 
@@ -877,11 +871,10 @@ DATA
 
 	cursorVisible	dd	1
 	cursorID	dd	0
-
-
+;------------------------------------------------------------------------------
 ; <--- uninitialised data --->
 UDATA
-
-
+;------------------------------------------------------------------------------
 MEOS_APP_END
 ; <--- end of MenuetOS application --->
+;------------------------------------------------------------------------------
