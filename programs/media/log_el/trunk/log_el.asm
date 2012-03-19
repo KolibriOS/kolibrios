@@ -47,7 +47,7 @@ include 'le_pole.inc'
 include 'le_signal.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Логические элементы 15.03.12',0 ;подпись окна
+caption db 'Логические элементы 20.03.12',0 ;подпись окна
 
 panel_0_coord_top equ 5 ;верхняя координата 0-го ряда панели инструментов
 panel_1_coord_top equ 35
@@ -127,11 +127,13 @@ tbl_not db 1,0 ;not
 time dd 0
 tim_ch db 0
 pen_mode dd 0 ;режим рисования провода
+pen_coord_x dd 0 ;координата x начальной точки рисования
+pen_coord_y dd 0
 
 txt_set_0 db '0',0
 txt_set_1 db '1',0
-txt_mov_l db 27,0 ;<-
-txt_mov_r db 26,0 ;->
+;txt_mov_l db 27,0 ;<-
+;txt_mov_r db 26,0 ;->
 
 txt_size db 'size',0
 txt_elements db 'elements',0
@@ -150,7 +152,7 @@ run_file_70 FileInfoBlock
 image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*15
+IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*20
 image_data_toolbar dd 0
 
 TREE_ICON_SYS16_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*11+54 ;размер bmp файла с системными иконками
@@ -160,6 +162,9 @@ icon_toolbar dd 0 ;указатель на память для хранения иконок объектов
 
 IMAGE_FONT_SIZE equ 128*144*3
 image_data_gray dd 0 ;память с временными серыми изображениями в формате 24-bit, из которых будут создаваться трафареты
+
+cursors_count equ 4
+IMAGE_CURSORS_SIZE equ 4096*cursors_count ;размер картинки с курсорами
 
 macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	;path - может быть переменной или строковым параметром
@@ -231,12 +236,25 @@ start:
 	mov eax,dword[icon_toolbar]
 	mov dword[tree1.data_img],eax
 
+	;*** загрузка шрифта
 	load_image_file 'font6x9.bmp', image_data_gray,IMAGE_FONT_SIZE
 	stdcall [buf2d_create_f_img], buf_font,[image_data_gray] ;создаем буфер
 	stdcall mem.Free,[image_data_gray] ;освобождаем память
 
 	stdcall [buf2d_conv_24_to_8], buf_font,1 ;делаем буфер прозрачности 8 бит
 	stdcall [buf2d_convert_text_matrix], buf_font
+
+	;*** загрузка курсоров
+	load_image_file 'cursors_gr.png',image_data_gray,IMAGE_CURSORS_SIZE
+	stdcall [buf2d_create_f_img], buf_curs_8,[image_data_gray] ;создаем буфер
+	stdcall mem.Free,[image_data_gray] ;освобождаем память
+
+	load_image_file 'cursors.png',image_data_gray, IMAGE_CURSORS_SIZE
+	stdcall [buf2d_create_f_img], buf_curs,[image_data_gray] ;создаем буфер
+	stdcall mem.Free,[image_data_gray] ;освобождаем память
+
+	stdcall [buf2d_conv_24_to_8], buf_curs_8,1 ;делаем буфер прозрачности 8бит
+	stdcall [buf2d_conv_24_to_32],buf_curs,buf_curs_8 ;делаем буфер rgba 32бит
 
 	stdcall sign_init, 3000
 
@@ -304,7 +322,12 @@ mouse:
 	push eax ebx ecx edx
 	mcall 37,2 ;нажатые кнопки мыши
 	bt eax,0 ;левая кнопка нажата?
-	jnc .end_buf_wnd
+	jc @f
+		xor eax,eax
+		mov [pen_coord_x],eax
+		mov [pen_coord_y],eax
+		jmp .end_buf_wnd
+	@@:
 
 	mcall 37,1 ;eax = (x shl 16) + y
 	cmp ax,word[buf_0.t]
@@ -340,15 +363,50 @@ mouse:
 		jge .end_buf_wnd
 
 		cmp byte[pen_mode],1
-		jne @f
+		jne .end_mode_1
 			;режим рисования провода
+			cmp dword[pen_coord_x],0
+			jne @f
+			cmp dword[pen_coord_y],0
+			jne @f
+				mov [pen_coord_x],eax
+				mov [pen_coord_y],ebx
+			@@:
+
+			cmp dword[pen_coord_x],eax
+			je .beg_draw
+			cmp dword[pen_coord_y],ebx
+			je .beg_draw
+
+			mov ecx,eax
+			sub ecx,[pen_coord_x]
+			bt ecx,31
+			jnc @f
+				neg ecx
+				inc ecx
+			@@:
+			mov edx,ebx
+			sub edx,[pen_coord_y]
+			bt edx,31
+			jnc @f
+				neg edx
+				inc edx
+			@@:
+			cmp ecx,edx
+			jl @f
+				mov ebx,[pen_coord_y] ;привязка к координате y
+				jmp .beg_draw
+			@@:
+			mov eax,[pen_coord_x] ;привязка к координате x
+
+			.beg_draw:
 			stdcall pole_cell_creat, pole,eax,ebx,0
 			;ничего не убралось redraw_pole не подходит, т. к. чистить поле не нужно
 			stdcall pole_paint, pole
 			stdcall [buf2d_draw], buf_0
 			;stdcall but_test_pole, pole
 			jmp .end_buf_wnd
-		@@:
+		.end_mode_1:
 		cmp byte[pen_mode],2
 		jne @f
 			;режим рисования изоляции для провода
@@ -364,6 +422,14 @@ mouse:
 			stdcall pole_cell_delete, pole,eax,ebx
 			call redraw_pole
 			;stdcall but_test_pole, pole
+			jmp .end_buf_wnd
+		@@:
+		cmp byte[pen_mode],4
+		jne @f
+			;режим создания элементов
+			stdcall shem_element_creat, eax,ebx
+			stdcall pole_paint, pole
+			stdcall [buf2d_draw], buf_0
 			jmp .end_buf_wnd
 		@@:
 
@@ -519,12 +585,25 @@ pushad
 	mov edx,txt_set_1
 	int 0x40
 
-	add ebx,35 shl 16
-	mov edx,txt_mov_l
+	; *** рисование иконок на кнопках ***
+	mov eax,7
+	mov ebx,[image_data_toolbar]
+	mov ecx,(16 shl 16)+16
+	mov edx,(62 shl 16)+panel_1_coord_top+2
+
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE*16
 	int 0x40
 
-	add ebx,25 shl 16
-	mov edx,txt_mov_r
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16)
+	int 0x40
+
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16)
+	int 0x40
+
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16)
 	int 0x40
 
 	; *** создание кнопок рисования провода ***
@@ -547,6 +626,10 @@ pushad
 	mov edx,33
 	int 0x40
 
+	add ebx,25 shl 16
+	mov edx,34
+	int 0x40
+
 	; *** рисование иконок на кнопках ***
 	mov eax,7
 	mov ebx,[image_data_toolbar]
@@ -566,6 +649,10 @@ pushad
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(25 shl 16) ;icon pen 3
+	int 0x40
+
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;icon add elemet
 	int 0x40
 
 	mcall 12,2
@@ -656,33 +743,49 @@ button:
 	@@:
 	cmp ah,31
 	jne @f
-		call but_set_pen_1
+		stdcall set_pen_mode,1,0 ;установка режима рисования провода
 	@@:
 	cmp ah,32
 	jne @f
-		call but_set_pen_2
+		stdcall set_pen_mode,2,1
 	@@:
 	cmp ah,33
 	jne @f
-		call but_set_pen_3
+		stdcall set_pen_mode,3,2 ;установка режима стирания провода
+	@@:
+	cmp ah,34
+	jne @f
+		stdcall set_pen_mode,4,3 ;установка режима создания элементов
 	@@:
 	cmp ah,1
 	jne still
 .exit:
 	stdcall [buf2d_delete],buf_0
 	stdcall [buf2d_delete],buf_font
+	stdcall [buf2d_delete],buf_curs
 	stdcall mem.Free,[image_data_toolbar]
 	stdcall pole_delete, pole
 	call sign_delete
 	stdcall [tl_data_clear], tree1
+	cmp [cursor_pointer],0
+	je @f
+		mcall 37,6,[cursor_pointer]
+	@@:
 	mcall -1
 
-
+;создание новой схемы
 align 4
-but_new_file:
+proc but_new_file uses eax
+	call but_set_none
+	stdcall [tl_info_clear],tree1
+	stdcall [tl_draw],tree1
+	xor eax,eax
+	mov [shem_elems],eax
+	mov [shem_captions],eax
 	stdcall pole_clear, pole
 	call redraw_pole
 	ret
+endp
 
 align 4
 f_size dd 0 ;размер открываемого файла
@@ -1026,6 +1129,7 @@ but_open_file:
 
 		;---
 		call but_center ;центровка схемы с учетом shem_w и shem_h
+		call but_set_none
 	.end_open_file:
 	popad
 	ret
@@ -1460,6 +1564,31 @@ proc make_list_capts uses eax ebx ecx edi, buf:dword, txt:dword
 	ret
 endp
 
+;добавление нового элемента управления на схему
+;при добавлении используются стандартные настройки
+align 4
+proc shem_element_creat uses eax ebx, coord_x:dword, coord_y:dword
+	mov eax,dword[coord_x]
+	mov dword[txt_buf],eax ;координата x
+	mov eax,dword[coord_y]
+	mov dword[txt_buf+4],eax ;координата y
+
+	xor eax,eax
+	mov byte[txt_buf+8],al ;направление
+	;по адресу edi название элемента
+	;stdcall el_get_name, edi
+	mov byte[txt_buf+sp_offs_el_type],al ;тип элемента
+
+	movzx ebx,al
+	imul ebx,size_el_opt
+	add ebx,el_opt_beg+el_offs_nam
+	stdcall make_list_capts,txt_buf,ebx
+	stdcall [tl_node_add], txt_buf,(el_icon_elems shl 16)+1, tree1
+	stdcall [tl_cur_next], tree1
+	stdcall [tl_draw], tree1
+	ret
+endp
+
 ;output:
 ; eax - тип элемента
 align 4
@@ -1842,27 +1971,33 @@ endp
 align 4
 proc but_set_none
 	mov byte[pen_mode],0
+	cmp [cursor_pointer],0
+	je @f
+		push eax ebx ecx
+		mcall 37,6,[cursor_pointer]
+		pop ecx ebx eax
+	@@:
 	ret
 endp
 
-;установка режима рисования провода
 align 4
-proc but_set_pen_1
-	mov byte[pen_mode],1
-	ret
-endp
+proc set_pen_mode uses eax ebx ecx edx, mode:dword, icon:dword
+	mov eax,[mode]
+	cmp byte[pen_mode],al
+	je @f
+		mov byte[pen_mode],al
+		;mov edx,((cx shl 8) + cy) shl 16
+		mov edx,2 ;LOAD_INDIRECT
+		mov ecx,[icon]
+		shl ecx,12 ;умножаем на 4 кб
+		add ecx,[buf_curs.data]
+		mcall 37,4
 
-;
-align 4
-proc but_set_pen_2
-	mov byte[pen_mode],2
-	ret
-endp
-
-;установка режима стирания провода
-align 4
-proc but_set_pen_3
-	mov byte[pen_mode],3
+		cmp eax,0
+		je @f
+			mov [cursor_pointer],eax
+			mcall 37,5,[cursor_pointer]
+	@@:
 	ret
 endp
 
@@ -1934,6 +2069,28 @@ buf_font: ;буфер со шрифтом
 	dd 144 ;+12 h
 	dd 0 ;+16 color
 	db 24 ;+20 bit in pixel
+
+align 4
+buf_curs: ;буфер с курсорами
+.data: dd 0 ;указатель на буфер изображения
+	dw 0 ;+4 left
+	dw 0 ;+6 top
+	dd 32 ;+8 w
+	dd 32*cursors_count ;+12 h
+	dd 0 ;+16 color
+	db 24 ;+20 bit in pixel
+
+align 4
+buf_curs_8: ;буфер с курсорами
+.data: dd 0 ;указатель на буфер изображения
+	dw 0 ;+4 left
+	dw 0 ;+6 top
+	dd 32 ;+8 w
+	dd 32*cursors_count ;+12 h
+	dd 0 ;+16 color
+	db 24 ;+20 bit in pixel
+
+cursor_pointer dd 0 ;указатель на данные для курсора
 
 el_focus dd 0
 tree1 tree_list 32,points_max+2, tl_key_no_edit, 16,16,\
