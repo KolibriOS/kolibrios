@@ -1424,11 +1424,12 @@ align 4
         jae     .no_mouse_area
 ;--------------------------------------
 ; check mouse area for putpixel
+        push    eax
         call    check_mouse_area_for_putpixel_new.1
         mov     [edx], ax
         shr     eax, 16
         mov     [edx + 2], al
-        mov     eax, [drbar.color]
+        pop     eax
         jmp     .skip
 ; store to real LFB
 ;--------------------------------------
@@ -1608,9 +1609,10 @@ align 4
         jae     .no_mouse_area
 ;--------------------------------------
 ; check mouse area for putpixel
+        push    eax
         call    check_mouse_area_for_putpixel_new.1
         mov     [edx], eax
-        mov     eax, [drbar.color]
+        pop     eax
         jmp     .skip
 ; store to real LFB
 ;--------------------------------------
