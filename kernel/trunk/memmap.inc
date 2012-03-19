@@ -246,7 +246,8 @@
 ;         04   dword  draw limit - y start
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
-; 0x80339000 -> 3BFFF3   free (12k)
+; 0x80339000 -> 33A7FF   area for fast getting offset to LFB (6k)
+; 0x8033A800 -> 3BFFF3   free (6k)
 ; 0x8033BFF4 -> 33BFFF   background info 
 ; 0x8033C000             page map     (length b = memsize shr 15)
 ; 0x8033C000 + b         start of static pagetables

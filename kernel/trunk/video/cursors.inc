@@ -618,9 +618,7 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         mov     [_dy], edx
 
 ;        mul     dword [BytesPerScanLine]
-        mov     eax, [d_width_calc_area + eax*4]
-        lea     eax, [eax + eax*2]
-
+        mov     eax, [BPSLine_calc_area+eax*4]
         lea     edx, [LFB_BASE+ecx*3]
         add     edx, eax
         mov     [cur_saved_base], edx
@@ -737,9 +735,7 @@ proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
         mov     [_dy], edx
 
 ;        mul     dword [BytesPerScanLine]
-        mov     eax, [d_width_calc_area + eax*4]
-        shl     eax, 2
-
+        mov     eax, [BPSLine_calc_area+eax*4]
         lea     edx, [LFB_BASE+eax+ecx*4]
         mov     [cur_saved_base], edx
 

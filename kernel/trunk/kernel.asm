@@ -403,6 +403,10 @@ high_code:
         mov     [_WinMapSize], eax
 
         call    calculate_fast_getting_offset_for_WinMapAddress
+; for Qemu or non standart video cards
+; Unfortunately [BytesPerScanLine] does not always 
+;                             equal to [_display.width] * [ScreenBPP] / 8
+        call    calculate_fast_getting_offset_for_LFB
 
         mov     esi, BOOT_VAR+0x9080
         movzx   ecx, byte [esi-1]
@@ -4844,6 +4848,21 @@ calculate_fast_getting_offset_for_WinMapAddress:
 @@:
         stosd
         add     eax, [_display.width]
+        dec     ecx
+        jnz     @r
+        ret
+;------------------------------------------------------------------------------
+align 4
+calculate_fast_getting_offset_for_LFB:
+; calculate data area for fast getting offset to LFB
+        xor     eax, eax
+        mov     ecx, [_display.height]
+        inc     ecx
+        mov     edi, BPSLine_calc_area
+        cld
+@@:
+        stosd
+        add     eax, [BytesPerScanLine]
         dec     ecx
         jnz     @r
         ret

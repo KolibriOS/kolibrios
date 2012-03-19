@@ -72,8 +72,7 @@ align 4
 .no_mouseunder:
 ;--------------------------------------
 ;        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
-        mov     ebx, [d_width_calc_area + ebx*4]
-        lea     ebx, [ebx + ebx*2]
+        mov     ebx, [BPSLine_calc_area+ebx*4]
         lea     edi, [eax+eax*2]; edi = x*3
         add     edi, ebx      ; edi = x*3+(y*y multiplier)
         mov     ecx, [LFB_BASE+edi]
@@ -105,8 +104,7 @@ align 4
 .no_mouseunder:
 ;--------------------------------------
 ;        imul    ebx, [BytesPerScanLine] ; ebx = y * y multiplier
-        mov     ebx, [d_width_calc_area + ebx*4]
-        shl     ebx, 2
+        mov     ebx, [BPSLine_calc_area+ebx*4]
         lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
         mov     ecx, [LFB_BASE+edi]
 ;--------------------------------------
@@ -243,19 +241,7 @@ align 4
 ; pointer to screen
         mov     edx, [putimg.abs_cy]
 ;        imul    edx, [BytesPerScanLine]
-
-        mov     edx, [d_width_calc_area + edx*4]
-        cmp     bl, 4
-        je      .32
-        lea     edx, [edx+edx*2]
-        jmp     @f
-;-------------------------------------
-align 4
-.32:
-        shl     edx, 2
-;-------------------------------------
-align 4
-@@:
+        mov     edx, [BPSLine_calc_area+edx*4]
         mov     eax, [putimg.abs_cx]
 ;        movzx   ebx, byte [ScreenBPP]
 ;        shr     ebx, 3
@@ -740,9 +726,7 @@ Vesa20_putpixel24:
         mov     cx, bx
 
 ;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
-        mov     ebx, [d_width_calc_area + ebx*4]
-        lea     ebx, [ebx + ebx*2]
-
+        mov     ebx, [BPSLine_calc_area+ebx*4]
         lea     edi, [eax+eax*2]; edi = x*3
         mov     eax, [esp+32-8+4]
 ;--------------------------------------
@@ -771,9 +755,7 @@ Vesa20_putpixel24_new:
         mov     cx, bx
 
 ;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
-        mov     ebx, [d_width_calc_area + ebx*4]
-        lea     ebx, [ebx + ebx*2]
-
+        mov     ebx, [BPSLine_calc_area+ebx*4]
         lea     edi, [eax+eax*2]; edi = x*3
         mov     eax, [esp+32-8+4]
 ;--------------------------------------
@@ -819,9 +801,7 @@ Vesa20_putpixel32:
         mov     cx, bx
 
 ;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
-        mov     ebx, [d_width_calc_area + ebx*4]
-        shl     ebx, 2
-
+        mov     ebx, [BPSLine_calc_area+ebx*4]
         lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
         mov     eax, [esp+32-8+4]; eax = color
 ;--------------------------------------
@@ -849,9 +829,7 @@ Vesa20_putpixel32_new:
         mov     cx, bx
 
 ;        imul    ebx, [BytesPerScanLine]  ; ebx = y * y multiplier
-        mov     ebx, [d_width_calc_area + ebx*4]
-        shl     ebx, 2
-
+        mov     ebx, [BPSLine_calc_area+ebx*4]
         lea     edi, [ebx+eax*4]; edi = x*4+(y*y multiplier)
         mov     eax, [esp+32-8+4]; eax = color
 ;--------------------------------------
@@ -1238,19 +1216,7 @@ align 4
 ; pointer to screen
         mov     edx, [drbar.abs_cy]
 ;        imul    edx, [BytesPerScanLine]
-
-        mov     edx, [d_width_calc_area + edx*4]
-        cmp     bl, 4
-        je      .32
-        lea     edx, [edx+edx*2]
-        jmp     @f
-;-------------------------------------
-align 4
-.32:
-        shl     edx, 2
-;-------------------------------------
-align 4
-@@:
+        mov     edx, [BPSLine_calc_area+edx*4]
         mov     eax, [drbar.abs_cx]
         imul    eax, ebx
         add     edx, eax
@@ -1656,18 +1622,7 @@ dp2:
 ;                       and LFB data (output for our function) [edi]
 ;        mov     eax, [BytesPerScanLine]
 ;        mul     ebx
-        mov     eax, [d_width_calc_area + ebx*4]
-        cmp     [ScreenBPP], byte 32
-        je      .32
-        lea     eax, [eax+eax*2]
-        jmp     @f
-;-------------------------------------
-align 4
-.32:
-        shl     eax, 2
-;-------------------------------------
-align 4
-@@:
+        mov     eax, [BPSLine_calc_area+ebx*4]
         xchg    ebp, eax
         add     ebp, eax
         add     ebp, eax
@@ -1813,19 +1768,7 @@ vesa20_drawbackground_stretch:
 ;                       and LFB data (output for our function) [edi]
 ;        mov     eax, [BytesPerScanLine]
 ;        mul     ebx
-        mov     eax, [d_width_calc_area + ebx*4]
-        cmp     [ScreenBPP], byte 32
-        je      .32
-        lea     eax, [eax+eax*2]
-        jmp     @f
-;-------------------------------------
-align 4
-.32:
-        shl     eax, 2
-;-------------------------------------
-align 4
-@@:
-
+        mov     eax, [BPSLine_calc_area+ebx*4]
         xchg    ebp, eax
         add     ebp, eax
         add     ebp, eax
