@@ -3,7 +3,11 @@
 ;;          DEVICE SETUP         ;;
 ;;                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+; version:	1.14
+; last update:  20/03/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      optimisations and code refactoring
+;---------------------------------------------------------------------
 ; Authors: Ville       - original version
 ;          A. Ivushkin - autostart (w launcher)
 ;          M. Lisovin  - added many feauters (apply all, save all, set time...)
@@ -90,13 +94,14 @@ get_setup_values:
 	ret
 ;-------------------------------------------------------------------------------
 START:
-	cmp	[I_PARAM],'SLAN'
+	mov	eax,I_PARAM
+	cmp	[eax],dword 'SLAN'
 	je	set_syslanguage_and_exit
 
-	cmp	[I_PARAM],'LANG'
+	cmp	[eax],dword 'LANG'
 	je	set_language_and_exit
 
-	cmp	[I_PARAM],'BOOT'
+	cmp	[eax],dword 'BOOT'
 	je	apply_all_and_exit
 
 	call	get_setup_values
@@ -420,6 +425,12 @@ draw_window:
 	xor	eax,eax       ; DRAW WINDOW
 	xor	esi,esi
 	mcall	,<40,(355+BBB)>,<40,(12*15)>,0xB4111199,,title
+	
+	mcall	9,procinfo,-1
+	
+	mov	eax,[ebx+70] ;status of window
+	test	eax,100b
+	jne	.end
 
 	mcall	8,<(350-85),100>,<(5+14*8),12>,100,0x005588dd	; APPLY ALL
 
@@ -454,7 +465,7 @@ draw_window:
 	call	draw_buttons
 
 	call	draw_infotext
-
+.end:
 	mcall	12,2
 	popa
 	ret
@@ -724,8 +735,6 @@ save_fileinfo:
 	dd keyboard
 file_name:	db '/sys/setup.dat',0
 ;-------------------------------------------------------------------------------
-I_PARAM	dd 0
-;-----------------------------------------------------------------------------
 ; Note to SVN revision 2299 - some parameters has not used,
 ; but keep the order of the parameter has always needed!
 keyboard	dd 0x0
@@ -745,12 +754,16 @@ IM_END:
 ;-----------------------------------------------------------------------------
 align 4
 text00:
-	rb	LLL*(text1_strings + text2_strings)
+	rb LLL*(text1_strings + text2_strings)
 ;-----------------------------------------------------------------------------
 align 4
-	rb	0x1000
+I_PARAM:
+procinfo:
+	rb 1024
+;-----------------------------------------------------------------------------
+align 4
+	rb 0x1000
 stack_area:
 ;-----------------------------------------------------------------------------
-;table_area:
 I_END:
 ;-------------------------------------------------------------------------------
