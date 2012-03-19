@@ -81,15 +81,15 @@ fir_lng:
     mov  eax,21
     mov  ebx,2
     mov  ecx,1
-    mov  edx,en_keymap
+    mov  edx,current_keymap
     mcall
     mov  eax,21
     inc  ecx
-    mov  edx,en_keymap_shift
+    mov  edx,current_keymap_shift
     mcall
     mov  eax,21
     inc  ecx
-    mov  edx,en_keymap_alt
+    mov  edx,current_keymap_alt
     mcall
     mov  eax,21
     mov  ecx,9
@@ -211,38 +211,35 @@ ret
 alt_1:
     mov    [point],0
     mcall  70,get_key
-
     mov  eax,21       ; english     0
     mov  ebx,2
     mov  ecx,1
-    mov  edx,en_keymap
+    mov  edx,current_keymap
     mcall
     mov  eax,21
     inc  ecx
-    mov  edx,en_keymap_shift
+    mov  edx,current_keymap_shift
     mcall
     mov  eax,21
     mov  ecx,9
-    mov  edx,1
+    mov  edx,1	; 1 - english
     mcall
 ret
 alt_2:
-    mov    [point],384
+    mov    [point],1536
     mcall  70,get_key
-
-
-    mov  eax,21       ; russian
+    mov  eax,21       ; finnish
     mov  ebx,2
     mov  ecx,1
-    mov  edx,en_keymap
+    mov  edx,current_keymap
     mcall
     mov  eax,21
     inc  ecx
-    mov  edx,en_keymap_shift
+    mov  edx,current_keymap_shift
     mcall
     mov  eax,21
     mov  ecx,9
-    mov  edx,2
+    mov  edx,2	; 2 - finnish
     mcall
 ret
 alt_3:
@@ -251,53 +248,53 @@ alt_3:
     mov  eax,21       ; german
     mov  ebx,2
     mov  ecx,1
-    mov  edx,en_keymap
+    mov  edx,current_keymap
     mcall
     mov  eax,21
     inc  ecx
-    mov  edx,en_keymap_shift
+    mov  edx,current_keymap_shift
     mcall
     mov  eax,21
     mov  ecx,9
-    mov  edx,3
+    mov  edx,3	; 3 - german
     mcall
 ret
 alt_4:
+    mov    [point],384
+    mcall  70,get_key
+    mov  eax,21       ; russian
+    mov  ebx,2
+    mov  ecx,1
+    mov  edx,current_keymap
+    mcall
+    mov  eax,21
+    inc  ecx
+    mov  edx,current_keymap_shift
+    mcall
+    mov  eax,21
+    mov  ecx,9
+    mov  edx,4	; 4 - russian
+    mcall
+ret
+alt_5:
     mov    [point],1152
     mcall  70,get_key
     mov  eax,21 	 ;french
     mov  ebx,2
     mov  ecx,1
-    mov  edx,en_keymap
+    mov  edx,current_keymap
     mcall
     mov  eax,21
     inc  ecx
-    mov  edx,en_keymap_shift
+    mov  edx,current_keymap_shift
     mcall
     mov  eax,21
     inc  ecx
-    mov  edx,en_keymap_alt
+    mov  edx,current_keymap_alt
     mcall
     mov  eax,21
     mov  ecx,9
-    mov  edx,4
-    mcall
-ret
-alt_5:
-    mov    [point],1536
-    mcall  70,get_key
-    mov  eax,21       ; finnish
-    mov  ebx,2
-    mov  ecx,1
-    mov  edx,en_keymap
-    mcall
-    mov  eax,21
-    inc  ecx
-    mov  edx,en_keymap_shift
-    mcall
-    mov  eax,21
-    mov  ecx,9
-    mov  edx,5
+    mov  edx,5	; 5 - french
     mcall
 ret
 alt_6:
@@ -306,39 +303,39 @@ alt_6:
     mov  eax,21       ; estonian
     mov  ebx,2
     mov  ecx,1
-    mov  edx,en_keymap
+    mov  edx,current_keymap
     mcall
     mov  eax,21
     inc  ecx
-    mov  edx,en_keymap_shift
+    mov  edx,current_keymap_shift
     mcall
     mov  eax,21
     mov  ecx,9
-    mov  edx,6
+    mov  edx,6	; 6 - estonian
     mcall
 ret
 alt_7:
     mov    [point],2304
     mcall  70,get_key
-    mov  eax,21       ; Ukrainian
+    mov  eax,21       ; ukrainian
     mov  ebx,2
     mov  ecx,1
-    mov  edx,en_keymap
+    mov  edx,current_keymap
     mcall
     mov  eax,21
     inc  ecx
-    mov  edx,en_keymap_shift
+    mov  edx,current_keymap_shift
     mcall
     mov  eax,21
     mov  ecx,9
-    mov  edx,7
+    mov  edx,7	; 7 - ukrainian
     mcall
 ret
-en_keymap:
+current_keymap:
 	  rb	  128
-en_keymap_shift:
+current_keymap_shift:
 	  rb	  128
-en_keymap_alt:
+current_keymap_alt:
 	  rb	  128
 key_r	  db	  0
 key_r2	  db	  0
@@ -363,7 +360,7 @@ get_key:
 point	  dd	  0
 	  dd	  0
 	  dd	  384
-	  dd	  en_keymap
+	  dd	  current_keymap
 	  db	  0
 	  dd	  key_file
 get_ini:
