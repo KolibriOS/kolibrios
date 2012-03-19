@@ -9,840 +9,748 @@
 ;          M. Lisovin  - added many feauters (apply all, save all, set time...)
 ;          I. Poddubny - fixed russian keymap
 ;14/08/06  Mario79 - added regulation of mouse features
+;-------------------------------------------------------------------------------
+	use32
+	org 0x0
 
-;******************************************************************************
-  use32
-  org	  0x0
-  db	  'MENUET01'   ; 8 byte identifier
-  dd	  0x01		 ; header version
-  dd	  START        ; pointer to program start
-  dd	  I_END        ; size of image
-  dd	  0x4000      ; reguired amount of memory
-  dd	  0x4000      ; stack pointer (esp)
-  dd	  I_PARAM,0    ; parameters, reserved
-  include '..\..\..\macros.inc'
-;******************************************************************************
-
+	db 'MENUET01'	; 8 byte identifier
+	dd 0x01		; header version
+	dd START	; pointer to program start
+	dd IM_END	; size of image
+	dd I_END	;0x4000	; reguired amount of memory
+	dd stack_area	; stack pointer (esp)
+	dd I_PARAM	; boot parameters
+	dd 0x0		; path
+;-------------------------------------------------------------------------------
+include '..\..\..\macros.inc'
+;-------------------------------------------------------------------------------
 LLL equ (56+3)
 BBB equ 25
-
-;******************************************************************************
-apply_all:
-
-    call _pci_acc    ;12
-    call _syslang    ;5
-    call _keyboard    ;2
-    call _mouse_speed
-    call _mouse_delay
-
-ret
 ;-------------------------------------------------------------------------------
-;******************************************************************************
+apply_all:
+	call	_pci_acc    ;12
+	call	_syslang    ;5
+	call	_keyboard    ;2
+	call	_mouse_speed
+	call	_mouse_delay
+	ret
+;-------------------------------------------------------------------------------
 apply_all_and_exit:
-
-	mcall	70, read_fileinfo
+	mcall	70,read_fileinfo
 	call	apply_all
 	jmp	close
-
-;******************************************************************************
+;-------------------------------------------------------------------------------
 set_language_and_exit:
-
-	mcall	26, 2, 9
-
-	cmp	eax, 1
+	mcall	26,2,9
+	cmp	eax,1
 	je	russian
 
 	xor	eax,eax
-
+;--------------------------------------
 set_lang_now:
-	mov	[keyboard], eax
+	mov	[keyboard],eax
 	call	_keyboard
 	jmp	close
-
+;--------------------------------------
 russian:
-	mov	eax, 3
+	mov	eax,3
 	jmp	set_lang_now
-
+;-------------------------------------------------------------------------------
 set_syslanguage_and_exit:
-
-	mcall	26, 5
+	mcall	26,5
 	cmp	eax,6
 	jne	temp
 	xor	eax,eax
-
+;--------------------------------------
 temp:
 	inc	eax
-	mov	[syslang], eax
+	mov	[syslang],eax
 	call	_syslang
 	jmp	close
-
-
-
+;-------------------------------------------------------------------------------
 get_setup_values:
-
-	mcall	26, 2, 9
+	mcall	26,2,9
 	dec	eax
-	mov	[keyboard], eax
+	mov	[keyboard],eax
 
-	mcall	26, 5
-	mov	[syslang], eax
+	mcall	26,5
+	mov	[syslang],eax
 
-	mcall	26, 11
-	mov	[lba_read], eax
+	mcall	26,11
+	mov	[lba_read],eax
 
-	mcall	26, 12
-	mov	[pci_acc], eax
+	mcall	26,12
+	mov	[pci_acc],eax
 
-	mcall	18, 19, 0
-	mov	[mouse_speed], eax
+	mcall	18,19,0
+	mov	[mouse_speed],eax
 
-	mcall	18, 19, 2
-	mov	[mouse_delay], eax
-
+	mcall	18,19,2
+	mov	[mouse_delay],eax
 	ret
-
-;******************************************************************************
-
+;-------------------------------------------------------------------------------
 START:
-	cmp	[I_PARAM], 'SLAN'
+	cmp	[I_PARAM],'SLAN'
 	je	set_syslanguage_and_exit
 
-	cmp	[I_PARAM], 'LANG'
+	cmp	[I_PARAM],'LANG'
 	je	set_language_and_exit
 
-	cmp	[I_PARAM], 'BOOT'
+	cmp	[I_PARAM],'BOOT'
 	je	apply_all_and_exit
 
 	call	get_setup_values
 	call	loadtxt
-
+;-------------------------------------------------------------------------------
 red:
-	call draw_window
-
+	call	draw_window
+;-------------------------------------------------------------------------------
 still:
-
- sysevent:
-	mov	eax, 23
-	mov	ebx, 8	      ; wait here for event with timeout
-	mcall
-
-	cmp	eax, 1
+sysevent:
+	mcall	23,8	      ; wait here for event with timeout
+	cmp	eax,1
 	jz	red
 
-	cmp	eax, 2
+	cmp	eax,2
 	jz	key
 
-	cmp	eax, 3
+	cmp	eax,3
 	jz	button
 
 	jmp	still
-
-
-  key:
-	;mov    eax,2
-	mcall
-
+;-------------------------------------------------------------------------------
+key:
+	mcall	2
 	jmp	still
-
-  button:
-
-    mov  eax,17
-    mcall
-
-    cmp  ah,99
-    jne  nosaveall
-    mcall 70,save_fileinfo
-
-    jmp  still
+;-------------------------------------------------------------------------------
+button:
+	mcall	17
+	cmp	ah,99
+	jne	nosaveall
+	mcall	70,save_fileinfo
+	jmp	still
+;--------------------------------------    
 nosaveall:
-    cmp  ah,100
-    jne  no_apply_all
-    call apply_all
-    jmp  still
+	cmp	ah,100
+	jne	no_apply_all
+	call	apply_all
+	jmp	still
+;--------------------------------------
 no_apply_all:
-
-    cmp  ah,1		; CLOSE APPLICATION
-    jne  no_close
+	cmp	ah,1	; CLOSE APPLICATION
+	jne	no_close
+;--------------------------------------
 close:
-    or	       eax,-1
-    mcall
-  no_close:
-
-
-    cmp  ah,4		; SET KEYBOARD
-    jnz  nokm
-    mov  eax,[keyboard]
-    test eax,eax
-    je	       downuplbl
-    dec  eax
-    jmp  nodownup
-   downuplbl:
-    mov  eax,5
-   nodownup:
-    mov  [keyboard],eax
-    call draw_infotext
-  nokm:
-    cmp  ah,5
-    jnz  nokp
-    mov  eax,[keyboard]
-    cmp  eax,5
-    je	       updownlbl
-    inc  eax
-    jmp  noupdown
-   updownlbl:
-    xor  eax,eax
-   noupdown:
-    mov  [keyboard],eax
-    call draw_infotext
-  nokp:
-
-
-    cmp  ah,92	       ; SET LBA READ
-    jne  no_lba_d
-  slbal:
-    btc  [lba_read],0
-    call draw_infotext
-    jmp  still
-   no_lba_d:
-    cmp  ah,93
-    jne  no_lba_i
-    jmp  slbal
-  no_lba_i:
-    cmp  ah,91
-    jne  no_set_lba_read
-    call _lba_read
-    jmp  still
-   no_set_lba_read:
-
-
-    cmp  ah,102       ; SET PCI ACCESS
-    jne  no_pci_d
-  pcip:
-    btc  [pci_acc],0
-    call draw_infotext
-    jmp  still
-  no_pci_d:
-    cmp  ah,103
-    jne  no_pci_i
-    jmp  pcip
-   no_pci_i:
-    cmp  ah,101
-    jne  no_set_pci_acc
-    call _pci_acc
-    jmp  still
-  no_set_pci_acc:
-
-
-    cmp  ah,42		; SET SYSTEM LANGUAGE BASE
-    jnz  nosysm
-    mov  eax,[syslang]
-    dec  eax
-    jz	       still
-    mov  [syslang],eax
-    call draw_infotext
-  nosysm:
-    cmp  ah,43
-    jnz  nosysp
-    mov  eax,[syslang]
-    cmp  eax,6
-    je	       nosysp
-    inc  eax
-    mov  [syslang],eax
-    call draw_infotext
-  nosysp:
-    cmp  ah,41
-    jnz  nosyss
-    call _syslang
-    call cleantxt
-    call loadtxt
-    call draw_window
-  nosyss:
-    cmp  ah,132        ; SET MOUSE SPEED
-    jnz  .nominus
-    mov  eax,[mouse_speed]
-    sub  eax,2
-    cmp  eax,9
-    jb	      @f
-    mov  eax,8
+	or	eax,-1
+	mcall
+;--------------------------------------
+no_close:
+	cmp	ah,4	; SET KEYBOARD
+	jnz	nokm
+	mov	eax,[keyboard]
+	test	eax,eax
+	je	downuplbl
+	dec	eax
+	jmp	nodownup
+;--------------------------------------
+downuplbl:
+	mov	eax,5
+;--------------------------------------
+nodownup:
+	mov	[keyboard],eax
+	call	draw_infotext
+;--------------------------------------
+nokm:
+	cmp	ah,5
+	jnz	nokp
+	mov	eax,[keyboard]
+	cmp	eax,5
+	je	updownlbl
+	inc	eax
+	jmp	noupdown
+;--------------------------------------
+updownlbl:
+	xor	eax,eax
+;--------------------------------------
+noupdown:
+	mov	[keyboard],eax
+	call	draw_infotext
+;--------------------------------------
+nokp:
+	cmp	ah,92	; SET LBA READ
+	jne	no_lba_d
+;--------------------------------------
+slbal:
+	btc	[lba_read],0
+	call	draw_infotext
+	jmp	still
+;--------------------------------------
+no_lba_d:
+	cmp	ah,93
+	jne	no_lba_i
+	jmp	slbal
+;--------------------------------------
+no_lba_i:
+	cmp	ah,91
+	jne	no_set_lba_read
+	call	_lba_read
+	jmp	still
+;--------------------------------------
+no_set_lba_read:
+	cmp	ah,102	; SET PCI ACCESS
+	jne	no_pci_d
+;--------------------------------------
+pcip:
+	btc	[pci_acc],0
+	call	draw_infotext
+	jmp	still
+;--------------------------------------
+no_pci_d:
+	cmp	ah,103
+	jne	no_pci_i
+	jmp	pcip
+;--------------------------------------
+no_pci_i:
+	cmp	ah,101
+	jne	no_set_pci_acc
+	call	_pci_acc
+	jmp	still
+;--------------------------------------
+no_set_pci_acc:
+	cmp	ah,42	; SET SYSTEM LANGUAGE BASE
+	jnz	nosysm
+	mov	eax,[syslang]
+	dec	eax
+	jz	still
+	mov	[syslang],eax
+	call	draw_infotext
+;--------------------------------------
+nosysm:
+	cmp	ah,43
+	jnz	nosysp
+	mov	eax,[syslang]
+	cmp	eax,6
+	je	nosysp
+	inc	eax
+	mov	[syslang],eax
+	call	draw_infotext
+;--------------------------------------
+nosysp:
+	cmp	ah,41
+	jnz	nosyss
+	call	_syslang
+	call	cleantxt
+	call	loadtxt
+	call	draw_window
+;--------------------------------------
+nosyss:
+	cmp	ah,132	; SET MOUSE SPEED
+	jnz	.nominus
+	mov	eax,[mouse_speed]
+	sub	eax,2
+	cmp	eax,9
+	jb	@f
+	mov	eax,8
+;--------------------------------------
 @@:
-    inc  eax
-    mov  [mouse_speed],eax
-    call draw_infotext
-  .nominus:
-    cmp  ah,133
-    jnz  .noplus
-    mov  eax,[mouse_speed]
-    cmp  eax,9
-    jb	      @f
-    mov  eax,0
+	inc	eax
+	mov	[mouse_speed],eax
+	call	draw_infotext
+;--------------------------------------
+.nominus:
+	cmp	ah,133
+	jnz	.noplus
+	mov	eax,[mouse_speed]
+	cmp	eax,9
+	jb	@f
+	mov	eax,0
+;--------------------------------------
 @@:
-    inc  eax
-    mov  [mouse_speed],eax
-    call draw_infotext
-  .noplus:
-    cmp  ah,131
-    jnz  .noapply
-    call _mouse_speed
-  .noapply:
- mousedelay:
-    cmp  ah,142        ; SET MOUSE DELAY
-    jnz  .nominus
-    mov  eax,[mouse_delay]
-    sub  eax,2
-    cmp  eax,0xfff
-    jb	      @f
-    mov  eax,0xffe
+	inc	eax
+	mov	[mouse_speed],eax
+	call	draw_infotext
+;--------------------------------------
+.noplus:
+	cmp	ah,131
+	jnz	.noapply
+	call	_mouse_speed
+;--------------------------------------    
+.noapply:
+mousedelay:
+	cmp	ah,142        ; SET MOUSE DELAY
+	jnz	.nominus
+	mov	eax,[mouse_delay]
+	sub	eax,2
+	cmp	eax,0xfff
+	jb	@f
+	mov	eax,0xffe
+;--------------------------------------
 @@:
-    inc  eax
-    mov  [mouse_delay],eax
-    call draw_infotext
-  .nominus:
-    cmp  ah,143
-    jnz  .noplus
-    mov  eax,[mouse_delay]
-    cmp  eax,0xfff
-    jb	      @f
-    mov  eax,0
+	inc	eax
+	mov	[mouse_delay],eax
+	call	draw_infotext
+;--------------------------------------
+.nominus:
+	cmp	ah,143
+	jnz	.noplus
+	mov	eax,[mouse_delay]
+	cmp	eax,0xfff
+	jb	@f
+	mov	eax,0
+;--------------------------------------
 @@:
-    inc  eax
-    mov  [mouse_delay],eax
-    call draw_infotext
-  .noplus:
-    cmp  ah,141
-    jnz  .noapply
-    call _mouse_delay
-  .noapply:
+	inc	eax
+	mov	[mouse_delay],eax
+	call	draw_infotext
+;--------------------------------------
+.noplus:
+	cmp	ah,141
+	jnz	.noapply
+	call	_mouse_delay
+;--------------------------------------
+.noapply:
+	cmp	ah,3	      ; SET KEYMAP
+	jne	still
+	call	_keyboard
+	jmp	still
+;-------------------------------------------------------------------------------
+_keyboard:
+	cmp	[keyboard],0	; english
+	jnz	nosetkeyle
+	
+	mcall	21,2,1,en_keymap
+	
+	inc	ecx
+	mcall	21,,,en_keymap_shift
 
-    cmp  ah,3	      ; SET KEYMAP
-    jne  still
-    call _keyboard
-    jmp  still
+	mcall	21,,9,1
+	call	alt_gen
+;--------------------------------------
+nosetkeyle:
+	cmp	[keyboard],1	; finnish
+	jnz	nosetkeylfi
 
-  _keyboard:
-    cmp [keyboard],0
-    jnz  nosetkeyle
-    mov  eax,21       ; english
-    mov  ebx,2
-    mov  ecx,1
-    mov  edx,en_keymap
-    mcall
-    mov  eax,21
-    inc  ecx
-    mov  edx,en_keymap_shift
-    mcall
-    mov  eax,21
-    mov  ecx,9
-    mov  edx,1
-    mcall
-    call alt_gen
-  nosetkeyle:
-    cmp  [keyboard],1
-    jnz  nosetkeylfi
-    mov  eax,21       ; finnish
-    mov  ebx,2
-    mov  ecx,1
-    mov  edx,fi_keymap
-    mcall
-    mov  eax,21
-    inc  ecx
-    mov  edx,fi_keymap_shift
-    mcall
-    mov  eax,21
-    mov  ecx,9
-    mov  edx,2
-    mcall
-    call alt_gen
-  nosetkeylfi:
-    cmp  [keyboard],2
-    jnz  nosetkeylge
-    mov  eax,21       ; german
-    mov  ebx,2
-    mov  ecx,1
-    mov  edx,ge_keymap
-    mcall
-    mov  eax,21
-    inc  ecx
-    mov  edx,ge_keymap_shift
-    mcall
-    mov  eax,21
-    mov  ecx,9
-    mov  edx,3
-    mcall
-    call alt_gen
-  nosetkeylge:
-    cmp  [keyboard],3
-    jnz  nosetkeylru
-    mov  eax,21       ; russian
-    mov  ebx,2
-    mov  ecx,1
-    mov  edx,ru_keymap
-    mcall
-    mov  eax,21
-    inc  ecx
-    mov  edx,ru_keymap_shift
-    mcall
-    call alt_gen
-    mov  eax,21
-    mov  ecx,9
-    mov  edx,4
-    mcall
-  nosetkeylru:
-    cmp  [keyboard],4	     ;french
-    jnz  nosetkeylfr
-    mov  eax,21
-    mov  ebx,2
-    mov  ecx,1
-    mov  edx,fr_keymap
-    mcall
-    mov  eax,21
-    inc  ecx
-    mov  edx,fr_keymap_shift
-    mcall
-    mov  eax,21
-    inc  ecx
-    mov  edx,fr_keymap_alt_gr
-    mcall
-    mov  eax,21
-    mov  ecx,9
-    mov  edx,5
-    mcall
-  nosetkeylfr:
-    cmp  [keyboard],5
-    jnz  nosetkeylet
-    mov  eax,21       ; estonian
-    mov  ebx,2
-    mov  ecx,1
-    mov  edx,et_keymap
-    mcall
-    mov  eax,21
-    inc  ecx
-    mov  edx,et_keymap_shift
-    mcall
-    mov  eax,21
-    mov  ecx,9
-    mov  edx,6
-    mcall
-    call alt_gen
-  nosetkeylet:
-    ret
+	mcall	21,2,1,fi_keymap
+	
+	inc	ecx
+	mcall	21,,,fi_keymap_shift
 
- alt_gen:
-   mov eax,21
-   mov ecx,3
-   mov edx,alt_general
-   mcall
-   ret
+	mcall	21,,9,2
+	call	alt_gen
+;--------------------------------------
+nosetkeylfi:
+	cmp  [keyboard],2	; german
+	jnz  nosetkeylge
 
+	mcall	21,2,1,ge_keymap
+	
+	inc	ecx
+	mcall	21,,,ge_keymap_shift
 
+	mcall	21,,9,3
+	call	alt_gen
+;--------------------------------------
+nosetkeylge:
+	cmp	[keyboard],3	; russian
+	jnz	nosetkeylru
+    
+	mcall	21,2,1,ru_keymap
+	
+	inc	ecx
+	mcall	21,,,ru_keymap_shift
 
+	mcall	21,,9,4
+	call	alt_gen
+;--------------------------------------
+nosetkeylru:
+	cmp	[keyboard],4 	;french
+	jnz	nosetkeylfr
+
+	mcall	21,2,1,fr_keymap
+	
+	inc	ecx
+	mcall	21,,,fr_keymap_shift
+
+	inc  ecx
+	mcall	21,,,fr_keymap_alt_gr
+
+	mcall	21,,9,5
+;--------------------------------------
+nosetkeylfr:
+	cmp	[keyboard],5	; estonian
+	jnz	nosetkeylet
+
+	mcall	21,2,1,et_keymap
+	
+	inc	ecx
+	mcall	21,,,et_keymap_shift
+
+	mcall	21,,9,6
+	call	alt_gen
+;--------------------------------------
+nosetkeylet:
+	ret
+;-------------------------------------------------------------------------------
+alt_gen:
+	mcall	21,,3,alt_general
+	ret
+;-------------------------------------------------------------------------------
 draw_buttons:
+	pusha
+	shl  ecx,16
+	add  ecx,12
+	mcall	8,<(350-57),(46+BBB)>
 
-    pusha
+	inc	edx
+	mcall	,<(350-85),9>
 
-    shl  ecx,16
-    add  ecx,12
-    mov  ebx,(350-50)*65536+46+BBB
+	inc	edx
+	mcall	,<(350-73),9>
 
-    mov  eax,8
-    mcall
-
-    mov  ebx,(350-79)*65536+9
-    inc  edx
-    mcall
-
-    mov  ebx,(350-67)*65536+9
-    inc  edx
-    mcall
-
-    popa
-    ret
-
-
-
+	popa
+	ret
+;-------------------------------------------------------------------------------
 ; ********************************************
 ; ******* WINDOW DEFINITIONS AND DRAW  *******
 ; ********************************************
-
-
 draw_window:
+	pusha
+	mcall	12,1
 
-    pusha
+	xor	eax,eax       ; DRAW WINDOW
+	xor	esi,esi
+	mcall	,<40,(355+BBB)>,<40,(12*15)>,0xB4111199,,title
 
-    mov  eax,12
-    mov  ebx,1
-    mcall
+	mcall	8,<(350-85),100>,<(5+14*8),12>,100,0x005588dd	; APPLY ALL
 
-    xor  eax,eax       ; DRAW WINDOW
-    mov  ebx,40*65536+355+BBB
-    mov  ecx,40*65536+320
-    mov  edx,0x94111199
-    mov  edi,title
-    mcall
+	add	ecx,16*65536	      ; SAVE ALL
+	dec	edx
+	mcall
 
-    mov  eax,8		   ; APPLY ALL
-    mov  ebx,(350-79)*65536+100
-    mov  ecx,282*65536+12
-    mov  edx,100
-    mov  esi,0x005588dd
-    mcall
-    add  ecx,16*65536	      ; SAVE ALL
-    dec  edx
-    mcall
+	mov	esi,0x5580c0
 
-    mov  esi,0x5580c0
+	mov	edx,41
+	mov	ecx,5+0*8
+	call	draw_buttons
 
-    mov  edx,41
-    mov  ecx,43+8*8
-    call draw_buttons
+	mov	edx,3
+	mov	ecx,5+2*8
+	call	draw_buttons
 
-    mov  edx,3
-    mov  ecx,43+10*8
-    call draw_buttons
+	mov	edx,91
+	mov	ecx,5+4*8
+	call	draw_buttons
 
-    mov  edx,91
-    mov  ecx,43+16*8
-    call draw_buttons
+	mov	edx,101
+	mov	ecx,5+6*8
+	call	draw_buttons
 
-    mov  edx,101
-    mov  ecx,43+18*8
-    call draw_buttons
+	mov	edx,131
+	mov	ecx,5+8*8
+	call	draw_buttons
 
-    mov  edx,131
-    mov  ecx,43+24*8 ; 26
-    call draw_buttons
+	mov	edx,141
+	mov	ecx,5+10*8
+	call	draw_buttons
 
-    mov  edx,141
-    mov  ecx,43+26*8 ; 26
-    call draw_buttons
+	call	draw_infotext
 
-    call draw_infotext
-
-    mov  eax,12
-    mov  ebx,2
-    mcall
-
-    popa
-    ret
-
-
-
+	mcall	12,2
+	popa
+	ret
+;-------------------------------------------------------------------------------
 draw_infotext:
+	pusha
+	mov	eax,[keyboard]       ; KEYBOARD
+	test	eax,eax
+	jnz	noen
+	mov	[text00+LLL*1+28],dword 'ENGL'
+	mov	[text00+LLL*1+32],dword 'ISH '
+;--------------------------------------
+noen:
+	cmp	eax,1
+	jnz	nofi
+	mov	[text00+LLL*1+28],dword 'FINN'
+	mov	[text00+LLL*1+32],dword 'ISH '
+;--------------------------------------
+nofi:
+	cmp	eax,2
+	jnz	noge
+	mov	[text00+LLL*1+28],dword 'GERM'
+	mov	[text00+LLL*1+32],dword 'AN  '
+;--------------------------------------
+noge:
+	cmp	eax,3
+	jnz	nogr
+	mov	[text00+LLL*1+28],dword 'RUSS'
+	mov	[text00+LLL*1+32],dword 'IAN '
+;--------------------------------------
+nogr:
+	cmp	eax,4
+	jnz	nofr
+	mov	[text00+LLL*1+28],dword 'FREN'
+	mov	[text00+LLL*1+32],dword 'CH  '
+;--------------------------------------
+nofr:
+	cmp	eax,5
+	jnz	noet
+	mov	[text00+LLL*1+28],dword 'ESTO'
+	mov	[text00+LLL*1+32],dword 'NIAN'
+;--------------------------------------
+noet:
+	mov	eax,[syslang]		  ; SYSTEM LANGUAGE
+	dec	eax
+	test	eax,eax
+	jnz	noen5
+	mov	[text00+LLL*0+28],dword 'ENGL'
+	mov	[text00+LLL*0+32],dword 'ISH '
+;--------------------------------------
+noen5:
+	cmp	eax,1
+	jnz	nofi5
+	mov	[text00+LLL*0+28],dword 'FINN'
+	mov	[text00+LLL*0+32],dword 'ISH '
+;--------------------------------------
+nofi5:
+	cmp	eax,2
+	jnz	noge5
+	mov	[text00+LLL*0+28],dword 'GERM'
+	mov	[text00+LLL*0+32],dword 'AN  '
+;--------------------------------------
+noge5:
+	cmp	eax,3
+	jnz	nogr5
+	mov	[text00+LLL*0+28],dword 'RUSS'
+	mov	[text00+LLL*0+32],dword 'IAN '
+;--------------------------------------
+nogr5:
+	cmp	eax,4
+	jne	nofr5
+	mov	[text00+LLL*0+28],dword 'FREN'
+	mov	[text00+LLL*0+32],dword 'CH  '
+;--------------------------------------
+nofr5:
+	cmp	eax,5
+	jne	noet5
+	mov	[text00+LLL*0+28],dword 'ESTO'
+	mov	[text00+LLL*0+32],dword 'NIAN'
+;--------------------------------------
+noet5:
+	mov	eax,[lba_read]
+	call	onoff				; LBA READ
+	mov	[text00+LLL*2+28],ebx
 
-    pusha
+	mov	eax,[pci_acc]
+	call	onoff				; PCI ACCESS
+	mov	[text00+LLL*3+28],ebx
 
-    mov  eax,[keyboard]       ; KEYBOARD
-    test eax,eax
-    jnz  noen
-    mov  [text00+LLL*5+28],dword 'ENGL'
-    mov  [text00+LLL*5+32],dword 'ISH '
-  noen:
-    cmp  eax,1
-    jnz  nofi
-    mov  [text00+LLL*5+28],dword 'FINN'
-    mov  [text00+LLL*5+32],dword 'ISH '
-  nofi:
-    cmp  eax,2
-    jnz  noge
-    mov  [text00+LLL*5+28],dword 'GERM'
-    mov  [text00+LLL*5+32],dword 'AN  '
-  noge:
-    cmp  eax,3
-    jnz  nogr
-    mov  [text00+LLL*5+28],dword 'RUSS'
-    mov  [text00+LLL*5+32],dword 'IAN '
-  nogr:
-    cmp  eax,4
-    jnz  nofr
-    mov  [text00+LLL*5+28],dword 'FREN'
-    mov  [text00+LLL*5+32],dword 'CH  '
-  nofr:
-    cmp  eax,5
-    jnz  noet
-    mov  [text00+LLL*5+28],dword 'ESTO'
-    mov  [text00+LLL*5+32],dword 'NIAN'
-  noet:
+	mov	eax,[mouse_speed]		; MOUSE SPEED
+	add	al,48
+	mov	[text00+LLL*4+28],al
 
-    mov  eax,[syslang]		  ; SYSTEM LANGUAGE
-    dec  eax
-    test eax,eax
-    jnz  noen5
-    mov  [text00+LLL*4+28],dword 'ENGL'
-    mov  [text00+LLL*4+32],dword 'ISH '
-  noen5:
-    cmp  eax,1
-    jnz  nofi5
-    mov  [text00+LLL*4+28],dword 'FINN'
-    mov  [text00+LLL*4+32],dword 'ISH '
-  nofi5:
-    cmp  eax,2
-    jnz  noge5
-    mov  [text00+LLL*4+28],dword 'GERM'
-    mov  [text00+LLL*4+32],dword 'AN  '
-  noge5:
-    cmp  eax,3
-    jnz  nogr5
-    mov  [text00+LLL*4+28],dword 'RUSS'
-    mov  [text00+LLL*4+32],dword 'IAN '
-  nogr5:
-    cmp  eax,4
-    jne  nofr5
-    mov  [text00+LLL*4+28],dword 'FREN'
-    mov  [text00+LLL*4+32],dword 'CH  '
-  nofr5:
-    cmp  eax,5
-    jne  noet5
-    mov  [text00+LLL*4+28],dword 'ESTO'
-    mov  [text00+LLL*4+32],dword 'NIAN'
-  noet5:
-
-    mov  eax,[lba_read]
-    call onoff				; LBA READ
-    mov  [text00+LLL*8+28],ebx
-
-    mov  eax,[pci_acc]
-    call onoff				; PCI ACCESS
-    mov  [text00+LLL*9+28],ebx
-
-    mov  eax,[mouse_speed]		; MOUSE SPEED
-    add  al,48
-    mov  [text00+LLL*12+28],al
-
-    mov  eax,[mouse_delay]
-    mov  esi,text00+LLL*13+32
-    call hexconvert			; MOUSE DELAY
-
-    call text_out
-
-    popa
-    ret
-
+	mov	eax,[mouse_delay]
+	mov	esi,text00+LLL*5+32
+	call	hexconvert			; MOUSE DELAY
+	call	text_out
+	popa
+	ret
+;-------------------------------------------------------------------------------
 text_out:
-    mov  eax,13
-    mov  ebx,175*65536+85
-    mov  ecx,40*65536+225
-    mov  edx,0x80111199-19
-    mcall
+	mcall	13,<165,85>,<0,(12*8)>,0x80111199	;0x80111199-19
 
-    mov  edx,text00
-    mov  ebx,10*65536+45
-    mov  eax,4
-    mov  ecx,0xffffff
-    mov  esi,LLL
-    mov  ebp,text1_strings
-  newline:
-    mcall
-    add  ebx,8+8
-    add  edx,esi
-    dec  ebp
-    jnz  newline
-    mov  ebp,text2_strings
-    add  ebx,8+8
-  @@:
-    mcall
-    add  ebx,8+8
-    add  edx,esi
-    dec  ebp
-    jnz  @b
-    ret
+	mov	edx,text00
+	mov	ebx,3*65536+7
+	mov	eax,4
+	mov	ecx,0xffffff
+	mov	esi,LLL
+	mov	ebp,text1_strings
+;--------------------------------------
+newline:
+	mcall
+	add	ebx,8+8
+	add	edx,esi
+	dec	ebp
+	jnz	newline
 
-
-
-  hexconvert:	     ;converting dec to hex in ascii
-    xor  ebx,ebx
-    mov  bl,al
-    and  bl,15
-    add  ebx,hex
-    mov  cl,[ebx]
-    mov  [esi],cl
-    shr  eax,4
-    xor  ebx,ebx
-    mov  bl,al
-    and  bl,15
-    add  ebx,hex
-    mov  cl,[ebx]
-    dec  esi
-    mov  [esi],cl
-    shr  eax,4
-    xor  ebx,ebx
-    mov  bl,al
-    and  bl,15
-    add  ebx,hex
-    mov  cl,[ebx]
-    dec  esi
-    mov  [esi],cl
-    ret
-
+	mov	ebp,text2_strings
+	add	ebx,8+8
+;--------------------------------------
+@@:
+	mcall
+	add	ebx,8+8
+	add	edx,esi
+	dec	ebp
+	jnz	@b
+	ret
+;-------------------------------------------------------------------------------
+hexconvert:	     ;converting dec to hex in ascii
+	xor	ebx,ebx
+	mov	bl,al
+	and	bl,15
+	add	ebx,hex
+	mov	cl,[ebx]
+	mov	[esi],cl
+	shr	eax,4
+	xor	ebx,ebx
+	mov	bl,al
+	and	bl,15
+	add	ebx,hex
+	mov	cl,[ebx]
+	dec	esi
+	mov	[esi],cl
+	shr	eax,4
+	xor	ebx,ebx
+	mov	bl,al
+	and	bl,15
+	add	ebx,hex
+	mov	cl,[ebx]
+	dec	esi
+	mov	[esi],cl
+	ret
+;-------------------------------------------------------------------------------
 onoff:
-    cmp [syslang],4
-    jne norus1
-    mov ebx,'ДА  '
-    cmp eax,1
-    je	      exitsub
-    mov ebx,'НЕТ '
-    ret
- norus1:
-    mov ebx,'ON  '
-    cmp eax,1
-    je	      exitsub
-    mov ebx,'OFF '
- exitsub:
-    ret
-
-
+	cmp	[syslang],4
+	jne	norus1
+	mov	ebx,'ДА  '
+	cmp	eax,1
+	je	exitsub
+	mov	ebx,'НЕТ '
+	ret
+;--------------------------------------
+norus1:
+	mov	ebx,'ON  '
+	cmp	eax,1
+	je	exitsub
+	mov	ebx,'OFF '
+;--------------------------------------
+exitsub:
+	ret
+;-------------------------------------------------------------------------------
 _lba_read:
-    mov  eax,21
-    mov  ebx,11
-    mov  ecx,[lba_read]
-    mcall
-    ret
-
+	mcall	21,11,[lba_read]
+	ret
+;-------------------------------------------------------------------------------
 _pci_acc:
-    mov  eax,21
-    mov  ebx,12
-    mov  ecx,[pci_acc]
-    mcall
-    ret
-
+	mcall	21,12,[pci_acc]
+	ret
+;-------------------------------------------------------------------------------
 _syslang:
-    mov  eax,21
-    mov  ebx,5
-    mov  ecx,[syslang]
-    mcall
- ret
-
+	mcall	21,5,[syslang]
+	ret
+;-------------------------------------------------------------------------------
 _mouse_speed:
-    mov  eax,18
-    mov  ebx,19
-    mov  ecx,1
-    mov  edx,[mouse_speed]
-    mcall
- ret
-
+	mcall	18,19,1,[mouse_speed]
+	ret
+;-------------------------------------------------------------------------------
 _mouse_delay:
-    mov  eax,18
-    mov  ebx,19
-    mov  ecx,3
-    mov  edx,[mouse_delay]
-    mcall
- ret
-
+	mcall	18,19,3,[mouse_delay]
+	ret
+;-------------------------------------------------------------------------------
 loadtxt:
-    mov  edi,text00
-    mov  ecx,488 ;28
-    cmp  [syslang],4
-    jne  norus
-    mov  esi,textrus
-    jmp  sload
-  norus:
-    mov  esi,texteng
-  sload:
-    rep  movsd
-    ret
+	mov	edi,text00
+	mov	ecx,LLL*(text1_strings + text2_strings)/4
+	cmp	[syslang],4
+	jne	norus
 
+	mov	esi,textrus
+	jmp	sload
+;--------------------------------------
+norus:
+	mov	esi,texteng
+;--------------------------------------
+sload:
+	rep	movsd
+	ret
+;-------------------------------------------------------------------------------
 cleantxt:
-    xor  eax,eax
-    mov  ecx,428
-    cld
-    mov  edi,text00
-    rep stosd
-    mov  [text00+1711],byte 'x'
-    ret
-
+	xor	eax,eax
+	mov	ecx,LLL*(text1_strings + text2_strings)/4
+	cld
+	mov	edi,text00
+	rep	stosd
+	mov	[text00+1711],byte 'x'
+	ret
+;-------------------------------------------------------------------------------
 ; DATA AREA
 count:		db 0x0
-blinkpar: dd 0x0
-time:	     dw 0x0
-date:	     dd 0x0
-
+blinkpar:	dd 0x0
+time:		dw 0x0
+date:		dd 0x0
+;-------------------------------------------------------------------------------
 textrus:
-
-    db '                                                           '
-    db '                                                           '
-    db '                                                           '
-    db '                                                           '
-    db '?зык системы              : ENGLISH         - +   Применить'
-    db 'Р скл дк  кл ви туры      : ENGLISH         - +   Применить'
-    db '                                                           '
-    db '                                                           '
-    db '?ключить LBA              : OFF             - +   Применить'
-    db '?оступ к шине PCI         : OFF             - +   Применить'
-    db '                                                           '
-    db '                                                           '
-    db '?корость курсор  мыши     : 1               - +   Применить'
-    db '? держк  ускорения мыши   : 0x00a           - +   Применить'
-
-    db 'ВНИМАНИЕ:                                    Применить все '
-    db 'НЕ ЗАБУДЬТЕ СОХРАНИТЬ НАСТРОЙКИ              Сохранить все '
-
+	db 'Язык системы              : ENGLISH         - +   Применить'
+	db 'Раскладка клавиатуры      : ENGLISH         - +   Применить'
+	db 'Включить LBA              : OFF             - +   Применить'
+	db 'Доступ к шине PCI         : OFF             - +   Применить'
+	db 'Скорость курсора мыши     : 1               - +   Применить'
+	db 'Задержка ускорения мыши   : 0x00a           - +   Применить'
+	
+	db 'ВНИМАНИЕ:                                    Применить все '
+	db 'НЕ ЗАБУДЬТЕ СОХРАНИТЬ НАСТРОЙКИ              Сохранить все '
+;-------------------------------------------------------------------------------
 texteng:
+	db 'SYSTEM LANGUAGE           : ENGLISH         - +     APPLY  '
+	db 'KEYBOARD LAYOUT           : ENGLISH         - +     APPLY  '
+	db 'LBA READ ENABLED          : OFF             - +     APPLY  '
+	db 'PCI ACCESS FOR APPL.      : OFF             - +     APPLY  '
+	db 'Mouse pointer speed       : 1               - +     APPLY  '
+	db 'Mouse pointer delay       : 0x00a           - +     APPLY  '
+text1_strings = 6
 
-    db '                                                           '
-    db '                                                           '
-    db '                                                           '
-    db '                                                           '
-    db 'SYSTEM LANGUAGE           : ENGLISH         - +     APPLY  '
-    db 'KEYBOARD LAYOUT           : ENGLISH         - +     APPLY  '
-    db '                                                           '
-    db '                                                           '
-    db 'LBA READ ENABLED          : OFF             - +     APPLY  '
-    db 'PCI ACCESS FOR APPL.      : OFF             - +     APPLY  '
-    db '                                                           '
-    db '                                                           '
-    db 'Mouse pointer speed       : 1               - +     APPLY  '
-    db 'Mouse pointer delay       : 0x00a           - +     APPLY  '
-text1_strings = 14
-
-    db 'NOTE:                                           APPLY ALL  '
-    db 'SAVE YOUR SETTINGS BEFORE QUITING KOLIBRI       SAVE ALL   '
+	db 'NOTE:                                           APPLY ALL  '
+	db 'SAVE YOUR SETTINGS BEFORE QUITING KOLIBRI       SAVE ALL   '
 text2_strings = 2
+;-------------------------------------------------------------------------------
+title	db 'SETUP',0
 
-title  db 'SETUP',0
-
-hex db	       '0123456789ABCDEF'
-
-
-
-
+hex	db '0123456789ABCDEF'
+;-------------------------------------------------------------------------------
 include 'keymaps.inc'
-
-
-
-
+;-------------------------------------------------------------------------------
 read_fileinfo:
-       dd 0
-       dd 0
-       dd 0
-       dd 48
-       dd keyboard
-       db 0
-       dd file_name
-
+	dd 0
+	dd 0
+	dd 0
+	dd 48
+	dd keyboard
+	db 0
+	dd file_name
+;-------------------------------------------------------------------------------
 save_fileinfo:
-       dd 2
-       dd 0
-       dd 0
-       dd 48
-       dd keyboard
-file_name:   db '/sys/setup.dat',0
-
-I_PARAM   dd 0
+	dd 2
+	dd 0
+	dd 0
+	dd 48
+	dd keyboard
+file_name:	db '/sys/setup.dat',0
+;-------------------------------------------------------------------------------
+I_PARAM	dd 0
 ;-----------------------------------------------------------------------------
 ; Note to SVN revision 2299 - some parameters has not used,
 ; but keep the order of the parameter has always needed!
 keyboard	dd 0x0
-		dd 0	;midibase  - not use, but...
-		dd 0	;cdbase - not use, but...
-		dd 0	;sb16 - not use, but...
+		dd 0	;midibase  - not use, but retained for backward compat.
+		dd 0	;cdbase - not use, but retained for backward compat.
+		dd 0	;sb16 - not use, but retained for backward compat.
 syslang		dd 0x1
-		dd 0	;hdbase - not use, but...
-		dd 0	;f32p - not use, but...
-		dd 0	;sound_dma - not use, but...
+		dd 0	;hdbase - not use, but retained for backward compat.
+		dd 0	;f32p - not use, but retained for backward compat.
+		dd 0	;sound_dma - not use, but retained for backward compat.
 lba_read	dd 0x1
 pci_acc		dd 0x1
 mouse_speed	dd 0x3
 mouse_delay	dd 0x10
 ;-----------------------------------------------------------------------------
+IM_END:
+;-----------------------------------------------------------------------------
+align 4
 text00:
-
+	rb	LLL*(text1_strings + text2_strings)
+;-----------------------------------------------------------------------------
+align 4
+	rb	0x1000
+stack_area:
+;-----------------------------------------------------------------------------
+;table_area:
 I_END:
-table_area:
+;-------------------------------------------------------------------------------
