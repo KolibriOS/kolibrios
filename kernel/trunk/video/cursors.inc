@@ -384,8 +384,8 @@ align 4
         shr     ebx, 16
         movzx   ecx, bh
         movzx   edx, bl
-        mov     [eax+CURSOR.hot_x], ecx
-        mov     [eax+CURSOR.hot_y], edx
+        mov     [edi+CURSOR.hot_x], ecx
+        mov     [edi+CURSOR.hot_y], edx
 
         xchg    edi, eax
         mov     ecx, 1024
