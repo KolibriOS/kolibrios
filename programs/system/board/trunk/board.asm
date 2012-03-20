@@ -200,7 +200,8 @@ draw_window:
 	mcall	12,1	; 1, start of draw
 	xor	eax,eax		     ; function 0 : define and draw window
 	mov	ecx,MAXSTRINGS*10+45	   ; [y start] *65536 + [y size]
-	mov	edx,[sc.work]		   ; color of work area RRGGBB,8->color gl
+;	mov	edx,[sc.work]		   ; color of work area RRGGBB,8->color gl
+	mov	edx,0xffffff
 	or	edx,0x13000000
 	xor	esi,esi
 	mcall	,[xstart],,,,title
@@ -215,9 +216,11 @@ draw_window:
 ;------------------------------------------------------------------------------
 draw_text:
 	mov	ebx,15*65536+30	   ; draw info text with function 4
-	mov	ecx,[sc.work_text]
+;	mov	ecx,[sc.work_text]
+	xor	ecx,ecx
 	or	ecx,0x40000000
-	mov	edi,[sc.work]
+;	mov	edi,[sc.work]
+	mov	edi,0xffffff
 	mov	edx,text1
 	cmp	[vmode],0
 	je	.kern
