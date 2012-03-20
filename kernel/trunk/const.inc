@@ -189,9 +189,6 @@ TASK_BASE           equ (OS_BASE+0x0003010)
 TASK_DATA           equ (OS_BASE+0x0003020)
 TASK_EVENT          equ (OS_BASE+0x0003020)
 
-d_width_calc_area   equ (OS_BASE+0x0005000)
-BPSLine_calc_area   equ (OS_BASE+0x0339000)
-
 mouseunder          equ (OS_BASE+0x0006900)
 CDDataBuf           equ (OS_BASE+0x0007000)
 FLOPPY_BUFF         equ (OS_BASE+0x0008000)
@@ -293,6 +290,10 @@ SB16Buffer          equ (OS_BASE+0x02A0000)
 SB16_Status         equ (OS_BASE+0x02B0000)
 
 BUTTON_INFO         equ (OS_BASE+0x02C0000)
+
+BPSLine_calc_area   equ (OS_BASE+0x02C4000)
+d_width_calc_area   equ (OS_BASE+0x02CA000)
+
 RESERVED_PORTS      equ (OS_BASE+0x02D0000)
 BOOT_VAR            equ (OS_BASE+0x02E0000)
 

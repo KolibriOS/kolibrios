@@ -68,7 +68,7 @@
 ;         3c   dword  cpu usage in cpu timer tics
 ;
 ;
-;   5000  ->   68FF   display width fast calc area (6k6)
+;   5000  ->   68FF   free (6k6)
 ;   6900  ->   6EFF   saved picture under mouse pointer (1k5)
 ;
 ;   6F00  ->   6FFF   free (256)
@@ -221,7 +221,10 @@
 ;       +000A word   y size
 ;       +000C word   button id number : bits 16-31
 ;
-; 0x802C4000 -> 2CFFFF   free (48k)
+; 0x802C4000 -> 2C9FFF   area for fast getting offset to LFB (24k)
+;                        BPSLine_calc_area
+; 0x802CA000 -> 2CFFFF   area for fast getting offset to _WinMapAddress (24k)
+;                        d_width_calc_area
 ;
 ; 0x802D0000 -> 2DFFFF   reserved port area (64k)
 ;
@@ -231,26 +234,29 @@
 ;            dword   end port
 ;            dword   0
 ;
-; 0x802E0000 -> 2EFFFF   irq data area  (64k)
-; 0x802F0000 -> 2FFFFF   low memory save        (64k)
+; 0x802E0000 -> 2EFFFF   irq data area  (64k)  ;BOOT_VAR
 ;
-; 0x80300000 -> 31FFFF   tcp memory       (128k)
-; 0x80320000 -> 327FFF   tcp memory       (32k)
+; 0x802F0000 -> 2F3FFF   tcp memory  stack_data_start eth_data_start (16k)
 ;
-; 0x80328000 -> 32FFFF   !vrr driver      (32k)
-
-; 0x80330000 -> 377FFF   skin data              (32k)
-
-; 0x80338000 -> 338FFF draw data     - 256 entries (4k)
+; 0x802F4000 -> 30ffff   stack_data | stack_data_end (112k)
+;
+; 0x80310000 -> 317fff   resendQ (32k)
+;
+; 0x80318000 -> 31ffff   skin_data (32k)
+;
+; 0x80320000 -> 323FF3   draw data     - 256 entries (4k)
 ;         00   dword  draw limit - x start
 ;         04   dword  draw limit - y start
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
-; 0x80339000 -> 33A7FF   area for fast getting offset to LFB (6k)
-; 0x8033A800 -> 3BFFF3   free (6k)
-; 0x8033BFF4 -> 33BFFF   background info 
-; 0x8033C000             page map     (length b = memsize shr 15)
-; 0x8033C000 + b         start of static pagetables
+;
+; 0x8032BFF4 -> 32BFFF   background info 
+;         0x80323FF4    BgrDrawMode
+;         0x80323FF8    BgrDataWidth
+;         0x80323FFC    BgrDataHeight
+;
+; 0x80324000             page map     (length b = memsize shr 15)
+; 0x80324000 + b         start of static pagetables
 
 ; 0x803FFFFF <- no direct address translation beyond this point
 ; ============================================================= 
