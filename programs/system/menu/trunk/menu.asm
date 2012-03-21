@@ -1,11 +1,16 @@
 ;******************************************************************************
 ;   MAIN MENU
 ;******************************************************************************
+; last update:  22/03/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Global optimization! The program uses
+;               only 32 KB of memory instead of 128 kb is now.
+;------------------------------------------------------------------------------
 ; last update:  19/09/2011
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      Checking for program exist to memory
 ;               Added processing of keys: left and right arrow
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ;   MAIN MENU by lisovin@26.ru
 ;   Some parts of code rewritten by Ivan Poddubny <ivan-yar@bk.ru>
 ;
@@ -20,34 +25,53 @@
   PANEL_HEIGHT	= 20
   MENU_BOTTON_X_POS	= 10
   MENU_BOTTON_X_SIZE	= 60
-  
+;------------------------------------------------------------------------------
 	use32
 	org 0x0
+
 	db 'MENUET01'	; 8 byte id
 	dd 0x01		; header version
 	dd START	; start of code
-	dd I_END	; size of image
-	dd 0x20000	; memory for app
-	dd 0x20000	; esp
-	dd 0x0,0x0	; I_Param , I_Icon
-;******************************************************************************
+	dd IM_END	; size of image
+	dd mem_end	; memory for app
+	dd stack_area	; esp
+	dd 0x0		; boot parameters
+	dd 0x0		; path
+;------------------------------------------------------------------------------
 ;include "DEBUG.INC"             ; debug macros
+;------------------------------------------------------------------------------
+align 4
 START:		       ; start of execution
+	mcall	68,11
 	call	program_exist
 	mcall	14
 	mov	[screen_size],eax
 	
 	mcall	48,3,sc,sizeof.system_colors	; load system colors
-	mcall	70,fileinfo	; load MENU.DAT
-	test	eax,eax	   ; error ?
-	jz	@f
-	cmp	eax,6
+	
+; get size of file MENU.DAT
+	mcall	70,fileinfo
+	test	eax,eax
 	jnz	close
-@@:
+; get memory for MENU.DAT
+	mov	ecx,[procinfo+32]
+	mov	[fileinfo.size],ecx
+	mcall	68,12
+	mov	[fileinfo.return],eax
+	mcall	68
+	mov	[menu_data],eax
+; load MENU.DAT
+	mov	[fileinfo],dword 0
+	mcall	70,fileinfo
+	test	eax,eax
+	jnz	close
+
 	test	ebx,ebx	   ; length = 0 ?
 	jz	close
 	mov	ecx,ebx
-	mov	edi,mem_end
+	mov	edi,[fileinfo.return]	;mem_end
+;--------------------------------------
+align 4
 newsearch:
 	mov	al,'#'
 	cld
@@ -59,24 +83,31 @@ newsearch:
 	jnz	.number
 	cmp	al,'#'
 	je	search_end
+;--------------------------------------
+align 4
 .number:
 	shl	ebx,4
-	add	ebx,menu_data     ; pointer to process table
+	add	ebx,[menu_data]     ; pointer to process table
 	mov	[ebx],edi
 	inc	[processes]
 	jmp	newsearch
-;---------------------------------------------------------------------
+;--------------------------------------
+align 4
 search_end:
 	mov	[end_pointer],edi
 	mov	ebx,[processes]
 	dec	ebx
 	shl	ebx,4
-	add	ebx,menu_data
+	add	ebx,[menu_data]
+;--------------------------------------
+align 4
 newprocess:
 	xor	edx,edx
 	mov	ecx,edi
 	sub	ecx,[ebx]
 	mov	al,10
+;--------------------------------------
+align 4
 newsearch1:
 	std
 	repne	scasb
@@ -86,35 +117,54 @@ newsearch1:
 	jne	newsearch1
 	inc	edx
 	jmp	newsearch1
-;---------------------------------------------------------------------
+;--------------------------------------
+align 4
 endprocess:
 	mov	esi,ebx
 	add	esi,4
 	dec	edx
 	mov	[esi],dl
-	cmp	ebx,menu_data
+	cmp	ebx,[menu_data]
 	jbe	search_end1
 	sub	ebx,16
 	jmp	newprocess
-;---------------------------------------------------------------------
+;--------------------------------------
+align 4
 search_end1:
 	mcall	14
 	sub	ax,20
-	mov	[menu_data + y_end],ax
-	mov	[menu_data + x_start],5
-	mov	al,[menu_data + rows]
-	mov	[menu_data + cur_sel],al	 ; clear selection
-	mov	[menu_data + prev_sel],al
+	mov	ebx,[menu_data]
+	mov	[ebx + y_end],ax
+	mov	[ebx + x_start],5
+	mov	al,[ebx + rows]
+	mov	[ebx + cur_sel],al	 ; clear selection
+	mov	[ebx + prev_sel],al
 	mov	[buffer],0
+;------------------------------------------------------------------------------
+align 4
 thread:
+	mov	ebp,esp
+	sub	ebp,0x1000
+	cmp	ebp,0x2000 ; if this is first started thread
+	ja	@f
+	xor	ebp,ebp ; not free area
+;--------------------------------------
+align 4
+@@:
 	mov	eax,[buffer]      ; identifier
 	shl	eax,4
-	add	eax,menu_data
+	add	eax,[menu_data]
 	mov	edi,eax
 	mcall	40,100111b	; mouse + button + key + redraw
+;------------------------------------------------------------------------------
+align 4
 red:	
 	call	draw_window	; redraw
+;------------------------------------------------------------------------------
+align 4
 still:
+	call	free_area_if_set_mutex
+
 	mcall	23,5	; wait here for event
 	test	[close_now],1      ; is close flag set?
 	jnz	close
@@ -127,21 +177,21 @@ still:
 	je	button
 	cmp	eax,6	; mouse event ?
 	je	mouse
-	cmp	edi,menu_data
+	cmp	edi,[menu_data]
 	je	still	     ; if main process-ignored
 	
 	movzx	ebx,[edi + parent]	 ; parent id
 	shl	ebx,4
-	add	ebx,menu_data      ; ebx = base of parent info
+	add	ebx,[menu_data]      ; ebx = base of parent info
 	call	backconvert	     ; get my id in al
 	cmp	al,[ebx + child]    ; if I'm not child of my parent, I shall die :)
 	jne	close
 	
 	jmp	still
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 key:
-;	mov	eax,2
-	mcall
+	mcall	2
 	mov	[last_key],ah
 	mov	al,[edi + rows]     ; number of buttons
 	cmp	ah,178	  ; KEY_UP
@@ -153,7 +203,8 @@ key:
 	jnz	redrawbut
 	mov	[edi+cur_sel],al
 	jmp	redrawbut
-;---------------------------------------------------------------------
+;--------------------------------------
+align 4
 .noup:
 	cmp	ah,177	 ; KEY_DOWN
 	jne	.nodn
@@ -165,7 +216,8 @@ key:
 	jna	redrawbut
 	mov	[edi + cur_sel],1
 	jmp	redrawbut
-;---------------------------------------------------------------------
+;--------------------------------------
+align 4
 .nodn:
 	cmp	ah,179 	 ; KEY_LEFT
 	je	@f
@@ -174,20 +226,23 @@ key:
 @@:
 	mov	ah,[edi + cur_sel]
 	jmp	button1
-;---------------------------------------------------------------------
+;--------------------------------------
+align 4
 .noenter:
 	cmp	ah,176 	 ; KEY_RIGHT
 	je	@f
 	cmp	ah,27 	 ; ESC
 	jne	still
 	jmp	close
+;--------------------------------------
+align 4
 @@:
 	call	get_process_ID
 	cmp	[main_process_ID],ecx
 	jne	close
 	jmp	still
-;---------------------------------------------------------------------
-; include "DEBUG.INC"
+;------------------------------------------------------------------------------
+align 4
 button:	; BUTTON HANDLER
 	mcall	17	; get id
 				; dunkaist[
@@ -195,6 +250,8 @@ button:	; BUTTON HANDLER
 	setz	byte[close_now]	; set (or not set) close_recursive flag
 	jz	close		; if so,close all menus
 				; dunkaist]
+;--------------------------------------
+align 4
 button1:
 	mov	esi,edi
 	push	edi
@@ -211,6 +268,8 @@ button1:
 	popad
 ; look for the next line <ah> times; <ah> = button_id
 	push	eax
+;--------------------------------------
+align 4
 .next_string:
 	call	searchstartstring
 	dec	ah
@@ -247,11 +306,13 @@ button1:
 	pop	edi
 	mov	[mousemask],0
 	jmp	close
-;---------------------------------------------------------------------
+;--------------------------------------
+align 4
 searchexit:
 	pop	edi
 	jmp	still
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 runthread:
 	inc	edi
 	
@@ -276,7 +337,7 @@ runthread:
 	add	cx,141	  ; new x_start in cx
 	movzx	edx,al
 	shl	edx,4
-	add	edx,menu_data       ; edx points to child's base address
+	add	edx,[menu_data]       ; edx points to child's base address
 	mov	[edx + x_start],cx  ; xstart for new thread
 	mov	cx,[esi + y_end]   ; y_end in cx
 	mov	bl,[esi + rows]    ; number of buttons in bl
@@ -298,14 +359,13 @@ runthread:
 	mov	[edx + prev_sel],al ; clear previous selected element
 	mov	[edx + child],0
 	
-	cmp	[thread_stack],0x1e000
-	jne	thread_stack_not_full
-	mov	[thread_stack],0xE000
-thread_stack_not_full:
-	add	[thread_stack],0x2000 ; start new thread
-	mcall	51,1,thread,[thread_stack]
+	mcall	68,12,0x1000	; stack of each thread is allocated 4 KB
+	add	eax,0x1000	; set the stack pointer to the desired position
+	mov	edx,eax
+	mcall	51,1,thread	; Go ahead!
 	jmp	searchexit
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 mouse: 	      ; MOUSE EVENT HANDLER
 	mcall	37,0
 	mov	[screen_mouse_position],eax ; eax = [ Y | X ] relative to screen
@@ -335,18 +395,24 @@ mouse: 	      ; MOUSE EVENT HANDLER
 ;;;;;;
 	mov	[edi + cur_sel],al
 	mov	[edi + prev_sel],bl
+;--------------------------------------
+align 4
 redrawbut:
 	call	draw_only_needed_buttons
+;--------------------------------------
+align 4
 noredrawbut:
 	call	backconvert
 	bts	[mousemask],eax
 	jmp	still
-;---------------------------------------------------------------------
+;--------------------------------------
+align 4
 noinwindow:
 	call	backconvert
 	btr	[mousemask],eax
 	jmp	still
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 click:
 	cmp	[mousemask],0  ; not in a window (i.e. menu)
 	jne	still
@@ -361,34 +427,90 @@ click:
 	ja	close
 	cmp	ax,MENU_BOTTON_X_POS
 	ja	still
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 close:
 	
 	movzx	ebx,[edi+parent]       ; parent id
 	shl	ebx,4
-	add	ebx,menu_data          ; ebx = base of parent info
+	add	ebx,[menu_data]          ; ebx = base of parent info
 	call	backconvert
 	cmp	[ebx + child],al       ; if i am the child of my parent...
 	jnz	@f
 	mov	[ebx + child],-1       ; ...my parent now has no children
+;--------------------------------------
+align 4
 @@:
 	or	eax,-1                 ; close this thread
 	mov	[edi + child],al       ; my child is not mine
+	
+	call	free_area_if_set_mutex
+	call	set_mutex_for_free_area
+	
 	mcall
+;--------------------------------------
+align 4
 backconvert:		  ; convert from pointer to process id
 	mov	eax,edi
-	sub	eax,menu_data
+	sub	eax,[menu_data]
 	shr	eax,4
 	ret
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
+set_mutex_for_free_area:
+; set mutex for free thread stack area	
+	push	eax ebx
+;--------------------------------------
+align 4
+.wait_lock:
+        cmp     [free_my_area_lock], 0
+        je      .get_lock
+	mcall	68,1
+        jmp     .wait_lock
+;--------------------------------------
+align 4
+.get_lock:
+        mov     eax, 1
+        xchg    eax, [free_my_area_lock]
+        test    eax, eax
+        jnz     .wait_lock
+	mov	[free_my_area],ebp
+	pop	ebx eax
+	ret
+;------------------------------------------------------------------------------
+align 4
+free_area_if_set_mutex:
+	cmp	[free_my_area_lock],0
+	je	.end
+
+	push	eax ebx ecx
+	mov	ecx,[free_my_area]
+
+	test	ecx,ecx
+	jz	@f
+	mcall	68,13
+;--------------------------------------
+align 4
+@@:
+	xor	eax,eax
+	mov	[free_my_area_lock],eax
+	pop	ecx ebx eax
+;--------------------------------------
+align 4
+.end:	
+	ret
+;------------------------------------------------------------------------------
 ;==================================
 ; get_number
 ;    load number from [edi] to ebx
 ;==================================
+align 4
 get_number:
 	push	edi
 	xor	eax,eax
 	xor	ebx,ebx
+;--------------------------------------
+align 4
 .get_next_char:
 	mov	al,[edi]
 	inc	edi
@@ -401,16 +523,19 @@ get_number:
 	add	ebx,eax
 	jmp	.get_next_char
 ;-------------------------------------
+align 4
 .finish:
 	pop	edi
 	ret
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 get_process_ID:
 	mcall	9,procinfo,-1
 	mov	edx,eax
 	mov	ecx,[ebx+30]	; PID
 	ret
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 program_exist:
 	call	get_process_ID
 	mov	[main_process_ID],ecx
@@ -419,6 +544,7 @@ program_exist:
 	mov	ecx,edx
 	xor	edx,edx
 ;-----------------------------------------
+align 4
 .loop:
 	push	ecx
 	mcall	9,procinfo
@@ -433,19 +559,24 @@ program_exist:
 ; dph ecx
 	mcall	18,2
 	mov	edx,1
+;--------------------------------------
+align 4
 @@:
 	pop	ecx
 	loop	.loop
-;-----------------------------------------	
+
 	test	edx,edx
 	jz	@f
 	mcall	-1
+;--------------------------------------
+align 4
 @@:
 	ret
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
+align 4
 draw_window:
 	mcall	12,1	; 1,start of draw
 	movzx	ebx,[edi + rows]
@@ -466,16 +597,20 @@ draw_window:
 	call	draw_all_buttons
 	mcall	12,2
 	ret
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 draw_all_buttons:
 	xor	edx,edx
+;--------------------------------------
+align 4
 .new_button:
 	call	draw_one_button
 	inc	edx
 	cmp	dl,[edi + rows]
 	jb	.new_button
 	ret
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 draw_only_needed_buttons:
 	xor	edx,edx
 	mov	dl,[edi + cur_sel]
@@ -485,7 +620,8 @@ draw_only_needed_buttons:
 	dec	dl
 	call	draw_one_button
 	ret
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 draw_one_button:
 ; receives number of button in dl
 	push	edx
@@ -500,11 +636,15 @@ draw_one_button:
 	cmp	esi,0xdfdfdf
 	jb	nocorrect
 	sub	esi,0x1b1b1b
+;--------------------------------------
+align 4
 nocorrect: 
 	inc	dl
 	cmp	[edi + cur_sel],dl
 	jne	.nohighlight
 	add	esi,0x1a1a1a
+;--------------------------------------
+align 4
 .nohighlight:
 	or	edx,0x20000000
 				; dunkaist[
@@ -519,12 +659,15 @@ nocorrect:
 	movzx	ecx,dl
 	inc	ecx
 	mov	edx,[edi + pointer]
+;--------------------------------------
+align 4
 .findline:
 	cmp	byte [edx],13
 	je	.linefound
 	inc	edx
 	jmp	.findline
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 .linefound:
 	inc	edx
 	cmp	byte [edx],10
@@ -535,7 +678,8 @@ nocorrect:
 	mcall	4,,[sc.work_text],,21
 	pop	edx
 	ret
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
 searchstartstring:
 	mov	ecx,40
 	mov	al,13
@@ -544,34 +688,40 @@ searchstartstring:
 	cmp	byte [edi],10
 	jne	searchstartstring
 	ret
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
 ;*** DATA AREA ****************************************************************
 menu_mame:
 	db '@MENU',0
 
-thread_stack   dd 0xE000
-processes      dd 0
+align 4
+free_my_area_lock	dd 0
+free_my_area	dd 0
 
+processes      dd 0
+;--------------------------------------
+align 4
 fileinfo:
- .subfunction	 dd 0 	      ; 0=READ
- .start 	 dd 0 	      ; start byte
- .size_high	 dd 0 	      ; rezerved
- .size		 dd 0x10000-mem_end ; blocks to read
- .return	 dd mem_end	      ; return data pointer
+ .subfunction	 dd 5		; 5 - file info; 0 - file read
+ .start 	 dd 0		; start byte
+ .size_high	 dd 0		; rezerved
+ .size		 dd 0		; bytes to read
+ .return	 dd procinfo	; return data pointer
  .name:
      db   '/sys/MENU.DAT',0   ; ASCIIZ dir & filename
-
+;--------------------------------------
+align 4
 fileinfo_start:
- .subfunction	dd 7 	 ; 7=START APPLICATION
- .flags		dd 0 	 ; flags
- .params	dd 0x0	 ; nop
- .rezerved	dd 0x0	 ; nop
- .rezerved_1	dd 0x0	 ; nop
+ .subfunction	dd 7	; 7=START APPLICATION
+ .flags		dd 0	; flags
+ .params	dd 0x0	; nop
+ .rezerved	dd 0x0	; nop
+ .rezerved_1	dd 0x0	; nop
  .name:
    times 50 db ' '
-;---------------------------------------------------------------------
-I_END:
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+IM_END:
+;------------------------------------------------------------------------------
+align 4
 close_now	dd ?   ; close all processes immediately
 end_pointer	dd ?
 buffer		dd ?
@@ -579,21 +729,22 @@ mousemask	dd ?   ; mask for mouse pointer location
 
 active_process	dd ?
 main_process_ID	dd ?
-
+;--------------------------------------
 screen_mouse_position:
 .y	dw ?
 .x	dw ?
-
+;--------------------------------------
 screen_size:
 .y	dw ?
 .x	dw ?
-
-
+;--------------------------------------
 sc system_colors
-
-menu_data:
-	rb 0x4000  ;x10000
-
+;--------------------------------------
+last_key	db ?
+;------------------------------------------------------------------------------
+align 4
+menu_data	dd ?
+;--------------------------------------
 virtual at 0	      ; PROCESSES TABLE (located at menu_data)
   pointer	dd ?   ; +0    pointer in file
   rows		db ?	; +4    numer of strings
@@ -605,12 +756,14 @@ virtual at 0	      ; PROCESSES TABLE (located at menu_data)
   prev_sel	db ?   ; +12   previous selection
   rb		16-$+1 ; [16 bytes per element]
 end virtual
-
-last_key	db ?
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
 align 4
 procinfo:
 	rb 1024
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
+	rb 0x1000
+stack_area:
+;------------------------------------------------------------------------------
 mem_end:
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
