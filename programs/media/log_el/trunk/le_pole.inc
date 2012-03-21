@@ -533,11 +533,11 @@ proc el_draw, h_elem:dword
 		add ebx,[Cor_y]
 		movzx esi,byte[esi+8]
 		stdcall move_rotate_n90, 1,0,esi
-		mov edx,el_offs_legs_inp
-		inc edx
+		mov edx,1
 		@@:
 			stdcall [buf2d_set_pixel], buf_0, eax,ebx,dword[edi+el_offs_col]
-			movzx ecx,byte[edi+edx]
+			mov ecx,[edi+el_offs_legs_inp]
+			movzx ecx,byte[ecx+edx]
 			cmp ecx,0
 			je @f
 			stdcall move_rotate_n90, 0,ecx,esi

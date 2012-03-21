@@ -29,9 +29,10 @@ el_offs_col equ 16 ;цвет элемента
 el_offs_box_x equ 20 ;ширина коробки элемента
 el_offs_box_y equ 21 ;высота коробки элемента
 el_offs_table equ 22 ;указатель на таблицу работы элемента
-el_offs_legs_inp equ 26 ;смещение на описание входных ног
+el_offs_legs_inp equ 26 ;указатель на таблицу описания входных ног
 el_offs_legs_out equ 30 ;смещение на описание выходных ног
 
+sp_offs_el_angle equ 8 ;смещение для угла поворота элемента в списке
 sp_offs_el_type equ 9 ;смещение для типа элемента в списке
 
 points_max equ 1000
@@ -47,7 +48,7 @@ include 'le_pole.inc'
 include 'le_signal.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Логические элементы 20.03.12',0 ;подпись окна
+caption db 'Логические элементы 21.03.12',0 ;подпись окна
 
 panel_0_coord_top equ 5 ;верхняя координата 0-го ряда панели инструментов
 panel_1_coord_top equ 35
@@ -82,7 +83,7 @@ struct FileInfoBlock
 	FileName dd ?
 ends
 
-macro elOpt nam,col,box_x,box_y,table, il0, il1, il2, ol0, ol1, ol2
+macro elOpt nam,col,box_x,box_y,table, tbl_i_legs, ol0, ol1, ol2
 {
 	@@: db nam
 	rb @b+16-$
@@ -90,39 +91,45 @@ macro elOpt nam,col,box_x,box_y,table, il0, il1, il2, ol0, ol1, ol2
 	db box_x
 	db box_y
 	dd table+0 ;+el_offs_table
-;+26
-	db il0+0 ;0-я входная нога
-	db il1+0 ;1-я входная нога
-	db il2+0
-	db 0
-;+30
-	db ol0+0
-	db ol1+0
-	db ol2+0
-	db 0
+	dd tbl_i_legs+0 ;+26 входные ноги
+;+30 выходные ноги
+	db ol0+0, ol1+0, ol2+0, 0
 }
 
 align 4
 el_opt_beg:
-elOpt 'or[2]', 0xff00ff,5,5,tbl_or, 1,2,, 2
-elOpt 'or[3]', 0xff00ff,5,7,tbl_or, 1,2,2, 3
-elOpt 'and[2]',0xffff00,5,5,tbl_and.2, 1,2,, 2
-elOpt 'and[3]',0xffff00,5,7,tbl_and.3, 1,2,2, 3
-elOpt 'not',   0xffff,3,3,tbl_not, 1,,, 1
-elOpt 'xor',   0x8000ff,5,5,tbl_xor, 1,2,, 2
-elOpt 'sm[1]', 0x8080ff,7,7,tbl_sm, 1,2,2, 1,4
+elOpt 'or[2]', 0xff00ff,5,5,tbl_or, tbl_il_2, 2
+elOpt 'or[3]', 0xff00ff,5,7,tbl_or, tbl_il_3, 3
+elOpt 'or[4]', 0xff00ff,5,9,tbl_or, tbl_il_4, 4
+elOpt 'and[2]',0xffff00,5,5,tbl_and.2, tbl_il_2, 2
+elOpt 'and[3]',0xffff00,5,7,tbl_and.3, tbl_il_3, 3
+elOpt 'and[4]',0xffff00,5,9,tbl_and.4, tbl_il_4, 4
+elOpt 'not',   0xffff,  3,3,tbl_not, tbl_il_1, 1
+elOpt 'xor',   0x8000ff,5,5,tbl_xor, tbl_il_2, 2
+elOpt 'sm[1]', 0x8080ff,7,7,tbl_sm,  tbl_il_3, 1,4
+;elOpt 'cd[8]', 0x8000, 7,17,tbl_cd_8,tbl_il_8, 6,2,2 ;шифратор на 8 входов
 .end:
-elOpt '???', 0x808080,3,3,tbl_and.3, 1,,, 1 ;не опознанный элемент
+elOpt '???', 0x808080,3,3,tbl_and.3, tbl_il_1, 1 ;не опознанный элемент
 
 ;таблицы по которым задаются правила работы элементов
 align 4
 tbl_or db 0,1,1,1, 1,1,1,1 ;or2, or3
+	db 1,1,1,1,1,1,1,1 ;or4
 tbl_and:
-.3: db 0,0,0,0
+.4: dq 0
+.3: dd 0
 .2: db 0,0,0,1
 tbl_xor db 0,1,1,0
 tbl_sm db 0,2,2,1, 2,1,1,3
 tbl_not db 1,0 ;not
+;tbl_cd_8 db ;256=2^8
+
+;таблицы для входных ног
+tbl_il_1 db 1,0   ;корпус на 1 ногу
+tbl_il_2 db 1,2,0 ;корпус на 2 ноги
+tbl_il_3 db 1,2,2,0
+tbl_il_4 db 1,2,2,2,0
+;tbl_il_8 db 1,2,2,2,2,2,2,2,0
 
 time dd 0
 tim_ch db 0
@@ -224,6 +231,7 @@ start:
 
 	stdcall pole_init, pole
 	stdcall dword[tl_data_init], tree1
+	stdcall dword[tl_data_init], tree2
 
 	;системные иконки 16*16 для tree_list
 	load_image_file 'tl_sys_16.png', icon_tl_sys,TREE_ICON_SYS16_BMP_SIZE
@@ -231,10 +239,12 @@ start:
 	;не инициализированные данные, но ошибки не будет, т. к. буфер нужного размера
 	mov eax,dword[icon_tl_sys]
 	mov dword[tree1.data_img_sys],eax
+	mov dword[tree2.data_img_sys],eax
 
 	load_image_file 'objects.png', icon_toolbar,TOOLBAR_ICON_BMP_SIZE
 	mov eax,dword[icon_toolbar]
 	mov dword[tree1.data_img],eax
+	mov dword[tree2.data_img],eax
 
 	;*** загрузка шрифта
 	load_image_file 'font6x9.bmp', image_data_gray,IMAGE_FONT_SIZE
@@ -257,6 +267,15 @@ start:
 	stdcall [buf2d_conv_24_to_32],buf_curs,buf_curs_8 ;делаем буфер rgba 32бит
 
 	stdcall sign_init, 3000
+	mov eax,el_opt_beg+el_offs_nam
+	mov ecx,(el_opt_beg.end-el_opt_beg)/size_el_opt ;колличество типов элементов
+	cld
+	@@:
+		stdcall [tl_node_add], eax, el_icon_elems shl 16, tree2
+		stdcall [tl_cur_next], tree2
+		add eax,size_el_opt
+		loop @b
+	stdcall [tl_cur_beg], tree2
 
 	mcall 26,9
 	mov [last_time],eax
@@ -318,6 +337,7 @@ timer_funct:
 align 4
 mouse:
 	stdcall [tl_mouse], tree1
+	stdcall [tl_mouse], tree2
 
 	push eax ebx ecx edx
 	mcall 37,2 ;нажатые кнопки мыши
@@ -362,6 +382,31 @@ mouse:
 		cmp ebx,[shem_h]
 		jge .end_buf_wnd
 
+		cmp byte[pen_mode],0
+		jne .end_mode_0
+			;режим курсора (выбор элемента при нажатии)
+			stdcall element_is_click,eax,ebx
+			test eax,eax
+			jz .end_buf_wnd ;при нажатии не попали ни на один из элементов
+				stdcall [tl_node_get_data], tree1
+				pop ebx
+				cmp eax,ebx
+				je .end_buf_wnd ;если уже курсор стоит там где нужно
+				
+				stdcall [tl_cur_beg], tree1
+				.cycle0:
+				stdcall [tl_node_get_data], tree1
+				pop ebx
+				test ebx,ebx
+				jz .end_buf_wnd
+				cmp eax,ebx
+				je @f
+					stdcall [tl_cur_next], tree1
+					jmp .cycle0
+				@@:
+				stdcall [tl_draw], tree1
+			jmp .end_buf_wnd
+		.end_mode_0:
 		cmp byte[pen_mode],1
 		jne .end_mode_1
 			;режим рисования провода
@@ -436,6 +481,91 @@ mouse:
 	.end_buf_wnd:
 	pop edx ecx ebx eax 
 	ret
+
+;output:
+; eax - pointer to element data
+align 4
+proc element_is_click uses ebx ecx edx esi edi, coord_x:dword, coord_y:dword
+	stdcall dword[tl_node_poi_get_info],0,tree1
+	pop esi
+	@@:
+		cmp esi,0
+		je @f
+		cmp word[esi],el_icon_elems ;получение через esi тип иконки
+		jne .end_add_p1
+			stdcall [tl_node_poi_get_data], esi, tree1
+			pop ecx
+
+			movzx edx,byte[ecx+sp_offs_el_type]
+			imul edx,size_el_opt
+			add edx,el_opt_beg ;находим опцию со свойствами данного элемента
+
+			mov eax,[ecx] ;element coord x
+			mov ebx,[ecx+4] ;element coord y
+			movzx edi,byte[ecx+sp_offs_el_angle]
+			push edi
+			movzx edi,byte[edx+el_offs_box_y]
+			dec edi
+			push edi
+			movzx edi,byte[edx+el_offs_box_x]
+			dec edi
+			push edi
+			stdcall move_rotate_n90 ;,[edx+el_offs_box_x],[edx+el_offs_box_y],[ecx+sp_offs_el_angle]
+			;Rect(eax,ebx,[ecx],[ecx+4])
+			stdcall point_in_rect, [coord_x],[coord_y], eax,ebx,[ecx],[ecx+4]
+			test eax,eax
+			jz .end_add_p1
+				mov eax,ecx
+				jmp .end_f
+		.end_add_p1:
+		stdcall dword[tl_node_poi_get_next_info],esi,tree1
+		pop esi ;переходим к следущему узлу
+		jmp @b
+	@@:
+		xor eax,eax ;если не нашли
+	.end_f:
+	ret
+endp
+
+;проверка попадения точки в прямоугольник
+;результат:
+; если не попадает то eax=0
+; если попадает то eax=1
+align 4
+proc point_in_rect uses ebx ecx, px:dword, py:dword, rx0:dword, ry0:dword, rx1:dword, ry1:dword
+	xor eax,eax
+
+	;проверка по оси x
+	mov ebx,[rx0]
+	mov ecx,[rx1]
+	cmp ebx,ecx
+	jle @f
+		xchg ebx,ecx
+	@@:
+	cmp ebx,[px]
+	jg .no_contains
+	cmp ecx,[px]
+	jl .no_contains
+
+	;проверка по оси y
+	mov ebx,[ry0]
+	mov ecx,[ry1]
+	cmp ebx,ecx
+	jle @f
+		xchg ebx,ecx
+	@@:
+	cmp ebx,[py]
+	jg .no_contains
+	cmp ecx,[py]
+	jl .no_contains
+
+	;если попали то eax=1
+		inc eax
+		;stdcall draw_scaled_rect, [rx0],[ry0],[rx1],[ry1], 0xffffff
+		;stdcall [buf2d_draw], buf_0
+	.no_contains:
+	ret
+endp
 
 align 4
 draw_window:
@@ -541,8 +671,10 @@ pushad
 
 	; *** рисование буфера ***
 	stdcall [buf2d_draw], buf_0
-	mov dword[wScrObj.all_redraw],1
+	mov dword[wScr1.all_redraw],1
 	stdcall [tl_draw], tree1
+	mov dword[wScr2.all_redraw],1
+	stdcall [tl_draw], tree2
 	stdcall pole_draw_pok, pole
 
 	; *** создание кнопок установки сигналов set_0 и set_1 ***
@@ -663,6 +795,7 @@ align 4
 key:
 	mcall 2
 	stdcall [tl_key], dword tree1
+	stdcall [tl_key], dword tree2
 	jmp still
 
 
@@ -743,19 +876,19 @@ button:
 	@@:
 	cmp ah,31
 	jne @f
-		stdcall set_pen_mode,1,0 ;установка режима рисования провода
+		stdcall set_pen_mode,1,0,((9 shl 8)+9) shl 16 ;установка режима рисования провода
 	@@:
 	cmp ah,32
 	jne @f
-		stdcall set_pen_mode,2,1
+		stdcall set_pen_mode,2,1,((9 shl 8)+9) shl 16
 	@@:
 	cmp ah,33
 	jne @f
-		stdcall set_pen_mode,3,2 ;установка режима стирания провода
+		stdcall set_pen_mode,3,2,((15 shl 8)+9) shl 16 ;установка режима стирания провода
 	@@:
 	cmp ah,34
 	jne @f
-		stdcall set_pen_mode,4,3 ;установка режима создания элементов
+		stdcall set_pen_mode,4,3,((9 shl 8)+9) shl 16 ;установка режима создания элементов
 	@@:
 	cmp ah,1
 	jne still
@@ -767,6 +900,10 @@ button:
 	stdcall pole_delete, pole
 	call sign_delete
 	stdcall [tl_data_clear], tree1
+	;чистим указатели на изображения, которые были общими для листов и удалены листом tree1
+	mov dword[tree2.data_img_sys],0
+	mov dword[tree2.data_img],0
+	stdcall [tl_data_clear], tree2
 	cmp [cursor_pointer],0
 	je @f
 		mcall 37,6,[cursor_pointer]
@@ -880,7 +1017,7 @@ but_open_file:
 				mov dword[txt_buf+4],eax ;координата y
 				call str_next_val
 				stdcall conv_str_to_int,edi
-				mov byte[txt_buf+8],al ;направление
+				mov byte[txt_buf+sp_offs_el_angle],al ;направление
 				call str_next_val
 				;по адресу edi название элемента
 				stdcall el_get_name, edi
@@ -1318,7 +1455,7 @@ pushad
 
 			stdcall str_len,edi
 			add edi,eax
-			movzx eax,byte[ecx+8] ;angle
+			movzx eax,byte[ecx+sp_offs_el_angle] ;angle
 			stdcall convert_int_to_str
 			stdcall str_cat,edi,txt_space
 
@@ -1570,22 +1707,30 @@ align 4
 proc shem_element_creat uses eax ebx, coord_x:dword, coord_y:dword
 	mov eax,dword[coord_x]
 	mov dword[txt_buf],eax ;координата x
-	mov eax,dword[coord_y]
-	mov dword[txt_buf+4],eax ;координата y
+	mov ebx,dword[coord_y]
 
-	xor eax,eax
-	mov byte[txt_buf+8],al ;направление
-	;по адресу edi название элемента
-	;stdcall el_get_name, edi
+	stdcall element_is_click,eax,ebx ;проверяем есть ли в данной точке другой элемент созданный раньше
+	test eax,eax
+	jnz .end_f ;при нажатии попали на один из элементов
+	mov dword[txt_buf+4],ebx ;координата y
+
+	;xor eax,eax
+	mov byte[txt_buf+sp_offs_el_angle],al ;направление
+
+	stdcall [tl_node_get_data], tree2
+	pop ebx
+	test ebx,ebx
+	jnz @f
+		mov ebx,el_opt_beg+el_offs_nam ;если не взялось имя элемента, то по умолчанию берем 1-й из списка
+	@@:
+	stdcall el_get_name, ebx
 	mov byte[txt_buf+sp_offs_el_type],al ;тип элемента
 
-	movzx ebx,al
-	imul ebx,size_el_opt
-	add ebx,el_opt_beg+el_offs_nam
 	stdcall make_list_capts,txt_buf,ebx
 	stdcall [tl_node_add], txt_buf,(el_icon_elems shl 16)+1, tree1
 	stdcall [tl_cur_next], tree1
 	stdcall [tl_draw], tree1
+	.end_f:
 	ret
 endp
 
@@ -1622,12 +1767,12 @@ proc el_get_leg_coords uses ecx edx edi esi, el_data:dword, l_opt:dword
 	movzx esi,byte[edi+sp_offs_el_type] ;тип элемента
 	imul esi,size_el_opt
 	add esi,el_opt_beg
-	;esi+el_offs_legs_inp - указатель на параметры 0-й входной ноги
+	;esi+el_offs_legs_inp - указатель на таблицу с параметрами входных ног
 
 	mov eax,[edi+0]
 	mov ebx,[edi+4]
 	mov edx,[l_opt]
-	movzx edi,byte[edi+8] ;угол поворота / 90 (от 0-3)
+	movzx edi,byte[edi+sp_offs_el_angle] ;угол поворота / 90 (от 0-3)
 
 	btr edx,16 ;входная/выходная нога
 	jc .output_leg
@@ -1635,7 +1780,7 @@ proc el_get_leg_coords uses ecx edx edi esi, el_data:dword, l_opt:dword
 	;если нога входная
 	inc edx ;номерация ног начинается с нуля, потому добавляем 1
 	stdcall move_rotate_x_n90, -2,edi
-	add esi,el_offs_legs_inp
+	mov esi,[esi+el_offs_legs_inp]
 	@@:
 		movzx ecx,byte[esi]
 		cmp ecx,0
@@ -1980,14 +2125,15 @@ proc but_set_none
 	ret
 endp
 
+;hot_p - координаты горячей точки курсора, смещенные на бит 16 ((cx shl 8) + cy) shl 16
 align 4
-proc set_pen_mode uses eax ebx ecx edx, mode:dword, icon:dword
+proc set_pen_mode uses eax ebx ecx edx, mode:dword, icon:dword, hot_p:dword
 	mov eax,[mode]
 	cmp byte[pen_mode],al
 	je @f
 		mov byte[pen_mode],al
-		;mov edx,((cx shl 8) + cy) shl 16
-		mov edx,2 ;LOAD_INDIRECT
+		mov edx,[hot_p]
+		mov dx,2 ;LOAD_INDIRECT
 		mov ecx,[icon]
 		shl ecx,12 ;умножаем на 4 кб
 		add ecx,[buf_curs.data]
@@ -2094,10 +2240,48 @@ cursor_pointer dd 0 ;указатель на данные для курсора
 
 el_focus dd 0
 tree1 tree_list 32,points_max+2, tl_key_no_edit, 16,16,\
-    0x8080ff,0x0000ff,0xffffff, 5,panel_3_coord_top,145,250, 0,capt_offs,0,\
-    el_focus, wScrObj,0
+    0x8080ff,0x0000ff,0xffffff, 5,panel_3_coord_top+85,145,170, 0,capt_offs,0,\
+    el_focus, wScr1,0
+tree2 tree_list el_offs_col-el_offs_nam,100+2, tl_key_no_edit+tl_list_box_mode, 16,16,\
+    0x8080ff,0x0000ff,0xffffff, 5,panel_3_coord_top,145,80, 0,0,0,\
+    el_focus, wScr2,0
+
 align 4
-wScrObj:
+wScr1:
+.x:
+.size_x     dw 16 ;+0
+.start_x    dw 0 ;+2
+.y:
+.size_y     dw 150 ;+4
+.start_y    dw 0 ;+6
+.btn_high   dd 15 ;+8
+.type	    dd 1  ;+12
+.max_area   dd 100  ;+16
+.cur_area   dd 30  ;+20
+.position   dd 0  ;+24
+.bckg_col   dd 0xeeeeee ;+28
+.frnt_col   dd 0xbbddff ;+32
+.line_col   dd 0  ;+36
+.redraw     dd 0  ;+40
+.delta	    dw 0  ;+44
+.delta2     dw 0  ;+46
+.run_x:
+.r_size_x   dw 0  ;+48
+.r_start_x  dw 0  ;+50
+.run_y:
+.r_size_y   dw 0 ;+52
+.r_start_y  dw 0 ;+54
+.m_pos	    dd 0 ;+56
+.m_pos_2    dd 0 ;+60
+.m_keys     dd 0 ;+64
+.run_size   dd 0 ;+68
+.position2  dd 0 ;+72
+.work_size  dd 0 ;+76
+.all_redraw dd 0 ;+80
+.ar_offset  dd 1 ;+84
+
+align 4
+wScr2:
 .x:
 .size_x     dw 16 ;+0
 .start_x    dw 0 ;+2
