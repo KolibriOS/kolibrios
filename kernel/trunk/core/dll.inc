@@ -438,23 +438,12 @@ proc load_file stdcall, file_name:dword
 
         mov     [file2], eax
 
-        push    eax
-.wait_lock:
-        cmp     [unpack_mutex], 0
-        je      .get_lock
-        call    change_task
-        jmp     .wait_lock
-
-.get_lock:
-        mov     eax, 1
-        xchg    eax, [unpack_mutex]
-        test    eax, eax
-        jnz     .wait_lock
-        pop     eax
+        mov     ecx, unpack_mutex
+        call    mutex_lock
 
         stdcall unpack, [file], eax
 
-        mov     [unpack_mutex], 0
+        call    mutex_unlock
 
         stdcall kernel_free, [file]
         mov     eax, [file2]
@@ -485,9 +474,9 @@ proc load_file stdcall, file_name:dword
         ret
 endp
 
-iglobal
+uglobal
 align 4
-unpack_mutex dd 0
+unpack_mutex MUTEX
 endg
 
 align 4

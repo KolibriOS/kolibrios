@@ -332,6 +332,9 @@ high_code:
         mov     ecx, disk_list_mutex
         call    mutex_init
 
+        mov     ecx, unpack_mutex
+        call    mutex_init
+
 ; SAVE REAL MODE VARIABLES
         mov     ax, [BOOT_VAR + BOOT_IDE_BASE_ADDR]
         mov     [IDEContrRegsBaseAddr], ax
