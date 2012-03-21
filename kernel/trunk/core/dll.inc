@@ -437,10 +437,25 @@ proc load_file stdcall, file_name:dword
         jz      .cleanup
 
         mov     [file2], eax
-        pushfd
-        cli
+
+        push    eax
+.wait_lock:
+        cmp     [unpack_mutex], 0
+        je      .get_lock
+        call    change_task
+        jmp     .wait_lock
+
+.get_lock:
+        mov     eax, 1
+        xchg    eax, [unpack_mutex]
+        test    eax, eax
+        jnz     .wait_lock
+        pop     eax
+
         stdcall unpack, [file], eax
-        popfd
+
+        mov     [unpack_mutex], 0
+
         stdcall kernel_free, [file]
         mov     eax, [file2]
         mov     ebx, [file_size]
@@ -469,6 +484,11 @@ proc load_file stdcall, file_name:dword
         pop     esi
         ret
 endp
+
+iglobal
+align 4
+unpack_mutex dd 0
+endg
 
 align 4
 proc get_proc_ex stdcall, proc_name:dword, imports:dword
