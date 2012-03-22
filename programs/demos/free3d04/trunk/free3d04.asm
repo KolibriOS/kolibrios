@@ -295,21 +295,13 @@ m_right:                                  ; turn right
 
 draw_window:
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
-    mcall
+	mcall	12,1
+	
+	mcall 48, 4                             ;get skin width
+	lea	ecx, [50*65536+484+eax]             ;[y start] *65536 + [y size] + [skin_height]
+	mcall	0,<50,649>,,0x34ffffff,,title   ;draw window
 
-                                   ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
-    mov  ebx,50*65536+649         ; [x start] *65536 + [x size]
-    mov  ecx,50*65536+506         ; [y start] *65536 + [y size]
-    mov  edx,0x74ffffff            ; color of work area RRGGBB,8->color gl
-    mov  edi,title
-    mcall
-
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
-    mcall
+	mcall	12,2
 
     ret
 
