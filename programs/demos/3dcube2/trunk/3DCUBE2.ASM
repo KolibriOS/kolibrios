@@ -65,7 +65,7 @@ still:
 ;    cmp  eax,3                  ; button in buffer ?
     jz   button
 
-    fps  220,9,cl_White,cl_Black
+    fps  220,8,cl_White,cl_Black
 
 main_loop:
 
@@ -112,13 +112,15 @@ exit:
 draw_window:
     mcall 12, 1 ;Start window redraw
 
-    mov eax,0   ;Draw window
+	mcall 48, 4
+	
+	lea	ecx, [100*65536+SCREEN_Y+4+eax]; [y start] *65536 + [y size] + [skin_height]
+	xor	eax, eax   ;Draw window
     mov ebx,100*65536+(SCREEN_X+9)  ;x start*65536+x size
-    mov ecx,100*65536+(SCREEN_Y+26) ;y start*65536+y size
     mov edx,0x54000000         ;0x03 use skinned window
     mov edi,title
     mcall
-
+	
     mcall 12, 2 ;End window redraw
 	
     ret
@@ -179,16 +181,17 @@ df_next:
 clear_screen_buffer:
 
 ;outscrbuf
+ mcall 48, 4
  mov ebx,scrbuf
  mov ecx,SCREEN_X*65536+SCREEN_Y
- mov edx,5*65536+22
+ lea edx,[5*65536+eax]
  mov eax,7
  mcall
 
 ;White background
  mov edi,scrbuf
  mov ecx,(SCREEN_X*SCREEN_Y*3)/4
- mov eax,0xffffffff
+ mov eax,0xfffffff0
  cld
  rep stosd
 
