@@ -81,6 +81,7 @@ proc fs_execute
          hdr_i_end     dd ? ;0x14
        endl
 
+        pushad
         call    set_default_cursor_clock
 
         mov     [flags], edx
