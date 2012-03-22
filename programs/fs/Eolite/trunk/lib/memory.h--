@@ -1,7 +1,7 @@
 #code32 TRUE
 
 inline fastcall dword malloc(dword ECX){
-	dword	size, heap;
+	dword	size, heap; 
 	#speed
 	size = ECX;
 	EAX = 68;

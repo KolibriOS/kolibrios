@@ -1,4 +1,4 @@
-//Leency & Veliant -=- KolibriOS Team -=- 2011
+//Leency & Veliant -=- KolibriOS Team -=- 2012
 //GNU GPL licence.
 
 //немного кривая прокрутка
@@ -16,7 +16,7 @@
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v0.99.8"
+#define title "Eolite File Manager v0.99.9"
 #define videlenie 0x94AECE //0xFEA4B7,0x8BCDFF,0xB8C9B8}; //цвет выделенного элемента из списка файлов
 byte toolbar_buttons_x[6]={9,46,85,134,167,203};
 //
@@ -368,7 +368,7 @@ inline fastcall void draw_window()
 {                
 	DefineAndDrawWindow(98,90,582,482,0x73,0x10E4DFE1,0,0,title); 
 	Form.GetInfo(#Form, SelfInfo);
-	IF (Form.height==GetSkinWidth()+3) return; //ничего не делать если окно схлопнуто в заголовок
+	IF (Form.status_window==4) return; //ничего не делать если окно схлопнуто в заголовок
 	  IF (Form.height<280) MoveSize(OLD,OLD,OLD,280);
 	  IF (Form.width<480) MoveSize(OLD,OLD,480,OLD);
 	//toolbar buttons

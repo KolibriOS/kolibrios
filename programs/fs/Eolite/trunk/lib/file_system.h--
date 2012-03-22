@@ -1,4 +1,4 @@
-//CODED by Veliant, Leency. GNU GPL licence.
+//CODED by Veliant, Leency 2008-2012. GNU GPL licence.
 
 struct f70{
 	dword	func;

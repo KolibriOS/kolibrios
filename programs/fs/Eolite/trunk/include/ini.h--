@@ -1,5 +1,5 @@
 //INI parser in C--, GPL licence.
-//Leency - 2011
+//Leency - 2012
 
 #define COMMENT	0
 #define SECTION	1

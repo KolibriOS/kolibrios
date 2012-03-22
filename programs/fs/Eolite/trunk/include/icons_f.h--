@@ -2,7 +2,7 @@
 #include "imgs\icons.txt"
 dword Put_icon(dword extension, yy)
 { 
-	dword ftype="", fnum=0; //еши неизвесный файл
+	dword ftype="", fnum=0; //еши неизвесный файл 
 
 	IF (!strcmp(extension,"htm")) || (!strcmp(extension,"html")) ||
 	   (!strcmp(extension,"mht")) {fnum = 2; ftype="Web-page";}
