@@ -333,6 +333,7 @@ _WinMapAddress    rd 1
 _WinMapSize       rd 1
 
 def_cursor        rd 1
+def_cursor_clock  rd 1
 current_cursor    rd 1
 hw_cursor         rd 1
 cur_saved_base    rd 1

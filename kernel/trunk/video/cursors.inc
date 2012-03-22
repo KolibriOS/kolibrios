@@ -1014,6 +1014,8 @@ align 4
 ;--------------------------------------
 align 4
 @@:
+        stdcall load_cursor, clock_arrow, dword LOAD_FROM_MEM
+        mov     [def_cursor_clock], eax
         stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
         mov     [def_cursor], eax
         ret
@@ -1025,8 +1027,28 @@ align 4
         mov     [_display.move_cursor], eax
         ret
 ;------------------------------------------------------------------------------
+set_default_cursor_clock:
+        pushad
+        stdcall set_cursor, [def_cursor_clock]
+        mov     [redrawmouse_unconditional], 1
+        popad
+        call    __sys_draw_pointer
+        ret
+;------------------------------------------------------------------------------
+set_default_cursor_arrow:
+        pushad
+        stdcall set_cursor, [def_cursor]
+        mov     [redrawmouse_unconditional], 1
+        popad
+        call    __sys_draw_pointer
+        ret
+;------------------------------------------------------------------------------
 align 4
 def_arrow:
   file 'arrow.cur'
+;------------------------------------------------------------------------------
+align 4
+clock_arrow:
+  file 'arrow_clock.cur'
 ;------------------------------------------------------------------------------
 

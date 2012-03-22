@@ -81,7 +81,7 @@ proc fs_execute
          hdr_i_end     dd ? ;0x14
        endl
 
-        pushad
+        call    set_default_cursor_clock
 
         mov     [flags], edx
 
@@ -113,6 +113,7 @@ proc fs_execute
 .bigfilename:
         popad
         mov     eax, -ERROR_FILE_NOT_FOUND
+        call    set_default_cursor_arrow
         ret
 
 .namecopied:
@@ -127,6 +128,7 @@ proc fs_execute
 @@:
         lea     eax, [filename]
         stdcall load_file, eax
+
         mov     esi, -ERROR_FILE_NOT_FOUND
         test    eax, eax
         jz      .err_file
@@ -237,6 +239,7 @@ end if
         xor     ebx, ebx
         mov     [application_table_status], ebx;unlock application_table_status mutex
         mov     eax, [process_number];set result
+        call    set_default_cursor_arrow
         ret
 .failed:
         mov     eax, [save_cr3]
@@ -248,6 +251,7 @@ end if
         xor     eax, eax
         mov     [application_table_status], eax
         mov     eax, esi
+        call    set_default_cursor_arrow
         ret
 endp
 
