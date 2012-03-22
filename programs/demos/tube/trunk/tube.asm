@@ -1,7 +1,7 @@
 
-;  (м) ( ) м ) ( )   256b intro by baze/3SC for Syndeecate 2001   use NASM to
-;  плп лмл ллл ллм   loveC: thanks, Serzh: eat my socks dude ;]   compile the
-;  ( ) ( ) ( ) ( )   e-mail: baze@stonline.sk, web: www.3SC.sk    source code
+;  (м) ( ) м ) ( )   256b intro by baze/3SC for Syndeecate 2001
+;  плп лмл ллл ллм   loveC: thanks, Serzh: eat my socks dude ;]
+;  ( ) ( ) ( ) ( )   e-mail: baze@stonline.sk, web: www.3SC.sk
 
 ;  Menuet port by VT
 
@@ -189,18 +189,15 @@ draw_window:
 
      pusha
 
-     mov  eax,12
-     mov  ebx,1
-     mcall
+     mcall 12, 1
+	 mcall 48, 4 ;get skin width
+	 lea  ecx,[100*65536+164+eax]
      xor  eax,eax
      mov  ebx,100*65536+329
-     mov  ecx,100*65536+186
      mov  edx,0x74000000
      mov  edi,title
      mcall
-     mov  eax,12
-     mov  ebx,2
-     mcall
+     mcall 12, 2
      popa
      ret
 
