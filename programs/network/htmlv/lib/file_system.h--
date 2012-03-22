@@ -106,7 +106,7 @@ void DeleteFile(dword del_file_path)
 //     Прочитать файл     //
 ////////////////////////////
 f70 read_file_70; 
-void ReadFile(dword pos, file_size, read_buffer, file_path)
+int ReadFile(dword pos, file_size, read_buffer, file_path)
 {
 	read_file_70.func = 0;
 	read_file_70.param1 = pos;
@@ -124,7 +124,7 @@ void ReadFile(dword pos, file_size, read_buffer, file_path)
 //    Прочитать папку    //
 ///////////////////////////
 f70 read_dir_70;
-void ReadDir(dword file_count, read_buffer, dir_path)
+int ReadDir(dword file_count, read_buffer, dir_path)
 {    
 	read_dir_70.func = 1;
 	read_dir_70.param1 = 

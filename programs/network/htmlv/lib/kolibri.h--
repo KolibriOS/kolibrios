@@ -198,7 +198,7 @@ inline fastcall dword GetSkinWidth()
 	$int 0x40
 }
 
-inline fastcall void ChangeSkin(ECX){
+inline fastcall void SetSystemSkin(ECX){
 	EAX = 48;
 	EBX = 8;
 	$int 0x40
@@ -522,6 +522,21 @@ inline fastcall dword CreateThread(dword ECX,EDX)
 	EBX = 1;
 	$int 0x40
 }
+
+inline fastcall int GetSlot(dword ECX)
+{
+	EAX = 18;
+	EBX = 21;
+	$int 0x40
+}
+
+inline fastcall int GetActiveProcess()
+{
+	EAX = 18;
+	EBX = 7;
+	$int 0x40
+}
+
 
 void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 {
