@@ -122,3 +122,19 @@ char* strchr(const char* string, int c)
 	return (char*)0;
 }
 
+
+
+void _itoa(int i, char *s)
+{
+int a, b, c, d;
+a = (i - i%1000)/1000;
+b = (i - i%100)/100 - a*10;
+c = (i - i%10)/10 - a*100 - b*10;
+d = i%10;
+s[0] = a + '0';
+s[1] = b + '0';
+s[2] = c + '0';
+s[3] = d + '0';
+s[4] = 0;
+}
+

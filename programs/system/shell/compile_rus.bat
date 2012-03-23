@@ -9,7 +9,7 @@ gcc -c system/string.c
 gcc -c system/ctype.c
 ld -nostdlib -T kolibri.ld -o shell start.o kolibri.o stdlib.o string.o ctype.o shell.o
 objcopy shell -O binary
-erase lang.h start.o shell.o kolibri.o stdlib.o string.o
+erase lang.h start.o shell.o kolibri.o stdlib.o string.o ctype.o
 kpack shell
 move shell bin\rus\
 copy locale\rus\.shell bin\rus\

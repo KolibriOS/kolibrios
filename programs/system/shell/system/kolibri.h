@@ -1,6 +1,18 @@
 
 #define NULL ((void*)0)
 
+#define SHM_OPEN		0
+#define SHM_OPEN_ALWAYS	0x04
+#define SHM_CREATE		0x08 
+#define SHM_READ		0x00 
+#define SHM_WRITE		0x01
+
+#define E_NOTFOUND	5 
+#define E_ACCESS	10 
+#define E_NOMEM		30 
+#define E_PARAM		33
+
+
 typedef struct 
 {
 unsigned	p00 __attribute__((packed));
@@ -90,3 +102,5 @@ unsigned kol_process_info(unsigned slot, char buf1k[]);
 int kol_process_kill_pid(unsigned process);
 void kol_get_kernel_ver(char buff16b[]);
 int kol_kill_process(unsigned process);
+int kol_buffer_open(char name[], int mode, int size, char **buf);
+void  kol_buffer_close(char name[]);

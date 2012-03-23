@@ -44,6 +44,7 @@
 #include "cmd/cmd_killall.c"
 
 #include "modules/module_command.c"
+#include "modules/module_program_console.c"
 #include "modules/module_program.c"
 #include "modules/module_script.c"
 #include "modules/module_executable.c"

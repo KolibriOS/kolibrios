@@ -215,14 +215,13 @@ while (*(s+i))
 void kol_board_puti(int n)
 {
 char c;
-int i = 0;
-do 
-	{
-	c = n % 10 + '0';
-	asm ("int $0x40"::"a"(63), "b"(1), "c"(c));
-	i++;
-	}
-	while ((n /= 10) > 0);
+
+if ( n > 1 )
+	kol_board_puti(n / 10);
+
+c = n % 10 + '0';
+asm ("int $0x40"::"a"(63), "b"(1), "c"(c));
+
 }
 
 
@@ -419,4 +418,17 @@ asm ("int $0x40"::"a"(18), "b"(2), "c"(process));
 void kol_get_kernel_ver(char buff16b[])
 {
 asm ("int $0x40"::"a"(18), "b"(13), "c"(buff16b));
+}
+
+int kol_buffer_open(char name[], int mode, int size, char **buf)
+{
+int error;
+asm ("movl %0, %%esi"::"r"(mode));
+asm ("int $0x40":"=a"(*buf), "=d"(error):"a"(68), "b"(22), "c"(name), "d"(size));
+return error;
+}
+
+void kol_buffer_close(char name[])
+{
+asm ("int $0x40"::"a"(68), "b"(23), "c"(name));
 }

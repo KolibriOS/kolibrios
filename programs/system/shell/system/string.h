@@ -13,3 +13,4 @@ void strcpy(char strDest[], const char strSource[]);
 char* strncpy(char *strDest, const char *strSource, unsigned n);
 int strlen(const char* string);
 char *strchr(const char* string, int c);
+void _itoa(int i, char *s);

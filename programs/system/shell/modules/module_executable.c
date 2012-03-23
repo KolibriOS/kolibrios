@@ -49,11 +49,15 @@ if ( script_check(exec) )
 result = program_run(exec, args);
 if (result > 0)
 	{
-	#if LANG_ENG
-		printf ("  '%s' started. PID = %d\n\r", cmd, result);
-	#elif LANG_RUS
-		printf ("  '%s' запущен. PID = %d\n\r", cmd, result);
-	#endif
+	
+	if ( !program_console(result)  )
+		{
+		#if LANG_ENG
+			printf ("  '%s' started. PID = %d\n\r", cmd, result);
+		#elif LANG_RUS
+			printf ("  '%s' запущен. PID = %d\n\r", cmd, result);
+		#endif
+		}
 	return TRUE;
 	}
 else	
