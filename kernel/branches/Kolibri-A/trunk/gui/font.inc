@@ -214,47 +214,51 @@ diff16 "parse_tick     : ",0,$
 	pushad
 	mov	dx, word[edx]
 	movzx	ecx, dl
-	test	dl, 0xE0	    ; ticks #32..255
-	jz	.lntick.short
+	test	dl, 0xE0	  
+	jz	.lntick.short   ; ticks #0..31
 	cmp	dl, 0xE0
-	jae	.lntick.long
-	cmp	dl, 0xC0
-	jae	.cstick
+	jae	.lntick.long    ; ticks #224..255
+	cmp	dl, 0xD8
+	jae	.cstick         ; ticks #216..223
 .gptick:
 	push	edx
+	cmp	dl, 38
+	jb	.sptick             ; special ticks #32-37
+                                    ; general ticks #38..215 
 	mov	cl, dh
-	shr	cl, 3		    ; number of origin 
+	shr	cl, 3		    ; number of origin
 	mov	edx, [ebp+8]	    ; orig. table
 	mov	ch, byte[edx+ecx]   ; orig. coords
 	pop	edx
 	mov	cl, dh
 	and	cl, 7		    ; three rotation bits
-	movzx	edx, dl		    ; dl = gptick#
-	sub	dl, 32
-	cmp	dl, (sdsh_data.v5-sdsh_data.v1)
+	movzx	edx, dl 	    ; dl = gptick#
+	cmp	dl, 80
 	jae	.gptick.2
+	sub	dl, 38
 
 .gptick.1:
 	;  1-byte tickgroups .v1-v4:
 	lea	esi, [sdsh_data.v1+edx]
-	inc	dh
-	sub	dl, 2			; .v1 : 2 ticks only (#32, 33)
+	inc	dh                ; dh = 1 vertex
+	sub	dl, 2			; .v1 : 2 ticks only (#38, 39)
 	jae	.gptick.1v2v4
 	mov	dl, dh
 	mov	dh, ch
 	jmp	.draw
 
 .gptick.1v2v4:
-	; 1-byte tickgroups .v2-v4 : 8 ticks each
-	inc	dh
-	shr	dl, 3			
+	; 1-byte tickgroups .v2-v4 : 8, 16 and 16 ticks
+	inc	dh               ; dh = 2 vertice
+        add     dl, 8
+	shr	dl, 4
 	jmp	.gptick.done
 
 .gptick.2:
 	; 2-byte tickgroups .v5-v8: 8 ticks each
-	sub	dl, (sdsh_data.v5-sdsh_data.v1)
-	cmp	dl, (sdsh_data.v9-sdsh_data.v5)
+	cmp	dl, 112
 	jae	.gptick.3
+	sub	dl, 80
 	lea	esi, [sdsh_data.v5 + edx*2]
 	mov	dh, 5
 	shr	dl, 3
@@ -262,9 +266,9 @@ diff16 "parse_tick     : ",0,$
 
 .gptick.3:
 	; 3-byte tickgroups .v9-12: 4 ticks each
-	sub	dl, (sdsh_data.v9-sdsh_data.v5)
-	cmp	dl, (sdsh_data.v13-sdsh_data.v9)
+	cmp	dl, 128
 	jae	.gptick.4
+	sub	dl, 112
 	lea	esi, [sdsh_data.v9 + edx*2 + edx]
 	mov	dh, 9
 	shr	dl, 2
@@ -272,9 +276,9 @@ diff16 "parse_tick     : ",0,$
 
 .gptick.4:
 	; 4-byte tickgroups .v13-16: 4 ticks each
-	sub	dl, (sdsh_data.v13-sdsh_data.v9)
-	cmp	dl, 16
-	jae	.exit
+	cmp	dl, 128                 ; fix this when needed
+	jae	.exit                   ; not implemented yet!
+	sub	dl, 128
 	lea	esi, [sdsh_data.v13 + edx*4]
 	mov	dh, 13
 	shr	dl, 2
@@ -313,7 +317,7 @@ diff16 "parse_tick     : ",0,$
 	test	dl, 1
 	jnz	.ritick.1
 .ritick.0:
-	movzx	ecx, dh		    ; y
+	movzx	ecx, dh 	    ; y
 	and	cl, 0x0F
 	sub	ebx, ecx
 	mov	cl, dh
@@ -343,7 +347,7 @@ diff16 "parse_tick     : ",0,$
 .draw:
 ; cl = rot; dl = numvert; dh = orig.xy
 	push	ecx
-	movzx	ecx, dh		    ; y
+	movzx	ecx, dh 	    ; y
 	and	cl, 0x0F
 	sub	ebx, ecx
 	mov	cl, dh
@@ -352,6 +356,7 @@ diff16 "parse_tick     : ",0,$
 	pop	ecx
 	call	draw_tick
 .gptick.5:
+.sptick:
 .exit:
 	popad
 	ret
@@ -373,35 +378,35 @@ draw_tick:
 	lea	ebp, [.move000+ ecx*4]
 	call	ebp		      ; basic vector
 	call	ch_putpixel
-        and     edx, 15
-        jz	.done		       ; no vertex (2pix line)
-        mov     esi, dword [esi]       ; 15 vertice will easily fit to 1dw
-        xchg    esi, edx
+	and	edx, 15
+	jz	.done		       ; no vertex (2pix line)
+	mov	esi, dword [esi]       ; 15 vertice will easily fit to 1dw
+	xchg	esi, edx
 .move_and_draw:
-        mov     ch, dl
-        and     ch, 3
-        jz	.moved
-        dec     ch
-        jz      .1
-        dec     ch
-        jz      .2
-.3: 
-        dec     cl
+	mov	ch, dl
+	and	ch, 3
+	jz	.moved
+	dec	ch
+	jz	.1
+	dec	ch
+	jz	.2
+.3:
+	dec	cl
 .1:
-        dec     cl
-        jmp     .wipe_it
+	dec	cl
+	jmp	.wipe_it
 .2:
-        inc     cl
+	inc	cl
 .wipe_it:
-        and     ecx, 7
+	and	ecx, 7
 .moved:
 diff16 "moved          : ",0,$
 	lea	ebp, [.move000+ ecx*4]
 	call	ebp		    ; go new way
 	call	ch_putpixel
-        shr     edx, 2
-        dec     esi
-        jnz     .move_and_draw
+	shr	edx, 2
+	dec	esi
+	jnz	.move_and_draw
 diff16 "done           : ",0,$
 .done:
 	popad
@@ -496,7 +501,7 @@ ch_checkwin:
 
 align 4
 diff16 "ch_putpix      : ",0,$
-ch_putpixel:
+; ch_putpixel:
 ; eax = x coordinate
 ; ebx = y coordinate
 ; edi = 0x0RRGGBB
@@ -508,6 +513,24 @@ ch_putpixel:
      pop    edx
      ret
 ;)
+ch_putpixel:
+; test version!!! ===== to be removed!!
+; eax = x coordinate
+; ebx = y coordinate
+; edi = 0x0RRGGBB
+     push   edx
+	 mov	edx, ebx
+	shl	edx, 1
+     imul	edx, [BytesPerScanLine]
+     lea	edx, [edx+eax*8]
+	add	edx, LFB_BASE
+     mov   [edx], edi
+	mov	[edx+4], edi
+	sub	edx, [BytesPerScanLine]
+	mov	[edx], edi
+	mov	[edx+4], edi
+     pop    edx
+     ret
 
 
 diff10 "new font  code size",sdsh_code,$
