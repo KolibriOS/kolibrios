@@ -27,6 +27,7 @@ pole_index    equ dword[edi]
 pole_data     equ dword[edi +4] ;указатель на память со структурами ячеек
 pole_max_cell equ dword[edi +8]
 pole_b_sort   equ dword[edi+12] ;граница для сортированных ячеек
+offs_pole_b_sort equ 12
 
 macro get_cell_offset reg,ind
 {
@@ -151,6 +152,8 @@ align 4
 proc pole_cell_delete, pole:dword, x:dword, y:dword
 	pushad
 	mov edi,dword[pole]
+	mov ebx,edi
+	add ebx,offs_pole_b_sort
 	mov esi,pole_index
 
 	mov ecx,[esi]
@@ -161,10 +164,6 @@ proc pole_cell_delete, pole:dword, x:dword, y:dword
 	cmp eax,0
 	je .fun_e ;если клетка не была создана
 
-	cmp pole_b_sort,0
-	je @f
-		dec pole_b_sort
-	@@:
 	dec dword[esi]
 
 	mov edi,esi
@@ -173,6 +172,17 @@ proc pole_cell_delete, pole:dword, x:dword, y:dword
 	cld
 	repnz scasd ;поиск
 	sub edi,4
+
+	cmp dword[ebx],1 ;[ebx]=pole_b_sort
+	jl @f
+	mov eax,edi
+	sub eax,esi ;esi=pole_index
+	shr eax,2
+	dec eax
+	cmp [ebx],eax ;eax - позиция указателя удаляемой ячейки
+	jle @f ;было jl @f
+		dec dword[ebx]
+	@@:
 
 	shl edx,2
 	add edx,esi ;конечный элемент массива
@@ -193,7 +203,7 @@ proc pole_cell_delete, pole:dword, x:dword, y:dword
 	ret
 endp
 
-if 0
+if debug
 align 4
 proc but_test_pole, pole:dword
 	pushad
@@ -205,7 +215,12 @@ proc but_test_pole, pole:dword
 
 	mov esi,pole_index
 	mov ecx,[esi]
+
+	mov eax,pole_b_sort
 	mov edi,open_file_lif
+	stdcall convert_int_to_str
+	stdcall [buf2d_draw_text], buf_0, buf_font,edi,5,ebx,color_s0 ;рисуем b_sort
+	add ebx,18
 
 	mov eax,[esi]
 	add esi,4
@@ -279,9 +294,11 @@ proc pole_cell_find uses edi, pole:dword, x:dword, y:dword
 		mov edx,ebx
 		shl edx,2
 		add edx,ecx
-		inc ebx
 		mov ecx,dword[ecx]
 		.cycle_b: ;for(i=pole_b_sort+1;i<=fristC;i++)
+			inc ebx
+			cmp ebx,ecx
+			jg .not_found
 			add edx,4
 			get_cell_offset esi,dword[edx]
 			mov eax,dword[x]
@@ -294,9 +311,8 @@ proc pole_cell_find uses edi, pole:dword, x:dword, y:dword
 				mov eax,dword[edx] ;fnd=pole_index[i];
 				jmp .cycle_e ;break;
 			.if_e:
-			inc ebx
-			cmp ebx,ecx
-			jle .cycle_b
+			jmp .cycle_b
+			.not_found:
 		xor eax,eax ;восстанавливаем нулевое значение если не нашли ячейку (в цикле eax портится при проверке координат)
 		.cycle_e:
 		pop esi edx ecx ebx
@@ -360,6 +376,58 @@ proc pole_bin_find uses ebx ecx edx edi, mas:dword, fx:dword, fy:dword, k:dword
 	cmp ebx,0
 	jne .cycle_b ;}while(por);
 
+	ret
+endp
+
+;сдвиг всех ячеек (и объектов)
+align 4
+proc pole_move_all, pole:dword, m_d_x:dword, m_d_y:dword
+pushad
+	mov edi,dword[pole]
+	mov edx,[m_d_x]
+	mov esi,[m_d_y]
+
+	mov eax,pole_index
+	cmp dword[eax],0
+	je .end_0 ;если нет ячеек (проводов) то выход
+
+	mov ecx,dword[eax]
+	cld
+	@@: ;цикл по всем ячейкам
+		add eax,4
+		mov ebx,[eax]
+		imul ebx,sizeof.Cell
+		add ebx,pole_data
+
+		add dword[ebx+offs_cell_x],edx
+		add dword[ebx+offs_cell_y],esi
+		loop @b
+	.end_0:
+
+	;цикл по логическим элементам и подписям
+	stdcall dword[tl_node_poi_get_info],0,tree1
+	pop eax
+	@@:
+		cmp eax,0
+		je .end_1
+		cmp word[eax],el_icon_elems ;получение через eax тип иконки
+		je .mov_1
+		cmp word[eax],el_icon_captions
+		je .mov_1
+			jmp .end_mov_1
+		.mov_1:
+			stdcall [tl_node_poi_get_data], eax, tree1
+			pop ecx
+
+			add [ecx],edx ;coord x
+			add [ecx+4],esi ;coord y
+		.end_mov_1:
+		stdcall dword[tl_node_poi_get_next_info],eax,tree1
+		pop eax ;переходим к следущему узлу
+		jmp @b
+	.end_1:
+
+popad
 	ret
 endp
 
@@ -910,7 +978,7 @@ proc pole_draw_pok uses eax ebx ecx edx edi esi, pole:dword
 	;mov edi,dword[pole]
 
 	mov eax,4 ;рисование текста
-	mov ebx,325*65536+5
+	mov ebx,400*65536+5
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 ;or (1 shl 30)
 	mov edx,txt_zoom
@@ -928,7 +996,7 @@ proc pole_draw_pok uses eax ebx ecx edx edi esi, pole:dword
 	mov eax,47
 	movzx ecx,byte[zoom]
 	mov ebx,(2 shl 16)
-	mov edx,(325+6*9)*65536+5
+	mov edx,(400+6*9)*65536+5
 	mov esi,[sc.work_button_text]
 	or  esi,(1 shl 30)
 	mov edi,[sc.work_button]

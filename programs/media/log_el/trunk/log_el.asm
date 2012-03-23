@@ -16,6 +16,8 @@ color_s2 equ 0xff00 ;точка без пересечения
 color_s3 equ 0xff0000 ;временное значение для сохранения
 color_caption equ 0x808080
 
+debug equ 0
+
 ;номара иконок:
 el_icon_group equ 0 ;групповая
 el_icon_points equ 1 ;точки
@@ -48,7 +50,7 @@ include 'le_pole.inc'
 include 'le_signal.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Логические элементы 21.03.12',0 ;подпись окна
+caption db 'Логические элементы 23.03.12',0 ;подпись окна
 
 panel_0_coord_top equ 5 ;верхняя координата 0-го ряда панели инструментов
 panel_1_coord_top equ 35
@@ -104,6 +106,7 @@ elOpt 'or[4]', 0xff00ff,5,9,tbl_or, tbl_il_4, 4
 elOpt 'and[2]',0xffff00,5,5,tbl_and.2, tbl_il_2, 2
 elOpt 'and[3]',0xffff00,5,7,tbl_and.3, tbl_il_3, 3
 elOpt 'and[4]',0xffff00,5,9,tbl_and.4, tbl_il_4, 4
+elOpt 'and[5]',0xffff00,5,11,tbl_and.5, tbl_il_5, 5
 elOpt 'not',   0xffff,  3,3,tbl_not, tbl_il_1, 1
 elOpt 'xor',   0x8000ff,5,5,tbl_xor, tbl_il_2, 2
 elOpt 'sm[1]', 0x8080ff,7,7,tbl_sm,  tbl_il_3, 1,4
@@ -116,6 +119,7 @@ align 4
 tbl_or db 0,1,1,1, 1,1,1,1 ;or2, or3
 	db 1,1,1,1,1,1,1,1 ;or4
 tbl_and:
+.5: dq 0,0
 .4: dq 0
 .3: dd 0
 .2: db 0,0,0,1
@@ -129,6 +133,7 @@ tbl_il_1 db 1,0   ;корпус на 1 ногу
 tbl_il_2 db 1,2,0 ;корпус на 2 ноги
 tbl_il_3 db 1,2,2,0
 tbl_il_4 db 1,2,2,2,0
+tbl_il_5 db 1,2,2,2,2,0
 ;tbl_il_8 db 1,2,2,2,2,2,2,2,0
 
 time dd 0
@@ -339,15 +344,18 @@ mouse:
 	stdcall [tl_mouse], tree1
 	stdcall [tl_mouse], tree2
 
-	push eax ebx ecx edx
+	pushad
 	mcall 37,2 ;нажатые кнопки мыши
 	bt eax,0 ;левая кнопка нажата?
+	jc @f
+	bt eax,1 ;правая кнопка нажата?
 	jc @f
 		xor eax,eax
 		mov [pen_coord_x],eax
 		mov [pen_coord_y],eax
 		jmp .end_buf_wnd
 	@@:
+	mov esi,eax
 
 	mcall 37,1 ;eax = (x shl 16) + y
 	cmp ax,word[buf_0.t]
@@ -384,6 +392,8 @@ mouse:
 
 		cmp byte[pen_mode],0
 		jne .end_mode_0
+			bt esi,1
+			jc .end_mode_0
 			;режим курсора (выбор элемента при нажатии)
 			stdcall element_is_click,eax,ebx
 			test eax,eax
@@ -445,32 +455,50 @@ mouse:
 			mov eax,[pen_coord_x] ;привязка к координате x
 
 			.beg_draw:
-			stdcall pole_cell_creat, pole,eax,ebx,0
-			;ничего не убралось redraw_pole не подходит, т. к. чистить поле не нужно
-			stdcall pole_paint, pole
-			stdcall [buf2d_draw], buf_0
-			;stdcall but_test_pole, pole
-			jmp .end_buf_wnd
+			bt esi,1
+			jc @f
+				stdcall pole_cell_creat, pole,eax,ebx,0
+				;ничего не убралось redraw_pole не подходит, т. к. чистить поле не нужно
+				stdcall pole_paint, pole
+				stdcall [buf2d_draw], buf_0
+				jmp .end_buf_wnd
+			@@:
+				stdcall pole_cell_delete, pole,eax,ebx
+				call redraw_pole
+				jmp .end_buf_wnd
 		.end_mode_1:
 		cmp byte[pen_mode],2
 		jne @f
 			;режим рисования изоляции для провода
-			stdcall pole_cell_creat, pole,eax,ebx,2
+			bt esi,1
+			jc .mode_2_del
+				stdcall pole_cell_creat, pole,eax,ebx,2
+				jmp .mode_2_draw
+			.mode_2_del:
+				;стирание изоляции
+				mov ecx,eax
+				stdcall pole_cell_find, pole,ecx,ebx
+				test eax,eax
+				jz .end_buf_wnd
+				stdcall pole_cell_creat, pole,ecx,ebx,0
+			.mode_2_draw:
 			stdcall pole_paint, pole
 			stdcall [buf2d_draw], buf_0
-			;stdcall but_test_pole, pole
 			jmp .end_buf_wnd
 		@@:
 		cmp byte[pen_mode],3
 		jne @f
+			bt esi,1
+			jc @f
 			;режим стирания провода
 			stdcall pole_cell_delete, pole,eax,ebx
 			call redraw_pole
-			;stdcall but_test_pole, pole
 			jmp .end_buf_wnd
 		@@:
 		cmp byte[pen_mode],4
 		jne @f
+			bt esi,1
+			jc @f
 			;режим создания элементов
 			stdcall shem_element_creat, eax,ebx
 			stdcall pole_paint, pole
@@ -479,7 +507,10 @@ mouse:
 		@@:
 
 	.end_buf_wnd:
-	pop edx ecx ebx eax 
+if debug
+stdcall but_test_pole, pole
+end if
+	popad
 	ret
 
 ;output:
@@ -589,44 +620,60 @@ pushad
 	mov esi,[sc.work_button]
 	int 0x40
 
-	mov ebx,(30 shl 16)+20
+	add ebx,25 shl 16
 	mov edx,4
 	int 0x40
 
-	mov ebx,(55 shl 16)+20
+	add ebx,25 shl 16
 	mov edx,5
 	int 0x40
 
-	mov ebx,(85 shl 16)+20
-	mov edx,6
+	add ebx,30 shl 16
+	mov edx,6 ;пуск | остановка
 	int 0x40
 
-	mov ebx,(110 shl 16)+20
+	add ebx,25 shl 16
 	mov edx,7
 	int 0x40
 
-	mov ebx,(135 shl 16)+20
+	add ebx,25 shl 16
 	mov edx,8
 	int 0x40
 
-	mov ebx,(160 shl 16)+20
+	add ebx,25 shl 16
 	mov edx,9
 	int 0x40
 
-	mov ebx,(185 shl 16)+20
+	add ebx,25 shl 16
 	mov edx,10
 	int 0x40
 
-	mov ebx,(210 shl 16)+20
+	add ebx,25 shl 16
 	mov edx,11
 	int 0x40
 
-	mov ebx,(235 shl 16)+20
+	add ebx,25 shl 16
 	mov edx,12
 	int 0x40
 
-	mov ebx,(265 shl 16)+20
-	mov edx,13
+	add ebx,30 shl 16
+	mov edx,13 ;центровка схемы
+	int 0x40
+
+	add ebx,25 shl 16
+	mov edx,14
+	int 0x40
+
+	add ebx,25 shl 16
+	mov edx,15
+	int 0x40
+
+	add ebx,25 shl 16
+	mov edx,16 ;сдвиг схемы вверх
+	int 0x40
+
+	add ebx,25 shl 16
+	mov edx,17 ;сдвиг схемы вниз
 	int 0x40
 
 	; *** рисование иконок на кнопках ***
@@ -846,6 +893,32 @@ button:
 	jne @f
 		call but_center
 	@@:
+
+	;передвижение всех объектов схемы
+	cmp byte[tim_ch],0
+	jne .no_move
+	cmp ah,14
+	jne @f
+		stdcall pole_move_all, pole, -1, 0
+		call redraw_pole
+	@@:
+	cmp ah,15
+	jne @f
+		stdcall pole_move_all, pole, 1, 0
+		call redraw_pole
+	@@:
+	cmp ah,16 ;сдвиг схемы вверх
+	jne @f
+		stdcall pole_move_all, pole, 0, -1
+		call redraw_pole
+	@@:
+	cmp ah,17 ;сдвиг схемы вниз
+	jne @f
+		stdcall pole_move_all, pole, 0, 1
+		call redraw_pole
+	@@:
+	.no_move:
+
 	cmp ah,20
 	jne @f
 		call but_set_0
@@ -1275,6 +1348,7 @@ align 4
 proc but_save_file
 locals
 	napr dd ?
+	s_param dd ? ;параметр для красивого сохранения
 endl
 pushad
 	;*** вызов диалогового окна для сохранения файла
@@ -1549,6 +1623,7 @@ pushad
 	mov edi,eax
 
 	mov ecx,dword[esi]
+	mov dword[s_param],0
 	.cycle4: ;цикл по всем точкам
 		add esi,4
 		mov ebx,[esi]
@@ -1574,12 +1649,22 @@ pushad
 			add edi,eax
 			movzx eax,dh
 			stdcall convert_int_to_str
-			stdcall str_cat,edi,txt_space
-			;stdcall str_cat,edi,txt_nl
+
+			cmp dword[s_param],7 ;для формата строки
+			je .new_line
+				inc dword[s_param]
+				stdcall str_cat,edi,txt_space
+			jmp @f
+			.new_line:
+				mov dword[s_param],0
+				stdcall str_cat,edi,txt_nl
 		@@:
 		dec ecx
 		jnz .cycle4
-		stdcall str_cat,edi,txt_nl
+		cmp dword[s_param],0
+		je @f
+			stdcall str_cat,edi,txt_nl
+		@@:
 
 	;*** сохранение изоляционных точек ***
 	stdcall str_cat,edi,txt_sub_points

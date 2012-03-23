@@ -16,7 +16,7 @@ include '../../nu_pogodi/trunk/mem.inc'
 include '../../nu_pogodi/trunk/dll.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-hed db 'Life 20.02.12',0 ;подпись окна
+hed db 'Life 23.03.12',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -329,9 +329,11 @@ proc pole_cell_find, x:dword, y:dword
 		mov edx,ebx
 		shl edx,2
 		add edx,ecx
-		inc ebx
 		mov ecx,dword[ecx]
 		.cycle_b: ;for(i=b_sort+1;i<=fristC;i++)
+			inc ebx
+			cmp ebx,ecx
+			jg .cycle_e
 			add edx,4
 			get_cell_offset edi,dword[edx]
 			mov esi,dword[x]
@@ -344,9 +346,7 @@ proc pole_cell_find, x:dword, y:dword
 				mov eax,dword[edx] ;fnd=memCell[i];
 				jmp .cycle_e ;break;
 			.if_e:
-			inc ebx
-			cmp ebx,ecx
-			jle .cycle_b
+			jmp .cycle_b
 		.cycle_e:
 		pop esi edi edx ecx ebx
 	@@:
@@ -886,7 +886,8 @@ start:
 	mov [CellColors],eax
 	load_image_file fn_toolbar, image_data_toolbar,IMAGE_TOOLBAR_SIZE
 
-	stdcall pole_init_colors, 0xffffff,0xff0000,0x0000ff
+	;настройка цветов ячеек
+	stdcall pole_init_colors, 0xffffd0,0xff0000,0x0000ff
 	call pole_clear
 	call pole_paint ;рисование поля в буфере (не на экране)
 
