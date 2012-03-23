@@ -1578,7 +1578,10 @@ window._.sys_set_window: ;/////////////////////////////////////////////////////
         test    [edi + WDATA.fl_wdrawn], 1
         jnz     .set_client_box
         or      [edi + WDATA.fl_wdrawn], 1
-
+; After first draw_window we need redraw mouse necessarily!
+; Otherwise the user can see cursor specified by f.37.5 from another window.
+; He will be really unhappy! He is terrible in rage - usually he throws stones!
+        mov     [redrawmouse_unconditional], 1
         ; NOTE: commented out since doesn't provide necessary functionality
         ;       anyway, to be reworked
 ;       mov     eax, [timer_ticks] ; [0xfdf0]

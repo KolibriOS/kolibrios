@@ -1027,22 +1027,6 @@ align 4
         mov     [_display.move_cursor], eax
         ret
 ;------------------------------------------------------------------------------
-set_default_cursor_clock:
-        pushad
-        stdcall set_cursor, [def_cursor_clock]
-        mov     [redrawmouse_unconditional], 1
-        popad
-        call    __sys_draw_pointer
-        ret
-;------------------------------------------------------------------------------
-set_default_cursor_arrow:
-        pushad
-        stdcall set_cursor, [def_cursor]
-        mov     [redrawmouse_unconditional], 1
-        popad
-        call    __sys_draw_pointer
-        ret
-;------------------------------------------------------------------------------
 align 4
 def_arrow:
   file 'arrow.cur'

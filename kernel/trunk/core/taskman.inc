@@ -72,6 +72,7 @@ proc fs_execute
          slot_base     dd ?
          file_base     dd ?
          file_size     dd ?
+         handle        dd ? ;temp. for default cursor handle for curr. thread
                       ;app header data
          hdr_cmdline   dd ? ;0x00
          hdr_path      dd ? ;0x04
@@ -82,7 +83,13 @@ proc fs_execute
        endl
 
         pushad
-        call    set_default_cursor_clock
+
+        pushad
+        stdcall set_cursor, [def_cursor_clock]
+        mov     [handle], eax
+        mov     [redrawmouse_unconditional], 1
+        call    __sys_draw_pointer
+        popad
 
         mov     [flags], edx
 
@@ -114,8 +121,8 @@ proc fs_execute
 .bigfilename:
         popad
         mov     eax, -ERROR_FILE_NOT_FOUND
-        call    set_default_cursor_arrow
-        ret
+
+        jmp     .final
 
 .namecopied:
 
@@ -240,8 +247,9 @@ end if
         xor     ebx, ebx
         mov     [application_table_status], ebx;unlock application_table_status mutex
         mov     eax, [process_number];set result
-        call    set_default_cursor_arrow
-        ret
+
+        jmp     .final
+
 .failed:
         mov     eax, [save_cr3]
         call    set_cr3
@@ -252,7 +260,12 @@ end if
         xor     eax, eax
         mov     [application_table_status], eax
         mov     eax, esi
-        call    set_default_cursor_arrow
+.final:
+        pushad
+        stdcall set_cursor, [handle]
+        mov     [redrawmouse_unconditional], 1
+        call    __sys_draw_pointer
+        popad
         ret
 endp
 
