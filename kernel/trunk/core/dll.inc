@@ -438,12 +438,17 @@ proc load_file stdcall, file_name:dword
 
         mov     [file2], eax
 
+        pushad
         mov     ecx, unpack_mutex
         call    mutex_lock
+        popad
 
         stdcall unpack, [file], eax
 
+        pushad
+        mov     ecx, unpack_mutex
         call    mutex_unlock
+        popad
 
         stdcall kernel_free, [file]
         mov     eax, [file2]
