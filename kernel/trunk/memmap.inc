@@ -204,15 +204,18 @@
 ; 0x80284000 -> 28BFFF   HDD DMA AREA   (32k)
 ; 0x8028C000 -> 297FFF   free (48k)
 ;
-; 0x80298000 -> 29ffff   auxiliary table for background smoothing code (32k)
+; 0x80298000 -> 29FFFF   auxiliary table for background smoothing code (32k)
 ;
-; 0x802A0000 -> 2B00ff   wav device buffer (64k)
-; 0x802A0000 -> 2B00ff   wav device status (256)
-; 0x802B0100 -> 2Bffff   free (63k8)
-; 0x802C0000 -> 2C3fff   button info (8k)
+; 0x802A0000 -> 2B00FF   wav device buffer (64k)
+; 0x802A0000 -> 2B00FF   wav device status (256)
 ;
-;       0000 word    number of buttons
-;        first button entry at 0x10
+; 0x802B0100 -> 2B3FFD   free (15k7)
+;
+; 0x802B3FFE -> 2C3FFF   button info (64K + 2 byte)
+;     2B3FFE   0000 word    number of buttons
+;     2B4000    first button entry
+;      
+;        button entry at 0x10
 ;       +0000 word   process number
 ;       +0002 word   button id number : bits 00-15
 ;       +0004 word   x start
