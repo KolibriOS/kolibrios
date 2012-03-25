@@ -31,5 +31,4 @@ Sorcerer
 Gluk
 
 
-Thank you for using :)
 KolibriOS Forever!

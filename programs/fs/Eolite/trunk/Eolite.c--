@@ -16,7 +16,7 @@
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v0.99.9"
+#define title "Eolite File Manager v1.0"
 #define videlenie 0x94AECE //0xFEA4B7,0x8BCDFF,0xB8C9B8}; //цвет выделенного элемента из списка файлов
 byte toolbar_buttons_x[6]={9,46,85,134,167,203};
 //
@@ -149,8 +149,18 @@ int pressed_y;
 					}
 
 					//колёсико мыши
-					IF (m.vert==65535) IF (curbtn==0) FileList_ReDraw(-3); ELSE FileList_ReDraw(-1);
-					IF (m.vert==1) IF (curbtn==but_num-1) FileList_ReDraw(3); ELSE FileList_ReDraw(1);
+					IF (m.vert==65535) IF (curbtn>0) FileList_ReDraw(-1); ELSE
+					{
+						FileList_ReDraw(-1);
+						FileList_ReDraw(-1);
+						FileList_ReDraw(-1);					
+					}
+					IF (m.vert==1) IF (curbtn<but_num-1) FileList_ReDraw(1); ELSE
+					{
+						FileList_ReDraw(1);
+						FileList_ReDraw(1);
+						FileList_ReDraw(1);
+					}
 					//скролл
 					if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>56) while (m.lkm)
 					{
@@ -443,8 +453,15 @@ void FileList_ReDraw(int curbtn_)
 	}
 	else  //вниз
 	{
+		/*if (count-za_kadrom-but_num==1) //это заглушка
+		{
+			za_kadrom=count-but_num;
+			curbtn=but_num-1;
+			List_ReDraw();
+		}*/
+
 		IF (za_kadrom==count-but_num) && (curbtn==but_num-1) return;
-		IF (but_num-curbtn>curbtn_) // 18-0>33?
+		IF (but_num-curbtn>curbtn_)
 		{
 			Line_ReDraw(0xFFFFFF, curbtn); //белая полоса
 			curbtn+=curbtn_;
@@ -453,12 +470,10 @@ void FileList_ReDraw(int curbtn_)
 		}
 		else
 		{
-			IF(but_num+za_kadrom+curbtn_>=count) //18+0+33>=41
+			//IF(za_kadrom+but_num+curbtn_>=count) //а тут кажись был баг
+			IF(za_kadrom+curbtn+curbtn_>=count)
 			{
-				//WriteDebug("1");
 				za_kadrom=count-but_num;
-				//WriteDebug(IntToStr(curbtn));
-				//WriteDebug(IntToStr(curbtn_));
 				curbtn=curbtn_-za_kadrom+curbtn;
 				}
 			ELSE
@@ -466,10 +481,9 @@ void FileList_ReDraw(int curbtn_)
 				za_kadrom+=curbtn_+curbtn-but_num+1;
 				curbtn=but_num-1;
 			}
+			
 			IF (curbtn<0) || (curbtn>but_num)
 			{
-				//WriteDebug(IntToStr(curbtn));
-				//ShowMessage("Bug found! Tell it Leency!");
 				curbtn=but_num-1;
 			}
 			List_ReDraw();
