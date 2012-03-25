@@ -507,6 +507,7 @@ void Line_ReDraw(dword color, filenum){
 	y=filenum*18+57; //положение текста по Y
 	IF (rename_active==1) ReName(false);
 	//да, я не спорю что изврат, но перерисовка зато маленькая
+	DeleteButton(201+filenum);
 	DefineButton(192,y,onLeft(28,192),18,201+filenum+BT_HIDE+BT_NOFRAME,color); //кнопа
 	DrawBar(192,y,3,18,color); DrawBar(195,y,16,2,color); 
 	DrawBar(192+19,y,onLeft(46,192),18,color); DrawBar(195,y+17,16,1,color);
