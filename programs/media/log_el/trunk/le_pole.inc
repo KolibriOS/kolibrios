@@ -685,26 +685,59 @@ proc el_draw, h_elem:dword
 	ret
 endp
 
+;description:
+;рисование подписей
 align 4
 proc capt_draw uses eax ebx edi esi, h_capt:dword
 	mov edi,[h_capt]
 	mov eax,[edi] ;coord x
 	mov ebx,[edi+4] ;coord y
+
+	movzx esi,byte[zoom]
+	cmp esi,3
+	jl @f
+		;рисование рамки, вокруг занятой точки
+		stdcall draw_point_border, eax,ebx, color_caption
+	@@:
+
 	add eax,[Cor_x]
 	add ebx,[Cor_y]
 
-	movzx esi,byte[zoom]
 	cmp esi,1
 	jle @f
 		imul eax,esi
 		imul ebx,esi
 	@@:
 
+	cmp esi,3
+	jl @f
+		;сдвиг надписи с учетом рамки
+		add eax,esi
+		inc eax
+	@@:
+
 	add edi,capt_offs ;edi - указатель на полную подпись (с координатами)
 	call str_next_val
 	call str_next_val
-	;call str_next_val
 	stdcall [buf2d_draw_text], buf_0, buf_font,edi,eax,ebx,color_caption ;рисуем строку с текстом
+	ret
+endp
+
+;description:
+; функция для выделения точечных объектов на крупных масштабах
+; данная функция очень похожа на draw_signal_rect
+align 4
+proc draw_point_border uses eax ebx edi, x0:dword,y0:dword, color:dword
+	movzx edi,byte[zoom]
+	mov ebx,[y0]
+	mov eax,[x0]
+
+	add ebx,[Cor_y]
+	imul ebx,edi
+	add eax,[Cor_x]
+	imul eax,edi
+
+	stdcall [buf2d_rect_by_size], buf_0, eax,ebx,edi,edi, dword[color]
 	ret
 endp
 

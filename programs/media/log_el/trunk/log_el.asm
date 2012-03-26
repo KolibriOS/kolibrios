@@ -50,7 +50,7 @@ include 'le_pole.inc'
 include 'le_signal.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Логические элементы 23.03.12',0 ;подпись окна
+caption db 'Логические элементы 26.03.12',0 ;подпись окна
 
 panel_0_coord_top equ 5 ;верхняя координата 0-го ряда панели инструментов
 panel_1_coord_top equ 35
@@ -164,7 +164,7 @@ run_file_70 FileInfoBlock
 image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*20
+IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*24
 image_data_toolbar dd 0
 
 TREE_ICON_SYS16_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*11+54 ;размер bmp файла с системными иконками
@@ -498,11 +498,20 @@ mouse:
 		cmp byte[pen_mode],4
 		jne @f
 			bt esi,1
-			jc @f
+			jc .rotate
 			;режим создания элементов
 			stdcall shem_element_creat, eax,ebx
 			stdcall pole_paint, pole
 			stdcall [buf2d_draw], buf_0
+			jmp .end_buf_wnd
+			.rotate:
+			;поворот элементов на 90 градусов
+			stdcall element_is_click,eax,ebx
+			test eax,eax
+			jz .end_buf_wnd
+				inc byte[eax+sp_offs_el_angle]
+				and byte[eax+sp_offs_el_angle],3 ;для контроля на переполнение
+				call redraw_pole
 			jmp .end_buf_wnd
 		@@:
 
@@ -605,7 +614,7 @@ pushad
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
 	xor eax,eax
-	mov ebx,(20 shl 16)+520
+	mov ebx,(20 shl 16)+580
 	mov ecx,(20 shl 16)+415
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x10000000+0x20000000
@@ -715,6 +724,18 @@ pushad
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	add edx,(30 shl 16) ;center
 	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;m
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;m
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;m
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;m
+	int 0x40
 
 	; *** рисование буфера ***
 	stdcall [buf2d_draw], buf_0
@@ -770,7 +791,7 @@ pushad
 	mov ecx,(16 shl 16)+16
 	mov edx,(62 shl 16)+panel_1_coord_top+2
 
-	add ebx,IMAGE_TOOLBAR_ICON_SIZE*16
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE*15
 	int 0x40
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
@@ -815,7 +836,7 @@ pushad
 	mov ecx,(16 shl 16)+16
 	mov edx,(7 shl 16)+panel_2_coord_top+2 ;иконка стрела
 
-	add ebx,IMAGE_TOOLBAR_ICON_SIZE*11
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE*19
 	int 0x40
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
@@ -1451,10 +1472,10 @@ pushad
 		je .cycle1_end
 		cmp word[esi],el_icon_elems ;получение через esi тип иконки
 		jne .end_add_p1
-			stdcall [tl_node_poi_get_data], esi, tree1
-			pop ecx
+;			stdcall [tl_node_poi_get_data], esi, tree1
+;			pop ecx
 			inc dword[shem_elems]
-
+if 0
 			xor edx,edx ;edx - номер входной ноги
 			@@:
 				stdcall el_get_leg_coords, ecx,edx
@@ -1473,7 +1494,7 @@ pushad
 				jmp @b
 			@@:
 			;mov edx,(1 shl 16) ;edx - номер выходной ноги
-
+end if
 		.end_add_p1:
 		stdcall dword[tl_node_poi_get_next_info],esi,tree1
 		pop esi ;переходим к следущему узлу
@@ -2286,7 +2307,7 @@ align 4
 buf_0: dd 0 ;
 .l: dw 170 ;+4 left
 .t: dw panel_1_coord_top ;+6 top
-.w: dd 335 ;+8 w
+.w: dd 395 ;+8 w
 .h: dd 340 ;+12 h
 .color: dd 0 ;+16 color
 	db 24 ;+20 bit in pixel
@@ -2529,16 +2550,15 @@ endp
 ; edi = string buffer
 ;output:
 align 4
-convert_int_to_str:
-	pushad
-		mov dword[edi+1],0;0x20202020
-		call .str
-	popad
+proc convert_int_to_str uses eax ecx edx edi
+	mov dword[edi+1],0
+	call .str
 	ret
+endp
 
 align 4
 .str:
-	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
+	mov ecx,0x0a ;задается система счисления изменяются регистры eax,ecx,edx входные параметры eax - число
     ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной
 	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
 	jb @f
@@ -2549,7 +2569,7 @@ align 4
 		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
 		pop eax
 	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-	or al,0x30  ;данная команда короче  чем две выше
+	or al,0x30  ;данная команда короче чем две выше
 	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
 	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
