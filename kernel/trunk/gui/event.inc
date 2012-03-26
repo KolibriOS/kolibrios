@@ -381,7 +381,7 @@ align 4
 sys_sendwindowmsg:                                 ;; f72
         dec     ebx
         jnz     .ret ;subfunction==1 ?
-       ;pushfd  ;а нафига?
+        pushfd
         cli
         sub     ecx, 2
         je      .sendkey
@@ -402,7 +402,8 @@ sys_sendwindowmsg:                                 ;; f72
         mov     [KEY_COUNT+1+eax], dl
 .result:
         setae   byte[esp+32] ;считаем, что исходно: dword[esp+32]==72
-.retf: ;popfd
+.retf:
+        popfd
 .ret:
         ret
 
