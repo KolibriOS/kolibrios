@@ -4687,9 +4687,8 @@ syscall_getpixel:                       ; GetPixel
         call    dword [GETPIXEL]; eax - x, ebx - y
         mov     [esp + 32], ecx
         ret
-
+;-----------------------------------------------------------------------------
 align 4
-
 syscall_getarea:
 ;eax = 36
 ;ebx = pointer to bufer for img BBGGRRBBGGRR...
@@ -4725,9 +4724,12 @@ syscall_getarea:
         add     ebp, edi
 
         add     ebx, edx
-
+;--------------------------------------
+align 4
 .start_y:
         push    ecx edx
+;--------------------------------------
+align 4
 .start_x:
         push    eax ebx ecx
         add     eax, ecx
@@ -4749,9 +4751,89 @@ syscall_getarea:
         jnz     .start_y
         popad
         ret
-
+;-----------------------------------------------------------------------------
 align 4
+syscall_putarea_backgr:
+;eax = 25
+;ebx = pointer to bufer for img BBGGRRBBGGRR...
+;ecx = [size x]*65536 + [size y]
+;edx = [start x]*65536 + [start y]
+        pushad
+        mov     edi, ebx
+        mov     eax, edx
+        shr     eax, 16
+        mov     ebx, edx
+        and     ebx, 0xffff
+        dec     eax
+        dec     ebx
+; eax - x, ebx - y
+        mov     edx, ecx
+        shr     ecx, 16
+        and     edx, 0xffff
+        mov     esi, ecx
+; ecx - size x, edx - size y
+        mov     ebp, edx
+        dec     ebp
+        shl     ebp, 2
 
+        imul    ebp, esi
+
+        mov     esi, ecx
+        dec     esi
+        shl     esi, 2
+
+        add     ebp, esi
+        add     ebp, edi
+
+        add     ebx, edx
+;--------------------------------------
+align 4
+.start_y:
+        push    ecx edx
+;--------------------------------------
+align 4
+.start_x:
+        push    eax ecx
+        add     eax, ecx
+
+        mov     ecx, [ebp]
+        rol     ecx, 8
+        test    cl, cl        ; transparensy = 0
+        jz      .no_put
+
+        xor     cl, cl
+        ror     ecx, 8
+
+        pushad
+        mov     edx, [d_width_calc_area + ebx*4]
+        add     edx, [_WinMapAddress]
+        movzx   edx, byte [eax+edx]
+        cmp     dl, byte 1
+        jne     @f
+
+        call    dword [PUTPIXEL]; eax - x, ebx - y
+;--------------------------------------
+align 4
+@@:
+        popad
+;--------------------------------------
+align 4
+.no_put:
+        pop     ecx eax
+        
+        sub     ebp, 4
+        dec     ecx
+        jnz     .start_x
+
+        pop     edx ecx
+        dec     ebx
+        dec     edx
+        jnz     .start_y
+
+        popad
+        ret
+;-----------------------------------------------------------------------------
+align 4
 syscall_drawline:                       ; DrawLine
 
         mov     edi, [TASK_BASE]

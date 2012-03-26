@@ -145,7 +145,7 @@ iglobal
       dd sys_settime             ; 22-setting date,time,clock and alarm-clock
       dd sys_wait_event_timeout  ; 23-TimeOutWaitForEvent
       dd syscall_cdaudio         ; 24-PlayCdTrack,StopCd and GetCdPlaylist
-      dd undefined_syscall       ; 25-reserved
+      dd syscall_putarea_backgr  ; 25-Put Area to background
       dd sys_getsetup            ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
       dd undefined_syscall       ; 27-reserved
       dd undefined_syscall       ; 28-reserved

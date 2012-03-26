@@ -1493,6 +1493,26 @@ Remarks:
   * An example of usage of the function is the application CD_tray.
 
 ======================================================================
+======= Function 25 - put image area on the background layer. ========
+======================================================================
+Paramters:
+  * eax = 25 - function number
+  * ebx = pointer to the previously allocated memory area,
+        where placed the source images in a format BBGGRRTTBBGGRRTT...
+  * ecx = [size on axis x]*65536 + [size on axis y]
+  * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
+Returned value:
+  * function does not return value
+Remarks:
+  * Coordinates of the image are coordinates of the upper left corner
+    of the image relative to the screen.
+  * Size of the image in bytes is 4*xsize*ysize
+  * TT - byte pointer of transparency, at current version:
+         1 to FF - opaque, 0 - transparent.
+  * The function places the image directly to LFB. It is not for
+    background image f.15. Options f.15 to f.25 does not make sense.
+
+======================================================================
 ======== Function 26, subfunction 1 - get MPU MIDI base port. ========
 ======================================================================
 Parameters:
