@@ -154,7 +154,7 @@ iglobal
       dd undefined_syscall       ; 31-reserved
       dd undefined_syscall       ; 32-reserved
       dd undefined_syscall       ; 33-reserved
-      dd undefined_syscall       ; 34-reserved
+      dd syscall_getpixel_WinMap ; 34-GetPixel WinMap
       dd syscall_getpixel        ; 35-GetPixel
       dd syscall_getarea         ; 36-GetArea
       dd readmousepos            ; 37-GetMousePosition_ScreenRelative,.

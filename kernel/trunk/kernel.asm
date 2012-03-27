@@ -4672,9 +4672,28 @@ syscall_cdaudio:                        ; CD
         call    .free
 ;        pop     eax
         ret
-
+;-----------------------------------------------------------------------------
 align 4
-
+syscall_getpixel_WinMap:                       ; GetPixel WinMap
+        cmp     ebx, [Screen_Max_X]
+        jbe     @f
+        cmp     ecx, [Screen_Max_Y]
+        jbe     @f
+        xor     eax, eax
+        jmp     .store
+;--------------------------------------
+align 4
+@@:
+        mov     eax, [d_width_calc_area + ecx*4]
+        add     eax, [_WinMapAddress]
+        movzx   eax, byte[eax+ebx]        ; get value for current point
+;--------------------------------------
+align 4
+.store:
+        mov     [esp + 32], eax
+        ret
+;-----------------------------------------------------------------------------
+align 4
 syscall_getpixel:                       ; GetPixel
         mov     ecx, [Screen_Max_X]
         inc     ecx
