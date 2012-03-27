@@ -48,19 +48,6 @@ still:		     ; главный цикл основного процесса
 ;	test	eax,eax	; курсор в точке (0;0), т.е. eax = 0
 ;	je	exit
 ;--------------------------------------
-; получим число процессов в системе
-	xor	ecx,ecx
-	mcall	9,procinfo
-
-	inc	eax	     ; теперь в eax содержится число процессов + 1
-	mov	[processes],eax
-	mov	ecx,1
-;--------------------------------------
-align 4
-new_process:
-	pushad
-; получим информацию о процессе; номер - в ecx
-	mcall	9,procinfo
 ; координаты курсора
 	xor	ebx,ebx
 	mcall	37
@@ -70,42 +57,10 @@ new_process:
 	and	ebx,0xffff
 	mov	[curx1],eax	; curx1 = cursor_x
 	mov	[cury1],ebx	; cury1 = cursor_y
-; \begin{diamond}[18.09.2006]
-; ignore minimized windows
-	test	[procinfo.wnd_state], 2
-	jnz	ne_goden
-; \end{diamond}[18.09.2006]
-	mov	eax,[procinfo.box.left]   ; eax = wnd_x_start
-	mov	ebx,[procinfo.box.top]	  ; ebx = wnd_y_start
-
-	mov	ecx,[procinfo.box.width]
-	add	ecx,eax 		 ; ecx = wnd_x_end
-	mov	edx,[procinfo.box.height]
-	add	edx,ebx 		 ; ecx = wnd_y_end
-
-	cmp	eax,[curx1]  ; wnd_x_start > cursor_x => курсор левее окна
-	jg	ne_goden
-
-	cmp	ecx,[curx1]  ; wnd_x_end   < cursor_x => курсор правее окна
-	jl	ne_goden
-
-	cmp	ebx,[cury1]  ; wnd_y_start > cursor_y => курсор выше окна
-	jg	ne_goden
-
-	cmp	edx,[cury1]  ; wnd_y_end   < cursor_y => курсор ниже окна
-	jl	ne_goden
-;--------------------------------------
-align 4
-goden:		     ; клик был внутри какого-то окна, поэтому ничего не делаем
-	popad
-	jmp	still
-;--------------------------------------
-align 4
-ne_goden:	     ; клик был снаружи рассматриваемого окна, поэтому
-	popad
-	inc	ecx
-	cmp	ecx,[processes]
-	jl	new_process  ; либо сморим следующее окно, либо запускаем меню
+; кому принадлежит точка?
+	mcall	34,[curx1],[cury1]
+	cmp	al,1 ; 1 - ядро
+	jne	still
 ;--------------------------------------
 align 4
 @@:		; подождём, пока пользователь не отпустил правую кнопку мыши
@@ -400,7 +355,6 @@ start_info:
 IM_END:	
 align 4
 ; НЕИНИЦИАЛИЗИРОВАННЫЕ ДАННЫЕ
-  processes	dd ?	; количество процессов в системе
   curx1		dd ?	; координаты курсора
   cury1		dd ?
   curx		dd ?	; координаты окна меню
