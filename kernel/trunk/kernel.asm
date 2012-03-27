@@ -2511,12 +2511,7 @@ nosb2:
         cmp     ebx, 3                     ; DRAW BACKGROUND
         jnz     nosb3
 draw_background_temp:
-;    cmp   [bgrchanged],1 ;0
-;    je    nosb31
-;draw_background_temp:
-;    mov   [bgrchanged],1 ;0
         mov     [background_defined], 1
-        mov     byte[BACKGROUND_CHANGED], 1
         call    force_redraw_background
    nosb31:
         ret
@@ -2527,7 +2522,6 @@ draw_background_temp:
         cmp     ecx, [BgrDrawMode]
         je      nosb41
         mov     [BgrDrawMode], ecx
-;    mov   [bgrchanged],1
    nosb41:
         ret
   nosb4:
@@ -3139,12 +3133,9 @@ endg
 uglobal
 background_defined    db    0    ; diamond, 11.04.2006
 endg
-
+;-----------------------------------------------------------------------------
 align 4
-; check misc
-
 checkmisc:
-
         cmp     [ctrl_alt_del], 1
         jne     nocpustart
 
@@ -3152,7 +3143,8 @@ checkmisc:
         call    fs_execute_from_sysdir
 
         mov     [ctrl_alt_del], 0
-
+;--------------------------------------
+align 4
 nocpustart:
         cmp     [mouse_active], 1
         jne     mouse_not_active
@@ -3168,7 +3160,7 @@ nocpustart:
 
         movzx   eax, word [MOUSE_X]
         movzx   edx, word [MOUSE_Y]
-
+;--------------------------------------
 align 4
 .set_mouse_event:
         add     edi, 256
@@ -3178,7 +3170,8 @@ align 4
 
         cmp     edi, [esp]                      ; skip if filtration active
         jne     .skip
-
+;--------------------------------------
+align 4
 .pos_filter:
         test    [ebx+TASKDATA.event_mask], 0x40000000
         jz      .set
@@ -3196,50 +3189,53 @@ align 4
         add     esi, [ebx-twdw+WDATA.box.height]
         cmp     edx, esi
         ja      .skip
+;--------------------------------------
+align 4
 .set:
-        or      [edi+SLOT_BASE+APPDATA.event_mask], 100000b
+        or      [edi+SLOT_BASE+APPDATA.event_mask], 100000b  ; set event 6
+;--------------------------------------
+align 4
 .skip:
         loop    .set_mouse_event
 
         pop     eax
-
+;--------------------------------------
+align 4
 mouse_not_active:
-        cmp     byte[BACKGROUND_CHANGED], 0
-        jz      no_set_bgr_event
-        xor     edi, edi
-        mov     ecx, [TASK_COUNT]
-set_bgr_event:
-        add     edi, 256
-        or      [edi+SLOT_BASE+APPDATA.event_mask], 16
-        loop    set_bgr_event
-        mov     byte[BACKGROUND_CHANGED], 0
-no_set_bgr_event:
         cmp     byte[REDRAW_BACKGROUND], 0         ; background update ?
         jz      nobackgr
         cmp     [background_defined], 0
         jz      nobackgr
-;    mov   [draw_data+32 + RECT.left],dword 0
-;    mov   [draw_data+32 + RECT.top],dword 0
-;    mov   eax,[Screen_Max_X]
-;    mov   ebx,[Screen_Max_Y]
-;    mov   [draw_data+32 + RECT.right],eax
-;    mov   [draw_data+32 + RECT.bottom],ebx
+;--------------------------------------
+align 4
 @@:
         call    drawbackground
+;--------- set event 5 start ----------
+        push    ecx edi
+        xor     edi, edi
+        mov     ecx, [TASK_COUNT]
+;--------------------------------------
+align 4
+set_bgr_event:
+        add     edi, 256
+        or      [edi+SLOT_BASE+APPDATA.event_mask], 10000b  ; set event 5
+        loop    set_bgr_event
+        pop     edi ecx
+;--------- set event 5 stop -----------
         xor     eax, eax
         xchg    al, [REDRAW_BACKGROUND]
         test    al, al                             ; got new update request?
         jnz     @b
+
         mov     [draw_data+32 + RECT.left], eax
         mov     [draw_data+32 + RECT.top], eax
         mov     [draw_data+32 + RECT.right], eax
         mov     [draw_data+32 + RECT.bottom], eax
         mov     [MOUSE_BACKGROUND], byte 0
-
+;--------------------------------------
+align 4
 nobackgr:
-
-    ; system shutdown request
-
+; system shutdown request
         cmp     [SYS_SHUTDOWN], byte 0
         je      noshutdown
 
@@ -3251,28 +3247,31 @@ nobackgr:
         lea     ecx, [edx-1]
         mov     edx, OS_BASE+0x3040
         jecxz   @f
+;--------------------------------------
+align 4
 markz:
         mov     [edx+TASKDATA.state], byte 3
         add     edx, 0x20
         loop    markz
+;--------------------------------------
+align 4
 @@:
-
-  no_mark_system_shutdown:
-
+no_mark_system_shutdown:
         dec     byte [SYS_SHUTDOWN]
         je      system_shutdown
-
+;--------------------------------------
+align 4
 noshutdown:
-
-
         mov     eax, [TASK_COUNT]           ; termination
         mov     ebx, TASK_DATA+TASKDATA.state
         mov     esi, 1
-
+;--------------------------------------
+align 4
 newct:
         mov     cl, [ebx]
         cmp     cl, byte 3
         jz      terminate
+
         cmp     cl, byte 4
         jz      terminate
 
@@ -3281,11 +3280,9 @@ newct:
         dec     eax
         jnz     newct
         ret
-
-; redraw screen
-
+;-----------------------------------------------------------------------------
+align 4
 redrawscreen:
-
 ; eax , if process window_data base is eax, do not set flag/limits
 
         pushad
@@ -3296,8 +3293,9 @@ redrawscreen:
 
          ;mov   ecx,0               ; redraw flags for apps
         xor     ecx, ecx
-       newdw2:
-
+;--------------------------------------
+align 4
+newdw2:
         inc     ecx
         push    ecx
 
@@ -3342,45 +3340,58 @@ redrawscreen:
         mov     eax, [draw_limits.left]  ; eax = area x start     ecx = window x end
         cmp     ecx, eax
         jb      ricino
-
-        bgli:
-
+;--------------------------------------
+align 4
+bgli:
         cmp     dword[esp], 1
         jnz     .az
-;         cmp   byte[BACKGROUND_CHANGED], 0
-;         jnz   newdw8
+
         cmp     byte[REDRAW_BACKGROUND], 0
         jz      .az
+
         mov     dl, 0
         lea     eax, [edi+draw_data-window_data]
         mov     ebx, [draw_limits.left]
         cmp     ebx, [eax+RECT.left]
         jae     @f
+
         mov     [eax+RECT.left], ebx
         mov     dl, 1
-        @@:
+;--------------------------------------
+align 4
+@@:
         mov     ebx, [draw_limits.top]
         cmp     ebx, [eax+RECT.top]
         jae     @f
+
         mov     [eax+RECT.top], ebx
         mov     dl, 1
-        @@:
+;--------------------------------------
+align 4
+@@:
         mov     ebx, [draw_limits.right]
         cmp     ebx, [eax+RECT.right]
         jbe     @f
+
         mov     [eax+RECT.right], ebx
         mov     dl, 1
-        @@:
+;--------------------------------------
+align 4
+@@:
         mov     ebx, [draw_limits.bottom]
         cmp     ebx, [eax+RECT.bottom]
         jbe     @f
+
         mov     [eax+RECT.bottom], ebx
         mov     dl, 1
-        @@:
+;--------------------------------------
+align 4
+@@:
         add     byte[REDRAW_BACKGROUND], dl
         jmp     newdw8
-        .az:
-
+;--------------------------------------
+align 4
+.az:
         mov     eax, edi
         add     eax, draw_data-window_data
 
@@ -3398,16 +3409,16 @@ redrawscreen:
         cmp     dword [esp], 1
         jne     nobgrd
         inc     byte[REDRAW_BACKGROUND]
-
-       newdw8:
-       nobgrd:
+;--------------------------------------
+align 4
+newdw8:
+nobgrd:
 
         mov     [eax + WDATA.fl_redraw], byte 1  ; mark as redraw
-
-       ricino:
-
-       not_this_task:
-
+;--------------------------------------
+align 4
+ricino:
+not_this_task:
         pop     ecx
 
         cmp     ecx, [TASK_COUNT]
@@ -3415,11 +3426,10 @@ redrawscreen:
 
         pop     eax
         popad
-
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 calculatebackground:   ; background
-
         mov     edi, [_WinMapAddress]              ; set os to use all pixels
         mov     eax, 0x01010101
         mov     ecx, [_WinMapSize]
@@ -3427,19 +3437,14 @@ calculatebackground:   ; background
         rep stosd
 
         mov     byte[REDRAW_BACKGROUND], 0            ; do not draw background!
-        mov     byte[BACKGROUND_CHANGED], 0
-
         ret
-
+;-----------------------------------------------------------------------------
 uglobal
   imax    dd 0x0
 endg
-
-
-
+;-----------------------------------------------------------------------------
+align 4
 delay_ms:     ; delay in 1/1000 sec
-
-
         push    eax
         push    ecx
 
@@ -3453,8 +3458,9 @@ delay_ms:     ; delay in 1/1000 sec
         and     al, 0x10
         mov     ah, al
         cld
-
- cnt1:
+;--------------------------------------
+align 4
+cnt1:
         in      al, 0x61
         and     al, 0x10
         cmp     al, ah
@@ -3465,9 +3471,8 @@ delay_ms:     ; delay in 1/1000 sec
 
         pop     ecx
         pop     eax
-
         ret
-
+;-----------------------------------------------------------------------------
 align 4
 set_app_param:
         mov     edi, [TASK_BASE]
@@ -3478,17 +3483,17 @@ set_app_param:
         xchg    eax, [edi + TASKDATA.event_mask] ; set new event mask
         mov     [esp+32], eax                    ; return old mask value
         ret
-
-
-
+;-----------------------------------------------------------------------------
+align 4
 delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
         push    ecx
         push    edx
 
         mov     edx, [timer_ticks]
-
-      newtic:
+;--------------------------------------
+align 4
+newtic:
         mov     ecx, [timer_ticks]
         sub     ecx, edx
         cmp     ecx, ebx
@@ -3497,16 +3502,15 @@ delay_hs:     ; delay in 1/100 secs
         call    change_task
 
         jmp     newtic
-
-      zerodelay:
+;--------------------------------------
+align 4
+zerodelay:
         pop     edx
         pop     ecx
-
         ret
-
+;-----------------------------------------------------------------------------
 align 16        ;very often call this subrutine
 memmove:       ; memory move in bytes
-
 ; eax = from
 ; ebx = to
 ; ecx = no of bytes
@@ -3527,15 +3531,19 @@ memmove:       ; memory move in bytes
         pop     ecx
         and     ecx, 11b
         jz      .finish
-  @@:
+;--------------------------------------
+align 4
+@@:
         rep movsb
-
-  .finish:
+;--------------------------------------
+align 4
+.finish:
         pop     ecx edi esi
-  .ret:
+;--------------------------------------
+align 4
+.ret:
         ret
-
-
+;-----------------------------------------------------------------------------
 ; <diamond> Sysfunction 34, read_floppy_file, is obsolete. Use 58 or 70 function instead.
 ;align 4
 ;

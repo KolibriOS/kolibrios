@@ -4463,9 +4463,7 @@ Codes of events:
     are read out by function 17)
   * 4 = reserved (in current implementation never comes even after
     unmasking by function 40)
-  * 5 = the desktop background is redrawed (is reset automatically
-    after redraw, so if in redraw time program does not wait and
-    does not check events, it will not remark this event)
+  * 5 = kernel finished redrawing of the desktop background
   * 6 = mouse event (something happened - button pressing or moving;
     is reset at reading)
   * 7 = IPC event (see function 60 -

@@ -137,7 +137,7 @@
 ;   FF00  byte        1 = system shutdown request
 ;   FF01  byte        task activation request?
 ;   FFF0  byte        >0 if redraw background request from app
-;   FFF1  byte        >0 if background changed
+;   FFF1  byte        free
 ;   FFF2              write and read bank in screen
 ;   FFF4  byte        0 if first mouse draw & do not return picture under
 ;   FFF5  byte        1 do not draw pointer
