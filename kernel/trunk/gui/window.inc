@@ -1351,45 +1351,17 @@ window._.invalidate_screen: ;//////////////////////////////////////////////////
 
         ; TODO: do we really need `draw_limits`?
         ; Yes, they are used by background drawing code.
-        mov     ecx, [eax + BOX.left]
-        mov     edx, [ebx + BOX.left]
-        cmp     ecx, edx
-        jle     @f
-        mov     ecx, edx
-;--------------------------------------
-align 4
-@@:
+
+; we need only to restore the background windows at the old place!
+        mov     ecx, [ebx + BOX.left]
         mov     [draw_limits.left], ecx
-        mov     ecx, [eax + BOX.left]
-        add     ecx, [eax + BOX.width]
-        add     edx, [ebx + BOX.width]
-        cmp     ecx, edx
-        jae     @f
-        mov     ecx, edx
-;--------------------------------------
-align 4
-@@:
+        add     ecx, [ebx + BOX.width]
         mov     [draw_limits.right], ecx
-        mov     ecx, [eax + BOX.top]
-        mov     edx, [ebx + BOX.top]
-        cmp     ecx, edx
-        jle     @f
-        mov     ecx, edx
-;--------------------------------------
-align 4
-@@:
+        mov     ecx, [ebx + BOX.top]
         mov     [draw_limits.top], ecx
-        mov     ecx, [eax + BOX.top]
-        add     ecx, [eax + BOX.height]
-        add     edx, [ebx + BOX.height]
-        cmp     ecx, edx
-        jae     @f
-        mov     ecx, edx
-;--------------------------------------
-align 4
-@@:
+        add     ecx, [ebx + BOX.height]
         mov     [draw_limits.bottom], ecx
-        ; recalculate screen buffer at old position
+; recalculate screen buffer at old position
         push    ebx
         mov     edx, [eax + BOX.height]
         mov     ecx, [eax + BOX.width]
@@ -1399,7 +1371,7 @@ align 4
         add     edx, ebx
         call    calculatescreen
         pop     eax
-        ; recalculate screen buffer at new position
+; recalculate screen buffer at new position
         mov     edx, [eax + BOX.height]
         mov     ecx, [eax + BOX.width]
         mov     ebx, [eax + BOX.top]
