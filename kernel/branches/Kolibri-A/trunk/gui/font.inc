@@ -1,20 +1,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;;   Distributed FOR KOLIBRIOS AND ITS DIRECT BRANCHES ONLY     ;;
+;;     under conditions of the GNU General Public License       ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
 
-; // Alver 22.06.2008 // {
 align 4
 dtext_asciiz_esi:			   ; for skins title out
     push eax
     xor eax, eax
     inc eax
     jmp    dtext.1
-; } \\ Alver \\
 
 align 4
 dtext:	; Text String Output (rw by Johnny_B[john@kolibrios.org])
@@ -27,11 +26,12 @@ dtext:	; Text String Output (rw by Johnny_B[john@kolibrios.org])
 	; edx start of text
 	; edi 1 force
 
-; // Alver 22.06.2008 // {
+	test	ecx, 0x20000000
+	jnz	.font3
+
        push eax
 	xor	eax, eax
 .1:
-; } \\ Alver \\
 	pushad
 	call	[_display.disable_mouse]
 
@@ -50,12 +50,10 @@ dtext:	; Text String Output (rw by Johnny_B[john@kolibrios.org])
 .test_asciiz:
 	cmp	byte [edx], 0
 	jz	.end
-; // Alver 22.06.2008 // {
 	cmp byte [esp+28], 1	;  was the entry point = dtext.1 ?
 	jne   @f
 	dec	esi
 	js	  .end
-; } \\ Alver \\
 @@:
 	inc	edx
 	pushad			; esp -= 64 !
@@ -92,6 +90,7 @@ dtext:	; Text String Output (rw by Johnny_B[john@kolibrios.org])
 	popad
 	add	eax, 6
 	jmp	.loop
+
 .font2:
 	add	edx, edx
 	lea	ebp, [FONT_II+4*edx+edx+1]
@@ -128,7 +127,7 @@ dtext:	; Text String Output (rw by Johnny_B[john@kolibrios.org])
 	jmp	.loop
 .end:
 	popad
-	pop  eax		; << // Alver 22.06.2008 // <<
+	pop  eax
 	ret
 
 diff10 "old font  code size",dtext,$
@@ -137,6 +136,55 @@ diff10 "old font  code size",dtext,$
 ; NEW FONTS
 ;_____________________________________________________
 ;
+align 4
+.font3:
+	pushad
+	call	[_display.disable_mouse]
+	movsx	eax, bx 	; eax=y
+	sar	ebx, 16 	; ebx=x
+	xchg	eax, ebx	; eax=x, ebx=y
+
+	xor	ebp, ebp	; font#
+	mov	[font_check_routine], ebp
+
+	test	ecx, ecx
+	js	.checked
+	inc	[font_check_routine];  .check_esi
+.checked:
+	mov	edi, ecx	; colour
+	and	edi, 0x0FFFFFF	; RGB
+align 4
+.draw_char:
+	mov	cl,  byte[edx]	; char#
+	movzx	ecx, cl
+	call	nsvf_draw_char
+	add	eax, 6
+	test	[font_check_routine], 1
+	jz	.check_asciz
+
+.check_esi:
+	inc	edx
+	dec	esi
+	jz	.exit
+	jmp   .draw_char
+
+align 4
+.check_asciz:
+	or	byte[edx], 0
+	jz	.exit
+	inc	edx
+	jmp   .draw_char
+
+align 4
+.exit:
+	popad
+	ret
+
+align 4
+
+font_check_routine  dd ?
+
+
 
 align 8
 sdsh_data:
@@ -169,10 +217,10 @@ draw_char:
 	mov	ebp, edi
 
 
-sdsh_draw_char:
+nsvf_draw_char:
 ; eax = left side X
 ; ebx = bottom Y
-; edi = color 0x0RRGGBB
+; edi = colour 0x0RRGGBB
 ; ebp = font@
 ; ecx = ascii, zero-extended to 32bits
 	push	ecx
@@ -180,10 +228,10 @@ sdsh_draw_char:
 	push	ebp
 	shl	ebp, 4
 	add	ebp, sdsh_data.info
-;        call   ch_checkscreen
-;        jb             .exit
-;        call   ch_checkwin
-;        jc             .exit
+	call   ch_checkscreen
+	jb	       .exit
+	call   ch_checkwin
+	jc	       .exit
 	mov	edx, [ebp + 4]		    ; chartable addr
 	mov	cx, word[edx + ecx*2]	    ; tick info
 	mov	edx, ecx
@@ -214,17 +262,17 @@ diff16 "parse_tick     : ",0,$
 	pushad
 	mov	dx, word[edx]
 	movzx	ecx, dl
-	test	dl, 0xE0	  
-	jz	.lntick.short   ; ticks #0..31
+	test	dl, 0xE0
+	jz	.lntick.short	; ticks #0..31
 	cmp	dl, 0xE0
-	jae	.lntick.long    ; ticks #224..255
+	jae	.lntick.long	; ticks #224..255
 	cmp	dl, 0xD8
-	jae	.cstick         ; ticks #216..223
+	jae	.cstick 	; ticks #216..223
 .gptick:
 	push	edx
 	cmp	dl, 38
-	jb	.sptick             ; special ticks #32-37
-                                    ; general ticks #38..215 
+	jb	.sptick 	    ; special ticks #32-37
+				    ; general ticks #38..215
 	mov	cl, dh
 	shr	cl, 3		    ; number of origin
 	mov	edx, [ebp+8]	    ; orig. table
@@ -240,7 +288,7 @@ diff16 "parse_tick     : ",0,$
 .gptick.1:
 	;  1-byte tickgroups .v1-v4:
 	lea	esi, [sdsh_data.v1+edx]
-	inc	dh                ; dh = 1 vertex
+	inc	dh		  ; dh = 1 vertex
 	sub	dl, 2			; .v1 : 2 ticks only (#38, 39)
 	jae	.gptick.1v2v4
 	mov	dl, dh
@@ -249,8 +297,8 @@ diff16 "parse_tick     : ",0,$
 
 .gptick.1v2v4:
 	; 1-byte tickgroups .v2-v4 : 8, 16 and 16 ticks
-	inc	dh               ; dh = 2 vertice
-        add     dl, 8
+	inc	dh		 ; dh = 2 vertice
+	add	dl, 8
 	shr	dl, 4
 	jmp	.gptick.done
 
@@ -276,8 +324,8 @@ diff16 "parse_tick     : ",0,$
 
 .gptick.4:
 	; 4-byte tickgroups .v13-16: 4 ticks each
-	cmp	dl, 128                 ; fix this when needed
-	jae	.exit                   ; not implemented yet!
+	cmp	dl, 128 		; fix this when needed
+	jae	.exit			; not implemented yet!
 	sub	dl, 128
 	lea	esi, [sdsh_data.v13 + edx*4]
 	mov	dh, 13
@@ -470,18 +518,19 @@ ch_checkwin:
 ; eax = x coordinate
 ; ebx = y coordinate
 ; ebp -> font info
-;!destroys ch, edx!
+
 	push	eax
 	push	ebx
+	push	ecx
+	push	edx
 	mov	ch,  byte[CURRENT_TASK]
-	mov	al,  byte [ebp] 	    ; char X-width
 	mov	edx, [_display.width]	    ; screen X-size
 	imul	edx, ebx
 	add	edx, [_WinMapAddress]
 	add	edx, eax
 	cmp	ch,  byte [edx]
 	jne	.fail
-	movzx	eax, byte [ebp]
+	movzx	eax, byte [ebp] 	    ; char X-width
 	cmp	ch,  byte [edx+eax]
 	jne	.fail
 	movzx	ebx, byte [ebp+1]
@@ -495,13 +544,15 @@ ch_checkwin:
 .fail:
 	stc				    ; CF means the charbox is invisible
 .done:
+	pop	edx
+	pop	ecx
 	pop	ebx
 	pop	eax
 	ret
 
 align 4
 diff16 "ch_putpix      : ",0,$
-; ch_putpixel:
+ ch_putpixel:
 ; eax = x coordinate
 ; ebx = y coordinate
 ; edi = 0x0RRGGBB
@@ -513,7 +564,7 @@ diff16 "ch_putpix      : ",0,$
      pop    edx
      ret
 ;)
-ch_putpixel:
+;ch_putpixel2:
 ; test version!!! ===== to be removed!!
 ; eax = x coordinate
 ; ebx = y coordinate
