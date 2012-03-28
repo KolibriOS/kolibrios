@@ -2384,35 +2384,44 @@ version_inf:
   dd __REV__
 version_end:
 endg
-
+;------------------------------------------------------------------------------
+align 4
 sys_cachetodiskette:
         cmp     ebx, 1
         jne     .no_floppy_a_save
         mov     [flp_number], 1
         jmp     .save_image_on_floppy
+;--------------------------------------
+align 4
 .no_floppy_a_save:
         cmp     ebx, 2
         jne     .no_floppy_b_save
         mov     [flp_number], 2
+;--------------------------------------
+align 4
 .save_image_on_floppy:
         call    save_image
         mov     [esp + 32], dword 0
         cmp     [FDC_Status], 0
         je      .yes_floppy_save
+;--------------------------------------
+align 4
 .no_floppy_b_save:
         mov     [esp + 32], dword 1
+;--------------------------------------
+align 4
 .yes_floppy_save:
         ret
-
+;------------------------------------------------------------------------------
 uglobal
 ;  bgrchanged  dd  0x0
 align 4
 bgrlockpid dd 0
 bgrlock db 0
 endg
-
+;------------------------------------------------------------------------------
+align 4
 sys_background:
-
         cmp     ebx, 1                     ; BACKGROUND SIZE
         jnz     nosb1
         test    ecx, ecx
@@ -2421,12 +2430,16 @@ sys_background:
         test    edx, edx
 ;    cmp   edx,0
         jz      sbgrr
+;--------------------------------------
+align 4
 @@:
 ;;Maxis use atomic bts for mutexes  4.4.2009
         bts     dword [bgrlock], 0
         jnc     @f
         call    change_task
         jmp     @b
+;--------------------------------------
+align 4
 @@:
         mov     [BgrDataWidth], ecx
         mov     [BgrDataHeight], edx
@@ -2438,6 +2451,8 @@ sys_background:
         cmp     eax, static_background_data
         jz      @f
         stdcall kernel_free, eax
+;--------------------------------------
+align 4
 @@:
 ; calculate RAW size
         xor     eax, eax
@@ -2445,10 +2460,14 @@ sys_background:
         cmp     [BgrDataWidth], eax
         jae     @f
         mov     [BgrDataWidth], eax
+;--------------------------------------
+align 4
 @@:
         cmp     [BgrDataHeight], eax
         jae     @f
         mov     [BgrDataHeight], eax
+;--------------------------------------
+align 4
 @@:
         mov     eax, [BgrDataWidth]
         imul    eax, [BgrDataHeight]
@@ -2466,6 +2485,8 @@ sys_background:
         jz      .memfailed
         mov     [img_background], eax
         jmp     .exit
+;--------------------------------------
+align 4
 .memfailed:
 ; revert to static monotone data
         mov     [img_background], static_background_data
@@ -2474,15 +2495,18 @@ sys_background:
         mov     [BgrDataWidth], eax
         mov     [BgrDataHeight], eax
         mov     [mem_BACKGROUND], 4
+;--------------------------------------
+align 4
 .exit:
         popad
         mov     [bgrlock], 0
-
-  sbgrr:
+;--------------------------------------
+align 4
+sbgrr:
         ret
-
+;------------------------------------------------------------------------------
+align 4
 nosb1:
-
         cmp     ebx, 2                     ; SET PIXEL
         jnz     nosb2
 
@@ -2491,6 +2515,8 @@ nosb1:
         jz      @f
         cmp     eax, static_background_data
         jz      .ret
+;--------------------------------------
+align 4
 @@:
         mov     ebx, [mem_BACKGROUND]
         add     ebx, 4095
@@ -2504,28 +2530,39 @@ nosb1:
         and     edx, 0x00FFFFFF;255*256*256+255*256+255
         add     edx, ebx
         mov     [eax+ecx], edx
+;--------------------------------------
+align 4
 .ret:
         ret
+;------------------------------------------------------------------------------
+align 4
 nosb2:
-
         cmp     ebx, 3                     ; DRAW BACKGROUND
         jnz     nosb3
+;--------------------------------------
+align 4
 draw_background_temp:
         mov     [background_defined], 1
         call    force_redraw_background
-   nosb31:
+;--------------------------------------
+align 4
+nosb31:
         ret
-  nosb3:
-
+;------------------------------------------------------------------------------
+align 4
+nosb3:
         cmp     ebx, 4                     ; TILED / STRETCHED
         jnz     nosb4
         cmp     ecx, [BgrDrawMode]
         je      nosb41
         mov     [BgrDrawMode], ecx
-   nosb41:
+;--------------------------------------
+align 4
+nosb41:
         ret
-  nosb4:
-
+;------------------------------------------------------------------------------
+align 4
+nosb4:
         cmp     ebx, 5                     ; BLOCK MOVE TO BGR
         jnz     nosb5
         cmp     [img_background], static_background_data
@@ -2534,25 +2571,34 @@ draw_background_temp:
         jnz     .fin
         cmp     esi, 4
         ja      .fin
-  @@:
+;--------------------------------------
+align 4
+@@:
   ; bughere
         mov     eax, ecx
         mov     ebx, edx
         add     ebx, [img_background];IMG_BACKGROUND
         mov     ecx, esi
         call    memmove
-  .fin:
+;--------------------------------------
+align 4
+.fin:
         ret
-  nosb5:
-
+;------------------------------------------------------------------------------
+align 4
+nosb5:
         cmp     ebx, 6
         jnz     nosb6
+;--------------------------------------
+align 4
 ;;Maxis use atomic bts for mutex 4.4.2009
 @@:
         bts     dword [bgrlock], 0
         jnc     @f
         call    change_task
         jmp     @b
+;--------------------------------------
+align 4
 @@:
         mov     eax, [CURRENT_TASK]
         mov     [bgrlockpid], eax
@@ -2570,11 +2616,15 @@ draw_background_temp:
         mov     ecx, [mem_BACKGROUND]
         add     ecx, 0xFFF
         shr     ecx, 12
+;--------------------------------------
+align 4
 .z:
         mov     eax, [page_tabs+ebx*4]
         test    al, 1
         jz      @f
         call    free_page
+;--------------------------------------
+align 4
 @@:
         mov     eax, [page_tabs+esi*4]
         or      al, PG_UW
@@ -2586,9 +2636,13 @@ draw_background_temp:
         inc     esi
         loop    .z
         ret
+;--------------------------------------
+align 4
 .nomem:
         and     [bgrlockpid], 0
         mov     [bgrlock], 0
+;------------------------------------------------------------------------------
+align 4
 nosb6:
         cmp     ebx, 7
         jnz     nosb7
@@ -2607,6 +2661,8 @@ nosb6:
         push    eax
         shr     ecx, 12
         dec     ecx
+;--------------------------------------
+align 4
 @@:
         and     dword [page_tabs+eax*4], 0
         mov     edx, eax
@@ -2623,13 +2679,31 @@ nosb6:
         and     [bgrlockpid], 0
         mov     [bgrlock], 0
         ret
+;--------------------------------------
+align 4
 .err:
         and     dword [esp+32], 0
         ret
-
+;------------------------------------------------------------------------------
+align 4
 nosb7:
+        cmp     ebx, 8
+        jnz     nosb8
+        mov     eax, [draw_data+32 + RECT.left]
+        shl     eax, 16
+        add     eax, [draw_data+32 + RECT.right]
+        mov     [esp + 32], eax ; eax = [left]*65536 + [right]
+        mov     eax, [draw_data+32 + RECT.top]
+        shl     eax, 16
+        add     eax, [draw_data+32 + RECT.bottom]
+        mov     [esp + 20], eax ; ebx = [top]*65536 + [bottom]
         ret
-
+;------------------------------------------------------------------------------
+align 4
+nosb8:
+        ret
+;------------------------------------------------------------------------------
+align 4
 force_redraw_background:
         and     [draw_data+32 + RECT.left], 0
         and     [draw_data+32 + RECT.top], 0
@@ -2641,9 +2715,8 @@ force_redraw_background:
         pop     ebx eax
         inc     byte[REDRAW_BACKGROUND]
         ret
-
+;------------------------------------------------------------------------------
 align 4
-
 sys_getbackground:
 ;    cmp   eax,1                                  ; SIZE
         dec     ebx
@@ -2653,7 +2726,8 @@ sys_getbackground:
         mov     ax, [BgrDataHeight]
         mov     [esp+32], eax
         ret
-
+;------------------------------------------------------------------------------
+align 4
 nogb1:
 ;    cmp   eax,2                                  ; PIXEL
         dec     ebx
@@ -2664,6 +2738,8 @@ nogb1:
         jz      @f
         cmp     eax, static_background_data
         jz      .ret
+;--------------------------------------
+align 4
 @@:
         mov     ebx, [mem_BACKGROUND]
         add     ebx, 4095
@@ -2676,21 +2752,26 @@ nogb1:
 
         and     eax, 0xFFFFFF
         mov     [esp+32], eax
+;--------------------------------------
+align 4
 .ret:
         ret
-  nogb2:
+;------------------------------------------------------------------------------
+align 4
+nogb2:
 
 ;    cmp   eax,4                                  ; TILED / STRETCHED
         dec     ebx
         dec     ebx
         jnz     nogb4
         mov     eax, [BgrDrawMode]
-  nogb4:
+;--------------------------------------
+align 4
+nogb4:
         mov     [esp+32], eax
         ret
-
+;------------------------------------------------------------------------------
 align 4
-
 sys_getkey:
         mov     [esp + 32], dword 1
         ; test main buffer
@@ -2712,12 +2793,18 @@ sys_getkey:
         mov     ebx, KEY_BUFF
         call    memmove
         pop     eax
+;--------------------------------------
+align 4
 .ret_eax:
         mov     [esp + 32], eax
         ret
+;--------------------------------------
+align 4
 .finish:
 ; test hotkeys buffer
         mov     ecx, hotkey_buffer
+;--------------------------------------
+align 4
 @@:
         cmp     [ecx], ebx
         jz      .found
@@ -2725,6 +2812,8 @@ sys_getkey:
         cmp     ecx, hotkey_buffer + 120 * 8
         jb      @b
         ret
+;--------------------------------------
+align 4
 .found:
         mov     ax, [ecx + 6]
         shl     eax, 16
@@ -2733,11 +2822,9 @@ sys_getkey:
         and     dword [ecx + 4], 0
         and     dword [ecx], 0
         jmp     .ret_eax
-
+;------------------------------------------------------------------------------
 align 4
-
 sys_getbutton:
-
         mov     ebx, [CURRENT_TASK]                         ; TOP OF WINDOW STACK
         mov     [esp + 32], dword 1
         movzx   ecx, word [WIN_STACK + ebx * 2]
@@ -2751,12 +2838,12 @@ sys_getbutton:
         and     al, 0xFE                                    ; delete left button bit
         mov     [BTN_COUNT], byte 0
         mov     [esp + 32], eax
+;--------------------------------------
+align 4
 .exit:
         ret
-
-
+;------------------------------------------------------------------------------
 align 4
-
 sys_cpuusage:
 
 ;  RETURN:

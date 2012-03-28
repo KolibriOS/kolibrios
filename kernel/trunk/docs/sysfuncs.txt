@@ -601,6 +601,23 @@ Returned value:
   * eax = 1 - success, 0 - error
 
 ======================================================================
+===================== Function 15, subfunction 8 =====================
+============= Get coordinates of last draw the background ============
+======================================================================
+Parameters:
+  * eax = 15 - function number
+  * ebx = 8 - subfunction number
+Returned value:
+  * eax = [left]*65536 + [right]
+  * ebx = [top]*65536 + [bottom]
+Remarks:
+  * (left,top) are coordinates of the left upper corner,
+    (right,bottom) are coordinates of the right lower one.
+  * For receiving more reliable information, call the function
+    immediately after the event:
+             5 = kernel finished redrawing of the desktop background
+
+======================================================================
 =============== Function 16 - save ramdisk on a floppy. ==============
 ======================================================================
 Parameters:
