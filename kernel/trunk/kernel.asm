@@ -3314,6 +3314,9 @@ set_bgr_event:
         test    al, al                             ; got new update request?
         jnz     @b
 
+; call change_task - because the application must have time to call f.15.8
+        call    change_task
+
         mov     [draw_data+32 + RECT.left], eax
         mov     [draw_data+32 + RECT.top], eax
         mov     [draw_data+32 + RECT.right], eax
