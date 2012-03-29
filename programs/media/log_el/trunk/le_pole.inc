@@ -219,13 +219,13 @@ proc but_test_pole, pole:dword
 	mov eax,pole_b_sort
 	mov edi,open_file_lif
 	stdcall convert_int_to_str
-	stdcall [buf2d_draw_text], buf_0, buf_font,edi,5,ebx,color_s0 ;рисуем b_sort
+	stdcall [buf2d_draw_text], buf_0, buf_font,edi,5,ebx,[shem_colors] ;рисуем b_sort
 	add ebx,18
 
 	mov eax,[esi]
 	add esi,4
 	stdcall convert_int_to_str
-	stdcall [buf2d_draw_text], buf_0, buf_font,edi,5,ebx,color_s0 ;рисуем число точек
+	stdcall [buf2d_draw_text], buf_0, buf_font,edi,5,ebx,[shem_colors] ;рисуем число точек
 	add ebx,9
 
 	cmp ecx,1
@@ -245,7 +245,7 @@ proc but_test_pole, pole:dword
 		mov eax,[esi]
 		add esi,4
 		stdcall convert_int_to_str
-		stdcall [buf2d_draw_text], buf_0, buf_font,edi,5,ebx,color_border ;рисуем 4 строки указателей
+		stdcall [buf2d_draw_text], buf_0, buf_font,edi,5,ebx,[color_border] ;рисуем 4 строки указателей
 		add ebx,9
 		loop @b
 
@@ -797,7 +797,7 @@ proc pole_paint, pole:dword
 	dec ebx
 	add ecx,2
 	add edx,2
-	stdcall [buf2d_rect_by_size], buf_0, eax,ebx, ecx,edx, color_border
+	stdcall [buf2d_rect_by_size], buf_0, eax,ebx, ecx,edx, [color_border]
 
 	;eax -> firstC
 	;ebx -> i

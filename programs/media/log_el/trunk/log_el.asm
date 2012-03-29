@@ -9,12 +9,15 @@ use32
 	dd 0
 	dd sys_path
 
-color_border equ 0xff0000
+ini_def_c_bkgnd equ 0
+ini_def_c_border equ 0xff0000
 color_s0 equ 0xff ;сигнал 0
 color_s1 equ 0xffffff ;сигнал 1
 color_s2 equ 0xff00 ;точка без пересечения
 color_s3 equ 0xff0000 ;временное значение для сохранения
 color_caption equ 0x808080
+
+color_border dd ini_def_c_border
 
 debug equ 0
 
@@ -50,7 +53,7 @@ include 'le_pole.inc'
 include 'le_signal.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Логические элементы 26.03.12',0 ;подпись окна
+caption db 'Логические элементы 29.03.12',0 ;подпись окна
 
 panel_0_coord_top equ 5 ;верхняя координата 0-го ряда панели инструментов
 panel_1_coord_top equ 35
@@ -164,7 +167,7 @@ run_file_70 FileInfoBlock
 image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*24
+IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*25
 image_data_toolbar dd 0
 
 TREE_ICON_SYS16_BMP_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*11+54 ;размер bmp файла с системными иконками
@@ -217,7 +220,13 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	@@:
 }
 
-
+ini_name db 'log_el.ini',0 ;имя файла
+ini_sec_color db 'Colors',0
+key_color_bkgnd db 'background',0
+key_color_border db 'border',0
+key_color_s0 db 's0',0
+key_color_s1 db 's1',0
+key_color_s2 db 's2',0
 
 align 4
 start:
@@ -230,7 +239,23 @@ start:
 	@@:
 	mcall 48,3,sc,sizeof.system_colors
 	mcall 40,0x27
-	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
+
+	;*** считывание настроек из *.ini файла
+	copy_path ini_name,sys_path,file_name,0x0
+
+	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_bkgnd,ini_def_c_bkgnd
+	mov	dword[buf_0.color],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_border,ini_def_c_border
+	mov	dword[color_border],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_s0,color_s0
+	mov	dword[shem_colors],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_s1,color_s1
+	mov	dword[shem_colors+4],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_s2,color_s2
+	mov	dword[shem_colors+8],eax
+
+	;*** подготовка диалога
+	stdcall [OpenDialog_Init],OpenDialog_data
 	stdcall [buf2d_create], buf_0 ;создание буфера
 	load_image_file 'toolbar.png', image_data_toolbar,IMAGE_TOOLBAR_SIZE
 
@@ -282,6 +307,7 @@ start:
 		loop @b
 	stdcall [tl_cur_beg], tree2
 
+	;*** установка времени для таймера
 	mcall 26,9
 	mov [last_time],eax
 
@@ -814,7 +840,7 @@ pushad
 	mov esi,[sc.work_button]
 	int 0x40
 
-	add ebx,25 shl 16
+	add ebx,30 shl 16
 	mov edx,31
 	int 0x40
 
@@ -830,6 +856,10 @@ pushad
 	mov edx,34
 	int 0x40
 
+	add ebx,25 shl 16
+	mov edx,35
+	int 0x40
+
 	; *** рисование иконок на кнопках ***
 	mov eax,7
 	mov ebx,[image_data_toolbar]
@@ -840,19 +870,23 @@ pushad
 	int 0x40
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;icon pen 1
+	add edx,(30 shl 16) ;icon - рисование провода
 	int 0x40
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;icon pen 2
+	add edx,(25 shl 16) ;icon - рисование пересечений проводов
 	int 0x40
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;icon pen 3
+	add edx,(25 shl 16) ;icon - рисование логических элементов
 	int 0x40
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;icon add elemet
+	add edx,(25 shl 16) ;icon - рисование подписей
+	int 0x40
+
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;icon - затирачка
 	int 0x40
 
 	mcall 12,2
@@ -978,11 +1012,11 @@ button:
 	@@:
 	cmp ah,33
 	jne @f
-		stdcall set_pen_mode,3,2,((15 shl 8)+9) shl 16 ;установка режима стирания провода
-	@@:
-	cmp ah,34
-	jne @f
 		stdcall set_pen_mode,4,3,((9 shl 8)+9) shl 16 ;установка режима создания элементов
+	@@:
+	cmp ah,35
+	jne @f
+		stdcall set_pen_mode,3,2,((15 shl 8)+9) shl 16 ;установка режима стирания провода
 	@@:
 	cmp ah,1
 	jne still
@@ -2309,7 +2343,7 @@ buf_0: dd 0 ;
 .t: dw panel_1_coord_top ;+6 top
 .w: dd 395 ;+8 w
 .h: dd 340 ;+12 h
-.color: dd 0 ;+16 color
+.color: dd ini_def_c_bkgnd ;+16 color
 	db 24 ;+20 bit in pixel
 
 align 4
