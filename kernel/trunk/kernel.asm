@@ -3289,8 +3289,11 @@ align 4
 ;--------------------------------------
 align 4
 mouse_not_active:
-        cmp     byte[REDRAW_BACKGROUND], 0         ; background update ?
+        xor     eax, eax
+        xchg    al, [REDRAW_BACKGROUND]
+        test    al, al      ; background update ?
         jz      nobackgr
+
         cmp     [background_defined], 0
         jz      nobackgr
 ;--------------------------------------
