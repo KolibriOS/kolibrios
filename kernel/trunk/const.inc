@@ -289,7 +289,7 @@ BgrAuxTable         equ (OS_BASE+0x0298000)
 SB16Buffer          equ (OS_BASE+0x02A0000)
 SB16_Status         equ (OS_BASE+0x02B0000)
 
-BUTTON_INFO         equ (OS_BASE+0x02B3FFE)
+BUTTON_INFO         equ (OS_BASE+0x02B3FEE)
 
 BPSLine_calc_area   equ (OS_BASE+0x02C4000)
 d_width_calc_area   equ (OS_BASE+0x02CA000)

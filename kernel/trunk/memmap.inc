@@ -211,9 +211,9 @@
 ;
 ; 0x802B0100 -> 2B3FFD   free (15k7)
 ;
-; 0x802B3FFE -> 2C3FFF   button info (64K + 2 byte)
-;     2B3FFE   0000 word    number of buttons
-;     2B4000    first button entry
+; 0x802B3FEE -> 2B3FEF   button info (64K+ 16 + 2 byte)
+;     2B3FEE   0000 word    number of buttons
+;     2B3FF0    first button entry
 ;      
 ;        button entry at 0x10
 ;       +0000 word   process number
