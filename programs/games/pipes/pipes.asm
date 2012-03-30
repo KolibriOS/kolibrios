@@ -519,7 +519,11 @@ pusha
     mov  eax,8
     movsx edx, byte [map]
     add  edx,9		    ;button-id = map-pos + 10;gen_image inkrements
-    add  edx,0x50000000     ;no button image - no esi need
+    add  edx,0x80000000     ;first delete previous button
+	mcall
+    movsx edx, byte [map]
+    add  edx,9		    ;button-id = map-pos + 10;gen_image inkrements
+	add  edx,0x50000000     ;no button image - no esi need
     mcall
     pop  edx
     push ebx
