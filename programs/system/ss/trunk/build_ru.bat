@@ -1,5 +1,6 @@
 @erase lang.inc
 @echo lang fix ru >lang.inc
-@fasm @ss.asm @ss
+@fasm -m 16384 @ss.asm @ss
+@kpack @ss
 @erase lang.inc
 @pause
