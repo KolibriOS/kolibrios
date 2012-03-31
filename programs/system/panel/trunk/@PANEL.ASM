@@ -3,20 +3,26 @@
 ;    MENUBAR for KolibriOS  - Compile with fasm     ;
 ;                                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-use32
-  org  0x0
-  db   'MENUET01'   ; 8 byte id
-  dd   0x01	    ; header version
-  dd   START	    ; program start
-  dd   I_END	    ; program image size
-  dd   0xA000	    ; reguired amount of memory - 10 Kb
-  dd   0xA000	    ; esp
-  dd   0x0,0x0	    ; param, icon
-
+;------------------------------------------------------------------------------	
+; last update:  31/03/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      The program uses only 20 Kb memory is now.
+;               Code optimizing and refactoring.
+;------------------------------------------------------------------------------
+	use32
+	org 0x0
+	db 'MENUET01'	; 8 byte id
+	dd 0x01		; header version
+	dd START	; program start
+	dd IM_END	;I_END	    ; program image size
+	dd I_END	;0xA000	    ; reguired amount of memory - 10 Kb
+	dd stack_top	;0xA000	    ; esp
+	dd 0x0		; boot parameters
+	dd 0x0		; path
+;------------------------------------------------------------------------------	
 include 'lang.inc'
 include '..\..\..\macros.inc'
-include 'MOI.INC'   ;раскладки клавиатуры
+include 'MOI.INC'	;раскладки клавиатуры
 
 caps_lock_check fix 0
 
@@ -36,167 +42,163 @@ soften_middle	dd    1  ;  0 no         ; 1 yes
 icons		dd    1  ;  0 defaults   ; 1 activate
 
 PANEL_HEIGHT = 18
-
-
+;------------------------------------------------------------------------------	
+align 4
 handle_key:
+	mcall	18, 7
+	mov	[active_process],eax
 
-    mcall 18, 7
-    mov  [active_process],eax
-
-	mcall 2
+	mcall	2
 	cmp	al, 2
 	jnz	begin_1.ret
+
 	mov	ebx, exec_fileinfo
 	shr	eax, 8
 	cmp	al, 0
 	je	prod
+
 	mov	[key_r],al
 	sub	[key_r],2
 	cmp	al, 2
 	jz	alter
+
 	cmp	al, 3
 	jz	alter
+
 	cmp	al, 4
 	jz	alter
+
 	cmp	al, 5
 	jz	alter
+
 	cmp	al, 6
 	jz	alter
+
 	cmp	al, 7
 	jz	alter
+
 	cmp	al, 8
 	jz	alter
+;--------------------------------------
+align 4
 prod:
-	;{Albom
-	if caps_lock_check
-		cmp al, 58
-		jne @f
-		pusha
-		mov  eax,26
-		mov  ebx,2
-		mov  ecx,9
-		int  0x40
-		mov  ebx,eax
-		mov eax, 2
-		call draw_window ;;;???
-		popa
-		ret
-	@@:
-	end if
-	;}Albom
+if caps_lock_check
+	cmp	al,58
+	jne	@f
+
+	pusha
+	mcall	26,2,9
+	mov	ebx,eax
+	mov	eax,2
+	call	draw_window ;;;???
+	popa
+	ret
+@@:
+end if
 	cmp	al, 15
 	jz	alt_tab_pressed
+
 	cmp	al, 88
 	jz	start_end_application
+
 	cmp	al, 91
 	jz	start_menu_application
+
 	cmp	al, 92
 	jz	start_menu_application
+
 	cmp	al, 62
 	jz	kill_active_application
+
 ;	cmp	al, 71
 ;	jz	page_list_next
+
 ;	cmp	al, 72
 ;	jz	page_list_prev
+
 	cmp	al, 69
 	jz	start_mousemul_application
 
 	cmp	[current_alt_tab_app], -1
 	jz	@f
+
 	test	ah, 0x30
 	jz	alt_tab_released
+;--------------------------------------
+align 4
 @@:
 ; this is hotkey Ctrl+Shift ;or LShift+RShift
-
-	 jmp	 karu
-;        mov     ebx, setup_exec
-;        test    ah, 001100b
-;        jz      change_sys_lang
+	jmp	karu
+;	mov	ebx, setup_exec
+;	test	ah, 001100b
+;	jz	change_sys_lang
+;------------------------------------------------------------------------------	
+align 4
 change_key_lang:
 	mov	dword [ebx+8], chlang
 	mcall	70
-	call	chlang_music
-;       mcall   5, 25
+;--------------------------------------
+align 4
 begin_1:
-    mov  ecx,[active_process]
-    mcall 18, 3
-    mcall 5, 25
+	mov	ecx,[active_process]
+	mcall	18, 3
+	mcall	5, 25
+;--------------------------------------
+align 4
 .ret:
 	ret
-
+;------------------------------------------------------------------------------	
+;align 4
 ;change_sys_lang:
-;        mov     dword [ebx+8], syslang
+;    	mov	   dword [ebx+8], syslang
 ;        mcall   70
-;        call    syslang_music
-;;       mcall   5, 25
 ;        jmp     begin_1
-
-  start_end_application:
-	mov	dword [ebx+21], end_name
+;------------------------------------------------------------------------------	
+align 4
+start_end_application:
+	mov	dword [ebx+21],end_name
 	mcall	70
 	ret
-  start_mousemul_application:
-	mov	dword [ebx+21], mousemul_name
+;------------------------------------------------------------------------------	
+align 4
+start_mousemul_application:
+	mov	dword [ebx+21],mousemul_name
 	mcall	70
 	ret
-
-   kill_active_application:
-;     mcall  18, 7
-;     mov    ecx,eax
-;
-;     ;//{SPraid.simba do not kill panel and icon
-;     push eax
-;     mov eax,9
-;     mov ebx, process_info_buffer
-;     int 0x40
-;     mov eax,process_info_buffer
-;     add eax,10
-;     mov ebx,[eax]
-;     cmp ebx,'ICON'
-;     je  no_kill
-;     cmp ebx,'@PAN'
-;     jne  kill_app
-;     add eax,4
-;     mov ebx,[eax]
-;     and ebx,0x0000FFFF
-;     cmp ebx,'EL'
-;     je  no_kill
-;   kill_app:
-;     pop ecx
-;     mcall  18, 2
-;     jmp if_kill
-;   no_kill:
-;     pop eax
-;   if_kill:
-;     ;// }SPraid.simba
-	mcall 72,1,3,1
-
-     jmp    begin_1.ret
-
-   start_menu_application:
+;------------------------------------------------------------------------------	
+align 4
+kill_active_application:
+	mcall	72,1,3,1
+	jmp	begin_1.ret
+;------------------------------------------------------------------------------	
+align 4
+start_menu_application:
 	mov	[draw_window_1], 1
 	mov	dword [ebx+21], menu_name
 	mcall	70
-	call	menu_music
-     mcall 5,50
-     jmp   begin_1.ret
-
+	jmp	begin_1.ret
+;------------------------------------------------------------------------------	
+;align 4
 ;page_list_next:
-;    cmp  [page_list],15
-;    je	   @f
-;    inc  [page_list]
-;    mov  [draw_window_1],1
-;  @@:
-;    jmp  begin_1.ret
+;	cmp	[page_list],15
+;	je	@f
 ;
+;	inc	[page_list]
+;	mov	[draw_window_1],1
+;@@:
+;	jmp  begin_1.ret
+;------------------------------------------------------------------------------	
+;align 4
 ;page_list_prev:
-;    cmp  [page_list],0
-;    je	   @f
-;    dec  [page_list]
-;    mov  [draw_window_1],1
-;  @@:
-;    jmp  begin_1.ret
-
+;	cmp	[page_list],0
+;	je	@f
+;
+;	dec	[page_list]
+;	mov	[draw_window_1],1
+;@@:
+;	jmp  begin_1.ret
+;------------------------------------------------------------------------------	
+align 4
 alt_tab_pressed:
 ; handle Alt+Tab and Alt+Shift+Tab
 	mov	ebp, eax
@@ -204,44 +206,57 @@ alt_tab_pressed:
 	jnz	has_alt_tab_app
 ; заполняем таблицу приложений, подлежащих переключению
 	xor	edx, edx
-	mov	ebx, 0x8000
+	mov	ebx, procinfo_window_tabs	;0x8000 ; WTF???!!!
 	mov	ecx, 1
-	mov	eax, 9
 .fill:
 	inc	ecx
-	int	0x40
+	mcall	9
 	call	need_window_tab
 	jz	@f
+
 	cmp	edx, 256
 	jz	@f
+
 	mov	[alt_tab_list+edx*8], ecx
 	movzx	esi, word [ebx+4]
 	mov	[alt_tab_list+edx*8+4], esi
 	inc	edx
+;--------------------------------------
+align 4
 @@:
-	cmp	ecx, eax
-	mov	eax, 9
+	cmp	ecx,eax
 	jb	.fill
+
 	mov	[alt_tab_list_size], edx
 	test	edx, edx
 	jz	begin_1.ret
+
 	mcall	66,4,0,0	; ловим момент отпускания всех управляющих клавиш
 	test	eax, eax
 	jnz	begin_1.ret
+
 	xor	edx, edx
 	mov	eax, [alt_tab_list+4]
 	xor	ecx, ecx
 	inc	ecx
+;--------------------------------------
+align 4
 .findmax:
 	cmp	[alt_tab_list+ecx*8+4], eax
 	jb	@f
+
 	mov	edx, ecx
 	mov	eax, [alt_tab_list+ecx*8+4]
+;--------------------------------------
+align 4
 @@:
 	inc	ecx
 	cmp	ecx, [alt_tab_list_size]
 	jb	.findmax
+
 	mov	[current_alt_tab_app], edx
+;--------------------------------------
+align 4
 has_alt_tab_app:
 	mov	eax, [current_alt_tab_app]
 	mov	edx, [alt_tab_list+eax*8+4]	; slot
@@ -249,41 +264,62 @@ has_alt_tab_app:
 	or	eax, -1
 	test	ebp, 300h
 	jz	.notshift
+
 	or	esi, -1
+;--------------------------------------
+align 4
 .loop1:
 	cmp	[alt_tab_list+ecx*8+4], edx
 	jbe	@f
+
 	cmp	[alt_tab_list+ecx*8+4], esi
 	jae	@f
+
 	mov	eax, ecx
 	mov	esi, [alt_tab_list+ecx*8+4]
+;--------------------------------------
+align 4
 @@:
 	inc	ecx
 	cmp	ecx, [alt_tab_list_size]
 	jb	.loop1
+
 	cmp	eax, -1
 	jnz	.found
+
 	xor	edx, edx
 	xor	ecx, ecx
 	jmp	.loop1
+;--------------------------------------
+align 4
 .notshift:
 	xor	esi, esi
+;--------------------------------------
+align 4
 .loop2:
 	cmp	[alt_tab_list+ecx*8+4], edx
 	jae	@f
+
 	cmp	[alt_tab_list+ecx*8+4], esi
 	jbe	@f
+
 	mov	eax, ecx
 	mov	esi, [alt_tab_list+ecx*8+4]
+;--------------------------------------
+align 4
 @@:
 	inc	ecx
 	cmp	ecx, [alt_tab_list_size]
 	jb	.loop2
+
 	cmp	eax, -1
 	jnz	.found
+
 	or	edx, -1
 	xor	ecx, ecx
 	jmp	.loop2
+;--------------------------------------
+align 4
 .found:
 	mov	[current_alt_tab_app], eax
 	push	eax
@@ -299,234 +335,167 @@ has_alt_tab_app:
 	pop	edi
 	pop	ecx
 	sub	ecx, edx
+;--------------------------------------
+align 4
 @@:
 	cmp	ecx, [alt_tab_list_size]
 	jae	redraw_window_tabs
+
 	mov	eax, [alt_tab_list+ecx*8]
 	stosd
 	inc	ecx
 	jmp	@b
-
+;--------------------------------------
+align 4
 alt_tab_released:
 	mcall	66,5,0,0	; уже поймали, хватит :)
 	or	eax, -1
 	xchg	eax, [current_alt_tab_app]
 	mov	ecx, [alt_tab_list+eax*8]
-	mov	eax, 18
-	mov	ebx, 3
-	int	0x40
+	mcall	18,3
 	jmp	redraw_window_tabs
-
+;------------------------------------------------------------------------------	
+align 4
 active_process	dd 0
-
-calendar_music:
-    mcall 55, eax, , , calendarmusic
-    ret
-setup_music:
-    mcall 55,eax, , ,setupmusic
-    ret
-sysmeter_music:
-    mcall 55,eax, , ,sysmetermusic
-    ret
-button_music:
-    mcall 55,eax, , ,buttonmusic
-    ret
-;syslang_music:
-;    mcall 55, eax, , , syslangmusic
-;    ret
-chlang_music:
-    mcall 55, eax, , , chlangmusic
-    ret
-menu_music:
-    mcall 55,eax, , ,menumusic
-    ret
-
-chlangmusic:	db 0x82,0x60,0x83,0x65,0x82,0x60,0
-
-;syslangmusic:   db 0x82,0x65,0x83,0x70,0x82,0x65,0
-
-menumusic:	db 0x82,0x50,0x84,0x48,0x82,0x50,0x84,0x53,0x82,0x51,0
-
-activatemusic:	db 0x83,0x30,0x85,0x60,0
-
-buttonmusic:	db 0x85,0x25,0x85,0x40,0
-
-sysmetermusic:	db 0x85,0x35,0x85,0x45,0
-
-setupmusic:	db 0x85,0x40,0x85,0x50,0
-
-calendarmusic:	db 0x85,0x37,0x85,0x48,0
 
 ;  .exit: mcall -1
 
 
 START:
-;       mov     eax, 51
-;       mov     ebx, 1
-;       mov     ecx, detect_start
-;       mov     edx, detect_stack
-;       int     0x40
-	mcall 66,4,0,2		; LShift+RShift
-	mcall 66, , ,11h	; Ctrl+Shift
-	mcall 66,,88,110h	; Alt+Ctrl+F12
-	mcall 66,,91,0h 	; LWin
-	mcall 66,,92 		; RWin
-;	mcall 66,,91,100h	; Alt+LWin
-;	mcall 66,,92		; Alt+RWin
-	mcall 66,,62,100h	; Alt+F4
-;	mcall 66,,71		; Alt+Home
-;	mcall 66,,72		; Alt+Up
-	mcall 66,,15		; Alt+Tab
-	mcall 66,,2		; Alt+1
-	mcall 66,,3		; Alt+2
-	mcall 66,,4		; Alt+3
-	mcall 66,,5		; Alt+4
-	mcall 66,,6		; Alt+5
-	mcall 66,,7		; Alt+6
-	mcall 66,,8		; Alt+7
-	mcall 66,,,101h 	; Alt+Shift+Tab
-	mcall 66,,69		; Alt+Shift+NumLock
-	;{Albom
-	; CapsLock
-	if caps_lock_check
-		mov eax, 66
-		mov edx, 0
-		mov ebx, 4
-		xor ecx, ecx
-		mov cl, 58
-		int 0x40
-	end if
-	;}Albom
+	mcall	66,4,0,2	; LShift+RShift
+	mcall	66,,,11h	; Ctrl+Shift
+	mcall	66,,88,110h	; Alt+Ctrl+F12
+	mcall	66,,91,0h 	; LWin
+	mcall	66,,92 		; RWin
+;	mcall	66,,91,100h	; Alt+LWin
+;	mcall	66,,92		; Alt+RWin
+	mcall	66,,62,100h	; Alt+F4
+;	mcall	66,,71		; Alt+Home
+;	mcall	66,,72		; Alt+Up
+	mcall	66,,15		; Alt+Tab
+	mcall	66,,2		; Alt+1
+	mcall	66,,3		; Alt+2
+	mcall	66,,4		; Alt+3
+	mcall	66,,5		; Alt+4
+	mcall	66,,6		; Alt+5
+	mcall	66,,7		; Alt+6
+	mcall	66,,8		; Alt+7
+	mcall	66,,,101h 	; Alt+Shift+Tab
+	mcall	66,,69		; Alt+Shift+NumLock
 
-    mcall 18, 8, 1
-    test eax, eax
-    jne  @f
-    mcall 18, 8, 2
-  @@:
-	mov	eax, 70
-	mov	ebx, dat_fileinfo
-	int	0x40
+if caps_lock_check
+	xor	edx,edx
+	mcall	66,4,58
+end if
+	mcall	18,8,1
+	test	eax,eax
+	jne	@f
+	mcall	18,8,2
+;--------------------------------------
+align 4
+@@:
+	mcall	70,dat_fileinfo
 
-    mov  edi,width
-    mov  esi,I_END
-    xor  eax,eax
-  new_number:
-    cmp  [esi],byte ';'
-    je	 number_ready
-    imul eax,10
-    movzx ebx,byte [esi]
-    sub  ebx,'0'
-    add  eax,ebx
-    inc  esi
-    jmp  new_number
-  number_ready:
-    stosd
-    xor  eax,eax
-    inc  esi
-    cmp  [esi],byte 'x'
-    jne  new_number
+	mov	edi,width
+	mov	esi,I_END
+	xor	eax,eax
+;--------------------------------------
+align 4
+new_number:
+	cmp	[esi],byte ';'
+	je	number_ready
+
+	imul	eax,10
+	movzx	ebx,byte [esi]
+	sub	ebx,'0'
+	add	eax,ebx
+	inc	esi
+	jmp	new_number
+;--------------------------------------
+align 4
+number_ready:
+	stosd
+	xor	eax,eax
+	inc	esi
+	cmp	[esi],byte 'x'
+	jne	new_number
 
 	mcall	14
 	mov	[screen_size],eax
 
-	;mcall  48,5            ; barsuk {
-	mov	eax, 14
-	int	0x40
 	mov	ecx,eax
 ;eax = [xsize]*65536 + [ysize], где
-	shr	ecx, 16
-	and	eax, 0xFFFF
+	shr	ecx,16
+	and	eax,0xFFFF
 	lea	edx,[eax-PANEL_HEIGHT-1]
-				; barsuk }
 
 	mcall	48,6
 
-; // Alver 26.08.2007 // {
-   mov	eax, 9			    ; info of process
-   mov	ebx, process_info_buffer
-   mov	ecx, -1
-   mcall
-   mov	ecx, dword [process_info_buffer+30]
-   mcall 18,21
-   mov	[this_slot], eax
-   mov	[max_slot], 255
-; } \\ Alver \\
+	mcall	9,process_info_buffer,-1
+	mov	ecx,[process_info_buffer+30]
+	mcall	18,21
+	mov	[this_slot],eax
+	mov	[max_slot],255
 
-    call set_variables
-
+	call	set_variables
+;--------------------------------------
+align 4
 start_after_minimize:
+	call	draw_window
+	call	draw_info
+	call	draw_running_applications
 
-    call draw_window
-    call draw_info
-    call draw_running_applications
-
-    mov  eax, 23
-    mov  ebx, 30
-    int  0x40
-    call    load_ini
-    call    fir_lng
-
+	mcall	23,30
+	call	load_ini
+	call	fir_lng
+;------------------------------------------------------------------------------
+align 4
 still:
-;     mcall  13,<390,70>,<3,11>,0xffffff
-;     mov    ecx,[button_presssed_alt]
-;     mcall  47,0x80100,ecx ,400 shl 16+5,0
+	call	draw_info
+	call	draw_running_applications
 
-    call draw_info
-    call draw_running_applications
-
-	mov	eax, 18 			; check if active window changed
-	mov	ebx, 7				; barsuk
-	int	0x40
+	mcall	18,7	; check if active window changed
 	cmp	eax, [last_active_window]
 	jz	@f
-
 ; need_window_tab:
 ; in: ebx->process info
 ; out: ZF set <=> do not draw
-
-	mov	ebx, [last_active_window]
+	mov	ebx,[last_active_window]
 	mov	[prev_active_window], ebx
 	mov	[last_active_window], eax
 
 	mov	ecx, eax
-	mov	eax, 9
-	mov	ebx, process_info_buffer
-	int	0x40
+	mcall	9,process_info_buffer
 
 	call	need_window_tab
 	jnz	.need_repaint
 
-	mov	eax, 9
-	mov	ebx, process_info_buffer
-	mov	ecx, [prev_active_window]
-	int	0x40
+	mcall	9,process_info_buffer,[prev_active_window]
 	call	need_window_tab
 	jz	@f
-
+;--------------------------------------
+align 4
 .need_repaint:
 	mov	dword [active_window_changed], 1
-
+;--------------------------------------
+align 4
 @@:
+	mcall	23,20
+	cmp	eax,1		; redraw ?
+	jz	red
 
-    mov  eax, 23
-    mov  ebx, 20
-    int  0x40
+	cmp	eax,3		; button ?
+	jz	button
 
-    cmp  eax,1		; redraw ?
-    jz	 red
-    cmp  eax,3		; button ?
-    jz	 button
 	call	handle_key
-
-	cmp  dword [active_window_changed], 0
-	jnz   red_active
+	cmp	dword [active_window_changed], 0
+	jnz	red_active
 
 	jmp	still
-
-  red_active:		; barsuk
-
-  red:			 ; redraw window
-
+;------------------------------------------------------------------------------	
+align 4
+red_active:
+red:
 	mov	dword [active_window_changed], 0
 
 	mcall	14
@@ -535,1853 +504,1596 @@ still:
 	shr	edx,16
 	cmp	[screen_size.height],ax
 	jne	@f
+
 	rol	eax,16
 	cmp	[screen_size.width],ax
 	je	.lp1
 	rol	eax,16
-    @@: mov	[screen_size],eax
+@@:
+	mov	[screen_size],eax
 	sub	ecx,PANEL_HEIGHT
 	mcall	67,0,,,PANEL_HEIGHT
+;--------------------------------------
+align 4
+.lp1:
+	call	draw_window
+	call	draw_info
+	jmp	still
+;------------------------------------------------------------------------------	
+align 4
+button:
+	mcall	17
+	test	eax,0xfffffe00	; is it close button? (signal from @panel)
+	jz	still		; if so - wait for another event, because @panel shouldn't be closed
 
-  .lp1:
+	cmp	al, 0
+	jnz	right_mouse
 
-    call draw_window
-    call draw_info
-    jmp  still
+	cmp	ah,50
+	jb	no_activate
+	cmp	ah,70
+	jg	no_activate
 
-  button:		 ; button
-    mov  eax,17
-    int  0x40
-							; dunkaist[
-	test eax,	0xfffffe00	; is it close button? (signal from @panel)
-	 jz  still				; if so - wait for another event, because @panel shouldn't be closed
-							; dunkaist]
-    cmp  al, 0			; barsuk
-    jnz  right_mouse
+	movzx	ecx,byte ah
+	sub	ecx,52
+	shl	ecx,2
 
-    cmp  ah,50
-    jb	 no_activate
-    cmp  ah,70
-    jg	 no_activate
+	mov	ecx,[app_list+ecx]
+	mcall	18,3,
 
-    movzx ecx,byte ah
-    sub  ecx,52
-    shl  ecx,2
+;	mcall	55,eax,,,activatemusic
+	jmp	still
+;------------------------------------------------------------------------------	
+align 4
+right_mouse:
+	cmp	ah,50
+	jb	still
 
-    mov  eax,18
-    mov  ebx,3
-    mov  ecx,[app_list+ecx]
-    int  0x40
-;    cmp  [music_type],0
-;    je   still
-    mcall 55,eax, , ,activatemusic
-    jmp  still
+	cmp	ah,70
+	jg	still
 
-right_mouse:			; barsuk
+	movzx	ecx,byte ah
+	sub	ecx,52
 
-    cmp  ah,50
-    jb	 still
-    cmp  ah,70
-    jg	 still
+	cmp	ecx, [app_tab_count]
+	jge	still
 
-    movzx ecx,byte ah
-    sub  ecx,52
+	shl	ecx,2
+	mcall	37,0
+	mov	ebx, eax
+	shr	eax, 16
+	mov	[x_coord], ax
+	and	ebx, 0xFFFF
+	mov	[y_coord], bx
 
-    cmp  ecx, [app_tab_count]
-    jge  still
+	mov	ecx,[app_list+ecx]	; ecx->selected app.slot
+	mov	[n_slot], ecx
+	mcall	9,procinfo_for_detect
 
-    shl  ecx,2
-
-    mov  eax, 37
-    mov  ebx, 0
-    int  0x40
-    mov  ebx, eax
-    shr  eax, 16
-    mov  [x_coord], ax
-    and  ebx, 0xFFFF
-    mov  [y_coord], bx
-
-    mov  eax, 9
-    mov  ecx,[app_list+ecx]	; ecx->selected app.slot
-    mov  [n_slot], ecx
-    mov  ebx, procinfo_for_detect
-    int  0x40
-
-;    cmp  dword [procinfo_for_detect+process_information.slot_state],9
-;    jz   still
-
-	mov	eax, 51
-	mov	ebx, 1
-	mov	ecx, context_menu_start
-	mov	edx, ctx_menu_stack
-	int	0x40
+	mcall	51,1,context_menu_start,ctx_menu_stack
 
 	mov	[ctx_menu_PID], eax
+	jmp	still
+;------------------------------------------------------------------------------	
+align 4
+no_activate:
+	cmp	ah,101 	  ; minimize to left
+	je	left_button
 
-    jmp  still
+	cmp	ah,102 	  ; minimize to right
+	je	right_button
 
+	cmp	ah, 103
+	je	clean_desktop		    ; minimize all windows
 
-  no_activate:
+	cmp	ah, 104
+	je	restore_desktop	    ; restore minimized windows
 
+	cmp	ah, 105
+	je	swap_minimized_desktop     ; minimize normal windows, and restore minimized windows
 
-    cmp  ah,101 	  ; minimize to left
-    je	 left_button
+	cmp	ah,byte 1	  ; start/terminate menu
+	jnz	noselect
 
-    cmp  ah,102 	  ; minimize to right
-    je	 right_button
+	call	menu_handler
 
-; // Alver 26.08.2007 // {
-    cmp  ah, 103
-    je	 clean_desktop		    ; minimize all windows
-    cmp  ah, 104
-    je	 restore_desktop	    ; restore minimized windows
-    cmp  ah, 105
-    je	 swap_minimized_desktop     ; minimize normal windows, and restore minimized windows
-; } \\ Alver \\
-
-    cmp  ah,byte 1	  ; start/terminate menu
-    jnz  noselect
-    call menu_handler
-;    cmp  [music_type],0
-;    je   still
-    call menu_music
-    jmp  still
-  noselect:
-
+	jmp	still
+;--------------------------------------
+align 4	
+noselect:
 	mov	ebx, exec_fileinfo
-    cmp  ah,byte 2	       ; start calendar
-    jnz  noid15  ;noclock
-	mov	dword [ebx+21], calendar_name
-	mov	eax, 70
-	int	0x40
-    call calendar_music
-    jmp  still
+	cmp	ah,byte 2	       ; start calendar
+	jnz	noid15  ;noclock
 
-  noid15:
-    cmp  ah,16
-    jne  noid16
+	mov	dword [ebx+21], calendar_name
+	mcall	70
+	jmp	still
+;--------------------------------------
+align 4	
+noid15:
+	cmp	ah,16
+	jne	noid16
+
 	mov	ebx, setup_exec
 	mov	dword [ebx+8], chlang
-	mov	eax, 70
-	int	0x40
-    call chlang_music
-    mcall 5, 25
-    jmp  still
-
-  noid16:
-;    cmp  ah,17
-;    jne  noid17
-;        mov     ebx, setup_exec
-;        mov     dword [ebx+8], syslang
-;        mov     eax, 70
-;        int     0x40
-;    call syslang_music
-;    mcall 5, 25
-;    jmp  still
+	mcall	70
+	jmp	still
+;--------------------------------------
+align 4	
+noid16:
+;	cmp	ah,17
+;	jne	noid17
 ;
+;	mov	ebx, setup_exec
+;	mov	dword [ebx+8], syslang
+;	mcall	70
+;	jmp	still
+;--------------------------------------
+;align 4	
 ;  noid17:
-    cmp  ah,18
-    jne  noid18
+	cmp	ah,18
+	jne	noid18
+
 	mov	dword [ebx+21], sysmeter_name
-	mov	eax, 70
-	int	0x40
-    call sysmeter_music
-    jmp  still
+	mcall	70
+	jmp	still
+;--------------------------------------
+align 4	
+noid18:
+	cmp	ah,19
+	jne	noid19
 
-  noid18:
-    cmp  ah,19
-    jne  noid19
-;    inc  [music_type]
-;    and  [music_type],1
-    mcall 18,8,2
-;    mcall 18,8
-;    mov [sound_flag],al
+	mcall	18,8,2
+	mcall	15,3
+	jmp	red
+;--------------------------------------
+align 4	
+noid19:
+	cmp	ah,20		   ; start system setup
+	jnz	noid20
 
-;    mcall 15,4,2
-    mcall 15,3
-    jmp  red
-
-  noid19:
-    cmp  ah,20		   ; start system setup
-    jnz  noid20
 	mov	ebx, setup_exec
 	and	dword [ebx+8], 0
-	mov	eax, 70
-	int	0x40
-    call setup_music
-    jmp still
+	mcall	70
+	jmp	still
+;--------------------------------------
+align 4	
+noid20:
+	cmp	ah,21
+	jnz	noid21
 
- noid20:
-    cmp  ah,21
-    jnz  noid21
-; // Alver 25.08.2007 // {
-    cmp  [page_list], 99
-    jnc  @f
-  ;  cmp  [page_list],15
-  ;  je    @f
-; } \\ Alver \\
-    inc  [page_list]
-    jmp  red
-  @@:
-    jmp still
+	cmp	[page_list], 99
+	jnc	still
+	inc	[page_list]
+	jmp	red
+;--------------------------------------
+align 4	
+noid21:
+	cmp	ah,22
+	jnz	still
 
- noid21:
-    cmp  ah,22
-    jnz  noid22
-    cmp  [page_list],0
-    je	   @f
-    dec  [page_list]
-    jmp  red
-  @@:
-    jmp  still
+	cmp	[page_list],0
+	je	still
 
- noid22:
-
-    jmp  still
-
-; // Alver 26.08.2007 //{
+	dec	[page_list]
+	jmp	red
+;------------------------------------------------------------------------------	
+align 4
 restore_desktop:
-    mcall   9,process_info_buffer,-1
-    mov     [max_slot], eax
-    mov     ecx, 2
-    mov     edx, 2
+	mcall	9,process_info_buffer,-1
+	mov	[max_slot], eax
+	mov	ecx, 2
+	mov	edx, 2
+;--------------------------------------
+align 4	
 @@:
-    mcall   18, 22
-    inc     edx
-    cmp     edx, [max_slot]
-    jbe     @b
-    jmp  still
-
+	mcall	18, 22
+	inc	edx
+	cmp	edx, [max_slot]
+	jbe	@b
+	jmp	still
+;------------------------------------------------------------------------------	
+align 4
 swap_minimized_desktop:
-    xor  esi, esi
-    inc esi
-    jmp  min_swap_desktop
+	xor	esi, esi
+	inc	esi
+	jmp	min_swap_desktop
+;------------------------------------------------------------------------------	
+align 4
 clean_desktop:
-    xor esi,esi
- min_swap_desktop:		   ; input esi 0 - min, <>0 swap
-     mov    ecx, 2		   ; Начальный номер слота процесса
-     mov    ebx, process_info_buffer
-
+	xor	esi,esi
+;--------------------------------------
+align 4	
+min_swap_desktop:		   ; input esi 0 - min, <>0 swap
+	mov	ecx, 2		   ; Начальный номер слота процесса
+	mov	ebx, process_info_buffer
+;--------------------------------------
+align 4
 .loop1:
-     cmp    ecx, [this_slot]
-     je     .loop1xx
-     mcall  9
-     mov    [max_slot], eax
-     mov    dx, word [process_info_buffer+50]
-     cmp    dx, 9		    ; Проверка свободен ли данный слот
-     jz     .loop1xx
-     mov    edx, dword [ebx+10]
-     cmp    dl, '@'
-     je     .loop1xx
-     cmp    dword [ebx+10], 'ICON'
-     jnz    @f
-     cmp    [ebx+42], dword 51
-     jnz    @f
-     cmp    [ebx+46], dword 51
-     jz     .loop1xx
-@@:
-     cmp    [ebx+10], dword '    '
-     jz     .loop1xx
+	cmp	ecx, [this_slot]
+	je	.loop1xx
 
-     pushad
-     mov    edx, ecx
-     xor    ecx, ecx
-     or     esi, esi
-     jz     @f
-     movzx  eax, byte [process_info_buffer+70]
-     and    eax, 2	      ; mask minimize
-     jz     @f
-     mov    ecx, 2	      ; restore
+	mcall	9
+	mov	[max_slot], eax
+	mov	dx, word [process_info_buffer+50]
+	cmp	dx, 9		    ; Проверка свободен ли данный слот
+	jz	.loop1xx
+
+	mov	edx, dword [ebx+10]
+	cmp	dl, '@'
+	je	.loop1xx
+
+	cmp	dword [ebx+10], 'ICON'
+	jnz	@f
+
+	cmp	[ebx+42], dword 51
+	jnz	@f
+
+	cmp	[ebx+46], dword 51
+	jz	.loop1xx
+;--------------------------------------
+align 4
 @@:
-     mcall  18, 22
-     popad
+	cmp	[ebx+10], dword '    '
+	jz	.loop1xx
+
+	pushad
+	mov	  edx, ecx
+	xor	  ecx, ecx
+	or     esi, esi
+	jz     @f
+
+	movzx  eax, byte [process_info_buffer+70]
+	and	  eax, 2	      ; mask minimize
+	jz     @f
+
+	mov	  ecx, 2	      ; restore
+;--------------------------------------
+align 4
+@@:
+	mcall	18, 22
+	popad
+;--------------------------------------
+align 4
 .loop1xx:
-     inc    ecx
-     cmp    ecx, [max_slot]
-     jbe    .loop1
-     jmp    still
-; } \\ Alver \\
-
+	inc	ecx
+	cmp	ecx, [max_slot]
+	jbe	.loop1
+	jmp	still
+;------------------------------------------------------------------------------	
+align 4
 draw_running_applications:
+	pusha
 
-    pusha
+	cmp	[icons],1
+	jne	dr_ret
 
-    cmp  [icons],1
-    jne  dr_ret
+	call	calculate_applications
 
-    call calculate_applications
-
-    cmp  edi,[running_applications]
-    jne  noret
-    popa
-    ret
-  noret:
-
-;    cmp  edi,[running_applications]
-;    jge  no_application_decrease
-    call draw_window
-;  no_application_decrease:
-
-    mov  [running_applications],edi
-
+	cmp	edi,[running_applications]
+	jne	noret
+	popa
+	ret
+;--------------------------------------
+align 4
+noret:
+	call	draw_window
+	mov	[running_applications],edi
 	call	redraw_window_tabs
-
-  dr_ret:
-
-    popa
-
-    ret
-
+;--------------------------------------
+align 4
+dr_ret:
+	popa
+	ret
+;------------------------------------------------------------------------------	
+align 4
 need_window_tab:
 ; in: ebx->process info
 ; out: ZF set <=> do not draw
 	cmp	byte [ebx+10], '@'
 	jz	.nodraw
-; \begin{diamond}[29.03.2007]
 ; do not draw undefined (zero-sized) windows
 	cmp	dword [ebx+42], 0
 	jnz	@f
 	cmp	dword [ebx+46], 0
 	jz	.nodraw
+;--------------------------------------
+align 4
 @@:
-; \end{diamond}[29.03.2007]
-; <begin> (pterox)[12.10.2010] 
 ; do not draw OpenDialog windows
-	push	EDI
-	mov	EDI, dword [EBX+10]
-	or	EDI, 0x20202020
-	cmp	EDI, 'open'
+	push	edi
+	mov	edi, dword [ebx+10]
+	or	edi, 0x20202020
+	cmp	edi, 'open'
 	jne	@f
-	mov	EDI, dword [EBX+14]
-	or	EDI, 0x20202020
-	cmp	dword [EBX+14], 'dial'
-	jne	@f
-	pop	EDI
-	jmp	.nodraw
 
+	mov	edi, dword [ebx+14]
+	or	edi, 0x20202020
+	cmp	dword [ebx+14], 'dial'
+	jne	@f
+
+	pop	edi
+	jmp	.nodraw
+;--------------------------------------
+align 4
 @@:
-	pop	EDI
-; <end> (pterox)[12.10.2010] 
+	pop	edi
 	cmp	dword [ebx+10], 'ICON'
 	jnz	@f
+
 	cmp	[ebx+42], dword 51
 	jnz	@f
+
 	cmp	[ebx+46], dword 51
 	jz	.nodraw
+;--------------------------------------
+align 4
 @@:
 	cmp	[ebx+10], dword '    '
+;--------------------------------------
+align 4
 .nodraw:
 	ret
-
+;------------------------------------------------------------------------------	
+align 4
 redraw_window_tabs:
 	xor	edi, edi
 	mov	[contrast], 0
 
-	push	ebp			; barsuk {
-	mov	eax, 18
-	mov	ebx, 7
-	int	0x40
-	mov	ebp, eax		; barsuk }
-
+	push	ebp
+	mcall	18,7
+	mov	ebp,eax
+;--------------------------------------
+align 4
 .loop:
-	mov	ecx, [app_list+edi*4]
-	cmp	ecx, -1
+	mov	ecx,[app_list+edi*4]
+	cmp	ecx,-1
 	jz	.done
 
 	push	ecx
-	mov	eax, 9
-	mov	ebx, 0x8000
-	int	0x40
+	mcall	9,procinfo_window_tabs	;0x8000	; WTF???!!!
 
-	mov	eax, 13
 	imul	ebx, edi, 6*10*10000h
-; // Alver 26.08.2007 // {
-;       add     ebx, 6*10*10000h + 7*10000h + 54
 	add	ebx, 12*10*10000h + 7*10000h + 54
-; } // Alver //
-	mov	ecx, 3*10000h + 14
 
-;       xor     edx, edx
-	mov	edx, 0x383838		; barsuk
-	int	0x40
+	mcall	13,,<3,14>,0x383838
+
 	sub	ebx, 10000h + 53
-	mov	ecx, 4*10000h + 12
-	int	0x40
+	mcall	,,<4,12>
+
 	sub	ebx, 10000h
-	mov	ecx, 5*10000h + 10
-	int	0x40
+	mcall	,,<5,10>
+
 	add	ebx, 56*10000h
-	mov	ecx, 4*10000h + 12
-	int	0x40
+	mcall	,,<4,12>
+
 	add	ebx, 10000h
-	mov	ecx, 5*10000h + 10
-	int	0x40
+	mcall	,,<5,10>
 
 	mov	edx, [wcolor]	; barsuk
 	pop	ecx
 	cmp	ebp, ecx	; ecx=active slot number
 	jnz	@f
+
 	mov	edx, [system_colours.work_button]
+;--------------------------------------
+align 4
 @@:
 	mov	esi, [current_alt_tab_app]
 	cmp	esi, -1
 	jz	@f
+
 	cmp	ecx, [alt_tab_list+esi*8]
 	jnz	@f
-;	xor	edx, 0xFFFFFF
+
 	mov	edx, 0xFF8000
+;--------------------------------------
+align 4
 @@:
 	sub	ebx, 55*10000h - 53
-	mov	ecx, 4*10000h + 12
-	int	0x40
+	mcall	,,<4,12>
+	
 	sub	ebx, 10000h + 53
-	mov	ecx, 5*10000h + 10
-	int	0x40
+	mcall	,,<5,10>
+
 	add	ebx, 55*10000h
-	int	0x40
+	mcall
 
-	mov	eax, 4
 	sub	ebx, 51*10000h - 6
-	mov	ecx, [system_colours.work_button_text]	;0xffffff
-	mov	edx, 0x8000+10
-	mov	esi, 11
-	int	0x40
-
+	mov	edx, procinfo_window_tabs+10	;0x8000+10		; WTF???!!!
+	mcall	4,,[system_colours.work_button_text],,11
+;--------------------------------------
+align 4
 .nodraw:
 	inc	edi
 	cmp	edi, [max_applications]
 	jb	.loop
+;--------------------------------------
+align 4
 .done:
 	pop	ebp
 	ret
-
+;------------------------------------------------------------------------------	
+align 4
 calculate_applications:
+	mov	eax,[max_applications]
+	mul	[page_list]
+	test	eax,eax
+	je	@f
 
-    mov  eax,[max_applications]
-    mul  [page_list]
-    test eax,eax
-    je	  @f
-    inc  eax
-  @@:
-    mov  [draw_start_position],eax
+	inc	eax
+;--------------------------------------
+align 4
+@@:
+	mov	[draw_start_position],eax
 
-    mov  edi,app_list
-    mov  ecx,20
-    mov  eax,-1
-    cld
-    rep  stosd
+	mov	edi,app_list
+	mov	ecx,20
+	mov	eax,-1
+	cld
+	rep	stosd
 
-    mov  edi,0
-    mov  ecx,2
-
-  cnewpr:
-
-    mov  eax,9
-    mov  ebx,0x8000
-    int  0x40
+	mov	edi,0
+	mov	ecx,2
+;--------------------------------------
+align 4
+cnewpr:
+	mcall	9,procinfo_window_tabs	;0x8000	; WTF???!!!
 
 	call	need_window_tab
 	jz	cnorpl
+
 	sub	[draw_start_position], 1
 	jg	cnorpl
 
-    mov  [app_list+edi*4],ecx
+	mov	[app_list+edi*4],ecx
+	inc	edi
+;--------------------------------------
+align 4
+cnorpl:
+	inc	ecx
+	cmp	eax,ecx
+	jge	cnewpr
 
-    inc  edi
-
-  cnorpl:
-    inc  ecx
-
-    cmp  eax,ecx
-    jge  cnewpr
-
-    mov  [app_tab_count], edi	; barsuk
-
-    ret
-
-
-draw_application_buttons:
-
-    pusha
-
-    cmp [icons],1
-    jne da_ret
-
-    mov  eax,14
-    int  0x40
-
-    shr  eax,16
-
-; // Alver 25.08.2007 // {
- ;   cmp  eax,639
- ;   jne  now1
- ;   mov  [max_applications],7  ;6
- ; now1:
- ;   cmp  eax,799
- ;   jne  now2
- ;   mov  [max_applications],9 ;10    ;8
- ; now2:
- ;   cmp  eax,1023
- ;   jne  now3
- ;   mov  [max_applications],12 ;13   ;8
- ; now3:
- ;   cmp  eax,1279
- ;   jne  now4
- ;   mov  [max_applications],17 ;18    ;8
- ; now4:
- ;   mov  edi,1
-
-     sub  eax, 281
-     jnc  ._01
-     xor  eax, eax
-._01:
-     mov  bl, 60
-     div  bl
-     xor  ah, ah		       ; eax - количество умещаюшихся пиктов
-     mov  [max_applications], eax
-     mov  edi,1
-;  } \\ Alver \\
-
-  nb:
-
-    mov  eax,8
-    mov  ebx,edi
-    shl  ebx,16
-    imul ebx,6*10	     ;13
-    add  ebx,75*65536+10*6-1 ; << Alver 25.08.2007 >> 15*65536+10*6-1  ;13
-    mov  ecx,1*65536+17
-    mov  edx,edi
-    add  edx,51
-    cmp  [buttons],1
-    je	 bufr
-    or	 edx,0x60000000
-  bufr:
-    mov  esi,[wcolor]
-    sub  ebx,11 shl 16
-    int  0x40
-
-    inc  edi
-    cmp  edi,[max_applications]
-    jbe  nb
-
-  da_ret:
-
-    popa
-
-    ret
-
-
-menu_handler:
-	mov	eax, 70
-	mov	ebx, exec_fileinfo
-	mov	dword [ebx+21], menu_name
-	int	0x40
+	mov	[app_tab_count], edi
 	ret
+;------------------------------------------------------------------------------	
+align 4
+draw_application_buttons:
+	pusha
 
+	cmp	[icons],1
+	jne	da_ret
+
+	mcall	14
+	shr	eax,16
+
+	sub	eax, 281
+	jnc	._01
+	xor	eax, eax
+;--------------------------------------
+align 4
+._01:
+	mov	bl, 60
+	div	bl
+	xor	ah, ah		       ; eax - количество умещаюшихся пиктов
+	mov	[max_applications], eax
+	mov	edi,1
+;--------------------------------------
+align 4
+nb:
+	mov	ebx,edi
+	shl	ebx,16
+	imul	ebx,6*10	     ;13
+	add	ebx,75*65536+10*6-1 ; << Alver 25.08.2007 >> 15*65536+10*6-1  ;13
+	mov	edx,edi
+	add	edx,51
+	cmp	[buttons],1
+	je	bufr
+
+	or	edx,0x60000000
+;--------------------------------------
+align 4
+bufr:
+	mov	esi,[wcolor]
+	sub	ebx,11 shl 16
+	mcall	8,,<1,17>
+
+	inc	edi
+	cmp	edi,[max_applications]
+	jbe	nb
+;--------------------------------------
+align 4
+da_ret:
+	popa
+	ret
+;------------------------------------------------------------------------------	
+align 4
+menu_handler:
+	mov	ebx, exec_fileinfo
+	mov	[ebx+21],dword menu_name
+	mcall	70
+	ret
+;------------------------------------------------------------------------------	
+align 4
 draw_small_right:
+	pusha
+	mcall	12,1
 
-    pusha
+	xor	eax,eax
+	mov	edx,[wcolor]
+	mov	esi,edx
+	mov	edi,edx
+	or	edx, 0x01000000
+	mcall
 
-    mov  eax,12
-    mov  ebx,1
-    int  0x40
+	xor	ecx,ecx
+	mov	cx,[b_size_y]
+	mcall	8,<0,9>,,1,[wcolor]
 
-    mov  eax,0
-    mov  edx,[wcolor]
-    mov  esi,edx
-    mov  edi,edx
-    or	 edx, 0x01000000
-    int  0x40
+	mov	ebx,2*65536+16
+	cmp	[graph_text],1
+	jne	nos3
 
-    mov  eax,8
-    mov  ebx,0*65536+9
-    mov  ecx,0*65536
-    mov  cx,[b_size_y]
-    mov  edx,1
-    mov  esi,[wcolor]
-    int  0x40
+	mov	ebx,2*65536+7
+;--------------------------------------
+align 4
+nos3:
+	mov	ecx,[wcolor]
+	add	ecx,0x303030
+	mcall	4,,,hidetext,1
 
-    mov  eax,4
-    mov  ebx,2*65536+16
-    cmp  [graph_text],1
-    jne  nos3
-    mov  ebx,2*65536+7
-  nos3:
-    mov  ecx,[wcolor]
-    add  ecx,0x303030
-    mov  edx,hidetext
-    mov  esi,1
-    int  0x40
-
-    mov  eax,12
-    mov  ebx,2
-    int  0x40
-
-    popa
-
-    ret
-
-
-
+	mcall	12,2
+	popa
+	ret
+;------------------------------------------------------------------------------	
+align 4
 draw_small_left:
+	pusha
+	mcall	12,1
 
-    pusha
+	xor	eax,eax
+	mov	edx,[wcolor]
+	mov	esi,edx
+	mov	edi,edx
+	or	edx, 0x01000000
+	mcall
 
-    mov  eax,12
-    mov  ebx,1
-    int  0x40
+	cmp	[graph_text],1
+	je	nos4
 
-    mov  eax,0
-    mov  edx,[wcolor]
-    mov  esi,edx
-    mov  edi,edx
-    or	 edx, 0x01000000
-    int  0x40
+	mcall	8,<0,9>,<0,12>,2,[wcolor]
 
-    cmp  [graph_text],1
-    je	 nos4
+	mov	ecx,[wcolor]
+	add	ecx,0x303030
+	mcall	4,<2,4>,,hidetext+2,1
+;--------------------------------------
+align 4
+nos4:
+	mov	ecx,13*65536+25
+	cmp	[graph_text],1
+	jne	nos6
 
-    mov  eax,8
-    mov  ebx,0*65536+9
-    mov  ecx,0*65536+18-6
-    mov  edx,2
-    mov  esi,[wcolor]
-    int  0x40
+	xor	ecx,ecx
+	mov	cx,word [b_size_y]
+;--------------------------------------
+align 4
+nos6:
+	mcall	8,<0,9>,,1,[wcolor]
 
-    mov  eax,4
-    mov  ebx,2*65536+4
-    mov  ecx,[wcolor]
-    add  ecx,0x303030
-    mov  edx,hidetext+2
-    mov  esi,1
-    int  0x40
+	mov	ebx,3*65536+22
+	cmp	[graph_text],1
+	jne	nos7
 
-  nos4:
+	mov	ebx,3*65536+7
+;--------------------------------------
+align 4
+nos7:
+	mov	ecx,[wcolor]
+	add	ecx,0x303030
+	mcall	4,,,hidetext+1,1
 
-    mov  eax,8
-    mov  ebx,0*65536+9
-    mov  ecx,13*65536+25
-    cmp  [graph_text],1
-    jne  nos6
-    mov  ecx,0*65536
-    mov  cx,word [b_size_y]
-  nos6:
-    mov  edx,1
-    mov  esi,[wcolor]
-    int  0x40
-
-    mov  eax,4
-    mov  ebx,3*65536+22
-    cmp  [graph_text],1
-    jne  nos7
-    mov  ebx,3*65536+7
-  nos7:
-    mov  ecx,[wcolor]
-    add  ecx,0x303030
-    mov  edx,hidetext+1
-    mov  esi,1
-    int  0x40
-
-    mov  eax,12
-    mov  ebx,2
-    int  0x40
-
-    popa
-    ret
-
-
-;-------------------------------------------------
-
+	mcall	12,2
+	popa
+	ret
+;------------------------------------------------------------------------------	
+align 4
 right_button:
+	mov	[small_draw],dword draw_small_right
 
-    call button_music
+	mcall	14
 
-    mov  [small_draw],dword draw_small_right
+	shr	eax, 16
+	mov	ebx, eax
+	mov	ecx, -1
+	mov	edx, 9
+	sub	ebx, edx
+	mov	esi, -1
+	mcall	67
 
-    mcall 14
-    shr eax, 16
-    mov ebx, eax
-    mov ecx, -1
-    mov edx, 9
-    sub ebx, edx
-    mov esi, -1
-    mcall 67
-
-    call draw_small_right
-
-    jmp  small_wait
-
-;-------------------------------------------------
-
+	call	draw_small_right
+	jmp	small_wait
+;------------------------------------------------------------------------------	
+align 4
 left_button:
+	mov	[small_draw],dword draw_small_left
 
-    call  button_music
+	xor	ebx,ebx
+	mcall	67,,-1,9,-1
 
-    mov  [small_draw],dword draw_small_left
+	call	draw_small_left
+;--------------------------------------
+align 4
+small_wait:
+	mcall	10
+	cmp	eax,1
+	jne	no_win
 
-    mov   ebx, 0
-    mov   edx, 9
-    mov   ecx, -1
-    mov   esi, -1
-    mcall 67
+	call	[small_draw]
+	jmp	small_wait
+;--------------------------------------
+align 4
+no_win:
+	cmp	eax,2
+	jne	no_key
 
-    call draw_small_left
-
-;-------------------------------------------------
-
-  small_wait:
-
-    mov  eax, 10
-    int  0x40
-
-    cmp  eax,1
-    jne  no_win
-    call [small_draw]
-    jmp  small_wait
-  no_win:
-    cmp  eax,2
-    jne  no_key
-    call handle_key
-    jmp  small_wait
+	call	handle_key
+	jmp	small_wait
+;--------------------------------------
+align 4
 no_key:
+	mcall	17
+	cmp	ah,1
+	jne	no_full
 
-    mov  eax,17
-    int  0x40
+	mcall	14	; get screen max x & max y
 
-    cmp  ah,1
-    jne  no_full
+	mov	edx, eax
+	shr	edx, 16
+	xor	ebx, ebx
+	mcall	67,,-1,,-1 ; x0 y0 xs ys
 
-    mov   eax, 14		    ; get screen max x & max y
-    int   0x40
-    mov   edx, eax
-    shr   edx, 16
-    xor   ebx, ebx
-    mov   ecx, -1
-    mov   esi, -1
-    mcall 67 ; x0 y0 xs ys
-
-    call  button_music
-
-    jmp   still
-
-
-  no_full:
-
-    call menu_handler
-
-    jmp  small_wait
-
-
-
+	jmp	still
+;--------------------------------------
+align 4
+no_full:
+	call	menu_handler
+	jmp	small_wait
+;------------------------------------------------------------------------------	
+align 4
 set_variables:
+	pusha
+	mov	[b_size_y],dword 38
+	cmp	[graph_text],1
+	jne	noy2
 
-     pusha
+	mov	[b_size_y],dword 18
+;--------------------------------------
+align 4
+noy2:
+	mov	[button_frames],0x0
+	cmp	[buttons],0
+	jne	no_frames
 
-     mov  [b_size_y],dword 38
-     cmp  [graph_text],1
-     jne  noy2
-     mov  [b_size_y],dword 18
-   noy2:
+	mov	[button_frames],0x40000000
+;--------------------------------------
+align 4
+no_frames:
+	mcall	48,1,1	; 3d button look
 
-     mov  [button_frames],0x0
-     cmp  [buttons],0
-     jne  no_frames
-     mov  [button_frames],0x40000000
-   no_frames:
+	mov	eax,0x40404040   ; dividers for processes
+	mov	edi,pros
+	mov	ecx,10
+	cld
+	rep	stosd
 
-
-     mov  eax,48	   ; 3d button look
-     mov  ebx,1
-     mov  ecx,1
-     int  0x40
-
-     mov  eax,0x40404040   ; dividers for processes
-     mov  edi,pros
-     mov  ecx,10
-     cld
-     rep  stosd
-
-     popa
-     ret
-
-
-
+	popa
+	ret
+;------------------------------------------------------------------------------	
+align 4
 ; eax = number (1 or 2)
 ; ebx = language id
 draw_flag:
-    pusha
-
-;    cmp  [graph_text],0
-;    je   mini_flag
-
+	pusha
 ; eax = 2 BIG
 ; eax = 1 small
+	mov	edx,ebx
 
-    mov  edx,ebx
+	mov	ebx,[maxx]
+	and	eax,1
+	imul	eax,17  ;17
+	sub	ebx,eax
+	sub	ebx,76 ;79 ;28
 
-    mov  ebx,[maxx]
-    and  eax,1
-    imul eax,17  ;17
-    sub  ebx,eax
-    sub  ebx,76 ;79 ;28
+	pushad
+;	dec	ebx
+	sub	ebx,2
+	shl	ebx, 16
+	add	ebx, 15 ;25
+	xor	edx,edx
+	mcall	13,,<4,13>
 
-    pushad
-;    dec  ebx
-    sub  ebx,2
-    shl  ebx, 16
-    add  ebx, 15 ;25
-    mov  ecx, 4*65536+13
-    mov  edx,0
-    mov  eax,13
-    int  0x40
-    add  ebx,1 shl 16
-    sub  ebx,2
-    mov  ecx, 5 shl 16+11
-    cmp  [type_lang],1
-    je	label_1
-    mov  edx,0xff ;[wcolor]
-    jmp  label_2
+	add	ebx,1 shl 16
+	sub	ebx,2
+	mov	ecx, 5 shl 16+11
+	cmp	[type_lang],1
+	je	label_1
+
+	mov	edx,0xff ;[wcolor]
+	jmp	label_2
+;--------------------------------------
+align 4
 label_1:
-    mov  edx,0x7700
+	mov	edx,0x7700
+;--------------------------------------
+align 4
 label_2:
-    mov  eax, 13
-    int  0x40
-    popad
+	mcall
+	popad
 
-    shl  ebx,16
-    add  ebx,7	;24
+	shl	ebx,16
+	add	ebx,7	;24
 
-    mov  ecx,[bte] ; color
+	mov	ecx,[bte] ; color
 
-	;{Albom
-	if caps_lock_check
-		call flag_text_setup ; make flag_text 'enfigerufretua' or 'ENFIGERUFRETUA' depending on CapsLock state.
-	end if
-	;}Albom
-	
-    dec  edx
-    shl  edx,1
-    add  edx,flag_text
-    mov  esi,2
-    mov  eax,4
-    int  0x40
+if caps_lock_check
+; make flag_text 'enfigerufretua' or 'ENFIGERUFRETUA' depending on CapsLock state.
+	call	flag_text_setup
+end if
+	dec	edx
+	shl	edx,1
+	add	edx,flag_text
+	mcall	4,,,,2
 
-    mov  ebx,[maxx]
-    sub  ebx,48
-    shl  ebx,16
-    mov  bx,34
-    mov  ecx,3 shl 16+14
-    xor  edx,edx
-    mov  eax,13
-    int  0x40
-    add  ebx,1 shl 16
-    sub  ebx,2
-    mov  ecx,4 shl 16+12
-    mov  edx,time_bgr_color
-    int  0x40
+	mov	ebx,[maxx]
+	sub	ebx,48
+	shl	ebx,16
+	mov	bx,34
+	xor	edx,edx
+	mcall	13,,<3,14>
+
+	add	ebx,1 shl 16
+	sub	ebx,2
+	mov	ecx,4 shl 16+12
+	mov	edx,time_bgr_color
+    mcall
 
     popa
     ret
-
-;mini_flag:
-;    popa
-;    ret
-
-;{Albom
+;------------------------------------------------------------------------------	
+align 4
 if caps_lock_check
-	flag_text_setup:
-		pusha
+flag_text_setup:
+	pusha
+	mcall	66,3
+	mov	edi, flag_text
+	mov	esi, flag_text_caps_off
+	test	eax, 0x40
+	jz	@f
 	
-		mov eax, 66
-		mov ebx, 3
-		int 40h
+	add	esi, 14
+;--------------------------------------
+align 4
+@@:
+	mov	ecx, 14
+	rep	movsb
 	
-		mov edi, flag_text
-		mov esi, flag_text_caps_off
-	
-		test eax, 0x40
-		jz @f
-		add esi, 14
-	@@:
-		mov ecx, 14
-		rep movsb	
-	
-		popa
-		ret
-		flag_text_caps_off db 'enfigerufretua' 
-		db 'ENFIGERUFRETUA'
+	popa
+	ret
+
+flag_text_caps_off db 'enfigerufretua' 
+db 'ENFIGERUFRETUA'
 end if
-;Albom}
-
-
+;------------------------------------------------------------------------------	
 ; ***************************************************
 ; ********* WINDOW DEFINITIONS AND DRAW *************
 ; ***************************************************
-
-
+align 4
 draw_window:
+	pusha
+	mov	[running_applications],-1
+	mov	[checks],-1
+	mcall	12,1
 
-    pusha
+	mcall	48,3,system_colours,10*4
 
-    mov  [running_applications],-1
-    mov  [checks],-1
+	mov	eax, [system_colours+4*6]
+	sub	eax, 0x101010
+	mov	[wcolor], eax
 
-    mov  eax, 12		   ; tell os about redraw
-    mov  ebx, 1
-    int  0x40
+	mcall	14	; get screen max x & max y
 
-    mov  eax, 48
-    mov  ebx, 3
-    mov  ecx, system_colours
-    mov  edx, 10*4
-    int  0x40
+	cmp	[width],0
+	je	no_def_width
 
-    mov  eax, [system_colours+4*6]
-    sub  eax, 0x101010
-    mov  [wcolor], eax
+	and	eax,0xffff
+	mov	ebx,[width]
+	shl	ebx,16
+	add	eax,ebx
+;--------------------------------------
+align 4
+no_def_width:
+	mov	ebx,eax
+	mov	[screenxy],ebx
+	shr	ebx,16
+	sub	ax,38
+	shl	eax,16
+	mov	ecx,eax
+	add	ecx,0*65536+38
+	cmp	[graph_text],1
+	jne	no_text_1
+	mov	cx,PANEL_HEIGHT
+	add	ecx,20*65536
+;--------------------------------------
+align 4
+no_text_1:
+	xor	eax,eax 		    ; DEFINE AND DRAW WINDOW
+	mov 	edx, [wcolor]
+	or	edx, 0x01000000 ; do not draw the window
+	mov	esi, [wcolor]
+	or	esi, 0x01000000 ; unmovable window
+	mov 	edi, [wcolor]
+	mov	[panel_x_pos], ebx
+	mov	[panel_y_pos], ecx	 ; Пока что так.
+	mcall
 
-    mov  eax,14 		   ; get screen max x & max y
-    int  0x40
+	movzx	ebx,word [screenxy+2]
+	mov	ecx,0*65536+0
+	mov	edx,[wcolor]
+	add	edx,0x161616
+;--------------------------------------
+align 4
+newline_:			; debug.inc has macros with the same name
+	sub	edx,0x040404
+	mov	eax,38
+	cmp	[soften_up],1
+	jne	no_su
 
-    cmp  [width],0
-    je	 no_def_width
-    and  eax,0xffff
-    mov  ebx,[width]
-    shl  ebx,16
-    add  eax,ebx
-  no_def_width:
+	and	edx,0x00FFFFFF
+	mcall
+;--------------------------------------
+align 4
+no_su:
+	pusha
+	cmp	[soften_down],1
+	jne	no_sd
 
-    mov  ebx,eax
-    mov  [screenxy],ebx
-    shr  ebx,16
-    sub  ax,38
-    shl  eax,16
-    mov  ecx,eax
-    add  ecx,0*65536+38
-    cmp  [graph_text],1
-    jne  no_text_1
-    mov  cx,PANEL_HEIGHT
-    add  ecx,20*65536
-  no_text_1:
-    mov  eax, 0 		    ; DEFINE AND DRAW WINDOW
-    mov  edx, [wcolor]
-    or	 edx, 0x01000000 ; do not draw the window
-    mov  esi, [wcolor]
-    or	 esi, 0x01000000 ; unmovable window
-    mov  edi, [wcolor]
+	sub	edx,0x141414
+	mov	edi,[b_size_y]
+	shl	edi,16
+	add	edi,[b_size_y]
+	add	ecx,edi
+	sub	ecx,3*65536+3
+	and	edx,0x00FFFFFF
+	mcall
+;--------------------------------------
+align 4
+no_sd:
+	popa
 
-    mov  [panel_x_pos], ebx
-    mov  [panel_y_pos], ecx	 ; Пока что так.
+	add	ecx,1*65536+1
+	cmp	cx,5
+	jb	newline_
 
-    int  0x40
+	cmp	[soften_middle],1
+	jne	no_sm
 
-    movzx ebx,word [screenxy+2]
-    mov  ecx,0*65536+0
-    mov  edx,[wcolor]
-    add  edx,0x161616
-  newline_:			; debug.inc has macros with the same name
-    sub  edx,0x040404
-    mov  eax,38
-    cmp  [soften_up],1
-    jne  no_su
-    and  edx,0x00FFFFFF
-    int  0x40
-  no_su:
+	movzx	ebx,word [screenxy+2]
+	mov	ecx,5*65536+5
+	mov	esi,stripe
+	mov	edx,[wcolor]
+;--------------------------------------
+align 4
+newline3:
+	add	edx,[esi]
+	add	esi,4
 
-    pusha
-    cmp  [soften_down],1
-    jne  no_sd
-    sub  edx,0x141414
-    mov  edi,[b_size_y]
-    shl  edi,16
-    add  edi,[b_size_y]
-    add  ecx,edi
-    sub  ecx,3*65536+3
-    and  edx,0x00FFFFFF
-    int  0x40
-  no_sd:
-    popa
+	and	edx,0x00FFFFFF
+	mcall	38
+	add	ecx,1*65536+1
+	cmp	cx,15
+	jb	newline3
+;--------------------------------------
+align 4
+no_sm:
+	cmp	[minimize_left],1
+	jne	no_mleft
 
-    add  ecx,1*65536+1
-    cmp  cx,5
-    jb	 newline_
+	mov	ecx,1 *65536
+	add	ecx,[b_size_y]
+	dec	ecx
+	mov	edx,101
+	add	edx,[button_frames]
+	mcall	8,<0,9>,,,[wcolor]	; ABS LEFT
 
-    cmp   [soften_middle],1
-    jne   no_sm
+	mov	ebx,2*65536+17
+	cmp	[graph_text],1
+	jne	no_y1
 
-    movzx ebx,word [screenxy+2]
-    mov   ecx,5*65536+5
-    mov   esi,stripe
-    mov   edx,[wcolor]
-  newline3:
-    add  edx,[esi]
-    add  esi,4
+	mov	bx,7
+;--------------------------------------
+align 4
+no_y1:
+	mov	ecx,[wcolor]
+	add	ecx,0x303030
+	mcall	4,,,hidetext,1	; HIDE TEXT
+;--------------------------------------
+align 4
+no_mleft:
+	movzx	eax,word [screenxy+2]
+	mov	[maxx],eax
+	cmp	[minimize_right],1
+	jne	no_mright
+	mov	eax,[maxx]
+	sub	eax,77
+	shl	eax,16
+	mov	ebx,eax
+	add	ebx,67
 
-    mov  eax,38
-    and  edx,0x00FFFFFF
-    int  0x40
-    add  ecx,1*65536+1
-    cmp  cx,15
-    jb	 newline3
+	mov	ecx,1 *65536
+	add	ecx,[b_size_y]
+	dec	ecx
+	add	ebx,68*65536
+	mov	bx,9
+	mov	edx,102
+	add	edx,[button_frames]
+	mcall	8,,,,[wcolor]	; ABS RIGHT
 
-  no_sm:
+	mov	edx,hidetext+1
+	mov	eax,4
+	mov	ebx,[maxx]
+	sub	ebx,6
+	shl	ebx,16
+	mov	bx,17
+	cmp	[graph_text],1
+	jne	no_y2
 
-    cmp  [minimize_left],1
-    jne  no_mleft
-    mov  eax,8				     ; ABS LEFT
-    mov  ebx,0 *65536+9
-    mov  ecx,1 *65536
-    add  ecx,[b_size_y]
-    dec  ecx
-    mov  edx,101
-    add  edx,[button_frames]
-    mov  esi,[wcolor]
-    int  0x40
-    mov  eax,4				     ; HIDE TEXT
-    mov  ebx,2*65536+17
-    cmp  [graph_text],1
-    jne  no_y1
-    mov  bx,7
-  no_y1:
-    mov  ecx,[wcolor]
-    add  ecx,0x303030
-    mov  edx,hidetext
-    mov  esi,1
-    int  0x40
-  no_mleft:
+	mov	bx,7
+;--------------------------------------
+align 4
+no_y2:
+	mov	ecx,[wcolor]
+	add	ecx,0x303030
+	mov	esi,1
+	mcall
+;--------------------------------------
+align 4
+no_mright:
+	call	draw_menuet_icon
+;	call	draw_program_icons
+	mov	[ptime],0
+	call	draw_info
+	call	draw_application_buttons
 
-    movzx eax,word [screenxy+2]
-    mov  [maxx],eax
-
-    cmp  [minimize_right],1
-    jne  no_mright
-    mov  eax,[maxx]
-    sub  eax,77
-    shl  eax,16
-    mov  ebx,eax
-    add  ebx,67
-    mov  eax,8				     ; ABS RIGHT
-    mov  ecx,1 *65536
-    add  ecx,[b_size_y]
-    dec  ecx
-    add  ebx,68*65536
-    mov  bx,9
-    mov  edx,102
-    add  edx,[button_frames]
-    mov  esi,[wcolor]
-    int  0x40
-    mov  edx,hidetext+1
-    mov  eax,4
-    mov  ebx,[maxx]
-    sub  ebx,6
-    shl  ebx,16
-    mov  bx,17
-    cmp  [graph_text],1
-    jne  no_y2
-    mov  bx,7
-  no_y2:
-    mov  ecx,[wcolor]
-    add  ecx,0x303030
-    mov  esi,1
-    int  0x40
-  no_mright:
-
-    call draw_menuet_icon
-
-    call draw_program_icons
-
-    mov  [ptime],0
-    call draw_info
-
-    call draw_application_buttons
-
-;     mov    ecx,[button_presssed_alt]
-;     mcall  47,0x80100,ecx ,400 shl 16+5,0
-
-    mov  eax,12
-    mov  ebx,2
-    int  0x40
-
-    popa
-    ret
-
-; // Alver 26.08.2007 // {
+	mcall	12,2
+	popa
+	ret
+;------------------------------------------------------------------------------	
+align 4
 dr_button_clean:
-    mov  ecx, 3*65536+13
-    mcall 8
-    ret
-; } \\ Alver \\
-
+	mcall	8,,<3,13>
+	ret
+;------------------------------------------------------------------------------	
+align 4
 draw_menuet_icon:
+	pusha
+; Inserted code for drawing buttons 103, 104, 105 (Clean, Restore, Exchange windows)
+	mov	esi, dword [system_colours+24]    ; drawing buttons
+	and	esi, 0x00ffffff
+	mov	edx, 103
+	mov	ebx, 67*65536+13
+	call	dr_button_clean
+	
+	inc	edx
+	mov	ebx, 86*65536+13
+	call	dr_button_clean
+	
+	inc	edx
+	mov	ebx, 105*65536+13
+	call	dr_button_clean
+	
+	mov	ecx, dword [system_colours+28]
+	and	ecx, 0x00ffffff
+	mcall	4,<71,6>,,page_clean_but,1
 
-    pusha
+	inc	edx
+	mcall	,<90,6>
 
-; // Alver 26.08.2007 // {
-; Inserted code for drowing buttons 103, 104, 105 (Clean, Restore, Exchange windows)
-    mov  esi, dword [system_colours+24]    ; drawing buttons
-    and  esi, 0x00ffffff
-    mov  edx, 103
-    mov  ebx, 67*65536+13
-    call dr_button_clean
-    inc  edx
-    mov  ebx, 86*65536+13
-    call dr_button_clean
-    inc  edx
-    mov  ebx, 105*65536+13
-    call dr_button_clean
-    mov  ecx, dword [system_colours+28]
-    and  ecx, 0x00ffffff
-    xor  esi, esi
-    inc  esi
-    mov  edx, page_clean_but
-    mov  eax, 4
-    mov  ebx, 71*65536+6
-    int  0x40
-    inc  edx
-    mov  ebx, 90*65536+6
-    int  0x40
-    inc  edx
-    mov  ebx, 109*65536+6
-    int  0x40
-; } \\ Alver \\
+	inc	edx
+	mcall	,<109,6>
 
-    cmp  [menu_enable],1
-    jne  no_menu
+	cmp	[menu_enable],1
+	jne	no_menu
 
+	mov	ebx, 10*65536 + 47
+	cmp	[minimize_left], 0
+	jne	@f
 
-    mov  eax, 8 			      ; M BUTTON
-    mov  ebx, 10*65536 + 47
-    cmp  [minimize_left], 0
-    jne  @f
-    sub  ebx, 10*65536
-  @@:
-    mov  ecx, 1*65536
-    add  ecx, [b_size_y]
-    dec  ecx
-;    mov  edx, 0x20000001			; dunkaist[
-    mov  edx, 0x20d1ff01			; dunkaist]
-    add  edx, [button_frames]
-    mov  esi, [wcolor]
-    int  0x40
+	sub	ebx, 10*65536
+;--------------------------------------
+align 4
+@@:
+	mov	ecx, 1*65536
+	add	ecx, [b_size_y]
+	dec	ecx
+	mov	edx, 0x20d1ff01
+	add	edx, [button_frames]
+	mcall	8,,,,[wcolor]	; M BUTTON
 
-    cmp  [graph_text], 1
-    jne  no_mtext
+;	cmp	[graph_text], 1
+;	jne	no_mtext
 
-    push ebx
-    mov  eax,13
-    mov  ebx,12 shl 16+44  ;51
-    mov  ecx,1 shl 16+17
-;    xor  edx,edx
-    mov edx, 0x383838
-    int  0x40
-;    mov  ebx,63 shl 16+1
-    mov  ebx,56 shl 16+1
-    mov  ecx,2 shl 16+15
-    int  0x40
-    mov  ebx,57 shl 16+1
-    mov  ecx,4 shl 16+11
-    int  0x40
-    mov  ebx,58 shl 16+1
-    mov  ecx,6	shl 16+7
-    int  0x40
-;    mov  ebx,66  shl 16+1
-;    mov  ecx,9 shl 16+1
-;    int  0x40
-    mov  ebx,13 shl 16+43 ;50
-    mov  ecx,2 shl 16+15
-    mov  edx,0x7700
-    int  0x40
-;    mov  ebx,62 shl 16+1
-;    mov  ecx,3 shl 16+14
-;    int  0x40
-    mov  ebx,56 shl 16+1
-    mov  ecx,4 shl 16+11
-    int  0x40
-    mov  ebx,57 shl 16+1
-    mov  ecx,6 shl 16+7
-    int  0x40
-    pop  ebx
+	push	ebx
+	mcall	13,<12,44>,<1,17>,0x383838
 
-    mov  eax, 4
-    mov  bx,  7
-    add  ebx, 8*65536
-    mov  ecx, 0x10ffffff
-    mov  edx, m_text
-    mov  esi, 4
-    int  0x40
+	mcall	,<56,1>,<2,15>
 
-    popa
-    ret
+	mcall	,<57,1>,<4,11>
 
-  no_mtext:
+	mcall	,<58,1>,<6,7>
 
+	mcall	,<13,43>,<2,15>,0x7700
 
+	mcall	,<56,1>,<4,11>
 
-    mov  eax,[wcolor]
-    mov  [m_icon+4],eax
+	mcall	,<57,1>,<6,7>
+	pop	ebx
 
-; load & display menuet.bmp
-	mov	eax, 70
-	mov	ebx, m_bmp_fileinfo
-	int	0x40
+	mov	bx,  7
+	add	ebx, 8*65536
 
-    mov  eax,40
-    mov  ebx,0
-    mov  edi,image+53
+	mcall	4,,0x10ffffff,m_text,4
 
-   new_m_pix:
+	popa
+	ret
+;--------------------------------------
+;align 4
+;no_mtext:
+;	mov	eax,[wcolor]
+;	mov	[m_icon+4],eax
+;; load & display menuet.bmp
+;	mcall	70,m_bmp_fileinfo
 
-;    movzx ecx,byte [edi]
-;    shr  ecx,5
+;	mov	eax,40
+;	mov	ebx,0
+;	mov	edi,image+53
+;--------------------------------------
+;align 4
+;new_m_pix:
+;	cmp	byte [edi], 10
+;	jb	nopix
 
-    cmp    byte [edi], 10
-    jb	   nopix
-    cmp    byte [edi+1], 10
-    jb	   nopix
-    cmp    byte [edi+2], 10
-    jb	   nopix
+;	cmp	byte [edi+1], 10
+;	jb	nopix
 
-    pusha
-    cmp  [minimize_left],0
-    jne  no_m_s2
-    sub  ebx,10
-  no_m_s2:
-;    mov  edx,[ecx*4+m_icon]
-    mov  edx,[edi+1]
+;	cmp	byte [edi+2], 10
+;	jb	nopix
 
-    mov  ecx,eax
-    mov  eax,1
-    add  ebx,12
-    int  0x40
-    popa
+;	pusha
+;	cmp	[minimize_left],0
+;	jne	no_m_s2
 
-   nopix:
+;	sub	ebx,10
+;--------------------------------------
+;align 4
+;no_m_s2:
+;	mov	edx,[edi+1]
+;	mov	ecx,eax
+;	add	ebx,12
+;	mcall	1	; point - WTF???!!!
 
-    add  edi,3
-    add  ebx,1
-    cmp  ebx,40
-    jnz  new_m_pix
+;	popa
+;--------------------------------------
+;align 4
+;nopix:
+;	add	edi,3
+;	add	ebx,1
+;	cmp	ebx,40
+;	jnz	new_m_pix
 
-    mov  ebx,0
-    dec  eax
-    jnz  new_m_pix
+;	mov	ebx,0
+;	dec	eax
+;	jnz	new_m_pix
+;--------------------------------------
+align 4
+no_menu:
+	popa
+	ret
+;------------------------------------------------------------------------------	
+;align 4
+;draw_program_icons:
+;	pusha
 
-  no_menu:
+;	cmp	[icons],0
+;	jne	dp_ret
 
-    popa
-    ret
+;	mov	edi,1
+;	push	edi
+;--------------------------------------
+;align 4
+;new_icon_file:
+;	pusha
+;	mov	edx,[esp+32]
+;	add	edx,10
 
+;	push	edx
+;	mov	ecx,1*65536
+;	add	ecx,[b_size_y]
+;	dec	ecx
+;	mov	eax,edi
+;	dec	eax
+;	imul	eax,40
+;	mov	ebx,eax
+;	add	ebx,[icons_position]
+;	shl	ebx,16
+;	mov	bx,39
+;	pop	edx
 
-draw_program_icons:
+;	add	edx,[button_frames]
+;	or	edx, 0x20000000
+;	mcall	8,,,,[wcolor]
+;	popa
 
-    pusha
+;	mov	ecx,[esp]
+;	add	ecx,48
+;	mov	[iconf+6],cl
 
-    cmp  [icons],0
-    jne  dp_ret
+;	mcall	70,iconf_fileinfo
 
-    mov  edi,1
-    push edi
+;	mov	eax,0
+;	mov	ebx,32
+;	mov	edi,image+51+32*33*3
+;--------------------------------------
+;align 4
+;np2: 			    ; new pixel of file
+;	mov	edx,[edi]
+;	and	edx,0xffffff
 
-  new_icon_file:
+;	cmp	eax,3		; Y draw limits
+;	jb	nopix2
 
-    pusha
-    mov  edx,[esp+32]
-    add  edx,10
-    push edx
-    mov  esi,[wcolor]
-    mov  ecx,1*65536
-    add  ecx,[b_size_y]
-    dec  ecx
-    mov  eax,edi
-    dec  eax
-    imul eax,40
-    mov  ebx,eax
-    add  ebx,[icons_position]
-    shl  ebx,16
-    mov  bx,39
-    pop  edx
-    add  edx,[button_frames]
-    or	 edx, 0x20000000
-    mov  eax,8
-    int  0x40
-    popa
+;	cmp	eax,36
+;	jg	nopix2
 
-    mov  ecx,[esp]
-    add  ecx,48
-    mov  [iconf+6],cl
+;	cmp	ebx,38		; X draw limits
+;	jg	nopix2
 
-	mov	eax, 70
-	mov	ebx, iconf_fileinfo
-	int	0x40
+;	cmp	ebx,2
+;	jb	nopix2
 
-    mov  eax,0
-    mov  ebx,32
-    mov  edi,image+51+32*33*3
+;	cmp	edx,0
+;	jz	nopix2
 
-   np2: 			    ; new pixel of file
+;	cmp	[graph_text],1
+;	jne	no_icon_text
 
-    mov  edx,[edi]
-    and  edx,0xffffff
+;	pusha
+;	mov	ebx,[esp+32]
+;	dec	ebx
+;	imul	ebx,40
+;	add	ebx,8
+;	add	ebx,[icons_position]
+;	shl	ebx,16
+;	mov	bx,7
 
-    cmp  eax,3			    ; Y draw limits
-    jb	 nopix2
-    cmp  eax,36
-    jg	 nopix2
-    cmp  ebx,38 		    ; X draw limits
-    jg	 nopix2
-    cmp  ebx,2
-    jb	 nopix2
+;	mov	edx,[esp+32]
+;	dec	edx
+;	imul	edx,4
+;	add	edx,mi_text
+;	mcall	4,,0xffffff,,4
+;	popa
+;	jmp  nopix2
+;--------------------------------------
+;align 4
+;no_icon_text:
+;	mov	esi,[esp]
+;	pusha
+	
+;	push	edx
+;	mov	ecx,eax
+;	add	ecx,2
+;	mov	eax,esi
+;	dec	eax
+;	imul	eax,40
+;	add	ebx,eax
+;	add	ebx,3
+;	add	ebx,[icons_position]
+;	pop	edx
 
-    cmp  edx,0
-    jz	 nopix2
+;	mcall	1	; WTF???!!!
+;	popa
+;--------------------------------------
+;align 4
+;nopix2:
+;	sub	edi,3
+;	dec	ebx
+;	jnz	np2
 
-    cmp  [graph_text],1
-    jne  no_icon_text
+;	mov	ebx,32
+;	add	eax,1
+;	cmp	eax,32
+;	jnz	np2
 
-    pusha
+;	add	dword [esp],1
+;	mov	edi,[esp]
+;	cmp	dword [esp],4
+;	jbe	new_icon_file
 
-    mov  ebx,[esp+32]
-    dec  ebx
-    imul ebx,40
-    add  ebx,8
-    add  ebx,[icons_position]
-    shl  ebx,16
-    mov  bx,7
+;	add	esp,4
 
-    mov  eax,4
-    mov  ecx,0xffffff
-    mov  edx,[esp+32]
-    dec  edx
-    imul edx,4
-    add  edx,mi_text
-    mov  esi,4
-    int  0x40
-
-    popa
-
-    jmp  nopix2
-
-  no_icon_text:
-
-    mov  esi,[esp]
-    pusha
-    push edx
-    mov  ecx,eax
-    add  ecx,2
-    mov  eax,esi
-    dec  eax
-    imul eax,40
-    add  ebx,eax
-    add  ebx,3
-    add  ebx,[icons_position]
-    pop  edx
-    mov  eax,1
-    int  0x40
-    popa
-
-  nopix2:
-
-    sub  edi,3
-    dec  ebx
-    jnz  np2
-
-    mov  ebx,32
-    add  eax,1
-    cmp  eax,32
-    jnz  np2
-
-    add  dword [esp],1
-    mov  edi,[esp]
-    cmp  dword [esp],4
-    jbe  new_icon_file
-    add  esp,4
-
-    mov  eax,4
-    mov  ebx,40
-    imul ebx,3
-    add  ebx,[icons_position]
-    add  ebx,10
-    shl  ebx,16
-    mov  bx,23
-    mov  ecx,[wcolor]
-    mov  edx,gpl
-    mov  esi,3
-    int  0x40
-
-  dp_ret:
-
-    popa
-    ret
-
-
-
+;	mov	ebx,40
+;	imul	ebx,3
+;	add	ebx,[icons_position]
+;	add	ebx,10
+;	shl	ebx,16
+;	mov	bx,23
+;	mcall	4,,[wcolor],gpl,3
+;--------------------------------------
+;align 4
+;dp_ret:
+;	popa
+;	ret
+;------------------------------------------------------------------------------	
+align 4
 draw_info:    ; draw cpu usage, time, date
-
     pusha
+	cmp	[setup_enable],1
+	jne	no_setup
 
-    cmp  [setup_enable],1
-    jne  no_setup
+	cmp	[minimize_right],0
+	jne	no_m_r
+	add	[maxx],10
+;--------------------------------------
+align 4
+no_m_r:
+	mov	eax,3
+	mcall
+	cmp	eax,[ptime]
+	jz	_ret
 
-    cmp  [minimize_right],0
-    jne  no_m_r
-    add  [maxx],10
+	mov	[ptime],eax
 
-   no_m_r:
+   	call	draw_cpu_usage
 
-    mov  eax,3
-    int  0x40
-    cmp  eax,[ptime]
-    jz	 _ret
-    mov  [ptime],eax
+	mov	eax,[maxx]   ; blink sec
+	sub	eax,33
+	shl	eax,16
+	mov	ebx,eax
+	add	ebx,9
+	mcall	3
 
-    call draw_cpu_usage
+	cmp	[graph_text],1
+	jne	no_y4
 
-    mov  eax,[maxx]   ; blink sec
-    sub  eax,33
-    shl  eax,16
-    mov  ebx,eax
-    add  ebx,9
-    mov  eax,3
-    int  0x40
-    cmp  [graph_text],1
-    jne  no_y4
-    sub  bx,2
-  no_y4:
-    mov  ecx,eax
-    shr  ecx,16
-    and  ecx,1
-    mov  edx,[bte]
-    sub  edx,time_bgr_color;[wcolor]
-    imul ecx,edx
-    add  ecx,time_bgr_color;[wcolor]
-    mov  edx,sec
-    mov  eax,4
-    mov  esi,1
-    int  0x40
+	sub	bx,2
+;--------------------------------------
+align 4
+no_y4:
+	mov	ecx,eax
+	shr	ecx,16
+	and	ecx,1
+	mov	edx,[bte]
+	sub	edx,time_bgr_color;[wcolor]
+	imul	ecx,edx
+	add	ecx,time_bgr_color;[wcolor]
 
+	mcall	4,,,sec,1
 
-;    mov  eax,26          ; check for change in time or country
-;    mov  ebx,5
-;    int  0x40
-;    mov  edx,eax
-    mov  eax,26
-    mov  ebx,2
-    mov  ecx,9
-    int  0x40
-;    add  edx,eax
-    mov  edx,eax
-    mov  eax,3
-    int  0x40
-    and  eax,0xffff
-    add  edx,eax
-    cmp  edx,[checks]
-    je	 _ret
-    mov  [checks],edx
+	mcall	26,2,9
 
-    mov  ebx,[maxx]
-    sub  ebx,48 ;;94 ;;74
-    shl  ebx,16
-    add  ebx,33 ;;84 ;;64
+	mov	edx,eax
+	mcall	3
 
-    mov  eax,8		     ; time/date button
-    mov  ecx,3 *65536
-    add  ecx,[b_size_y]
-;    dec  ecx
-    sub  cx,5
-    mov  edx,0x40000002
-    mov  esi,[wcolor]
-    int  0x40
-    and  edx,0xffff
-    add  edx,[button_frames]
-    int  0x40
+	and	eax,0xffff
+	add	edx,eax
+	cmp	edx,[checks]
+	je	_ret
 
-    mov  eax,8                 ;other tray buttons
-    mov  ebx,[maxx]
-    sub  ebx,77 ;80
-    shl  ebx,16
-    add  ebx,14
-    mov  ecx,4 shl 16+12
-    mov  edx,16+0x40000000+0x20000000  ;button 16
-    mov  esi,[wcolor]
-    int  0x40
-    sub  ebx,17 shl 16
-    inc  edx		    ;button 17
-;    int  0x40
-    add  ebx,33 shl 16
-    mov  bx,8
-    inc  edx		    ;button 18
-    int  0x40
-    sub  ebx,30 shl 16
-    mov  bx,10
-    inc  edx		    ;button 19
-    int  0x40
-    sub  ebx,14 shl 16
-    inc  edx		    ;button 20
-    int  0x40
-    sub  ebx,12 shl 16
-    mov  bx,8
-    mov  ecx,6 shl 16+10
-    inc  edx	    ;button 21
-    int  0x40
-    sub  ebx,24 shl 16	; << Alver 25.08.2007 >> 18 shl 16
-    inc  edx	    ;button 22
-    int  0x40
+	mov	[checks],edx
 
+	mov	ebx,[maxx]
+	sub	ebx,48 ;;94 ;;74
+	shl	ebx,16
+	add	ebx,33 ;;84 ;;64
 
-    ; flags
+	mov	ecx,3 *65536
+	add	ecx,[b_size_y]
+	sub	cx,5
+	mcall	8,,,0x40000002,[wcolor]	; time/date button
 
-;   mov  eax,26
-;   mov  ebx,5
-;   int  0x40
-;   mov  ebx,eax
+	and	edx,0xffff
+	add	edx,[button_frames]
+	mcall
 
-;   mov  eax,2
-;   mov  [type_lang],al
-;   call draw_flag
+	mov	ebx,[maxx]
+	sub	ebx,77 ;80
+	shl	ebx,16
+	add	ebx,14
 
-    mov  eax,26
-    mov  ebx,2
-    mov  ecx,9
-    int  0x40
-    mov  ebx,eax
+	mcall	,,<4,12>,0x60000010,[wcolor]	;button 16
 
-    mov  eax,2
-    mov  [type_lang],al
-    call draw_flag
+	sub	ebx,17 shl 16
+	inc	edx		    ;button 17
 
-    mcall 18,8,1
-    mov  [sound_flag],al
+	add	ebx,33 shl 16
+	mov	bx,8
+	inc	edx		    ;button 18
+	mcall
 
-    mov  ebx,[maxx]
-    sub  ebx,92 ;109 ;112 ;28
-    shl  ebx,16
-    mov  bx,12
-    mov  ecx, 4*65536+13
-    mov  edx,0
-    mov  eax,13
-    int  0x40
-    add  ebx,1 shl 16
-    sub  bx,2
-    mov  ecx,5 shl 16+11
-    mov  edx,0xcc
-    int  0x40
-    add  ebx,1 shl 16
-    mov  bx,5
-    mov  ecx,8 shl 16+5
-    mov  edx,0xdddd00
-    int  0x40
-    add  ebx,5 shl 16
-    mov  bx,1
-    mov  ecx,7 shl 16+7
-    int  0x40
-    add  ebx,1 shl 16
-    mov  ecx,6 shl 16+9
-    int  0x40
-    add  ebx,1 shl 16
-    mov  ecx,5 shl 16+11
-    int  0x40
+	sub	ebx,30 shl 16
+	mov	bx,10
+	inc	edx		    ;button 19
+	mcall
 
-;    cmp  [music_type],0
-;    jne   dalshe
-    cmp  [sound_flag],0
-    je	 dalshe
+	sub	ebx,14 shl 16
+	inc	edx		    ;button 20
+	mcall
 
-    sub  ebx,8 shl 16
-    ror  ebx,16
-    mov  cx,bx
-    rol  ebx,16
-    mov  bx,cx
-    add  bx,8
-    mov  ecx,5 shl 16+15
-    mov  edx,0xff0000
-    mov  eax,38
-    int  0x40
-    add  ebx,1 shl 16
-    inc  bx
-    int  0x40
-    rol  ecx,16
-    int  0x40
-    sub  ebx,1 shl 16
-    dec  bx
-    int  0x40
+	sub	ebx,12 shl 16
+	mov	bx,8
+	mov	ecx,6 shl 16+10
+	inc	edx	    ;button 21
+	mcall
 
+	sub	ebx,24 shl 16
+	inc	edx	    ;button 22
+	mcall
+
+	mcall	26,2,9
+
+	mov	ebx,eax
+
+	mov	eax,2
+	mov	[type_lang],al
+   	call	draw_flag
+
+	mcall	18,8,1
+
+	mov	[sound_flag],al
+
+	mov	ebx,[maxx]
+	sub	ebx,92 ;109 ;112 ;28
+	shl	ebx,16
+	mov	bx,12
+	xor	edx,edx
+	mcall	13,,<4,13>
+
+	add	ebx,1 shl 16
+	sub	bx,2
+	mcall	,,<5,11>,0xcc
+
+	add	ebx,1 shl 16
+	mov	bx,5
+	mcall	,,<8,5>,0xdddd00
+
+	add	ebx,5 shl 16
+	mov	bx,1
+	mcall	,,<7,7>
+
+	add	ebx,1 shl 16
+	mcall	,,<6,9>
+
+	add	ebx,1 shl 16
+	mcall	,,<5,11>
+
+	cmp	[sound_flag],0
+	je	dalshe
+
+	sub	ebx,8 shl 16
+	ror	ebx,16
+	mov	cx,bx
+	rol	ebx,16
+	mov	bx,cx
+	add	bx,8
+	mcall	38,,<5,15>,0xff0000
+
+	add	ebx,1 shl 16
+	inc	bx
+	mcall
+
+	rol	ecx,16
+	mcall
+
+	sub	ebx,1 shl 16
+	dec	bx
+	mcall
+;--------------------------------------
+align 4
 dalshe:
+	mov	ebx,[maxx]
+	sub	ebx,106;123
+	shl	ebx,16
+	mov	bx,12
+	xor	edx,edx
+	mcall	13,,<4,13>
 
-    mov  ebx,[maxx]
-    sub  ebx,106;123
-    shl  ebx,16
-    mov  bx,12
-    mov  ecx, 4*65536+13
-    mov  edx,0
-    mov  eax,13
-    int  0x40
-    add  ebx,1 shl 16
-    sub  bx,2
-    mov  ecx,5 shl 16+11
-    mov  edx,0xffcc00
-    int  0x40
-    mov  eax,4
-    mov  ebx,[maxx]
-    sub  ebx,104;121
-    shl  ebx,16
-    mov  bx,7
-    mov  ecx,0x10000000
-    mov  edx,file_sys
-    mov  esi,1
-    int  0x40
-    add  ebx,1 shl 16
-    int  0x40
+	add	ebx,1 shl 16
+	sub	bx,2
+	mcall	,,<5,11>,0xffcc00
 
-    mov  edx,0
-    mov  eax,13
-    mov  ebx,[maxx]
-    sub  ebx,117;134
-    shl  ebx,16
-    mov  bx,9
-    mov  ecx,6 shl 16+11
-    int  0x40
-; // Alver 25.08.2007 // {
-  ;  sub  ebx,18 shl 16
-  ;  int  0x40
-  ;  add  ebx,19 shl 16
-    sub  ebx,24 shl 16 ; 18 shl 16
-    int  0x40
-    add  ebx,25 shl 16 ; 19 shl 16
-; } \\ Alver \\
-    sub  bx,2
-    mov  ecx,7 shl 16+9
-    mov  edx,0xffffff
-    int  0x40
-; // Alver 25.08.2007 // {
- ;   sub  ebx,18 shl 16
-    sub  ebx,24 shl 16
-; } \\ Alver \\
-    int  0x40
+	mov	ebx,[maxx]
+	sub	ebx,104;121
+	shl	ebx,16
+	mov	bx,7
 
-    mov  eax,4
-    mov  edx,page_a1
-    mov  ebx,[maxx]
-; // Alver 25.08.2007 // {
-   ; sub  ebx,133;150
-    sub  ebx, 139
-; } \\ Alver \\
-    shl  ebx,16
-    mov  bx,8
-    mov  esi,5	   ;4
-    int  0x40
-    add  ebx,1 shl 16
-    int  0x40
+	mcall	4,,0x10000000,file_sys,1
 
-    mov  eax,47
-    mov  ebx,0x20000  ; 0x10100 (<Alver)
-    mov  ecx,[page_list]
-    mov  edx,[maxx]
-    sub  edx,130 ; 124 (<Alver);141
-    shl  edx,16
-    mov  dx,7
-    mov  esi,0xffffff
-    int  0x40
+	add	ebx,1 shl 16
+	mcall
 
-;    sub  ebx,14 shl 16
-;    mov  bx,7
-;    mov  edx,turn_text
-;    mov  esi,1
+	mov	ebx,[maxx]
+	sub	ebx,117;134
+	shl	ebx,16
+	mov	bx,9
+	xor	edx,edx
+	mcall	13,,<6,11>
 
-;    mov  ecx,0x60a060 ;[wcolor]
-;    add  ecx,0x303030
-;    mov  eax,4
-;    int  0x40
-;    add  ebx,1 shl 16
-;    int  0x40
-;    add  ebx,1 shl 16
-;    int  0x40
-;    add  ebx,1 shl 16
-;    int  0x40
+	sub	ebx,24 shl 16 ; 18 shl 16
+	mcall
 
-;    add  ebx,1 shl 16
-;    mov  ecx,0x60a060 ;[wcolor]
-;    int  0x40
-;    add  ebx,1 shl 16
-;    int  0x40
-;    add  ebx,1 shl 16
-;    sub  ecx,0x303030
-;    int  0x40
+	add	ebx,25 shl 16 ; 19 shl 16
+	sub	bx,2
+	mcall	,,<7,9>,0xffffff
 
-;    sub  ebx,6 shl 16
-;    mov  bx,1
-;    mov  ecx,2 shl 16+15
-;    mov  edx,0x60a060  ;[wcolor]
-;    add  edx,0x303030
-;    mov  eax,13
-;    int  0x40
-;    add  ebx,1 shl 16
-;    mov  bx,1
-;    mov  edx,0x60a060  ;[wcolor]
-;    int  0x40
-;    add  ebx,1 shl 16
-;    mov  bx,1
-;    sub  edx,0x303030
-;    int  0x40
-;    add  ebx,1 shl 16
-;    mov  edx,[wcolor]
-;    int  0x40
+	sub	ebx,24 shl 16
+	mcall
 
-    mov  eax,3			; get time
-    int  0x40
+	mov	ebx,[maxx]
+	sub	ebx, 139
+	shl	ebx,16
+	mov	bx,8
+	mcall	4,,,page_a1,5
 
-    movzx ebx,al
-    shr   eax,8
-    movzx ecx,al
-    shr   eax,8
-    movzx edx,al
+	add	ebx,1 shl 16
+	mcall
 
-    ; ebx ecx edx h m s
+	mov	edx,[maxx]
+	sub	edx,130
+	shl	edx,16
+	mov	dx,7
+	mcall	47,0x20000,[page_list],,0xffffff
 
-    push ebx
-    push ecx
+	mcall	3	; get time
 
-    mov  eax,[maxx]
-    sub  eax,32
-    shl  eax,16
-    mov  ebx,eax
-    add  ebx,9
+	movzx	ebx,al
+	shr	eax,8
+	movzx	ecx,al
+	shr	eax,8
+	movzx	edx,al
+; ebx ecx edx h m s
+	push	ebx
+	push	ecx
 
-    mov  ecx,[bte]
+	mov	eax,[maxx]
+	sub	eax,32
+	shl	eax,16
+	mov	ebx,eax
+	add	ebx,9
 
-    cmp  [graph_text],1
-    jne  no_y3
-    sub  bx,2
-;    mov  ecx,0xffffff
-  no_y3:
-  
-mov  ecx,0xffffff
-    mov  edx,[esp]	       ; __:_X
-    and  edx,15
-    mov  eax,4
-    add  ebx,10*65536
-    add  edx,text
-    mov  esi,1
-    int  0x40
-mov  ecx,0xffffff
-    pop  edx			; __:X_
-    shr  edx,4
-    and  edx,15
-    mov  eax,4
-    sub  ebx,6*65536
-    add  edx,text
-    mov  esi,1
-    int  0x40
-mov  ecx,0xffffff
-    mov  edx,[esp]	       ; _X:__
-    and  edx,15
-    mov  eax,4
-    sub  ebx,11*65536
-    add  edx,text
-    mov  esi,1
-    int  0x40
-mov  ecx,0xffffff
-    pop  edx			; X_:__
-    shr  edx,4
-    and  edx,15
-    mov  eax,4
-    sub  ebx,6*65536
-    add  edx,text
-    mov  esi,1
-    int  0x40
+	mov	ecx,[bte]
 
-    call draw_cpu_usage
+	cmp	[graph_text],1
+	jne	no_y3
 
-  _ret:
+	sub	bx,2
+;--------------------------------------
+align 4
+no_y3:
+	mov	edx,[esp]	       ; __:_X
+	and	edx,15
+	add	ebx,10*65536
+	add	edx,text
+	mcall	4,,0xffffff,,1
 
-    cmp  [minimize_right],0
-    jne  no_m_r2
-    sub  [maxx],10
-   no_m_r2:
+	pop	edx			; __:X_
+	shr	edx,4
+	and	edx,15
+	sub	ebx,6*65536
+	add	edx,text
+	mcall	
 
-   no_setup:
+	mov	edx,[esp]	       ; _X:__
+	and	edx,15
+	sub	ebx,11*65536
+	add	edx,text
+	mcall
 
-    popa
-    ret
+	pop	edx			; X_:__
+	shr	edx,4
+	and	edx,15
+	sub	ebx,6*65536
+	add	edx,text
+	mcall
 
+   	call	draw_cpu_usage
+;--------------------------------------
+align 4
+_ret:
+	cmp	[minimize_right],0
+	jne	no_m_r2
 
-
+	sub	[maxx],10
+;--------------------------------------
+align 4
+no_m_r2:
+no_setup:
+	popa
+	ret
+;------------------------------------------------------------------------------	
+align 4
 draw_cpu_usage:
+	pushad
+	mov	[ysi],30
+	cmp	[graph_text],1
+	jne	@f
 
-    pushad
+	mov	[ysi],12
+;--------------------------------------
+align 4
+@@:
+	mcall	18,5	; TSC / SEC
 
-    mov  [ysi],30
-    cmp  [graph_text],1
-    jne  @f
-    mov  [ysi],12
-  @@:
+	shr	eax,20
+	push	eax
+	mcall	18,4	; IDLE / SEC
 
+	shr	eax,20
+	xor	edx,edx
+	imul	eax,[ysi]
+	cdq
+	pop	ebx
+	inc	ebx
+	div	ebx
+	cmp	eax,[ysi]
+	jng	no_bug
 
-    mov  eax,18    ; TSC / SEC
-    mov  ebx,5
-    int  0x40
-    shr  eax,20
-    push eax
-    mov  eax,18    ; IDLE / SEC
-    mov  ebx,4
-    int  0x40
-    shr  eax,20
-    xor  edx,edx
-    imul eax,[ysi]
-
-    cdq
-    pop  ebx
-    inc  ebx
-    div  ebx
-    cmp  eax,[ysi]
-    jng  no_bug
-    mov  eax,[ysi]
+	mov	eax,[ysi]
+;--------------------------------------
+align 4
 no_bug:
-    push eax
+	push	eax
 
-    mov  eax,13
-    mov  ebx,[maxx]
-    sub  ebx,60
-    shl  ebx,16
-    add  ebx,8
-    mov  ecx,5 shl 16
-    add  ecx,[ysi]
-    mov  edx,0xdd2222
-    int  0x40
+	mov	ebx,[maxx]
+	sub	ebx,60
+	shl	ebx,16
+	add	ebx,8
+	mov	ecx,5 shl 16
+	add	ecx,[ysi]
+	mcall	13,,,0xdd2222
 
-    pop  eax
-    mov  ecx,5 shl 16
-    add  ecx,eax
-    mov  eax,13
-    mov  edx,0x44aa44
-    int  0x40
+	pop	eax
+	mov	ecx,5 shl 16
+	add	ecx,eax
+	mov	eax,13
+	mcall	13,,,0x44aa44
 
-    popad
-    ret
-
-;;;include 'detect.asm'
+	popad
+	ret
+;------------------------------------------------------------------------------	
+align 4
 include 'ctx_menu.asm'
-
+;------------------------------------------------------------------------------	
+align 4
 ; DATA
-
 stripe:
-    dd	-0x010101
-    dd	-0x010101
-    dd	-0x020202
-    dd	-0x010101
-    dd	-0x000000
+	dd -0x010101
+	dd -0x010101
+	dd -0x020202
+	dd -0x010101
+	dd -0x000000
 
-    dd	 0x000000
-    dd	 0x010101
-    dd	 0x020202
-    dd	 0x010101
-    dd	 0x010101
+	dd 0x000000
+	dd 0x010101
+	dd 0x020202
+	dd 0x010101
+	dd 0x010101
 
 m_icon:
-    dd	0x0
-    dd	0x808080
-    dd	0x000000
-    dd	0x000000
-    dd	0xffffff
+	dd 0x0
+	dd 0x808080
+	dd 0x000000
+	dd 0x000000
+	dd 0xffffff
 
 
 lsz m_text,\
@@ -2389,47 +2101,46 @@ lsz m_text,\
   en, "MENU",\
   et, "MEN--"
 
-mi_text   db   'WAVETETRBGRDGPL '
+mi_text		db 'WAVETETRBGRDGPL '
 
-flag_text db 'EnFiGeRuFrEtUa'
+flag_text	db 'EnFiGeRuFrEtUa'
 
-type_lang db 0
-;music_type db 1
-sound_flag db 0
-button_frames  dd  0x0
+type_lang	db 0
 
-checks	  dd -1
-hidetext  db 0x11,0x10,0x1e
+sound_flag	db 0
+button_frames	dd 0x0
 
-turn_text db  '><'
-gpl	  db  'GPL'
+checks		dd -1
+hidetext	db 0x11,0x10,0x1e
 
-chlang db 'LANG',0
+turn_text	db  '><'
+gpl		db  'GPL'
+
+chlang	db 'LANG',0
 ;syslang db 'SLAN',0
 
-contrast  db 0
+contrast	db 0
 
-running_applications  dd  0x100
-max_applications      dd  11
+running_applications	dd 0x100
+max_applications	dd 11
 
-current_alt_tab_app	dd	-1
+current_alt_tab_app	dd -1
 
-page_list  dd 0
-draw_start_position dd 0
-draw_window_1 db 0
+page_list		dd 0
+draw_start_position	dd 0
+draw_window_1	db 0
 
-b_size_y:  dd  0x0
-ysi  dd  0
-small_draw dd 0x0
+b_size_y:	dd 0x0
+ysi		dd 0
+small_draw	dd 0x0
 
-ptime	dd 0x0
-maxx	dd 0x0
-text	db '0123456789'
-; // Alver 25.08.2007 // {
-;page_a1 db '<  >'
-page_a1        db '<   >'
-page_clean_but db 25,24,18
-; } \\ Alver \\
+ptime		dd 0x0
+maxx		dd 0x0
+text		db '0123456789'
+
+page_a1		db '<   >'
+page_clean_but	db 25,24,18
+
 bte	dd 0xccddee
 
 wcolor	dd 0x506070
@@ -2442,82 +2153,112 @@ screenxy    dd	0x0
 stcount     dd	0x0
 
 setup_exec:
-	dd	7
-	dd	0
-.cmdline dd	?
-	dd	0
-	dd	0
-	db	'/sys/'
-file_sys db	'SETUP',0
+		dd 7
+		dd 0
+.cmdline	dd 0
+		dd 0
+		dd 0
+		db '/sys/'
+file_sys	db 'SETUP',0
 
 exec_fileinfo:
-	dd	7
-	dd	0
-	dd	0
-	dd	0
-	dd	0
-	db	0
-.name	dd	?
+	dd 7
+	dd 0
+	dd 0
+	dd 0
+	dd 0
+	db 0
+.name	dd 0
 
-end_name	db	'/sys/END',0
-menu_name	db	'/sys/@MENU',0
-calendar_name	db	'/sys/CALENDAR',0
-sysmeter_name	db	'/sys/GMON',0
-mousemul_name	db	'/sys/MOUSEMUL',0
+end_name	db '/sys/END',0
+menu_name	db '/sys/@MENU',0
+calendar_name	db '/sys/CALENDAR',0
+sysmeter_name	db '/sys/GMON',0
+mousemul_name	db '/sys/MOUSEMUL',0
 
 dat_fileinfo:
-	dd	0
-	dd	0
-	dd	0
-	dd	1024
-	dd	I_END
-	db	'/sys/PANEL.DAT',0
+	dd 0
+	dd 0
+	dd 0
+	dd 1024
+	dd I_END
+	db '/sys/PANEL.DAT',0
 
-m_bmp_fileinfo:
-	dd	0
-	dd	0
-	dd	0
-	dd	8192
-	dd	image
-	db	'/sys/MENUET.BMP',0
+;m_bmp_fileinfo:
+;	dd 0
+;	dd 0
+;	dd 0
+;	dd 8192
+;	dd image
+;	db '/sys/MENUET.BMP',0
 
-iconf_fileinfo:
-	dd	0
-	dd	0
-	dd	0
-	dd	8192
-	dd	image
-	db	'/sys/'
-iconf	db	'MBAR_IX.BMP',0
+;iconf_fileinfo:
+;	dd 0
+;	dd 0
+;	dd 0
+;	dd 8192
+;	dd image
+;	db '/sys/'
+;iconf	db 'MBAR_IX.BMP',0
 
-I_END:
+this_slot	dd 0	      ; Slot of this process
+max_slot	dd 255
+;------------------------------------------------------------------------------	
+IM_END:
+;------------------------------------------------------------------------------	
+align 4
+last_active_window	rd 1
+prev_active_window	rd 1
+active_window_changed	rd 1
+app_tab_count		rd 1
 
-screen_size:
-  .height dw ?
-  .width  dw ?
-
-this_slot      dd 0	      ; Slot of this process
-max_slot       dd 255
-system_colours	system_colors ; rd 10
-app_list rd 50
-alt_tab_list	rd	256*2
-alt_tab_list_size dd	?
-process_info_buffer  rb 1024
-procinfo_for_detect  rb 1024
-tictable:
-  rd 256
-
-	rb	256
-detect_stack:
-	rb	256
-ctx_menu_stack:
+alt_tab_list_size	rd 1
 
 panel_x_pos	rd	1
 panel_y_pos	rd	1
 
-last_active_window	dd	0
-prev_active_window	dd	0
-active_window_changed	dd	0
-app_tab_count		dd	0
-
-image:
+screen_size:
+.height	rw 1
+.width	rw 1
+;------------------------------------------------------------------------------	
+align 4
+system_colours	system_colors ; rd 10
+;------------------------------------------------------------------------------	
+align 4
+app_list	rd 50
+;------------------------------------------------------------------------------	
+align 4
+alt_tab_list	rd 256*2
+;------------------------------------------------------------------------------	
+align 4
+process_info_buffer:
+	rb 1024
+;------------------------------------------------------------------------------	
+align 4
+procinfo_for_detect:
+	rb 1024
+;------------------------------------------------------------------------------	
+align 4
+procinfo_window_tabs:
+	rb 1024
+;-----------------------------------------------------------------------------
+align 4
+tictable:
+	rd 256
+;------------------------------------------------------------------------------	
+align 4
+	rb 256
+detect_stack:
+;------------------------------------------------------------------------------	
+align 4
+	rb 256
+ctx_menu_stack:
+;------------------------------------------------------------------------------
+align 4
+	rb 0x1000
+stack_top:
+;------------------------------------------------------------------------------	
+;align 4
+;image:
+;------------------------------------------------------------------------------	
+I_END:
