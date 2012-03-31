@@ -161,7 +161,7 @@ draw_window:
     mov  eax, 0                    ; function 0 : define and draw window
     mov  ebx, 100*65536+200        ; [x start] *65536 + [x size]
     mov  ecx, 100*65536+267        ; [y start] *65536 + [y size]
-    mov  edx, [sc.work]            ; color of work area RRGGBB,8->color gl
+    mov  edx, 0xffffff	;[sc.work] ; color of work area RRGGBB,8->color gl
     or   edx, 0x34000000
     mov  edi, title                ; WINDOW LABEL
     mcall
@@ -194,14 +194,15 @@ draw_codes:
     add  ecx,10
     mov  eax,13   ; filled rectangle
     mov  ebx,15*65536+160
-    mov  edx,[sc.work]
+    mov  edx,0xffffff	;[sc.work]
     mcall
     popa
     pusha
     mov  ebx,edx
     add  ebx,70*65536
     mov  eax,4    ; text
-    mov  ecx,[sc.work_text]
+;    mov  ecx,[sc.work_text]
+    xor  ecx,ecx
     mov  edx,key_codes
     imul edi,12
     add  edx,edi
