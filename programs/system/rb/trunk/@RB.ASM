@@ -322,7 +322,7 @@ align 4
     <"/sys/DESKTOP",0>	,\
     <"/sys/ICON",0>,\
     <"/sys/SETUP",0>	,\
-    <"/sys/VRR",0> ,\
+    <"/sys/DEVELOP/BOARD",0> ,\
     <"/sys/CPU",0> 
     
   sz title, "KolibriOS"
@@ -332,14 +332,14 @@ align 4
     en, 'Desktop     ',\
     en, 'Icon manager',\
     en, 'Device setup',\
-    en, 'VRR         ',\
+    en, 'Debug board ',\
     en, 'Processes   ',\
     \
     ru, 'Генератор обоев     ',\
     ru, 'Настройка окон      ',\
     ru, 'Управление иконками ',\
     ru, 'Настройка устройств ',\
-    ru, 'Настройка монитора  ',\
+    ru, 'Панель отладки      ',\
     ru, 'Процессы            '
 ;------------------------------------------------------------------------------	
 align 4
