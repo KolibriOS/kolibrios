@@ -21,7 +21,7 @@
 	dd IM_END	; size of image
 	dd I_END	; memory for app
 	dd stack_top	; esp
-	dd 0x0		; I_Param
+	dd I_Param	; boot parameters
 	dd 0x0		; path
 ;------------------------------------------------------------------------------
 include 'lang.inc'
@@ -32,6 +32,16 @@ align 4
 START:
 	mcall	68,11
 	mcall	40,110010b
+; boot parameters
+	cmp	[I_Param],dword 'ZERO'
+	jne	@f
+	mov	[type],dword 0
+;--------------------------------------
+align 4	
+@@:
+	cmp	[I_Param],dword 'ASSM'
+	jne	bgr_changed
+	mov	[type],dword 24
 ;------------------------------------------------------------------------------
 align 4
 bgr_changed:
@@ -595,6 +605,7 @@ y_max	dw ?
 top_right_corner	rd 1
 ;------------------------------------------------------------------------------
 align 4
+I_Param:
 fileinfo_buffer:
 	rb 40
 ;------------------------------------------------------------------------------
