@@ -497,12 +497,21 @@ align 4
         btr     ecx, eax       ; сбрасываем проверяемый бит маски
        ; переходим на обработчик этого (eax) бита
         cmp     eax, 9
-        jae     .loop          ; eax=[9..31], ignored
+        jae     .loop          ; eax=[9..31], ignored (event 10...32)
+
         cmp     eax, 3
-        je      .loop          ; eax=3, ignored
-        ja      .FlagAutoReset ; eax=[4..8], retvals=eax+1
+        je      .loop          ; eax=3, ignored (event 4)
+
+        cmp     eax, 4
+        je      .FlagAutoReset  ; eax=4, retvals=eax+1 (event 5)
+
+        cmp     eax, 5
+        je      .mouse_check  ; eax=5, retvals=eax+1 (event 6)
+
+        ja      .FlagAutoReset ; eax=[6..8], retvals=eax+1 (event 7...9)
+
         cmp     eax, 1
-        jae     .BtKy          ; eax=[1,2],  retvals=eax+1
+        jae     .BtKy          ; eax=[1,2],  retvals=eax+1 (event 2,3)
 ;--------------------------------------
 align 4
 .WndRedraw:                    ; eax=0, retval WndRedraw=1
@@ -516,16 +525,14 @@ align 4
         ret
 ;--------------------------------------
 align 4
-.FlagAutoReset: ; retvals: BgrRedraw=5, Mouse=6, IPC=7, Stack=8, Debug=9
-        cmp     eax, 5; Mouse 5+1=6
-        jne     .no_mouse_check
+.mouse_check:    ; Mouse 5+1=6
         push    eax
         mov     eax, [TASK_BASE]
         mov     eax, [eax + TASKDATA.event_mask]
         test    eax, 0x80000000 ; bit 31: active/inactive filter f.40
         jz      @f
         pop     eax
-        jmp     .no_mouse_check
+        jmp     .FlagAutoReset
 ;--------------------------------------
 align 4
 @@:
@@ -537,7 +544,7 @@ align 4
         jnz     .loop
 ;--------------------------------------
 align 4
-.no_mouse_check:
+.FlagAutoReset: ; retvals: BgrRedraw=5, IPC=7, Stack=8, Debug=9
         btr     [ebx+APPDATA.event_mask], eax
         jnc     .loop
 ;--------------------------------------
