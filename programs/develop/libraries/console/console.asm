@@ -2092,7 +2092,7 @@ con.draw_window:
         mov     cx, word [con.wnd_height]
         imul    cx, font_height
         lea     ecx, [ecx+eax+5-1]
-        mov     edx, 0x33000000
+        mov     edx, 0x74000000
         mov     edi, [con.title]
 ; place for scrollbar
         mov     eax, [con.wnd_height]
