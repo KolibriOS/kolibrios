@@ -194,16 +194,22 @@ Remarks:
 Parameters:
   * eax = 4 - function number
   * ebx = [coordinate on axis x]*65536 + [coordinate on axis y]
-  * ecx = 0xX0RRGGBB, where
+  * ecx = 0xXYRRGGBB, where
     * RR, GG, BB specify text color
     * X=ABnn (bits):
-    * nn specifies the used font: 0=system monospaced,
-      1=system font of variable width
-    * A=0 - output esi characters, A=1 - output ASCIIZ-string
-    * B=1 - fill background with the color edi
+      * nn specifies the used font: 0=system monospaced,
+        1=system font of variable width
+      * A=0 - output esi characters, A=1 - output ASCIIZ-string
+      * B=1 - fill background with the color edi
+    * Y = Cnnn
+      * C=1 redirect the output to the user area, specified in edi
+      * nnn - not used in the current, must be 0 (zero) 
   * edx = pointer to the beginning of the string
   * esi = for A=0 length of the string, must not exceed 255;
           for A=1 is ignored
+  * edi = color to fill background, if B=1
+  * edi = pointer to user area, for redirect, if C=1
+  
 Returned value:
   * function does not return value
 Remarks:
@@ -211,6 +217,12 @@ Remarks:
     second - from char2.mt.
   * Both fonts have height 9 pixels, width of the monospaced font
     is equal to 6 pixels.
+  * C=1, pixel depth = 32 bits, user area is as follows:
+    dword Xsize
+    dword Ysize
+    rest of the area = Xsize * Y size * 4
+  * You can not use B = 1 and C = 1, at the same time. Since in both
+    cases, the register edi is used for different purposes.
 
 ======================================================================
 ========================= Function 5 - delay. ========================

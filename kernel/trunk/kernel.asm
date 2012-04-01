@@ -4661,6 +4661,8 @@ syscall_writetext:                      ; WriteText
         pop     esi
         add     ebx, ebp
         mov     eax, edi
+        test    ecx, 0x08000000  ; redirect the output to the user area
+        jnz     dtext
         xor     edi, edi
         jmp     dtext
 

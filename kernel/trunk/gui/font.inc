@@ -16,15 +16,15 @@ dtext_asciiz_esi:                          ; for skins title out
         jmp     dtext.1
 ;------------------------------------------------------------------------------
 align 4
-dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
-        ; ebx x & y
-        ; ecx style ( 0xX0000000 ) & color ( 0x00RRGGBB )
-        ; X = ABnnb:
-        ; nn = font
-        ; A = 0 <=> output esi characters; otherwise output ASCIIZ string
-        ; B = 1 <=> fill background with color eax
-        ; edx start of text
-        ; edi 1 force
+dtext:
+; ebx x & y
+; ecx style ( 0xX0000000 ) & color ( 0x00RRGGBB )
+; X = ABnnb:
+; nn = font
+; A = 0 <=> output esi characters; otherwise output ASCIIZ string
+; B = 1 <=> fill background with color eax
+; edx start of text
+; edi 1 force or user area for redirect
         push    eax
         xor     eax, eax
 ;--------------------------------------
@@ -36,14 +36,17 @@ align 4
         xchg    eax, ebx        ; eax=x, ebx=y
         cmp     esi, 255
         jb      .loop
+
         mov     esi, 255
 ;--------------------------------------
 align 4
 .loop:
         test    ecx, ecx
         js      .test_asciiz
+
         dec     esi
         js      .end
+
         jmp     @f
 ;--------------------------------------
 align 4
@@ -53,6 +56,7 @@ align 4
 
         cmp     byte [esp+28], 1
         jne     @f
+
         dec     esi
         js      .end
 ;--------------------------------------
@@ -63,6 +67,7 @@ align 4
         movzx   edx, byte [edx-1]
         test    ecx, 0x10000000
         jnz     .font2
+
         mov     esi, 9
         lea     ebp, [FONT_I+8*edx+edx]
 ;--------------------------------------
@@ -75,7 +80,17 @@ align 4
 .pixloop1:
         shr     dl, 1
         jz      .pixloop1end
+
         jnc     .nopix
+
+        test    ecx, 0x08000000  ; redirect the output to the user area
+        jz      @f
+
+        call    draw_text_to_user_area
+        jmp     .pixloop1cont
+;--------------------------------------
+align 4
+@@:
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
 ;        call    [putpixel]
         call    __sys_putpixel
@@ -85,8 +100,19 @@ align 4
 .nopix:
         test    ecx, 0x40000000
         jz      .pixloop1cont
+
         push    ecx
         mov     ecx, [esp+4+20h+20h]
+
+        test    ecx, 0x08000000  ; redirect the output to the user area
+        jz      @f
+
+        call    draw_text_to_user_area
+        pop     ecx
+        jmp     .pixloop1cont
+;--------------------------------------
+align 4
+@@:
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
 ;        call    [putpixel]
         call    __sys_putpixel
@@ -104,6 +130,7 @@ align 4
         inc     ebp
         dec     esi
         jnz     .symloop1
+
         popad
         add     eax, 6
         jmp     .loop
@@ -124,6 +151,15 @@ align 4
 .pixloop2:
         shr     dl, 1
         jnc     .nopix2
+
+        test    ecx, 0x08000000  ; redirect the output to the user area
+        jz      @f
+
+        call    draw_text_to_user_area
+        jmp     .pixloop2cont
+;--------------------------------------
+align 4
+@@:
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
 ;        call    [putpixel]
         call    __sys_putpixel
@@ -133,8 +169,19 @@ align 4
 .nopix2:
         test    ecx, 0x40000000
         jz      .pixloop2cont
+
         push    ecx
         mov     ecx, [esp+12+20h+20h]
+
+        test    ecx, 0x08000000  ; redirect the output to the user area
+        jz      @f
+
+        call    draw_text_to_user_area
+        pop     ecx
+        jmp     .pixloop2cont
+;--------------------------------------
+align 4
+@@:
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
 ;        call    [putpixel]
         call    __sys_putpixel
@@ -145,12 +192,14 @@ align 4
         inc     eax
         dec     esi
         jnz     .pixloop2
+
         pop     esi
         sub     eax, esi
         inc     ebx
         inc     ebp
         dec     dword [esp]
         jnz     .symloop2
+
         pop     eax
         add     dword [esp+28], esi
         popad
@@ -160,5 +209,23 @@ align 4
 .end:
         popad
         pop     eax
+        ret
+;------------------------------------------------------------------------------
+; eax = x coordinate
+; ebx = y coordinate
+; ecx = ?? RR GG BB
+; edi = user area
+align 4
+draw_text_to_user_area:
+        pushad
+        imul    ebx, [edi+0]
+        add     eax, ebx
+        shl     eax, 2
+        add     eax, edi
+        add     eax, 8
+        and     ecx, 0xffffff
+        or      ecx, 0xff000000  ; not transparent
+        mov     [eax], ecx       ; store  pixel
+        popad
         ret
 ;------------------------------------------------------------------------------
