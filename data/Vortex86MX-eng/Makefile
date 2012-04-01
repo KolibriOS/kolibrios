@@ -239,7 +239,7 @@ CMM_PROGRAMS:=\
 OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  background.gif:background.gif default.skn:DEFAULT.SKN \
  e80:E80 graph:GRAPH hdread:HDREAD \
- icons.dat:ICONS.DAT iconstrp.gif:ICONSTRP.GIF index_htm:INDEX.HTM \
+ icons.dat:ICONS.DAT iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
  menu.dat:MENU.DAT \

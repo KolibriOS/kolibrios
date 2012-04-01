@@ -5,6 +5,13 @@
 ;*  Compile with flat assembler *
 ;*                              *
 ;********************************
+; version:	3.00
+; last update:  02/04/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Program used only 2 threads: draw and mouse
+;               Used new kernel functions: 25, 34, 15.8, 4 (redirect).
+;               Used PNG icons with transparent.
+;---------------------------------------------------------------------
 ; version:	2.11
 ; last update:  19/03/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -33,17 +40,15 @@
 ;               SPraid, Dunkaist
 ;---------------------------------------------------------------------
 ; version:	2.00
-; last update:  22|02|2005
+; last update:  22/02/2005
 ; changed by:   Willow and Mario79
 ; changes:      modified for work with new multi-thread ICON.
 ;******************************************************************************
-ICON_SIZE equ 32*32*3
-;RAW_SIZE equ ICON_SIZE*32	;350000
-;GIF_SIZE equ 12*1024	;45000
+ICON_SIZE equ 32*32*4
 REC_SIZE equ 80
-ICONS_DAT equ '/sys/ICONS.DAT'
-ICON_APP equ '/sys/ICON'
-ICON_STRIP equ '/sys/ICONSTRP.GIF'
+ICONS_DAT equ '/sys/icons.dat'
+ICON_APP equ '/sys/icon'
+ICON_STRIP equ '/rd/1/iconstrp.png'
 ;------------------------------------------------------------------------------
 	use32
 	org 0x0
@@ -54,55 +59,73 @@ ICON_STRIP equ '/sys/ICONSTRP.GIF'
 	dd I_END	; memory for app
 	dd stack_area	; esp
 	dd I_Param	; boot parameters
-	dd 0x0		; path
+	dd path		; path
 ;------------------------------------------------------------------------------
-include '../../../macros.inc'
 include 'lang.inc'
+include '../../../macros.inc'
+include '../../../develop/libraries/box_lib/load_lib.mac'
 COLOR_ORDER equ MENUETOS
-include 'gif_lite.inc'
 ;include 'debug.inc'
-purge newline
+;------------------------------------------------------------------------------
+        @use_library    ;use load lib macros
 ;------------------------------------------------------------------------------
 START:		; start of execution
 	mcall	68,11
+;---------------------------------------------------------------------	
+load_libraries l_libs_start,end_l_libs
+	test	eax,eax
+	jnz	close
+	
+; unpack deflate
+	mov	eax,[unpack_DeflateUnpack2]
+	mov	[deflate_unpack],eax
+;---------------------------------------------------------------------
 ; get size of file ICONSTRP.GIF
 	mcall	70,finfo
 	test	eax,eax
 	jnz	close
 ; get memory for ICONSTRP.GIF
-	mov	ecx,[process_table+32]
+	mov	ecx,[procinfo+32]
 	mov	[finfo.size],ecx
+	mov	[img_size],ecx
 	mcall	68,12
 	mov	[finfo.point],eax
+	mov	[image_file],eax
 ; load ICONSTRP.GIF
 	mov	[finfo],dword 0
 	mcall	70,finfo
 	test	eax,eax
 	jnz	close
-; calculate and get memory for RAW data	
-	mov	esi,[finfo.point]
-	movzx	eax,word [esi+6]	;x
-	movzx	edi,word [esi+8]	;y
-	imul	eax,edi		;x*y
-	lea	edi,[eax+eax*2]	; multiply x3
-	mov	ecx,edi
-	mcall	68,12
+; convert PNG to RAW
+	xor	eax,eax
+	mov	[return_code],eax
+
+	push	image_file
+	call	[cnv_png_import.Start]
+
+	mov	eax,[raw_pointer]
+	mov	eax,[eax+28]
+	add	eax,[raw_pointer]
 	mov	[strip_file],eax
-	mov	edi,eax
-; convert GIF to RAW
-	call	ReadGIF
 ; back memeory to system
 	mcall	68,13,[finfo.point]
-
-	mov	eax,dword[edi+4]
+	
+	mov	eax,[raw_pointer]
+	mov	eax,[eax+8]
 	shr	eax,5
 	mov	[icon_count],eax
 ; load ICON.DAT
 	call	load_ic
 boot_str:
 	cmp	[I_Param],dword 'BOOT'
-	je	load_icon_list2
+	je	START2
+;------------------------------------------------------------------------------	
+; ICON EDITOR MODE - START1 entering label
+;------------------------------------------------------------------------------	
+START1:
 	call	load_icon_list
+;------------------------------------------------------------------------------
+align 4	
 red:
 	call	draw_window	; at first, draw the window
 	mov	esi,[current_icon]
@@ -122,44 +145,64 @@ button:
 	mcall	17	; get id
 	shr	eax,8
 
-;	dps	"button id: "
-;	dpd	eax
-;	newline_1
-
 	cmp	eax,1	; button id=1 ?
 	je	close
-;--------------------------------------
-align 4
-noclose:
+	
 	mov	esi,[current_icon]
 	add	esi,12
-	mov	ebx,[cur_band]	;eax
+	mov	ebx,[cur_band]
+	
+	cmp	eax,11
+	jb	@f
+	cmp	eax,13
+	ja	@f
+	call	read_string
+	jmp	still
+;--------------------------------------
+align 4
+@@:
+	cmp	eax,21	; apply changes
+	je	apply
+	
+	cmp	eax,22		; user pressed the 'add icon' button
+	je	add_icon
+	
+	cmp	eax,23	; user pressed the remove icon button
+	je	remove_icon
+
+	
+	cmp	eax,30	; left arrow to icons bar
+	je	arrow.left
+	
 	cmp	eax,31	; right arrow to icons bar
-	jne	.no_back
+	je	arrow.right
+	
+	cmp	eax,32
+	je	ico
 
-	add	ebx,8
+	cmp	eax,40	; user pressed button for icon position
+	jae	press_button_for_icon_position
+	
+	jmp	still
+;------------------------------------------------------------------------------
+align 4
+arrow:
+.right:
+
 	mov	eax,[icon_count]
-	cmp	eax,ebx
-	jae	.drwic2
+	sub	eax,8
+	cmp	ebx,eax
+	jae	still	;.drwic2
 
-	xor	ebx,ebx
+	add	ebx,1
 	jmp	.drwic2
 ;--------------------------------------
 align 4
-.no_back:
-	cmp	eax,30	; left arrow to icons bar
-	jne	.no_side
-
+.left:
 	test	ebx,ebx
-	jnz	.dec
+	jz	still
 
-	mov	ebx,[icon_count]
-	and	ebx,0xfffffff8
-	add	ebx,8
-;--------------------------------------
-align 4
-.dec:
-	sub	ebx,8
+	sub	ebx,1
 ;--------------------------------------
 align 4
 .drwic2:
@@ -169,11 +212,9 @@ align 4
 .drwic1:
 	call	draw_icon
 	jmp	still
-;--------------------------------------
+;------------------------------------------------------------------------------
 align 4
-.no_side:
-	cmp	eax,32
-	jne	.no_ico
+ico:
 	push	ebx
 	mcall	37,1
 	pop	ebx
@@ -186,27 +227,15 @@ align 4
 	cmp	ecx,[icon_count]
 	jae	still
 
-	mov	[sel_icon1],eax
 	mov	ecx,eax
 	add	eax,ebx
 	call	itoa
-	jmp	.drwic1
-;--------------------------------------
-align 4
-.no_ico:
-	cmp	eax,11
-	jb	no_str
-	cmp	eax,13
-	jg	no_str
-	call	read_string
-	jmp	still
-;--------------------------------------
+	jmp	arrow.drwic1
+;------------------------------------------------------------------------------
 align 4 
-no_str:
-	cmp	eax,21	; apply changes
-	jne	no_apply
+apply:
 	; (1) save list
-	mov	ebx,finfo	; Change by spraid
+	mov	ebx,finfo
 	mov	dword[ebx],2
 	mov	edx,REC_SIZE
 	imul	edx,dword [icons]
@@ -216,7 +245,7 @@ no_str:
 	mcall	70
 	; (2) terminate all icons
 	or	ecx,-1
-	mcall	9,process_table
+	mcall	9,procinfo
 	mov	edi,[ebx+30]
 ;--------------------------------------
 align 4
@@ -227,12 +256,13 @@ align 4
 newread:
 	inc	esi
 	mov	ecx,esi
-	mcall	9,process_table
+	mcall	9,procinfo
+
 	cmp	edi,[ebx+30]
 	je	newread
 
 	cmp	esi,eax
-	jg	apply_changes
+	jg	.apply_changes
 
 	mov	eax,[ebx+10]
 	and	eax,not 20202020h
@@ -243,7 +273,7 @@ newread:
 ;--------------------------------------
 align 4
 @@:
-	mov	eax,51
+	xor	eax,eax
 	cmp	eax,[ebx+42]
 	jne	newread
 
@@ -252,43 +282,22 @@ align 4
 
 	mov	ecx,esi
 	mcall	18,2
+
 	jmp	newread2
-;------------------------------------------------------------------------------
+;--------------------------------------
 align 4
-finfo_start:
-	dd 7
-	dd 0
-.params	dd 0
-	dd 0
-	dd 0
-	db 0
-	dd finfo.path
-;------------------------------------------------------------------------------
-align 4
-finfo:
-	dd 5
-	dd 0
-	dd 0
-.size	dd 0	;GIF_SIZE
-.point	dd process_table	;gif_file
-.path:
-	db ICON_STRIP,0
-	rb 31-($-.path)
-;------------------------------------------------------------------------------
-align 4
-apply_changes:
+.apply_changes:
 	mov	ebx, finfo_start
 	mov	dword [ebx+8], boot_str+6
 	mov	esi, iconname
 	call	lst_path
 	mcall	70
+	mcall	68,1
+	mcall	15,3
 	jmp	still
 ;------------------------------------------------------------------------------
 align 4
-no_apply:
-	cmp	eax,22		; user pressed the 'add icon' button
-	jne	no_add_icon
-
+add_icon:
 	mov	ebx,24*65536+250+8*14
 	mcall	4,,0xc0ff0000,add_text,,0xffffff
 
@@ -345,12 +354,9 @@ align 4
 no_f:
 	call	draw_btns	;draw_window
 	jmp	still
-;--------------------------------------
+;------------------------------------------------------------------------------
 align 4
-no_add_icon:
-	cmp	eax,23	; user pressed the remove icon button
-	jne	no_remove_icon
-	
+remove_icon:
 	mov	ebx,24*65536+250+8*14
 	mcall	4,,0xc0ff0000,rem_text,,0xffffff
 	
@@ -422,11 +428,9 @@ foundi:
 	add	ebx,40
 	mov	[cur_btn],ebx
 	jmp	red
-;--------------------------------------
+;------------------------------------------------------------------------------
 align 4
-no_remove_icon:
-	cmp	eax,40	; user pressed button for icon position
-	jb	still
+press_button_for_icon_position:
 	mov	edi,eax
 	sub	eax,40
 	mov	edx,eax
@@ -454,13 +458,11 @@ foundl1:
 align 4
 band:
 	add	esi,12
-	call	atoi
+	call	ASCII_to_icon_number
 	and	eax,0xfffff8
 	mov	[cur_band],eax
 	call	draw_btns
 	jmp	still
-;------------------------------------------------------------------------------
-current_icon	dd icon_data
 ;------------------------------------------------------------------------------
 align 4
 print_strings:
@@ -486,8 +488,6 @@ align 4
 
 	popa
 	ret
-;------------------------------------------------------------------------------
-iconlst	db ICONS_DAT,0
 ;------------------------------------------------------------------------------
 align 4
 load_icon_list:
@@ -537,10 +537,6 @@ load_ic:
 	div	ebx
 	mov	[icons],eax
 	ret
-;------------------------------------------------------------------------------
-align 4
-positions	dd 3,16,47
-str_lens	db 8,30,30
 ;------------------------------------------------------------------------------
 align 4
 read_string:
@@ -688,14 +684,14 @@ draw_window:
 	mov	esi,47
 ;--------------------------------------
 align 4
-newline:
+.newline:
 	mov	ecx,[edx]
 	add	edx,4
 	mcall
 	add	ebx,14
 	add	edx,47
 	cmp	[edx],byte 'x'
-	jne	newline
+	jne	.newline
 ;--------------------------------------
 align 4
 draw_btns:
@@ -743,7 +739,7 @@ no_button:
 	ror	ebx,16
 	add	ecx,20 shl 16
 	inc	ah
-	cmp	ah,8	;9
+	cmp	ah,8
 	jbe	newbline
 
 	call	print_strings
@@ -756,7 +752,7 @@ draw_icon:
 	mcall	13,<(33-20),(34*8+2)>,<(260-24),(37+15-2)>,0xffffff
 	mov	esi,[current_icon]
 	add	esi,12
-	call	atoi
+	call	ASCII_to_icon_number
 	push	eax
 	cmp	eax,[cur_band]
 	jb	.nou
@@ -772,18 +768,20 @@ draw_icon:
 align 4
 .nou:
 	mov	eax,[cur_band]
-	and	eax,0xfffffff8
 	push	eax
 	imul	eax,ICON_SIZE
 	mov	ebx,[strip_file]
-	lea	ebx,[ebx+8+eax]
+	add	ebx,eax
 	mov	ecx,8
 	mov	edx,(33-18) shl 16+238
 ;--------------------------------------
 align 4
 .nxt:
 	push	ecx
-	mcall	7,,<32,32>
+	pusha
+	mov	ebp,0
+	mcall	65,,<32,32>,,32
+	popa
 	pop	ecx
 	add	ebx,ICON_SIZE
 	add	edx,34 shl 16
@@ -806,540 +804,131 @@ align 4
 	mcall	,,,,0xff0000
 	ret
 ;------------------------------------------------------------------------------
-; DATA AREA
-bcolor dd 0x335599
-;------------------------------------------------------------------------------
-icon_table:
- times 4  db 'xxxx  xxxx'
- times 2  db '          '
- times 1  db '          '
- times 2  db 'xxxx  xxxx'
-; times 1  db '          '
-;------------------------------------------------------------------------------
-icons_reserved:
-	times 9  db '          '
-;------------------------------------------------------------------------------
-if lang eq ru
-text:
-	db 255,255,255,0,   '   íÖäëí                                       '
-	db 255,255,255,0,   ' èêéÉêÄååÄ                                     '
-	db 255,255,255,0,   ' èÄêÄåÖíêõ                                     '
-	db 255,255,255,0,   '                 èêàåÖçàíú                     '
-	db 255,255,255,0,   '      ÑéÅÄÇàíú              ìÑÄãàíú            '
-	db 0,0,0,0,         'çÄÜåàíÖ çÄ èéáàñàû àäéçäà Ñãü êÖÑÄäíàêéÇÄçàü   '
-	db                  'x' ; <- END MARKER, DONT DELETE
-
-add_text	db 'çÄÜåàíÖ çÄ èéáàñàû çÖàëèéãúáìÖåéâ àäéçäà     ',0
-rem_text	db 'çÄÜåàíÖ çÄ èéáàñàû àëèéãúáìÖåéâ àäéçäà       ',0
-title		db 'å•≠•§¶•‡ ®™Æ≠Æ™',0
-
-else if lang eq ge
-text:
-	db 255,255,255,0,   '   TITLE                                       '
-	db 255,255,255,0,   '  APP NAME                                     '
-	db 255,255,255,0,   ' PARAMETER                                     '
-	db 255,255,255,0,   '                ANWENDEN                       '
-	db 255,255,255,0,   '     HINZUFUEGEN              ENTFERNEN        '
-	db 0,0,0,0,         'AUF BUTTON KLICKEN, UM ICON ZU EDITIEREN       '
-	db                  'x' ; <- END MARKER, DONT DELETE
-
-add_text	db 'AUF UNBENUTZTE ICONPOSITION KLICKEN          ',0
-rem_text	db 'ICON ANKLICKEN; DAS GELOESCHT WERDEN SOLL    ',0
-title		db 'Icon Manager',0
-
-else
-text:
-	db 255,255,255,0,   '   TITLE                                       '
-	db 255,255,255,0,   '  APP NAME                                     '
-	db 255,255,255,0,   ' PARAMETERS                                    '
-	db 255,255,255,0,   '                APPLY CHANGES                  '
-	db 255,255,255,0,   '      ADD ICON              REMOVE ICON        '
-	db 0,0,0,0,         'CLICK BUTTON ON ICON POSITION FOR EDIT         '
-	db                  'x' ; <- END MARKER, DONT DELETE
-add_text	db 'CLICK ON A NOT USED POSITION                 ',0
-rem_text	db 'CLICK ICON POSITION; YOU WANT TO DELETE      ',0
-title		db 'Icon Manager',0
-
-end if
-;------------------------------------------------------------------------------
-arrows	db '</>'
-;------------------------------------------------------------------------------
-iconname:
-	db ICON_APP,0
-;------------------------------------------------------------------------------
-icon_default:
-	db 'AA-SYSXTREE-000-/RD/1/SYSXTREE                '
-	db '-                              *'
-	db 13,10
-;------------------------------------------------------------------------------
-rep_text:
-if lang eq ru
-	db 'áçÄóäà    -     àá    , ÇõÅêÄç #'
-else
-	db 'ICONS     -     OF    , SELECTED'
-end if
-
-rep_text_len:
-;------------------------------------------------------------------------------
-align 4
-get_bg_info:
-	mcall	39,4
-	mov	[bgrdrawtype],eax
-
-	mcall	39,1	; get background size
-	mov	[bgrxy],eax
-
-	mov	ebx,eax
-	shr	eax,16
-	and	ebx,0xffff
-	mov	[bgrx],eax
-	mov	[bgry],ebx
-	ret
-;------------------------------------------------------------------------------
-align 4
-calc_icon_pos:
-	movzx	eax,byte [ebp-20]	; x position
-	sub	eax,'A'		;eax - number of letter
-	cmp	eax,4
-	jg	no_left
-
-	shl	eax,6	;imul eax,64
-	add	eax,16
-	movzx	ebx,[warea.left]
-	add	eax,ebx
-	jmp	x_done
-;--------------------------------------
-align 4
-no_left:
-	sub	eax,9
-	sal	eax,6	;imul eax,64
-	sub	eax,16+52-1
-	movzx	ebx,[warea.right]
-	add	eax,ebx
-;--------------------------------------
-align 4
-x_done:
-	mov	[ebp-12],eax
-	movzx	eax,byte [ebp-20+1]	; y position
-	sub	eax,'A'		; eax - number of letter
-	cmp	eax,4
-	jg	no_up
-
-	shl	eax,6		;imul eax,80
-	add	eax,16
-	movzx	ebx,[warea.top]
-	add	eax,ebx
-	jmp	y_done
-;--------------------------------------
-align 4
-no_up:
-	sub	eax,9
-	shl	eax,6		;imul eax,80
-	sub	eax,16-1
-	movzx	ebx,[warea.bottom]
-	add	eax,ebx
-;--------------------------------------
-align 4
-y_done:
-	mov	[ebp-8],eax
-	ret
-;--------------------------------------
-align 4
-;START2:
-load_icon_list2:
-	call	get_bg_info
-
-	mcall	48,5
-	mov	[warea.by_x],eax
-	mov	[warea.by_y],ebx
-
-	mcall	14
-	add	eax,0x00010001
-	mov	[scrxy],eax
-;--------------------------------------
-align 4
-apply_changes2:
-	mov	edi,[icons]
-	mov	esi,icon_data
-	mov	ebp,thread_stack+0x100	;0x5000	; threads stack starting point
-;--------------------------------------
-align 4
-start_new:
-	mov	eax,[esi]
-	mov	[ebp-20],eax
-	call	calc_icon_pos
-
-	mov	edx,ebp
-	mov	dword[ebp-4],esi
-	mcall	51,1,thread
-	add	ebp,0x100
-; change to next thread if mutex is blocked
-	mov	eax,68
-	mov	ebx,1
-;--------------------------------------
-align 4
-wait_thread_start:		;wait until thread draw itself first time
-	cmp	[create_thread_event],bl	;mutex
-	jz	wait_thread_end
-	mcall
-	jmp	wait_thread_start
-;--------------------------------------
-align 4
-wait_thread_end:
-	dec	[create_thread_event]	;reset event
-	add	esi,REC_SIZE
-	dec	edi
-	jnz	start_new
-;--------------------------------------
 align 4
 close:
 	or	eax,-1
 	mcall
 ;------------------------------------------------------------------------------
-; esp-28 = start of thread stack
-; esp-24 = ???
-; esp-20 = 'AA-F' or...
-; esp-16 = ebp-4 - area of f. 15.6
-; esp-12 = ebp+0 = X
-; esp-8  = ebp+4 = Y
-; esp-4  = ebp+8 = adress of icon_data
+; ICON PROCESSING MODE - START2 entering label
 ;------------------------------------------------------------------------------
 align 4
-thread:
-	sub	esp,12
-	mov	ebp,esp
-	sub	esp,16
-	call	draw_window2
-	mov	[create_thread_event],1
-	mcall	40,010101b
+START2:
+	mcall	40,10000b	; only Event 5 - draw background
+	
+	mcall	51,1,START_mouse_thread,stack_mouse_thread
 ;------------------------------------------------------------------------------
 align 4
 still2:
 	mcall	10
-	cmp	eax,1
-	je	red2
 
-	cmp	eax,3
-	je	button2
-	
+	mcall	15,8
+
+	mov	ecx,eax
+	shr	ecx,16
+	mov	[x_left],ecx
+	and	eax,0xffff
+	mov	[x_right],eax
+
+	mov	ecx,ebx
+	shr	ecx,16
+	mov	[y_top],ecx
+	and	ebx,0xffff
+	mov	[y_bottom],ebx
+
 	call	get_bg_info
-	call	draw_icon2_1
-	
-	jmp	still2
-;------------------------------------------------------------------------------
+
+	mov	ecx,[icons]
+	mov	ebx,icon_data
+;--------------------------------------
 align 4
-red2:
-	mcall	14
-	add	eax,0x00010001
-	mov	[scrxy],eax
-	mcall	48,5
-	mov	[warea.by_x],eax
-	mov	[warea.by_y],ebx
-	add	ebp,+12
+.start_new:
+	push	ebx ecx
+	mov	[adress_of_icon_data],ebx
+	mov	eax,[ebx]
 	call	calc_icon_pos
-	add	ebp,-12
-	mcall	9,process_table,-1
-	mov	eax,[process_table+process_information.box.left]
-	cmp	eax,[ebp+0]
-	jne	@f
-	mov	eax,[process_table+process_information.box.top]
-	cmp	eax,[ebp+4]
-	je	.lp1
-;--------------------------------------
-align 4
-@@:
-	call	get_bg_info
-	mcall	67,[ebp+0],[ebp+4],51,51
-;--------------------------------------
-align 4
-.lp1:
-	call	draw_window2
-	jmp	still2
-;------------------------------------------------------------------------------
-align 4
-button2:
-	mcall	17
-	cmp	ah, 2
-	jnz	still2
+	mov	[current_X],ebx
+	mov	[current_Y],eax
 
-	mcall	9,process_table,-1
-	mov	ecx,[ebx+30]	; PID
-	mcall	18,21
-	mov	edx,eax		; SLOT
-	mcall	18,7
-	cmp	edx,eax	; compare with active SLOT
-	jne	@f
-	mov	ecx,edx
-	mcall	18,1	; set to down
-	call	draw_window2
-;--------------------------------------
-align 4
-@@:
-	mov	esi,[ebp+8]
-	mov	ebx,1
-	mov	edi,finfo.path
-	call	fill_paths
-	inc	ebx
-	mov	edi,param_str
-	mov	dword[finfo_start+8],edi
-	call	fill_paths
-	cmp	byte[edi],0
-	jne	.no0
-	and	dword[finfo_start+8],0
-;--------------------------------------
-align 4
-.no0:
-	mov	ebx,finfo_start
-	mcall	70
+	call	draw_picture
+	pop	ecx ebx
+	add	ebx,REC_SIZE
+	dec	ecx
+	jnz	.start_new
 	jmp	still2
-;------------------------------------------------------------------------------
-align 4
-fill_paths:
-	push	esi edi
-	movzx	ecx,byte[str_lens+ebx]
-	add	esi,[positions+ebx*4]
-	push	esi
-	add	esi,ecx
-;--------------------------------------
-align 4
-.l1:
-	dec	esi
-	cmp	byte[esi],' '
-	jnz	.found
-	loop	.l1
-	pop	esi
-	jmp	.noms
-;--------------------------------------
-align 4
-.found:
-	lea	ecx,[esi+1]
-	pop	esi
-	sub	ecx,esi
-	rep	movsb
-;--------------------------------------
-align 4
-.noms:
-	and	byte[edi],0
-	pop	edi esi
-	ret
-;--------------------------------------
-align 4
-atoi:
-	push	esi
-	xor	eax,eax
-	xor	ebx,ebx
-;--------------------------------------
-align 4
-.nxt:
-	lodsb
-	cmp	al,'0'
-	jb	.done
-	cmp	al,'9'
-	ja	.done
-	sub	eax,'0'
-; multiply x10
-	shl	ebx,1		; multiply x2
-	lea	ebx,[ebx+ebx*4] ; multiply x5
-	add	ebx,eax
-	jmp	.nxt
-;--------------------------------------
-align 4
-.done:
-	pop	esi
-	mov	eax,ebx
-	ret
-;--------------------------------------
-align 4
-itoa:
-	add	esi,2
-	mov	ebx,10
-	mov	ecx,3
-;--------------------------------------
-align 4
-.l0:
-	xor	edx,edx
-	div	ebx
-	add	dl,'0'
-	mov	[esi],dl
-	dec	esi
-	loop	.l0
-	ret
-;------------------------------------------------------------------------------
+;------------------------------------------------------------------------------	
 align 4
 draw_picture:
-	mcall	15,6
-	test	eax,eax
-	jnz	@f
-	mcall	68,1
-	jmp	draw_picture
-@@:
-	mov	[ebp-4],eax
-	mov	[image],image_area
+	mov	eax,[current_X]
+	cmp	eax,[x_right]
+	ja	.exit
 
-	mov	edi,[ebp+8]
+	add	eax,52
+	cmp	eax,[x_left]
+	jb	.exit
+
+	mov	eax,[current_Y]
+	cmp	eax,[y_bottom]
+	ja	.exit
+
+	add	eax,52
+	cmp	eax,[y_top]
+	jb	.exit
+;--------------------------------------
+align 4
+@@:
+	mov	edi,[adress_of_icon_data]	;[ebp+8]
 	lea	esi,[edi+12]
-	call	atoi
+	call	ASCII_to_icon_number
+; protect for icon area RAW size limit
 	cmp	eax,[icon_count]
-	ja	toponly.ex
-;	imul	eax,(32*3*32)
-	lea	eax,[eax+eax*2]	; multiply x3
-	shl	eax,10		; multiply x1024
-	
-	mov	edi,[strip_file]
-	lea	edi,[eax+edi+8]
-	xor	ecx,ecx
-	mov	esi,edi
-
-	mov	[pixpos],0
-;--------------------------------------
-; loop Y start
-align 4
-new_line:	
-	push	ecx	; Y
-	xor	ebx,ebx
-;--------------------------------------
-; loop X start
-align 4
-newb:
-	mov	ecx,[esp]
-	push	ebx	; X
-
-	cmp	ebx,10
-	jb	yesbpix
-	cmp	ebx,42
-	jge	yesbpix
-	cmp	ecx,31	;2
-	jg	yesbpix
-
-	push	esi
-	mov	esi,edi
-	add	esi,[pixpos]
-;--------------------------------------
-	add	[pixpos],3
-	mov	eax,[esi]
-	and	eax,0xffffff
-
-	pop	esi
-
-	cmp	eax,0
-	je	yesbpix
-	cmp	eax,0xfffcff	;f5f5f5
-	je	yesbpix
-	jmp	nobpix
+	jbe	@f
 ;--------------------------------------
 align 4
-yesbpix:
-stretch:
-	cmp	[bgrdrawtype],dword 2
-	jne	nostretch
-	mov	eax,[ebp+4]
-	add	eax,ecx
-	imul	eax,[bgry]
-	cdq
-	movzx	ebx,word [scrxy]
-	div	ebx
-	imul	eax,[bgrx]
-	push	eax
-	mov	eax,[ebp+0]
-	add	eax,[esp+4]
-	imul	eax,[bgrx]
-	cdq
-	movzx	ebx,word [scrxy+2]
-	div	ebx
-	add	eax,[esp]
-	add	esp,4
-	jmp	notiled
+.exit:
+	ret
 ;--------------------------------------
 align 4
-nostretch:
-	cmp	[bgrdrawtype],dword 1
-	jne	notiled
-	mov	eax,[ebp+4]
-	add	eax,ecx
-	cdq
-	movzx	ebx,word [bgrxy]
-	div	ebx
-	mov	eax,edx
-	imul	eax,[bgrx]
-	push	eax
-	mov	eax,[ebp+0]
-	add	eax,[esp+4]
-	movzx	ebx,word [bgrxy+2]
-	cdq
-	div	ebx
-	mov	eax,edx
-	add	eax,[esp]
-	add	esp,4
-;--------------------------------------
-align 4
-notiled:
-	lea	ecx,[eax+eax*2]
-	add	ecx,[ebp-4]
-	mov	eax,[ecx]
-;--------------------------------------
-align 4
-nobpix:
-	mov	edx,eax
-	mov	eax,[image]
-
-	mov	[eax],dl
-	inc	eax
-	ror	edx,8
-	
-	mov	[eax],dl
-	inc	eax
-	ror	edx,8
-	
-	mov	[eax],dl
-	
-	inc	eax
-	mov	[image],eax
-
-	pop	ebx
-
-	inc	ebx
-	
-	mov	eax,[yw]
-	inc	eax
-	cmp	ebx,eax
-	jb	newb
-
-	pop	ecx
-
-	inc	ecx
-	mov	eax,[ya]
-	add	[pixpos],eax
-
-	cmp	[top],1
-	jne	notop
-
-	cmp	ecx,38
-	je	toponly
-;--------------------------------------
-align 4
-notop:
-	cmp	ecx,52
-	jnz	new_line
-;--------------------------------------
-align 4
-toponly:
-	mcall	15,7,[ebp-4]
-	test	eax,eax
-	jnz	@f
-	mcall	68,1
-	jmp	toponly
 @@:
-	xor	edx,edx
-	mcall	7,image_area,<52,52>
+	push	eax
+	mcall	68,12,52*52*4+8
+	mov	[draw_area],eax
+	mov	ebx,52
+	mov	[eax],ebx
+	mov	[eax+4],ebx
+	pop	eax
+
+	shl	eax,12		; multiply x4096
+	add	eax,[strip_file]
+	mov	esi,eax
+
+	mov	edi,[draw_area]
+	add	edi,(52-32)/2*4+8
+	mov	ebx,32
+	cld
 ;--------------------------------------
 align 4	
-.ex:
-	mov	[load_pic],0
+.y:
+	mov	ecx,32
+	rep	movsd
+	
+	add	edi,(52-32)*4
+	dec	ebx
+	jnz	.y
+
+	call	draw_text
+	
+	mov	edx,[current_X]	;[ebp+0]
+	shl	edx,16
+	add	edx,[current_Y]	;[ebp+4]
+	mov	ebx,[draw_area]
+	add	ebx,8
+	mcall	25,,<52,52>
+	mcall	68,13,[draw_area]
 	ret
 ;------------------------------------------------------------------------------
 align 4
 draw_text:
-	mov	esi,[ebp+8]
+	mov	esi,[adress_of_icon_data]	;[ebp+8]
 	add	esi,3
 	push	edi
 	mov	edi,title
@@ -1370,7 +959,10 @@ founde:
 	sub	ebx,eax
 	
 	xor	ecx,ecx		; black shade of text
+	or	ecx,0x08000000	; redirect the output to the user area
 	add	ebx,1 shl 16	;*65536+1
+	
+	mov	edi,[draw_area]
 	mcall	4,,,title,[tl]
 
 	inc	ebx
@@ -1398,127 +990,143 @@ founde:
 	mcall
 
 	inc	ebx
-	mcall	,,0xffffff
-	mov	[draw_pic],0
+	mov	ecx,0xffffff		; white text
+	or	ecx,0x08000000	; redirect the output to the user area
+	mcall
 	ret
 ;------------------------------------------------------------------------------
-;   *********************************************
-;   *******  WINDOW DEFINITIONS AND DRAW ********
-;   *********************************************
 align 4
-draw_window2:
-	mcall	12,1
-	; DRAW WINDOW
-	xor	eax,eax		; function 0 : define and draw window
-	mov	ebx,[ebp+0-2]
-	mov	ecx,[ebp+4-2]
-	mov	bx,[yw]		; [x start] *65536 + [x size]
-	mov	cx,51		; [y start] *65536 + [y size]
-	mov	edx,0x41000000	; color of work area RRGGBB,8->color gl
-	mcall
+ASCII_to_icon_number:
+;
+; in:
+; esi - adress of icon ASCII text number (line start + 12)
+;
+; out:
+; eax - number of icon
+;
+	push	esi
+	xor	eax,eax
+	xor	ebx,ebx
+;--------------------------------------
+align 4
+.next:
+	lodsb
+	cmp	al,'0'
+	jb	.done
+	cmp	al,'9'
+	ja	.done
+	sub	eax,'0'
+; multiply x10
+	shl	ebx,1		; multiply x2
+	lea	ebx,[ebx+ebx*4] ; multiply x5
+	add	ebx,eax
+	jmp	.next
+;--------------------------------------
+align 4
+.done:
+	pop	esi
+	mov	eax,ebx
+	ret
+;------------------------------------------------------------------------------
+align 4
+itoa:
+	add	esi,2
+	mov	ebx,10
+	mov	ecx,3
+;--------------------------------------
+align 4
+.l0:
+	xor	edx,edx
+	div	ebx
+	add	dl,'0'
+	mov	[esi],dl
+	dec	esi
+	loop	.l0
+	ret
+;------------------------------------------------------------------------------
+align 4
+get_bg_info:
+	mcall	39,1	; get background size
+	mov	[bgrxy],eax
+
+	mov	ebx,eax
+	shr	eax,16
+	and	ebx,0xffff
+	mov	[bgrx],eax
+	mov	[bgry],ebx
 	
-	mcall	8,51,50,0x40000002 ; button
-;--------------------------------------
-align 4
-draw_icon2_1:
-; change to next thread if mutex is blocked
-	mov	eax,68
-	mov	ebx,1
-;--------------------------------------
-align 4
-draw_icon2:
-	xchg	[load_pic],bl	;mutex
-	test	bl,bl
-	je	draw_icon_end
-	mcall
-	jmp	draw_icon2
-;--------------------------------------
-align 4
-draw_icon_end:
-; change to next thread if mutex is blocked
-	mov	eax,68
-	mov	ebx,1
-;--------------------------------------
-align 4
-draw_icon_2:
-	xchg	[draw_pic],bl	;mutex
-	test	bl,bl
-	je	draw_icon_end_2
-	mcall
-	jmp	draw_icon_2
-;--------------------------------------
-align 4
-draw_icon_end_2:
-	call	draw_picture
-	call	draw_text
-	mcall	12,2
+	mcall	48,5
+	mov	[warea.by_x],eax
+	mov	[warea.by_y],ebx
+	
+	mcall	14
+	add	eax,0x00010001
+	mov	[scrxy],eax
 	ret
 ;------------------------------------------------------------------------------
-tl	dd 8
-yw:	dd 51
-ya	dd 0
-cur_btn	dd 40
+align 4
+calc_icon_pos:
+; in:
+; eax - dword [icon_position]
+; out:
+; eax - current Y
+; ebx - current X
+	push	eax
+	movzx	eax,al
+	sub	eax,'A'		;eax - number of letter
+	cmp	eax,4
+	jg	no_left
 
-draw_pic	db 0
-load_pic	db 0
-create_thread_event	db 0
+	shl	eax,6	;imul eax,64
+	add	eax,16
+	movzx	ebx,[warea.left]
+	add	eax,ebx
+	jmp	x_done
+;--------------------------------------
+align 4
+no_left:
+	sub	eax,9
+	sal	eax,6	;imul eax,64
+	sub	eax,16+52-1
+	movzx	ebx,[warea.right]
+	add	eax,ebx
+;--------------------------------------
+align 4
+x_done:
+	mov	ebx,eax
+	pop	eax
+	push	ebx
+	movzx	eax,ah
+	sub	eax,'A'		; eax - number of letter
+	cmp	eax,4
+	jg	no_up
 
-image	dd image_area
-
-IncludeUGlobals
+	shl	eax,6		;imul eax,80
+	add	eax,16
+	movzx	ebx,[warea.top]
+	add	eax,ebx
+	jmp	y_done
+;--------------------------------------
+align 4
+no_up:
+	sub	eax,9
+	shl	eax,6		;imul eax,80
+	sub	eax,16-1
+	movzx	ebx,[warea.bottom]
+	add	eax,ebx
+;--------------------------------------
+align 4
+y_done:
+	pop	ebx
+	ret
+;------------------------------------------------------------------------------
+include 'mouse.inc'
+;------------------------------------------------------------------------------
+include 'data.inc'
 ;------------------------------------------------------------------------------
 IM_END:
 ;------------------------------------------------------------------------------
-align 4
-bgrx	dd ?
-bgry	dd ?
-
-bgrxy	dd ?
-warea:
- .by_x:
-  .right	dw ?
-  .left		dw ?
- .by_y:
-  .bottom	dw ?
-  .top		dw ?
-scrxy		dd ?
-bgrdrawtype	dd ?
-
-pixpos	dd ?
-top	dd ?
-icons	dd ?
-addr	dd ?
-cur_str		dd ?
-cur_band	dd ?
-sel_icon1	rd 1
-icon_count	rd 1
-strip_file	rd 1
-;------------------------------------------------------------------------------
-align 4
-param_str	rb 31
-;------------------------------------------------------------------------------
-align 4
-process_table:
-	rb 0x400
-;------------------------------------------------------------------------------	
-align 4
-icon_data:
-	rb 0x1000
-;------------------------------------------------------------------------------
-align 4
-	rb 0x1000
-stack_area:
-;------------------------------------------------------------------------------
-align 4
-I_Param:
-	rb 0x100	; max 256 
-;------------------------------------------------------------------------------
-align 4
-thread_stack:
-	rb 0x100*48	; max 48 icons
-;------------------------------------------------------------------------------
-align 4
-image_area:
-	rb 52*52*3
+include 'dat_area.inc'
 ;------------------------------------------------------------------------------
 I_END:
+;------------------------------------------------------------------------------

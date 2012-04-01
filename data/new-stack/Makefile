@@ -169,7 +169,7 @@ CMM_PROGRAMS:=\
 # Spaces should be represented as |.
 OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  background.gif:background.gif default.skn:DEFAULT.SKN \
- icons.dat:ICONS.DAT iconstrp.gif:ICONSTRP.GIF index_htm:INDEX.HTM \
+ icons.dat:ICONS.DAT iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  lang.inc:LANG.INC lang.ini:LANG.INI \
  menu.dat:MENU.DAT \
