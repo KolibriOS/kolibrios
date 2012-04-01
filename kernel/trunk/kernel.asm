@@ -2689,19 +2689,22 @@ align 4
 nosb7:
         cmp     ebx, 8
         jnz     nosb8
-        mov     eax, [draw_data+32 + RECT.left]
-        shl     eax, 16
-        add     eax, [draw_data+32 + RECT.right]
+
+        mov     eax, [BG_Rect_X_left_right]
         mov     [esp + 32], eax ; eax = [left]*65536 + [right]
-        mov     eax, [draw_data+32 + RECT.top]
-        shl     eax, 16
-        add     eax, [draw_data+32 + RECT.bottom]
+        mov     eax, [BG_Rect_Y_top_bottom]
         mov     [esp + 20], eax ; ebx = [top]*65536 + [bottom]
         ret
 ;------------------------------------------------------------------------------
 align 4
 nosb8:
         ret
+;------------------------------------------------------------------------------
+align 4
+uglobal
+  BG_Rect_X_left_right  dd   0x0
+  BG_Rect_Y_top_bottom  dd   0x0
+endg
 ;------------------------------------------------------------------------------
 align 4
 force_redraw_background:
@@ -3299,6 +3302,18 @@ mouse_not_active:
 ;--------------------------------------
 align 4
 @@:
+        push    eax
+        mov     eax, [draw_data+32 + RECT.left]
+        shl     eax, 16
+        add     eax, [draw_data+32 + RECT.right]
+        mov     [BG_Rect_X_left_right], eax ; [left]*65536 + [right]
+
+        mov     eax, [draw_data+32 + RECT.top]
+        shl     eax, 16
+        add     eax, [draw_data+32 + RECT.bottom]
+        mov     [BG_Rect_Y_top_bottom], eax ; [top]*65536 + [bottom]
+        pop     eax
+
         call    drawbackground
 ;--------- set event 5 start ----------
         push    ecx edi
@@ -3311,14 +3326,13 @@ set_bgr_event:
         or      [edi+SLOT_BASE+APPDATA.event_mask], 10000b  ; set event 5
         loop    set_bgr_event
         pop     edi ecx
+; call change_task - because the application must have time to call f.15.8
+        call    change_task
 ;--------- set event 5 stop -----------
         xor     eax, eax
         xchg    al, [REDRAW_BACKGROUND]
         test    al, al                             ; got new update request?
         jnz     @b
-
-; call change_task - because the application must have time to call f.15.8
-        call    change_task
 
         mov     [draw_data+32 + RECT.left], eax
         mov     [draw_data+32 + RECT.top], eax
