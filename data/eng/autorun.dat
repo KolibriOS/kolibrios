@@ -7,7 +7,7 @@
 /RD/1/MEDIA/KIV \T__background.gif -1  # Desktop background image
 /RD/1/@CLIP           ""          1    # Clipboard
 /RD/1/@RB             ""          1    # Desktop right-click menu
-/RD/1/@SS             ""          1    # Screensaver
+/RD/1/@SS            ASSM         1    # Screensaver
 /RD/1/@PANEL          ""          1    # Start panel
 #/RD/1/DEVELOP/BOARD   ""          1    # Load DEBUG board
 /RD/1/SETUP           BOOT        1    # Load device settings
