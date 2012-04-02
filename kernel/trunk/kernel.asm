@@ -5125,7 +5125,10 @@ set_screen:
         jz      .epic_fail
 
         call    calculate_fast_getting_offset_for_WinMapAddress
-
+; for Qemu or non standart video cards
+; Unfortunately [BytesPerScanLine] does not always 
+;                             equal to [_display.width] * [ScreenBPP] / 8
+        call    calculate_fast_getting_offset_for_LFB
         popad
 
         call    repos_windows
