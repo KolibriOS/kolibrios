@@ -5,6 +5,12 @@
 ;*  Compile with flat assembler *
 ;*                              *
 ;********************************
+; version:	3.10
+; last update:  03/04/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Drawing selection rectangle.
+;               Using new kernel function: 15.9
+;---------------------------------------------------------------------
 ; version:	3.01
 ; last update:  02/04/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -14,9 +20,9 @@
 ; version:	3.00
 ; last update:  02/04/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
-; changes:      Program used only 2 threads: draw and mouse
-;               Used new kernel functions: 25, 34, 15.8, 4 (redirect).
-;               Used PNG icons with transparent.
+; changes:      Program use only 2 threads: draw and mouse
+;               Using new kernel functions: 25, 34, 15.8, 4 (redirect).
+;               Using PNG icons with transparent.
 ;---------------------------------------------------------------------
 ; version:	2.11
 ; last update:  19/03/2012
@@ -53,7 +59,7 @@
 ICON_SIZE equ 32*32*4
 REC_SIZE equ 80
 ICONS_DAT equ '/sys/icons.dat'
-ICON_APP equ '/sys/icon'
+ICON_APP equ '/sys/ICON'
 ICON_STRIP equ '/rd/1/iconstrp.png'
 ;------------------------------------------------------------------------------
 	use32
@@ -70,7 +76,6 @@ ICON_STRIP equ '/rd/1/iconstrp.png'
 include 'lang.inc'
 include '../../../macros.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
-COLOR_ORDER equ MENUETOS
 ;include 'debug.inc'
 ;------------------------------------------------------------------------------
         @use_library    ;use load lib macros
@@ -900,7 +905,7 @@ draw_picture:
 ;--------------------------------------
 align 4
 @@:
-	mov	edi,[adress_of_icon_data]	;[ebp+8]
+	mov	edi,[adress_of_icon_data]
 	lea	esi,[edi+12]
 	call	ASCII_to_icon_number
 ; protect for icon area RAW size limit
@@ -941,9 +946,9 @@ align 4
 
 	call	draw_text
 	
-	mov	edx,[current_X]	;[ebp+0]
+	mov	edx,[current_X]
 	shl	edx,16
-	add	edx,[current_Y]	;[ebp+4]
+	add	edx,[current_Y]
 	mov	ebx,[draw_area]
 	add	ebx,8
 	mcall	25,,<52,52>
@@ -952,7 +957,7 @@ align 4
 ;------------------------------------------------------------------------------
 align 4
 draw_text:
-	mov	esi,[adress_of_icon_data]	;[ebp+8]
+	mov	esi,[adress_of_icon_data]
 	add	esi,3
 	push	edi
 	mov	edi,title

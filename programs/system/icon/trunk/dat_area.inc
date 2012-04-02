@@ -26,6 +26,7 @@ current_X_mouse_thread:	rd 1
 current_Y_mouse_thread:	rd 1
 
 draw_area:	rd 1
+draw_area_2:	rd 1
 
 x_left:		rd 1
 x_right:	rd 1
@@ -36,7 +37,9 @@ curx1		rd 1
 cury1		rd 1
 curx2		rd 1
 cury2		rd 1
-  
+curx_restore	rd 1
+cury_restore	rd 1
+
 click_pos	rd 1
 ;------------------------------------------------------------------------------
 align 4

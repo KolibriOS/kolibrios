@@ -25,6 +25,19 @@ mouse:
 	mcall	34,[curx1],[cury1]
 	cmp	al,1 ; 1 - ядро
 	jne	still_mouse
+	
+; check for icon by click down
+	call	check_icons_position
+	mov	eax,[click_pos]
+	test	eax,eax
+	jz	still_mouse
+	
+	mov	eax,[current_X_mouse_thread]
+	mov	[curx_restore],eax
+	mov	eax,[current_Y_mouse_thread]
+	mov	[cury_restore],eax
+
+	call	draw_select
 ;--------------------------------------
 align 4
 @@:		; подождём, пока пользователь не отпустил правую кнопку мыши
@@ -50,7 +63,12 @@ align 4
 ; кому принадлежит точка?
 	mcall	34,[curx2],[cury2]
 	cmp	al,1 ; 1 - ядро
-	jne	still_mouse
+	je	@f
+	call	restore_background
+	jmp	still_mouse
+;--------------------------------------
+align 4		
+@@:
 ; check for icon by click down
 	call	check_icons_position
 	mov	eax,[click_pos]
@@ -66,6 +84,8 @@ align 4
 	call	check_icons_position	
 	pop	eax
 	
+	call	restore_background
+	
 	mov	ebx,[click_pos]
 	
 	test	ebx,ebx
@@ -74,9 +94,8 @@ align 4
 	cmp	eax,ebx
 	jne	still_mouse
 ;--------------------------------------
-align 4
-start_appl:
-	mov	esi,[adress_of_icon_data_2]	;[ebp+8]
+;start_appl:
+	mov	esi,[adress_of_icon_data_2]
 	mov	ebx,1
 	mov	edi,finfo.path
 	call	fill_paths
@@ -170,5 +189,81 @@ align 4
 ; all icons survived!
 	xor	eax,eax
 	mov	[click_pos],eax
+	ret
+;------------------------------------------------------------------------------
+align 4
+draw_select:
+	mcall	68,12,52*52*4+8
+	mov	[draw_area_2],eax
+	mov	ebx,52
+	mov	[eax],ebx
+	mov	[eax+4],ebx
+;--------------------------------------
+; draw black square
+	mov	eax,-1
+	mov	edi,[draw_area_2]
+	add	edi,8
+	cld
+	mov	ecx,52*52
+	rep	stosd
+;--------------------------------------
+; draw white square	
+	mov	eax,0xff000000
+	mov	edi,[draw_area_2]
+	add	edi,8+(4*1)+(52*4*1)
+	mov	ebx,50
+	cld
+;--------------------------------------
+align 4	
+@@:
+	mov	ecx,50
+	rep	stosd
+	
+	add	edi,2*4
+	dec	ebx
+	jnz	@b
+;--------------------------------------
+; draw black square
+	xor	eax,eax
+	mov	edi,[draw_area_2]
+	add	edi,8+(4*2)+(52*4*2)
+	mov	ebx,48
+	cld
+;--------------------------------------
+align 4	
+@@:
+	mov	ecx,48
+	rep	stosd
+	
+	add	edi,4*4
+	dec	ebx
+	jnz	@b	
+;--------------------------------------
+	mov	edx,[current_X_mouse_thread]
+	shl	edx,16
+	add	edx,[current_Y_mouse_thread]
+	mov	ebx,[draw_area_2]
+	add	ebx,8
+	mcall	25,,<52,52>
+	mcall	68,13,[draw_area_2]
+	ret
+;------------------------------------------------------------------------------
+align 4	
+restore_background:
+	pusha
+	mov	eax,[curx_restore]
+	mov	ecx,eax
+	shl	ecx,16
+	add	ecx,eax
+	add	ecx,52
+	
+	mov	eax,[cury_restore]
+	mov	edx,eax
+	shl	edx,16
+	add	edx,eax
+	add	edx,52
+	
+	mcall	15,9
+	popa
 	ret
 ;------------------------------------------------------------------------------
