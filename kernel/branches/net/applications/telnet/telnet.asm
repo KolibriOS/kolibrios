@@ -182,10 +182,10 @@ mainloop:
 
 fail:
         push    str5
-        jmp     @b
+        jmp     main
 fail2:
         push    str6
-        jmp     @b
+        jmp     main
 
 done:
         push    1
