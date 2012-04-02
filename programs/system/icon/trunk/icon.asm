@@ -5,6 +5,12 @@
 ;*  Compile with flat assembler *
 ;*                              *
 ;********************************
+; version:	3.01
+; last update:  02/04/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Fix for previous revision - not drawed icons after
+;               startup in certain cases.
+;---------------------------------------------------------------------
 ; version:	3.00
 ; last update:  02/04/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -815,7 +821,23 @@ align 4
 START2:
 	mcall	40,10000b	; only Event 5 - draw background
 	
+	mcall	48,5
+	mov	[warea.by_x],eax
+	mov	[warea.by_y],ebx
+	
 	mcall	51,1,START_mouse_thread,stack_mouse_thread
+	
+	xor	eax,eax
+	mov	[x_left],eax
+	mov	[y_top],eax
+	
+	mcall	14
+	mov	ebx,eax
+	shr	eax,16
+	and	ebx,0xffff
+	mov	[x_right],eax
+	mov	[y_bottom],ebx
+	jmp	still2.1
 ;------------------------------------------------------------------------------
 align 4
 still2:
@@ -835,8 +857,10 @@ still2:
 	and	ebx,0xffff
 	mov	[y_bottom],ebx
 
-	call	get_bg_info
-
+	mcall	48,5
+	mov	[warea.by_x],eax
+	mov	[warea.by_y],ebx
+.1:
 	mov	ecx,[icons]
 	mov	ebx,icon_data
 ;--------------------------------------
@@ -1042,26 +1066,6 @@ align 4
 	mov	[esi],dl
 	dec	esi
 	loop	.l0
-	ret
-;------------------------------------------------------------------------------
-align 4
-get_bg_info:
-	mcall	39,1	; get background size
-	mov	[bgrxy],eax
-
-	mov	ebx,eax
-	shr	eax,16
-	and	ebx,0xffff
-	mov	[bgrx],eax
-	mov	[bgry],ebx
-	
-	mcall	48,5
-	mov	[warea.by_x],eax
-	mov	[warea.by_y],ebx
-	
-	mcall	14
-	add	eax,0x00010001
-	mov	[scrxy],eax
 	ret
 ;------------------------------------------------------------------------------
 align 4

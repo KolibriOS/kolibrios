@@ -1,10 +1,5 @@
 ;------------------------------------------------------------------------------
 align 4
-bgrx	rd 1
-bgry	rd 1
-
-bgrxy	rd 1
-
 warea:
  .by_x:
   .right	rw 1
@@ -12,8 +7,6 @@ warea:
  .by_y:
   .bottom	rw 1
   .top		rw 1
-
-scrxy		rd 1
 
 icons	rd 1
 addr	rd 1
