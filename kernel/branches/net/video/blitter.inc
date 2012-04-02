@@ -1,3 +1,9 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2011-2012. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 struct  BLITTER_BLOCK
         xmin            dd ?
@@ -324,19 +330,26 @@ blit_32:
         test    eax, eax
         jne     .L57
 
-        inc     [mouse_pause]
-        call    [_display.disable_mouse]
-
         mov     eax, [TASK_BASE]
 
         mov     ebx, [esp+BLITTER.dst_x]
         mov     ebp, [esp+BLITTER.dst_y]
         add     ebx, [eax-twdw + WDATA.box.left]
         add     ebp, [eax-twdw + WDATA.box.top]
+
+        mov     ecx, ebx
+        add     ecx, [esp+BLITTER.w]
+        shl     ecx, 16
+        mov     cx, bp
+        add     ecx, [esp+BLITTER.h]
+
         mov     edi, ebp
 
-        imul    edi, [_display.pitch]
-        imul    ebp, [_display.width]
+;        imul    edi, [_display.pitch]
+        mov     edi, [BPSLine_calc_area+edi*4]
+;        imul    ebp, [_display.width]
+        mov     ebp, [d_width_calc_area+ebp*4]
+
         add     ebp, ebx
         add     ebp, [_WinMapAddress]
 
@@ -346,6 +359,7 @@ blit_32:
         lea     esi, [eax+esi*4]
         add     esi, [esp+BLITTER.bitmap]
 
+        mov     eax, ecx
         mov     ecx, [esp+BLITTER.h]
         mov     edx, [esp+BLITTER.w]
 
@@ -361,7 +375,6 @@ blit_32:
         lea     edi, [edi+ebx*4]
 
         mov     ebx, [CURRENT_TASK]
-
 align 4
 .outer32:
         xor     ecx, ecx
@@ -369,11 +382,39 @@ align 4
 align 4
 .inner32:
         cmp     [ebp+ecx], bl
-        jne     @F
-
+        jne     .skip
+;--------------------------------------
+        push    eax
         mov     eax, [esi+ecx*4]
-        mov     [LFB_BASE+edi+ecx*4], eax
+
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder
+;--------------------------------------
+align 4
 @@:
+        push    ecx
+
+        mov     ecx, [esp+4]
+        ror     ecx, 16
+        sub     ecx, edx
+        rol     ecx, 16
+        sub     ecx, [esp+BLITTER.h + 8]
+
+; check mouse area for putpixel
+        call    [_display.check_mouse]
+        pop     ecx
+;--------------------------------------
+align 4
+.no_mouseunder:
+; store to real LFB
+        mov     [LFB_BASE+edi+ecx*4], eax
+        pop     eax
+;--------------------------------------
+align 4
+.skip:
         inc     ecx
         dec     edx
         jnz     .inner32
@@ -387,8 +428,8 @@ align 4
         jnz     .outer32
 
 .done:
-        dec     [mouse_pause]
-        call    [draw_pointer]
+;        call    [draw_pointer]
+        call    __sys_draw_pointer
 .L57:
         add     esp, 72
         pop     ebx
@@ -410,15 +451,43 @@ align 4
 align 4
 .inner24:
         cmp     [ebp+ecx], bl
-        jne     @F
-
+        jne     .skip_1
+;--------------------------------------
+        push    eax
         mov     eax, [esi+ecx*4]
 
         lea     edi, [edi+ecx*2]
+
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder_1
+;--------------------------------------
+align 4
+@@:
+        push    ecx
+
+        mov     ecx, [esp+4]
+        ror     ecx, 16
+        sub     ecx, edx
+        rol     ecx, 16
+        sub     ecx, [esp+BLITTER.h + 8]
+
+; check mouse area for putpixel
+        call    [_display.check_mouse]
+        pop     ecx
+;--------------------------------------
+align 4
+.no_mouseunder_1:
         mov     [edi+ecx], ax
         shr     eax, 16
         mov     [edi+ecx+2], al
-@@:
+
+        pop     eax
+;--------------------------------------
+align 4
+.skip_1:
         mov     edi, [esp+64]
         inc     ecx
         dec     edx

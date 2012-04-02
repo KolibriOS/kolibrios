@@ -1,11 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision $
 
 
 dpl0    equ  10010000b     ; data read       dpl0
@@ -210,7 +210,7 @@ BANK_SWITCH         equ (OS_BASE+0x000E030)
 ;unused ? store mousepointer
 MOUSE_PICTURE       equ (OS_BASE+0x000F200)
 
-MOUSE_VISIBLE       equ (OS_BASE+0x000F204)
+;MOUSE_VISIBLE       equ (OS_BASE+0x000F204)
 WIN_TEMP_XY         equ (OS_BASE+0x000F300)
 KEY_COUNT           equ (OS_BASE+0x000F400)
 KEY_BUFF            equ (OS_BASE+0x000F401)
@@ -255,7 +255,7 @@ SYS_SHUTDOWN        equ (OS_BASE+0x000FF00)
 TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
 
 REDRAW_BACKGROUND   equ (OS_BASE+0x000FFF0)
-BACKGROUND_CHANGED  equ (OS_BASE+0x000FFF1)
+
 BANK_RW             equ (OS_BASE+0x000FFF2)
 MOUSE_BACKGROUND    equ (OS_BASE+0x000FFF4)
 DONT_DRAW_MOUSE     equ (OS_BASE+0x000FFF5)
@@ -289,7 +289,11 @@ BgrAuxTable         equ (OS_BASE+0x0298000)
 SB16Buffer          equ (OS_BASE+0x02A0000)
 SB16_Status         equ (OS_BASE+0x02B0000)
 
-BUTTON_INFO         equ (OS_BASE+0x02C0000)
+BUTTON_INFO         equ (OS_BASE+0x02B3FEE)
+
+BPSLine_calc_area   equ (OS_BASE+0x02C4000)
+d_width_calc_area   equ (OS_BASE+0x02CA000)
+
 RESERVED_PORTS      equ (OS_BASE+0x02D0000)
 BOOT_VAR            equ (OS_BASE+0x02E0000)
 
@@ -362,21 +366,29 @@ PG_SHARED           equ 0x200
 
 ;;;;;;;;;;;boot time variables
 
-;BOOT_BPP            equ 0x9000    ;byte   bits per pixel
-BOOT_SCANLINE       equ 0x9001    ;word   scanline length
+BOOT_BPP            equ 0x9000    ;byte   bits per pixel
+BOOT_PITCH          equ 0x9001    ;word   scanline length
 BOOT_VESA_MODE      equ 0x9008    ;word   vesa video mode
-;;BOOT_X_RES          equ 0x900A    ;word   X res
-;;BOOT_Y_RES          equ 0x900C    ;word   Y res
+BOOT_X_RES          equ 0x900A    ;word   X res
+BOOT_Y_RES          equ 0x900C    ;word   Y res
 ;;BOOT_MOUSE_PORT     equ 0x9010    ;byte   mouse port  - not used
 BOOT_BANK_SW        equ 0x9014    ;dword  Vesa 1.2 pm bank switch
 BOOT_LFB            equ 0x9018    ;dword  Vesa 2.0 LFB address
 BOOT_MTRR           equ 0x901C    ;byte   0 or 1 : enable MTRR graphics acceleration
 BOOT_LOG            equ 0x901D    ;byte   not used anymore (0 or 1 : enable system log display)
-BOOT_DIRECT_LFB     equ 0x901E    ;byte   0 or 1 : enable direct lfb write, paging disabled
+;BOOT_DIRECT_LFB     equ 0x901E    ;byte   0 or 1 : enable direct lfb write, paging disabled
+BOOT_DMA            equ 0x901F    ;
 BOOT_PCI_DATA       equ 0x9020    ;8bytes pci data
 BOOT_VRR            equ 0x9030    ;byte   VRR start enabled 1, 2-no
 BOOT_IDE_BASE_ADDR  equ 0x9031   ;word   IDEContrRegsBaseAddr
 BOOT_MEM_AMOUNT     equ 0x9034    ;dword  memory amount
+
+BOOT_APM_ENTRY      equ 0x9040
+BOOT_APM_VERSION    equ 0x9044
+BOOT_APM_FLAGS      equ 0x9046    ;unused
+BOOT_APM_CODE_32    equ 0x9050
+BOOT_APM_CODE_16    equ 0x9052
+BOOT_APM_DATA_16    equ 0x9054
 
 TMP_FILE_NAME       equ     0
 TMP_CMD_LINE        equ  1024
@@ -513,6 +525,9 @@ struct  display_t
         move_cursor     dd ?
         restore_cursor  dd ?
         disable_mouse   dd ?
+        mask_seqno      dd ?
+        check_mouse     dd ?
+        check_m_pixel   dd ?
 ends
 
 struct  BOOT_DATA

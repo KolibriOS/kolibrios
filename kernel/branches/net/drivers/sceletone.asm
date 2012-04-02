@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -15,10 +15,6 @@ API_VERSION     equ 0  ;debug
 
 include 'proc32.inc'
 include 'imports.inc'
-
-OS_BASE         equ 0;
-new_app_base    equ 0x60400000
-PROC_BASE       equ OS_BASE+0x0080000
 
 struc IOCTL
 {  .handle      dd ?
@@ -47,21 +43,21 @@ section '.flat' code readable align 16
 
 proc START stdcall, state:dword
 
-           cmp [state], 1
-           jne .exit
+        cmp     [state], 1
+        jne     .exit
 .entry:
 
      if DEBUG
-           mov esi, msgInit
-           call SysMsgBoardStr
+        mov     esi, msgInit
+        call    SysMsgBoardStr
      end if
 
-           stdcall RegService, my_service, service_proc
-           ret
+        stdcall RegService, my_service, service_proc
+        ret
 .fail:
 .exit:
-           xor eax, eax
-           ret
+        xor     eax, eax
+        ret
 endp
 
 handle     equ  IOCTL.handle
@@ -74,21 +70,21 @@ out_size   equ  IOCTL.out_size
 align 4
 proc service_proc stdcall, ioctl:dword
 
-           mov ebx, [ioctl]
-           mov eax, [ebx+io_code]
-           cmp eax, SRV_GETVERSION
-           jne @F
+        mov     ebx, [ioctl]
+        mov     eax, [ebx+io_code]
+        cmp     eax, SRV_GETVERSION
+        jne     @F
 
-           mov eax, [ebx+output]
-           cmp [ebx+out_size], 4
-           jne .fail
-           mov [eax], dword API_VERSION
-           xor eax, eax
-           ret
+        mov     eax, [ebx+output]
+        cmp     [ebx+out_size], 4
+        jne     .fail
+        mov     [eax], dword API_VERSION
+        xor     eax, eax
+        ret
 @@:
 .fail:
-           or eax, -1
-           ret
+        or      eax, -1
+        ret
 endp
 
 restore   handle
@@ -104,53 +100,53 @@ proc detect
             last_bus dd ?
            endl
 
-           xor eax, eax
-           mov [bus], eax
-           inc eax
-           call PciApi
-           cmp eax, -1
-           je .err
+        xor     eax, eax
+        mov     [bus], eax
+        inc     eax
+        call    PciApi
+        cmp     eax, -1
+        je      .err
 
-           mov [last_bus], eax
+        mov     [last_bus], eax
 
 .next_bus:
-           and [devfn], 0
+        and     [devfn], 0
 .next_dev:
-           stdcall PciRead32, [bus], [devfn], dword 0
-           test eax, eax
-           jz .next
-           cmp eax, -1
-           je .next
+        stdcall PciRead32, [bus], [devfn], dword 0
+        test    eax, eax
+        jz      .next
+        cmp     eax, -1
+        je      .next
 
-           mov edi, devices
+        mov     edi, devices
 @@:
-           mov ebx, [edi]
-           test ebx, ebx
-           jz .next
+        mov     ebx, [edi]
+        test    ebx, ebx
+        jz      .next
 
-           cmp eax, ebx
-           je .found
+        cmp     eax, ebx
+        je      .found
 
-           add edi, STRIDE
-           jmp @B
+        add     edi, STRIDE
+        jmp     @B
 .next:
-           inc [devfn]
-           cmp [devfn], 256
-           jb  .next_dev
-           mov eax, [bus]
-           inc eax
-           mov [bus], eax
-           cmp eax, [last_bus]
-           jna .next_bus
-           xor eax, eax
-           ret
+        inc     [devfn]
+        cmp     [devfn], 256
+        jb      .next_dev
+        mov     eax, [bus]
+        inc     eax
+        mov     [bus], eax
+        cmp     eax, [last_bus]
+        jna     .next_bus
+        xor     eax, eax
+        ret
 .found:
-           xor eax, eax
-           inc eax
-           ret
+        xor     eax, eax
+        inc     eax
+        ret
 .err:
-           xor eax, eax
-           ret
+        xor     eax, eax
+        ret
 endp
 
 DEVICE_ID    equ  1234;  pci device id

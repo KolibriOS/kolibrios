@@ -1,11 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision $
 
 
 MEM_WB     equ 6               ;write-back memory
@@ -55,6 +55,9 @@ proc init_mem
 .calcmax:
 ; round all to pages
         mov     eax, [edi]
+        cmp     [edi+16], byte 1
+        jne     .unusable
+
         test    eax, 0xFFF
         jz      @f
         neg     eax
@@ -87,7 +90,7 @@ proc init_mem
         add     esi, eax
         jmp     .usable
 .unusable:
-        and     dword [edi+8], 0
+;        and     dword [edi+8], 0
 .usable:
         add     edi, 20
         loop    .calcmax
@@ -195,6 +198,9 @@ proc init_page_map
         mov     ebx, BOOT_VAR-OS_BASE + 0x9104
         mov     edx, [ebx-4]
 .scanmap:
+        cmp     [ebx+16], byte 1
+        jne     .next
+
         mov     ecx, [ebx+8]
         shr     ecx, 12; ecx = number of pages
         jz      .next
@@ -432,6 +438,11 @@ proc test_cpu
         ret
 endp
 
+iglobal
+align 4
+acpi_lapic_base   dd 0xfee00000   ; default local apic base
+endg
+
 uglobal
 align 4
 acpi_rsdp         rd 1
@@ -443,8 +454,10 @@ acpi_dev_size     rd 1
 
 acpi_rsdt_base    rd 1
 acpi_madt_base    rd 1
-acpi_lapic_base   rd 1
 acpi_ioapic_base  rd 1
+
+cpu_count         rd 1
+smpt              rd 16
 endg
 
 ACPI_HI_RSDP_WINDOW_START  equ 0x000E0000
@@ -493,6 +506,7 @@ rsdt_find:           ;ecx= rsdt edx= SIG
         lea     ebx, [ecx+36]
         mov     esi, [ecx+4]
         add     esi, ecx
+align 4
 .next:
         mov     eax, [ebx]
         cmp     [eax], edx
@@ -513,9 +527,7 @@ rsdt_find:           ;ecx= rsdt edx= SIG
         pop     ebx
         ret
 
-
 align 4
-
 check_acpi:
 
         call    acpi_locate
@@ -533,22 +545,47 @@ check_acpi:
         mov     ecx, [eax+36]
         mov     [acpi_lapic_base-OS_BASE], ecx
 
+        mov     edi, smpt-OS_BASE
+        mov     ebx, [ecx+0x20]
+        shr     ebx, 24              ; read APIC ID
+
+        mov     [edi], ebx           ; bootstrap always first
+        inc     [cpu_count-OS_BASE]
+        add     edi, 4
+
         lea     edx, [eax+44]
         mov     ecx, [eax+4]
         add     ecx, eax
 .check:
         mov     eax, [edx]
-        cmp     al, 1
-        je      .ioapic
+        cmp     al, 0
+        jne     .io_apic
 
+        shr     eax, 24              ; get APIC ID
+        cmp     eax, ebx             ; skip self
+        je      .next
+
+        test    [edx+4], byte 1      ; is enabled ?
+        jz      .next
+
+        cmp     [cpu_count-OS_BASE], 16
+        jae     .next
+
+        stosd                        ; store APIC ID
+        inc     [cpu_count-OS_BASE]
 .next:
+        mov     eax, [edx]
         movzx   eax, ah
         add     edx, eax
         cmp     edx, ecx
         jb      .check
 .done:
         ret
-.ioapic:
+
+.io_apic:
+        cmp     al, 1
+        jne     .next
+
         mov     eax, [edx+4]
         mov     [acpi_ioapic_base-OS_BASE], eax
-        ret
+        jmp     .next

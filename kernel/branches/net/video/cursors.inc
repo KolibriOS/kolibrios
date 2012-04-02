@@ -1,11 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision $
 
 
 LOAD_FROM_FILE  equ 0
@@ -26,7 +26,7 @@ struct  BITMAPINFOHEADER
         ClrUsed                 dd ?
         ClrImportant            dd ?
 ends
-
+;------------------------------------------------------------------------------
 align 4
 proc init_cursor stdcall, dst:dword, src:dword
            locals
@@ -49,7 +49,8 @@ proc init_cursor stdcall, dst:dword, src:dword
         je      .img_8
         cmp     [esi+BITMAPINFOHEADER.BitCount], 4
         je      .img_4
-
+;--------------------------------------
+align 4
 .img_2:
         add     eax, [esi]
         mov     [pQuad], eax
@@ -68,6 +69,8 @@ proc init_cursor stdcall, dst:dword, src:dword
         mov     [rBase], edi
 
         mov     esi, [pQuad]
+;--------------------------------------
+align 4
 .l21:
         mov     ebx, [pBits]
         mov     ebx, [ebx]
@@ -76,6 +79,8 @@ proc init_cursor stdcall, dst:dword, src:dword
         mov     eax, [eax]
         bswap   eax
         mov     [counter], 32
+;--------------------------------------
+align 4
 @@:
         xor     edx, edx
         shl     eax, 1
@@ -103,7 +108,8 @@ proc init_cursor stdcall, dst:dword, src:dword
         sub     [height], 1
         jnz     .l21
         ret
-
+;--------------------------------------
+align 4
 .img_4:
         add     eax, [esi]
         mov     [pQuad], eax
@@ -123,11 +129,15 @@ proc init_cursor stdcall, dst:dword, src:dword
 
         mov     esi, [pQuad]
         mov     ebx, [pBits]
+;--------------------------------------
+align 4
 .l4:
         mov     eax, [pAnd]
         mov     eax, [eax]
         bswap   eax
         mov     [counter], 16
+;--------------------------------------
+align 4
 @@:
         xor     edx, edx
         shl     eax, 1
@@ -168,6 +178,8 @@ proc init_cursor stdcall, dst:dword, src:dword
         sub     [height], 1
         jnz     .l4
         ret
+;--------------------------------------
+align 4
 .img_8:
         add     eax, [esi]
         mov     [pQuad], eax
@@ -187,11 +199,15 @@ proc init_cursor stdcall, dst:dword, src:dword
 
         mov     esi, [pQuad]
         mov     ebx, [pBits]
+;--------------------------------------
+align 4
 .l81:
         mov     eax, [pAnd]
         mov     eax, [eax]
         bswap   eax
         mov     [counter], 32
+;--------------------------------------
+align 4
 @@:
         xor     edx, edx
         shl     eax, 1
@@ -217,6 +233,8 @@ proc init_cursor stdcall, dst:dword, src:dword
         sub     [height], 1
         jnz     .l81
         ret
+;--------------------------------------
+align 4
 .img_24:
         add     eax, [esi]
         mov     [pQuad], eax
@@ -234,10 +252,14 @@ proc init_cursor stdcall, dst:dword, src:dword
 
         mov     esi, [pAnd]
         mov     ebx, [pQuad]
+;--------------------------------------
+align 4
 .row_24:
         mov     eax, [esi]
         bswap   eax
         mov     [counter], 32
+;--------------------------------------
+align 4
 @@:
         xor     edx, edx
         shl     eax, 1
@@ -263,7 +285,7 @@ proc init_cursor stdcall, dst:dword, src:dword
         jnz     .row_24
         ret
 endp
-
+;------------------------------------------------------------------------------
 align 4
 proc set_cursor stdcall, hcursor:dword
         mov     eax, [hcursor]
@@ -274,13 +296,16 @@ proc set_cursor stdcall, hcursor:dword
         mov     ebx, [current_slot]
         xchg    eax, [ebx+APPDATA.cursor]
         ret
+;--------------------------------------
+align 4
 .fail:
         mov     eax, [def_cursor]
         mov     ebx, [current_slot]
         xchg    eax, [ebx+APPDATA.cursor]
         ret
 endp
-
+;------------------------------------------------------------------------------
+align 4
 ; param
 ;  eax= pid
 ;  ebx= src
@@ -328,6 +353,8 @@ create_cursor:
 
         stdcall init_cursor, eax, esi
 
+align 4
+.add_cursor:
         mov     ecx, [.hcursor]
         lea     ecx, [ecx+CURSOR.list_next]
         lea     edx, [_display.cr_list.next]
@@ -338,7 +365,6 @@ create_cursor:
         popfd
 
         mov     eax, [.hcursor]
-.check_hw:
         cmp     [_display.init_cursor], 0
         je      .fail
 
@@ -347,22 +373,26 @@ create_cursor:
         add     esp, 4
 
         mov     eax, [.hcursor]
+;--------------------------------------
+align 4
 .fail:
         add     esp, 12
         ret
+;--------------------------------------
+align 4
 .indirect:
         shr     ebx, 16
         movzx   ecx, bh
         movzx   edx, bl
-        mov     [eax+CURSOR.hot_x], ecx
-        mov     [eax+CURSOR.hot_y], edx
+        mov     [edi+CURSOR.hot_x], ecx
+        mov     [edi+CURSOR.hot_y], edx
 
         xchg    edi, eax
         mov     ecx, 1024
         cld
         rep movsd
-        jmp     .check_hw
-
+        jmp     .add_cursor
+;------------------------------------------------------------------------------
 align 4
 proc load_cursor stdcall, src:dword, flags:dword
            locals
@@ -381,6 +411,8 @@ proc load_cursor stdcall, src:dword, flags:dword
         test    eax, eax
         jz      .fail
         mov     [src], eax
+;--------------------------------------
+align 4
 @@:
         push    ebx
         push    esi
@@ -397,16 +429,22 @@ proc load_cursor stdcall, src:dword, flags:dword
         cmp     word [flags], LOAD_FROM_FILE
         jne     .exit
         stdcall kernel_free, [src]
+;--------------------------------------
+align 4
 .exit:
         pop     edi
         pop     esi
         pop     ebx
+;--------------------------------------
+align 4
 .fail:
         mov     eax, [handle]
+;--------------------------------------
+align 4
 .fail2:
         ret
 endp
-
+;------------------------------------------------------------------------------
 align 4
 proc delete_cursor stdcall, hcursor:dword
            locals
@@ -433,17 +471,20 @@ proc delete_cursor stdcall, hcursor:dword
         jne     @F
         mov     eax, [def_cursor]
         mov     [ebx+APPDATA.cursor], eax
+;--------------------------------------
+align 4
 @@:
         mov     eax, [hcursor]
         call    [eax+APPOBJ.destroy]
+;--------------------------------------
+align 4
 .fail:
         ret
 endp
-
+;------------------------------------------------------------------------------
+align 4
 ; param
 ;  eax= cursor
-
-align 4
 destroy_cursor:
 
         push    eax
@@ -460,13 +501,13 @@ destroy_cursor:
         pop     eax
         call    destroy_kernel_object
         ret
-
+;------------------------------------------------------------------------------
 align 4
 select_cursor:
         mov     eax, [esp+4]
         mov     [_display.cursor], eax
         ret     4
-
+;------------------------------------------------------------------------------
 align 4
 proc restore_24 stdcall, x:dword, y:dword
 
@@ -484,6 +525,8 @@ proc restore_24 stdcall, x:dword, y:dword
         mov     ecx, [cur.w]
         lea     ecx, [ecx+ecx*2]
         push    ecx
+;--------------------------------------
+align 4
 @@:
         mov     edi, ebx
         add     ebx, [BytesPerScanLine]
@@ -496,11 +539,13 @@ proc restore_24 stdcall, x:dword, y:dword
         pop     ecx
         pop     edi
         pop     esi
+;--------------------------------------
+align 4
 .ret:
         pop     ebx
         ret
 endp
-
+;------------------------------------------------------------------------------
 align 4
 proc restore_32 stdcall, x:dword, y:dword
 
@@ -515,6 +560,8 @@ proc restore_32 stdcall, x:dword, y:dword
         push    edi
 
         mov     esi, cur_saved_data
+;--------------------------------------
+align 4
 @@:
         mov     edi, ebx
         add     ebx, [BytesPerScanLine]
@@ -525,12 +572,14 @@ proc restore_32 stdcall, x:dword, y:dword
         jnz     @B
 
         pop     edi
+;--------------------------------------
+align 4
 .ret:
         pop     esi
         pop     ebx
         ret
 endp
-
+;------------------------------------------------------------------------------
 align 4
 proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
            locals
@@ -542,7 +591,7 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         mov     esi, [hcursor]
         mov     ecx, [x]
         mov     eax, [y]
-        mov     ebx, [BytesPerScanLine]
+;        mov     ebx, [BytesPerScanLine]
 
         xor     edx, edx
         sub     ecx, [esi+CURSOR.hot_x]
@@ -568,7 +617,8 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         sub     edx, [y]
         mov     [_dy], edx
 
-        mul     dword [BytesPerScanLine]
+;        mul     dword [BytesPerScanLine]
+        mov     eax, [BPSLine_calc_area+eax*4]
         lea     edx, [LFB_BASE+ecx*3]
         add     edx, eax
         mov     [cur_saved_base], edx
@@ -576,10 +626,14 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         cmp     ebx, [Screen_Max_X]
         jbe     @F
         mov     ebx, [Screen_Max_X]
+;--------------------------------------
+align 4
 @@:
         cmp     edi, [Screen_Max_Y]
         jbe     @F
         mov     edi, [Screen_Max_Y]
+;--------------------------------------
+align 4
 @@:
         mov     [cur.right], ebx
         mov     [cur.bottom], edi
@@ -595,6 +649,8 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
 
         mov     eax, edi
         mov     edi, cur_saved_data
+;--------------------------------------
+align 4
 @@:
         mov     esi, edx
         add     edx, [BytesPerScanLine]
@@ -613,12 +669,16 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         mov     esi, [hcursor]
         mov     esi, [esi+CURSOR.base]
         lea     edx, [esi+eax*4]
+;--------------------------------------
+align 4
 .row:
         mov     ecx, [cur.w]
         mov     esi, edx
         mov     edi, ebx
         add     edx, 32*4
         add     ebx, [BytesPerScanLine]
+;--------------------------------------
+align 4
 .pix:
         lodsd
         test    eax, 0xFF000000
@@ -626,6 +686,8 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         mov     [edi], ax
         shr     eax, 16
         mov     [edi+2], al
+;--------------------------------------
+align 4
 @@:
         add     edi, 3
         dec     ecx
@@ -635,8 +697,7 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         jnz     .row
         ret
 endp
-
-
+;------------------------------------------------------------------------------
 align 4
 proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
            locals
@@ -673,17 +734,22 @@ proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
         sub     edx, [y]
         mov     [_dy], edx
 
-        mul     dword [BytesPerScanLine]
+;        mul     dword [BytesPerScanLine]
+        mov     eax, [BPSLine_calc_area+eax*4]
         lea     edx, [LFB_BASE+eax+ecx*4]
         mov     [cur_saved_base], edx
 
         cmp     ebx, [Screen_Max_X]
         jbe     @F
         mov     ebx, [Screen_Max_X]
+;--------------------------------------
+align 4
 @@:
         cmp     edi, [Screen_Max_Y]
         jbe     @F
         mov     edi, [Screen_Max_Y]
+;--------------------------------------
+align 4
 @@:
         mov     [cur.right], ebx
         mov     [cur.bottom], edi
@@ -699,6 +765,8 @@ proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
 
         mov     eax, edi
         mov     edi, cur_saved_data
+;--------------------------------------
+align 4
 @@:
         mov     esi, edx
         add     edx, [BytesPerScanLine]
@@ -716,17 +784,23 @@ proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
         mov     esi, [hcursor]
         mov     esi, [esi+CURSOR.base]
         lea     edx, [esi+eax*4]
+;--------------------------------------
+align 4
 .row:
         mov     ecx, [cur.w]
         mov     esi, edx
         mov     edi, ebx
         add     edx, 32*4
         add     ebx, [BytesPerScanLine]
+;--------------------------------------
+align 4
 .pix:
         lodsd
         test    eax, 0xFF000000
         jz      @F
         mov     [edi], eax
+;--------------------------------------
+align 4
 @@:
         add     edi, 4
         dec     ecx
@@ -736,16 +810,158 @@ proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
         jnz     .row
         ret
 endp
+;------------------------------------------------------------------------------
+align 4
+check_mouse_area_for_getpixel_new:
+; in:
+; eax = x
+; ebx = y
+; out:
+; ecx = new color
+;--------------------------------------
+; check for Y
+        cmp     bx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      .no_mouse_area
 
+        cmp     bx, [Y_UNDER_sub_CUR_hot_y_add_curh]
+        jae     .no_mouse_area
+;--------------------------------------
+; check for X
+        cmp     ax, [X_UNDER_subtraction_CUR_hot_x]
+        jb      .no_mouse_area
 
+        cmp     ax, [X_UNDER_sub_CUR_hot_x_add_curh]
+        jae     .no_mouse_area
+;--------------------------------------
+        push    eax ebx
+; offset X
+        mov     ecx, [X_UNDER_subtraction_CUR_hot_x]
+        sub     eax, ecx        ; x1
+; offset Y
+        mov     ecx, [Y_UNDER_subtraction_CUR_hot_y]
+        sub     ebx, ecx        ; y1
+;--------------------------------------
+; ebx = offset y
+; eax = offset x
+        imul    ebx, [cur.w]     ;y
+        add     eax, ebx
+        mov     ebx, eax
+        shl     eax, 2
+        cmp     [ScreenBPP], byte 32
+        je      @f
+        sub     eax, ebx
+;--------------------------------------
+align 4
+@@:
+        add     eax, cur_saved_data
+        mov     ecx, [eax]
+        and     ecx, 0xffffff
+        add     ecx, 0xff000000
+        pop     ebx eax
+        ret
+;--------------------------------------
+align 4
+.no_mouse_area:
+        xor     ecx, ecx
+        ret
+;-----------------------------------------------------------------------------
+align 4
+check_mouse_area_for_putpixel_new:
+; in:
+; ecx = x shl 16 + y
+; eax = color
+; out:
+; eax = new color
+;--------------------------------------
+; check for Y
+        cmp     cx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      .no_mouse_area
+
+        cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
+        jae     .no_mouse_area
+
+        rol     ecx, 16
+;--------------------------------------
+; check for X
+        cmp     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      .no_mouse_area
+
+        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
+        jae     .no_mouse_area
+;--------------------------------------
+align 4
+.1:
+        push    eax
+; offset X
+        mov     ax, [X_UNDER_subtraction_CUR_hot_x]
+        sub     cx, ax        ; x1
+        ror     ecx, 16
+; offset Y
+        mov     ax, [Y_UNDER_subtraction_CUR_hot_y]
+        sub     cx, ax        ; y1
+;--------------------------------------
+; ecx = (offset x) shl 16 + (offset y)
+        push    ebx
+        mov     ebx, ecx
+        shr     ebx, 16        ; x
+        and     ecx, 0xffff    ; y
+; ecx = offset y
+; ebx = offset x
+        mov     eax, [esp + 4]
+
+        push    ebx ecx
+        imul    ecx, [cur.w]    ;y
+        add     ecx, ebx
+        mov     ebx, ecx
+        shl     ecx, 2
+        cmp     [ScreenBPP], byte 24
+        je      .24
+        and     eax, 0xFFFFFF
+        mov     [ecx + cur_saved_data], eax   ;store new color  to
+        jmp     @f
+;--------------------------------------
+align 4
+.24:
+        sub     ecx, ebx
+        mov     [ecx + cur_saved_data], ax      ;store new color  to
+        shr     eax, 16
+        mov     [ecx + cur_saved_data + 2], al  ;store new color  to
+;--------------------------------------
+align 4
+@@:
+        pop     ecx ebx
+
+        shl     ecx, 5
+        add     ecx, ebx
+
+        mov     eax, [current_cursor]
+        mov     eax, [eax+CURSOR.base]
+        lea     eax, [eax+ecx*4]
+        mov     eax, [eax]
+
+        pop     ebx
+
+        test    eax, 0xFF000000
+        jz      @f
+
+        pop     ecx
+        ret
+;--------------------------------------
+align 4
+@@:
+        pop     eax
+;--------------------------------------
+align 4
+.no_mouse_area:
+        ret
+;------------------------------------------------------------------------------
 align 4
 get_display:
         mov     eax, _display
         ret
-
+;------------------------------------------------------------------------------
 align 4
 init_display:
-
         xor     eax, eax
         mov     edi, _display
 
@@ -764,6 +980,7 @@ init_display:
 
         test    word [SCR_MODE], 0x4000
         jz      .fail
+;        jmp      .fail
 
         mov     ebx, restore_32
         mov     ecx, move_cursor_32
@@ -775,22 +992,47 @@ init_display:
         mov     ecx, move_cursor_24
         cmp     eax, 24
         jne     .fail
+;--------------------------------------
+align 4
 @@:
         mov     [_display.select_cursor], select_cursor
         mov     [_display.move_cursor], ecx
         mov     [_display.restore_cursor], ebx
+        mov     [_display.check_mouse], check_mouse_area_for_putpixel_new
+        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel_new
 
+        cmp     [PUTPIXEL], dword VGA_putpixel
+        je      @f
+        cmp     [ScreenBPP], byte 32
+        je      .32
+        mov     [PUTPIXEL], dword Vesa20_putpixel24_new
+        jmp     @f
+;--------------------------------------
+align 4
+.32:
+        mov     [PUTPIXEL], dword Vesa20_putpixel32_new
+;--------------------------------------
+align 4
+@@:
+        stdcall load_cursor, clock_arrow, dword LOAD_FROM_MEM
+        mov     [def_cursor_clock], eax
         stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
         mov     [def_cursor], eax
         ret
+;--------------------------------------
+align 4
 .fail:
         xor     eax, eax
         mov     [_display.select_cursor], eax
         mov     [_display.move_cursor], eax
         ret
-
-
+;------------------------------------------------------------------------------
 align 4
 def_arrow:
   file 'arrow.cur'
+;------------------------------------------------------------------------------
+align 4
+clock_arrow:
+  file 'arrow_clock.cur'
+;------------------------------------------------------------------------------
 

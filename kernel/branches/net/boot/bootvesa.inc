@@ -1,11 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision $
 
 struc VBE_VGAInfo {
   .VESASignature          dd ?    ; char
@@ -215,7 +215,7 @@ calc_vmodes_table:
         test    [es:mi.ModeAttributes],10000000b   ;LFB ?
         jz      @f
 
-        cmp     [es:mi.BitsPerPixel], 24	;It show only videomodes to have support 24 and 32 bpp
+        cmp     [es:mi.BitsPerPixel], 24        ;It show only videomodes to have support 24 and 32 bpp
         jb      @f
 
 ;        cmp     [es:mi.BitsPerPixel],16
@@ -240,11 +240,12 @@ calc_vmodes_table:
         mov     ax,[es:mi.ModeAttributes]
         mov     [es:bx+4],ax               ; +4[2] : attributes
 
-        cmp     [s_vesa.ver],'2'
-        jb      .lp1
+        cmp     [s_vesa.ver], '2'
+;        jb      .lp1
+        jb      @f    ; We do not use Vesa 1.2 mode is now
 
-        or      cx,0x4000  ; use LFB
-.lp1:	mov     [es:bx+6],cx               ; +6 : mode number
+        or      cx, 0x4000 ; use LFB
+.lp1:   mov     [es:bx+6],cx               ; +6 : mode number
         movzx   ax,byte [es:mi.BitsPerPixel]
         mov     word [es:bx+8],ax               ; +8 : bits per pixel
         add     bx,size_of_step                 ; size of record 
@@ -379,7 +380,7 @@ check_first_parm:
 
 
 .no_zero:
-	mov	bp,word [number_vm]
+        mov     bp,word [number_vm]
         cmp     bp,word [es:si+6]
         jz      .ok_found_mode
         mov     ax,word [x_save]
@@ -389,7 +390,7 @@ check_first_parm:
         test    ax,ax
         jz     .ok_found_mode
 
-	mov    si,modes_table
+        mov    si,modes_table
 ;        cmp     ax,modes_table
 ;        jb      .zerro           ;check on correct if bellow
 ;        cmp     ax,word [end_cursor]
@@ -415,7 +416,7 @@ check_first_parm:
 @@:
 
         mov     word [home_cursor],ax
-        mov	si,[preboot_graph]
+        mov     si,[preboot_graph]
         mov     word [cursor_pos],si
 
         push    word [es:si]
@@ -441,9 +442,9 @@ check_first_parm:
         je      .exit
         jmp     .loops
 .ok:    xor     ax,ax        
-	ret
-.exit:  or	ax,-1
-	ret
+        ret
+.exit:  or      ax,-1
+        ret
 
 
 ;-----------------------------------------------------------------------------
@@ -542,7 +543,7 @@ draw_vmodes_table:
         mov     bp,long_v_table               ;show rows
 .@@_next_bit:
 ;clear cursor
-	mov	ax,'  '
+        mov     ax,'  '
         mov     word[ds:_r1+21],ax
         mov     word[ds:_r1+50],ax
 
@@ -662,7 +663,7 @@ clear_vmodes_table:
         mov     cx,70
         add     di,20
         dec     bp
-        jns		.loop_start       
+        jns             .loop_start       
         pop     es
         popa
         ret
@@ -678,21 +679,21 @@ set_vmode:
         
 
         mov     ax,word [es:si+0]            ; resolution X
-        mov     bx,word [es:si+2]            ; resolution Y
+        mov     bx, word [es:si+2]           ; resolution Y
 
 
-        mov     word [es:0x900A],ax              ; resolution X
-        mov     word [es:0x900C],bx              ; resolution Y
-        mov     word [es:0x9008],cx              ; number of mode
+        mov     word [es:BOOT_X_RES], ax             ; resolution X
+        mov     word [es:BOOT_Y_RES], bx             ; resolution Y
+        mov     word [es:BOOT_VESA_MODE], cx             ; number of mode
 
-        cmp     cx,0x12
+        cmp     cx, 0x12
         je      .mode0x12_0x13
         cmp     cx,0x13
         je      .mode0x12_0x13
 
 
-        cmp     byte [s_vesa.ver],'2'
-        jb      .vesa12
+;        cmp     byte [s_vesa.ver], '2'
+;        jb      .vesa12
 
 ;  VESA 2 and Vesa 3
 
@@ -701,53 +702,47 @@ set_vmode:
         mov     di,mi;0xa000
         int     0x10
         ; LFB
-        mov     eax,[es:mi.PhysBasePtr];di+0x28]
-        mov     [es:0x9018],eax
+        mov     eax, [es:mi.PhysBasePtr];di+0x28]
+        mov     [es:BOOT_LFB], eax
         ; ---- vbe voodoo
         BytesPerLine equ 0x10
         mov     ax, [es:di+BytesPerLine]
-        mov     [es:0x9001], ax
+        mov     [es:BOOT_PITCH], ax
         ; BPP
-        cmp     [es:mi.BitsPerPixel],16
+        cmp     [es:mi.BitsPerPixel], 16
         jne     .l0
         cmp     [es:mi.GreenMaskSize],5
         jne     .l0
-        mov     [es:mi.BitsPerPixel],15
+        mov     [es:mi.BitsPerPixel], 15
 .l0:
         mov     al, byte [es:di+0x19]
-        mov     [es:0x9000], al
+        mov     [es:BOOT_BPP], al
         jmp     .exit
 
 .mode0x12_0x13:
-        mov     byte [es:0x9000], 32
-        or      dword [es:0x9018], 0xFFFFFFFF; 0x800000
+        mov     byte [es:BOOT_BPP], 32
+        or      dword [es:BOOT_LFB], 0xFFFFFFFF; 0x800000
 
 
 ;  VESA 1.2 PM BANK SWITCH ADDRESS
 
-.vesa12:
-
-
-        mov     ax,0x4f0A
-        xor     bx,bx
-        int     0x10
-        xor     eax,eax
-        xor     ebx,ebx
-        mov     ax,es
-        shl     eax,4
-        mov     bx,di
-        add     eax,ebx
-        movzx   ebx,word[es:di]
-        add     eax,ebx
-        push    0x0000
-        pop     es
-        mov     [es:0x9014],eax
+;.vesa12:
+;        mov     ax, 0x4f0A
+;        xor     bx, bx
+;        int     0x10
+;        xor     eax, eax
+;        xor     ebx, ebx
+;        mov     ax, es
+;        shl     eax, 4
+;        mov     bx, di
+;        add     eax, ebx
+;        movzx   ebx, word[es:di]
+;        add     eax, ebx
+;        push    0x0000
+;        pop     es
+;        mov     [es:0x9014], eax
   .exit:
         ret
-
-
-;        mov     dword[es:0x9018],0x000A0000
-;        ret
 
 ;=============================================================================
 ;=============================================================================

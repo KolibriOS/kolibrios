@@ -1,11 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision $
 
 
 keymap:
@@ -107,7 +107,7 @@ msg_module     db 'in module ',0
 msg_version    db 'incompatible driver version',13,10,0
 msg_www        db 'please visit www.kolibrios.org',13,10,0
 msg_CR         db  13,10,0
-aSis           db 'SIS',0
+aHDA           db 'INTEL_HDA',0
 
 intel_str      db "GenuineIntel",0
 AMD_str        db "AuthenticAMD",0
@@ -156,23 +156,25 @@ dll_list:
  .bk           dd dll_list
  .fd           dd dll_list
 
-MAX_DEFAULT_DLL_ADDR = 0x20000000
-MIN_DEFAULT_DLL_ADDR = 0x10000000
+MAX_DEFAULT_DLL_ADDR = 0x80000000
+MIN_DEFAULT_DLL_ADDR = 0x70000000
 dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 ; supported videomodes
 
 
 ; mike.dld {
-db 0
-dd servetable-0x10000
-draw_line       dd __sys_draw_line
-draw_pointer    dd __sys_draw_pointer
+;db 0
+;dd servetable-0x10000
+;align 4
+;draw_line       dd __sys_draw_line
+;draw_pointer    dd __sys_draw_pointer
 ;//mike.dld, 2006-08-02 [
-;drawbar         dd __sys_drawbar
-drawbar         dd __sys_drawbar.forced
+;;drawbar         dd __sys_drawbar
+;;drawbar         dd __sys_drawbar.forced
+;drawbar         dd vesa20_drawbar
 ;//mike.dld, 2006-08-02 ]
-putpixel        dd __sys_putpixel
+;putpixel        dd __sys_putpixel
 ; } mike.dld
 
 
@@ -292,7 +294,8 @@ endofcode:
 gdte:
 
 align 16
-cur_saved_data    rb 4096
+cur_saved_data:
+                  rb 4096
 fpu_data:
                   rb 512
 
@@ -330,6 +333,7 @@ _WinMapAddress    rd 1
 _WinMapSize       rd 1
 
 def_cursor        rd 1
+def_cursor_clock  rd 1
 current_cursor    rd 1
 hw_cursor         rd 1
 cur_saved_base    rd 1
@@ -393,13 +397,10 @@ windowtypechanged rd 1
 
 hd_entries        rd 1     ;unused ? 0xfe10
 
-;* start code - Mario79
-
 mouse_active          rd 1
 mouse_pause           rd 1
-MouseTickCounter      rd 1
 
-;* end code - Mario79
+redrawmouse_unconditional rd 1
 
 img_background        rd 1
 mem_BACKGROUND        rd 1

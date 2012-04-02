@@ -1,11 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision $
 
 
 align 4
@@ -166,6 +166,7 @@ proc free_page
         ret
 endp
 
+align 4
 proc map_io_mem stdcall, base:dword, size:dword, flags:dword
 
         push    ebx
@@ -357,8 +358,10 @@ proc init_LFB
 
         cmp     dword [LFBAddress], -1
         jne     @f
-        mov     [BOOT_VAR+0x901c], byte 2
-        stdcall alloc_pages, (0x280000 / 4096)
+        mov     [BOOT_VAR+BOOT_MTRR], byte 2
+; max VGA=640*480*4=1228800 bytes
+; + 32*640*4=81920 bytes for mouse pointer
+        stdcall alloc_pages, ((1228800+81920)/4096)
 
         push    eax
         call    alloc_page
@@ -366,14 +369,16 @@ proc init_LFB
         pop     eax
         or      eax, PG_UW
         mov     ebx, LFB_BASE
-        mov     ecx, 0x280000 / 4096
+; max VGA=640*480*4=1228800 bytes
+; + 32*640*4=81920 bytes for mouse pointer
+        mov     ecx, (1228800+81920)/4096
         call    commit_pages
         mov     [LFBAddress], dword LFB_BASE
         ret
 @@:
         test    [SCR_MODE], word 0100000000000000b
         jnz     @f
-        mov     [BOOT_VAR+0x901c], byte 2
+        mov     [BOOT_VAR+BOOT_MTRR], byte 2
         ret
 @@:
         call    init_mtrr
@@ -1303,6 +1308,11 @@ f68:
 @@:
         ret
 
+.26:
+        stdcall user_unmap, ecx, edx, esi
+        mov     [esp+32], eax
+        ret
+
 .fail:
         xor     eax, eax
         mov     [esp+32], eax
@@ -1325,8 +1335,9 @@ f68call:   ; keep this table closer to main code
            dd f68.21   ; load_driver
            dd f68.22   ; shmem_open
            dd f68.23   ; shmem_close
-           dd f68.24
-           dd f68.25
+           dd f68.24   ; set exception handler
+           dd f68.25   ; unmask exception
+           dd f68.26   ; user_unmap
 
 
 align 4
@@ -1353,7 +1364,7 @@ endp
 align 4
 proc init_mtrr
 
-        cmp     [BOOT_VAR+0x901c], byte 2
+        cmp     [BOOT_VAR+BOOT_MTRR], byte 2
         je      .exit
 
         bt      [cpu_caps], CAPS_MTRR
@@ -1541,5 +1552,29 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
         xor     eax, eax
         pop     ebx
 .fail:
+        ret
+endp
+
+
+align 4
+proc print_mem
+        mov     edi, BOOT_VAR + 0x9104
+        mov     ecx, [edi-4]
+        test    ecx, ecx
+        jz      .done
+
+@@:
+        mov     eax, [edi]
+        mov     edx, [edi+4]
+        add     eax, [edi+8]
+        adc     edx, [edi+12]
+
+        DEBUGF  1, "K : E820 %x%x - %x%x type %d\n", \
+                    [edi+4], [edi],\
+                    edx, eax, [edi+16]
+        add     edi, 20
+        dec     ecx
+        jnz     @b
+.done:
         ret
 endp

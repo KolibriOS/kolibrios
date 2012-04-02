@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  VGA.INC                                                     ;;
@@ -11,9 +11,10 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision $
 
-
+;------------------------------------------------------------------------------
+align 4
 paletteVGA:
 
 ;16 colour palette
@@ -24,9 +25,9 @@ paletteVGA:
         mov     ecx, 16
         mov     dx, 0x3c9
         xor     eax, eax
-
-     palvganew:
-
+;--------------------------------------
+align 4
+palvganew:
         mov     al, 0
         test    ah, 4
         jz      palvgalbl1
@@ -34,7 +35,9 @@ paletteVGA:
         test    ah, 8
         jz      palvgalbl1
         add     al, 32
-     palvgalbl1:
+;--------------------------------------
+align 4
+palvgalbl1:
         out     dx, al; red 0,31 or 63
         mov     al, 0
         test    ah, 2
@@ -43,7 +46,9 @@ paletteVGA:
         test    ah, 8
         jz      palvgalbl2
         add     al, 32
-     palvgalbl2:
+;--------------------------------------
+align 4
+palvgalbl2:
         out     dx, al; blue 0,31 or 63
         mov     al, 0
         test    ah, 1
@@ -52,7 +57,9 @@ paletteVGA:
         test    ah, 8
         jz      palvgalbl3
         add     al, 32
-     palvgalbl3:
+;--------------------------------------
+align 4
+palvgalbl3:
         out     dx, al; green 0,31 or 63
         add     ah, 1
         loop    palvganew
@@ -60,59 +67,76 @@ paletteVGA:
 ;       mov    ax, 0005h
 ;       out    dx, ax
         ret
-
+;------------------------------------------------------------------------------
+align 4
 palette320x200:
-
         mov     edx, 0x3c8
         xor     eax, eax
         out     dx, al
         mov     ecx, 256
         mov     edx, 0x3c9
         xor     eax, eax
-
-     palnew:
+;--------------------------------------
+align 4
+palnew:
         mov     al, 0
         test    ah, 64
         jz      pallbl1
         add     al, 21
-     pallbl1:
+;--------------------------------------
+align 4
+pallbl1:
         test    ah, 128
         jz      pallbl2
         add     al, 42
-     pallbl2:
+;--------------------------------------
+align 4
+pallbl2:
         out     dx, al
         mov     al, 0
         test    ah, 8
         jz      pallbl3
         add     al, 8
-     pallbl3:
+;--------------------------------------
+align 4
+pallbl3:
         test    ah, 16
         jz      pallbl4
         add     al, 15
-     pallbl4:
+;--------------------------------------
+align 4
+pallbl4:
         test    ah, 32
         jz      pallbl5
         add     al, 40
-     pallbl5:
+;--------------------------------------
+align 4
+pallbl5:
         out     dx, al
         mov     al, 0
         test    ah, 1
         jz      pallbl6
         add     al, 8
-     pallbl6:
+;--------------------------------------
+align 4
+pallbl6:
         test    ah, 2
         jz      pallbl7
         add     al, 15
-     pallbl7:
+;--------------------------------------
+align 4
+pallbl7:
         test    ah, 4
         jz      pallbl8
         add     al, 40
-     pallbl8:
+;--------------------------------------
+align 4
+pallbl8:
         out     dx, al
         add     ah, 1
         loop    palnew
-
         ret
+;------------------------------------------------------------------------------
 align 4
 uglobal
   novesachecksum dd 0x0
@@ -123,13 +147,12 @@ uglobal
   temp:
      .cx dd 0
 endg
+;------------------------------------------------------------------------------
 align 4
 checkVga_N13:
-
         cmp     [SCR_MODE], dword 0x13
         jne     @f
 
-;      cnvl:
         pushad
         cmp     [EGA_counter], 1
         je      novesal
@@ -137,21 +160,28 @@ checkVga_N13:
         cmp     ecx, [novesachecksum]
         jne     novesal
         popad
-      @@:
+;--------------------------------------
+align 4
+@@:
         ret
-
-      novesal:
+;--------------------------------------
+align 4
+novesal:
         mov     [novesachecksum], ecx
         mov     ecx, 0
         movzx   eax, word [MOUSE_Y]
         cmp     eax, 100
         jge     m13l3
         mov     eax, 100
-      m13l3:
+;--------------------------------------
+align 4
+m13l3:
         cmp     eax, 480-100
         jbe     m13l4
         mov     eax, 480-100
-      m13l4:
+;--------------------------------------
+align 4
+m13l4:
         sub     eax, 100
         imul    eax, 640*4
         add     ecx, eax
@@ -159,11 +189,15 @@ checkVga_N13:
         cmp     eax, 160
         jge     m13l1
         mov     eax, 160
-      m13l1:
+;--------------------------------------
+align 4
+m13l1:
         cmp     eax, 640-160
         jbe     m13l2
         mov     eax, 640-160
-      m13l2:
+;--------------------------------------
+align 4
+m13l2:
         sub     eax, 160
         shl     eax, 2
         add     ecx, eax
@@ -173,7 +207,9 @@ checkVga_N13:
         mov     edx, 200
         mov     ecx, 320
         cld
-     m13pix:
+;--------------------------------------
+align 4
+m13pix:
         lodsd
         test    eax, eax
         jz      .save_pixel
@@ -188,7 +224,9 @@ checkVga_N13:
         and     ebx, (128+64)*256*256; red
         shr     ebx, 8+8
         add     eax, ebx
-     .save_pixel:
+;--------------------------------------
+align 4
+.save_pixel:
         stosb
         loop    m13pix
         mov     ecx, 320
@@ -198,17 +236,18 @@ checkVga_N13:
         mov     [EGA_counter], 0
         popad
         ret
-
+;------------------------------------------------------------------------------
+align 4
 VGA_drawbackground:
 ; draw all
-        cmp     [SCR_MODE], dword 0x12
-        jne     .end
         pushad
         mov     esi, [LFBAddress]
         mov     edi, VGABasePtr
         mov     ebx, 640/32; 640*480/(8*4)
         mov     edx, 480
-     @@:
+;--------------------------------------
+align 4
+@@:
         push    ebx edx esi edi
         shl     edx, 9
         lea     edx, [edx+edx*4]
@@ -221,9 +260,9 @@ VGA_drawbackground:
         jnz     @r
         call    VGA_draw_long_line_1
         popad
-    .end:
         ret
-
+;------------------------------------------------------------------------------
+align 4
 VGA_draw_long_line:
         mov     dx, 3ceh
         mov     ax, 0ff08h
@@ -231,7 +270,9 @@ VGA_draw_long_line:
         out     dx, ax
         mov     ax, 0005h
         out     dx, ax
-    m12pix:
+;--------------------------------------
+align 4
+m12pix:
         call    VGA_draw_32_pixels
         dec     ebx
         jnz     m12pix
@@ -246,7 +287,8 @@ VGA_draw_long_line:
         out     dx, al
         sti
         ret
-
+;------------------------------------------------------------------------------
+align 4
 VGA_draw_32_pixels:
         xor     eax, eax
         mov     ebp, VGA_8_pixels
@@ -255,9 +297,13 @@ VGA_draw_32_pixels:
         mov     [ebp+8], eax
         mov     [ebp+12], eax
         mov     ch, 4
-    .main_loop:
+;--------------------------------------
+align 4
+.main_loop:
         mov     cl, 8
-    .convert_pixels_to_VGA:
+;--------------------------------------
+align 4
+.convert_pixels_to_VGA:
         lodsd   ; eax = 24bit colour
         test    eax, eax
         jz      .end
@@ -273,14 +319,18 @@ VGA_draw_32_pixels:
         cmp     al, 170
         jbe     .p13green
         or      [ebp+12], ch
-    .p13green:
+;--------------------------------------
+align 4
+.p13green:
         cmp     ah, 85
         jbe     .p13red
         or      [ebp+4], ch
         cmp     ah, 170
         jbe     .p13red
         or      [ebp+12], ch
-    .p13red:
+;--------------------------------------
+align 4
+.p13red:
         shr     eax, 8
         cmp     ah, 85
         jbe     .p13cont
@@ -288,11 +338,15 @@ VGA_draw_32_pixels:
         cmp     ah, 170
         jbe     .p13cont
         or      [ebp+12], ch
-    .p13cont:
+;--------------------------------------
+align 4
+.p13cont:
         ror     eax, 8
         mov     ch, ah
         inc     cl
-    .end:
+;--------------------------------------
+align 4
+.end:
         dec     cl
         jnz     .convert_pixels_to_VGA
         inc     ebp
@@ -303,7 +357,9 @@ VGA_draw_32_pixels:
         mov     esi, ebp
         mov     dx, 3c4h
         mov     ah, 1h
-    @@:
+;--------------------------------------
+align 4
+@@:
         mov     al, 02h
         out     dx, ax
         xchg    ax, bp
@@ -316,12 +372,36 @@ VGA_draw_32_pixels:
         add     edi, 4
         pop     esi
         ret
-
+;------------------------------------------------------------------------------
+align 4
 VGA_putpixel:
  ; eax = x
  ; ebx = y
         mov     ecx, eax
         mov     eax, [esp+32-8+4] ; color
+;--------------------------------------
+; check for hardware cursor
+        cmp     [_display.select_cursor], select_cursor
+        je      @f
+        cmp     [_display.select_cursor], 0
+        jne     .no_mouseunder
+;--------------------------------------
+align 4
+@@:
+        push    ecx
+        shl     ecx, 16
+        mov     cx, bx
+; check mouse area for putpixel
+        test    eax, 0x04000000
+        jnz     @f
+        call    [_display.check_mouse]
+;--------------------------------------
+align 4
+@@:
+        pop     ecx
+;--------------------------------------
+align 4
+.no_mouseunder:
         shl     ebx, 9
         lea     ebx, [ebx+ebx*4]   ; умножение на 5
         lea     edx, [ebx+ecx*4]  ; + x*BytesPerPixel (Vesa2.0 32)
@@ -343,6 +423,8 @@ VGA_putpixel:
         cmp     al, 170
         jbe     .p13green
         or      dl, 0x08
+;--------------------------------------
+align 4
 .p13green:
         cmp     ah, 85
         jbe     .p13red
@@ -350,6 +432,8 @@ VGA_putpixel:
         cmp     ah, 170
         jbe     .p13red
         or      dl, 0x08
+;--------------------------------------
+align 4
 .p13red:
         shr     eax, 8
         cmp     ah, 85
@@ -358,6 +442,8 @@ VGA_putpixel:
         cmp     ah, 170
         jbe     .p13cont
         or      dl, 0x08
+;--------------------------------------
+align 4
 .p13cont:
         ror     edx, 8
         inc     cl
@@ -371,14 +457,12 @@ VGA_putpixel:
         rol     edx, 8
         mov     [edi], dl
         popfd
-;.end:
         ret
-
+;------------------------------------------------------------------------------
+align 4
 VGA__putimage:
 ; ecx = size [x|y]
 ; edx = coordinates [x|y]
-        cmp     [SCR_MODE], dword 0x12
-        jne     @f
         pushad
         rol     edx, 16
         movzx   eax, dx
@@ -389,16 +473,14 @@ VGA__putimage:
         movzx   ecx, cx
         call    VGA_draw_bar_1
         popad
-@@:
         ret
-
+;------------------------------------------------------------------------------
+align 4
 VGA_draw_bar:
 ; eax   cx
 ; ebx   cy
 ; ecx   xe
 ; edx   ye
-        cmp     [SCR_MODE], dword 0x12
-        jne     @f
         pushad
         sub     ecx, eax
         sub     edx, ebx
@@ -408,9 +490,9 @@ VGA_draw_bar:
         and     edx, 0xffff
         call    VGA_draw_bar_1
         popad
-@@:
         ret
-
+;------------------------------------------------------------------------------
+align 4
 VGA_draw_bar_1:
         mov     [temp.cx], eax
         mov     eax, [TASK_BASE]
@@ -429,13 +511,16 @@ VGA_draw_bar_1:
         mov     ebx, ecx
         shr     ebx, 5
         inc     ebx
+;--------------------------------------
+align 4
 .main_loop:
         call    VGA_draw_long_line_1
         dec     edx
         jnz     .main_loop
         call    VGA_draw_long_line_1
         ret
-
+;------------------------------------------------------------------------------
+align 4
 VGA_draw_long_line_1:
         push    ebx edx esi edi
         shl     edx, 9
@@ -446,5 +531,4 @@ VGA_draw_long_line_1:
         call    VGA_draw_long_line
         pop     edi esi edx ebx
         ret
-
-
+;------------------------------------------------------------------------------

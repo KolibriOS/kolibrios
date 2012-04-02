@@ -1,11 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision $
 
 ; Old style system call converter
 align 16
@@ -145,7 +145,7 @@ iglobal
       dd sys_settime             ; 22-setting date,time,clock and alarm-clock
       dd sys_wait_event_timeout  ; 23-TimeOutWaitForEvent
       dd syscall_cdaudio         ; 24-PlayCdTrack,StopCd and GetCdPlaylist
-      dd undefined_syscall       ; 25-reserved
+      dd syscall_putarea_backgr  ; 25-Put Area to background
       dd sys_getsetup            ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
       dd undefined_syscall       ; 27-reserved
       dd undefined_syscall       ; 28-reserved
@@ -154,7 +154,7 @@ iglobal
       dd undefined_syscall       ; 31-reserved
       dd undefined_syscall       ; 32-reserved
       dd undefined_syscall       ; 33-reserved
-      dd undefined_syscall       ; 34-reserved
+      dd syscall_getpixel_WinMap ; 34-GetPixel WinMap
       dd syscall_getpixel        ; 35-GetPixel
       dd syscall_getarea         ; 36-GetArea
       dd readmousepos            ; 37-GetMousePosition_ScreenRelative,.

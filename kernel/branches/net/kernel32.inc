@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;; KERNEL32.INC                                                 ;;
@@ -13,7 +13,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision $
 
 struct  POINT
         x       dd ?
@@ -125,7 +125,8 @@ struct  APPDATA
         wait_param      dd ?            ;+100  +++
         tls_base        dd ?            ;+104
         dlls_list_ptr   dd ?            ;+108
-                        rb 16           ;+112
+        event_filter    dd ?            ;+112
+                        rb 12           ;+116
 
         wnd_shape       dd ?            ;+128
         wnd_shape_scale dd ?            ;+132
@@ -194,7 +195,7 @@ include "sound/playnote.inc" ; player Note for Speaker PC
 
 ; display
 
-include "video/vesa12.inc"   ; Vesa 1.2 functions
+;include "video/vesa12.inc"   ; Vesa 1.2 functions
 include "video/vesa20.inc"   ; Vesa 2.0 functions
 include "video/blitter.inc"  ;
 include "video/vga.inc"      ; VGA 16 color functions

@@ -1,11 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision $
 
 
 struct  MEM_BLOCK
@@ -578,7 +578,7 @@ restore block_flags
 
 ;;;;;;;;;;;;;;      USER     ;;;;;;;;;;;;;;;;;
 
-HEAP_TOP  equ 0x5FC00000
+HEAP_TOP  equ 0x80000000
 
 align 4
 proc init_heap
@@ -848,6 +848,71 @@ proc user_free stdcall, base:dword
         ret
 endp
 
+
+align 4
+proc user_unmap stdcall, base:dword, offset:dword, size:dword
+
+        push    ebx
+
+        mov     ebx, [base]             ; must be valid pointer
+        test    ebx, ebx
+        jz      .error
+
+        mov     edx, [offset]           ; check offset
+        add     edx, ebx                ; must be below 2Gb app limit
+        js      .error
+
+        shr     ebx, 12                 ; chek block attributes
+        lea     ebx, [page_tabs+ebx*4]
+        mov     eax, [ebx-4]            ; block attributes
+        test    al, USED_BLOCK
+        jz      .error
+        test    al, DONT_FREE_BLOCK
+        jnz     .error
+
+        shr     edx, 12
+        lea     edx, [page_tabs+edx*4]  ; unmap offset
+
+        mov     ecx, [size]
+        add     ecx, 4095
+        shr     ecx, 12                 ; unmap size in pages
+
+        shr     eax, 12                 ; block size + 1 page
+        lea     ebx, [ebx+eax*4-4]      ; block end ptr
+        lea     eax, [edx+ecx*4]        ; unmap end ptr
+
+        cmp     eax, ebx                ; check for overflow
+        ja      .error
+
+        mov     ebx, [offset]
+        and     ebx, not 4095           ; is it required ?
+
+.unmap:
+        mov     eax, [edx]              ; get page addres
+        test    al, 1                   ; page mapped ?
+        jz      @F
+        test    eax, PG_SHARED          ; page shared ?
+        jnz     @F
+        mov     [page_tabs+edx*4], dword 2
+                                        ; mark page as reserved
+        invlpg  [ebx]                   ; when we start using
+        call    free_page               ; empty c-o-w page instead this ?
+@@:
+        add     ebx, 4096
+        add     edx, 4
+        dec     ecx
+        jnz     .unmap
+
+        pop     ebx
+        or      al, 1                   ; return non zero on success
+        ret
+.error:
+        pop     ebx
+        xor     eax, eax                ; something wrong
+        ret
+endp
+
+align 4
 user_normalize:
 ; in: esi=heap_base, edi=heap_top
 ; out: eax=0 <=> OK

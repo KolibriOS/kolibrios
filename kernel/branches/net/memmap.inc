@@ -1,3 +1,9 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ;   MEMORY MAP
 ;
@@ -131,7 +137,7 @@
 ;   FF00  byte        1 = system shutdown request
 ;   FF01  byte        task activation request?
 ;   FFF0  byte        >0 if redraw background request from app
-;   FFF1  byte        >0 if background changed
+;   FFF1  byte        free
 ;   FFF2              write and read bank in screen
 ;   FFF4  byte        0 if first mouse draw & do not return picture under
 ;   FFF5  byte        1 do not draw pointer
@@ -198,15 +204,18 @@
 ; 0x80284000 -> 28BFFF   HDD DMA AREA   (32k)
 ; 0x8028C000 -> 297FFF   free (48k)
 ;
-; 0x80298000 -> 29ffff   auxiliary table for background smoothing code (32k)
+; 0x80298000 -> 29FFFF   auxiliary table for background smoothing code (32k)
 ;
-; 0x802A0000 -> 2B00ff   wav device buffer (64k)
-; 0x802A0000 -> 2B00ff   wav device status (256)
-; 0x802B0100 -> 2Bffff   free (63k8)
-; 0x802C0000 -> 2C3fff   button info (8k)
+; 0x802A0000 -> 2B00FF   wav device buffer (64k)
+; 0x802A0000 -> 2B00FF   wav device status (256)
 ;
-;       0000 word    number of buttons
-;        first button entry at 0x10
+; 0x802B0100 -> 2B3FFD   free (15k7)
+;
+; 0x802B3FEE -> 2B3FEF   button info (64K+ 16 + 2 byte)
+;     2B3FEE   0000 word    number of buttons
+;     2B3FF0    first button entry
+;      
+;        button entry at 0x10
 ;       +0000 word   process number
 ;       +0002 word   button id number : bits 00-15
 ;       +0004 word   x start
@@ -215,7 +224,10 @@
 ;       +000A word   y size
 ;       +000C word   button id number : bits 16-31
 ;
-; 0x802C4000 -> 2CFFFF   free (48k)
+; 0x802C4000 -> 2C9FFF   area for fast getting offset to LFB (24k)
+;                        BPSLine_calc_area
+; 0x802CA000 -> 2CFFFF   area for fast getting offset to _WinMapAddress (24k)
+;                        d_width_calc_area
 ;
 ; 0x802D0000 -> 2DFFFF   reserved port area (64k)
 ;
@@ -225,25 +237,29 @@
 ;            dword   end port
 ;            dword   0
 ;
-; 0x802E0000 -> 2EFFFF   irq data area  (64k)
-; 0x802F0000 -> 2FFFFF   low memory save        (64k)
+; 0x802E0000 -> 2EFFFF   irq data area  (64k)  ;BOOT_VAR
 ;
-; 0x80300000 -> 31FFFF   tcp memory       (128k)
-; 0x80320000 -> 327FFF   tcp memory       (32k)
+; 0x802F0000 -> 2F3FFF   tcp memory  stack_data_start eth_data_start (16k)
 ;
-; 0x80328000 -> 32FFFF   !vrr driver      (32k)
-
-; 0x80330000 -> 377FFF   skin data              (32k)
-
-; 0x80338000 -> 338FFF draw data     - 256 entries (4k)
+; 0x802F4000 -> 30ffff   stack_data | stack_data_end (112k)
+;
+; 0x80310000 -> 317fff   resendQ (32k)
+;
+; 0x80318000 -> 31ffff   skin_data (32k)
+;
+; 0x80320000 -> 323FF3   draw data     - 256 entries (4k)
 ;         00   dword  draw limit - x start
 ;         04   dword  draw limit - y start
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
-; 0x80339000 -> 3BFFF3   free (12k)
-; 0x8033BFF4 -> 33BFFF   background info 
-; 0x8033C000             page map     (length b = memsize shr 15)
-; 0x8033C000 + b         start of static pagetables
+;
+; 0x8032BFF4 -> 32BFFF   background info 
+;         0x80323FF4    BgrDrawMode
+;         0x80323FF8    BgrDataWidth
+;         0x80323FFC    BgrDataHeight
+;
+; 0x80324000             page map     (length b = memsize shr 15)
+; 0x80324000 + b         start of static pagetables
 
 ; 0x803FFFFF <- no direct address translation beyond this point
 ; ============================================================= 

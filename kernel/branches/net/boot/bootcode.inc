@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2011. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
@@ -11,7 +11,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+$Revision $
 
 
 ;==========================================================================
@@ -274,7 +274,7 @@ sayerr:
 
         push    0
         pop     es
-        and     word [es:0x9031], 0
+        and     word [es:BOOT_IDE_BASE_ADDR], 0
 ; \begin{Mario79}
 ; find HDD IDE DMA PCI device
 ; check for PCI BIOS
@@ -311,7 +311,7 @@ sayerr:
         int     0x1A
         jc      .nopci
         and     cx, 0xFFF0      ; clear address decode type
-        mov     [es:0x9031], cx
+        mov     [es:BOOT_IDE_BASE_ADDR], cx
 .nopci:
 ; \end{Mario79}
 
@@ -343,15 +343,15 @@ wait_loop:       ; variant 2
         loopnz  @b
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; --------------- APM ---------------------
-        and     word [es:0x9044], 0     ; ver = 0.0 (APM not found)
+        and     word [es:BOOT_APM_VERSION], 0     ; ver = 0.0 (APM not found)
         mov     ax, 0x5300
         xor     bx, bx
         int     0x15
         jc      apm_end                 ; APM not found
         test    cx, 2
         jz      apm_end                 ; APM 32-bit protected-mode interface not supported
-        mov     [es:0x9044], ax         ; Save APM Version
-        mov     [es:0x9046], cx         ; Save APM flags
+        mov     [es:BOOT_APM_VERSION], ax         ; Save APM Version
+        mov     [es:BOOT_APM_FLAGS], cx           ; Save APM flags
 
         ; Write APM ver ----
         and     ax, 0xf0f
@@ -370,10 +370,10 @@ wait_loop:       ; variant 2
         xor     bx, bx
         int     0x15
 
-        mov     [es:0x9040], ebx
-        mov     [es:0x9050], ax
-        mov     [es:0x9052], cx
-        mov     [es:0x9054], dx
+        mov     [es:BOOT_APM_ENTRY], ebx
+        mov     [es:BOOT_APM_CODE_32], ax
+        mov     [es:BOOT_APM_CODE_16], cx
+        mov     [es:BOOT_APM_DATA_16], dx
 
 apm_end:
         _setcursor d80x25_top_num, 0
@@ -1151,7 +1151,7 @@ no_sys_on_floppy:
         xor     ax, ax
         mov     es, ax
 
-        mov     ax, [es:0x9008]         ; vga & 320x200
+        mov     ax, [es:BOOT_VESA_MODE]         ; vga & 320x200
         mov     bx, ax
         cmp     ax, 0x13
         je      setgr
