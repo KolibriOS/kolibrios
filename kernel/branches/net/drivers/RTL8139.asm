@@ -294,8 +294,7 @@ proc service_proc stdcall, ioctl:dword
         test    ecx, ecx
         jz      .firstdevice
 
-;        mov     eax, [IOCTL.input]                      ; get the pci bus and device numbers
-        mov     ax , [eax+1]                            ;
+        mov     ax , [eax+1]                            ; get the pci bus and device numbers
   .nextdevice:
         mov     ebx, [esi]
         cmp     ax , word [device.pci_bus]              ; compare with pci and device num in device list (notice the usage of word instead of byte)

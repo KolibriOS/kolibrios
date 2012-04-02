@@ -199,7 +199,7 @@ proc service_proc stdcall, ioctl:dword
         mov     [eax], dword API_VERSION
 
         xor     eax, eax
-        ret     4
+        ret
 
 ;------------------------------------------------------
   @@:                  ;---------
@@ -231,8 +231,7 @@ proc service_proc stdcall, ioctl:dword
         test    ecx, ecx
         jz      .firstdevice_pci
 
-;        mov     eax, [IOCTL.input]                      ; get the pci bus and device numbers
-        mov     ax , [eax+1]                            ;
+        mov     ax , [eax+1]                            ; get the pci bus and device numbers
   .nextdevice:
         mov     ebx, [esi]
         cmp     ax , word [device.pci_bus]              ; compare with pci and device num in device list (notice the usage of word instead of byte)
@@ -306,14 +305,13 @@ proc service_proc stdcall, ioctl:dword
 
         cmp     eax, -1
         jz      .err
-        ret     4
+        ret
 
 
 ; If the device was already loaded, find the device number and return it in eax
 
   .find_devicenum:
         DEBUGF  1,"Trying to find device number of already registered device\n"
-        mov     ebx, eax
         call    NetPtrToNum                                             ; This kernel procedure converts a pointer to device struct in ebx
                                                                         ; into a device number in edi
         mov     eax, edi                                                ; Application wants it in eax instead
@@ -330,7 +328,7 @@ proc service_proc stdcall, ioctl:dword
   @@:
 .fail:
         or      eax, -1
-        ret     4
+        ret
 
 ;------------------------------------------------------
 endp
@@ -661,6 +659,7 @@ nsr_002:
         mov     [device.mtu], 1514
 
 ; Indicate that we have successfully reset the card
+        xor     eax, eax
         DEBUGF  2,"Done!\n"
 
         ret

@@ -491,7 +491,6 @@ proc service_proc stdcall, ioctl:dword
 
   .find_devicenum:
         DEBUGF  1,"Trying to find device number of already registered device\n"
-        mov     ebx, eax
         call    NetPtrToNum                                             ; This kernel procedure converts a pointer to device struct in ebx
                                                                         ; into a device number in edi
         mov     eax, edi                                                ; Application wants it in eax instead

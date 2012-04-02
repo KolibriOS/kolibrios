@@ -214,7 +214,6 @@ service_proc:
 ; 5. If the device was already loaded, find the device number and return it in eax
 
   .find_devicenum:
-        mov     ebx, eax
         call    NetPtrToNum                                             ; This kernel procedure converts a pointer to device struct in ebx
                                                                         ; into a device number in edi
         mov     eax, edi                                                ; Application wants it in eax instead
