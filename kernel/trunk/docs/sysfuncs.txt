@@ -630,6 +630,22 @@ Remarks:
              5 = kernel finished redrawing of the desktop background
 
 ======================================================================
+===================== Function 15, subfunction 9 =====================
+============= Redraws a rectangular part of the background ===========
+======================================================================
+Parameters:
+  * eax = 15 - function number
+  * ebx = 9 - subfunction number
+  * ecx = [left]*65536 + [right]
+  * edx = [top]*65536 + [bottom]
+Returned value:
+  * function does not return value
+Remarks:
+  * (left,top) are coordinates of the left upper corner,
+    (right,bottom) are coordinates of the right lower one.
+  * If parameters are set incorrectly then background is not redrawn.
+
+======================================================================
 =============== Function 16 - save ramdisk on a floppy. ==============
 ======================================================================
 Parameters:

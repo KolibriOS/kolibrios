@@ -2425,10 +2425,9 @@ sys_background:
         cmp     ebx, 1                     ; BACKGROUND SIZE
         jnz     nosb1
         test    ecx, ecx
-;    cmp   ecx,0
         jz      sbgrr
+
         test    edx, edx
-;    cmp   edx,0
         jz      sbgrr
 ;--------------------------------------
 align 4
@@ -2698,6 +2697,49 @@ nosb7:
 ;------------------------------------------------------------------------------
 align 4
 nosb8:
+        cmp     ebx, 9
+        jnz     nosb9
+; ecx = [left]*65536 + [right]
+; edx = [top]*65536 + [bottom]
+        mov     eax, [Screen_Max_X]
+        mov     ebx, [Screen_Max_Y]
+; check [right]
+        cmp     cx, ax
+        ja      .exit
+; check [left]
+        ror     ecx, 16
+        cmp     cx, ax
+        ja      .exit
+; check [bottom]
+        cmp     dx, bx
+        ja      .exit
+; check [top]
+        ror     edx, 16
+        cmp     dx, bx
+        ja      .exit
+
+        movzx   eax, cx  ; [left]
+        movzx   ebx, dx  ; [top]
+
+        shr     ecx, 16 ; [right]
+        shr     edx, 16 ; [bottom]
+
+        mov     [background_defined], 1
+
+        mov     [draw_data+32 + RECT.left], eax
+        mov     [draw_data+32 + RECT.top], ebx
+
+        mov     [draw_data+32 + RECT.right], ecx
+        mov     [draw_data+32 + RECT.bottom], edx
+
+        inc     byte[REDRAW_BACKGROUND]
+;--------------------------------------
+align 4
+.exit:
+        ret
+;------------------------------------------------------------------------------
+align 4
+nosb9:
         ret
 ;------------------------------------------------------------------------------
 align 4
