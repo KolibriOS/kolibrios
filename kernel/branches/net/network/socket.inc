@@ -670,7 +670,7 @@ SOCKET_close:
         cmp     [eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED    ; state must be LISTEN, SYN_SENT or CLOSED
         jb      .free
 
-        call    TCP_output
+        call    TCP_drop
         mov     dword [esp+32], 0
 
         ret

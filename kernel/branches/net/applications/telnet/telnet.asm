@@ -153,7 +153,6 @@ mainloop:
 
         cmp     byte [esi], 0x1b        ; escape character
         jne     .print_byte
-        mov     byte [esi], 0
         inc     esi
 
         cmp     word [esi], 0x485b      ; move cursor to beginning
@@ -169,6 +168,7 @@ mainloop:
         jmp     .print_loop
 
   @@:
+        inc     esi
         inc     esi
         jmp     .print_loop
 
