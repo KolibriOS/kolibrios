@@ -187,8 +187,6 @@ TCP_input:
         pop     [eax + TCP_SOCKET.LocalPort]
 
         mov     [eax + TCP_SOCKET.t_state], TCPS_LISTEN
-
-;        mov     [ebx + SOCKET.lock], 0
         mov     ebx, eax
 
         jmp     .LISTEN
@@ -462,7 +460,7 @@ TCP_input:
 ; Passive Open
 
 align 4
-.LISTEN:
+  .LISTEN:
 
         DEBUGF  1,"TCP state: listen\n"
 
@@ -477,7 +475,7 @@ align 4
 
 ;;; TODO: check if it's a broadcast or multicast, and drop if so
 
-        push    dword [edi + 4]                         ; Ipv4 destination addres
+        push    dword [edi]                             ; Ipv4 source addres
         pop     [ebx + IP_SOCKET.RemoteIP]
 
         push    [edx + TCP_header.SourcePort]

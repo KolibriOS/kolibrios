@@ -424,7 +424,7 @@ TCP_output:
         mov     eax, [eax + IP_SOCKET.RemoteIP] ; dest ip
         mov     di, IP_PROTO_TCP shl 8 + 128
         call    IPv4_output
-        jz      .fail
+        jz      .ip_error
 
 ;-----------------------------------------
 ; Move TCP header from stack to TCP packet
@@ -527,7 +527,7 @@ TCP_output:
         ret
 
 
-  .fail:
+  .ip_error:
         pop     ecx
         add     esp, ecx
         pop     eax
@@ -538,7 +538,7 @@ TCP_output:
         call    mutex_unlock
         popa
 
-        DEBUGF 1,"TCP_output: failed\n"
+        DEBUGF 1,"TCP_output: IP error\n"
         ret
 
 

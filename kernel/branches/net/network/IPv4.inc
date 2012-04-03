@@ -621,7 +621,7 @@ IPv4_output:
         add     ecx, sizeof.IPv4_header
         mov     di , ETHER_IPv4
         call    ETH_output
-        jz      .error
+        jz      .eth_error
 
         add     esp, 6  ; pop the mac
 
@@ -644,12 +644,20 @@ IPv4_output:
         DEBUGF  1,"IPv4 Packet for device %x created successfully\n", ebx
         ret
 
-  .error:
-        add     esp, 6
+  .eth_error:
+        DEBUGF  1,"IPv4_output: ethernet error\n"
+        add     esp, 6+2+4
+        sub     edi, edi
+        ret
+
   .arp_error:
+        DEBUGF  1,"IPv4_output: ARP error (0x%x)\n", eax
         add     esp, 4+4+4+2+2
+        sub     edi, edi
+        ret
+
   .too_large:
-        DEBUGF  1,"IPv4_output: Failed\n"
+        DEBUGF  1,"IPv4_output: error: Packet too large!\n"
         sub     edi, edi
         ret
 

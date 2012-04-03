@@ -162,7 +162,7 @@ local   .exit
 align 4
 ARP_input:
 
-        DEBUGF  1,"ARP_Handler - start\n"
+        DEBUGF  1,"ARP_input - start\n"
         cmp     ecx, sizeof.ARP_header
         jb      .exit
 
@@ -172,7 +172,7 @@ ARP_input:
         cmp     [edx + ARP_header.Opcode], ARP_REP_OPCODE
         jne     .maybe_request
 
-        DEBUGF  1,"ARP_Handler - it's a reply packet from %u.%u.%u.%u\n",\
+        DEBUGF  1,"ARP_input - it's a reply packet from %u.%u.%u.%u\n",\
         [edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP+1]:1, [edx + ARP_header.SenderIP+2]:1, [edx + ARP_header.SenderIP+3]:1
 
         mov     ecx, [NumARP]
@@ -192,12 +192,12 @@ ARP_input:
         jmp     .exit
 
   .gotit:
-        DEBUGF  1,"ARP_Handler - found matching entry\n"
+        DEBUGF  1,"ARP_input - found matching entry\n"
 
         cmp     [esi + ARP_entry.TTL], ARP_STATIC_ENTRY         ; if it is a static entry, dont touch it
         je      .exit
 
-        DEBUGF  1,"ARP_Handler - updating entry\n"
+        DEBUGF  1,"ARP_input - updating entry\n"
 
         mov     [esi + ARP_entry.Status], ARP_VALID_MAPPING
         mov     [esi + ARP_entry.TTL], ARP_ENTRY_TTL
@@ -262,7 +262,7 @@ ARP_input:
 ;        mov     ax , ETHER_ARP
 ;        stosw
 
-        DEBUGF  1,"ARP_Handler - Sending reply \n"
+        DEBUGF  1,"ARP_input - Sending reply \n"
 
         call    [ebx + NET_DEVICE.transmit]
         ret
@@ -271,7 +271,7 @@ ARP_input:
         call    kernel_free
         add     esp, 4                                          ; pop (balance stack)
 
-        DEBUGF  1,"ARP_Handler - exiting\n"
+        DEBUGF  1,"ARP_input - exiting\n"
         ret
 
 
@@ -447,7 +447,10 @@ ARP_del_entry:
 align 4
 ARP_IP_to_MAC:
 
-        DEBUGF 1,"ARP_IP_to_MAC\n"
+        DEBUGF 1,"ARP_IP_to_MAC: %u.%u", al, ah
+        rol     eax, 16
+        DEBUGF 1,".%u.%u\n", al, ah
+        rol     eax, 16
 
         cmp     eax, 0xffffffff
         je      .broadcast
