@@ -712,7 +712,7 @@ text1_strings = 6
 	db 'SAVE YOUR SETTINGS BEFORE QUITING KOLIBRI       SAVE ALL   '
 text2_strings = 2
 ;-------------------------------------------------------------------------------
-title	db 'SETUP',0
+title	db 'System setup',0
 
 hex	db '0123456789ABCDEF'
 ;-------------------------------------------------------------------------------
