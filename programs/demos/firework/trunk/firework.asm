@@ -42,7 +42,7 @@ x = 100
 y = 70
 xsize = SCREEN_WIDTH+9
 ysize = SCREEN_HEIGHT+4
-areacolor = 0x14224466
+areacolor = 0x54224466
 caption = labelt
 	mov	eax, 12 		; function 12:tell os about windowdraw
 	mov	ebx, 1			; 1, start of draw
