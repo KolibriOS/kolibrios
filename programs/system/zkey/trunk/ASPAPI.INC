@@ -1,25 +1,17 @@
 include 'proc32.inc'
 
-macro start_draw_window x,y,xsize,ysize,areacolor,caption,capsize
+macro start_draw_window x,y,xsize,ysize,areacolor,caption
 {
 	;pusha
 	mov	eax, 12 		; function 12:tell os about windowdraw
 	mov	ebx, 1			; 1, start of draw
 	int	0x40
 	; DRAW WINDOW
-	mov	eax, 0			; function 0 : define and draw window
-	mov	ebx, x*65536+xsize	; [x start] *65536 + [x size]
-	mov	ecx, y*65536+ysize	; [y start] *65536 + [y size]
+	mov	eax, 0			     ; function 0 : define and draw window
+	mov	ebx, x*65536+xsize	 ; [x start] *65536 + [x size]
+	mov	ecx, y*65536+ysize	 ; [y start] *65536 + [y size]
 	mov	edx, areacolor		 ; color of work area RRGGBB
-	mov	esi, 0x00334455 	 ; color of grab bar  RRGGBB
-	mov	edi, 0x00ddeeff 	 ; color of frames    RRGGBB
-	int	0x40
-	; WINDOW LABEL
-	mov	eax, 4			; function 4 : write text to window
-	mov	ebx, 8*65536+8		; [x start] *65536 + [y start]
-	mov	ecx, 0x00ffffff 	; color of text RRGGBB
-	mov	edx, caption		; pointer to text beginning
-	mov	esi, capsize	; text length
+	mov	edi, caption         ; color of frames    RRGGBB
 	int	0x40
 	;popa
 }

@@ -1,5 +1,5 @@
 ;
-;   ZKEY. Version 0.5.
+;   ZKEY. Version 0.51.
 ;   Virtual keyboard for KolibriOS.
 ;
 ;   Author:         Asper
@@ -39,7 +39,7 @@ draw_window:
   jnz	 @f
   test	 byte [red_type], 2
   jnz	 .draw_switch_button
-  start_draw_window 100,370,600,210,0x04224466,labelt, 35;labellen-labelt
+  start_draw_window 100,370,600,210,0x14224466,labelt
 
   stdcall draw_button, 15,50,23,20,2,N_KEYCOLOR,keyText,3,TEXTCOLOR		; Esc
 
@@ -406,8 +406,7 @@ ret
 ; DATA AREA
 
 ; Application Title
-labelt		db	'ZKEY v.0.5 - keyboard for KolibriOS'
-labellen:
+labelt db 'ZKEY v0.51 - keyboard for KolibriOS', 0
 
 SwitchText db ' ASCII SCAN '
 
