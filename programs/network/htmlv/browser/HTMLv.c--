@@ -14,7 +14,7 @@
 #include "..\lib\dll.h--"
 
 //переменные
-char URL[4096]="/sys/index.htm",
+char URL[4096],
 	editURL[4096],
 	page_links[12000],
 	header[512];
@@ -53,6 +53,8 @@ void main()
     //] Asper
 	
 	IF (param) copystr(#param,#URL);
+	ELSE copystr("/sys/index.htm",#URL);
+
 	copystr(#URL,#editURL);
 	
 	if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
