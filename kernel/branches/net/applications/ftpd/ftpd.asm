@@ -6,7 +6,12 @@
 ; GPLv2
 ;
 
-BUFFERSIZE      equ 4096
+BUFFERSIZE              = 4096
+
+STATE_DISCONNECTED      = 0
+STATE_CONNECTED         = 1
+STATE_LOGIN             = 2
+STATE_ACTIVE            = 3
 
 
 use32
@@ -93,18 +98,20 @@ start:
 
         mov     [socketnum2], eax
 
-;;        mcall   close, [socketnum]
-
-        mcall   send, [socketnum2], str220, str220.length       ; send welcome string
+        mcall   send, [socketnum2], str220, str220.length, 0    ; send welcome string
 
   .loop:
         mcall   10
 
         mcall   recv, [socketnum2], buffer, buffer.length
+        cmp     eax, -1
+        je      .loop
+        push    eax
 
         push    buffer
         call    [con_write_asciiz]
 
+        pop     ecx
         mov     esi, buffer
         call    parse_cmd
 
@@ -140,7 +147,7 @@ exit:
 
 
 ; data
-title   db      'KolibriOS FTP daemon 1.0',0
+title   db      'KolibriOS FTP daemon 0.1',0
 str1    db      'Opening socket',10, 0
 str2    db      'Listening for incoming connections...',10,0
 str3    db      'Listen error',10,10,0
@@ -196,7 +203,11 @@ import  libio,          \
 i_end:
 
 socketnum       dd ?
+
+
+; thread specific data
 socketnum2      dd ?
+state           dd ?
 
 buffer          rb BUFFERSIZE
 .length = BUFFERSIZE

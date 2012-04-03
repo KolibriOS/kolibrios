@@ -4,14 +4,18 @@
 align 4
 parse_cmd:                              ; esi must point to command
 
+        cmp     byte [esi+3], 0x20
+        jae     @f
+        mov     byte [esi+3], 0
+       @@:
+
         mov     eax, [esi]
         and     eax, not 0x20202020     ; convert to upper case
                                         ; (also convert spaces to null)
         mov     edi, commands           ; list of commands to scan
   .scanloop:
         cmp     eax, [edi]
-        jb      .error
-        jl      .try_next
+        jne     .try_next
 
         jmp     dword [edi+4]
 
@@ -21,11 +25,13 @@ parse_cmd:                              ; esi must point to command
         jne     .scanloop
 
   .error:
+        mcall   send, [socketnum2], str500, str500.length, 0
+
         ret
 
 
 align 4
-commands:                               ; all commands must be in uppercase, and in alphabetical order.
+commands:                               ; all commands must be in uppercase
 
         db 'ABOR'
         dd cmdABOR
@@ -44,6 +50,9 @@ commands:                               ; all commands must be in uppercase, and
 
         db 'NOOP'
         dd cmdNOOP
+
+        db 'PASS'
+        dd cmdPASS
 
         db 'PWD', 0
         dd cmdPWD
@@ -106,6 +115,14 @@ cmdNOOP:
         ret
 
 align 4
+cmdPASS:
+
+        mcall   send, [socketnum2], str230, str230.length, 0
+        mov     [state], STATE_ACTIVE
+
+        ret
+
+align 4
 cmdPWD:
 
         ret
@@ -117,6 +134,9 @@ cmdPORT:
 
 align 4
 cmdQUIT:
+
+        mcall   send, [socketnum2], str221, str221.length, 0
+        mcall   close, [socketnum2]
 
         ret
 
@@ -133,6 +153,8 @@ cmdSTOR:
 align 4
 cmdSYST:
 
+        mcall   send, [socketnum2], str215, str215.length, 0
+
         ret
 
 align 4
@@ -143,6 +165,9 @@ cmdTYPE:
 align 4
 cmdUSER:
 
+        mcall   send, [socketnum2], str331, str331.length, 0
+        mov     [state], STATE_LOGIN
+
         ret
 
 
@@ -150,14 +175,19 @@ cmdUSER:
 str150  db '150 Here it comes...', 13, 10
 str200  db '200 Command OK.', 13, 10
 str215  db '215 UNIX type: L8', 13, 10
+.length = $ - str215
 str220  db '220 KolibriOS FTP Daemon 1.0', 13, 10
 .length = $ - str220
 str221  db '221 Bye!', 13, 10
+.length = $ - str221
 str225  db '225 Abort successful', 13, 10
 str226  db '226 Transfer OK, Closing connection', 13, 10
 str230  db '230 You are now logged in.', 13, 10
+.length = $ - str230
 str250  db '250 command successful', 13, 10
 str257  db '257 ""', 13, 10
 str331  db '331 Please specify the password.', 13, 10
+.length = $ - str331
 str500  db '500 Unsupported command', 13, 10
+.length = $ - str500
 str550  db '550 No such file', 13, 10
