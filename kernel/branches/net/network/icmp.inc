@@ -227,24 +227,24 @@ ICMP_input:
         ; Look for an open ICMP socket
 
         mov     esi, [edi]              ; ipv4 source address
-        mov     ebx, net_sockets
+        mov     eax, net_sockets
   .try_more:
-;        mov     ax , [edx + ICMP_header.Identifier]
+;        mov      , [edx + ICMP_header.Identifier]
   .next_socket:
-        mov     ebx, [ebx + SOCKET.NextPtr]
-        or      ebx, ebx
+        mov     eax, [eax + SOCKET.NextPtr]
+        or      eax, eax
         jz      .dump
 
-        cmp     [ebx + SOCKET.Domain], AF_INET4
+        cmp     [eax + SOCKET.Domain], AF_INET4
         jne     .next_socket
 
-        cmp     [ebx + SOCKET.Protocol], IP_PROTO_ICMP
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_ICMP
         jne     .next_socket
 
-        cmp     [ebx + IP_SOCKET.RemoteIP], esi
+        cmp     [eax + IP_SOCKET.RemoteIP], esi
         jne     .next_socket
 
-;        cmp     [esi + ICMP_SOCKET.Identifier], ax
+;        cmp     [eax + ICMP_SOCKET.Identifier],
 ;        jne     .next_socket
 
 ;        call    IPv4_dest_to_dev
@@ -252,7 +252,7 @@ ICMP_input:
 ;        je      .dump
 ;        inc     [ICMP_PACKETS_RX+edi]
 
-        DEBUGF 1,"Found valid ICMP packet for socket %x\n", ebx
+        DEBUGF 1,"Found valid ICMP packet for socket %x\n", eax
 
         pusha
         lea     ecx, [eax + SOCKET.mutex]

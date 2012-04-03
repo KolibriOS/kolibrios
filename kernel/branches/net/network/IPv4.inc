@@ -202,7 +202,7 @@ align 4
 IPv4_input:      ; TODO: implement handler for IP options
                  ; TODO2: add code for raw sockets
 
-        DEBUGF  1,"IPv4_Handler, packet from: %u.%u.%u.%u ",\
+        DEBUGF  1,"IPv4_input, packet from: %u.%u.%u.%u ",\
         [edx + IPv4_header.SourceAddress]:1,[edx + IPv4_header.SourceAddress + 1]:1,[edx + IPv4_header.SourceAddress + 2]:1,[edx + IPv4_header.SourceAddress + 3]:1
         DEBUGF  1,"to: %u.%u.%u.%u\n",\
         [edx + IPv4_header.DestinationAddress]:1,[edx + IPv4_header.DestinationAddress + 1]:1,[edx + IPv4_header.DestinationAddress + 2]:1,[edx + IPv4_header.DestinationAddress + 3]:1
@@ -595,7 +595,7 @@ IPv4_find_fragment_slot:
 align 4
 IPv4_output:
 
-        DEBUGF  1,"IPv4_create_packet: size=%u\n", ecx
+        DEBUGF  1,"IPv4_output: size=%u\n", ecx
 
         cmp     ecx, 65500              ; Max IPv4 packet size
         ja      .too_large
@@ -649,7 +649,7 @@ IPv4_output:
   .arp_error:
         add     esp, 4+4+4+2+2
   .too_large:
-        DEBUGF  1,"IPv4_create_packet: Failed\n"
+        DEBUGF  1,"IPv4_output: Failed\n"
         sub     edi, edi
         ret
 
