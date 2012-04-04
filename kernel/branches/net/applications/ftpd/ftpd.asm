@@ -157,10 +157,8 @@ start:
 
         pushd   0x0a
         call    [con_set_flags]
-
         push    buffer
         call    [con_write_asciiz]
-
         pushd   0x07
         call    [con_set_flags]
 
@@ -297,8 +295,11 @@ socketnum       dd ?
 ; thread specific data
 socketnum2      dd ?
 state           dd ?
-home_dir        db '/rd/1/',0
+home_dir        db '/rd/1/', 0
+                rb 1024
 work_dir        rb 1024
+fpath           rb 2048
+
 type            db ?
 mode            db ?    ; active/passive
 

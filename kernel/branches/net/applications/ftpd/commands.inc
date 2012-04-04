@@ -49,7 +49,7 @@ commands:               ; all commands must be in uppercase
         dd cmdPASS
         db 'PASV'
         dd cmdPASV
-        db 'PWD', 0     ; Print Working Directory
+        db 'PWD', 0
         dd cmdPWD
         db 'PORT'
         dd cmdPORT
@@ -76,7 +76,39 @@ cmdABOR:
         ret
 
 align 4
-cmdCWD:
+cmdCWD:                 ; Change Working Directory
+
+        sub     ecx, 4
+        jb      .err
+        add     esi, 4
+        mov     edi, work_dir + 1
+
+        cmp     byte [esi], '/'
+        jne     @f
+        inc     esi
+        dec     ecx
+        jz      .done
+       @@:
+
+  .loop:
+        lodsb
+        cmp     al, 0x20
+        jb      .done
+        stosb
+        loop    .loop
+  .done:
+        cmp     byte [edi-1], '/'
+        je      @f
+        mov     byte [edi], '/'
+        inc     edi
+       @@:
+        mov     byte [edi], 0
+
+        mcall   send, [socketnum2], str250, str250.length, 0
+
+        ret
+
+  .err:
 
         ret
 
@@ -88,6 +120,7 @@ cmdDELE:
 align 4
 cmdLIST:
 
+; If we are in active mode, it's time to open a data socket..
         cmp     [mode], MODE_ACTIVE
         jne     @f
         mcall   connect, [datasocketnum], datasock, datasock.length
@@ -95,31 +128,30 @@ cmdLIST:
         je      .err
   @@:
 
+; Warn the client we're about to send the data
         mcall   send, [socketnum2], str150, str150.length, 0    ; here it comes..
 
+; Create fpath from home_dir and work_dir
+        call    create_path
+
+; Start the search
         push    FA_READONLY + FA_FOLDER
         push    str_mask
-        push    home_dir
+        push    fpath
         call    [file.find.first]
 
         mov     edi, buffer
-        jmp     .parse_file
-
-  .checknextfile:
-        push    edx
-        call    [file.find.next]
-
   .parse_file:
-        test    eax, eax
+        test    eax, eax        ; did we find a file?
         jz      .done
 
-        mov     edx, eax
+        mov     edx, eax        ; yes, save the descripter
 
 ; first, convert the attributes
-        test    [eax + FileInfoA.Attributes], FA_FOLDER
+        test    [edx + FileInfoA.Attributes], FA_FOLDER
         jnz     .folder
 
-        test    [eax + FileInfoA.Attributes], FA_READONLY
+        test    [edx + FileInfoA.Attributes], FA_READONLY
         jnz     .readonly
 
         mov     eax, '-rw-'
@@ -128,7 +160,7 @@ cmdLIST:
 
   .folder:
         mov     eax, 'drwx'
-        stosb
+        stosd
         jmp     .attr
 
   .readonly:
@@ -153,7 +185,7 @@ cmdLIST:
         stosd
 
 ; now the filesize in ascii
-        mov     ebx, dword [edx + FileInfoA.FileSize]
+        mov     ebx, [edx + FileInfoA.FileSizeLow]
         call    dword_to_ascii
 
         mov     al, ' '
@@ -186,24 +218,34 @@ cmdLIST:
         stosb
         loop    .nameloop
 
+; insert a cr lf
   .namedone:
         mov     ax, 0x0d0a
         stosw
-        jmp     .checknextfile
 
+; check next file
+        push    edx
+        call    [file.find.next]
+        jmp     .parse_file
+
+; close file desc
   .done:
         push    edx
         call    [file.find.close]
 
+; append the string with a 0
         xor     al, al
         stosb
 
+; print everything on the console
         push    buffer
         call    [con_write_asciiz]
 
+; and send it to the client
         lea     esi, [edi - buffer]
         mcall   send, [datasocketnum], buffer, , 0
 
+; close the data socket..
         mcall   close, [datasocketnum]
 
         cmp     [mode], MODE_PASSIVE_OK
@@ -211,7 +253,8 @@ cmdLIST:
         mov     [mode], MODE_PASSIVE_WAIT
       @@:
 
-        mcall   send, [socketnum2], str226, str226.length, 0    ; transfer ok
+; And send "transfer ok" on the base connection
+        mcall   send, [socketnum2], str226, str226.length, 0
 
         ret
 
@@ -296,7 +339,7 @@ cmdPASV:
         ret
 
 align 4
-cmdPWD:
+cmdPWD:         ; Print Working Directory
 
         mov     dword[buffer], '257 '
         mov     byte[buffer+4], '"'
@@ -383,22 +426,51 @@ cmdQUIT:
 align 4
 cmdRETR:
 
-;        mcall   connect, [datasocketnum], datasock, datasock.length
+        cmp     [mode], MODE_ACTIVE
+        jne     @f
+        mcall   connect, [datasocketnum], datasock, datasock.length
 ;        cmp     eax, -1
 ;        je      .err
+  @@:
 
-;        push    O_READ
-;        push    home_dir
-;        call    [file.open]
+        mcall   send, [socketnum2], str150, str150.length, 0    ; here it comes..
+
+        push    O_READ
+        push    home_dir
+        call    [file.open]
 ;        test    eax, eax
 ;        jz      .cannot_open
-;
-;        push    BUFFERSIZE
-;        push    buffer
-;        push    eax
-;        call    [file.read]
+
+        mov     ebx, eax
+
+  .read_more:
+        push    BUFFERSIZE
+        push    buffer
+        push    ebx
+        call    [file.read]
 ;        cmp     eax, -1
-;        jz      .cannot_open
+;        je      .cannot_open
+
+        push    eax
+        push    ebx
+        mov     esi, eax
+        mcall   send, [datasocketnum], buffer, , 0
+        pop     ebx
+        pop     ecx
+;        cmp     eax, -1
+;        je      .socketerr
+
+        cmp     ecx, BUFFERSIZE
+        je      .read_more
+
+        mcall   close, [datasocketnum]
+
+        cmp     [mode], MODE_PASSIVE_OK
+        jne     @f
+        mov     [mode], MODE_PASSIVE_WAIT
+      @@:
+
+        mcall   send, [socketnum2], str226, str226.length, 0    ; transfer ok
 
         ret
 
@@ -542,6 +614,41 @@ dword_to_ascii: ; edi = ptr where to write, ebx is number
 
         ret
 
+align 4
+create_path:            ; combine home_dir and work_dir strings into fpath
+        mov     edi, fpath
+        mov     esi, home_dir
+        mov     ecx, 1024
+
+  .loop1:
+        lodsb
+        or      al, al
+        jz      .next
+        stosb
+        loop    .loop1
+  .next:
+
+        cmp     byte[edi-1], '/'
+        jne     @f
+        dec     edi
+       @@:
+
+        mov     esi, work_dir
+        mov     ecx, 1024
+
+  .loop2:
+        lodsb
+        or      al, al
+        jz      .done
+        stosb
+        loop    .loop2
+
+  .done:
+        stosb
+
+        ret
+
+
 
 
 
@@ -563,10 +670,7 @@ str226  db '226 Transfer OK, Closing connection', 13, 10
 str230  db '230 You are now logged in.', 13, 10
 .length = $ - str230
 str250  db '250 command successful', 13, 10
-;str257  db '257 "'
-;.length = $ - str257
-;str257b db '"', 13, 10
-;.length = $ - str257b
+.length = $ - str250
 str331  db '331 Please specify the password.', 13, 10
 .length = $ - str331
 str421  db '421 Timeout!', 13, 10
@@ -576,3 +680,4 @@ str425  db '425 Cant open data connection.', 13, 10
 str500  db '500 Unsupported command', 13, 10
 .length = $ - str500
 str550  db '550 No such file', 13, 10
+.length = $ - str550
