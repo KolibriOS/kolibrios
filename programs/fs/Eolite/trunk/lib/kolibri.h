@@ -7,13 +7,13 @@ byte   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
 dword  start_addr   = #main;
 dword  final_addr   = #stop+32;
-dword  alloc_mem    = 0x00100000;
-dword  x86esp_reg   = 0x00100000;   // 0x0007fff0; 
+dword  alloc_mem    = 0x00070000;
+dword  x86esp_reg   = 0x00070000;   // 0x0007fff0;
 dword  I_Param      = #param;
 dword  I_Path       = #program_path;
 
-char param[4096]="";
-char program_path[4096]="";
+char param[4096];
+char program_path[4096];
 
 
 //Events
@@ -224,7 +224,7 @@ l1:
 	$jnz l1
 }
 
-char buffer[11]="";
+char buffer[11];
 inline fastcall dword IntToStr(dword ESI)
 {
      $mov     edi, #buffer
@@ -250,6 +250,37 @@ f3:
      $jnz     f3
      $mov     eax, #buffer
      $ret
+}
+
+inline fastcall dword StrToInt()
+{
+	ESI=EDI=EAX;
+	IF(DSBYTE[ESI]=='-')ESI++;
+	EAX=0;
+	BH=AL;
+	do{
+		BL=DSBYTE[ESI]-'0';
+		EAX=EAX*10+EBX;
+		ESI++;
+	}while(DSBYTE[ESI]>0);
+	IF(DSBYTE[EDI]=='-') -EAX;
+}
+
+dword StrToCol(char* htmlcolor)
+{
+  dword j, color=0;
+  char ch=0x00;
+  
+  FOR (j=0; j<6; j++)
+  {
+    ch=ESBYTE[htmlcolor+j];
+    IF ((ch>='0') && (ch<='9')) ch -= '0';
+    IF ((ch>='A') && (ch<='F')) ch -= 'A'-10;
+    IF ((ch>='a') && (ch<='f')) ch -= 'a'-10;
+    color = color*0x10 + ch;
+  }
+  
+  return color;
 }
 
 inline fastcall int strcmp(ESI, EDI)

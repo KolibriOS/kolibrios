@@ -49,7 +49,9 @@ void GetIni(byte onload)
 			case 0x0a:
 			case 0x0d:
 				InfType=PARAM;
-				//IF (strcmp(#parametr,"select_color")==0) videlenie=StrToCol(#option);
+				IF (strcmp(#parametr,"SelectionColor")==0) videlenie=StrToCol(#option);
+				IF (strcmp(#parametr,"LineHeight")==0) BUTTON_HEIGHT=StrToInt(#option);
+				
 				IF (parametr) && (!strcmp(#file_name+find_symbol(#file_name,'.'),#parametr)) {
 					errornum=RunProgram(#option,#file_path);
 					IF (errornum<0) //если ошибочка вышла при запуске
