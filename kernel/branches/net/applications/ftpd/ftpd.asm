@@ -28,7 +28,8 @@ TYPE_LOCAL              = 10000000b     ; bits per byte must be specified
 
 MODE_NOTREADY           = 0
 MODE_ACTIVE             = 1
-MODE_PASSIVE            = 2
+MODE_PASSIVE_WAIT       = 2
+MODE_PASSIVE_OK         = 3
 
 use32
         db      'MENUET01'      ; signature
@@ -44,6 +45,8 @@ include '../macros.inc'
 purge mov,add,sub
 include '../proc32.inc'
 include '../dll.inc'
+include '../struct.inc'
+include '../libio.inc'
 
 include '../network.inc'
 include 'commands.inc'
@@ -131,13 +134,26 @@ start:
   .loop:
         mcall   10
 
+        cmp     [mode], MODE_PASSIVE_WAIT
+        jne     @f
+        mcall   accept, [passivesocknum], datasock, datasock.length
+        cmp     eax, -1
+        je      @f
+        mov     [datasocketnum], eax
+        mov     [mode], MODE_PASSIVE_OK
+
+        push    str_datasock
+        call    [con_write_asciiz]
+       @@:
+
         mcall   recv, [socketnum2], buffer, buffer.length
         cmp     eax, -1
         je      .loop
+        or      eax, eax
+        jz      .loop
         push    eax
 
         mov     byte[buffer+eax], 0
-
 
         pushd   0x0a
         call    [con_set_flags]
@@ -211,8 +227,20 @@ str6    db      'Could not open socket',10,10,0
 str7    db      'Got data!',10,10,0
 str8    db      'Error accepting connection',10,10,0
 
-str_logged_in db 'Login ok',10,10,0
-str_pass_ok   db 'Password ok - Logged in',10,10,0
+str_logged_in   db 'Login ok',10,10,0
+str_pass_ok     db 'Password ok - Logged in',10,10,0
+str_pwd         db 'Current directory is "%s"\n',0
+str_err1        db 'ERROR: cannot connect to remote socket',10,10,0
+str_err2        db 'ERROR: cannot open directory',10,10,0
+str_datasock    db 'Passive data socket connected!',10,10,0
+
+
+str_mask        db '*', 0
+
+
+months:
+        dd     'Jan ','Feb ','Mar ','Apr ','May ','Jun '
+        dd     'Jul ','Aug ','Sep ','Oct ','Nov ','Dec '
 
 filename db '.ini', 0
 str_port db 'port', 0
@@ -255,7 +283,10 @@ import  libio,          \
         file.size  , 'file_size'  , \
         file.open  , 'file_open'  , \
         file.read  , 'file_read'  , \
-        file.close , 'file_close'
+        file.close , 'file_close' , \
+        file.find.first , 'file_find_first', \
+        file.find.next ,  'file_find_next', \
+        file.find.close , 'file_find_close'
 
 
 i_end:
@@ -266,11 +297,12 @@ socketnum       dd ?
 ; thread specific data
 socketnum2      dd ?
 state           dd ?
-home_dir        rb 1024
+home_dir        db '/rd/1/',0
 work_dir        rb 1024
 type            db ?
 mode            db ?    ; active/passive
 
+passivesocknum  dd ?
 datasocketnum   dd ?
 
 datasock:

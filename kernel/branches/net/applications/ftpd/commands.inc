@@ -31,57 +31,43 @@ parse_cmd:                              ; esi must point to command
 
 
 align 4
-commands:                               ; all commands must be in uppercase
+commands:               ; all commands must be in uppercase
 
         db 'ABOR'
         dd cmdABOR
-
         db 'CWD', 0
         dd cmdCWD
-
         db 'DELE'
         dd cmdDELE
-
         db 'LIST'
         dd cmdLIST
-
         db 'NLST'
         dd cmdNLST
-
         db 'NOOP'
         dd cmdNOOP
-
         db 'PASS'
         dd cmdPASS
-
+        db 'PASV'
+        dd cmdPASV
         db 'PWD', 0     ; Print Working Directory
         dd cmdPWD
-
         db 'PORT'
         dd cmdPORT
-
         db 'QUIT'
         dd cmdQUIT
-
         db 'RETR'
         dd cmdRETR
-
         db 'STOR'
         dd cmdSTOR
-
         db 'SYST'
         dd cmdSYST
-
         db 'TYPE'
         dd cmdTYPE
-
         db 'USER'
         dd cmdUSER
-
         db 'XPWD'
         dd cmdPWD
-
-        db 0                    ; end marker
+        db 0            ; end marker
 
 
 align 4
@@ -101,6 +87,143 @@ cmdDELE:
 
 align 4
 cmdLIST:
+
+        cmp     [mode], MODE_ACTIVE
+        jne     @f
+        mcall   connect, [datasocketnum], datasock, datasock.length
+        cmp     eax, -1
+        je      .err
+  @@:
+
+        mcall   send, [socketnum2], str150, str150.length, 0    ; here it comes..
+
+        push    FA_READONLY + FA_FOLDER
+        push    str_mask
+        push    home_dir
+        call    [file.find.first]
+
+        mov     edi, buffer
+        jmp     .parse_file
+
+  .checknextfile:
+        push    edx
+        call    [file.find.next]
+
+  .parse_file:
+        test    eax, eax
+        jz      .done
+
+        mov     edx, eax
+
+; first, convert the attributes
+        test    [eax + FileInfoA.Attributes], FA_FOLDER
+        jnz     .folder
+
+        test    [eax + FileInfoA.Attributes], FA_READONLY
+        jnz     .readonly
+
+        mov     eax, '-rw-'
+        stosd
+        jmp     .attr
+
+  .folder:
+        mov     eax, 'drwx'
+        stosb
+        jmp     .attr
+
+  .readonly:
+        mov     eax, '-r--'
+        stosd
+
+  .attr:
+        mov     eax, 'rw-r'
+        stosd
+        mov     ax, 'w-'
+        stosw
+        mov     al, ' '
+        stosb
+
+; now..
+        mov     ax, '1 '
+        stosw
+
+; now write owner, everything is owned by FTP, woohoo!
+        mov     eax, 'FTP '
+        stosd
+        stosd
+
+; now the filesize in ascii
+        mov     ebx, dword [edx + FileInfoA.FileSize]
+        call    dword_to_ascii
+
+        mov     al, ' '
+        stosb
+
+; then date (month/day/year)
+        movzx   ebx, [edx + FileInfoA.DateModify + FileDateTime.month]
+        mov     eax, [months + 4*ebx]
+        stosd
+
+        movzx   ebx, [edx + FileInfoA.DateModify + FileDateTime.day]
+        call    dword_to_ascii
+
+        mov     al, ' '
+        stosb
+
+        movzx   ebx, [edx + FileInfoA.DateModify + FileDateTime.year]
+        call    dword_to_ascii
+
+        mov     al, ' '
+        stosb
+
+; and last but not least, filename
+        lea     esi, [edx + FileInfoA.FileName]
+        mov     ecx, 250
+  .nameloop:
+        lodsb
+        test    al, al
+        jz      .namedone
+        stosb
+        loop    .nameloop
+
+  .namedone:
+        mov     ax, 0x0d0a
+        stosw
+        jmp     .checknextfile
+
+  .done:
+        push    edx
+        call    [file.find.close]
+
+        xor     al, al
+        stosb
+
+        push    buffer
+        call    [con_write_asciiz]
+
+        lea     esi, [edi - buffer]
+        mcall   send, [datasocketnum], buffer, , 0
+
+        mcall   close, [datasocketnum]
+
+        cmp     [mode], MODE_PASSIVE_OK
+        jne     @f
+        mov     [mode], MODE_PASSIVE_WAIT
+      @@:
+
+        mcall   send, [socketnum2], str226, str226.length, 0    ; transfer ok
+
+        ret
+
+  .err:
+        pushd   0x0c
+        call    [con_set_flags]
+
+        push    str_err1
+        call    [con_write_asciiz]
+
+        pushd   0x07
+        call    [con_set_flags]
 
         ret
 
@@ -129,12 +252,46 @@ cmdPASS:
 align 4
 cmdPASV:
 
-        mov     [mode], MODE_PASSIVE
-
-; TODO: open the UDP socket and return our IP + port
-
 ; 227 Entering Passive Mode (a1,a2,a3,a4,p1,p2)
 ; where a1.a2.a3.a4 is the IP address and p1*256+p2 is the port number.
+
+        mcall   socket, AF_INET4, SOCK_STREAM, 0
+        cmp     eax, -1
+;        je      .err
+        mov     [passivesocknum], eax
+
+        mov     [datasock.port], 2000
+        mov     [datasock.ip], 0
+
+        mcall   bind, [passivesocknum], datasock, datasock.length
+        cmp     eax, -1
+        je      bind_err
+
+        mcall   listen, [passivesocknum], 1
+
+        mov     [mode], MODE_PASSIVE_WAIT
+
+        mov     edi, buffer
+        mov     eax, '227 '     ; FIXME (now hardcoded to 127.0.0.1:2000)
+        stosd
+        mov     eax, '(127'
+        stosd
+        mov     eax, ',0,0'
+        stosd
+        mov     eax, ',1,7'
+        stosd
+        mov     eax, ',208'
+        stosd
+        mov     al, ')'
+        stosb
+        mov     ax, 0x0d0a
+        stosw
+        xor     al, al
+        stosb
+
+        lea     esi, [edi - buffer]
+
+        mcall   send, [socketnum2], buffer, ,0
 
         ret
 
@@ -160,6 +317,10 @@ cmdPWD:
         lea     esi, [edi - buffer + 4]
 
         mcall   send, [socketnum2], buffer, , 0
+
+;        push    work_dir
+;        push    str_pwd
+;        call    [con_printf]
 
         ret
 
@@ -198,14 +359,10 @@ cmdPORT:
 
         mov     [datasock.port], dx
 
-        mcall   socket, AF_INET4, SOCK_DGRAM, 0
+        mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         je      .err
         mov     [datasocketnum], eax
-
-        mcall   connect, [datasocketnum], datasock, datasock.length
-        cmp     eax, -1
-        je      .err
 
         mcall   send, [socketnum2], str225, str225.length, 0
         ret
@@ -225,6 +382,23 @@ cmdQUIT:
 
 align 4
 cmdRETR:
+
+;        mcall   connect, [datasocketnum], datasock, datasock.length
+;        cmp     eax, -1
+;        je      .err
+
+;        push    O_READ
+;        push    home_dir
+;        call    [file.open]
+;        test    eax, eax
+;        jz      .cannot_open
+;
+;        push    BUFFERSIZE
+;        push    buffer
+;        push    eax
+;        call    [file.read]
+;        cmp     eax, -1
+;        jz      .cannot_open
 
         ret
 
@@ -360,11 +534,20 @@ ascii_to_byte:
   .done:
         ret
 
+align 4
+dword_to_ascii: ; edi = ptr where to write, ebx is number
+
+        mov     eax, '1'
+        stosb
+
+        ret
+
 
 
 
 
 str150  db '150 Here it comes...', 13, 10
+.length = $ - str150
 str200  db '200 Command OK.', 13, 10
 .length = $ - str200
 str215  db '215 UNIX type: L8', 13, 10
@@ -376,6 +559,7 @@ str221  db '221 Bye!', 13, 10
 str225  db '225 Data connection open', 13, 10
 .length = $ - str225
 str226  db '226 Transfer OK, Closing connection', 13, 10
+.length = $ - str226
 str230  db '230 You are now logged in.', 13, 10
 .length = $ - str230
 str250  db '250 command successful', 13, 10
