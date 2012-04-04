@@ -690,9 +690,9 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				top1=WB1.top;
 			}
 			
-			if (top1>WB1.top+WB1.height-h-10) //если часть изображения снизу     IF (stroka - 2 < max_kolvo_strok)
+			if (top1>WB1.top+WB1.height-h-15) //если часть изображения снизу     IF (stroka - 2 < max_kolvo_strok)
 			{
-				h=WB1.top+WB1.height-top1-10;
+				h=WB1.top+WB1.height-top1-15;
 			}	
 
 			IF (h<=0) return;
