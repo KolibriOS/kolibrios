@@ -2078,8 +2078,6 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         jne     noatsc
         and     [application_table_status], 0
 noatsc:
-; for guarantee the updating data
-        call    change_task
 noprocessterminate:
         add     esp, 4
         ret
