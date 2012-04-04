@@ -481,7 +481,7 @@ still:
 
     mov  eax,4			   ; function 4 : write text to window
     mov  ebx,5*65536+23 	   ; [x start] *65536 + [y start]
-    mov  ecx,-1
+    mov  ecx,0x00ffffff	;-1
     mov  edx,STRdata		   ; pointer to text beginning
     mov  esi,10 		   ; text length
     int  40h
