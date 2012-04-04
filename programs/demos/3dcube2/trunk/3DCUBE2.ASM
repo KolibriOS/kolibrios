@@ -191,7 +191,7 @@ clear_screen_buffer:
 ;White background
  mov edi,scrbuf
  mov ecx,(SCREEN_X*SCREEN_Y*3)/4
- mov eax,0xfffffff0
+ mov eax,0xffffffff
  cld
  rep stosd
 
