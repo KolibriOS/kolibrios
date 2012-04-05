@@ -19,11 +19,11 @@
 
 
 O_BINARY = 00000000b
-O_READ	 = 00000001b
+O_READ   = 00000001b
 O_WRITE  = 00000010b
 O_CREATE = 00000100b
 O_SHARE  = 00001000b
-O_TEXT	 = 00010000b
+O_TEXT   = 00010000b
 
 SEEK_SET = 0
 SEEK_CUR = 1
@@ -54,7 +54,7 @@ struct FileInfoBlock
   Flags      dd ?
   Count      dd ?
   Buffer     dd ?
-	     db ?
+             db ?
   FileName   dd ?
 ends
 
@@ -62,7 +62,7 @@ struct FileInfoHeader
   Version    dd ?
   FilesRead  dd ?
   FilesCount dd ?
-	     rd 5
+             rd 5
 ends
 
 struct FileInfoA
@@ -78,7 +78,7 @@ struct FileInfoA
       FileSizeHigh dd ?
     ends
   ends
-  FileName     rb 252
+  FileName     rb 264
 ends
 
 struct FileInfoW
@@ -98,8 +98,8 @@ struct FileInfoW
 ends
 
 virtual at 0
-	 FileInfo	     FileInfoA
-	 FileInfo fix	     FileInfoA
+         FileInfo            FileInfoA
+         FileInfo fix        FileInfoA
   sizeof.FileInfo fix sizeof.FileInfoA
 end virtual
 
@@ -109,4 +109,4 @@ FA_SYSTEM   = 00000100b
 FA_LABEL    = 00001000b
 FA_FOLDER   = 00010000b
 FA_ARCHIVED = 00100000b
-FA_ANY	    = 00111111b
+FA_ANY      = 00111111b

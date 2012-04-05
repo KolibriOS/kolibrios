@@ -37,13 +37,14 @@
 ;;================================================================================================;;
 
 
+
 format MS COFF
 
 public @EXPORT as 'EXPORTS'
 
 include '../../../../proc32.inc'
 include '../../../../macros.inc'
-purge section;mov,add,sub
+purge section,mov,add,sub
 
 include 'libio.inc'
 include 'libio_p.inc'
@@ -63,33 +64,33 @@ proc file.find_first _dir, _mask, _attr ;///////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 (error) / matched file data pointer (acts as find descriptor) <FileInfo*>              ;;
 ;;================================================================================================;;
-	push	ebx edx
+        push    ebx edx
 
-	invoke	mem.alloc, sizeof.FindFileBlock
-	or	eax, eax
-	jz	.exit.error
-	mov	edx, eax
-	mov	ebx, [_attr]
-	mov	[edx + FindFileBlock.Options.Attributes], ebx
-	mov	ebx, [_mask]
-	mov	[edx + FindFileBlock.Options.Mask], ebx
+        invoke  mem.alloc, sizeof.FindFileBlock
+        or      eax, eax
+        jz      .exit.error
+        mov     edx, eax
+        mov     ebx, [_attr]
+        mov     [edx + FindFileBlock.Options.Attributes], ebx
+        mov     ebx, [_mask]
+        mov     [edx + FindFileBlock.Options.Mask], ebx
 
-	lea	ebx, [edx + FindFileBlock.InfoBlock]
-	mov	[ebx + FileInfoBlock.Function], F70_READ_D
-	mov	[ebx + FileInfoBlock.Count], 1
-	lea	eax, [edx + FindFileBlock.Header]
-	mov	[ebx + FileInfoBlock.Buffer], eax
-	mov	eax, [_dir]
-	mov	[ebx + FileInfoBlock.FileName], eax
+        lea     ebx, [edx + FindFileBlock.InfoBlock]
+        mov     [ebx + FileInfoBlock.Function], F70_READ_D
+        mov     [ebx + FileInfoBlock.Count], 1
+        lea     eax, [edx + FindFileBlock.Header]
+        mov     [ebx + FileInfoBlock.Buffer], eax
+        mov     eax, [_dir]
+        mov     [ebx + FileInfoBlock.FileName], eax
 
-	stdcall libio._.find_matching_file, edx
-	pop	edx ebx
-	ret
+        stdcall libio._.find_matching_file, edx
+        pop     edx ebx
+        ret
 
   .exit.error:
-	xor	eax, eax
-	pop	edx ebx
-	ret
+        xor     eax, eax
+        pop     edx ebx
+        ret
 endp
 
 ;;================================================================================================;;
@@ -101,11 +102,11 @@ proc file.find_next _findd ;////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 (error) / matched file data pointer (acts as find descriptor) <FileInfo*>              ;;
 ;;================================================================================================;;
-	mov	eax, [_findd]
-	add	eax, -sizeof.FileInfoHeader
-	inc	[eax + FindFileBlock.InfoBlock.Position]
-	stdcall libio._.find_matching_file, eax
-	ret
+        mov     eax, [_findd]
+        add     eax, -sizeof.FileInfoHeader
+        inc     [eax + FindFileBlock.InfoBlock.Position]
+        stdcall libio._.find_matching_file, eax
+        ret
 endp
 
 ;;================================================================================================;;
@@ -117,10 +118,10 @@ proc file.find_close _findd ;///////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = result of memory freeing routine                                                         ;;
 ;;================================================================================================;;
-	mov	eax, [_findd]
-	add	eax, -sizeof.FileInfoHeader
-	invoke	mem.free, eax
-	ret
+        mov     eax, [_findd]
+        add     eax, -sizeof.FileInfoHeader
+        invoke  mem.free, eax
+        ret
 endp
 
 ;;================================================================================================;;
@@ -138,22 +139,22 @@ locals
   loc_info FileInfoBlock
 endl
 
-	lea	ebx, [loc_info]
-	invoke	mem.alloc, 40
-	push	eax
-	mov	[ebx + FileInfoBlock.Function], F70_GETATTR_FD
-	mov	[ebx + FileInfoBlock.Buffer], eax
-	mov	byte[ebx + FileInfoBlock.FileName - 1], 0
-	mov	eax, [_name]
-	mov	[ebx + FileInfoBlock.FileName], eax
-	mcall	70
-	pop	ebx
-	push	eax
-	mov	eax, ebx
-	mov	ebx, [ebx + FileInfo.FileSizeLow]
-	invoke	mem.free, eax
-	pop	eax
-	ret
+        lea     ebx, [loc_info]
+        invoke  mem.alloc, 40
+        push    eax
+        mov     [ebx + FileInfoBlock.Function], F70_GETATTR_FD
+        mov     [ebx + FileInfoBlock.Buffer], eax
+        mov     byte[ebx + FileInfoBlock.FileName - 1], 0
+        mov     eax, [_name]
+        mov     [ebx + FileInfoBlock.FileName], eax
+        mcall   70
+        pop     ebx
+        push    eax
+        mov     eax, ebx
+        mov     ebx, [ebx + FileInfo.FileSizeLow]
+        invoke  mem.free, eax
+        pop     eax
+        ret
 endp
 
 ;;================================================================================================;;
@@ -179,62 +180,62 @@ locals
   loc_buf  rb 40
 endl
 
-	push	ebx esi edi
+        push    ebx esi edi
 
-	xor	ebx, ebx
-	invoke	mem.alloc, sizeof.InternalFileInfo
-	or	eax, eax
-	jz	.exit_error
-	mov	ebx, eax
-	push	[_mode]
-	pop	[ebx + InternalFileInfo.Mode]
-	mov	[ebx + InternalFileInfo.Position], 0
-	lea	edi, [ebx + InternalFileInfo.FileName]
-	mov	esi, [_name]
-	mov	ecx, 260 / 4
-	cld
-	rep	movsd
+        xor     ebx, ebx
+        invoke  mem.alloc, sizeof.InternalFileInfo
+        or      eax, eax
+        jz      .exit_error
+        mov     ebx, eax
+        push    [_mode]
+        pop     [ebx + InternalFileInfo.Mode]
+        mov     [ebx + InternalFileInfo.Position], 0
+        lea     edi, [ebx + InternalFileInfo.FileName]
+        mov     esi, [_name]
+        mov     ecx, 260 / 4
+        cld
+        rep     movsd
 
   .get_info:
-	push	ebx
-	mov	[loc_info.Function], F70_GETATTR_FD
-	lea	eax, [loc_buf]
-	mov	[loc_info.Buffer], eax
-	mov	byte[loc_info.FileName - 1], 0
-	mov	eax, [_name]
-	mov	[loc_info.FileName], eax
-	lea	ebx, [loc_info]
-	mcall	70
-	pop	ebx
-	or	eax, eax
-	jz	@f
-	cmp	eax, 6
-	jne	.exit_error.ex
+        push    ebx
+        mov     [loc_info.Function], F70_GETATTR_FD
+        lea     eax, [loc_buf]
+        mov     [loc_info.Buffer], eax
+        mov     byte[loc_info.FileName - 1], 0
+        mov     eax, [_name]
+        mov     [loc_info.FileName], eax
+        lea     ebx, [loc_info]
+        mcall   70
+        pop     ebx
+        or      eax, eax
+        jz      @f
+        cmp     eax, 6
+        jne     .exit_error.ex
     @@:
-	mov	eax, ebx
-	pop	edi esi ebx
-	ret
+        mov     eax, ebx
+        pop     edi esi ebx
+        ret
 
   .exit_error.ex:
-	test	[_mode], O_CREATE
-	jz	.exit_error
-	push	ebx
-	mov	[loc_info.Function], F70_CREATE_F
-	xor	eax, eax
-	mov	[loc_info.Position], eax
-	mov	[loc_info.Flags], eax
-	mov	[loc_info.Count], eax
-	lea	ebx, [loc_info]
-	mcall	70
-	pop	ebx
-	or	eax, eax
-	jz	.get_info
+        test    [_mode], O_CREATE
+        jz      .exit_error
+        push    ebx
+        mov     [loc_info.Function], F70_CREATE_F
+        xor     eax, eax
+        mov     [loc_info.Position], eax
+        mov     [loc_info.Flags], eax
+        mov     [loc_info.Count], eax
+        lea     ebx, [loc_info]
+        mcall   70
+        pop     ebx
+        or      eax, eax
+        jz      .get_info
 
   .exit_error:
-	invoke	mem.free, ebx
-	xor	eax, eax
-	pop	edi esi ebx
-	ret
+        invoke  mem.free, ebx
+        xor     eax, eax
+        pop     edi esi ebx
+        ret
 endp
 
 ;;================================================================================================;;
@@ -254,37 +255,37 @@ locals
   loc_info FileInfoBlock
 endl
 
-	push	ebx esi edi
+        push    ebx esi edi
 
-	mov	ebx, [_filed]
-	test	[ebx + InternalFileInfo.Mode], O_READ
-	jz	.exit_error
+        mov     ebx, [_filed]
+        test    [ebx + InternalFileInfo.Mode], O_READ
+        jz      .exit_error
 
-	xor	eax, eax
-	mov	[loc_info.Function], F70_READ_F
-	mov	[loc_info.Flags], eax
-	mov	byte[loc_info.FileName - 1], al
-	push	[ebx+InternalFileInfo.Position] [_buflen] [_buf]
-	pop	[loc_info.Buffer] [loc_info.Count] [loc_info.Position]
-	lea	eax, [ebx + InternalFileInfo.FileName]
-	mov	[loc_info.FileName], eax
-	lea	ebx, [loc_info]
-	mcall	70
-	or	eax, eax
-	jz	@f
-	cmp	eax, 6
-	jne	.exit_error
+        xor     eax, eax
+        mov     [loc_info.Function], F70_READ_F
+        mov     [loc_info.Flags], eax
+        mov     byte[loc_info.FileName - 1], al
+        push    [ebx+InternalFileInfo.Position] [_buflen] [_buf]
+        pop     [loc_info.Buffer] [loc_info.Count] [loc_info.Position]
+        lea     eax, [ebx + InternalFileInfo.FileName]
+        mov     [loc_info.FileName], eax
+        lea     ebx, [loc_info]
+        mcall   70
+        or      eax, eax
+        jz      @f
+        cmp     eax, 6
+        jne     .exit_error
     @@:
-	mov	eax, ebx
-	mov	ebx, [_filed]
-	add	[ebx + InternalFileInfo.Position], eax
-	pop	edi esi ebx
-	ret
+        mov     eax, ebx
+        mov     ebx, [_filed]
+        add     [ebx + InternalFileInfo.Position], eax
+        pop     edi esi ebx
+        ret
 
   .exit_error:
-	or	eax, -1
-	pop	edi esi ebx
-	ret
+        or      eax, -1
+        pop     edi esi ebx
+        ret
 endp
 
 ;;================================================================================================;;
@@ -304,41 +305,41 @@ locals
   loc_info FileInfoBlock
 endl
 
-	push	ebx esi edi
+        push    ebx esi edi
 
-	mov	ebx, [_filed]
-	test	[ebx + InternalFileInfo.Mode], O_WRITE
-	jz	.exit_error
+        mov     ebx, [_filed]
+        test    [ebx + InternalFileInfo.Mode], O_WRITE
+        jz      .exit_error
 
-	stdcall file.eof?, [_filed]
-	or	eax, eax
-	js	.exit_error
-	jz	@f
-	stdcall file.truncate, [_filed]
+        stdcall file.eof?, [_filed]
+        or      eax, eax
+        js      .exit_error
+        jz      @f
+        stdcall file.truncate, [_filed]
     @@:
-	mov	[loc_info.Function], F70_WRITE_F
-	xor	eax, eax
-	mov	[loc_info.Flags], eax
-	mov	byte[loc_info.FileName - 1], al
-	push	[ebx + InternalFileInfo.Position] [_buflen] [_buf]
-	pop	[loc_info.Buffer] [loc_info.Count] [loc_info.Position]
-	lea	eax, [ebx + InternalFileInfo.FileName]
-	mov	[loc_info.FileName], eax
-	lea	ebx, [loc_info]
-	mcall	70
-	or	eax, eax
-	jnz	.exit_error
+        mov     [loc_info.Function], F70_WRITE_F
+        xor     eax, eax
+        mov     [loc_info.Flags], eax
+        mov     byte[loc_info.FileName - 1], al
+        push    [ebx + InternalFileInfo.Position] [_buflen] [_buf]
+        pop     [loc_info.Buffer] [loc_info.Count] [loc_info.Position]
+        lea     eax, [ebx + InternalFileInfo.FileName]
+        mov     [loc_info.FileName], eax
+        lea     ebx, [loc_info]
+        mcall   70
+        or      eax, eax
+        jnz     .exit_error
     @@:
-	mov	eax, ebx
-	mov	ebx, [_filed]
-	add	[ebx + InternalFileInfo.Position],eax
-	pop	edi esi ebx
-	ret
+        mov     eax, ebx
+        mov     ebx, [_filed]
+        add     [ebx + InternalFileInfo.Position],eax
+        pop     edi esi ebx
+        ret
 
   .exit_error:
-	or	eax, -1
-	pop	edi esi ebx
-	ret
+        or      eax, -1
+        pop     edi esi ebx
+        ret
 endp
 
 ;;================================================================================================;;
@@ -357,50 +358,50 @@ proc file.seek _filed, _where, _origin ;////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
-	push	ebx ecx edx
+        push    ebx ecx edx
 
-	mov	ecx, [_filed]
-	lea	eax, [ecx + InternalFileInfo.FileName]
-	stdcall file.size, eax
-	or	eax, eax
-	jnz	.exit_error
-	mov	edx, [_where]
-	cmp	[_origin], SEEK_SET
-	jne	.n_set
-	mov	[ecx + InternalFileInfo.Position], edx
-	jmp	.exit_ok
+        mov     ecx, [_filed]
+        lea     eax, [ecx + InternalFileInfo.FileName]
+        stdcall file.size, eax
+        or      eax, eax
+        jnz     .exit_error
+        mov     edx, [_where]
+        cmp     [_origin], SEEK_SET
+        jne     .n_set
+        mov     [ecx + InternalFileInfo.Position], edx
+        jmp     .exit_ok
 
   .n_set:
-	cmp	[_origin], SEEK_CUR
-	jne	.n_cur
-	add	[ecx + InternalFileInfo.Position], edx
-	jmp	.exit_ok
+        cmp     [_origin], SEEK_CUR
+        jne     .n_cur
+        add     [ecx + InternalFileInfo.Position], edx
+        jmp     .exit_ok
 
   .n_cur:
-	cmp	[_origin], SEEK_END
-	jne	.exit_error
-	neg	edx
-	add	edx, ebx
-	mov	[ecx + InternalFileInfo.Position], edx
+        cmp     [_origin], SEEK_END
+        jne     .exit_error
+        neg     edx
+        add     edx, ebx
+        mov     [ecx + InternalFileInfo.Position], edx
 
   .exit_ok:
 
-	cmp	[ecx + InternalFileInfo.Position], 0
-	jge	@f
-	mov	[ecx + InternalFileInfo.Position], 0
+        cmp     [ecx + InternalFileInfo.Position], 0
+        jge     @f
+        mov     [ecx + InternalFileInfo.Position], 0
     @@:
 ;       cmp     ebx, [ecx+InternalFileInfo.Position]
 ;       jae     @f
 ;       mov     [ecx + InternalFileInfo.Position], ebx
 ;   @@:
-	xor	eax, eax
-	pop	edx ecx ebx
-	ret
+        xor     eax, eax
+        pop     edx ecx ebx
+        ret
 
   .exit_error:
-	or	eax, -1
-	pop	edx ecx ebx
-	ret
+        or      eax, -1
+        pop     edx ecx ebx
+        ret
 endp
 
 ;;================================================================================================;;
@@ -414,25 +415,25 @@ proc file.eof? _filed ;/////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
-	push	ebx ecx
+        push    ebx ecx
 
-	mov	ecx, [_filed]
-	lea	eax, [ecx + InternalFileInfo.FileName]
-	stdcall file.size, eax
-	or	eax, eax
-	jnz	.exit_error
+        mov     ecx, [_filed]
+        lea     eax, [ecx + InternalFileInfo.FileName]
+        stdcall file.size, eax
+        or      eax, eax
+        jnz     .exit_error
 
-	xor	eax, eax
-	cmp	[ecx + InternalFileInfo.Position], ebx
-	jb	@f
-	inc	eax
-    @@: pop	ecx ebx
-	ret
+        xor     eax, eax
+        cmp     [ecx + InternalFileInfo.Position], ebx
+        jb      @f
+        inc     eax
+    @@: pop     ecx ebx
+        ret
 
   .exit_error:
-	or	eax, -1
-	pop	ecx ebx
-	ret
+        or      eax, -1
+        pop     ecx ebx
+        ret
 endp
 
 ;;================================================================================================;;
@@ -450,36 +451,36 @@ locals
   loc_info FileInfoBlock
 endl
 
-	push	ebx esi edi
+        push    ebx esi edi
 
-	mov	ebx, [_filed]
-	test	[ebx + InternalFileInfo.Mode], O_WRITE
-	jz	.exit_error
+        mov     ebx, [_filed]
+        test    [ebx + InternalFileInfo.Mode], O_WRITE
+        jz      .exit_error
 
-	mov	[loc_info.Function], F70_SETSIZE_F
-	mov	eax, [ebx + InternalFileInfo.Position]
-	mov	[loc_info.Position], eax
-	xor	eax, eax
-	mov	[loc_info.Flags], eax
-	mov	[loc_info.Count], eax
-	mov	[loc_info.Buffer], eax
-	mov	byte[loc_info.FileName - 1], al
-	lea	eax, [ebx + InternalFileInfo.FileName]
-	mov	[loc_info.FileName], eax
-	lea	ebx, [loc_info]
-	mcall	70
-	cmp	eax, 2
-	je	.exit_error
-	cmp	eax, 8
-	je	.exit_error
-    @@: xor	eax, eax
-	pop	edi esi ebx
-	ret
+        mov     [loc_info.Function], F70_SETSIZE_F
+        mov     eax, [ebx + InternalFileInfo.Position]
+        mov     [loc_info.Position], eax
+        xor     eax, eax
+        mov     [loc_info.Flags], eax
+        mov     [loc_info.Count], eax
+        mov     [loc_info.Buffer], eax
+        mov     byte[loc_info.FileName - 1], al
+        lea     eax, [ebx + InternalFileInfo.FileName]
+        mov     [loc_info.FileName], eax
+        lea     ebx, [loc_info]
+        mcall   70
+        cmp     eax, 2
+        je      .exit_error
+        cmp     eax, 8
+        je      .exit_error
+    @@: xor     eax, eax
+        pop     edi esi ebx
+        ret
 
   .exit_error:
-	or	eax, -1
-	pop	edi esi ebx
-	ret
+        or      eax, -1
+        pop     edi esi ebx
+        ret
 endp
 
 file.seteof equ file.truncate
@@ -495,9 +496,9 @@ proc file.tell _filed ;/////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
-	mov	eax, [_filed]
-	mov	eax, [eax + InternalFileInfo.Position]
-	ret
+        mov     eax, [_filed]
+        mov     eax, [eax + InternalFileInfo.Position]
+        ret
 endp
 
 ;;================================================================================================;;
@@ -511,12 +512,12 @@ proc file.close _filed ;////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
-	mov	eax, [_filed]
-	mov	[eax + InternalFileInfo.Mode], 0
-	mov	[eax + InternalFileInfo.FileName], 0
-	invoke	mem.free, eax
-	xor	eax, eax
-	ret
+        mov     eax, [_filed]
+        mov     [eax + InternalFileInfo.Mode], 0
+        mov     [eax + InternalFileInfo.FileName], 0
+        invoke  mem.free, eax
+        xor     eax, eax
+        ret
 endp
 
 
@@ -532,19 +533,20 @@ endp
 align 16
 @EXPORT:
 
-export					      \
-	libio._.init	, 'lib_init'	    , \
-	0x00040004	, 'version'	    , \
-	file.find_first , 'file_find_first' , \
-	file.find_next	, 'file_find_next'  , \
-	file.find_close , 'file_find_close' , \
-	file.size	, 'file_size'	    , \
-	file.open	, 'file_open'	    , \
-	file.read	, 'file_read'	    , \
-	file.write	, 'file_write'	    , \
-	file.seek	, 'file_seek'	    , \
-	file.tell	, 'file_tell'	    , \
-	file.eof?	, 'file_iseof'	    , \
-	file.seteof	, 'file_seteof'     , \
-	file.truncate	, 'file_truncate'   , \
-	file.close	, 'file_close'
+export                                        \
+        libio._.init    , 'lib_init'        , \
+        0x00040004      , 'version'         , \
+        file.find_first , 'file_find_first' , \
+        file.find_next  , 'file_find_next'  , \
+        file.find_close , 'file_find_close' , \
+        file.size       , 'file_size'       , \
+        file.open       , 'file_open'       , \
+        file.read       , 'file_read'       , \
+        file.write      , 'file_write'      , \
+        file.seek       , 'file_seek'       , \
+        file.tell       , 'file_tell'       , \
+        file.eof?       , 'file_iseof'      , \
+        file.seteof     , 'file_seteof'     , \
+        file.truncate   , 'file_truncate'   , \
+        file.close      , 'file_close'
+
