@@ -11,7 +11,6 @@ parse_cmd:                              ; esi must point to command
 
         mov     eax, [esi]
         and     eax, not 0x20202020     ; convert to upper case
-                                        ; (also convert spaces to null)
         mov     edi, commands           ; list of commands to scan
   .scanloop:
         cmp     eax, [edi]
@@ -35,6 +34,8 @@ commands:               ; all commands must be in uppercase
 
         db 'ABOR'
         dd cmdABOR
+        db 'CDUP'
+        dd cmdCDUP
         db 'CWD', 0
         dd cmdCWD
         db 'DELE'
@@ -76,11 +77,36 @@ cmdABOR:
         ret
 
 align 4
+cmdCDUP:
+
+        cmp     byte [work_dir+1], 0
+        je      .done
+
+        mov     ecx, 1024
+        xor     al, al
+        mov     edi, work_dir+1024
+        repne   scasb
+        std
+        dec     edi
+        mov     al,'/'
+        scasb
+        cld
+        mov     byte[edi], 0
+
+  .done:
+        mcall   send, [socketnum2], str250, str250.length, 0    ; command successful
+
+
+        ret
+
+align 4
 cmdCWD:                 ; Change Working Directory
 
         sub     ecx, 4
         jb      .err
         add     esi, 4
+
+  .scan:
         mov     edi, work_dir + 1
 
         cmp     byte [esi], '/'
@@ -94,6 +120,9 @@ cmdCWD:                 ; Change Working Directory
         lodsb
         cmp     al, 0x20
         jb      .done
+        cmp     al, '.'
+        je      .up
+  .continue:
         stosb
         loop    .loop
   .done:
@@ -107,6 +136,14 @@ cmdCWD:                 ; Change Working Directory
         mcall   send, [socketnum2], str250, str250.length, 0
 
         ret
+
+  .up:
+        lodsb
+        cmp     al, '.'
+        jne     .continue
+
+        call    cmdCDUP
+        jmp     .scan
 
   .err:
 
@@ -125,17 +162,20 @@ cmdLIST:
         jne     @f
         mcall   connect, [datasocketnum], datasock, datasock.length
         cmp     eax, -1
-        je      .err
+        je      socketerror
+        mov     [datasocketnum], eax
   @@:
-
-; Warn the client we're about to send the data
-        mcall   send, [socketnum2], str150, str150.length, 0    ; here it comes..
 
 ; Create fpath from home_dir and work_dir
         call    create_path
 
+        push    fpath
+        call    [con_write_asciiz]
+        push    str_newline
+        call    [con_write_asciiz]
+
 ; Start the search
-        push    FA_READONLY + FA_FOLDER
+        push    FA_ANY
         push    str_mask
         push    fpath
         call    [file.find.first]
@@ -220,7 +260,7 @@ cmdLIST:
 
 ; insert a cr lf
   .namedone:
-        mov     ax, 0x0d0a
+        mov     ax, 0x0a0d
         stosw
 
 ; check next file
@@ -237,9 +277,8 @@ cmdLIST:
         xor     al, al
         stosb
 
-; print everything on the console
-        push    buffer
-        call    [con_write_asciiz]
+; Warn the client we're about to send the data
+        mcall   send, [socketnum2], str150, str150.length, 0    ; here it comes..
 
 ; and send it to the client
         lea     esi, [edi - buffer]
@@ -258,17 +297,6 @@ cmdLIST:
 
         ret
 
-  .err:
-        pushd   0x0c
-        call    [con_set_flags]
-
-        push    str_err1
-        call    [con_write_asciiz]
-
-        pushd   0x07
-        call    [con_set_flags]
-
-        ret
 
 align 4
 cmdNLST:
@@ -327,7 +355,7 @@ cmdPASV:
         stosd
         mov     al, ')'
         stosb
-        mov     ax, 0x0d0a
+        mov     ax, 0x0a0d
         stosw
         xor     al, al
         stosb
@@ -426,30 +454,57 @@ cmdQUIT:
 align 4
 cmdRETR:
 
+        sub     ecx, 5
+        jb      .cannot_open
+
         cmp     [mode], MODE_ACTIVE
         jne     @f
+        push    esi
         mcall   connect, [datasocketnum], datasock, datasock.length
-;        cmp     eax, -1
-;        je      .err
+        pop     esi
+        cmp     eax, -1
+        je      socketerror
+        mov     [datasocketnum], eax
   @@:
 
-        mcall   send, [socketnum2], str150, str150.length, 0    ; here it comes..
+        push    esi
+        call    create_path
+        pop     esi
+        dec     edi
+        add     esi, 5
+        mov     ecx, 1024
+  .loop:
+        lodsb
+        cmp     al, 0x20
+        jl      .done
+        stosb
+        loop    .loop
+  .done:
+        xor     al, al
+        stosb
+
+        push    fpath
+        call    [con_write_asciiz]
+        push    str_newline
+        call    [con_write_asciiz]
 
         push    O_READ
-        push    home_dir
+        push    fpath
         call    [file.open]
-;        test    eax, eax
-;        jz      .cannot_open
+        test    eax, eax
+        jz      .cannot_open
 
-        mov     ebx, eax
+        push    eax
+        mcall   send, [socketnum2], str150, str150.length, 0    ; here it comes..
+        pop     ebx
 
   .read_more:
         push    BUFFERSIZE
         push    buffer
         push    ebx
         call    [file.read]
-;        cmp     eax, -1
-;        je      .cannot_open
+        cmp     eax, -1
+        je      .cannot_open    ; fixme: this is not the correct error
 
         push    eax
         push    ebx
@@ -457,8 +512,8 @@ cmdRETR:
         mcall   send, [datasocketnum], buffer, , 0
         pop     ebx
         pop     ecx
-;        cmp     eax, -1
-;        je      .socketerr
+        cmp     eax, -1
+        je      socketerror
 
         cmp     ecx, BUFFERSIZE
         je      .read_more
@@ -471,6 +526,21 @@ cmdRETR:
       @@:
 
         mcall   send, [socketnum2], str226, str226.length, 0    ; transfer ok
+
+        ret
+
+  .cannot_open:
+
+        pushd   0x0c
+        call    [con_set_flags]
+
+        push    str_notfound
+        call    [con_write_asciiz]
+
+        pushd   0x07
+        call    [con_set_flags]
+
+        mcall   send, [socketnum2], str550, str550.length, 0    ; file not found
 
         ret
 
@@ -649,6 +719,21 @@ create_path:            ; combine home_dir and work_dir strings into fpath
         ret
 
 
+align 4
+socketerror:
+
+        pushd   0x0c
+        call    [con_set_flags]
+
+        push    str_sockerr
+        call    [con_write_asciiz]
+
+        pushd   0x07
+        call    [con_set_flags]
+
+        mcall   send, [socketnum2], str425, str425.length, 0    ; data connection error
+
+        ret
 
 
 

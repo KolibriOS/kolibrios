@@ -6,7 +6,7 @@
 ; GPLv2
 ;
 
-BUFFERSIZE              = 4096
+BUFFERSIZE              = 8192
 
 STATE_DISCONNECTED      = 0
 STATE_CONNECTED         = 1
@@ -228,9 +228,12 @@ str8    db      'Error accepting connection',10,10,0
 str_logged_in   db 'Login ok',10,10,0
 str_pass_ok     db 'Password ok - Logged in',10,10,0
 str_pwd         db 'Current directory is "%s"\n',0
-str_err1        db 'ERROR: cannot connect to remote socket',10,10,0
 str_err2        db 'ERROR: cannot open directory',10,10,0
 str_datasock    db 'Passive data socket connected!',10,10,0
+str_notfound    db 'ERROR: file not found',10,10,0
+str_sockerr     db 'ERROR: socket error',10,10,0
+
+str_newline     db 10,0
 
 
 str_mask        db '*', 0
@@ -298,7 +301,7 @@ state           dd ?
 home_dir        db '/rd/1/', 0
                 rb 1024
 work_dir        rb 1024
-fpath           rb 2048
+fpath           rb 1024*3
 
 type            db ?
 mode            db ?    ; active/passive
