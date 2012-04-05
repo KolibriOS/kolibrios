@@ -799,9 +799,10 @@ SOCKET_send_udp:
 
         DEBUGF  1,"SOCKET_send: UDP\n"
 
+        mov     [esp+32], ecx
         call    UDP_output
-
-        mov     [esp+32], eax
+        cmp     eax, -1
+        je      s_error
         ret
 
 
@@ -813,11 +814,13 @@ SOCKET_send_tcp:
         push    eax
         add     eax, STREAM_SOCKET.snd
         call    SOCKET_ring_write
+        mov     [esp+32], ecx
         pop     eax
 
-        call    TCP_output
+        test    ecx, ecx
+        jz      s_error
 
-        mov     [esp+32], eax
+        call    TCP_output
         ret
 
 
@@ -826,19 +829,22 @@ SOCKET_send_ip:
 
         DEBUGF  1,"type: IP\n"
 
+        mov     [esp+32], ecx
         call    IPv4_output_raw
-
-        mov     [esp+32], eax
+        cmp     eax, -1
+        je      s_error
         ret
+
 
 align 4
 SOCKET_send_icmp:
 
         DEBUGF  1,"SOCKET_send: ICMP\n"
 
+        mov     [esp+32], ecx
         call    ICMP_output_raw
-
-        mov     [esp+32], eax
+        cmp     eax, -1
+        je      s_error
         ret
 
 
@@ -1136,6 +1142,7 @@ SOCKET_ring_write:
         DEBUGF  1,"SOCKET_ring_write: ringbuff=%x ptr=%x size=%u\n", eax, esi, ecx
 
         add     [eax + RING_BUFFER.size], ecx
+        jc      .way_too_large
         cmp     [eax + RING_BUFFER.size], SOCKET_MAXDATA
         ja      .too_large
 
@@ -1174,13 +1181,20 @@ SOCKET_ring_write:
         sub     [eax + RING_BUFFER.size], SOCKET_MAXDATA
         sub     ecx, [eax + RING_BUFFER.size]
         mov     [eax + RING_BUFFER.size], SOCKET_MAXDATA
+        ja      .copy
 
-        test    ecx, ecx
-        jnz     .copy
-
+  .full:
         DEBUGF  2,"SOCKET_ring_write: ring buffer is full!\n"
         xor     ecx, ecx
         ret
+
+  .way_too_large:
+        sub     [eax + RING_BUFFER.size], ecx
+        mov     ecx, SOCKET_MAXDATA
+        sub     ecx, [eax + RING_BUFFER.size]
+        ja      .copy
+        jmp     .full
+
 
 
 ;-----------------------------------------------------------------
