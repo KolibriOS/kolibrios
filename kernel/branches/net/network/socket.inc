@@ -625,8 +625,13 @@ SOCKET_accept:
         jne     s_error
 
         get_from_queue (eax + SOCKET_QUEUE_LOCATION), MAX_backlog, 4, s_error
-
         mov     eax, [esi]
+
+; Change PID to that of the current process
+        mov     ebx, [TASK_BASE]
+        mov     ebx, [ebx + TASKDATA.pid]
+        mov     [eax + SOCKET.PID], ebx
+
         call    SOCKET_ptr_to_num
         jz      s_error
         mov     [esp+32], eax
