@@ -235,7 +235,7 @@ proc but_test_pole, pole:dword
 		mov eax,[esi]
 		add esi,4
 		stdcall convert_int_to_str
-		stdcall [buf2d_draw_text], buf_0, buf_font,edi,5,ebx,color_caption ;рисуем указатели на массивы точек
+		stdcall [buf2d_draw_text], buf_0, buf_font,edi,5,ebx,[color_captions] ;рисуем указатели на массивы точек
 		add ebx,9
 		loop @b
 	.end_dr:
@@ -565,7 +565,7 @@ endp
 align 4
 proc el_draw, h_elem:dword
 	pushad
-;el_offs_nam
+
 	mov edi,[h_elem]
 	mov eax,[edi] ;coord x
 	mov ebx,[edi+4] ;coord y
@@ -697,7 +697,7 @@ proc capt_draw uses eax ebx edi esi, h_capt:dword
 	cmp esi,3
 	jl @f
 		;рисование рамки, вокруг занятой точки
-		stdcall draw_point_border, eax,ebx, color_caption
+		stdcall draw_point_border, eax,ebx, [color_captions]
 	@@:
 
 	add eax,[Cor_x]
@@ -719,7 +719,7 @@ proc capt_draw uses eax ebx edi esi, h_capt:dword
 	add edi,capt_offs ;edi - указатель на полную подпись (с координатами)
 	call str_next_val
 	call str_next_val
-	stdcall [buf2d_draw_text], buf_0, buf_font,edi,eax,ebx,color_caption ;рисуем строку с текстом
+	stdcall [buf2d_draw_text], buf_0, buf_font,edi,eax,ebx,[color_captions] ;рисуем строку с текстом
 	ret
 endp
 

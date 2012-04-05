@@ -15,7 +15,6 @@ color_s0 equ 0xff ;сигнал 0
 color_s1 equ 0xffffff ;сигнал 1
 color_s2 equ 0xff00 ;точка без пересечения
 color_s3 equ 0xff0000 ;временное значение для сохранения
-color_caption equ 0x808080
 
 color_border dd ini_def_c_border
 
@@ -53,7 +52,7 @@ include 'le_pole.inc'
 include 'le_signal.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Логические элементы 29.03.12',0 ;подпись окна
+caption db 'Логические элементы 05.04.12',0 ;подпись окна
 
 panel_0_coord_top equ 5 ;верхняя координата 0-го ряда панели инструментов
 panel_1_coord_top equ 35
@@ -110,7 +109,7 @@ elOpt 'and[2]',0xffff00,5,5,tbl_and.2, tbl_il_2, 2
 elOpt 'and[3]',0xffff00,5,7,tbl_and.3, tbl_il_3, 3
 elOpt 'and[4]',0xffff00,5,9,tbl_and.4, tbl_il_4, 4
 elOpt 'and[5]',0xffff00,5,11,tbl_and.5, tbl_il_5, 5
-elOpt 'not',   0xffff,  3,3,tbl_not, tbl_il_1, 1
+elOpt 'not',   0xffff,	3,3,tbl_not, tbl_il_1, 1
 elOpt 'xor',   0x8000ff,5,5,tbl_xor, tbl_il_2, 2
 elOpt 'sm[1]', 0x8080ff,7,7,tbl_sm,  tbl_il_3, 1,4
 ;elOpt 'cd[8]', 0x8000, 7,17,tbl_cd_8,tbl_il_8, 6,2,2 ;шифратор на 8 входов
@@ -227,6 +226,7 @@ key_color_border db 'border',0
 key_color_s0 db 's0',0
 key_color_s1 db 's1',0
 key_color_s2 db 's2',0
+key_color_captions db 'captions',0
 
 align 4
 start:
@@ -253,6 +253,19 @@ start:
 	mov	dword[shem_colors+4],eax
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_s2,color_s2
 	mov	dword[shem_colors+8],eax
+	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_captions,[color_captions]
+	mov	dword[color_captions],eax
+
+	mov ebx,el_opt_beg+el_offs_nam
+	mov ecx,(el_opt_beg.end-el_opt_beg)/size_el_opt ;колличество типов элементов
+	cld
+	@@:
+		push ecx
+		stdcall dword[ini_get_color],file_name,ini_sec_color,ebx,[ebx+el_offs_col-el_offs_nam]
+		pop ecx
+		mov	dword[ebx+el_offs_col-el_offs_nam],eax
+		add ebx,size_el_opt
+		loop @b
 
 	;*** подготовка диалога
 	stdcall [OpenDialog_Init],OpenDialog_data
@@ -1062,6 +1075,7 @@ shem_elems dd 0 ;колличество элементов на схеме
 shem_captions dd 0
 shem_colors:
 	dd color_s0, color_s1, color_s2, color_s3
+color_captions dd 0x808080
 
 align 4
 open_file_lif:
@@ -1506,8 +1520,8 @@ pushad
 		je .cycle1_end
 		cmp word[esi],el_icon_elems ;получение через esi тип иконки
 		jne .end_add_p1
-;			stdcall [tl_node_poi_get_data], esi, tree1
-;			pop ecx
+;                       stdcall [tl_node_poi_get_data], esi, tree1
+;                       pop ecx
 			inc dword[shem_elems]
 if 0
 			xor edx,edx ;edx - номер входной ноги
@@ -2122,6 +2136,7 @@ proc but_run_stop
 	@@:
 		;подготовка схемы к запуску
 		call sign_clear
+		call sign_set_captions_angles
 	.end_f:
 	ret
 endp
