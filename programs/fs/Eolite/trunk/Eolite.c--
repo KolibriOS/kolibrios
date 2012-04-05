@@ -16,7 +16,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.1"
+#define title "Eolite File Manager v1.11"
 dword videlenie=0x94AECE; //цвет выделенного элемента из списка файлов
 //
 int  but_num,
@@ -200,11 +200,11 @@ int pressed_y;
 							break;
 					case 100...120:
 							DEVICE_MARK:
-							//copystr(#disk_list[id-100].Item, #file_path);
-							//GOTO OPEN_DEV;
+							DrawRegion_3D(17,id-100*16+74,159,16, 0, 0); //выделение
 							copystr(#disk_list[id-100].Item, #path);
 							za_kadrom=curbtn=0;
 							Open_Dir(#path,1);
+							DrawRegion_3D(17,id-100*16+74,159,16, 0xFFFFFF, 0xFFFFFF);
 							break;
 					default:
 							if (id<200) break; //кнопки из списка файлов
