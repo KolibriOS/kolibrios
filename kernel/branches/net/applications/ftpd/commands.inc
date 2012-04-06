@@ -1,8 +1,39 @@
 
 
+struct  thread_data
+                        rb 1024
+        stack           rb 0
+
+        home_dir        rb 1024
+        work_dir        rb 1024
+        fpath           rb 1024*3
+
+        type            db ?    ; ASCII/EBDIC/IMAGE/..
+        mode            db ?    ; active/passive
+        socketnum       dd ?    ; Commands socket
+        state           dd ?    ; disconnected/logging in/logged in/..
+        passivesocknum  dd ?    ; when in passive mode, this is the listening socket
+        datasocketnum   dd ?    ; socket used for data transfers
+
+        datasock        sockaddr_in
+
+        buffer          rb BUFFERSIZE
+ends
+
+
+
 
 align 4
 parse_cmd:                              ; esi must point to command
+
+        cmp     byte [esi], 0x20        ; skip all leading characters
+        ja      .ok
+        inc     esi
+        dec     ecx
+        cmp     ecx, 3
+        ja      parse_cmd
+        ret
+  .ok:
 
         cmp     byte [esi+3], 0x20
         jae     @f
@@ -24,7 +55,7 @@ parse_cmd:                              ; esi must point to command
         jne     .scanloop
 
   .error:
-        mcall   send, [socketnum2], str500, str500.length, 0
+        mcall   send, [edx + thread_data.socketnum], str500, str500.length, 0
 
         ret
 
@@ -74,17 +105,19 @@ commands:               ; all commands must be in uppercase
 align 4
 cmdABOR:
 
+        ; TODO: abort the current filetransfer
+
         ret
 
 align 4
 cmdCDUP:
 
-        cmp     byte [work_dir+1], 0
+        cmp     byte [edx + thread_data.work_dir+1], 0
         je      .done
 
         mov     ecx, 1024
         xor     al, al
-        mov     edi, work_dir+1024
+        lea     edi, [edx + thread_data.work_dir+1024]
         repne   scasb
         std
         dec     edi
@@ -94,9 +127,7 @@ cmdCDUP:
         mov     byte[edi], 0
 
   .done:
-        mcall   send, [socketnum2], str250, str250.length, 0    ; command successful
-
-
+        mcall   send, [edx + thread_data.socketnum], str250, str250.length, 0    ; command successful
         ret
 
 align 4
@@ -107,7 +138,16 @@ cmdCWD:                 ; Change Working Directory
         add     esi, 4
 
   .scan:
-        mov     edi, work_dir + 1
+        lea     edi, [edx + thread_data.work_dir + 1]
+        push    ecx
+        mov     ecx, 1024
+  .find_zero:
+        cmp     byte [edi], 0
+        je      .found_zero
+        inc     edi
+        loop    .find_zero
+  .found_zero:
+        pop     ecx
 
         cmp     byte [esi], '/'
         jne     @f
@@ -133,7 +173,7 @@ cmdCWD:                 ; Change Working Directory
        @@:
         mov     byte [edi], 0
 
-        mcall   send, [socketnum2], str250, str250.length, 0
+        mcall   send, [edx + thread_data.socketnum], str250, str250.length, 0
 
         ret
 
@@ -142,10 +182,11 @@ cmdCWD:                 ; Change Working Directory
         cmp     al, '.'
         jne     .continue
 
-        call    cmdCDUP
+;;;;        call    cmdCDUP     ;;;;;; FIXME
         jmp     .scan
 
   .err:
+        ; TODO: print correct error message (550?)
 
         ret
 
@@ -158,18 +199,23 @@ align 4
 cmdLIST:
 
 ; If we are in active mode, it's time to open a data socket..
-        cmp     [mode], MODE_ACTIVE
+        cmp     [edx + thread_data.mode], MODE_ACTIVE
         jne     @f
-        mcall   connect, [datasocketnum], datasock, datasock.length
+        mov     ecx, [edx + thread_data.datasocketnum]
+        lea     edx, [edx + thread_data.datasock]
+        mov     esi, sizeof.thread_data.datasock
+        mcall   connect
+        mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
         je      socketerror
-        mov     [datasocketnum], eax
+        mov     [edx + thread_data.datasocketnum], eax
   @@:
 
 ; Create fpath from home_dir and work_dir
         call    create_path
 
-        push    fpath
+        lea     eax, [edx + thread_data.fpath]
+        push    eax
         call    [con_write_asciiz]
         push    str_newline
         call    [con_write_asciiz]
@@ -177,21 +223,24 @@ cmdLIST:
 ; Start the search
         push    FA_ANY
         push    str_mask
-        push    fpath
+        lea     eax, [edx + thread_data.fpath]
+        push    eax
         call    [file.find.first]
 
-        mov     edi, buffer
+        test    eax, eax
+        jz      .nosuchdir
+
+        lea     edi, [edx + thread_data.buffer]
   .parse_file:
         test    eax, eax        ; did we find a file?
         jz      .done
-
-        mov     edx, eax        ; yes, save the descripter
+        mov     ebx, eax        ; yes, save the descripter in ebx
 
 ; first, convert the attributes
-        test    [edx + FileInfoA.Attributes], FA_FOLDER
+        test    [ebx + FileInfoA.Attributes], FA_FOLDER
         jnz     .folder
 
-        test    [edx + FileInfoA.Attributes], FA_READONLY
+        test    [ebx + FileInfoA.Attributes], FA_READONLY
         jnz     .readonly
 
         mov     eax, '-rw-'
@@ -225,32 +274,32 @@ cmdLIST:
         stosd
 
 ; now the filesize in ascii
-        mov     ebx, [edx + FileInfoA.FileSizeLow]
+        mov     eax, [ebx + FileInfoA.FileSizeLow]
         call    dword_to_ascii
 
         mov     al, ' '
         stosb
 
 ; then date (month/day/year)
-        movzx   ebx, [edx + FileInfoA.DateModify + FileDateTime.month]
-        mov     eax, [months + 4*ebx]
+        movzx   eax, [ebx + FileInfoA.DateModify + FileDateTime.month]
+        mov     eax, [months + 4*eax]
         stosd
 
-        movzx   ebx, [edx + FileInfoA.DateModify + FileDateTime.day]
+        movzx   eax, [ebx + FileInfoA.DateModify + FileDateTime.day]
         call    dword_to_ascii
 
         mov     al, ' '
         stosb
 
-        movzx   ebx, [edx + FileInfoA.DateModify + FileDateTime.year]
+        movzx   eax, [ebx + FileInfoA.DateModify + FileDateTime.year]
         call    dword_to_ascii
 
         mov     al, ' '
         stosb
 
 ; and last but not least, filename
-        lea     esi, [edx + FileInfoA.FileName]
-        mov     ecx, 250
+        lea     esi, [ebx + FileInfoA.FileName]
+        mov     ecx, 264
   .nameloop:
         lodsb
         test    al, al
@@ -264,13 +313,13 @@ cmdLIST:
         stosw
 
 ; check next file
-        push    edx
+        push    ebx
         call    [file.find.next]
         jmp     .parse_file
 
 ; close file desc
   .done:
-        push    edx
+        push    ebx
         call    [file.find.close]
 
 ; append the string with a 0
@@ -278,28 +327,41 @@ cmdLIST:
         stosb
 
 ; Warn the client we're about to send the data
-        mcall   send, [socketnum2], str150, str150.length, 0    ; here it comes..
+        push    edi edx
+        mcall   send, [edx + thread_data.socketnum], str150, str150.length, 0    ; here it comes..
+        pop     edx esi
 
 ; and send it to the client
-        lea     esi, [edi - buffer]
-        mcall   send, [datasocketnum], buffer, , 0
+        mov     ecx, [edx + thread_data.datasocketnum]
+        lea     edx, [edx + thread_data.buffer]
+        sub     esi, edx
+        xor     edi, edi
+        mcall   send
 
 ; close the data socket..
-        mcall   close, [datasocketnum]
+        mov     edx, [esp+4]                                    ; thread_data pointer
+        mcall   close, [edx + thread_data.datasocketnum]
 
-        cmp     [mode], MODE_PASSIVE_OK
+        cmp     [edx + thread_data.mode], MODE_PASSIVE_OK
         jne     @f
-        mov     [mode], MODE_PASSIVE_WAIT
+        mov     [edx + thread_data.mode], MODE_NOTREADY
       @@:
 
 ; And send "transfer ok" on the base connection
-        mcall   send, [socketnum2], str226, str226.length, 0
+        mcall   send, [edx + thread_data.socketnum], str226, str226.length, 0
+
+        ret
+
+  .nosuchdir:
+        mcall   send, [edx + thread_data.socketnum], str550, str550.length, 0
 
         ret
 
 
 align 4
 cmdNLST:
+
+        ; TODO: same as list but simpler output format
 
         ret
 
@@ -311,38 +373,51 @@ cmdNOOP:
 align 4
 cmdPASS:
 
-        mcall   send, [socketnum2], str230, str230.length, 0
+        ; TODO: verify password
+
+        mcall   send, [edx + thread_data.socketnum], str230, str230.length, 0
 
         push    str_pass_ok
         call    [con_write_asciiz]
 
-        mov     [state], STATE_ACTIVE
+        mov     edx, [esp+4]                                    ; thread_data pointer
+        mov     [edx + thread_data.state], STATE_ACTIVE
 
         ret
 
 align 4
 cmdPASV:
 
-; 227 Entering Passive Mode (a1,a2,a3,a4,p1,p2)
-; where a1.a2.a3.a4 is the IP address and p1*256+p2 is the port number.
-
+; Open a new TCP socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
+        mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
-;        je      .err
-        mov     [passivesocknum], eax
+        je      socketerror
+        mov     [edx + thread_data.passivesocknum], eax
 
-        mov     [datasock.port], 2000
-        mov     [datasock.ip], 0
+; Bind it to a known local port
+        mov     [edx + thread_data.datasock.sin_family], AF_INET4
+        mov     [edx + thread_data.datasock.sin_port], 2000
+        mov     [edx + thread_data.datasock.sin_addr], 0
 
-        mcall   bind, [passivesocknum], datasock, datasock.length
+        mov     ecx, eax ;[edx + thread_data.passivesocknum]
+        lea     edx, [edx + thread_data.datasock]
+        mcall   bind, , , sizeof.thread_data.datasock
+        mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
         je      bind_err
 
-        mcall   listen, [passivesocknum], 1
+; And set it to listen!
+        mcall   listen, [edx + thread_data.passivesocknum], 10    ;;;;; FIXME
 
-        mov     [mode], MODE_PASSIVE_WAIT
+; Tell our thread we are ready to accept incoming calls
+        mov     edx, [esp+4]                                    ; thread_data pointer
+        mov     [edx + thread_data.mode], MODE_PASSIVE_WAIT
 
-        mov     edi, buffer
+; Now tell the client where to connect to in this format:
+; 227 Entering Passive Mode (a1,a2,a3,a4,p1,p2)
+; where a1.a2.a3.a4 is the IP address and p1*256+p2 is the port number.
+        lea     edi, [edx + thread_data.buffer]
         mov     eax, '227 '     ; FIXME (now hardcoded to 127.0.0.1:2000)
         stosd
         mov     eax, '(127'
@@ -360,20 +435,22 @@ cmdPASV:
         xor     al, al
         stosb
 
-        lea     esi, [edi - buffer]
-
-        mcall   send, [socketnum2], buffer, ,0
+        lea     esi, [edi - thread_data.buffer]
+        sub     esi, edx
+        mov     ecx, [edx + thread_data.socketnum]
+        lea     edx, [edx + thread_data.buffer]
+        mcall   send, , , ,0
 
         ret
 
 align 4
 cmdPWD:         ; Print Working Directory
 
-        mov     dword[buffer], '257 '
-        mov     byte[buffer+4], '"'
+        mov     dword [edx + thread_data.buffer], '257 '
+        mov     byte [edx + thread_data.buffer+4], '"'
 
-        lea     edi, [buffer+5]
-        mov     esi, work_dir
+        lea     edi, [edx + thread_data.buffer+5]
+        lea     esi, [edx + thread_data.work_dir]
         mov     ecx, 1024
   .loop:
         lodsb
@@ -384,10 +461,12 @@ cmdPWD:         ; Print Working Directory
         jnz     .loop
 
   .ok:
-        mov     dword[edi], '"' + 0x000a0d00    ; '"',13,10,0
-        lea     esi, [edi - buffer + 4]
-
-        mcall   send, [socketnum2], buffer, , 0
+        mov     dword [edi], '"' + 0x000a0d00    ; '"',13,10,0
+        lea     esi, [edi - thread_data.buffer + 4]
+        sub     esi, edx
+        mov     ecx, [edx + thread_data.socketnum]
+        lea     edx, [edx + thread_data.buffer]
+        mcall   send, , , , 0
 
 ;        push    work_dir
 ;        push    str_pwd
@@ -401,55 +480,59 @@ cmdPORT:
 ; PORT a1,a2,a3,a4,p1,p2
 ; IP address a1.a2.a3.a4, port p1*256+p2
 
-        mov     [mode], MODE_ACTIVE
+        mov     [edx + thread_data.mode], MODE_ACTIVE
 
         lea     esi, [esi+5]
-        xor     edx, edx
-
+; Convert the IP
         call    ascii_to_byte
-        mov     dh, bl
+        mov     bh, al
+        inc     esi             ; skip past ','
+        call    ascii_to_byte
+        mov     bl, al
+        shl     ebx, 16
         inc     esi
         call    ascii_to_byte
-        mov     dl, bl
-        shl     edx, 16
+        mov     bh, al
         inc     esi
         call    ascii_to_byte
-        mov     dh, bl
-        inc     esi
-        call    ascii_to_byte
-        mov     dl, bl
+        mov     bl, al
         inc     esi
 
-        mov     [datasock.ip], edx
+; And put it in datasock
+        mov     [edx + thread_data.datasock.sin_addr], ebx
 
+; Now the same with portnumber
         call    ascii_to_byte
-        mov     dh, bl
+        mov     bh, al
         inc     esi
         call    ascii_to_byte
-        mov     dl, bl
+        mov     bl, al
 
-        mov     [datasock.port], dx
+; Save it in datasock too
+        mov     [edx + thread_data.datasock.sin_port], bx
 
+; We will open the socket, but do not connect yet!
+        mov     [edx + thread_data.datasock.sin_family], AF_INET4
         mcall   socket, AF_INET4, SOCK_STREAM, 0
+        mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
-        je      .err
-        mov     [datasocketnum], eax
+        je      socketerror
+        mov     [edx + thread_data.datasocketnum], eax
 
-        mcall   send, [socketnum2], str225, str225.length, 0
+; Tell the client we are ready
+        mov     edx, [esp+4]                                    ; thread_data pointer
+        mcall   send, [edx + thread_data.socketnum], str225, str225.length, 0
         ret
 
-  .err:
-
-        mcall   send, [socketnum2], str425, str425.length, 0
-        ret
 
 align 4
 cmdQUIT:
 
-        mcall   send, [socketnum2], str221, str221.length, 0
-        mcall   close, [socketnum2]
+        mcall   close, [edx + thread_data.datasocketnum]
+        mcall   send, [edx + thread_data.socketnum], str221, str221.length, 0    ; 221 - bye!
+        mcall   close;, [edx + thread_data.socketnum]
 
-        ret
+        jmp     thread_exit    ; now close this thread
 
 align 4
 cmdRETR:
@@ -457,14 +540,17 @@ cmdRETR:
         sub     ecx, 5
         jb      .cannot_open
 
-        cmp     [mode], MODE_ACTIVE
+        cmp     [edx + thread_data.mode], MODE_ACTIVE
         jne     @f
         push    esi
-        mcall   connect, [datasocketnum], datasock, datasock.length
+        mov     ecx, [edx + thread_data.datasocketnum]
+        lea     edx, [edx + thread_data.datasock]
+        mcall   connect, , , sizeof.thread_data.datasock
         pop     esi
+        mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
         je      socketerror
-        mov     [datasocketnum], eax
+        mov     [edx + thread_data.datasocketnum], eax
   @@:
 
         push    esi
@@ -483,24 +569,28 @@ cmdRETR:
         xor     al, al
         stosb
 
-        push    fpath
+        lea     eax, [edx + thread_data.fpath]
+        push    eax
         call    [con_write_asciiz]
         push    str_newline
         call    [con_write_asciiz]
 
         push    O_READ
-        push    fpath
+        lea     eax, [edx + thread_data.fpath]
+        push    eax
         call    [file.open]
         test    eax, eax
         jz      .cannot_open
 
         push    eax
-        mcall   send, [socketnum2], str150, str150.length, 0    ; here it comes..
+        mcall   send, [edx + thread_data.socketnum], str150, str150.length, 0    ; here it comes..
         pop     ebx
 
+        mov     edx, [esp+4]                                    ; thread_data pointer
   .read_more:
         push    BUFFERSIZE
-        push    buffer
+        lea     eax, [edx + thread_data.buffer]
+        push    eax
         push    ebx
         call    [file.read]
         cmp     eax, -1
@@ -509,56 +599,57 @@ cmdRETR:
         push    eax
         push    ebx
         mov     esi, eax
-        mcall   send, [datasocketnum], buffer, , 0
+        mov     ecx, [edx + thread_data.datasocketnum]
+        lea     edx, [edx + thread_data.buffer]
+        mcall   send, , , , 0
         pop     ebx
         pop     ecx
+        mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
         je      socketerror
 
         cmp     ecx, BUFFERSIZE
         je      .read_more
 
-        mcall   close, [datasocketnum]
+        mcall   close, [edx + thread_data.datasocketnum]
 
-        cmp     [mode], MODE_PASSIVE_OK
+        cmp     [edx + thread_data.mode], MODE_PASSIVE_OK
         jne     @f
-        mov     [mode], MODE_PASSIVE_WAIT
+        mov     [edx + thread_data.mode], MODE_PASSIVE_WAIT
       @@:
 
-        mcall   send, [socketnum2], str226, str226.length, 0    ; transfer ok
+        mcall   send, [edx + thread_data.socketnum], str226, str226.length, 0    ; transfer ok
 
         ret
 
   .cannot_open:
-
         pushd   0x0c
         call    [con_set_flags]
-
         push    str_notfound
         call    [con_write_asciiz]
-
         pushd   0x07
         call    [con_set_flags]
 
-        mcall   send, [socketnum2], str550, str550.length, 0    ; file not found
+        mcall   send, [edx + thread_data.socketnum], str550, str550.length, 0    ; file not found
 
         ret
 
 align 4
 cmdSTOR:
 
+        ; TODO: check if user has write permission, and write file if so
+
         ret
 
 align 4
 cmdSYST:
 
-        mcall   send, [socketnum2], str215, str215.length, 0
+        mcall   send, [edx + thread_data.socketnum], str215, str215.length, 0
 
         ret
 
 align 4
 cmdTYPE:
-
 
         cmp     ecx, 6
         jb      parse_cmd.error
@@ -578,11 +669,11 @@ cmdTYPE:
         jmp     parse_cmd.error
 
   .ascii:
-        mov     [type], TYPE_ASCII
+        mov     [edx + thread_data.type], TYPE_ASCII
         jmp     .subtype
 
   .ebdic:
-        mov     [type], TYPE_EBDIC
+        mov     [edx + thread_data.type], TYPE_EBDIC
 
   .subtype:
 
@@ -602,19 +693,19 @@ cmdTYPE:
         jmp     parse_cmd.error
 
   .non_print:
-        or      [type], TYPE_NP
+        or      [edx + thread_data.type], TYPE_NP
         jmp     .ok
 
   .telnet:
-        or      [type], TYPE_TELNET
+        or      [edx + thread_data.type], TYPE_TELNET
         jmp     .ok
 
   .asacc:
-        or      [type], TYPE_ASA
+        or      [edx + thread_data.type], TYPE_ASA
         jmp     .ok
 
   .image:
-        mov     [type], TYPE_IMAGE
+        mov     [edx + thread_data.type], TYPE_IMAGE
         jmp     .ok
 
   .local:
@@ -627,21 +718,24 @@ cmdTYPE:
         cmp     al, 9
         ja      parse_cmd.error
         or      al, TYPE_LOCAL
-        mov     [type], al
+        mov     [edx + thread_data.type], al
 
   .ok:
-        mcall   send, [socketnum2], str200, str200.length, 0
+        mcall   send, [edx + thread_data.socketnum], str200, str200.length, 0
 
         ret
 
 align 4
 cmdUSER:
 
-        mcall   send, [socketnum2], str331, str331.length, 0
-        mov     [state], STATE_LOGIN
+        ; TODO: check user and set home directory (and permissions)
 
-        mov     byte [work_dir], "/"
-        mov     byte [work_dir+1], 0
+        mcall   send, [edx + thread_data.socketnum], str331, str331.length, 0
+        mov     edx, [esp+4]                                    ; thread_data pointer
+        mov     [edx + thread_data.state], STATE_LOGIN
+
+        mov     byte [edx + thread_data.work_dir], "/"
+        mov     byte [edx + thread_data.work_dir+1], 0
 
         push    str_logged_in
         call    [con_write_asciiz]
@@ -650,34 +744,31 @@ cmdUSER:
 
 
 
-
-
-
-
-align 4         ; esi = ptr to str
+align 4         ; esi = ptr to str, output in eax
 ascii_to_byte:
 
-        xor     ebx, ebx
+        xor     eax, eax
+        push    ebx
 
   .loop:
-
-        movzx   eax, byte[esi]
-        sub     al, '0'
+        movzx   ebx, byte[esi]
+        sub     bl, '0'
         jb      .done
-        cmp     al, 9
+        cmp     bl, 9
         ja      .done
-        lea     ebx, [ebx*4 + ebx]
-        shl     ebx, 1
-        add     ebx, eax
+        lea     eax, [eax*4 + eax]      ;
+        shl     eax, 1                  ; eax = eax * 10
+        add     eax, ebx
         inc     esi
 
         jmp     .loop
 
   .done:
+        pop     ebx
         ret
 
 align 4
-dword_to_ascii: ; edi = ptr where to write, ebx is number
+dword_to_ascii: ; edi = ptr where to write, eax is number
 
         mov     eax, '1'
         stosb
@@ -686,8 +777,8 @@ dword_to_ascii: ; edi = ptr where to write, ebx is number
 
 align 4
 create_path:            ; combine home_dir and work_dir strings into fpath
-        mov     edi, fpath
-        mov     esi, home_dir
+        lea     edi, [edx + thread_data.fpath]
+        lea     esi, [edx + thread_data.home_dir]
         mov     ecx, 1024
 
   .loop1:
@@ -703,7 +794,7 @@ create_path:            ; combine home_dir and work_dir strings into fpath
         dec     edi
        @@:
 
-        mov     esi, work_dir
+        lea     esi, [edx + thread_data.work_dir]
         mov     ecx, 1024
 
   .loop2:
@@ -724,14 +815,12 @@ socketerror:
 
         pushd   0x0c
         call    [con_set_flags]
-
         push    str_sockerr
         call    [con_write_asciiz]
-
         pushd   0x07
         call    [con_set_flags]
 
-        mcall   send, [socketnum2], str425, str425.length, 0    ; data connection error
+        mcall   send, [edx + thread_data.socketnum], str425, str425.length, 0    ; data connection error
 
         ret
 
