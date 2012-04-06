@@ -3332,9 +3332,7 @@ align 4
 ;--------------------------------------
 align 4
 mouse_not_active:
-        xor     eax, eax
-        xchg    al, [REDRAW_BACKGROUND]
-        test    al, al      ; background update ?
+        cmp     byte[REDRAW_BACKGROUND], 0         ; background update ?
         jz      nobackgr
 
         cmp     [background_defined], 0
@@ -3355,6 +3353,7 @@ align 4
         pop     eax
 
         call    drawbackground
+;        DEBUGF  1, "K : drawbackground\n"
 ;--------- set event 5 start ----------
         push    ecx edi
         xor     edi, edi
@@ -3369,9 +3368,7 @@ set_bgr_event:
 ; call change_task - because the application must have time to call f.15.8
         call    change_task
 ;--------- set event 5 stop -----------
-        xor     eax, eax
-        xchg    al, [REDRAW_BACKGROUND]
-        test    al, al                             ; got new update request?
+        dec     byte[REDRAW_BACKGROUND]    ; got new update request?
         jnz     @b
 
         mov     [draw_data+32 + RECT.left], eax
