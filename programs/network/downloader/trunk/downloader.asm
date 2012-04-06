@@ -454,8 +454,11 @@ no_more_data:
 ;pregs
 	call	parse_result
 	mov	ecx,[shared_name]
+	test	ecx, ecx
+	jz	@f
 	cmp	[ecx],byte 0
 	jnz	save_in_shared
+@@:
 
 	mcall	70,fileinfo
 ;dps	"saving "
