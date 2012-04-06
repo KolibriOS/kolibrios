@@ -242,7 +242,7 @@ endg
 pcnet32_dwio_read_csr:
         push    edx
         lea     edx, [ebp+PCNET32_DWIO_RAP]
-        mov     ebx, eax
+        mov     eax, ebx
         out     dx, eax
         lea     edx, [ebp+PCNET32_DWIO_RDP]
         in      eax, dx
@@ -267,7 +267,7 @@ pcnet32_dwio_write_csr:
 pcnet32_dwio_read_bcr:
         push    edx
         lea     edx, [ebp+PCNET32_DWIO_RAP]
-        mov     ebx, eax
+        mov     eax, ebx
         out     dx, eax
         lea     edx, [ebp+PCNET32_DWIO_BDP]
         in      eax, dx
@@ -709,10 +709,10 @@ pcnet32_probe:
         mov     eax, 2
         call    dword [pcnet32_access.write_bcr]
         mov     ebx, 1
-        mov     eax, (pcnet32_private and 0xffff)
+        mov     eax, ((pcnet32_private - OS_BASE) and 0xffff)
         call    dword [pcnet32_access.write_csr]
         mov     ebx, 2
-        mov     eax, (pcnet32_private shr 16) and 0xffff
+        mov     eax, ((pcnet32_private - OS_BASE) shr 16) and 0xffff
         call    dword [pcnet32_access.write_csr]
         mov     ebx, 0
         mov     eax, 1
