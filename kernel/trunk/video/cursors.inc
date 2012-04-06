@@ -642,6 +642,8 @@ align 4
         sub     edi, [y]
         inc     ebx
         inc     edi
+        sub     ebx, [_dx]
+        sub     edi, [_dy]
 
         mov     [cur.w], ebx
         mov     [cur.h], edi
@@ -758,6 +760,8 @@ align 4
         sub     edi, [y]
         inc     ebx
         inc     edi
+        sub     ebx, [_dx]
+        sub     edi, [_dy]
 
         mov     [cur.w], ebx
         mov     [cur.h], edi
