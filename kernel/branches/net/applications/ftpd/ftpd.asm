@@ -64,7 +64,7 @@ start:
 
 ; find path to main settings file
         mov     edi, path               ; Calculate the length of zero-terminated string
-        xor     al , al
+        xor     al, al
         mov     ecx, 1024
         repne   scasb
         dec     edi
@@ -101,9 +101,9 @@ start:
         push    str2
         call    [con_write_asciiz]
 
-;;        mcall   setsockopt, [socketnum], SOL_SOCKET, SO_REUSEADDR, &yes,
-;;        cmp     eax, -1
-;;        je      opt_err
+;        mcall   setsockopt, [socketnum], SOL_SOCKET, SO_REUSEADDR, &yes,
+;        cmp     eax, -1
+;        je      opt_err
 
         mcall   bind, [socketnum], sockaddr1, sockaddr1.length
         cmp     eax, -1
@@ -132,6 +132,7 @@ mainloop:
                                                 ; NOTE: upon initialisation of the thread, stack will not be available!
         jmp     mainloop
 
+        diff16  "threadstart", 0, $
 threadstart:
         mcall   68, 12, sizeof.thread_data      ; allocate the thread data struct
         cmp     eax, -1
@@ -142,8 +143,12 @@ threadstart:
 
         mcall   40, 1 shl 7                     ; we only want network events for this thread
 
+        pushd   0x03
+        call    [con_set_flags]
         push    str8
         call    [con_write_asciiz]                                              ; print on the console that we have created the new thread successfully
+        pushd   0x07
+        call    [con_set_flags]
 
         mcall   accept, [socketnum], sockaddr1, sockaddr1.length                ; time to accept the awaiting connection..
         cmp     eax, -1
@@ -187,8 +192,10 @@ threadloop:
         mov     edx, [esp+4]                                                    ; pointer to thread_data
         mov     byte [edx + thread_data.buffer + eax], 0                        ; append received data with a 0 byte
 
-        pushd   0x0a                                                            ; print received data to console (in green color)
+        pushd   0x02                                                            ; print received data to console (in green color)
         call    [con_set_flags]
+        push    str_newline
+        call    [con_write_asciiz]
         lea     eax, [edx + thread_data.buffer]
         push    eax
         call    [con_write_asciiz]
@@ -244,22 +251,22 @@ thread_exit:
 title           db 'KolibriOS FTP daemon 0.1', 0
 str1            db 'Starting FTP daemon on port %u', 0
 str2            db '.', 0
-str2b           db ' OK!',10,10,0
-str3            db 'Listen error',10,10,0
-str4            db 'Bind error',10,10,0
+str2b           db ' OK!',10,0
+str3            db 'Listen error',10,0
+str4            db 'Bind error',10,0
 ;str5            db 'Setsockopt error.',10,10,0
-str6            db 'Could not open socket',10,10,0
+str6            db 'Could not open socket',10,0
 str7            db 'Got data!',10,10,0
-str8            db 10,'New thread created!',10,10,0
-str_bye         db 10,'Closing thread!',10,10,0
+str8            db 10,'New thread created!',10,0
+str_bye         db 10,'Closing thread!',10,0
 
-str_logged_in   db 'Login ok',10,10,0
-str_pass_ok     db 'Password ok - Logged in',10,10,0
+str_logged_in   db 'Login ok',10,0
+str_pass_ok     db 'Password ok - Logged in',10,0
 str_pwd         db 'Current directory is "%s"\n',0
-str_err2        db 'ERROR: cannot open directory',10,10,0
-str_datasock    db 'Passive data socket connected!',10,10,0
-str_notfound    db 'ERROR: file not found',10,10,0
-str_sockerr     db 'ERROR: socket error',10,10,0
+str_err2        db 'ERROR: cannot open directory',10,0
+str_datasock    db 'Passive data socket connected!',10,0
+str_notfound    db 'ERROR: file not found',10,0
+str_sockerr     db 'ERROR: socket error',10,0
 
 str_newline     db 10, 0
 str_mask        db '*', 0

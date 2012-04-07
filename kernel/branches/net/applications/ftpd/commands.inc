@@ -81,10 +81,10 @@ commands:               ; all commands must be in uppercase
         dd cmdPASS
         db 'PASV'
         dd cmdPASV
-        db 'PWD', 0
-        dd cmdPWD
         db 'PORT'
         dd cmdPORT
+        db 'PWD', 0
+        dd cmdPWD
         db 'QUIT'
         dd cmdQUIT
         db 'RETR'
@@ -97,8 +97,6 @@ commands:               ; all commands must be in uppercase
         dd cmdTYPE
         db 'USER'
         dd cmdUSER
-        db 'XPWD'
-        dd cmdPWD
         db 0            ; end marker
 
 
@@ -112,23 +110,33 @@ cmdABOR:
 align 4
 cmdCDUP:
 
-        cmp     byte [edx + thread_data.work_dir+1], 0
+        cmp     byte [edx + thread_data.work_dir+1], 0                          ; are we in "/" ?
         je      .done
 
         mov     ecx, 1024
         xor     al, al
-        lea     edi, [edx + thread_data.work_dir+1024]
+        lea     edi, [edx + thread_data.work_dir]
         repne   scasb
         std
         dec     edi
+        dec     edi
+        dec     edi
         mov     al,'/'
-        scasb
+        repne   scasb
         cld
-        mov     byte[edi], 0
+        mov     byte[edi+1], 0
 
   .done:
-        mcall   send, [edx + thread_data.socketnum], str250, str250.length, 0    ; command successful
+; Print the new working dir on the console
+        lea     eax, [edx + thread_data.work_dir]
+        push    eax
+        call    [con_write_asciiz]
+        push    str_newline
+        call    [con_write_asciiz]
+
+        mcall   send, [edx + thread_data.socketnum], str250, str250.length, 0   ; command successful
         ret
+
 
 align 4
 cmdCWD:                 ; Change Working Directory
@@ -174,6 +182,13 @@ cmdCWD:                 ; Change Working Directory
        @@:
         mov     byte [edi], 0
 
+; Print the new working dir on the console
+        lea     eax, [edx + thread_data.work_dir]
+        push    eax
+        call    [con_write_asciiz]
+        push    str_newline
+        call    [con_write_asciiz]
+
         mcall   send, [edx + thread_data.socketnum], str250, str250.length, 0
 
         ret
@@ -197,6 +212,7 @@ align 4
 cmdDELE:
 
         ret
+
 
 align 4
 cmdLIST:
@@ -344,11 +360,7 @@ cmdLIST:
 ; close the data socket..
         mov     edx, [esp+4]                                    ; thread_data pointer
         mcall   close, [edx + thread_data.datasocketnum]
-
-        cmp     [edx + thread_data.mode], MODE_PASSIVE_OK
-        jne     @f
         mov     [edx + thread_data.mode], MODE_NOTREADY
-      @@:
 
 ; And send "transfer ok" on the base connection
         mcall   send, [edx + thread_data.socketnum], str226, str226.length, 0
@@ -448,6 +460,7 @@ cmdPASV:
 
         ret
 
+
 align 4
 cmdPWD:         ; Print Working Directory
 
@@ -471,13 +484,19 @@ cmdPWD:         ; Print Working Directory
         sub     esi, edx
         mov     ecx, [edx + thread_data.socketnum]
         lea     edx, [edx + thread_data.buffer]
-        mcall   send, , , , 0
+        xor     edi, edi
+        mcall   send
 
-;        push    work_dir
-;        push    str_pwd
-;        call    [con_printf]
+        mov     edx, [esp+4]
+; Print the new working dir on the console
+        lea     eax, [edx + thread_data.work_dir]
+        push    eax
+        call    [con_write_asciiz]
+        push    str_newline
+        call    [con_write_asciiz]
 
         ret
+
 
 align 4
 cmdPORT:
@@ -620,11 +639,7 @@ cmdRETR:
         je      .read_more
 
         mcall   close, [edx + thread_data.datasocketnum]
-
-        cmp     [edx + thread_data.mode], MODE_PASSIVE_OK
-        jne     @f
-        mov     [edx + thread_data.mode], MODE_PASSIVE_WAIT
-      @@:
+        mov     [edx + thread_data.mode], MODE_NOTREADY
 
         mcall   send, [edx + thread_data.socketnum], str226, str226.length, 0    ; transfer ok
 
@@ -684,7 +699,6 @@ cmdTYPE:
         mov     [edx + thread_data.type], TYPE_EBDIC
 
   .subtype:
-
         cmp     ecx, 8
         jb      .non_print
 
@@ -733,20 +747,20 @@ cmdTYPE:
 
         ret
 
+
 align 4
 cmdUSER:
 
         ; TODO: check user and set home directory (and permissions)
 
-        mcall   send, [edx + thread_data.socketnum], str331, str331.length, 0
-        mov     edx, [esp+4]                                    ; thread_data pointer
         mov     [edx + thread_data.state], STATE_LOGIN
-
-        mov     byte [edx + thread_data.work_dir], "/"
-        mov     byte [edx + thread_data.work_dir+1], 0
+        mov     word [edx + thread_data.home_dir], "/"          ; "/", 0
+        mov     word [edx + thread_data.work_dir], "/"          ; "/", 0
 
         push    str_logged_in
         call    [con_write_asciiz]
+
+        mcall   send, [edx + thread_data.socketnum], str331, str331.length, 0           ; Now send me the password!
 
         ret
 
