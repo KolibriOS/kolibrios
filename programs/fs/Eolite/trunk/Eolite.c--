@@ -2,6 +2,7 @@
 //GNU GPL licence.
 
 //копировать через поток
+//IF (strcmp(#path+strlen(#path)-1,"/")<>0) copystr("/",#path+strlen(#path)); //если нет, + "/" перенестив опендир
 
 #include "lib\kolibri.h"
 #include "lib\memory.h"

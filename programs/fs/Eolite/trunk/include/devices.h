@@ -54,6 +54,7 @@ void DrawSystemDiscs()
 		copystr("Unknown ",#disc_name); //изначально неизвесный носитель
 		dev_icon=3; //по-умолчанию устройство выглядит как жестяк
 		copystr(#disk_list[i].Item, #dev_name);
+		dev_name[strlen(#dev_name)-1]='';
 		IF (dev_name[1]=='r')  { dev_icon=0; copystr("RAM disk ",#disc_name); }
 		IF (dev_name[1]=='c')  { dev_icon=1; copystr("CD-ROM ",#disc_name); }
 		IF (dev_name[1]=='f')  { dev_icon=2; copystr("Floppy disk ",#disc_name); }
