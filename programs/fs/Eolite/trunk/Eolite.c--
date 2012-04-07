@@ -1,6 +1,8 @@
 //Leency & Veliant -=- KolibriOS Team -=- 2012
 //GNU GPL licence.
 
+//копировать через поток
+
 #include "lib\kolibri.h"
 #include "lib\memory.h"
 #include "lib\edit_box_lib.h"
@@ -16,7 +18,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.11"
+#define title "Eolite File Manager v1.15"
 dword videlenie=0x94AECE; //цвет выделенного элемента из списка файлов
 //
 int  but_num,
@@ -43,6 +45,10 @@ int toolbar_buttons_x[6]={9,46,85,134,167,203};
 dword file_mas[6898];
 int j, i, mouse_dd;
 
+struct path_string {
+char Item[4096];
+};
+
 dword stak[100]; //окно About 
 
 edit_box edit1= {250,247,13,0xffffff,0x94AECE,0xD3DDEB,0xffffff,0,248,#edit_path,#mouse_dd,64,6,6};
@@ -57,6 +63,7 @@ dword buf, off; //для текста и буфера
 #include "include\icons_f.h"
 #include "include\ini.h"
 #include "include\devices.h"
+#include "include\history.h"
 
 
 void main() 
@@ -84,7 +91,7 @@ int pressed_y;
 	{
 		switch(WaitEvent())
 		{
-			CASE evMouse:
+			case evMouse:
 					IF (del_active==1) break;
 					
 					id=GetSlot(Form.ID); 
@@ -152,23 +159,26 @@ int pressed_y;
 				IF (del_active==1) {IF (id==301) || (id==302) Del_File(302-id); break;}
 				switch(id) 
 				{
-					CASE 21: //Назад
+					case 21: //Back
 							GoBack();
 							break;
-					CASE 23: //up!
+					case 22: //Forvard
+							HistoryPath(go_forvard);
+							break;
+					case 23: //up!
 							IF (strcmp(#path,"/")<>0) Dir_Up();
 							break;
-					CASE 24: //cut
+					case 24: //cut
 							key=24; 
-					CASE 25: //copy
+					case 25: //copy
 							goto CTRLC_MARK;
-					CASE 26: //paste
+					case 26: //paste
 							Paste();
 							break;
-					CASE 27: //goto edit_path
+					case 27: //goto edit_path
 							Goto_edit_path();
 							break; 
-					CASE 31...33: //sort
+					case 31...33: //sort
 							IF(sort_num==1) DrawBar(onLeft(192,168)/2+210,45,6,9,0xE4DFE1);
 							IF(sort_num==2) DrawBar(onLeft(115,0),45,6,9,0xE4DFE1);
 							IF(sort_num==3) DrawBar(onLeft(44,0),45,6,9,0xE4DFE1);
@@ -787,12 +797,10 @@ void Dir_Up()
 
 inline fastcall void GoBack()   //вначале удаляем текущий путь, а потом копируем то, что осталось
 {
-	i=strlen(#PathHistory)-1;
-	IF (i<7) RETURN;
-	PathHistory[i]=0x00;
-	copystr(#PathHistory+find_symbol(#PathHistory,'/'),#temp); //папка в которой были
+	char cur_folder[4096];
+	copystr(GetCurrentFolder(), #cur_folder);
 	HistoryPath(go_back); 
-	SelectFile(#temp);
+	SelectFile(#cur_folder);
 }
 
 

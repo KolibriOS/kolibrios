@@ -1,10 +1,6 @@
 //03.04.2012
 
-struct string {
-char Item[4096];
-};
-
-string disk_list[20];
+path_string disk_list[20];
 int disc_num;
 
 
@@ -25,6 +21,7 @@ void GetSystemDiscs()
 		
 		Open_Dir(#dev_name, ONLY_OPEN);
 		dev_disc_num = count;
+		//if (count<=0) copystr(#dev_name,#disk_list[disc_num].Item); else
 		for (j1=0; j1<dev_disc_num; j1++;)
 		{
 			copystr(#dev_name, #sys_discs);                              // /rd/
@@ -41,7 +38,7 @@ void GetSystemDiscs()
 void DrawSystemDiscs()
 {    
 	byte disc_icon;
-	char dev_name[6];
+	char dev_name[10];
 	char disc_name[100];
 	int i, dev_icon;
 	
@@ -49,19 +46,18 @@ void DrawSystemDiscs()
 	DrawBar(2,56,15,onTop(21,41),0x00699C);	  //синий прямоугольник - слева       
 	DrawBar(177,56,15,onTop(21,41),0x00699C); //синий прямоугольник - справа
 	//список дисков
-	Tip(56, "Disks", 0, "");
+	Tip(56, "Devices", 0, "");
 	for (i=0;i<disc_num;i++)
 	{
 		DrawBar(17,i*16+74,160,17,0xFFFFFF); //белое
 		DefineButton(17,i*16+74,159,16,100+i+BT_HIDE,0xFFFFFF); //создаём кнопки, а потом выводим названия дисков
-		copystr("Unknown drive",#disc_name); //изначально неизвесный носитель
+		copystr("Unknown ",#disc_name); //изначально неизвесный носитель
 		dev_icon=3; //по-умолчанию устройство выглядит как жестяк
 		copystr(#disk_list[i].Item, #dev_name);
 		IF (dev_name[1]=='r')  { dev_icon=0; copystr("RAM disk ",#disc_name); }
 		IF (dev_name[1]=='c')  { dev_icon=1; copystr("CD-ROM ",#disc_name); }
 		IF (dev_name[1]=='f')  { dev_icon=2; copystr("Floppy disk ",#disc_name); }
 		IF (dev_name[1]=='h') || (dev_name[1]=='b') copystr("Hard disk ",#disc_name); 
-		//IF (dev_name[1]=='b')   copystr("SATA disk ",#disc_name); 
 		copystr(#dev_name,#disc_name+strlen(#disc_name));
 		//
 		WriteText(45,i*16+79,0x80,0,#disc_name,0);
