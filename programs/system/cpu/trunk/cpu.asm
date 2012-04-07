@@ -2,6 +2,13 @@
 ;   CPU -process Manager
 ;
 ;------------------------------------------------------------------------------
+; version:	1.80
+; last update:  07/04/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Complete elimination of flicker.
+;               Using f.0 C = 1 - don't fill working area on window draw.
+;               Increasing the size of buttons and a bright color.
+;------------------------------------------------------------------------------
 ; version:	1.70
 ; last update:  04/04/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -36,7 +43,7 @@ include '../../../macros.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 ;------------------------------------------------------------------------------
-display_processes=32		; number of processes to show
+display_processes=24	;32		; number of processes to show
 window_x_size=524
 window_y_size=430
 ;------------------------------------------------------------------------------
@@ -93,9 +100,6 @@ still:
 
 	dec	eax		      ; button in buffer ?
 	jz	button
-
-;	sub	eax,3		      ; If not use mouse - show 
-;	jnz	still_end
 
 	push	dword edit1
 	call	[edit_box_mouse]
@@ -179,7 +183,7 @@ button:
 	jle	still_end
 ;terminate application    
 	mcall	18,2
-	jmp	show_process_info_1	;still_end 
+	jmp	show_process_info_1 
 ;--------------------------------------
 align 4
 noterm:
@@ -205,21 +209,20 @@ noterm:
 align 4	
 pgdn:
 	sub	[list_start],display_processes
-;	cmp	[list_start],0
-	jge	show_process_info_1	;still_end  
+	jge	show_process_info_1  
 	mov	[list_start],0
-	jmp	show_process_info_1	;still_end  
+	jmp	show_process_info_1
 ;------------------------------------------------------------------------------
 align 4	
 pgup:
 	mov	eax,[list_add]  ;maximal displayed process slot
 	mov	[list_start],eax
-	jmp	show_process_info_1	;still_end  
+	jmp	show_process_info_1
 ;------------------------------------------------------------------------------
 align 4	    
 program_start:    
 	mcall	70,file_start
-	jmp	show_process_info_1	;still_end
+	jmp	show_process_info_1
 ;------------------------------------------------------------------------------
 align 4	
 reboot:    
@@ -232,6 +235,24 @@ close:
 	mcall
 ;------------------------------------------------------------------------------
 align 4	
+draw_empty_slot:	
+	cmp	[draw_window_flag],1
+	je	@f
+	mov	ecx,[curposy]
+	shl	ecx,16
+	mov	cx,10	; button height
+	push	ecx
+	add	ecx,3 shl 16
+	mcall	13,<11,95>,,[btn_bacground_color]
+	pop	ecx
+	
+	mcall	13,<111,393>,,[bar_bacground_color]
+;--------------------------------------
+align 4
+@@:
+	ret
+;------------------------------------------------------------------------------
+align 4	
 draw_next_process:
 ;input:
 ;  edi - current slot
@@ -240,39 +261,61 @@ draw_next_process:
 ;  edi - next slot (or -1 if no next slot)
 ;registers corrupted!
 ;delete old button
+	cmp	[draw_window_flag],0
+	je	@f
 	mov	edx,[index]
 	add	edx,(1 shl 31)+11
 	mcall	8
+;--------------------------------------
+align 4
+@@:
 ;create terminate process button
 	mov	ecx,[curposy]
 	shl	ecx,16
-	mov	cx,10
+	mov	cx,13	; button height
 	mov	edx,[index]
 	add	edx,11
-	mov	esi,0xaabbcc
+	mov	esi,0xccddee	; 0xaabbcc
 ;contrast    
 	test	dword [index],1
 	jz	.change_color_button
-	mov	esi,0x8899aa
+	mov	esi,0xaabbcc	; 0x8899aa
 ;--------------------------------------
 align 4
 .change_color_button:
-	mcall	,<10,99>
+	cmp	[draw_window_flag],0
+	je	@f
+	mcall	8,<10,99>
+;--------------------------------------
+align 4
+@@:
+	mov	[btn_bacground_color],esi
 ;draw background for proccess information
 ; ecx was already set
-	mov	edx,0x88ff88
+	mov	edx,0xddffdd	; 0x88ff88
 ;contrast
 	test	dword [index],1
 	jz	.change_color_info
-	mov	edx,0xddffdd
+	mov	edx,0xffffff	; 0xddffdd
 ;--------------------------------------
 align 4
 .change_color_info:
+	inc	cx
+	cmp	[draw_window_flag],0
+	je	@f
 	mcall	13,<110,395>
+;--------------------------------------
+align 4
+@@:
+	mov	[bar_bacground_color],edx
 ;nothing else should be done
 ;if there is no process for this button    
-	test	edi,edi
-	jl	.ret
+	cmp	edi,-1
+	jne	.return_1
+
+	call	draw_empty_slot
+	or	edi,-1
+	jmp	.ret
 ;--------------------------------------
 align 4
 .return_1:
@@ -302,6 +345,7 @@ align 4
 ;--------------------------------------
 align 4
 .no_processes:
+	call	draw_empty_slot
 	or	edi,-1
 	ret
 ;--------------------------------------
@@ -368,18 +412,27 @@ align 4
 .color_set:
 ;show slot number
 ;ecx haven't changed since .process_found    
-;	mov	ecx,edi
+	push	edi
 	mov	edx,[curposy]
-	add	edx,15*65536+1
-	mcall	47,<2,256>,,,[tcolor]
+	add	edx,15*65536+3
+	mov	esi,[tcolor]
+	and	esi,0xffffff
+	or	esi,0x40000000
+	mcall	47,<2,256>,,,,[btn_bacground_color]
 ;show process name
 	mov	ebx,[curposy]
-	add	ebx,45*65536+1
-	mcall	4,,[tcolor],process_info_buffer.process_name,11
+	add	ebx,40*65536+3
+	mov	ecx,[tcolor]
+	and	ecx,0xffffff
+	or	ecx,0x40000000
+	mcall	4,,,process_info_buffer.process_name,11,[btn_bacground_color]
 ;show pid
 	mov	edx,[curposy]
-	add	edx,125*65536+1
-	mcall	47,<8,256>,[process_info_buffer.PID],,[tcolor]
+	add	edx,125*65536+3
+	mov	esi,[tcolor]
+	and	esi,0xffffff
+	or	esi,0x40000000
+	mcall	47,<8,256>,[process_info_buffer.PID],,,[bar_bacground_color]
 ;show cpu usage
 	add	edx,60*65536
 	mcall	,,[process_info_buffer.cpu_usage]
@@ -403,6 +456,7 @@ align 4
 	add	ecx,[process_info_buffer.box.top]
 	add	edx,60*65536
 	mcall 
+	pop	edi
 ;--------------------------------------
 align 4
 .ret:
@@ -427,24 +481,51 @@ draw_window:
 ; DRAW WINDOW
 	xor	eax,eax				; function 0 : define and draw window
 	xor	esi,esi
-	mcall	,[winxpos],[winypos],0x34ddffdd,,title
+	mcall	,[winxpos],[winypos],0x74ffffff,,title	;0x34ddffdd
+
+	mcall	9,process_info_buffer,-1
+	mov	eax,[ebx+62]
+	inc	eax
+	mov	[client_area_x_size],eax
+	mov	eax,[ebx+66]
+	inc	eax
+	mov	[client_area_y_size],eax
+
+	mov	ebx,[client_area_x_size]
+	mcall	13,,<0,20>,0xffffff
 ; function 4 : write text to window
 	xor	ecx,ecx
-	mcall	4,<17,13>,,text,text_len
+	mcall	4,<17,8>,,text,text_len
+
+	mcall	13,<0,10>,<20,336>,0xffffff
+	
+	mov	ebx,[client_area_x_size]
+	sub	ebx,10+100+395
+	add	ebx,(10+100+395) shl 16
+	mcall
+	
+	mcall	26,9
+	add	eax,100
+	mov	[time_counter],eax
+
+	mov	[draw_window_flag],1
+	call	show_process_info
+	mov	[draw_window_flag],0
+	
+	mov	ebx,[client_area_x_size]
+	mov	ecx,[client_area_y_size]
+	sub	ecx,20+336
+	add	ecx,(20+336) shl 16
+	mcall	13,,,0xffffff
 
 	push	dword edit1
 	call	[edit_box_draw]
 
 	push	dword check1
 	call	[check_box_draw]
-
-	mcall	26,9
-	add	eax,100
-	mov	[time_counter],eax
-
-	call	show_process_info
+	
 ; previous page button
-	mcall	8,<25,96>,<358,10>,51,0xaabbcc
+	mcall	8,<25,96>,<361,14>,51,0xccddee	;0xaabbcc
 ; next page button  52
 	inc	edx
 	mcall	,<125,96>
@@ -452,7 +533,7 @@ draw_window:
 	add	ecx,20 shl 16
 ; run button 53
 	inc	edx
-	mcall	,<451,50>
+	mcall	,<456,50>
 ; reboot button    
 	sub	ebx,120*65536		    
 	add	ebx,60
@@ -461,9 +542,9 @@ draw_window:
 	mcall
 ;"PREV PAGE", "NEXT PAGE" and "REBOOT" labels
 	xor	ecx,ecx
-	mcall	4,<45,360>,,tbts,tbte-tbts
+	mcall	4,<45,365>,,tbts,tbte-tbts
 ;"RUN" labels
-	mcall	,<464,380>,,tbts_3,tbte_2-tbts_3
+	mcall	,<464,385>,,tbts_3,tbte_2-tbts_3
 ;print application name in text box
 	mcall	12, 2
 	ret
@@ -473,13 +554,13 @@ show_process_info:
 	mov	edi,[list_start]
 	mov	[list_add],edi
 	mov	dword [index],0
-	mov	dword [curposy],32
+	mov	dword [curposy],20
 ;--------------------------------------
 align 4
 .loop_draw:
 	call	draw_next_process
 	inc	dword [index]
-	add	dword [curposy],10
+	add	dword [curposy],14
 	cmp	[index],display_processes
 	jl	.loop_draw
 	ret
@@ -527,9 +608,9 @@ aCheck_box_mouse	db 'check_box_mouse',0
 ;aVersion_op		db 'version_op',0
 ;------------------------------------------------------------------------------
 align 4	
-check1 check_box 10,378,6,11,0x80AABBCC,0,0,check_text,check_t_e,0;ch_flag_en
+check1 check_box 10,383,6,11,0x80AABBCC,0,0,check_text,check_t_e,0;ch_flag_en
 check1_end:
-edit1 edit_box 350,95,376,0xffffff,0x6f9480,0,0xAABBCC,0,start_application_c,\
+edit1 edit_box 350,95,381,0xffffff,0x6f9480,0,0xAABBCC,0,start_application_c,\
    start_application,mouse_dd,ed_focus,start_application_e,start_application_e
 edit1_end:
 list_start  dd 0
@@ -549,7 +630,7 @@ text:
 	db 'SPEICHER START/NUTZUNG  W-STACK   W-SIZE'
 text_len = $-text
 
-tbts:	db 'SEITE ZURUECK       SEITE VOR                      REBOOT SYSTEM'
+tbts:	db 'SEITE ZURUECK     SEITE VOR                        REBOOT SYSTEM'
 tbte:
 tbts_3	db 'START'
 tbte_2:
@@ -628,6 +709,12 @@ curposy		rd 1
 index		rd 1
 tasklist	rd display_processes
 time_counter	rd 1
+
+client_area_x_size	rd 1
+client_area_y_size	rd 1
+bar_bacground_color	rd 1
+btn_bacground_color	rd 1
+draw_window_flag	rd 1
 ;------------------------------------------------------------------------------
 align 4	
 library_path:
