@@ -31,6 +31,8 @@ MODE_ACTIVE             = 1
 MODE_PASSIVE_WAIT       = 2
 MODE_PASSIVE_OK         = 3
 
+format binary as ""
+
 use32
         db      'MENUET01'      ; signature
         dd      1               ; header version

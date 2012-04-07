@@ -148,6 +148,7 @@ cmdCWD:                 ; Change Working Directory
         loop    .find_zero
   .found_zero:
         pop     ecx
+  .scan2:
 
         cmp     byte [esi], '/'
         jne     @f
@@ -182,8 +183,10 @@ cmdCWD:                 ; Change Working Directory
         cmp     al, '.'
         jne     .continue
 
-;;;;        call    cmdCDUP     ;;;;;; FIXME
-        jmp     .scan
+;;;;        TODO: find second last '\' in work_dir and make next char zero
+;;;;        point edi to that 0
+
+        jmp     .scan2
 
   .err:
         ; TODO: print correct error message (550?)
@@ -208,7 +211,6 @@ cmdLIST:
         mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
         je      socketerror
-        mov     [edx + thread_data.datasocketnum], eax
   @@:
 
 ; Create fpath from home_dir and work_dir
@@ -232,6 +234,7 @@ cmdLIST:
 
         lea     edi, [edx + thread_data.buffer]
   .parse_file:
+
         test    eax, eax        ; did we find a file?
         jz      .done
         mov     ebx, eax        ; yes, save the descripter in ebx
@@ -402,7 +405,8 @@ cmdPASV:
 
         mov     ecx, eax ;[edx + thread_data.passivesocknum]
         lea     edx, [edx + thread_data.datasock]
-        mcall   bind, , , sizeof.thread_data.datasock
+        mov     esi, sizeof.thread_data.datasock
+        mcall   bind
         mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
         je      bind_err
@@ -439,7 +443,8 @@ cmdPASV:
         sub     esi, edx
         mov     ecx, [edx + thread_data.socketnum]
         lea     edx, [edx + thread_data.buffer]
-        mcall   send, , , ,0
+        xor     esi, esi
+        mcall   send
 
         ret
 
@@ -485,18 +490,19 @@ cmdPORT:
         lea     esi, [esi+5]
 ; Convert the IP
         call    ascii_to_byte
-        mov     bh, al
+        mov     bl, al
         inc     esi             ; skip past ','
         call    ascii_to_byte
-        mov     bl, al
+        mov     bh, al
         shl     ebx, 16
         inc     esi
         call    ascii_to_byte
-        mov     bh, al
-        inc     esi
-        call    ascii_to_byte
         mov     bl, al
         inc     esi
+        call    ascii_to_byte
+        mov     bh, al
+        inc     esi
+        rol     ebx, 16
 
 ; And put it in datasock
         mov     [edx + thread_data.datasock.sin_addr], ebx
@@ -532,7 +538,8 @@ cmdQUIT:
         mcall   send, [edx + thread_data.socketnum], str221, str221.length, 0    ; 221 - bye!
         mcall   close;, [edx + thread_data.socketnum]
 
-        jmp     thread_exit    ; now close this thread
+        add     esp, 4          ; get rid of call return address
+        jmp     thread_exit     ; now close this thread
 
 align 4
 cmdRETR:
@@ -545,12 +552,12 @@ cmdRETR:
         push    esi
         mov     ecx, [edx + thread_data.datasocketnum]
         lea     edx, [edx + thread_data.datasock]
-        mcall   connect, , , sizeof.thread_data.datasock
+        mov     esi, sizeof.thread_data.datasock
+        mcall   connect
         pop     esi
         mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
         je      socketerror
-        mov     [edx + thread_data.datasocketnum], eax
   @@:
 
         push    esi
@@ -601,7 +608,8 @@ cmdRETR:
         mov     esi, eax
         mov     ecx, [edx + thread_data.datasocketnum]
         lea     edx, [edx + thread_data.buffer]
-        mcall   send, , , , 0
+        xor     esi, esi
+        mcall   send
         pop     ebx
         pop     ecx
         mov     edx, [esp+4]                                    ; thread_data pointer
@@ -777,10 +785,10 @@ dword_to_ascii: ; edi = ptr where to write, eax is number
 
 align 4
 create_path:            ; combine home_dir and work_dir strings into fpath
+
         lea     edi, [edx + thread_data.fpath]
         lea     esi, [edx + thread_data.home_dir]
         mov     ecx, 1024
-
   .loop1:
         lodsb
         or      al, al
@@ -796,7 +804,6 @@ create_path:            ; combine home_dir and work_dir strings into fpath
 
         lea     esi, [edx + thread_data.work_dir]
         mov     ecx, 1024
-
   .loop2:
         lodsb
         or      al, al
