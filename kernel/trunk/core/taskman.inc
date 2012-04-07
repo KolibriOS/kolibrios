@@ -84,13 +84,15 @@ proc fs_execute
 
         pushad
 
+        cmp     [SCR_MODE], word 0x13
+        jbe     @f
         pushad
         stdcall set_cursor, [def_cursor_clock]
         mov     [handle], eax
         mov     [redrawmouse_unconditional], 1
         call    __sys_draw_pointer
         popad
-
+@@:
         mov     [flags], edx
 
 ; [ebp]  pointer to filename
@@ -261,11 +263,14 @@ end if
         mov     [application_table_status], eax
         mov     eax, esi
 .final:
+        cmp     [SCR_MODE], word 0x13
+        jbe     @f
         pushad
         stdcall set_cursor, [handle]
         mov     [redrawmouse_unconditional], 1
         call    __sys_draw_pointer
         popad
+@@:
         ret
 endp
 
