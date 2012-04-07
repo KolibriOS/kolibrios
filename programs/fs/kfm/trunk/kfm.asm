@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-; KFM v0.47c 05.02.2012
+; KFM v0.47d 07.04.2012
 ;---------------------------------------------------------------------
 use32
 org	0x0
@@ -151,8 +151,12 @@ draw_window:
     mcall 0, <20,620>, <20,460>, 0x43cccccc   ; 0x805080D0, 0x005080D0
     call  get_window_param
 ;    mov   ecx,[temp_esi]
-    test  [window_status],10b
-    jnz   @f
+	test	[window_status],100b	; window is rolled up
+	jnz	.exit
+
+	test	[window_status],10b	; window is minimized to panel
+	jnz	.exit
+
     mcall 71, 1 , header_text
     ; create_dir_name
     ; start_parameter
@@ -167,9 +171,9 @@ draw_window:
 		; read_file_features.name ;path ;header
 
     cmp   [window_high],180
-    jb	  @f
+    jb	  .exit
     cmp   [window_width],495
-    jb	  @f
+    jb	  .exit
 
 ;    pusha
 ;    mcall 4,<15,25>,0,read_folder.name,100
@@ -234,7 +238,7 @@ draw_window:
 ;    mcall 4,<150,3>,0x80000000
 ;    mov   edx,[temp_counter_dword]
 ;    mcall 4,<5,3>,0x80000000
-@@:
+.exit:
     mcall 12, 2
     ret
 ;temp_eax dd 0

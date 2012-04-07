@@ -1021,6 +1021,12 @@ erase_fbutton:
     ret
 ;---------------------------------------------------------------------
 draw_fbutton:
+	test	[window_status],100b	; window is rolled up
+	jnz	.exit
+
+	test	[window_status],10b	; window is minimized to panel
+	jnz	.exit
+
     mov   ecx,[window_high]
     sub   ecx,20
     shl   ecx,16
@@ -1082,6 +1088,7 @@ draw_fbutton:
     rol   ebx,16
     add   ebx,[fbutton_width]
     ror   ebx,16
+.exit:
     ret
 ;---------------------------------------------------------------------
 draw_fbutton_name:

@@ -1,4 +1,4 @@
-header_text	  db 'KFM - Kolibri File Manager v0.47c',0
+header_text	  db 'KFM - Kolibri File Manager v0.47d',0
 ;---------------------------------------------------------------------
 fbutton_name:
     .f1   db '1 Help',0
@@ -190,6 +190,14 @@ background_tile:
     db '\T  '
 background_stretch:
     db '\S  '
+;---------------------------------------------------------------------
+files_information_window_x: dd 100 shl 16 + 250
+files_information_window_y: dd 100 shl 16 + 300
+;---------------------------------------------------------------------
+error_window_x: dd 100 shl 16 + 250
+error_window_y: dd 100 shl 16 + 80
+;---------------------------------------------------------------------
+mouse_key_delay dd 100
 ;---------------------------------------------------------------------
 copy_editboxes:
 create_editboxes:

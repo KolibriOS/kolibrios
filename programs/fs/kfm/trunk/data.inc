@@ -1,220 +1,241 @@
 ;---------------------------------------------------------------------
-files_information_window_x: dd 100 shl 16 + 250
-files_information_window_y: dd 100 shl 16 + 300
-;---------------------------------------------------------------------
-error_window_x: dd 100 shl 16 + 250
-error_window_y: dd 100 shl 16 + 80
-;---------------------------------------------------------------------
-mouse_key_delay dd 100
-;---------------------------------------------------------------------
-files_counter dd 0
-directories_counter dd 0
+align 4
+files_counter rd 1
+directories_counter rd 1
 files_size:
-     .low dd 0
-     .high dd 0
+     .low rd 1
+     .high rd 1
 ;---------------------------------------------------------------------
-open_param dd 0
+open_param rd 1
 ;---------------------------------------------------------------------
-PID  dd 0
-active_process dd 0
+align 4
+PID  rd 1
+active_process rd 1
 ;---------------------------------------------------------------------
-window_high	dd 0
-window_width	     dd 0
-window_status dd 0
-skin_high	     dd 0
-fbutton_width	     dd 0
-drawing_panel_folder db 0 ; 1-left, 2 right
+align 4
+window_high rd 1
+window_width	     rd 1
+window_status rd 1
+skin_high	     rd 1
+fbutton_width	     rd 1
 left_panel_x:
-    .size_x		 dw 0
-    .start_x	     dw 0
+    .size_x		 rw 1
+    .start_x	     rw 1
 left_panel_y:
-    .size_y		 dw 0
-    .start_y	     dw 0
+    .size_y		 rw 1
+    .start_y	     rw 1
 right_panel_x:
-    .size_x		 dw 0
-    .start_x	     dw 0
+    .size_x		 rw 1
+    .start_x	     rw 1
 right_panel_y:
-    .size_y		 dw 0
-    .start_y	     dw 0
+    .size_y		 rw 1
+    .start_y	     rw 1
+drawing_panel_folder rb 1 ; 1-left, 2 right
 ;---------------------------------------------------------------------
+align 4
 mouse_position:
-    .y		 dw 0
-    .x	     dw 0
-mouse_keys dd 0
-mouse_keys_delta db 0
-mouse_keys_delta_1 db 0
-scroll_bar_event db 0
-scroll_pointer db 0
-scroll_pointer_1 db 0
-mouse_keys_tick dd 0
+    .y		 rw 1
+    .x	     rw 1
+mouse_keys rd 1
+mouse_keys_tick rd 1
 mouse_scroll_data:
-    .vertical   dw 0
-    .horizontal dw 0
-left_scroll_compens dd 0
-right_scroll_compens dd 0
+    .vertical   rw 1
+    .horizontal rw 1
+left_scroll_compens rd 1
+right_scroll_compens rd 1
+mouse_keys_delta rb 1
+mouse_keys_delta_1 rb 1
+scroll_bar_event rb 1
+scroll_pointer rb 1
+scroll_pointer_1 rb 1
 ;---------------------------------------------------------------------
+align 4
 device_present:
-    .rd     db 0
-    .fd     db 0
-    .hd0	db 0
-    .hd1	db 0
-    .hd2	db 0
-    .hd3	db 0
-    .cd0	db 0
-    .cd1	db 0
-    .cd2	db 0
-    .cd3	db 0
-;device_present_text_counter dd 0
+    .rd     rb 1
+    .fd     rb 1
+    .hd0	rb 1
+    .hd1	rb 1
+    .hd2	rb 1
+    .hd3	rb 1
+    .cd0	rb 1
+    .cd1	rb 1
+    .cd2	rb 1
+    .cd3	rb 1
+;device_present_text_counter rd 1
 device_present_buffer:
-    .fd       db 0
-    .hd_cd	  db 0
-    .hd0_part db 0
-    .hd1_part db 0
-    .hd2_part db 0
-    .hd3_part db 0
+    .fd       rb 1
+    .hd_cd	  rb 1
+    .hd0_part rb 1
+    .hd1_part rb 1
+    .hd2_part rb 1
+    .hd3_part rb 1
     rb 4
 ;---------------------------------------------------------------------
-copy_many_files:
-     db 0
-max_progress_value dd 0
-current_progress_value dd 0
-current_progress_value_1 dd 0
+align 4
+max_progress_value rd 1
+current_progress_value rd 1
+current_progress_value_1 rd 1
 temp_progress_value:
-     dd 0
-draw_all_progressbar db 0
-amount_output_numbers dd 0
+     rd 1
+amount_output_numbers rd 1
+draw_all_progressbar rb 1
+copy_many_files:
+     rb 1
 ;---------------------------------------------------------------------
-max_panel_line dd 0
-temp_panel_end dd 0
+align 4
+max_panel_line rd 1
+temp_panel_end rd 1
 ;---------------------------------------------------------------------
-left_start_draw_line dd 0
-left_folder_block dd 0
-left_start_draw_cursor_line dw 0
-;left_panel_clear_all db 0
+align 4
+left_start_draw_line rd 1
+left_folder_block rd 1
+left_start_draw_cursor_line rw 1
+;left_panel_clear_all rb 1
 ;---------------------------------------------------------------------
-right_start_draw_line dd 0
-right_folder_block dd 0
-right_start_draw_cursor_line dw 0
-;right_panel_clear_all db 0
+align 4
+right_start_draw_line rd 1
+right_folder_block rd 1
+right_start_draw_cursor_line rw 1
+;right_panel_clear_all rb 1
 ;---------------------------------------------------------------------
-sort_counter dd 0
-sorting_low_limit dd 0
-sorting_high_limit dd 0
-dir_or_file  db  0
-dir_temp_counter dd 0
-dir_temp_counter_1 dd 0
-draw_scroll_character db 0
-nesting_direction db 0
+align 4
+sort_counter rd 1
+sorting_low_limit rd 1
+sorting_high_limit rd 1
+dir_temp_counter rd 1
+dir_temp_counter_1 rd 1
+draw_scroll_character rb 1
+nesting_direction rb 1
+dir_or_file  rb 1
 ;---------------------------------------------------------------------
-left_marked_counter dd 0
-right_marked_counter dd 0
-marked_file db 0
-marked_action db 0
-mark_action_counter db 0
-work_confirmation db 0
-work_confirmation_yes db 0
-delete_marked_yes db 0
-inf_marked_yes db 0
-confirmation_type dd 0
-move_file_flag db 0
-recursive_pointer dd 0
+align 4
+left_marked_counter rd 1
+right_marked_counter rd 1
+confirmation_type rd 1
+recursive_pointer rd 1
+marked_file rb 1
+marked_action rb 1
+mark_action_counter rb 1
+work_confirmation rb 1
+work_confirmation_yes rb 1
+delete_marked_yes rb 1
+inf_marked_yes rb 1
+move_file_flag rb 1
 ;---------------------------------------------------------------------
-search_pre_folder db 0
-not_clear_lines db 0
-select_panel_counter db 0
-extended_key db 0
-start_draw_menu_cursor_line dd 0
-press_enter_menu db  0
-close_menu db 0
-extension_start dd 0
-extension_size dd 0
-file_name_length dd 0
-temp_counter_dword dd 0
-error_pointer dd 0
-file_system_error dd 0
-exit_to_dir db 0
-exit_dir db 0
-end_tag dd 0
-icons_end_tag dd 0
-use_patch db 0
+align 4
+start_draw_menu_cursor_line rd 1
+search_pre_folder rb 1
+not_clear_lines rb 1
+select_panel_counter rb 1
+extended_key rb 1
+press_enter_menu rb 1
+close_menu rb 1
 ;---------------------------------------------------------------------
-appl_memory dd 0
-appl_memory_old dd 0
-buttons_img_start dd 0
-ini_file_start dd 0
-left_folder_data dd 0
-right_folder_data dd 0
+align 4
+extension_start rd 1
+extension_size rd 1
+file_name_length rd 1
+temp_counter_dword rd 1
+error_pointer rd 1
+file_system_error rd 1
+end_tag rd 1
+icons_end_tag rd 1
+exit_to_dir rb 1
+exit_dir rb 1
+use_patch rb 1
 ;---------------------------------------------------------------------
-shift_flag db 0
-ctrl_flag  db 0
-alt_flag   db 0
+align 4
+appl_memory rd 1
+appl_memory_old rd 1
+buttons_img_start rd 1
+ini_file_start rd 1
+left_folder_data rd 1
+right_folder_data rd 1
 ;---------------------------------------------------------------------
-left_sort_flag dd 0
-right_sort_flag dd 0
+shift_flag rb 1
+ctrl_flag  rb 1
+alt_flag   rb 1
 ;---------------------------------------------------------------------
-retrieved_devices_table_counter dd 0
-temp_counter db 0
-temp_counter_1 dd 0
+align 4
+left_sort_flag rd 1
+right_sort_flag rd 1
 ;---------------------------------------------------------------------
+align 4
+retrieved_devices_table_counter rd 1
+temp_counter_1 rd 1
+temp_counter rb 1
+;---------------------------------------------------------------------
+align 4
 ; for EDITBOX
-mouse_flag: dd 0x0
+mouse_flag: rd 1
 ;---------------------------------------------------------------------
+align 4
 create_dir_name:
-    db 0
-    rb 256
+	rb 1
+	rb 256
 ;---------------------------------------------------------------------
+align 4
 retrieved_devices_table:
-    rb 10*100
+	rb 10*100
 ;---------------------------------------------------------------------
+align 4
 procinfo:
-    rb 1024
+	rb 1024
 ;---------------------------------------------------------------------
+align 4
 type_name:
 	rb 512
 ;---------------------------------------------------------------------
+align 4
 type_size_string:
 	rb 32
 ;---------------------------------------------------------------------
+align 4
 type_files_string:
 	rb 16
 ;---------------------------------------------------------------------
+align 4
 type_directories_string:
 	rb 16
 ;---------------------------------------------------------------------
+align 4
 delete_dir_data:
-    rb 32
+	rb 32
 ;---------------------------------------------------------------------
 ;stack
-	align 4
+align 4
 	rb 512
 stacktop:
 ;---------------------------------------------------------------------
-	align 4
+align 4
 	rb 4096
 thread_stack:
 ;---------------------------------------------------------------------
+align 4
 file_features_temp_area:
-    rb 40
+	rb 40
 ;---------------------------------------------------------------------
+align 4
 initial_data:
-    rb 4096
+	rb 4096
 ;---------------------------------------------------------------------
+align 4
 path:
-    rb 4096
+	rb 4096
 ;---------------------------------------------------------------------
+align 4
 file_name:
-    rb 4096
+	rb 4096
 ;---------------------------------------------------------------------
+align 4
 start_parameter:
-    rb 4096
+	rb 4096
 ;---------------------------------------------------------------------
+align 4
 read_folder_name:
-    rb 4096
+	rb 4096
 ;---------------------------------------------------------------------
+align 4
 read_folder_1_name:
-    rb 4096
-;---------------------------------------------------------------------
-; for EDITBOX
-;structure_of_potock:
-;    rb 1024
+	rb 4096
 ;---------------------------------------------------------------------
