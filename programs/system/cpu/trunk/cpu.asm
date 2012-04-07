@@ -8,6 +8,7 @@
 ; changes:      Complete elimination of flicker.
 ;               Using f.0 C = 1 - don't fill working area on window draw.
 ;               Increasing the size of buttons and a bright color.
+;               Processing "window is rolled up" and "window is minimized"
 ;------------------------------------------------------------------------------
 ; version:	1.70
 ; last update:  04/04/2012
@@ -484,6 +485,15 @@ draw_window:
 	mcall	,[winxpos],[winypos],0x74ffffff,,title	;0x34ddffdd
 
 	mcall	9,process_info_buffer,-1
+	
+	mov	eax,[ebx+70]
+	mov	[window_status],eax
+	test	[window_status],100b		; window is rolled up
+	jnz	.exit
+
+	test	[window_status],10b		; window is minimized to panel
+	jnz	.exit
+
 	mov	eax,[ebx+62]
 	inc	eax
 	mov	[client_area_x_size],eax
@@ -546,11 +556,20 @@ draw_window:
 ;"RUN" labels
 	mcall	,<464,385>,,tbts_3,tbte_2-tbts_3
 ;print application name in text box
+;--------------------------------------
+align 4
+.exit:
 	mcall	12, 2
 	ret
 ;------------------------------------------------------------------------------
 align 4
 show_process_info:
+	test	[window_status],100b		; window is rolled up
+	jnz	.exit
+
+	test	[window_status],10b		; window is minimized to panel
+	jnz	.exit
+
 	mov	edi,[list_start]
 	mov	[list_add],edi
 	mov	dword [index],0
@@ -563,6 +582,9 @@ align 4
 	add	dword [curposy],14
 	cmp	[index],display_processes
 	jl	.loop_draw
+;--------------------------------------
+align 4
+.exit:
 	ret
 ;------------------------------------------------------------------------------
 ; DATA AREA
@@ -710,6 +732,7 @@ index		rd 1
 tasklist	rd display_processes
 time_counter	rd 1
 
+window_status		rd 1
 client_area_x_size	rd 1
 client_area_y_size	rd 1
 bar_bacground_color	rd 1
