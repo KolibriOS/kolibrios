@@ -3,6 +3,7 @@
 
 //копировать через поток
 //IF (strcmp(#path+strlen(#path)-1,"/")<>0) copystr("/",#path+strlen(#path)); //если нет, + "/" перенестив опендир
+//3. Думаю будет флаг отображать подписи или нет. И да, иконка действительно нужна другая.
 
 #include "lib\kolibri.h"
 #include "lib\memory.h"
@@ -19,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.15"
+#define title "Eolite File Manager v1.2"
 dword videlenie=0x94AECE; //цвет выделенного элемента из списка файлов
 //
 int  but_num,
@@ -163,8 +164,8 @@ int pressed_y;
 					case 21: //Back
 							GoBack();
 							break;
-					case 22: //Forvard
-							HistoryPath(go_forvard);
+					case 22: //Forward
+							HistoryPath(go_forward);
 							break;
 					case 23: //up!
 							IF (strcmp(#path,"/")<>0) Dir_Up();
@@ -787,12 +788,12 @@ void SelectFile(dword that_file)
 
 void Dir_Up()
 {
-	byte temp_[4096];
+	char cur_folder[4096];
 	i=strlen(#path)-1;
 	path[i]=0x00;
-	do i--; while (path[i]<>'/'); copystr(#path+i+1,#temp_); 
+	do i--; while (path[i]<>'/'); copystr(#path+i+1,#cur_folder); 
 	path[i+1]=0x00;
-	SelectFile(#temp_);
+	SelectFile(#cur_folder);
 }
 
 
