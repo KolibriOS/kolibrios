@@ -499,7 +499,7 @@ AC97DIR=$(PROGS)/media/ac97snd
 media/ac97snd: .obj.ac97snd/ac97snd.exe
 	$(msvc_final)
 .obj.ac97snd/ac97snd.exe: .obj.ac97snd/ac97wav.obj .obj.ac97snd/crt.obj .obj.ac97snd/k_lib.obj \
-	.obj.ac97snd/mpg.lib .sdk/sound.lib $(AC97DIR)/ufmod.obj
+	.obj.ac97snd/mpg.lib .sdk/sound.lib .obj.ac97snd/ufmod.obj
 	$(msvc_link)
 .obj.ac97snd/ac97wav.obj: $(AC97DIR)/ac97snd/ac97wav.c \
 	$(AC97DIR)/kolibri.h $(AC97DIR)/ac97snd/ac97wav.h $(AC97DIR)/mpg/mpg123.h \
@@ -509,6 +509,12 @@ media/ac97snd: .obj.ac97snd/ac97snd.exe
 	$(msvc_compile)
 .obj.ac97snd/k_lib.obj: $(AC97DIR)/ac97snd/k_lib.asm $(AC97DIR)/ac97snd/proc32.inc | .obj.ac97snd
 	fasm $< $@
+.obj.ac97snd/ufmod.obj: $(AC97DIR)/ufmod-config.asm | .obj.ac97snd
+	fasm $< $@ -s .deps/ac97snd-ufmod.fas
+	prepsrc .deps/ac97snd-ufmod.fas /dev/stdout | \
+	perl -n -e 's|\\|/|g;s| |\\ |g;push @a,$$1 if/^;include\\ \x27(.*?)\x27/;' \
+	-e 'END{$$a=join " \\\n ",@a;print "$@: $$a\n$$a:\n"}' > .deps/ac97snd-ufmod.Po
+-include .deps/ac97snd-ufmod.Po
 AC97SND_MPG_C_FILES:=$(wildcard $(AC97DIR)/mpg/*.c)
 AC97SND_MPG_H_FILES:=$(wildcard $(AC97DIR)/mpg/*.h)
 AC97SND_MPG_C_OBJECTS:=$(patsubst $(AC97DIR)/mpg/%.c,.obj.ac97snd/%.o,$(AC97SND_MPG_C_FILES))
