@@ -442,72 +442,82 @@ endp
 align 4
 proc new_mem_resize stdcall, new_size:dword
 
-        mov     ecx, pg_data.mutex
-        call    mutex_lock
+        push    ebx
+        push    esi
+        push    edi
+
+        mov     edx, [current_slot]
+        cmp     [edx+APPDATA.heap_base], 0
+        jne     .exit
 
         mov     edi, [new_size]
         add     edi, 4095
         and     edi, not 4095
         mov     [new_size], edi
 
-        mov     edx, [current_slot]
-        cmp     [edx+APPDATA.heap_base], 0
-        jne     .exit
-
         mov     esi, [edx+APPDATA.mem_size]
         add     esi, 4095
         and     esi, not 4095
 
         cmp     edi, esi
-        jae     .expand
+        ja      .expand
+        je      .exit
 
+        mov     ebx, edi
         shr     edi, 12
         shr     esi, 12
+
+        mov     ecx, pg_data.mutex
+        call    mutex_lock
 @@:
         mov     eax, [app_page_tabs+edi*4]
         test    eax, 1
         jz      .next
-        mov     dword [app_page_tabs+edi*4], 2
-        mov     ebx, edi
-        shl     ebx, 12
-        push    eax
+
+        mov     dword [app_page_tabs+edi*4], 0
         invlpg  [ebx]
-        pop     eax
         call    free_page
 
 .next:
-        add     edi, 1
+        inc     edi
         cmp     edi, esi
         jb      @B
-
-.update_size:
-        mov     ebx, [new_size]
-        call    update_mem_size
 
         mov     ecx, pg_data.mutex
         call    mutex_unlock
 
+.update_size:
+        mov     edx, [current_slot]
+        mov     ebx, [new_size]
+        call    update_mem_size
+.exit:
+        pop     edi
+        pop     esi
+        pop     ebx
         xor     eax, eax
         ret
+
 .expand:
 
-        push    esi
-        push    edi
+        mov     ecx, pg_data.mutex
+        call    mutex_lock
+
+        xchg    esi, edi
+
+        push    esi                   ;new size
+        push    edi                   ;old size
 
         add     edi, 0x3FFFFF
         and     edi, not(0x3FFFFF)
         add     esi, 0x3FFFFF
         and     esi, not(0x3FFFFF)
 
-        cmp     esi, edi
+        cmp     edi, esi
         jae     .grow
-
-        xchg    esi, edi
-
-@@:
+ @@:
         call    alloc_page
         test    eax, eax
-        jz      .exit_pop
+        jz      .exit_fail
 
         stdcall map_page_table, edi, eax
 
@@ -524,51 +534,38 @@ proc new_mem_resize stdcall, new_size:dword
         cmp     edi, esi
         jb      @B
 .grow:
-;//-
-        pop     edi
-        push    edi
-        mov     esi, [pg_data.pages_free]
-        sub     esi, 1
-        shr     edi, 12
-        cmp     esi, edi
-        jle     .out_of_memory
-;//-
-        pop     edi
-        pop     esi
-@@:
-        call    alloc_page
-        test    eax, eax
-        jz      .exit
-        stdcall map_page, esi, eax, dword PG_UW
+        pop     edi                   ;old size
+        pop     ecx                   ;new size
 
-        push    edi
-        mov     edi, esi
-        xor     eax, eax
-        mov     ecx, 1024
-        cld
+        shr     edi, 10
+        shr     ecx, 10
+        sub     ecx, edi
+        shr     ecx, 2                ;pages count
+        mov     eax, 2
+
+        add     edi, app_page_tabs
         rep stosd
-        pop     edi
 
-        add     esi, 0x1000
-        cmp     esi, edi
-        jb      @B
-
-        jmp     .update_size
-;//-
-.exit_pop:
-.out_of_memory:
-;//-
-        pop     edi
-        pop     esi
-.exit:
         mov     ecx, pg_data.mutex
         call    mutex_unlock
 
+        jmp     .update_size
+
+.exit_fail:
+        mov     ecx, pg_data.mutex
+        call    mutex_unlock
+
+        add     esp, 8
+        pop     edi
+        pop     esi
+        pop     ebx
         xor     eax, eax
         inc     eax
         ret
 endp
 
+
+align 4
 update_mem_size:
 ; in: edx = slot base
 ;     ebx = new memory size
