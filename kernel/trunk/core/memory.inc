@@ -480,6 +480,7 @@ proc new_mem_resize stdcall, new_size:dword
 
 .next:
         inc     edi
+        add     ebx, 0x1000
         cmp     edi, esi
         jb      @B
 
