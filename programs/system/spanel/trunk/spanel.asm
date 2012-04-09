@@ -1,256 +1,243 @@
 ;
 ;   PANEL SETUP
 ;
-;   Compile with FASM for Menuet
-;
-
-use32
-
-               org    0x0
-
-               db     'MENUET01'              ; 8 byte id
-               dd     0x01                    ; header version
-               dd     START                   ; start of code
-               dd     I_END                   ; size of image
-               dd     0x8000                  ; memory for app
-               dd     0x8000                  ; esp
-               dd     0x0 , 0x0               ; I_Param , I_Icon
-
+;------------------------------------------------------------------------------	
+; last update:  09/04/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Code optimizing and refactoring.
+;               
+;------------------------------------------------------------------------------
+	use32
+	org 0x0
+	db 'MENUET01'		; 8 byte id
+	dd 0x01			; header version
+	dd START		; start of code
+	dd IM_END		; size of image
+	dd I_END	;0x8000		; memory for app
+	dd stack_top		; esp
+	dd 0x0			; boot parameters
+	dd 0x0			; path
+;------------------------------------------------------------------------------
 include '../../../macros.inc'
-
-START:                          ; start of execution
-
-     call draw_window
-
+;------------------------------------------------------------------------------
+START:
+;------------------------------------------------------------------------------	
+align 4
+red:
+	call	draw_window
+;------------------------------------------------------------------------------	
+align 4
 still:
+	mcall	10
+	
+	cmp	eax,1	; redraw request ?
+	je	red
 
-    mov  eax,10                 ; wait here for event
-    int  0x40
+	cmp	eax,2	; key in buffer ?
+	je	key
 
-    cmp  eax,1                  ; redraw request ?
-    je   red
-    cmp  eax,2                  ; key in buffer ?
-    je   key
-    cmp  eax,3                  ; button in buffer ?
-    je   button
+	cmp	eax,3	; button in buffer ?
+	je	button
+	
+	jmp	still
+;------------------------------------------------------------------------------	
+align 4
+key:
+	mcall	2
+	
+	shr	eax,8
+	cmp	eax,'0'
+	jb	still
 
-    jmp  still
+	cmp	eax,'9'
+	jg	still
+	
+	mov	edi,[ent]
+	add	edi,text
+	mov	esi,edi
+	inc	esi
+	mov	ecx,3
+	cld
+	rep	movsb
+	
+	mov	[edi],al
+	
+	jmp	red
+;------------------------------------------------------------------------------	
+align 4
+button:
+	mcall	17
+	
+	cmp	ah,1	; button id=1 ?
+	jne	noclose
 
-  red:                          ; redraw
-    call draw_window
-    jmp  still
+	mcall	-1	; close this program
+;--------------------------------------
+align 4
+noclose:
+	cmp	ah,10
+	jne	no_apply
+	
+	mov	esi,text+17
+	mov	edi,panel_ini_data_area	;I_END+10
+	mov	ecx,12
+;--------------------------------------
+align 4
+newfe:
+	mov	ebx,[esi]
+	mov	[edi],ebx
+	mov	[edi+4],byte ';'
+	add	edi,5
+	add	esi,55
+	loop	newfe
 
-  key:                          ; key
-    mov  eax,2                  ; just read it and ignore
-    int  0x40
+	mov	[edi],byte 'x'
+	mcall	70,dat_write
+	mov	esi,1
+;--------------------------------------
+align 4
+newread:
+	inc	esi
+	mcall	9,proc_info,esi
+	cmp	esi,eax
+	jg	all_terminated
+	
+	mov	eax,[ebx+10]
+	and	eax,not 0x20202000
+	cmp	eax,'@PAN'
+	jne	newread
 
-    shr  eax,8
-    cmp  eax,'0'
-    jb   still
-    cmp  eax,'9'
-    jg   still
+	mov	eax,[ebx+14]
+	and	eax,not 0x2020
+	cmp	ax,'EL'
+	jne	newread
+	
+	mcall	18,2,esi
+	
+	mcall	5,5
+	
+	mov	esi,1
+	jmp	newread
+;--------------------------------------
+align 4
+all_terminated:
+	mcall	5,25
 
-    mov  edi,[ent]
-    add  edi,text
-    mov  esi,edi
-    inc  esi
-    mov  ecx,3
-    cld
-    rep  movsb
+	mcall	70,panel_start
+;--------------------------------------
+align 4
+no_apply:
+	cmp	ah,11
+	jb	still
 
-    mov  [edi],al
-
-    call draw_window
-    jmp  still
-
-  button:                       ; button
-    mov  eax,17                 ; get id
-    int  0x40
-
-    cmp  ah,1                   ; button id=1 ?
-    jne  noclose
-    mov  eax,-1                 ; close this program
-    int  0x40
-  noclose:
-
-    cmp  ah,10
-    jne  no_apply
-
-    mov  esi,text+17
-    mov  edi,I_END+10
-    mov  ecx,12
-   newfe:
-    mov  ebx,[esi]
-    mov  [edi],ebx
-    mov  [edi+4],byte ';'
-    add  edi,5
-    add  esi,55
-    loop newfe
-    mov  [edi],byte 'x'
-
-    mov  eax,70
-    mov  ebx,dat_write
-    int  0x40
-
-
-    mov  esi,1
-   newread:
-    inc  esi
-    mov  eax,9
-    mov  ebx,I_END
-    mov  ecx,esi
-    int  0x40
-    cmp  esi,eax
-    jg   all_terminated
-
-    mov  eax,[ebx+10]
-    and  eax,not 0x20202000
-    cmp  eax,'@PAN'
-    jne  newread
-    mov  eax,[ebx+14]
-    and  eax,not 0x2020
-    cmp  eax,'EL  '
-    jne  newread
-
-    mov  eax,18
-    mov  ebx,2
-    mov  ecx,esi
-    int  0x40
-
-    mov  eax,5
-    mov  ebx,5
-    int  0x40
-
-    mov  esi,1
-
-    jmp  newread
-
-   all_terminated:
-
-    mov  eax,5
-    mov  ebx,25
-    int  0x40
-
-        mov     eax, 70
-        mov     ebx, panel_start
-        int     0x40
-
-  no_apply:
-
-    cmp  ah,11
-    jb   no_entry
-    shr  eax,8
-    sub  eax,11
-    imul eax,55
-    add  eax,17
-    mov  [ent],eax
-    mov  [text+eax],dword '0000'
-    call draw_window
-    jmp  still
-  no_entry:
-
-
-    jmp  still
-
-
-ent       dd  17
-
-panel_start:
-        dd      7
-        dd      0
-        dd      0
-        dd      0
-        dd      0
-        db      '/RD/1/@PANEL',0
-
-dat_write:
-        dd      2
-        dq      0
-        dd      5*12+1
-        dd      I_END+10
-        db      'PANEL.DAT',0
-
+	shr	eax,8
+	sub	eax,11
+	imul	eax,55
+	add	eax,17
+	mov	[ent],eax
+	mov	[text+eax],dword '0000'
+	jmp	red
+;------------------------------------------------------------------------------	
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
-
-
+;------------------------------------------------------------------------------	
+align 4
 draw_window:
+	mcall	12,1
+; DRAW WINDOW
+	xor	eax,eax
+	xor	esi,esi
+	mcall	,<100,385>,<100,190>,0x14ffffff,,labelt
 
+	mcall	8,<25,335>,<162,12>,10,0x80a0c0	;0x6677cc
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
-    int  0x40
+	mov	ebx,340*65536+20
+	mov	ecx,34*65536+10
+	inc	edx	;11 - button
+;--------------------------------------
+align 4
+newb:
+	mcall
+	add	ecx,10*65536
+	inc	edx
+	cmp	edx,23
+	jb	newb
 
-                                   ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
-    mov  ebx,100*65536+385         ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+190         ; [y start] *65536 + [y size]
-    mov  edx,0x14ffffff            ; color of work area RRGGBB,8->color gl
-    mov  edi,labelt                ; color of frames    RRGGBB
-    int  0x40
+	mov	ebx,25*65536+35           ; draw info text with function 4
+	mov	ecx,0x224466
+	mov	edx,text
+	mov	esi,55
+	mov	eax,4
+;--------------------------------------
+align 4
+newline:
+	mcall
+	add	ebx,10
+	add	edx,55
+	cmp	[edx],byte 'x'
+	jne	newline
 
-    mov  eax,8
-    mov  ebx,25*65536+335 ;160
-    mov  ecx,162*65536+12
-    mov  edx,10
-    mov  esi,0x80a0c0 ;0x6677cc
-    int  0x40
-
-    mov  eax,8
-    mov  ebx,340*65536+20
-    mov  ecx,34*65536+10
-    mov  edx,11
-  newb:
-    int  0x40
-    add  ecx,10*65536
-    inc  edx
-    cmp  edx,23
-    jb   newb
-
-    mov  ebx,25*65536+35           ; draw info text with function 4
-    mov  ecx,0x224466
-    mov  edx,text
-    mov  esi,55
-  newline:
-    mov  eax,4
-    int  0x40
-    add  ebx,10
-    add  edx,55
-    cmp  [edx],byte 'x'
-    jne  newline
-
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
-    int  0x40
-
-    ret
-
-
+	mcall	12,2
+	ret
+;------------------------------------------------------------------------------	
+align 4
 ; DATA AREA
-
-
 text:
-
-db  'width            0000  :  0 for full screen width     <'
-db  'buttons          0000  :  0 no frames  , 1 frames     <'
-db  'soften_up        0001  :  0 no         , 1 yes        <'
-db  'soften_down      0001  :  0 no         , 1 yes        <'
-db  'minimize_left    0001  :  0 no         , 1 yes        <'
-db  'minimize_right   0001  :  0 no         , 1 yes        <'
-db  'icons_position   0100  :  position in pixels          <'
-db  'menu_enable      0001  :  0 no         , 1 yes        <'
-db  'setup_enable     0001  :  0 no         , 1 yes        <'
-db  'graph_text       0001  :  0 graphics   , 1 text       <'
-db  'soften_middle    0001  :  0 no         , 1 yes        <'
-db  'icons            0001  :  0 start      , 1 activate   <'
-db  '                                                       '
-db  '                         APPLY                         '
-db  'x'
-
-
+	db 'width            0000  :  0 for full screen width     <'
+	db 'buttons          0000  :  0 no frames  , 1 frames     <'
+	db 'soften_up        0001  :  0 no         , 1 yes        <'
+	db 'soften_down      0001  :  0 no         , 1 yes        <'
+	db 'minimize_left    0001  :  0 no         , 1 yes        <'
+	db 'minimize_right   0001  :  0 no         , 1 yes        <'
+	db 'icons_position   0100  :  position in pixels          <'
+	db 'menu_enable      0001  :  0 no         , 1 yes        <'
+	db 'setup_enable     0001  :  0 no         , 1 yes        <'
+	db 'graph_text       0001  :  0 graphics   , 1 text       <'
+	db 'soften_middle    0001  :  0 no         , 1 yes        <'
+	db 'icons            0001  :  0 start      , 1 activate   <'
+	db '                                                       '
+	db '                         APPLY                         '
+	db 'x'
+;------------------------------------------------------------------------------	
 labelt:
-     db   'Panel setup'
+	db 'Panel setup'
 labellen:
-
+;------------------------------------------------------------------------------	
+align 4
+ent	dd  17
+;------------------------------------------------------------------------------	
+align 4
+panel_start:
+	dd 7
+	dd 0
+	dd 0
+	dd 0
+	dd 0
+	db '/RD/1/@PANEL',0
+;------------------------------------------------------------------------------	
+align 4
+dat_write:
+	dd 2
+	dd 0
+	dd 0
+	dd 5*12+1
+	dd panel_ini_data_area	;I_END+10
+	db 'PANEL.DAT',0
+;------------------------------------------------------------------------------	
+IM_END:
+;------------------------------------------------------------------------------	
+align 4
+proc_info:
+	rb 1024
+;------------------------------------------------------------------------------
+align 4
+	rb 1024
+stack_top:
+;------------------------------------------------------------------------------	
+align 4
+panel_ini_data_area:
+	rb 61
+;------------------------------------------------------------------------------	
 I_END:
+;------------------------------------------------------------------------------	
