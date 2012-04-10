@@ -37,11 +37,8 @@ CODE
     add word [ver_counter],VC_DELTA
     add word [hor_counter],HC_DELTA
     call handle_animation
-    mov eax,7
-    mov ebx,virtual_screen_32
-    mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
-    xor edx,edx
-    mcall
+    xor ebp,ebp
+    mcall 65,virtual_screen_8,<WND_SIZE_X,WND_SIZE_Y>,<0,0>,8,_palette
     jmp .event_loop
 
 .paint_window:
@@ -50,21 +47,16 @@ CODE
     mov ebx,1
     mcall
 
-    xor eax,eax
-    mov ebx,(100 shl 16)+(WND_SIZE_X+9)
-    mov ecx,(100 shl 16)+(WND_SIZE_Y+26)
-    mov edx,0x74000000
+    mcall 48,4 ; get skin height
+    lea ecx,[eax + (100 shl 16) + WND_SIZE_Y+4]
     mov edi,title
-    mcall
+    mcall 0,<100,WND_SIZE_X+9>,,0x74000000
 
     test [proc_info.wnd_state], 0x04
     jnz @f
 
-    mov eax,7
-    mov ebx,virtual_screen_32
-    mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
-    xor edx,edx
-    mcall
+    xor ebp,ebp
+    mcall 65,virtual_screen_8,<WND_SIZE_X,WND_SIZE_Y>,<0,0>,8,_palette
   @@:
     mov eax,12
     mov ebx,2
@@ -82,7 +74,7 @@ init_palette:
     stosb
     stosb
     stosb
-    inc edi
+    stosb
     inc ah
     loop .next_pal
     ret
@@ -136,7 +128,7 @@ handle_animation:
     add ebx,ebx
     mov ax,[sinetable+ebx]
     mov [esp+s_OFFX],ax
-    mov edi,virtual_screen_32
+    mov edi,virtual_screen_8
     mov edx,WND_SIZE_Y-1
 .a_ver:
     mov ecx,WND_SIZE_X-1
@@ -148,12 +140,7 @@ handle_animation:
     mov ax,[esp+s_OFFX]
     add ax,cx
     and eax,255
-    lea esi,[background+ebx+eax]
-    mov al,[esi]
-    and eax,0xff
-    mov eax,[_palette+eax*4]
-    stosw
-    shr eax,16
+    mov al,[background+ebx+eax]
     stosb
     dec ecx
     jge .a_hor
@@ -174,8 +161,8 @@ UDATA
 
   _palette:	rd 256
 
-  virtual_screen_32:
-  	rb WND_SIZE_X*WND_SIZE_Y*3
+  virtual_screen_8:
+  	rb WND_SIZE_X*WND_SIZE_Y
 
   background:
   	rb 256*256

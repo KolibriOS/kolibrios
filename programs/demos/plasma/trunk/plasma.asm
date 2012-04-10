@@ -8,16 +8,12 @@ WND_SIZE_Y		= 200
 MEOS_APP_START
 CODE
     fninit
-    mov al,40
-    mov bl,101b
-    mcall
+    mcall 40,101b
     call init_palette
     call init_texture
     jmp .paint_window
 .event_loop:
-    mov al,23
-    mov ebx,1
-    mcall
+    mcall 23,1
     test eax,eax
     je .draw_screen
     dec eax
@@ -27,38 +23,23 @@ CODE
     mcall
 
 .draw_screen:
-    call blit_8_to_32
-    mov al,7
-    mov ebx,virtual_screen_32
-    mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
-    xor edx,edx
-    mcall
+    xor ebp,ebp
+    mcall 65,virtual_screen_8,<WND_SIZE_X,WND_SIZE_Y>,0,8,_palette
     call rotate_pal
     jmp .event_loop
 
 .paint_window:
-    mov al,12
-    push eax
-    xor ebx,ebx
-    inc ebx
-    mcall
+    mcall 12,1
 
-    xor eax,eax
-    mov ebx,(110 shl 16)+(WND_SIZE_X+9)
-    mov ecx,(110 shl 16)+(WND_SIZE_Y+26)
-    mov edx,0x74000000
+    mcall 48,4 ; get skin height
+    lea ecx,[eax + (110 shl 16) + WND_SIZE_Y + 4]
     mov edi,title
-    mcall
+    mcall 0,<110,WND_SIZE_X+9>,,0x74000000
 
-    mov al,7
-    mov ebx,virtual_screen_32
-    mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
-    xor edx,edx
-    mcall
+    xor ebp,ebp
+    mcall 65,virtual_screen_8,<WND_SIZE_X,WND_SIZE_Y>,0,8,_palette
 
-    pop eax
-    and ebx,2 ; bit 1 is set
-    mcall
+    mcall 12,2
 
     jmp .event_loop
 
@@ -73,7 +54,7 @@ init_palette:
     xor al,al
     stosb
     stosb
-    inc edi
+    stosb
     loop .color1
     mov ecx,64
     push ecx
@@ -85,8 +66,8 @@ init_palette:
     stosb
     xor al,al
     stosb
+    stosb
     inc ah
-    inc edi
     loop .color2
     pop ecx
     push ecx
@@ -97,8 +78,9 @@ init_palette:
     stosb
     mov al,ah
     stosb
+    mov al,0
+    stosb
     inc ah
-    inc edi
     loop .color3
     pop ecx
     mov eax,0x003f3f3f
@@ -156,8 +138,6 @@ rotate_pal:
     mov [_palette+1020],ebx
     ret
 
-include "graph8.inc"
-
 DATA
   _multiplier	dd 63.5
 
@@ -171,8 +151,5 @@ UDATA
 
   virtual_screen_8:
    	rb WND_SIZE_X*WND_SIZE_Y
-
-  virtual_screen_32:
-   	rb WND_SIZE_X*WND_SIZE_Y*3
 
 MEOS_APP_END
