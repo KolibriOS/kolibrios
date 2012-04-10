@@ -6,7 +6,7 @@ struct  thread_data
 
         home_dir        rb 1024
         work_dir        rb 1024
-        fpath           rb 1024*3
+        fpath           rb 1024*3       ; Will also be used to temporarily store username
 
         type            db ?    ; ASCII/EBDIC/IMAGE/..
         mode            db ?    ; active/passive
@@ -14,6 +14,8 @@ struct  thread_data
         state           dd ?    ; disconnected/logging in/logged in/..
         passivesocknum  dd ?    ; when in passive mode, this is the listening socket
         datasocketnum   dd ?    ; socket used for data transfers
+        permissions     dd ?
+        buffer_ptr      dd ?
 
         datasock        sockaddr_in
 
@@ -21,8 +23,30 @@ struct  thread_data
 ends
 
 
+macro sendFTP str {
+local .string, .length, .label
+        xor     edi, edi
+        mcall   send, [edx + thread_data.socketnum], .string, .length
+        jmp     @f
+.string db str, 13, 10
+.length = $ - .string
+@@:
 
+}
 
+;------------------------------------------------
+; parse_cmd
+;
+; Internal function wich uses the 'commands'
+;  table to call an appropriate cmd_xx function.
+;
+; input: esi = ptr to ascii commands
+;        ecx = number of bytes input
+;        edx = pointer to thread_data structure
+;
+; output: none
+;
+;------------------------------------------------
 align 4
 parse_cmd:                              ; esi must point to command
 
@@ -31,12 +55,11 @@ parse_cmd:                              ; esi must point to command
         inc     esi
         dec     ecx
         cmp     ecx, 3
-        ja      parse_cmd
-        ret
+        jb      .error
+        jmp     parse_cmd
   .ok:
-
         cmp     byte [esi+3], 0x20
-        jae     @f
+        ja      @f
         mov     byte [esi+3], 0
        @@:
 
@@ -45,70 +68,262 @@ parse_cmd:                              ; esi must point to command
         mov     edi, commands           ; list of commands to scan
   .scanloop:
         cmp     eax, [edi]
-        jne     .try_next
+        je      .got_it
 
-        jmp     dword [edi+4]
-
-  .try_next:
-        add     edi, 8
+        add     edi, 4+4*4
         cmp     byte [edi], 0
         jne     .scanloop
 
   .error:
-        mcall   send, [edx + thread_data.socketnum], str500, str500.length, 0
-
+        cmp     [edx + thread_data.state], STATE_ACTIVE
+        jb      login_first
+        sendFTP "500 Unsupported command"
         ret
+
+  .got_it:
+        mov     eax, [edx + thread_data.state]
+        jmp     dword [edi + 4 + eax]
 
 
 align 4
 commands:               ; all commands must be in uppercase
 
-        db 'ABOR'
-        dd cmdABOR
-        db 'CDUP'
-        dd cmdCDUP
-        db 'CWD', 0
-        dd cmdCWD
-        db 'DELE'
-        dd cmdDELE
-        db 'LIST'
-        dd cmdLIST
-        db 'NLST'
-        dd cmdNLST
-        db 'NOOP'
-        dd cmdNOOP
-        db 'PASS'
-        dd cmdPASS
-        db 'PASV'
-        dd cmdPASV
-        db 'PORT'
-        dd cmdPORT
-        db 'PWD', 0
-        dd cmdPWD
-        db 'QUIT'
-        dd cmdQUIT
-        db 'RETR'
-        dd cmdRETR
-        db 'STOR'
-        dd cmdSTOR
-        db 'SYST'
-        dd cmdSYST
-        db 'TYPE'
-        dd cmdTYPE
-        db 'USER'
-        dd cmdUSER
-        db 0            ; end marker
-
+        dd 'ABOR'
+        dd login_first, login_first, login_first, cmdABOR
+;        dd 'ACCT
+;        dd login_fitst, login_first, login_first, cmd_ACCT
+;        dd 'APPE'
+;        dd login_fitst, login_first, login_first, cmd_APPE
+        dd 'CDUP'
+        dd login_first, login_first, login_first, cmdCDUP
+        dd 'CWD'
+        dd login_first, login_first, login_first, cmdCWD
+        dd 'DELE'
+        dd login_first, login_first, login_first, cmdDELE
+;        dd 'HELP'
+;        dd login_fitst, login_first, login_first, cmd_HELP
+        dd 'LIST'
+        dd login_first, login_first, login_first, cmdLIST
+;        dd 'MDTM'
+;        dd login_fitst, login_first, login_first, cmd_MDTM
+;        dd 'MKD'
+;        dd login_fitst, login_first, login_first, cmd_MKD
+;        dd 'MODE'
+;        dd login_fitst, login_first, login_first, cmd_MODE
+        dd 'NLST'
+        dd login_first, login_first, login_first, cmdNLST
+        dd 'NOOP'
+        dd login_first, login_first, login_first, cmdNOOP
+        dd 'PASS'
+        dd cmdPASS.0,   cmdPASS    , cmdPASS.2,   cmdPASS.3
+        dd 'PASV'
+        dd login_first, login_first, login_first, cmdPASV
+        dd 'PORT'
+        dd login_first, login_first, login_first, cmdPORT
+        dd 'PWD'
+        dd login_first, login_first, login_first, cmdPWD
+        dd 'QUIT'
+        dd cmdQUIT,     cmdQUIT,     cmdQUIT,     cmdQUIT
+;        dd 'REIN'
+;        dd login_fitst, login_first, login_first, cmd_REIN
+;        dd 'REST'
+;        dd login_fitst, login_first, login_first, cmd_REST
+        dd 'RETR'
+        dd login_first, login_first, login_first, cmdRETR
+;        dd 'RMD'
+;        dd login_fitst, login_first, login_first, cmd_RMD
+;        dd 'RNFR'
+;        dd login_fitst, login_first, login_first, cmd_RNFR
+;        dd 'RNTO'
+;        dd login_fitst, login_first, login_first, cmd_RNTO
+;        dd 'SITE'
+;        dd login_fitst, login_first, login_first, cmd_SITE
+;        dd 'SIZE'
+;        dd login_fitst, login_first, login_first, cmd_SIZE
+;        dd 'STAT'
+;        dd login_fitst, login_first, login_first, cmd_STAT
+        dd 'STOR'
+        dd login_first, login_first, login_first, cmdSTOR
+;        dd 'STOU'
+;        dd login_fitst, login_first, login_first, cmd_STOU
+;        dd 'STRU'
+;        dd login_fitst, login_first, login_first, cmd_STRU
+        dd 'SYST'
+        dd login_first, login_first, login_first, cmdSYST
+        dd 'TYPE'
+        dd login_first, login_first, login_first, cmdTYPE
+        dd 'USER'
+        dd cmdUSER,     cmdUSER,     cmdUSER,     cmdUSER.2
+        db 0                                                    ; end marker
 
 align 4
-cmdABOR:
-
-        ; TODO: abort the current filetransfer
-
+login_first:
+        sendFTP "530 Please login with USER and PASS"
         ret
 
 align 4
+permission_denied:
+        sendFTP "550 Permission denied"
+        ret
+
+align 4
+socketerror:
+        pushd   0x0c
+        call    [con_set_flags]
+        push    str_sockerr
+        call    [con_write_asciiz]
+        pushd   0x07
+        call    [con_set_flags]
+
+        mov     edx, [ebp]
+        sendFTP "425 Can't open data connection"
+        ret
+
+align 4
+abort_transfer:
+        and     [edx + thread_data.permissions], not ABORT
+        mov     [edx + thread_data.mode], MODE_NOTREADY
+        push    ebx
+        call    [file.close]
+        mcall   close, [edx + thread_data.datasocketnum]
+        mov     edx, [ebp]
+        sendFTP "530 Transfer aborted"
+        ret
+
+align 4
+ip_to_dword:    ; esi = ptr to str, cl = separator ('.', ',')
+
+        call    ascii_to_byte
+        mov     bh, al
+        cmp     byte [esi], cl
+        jne     .err
+
+        call    ascii_to_byte
+        mov     bh, al
+        cmp     byte [esi], cl
+        jne     .err
+        shl     ebx, 16
+
+        call    ascii_to_byte
+        mov     bh, al
+        cmp     byte [esi], cl
+        jne     .err
+
+        call    ascii_to_byte
+        mov     bh, al
+
+        ror     ebx, 16
+        ret
+
+  .err:
+        xor     ebx, ebx
+        ret
+
+align 4         ; esi = ptr to str, output in eax
+ascii_to_byte:
+
+        xor     eax, eax
+        push    ebx
+
+  .loop:
+        movzx   ebx, byte[esi]
+        sub     bl, '0'
+        jb      .done
+        cmp     bl, 9
+        ja      .done
+        lea     eax, [eax*4 + eax]      ;
+        shl     eax, 1                  ; eax = eax * 10
+        add     eax, ebx
+        inc     esi
+
+        jmp     .loop
+
+  .done:
+        pop     ebx
+        ret
+
+align 4
+dword_to_ascii: ; edi = ptr where to write, eax is number
+
+        push    edx ebx ecx
+        mov     ebx, 10
+        xor     ecx, ecx
+
+       @@:
+        xor     edx, edx
+        div     ebx
+        add     edx, '0'
+        pushw   dx
+        inc     ecx
+        test    eax, eax
+        jnz     @r
+
+       @@:
+        popw    ax
+        stosb
+        dec     ecx
+        jnz     @r
+
+        pop     ecx ebx edx
+        ret
+
+align 4
+create_path:            ; combine home_dir and work_dir strings into fpath
+
+        mov     edx, [ebp]
+        lea     edi, [edx + thread_data.fpath]
+        lea     esi, [edx + thread_data.home_dir]
+        mov     ecx, 1024
+  .loop1:
+        lodsb
+        or      al, al
+        jz      .next
+        stosb
+        loop    .loop1
+  .next:
+
+        cmp     byte[edi-1], '/'
+        jne     @f
+        dec     edi
+       @@:
+
+        lea     esi, [edx + thread_data.work_dir]
+        mov     ecx, 1024
+  .loop2:
+        lodsb
+        or      al, al
+        jz      .done
+        stosb
+        loop    .loop2
+
+  .done:
+        stosb
+        ret
+
+;------------------------------------------------
+; "ABOR"
+;
+; This command aborts the current filetransfer.
+;
+;------------------------------------------------
+align 4
+cmdABOR:
+
+        or      [edx + thread_data.permissions], ABORT
+        sendFTP "250 Command succesul"
+        ret
+
+;------------------------------------------------
+; "CDUP"
+;
+; Change the directory to move up one level.
+;
+;------------------------------------------------
+align 4
 cmdCDUP:
+
+        test    [edx + thread_data.permissions], PERMISSION_CD
+        jz      permission_denied
 
         cmp     byte [edx + thread_data.work_dir+1], 0                          ; are we in "/" ?
         je      .done
@@ -134,12 +349,20 @@ cmdCDUP:
         push    str_newline
         call    [con_write_asciiz]
 
-        mcall   send, [edx + thread_data.socketnum], str250, str250.length, 0   ; command successful
+        sendFTP "250 Command succesul"
         ret
 
-
+;------------------------------------------------
+; "CWD"
+;
+; Change Working Directory.
+;
+;------------------------------------------------
 align 4
-cmdCWD:                 ; Change Working Directory
+cmdCWD:
+
+        test    [edx + thread_data.permissions], PERMISSION_CD
+        jz      permission_denied
 
         sub     ecx, 4
         jb      .err
@@ -189,8 +412,7 @@ cmdCWD:                 ; Change Working Directory
         push    str_newline
         call    [con_write_asciiz]
 
-        mcall   send, [edx + thread_data.socketnum], str250, str250.length, 0
-
+        sendFTP "250 Command succesful"
         ret
 
   .up:
@@ -204,18 +426,34 @@ cmdCWD:                 ; Change Working Directory
         jmp     .scan2
 
   .err:
-        ; TODO: print correct error message (550?)
-
+        sendFTP "550 Directory does not exist"
         ret
 
+;------------------------------------------------
+; "DELE"
+;
+; Delete a file from the server.
+;
+;------------------------------------------------
 align 4
 cmdDELE:
 
+        test    [edx + thread_data.permissions], PERMISSION_DELETE
+        jz      permission_denied
+
         ret
 
-
+;------------------------------------------------
+; "LIST"
+;
+; List the files in the current working directory.
+;
+;------------------------------------------------
 align 4
 cmdLIST:
+
+        test    [edx + thread_data.permissions], PERMISSION_EXEC
+        jz      permission_denied
 
 ; If we are in active mode, it's time to open a data socket..
         cmp     [edx + thread_data.mode], MODE_ACTIVE
@@ -224,7 +462,6 @@ cmdLIST:
         lea     edx, [edx + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
         mcall   connect
-        mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
         je      socketerror
   @@:
@@ -239,6 +476,7 @@ cmdLIST:
         call    [con_write_asciiz]
 
 ; Start the search
+        mov     edx, [ebp]
         push    FA_ANY
         push    str_mask
         lea     eax, [edx + thread_data.fpath]
@@ -248,9 +486,10 @@ cmdLIST:
         test    eax, eax
         jz      .nosuchdir
 
+        mov     edx, [ebp]
         lea     edi, [edx + thread_data.buffer]
-  .parse_file:
 
+  .parse_file:
         test    eax, eax        ; did we find a file?
         jz      .done
         mov     ebx, eax        ; yes, save the descripter in ebx
@@ -331,6 +570,9 @@ cmdLIST:
         mov     ax, 0x0a0d
         stosw
 
+        test    [edx + thread_data.permissions], ABORT
+;;;        jnz     .abort
+
 ; check next file
         push    ebx
         call    [file.find.next]
@@ -338,7 +580,7 @@ cmdLIST:
 
 ; close file desc
   .done:
-        push    ebx
+        push    eax                             ; file discriptor is still in eax at this point!
         call    [file.find.close]
 
 ; append the string with a 0
@@ -346,11 +588,13 @@ cmdLIST:
         stosb
 
 ; Warn the client we're about to send the data
-        push    edi edx
-        mcall   send, [edx + thread_data.socketnum], str150, str150.length, 0    ; here it comes..
-        pop     edx esi
+        mov     edx, [ebp]
+        push    edi
+        sendFTP "150 Here it comes.."
+        pop     esi
 
 ; and send it to the client
+        mov     edx, [ebp]
         mov     ecx, [edx + thread_data.datasocketnum]
         lea     edx, [edx + thread_data.buffer]
         sub     esi, edx
@@ -358,56 +602,110 @@ cmdLIST:
         mcall   send
 
 ; close the data socket..
-        mov     edx, [esp+4]                                    ; thread_data pointer
+        mov     edx, [ebp]                                      ; thread_data pointer
         mcall   close, [edx + thread_data.datasocketnum]
         mov     [edx + thread_data.mode], MODE_NOTREADY
 
-; And send "transfer ok" on the base connection
-        mcall   send, [edx + thread_data.socketnum], str226, str226.length, 0
-
+        sendFTP "226 Transfer OK"
         ret
 
   .nosuchdir:
-        mcall   send, [edx + thread_data.socketnum], str550, str550.length, 0
-
+        sendFTP "550 Directory does not exist"
         ret
 
-
+;------------------------------------------------
+; "NLST"
+;
+; List the filenames of the files in the current working directory.
+;
+;------------------------------------------------
 align 4
 cmdNLST:
+
+        test    [edx + thread_data.permissions], PERMISSION_EXEC
+        jz      permission_denied
 
         ; TODO: same as list but simpler output format
 
         ret
 
+;------------------------------------------------
+; "NOOP"
+;
+; No operation, just keep the connection alive.
+;
+;------------------------------------------------
 align 4
 cmdNOOP:
 
         ret
 
+;------------------------------------------------
+; "PASS"
+;
+; Second phase of login process, client provides password.
+;
+;------------------------------------------------
 align 4
 cmdPASS:
+        lea     esi, [esi + 5]
+        lea     edi, [edx + thread_data.buffer + 512]           ; temp pass
+        lea     eax, [edx + thread_data.fpath]                  ; temp username
+        invoke  ini.get_str, path2, eax, str_pass, edi, 512
+        test    eax, eax
+        jnz     .incorrect
 
-        ; TODO: verify password
+        repe    cmpsb
 
-        mcall   send, [edx + thread_data.socketnum], str230, str230.length, 0
+        cmp     byte [esi], 0x20
+        jae     .incorrect
+
+        cmp     byte [edi], 0
+        jne     .incorrect
+
+  .pass_ok:
+        lea     eax, [edx + thread_data.fpath]
+        invoke  ini.get_int, path2, eax, str_mode, 0
+        mov     [edx + thread_data.permissions], eax
 
         push    str_pass_ok
         call    [con_write_asciiz]
 
-        mov     edx, [esp+4]                                    ; thread_data pointer
+        mov     edx, [ebp]                                      ; thread_data pointer
         mov     [edx + thread_data.state], STATE_ACTIVE
-
+        sendFTP "230 You are now logged in"
         ret
 
+  .2:
+  .incorrect:
+        mov     [edx + thread_data.state], STATE_CONNECTED
+        sendFTP "530 Login incorrect"
+        ret
+
+align 4
+  .0:
+        sendFTP "503 Login with USER first"
+        ret
+
+align 4
+  .3:
+        sendFTP "230 Already logged in"
+        ret
+
+;------------------------------------------------
+; "PASV"
+;
+; Initiate a passive dataconnection.
+;
+;------------------------------------------------
 align 4
 cmdPASV:
 
 ; Open a new TCP socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
-        mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
         je      socketerror
+        mov     edx, [ebp]                                      ; thread_data pointer
         mov     [edx + thread_data.passivesocknum], eax
 
 ; Bind it to a known local port
@@ -415,41 +713,59 @@ cmdPASV:
         mov     [edx + thread_data.datasock.sin_port], 2000
         mov     [edx + thread_data.datasock.sin_addr], 0
 
-        mov     ecx, eax ;[edx + thread_data.passivesocknum]
+        mov     ecx, eax                                        ; passivesocketnum
         lea     edx, [edx + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
         mcall   bind
-        mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
-        je      bind_err
+;        je      bind_err
 
 ; And set it to listen!
-        mcall   listen, [edx + thread_data.passivesocknum], 10    ;;;;; FIXME
+        mcall   listen, , 1
+        cmp     eax, -1
+;        je      listen_err
 
 ; Tell our thread we are ready to accept incoming calls
-        mov     edx, [esp+4]                                    ; thread_data pointer
+        mov     edx, [ebp]                                      ; thread_data pointer
         mov     [edx + thread_data.mode], MODE_PASSIVE_WAIT
 
 ; Now tell the client where to connect to in this format:
 ; 227 Entering Passive Mode (a1,a2,a3,a4,p1,p2)
 ; where a1.a2.a3.a4 is the IP address and p1*256+p2 is the port number.
+
+; '227 ('
         lea     edi, [edx + thread_data.buffer]
         mov     eax, '227 '     ; FIXME (now hardcoded to 127.0.0.1:2000)
         stosd
-        mov     eax, '(127'
-        stosd
-        mov     eax, ',0,0'
-        stosd
-        mov     eax, ',1,7'
-        stosd
-        mov     eax, ',208'
-        stosd
-        mov     al, ')'
+        mov     al, '('
         stosb
-        mov     ax, 0x0a0d
-        stosw
-        xor     al, al
+; ip
+        mov     eax, 127
+        call    dword_to_ascii
+        mov     al, ','
         stosb
+        mov     eax, 0
+        call    dword_to_ascii
+        mov     al, ','
+        stosb
+        mov     eax, 0
+        call    dword_to_ascii
+        mov     al, ','
+        stosb
+        mov     eax, 1
+        call    dword_to_ascii
+        mov     al, ','
+        stosb
+; port
+        mov     eax, 7
+        call    dword_to_ascii
+        mov     al, ','
+        stosb
+        mov     eax, 208
+        call    dword_to_ascii
+; ')', 13, 10, 0
+        mov     eax, ')' + 0x000a0d00
+        stosd
 
         lea     esi, [edi - thread_data.buffer]
         sub     esi, edx
@@ -460,9 +776,14 @@ cmdPASV:
 
         ret
 
-
+;------------------------------------------------
+; "PWD"
+;
+; Print the current working directory.
+;
+;------------------------------------------------
 align 4
-cmdPWD:         ; Print Working Directory
+cmdPWD:
 
         mov     dword [edx + thread_data.buffer], '257 '
         mov     byte [edx + thread_data.buffer+4], '"'
@@ -487,7 +808,7 @@ cmdPWD:         ; Print Working Directory
         xor     edi, edi
         mcall   send
 
-        mov     edx, [esp+4]
+        mov     edx, [ebp]
 ; Print the new working dir on the console
         lea     eax, [edx + thread_data.work_dir]
         push    eax
@@ -497,33 +818,24 @@ cmdPWD:         ; Print Working Directory
 
         ret
 
-
+;------------------------------------------------
+; "PORT"
+;
+; Initiate an active dataconnection.
+;
+;------------------------------------------------
 align 4
 cmdPORT:
 
 ; PORT a1,a2,a3,a4,p1,p2
 ; IP address a1.a2.a3.a4, port p1*256+p2
 
-        mov     [edx + thread_data.mode], MODE_ACTIVE
-
-        lea     esi, [esi+5]
 ; Convert the IP
-        call    ascii_to_byte
-        mov     bl, al
-        inc     esi             ; skip past ','
-        call    ascii_to_byte
-        mov     bh, al
-        shl     ebx, 16
-        inc     esi
-        call    ascii_to_byte
-        mov     bl, al
-        inc     esi
-        call    ascii_to_byte
-        mov     bh, al
-        inc     esi
-        rol     ebx, 16
-
+        lea     esi, [esi+5]
+        mov     cl, ','
+        call    ip_to_dword
 ; And put it in datasock
+        mov     edx, [ebp]
         mov     [edx + thread_data.datasock.sin_addr], ebx
 
 ; Now the same with portnumber
@@ -539,29 +851,45 @@ cmdPORT:
 ; We will open the socket, but do not connect yet!
         mov     [edx + thread_data.datasock.sin_family], AF_INET4
         mcall   socket, AF_INET4, SOCK_STREAM, 0
-        mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
         je      socketerror
-        mov     [edx + thread_data.datasocketnum], eax
 
-; Tell the client we are ready
-        mov     edx, [esp+4]                                    ; thread_data pointer
-        mcall   send, [edx + thread_data.socketnum], str225, str225.length, 0
+        mov     edx, [ebp]                                      ; thread_data pointer
+        mov     [edx + thread_data.datasocketnum], eax
+        mov     [edx + thread_data.mode], MODE_ACTIVE
+
+        sendFTP "225 Data connection open"
         ret
 
-
+;------------------------------------------------
+; "QUIT"
+;
+; Close the connection with client.
+;
+;------------------------------------------------
 align 4
 cmdQUIT:
 
         mcall   close, [edx + thread_data.datasocketnum]
-        mcall   send, [edx + thread_data.socketnum], str221, str221.length, 0    ; 221 - bye!
-        mcall   close;, [edx + thread_data.socketnum]
+
+        sendFTP "221 Bye!"
+        mcall   close, [edx + thread_data.socketnum]
 
         add     esp, 4          ; get rid of call return address
         jmp     thread_exit     ; now close this thread
 
+
+;------------------------------------------------
+; "RETR"
+;
+; Retrieve a file from the ftp server.
+;
+;------------------------------------------------
 align 4
 cmdRETR:
+
+        test    [edx + thread_data.permissions], PERMISSION_READ
+        jz      permission_denied
 
         sub     ecx, 5
         jb      .cannot_open
@@ -574,7 +902,6 @@ cmdRETR:
         mov     esi, sizeof.thread_data.datasock
         mcall   connect
         pop     esi
-        mov     edx, [esp+4]                                    ; thread_data pointer
         cmp     eax, -1
         je      socketerror
   @@:
@@ -601,6 +928,7 @@ cmdRETR:
         push    str_newline
         call    [con_write_asciiz]
 
+        mov     edx, [ebp]
         push    O_READ
         lea     eax, [edx + thread_data.fpath]
         push    eax
@@ -608,12 +936,16 @@ cmdRETR:
         test    eax, eax
         jz      .cannot_open
 
+        mov     edx, [ebp]
         push    eax
-        mcall   send, [edx + thread_data.socketnum], str150, str150.length, 0    ; here it comes..
+        sendFTP "150 Here it comes.."
         pop     ebx
 
-        mov     edx, [esp+4]                                    ; thread_data pointer
   .read_more:
+        mov     edx, [ebp]
+        test    [edx + thread_data.permissions], ABORT
+        jnz     abort_transfer
+
         push    BUFFERSIZE
         lea     eax, [edx + thread_data.buffer]
         push    eax
@@ -622,16 +954,15 @@ cmdRETR:
         cmp     eax, -1
         je      .cannot_open    ; fixme: this is not the correct error
 
-        push    eax
-        push    ebx
+        mov     edx, [ebp]
+        push    eax ebx
         mov     esi, eax
         mov     ecx, [edx + thread_data.datasocketnum]
         lea     edx, [edx + thread_data.buffer]
         xor     esi, esi
         mcall   send
-        pop     ebx
-        pop     ecx
-        mov     edx, [esp+4]                                    ; thread_data pointer
+        pop     ebx ecx
+        mov     edx, [ebp]                                      ; thread_data pointer
         cmp     eax, -1
         je      socketerror
 
@@ -641,8 +972,10 @@ cmdRETR:
         mcall   close, [edx + thread_data.datasocketnum]
         mov     [edx + thread_data.mode], MODE_NOTREADY
 
-        mcall   send, [edx + thread_data.socketnum], str226, str226.length, 0    ; transfer ok
+        push    ebx
+        call    [file.close]
 
+        sendFTP "226 Transfer OK, closing connection"
         ret
 
   .cannot_open:
@@ -653,24 +986,51 @@ cmdRETR:
         pushd   0x07
         call    [con_set_flags]
 
-        mcall   send, [edx + thread_data.socketnum], str550, str550.length, 0    ; file not found
-
+        mov     edx, [ebp]
+        sendFTP "550 No such file"
         ret
 
+
+
+;------------------------------------------------
+; "STOR"
+;
+; Store a file on the server.
+;
+;------------------------------------------------
 align 4
 cmdSTOR:
 
-        ; TODO: check if user has write permission, and write file if so
+        test    [edx + thread_data.permissions], PERMISSION_WRITE
+        jz      permission_denied
+
+
+;;;;
+        test    [edx + thread_data.permissions], ABORT
+        jnz     abort_transfer
+
+;;;;
 
         ret
 
+;------------------------------------------------
+; "SYST"
+;
+; Send information about the system.
+;
+;------------------------------------------------
 align 4
 cmdSYST:
 
-        mcall   send, [edx + thread_data.socketnum], str215, str215.length, 0
-
+        sendFTP "215 UNIX type: L8"
         ret
 
+;------------------------------------------------
+; "TYPE"
+;
+; Choose the file transfer type.
+;
+;------------------------------------------------
 align 4
 cmdTYPE:
 
@@ -743,136 +1103,53 @@ cmdTYPE:
         mov     [edx + thread_data.type], al
 
   .ok:
-        mcall   send, [edx + thread_data.socketnum], str200, str200.length, 0
-
+        sendFTP "200 Command ok"
         ret
 
-
+;------------------------------------------------
+; "USER"
+;
+; Login to the server, step one of two.
+;
+;------------------------------------------------
 align 4
 cmdUSER:
 
-        ; TODO: check user and set home directory (and permissions)
+        lea     esi, [esi + 5]
+        lea     edi, [edx + thread_data.fpath]
+  .loop:                                         ;;; TODO: prevent buffer overflow!
+        lodsb
+        stosb
+        cmp     al, 0x20
+        jae     .loop
+        mov     byte [edi-1], 0
 
-        mov     [edx + thread_data.state], STATE_LOGIN
-        mov     word [edx + thread_data.home_dir], "/"          ; "/", 0
+        lea     esi, [edx + thread_data.fpath]
+        lea     eax, [edx + thread_data.home_dir]
+        invoke  ini.get_str, path2, esi, str_home, eax, 1024
+        cmp     eax, -1
+        je      .login_fail
+
         mov     word [edx + thread_data.work_dir], "/"          ; "/", 0
 
         push    str_logged_in
         call    [con_write_asciiz]
 
-        mcall   send, [edx + thread_data.socketnum], str331, str331.length, 0           ; Now send me the password!
-
+        mov     edx, [ebp]
+        mov     [edx + thread_data.state], STATE_LOGIN
+  .sendstr:
+        sendFTP "331 Please specify the password"
         ret
 
-
-
-align 4         ; esi = ptr to str, output in eax
-ascii_to_byte:
-
-        xor     eax, eax
-        push    ebx
-
-  .loop:
-        movzx   ebx, byte[esi]
-        sub     bl, '0'
-        jb      .done
-        cmp     bl, 9
-        ja      .done
-        lea     eax, [eax*4 + eax]      ;
-        shl     eax, 1                  ; eax = eax * 10
-        add     eax, ebx
-        inc     esi
-
-        jmp     .loop
-
-  .done:
-        pop     ebx
-        ret
-
-align 4
-dword_to_ascii: ; edi = ptr where to write, eax is number
-
-        mov     eax, '1'
-        stosb
-
-        ret
-
-align 4
-create_path:            ; combine home_dir and work_dir strings into fpath
-
-        lea     edi, [edx + thread_data.fpath]
-        lea     esi, [edx + thread_data.home_dir]
-        mov     ecx, 1024
-  .loop1:
-        lodsb
-        or      al, al
-        jz      .next
-        stosb
-        loop    .loop1
-  .next:
-
-        cmp     byte[edi-1], '/'
-        jne     @f
-        dec     edi
-       @@:
-
-        lea     esi, [edx + thread_data.work_dir]
-        mov     ecx, 1024
-  .loop2:
-        lodsb
-        or      al, al
-        jz      .done
-        stosb
-        loop    .loop2
-
-  .done:
-        stosb
-
-        ret
-
-
-align 4
-socketerror:
-
-        pushd   0x0c
-        call    [con_set_flags]
-        push    str_sockerr
+  .login_fail:
+        push    str_login_invalid
         call    [con_write_asciiz]
-        pushd   0x07
-        call    [con_set_flags]
 
-        mcall   send, [edx + thread_data.socketnum], str425, str425.length, 0    ; data connection error
+        mov     edx, [ebp]
+        mov     [edx + thread_data.state], STATE_LOGIN_FAIL
+        jmp     .sendstr
 
+align 4
+  .2:
+        sendFTP "530 Can't change to another user"
         ret
-
-
-
-
-str150  db '150 Here it comes...', 13, 10
-.length = $ - str150
-str200  db '200 Command OK.', 13, 10
-.length = $ - str200
-str215  db '215 UNIX type: L8', 13, 10
-.length = $ - str215
-str220  db '220 KolibriOS FTP Daemon 1.0', 13, 10
-.length = $ - str220
-str221  db '221 Bye!', 13, 10
-.length = $ - str221
-str225  db '225 Data connection open', 13, 10
-.length = $ - str225
-str226  db '226 Transfer OK, Closing connection', 13, 10
-.length = $ - str226
-str230  db '230 You are now logged in.', 13, 10
-.length = $ - str230
-str250  db '250 command successful', 13, 10
-.length = $ - str250
-str331  db '331 Please specify the password.', 13, 10
-.length = $ - str331
-str421  db '421 Timeout!', 13, 10
-.length = $ - str421
-str425  db '425 Cant open data connection.', 13, 10
-.length = $ - str425
-str500  db '500 Unsupported command', 13, 10
-.length = $ - str500
-str550  db '550 No such file', 13, 10
-.length = $ - str550

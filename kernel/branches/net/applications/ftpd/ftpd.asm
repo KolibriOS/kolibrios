@@ -8,10 +8,11 @@
 
 BUFFERSIZE              = 8192
 
-STATE_DISCONNECTED      = 0
-STATE_CONNECTED         = 1
-STATE_LOGIN             = 2
-STATE_ACTIVE            = 3
+; using multiple's of 4
+STATE_CONNECTED         = 4*0
+STATE_LOGIN             = 4*1
+STATE_LOGIN_FAIL        = 4*2           ; When an invalid username was given
+STATE_ACTIVE            = 4*3
 
 TYPE_UNDEF              = 0
 
@@ -25,11 +26,19 @@ TYPE_ASA                = 00000011b
 TYPE_IMAGE              = 01000000b     ; binary data
 TYPE_LOCAL              = 10000000b     ; bits per byte must be specified
                                         ; lower 4 bits will hold this value
-
 MODE_NOTREADY           = 0
 MODE_ACTIVE             = 1
 MODE_PASSIVE_WAIT       = 2
 MODE_PASSIVE_OK         = 3
+MODE_PASSIVE_FAILED     = 4
+
+PERMISSION_EXEC         = 1b            ; LIST
+PERMISSION_READ         = 10b
+PERMISSION_WRITE        = 100b
+PERMISSION_DELETE       = 1000b
+PERMISSION_CD           = 10000b        ; Change Directory
+
+ABORT                   = 1 shl 31
 
 format binary as ""
 
@@ -62,15 +71,29 @@ start:
 
         mcall   68, 11                  ; init heap
 
-; find path to main settings file
+; find path to main settings file (ftpd.ini)
         mov     edi, path               ; Calculate the length of zero-terminated string
         xor     al, al
         mov     ecx, 1024
         repne   scasb
         dec     edi
-        mov     esi, filename           ; append it with '.ini'
+        mov     esi, str_ini            ; append it with '.ini', 0
         movsd
         movsb
+
+; now create the second path (users.ini)
+        std
+        mov     al, '/'
+        repne   scasb
+        lea     ecx, [edi - path + 2]
+        cld
+        mov     esi, path
+        mov     edi, path2
+        rep     movsb
+        mov     esi, str_users
+        movsd
+        movsd
+        movsw
 
 ; initialize console
         push    1
@@ -84,6 +107,11 @@ start:
         call    [con_init]
 
         mcall   40, 1 shl 7             ; we only want network events
+
+        invoke  ini.get_str, path, str_ftpd, str_ip, ini_buf, 16, 0
+        mov     esi, ini_buf
+        call    ip_to_dword
+        mov     [serverip], ebx
 
         invoke  ini.get_int, path, str_ftpd, str_port, 21
         mov     [sockaddr1.port], ax
@@ -140,6 +168,7 @@ threadstart:
 
         lea     esp, [eax + thread_data.stack]  ; init stack
         push    eax                             ; save pointer to thread_data on stack
+        mov     ebp, esp
 
         mcall   40, 1 shl 7                     ; we only want network events for this thread
 
@@ -153,55 +182,75 @@ threadstart:
         mcall   accept, [socketnum], sockaddr1, sockaddr1.length                ; time to accept the awaiting connection..
         cmp     eax, -1
         je      thread_exit
-        mov     edx, [esp]                                                      ; pointer to thread_data
+        mov     edx, [ebp]                                                      ; pointer to thread_data
         mov     [edx + thread_data.socketnum], eax
 
-        mcall   send, [edx + thread_data.socketnum], str220, str220.length, 0   ; send welcome string to the FTP client
+        mov     [edx + thread_data.state], STATE_CONNECTED
+        mov     [edx + thread_data.permissions], 0
+        mov     [edx + thread_data.mode], MODE_NOTREADY
+        lea     eax, [edx + thread_data.buffer]
+        mov     [edx + thread_data.buffer_ptr], eax
+
+        sendFTP "220 Welcome to KolibriOS FTP daemon"
 
 threadloop:
         mcall   10
 
-        mov     edx, [esp]                                                      ; pointer to thread_data
+        mov     edx, [ebp]                                                      ; pointer to thread_data
 
         cmp     [edx + thread_data.mode], MODE_PASSIVE_WAIT
-        jne     @f
+        jne     .not_passive
         mov     ecx, [edx + thread_data.passivesocknum]
         lea     edx, [edx + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
         mcall   accept
-        mov     edx, [esp]                                                      ; pointer to thread_data
+        mov     edx, [ebp]                                                      ; pointer to thread_data
         cmp     eax, -1
-        je      @f
+        je      .not_passive
         mov     [edx + thread_data.datasocketnum], eax
-        mov     [edx + thread_data.mode], MODE_PASSIVE_OK
+        mov     [edx + thread_data.mode], MODE_PASSIVE_FAILED
 
         push    str_datasock
         call    [con_write_asciiz]                                              ; print on the console that the datasock is now ready
-       @@:
+  .not_passive:
 
         mov     ecx, [edx + thread_data.socketnum]
-        lea     edx, [edx + thread_data.buffer]
-        mov     esi, sizeof.thread_data.buffer
+        mov     edx, [edx + thread_data.buffer_ptr]
+        mov     esi, sizeof.thread_data.buffer    ;;; FIXME
         mcall   recv
-        cmp     eax, -1                                                         ; error?
-        je      threadloop
-        or      eax, eax                                                        ; 0 bytes read?
+        inc     eax                                                             ; error? (-1)
         jz      threadloop
-        push    eax                                                             ; save number of bytes read on stack
+        dec     eax                                                             ; 0 bytes read?
+        jz      threadloop
 
-        mov     edx, [esp+4]                                                    ; pointer to thread_data
-        mov     byte [edx + thread_data.buffer + eax], 0                        ; append received data with a 0 byte
+        mov     edx, [ebp]                                                      ; pointer to thread_data
+        mov     edi, [edx + thread_data.buffer_ptr]
+        add     [edx + thread_data.buffer_ptr], eax
 
+; Check if we received a newline character, if not, wait for more data
+        mov     ecx, eax
+        mov     al, 13
+        repne   scasb
+        jne     threadloop
+
+; We got a command!
+        lea     eax, [edx + thread_data.buffer]
+        mov     ecx, [edx + thread_data.buffer_ptr]
+        sub     ecx, eax
+        push    ecx                                                             ; push full data size on stack
+        mov     [edx + thread_data.buffer_ptr], eax                             ; reset buffer ptr
+
+        push    eax;;;;
         pushd   0x02                                                            ; print received data to console (in green color)
         call    [con_set_flags]
         push    str_newline
         call    [con_write_asciiz]
-        lea     eax, [edx + thread_data.buffer]
-        push    eax
+;;;;        push    eax
         call    [con_write_asciiz]
         pushd   0x07
         call    [con_set_flags]
 
+        mov     edx, [ebp]
         pop     ecx                                                             ; number of bytes read
         lea     esi, [edx + thread_data.buffer]
         call    parse_cmd
@@ -268,6 +317,8 @@ str_datasock    db 'Passive data socket connected!',10,0
 str_notfound    db 'ERROR: file not found',10,0
 str_sockerr     db 'ERROR: socket error',10,0
 
+str_login_invalid db 'Login invalid',10,0
+
 str_newline     db 10, 0
 str_mask        db '*', 0
 
@@ -284,10 +335,16 @@ months          dd 'Jan '
                 dd 'Nov '
                 dd 'Dec '
 
-filename        db '.ini', 0
+str_users       db 'users'
+str_ini         db '.ini', 0
 str_port        db 'port', 0
 str_ftpd        db 'ftpd', 0
 str_conn        db 'conn', 0
+str_ip          db 'ip', 0
+str_pass        db 'pass', 0
+str_home        db 'home', 0
+str_mode        db 'mode', 0
+
 
 sockaddr1:
                 dw AF_INET4
@@ -338,7 +395,11 @@ i_end:
 
         socketnum       dd ?
         path            rb 1024
+        path2           rb 1024
         params          rb 1024
+        serverip        dd ?
+
+        ini_buf         rb 3*4+3+1
 
 mem:
 
