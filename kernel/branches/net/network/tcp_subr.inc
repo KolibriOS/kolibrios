@@ -313,8 +313,7 @@ TCP_respond_socket:
 ;-------------------------
 ; TCP_respond.segment:
 ;
-;  IN:  ebx = ptr to driver
-;       edx = segment ptr (a previously received segment)
+;  IN:  edx = segment ptr (a previously received segment)
 ;       edi = ptr to dest and src IPv4 addresses
 ;        cl = flags
 
@@ -326,14 +325,14 @@ TCP_respond_segment:
 ;---------------------
 ; Create the IP packet
 
-        push    cx edx ebx
+        push    cx edx
         mov     ebx, [edi + 4]
         mov     eax, [edi]
         mov     ecx, sizeof.TCP_header
         mov     di , IP_PROTO_TCP shl 8 + 128
         call    IPv4_output
         jz      .error
-        pop     ebx esi cx
+        pop     esi cx
 
         push    edx eax
 

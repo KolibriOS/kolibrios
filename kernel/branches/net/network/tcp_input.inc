@@ -45,18 +45,18 @@ TCP_input:
         pop     cx              ; previous checksum
         cmp     cx, dx
         pop     edx ecx
-        jne     .drop_not_locked
+        jne     .drop_no_socket
 
         DEBUGF  1,"Checksum ok\n"
 
         and     [edx + TCP_header.DataOffset], 0xf0                     ; Calculate TCP segment header size (throwing away unused reserved bits in TCP header)
         shr     [edx + TCP_header.DataOffset], 2
         cmp     [edx + TCP_header.DataOffset], sizeof.TCP_header        ; Now see if it's at least the size of a standard TCP header
-        jb      .drop_not_locked                                        ; If not, drop the packet
+        jb      .drop_no_socket                                         ; If not, drop the packet
 
         movzx   eax, [edx + TCP_header.DataOffset]
         sub     ecx, eax                                                ; substract TCP header size from total segment size
-        jb      .drop_not_locked                                        ; If total segment size is less then the advertised header size, drop packet
+        jb      .drop_no_socket                                         ; If total segment size is less then the advertised header size, drop packet
         DEBUGF  1,"we got %u bytes of data\n", ecx
 
 ;-----------------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ TCP_input:
   .socket_loop:
         mov     ebx, [ebx + SOCKET.NextPtr]
         or      ebx, ebx
-        jz      .drop_with_reset_not_locked
+        jz      .drop_with_reset_no_socket
 
         cmp     [ebx + SOCKET.Domain], AF_INET4
         jne     .socket_loop
@@ -1525,14 +1525,12 @@ align 4
 align 4
 .drop_with_reset:
 
+        DEBUGF  1,"Drop with reset\n"
+
         pusha
         lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
         popa
-
-.drop_with_reset_not_locked:
-
-        DEBUGF  1,"Drop with reset\n"
 
         test    [edx + TCP_header.Flags], TH_RST
         jnz     .drop
@@ -1555,7 +1553,6 @@ align 4
         mov     cl, TH_RST
         call    TCP_respond_socket
         pop     ebx
-
         jmp     .destroy_new_socket
 
 
@@ -1565,10 +1562,7 @@ align 4
         mov     cl, TH_RST + TH_ACK
         call    TCP_respond_socket
         pop     ebx
-
         jmp     .destroy_new_socket
-
-
 
 
 
@@ -1598,3 +1592,41 @@ align 4
         call    kernel_free
         add     esp, 4
         ret
+
+
+
+
+.drop_with_reset_no_socket:
+
+        DEBUGF  1,"Drop with reset (no socket)\n"
+
+        test    [edx + TCP_header.Flags], TH_RST
+        jnz     .drop_no_socket
+
+        ;;; if its a multicast/broadcast, also drop
+
+        test    [edx + TCP_header.Flags], TH_ACK
+        jnz     .respond_seg_ack
+
+        test    [edx + TCP_header.Flags], TH_SYN
+        jnz     .respond_seg_syn
+
+.drop_no_socket:
+
+        DEBUGF  1,"Drop (no socket)\n"
+
+        call    kernel_free
+        add     esp, 4
+        ret
+
+  .respond_seg_ack:
+
+        mov     cl, TH_RST
+        call    TCP_respond_segment
+        jmp     .drop_no_socket
+
+  .respond_seg_syn:
+
+        mov     cl, TH_RST + TH_ACK
+        call    TCP_respond_segment
+        jmp     .drop_no_socket
