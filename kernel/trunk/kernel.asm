@@ -332,6 +332,9 @@ high_code:
         mov     ecx, disk_list_mutex
         call    mutex_init
 
+        mov     ecx, keyboard_list_mutex
+        call    mutex_init
+
         mov     ecx, unpack_mutex
         call    mutex_init
 
@@ -910,6 +913,8 @@ first_app_found:
 ; SET KEYBOARD PARAMETERS
         mov     al, 0xf6       ; reset keyboard, scan enabled
         call    kb_write
+        test    ah, ah
+        jnz     .no_keyboard
 
         ; wait until 8042 is ready
         xor     ecx, ecx
@@ -918,6 +923,15 @@ first_app_found:
         and     al, 00000010b
         loopnz  @b
 
+iglobal
+align 4
+ps2_keyboard_functions:
+        dd      .end - $
+        dd      0       ; no close
+        dd      ps2_set_lights
+.end:
+endg
+        stdcall register_keyboard, ps2_keyboard_functions, 0
        ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
        ; call  kb_write
        ; call  kb_read
@@ -935,6 +949,7 @@ first_app_found:
         call    set_lights
      ;// mike.dld ]
         stdcall attach_int_handler, 1, irq1, 0
+.no_keyboard:
 
 ; SET MOUSE
 
@@ -1056,6 +1071,7 @@ osloop:
         call    checkidle
         call    check_fdd_motor_status
         call    check_ATAPI_device_event
+        call    check_lights_state
         call    check_timers
         jmp     osloop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

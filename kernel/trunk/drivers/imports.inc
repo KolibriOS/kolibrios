@@ -80,6 +80,9 @@ kernel_export \
               LoadFile,\
               SendEvent,\
               SetMouseData,\
+              SetKeyboardData,\
+              RegKeyboard,\
+              DelKeyboard,\
               Sleep,\
               GetTimerTicks,\
 \
