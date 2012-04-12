@@ -646,7 +646,7 @@ IPv4_output:
 
   .eth_error:
         DEBUGF  1,"IPv4_output: ethernet error\n"
-        add     esp, 6+2+4
+        add     esp, 3*4+2*2+6
         sub     edi, edi
         ret
 

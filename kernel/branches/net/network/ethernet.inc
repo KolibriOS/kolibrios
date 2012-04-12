@@ -136,14 +136,15 @@ ETH_output:
         lea     edx, [ecx + sizeof.ETH_header]  ; Set edx to complete buffer size
 
         cmp     edx, ETH_FRAME_MINIMUM
-        jb      .adjust_size
+        jbe     .adjust_size
+  .done:
         DEBUGF  1,"ETH_output: done: %x total size: %u\n", eax, edx
         ret
 
   .adjust_size:
         mov     edx, ETH_FRAME_MINIMUM
         test    edx, edx        ; clear zero flag
-        ret
+        jmp     .done
 
   .out_of_ram:
         DEBUGF  2,"ETH_output: Out of ram space!!\n"
