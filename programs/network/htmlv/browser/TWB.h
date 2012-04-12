@@ -15,7 +15,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 0.78";
+ char version[]=" Text-based Browser 0.80";
 
 
 struct TWebBrowser {
@@ -36,7 +36,7 @@ byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, link, ign
 
 
 dword text_colors[10],
-	text_color_index = 0,
+	text_color_index,
 	link_color,
 	bg_color=0xFFFFFF;
 
@@ -108,9 +108,19 @@ void TWebBrowser::Scan(dword id) {
 			break;
 		case BACK:
 			BrowserHistory.GoBack();
+			
+			copystr(#URL, #editURL);
+			za_kadrom = count = 0;
+			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
+			ShowPage(#URL);
 			return;
 		case FORWARD:
-			RunProgram("@notify", "Forward button is not realized yet");
+			BrowserHistory.GoForward();
+
+			copystr(#URL, #editURL);
+			za_kadrom = count = 0;
+			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
+			ShowPage(#URL);
 			return;
 		case 054: //F5
 			IF(edit1.flags == 66) break;
@@ -309,7 +319,7 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 				temp = '';
 				goto NEXT_MARK;
 			}
-		CASE '\9':
+		case '\9':
 			if (pre_text == 1) //иначе идём на 0x0d	
 			{
 				tab_len=strlen(#line)/8;
@@ -712,10 +722,10 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 
-	if (!chTag("meta")) 
+	if (!chTag("meta")) || (!chTag("?xml"))
 	{
 		META:
-		if (!strcmp(#parametr, "charset=")) || (!strcmp(#parametr, "content="))
+		if (!strcmp(#parametr, "charset=")) || (!strcmp(#parametr, "content=")) || (!strcmp(#parametr, "encoding="))
 		{
 			copystr(#options[find_symbol(#options, '=')],#options); //поиск в content=
 

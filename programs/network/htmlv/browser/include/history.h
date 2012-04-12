@@ -1,36 +1,55 @@
 struct UrlsHistory {
-	byte UrlHistory[6000];	
+	dword CurrentUrl();
 	void AddUrl();
 	void GoBack();
-	dword CurrentUrl();
+	void GoForward();
 };
 
 UrlsHistory BrowserHistory;
 
-void UrlsHistory::GoBack()
-{
-	j = find_symbol(#UrlHistory, '|') -1; //текущая страница
-	if (j<=0) return;
-	UrlHistory[j] = 0x00;
-	j = find_symbol(#UrlHistory, '|'); //предыдущая страница -> она нам и нужна
-	copystr(#UrlHistory + j, #URL);
-	
-	copystr(#URL, #editURL);
-	za_kadrom = count = 0;
-	if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
-	WB1.ShowPage(#URL);
-}
+struct path_string {
+char Item[4096];
+};
 
-void UrlsHistory::AddUrl()
-{
-	if (strcmp(BrowserHistory.CurrentUrl(), #URL)==0) return; //если новый адресс = текущему
-	
-	IF (strlen(#UrlHistory)>6000) copystr(#UrlHistory+5000,#UrlHistory);
-	copystr("|", #UrlHistory + strlen(#UrlHistory));
-	copystr(#URL, #UrlHistory + strlen(#UrlHistory));
-}
+#define MAX_HISTORY_NUM 40
+path_string history_list[MAX_HISTORY_NUM];
+int history_num;
+int history_current;
 
 dword UrlsHistory::CurrentUrl()
 {
-	EAX=#UrlHistory + find_symbol(#UrlHistory, '|');
+	return #history_list[history_current].Item;
+}
+
+void UrlsHistory::AddUrl() //тут нужен вводимый элемент - для универсальности
+{
+	if (history_num>0) && (strcmp(#URL,#history_list[history_current].Item)==0) return;
+		
+	if (history_current>=MAX_HISTORY_NUM-1)
+	{
+		history_current/=2;
+		for (i=0; i<history_current; i++;)
+		{
+			copystr(#history_list[MAX_HISTORY_NUM-i].Item, #history_list[i].Item);
+		}	
+	}
+	history_current++;
+	copystr(#URL,#history_list[history_current].Item);
+	history_num=history_current;
+}
+
+
+void UrlsHistory::GoBack()
+{
+	if (history_current<=2) return;
+	history_current--;
+	copystr(#history_list[history_current].Item,#URL);
+}
+
+
+void UrlsHistory::GoForward()
+{
+	if (history_current==history_num) return;
+	history_current++;
+	copystr(#history_list[history_current].Item,#URL);
 }

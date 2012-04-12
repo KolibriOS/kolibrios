@@ -2,4 +2,4 @@
 del HTMLv
 rename HTMLv.com HTMLv
 rem ..\C--\kpack HTMLv
-rem pause
+pause
