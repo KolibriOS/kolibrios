@@ -205,7 +205,6 @@ draw_window:
 
 
 
-
 start_transfer:
 
         ; first, resolve the hostname
@@ -459,9 +458,9 @@ sockaddr_len = $ - sockaddr
 align 16
 @IMPORT:
 
-library box_lib , 'box_lib.obj'
-library io_lib  , 'libio.obj'
-library network , 'network.obj'
+library box_lib , 'box_lib.obj', \
+        io_lib  , 'libio.obj', \
+        network , 'network.obj'
 
 import  box_lib                                 ,\
         edit_box_draw    ,'edit_box'            ,\
@@ -497,7 +496,7 @@ import  network                                         ,\
 
 
 edit1 edit_box 300,80,5 ,0xffffff,0x6f9480,0,0,0,99 ,SRV,mouse_dd,ed_focus,  11,11
-edit2 edit_box 300,80,25,0xffffff,0x6a9480,0,0,0,99 ,remote_addr,mouse_dd,ed_figure_only, 10,10
+edit2 edit_box 300,80,25,0xffffff,0x6a9480,0,0,0,99 ,remote_addr,mouse_dd,ed_figure_only, 5,5
 edit3 edit_box 300,80,45,0xffffff,0x6a9480,0,0,0,99 ,local_addr,mouse_dd,ed_figure_only, 27,27
 edit4 edit_box 40,340,68,0xffffff,0x6a9480,0,0,0,5 ,BLK,mouse_dd,ed_figure_only, 3,3
 
@@ -560,5 +559,7 @@ I_END:
 mouse_dd        dd ?
 buffer:
 rb buffer_len
+
+rb 0x1000       ; stack
 
 IM_END:
