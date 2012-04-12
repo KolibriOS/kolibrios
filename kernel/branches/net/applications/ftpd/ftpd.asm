@@ -96,15 +96,8 @@ start:
         movsw
 
 ; initialize console
-        push    1
-        call    [con_start]
-
-        push    title
-        push    -1
-        push    -1
-        push    -1
-        push    -1
-        call    [con_init]
+        invoke  con_start, 1
+        invoke  con_init, -1, -1, -1, -1, title
 
         mcall   40, 1 shl 7             ; we only want network events
 
@@ -116,18 +109,14 @@ start:
         invoke  ini.get_int, path, str_ftpd, str_port, 21
         mov     [sockaddr1.port], ax
 
-        push    eax
-        push    str1
-        call    [con_printf]
+        invoke  con_printf, str1, eax
 
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         je      sock_err
-
         mov     [socketnum], eax
 
-        push    str2
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str2
 
 ;        mcall   setsockopt, [socketnum], SOL_SOCKET, SO_REUSEADDR, &yes,
 ;        cmp     eax, -1
@@ -137,21 +126,18 @@ start:
         cmp     eax, -1
         je      bind_err
 
-        push    str2
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str2
 
         invoke  ini.get_int, path, str_ftpd, str_conn, 1        ; Backlog (max connections)
         mov     edx, eax
 
-        push    str2
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str2
 
         mcall   listen, [socketnum]
         cmp     eax, -1
         je      listen_err
 
-        push    str2b
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, str2b
 
 mainloop:
         mcall   10                              ; Wait here for incoming connections on the base socket (socketnum)
@@ -172,12 +158,9 @@ threadstart:
 
         mcall   40, 1 shl 7                     ; we only want network events for this thread
 
-        pushd   0x03
-        call    [con_set_flags]
-        push    str8
-        call    [con_write_asciiz]                                              ; print on the console that we have created the new thread successfully
-        pushd   0x07
-        call    [con_set_flags]
+        invoke  con_set_flags, 0x03
+        invoke  con_write_asciiz, str8          ; print on the console that we have created the new thread successfully
+        invoke  con_set_flags, 0x07
 
         mcall   accept, [socketnum], sockaddr1, sockaddr1.length                ; time to accept the awaiting connection..
         cmp     eax, -1
@@ -195,11 +178,11 @@ threadstart:
 
 threadloop:
         mcall   10
-
         mov     edx, [ebp]                                                      ; pointer to thread_data
 
         cmp     [edx + thread_data.mode], MODE_PASSIVE_WAIT
         jne     .not_passive
+        mov     [edx + thread_data.mode], MODE_PASSIVE_FAILED                   ; assume that we will fail
         mov     ecx, [edx + thread_data.passivesocknum]
         lea     edx, [edx + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
@@ -208,10 +191,9 @@ threadloop:
         cmp     eax, -1
         je      .not_passive
         mov     [edx + thread_data.datasocketnum], eax
-        mov     [edx + thread_data.mode], MODE_PASSIVE_FAILED
+        mov     [edx + thread_data.mode], MODE_PASSIVE_OK
 
-        push    str_datasock
-        call    [con_write_asciiz]                                              ; print on the console that the datasock is now ready
+        invoke  con_write_asciiz, str_datasock
   .not_passive:
 
         mov     ecx, [edx + thread_data.socketnum]
@@ -234,61 +216,45 @@ threadloop:
         jne     threadloop
 
 ; We got a command!
-        lea     eax, [edx + thread_data.buffer]
-        mov     ecx, [edx + thread_data.buffer_ptr]
-        sub     ecx, eax
-        push    ecx                                                             ; push full data size on stack
-        mov     [edx + thread_data.buffer_ptr], eax                             ; reset buffer ptr
-
-        push    eax;;;;
-        pushd   0x02                                                            ; print received data to console (in green color)
-        call    [con_set_flags]
-        push    str_newline
-        call    [con_write_asciiz]
-;;;;        push    eax
-        call    [con_write_asciiz]
-        pushd   0x07
-        call    [con_set_flags]
-
-        mov     edx, [ebp]
-        pop     ecx                                                             ; number of bytes read
+        mov     byte [edi + 1], 0                                               ; append string with zero byte
         lea     esi, [edx + thread_data.buffer]
-        call    parse_cmd
+        mov     ecx, [edx + thread_data.buffer_ptr]
+        sub     ecx, esi
+        mov     [edx + thread_data.buffer_ptr], esi                             ; reset buffer ptr
 
-        jmp     threadloop
+        invoke  con_set_flags, 0x02                                                            ; print received data to console (in green color)
+        invoke  con_write_asciiz, str_newline
+        invoke  con_write_asciiz, esi
+        invoke  con_set_flags, 0x07
+
+        push    threadloop
+        jmp     parse_cmd
 
 listen_err:
-        pushd   0x0c
-        call    [con_set_flags]
-        push    str3
-        call    [con_write_asciiz]
+        invoke  con_set_flags, 0x0c                                                            ; print received data to console (in green color)
+        invoke  con_write_asciiz, str3
         jmp     done
 
 bind_err:
-        pushd   0x0c
-        call    [con_set_flags]
-        push    str4
-        call    [con_write_asciiz]
+        invoke  con_set_flags, 0x0c                                                            ; print received data to console (in green color)
+        invoke  con_write_asciiz, str4
         jmp     done
 
 sock_err:
-        pushd   0x0c
-        call    [con_set_flags]
-        push    str6
-        call    [con_write_asciiz]
+        invoke  con_set_flags, 0x0c                                                            ; print received data to console (in green color)
+        invoke  con_write_asciiz, str6
         jmp     done
 
 done:
-        call    [con_getch2]
-        push    1
-        call    [con_exit]
+        invoke  con_getch2
+        invoke  con_exit, 1
 exit:
         mcall   -1
 
 
 thread_exit:
-        push    str_bye
-        call    [con_write_asciiz]      ; say bye bye
+        invoke  con_set_flags, 0x02                                                            ; print received data to console (in green color)
+        invoke  con_write_asciiz, str_bye
         pop     ecx                     ; get the thread_data pointer from stack
         mcall   68, 13                  ; free the memory
         mcall   -1                      ; and kill the thread
@@ -310,7 +276,7 @@ str8            db 10,'New thread created!',10,0
 str_bye         db 10,'Closing thread!',10,0
 
 str_logged_in   db 'Login ok',10,0
-str_pass_ok     db 'Password ok - Logged in',10,0
+str_pass_ok     db 'Password ok',10,0
 str_pwd         db 'Current directory is "%s"\n',0
 str_err2        db 'ERROR: cannot open directory',10,0
 str_datasock    db 'Passive data socket connected!',10,0
@@ -321,6 +287,7 @@ str_login_invalid db 'Login invalid',10,0
 
 str_newline     db 10, 0
 str_mask        db '*', 0
+str_infinity    db 0xff, 0xff, 0xff, 0xff, 0
 
 months          dd 'Jan '
                 dd 'Feb '
