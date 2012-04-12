@@ -26,7 +26,7 @@ ends
 macro sendFTP str {
 local .string, .length, .label
         xor     edi, edi
-        mcall   send, [edx + thread_data.socketnum], .string, .length
+        mcall   send, [ebp + thread_data.socketnum], .string, .length
         jmp     @f
 .string db str, 13, 10
 .length = $ - .string
@@ -42,7 +42,7 @@ local .string, .length, .label
 ;
 ; input: esi = ptr to ascii commands
 ;        ecx = number of bytes input
-;        edx = pointer to thread_data structure
+;        ebp = pointer to thread_data structure
 ;
 ; output: none
 ;
@@ -70,91 +70,58 @@ parse_cmd:                              ; esi must point to command
         cmp     eax, [edi]
         je      .got_it
 
-        add     edi, 4+4*4
+        add     edi, 5*4
         cmp     byte [edi], 0
         jne     .scanloop
 
   .error:
-        cmp     [edx + thread_data.state], STATE_ACTIVE
+        cmp     [ebp + thread_data.state], STATE_ACTIVE
         jb      login_first
         sendFTP "500 Unsupported command"
         ret
 
   .got_it:
-        mov     eax, [edx + thread_data.state]
+        mov     eax, [ebp + thread_data.state]
         jmp     dword [edi + 4 + eax]
 
 
 align 4
 commands:               ; all commands must be in uppercase
 
-        dd 'ABOR'
-        dd login_first, login_first, login_first, cmdABOR
-;        dd 'ACCT
-;        dd login_first, login_first, login_first, cmd_ACCT
-;        dd 'APPE'
-;        dd login_first, login_first, login_first, cmd_APPE
-        dd 'CDUP'
-        dd login_first, login_first, login_first, cmdCDUP
-        dd 'CWD'
-        dd login_first, login_first, login_first, cmdCWD
-        dd 'DELE'
-        dd login_first, login_first, login_first, cmdDELE
-;        dd 'HELP'
-;        dd login_first, login_first, login_first, cmd_HELP
-        dd 'LIST'
-        dd login_first, login_first, login_first, cmdLIST
-;        dd 'MDTM'
-;        dd login_first, login_first, login_first, cmd_MDTM
-;        dd 'MKD'
-;        dd login_first, login_first, login_first, cmd_MKD
-;        dd 'MODE'
-;        dd login_first, login_first, login_first, cmd_MODE
-        dd 'NLST'
-        dd login_first, login_first, login_first, cmdNLST
-        dd 'NOOP'
-        dd login_first, login_first, login_first, cmdNOOP
-        dd 'PASS'
-        dd cmdPASS.0,   cmdPASS    , cmdPASS.2,   cmdPASS.3
-        dd 'PASV'
-        dd login_first, login_first, login_first, cmdPASV
-        dd 'PORT'
-        dd login_first, login_first, login_first, cmdPORT
-        dd 'PWD'
-        dd login_first, login_first, login_first, cmdPWD
-        dd 'QUIT'
-        dd cmdQUIT,     cmdQUIT,     cmdQUIT,     cmdQUIT
-;        dd 'REIN'
-;        dd login_first, login_first, login_first, cmd_REIN
-;        dd 'REST'
-;        dd login_first, login_first, login_first, cmd_REST
-        dd 'RETR'
-        dd login_first, login_first, login_first, cmdRETR
-;        dd 'RMD'
-;        dd login_first, login_first, login_first, cmd_RMD
-;        dd 'RNFR'
-;        dd login_first, login_first, login_first, cmd_RNFR
-;        dd 'RNTO'
-;        dd login_first, login_first, login_first, cmd_RNTO
-;        dd 'SITE'
-;        dd login_first, login_first, login_first, cmd_SITE
-;        dd 'SIZE'
-;        dd login_first, login_first, login_first, cmd_SIZE
-;        dd 'STAT'
-;        dd login_first, login_first, login_first, cmd_STAT
-        dd 'STOR'
-        dd login_first, login_first, login_first, cmdSTOR
-;        dd 'STOU'
-;        dd login_first, login_first, login_first, cmd_STOU
-;        dd 'STRU'
-;        dd login_first, login_first, login_first, cmd_STRU
-        dd 'SYST'
-        dd login_first, login_first, login_first, cmdSYST
-        dd 'TYPE'
-        dd login_first, login_first, login_first, cmdTYPE
-        dd 'USER'
-        dd cmdUSER,     cmdUSER,     cmdUSER,     cmdUSER.2
-        db 0                                                    ; end marker
+        dd 'ABOR', login_first, login_first, login_first, cmdABOR
+;        dd 'ACCT', login_first, login_first, login_first, cmd_ACCT
+;        dd 'APPE', login_first, login_first, login_first, cmd_APPE
+        dd 'CDUP', login_first, login_first, login_first, cmdCDUP
+        dd 'CWD',  login_first, login_first, login_first, cmdCWD
+        dd 'DELE', login_first, login_first, login_first, cmdDELE
+;        dd 'HELP', login_first, login_first, login_first, cmd_HELP
+        dd 'LIST', login_first, login_first, login_first, cmdLIST
+;        dd 'MDTM', login_first, login_first, login_first, cmd_MDTM
+;        dd 'MKD',  login_first, login_first, login_first, cmd_MKD
+;        dd 'MODE', login_first, login_first, login_first, cmd_MODE
+        dd 'NLST', login_first, login_first, login_first, cmdNLST
+        dd 'NOOP', login_first, login_first, login_first, cmdNOOP
+        dd 'PASS', cmdPASS.0,   cmdPASS    , cmdPASS.2,   cmdPASS.3
+        dd 'PASV', login_first, login_first, login_first, cmdPASV
+        dd 'PORT', login_first, login_first, login_first, cmdPORT
+        dd 'PWD',  login_first, login_first, login_first, cmdPWD
+        dd 'QUIT', cmdQUIT,     cmdQUIT,     cmdQUIT,     cmdQUIT
+;        dd 'REIN', login_first, login_first, login_first, cmd_REIN
+;        dd 'REST', login_first, login_first, login_first, cmd_REST
+        dd 'RETR', login_first, login_first, login_first, cmdRETR
+;        dd 'RMD', login_first, login_first, login_first, cmd_RMD
+;        dd 'RNFR', login_first, login_first, login_first, cmd_RNFR
+;        dd 'RNTO', login_first, login_first, login_first, cmd_RNTO
+;        dd 'SITE', login_first, login_first, login_first, cmd_SITE
+;        dd 'SIZE', login_first, login_first, login_first, cmd_SIZE
+;        dd 'STAT', login_first, login_first, login_first, cmd_STAT
+        dd 'STOR', login_first, login_first, login_first, cmdSTOR
+;        dd 'STOU', login_first, login_first, login_first, cmd_STOU
+;        dd 'STRU', login_first, login_first, login_first, cmd_STRU
+        dd 'SYST', login_first, login_first, login_first, cmdSYST
+        dd 'TYPE', login_first, login_first, login_first, cmdTYPE
+        dd 'USER', cmdUSER,     cmdUSER,     cmdUSER,     cmdUSER.2
+        db 0    ; end marker
 
 align 4
 login_first:
@@ -177,12 +144,11 @@ socketerror:
 
 align 4
 abort_transfer:
-        and     [edx + thread_data.permissions], not ABORT
-        mov     [edx + thread_data.mode], MODE_NOTREADY
+        and     [ebp + thread_data.permissions], not ABORT
+        mov     [ebp + thread_data.mode], MODE_NOTREADY
         invoke  file.close, ebx
-        mcall   close, [edx + thread_data.datasocketnum]
+        mcall   close, [ebp + thread_data.datasocketnum]
 
-        mov     edx, [ebp]
         sendFTP "530 Transfer aborted"
         ret
 
@@ -270,9 +236,8 @@ dword_to_ascii: ; edi = ptr where to write, eax is number
 align 4
 create_path:            ; combine home_dir and work_dir strings into fpath
 
-        mov     edx, [ebp]
-        lea     edi, [edx + thread_data.fpath]
-        lea     esi, [edx + thread_data.home_dir]
+        lea     edi, [ebp + thread_data.fpath]
+        lea     esi, [ebp + thread_data.home_dir]
         mov     ecx, 1024
   .loop1:
         lodsb
@@ -287,7 +252,7 @@ create_path:            ; combine home_dir and work_dir strings into fpath
         dec     edi
        @@:
 
-        lea     esi, [edx + thread_data.work_dir]
+        lea     esi, [ebp + thread_data.work_dir]
         mov     ecx, 1024
   .loop2:
         lodsb
@@ -310,7 +275,7 @@ create_path:            ; combine home_dir and work_dir strings into fpath
 align 4
 cmdABOR:
 
-        or      [edx + thread_data.permissions], ABORT
+        or      [ebp + thread_data.permissions], ABORT
         sendFTP "250 Command succesul"
         ret
 
@@ -323,28 +288,28 @@ cmdABOR:
 align 4
 cmdCDUP:
 
-        test    [edx + thread_data.permissions], PERMISSION_CD
+        test    [ebp + thread_data.permissions], PERMISSION_CD
         jz      permission_denied
 
-        cmp     byte [edx + thread_data.work_dir+1], 0                          ; are we in "/" ?
+        cmp     byte [ebp + thread_data.work_dir+1], 0                          ; are we in "/" ?
         je      .done
 
         mov     ecx, 1024
         xor     al, al
-        lea     edi, [edx + thread_data.work_dir]
+        lea     edi, [ebp + thread_data.work_dir]
         repne   scasb
-        std
-        dec     edi
-        dec     edi
-        dec     edi
+        sub     edi, 3
         mov     al,'/'
+        std
+        neg     ecx
+        add     ecx, 1024
         repne   scasb
         cld
         mov     byte[edi+1], 0
 
   .done:
 ; Print the new working dir on the console
-        lea     eax, [edx + thread_data.work_dir]
+        lea     eax, [ebp + thread_data.work_dir]
         push    eax
         call    [con_write_asciiz]
         push    str_newline
@@ -362,15 +327,20 @@ cmdCDUP:
 align 4
 cmdCWD:
 
-        test    [edx + thread_data.permissions], PERMISSION_CD
+        test    [ebp + thread_data.permissions], PERMISSION_CD
         jz      permission_denied
 
         sub     ecx, 4
         jb      .err
         add     esi, 4
 
+        mov     ecx, 1024
+        lea     edi, [ebp + thread_data.work_dir]
+        cmp     byte [esi], '/'
+        je      .loop
+
   .scan:
-        lea     edi, [edx + thread_data.work_dir + 1]
+        lea     edi, [ebp + thread_data.work_dir + 1]
         push    ecx
         mov     ecx, 1024
   .find_zero:
@@ -407,7 +377,7 @@ cmdCWD:
         mov     byte [edi], 0
 
 ; Print the new working dir on the console
-        lea     eax, [edx + thread_data.work_dir]
+        lea     eax, [ebp + thread_data.work_dir]
         push    eax
         call    [con_write_asciiz]
         push    str_newline
@@ -439,7 +409,7 @@ cmdCWD:
 align 4
 cmdDELE:
 
-        test    [edx + thread_data.permissions], PERMISSION_DELETE
+        test    [ebp + thread_data.permissions], PERMISSION_DELETE
         jz      permission_denied
 
         ret
@@ -453,38 +423,33 @@ cmdDELE:
 align 4
 cmdLIST:
 
-        test    [edx + thread_data.permissions], PERMISSION_EXEC
+        test    [ebp + thread_data.permissions], PERMISSION_EXEC
         jz      permission_denied
 
 ; If we are in active mode, it's time to open a data socket..
-        cmp     [edx + thread_data.mode], MODE_ACTIVE
+        cmp     [ebp + thread_data.mode], MODE_ACTIVE
         jne     @f
-        mov     ecx, [edx + thread_data.datasocketnum]
-        lea     edx, [edx + thread_data.datasock]
+        mov     ecx, [ebp + thread_data.datasocketnum]
+        lea     edx, [ebp + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
         mcall   connect
         cmp     eax, -1
         je      socketerror
   @@:
-        mov     edx, [ebp]
 
 ; Create fpath from home_dir and work_dir
         call    create_path
 
-        lea     ebx, [edx + thread_data.fpath]
+        lea     ebx, [ebp + thread_data.fpath]
         invoke  con_write_asciiz, ebx
         invoke  con_write_asciiz, str_newline
 
-
-        mov     edx, [ebp]                        ;;;
-        lea     ebx, [edx + thread_data.fpath]       ;;;;
 ; Start the search
-        invoke  file.find.first, ebx, str_mask, FA_ANY
+        invoke  file.find.first, ebx, str_mask, FA_READONLY+FA_FOLDER+FA_NORMAL+FA_ARCHIVED
         test    eax, eax
         jz      .nosuchdir
 
-        mov     edx, [ebp]                        ;;;
-        lea     edi, [edx + thread_data.buffer]
+        lea     edi, [ebp + thread_data.buffer]
   .parse_file:
         test    eax, eax        ; did we find a file?
         jz      .done
@@ -566,17 +531,17 @@ cmdLIST:
         mov     ax, 0x0a0d
         stosw
 
-        test    [edx + thread_data.permissions], ABORT          ; Did we receive ABOR command from client?
+        test    [ebp + thread_data.permissions], ABORT          ; Did we receive ABOR command from client?
 ;;;        jnz     .abort                                         ; TODO
 
 ; check next file
-;;;        invoke  file.find.next, ebx
-;;;        jmp     .parse_file
-        mov     eax, ebx        ;;;;;
+        invoke  file.find.next, ebx
+        jmp     .parse_file
+;;;        mov     eax, ebx        ;;;;;
 
 ; close file desc
   .done:
-        invoke  file.find.close, eax                            ; file discriptor is still in eax at this point!
+        invoke  file.find.close, ebx                            ; ebx is the
 
 ; append the string with a 0
         xor     al, al
@@ -584,22 +549,19 @@ cmdLIST:
 
 ; Warn the client we're about to send the data
         push    edi
-        mov     edx, [ebp]              ;;;;;;;
         sendFTP "150 Here it comes.."
         pop     esi
 
 ; and send it to the client
-        mov     edx, [ebp]
-        mov     ecx, [edx + thread_data.datasocketnum]
-        lea     edx, [edx + thread_data.buffer]
+        mov     ecx, [ebp + thread_data.datasocketnum]
+        lea     edx, [ebp + thread_data.buffer]
         sub     esi, edx
         xor     edi, edi
         mcall   send
 
 ; close the data socket..
-        mov     edx, [ebp]                                      ; thread_data pointer
-        mov     [edx + thread_data.mode], MODE_NOTREADY
-        mcall   close, [edx + thread_data.datasocketnum]
+        mov     [ebp + thread_data.mode], MODE_NOTREADY
+        mcall   close, [ebp + thread_data.datasocketnum]
 
         sendFTP "226 Transfer OK"
         ret
@@ -617,7 +579,7 @@ cmdLIST:
 align 4
 cmdNLST:
 
-        test    [edx + thread_data.permissions], PERMISSION_EXEC
+        test    [ebp + thread_data.permissions], PERMISSION_EXEC
         jz      permission_denied
 
         ; TODO: same as list but simpler output format
@@ -647,8 +609,8 @@ cmdPASS:
         lea     esi, [esi + 5]
 
 ; read the password from users.ini
-        lea     edi, [edx + thread_data.buffer + 512]           ; temp pass
-        lea     ebx, [edx + thread_data.fpath]                  ; temp username
+        lea     edi, [ebp + thread_data.buffer + 512]           ; temp pass
+        lea     ebx, [ebp + thread_data.fpath]                  ; temp username
         invoke  ini.get_str, path2, ebx, str_pass, edi, 512, str_infinity
         test    eax, eax
         jnz     .incorrect
@@ -666,17 +628,16 @@ cmdPASS:
 
   .pass_ok:
         invoke  ini.get_int, path2, ebx, str_mode, 0
-        mov     edx, [ebp]                                      ; because libini destroys edx!
-        mov     [edx + thread_data.permissions], eax
+        mov     [ebp + thread_data.permissions], eax
 
         invoke  con_write_asciiz, str_pass_ok
-        mov     [edx + thread_data.state], STATE_ACTIVE
+        mov     [ebp + thread_data.state], STATE_ACTIVE
         sendFTP "230 You are now logged in"
         ret
 
   .2:
   .incorrect:
-        mov     [edx + thread_data.state], STATE_CONNECTED
+        mov     [ebp + thread_data.state], STATE_CONNECTED
         sendFTP "530 Login incorrect"
         ret
 
@@ -703,16 +664,17 @@ cmdPASV:
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         je      socketerror
-        mov     edx, [ebp]                                      ; thread_data pointer
-        mov     [edx + thread_data.passivesocknum], eax
+        mov     [ebp + thread_data.passivesocknum], eax
 
 ; Bind it to a known local port
-        mov     [edx + thread_data.datasock.sin_family], AF_INET4
-        mov     [edx + thread_data.datasock.sin_port], 2000
-        mov     [edx + thread_data.datasock.sin_addr], 0
+        mov     [ebp + thread_data.datasock.sin_family], AF_INET4
+        pushw   [pasvport]
+        popw    [ebp + thread_data.datasock.sin_port]
+        inc     [pasvport]
+        mov     [ebp + thread_data.datasock.sin_addr], 0
 
         mov     ecx, eax                                        ; passivesocketnum
-        lea     edx, [edx + thread_data.datasock]
+        lea     edx, [ebp + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
         mcall   bind
         cmp     eax, -1
@@ -724,15 +686,14 @@ cmdPASV:
 ;        je      listen_err     ; TODO
 
 ; Tell our thread we are ready to accept incoming calls
-        mov     edx, [ebp]                                      ; thread_data pointer
-        mov     [edx + thread_data.mode], MODE_PASSIVE_WAIT
+        mov     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
 
 ; Now tell the client where to connect to in this format:
 ; 227 Entering Passive Mode (a1,a2,a3,a4,p1,p2)
 ; where a1.a2.a3.a4 is the IP address and p1*256+p2 is the port number.
 
 ; '227 ('
-        lea     edi, [edx + thread_data.buffer]
+        lea     edi, [ebp + thread_data.buffer]
         mov     eax, '227 '     ; FIXME (now hardcoded to 127.0.0.1:2000)
         stosd
         mov     al, '('
@@ -755,20 +716,20 @@ cmdPASV:
         mov     al, ','
         stosb
 ; port
-        mov     eax, 7
+        movzx   eax, byte [ebp + thread_data.datasock.sin_port + 1]
         call    dword_to_ascii
         mov     al, ','
         stosb
-        mov     eax, 208
+        movzx   eax, byte [ebp + thread_data.datasock.sin_port]
         call    dword_to_ascii
 ; ')', 13, 10, 0
         mov     eax, ')' + 0x000a0d00
         stosd
 
         lea     esi, [edi - thread_data.buffer]
-        sub     esi, edx
-        mov     ecx, [edx + thread_data.socketnum]
-        lea     edx, [edx + thread_data.buffer]
+        sub     esi, ebp
+        mov     ecx, [ebp + thread_data.socketnum]
+        lea     edx, [ebp + thread_data.buffer]
         xor     edi, edi
         mcall   send
 
@@ -783,11 +744,11 @@ cmdPASV:
 align 4
 cmdPWD:
 
-        mov     dword [edx + thread_data.buffer], '257 '
-        mov     byte [edx + thread_data.buffer+4], '"'
+        mov     dword [ebp + thread_data.buffer], '257 '
+        mov     byte [ebp + thread_data.buffer+4], '"'
 
-        lea     edi, [edx + thread_data.buffer+5]
-        lea     esi, [edx + thread_data.work_dir]
+        lea     edi, [ebp + thread_data.buffer+5]
+        lea     esi, [ebp + thread_data.work_dir]
         mov     ecx, 1024
   .loop:
         lodsb
@@ -800,15 +761,14 @@ cmdPWD:
   .ok:
         mov     dword [edi], '"' + 0x000a0d00    ; '"',13,10,0
         lea     esi, [edi - thread_data.buffer + 4]
-        sub     esi, edx
-        mov     ecx, [edx + thread_data.socketnum]
-        lea     edx, [edx + thread_data.buffer]
+        sub     esi, ebp
+        mov     ecx, [ebp + thread_data.socketnum]
+        lea     edx, [ebp + thread_data.buffer]
         xor     edi, edi
         mcall   send
 
-        mov     edx, [ebp]
 ; Print the new working dir on the console
-        lea     eax, [edx + thread_data.work_dir]
+        lea     eax, [ebp + thread_data.work_dir]
         invoke  con_write_asciiz, eax
         invoke  con_write_asciiz, str_newline
 
@@ -831,8 +791,7 @@ cmdPORT:
         mov     cl, ','
         call    ip_to_dword
 ; And put it in datasock
-;;;        mov     edx, [ebp]
-        mov     [edx + thread_data.datasock.sin_addr], ebx
+        mov     [ebp + thread_data.datasock.sin_addr], ebx
 
 ; Now the same with portnumber
         inc     esi
@@ -843,17 +802,16 @@ cmdPORT:
         mov     bl, al
 
 ; Save it in datasock too
-        mov     [edx + thread_data.datasock.sin_port], bx
+        mov     [ebp + thread_data.datasock.sin_port], bx
 
 ; We will open the socket, but do not connect yet!
-        mov     [edx + thread_data.datasock.sin_family], AF_INET4
+        mov     [ebp + thread_data.datasock.sin_family], AF_INET4
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         je      socketerror
 
-        mov     edx, [ebp]                                      ; thread_data pointer
-        mov     [edx + thread_data.datasocketnum], eax
-        mov     [edx + thread_data.mode], MODE_ACTIVE
+        mov     [ebp + thread_data.datasocketnum], eax
+        mov     [ebp + thread_data.mode], MODE_ACTIVE
 
         sendFTP "225 Data connection open"
         ret
@@ -868,9 +826,8 @@ align 4
 cmdQUIT:
 
         sendFTP "221 Bye!"
-        mov     edx, [ebp]
-        mcall   close, [edx + thread_data.datasocketnum]
-        mcall   close, [edx + thread_data.socketnum]
+        mcall   close, [ebp + thread_data.datasocketnum]
+        mcall   close, [ebp + thread_data.socketnum]
 
         add     esp, 4          ; get rid of call return address
         jmp     thread_exit     ; now close this thread
@@ -885,7 +842,7 @@ cmdQUIT:
 align 4
 cmdRETR:
 
-        test    [edx + thread_data.permissions], PERMISSION_READ
+        test    [ebp + thread_data.permissions], PERMISSION_READ
         jz      permission_denied
 
         cmp     ecx, 1024 + 5
@@ -894,11 +851,11 @@ cmdRETR:
         sub     ecx, 5
         jb      .cannot_open
 
-        cmp     [edx + thread_data.mode], MODE_ACTIVE
+        cmp     [ebp + thread_data.mode], MODE_ACTIVE
         jne     @f
         push    ecx esi
-        mov     ecx, [edx + thread_data.datasocketnum]
-        lea     edx, [edx + thread_data.datasock]
+        mov     ecx, [ebp + thread_data.datasocketnum]
+        lea     edx, [ebp + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
         mcall   connect
         pop     esi ecx
@@ -922,7 +879,7 @@ cmdRETR:
         xor     al, al
         stosb
 
-        lea     ebx, [edx + thread_data.fpath]
+        lea     ebx, [ebp + thread_data.fpath]
         invoke  con_write_asciiz, ebx
         invoke  con_write_asciiz, str_newline
 
@@ -931,29 +888,27 @@ cmdRETR:
         jz      .cannot_open
 
         push    eax
-        mov     edx, [ebp]
         sendFTP "150 Here it comes.."
         pop     ebx
 
   .read_more:
-        mov     edx, [ebp]
-        test    [edx + thread_data.permissions], ABORT
+        test    [ebp + thread_data.permissions], ABORT
         jnz     abort_transfer
 
-        lea     eax, [edx + thread_data.buffer]                 ; FIXME: use another buffer!! if we receive something on control connection now, we screw up!
+        lea     eax, [ebp + thread_data.buffer]                 ; FIXME: use another buffer!! if we receive something on control connection now, we screw up!
         invoke  file.read, ebx, eax, BUFFERSIZE
         cmp     eax, -1
         je      .cannot_open                                    ; FIXME: this is not the correct error
 
         push    eax ebx
         mov     esi, eax
-        mov     ecx, [edx + thread_data.datasocketnum]
-        lea     edx, [edx + thread_data.buffer]
-        xor     esi, esi
+        mov     ecx, [ebp + thread_data.datasocketnum]
+        lea     edx, [ebp + thread_data.buffer]
+        xor     edi, edi
         mcall   send
         pop     ebx ecx
         cmp     eax, -1
-        je      socketerror
+        je      socketerror                                     ; FIXME: not the correct error
 
 ;        cmp     eax, ecx
 ;        jne     not_all_byes_sent                               ; TODO
@@ -963,11 +918,9 @@ cmdRETR:
 
         invoke  file.close, ebx
 
-        mov     edx, [ebp]
-        mov     [edx + thread_data.mode], MODE_NOTREADY
-        mcall   close, [edx + thread_data.datasocketnum]
+        mov     [ebp + thread_data.mode], MODE_NOTREADY
+        mcall   close, [ebp + thread_data.datasocketnum]
 
-        mov     edx, [ebp]
         sendFTP "226 Transfer OK, closing connection"
         ret
 
@@ -991,12 +944,12 @@ cmdRETR:
 align 4
 cmdSTOR:
 
-        test    [edx + thread_data.permissions], PERMISSION_WRITE
+        test    [ebp + thread_data.permissions], PERMISSION_WRITE
         jz      permission_denied
 
 
 ;;;;
-        test    [edx + thread_data.permissions], ABORT
+        test    [ebp + thread_data.permissions], ABORT
         jnz     abort_transfer
 
 ;;;;
@@ -1042,11 +995,11 @@ cmdTYPE:
         jmp     parse_cmd.error
 
   .ascii:
-        mov     [edx + thread_data.type], TYPE_ASCII
+        mov     [ebp + thread_data.type], TYPE_ASCII
         jmp     .subtype
 
   .ebdic:
-        mov     [edx + thread_data.type], TYPE_EBDIC
+        mov     [ebp + thread_data.type], TYPE_EBDIC
 
   .subtype:
         cmp     ecx, 8
@@ -1065,19 +1018,19 @@ cmdTYPE:
         jmp     parse_cmd.error
 
   .non_print:
-        or      [edx + thread_data.type], TYPE_NP
+        or      [ebp + thread_data.type], TYPE_NP
         jmp     .ok
 
   .telnet:
-        or      [edx + thread_data.type], TYPE_TELNET
+        or      [ebp + thread_data.type], TYPE_TELNET
         jmp     .ok
 
   .asacc:
-        or      [edx + thread_data.type], TYPE_ASA
+        or      [ebp + thread_data.type], TYPE_ASA
         jmp     .ok
 
   .image:
-        mov     [edx + thread_data.type], TYPE_IMAGE
+        mov     [ebp + thread_data.type], TYPE_IMAGE
         jmp     .ok
 
   .local:
@@ -1090,7 +1043,7 @@ cmdTYPE:
         cmp     al, 9
         ja      parse_cmd.error                         ; FIXME
         or      al, TYPE_LOCAL
-        mov     [edx + thread_data.type], al
+        mov     [ebp + thread_data.type], al
 
   .ok:
         sendFTP "200 Command ok"
@@ -1106,7 +1059,7 @@ align 4
 cmdUSER:
 
         lea     esi, [esi + 5]
-        lea     edi, [edx + thread_data.fpath]                  ; temp buffer for username
+        lea     edi, [ebp + thread_data.fpath]                  ; temp buffer for username
   .loop:
         lodsb
         stosb
@@ -1114,25 +1067,25 @@ cmdUSER:
         jae     .loop
         mov     byte [edi-1], 0
 
-        lea     esi, [edx + thread_data.fpath]
-        lea     eax, [edx + thread_data.home_dir]
+        lea     esi, [ebp + thread_data.fpath]
+        lea     eax, [ebp + thread_data.home_dir]
         invoke  ini.get_str, path2, esi, str_home, eax, 1024, str_infinity
         cmp     eax, -1
         je      .login_fail
         cmp     dword [esi], -1
         je      .login_fail
 
-        mov     word [edx + thread_data.work_dir], "/"          ; "/", 0
+        mov     word [ebp + thread_data.work_dir], "/"          ; "/", 0
 
         invoke  con_write_asciiz, str_logged_in
-        mov     [edx + thread_data.state], STATE_LOGIN
+        mov     [ebp + thread_data.state], STATE_LOGIN
   .sendstr:
         sendFTP "331 Please specify the password"
         ret
 
   .login_fail:
         invoke  con_write_asciiz, str_login_invalid
-        mov     [edx + thread_data.state], STATE_LOGIN_FAIL
+        mov     [ebp + thread_data.state], STATE_LOGIN_FAIL
         jmp     .sendstr
 
 align 4

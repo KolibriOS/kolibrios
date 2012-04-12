@@ -64,12 +64,13 @@ include 'commands.inc'
 
 align 4
 start:
+        mcall   68, 11                  ; init heap
+        mcall   40, 1 shl 7             ; we only want network events
+
 ; load libraries
         stdcall dll.Load, @IMPORT
         test    eax, eax
         jnz     exit
-
-        mcall   68, 11                  ; init heap
 
 ; find path to main settings file (ftpd.ini)
         mov     edi, path               ; Calculate the length of zero-terminated string
@@ -98,8 +99,6 @@ start:
 ; initialize console
         invoke  con_start, 1
         invoke  con_init, -1, -1, -1, -1, title
-
-        mcall   40, 1 shl 7             ; we only want network events
 
         invoke  ini.get_str, path, str_ftpd, str_ip, ini_buf, 16, 0
         mov     esi, ini_buf
@@ -139,6 +138,8 @@ start:
 
         invoke  con_write_asciiz, str2b
 
+        mov     [pasvport], 2000        ;;;;;; FIXME
+
 mainloop:
         mcall   10                              ; Wait here for incoming connections on the base socket (socketnum)
 
@@ -148,13 +149,13 @@ mainloop:
 
         diff16  "threadstart", 0, $
 threadstart:
+;;;        mcall   68, 11                          ; init heap
         mcall   68, 12, sizeof.thread_data      ; allocate the thread data struct
-        cmp     eax, -1
+        test    eax, eax
         je      exit
 
         lea     esp, [eax + thread_data.stack]  ; init stack
-        push    eax                             ; save pointer to thread_data on stack
-        mov     ebp, esp
+        mov     ebp, eax
 
         mcall   40, 1 shl 7                     ; we only want network events for this thread
 
@@ -165,14 +166,13 @@ threadstart:
         mcall   accept, [socketnum], sockaddr1, sockaddr1.length                ; time to accept the awaiting connection..
         cmp     eax, -1
         je      thread_exit
-        mov     edx, [ebp]                                                      ; pointer to thread_data
-        mov     [edx + thread_data.socketnum], eax
+        mov     [ebp + thread_data.socketnum], eax
 
-        mov     [edx + thread_data.state], STATE_CONNECTED
-        mov     [edx + thread_data.permissions], 0
-        mov     [edx + thread_data.mode], MODE_NOTREADY
-        lea     eax, [edx + thread_data.buffer]
-        mov     [edx + thread_data.buffer_ptr], eax
+        mov     [ebp + thread_data.state], STATE_CONNECTED
+        mov     [ebp + thread_data.permissions], 0
+        mov     [ebp + thread_data.mode], MODE_NOTREADY
+        lea     eax, [ebp + thread_data.buffer]
+        mov     [ebp + thread_data.buffer_ptr], eax
 
         sendFTP "220 Welcome to KolibriOS FTP daemon"
 
@@ -180,24 +180,23 @@ threadloop:
         mcall   10
         mov     edx, [ebp]                                                      ; pointer to thread_data
 
-        cmp     [edx + thread_data.mode], MODE_PASSIVE_WAIT
+        cmp     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
         jne     .not_passive
-        mov     [edx + thread_data.mode], MODE_PASSIVE_FAILED                   ; assume that we will fail
-        mov     ecx, [edx + thread_data.passivesocknum]
-        lea     edx, [edx + thread_data.datasock]
+        mov     [ebp + thread_data.mode], MODE_PASSIVE_FAILED                   ; assume that we will fail
+        mov     ecx, [ebp + thread_data.passivesocknum]
+        lea     edx, [ebp + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
         mcall   accept
-        mov     edx, [ebp]                                                      ; pointer to thread_data
         cmp     eax, -1
         je      .not_passive
-        mov     [edx + thread_data.datasocketnum], eax
-        mov     [edx + thread_data.mode], MODE_PASSIVE_OK
+        mov     [ebp + thread_data.datasocketnum], eax
+        mov     [ebp + thread_data.mode], MODE_PASSIVE_OK
 
         invoke  con_write_asciiz, str_datasock
   .not_passive:
 
-        mov     ecx, [edx + thread_data.socketnum]
-        mov     edx, [edx + thread_data.buffer_ptr]
+        mov     ecx, [ebp + thread_data.socketnum]
+        mov     edx, [ebp + thread_data.buffer_ptr]
         mov     esi, sizeof.thread_data.buffer    ;;; FIXME
         mcall   recv
         inc     eax                                                             ; error? (-1)
@@ -205,9 +204,8 @@ threadloop:
         dec     eax                                                             ; 0 bytes read?
         jz      threadloop
 
-        mov     edx, [ebp]                                                      ; pointer to thread_data
-        mov     edi, [edx + thread_data.buffer_ptr]
-        add     [edx + thread_data.buffer_ptr], eax
+        mov     edi, [ebp + thread_data.buffer_ptr]
+        add     [ebp + thread_data.buffer_ptr], eax
 
 ; Check if we received a newline character, if not, wait for more data
         mov     ecx, eax
@@ -217,10 +215,10 @@ threadloop:
 
 ; We got a command!
         mov     byte [edi + 1], 0                                               ; append string with zero byte
-        lea     esi, [edx + thread_data.buffer]
-        mov     ecx, [edx + thread_data.buffer_ptr]
+        lea     esi, [ebp + thread_data.buffer]
+        mov     ecx, [ebp + thread_data.buffer_ptr]
         sub     ecx, esi
-        mov     [edx + thread_data.buffer_ptr], esi                             ; reset buffer ptr
+        mov     [ebp + thread_data.buffer_ptr], esi                             ; reset buffer ptr
 
         invoke  con_set_flags, 0x02                                                            ; print received data to console (in green color)
         invoke  con_write_asciiz, str_newline
@@ -285,6 +283,8 @@ str_sockerr     db 'ERROR: socket error',10,0
 
 str_login_invalid db 'Login invalid',10,0
 
+str_test db 'test: %x ', 0
+
 str_newline     db 10, 0
 str_mask        db '*', 0
 str_infinity    db 0xff, 0xff, 0xff, 0xff, 0
@@ -325,6 +325,8 @@ sockaddr1:
 align 4
 @IMPORT:
 
+diff16 "import", 0, $
+
 library console,                'console.obj',\
         libini,                 'libini.obj', \
         libio,                  'libio.obj'
@@ -358,6 +360,8 @@ import  libio,\
 
 i_end:
 
+diff16 "i_end", 0, $
+
 ; uninitialised data
 
         socketnum       dd ?
@@ -365,6 +369,7 @@ i_end:
         path2           rb 1024
         params          rb 1024
         serverip        dd ?
+        pasvport        dw ?
 
         ini_buf         rb 3*4+3+1
 
