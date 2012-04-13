@@ -363,6 +363,7 @@ send_scancode:
         call    set_lights
         pop     ecx
 .writekey:
+        pushad
 ; test for system hotkeys
         movzx   eax, ch
         cmp     bh, 1
@@ -415,9 +416,9 @@ send_scancode:
         mov     [edi+4], ax
         mov     eax, [kb_state]
         mov     [edi+6], ax
-        jmp     .exit.irq1
 ;--------------------------------------
 .nohotkey:
+        popad
         cmp     [keyboard_mode], 0; return from keymap
         jne     .scancode
         
