@@ -102,6 +102,7 @@ start:
 
         invoke  ini.get_str, path, str_ftpd, str_ip, ini_buf, 16, 0
         mov     esi, ini_buf
+        mov     cl, '.'
         call    ip_to_dword
         mov     [serverip], ebx
 
@@ -138,7 +139,10 @@ start:
 
         invoke  con_write_asciiz, str2b
 
-        mov     [pasvport], 2000        ;;;;;; FIXME
+        invoke  ini.get_int, path, str_pasv, str_start, 2000
+        mov     [pasv_start], ax
+        invoke  ini.get_int, path, str_pasv, str_end, 5000
+        mov     [pasv_end], ax
 
 mainloop:
         mcall   10                              ; Wait here for incoming connections on the base socket (socketnum)
@@ -163,7 +167,7 @@ threadstart:
         invoke  con_write_asciiz, str8          ; print on the console that we have created the new thread successfully
         invoke  con_set_flags, 0x07
 
-        mcall   accept, [socketnum], sockaddr1, sockaddr1.length                ; time to accept the awaiting connection..
+        mcall   accept, [socketnum], sockaddr1, sockaddr1.length        ; time to accept the awaiting connection..
         cmp     eax, -1
         je      thread_exit
         mov     [ebp + thread_data.socketnum], eax
@@ -173,16 +177,16 @@ threadstart:
         mov     [ebp + thread_data.mode], MODE_NOTREADY
         lea     eax, [ebp + thread_data.buffer]
         mov     [ebp + thread_data.buffer_ptr], eax
+        mov     [ebp + thread_data.passivesocknum], -1
 
         sendFTP "220 Welcome to KolibriOS FTP daemon"
 
 threadloop:
         mcall   10
-        mov     edx, [ebp]                                                      ; pointer to thread_data
 
         cmp     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
         jne     .not_passive
-        mov     [ebp + thread_data.mode], MODE_PASSIVE_FAILED                   ; assume that we will fail
+        mov     [ebp + thread_data.mode], MODE_PASSIVE_FAILED           ; assume that we will fail
         mov     ecx, [ebp + thread_data.passivesocknum]
         lea     edx, [ebp + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
@@ -191,6 +195,8 @@ threadloop:
         je      .not_passive
         mov     [ebp + thread_data.datasocketnum], eax
         mov     [ebp + thread_data.mode], MODE_PASSIVE_OK
+        mcall   close   ; [ebp + thread_data.passivesocknum]
+        mov     [ebp + thread_data.passivesocknum], -1
 
         invoke  con_write_asciiz, str_datasock
   .not_passive:
@@ -199,9 +205,9 @@ threadloop:
         mov     edx, [ebp + thread_data.buffer_ptr]
         mov     esi, sizeof.thread_data.buffer    ;;; FIXME
         mcall   recv
-        inc     eax                                                             ; error? (-1)
+        inc     eax                                     ; error? (-1)
         jz      threadloop
-        dec     eax                                                             ; 0 bytes read?
+        dec     eax                                     ; 0 bytes read?
         jz      threadloop
 
         mov     edi, [ebp + thread_data.buffer_ptr]
@@ -214,13 +220,13 @@ threadloop:
         jne     threadloop
 
 ; We got a command!
-        mov     byte [edi + 1], 0                                               ; append string with zero byte
+        mov     byte [edi + 1], 0                       ; append string with zero byte
         lea     esi, [ebp + thread_data.buffer]
         mov     ecx, [ebp + thread_data.buffer_ptr]
         sub     ecx, esi
-        mov     [ebp + thread_data.buffer_ptr], esi                             ; reset buffer ptr
+        mov     [ebp + thread_data.buffer_ptr], esi     ; reset buffer ptr
 
-        invoke  con_set_flags, 0x02                                                            ; print received data to console (in green color)
+        invoke  con_set_flags, 0x02                     ; print received data to console (in green color)
         invoke  con_write_asciiz, str_newline
         invoke  con_write_asciiz, esi
         invoke  con_set_flags, 0x07
@@ -229,17 +235,17 @@ threadloop:
         jmp     parse_cmd
 
 listen_err:
-        invoke  con_set_flags, 0x0c                                                            ; print received data to console (in green color)
+        invoke  con_set_flags, 0x0c                     ; print errors in red
         invoke  con_write_asciiz, str3
         jmp     done
 
 bind_err:
-        invoke  con_set_flags, 0x0c                                                            ; print received data to console (in green color)
+        invoke  con_set_flags, 0x0c                     ; print errors in red
         invoke  con_write_asciiz, str4
         jmp     done
 
 sock_err:
-        invoke  con_set_flags, 0x0c                                                            ; print received data to console (in green color)
+        invoke  con_set_flags, 0x0c                     ; print errors in red
         invoke  con_write_asciiz, str6
         jmp     done
 
@@ -251,12 +257,11 @@ exit:
 
 
 thread_exit:
-        invoke  con_set_flags, 0x02                                                            ; print received data to console (in green color)
+        invoke  con_set_flags, 0x02                     ; print thread info in blue
         invoke  con_write_asciiz, str_bye
-        pop     ecx                     ; get the thread_data pointer from stack
-        mcall   68, 13                  ; free the memory
-        mcall   -1                      ; and kill the thread
-
+        pop     ecx                                     ; get the thread_data pointer from stack
+        mcall   68, 13                                  ; free the memory
+        mcall   -1                                      ; and kill the thread
 
 
 ; initialized data
@@ -275,15 +280,12 @@ str_bye         db 10,'Closing thread!',10,0
 
 str_logged_in   db 'Login ok',10,0
 str_pass_ok     db 'Password ok',10,0
+str_pass_err    db 'Password/Username incorrect',10,0
 str_pwd         db 'Current directory is "%s"\n',0
 str_err2        db 'ERROR: cannot open directory',10,0
 str_datasock    db 'Passive data socket connected!',10,0
 str_notfound    db 'ERROR: file not found',10,0
 str_sockerr     db 'ERROR: socket error',10,0
-
-str_login_invalid db 'Login invalid',10,0
-
-str_test db 'test: %x ', 0
 
 str_newline     db 10, 0
 str_mask        db '*', 0
@@ -311,6 +313,9 @@ str_ip          db 'ip', 0
 str_pass        db 'pass', 0
 str_home        db 'home', 0
 str_mode        db 'mode', 0
+str_pasv        db 'pasv', 0
+str_start       db 'start', 0
+str_end         db 'end', 0
 
 
 sockaddr1:
@@ -369,7 +374,9 @@ diff16 "i_end", 0, $
         path2           rb 1024
         params          rb 1024
         serverip        dd ?
-        pasvport        dw ?
+        pasv_start      dw ?
+        pasv_end        dw ?
+        pasv_port       dw ?
 
         ini_buf         rb 3*4+3+1
 

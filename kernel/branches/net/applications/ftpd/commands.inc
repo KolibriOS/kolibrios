@@ -4,9 +4,10 @@ struct  thread_data
                         rb 1024
         stack           rb 0
 
-        home_dir        rb 1024
-        work_dir        rb 1024
-        fpath           rb 1024*3       ; Will also be used to temporarily store username
+        home_dir        rb 1024         ; home directory in wich the user is locked, asciiz
+        work_dir        rb 1024         ; working directory, must at all times begin and end with a '/', asciiz
+        fpath           rb 1024*3       ; file path, combination of home_dir, work_dir and filename
+                                        ; Will also be used to temporarily store username
 
         type            db ?    ; ASCII/EBDIC/IMAGE/..
         mode            db ?    ; active/passive
@@ -14,7 +15,7 @@ struct  thread_data
         state           dd ?    ; disconnected/logging in/logged in/..
         passivesocknum  dd ?    ; when in passive mode, this is the listening socket
         datasocketnum   dd ?    ; socket used for data transfers
-        permissions     dd ?
+        permissions     dd ?    ; read/write/execute/....
         buffer_ptr      dd ?
 
         datasock        sockaddr_in
@@ -266,6 +267,27 @@ create_path:            ; combine home_dir and work_dir strings into fpath
         stosb
         ret
 
+
+align 4
+nextpasvport:
+
+        inc     [pasv_port]
+
+        mov     ax, [pasv_port]
+        cmp     ax, [pasv_start]
+        jb      .restart
+        cmp     ax, [pasv_end]
+        ja      .restart
+
+        ret
+
+  .restart:
+        pushw   [pasv_start]
+        popw    [pasv_port]
+
+        ret
+
+
 ;------------------------------------------------
 ; "ABOR"
 ;
@@ -291,29 +313,31 @@ cmdCDUP:
         test    [ebp + thread_data.permissions], PERMISSION_CD
         jz      permission_denied
 
-        cmp     byte [ebp + thread_data.work_dir+1], 0                          ; are we in "/" ?
-        je      .done
+        cmp     byte [ebp + thread_data.work_dir+1], 0  ; are we in "/" ?
+        je      .done                                   ; if so, we cant go up..
 
+; find the end of asciiz string work_dir
         mov     ecx, 1024
         xor     al, al
         lea     edi, [ebp + thread_data.work_dir]
         repne   scasb
+; return 2 characters (right before last /)
         sub     edi, 3
+; and now search backwards, for a '/'
         mov     al,'/'
-        std
         neg     ecx
         add     ecx, 1024
+        std
         repne   scasb
         cld
-        mov     byte[edi+1], 0
+; terminate the string here
+        mov     byte[edi+2], 0
 
   .done:
 ; Print the new working dir on the console
         lea     eax, [ebp + thread_data.work_dir]
-        push    eax
-        call    [con_write_asciiz]
-        push    str_newline
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, eax
+        invoke  con_write_asciiz, str_newline
 
         sendFTP "250 Command succesul"
         ret
@@ -330,44 +354,40 @@ cmdCWD:
         test    [ebp + thread_data.permissions], PERMISSION_CD
         jz      permission_denied
 
+; do we have enough parameters?
         sub     ecx, 4
-        jb      .err
-        add     esi, 4
+        jbe     .err
 
+; get ready to copy the path
+        add     esi, 4
         mov     ecx, 1024
         lea     edi, [ebp + thread_data.work_dir]
-        cmp     byte [esi], '/'
-        je      .loop
 
-  .scan:
-        lea     edi, [ebp + thread_data.work_dir + 1]
-        push    ecx
-        mov     ecx, 1024
+; if received dir starts with '/', we will simply copy it
+; If not, we will append the current path with the received path.
+        cmp     byte [esi], '/'
+        je      .copyloop
+
+; Find the end of work_dir string.
+        xor     al, al
   .find_zero:
-        cmp     byte [edi], 0
-        je      .found_zero
-        inc     edi
-        loop    .find_zero
-  .found_zero:
-        pop     ecx
-  .scan2:
+        repne   scasb
+        dec     edi
 
-        cmp     byte [esi], '/'
-        jne     @f
-        inc     esi
-        dec     ecx
-        jz      .done
-       @@:
+; and now append work_dir with received string
+        mov     ecx, 1024
 
-  .loop:
+; scan for end byte, or '.'
+  .copyloop:
         lodsb
         cmp     al, 0x20
         jb      .done
-        cmp     al, '.'
-        je      .up
-  .continue:
+;;;        cmp     al, '.'         ; '..' means we must go up one dir   TODO
+;;;        je      .up
         stosb
-        loop    .loop
+        loop    .copyloop
+
+; now, now make sure it ends with '/', 0
   .done:
         cmp     byte [edi-1], '/'
         je      @f
@@ -378,23 +398,11 @@ cmdCWD:
 
 ; Print the new working dir on the console
         lea     eax, [ebp + thread_data.work_dir]
-        push    eax
-        call    [con_write_asciiz]
-        push    str_newline
-        call    [con_write_asciiz]
+        invoke  con_write_asciiz, eax
+        invoke  con_write_asciiz, str_newline
 
         sendFTP "250 Command succesful"
         ret
-
-  .up:
-        lodsb
-        cmp     al, '.'
-        jne     .continue
-
-;;;;        TODO: find second last '\' in work_dir and make next char zero
-;;;;        point edi to that 0
-
-        jmp     .scan2
 
   .err:
         sendFTP "550 Directory does not exist"
@@ -426,17 +434,44 @@ cmdLIST:
         test    [ebp + thread_data.permissions], PERMISSION_EXEC
         jz      permission_denied
 
+        cmp     [ebp + thread_data.mode], MODE_PASSIVE_OK
+        je      .start
+
 ; If we are in active mode, it's time to open a data socket..
         cmp     [ebp + thread_data.mode], MODE_ACTIVE
-        jne     @f
+        jne     .not_active
         mov     ecx, [ebp + thread_data.datasocketnum]
         lea     edx, [ebp + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
         mcall   connect
         cmp     eax, -1
         je      socketerror
-  @@:
+        jmp     .start
 
+; If we are still in passive_wait, it's time we accept an incomming call..
+  .not_active:
+        cmp     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
+        jne     socketerror
+        mov     [ebp + thread_data.mode], MODE_PASSIVE_FAILED                   ; assume that we will fail
+  .try_now:
+        mov     ecx, [ebp + thread_data.passivesocknum]
+        lea     edx, [ebp + thread_data.datasock]
+        mov     esi, sizeof.thread_data.datasock
+        mcall   accept
+        cmp     eax, -1
+        jne     .pasv_ok
+        mcall   23, 200
+        mcall   accept
+        cmp     eax, -1
+        je      socketerror
+  .pasv_ok:
+        mov     [ebp + thread_data.datasocketnum], eax
+        mov     [ebp + thread_data.mode], MODE_PASSIVE_OK
+        mcall   close   ; [ebp + thread_data.passivesocknum]
+        mov     [ebp + thread_data.passivesocknum], -1
+        invoke  con_write_asciiz, str_datasock
+
+  .start:
 ; Create fpath from home_dir and work_dir
         call    create_path
 
@@ -606,27 +641,31 @@ cmdNOOP:
 ;------------------------------------------------
 align 4
 cmdPASS:
-        lea     esi, [esi + 5]
 
 ; read the password from users.ini
         lea     edi, [ebp + thread_data.buffer + 512]           ; temp pass
+        mov     byte [edi], 0
         lea     ebx, [ebp + thread_data.fpath]                  ; temp username
         invoke  ini.get_str, path2, ebx, str_pass, edi, 512, str_infinity
-        test    eax, eax
+        test    eax, eax                                        ; unable to read password? fail!
         jnz     .incorrect
-        cmp     dword [edi], -1
+        cmp     dword [edi], -1                                 ; no key, section or file found.. fail!
         je      .incorrect
-        cmp     byte[edi], 0
-        je      .pass_ok
+        cmp     byte [edi], 0                                   ; zero password? ok!
+        je      .ok
+
+        add     esi, 5
+        sub     ecx, 5
+        jbe     .incorrect                                      ; no password given? but hey, we need one! fail..
 
 ; compare with received password
         repe    cmpsb
-        cmp     byte [esi], 0x20
+        cmp     byte [esi-1], 0x20                              ; printeable characters left?
         jae     .incorrect
-        cmp     byte [edi], 0
+        cmp     byte [edi-1], 0
         jne     .incorrect
 
-  .pass_ok:
+  .ok:
         invoke  ini.get_int, path2, ebx, str_mode, 0
         mov     [ebp + thread_data.permissions], eax
 
@@ -637,16 +676,15 @@ cmdPASS:
 
   .2:
   .incorrect:
-        mov     [ebp + thread_data.state], STATE_CONNECTED
+        invoke  con_write_asciiz, str_pass_err
+        mov     [ebp + thread_data.state], STATE_CONNECTED      ; reset state
         sendFTP "530 Login incorrect"
         ret
 
-align 4
   .0:
         sendFTP "503 Login with USER first"
         ret
 
-align 4
   .3:
         sendFTP "230 Already logged in"
         ret
@@ -660,6 +698,11 @@ align 4
 align 4
 cmdPASV:
 
+        cmp     [ebp + thread_data.passivesocknum], -1
+        je      @f
+        mcall   close, [ebp + thread_data.passivesocknum]       ; if there is still a socket open, close it
+       @@:
+
 ; Open a new TCP socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
@@ -668,22 +711,25 @@ cmdPASV:
 
 ; Bind it to a known local port
         mov     [ebp + thread_data.datasock.sin_family], AF_INET4
-        pushw   [pasvport]
-        popw    [ebp + thread_data.datasock.sin_port]
-        inc     [pasvport]
         mov     [ebp + thread_data.datasock.sin_addr], 0
 
         mov     ecx, eax                                        ; passivesocketnum
         lea     edx, [ebp + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
+
+  .next_port:                                                   ; TODO: break the endless loop
+        call    nextpasvport
+        pushw   [pasv_port]
+        popw    [ebp + thread_data.datasock.sin_port]
+
         mcall   bind
         cmp     eax, -1
-;        je      bind_err       ; TODO
+        je      .next_port
 
 ; And set it to listen!
         mcall   listen, , 1
         cmp     eax, -1
-;        je      listen_err     ; TODO
+        je      socketerror
 
 ; Tell our thread we are ready to accept incoming calls
         mov     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
@@ -694,24 +740,24 @@ cmdPASV:
 
 ; '227 ('
         lea     edi, [ebp + thread_data.buffer]
-        mov     eax, '227 '     ; FIXME (now hardcoded to 127.0.0.1:2000)
+        mov     eax, '227 '
         stosd
         mov     al, '('
         stosb
 ; ip
-        mov     eax, 127
+        movzx   eax, byte [serverip]
         call    dword_to_ascii
         mov     al, ','
         stosb
-        mov     eax, 0
+        movzx   eax, byte [serverip+1]
         call    dword_to_ascii
         mov     al, ','
         stosb
-        mov     eax, 0
+        movzx   eax, byte [serverip+2]
         call    dword_to_ascii
         mov     al, ','
         stosb
-        mov     eax, 1
+        movzx   eax, byte [serverip+3]
         call    dword_to_ascii
         mov     al, ','
         stosb
@@ -851,24 +897,50 @@ cmdRETR:
         sub     ecx, 5
         jb      .cannot_open
 
+        cmp     [ebp + thread_data.mode], MODE_PASSIVE_OK
+        je      .start
+
+; If we are in active mode, it's time to open a data socket..
         cmp     [ebp + thread_data.mode], MODE_ACTIVE
-        jne     @f
-        push    ecx esi
+        jne     .not_active
         mov     ecx, [ebp + thread_data.datasocketnum]
         lea     edx, [ebp + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
         mcall   connect
-        pop     esi ecx
         cmp     eax, -1
         je      socketerror
-  @@:
+        jmp     .start
 
-        push    ecx esi
+; If we are still in passive_wait, it's time we accept an incomming call..
+  .not_active:
+        cmp     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
+        jne     socketerror
+        mov     [ebp + thread_data.mode], MODE_PASSIVE_FAILED                   ; assume that we will fail
+  .try_now:
+        mov     ecx, [ebp + thread_data.passivesocknum]
+        lea     edx, [ebp + thread_data.datasock]
+        mov     esi, sizeof.thread_data.datasock
+        mcall   accept
+        cmp     eax, -1
+        jne     .pasv_ok
+        mcall   23, 200
+        mcall   accept
+        cmp     eax, -1
+        je      socketerror
+  .pasv_ok:
+        mov     [ebp + thread_data.datasocketnum], eax
+        mov     [ebp + thread_data.mode], MODE_PASSIVE_OK
+        mcall   close   ; [ebp + thread_data.passivesocknum]
+        mov     [ebp + thread_data.passivesocknum], -1
+        invoke  con_write_asciiz, str_datasock
+
+  .start:
         call    create_path
-        pop     esi ecx
         dec     edi
         add     esi, 5
 
+        lea     esi, [ebp + thread_data.buffer]                         ; FIXME
+        mov     ecx, 1024
   .loop:
         lodsb
         cmp     al, 0x20
@@ -929,7 +1001,6 @@ cmdRETR:
         invoke  con_write_asciiz, str_notfound
         invoke  con_set_flags, 0x07
 
-        mov     edx, [ebp]
         sendFTP "550 No such file"
         ret
 
@@ -1084,7 +1155,7 @@ cmdUSER:
         ret
 
   .login_fail:
-        invoke  con_write_asciiz, str_login_invalid
+        invoke  con_write_asciiz, str_pass_err
         mov     [ebp + thread_data.state], STATE_LOGIN_FAIL
         jmp     .sendstr
 
