@@ -18,19 +18,19 @@
 
 $Revision$
 
-ARP_NO_ENTRY            equ 0
-ARP_VALID_MAPPING       equ 1
-ARP_AWAITING_RESPONSE   equ 2
-ARP_RESPONSE_TIMEOUT    equ 3
+ARP_NO_ENTRY            = 0
+ARP_VALID_MAPPING       = 1
+ARP_AWAITING_RESPONSE   = 2
+ARP_RESPONSE_TIMEOUT    = 3
 
-ARP_REQUEST_TTL         equ 31          ; 20 s
-ARP_ENTRY_TTL           equ 937         ; 600 s
-ARP_STATIC_ENTRY        equ -1
+ARP_REQUEST_TTL         = 31          ; 20 s
+ARP_ENTRY_TTL           = 937         ; 600 s
+ARP_STATIC_ENTRY        = -1
 
-ARP_REQ_OPCODE          equ 0x0100      ; request
-ARP_REP_OPCODE          equ 0x0200      ; reply
+ARP_REQ_OPCODE          = 0x0100      ; request
+ARP_REP_OPCODE          = 0x0200      ; reply
 
-ARP_TABLE_SIZE          equ 20          ; Size of table
+ARP_TABLE_SIZE          = 20          ; Size of table
 
 struct ARP_entry
 
@@ -570,44 +570,42 @@ ARP_IP_to_MAC:
 ;
 ;-----------------------------------------------------------------
 align 4
-ARP_API:
+ARP_api:
 
         movzx   eax, bh
         shl     eax, 2
 
-        test    bl, bl
-        jz      .packets_tx     ; 0
-        dec     bl
-        jz      .packets_rx     ; 1
-        dec     bl
-        jz      .entries        ; 2
-        dec     bl
-        jz      .read           ; 3
-        dec     bl
-        jz      .write          ; 4
-        dec     bl
-        jz      .remove         ; 5
-        dec     bl
+        and     ebx, 0xff
+        cmp     ebx, .number
+        ja      .error
+        jmp     dword [.table + 4*ebx]
 
-.error:
+  .table:
+        dd      .packets_tx     ; 0
+        dd      .packets_rx     ; 1
+        dd      .entries        ; 2
+        dd      .read           ; 3
+        dd      .write          ; 4
+        dd      .remove         ; 5
+  .number = ($ - .table) / 4 - 1
+
+  .error:
         mov     eax, -1
         ret
 
-.packets_tx:
-        add     eax, ARP_PACKETS_TX
-        mov     eax, [eax]
+  .packets_tx:
+        mov     eax, [ARP_PACKETS_TX + eax]
         ret
 
-.packets_rx:
-        add     eax, ARP_PACKETS_RX
-        mov     eax, [eax]
+  .packets_rx:
+        mov     eax, [ARP_PACKETS_RX + eax]
         ret
 
-.entries:
+  .entries:
         mov     eax, [NumARP]
         ret
 
-.read:
+  .read:
         cmp     ecx, [NumARP]
         jae     .error
         ; edi = pointer to buffer
@@ -621,12 +619,12 @@ ARP_API:
         xor     eax, eax
         ret
 
-.write:
+  .write:
         ; esi = pointer to buffer
         call    ARP_add_entry        ;out: eax = entry number, -1 on error
         ret
 
-.remove:
+  .remove:
         ; ecx = # entry
         cmp     ecx, [NumARP]
         jae     .error

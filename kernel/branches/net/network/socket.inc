@@ -171,11 +171,11 @@ struct  socket_queue_entry
 ends
 
 
-SOCKETBUFFSIZE          equ 4096     ; in bytes
+SOCKETBUFFSIZE          = 4096     ; in bytes
 
-SOCKET_QUEUE_SIZE       equ 10       ; maximum number ofincoming packets queued for 1 socket
+SOCKET_QUEUE_SIZE       = 10       ; maximum number ofincoming packets queued for 1 socket
 ; the incoming packet queue for sockets is placed in the socket struct itself, at this location from start
-SOCKET_QUEUE_LOCATION   equ (SOCKETBUFFSIZE - SOCKET_QUEUE_SIZE*sizeof.socket_queue_entry - sizeof.queue)
+SOCKET_QUEUE_LOCATION   = (SOCKETBUFFSIZE - SOCKET_QUEUE_SIZE*sizeof.socket_queue_entry - sizeof.queue)
 
 uglobal
         net_sockets     rd 4
@@ -221,8 +221,17 @@ macro   SOCKET_init {
 ; Socket API (function 74)
 ;
 ;-----------------------------------------------------------------
-align 16
-sock_sysfn_table:
+align 4
+sys_socket:
+
+        cmp     ebx, 255
+        jz      SOCKET_debug
+
+        cmp     ebx, .number
+        ja      s_error
+        jmp     dword [.table + 4*ebx]
+
+  .table:
         dd      SOCKET_open     ; 0
         dd      SOCKET_close    ; 1
         dd      SOCKET_bind     ; 2
@@ -233,18 +242,7 @@ sock_sysfn_table:
         dd      SOCKET_receive  ; 7
         dd      SOCKET_set_opt  ; 8
         dd      SOCKET_get_opt  ; 9
-
-SOCKET_SYSFUNCS = ($ - sock_sysfn_table)/4
-
-
-align 4
-sys_socket:
-        cmp     ebx, SOCKET_SYSFUNCS-1
-        ja      @f
-        jmp     dword [sock_sysfn_table + 4*ebx]
-       @@:
-        cmp     ebx, 255
-        jz      SOCKET_debug
+  .number = ($ - .table) / 4 - 1
 
 s_error:
         DEBUGF  1,"socket error\n"

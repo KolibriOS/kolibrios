@@ -308,7 +308,7 @@ UDP_output:
 ;---------------------------------------------------------------------------
 
 align 4
-UDP_API:
+UDP_api:
 
         movzx   eax, bh
         shl     eax, 2
@@ -318,14 +318,14 @@ UDP_API:
         dec     bl
         jz      .packets_rx     ; 1
 
-.error:
+  .error:
         mov     eax, -1
         ret
 
-.packets_tx:
+  .packets_tx:
         mov     eax, [UDP_PACKETS_TX + eax]
         ret
 
-.packets_rx:
+  .packets_rx:
         mov     eax, [UDP_PACKETS_RX + eax]
         ret

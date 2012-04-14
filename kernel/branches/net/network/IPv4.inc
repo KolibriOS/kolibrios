@@ -18,9 +18,9 @@
 
 $Revision$
 
-MAX_FRAGMENTS   equ 64
-MAX_IP          equ MAX_NET_DEVICES
-IP_MAX_INTERFACES   equ MAX_IP
+MAX_FRAGMENTS           = 64
+MAX_IP                  = MAX_NET_DEVICES
+IP_MAX_INTERFACES       = MAX_IP
 
 struct  IPv4_header
 
@@ -194,7 +194,8 @@ macro IPv4_checksum ptr {
 ;  IN:  Pointer to buffer in [esp]
 ;       size of buffer in [esp+4]
 ;       pointer to device struct in ebx
-;       pointer to IP Packet data in edx
+;       pointer to IP header in edx
+;       size of IP packet in ecx
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
@@ -943,86 +944,72 @@ IPv4_get_frgmnt_num:
 ;
 ;---------------------------------------------------------------------------
 align 4
-IPv4_API:
+IPv4_api:
 
         movzx   eax, bh
         shl     eax, 2
 
-        test    bl, bl
-        jz      .packets_tx     ; 0
-        dec     bl
-        jz      .packets_rx     ; 1
-        dec     bl
-        jz      .read_ip        ; 2
-        dec     bl
-        jz      .write_ip       ; 3
-        dec     bl
-        jz      .read_dns       ; 4
-        dec     bl
-        jz      .write_dns      ; 5
-        dec     bl
-        jz      .read_subnet    ; 6
-        dec     bl
-        jz      .write_subnet   ; 7
-        dec     bl
-        jz      .read_gateway   ; 8
-        dec     bl
-        jz      .write_gateway  ; 9
+        and     ebx, 0xff
+        cmp     ebx, .number
+        ja      .error
+        jmp     dword [.table + 4*ebx]
+
+  .table:
+        dd      .packets_tx     ; 0
+        dd      .packets_rx     ; 1
+        dd      .write_ip       ; 3
+        dd      .read_dns       ; 4
+        dd      .write_dns      ; 5
+        dd      .read_subnet    ; 6
+        dd      .write_subnet   ; 7
+        dd      .read_gateway   ; 8
+        dd      .write_gateway  ; 9
+  .number = ($ - .table) / 4 - 1
 
   .error:
         mov     eax, -1
         ret
 
   .packets_tx:
-        add     eax, IP_PACKETS_TX
-        mov     eax, [eax]
+        mov     eax, [IP_PACKETS_TX + eax]
         ret
 
   .packets_rx:
-        add     eax, IP_PACKETS_RX
-        mov     eax, [eax]
+        mov     eax, [IP_PACKETS_RX + eax]
         ret
 
   .read_ip:
-        add     eax, IP_LIST
-        mov     eax, [eax]
+        mov     eax, [IP_LIST + eax]
         ret
 
   .write_ip:
-        add     eax, IP_LIST
-        mov     [eax], ecx
+        mov     [IP_LIST + eax], ecx
         xor     eax, eax
         ret
 
   .read_dns:
-        add     eax, DNS_LIST
-        mov     eax, [eax]
+        mov     eax, [DNS_LIST + eax]
         ret
 
   .write_dns:
-        add     eax, DNS_LIST
-        mov     [eax], ecx
+        mov     [DNS_LIST + eax], ecx
         xor     eax, eax
         ret
 
   .read_subnet:
-        add     eax, SUBNET_LIST
-        mov     eax, [eax]
+        mov     eax, [SUBNET_LIST + eax]
         ret
 
   .write_subnet:
-        add     eax, SUBNET_LIST
-        mov     [eax], ecx
+        mov     [SUBNET_LIST + eax], ecx
         xor     eax, eax
         ret
 
   .read_gateway:
-        add     eax, GATEWAY_LIST
-        mov     eax, [eax]
+        mov     eax, [GATEWAY_LIST + eax]
         ret
 
   .write_gateway:
-        add     eax, GATEWAY_LIST
-        mov     [eax], ecx
+        mov     [GATEWAY_LIST + eax], ecx
         xor     eax, eax
         ret

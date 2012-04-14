@@ -31,77 +31,77 @@ uglobal
         net_tmr_count   dw ?
 endg
 
-MAX_NET_DEVICES         equ 16
+MAX_NET_DEVICES        = 16
 
-MIN_EPHEMERAL_PORT      equ 49152
-MAX_EPHEMERAL_PORT      equ 61000
+MIN_EPHEMERAL_PORT     = 49152
+MAX_EPHEMERAL_PORT     = 61000
 
 ; Ethernet protocol numbers
-ETHER_ARP               equ 0x0608
-ETHER_IPv4              equ 0x0008
-ETHER_PPP_DISCOVERY     equ 0x6388
-ETHER_PPP_SESSION       equ 0x6488
+ETHER_ARP              = 0x0608
+ETHER_IPv4             = 0x0008
+ETHER_PPP_DISCOVERY    = 0x6388
+ETHER_PPP_SESSION      = 0x6488
 
 ;Protocol family
-AF_UNSPEC               equ 0
-AF_UNIX                 equ 1
-AF_INET4                equ 2
-AF_INET6                equ 10
+AF_UNSPEC              = 0
+AF_UNIX                = 1
+AF_INET4               = 2
+AF_INET6               = 10
 
 ; Internet protocol numbers
-IP_PROTO_IP             equ 0
-IP_PROTO_ICMP           equ 1
-IP_PROTO_TCP            equ 6
-IP_PROTO_UDP            equ 17
+IP_PROTO_IP            = 0
+IP_PROTO_ICMP          = 1
+IP_PROTO_TCP           = 6
+IP_PROTO_UDP           = 17
 
 ; Socket types
-SOCK_STREAM             equ 1
-SOCK_DGRAM              equ 2
-SOCK_RAW                equ 3
+SOCK_STREAM            = 1
+SOCK_DGRAM             = 2
+SOCK_RAW               = 3
 
 ; Socket options
-SO_ACCEPTCON            equ 1 shl 0
-SO_BROADCAST            equ 1 shl 1
-SO_DEBUG                equ 1 shl 2
-SO_DONTROUTE            equ 1 shl 3
-SO_KEEPALIVE            equ 1 shl 4
-SO_OOBINLINE            equ 1 shl 5
-SO_REUSEADDR            equ 1 shl 6
-SO_REUSEPORT            equ 1 shl 7
-SO_USELOOPBACK          equ 1 shl 8
+SO_ACCEPTCON           = 1 shl 0
+SO_BROADCAST           = 1 shl 1
+SO_DEBUG               = 1 shl 2
+SO_DONTROUTE           = 1 shl 3
+SO_KEEPALIVE           = 1 shl 4
+SO_OOBINLINE           = 1 shl 5
+SO_REUSEADDR           = 1 shl 6
+SO_REUSEPORT           = 1 shl 7
+SO_USELOOPBACK         = 1 shl 8
 
 
 ; Socket States
-SS_NOFDREF              equ 0x001       ; no file table ref any more
-SS_ISCONNECTED          equ 0x002       ; socket connected to a peer
-SS_ISCONNECTING         equ 0x004       ; in process of connecting to peer
-SS_ISDISCONNECTING      equ 0x008       ; in process of disconnecting
-SS_CANTSENDMORE         equ 0x010       ; can't send more data to peer
-SS_CANTRCVMORE          equ 0x020       ; can't receive more data from peer
-SS_RCVATMARK            equ 0x040       ; at mark on input
-SS_ISABORTING           equ 0x080       ; aborting fd references - close()
-SS_RESTARTSYS           equ 0x100       ; restart blocked system calls
-SS_ISDISCONNECTED       equ 0x800       ; socket disconnected from peer
+SS_NOFDREF             = 0x001       ; no file table ref any more
+SS_ISCONNECTED         = 0x002       ; socket connected to a peer
+SS_ISCONNECTING        = 0x004       ; in process of connecting to peer
+SS_ISDISCONNECTING     = 0x008       ; in process of disconnecting
+SS_CANTSENDMORE        = 0x010       ; can't send more data to peer
+SS_CANTRCVMORE         = 0x020       ; can't receive more data from peer
+SS_RCVATMARK           = 0x040       ; at mark on input
+SS_ISABORTING          = 0x080       ; aborting fd references - close()
+SS_RESTARTSYS          = 0x100       ; restart blocked system calls
+SS_ISDISCONNECTED      = 0x800       ; socket disconnected from peer
 
-SS_ASYNC                equ 0x100       ; async i/o notify
-SS_ISCONFIRMING         equ 0x200       ; deciding to accept connection req
-SS_MORETOCOME           equ 0x400
+SS_ASYNC               = 0x100       ; async i/o notify
+SS_ISCONFIRMING        = 0x200       ; deciding to accept connection req
+SS_MORETOCOME          = 0x400
 
 
-SOCKET_MAXDATA          equ 4096*32     ; must be 4096*(power of 2) where 'power of 2' is at least 8
+SOCKET_MAXDATA         = 4096*32     ; must be 4096*(power of 2) where 'power of 2' is at least 8
 
 ; Network driver types
-NET_TYPE_ETH            equ 1
-NET_TYPE_SLIP           equ 2
+NET_TYPE_ETH           = 1
+NET_TYPE_SLIP          = 2
 
-MAX_backlog             equ 20          ; maximum backlog for stream sockets
+MAX_backlog            = 20          ; maximum backlog for stream sockets
 
 ; Error Codes
-ENOBUFS                 equ 55
-ECONNREFUSED            equ 61
-ECONNRESET              equ 52
-ETIMEDOUT               equ 60
-ECONNABORTED            equ 53
+ENOBUFS                = 55
+ECONNREFUSED           = 61
+ECONNRESET             = 52
+ETIMEDOUT              = 60
+ECONNABORTED           = 53
 
 
 
@@ -155,8 +155,7 @@ include "queue.inc"
 
 include "ethernet.inc"
 
-;include "slip.inc"
-;include "pppoe.inc"
+;include "PPPoE.inc"
 
 include "ARP.inc"
 include "IPv4.inc"
@@ -690,23 +689,26 @@ sys_protocols:
         mov     eax, ebx                        ; set ax to protocol number
         shr     eax, 16                         ;
 
-        cmp     ax , IP_PROTO_IP
-        je      IPv4_API
+        cmp     ax, IP_PROTO_IP
+        je      IPv4_api
 
-        cmp     ax , IP_PROTO_ICMP
-        je      ICMP_API
+        cmp     ax, IP_PROTO_ICMP
+        je      ICMP_api
 
-        cmp     ax , IP_PROTO_UDP
-        je      UDP_API
+        cmp     ax, IP_PROTO_UDP
+        je      UDP_api
 
-        cmp     ax , IP_PROTO_TCP
-        je      TCP_API
+        cmp     ax, IP_PROTO_TCP
+        je      TCP_api
 
-        cmp     ax , ETHER_ARP
-        je      ARP_API
+        cmp     ax, ETHER_ARP
+        je      ARP_api
 
-        cmp     ax , 1337  ;;;;;
-        je      ETH_API
+        cmp     ax, 1337  ;;;;;
+        je      ETH_api
+
+;        cmp     ax, API_PPPoE
+;        je      PPPoE_api
 
         add     esp, 4                           ; if we reached here, no function was called, so we need to balance stack
 
@@ -715,7 +717,7 @@ sys_protocols:
         mov     eax, -1
 
   .return:
-        mov     [esp+28+4], eax
+        mov     [esp+28+4], eax                 ; return eax value to the program
         ret
 
 
