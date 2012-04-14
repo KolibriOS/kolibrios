@@ -100,13 +100,14 @@ TCP_output:
        @@:
         sub     esi, ebx
 
+
 ;------------------------
 ; check for window shrink (107)
 
 ; If FIN has been set, but not ACKed, but we havent been called to retransmit, esi will be -1
 ; Otherwise, window shrank after we sent into it.
 
-        jns     .not_negative
+        jae     .not_persist
 
 ; enter persist state
         xor     esi, esi
@@ -126,7 +127,7 @@ TCP_output:
 
 ; If window didn't close completely, just wait for an ACK
 
-  .not_negative:
+  .not_persist:
 
 ;---------------------------
 ; Send one segment at a time (124)
@@ -291,7 +292,7 @@ TCP_output:
 
   .send:
 
-        DEBUGF  1,"Preparing to send a segment\n"
+        DEBUGF  1,"Preparing to send a segment socket: %x length: %u flags: %x\n", eax, esi, dl
 
         mov     edi, sizeof.TCP_header  ; edi will contain headersize
 

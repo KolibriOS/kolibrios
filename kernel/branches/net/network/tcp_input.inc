@@ -595,6 +595,8 @@ align 4
         mov     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
 
 ;;; TODO: check if we should scale the connection (567-572)
+        mov     [ebx + TCP_SOCKET.SND_SCALE], 0
+
 ;;; TODO: update RTT estimators
 
         jmp     .trim_then_step6
@@ -1249,24 +1251,7 @@ align 4
 
   .update_window:
 
-        DEBUGF  1,"Updating window\n"
-
-; Keep track of pure window updates
-
-;        test    ecx, ecx
-;        jz      @f
-;
-;        mov     eax, [ebx + TCP_SOCKET.SND_WL2]
-;        cmp     eax, [edx + TCP_header.AckNumber]
-;        jne     @f
-;
-;        ;; mov eax, tiwin
-;        cmp     eax, [ebx + TCP_SOCKET.SND_WND]
-;        jbe     @f
-;
-;        ;;; update stats
-;
-;       @@:
+;;; TODO: Keep track of pure window updates
 
         mov     eax, dword [edx + TCP_header.Window]
         cmp     eax, [ebx + TCP_SOCKET.max_sndwnd]
@@ -1274,6 +1259,8 @@ align 4
         mov     [ebx + TCP_SOCKET.max_sndwnd], eax
        @@:
         mov     [ebx + TCP_SOCKET.SND_WND], eax
+
+        DEBUGF  1,"Updating window to %d\n", eax
 
         push    [edx + TCP_header.SequenceNumber]
         pop     [ebx + TCP_SOCKET.SND_WL1]

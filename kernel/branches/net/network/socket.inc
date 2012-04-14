@@ -324,7 +324,7 @@ align 4
         mov     [eax + SOCKET.snd_proc], SOCKET_send_tcp
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_tcp
 
-        mov     [eax + TCP_SOCKET.t_maxseg], 1480       ;;;;; FIXME
+        TCP_init_socket eax
         ret
 
 
@@ -498,10 +498,12 @@ align 4
 
         mov     [eax + TCP_SOCKET.timer_persist], 0
         mov     [eax + TCP_SOCKET.t_state], TCPS_SYN_SENT
+
         push    [TCP_sequence_num]
         add     [TCP_sequence_num], 6400
         pop     [eax + TCP_SOCKET.ISS]
         mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_init
+
 
         TCP_sendseqinit eax
 
