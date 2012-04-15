@@ -715,7 +715,7 @@ key_insert:
     cmp   ah,82   ; Insert
     je	  mark_file
     cmp   ah,83
-    je	  delete_file
+    je	  f_key_f8	;delete_file
 key_end:
     jmp  still
 ;---------------------------------------------------------------------

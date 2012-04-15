@@ -1,6 +1,6 @@
 ;*****************************************************************************
 ; KFM - Kolibri File Manager
-; Copyright (c) 2006 - 2010, Marat Zakiyanov aka Mario79, aka Mario
+; Copyright (c) 2006 - 2012, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -25,7 +25,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-; KFM v0.47d 07.04.2012
+; KFM v0.47e 16.04.2012
 ;---------------------------------------------------------------------
 use32
 org	0x0
@@ -122,6 +122,9 @@ red_1:
 ;---------------------------------------------------------------------
 still:
     mcall 10
+
+    call  check_active_process_for_clear_all_flags
+
     cmp   eax,1
     je	  red
     cmp   eax,2
@@ -131,6 +134,33 @@ still:
     cmp   eax,6
     je	  mouse
     jmp   still
+;---------------------------------------------------------------------
+check_active_process_for_clear_all_flags:
+	push	eax
+	mcall	18,7
+	cmp	[active_process],eax
+	je	.exit
+	
+	xor	eax,eax
+	cmp	[shift_flag],al
+	jne	.clear_all_flags
+	
+	cmp	[ctrl_flag],al
+	jne	.clear_all_flags
+	
+	cmp	[ctrl_flag],al
+	je	.exit
+;--------------------------------------
+.clear_all_flags:
+	mov	[shift_flag],al
+	mov	[ctrl_flag],al
+	mov	[alt_flag],al
+	call	erase_fbutton
+	call	draw_fbutton
+;--------------------------------------    
+.exit:
+	pop	eax
+	ret
 ;---------------------------------------------------------------------
 get_window_param:
     mcall 9, procinfo, -1
