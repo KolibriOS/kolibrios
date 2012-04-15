@@ -25,16 +25,28 @@ if ( '/' == file[0])
 
 	if ( !file_check(temp) )
 		{
+		#if LANG_ENG
+			printf ("  File not found!\n\r");
+		#elif LANG_RUS
+			printf ("  Файл не найден!\n\r");
+		#endif
 		return FALSE;
 		}
 	}
 else
 	{
 	strcpy(temp, cur_dir);
+	if (temp[strlen(temp)-1] != '/') 
+		strcat(temp, "/"); // add slash
 	strcat(temp, file);
 	
 	if ( !file_check(temp) )
 		{
+		#if LANG_ENG
+			printf ("  File not found!\n\r");
+		#elif LANG_RUS
+			printf ("  Файл не найден!\n\r");
+		#endif
 		return FALSE;
 		}
 	}

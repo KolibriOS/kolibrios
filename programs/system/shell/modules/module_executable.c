@@ -26,8 +26,11 @@ if ( '/' == cmd[0]) // если путь абсолютный
 else 
 	{
 	strcpy(exec, cur_dir); // проверяем файл в текущем каталоге
-//	strcat(exec, "/"); // add slash
+	if (exec[strlen(exec)-1] != '/') 
+		strcat(exec, "/"); // add slash
 	strcat(exec, cmd);
+	
+	printf("\n%s\n", exec);
 	
 	if ( !file_check(exec) ) // проверяем существование файла
 		{
