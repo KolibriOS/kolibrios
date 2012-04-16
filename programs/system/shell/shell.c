@@ -66,6 +66,17 @@ else
 
 /// ===========================================================
 
+void file_not_found(char file[])
+{
+#if LANG_ENG
+	printf ("  File '%s' not found.\n\r", file);
+#elif LANG_RUS
+	printf ("  Файл '%s' не найден.\n\r", file);
+#endif
+}
+
+/// ===========================================================
+
 int iswhite(char c)
 {
 return ((' ' == c) || ('\t' == c) || (13 == c) || (10 == c));

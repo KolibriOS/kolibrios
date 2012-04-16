@@ -9,7 +9,7 @@ char		buf[81]; //буфер
 char		temp[256];
 unsigned	flags;
 
-if (NULL == file)
+if (strlen(file)<1)
 	{
 	#if LANG_ENG
 		printf ("  more <filename>\n\r");
@@ -17,7 +17,7 @@ if (NULL == file)
 		printf ("  more <имя файла>\n\r");
 	#endif
 	return FALSE;
-		}
+	}
 
 if ( '/' == file[0])
 	{
@@ -25,11 +25,7 @@ if ( '/' == file[0])
 
 	if ( !file_check(temp) )
 		{
-		#if LANG_ENG
-			printf ("  File not found!\n\r");
-		#elif LANG_RUS
-			printf ("  Файл не найден!\n\r");
-		#endif
+		file_not_found(file);
 		return FALSE;
 		}
 	}
@@ -42,11 +38,7 @@ else
 	
 	if ( !file_check(temp) )
 		{
-		#if LANG_ENG
-			printf ("  File not found!\n\r");
-		#elif LANG_RUS
-			printf ("  Файл не найден!\n\r");
-		#endif
+		file_not_found(file);
 		return FALSE;
 		}
 	}

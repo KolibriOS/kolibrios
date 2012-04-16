@@ -26,11 +26,9 @@ if (!strcmp(param, "kernel"))
 		printf ("  KolibriOS v%d.%d.%d.%d. SVN-рев. ядра: %d\n\r", vA, vB, vC, vD, Rev);
 	#endif
 	free(kvbuf);
-	return TRUE;
 	}
 else
-	{
 	printf ("  Shell v%s\n\r", SHELL_VERSION);
-	return TRUE;
-	}
+	
+return TRUE;
 }

@@ -2,6 +2,7 @@
 /// ===========================================================
 
 int file_check(char file[]);
+void file_not_found(char file[]);
 int dir_check(char dir[]);
 void dir_truncate(char dir[]);
 int iswhite(char c);

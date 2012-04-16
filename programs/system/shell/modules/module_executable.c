@@ -4,12 +4,7 @@
 int executable_run(char cmd[], char args[])
 {
 
-char		exec[256];
-#if LANG_ENG
-	char		error_starting[]={"  No such command '%s'.\n\r"};
-#elif LANG_RUS
-	char		error_starting[]={"  Нет такой команды - '%s'.\n\r"};
-#endif
+char	exec[256];
 int		result;
 
 if ( '/' == cmd[0]) // если путь абсолютный
@@ -18,7 +13,7 @@ if ( '/' == cmd[0]) // если путь абсолютный
 
 	if (  !file_check(exec) ) // проверяем существование файла
 		{
-		printf(error_starting, cmd);
+		file_not_found(cmd);
 		return FALSE;
 		}
 	}
@@ -30,15 +25,13 @@ else
 		strcat(exec, "/"); // add slash
 	strcat(exec, cmd);
 	
-	printf("\n%s\n", exec);
-	
 	if ( !file_check(exec) ) // проверяем существование файла
 		{
 		strcpy(exec, "/rd/1/"); // проверяем файл на виртуальном диске
 		strcat(exec, cmd);
 			if ( !file_check(exec) ) // проверяем существование файла
 				{
-				printf(error_starting, cmd);
+				file_not_found(cmd);
 				return FALSE;
 				}
 		}
@@ -65,7 +58,7 @@ if (result > 0)
 	}
 else	
 	{
-	printf(error_starting, cmd);
+	file_not_found(cmd);
 	return FALSE;
 	}
 
