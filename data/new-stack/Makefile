@@ -173,7 +173,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  lang.inc:LANG.INC lang.ini:LANG.INI \
  menu.dat:MENU.DAT \
- panel.dat:PANEL.DAT setup.dat:SETUP.DAT \
+ panel.ini:PANEL.INI setup.dat:SETUP.DAT \
  shell:SHELL \
  vmode:VMODE \
  File|Managers/eolite.ini:File|Managers/EOLITE.INI \

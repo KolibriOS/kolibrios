@@ -124,6 +124,8 @@ fir_lng:
 ;------------------------------------------------------------------------------	
 align 4
 karu:
+	mov	[draw_flag_certainly],1
+
 	add	[key_r2],1
 	cmp	[key_r2],3
 	jb	.altes
@@ -166,6 +168,8 @@ align 4
 ;------------------------------------------------------------------------------	
 align 4
 alter:
+	mov	[draw_flag_certainly],1
+
 	cmp	[key_r],0
 	je	.alt_1
 
