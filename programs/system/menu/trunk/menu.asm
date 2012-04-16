@@ -1,6 +1,10 @@
 ;******************************************************************************
 ;   MAIN MENU
 ;******************************************************************************
+; last update:  17/04/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Support for boot parameters.
+;------------------------------------------------------------------------------
 ; last update:  22/03/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      Global optimization! The program uses
@@ -16,15 +20,12 @@
 ;
 ;   Compile with FASM for Menuet
 ;******************************************************************************
-  include "lang.inc"
-  include "..\..\..\macros.inc"
-
   BTN_HEIGHT  = 22
   TXT_Y       = (BTN_HEIGHT)/2-5
 
   PANEL_HEIGHT	= 20
   MENU_BOTTON_X_POS	= 10
-  MENU_BOTTON_X_SIZE	= 60
+  MENU_BOTTON_X_SIZE	= 50
 ;------------------------------------------------------------------------------
 	use32
 	org 0x0
@@ -35,14 +36,105 @@
 	dd IM_END	; size of image
 	dd mem_end	; memory for app
 	dd stack_area	; esp
-	dd 0x0		; boot parameters
+	dd bootparam	; boot parameters
 	dd 0x0		; path
 ;------------------------------------------------------------------------------
+include "lang.inc"
+include "..\..\..\macros.inc"
 ;include "DEBUG.INC"             ; debug macros
+;------------------------------------------------------------------------------
+align 4
+conversion_ASCII_to_HEX:
+	xor	ebx,ebx
+	cld
+	lodsd
+	mov	ecx,4
+;--------------------------------------
+align 4
+.loop:
+	cmp	al,0x60	; check for ABCDEF
+	ja	@f
+	sub	al,0x30 ; 0-9
+	jmp	.store
+;--------------------------------------
+align 4
+@@:
+	sub	al,0x57 ; A-F
+;--------------------------------------
+align 4
+.store:
+	and	al,0xf
+	rol	ebx,4
+	add	bl,al
+	ror	eax,8
+	dec	ecx
+	jnz	.loop
+
+	ret
 ;------------------------------------------------------------------------------
 align 4
 START:		       ; start of execution
 	mcall	68,11
+
+	mov	esi,bootparam	
+	cmp	[esi],byte 0
+	je	.no_boot_parameters
+; boot params - hex
+; db '9999'	; +0	Menu button X
+; db '9999'	; +4	Menu button X size
+; db '9999'	; +8	Menu button Y
+; db '9999'	; +12	Menu button Y size
+; db '9999'	; +16	Panel height
+; db '1000'	; +20	Panel attachment
+
+;	mov	edx,bootparam
+;	call	debug_outstr
+;	newline
+
+	call	conversion_ASCII_to_HEX
+	mov	[menu_button_x.start],ebx
+	
+;	dps	"menu_button_x.start: "
+;	dpd	ebx
+;	newline
+
+	call	conversion_ASCII_to_HEX
+	mov	[menu_button_x.size],ebx
+
+;	dps	"menu_button_x.size: "
+;	dpd	ebx
+;	newline
+
+	call	conversion_ASCII_to_HEX
+	mov	[menu_button_y.start],ebx
+
+;	dps	"menu_button_y.start: "
+;	dpd	ebx
+;	newline
+	
+	call	conversion_ASCII_to_HEX
+	mov	[menu_button_y.size],ebx
+	
+;	dps	"menu_button_y.size: "
+;	dpd	ebx
+;	newline
+	
+	call	conversion_ASCII_to_HEX
+	mov	[panel_height],ebx
+
+;	dps	"panel_height: "
+;	dpd	ebx
+;	newline
+	
+	call	conversion_ASCII_to_HEX
+	mov	[panel_attachment],ebx
+	
+;	dps	"panel_attachment: "
+;	dpd	ebx
+;	newline
+;--------------------------------------
+align 4	
+.no_boot_parameters:
 	call	program_exist
 	mcall	14
 	mov	[screen_size],eax
@@ -132,7 +224,15 @@ endprocess:
 align 4
 search_end1:
 	mcall	14
-	sub	ax,20
+	cmp	[panel_attachment],byte 1
+	je	@f
+	xor	ax,ax
+	jmp	.store
+;--------------------------------------
+align 4	
+@@:
+	sub	ax,[panel_height]	;20
+.store:
 	mov	ebx,[menu_data]
 	mov	[ebx + y_end],ax
 	mov	[ebx + x_start],5
@@ -418,14 +518,36 @@ click:
 	jne	still
 ; checking for pressing 'MENU' on the taskbar	
 	mov	eax,[screen_mouse_position]
+	
+	cmp	[panel_attachment],byte 1
+	je	@f
+
+	xor	ebx,ebx
+	jmp	.check_y
+;--------------------------------------
+align 4
+@@:
 	mov	ebx,[screen_size]
-	sub	bx,PANEL_HEIGHT
+	sub	bx,word [panel_height]	;PANEL_HEIGHT
+;--------------------------------------
+align 4
+.check_y:
+	add	bx,word [menu_button_y.start]
 	cmp	bx,ax
 	ja	close
+
+	add	bx,word [menu_button_y.size]
+	cmp	bx,ax
+	jb	close
+	
 	shr	eax,16
-	cmp	ax,MENU_BOTTON_X_SIZE
+	
+	mov	ebx,[menu_button_x.start]
+	cmp	bx,ax	; MENU_BOTTON_X_SIZE
 	ja	close
-	cmp	ax,MENU_BOTTON_X_POS
+	
+	add	bx,[menu_button_x.size]
+	cmp	bx,ax	; MENU_BOTTON_X_POS
 	ja	still
 ;------------------------------------------------------------------------------
 align 4
@@ -578,22 +700,63 @@ align 4
 ;   *********************************************
 align 4
 draw_window:
+	mcall	48,5
+	mov	[x_working_area],eax
+	mov	[y_working_area],ebx
+
 	mcall	12,1	; 1,start of draw
 	movzx	ebx,[edi + rows]
 	imul	eax,ebx,BTN_HEIGHT	    ; eax = height of window
 	movzx	ecx,[edi + y_end]
+	cmp	[panel_attachment],byte 1
+	je	@f
+;	add	ecx,eax
+;	sub	ecx,BTN_HEIGHT
+	jmp	.1
+;--------------------------------------
+align 4
+@@:	
 	sub	ecx,eax	    ; ecx = Y_START
+;--------------------------------------
+align 4
+.1:
 	shl	ecx,16
 	add	ecx,eax	    ; ecx = [ Y_START | Y_SIZE ]
 	dec	ecx
+	
 	movzx	ebx,[edi + x_start]
 	shl	ebx,16
 	mov	bx,140	    ; ebx = [ X_START | X_SIZE ]
 	mov	edx,0x01000000       ; color of work area RRGGBB,8->color gl
 	mov	esi,edx	    ; unmovable window
+	
+	mov	eax,[y_working_area]
+	shr	eax,16
+	ror	ecx,16
+	test	cx,0x8000
+	jz	@f
+	mov	cx,ax
+;--------------------------------------
+align 4
+@@:
+	cmp	cx,ax
+	ja	@f
+	mov	cx,ax	
+;--------------------------------------
+align 4
+@@:
+	rol	ecx,16
 	xor	eax,eax	    ; function 0 : define and draw window
 	mcall
 	
+;	dps	"[ Y_START | Y_SIZE ] : "
+;	dph	ecx
+;	newline
+
+;	dps	"[ X_START | X_SIZE ] : "
+;	dph	ebx
+;	newline
+
 	call	draw_all_buttons
 	mcall	12,2
 	ret
@@ -699,6 +862,17 @@ free_my_area	dd 0
 
 processes      dd 0
 ;--------------------------------------
+menu_button_x:
+.start:	dd MENU_BOTTON_X_POS
+.size:	dd MENU_BOTTON_X_SIZE
+;--------------------------------------
+menu_button_y:
+.start:	dd 2
+.size:	dd 18
+;--------------------------------------
+panel_height:		dd PANEL_HEIGHT
+panel_attachment:	dd 1
+;--------------------------------------
 align 4
 fileinfo:
  .subfunction	 dd 5		; 5 - file info; 0 - file read
@@ -738,6 +912,13 @@ screen_size:
 .y	dw ?
 .x	dw ?
 ;--------------------------------------
+x_working_area:
+.right:		dw ?
+.left:		dw ?
+y_working_area:
+.bottom:	dw ?
+.top:		dw ?
+;--------------------------------------
 sc system_colors
 ;--------------------------------------
 last_key	db ?
@@ -758,6 +939,7 @@ virtual at 0	      ; PROCESSES TABLE (located at menu_data)
 end virtual
 ;------------------------------------------------------------------------------
 align 4
+bootparam:
 procinfo:
 	rb 1024
 ;------------------------------------------------------------------------------
