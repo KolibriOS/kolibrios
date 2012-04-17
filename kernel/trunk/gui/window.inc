@@ -1047,6 +1047,13 @@ minimize_window: ;/////////////////////////////////////////////////////////////
 
         ; no it's not, let's do that
         or      [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
+; If the window width is 0, then the action is not needed.
+        cmp     [edi + WDATA.box.width], dword 0
+        je      @f
+; If the window height is 0, then the action is not needed.
+        cmp     [edi + WDATA.box.height], dword 0
+        je      @f
+
         mov     eax, [edi + WDATA.box.left]
         mov     [draw_limits.left], eax
         mov     ecx, eax
@@ -1057,11 +1064,20 @@ minimize_window: ;/////////////////////////////////////////////////////////////
         mov     edx, ebx
         add     edx, [edi + WDATA.box.height]
         mov     [draw_limits.bottom], edx
-        call    calculatescreen
-        xor     esi, esi
-        xor     eax, eax
-        call    redrawscreen
 
+;        DEBUGF  1, "K : minimize_window\n"
+;        DEBUGF  1, "K : dl_left %x\n",[draw_limits.left]
+;        DEBUGF  1, "K : dl_right %x\n",[draw_limits.right]
+;        DEBUGF  1, "K : dl_top %x\n",[draw_limits.top]
+;        DEBUGF  1, "K : dl_bottom %x\n",[draw_limits.bottom]
+        call    calculatescreen
+;        xor     esi, esi
+;        xor     eax, eax
+        mov     eax, edi
+        call    redrawscreen
+;--------------------------------------
+align 4
+@@:
         pop     esi edx ecx ebx eax
 ;--------------------------------------
 align 4

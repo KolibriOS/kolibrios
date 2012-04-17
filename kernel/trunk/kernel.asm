@@ -3370,6 +3370,8 @@ align 4
 
         call    drawbackground
 ;        DEBUGF  1, "K : drawbackground\n"
+;        DEBUGF  1, "K : backg x %x\n",[BG_Rect_X_left_right]
+;        DEBUGF  1, "K : backg y %x\n",[BG_Rect_Y_top_bottom]
 ;--------- set event 5 start ----------
         push    ecx edi
         xor     edi, edi
