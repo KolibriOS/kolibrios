@@ -17,6 +17,7 @@ struct  thread_data
         datasocketnum   dd ?    ; socket used for data transfers
         permissions     dd ?    ; read/write/execute/....
         buffer_ptr      dd ?
+        pid             dd ?    ; Process id of the current thread
 
         datasock        sockaddr_in
 
@@ -452,7 +453,6 @@ cmdLIST:
   .not_active:
         cmp     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
         jne     socketerror
-        mov     [ebp + thread_data.mode], MODE_PASSIVE_FAILED                   ; assume that we will fail
   .try_now:
         mov     ecx, [ebp + thread_data.passivesocknum]
         lea     edx, [ebp + thread_data.datasock]
@@ -460,6 +460,7 @@ cmdLIST:
         mcall   accept
         cmp     eax, -1
         jne     .pasv_ok
+        mov     [ebp + thread_data.mode], MODE_PASSIVE_FAILED                   ; assume that we will fail
         mcall   23, 200
         mcall   accept
         cmp     eax, -1
@@ -572,11 +573,10 @@ cmdLIST:
 ; check next file
         invoke  file.find.next, ebx
         jmp     .parse_file
-;;;        mov     eax, ebx        ;;;;;
 
 ; close file desc
   .done:
-        invoke  file.find.close, ebx                            ; ebx is the
+        invoke  file.find.close, ebx                            ; ebx is descriptor of last file, eax will be -1 !!
 
 ; append the string with a 0
         xor     al, al
@@ -588,10 +588,10 @@ cmdLIST:
         pop     esi
 
 ; and send it to the client
-        mov     ecx, [ebp + thread_data.datasocketnum]
-        lea     edx, [ebp + thread_data.buffer]
-        sub     esi, edx
-        xor     edi, edi
+        mov     ecx, [ebp + thread_data.datasocketnum]          ; socket num
+        lea     edx, [ebp + thread_data.buffer]                 ; buffer ptr
+        sub     esi, edx                                        ; length
+        xor     edi, edi                                        ; flags
         mcall   send
 
 ; close the data socket..
@@ -644,15 +644,14 @@ cmdPASS:
 
 ; read the password from users.ini
         lea     edi, [ebp + thread_data.buffer + 512]           ; temp pass
-        mov     byte [edi], 0
         lea     ebx, [ebp + thread_data.fpath]                  ; temp username
         invoke  ini.get_str, path2, ebx, str_pass, edi, 512, str_infinity
         test    eax, eax                                        ; unable to read password? fail!
         jnz     .incorrect
         cmp     dword [edi], -1                                 ; no key, section or file found.. fail!
         je      .incorrect
-        cmp     byte [edi], 0                                   ; zero password? ok!
-        je      .ok
+;;;        cmp     byte [edi], 0                                   ; zero password? ok!
+;;;        je      .ok
 
         add     esi, 5
         sub     ecx, 5

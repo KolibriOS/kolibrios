@@ -62,7 +62,6 @@ include '../libio.inc'
 include '../network.inc'
 include 'commands.inc'
 
-align 4
 start:
         mcall   68, 11                  ; init heap
         mcall   40, 1 shl 7             ; we only want network events
@@ -110,6 +109,7 @@ start:
         mov     [sockaddr1.port], ax
 
         invoke  con_printf, str1, eax
+        add     esp, 8
 
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
@@ -145,13 +145,26 @@ start:
         mov     [pasv_end], ax
 
 mainloop:
-        mcall   10                              ; Wait here for incoming connections on the base socket (socketnum)
+        mcall   23, 100                         ; Wait here for incoming connections on the base socket (socketnum)
+                                                ; One second timeout, we sill use this to check if console is still working
+
+        test    eax, 1 shl 7                    ; network event?
+        jz      .checkconsole
 
         mcall   51, 1, threadstart, 0           ; Start a new thread for every incoming connection
                                                 ; NOTE: upon initialisation of the thread, stack will not be available!
         jmp     mainloop
 
+  .checkconsole:
+
+        invoke  con_get_flags                   ; Is console still running?
+        test    eax, 0x0200
+        jz      mainloop
+        mcall   close, [socketnum]              ; kill the listening socket
+        mcall   -1                              ; and exit
+
         diff16  "threadstart", 0, $
+
 threadstart:
 ;;;        mcall   68, 11                          ; init heap
         mcall   68, 12, sizeof.thread_data      ; allocate the thread data struct
@@ -163,8 +176,15 @@ threadstart:
 
         mcall   40, 1 shl 7                     ; we only want network events for this thread
 
+        lea     ebx, [ebp + thread_data.buffer] ; get information about the current process
+        or      ecx, -1
+        mcall   9
+        mov     eax, dword [ebp + thread_data.buffer + 30]              ; PID is at offset 30
+        mov     [ebp + thread_data.pid], eax
+
         invoke  con_set_flags, 0x03
-        invoke  con_write_asciiz, str8          ; print on the console that we have created the new thread successfully
+        invoke  con_printf, str8, [ebp + thread_data.pid]               ; print on the console that we have created the new thread successfully
+        add     esp, 8                                                  ; balance stack
         invoke  con_set_flags, 0x07
 
         mcall   accept, [socketnum], sockaddr1, sockaddr1.length        ; time to accept the awaiting connection..
@@ -181,12 +201,17 @@ threadstart:
 
         sendFTP "220 Welcome to KolibriOS FTP daemon"
 
+        diff16  "threadloop", 0, $
 threadloop:
-        mcall   10
+; Check if our socket is still connected
+        mcall   send, [ebp + thread_data.socketnum], 0, 0       ; Try to send zero bytes, if socket is closed, this will return -1
+        cmp     eax, -1
+        je      thread_exit
+
+        mcall   10                                              ; Wait for network event
 
         cmp     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
         jne     .not_passive
-        mov     [ebp + thread_data.mode], MODE_PASSIVE_FAILED           ; assume that we will fail
         mov     ecx, [ebp + thread_data.passivesocknum]
         lea     edx, [ebp + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
@@ -250,42 +275,41 @@ sock_err:
         jmp     done
 
 done:
-        invoke  con_getch2
-        invoke  con_exit, 1
+        invoke  con_exit, 0
 exit:
         mcall   -1
 
 
 thread_exit:
-        invoke  con_set_flags, 0x02                     ; print thread info in blue
-        invoke  con_write_asciiz, str_bye
-        pop     ecx                                     ; get the thread_data pointer from stack
-        mcall   68, 13                                  ; free the memory
-        mcall   -1                                      ; and kill the thread
+        invoke  con_set_flags, 0x03                             ; print thread info in blue
+        invoke  con_printf, str_bye, [ebp + thread_data.pid]    ; print on the console that we are about to kill the thread
+        add     esp, 8                                          ; balance stack
+        mcall   68, 13, ebp                                     ; free the memory
+        mcall   -1                                              ; and kill the thread
 
 
 ; initialized data
 
 title           db 'KolibriOS FTP daemon 0.1', 0
-str1            db 'Starting FTP daemon on port %u', 0
+str1            db 'Starting FTP daemon on port %u.', 0
 str2            db '.', 0
 str2b           db ' OK!',10,0
 str3            db 'Listen error',10,0
-str4            db 'Bind error',10,0
+str4            db 10,'ERROR: local port is already in use.',10,0
 ;str5            db 'Setsockopt error.',10,10,0
-str6            db 'Could not open socket',10,0
+str6            db 'ERROR: Could not open socket.',10,0
 str7            db 'Got data!',10,10,0
-str8            db 10,'New thread created!',10,0
-str_bye         db 10,'Closing thread!',10,0
+str8            db 10,'Thread %d created',10,0
+str_bye         db 10,'Thread %d killed',10,0
 
 str_logged_in   db 'Login ok',10,0
 str_pass_ok     db 'Password ok',10,0
 str_pass_err    db 'Password/Username incorrect',10,0
 str_pwd         db 'Current directory is "%s"\n',0
-str_err2        db 'ERROR: cannot open directory',10,0
-str_datasock    db 'Passive data socket connected!',10,0
-str_notfound    db 'ERROR: file not found',10,0
-str_sockerr     db 'ERROR: socket error',10,0
+str_err2        db 'ERROR: cannot open the directory.',10,0
+str_datasock    db 'Passive data socket connected.',10,0
+str_notfound    db 'ERROR: file not found.',10,0
+str_sockerr     db 'ERROR: socket error.',10,0
 
 str_newline     db 10, 0
 str_mask        db '*', 0
@@ -346,7 +370,8 @@ import  console,\
         con_printf,             'con_printf',\
         con_getch2,             'con_getch2',\
         con_set_cursor_pos,     'con_set_cursor_pos',\
-        con_set_flags,          'con_set_flags'
+        con_set_flags,          'con_set_flags',\
+        con_get_flags,          'con_get_flags'
 
 import  libini,\
         ini.get_str,            'ini_get_str',\
