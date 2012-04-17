@@ -589,9 +589,7 @@ align 4
 ;;; TODO: update stats
 
 ; set socket state to connected
-
-        mov     [ebx + SOCKET.state],1  ;;;; FIXME
-
+        mov     [ebx + SOCKET.state], SS_ISCONNECTED
         mov     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
 
 ;;; TODO: check if we should scale the connection (567-572)

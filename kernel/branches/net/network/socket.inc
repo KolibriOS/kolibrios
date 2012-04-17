@@ -814,11 +814,12 @@ SOCKET_send_tcp:
         push    eax
         add     eax, STREAM_SOCKET.snd
         call    SOCKET_ring_write
-        mov     [esp+32], ecx
         pop     eax
 
         test    ecx, ecx
         jz      s_error
+
+        mov     [esp+32], ecx
 
         call    TCP_output
         ret

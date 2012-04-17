@@ -589,82 +589,73 @@ sys_network:                    ; FIXME: make default device easily accessible
         cmp     dword [esi + NET_DRV_LIST], 0   ; check if driver is running
         je      .doesnt_exist
 
+        mov     eax, [esi + NET_DRV_LIST]
 
+        and     ebx, 0x000000ff
+        cmp     ebx, .number
+        ja      .doesnt_exist
+        jmp     dword [.table + 4*ebx]
 
-        test    bl, bl                  ; 0 = Get device type (ethernet/token ring/...)
-        jnz     @f
+  .table:
+        dd      .get_type               ; 0
+        dd      .get_dev_name           ; 1
+        dd      .reset                  ; 2
+        dd      .stop                   ; 3
+        dd      .get_ptr                ; 4
+        dd      .get_drv_name           ; 5
+        dd      .set_default            ; 6
+  .number = ($ - .table) / 4 - 1
 
-        xor     eax, eax
+  .get_type:                            ; 0 = Get device type (ethernet/token ring/...)
+
+        mov     eax, [eax + NET_DEVICE.type]
         jmp     .return
 
 
-  @@:
-        dec     bl                      ; 1 = Get device name
-        jnz     @f
+  .get_dev_name:                        ; 1 = Get device name
 
-        mov     esi, [esi + NET_DRV_LIST]
-        mov     esi, [esi + NET_DEVICE.name]
+        mov     esi, [eax + NET_DEVICE.name]
         mov     edi, ecx
 
-        mov     ecx, 64 ; max length
-        repnz   movsb
+        mov     ecx, 64/4 ; max length
+        rep     movsd
 
         xor     eax, eax
         jmp     .return
 
-  @@:
+  .reset:                               ; 2 = Reset the device
 
-        dec     bl                      ; 2 = Reset the device
-        jnz     @f
-
-        mov     esi, [esi + NET_DRV_LIST]
-        call    [esi + NET_DEVICE.reset]
+        call    [eax + NET_DEVICE.reset]
         jmp     .return
 
-  @@:
+  .stop:                                ; 3 = Stop driver for this device
 
-        dec     bl                      ; 3 = Stop driver for this device
-        jnz     @f
-
-        mov     esi, [esi + NET_DRV_LIST]
-        call    [esi + NET_DEVICE.unload]
+        call    [eax + NET_DEVICE.unload]
         jmp     .return
 
-  @@:
-        dec     bl                      ; 4 = Get driver pointer
-        jnz     @f
 
-        ; ..;
+  .get_ptr:                             ; 4 = Get driver pointer
+
+        jmp     .return
+
+
+  .get_drv_name:                        ; 5 = Get driver name
+
         xor     eax, eax
         jmp     .return
 
 
-  @@:
-        dec     bl                      ; 5 = Get driver name
-        jnz     @f
+  .set_default:                         ; 6 = Set default device
 
-        ; ..;
-        xor     eax, eax
-        jmp     .return
-
-
-  @@:
-        dec     bl                      ; 6 = Set default device
-        jnz     @f
-
-        mov     eax, esi
         call    NET_set_default
         jmp     .return
-
-
-  @@:
 
   .doesnt_exist:
         DEBUGF  1,"sys_network: invalid device/function specified!\n"
         mov     eax, -1
 
   .return:
-        mov     [esp+28+4], eax
+        mov     [esp+32], eax
         ret
 
 

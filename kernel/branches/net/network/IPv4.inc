@@ -200,8 +200,7 @@ macro IPv4_checksum ptr {
 ;
 ;-----------------------------------------------------------------
 align 4
-IPv4_input:      ; TODO: implement handler for IP options
-                 ; TODO2: add code for raw sockets
+IPv4_input:      ; TODO: add code for raw sockets
 
         DEBUGF  1,"IPv4_input, packet from: %u.%u.%u.%u ",\
         [edx + IPv4_header.SourceAddress]:1,[edx + IPv4_header.SourceAddress + 1]:1,[edx + IPv4_header.SourceAddress + 2]:1,[edx + IPv4_header.SourceAddress + 3]:1
@@ -213,14 +212,6 @@ IPv4_input:      ; TODO: implement handler for IP options
 
         cmp     byte [edx + IPv4_header.TimeToLive], 0
         je      .dump
-
-;--------------------------------------
-; First, check if IP packet has options
-
-        movzx   eax, [edx + IPv4_header.VersionAndIHL]
-        and     al , 0x0f                                       ; get IHL(header length)
-        cmp     al , 0x05                                       ; IHL!= 5*4(20 bytes)
-        jnz     .has_options
 
 ;-------------------------------
 ; Now, re-calculate the checksum
@@ -304,13 +295,13 @@ IPv4_input:      ; TODO: implement handler for IP options
         mov     al , [edx + IPv4_header.Protocol]
         add     esi, edx                                        ; make esi ptr to data
 
-        cmp     al , IP_PROTO_TCP
+        cmp     al, IP_PROTO_TCP
         je      TCP_input
 
-        cmp     al , IP_PROTO_UDP
+        cmp     al, IP_PROTO_UDP
         je      UDP_input
 
-        cmp     al , IP_PROTO_ICMP
+        cmp     al, IP_PROTO_ICMP
         je      ICMP_input
 
         DEBUGF  2,"unknown Internet protocol: %u\n", al
@@ -528,13 +519,6 @@ IPv4_input:      ; TODO: implement handler for IP options
         jmp     .dump
 
 
-
-
-;-----------------------------------
-; The IP packet has some options
-
-  .has_options:
-        jmp     .dump
 
 
 
@@ -949,7 +933,7 @@ IPv4_api:
         movzx   eax, bh
         shl     eax, 2
 
-        and     ebx, 0xff
+        and     ebx, 0x000000ff
         cmp     ebx, .number
         ja      .error
         jmp     dword [.table + 4*ebx]
@@ -957,6 +941,7 @@ IPv4_api:
   .table:
         dd      .packets_tx     ; 0
         dd      .packets_rx     ; 1
+        dd      .read_ip        ; 2
         dd      .write_ip       ; 3
         dd      .read_dns       ; 4
         dd      .write_dns      ; 5
