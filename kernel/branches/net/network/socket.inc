@@ -383,11 +383,28 @@ SOCKET_bind:
         cmp     esi, 6
         jb      s_error
 
-        pushw   [edx + 2]
-        pop     [eax + UDP_SOCKET.LocalPort]
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_UDP
+        je      .udp
 
-        pushd   [edx + 4]
-        pop     [eax + IP_SOCKET.LocalIP]
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        je      .tcp
+
+        jmp     s_error
+
+  .tcp:
+  .udp:
+
+        mov     ebx, [edx + 4]                  ; First, fill in the IP
+        test    ebx, ebx                        ; If IP is 0, use default
+        jnz     @f
+        mov     ebx, [NET_DEFAULT]
+        mov     ebx, [IP_LIST + 4*ebx]
+       @@:
+        mov     [eax + IP_SOCKET.LocalIP], ebx
+
+        mov     bx, [edx + 2]                   ; Now fill in the port if it's still available
+        call    SOCKET_check_port
+        jz      s_error                         ; ZF is set by socket_check_port, on error
 
         DEBUGF  1,"local ip: %u.%u.%u.%u\n",\
         [eax + IP_SOCKET.LocalIP + 0]:1,[eax + IP_SOCKET.LocalIP + 1]:1,\
@@ -1021,6 +1038,7 @@ SOCKET_check_port:
         DEBUGF  1,"SOCKET_check_port\n"
 
         mov     ecx, [eax + SOCKET.Protocol]
+        mov     edx, [eax + IP_SOCKET.LocalIP]
         mov     esi, net_sockets
 
   .next_socket:
@@ -1029,6 +1047,9 @@ SOCKET_check_port:
         jz      .port_ok
 
         cmp     [esi + SOCKET.Protocol], ecx
+        jne     .next_socket
+
+        cmp     [esi + IP_SOCKET.LocalIP], edx
         jne     .next_socket
 
         cmp     [esi + UDP_SOCKET.LocalPort], bx
