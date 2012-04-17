@@ -4,6 +4,14 @@
 ;                                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;------------------------------------------------------------------------------
+; version:	2.1
+; last update:  18/04/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Added color selection for the text.
+;               Show "change page list" only if the applications
+;               does not fit in the panel.
+;               Display file names up to 11 char previously displ. only 8 char.
+;------------------------------------------------------------------------------
 ; version:	2.0
 ; last update:  17/04/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -47,7 +55,7 @@ ML_SIZE = 10
 MR_SIZE = 10
 MENU_SIZE = 50
 CLD_SIZE = 20
-TAB_SIZE = 60
+TAB_SIZE = 75	;60
 TRAY_SIZE = 140
 
 CLOCK_SIZE = 40
@@ -240,6 +248,8 @@ start_run_application:
 	cmp	[win_key_flag],1
 	je	@f
 	ret
+;--------------------------------------
+align 4
 @@:
 	mov	[start_menu_flag],1
 	mov	[draw_window_1], 1
@@ -252,6 +262,8 @@ minimize_all_windows:
 	cmp	[win_key_flag],1
 	je	@f
 	ret
+;--------------------------------------
+align 4
 @@:
 	mov	[start_menu_flag],1
 	call	clean_desktop
@@ -287,6 +299,8 @@ alt_tab_pressed:
 	xor	edx, edx
 	mov	ebx, procinfo_window_tabs
 	mov	ecx, 1
+;--------------------------------------
+align 4
 .fill:
 	inc	ecx
 	mcall	9
@@ -586,6 +600,14 @@ align 4
 	cmp	eax,1		; redraw ?
 	jz	red
 
+	push	eax
+	mov	eax,[redraw_window_flag]
+	test	eax,eax
+	jz	@f
+	call	draw_window
+@@:
+	pop	eax
+	
 	cmp	eax,2
 	jnz	@f
 	call	handle_key
@@ -986,8 +1008,12 @@ draw_small_right:
 	mov	bx,[height]
 	shr	bx,1
 	sub	bx,3
-	mov	ecx,[wcolor]
-	add	ecx,0x303030
+;	mov	ecx,[wcolor]
+;	add	ecx,0x303030
+	mov	edx,[wcolor]
+	mov	eax,COLOR_CHANGE_MAGNITUDE_2
+	call	add_color_change_magnitude
+	mov	ecx,edx
 	mcall	4,,,hidetext,1
 
 	mcall	12,2
@@ -1014,8 +1040,12 @@ draw_small_left:
 	mov	bx,[height]
 	shr	bx,1
 	sub	bx,3
-	mov	ecx,[wcolor]
-	add	ecx,0x303030
+;	mov	ecx,[wcolor]
+;	add	ecx,0x303030
+	mov	edx,[wcolor]
+	mov	eax,COLOR_CHANGE_MAGNITUDE_2
+	call	add_color_change_magnitude
+	mov	ecx,edx
 	mcall	4,,,hidetext+1,1
 
 	mcall	12,2

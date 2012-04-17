@@ -67,7 +67,7 @@ text		db '0123456789'
 page_a1		db '<   >'
 page_clean_but	db 25,24,18
 
-bte	dd 0xccddee
+;bte	dd 0x0	;ccddee
 
 wcolor	dd 0x506070
 
@@ -164,9 +164,11 @@ clean_desktop_enable:	dd 1
 clock_enable:		dd 1
 cpu_usage_enable:	dd 1
 chlang_enable:		dd 1
-page_list_enable:	dd 1
 place_attachment	dd 1
 button_style		dd 1
+;------------------------------------------------------------------------------
+page_list_enable:	dd 0
+redraw_window_flag	dd 0
 ;------------------------------------------------------------------------------
 ; INI colors
 MenuButton_color		dd 0x44aa44	; Green
@@ -176,6 +178,7 @@ CpuUsage_color			dd 0x44aa44	; Green
 CpuUsageBckgr_color		dd 0xdd2222	; Red
 ChangeLang_color		dd 0x66cc	; Blue
 PageList_color			dd 0xffffff	; White
+PanelText_color			dd 0xffffff	; White
 ;------------------------------------------------------------------------------
 aVariables		db 'Variables',0
 aPanelHeight		db 'PanelHeight',0
@@ -201,6 +204,7 @@ aButtonsStyle		db 'ButtonsStyle',0
 ;------------------------------------------------------------------------------
 aColors			db 'Colors',0
 aCpuUsageBckgr		db 'CpuUsageBckgr',0
+aPanelText		db 'Text',0
 ;------------------------------------------------------------------------------
 plugins_directory               db 0
 

@@ -173,7 +173,7 @@ align 4
 	call	draw_appl_button
 	pop	edi
 ;------------------------------------------------------------------------------
-	add	ebx,5 shl 16
+	add	ebx,4 shl 16
 	mov	bx,cx	;[height]
 	shr	bx,1
 	sub	bx,4
@@ -188,9 +188,42 @@ align 4
 	inc	edi
 	cmp	edi, [max_applications]
 	jb	.loop
+
+	mov	ecx,[app_list+edi*4]
+	cmp	ecx,-1
+	jz	.done
+
+	xor	eax,eax
+	cmp	[page_list],eax
+	jne	@f
+	
+	inc	eax
+	cmp	[page_list_enable],eax
+	je	@f
+	
+	mov	[page_list_enable],eax
+	mov	[redraw_window_flag],eax
+;--------------------------------------
+align 4
+@@:
+	pop	ebp
+	ret
 ;--------------------------------------
 align 4
 .done:
+	xor	eax,eax
+	cmp	[page_list],eax
+	jne	@f
+
+	cmp	[page_list_enable],eax
+	je	@f
+
+	mov	[page_list_enable],eax
+	inc	eax
+	mov	[redraw_window_flag],eax
+;--------------------------------------
+align 4
+@@:
 	pop	ebp
 	ret
 ;------------------------------------------------------------------------------

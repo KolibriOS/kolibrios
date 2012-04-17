@@ -144,12 +144,14 @@ draw_time:
 	
 	add	ebx,18 shl 16
 	
-	mov	ecx,[bte]
+;	mov	ecx,[bte]
+	mov	ecx,[PanelText_color]
+	or	ecx,0x40000000
 	mov	edx,[esp]	       ; __:_X
 	and	edx,15
 	add	ebx,10*65536
 	add	edx,text
-	mcall	4,,0x40ffffff,,1,[Clock_color]	;time_bgr_color
+	mcall	4,,,,1,[Clock_color]	;time_bgr_color
 
 	pop	edx			; __:X_
 	shr	edx,4
@@ -188,7 +190,8 @@ draw_time:
 	mov	ecx,eax
 	shr	ecx,16
 	and	ecx,1
-	mov	edx,[bte]
+;	mov	edx,[bte]
+	mov	edx,[PanelText_color]
 	sub	edx,[Clock_color]	;time_bgr_color;[wcolor]
 	imul	ecx,edx
 	add	ecx,[Clock_color]	;time_bgr_color;[wcolor]
@@ -209,9 +212,11 @@ draw_list_button:
 	mov	ebx,[pos_x_page_list]
 	mov	bx,10
 	
-	mov	ecx,3 shl 16
-	add	ecx,[height]
-	sub	cx,6
+	call	calculate_button_y_coordinate_and_size
+
+;	mov	ecx,3 shl 16
+;	add	ecx,[height]
+;	sub	cx,6
 
 	xor	edx,edx
 ;	mcall	13
@@ -240,10 +245,19 @@ draw_list_button:
 ; draw page list button  text <>
 	mov	ebx,[pos_x_page_list]
 	add	ebx,2 shl 16
-	mov	eax,[height]
+;	mov	eax,[height]
+;	shr	eax,1
+;	sub	eax,4
+;	mov	bx,ax
+
+	call	calculate_button_y_coordinate_and_size
+	movzx	eax,cx
 	shr	eax,1
 	sub	eax,4
+	shr	ecx,16
+	add	eax,ecx
 	mov	bx,ax
+
 	xor	ecx,ecx
 	mcall	4,,,page_a1,5
 
@@ -253,7 +267,7 @@ draw_list_button:
 ; draw page list number
 	mov	edx,ebx
 	add	edx,9 shl 16
-	mcall	47,0x20000,[page_list],,0xffffff
+	mcall	47,0x20000,[page_list],,[system_colours.work_button_text]
 .exit:	
 	ret
 ;------------------------------------------------------------------------------
@@ -378,7 +392,8 @@ draw_flag:
 	add	eax,ecx
 	mov	bx,ax
 
-	mov	ecx,[bte] ; color
+;	mov	ecx,[bte] ; color
+	mov	ecx,[PanelText_color]
 
 if caps_lock_check
 ; make flag_text 'enfigerufretua' or 'ENFIGERUFRETUA' depending on CapsLock state.

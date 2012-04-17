@@ -142,14 +142,6 @@ Get_ini:
 	mov     eax,1
 @@:
 	mov	[chlang_enable],eax
-;--------------------------------------	
-	invoke	ini_get_int,library_path,aFlags,aPageList,1
-	cmp     eax,2
-	jb      @f
-
-	mov     eax,1
-@@:
-	mov	[page_list_enable],eax
 ;--------------------------------------
 	invoke	ini_get_int,library_path,aFlags,aAttachment,1
 	cmp     eax,2
@@ -187,6 +179,9 @@ Get_ini:
 ;--------------------------------------
 	invoke	ini_get_color,library_path,aColors,aPageList,0xffffff
 	mov	[PageList_color],eax
+;--------------------------------------
+	invoke	ini_get_color,library_path,aColors,aPanelText,0xffffff
+	mov	[PanelText_color],eax
 ;--------------------------------------
 ;	invoke	ini_get_str,library_path,aConvertPlugins,aCP0,plugin_0_name,127,ConvertPlugins_no_key
 	

@@ -70,6 +70,7 @@ align 4
 	call	draw_tray
 	call	draw_application_buttons
 
+	mov	[redraw_window_flag],0
 	mcall	12,2
 	popa
 	ret
@@ -181,8 +182,12 @@ minimize_left_button:
 	mov	bx,[height]
 	shr	bx,1
 	sub	bx,3
-	mov	ecx,[wcolor]
-	add	ecx,0x303030
+;	mov	ecx,[wcolor]
+;	add	ecx,0x303030
+	mov	edx,[wcolor]
+	mov	eax,COLOR_CHANGE_MAGNITUDE_2
+	call	add_color_change_magnitude
+	mov	ecx,edx
 	mcall	4,,,hidetext,1	; HIDE TEXT
 ;--------------------------------------
 align 4
@@ -215,8 +220,12 @@ minimize_right_button:
 	mov	bx,[height]
 	shr	bx,1
 	sub	bx,3
-	mov	ecx,[wcolor]
-	add	ecx,0x303030
+;	mov	ecx,[wcolor]
+;	add	ecx,0x303030
+	mov	edx,[wcolor]
+	mov	eax,COLOR_CHANGE_MAGNITUDE_2
+	call	add_color_change_magnitude
+	mov	ecx,edx
 	mov	esi,1
 	mcall	4,,,hidetext+1
 ;--------------------------------------
@@ -270,7 +279,9 @@ align 4
 	mov	bx,[height]
 	shr	bx,1
 	sub	bx,3
-	mcall	4,,0x10ffffff,m_text,4
+	mov	ecx,[PanelText_color]
+	or	ecx,0x10000000
+	mcall	4,,,m_text,4
 ;--------------------------------------
 align 4
 no_menu:
@@ -308,7 +319,7 @@ align 4
 	
 ;	mov	ecx, dword [system_colours+28]
 ;	and	ecx, 0x00ffffff
-	mov	ecx,0xffffff
+	mov	ecx,[PanelText_color]
 	add	ebx,5 shl 16
 ;	mov	bx,6
 	mov	bx,[height]
