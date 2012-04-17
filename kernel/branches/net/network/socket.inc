@@ -833,9 +833,6 @@ SOCKET_send_tcp:
         call    SOCKET_ring_write
         pop     eax
 
-        test    ecx, ecx
-        jz      s_error
-
         mov     [esp+32], ecx
 
         call    TCP_output
