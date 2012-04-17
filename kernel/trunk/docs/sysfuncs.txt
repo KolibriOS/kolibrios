@@ -337,7 +337,7 @@ Returned value:
       position ecx
     * +8: word: reserved
     * +10 = +0xA: 11 bytes: name of the process
-      (name of corresponding executable file in the format 8+3)
+      (name of the started file - executable file without extension)
     * +21 = +0x15: byte: reserved, this byte is not changed
     * +22 = +0x16: dword: address of the process in memory
     * +26 = +0x1A: dword: size of used memory - 1

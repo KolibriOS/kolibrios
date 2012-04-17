@@ -187,7 +187,7 @@ proc fs_execute
         jnz     @F
         lea     esi, [filename]
 @@:
-        mov     ecx, 8; 8 chars for name
+        mov     ecx, 11 ; 11 chars for name! 8 - is old value!
         mov     edi, [slot_base]
 .copy_process_name_loop:
         lodsb
