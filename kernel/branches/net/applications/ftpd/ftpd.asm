@@ -144,11 +144,13 @@ start:
         invoke  ini.get_int, path, str_pasv, str_end, 5000
         mov     [pasv_end], ax
 
+        mov     [alive], 1
+
 mainloop:
         mcall   23, 100                         ; Wait here for incoming connections on the base socket (socketnum)
-                                                ; One second timeout, we sill use this to check if console is still working
+                                                ; One second timeout, we will use this to check if console is still working
 
-        test    eax, 1 shl 7                    ; network event?
+        test    eax, eax                        ; network event?
         jz      .checkconsole
 
         mcall   51, 1, threadstart, 0           ; Start a new thread for every incoming connection
@@ -161,6 +163,7 @@ mainloop:
         test    eax, 0x0200
         jz      mainloop
         mcall   close, [socketnum]              ; kill the listening socket
+        mov     [alive], 0
         mcall   -1                              ; and exit
 
         diff16  "threadstart", 0, $
@@ -206,6 +209,9 @@ threadloop:
 ; Check if our socket is still connected
         mcall   send, [ebp + thread_data.socketnum], 0, 0       ; Try to send zero bytes, if socket is closed, this will return -1
         cmp     eax, -1
+        je      thread_exit
+
+        cmp     [alive], 0                                      ; Did main thread take a run for it?
         je      thread_exit
 
         mcall   10                                              ; Wait for network event
@@ -404,6 +410,8 @@ diff16 "i_end", 0, $
         pasv_port       dw ?
 
         ini_buf         rb 3*4+3+1
+
+        alive           db ?
 
 mem:
 
