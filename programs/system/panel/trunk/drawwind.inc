@@ -116,6 +116,8 @@ no_su:
 	mov	eax,COLOR_CHANGE_MAGNITUDE_0
 	imul	eax,dword [soften_height]
 	call	subtract_color_change_magnitude
+;--------------------------------------
+align 4
 @@:
 	mov	eax,COLOR_CHANGE_MAGNITUDE_0
 	call	add_color_change_magnitude
@@ -348,14 +350,6 @@ draw_application_buttons:
 	shr	eax,16
 
 	sub	eax,[offset_X]
-; check for tray enabled
-;	cmp	[tray_enable],dword 0
-;	je	@f
-
-;	sub	eax, TRAY_SIZE
-;--------------------------------------
-;align 4
-;@@:
 ; check for left minimize button enabled
 	cmp	[minimize_right],dword 0
 	je	@f

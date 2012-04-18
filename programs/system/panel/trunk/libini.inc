@@ -183,33 +183,48 @@ Get_ini:
 	invoke	ini_get_color,library_path,aColors,aPanelText,0xffffff
 	mov	[PanelText_color],eax
 ;--------------------------------------
-;	invoke	ini_get_str,library_path,aConvertPlugins,aCP0,plugin_0_name,127,ConvertPlugins_no_key
+	invoke	ini_get_color,library_path,aColors,aAltTab,0xff8000
+	mov	[AltTab_color],eax
+;--------------------------------------
+	invoke ini_get_str,library_path,aApplicationsPaths,aEnd,end_name,63,Path_def_val
+;--------------------------------------
+	invoke ini_get_str,library_path,aApplicationsPaths,aMenu,menu_name,63,Path_def_val
+;--------------------------------------
+	invoke ini_get_str,library_path,aApplicationsPaths,aRun,run_name,63,Path_def_val
+;--------------------------------------
+	invoke ini_get_str,library_path,aApplicationsPaths,aPrnScr,printscreen_name,63,Path_def_val
+;--------------------------------------
+	invoke ini_get_str,library_path,aApplicationsPaths,aClock,calendar_name,63,Path_def_val
+;--------------------------------------
+	invoke ini_get_str,library_path,aApplicationsPaths,aCpuUsage,sysmeter_name,63,Path_def_val
+;--------------------------------------
+	invoke ini_get_str,library_path,aApplicationsPaths,aMouseEmul,mousemul_name,63,Path_def_val	
 	
 	ret
 ;-----------------------------------------------------------------------------
 copy_file_path:
-    xor   eax,eax
+	xor	eax,eax
 @@:
-    cld
-    lodsb
-    stosb
-    test  eax,eax
-    jnz   @b
-    mov   esi,edi
-    dec   esi
+	cld
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+	mov	esi,edi
+	dec	esi
 @@:
-    std
-    lodsb
-    cmp   al,'/'
-    jnz   @b
-    mov   edi,esi
-    add   edi,2
-    mov   esi,ebx
+	std
+	lodsb
+	cmp	al,'/'
+	jnz	@b
+	mov	edi,esi
+	add	edi,2
+	mov	esi,ebx
 @@:
-    cld
-    lodsb
-    stosb
-    test  eax,eax
-    jnz   @b
-    ret
+	cld
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+	ret
 ;-----------------------------------------------------------------------------

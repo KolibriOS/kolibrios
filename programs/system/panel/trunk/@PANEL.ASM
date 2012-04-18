@@ -4,6 +4,16 @@
 ;                                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;------------------------------------------------------------------------------
+; version:	2.2
+; last update:  19/04/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Support PrintScreen for SCRSHOOT.
+;               Path to run applications from the INI file.
+;               Algorithm anti-duplication of applications for run with hotkey.
+;               Added color selection for the Alt+Tab.
+;               Alt+Ctrl+ArrowLeft - Page list next
+;               Alt+Ctrl+ArrowRight - Page list previous
+;------------------------------------------------------------------------------
 ; version:	2.1
 ; last update:  18/04/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -147,11 +157,11 @@ end if
 	cmp	al, 62	; Alt+F4 
 	jz	kill_active_application
 
-;	cmp	al, 71
-;	jz	page_list_next
+	cmp	al, 205
+	jz	page_list_next
 
-;	cmp	al, 72
-;	jz	page_list_prev
+	cmp	al, 203
+	jz	page_list_prev
 
 	cmp	al, 69	; Alt+Shift+NumLock
 	jz	start_mousemul_application
@@ -161,6 +171,9 @@ end if
 
 	cmp	al, 32	; Win+D
 	jz	minimize_all_windows
+	
+	cmp	al, 55	; PrintScreen DOWN
+	jz	start_PrintScreen_application
 ;--------------------------------------
 align 4
 prod:
@@ -221,12 +234,30 @@ align 4
 ;------------------------------------------------------------------------------
 align 4
 start_end_application:
+	mov	esi,end_name
+	call	algorithm_anti_duplication
+	test	eax,eax
+	jz	@f
+	ret
+;--------------------------------------
+align 4
+@@:
+	mov	ebx, exec_fileinfo
 	mov	dword [ebx+21],end_name
 	mcall	70
 	ret
 ;------------------------------------------------------------------------------
 align 4
 start_mousemul_application:
+	mov	esi,mousemul_name
+	call	algorithm_anti_duplication
+	test	eax,eax
+	jz	@f
+	ret
+;--------------------------------------
+align 4
+@@:
+	mov	ebx, exec_fileinfo
 	mov	dword [ebx+21],mousemul_name
 	mcall	70
 	ret
@@ -239,7 +270,6 @@ kill_active_application:
 
 align 4
 start_menu_application:
-	mov	[draw_window_1], 1
 	call	menu_handler
 	jmp	begin_1.ret
 ;------------------------------------------------------------------------------
@@ -252,8 +282,33 @@ start_run_application:
 align 4
 @@:
 	mov	[start_menu_flag],1
-	mov	[draw_window_1], 1
+	
+	mov	esi,run_name
+	call	algorithm_anti_duplication
+	test	eax,eax
+	jz	@f
+	ret
+;--------------------------------------
+align 4
+@@:
+	mov	ebx, exec_fileinfo
 	mov	dword [ebx+21], run_name
+	mcall	70
+	jmp	begin_1.ret
+;------------------------------------------------------------------------------
+align 4
+start_PrintScreen_application:
+	mov	esi,printscreen_name
+	call	algorithm_anti_duplication
+	test	eax,eax
+	jz	@f
+	ret
+;--------------------------------------
+align 4
+@@:
+	mov	ebx, exec_fileinfo
+	mov	dword [ebx+21],printscreen_name
+	mov	[ebx+8],dword bootparam_printscreen
 	mcall	70
 	jmp	begin_1.ret
 ;------------------------------------------------------------------------------
@@ -269,25 +324,98 @@ align 4
 	call	clean_desktop
 	ret
 ;------------------------------------------------------------------------------
-;align 4
-;page_list_next:
-;	cmp	[page_list],15
-;	je	@f
-;
-;	inc	[page_list]
-;	mov	[draw_window_1],1
-;@@:
-;	jmp  begin_1.ret
+align 4
+algorithm_anti_duplication:
+	cld
+;--------------------------------------
+align 4
+@@:
+	lodsb
+	test	al,al
+	jnz	@r
+;--------------------------------------
+align 4
+@@:
+	std
+	lodsb
+	cmp	al,'/'
+	jnz	@r
+	add	esi,2
+	mov	edx,esi
+	
+	mov	edi,1
+;--------------------------------------
+align 4
+@@:
+	inc	edi
+	mov	ecx,edi
+	mcall	9,procinfo_window_tabs
+
+	cmp	edi,eax
+	jg	.apply_changes
+
+;	mov	eax,[ebx+10]
+;	and	eax,not 20202020h
+;	cmp	eax,'SCRS'
+;	jz	@f
+	
+;	mov	eax,[ebx+14]
+;	and	eax,not 20202020h
+;	cmp	eax,'HOOT'
+;	jne	@r
+	mov	esi,edx
+	mov	ecx,11
+	add	ebx,9
+	cld
+;--------------------------------------
+align 4
+.loop:
+	lodsb
+	inc	ebx
+	cmp	al,[ebx]
+	jne	@r
+
+	loop	.loop
+
+	mov	eax,1
+	ret
+;--------------------------------------
+align 4
+.apply_changes:
+	xor	eax,eax
+	ret
 ;------------------------------------------------------------------------------
-;align 4
-;page_list_prev:
-;	cmp	[page_list],0
-;	je	@f
-;
-;	dec	[page_list]
-;	mov	[draw_window_1],1
-;@@:
-;	jmp  begin_1.ret
+align 4
+page_list_next:
+	cmp	[page_list],50
+	je	@f
+
+	xor	eax,eax
+	cmp	[page_list_enable],eax
+	je	@f
+
+	inc	[page_list]
+	mov	[redraw_window_flag],1
+;--------------------------------------
+align 4
+@@:
+	jmp	begin_1.ret
+;------------------------------------------------------------------------------
+align 4
+page_list_prev:
+	xor	eax,eax
+	cmp	[page_list],eax
+	je	@f
+
+	cmp	[page_list_enable],eax
+	je	@f
+
+	dec	[page_list]
+	mov	[redraw_window_flag],1
+;--------------------------------------
+align 4
+@@:
+	jmp	begin_1.ret
 ;------------------------------------------------------------------------------
 align 4
 alt_tab_pressed:
@@ -419,7 +547,6 @@ align 4
 	xor	edx, edx
 	div	[max_applications]
 	mov	[page_list], eax
-	mov	[draw_window_1], 1
 	mov	edi, app_list
 	push	edi
 	mov	ecx, 20
@@ -478,6 +605,11 @@ load_libraries l_libs_start,end_l_libs
 	mcall	66,4,0,2	; LShift+RShift
 	mcall	66,,,11h	; Ctrl+Shift
 	mcall	66,,88,110h	; Alt+Ctrl+F12
+;	mcall	66,,75		; Alt+Ctrl+ArrowLeft DOWN
+	mcall	66,,203		; Alt+Ctrl+ArrowLeft UP
+;	mcall	66,,77		; Alt+Ctrl+ArrowRight DOWN
+	mcall	66,,205		; Alt+Ctrl+ArrowRight UP
+	
 	mcall	66,,91,0h 	; RWin DOWN
 	mcall	66,,92 		; LWin DOWN
 	mcall	66,,219 	; RWin UP
@@ -491,13 +623,15 @@ load_libraries l_libs_start,end_l_libs
 	mcall	66,,32,0h 	; Win+D DOWN
 ;	mcall	66,,160,0h 	; Win+D UP
 
+	mcall	66,,55,0h 	; PrintScreen DOWN
+;	mcall	66,,183,0h 	; PrintScreen UP
+
 
 ;	mcall	66,,91,100h	; Alt+LWin
 ;	mcall	66,,92		; Alt+RWin
 	mcall	66,,62,100h	; Alt+F4
 ;	mcall	66,,71		; Alt+Home
 ;	mcall	66,,72		; Alt+Up
-	mcall	66,,15		; Alt+Tab
 	mcall	66,,2		; Alt+1
 	mcall	66,,3		; Alt+2
 	mcall	66,,4		; Alt+3
@@ -505,7 +639,8 @@ load_libraries l_libs_start,end_l_libs
 	mcall	66,,6		; Alt+5
 	mcall	66,,7		; Alt+6
 	mcall	66,,8		; Alt+7
-	mcall	66,,,101h 	; Alt+Shift+Tab
+	mcall	66,,15		; Alt+Tab DOWN
+	mcall	66,,15,101h 	; Alt+Shift+Tab DOWN
 	mcall	66,,69		; Alt+Shift+NumLock
 
 if caps_lock_check
@@ -593,7 +728,10 @@ align 4
 	mcall	18,7
 	cmp	[my_active_slot],eax
 	je	@f
+
 	mov	[current_active_slot],eax
+;--------------------------------------
+align 4
 @@:
 	pop	eax
 	
@@ -604,7 +742,10 @@ align 4
 	mov	eax,[redraw_window_flag]
 	test	eax,eax
 	jz	@f
+
 	call	draw_window
+;--------------------------------------
+align 4
 @@:
 	pop	eax
 	
@@ -612,11 +753,15 @@ align 4
 	jnz	@f
 	call	handle_key
 	jmp	.key
+;--------------------------------------
+align 4
 @@:
 	cmp	eax,3		; button ?
 	jz	button
 
 ;	call	handle_key
+;--------------------------------------
+align 4
 .key:
 	cmp	dword [active_window_changed], 0
 	jnz	red_active
@@ -639,7 +784,10 @@ red:
 	rol	eax,16
 	cmp	[screen_size.width],ax
 	je	.lp1
+
 	rol	eax,16
+;--------------------------------------
+align 4
 @@:
 	mov	[screen_size],eax
 	sub	ecx,[height]
@@ -678,6 +826,8 @@ button:
 
 	cmp	ecx,[current_active_slot]
 	je	.turn_off
+;--------------------------------------
+align 4
 @@:
 	mcall	18,3,
 	jmp	.task_switching
@@ -686,6 +836,8 @@ align 4
 .turn_off:
 	mov	edx,ecx
 	mcall	18,22,0
+;--------------------------------------
+align 4
 .task_switching:
 	mcall	68,1
 	jmp	still	
@@ -747,11 +899,7 @@ no_activate:
 ;--------------------------------------
 align 4
 clean_desktop_1:
-
-
 	call	clean_desktop	
-	
-	
 	jmp	still
 ;--------------------------------------
 align 4	
@@ -760,6 +908,12 @@ noselect:
 	cmp	ah,byte 2	       ; start calendar
 	jnz	noid15  ;noclock
 
+	mov	esi,calendar_name
+	call	algorithm_anti_duplication
+	test	eax,eax
+	jnz	still
+
+	mov	ebx, exec_fileinfo
 	mov	dword [ebx+21], calendar_name
 	mcall	70
 	jmp	still
@@ -791,6 +945,12 @@ noid16:
 	cmp	ah,18
 	jne	noid18
 
+	mov	esi,sysmeter_name
+	call	algorithm_anti_duplication
+	test	eax,eax
+	jnz	still
+
+	mov	ebx, exec_fileinfo
 	mov	dword [ebx+21], sysmeter_name
 	mcall	70
 	jmp	still
@@ -819,7 +979,7 @@ noid18:
 	cmp	ah,21
 	jnz	noid21
 
-	cmp	[page_list], 99
+	cmp	[page_list],50
 	jnc	still
 	inc	[page_list]
 	jmp	red
@@ -923,6 +1083,8 @@ align 4
 	cmp	[clean_desktop_minimize],1
 	je	@f
 	call	restore_desktop
+;--------------------------------------
+align 4
 @@:
 	ret
 ;	jmp	still
@@ -1114,21 +1276,6 @@ align 4
 no_full:
 	call	menu_handler
 	jmp	small_wait
-;------------------------------------------------------------------------------
-;align 4
-;set_variables:
-;	pusha
-;	mov	[button_frames],0x0
-;	cmp	[buttons],0
-;	jne	no_frames
-
-;	mov	[button_frames],0x40000000
-;--------------------------------------
-;align 4
-;no_frames:
-;	mcall	48,1,1	; 3d button look
-;	popa
-;	ret
 ;------------------------------------------------------------------------------
 include 'libini.inc'
 ;------------------------------------------------------------------------------

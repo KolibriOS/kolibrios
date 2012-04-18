@@ -100,7 +100,7 @@ draw_ctx_menu:
 	add	ecx, 60         ; 41
 	mov	esi, [system_colours + 4]     ; sc.grab
 	or	esi, 0x81000000
-	mcall	,,,[system_colours + 20],[system_colours]
+	mcall	,,,[system_colours + 20],,[system_colours]
 
 	mcall	8,<0,133>,<22,17>,0x40000001
 

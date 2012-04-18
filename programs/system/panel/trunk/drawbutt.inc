@@ -128,19 +128,28 @@ subtract_color_change_magnitude:
 ; edx = processed color
 	sub	dl,al
 	jae	@f
+
 	xor	dl,dl
+;--------------------------------------
+align 4
 @@:
 	ror	edx,8
 	ror	eax,8
 	sub	dl,al
 	jae	@f
+
 	xor	dl,dl
+;--------------------------------------
+align 4
 @@:
 	ror	edx,8
 	ror	eax,8
 	sub	dl,al
 	jae	@f
+
 	xor	dl,dl
+;--------------------------------------
+align 4
 @@:
 	rol	edx,16
 	ret
@@ -154,23 +163,33 @@ add_color_change_magnitude:
 ; edx = processed color
 	add	dl,al
 	jae	@f
+
 	mov	dl,0xff
+;--------------------------------------
+align 4
 @@:
 	ror	edx,8
 	ror	eax,8
 	add	dl,al
 	jae	@f
+
 	mov	dl,0xff
+;--------------------------------------
+align 4
 @@:
 	ror	edx,8
 	ror	eax,8
 	add	dl,al
 	jae	@f
+
 	mov	dl,0xff
+;--------------------------------------
+align 4
 @@:
 	rol	edx,16
 	ret
 ;------------------------------------------------------------------------------
+align 4
 calculate_button_y_coordinate_and_size:
 	mov	ecx,[button_top_offset]
 	shl	ecx,16
@@ -178,3 +197,4 @@ calculate_button_y_coordinate_and_size:
 	sub	ecx,[button_top_offset]
 	sub	ecx,[button_bottom_offset]
 	ret
+;------------------------------------------------------------------------------

@@ -144,8 +144,6 @@ align 4
 	shl	ebx,16
 	add	ebx,TAB_SIZE-2	;54
 
-	call	calculate_button_y_coordinate_and_size
-
 	push	edi
 	mov	edx,[system_colours.work_button]
 	xor	edi,edi
@@ -165,10 +163,12 @@ align 4
 	cmp	ecx,[alt_tab_list+esi*8]
 	jnz	@f
 
-	mov	edx,0xFF8000	; current select for ALT+Tab
+	mov	edx,[AltTab_color]	;0xFF8000	; current select for ALT+Tab
 ;--------------------------------------
 align 4
 @@:
+	call	calculate_button_y_coordinate_and_size
+
 	mov	esi,[wcolor]
 	call	draw_appl_button
 	pop	edi

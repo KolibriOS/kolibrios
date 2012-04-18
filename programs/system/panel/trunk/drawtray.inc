@@ -2,8 +2,6 @@
 align 4
 draw_tray:    ; draw cpu usage, time, date etc.
 	pusha
-;	cmp	[tray_enable],dword 1
-;	jne	no_setup
 
 	call	draw_tray_buttons
 	call	draw_time_skin
@@ -13,9 +11,7 @@ draw_tray:    ; draw cpu usage, time, date etc.
    	call	draw_flag	; language
 
 	call	draw_list_button
-;--------------------------------------
-;align 4
-;no_setup:
+
 	popa
 	ret
 ;------------------------------------------------------------------------------
@@ -97,6 +93,7 @@ align 4
 @@:
 	ret
 ;------------------------------------------------------------------------------
+align 4
 draw_time_skin:
 	cmp	[clock_enable],dword 0
 	je	.exit
@@ -113,6 +110,7 @@ align 4
 .exit:
 	ret
 ;------------------------------------------------------------------------------
+align 4
 draw_time:
 	cmp	[clock_enable],dword 0
 	je	.exit
@@ -268,6 +266,8 @@ draw_list_button:
 	mov	edx,ebx
 	add	edx,9 shl 16
 	mcall	47,0x20000,[page_list],,[system_colours.work_button_text]
+;--------------------------------------
+align 4
 .exit:	
 	ret
 ;------------------------------------------------------------------------------
@@ -330,6 +330,8 @@ align 4
 	mcall	13,,,[CpuUsage_color]	;0x44aa44
 
 	popad
+;--------------------------------------
+align 4
 .exit:
 	ret
 ;------------------------------------------------------------------------------
@@ -405,6 +407,8 @@ end if
 	mcall	4,,,,2
 	popa
 	mov	[draw_flag_certainly],0
+;--------------------------------------
+align 4
 .exit:
 	ret
 ;------------------------------------------------------------------------------

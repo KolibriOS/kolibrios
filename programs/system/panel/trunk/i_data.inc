@@ -54,7 +54,6 @@ current_alt_tab_app	dd -1
 
 page_list		dd 0
 draw_start_position	dd 0
-draw_window_1	db 0
 
 ;b_size_y:	dd 0x0
 ysi		dd 0
@@ -96,37 +95,9 @@ exec_fileinfo:
 	db 0
 .name	dd 0
 
-end_name	db '/sys/END',0
-menu_name	db '/sys/@MENU',0
-run_name	db '/sys/RUN',0
-calendar_name	db '/sys/CALENDAR',0
-sysmeter_name	db '/sys/GMON',0
-mousemul_name	db '/sys/MOUSEMUL',0
+bootparam_printscreen	db 'DIRECT',0
 
-;dat_fileinfo:
-;	dd 0
-;	dd 0
-;	dd 0
-;	dd 1024
-;	dd panel_ini_data_area	;I_END
-;	db '/sys/PANEL.DAT',0
-
-;m_bmp_fileinfo:
-;	dd 0
-;	dd 0
-;	dd 0
-;	dd 8192
-;	dd image
-;	db '/sys/MENUET.BMP',0
-
-;iconf_fileinfo:
-;	dd 0
-;	dd 0
-;	dd 0
-;	dd 8192
-;	dd image
-;	db '/sys/'
-;iconf	db 'MBAR_IX.BMP',0
+Path_def_val db 'NONE',0
 
 this_slot	dd 0	      ; Slot of this process
 max_slot	dd 255
@@ -179,6 +150,7 @@ CpuUsageBckgr_color		dd 0xdd2222	; Red
 ChangeLang_color		dd 0x66cc	; Blue
 PageList_color			dd 0xffffff	; White
 PanelText_color			dd 0xffffff	; White
+AltTab_color			dd 0xff8000	; Orange
 ;------------------------------------------------------------------------------
 aVariables		db 'Variables',0
 aPanelHeight		db 'PanelHeight',0
@@ -205,6 +177,14 @@ aButtonsStyle		db 'ButtonsStyle',0
 aColors			db 'Colors',0
 aCpuUsageBckgr		db 'CpuUsageBckgr',0
 aPanelText		db 'Text',0
+aAltTab			db 'AltTab',0
+;------------------------------------------------------------------------------
+aApplicationsPaths	db 'ApplicationsPaths',0
+aEnd			db 'End',0
+aMenu			db 'Menu',0
+aRun			db 'Run',0
+aPrnScr			db 'PrnScr',0
+aMouseEmul		db 'MouseEmul',0
 ;------------------------------------------------------------------------------
 plugins_directory               db 0
 
