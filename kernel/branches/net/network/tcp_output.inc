@@ -534,6 +534,8 @@ TCP_output:
         pop     eax
         add     esp, 8
 
+        mov     [eax + TCP_SOCKET.timer_retransmission], TCP_time_re_min
+
         pusha
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock

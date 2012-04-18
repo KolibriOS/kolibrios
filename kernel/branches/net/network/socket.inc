@@ -1323,6 +1323,8 @@ SOCKET_notify_owner:
 ; socket exists, now try to flag an event to the application
 
         mov     eax, [eax + SOCKET.PID]
+        test    eax, eax
+        jz      .error2
         mov     ecx, 1
         mov     esi, TASK_DATA + TASKDATA.pid
 
@@ -1719,15 +1721,11 @@ SOCKET_process_end:
 
         mov     [ebx + SOCKET.PID], 0
 
-        cmp     [ebx + SOCKET.Protocol], IP_PROTO_UDP
-        je      .udp
-
         cmp     [ebx + SOCKET.Protocol], IP_PROTO_TCP
         je      .tcp
 
-        jmp     .next_socket    ; kill all sockets for given PID
+; The socket is stateless, just kill it right away!
 
-  .udp:
         mov     eax, ebx
         mov     ebx, [ebx + SOCKET.NextPtr]
         call    SOCKET_free
@@ -1735,9 +1733,11 @@ SOCKET_process_end:
 
   .tcp:
 
-        ;;; TODO
-
-        jmp     .next_socket
+        push    [ebx + SOCKET.NextPtr]
+        mov     eax, ebx
+        call    TCP_close
+        pop     ebx
+        jmp     .test_socket
 
   .done:
         pop     ebx

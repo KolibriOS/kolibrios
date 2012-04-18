@@ -592,8 +592,6 @@ IPv4_output:
         test    eax, 0xffff0000         ; error bits
         jnz     .arp_error
 
-  .continue:
-
         push    ebx     ; push the mac
         push    ax
 

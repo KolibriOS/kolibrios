@@ -156,6 +156,7 @@ local   .exit
 ;  IN:  Pointer to buffer in [esp]
 ;       size of buffer in [esp+4]
 ;       packet size (without ethernet header) in ecx
+;       packet ptr in edx
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
@@ -173,7 +174,8 @@ ARP_input:
         jne     .maybe_request
 
         DEBUGF  1,"ARP_input - it's a reply packet from %u.%u.%u.%u\n",\
-        [edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP+1]:1, [edx + ARP_header.SenderIP+2]:1, [edx + ARP_header.SenderIP+3]:1
+        [edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP+1]:1,\
+        [edx + ARP_header.SenderIP+2]:1, [edx + ARP_header.SenderIP+3]:1
 
         mov     ecx, [NumARP]
         test    ecx, ecx
@@ -204,8 +206,8 @@ ARP_input:
 
         mov     eax, dword [edx + ARP_header.SenderMAC]
         mov     dword [esi+ARP_entry.MAC], eax
-        mov     ax , word [edx + ARP_header.SenderMAC + 4]
-        mov     word [esi+ARP_entry.MAC+4], ax
+        mov     cx, word [edx + ARP_header.SenderMAC + 4]
+        mov     word [esi+ARP_entry.MAC+4], cx
 
         jmp     .exit
 
@@ -225,7 +227,7 @@ ARP_input:
 
         mov     eax, [IP_LIST+4*edi]
         cmp     eax, [edx + ARP_header.TargetIP]                ; Is it looking for my IP address?
-        jne     .exit                                           ; TODO: instead of quitting, update local entrys with matching IP's ?
+        jne     .exit
 
         push    eax
         push    edi
@@ -259,7 +261,7 @@ ARP_input:
         lea     esi, [edx + ARP_header.SenderMAC]
         movsd
         movsw
-;        mov     ax , ETHER_ARP
+;        mov     ax , ETHER_ARP                                 ; It's already there, I'm sure of it!
 ;        stosw
 
         DEBUGF  1,"ARP_input - Sending reply \n"
@@ -267,7 +269,7 @@ ARP_input:
         call    [ebx + NET_DEVICE.transmit]
         ret
 
-     .exit:
+  .exit:
         call    kernel_free
         add     esp, 4                                          ; pop (balance stack)
 
@@ -492,13 +494,14 @@ ARP_IP_to_MAC:
 ;--------------------
 ; Send an ARP request
 
-        push    eax
+        push    eax                     ; save IP for ARP_output_request
 
-        pushw   ARP_REQUEST_TTL
-        pushw   ARP_AWAITING_RESPONSE
-        pushd   0
+; Now create the ARP entry
+        pushw   ARP_REQUEST_TTL         ; TTL
+        pushw   ARP_AWAITING_RESPONSE   ; status
+        pushd   0                       ; mac
         pushw   0
-        pushd   eax
+        pushd   eax                     ; ip
         mov     esi, esp
         call    ARP_add_entry
         add     esp, sizeof.ARP_entry
@@ -506,36 +509,19 @@ ARP_IP_to_MAC:
         cmp     eax, -1
         je      .full
 
-        mov     ecx, eax
+; And send a request
         pop     eax
-        push    ecx
-        call    ARP_output_request
-
+        call    ARP_output_request      ; IP in eax
 ;; TODO: check if driver could transmit packet
 
-        pop     esi
-        imul    esi, sizeof.ARP_entry
-        add     esi, ARP_table
-
-        mov     ecx, 25
-  .wait_loop:
-        cmp     [esi + ARP_entry.Status], 1
-        je      .got_it
-        push    esi
-        mov     esi, 10
-        call    delay_ms
-        pop     esi
-        loop    .wait_loop
-
-        mov     eax, -2         ; request send
+        mov     eax, -2                 ; request send
         ret
 
   .found_it:
         DEBUGF  1,"found IP in ARPTable\n"
-        cmp     [esi + ARP_entry.Status], 1
+        cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING
         jne     .invalid
 
-  .got_it:
         movzx   eax, word [esi + ARP_entry.MAC]
         mov     ebx, dword[esi + ARP_entry.MAC+2]
         ret
