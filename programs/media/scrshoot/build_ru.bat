@@ -1,6 +1,6 @@
 @erase lang.inc
 @echo lang fix ru >lang.inc
-@fasm scrshoot.asm scrshoot
+@fasm -m 16384 scrshoot.asm scrshoot
 @kpack scrshoot
 @erase lang.inc
 @pause

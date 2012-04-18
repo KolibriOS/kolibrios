@@ -158,6 +158,51 @@ red:
 	edit_boxes_set_sys_color editboxes,editboxes_end,sc	 ; /
 
 	get_screen_prop scr ; получаем информацию об экране
+;------------------------------------------------------------------------------
+; Boot with "DIRECT" parameter - get screen and save
+	mov	eax,cmdstr
+	cmp	[eax],byte 0
+	je	no_boot
+
+	cmp	[eax],dword 'DIRE'
+	jne	no_boot
+
+	cmp	[eax+4],word 'CT'
+	jne	no_boot
+
+	and	[ch2.flags],dword 0
+	or	[ch5.flags],dword 1
+	and	[ch3.flags],dword 0
+	mov	[OpenDialog_data.draw_window],dword draw_window_direct
+
+	call	shoot
+	jmp	close
+;------------------------------------------------------------------------------	
+draw_window_direct:
+	mcall	12,1
+	mcall	14
+; eax = [xsize]*65536 + [ysize]
+	mov	ebx,eax
+	shr	ebx,17
+	sub	ebx,100
+	shl	ebx,16
+	mov	bx,200
+	mov	ecx,eax
+	and	ecx,0xffff
+	shr	ecx,1
+	sub	ecx,50
+	shl	ecx,16
+	mov	cx,100
+	xor	eax,eax
+	xor	esi,esi
+	mcall	,,,0x34ffffff,,grab_text
+
+	mcall	4,<10,30>,0x90000000,saving
+	
+	mcall	12,2
+	ret
+;------------------------------------------------------------------------------	
+no_boot:
 	call	draw_window ; перерисовываем окно
 still:
 	wait_event red,key,button,mouse,ipc,still ; ждем событий
@@ -412,6 +457,7 @@ shoot:
 	bt	dword [ch5.flags],1  ; включено ли автосохранение ?
 	jnc	@f
 	
+	call	[OpenDialog_data.draw_window]
 ; invoke OpenDialog
 	push    dword OpenDialog_data
 	call    [OpenDialog_Start]
@@ -422,6 +468,8 @@ shoot:
 ; prepare for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_prepare]
+	
+	call	[OpenDialog_data.draw_window]
 
 	call	save_file
 @@:
