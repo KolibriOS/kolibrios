@@ -11,8 +11,13 @@ draw_window:
 	mcall	48,3,system_colours,10*4
 
 	mov	eax, [system_colours+4*6]
-	sub	eax, 0x101010
-	mov	[wcolor], eax
+;	sub	eax, 0x101010
+;	mov	[wcolor], eax
+
+	mov	edx,[system_colours+4*6]
+	mov	eax,COLOR_CHANGE_MAGNITUDE
+	call	subtract_color_change_magnitude
+	mov	[wcolor], edx
 
 	mcall	14	; get screen max x & max y
 
