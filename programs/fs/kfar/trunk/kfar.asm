@@ -7477,7 +7477,14 @@ editor_ctrlkeys:
         dd      editor_OnKey.del
         dw      0x58, 0
         dd      F12
+        dw      0xF, 0x100	; Alt+Tab
+        dd      dummy_key
+        dw      0xF, 0x101	; Shift+Alt+Tab
+        dd      dummy_key
         db      0
+
+dummy_key:
+	ret
 
 dirinfo:
                 dd      1
