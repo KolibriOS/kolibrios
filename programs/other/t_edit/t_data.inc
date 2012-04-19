@@ -2,22 +2,22 @@ fn_col_option dd def_col_file
 fn_syntax_dir db 'info/',0
 def_col_file db 'default.syn',0
 
-system_dir0 db '/sys/lib/'
-lib0_name db 'box_lib.obj',0
+system_dir_0 db '/sys/lib/'
+lib_name_0 db 'box_lib.obj',0
 
-system_dir1 db '/sys/lib/'
-lib1_name db 'msgbox.obj',0
+system_dir_1 db '/sys/lib/'
+lib_name_1 db 'msgbox.obj',0
 
-system_dir2 db '/sys/lib/'
-lib2_name db 'proc_lib.obj',0
+system_dir_2 db '/sys/lib/'
+lib_name_2 db 'proc_lib.obj',0
 
-fn_icon_tl_sys db 'tl_sys_16.bmp',0
-fn_icon_tl_nod db 'tl_nod_16.bmp',0
+system_dir_3 db '/sys/lib/'
+lib_name_3 db 'libimg.obj',0
 
 ;---------------------------------------------------------------------
 align 4
-boxlib_import:
-	dd alib_init2 ;ЇєэъЎш  чряєёърхЄё  ьръЁюёюь 1 Ёрч яЁш яюфъы■ўхэшш сшсшышюЄхъш, яюЄюьє т яЁюуЁрььх ьхЄър эр эхх эх эєцэр
+import_box_lib:
+	dd alib_init0 ;функция запускается макросом 1 раз при подключении бибилиотеки, потому в программе метка на нее не нужна
 
 	edit_box_draw  dd aEdit_box_draw
 	edit_box_key   dd aEdit_box_key
@@ -92,7 +92,7 @@ boxlib_import:
 	version_text_edit dd sz_ted_version
 
 dd 0,0
-	alib_init2 db 'lib_init',0
+	alib_init0 db 'lib_init',0
 
 	aEdit_box_draw	db 'edit_box',0
 	aEdit_box_key	db 'edit_box_key',0
@@ -167,7 +167,7 @@ dd 0,0
 	sz_ted_version db 'version_text_edit',0
 
 align 4
-proclib_import:
+import_proclib:
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
 dd 0,0
@@ -175,7 +175,7 @@ dd 0,0
 	aOpenDialog_Start db 'OpenDialog_start',0
 
 align 4
-msgbox_lib_import:
+import_msgbox_lib:
 	mb_create dd amb_create
 	mb_reinit dd amb_reinit
 	mb_setfunctions dd amb_setfunctions
@@ -183,6 +183,53 @@ dd 0,0
 	amb_create db 'mb_create',0
 	amb_reinit db 'mb_reinit',0
 	amb_setfunctions db 'mb_setfunctions',0
+
+align 4
+import_libimg:
+	dd alib_init1
+	;img_is_img  dd aimg_is_img
+	;img_info    dd aimg_info
+	;img_from_file dd aimg_from_file
+	;img_to_file dd aimg_to_file
+	;img_from_rgb dd aimg_from_rgb
+	;img_to_rgb  dd aimg_to_rgb
+	img_to_rgb2 dd aimg_to_rgb2
+	img_decode  dd aimg_decode
+	;img_encode  dd aimg_encode
+	;img_create  dd aimg_create
+	img_destroy dd aimg_destroy
+	;img_destroy_layer dd aimg_destroy_layer
+	;img_count   dd aimg_count
+	;img_lock_bits dd aimg_lock_bits
+	;img_unlock_bits dd aimg_unlock_bits
+	;img_flip    dd aimg_flip
+	;img_flip_layer dd aimg_flip_layer
+	;img_rotate  dd aimg_rotate
+	;img_rotate_layer dd aimg_rotate_layer
+	;img_draw    dd aimg_draw
+dd 0,0
+	alib_init1   db 'lib_init',0
+	;aimg_is_img  db 'img_is_img',0 ;определяет по данным, может ли библиотека сделать из них изображение
+	;aimg_info    db 'img_info',0
+	;aimg_from_file db 'img_from_file',0
+	;aimg_to_file db 'img_to_file',0
+	;aimg_from_rgb db 'img_from_rgb',0
+	;aimg_to_rgb  db 'img_to_rgb',0 ;преобразование изображения в данные RGB
+	aimg_to_rgb2 db 'img_to_rgb2',0
+	aimg_decode  db 'img_decode',0 ;автоматически определяет формат графических данных
+	;aimg_encode  db 'img_encode',0
+	;aimg_create  db 'img_create',0
+	aimg_destroy db 'img_destroy',0
+	;aimg_destroy_layer db 'img_destroy_layer',0
+	;aimg_count   db 'img_count',0
+	;aimg_lock_bits db 'img_lock_bits',0
+	;aimg_unlock_bits db 'img_unlock_bits',0
+	;aimg_flip    db 'img_flip',0
+	;aimg_flip_layer db 'img_flip_layer',0
+	;aimg_rotate  db 'img_rotate',0
+	;aimg_rotate_layer db 'img_rotate_layer',0
+	;aimg_draw    db 'img_draw',0
+
 ;---------------------------------------------------------------------
 align 4
 wScr:
@@ -197,8 +244,8 @@ wScr:
 .max_area dd 100 ;+16
 .cur_area dd  30 ;+20
 .position dd   0 ;+24
-.bckg_col dd 0xeeeeee ;+28
-.frnt_col dd 0xbbddff ;+32
+.bckg_col dd   0 ;+28
+.frnt_col dd   0 ;+32
 .line_col dd   0 ;+36
 .redraw   dd   0 ;+40
 .delta	  dw   0 ;+44
@@ -229,10 +276,10 @@ hScr:
 .btn_high   dd 15 ;+8
 .type	    dd 1  ;+12
 .max_area   dd 100 ;+16
-.cur_area   dd 30  ;+20
+.cur_area   dd 30 ;+20
 .position   dd 0  ;+24
-.bckg_col   dd 0xeeeeee ;+28
-.frnt_col   dd 0xbbddff ;+32
+.bckg_col   dd 0  ;+28
+.frnt_col   dd 0  ;+32
 .line_col   dd 0  ;+36
 .redraw     dd 0  ;+40
 .delta	    dw 0  ;+44
@@ -262,11 +309,11 @@ ws_dir_lbox: ;дочерний скроллинг для элемента ListBox
 .start_y    dw 70 ;+6
 .btn_high   dd 15 ;+8
 .type	    dd 1  ;+12
-.max_area   dd 100  ;+16
-.cur_area   dd 30  ;+20
+.max_area   dd 100 ;+16
+.cur_area   dd 30 ;+20
 .position   dd 0  ;+24
-.bckg_col   dd 0xeeeeee ;+28
-.frnt_col   dd 0xbbddff ;+32
+.bckg_col   dd 0  ;+28
+.frnt_col   dd 0  ;+32
 .line_col   dd 0  ;+36
 .redraw     dd 0  ;+40
 .delta	    dw 0  ;+44

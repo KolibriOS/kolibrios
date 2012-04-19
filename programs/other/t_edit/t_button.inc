@@ -18,10 +18,10 @@ struct symbol
 ends
 
 
-hed db 'TextEditor 26.08.11',0 ;подпись окна
+hed db 'TextEditor 19.04.12',0 ;подпись окна
 sc system_colors
 
-fn_icon db 'te_icon.bmp',0
+;fn_icon db 'te_icon.bmp',0
 bmp_icon dd 0
 run_file_70 FileInfoBlock 	  
 
@@ -113,6 +113,8 @@ ted_but_open_file:
 		stdcall [mb_create],msgbox_9,thread ;message: error run 'open file dialog'
 		jmp .ret_f
 	@@:
+  cmp [OpenDialog_data.status],1
+	jne .ret_f
 	mov esi,[OpenDialog_data.openfile_path]
 	call strlen
 	mov [edit1.size],eax

@@ -17,6 +17,8 @@ color_s2 equ 0xff00 ;точка без пересечения
 color_s3 equ 0xff0000 ;временное значение для сохранения
 
 color_border dd ini_def_c_border
+opt_sign_moves dd 4
+opt_fast_mode dd 0 ;быстрый режим
 
 debug equ 0
 
@@ -52,7 +54,7 @@ include 'le_pole.inc'
 include 'le_signal.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Логические элементы 05.04.12',0 ;подпись окна
+caption db 'Логические элементы 19.04.12',0 ;подпись окна
 
 panel_0_coord_top equ 5 ;верхняя координата 0-го ряда панели инструментов
 panel_1_coord_top equ 35
@@ -89,8 +91,8 @@ ends
 
 macro elOpt nam,col,box_x,box_y,table, tbl_i_legs, ol0, ol1, ol2
 {
-	@@: db nam
-	rb @b+16-$
+	@@: db nam,0
+	rb @b+el_offs_col-$
 	dd col
 	db box_x
 	db box_y
@@ -112,6 +114,8 @@ elOpt 'and[5]',0xffff00,5,11,tbl_and.5, tbl_il_5, 5
 elOpt 'not',   0xffff,	3,3,tbl_not, tbl_il_1, 1
 elOpt 'xor',   0x8000ff,5,5,tbl_xor, tbl_il_2, 2
 elOpt 'sm[1]', 0x8080ff,7,7,tbl_sm,  tbl_il_3, 1,4
+elOpt 'ms[2]', 0x8080ff,7,14,tbl_ms_2,  tbl_il_m2,6
+elOpt 'ms[2]e',0x8080ff,7,17,tbl_ms_2_e,tbl_il_m2e,8
 ;elOpt 'cd[8]', 0x8000, 7,17,tbl_cd_8,tbl_il_8, 6,2,2 ;шифратор на 8 входов
 .end:
 elOpt '???', 0x808080,3,3,tbl_and.3, tbl_il_1, 1 ;не опознанный элемент
@@ -128,6 +132,20 @@ tbl_and:
 tbl_xor db 0,1,1,0
 tbl_sm db 0,2,2,1, 2,1,1,3
 tbl_not db 1,0 ;not
+
+;мультиплексор для 2-х разрядного сигнала
+align 4
+tbl_ms_2_e: ;со входом 'e'
+dq 0,0,0,0,0,0,0,0
+tbl_ms_2:
+db 0,1,0,1,0,1,0,1
+db 0,1,0,1,0,1,0,1
+db 0,0,1,1,0,0,1,1
+db 0,0,1,1,0,0,1,1
+db 0,0,0,0,1,1,1,1
+db 0,0,0,0,1,1,1,1
+dq 0
+db 1,1,1,1,1,1,1,1
 ;tbl_cd_8 db ;256=2^8
 
 ;таблицы для входных ног
@@ -136,6 +154,8 @@ tbl_il_2 db 1,2,0 ;корпус на 2 ноги
 tbl_il_3 db 1,2,2,0
 tbl_il_4 db 1,2,2,2,0
 tbl_il_5 db 1,2,2,2,2,0
+tbl_il_m2  db 1,2,2,2,3,2,0
+tbl_il_m2e db 1,2,2,2,3,2,3,0
 ;tbl_il_8 db 1,2,2,2,2,2,2,2,0
 
 time dd 0
@@ -227,6 +247,9 @@ key_color_s0 db 's0',0
 key_color_s1 db 's1',0
 key_color_s2 db 's2',0
 key_color_captions db 'captions',0
+ini_sec_options db 'Options',0
+key_opt_sign_moves db 'signal_moves',0
+key_opt_fast_mode db 'fast_mode',0
 
 align 4
 start:
@@ -244,17 +267,17 @@ start:
 	copy_path ini_name,sys_path,file_name,0x0
 
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_bkgnd,ini_def_c_bkgnd
-	mov	dword[buf_0.color],eax
+	mov dword[buf_0.color],eax
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_border,ini_def_c_border
-	mov	dword[color_border],eax
+	mov dword[color_border],eax
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_s0,color_s0
-	mov	dword[shem_colors],eax
+	mov dword[shem_colors],eax
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_s1,color_s1
-	mov	dword[shem_colors+4],eax
+	mov dword[shem_colors+4],eax
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_s2,color_s2
-	mov	dword[shem_colors+8],eax
+	mov dword[shem_colors+8],eax
 	stdcall dword[ini_get_color],file_name,ini_sec_color,key_color_captions,[color_captions]
-	mov	dword[color_captions],eax
+	mov dword[color_captions],eax
 
 	mov ebx,el_opt_beg+el_offs_nam
 	mov ecx,(el_opt_beg.end-el_opt_beg)/size_el_opt ;колличество типов элементов
@@ -263,9 +286,14 @@ start:
 		push ecx
 		stdcall dword[ini_get_color],file_name,ini_sec_color,ebx,[ebx+el_offs_col-el_offs_nam]
 		pop ecx
-		mov	dword[ebx+el_offs_col-el_offs_nam],eax
+		mov dword[ebx+el_offs_col-el_offs_nam],eax
 		add ebx,size_el_opt
 		loop @b
+
+	stdcall dword[ini_get_int],file_name,ini_sec_options,key_opt_sign_moves,[opt_sign_moves]
+	mov dword[opt_sign_moves],eax
+	stdcall dword[ini_get_int],file_name,ini_sec_options,key_opt_fast_mode,[opt_fast_mode]
+	mov dword[opt_fast_mode],eax
 
 	;*** подготовка диалога
 	stdcall [OpenDialog_Init],OpenDialog_data
@@ -367,12 +395,27 @@ timer_funct:
 	cmp byte[tim_ch],0
 	je @f
 		inc dword[time]
+	cmp dword[opt_fast_mode],0
+	jne .fast_m
 		call sign_move
+		stdcall [buf2d_draw], buf_0
 		mov eax,[time]
-		and eax,11b ;кратность 4-м
+		xor edx,edx
+		div dword[opt_sign_moves]
+		cmp edx,0 ;проверяем кратность opt_sign_moves
 		jnz @f
 			call sign_from_elems
 			call sign_from_captions
+		jmp @f
+	.fast_m:
+		mov ecx,[opt_sign_moves]
+		cld
+		.cycle:
+		call sign_move
+		loop .cycle
+		call sign_from_elems
+		call sign_from_captions
+		stdcall [buf2d_draw], buf_0
 	@@:
 
 	popad
@@ -1088,8 +1131,8 @@ but_open_file:
 	copy_path open_dialog_name,communication_area_default_path,file_name,0
 	mov [OpenDialog_data.type],0
 	stdcall [OpenDialog_Start],OpenDialog_data
-	cmp [OpenDialog_data.status],2
-	je .end_open_file
+	cmp [OpenDialog_data.status],1 ;0 - Cancel 1 - Open 2 - Error open dialog
+	jne .end_open_file
 	;код при удачном открытии диалога
 
 	mov eax,70 ;70-я функция работа с файлами
@@ -1162,7 +1205,7 @@ but_open_file:
 				mov byte[txt_buf+sp_offs_el_angle],al ;направление
 				call str_next_val
 				;по адресу edi название элемента
-				stdcall el_get_name, edi
+				stdcall el_get_name, edi,13 ;13 - ascii code
 				mov byte[txt_buf+sp_offs_el_type],al ;тип элемента
 
 				stdcall make_list_capts,txt_buf,edi
@@ -1877,7 +1920,7 @@ proc shem_element_creat uses eax ebx, coord_x:dword, coord_y:dword
 	jnz @f
 		mov ebx,el_opt_beg+el_offs_nam ;если не взялось имя элемента, то по умолчанию берем 1-й из списка
 	@@:
-	stdcall el_get_name, ebx
+	stdcall el_get_name, ebx,0
 	mov byte[txt_buf+sp_offs_el_type],al ;тип элемента
 
 	stdcall make_list_capts,txt_buf,ebx
@@ -1888,15 +1931,32 @@ proc shem_element_creat uses eax ebx, coord_x:dword, coord_y:dword
 	ret
 endp
 
+;description:
+; анализирует строку с именем лог. элемента и возвращает номер лог. элемента
+;input:
+; str - указатель на строку содержащую имя лог. элемента
+; asciiz - символ который должен быть заменен на ascii 0
 ;output:
 ; eax - тип элемента
 align 4
-proc el_get_name uses ecx edi esi, str:dword
+proc el_get_name uses ebx ecx edi esi, str:dword, asciiz:dword
+	mov edi,[str]
+	cmp dword[asciiz],0
+	je @f
+		mov eax,dword[asciiz]
+		mov ecx,el_offs_col ;размер текста в str не больше el_offs_col
+		cld
+		repne scasb
+		mov ebx,edi
+		dec ebx
+		mov byte[ebx],0 ;0 - символ конца строки для правильной работы str_cmp
+	@@:
+
 	mov edi,[str]
 	mov esi,el_opt_beg+el_offs_nam
 	xor ecx,ecx
 	@@:
-		stdcall str_instr, edi,esi
+		stdcall str_cmp, edi,esi
 		cmp eax,0
 		je @f
 		add esi,size_el_opt
@@ -1906,6 +1966,12 @@ proc el_get_name uses ecx edi esi, str:dword
 		jmp @b
 	@@:
 	mov eax,ecx
+
+	cmp dword[asciiz],0
+	je @f
+		mov ecx,dword[asciiz]
+		mov byte[ebx],cl
+	@@:
 	ret
 endp
 
@@ -2121,6 +2187,31 @@ proc str_instr uses edi esi, str0:dword, str1:dword
 	;сюда попадаем если строки не совпали
 	sub al,[edi-1]
 	.e1: ;сюда попадаем если строка str1 (esi) закончилась
+	ret
+endp
+
+;description:
+; проверяет совпадение строк str0 и str1
+;output:
+; eax = 0 если str0 = str1
+; eax = 1 если str0 != str1
+align 4
+proc str_cmp uses ecx edi esi, str0:dword, str1:dword
+	xor eax,eax
+	mov edi,[str0]
+	mov esi,[str1]
+	mov ecx,0x8fffffff ;ecx - очень большое число
+	cld
+	repne scasb
+	;dec edi
+	sub edi,[str0]
+	mov ecx,edi ;ecx = strlen(str0)+1
+
+	mov edi,[str0]
+	repe cmpsb
+	je @f
+		inc eax
+	@@:
 	ret
 endp
 

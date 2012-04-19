@@ -22,6 +22,7 @@ maxSyntaxFileSize equ 410000
 include '../../proc32.inc'
 include '../../macros.inc'
 include 'mem.inc'
+include 'dll.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'lang.inc'
@@ -31,7 +32,55 @@ include 'strlen.inc'
 include 't_draw.inc' ;draw main window functions
 include 't_button.inc' ;text work functions
 
-@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,0
+@use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+
+
+;Макрос для загрузки изображений с использованием библиотеки libimg.obj
+;для использования макроса нужны переменные:
+; - run_file_70 FileInfoBlock
+; - image_data dd 0
+macro load_image_file path,buf,size
+{
+	;path - может быть переменной или строковым параметром
+	if path eqtype '' ;проверяем задан ли строкой параметр path
+		jmp @f
+			local .path_str
+			.path_str db path ;формируем локальную переменную
+			db 0
+		@@:
+		;32 - стандартный адрес по которому должен быть буфер с системным путем
+		copy_path .path_str,[32],file_name,0x0
+	else
+		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+	end if
+
+	stdcall mem.Alloc, dword size ;выделяем память для изображения
+	mov [buf],eax
+
+	mov eax,70 ;70-я функция работа с файлами
+	mov [run_file_70.Function], 0
+	mov [run_file_70.Position], 0
+	mov [run_file_70.Flags], 0
+	mov [run_file_70.Count], dword size
+	m2m [run_file_70.Buffer], [buf]
+	mov byte[run_file_70+20], 0
+	mov [run_file_70.FileName], file_name
+	mov ebx,run_file_70
+	int 0x40 ;загружаем файл изображения
+	cmp ebx,0xffffffff
+	je @f
+		;определяем вид изображения и переводим его во временный буфер image_data
+		stdcall dword[img_decode], dword[buf],ebx,0
+		mov dword[image_data],eax
+		;преобразуем изображение к формату rgb
+		stdcall dword[img_to_rgb2], dword[image_data],dword[buf]
+		;удаляем временный буфер image_data
+		stdcall dword[img_destroy], dword[image_data]
+	@@:
+}
+
+image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
+icon_tl_sys dd 0 ;указатель на память для хранения системных иконок
 
 align 4
 start:
@@ -49,6 +98,7 @@ start:
   call strlen
   mov ecx,eax
   mov edi,openfile_path
+  cld
   rep movsb ;копируем имя файла в буфер edit1
 
 load_libraries l_libs_start,load_lib_end
@@ -78,76 +128,18 @@ load_libraries l_libs_start,load_lib_end
 ; OpenDialog initialisation
 	stdcall [OpenDialog_Init],OpenDialog_data
 
-; init bmp file
-  mov ecx,1200*18
-  stdcall mem.Alloc,ecx
-  mov [bmp_icon],eax
-
-  copy_path fn_icon,sys_path,file_name,0x0
-
-  mov eax,70 ;load icon file
-  mov [run_file_70.Function], 0
-  mov [run_file_70.Position], 54
-  mov [run_file_70.Flags], 0
-  mov [run_file_70.Count], 1200*18
-  m2m [run_file_70.Buffer], [bmp_icon]
-  mov byte[run_file_70+20], 0
-  mov [run_file_70.FileName], file_name
-  mov ebx,run_file_70
-  int 0x40
-
-  cmp ebx,-1
-  mov [err_ini0],1
-  je @f ;if open file
-    mov [err_ini0],0
-  @@:
-
+; init toolbar file
+	load_image_file 'te_icon.png', bmp_icon,1200*18
 ;---------------------------------------------------------------------
-; читаем bmp файл с курсорами и линиями
-  copy_path fn_icon_tl_sys,sys_path,file_name,0x0
-
-  mov ecx,3*256*13
-  stdcall mem.Alloc,ecx
-  mov dword[tree1.data_img_sys],eax
-
-  ;mov [run_file_70.Function], 0
-  ;mov [run_file_70.Position], 54
-  ;mov [run_file_70.Flags], 0
-  mov [run_file_70.Count], 3*256*13
-  mov [run_file_70.Buffer], eax
-  ;mov byte[run_file_70+20], 0
-  ;mov [run_file_70.FileName], file_name
-
-  mov eax,70 ;load icon file
-  mov ebx,run_file_70
-  int 0x40
-  cmp ebx,0
-  jg @f
-    mov dword[tree1.data_img_sys],0
-  @@:
+; читаем файл с курсорами и линиями
+	load_image_file 'tl_sys_16.png', icon_tl_sys,54+3*256*13
+	mov eax,dword[icon_tl_sys]
+	mov dword[tree1.data_img_sys],eax
 ;---------------------------------------------------------------------
-; читаем bmp файл с иконками узлов
-  copy_path fn_icon_tl_nod,sys_path,file_name,0x0
-
-  mov ecx,3*256*2
-  stdcall mem.Alloc,ecx
-  mov dword[tree1.data_img],eax
-
-;  mov [run_file_70.Function], 0
-;  mov [run_file_70.Position], 54
-;  mov [run_file_70.Flags], 0
-  mov [run_file_70.Count], 3*256*2
-  mov [run_file_70.Buffer], eax
-;  mov byte[run_file_70+20], 0
-;  mov [run_file_70.FileName], file_name
-
-  mov eax,70 ;load icon file
-  mov ebx,run_file_70
-  int 0x40
-  cmp ebx,0
-  jg @f
-    mov dword[tree1.data_img],0
-  @@:
+; читаем файл с иконками узлов
+	load_image_file 'tl_nod_16.png', icon_tl_sys,54+3*256*2
+	mov eax,dword[icon_tl_sys]
+	mov dword[tree1.data_img],eax
 ;------------------------------------------------------------------------------
   copy_path fn_syntax_dir,sys_path,file_name,0x0 ;берем путь к папке с файлами синтаксиса
   mov eax,70
@@ -243,28 +235,7 @@ draw_window:
 
   call draw_but_toolbar
 
-  cmp [err_ini0],1
-  jne @f
-    mov eax,4
-    mov ebx,ted_wnd_l
-    add ebx,ted_rec_l
-    shl ebx,16
-    add ebx,ted_wnd_t
-    add ebx,ted_rec_t
-    mov ecx,0x80ff0000
-    mov edx,txtErrIni0
-    int 0x40
-
-    add ebx,10 ;move <--y-->
-    mov ecx,0x80ff0080
-    mov edx,file_name
-    int 0x40
-  @@:
-
-  cmp [err_ini0],1
-  je @f
-    stdcall [ted_draw], tedit0
-  @@:
+  stdcall [ted_draw], tedit0
 
   mcall 12,2
   ret
@@ -502,40 +473,45 @@ button:
   mcall -1 ;выход из программы
 
 
-
-txtErrIni0 db 'Не открылся файл с иконками',0
-err_ini0 db 0
-
 edit1 edit_box 250, 220, 5, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 4090, openfile_path, mouse_dd, 0
 edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
 
 buf_find db 302 dup(0)
 
 if lang eq ru
-  head_f_i0:
-  head_f_l0  db 'Системная ошибка',0
+  head_f_i:
+  head_f_l db 'Системная ошибка',0
   err_message_found_lib0 db 'Не найдена библиотека ',39,'box_lib.obj',39,0
   err_message_import0 db 'Ошибка при импорте библиотеки ',39,'box_lib.obj',39,0
   err_message_found_lib1 db 'Не найдена библиотека ',39,'msgbox.obj',39,0
   err_message_import1 db 'Ошибка при импорте библиотеки ',39,'msgbox.obj',39,0
   err_message_found_lib2 db 'Не найдена библиотека ',39,'proc_lib.obj',39,0
   err_message_import2 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
+  err_message_found_lib_3 db 'Не найдена библиотека ',39,'libimg.obj',39,0
+  err_message_import_3 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
 else
-  head_f_i0:
-  head_f_l0  db 'System error',0
+  head_f_i:
+  head_f_l db 'System error',0
   err_message_found_lib0 db 'Sorry I cannot found library ',39,'box_lib.obj',39,0
   err_message_import0 db 'Error on load import library ',39,'box_lib.obj',39,0
   err_message_found_lib1 db 'Sorry I cannot found library ',39,'msgbox.obj',39,0
   err_message_import1 db 'Error on load import library ',39,'msgbox.obj',39,0
   err_message_found_lib2 db 'Sorry I cannot found library ',39,'proc_lib.obj',39,0
   err_message_import2 db 'Error on load import library ',39,'proc_lib.obj',39,0
+  err_message_found_lib_3 db 'Sorry I cannot found library ',39,'libimg.obj',39,0
+  err_message_import_3 db 'Error on load import library ',39,'libimg.obj',39,0
 end if
 
 ;library structures
 l_libs_start:
-	lib0 l_libs lib0_name, sys_path, file_name, system_dir0, err_message_found_lib0, head_f_l0, boxlib_import,err_message_import0, head_f_i0
-	lib1 l_libs lib1_name, sys_path, file_name, system_dir1, err_message_found_lib1, head_f_l0, msgbox_lib_import, err_message_import1, head_f_i0
-	lib2 l_libs lib2_name, sys_path, file_name, system_dir2, err_message_found_lib2, head_f_l0, proclib_import, err_message_import2, head_f_i0
+	lib0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
+		err_message_found_lib0, head_f_l, import_box_lib,err_message_import0, head_f_i
+	lib1 l_libs lib_name_1, sys_path, file_name, system_dir_1,\
+		err_message_found_lib1, head_f_l, import_msgbox_lib, err_message_import1, head_f_i
+	lib2 l_libs lib_name_2, sys_path, file_name, system_dir_2,\
+		err_message_found_lib2, head_f_l, import_proclib, err_message_import2, head_f_i
+	lib3 l_libs lib_name_3, sys_path, file_name, system_dir_3,\
+		err_message_found_lib_3, head_f_l, import_libimg, err_message_import_3, head_f_i
 load_lib_end:
 
 
