@@ -120,7 +120,6 @@ FASM_PROGRAMS:=\
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \
- fonts/bgitest:FONTS/BGITEST:$(PROGS)/demos/bgitest/trunk/bgitest.asm \
  games/15:GAMES/15:$(PROGS)/games/15/trunk/15.ASM \
  games/arcanii:GAMES/ARCANII:$(PROGS)/games/arcanii/trunk/arcanii.asm \
  games/freecell:GAMES/FREECELL:$(PROGS)/games/freecell/freecell.asm \
@@ -196,16 +195,7 @@ COPY_FILES:=\
  File|Managers/kfm_keys.txt:File|Managers/KFM_KEYS.TXT:$(PROGS)/fs/kfm/trunk/docs/english/kfm_keys.txt \
  File|Managers/buttons.bmp:File|Managers/BUTTONS.BMP:$(PROGS)/fs/kfm/trunk/buttons.bmp \
  File|Managers/icons.bmp:File|Managers/ICONS.BMP:$(PROGS)/fs/kfm/trunk/icons.bmp \
- fonts/euro.chr:FONTS/EURO.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/EURO.CHR \
- fonts/goth.chr:FONTS/GOTH.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/GOTH.CHR \
- fonts/lcom.chr:FONTS/LCOM.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/LCOM.CHR \
  fonts/litt.chr:FONTS/LITT.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/LITT.CHR \
- fonts/sans.chr:FONTS/SANS.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/SANS.CHR \
- fonts/scri.chr:FONTS/SCRI.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/SCRI.CHR \
- fonts/simp.chr:FONTS/SIMP.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/SIMP.CHR \
- fonts/smal.chr:FONTS/SMAL.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/SMAL.CHR \
- fonts/trip.chr:FONTS/TRIP.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TRIP.CHR \
- fonts/tscr.chr:FONTS/TSCR.CHR:$(PROGS)/demos/bgitest/trunk/FONTS/TSCR.CHR \
  games/snake.ini:GAMES/SNAKE.INI:$(PROGS)/games/snake/trunk/snake.ini \
  games/skin.raw:GAMES/SKIN.RAW:$(PROGS)/games/soko/trunk/SKIN.RAW \
  games/soko-4.lev:GAMES/SOKO-4.LEV:$(PROGS)/games/soko/trunk/SOKO-4.LEV \
@@ -253,7 +243,6 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  File|Managers/icons.ini:File|Managers/ICONS.INI \
  File|Managers/kfar.ini:File|Managers/KFAR.INI \
  File|Managers/kfm.ini:File|Managers/KFM.INI \
- fonts/bold.chr:FONTS/BOLD.CHR \
  games/kosilka:GAMES/KOSILKA games/kosskin.gfx:GAMES/KOSSKIN.GFX \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/xonix:GAMES/XONIX games/megamaze:GAMES/MEGAMAZE \

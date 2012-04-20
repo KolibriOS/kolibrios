@@ -101,7 +101,6 @@ FASM_PROGRAMS:=\
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \
- fonts/bgitest:FONTS/BGITEST:$(PROGS)/demos/bgitest/trunk/bgitest.asm \
  lib/archiver.obj:LIB/ARCHIVER.OBJ:$(PROGS)/fs/kfar/trunk/kfar_arc/kfar_arc.asm \
  lib/box_lib.obj:LIB/BOX_LIB.OBJ:$(PROGS)/develop/libraries/box_lib/trunk/box_lib.asm \
  lib/console.obj:LIB/CONSOLE.OBJ:$(PROGS)/develop/libraries/console/console.asm \
@@ -180,7 +179,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  File|Managers/icons.ini:File|Managers/ICONS.INI \
  File|Managers/kfar.ini:File|Managers/KFAR.INI \
  File|Managers/kfm.ini:File|Managers/KFM.INI \
- fonts/bold.chr:FONTS/BOLD.CHR fonts/char2.mt:FONTS/CHAR2.MT \
+ fonts/char2.mt:FONTS/CHAR2.MT \
  fonts/char.mt:FONTS/CHAR.MT \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
