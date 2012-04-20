@@ -4,6 +4,12 @@
 ;                                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;------------------------------------------------------------------------------
+; version:	2.22
+; last update:  20/04/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Activation mechanism when trying to run an existing appl.
+;               Forced redrawing the background after the clean desktop (Win+D)
+;------------------------------------------------------------------------------
 ; version:	2.2
 ; last update:  19/04/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -238,6 +244,8 @@ start_end_application:
 	call	algorithm_anti_duplication
 	test	eax,eax
 	jz	@f
+
+	mcall	18,3,edi
 	ret
 ;--------------------------------------
 align 4
@@ -287,6 +295,8 @@ align 4
 	call	algorithm_anti_duplication
 	test	eax,eax
 	jz	@f
+
+	mcall	18,3,edi
 	ret
 ;--------------------------------------
 align 4
@@ -302,6 +312,7 @@ start_PrintScreen_application:
 	call	algorithm_anti_duplication
 	test	eax,eax
 	jz	@f
+	mcall	18,3,edi
 	ret
 ;--------------------------------------
 align 4
@@ -911,8 +922,13 @@ noselect:
 	mov	esi,calendar_name
 	call	algorithm_anti_duplication
 	test	eax,eax
-	jnz	still
+	jz	@f
 
+	mcall	18,3,edi	
+	jmp	still
+;--------------------------------------
+align 4
+@@:
 	mov	ebx, exec_fileinfo
 	mov	dword [ebx+21], calendar_name
 	mcall	70
@@ -948,8 +964,13 @@ noid16:
 	mov	esi,sysmeter_name
 	call	algorithm_anti_duplication
 	test	eax,eax
-	jnz	still
+	jz	@f
 
+	mcall	18,3,edi
+	jmp	still
+;--------------------------------------
+align 4	
+@@:
 	mov	ebx, exec_fileinfo
 	mov	dword [ebx+21], sysmeter_name
 	mcall	70
