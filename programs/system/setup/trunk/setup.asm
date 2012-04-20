@@ -3,6 +3,12 @@
 ;;          DEVICE SETUP         ;;
 ;;                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; version:	1.15
+; last update:  20/04/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Add the flag of speaker mute.
+;               Correcting setup.dat
+;---------------------------------------------------------------------
 ; version:	1.14
 ; last update:  20/03/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -21,9 +27,9 @@
 	dd 0x01		; header version
 	dd START	; pointer to program start
 	dd IM_END	; size of image
-	dd I_END	;0x4000	; reguired amount of memory
+	dd I_END	; reguired amount of memory
 	dd stack_area	; stack pointer (esp)
-	dd I_PARAM	; boot parameters
+	dd boot_param	; boot parameters
 	dd 0x0		; path
 ;-------------------------------------------------------------------------------
 include '..\..\..\macros.inc'
@@ -37,6 +43,7 @@ apply_all:
 	call	_keyboard    ;2
 	call	_mouse_speed
 	call	_mouse_delay
+	call	_speaker_mute
 	ret
 ;-------------------------------------------------------------------------------
 apply_all_and_exit:
@@ -91,10 +98,13 @@ get_setup_values:
 
 	mcall	18,19,2
 	mov	[mouse_delay],eax
+	
+	mcall	18,8,1
+	mov	[speaker_mute],eax
 	ret
 ;-------------------------------------------------------------------------------
 START:
-	mov	eax,I_PARAM
+	mov	eax,boot_param
 	cmp	[eax],dword 'SLAN'
 	je	set_syslanguage_and_exit
 
@@ -106,6 +116,7 @@ START:
 
 	call	get_setup_values
 	call	loadtxt
+	call	draw_infotext
 ;-------------------------------------------------------------------------------
 red:
 	call	draw_window
@@ -310,8 +321,28 @@ mousedelay:
 ;--------------------------------------
 .noplus:
 	cmp	ah,141
-	jnz	.noapply
+	jnz	speakermute
 	call	_mouse_delay
+;--------------------------------------
+speakermute:
+	cmp	ah,152	; SET SPEAKER
+	jne	no_speaker_d
+;--------------------------------------
+speaker_p:
+	btc	[speaker_mute],0
+	call	draw_infotext
+	jmp	still
+;--------------------------------------
+no_speaker_d:
+	cmp	ah,153
+	jne	no_speaker_i
+	jmp	speaker_p
+;--------------------------------------
+no_speaker_i:
+	cmp	ah,151
+	jne	.noapply
+	call	_speaker_mute
+	jmp	still
 ;--------------------------------------
 .noapply:
 	cmp	ah,3	      ; SET KEYMAP
@@ -424,7 +455,7 @@ draw_window:
 
 	xor	eax,eax       ; DRAW WINDOW
 	xor	esi,esi
-	mcall	,<40,(355+BBB)>,<40,(12*15)>,0xB4111199,,title
+	mcall	,<40,(355+BBB)>,<40,(12*16)>,0xB4111199,,title
 	
 	mcall	9,procinfo,-1
 	
@@ -432,7 +463,7 @@ draw_window:
 	test	eax,100b
 	jne	.end
 
-	mcall	8,<(350-85),100>,<(5+14*8),12>,100,0x005588dd	; APPLY ALL
+	mcall	8,<(350-85),100>,<(5+16*8),12>,100,0x005588dd	; APPLY ALL
 
 	add	ecx,16*65536	      ; SAVE ALL
 	dec	edx
@@ -462,6 +493,10 @@ draw_window:
 
 	mov	edx,141
 	mov	ecx,5+10*8
+	call	draw_buttons
+	
+	mov	edx,151
+	mov	ecx,5+12*8
 	call	draw_buttons
 
 	call	draw_infotext
@@ -554,6 +589,10 @@ noet5:
 	mov	eax,[pci_acc]
 	call	onoff				; PCI ACCESS
 	mov	[text00+LLL*3+28],ebx
+	
+	mov	eax,[speaker_mute]
+	call	onoff				; SPEAKER
+	mov	[text00+LLL*6+28],ebx
 
 	mov	eax,[mouse_speed]		; MOUSE SPEED
 	add	al,48
@@ -563,11 +602,12 @@ noet5:
 	mov	esi,text00+LLL*5+32
 	call	hexconvert			; MOUSE DELAY
 	call	text_out
+	
 	popa
 	ret
 ;-------------------------------------------------------------------------------
 text_out:
-	mcall	13,<165,85>,<0,(12*8)>,0x80111199	;0x80111199-19
+	mcall	13,<165,85>,<0,(14*8)>,0x80111199	;0x80111199-19
 
 	mov	edx,text00
 	mov	ebx,3*65536+7
@@ -657,9 +697,19 @@ _mouse_delay:
 	mcall	18,19,3,[mouse_delay]
 	ret
 ;-------------------------------------------------------------------------------
+_speaker_mute:
+	mcall	18,8,1
+	cmp	[speaker_mute],eax
+	je	@f
+	inc	ecx
+	mcall	18
+;--------------------------------------	
+@@:
+	ret
+;-------------------------------------------------------------------------------
 loadtxt:
 	mov	edi,text00
-	mov	ecx,LLL*(text1_strings + text2_strings)/4
+	mov	ecx,LLL*(text1_strings + text2_strings)/4+1
 	cmp	[syslang],4
 	jne	norus
 
@@ -695,21 +745,23 @@ textrus:
 	db 'Доступ к шине PCI         : OFF             - +   Применить'
 	db 'Скорость курсора мыши     : 1               - +   Применить'
 	db 'Задержка ускорения мыши   : 0x00a           - +   Применить'
+	db 'Выключить SPEAKER         : OFF             - +   Применить'
 	
 	db 'ВНИМАНИЕ:                                    Применить все '
 	db 'НЕ ЗАБУДЬТЕ СОХРАНИТЬ НАСТРОЙКИ              Сохранить все '
 ;-------------------------------------------------------------------------------
 texteng:
-	db 'SYSTEM LANGUAGE           : ENGLISH         - +     APPLY  '
-	db 'KEYBOARD LAYOUT           : ENGLISH         - +     APPLY  '
-	db 'LBA READ ENABLED          : OFF             - +     APPLY  '
-	db 'PCI ACCESS FOR APPL.      : OFF             - +     APPLY  '
-	db 'Mouse pointer speed       : 1               - +     APPLY  '
-	db 'Mouse pointer delay       : 0x00a           - +     APPLY  '
-text1_strings = 6
+	db 'System language           : ENGLISH         - +     Apply  '
+	db 'Keyboard layout           : ENGLISH         - +     Apply  '
+	db 'LBA read enabled          : OFF             - +     Apply  '
+	db 'PCI access for appl.      : OFF             - +     Apply  '
+	db 'Mouse pointer speed       : 1               - +     Apply  '
+	db 'Mouse pointer delay       : 0x00a           - +     Apply  '
+	db 'SPEAKER disabled          : OFF             - +     Apply  '
+text1_strings = 7
 
-	db 'NOTE:                                           APPLY ALL  '
-	db 'SAVE YOUR SETTINGS BEFORE QUITING KOLIBRI       SAVE ALL   '
+	db 'NOTE:                                           Apply all  '
+	db 'SAVE YOUR SETTINGS BEFORE QUITING KOLIBRI       Save all   '
 text2_strings = 2
 ;-------------------------------------------------------------------------------
 title	db 'System setup',0
@@ -722,7 +774,7 @@ read_fileinfo:
 	dd 0
 	dd 0
 	dd 0
-	dd 48
+	dd 28
 	dd keyboard
 	db 0
 	dd file_name
@@ -731,33 +783,26 @@ save_fileinfo:
 	dd 2
 	dd 0
 	dd 0
-	dd 48
+	dd 28
 	dd keyboard
 file_name:	db '/sys/setup.dat',0
 ;-------------------------------------------------------------------------------
-; Note to SVN revision 2299 - some parameters has not used,
-; but keep the order of the parameter has always needed!
 keyboard	dd 0x0
-		dd 0	;midibase  - not use, but retained for backward compat.
-		dd 0	;cdbase - not use, but retained for backward compat.
-		dd 0	;sb16 - not use, but retained for backward compat.
-syslang		dd 0x1
-		dd 0	;hdbase - not use, but retained for backward compat.
-		dd 0	;f32p - not use, but retained for backward compat.
-		dd 0	;sound_dma - not use, but retained for backward compat.
+syslang		dd 0x4	; 4 - rus
 lba_read	dd 0x1
 pci_acc		dd 0x1
-mouse_speed	dd 0x3
-mouse_delay	dd 0x10
+mouse_speed	dd 0x2
+mouse_delay	dd 0xa
+speaker_mute	dd 0	; 0 - enable, 1 - disable
 ;-----------------------------------------------------------------------------
 IM_END:
 ;-----------------------------------------------------------------------------
 align 4
 text00:
-	rb LLL*(text1_strings + text2_strings)
+	rb LLL*(text1_strings + text2_strings)+4
 ;-----------------------------------------------------------------------------
 align 4
-I_PARAM:
+boot_param:
 procinfo:
 	rb 1024
 ;-----------------------------------------------------------------------------
