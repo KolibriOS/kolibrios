@@ -23,6 +23,26 @@ key:
 	cmp	al,0
 	jne	still.skip_write
 	shr	eax,8
+;--------------------------------------
+	cmp	al,91	; RWin DOWN
+	je	.set_win_key_flag
+	cmp	al,92	; LWin DOWN
+	jne	@f
+.set_win_key_flag:
+	mov	[win_key_flag],1
+	jmp	still.skip_write
+@@:
+	cmp	al,219	; RWin UP
+	je	.cut_win_key_flag
+	cmp	al,220	; LWin UP
+	jne	@f
+.cut_win_key_flag:
+	mov	[win_key_flag],0
+	jmp	still.skip_write
+@@:
+	cmp	[win_key_flag],1
+	je	still.skip_write
+;--------------------------------------
 	cmp	al,224
 	jne	@f
 	mov	[ext],0x01
