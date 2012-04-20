@@ -671,15 +671,15 @@ end if
 
 ; LOAD FONTS I and II
 
-        stdcall read_file, char, FONT_I, 0, 2304
-        stdcall read_file, char2, FONT_II, 0, 2560
+;        stdcall read_file, char, FONT_I, 0, 2304
+;        stdcall read_file, char2, FONT_II, 0, 2560
 
         mov     [MOUSE_PICTURE], dword mousepointer
         mov     [_display.check_mouse], check_mouse_area_for_putpixel
         mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
 
-        mov     esi, boot_fonts
-        call    boot_log
+;        mov     esi, boot_fonts
+;        call    boot_log
 
 ; Display APIC status
         mov     esi, boot_APIC_found

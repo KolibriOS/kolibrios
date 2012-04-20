@@ -147,8 +147,8 @@
 
 ; 0x8006CC00 ->  6DBFF   stack at boot time (4Kb)
 ;
-; 0x8006DC00 ->  6E5FF   basic text font II
-; 0x8006E600 ->  6Efff   basic text font I
+; 0x8006DC00 ->  6E5FF   free (2560)
+; 0x8006E600 ->  6Efff   free (2560)
 ; 0x8006F000 ->  6FFFF   main page directory
 
 ; 0x80070000 ->  7FFFF   data of retrieved disks and partitions (Mario79)

@@ -49,7 +49,7 @@ keymap_alt:
 
 
 if lang eq ru
-  boot_fonts        db   'Шрифты загружены',0
+;  boot_fonts        db   'Шрифты загружены',0
   boot_memdetect    db   'Количество оперативной памяти','     ',' Мб',0
   boot_tss          db   'Установка TSSs',0
   boot_cpuid        db   'Чтение CPUIDs',0
@@ -73,7 +73,7 @@ if preboot_blogesc
   boot_tasking      db   'Все готово для запуска, нажмитре ESC для старта',0
 end if
 else
-  boot_fonts        db   'Fonts loaded',0
+;  boot_fonts        db   'Fonts loaded',0
   boot_memdetect    db   'Determining amount of memory',0
   boot_tss          db   'Setting TSSs',0
   boot_cpuid        db   'Reading CPUIDs',0
@@ -134,9 +134,6 @@ ud_user_message db 'Ошибка: неподдерживаемая инструкция процессора',0
 else
 ud_user_message db 'Error: unsupported processor instruction',0
 end if
-
-char    db '/sys/FONTS/CHAR.MT',0
-char2   db '/sys/FONTS/CHAR2.MT',0
 
 bootpath       db  '/KOLIBRI    '
 bootpath2      db  0

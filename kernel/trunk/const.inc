@@ -263,9 +263,6 @@ DONT_SWITCH         equ (OS_BASE+0x000FFFF)
 
 TMP_STACK_TOP       equ 0x006CC00
 
-FONT_II             equ (OS_BASE+0x006DC00)
-FONT_I              equ (OS_BASE+0x006E600)
-
 sys_pgdir           equ (OS_BASE+0x006F000)
 
 DRIVE_DATA          equ (OS_BASE+0x0070000)

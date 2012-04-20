@@ -253,8 +253,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  File|Managers/icons.ini:File|Managers/ICONS.INI \
  File|Managers/kfar.ini:File|Managers/KFAR.INI \
  File|Managers/kfm.ini:File|Managers/KFM.INI \
- fonts/bold.chr:FONTS/BOLD.CHR fonts/char2.mt:FONTS/CHAR2.MT \
- fonts/char.mt:FONTS/CHAR.MT \
+ fonts/bold.chr:FONTS/BOLD.CHR \
  games/appdata.dat:GAMES/APPDATA.DAT games/ataka:GAMES/ATAKA \
  games/basekurs.kla:GAMES/BASEKURS.KLA games/checkers:GAMES/CHECKERS \
  games/kosilka:GAMES/KOSILKA games/kosskin.gfx:GAMES/KOSSKIN.GFX \
