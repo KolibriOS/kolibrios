@@ -6,6 +6,8 @@
 ; GPLv2
 ;
 
+DEBUG                   = 0             ; if set to one, program will run in a single thread
+
 BUFFERSIZE              = 8192
 
 ; using multiple's of 4
@@ -60,6 +62,18 @@ include '../struct.inc'
 include '../libio.inc'
 
 include '../network.inc'
+
+macro sendFTP str {
+local string, length
+        xor     edi, edi
+        mcall   send, [ebp + thread_data.socketnum], string, length
+
+iglobal
+string db str, 13, 10
+length = $ - string
+\}
+}
+
 include 'commands.inc'
 
 start:
@@ -153,8 +167,12 @@ mainloop:
         test    eax, eax                        ; network event?
         jz      .checkconsole
 
+if DEBUG
+        jmp     threadstart
+else
         mcall   51, 1, threadstart, 0           ; Start a new thread for every incoming connection
                                                 ; NOTE: upon initialisation of the thread, stack will not be available!
+end if
         jmp     mainloop
 
   .checkconsole:
@@ -194,6 +212,10 @@ threadstart:
         cmp     eax, -1
         je      thread_exit
         mov     [ebp + thread_data.socketnum], eax
+
+if DEBUG
+        mcall   close, [socketnum]                                      ; close the listening socket
+end if
 
         mov     [ebp + thread_data.state], STATE_CONNECTED
         mov     [ebp + thread_data.permissions], 0
@@ -384,7 +406,6 @@ import  libini,\
         ini.get_int,            'ini_get_int'
 
 import  libio,\
-        libio.init,             'lib_init',\
         file.size,              'file_size',\
         file.open,              'file_open',\
         file.read,              'file_read',\
@@ -392,6 +413,9 @@ import  libio,\
         file.find.first,        'file_find_first',\
         file.find.next,         'file_find_next',\
         file.find.close,        'file_find_close'
+
+
+IncludeIGlobals
 
 
 i_end:

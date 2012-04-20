@@ -24,18 +24,6 @@ struct  thread_data
         buffer          rb BUFFERSIZE
 ends
 
-
-macro sendFTP str {
-local .string, .length, .label
-        xor     edi, edi
-        mcall   send, [ebp + thread_data.socketnum], .string, .length
-        jmp     @f
-.string db str, 13, 10
-.length = $ - .string
-@@:
-
-}
-
 ;------------------------------------------------
 ; parse_cmd
 ;
@@ -88,6 +76,7 @@ parse_cmd:                              ; esi must point to command
 
 
 align 4
+iglobal
 commands:               ; all commands must be in uppercase
 
         dd 'ABOR', login_first, login_first, login_first, cmdABOR
@@ -124,6 +113,7 @@ commands:               ; all commands must be in uppercase
         dd 'TYPE', login_first, login_first, login_first, cmdTYPE
         dd 'USER', cmdUSER,     cmdUSER,     cmdUSER,     cmdUSER.2
         db 0    ; end marker
+endg
 
 align 4
 login_first:
