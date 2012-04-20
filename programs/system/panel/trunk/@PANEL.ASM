@@ -1083,9 +1083,12 @@ align 4
 	cmp	[clean_desktop_minimize],1
 	je	@f
 	call	restore_desktop
+	ret
 ;--------------------------------------
 align 4
 @@:
+	mcall	68,1
+	mcall	15,3
 	ret
 ;	jmp	still
 ;------------------------------------------------------------------------------
