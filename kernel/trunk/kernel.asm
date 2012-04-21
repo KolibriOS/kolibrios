@@ -447,6 +447,10 @@ v20ga24:
         mov     [GETPIXEL], dword Vesa20_getpixel32
 no_mode_0x12:
 
+        mov     [MOUSE_PICTURE], dword mousepointer
+        mov     [_display.check_mouse], check_mouse_area_for_putpixel
+        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
+
 ; -------- Fast System Call init ----------
 ; Intel SYSENTER/SYSEXIT (AMD CPU support it too)
         bt      [cpu_caps], CAPS_SEP
@@ -610,19 +614,31 @@ no_mode_0x12:
         rep stosd
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
-
+        mov     esi, boot_initirq
+        call    boot_log
         call    init_irqs
+
+        mov     esi, boot_picinit
+        call    boot_log
         call    PIC_init
 
+        mov     esi, boot_v86machine
+        call    boot_log
 ; Initialize system V86 machine
         call    init_sys_v86
 
+        mov     esi, boot_inittimer
+        call    boot_log
 ; Initialize system timer (IRQ0)
         call    PIT_init
 
+        mov     esi, boot_initapic
+        call    boot_log
 ; Try to Initialize APIC
         call    APIC_init
 
+        mov     esi, boot_enableirq
+        call    boot_log
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
         call    unmask_timer
@@ -632,6 +648,8 @@ no_mode_0x12:
         stdcall enable_irq, 14
         stdcall enable_irq, 15
 
+        mov     esi, boot_enablint_ide
+        call    boot_log
 ; Enable interrupts in IDE controller
         mov     al, 0
         mov     dx, 0x3F6
@@ -640,9 +658,25 @@ no_mode_0x12:
         out     dx, al
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
-include 'detect/disks.inc'
+;        mov     esi, boot_detectdisks
+;        call    boot_log
+;include 'detect/disks.inc'
+        mov     esi, boot_detectfloppy
+        call    boot_log
+include 'detect/dev_fd.inc'
+        mov     esi, boot_detecthdcd
+        call    boot_log
+include 'detect/dev_hdcd.inc'
+        mov     esi, boot_getcache
+        call    boot_log
+include 'detect/getcache.inc'
+        mov     esi, boot_detectpart
+        call    boot_log
+include 'detect/sear_par.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+        mov     esi, boot_init_sys
+        call    boot_log
         call    Parser_params
 
 if ~ defined extended_primary_loader
@@ -662,6 +696,9 @@ if 0
         mov     ax, [OS_BASE+0x10000+bx_from_load]
         cmp     ax, 'r1'; if using not ram disk, then load librares and parameters {SPraid.simba}
         je      no_lib_load
+
+        mov     esi, boot_loadlibs
+        call    boot_log
 ; LOADING LIBRARES
         stdcall dll.Load, @IMPORT           ; loading librares for kernel (.obj files)
         call    load_file_parse_table       ; prepare file parse table
@@ -669,24 +706,13 @@ if 0
 no_lib_load:
 end if
 
-; LOAD FONTS I and II
-
-;        stdcall read_file, char, FONT_I, 0, 2304
-;        stdcall read_file, char2, FONT_II, 0, 2560
-
-        mov     [MOUSE_PICTURE], dword mousepointer
-        mov     [_display.check_mouse], check_mouse_area_for_putpixel
-        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
-
-;        mov     esi, boot_fonts
-;        call    boot_log
-
 ; Display APIC status
         mov     esi, boot_APIC_found
         cmp     [irq_mode], IRQ_APIC
         je      @f
         mov     esi, boot_APIC_nfound
 @@:
+        call    boot_log
 
 ; PRINT AMOUNT OF MEMORY
         mov     esi, boot_memdetect
@@ -709,10 +735,10 @@ end if
 
 ; BUILD SCHEDULER
 
-        call    build_scheduler; sys32.inc
+;        call    build_scheduler; sys32.inc
 
-        mov     esi, boot_devices
-        call    boot_log
+;        mov     esi, boot_devices
+;        call    boot_log
 
         mov     [pci_access_enabled], 1
 

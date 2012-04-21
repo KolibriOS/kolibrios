@@ -677,24 +677,22 @@ term9:
         ret
 restore .slot
 
-iglobal
-if lang eq ru
-  boot_sched_1    db   'Создание GDT TSS указателя',0
-  boot_sched_2    db   'Создание IDT таблицы',0
-else
-  boot_sched_1    db   'Building gdt tss pointer',0
-  boot_sched_2    db   'Building IDT table',0
-end if
-endg
+;iglobal
+;if lang eq ru
+;  boot_sched_1    db   'Создание GDT TSS указателя',0
+;  boot_sched_2    db   'Создание IDT таблицы',0
+;else
+;  boot_sched_1    db   'Building gdt tss pointer',0
+;  boot_sched_2    db   'Building IDT table',0
+;end if
+;endg
 
 
-build_scheduler:
+;build_scheduler:
+;        mov     esi, boot_sched_1
+;        call    boot_log
+;        call   build_process_gdt_tss_pointer
 
-        mov     esi, boot_sched_1
-        call    boot_log
-  ;      call   build_process_gdt_tss_pointer
-
-  ;      mov    esi,boot_sched_2
-  ;      call   boot_log
-
-        ret
+;        mov    esi,boot_sched_2
+;        call   boot_log
+;        ret
