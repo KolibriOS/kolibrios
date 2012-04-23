@@ -350,8 +350,10 @@ disk_add:
         inc     eax
         cmp     byte [ebx+eax-1], 0
         jnz     @b
-; 2b. Call the heap manager.
+; 2b. Call the heap manager. Note that it can change ebx.
+        push    ebx
         call    malloc
+        pop     ebx
 ; 2c. Check the result. If allocation failed, go to 7.
         pop     esi             ; restore allocated pointer to DISK
         test    eax, eax
@@ -418,7 +420,7 @@ disk_del:
         push    esi         ; save used registers to be stdcall
 ; 1. Force media to be removed. If the media is already removed, the
 ; call does nothing.
-        mov     esi, [esp+4+8]  ; esi = handle of the disk
+        mov     esi, [esp+4+4]  ; esi = handle of the disk
         stdcall disk_media_changed, esi, 0
 ; 2. Delete the structure from the global list.
 ; 2a. Acquire the mutex.
@@ -975,15 +977,33 @@ virtual at ebp+8
 .start  dq      ?
 .length dq      ?
 end virtual
-; Currently no file systems are supported, so just allocate the PARTITION
+; When disk_add_partition is called, ebx contains a pointer to
+; a two-sectors-sized buffer. This function saves ebx in the stack
+; immediately before ebp.
+virtual at ebp-4
+.buffer dd      ?
+end virtual
+; 1. Read the bootsector to the buffer.
+        mov     al, DISKFUNC.read
+        mov     ebx, [.buffer]
+        add     ebx, 512
+        push    1
+        stdcall disk_call_driver, ebx, dword [.start], dword [.start+4], esp
+; 2. Run tests for all supported filesystems. If at least one test succeeded,
+; go to 4.
+; For tests: qword [ebp+8] = partition start, qword [ebp+10h] = partition
+; length, [esp] = 0 if reading bootsector failed or 1 if succeeded,
+; ebx points to the buffer for bootsector.
+        call    fat_create_partition
+        test    eax, eax
+        jnz     .success
+; 3. No file system has recognized the volume, so just allocate the PARTITION
 ; structure without extra fields.
-; 1. Allocate and check result.
         push    sizeof.PARTITION
         pop     eax
         call    malloc
         test    eax, eax
         jz      .nothing
-; 2. Fill the common fields: copy .start and .length.
         mov     edx, dword [.start]
         mov     dword [eax+PARTITION.FirstSector], edx
         mov     edx, dword [.start+4]
@@ -992,8 +1012,12 @@ end virtual
         mov     dword [eax+PARTITION.Length], edx
         mov     edx, dword [.length+4]
         mov     dword [eax+PARTITION.Length+4], edx
+        mov     [eax+PARTITION.Disk], esi
+        and     [eax+PARTITION.FSUserFunctions], 0
+.success:
 .nothing:
-; 3. Return with eax = pointer to PARTITION or NULL.
+; 4. Return with eax = pointer to PARTITION or NULL.
+        pop     ecx
         ret
 
 ; This function is called from file_system_lfn.
@@ -1061,6 +1085,7 @@ dyndisk_handler:
 ; 6. Now we are sure that the DISK structure is not going to die at least
 ; while we are working with it, so release the global mutex.
         call    mutex_unlock
+        pop     ecx             ; pop from the stack saved value of esi
 ; 7. Acquire the mutex for media object.
         pop     edi             ; restore edi
         lea     ecx, [ebx+DISK.MediaLock]
@@ -1175,14 +1200,35 @@ fs_dyndisk:
 .main:
         cmp     ecx, [edx+DISK.NumPartitions]
         jae     .notfound
-        mov     dword [esp+32], ERROR_UNKNOWN_FS
+        mov     eax, [edx+DISK.Partitions]
+        mov     eax, [eax+ecx*4]
+        mov     edi, [eax+PARTITION.FSUserFunctions]
+        test    edi, edi
+        jz      .nofs
+        mov     ecx, [ebx]
+        cmp     [edi], ecx
+        jbe     .unsupported
+        push    edx
+        push    ebp
+        mov     ebp, eax
+        call    dword [edi+4+ecx*4]
+        pop     ebp
+        pop     edx
+        mov     dword [esp+32], eax
+        mov     dword [esp+20], ebx
 .cleanup:
         mov     esi, edx
         call    disk_media_dereference
         call    disk_dereference
         ret
+.nofs:
+        mov     dword [esp+32], ERROR_UNKNOWN_FS
+        jmp     .cleanup
 .notfound:
         mov     dword [esp+32], ERROR_FILE_NOT_FOUND
+        jmp     .cleanup
+.unsupported:
+        mov     dword [esp+32], ERROR_UNSUPPORTED_FS
         jmp     .cleanup
 .nomedia:
         test    ecx, ecx
@@ -1192,7 +1238,6 @@ fs_dyndisk:
 ; if the driver does not support insert notifications and we are the only fs
 ; operation with this disk, issue the fake insert notification; if media is
 ; still not inserted, 'disk_media_changed' will detect this and do nothing
-;;;        push    ebx
         lea     ecx, [edx+DISK.MediaLock]
         call    mutex_lock
         cmp     [edx+DISK.MediaRefCount], 1

@@ -945,3 +945,83 @@ int13_call:
 @@:
         ret
 ; \end{diamond}
+
+reserve_hd1:
+
+        cli
+        cmp     [hd1_status], 0
+        je      reserve_ok1
+
+        sti
+        call    change_task
+        jmp     reserve_hd1
+
+  reserve_ok1:
+
+        push    eax
+        mov     eax, [CURRENT_TASK]
+        shl     eax, 5
+        mov     eax, [eax+CURRENT_TASK+TASKDATA.pid]
+        mov     [hd1_status], eax
+        pop     eax
+        sti
+        ret
+;********************************************
+
+uglobal
+hd_in_cache db ?
+endg
+
+reserve_hd_channel:
+; BIOS disk accesses are protected with common mutex hd1_status
+; This must be modified when hd1_status will not be valid!
+        cmp     [hdpos], 0x80
+        jae     .ret
+        cmp     [hdbase], 0x1F0
+        jne     .IDE_Channel_2
+.IDE_Channel_1:
+        cli
+        cmp     [IDE_Channel_1], 0
+        je      .reserve_ok_1
+        sti
+        call    change_task
+        jmp     .IDE_Channel_1
+.IDE_Channel_2:
+        cli
+        cmp     [IDE_Channel_2], 0
+        je      .reserve_ok_2
+        sti
+        call    change_task
+        jmp     .IDE_Channel_2
+.reserve_ok_1:
+        mov     [IDE_Channel_1], 1
+        push    eax
+        mov     al, 1
+        jmp     @f
+.reserve_ok_2:
+        mov     [IDE_Channel_2], 1
+        push    eax
+        mov     al, 3
+@@:
+        cmp     [hdid], 1
+        sbb     al, -1
+        mov     [hd_in_cache], al
+        pop     eax
+        sti
+.ret:
+        ret
+
+free_hd_channel:
+; see comment at reserve_hd_channel
+        cmp     [hdpos], 0x80
+        jae     .ret
+        cmp     [hdbase], 0x1F0
+        jne     .IDE_Channel_2
+.IDE_Channel_1:
+        mov     [IDE_Channel_1], 0
+.ret:
+        ret
+.IDE_Channel_2:
+        mov     [IDE_Channel_2], 0
+        ret
+;********************************************

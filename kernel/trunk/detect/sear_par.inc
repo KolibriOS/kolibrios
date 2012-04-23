@@ -133,6 +133,10 @@ end_search_partitions_bd:
         loop    start_search_partitions_bd
         jmp     end_search_partitions
 
+problem_partition db 0  ; used for partitions search
+
+include  '../fs/part_set.inc'
+
 partition_data_transfer:
         mov     edi, [transfer_adress]
         mov     esi, PARTITION_START            ;start of file_system_data

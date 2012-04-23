@@ -33,24 +33,8 @@ align 4
 fs_dependent_data_start:
 ; FATxx data
 
-SECTORS_PER_FAT      dd 0x1f3a
-NUMBER_OF_FATS       dd 0x2
-SECTORS_PER_CLUSTER  dd 0x8
-BYTES_PER_SECTOR     dd 0x200   ; Note: if BPS <> 512 need lots of changes
-ROOT_CLUSTER         dd 2       ; first rootdir cluster
-FAT_START            dd 0       ; start of fat table
-ROOT_START           dd 0       ; start of rootdir (only fat16)
-ROOT_SECTORS         dd 0       ; count of rootdir sectors (only fat16)
-DATA_START           dd 0       ; start of data area (=first cluster 2)
-LAST_CLUSTER         dd 0       ; last availabe cluster
-ADR_FSINFO           dd 0       ; used only by fat32
-
-fatRESERVED          dd 0x0FFFFFF6
-fatBAD               dd 0x0FFFFFF7
-fatEND               dd 0x0FFFFFF8
-fatMASK              dd 0x0FFFFFFF
-
-fatStartScan         dd 2
+.partition      dd      ?
+                rb      80
 
 fs_dependent_data_end:
 file_system_data_size = $ - PARTITION_START
@@ -427,108 +411,27 @@ boot_read_ok:
         cmp     [hd_error], 0
         jnz     problem_fat_dec_count
 
-        cmp     word [ebx+0x1fe], 0xaa55; is it valid boot sector?
-        jnz     problem_fat_dec_count
-
-        movzx   eax, word [ebx+0xe]; sectors reserved
-        add     eax, [PARTITION_START]
-        mov     [FAT_START], eax; fat_start = partition_start + reserved
-
-        movzx   eax, byte [ebx+0xd]; sectors per cluster
+        push    0
+        mov     eax, [PARTITION_END]
+        sub     eax, [PARTITION_START]
+        inc     eax
+        push    eax
+        push    0
+        push    [PARTITION_START]
+        push    ebp
+        push    ebp
+        mov     ebp, esp
+        mov     esi, 'old'      ; special value: there is no DISK structure
+        push    1       ; bootsector read successfully
+        call    fat_create_partition
+        add     esp, 4*7
         test    eax, eax
         jz      problem_fat_dec_count
-        mov     [SECTORS_PER_CLUSTER], eax
-
-        movzx   ecx, word [ebx+0xb]; bytes per sector
-        cmp     ecx, 0x200
-        jnz     problem_fat_dec_count
-        mov     [BYTES_PER_SECTOR], ecx
-
-        movzx   eax, word [ebx+0x11]; count of rootdir entries (=0 fat32)
-        mov     edx, 32
-        mul     edx
-        dec     ecx
-        add     eax, ecx        ; round up if not equal count
-        inc     ecx             ; bytes per sector
-        div     ecx
-        mov     [ROOT_SECTORS], eax; count of rootdir sectors
-
-        movzx   eax, word [ebx+0x16]; sectors per fat <65536
-        test    eax, eax
-        jnz     fat16_fatsize
-        mov     eax, [ebx+0x24] ; sectors per fat
-  fat16_fatsize:
-        mov     [SECTORS_PER_FAT], eax
-
-        movzx   eax, byte [ebx+0x10]; number of fats
-        test    eax, eax        ; if 0 it's not fat partition
-        jz      problem_fat_dec_count
-        mov     [NUMBER_OF_FATS], eax
-        imul    eax, [SECTORS_PER_FAT]
-        add     eax, [FAT_START]
-        mov     [ROOT_START], eax; rootdir = fat_start + fat_size * fat_count
-        add     eax, [ROOT_SECTORS]; rootdir sectors should be 0 on fat32
-        mov     [DATA_START], eax; data area = rootdir + rootdir_size
-
-        movzx   eax, word [ebx+0x13]; total sector count <65536
-        test    eax, eax
-        jnz     fat16_total
-        mov     eax, [ebx+0x20] ; total sector count
-  fat16_total:
-        add     eax, [PARTITION_START]
-        dec     eax
-        mov     [PARTITION_END], eax
-        inc     eax
-        sub     eax, [DATA_START]; eax = count of data sectors
-        xor     edx, edx
-        div     dword [SECTORS_PER_CLUSTER]
-        inc     eax
-        mov     [LAST_CLUSTER], eax
-        dec     eax             ; cluster count
-        mov     [fatStartScan], 2
-
-    ; limits by Microsoft Hardware White Paper v1.03
-        cmp     eax, 4085       ; 0xff5
-        jb      problem_fat_dec_count; fat12 not supported
-        cmp     eax, 65525      ; 0xfff5
-        jb      fat16_partition
-
-fat32_partition:
-        mov     eax, [ebx+0x2c] ; rootdir cluster
-        mov     [ROOT_CLUSTER], eax
-        movzx   eax, word [ebx+0x30]; fs info sector
-        add     eax, [PARTITION_START]
-        mov     [ADR_FSINFO], eax
-        call    hd_read
-        mov     eax, [ebx+0x1ec]
-        cmp     eax, -1
-        jz      @f
-        mov     [fatStartScan], eax
-@@:
+        mov     [fs_dependent_data_start.partition], eax
+        mov     al, [eax+FAT.fs_type]
+        mov     [fs_type], al
 
         popad
-
-        mov     [fatRESERVED], 0x0FFFFFF6
-        mov     [fatBAD], 0x0FFFFFF7
-        mov     [fatEND], 0x0FFFFFF8
-        mov     [fatMASK], 0x0FFFFFFF
-        mov     [fs_type], 32  ; Fat32
         call    free_hd_channel
         mov     [hd1_status], 0 ; free
         ret
-
-fat16_partition:
-        xor     eax, eax
-        mov     [ROOT_CLUSTER], eax
-
-        popad
-
-        mov     [fatRESERVED], 0x0000FFF6
-        mov     [fatBAD], 0x0000FFF7
-        mov     [fatEND], 0x0000FFF8
-        mov     [fatMASK], 0x0000FFFF
-        mov     [fs_type], 16  ; Fat16
-        call    free_hd_channel
-        mov     [hd1_status], 0 ; free
-        ret
-

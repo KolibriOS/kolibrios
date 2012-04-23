@@ -38,5 +38,5 @@ end if
 ERROR:
        prebooting parameters must fit in first sector!!!
       end if
-hdsysimage          db  'KOLIBRI IMG' ; load from
-image_save          db  'KOLIBRI IMG' ; save to
+hdsysimage          db  'KOLIBRI.IMG',0 ; load from
+image_save          db  'KOLIBRI.IMG',0 ; save to

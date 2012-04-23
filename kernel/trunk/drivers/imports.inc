@@ -95,4 +95,8 @@ kernel_export \
 \
               LFBAddress,\
               GetDisplay,\
-              SetScreen
+              SetScreen,\
+\
+              DiskAdd,\
+              DiskMediaChanged,\
+              DiskDel

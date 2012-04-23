@@ -5120,22 +5120,6 @@ socket:                                 ; Socket interface
         mov     [esp+24], ebx
         ret
 
-align 4
-
-read_from_hd:                           ; Read from hd - fn not in use
-
-        mov     edi, [TASK_BASE]
-        add     edi, TASKDATA.mem_start
-        add     eax, [edi]
-        add     ecx, [edi]
-        add     edx, [edi]
-        call    file_read
-
-        mov     [esp+36], eax
-        mov     [esp+24], ebx
-
-        ret
-
 paleholder:
         ret
 ;------------------------------------------------------------------------------
