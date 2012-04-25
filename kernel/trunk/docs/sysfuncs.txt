@@ -3674,6 +3674,20 @@ Remarks:
     the new and old sizes.
 
 ======================================================================
+=========== Function 68, subfunction 21 - load driver PE. ============
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 21 - subfunction number
+  * ecx = pointer to ASCIIZ-string with driver name
+Returned value:
+  * eax = 0 - failed
+  * otherwise eax = driver handle
+Remarks:
+  * If the driver was not loaded yet, it is loaded;
+    if the driver was loaded yet, nothing happens.
+
+======================================================================
 ======== Function 68, subfunction 22 - open named memory area. =======
 ======================================================================
 Parameters:
