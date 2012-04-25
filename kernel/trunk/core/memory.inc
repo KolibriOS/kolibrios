@@ -1251,7 +1251,7 @@ f68:
         cmp     ecx, OS_BASE
         jae     .fail
 
-        cmp     ebx, OS_BASE
+        cmp     edx, OS_BASE
         jae     .fail
 
         mov     edi, edx

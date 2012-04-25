@@ -3680,6 +3680,7 @@ Parameters:
   * eax = 68 - function number
   * ebx = 21 - subfunction number
   * ecx = pointer to ASCIIZ-string with driver name
+  * edx = pointer to command line
 Returned value:
   * eax = 0 - failed
   * otherwise eax = driver handle
