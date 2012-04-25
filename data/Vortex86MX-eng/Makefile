@@ -116,6 +116,7 @@ FASM_PROGRAMS:=\
  drivers/infinity.obj:DRIVERS/INFINITY.OBJ:$(KERNEL)/drivers/infinity.asm \
  drivers/ps2mouse.obj:DRIVERS/PS2MOUSE.OBJ:$(REPOSITORY)/drivers/mouse/ps2mouse4d/trunk/ps2mouse.asm \
  drivers/sb16.obj:DRIVERS/SB16.OBJ:$(KERNEL)/drivers/sb16/sb16.asm \
+ drivers/sound.obj:DRIVERS/SOUND.OBJ:$(KERNEL)/drivers/sound.asm \
  drivers/vt8235.obj:DRIVERS/VT8235.OBJ:$(KERNEL)/drivers/vt823x.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
@@ -238,7 +239,6 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  vmode:VMODE 3d/3dsheart:3D/3DSHEART \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
  demos/use_mb:DEMOS/USE_MB \
- drivers/sound.obj:DRIVERS/SOUND.OBJ \
  File|Managers/eolite.ini:File|Managers/EOLITE.INI \
  File|Managers/icons.ini:File|Managers/ICONS.INI \
  File|Managers/kfar.ini:File|Managers/KFAR.INI \
@@ -248,6 +248,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  games/xonix:GAMES/XONIX games/megamaze:GAMES/MEGAMAZE \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
+ drivers/intel_hda.obj:DRIVERS/intel_hda.obj \
  media/ac97snd:MEDIA/AC97SND \
  network/jmail:NETWORK/JMAIL network/zeroconf.ini:NETWORK/ZEROCONF.INI \
 #end of list
