@@ -32,7 +32,6 @@ draw_flag_certainly	rb 1
 start_menu_flag		rb 1
 win_key_flag		rb 1
 
-clean_desktop_minimize	rb 1
 ;------------------------------------------------------------------------------
 align 4
 system_colours	system_colors ; rd 10

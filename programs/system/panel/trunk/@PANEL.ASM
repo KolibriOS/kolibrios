@@ -4,6 +4,11 @@
 ;                                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;------------------------------------------------------------------------------
+; version:	2.23
+; last update:  26/04/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Using new  f18.23 - minimize all windows
+;------------------------------------------------------------------------------
 ; version:	2.22
 ; last update:  20/04/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -1029,89 +1034,18 @@ align 4
 	inc	edx
 	cmp	edx, [max_slot]
 	jbe	@b
-;	jmp	still
 	ret
-;------------------------------------------------------------------------------
-;align 4
-;swap_minimized_desktop:
-;	xor	esi, esi
-;	inc	esi
-;	jmp	min_swap_desktop
 ;------------------------------------------------------------------------------
 align 4
 clean_desktop:
-	mov	[clean_desktop_minimize],0
-;	xor	esi,esi
-;--------------------------------------
-;align 4	
-;min_swap_desktop:		   ; input esi 0 - min, <>0 swap
-	mov	ecx, 2		   ; Начальный номер слота процесса
-	mov	ebx, process_info_buffer
-;--------------------------------------
-align 4
-.loop1:
-	cmp	ecx, [this_slot]
-	je	.loop1xx
-
-	mcall	9
-	mov	[max_slot], eax
-	mov	dx, word [process_info_buffer+50]
-	cmp	dx, 9		    ; Проверка свободен ли данный слот
-	jz	.loop1xx
-
-	mov	edx, dword [ebx+10]
-	cmp	dl, '@'
-	je	.loop1xx
-
-	cmp	dword [ebx+10], 'ICON'
+	mcall	18,23
+	test	eax,eax
 	jnz	@f
-
-	cmp	[ebx+42], dword 51
-	jnz	@f
-
-	cmp	[ebx+46], dword 51
-	jz	.loop1xx
-;--------------------------------------
-align 4
-@@:
-	cmp	[ebx+10], dword '    '
-	jz	.loop1xx
-
-	pusha
-	mov	edx, ecx
-	xor	ecx, ecx
-;	or	esi, esi
-;	jz	@f
-
-	movzx	eax, byte [process_info_buffer+70]
-	and	eax, 2	      ; mask minimize
-	jnz	@f
-
-	mov	[clean_desktop_minimize],1
-;	mov	ecx, 2	      ; restore
-	mcall	18, 22
-;--------------------------------------
-align 4
-@@:
-	popa
-;--------------------------------------
-align 4
-.loop1xx:
-	inc	ecx
-	cmp	ecx, [max_slot]
-	jbe	.loop1
-	
-	cmp	[clean_desktop_minimize],1
-	je	@f
 	call	restore_desktop
-	ret
 ;--------------------------------------
 align 4
 @@:
-	mcall	68,1
-	mcall	15,3
 	ret
-;	jmp	still
 ;------------------------------------------------------------------------------
 align 4
 conversion_HEX_to_ASCII:
