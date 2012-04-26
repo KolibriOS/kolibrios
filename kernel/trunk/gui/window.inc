@@ -1026,6 +1026,55 @@ align 4
 ;------------------------------------------------------------------------------
 align 4
 ;------------------------------------------------------------------------------
+minimize_all_window:
+        push    ebx ecx edx esi edi
+        pushfd
+        cli
+        xor     edx, edx
+        mov     eax, 2  ; we do not minimize the kernel thread N1
+        mov     ebx, [TASK_COUNT]
+;--------------------------------------
+align 4
+.loop:
+        movzx   edi, word[WIN_POS + eax * 2]
+        shl     edi, 5
+; it is a unused slot?
+        cmp     dword [edi+CURRENT_TASK+TASKDATA.state], 9
+        je      @f
+; it is a hidden thread?
+        lea     esi, [edi*8+SLOT_BASE+APPDATA.app_name]
+        cmp     [esi], byte '@'
+        je      @f
+; is it already minimized?
+        test    [edi + window_data+WDATA.fl_wstate], WSTATE_MINIMIZED
+        jnz     @f
+; no it's not, let's do that
+        or      [edi + window_data+WDATA.fl_wstate], WSTATE_MINIMIZED
+        inc     edx
+;--------------------------------------
+align 4
+@@:
+        inc     eax
+        cmp     eax, ebx
+        jbe     .loop
+; If nothing has changed
+        test    edx, edx
+        jz      @f
+
+        push    edx
+        call    syscall_display_settings._.calculate_whole_screen
+        call    syscall_display_settings._.redraw_whole_screen
+        pop     edx
+;--------------------------------------
+align 4
+@@:
+        mov     eax, edx
+        popfd
+        pop     edi esi edx ecx ebx
+        ret
+;------------------------------------------------------------------------------
+align 4
+;------------------------------------------------------------------------------
 minimize_window: ;/////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;> eax = window number on screen

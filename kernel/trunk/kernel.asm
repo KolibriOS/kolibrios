@@ -2054,6 +2054,7 @@ sys_system_table:
         dd      sysfn_meminfo           ; 20 = get extended memory info
         dd      sysfn_pid_to_slot       ; 21 = get slot number for pid
         dd      sysfn_min_rest_window   ; 22 = minimize and restore any window
+        dd      sysfn_min_windows       ; 23 = minimize all windows
 sysfn_num = ($ - sys_system_table)/4
 endg
 ;------------------------------------------------------------------------------
@@ -2359,20 +2360,19 @@ sysfn_getfreemem:
         shl     eax, 2
         mov     [esp+32], eax
         ret
-
+;------------------------------------------------------------------------------
 sysfn_getallmem:
         mov     eax, [MEM_AMOUNT]
         shr     eax, 10
         mov     [esp+32], eax
         ret
-
-; // Alver, 2007-22-08 // {
+;------------------------------------------------------------------------------
 sysfn_pid_to_slot:
         mov     eax, ecx
         call    pid_to_slot
         mov     [esp+32], eax
         ret
-
+;------------------------------------------------------------------------------
 sysfn_min_rest_window:
         pushad
         mov     eax, edx ; ebx - operating
@@ -2403,12 +2403,15 @@ sysfn_min_rest_window:
         dec     eax
         mov     [esp+32], eax
         ret
-; } \\ Alver, 2007-22-08 \\
-
+;------------------------------------------------------------------------------
+sysfn_min_windows:
+        call    minimize_all_window
+        mov     [esp+32], eax
+        call    change_task
+        ret
+;------------------------------------------------------------------------------
 uglobal
-;// mike.dld, 2006-29-01 [
 screen_workarea RECT
-;// mike.dld, 2006-29-01 ]
 window_minimize db 0
 sound_flag      db 0
 endg

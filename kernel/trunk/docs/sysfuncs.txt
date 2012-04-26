@@ -1109,6 +1109,18 @@ Remarks:
     subfunction 3 (which requires slot number).
 
 ======================================================================
+======== Function 18, subfunction 23 - minimize all windows. ==========
+======================================================================
+Parameters:
+  * eax = 18 - function number
+  * ebx = 23 - subfunction number
+Returned value:
+  * eax = 0 - all windows have been minimized before a function call
+  * eax = N - number of windows minimized from function
+Remarks:
+  * Window of special thread (name begin to symbol @) is not minimize.
+	
+======================================================================
 ==================== Function 20 - MIDI interface. ===================
 ======================================================================
 
