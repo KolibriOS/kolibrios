@@ -956,7 +956,7 @@ align 4
         test    eax, 0xFF000000
         jz      @f
 
-        pop     ecx
+        add     esp, 4
         ret
 ;--------------------------------------
 align 4
