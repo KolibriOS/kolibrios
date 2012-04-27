@@ -608,7 +608,12 @@ disk_sync:
 ; Compatibility hack: if PARTITION.Disk is 'old', there is no DISK structure,
 ; this request should be processed by write_cache.
         cmp     esi, 'old'
-        jz      write_cache
+        jnz     @f
+        mov     [hdd_appl_data], 0
+        call    write_cache
+        mov     [hdd_appl_data], 1
+        jmp     write_cache
+@@:
 ; The algorithm is straightforward.
         push    esi
         push    esi     ; for second write_cache64
