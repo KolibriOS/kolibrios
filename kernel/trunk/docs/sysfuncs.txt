@@ -1119,7 +1119,25 @@ Returned value:
   * eax = N - number of windows minimized from function
 Remarks:
   * Window of special thread (name begin to symbol @) is not minimize.
-	
+
+======================================================================
+======= Function 18, subfunction 24 - set limits of screen. ==========
+======================================================================
+Parameters:
+  * eax = 18 - function number
+  * ebx = 24 - subfunction number
+  * ecx = new X size
+  * edx = new Y size
+Returned value:
+  * function does not return value
+Remarks:
+  * The function does not change the physical size of the video mode.
+    It is designed for non-standard displays which display the image
+    partially.
+  * The sizes specified in the function should not exceed the sizes
+    of the current video mode, otherwise the function will not change
+    anything.
+
 ======================================================================
 ==================== Function 20 - MIDI interface. ===================
 ======================================================================

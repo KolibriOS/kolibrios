@@ -383,11 +383,13 @@ high_code:
 
         movzx   eax, word [BOOT_VAR+BOOT_X_RES]; X max
         mov     [_display.width], eax
+        mov     [display_width_standard], eax
         dec     eax
         mov     [Screen_Max_X], eax
         mov     [screen_workarea.right], eax
         movzx   eax, word [BOOT_VAR+BOOT_Y_RES]; Y max
         mov     [_display.height], eax
+        mov     [display_height_standard], eax
         dec     eax
         mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
@@ -2055,6 +2057,7 @@ sys_system_table:
         dd      sysfn_pid_to_slot       ; 21 = get slot number for pid
         dd      sysfn_min_rest_window   ; 22 = minimize and restore any window
         dd      sysfn_min_windows       ; 23 = minimize all windows
+        dd      sysfn_set_screen_sizes  ; 24 = set screen sizes for Vesa
 sysfn_num = ($ - sys_system_table)/4
 endg
 ;------------------------------------------------------------------------------
@@ -2410,10 +2413,45 @@ sysfn_min_windows:
         call    change_task
         ret
 ;------------------------------------------------------------------------------
+sysfn_set_screen_sizes:
+        cmp     [SCR_MODE], word 0x13
+        jbe     .exit
+
+        cmp     [_display.select_cursor], select_cursor
+        jne     .exit
+
+        cmp     ecx, [display_width_standard]
+        ja      .exit
+
+        cmp     edx, [display_height_standard]
+        ja      .exit
+
+        pushfd
+        cli
+        mov     eax, ecx
+        mov     ecx, [BytesPerScanLine]
+        mov     [_display.width], eax
+        dec     eax
+        mov     [_display.height], edx
+        dec     edx
+; eax - new Screen_Max_X
+; edx - new Screen_Max_Y
+        mov     [do_not_touch_winmap], 1
+        call    set_screen
+        mov     [do_not_touch_winmap], 0
+        popfd
+        call    change_task
+.exit:
+        ret
+;------------------------------------------------------------------------------
 uglobal
 screen_workarea RECT
+display_width_standard dd 0
+display_height_standard dd 0
+do_not_touch_winmap db 0
 window_minimize db 0
 sound_flag      db 0
+
 endg
 
 UID_NONE=0
@@ -5158,6 +5196,10 @@ calculate_fast_getting_offset_for_LFB:
 ;------------------------------------------------------------------------------
 align 4
 set_screen:
+; in:
+; eax - new Screen_Max_X
+; ecx - new BytesPerScanLine
+; edx - new Screen_Max_Y
         cmp     eax, [Screen_Max_X]
         jne     .set
 
@@ -5181,6 +5223,9 @@ set_screen:
 
         pushad
 
+        cmp     [do_not_touch_winmap], 1
+        je      @f
+
         stdcall kernel_free, [_WinMapAddress]
 
         mov     eax, [_display.width]
@@ -5191,7 +5236,13 @@ set_screen:
         mov     [_WinMapAddress], eax
         test    eax, eax
         jz      .epic_fail
+; store for f.18.24
+        mov     eax, [_display.width]
+        mov     [display_width_standard], eax
 
+        mov     eax, [_display.height]
+        mov     [display_height_standard], eax
+@@:
         call    calculate_fast_getting_offset_for_WinMapAddress
 ; for Qemu or non standart video cards
 ; Unfortunately [BytesPerScanLine] does not always 
