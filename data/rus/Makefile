@@ -58,6 +58,7 @@ FASM_PROGRAMS:=\
  gmon:GMON:$(PROGS)/system/gmon/gmon.asm \
  hdd_info:HDD_INFO:$(PROGS)/system/hdd_info/trunk/hdd_info.asm \
  icon:ICON:$(PROGS)/system/icon/trunk/icon.asm \
+ cropflat:CROPFLAT:$(PROGS)/system/cropflat/cropflat.asm \
  kbd:KBD:$(PROGS)/system/kbd/trunk/kbd.ASM \
  kpack:KPACK:$(PROGS)/other/kpack/trunk/kpack.asm \
  launcher:LAUNCHER:$(PROGS)/system/launcher/trunk/launcher.asm \

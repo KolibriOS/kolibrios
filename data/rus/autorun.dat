@@ -3,6 +3,7 @@
 # Delay time means how much the system should wait, before running the next line. It is measured in 1/100 seconds. 
 # If delay is negative, wait for termination of the spawned process. Otherwise, simply wait
 #
+#/RD/1/CROPFLAT "XS800 YS480"      1    # set limits of screen
 /RD/1/COMMOUSE        ""          1    # COM mice detector
 /RD/1/MEDIA/KIV \T__background.gif -1  # Desktop background image
 /RD/1/@CLIP           ""          1    # Clipboard
