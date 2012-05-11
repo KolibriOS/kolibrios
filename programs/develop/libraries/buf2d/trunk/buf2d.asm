@@ -84,6 +84,8 @@ draw_pixel:
 		add esi,ebx	 ;size_x*y+x
 		cmp buf2d_bits,8
 		je .beg8
+		cmp buf2d_bits,32
+		je .beg32
 			lea esi,[esi+esi*2] ;(size_x*y+x)*3
 			add esi,buf2d_data  ;ptr+(size_x*y+x)*3
 			mov word[esi],dx ;copy pixel color
@@ -94,7 +96,42 @@ draw_pixel:
 		.beg8: ;рисование точки в 8 битном буфере
 			add esi,buf2d_data  ;ptr+(size_x*y+x)
 			mov byte[esi],dl
+			jmp .end_draw
+		.beg32: ;рисование точки в 32 битном буфере
+			shl esi,2
+			add esi,buf2d_data  ;ptr+(size_x*y+x)
+			mov dword[esi],edx
 		.end_draw:
+	pop esi
+	@@:
+	ret
+
+;input:
+; ebx = coord x
+; ecx = coord y
+; edi = pointer to buffer struct
+;output:
+; eax = цвет точки
+; в случае ошибки eax = 0xffffffff
+align 4
+get_pixel_8:
+	mov eax,0xffffffff
+
+	bt ebx,31
+	jc @f
+	bt ecx,31
+	jc @f
+	cmp ebx,buf2d_w
+	jge @f
+	cmp ecx,buf2d_h
+	jge @f
+	push esi
+		mov esi,buf2d_w ;size x
+		imul esi,ecx ;size_x*y
+		add esi,ebx	 ;size_x*y+x
+		add esi,buf2d_data  ;ptr+(size_x*y+x)
+
+		movzx eax,byte[esi] ;copy pixel color
 	pop esi
 	@@:
 	ret
@@ -130,6 +167,37 @@ get_pixel_24:
 		ror eax,16
 		mov al,byte[esi+2]
 		ror eax,16
+	pop esi
+	@@:
+	ret
+
+;input:
+; ebx = coord x
+; ecx = coord y
+; edi = pointer to buffer struct
+;output:
+; eax = цвет точки
+; в случае ошибки eax = 0xffffffff
+align 4
+get_pixel_32:
+	mov eax,0xffffffff
+
+	bt ebx,31
+	jc @f
+	bt ecx,31
+	jc @f
+	cmp ebx,buf2d_w
+	jge @f
+	cmp ecx,buf2d_h
+	jge @f
+	push esi
+		mov esi,buf2d_w ;size x
+		imul esi,ecx ;size_x*y
+		add esi,ebx	 ;size_x*y+x
+		shl esi,2
+		add esi,buf2d_data  ;ptr+(size_x*y+x)*4
+
+		mov eax,dword[esi] ;copy pixel color
 	pop esi
 	@@:
 	ret
@@ -1635,21 +1703,40 @@ buf_flood_fill_recurs_1:
 
 ;функция для рисования точки
 align 4
-proc buf_set_pixel, buf_struc:dword, coord_x:dword, coord_y:dword, color:dword
-	pushad
-		mov edi,[buf_struc]
-		cmp buf2d_bits,8
-		je @f
-		cmp buf2d_bits,24
-		je @f
-			jmp .end24
-		@@:
-			mov ebx,dword[coord_x]
-			mov ecx,dword[coord_y]
-			mov edx,dword[color]
-			call draw_pixel
-		.end24:
-	popad
+proc buf_set_pixel uses ebx ecx edx edi, buf_struc:dword, coord_x:dword, coord_y:dword, color:dword
+	mov edi,dword[buf_struc]
+	mov ebx,dword[coord_x]
+	mov ecx,dword[coord_y]
+	mov edx,dword[color]
+	call draw_pixel
+	ret
+endp
+
+;output:
+; eax = цвет точки
+; в случае ошибки eax = 0xffffffff
+align 4
+proc buf_get_pixel uses ebx ecx edi, buf_struc:dword, coord_x:dword, coord_y:dword
+	mov edi,dword[buf_struc]
+	mov ebx,[coord_x]
+	mov ecx,[coord_y]
+
+	cmp buf2d_bits,8
+	jne @f
+		call get_pixel_8
+		jmp .end_fun
+	@@:
+	cmp buf2d_bits,24
+	jne @f
+		call get_pixel_24
+		jmp .end_fun
+	@@:
+	cmp buf2d_bits,32
+	jne @f
+		call get_pixel_32
+		;jmp .end_fun
+	@@:
+	.end_fun:
 	ret
 endp
 
@@ -2203,7 +2290,7 @@ proc buf_bit_blt_transp, buf_destination:dword, coord_x:dword, coord_y:dword, bu
 	@@:
 
 	lea ebx,[ebx+ebx*2] ;колличество байт в 1-й строке буфера минус число байт в 1-й строке копируемой картинки
-;g;
+
 	cld
 	cmp [right_bytes],0
 	jg .copy_1
@@ -2751,6 +2838,7 @@ EXPORTS:
 	dd sz_buf2d_offset_h, buf_offset_h
 	dd sz_buf2d_flood_fill, buf_flood_fill
 	dd sz_buf2d_set_pixel, buf_set_pixel
+	dd sz_buf2d_get_pixel, buf_get_pixel
 	dd 0,0
 	sz_lib_init db 'lib_init',0
 	sz_buf2d_create db 'buf2d_create',0
@@ -2778,4 +2866,4 @@ EXPORTS:
 	sz_buf2d_offset_h db 'buf2d_offset_h',0
 	sz_buf2d_flood_fill db 'buf2d_flood_fill',0
 	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
-
+	sz_buf2d_get_pixel db 'buf2d_get_pixel',0
