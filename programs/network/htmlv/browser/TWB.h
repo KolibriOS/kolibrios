@@ -15,7 +15,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 0.80";
+ char version[]=" Text-based Browser 0.81";
 
 
 struct TWebBrowser {
@@ -38,7 +38,7 @@ byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, link, ign
 dword text_colors[10],
 	text_color_index,
 	link_color,
-	bg_color=0xFFFFFF;
+	bg_color;
 
 int stroka,
 	stolbec,
@@ -105,6 +105,10 @@ void TWebBrowser::Scan(dword id) {
 		case 011: //Ctrk+K 
 			ReadHtml();
 			koitodos(buf);
+			break;
+		case 021: //Ctrl+U
+			ReadHtml();
+			utf8rutodos(buf);
 			break;
 		case BACK:
 			BrowserHistory.GoBack();
@@ -310,7 +314,7 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 		pre_text = 1; //зачётное отображение текста 
 	}
 	IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
-	for (; buf + fsize > bword; bword++;) {
+	for (bword = buf; buf + fsize > bword; bword++;) {
 	  bukva = ESBYTE[bword];
 	  switch (bukva) {
 		case 0x0a:
@@ -503,7 +507,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) IF (rez==0) ignor_text = 1; ELSE ignor_text = 0;
 		return;
 	}
-	IF(!chTag("script")) || (!chTag("style")) ignor_text = rez;
+	IF(!chTag("script")) || (!chTag("style")) || (!chTag("binary")) ignor_text = rez;
 
 	if(!chTag("title")) && (!rez)
 	{
@@ -633,7 +637,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 	////////////////////////////
-	IF(!chTag("i")) || (!chTag("em")) {
+	IF(!chTag("i")) || (!chTag("em")) || (!chTag("subtitle")) {
 		i_text = rez;
 		return;
 	}	

@@ -3,6 +3,7 @@
 //Asper, Lrz, Nable, lev.
 
 #include "..\lib\kolibri.h--"
+#include "..\lib\encoding.h--"
 #include "..\lib\file_system.h--"
 #include "img\toolbar_icons.c"
 #include "img\URLgoto.txt";
