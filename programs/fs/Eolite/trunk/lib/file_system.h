@@ -26,7 +26,25 @@ struct BDVK{
 };
 
 ////////////////////////////
-//     ірочитать файл     //
+//     Создать файл     //
+////////////////////////////
+/*f70 create_file_70;
+void CreateFile(dword file_size, read_buffer, file_path)
+{    
+	create_file_70.func = 2;
+	create_file_70.param1 = 0;
+	create_file_70.param2 = 0;
+	create_file_70.param3 = file_size;
+	create_file_70.param4 = read_buffer;
+	create_file_70.rezerv = 0;
+	create_file_70.name = file_path;
+	$mov eax,70
+	$mov ebx,#create_file_70.func
+	$int 0x40
+} */
+
+////////////////////////////
+//     Прочитать файл     //
 ////////////////////////////
 f70 read_file_70;
 void ReadFile(dword pos, file_size, read_buffer, file_path)
@@ -44,7 +62,7 @@ void ReadFile(dword pos, file_size, read_buffer, file_path)
 }    
 
 ///////////////////////////
-//    ірочитать папку    //
+//    Прочитать папку    //
 ///////////////////////////
 f70 read_dir_70;
 int ReadDir(dword file_count, read_buffer, read_dir_path)
@@ -62,7 +80,7 @@ int ReadDir(dword file_count, read_buffer, read_dir_path)
 }  
 
 ///////////////////////////
-//   іапуск программv    //
+//   Запуск программv    //
 ///////////////////////////
 f70 run_file_70;
 int RunProgram(dword run_path, run_param)
@@ -80,7 +98,7 @@ int RunProgram(dword run_path, run_param)
 }
 
 ///////////////////////////
-//    Tоздание папки     //
+//    Создание папки     //
 ///////////////////////////
 f70 create_dir_70;
 int CreateFolder(dword new_folder_path)
@@ -98,7 +116,7 @@ int CreateFolder(dword new_folder_path)
 }
 
 ////////////////////////////
-//  Lдаление файла/папки  //
+//  Удаление файла/папки  //
 ////////////////////////////
 f70 del_file_70;	
 int DeleleFile(dword del_file_path)
@@ -116,7 +134,7 @@ int DeleleFile(dword del_file_path)
 }  
 
 ///////////////////////////
-//   Tкопировать файл    //
+//   Скопировать файл    //
 ///////////////////////////
 f70	CopyFile_f;
 inline fastcall int CopyFile(dword EBX,ECX)

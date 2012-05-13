@@ -195,6 +195,15 @@ inline fastcall dword GetSkinWidth(){
 	$int 0x40
 }
 
+inline fastcall dword GetScreenHeight()
+{
+	EAX = 14;
+	EBX = 4;
+	$int 0x40
+	//$shr eax, 16
+	$and eax,0x0000FFFF
+}
+
 inline fastcall void MoveSize(dword EBX,ECX,EDX,ESI){
 	EAX = 67;
 	$int 0x40
