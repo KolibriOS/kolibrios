@@ -3,10 +3,10 @@
 #include "imgs\logo.txt"
 
 #define BROWSER_PATH	"/sys/htmlv"
-#define BROWSER_LINK	"http://www.kolibri-os.narod.ru"
+#define BROWSER_LINK	"http://kolibri-os.narod.ru"
 
 
-void authors()
+void about_dialog()
 {   
 	byte p;
 	mouse mm;
@@ -37,11 +37,11 @@ void authors()
 				DefineAndDrawWindow(600,150,181,256,0x34,0x10EFEBEF,0,0,"About Eolite");
 				DrawBar(0,0,172,50,0x8494C4); //голубое сзади
 				PutPaletteImage(#logo,85,85,43,7,#logo_pal);
-				WriteText(54,100,0x80,0xBF40BF,"Eolite v1.2",0);
+				WriteText(51,100,0x80,0xBF40BF,"Eolite v1.22",0);
 				WriteText(55,120,0x80,0,"Developers:",0); 
 				WriteText(39,130,0x80,0,"Leency & Veliant",0); 
 				WriteText(45,140,0x80,0,"KolibriOS Team",0);
-				WriteText(55,150,0x80,0," 2008-2012 ",0);
+				WriteText(61,150,0x80,0,"2008-2012",0);
 				WriteText(12,170,0x80,0,"Visit",0);
 				DrawLink(48,170,23, "kolibri-os.narod.ru"); //ссылкa
 				DrawFlatButton(85,190,70,22,0,0xE4DFE1, "Close");

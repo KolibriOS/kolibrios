@@ -8,7 +8,6 @@
 
 char NOTIFY_PATH[7]="@notify";
 
-
 void GetIni(byte onload)
 {
 	byte section[32]='', parametr[32]='', option[256]='', InfType=0;
@@ -49,8 +48,15 @@ void GetIni(byte onload)
 			case 0x0a:
 			case 0x0d:
 				InfType=PARAM;
-				IF (strcmp(#parametr,"SelectionColor")==0) videlenie=StrToCol(#option);
-				IF (strcmp(#parametr,"LineHeight")==0) BUTTON_HEIGHT=StrToInt(#option);
+				IF (!strcmp(#parametr,"SelectionColor")) videlenie=StrToCol(#option);
+				IF (!strcmp(#parametr,"LineHeight")) BUTTON_HEIGHT=StrToInt(#option);
+				IF (!strcmp(#parametr,"ShowDeviceName")) show_dev_name=StrToInt(#option);
+				
+				/*if (!strcmp(#section,"UserDirectories")) && (parametr) && (onload)
+				{
+					copystr(#parametr, #disk_list[disc_num].Item);
+					disc_num++;
+				}*/
 				
 				IF (parametr) && (!strcmp(#file_name+find_symbol(#file_name,'.'),#parametr)) {
 					errornum=RunProgram(#option,#file_path);

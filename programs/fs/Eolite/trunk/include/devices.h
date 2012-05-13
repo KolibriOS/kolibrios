@@ -1,9 +1,5 @@
 //03.04.2012
 
-path_string disk_list[20];
-int disc_num;
-
-
 void GetSystemDiscs()
 {
 	char dev_name[10], sys_discs[10];
@@ -46,7 +42,8 @@ void DrawSystemDiscs()
 	DrawBar(2,56,15,onTop(21,41),0x00699C);	  //синий прямоугольник - слева       
 	DrawBar(177,56,15,onTop(21,41),0x00699C); //синий прямоугольник - справа
 	//список дисков
-	Tip(56, "Devices", 0, "");
+	if (show_dev_name) Tip(56, "Devices", 78, "=");
+		else Tip(56, "Devices", 78, "-");
 	for (i=0;i<disc_num;i++)
 	{
 		DrawBar(17,i*16+74,160,17,0xFFFFFF); //белое
@@ -61,7 +58,8 @@ void DrawSystemDiscs()
 		IF (dev_name[1]=='h') || (dev_name[1]=='b') copystr("Hard disk ",#disc_name); 
 		copystr(#dev_name,#disc_name+strlen(#disc_name));
 		//
-		WriteText(45,i*16+79,0x80,0,#disc_name,0);
+		if (show_dev_name) WriteText(45,i*16+79,0x80,0,#disc_name,0);
+			else WriteText(45,i*16+79,0x80,0,#dev_name,0);
 		PutImage(dev_icon*14*13*3+#devices,14,13,21,i*16+76);
 	}
 }
