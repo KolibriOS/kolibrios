@@ -1,5 +1,5 @@
 ; flat assembler
-; Copyright (c) 1999-2007, Tomasz Grysztar
+; Copyright (c) 1999-2012, Tomasz Grysztar
 ; All rights reserved.
 
 struc FILEIO

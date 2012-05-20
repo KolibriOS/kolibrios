@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2011, Tomasz Grysztar.
+; Copyright (c) 1999-2012, Tomasz Grysztar.
 ; All rights reserved.
 
 parser:
@@ -115,6 +115,8 @@ parser:
 	je	parse_end_directive
 	cmp	bx,else_directive-instruction_handler
 	je	parse_else
+	cmp	bx,assert_directive-instruction_handler
+	je	parse_assert
       common_parse:
 	call	parse_line_contents
 	jmp	parse_next_line
@@ -278,6 +280,19 @@ parser:
 	mov	al,dl
 	stos	byte [edi]
 	jmp	parse_if
+      parse_assert:
+	push	edi
+	call	parse_line_contents
+	xor	al,al
+	stos	byte [edi]
+	xchg	esi,[esp]
+	mov	edi,esi
+	call	preevaluate_logical_expression
+	pop	esi
+	or	al,al
+	jz	parse_next_line
+	stos	byte [edi]
+	jmp	parse_next_line
       skip_true_condition_else:
 	sub	edi,4
 	or	byte [esp],1

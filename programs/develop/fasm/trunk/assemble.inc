@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2011, Tomasz Grysztar.
+; Copyright (c) 1999-2012, Tomasz Grysztar.
 ; All rights reserved.
 
 assembler:
@@ -1914,3 +1914,13 @@ err_directive:
 	or	al,al
 	jz	invoked_error
 	jmp	extra_characters_on_line
+assert_directive:
+	call	calculate_logical_expression
+	or	al,al
+	jnz	instruction_assembled
+	cmp	[error_line],0
+	jne	instruction_assembled
+	mov	eax,[current_line]
+	mov	[error_line],eax
+	mov	[error],assertion_failed
+	jmp	instruction_assembled

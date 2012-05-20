@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2011, Tomasz Grysztar.
+; Copyright (c) 1999-2012, Tomasz Grysztar.
 ; All rights reserved.
 
 convert_expression:
@@ -15,6 +15,8 @@ convert_expression:
 	pop	edi
 	or	al,al
 	jz	expression_element
+	cmp	al,82h
+	je	expression_loop
 	push	eax
 	jmp	expression_loop
       expression_element:
@@ -391,8 +393,12 @@ get_number:
 	xor	edx,edx
 	mov	cl,bl
 	dec	esi
-	cmp	bl,64
-	jae	oct_out_of_range
+	cmp	bl,63
+	ja	oct_out_of_range
+	jne	oct_range_ok
+	cmp	al,1
+	ja	oct_out_of_range
+      oct_range_ok:
 	add	bl,3
 	cmp	cl,30
 	je	oct_digit_wrap

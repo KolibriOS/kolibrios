@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2011, Tomasz Grysztar.
+; Copyright (c) 1999-2012, Tomasz Grysztar.
 ; All rights reserved.
 
 include_variable db 'INCLUDE',0
@@ -58,8 +58,8 @@ operators:
  db 0
 
 single_operand_operators:
- db 1,'+',0
- db 1,'-',083h
+ db 1,'+',82h
+ db 1,'-',83h
  db 3,'not',0D0h
  db 3,'plt',0E1h
  db 3,'rva',0E0h
@@ -1265,6 +1265,8 @@ instructions_6:
  dw sse_pd_instruction-instruction_handler
  db 'andnps',55h
  dw sse_ps_instruction-instruction_handler
+ db 'assert',0
+ dw assert_directive-instruction_handler
  db 'cmovae',43h
  dw cmov_instruction-instruction_handler
  db 'cmovbe',46h

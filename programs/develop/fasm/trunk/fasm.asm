@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                 ;;
 ;;  flat assembler source                          ;;
-;;  Copyright (c) 1999-2006, Tomasz Grysztar       ;;
+;;  Copyright (c) 1999-2012, Tomasz Grysztar       ;;
 ;;  All rights reserved.                           ;;
 ;;                                                 ;;
 ;;  KolibriOS port by KolibriOS Team               ;;
