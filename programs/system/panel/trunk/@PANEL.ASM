@@ -1122,7 +1122,7 @@ draw_small_right:
 
 	xor	ecx,ecx
 	mov	cx,[height]
-	mcall	8,<0,9>,,1,[wcolor]
+	mcall	8,<0,10>,,1,[wcolor]
 
 	mov	ebx,2*65536	;+6
 	mov	bx,[height]

@@ -215,7 +215,7 @@ minimize_right_button:
 	add	ecx,[height]
 	dec	ecx
 	add	ebx,68*65536
-	mov	bx,9
+	mov	bx,10 ;9
 	mov	edx,102
 ;	add	edx,[button_frames]
 	or	edx,0x40000000
