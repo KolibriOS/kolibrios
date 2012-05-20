@@ -134,11 +134,39 @@ convert_number:
       symbol_value:
 	cmp	[source_start],0
 	je	preprocessor_value
-	push	edi
-	mov	edi,address_registers
-	call	get_operator
-	or	al,al
-	jnz	register_value
+	push	edi esi
+	lods	word [esi]
+	cmp	al,1Ah
+	jne	no_address_register
+	movzx	ecx,ah
+	call	get_symbol
+	jc	no_address_register
+	cmp	al,10h
+	jne	no_address_register
+	mov	al,ah
+	shr	ah,4
+	cmp	ah,4
+	je	register_value
+	cmp	ah,8
+	je	register_value
+	cmp	ah,0Ch
+	je	register_value
+	cmp	ah,0Dh
+	je	register_value
+	cmp	ah,0Fh
+	je	register_value
+	cmp	ah,2
+	jne	no_address_register
+	cmp	al,23h
+	je	register_value
+	cmp	al,25h
+	je	register_value
+	cmp	al,26h
+	je	register_value
+	cmp	al,27h
+	je	register_value
+      no_address_register:
+	pop	esi
 	mov	edi,directive_operators
 	call	get_operator
 	pop	edi
@@ -158,7 +186,7 @@ convert_number:
 	mov	eax,0Fh
 	jmp	store_label_value
       register_value:
-	pop	edi
+	pop	edx edi
 	mov	byte [edi-1],10h
 	stos	byte [edi]
 	ret

@@ -12,14 +12,14 @@ dump_symbols:
 	jae	out_of_memory
 	mov	eax,edi
 	sub	eax,ebx
-	mov	[ebx-38h+0Ch],eax
+	mov	[ebx-40h+0Ch],eax
 	mov	esi,[output_file]
 	call	copy_asciiz
 	cmp	edi,[display_buffer]
 	jae	out_of_memory
 	mov	edx,[symbols_stream]
 	mov	ebp,[free_additional_memory]
-	mov	[number_of_sections],0
+	and	[number_of_sections],0
 	cmp	[output_format],4
 	je	prepare_strings_table
 	cmp	[output_format],5
@@ -152,22 +152,22 @@ dump_symbols:
       labels_dump_ok:
 	mov	eax,edi
 	sub	eax,ebx
-	mov	[ebx-38h+14h],eax
-	add	eax,38h
-	mov	[ebx-38h+18h],eax
+	mov	[ebx-40h+14h],eax
+	add	eax,40h
+	mov	[ebx-40h+18h],eax
 	mov	ecx,[memory_end]
 	sub	ecx,[labels_list]
-	mov	[ebx-38h+1Ch],ecx
+	mov	[ebx-40h+1Ch],ecx
 	add	eax,ecx
-	mov	[ebx-38h+20h],eax
+	mov	[ebx-40h+20h],eax
 	mov	ecx,[source_start]
 	sub	ecx,[memory_start]
-	mov	[ebx-38h+24h],ecx
+	mov	[ebx-40h+24h],ecx
 	add	eax,ecx
-	mov	[ebx-38h+28h],eax
+	mov	[ebx-40h+28h],eax
 	mov	eax,[number_of_sections]
 	shl	eax,2
-	mov	[ebx-38h+34h],eax
+	mov	[ebx-40h+34h],eax
 	call	prepare_preprocessed_source
 	mov	esi,[labels_list]
 	mov	ebp,edi
@@ -179,7 +179,12 @@ dump_symbols:
 	sub	esi,8
 	sub	esi,ecx
 	cmp	eax,1
+	je	process_line_dump
+	cmp	eax,2
 	jne	make_lines_dump
+	add	dword [ebx-40h+3Ch],8
+	jmp	make_lines_dump
+      process_line_dump:
 	mov	eax,[esi+4]
 	sub	eax,[code_start]
 	add	eax,[headers_size]
@@ -193,8 +198,10 @@ dump_symbols:
 	stos	dword [edi]
 	mov	eax,[esi+4]
 	xor	edx,edx
+	xor	cl,cl
 	sub	eax,[esi+8]
 	sbb	edx,[esi+8+4]
+	sbb	cl,[esi+1Bh]
 	stos	dword [edi]
 	mov	eax,edx
 	stos	dword [edi]
@@ -210,10 +217,15 @@ dump_symbols:
       base_symbol_for_line_ok:
 	stos	dword [edi]
 	mov	eax,[esi+18h]
-	and	eax,001FFFFh
+	and	eax,01FFFFh
 	stos	dword [edi]
+	mov	[edi-1],cl
 	cmp	edi,[display_buffer]
 	jae	out_of_memory
+	mov	eax,edi
+	sub	eax,1Ch
+	sub	eax,ebp
+	mov	[esi],eax
 	jmp	make_lines_dump
       lines_dump_ok:
 	mov	edx,edi
@@ -223,10 +235,12 @@ dump_symbols:
 	stos	dword [edi]
 	mov	ecx,edi
 	sub	ecx,ebx
-	sub	ecx,[ebx-38h+14h]
-	mov	[ebx-38h+2Ch],ecx
-	add	ecx,[ebx-38h+28h]
-	mov	[ebx-38h+30h],ecx
+	sub	ecx,[ebx-40h+14h]
+	mov	[ebx-40h+2Ch],ecx
+	add	ecx,[ebx-40h+28h]
+	mov	[ebx-40h+30h],ecx
+	add	ecx,[ebx-40h+34h]
+	mov	[ebx-40h+38h],ecx
       find_inexisting_offsets:
 	sub	edx,1Ch
 	cmp	edx,ebp
@@ -238,7 +252,7 @@ dump_symbols:
 	mov	eax,[edx]
 	jmp	find_inexisting_offsets
       correct_inexisting_offset:
-	mov	dword [edx],0
+	and	dword [edx],0
 	or	byte [edx+1Ah],2
 	jmp	find_inexisting_offsets
       write_symbols:
@@ -247,7 +261,7 @@ dump_symbols:
 	jc	write_failed
 	mov	edx,[code_start]
 	mov	ecx,[edx+14h]
-	add	ecx,38h
+	add	ecx,40h
 	call	write
 	jc	write_failed
 	mov	edx,[display_buffer]
@@ -270,16 +284,47 @@ dump_symbols:
 	shl	ecx,2
 	call	write
 	jc	write_failed
+	mov	esi,[labels_list]
+	mov	edi,[memory_start]
+      make_references_dump:
+	cmp	esi,[display_buffer]
+	je	references_dump_ok
+	mov	eax,[esi-4]
+	mov	ecx,[esi-8]
+	sub	esi,8
+	sub	esi,ecx
+	cmp	eax,2
+	je	dump_reference
+	cmp	eax,1
+	jne	make_references_dump
+	mov	edx,[esi]
+	jmp	make_references_dump
+      dump_reference:
+	mov	eax,[memory_end]
+	sub	eax,[esi]
+	sub	eax,LABEL_STRUCTURE_SIZE
+	stosd
+	mov	eax,edx
+	stosd
+	cmp	edi,[display_buffer]
+	jb	make_references_dump
+	jmp	out_of_memory
+      references_dump_ok:
+	mov	edx,[memory_start]
+	mov	ecx,edi
+	sub	ecx,edx
+	call	write
+	jc	write_failed
 	call	close
 	ret
       setup_dump_header:
 	xor	eax,eax
-	mov	ecx,38h shr 2
+	mov	ecx,40h shr 2
 	rep	stos dword [edi]
 	mov	ebx,edi
-	mov	dword [ebx-38h],'fas'+1Ah shl 24
-	mov	dword [ebx-38h+4],VERSION_MAJOR + VERSION_MINOR shl 8 + 38h shl 16
-	mov	dword [ebx-38h+10h],38h
+	mov	dword [ebx-40h],'fas'+1Ah shl 24
+	mov	dword [ebx-40h+4],VERSION_MAJOR + VERSION_MINOR shl 8 + 40h shl 16
+	mov	dword [ebx-40h+10h],40h
 	ret
 prepare_preprocessed_source:
 	mov	esi,[memory_start]
@@ -365,21 +410,21 @@ dump_preprocessed_source:
 	mov	eax,edi
 	sub	eax,ebx
 	dec	eax
-	mov	[ebx-38h+0Ch],eax
+	mov	[ebx-40h+0Ch],eax
 	mov	eax,edi
 	sub	eax,ebx
-	mov	[ebx-38h+14h],eax
-	add	eax,38h
-	mov	[ebx-38h+20h],eax
+	mov	[ebx-40h+14h],eax
+	add	eax,40h
+	mov	[ebx-40h+20h],eax
 	call	prepare_preprocessed_source
 	sub	esi,[memory_start]
-	mov	[ebx-38h+24h],esi
+	mov	[ebx-40h+24h],esi
 	mov	edx,[symbols_file]
 	call	create
 	jc	write_failed
 	mov	edx,[free_additional_memory]
 	mov	ecx,[edx+14h]
-	add	ecx,38h
+	add	ecx,40h
 	call	write
 	jc	write_failed
 	mov	edx,[memory_start]

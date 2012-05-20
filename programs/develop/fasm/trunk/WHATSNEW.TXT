@@ -2,46 +2,26 @@
 Visit http://flatassembler.net/ for more information.
 
 
-version 1.69.11 (Dec 19, 2009)
+version 1.70.01 (Apr 30, 2012)
 
-[+] Allowed syntax of "pmovmskb" with 64-bit register destination in long mode.
-
-[-] The code generated for "call eax" instruction was missing prefix in 16-bit
-    mode - fixed.
-
-
-version 1.69.10 (Oct 28, 2009)
-
-[-] Fixed long mode opcode generator to allow absolute addresses to be
-    generated with "qword" keyword inside square brackets.
+[-] Corrected a recently introduced bug that caused some incorrect
+    address expressions to cause an error prematurely during the
+    parsing stage.
 
 
-version 1.69.09 (Oct 20, 2009)
+version 1.70 (Apr 17, 2012)
 
-[-] Fixed a crash during the symbolic information generation when a "static"
-    symbol was encountered.
+[+] Added support for AVX, AVX2, AES, CLMUL, FMA, RDRAND, FSGSBASE, F16C,
+    FMA4, XOP, MOVBE, BMI, TBM, INVPCID, HLE and RTM instruction sets.
 
+[+] Added half-precision floating point values support.
 
-version 1.69.08 (Oct 04, 2009)
+[+] Extended the syntax of "rept" directive to allow numerical expressions
+    to be calculated by preprocessor in its arguments.
 
-[-] Minor bugfixes.
+[+] Added "large" and "NX" settings from PE format.
 
-
-version 1.69.07 (Oct 03, 2009)
-
-[-] Corrected encoding of "extrq" intruction for some cases.
-
-
-version 1.69.06 (Sep 29, 2009)
-
-[-] The prefix 67h for "jecxz" and "loopd" instructions in 64-bit mode wasn't
-    correctly generated - fixed.
-
-[-] It's no longer possible to define two special segments of the same type
-    in ELF executables.
-
-
-version 1.69.05 (Sep 14, 2009)
+[+] Allowed PE fixups to be resolved anywhere in the generated executable.
 
 [+] Allowed to specify branding value (use 3 for Linux) after the
     "format ELF executable" setting.
@@ -49,38 +29,42 @@ version 1.69.05 (Sep 14, 2009)
 [+] Added "intepreter", "dynamic" and "note" keywords for creation of
     special segments in ELF executables.
 
+[-] Fixed long mode opcode generator to allow absolute addresses to be
+    generated with "qword" keyword inside square brackets.
 
-version 1.69.04 (Sep 7, 2009)
+[-] Disallowed negative immediates with "int", "enter", "ret" instructions.
 
-[-] Fixed a bug with REX prefix generation with address of type "rX+rsp".
+[+] Allowed symbolic information dump file to be created even in case of error.
+    In such case it contains only the preprocessed source that can be extracted
+    with PREPSRC tool. If error occured during preprocessing, only the source up
+    to the point of error is provided.
 
+[+] Added symbol references table to symbolic dump file.
 
-version 1.69.03 (Aug 03, 2009)
+[-] Corrected the "defined" and "used" flags in the symbols dump to reflect the
+    state from the final assembly pass.
 
-[+] Allowed simplified syntax for "monitor", "mwait", "blendvps", "blendvpd" and
-    "pblendvb" instructions.
+[+] Added "assert" directive.
 
+[-] Formatter symbols like "PE" or "readable" are now recognized only in the
+    context of formatter directives, and thus are no longer disallowed as
+    labels.
 
-version 1.69.02 (Jul 04, 2009)
+[+] Macroinstruction argument now can have default value, defined with "="
+    symbol followed by value after the argument name in definition.
 
-[-] Minor bugfixes.
+[+] Added "relativeto" operator, which can be used in logical expressions
+    to test whether two values differ only by a constant and not relocatable
+    amount.
 
-
-version 1.69.01 (Jul 01, 2009)
-
-[+] Added "movbe" instruction.
-
-[-] "extractps" no longer generates the double 66h prefix.
-
-
-version 1.69.00 (Jun 23, 2009)
-
-[+] Extended the syntax of "rept" directive to allow numerical expressions
-    to be calculated by preprocessor in its arguments.
-
-[-] The code of assembler (but not data) has been made position-independent, and
-    this allowed to use code segmentation in DOS unREAL mode, so the code is
-    no longer limited to 64 kilobytes.
+[-] Revised the expression calculator, it now is able to correctly perform
+    calculations in signed and unsigned ranges in full 64-bit. This fixes
+    a number of issues - the overflow will now be correctly detected for
+    64-bit values in cases, where previous versions could not distinguish
+    whether it was an overflow or not. The effect of these corrections is
+    that "dq" directive will now behave consistently with behavior of the
+    data directives for smaller sizes, and the same applies to all the
+    places where "qword" size for value is used.
 
 
 version 1.68 (Jun 13, 2009)

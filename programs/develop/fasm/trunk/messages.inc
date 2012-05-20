@@ -25,7 +25,7 @@ _operand_size_not_specified db 'operand size not specified',0
 _operand_sizes_do_not_match db 'operand sizes do not match',0
 _invalid_address_size db 'invalid size of address value',0
 _address_sizes_do_not_agree db 'address sizes do not agree',0
-_prefix_conflict db 'disallowed combination of registers',0
+_disallowed_combination_of_registers db 'disallowed combination of registers',0
 _long_immediate_not_encodable db 'not encodable with long immediate',0
 _relative_jump_out_of_range db 'relative jump out of range',0
 _invalid_expression db 'invalid expression',0

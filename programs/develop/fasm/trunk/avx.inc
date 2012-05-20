@@ -68,6 +68,10 @@ avx_movshdup_instruction:
 	or	[vex_required],2
 	mov	[opcode_prefix],0F3h
 	mov	[mmx_size],0
+	jmp	avx_instruction
+avx_128bit_instruction:
+	mov	[mmx_size],16
+	mov	[opcode_prefix],66h
 avx_instruction:
 	mov	[base_code],0Fh
 	mov	[extended_code],al
@@ -207,8 +211,11 @@ avx_instruction:
 	ret
       avx_smem:
 	xchg	al,[operand_size]
+	or	al,al
+	jz	avx_smem_ok
 	cmp	al,[mmx_size]
 	jne	invalid_operand_size
+      avx_smem_ok:
 	clc
 	ret
       take_imm4_if_needed:
@@ -229,23 +236,24 @@ avx_instruction:
       imm4_ok:
 	ret
 
-avx_128bit_instruction:
-	mov	[mmx_size],16
-	mov	[opcode_prefix],66h
-	jmp	avx_instruction
 avx_single_source_128bit_instruction_38:
 	or	[vex_required],2
 avx_128bit_instruction_38:
 	mov	[mmx_size],16
+	jmp	avx_instruction_38_setup
+avx_single_source_instruction_38:
+	or	[vex_required],2
+avx_instruction_38:
+	mov	[mmx_size],0
       avx_instruction_38_setup:
 	mov	[opcode_prefix],66h
 	mov	[supplemental_code],al
 	mov	al,38h
 	jmp	avx_instruction
-avx_single_source_instruction_38:
-	or	[vex_required],2
-	mov	[mmx_size],0
-	jmp	avx_instruction_38_setup
+avx_instruction_38_w1:
+	or	[rex_prefix],8
+	jmp	avx_instruction_38
+
 avx_ss_instruction_3a_imm8:
 	mov	[mmx_size],4
 	jmp	avx_instruction_3a_imm8_setup
@@ -259,11 +267,6 @@ avx_128bit_instruction_3a_imm8:
 	jmp	avx_instruction_3a_imm8_setup
 avx_triple_source_instruction_3a:
 	mov	[mmx_size],0
-	mov	[immediate_size],-1
-	mov	byte [value],0
-	jmp	avx_instruction_3a_setup
-avx_triple_source_128bit_instruction_3a:
-	mov	[mmx_size],16
 	mov	[immediate_size],-1
 	mov	byte [value],0
 	jmp	avx_instruction_3a_setup
@@ -283,9 +286,21 @@ avx_pclmulqdq_instruction:
 	mov	[mmx_size],16
 	mov	al,44h
 	jmp	avx_instruction_3a_setup
+
+avx_permq_instruction:
+	or	[vex_required],2
+	or	[rex_prefix],8
 avx_perm2f128_instruction:
-	call	setup_66_0f_3a
 	mov	[immediate_size],1
+	mov	ah,3Ah
+	jmp	avx_perm_instruction
+avx_permd_instruction:
+	mov	ah,38h
+      avx_perm_instruction:
+	mov	[opcode_prefix],66h
+	mov	[base_code],0Fh
+	mov	[extended_code],ah
+	mov	[supplemental_code],al
 	mov	[mmx_size],0
 	or	[vex_required],1
 	call	take_avx_register
@@ -293,12 +308,6 @@ avx_perm2f128_instruction:
 	jne	invalid_operand_size
 	mov	[postbyte_register],al
 	jmp	avx_vex_reg
-     setup_66_0f_3a:
-	mov	[opcode_prefix],66h
-	mov	[base_code],0Fh
-	mov	[extended_code],3Ah
-	mov	[supplemental_code],al
-	ret
 
 avx_movdqu_instruction:
 	mov	[opcode_prefix],0F3h
@@ -340,7 +349,7 @@ avx_movntps_instruction:
 avx_lddqu_instruction:
 	mov	[opcode_prefix],0F2h
 	mov	[mmx_size],0
-	xor	cl,cl
+	xor	cx,cx
       avx_load_instruction:
 	mov	[base_code],0Fh
 	mov	[extended_code],al
@@ -362,6 +371,8 @@ avx_lddqu_instruction:
 	jne	invalid_operand
 	lods	byte [esi]
 	call	get_size_operator
+	cmp	al,10h
+	je	avx_load_reg_reg
 	cmp	al,'['
 	jne	invalid_operand
 	call	get_address
@@ -376,25 +387,50 @@ avx_lddqu_instruction:
 	cmp	al,ah
 	jne	invalid_operand_size
 	jmp	instruction_ready
+      avx_load_reg_reg:
+	lods	byte [esi]
+	call	convert_avx_register
+	cmp	ch,ah
+	jne	invalid_operand
+	mov	bl,al
+	pop	eax
+	xchg	ah,[operand_size]
+	mov	[postbyte_register],al
+	jmp	nomem_instruction_ready
+
 avx_movntdqa_instruction:
-	mov	[mmx_size],16
-	mov	al,2Ah
-	mov	cl,16
+	mov	[mmx_size],0
+	xor	cx,cx
 	jmp	avx_load_instruction_38
 avx_broadcastss_instruction:
 	mov	[mmx_size],4
-	mov	al,18h
 	xor	cl,cl
+	mov	ch,16
 	jmp	avx_load_instruction_38
 avx_broadcastsd_instruction:
 	mov	[mmx_size],8
-	mov	al,19h
 	mov	cl,32
+	mov	ch,16
+	jmp	avx_load_instruction_38
+avx_pbroadcastb_instruction:
+	mov	[mmx_size],1
+	jmp	avx_pbroadcast_instruction
+avx_pbroadcastw_instruction:
+	mov	[mmx_size],2
+	jmp	avx_pbroadcast_instruction
+avx_pbroadcastd_instruction:
+	mov	[mmx_size],4
+	jmp	avx_pbroadcast_instruction
+avx_pbroadcastq_instruction:
+	mov	[mmx_size],8
+      avx_pbroadcast_instruction:
+	xor	cl,cl
+	mov	ch,16
 	jmp	avx_load_instruction_38
 avx_broadcastf128_instruction:
 	mov	[mmx_size],16
-	mov	al,1Ah
 	mov	cl,32
+	xor	ch,ch
       avx_load_instruction_38:
 	mov	[opcode_prefix],66h
 	mov	[supplemental_code],al
@@ -467,11 +503,10 @@ avx_movhlps_instruction:
 	call	take_avx_register
 	mov	bl,al
 	jmp	nomem_instruction_ready
+avx_maskmov_w1_instruction:
+	or	[rex_prefix],8
 avx_maskmov_instruction:
-	mov	[opcode_prefix],66h
-	mov	[base_code],0Fh
-	mov	[extended_code],38h
-	mov	[supplemental_code],al
+	call	setup_66_0f_38
 	mov	[mmx_size],0
 	or	[vex_required],1
 	lods	byte [esi]
@@ -508,6 +543,12 @@ avx_maskmov_instruction:
 	mov	[postbyte_register],al
 	add	[supplemental_code],2
 	jmp	instruction_ready
+      setup_66_0f_38:
+	mov	[extended_code],38h
+	mov	[supplemental_code],al
+	mov	[base_code],0Fh
+	mov	[opcode_prefix],66h
+	ret
 avx_movd_instruction:
 	or	[vex_required],1
 	jmp	movd_instruction
@@ -638,13 +679,14 @@ avx_cvtps2pd_instruction:
 	jne	invalid_operand
 	mov	[mmx_size],cl
 	call	get_address
-	mov	al,[operand_size]
+	mov	al,[mmx_size]
+	mov	ah,al
+	xchg	al,[operand_size]
 	or	al,al
 	jz	instruction_ready
 	shl	al,1
-	cmp	al,[mmx_size]
+	cmp	al,ah
 	jne	invalid_operand_size
-	mov	[operand_size],al
 	jmp	instruction_ready
 avx_cvtpd2dq_instruction:
 	mov	[opcode_prefix],0F2h
@@ -753,6 +795,12 @@ avx_extractf128_instruction:
 	mov	[postbyte_register],al
 	pop	ebx
 	jmp	mmx_nomem_imm8
+      setup_66_0f_3a:
+	mov	[extended_code],3Ah
+	mov	[supplemental_code],al
+	mov	[base_code],0Fh
+	mov	[opcode_prefix],66h
+	ret
 avx_insertf128_instruction:
 	or	[vex_required],1
 	call	setup_66_0f_3a
@@ -840,10 +888,46 @@ avx_maskmovdqu_instruction:
 	jmp	maskmovdqu_instruction
 avx_pmovmskb_instruction:
 	or	[vex_required],1
-	jmp	pmovmskb_instruction
+	mov	[opcode_prefix],66h
+	mov	[base_code],0Fh
+	mov	[extended_code],al
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	jne	invalid_operand
+	lods	byte [esi]
+	call	convert_register
+	cmp	ah,4
+	je	avx_pmovmskb_reg_size_ok
+	cmp	[code_type],64
+	jne	invalid_operand_size
+	cmp	ah,8
+	jnz	invalid_operand_size
+      avx_pmovmskb_reg_size_ok:
+	mov	[postbyte_register],al
+	mov	[operand_size],0
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	call	take_avx_register
+	mov	bl,al
+	jmp	nomem_instruction_ready
 avx_pshufd_instruction:
 	or	[vex_required],1
-	jmp	pshufd_instruction
+	mov	[mmx_size],0
+	mov	[opcode_prefix],al
+	mov	[base_code],0Fh
+	mov	[extended_code],70h
+	call	take_avx_register
+	mov	[postbyte_register],al
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	call	take_avx_rm
+	jnc	mmx_imm8
+	mov	bl,al
+	jmp	mmx_nomem_imm8
+
 avx_pmovsxbw_instruction:
 	mov	[mmx_size],8
 	jmp	avx_pmovsx_instruction
@@ -863,7 +947,40 @@ avx_pmovsxdq_instruction:
 	mov	[mmx_size],8
       avx_pmovsx_instruction:
 	or	[vex_required],1
-	jmp	pmovsx_instruction
+	call	setup_66_0f_38
+	call	take_avx_register
+	mov	[postbyte_register],al
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	xor	al,al
+	xchg	al,[operand_size]
+	push	eax
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	je	avx_pmovsx_xmmreg_reg
+	cmp	al,'['
+	jne	invalid_operand
+	call	get_address
+	pop	eax
+	cmp	al,32
+	jb	avx_pmovsx_size_check
+	shl	[mmx_size],1
+      avx_pmovsx_size_check:
+	xchg	al,[operand_size]
+	test	al,al
+	jz	instruction_ready
+	cmp	al,[mmx_size]
+	jne	invalid_operand_size
+	jmp	instruction_ready
+      avx_pmovsx_xmmreg_reg:
+	lods	byte [esi]
+	call	convert_xmm_register
+	mov	bl,al
+	pop	eax
+	mov	[operand_size],al
+	jmp	nomem_instruction_ready
 avx_permil_instruction:
 	call	setup_66_0f_3a
 	or	[vex_required],1
@@ -915,30 +1032,12 @@ avx_permil_instruction:
       avx_permil_reg_mem:
 	call	get_address
 	jmp	mmx_imm8
-avx_pslldq_instruction:
-	mov	[postbyte_register],al
-	mov	[opcode_prefix],66h
-	mov	[base_code],0Fh
-	mov	[extended_code],73h
-	or	[vex_required],1
-	call	take_avx_register
-	cmp	ah,16
-	jne	invalid_operand
-	mov	[vex_register],al
-	lods	byte [esi]
-	cmp	al,','
-	jne	invalid_operand
-	call	take_avx_register
-	mov	bl,al
-	jmp	mmx_nomem_imm8
 avx_bit_shift_instruction:
 	mov	[opcode_prefix],66h
 	mov	[base_code],0Fh
 	mov	[extended_code],al
 	or	[vex_required],1
 	call	take_avx_register
-	cmp	ah,16
-	jne	invalid_operand
 	mov	[postbyte_register],al
 	lods	byte [esi]
 	cmp	al,','
@@ -953,12 +1052,12 @@ avx_bit_shift_instruction:
 	xchg	cl,[operand_size]
 	lods	byte [esi]
 	call	get_size_operator
-	xchg	cl,[operand_size]
-	pop	esi
 	cmp	al,10h
 	je	avx_bit_shift_regs_reg
+	pop	esi
 	cmp	al,'['
 	je	avx_bit_shift_regs_mem
+	xchg	cl,[operand_size]
 	dec	esi
 	mov	bl,[extended_code]
 	mov	al,bl
@@ -972,14 +1071,38 @@ avx_bit_shift_instruction:
 	xchg	bl,[vex_register]
 	jmp	mmx_nomem_imm8
       avx_bit_shift_regs_reg:
-	call	take_avx_register
+	pop	eax
+	lods	byte [esi]
+	call	convert_xmm_register
+	xchg	cl,[operand_size]
 	mov	bl,al
 	jmp	nomem_instruction_ready
       avx_bit_shift_regs_mem:
+	push	ecx
 	lods	byte [esi]
 	call	get_size_operator
 	call	get_address
+	pop	eax
+	xchg	al,[operand_size]
+	test	al,al
+	jz	instruction_ready
+	cmp	al,16
+	jne	invalid_operand_size
 	jmp	instruction_ready
+avx_pslldq_instruction:
+	mov	[postbyte_register],al
+	mov	[opcode_prefix],66h
+	mov	[base_code],0Fh
+	mov	[extended_code],73h
+	or	[vex_required],1
+	call	take_avx_register
+	mov	[vex_register],al
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	call	take_avx_register
+	mov	bl,al
+	jmp	mmx_nomem_imm8
 
 vzeroall_instruction:
 	mov	[operand_size],32
@@ -1024,6 +1147,166 @@ vcvtps2ph_instruction:
 	jne	invalid_operand
 	call	take_avx_register
 	mov	[postbyte_register],al
+	jmp	mmx_nomem_imm8
+
+bmi_instruction:
+	mov	[base_code],0Fh
+	mov	[extended_code],38h
+	mov	[supplemental_code],0F3h
+	mov	[postbyte_register],al
+      bmi_reg:
+	or	[vex_required],1
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	jne	invalid_operand
+	lods	byte [esi]
+	call	convert_register
+	mov	[vex_register],al
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	je	bmi_reg_reg
+	cmp	al,'['
+	jne	invalid_argument
+	call	get_address
+	call	operand_32or64
+	jmp	instruction_ready
+      bmi_reg_reg:
+	lods	byte [esi]
+	call	convert_register
+	mov	bl,al
+	call	operand_32or64
+	jmp	nomem_instruction_ready
+      operand_32or64:
+	mov	al,[operand_size]
+	cmp	al,4
+	je	operand_32or64_ok
+	cmp	al,8
+	jne	invalid_operand_size
+	cmp	[code_type],64
+	jne	invalid_operand
+	or	[rex_prefix],8
+      operand_32or64_ok:
+	ret
+pdep_instruction:
+	mov	[opcode_prefix],0F2h
+	jmp	andn_instruction
+pext_instruction:
+	mov	[opcode_prefix],0F3h
+andn_instruction:
+	mov	[base_code],0Fh
+	mov	[extended_code],38h
+	mov	[supplemental_code],al
+	or	[vex_required],1
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	jne	invalid_operand
+	lods	byte [esi]
+	call	convert_register
+	mov	[postbyte_register],al
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	jmp	bmi_reg
+sarx_instruction:
+	mov	[opcode_prefix],0F3h
+	jmp	bzhi_instruction
+shrx_instruction:
+	mov	[opcode_prefix],0F2h
+	jmp	bzhi_instruction
+shlx_instruction:
+	mov	[opcode_prefix],66h
+bzhi_instruction:
+	mov	[base_code],0Fh
+	mov	[extended_code],38h
+	mov	[supplemental_code],al
+	or	[vex_required],1
+	call	get_reg_mem
+	jc	bzhi_reg_reg
+	call	get_vex_source_register
+	jc	invalid_operand
+	call	operand_32or64
+	jmp	instruction_ready
+      bzhi_reg_reg:
+	call	get_vex_source_register
+	jc	invalid_operand
+	call	operand_32or64
+	jmp	nomem_instruction_ready
+      get_vex_source_register:
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	jne	no_vex_source_register
+	lods	byte [esi]
+	call	convert_register
+	mov	[vex_register],al
+	clc
+	ret
+      no_vex_source_register:
+	stc
+	ret
+bextr_instruction:
+	mov	[base_code],0Fh
+	mov	[extended_code],38h
+	mov	[supplemental_code],al
+	or	[vex_required],1
+	call	get_reg_mem
+	jc	bextr_reg_reg
+	call	get_vex_source_register
+	jc	bextr_reg_mem_imm32
+	call	operand_32or64
+	jmp	instruction_ready
+      bextr_reg_reg:
+	call	get_vex_source_register
+	jc	bextr_reg_reg_imm32
+	call	operand_32or64
+	jmp	nomem_instruction_ready
+      setup_bextr_imm_opcode:
+	mov	[xop_opcode_map],0Ah
+	mov	[base_code],10h
+	call	operand_32or64
+	ret
+      bextr_reg_mem_imm32:
+	call	get_imm32
+	call	setup_bextr_imm_opcode
+	jmp	store_instruction_with_imm32
+      bextr_reg_reg_imm32:
+	call	get_imm32
+	call	setup_bextr_imm_opcode
+      store_nomem_instruction_with_imm32:
+	call	store_nomem_instruction
+	mov	eax,dword [value]
+	call	mark_relocation
+	stos	dword [edi]
+	jmp	instruction_assembled
+      get_imm32:
+	cmp	al,'('
+	jne	invalid_operand
+	push	edx ebx ecx
+	call	get_dword_value
+	mov	dword [value],eax
+	pop	ecx ebx edx
+	ret
+rorx_instruction:
+	mov	[opcode_prefix],0F2h
+	mov	[base_code],0Fh
+	mov	[extended_code],3Ah
+	mov	[supplemental_code],al
+	or	[vex_required],1
+	call	get_reg_mem
+	jc	rorx_reg_reg
+	call	operand_32or64
+	jmp	mmx_imm8
+      rorx_reg_reg:
+	call	operand_32or64
 	jmp	mmx_nomem_imm8
 
 fma_instruction_pd:
@@ -1219,6 +1502,157 @@ vpermil2_instruction:
 	mov	[mmx_size],0
 	jmp	avx_instruction
 
+tbm_instruction:
+	mov	[xop_opcode_map],9
+	mov	ah,al
+	shr	ah,4
+	and	al,111b
+	mov	[base_code],ah
+	mov	[postbyte_register],al
+	jmp	bmi_reg
+
+llwpcb_instruction:
+	or	[vex_required],1
+	mov	[xop_opcode_map],9
+	mov	[base_code],12h
+	mov	[postbyte_register],al
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	jne	invalid_operand
+	lods	byte [esi]
+	call	convert_register
+	mov	bl,al
+	call	operand_32or64
+	jmp	nomem_instruction_ready
+lwpins_instruction:
+	or	[vex_required],1
+	mov	[xop_opcode_map],0Ah
+	mov	[base_code],12h
+	mov	[vex_register],al
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	jne	invalid_operand
+	lods	byte [esi]
+	call	convert_register
+	mov	[postbyte_register],al
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	xor	cl,cl
+	xchg	cl,[operand_size]
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	je	lwpins_reg_reg
+	cmp	al,'['
+	jne	invalid_argument
+	push	ecx
+	call	get_address
+	pop	eax
+	xchg	al,[operand_size]
+	test	al,al
+	jz	lwpins_reg_mem_size_ok
+	cmp	al,4
+	jne	invalid_operand_size
+      lwpins_reg_mem_size_ok:
+	call	prepare_lwpins
+	jmp	store_instruction_with_imm32
+      lwpins_reg_reg:
+	lods	byte [esi]
+	call	convert_register
+	cmp	ah,4
+	jne	invalid_operand_size
+	mov	[operand_size],cl
+	mov	bl,al
+	call	prepare_lwpins
+	jmp	store_nomem_instruction_with_imm32
+      prepare_lwpins:
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	lods	byte [esi]
+	call	get_imm32
+	call	operand_32or64
+	mov	al,[vex_register]
+	xchg	al,[postbyte_register]
+	mov	[vex_register],al
+	ret
+
+gather_instruction_pd:
+	or	[rex_prefix],8
+gather_instruction_ps:
+	call	setup_66_0f_38
+	or	[vex_required],4
+	call	take_avx_register
+	mov	[postbyte_register],al
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	xor	cl,cl
+	xchg	cl,[operand_size]
+	push	ecx
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,'['
+	jne	invalid_argument
+	call	get_address
+	pop	eax
+	xchg	al,[operand_size]
+	test	al,al
+	jz	gather_elements_size_ok
+	test	[rex_prefix],8
+	jnz	gather_elements_64bit
+	cmp	al,4
+	jne	invalid_operand_size
+	jmp	gather_elements_size_ok
+      gather_elements_64bit:
+	cmp	al,8
+	jne	invalid_operand_size
+      gather_elements_size_ok:
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	call	take_avx_register
+	mov	[vex_register],al
+	cmp	al,[postbyte_register]
+	je	disallowed_combination_of_registers
+	mov	al,bl
+	and	al,1111b
+	cmp	al,[postbyte_register]
+	je	disallowed_combination_of_registers
+	cmp	al,[vex_register]
+	je	disallowed_combination_of_registers
+	mov	al,bl
+	shr	al,4
+	cmp	al,0Ch
+	je	gather_vr_128bit
+	mov	al,[rex_prefix]
+	shr	al,3
+	xor	al,[supplemental_code]
+	test	al,1
+	jz	gather_256bit
+	test	[supplemental_code],1
+	jz	invalid_operand_size
+	mov	al,32
+	xchg	al,[operand_size]
+	cmp	al,16
+	jne	invalid_operand_size
+	jmp	instruction_ready
+      gather_256bit:
+	cmp	ah,32
+	jne	invalid_operand_size
+	jmp	instruction_ready
+      gather_vr_128bit:
+	cmp	ah,16
+	je	instruction_ready
+	test	[supplemental_code],1
+	jnz	invalid_operand_size
+	test	[rex_prefix],8
+	jz	invalid_operand_size
+	jmp	instruction_ready
+
 take_avx_register:
 	lods	byte [esi]
 	call	get_size_operator
@@ -1276,7 +1710,7 @@ store_vex_instruction_code:
 	cmp	ah,0F2h
 	je	vex_f2
 	test	ah,ah
-	jnz	prefix_conflict
+	jnz	disallowed_combination_of_registers
 	ret
       vex_f2:
 	or	al,11b

@@ -72,8 +72,8 @@ invalid_address_size:
 address_sizes_do_not_agree:
 	push	_address_sizes_do_not_agree
 	jmp	error_with_source
-prefix_conflict:
-	push	_prefix_conflict
+disallowed_combination_of_registers:
+	push	_disallowed_combination_of_registers
 	jmp	error_with_source
 long_immediate_not_encodable:
 	push	_long_immediate_not_encodable

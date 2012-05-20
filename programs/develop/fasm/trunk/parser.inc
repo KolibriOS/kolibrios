@@ -503,7 +503,7 @@ parse_line_contents:
 	cmp	al,','
 	je	separator
 	cmp	al,'='
-	je	separator
+	je	expression_comparator
 	cmp	al,'|'
 	je	separator
 	cmp	al,'&'
@@ -569,7 +569,11 @@ parse_line_contents:
 	je	parse_from_operator
 	cmp	al,89h
 	je	parse_label_operator
+	cmp	al,0F8h
+	je	forced_expression
 	jmp	argument_parsed
+      instruction_separator:
+	stos	byte [edi]
       allow_embedded_instruction:
 	cmp	byte [esi],1Ah
 	jne	parse_argument
@@ -810,6 +814,29 @@ parse_line_contents:
 	stos	byte [edi]
 	inc	[parenthesis_stack]
 	jmp	parse_argument
+      expression_comparator:
+	stos	byte [edi]
+	jmp	forced_expression
+      greater:
+	cmp	byte [esi],'='
+	jne	separator
+	inc	esi
+	mov	al,0F2h
+	jmp	separator
+      less:
+	cmp	byte [edi-1],0F6h
+	je	separator
+	cmp	byte [esi],'>'
+	je	not_equal
+	cmp	byte [esi],'='
+	jne	separator
+	inc	esi
+	mov	al,0F3h
+	jmp	separator
+      not_equal:
+	inc	esi
+	mov	al,0F1h
+	jmp	expression_comparator
       expression:
 	mov	al,'('
 	stos	byte [edi]
@@ -892,30 +919,6 @@ parse_line_contents:
 	mov	al,'}'
       separator:
 	stos	byte [edi]
-	jmp	argument_parsed
-      instruction_separator:
-	stos	byte [edi]
-	jmp	allow_embedded_instruction
-      greater:
-	cmp	byte [esi],'='
-	jne	separator
-	inc	esi
-	mov	al,0F2h
-	jmp	separator
-      less:
-	cmp	byte [edi-1],0F6h
-	je	separator
-	cmp	byte [esi],'>'
-	je	not_equal
-	cmp	byte [esi],'='
-	jne	separator
-	inc	esi
-	mov	al,0F3h
-	jmp	separator
-      not_equal:
-	inc	esi
-	mov	al,0F1h
-	jmp	separator
       argument_parsed:
 	cmp	[parenthesis_stack],0
 	je	parse_argument
@@ -984,6 +987,7 @@ get_operator:
 	jne	next_operator
 	repe	cmps byte [esi],[edi]
 	je	operator_found
+	jb	no_operator
       next_operator:
 	mov	edi,ebx
 	inc	edi
@@ -1046,12 +1050,10 @@ get_symbol:
 	ja	symbols_up
 	jb	symbols_down
 	mov	ax,[edi]
-
 	cmp	al,18h
 	jb	symbol_ok
 	cmp	[formatter_symbols_allowed],0
 	je	no_symbol
-
       symbol_ok:
 	pop	esi
 	add	esi,ebp

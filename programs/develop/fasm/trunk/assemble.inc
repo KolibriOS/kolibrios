@@ -35,6 +35,8 @@ assembler:
 	mov	[file_extension],eax
 	mov	[next_pass_needed],al
 	mov	[output_format],al
+	mov	[org_origin_sign],al
+	mov	[adjustment_sign],al
 	mov	[labels_type],al
 	mov	[virtual_data],al
 	mov	[code_type],16
@@ -169,6 +171,8 @@ assemble_line:
 	mov	[prefixed_instruction],0
 	cmp	[symbols_file],0
 	je	continue_line
+	cmp	[next_pass_needed],0
+	jne	continue_line
 	mov	ebx,[display_buffer]
 	mov	dword [ebx-4],1
 	mov	dword [ebx-8],1Ch
@@ -185,6 +189,11 @@ assemble_line:
 	mov	[ebx+8+4],edx
 	mov	[ebx+10h],ecx
 	mov	edx,[org_symbol]
+;        mov     al,[virtual_data]
+;        mov     ah,[org_origin_sign]
+;        shl     eax,16
+;        mov     al,[labels_type]
+;        mov     ah,[code_type]
 	mov	eax,dword [labels_type]
 	mov	[ebx+14h],edx
 	mov	[ebx+18h],eax
@@ -199,24 +208,39 @@ assemble_line:
 	je	reserved_word_used_as_symbol
 	mov	ebx,eax
 	lods	byte [esi]
-	mov	cl,al
+	mov	[label_size],al
+	call	make_label
+	jmp	continue_line
+      make_label:
 	mov	eax,edi
 	xor	edx,edx
+	xor	cl,cl
 	sub	eax,dword [org_origin]
 	sbb	edx,dword [org_origin+4]
-	mov	ch,[labels_type]
+	sbb	cl,[org_origin_sign]
+	jp	label_value_ok
+	call	recoverable_overflow
+      label_value_ok:
+	mov	[address_sign],cl
 	cmp	[virtual_data],0
 	jne	make_virtual_label
 	or	byte [ebx+9],1
 	xchg	eax,[ebx]
 	xchg	edx,[ebx+4]
+	mov	ch,[ebx+9]
+	shr	ch,1
+	and	ch,1
+	neg	ch
 	sub	eax,[ebx]
 	sbb	edx,[ebx+4]
+	sbb	ch,cl
 	mov	dword [adjustment],eax
 	mov	dword [adjustment+4],edx
+	mov	[adjustment_sign],ch
+	or	al,ch
 	or	eax,edx
 	setnz	ah
-	jmp	finish_label_symbol
+	jmp	finish_label
       make_virtual_label:
 	and	byte [ebx+9],not 1
 	cmp	eax,[ebx]
@@ -226,7 +250,17 @@ assemble_line:
 	mov	[ebx+4],edx
 	setne	al
 	or	ah,al
+      finish_label:
+	mov	ch,[labels_type]
+	mov	cl,[label_size]
+	mov	ebp,[org_registers]
+	mov	edx,[org_symbol]
       finish_label_symbol:
+	mov	al,[address_sign]
+	xor	al,[ebx+9]
+	and	al,10b
+	or	ah,al
+	xor	[ebx+9],al
 	cmp	cl,[ebx+10]
 	mov	[ebx+10],cl
 	setne	al
@@ -235,14 +269,12 @@ assemble_line:
 	mov	[ebx+11],ch
 	setne	al
 	or	ah,al
-	mov	edx,[org_registers]
-	cmp	edx,[ebx+12]
-	mov	[ebx+12],edx
+	cmp	ebp,[ebx+12]
+	mov	[ebx+12],ebp
 	setne	al
 	or	ah,al
 	or	ch,ch
 	jz	label_symbol_ok
-	mov	edx,[org_symbol]
 	cmp	edx,[ebx+20]
 	mov	[ebx+20],edx
 	setne	al
@@ -261,17 +293,18 @@ assemble_line:
 	sub	cx,[ebx+16]
 	setnz	al
 	or	ah,al
-	jz	continue_line
+	jz	label_made
 	test	byte [ebx+8],8
-	jz	continue_line
+	jz	label_made
 	mov	cx,[current_pass]
 	cmp	cx,[ebx+18]
-	jne	continue_line
+	jne	label_made
 	or	[next_pass_needed],-1
-	jmp	continue_line
+      label_made:
+	ret
       new_label:
 	or	byte [ebx+8],1
-	jmp	continue_line
+	ret
       define_constant:
 	lods	dword [esi]
 	inc	esi
@@ -293,6 +326,7 @@ assemble_line:
 	push	eax
 	mov	al,byte [esi-1]
 	push	eax
+	or	[size_override],-1
 	call	get_value
 	pop	ebx
 	mov	ch,bl
@@ -314,6 +348,11 @@ assemble_line:
 	mov	[ebx+4],edx
 	setne	al
 	or	ah,al
+	mov	al,[value_sign]
+	xor	al,[ebx+9]
+	and	al,10b
+	or	ah,al
+	xor	[ebx+9],al
 	cmp	cl,[ebx+10]
 	mov	[ebx+10],cl
 	setne	al
@@ -370,12 +409,12 @@ assemble_line:
 ;        mov     [size_override],0
 ;        mov     [operand_prefix],0
 ;        mov     [opcode_prefix],0
-	mov	dword [operand_size],0
+	and	dword [operand_size],0
 ;        mov     [rex_prefix],0
 ;        mov     [vex_required],0
 ;        mov     [vex_register],0
 ;        mov     [immediate_size],0
-	mov	dword [rex_prefix],0
+	and	dword [rex_prefix],0
 	call	instruction_handler
       instruction_handler:
 	movzx	ebx,word [esi]
@@ -408,13 +447,18 @@ org_directive:
 	test	cl,1
 	jnz	invalid_use_of_symbol
 	mov	[labels_type],cl
-	mov	ecx,edi
-	sub	ecx,eax
-	adc	edx,0
-	neg	edx
-	mov	dword [org_origin],ecx
-	mov	dword [org_origin+4],edx
-	mov	[org_registers],0
+	mov	dword [org_origin],edi
+	xor	ecx,ecx
+	mov	dword [org_origin+4],ecx
+	mov	[org_origin_sign],cl
+	mov	[org_registers],ecx
+	mov	cl,[value_sign]
+	sub	dword [org_origin],eax
+	sbb	dword [org_origin+4],edx
+	sbb	[org_origin_sign],cl
+	jp	org_value_ok
+	call	recoverable_overflow
+      org_value_ok:
 	mov	[org_start],edi
 	mov	edx,[symbol_identifier]
 	mov	[org_symbol],edx
@@ -436,7 +480,7 @@ label_directive:
 	je	reserved_word_used_as_symbol
 	inc	esi
 	mov	ebx,eax
-	xor	cl,cl
+	mov	[label_size],0
 	lods	byte [esi]
 	cmp	al,':'
 	je	get_label_size
@@ -447,30 +491,12 @@ label_directive:
 	lods	word [esi]
 	cmp	al,11h
 	jne	invalid_argument
-	mov	cl,ah
+	mov	[label_size],ah
       label_size_ok:
-	mov	eax,edi
-	xor	edx,edx
-	sub	eax,dword [org_origin]
-	sbb	edx,dword [org_origin+4]
-	mov	ebp,[org_registers]
 	cmp	byte [esi],80h
 	je	get_free_label_value
-	mov	ch,[labels_type]
-	push	[org_symbol]
-	pop	[address_symbol]
-	cmp	[virtual_data],0
-	jne	make_free_label
-	or	byte [ebx+9],1
-	xchg	eax,[ebx]
-	xchg	edx,[ebx+4]
-	sub	eax,[ebx]
-	sbb	edx,[ebx+4]
-	mov	dword [adjustment],eax
-	mov	dword [adjustment+4],edx
-	or	eax,edx
-	setne	ah
-	jmp	finish_label
+	call	make_label
+	jmp	instruction_assembled
       get_free_label_value:
 	inc	esi
 	lods	byte [esi]
@@ -507,50 +533,9 @@ label_directive:
 	mov	[ebx+4],edx
 	setne	al
 	or	ah,al
-      finish_label:
-	cmp	cl,[ebx+10]
-	mov	[ebx+10],cl
-	setne	al
-	or	ah,al
-	cmp	ch,[ebx+11]
-	mov	[ebx+11],ch
-	setne	al
-	or	ah,al
-	cmp	ebp,[ebx+12]
-	mov	[ebx+12],ebp
-	setne	al
-	or	ah,al
-	or	ch,ch
-	jz	free_label_symbol_ok
 	mov	edx,[address_symbol]
-	cmp	edx,[ebx+20]
-	mov	[ebx+20],edx
-	setne	al
-	or	ah,al
-      free_label_symbol_ok:
-	mov	cx,[current_pass]
-	xchg	[ebx+16],cx
-	mov	edx,[current_line]
-	mov	[ebx+28],edx
-	and	byte [ebx+8],not 2
-	test	byte [ebx+8],1
-	jz	new_free_label
-	cmp	cx,[ebx+16]
-	je	symbol_already_defined
-	inc	cx
-	sub	cx,[ebx+16]
-	setnz	al
-	or	ah,al
-	jz	instruction_assembled
-	test	byte [ebx+8],8
-	jz	instruction_assembled
-	mov	cx,[current_pass]
-	cmp	cx,[ebx+18]
-	jne	instruction_assembled
-	or	[next_pass_needed],-1
-	jmp	instruction_assembled
-      new_free_label:
-	or	byte [ebx+8],1
+	mov	cl,[label_size]
+	call	finish_label_symbol
 	jmp	instruction_assembled
 load_directive:
 	lods	byte [esi]
@@ -571,8 +556,8 @@ load_directive:
 	cmp	al,8
 	ja	invalid_value
 	mov	[operand_size],al
-	mov	dword [value],0
-	mov	dword [value+4],0
+	and	dword [value],0
+	and	dword [value+4],0
 	lods	word [esi]
 	cmp	ax,82h+'(' shl 8
 	jne	invalid_argument
@@ -603,13 +588,10 @@ load_directive:
 	rep	movs byte [edi],[esi]
 	jmp	value_loaded
       bad_load_address:
-	cmp	[error_line],0
-	jne	value_loaded
-	mov	eax,[current_line]
-	mov	[error_line],eax
-	mov	[error],value_out_of_range
+	call	recoverable_overflow
       value_loaded:
 	pop	edi esi
+	mov	[value_sign],0
 	mov	eax,dword [value]
 	mov	edx,dword [value+4]
 	pop	ebx
@@ -627,6 +609,7 @@ store_directive:
 	mov	[operand_size],1
 	jmp	store_value_ok
       sized_store:
+	or	[size_override],-1
 	call	get_value
       store_value_ok:
 	cmp	[value_type],0
@@ -669,11 +652,7 @@ store_directive:
 	jmp	instruction_assembled
       bad_store_address:
 	pop	edi esi
-	cmp	[error_line],0
-	jne	instruction_assembled
-	mov	eax,[current_line]
-	mov	[error_line],eax
-	mov	[error],value_out_of_range
+	call	recoverable_overflow
 	jmp	instruction_assembled
 
 display_directive:
@@ -795,10 +774,8 @@ virtual_directive:
 	je	invalid_value
 	call	get_address_value
 	mov	ebp,[address_symbol]
-	xor	ch,ch
 	or	bh,bh
-	jz	set_virtual
-	mov	ch,1
+	setnz	ch
 	jmp	set_virtual
       virtual_at_current:
 	dec	esi
@@ -807,8 +784,11 @@ virtual_directive:
 	mov	ebp,[org_symbol]
 	mov	eax,edi
 	xor	edx,edx
+	xor	cl,cl
 	sub	eax,dword [org_origin]
 	sbb	edx,dword [org_origin+4]
+	sbb	cl,[org_origin_sign]
+	mov	[address_sign],cl
 	mov	bx,word [org_registers]
 	mov	cx,word [org_registers+2]
 	xchg	bh,bl
@@ -821,19 +801,27 @@ virtual_directive:
 	mov	byte [org_registers+3],cl
 	call	allocate_structure_data
 	mov	word [ebx],virtual_directive-instruction_handler
+	mov	cl,[address_sign]
 	not	eax
 	not	edx
+	not	cl
 	add	eax,1
 	adc	edx,0
+	adc	cl,0
 	add	eax,edi
 	adc	edx,0
+	adc	cl,0
 	xchg	dword [org_origin],eax
 	xchg	dword [org_origin+4],edx
+	xchg	[org_origin_sign],cl
 	mov	[ebx+10h],eax
 	mov	[ebx+14h],edx
 	pop	eax
 	mov	[ebx+18h],eax
 	mov	al,[virtual_data]
+	and	al,0Fh
+	shl	cl,4
+	or	al,cl
 	mov	[ebx+2],al
 	mov	al,[labels_type]
 	mov	[ebx+3],al
@@ -876,7 +864,14 @@ virtual_directive:
 	call	find_structure_data
 	jc	unexpected_instruction
 	mov	al,[ebx+2]
+	mov	ah,al
+	shr	ah,4
+	and	al,1
+	neg	al
+	and	ah,1
+	neg	ah
 	mov	[virtual_data],al
+	mov	[org_origin_sign],ah
 	mov	al,[ebx+3]
 	mov	[labels_type],al
 	mov	eax,[ebx+10h]
@@ -1339,7 +1334,7 @@ data_words:
 	cmp	al,'?'
 	jne	invalid_argument
 	mov	eax,edi
-	mov	word [edi],0
+	and	word [edi],0
 	scas	word [edi]
 	jmp	undefined_data
 	ret
@@ -1377,7 +1372,7 @@ data_dwords:
 	cmp	al,'?'
 	jne	invalid_argument
 	mov	eax,edi
-	mov	dword [edi],0
+	and	dword [edi],0
 	scas	dword [edi]
 	jmp	undefined_data
       get_dword:
@@ -1420,9 +1415,9 @@ data_pwords:
 	cmp	al,'?'
 	jne	invalid_argument
 	mov	eax,edi
-	mov	dword [edi],0
+	and	dword [edi],0
 	scas	dword [edi]
-	mov	word [edi],0
+	and	word [edi],0
 	scas	word [edi]
 	jmp	undefined_data
       get_pword:
@@ -1467,9 +1462,9 @@ data_qwords:
 	cmp	al,'?'
 	jne	invalid_argument
 	mov	eax,edi
-	mov	dword [edi],0
+	and	dword [edi],0
 	scas	dword [edi]
-	mov	dword [edi],0
+	and	dword [edi],0
 	scas	dword [edi]
 	jmp	undefined_data
       get_qword:
@@ -1487,11 +1482,11 @@ data_twords:
 	cmp	al,'?'
 	jne	invalid_argument
 	mov	eax,edi
-	mov	dword [edi],0
+	and	dword [edi],0
 	scas	dword [edi]
-	mov	dword [edi],0
+	and	dword [edi],0
 	scas	dword [edi]
-	mov	word [edi],0
+	and	word [edi],0
 	scas	word [edi]
 	jmp	undefined_data
       get_tword:
@@ -1647,7 +1642,7 @@ data_file:
 	mov	esi,[eax] 
 	test	byte [eax+7],80h 
 	jz	get_current_path 
-	mov	eax,[eax+12] 
+	mov	eax,[eax+8]
 	jmp	find_current_source_path
       get_current_path:
 	lodsb
@@ -1665,15 +1660,31 @@ data_file:
 	jmp	cut_current_path
       current_path_ok:
 	mov	esi,[esp+4]
-	call	preprocess_path
+	call	expand_path
 	pop	edx
 	mov	esi,edx
 	call	open
 	jnc	file_opened
+	mov	edx,[include_paths]
+      search_in_include_paths:
+	push	edx esi
+	mov	edi,esi
+	mov	esi,[esp+4]
+	call	get_include_directory
+	mov	[esp+4],esi
+	mov	esi,[esp+8]
+	call	expand_path
+	pop	edx
+	mov	esi,edx
+	call	open
+	pop	edx
+	jnc	file_opened
+	cmp	byte [edx],0
+	jne	search_in_include_paths
 	mov	edi,esi
 	mov	esi,[esp]
 	push	edi
-	call	preprocess_path
+	call	expand_path
 	pop	edx
 	mov	esi,edx
 	call	open

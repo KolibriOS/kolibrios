@@ -117,12 +117,16 @@ jump_type db ?
 push_size db ?
 value_size db ?
 address_size db ?
+label_size db ?
 size_declared db ?
 
 value_undefined db ?
+value_constant db ?
 value_type db ?
+value_sign db ?
 fp_sign db ?
 fp_format db ?
+address_sign db ?
 compare_type db ?
 logical_value_wrapping db ?
 next_pass_needed db ?
@@ -130,8 +134,11 @@ output_format db ?
 labels_type db ?
 code_type db ?
 virtual_data db ?
+org_origin_sign db ?
+adjustment_sign db ?
 
 macro_status db ?
+default_argument_value db ?
 prefixed_instruction db ?
 formatter_symbols_allowed db ?
 
