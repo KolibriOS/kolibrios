@@ -24,7 +24,7 @@ char_toupper:
     ret
 ;---------------------------------------------------------------------
 char_todown:
-; convert character to uppercase, using cp866 encoding
+; convert character to lowercase, using cp866 encoding
 ; in: al=symbol
 ; out: al=converted symbol
 	cmp	al, 'A'
