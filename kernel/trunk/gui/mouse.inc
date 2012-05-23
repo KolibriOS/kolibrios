@@ -258,8 +258,8 @@ mouse._.left_button_press_handler: ;///////////////////////////////////////////
         call    .calculate_e_delta
 
   .call_window_handler:
-        mov     eax, mouse.active_sys_window.old_box
-        call    sys_window_start_moving_handler
+;        mov     eax, mouse.active_sys_window.old_box
+;        call    sys_window_start_moving_handler
 
   .exit:
         ret
