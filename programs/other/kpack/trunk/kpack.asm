@@ -69,11 +69,6 @@ load_libraries l_libs_start,load_lib_end
 	movsw
 	movsd
 ; get system window info
-	mcall	48,3,color_table,40
-;--------------------------------------
-edit_boxes_set_sys_color edit1,editboxes_end,color_table
-check_boxes_set_sys_color check1,check1_end,color_table
-;--------------------------------------
 	xor	eax,eax
 	cmp	[params],al
 	je	default
@@ -426,6 +421,11 @@ draw_messages:
 draw_window:
 ; start redraw
 	mcall	12,1
+	
+	mcall	48,3,color_table,40
+;--------------------------------------
+edit_boxes_set_sys_color edit1,editboxes_end,color_table
+check_boxes_set_sys_color check1,check1_end,color_table
 ;--------------------------------------
 ; define window
 	xor	eax,eax
@@ -505,7 +505,7 @@ draw_lines:
 draw_buttons:
 ; define compress button
 	mov	cx,18
-	mcall	8,<351,72>,,2,[color_table+24]
+	mcall	8,<351,72>,<1, 17>,2,[color_table+24]
 ; uncompress button
 	add	ecx,18 shl 16
 	inc	edx
@@ -543,8 +543,8 @@ draw_buttons:
 	mcall
 ; text on compress and decompress buttons
 	or	ecx,80000000h
-	mcall	,<367,7>,,aCompress
-	mcall	,<359,25>,,aDecompress
+	mcall	,<364,6>,,aCompress
+	mcall	,<359,24>,,aDecompress
 	ret
 ;*********************************************************************
 ;Pack procedures
