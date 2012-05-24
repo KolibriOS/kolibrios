@@ -100,7 +100,6 @@ Debug board               /rd/1/develop/board
 Devices                   /rd/1/setup
 Background generator      /rd/1/pic4
 Colors & Skin             /rd/1/desktop
-Panel                     /rd/1/spanel
 Icons manager             /rd/1/icon
 MyKey                     /rd/1/mykey
 Video mode for ATI        /rd/1/vmode
