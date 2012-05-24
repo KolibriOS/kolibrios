@@ -330,7 +330,7 @@ key_help_correct:
 	sub	cx,3
 	shl	ecx,16
 	mov	cx,13
-	mcall	13,,,0xffffff
+	mcall	13,,,[sc.work_graph]
 	popa
 	mcall	
 	pop	ebx
