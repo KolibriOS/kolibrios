@@ -102,9 +102,6 @@ load_libraries l_libs_start,load_lib_end
 	mcall	40,0x27 ;маска системных событий
 ;---------------------------------------------------------------------
 init_checkboxes2 ch1_dbg,ch1_dbg+ch_struc_size
-get_sys_colors 1,0
-edit_boxes_set_sys_color edit1,editboxes_end,sc
-check_boxes_set_sys_color2 ch1_dbg,ch1_dbg+ch_struc_size,sc
 ;---------------------------------------------------------------------
 ; OpenDialog initialisation
 	push dword OpenDialog_data
@@ -185,7 +182,10 @@ mouse:
 draw_window:
 	pusha
 	mcall	12,1 ; Start of draw
-;get_sys_colors 1,0
+	
+	get_sys_colors 1,0
+	edit_boxes_set_sys_color edit1,editboxes_end,sc
+	check_boxes_set_sys_color2 ch1_dbg,ch1_dbg+ch_struc_size,sc
 
 	mov	edx,[sc.work]
 	or	edx,0x33000000
