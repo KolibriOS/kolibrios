@@ -1069,8 +1069,8 @@ draw_gowindow:
     ret
   @@:
     drawfbox 170,160,300,120,cl_Grey
-    drawlbut 180,260,80,14,'(X) EXIT',4,0x990000,cl_Black
-    drawlbut 280,260,80,14,'<MENU>',5,0x990000,cl_Black
+    drawlbut 180,260,80,14,'EXIT',4,0x990000,cl_Black
+    drawlbut 280,260,80,14,'MENU',5,0x990000,cl_Black
     drawlbut 380,260,80,14,'RESTART',7,0x990000,cl_Black
 
     label 280,200,'  GAME OVER  ',cl_Black
