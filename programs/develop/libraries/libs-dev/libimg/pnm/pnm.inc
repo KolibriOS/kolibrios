@@ -24,3 +24,7 @@ PNM_PBM		=	0
 PNM_PGM		=	1
 PNM_PPM		=	2
 
+struct	Encode_PNM	; ignored so far. just an example
+  Size     dd ?		; the size of this structure
+  Mode     dd ?		; PNM_RAW or PNM_ASCII
+ends

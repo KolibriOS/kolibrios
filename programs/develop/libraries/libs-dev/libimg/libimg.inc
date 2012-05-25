@@ -17,11 +17,40 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 
+; list of format id's
+LIBIMG_FORMAT_ID_BMP	= 1
+LIBIMG_FORMAT_ID_ICO	= 2
+LIBIMG_FORMAT_ID_CUR	= 3
+LIBIMG_FORMAT_ID_GIF	= 4
+LIBIMG_FORMAT_ID_PNG	= 5
+LIBIMG_FORMAT_ID_JPEG	= 6
+LIBIMG_FORMAT_ID_TGA	= 7
+LIBIMG_FORMAT_ID_PCX	= 8
+LIBIMG_FORMAT_ID_XCF	= 9
+LIBIMG_FORMAT_ID_TIFF	= 10
+LIBIMG_FORMAT_ID_PNM	= 11
+LIBIMG_FORMAT_ID_WBMP	= 12
+LIBIMG_FORMAT_ID_Z80	= 13
+
+; error codes
+LIBIMG_ERROR_OUT_OF_MEMORY = 1
+LIBIMG_ERROR_FORMAT        = 2
+LIBIMG_ERROR_CONDITIONS    = 3
+LIBIMG_ERROR_BIT_DEPTH     = 4
+LIBIMG_ERROR_ENCODER       = 5
+
+; encode flags (byte 0x02 of _common option)
+LIBIMG_ENCODE_STRICT_SPECIFIC  = 0x01
+LIBIMG_ENCODE_STRICT_BIT_DEPTH = 0x02
+LIBIMG_ENCODE_DELETE_ALPHA     = 0x08
+LIBIMG_ENCODE_FLUSH_ALPHA      = 0x10
 
 struct FormatsTableEntry
-  Is     dd ?
-  Decode dd ?
-  Encode dd ?
+  Format_id	dd ?
+  Is		dd ?
+  Decode	dd ?
+  Encode	dd ?
+  Capabilities	dd ?
 ends
 
 struct Image

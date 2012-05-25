@@ -28,6 +28,7 @@ include '../../../../macros.inc'
 purge section,mov,add,sub
 
 include 'libimg.inc'
+;include '../../../../system/board/trunk/debug.inc'
 
 section '.flat' code readable align 16
 
@@ -85,7 +86,7 @@ proc img.is_img _data, _length ;////////////////////////////////////////////////
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
     push    ebx
-    mov ebx, img._.formats_table
+    mov ebx, img.formats_table
     @@: stdcall [ebx + FormatsTableEntry.Is], [_data], [_length]
     or  eax, eax
     jnz @f
@@ -152,11 +153,12 @@ endp
 ;;================================================================================================;;
 proc img.to_rgb2 _img, _out ;/////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? decodes image data into RGB triplets and stores them where [_out] points to                    ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> [_img] = pointer to source image                                                               ;;
+;> [_out] = where to store RGB triplets                                                           ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< --- TBD ---                                                                                    ;;
+;< none                                                                                           ;;
 ;;================================================================================================;;
     push    esi edi
     mov esi, [_img]
@@ -173,9 +175,9 @@ endp
 ;;================================================================================================;;
 proc img.to_rgb _img ;////////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? decodes image data into RGB triplets and returns pointer to memory area containing them        ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> [_img] = pointer to source image                                                               ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 / pointer to rgb_data (array of [rgb] triplets)                                        ;;
 ;;================================================================================================;;
@@ -213,11 +215,12 @@ endp
 ;;================================================================================================;;
 proc img._.do_rgb ;///////////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? decodes [esi + Image.Data] data into RGB triplets and stores them at [edi]                     ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> esi = pointer to source image                                                                  ;;
+;> edi = pointer to memory to store RGB triplets                                                  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< --- TBD ---                                                                                    ;;
+;< none                                                                                           ;;
 ;;================================================================================================;;
     mov ecx, [esi + Image.Width]
     imul    ecx, [esi + Image.Height]
@@ -552,14 +555,16 @@ endp
 ;;================================================================================================;;
 proc img.decode _data, _length, _options ;////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? decodes loaded into memory graphic file                                                        ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> [_data]    = pointer to file in memory                                                         ;;
+;> [_length]  = size in bytes of memory area pointed to by [_data]                                ;;
+;> [_options] = 0 / pointer to the structure of additional options                                ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 / pointer to image                                                                     ;;
 ;;================================================================================================;;
     push    ebx
-    mov ebx, img._.formats_table
+    mov ebx, img.formats_table
     @@: stdcall [ebx + FormatsTableEntry.Is], [_data], [_length]
     or  eax, eax
     jnz @f
@@ -575,25 +580,103 @@ proc img.decode _data, _length, _options ;//////////////////////////////////////
 endp
 
 ;;================================================================================================;;
-proc img.encode _img, _p_length, _options ;///////////////////////////////////////////////////////;;
+proc img.encode _img, _common, _specific ;////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? encode image to some format                                                                    ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> [_img]      = pointer to input image                                                           ;;
+;> [_common]   = some most important options                                                      ;;
+;     0x00 :  byte : format id (defined in libimg.inc)                                            ;;
+;     0x01 :  byte : fast encoding (0) / best compression ratio (255)                             ;;
+;                    0 : store uncompressed data (if supported both by the format and libimg)     ;;
+;                    1 - 255 : use compression, if supported                                      ;;
+;                    this option may be ignored if any format specific options are defined        ;;
+;                    i.e. the 0 here will be ignored if some compression algorithm is specified   ;;
+;     0x02 :  byte : flags (bitfield)                                                             ;;
+;                   0x01 : return an error if format specific conditions cannot be met            ;;
+;                   0x02 : preserve current bit depth. means 8bpp/16bpp/24bpp and so on           ;;
+;                   0x04 : delete alpha channel, if any                                           ;;
+;                   0x08 : flush alpha channel with 0xff, if any; add it if none                  ;;
+;     0x03 :  byte : reserved, must be 0                                                          ;;
+;> [_specific] = 0 / pointer to the structure of format specific options                          ;;
+;                   see <format_name>.inc for description                                         ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 / pointer to encoded data                                                              ;;
-;< [_p_length] = data length                                                                      ;;
+;< ecx = error code / the size of encoded data                                                    ;;
+;     1 : out of memory                                                                           ;;
+;     2 : format is not supported                                                                 ;;
+;     3 : specific conditions cannot be satisfied                                                 ;;
+;     4 : bit depth cannot be preserved                                                           ;;
 ;;================================================================================================;;
-    xor eax, eax
-    ret
+	mov	ebx, [_img]
+
+	movzx	eax, byte[_common]
+	dec	eax
+	imul	eax, sizeof.FormatsTableEntry
+	add	eax, FormatsTableEntry.Capabilities
+	add	eax, img.formats_table
+	mov	eax, [eax]
+	test	eax, 1				; is encoding to this format supported at all?
+	jnz	@f
+	mov	ecx, LIBIMG_ERROR_FORMAT
+	jmp	.error
+    @@:
+	mov	ecx, [ebx + Image.Type]
+	mov	edx, 1
+	shl	edx, cl
+	test	eax, edx
+	jnz	.bit_depth_ok
+	test	byte[_common+2], LIBIMG_ENCODE_STRICT_BIT_DEPTH
+	jz	@f
+	mov	ecx, LIBIMG_ERROR_BIT_DEPTH
+	jmp	.error
+    @@:
+	mov	edx, 1 SHL Image.bpp24
+	test	eax, edx
+	jnz	@f
+	mov	ecx, LIBIMG_ERROR_BIT_DEPTH
+	jmp	.error
+    @@:
+	stdcall	img.create, [ebx + Image.Width], [ebx + Image.Height], Image.bpp24
+	test	eax, eax
+	jnz	@f
+	mov	ecx, LIBIMG_ERROR_OUT_OF_MEMORY
+	jmp	.error
+    @@:
+	push	eax
+	stdcall	img.to_rgb2, ebx, [eax + Image.Data]
+	pop	ebx
+
+  .bit_depth_ok:
+	movzx	eax, byte[_common]
+	dec	eax
+	imul	eax, sizeof.FormatsTableEntry
+	add	eax, FormatsTableEntry.Encode
+	add	eax, img.formats_table
+	mov	eax, [eax]
+	stdcall	eax, [_img], [_common], [_specific]
+	push	eax ecx
+	cmp	ebx, [_img]
+	je	@f
+	stdcall	img.destroy, ebx
+    @@:
+	pop	ecx eax
+	jmp	.quit
+
+  .error:
+	xor	eax, eax
+  .quit:
+	ret
 endp
 
 ;;================================================================================================;;
 proc img.create _width, _height, _type ;//////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? creates an Image structure and initializes some its fields                                     ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> [_width]  = width of an image in pixels                                                        ;;
+;> [_height] = height of an image in pixels                                                       ;;
+;> [_type]   = one of the Image.bppN constants from libimg.inc                                    ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 / pointer to image                                                                     ;;
 ;;================================================================================================;;
@@ -629,11 +712,12 @@ endp
 ;;================================================================================================;;
 proc img.destroy.layer _img ;/////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? frees memory occupied by an image and all the memory regions its fields point to               ;;
+;? for image sequences deletes only one frame and fixes Previous/Next pointers                    ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> [_img] = pointer to image                                                                      ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = false / true                                                                             ;;
+;< eax = 0 (fail) / 1 (success)                                                                   ;;
 ;;================================================================================================;;
     mov eax, [_img]
     mov edx, [eax + Image.Previous]
@@ -655,11 +739,12 @@ endp
 ;;================================================================================================;;
 proc img.destroy _img ;///////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
-;? --- TBD ---                                                                                    ;;
+;? frees memory occupied by an image and all the memory regions its fields point to               ;;
+;? follows Previous/Next pointers and deletes all the images in sequence                          ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> --- TBD ---                                                                                    ;;
+;> [_img] = pointer to image                                                                      ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = false / true                                                                             ;;
+;< eax = 0 (fail) / 1 (success)                                                                   ;;
 ;;================================================================================================;;
     push    1
     mov eax, [_img]
@@ -1787,6 +1872,24 @@ proc img.draw _img, _x, _y, _width, _height, _xpos, _ypos ;/////////////////////
     ret
 endp
 
+
+align 4
+img.formats_table:
+  .bmp  dd LIBIMG_FORMAT_ID_BMP,  img.is.bmp,  img.decode.bmp,     img.encode.bmp, 0
+  .ico  dd LIBIMG_FORMAT_ID_ICO,  img.is.ico,  img.decode.ico_cur, img.encode.ico, 0
+  .cur  dd LIBIMG_FORMAT_ID_CUR,  img.is.cur,  img.decode.ico_cur, img.encode.cur, 0
+  .gif  dd LIBIMG_FORMAT_ID_GIF,  img.is.gif,  img.decode.gif,     img.encode.gif, 0
+  .png  dd LIBIMG_FORMAT_ID_PNG,  img.is.png,  img.decode.png,     img.encode.png, 0
+  .jpg  dd LIBIMG_FORMAT_ID_JPEG, img.is.jpg,  img.decode.jpg,     img.encode.jpg, 0
+  .tga  dd LIBIMG_FORMAT_ID_TGA,  img.is.tga,  img.decode.tga,     img.encode.tga, 0
+  .pcx  dd LIBIMG_FORMAT_ID_PCX,  img.is.pcx,  img.decode.pcx,     img.encode.pcx, 0
+  .xcf  dd LIBIMG_FORMAT_ID_XCF,  img.is.xcf,  img.decode.xcf,     img.encode.xcf, 0
+  .tiff dd LIBIMG_FORMAT_ID_TIFF, img.is.tiff, img.decode.tiff,    img.encode.tiff,0
+  .pnm  dd LIBIMG_FORMAT_ID_PNM,  img.is.pnm,  img.decode.pnm,     img.encode.pnm, 1 + (1 SHL Image.bpp1) + (1 SHL Image.bpp8) + (1 SHL Image.bpp24)
+  .wbmp dd LIBIMG_FORMAT_ID_WBMP, img.is.wbmp, img.decode.wbmp,    img.encode.wbmp,0
+  .z80  dd LIBIMG_FORMAT_ID_Z80,  img.is.z80,  img.decode.z80,     img.encode.z80, 0 ;this must be the last entry as there are no signatures in z80 screens at all
+        dd 0
+
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
@@ -1992,24 +2095,6 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 ;;================================================================================================;;
 
 align 4
-img._.formats_table:
-  .bmp dd img.is.bmp, img.decode.bmp, img.encode.bmp
-  .ico dd img.is.ico, img.decode.ico_cur, img.encode.ico
-  .cur dd img.is.cur, img.decode.ico_cur, img.encode.cur
-  .gif dd img.is.gif, img.decode.gif, img.encode.gif
-  .png dd img.is.png, img.decode.png, img.encode.png
-  .jpg dd img.is.jpg, img.decode.jpg, img.encode.jpg
-  .tga dd img.is.tga, img.decode.tga, img.encode.tga
-  .pcx dd img.is.pcx, img.decode.pcx, img.encode.pcx
-  .xcf dd img.is.xcf, img.decode.xcf, img.encode.xcf
-  .tiff dd img.is.tiff, img.decode.tiff, img.encode.tiff
-  .pnm dd img.is.pnm, img.decode.pnm, img.encode.pnm
-  .wbmp dd img.is.wbmp, img.decode.wbmp, img.encode.wbmp
-  .z80 dd img.is.z80, img.decode.z80, img.encode.z80 ;this must be the last entry as there are no
-  ;signatures in z80 screens at all
-       dd 0
-
-align 4
 type2bpp    dd  8, 24, 32, 15, 16, 1
 img._.do_rgb.handlers:
     dd  img._.do_rgb.bpp8
@@ -2039,29 +2124,30 @@ img.flip.layer.handlers_horz:
 align 4
 @EXPORT:
 
-export                        \
-    lib_init    , 'lib_init'        , \
-    0x00050007  , 'version'     , \
-    img.is_img  , 'img_is_img'      , \
-    img.info    , 'img_info'        , \
-    img.from_file   , 'img_from_file'   , \
-    img.to_file , 'img_to_file'     , \
-    img.from_rgb    , 'img_from_rgb'    , \
-    img.to_rgb  , 'img_to_rgb'      , \
-    img.to_rgb2 , 'img_to_rgb2'     , \
-    img.decode  , 'img_decode'      , \
-    img.encode  , 'img_encode'      , \
-    img.create  , 'img_create'      , \
-    img.destroy , 'img_destroy'     , \
+export                                      \
+    lib_init         , 'lib_init'         , \
+    0x00050007       , 'version'          , \
+    img.is_img       , 'img_is_img'       , \
+    img.info         , 'img_info'         , \
+    img.from_file    , 'img_from_file'    , \
+    img.to_file      , 'img_to_file'      , \
+    img.from_rgb     , 'img_from_rgb'     , \
+    img.to_rgb       , 'img_to_rgb'       , \
+    img.to_rgb2      , 'img_to_rgb2'      , \
+    img.decode       , 'img_decode'       , \
+    img.encode       , 'img_encode'       , \
+    img.create       , 'img_create'       , \
+    img.destroy      , 'img_destroy'      , \
     img.destroy.layer, 'img_destroy_layer', \
-    img.count   , 'img_count'       , \
-    img.lock_bits   , 'img_lock_bits'   , \
-    img.unlock_bits , 'img_unlock_bits' , \
-    img.flip    , 'img_flip'        , \
-    img.flip.layer  , 'img_flip_layer'  , \
-    img.rotate  , 'img_rotate'      , \
-    img.rotate.layer, 'img_rotate_layer', \
-    img.draw        , 'img_draw'
+    img.count        , 'img_count'        , \
+    img.lock_bits    , 'img_lock_bits'    , \
+    img.unlock_bits  , 'img_unlock_bits'  , \
+    img.flip         , 'img_flip'         , \
+    img.flip.layer   , 'img_flip_layer'   , \
+    img.rotate       , 'img_rotate'       , \
+    img.rotate.layer , 'img_rotate_layer' , \
+    img.draw         , 'img_draw'         , \
+    img.formats_table, 'img_formats_table'
 
 ; import from deflate unpacker
 ; is initialized only when PNG loading is requested

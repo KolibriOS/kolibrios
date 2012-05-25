@@ -182,16 +182,127 @@ endp
 
 
 ;;================================================================================================;;
-proc img.encode.pnm _img, _p_length, _options ;///////////////////////////////////////////////////;;
+proc img.encode.pnm _img, _common, _specific ;////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Encode image into raw data in pnm format                                                       ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _img = pointer to image                                                                        ;;
+;> [_img]      = pointer to image                                                                 ;;
+;> [_common]   = format independent options                                                       ;;
+;> [_specific] = 0 / pointer to the structure of format specific options                          ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 (error) or pointer to encoded data                                                     ;;
-;< _p_length = encoded data length                                                                ;;
+;< eax = 0 / pointer to encoded data                                                              ;;
+;< ecx = error code / the size of encoded data                                                    ;;
 ;;================================================================================================;;
+locals
+ 	encoded_file		rd 1
+ 	encoded_file_size	rd 1
+ 	encoded_data_size	rd 1
+endl
+	push	ebx
+
+	mov	ebx, [_img]
+	mov	eax, [ebx + Image.Type]
+	cmp	eax, Image.bpp1
+	je	.pbm
+	cmp	eax, Image.bpp8
+	je	.pgm
+	cmp	eax, Image.bpp24
+	je	.ppm
+	mov	ecx, LIBIMG_ERROR_BIT_DEPTH
+	jmp	.error
+  .pbm:
+	mov	ecx, [ebx + Image.Width]
+	add	ecx, 7
+	shr	ecx, 3
+	imul	ecx, [ebx + Image.Height]
+	mov	[encoded_data_size], ecx
+	add	ecx, (2 + 1) + (2 + pnm._.creator_comment.size + 1) + (5 + 1 + 5 + 1) + (3 + 1)
+	mov	[encoded_file_size], ecx
+	stdcall	[mem.alloc], ecx
+	mov	[encoded_file], eax
+	test	eax, eax
+	jnz	@f
+	mov	ecx, LIBIMG_ERROR_OUT_OF_MEMORY
+	jmp	.error
+    @@:
+	mov	edi, eax
+	mov	ax, 'P4'
+	call	pnm._.write_header
+	mov	esi, [ebx + Image.Data]
+	mov	ecx, [encoded_data_size]
+	rep	movsb
+	mov	eax, [encoded_file]
+	mov	ecx, [encoded_file_size]
+	jmp	.quit
+	
+  .pgm:
+	mov	ecx, [ebx + Image.Width]
+	imul	ecx, [ebx + Image.Height]
+	mov	[encoded_data_size], ecx
+	add	ecx, (2 + 1) + (2 + pnm._.creator_comment.size + 1) + (5 + 1 + 5 + 1) + (3 + 1)
+	mov	[encoded_file_size], ecx
+	stdcall	[mem.alloc], ecx
+	mov	[encoded_file], eax
+	test	eax, eax
+	jnz	@f
+	mov	ecx, LIBIMG_ERROR_OUT_OF_MEMORY
+	jmp	.error
+    @@:
+	mov	edi, eax
+	mov	ax, 'P5'
+	call	pnm._.write_header
+	mov	dword[edi], '255 '
+	add	edi, 3
+	mov	byte[edi], 0x0A
+	add	edi, 1
+	mov	esi, [ebx + Image.Data]
+	mov	ecx, [encoded_data_size]
+	rep	movsb
+	mov	eax, [encoded_file]
+	mov	ecx, [encoded_file_size]
+	jmp	.quit
+
+  .ppm:
+	mov	ecx, [ebx + Image.Width]
+	imul	ecx, [ebx + Image.Height]
+	lea	ecx, [ecx*3]
+	mov	[encoded_data_size], ecx
+	add	ecx, (2 + 1) + (2 + pnm._.creator_comment.size + 1) + (5 + 1 + 5 + 1) + (3 + 1)
+	mov	[encoded_file_size], ecx
+	stdcall	[mem.alloc], ecx
+	mov	[encoded_file], eax
+	test	eax, eax
+	jnz	@f
+	mov	ecx, LIBIMG_ERROR_OUT_OF_MEMORY
+	jmp	.error
+    @@:
+	mov	edi, eax
+	mov	ax, 'P6'
+	call	pnm._.write_header
+	mov	dword[edi], '255 '
+	add	edi, 3
+	mov	byte[edi], 0x0A
+	add	edi, 1
+	mov	esi, [ebx + Image.Data]
+	mov	ecx, [ebx + Image.Width]
+	imul	ecx, [ebx + Image.Height]
+    @@:
+	lodsb
+	mov	byte[edi+2], al
+	lodsb
+	mov	byte[edi+1], al
+	movsb
+	add	edi, 2
+	dec	ecx
+	jnz	@b
+	mov	eax, [encoded_file]
+	mov	ecx, [encoded_file_size]
+	jmp	.quit
+
+  .error:
 	xor	eax, eax
+  .quit:
+	pop	ebx
 	ret
 endp
 
@@ -220,6 +331,54 @@ proc	pnm._.get_number
 	ret
 endp
 
+
+proc	pnm._.write_header
+	stosw
+	mov	byte[edi], 0x0A
+	add	edi, 1
+	mov	word[edi], '# '
+	add	edi, 2
+	mov	esi, pnm._.creator_comment
+	mov	ecx, pnm._.creator_comment.size
+	rep	movsb
+	mov	byte[edi], 0x0A
+	add	edi, 1
+
+	push	edi
+	mov	al, ' '
+	mov	ecx, (5 + 1 + 5)
+	rep	stosb
+	pop	edi
+	push	edi
+	add	edi, 4
+	mov	eax, [ebx + Image.Width]
+	mov	ecx, 10
+  .write_width:
+	xor	edx, edx
+	div	cx
+	add	dl, '0'
+	mov	byte[edi], dl
+	dec	edi
+	test	ax, ax
+	jnz	.write_width
+	mov	eax, [ebx + Image.Height]
+	pop	edi
+	push	edi
+	add	edi, 10
+  .write_height:
+	xor	edx, edx
+	div	cx
+	add	dl, '0'
+	mov	byte[edi], dl
+	dec	edi
+	test	ax, ax
+	jnz	.write_height
+	pop	edi
+	add	edi, 11
+	mov	byte[edi], 0x0A
+	add	edi, 1
+	ret
+endp
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
@@ -227,4 +386,6 @@ endp
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
+
+sz pnm._.creator_comment ,'CREATOR: KolibriOS / libimg'
 
