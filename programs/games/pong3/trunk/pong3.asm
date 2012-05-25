@@ -42,6 +42,11 @@ still:
 
     scevent red,key,button
 
+	;mcall 48, 4 ;get skin width
+	;sub [skin_h], 16
+	;div eax, 2
+	;mov [skin_h], eax
+	
     outcount dword [scoreb],300,8,cl_Blue,5*65536
     outcount dword [scorea],350,8,cl_Red,5*65536
 
@@ -292,14 +297,16 @@ no_sp:
 
 
 draw_window:
-    startwd
-    window 0,0,640+8,480+24,window_Skinned
-    label 12,8,'PONG: USE ARROW KEYS              SCORE',cl_White+font_Big
-    endwd
+    mcall 12,1 ;start window redraw
+	mcall 0, <10, 640+8>, <10, 480+24>, 0x14000000,, wtitle 
+    mcall 12,2 ;end window redraw
     ret
 
 
 ; DATA AREA
+wtitle db 'PONG: USE ARROW KEYS                     SCORE:',0
+;skin_h dd 25
+
 xt dd 100
 yt dd 100
 

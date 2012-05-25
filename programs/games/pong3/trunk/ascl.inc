@@ -386,19 +386,6 @@ macro delay arg1
     mcall
 }
 
-; WINDOW - Draw window
-; (SYNTAX)  WINDOW Xstart,Ystart,'Text',Color
-; (SAMPLE)  WINDOW 10,10,640+8,480+24,window_Skinned
-
-macro window arg1,arg2,arg3,arg4,arg5
-{
-    mov ebx,arg1*65536+arg3
-    mov ecx,arg2*65536+arg4
-    mov edx,arg5
-    mov eax,0
-    mcall
-}
-
 macro colorwindow arg1,arg2,arg3,arg4,arg5,arg6,arg7
 {
     mov ebx,arg1*65536+arg3
@@ -407,25 +394,6 @@ macro colorwindow arg1,arg2,arg3,arg4,arg5,arg6,arg7
     mov esi,arg6
     mov edi,arg7
     mov eax,0
-    mcall
-}
-
-
-; STARTWD - Start of window draw
-
-macro startwd
-{
-    mov eax,12
-    mov ebx,1
-    mcall
-}
-
-; ENDWD - End window draw
-
-macro endwd
-{
-    mov eax,12
-    mov ebx,2
     mcall
 }
 
