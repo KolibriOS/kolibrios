@@ -1,10 +1,7 @@
-VERSION equ 'ARCANOID II v. 0.30'
 ;               by jj
 ;        (jacek jerzy malinowski)
 ;
 ;   contact: 4nic8@casiocalc.org
-;----------------------------------------
-;   Compile with FASM for Menuet
 ;----------------------------------------
 
 include 'lang.inc'
@@ -417,7 +414,7 @@ intro:  ; INTRO    ;
     jne  @f
     ret
   @@:
-    label 140,200,VERSION,0x100000FF
+    label 146,200,'ARCANOID II  v0.30',0x100000FF
     label 120,220,'by jj (jacek jerzy malinowski)',0x050505
     label 100,240,'press SPACE to start a new game',0x10FF0800
     label 15,240,'F1 + delay',0xFFA8FF
@@ -802,25 +799,27 @@ ret
 
 draw_window:
 
-    startwd
+    mcall 12,1
+    mcall 0,<100,X_SIZE+8>,<100,Y_SIZE+21>,0x14ffffff, , VERSION
 
-    window 100,100,X_SIZE+8,Y_SIZE+21,0x04ffffff
-    label 8,8,VERSION,cl_White+font_Big
-    label 200,8,'LIVES:',0x10ddeeff
-    outcount dword [lives],250,8,0x10ddeeff,65536
+	
+	label 200,8,'LIVES:',0x10ffffff
+    outcount dword [lives],250,8,0x10ffffff,65536
 
     cmp [is_rolled_up], 1
     je  @f
     call fast_gfx
   @@:
 
-    endwd
+    mcall 12,2
 
     ret
 
 ;-----------;####################
 ; DATA AREA ;####################
 ;-----------;####################
+
+VERSION db 'ARCANOID II', 0
 
 is_rolled_up dd 0
 
