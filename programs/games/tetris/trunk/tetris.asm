@@ -59,8 +59,7 @@ use32
                 dd      I_END+1024    ; esp
                 dd      0x0,0x0       ; I_PARAM, I_ICON
 include 'lang.inc'
-include 'macros.inc'
-
+include '../../../macros.inc'
 
 START:                          ; start of execution
 
@@ -843,7 +842,7 @@ if lang eq ru
   title          db '’…’ˆ‘ 1.61 - ‘’…‹Šˆ ˆ …‹',0
   labe           db '€“‡€',0
   text           db 'çª¨:',0
-  game_finished: db '‚€Ÿ',0
+  game_finished: db '  ‚€Ÿ',0
 
 else
 
