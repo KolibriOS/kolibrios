@@ -3,16 +3,12 @@
 ; 31.01.07 - исправлена некорректная отрисовка при большом значении высоты скина
 ;            выравнивание снизу относительно рабочей области экрана
 window_y=67
-;window_x=320
-window_x=640
+window_x=400
 ;--- другие макросы ---
-;include '../../../develop/examples/editbox/trunk/editbox.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-;include 'editbox.inc'
 include 'txtbut.inc'
 include '../../../macros.inc'
-;include 'macros.inc'
 include 'run.mac'
 include 'lang.inc'
 use32		     
