@@ -14,9 +14,7 @@ code
 
 do_draw:
 
-    mov  al,12 		   ; eax=12 - tell os about redraw start
-    mov  bl,1
-    mcall
+    mcall 12,1
 
     mov  al,14 		   ; eax=14 - get screen max x & max y
     mcall
@@ -47,16 +45,11 @@ do_draw:
    pop  ebx
    mcall
 
-   xor edx,edx
    mov al,8
-   inc edx
-   mcall ,15 shl 16+87,17 shl 16+24,,0xaa0044
-   inc edx
-   mcall ,118 shl 16+87,,,0xbb7700
-   inc edx
-   mcall ,15 shl 16+87,51 shl 16+24,,0x8800
-   inc edx
-   mcall ,118 shl 16+87,,,0x999999
+   mcall ,15 shl 16+87,17 shl 16+24,4,0xaa0044
+   mcall ,118 shl 16+87,,2,0xbb7700
+   mcall ,15 shl 16+87,51 shl 16+24,3,0x8800
+   mcall ,118 shl 16+87,,1,0x999999
    mcall ,10 shl 16+200,88 shl 16+15,0x40000005
    mcall 38,27 shl 16 +193,102 shl 16 +102,0x000000dd
 
@@ -83,9 +76,7 @@ do_draw:
     mov  edx,label6
     mcall
 
-    mov  al,12 		   ;end of redraw 
-    mov  ebx,2
-    mcall
+    mcall 12,2
 
 still:
 
@@ -117,7 +108,7 @@ still:
     mcall
     xchg al,ah
     dec  eax
-    jz   power_off
+    jz   close_1
     dec  eax
     jz   restart_kernel
     dec  eax
@@ -127,15 +118,15 @@ still:
 ; we have only one button left, this is close button
 ;    dec  eax
 ;    jnz  still
+power_off:
+    push 2
+    jmp  mcall_and_close
+
 close_1:
     or   eax,-1
     mcall
 
- power_off:
-    push 2
-    jmp  mcall_and_close
-
- restart:
+restart:
     push 3
     jmp  mcall_and_close
 
