@@ -973,11 +973,12 @@ close_app:
     jmp  still
 
 draw_window:
-    startwd
-    window 40,40,(640+9),(440+26),window_Skinned+0x00
-    label  8,8,'ASCL DYNAMIC GAME',cl_White+font_Big
-;    setimg 5,22,img_area
-    endwd
+	
+    mcall 12,1 ;start window redraw
+	mcall 0, <40, 640+9>, <40, 440+26>, 0x14000000,, wtitle
+    mcall 12,2 ;end window redraw
+	;    setimg 5,22,img_area
+
     ret
 
 ;**********************
@@ -1296,6 +1297,8 @@ imgsize:
 
 keymap:
 rb 1000
+
+wtitle db 'Phenix for KolibriOS', 0
 
 ;gif_file_area ~21500
 gif_file_area2:
