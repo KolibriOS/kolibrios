@@ -8,7 +8,7 @@ include '..\..\..\macros.inc' ; decreases program size (not required)
 
 StatusColor equ 0x02ffffff
 StatusColor2 equ 0x02dc1e14
-BgdColor equ 0x04aabbcc
+BgdColor equ 0x14aabbcc
 
 ; Main window dimensions
 XXwindow equ 200 shl 16+276
@@ -80,7 +80,7 @@ START:
     add  esi,conf
     add  esi,eax
     add  al,0x31
-    mov  [lenTitle-1],al     ;task number to program title
+    mov  [txtTitle+17],al     ;task number to program title
     mov  [task],esi
     mov  edi,curconf
     rep  movsb          ; initial configuration
@@ -157,26 +157,10 @@ fail:
 ;   *******************************
 
 draw_window:
-    mov  eax,12
-    mov  ebx,1                     ; begin draw
-    mcall
+                  
+    mcall 12, 1 ; begin draw
+	mcall 0, XXwindow, YYwindow, BgdColor,, txtTitle ; CREATING WINDOW
 
-                                   ; CREATING WINDOW
-    mov  eax,0
-    mov  ebx,XXwindow
-    mov  ecx,YYwindow
-    mov  edx,BgdColor
-    mov  esi,0x805080d0
-    mov  edi,0x005080d0
-    mcall
-
-                                   ; PROGRAM TITLE
-    mov  eax,4
-    mov  ebx,8*65536+8
-    mov  ecx,0x10000000
-    mov  edx,txtTitle
-    mov  esi,lenTitle-txtTitle
-    mcall
 
     mov  eax,8                     ; SHUFFLE BUTTON
     mov  ebx,XXSh
@@ -188,7 +172,7 @@ draw_window:
     mov  ebx,XXCnf                  ; CONF BUTTON
     mov  ecx,YYCnf
     mov  edx,20
-    mov  esi,BtnColor
+    ;mov  esi,BtnColor
     mcall
 
     mov  ebx, XYShText             ; SHUFFLE TEXT
@@ -210,9 +194,7 @@ draw_window:
 
     call draw_moves
 
-    mov  eax,12
-    mov  ebx,2                     ; end of drawing
-    mcall
+    mcall 12, 2 ; end of drawing
     ret
 
 
@@ -459,13 +441,12 @@ else
 end if
 lenCnf:
 
-txtTitle:               ; строка заголовка
+txtTitle:              ; строка заголовка
 if lang eq ru
-     db   'Игра 15 - задача X'
+     db   'Игра 15 - задача X', 0
 else
-     db   'Game 15 - puzzle X'
+     db   'Game 15 - puzzle X', 0
 end if
-lenTitle:                ; и её конец
 
 txtVictory:
 if lang eq ru
