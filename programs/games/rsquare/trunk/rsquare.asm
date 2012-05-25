@@ -184,13 +184,12 @@ button:                       ; BUTTON - only close supported
 draw_window:
     mov  [ticks],TICKS
     mcall 12,1
-    mcall 0,<100,FLDSIZE2+16>,<100,FLDSIZE2+38>,0x04008000
-    mcall 4,<8,8>,0x10ffffff,header,header.size
-    mov   esi,ecx
+    mcall 0,<100,FLDSIZE2+16>,<100,FLDSIZE2+38>,0x14008000, , header
+ 
   if lang eq ru
-    mcall 47,0x20000,[levnum],<165,8>
+    mcall 47,0x20000,[levnum],<128,8>, 0
   else
-    mcall 47,0x20000,[levnum],<145,8>
+    mcall 47,0x20000,[levnum],<117,8>, 0
   end if
     call  red_field
     cmp   [mode],0
@@ -640,8 +639,8 @@ file 'rlevels.bin'
 
 msg_ok db 'OK'
 if lang eq ru
-header db 'Red Square - Уровень       h - Помощь, p - Пауза'
-   .size = $ - header
+header db 'Red Square - Уровень       h - Помощь, p - Пауза', 0
+
 messages mstr 'Отлично! Вы переходите на следующий уровень.',\
               'Красные клетки уничтожены. Вы проиграли.',\
               'Вы прошли все уровни. Поздравляем!',\
@@ -664,8 +663,8 @@ desc mstr   '   Вы играете красным квадратиком. Цель игры - выжить среди',\
             'Оригинал игры под Win32 написал Владимир Привалов, 2002',\
             'Запрограммировал на ассемблере Willow, 2005'
 else
-header db 'Red Square - Level         h - Help,  p - Pause'
-   .size = $ - header
+header db 'Red Square - Level         h - Help,  p - Pause', 0
+
 messages mstr 'Well done! You are on the next level',\
               'Your red cells are vanished! Game over.',\
               "You've completed the game. Congratulations!",\
