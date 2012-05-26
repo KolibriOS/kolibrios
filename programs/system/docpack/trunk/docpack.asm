@@ -191,14 +191,12 @@ end if
 if lang eq ru
   embed_file 'SYSFUNCR.TXT'      ;f
   embed_file 'STACK_RU.TXT'      ;g
-  embed_file 'GROBFAR.TXT'       ;h
 else
   embed_file 'SYSFUNCS.TXT'      ;f
   embed_file 'STACK.TXT'         ;g
-  embed_file 'FARA.TXT'          ;h
 end if
-  embed_file 'KFAR_KEYS.TXT'     ;i
-  embed_file 'INI.TXT'           ;j
+  embed_file 'KFAR_KEYS.TXT'     ;h
+  embed_file 'INI.TXT'           ;i
 ; -- End of embedding area  -------
 
   dd 0
