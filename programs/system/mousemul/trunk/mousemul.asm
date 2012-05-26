@@ -2,6 +2,11 @@
 ; compiler:     FASM 1.67.23
 ; name:         Mouse Emulation For KolibriOS
 ;-----------------------------------------------------------------------------
+; version:	1.1
+; last update:  26/05/2012
+; written by:   Lipatov Kirill aka Leency
+; changes:      shows notify with instructions, while opening program
+;-----------------------------------------------------------------------------
 ; version:	1.0
 ; last update:  04/09/2010
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -15,7 +20,7 @@
 ; e-mail:       umbrosia@land.ru
 ;-----------------------------------------------------------------------------
 ; <--- include all KolibriOS stuff --->
-;include "lang.inc"
+include "lang.inc"
 include '../../../macros.inc'
 
 ; <--- start of KolibriOS application --->
@@ -25,6 +30,10 @@ MEOS_APP_START
 CODE
 ;-----------------------------------------------------------------------------
 start:
+    mov eax,70
+    mov ebx,notifyapp
+    mcall
+	
 	xor	ebx,ebx
 	mcall	40
 @@:
@@ -269,6 +278,23 @@ DATA
 UDATA
 mouse_timer_ticks	dd 0
 ;-----------------------------------------------------------------------------
+if lang eq ru
+ud_user_message db 'NumLock вкл/выкл эмулятор мыши. Управление Numpad',0 ;удалить строчку из хот_кейз
+else
+ud_user_message db 'NumLock - on/off mouse emul. Numpad - move cursor',0
+end if
+
+notifyapp:
+        dd      7
+        dd      0
+        dd      ud_user_message
+        dd      0
+        dd      0
+        db      '@notify',0
+;-----------------------------------------------------------------------------
+
+
+
 MEOS_APP_END
 ; <--- end of KolibriOS application --->
 ; ZG
