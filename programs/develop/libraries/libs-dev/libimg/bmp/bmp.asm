@@ -92,11 +92,13 @@ img.decode.bmp.length_rest equ length_rest
 
 	mov	[bTopDown], 0
 
-	cmp	eax, 12
+	cmp	eax, 12		; 0x0C
 	jz	.old1
-	cmp	eax, 40
+	cmp	eax, 40		; 0x28
 	jz	.normal
-	cmp	eax, 56
+	cmp	eax, 56		; 0x38
+	je	.normal
+	cmp	eax, 108	; 0x6C
 	jnz	.error
 ; convert images with <= 8 bpp to 8bpp, other - to 32 bpp
 .normal:

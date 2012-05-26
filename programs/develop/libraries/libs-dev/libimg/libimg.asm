@@ -884,13 +884,17 @@ endl
     mov ecx, [scanline_len]
     push    ecx
     shr ecx, 2
-    @@: mov eax, [esi]
+    @@:
+    dec ecx
+    js  @f
+    mov eax, [esi]
     xchg    eax, [edi]
     mov [esi], eax
     add esi, 4
     add edi, 4
-    sub ecx, 1
-    jnz @b
+    jmp @b
+    @@:
+
     pop ecx
     and ecx, 3
     jz  .cont_line_vert
