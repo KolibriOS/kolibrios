@@ -180,14 +180,16 @@ draw_window:
 	xor	esi,esi
     mcall 0, <20,620>, <20,460>, 0x43cccccc   ; 0x805080D0, 0x005080D0
     call  get_window_param
-;    mov   ecx,[temp_esi]
+
+    mcall 71, 1, header_text
+
+	;    mov   ecx,[temp_esi]
 	test	[window_status],100b	; window is rolled up
 	jnz	.exit
 
 	test	[window_status],10b	; window is minimized to panel
 	jnz	.exit
 
-    mcall 71, 1 , header_text
     ; create_dir_name
     ; start_parameter
     ; file_name
