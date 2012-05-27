@@ -16,6 +16,9 @@ cur_band	rd 1
 
 icon_count	rd 1
 strip_file	rd 1
+strip_file_size rd 1
+
+cur_band_compensation rd 1
 
 icon_position:	rd 1	; [ebp-4] 'AA-F' or... 
 adress_of_icon_data:	rd 1	; [ebp+8]

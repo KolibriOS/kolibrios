@@ -5,6 +5,12 @@
 ;*  Compile with flat assembler *
 ;*                              *
 ;********************************
+; version:	3.11
+; last update:  28/05/2012
+; changed by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      Fixed crash when trying to select some of the icons.
+;               (bug 000013)
+;---------------------------------------------------------------------
 ; version:	3.10
 ; last update:  03/04/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
@@ -91,18 +97,18 @@ load_libraries l_libs_start,end_l_libs
 	mov	eax,[unpack_DeflateUnpack2]
 	mov	[deflate_unpack],eax
 ;---------------------------------------------------------------------
-; get size of file ICONSTRP.GIF
+; get size of file ICONSTRP.PNG
 	mcall	70,finfo
 	test	eax,eax
 	jnz	close
-; get memory for ICONSTRP.GIF
+; get memory for ICONSTRP.PNG
 	mov	ecx,[procinfo+32]
 	mov	[finfo.size],ecx
 	mov	[img_size],ecx
 	mcall	68,12
 	mov	[finfo.point],eax
 	mov	[image_file],eax
-; load ICONSTRP.GIF
+; load ICONSTRP.PNG
 	mov	[finfo],dword 0
 	mcall	70,finfo
 	test	eax,eax
@@ -115,6 +121,8 @@ load_libraries l_libs_start,end_l_libs
 	call	[cnv_png_import.Start]
 
 	mov	eax,[raw_pointer]
+	mov	ebx,[eax+32]
+	mov	[strip_file_size],ebx
 	mov	eax,[eax+28]
 	add	eax,[raw_pointer]
 	mov	[strip_file],eax
@@ -125,6 +133,9 @@ load_libraries l_libs_start,end_l_libs
 	mov	eax,[eax+8]
 	shr	eax,5
 	mov	[icon_count],eax
+
+	and	eax,0x7
+	mov	[cur_band_compensation],eax
 ; load ICON.DAT
 	call	load_ic
 boot_str:
@@ -470,7 +481,14 @@ align 4
 band:
 	add	esi,12
 	call	ASCII_to_icon_number
-	and	eax,0xfffff8
+;	and	eax,0xfffff8
+	cmp	eax,[cur_band_compensation]
+	jb	@f
+
+	sub	eax,[cur_band_compensation]
+;--------------------------------------
+align 4
+@@:
 	mov	[cur_band],eax
 	call	draw_btns
 	jmp	still
@@ -791,12 +809,34 @@ align 4
 	push	ecx
 	pusha
 	mov	ebp,0
+	
+	mov	eax,[strip_file_size]
+	add	eax,[strip_file]
+	cmp	eax,ebx
+	ja	@f
+; draw a rectangle if icon does not exist	
+	mov	ebx,edx	; X
+	mov	ecx,edx	; Y
+	shl	ecx,16
+	mov	bx,32
+	mov	cx,bx
+	xor	edx,edx
+	mcall	13
+	jmp	.draw_pict_end
+;--------------------------------------
+align 4
+@@:
 	mcall	65,,<32,32>,,32
+;--------------------------------------
+align 4
+.draw_pict_end:
 	popa
 	pop	ecx
 	add	ebx,ICON_SIZE
 	add	edx,34 shl 16
-	loop	.nxt
+
+	dec	ecx
+	jnz	.nxt
 
 	mcall	4,<45,280-2>,0,rep_text,rep_text_len-rep_text
 	lea	edx,[ebx+(8*5)shl 16]
