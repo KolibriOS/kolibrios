@@ -15,7 +15,7 @@ dword j,
  char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
  char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 0.81";
+ char version[]=" Text-based Browser 0.83";
 
 
 struct TWebBrowser {
@@ -152,7 +152,7 @@ void TWebBrowser::Scan(dword id) {
 			return;
 
 		case HOME:
-			copystr("http://bash.org.ru", #editURL);
+			copystr("http://kolibri-os.narod.ru", #editURL);
 		case GOTOURL:
 		case 0x0D: //enter
 			copystr(#editURL, #URL);
@@ -528,7 +528,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	if (stroka >= 0) && (stroka - 2 < max_kolvo_strok) && (line) 
 	{
 		WriteText(stolbec * 6 + left1, top1, 0x80, text_colors[text_color_index], #line, 0); //может тут рисовать белую строку?
-		IF (b_text) WriteText(stolbec * 6 + left1 + 1, top1, 0x80, text_colors[text_color_index], #line, 0);
+		IF (b_text)	{ $add ebx, 1<<16   $int 0x40 }
 		IF (i_text) Skew(stolbec * 6 + left1, top1, strlen(#line)+1*6, 10); //наклонный текст
 		IF (s_text) DrawBar(stolbec * 6 + left1, top1 + 4, strlen(#line) * 6, 1, text_colors[text_color_index]); //зачёркнутый
 		IF (u_text) DrawBar(stolbec * 6 + left1, top1 + 8, strlen(#line) * 6, 1, text_colors[text_color_index]); //подчёркнутый
@@ -642,12 +642,20 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}	
 	////////////////////////////
-	if(!chTag("li")) || (!chTag("dt")) //надо сделать вложенные списки
+	if (!chTag("dt"))
 	{
 		li_text = rez;
 		IF(rez == 0) return;
 		TextGoDown(left1, top1, width1);
-		IF(stroka > -1) && (stroka - 2 < max_kolvo_strok) IF(!chTag("li")) DrawBar(li_tab * 5 * 6 + left1 - 5, top1 + 12, 2, 2, 0);
+		return;
+	}
+	/////////////////////////////
+	if(!chTag("li")) //надо сделать вложенные списки
+	{
+		li_text = rez;
+		IF(rez == 0) return;
+		TextGoDown(left1, top1, width1);
+		IF(stroka > -1) && (stroka - 2 < max_kolvo_strok) DrawBar(li_tab * 5 * 6 + left1 - 5, top1 + 12, 2, 2, 0);
 		return;
 	}
 	////////////////////////////

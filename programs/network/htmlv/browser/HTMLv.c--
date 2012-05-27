@@ -2,6 +2,8 @@
 //Copyright 2007-2012 by Veliant & Leency
 //Asper, Lrz, Nable, lev.
 
+//home icon - rachel fu, GPL licence
+
 #include "..\lib\kolibri.h--"
 #include "..\lib\encoding.h--"
 #include "..\lib\file_system.h--"
