@@ -20,7 +20,7 @@ dword Put_icon(dword extension, yy)
 	   (!strcmp(extension,"ttf")) || (!strcmp(extension,"fon")) {fnum = 10; ftype="Font";}
 	IF (!strcmp(extension,"asm")) {fnum = 11; ftype="Source";}
 	IF (!strcmp(extension,"skn")) {fnum = 13; ftype="Skin";}
-	IF (!strcmp(extension,"djvu")) || (!strcmp(extension,"pdf")) {fnum = 15; ftype="Book";}
+	IF (!strcmp(extension,"djvu")) || (!strcmp(extension,"pdf"))  || (!strcmp(extension,"fb2")) {fnum = 15; ftype="Book";}
 	IF (!strcmp(extension,"nes")) {fnum = 18; ftype="Cartridge";}
 	IF (!strcmp(extension,"img")) || (!strcmp(extension,"ima")) {fnum = 21; ftype="Image";}
 	IF (!strcmp(extension,"dll")) || (!strcmp(extension,"obj")) {fnum = 22; ftype="Library";}

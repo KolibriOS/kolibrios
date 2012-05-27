@@ -411,19 +411,6 @@ void KEdit()
 }
 
 
-inline fastcall void TVScroll() { //Прокрутка
-	dword on_y;
-	IF (count<=0) {DrawFlatButton(onLeft(27,0),57,16,onTop(22,58),0,0xE4DFE1,""); return;}
-	on_y = za_kadrom * onTop(22,57) / count +57;
-	scroll_size=onTop(22,57) * but_num - but_num / count;
-	IF (scroll_size<20) scroll_size = 20; //устанавливаем минимальный размер скролла
-	IF (scroll_size>onTop(22,57)-on_y+56) || (za_kadrom+but_num>=count) on_y=onTop(23+scroll_size,0); //для большого списка 
-	DrawFlatButton(onLeft(27,0),on_y,16,scroll_size,0,0xE4DFE1,"");//ползунок
-	DrawBar(onLeft(26,0),57,15,on_y-57,0xCED0D0);//поле до ползунка
-	DrawBar(onLeft(26,0),on_y+scroll_size+1,15,onTop(22,57)-scroll_size-on_y+56,0xCED0D0); //поле после ползунка
-}
-
-
 void FileList_ReDraw(int curbtn_)
 {
 	if (curbtn_<=0) //вверх
@@ -699,7 +686,7 @@ void Paste()
 void Tip(int y, dword caption, id, arrow)
 {
 	DrawBar(17,y,160,17,0xE4DFE1); //серое сверху
-	WriteText(25,y+5,0x80,0,caption,0);		//text Goto:
+	WriteText(25,y+5,0x80,0,caption,0);
 	IF (id<>0) DefineButton(159,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0xE4DFE1); //кнопа для стрелки
 	WriteText(165,y+5,0x80,0,arrow,0); //стрелка вниз
 	DrawBar(17,y+17,160,1,0x94AECE);		//подчёркивание

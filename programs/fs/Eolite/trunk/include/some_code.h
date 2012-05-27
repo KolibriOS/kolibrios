@@ -24,3 +24,15 @@ dword ConvertSize(dword bytes)
 	copystr(#temp,#size_prefix+strlen(#size_prefix));
 	EAX=#size_prefix;
 }
+
+inline fastcall void TVScroll() { //Прокрутка
+	dword on_y;
+	IF (count<=0) {DrawFlatButton(onLeft(27,0),57,16,onTop(22,58),0,0xE4DFE1,""); return;}
+	on_y = za_kadrom * onTop(22,57) / count +57;
+	scroll_size=onTop(22,57) * but_num - but_num / count;
+	IF (scroll_size<20) scroll_size = 20; //устанавливаем минимальный размер скролла
+	IF (scroll_size>onTop(22,57)-on_y+56) || (za_kadrom+but_num>=count) on_y=onTop(23+scroll_size,0); //для большого списка 
+	DrawFlatButton(onLeft(27,0),on_y,16,scroll_size,0,0xE4DFE1,"");//ползунок
+	DrawBar(onLeft(26,0),57,15,on_y-57,0xCED0D0);//поле до ползунка
+	DrawBar(onLeft(26,0),on_y+scroll_size+1,15,onTop(22,57)-scroll_size-on_y+56,0xCED0D0); //поле после ползунка
+}
