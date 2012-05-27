@@ -98,7 +98,9 @@ img.decode.bmp.length_rest equ length_rest
 	jz	.normal
 	cmp	eax, 56		; 0x38
 	je	.normal
-	cmp	eax, 108	; 0x6C
+	cmp	eax, 0x6C
+	je	.normal
+	cmp	eax, 0x7C
 	jnz	.error
 ; convert images with <= 8 bpp to 8bpp, other - to 32 bpp
 .normal:
@@ -259,16 +261,234 @@ img.decode.bmp.length_rest equ length_rest
 endp
 
 ;;================================================================================================;;
-proc img.encode.bmp _img, _p_length, _options ;///////////////////////////////////////////////////;;
+proc img.encode.bmp _img, _common, _specific ;////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Encode image into raw data in BMP format                                                       ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _img = pointer to image                                                                        ;;
+;> [_img]      = pointer to image                                                                 ;;
+;> [_common]   = format independent options                                                       ;;
+;> [_specific] = 0 / pointer to the structure of format specific options                          ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 (error) or pointer to encoded data                                                     ;;
-;< _p_length = encoded data length                                                                ;;
+;< eax = 0 / pointer to encoded data                                                              ;;
+;< ecx = error code / the size of encoded data                                                    ;;
 ;;================================================================================================;;
+locals
+	bytes_per_scanline	rd 1
+	encoded_file		rd 1
+	encoded_file_size	rd 1
+	encoded_data_size	rd 1
+endl
+	mov	ebx, [_img]
+	mov	eax, [ebx + Image.Type]
+	cmp	eax, Image.bpp24
+	je	.bpp24
+	cmp	eax, Image.bpp32
+	je	.bpp32
+	mov	ecx, LIBIMG_ERROR_BIT_DEPTH
+	jmp	.error
+
+  .bpp24:
+	mov	eax, [ebx + Image.Width]
+	call	img._.get_scanline_len
+	test	eax, 0x03
+	jz	@f
+	and	al, 0xfc
+	add	eax, 4
+    @@:
+	mov	[bytes_per_scanline], eax
+	imul	eax, [ebx + Image.Height]
+	mov	[encoded_data_size], eax
+	add	eax, 108 + 14
+	mov	[encoded_file_size], eax
+	stdcall	[mem.alloc], eax
+	test	eax, eax
+	jz	.error
+	mov	[encoded_file], eax
+	mov	edi, eax
+
+	mov	word[edi], 'BM'
+	add	edi, 2
+	mov	eax, [encoded_file_size]
+	stosd
 	xor	eax, eax
+	stosd
+	mov	eax, 108 + 14
+	stosd
+	mov	eax, 108
+	stosd
+	mov	eax, [ebx + Image.Width]
+	stosd
+	mov	eax, [ebx + Image.Height]
+	stosd
+	mov	ax, 1	; Planes
+	stosw
+	mov	ax, 24	; BitCount
+	stosw
+	mov	eax, bmp.BI_RGB
+	stosd
+	mov	eax, [encoded_data_size]
+	stosd
+	mov	eax, 0x00000B13
+	stosd
+	stosd
+	xor	eax, eax
+	stosd
+	stosd
+	mov	eax, 'BGRs'
+	stosd
+	xor	eax, eax
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	mov	eax, 2
+	stosd
+	xor	eax, eax
+	stosd
+	stosd
+	stosd
+
+	mov	esi, [ebx + Image.Data]
+	mov	ecx, [ebx + Image.Width]
+	lea	ecx, [ecx*3]
+	mov	eax, [ebx + Image.Height]
+	mov	edx, [bytes_per_scanline]
+	sub	edx, ecx
+	mov	dh, cl
+	and	dh, 3
+	shr	ecx, 2
+	push	ecx
+	add	edi, [encoded_data_size]
+	sub	edi, [bytes_per_scanline]
+    @@:
+	pop	ecx
+	push	ecx
+	rep	movsd
+	mov	cl, dh
+	rep	movsb
+	mov	cl, dl
+	add	edi, ecx
+	sub	edi, [bytes_per_scanline]
+	sub	edi, [bytes_per_scanline]
+	dec	eax
+	jnz	@b
+	pop	ecx
+	mov	eax, [encoded_file]
+	mov	ecx, [encoded_file_size]
+	jmp	.quit
+
+  .bpp32:
+	mov	eax, [ebx + Image.Width]
+	call	img._.get_scanline_len
+	mov	[bytes_per_scanline], eax
+	imul	eax, [ebx + Image.Height]
+	mov	[encoded_data_size], eax
+	add	eax, 0x7C + 14
+	mov	[encoded_file_size], eax
+	stdcall	[mem.alloc], eax
+	test	eax, eax
+	jz	.error
+	mov	[encoded_file], eax
+	mov	edi, eax
+
+	mov	word[edi], 'BM'
+	add	edi, 2
+	mov	eax, [encoded_file_size]
+	stosd
+	xor	eax, eax
+	stosd
+	mov	eax, 0x7C + 14
+	stosd
+	mov	eax, 0x7C
+	stosd
+	mov	eax, [ebx + Image.Width]
+	stosd
+	mov	eax, [ebx + Image.Height]
+	stosd
+	mov	ax, 1	; Planes
+	stosw
+	mov	ax, 32	; BitCount
+	stosw
+	mov	eax, 3	; WTF? bmp.BI_RGB
+	stosd
+	mov	eax, [encoded_data_size]
+	stosd
+	mov	eax, 0x00000B13
+	stosd
+	stosd
+	xor	eax, eax
+	stosd
+	stosd
+	mov	eax, 0xFF000000
+	stosd
+	shr	eax, 8
+	stosd
+	shr	eax, 8
+	stosd
+;	shr	eax, 8
+	xor	eax, eax
+	stosd
+	mov	eax, 'BGRs'
+	stosd
+	xor	eax, eax
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	stosd
+	mov	eax, 2
+	stosd
+	xor	eax, eax
+	stosd
+	stosd
+	stosd
+
+	mov	esi, [ebx + Image.Data]
+	mov	ecx, [ebx + Image.Width]
+	mov	eax, [ebx + Image.Height]
+	add	edi, [encoded_data_size]
+	sub	edi, [bytes_per_scanline]
+	push	ecx
+  .next_line:
+	pop	ecx
+	push	ecx
+	push	eax
+    @@:
+	dec	ecx
+	js	@f
+	lodsd
+	rol	eax, 8
+	stosd
+	jmp	@b
+    @@:
+	sub	edi, [bytes_per_scanline]
+	sub	edi, [bytes_per_scanline]
+	pop	eax
+	dec	eax
+	jnz	.next_line
+	pop	ecx
+	mov	eax, [encoded_file]
+	mov	ecx, [encoded_file_size]
+	jmp	.quit
+
+  .error:
+	xor	eax, eax
+  .quit:
 	ret
 endp
 
