@@ -307,7 +307,7 @@ int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,
         {
             //bitmap->data = NULL;    Not now, Serge
 //            printf("blit done\n");
-            delay(1);
+//            delay(1);
             return 0;
         };
         return err;
@@ -328,7 +328,8 @@ int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,
 
     __asm__ __volatile__(
     "int $0x40"
-    ::"a"(73),"b"(0),"c"(&bc));
+    ::"a"(73),"b"(0x00),"c"(&bc)
+    :"memory");
     
     return 0;
 };
@@ -340,7 +341,7 @@ static inline void* user_realloc(void *mem, size_t size)
     __asm__ __volatile__(
     "int $0x40"
     :"=a"(val)
-    :"a"(68),"b"(12),"c"(size),"d"(mem)
+    :"a"(68),"b"(20),"c"(size),"d"(mem)
     :"memory");
 
     return val;

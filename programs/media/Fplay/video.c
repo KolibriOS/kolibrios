@@ -17,6 +17,7 @@ extern int res_pause_btn_pressed[];
 extern int res_play_btn[];
 extern int res_play_btn_pressed[];
 
+extern int64_t stream_duration;
 
 typedef struct
 {
@@ -44,6 +45,18 @@ volatile uint32_t driver_lock;
 
 void get_client_rect(rect_t *rc);
 
+void flush_video()
+{
+    int i;
+
+    for(i = 0; i < 4; i++)
+    {    
+        frames[i].pts    = 0;
+        frames[i].ready  = 0;
+    };
+    vfx    = 0;
+    dfx    = 0;
+};
 
 int init_video(AVCodecContext *ctx)
 {
@@ -113,19 +126,20 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
     if( get_packet(qv, &pkt) == 0 )
         return 0;
 
-    current_clock = -80.0 + get_master_clock();
+    current_clock = -90.0 + get_master_clock();
 
     if( pkt.dts == AV_NOPTS_VALUE &&
         Frame->reordered_opaque != AV_NOPTS_VALUE)
-    pts = Frame->reordered_opaque;
-        else if(pkt.dts != AV_NOPTS_VALUE)
+        pts = Frame->reordered_opaque;
+    else if(pkt.dts != AV_NOPTS_VALUE)
         pts= pkt.dts;
     else
         pts= 0;
-
+        
+  
     pts *= av_q2d(video_time_base)*1000.0;
 
-    if( pts > current_clock)
+    if( 1 /*pts > current_clock*/)
     {
         frameFinished = 0;
 
@@ -140,7 +154,7 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
 
             if( pkt.dts == AV_NOPTS_VALUE &&
                 Frame->reordered_opaque != AV_NOPTS_VALUE)
-            pts = Frame->reordered_opaque;
+                pts = Frame->reordered_opaque;
             else if(pkt.dts != AV_NOPTS_VALUE)
                 pts= pkt.dts;
             else
@@ -161,6 +175,8 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
                       Frame->linesize, ctx->pix_fmt, ctx->width, ctx->height);
 
             frames[dfx].pts = pts*1000.0;
+//            printf("pts %f\n", frames[dfx].pts);
+
             frames[dfx].ready = 1;
 
             dfx++;
@@ -175,6 +191,7 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
 extern volatile enum player_state player_state;
 //rect_t     win_rect;
 
+extern int64_t rewind_pos;
 
 int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 {
@@ -196,18 +213,18 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
         case MSG_LBTNDOWN:
             if(player_state == PAUSE)
             {
-                win->panel.play_btn->img_default = res_play_btn;
-                win->panel.play_btn->img_hilite  = res_play_btn;
-                win->panel.play_btn->img_pressed = res_play_btn_pressed;
+                win->panel.play_btn->img_default = res_pause_btn;
+                win->panel.play_btn->img_hilite  = res_pause_btn;
+                win->panel.play_btn->img_pressed = res_pause_btn_pressed;
                 send_message(win->panel.play_btn, MSG_PAINT, 0, 0);
-                player_state = PLAY_RESTART;
+                player_state = PAUSE_2_PLAY;
 
             }
             else if(player_state == PLAY)
             {
-                win->panel.play_btn->img_default = res_pause_btn;
-                win->panel.play_btn->img_hilite  = res_pause_btn;
-                win->panel.play_btn->img_pressed = res_pause_btn_pressed;
+                win->panel.play_btn->img_default = res_play_btn;
+                win->panel.play_btn->img_hilite  = res_play_btn;
+                win->panel.play_btn->img_pressed = res_play_btn_pressed;
                 send_message(win->panel.play_btn, MSG_PAINT, 0, 0);
                 player_state = PAUSE;
             }
@@ -219,19 +236,35 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                 case ID_PLAY:
                     if(player_state == PAUSE)
                     {
-                        win->panel.play_btn->img_default = res_play_btn;
-                        win->panel.play_btn->img_hilite  = res_play_btn;
-                        win->panel.play_btn->img_pressed  = res_play_btn_pressed;
-                        player_state = PLAY_RESTART;
-                    }
-                    else if(player_state == PLAY)
-                    {
                         win->panel.play_btn->img_default  = res_pause_btn;
                         win->panel.play_btn->img_hilite   = res_pause_btn;
                         win->panel.play_btn->img_pressed = res_pause_btn_pressed;
+                        player_state = PAUSE_2_PLAY;
+                    }
+                    else if(player_state == PLAY)
+                    {
+                        win->panel.play_btn->img_default = res_play_btn;
+                        win->panel.play_btn->img_hilite  = res_play_btn;
+                        win->panel.play_btn->img_pressed  = res_play_btn_pressed;
                         player_state = PAUSE;
                     }
                     break;
+
+                case 101:  //ID_PROGRESS:
+                    if(player_state != REWIND)
+                    {
+                        progress_t *prg = (progress_t*)arg2;
+                    
+                        rewind_pos = (int64_t)prg->pos *
+                              (prg->max - prg->min)/prg->ctrl.w;
+                              
+//                        printf("progress action %f\n", (double)rewind_pos);
+                        player_state = REWIND;
+                        main_render->win->panel.prg->current = rewind_pos;
+                        send_message(&main_render->win->panel.ctrl, MSG_PAINT, 0, 0);
+                    };
+                    break;
+                      
                 default:
                     break;
             }
@@ -242,6 +275,8 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
     };
     return 0;
 };
+
+#define VERSION_A          1
 
 void render_time(render_t *render)
 {
@@ -261,27 +296,102 @@ void render_time(render_t *render)
         return;
     };
 
+#ifdef VERSION_A
     if(frames[vfx].ready == 1 )
     {
+        int sys_time;
+
         ctime = get_master_clock();
         fdelay = (frames[vfx].pts - ctime);
 
 //        printf("pts %f time %f delay %f\n",
- //               frames[vfx].pts, ctime, fdelay);
+//                frames[vfx].pts, ctime, fdelay);
 
-        if(fdelay > 20.0)
+        if(fdelay > 15.0)
         {
-            delay(2);
+            delay(1);
 //            yield();
             return;
         };
 
+        ctime = get_master_clock();
+        fdelay = (frames[vfx].pts - ctime);
+
+        sys_time = get_tick_count();
+
+//      if(fdelay < 0)
+//            printf("systime %d pts %f time %f delay %f\n",
+//                    sys_time*10, frames[vfx].pts, ctime, fdelay);
+
         main_render->draw(main_render, &frames[vfx].picture);
+        main_render->win->panel.prg->current = frames[vfx].pts*1000;
+        send_message(&render->win->panel.prg->ctrl, MSG_PAINT, 0, 0);
         frames[vfx].ready = 0;
         vfx++;
         vfx&= 3;
     }
     else yield();
+
+#else
+
+    if(frames[vfx].ready == 1 )
+    {
+        ctime = get_master_clock();
+        fdelay = (frames[vfx].pts - ctime);
+
+//            printf("pts %f time %f delay %f\n",
+//                    frames[vfx].pts, ctime, fdelay);
+
+        if(fdelay < 0.0 )
+        {
+            int  next_vfx;
+            fdelay = 0;
+            next_vfx = (vfx+1) & 3;
+            if( frames[next_vfx].ready == 1 )
+            {
+                if(frames[next_vfx].pts <= ctime)
+                {
+                    frames[vfx].ready = 0;                  // skip this frame
+                    vfx++;
+                    vfx&= 3;
+                }
+                else
+                {
+                    if( (frames[next_vfx].pts - ctime) <
+                        ( ctime - frames[vfx].pts) )
+                    {
+                        frames[vfx].ready = 0;                  // skip this frame
+                        vfx++;
+                        vfx&= 3;
+                        fdelay = (frames[next_vfx].pts - ctime);
+                    }
+                }
+            };
+        };
+
+        if(fdelay > 10.0)
+        {
+           int val = fdelay;
+           printf("pts %f time %f delay %d\n",
+                   frames[vfx].pts, ctime, val);
+           delay(val/10);
+        };
+
+        ctime = get_master_clock();
+        fdelay = (frames[vfx].pts - ctime);
+
+        printf("pts %f time %f delay %f\n",
+                frames[vfx].pts, ctime, fdelay);
+
+        main_render->draw(main_render, &frames[vfx].picture);
+        main_render->win->panel.prg->current = frames[vfx].pts;
+//        send_message(&render->win->panel.prg->ctrl, MSG_PAINT, 0, 0);
+        frames[vfx].ready = 0;
+        vfx++;
+        vfx&= 3;
+    }
+    else yield();
+#endif
 
 }
 
@@ -297,13 +407,18 @@ int video_thread(void *param)
     init_winlib();
 
     MainWindow = create_window(movie_file,0,
-                               10,10,width,height+29+75,MainWindowProc);
+                               10,10,width,height+29+55,MainWindowProc);
 
+    MainWindow->panel.prg->max = stream_duration;
 //    printf("MainWindow %x\n", MainWindow);
 
     main_render->win = MainWindow;
 
     show_window(MainWindow, NORMAL);
+
+    render_draw_client(main_render);
+    player_state = PAUSE_2_PLAY;
+
     run_render(MainWindow, main_render);
 
 //    printf("exit thread\n");
@@ -448,7 +563,7 @@ void render_adjust_size(render_t *render, window_t *win)
 
 
     right  = win->w;
-    bottom = win->h-CAPTION_HEIGHT-75;
+    bottom = win->h-CAPTION_HEIGHT-55;
     render->win_state  = win->win_state;
 
     if(render->win_state == MINIMIZED)
@@ -482,7 +597,7 @@ void render_adjust_size(render_t *render, window_t *win)
     };
 
     render->win_width  = win->w;
-    render->win_height = win->h-CAPTION_HEIGHT-75;
+    render->win_height = win->h-CAPTION_HEIGHT-55;
     render_set_size(render, new_w, new_h);
 };
 
@@ -600,9 +715,14 @@ void render_draw_client(render_t *render)
        render->win_state == ROLLED)
         return;
 
-    if(player_state == PAUSE)
+    if((player_state == PAUSE) ||
+       (player_state == PLAY_INIT) )
     {
-        main_render->draw(main_render, &frames[vfx].picture);
+         if(frames[vfx].ready == 1 )
+            main_render->draw(main_render, &frames[vfx].picture);
+         else
+            draw_bar(0, CAPTION_HEIGHT, render->win_width,
+                 render->rcvideo.b, 0);
     };
 
     if(render->layout & HAS_TOP)

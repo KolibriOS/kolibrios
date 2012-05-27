@@ -25,6 +25,9 @@ static int snd_format;
 int sample_rate;
 
 static uint32_t samples_written = 0;
+double audio_base = -1.0;
+
+double get_audio_base();
 
 int init_audio(int format)
 {
@@ -104,6 +107,13 @@ int decode_audio(AVCodecContext  *ctx, queue_t *qa)
 
         if(len >= 0)
         {
+//            if(audio_base == -1.0)
+//            {
+//                if (pkt.pts != AV_NOPTS_VALUE)
+//                    audio_base = get_audio_base() * pkt.pts;
+//                printf("audio base %f\n", audio_base);                
+//            };
+            
             pkt_tmp.data += len;
             pkt_tmp.size -= len;
 
@@ -214,19 +224,36 @@ int audio_thread(void *param)
         double    event_stamp, wait_stamp;
         int       too_late = 0;
 
-        if(player_state == PAUSE)
+        if((player_state == PAUSE) ||
+           (player_state == PLAY_INIT) )
         {
             if( active )
             {
                 StopBuffer(hBuff);
                 active = 0;
-            }
+            };
             delay(1);
             continue;
         }
-        else if(player_state == PLAY_RESTART)
+        else if(player_state == REWIND)
         {
+            if( active )
+            {
+                StopBuffer(hBuff);
+                active = 0;
+            };
+            mutex_lock(&astream.lock);
+            astream.count = 0;
+            mutex_unlock(&astream.lock);
+            delay(1);
+            continue;
+        }
+        else if(player_state == PAUSE_2_PLAY)
+        {
+//            SetTimeBase(hBuff, audio_base);
             GetTimeStamp(hBuff, &last_time_stamp);
+//            printf("last_time_stamp %f\n", last_time_stamp);
+            
             if((err = PlayBuffer(hBuff, 0)) !=0 )
             {
                 errstr = "Cannot play buffer\n\r";
@@ -235,7 +262,27 @@ int audio_thread(void *param)
             active = 1;
             sync_audio(hBuff, buffsize);
             player_state = PLAY;
-            printf("audio delta %f\n", audio_delta);
+            printf("render: set audio latency to %f\n", audio_delta);
+        }
+        else if(player_state == REWIND_2_PLAY)
+        {
+            while( (astream.count < buffsize*2) &&
+                   (player_state != CLOSED) )
+            yield();
+
+            SetTimeBase(hBuff, audio_base);
+            GetTimeStamp(hBuff, &last_time_stamp);
+            printf("last audio time stamp %f\n", last_time_stamp);
+            
+            if((err = PlayBuffer(hBuff, 0)) !=0 )
+            {
+                errstr = "Cannot play buffer\n\r";
+                goto exit_whith_error;
+            };
+            active = 1;
+            sync_audio(hBuff, buffsize);
+            player_state = PLAY;
+            printf("render: set audio latency to %f\n", audio_delta);
         };
 
         GetNotify(&evnt);

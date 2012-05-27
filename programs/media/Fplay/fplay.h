@@ -52,10 +52,13 @@ struct render
 };
 
 enum player_state
-{  CLOSED=0, STOP, PLAY_RESTART, PLAY, PAUSE, REWIND };
+{  CLOSED=0,PLAY_INIT,
+   STOP, PAUSE, PLAY, REWIND,
+   PAUSE_2_PLAY, REWIND_2_PLAY
+};
 
-#define ID_PLAY    100
-
+#define ID_PLAY      100
+#define ID_PROGRESS  101
 typedef struct
 {
     volatile uint32_t   lock;
@@ -156,7 +159,8 @@ static inline void delay(uint32_t time)
 {
     __asm__ __volatile__(
     "int $0x40"
-    ::"a"(5), "b"(time));
+    ::"a"(5), "b"(time)
+    :"memory");
 };
 
 
