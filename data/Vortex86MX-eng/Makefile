@@ -45,7 +45,7 @@ FASM_PROGRAMS:=\
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
  @rb:@RB:$(PROGS)/system/rb/trunk/@RB.ASM \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm\
- refrscrn:REFRSCRN:$(PROGS)/system/refrscrn/refrscrn.ASM \
+ refrscrn:REFRSCRN:$(PROGS)/system/refrscrn/refrscrn.asm \
  asciivju:ASCIIVJU:$(PROGS)/develop/asciivju/trunk/asciivju.asm \
  calc:CALC:$(PROGS)/other/calc/trunk/calc.asm \
  calendar:CALENDAR:$(PROGS)/system/calendar/trunk/calendar.asm \
