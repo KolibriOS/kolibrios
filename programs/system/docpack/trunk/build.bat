@@ -1,2 +1,3 @@
-fasm docpack.asm docpack
+fasm docpack.asm docpak
+kpack docpak
 pause

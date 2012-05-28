@@ -1,6 +1,6 @@
 ;---------------------------------------------------------------------
 ;
-;   DOCPAK FOR MENUET v1.1
+;   DOCPAK FOR KOLIBRI v1.2
 ;   Written in pure assembly by Ivushkin Andrey aka Willow
 ;
 ;---------------------------------------------------------------------
@@ -21,7 +21,7 @@ macro embed_file fn
    label2:
    FILE_COUNT=FILE_COUNT+1
 }
-appname equ 'Doc Pack'
+
    use32
    org    0x0
    db     'MENUET01'              ; 8 byte id
@@ -87,21 +87,13 @@ start:
 red:
   mov   [my_param],'a'
   
-  mov  eax,48
-  mov  ebx,3
-  mov  ecx,sc
-  mov  edx,sizeof.system_colors
-  mcall
+  mcall 48, 3, sc, sizeof.system_colors
 
   mcall 12,1
   
-  xor  eax,eax                     
-  mov  ebx,220*65536+120        
-  mov  ecx,30*65536+FILECOUNT*16+35
   mov  edx,[sc.work]
   or   edx,0x34000000
-  mov  edi,title
-  mcall
+  mcall 0, <220,120>, <30,FILECOUNT*16+35>, , ,title
 
   mov   ecx,FILECOUNT
   mov   ebx,5 shl 16+100
@@ -160,8 +152,6 @@ still:
   movzx  ecx,ah
   jmp   start.open
 
-title  db appname,0
-
 fileinfo:
         dd      7
         dd      0
@@ -179,24 +169,24 @@ embedded:
 ; Please use only filenames w/o path!
 
 ; -- Start of embedding area ------
-  embed_file 'README.TXT'        ;a
+  embed_file 'Readme.txt'        ;a
 if lang eq ru
-  embed_file 'GNU.TXT'           ;b
+  embed_file 'GNU.txt'           ;b
 else
-  embed_file 'COPYING.TXT'       ;b
+  embed_file 'Copying.txt'       ;b
 end if
-  embed_file 'HOT_KEYS.TXT'      ;c
+  embed_file 'Hot_keys.txt'      ;c
   embed_file 'FASM.TXT'          ;d
   embed_file 'MTDBG.TXT'         ;e
 if lang eq ru
-  embed_file 'SYSFUNCR.TXT'      ;f
-  embed_file 'STACK_RU.TXT'      ;g
+  embed_file 'Sysfuncr.txt'      ;f
+  embed_file 'Stack_ru.txt'      ;g
 else
-  embed_file 'SYSFUNCS.TXT'      ;f
-  embed_file 'STACK.TXT'         ;g
+  embed_file 'Sysfuncs.txt'      ;f
+  embed_file 'Stack.txt'         ;g
 end if
-  embed_file 'KFAR_KEYS.TXT'     ;h
-  embed_file 'INI.TXT'           ;i
+  embed_file 'Kfar_keys.txt'     ;h
+  embed_file 'Ini.txt'           ;i
 ; -- End of embedding area  -------
 
   dd 0
@@ -209,5 +199,7 @@ FILECOUNT = FILE_COUNT
 my_param db 0
   rb 256
 I_END:
+
+title db 'Doc Pack',0
 
 sc     system_colors
