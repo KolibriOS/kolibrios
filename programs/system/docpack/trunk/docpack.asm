@@ -169,24 +169,24 @@ embedded:
 ; Please use only filenames w/o path!
 
 ; -- Start of embedding area ------
-  embed_file 'Readme.txt'        ;a
+  embed_file 'README.TXT'        ;a
 if lang eq ru
-  embed_file 'GNU.txt'           ;b
+  embed_file 'GNU.TXT'           ;b
 else
-  embed_file 'Copying.txt'       ;b
+  embed_file 'COPYING.TXT'       ;b
 end if
-  embed_file 'Hot_keys.txt'      ;c
+  embed_file 'HOT_KEYS.TXT'      ;c
   embed_file 'FASM.TXT'          ;d
   embed_file 'MTDBG.TXT'         ;e
 if lang eq ru
-  embed_file 'Sysfuncr.txt'      ;f
-  embed_file 'Stack_ru.txt'      ;g
+  embed_file 'SYSFUNCR.TXT'      ;f
+  embed_file 'STACK_RU.TXT'      ;g
 else
-  embed_file 'Sysfuncs.txt'      ;f
-  embed_file 'Stack.txt'         ;g
+  embed_file 'SYSFUNCS.TXT'      ;f
+  embed_file 'STACK.TXT'         ;g
 end if
-  embed_file 'Kfar_keys.txt'     ;h
-  embed_file 'Ini.txt'           ;i
+  embed_file 'KFAR_KEYS.TXT'     ;h
+  embed_file 'INI.TXT'           ;i
 ; -- End of embedding area  -------
 
   dd 0
