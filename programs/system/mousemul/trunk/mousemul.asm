@@ -34,6 +34,7 @@ start:
     mov ebx,notifyapp
     mcall
 	
+start1:
 	xor	ebx,ebx
 	mcall	40
 @@:
@@ -65,7 +66,7 @@ key:				   ; key event handler
 	jnz	@f
 	mov	ebx,5
 	call	hotkeys_common	
-	jmp	start
+	jmp	start1
 @@:
 	cmp	al,2
 	jne	still
