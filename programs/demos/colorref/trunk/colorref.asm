@@ -142,9 +142,7 @@ k2: call help                      ; show help screen
 
 draw_window:
 
-    mov  eax,12                    ; tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
-    mcall
+    mcall 12,1
 
     mov  eax,0                     ; DRAW WINDOW
     mov  ebx,1*65536+200           ; [x start] *65536 + [x size]
@@ -155,9 +153,7 @@ draw_window:
    
     call palette                   ; display color palette
 
-    mov  eax,12                    ; tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
-    mcall
+    mcall 12, 2
 
     ret
 
@@ -278,8 +274,14 @@ clear:
     ret
 
 help:
-    mov  ebx,4*65536+192           ; x and width
-    mov  ecx,20*65536+216          ; y and depth
+	mcall 48,4
+	mov ecx, eax
+	shl ecx, 16
+	add ecx, 236
+	sub ecx, eax
+
+	
+    mov  ebx,5*65536+191           ; x and width
     mov  edx,0x465e8f              ; dark denim color
     mov  eax,13                    ; write text funx
     mcall
@@ -305,12 +307,8 @@ h1: push ecx
     jne  h2                        ; nope
     mov  eax,2                     ; yep, burn it
     mcall
-h2: mov  ebx,4*65536+192           ; y and width
-    mov  ecx,20*65536+216          ; x and depth
-    mov  edx,0x00000               ; restore black bkg
-    mov  eax,13                    ; draw bar funx
-    mcall
-    call palette                   ; redraw color palette
+h2: 
+	call draw_window
 
     ret
 
