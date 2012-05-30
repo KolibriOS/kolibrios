@@ -45,7 +45,7 @@
 ;  dd 0,0
 
 ;******************************************************************************
-include 'macros.inc'
+include '../../../macros.inc' ;
 include 'ascl.inc'
 include 'ascgl.inc'
 
@@ -597,14 +597,24 @@ is_brow:
 	jz	.noext
 	mov	ecx, dword [eax]
 	and	ecx, not 0x20202020
-	mov	ebx, jpgview
+
+	mov	ebx, kiv
 	cmp	ecx, 'JPG'
 	jz	run
 	cmp	ecx, 'JPEG'	; note that it will select also *.JPEG*
 	jz	run
-	mov	ebx, bmpview
 	cmp	ecx, 'GIF'
 	jz	run
+	cmp	ecx, 'BMP'
+	jz	run
+	cmp	ecx, 'PNG'
+	jz	run
+	cmp	ecx, 'ICO'
+	jz	run
+	cmp	ecx, 'CUR'
+	jz	run
+
+	
 	mov	ebx, ac97
 	cmp	ecx, 'WAV'
 	jz	run
@@ -612,20 +622,15 @@ is_brow:
 	jz	run
 	cmp	ecx, 'XM'
 	jz	run
+	
 	mov	ebx, midamp
 	cmp	ecx, 'MID'
 	jz	run
 	mov	ebx, htmlv
 	cmp	ecx, 'HTM'
 	jz	run
-	mov	ebx, bmpview
-	cmp	ecx, 'BMP'
+	cmp	ecx, 'HTML'
 	jz	run
-; //// Willow
-	mov	ebx, pngview
-	cmp	ecx, 'PNG'
-	jz	run
-; //// Willow
 	mov	ebx, rtfread
 	cmp	ecx, 'RTF'
 	jz	run
@@ -1160,18 +1165,13 @@ draw_window:
 ;    jg  temp12345
 ;    ret
 ; temp12345:
-    mov  eax,48
-    mov  ebx,3
-    mov  ecx,sc
-    mov  edx,sizeof.system_colors
-    mcall
+
+    mcall 48, 3, sc, sizeof.system_colors
 
     mov  eax,[sc.work_button]
     mov  [b_color],eax
 
-    mov  eax,12        ; function 12:tell os about windowdraw
-    mov  ebx,1		   ; 1, start of draw
-    mcall
+    mcall 12, 1
 
 ;Window
 
@@ -1187,8 +1187,10 @@ nob1:
     mov  ecx,260*65536+240     ; [y start] *65536 + [y size]
 isb1:
 ;    mov  edx,[sc.work]             ; color of work area RRGGBB
-    or	     edx,0x03ffffff;000000
+    or	     edx,0x13ffffff
     mcall
+	
+    mcall 12, 2      ; end of window redraw
 
 ;Get proc info
     mov eax,9
@@ -1236,7 +1238,7 @@ isb9:
 
     mov  eax,[sc.grab_text]	 ; color of text RRGGBB
     or	     eax,0x10000000
-    glabel 8,8,'SYSTEM X-TREE FILE BROWSER',eax
+	mcall 71,1,title_browser
 
 ;Draw buttons headers
     mov  eax,8
@@ -1282,12 +1284,6 @@ nexthbut:
     glabel ,,'welcome to',cl_Green
     add  ebx,-15*65536+10
     glabel ,,'www.kolibrios.org',cl_Green
-
-;    glabel ,,'Create by',cl_Green
-;    add  ebx,10
-;    glabel ,,'   Pavlushin',
-;    add  ebx,10
-;    glabel ,,'       Evgeni',
 
 
 ;Draw head->file buttons
@@ -1391,10 +1387,9 @@ isb4:
     jmp isb5
 
 iglobal
-head_dlg: db 'OPEN FILE'
-      db 'SAVE FILE'
+
 but_dlg:  db 'OPEN'
-      db 'SAVE'
+          db 'SAVE'
 endg
 
 nob5:
@@ -1410,19 +1405,13 @@ nob5:
 
     cmp byte [dlg_type],'O'    ;if byte O - is Open dialog
     jne no_openh
-    mov edx,head_dlg	      ;draw in head OPEN FILE
-    jmp out_laby
+    mcall 71,1,open_dlg	      ;draw in head OPEN FILE
+    jmp no_saveh
 no_openh:
     cmp byte [dlg_type],'S'    ;if byte S - is Save dialog
     jne no_saveh
-    mov edx,head_dlg+9	      ;draw in head SAVE FILE
-out_laby:
-    mov ebx,8*65536+8
-    mov ecx,[sc.grab_text]    ; color of text RRGGBB
-    or	    ecx,0x10000000
-    mov esi,9
-    mov eax,4
-    mcall
+    mcall 71,1,save_dlg	      ;draw in head SAVE FILE
+    
 no_saveh:
 
 
@@ -1622,11 +1611,12 @@ notusescroll:
     add  ecx,[listysize]
 
     mov  eax,8
-    mov  edx,4+1000000000000000000000000000000b  ;spoke butt
+    mov  edx,4+0x60000000
     mcall
 
     add  ebx,15
     mov  eax,13
+	sub  ebx,[scrollsize]   ;leency
     mov  edx,[listcolor] ;ffffff
     mcall
 
@@ -1645,7 +1635,7 @@ notusescroll:
 
     inc  ecx
     mov  eax,13
-    mov  edx,[scrollbutcol] ;ffffff
+    mov  edx,[scrollbutcol]
     mcall
 
 ; Draw image on up button
@@ -1871,10 +1861,11 @@ no_folico:
     je	     is_imgico
     cmp  edi,dword 'GIF'
     je	     is_imgico
-; //// Willow
     cmp  edi,dword 'PNG'
-    je	 is_imgico
-; //// Willow
+    je	     is_imgico
+    cmp  edi,dword 'ICO'
+    je	     is_imgico
+	
     cmp  edi,dword 'WAV'
     je	     is_imgico
     cmp  edi,dword 'MID'
@@ -2030,10 +2021,6 @@ nob8:
     mov  [flick],0
     jmp  still
 no_flick:
-
-    mov  eax,12        ; function 12:tell os about windowdraw
-    mov  ebx,2		   ; 2, end of draw
-    mcall
 
     ret
 
@@ -2473,6 +2460,9 @@ find_ext:
 	ret
 
 ;******************************************************************************
+title_browser db 'SYSTEM X-TREE FILE BROWSER',0
+open_dlg  db 'OPEN FILE',0
+save_dlg  db 'SAVE FILE',0
 
 ; DATA AREA
 pmenu_draw dd 0  ;if poup menu is draw,update all window
@@ -2570,19 +2560,14 @@ b_color   dd   0x6677cc
 ; //// Willow
 
 ;Name of programs
-editor	      db '/sys/TINYPAD',0
-bmpview   db '/sys/MV',0
-jpgview   db '/sys/JPEGVIEW',0
-gifview   db '/sys/GIFVIEW',0
-ac97	  db '/sys/AC97SND',0
-htmlv	  db '/sys/NETWORK/HTMLV',0
-rtfread   db '/sys/RTFREAD',0
-; //// Willow
-pngview   db '/sys/@RCHER',0
-; //// Willow
-midamp	  db '/sys/MIDAMP',0
-view3ds   db '/sys/3D/VIEW3DS',0
-life2	  db '/sys/DEMOS/LIFE2',0
+editor	  db '/sys/tinypad',0
+kiv       db '/sys/media/kiv',0
+ac97	  db '/sys/media/ac97snd',0
+midamp	  db '/sys/media/midamp',0
+htmlv	  db '/sys/network/htmlv',0
+rtfread   db '/sys/rtfread',0
+view3ds   db '/sys/3d/view3ds',0
+life2	  db '/sys/demos/life2',0
 
 more_char db 10h
 
