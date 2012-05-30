@@ -28,9 +28,7 @@ START:                          ; start of execution
 still:
     call mouse_info
 
-    mov  eax,23
-    mov  ebx,2
-    mcall
+    mcall 23, 2
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -46,20 +44,17 @@ still:
     jmp  still
 
   key:                          ; key
-    mov  eax,2                  ; just read it and ignore
-    mcall
+    mcall 2                  ; just read it and ignore
     jmp  still
 
   button:                       ; button
-    mov  eax,17                 ; get id
-    mcall
-
+    mcall 17                 ; get id
+    
     shr  eax,8
 
     cmp  eax,1                   ; button id=1 ?
     jne  noclose
-    mov  eax,-1                 ; close this program
-    mcall
+    mcall -1                     ; close this program
   noclose:
 
 
@@ -73,17 +68,10 @@ still:
 
 
 draw_window:
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
-    mcall
-                                   ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
-    mov  ebx,100*65536+200         ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+200         ; [y start] *65536 + [y size]
-    mov  edx,0x14ffffff            ; color of work area RRGGBB,8->color gl
-    mov  edi,title                 ; WINDOW LABEL
-    mcall
-
+    mcall 12, 1                    ; 1, start of draw
+    mcall 0, <100,200>, <100,200>, 0x14ffffff, , title ; DRAW WINDOW
+    mcall 12,2                    ; end WINDOW redraw
+	
     call draw_slider_info
 
     xor  ecx,ecx
@@ -96,11 +84,6 @@ Draw_Controls_Loop:
     jmp  Draw_Controls_Loop
 Draw_Controls_Done:
 
-
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
-    mcall
-
     ret
 
 
@@ -112,14 +95,10 @@ mousex dw 0
 mouseb dd 0
 
 mouse_info:
-   mov eax, 37            ;get mouse cordinates
-   mov ebx, 1             ;
-   mcall               ;
+   mcall 37, 1            ;get mouse cordinates
    mov ecx, eax           ;
    push ecx               ;
-   mov eax, 37            ;get mouse buttons
-   mov ebx, 2             ;
-   mcall               ;
+   mcall  37, 2           ;get mouse buttons
    cmp [mouseb], eax      ;compare old mouse states to new states
    jne redraw_mouse_info  ;
    cmp [mousey], cx       ;
@@ -171,11 +150,7 @@ ret
 
 draw_slider_info:
 ;Repaint value background
-   mov eax, 13
-   mov ebx, 0x00960028
-   mov ecx, 0x00240010
-   mov edx, 0x00ffffff
-   mcall
+   mcall 13, 144*65536+36, 72*65536+9, 0x00ffffff 
 ;Draw Color Box
    xor edx, edx
    movzx ecx,word [slider_1+12]
@@ -188,13 +163,13 @@ draw_slider_info:
    mov ebx, 0x00860035
    mov ecx, 0x00590040
    mov eax, 13
-   mcall
+   mcall 
 ;draw current value of slider
    mov ecx, edx
    mov eax, 47
    mov ebx, 0x00060100
    mov esi, 0
-   mov edx, 0x009A0029
+   mov edx, 144*65536+72
    mcall
 ret
 
@@ -267,7 +242,7 @@ draw_slider:
    mov   eax, 13         ;slider background
    mov   ebx, [ebp]      ;x start/width
    mov   ecx, [ebp+4]    ;y start/height
-   mov   edx, 0x002288DD ;color
+   mov   edx, 0x00EBEBEB ;color
    mcall                 ;draw bar
 ;Draw line for slide rail
    mov   eax, 38         ;draw vertical slide line
