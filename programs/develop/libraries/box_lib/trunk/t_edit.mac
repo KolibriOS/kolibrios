@@ -685,21 +685,9 @@ endp
 
 
 align 4
-proc ted_init_syntax_file, edit:dword, file:dword, f_name:dword
+proc ted_init_syntax_file, edit:dword
 	pushad
 	mov edi,dword[edit]
-
-	mov eax,70
-	mov ebx,dword[file]
-	mov dword[ebx], 0
-	mov dword[ebx+4], 0
-	mov dword[ebx+8], 0
-	mov ecx,ted_syntax_file_size
-	mov dword[ebx+12], ecx
-	m2m dword[ebx+16], ted_syntax_file
-	mov  byte[ebx+20], 0
-	m2m dword[ebx+21], dword[f_name]
-	int 0x40
 
 	mov ecx,0x100
 	mov edx,ted_arr_key_pos
@@ -713,22 +701,6 @@ proc ted_init_syntax_file, edit:dword, file:dword, f_name:dword
 	mov ted_key_words_count,0
 	mov ted_help_text_f1,0
 	mov ted_help_id,-1 ;идентификатор слова для справки
-
-	cmp eax,6
-	je @f
-	cmp eax,0
-	je @f
-		cmp ax,10
-		jl .zifra_0_9
-			mov al,'?'
-			sub ax,48
-		.zifra_0_9:
-		add ax,48
-		cmp ted_fun_init_synt_err,0
-		je .no_colors
-			call ted_fun_init_synt_err
-			jmp .no_colors
-	@@:
 
 	mov eax,edi ;сохраняем значение edi
 	mov esi,ted_syntax_file

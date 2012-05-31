@@ -169,7 +169,23 @@ mov ecx,ebx
 	mov ebx,dword[fn_col_option]
 	copy_path ebx,fn_syntax_dir,file_name_rez,0x0
 	copy_path file_name_rez,sys_path,file_name,0x0
-	stdcall [ted_init_syntax_file], tedit0,run_file_70,file_name
+	mov edi, tedit0
+	mov ebx,run_file_70
+	mov dword[ebx], 0
+	mov dword[ebx+4], 0
+	mov dword[ebx+8], 0
+	mov ecx, ted_syntax_file_size
+	mov dword[ebx+12], ecx
+	m2m dword[ebx+16], ted_syntax_file
+	mov  byte[ebx+20], 0
+	m2m dword[ebx+21], file_name
+	mcall 70
+	cmp eax,0
+	jne .end_0
+		call ted_on_init_synt_err
+		jmp @f
+	.end_0:
+	stdcall [ted_init_syntax_file], edi
 
 ;--- get cmd line ---
   cmp byte[openfile_path+3],0 ;openfile_path

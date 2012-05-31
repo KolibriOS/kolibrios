@@ -437,7 +437,7 @@ ted_fun_on_key_ctrl_n equ dword[edi+206] ;... Ctrl+N (создание нового документа)
 ted_fun_on_key_ctrl_s equ dword[edi+210] ;... Ctrl+S
 ted_buffer_size       equ dword[edi+214] ;размер буфера копирования/вставки
 ted_fun_find_err      equ dword[edi+218] ;указатель на функцию вызываемую если поиск закончился неудачно
-ted_fun_init_synt_err equ dword[edi+222] ;указатель на функцию вызываемую при ошибочном открытии файла синтаксиса
+;ted_fun_init_synt_err equ dword[edi+222] ;указатель на функцию вызываемую при ошибочном открытии файла синтаксиса
 ted_fun_draw_panel_buttons equ dword[edi+226] ;указатель на функцию рисования панели с кнопками
 ted_fun_draw_panel_find    equ dword[edi+230] ;указатель на функцию рисования панели поиска
 ted_fun_draw_panel_syntax  equ dword[edi+234] ;указатель на функцию рисования панели синтаксиса

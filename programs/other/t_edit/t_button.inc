@@ -18,7 +18,7 @@ struct symbol
 ends
 
 
-hed db 'TextEditor 19.04.12',0 ;подпись окна
+hed db 'TextEditor 31.05.12',0 ;подпись окна
 sc system_colors
 
 ;fn_icon db 'te_icon.bmp',0
@@ -197,23 +197,36 @@ ted_save_err_msg:
 ;description:
 ; функция нажатия на кнопку [Применить] в панели синтаксиса
 align 4
-proc ted_but_open_syntax, edit:dword
-  push ebx edi
-  mov edi,dword[edit]
+proc ted_but_open_syntax uses eax ebx ecx edi, edit:dword
+	mov edi,dword[edit]
+	cmp ted_panel_id,TED_PANEL_SYNTAX
+	jne @f
+		stdcall dword[tl_node_get_data], tree1
+		pop dword[fn_col_option]
+		mov ebx,dword[fn_col_option]
+		copy_path ebx,fn_syntax_dir,file_name_rez,0x0
+		copy_path file_name_rez,sys_path,file_name,0x0
 
-  cmp ted_panel_id,TED_PANEL_SYNTAX
-  jne @f
-    stdcall dword[tl_node_get_data], tree1
-    pop dword[fn_col_option]
-	mov ebx,dword[fn_col_option]
-	copy_path ebx,fn_syntax_dir,file_name_rez,0x0
-	copy_path file_name_rez,sys_path,file_name,0x0
-    stdcall [ted_init_syntax_file],edi,run_file_70,file_name
-    call [ted_text_colored]
-    stdcall [ted_draw],edi
-  @@:
-  pop edi ebx
-  ret
+		mov ebx,run_file_70
+		mov dword[ebx], 0
+		mov dword[ebx+4], 0
+		mov dword[ebx+8], 0
+		mov ecx, ted_syntax_file_size
+		mov dword[ebx+12], ecx
+		m2m dword[ebx+16], ted_syntax_file
+		mov  byte[ebx+20], 0
+		m2m dword[ebx+21], file_name
+		mcall 70
+		cmp eax,0
+		jne .end_0
+			call ted_on_init_synt_err
+			jmp @f
+		.end_0:
+		stdcall [ted_init_syntax_file],edi
+		call [ted_text_colored]
+		stdcall [ted_draw],edi
+	@@:
+	ret
 endp
 
 ;description:

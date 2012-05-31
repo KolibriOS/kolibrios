@@ -488,7 +488,7 @@ tedit0: ;структура текстового редактора
 	.fun_on_key_ctrl_s dd 0 ;+210 ... Ctrl+S
 	.buffer_size	   dd BUF_SIZE ;+214 размер буфера копирования/вставки
 	.fun_find_err	   dd ted_on_find_err ;+218 указатель на функцию вызываемую если поиск закончился неудачно
-	.fun_init_synt_err dd ted_on_init_synt_err   ;+222 указатель на функцию вызываемую при ошибочном открытии файла синтаксиса
+	.fun_init_synt_err dd 0   ;+222
 	.fun_draw_panel_buttons dd draw_but_toolbar  ;+226 указатель на функцию рисования панели с кнопками
 	.fun_draw_panel_find	dd draw_panel_find   ;+230 указатель на функцию рисования панели поиска
 	.fun_draw_panel_syntax	dd draw_panel_syntax ;+234 указатель на функцию рисования панели синтаксиса
