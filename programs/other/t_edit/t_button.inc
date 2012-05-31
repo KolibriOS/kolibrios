@@ -18,10 +18,9 @@ struct symbol
 ends
 
 
-hed db 'TextEditor 31.05.12',0 ;подпись окна
+hed db 'TextEditor 1.06.12',0 ;подпись окна
 sc system_colors
 
-;fn_icon db 'te_icon.bmp',0
 bmp_icon dd 0
 run_file_70 FileInfoBlock 	  
 
@@ -207,27 +206,59 @@ proc ted_but_open_syntax uses eax ebx ecx edi, edit:dword
 		copy_path ebx,fn_syntax_dir,file_name_rez,0x0
 		copy_path file_name_rez,sys_path,file_name,0x0
 
-		mov ebx,run_file_70
-		mov dword[ebx], 0
-		mov dword[ebx+4], 0
-		mov dword[ebx+8], 0
-		mov ecx, ted_syntax_file_size
-		mov dword[ebx+12], ecx
-		m2m dword[ebx+16], ted_syntax_file
-		mov  byte[ebx+20], 0
-		m2m dword[ebx+21], file_name
-		mcall 70
-		cmp eax,0
-		jne .end_0
-			call ted_on_init_synt_err
-			jmp @f
-		.end_0:
-		stdcall [ted_init_syntax_file],edi
+		call open_unpac_synt_file
+		cmp ebx,-1
+		je @f
+
 		call [ted_text_colored]
 		stdcall [ted_draw],edi
 	@@:
 	ret
 endp
+
+;открытие и распаковка файла подсветки синтаксиса
+;output:
+; ebx - число прочитанных байт из файла
+align 4
+open_unpac_synt_file:
+push eax edi esi
+	mov edi, tedit0
+	mov [run_file_70.Function], 0
+	mov [run_file_70.Position], 0
+	mov [run_file_70.Flags], 0
+	mov ecx, ted_syntax_file_size
+	mov dword[run_file_70.Count], ecx
+	m2m dword[run_file_70.Buffer], ted_syntax_file
+	mov byte[run_file_70+20], 0
+	mov [run_file_70.FileName], file_name
+	mcall 70, run_file_70
+	cmp ebx,-1
+	jne .end_0
+		call ted_on_init_synt_err
+		jmp @f
+	.end_0:
+		mov eax,ted_syntax_file
+		cmp dword[eax],'KPCK'
+		jne .end_unpack
+		cmp dword[eax+4],ecx
+		jg @f ;если для распакованого файла не хватает выделенной памяти
+		cmp dword[unpac_mem],0
+		jne .end_1
+			;выделение памяти для распаковки файла
+			stdcall mem.Alloc,ecx
+			mov [unpac_mem],eax
+		.end_1:
+		stdcall unpack,ted_syntax_file,[unpac_mem]
+		mov edi,ted_syntax_file
+		mov esi,[unpac_mem]
+		mov ecx,[edi+4]
+		cld
+		rep movsb
+		.end_unpack:
+		stdcall [ted_init_syntax_file], tedit0
+	@@:
+pop esi edi eax
+	ret
 
 ;description:
 ; вызов/скрытие панели поиска

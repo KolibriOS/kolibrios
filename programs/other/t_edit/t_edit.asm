@@ -20,11 +20,14 @@ BUF_SIZE equ 1000 ;buffer for copy|paste
 maxSyntaxFileSize equ 410000
 
 include '../../proc32.inc'
+;include '../../config.inc'
 include '../../macros.inc'
 include 'mem.inc'
 include 'dll.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../system/desktop/trunk/kglobals.inc'
+include '../../system/desktop/trunk/unpacker.inc'
 include 'lang.inc'
 
 include 't_data.inc'
@@ -91,7 +94,6 @@ start:
   jz button.exit
 
   mcall 66,1,1 ;scan code
-  ;mcall 26,2,1,conv_tabl
   mcall 40,0x27
 
   mov esi,file_name
@@ -169,32 +171,16 @@ mov ecx,ebx
 	mov ebx,dword[fn_col_option]
 	copy_path ebx,fn_syntax_dir,file_name_rez,0x0
 	copy_path file_name_rez,sys_path,file_name,0x0
-	mov edi, tedit0
-	mov ebx,run_file_70
-	mov dword[ebx], 0
-	mov dword[ebx+4], 0
-	mov dword[ebx+8], 0
-	mov ecx, ted_syntax_file_size
-	mov dword[ebx+12], ecx
-	m2m dword[ebx+16], ted_syntax_file
-	mov  byte[ebx+20], 0
-	m2m dword[ebx+21], file_name
-	mcall 70
-	cmp eax,0
-	jne .end_0
-		call ted_on_init_synt_err
-		jmp @f
-	.end_0:
-	stdcall [ted_init_syntax_file], edi
+	call open_unpac_synt_file
 
 ;--- get cmd line ---
-  cmp byte[openfile_path+3],0 ;openfile_path
-  je @f ;if file names exist
-    mov esi,openfile_path
-    call strlen ;eax=strlen
-    mov [edit1.size],eax
-    call but_no_msg_OpenFile
-  @@:
+	cmp byte[openfile_path+3],0 ;openfile_path
+	je @f ;if file names exist
+		mov esi,openfile_path
+		call strlen ;eax=strlen
+		mov [edit1.size],eax
+		call but_no_msg_OpenFile
+	@@:
 
 align 4
 red_win:
@@ -476,22 +462,27 @@ button:
   cmp ah,1
   jne still
 .exit:
-  stdcall [ted_can_save], tedit0
-  cmp al,1
-  jne @f
-    stdcall [mb_create],msgbox_8,thread ;message: save changes in file?
-    jmp still
-  @@:
-  stdcall mem.Free,[bmp_icon]
-
-  stdcall [ted_delete], tedit0
-  stdcall dword[tl_data_clear], tree1
-  mcall -1 ;выход из программы
+	stdcall [ted_can_save], tedit0
+	cmp al,1
+	jne @f
+		stdcall [mb_create],msgbox_8,thread ;message: save changes in file?
+		jmp still
+	@@:
+	stdcall mem.Free,[bmp_icon]
+	cmp dword[unpac_mem],0
+	je @f
+		stdcall mem.Free,[unpac_mem]
+	@@:
+ 
+	stdcall [ted_delete], tedit0
+	stdcall dword[tl_data_clear], tree1
+	mcall -1 ;выход из программы
 
 
 edit1 edit_box 250, 220, 5, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 4090, openfile_path, mouse_dd, 0
 edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
 
+unpac_mem dd 0
 buf_find db 302 dup(0)
 
 if lang eq ru
@@ -530,8 +521,9 @@ l_libs_start:
 		err_message_found_lib_3, head_f_l, import_libimg, err_message_import_3, head_f_i
 load_lib_end:
 
-
+IncludeIGlobals
 i_end:
+IncludeUGlobals
 	rb 1024
 	align 16
 	procinfo process_information
