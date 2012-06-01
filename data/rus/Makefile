@@ -103,13 +103,13 @@ FASM_PROGRAMS:=\
  develop/board:DEVELOP/BOARD:$(PROGS)/system/board/trunk/board.asm \
  develop/t_edit:DEVELOP/T_EDIT:$(PROGS)/other/t_edit/t_edit.asm \
  develop/info/asm.syn:DEVELOP/INFO/ASM.SYN:$(PROGS)/other/t_edit/info/asm_syn.asm \
- develop/info/cpp_kol_cla.syn:DEVELOP/INFO/cpp_kol_cla.syn:$(PROGS)/other/t_edit/info/cpp_kol_cla.asm \
- develop/info/cpp_kol_dar.syn:DEVELOP/INFO/cpp_kol_dar.syn:$(PROGS)/other/t_edit/info/cpp_kol_dar.asm \
- develop/info/cpp_kol_def.syn:DEVELOP/INFO/cpp_kol_def.syn:$(PROGS)/other/t_edit/info/cpp_kol_def.asm \
- develop/info/default.syn:DEVELOP/INFO/DEFAULT.SYN:$(PROGS)/other/t_edit/info/default.asm \
- develop/info/html.syn:DEVELOP/INFO/HTML.SYN:$(PROGS)/other/t_edit/info/html.asm \
- develop/info/ini_files.syn:DEVELOP/INFO/ini_files.syn:$(PROGS)/other/t_edit/info/ini_files.asm \
- develop/info/win_const.syn:DEVELOP/INFO/win_const.syn:$(PROGS)/other/t_edit/info/win_const.asm \
+ develop/info/cpp_kol_cla.syn:DEVELOP/INFO/cpp_kol_cla.syn:$(PROGS)/other/t_edit/info/cpp_kol_cla_syn.asm \
+ develop/info/cpp_kol_dar.syn:DEVELOP/INFO/cpp_kol_dar.syn:$(PROGS)/other/t_edit/info/cpp_kol_dar_syn.asm \
+ develop/info/cpp_kol_def.syn:DEVELOP/INFO/cpp_kol_def.syn:$(PROGS)/other/t_edit/info/cpp_kol_def_syn.asm \
+ develop/info/default.syn:DEVELOP/INFO/DEFAULT.SYN:$(PROGS)/other/t_edit/info/default_syn.asm \
+ develop/info/html.syn:DEVELOP/INFO/HTML.SYN:$(PROGS)/other/t_edit/info/html_syn.asm \
+ develop/info/ini_files.syn:DEVELOP/INFO/ini_files.syn:$(PROGS)/other/t_edit/info/ini_files_syn.asm \
+ develop/info/win_const.syn:DEVELOP/INFO/win_const.syn:$(PROGS)/other/t_edit/info/win_const_syn.asm \
  develop/cObj:DEVELOP/cObj:$(PROGS)/develop/cObj/trunk/cObj.asm \
  develop/fasm:DEVELOP/FASM:$(PROGS)/develop/fasm/trunk/fasm.asm \
  develop/h2d2b:DEVELOP/H2D2B:$(PROGS)/develop/h2d2b/trunk/h2d2b.asm \
