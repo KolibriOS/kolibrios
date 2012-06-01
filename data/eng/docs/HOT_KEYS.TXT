@@ -7,7 +7,7 @@ The following "hot" shortcut keys are used in the system:
 5) Alt + F4 - terminate the active application.
 6) Alt + Tab - switch to the next (in the window stack) window
 7) Alt + Shift + Tab - switch to the previous (in the window stack) window
-8) Alt + Shift + NumLock - start of the application MOUSEMUL, which emulates mouse with numpad, when NumLock is on (note: mousEmul does not create window or pictures to indicate its work!)
+8) Alt + Shift + NumLock - start of the application MOUSEMUL, which emulates mouse with numpad, when NumLock is on.
 9) Alt + 1...7 - fast switching to the selected keyboard layout (even if absent for Ctrl + Shift)
 10) Win + D - minimize/restore all windows (cleaning of desktop)
 11) Win + R - start of the application RUN
