@@ -102,7 +102,7 @@ FASM_PROGRAMS:=\
  demos/web:DEMOS/WEB:$(PROGS)/demos/web/trunk/web.asm \
  develop/board:DEVELOP/BOARD:$(PROGS)/system/board/trunk/board.asm \
  develop/t_edit:DEVELOP/T_EDIT:$(PROGS)/other/t_edit/t_edit.asm \
- develop/info/asm.syn:DEVELOP/INFO/ASM.SYN:$(PROGS)/other/t_edit/info/asm_syn.asm \
+ #develop/info/asm.syn:DEVELOP/INFO/ASM.SYN:$(PROGS)/other/t_edit/info/asm_syn.asm \
  develop/info/cpp_kol_cla.syn:DEVELOP/INFO/cpp_kol_cla.syn:$(PROGS)/other/t_edit/info/cpp_kol_cla_syn.asm \
  develop/info/cpp_kol_dar.syn:DEVELOP/INFO/cpp_kol_dar.syn:$(PROGS)/other/t_edit/info/cpp_kol_dar_syn.asm \
  develop/info/cpp_kol_def.syn:DEVELOP/INFO/cpp_kol_def.syn:$(PROGS)/other/t_edit/info/cpp_kol_def_syn.asm \
