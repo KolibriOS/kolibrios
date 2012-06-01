@@ -2,6 +2,11 @@
 ; compiler:     FASM 1.67.23
 ; name:         Mouse Emulation For KolibriOS
 ;-----------------------------------------------------------------------------
+; version:	1.2
+; last update:  01/06/2012
+; written by:   Marat Zakiyanov aka Mario79, aka Mario
+; changes:      using new functions 66.6 and 66.7
+;-----------------------------------------------------------------------------
 ; version:	1.1
 ; last update:  26/05/2012
 ; written by:   Lipatov Kirill aka Leency
@@ -30,9 +35,7 @@ MEOS_APP_START
 CODE
 ;-----------------------------------------------------------------------------
 start:
-    mov eax,70
-    mov ebx,notifyapp
-    mcall
+	mcall	70,notifyapp
 	
 start1:
 	xor	ebx,ebx
@@ -41,7 +44,7 @@ start1:
 	mcall	23,10	
 
 	mcall	66,3
-	test	eax,0x80
+	test	eax,0x80	;NumLock status
 	jz	@r
 
 	mov	ebx,4
@@ -61,11 +64,11 @@ key:				   ; key event handler
 	
 	push	eax
 	mcall	66,3
-	test	eax,0x80
+	test	eax,0x80	;NumLock status
 	pop	eax
 	jnz	@f
 	mov	ebx,5
-	call	hotkeys_common	
+	call	hotkeys_common
 	jmp	start1
 @@:
 	cmp	al,2
@@ -270,6 +273,9 @@ hotkeys_common:
 
 	mov	cl,73	; Down Num 9
 	mcall	66
+; disable/enable input, work only hotkeys (f.66.6,66.7)	
+	add	ebx,2
+	mcall	66
 	ret
 ;-----------------------------------------------------------------------------
 ; <--- initialised data --->
@@ -280,22 +286,19 @@ UDATA
 mouse_timer_ticks	dd 0
 ;-----------------------------------------------------------------------------
 if lang eq ru
-ud_user_message db 'NumLock вкл/выкл эмулятор мыши. Управление Numpad',0 ;удалить строчку из хот_кейз
+ud_user_message db 'NumLock вкл/выкл эмулятор мыши. Управление Numpad',0
 else
 ud_user_message db 'NumLock - on/off mouse emul. Numpad - move cursor',0
 end if
 
 notifyapp:
-        dd      7
-        dd      0
-        dd      ud_user_message
-        dd      0
-        dd      0
-        db      '@notify',0
+	dd 7
+	dd 0
+	dd ud_user_message
+	dd 0
+	dd 0
+	db '@notify',0
 ;-----------------------------------------------------------------------------
-
-
-
 MEOS_APP_END
 ; <--- end of KolibriOS application --->
 ; ZG
