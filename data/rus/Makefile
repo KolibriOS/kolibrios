@@ -77,6 +77,7 @@ FASM_PROGRAMS:=\
  setup:SETUP:$(PROGS)/system/setup/trunk/setup.asm \
  test:TEST:$(PROGS)/system/test/trunk/test.asm \
  tinypad:TINYPAD:$(PROGS)/develop/tinypad/trunk/tinypad.asm \
+ t_edit:T_EDIT:$(PROGS)/other/t_edit/t_edit.asm \
  zkey:ZKEY:$(PROGS)/system/zkey/trunk/ZKEY.ASM \
  3d/3dcube2:3D/3DCUBE2:$(PROGS)/demos/3dcube2/trunk/3DCUBE2.ASM \
  3d/3dsheart:3D/3DSHEART:$(PROGS)/demos/3dsheart/trunk/3dsheart.asm \
@@ -101,15 +102,6 @@ FASM_PROGRAMS:=\
  demos/unvwater:DEMOS/UNVWATER:$(PROGS)/demos/unvwater/trunk/unvwater.asm \
  demos/web:DEMOS/WEB:$(PROGS)/demos/web/trunk/web.asm \
  develop/board:DEVELOP/BOARD:$(PROGS)/system/board/trunk/board.asm \
- develop/t_edit:DEVELOP/T_EDIT:$(PROGS)/other/t_edit/t_edit.asm \
- #develop/info/asm.syn:DEVELOP/INFO/ASM.SYN:$(PROGS)/other/t_edit/info/asm_syn.asm \
- develop/info/cpp_kol_cla.syn:DEVELOP/INFO/cpp_kol_cla.syn:$(PROGS)/other/t_edit/info/cpp_kol_cla_syn.asm \
- develop/info/cpp_kol_dar.syn:DEVELOP/INFO/cpp_kol_dar.syn:$(PROGS)/other/t_edit/info/cpp_kol_dar_syn.asm \
- develop/info/cpp_kol_def.syn:DEVELOP/INFO/cpp_kol_def.syn:$(PROGS)/other/t_edit/info/cpp_kol_def_syn.asm \
- develop/info/default.syn:DEVELOP/INFO/DEFAULT.SYN:$(PROGS)/other/t_edit/info/default_syn.asm \
- develop/info/html.syn:DEVELOP/INFO/HTML.SYN:$(PROGS)/other/t_edit/info/html_syn.asm \
- develop/info/ini_files.syn:DEVELOP/INFO/ini_files.syn:$(PROGS)/other/t_edit/info/ini_files_syn.asm \
- develop/info/win_const.syn:DEVELOP/INFO/win_const.syn:$(PROGS)/other/t_edit/info/win_const_syn.asm \
  develop/cObj:DEVELOP/cObj:$(PROGS)/develop/cObj/trunk/cObj.asm \
  develop/fasm:DEVELOP/FASM:$(PROGS)/develop/fasm/trunk/fasm.asm \
  develop/h2d2b:DEVELOP/H2D2B:$(PROGS)/develop/h2d2b/trunk/h2d2b.asm \
@@ -154,6 +146,14 @@ FASM_PROGRAMS:=\
  games/sw:GAMES/SW:$(PROGS)/games/sw/trunk/sw.asm \
  games/tanks:GAMES/TANKS:$(PROGS)/games/tanks/trunk/tanks.asm \
  games/tetris:GAMES/TETRIS:$(PROGS)/games/tetris/trunk/tetris.asm \
+ info/asm.syn:INFO/ASM.SYN:$(PROGS)/other/t_edit/info/asm_syn.asm \
+ info/cpp_kol_cla.syn:INFO/cpp_kol_cla.syn:$(PROGS)/other/t_edit/info/cpp_kol_cla_syn.asm \
+ info/cpp_kol_dar.syn:INFO/cpp_kol_dar.syn:$(PROGS)/other/t_edit/info/cpp_kol_dar_syn.asm \
+ info/cpp_kol_def.syn:INFO/cpp_kol_def.syn:$(PROGS)/other/t_edit/info/cpp_kol_def_syn.asm \
+ info/default.syn:INFO/DEFAULT.SYN:$(PROGS)/other/t_edit/info/default_syn.asm \
+ info/html.syn:INFO/HTML.SYN:$(PROGS)/other/t_edit/info/html_syn.asm \
+ info/ini_files.syn:INFO/ini_files.syn:$(PROGS)/other/t_edit/info/ini_files_syn.asm \
+ info/win_const.syn:INFO/win_const.syn:$(PROGS)/other/t_edit/info/win_const_syn.asm \
  lib/archiver.obj:LIB/ARCHIVER.OBJ:$(PROGS)/fs/kfar/trunk/kfar_arc/kfar_arc.asm \
  lib/box_lib.obj:LIB/BOX_LIB.OBJ:$(PROGS)/develop/libraries/box_lib/trunk/box_lib.asm \
  lib/console.obj:LIB/CONSOLE.OBJ:$(PROGS)/develop/libraries/console/console.asm \
@@ -368,7 +368,7 @@ $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
 $(BUILD_DIR)/boot_fat12.bin: $(KERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootloader/floppy1440.inc
 	fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
 
-$(BUILD_DIR)/.dir 3d/.dir demos/.dir develop/.dir develop/info/.dir drivers/.dir fonts/.dir \
+$(BUILD_DIR)/.dir 3d/.dir demos/.dir develop/.dir info/.dir drivers/.dir fonts/.dir \
  games/.dir lib/.dir media/.dir network/.dir .deps/.dir:
 	mkdir -p $(dir $@)
 	touch $@
