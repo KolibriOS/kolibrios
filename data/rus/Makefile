@@ -146,7 +146,7 @@ FASM_PROGRAMS:=\
  games/sw:GAMES/SW:$(PROGS)/games/sw/trunk/sw.asm \
  games/tanks:GAMES/TANKS:$(PROGS)/games/tanks/trunk/tanks.asm \
  games/tetris:GAMES/TETRIS:$(PROGS)/games/tetris/trunk/tetris.asm \
- info/asm.syn:INFO/ASM1.SYN:$(PROGS)/other/t_edit/info/asm_syn.asm \
+#info/asm.syn:INFO/ASM1.SYN:$(PROGS)/other/t_edit/info/asm_syn.asm \
  info/cpp_kol_cla.syn:INFO/cpp_kol_cla.syn:$(PROGS)/other/t_edit/info/cpp_kol_cla_syn.asm \
  info/cpp_kol_dar.syn:INFO/cpp_kol_dar.syn:$(PROGS)/other/t_edit/info/cpp_kol_dar_syn.asm \
  info/cpp_kol_def.syn:INFO/cpp_kol_def.syn:$(PROGS)/other/t_edit/info/cpp_kol_def_syn.asm \
