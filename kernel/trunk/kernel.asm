@@ -4617,17 +4617,17 @@ f66call:
            dd sys_process_def.1   ; 1 = set keyboard mode
            dd sys_process_def.2   ; 2 = get keyboard mode
            dd sys_process_def.3   ; 3 = get keyboard ctrl, alt, shift
-           dd sys_process_def.4
-           dd sys_process_def.5
+           dd sys_process_def.4   ; 4 = set system-wide hotkey
+           dd sys_process_def.5   ; 5 = delete installed hotkey
+           dd sys_process_def.6   ; 6 = disable input, work only hotkeys
+           dd sys_process_def.7   ; 7 = enable input, opposition to f.66.6
 endg
-
-
-
-
+;-----------------------------------------------------------------------------
+align 4
 sys_process_def:
         dec     ebx
-        cmp     ebx, 5
-        jae     .not_support    ;if >=6 then or eax,-1
+        cmp     ebx, 7
+        jae     .not_support    ;if >=8 then or eax,-1
 
         mov     edi, [CURRENT_TASK]
         jmp     dword [f66call+ebx*4]
@@ -4635,33 +4635,28 @@ sys_process_def:
 .not_support:
         or      eax, -1
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .1:
         shl     edi, 8
         mov     [edi+SLOT_BASE + APPDATA.keyboard_mode], cl
 
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .2:                             ; 2 = get keyboard mode
         shl     edi, 8
         movzx   eax, byte [SLOT_BASE+edi + APPDATA.keyboard_mode]
         mov     [esp+32], eax
         ret
-;     xor   eax,eax
-;     movzx eax,byte [shift]
-;     movzx ebx,byte [ctrl]
-;     shl   ebx,2
-;     add   eax,ebx
-;     movzx ebx,byte [alt]
-;     shl   ebx,3
-;     add   eax,ebx
+;-----------------------------------------------------------------------------
+align 4
 .3:                             ;3 = get keyboard ctrl, alt, shift
- ;// mike.dld [
         mov     eax, [kb_state]
- ;// mike.dld ]
         mov     [esp+32], eax
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .4:
         mov     eax, hotkey_list
 @@:
@@ -4686,7 +4681,8 @@ sys_process_def:
 @@:
         and     dword [esp+32], 0
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .5:
         movzx   ebx, cl
         lea     ebx, [hotkey_scancodes+ebx*4]
@@ -4720,8 +4716,45 @@ sys_process_def:
         mov     [eax], edx
         mov     [esp+32], edx
         ret
+;-----------------------------------------------------------------------------
+align 4
+.6:
+        pushfd
+        cli
+        mov     eax, [PID_lock_input]
+        test    eax, eax
+        jnz     @f
+; get current PID
+        mov     eax, [CURRENT_TASK]
+        shl     eax, 5
+        mov     eax, [eax+CURRENT_TASK+TASKDATA.pid]
+; set current PID for lock input
+        mov     [PID_lock_input], eax
+@@:
+        popfd
+        ret
+;-----------------------------------------------------------------------------
+align 4
+.7:
+        mov     eax, [PID_lock_input]
+        test    eax, eax
+        jz      @f
+; get current PID
+        mov     ebx, [CURRENT_TASK]
+        shl     ebx, 5
+        mov     ebx, [ebx+CURRENT_TASK+TASKDATA.pid]
+; compare current lock input with current PID
+        cmp     ebx, eax
+        jne     @f
 
-
+        xor     eax, eax
+        mov     [PID_lock_input], eax
+@@:
+        ret
+;-----------------------------------------------------------------------------
+uglobal
+  PID_lock_input dd 0x0
+endg
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 61 sys function.                                                ;;
 ;; in eax=61,ebx in [1..3]                                         ;;

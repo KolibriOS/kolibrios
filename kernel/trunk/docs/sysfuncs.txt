@@ -3448,6 +3448,26 @@ Remarks:
     If other application has defined the same combination, it will
     still receive notices.
 
+--------------- Subfunction 6 - block the normal input. --------------
+Parameters:
+  * eax = 66 - function number
+  * ebx = 6 - subfunction number
+Returned value:
+  * function does not return value
+Remarks:
+  * Blocking the normal keyboard input for installed hotkeys
+  * To emulate a mouse via the keyboard, the application MOUSEMUL
+
+------------ Subfunction 7 - unlock the normal input. ----------------
+Parameters:
+  * eax = 66 - function number
+  * ebx = 7 - subfunction number
+Returned value:
+  * function does not return value
+Remarks:
+  * Unlocking the results of the f. 66.6
+  * To emulate a mouse via the keyboard, the application MOUSEMUL
+
 ======================================================================
 ========= Function 67 - change position/sizes of the window. =========
 ======================================================================

@@ -425,6 +425,17 @@ term9:
         add     eax, 16
         cmp     eax, hotkey_list+256*16
         jb      .loop
+; get process PID
+        mov     eax, esi
+        shl     eax, 5
+        mov     eax, [eax+CURRENT_TASK+TASKDATA.pid]
+; compare current lock input with process PID
+        cmp     eax, [PID_lock_input]
+        jne     @f
+
+        xor     eax, eax
+        mov     [PID_lock_input], eax
+@@:
 ; remove hotkeys in buffer
         mov     eax, hotkey_buffer
 .loop2:

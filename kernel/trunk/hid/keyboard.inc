@@ -416,9 +416,16 @@ send_scancode:
         mov     [edi+4], ax
         mov     eax, [kb_state]
         mov     [edi+6], ax
+
+        cmp     [PID_lock_input], dword 0
+        je      .nohotkey
+
+        popad
+        jmp     .exit.irq1
 ;--------------------------------------
 .nohotkey:
         popad
+
         cmp     [keyboard_mode], 0; return from keymap
         jne     .scancode
         
