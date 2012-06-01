@@ -1,17 +1,28 @@
-; version: 0.5
-; last update:  07/10/2010
+; version:      0.6
+; last update:  01/06/2012
+; written by:   Lipatov Kirill aka Leency
+; changes:      removed old code
+;               added edit_box
+;               using system colors
+;-----------------------------------------------------------
+; version:      0.5
+; date:         07/10/2010
 ; written by:   Marat Zakiyanov aka Mario79, aka Mario
 ; changes:      reducing the size of the binary code,
 ;               program uses far less memory while running
 ;               (>0x7000, the old version used >0x100000),
 ;               process only net event at start with parameter
 ;-----------------------------------------------------------
-; version 0.3 -0.4 
+; version:      0.3 -0.4 
 ; written by:   CleverMouse
 ;
 ;-----------------------------------------------------------
 ; wget 0.2 by barsuk
 ; based on Menuet Httpc
+
+
+;TODO
+;downloading status indication in window
 
 
 ; Enabling debugging puts stuff to the debug board
@@ -32,13 +43,19 @@ use32
 
 include	'lang.inc'
 include	'../../../macros.inc'
-include	"../../../proc32.inc"
-include	"dll.inc"
-include	"debug.inc"
+include	'../../../proc32.inc'
+include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include	'dll.inc'
+include	'debug.inc'
 
 URLMAXLEN	equ 256	; maximum length of url string
 
 primary_buffer_size	equ 4096
+
+sc system_colors
+
+@use_library
 
 ; Memory usage
 ; webpage headers at buf_headers
@@ -46,6 +63,13 @@ primary_buffer_size	equ 4096
 START:	; start of execution
 ;dps	<"Program started",13,10>
 ; prepare webAddr area	
+	load_libraries l_libs_start,l_libs_end
+	mov	ebp,lib_0
+	cmp	dword [ebp+ll_struc_size-4],0
+	jz	@f
+		mcall -1 ;exit not correct
+	@@:
+
 	mov	al,' '
 	mov	edi,webAddr
 	mov	ecx,URLMAXLEN
@@ -69,7 +93,8 @@ START:	; start of execution
 	cmp	[params],byte 0
 	jz	prepare_event	;red
 
-	mcall	40,10000000b ; only net event!!!
+
+	mcall 40, 10000000b ; only net event!!!
 
 ; we have an url
 	mov	edi,document_user
@@ -107,7 +132,7 @@ START:	; start of execution
 prepare_event:
 ; Report events
 ; Stack 8 + defaults
-	mcall	40,10000111b
+	mcall 40,10100111b
 
 red:	; redraw
 	call	draw_window
@@ -122,6 +147,10 @@ still:
 
 	cmp	eax,3	; button in buffer ?
 	je	button
+	
+	cmp  eax,6  ; mouse in buffer ? 
+    je	 mouse
+
 
 ; Get the web page data from the remote server
 	call	read_incoming_data
@@ -149,27 +178,26 @@ no_send:
 ; draw page
 	call	read_incoming_data
 	mcall	53,8,[socket]
-	call	draw_page
 	mov	[onoff],0
 
 no_close:
 	jmp	still
 
 key:	; key
-	mcall	2	; just read it and ignore
+	mcall	2	; read key
+	stdcall [edit_box_key], dword edit1
+	
 	shr	eax,8
 	cmp	eax,184
 	jne	no_down
 	cmp	[display_from],25
 	jb	no_down
 	sub	[display_from],25
-	call	display_page
 
 no_down:
 	cmp	eax,183
 	jne	no_up
 	add	[display_from],25
-	call	display_page
 
 no_up:
 	jmp	still
@@ -191,6 +219,10 @@ close_end_exit:
 exit:
 	or	eax,-1	; close this program
 	mcall
+	
+mouse:
+	stdcall [edit_box_mouse], edit1
+	jmp still
 
 save:
 dps	"saving"
@@ -203,32 +235,13 @@ noclose:
 	cmp	ah,31
 	jne	noup
 	sub	[display_from],20
-	call	display_page
 	jmp	still
 
 noup:
 	cmp	ah,32
-	jne	nodown
-	add	[display_from],20
-	call	display_page
-	jmp	still
-
-nodown:
-	cmp	ah,10	; Enter url
 	jne	nourl
-
-	mov	[addr],dword document_user
-	mov	[ya],dword 38
-	mov	[len],dword URLMAXLEN
-
-	mov	ecx,URLMAXLEN
-	mov	edi,[addr]
-	mov	al,' '
-	rep	stosb
-
-	call	print_text
-
-	mov	edi,[addr]
+	add	[display_from],20
+	jmp	still
 
 f11:
 	mcall	10
@@ -241,11 +254,6 @@ fbu:
 	shr	eax,8
 	cmp	eax,8
 	jnz	nobs
-	cmp	edi,[addr]
-	jz	f11
-	sub	edi,1
-	mov	[edi],byte ' '
-	call	print_text
 	jmp	f11
 
 nobs:
@@ -257,19 +265,6 @@ nobs:
 	cmp	eax,31
 	jbe	f11
 
-; Removed in v0.4
-;	cmp	eax,95
-;	jb	keyok
-;	sub	eax,32
-
-keyok:
-	mov	[edi],al
-	call	print_text
-	add	edi,1
-	mov	esi,[addr]
-	add	esi,URLMAXLEN
-	cmp	esi,edi
-	jnz	f11
 	jmp	still
 
 retkey:
@@ -770,41 +765,6 @@ read_hex:
 
 ;****************************************************************************
 ;    Function
-;       draw_page
-;
-;   Description
-;       parses the web page data, storing displayable data at 0x20000
-;       and attributes at 0x30000. It then calls display_page to render
-;       the data
-;
-;****************************************************************************
-draw_page:
-	ret
-
-;****************************************************************************
-;    Function
-;       linefeed
-;
-;   Description
-;
-;
-;****************************************************************************
-linefeed:
-	ret
-
-;****************************************************************************
-;    Function
-;       display_page
-;
-;   Description
-;       Renders the text decoded by draw_page
-;
-;****************************************************************************
-display_page:
-	ret
-
-;****************************************************************************
-;    Function
 ;       socket_commands
 ;
 ;   Description
@@ -865,7 +825,6 @@ tst3:
 	jnz	no_24
 
 	mcall	53,8,[socket]
-	call	draw_page
 no_24:
 	ret
 
@@ -1449,63 +1408,48 @@ dps_001:
 	jmp	dps_000
 end	if
 
-;****************************************************************************
-;    Function
-;       print_text
-;
-;   Description
-;       display the url (full path) text
-;
-;****************************************************************************
-print_text:
-; Draw a bar to blank out previous text
-	mcall	13, <30,520>, <[ya], 9>,0xFFFFFF
-; write text
-	mcall	4, <30,[ya]>, 0,[addr],URLMAXLEN
-	ret
-
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
 
 draw_window:
 
-	mcall	12,1 ; start window redraw
-
 ;	cmp	[params],byte 0
 ;	jz	.noret
 
 ;.noret:
-; DRAW	WINDOW
-	mcall	0,<50,570>,<350,200>,0x14ffffff,0,title
-; eax	function 4: write text to window
-; ebx	[x start] *65536 + [y start]
-; ecx	color of text RRGGBB
-; edx	pointer to text beginning
-; esi	max lenght
-	xor	ecx,ecx
-	mcall	4,<30,38>,,document_user,URLMAXLEN
 
-;	xor	edx,edx
-;	mcall	38,<5,545>,<60,60>
+	mcall	12,1
 
-;	mov	ecx,[winys]
-;	shl	ecx,16
-;	add	ecx,[winys]
-;	sub	ecx,26*65536+26
-;	mcall	38,<5,545>
+	mcall	48,3,sc,40 ;get system colors
+
+    mov  edx,[sc.work]
+    or   edx,0x34000000
+	mcall	0,<50,370>,<350,140>,,0,title   ;draw window
+	
+    mov  ecx,[sc.work_text]
+    or	ecx,80000000h	
+	mcall	4, <14,14>, ,type_pls ;"URL:"
+
+	;mov	ecx,[winys]
+	;shl	ecx,16
+	;add	ecx,[winys]
+	;sub	ecx,26*65536+26
+	;mcall	38,<5,545>
+	
+	edit_boxes_set_sys_color edit1,editboxes_end,sc
+	stdcall [edit_box_draw], edit1
 
 ; RELOAD
-	mcall	8,<388,50>,<54,14>,22,0x5588dd
-; URL
-	mcall	,<10,12>,<34,12>,10
+	mcall	8,<90,68>,<54,16>,22,[sc.work_button]
 ; STOP
-	mcall	,<443,50>,<54,14>,24
+	mcall	,<166,50>,<54,16>,24
 ; SAVE
-	mcall	,<498,50>,,26
+	mcall	,<224,54>,,26
 ; BUTTON TEXT
-	mcall	4,<390,58>,0xffffff,button_text,30
-	call	display_page
+    mov  ecx,[sc.work_button_text]
+    or	ecx,80000000h
+	mcall	4,<102,59>,,button_text
 
 	mcall	12,2 ; end window redraw
 	ret
@@ -1544,13 +1488,44 @@ str2:		db "GotIP",0
 str4:		db "GotResponse",0
 end	if
 ;---------------------------------------------------------------------
-button_text	db ' RELOAD    STOP     SAVE      '
-dpx		dd 25	; x - start of html page in pixels in window
-dpy		dd 65	; for	y
-lastletter	db 0
-pageyinc	dd 0
+;Leency editbox
+mouse_dd dd 0
+edit1 edit_box 295, 48, 10, 0xffffff, 0xff, 0x80ff, 0, 0x8000, URLMAXLEN, document_user, mouse_dd, ed_focus+ed_always_focus,7,7
+editboxes_end:
+
+head_f_i: head_f_l db 'System error',0
+system_dir_0 db '/sys/lib/'
+lib_name_0 db 'box_lib.obj',0
+err_msg_found_lib_0 db 'Не найдена библиотека ',39,'box_lib.obj',39,0
+err_msg_import_0 db 'Ошибка при импорте библиотеки ',39,'box_lib',39,0
+
+l_libs_start:
+	lib_0 l_libs lib_name_0, sys_path, library_path, system_dir_0,\
+		err_msg_found_lib_0,head_f_l,import_box_lib,err_msg_import_0,head_f_i
+l_libs_end:
+
+align 4
+import_box_lib:
+	;dd sz_init1
+	edit_box_draw dd sz_edit_box_draw
+	edit_box_key dd sz_edit_box_key
+	edit_box_mouse dd sz_edit_box_mouse
+	;edit_box_set_text dd sz_edit_box_set_text
+dd 0,0
+	;sz_init1 db 'lib_init',0
+	sz_edit_box_draw db 'edit_box',0
+	sz_edit_box_key db 'edit_box_key',0
+	sz_edit_box_mouse db 'edit_box_mouse',0
+	;sz_edit_box_set_text db 'edit_box_set_text',0
+
+ sys_path rb 4096
+ library_path rb 4096
+;---------------------------------------------------------------------
+
+type_pls	db 'URL:',0	
+button_text	db 'DOWNLOAD     STOP     RESAVE',0
 display_from	dd 20
-pos		dd 0x0
+pos			dd 0x0
 pagex		dd 0x0
 pagey		dd 0x0
 pagexs		dd 80
@@ -1626,7 +1601,7 @@ winys:		dd 400
 dnsMsgLen:	dd 0
 socketNum:	dd 0xFFFF
 ;---------------------------------------------------------------------
-document_user:	db 'Click on the button to the left to enter a URL',0
+document_user db 'http://',0
 ;---------------------------------------------------------------------
 IM_END:
 	rb URLMAXLEN-(IM_END - document_user)
