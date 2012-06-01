@@ -1459,16 +1459,9 @@ end	if
 ;****************************************************************************
 print_text:
 ; Draw a bar to blank out previous text
-	mov	ebx,30*65536+URLMAXLEN*6	; 50 should really be [len] and 103 [xa]
-	mov	ecx,[ya]
-	shl	ecx,16
-	mov	cx,9
-	mcall	13,,,0xFFFFFF
+	mcall	13, <30,520>, <[ya], 9>,0xFFFFFF
 ; write text
-	mov	ebx,30*65536
-	add	ebx,[ya]
-	xor	ecx,ecx
-	mcall	4,,,[addr],URLMAXLEN
+	mcall	4, <30,[ya]>, 0,[addr],URLMAXLEN
 	ret
 
 ;   *********************************************
@@ -1476,42 +1469,15 @@ print_text:
 ;   *********************************************
 
 draw_window:
-; function 12: tell os about windowdraw
-; 1 start of draw
-	mcall	12,1
+
+	mcall	12,1 ; start window redraw
 
 ;	cmp	[params],byte 0
 ;	jz	.noret
 
-; это несколько загадочно, но если не рисовать окошко совсем, прога не пашет.
-; DRAW	WINDOW
-; eax	function 0 : define and draw window
-;	xor	eax,eax
-; ebx	[x start] *65536 + [x size]
-;	xor	ebx,ebx
-; ecx	[y start] *65536 + [y size]
-;	xor	ecx,ecx
-; edx	color of work area RRGGBB,8->color gl
-; esi	color of bar and flags
-;	xor	esi,esi
-;	mcall	,,,0x14ffffff,,title
-
-; function 12: tell os about windowdraw
-; 2, end of draw
-;	mcall	12,2
-;	ret
-	
 ;.noret:
 ; DRAW	WINDOW
-; eax	function 0 : define and draw window
-	xor	eax,eax
-; ebx	[x start] *65536 + [x size]
-; ecx	[y start] *65536 + [y size]
-; edx	color of work area RRGGBB,8->color gl
-; esi	color of bar and flags
-	xor	esi,esi
-; edi	WINDOW	LABEL
-	mcall	,<50,600>,<350,200>,0x14ffffff,,title
+	mcall	0,<50,570>,<350,200>,0x14ffffff,0,title
 ; eax	function 4: write text to window
 ; ebx	[x start] *65536 + [y start]
 ; ecx	color of text RRGGBB
@@ -1530,30 +1496,18 @@ draw_window:
 ;	mcall	38,<5,545>
 
 ; RELOAD
-; eax	function 8 : define and draw button
-; ebx	[x start] *65536 + [x size]
-; ecx	[y start] *65536 + [y size]
-; edx	button id
-; esi	button color RRGGBB
-	mcall	8,<388,50>,<34,14>,22,0x5588dd
+	mcall	8,<388,50>,<54,14>,22,0x5588dd
 ; URL
 	mcall	,<10,12>,<34,12>,10
 ; STOP
-	mcall	,<443,50>,<34,14>,24
+	mcall	,<443,50>,<54,14>,24
 ; SAVE
 	mcall	,<498,50>,,26
 ; BUTTON TEXT
-; eax	function 4 : write text to window
-; ebx	[x start] *65536 + [y start]
-; ecx	color	of	text	RRGGBB
-; edx	pointer	to	text	beginning
-; esi	text	length
-	mcall	4,<390,38>,0xffffff,button_text,30
+	mcall	4,<390,58>,0xffffff,button_text,30
 	call	display_page
 
-; function 12: tell os about windowdraw
-; 2, end of draw
-	mcall	12,2
+	mcall	12,2 ; end window redraw
 	ret
 ;-----------------------------------------------------------------------------
 ; Data area
@@ -1610,7 +1564,7 @@ addr		dd 0x0
 ya		dd 0x0
 len		dd 0x00
 
-title		db 'Downloader',0
+title		db 'Network Downloader',0
 
 server_ip:	db 207,44,212,20
 ;dns_ip:	db 194,145,128,1
@@ -1618,9 +1572,6 @@ server_ip:	db 207,44,212,20
 ;webAddr:
 ;times URLMAXLEN db ' '
 ;db	0
-
-;document_user:	db 'Click on the button to the left to enter a URL',0
-;times URLMAXLEN+document_user-$ db 0
 
 ;document:	db '/'
 ;times URLMAXLEN-1 db ' '
