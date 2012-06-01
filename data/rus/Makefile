@@ -146,14 +146,14 @@ FASM_PROGRAMS:=\
  games/sw:GAMES/SW:$(PROGS)/games/sw/trunk/sw.asm \
  games/tanks:GAMES/TANKS:$(PROGS)/games/tanks/trunk/tanks.asm \
  games/tetris:GAMES/TETRIS:$(PROGS)/games/tetris/trunk/tetris.asm \
-#info/asm.syn:INFO/ASM1.SYN:$(PROGS)/other/t_edit/info/asm_syn.asm \
- info/cpp_kol_cla.syn:INFO/cpp_kol_cla.syn:$(PROGS)/other/t_edit/info/cpp_kol_cla_syn.asm \
- info/cpp_kol_dar.syn:INFO/cpp_kol_dar.syn:$(PROGS)/other/t_edit/info/cpp_kol_dar_syn.asm \
- info/cpp_kol_def.syn:INFO/cpp_kol_def.syn:$(PROGS)/other/t_edit/info/cpp_kol_def_syn.asm \
+ info/asm.syn:INFO/ASM.SYN:$(PROGS)/other/t_edit/info/asm_syn.asm \
+ info/cpp_kol_cla.syn:INFO/CPP_KOL_CLA.SYN:$(PROGS)/other/t_edit/info/cpp_kol_cla_syn.asm \
+ info/cpp_kol_dar.syn:INFO/CPP_KOL_DAR.SYN:$(PROGS)/other/t_edit/info/cpp_kol_dar_syn.asm \
+ info/cpp_kol_def.syn:INFO/CPP_KOL_DEF.SYN:$(PROGS)/other/t_edit/info/cpp_kol_def_syn.asm \
  info/default.syn:INFO/DEFAULT.SYN:$(PROGS)/other/t_edit/info/default_syn.asm \
  info/html.syn:INFO/HTML.SYN:$(PROGS)/other/t_edit/info/html_syn.asm \
- info/ini_files.syn:INFO/ini_files.syn:$(PROGS)/other/t_edit/info/ini_files_syn.asm \
- info/win_const.syn:INFO/win_const.syn:$(PROGS)/other/t_edit/info/win_const_syn.asm \
+ info/ini_files.syn:INFO/INI_FILES.SYN:$(PROGS)/other/t_edit/info/ini_files_syn.asm \
+ info/win_const.syn:INFO/WIN_CONST.SYN:$(PROGS)/other/t_edit/info/win_const_syn.asm \
  lib/archiver.obj:LIB/ARCHIVER.OBJ:$(PROGS)/fs/kfar/trunk/kfar_arc/kfar_arc.asm \
  lib/box_lib.obj:LIB/BOX_LIB.OBJ:$(PROGS)/develop/libraries/box_lib/trunk/box_lib.asm \
  lib/console.obj:LIB/CONSOLE.OBJ:$(PROGS)/develop/libraries/console/console.asm \
@@ -207,9 +207,9 @@ COPY_FILES:=\
  macros.inc:MACROS.INC:$(PROGS)/macros.inc \
  config.inc:CONFIG.INC:$(PROGS)/config.inc \
  struct.inc:STRUCT.INC:$(PROGS)/struct.inc \
- te_icon.png:DEVELOP/TE_ICON.PNG:$(PROGS)/other/t_edit/te_icon.png \
- tl_nod_16.png:DEVELOP/tl_nod_16.png:$(PROGS)/other/t_edit/tl_nod_16.png \
- tl_sys_16.png:DEVELOP/tl_sys_16.png:$(PROGS)/media/log_el/trunk/tl_sys_16.png \
+ te_icon.png:TE_ICON.PNG:$(PROGS)/other/t_edit/te_icon.png \
+ tl_nod_16.png:TL_NOD_16.PNG:$(PROGS)/other/t_edit/tl_nod_16.png \
+ tl_sys_16.png:TL_SYS_16.PNG:$(PROGS)/media/log_el/trunk/tl_sys_16.png \
  File|Managers/z_icons.png:File|Managers/Z_ICONS.PNG:$(PROGS)/fs/opendial/z_icons.png \
  File|Managers/kfm_keys.txt:File|Managers/KFM_KEYS.TXT:$(PROGS)/fs/kfm/trunk/docs/russian/dos_kolibri/kfm_keys.txt \
  File|Managers/buttons.bmp:File|Managers/BUTTONS.BMP:$(PROGS)/fs/kfm/trunk/buttons.bmp \
@@ -349,6 +349,7 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 	mmd -i $(BUILD_DIR)/kolibri.img ::File\ Managers
 	mmd -i $(BUILD_DIR)/kolibri.img ::FONTS
 	mmd -i $(BUILD_DIR)/kolibri.img ::GAMES
+	mmd -i $(BUILD_DIR)/kolibri.img ::INFO
 	mmd -i $(BUILD_DIR)/kolibri.img ::LIB
 	mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA
 	mmd -i $(BUILD_DIR)/kolibri.img ::NETWORK
