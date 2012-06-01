@@ -29,7 +29,7 @@ gskin			Aqwas
 Hearts			Rock_maniak_forever
 humanoid_OSX		Aqwas
 khrome2			ChE
-L-Junior		Leency
+Leency (folder)		Leency
 lightskin		Aqwas
 macos_l			Aqwas
 mage_scroll		Alver
@@ -59,7 +59,6 @@ RoboTech		Rock_maniak_forever
 Russia			Mario79
 Russia_2		Rock_maniak_forever
 Sad_grey		Aqwas
-Sandwich		Leency
 SashSkinPack_1_1	Sash
 sea			Aqwas
 skin_feol		goglus
@@ -78,8 +77,6 @@ Victory_1945		Rock_maniak_forever
 Vista			nillsoft
 WIN311			Veliant
 winflat			mistif(ator
-winpx_luna		Leency
 WindowsXP		Rock_maniak_forever
 WinXP_Standart		Mario79
-Yeah skin		Leency
 zRiver			Rock_maniak_forever
