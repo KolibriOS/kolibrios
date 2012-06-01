@@ -368,7 +368,7 @@ $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
 $(BUILD_DIR)/boot_fat12.bin: $(KERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootloader/floppy1440.inc
 	fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
 
-$(BUILD_DIR)/.dir 3d/.dir demos/.dir develop/.dir drivers/.dir fonts/.dir \
+$(BUILD_DIR)/.dir 3d/.dir demos/.dir develop/.dir develop/info/.dir drivers/.dir fonts/.dir \
  games/.dir lib/.dir media/.dir network/.dir .deps/.dir:
 	mkdir -p $(dir $@)
 	touch $@
