@@ -77,6 +77,7 @@ FASM_PROGRAMS:=\
  setup:SETUP:$(PROGS)/system/setup/trunk/setup.asm \
  test:TEST:$(PROGS)/system/test/trunk/test.asm \
  tinypad:TINYPAD:$(PROGS)/develop/tinypad/trunk/tinypad.asm \
+ t_edit:T_EDIT:$(PROGS)/other/t_edit/t_edit.asm \
  zkey:ZKEY:$(PROGS)/system/zkey/trunk/ZKEY.ASM \
  3d/3dcube2:3D/3DCUBE2:$(PROGS)/demos/3dcube2/trunk/3DCUBE2.ASM \
  3d/3dsheart:3D/3DSHEART:$(PROGS)/demos/3dsheart/trunk/3dsheart.asm \
@@ -146,6 +147,14 @@ FASM_PROGRAMS:=\
  games/sw:GAMES/SW:$(PROGS)/games/sw/trunk/sw.asm \
  games/tanks:GAMES/TANKS:$(PROGS)/games/tanks/trunk/tanks.asm \
  games/tetris:GAMES/TETRIS:$(PROGS)/games/tetris/trunk/tetris.asm \
+ info/asm.syn:INFO/ASM.SYN:$(PROGS)/other/t_edit/info/asm_syn.asm \
+ info/cpp_kol_cla.syn:INFO/CPP_KOL_CLA.SYN:$(PROGS)/other/t_edit/info/cpp_kol_cla_syn.asm \
+ info/cpp_kol_dar.syn:INFO/CPP_KOL_DAR.SYN:$(PROGS)/other/t_edit/info/cpp_kol_dar_syn.asm \
+ info/cpp_kol_def.syn:INFO/CPP_KOL_DEF.SYN:$(PROGS)/other/t_edit/info/cpp_kol_def_syn.asm \
+ info/default.syn:INFO/DEFAULT.SYN:$(PROGS)/other/t_edit/info/default_syn.asm \
+ info/html.syn:INFO/HTML.SYN:$(PROGS)/other/t_edit/info/html_syn.asm \
+ info/ini_files.syn:INFO/INI_FILES.SYN:$(PROGS)/other/t_edit/info/ini_files_syn.asm \
+ info/win_const.syn:INFO/WIN_CONST.SYN:$(PROGS)/other/t_edit/info/win_const_syn.asm \
  lib/archiver.obj:LIB/ARCHIVER.OBJ:$(PROGS)/fs/kfar/trunk/kfar_arc/kfar_arc.asm \
  lib/box_lib.obj:LIB/BOX_LIB.OBJ:$(PROGS)/develop/libraries/box_lib/trunk/box_lib.asm \
  lib/console.obj:LIB/CONSOLE.OBJ:$(PROGS)/develop/libraries/console/console.asm \
@@ -199,6 +208,9 @@ COPY_FILES:=\
  macros.inc:MACROS.INC:$(PROGS)/macros.inc \
  config.inc:CONFIG.INC:$(PROGS)/config.inc \
  struct.inc:STRUCT.INC:$(PROGS)/struct.inc \
+ te_icon.png:TE_ICON.PNG:$(PROGS)/other/t_edit/te_icon.png \
+ tl_nod_16.png:TL_NOD_16.PNG:$(PROGS)/other/t_edit/tl_nod_16.png \
+ tl_sys_16.png:TL_SYS_16.PNG:$(PROGS)/media/log_el/trunk/tl_sys_16.png \
  File|Managers/z_icons.png:File|Managers/Z_ICONS.PNG:$(PROGS)/fs/opendial/z_icons.png \
  File|Managers/kfm_keys.txt:File|Managers/KFM_KEYS.TXT:$(PROGS)/fs/kfm/trunk/docs/english/kfm_keys.txt \
  File|Managers/buttons.bmp:File|Managers/BUTTONS.BMP:$(PROGS)/fs/kfm/trunk/buttons.bmp \
@@ -343,6 +355,7 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 	mmd -i $(BUILD_DIR)/kolibri.img ::File\ Managers
 	mmd -i $(BUILD_DIR)/kolibri.img ::FONTS
 	mmd -i $(BUILD_DIR)/kolibri.img ::GAMES
+	mmd -i $(BUILD_DIR)/kolibri.img ::INFO
 	mmd -i $(BUILD_DIR)/kolibri.img ::LIB
 	mmd -i $(BUILD_DIR)/kolibri.img ::MEDIA
 	mmd -i $(BUILD_DIR)/kolibri.img ::NETWORK
@@ -362,7 +375,7 @@ $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
 $(BUILD_DIR)/boot_fat12.bin: $(KERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootloader/floppy1440.inc
 	fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
 
-$(BUILD_DIR)/.dir 3d/.dir demos/.dir develop/.dir drivers/.dir fonts/.dir \
+$(BUILD_DIR)/.dir 3d/.dir demos/.dir develop/.dir info/.dir drivers/.dir fonts/.dir \
  games/.dir lib/.dir media/.dir network/.dir .deps/.dir:
 	mkdir -p $(dir $@)
 	touch $@

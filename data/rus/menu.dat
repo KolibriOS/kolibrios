@@ -121,7 +121,8 @@ Eolite                    /rd/1/File Managers/Eolite
 Сохранение образа         /rd/1/rdsave
 #14   **** ОБРАБОТКА ДАННЫХ ****
 Калькулятор               /rd/1/calc
-Текстовый редактор        /rd/1/tinypad
+Текст.ред. Tinypad        /rd/1/tinypad
+Текст.ред. T_Edit         /rd/1/t_edit
 Табличный процессор       /rd/1/table
 Построение графиков       /rd/1/graph
 HEX-редактор              /rd/1/develop/heed
