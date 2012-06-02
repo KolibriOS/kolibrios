@@ -24,7 +24,7 @@ dword UrlsHistory::CurrentUrl()
 void UrlsHistory::AddUrl() //тут нужен вводимый элемент - для универсальности
 {
 	if (history_num>0) && (strcmp(#URL,#history_list[history_current].Item)==0) return;
-		
+
 	if (history_current>=MAX_HISTORY_NUM-1)
 	{
 		history_current/=2;
@@ -41,7 +41,7 @@ void UrlsHistory::AddUrl() //тут нужен вводимый элемент - для универсальности
 
 void UrlsHistory::GoBack()
 {
-	if (history_current<=2) return;
+	if (history_current<=1) return;
 	history_current--;
 	copystr(#history_list[history_current].Item,#URL);
 }

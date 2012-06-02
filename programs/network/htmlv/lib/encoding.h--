@@ -155,3 +155,36 @@ int utf8rutodos(dword ESI) //-
 }
 
 //------------------------------------------------------------------------------
+
+dword Hex2Symb(char* htmlcolor)
+{
+  dword j=0, symbol=0;
+  char ch=0x00;
+  FOR (;j<2;j++)
+  {
+    ch=ESBYTE[htmlcolor+j];
+    IF (ch==0x0d) || (ch=='\9') RETURN '';
+    IF ((ch>='0') && (ch<='9')) ch -= '0';
+    IF ((ch>='A') && (ch<='F')) ch -= 'A'-10;
+    IF ((ch>='a') && (ch<='f')) ch -= 'a'-10;
+    symbol = symbol*0x10 + ch;
+  }
+  wintodos(#symbol);
+  AL=symbol;
+}
+
+/*int hex2char(char c)
+{
+  if (c <=9)
+    return (c+48);
+
+  return (c - 10 + 'a');
+}
+
+int hex2char(dword c)
+{
+  if (c <=9)
+    return (c+48);
+
+  return (c - 10 + 'a');
+}*/
