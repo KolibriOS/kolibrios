@@ -3329,7 +3329,7 @@ Parameters:
   * ebx = pointer to the image
   * ecx = [size on axis x]*65536 + [size on axis y]
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
-  * esi = number of bits per pixel, must be 1,2,4,8,15,16,24 or 32
+  * esi = number of bits per pixel, must be 1,2,4,8,9,15,16,24 or 32;
   * edi = pointer to palette (2 to the power esi colors 0x00RRGGBB);
           ignored when esi > 8
   * ebp = offset of next row data relative to previous row data
@@ -3350,6 +3350,9 @@ Remarks:
     corresponds to first pixel.
   * Format of image with 8 bits per pixel: each byte of image is
     index in the palette.
+  * Format of image with 9 bits per pixel: array of one byte values;
+    each byte (8 bit) represents the intensity of gray for one pixel;
+    this format is equal to 8bpp without palette.
   * Format of image with 15 bits per pixel: the color of each pixel
     is coded as (bit representation) 0RRRRRGGGGGBBBBB - 5 bits per
     each color.
