@@ -130,8 +130,6 @@ FASM_PROGRAMS:=\
  games/gomoku:GAMES/GOMOKU:$(PROGS)/games/gomoku/trunk/gomoku.asm \
  games/invaders:GAMES/INVADERS:$(PROGS)/games/invaders/invaders.asm \
  games/klavisha:GAMES/KLAVISHA:$(PROGS)/games/klavisha/trunk/klavisha.asm \
- games/kox:GAMES/KOX:$(PROGS)/games/kox/trunk/kox.asm \
- games/lights:GAMES/LIGHTS:$(PROGS)/games/lights/trunk/lights.asm \
  games/lines:GAMES/LINES:$(PROGS)/games/lines/lines.asm \
  games/mblocks:GAMES/MBLOCKS:$(PROGS)/games/mblocks/trunk/mblocks.asm \
  games/msquare:GAMES/MSQUARE:$(PROGS)/games/MSquare/trunk/MSquare.asm \
