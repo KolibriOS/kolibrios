@@ -16,6 +16,8 @@
 
 $Revision$
 
+ETH_FRAME_MINIMUM       = 60
+
 struct  ETH_header
 
         DstMAC          dp  ?  ; destination MAC-address
@@ -23,8 +25,6 @@ struct  ETH_header
         Type            dw  ?  ; type of the upper-layer protocol
 
 ends
-
-ETH_FRAME_MINIMUM       = 60
 
 struct  ETH_DEVICE      NET_DEVICE
 
@@ -69,7 +69,7 @@ ETH_input:
         sub     ecx, sizeof.ETH_header
 
         lea     edx, [eax + sizeof.ETH_header]
-        mov     ax , [eax + ETH_header.Type]
+        mov     ax, [eax + ETH_header.Type]
 
         cmp     ax, ETHER_IPv4
         je      IPv4_input
@@ -77,8 +77,14 @@ ETH_input:
         cmp     ax, ETHER_ARP
         je      ARP_input
 
+;        cmp     ax, ETHER_IPv6
+;        je      IPv6_input
+
 ;        cmp     ax, ETHER_PPP_DISCOVERY
 ;        je      PPPoE_discovery_input
+
+;        cmp     ax, ETHER_PPP_SESSION
+;        je      PPPoE_session_input
 
         DEBUGF  2,"Unknown ethernet packet type %x\n", ax
 

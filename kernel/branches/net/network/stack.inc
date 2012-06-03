@@ -31,79 +31,87 @@ uglobal
         net_tmr_count   dw ?
 endg
 
-MAX_NET_DEVICES        = 16
+MAX_NET_DEVICES         = 16
 
-MIN_EPHEMERAL_PORT     = 49152
-MAX_EPHEMERAL_PORT     = 61000
+MIN_EPHEMERAL_PORT      = 49152
+MAX_EPHEMERAL_PORT      = 61000
 
 ; Ethernet protocol numbers
-ETHER_ARP              = 0x0608
-ETHER_IPv4             = 0x0008
-ETHER_PPP_DISCOVERY    = 0x6388
-ETHER_PPP_SESSION      = 0x6488
+ETHER_ARP               = 0x0608
+ETHER_IPv4              = 0x0008
+ETHER_IPv6              = 0xDD86
+ETHER_PPP_DISCOVERY     = 0x6388
+ETHER_PPP_SESSION       = 0x6488
 
 ;Protocol family
-AF_UNSPEC              = 0
-AF_UNIX                = 1
-AF_INET4               = 2
-AF_INET6               = 10
+AF_UNSPEC               = 0
+AF_UNIX                 = 1
+AF_INET4                = 2
+AF_INET6                = 10
 
 ; Internet protocol numbers
-IP_PROTO_IP            = 0
-IP_PROTO_ICMP          = 1
-IP_PROTO_TCP           = 6
-IP_PROTO_UDP           = 17
+IP_PROTO_IP             = 0
+IP_PROTO_ICMP           = 1
+IP_PROTO_TCP            = 6
+IP_PROTO_UDP            = 17
 
 ; Socket types
-SOCK_STREAM            = 1
-SOCK_DGRAM             = 2
-SOCK_RAW               = 3
+SOCK_STREAM             = 1
+SOCK_DGRAM              = 2
+SOCK_RAW                = 3
 
 ; Socket options
-SO_ACCEPTCON           = 1 shl 0
-SO_BROADCAST           = 1 shl 1
-SO_DEBUG               = 1 shl 2
-SO_DONTROUTE           = 1 shl 3
-SO_KEEPALIVE           = 1 shl 4
-SO_OOBINLINE           = 1 shl 5
-SO_REUSEADDR           = 1 shl 6
-SO_REUSEPORT           = 1 shl 7
-SO_USELOOPBACK         = 1 shl 8
+SO_ACCEPTCON            = 1 shl 0
+SO_BROADCAST            = 1 shl 1
+SO_DEBUG                = 1 shl 2
+SO_DONTROUTE            = 1 shl 3
+SO_KEEPALIVE            = 1 shl 4
+SO_OOBINLINE            = 1 shl 5
+SO_REUSEADDR            = 1 shl 6
+SO_REUSEPORT            = 1 shl 7
+SO_USELOOPBACK          = 1 shl 8
 
 
 ; Socket States
-SS_NOFDREF             = 0x001       ; no file table ref any more
-SS_ISCONNECTED         = 0x002       ; socket connected to a peer
-SS_ISCONNECTING        = 0x004       ; in process of connecting to peer
-SS_ISDISCONNECTING     = 0x008       ; in process of disconnecting
-SS_CANTSENDMORE        = 0x010       ; can't send more data to peer
-SS_CANTRCVMORE         = 0x020       ; can't receive more data from peer
-SS_RCVATMARK           = 0x040       ; at mark on input
-SS_ISABORTING          = 0x080       ; aborting fd references - close()
-SS_RESTARTSYS          = 0x100       ; restart blocked system calls
-SS_ISDISCONNECTED      = 0x800       ; socket disconnected from peer
+SS_NOFDREF              = 0x001       ; no file table ref any more
+SS_ISCONNECTED          = 0x002       ; socket connected to a peer
+SS_ISCONNECTING         = 0x004       ; in process of connecting to peer
+SS_ISDISCONNECTING      = 0x008       ; in process of disconnecting
+SS_CANTSENDMORE         = 0x010       ; can't send more data to peer
+SS_CANTRCVMORE          = 0x020       ; can't receive more data from peer
+SS_RCVATMARK            = 0x040       ; at mark on input
+SS_ISABORTING           = 0x080       ; aborting fd references - close()
+SS_RESTARTSYS           = 0x100       ; restart blocked system calls
+SS_ISDISCONNECTED       = 0x800       ; socket disconnected from peer
 
-SS_ASYNC               = 0x100       ; async i/o notify
-SS_ISCONFIRMING        = 0x200       ; deciding to accept connection req
-SS_MORETOCOME          = 0x400
+SS_ASYNC                = 0x100       ; async i/o notify
+SS_ISCONFIRMING         = 0x200       ; deciding to accept connection req
+SS_MORETOCOME           = 0x400
 
 
-SOCKET_MAXDATA         = 4096*32     ; must be 4096*(power of 2) where 'power of 2' is at least 8
+SOCKET_MAXDATA          = 4096*32     ; must be 4096*(power of 2) where 'power of 2' is at least 8
 
 ; Network driver types
-NET_TYPE_ETH           = 1
-NET_TYPE_SLIP          = 2
+NET_TYPE_ETH            = 1
+NET_TYPE_SLIP           = 2
 
-MAX_backlog            = 20          ; maximum backlog for stream sockets
+MAX_backlog             = 20          ; maximum backlog for stream sockets
 
 ; Error Codes
-ENOBUFS                = 55
-ECONNREFUSED           = 61
-ECONNRESET             = 52
-ETIMEDOUT              = 60
-ECONNABORTED           = 53
+ENOBUFS                 = 55
+ECONNREFUSED            = 61
+ECONNRESET              = 52
+ETIMEDOUT               = 60
+ECONNABORTED            = 53
 
-
+; Api protocol numbers
+API_ETH                 = 0
+API_IPv4                = 1
+API_ICMP                = 2
+API_UDP                 = 3
+API_TCP                 = 4
+API_ARP                 = 5
+API_PPPOE               = 6
 
 struct  NET_DEVICE
 
@@ -159,6 +167,7 @@ include "ethernet.inc"
 
 include "ARP.inc"
 include "IPv4.inc"
+;include "IPv6.inc"
 
 include "icmp.inc"
 include "udp.inc"
@@ -197,10 +206,10 @@ stack_init:
         mov     ecx, (MAX_NET_DEVICES + 2)
         rep     stosd
 
-;        SLIP_init
 ;        PPPOE_init
 
         IPv4_init
+;        IPv6_init
         ICMP_init
 
         ARP_init
@@ -661,7 +670,7 @@ sys_network:                    ; FIXME: make default device easily accessible
 
 ;----------------------------------------------------------------
 ;
-;  System function to work with protocols  (75)
+;  System function to work with protocols  (76)
 ;
 ;----------------------------------------------------------------
 align 4
@@ -680,25 +689,25 @@ sys_protocols:
         mov     eax, ebx                        ; set ax to protocol number
         shr     eax, 16                         ;
 
-        cmp     ax, IP_PROTO_IP
-        je      IPv4_api
-
-        cmp     ax, IP_PROTO_ICMP
-        je      ICMP_api
-
-        cmp     ax, IP_PROTO_UDP
-        je      UDP_api
-
-        cmp     ax, IP_PROTO_TCP
-        je      TCP_api
-
-        cmp     ax, ETHER_ARP
-        je      ARP_api
-
-        cmp     ax, 1337  ;;;;;
+        cmp     ax, API_ETH
         je      ETH_api
 
-;        cmp     ax, API_PPPoE
+        cmp     ax, API_IPv4
+        je      IPv4_api
+
+        cmp     ax, API_ICMP
+        je      ICMP_api
+
+        cmp     ax, API_UDP
+        je      UDP_api
+
+        cmp     ax, API_TCP
+        je      TCP_api
+
+        cmp     ax, API_ARP
+        je      ARP_api
+
+;        cmp     ax, API_PPPOE
 ;        je      PPPoE_api
 
         add     esp, 4                           ; if we reached here, no function was called, so we need to balance stack

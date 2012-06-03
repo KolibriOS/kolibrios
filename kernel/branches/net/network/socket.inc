@@ -919,9 +919,25 @@ SOCKET_get_opt:
 
 
 
-
+;-----------------------------------------------------------------
+;
+; SOCKET_set_options
+;
+;  IN:  ecx = socket number
+;       edx = pointer to the options:
+;               dd      level, optname, optval, optlen
+;  OUT: -1 on error
+;
+;-----------------------------------------------------------------
 align 4
 SOCKET_set_opt:
+
+        DEBUGF  1,"SOCKET_set_opt\n"
+
+        call    SOCKET_num_to_ptr
+        jz      s_error
+
+
 
         ret
 

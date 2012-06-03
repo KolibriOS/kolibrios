@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IPv4.INC                                                       ;;
@@ -18,57 +18,58 @@
 
 $Revision$
 
-MAX_FRAGMENTS           = 64
-MAX_IP                  = MAX_NET_DEVICES
-IP_MAX_INTERFACES       = MAX_IP
+MAX_FRAGMENTS                   = 64
+MAX_IP                          = MAX_NET_DEVICES
+IP_MAX_INTERFACES               = MAX_IP
 
 struct  IPv4_header
 
-        VersionAndIHL          db  ?  ; Version[0-3 bits] and IHL(header length)[4-7 bits]
-        TypeOfService          db  ?  ; precedence [7-5] minimize delay [4], maximize throughput [3], maximize riliability [2] minimize momentary cost [1] and zero [0]
-        TotalLength            dw  ?
-        Identification         dw  ?
-        FlagsAndFragmentOffset dw  ?  ; Flags[0-2] and FragmentOffset[3-15]
-        TimeToLive             db  ?  ;
-        Protocol               db  ?
-        HeaderChecksum         dw  ?
-        SourceAddress          dd  ?
-        DestinationAddress     dd  ?
+        VersionAndIHL           db ?    ; Version[0-3 bits] and IHL(header length)[4-7 bits]
+        TypeOfService           db ?    ; precedence [7-5] minimize delay [4], maximize throughput [3], maximize riliability [2] minimize momentary cost [1] and zero [0]
+        TotalLength             dw ?
+        Identification          dw ?
+        FlagsAndFragmentOffset  dw ?    ; Flags[0-2] and FragmentOffset[3-15]
+        TimeToLive              db ?    ;
+        Protocol                db ?
+        HeaderChecksum          dw ?
+        SourceAddress           dd ?
+        DestinationAddress      dd ?
 
 ends
 
 struct  FRAGMENT_slot
 
-        ttl                    dw  ?  ; Time to live for this entry, 0 for empty slot's
-        id                     dw  ?  ; Identification field from IP header
-        SrcIP                  dd  ?  ; .. from IP header
-        DstIP                  dd  ?  ; .. from IP header
-        ptr                    dd  ?  ; Pointer to first packet
+        ttl                     dw ?    ; Time to live for this entry, 0 for empty slot's
+        id                      dw ?    ; Identification field from IP header
+        SrcIP                   dd ?    ; .. from IP header
+        DstIP                   dd ?    ; .. from IP header
+        ptr                     dd ?    ; Pointer to first packet
 
 ends
 
-struct  FRAGMENT_entry                 ; This structure will replace the ethernet header in fragmented ip packets
+struct  FRAGMENT_entry                  ; This structure will replace the ethernet header in fragmented ip packets
 
-        PrevPtr                dd  ?  ; Pointer to previous fragment entry  (-1 for first packet)
-        NextPtr                dd  ?  ; Pointer to next fragment entry (-1 for last packet)
-        Owner                  dd  ?  ; Pointer to structure of driver
-                               rb  2  ; to match ethernet header size          ; TODO: fix this hack
-                                      ; Ip header begins here (we will need the IP header to re-construct the complete packet)
+        PrevPtr                 dd ?    ; Pointer to previous fragment entry  (-1 for first packet)
+        NextPtr                 dd ?    ; Pointer to next fragment entry (-1 for last packet)
+        Owner                   dd ?    ; Pointer to structure of driver
+                                rb 2    ; to match ethernet header size         ;;; FIXME
+                                        ; Ip header begins here (we will need the IP header to re-construct the complete packet)
 ends
 
 
 align 4
 uglobal
 
-        IP_LIST         rd  MAX_IP
-        SUBNET_LIST     rd  MAX_IP
-        DNS_LIST        rd  MAX_IP
-        GATEWAY_LIST    rd  MAX_IP
+        IP_LIST         rd MAX_IP
+        SUBNET_LIST     rd MAX_IP
+        DNS_LIST        rd MAX_IP
+        GATEWAY_LIST    rd MAX_IP
+        BROADCAST_LIST  rd MAX_IP
 
-        IP_PACKETS_TX   rd  MAX_IP
-        IP_PACKETS_RX   rd  MAX_IP
+        IP_PACKETS_TX   rd MAX_IP
+        IP_PACKETS_RX   rd MAX_IP
 
-        FRAGMENT_LIST   rb  MAX_FRAGMENTS * sizeof.FRAGMENT_slot
+        FRAGMENT_LIST   rb MAX_FRAGMENTS * sizeof.FRAGMENT_slot
 endg
 
 
@@ -83,11 +84,7 @@ macro   IPv4_init {
 
         xor     eax, eax
         mov     edi, IP_LIST
-        mov     ecx, 4*MAX_IP
-        rep     stosd
-
-        mov     edi, FRAGMENT_LIST
-        mov     ecx, sizeof.FRAGMENT_slot*MAX_FRAGMENTS/4 + 2*MAX_IP
+        mov     ecx, 7*MAX_IP + (sizeof.FRAGMENT_slot*MAX_FRAGMENTS)/4
         rep     stosd
 
 }
@@ -100,20 +97,27 @@ macro   IPv4_init {
 ;-----------------------------------------------------------------
 macro IPv4_decrease_fragment_ttls {
 
-local   .loop
+local   .loop, .next
 
         mov     esi, FRAGMENT_LIST
         mov     ecx, MAX_FRAGMENTS
   .loop:
         cmp     [esi + FRAGMENT_slot.ttl], 0
-        je      .try_next
+        je      .next
         dec     [esi + FRAGMENT_slot.ttl]
-        jnz     .try_next
+        jz      .died
+  .next:
+        add     esi, sizeof.FRAGMENT_slot
+        dec     ecx
+        jnz     .loop
+        jmp     .done
+
+  .died:
         DEBUGF 1,"Fragment slot timed-out!\n"
 ;;; TODO: clear all entry's of timed-out slot
-  .try_next:
-        add     esi, 4
-        loop    .loop
+        jmp     .next
+
+  .done:
 }
 
 
@@ -186,7 +190,7 @@ macro IPv4_checksum ptr {
 ;
 ; IPv4_input:
 ;
-;  Will check if IP Packet isnt damaged
+;  Will check if IPv4 Packet isnt damaged
 ;  and call appropriate handler. (TCP/UDP/ICMP/..)
 ;
 ;  It will also re-construct fragmented packets
@@ -194,27 +198,23 @@ macro IPv4_checksum ptr {
 ;  IN:  Pointer to buffer in [esp]
 ;       size of buffer in [esp+4]
 ;       pointer to device struct in ebx
-;       pointer to IP header in edx
-;       size of IP packet in ecx
+;       pointer to IPv4 header in edx
+;       size of IPv4 packet in ecx
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
 align 4
-IPv4_input:      ; TODO: add code for raw sockets
+IPv4_input:                                                     ; TODO: add IPv4 raw sockets support
 
         DEBUGF  1,"IPv4_input, packet from: %u.%u.%u.%u ",\
-        [edx + IPv4_header.SourceAddress]:1,[edx + IPv4_header.SourceAddress + 1]:1,[edx + IPv4_header.SourceAddress + 2]:1,[edx + IPv4_header.SourceAddress + 3]:1
+        [edx + IPv4_header.SourceAddress + 0]:1,[edx + IPv4_header.SourceAddress + 1]:1,\
+        [edx + IPv4_header.SourceAddress + 2]:1,[edx + IPv4_header.SourceAddress + 3]:1
         DEBUGF  1,"to: %u.%u.%u.%u\n",\
-        [edx + IPv4_header.DestinationAddress]:1,[edx + IPv4_header.DestinationAddress + 1]:1,[edx + IPv4_header.DestinationAddress + 2]:1,[edx + IPv4_header.DestinationAddress + 3]:1
-
-;-------------------------------------------
-; Check if the packet still has time to live
-
-        cmp     byte [edx + IPv4_header.TimeToLive], 0
-        je      .dump
+        [edx + IPv4_header.DestinationAddress + 0]:1,[edx + IPv4_header.DestinationAddress + 1]:1,\
+        [edx + IPv4_header.DestinationAddress + 2]:1,[edx + IPv4_header.DestinationAddress + 3]:1
 
 ;-------------------------------
-; Now, re-calculate the checksum
+; re-calculate the checksum
 
         IPv4_checksum edx
         jnz     .dump                                           ; if checksum isn't valid then dump packet
@@ -229,38 +229,35 @@ IPv4_input:      ; TODO: add code for raw sockets
 
         ; check if it matches local ip
 
-        mov     eax, [IP_LIST+edi]
-        cmp     [edx + IPv4_header.DestinationAddress], eax
-        je      .ip_ok
-
-        ; check for broadcast
-
-        mov     eax, [SUBNET_LIST+edi]
-        not     eax
-        or      eax, [IP_LIST+edi]
-        cmp     [edx + IPv4_header.DestinationAddress], eax
-        je      .ip_ok
-
-        ; or a special broadcast
-
-        cmp     [edx + IPv4_header.DestinationAddress], -1
-        je      .ip_ok
-
-        ; maybe it's a multicast then
-
         mov     eax, [edx + IPv4_header.DestinationAddress]
-        and     eax, 0xff000000
-;        cmp     eax, 224 shl 24
-;        je      .ip_ok
-
-        ; or a loopback address
-
-        cmp     eax, 127 shl 24
+        cmp     eax, [IP_LIST+edi]
         je      .ip_ok
 
-        ; or it's not meant for us..
+        ; check for broadcast (IP or (not SUBNET))
 
-        DEBUGF  2,"Destination address does not match!\n"
+        cmp     eax, [BROADCAST_LIST+edi]
+        je      .ip_ok
+
+        ; or a special broadcast (255.255.255.255)
+
+        cmp     eax, 0xffffffff
+        je      .ip_ok
+
+        ; maybe it's a multicast (224.0.0.0/4)
+
+        and     eax, 0x0fffffff
+        cmp     eax, 224
+        je      .ip_ok
+
+        ; or a loopback address (127.0.0.0/8)
+
+        and     eax, 0x00ffffff
+        cmp     eax, 127
+        je      .ip_ok
+
+        ; or it's just not meant for us.. :(
+
+        DEBUGF  2,"IPv4_input - Destination address does not match!\n"
         jmp     .dump
 
 ;------------------------
@@ -288,11 +285,11 @@ IPv4_input:      ; TODO: add code for raw sockets
         shl     esi, 2                                          ;
 
         movzx   ecx, [edx + IPv4_header.TotalLength]            ; Calculate length of encapsulated Packet
-        xchg    cl , ch                                         ;
+        xchg    cl, ch                                          ;
         sub     ecx, esi                                        ;
 
         lea     edi, [edx + IPv4_header.SourceAddress]          ; make edi ptr to source and dest IPv4 address
-        mov     al , [edx + IPv4_header.Protocol]
+        mov     al, [edx + IPv4_header.Protocol]
         add     esi, edx                                        ; make esi ptr to data
 
         cmp     al, IP_PROTO_TCP
@@ -304,10 +301,10 @@ IPv4_input:      ; TODO: add code for raw sockets
         cmp     al, IP_PROTO_ICMP
         je      ICMP_input
 
-        DEBUGF  2,"unknown Internet protocol: %u\n", al
+        DEBUGF  2,"IPv4_input - unknown protocol: %u\n", al
 
   .dump:
-        DEBUGF  2,"IP_Handler - dumping\n"
+        DEBUGF  2,"IPv4_input - dumping\n"
 ;        inc     [dumped_rx_count]
         call    kernel_free
         add     esp, 4                                          ; pop (balance stack)
@@ -499,16 +496,10 @@ IPv4_input:      ; TODO: add code for raw sockets
         mov     edx, eax
         mov     [edx + IPv4_header.TotalLength], cx
         add     esp, 8
+        xchg    cl, ch
+        push    ecx
 
-        xchg    cl, ch              ;
-
-        push    ecx                ;;;;
-        push    eax                ;;;;
-
-;        mov     esi, edx           ;  This prints the IP packet to the debug board (usefull when using serial output debug..)
-;                                   ;
-;        packet_to_debug
-
+        push    eax
         jmp     .handle_it          ; edx = buf ptr, ecx = size, [esp] buf ptr, [esp+4], total size, ebx=device ptr
 
   .destroy_slot_pop:
@@ -527,7 +518,7 @@ IPv4_input:      ; TODO: add code for raw sockets
 ; find fragment slot
 ;
 ; IN: pointer to fragmented packet in edx
-; OUT: pointer to slot in edi, -1 on error
+; OUT: pointer to slot in esi, -1 on error
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -885,7 +876,8 @@ IPv4_dest_to_dev:
         je      .found_it
   .next:
         add     edi, 4
-        loop    .loop
+        dec     ecx
+        jnz     .loop
 
   .invalid:
         xor     edi, edi                        ; if none found, use device 0 as default device
@@ -967,6 +959,13 @@ IPv4_api:
 
   .write_ip:
         mov     [IP_LIST + eax], ecx
+
+        ; pre-calculate the local broadcast address
+        mov     ebx, [SUBNET_LIST + eax]
+        not     ebx
+        or      ecx, ebx
+        mov     [BROADCAST_LIST + eax], ecx
+
         xor     eax, eax
         ret
 
@@ -985,6 +984,13 @@ IPv4_api:
 
   .write_subnet:
         mov     [SUBNET_LIST + eax], ecx
+
+        ; pre-calculate the local broadcast address
+        mov     ebx, [IP_LIST + eax]
+        not     ecx
+        or      ecx, ebx
+        mov     [BROADCAST_LIST + eax], ecx
+
         xor     eax, eax
         ret
 
