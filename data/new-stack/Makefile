@@ -67,6 +67,7 @@ FASM_PROGRAMS:=\
  magnify:MAGNIFY:$(PROGS)/demos/magnify/trunk/magnify.asm \
  mgb:MGB:$(PROGS)/system/mgb/trunk/mgb.asm \
  mousemul:MOUSEMUL:$(PROGS)/system/mousemul/trunk/mousemul.asm \
+ madmouse:MADMOUSE:$(PROGS)/other/madmouse/madmouse.asm \
  mykey:MYKEY:$(PROGS)/system/MyKey/trunk/MyKey.asm \
  pcidev:PCIDEV:$(PROGS)/system/pcidev/trunk/PCIDEV.ASM \
  period:PERIOD:$(PROGS)/other/period/trunk/period.asm \
