@@ -4111,6 +4111,14 @@ align 4
 ;--------------------------------------
 align 4
 @@:
+        cmp     esi, 9
+        jnz     @f
+        mov     ebp, putimage_get9bpp
+        mov     esi, putimage_init9bpp
+        jmp     sys_putimage_bpp
+;--------------------------------------
+align 4
+@@:
         cmp     esi, 15
         jnz     @f
         mov     ebp, putimage_get15bpp
@@ -4171,6 +4179,7 @@ align 4
 putimage_init24bpp:
         lea     eax, [eax*3]
 putimage_init8bpp:
+putimage_init9bpp:
         ret
 ;-----------------------------------------------------------------------------
 align 16
@@ -4189,6 +4198,14 @@ putimage_get8bpp:
         mov     eax, [edx+eax*4]
         pop     edx
         inc     esi
+        ret     4
+;-----------------------------------------------------------------------------
+align 16
+putimage_get9bpp:
+        lodsb
+        mov     ah, al
+        shl     eax, 8
+        mov     al, ah
         ret     4
 ;-----------------------------------------------------------------------------
 align 4
