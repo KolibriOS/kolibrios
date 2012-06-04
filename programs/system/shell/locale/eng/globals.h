@@ -1,3 +1,4 @@
+
 const command_t COMMANDS[]=
 {
 	{"about",   "  Displays information about Shell\n\r", &cmd_about},
@@ -8,8 +9,9 @@ const command_t COMMANDS[]=
 	{"date",    "  Returns the current date and time\n\r", &cmd_date},
 	{"echo",    "  Echoes the data to the screen. Usage:\n\r    echo <data>\n\r", &cmd_echo},
 	{"exit",    "  Exits from Shell\n\r", &cmd_exit},
-	{"memory",  "  Displays total, free and used memory\n\r", &cmd_memory},
+	{"free",    "  Displays total, free and used memory\n\r", &cmd_memory},
 	{"help",    "  Gives help on commands. Usage:\n\r    help ;it lists all builtins\n\r    help <command> ;help on command\n\r", &cmd_help},
+	{"history", "  Lists used commands\n\r", &cmd_history},	
 	{"kill",    "  Stops a running process. Usage:\n\r    kill <PID of process>\n\r", &cmd_kill},
 	{"killall", "  Kills all running processes\n\r", &cmd_killall},
 	{"ls",      "  Lists the files in a directory. Usage:\n\r    ls ;lists the files in current directory\n\r    ls <directory> ;lists the files at specified folder\n\r", &cmd_ls},
@@ -20,8 +22,8 @@ const command_t COMMANDS[]=
 	{"reboot",  "  Reboots the computer or KolibriOS kernel. Usage:\n\r    reboot ;reboot a PC\n\r    reboot kernel ;reboot the KolibriOS kernel\n\r", &cmd_reboot},
 	{"rm",      "  Removes a file. Usage:\n\r    rm file name>\n\r", &cmd_rm},
 	{"rmdir",   "  Removes a folder. Usage:\n\r    rmdir <directory>\n\r", &cmd_rmdir},
-	{"sleep",   "  Stops the shell for the desired period. Usage:\n\r    sleep <time in the 1/100 of second>\n\r  Example:\n\r    sleep 500 ;pause for 5sec.\n\r", &cmd_sleep},
 	{"shutdown","  Turns off the computer\n\r", &cmd_shutdown},
+	{"sleep",   "  Stops the shell for the desired period. Usage:\n\r    sleep <time in the 1/100 of second>\n\r  Example:\n\r    sleep 500 ;pause for 5sec.\n\r", &cmd_sleep},
 	{"touch",   "  Creates an empty file or updates the time/date stamp on a file. Usage:\n\r    touch <file name>\n\r", &cmd_touch},
 	{"uptime",  "  Displays the uptime\n\r", &cmd_uptime},
 	{"ver",     "  Displays version. Usage:\n\r    ver ;Shell version\n\r    ver kernel ;version of KolibriOS kernel\n\r", &cmd_ver},

@@ -28,7 +28,7 @@
 #include "cmd/cmd_date.c"
 #include "cmd/cmd_exit.c"
 #include "cmd/cmd_cd.c"
-#include "cmd/cmd_memory.c"
+#include "cmd/cmd_free.c"
 #include "cmd/cmd_reboot.c"
 #include "cmd/cmd_mkdir.c"
 #include "cmd/cmd_rmdir.c"
@@ -42,6 +42,7 @@
 #include "cmd/cmd_shutdown.c"
 #include "cmd/cmd_uptime.c"
 #include "cmd/cmd_killall.c"
+#include "cmd/cmd_history.c"
 
 #include "modules/module_command.c"
 #include "modules/module_program_console.c"

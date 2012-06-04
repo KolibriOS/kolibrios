@@ -1,5 +1,5 @@
 
-#define SHELL_VERSION "0.5.3"
+#define SHELL_VERSION "0.5.4"
 
 extern char	PATH[256];
 extern char	PARAM[256];
@@ -19,6 +19,7 @@ unsigned	ALIAS_NUM = 0;
 char		CMD[256];
 char		CMD_HISTORY[CMD_HISTORY_NUM][256];
 char		CMD_NUM;
+char		CMD_HISTORY_NUM_REAL = 0;
 
 unsigned	CMD_POS;
 
@@ -66,6 +67,7 @@ int cmd_sleep(char arg[]);
 int cmd_shutdown(char arg[]);
 int cmd_uptime(char param[]);
 int cmd_killall(char process_name[]);
+int cmd_history(char arg[]);
 
 /// ===========================================================
 

@@ -13,7 +13,7 @@ char command;
 int size;
 int is_end;
 
-_itoa(pid, name);
+itoa(pid, name);
 strcat(name, "-SHELL");
 
 buffer = NULL;

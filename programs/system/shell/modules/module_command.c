@@ -26,6 +26,10 @@ if (	(0 != strcmp( CMD_HISTORY[0], CMD)) &&
 	strcpy(CMD_HISTORY[1], CMD_HISTORY[0]);
 
 	strcpy(CMD_HISTORY[0], CMD);
+	
+	if (CMD_HISTORY_NUM_REAL < CMD_HISTORY_NUM)
+		CMD_HISTORY_NUM_REAL++;
+	
 	}
 
 }
