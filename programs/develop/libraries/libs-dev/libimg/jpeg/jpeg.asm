@@ -473,8 +473,8 @@ img.decode.jpg:
 	jnz	.end2
 ; image type: 8 bpp for grayscale JPEGs, 24 bpp for normal,
 ; 32 bpp for Adobe YCCK
-	push	Image.bpp8
-	pop	eax	; Image.bpp8 = 1
+	push	Image.bpp8i
+	pop	eax	; Image.bpp8i = 1
 	cmp	edi, eax
 	jz	@f
 	inc	eax	; Image.bpp24 = 2

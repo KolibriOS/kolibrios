@@ -1,16 +1,9 @@
 .pgm:
-	stdcall	img.create, [width], [height], Image.bpp8
+	stdcall	img.create, [width], [height], Image.bpp8g
 	test	eax, eax
 	jz	.quit
 	mov	[retvalue], eax
 	mov	ebx, eax
-
-	mov	edi, [ebx+Image.Palette]
-	mov	eax, 0xff000000
-    @@:
-	stosd
-	add	eax, 0x00010101
-	jnc	@b
 
 	mov	edi, [ebx+Image.Data]
 	mov	ecx, [ebx+Image.Width]

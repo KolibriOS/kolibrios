@@ -157,7 +157,7 @@ endl
 
   .indexed:
 
-	stdcall	img.create, eax, ebx, Image.bpp8
+	stdcall	img.create, eax, ebx, Image.bpp8i
 	mov	[retvalue], eax
 	test	eax, eax
 	jz	.quit

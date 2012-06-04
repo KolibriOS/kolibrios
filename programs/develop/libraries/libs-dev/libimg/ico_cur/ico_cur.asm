@@ -205,7 +205,7 @@ img.decode.ico._.decode_icon_mask:
 	mov	ebx, [eax + Image.Height]
 	mov	ecx, [eax + Image.Width]
 ; for now, BMP code produces only 8 and 32 bpp images
-	cmp	[eax + Image.Type], Image.bpp8
+	cmp	[eax + Image.Type], Image.bpp8i
 	jz	.bpp8
 .bpp32:
 	mov	edx, [esp+16]	; get background color

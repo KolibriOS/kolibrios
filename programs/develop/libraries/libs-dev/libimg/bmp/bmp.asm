@@ -104,7 +104,7 @@ img.decode.bmp.length_rest equ length_rest
 	jnz	.error
 ; convert images with <= 8 bpp to 8bpp, other - to 32 bpp
 .normal:
-	m2m	eax, Image.bpp8
+	m2m	eax, Image.bpp8i
 	cmp	byte [ebx + 14], 8	; bit count
 	jbe	@f
 	mov	al, Image.bpp32
@@ -124,7 +124,7 @@ img.decode.bmp.length_rest equ length_rest
 	pushd	[ebx + 4]	;[ebx + bmp.InfoHeader.Width]
 	jmp	.create
 .old1:
-	m2m	eax, Image.bpp8
+	m2m	eax, Image.bpp8i
 	cmp	byte [ebx + 10], 8	; bit count
 	jbe	@f
 	mov	al, Image.bpp32

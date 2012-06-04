@@ -71,7 +71,7 @@ endl
 	xor	eax,eax
 	pushad
 	cld						;paranoia
-	stdcall img.create,256,192,Image.bpp8
+	stdcall img.create,256,192,Image.bpp8i
 	test eax,eax
 	jz	img.decode.z80.locret			;test if allocation failed
 	mov	[frame1],eax
@@ -101,7 +101,7 @@ endl
 .decode_z80_with_blinking:
     or	 ebx,0xFFFF0000 	;use DualStos
 	mov	ecx,eax 			;eax still points to the first frame
-	stdcall img.create,256,192,Image.bpp8
+	stdcall img.create,256,192,Image.bpp8i
 	test eax,eax
 	jz	img.decode.z80.failed
 	mov	[eax+Image.Previous],ecx

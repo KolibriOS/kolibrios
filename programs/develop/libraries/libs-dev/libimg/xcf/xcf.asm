@@ -130,7 +130,7 @@ endl
 
   .process_grayscale:
 
-	stdcall	img.create, ebx, edx, Image.bpp8
+	stdcall	img.create, ebx, edx, Image.bpp8i
 	mov	[retvalue], eax
 	test	eax, eax
 	jz	.error
@@ -160,7 +160,7 @@ endl
 
   .process_indexed:
 
-	stdcall	img.create, ebx, edx, Image.bpp8
+	stdcall	img.create, ebx, edx, Image.bpp8i
 	mov	[retvalue], eax
 	test	eax, eax
 	jz	.error
@@ -217,7 +217,7 @@ endl
 	dec	[layer_count]
 	jnz	.still
 
-	cmp	[ebx + Image.Type], Image.bpp8
+	cmp	[ebx + Image.Type], Image.bpp8i
 	jne	.quit
 	stdcall	xcf._.pack_8a, ebx
 	jmp	.quit
@@ -372,7 +372,7 @@ endl
 	bswap	eax
 	add	esi, eax
 
-	stdcall	img.create, [channel_width], [channel_height], Image.bpp8
+	stdcall	img.create, [channel_width], [channel_height], Image.bpp8i
 	mov	ebx, eax
 	test	ebx, ebx
 	jz	.quit
@@ -443,7 +443,7 @@ endl
 	mov	[layer_height], eax
 	lodsd
 	bswap	eax
-	mov	edx, Image.bpp16
+	mov	edx, Image.bpp8a
 	mov	[color_step], 1
 	cmp	eax, 2
 	jge	@f
@@ -899,7 +899,7 @@ endl
 	imul	eax, [img_y1]
 	add	eax, [img_x1]
 	shl	eax, 1
-	cmp	[edx + Image.Width], Image.bpp16
+	cmp	[edx + Image.Width], Image.bpp8a
 	je	@f
 	shl	eax, 1
     @@:
@@ -909,7 +909,7 @@ endl
 	imul	eax, [bottom_y1]
 	add	eax, [bottom_x1]
 	shl	eax, 1
-	cmp	[ebx + Image.Width], Image.bpp8
+	cmp	[ebx + Image.Width], Image.bpp8i
 	je	@f
 	shl	eax, 1
     @@:
@@ -919,7 +919,7 @@ endl
 	mov	eax, [edx + Image.Width]
 	sub	eax, [copy_width]
 	shl	eax, 1
-	cmp	[edx + Image.Width], Image.bpp16
+	cmp	[edx + Image.Width], Image.bpp8a
 	je	@f
 	shl	eax, 1
     @@:
@@ -928,7 +928,7 @@ endl
 	mov	eax, [ebx + Image.Width]
 	sub	eax, [copy_width]
 	shl	eax, 1
-	cmp	[ebx + Image.Width], Image.bpp8
+	cmp	[ebx + Image.Width], Image.bpp8i
 	je	@f
 	shl	eax, 1
     @@:
@@ -938,7 +938,7 @@ endl
 	jne	.not_first
 	mov	ecx, [copy_width]
 	imul	ecx, [copy_height]
-	cmp	[ebx + Image.Type], Image.bpp8
+	cmp	[ebx + Image.Type], Image.bpp8i
 	je	.bpp8a
   .bpp32:
 	rep	movsd
@@ -997,7 +997,7 @@ endl
     @@:
 
 
-	cmp	[ebx + Image.Type], Image.bpp8
+	cmp	[ebx + Image.Type], Image.bpp8i
 	jne	@f
 	stdcall	xcf._.merge_8a, [copy_width], [copy_height], [img_total_bpl], [bottom_total_bpl]
 	jmp	.done

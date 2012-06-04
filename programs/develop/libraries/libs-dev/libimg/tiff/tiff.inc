@@ -38,6 +38,8 @@ struct tiff_extra
 	strip_byte_counts_length	rd	1
 	palette				rd	1	; SHORT
 	palette_size			rd	1	; in colors, not samples
+	extra_samples			rd	1	; pointer to array of SHORTs
+	extra_samples_number		rd	1
 ends
 
 

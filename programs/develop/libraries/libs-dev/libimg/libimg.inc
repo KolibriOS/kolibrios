@@ -69,13 +69,15 @@ ends
 
 ; values for Image.Type
 ; must be consecutive to allow fast switch on Image.Type in support functions
-Image.bpp8  = 1
+Image.bpp8i = 1  ; indexed
 Image.bpp24 = 2
 Image.bpp32 = 3
 Image.bpp15 = 4
 Image.bpp16 = 5
 Image.bpp1  = 6
-Image.bpp4  = 7
+Image.bpp8g = 7  ; grayscale
+Image.bpp8a = 8  ; grayscale with alpha channel; application layer only!!! kernel doesn't handle this image type, libimg can only create and destroy such images
+;Image.bpp4  = 9
 
 ; bits in Image.Flags
 Image.IsAnimated = 1

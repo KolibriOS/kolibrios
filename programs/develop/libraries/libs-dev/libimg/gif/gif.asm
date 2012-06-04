@@ -209,7 +209,7 @@ img.decode.gif.cur_color_table_size_child equ ebp + 4 + 4 + 4*3 + 4
 	xor	ecx, ecx
   @@:
 	push	eax
-	mov	[eax + Image.Type], Image.bpp8
+	mov	[eax + Image.Type], Image.bpp8i
 
 	add	ecx, sizeof.gif.Image
 	invoke	mem.alloc, ecx
@@ -306,7 +306,7 @@ img.decode.gif.cur_color_table_size_child equ ebp + 4 + 4 + 4*3 + 4
 	jnz	.noprevdata
 	push	1
 	pop	eax
-	cmp	[edx + Image.Type], Image.bpp8
+	cmp	[edx + Image.Type], Image.bpp8i
 	jz	@f
 	mov	al, 3
     @@:
@@ -1259,7 +1259,7 @@ proc img.decode.gif._.dispose ;/////////////////////////////////////////////////
 ; don't dispose - set prev_img and related vars to current image
 	mov	eax, [edx + Image.Data]
 	mov	[prev_img_data], eax
-	cmp	[edx + Image.Type], Image.bpp8
+	cmp	[edx + Image.Type], Image.bpp8i
 	jnz	@f
 	mov	eax, [max_color]
 	inc	eax

@@ -583,13 +583,14 @@ proc	xcf._.composite_rgb_04			; Screen
 
 	punpcklbw	xmm2, xmm0
 	punpcklbw	xmm3, xmm0
-	movdqu		xmm5, xword[xcf._.xmm_00ff]
-	movdqa		xmm4, xmm5
+	movdqu		xmm4, xword[xcf._.xmm_00ff]
+	movdqa		xmm5, xmm4
+	psubw		xmm5, xmm3
+	movdqa		xmm3, xmm4
 	psubw		xmm4, xmm2
-	psubw		xmm3, xmm5
-	pmullw		xmm3, xmm4
-	psrlw		xmm3, 8
-	paddw		xmm3, xmm5
+	pmullw		xmm4, xmm5
+	psrlw		xmm4, 8
+	psubw		xmm3, xmm4
 	ret
 endp
 

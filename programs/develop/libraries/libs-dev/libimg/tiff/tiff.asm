@@ -18,7 +18,6 @@
 ;;================================================================================================;;
 
 include 'tiff.inc'
-;include '../../../../../system/board/trunk/debug.inc'
 
 ;;================================================================================================;;
 proc img.is.tiff _data, _length ;/////////////////////////////////////////////////////////////////;;
@@ -185,7 +184,7 @@ endl
 
 	mov	ecx, [edx + Image.Type]
 	dec	ecx
-	jz	.bpp8
+	jz	.bpp8i
 	dec	ecx
 	jz	.bpp24
 	dec	ecx
@@ -196,7 +195,9 @@ endl
 	dec	ecx
 	jz	.bpp1
 	dec	ecx
-	jz	.bpp4
+	jz	.bpp8g
+	dec	ecx
+	jz	.bpp8a
 ;error report!!
 
   .bpp1:
@@ -216,10 +217,7 @@ endl
   .bpp4:
 	jmp	.common
 
-  .bpp8:
-	cmp	[ebx + tiff_extra.palette], 0
-	je	.bpp8.grayscale
-
+  .bpp8i:
 	mov	esi, [ebx + tiff_extra.palette]
 	mov	ah, 2
   .bpp8.channel:
@@ -238,13 +236,10 @@ endl
 	dec	ah
 	jns	.bpp8.channel
 	jmp	.common
-  .bpp8.grayscale:
-	mov	edi, [edx + Image.Palette]
-	mov	eax, 0xff000000
-    @@:
-	stosd
-	add	eax, 0x00010101
-	jnc	@b
+  .bpp8g:
+	jmp	.common
+
+  .bpp8a:
 	jmp	.common
 
   .bpp16:
@@ -346,8 +341,9 @@ endl
 
 
   .decoded:
+  .check1:
 	cmp	[ebx + tiff_extra.samples_per_pixel], 3
-	jne	.pop_quit
+	jne	.check2
 	mov	eax, [retvalue]
 	mov	esi, [eax + Image.Data]
 	mov	edi, [eax + Image.Data]
@@ -360,7 +356,26 @@ endl
 	add	edi, 2
 	dec	ecx
 	jnz	@b
-
+	jmp	.pop_quit
+  .check2:
+	mov	ebx, [retvalue]
+	cmp	[ebx + Image.Type], Image.bpp8a
+	jne	.pop_quit
+	stdcall	tiff._.pack_8a, ebx
+	mov	[ebx + Image.Type], Image.bpp8g
+;	mov	eax, [ebx + Image.Width]
+;	imul	eax, [ebx + Image.Height]
+;	mov	ecx, eax
+;	add	ecx, [ebx + Image.Data]
+;	mov	[ebx + Image.Palette], ecx
+;	add	eax, 256*4
+;	stdcall	[mem.realloc], [ebx + Image.Data], eax
+;	mov	edi, [ebx + Image.Palette]
+;	mov	eax, 0xff000000
+;    @@:
+;	stosd
+;	add	eax, 0x00010101
+;	jnc	@b
 
   .pop_quit:
 	pop	esi
@@ -386,13 +401,13 @@ proc tiff._.parse_IFDE _data, _endianness
 	add	edx, 8
 	dec	ecx
 	jnz	.tag
-  .tag_default:				; unknown/unsupported/uninteresting/unimportant
+  .tag_default:						; unknown/unsupported/uninteresting/unimportant
 	lodsw
 	lodsd
 	lodsd
-	jmp	.quit			; just skip it
+	jmp	.quit					; just skip it
 
-  .tag_100:
+  .tag_100:						; ImageWidth
 	cmp	ax, TIFF.IFDE_TYPE.SHORT
 	jne	@f
 	lodsd
@@ -411,7 +426,7 @@ proc tiff._.parse_IFDE _data, _endianness
     @@:
 	jmp	.quit
 
-  .tag_101:
+  .tag_101:						; ImageHeight
 	cmp	ax, TIFF.IFDE_TYPE.SHORT
 	jne	@f
 	lodsd
@@ -430,7 +445,7 @@ proc tiff._.parse_IFDE _data, _endianness
     @@:
 	jmp	.quit
 
-  .tag_102:
+  .tag_102:						; BitsPerSample
 	lodsd_
 	imul	eax, TIFF.IFDE_TYPE_LENGTH.SHORT
 	cmp	eax, 4
@@ -451,7 +466,7 @@ proc tiff._.parse_IFDE _data, _endianness
 	mov	[ebx + tiff_extra.bits_per_sample], eax
 	jmp	.quit
 
-  .tag_103:
+  .tag_103:						; Compression
 	cmp	ax, TIFF.IFDE_TYPE.SHORT
 	jne	@f
 	lodsd
@@ -463,7 +478,7 @@ proc tiff._.parse_IFDE _data, _endianness
     @@:
 	jmp	.quit
 
-  .tag_106:
+  .tag_106:						; PhotometricInterpretation
 	cmp	ax, TIFF.IFDE_TYPE.SHORT
 	jne	@f
 	lodsd
@@ -476,7 +491,7 @@ proc tiff._.parse_IFDE _data, _endianness
 
 	jmp	.quit
 
-  .tag_111:
+  .tag_111:						; StripOffsets
 	cmp	ax, TIFF.IFDE_TYPE.SHORT
 	jne	@f
 	mov	[ebx + tiff_extra.strip_offsets_length], TIFF.IFDE_TYPE_LENGTH.SHORT
@@ -498,7 +513,7 @@ proc tiff._.parse_IFDE _data, _endianness
 	mov	[ebx + tiff_extra.strip_offsets], eax
 	jmp	.quit
 
-  .tag_115:
+  .tag_115:						; SamplesPerPixel
 	lodsd_
 	imul	eax, TIFF.IFDE_TYPE_LENGTH.SHORT
 	cmp	eax, 4
@@ -514,7 +529,7 @@ proc tiff._.parse_IFDE _data, _endianness
 	movzx	eax, word[eax]
 	jmp	.quit
 
-  .tag_116:
+  .tag_116:						; RowsPerStrip
 	cmp	ax, TIFF.IFDE_TYPE.SHORT
 	jne	@f
 	lodsd
@@ -529,7 +544,7 @@ proc tiff._.parse_IFDE _data, _endianness
 	mov	[ebx + tiff_extra.rows_per_strip], eax
 	jmp	.quit
 
-  .tag_117:
+  .tag_117:						; StripByteCounts
 	cmp	ax, TIFF.IFDE_TYPE.SHORT
 	jne	@f
 	mov	[ebx + tiff_extra.strip_byte_counts_length], TIFF.IFDE_TYPE_LENGTH.SHORT
@@ -550,11 +565,16 @@ proc tiff._.parse_IFDE _data, _endianness
 	mov	[ebx + tiff_extra.strip_byte_counts], eax
 	jmp	.quit
 
-  .tag_140:
+  .tag_140:						; ColorMap
 	lodsd
 	lodsd_
 	add	eax, [_data]
 	mov	[ebx + tiff_extra.palette], eax
+	jmp	.quit
+  .tag_152:						; ExtraSamples
+	mov	[ebx + tiff_extra.extra_samples], esi
+	mov	ecx, [ebx + tiff_extra.extra_samples_number]
+	rep	lodsw	; ignored
 	jmp	.quit
 
   .quit:
@@ -567,42 +587,51 @@ proc tiff._.define_image_type
 
 	xor	eax, eax
 
+	cmp	[ebx + tiff_extra.photometric], TIFF.PHOTOMETRIC.RGB
+	jne	.not_full_color
+	mov	eax, -3
+	add	eax, [ebx + tiff_extra.samples_per_pixel]
+	mov	[ebx + tiff_extra.extra_samples_number], eax
+	dec	eax
+	jns	@f
+	mov	eax, Image.bpp24
+	jmp	.quit
+    @@:
+	dec	eax
+	jns	@f
+	mov	eax, Image.bpp32
+;	mov	[ebx + tiff_extra.extra_samples_number], 0
+	jmp	.quit
+    @@:
+  .not_full_color:	; grayscale, indexed, bilevel
 	cmp	[ebx + tiff_extra.bits_per_sample], 1
 	jg	.not_bilevel
 	mov	eax, Image.bpp1
 	jmp	.quit
-  .not_bilevel:
+  .not_bilevel:		; grayscale, indexed
 	cmp	[ebx + tiff_extra.palette], 0
 	je	.without_palette
 	cmp	[ebx + tiff_extra.bits_per_sample], 4
 	jne	@f
-	mov	eax, Image.bpp4
+;	mov	eax, Image.bpp4
 	jmp	.quit
     @@:
 	cmp	[ebx + tiff_extra.bits_per_sample], 8
 	jne	@f
-	mov	eax, Image.bpp8
+	mov	eax, Image.bpp8i
 	jmp	.quit
     @@: 
 	jmp	.quit
-  .without_palette:
-	cmp	[ebx + tiff_extra.samples_per_pixel], 1
-	jg	.not_grayscale
-	cmp	[ebx + tiff_extra.bits_per_sample], 4
-	jne	@f
-	mov	eax, Image.bpp4
+  .without_palette:	; grayscale
+	mov	eax, -1
+	add	eax, [ebx + tiff_extra.samples_per_pixel]
+	mov	[ebx + tiff_extra.extra_samples_number], eax
+	dec	eax
+	jns	@f
+	mov	eax, Image.bpp8g
 	jmp	.quit
     @@:
-	cmp	[ebx + tiff_extra.bits_per_sample], 8
-	jne	@f
-	mov	eax, Image.bpp8
-	jmp	.quit
-  .not_grayscale:
-	cmp	[ebx + tiff_extra.samples_per_pixel], 3
-	jne	@f
-	mov	eax, Image.bpp24
-	jmp	.quit
-    @@:
+	mov	eax, Image.bpp8a
 	jmp	.quit
   .quit:
 	ret
@@ -830,6 +859,20 @@ proc	tiff._.get_dword _endianness
 endp
 
 
+proc	tiff._.pack_8a _img
+	mov	ebx, [_img]
+	mov	esi, [ebx + Image.Data]
+	mov	edi, esi
+	mov	ecx, [ebx + Image.Width]
+	imul	ecx, [ebx + Image.Height]
+    @@:
+	lodsw
+	stosb
+	dec	ecx
+	jnz	@b
+	ret
+endp
+
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
@@ -848,6 +891,7 @@ tiff.IFDE_tag_table.begin:
   .tag_116:		dd	0x0116,	tiff._.parse_IFDE.tag_116		; rows per strip
   .tag_117:		dd	0x0117,	tiff._.parse_IFDE.tag_117		; strip byte counts
   .tag_140:		dd	0x0140,	tiff._.parse_IFDE.tag_140		; color map
+  .tag_152:		dd	0x0152,	tiff._.parse_IFDE.tag_152		; extra samples
 tiff.IFDE_tag_table.end:
 
 include 'huffman.asm'		; huffman trees for ccitt1d compression method

@@ -204,7 +204,7 @@ endl
 	mov	eax, [ebx + Image.Type]
 	cmp	eax, Image.bpp1
 	je	.pbm
-	cmp	eax, Image.bpp8
+	cmp	eax, Image.bpp8g
 	je	.pgm
 	cmp	eax, Image.bpp24
 	je	.ppm

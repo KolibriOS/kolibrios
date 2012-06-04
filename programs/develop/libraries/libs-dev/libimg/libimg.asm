@@ -228,13 +228,13 @@ proc img._.do_rgb ;/////////////////////////////////////////////////////////////
     jmp dword [.handlers + (eax-1)*4]
 
 align 16
-.bpp8:
-; 8 BPP -> 24 BPP
+.bpp8i:
+; 8 BPP WITH PALETTE -> 24 BPP
     push    ebx
     mov ebx, [esi + Image.Palette]
     mov esi, [esi + Image.Data]
     sub ecx, 1
-    jz  .bpp8.last
+    jz  .bpp8i.last
 @@:
     movzx   eax, byte [esi]
     add esi, 1
@@ -243,7 +243,7 @@ align 16
     add edi, 3
     sub ecx, 1
     jnz @b
-.bpp8.last:
+.bpp8i.last:
     movzx   eax, byte [esi]
     mov eax, [ebx + eax*4]
     mov [edi], ax
@@ -251,6 +251,32 @@ align 16
     mov [edi+2], al
     pop ebx
     ret
+
+align 16
+.bpp8g:
+; 8 BPP GRAYSCALE -> 24 BPP
+    mov esi, [esi + Image.Data]
+@@:
+    lodsb
+    mov ah, al
+    stosb
+    stosw
+    dec ecx
+    jnz @b
+    ret
+;
+;align 16
+;.bpp8a: ; considered application layer, may be changed in the future
+;; 8a BPP -> 24 BPP
+;    mov esi, [esi + Image.Data]
+;@@:
+;    lodsw
+;    mov ah, al
+;    stosb
+;    stosw
+;    dec ecx
+;    jnz @b
+;    ret
 
 ; 15 BPP -> 24 BPP
 .bpp15.intel:
@@ -972,9 +998,9 @@ endl
     jnz .next_line_horz1x
     jmp .exit
 
-.bpp8_horz:
+.bpp8ig_horz:
     dec edi
-  .next_line_horz8:
+  .next_line_horz8ig:
     push    ecx esi edi
 
     mov ecx, [scanline_len]
@@ -992,7 +1018,7 @@ endl
     add esi, [scanline_len]
     add edi, [scanline_len]
     dec ecx
-    jnz .next_line_horz8
+    jnz .next_line_horz8ig
     jmp .exit
 
 .bpp24_horz:
@@ -1180,8 +1206,10 @@ endl
 
     cmp [ebx + Image.Type], Image.bpp1
     jz  .rotate_ccw1
-    cmp [ebx + Image.Type], Image.bpp8
-    jz  .rotate_ccw8
+    cmp [ebx + Image.Type], Image.bpp8i
+    jz  .rotate_ccw8ig
+    cmp [ebx + Image.Type], Image.bpp8g
+    jz  .rotate_ccw8ig
     cmp [ebx + Image.Type], Image.bpp24
     jz  .rotate_ccw24
     cmp [ebx + Image.Type], Image.bpp32
@@ -1273,8 +1301,8 @@ endl
     pop ecx
     jmp .next_column_ccw_low
 
-.rotate_ccw8:
-  .next_column_ccw_low8:
+.rotate_ccw8ig:
+  .next_column_ccw_low8ig:
     dec ecx
     js  .exchange_dims
     push    ecx
@@ -1319,7 +1347,7 @@ endl
     rep movsb
 
     pop ecx
-    jmp .next_column_ccw_low8
+    jmp .next_column_ccw_low8ig
 
 .rotate_ccw24:
   .next_column_ccw_low24:
@@ -1472,8 +1500,10 @@ endl
 
     cmp [ebx + Image.Type], Image.bpp1
     jz  .rotate_cw1
-    cmp [ebx + Image.Type], Image.bpp8
-    jz  .rotate_cw8
+    cmp [ebx + Image.Type], Image.bpp8i
+    jz  .rotate_cw8ig
+    cmp [ebx + Image.Type], Image.bpp8g
+    jz  .rotate_cw8ig
     cmp [ebx + Image.Type], Image.bpp24
     jz  .rotate_cw24
     cmp [ebx + Image.Type], Image.bpp32
@@ -1570,8 +1600,8 @@ endl
     pop ecx
     jmp .next_column_cw_low
 
-.rotate_cw8:
-  .next_column_cw_low8:
+.rotate_cw8ig:
+  .next_column_cw_low8ig:
     dec ecx
     js  .exchange_dims
     push    ecx
@@ -1618,7 +1648,7 @@ endl
     rep movsb
 
     pop ecx
-    jmp .next_column_cw_low8
+    jmp .next_column_cw_low8ig
 
 .rotate_cw24:
   .next_column_cw_low24:
@@ -1889,7 +1919,7 @@ img.formats_table:
   .pcx  dd LIBIMG_FORMAT_ID_PCX,  img.is.pcx,  img.decode.pcx,     img.encode.pcx, 0
   .xcf  dd LIBIMG_FORMAT_ID_XCF,  img.is.xcf,  img.decode.xcf,     img.encode.xcf, 0
   .tiff dd LIBIMG_FORMAT_ID_TIFF, img.is.tiff, img.decode.tiff,    img.encode.tiff,0
-  .pnm  dd LIBIMG_FORMAT_ID_PNM,  img.is.pnm,  img.decode.pnm,     img.encode.pnm, 1 + (1 SHL Image.bpp1) + (1 SHL Image.bpp8) + (1 SHL Image.bpp24)
+  .pnm  dd LIBIMG_FORMAT_ID_PNM,  img.is.pnm,  img.decode.pnm,     img.encode.pnm, 1 + (1 SHL Image.bpp1) + (1 SHL Image.bpp8g) + (1 SHL Image.bpp24)
   .wbmp dd LIBIMG_FORMAT_ID_WBMP, img.is.wbmp, img.decode.wbmp,    img.encode.wbmp,0
   .z80  dd LIBIMG_FORMAT_ID_Z80,  img.is.z80,  img.decode.z80,     img.encode.z80, 0 ;this must be the last entry as there are no signatures in z80 screens at all
         dd 0
@@ -1989,8 +2019,12 @@ proc img._.resize_data _img, _width, _height ;//////////////////////////////////
     jae .error
     cmp [ebx + Image.Type], Image.bpp1
     jz  .bpp1
-    cmp [ebx + Image.Type], Image.bpp8
-    jz  .bpp8
+    cmp [ebx + Image.Type], Image.bpp8i
+    jz  .bpp8i
+    cmp [ebx + Image.Type], Image.bpp8g
+    jz  .bpp8g
+    cmp [ebx + Image.Type], Image.bpp8a
+    jz  .bpp8a
     cmp [ebx + Image.Type], Image.bpp24
     jz  .bpp24
 .bpp32:
@@ -1999,8 +2033,12 @@ proc img._.resize_data _img, _width, _height ;//////////////////////////////////
 .bpp24:
     lea eax, [eax*3]
     jmp @f
-.bpp8:
+.bpp8i:
     add eax, 256*4  ; for palette
+.bpp8g:
+    jmp @f
+.bpp8a:
+    shl eax, 1
     jmp @f
 .bpp1:
     mov eax, [_width]
@@ -2040,7 +2078,7 @@ proc img._.resize_data _img, _width, _height ;//////////////////////////////////
     pop [ebx + Image.Width]
     push    [_height]
     pop [ebx + Image.Height]
-    cmp [ebx + Image.Type], Image.bpp8
+    cmp [ebx + Image.Type], Image.bpp8i
     jnz @f
     lea esi, [eax + esi - 256*4]
     mov [ebx + Image.Palette], esi
@@ -2070,8 +2108,12 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 ;;================================================================================================;;
     cmp [ebx + Image.Type], Image.bpp1
     jz  .bpp1.1
-    cmp [ebx + Image.Type], Image.bpp8
+    cmp [ebx + Image.Type], Image.bpp8i
     jz  .bpp8.1
+    cmp [ebx + Image.Type], Image.bpp8g
+    jz  .bpp8.1
+    cmp [ebx + Image.Type], Image.bpp8a
+    jz  .bpp8a.1
     cmp [ebx + Image.Type], Image.bpp24
     jz  .bpp24.1
     add eax, eax
@@ -2085,6 +2127,9 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 .bpp1.1:
     add eax, 7
     shr eax, 3
+    jmp .quit
+.bpp8a.1:
+    shl eax, 1
 .bpp8.1:
 .quit:
     ret
@@ -2099,22 +2144,26 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 ;;================================================================================================;;
 
 align 4
-type2bpp    dd  8, 24, 32, 15, 16, 1
+type2bpp    dd  8, 24, 32, 15, 16, 1, 9 ;,16
 img._.do_rgb.handlers:
-    dd  img._.do_rgb.bpp8
+    dd  img._.do_rgb.bpp8i
     dd  img._.do_rgb.bpp24
     dd  img._.do_rgb.bpp32
     dd  img._.do_rgb.bpp15.amd  ; can be overwritten in lib_init
     dd  img._.do_rgb.bpp16.amd  ; can be overwritten in lib_init
     dd  img._.do_rgb.bpp1
+    dd  img._.do_rgb.bpp8g
+;    dd  img._.do_rgb.bpp8a
 
 img.flip.layer.handlers_horz:
-    dd  img.flip.layer.bpp8_horz
+    dd  img.flip.layer.bpp8ig_horz
     dd  img.flip.layer.bpp24_horz
     dd  img.flip.layer.bpp32_horz
     dd  img.flip.layer.bpp1x_horz
     dd  img.flip.layer.bpp1x_horz
     dd  img.flip.layer.bpp1_horz
+    dd  img.flip.layer.bpp8ig_horz
+;    dd  img.flip.layer.bpp8a_horz
 
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;

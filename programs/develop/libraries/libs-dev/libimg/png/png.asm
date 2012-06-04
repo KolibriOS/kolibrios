@@ -239,7 +239,7 @@ end virtual
 	mov	al, Image.bpp32
 	cmp	[.color_type], 6
 	jz	@f
-	mov	al, Image.bpp8
+	mov	al, Image.bpp8i
 @@:
 	stdcall	img.create, [.width], [.height], eax
 	test	eax, eax
