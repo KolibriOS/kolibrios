@@ -755,8 +755,8 @@ if Ext>=SSE2
 	 mov	    ecx,(SIZE_X*(SIZE_Y-3))*3/16
      .blr:
      @@:
-	 movups     xmm0,[edi+SIZE_X*3]
-	 movups     xmm1,[edi-SIZE_X*3]
+	 movaps     xmm0,[edi+SIZE_X*3]
+	 movaps     xmm1,[edi-SIZE_X*3]
 	 movups     xmm2,[edi-3]
 	 movups     xmm3,[edi+3]
 
@@ -766,7 +766,7 @@ if Ext>=SSE2
 
 	 psubusb    xmm0,xmm5  ; importand if fire
 
-	 movups     [edi],xmm0
+	 movaps     [edi],xmm0
 	 add	    edi,16
 	 add	    esi,16
 

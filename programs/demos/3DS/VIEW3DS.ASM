@@ -1,5 +1,5 @@
 
-; application : View3ds ver. 0.060 - tiny .3ds files viewer.
+; application : View3ds ver. 0.061 - tiny .3ds files viewer.
 ; compiler    : FASM
 ; system      : KolibriOS
 ; author      : Macgub aka Maciej Guba
@@ -19,23 +19,23 @@
 ;include 'proc32.inc'
 
 SIZE_X equ 512
-SIZE_Y equ 512				       ;      /////     I want definitely
-TIMEOUT equ 10				       ;     ------     say:
-ROUND equ 10				       ;     \ @ @/     keep smiling every
-TEX_X equ 512	  ; texture width              ;      \ ./    / day.
-TEX_Y equ 512	  ;         height             ;       \/    /
-TEX_SHIFT equ 9  ; texture width shifting      ;     __||__ /
-TEXTURE_SIZE EQU (TEX_X * TEX_Y)-1	       ;   /|      |
-TEX equ  SHIFTING ;  TEX={SHIFTING | FLUENTLY} ;  / \      /
-FLUENTLY = 0				       ; /   |    |
-SHIFTING = 1				       ;     ------
-CATMULL_SHIFT equ 8			       ;      |  |
-LIGHT_SIZE equ 22			       ;      |  |
-NON   =   0				       ;     -/  \-
+SIZE_Y equ 512				     ;      /////     I want definitely
+TIMEOUT equ 10				     ;     ------     say:
+ROUND equ 10				     ;     \ @ @/     keep smiling every
+TEX_X equ 512	 ; texture width             ;      \ ./    / day.
+TEX_Y equ 512	 ;         height            ;       \/    /
+TEX_SHIFT equ 9  ; texture width shifting    ;     __||__ /
+TEXTURE_SIZE EQU (TEX_X * TEX_Y)-1	     ;   /|      |
+TEX equ SHIFTING ; TEX={SHIFTING | FLUENTLY} ;  / \      /
+FLUENTLY = 0				     ; /   |    |
+SHIFTING = 1				     ;     ------
+CATMULL_SHIFT equ 8			     ;      |  |
+LIGHT_SIZE equ 22			     ;      |  |
+NON   =   0				     ;     -/  \-
 MMX   =   1
 SSE   =   2
 SSE2  =   3
-Ext   =   MMX		   ;Ext={ NON | MMX | SSE | SSE2 }
+Ext   =   SSE2		    ;Ext={ NON | MMX | SSE | SSE2 }
 
 ; 0 for short names (Menuet-compatible), 1 for long names (Kolibri features)
 USE_LFN = 1
@@ -92,7 +92,6 @@ START:	  ; start of execution
 	call   calc_bumpmap
 	call   calc_bumpmap_coords   ; bump and texture mapping
 	call   draw_window
-
 
 still:
 
@@ -457,6 +456,180 @@ still:
       @@:
 
 
+    cmp     [inc_bright_flag],0 	  ; increase brightness
+    je	    .no_inc_bright
+    movzx   ebx,[inc_bright_flag]
+    shl     ebx,4
+    mov     esi,screen
+    mov     ecx,SIZE_X*SIZE_Y*3
+if (Ext = MMX)|(Ext = SSE)
+    mov      bh,bl
+    push     bx
+    shl      ebx,16
+    pop      bx
+    push     ebx
+    push     ebx
+    movq     mm0,[esp]
+    add      esp,8
+else if Ext >= SSE2
+    mov      bh,bl
+    push     bx
+    shl      ebx,16
+    pop      bx
+    movd     xmm0,ebx
+    shufps   xmm0,xmm0,0
+end if
+  .oop:
+if Ext=NON
+    lodsb
+    add     al,bl
+    jnc     @f
+    mov     byte[esi-1],255
+    loop    .oop
+   @@:
+    mov     [esi-1],al
+    loop    .oop
+else if (Ext=MMX)|(Ext=SSE)
+    movq    mm1,[esi]
+    movq    mm2,[esi+8]
+    paddusb mm1,mm0
+    paddusb mm2,mm0
+    movq    [esi],mm1
+    movq    [esi+8],mm2
+    add     esi,16
+    sub     ecx,16
+    jnz     .oop
+else
+    movaps  xmm1,[esi]
+    paddusb xmm1,xmm0
+    movaps  [esi],xmm1
+    add     esi,16
+    sub     ecx,16
+    jnz     .oop
+end if
+
+.no_inc_bright:
+
+
+    cmp     [dec_bright_flag],0
+    je	    .no_dec_bright
+    movzx   ebx,[dec_bright_flag]
+    shl     ebx,4
+    mov     esi,screen
+    mov     ecx,SIZE_X*SIZE_Y*3
+if (Ext = MMX)|(Ext = SSE)
+    mov      bh,bl
+    push     bx
+    shl      ebx,16
+    pop      bx
+    push     ebx
+    push     ebx
+    movq     mm0,[esp]
+    add      esp,8
+else if Ext >=SSE2
+    mov      bh,bl
+    push     bx
+    shl      ebx,16
+    pop      bx
+    movd     xmm0,ebx
+    shufps   xmm0,xmm0,0
+end if
+ .oop1:
+if Ext=NON
+    lodsb
+    sub     al,bl
+    jb	    @f
+    mov     [esi-1],al
+    loop    .oop1
+   @@:
+    mov     byte[esi-1],0
+    loop    .oop1
+else if (Ext = MMX)|(Ext=SSE)
+    movq    mm1,[esi]
+    psubusb mm1,mm0
+    movq    [esi],mm1
+    add     esi,8
+    sub     ecx,8
+    jnz     .oop1
+else
+    movaps  xmm1,[esi]
+    psubusb xmm1,xmm0
+    movaps  [esi],xmm1
+    add     esi,16
+    sub     ecx,16
+    jnz     .oop1
+end if
+  .no_dec_bright:
+;======================================commmented====================
+if 0
+if Ext >= SSE
+    cmp     [max_flag],0
+    je	    .no_max
+    ;movzx   ebx,[max_flag]
+ .again_max:
+;    push       ecx
+    mov        edi,screen
+    mov        ecx,SIZE_X*3/4
+  ;   ;    pxor       mm5,mm5
+    xor        eax,eax
+    rep        stosd
+
+    mov        ecx,(SIZE_X*(SIZE_Y-3))*3/8
+  .calc_max:
+  @@:
+    movq       mm0,[edi+SIZE_X*3]
+    movq       mm1,[edi-SIZE_X*3]
+    movq       mm2,[edi-3]
+    movq       mm3,[edi+3]
+
+    pmaxub	mm0,mm1
+    pmaxub	mm2,mm3
+    pmaxub	mm0,mm2
+
+    movq       [edi],mm0
+    add 	edi,8
+    loop	@b
+
+    xor        eax,eax
+    mov        ecx,SIZE_X*3/4
+    rep        stosd
+end if
+
+.no_max:
+
+if Ext >= SSE
+    cmp     [min_flag],0
+    je	    .no_min
+;    push       ecx
+    mov        edi,screen
+    mov        ecx,SIZE_X*3/4
+  ;   ;    pxor       mm5,mm5
+    xor        eax,eax
+    rep        stosd
+
+    mov        ecx,(SIZE_X*(SIZE_Y-3))*3/8
+  @@:
+    movq       mm0,[edi+SIZE_X*3]
+    movq       mm1,[edi-SIZE_X*3]
+    movq       mm2,[edi-3]
+    movq       mm3,[edi+3]
+
+    pminub	mm0,mm1
+    pminub	mm2,mm3
+    pminub	mm0,mm2
+
+    movq       [edi],mm0
+    add 	edi,8
+    loop	@b
+
+    xor        eax,eax
+
+    mov        ecx,SIZE_X*3/4
+    rep        stosd
+end if
+.no_min:
+end if
+;========================commented=====================================
     RDTSC
     sub eax,[esp]
     sub eax,41
@@ -478,10 +651,15 @@ still:
     mov     edx,5 shl 16 + 23
     int     0x40
 
-
+	mov  eax,13
+    mov  ebx,530*65536+60
+    mov  ecx,510*65536+9
+    xor  edx,edx
+    int  40h
+	
     mov  eax,4			   ; function 4 : write text to window
-    mov  ebx,5*65536+23 	   ; [x start] *65536 + [y start]
-    mov  ecx,0x00ffffff	;-1
+    mov  ebx,530*65536+510 	   ; [x start] *65536 + [y start]
+    mov  ecx,0x00888888
     mov  edx,STRdata		   ; pointer to text beginning
     mov  esi,10 		   ; text length
     int  40h
@@ -507,6 +685,7 @@ include "GRD_CAT.INC"
 include "BUMP_TEX.INC"
 include "GRD_TEX.INC"
 include "TWO_TEX.INC"
+
 
 alloc_buffer_mem:
     movzx    ecx,[size_x]

@@ -152,6 +152,33 @@ bumps_deep_flag   db 3
 		  db 255
 map_tex_flag	  db ? ;1
 		  dd ?	;bumps_d_f
+
+		  db 22
+		  db 'bright +  '
+		  db 6
+inc_bright_flag   db 0 ;1
+		  dd blur_f
+
+		  db 23
+		  db 'bright -  '
+		  db 6
+dec_bright_flag   db 0 ;1
+		  dd blur_f
+
+;                  db 24
+;                  db 'max       '
+;                  db 2
+;max_flag          db 0 ;1
+;                  dd blur_f
+;
+;                  db 25
+;                  db 'min       '
+;                  db 2
+;min_flag          db 0 ;1
+;                  dd blur_f
+
+
+
 ;                  db 21
 ;                  db 'light No. '
 ;                  db 3
@@ -271,7 +298,7 @@ base_vector:
       if Ext=SSE2
 	db   ' (SSE2)'
       end if
-	db   ' 0.060',0
+	db   ' 0.061',0
     labellen:
 	STRdata db '-1        '
 
