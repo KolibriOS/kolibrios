@@ -7,7 +7,7 @@ macro DATA_SECTION
 ; ÑÄççõÖ èêéÉêÄååõ
 ;-----------------------------------------------------------------------------
 lootxt:   db 'oops! - Looser...'                     ; los
-text:     db 'KOX v0.003          [ESC]     - quit'  ; winheader string
+text:
 texts:    db 'Congratulations! You are winner.'      ;  in window win
 textend:  db 'New'     ;button id=200
 px:       dw 50        ;x,y -
@@ -63,4 +63,8 @@ idx:      dd  0        ;N cell
           dw 001010000b,2
           dw 001000100b,4      ;diag
 
+caption	  db 'KOX v0.1', 0		
+
+colors	  rd 10  
+		  
 }
