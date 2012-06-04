@@ -1,10 +1,11 @@
-; version:      0.61
-; last update:  01/06/2012
+; version:      0.6 - 0.62
+; last update:  04/06/2012
 ; written by:   Lipatov Kirill aka Leency
 ; changes:      removed old code
 ;               added edit_box
 ;               using system colors
 ;				indicates file saving
+;				download by pressing Enter
 ;-----------------------------------------------------------
 ; version:      0.5
 ; date:         07/10/2010
@@ -184,27 +185,20 @@ no_send:
 no_close:
 	jmp	still
 
-key:	; key
+key:
 	mcall	2	; read key
+
 	stdcall [edit_box_key], dword edit1
-	
+
 	shr	eax,8
-	cmp	eax,184
-	jne	no_down
-	cmp	[display_from],25
-	jb	no_down
-	sub	[display_from],25
-
-no_down:
-	cmp	eax,183
-	jne	no_up
-	add	[display_from],25
-
-no_up:
+	cmp	eax,13
+	je	retkey
+	
 	jmp	still
 
-button:	; button
-;dps	<"Button pressed",13,10>
+	
+button:
+
 	mcall	17	; get id
 	cmp	ah,26
 	je	save
@@ -249,29 +243,6 @@ noup:
 	add	[display_from],20
 	jmp	still
 
-f11:
-	mcall	10
-	cmp	eax,2	; key?
-	jz	fbu
-	jmp	still
-
-fbu:
-	mcall	2	; get key
-	shr	eax,8
-	cmp	eax,8
-	jnz	nobs
-	jmp	f11
-
-nobs:
-	cmp	eax,10
-	je	retkey
-	cmp	eax,13
-	je	retkey
-
-	cmp	eax,31
-	jbe	f11
-
-	jmp	still
 
 retkey:
 	mov	ah,22	; start load
