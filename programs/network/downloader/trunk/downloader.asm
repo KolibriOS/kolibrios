@@ -1,9 +1,10 @@
-; version:      0.6
+; version:      0.61
 ; last update:  01/06/2012
 ; written by:   Lipatov Kirill aka Leency
 ; changes:      removed old code
 ;               added edit_box
 ;               using system colors
+;				indicates file saving
 ;-----------------------------------------------------------
 ; version:      0.5
 ; date:         07/10/2010
@@ -225,10 +226,15 @@ mouse:
 	jmp still
 
 save:
-dps	"saving"
+dps	"file saved"
 newline
 	mcall	70,fileinfo
-;pregs
+
+	mov  ecx,[sc.work_text]
+    or	ecx,80000000h
+	mcall	4,<10,93>,,download_complete
+
+	;pregs
 	jmp	still
 
 noclose:
@@ -456,7 +462,12 @@ no_more_data:
 @@:
 
 	mcall	70,fileinfo
-;dps	"saving "
+	
+	mov  ecx,[sc.work_text]
+    or	ecx,80000000h
+	mcall	4,<10,93>,,download_complete
+dps	"file saved"
+newline
 ;pregs
 ;	jmp	close_end_exit
 	pop	edi
@@ -1522,8 +1533,9 @@ dd 0,0
  library_path rb 4096
 ;---------------------------------------------------------------------
 
-type_pls	db 'URL:',0	
-button_text	db 'DOWNLOAD     STOP     RESAVE',0
+type_pls          db 'URL:',0	
+button_text	      db 'DOWNLOAD     STOP     RESAVE',0
+download_complete db 'File saved as /rd/1/.download',0	
 display_from	dd 20
 pos			dd 0x0
 pagex		dd 0x0
