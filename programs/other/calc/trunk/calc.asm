@@ -653,9 +653,13 @@ draw_window:
     mov  edx,sizeof.system_colors
     mcall
 
+    mov  eax,48
+    mov  ebx,4
+    int  0x40
+    mov  ecx, eax
     xor  eax,eax                     
-    mov  ebx,200 shl 16+255        
-    mov  ecx,200 shl 16+180
+    mov  ebx,200 shl 16+256        
+    add  ecx,200 shl 16+158
     mov  edx,[sc.work]
     or   edx,0x34000000
     mov  edi,title
@@ -684,7 +688,7 @@ draw_window:
     mcall  ,220 shl 16+8,7 shl 16+8,3                     ; 'dec-bin-hex'
 
     mov  eax,4
-    mov  ebx,27 shl 16+54
+    mov  ebx,27 shl 16+55
     mov  ecx,[sc.work_button_text]
     mov  edx,text
     mov  esi,33
