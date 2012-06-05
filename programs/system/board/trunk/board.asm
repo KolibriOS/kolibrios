@@ -202,7 +202,7 @@ draw_window:
 	mov	ecx,MAXSTRINGS*10+45	   ; [y start] *65536 + [y size]
 ;	mov	edx,[sc.work]		   ; color of work area RRGGBB,8->color gl
 	mov	edx,0xffffff
-	or	edx,0x13000000
+	or	edx,0x14000000
 	xor	esi,esi
 	mcall	,[xstart],,,,title
 	mov	ebx,296 shl 16+5*6
