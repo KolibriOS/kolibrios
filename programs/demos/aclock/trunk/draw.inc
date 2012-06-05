@@ -114,9 +114,11 @@ drawClock:
 	pushad
 	mov	ebx,(MOS_WND_SKIN_BORDER_LEFT)*0x10000	; x start
 	or	ebx,ecx					; width
+	inc	ebx
 	mov	ecx,eax					; y start
 	shl	ecx,16					; (=skin height)
 	or	ecx,edx					; height
+	inc	ecx
 	mov	edx,[wndColors + MOS_WNDCOLORS.work]
 	mov	eax,MOS_SC_DRAWBAR
 	int	0x40

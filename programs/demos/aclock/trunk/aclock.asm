@@ -86,13 +86,18 @@ main:
 
 	call	drawWindow
 .msgpump:
-	call	drawClock
+;	call	drawClock
 
 	; wait up to a second for next event
 	mov	eax,MOS_SC_WAITEVENTTIMEOUT
 	mov	ebx,100
 	int	0x40
 
+	test	eax,eax
+	jne	.event_occured
+	call	drawClock
+
+  .event_occured:
 	cmp	eax,MOS_EVT_REDRAW
 	je	.redraw
 	cmp	eax,MOS_EVT_KEY
@@ -157,19 +162,10 @@ drawWindow:
 	shl	ecx,16
 	or	ecx,[wndHeight]
 	mov	edx,[wndColors+MOS_WNDCOLORS.work]
-	or	edx,0x03000000
-	mov	esi,[wndColors+MOS_WNDCOLORS.grab]
-	mov	edi,[wndColors+MOS_WNDCOLORS.frame]
+	or	edx,0x53000000
+	mov	edi,label
 	int	0x40
 
-	; draw window label
-	mov	eax,MOS_SC_WRITETEXT
-	mov	ebx,MOS_DWORD(8,8)
-	mov	ecx,[wndColors+MOS_WNDCOLORS.grabText]
-	mov	edx,label
-	mov	esi,LABEL_LEN
-	int	0x40
-		
 	call drawClock
 	
 	; end window redraw
