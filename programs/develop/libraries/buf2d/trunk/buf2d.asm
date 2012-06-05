@@ -48,6 +48,9 @@ BUF2D_BIT_OPT_CROP_LEFT equ 1
 BUF2D_BIT_OPT_CROP_BOTTOM equ 2
 BUF2D_BIT_OPT_CROP_RIGHT equ 3
 
+vox_offs_tree_table equ 4
+vox_offs_data equ 12
+
 ;input:
 ; eax = указатель на функцию выделения памяти
 ; ebx = ... освобождения памяти
@@ -2185,33 +2188,26 @@ align 4
 combine_colors:
 	push ax bx cx dx
 	mov bx,0x00ff ;---get transparent---
-	mov cl,byte[esi+3] ;pro
-	xor ch,ch
+	movzx cx,byte[esi+3] ;pro
 	sub bx,cx ;256-pro
 	;---blye---
-	xor ah,ah
-	mov al,byte[esi]
+	movzx ax,byte[esi]
 	imul ax,bx
-	xor dh,dh
-	mov dl,byte[edi]
+	movzx dx,byte[edi]
 	imul dx,cx
 	add ax,dx
 	mov byte[edi],ah
 	;---green---
-	xor ah,ah
-	mov al,byte[esi+1]
+	movzx ax,byte[esi+1]
 	imul ax,bx
-	xor dh,dh
-	mov dl,byte[edi+1]
+	movzx dx,byte[edi+1]
 	imul dx,cx
 	add ax,dx
 	mov byte[edi+1],ah
 	;---red---
-	xor ah,ah
-	mov al,byte[esi+2]
+	movzx ax,byte[esi+2]
 	imul ax,bx
-	xor dh,dh
-	mov dl,byte[edi+2]
+	movzx dx,byte[edi+2]
 	imul dx,cx
 	add ax,dx
 	mov byte[edi+2],ah
@@ -2339,31 +2335,25 @@ combine_colors_2:
 	sub si,cx ;256-pro
 
 		;---blye---
-		mov al,bl
-		xor ah,ah
+		movzx ax,bl
 		shr ebx,8
 		imul ax,si
-		xor dh,dh
-		mov dl,byte[edi]
+		movzx dx,byte[edi]
 		imul dx,cx
 		add ax,dx
 		mov byte[edi],ah
 		;---green---
-		mov al,bl
-		xor ah,ah
+		movzx ax,bl
 		shr ebx,8
 		imul ax,si
-		xor dh,dh
-		mov dl,byte[edi+1]
+		movzx dx,byte[edi+1]
 		imul dx,cx
 		add ax,dx
 		mov byte[edi+1],ah
 		;---red---
-		mov al,bl
-		xor ah,ah
+		movzx ax,bl
 		imul ax,si
-		xor dh,dh
-		mov dl,byte[edi+2]
+		movzx dx,byte[edi+2]
 		imul dx,cx
 		add ax,dx
 		mov byte[edi+2],ah
@@ -2806,6 +2796,162 @@ proc buf_curve_bezier, buffer:dword, coord_p0:dword,coord_p1:dword,coord_p2:dwor
 	ret
 endp
 
+
+
+;*** функции для работы с воксельной графикой ***
+
+
+
+;создание воксельных кистей
+align 4
+proc vox_brush_create uses eax ebx ecx edi, h_br:dword, buf_z:dword
+	mov edi,[h_br]
+	movzx ecx,byte[edi+3]
+	add edi,4
+
+	; *** создание единичной кисти ***
+	mov eax,[buf_z]
+	mov buf2d_data,eax
+	movzx eax,byte[edi-4] ;ширина единичной кисти
+	mov buf2d_w,eax ;ширина буфера
+	movzx eax,byte[edi-4+1] ;высота единичной кисти
+	mov buf2d_h,eax ;высота буфера
+	mov buf2d_size_lt,0 ;отступ слева и справа для буфера
+	mov buf2d_color,0 ;цвет фона буфера
+	mov buf2d_bits,32 ;количество бит в 1-й точке изображения
+
+	; *** создание следующих кистей ***
+	cmp ecx,1
+	jl .end_creat
+	movzx ebx,byte[edi-4+2] ;высота основания единичной кисти
+	shr ebx,1
+	cld
+	@@:
+		mov eax,edi
+		add edi,BUF_STRUCT_SIZE
+		stdcall vox_create_next_brush, eax, edi, ebx
+		shl ebx,1
+		loop @b
+	.end_creat:
+	ret
+endp
+
+;удаление воксельных кистей
+align 4
+proc vox_brush_delete uses ecx edi, h_br:dword
+	mov edi,[h_br]
+	movzx ecx,byte[edi+3]
+	add edi,4
+
+	; *** удаление кистей ***
+	cmp ecx,1
+	jl .end_delete
+	cld
+	@@:
+		add edi,BUF_STRUCT_SIZE
+		stdcall buf_delete, edi
+		loop @b
+	.end_delete:
+	ret
+endp
+
+;функция для создания вокселя следующего порядка
+; buf_v1 - буфер с исходным вокселем
+; buf_v2 - буфер с увеличеным вокселем
+; h - высота основания исходного вокселя : 2
+align 4
+proc vox_create_next_brush uses eax ebx ecx edx edi, buf_v1:dword, buf_v2:dword, h:dword
+	mov edi,[buf_v1]
+	mov ebx,buf2d_h
+	mov ecx,buf2d_w
+	mov edi,[buf_v2]
+	mov buf2d_h,ebx
+	shl buf2d_h,1
+	mov buf2d_w,ecx
+	shl buf2d_w,1
+	mov buf2d_color,0
+	mov buf2d_bits,32
+
+	stdcall buf_create, [buf_v2] ;создание буфера глубины
+	shr ecx,1
+	mov edx,[h]
+	shl edx,1
+	sub ebx,edx
+	;ecx - ширина исходного вокселя : 2
+	;ebx - высота исходного вокселя (без основания)
+	;edx - высота основания исходного вокселя
+	stdcall vox_add, [buf_v2], [buf_v1], ecx,0,0
+	stdcall vox_add, [buf_v2], [buf_v1], ecx,ebx,0
+
+	mov eax,[h]
+	stdcall vox_add, [buf_v2], [buf_v1], 0,eax,eax
+	push eax ;stdcall ...
+	add eax,ebx
+	stdcall vox_add, [buf_v2], [buf_v1], 0,eax ;,...
+	sub eax,ebx
+
+	shl ecx,1
+	;ecx - ширина исходного вокселя
+	mov eax,[h]
+	stdcall vox_add, [buf_v2], [buf_v1], ecx,eax,eax
+	push eax ;stdcall ...,[h]
+	add eax,ebx
+	stdcall vox_add, [buf_v2], [buf_v1], ecx,eax;,[h]
+	;sub eax,ebx
+	shr ecx,1
+
+	;ecx - ширина исходного вокселя : 2
+	stdcall vox_add, [buf_v2], [buf_v1], ecx,edx,edx
+	add ebx,edx
+	stdcall vox_add, [buf_v2], [buf_v1], ecx,ebx,edx
+
+	ret
+endp
+
+;
+align 4
+proc vox_add uses ebx ecx, buf_v1:dword, buf_v2:dword, coord_x:dword, coord_y:dword, coord_z:dword
+pushad
+	mov eax,[coord_x]
+	mov ebx,[coord_y]
+	mov edi,[buf_v2]
+	mov ecx,buf2d_h
+	mov esi,buf2d_w
+	imul ecx,esi
+	add esi,eax
+	mov edx,buf2d_data
+	cld
+	;ecx - count pixels in voxel
+	;edx - указатель на данные в воксельном буфере
+	;edi - указатель на воксельный буфер
+	;esi - width voxel buffer add coord x
+	.cycle:
+		cmp dword[edx],0
+		je @f
+			;проверяем буфер глубины
+			push eax ecx esi
+			mov ecx,eax
+			stdcall buf_get_pixel, [buf_v1],ecx,ebx
+			mov esi,[edx]
+			add esi,[coord_z]
+			cmp eax,esi
+			jge .end_draw
+			stdcall buf_set_pixel, [buf_v1],ecx,ebx,esi ;esi = new coord z
+			.end_draw:
+			pop esi ecx eax
+		@@:
+		add edx,4
+		inc eax
+		cmp eax,esi
+		jl @f
+			inc ebx
+			sub eax,buf2d_w
+		@@:
+		loop .cycle
+popad
+	ret
+endp
+
 txt_err_n8b db 'need buffer 8 bit',13,10,0
 txt_err_n24b db 'need buffer 24 bit',13,10,0
 txt_err_n8_24b db 'need buffer 8 or 24 bit',13,10,0
@@ -2839,6 +2985,8 @@ EXPORTS:
 	dd sz_buf2d_flood_fill, buf_flood_fill
 	dd sz_buf2d_set_pixel, buf_set_pixel
 	dd sz_buf2d_get_pixel, buf_get_pixel
+	dd sz_buf2d_vox_brush_create, vox_brush_create
+	dd sz_buf2d_vox_brush_delete, vox_brush_delete
 	dd 0,0
 	sz_lib_init db 'lib_init',0
 	sz_buf2d_create db 'buf2d_create',0
@@ -2867,3 +3015,5 @@ EXPORTS:
 	sz_buf2d_flood_fill db 'buf2d_flood_fill',0
 	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
 	sz_buf2d_get_pixel db 'buf2d_get_pixel',0
+	sz_buf2d_vox_brush_create db 'buf2d_vox_brush_create',0
+	sz_buf2d_vox_brush_delete db 'buf2d_vox_brush_delete',0

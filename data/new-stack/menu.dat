@@ -119,7 +119,7 @@ Save RD image             /rd/1/rdsave
 #14 **** DATA PROCESSING ****
 Calculator                /rd/1/calc
 TinyPad                   /rd/1/tinypad
-T_Edit                    /rd/1/t_edit
+T_Edit                    /rd/1/develop/t_edit
 Table Processor           /rd/1/table
 Graph builder             /rd/1/graph
 Hex-Editor                /rd/1/develop/heed
