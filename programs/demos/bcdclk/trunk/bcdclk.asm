@@ -72,16 +72,16 @@ drawclock:
     mov  ecx,6
 dgtomem:
     push eax
-    and  al,15
+    and  al,0x0f
     mov  [edi],al
     inc  edi
     pop  eax
     shr  eax,4
     loop dgtomem
-    mov  ebx,74*65536+10
+    mov  ebx,79*65536+11
     mov  edi,dg1
 digitlp:
-    mov  ecx,10*65536+10
+    mov  ecx,10*65536+11
     xor  esi,esi
 plotlp:
     xor  edx,edx
@@ -91,7 +91,7 @@ plotlp:
 nobit:
     mov  eax,13  ; plot 8,4,2,1
     mcall
-    add  ecx,12*65536
+    add  ecx,13*65536
     shl  byte[edi],1
     inc  esi
     cmp  esi,4
@@ -112,7 +112,7 @@ nobit:
     mov  eax,47  ; display decimal
     mcall
     popa
-    sub  ebx,12*65536
+    sub  ebx,13*65536
     inc  edi
     cmp  edi,dg1+6
     jne  digitlp
@@ -126,9 +126,13 @@ drawwindow:
     mov  ebx,1 ; start redraw
     mcall
 
+    mov  eax, 48
+    mov  ebx, 4
+    mcall
+    mov  ecx, eax
     xor  eax,eax ; window
-    mov  ebx,100*65536+107
-    mov  ecx,100*65536+105
+    mov  ebx,100*65536+113
+    add  ecx,100*65536+87
     mov  edx,0x34400088
     mov  edi,title
     mcall
