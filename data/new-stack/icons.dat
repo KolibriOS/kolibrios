@@ -8,6 +8,6 @@ BC-CALC    -004-/SYS/CALC                     -                              *
 CB-KFM     -005-/SYS/File Managers/KFM        -                              *
 JA-HEXEDIT -010-/SYS/DEVELOP/HEED             -                              *
 IA-BOARD   -019-/SYS/DEVELOP/BOARD            -                              *
-JC-DOCPACK -008-/SYS/DOCPAK                   -                              *
+JC-DOCPACK -008-/SYS/DOCPACK                  -                              *
 HA-MTDBG   -006-/SYS/DEVELOP/MTDBG            -                              *
 IB-KPACK   -010-/RD/1/KPACK                   -                              *

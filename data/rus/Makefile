@@ -54,7 +54,7 @@ FASM_PROGRAMS:=\
  cpuid:CPUID:$(PROGS)/system/cpuid/trunk/CPUID.ASM \
  desktop:DESKTOP:$(PROGS)/system/desktop/trunk/desktop.asm \
  disptest:DISPTEST:$(PROGS)/system/disptest/trunk/disptest.ASM \
- docpak:DOCPAK:$(PROGS)/system/docpack/trunk/docpack.asm \
+ docpack:DOCPACK:$(PROGS)/system/docpack/trunk/docpack.asm \
  end:END:$(PROGS)/system/end/light/end.asm \
  gmon:GMON:$(PROGS)/system/gmon/gmon.asm \
  hdd_info:HDD_INFO:$(PROGS)/system/hdd_info/trunk/hdd_info.asm \
@@ -387,7 +387,7 @@ include Makefile.nasm
 include Makefile.copy
 
 # Special rules for copying sysfuncr.txt - it isn't directly included in the image.
-docpak: $(DOCDIR)SYSFUNCR.TXT $(wildcard $(DOCDIR)*)
+docpack: $(DOCDIR)SYSFUNCR.TXT $(wildcard $(DOCDIR)*)
 $(DOCDIR)SYSFUNCR.TXT: $(KERNEL)/docs/sysfuncr.txt
 	cp $(KERNEL)/docs/sysfuncr.txt $(DOCDIR)SYSFUNCR.TXT
 
