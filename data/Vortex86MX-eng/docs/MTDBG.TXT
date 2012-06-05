@@ -1,9 +1,8 @@
 Introduction.
 
 mtdbg is a debugger for Kolibri operating system. This documentation describes
-debugger features and work with it. If you need some features which are
-not presented yet, either write to the forum meos.sysbin.com (if you can
-read russian texts) or mail me to address given in the end of this file.
+debugger features and work with it. Feel free to ask on our board (mostly
+in Russian, but has an English forum) -- board.kolibrios.org.
 
 General description.
 
@@ -211,4 +210,3 @@ Remarks.
    was true in the moment of command delivery.
 
 						diamond
-						mailto:diamondz@land.ru
