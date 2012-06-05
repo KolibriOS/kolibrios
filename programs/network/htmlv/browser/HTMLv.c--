@@ -1,7 +1,6 @@
 //HTML Viewer in C--
 //Copyright 2007-2012 by Veliant & Leency
-//Asper, Lrz, Nable, lev.
-
+//Asper, lev, Lrz, Barsuk, Nable.
 //home icon - rachel fu, GPL licence
 
 #include "..\lib\kolibri.h--"
@@ -9,12 +8,12 @@
 #include "..\lib\file_system.h--"
 #include "img\toolbar_icons.c"
 #include "img\URLgoto.txt";
-//Asper
 #include "..\lib\mem.h--"
 #include "..\lib\libio_lib.h--"
 #include "..\lib\libimg_lib.h--"
 #include "..\lib\edit_box_lib.h--"
 #include "..\lib\dll.h--"
+#include "..\lib\scroll_bar\scroll_lib.h--"
 
 //переменные
 char URL[4096],
@@ -22,15 +21,14 @@ char URL[4096],
 	page_links[12000],
 	header[512];
 
-int max_kolvo_strok,
-	 max_kolvo_stolbcov,
-	 count;
-
-int za_kadrom,
-	scroll_size,
+int max_kolvo_strok, //lines_visible
+	max_kolvo_stolbcov,
+	count, //lines_all
+	za_kadrom,
 	mouse_dd;
 
 edit_box edit1= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,248,#editURL,#mouse_dd,2,19,19};
+scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1}; //details in scroll_lib.h--
 
 proc_info Form;
 
@@ -43,20 +41,16 @@ void main()
 	mouse m;
 	int btn;
 	byte key;
+	int scroll_size;
 	
-    //Asper [
-        mem_Init();
-        $or      eax, eax
-        $jnz      loc00
-        return;
-      @loc00:
-      load_dll2(libio, #libio_init,1);
-      load_dll2(libimg, #libimg_init,1);
-      load_dll2(boxlib, #edit_box_draw,0);
-    //] Asper
+	mem_Init();
+	load_dll2(libio, #libio_init,1);
+	load_dll2(libimg, #libimg_init,1);
+	load_dll2(boxlib, #edit_box_draw,0);
+	load_dll2(#abox_lib, #boxlib_init,0);
 	
-	IF (param) copystr(#param,#URL);
-	ELSE copystr("/sys/index.htm",#URL);
+	if (param) copystr(#param,#URL);
+		else copystr("/sys/index.htm",#URL);
 
 	copystr(#URL,#editURL);
 	
@@ -67,15 +61,28 @@ void main()
 	SetEventMask(0x27);
 	loop()
 	{
-		switch(WaitEvent())
+		WaitEventTimeout(1);
+		switch(EAX & 0xFF)
+		//switch(WaitEvent())
 		{
-			CASE evMouse: 	
+			CASE evMouse:
+				edit_box_mouse stdcall (#edit1);
+				
+				/*scrollbar_v_mouse (#scroll1);      //конченый скролл притормажимает, идём "своим путём"
+				if (za_kadrom <> scroll1.position)
+				{
+					za_kadrom = scroll1.position;
+					WB1.ParseHTML(buf, filesize);
+					//break;
+				};*/
 				m.get();
+
 				IF (m.vert==65535) //прокрутка колёсиком
 				{
 					IF (za_kadrom==0) break;
 					IF (za_kadrom>3) za_kadrom-=2; ELSE za_kadrom=1;
 					WB1.Scan(ID1);
+					break;
 				} 
 				IF (m.vert==1)
 				{
@@ -84,8 +91,11 @@ void main()
 						za_kadrom+=2;
 						WB1.Scan(ID2);
 					}
+					break;
 				}
-				//IF (count<max_kolvo_strok) break;
+				
+				IF (count<max_kolvo_strok) break;
+				scroll_size = WB1.height - 16 * max_kolvo_strok / count - 3;
 				if (m.x>=WB1.width-14) && (m.x<=WB1.width+6)
 				&& (m.y>WB1.top+16) && (m.y<WB1.top+WB1.height-16)
 				&& (count>max_kolvo_strok) while (m.lkm)
@@ -97,7 +107,8 @@ void main()
 					IF (max_kolvo_strok+za_kadrom>count) za_kadrom=count-max_kolvo_strok;
 					IF (btn<>za_kadrom) WB1.ParseHTML(buf, filesize); //чтоб лишний раз не перерисовывать
 					m.get();
-				}				
+				}
+
 				break;
 			case evButton:
 				btn=GetButtonID();
@@ -119,8 +130,14 @@ void main()
 			case evReDraw:
 				Draw_Window();
 				break;
+			default:
+				if (downloader_id<>0)
+				{
+					if (GetProcessSlot(downloader_id)<>0) break;
+					downloader_id=0;
+					Draw_Window();
+				}
 		}
-		edit_box_mouse stdcall (#edit1);
 	}
 }
 
@@ -148,15 +165,17 @@ void Draw_Window()
 	PutImage(#URLgoto,40,19,onLeft(57,0),14);
 	DefineButton(onLeft(37,0),15, 18, 16, GOTOURL+BT_HIDE, 0xE4DFE1);
 	DefineButton(onLeft(56,0),15, 17, 16, SEARCHWEB+BT_HIDE, 0xE4DFE1);
-	DrawRegion_3D(205,14,onLeft(58,205),18,0x94AECE,0x94AECE); //ободок полосы адреса
-	DrawRegion_3D(206,15,onLeft(59,205),16,0xE4ECF3,0xE4ECF3);
+	DrawRegion(205,14,onLeft(58,205),18,0x94AECE); //ободок полосы адреса
+	DrawRegion(206,15,onLeft(59,205),16,0xE4ECF3);
+	
 	edit1.width=Form.width-266;
 	//edit_box_draw stdcall(#edit1); //рисуем строку адреса  //shis is right
 	
 	WB1.top=44;
-	WB1.width=Form.width-11;
+	WB1.width=Form.width-13;
 	WB1.height=onTop(43,5);
 	WB1.ShowPage(#URL);
+	
 	//WB1.ParseHTML(buf, filesize); //shis is right
 }
  

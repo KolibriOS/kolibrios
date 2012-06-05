@@ -1,8 +1,8 @@
 struct UrlsHistory {
 	dword CurrentUrl();
 	void AddUrl();
-	void GoBack();
-	void GoForward();
+	byte GoBack();
+	byte GoForward();
 };
 
 UrlsHistory BrowserHistory;
@@ -39,17 +39,20 @@ void UrlsHistory::AddUrl() //тут нужен вводимый элемент - для универсальности
 }
 
 
-void UrlsHistory::GoBack()
+byte UrlsHistory::GoBack()
 {
-	if (history_current<=1) return;
+	if (history_current<=1) return 0;
+	
 	history_current--;
 	copystr(#history_list[history_current].Item,#URL);
+	 return 1;
 }
 
 
-void UrlsHistory::GoForward()
+byte UrlsHistory::GoForward()
 {
-	if (history_current==history_num) return;
+	if (history_current==history_num) return 0;
 	history_current++;
 	copystr(#history_list[history_current].Item,#URL);
+	return 1;
 }

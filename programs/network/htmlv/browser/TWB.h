@@ -1,8 +1,6 @@
 //идея - левые файлы открывать соответствующими прогами
 //ol - циферки
 
-//из хттп-лоад в реадхтмл
-
 
 int	downloader_id;
 
@@ -12,17 +10,14 @@ dword j,
 	blink = 400;
  int i;
 
- char download_path[]="/rd/1/.download";
+char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
- char search_path[]="http://nigma.ru/index.php?s=";
- char version[]=" Text-based Browser 0.83";
+char search_path[]="http://nigma.ru/index.php?s=";
+char version[]=" Text-based Browser 0.9";
 
 
 struct TWebBrowser {
-	int left,
-	top,
-	width,
-	height;
+	int left, top, width, height;
 	void DrawScroller();
 	void ShowPage();
 	void ParseHTML(dword, dword);
@@ -111,20 +106,12 @@ void TWebBrowser::Scan(dword id) {
 			utf8rutodos(buf);
 			break;
 		case BACK:
-			BrowserHistory.GoBack();
-			
-			copystr(#URL, #editURL);
-			za_kadrom = count = 0;
-			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
-			ShowPage(#URL);
+			if (!BrowserHistory.GoBack()) return;
+			OpenPage();
 			return;
 		case FORWARD:
-			BrowserHistory.GoForward();
-
-			copystr(#URL, #editURL);
-			za_kadrom = count = 0;
-			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
-			ShowPage(#URL);
+			if (!BrowserHistory.GoForward()) return;
+			OpenPage();
 			return;
 		case 054: //F5
 			IF(edit1.flags == 66) break;
@@ -156,17 +143,13 @@ void TWebBrowser::Scan(dword id) {
 		case GOTOURL:
 		case 0x0D: //enter
 			copystr(#editURL, #URL);
-			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
-			za_kadrom = count = 0;
-			ShowPage(#URL);
+			OpenPage();
 			return;
 		case 173:	//ctrl+enter
 		case SEARCHWEB:
 			copystr(#search_path, #URL);
 			copystr(#editURL, #URL + strlen(#URL));
-			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
-			za_kadrom = count = 0;
-			ShowPage(#URL);
+			OpenPage();
 			return;
 
 		case ID1: //мотаем вверх
@@ -199,6 +182,16 @@ void TWebBrowser::Scan(dword id) {
 			RETURN;
 	}
 	ParseHTML(buf, filesize);
+}
+
+void OpenPage()
+{
+	if (GetProcessSlot(downloader_id)<>0) PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
+	KillProcess(downloader_id);
+	copystr(#URL, #editURL);
+	za_kadrom = count = 0;
+	if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
+	WB1.ShowPage(#URL);
 }
 
 void GetNewUrl(){
@@ -238,6 +231,11 @@ void HttpLoad()
 	DeleteFile(#download_path);
 	IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
 	downloader_id = RunProgram("/sys/network/downloader", #URL);
+	//это гениально и это пиздец!!!
+	Pause(60);
+	KillProcess(downloader_id); //убиваем старый процесс
+	downloader_id = RunProgram("/sys/network/downloader", #URL);
+	//
 	IF (downloader_id<0) RunProgram("@notify", "Error running Downloader. Internet unavilable.");
 	Draw_Window();
 }
@@ -275,7 +273,7 @@ void TWebBrowser::ShowPage(dword adress) {
 
 	if (!filesize)
 	{
-		DrawBar(left, top, width+2, height, 0xFFFFFF); //закрашиваем всё донизу
+		DrawBar(left, top, width+4, height, 0xFFFFFF); //закрашиваем всё донизу
 		if (GetProcessSlot(downloader_id)<>0) WriteText(left + 10, top + 18, 0x80, 0, "Loading...", 0);
 		else
 		{
@@ -410,7 +408,7 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 					GOTO DEFAULT_MARK; //обрабатываем букву
 				}
 			
-			WriteDebug(#tag); //тэг не найден - выводим на доску отладки
+			//WriteDebug(#tag); //тэг не найден - выводим на доску отладки
 			copystr(#tag, #line + strlen(#line)); //выводим на экран необработанный тег, так браузеры зачем-то делают
 			break;
 		default:
@@ -595,7 +593,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	/////////////////////////
 	if (!chTag("font"))
 	{
-		IF(stroka < 0) || (stroka - 1 > max_kolvo_strok) return;
+		IF (stroka - 1 > max_kolvo_strok) return;
 		COL_MARK:
 		if (strcmp(#parametr, "color=") == 0) //&& (parametr[1] == '#')
 		{
@@ -766,7 +764,8 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 }
 
 
-void TextGoDown(int left1, top1, width1) {
+void TextGoDown(int left1, top1, width1)
+{
 	stroka++;
 	IF(blq_text == 1) stolbec = 8;
 	ELSE stolbec = 0;
@@ -776,23 +775,18 @@ void TextGoDown(int left1, top1, width1) {
 
 
 //скролл
-void TWebBrowser::DrawScroller() {
-	dword on_y;
-	DrawBar(left + width - 15, top + 17, 1, height - 34, 0x94AECE); //линия слева от прокрутки 
-	DrawFlatButton(left + width - 15, top + height - 17, 16, 16, ID2, 0xE4DFE1, "\x19");
-	DrawFlatButton(left + width - 15, top, 16, 16, ID1, 0xE4DFE1, "\x18");
+void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном месте
+{
+	scroll1.max_area = count;
+	scroll1.cur_area = max_kolvo_strok;
+	scroll1.position = za_kadrom;
 
-	IF(count <= max_kolvo_strok) {
-		DrawBar(left + width - 14, top+17, 16, height - 34, 0xCED0D0);
-		return;
-	}
+	scroll1.all_redraw=1;
+	scroll1.start_x=Form.width-28; //left + width - 15
+	scroll1.size_y=WB1.height;
 
-	scroll_size = height - 16 * max_kolvo_strok / count - 3;
-	IF(scroll_size < 10) scroll_size = 10;
-	IF(za_kadrom + max_kolvo_strok >= count) on_y = height - scroll_size + top - 17;
-	ELSE on_y = height - 32 * za_kadrom / count + top + 16;
-	DrawFlatButton(left + width - 15, on_y, 16, scroll_size, 0, 0xE4DFE1, ""); //ползунок
-	IF(on_y > top + 17) DrawBar(left + width - 14, top + 17, 16, on_y - top - 17, 0xCED0D0); //поле до ползунка
-	IF(height - scroll_size + top - 17 > on_y)
-		DrawBar(left + width - 14, on_y + scroll_size + 1, 16, height - scroll_size - on_y + top - 18, 0xCED0D0); //поле после ползунка
+	scrollbar_v_draw(#scroll1);
+
+	DefineButton(scroll1.start_x+1, scroll1.start_y+1, 16, 16, ID1+BT_HIDE, 0xE4DFE1);
+	DefineButton(scroll1.start_x+1, scroll1.start_y+scroll1.size_y-18, 16, 16, ID2+BT_HIDE, 0xE4DFE1);
 }
