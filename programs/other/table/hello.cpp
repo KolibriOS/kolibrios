@@ -1,19 +1,9 @@
-//своевременное реагирование на события мыши
-//минимальные размеры окна
-//убрана перерисовка заголовка окна там, где она не нужна
-//убрано "заползание" панели снизу на границы окна
-//исправлен баг из-за которого после действий мышкой удалялась кнопка закрытия окна
-
-//зачем строка 450?
-//если выделить область ячеек и сдвинуть курсор ввода с помощью клавиш, "следы" остануться
-//нельзя перемещаться по буквам в редактируемой строке
-
 #include "func.h"
 #include "parser.h"
 #include "calc.h"
 #include "use_library.h"
 
-#define TABLE_VERSION "0.96"
+#define TABLE_VERSION "0.97"
 
 // строки, которые выводит программа
 const char *sFileSign = "KolibriTable File\n";
@@ -376,7 +366,10 @@ void draw_grid()
 
 				// есть кнопка стоблца и еще кнопка изменения ширины 
 				if (x - x0 + col_width[i] <= wi - col_width[0])
+				{
+					//kos_DeleteButton(COL_HEAD_BUTTON+i);
 					kos_DefineButton(x-x0+5,0,cur_width - 10,row_height[0]-1,0x60000000+COL_HEAD_BUTTON+i,0);
+				}
 				//kos_DefineButton(x-x0+col_width[i]-10,0,15,row_height[0]-1,0x60000000+COL_SIZE_BUTTON+i,0);
 				col_left[i] = x - x0;
 			}
@@ -432,6 +425,7 @@ void draw_grid()
 				if (!sel_moved || (is_y_changed(i)))
 					kos_WriteTextToWindow(2+dx,y-y0+dy,0,text_color,cells[0][i],strlen(cells[0][i]));
 
+				
 				kos_DefineButton(0,y-y0+5,col_width[0]-1,row_height[i]-6,0x60000000+ROW_HEAD_BUTTON+i,0);
 				//kos_DefineButton(0,y-y0+row_height[i]-5,col_width[0]-1,10,0x60000000+ROW_SIZE_BUTTON+i,0);
 				row_top[i] = y - y0;
@@ -667,7 +661,6 @@ void draw_drag()
 
 void draw_window()
 {
-	int i;
 	double xx0=0.0, yy0=0.0;
 	sProcessInfo info;
 	void *p;
@@ -678,7 +671,6 @@ void draw_window()
 	memset((Byte*)&info, 0, 1024);
 
 	kos_ProcessInfo(&info, 0xFFFFFFFF);
-
 	p = info.rawData + 42;			// magic
 	wi = *(Dword *)(p);
 	he = *(Dword *)((Byte *)p + 4);
@@ -695,22 +687,17 @@ void draw_window()
 	he -= kos_GetSkinHeight() + MENU_PANEL_HEIGHT; // доступная высота окна
 	wi -= 10;
 
-	//Leency{
-	// start redraw
 	if (window_drawall==true){
 		kos_WindowRedrawStatus(1);
 		kos_DefineAndDrawWindow(10,40,WND_W,WND_H,0x33,0x40FFFFFF,0,0,(Dword)"Table v" TABLE_VERSION);
+		kos_WindowRedrawStatus(2); 
 
-		if (he + MENU_PANEL_HEIGHT <= 8) //если окно свёрнуто в заголовок
-		{
-			kos_WindowRedrawStatus(2); 
-			return;
-		}
+		if (info.rawData[70]&0x04) return; //ничего не делать если окно схлопнуто в заголовок
 
 		if (he < 100) kos_ChangeWindow( -1, -1, -1, 180 );
 		if (wi < 340) kos_ChangeWindow( -1, -1, 350, -1 );
 
-	}//}Leency
+	}
 
 //	edit_box_draw((dword)&ebox);
 	int y = he + kos_GetSkinHeight() - 10;
@@ -748,9 +735,6 @@ void draw_window()
 	*/
 	panel_y = y;
 
-	//kos_DefineButton(0,0,WND_W,WND_H,0x60000002,0);
-	//if (is_edit) KEdit();
-
 	if ((void*)edit_box_draw != NULL)
 	{
 		if (is_edit)
@@ -759,8 +743,6 @@ void draw_window()
 	}	
 
 	draw_grid();
-	// end redraw
-	kos_WindowRedrawStatus(2);
 	window_drawall=false;
 	sel_moved = 0;
 }
@@ -769,7 +751,7 @@ void draw_window()
 void process_mouse()
 {
 	Dword mouse_btn, ckeys, shift, ctrl;
-	int mouse_x, mouse_y, i, p, dx = 0, dy = 0;
+	int mouse_x, mouse_y, i, dx = 0, dy = 0;
 	int redraw = 0;
 	
 	Dword mySlot = kos_GetSlotByPID(myPID);
@@ -785,10 +767,11 @@ void process_mouse()
 	//sprintf(debuf, "scroll %U %U", vert, hor);
 	//rtlDebugOutString(debuf);
 
+		
 	if (vert != 0) //труъ перерисовка!
 	{
+		if (!((sel_end_y + vert) >= (row_count-1))) //заглушка
 		move_sel(sel_x, sel_y + vert);
-		//move_sel(sel_x + hor, sel_y);
 		return;
 	}
 	
@@ -800,6 +783,7 @@ void process_mouse()
 
 	ckeys = kos_GetSpecialKeyState();
 	shift = ckeys & 0x3;
+
 
 	if (mouse_y < 0 && mouse_btn)	// т.к. мышка на заголовке окна
 	{
@@ -975,7 +959,7 @@ void process_mouse()
 void process_key()
 {
 	Dword mouse_btn, ckeys, shift, ctrl;
-	int mouse_x, mouse_y, i, p, dx = 0, dy = 0;
+	int mouse_x, mouse_y, dx = 0, dy = 0;
 
 	// key pressed, read it 
 	Byte keyCode;
@@ -1074,19 +1058,6 @@ void process_key()
 				draw_window();
 			}
 			break;
-		//case 0x08:			// backspace
-			/*if (is_edit || fn_edit)
-			{
-				if (strlen(edit_text) != 0)
-					edit_text[strlen(edit_text) - 1] = '\0';
-				KEdit();
-			}
-			else if (cells[sel_x][sel_y])
-			{
-				start_edit(sel_x, sel_y);
-			}
-			*/
-		//	break;
 		case 22:	// contol-v
 			{
 				if (ctrl)
@@ -1198,14 +1169,6 @@ void process_key()
 			}
 			if (is_edit)
 				edit_box_draw((dword)&cell_box);
-			/*
-			if (strlen(edit_text)<256)
-			{
-				edit_text[strlen(edit_text)]=keyCode;
-				edit_text[strlen(edit_text) + 1]='\0';
-				KEdit();
-			}
-			*/
 			break;
 	}
 	if (dx != 0)
@@ -1257,7 +1220,11 @@ void process_key()
 	{
 		if (!shift)
 		{
+			if ((sel_end_x + dx) >= (col_count-1)) {dx=0;} //заглушка
+			else if ((sel_end_y + dy) >= (row_count-1)) {dy=0;}
+			else {
 			move_sel(sel_x + dx, sel_y + dy);
+			}
 		}
 		else
 		{
@@ -1453,10 +1420,10 @@ void kos_Main()
 	kos_InitHeap();
 	load_edit_box();
 	init();
-
+	
 	for (;;)
 	{
-		switch (kos_CheckForEvent())
+		switch (kos_WaitForEvent(10))
 		{
 		case 0:
 			process_mouse();
