@@ -178,7 +178,7 @@ void __declspec(noinline) kos_DrawBar( Word x, Word y, Word sizeX, Word sizeY, D
 // функция 17
 bool kos_GetButtonID( Dword &buttonID );
 // функция 23
-Dword kos_WaitForEvent( Dword timeOut );
+Dword kos_WaitForEventTimeout( Dword timeOut );
 //
 enum eNumberBase
 {

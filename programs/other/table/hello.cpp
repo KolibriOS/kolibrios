@@ -1423,7 +1423,7 @@ void kos_Main()
 	
 	for (;;)
 	{
-		switch (kos_WaitForEvent(10))
+		switch (kos_WaitForEventTimeout(10))
 		{
 		case 0:
 			process_mouse();

@@ -695,7 +695,7 @@ bool kos_GetButtonID( Dword &buttonID )
 
 
 // функция 23
-Dword kos_WaitForEvent( Dword timeOut )
+Dword kos_WaitForEventTimeout( Dword timeOut )
 {
 //	Dword result;
 
