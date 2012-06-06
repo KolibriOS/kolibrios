@@ -1,3 +1,11 @@
+//не идёт дальше 98 строки 
+//удалены неиспользуемые переменные
+//правильное сворачивание в заголовок
+
+//зачем строка 450?
+//если выделить область ячеек и сдвинуть курсор ввода с помощью клавиш, "следы" остануться
+//нельзя перемещаться по буквам в редактируемой строке
+
 #include "func.h"
 #include "parser.h"
 #include "calc.h"
@@ -1423,9 +1431,9 @@ void kos_Main()
 	
 	for (;;)
 	{
-		switch (kos_WaitForEventTimeout(10))
+		switch (kos_WaitForEvent())
 		{
-		case 0:
+		case 6:
 			process_mouse();
 			break;
 		case 1:
@@ -1438,9 +1446,6 @@ void kos_Main()
 		case 3:
 			process_button();
 			break;
-		//case 6:
-		//	draw_window();
-		//	break;
 		}
 	}
 }
