@@ -103,7 +103,7 @@ wait_for_event:
    
     call draw_mario
    
-    mov  eax,11                  ; check if os wants to say something
+    mov  eax,11              ; check for event
     int  0x40
     cmp  eax,1
     jz   red
@@ -124,7 +124,7 @@ wait_for_event:
   key:
    
     mov  [mariomem],dword 0x0
-   
+
     mov  eax,2   ; ah <- key
     int  0x40
    
@@ -160,16 +160,19 @@ wait_for_event:
     mov  [velocity],dword 0x110
   key4:
    
-   
-   
-    jmp  wait_for_event
+	mov eax,71					;draw caption
+	mov ebx,1
+	mov ecx,title
+	int 0x40
+	
+	jmp sta						;draw field
+	
+    ;jmp  wait_for_event
    
   button:
    
     mov  eax,0xffffffff          ; close this program
     int  0x40
-   
-    ; end of program
    
    
 load_graph:
@@ -529,7 +532,7 @@ mario_delay:
    
     pusha
    
-    mov  eax,5
+    mov  eax,5		;pause
     mov  ebx,2
     int  0x40
    
@@ -545,9 +548,9 @@ draw_mario:
     mov  eax,[mariomem]
     cmp  eax,[marioxy]
     jnz  dm1
-   
+	
     call mario_delay
-   
+
     popa
    
     ret
@@ -743,23 +746,8 @@ draw_window:
     mov       eax,0                     ; define and draw window
     mov       ebx,80*65536+480+1
     mov       ecx,20*65536+382
-    mov       edx,0x0000500f
-    mov       esi,0x8066AA88
-    mov       edi,0x00559977
-    int       0x40
-   
-    mov       eax,dword 0x00000004
-    mov       ebx,8*65536+8
-    mov       ecx,dword 0x00cccccc
-    mov       edx,text
-    mov       esi,textlen-text
-    int       0x40
-   
-    mov       eax,8
-    mov       ebx,(481-19)*65536+12     ; button start x & size
-    mov       ecx,5*65536+12            ; button start y & size
-    mov       edx,1                     ; button number
-    mov       esi,0x00229911            ; button color
+    mov       edx,0x5466AA88
+    mov       edi,title
     int       0x40
    
     mov       eax,12                    ; tell os about redraw end
@@ -773,15 +761,11 @@ draw_window:
    
 ; DATA SECTION
    
-   
 filename:
     db  'MARIOALLBMP'
    
-text:
-    db 'SUPER MARIO - USE ARROW KEYS'
-textlen:
-   
-xx  db 'x'
+title:
+    db 'SUPER MARIO - USE ARROW KEYS', 0
    
 field:
    
