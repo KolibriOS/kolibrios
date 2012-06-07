@@ -29,7 +29,7 @@ gskin			Aqwas
 Hearts			Rock_maniak_forever
 humanoid_OSX		Aqwas
 khrome2			ChE
-Leency (folder)		Leency
+Leency			Leency
 lightskin		Aqwas
 macos_l			Aqwas
 mage_scroll		Alver
