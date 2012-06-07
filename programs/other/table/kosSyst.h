@@ -80,6 +80,7 @@ struct RGB
 };
 
 
+#pragma pack(push, 1)
 union sProcessInfo
 {
 	Byte rawData[1024];
@@ -100,6 +101,7 @@ union sProcessInfo
 		Word slot_state;
 	} processInfo;
 };
+#pragma pack(pop)
 
 #ifndef AUTOBUILD
 //
