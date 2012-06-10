@@ -13,399 +13,75 @@ buf2d_bits equ byte[edi+20] ;количество бит в 1-й точке изображения
 vox_offs_tree_table equ 4
 vox_offs_data equ 12
 
-;description:
-; функция рисующая одиночный воксел
-;input:
-; buf_i - буфер в котором рисуется (24 бита)
-; buf_z - буфер глубины (32 бита по числу пикселей должен совпадать с buf_i)
-; buf_v - буфер с изображением вокселя (32 бита)
-; v_color - цвет
-align 4
-proc draw_vox, buf_i:dword, buf_z:dword, buf_v:dword,\
-coord_x:dword, coord_y:dword, coord_z:dword, v_color:dword
-pushad
-	mov eax,[coord_x]
-	mov ebx,[coord_y]
-	mov edi,[buf_v]
-	mov ecx,buf2d_h
-	mov esi,buf2d_w
-	imul ecx,esi
-	add esi,eax
-	mov edx,buf2d_data
-	cld
-	;ecx - count pixels in voxel
-	;edx - указатель на данные в воксельном буфере
-	;edi - указатель на воксельный буфер
-	;esi - width voxel buffer add coord x
-	.cycle:
-		cmp dword[edx],0
-		je @f
-			;проверяем буфер глубины
-			push eax
-			stdcall [buf2d_get_pixel], [buf_z],eax,ebx
-			sub eax,[coord_z]
-			cmp eax,[edx]
-			jl .dr_pixel
-				pop eax
-				jmp @f
-			.dr_pixel:
-				;рисуем точку
-				pop eax
-				stdcall [buf2d_set_pixel], [buf_i],eax,ebx,[v_color]
-				push ecx
-				mov ecx,[coord_z]
-				add ecx,[edx]
-				stdcall [buf2d_set_pixel], [buf_z],eax,ebx,ecx
-				pop ecx
-		@@:
-		add edx,4
-		inc eax
-		cmp eax,esi
-		jl @f
-			inc ebx
-			sub eax,buf2d_w
-		@@:
-		loop .cycle
-popad
-	ret
-endp
-
-;description:
-; функция рисующая воксельный объект
-;input:
-; buf_i - буфер в котором рисуется (24 бита)
-; buf_z - буфер глубины (32 бита по числу пикселей должен совпадать с buf_i)
-; h_br - кисть с изображениями вокселей (32 бита)
-; v_obj - воксельный объект
-; k_scale - коэф. для масштабирования изображения
-align 4
-proc buf2d_vox_obj_draw_3g, buf_i:dword, buf_z:dword, h_br:dword, v_obj:dword,\
-coord_x:dword, coord_y:dword, coord_z:dword, k_scale:dword
-pushad
-	mov edi,[v_obj]
-	mov eax,[k_scale]
-	mov ebx,[coord_x]
-
-;---
-	;тестовая рамка
-	mov ecx,[h_br]
-
-	movzx edx,byte[ecx]
-	movzx esi,byte[ecx+1]
-	cmp eax,1
-	jl .end_c0
-		mov ecx,eax
-		shl edx,cl
-		shl esi,cl
-	.end_c0:
-	stdcall [buf2d_rect_by_size], [buf_i], ebx,[coord_y],edx,esi, 0xd0d0d0
-;---
-
-	mov ecx,[coord_y]
-	mov edx,eax
-	add edi,vox_offs_data
-
-	mov esi,[coord_z]
-	stdcall vox_go_in_node, [buf_i], [buf_z], [h_br], [v_obj]
-
-popad
-	ret
-endp
-
-;description:
-; функция рисующая тени
-;input:
-; buf_i - буфер в котором рисуется (24 бита)
-; buf_z - буфер глубины (32 бита по числу пикселей должен совпадать с buf_i)
-; h_br - кисть с изображениями вокселей (32 бита)
-; k_scale - коэф. для масштабирования изображения
-align 4
-proc buf2d_vox_obj_draw_3g_shadows, buf_i:dword, buf_z:dword, h_br:dword, \
-coord_x:dword, coord_y:dword, color:dword, k_scale:dword, prop:dword
-locals
-	correct_z dd 0 ;коректировка для буфера глубины
-endl
-pushad
-	mov eax,[k_scale]
-	add eax,[prop]
-	mov dword[correct_z],8
-	sub [correct_z],eax
-	mov ebx,[coord_x]
-	;correct_z = 8-k_scale-prop
-
-	stdcall buf2d_vox_obj_get_img_w_3g, [h_br],[k_scale]
-	mov edx,eax ;edx - ширина изображения
-	stdcall buf2d_vox_obj_get_img_h_3g, [h_br],[k_scale]
-	mov esi,eax
-
-	mov edi,[coord_y]
-	mov ecx,edx
-	add edx,ebx ;ширина + отступ слева
-	imul ecx,esi
-	cld
-	.cycle_0:
-		stdcall [buf2d_get_pixel], [buf_z],ebx,edi
-		cmp eax,0
-		je @f
-			stdcall vox_correct_z, [correct_z]
-			push eax
-			stdcall [buf2d_get_pixel], [buf_i],ebx,edi
-			stdcall combine_colors_3,eax,[color] ;,eax
-			stdcall [buf2d_set_pixel], [buf_i],ebx,edi,eax
-		@@:
-		inc ebx
-		cmp ebx,edx
-		jl @f
-			mov ebx,[coord_x]
-			inc edi
-		@@:
-		loop .cycle_0
-
-popad
-	ret
-endp
-
 ;output:
-; eax - scaled coord z
+; eax - (event shl 30) + position
 align 4
-proc vox_correct_z uses ecx, correct_z:dword
-	mov ecx,[correct_z]
-	cmp ecx,0
-	je .end_f
-	jl .end_0
-		shl eax,cl
-		jmp .end_f
-	.end_0:
-		neg ecx
-		inc ecx
-		shr eax,cl
-	.end_f:
-	ret
-endp
+proc get_mouse_ev_scale uses ebx ecx edx, h_br:dword, coord_x:dword, coord_y:dword, scale_obj:dword, scale_img:dword
+	mov ecx,[scale_obj]
+	stdcall [buf2d_vox_obj_get_img_h_3g], [h_br],ecx
+	cmp eax,[coord_y]
+	jle .test_x
+	stdcall [buf2d_vox_obj_get_img_w_3g], [h_br],ecx
+	cmp eax,[coord_x]
+	jle .test_z
 
-;output:
-; eax - color
-align 4
-proc combine_colors_3 uses ebx ecx edx edi esi, col_0:dword, col_1:dword, alpha:dword
-
-	mov ebx,[col_0]
-	mov ecx,[col_1]
-	movzx di,byte[alpha] ;pro
-	mov si,0x00ff ;---get transparent---
-	sub si,di ;256-pro
-
-	;---blye---
-	movzx ax,bl
-	imul ax,si
-	movzx dx,cl
-	imul dx,di
-	add ax,dx
-	mov cl,ah
-	;---green---
-	movzx ax,bh
-	imul ax,si
-	movzx dx,ch
-	imul dx,di
-	add ax,dx
-	mov ch,ah
-	shr ebx,16
-	ror ecx,16
-	;---red---
-	movzx ax,bl
-	imul ax,si
-	movzx dx,cl
-	imul dx,di
-	add ax,dx
-
-	shl eax,8
-	ror ecx,16
-	mov ax,cx
-	and eax,0xffffff
-
-	ret
-endp
-
-;input:
-; h_br - кисть с изображениями вокселей (32 бита)
-; ebx - coord_x
-; ecx - coord_y
-; esi - coord_z
-; edx - уровень текушего узла
-; edi - указатель на данные воксельного объекта
-align 4
-proc vox_go_in_node, buf_i:dword, buf_z:dword, h_br:dword, v_obj:dword
-;, coord_z:dword
-	cmp byte[edi+3],0 ;смотрим есть ли поддеревья
-	je .sub_trees
-		;рекурсивный перебор поддеревьев
-		push eax ecx
-
-		;прорисовка рамки если размер узла = 1
-		cmp edx,0
-		jne .end_2
-			push eax
-				stdcall vox_get_sub_brush,[h_br],0 ;определяем кисть для рисования
-				cmp eax,0 ;если кисть не найдена
-				je @f
-					stdcall draw_vox, [buf_i], [buf_z], eax, ebx,ecx,esi, [edi]
-				@@:
-			pop eax
-		.end_2:
-
-		;вход внутрь узла
-		dec edx
-;---
-		push ebx
-			;mov eax,(7-4/2)
-			mov ebx,[h_br]
-			movzx eax,byte[ebx+1]
-			movzx ebx,byte[ebx+2]
-			shr ebx,1
-			sub eax,ebx
-		cmp edx,1
-		jl .end_c1
-		push ecx
-			mov ecx,edx
-			shl eax,cl
-			shl ebx,cl ;???
-		pop ecx
-		.end_c1:
-		add esi,ebx ;???
-		pop ebx
-		add ecx,eax ;коректировка высоты под воксель нижнего уровня
-;---
-		mov ah,byte[edi+3]
-		add edi,4
-		mov al,8
-		.cycle:
-			bt ax,8 ;тестируем только ah
-			jnc .c_next
-				push ebx ecx esi
-				stdcall vox_corect_coords, [h_br], [v_obj]
-				stdcall vox_go_in_node, [buf_i], [buf_z], [h_br], [v_obj]
-				pop esi ecx ebx
-			.c_next:
-			shr ah,1
-			dec al
-			jnz .cycle
-
-		;выход из узла
-		inc edx
-		pop ecx eax
-
-		jmp .end_f
-	.sub_trees:
-		;рисуем узел
-		push eax
-			stdcall vox_get_sub_brush,[h_br],edx ;определяем кисть для рисования
-			cmp eax,0 ;если кисть не найдена
-			je @f
-				stdcall draw_vox, [buf_i], [buf_z], eax, ebx,ecx,esi, [edi]
-			@@:
-		pop eax
-
-		add edi,4
-	.end_f:
-	ret
-endp
-
-;извлекаем из h_br указатель на буфер с изображением вокселя, указанного порядка n
-align 4
-proc vox_get_sub_brush uses ebx ecx, h_br:dword, n:dword
+	.no_change:
 	xor eax,eax
-	mov ebx,[n]
-	cmp ebx,0
-	jl @f
-	mov ecx,[h_br]
-	cmp bl,byte[ecx+3]
-	jg @f
-		add ecx,4
-		imul ebx,BUF_STRUCT_SIZE
-		mov eax,ebx
-		add eax,ecx
+	jmp .end_f
+
+	.test_x:
+	mov ebx,[h_br]
+	movzx ebx,byte[ebx+1]
+	add eax,ebx
+	cmp eax,[coord_y]
+	jl .no_change
+	stdcall [buf2d_vox_obj_get_img_w_3g], [h_br],ecx
+	cmp eax,[coord_x]
+	jl .no_change
+	mov ebx,eax
+	mov ecx,[scale_img]
+	inc ecx
+	shr ebx,cl
+	xor edx,edx
+	mov eax,[coord_x]
+	div ebx
+	dec ecx
+	xor ebx,ebx
+	inc ebx
+	shl ebx,cl
+	cmp eax,ebx
+	jge @f
+		or eax,1 shl 30
+		jmp .end_f
 	@@:
-	ret
-endp
+	sub eax,ebx
+	or eax,2 shl 30
+	jmp .end_f
 
-;функция для коректировки координат
-;направления осей координат в вокселе:
-;*z
-;|
-;+
-;  * y
-; /
-;+
-; \
-;  * x
-;input:
-;  al - номер узла в дереве (от 1 до 8)
-; ebx - координата x
-; ecx - координата y
-; esi - координата z
-; edx - уровень текушего узла
-;output:
-; ebx - новая координата x
-; ecx - новая координата y
-; esi - новая координата z
-align 4
-proc vox_corect_coords, h_br:dword, v_obj:dword
-locals
-	osn_w_2 dd ? ;ширина основания единичного вокселя : 2
-	vox_h dd ? ;высота единичного вокселя
-endl
-	cmp edx,0
-	jl .end_f ;для ускорения отрисовки
+	.test_z:
+	mov ebx,[h_br]
+	movzx ebx,byte[ebx]
+	add eax,ebx
+	cmp eax,[coord_x]
+	jl .no_change
+	mov ebx,[h_br]
+	movzx ebx,byte[ebx+1]
+	mov ecx,[scale_obj]
+	shl ebx,cl
+	mov ecx,[scale_img]
+	shr ebx,cl
+	mov eax,[coord_y]
+	xor edx,edx
+	div ebx
+	;инверсия координаты y
+	xor edx,edx
+	inc edx
+	shl edx,cl
+	dec edx
+	sub edx,eax
+	mov eax,edx
+	or eax,3 shl 30
 
-	push eax edi
-	and eax,15 ;выделяем номер узла в дереве
-	mov edi,[v_obj]
-	add edi,vox_offs_tree_table
-	add edi,8
-	sub edi,eax
-
-	push ebx ecx
-		mov ebx,[h_br]
-
-		movzx ecx,byte[ebx]
-		shr ecx,1
-		mov dword[osn_w_2],ecx
-
-		movzx ecx,byte[ebx+2]
-		movzx ebx,byte[ebx+1]
-		sub ebx,ecx
-		mov dword[vox_h],ebx
-		shr ecx,1
-		mov eax,ecx ;eax - высота основания единичного вокселя : 2
-	pop ecx ebx
-
-	cmp edx,1
-	jl .no_scale ;во избежание зацикливания
-	push ecx
-		mov ecx,edx
-		shl eax,cl
-		shl dword[osn_w_2],cl
-		shl dword[vox_h],cl
-	pop ecx
-	.no_scale:
-
-;	add esi,eax ;меняем глубину для буфера z (компенсация для координаты y)
-	bt word[edi],0 ;test voxel coord x
-	jnc @f
-		add ebx,[osn_w_2]
-		add ecx,eax
-		add esi,eax ;меняем глубину для буфера z
-	@@:
-	bt word[edi],1 ;test voxel coord y
-	jnc @f
-		add ebx,[osn_w_2]
-		sub ecx,eax
-		sub esi,eax ;меняем глубину для буфера z
-	@@:
-	bt word[edi],2 ;test voxel coord z
-	jnc @f
-		sub ecx,[vox_h]
-	@@:
-	pop edi eax
 	.end_f:
 	ret
 endp
@@ -460,245 +136,6 @@ proc vox_obj_rot_x uses eax ebx ecx, v_obj:dword
 	ret
 endp
 
-;рисование среза изображения
-; v_size - размер квадрата с вокселем
-; k_scale - степень детализации изображения
-; n_plane - номер плоскости сечния (в пределах от 0 до 2^k_scale - 1)
-; b_color - цвет границы
-align 4
-proc buf2d_vox_obj_draw_pl, buf_i:dword, v_obj:dword, coord_x:dword,\
-coord_y:dword, v_size:dword, k_scale:dword, n_plane:dword, b_color:dword
-	cmp [k_scale],0
-	jl .end_f
-pushad
-	mov eax,[v_size]
-	mov ecx,[k_scale]
-	mov ebx,eax
-	cmp ecx,1
-	jl @f
-		shl ebx,cl
-	@@:
-	;ebx - полный размер изображения
-	stdcall [buf2d_rect_by_size], [buf_i], [coord_x],[coord_y],ebx,ebx, [b_color] ;рамка на рисунок
-	add ebx,[coord_y]
-	mov edx,[n_plane]
-	imul edx,eax
-	add edx,[coord_x]
-	stdcall [buf2d_filled_rect_by_size], [buf_i], edx,ebx, eax,eax, [b_color] ;квадратик, показывающий номер сечения
-
-	;рисование точек для сетки
-	push ecx
-	mov edi,1
-	cmp ecx,1
-	jl @f
-		shl edi,cl
-	@@:
-	dec edi
-	cmp edi,1
-	jl .end_0
-	mov ecx,edi
-	imul ecx,edi
-	mov ebx,[coord_x]
-	mov edx,[coord_y]
-	add edx,eax
-	xor esi,esi
-	cld
-	@@:
-		add ebx,eax
-		inc esi
-		stdcall [buf2d_set_pixel], [buf_i], ebx,edx, [b_color]
-		cmp esi,edi
-		jl .end_1
-			;переход точек на новую строку
-			xor esi,esi
-			mov ebx,[coord_x]
-			add edx,eax
-		.end_1:
-		loop @b
-	.end_0:
-	pop ecx
-
-	;eax - размер одного квадрата
-	;edi - указатель рисуемые данные из объекта
-	mov ebx,[coord_x]
-	mov edx,[coord_y]
-	mov edi,[v_obj]
-	add edi,vox_offs_data
-	xor esi,esi
-	push eax
-	imul eax,[n_plane]
-	stdcall draw_sub_vox_obj_pl, [buf_i],[v_obj], eax
-popad
-	.end_f:
-	ret
-endp
-
-;input:
-; ebx - coord_x
-; edx - coord_y
-; esi - coord_z
-; ecx - уровень текушего узла
-; edi - указатель на данные воксельного объекта
-align 4
-proc draw_sub_vox_obj_pl, buf_i:dword, v_obj:dword, clip_z:dword,\
-v_size:dword
-	cmp byte[edi+3],0 ;смотрим есть ли поддеревья
-	je .sub_trees
-
-		;прорисовка рамки если размер узла = 1
-		cmp ecx,0
-		jne @f
-		;проверка глубины esi
-		;clip_z=n_plane*v_size
-		stdcall vox_is_clip, [clip_z],[v_size]
-		cmp eax,0
-		je @f
-			push ecx
-			mov ecx,dword[edi]
-			and ecx,0xffffff
-			stdcall [buf2d_rect_by_size], [buf_i], ebx,edx, [v_size],[v_size],ecx
-			pop ecx
-		@@:
-
-		;рекурсивный перебор поддеревьев
-		push edx
-
-		;вход внутрь узла
-		dec ecx
-;---
-		mov eax,[v_size]
-		cmp ecx,1
-		jl @f
-			shl eax,cl
-		@@:
-		add edx,eax ;коректировка высоты под воксель нижнего уровня
-;---
-		mov ah,byte[edi+3]
-		add edi,4
-		mov al,8
-		.cycle:
-			bt ax,8 ;тестируем только ah
-			jnc .c_next
-				push eax ebx edx esi
-				stdcall vox_corect_coords_pl, [v_obj],[v_size]
-				stdcall draw_sub_vox_obj_pl, [buf_i],[v_obj],[clip_z],[v_size]
-				pop esi edx ebx eax
-			.c_next:
-			shr ah,1
-			dec al
-			jnz .cycle
-
-		;выход из узла
-		inc ecx
-		pop edx
-
-		jmp .end_f
-	.sub_trees:
-		cmp ecx,0
-		jl .end_0 ;не рисуем очень маленькие воксели
-
-		;проверка глубины esi
-		;clip_z=n_plane*v_size
-		stdcall vox_is_clip, [clip_z],[v_size]
-		cmp eax,0
-		je .end_0
-
-		;рисуем узел
-		mov eax,[edi]
-		and eax,0xffffff
-		push eax ;цвет узла
-
-		mov eax,[v_size]
-		cmp ecx,1
-		jl @f
-			shl eax,cl ;размер узла
-		@@:
-
-		stdcall [buf2d_filled_rect_by_size], [buf_i], ebx,edx, eax,eax
-		.end_0:
-		add edi,4
-	.end_f:
-	ret
-endp
-
-;проверка глубины esi
-;input:
-; ecx - уровень текушего узла
-; esi - coord z
-; clip_z - n_plane*v_size
-;output:
-; eax - 0 if no draw, 1 if draw
-align 4
-proc vox_is_clip uses ebx edi, clip_z:dword, v_size:dword
-	xor eax,eax
-	mov ebx,[clip_z]
-	mov edi,[v_size]
-	cmp ecx,1
-	jl @f
-		shl edi,cl
-	@@:
-	;edi = 2^ecx
-	add edi,esi
-	cmp edi,ebx ;if (esi+2^ecx*v_size <= (n_plane*v_size)) no draw
-	jle @f
-	add ebx,[v_size]
-	cmp esi,ebx ;if (esi >= (n_plane+1)*v_size) no draw
-	jge @f
-		inc eax
-	@@:
-	ret
-endp
-
-;функция для коректировки координат
-;направления осей координат в вокселе:
-;*z
-;|
-;+-* x
-;input:
-;  al - номер узла в дереве (от 1 до 8)
-; ebx - координата x
-; edx - координата y
-; esi - координата z
-; ecx - уровень текушего узла
-;output:
-; ebx - новая координата x
-; edx - новая координата y
-; esi - новая координата z
-align 4
-proc vox_corect_coords_pl, v_obj:dword, v_size:dword
-	cmp ecx,0
-	jl .end_f ;для ускорения отрисовки
-
-	push eax edi
-	and eax,15 ;выделяем номер узла в дереве
-	mov edi,[v_obj]
-	add edi,vox_offs_tree_table
-	add edi,8
-	sub edi,eax
-
-	mov eax,[v_size] ;eax - высота основания единичного вокселя
-	cmp ecx,1
-	jl @f ;во избежание зацикливания
-		shl eax,cl
-	@@:
-
-	bt word[edi],0 ;test voxel coord x
-	jnc @f
-		add ebx,eax
-	@@:
-	bt word[edi],1 ;test voxel coord y
-	jnc @f
-		add esi,eax ;меняем глубину для буфера z
-	@@:
-	bt word[edi],2 ;test voxel coord z
-	jnc @f
-		sub edx,eax
-	@@:
-	pop edi eax
-	.end_f:
-	ret
-endp
-
 ;
 ;output:
 ; eax - число узлов в объекте v_obj
@@ -711,6 +148,7 @@ proc vox_obj_get_nodes uses edi, v_obj:dword
 	ret
 endp
 
+;???
 ;input:
 ; edi - указатель на данные воксельного объекта
 ;output:
@@ -755,114 +193,17 @@ proc buf2d_vox_obj_get_size, v_obj:dword
 	ret
 endp
 
-if 0
-;output:
-; eax - указатель на данные вокселя
-align 4
-proc buf2d_vox_obj_is_node uses ebx ecx edx edi esi, v_obj:dword,\
-coord_x:dword,coord_y:dword,coord_z:dword,k_scale:dword
-	mov edi,[v_obj]
-	add edi,vox_offs_data
-	mov esi,[k_scale]
-	xor eax,eax
-	xor edx,edx
-	stdcall vox_obj_rec1, [v_obj],[coord_x],[coord_y],[coord_z], 0,0,0
-	ret
-endp
-
-;input:
-; eax - ...
-; edx - ...
-; edi - указатель на данные воксельного объекта
-; esi - уровень искомого вокселя
-align 4
-proc vox_obj_rec1, v_obj:dword, coord_x:dword,coord_y:dword,coord_z, tc_x:dword,tc_y:dword,tc_z
-	cmp edx,esi 
-	jne @f
-		mov ebx,[tc_x]
-		cmp [coord_x],ebx
-		jne @f
-		mov ebx,[tc_y]
-		cmp [coord_y],ebx
-		jne @f
-		mov ebx,[tc_z]
-		cmp [coord_z],ebx
-		jne @f
-		mov eax,edi
-	@@:
-
-	cmp eax,0
-	jne .end_f ;если указатель уже найден
-
-	cmp byte[edi+3],0 ;смотрим есть ли поддеревья
-	je .sub_trees
-		inc edx
-		shl dword[tc_x],1
-		shl dword[tc_y],1
-		shl dword[tc_z],1
-		;рекурсивный перебор поддеревьев
-		
-		mov bh,byte[edi+3]
-		add edi,4
-		;mov bl,8
-		xor bl,bl
-		.cycle:
-			bt bx,8 ;тестируем только bh
-			jnc .c_next
-push dword[tc_x]
-push dword[tc_y]
-push dword[tc_z]
-				push edx
-				movzx edx,bl
-				add edx,[v_obj]
-				add edx,vox_offs_tree_table
-				bt word[edx],0 ;coord x
-				jnc .end_x
-					inc dword[tc_x]
-				.end_x:
-				bt word[edx],1 ;coord y
-				jnc .end_y
-					inc dword[tc_y]
-				.end_y:
-				bt word[edx],2 ;coord z
-				jnc .end_z
-					inc dword[tc_z]
-				.end_z:
-				pop edx
-				push ebx ecx
-				stdcall vox_obj_rec1, [v_obj],[coord_x],[coord_y],[coord_z], [tc_x],[tc_y],[tc_z]
-				pop ecx ebx
-pop dword[tc_z]
-pop dword[tc_y]
-pop dword[tc_x]
-			.c_next:
-			shr bh,1
-			inc bl
-			;jnz .cycle
-			cmp bl,8
-			jl .cycle
-		
-		dec edx
-		jmp .end_f
-	.sub_trees:
-		add edi,4
-	.end_f:
-	ret
-endp
-end if
-
 ; создание вокселя в 3 этапа:
 ; 1) ищем место в структуре дерева, куда надо вставить (если ветвь существует, 2-й этап пропускаем)
 ; 2) вставляем новую ветвь с вокселем (3-й этап уже не делаем)
 ; 3) меняем цвет вокселя
 align 4
 proc buf2d_vox_obj_create_node, v_obj:dword,coord_x:dword,coord_y:dword,\
-coord_z:dword,color:dword,k_scale:dword
+coord_z:dword,k_scale:dword,color:dword
 pushad
 locals
 	p_node dd 0 ;родительский узел
 endl
-;stdcall print_err, txt_f1, txt_b
 
 	mov edi,[v_obj]
 	add edi,vox_offs_data
@@ -875,15 +216,14 @@ endl
 	movzx bx,byte[edi+3]
 	mov [p_node],edi
 	add edi,4
-;stdcall print_err, txt_chi, txt_e
+
 	cmp eax,0
 	je .end_1
 	mov ecx,eax
 	cld
-	@@: ; цикл  для пропуска предыдущих поддеревьев в узле
+	@@: ;цикл для пропуска предыдущих поддеревьев в узле
 		bt bx,0 ;проверяем есть ли дочерние узлы
 		jnc .end_0
-;stdcall print_err, txt_st, txt_e
 			xor eax,eax
 			stdcall vox_obj_rec0 ;в eax вычисляется число дочерних узлов, в данной ветви
 		.end_0:
@@ -928,9 +268,9 @@ popad
 	ret
 endp
 
-; удаление вокселя в 3 этапа:
+; удаление вокселя в 2 этапа:
 ; 1) ищем место в структуре дерева, где есть удаляемый узел (если ветвь не существует, выходим из функции)
-; 2) вставляем новую ветвь с вокселем
+; 2) удаляем ветвь с вокселем
 align 4
 proc buf2d_vox_obj_delete_node, v_obj:dword,coord_x:dword,coord_y:dword,\
 coord_z:dword,k_scale:dword
@@ -953,7 +293,7 @@ endl
 	je .end_1
 	mov ecx,eax
 	cld
-	@@: ; цикл  для пропуска предыдущих поддеревьев в узле
+	@@: ;цикл для пропуска предыдущих поддеревьев в узле
 		bt bx,0 ;проверяем есть ли дочерние узлы
 		jnc .end_0
 			xor eax,eax
@@ -1025,6 +365,7 @@ proc vox_obj_del_nodes_mem uses eax ecx edi esi, v_obj:dword,p_insert:dword
 	ret
 endp
 
+;???
 ; определение позиции узла в дереве (от 0 до 7)
 align 4
 proc vox_obj_get_node_position uses ebx ecx edi, v_obj:dword,\
@@ -1109,32 +450,6 @@ coord_x:dword,coord_y:dword,coord_z:dword,k_scale:dword
 	ret
 endp
 
-align 4
-proc buf2d_vox_obj_get_img_w_3g uses ecx, h_br:dword,k_scale:dword
-	mov ecx,[h_br]
-
-	movzx eax,byte[ecx]
-	cmp dword[k_scale],1
-	jl .end_c0
-		mov ecx,[k_scale]
-		shl eax,cl
-	.end_c0:
-	ret
-endp
-
-align 4
-proc buf2d_vox_obj_get_img_h_3g uses ecx, h_br:dword,k_scale:dword
-	mov ecx,[h_br]
-
-	movzx eax,byte[ecx+1]
-	cmp dword[k_scale],1
-	jl .end_c0
-		mov ecx,[k_scale]
-		shl eax,cl
-	.end_c0:
-	ret
-endp
-
 ;функция для рисования палитры
 align 4
 proc buf2d_draw_palete, buf:dword, coord_x:dword, coord_y:dword,\
@@ -1210,40 +525,3 @@ proc get_palete_color uses ebx ecx edx edi, ind:dword, r:dword
 	ret
 endp
 
-
-if 0
-txt_f1 db 13,10,'f1',0
-txt_chi db ' chi',0
-txt_st db '  st',0
-
-txt_b db 'beg'
-txt_e db 13,10,0
-
-align 4
-proc print_err, fun:dword, mes:dword ;выводим сообщение об шибке на доску отладки
-	pushad
-	mov eax,63
-	mov ebx,1
-
-	mov esi,[fun]
-	@@:
-		mov cl,byte[esi]
-		int 0x40
-		inc esi
-		cmp byte[esi],0
-		jne @b
-	mov cl,':'
-	int 0x40
-	mov cl,' '
-	int 0x40
-	mov esi,[mes]
-	@@:
-		mov cl,byte[esi]
-		int 0x40
-		inc esi
-		cmp byte[esi],0
-		jne @b
-	popad
-	ret
-endp
-end if

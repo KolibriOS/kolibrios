@@ -449,6 +449,15 @@ proc ted_key, edit:dword, table:dword, control:dword
 		stdcall ted_text_add,edi,ecx,1,edx ;добавляем символ введенный с клавиатуры
 		cmp ted_key_new,13
 		jne .dr_m_win
+			;если вставили символ новой строки
+			mov ecx,ted_scr_w
+			inc dword[ecx+sb_offs_max_area] ;увеличиваем размер вертикального скроллинга
+			mov edx,ted_cur_y
+			cmp edx,dword[ecx+sb_offs_cur_area]
+			jl .no_change
+				dec ted_cur_y ;курсор оставляем на месте
+				inc dword[ecx+sb_offs_position] ;сдвигаем ползунок
+			.no_change:
 			stdcall ted_draw,edi
 			jmp .dr_cur_l
 		.dr_m_win:
