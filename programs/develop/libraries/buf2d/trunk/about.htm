@@ -49,9 +49,15 @@ table { font-size: 15px; }
 <h1>Оглавление</h1>
 <ul>
 <li>Вступление</li>
-<li><a href="#f_buf">Форматы буферов</a></li>
+<li><a href="#format_buf">Форматы буферов</a></li>
 <li><a href="#fun">Функции</a><br>
-<li><a href="#const">Константы</a><br>
+<ul>
+<li><a href="#f_init">lib_init</a></li>
+<li><a href="#f_b_create">buf2d_create</a></li>
+<li><a href="#f_v_brush_c">buf2d_vox_brush_create</a></li>
+</ul>
+</li>
+<li><a href="#const">Константы</a></li>
 <li><a href="#tabl_e">Таблица экспорта</a></li>
 <li><a href="#hist">История</a></li>
 </ul>
@@ -60,11 +66,13 @@ table { font-size: 15px; }
 <p>Документация к свободной библиотеке <b>buf2d.asm</b>, для <b>ОС Колибри</b>.
  Эта библиотека создана для работы с 2d изображениями.
  С ее помощью можно создавать буфера с изображениями в памяти, и при необходимости выводить их на экран.
- Изображения можно накладывать одно на другое, поддерживается работа с прозрачными изображениями, есть функция рисования лини пока на этом все.</p>
+ Изображения можно накладывать одно на другое, поддерживается работа с прозрачными изображениями.
+ Есть функции рисования линий, кривых Безье, прямоугольников, окружностей.
+ Также есть функции для рисований воксельной графики.</p>
 
-<p>Последнее обновление библиотеки 11.05.12.</p>
+<p>Последнее обновление библиотеки 12.06.12.</p>
 
-<h1><a name="f_buf">Форматы буферов</a></h1>
+<h1><a name="format_buf">Форматы буферов</a></h1>
 <p>Поддерживается 3 формата буферов.
  Каждая функция при работе с буферами может быть расчитана на работу с определенными форматами изображений.</p>
 
@@ -90,11 +98,14 @@ buf_0:
 	dd 0x80 ;+16 фоновый цвет
 	db   24 ;+20 бит на пиксель</pre>
 
-<h4>lib_init</h4>
+<h4><a name="f_init">lib_init</a></h4>
 <p>Эта функция получает указатели на функции работы с памятью, вызыватся должна при загрузке библиотеки. Можете использовать макрос <b>@use_library_mem</b>, для ее автоматической настройки.</p>
 
-<h4>buf2d_create</h4>
-<p>Создает буфер и чистит его фоновым цветом.</p>
+<h4><a name="f_b_create">buf2d_create</a></h4>
+<p>Создает буфер и чистит его фоновым цветом. Пример:</p>
+<pre>stdcall [buf2d_create], buf_0</pre>
+<p>где buf_0 - структура буфера.</p>
+<p>Параметры для создания буфера берутся из структуры.</p>
 
 <h4>buf2d_create_f_img</h4>
 <p>Создает буфер на основе изображения в формате <b>rgb</b>.</p>
@@ -229,6 +240,33 @@ stdcall [buf2d_convert_text_matrix], buf_1</pre>
 <p>100,150 - координаты точки;</p>
 <p>eax - цвет точки (для 8 и 24 битных буферов не используемые старшие биты в eax равны 0) или значение -1 в случае ошибки.</p>
 
+<h4><a name="f_v_brush_c">buf2d_vox_brush_create</a></h4>
+<p>Создание воксельной кисти.</p>
+
+<h4>buf2d_vox_brush_delete</h4>
+<p>Удаление воксельной кисти.</p>
+
+<h4>buf2d_vox_obj_get_img_w_3g</h4>
+<p>Возврашает ширину воксельного изображения с 3-мя гранями (которое рисуется функцией <b>buf2d_vox_obj_draw_3g</b>), принимает указатель на кисть и масштаб.</p>
+
+<h4>buf2d_vox_obj_get_img_h_3g</h4>
+<p>Возврашает высоту воксельного изображения с 3-мя гранями (которое рисуется функцией <b>buf2d_vox_obj_draw_3g</b>), принимает указатель на кисть и масштаб.</p>
+
+<h4>buf2d_vox_obj_draw_3g</h4>
+<p>Рисование воксельного объекта с 3-мя гранями.</p>
+
+<h4>buf2d_vox_obj_draw_3g_scaled</h4>
+<p>Рисование части воксельного объекта.</p>
+
+<h4>buf2d_vox_obj_draw_3g_shadows</h4>
+<p>Функция рисующая тени для изображений нарисованных с помощью функции <b>buf2d_vox_obj_draw_3g</b> или <b>buf2d_vox_obj_draw_3g_scaled</b>.</p>
+
+<h4>buf2d_vox_obj_draw_pl</h4>
+<p>Функция рисующая срез воксельного обьекта.</p>
+
+<h4>buf2d_vox_obj_draw_pl_scaled</h4>
+<p>Функция рисующая срез части воксельного обьекта.</p>
+
 <h1><a name="const">Константы</a></h1>
 <h4>BUF2D_OPT_CROP_TOP equ 1</h4>
 <p>Константа для функции buf2d_crop_color, обозначает обрезку буфера сверху</p>
@@ -271,6 +309,17 @@ import_buf2d_lib:
 	buf2d_set_pixel dd sz_buf2d_set_pixel
 	buf2d_get_pixel dd sz_buf2d_get_pixel
 
+	;воксельные функции:
+	buf2d_vox_brush_create dd sz_buf2d_vox_brush_create
+	buf2d_vox_brush_delete dd sz_buf2d_vox_brush_delete
+	buf2d_vox_obj_get_img_w_3g dd sz_buf2d_vox_obj_get_img_w_3g
+	buf2d_vox_obj_get_img_h_3g dd sz_buf2d_vox_obj_get_img_h_3g
+	buf2d_vox_obj_draw_3g dd sz_buf2d_vox_obj_draw_3g
+	buf2d_vox_obj_draw_3g_scaled dd sz_buf2d_vox_obj_draw_3g_scaled
+	buf2d_vox_obj_draw_3g_shadows dd sz_buf2d_vox_obj_draw_3g_shadows
+	buf2d_vox_obj_draw_pl dd sz_buf2d_vox_obj_draw_pl
+	buf2d_vox_obj_draw_pl_scaled dd sz_buf2d_vox_obj_draw_pl_scaled
+
 	dd 0,0
 	sz_lib_init db 'lib_init',0
 	sz_buf2d_create db 'buf2d_create',0
@@ -298,7 +347,18 @@ import_buf2d_lib:
 	sz_buf2d_offset_h db 'buf2d_offset_h',0
 	sz_buf2d_flood_fill db 'buf2d_flood_fill',0
 	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
-	sz_buf2d_get_pixel db 'buf2d_get_pixel',0</pre>
+	sz_buf2d_get_pixel db 'buf2d_get_pixel',0
+
+	;воксельные функции:
+	sz_buf2d_vox_brush_create db 'buf2d_vox_brush_create',0
+	sz_buf2d_vox_brush_delete db 'buf2d_vox_brush_delete',0
+	sz_buf2d_vox_obj_get_img_w_3g db 'buf2d_vox_obj_get_img_w_3g',0
+	sz_buf2d_vox_obj_get_img_h_3g db 'buf2d_vox_obj_get_img_h_3g',0
+	sz_buf2d_vox_obj_draw_3g db 'buf2d_vox_obj_draw_3g',0
+	sz_buf2d_vox_obj_draw_3g_scaled db 'buf2d_vox_obj_draw_3g_scaled',0
+	sz_buf2d_vox_obj_draw_3g_shadows db 'buf2d_vox_obj_draw_3g_shadows',0
+	sz_buf2d_vox_obj_draw_pl db 'buf2d_vox_obj_draw_pl',0
+	sz_buf2d_vox_obj_draw_pl_scaled db 'buf2d_vox_obj_draw_pl_scaled',0</pre>
 
 <h1><a name="hist">История</a></h1>
 <p>02.07.10 - самая первая версия библиотеки, 2 примера использования.</p>
@@ -321,5 +381,6 @@ import_buf2d_lib:
 <p>20.02.12 - функции buf2d_filled_rect_by_size и buf2d_rect_by_size могут принимать отрицательные размеры для прямоугольников, в функции buf2d_line горизонтальная линия рисуется на 1 пиксель длинее (раньше не дорисовывало), некоторые функции могут рисовать в 8 битных буферах.</p>
 <p>23.02.12 - функция buf2d_bit_blt_alpha может принимать отрицательные координаты в позиции копируемого буфера, небольшие доработки в buf2d_bit_blt_transp</p>
 <p>11.05.12 - добавлена функция для взятия цвета точки buf2d_get_pixel, доработки в buf2d_set_pixel.</p>
+<p>12.06.12 - добавлены функции для рисования воксельной графики.</p>
 </body>
 </html>

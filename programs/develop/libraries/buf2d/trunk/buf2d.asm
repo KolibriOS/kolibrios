@@ -2912,13 +2912,13 @@ endp
 align 4
 proc vox_add, buf_v1:dword, buf_v2:dword, coord_x:dword, coord_y:dword, coord_z:dword
 pushad
-	mov eax,[coord_x]
-	mov ebx,[coord_y]
+	mov ebx,[coord_x]
+	mov eax,[coord_y]
 	mov edi,[buf_v2]
 	mov ecx,buf2d_h
 	mov esi,buf2d_w
 	imul ecx,esi
-	add esi,eax
+	add esi,ebx
 	mov edx,buf2d_data
 	cld
 	;ecx - count pixels in voxel
@@ -2929,23 +2929,24 @@ pushad
 		cmp dword[edx],0
 		je @f
 			;проверяем буфер глубины
-			push eax ecx esi
+			push eax ecx edi esi
 			mov ecx,eax
-			stdcall buf_get_pixel, [buf_v1],ecx,ebx
+			mov edi,[buf_v1]
+			call get_pixel_32 ;stdcall buf_get_pixel, [buf_v1],ebx,ecx
 			mov esi,[edx]
 			add esi,[coord_z]
 			cmp eax,esi
 			jge .end_draw
-			stdcall buf_set_pixel, [buf_v1],ecx,ebx,esi ;esi = new coord z
+			stdcall buf_set_pixel, [buf_v1],ebx,ecx,esi ;esi = new coord z
 			.end_draw:
-			pop esi ecx eax
+			pop esi edi ecx eax
 		@@:
 		add edx,4
-		inc eax
-		cmp eax,esi
+		inc ebx
+		cmp ebx,esi
 		jl @f
-			inc ebx
-			sub eax,buf2d_w
+			inc eax
+			sub ebx,buf2d_w
 		@@:
 		loop .cycle
 popad

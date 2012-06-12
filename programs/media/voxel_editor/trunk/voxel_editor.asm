@@ -9,15 +9,15 @@ use32
 	dd 0
 	dd sys_path
 
-include 'd:/kolibri/svn/programs/macros.inc'
-include 'd:/kolibri/svn/programs/proc32.inc'
-include 'd:/kolibri/svn/programs/develop/libraries/box_lib/load_lib.mac'
+include '../../../../programs/macros.inc'
+include '../../../../programs/proc32.inc'
+include '../../../../programs/develop/libraries/box_lib/load_lib.mac'
 include 'mem.inc'
 include 'dll.inc'
 include 'vox_draw.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel editor 11.06.12',0 ;подпись окна
+caption db 'Voxel editor 12.06.12',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -302,12 +302,7 @@ pushad
 	jg .end_f
 		stdcall [buf2d_get_pixel], edi,ebx,eax
 		mov [v_color],eax
-		;stdcall [buf2d_filled_rect_by_size], buf_0, 5,3, 8,8,eax
-		;stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
-		mov ebx,((OT_CAPT_X_COLOR+35) shl 16)+16 ;по оси x
-		mov ecx,(OT_CAPT_Y_COLOR shl 16)+12 ;по оси y
-		mov edx,[v_color]
-		mcall 13
+		call on_change_color ;отображаем изменения цвета
 	.end_f:
 popad
 	ret
@@ -472,24 +467,21 @@ draw_pok:
 
 	mov eax,47
 	mov ecx,[v_zoom]
-	mov ebx,(2 shl 16)
+	mov ebx,(3 shl 16)+(1 shl 31)
 	mov edx,((365+6*9) shl 16)+5
 	mov esi,[sc.work_button_text]
 	or  esi,(1 shl 30)
 	mov edi,[sc.work_button]
 	int 0x40 ;масштаб
-	mov ebx,(5 shl 16)
 	mov ecx,[v_cur_x]
 	add edx,(6*2)*65536+9
 	int 0x40 ;
-	mov ebx,(5 shl 16)
 	mov ecx,[v_cur_y]
 	add edx,(6*0)*65536+9
 	int 0x40 ;
-	mov ebx,(5 shl 16)
 	mov ecx,[n_plane]
 	add edx,(6*0)*65536+9
-	int 0x40 ;
+	int 0x40 ;номер сечения
 
 	mov eax,4 ;рисование текста
 	mov ebx,(OT_CAPT_X_COLOR shl 16)+OT_CAPT_Y_COLOR+2
@@ -498,10 +490,25 @@ draw_pok:
 	mov edx,txt_color
 	int 0x40
 
+	call on_change_color
+	ret
+
+align 4
+on_change_color:
+pushad
 	mov ebx,((OT_CAPT_X_COLOR+35) shl 16)+16 ;по оси x
 	mov ecx,(OT_CAPT_Y_COLOR shl 16)+12 ;по оси y
 	mov edx,[v_color]
 	mcall 13
+
+	mov ebx,(1 shl 8)+(6 shl 16)
+	mov ecx,edx
+	mov edx,((OT_CAPT_X_COLOR+55) shl 16)+OT_CAPT_Y_COLOR+2
+	mov esi,[sc.work_text]
+	add esi,(1 shl 30)
+	mov edi,[sc.work]
+	mcall 47
+popad
 	ret
 
 align 4
@@ -529,11 +536,11 @@ button:
 	@@:
 	cmp ah,6
 	jne @f
-		call but_1
+		call but_zoom_p
 	@@:
 	cmp ah,7
 	jne @f
-		call but_2
+		call but_zoom_m
 	@@:
 	cmp ah,8
 	jne @f
@@ -639,6 +646,9 @@ but_open_file:
 	movzx eax,byte[eax]
 	and eax,0xff ;берем масштаб по умолчанию
 	mov dword[v_zoom],eax ;берем масштаб по умолчанию
+	mov dword[cam_x],0
+	mov dword[cam_y],0
+	mov dword[cam_z],0
 	call draw_objects
 	.end_open_file:
 	popad
@@ -679,7 +689,7 @@ but_save_file:
 
 ;увеличение масштаба
 align 4
-but_1:
+but_zoom_p:
 	cmp dword[v_zoom],10 ;максимальный размер, до которого можно увеличить 2^10=1024
 	jge @f
 		inc dword[v_zoom]
@@ -688,9 +698,21 @@ but_1:
 		mov eax,[v_zoom]
 		cmp eax,[scaled_zoom]
 		jl .end_0
+			push ecx
+			mov ecx,[scaled_zoom]
+			xor eax,eax
+			inc eax
+			shl eax,cl
 			shl dword[cam_x],1
 			shl dword[cam_y],1
 			shl dword[cam_z],1
+			cmp eax,[n_plane]
+			jg .end_1
+				;коректировка ползунка
+				sub [n_plane],eax
+				inc dword[cam_y]
+			.end_1:
+			pop ecx
 		.end_0:
 		pop eax
 		call draw_objects
@@ -700,8 +722,8 @@ but_1:
 
 ;уменьшение масштаба
 align 4
-but_2:
-	cmp dword[v_zoom],-1
+but_zoom_m:
+	cmp dword[v_zoom],1
 	jl @f
 		dec dword[v_zoom]
 		shr dword[n_plane],1
@@ -711,6 +733,17 @@ but_2:
 		jl .end_0
 			shr dword[cam_x],1
 			shr dword[cam_y],1
+			jnc .end_1
+				;коректировка ползунка
+				push ecx
+				mov ecx,[scaled_zoom]
+				dec ecx
+				xor eax,eax
+				inc eax
+				shl eax,cl
+				add [n_plane],eax
+				pop ecx
+			.end_1:
 			shr dword[cam_z],1
 		.end_0:
 		pop eax
@@ -731,21 +764,83 @@ but_4:
 	call draw_objects
 	ret
 
+;сдвигаем плоскость среза
 align 4
 but_5:
+push eax ecx
 	inc dword[n_plane]
+	mov eax,[v_zoom]
+	cmp eax,[scaled_zoom]
+	jle .end_0
+		;происходит масштабирование
+		mov ecx,[scaled_zoom]
+		xor eax,eax
+		inc eax
+		shl eax,cl
+		cmp eax,[n_plane]
+		jg @f
+			mov dword[n_plane],0
+			inc dword[cam_y] ;переходим в соседний куб
+			neg ecx
+			;inc ecx
+			add ecx,[v_zoom]
+			xor eax,eax
+			inc eax
+			shl eax,cl
+			cmp eax,[cam_y]
+			jg @f
+				mov dword[cam_y],0 ;зацикливаем если вылезли за пределы последнего куба
+		@@:
+		jmp .end_1
+	.end_0:
+		;масштабирование не происходит
+		mov ecx,eax
+		xor eax,eax
+		inc eax
+		shl eax,cl
+		cmp eax,[n_plane]
+		jg .end_1
+			mov dword[n_plane],0
+	.end_1:
 	call draw_objects
 	call draw_pok
+pop ecx eax
 	ret
 
+;сдвигаем плоскость среза
 align 4
 but_6:
+	dec dword[n_plane]
 	cmp dword[n_plane],0
-	jle @f
-		dec dword[n_plane]
-		call draw_objects
-		call draw_pok
-	@@:
+	jge .end_f
+push eax ecx
+	mov ecx,[scaled_zoom]
+	xor eax,eax
+	inc eax
+	shl eax,cl
+	dec eax
+	mov dword[n_plane],eax
+
+	mov eax,[v_zoom]
+	cmp eax,[scaled_zoom]
+	jle .end_0
+		;происходит масштабирование
+		dec dword[cam_y] ;переходим в соседний куб
+		cmp dword[cam_y],0
+		jge .end_0
+
+		mov ecx,eax
+		sub ecx,[scaled_zoom]
+		xor eax,eax
+		inc eax
+		shl eax,cl
+		dec eax
+		mov dword[cam_y],eax ;если номер куба оказался меньше 0 исправляем на максимальное значение
+	.end_0:
+pop ecx eax
+	.end_f:
+	call draw_objects
+	call draw_pok
 	ret
 
 align 4
@@ -922,8 +1017,10 @@ draw_objects:
 	cmp eax,[scaled_zoom]
 	jg @f
 		;обычный режим изображения
-		stdcall [buf2d_vox_obj_draw_3g], buf_0, buf_0z, buf_vox, [open_file_vox], ebx,ecx, 0, eax
-		stdcall [buf2d_vox_obj_draw_pl], buf_pl, [open_file_vox], OT_MAP_X,OT_MAP_Y,TILE_SIZE, [v_zoom], [n_plane], 0xd0d0d0
+		stdcall [buf2d_vox_obj_draw_3g], buf_0, buf_0z, buf_vox,\
+			[open_file_vox], ebx,ecx, 0, eax
+		stdcall [buf2d_vox_obj_draw_pl], buf_pl, [open_file_vox],\
+			OT_MAP_X,OT_MAP_Y,TILE_SIZE, [v_zoom], [n_plane], [sc.work_graph]
 		bt dword[mode_light],0
 		jnc .end_1
 			stdcall [buf2d_vox_obj_draw_3g_shadows], buf_0, buf_0z, buf_vox, ebx,ecx, 0, eax, 3
@@ -1179,9 +1276,10 @@ import_buf2d:
 	buf2d_vox_obj_get_img_h_3g dd sz_buf2d_vox_obj_get_img_h_3g
 	buf2d_vox_obj_draw_3g dd sz_buf2d_vox_obj_draw_3g
 	buf2d_vox_obj_draw_3g_scaled dd sz_buf2d_vox_obj_draw_3g_scaled
+	buf2d_vox_obj_draw_3g_shadows dd sz_buf2d_vox_obj_draw_3g_shadows
 	buf2d_vox_obj_draw_pl dd sz_buf2d_vox_obj_draw_pl
 	buf2d_vox_obj_draw_pl_scaled dd sz_buf2d_vox_obj_draw_pl_scaled
-	buf2d_vox_obj_draw_3g_shadows dd sz_buf2d_vox_obj_draw_3g_shadows
+
 	dd 0,0
 	sz_init db 'lib_init',0
 	sz_buf2d_create db 'buf2d_create',0
@@ -1214,9 +1312,9 @@ import_buf2d:
 	sz_buf2d_vox_obj_get_img_h_3g db 'buf2d_vox_obj_get_img_h_3g',0
 	sz_buf2d_vox_obj_draw_3g db 'buf2d_vox_obj_draw_3g',0
 	sz_buf2d_vox_obj_draw_3g_scaled db 'buf2d_vox_obj_draw_3g_scaled',0
+	sz_buf2d_vox_obj_draw_3g_shadows db 'buf2d_vox_obj_draw_3g_shadows',0
 	sz_buf2d_vox_obj_draw_pl db 'buf2d_vox_obj_draw_pl',0
 	sz_buf2d_vox_obj_draw_pl_scaled db 'buf2d_vox_obj_draw_pl_scaled',0
-	sz_buf2d_vox_obj_draw_3g_shadows db 'buf2d_vox_obj_draw_3g_shadows',0
 
 mouse_dd dd 0x0
 sc system_colors 
