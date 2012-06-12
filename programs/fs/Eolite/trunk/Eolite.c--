@@ -55,7 +55,7 @@ char Item[4096];
 
 path_string disk_list[20];
 
-dword stak[100]; //окно About 
+dword stack[100]; //окно About 
 
 edit_box edit1= {250,247,13,0xffffff,0x94AECE,0xD3DDEB,0xffffff,0,248,#edit_path,#mouse_dd,64,6,6};
 edit_box edit2= {250,213,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_name,#mouse_dd,64,6,6};
@@ -191,7 +191,7 @@ int pressed_y;
 							Open_Dir(#path,1);
 							break; 
 					case 30: //about
-							CreateThread(#about_dialog,#stak); 
+							CreateThread(#about_dialog,#stack); 
 							break;
 					case 77:
 							IF (show_actions==1) show_actions=0; ELSE show_actions=1;
