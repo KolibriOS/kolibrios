@@ -63,7 +63,6 @@ void main()
 	{
 		WaitEventTimeout(1);
 		switch(EAX & 0xFF)
-		//switch(WaitEvent())
 		{
 			CASE evMouse:
 				edit_box_mouse stdcall (#edit1);
@@ -147,7 +146,7 @@ void Draw_Window()
 	DefineAndDrawWindow(215,100,640,480,0x73,0x00E4DFE1,0,0,0);
 	
 	GetProcessInfo(#Form, SelfInfo);
-	IF (Form.status_window==4) //если свернуто в заголовок, ничего не рисуем
+	IF (Form.status_window>2) //если свернуто в заголовок, ничего не рисуем
 	{
 		DrawTitle(#header);
 		return;

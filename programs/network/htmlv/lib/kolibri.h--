@@ -163,6 +163,14 @@ int GetProcessSlot(ECX) //ECX = process ID
 	$int 0x40;	
 }
 
+inline fastcall int ActiveProcess()
+{
+	EAX = 18;
+	EBX = 7;
+	$int 0x40
+}
+
+
 inline fastcall ExitProcess(){
  EAX = -1;              // close this program
  $int 0x40

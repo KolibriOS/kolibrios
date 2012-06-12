@@ -13,7 +13,7 @@ dword j,
 char download_path[]="/rd/1/.download";
 //char search_path[]="http://nova.rambler.ru/search?words=";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.9";
+char version[]=" Text-based Browser 0.9b";
 
 
 struct TWebBrowser {
@@ -69,12 +69,10 @@ void TWebBrowser::Scan(dword id) {
 			ShowPage(#URL);
 			return;
 		}
-		
 		URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка, лучше, чем ничего (хабр, например, будет работать)  //это не совсем правильно - в едитурл должно оставаться
 
 		GetNewUrl();
 
-		//полоса, белая рисуется снизу
 		if (!strcmp(#URL + strlen(#URL) - 4, ".gif")) || (!strcmp(#URL + strlen(#URL) - 4, ".png")) || (!strcmp(#URL + strlen(#URL) - 4, ".jpg"))
 		{
 			RunProgram("/sys/media/kiv", #URL);
@@ -82,12 +80,7 @@ void TWebBrowser::Scan(dword id) {
 			return;
 		}
 
-		copystr(#URL, #editURL);
-		za_kadrom = count = 0;
-		
-		if (!strcmp(get_URL_part(5),"http:")) HttpLoad();
-		
-		ShowPage(#URL);
+		OpenPage();
 		return;
 	}
 	
