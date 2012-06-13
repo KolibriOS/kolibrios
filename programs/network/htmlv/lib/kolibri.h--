@@ -81,25 +81,30 @@ void system_colors::get()
 //------------------------------------------------------------------------------
 
 inline fastcall dword WaitEvent(){
- EAX = 10;
- $int 0x40
+	$mov eax,10
+	$int 0x40
+}
+
+inline fastcall dword CheckEvent(){
+	$mov eax,11
+	$int 0x40
 }
 
 inline fastcall dword WaitEventTimeout(dword EBX){
- EAX = 23;
- $int 0x40
+	$mov eax,23
+	$int 0x40
 } 
  
 inline fastcall SetEventMask(dword EBX)
 {
- EAX = 40;
- $int 0x40
+	$mov eax,40
+	$int 0x40
 }
 
 inline fastcall ScancodesGeting(){
-	$mov eax,66;
-	$mov ebx,1;
-	$mov ecx,1; //сканкоды
+	$mov eax,66
+	$mov ebx,1
+	$mov ecx,1 //сканкоды
 	$int 0x40
 }
 
@@ -118,7 +123,7 @@ inline fastcall word GetKey(){ //Gluk fix
 		$jmp getkey
 @getkeyii:
 		$pop edx
-		EAX = EAX >> 8;		 
+		$shr eax,8
 }
 
 
@@ -131,9 +136,9 @@ inline fastcall Pause(dword EBX)
 //==================================================================
 
 inline fastcall word GetButtonID(){
- EAX = 17;
- $int  0x40
- EAX = EAX >> 8;
+	$mov eax,17
+	$int  0x40
+	$shr eax,8
 }
 
 struct proc_info{
@@ -152,7 +157,7 @@ struct proc_info{
 
 void GetProcessInfo(dword EBX, ECX)
 {
-	EAX = 9;
+	$mov eax,9;
 	$int  0x40
 }
 
@@ -172,8 +177,8 @@ inline fastcall int ActiveProcess()
 
 
 inline fastcall ExitProcess(){
- EAX = -1;              // close this program
- $int 0x40
+	$mov eax,-1;
+	$int 0x40
 }
 
 inline fastcall KillProcess(dword ECX){
