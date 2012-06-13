@@ -1,6 +1,3 @@
-//идея - левые файлы открывать соответствующими прогами
-//ol - циферки
-
 
 int	downloader_id;
 
@@ -11,9 +8,8 @@ dword j,
  int i;
 
 char download_path[]="/rd/1/.download";
-//char search_path[]="http://nova.rambler.ru/search?words=";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.9b";
+char version[]=" Text-based Browser 0.92";
 
 
 struct TWebBrowser {
@@ -56,23 +52,18 @@ void TWebBrowser::Scan(dword id) {
 	if (id > 399)
 	{
 		GetURLfromPageLinks(id);
-		
 		//эту всю хрень нужно в GetNewUrl() переместить
-		IF (URL[0] == '#') {  //мы не умеем переходить по ссылке внутри документа. Пока что...
+		if (URL[0] == '#') {  //мы не умеем переходить по ссылке внутри документа. Пока что...
 			copystr(BrowserHistory.CurrentUrl(), #editURL);
 			copystr(#URL, #editURL + strlen(#editURL));
-			
-			//edit1.size = edit1.pos = strlen(#editURL);
-			//edit_box_draw stdcall(#edit1); //рисуем строку адреса
-			
 			copystr(BrowserHistory.CurrentUrl(), #URL);
 			ShowPage(#URL);
 			return;
 		}
-		URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка, лучше, чем ничего (хабр, например, будет работать)  //это не совсем правильно - в едитурл должно оставаться
+		URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка, но это не совсем правильно - в едитурл должно оставаться
 
 		GetNewUrl();
-
+		
 		if (!strcmp(#URL + strlen(#URL) - 4, ".gif")) || (!strcmp(#URL + strlen(#URL) - 4, ".png")) || (!strcmp(#URL + strlen(#URL) - 4, ".jpg"))
 		{
 			RunProgram("/sys/media/kiv", #URL);
@@ -116,9 +107,7 @@ void TWebBrowser::Scan(dword id) {
 				Draw_Window();
 				return;
 			}
-			copystr(#URL, #editURL);
-			if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
-			ShowPage(#URL);
+			OpenPage(); //от сердца отрываю, здесь нужно za_kadrom старое
 			return;
 		case 014: //Ctrl+N новое окно
 		case 020: //Ctrl+T новая вкладка
@@ -177,15 +166,7 @@ void TWebBrowser::Scan(dword id) {
 	ParseHTML(buf, filesize);
 }
 
-void OpenPage()
-{
-	if (GetProcessSlot(downloader_id)<>0) PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
-	KillProcess(downloader_id);
-	copystr(#URL, #editURL);
-	za_kadrom = count = 0;
-	if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
-	WB1.ShowPage(#URL);
-}
+
 
 void GetNewUrl(){
 	IF (!strcmp(get_URL_part(2),"./")) copystr(#URL+2,#URL); //игнорим :)
@@ -216,23 +197,6 @@ void GetNewUrl(){
 }
 
 
-void HttpLoad()
-{	
-	//count = 0; я думаю ему место здесь
-	copystr(#version, #header);
-	KillProcess(downloader_id); //убиваем старый процесс
-	DeleteFile(#download_path);
-	IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
-	downloader_id = RunProgram("/sys/network/downloader", #URL);
-	//это гениально и это пиздец!!!
-	Pause(60);
-	KillProcess(downloader_id); //убиваем старый процесс
-	downloader_id = RunProgram("/sys/network/downloader", #URL);
-	//
-	IF (downloader_id<0) RunProgram("@notify", "Error running Downloader. Internet unavilable.");
-	Draw_Window();
-}
-
 	
 void ReadHtml()
 {
@@ -242,7 +206,8 @@ void ReadHtml()
 		file_size stdcall (#URL);
 	
 	filesize = EBX;
-	if (!filesize) /*{Pause(200); ReadHtml();}*/ return;
+	if (!filesize) return;
+	
 	mem_Free(buf);
 	buf = mem_Alloc(filesize);
 	if (!strcmp(get_URL_part(5),"http:"))) 
@@ -252,18 +217,44 @@ void ReadHtml()
 }
 
 
+void OpenPage()
+{
+	if (GetProcessSlot(downloader_id)<>0) PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
+	KillProcess(downloader_id);
+	copystr(#URL, #editURL);
+	BrowserHistory.AddUrl();
+	za_kadrom = count = 0;
+	if (!strcmp(get_URL_part(5),"http:")))
+	{
+		copystr(#version, #header);
+		KillProcess(downloader_id); //убиваем старый процесс
+		DeleteFile(#download_path);
+		IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
+		downloader_id = RunProgram("/sys/network/downloader", #URL);
+		//это гениально и это пиздец!!!
+		Pause(60);
+		if (GetProcessSlot(downloader_id)<>0)
+		{
+			WriteDebug("Browser Hack v2.0: Killing downloader and trying to run it one more!");
+			KillProcess(downloader_id); //убиваем старый процесс
+			downloader_id = RunProgram("/sys/network/downloader", #URL);
+		}
+		//
+		IF (downloader_id<0) RunProgram("@notify", "Error running Downloader. Internet unavilable.");
+		Draw_Window();
+		return;
+	}
+	ReadHtml();
+	if (filesize) wintodos(buf);
+	WB1.ShowPage(#URL);
+}
 
-void TWebBrowser::ShowPage(dword adress) {
-	max_kolvo_stolbcov = width - 30 / 6;
-	max_kolvo_strok = height - 3 / 10 - 2;
+
+void TWebBrowser::ShowPage(dword adress)
+{
 	edit1.size = edit1.pos = strlen(#editURL);
 	edit_box_draw stdcall(#edit1); //рисуем строку адреса
 	
-	BrowserHistory.AddUrl();
-	
-	//LETS_LOAD
-	ReadHtml();
-
 	if (!filesize)
 	{
 		DrawBar(left, top, width+4, height, 0xFFFFFF); //закрашиваем всё донизу
@@ -276,8 +267,7 @@ void TWebBrowser::ShowPage(dword adress) {
 		DrawTitle(#version); //?
 		return;
 	}
-
-	wintodos(buf);
+	
 	ParseHTML(buf, filesize);
 	IF (!strcmp(#version, #header)) DrawTitle(#header);
 }

@@ -24,21 +24,22 @@ char URL[4096],
 int max_kolvo_strok, //lines_visible
 	max_kolvo_stolbcov,
 	count, //lines_all
-	za_kadrom,
+	za_kadrom, //lines_first
 	mouse_dd;
 
 edit_box edit1= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,248,#editURL,#mouse_dd,2,19,19};
 scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1}; //details in scroll_lib.h--
 
 proc_info Form;
-
+dword stak[100]; //меню ПКМ 
+mouse m;
 
 #include "TWB.h"
+#include "include\menu_rmb.h"
 
 
 void main()
 {
-	mouse m;
 	int btn;
 	byte key;
 	int scroll_size;
@@ -51,17 +52,14 @@ void main()
 	
 	if (param) copystr(#param,#URL);
 		else copystr("/sys/index.htm",#URL);
-
 	copystr(#URL,#editURL);
 	
-	if (!strcmp(get_URL_part(5),"http:"))) HttpLoad();
-	//Draw_Window();  //shis is right
-	//WB1.ShowPage(#URL);  //shis is right
+	OpenPage();
 
 	SetEventMask(0x27);
 	loop()
 	{
-		WaitEventTimeout(1);
+		WaitEventTimeout(2);
 		switch(EAX & 0xFF)
 		{
 			CASE evMouse:
@@ -74,7 +72,16 @@ void main()
 					WB1.ParseHTML(buf, filesize);
 					//break;
 				};*/
+				btn=GetSlot(Form.ID); 
+				IF (btn<>ActiveProcess()) break; //если окно не активно на события мыши не реагируем
+
 				m.get();
+				
+				if (m.pkm) && (m.y>WB1.top) && (m.y<Form.height) && (filesize)
+				{
+					CreateThread(#menu_rmb,#stak); 
+					break;
+				}
 
 				IF (m.vert==65535) //прокрутка колёсиком
 				{
@@ -120,12 +127,12 @@ void main()
 				{
 					WB1.Scan(btn);
 				}
-				BREAK;
+				break;
 			case evKey:
 				key = GetKey();
 				WB1.Scan(key);
 				IF (key<>0x0d) && (key<>183) && (key<>184) && (key<>173) {EAX=key<<8; edit_box_key stdcall(#edit1);} //адресная строка
-				BREAK;
+				break;
 			case evReDraw:
 				Draw_Window();
 				break;
@@ -134,7 +141,10 @@ void main()
 				{
 					if (GetProcessSlot(downloader_id)<>0) break;
 					downloader_id=0;
+					ReadHtml();
+					if (filesize) wintodos(buf);
 					Draw_Window();
+					//WB1.ShowPage(#URL);
 				}
 		}
 	}
@@ -144,7 +154,7 @@ void main()
 void Draw_Window()
 {
 	DefineAndDrawWindow(215,100,640,480,0x73,0x00E4DFE1,0,0,0);
-	
+
 	GetProcessInfo(#Form, SelfInfo);
 	IF (Form.status_window>2) //если свернуто в заголовок, ничего не рисуем
 	{
@@ -166,16 +176,15 @@ void Draw_Window()
 	DefineButton(onLeft(56,0),15, 17, 16, SEARCHWEB+BT_HIDE, 0xE4DFE1);
 	DrawRegion(205,14,onLeft(58,205),18,0x94AECE); //ободок полосы адреса
 	DrawRegion(206,15,onLeft(59,205),16,0xE4ECF3);
-	
+
 	edit1.width=Form.width-266;
-	//edit_box_draw stdcall(#edit1); //рисуем строку адреса  //shis is right
-	
 	WB1.top=44;
 	WB1.width=Form.width-13;
 	WB1.height=onTop(43,5);
+	max_kolvo_stolbcov = WB1.width - 30 / 6;
+	max_kolvo_strok = WB1.height - 3 / 10 - 2;
+
 	WB1.ShowPage(#URL);
-	
-	//WB1.ParseHTML(buf, filesize); //shis is right
 }
  
 int onLeft(dword right,left) {return Form.width-right-left;}
