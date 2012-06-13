@@ -78,7 +78,13 @@ MidAMP                    /rd/1/media/midamp
 CD player                 /rd/1/media/cdp
 #8    **** PROGRAMMING ****
 Examples           >      /@9
-Tools              >      /@20
+Archiver KPack            /rd/1/kpack
+Flat Assembler            /rd/1/develop/fasm
+Debug Board               /rd/1/develop/board
+Debugger                  /rd/1/develop/mtdbg
+Hex2Dec2Bin               /rd/1/develop/h2d2b
+ASCII-codes               /rd/1/develop/keyascii
+SCAN-codes                /rd/1/develop/scancode
 #9    **** EXAMPLES ****
 Threads                   /rd/1/develop/thread
 IPC                       /rd/1/develop/ipc
@@ -92,7 +98,7 @@ Settings           >      /@11
 System sensors     >      /@12
 Work with files    >      /@13
 Testing            >      /@19
-Accessibility opt. >      /@21
+Accessibility opt. >      /@20
 Debug board               /rd/1/develop/board
 #11    **** SETTINGS ****
 Devices                   /rd/1/setup
@@ -118,8 +124,8 @@ SHELL console             /rd/1/shell
 Save RD image             /rd/1/rdsave
 #14 **** DATA PROCESSING ****
 Calculator                /rd/1/calc
-TinyPad                   /rd/1/tinypad
-T_Edit                    /rd/1/develop/t_edit
+Tinypad                   /rd/1/tinypad
+TextEdit                  /rd/1/develop/t_edit
 Table Processor           /rd/1/table
 Graph builder             /rd/1/graph
 Hex-Editor                /rd/1/develop/heed
@@ -157,15 +163,7 @@ RTF reader                /rd/1/rtfread
 #19    **** SYSTEM TESTS ****
 Protection test           /rd/1/test
 Monitor test              /rd/1/disptest
-#20    **** PROGRAMMING TOOLS ****
-Archiver KPack            /rd/1/kpack
-Flat Assembler            /rd/1/develop/fasm
-ASCII-codes               /rd/1/develop/keyascii
-SCAN-codes                /rd/1/develop/scancode
-Hex2Dec2Bin               /rd/1/develop/h2d2b
-Debug Board               /rd/1/develop/board
-Debugger                  /rd/1/develop/mtdbg
-#21    **** SYSTEM SPECIAL ****
+#20    **** SYSTEM SPECIAL ****
 Screen magnifier          /rd/1/magnify
 Screen keyboard           /rd/1/zkey
 Character table           /rd/1/ASCIIVju

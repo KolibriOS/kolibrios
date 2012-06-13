@@ -80,7 +80,14 @@ Midi-плеер                /rd/1/media/midamp
 CD-плейер                 /rd/1/media/cdp
 #8    **** PROGRAMMING ****
 Примеры            >      /@9
-Инструменты        >      /@20
+Упаковщик KPack           /rd/1/kpack
+Flat Assembler            /rd/1/develop/fasm
+Доска отладки             /rd/1/develop/board
+Отладчик                  /rd/1/develop/mtdbg
+Пипетка                   /rd/1/pipetka
+Hex2Dec2Bin               /rd/1/develop/h2d2b
+ASCII-коды                /rd/1/develop/keyascii
+SCAN-коды                 /rd/1/develop/scancode
 #9    **** EXAMPLES ****
 Потоки                    /rd/1/develop/thread
 IPC                       /rd/1/develop/ipc
@@ -94,7 +101,7 @@ BGI-шрифты (демо)         /rd/1/fonts/bgitest
 Системные сенсоры  >      /@12
 Работа с файлами   >      /@13
 Тестирование       >      /@19
-Спец. возможности  >      /@21
+Спец. возможности  >      /@20
 Доска отладки             /rd/1/develop/board
 #11   **** SETUP ****
 Устройства                /rd/1/setup
@@ -119,8 +126,8 @@ Eolite                    /rd/1/File Managers/Eolite
 Сохранение образа         /rd/1/rdsave
 #14   **** ОБРАБОТКА ДАННЫХ ****
 Калькулятор               /rd/1/calc
-Текст.ред. Tinypad        /rd/1/tinypad
-Текст.ред. T_Edit         /rd/1/develop/t_edit
+Редактор Tinypad          /rd/1/tinypad
+Редактор TextEdit         /rd/1/develop/t_edit
 Табличный процессор       /rd/1/table
 Построение графиков       /rd/1/graph
 HEX-редактор              /rd/1/develop/heed
@@ -161,16 +168,7 @@ DNS resolver              /rd/1/network/nslookup
 Тест защиты               /rd/1/test
 Тест монитора             /rd/1/disptest
 Графический бенчмарк      /rd/1/mgb
-#20   **** DEVELOP TOOLS ****
-Упаковщик KPack           /rd/1/kpack
-Flat Assembler            /rd/1/develop/fasm
-ASCII-коды                /rd/1/develop/keyascii
-SCAN-коды                 /rd/1/develop/scancode
-Hex2Dec2Bin               /rd/1/develop/h2d2b
-Пипетка                   /rd/1/pipetka
-Доска отладки             /rd/1/develop/board
-Отладчик                  /rd/1/develop/mtdbg
-#21   **** SYSTEM SPECIAL ****
+#20   **** SYSTEM SPECIAL ****
 Экранная лупа             /rd/1/magnify
 Экранная клавиатура       /rd/1/zkey
 Таблица символов          /rd/1/ASCIIVju
