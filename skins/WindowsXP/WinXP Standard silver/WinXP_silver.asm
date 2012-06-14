@@ -9,7 +9,7 @@ SKIN_PARAMS \
   colors inactive = [binner=0x777889:\	  ; border inner color
 		     bouter=0x777889:\	  ; border outer color
 		     bframe=0xADACAB],\   ; border frame color
-  dtp		  = 'WinXP_(silver).dtp'		  ; dtp colors
+  dtp		  = 'WinXP_silver.dtp'		  ; dtp colors
 
 SKIN_BUTTONS \
   close    = [-22:5][17:16],\		  ; buttons coordinates
