@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.22"
+#define title "Eolite File Manager v1.23"
 dword videlenie=0x94AECE; //цвет выделенного элемента из списка файлов
 //
 int  but_num,
@@ -144,7 +144,7 @@ int pressed_y;
 						FileList_ReDraw(1);
 					}
 					//скролл
-					if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>56) while (m.lkm)
+					if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>56) && && (m.y<65000) while (m.lkm)
 					{
 						IF (scroll_size/2+57>m.y) || (m.y<0) || (m.y>4000) m.y=scroll_size/2+57; //если курсор над окном
 						id=za_kadrom; //сохраняем старое количество
@@ -368,7 +368,7 @@ inline fastcall void draw_window()
 	if (GetScreenHeight()<480) DefineAndDrawWindow(20,0,582,GetScreenHeight()-30,0x73,0x10E4DFE1,0,0,title); else
 	DefineAndDrawWindow(98,90,582,482,0x73,0x10E4DFE1,0,0,title);
 	Form.GetInfo(#Form, SelfInfo);
-	IF (Form.status_window==4) return; //ничего не делать если окно схлопнуто в заголовок
+	IF (Form.status_window>2) return; //ничего не делать если окно схлопнуто в заголовок
 	  IF (Form.height<280) MoveSize(OLD,OLD,OLD,280);
 	  IF (Form.width<480) MoveSize(OLD,OLD,480,OLD);
 	//toolbar buttons

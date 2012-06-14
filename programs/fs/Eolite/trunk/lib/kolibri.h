@@ -8,7 +8,7 @@ dword  os_version   = 0x00000001;
 dword  start_addr   = #main;
 dword  final_addr   = #stop+32;
 dword  alloc_mem    = 0x00070000;
-dword  x86esp_reg   = 0x00070000;   // 0x0007fff0;
+dword  x86esp_reg   = 0x00070000;
 dword  I_Param      = #param;
 dword  I_Path       = #program_path;
 
