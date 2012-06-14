@@ -1,4 +1,4 @@
-include 'me_skin.inc'
+include 'ME_SKIN.INC'
 
 SKIN_PARAMS \
   height	  = bmp_base.height,\	  ; skin height
@@ -9,7 +9,7 @@ SKIN_PARAMS \
   colors inactive = [binner=0x00081d:\	  ; border inner color
 		     bouter=0x00081d:\	  ; border outer color
 		     bframe=0xEFEFEF],\   ; border frame color          0x1a8acc
-  dtp		  = 'myblue.dtp'	  ; dtp colors
+  dtp		  = 'myblue.DTP'	  ; dtp colors
 
 SKIN_BUTTONS \
   close    = [-17:5][13:13],\		  ; buttons coordinates

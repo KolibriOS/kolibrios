@@ -9,7 +9,7 @@ SKIN_PARAMS \
   colors inactive = [binner=0x121212:\	  ; border inner color
 		     bouter=0x121212:\	  ; border outer color
 		     bframe=0x1B1B1B],\   ; border frame color
-  dtp		  = 'BRoboTech.DTP'	  ; dtp colors
+  dtp		  = 'BRoboTech.dtp'	  ; dtp colors
 
 SKIN_BUTTONS \
   close    = [-25:4][16:15],\		  ; buttons coordinates
