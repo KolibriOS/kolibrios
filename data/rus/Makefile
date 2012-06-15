@@ -196,6 +196,21 @@ FASM_PROGRAMS_CD:=\
  drivers/atikms:DRIVERS/ATIKMS:$(REPOSITORY)/drivers/video/drm/radeon/atikms.asm \
 # end of list
 
+# The list of all FASM programs which needs to be compiled without KPACKing.
+FASM_NOKPACK_PROGRAMS:=\
+ distr_data/9x2klbr.exe::$(PROGS)/hd_load/9x2klbr/9x2klbr.asm \
+ distr_data/MeOSload.com::$(PROGS)/hd_load/meosload/MeOSload.asm \
+ distr_data/mtldr::$(PROGS)/hd_load/mtldr/mtldr.asm \
+ mtldr_for_installer::$(PROGS)/hd_load/mtldr_installer/mtldr_code/mtldr.asm \
+ distr_data/mtldr_install.exe::$(PROGS)/hd_load/mtldr_installer/mtldr_installer.asm \
+ distr_data/MeOSload_for_usb_boot_old.com::$(PROGS)/hd_load/usb_boot_old/MeOSload.asm \
+ distr_data/enable_for_usb_boot_old.exe::$(PROGS)/hd_load/usb_boot_old/enable.asm \
+ distr_data/BOOT_F32.BIN::$(PROGS)/hd_load/usb_boot/BOOT_F32.ASM \
+ distr_data/MTLD_F32::$(PROGS)/hd_load/usb_boot/mtldr.asm \
+ distr_data/inst.exe::$(PROGS)/hd_load/usb_boot/inst.asm \
+ distr_data/setmbr.exe::$(PROGS)/hd_load/usb_boot/setmbr.asm \
+#end of list
+
 # The list of all NASM programs with one main NASM file.
 # Format of an item is exactly the same as in the previous list.
 NASM_PROGRAMS:=\
@@ -306,6 +321,32 @@ MKISOFS_EXTRA:=\
  Docs/cp1251/readme.txt=docs/README.WIN.TXT \
  Docs/cp1251/stack_ru.txt=docs/STACK_RU.WIN.TXT \
  Docs/cp1251/sysfuncr.txt=docs/SYSFUNCR.WIN.TXT \
+ HD_Load/9x2klbr/=distr_data/9x2klbr.exe \
+ HD_Load/9x2klbr/=../common/hd_load/9x2klbr/LDKLBR.VXD \
+ HD_Load/9x2klbr/=$(PROGS)/hd_load/9x2klbr/readme_dos.txt \
+ HD_Load/9x2klbr/=$(PROGS)/hd_load/9x2klbr/readme_win.txt \
+ HD_Load/MeOSLoad/=distr_data/MeOSLoad.com \
+ HD_Load/MeOSLoad/=$(PROGS)/hd_load/meosload/AUTOEXEC.BAT \
+ HD_Load/MeOSLoad/=$(PROGS)/hd_load/meosload/CONFIG.SYS \
+ HD_Load/MeOSLoad/=$(PROGS)/hd_load/meosload/L_readme.txt \
+ HD_Load/MeOSLoad/=$(PROGS)/hd_load/meosload/L_readme_Win.txt \
+ HD_Load/mtldr/=distr_data/mtldr \
+ HD_Load/mtldr/=$(PROGS)/hd_load/mtldr/install.txt \
+ HD_Load/mtldr/=$(PROGS)/hd_load/mtldr/vista_install.bat \
+ HD_Load/mtldr/=$(PROGS)/hd_load/mtldr/vista_remove.bat \
+ HD_Load/=distr_data/mtldr_install.exe \
+ HD_Load/memdisk=../common/hd_load/memdisk \
+ HD_Load/USB_Boot/=distr_data/BOOT_F32.BIN \
+ HD_Load/USB_Boot/=distr_data/MTLD_F32 \
+ HD_Load/USB_Boot/=distr_data/inst.exe \
+ HD_Load/USB_Boot/=distr_data/setmbr.exe \
+ HD_Load/USB_Boot/=$(PROGS)/hd_load/usb_boot/readme.txt \
+ HD_Load/USB_boot_old/=$(PROGS)/hd_load/usb_boot_old/usb_boot.rtf \
+ HD_Load/USB_boot_old/=$(PROGS)/hd_load/usb_boot_old/usb_boot_866.txt \
+ HD_Load/USB_boot_old/=$(PROGS)/hd_load/usb_boot_old/usb_boot_1251.txt \
+ HD_Load/USB_boot_old/MeOSload.com=distr_data/MeOSload_for_usb_boot_old.com \
+ HD_Load/USB_boot_old/enable.exe=distr_data/enable_for_usb_boot_old.exe \
+ /=../common/games \
 #end of list
 
 # Text files which need to be recoded to cp1251 from native aka cp866
@@ -417,6 +458,9 @@ develop/info/.dir: develop/.dir
 File\ Managers/.dir:
 	mkdir -p "File Managers"
 	touch "File Managers/.dir"
+
+# extra dependency for mtldr_install.exe
+distr_data/mtldr_install.exe: mtldr_for_installer
 
 # FASM black magic goes to Makefile.fasm.
 include Makefile.fasm

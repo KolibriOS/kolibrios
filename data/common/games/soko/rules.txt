@@ -1,0 +1,180 @@
+SOKOBAN FOR MENUET v0.1        July 2, 2004
+ Written in pure assembler by Ivushkin Andrey aka Willow
+ Main idea, art & graphics
+   Sokofun for Windows 95 by Games 4 Brains
+   and Sokoban 2.3 by BjЎrn Kфllmark
+
+ Level designers:
+
+   Alberto Garcia, Aymeric du Peloux, Brian Kent, David Holland, 
+   David W Skinner, Erim Sever, Evgeniy Grigoriev, Franчois Marques, 
+   Frantisek Pokorny, Howard Abed,J franklin Mentzer, Jaques Duthen, 
+   John C Davis, John Polhemus, Kobus Theron, Lee Haywood, Mario Bonenfant,
+   Martin P Holland, Mic (Jan Reineke), Phil Shapiro, Richard Weston,
+   Sven Egevad, Ken'ichiro Takahashi (takaken), Thinking Rabbit,
+   Yoshio Murase, ZICO (Zbigniew Kornas)
+
+ Special thanks to Hirohiko Nakamiya
+
+ More credits:
+   Masato Hiramatsu, Kazuo Fukushima, Klaus Clemens
+
+ Game uses its own format of levelset files *.LEV
+   with simple run-length compression
+   
+!!!!NB!!!!
+It is strongly recommended that you place application files into C:\menuetos
+directory. Otherwise you should change CUR_DIR (SOKO.ASM, line 30) to the
+appropriate value!
+
+Interface
+
+When loaded, application opens skin file SKIN.RAW in the current directory.
+It is an image 16x240 pt. Then so-named "standard" levels SOKO-?.LEV are 
+read in the same dir. ? means a number within 0 and 9.
+You can navigate along the level list pressing PgUp and PgDn keys. User 
+selects the level desired by pressing keys 0-9. Space key moves focus to the 
+text field below, so you can enter filename there.
+Additional levels are in program subfolder LEV. For example, you wish to load
+a levelset file /HD/1/MENUETOS/LEV/AENIGMA.LEV. Then you should enter 
+lev/aenigma.lev
+Within the textbox user can press Backspace. There's no cursor yet :-( 
+Pressing Enter in the text field is equvalent for button "Load file".
+
+When in game, pressing Esc restarts the level, pressing Home returns back to 
+the levelset selection mode.
+
+Game Rules
+
+You have a little PUSHER. You will guide him using the cursor-keys.
+
+SOKOBAN (same as SOKOBLUE or SOKOWAHN)
+    The pink pyramids have to be pushed onto the marked places. 
+    The problem is: You can only push things, but not pull them.
+    A level is solved when every pyramid stands on a marked place.
+
+SOKOLOR 
+    Tiles of the same colour need to be pushed together.
+
+SOKONEX 
+    Push all CONNECTOR-TILES together! 
+
+    Game-items of SOKONEX and their properties:
+    
+    PLATE: undestructable, movable, covers holes
+    HOLE: you can push LASERS and BROKEN PLATES into them
+    BROKEN PLATE: destructable, movable
+    CONNECTOR: undestructable, movable
+    FIXED CONNECTOR: undestructable, not movable
+    LASER: destructable, movable
+    BEAM: eleminates LASERS and BROKEN PLATES, paralyses PUSHERS
+
+The objective is always the same: You must push boxes the right way. 
+Sometimes tasks seem to be impossible. 
+But, be sure: There is always a solution!
+
+To-Do list:
+
+1. Better interface - I saw XTREE and understood that it's really possible to 
+   write wonderful programs for MenuetOS easily.
+2. More skins. And lesser file size...
+3. Improve user interaction, I think.
+4. Level Editor. Having a great wish you may compose levelsets by yourself and
+   compile them with FASM - see files CNF.ASM and CNF.
+5. Correct bugs, make improvements from opinions of you, respective users of 
+   this application ;-)
+6. Include support for XTREE dialogs.
+
+****************************************
+****************************************
+
+СОКОБАН ДЛЯ MENUET v0.1        2 июля 2004 г.
+
+ Написана на чистом ассемблере Ивушкиным Андреем (Willow)
+ Главная идея, рисунки и графика
+   Sokofun for Windows 95 от Games 4 Brains
+   и Sokoban 2.3 от BjЎrn Kфllmark
+
+ Дизайнеры уровней:
+
+   Alberto Garcia, Aymeric du Peloux, Brian Kent, David Holland, 
+   David W Skinner, Erim Sever, Evgeniy Grigoriev, Franчois Marques, 
+   Frantisek Pokorny, Howard Abed,J franklin Mentzer, Jaques Duthen, 
+   John C Davis, John Polhemus, Kobus Theron, Lee Haywood, Mario Bonenfant,
+   Martin P Holland, Mic (Jan Reineke), Phil Shapiro, Richard Weston,
+   Sven Egevad, Ken'ichiro Takahashi (takaken), Thinking Rabbit,
+   Yoshio Murase, ZICO (Zbigniew Kornas)
+
+ Особая благодарность Hirohiko Nakamiya
+
+ Еще благодарности:
+   Masato Hiramatsu, Kazuo Fukushima, Klaus Clemens
+
+ В игре используется специальный формат файлов уровней *.LEV
+   с тривиальным сжатием информации
+
+!!!!NB!!!!
+Настоятельно рекомендуется поместить файлы программы в каталог C:\menuetos.
+В противном случае Вам придется изменить константу CUR_DIR в файле
+SOKO.ASM на строке 30 соответсвующим значением!
+
+Интерфейс
+
+При запуске программа открывает файл скинов для игровых объектов SKIN.RAW
+в собственном каталоге. Это картинка размером 16х240 точек. Затем в этом 
+же каталоге читаются так называемые "стандартные" уровни SOKO-?.LEV, где
+? - число от 0 до 9.
+По списку уровней можно передвигаться клавишами PgUp и PgDn. Желаемый уровень
+выбирается нажатием клавиш от 0 до 9.
+Нажатие пробела переносит фокус на текстовое поле ввода имени файла уровня.
+Дополнительные уровни находятся в подкаталоге LEV программы. Допустим, вы 
+хотите загрузить файл уровней /HD/1/MENUETOS/LEV/AENIGMA.LEV. Тогда следует
+ввести строку lev/aenigma.lev 
+В поле действует клавиша Backspace. Курсор пока не реализован :-( Нажатие 
+Enter в строке ввода эквивалентно кнопке 'Загрузить'.
+
+В режиме игры нажатие Esc производит рестарт уровня, нажатие Home выводит 
+из игры обратно к списку уровней.
+
+Правила игры
+
+В этой игре у вас есть ТОЛКАТЕЛЬ, которым можно управлять клавишами стрелок.
+
+СОКОБАН (иначе СОКОБЛЮ :-) или СОКОВАН)
+    Розовые пирамидки нужно передвинуть на специальные клетки.
+    Проблема в том, что можно только толкать предметы, но не тащить их.
+    Уровень решен, когда каждая пирамидка находится на маркерной клетке.
+    
+СОКОЛОР
+    Блоки одинакового цвета нужно подтолкать друг к другу.
+    
+СОКОНЕКС
+    Все блоки-коннекторы нужно подтолкать друг к другу.
+    
+    Объекты в игре СОКОНЕКС и их свойства:
+    
+    ПЛИТА: неуничтожаемая, подвижная, закрывает ДЫРЫ
+    ДЫРА: туда можно сталкивать ЛАЗЕРЫ и РАЗБИТЫЕ ПЛИТЫ
+    РАЗБИТАЯ ПЛИТА: уничтожаемая, подвижная
+    КОННЕКТОР: неуничтожаемый, подвижный
+    ФИКС-КОННЕКТОР: неуничтожаемый, подвижный
+    ЛАЗЕР: уничтожаемый, подвижный
+    ЛАЗЕРНЫЙ ЛУЧ: уничтожает ЛАЗЕРЫ и РАЗБИТЫЕ ПЛИТЫ, парализует ТОЛКАТЕЛЯ (!)
+    
+Цель игры всегда одинакова: Вы должны правильно переставлять блоки.
+Иногда задание кажется невыполнимым.
+Но будьте уверены: всегда есть решение!  
+
+Что еще можно сделать:
+
+1. Покрасивше интерфейс - после XTREE я понял, что для Menuet можно
+   относительно легко писать очень красивые программы.
+2. Дополнительные скины - для гурманов. И меньше размер файлов сделать:
+   11 кб как-никак на дороге не валяются
+3. Улучшить управление - мне так кажется.
+4. Редактор уровней. При особом желании файлы уровней можно писать вручную и
+   компилировать FASM'ом - см. файлы CNF.ASM и CNF.
+5. Исправить баги, внести улучшения и учесть пожелания Вас, уважаемых 
+   пользователей данной программы ;-)
+6. Включить поддержку диалогов из XTREE.
+

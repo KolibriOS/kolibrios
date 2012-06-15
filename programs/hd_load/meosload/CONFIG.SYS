@@ -1,0 +1,27 @@
+[menu]
+menucolor=7
+menuitem=win,Windows 98SE
+menuitem=dos1,Dos Navigator+CD
+menuitem=dos2,Dos Navigator
+menuitem=kos,KolibriOS
+menudefault=win,15
+[dos1]
+rem DEVICE=essolo.sys
+DEVICE=C:\WINDOWS\himem.sys
+device=C:\WINDOWS\COMMAND\display.sys con=(ega,,1)
+DEVICE=C:\WINDOWS\emm386.exe noems
+device=osi105p.sys
+dos=high,umb
+[dos2]
+rem DEVICE=essolo.sys
+DEVICE=C:\WINDOWS\himem.sys
+device=C:\WINDOWS\COMMAND\display.sys con=(ega,,1)
+DEVICE=C:\WINDOWS\emm386.exe noems
+dos=high,umb
+[win]
+rem DEVICE=c:\essolo.sys
+DEVICE=C:\WINDOWS\himem.sys
+device=C:\WINDOWS\COMMAND\display.sys con=(ega,,1)
+Country=007,866,C:\WINDOWS\COMMAND\country.sys
+[kos]
+[common]

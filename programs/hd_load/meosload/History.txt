@@ -1,0 +1,9 @@
+14.02.2003
+Version 1.0 - Base version
+
+11.06.2003
+Version 1.1 - Added support of loading from IMAGE-file.
+              (see of Ivan Poddubny kernel modification)
+
+28.10.2006
+menuet.img renamed to kolibri.img
