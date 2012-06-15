@@ -9,7 +9,7 @@ SKIN_PARAMS \
   colors inactive = [binner=0x006A9D:\                      ; border inner color
                      bouter=0x006A9D:\                      ; border outer color
                      bframe=0xE0E4E9],\                     ; border frame color
-  dtp             = 'Mistificator1.dtp'                     ; dtp colors
+  dtp             = 'Mistificator1.DTP'                     ; dtp colors
 
 SKIN_BUTTONS \
   close    = [-23:4][19:18],\                               ; buttons coordinates
