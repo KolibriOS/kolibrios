@@ -314,7 +314,7 @@ RECODE_TEXT_FILES:=\
   docs/CONFIG.WIN.TXT:docs/CONFIG.TXT \
   docs/GNU.WIN.TXT:docs/GNU.TXT \
   docs/HISTORY.WIN.TXT:docs/HISTORY.TXT \
-  docs/HOT_KEYS.WIN.TXT:docs/HOST_KEYS.TXT \
+  docs/HOT_KEYS.WIN.TXT:docs/HOT_KEYS.TXT \
   docs/INSTALL.WIN.TXT:docs/INSTALL.TXT \
   docs/README.WIN.TXT:docs/README.TXT \
   docs/STACK_RU.WIN.TXT:docs/STACK_RU.TXT \
@@ -438,7 +438,7 @@ include Makefile.cmm
 # Recode some text files from native encoding aka cp866 to cp1251
 define recode_meta_rule
 $(1): $(2)
-	iconv -f cp866 -t cp1251 "$<" > "$@"
+	iconv -f cp866 -t cp1251 "$$<" > "$$@"
 endef
 $(foreach f, $(RECODE_TEXT_FILES), $(eval $(call recode_meta_rule,$(fbinary),$(fimage))))
 
