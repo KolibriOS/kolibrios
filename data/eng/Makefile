@@ -443,6 +443,9 @@ File\ Managers/.dir:
 	mkdir -p "File Managers"
 	touch "File Managers/.dir"
 
+# extra dependency for mtldr_install.exe
+distr_data/mtldr_install.exe: mtldr_for_installer
+
 # FASM black magic goes to Makefile.fasm.
 include Makefile.fasm
 
