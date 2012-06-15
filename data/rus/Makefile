@@ -9,6 +9,9 @@ REPOSITORY:=../..
 KERNEL:=$(REPOSITORY)/kernel/trunk
 PROGS:=$(REPOSITORY)/programs
 
+# The main goal: build kolibri.img and kolibri.iso
+all: $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
+
 # Docpak requires some documents; we place them
 # into 'docs' subdir and communicate with FASM
 # through environment var DOCDIR.
@@ -270,6 +273,11 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
 #end of list
 #3d/logio.bmp:3D/LOGIO.BMP 3d/cubetext:3D/CUBETEXT
 
+# Generate skins list understandable by gnu make
+Makefile.skins: $(REPOSITORY)/skins/authors.txt $(REPOSITORY)/data/generate_makefile_skins.sh
+	cut -f1 $< | $(SHELL) $(REPOSITORY)/data/generate_makefile_skins.sh > $@
+include Makefile.skins
+
 # Extra targets for LiveCD image in the syntax of mkisofs
 MKISOFS_EXTRA:=\
  dosbox/=$(PROGS)/emulator/DosBox/dosbox \
@@ -277,6 +285,11 @@ MKISOFS_EXTRA:=\
  dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
  /=drivers/atikms \
  /=drivers/atikms.dll \
+ /=distr_data/autorun.inf \
+ /=distr_data/KolibriOS_icon.ico \
+ /=distr_data/readme.txt \
+ /=distr_data/readme_dos.txt \
+ Skins/=$(REPOSITORY)/skins/authors.txt \
 #end of list
 
 # Some macro for convenient work.
@@ -321,12 +334,11 @@ define newline
 endef
 mcopy_all_items:=$(foreach f,$(targets_full),$(mcopy_item_command)$(newline))
 
+# add skins to MKISOFS_EXTRA
+MKISOFS_EXTRA:=$(MKISOFS_EXTRA) $(foreach f,$(SKIN_SOURCES),$(call imagepart,$(f))=$(call binarypart,$(f)))
 # dependencies of MKISOFS_EXTRA; we iterate through $(MKISOFS_EXTRA),
 # substitute "=" with space, get the 2nd word and join all results
-mkisofs_extra_targets:=$(foreach f,$(MKISOFS_EXTRA),$(word 2,$(subst =, ,$(f))))
-
-# The main goal: build kolibri.img and kolibri.iso
-all: $(BUILD_DIR)/kolibri.img $(BUILD_DIR)/kolibri.iso
+mkisofs_extra_targets:=$(call respace,$(foreach f,$(MKISOFS_EXTRA),$(word 2,$(subst =, ,$(f)))))
 
 # The first goal: floppy image.
 $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
@@ -358,7 +370,7 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
 	mkisofs -U -J -pad -b kolibri.img -c boot.catalog -hide-joliet boot.catalog -hide-joliet kolibri.img -graft-points \
 	-A "KolibriOS AutoBuilder" -p "CleverMouse" -publisher "KolibriOS Team" -V "KolibriOS r$(REV)" -sysid "KOLIBRI" \
-	-iso-level 3 -o $(BUILD_DIR)/kolibri.iso $(BUILD_DIR)/kolibri.img $(MKISOFS_EXTRA) 2>&1
+	-iso-level 3 -o $(BUILD_DIR)/kolibri.iso $(BUILD_DIR)/kolibri.img $(call respace,$(MKISOFS_EXTRA)) 2>&1
 
 # Special targets to modify behaviour of make.
 .DELETE_ON_ERROR:
@@ -369,7 +381,7 @@ $(BUILD_DIR)/boot_fat12.bin: $(KERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootl
 	fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
 
 $(BUILD_DIR)/.dir 3d/.dir demos/.dir develop/.dir develop/info/.dir drivers/.dir fonts/.dir \
- games/.dir lib/.dir media/.dir network/.dir .deps/.dir:
+ games/.dir lib/.dir media/.dir network/.dir allskins/.dir .deps/.dir:
 	mkdir -p $(dir $@)
 	touch $@
 develop/info/.dir: develop/.dir
@@ -393,6 +405,10 @@ $(DOCDIR)SYSFUNCR.TXT: $(KERNEL)/docs/sysfuncr.txt
 
 # Similar for C--.
 include Makefile.cmm
+
+# Recode some text files from native encoding aka cp866 to cp1251
+distr_data/readme.txt: distr_data/readme_dos.txt
+	iconv -f cp866 -t cp1251 $< > $@
 
 # Sorry, even black magic seems to be insufficient for
 # auto-handling all subtle effects. So we just define

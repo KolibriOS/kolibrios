@@ -28,7 +28,7 @@
 # $(4) = name of program - without path and extension,
 define fasm_meta_rule
 $(1): $(2) Makefile.fasm .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
-	fasm -m 65536 $$< "$$@" -s .deps/$(4).fas
+	fasm -m 65536 "$$<" "$$@" -s .deps/$(4).fas
 	prepsrc .deps/$(4).fas /dev/null
 	prepsrc .deps/$(4).fas /dev/stdout | \
 	perl -n -e 's|\\|/|g;s| |\\ |g;push @a,$$$$1 if/^;include\\ \x27(.*?)\x27/;' \
@@ -39,11 +39,11 @@ endef
 
 progname=$(call respace,$(basename $(notdir $(call binarypart,$(f)))))
 binarydir=$(subst ./,,$(dir $(call binarypart,$(f))))
-$(foreach f,$(FASM_PROGRAMS) $(FASM_PROGRAMS_CD),$(eval $(call fasm_meta_rule,$(fbinary),$(fsource),$(binarydir),$(progname))))
+$(foreach f,$(FASM_PROGRAMS) $(FASM_PROGRAMS_CD) $(SKIN_SOURCES),$(eval $(call fasm_meta_rule,$(fbinary),$(fsource),$(binarydir),$(progname))))
 
 # Rule for the kernel differs: it uses kerpack instead of kpack.
 kernel.mnt: $(KERNEL)/kernel.asm Makefile.fasm .deps/.dir
-	fasm -m 65536 $< "$@" -s .deps/kernel.fas
+	fasm -m 65536 "$<" "$@" -s .deps/kernel.fas
 	prepsrc .deps/kernel.fas /dev/null
 	prepsrc .deps/kernel.fas /dev/stdout | \
 	perl -n -e 's|\\|/|g;s| |\\ |g;push @a,$$1 if/^;include\\ \x27(.*?)\x27/;' \
