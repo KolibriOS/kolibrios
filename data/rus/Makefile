@@ -346,7 +346,7 @@ MKISOFS_EXTRA:=\
  HD_Load/USB_boot_old/=$(PROGS)/hd_load/usb_boot_old/usb_boot_1251.txt \
  HD_Load/USB_boot_old/MeOSload.com=distr_data/MeOSload_for_usb_boot_old.com \
  HD_Load/USB_boot_old/enable.exe=distr_data/enable_for_usb_boot_old.exe \
- /=../common/games \
+ games/=../common/games \
 #end of list
 
 # Text files which need to be recoded to cp1251 from native aka cp866
