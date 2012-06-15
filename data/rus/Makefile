@@ -198,17 +198,17 @@ FASM_PROGRAMS_CD:=\
 
 # The list of all FASM programs which needs to be compiled without KPACKing.
 FASM_NOKPACK_PROGRAMS:=\
- distr_data/9x2klbr.exe::$(PROGS)/hd_load/9x2klbr/9x2klbr.asm \
- distr_data/MeOSload.com::$(PROGS)/hd_load/meosload/MeOSload.asm \
- distr_data/mtldr::$(PROGS)/hd_load/mtldr/mtldr.asm \
- mtldr_for_installer::$(PROGS)/hd_load/mtldr_installer/mtldr_code/mtldr.asm \
- distr_data/mtldr_install.exe::$(PROGS)/hd_load/mtldr_installer/mtldr_installer.asm \
- distr_data/MeOSload_for_usb_boot_old.com::$(PROGS)/hd_load/usb_boot_old/MeOSload.asm \
- distr_data/enable_for_usb_boot_old.exe::$(PROGS)/hd_load/usb_boot_old/enable.asm \
- distr_data/BOOT_F32.BIN::$(PROGS)/hd_load/usb_boot/BOOT_F32.ASM \
- distr_data/MTLD_F32::$(PROGS)/hd_load/usb_boot/mtldr.asm \
- distr_data/inst.exe::$(PROGS)/hd_load/usb_boot/inst.asm \
- distr_data/setmbr.exe::$(PROGS)/hd_load/usb_boot/setmbr.asm \
+ distr_data/9x2klbr.exe:-:$(PROGS)/hd_load/9x2klbr/9x2klbr.asm \
+ distr_data/MeOSload.com:-:$(PROGS)/hd_load/meosload/MeOSload.asm \
+ distr_data/mtldr:-:$(PROGS)/hd_load/mtldr/mtldr.asm \
+ mtldr_for_installer:-:$(PROGS)/hd_load/mtldr_installer/mtldr_code/mtldr.asm \
+ distr_data/mtldr_install.exe:-:$(PROGS)/hd_load/mtldr_installer/mtldr_installer.asm \
+ distr_data/MeOSload_for_usb_boot_old.com:-:$(PROGS)/hd_load/usb_boot_old/MeOSload.asm \
+ distr_data/enable_for_usb_boot_old.exe:-:$(PROGS)/hd_load/usb_boot_old/enable.asm \
+ distr_data/BOOT_F32.BIN:-:$(PROGS)/hd_load/usb_boot/BOOT_F32.ASM \
+ distr_data/MTLD_F32:-:$(PROGS)/hd_load/usb_boot/mtldr.asm \
+ distr_data/inst.exe:-:$(PROGS)/hd_load/usb_boot/inst.asm \
+ distr_data/setmbr.exe:-:$(PROGS)/hd_load/usb_boot/setmbr.asm \
 #end of list
 
 # The list of all NASM programs with one main NASM file.
@@ -322,7 +322,7 @@ MKISOFS_EXTRA:=\
  Docs/cp1251/stack_ru.txt=docs/STACK_RU.WIN.TXT \
  Docs/cp1251/sysfuncr.txt=docs/SYSFUNCR.WIN.TXT \
  HD_Load/9x2klbr/=distr_data/9x2klbr.exe \
- HD_Load/9x2klbr/=../common/hd_load/9x2klbr/LDKLBR.VXD \
+ HD_Load/9x2klbr/=../common/HD_load/9x2klbr/LDKLBR.VXD \
  HD_Load/9x2klbr/=$(PROGS)/hd_load/9x2klbr/readme_dos.txt \
  HD_Load/9x2klbr/=$(PROGS)/hd_load/9x2klbr/readme_win.txt \
  HD_Load/MeOSLoad/=distr_data/MeOSLoad.com \
@@ -335,7 +335,7 @@ MKISOFS_EXTRA:=\
  HD_Load/mtldr/=$(PROGS)/hd_load/mtldr/vista_install.bat \
  HD_Load/mtldr/=$(PROGS)/hd_load/mtldr/vista_remove.bat \
  HD_Load/=distr_data/mtldr_install.exe \
- HD_Load/memdisk=../common/hd_load/memdisk \
+ HD_Load/memdisk=../common/HD_load/memdisk \
  HD_Load/USB_Boot/=distr_data/BOOT_F32.BIN \
  HD_Load/USB_Boot/=distr_data/MTLD_F32 \
  HD_Load/USB_Boot/=distr_data/inst.exe \
@@ -451,7 +451,7 @@ $(BUILD_DIR)/boot_fat12.bin: $(KERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootl
 	fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
 
 $(BUILD_DIR)/.dir 3d/.dir demos/.dir develop/.dir develop/info/.dir drivers/.dir fonts/.dir \
- games/.dir lib/.dir media/.dir network/.dir allskins/.dir .deps/.dir:
+ games/.dir lib/.dir media/.dir network/.dir allskins/.dir distr_data/.dir .deps/.dir:
 	mkdir -p $(dir $@)
 	touch $@
 develop/info/.dir: develop/.dir
