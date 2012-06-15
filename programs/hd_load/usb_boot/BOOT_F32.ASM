@@ -7,8 +7,8 @@
 	org	0x7C00
 	jmp	@f
 	nop
-;	times 57h db 0
-	file 'bt2.dat':3,57h
+	times 57h db 0
+;	file 'bt2.dat':3,57h
 @@:
 	xor	eax, eax
 	mov	ds, ax

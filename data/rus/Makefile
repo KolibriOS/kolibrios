@@ -201,8 +201,8 @@ FASM_NOKPACK_PROGRAMS:=\
  distr_data/9x2klbr.exe:-:$(PROGS)/hd_load/9x2klbr/9x2klbr.asm \
  distr_data/MeOSload.com:-:$(PROGS)/hd_load/meosload/MeOSload.asm \
  distr_data/mtldr:-:$(PROGS)/hd_load/mtldr/mtldr.asm \
- mtldr_for_installer:-:$(PROGS)/hd_load/mtldr_installer/mtldr_code/mtldr.asm \
- distr_data/mtldr_install.exe:-:$(PROGS)/hd_load/mtldr_installer/mtldr_installer.asm \
+ mtldr_for_installer:-:$(PROGS)/hd_load/mtldr_install/mtldr_code/mtldr.asm \
+ distr_data/mtldr_install.exe:-:$(PROGS)/hd_load/mtldr_install/mtldr_install.asm \
  distr_data/MeOSload_for_usb_boot_old.com:-:$(PROGS)/hd_load/usb_boot_old/MeOSload.asm \
  distr_data/enable_for_usb_boot_old.exe:-:$(PROGS)/hd_load/usb_boot_old/enable.asm \
  distr_data/BOOT_F32.BIN:-:$(PROGS)/hd_load/usb_boot/BOOT_F32.ASM \
@@ -325,7 +325,7 @@ MKISOFS_EXTRA:=\
  HD_Load/9x2klbr/=../common/HD_load/9x2klbr/LDKLBR.VXD \
  HD_Load/9x2klbr/=$(PROGS)/hd_load/9x2klbr/readme_dos.txt \
  HD_Load/9x2klbr/=$(PROGS)/hd_load/9x2klbr/readme_win.txt \
- HD_Load/MeOSLoad/=distr_data/MeOSLoad.com \
+ HD_Load/MeOSLoad/=distr_data/MeOSload.com \
  HD_Load/MeOSLoad/=$(PROGS)/hd_load/meosload/AUTOEXEC.BAT \
  HD_Load/MeOSLoad/=$(PROGS)/hd_load/meosload/CONFIG.SYS \
  HD_Load/MeOSLoad/=$(PROGS)/hd_load/meosload/L_readme.txt \
