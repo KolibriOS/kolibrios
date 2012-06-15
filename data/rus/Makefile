@@ -438,7 +438,7 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 
 # The second goal: LiveCD image.
 $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
-	mkisofs -U -J -pad -b kolibri.img -c boot.catalog -hide-joliet boot.catalog -hide-joliet kolibri.img -graft-points \
+	mkisofs -U -J -pad -b kolibri.img -c boot.catalog -hide-joliet boot.catalog -graft-points \
 	-A "KolibriOS AutoBuilder" -p "CleverMouse" -publisher "KolibriOS Team" -V "KolibriOS r$(REV)" -sysid "KOLIBRI" \
 	-iso-level 3 -o $(BUILD_DIR)/kolibri.iso $(BUILD_DIR)/kolibri.img $(call respace,$(MKISOFS_EXTRA)) 2>&1
 
