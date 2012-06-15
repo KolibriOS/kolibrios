@@ -295,6 +295,13 @@ MKISOFS_EXTRA:=\
  /=distr_data/KolibriOS_icon.ico \
  /=distr_data/readme.txt \
  Skins/=$(REPOSITORY)/skins/authors.txt \
+ Docs/config.txt=docs/CONFIG.TXT \
+ Docs/copying.txt=docs/COPYING.TXT \
+ Docs/hot_keys.txt=docs/HOT_KEYS.TXT \
+ Docs/install.txt=docs/INSTALL.TXT \
+ Docs/readme.txt=docs/README.TXT \
+ Docs/stack.txt=docs/STACK.TXT \
+ Docs/sysfuncs.txt=docs/SYSFUNCS.TXT \
 #end of list
 
 # Some macro for convenient work.
