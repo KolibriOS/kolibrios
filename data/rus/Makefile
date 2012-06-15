@@ -290,6 +290,35 @@ MKISOFS_EXTRA:=\
  /=distr_data/readme.txt \
  /=distr_data/readme_dos.txt \
  Skins/=$(REPOSITORY)/skins/authors.txt \
+ Docs/cp866/config.txt=docs/CONFIG.TXT \
+ Docs/cp866/gnu.txt=docs/GNU.TXT \
+ Docs/cp866/history.txt=docs/HISTORY.TXT \
+ Docs/cp866/hot_keys.txt=docs/HOT_KEYS.TXT \
+ Docs/cp866/install.txt=docs/INSTALL.TXT \
+ Docs/cp866/readme.txt=docs/README.TXT \
+ Docs/cp866/stack_ru.txt=docs/STACK_RU.TXT \
+ Docs/cp866/sysfuncr.txt=docs/SYSFUNCR.TXT \
+ Docs/cp1251/config.txt=docs/CONFIG.WIN.TXT \
+ Docs/cp1251/gnu.txt=docs/GNU.WIN.TXT \
+ Docs/cp1251/history.txt=docs/HISTORY.WIN.TXT \
+ Docs/cp1251/hot_keys.txt=docs/HOT_KEYS.WIN.TXT \
+ Docs/cp1251/install.txt=docs/INSTALL.WIN.TXT \
+ Docs/cp1251/readme.txt=docs/README.WIN.TXT \
+ Docs/cp1251/stack_ru.txt=docs/STACK_RU.WIN.TXT \
+ Docs/cp1251/sysfuncr.txt=docs/SYSFUNCR.WIN.TXT \
+#end of list
+
+# Text files which need to be recoded to cp1251 from native aka cp866
+RECODE_TEXT_FILES:=\
+  distr_data/readme.txt:distr_data/readme_dos.txt \
+  docs/CONFIG.WIN.TXT:docs/CONFIG.TXT \
+  docs/GNU.WIN.TXT:docs/GNU.TXT \
+  docs/HISTORY.WIN.TXT:docs/HISTORY.TXT \
+  docs/HOT_KEYS.WIN.TXT:docs/HOST_KEYS.TXT \
+  docs/INSTALL.WIN.TXT:docs/INSTALL.TXT \
+  docs/README.WIN.TXT:docs/README.TXT \
+  docs/STACK_RU.WIN.TXT:docs/STACK_RU.TXT \
+  docs/SYSFUNCR.WIN.TXT:docs/SYSFUNCR.TXT \
 #end of list
 
 # Some macro for convenient work.
@@ -407,8 +436,11 @@ $(DOCDIR)SYSFUNCR.TXT: $(KERNEL)/docs/sysfuncr.txt
 include Makefile.cmm
 
 # Recode some text files from native encoding aka cp866 to cp1251
-distr_data/readme.txt: distr_data/readme_dos.txt
-	iconv -f cp866 -t cp1251 $< > $@
+define recode_meta_rule
+$(1): $(2)
+	iconv -f cp866 -t cp1251 "$<" > "$@"
+endef
+$(foreach f, $(RECODE_TEXT_FILES), $(eval $(call recode_meta_rule,$(fbinary),$(fimage))))
 
 # Sorry, even black magic seems to be insufficient for
 # auto-handling all subtle effects. So we just define
