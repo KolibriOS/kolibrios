@@ -1,0 +1,95 @@
+Installation:
+Step 1. Copy files mtldr and kolibri.img to C:\
+	(You do not want to use C:\? Read remarks below.)
+
+Step 2a) For users of NT-family (NT/2k/XP/2003 Server (?)):
+	add to boot.ini to the section [operating systems] line
+c:\mtldr="KolibriOS"
+	(either open c:\boot.ini with any text editor, or through
+	 Control Panel -> System -> Advanced -> Startup and Recovery
+	-> Edit). You can change the title in quotes to anything you like,
+	under this title the system will appear to bootload list.
+Now at booting the screen of operating system choice will appear.
+
+Step 2b) For users of 9x-family (95/98)
+(probably it works also for some DOS):
+	add to config.sys line
+install=c:\mtldr
+	as first line, if you have simple linear config.sys,
+	as first line in the corresponding section, if config.sys
+	is divided to sections (and begins with [menu])
+Now at booting mtldr will ask: "Load KolibriOS? [y/n]: " and wait for press
+one of 'y','Y','n','N'.
+
+It does not work for Windows Millenium, because loader of WinME does not
+load external code referenced by config.sys. (Thanks to camper for pointing
+to this sad fact.) Use 9x2klbr.
+
+Step 2c) For Vista users:
+	open command line with administrator rights
+		(the variant "Run as administrator" in context menu);
+	if you do not plan install many Kolibri variants as described
+	in remarks, simply run vista_install.bat
+	otherwise execute the following commands:
+bcdedit /create /d "KolibriOS" /application BOOTSECTOR
+	(You can replace the string in quotes with anything you like,
+	this is the title for system in boot list.)
+	The following message must appear:
+"The record {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} was successfully created."
+	In the next commands place obtained value (it is different on
+	different machines and different runs).
+bcdedit /set {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} DEVICE PARTITION=C:
+bcdedit /set {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} PATH \mtldr
+bcdedit /displayorder {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} /addlast
+
+To remove mtldr, in cases 2a) and 2b) delete entered data from boot.ini or
+config.sys accordingly. To remove in case 2c), do the following:
+
+vista_remove.bat, if you install through vista_install.bat;
+bcdedit /delete {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} in general case
+
+If you do not remember assigned to mtldr GUID (this is normal), you can
+find it out by running bcdedit without arguments and finding in displayed list
+corresponding item.
+
+In all cases in KolibriOS screen of parameter choice you can
+on the question about image (item d, "floppy image"), answer "3"
+(use already loaded image).
+
+Remarks:
+
+1. Now all this works only for file systems NTFS and FAT32, support for FAT16
+is not implemented because I think that now FAT16 is only historical object.
+If you use FAT16 and Windows and you do not want to go to FAT32 - mail me -
+possibly you will succeed in make me change my mind.
+
+2. You do not need to place the loader mtldr itself to C:\. Under 9x and Vista
+it can be placed anywhere, in NT-family - on drive C:, but not necessary in
+root folder. (Of course, when installing, you must use instead of c:\mtldr
+the real path and the real name of the file.)
+
+3. You do not need to place the image kolibri.img to C:\. You can without
+any changes in install use root folder of any logical drive, located on
+first physical.
+
+4. Do you want to use logical drive on other physical drive? You can use
+any from following variants:
+a) (If you can work with FASM) In the sources (which can be downloaded from
+   http://diamondz.land.ru, in the same place with loader itself) change
+   the constant boot_drive (located at the end of mtldr.asm) from 80h to
+   identifier of disk, 80h for first, 81h for second and so on. Recompile.
+b) (If you can use hex-editor) Change the byte at offset 0xD98 from 80h to
+   identifier of disk (as in a)).
+c) Use mtldr_install (you can download it in the same place). It will
+   config and install loader.
+
+5. Do you dislike root folder? There is two variants:
+a) In the sources change the constant kolibri_img_name (end of mtldr.asm)
+   to path to root. For example, for C:\Program Files\kolibri\kolibri.img
+   write 'progra~1\kolibri\kolibri.img' (use 8.3 names). Recompile.
+b) Use mtldr_install.
+
+6. Your wishes, remarks, suggestions are welcome on mail, stated below.
+
+						diamond
+						mailto: diamondz@land.ru

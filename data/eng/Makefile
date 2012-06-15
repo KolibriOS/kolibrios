@@ -197,6 +197,21 @@ FASM_PROGRAMS_CD:=\
  drivers/atikms:DRIVERS/ATIKMS:$(REPOSITORY)/drivers/video/drm/radeon/atikms.asm \
 # end of list
 
+# The list of all FASM programs which needs to be compiled without KPACKing.
+FASM_NOKPACK_PROGRAMS:=\
+ distr_data/9x2klbr.exe:-:$(PROGS)/hd_load/9x2klbr/9x2klbr.asm \
+ distr_data/MeOSload.com:-:$(PROGS)/hd_load/meosload/MeOSload.asm \
+ distr_data/mtldr:-:$(PROGS)/hd_load/mtldr/mtldr.asm \
+ mtldr_for_installer:-:$(PROGS)/hd_load/mtldr_install/mtldr_code/mtldr.asm \
+ distr_data/mtldr_install.exe:-:$(PROGS)/hd_load/mtldr_install/mtldr_install.asm \
+ distr_data/MeOSload_for_usb_boot_old.com:-:$(PROGS)/hd_load/usb_boot_old/MeOSload.asm \
+ distr_data/enable_for_usb_boot_old.exe:-:$(PROGS)/hd_load/usb_boot_old/enable.asm \
+ distr_data/BOOT_F32.BIN:-:$(PROGS)/hd_load/usb_boot/BOOT_F32.ASM \
+ distr_data/MTLD_F32:-:$(PROGS)/hd_load/usb_boot/mtldr.asm \
+ distr_data/inst.exe:-:$(PROGS)/hd_load/usb_boot/inst.asm \
+ distr_data/setmbr.exe:-:$(PROGS)/hd_load/usb_boot/setmbr.asm \
+#end of list
+
 # The list of all NASM programs with one main NASM file.
 # Format of an item is exactly the same as in the previous list.
 NASM_PROGRAMS:=\
@@ -302,6 +317,33 @@ MKISOFS_EXTRA:=\
  Docs/readme.txt=docs/README.TXT \
  Docs/stack.txt=docs/STACK.TXT \
  Docs/sysfuncs.txt=docs/SYSFUNCS.TXT \
+ HD_Load/9x2klbr/=distr_data/9x2klbr.exe \
+ HD_Load/9x2klbr/=../common/HD_load/9x2klbr/LDKLBR.VXD \
+ HD_Load/9x2klbr/=$(PROGS)/hd_load/9x2klbr/readme.txt \
+ HD_Load/MeOSLoad/=distr_data/MeOSload.com \
+ HD_Load/MeOSLoad/=$(PROGS)/hd_load/meosload/AUTOEXEC.BAT \
+ HD_Load/MeOSLoad/=$(PROGS)/hd_load/meosload/CONFIG.SYS \
+ HD_Load/MeOSLoad/=$(PROGS)/hd_load/meosload/L_readme.txt \
+ HD_Load/MeOSLoad/=$(PROGS)/hd_load/meosload/L_readme_Win.txt \
+ HD_Load/mtldr/=distr_data/mtldr \
+ HD_Load/mtldr/install.txt=$(PROGS)/hd_load/mtldr/install_eng.txt \
+ HD_Load/mtldr/=$(PROGS)/hd_load/mtldr/vista_install.bat \
+ HD_Load/mtldr/=$(PROGS)/hd_load/mtldr/vista_remove.bat \
+ HD_Load/=distr_data/mtldr_install.exe \
+ HD_Load/memdisk=../common/HD_load/memdisk \
+ HD_Load/USB_Boot/=distr_data/BOOT_F32.BIN \
+ HD_Load/USB_Boot/=distr_data/MTLD_F32 \
+ HD_Load/USB_Boot/=distr_data/inst.exe \
+ HD_Load/USB_Boot/=distr_data/setmbr.exe \
+ HD_Load/USB_Boot/readme.txt=$(PROGS)/hd_load/usb_boot/readme_eng.txt \
+ HD_Load/USB_boot_old/=$(PROGS)/hd_load/usb_boot_old/usb_boot.rtf \
+ HD_Load/USB_boot_old/=$(PROGS)/hd_load/usb_boot_old/usb_boot_866.txt \
+ HD_Load/USB_boot_old/=$(PROGS)/hd_load/usb_boot_old/usb_boot_1251.txt \
+ HD_Load/USB_boot_old/MeOSload.com=distr_data/MeOSload_for_usb_boot_old.com \
+ HD_Load/USB_boot_old/enable.exe=distr_data/enable_for_usb_boot_old.exe \
+ games/=../common/games \
+ games/fara=games/fara \
+ games/soko/soko=games/soko \
 #end of list
 
 # Some macro for convenient work.
@@ -380,7 +422,7 @@ $(BUILD_DIR)/kolibri.img: $(BUILD_DIR)/.dir \
 
 # The second goal: LiveCD image.
 $(BUILD_DIR)/kolibri.iso: $(BUILD_DIR)/kolibri.img $(mkisofs_extra_targets)
-	mkisofs -U -J -pad -b kolibri.img -c boot.catalog -hide-joliet boot.catalog -hide-joliet kolibri.img -graft-points \
+	mkisofs -U -J -pad -b kolibri.img -c boot.catalog -hide-joliet boot.catalog -graft-points \
 	-A "KolibriOS AutoBuilder" -p "CleverMouse" -publisher "KolibriOS Team" -V "KolibriOS r$(REV)" -sysid "KOLIBRI" \
 	-iso-level 3 -o $(BUILD_DIR)/kolibri.iso $(BUILD_DIR)/kolibri.img $(call respace,$(MKISOFS_EXTRA)) 2>&1
 
@@ -393,7 +435,7 @@ $(BUILD_DIR)/boot_fat12.bin: $(KERNEL)/bootloader/boot_fat12.asm $(KERNEL)/bootl
 	fasm $(KERNEL)/bootloader/boot_fat12.asm $(BUILD_DIR)/boot_fat12.bin
 
 $(BUILD_DIR)/.dir 3d/.dir demos/.dir develop/.dir develop/info/.dir drivers/.dir fonts/.dir \
- games/.dir lib/.dir media/.dir network/.dir allskins/.dir .deps/.dir:
+ games/.dir lib/.dir media/.dir network/.dir allskins/.dir distr_data/.dir .deps/.dir:
 	mkdir -p $(dir $@)
 	touch $@
 develop/info/.dir: develop/.dir
