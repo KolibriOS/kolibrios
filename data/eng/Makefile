@@ -251,7 +251,7 @@ COPY_FILES:=\
 # except that there can be fourth field with parameters for a compiler.
 CMM_PROGRAMS:=\
  File|Managers/Eolite:File|Managers/EOLITE:$(PROGS)/fs/Eolite/trunk/Eolite.c-- \
- games/clicks:GAMES/CLICKS:$(PROGS)/games/clicks/trunk/clicks.c-- \
+ games/clicks:GAMES/CLICKS:$(PROGS)/games/clicks/trunk/clicks.c \
  games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
  games/flood-it:GAMES/flood-it:$(PROGS)/games/flood-it/trunk/flood-it.c \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
