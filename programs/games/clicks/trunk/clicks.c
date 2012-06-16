@@ -3,7 +3,7 @@
 #include "lib\kolibri.h" 
 #include "lib\random.h"
 #include "lib\boxes.txt"
-#include "lang.h"
+#include "lang.h--"
 
 system_colors sc;
 
