@@ -240,7 +240,7 @@ wScr:
 .size_y   dw 300 ; +4
 .start_y  dw  50 ; +6
 .btn_high dd  15 ; +8
-.type	  dd   1 ;+12
+.type	  dd   0 ;+12
 .max_area dd 100 ;+16
 .cur_area dd  30 ;+20
 .position dd   0 ;+24
@@ -274,7 +274,7 @@ hScr:
 .size_y     dw 16 ;+4
 .start_y    dw 50 ;+6
 .btn_high   dd 15 ;+8
-.type	    dd 1  ;+12
+.type	    dd 0  ;+12
 .max_area   dd 100 ;+16
 .cur_area   dd 30 ;+20
 .position   dd 0  ;+24
@@ -308,7 +308,7 @@ ws_dir_lbox: ;дочерний скроллинг для элемента ListBox
 .size_y     dw 30 ;+4
 .start_y    dw 70 ;+6
 .btn_high   dd 15 ;+8
-.type	    dd 1  ;+12
+.type	    dd 0  ;+12
 .max_area   dd 100 ;+16
 .cur_area   dd 30 ;+20
 .position   dd 0  ;+24
