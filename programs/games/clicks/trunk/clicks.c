@@ -3,8 +3,6 @@
 #include "lib\kolibri.h" 
 #include "lib\random.h"
 #include "lib\boxes.txt"
-#include "lang.h--"
-
 system_colors sc;
 
 //уровни сложности
@@ -21,6 +19,10 @@ int blocks_matrix[28*28]; //цвета для поля с квадратиками
 #define MARKED 7
 #define DELETED_BLOCK 6
 #define HEADER "Just Clicks v2.0"
+
+#ifndef AUTOBUILD
+#include "lang.h--"
+#endif
 
 #ifdef LANG_RUS
 	char NEW_GAME_TEXT[]=" ‡ ­®ў® [F2]"; 

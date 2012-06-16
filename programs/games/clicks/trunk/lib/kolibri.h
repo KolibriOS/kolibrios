@@ -52,11 +52,13 @@ struct system_colors{
 
 void system_colors::get()
 {
+	$push ecx
 	EAX = 48;
 	EBX = 3;
 	ECX = #frame;
 	EDX = 40;
 	$int 0x40
+	$pop ecx
 }
 
 //------------------------------------------------------------------------------
