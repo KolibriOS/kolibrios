@@ -9,7 +9,7 @@ dword j,
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.93";
+char version[]=" Text-based Browser 0.93b";
 
 char tinypad_path[]="/sys/tinypad";
 char t_edit_path[]="/sys/develop/t_edit";

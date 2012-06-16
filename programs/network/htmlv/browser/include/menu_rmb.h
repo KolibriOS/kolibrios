@@ -23,10 +23,13 @@ void menu_rmb()
 	
 	SetEventMask(100111b); 
 	
-	loop() switch(CheckEvent())
+	loop() switch(WaitEvent())
 	{
 		case evMouse:
 				mm.get();
+				if (mm.lkm) || (mm.pkm)
+					if (mm.x>ITEM_WIDTH) || (mm.y>items_num*ITEM_HEIGHT+1) ExitProcess();
+				
 				id=mm.y/ITEM_HEIGHT;
 				if (id<0) || (id+1>items_num) break;
 				if (items_cur<>id)
@@ -84,9 +87,5 @@ void menu_rmb()
 					DrawBar(1, i*ITEM_HEIGHT+1, ITEM_WIDTH-1, ITEM_HEIGHT, EDX);
 					WriteText(8,i*ITEM_HEIGHT+6,0x80,0x000000,ITEMS_LIST[i],0);
 				}
-		default:
-				GetProcessInfo(#MenuForm, SelfInfo);
-				id=GetSlot(MenuForm.ID);
-				if (id<>ActiveProcess()) ExitProcess();			
 	}
 }
