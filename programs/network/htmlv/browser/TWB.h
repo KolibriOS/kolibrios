@@ -9,7 +9,10 @@ dword j,
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.92";
+char version[]=" Text-based Browser 0.93";
+
+char tinypad_path[]="/sys/tinypad";
+char t_edit_path[]="/sys/develop/t_edit";
 
 
 struct TWebBrowser {
@@ -17,7 +20,7 @@ struct TWebBrowser {
 	void DrawScroller();
 	void ShowPage();
 	void ParseHTML(dword, dword);
-	void Scan(dword);
+	void Scan(int);
 	void WhatTextStyle(int left1, top1, width1);
 };
 
@@ -26,7 +29,7 @@ TWebBrowser WB1;
 byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, link, ignor_text, li_tab, body_present;
 
 
-dword text_colors[10],
+dword text_colors[30],
 	text_color_index,
 	link_color,
 	bg_color;
@@ -41,6 +44,9 @@ char line[330],
 	parametr[1200],
 	options[1000];
 
+char anchor[256];
+int anchor_line_num;
+
 
 #include "include\history.h"
 #include "include\colors.h"
@@ -48,19 +54,30 @@ char line[330],
 #include "include\some_code.h"
 
 
-void TWebBrowser::Scan(dword id) {
+void TWebBrowser::Scan(int id) {
 	if (id > 399)
 	{
 		GetURLfromPageLinks(id);
-		//эту всю хрень нужно в GetNewUrl() переместить
-		if (URL[0] == '#') {  //мы не умеем переходить по ссылке внутри документа. Пока что...
-			copystr(BrowserHistory.CurrentUrl(), #editURL);
-			copystr(#URL, #editURL + strlen(#editURL));
+		
+		//#1
+		if (URL[0] == '#')
+		{
+			copystr(#URL+find_symbol(#URL, '#'), #anchor);
+			
 			copystr(BrowserHistory.CurrentUrl(), #URL);
+			//copystr(#editURL, #URL + strlen(#URL));
+			//copystr(#URL, #editURL);
+			
+			za_kadrom=count-max_kolvo_strok;
 			ShowPage(#URL);
 			return;
 		}
-		URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка, но это не совсем правильно - в едитурл должно оставаться
+		//liner.ru#1
+		if (find_symbol(#URL, '#')<>-1)
+		{
+			copystr(#URL+find_symbol(#URL, '#'), #anchor);
+			URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка
+		}
 
 		GetNewUrl();
 		
@@ -117,9 +134,13 @@ void TWebBrowser::Scan(dword id) {
 			return;
 		case 052:  //Нажата F3
 			IF(edit1.flags <> 66) 
-			IF (strcmp(get_URL_part(5),"http:")<>0) RunProgram("tinypad", #URL); ELSE RunProgram("tinypad", #download_path);
+			IF (!strcmp(get_URL_part(5),"http:")) RunProgram(#tinypad_path, #download_path); ELSE RunProgram(#tinypad_path, #URL);
 			return;
-
+		case 053:  //Нажата F4
+			IF(edit1.flags <> 66) 
+			IF (!strcmp(get_URL_part(5),"http:")) RunProgram(#t_edit_path, #download_path); ELSE RunProgram(#t_edit_path, #URL);
+			return;
+			
 		case HOME:
 			copystr("http://kolibri-os.narod.ru", #editURL);
 		case GOTOURL:
@@ -349,6 +370,7 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 			WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //обработка тегов
 
 			line = tag = parametr = tagparam = ignor_param = 0; //всё обнуляем
+			
 			break;
 		case '=': //поддержка шайтанской кодировки страниц, сохранённых через ИЕ7
 			IF(strcmp(#URL + strlen(#URL) - 4, ".mht")<>0) goto DEFAULT_MARK;
@@ -420,6 +442,14 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 	if (stroka * 10 + 15 <= height)
 		DrawBar(left, stroka * 10 + top + 15, width - 15, -stroka * 10 + height - 15, bg_color); //закрашиваем всё до конца
 	if (za_kadrom == 0) count = stroka;
+	
+	if (anchor)
+	{
+		anchor[0]='';
+		za_kadrom=anchor_line_num;
+		ParseHTML(buf, filesize);
+	}
+
 	DrawScroller(); //рисуем скролл
 }
 
@@ -501,7 +531,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	
 	IF (ignor_text == 1) return;
 	//
-	
+
 	//
 	IF(!chTag("q")) copystr("\"", #line + strlen(#line));
 	
@@ -521,6 +551,14 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	//
 	IF(!tag) return;
 	stolbec += strlen(#line);
+
+	if (anchor) && (!strcmp(#parametr, "id=")) //очень плохо!!! потому что если не последний тег, работать не будет
+	{
+		if (!strcmp(#anchor, #options))
+		{
+			anchor_line_num=za_kadrom+stroka;
+		}
+	}
 
 	if (!chTag("body"))
 	{
@@ -550,11 +588,15 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 	//////////////////////////
-	if (!chTag("a")) {
-		IF (stroka - 1 > max_kolvo_strok) || (stroka < -2) return;
-		if (rez) {
-			HREF: IF(strcmp(#parametr, "href=") == 0) {
-				IF(link == 1) text_color_index--; //если какой-то долбоёб не закрыл тэг
+	if (!chTag("a"))
+	{
+		if (rez)
+		{
+			_A_MARK:
+			if (!strcmp(#parametr, "href="))
+			{
+				if (stroka - 1 > max_kolvo_strok) || (stroka < -2) return;
+				if (link == 1) text_color_index--; //если какой-то долбоёб не закрыл тэг
 				link = 1;
 				blink++;
 				text_color_index++;
@@ -562,9 +604,17 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				copystr(#options, #page_links + strlen(#page_links));
 				copystr("|", #page_links + strlen(#page_links));
 			}
-			IF(tagparam) {
+			if (anchor) && (!strcmp(#parametr, "name="))
+			{
+				if (!strcmp(#anchor, #options))
+				{
+					anchor_line_num=za_kadrom+stroka;
+				}
+			}
+			if (tagparam)
+			{
 				GetNextParam();
-				GOTO HREF;
+				GOTO _A_MARK;
 			}
 		}
 		ELSE {
