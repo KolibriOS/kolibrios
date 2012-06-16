@@ -1,6 +1,8 @@
-echo #define LANG_ENG 1 >lang.h--
-c--\c-- clicks.c--
-del clicks.kex
-rename clicks.com clicks.kex
-rem rename clicks clicks.kex
+del lang.h
+echo #define LANG_ENG 1 >lang.h
+..\C--\C-- clicks.c
+del clicks
+rename clicks.com clicks
+del warning.txt
+del lang.h
 pause
