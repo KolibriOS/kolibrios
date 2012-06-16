@@ -227,7 +227,7 @@ void draw_clicks_num()
 	for (i=0;i<BLOCKS_NUM*BLOCKS_NUM;i++) 
 		if (blocks_matrix[i]<>DELETED_BLOCK) BLOCKS_LEFT++;	
 	
-	DrawBar(TEXT_X, TEXT_Y, 18,9, sc.work_button);
+	DrawBar(TEXT_X, TEXT_Y, 18,9, sc.work);
 	
 	WriteText(TEXT_X,TEXT_Y,0x80,sc.work_button_text,IntToStr(BLOCKS_LEFT),0);
 	if (check_for_end())
