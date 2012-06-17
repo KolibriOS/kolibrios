@@ -9,10 +9,7 @@ dword j,
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.93b";
-
-char tinypad_path[]="/sys/tinypad";
-char t_edit_path[]="/sys/develop/t_edit";
+char version[]=" Text-based Browser 0.93e";
 
 
 struct TWebBrowser {
@@ -54,7 +51,8 @@ int anchor_line_num;
 #include "include\some_code.h"
 
 
-void TWebBrowser::Scan(int id) {
+void TWebBrowser::Scan(int id)
+{
 	if (id > 399)
 	{
 		GetURLfromPageLinks(id);
@@ -92,7 +90,6 @@ void TWebBrowser::Scan(int id) {
 		return;
 	}
 	
-	//edit1.flags=64;
 	IF(count < max_kolvo_strok) SWITCH(id) //если мало строк игнорируем некоторые кнопки
 	{ CASE 183: CASE 184: CASE 180: CASE 181: return; } 
 	
@@ -114,6 +111,12 @@ void TWebBrowser::Scan(int id) {
 			if (!BrowserHistory.GoForward()) return;
 			OpenPage();
 			return;
+		case 052:  //Нажата F3
+			if (strcmp(get_URL_part(5),"http:")<>0) RunProgram("/rd/1/tinypad", #URL); else RunProgram("/rd/1/tinypad", #download_path);
+			return;
+		case 053:  //Нажата F4
+			if (strcmp(get_URL_part(5),"http:")<>0) RunProgram("/rd/1/develop/t_edit", #URL); else RunProgram("/rd/1/develop/t_edit", #download_path);
+			return;
 		case 054: //F5
 			IF(edit1.flags == 66) break;
 		case REFRESH:
@@ -124,21 +127,15 @@ void TWebBrowser::Scan(int id) {
 				Draw_Window();
 				return;
 			}
-			OpenPage(); //от сердца отрываю, здесь нужно za_kadrom старое
+			anchor_line_num=za_kadrom; //весёлый костыль :Р
+			anchor[0]='|';
+			OpenPage();
 			return;
 		case 014: //Ctrl+N новое окно
 		case 020: //Ctrl+T новая вкладка
 		case NEWTAB:
 			MoveSize(190,80,OLD,OLD);
 			RunProgram(#program_path, #URL);
-			return;
-		case 052:  //Нажата F3
-			IF(edit1.flags <> 66) 
-			IF (!strcmp(get_URL_part(5),"http:")) RunProgram(#tinypad_path, #download_path); ELSE RunProgram(#tinypad_path, #URL);
-			return;
-		case 053:  //Нажата F4
-			IF(edit1.flags <> 66) 
-			IF (!strcmp(get_URL_part(5),"http:")) RunProgram(#t_edit_path, #download_path); ELSE RunProgram(#t_edit_path, #URL);
 			return;
 			
 		case HOME:
@@ -256,7 +253,7 @@ void OpenPage()
 		Pause(60);
 		if (GetProcessSlot(downloader_id)<>0)
 		{
-			WriteDebug("Browser Hack v2.0: Killing downloader and trying to run it one more!");
+			debug("Browser Hack v2.0: Killing downloader and trying to run it one more!");
 			KillProcess(downloader_id); //убиваем старый процесс
 			downloader_id = RunProgram("/sys/network/downloader", #URL);
 		}
@@ -536,7 +533,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	IF(!chTag("q")) copystr("\"", #line + strlen(#line));
 	
 	//вывод на экран
-	if (stroka >= 0) && (stroka - 2 < max_kolvo_strok) && (line) 
+	if (stroka >= 0) && (stroka - 2 < max_kolvo_strok) && (line) && (!anchor)
 	{
 		WriteText(stolbec * 6 + left1, top1, 0x80, text_colors[text_color_index], #line, 0); //может тут рисовать белую строку?
 		IF (b_text)	{ $add ebx, 1<<16   $int 0x40 }
@@ -803,7 +800,7 @@ void TextGoDown(int left1, top1, width1)
 	IF(blq_text == 1) stolbec = 8;
 	ELSE stolbec = 0;
 	IF(li_text == 1) stolbec = li_tab * 5;
-	IF(stroka >= 0) && (stroka - 2 < max_kolvo_strok) DrawBar(left1 - 5, top1 + 10, width1 + 5, 10, bg_color);
+	IF(stroka >= 0) && (stroka - 2 < max_kolvo_strok)  && (!anchor) DrawBar(left1 - 5, top1 + 10, width1 + 5, 10, bg_color);
 }
 
 

@@ -181,7 +181,7 @@ inline fastcall ExitProcess(){
 	$int 0x40
 }
 
-inline fastcall KillProcess(dword ECX){
+inline fastcall int KillProcess(dword ECX){
 	$mov eax,18;
 	$mov ebx,18;
 	$int 0x40
@@ -206,9 +206,11 @@ inline fastcall void DrawTitle(dword ECX)
 
 inline fastcall dword GetSkinWidth()
 {
-	EAX = 48;
-	EBX = 4;
+	$push ebx
+	$mov  eax,48
+	$mov  ebx,4
 	$int 0x40
+	$pop  ebx
 }
 
 inline fastcall void SetSystemSkin(ECX){
@@ -373,7 +375,7 @@ void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaC
 }
 
 
-inline fastcall dword CreateThread(dword ECX,EDX)
+inline fastcall int CreateThread(dword ECX,EDX)
 {
 	EAX = 51;
 	EBX = 1;
@@ -493,13 +495,12 @@ void DrawFlatButton(dword x,y,width,height,id,color,text)
         PutPixel(px + x, y - py, 0);
         px = py / r + px;
         py = -px / r + py;
-		//Pause(1);
 	}
 }
 
 //------------------------------------------------------------------------------
 
-inline fastcall dword WriteDebug(dword EDX)
+inline fastcall void debug(dword EDX)
 {
 	$push ebx
 	$push ecx

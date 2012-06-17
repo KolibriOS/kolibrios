@@ -63,8 +63,6 @@ void main()
 		switch(EAX & 0xFF)
 		{
 			CASE evMouse:
-				edit_box_mouse stdcall (#edit1);
-				
 				/*scrollbar_v_mouse (#scroll1);      //конченый скролл притормажимает, идём "своим путём"
 				if (za_kadrom <> scroll1.position)
 				{
@@ -72,15 +70,17 @@ void main()
 					WB1.ParseHTML(buf, filesize);
 					//break;
 				};*/
+				
 				btn=GetSlot(Form.ID); 
 				IF (btn<>ActiveProcess()) break; //если окно не активно на события мыши не реагируем
+
+				edit_box_mouse stdcall (#edit1);
 
 				m.get();
 				
 				if (m.pkm) && (m.y>WB1.top) && (m.y<Form.height) && (filesize)
 				{
 					CreateThread(#menu_rmb,#stak); 
-					break;
 				}
 
 				IF (m.vert==65535) //прокрутка колёсиком
@@ -130,7 +130,13 @@ void main()
 				break;
 			case evKey:
 				key = GetKey();
+				
+				if (edit1.flags == 66) || (edit1.flags == 98) SWITCH(key) //если активна строка адреса игнорируем некоторые кнопки
+					{ CASE 52: CASE 53: CASE 54: goto _EDIT_MARK; } 
+
 				WB1.Scan(key);
+				
+				_EDIT_MARK:
 				IF (key<>0x0d) && (key<>183) && (key<>184) && (key<>173) {EAX=key<<8; edit_box_key stdcall(#edit1);} //адресная строка
 				break;
 			case evReDraw:

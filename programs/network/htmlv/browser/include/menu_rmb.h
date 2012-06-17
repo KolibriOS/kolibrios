@@ -6,7 +6,7 @@
 char *ITEMS_LIST[]={
 "View in Tinypad   F3",
 "View in TextEdit  F4",
-"--------------------", //сделать определение таких линий и рисовать их
+"-",
 "KOI-8         Ctrl+K",
 "UTF           Ctrl+U",
 0}; 
@@ -19,38 +19,31 @@ void menu_rmb()
 
 	mouse mm;
 	int items_num, items_cur;
-	byte id, key;
+	int id1, key;
 	
 	SetEventMask(100111b); 
 	
 	loop() switch(WaitEvent())
 	{
-		case evMouse:
+	case evMouse:
 				mm.get();
-				if (mm.lkm) || (mm.pkm)
-					if (mm.x>ITEM_WIDTH) || (mm.y>items_num*ITEM_HEIGHT+1) ExitProcess();
+
+				GetProcessInfo(#MenuForm, SelfInfo);
+				id1=GetSlot(MenuForm.ID);
+				if (id1<>ActiveProcess()) ExitProcess();			
 				
-				id=mm.y/ITEM_HEIGHT;
-				if (id<0) || (id+1>items_num) break;
-				if (items_cur<>id)
+				id1=mm.y/ITEM_HEIGHT;
+				if (id1<0) || (id1+1>items_num) || (mm.x<0) || (mm.x>ITEM_WIDTH) break;
+				if (items_cur<>id1)
 				{
-					items_cur=id;
+					items_cur=id1;
 					goto _ITEMS_DRAW;
 				}
 				
 				break;
 				
 		case evButton: 
-				id=GetButtonID();
-				if (id==1) ExitProcess();
-				_BUTTON_MARK:
-				if (id==10) WB1.Scan(52); //View html code
-				if (id==11) WB1.Scan(53); //View html code
-				if (id==12) break;
-				if (id==13) WB1.Scan(11); //KOI
-				if (id==14) WB1.Scan(21); //UTF
-				
-				ExitProcess();
+				ItemProcess(GetButtonID());
 				break;
 				
 		case evKey:
@@ -68,9 +61,7 @@ void menu_rmb()
 				}
 				if (key==13)
 				{
-					id=items_cur+10;
-					//WriteDebug(IntToStr(id));
-					goto _BUTTON_MARK;
+					ItemProcess(items_cur+10);
 				}
 				break;
 				
@@ -82,6 +73,12 @@ void menu_rmb()
 				_ITEMS_DRAW:
 				for (i=0; i<items_num; i++;)
 				{
+					if (!strcmp(ITEMS_LIST[i],"-"))
+					{
+						DrawBar(1, i*ITEM_HEIGHT+1, ITEM_WIDTH-1, ITEM_HEIGHT, 0xFFFFFF);
+						DrawBar(1, i*ITEM_HEIGHT+1+9, ITEM_WIDTH-1, 1, 0x999999);
+						continue;
+					}
 					DefineButton(0, i*ITEM_HEIGHT, ITEM_WIDTH, ITEM_HEIGHT, i+10+BT_HIDE, 0xFFFFFF);
 					if (i<>items_cur) EDX=0xFFFFFF; else EDX=0x94AECE;
 					DrawBar(1, i*ITEM_HEIGHT+1, ITEM_WIDTH-1, ITEM_HEIGHT, EDX);
@@ -89,3 +86,18 @@ void menu_rmb()
 				}
 	}
 }
+
+void ItemProcess(int num_id)
+{
+	if (num_id==10) WB1.Scan(52);
+	if (num_id==11) WB1.Scan(53);
+	//-----------------------
+	if (num_id==13) WB1.Scan(11); //KOI
+	if (num_id==14) WB1.Scan(21); //UTF
+	ExitProcess();
+}
+
+
+
+
+
