@@ -72,7 +72,6 @@ FASM_PROGRAMS:=\
  madmouse:MADMOUSE:$(PROGS)/other/madmouse/madmouse.asm \
  mykey:MYKEY:$(PROGS)/system/MyKey/trunk/MyKey.asm \
  pcidev:PCIDEV:$(PROGS)/system/pcidev/trunk/PCIDEV.ASM \
- period:PERIOD:$(PROGS)/other/period/trunk/period.asm \
  pic4:PIC4:$(PROGS)/media/pic4/trunk/pic4.asm \
  rdsave:RDSAVE:$(PROGS)/system/rdsave/trunk/rdsave.asm \
  rtfread:RTFREAD:$(PROGS)/other/rtfread/trunk/rtfread.asm \
