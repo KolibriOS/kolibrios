@@ -544,8 +544,7 @@ draw_window:
         mov     [scroll_bar_data_vertical.all_redraw],eax
   @@:
 ;---------------------------------------------
-    mov  esi,ecx
-    mcall 47,0x30000,isymImplemented,<114,8>
+    mcall 47,0x30000,isymImplemented,<114,8>, 0x10DDEEFF
     add  edx,36 shl 16
     mcall ,,isymMax
     add  edx,40 shl 16
