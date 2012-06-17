@@ -841,77 +841,6 @@ fileinfo:
 
    rb  256-($-.name)
 ;---------------------------------------------------------------------
-;blind db ?
-if RENDER eq PIX
-;  rd 2
-  Free rd 9
-else
-if RENDER eq BGI
-  FreeFontscale dd 0.07
-else
-  Zoomscale dd 1.15
-  FreeFontscale dd 0.04
-end if
-  Free BGIfree FONT_NAME,0,0,1.0,1.0,char,1,0x44000000,0
-end if
-;I_END0:
-fname_buf:
-        rb      1024+16
-fileattr rd 40/4
-if BENCH eq 1
-  bench dd ?
-end if
-tail dd ?
-cGroup dd ?
-Chp:
-  CHP
-Pap:
-  PAP
-Sep:
-  SEP
-Dop:
-  DOP
-rds db ?
-ris db ?
-cbBin dd ?
-lParam dd ?
-fSkipDestIfUnk db ?
-mode dd ?
-curheight dw ?
-maxheight dw ?
-RetroBlock dd ?
-RetroSave:
-  SAVE
-prcinfo rb 1024
-RetroPtr dd ?
-colorptr dd ?
-colortbl rd 16
-ct_end:
-fname_size dd ?
-max_block dd ?
-cur_block dd ?
-HDoc dd ?
-;HClick dd ?
-top dw ?
-line_count dd ?
-par_count  dd ?
-char db ?
-pitch db ?
-wSave dd ?
-RetroXY dd ?
-RetroGroup dd ?
-
-save_stack:
-rb RTFSTACKSIZE
-save_limit:
-rb BGIFONTSIZE
-
-listptr dd ?
-szKeyword rb 31
-szParameter rb 21
-block_end dd ?
-
-;---------------------------------------------------------------------
 align   4
 Box_lib_import:
 
@@ -1114,8 +1043,79 @@ scroll_bar_data_vertical:
 .work_size      dd 0    ;+76
 .all_redraw     dd 0    ;+80
 .ar_offset      dd AR_OFFSET   ;+84
+
 ;---------------------------------------------------------------------
+;blind db ?
+if RENDER eq PIX
+;  rd 2
+  Free rd 9
+else
+if RENDER eq BGI
+  FreeFontscale dd 0.07
+else
+  Zoomscale dd 1.15
+  FreeFontscale dd 0.04
+end if
+  Free BGIfree FONT_NAME,0,0,1.0,1.0,char,1,0x44000000,0
+end if
 I_END0:
+fname_buf:
+        rb      1024+16
+fileattr rd 40/4
+if BENCH eq 1
+  bench dd ?
+end if
+tail dd ?
+cGroup dd ?
+Chp:
+  CHP
+Pap:
+  PAP
+Sep:
+  SEP
+Dop:
+  DOP
+rds db ?
+ris db ?
+cbBin dd ?
+lParam dd ?
+fSkipDestIfUnk db ?
+mode dd ?
+curheight dw ?
+maxheight dw ?
+RetroBlock dd ?
+RetroSave:
+  SAVE
+prcinfo rb 1024
+RetroPtr dd ?
+colorptr dd ?
+colortbl rd 16
+ct_end:
+fname_size dd ?
+max_block dd ?
+cur_block dd ?
+HDoc dd ?
+;HClick dd ?
+top dw ?
+line_count dd ?
+par_count  dd ?
+char db ?
+pitch db ?
+wSave dd ?
+RetroXY dd ?
+RetroGroup dd ?
+
+save_stack:
+rb RTFSTACKSIZE
+save_limit:
+rb BGIFONTSIZE
+
+listptr dd ?
+szKeyword rb 31
+szParameter rb 21
+block_end dd ?
+
+;---------------------------------------------------------------------
 I_END:                             ; метка конца программы
 
 procinfo process_information
