@@ -1,0 +1,10 @@
+frame               dd 0x95afcf
+grab                dd 0x95afcf
+grab_button         dd 0x95afcf
+grab_button_text    dd 0xffffff
+grab_text           dd 0x333333
+work                dd 0xe2e4e4
+work_button         dd 0xacc4da
+work_button_text    dd 0x001c1e
+work_text           dd 0x333333
+work_graph          dd 0x95afcf
