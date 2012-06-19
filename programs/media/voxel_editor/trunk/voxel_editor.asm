@@ -17,7 +17,7 @@ include 'dll.inc'
 include 'vox_draw.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel editor 12.06.12',0 ;подпись окна
+caption db 'Voxel editor 19.06.12',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -474,13 +474,13 @@ draw_pok:
 	mov edi,[sc.work_button]
 	int 0x40 ;масштаб
 	mov ecx,[v_cur_x]
-	add edx,(6*2)*65536+9
-	int 0x40 ;
+	add edx,9
+	int 0x40 ;курсор x
 	mov ecx,[v_cur_y]
-	add edx,(6*0)*65536+9
-	int 0x40 ;
+	add edx,9
+	int 0x40 ;курсор y
 	mov ecx,[n_plane]
-	add edx,(6*0)*65536+9
+	add edx,9
 	int 0x40 ;номер сечения
 
 	mov eax,4 ;рисование текста
@@ -914,7 +914,8 @@ push edi
 			mov ebx,[scaled_zoom]
 			sub eax,ebx
 			inc ebx
-			stdcall [buf2d_vox_obj_draw_3g_scaled], buf_r_img, buf_r_z, buf_vox, [open_file_vox], 0,0, 0, ebx, [cam_x],[cam_y],[cam_z],eax, 0xd080d0
+			stdcall [buf2d_vox_obj_draw_3g_scaled], buf_r_img, buf_r_z, buf_vox,\
+				[open_file_vox], 0,0, 0, ebx, [cam_x],[cam_y],[cam_z],eax, [sc.work_graph]
 			bt dword[mode_light],0
 			jnc @f
 				stdcall [buf2d_vox_obj_draw_3g_shadows], buf_r_img, buf_r_z, buf_vox, 0,0, 0, ebx, 3
@@ -1038,12 +1039,64 @@ draw_objects:
 			stdcall [buf2d_vox_obj_draw_3g_shadows], buf_0, buf_0z, buf_vox, 0,0, 0, [scaled_zoom], 3
 		.end_2:
 	.end_0:
-
 	pop ecx ebx eax
 
+	call draw_vox_cursor
 	stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
 	stdcall [buf2d_draw], buf_pl ;обновляем буфер на экране
 	.end_f:
+	ret
+
+;рисование курсора
+align 4
+draw_vox_cursor:
+pushad
+	mov ecx,[v_zoom]
+	cmp ecx,[scaled_zoom]
+	jle @f
+		mov ecx,[scaled_zoom]
+	@@:
+	xor edx,edx
+	inc edx
+	shl edx,cl
+
+	mov eax,[v_cur_x]
+	cmp eax,edx
+	jge .end_f ;курсор за пределами поля
+	mov edi,TILE_SIZE
+	imul eax,edi
+	add eax,OT_MAP_X
+	mov ebx,edx
+	dec ebx
+	sub ebx,[v_cur_y]
+	imul ebx,edi
+	add ebx,OT_MAP_Y
+	inc eax
+	inc ebx
+	sub edi,2
+	stdcall [buf2d_rect_by_size], buf_pl, eax,ebx, edi,edi,[sc.work_graph]
+	dec ebx
+	add edi,2
+
+	;горизонтальные линии
+	sub eax,2
+	mov ecx,edi
+	imul edi,edx
+	shr ecx,1
+	add ebx,ecx ;центровка по середине клетки
+	mov ecx,OT_MAP_X
+	add edi,ecx
+	stdcall [buf2d_line], buf_pl, ecx,ebx, eax,ebx,[sc.work_graph]
+	add eax,TILE_SIZE
+	inc eax
+	cmp eax,edi
+	jge @f ;если курсор на краю поля
+		dec edi
+		stdcall [buf2d_line], buf_pl, eax,ebx, edi,ebx,[sc.work_graph]
+	@@:
+
+	.end_f:
+popad
 	ret
 
 if 0

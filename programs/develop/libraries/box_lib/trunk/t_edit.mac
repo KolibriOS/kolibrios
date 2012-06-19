@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 22.08.2011 IgorA
+; файл последний раз изменялся 19.06.2012 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -2339,15 +2339,60 @@ endp
 ; ebx = колличество прочитанных байт
 align 4
 proc ted_open_file, edit:dword, file:dword, f_name:dword ;функция открытия файла
-	push edi
+	push ecx edx edi
 	mov edi,dword[edit]
 
+	; *** проверяем размер памяти и если не хватает то увеличиваем ***
+	;пробуем получить информацию о файле
+	mov eax,70
+	mov ebx,dword[file]
+	mov dword[ebx], 5
+	mov dword[ebx+4], 0
+	mov dword[ebx+8], 0
+	mov dword[ebx+12], 0
+	m2m dword[ebx+16], ted_tex
+	mov  byte[ebx+20], 0
+	push dword[f_name]
+	pop dword[ebx+21]
+	int 0x40
+	cmp eax,0
+	je .end_0
+		mov edx,ted_max_chars
+		cmp eax,2 ;функция не поддерживается для данной файловой системы
+		je @f
+		jmp .ret_f
+	.end_0:
+	;проверяем хватит ли памяти для загрузки файла
+	mov ecx,ted_max_chars
+	sub ecx,2 ;ecx = максимальное число байт, для которых была выделена память
+	mov edx,ted_tex
+	mov edx,dword[edx+32] ;+32 = +0x20: qword: размер файла в байтах
+	cmp edx,ecx
+	jl @f
+		;увеличиваем память если не хватило
+		mov ecx,edx ;память необходимая для открытия файла
+		add ecx,2  ;память для служебных начального и конечного символов
+		add ecx,ted_increase_size ;память для редактирования файла
+		mov ted_max_chars,ecx
+		imul ecx,sizeof.symbol
+		invoke mem.realloc, ted_tex,ecx
+		mov ted_tex,eax
+		mov ted_tex_1,eax
+		add ted_tex_1,sizeof.symbol
+		add eax,ecx
+		mov ted_tex_end,eax
+		mov ecx,ted_tex_1
+		add ecx,sizeof.symbol
+		mov ted_ptr_free_symb,ecx
+	@@:
+
+	; *** пробуем открыть файл ***
 	mov eax,70
 	mov ebx,dword[file]
 	mov dword[ebx], 0
 	mov dword[ebx+4], 0
 	mov dword[ebx+8], 0
-	m2m dword[ebx+12], ted_max_chars ;число байт, которые могут быть считаны с файла
+	m2m dword[ebx+12], edx ;число байт, которые могут быть считаны с файла (не больше чем ted_max_chars)
 	m2m dword[ebx+16], ted_tex
 	mov  byte[ebx+20], 0
 	push dword[f_name]
@@ -2365,7 +2410,7 @@ proc ted_open_file, edit:dword, file:dword, f_name:dword ;функция открытия файла
 		;if open file
 		call ted_on_open_file
 	.ret_f:
-	pop edi
+	pop edi edx ecx
 	ret
 endp
 
