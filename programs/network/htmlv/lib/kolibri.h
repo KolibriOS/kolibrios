@@ -15,19 +15,20 @@ char param[4096];
 char program_path[4096];
 
 //Events
-#define evMouse	6
-#define evButton	3
-#define evKey		2
-#define evReDraw	1
+#define evMouse   6
+#define evButton  3
+#define evKey     2
+#define evReDraw  1
+
+#define OLD      -1
+#define true      1
+#define false     0
 
 //Button options
-#define BT_DEL		0x80000000
-#define BT_HIDE		0x40000000
-#define BT_NOFRAME	0x20000000
+#define BT_DEL      0x80000000
+#define BT_HIDE     0x40000000
+#define BT_NOFRAME  0x20000000
 
-#define OLD		-1
-#define true		1
-#define false		0
 //-------------------------------------------------------------------------
 
 struct mouse

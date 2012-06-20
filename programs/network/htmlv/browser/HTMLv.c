@@ -3,17 +3,17 @@
 //Asper, lev, Lrz, Barsuk, Nable.
 //home icon - rachel fu, GPL licence
 
-#include "..\lib\kolibri.h--"
-#include "..\lib\encoding.h--"
-#include "..\lib\file_system.h--"
+#include "..\lib\kolibri.h"
+#include "..\lib\encoding.h"
+#include "..\lib\file_system.h"
 #include "img\toolbar_icons.c"
 #include "img\URLgoto.txt";
-#include "..\lib\mem.h--"
-#include "..\lib\libio_lib.h--"
-#include "..\lib\libimg_lib.h--"
-#include "..\lib\edit_box_lib.h--"
-#include "..\lib\dll.h--"
-#include "..\lib\scroll_bar\scroll_lib.h--"
+#include "..\lib\mem.h"
+#include "..\lib\libio_lib.h"
+#include "..\lib\libimg_lib.h"
+#include "..\lib\edit_box_lib.h"
+#include "..\lib\dll.h"
+#include "..\lib\scroll_bar\scroll_lib.h"
 
 //переменные
 char URL[4096],
@@ -21,12 +21,11 @@ char URL[4096],
 	page_links[12000],
 	header[512];
 
-int lines_visible,
-	lines_all,
-	lines_first,
-	lines_column_max,
-	mouse_dd;
+struct lines{
+	int visible, all, first, column_max;
+};
 
+int	mouse_dd;
 edit_box edit1= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,248,#editURL,#mouse_dd,2,19,19};
 scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1}; //details in scroll_lib.h--
 
@@ -54,7 +53,7 @@ void main()
 		else strcpy(#URL, "/sys/index.htm");
 	strcpy(#editURL, #URL);
 	
-	OpenPage();
+	WB1.OpenPage();
 
 	SetEventMask(0x27);
 	loop()
@@ -64,9 +63,9 @@ void main()
 		{
 			CASE evMouse:
 				/*scrollbar_v_mouse (#scroll1);      //конченый скролл притормажимает, идём "своим путём"
-				if (lines_first <> scroll1.position)
+				if (lines.first <> scroll1.position)
 				{
-					lines_first = scroll1.position;
+					lines.first = scroll1.position;
 					WB1.ParseHTML(buf, filesize);
 					//break;
 				};*/
@@ -85,32 +84,32 @@ void main()
 
 				IF (m.vert==65535) //прокрутка колёсиком
 				{
-					IF (lines_first==0) break;
-					IF (lines_first>3) lines_first-=2; ELSE lines_first=1;
+					IF (lines.first==0) break;
+					IF (lines.first>3) lines.first-=2; ELSE lines.first=1;
 					WB1.Scan(ID1);
 					break;
 				} 
 				IF (m.vert==1)
 				{
-					IF(lines_visible+lines_first+3>=lines_all) WB1.Scan(181);
+					IF(lines.visible+lines.first+3>=lines.all) WB1.Scan(181);
 					ELSE	{
-						lines_first+=2;
+						lines.first+=2;
 						WB1.Scan(ID2);
 					}
 					break;
 				}
 				
-				IF (lines_all<lines_visible) break;
-				half_scroll_size = WB1.height - 16 * lines_visible / lines_all - 3 /2;
+				IF (lines.all<lines.visible) break;
+				half_scroll_size = WB1.height - 16 * lines.visible / lines.all - 3 /2;
 				if (m.x>=WB1.width-14) && (m.x<=WB1.width+6)
 				&& (m.y>WB1.top+16) && (m.y<WB1.top+WB1.height-16)
-				&& (lines_all>lines_visible) while (m.lkm)
+				&& (lines.all>lines.visible) while (m.lkm)
 				{
 					IF (half_scroll_size/2+WB1.top>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size/2+WB1.top; //если курсор над окном
-					btn=lines_first; //сохраняем старое количество
-					lines_first = m.y -half_scroll_size -WB1.top * lines_all / WB1.height;
-					IF (lines_visible+lines_first>lines_all) lines_first=lines_all-lines_visible;
-					IF (btn<>lines_first) WB1.ParseHTML(buf, filesize); //чтоб лишний раз не перерисовывать
+					btn=lines.first; //сохраняем старое количество
+					lines.first = m.y -half_scroll_size -WB1.top * lines.all / WB1.height;
+					IF (lines.visible+lines.first>lines.all) lines.first=lines.all-lines.visible;
+					IF (btn<>lines.first) WB1.ParseHTML(buf, filesize); //чтоб лишний раз не перерисовывать
 					m.get();
 				}
 
@@ -146,9 +145,8 @@ void main()
 				{
 					if (GetProcessSlot(downloader_id)<>0) break;
 					downloader_id=0;
-					lines_first = lines_all = 0;
-					ReadHtml();
-					if (filesize) wintodos(buf);
+					lines.first = lines.all = 0;
+					WB1.ReadHtml(_WIN);
 					Draw_Window();
 				}
 		}
@@ -187,10 +185,10 @@ void Draw_Window()
 	WB1.top=44;
 	WB1.width=Form.width-13;
 	WB1.height=onTop(43,5);
-	lines_column_max = WB1.width - 30 / 6;
-	lines_visible = WB1.height - 3 / 10 - 2;
+	lines.column_max = WB1.width - 30 / 6;
+	lines.visible = WB1.height - 3 / 10 - 2;
 
-	WB1.ShowPage(#URL);
+	WB1.ShowPage();
 }
  
 int onLeft(dword right,left) {return Form.width-right-left;}

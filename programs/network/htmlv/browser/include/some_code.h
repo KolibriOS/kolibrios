@@ -1,18 +1,18 @@
 //кнопки
-#define BACK		300
-#define FORWARD		301
-#define REFRESH		302
-#define HOME		303
-#define NEWTAB		304
-#define GOTOURL		305
-#define SEARCHWEB	306
-#define ID1		178
-#define ID2		177
+#define BACK        300
+#define FORWARD     301
+#define REFRESH     302
+#define HOME        303
+#define NEWTAB      304
+#define GOTOURL     305
+#define SEARCHWEB   306
+#define ID1         178
+#define ID2         177
 
-#define WINDOWS	0
-#define DOS		1
-#define KOI		2
-#define UTF		3
+#define _WIN  0
+#define _DOS  1
+#define _KOI  2
+#define _UTF  3
                       
 
 dword get_URL_part(byte len) {

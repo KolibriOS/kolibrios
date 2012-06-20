@@ -5,20 +5,22 @@ dword
 	buf,
 	filesize,
 	blink;
- int i;
+int i;
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.94";
+char version[]=" Text-based Browser 0.94b";
 
 
 struct TWebBrowser {
 	int left, top, width, height;
-	void DrawScroller();
+	void Scan(int);
+	void OpenPage();
+	void ReadHtml(byte);
 	void ShowPage();
 	void ParseHTML(dword, dword);
-	void Scan(int);
 	void WhatTextStyle(int left1, top1, width1);
+	void DrawScroller();
 };
 
 TWebBrowser WB1;
@@ -64,8 +66,8 @@ void TWebBrowser::Scan(int id)
 			
 			strcpy(#URL, BrowserHistory.CurrentUrl());
 			
-			lines_first=lines_all-lines_visible;
-			ShowPage(#URL);
+			lines.first=lines.all-lines.visible;
+			ShowPage();
 			return;
 		}
 		//liner.ru#1
@@ -88,18 +90,16 @@ void TWebBrowser::Scan(int id)
 		return;
 	}
 	
-	IF(lines_all < lines_visible) SWITCH(id) //если мало строк игнорируем некоторые кнопки
+	IF(lines.all < lines.visible) SWITCH(id) //если мало строк игнорируем некоторые кнопки
 	{ CASE 183: CASE 184: CASE 180: CASE 181: return; } 
 	
 	switch (id)
 	{
 		case 011: //Ctrk+K 
-			ReadHtml();
-			koitodos(buf);
+			ReadHtml(_KOI);
 			break;
 		case 021: //Ctrl+U
-			ReadHtml();
-			utf8rutodos(buf);
+			ReadHtml(_UTF);
 			break;
 		case BACK:
 			if (!BrowserHistory.GoBack()) return;
@@ -125,7 +125,7 @@ void TWebBrowser::Scan(int id)
 				Draw_Window();
 				return;
 			}
-			anchor_line_num=lines_first; //весёлый костыль :Р
+			anchor_line_num=lines.first; //весёлый костыль :Р
 			anchor[0]='|';
 			OpenPage();
 			return;
@@ -151,30 +151,30 @@ void TWebBrowser::Scan(int id)
 			return;
 
 		case ID1: //мотаем вверх
-			IF(lines_first <= 0) return;
-			lines_first--;
+			IF(lines.first <= 0) return;
+			lines.first--;
 			break; 
 		case ID2: //мотаем вниз
-			IF(lines_visible + lines_first >= lines_all) return;
-			lines_first++;
+			IF(lines.visible + lines.first >= lines.all) return;
+			lines.first++;
 			break; 
 		case 183: //PgDown
-			IF(lines_first == lines_all - lines_visible) return;
-			lines_first += lines_visible + 2;
-			IF(lines_visible + lines_first > lines_all) lines_first = lines_all - lines_visible;
+			IF(lines.first == lines.all - lines.visible) return;
+			lines.first += lines.visible + 2;
+			IF(lines.visible + lines.first > lines.all) lines.first = lines.all - lines.visible;
 			BREAK;
 		case 184: //PgUp
-			IF(lines_first == 0) RETURN;
-			lines_first -= lines_visible - 2;
-			IF(lines_first < 0) lines_first = 0;
+			IF(lines.first == 0) RETURN;
+			lines.first -= lines.visible - 2;
+			IF(lines.first < 0) lines.first = 0;
 			BREAK;
 		case 180: //home
-			IF(lines_first == 0) RETURN;
-			lines_first = 0;
+			IF(lines.first == 0) RETURN;
+			lines.first = 0;
 			BREAK; 
 		case 181: //end
-			IF (lines_first == lines_all - lines_visible) RETURN;
-			lines_first = lines_all - lines_visible;
+			IF (lines.first == lines.all - lines.visible) RETURN;
+			lines.first = lines.all - lines.visible;
 			BREAK; 
 		default:
 			RETURN;
@@ -214,7 +214,7 @@ void GetNewUrl(){
 
 
 	
-void ReadHtml()
+void TWebBrowser::ReadHtml(byte dest)
 {
 	if (!strcmp(get_URL_part(5),"http:"))) 
 		file_size stdcall (#download_path);
@@ -230,10 +230,14 @@ void ReadHtml()
 		ReadFile(0, filesize, buf, #download_path);
 	else
 		ReadFile(0, filesize, buf, #URL);
+		
+	if (dest==_WIN) wintodos(buf);
+	if (dest==_UTF) utf8rutodos(buf);
+	if (dest==_KOI) koitodos(buf);
 }
 
 
-void OpenPage()
+void TWebBrowser::OpenPage()
 {
 	if (GetProcessSlot(downloader_id)<>0) PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
 	KillProcess(downloader_id);
@@ -258,14 +262,13 @@ void OpenPage()
 		Draw_Window();
 		return;
 	}
-	lines_first = lines_all = 0;
-	ReadHtml();
-	if (filesize) wintodos(buf);
-	WB1.ShowPage(#URL);
+	lines.first = lines.all = 0;
+	ReadHtml(_WIN);
+	WB1.ShowPage();
 }
 
 
-void TWebBrowser::ShowPage(dword adress)
+void TWebBrowser::ShowPage()
 {
 	edit1.size = edit1.pos = strlen(#editURL);
 	edit_box_draw stdcall(#edit1); //рисуем строку адреса
@@ -295,7 +298,7 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 	byte ignor_param = 0;
 	char temp[768];
 	
-	stroka = -lines_first;
+	stroka = -lines.first;
 	stolbec = 0;
 	
 	for (j = 400; j < blink + 1; j++;) DeleteButton(j);
@@ -420,12 +423,12 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 			IF(ignor_text) break;
 			IF(!pre_text) && (bukva == ' ') && (!strcmp(#line + strlen(#line) - 1, " ")) continue;
 			//
-			if (stolbec + strlen(#line) >lines_column_max)
+			if (stolbec + strlen(#line) >lines.column_max)
 			{
 				strcpy(#temp, #line + find_symbol(#line, ' ')); //перенос по словам
 				line[find_symbol(#line, ' ')] = 0x00;
 			NEXT_MARK:
-				IF(stroka - 1 > lines_visible) && (lines_first <>0) break 1; //уходим...
+				IF(stroka - 1 > lines.visible) && (lines.first <>0) break 1; //уходим...
 				WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //вывод строки
 				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем следущую строку
 				strcpy(#line, #temp);
@@ -437,16 +440,16 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 	if (strcmp(#URL + strlen(#URL) - 4, ".txt")<>0) && (!body_present)
 		DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку если какой-то рахит не создал тег боди
 
-	if (lines_visible * 10 + 25 <= height)
-		DrawBar(left, lines_visible * 10 + top + 25, width - 15, -lines_visible * 10 + height - 25, bg_color);
+	if (lines.visible * 10 + 25 <= height)
+		DrawBar(left, lines.visible * 10 + top + 25, width - 15, -lines.visible * 10 + height - 25, bg_color);
 	if (stroka * 10 + 15 <= height)
 		DrawBar(left, stroka * 10 + top + 15, width - 15, -stroka * 10 + height - 15, bg_color); //закрашиваем всё до конца
-	if (lines_first == 0) lines_all = stroka;
+	if (lines.first == 0) lines.all = stroka;
 	
 	if (anchor)
 	{
 		anchor='';
-		lines_first=anchor_line_num;
+		lines.first=anchor_line_num;
 		ParseHTML(buf, filesize);
 	}
 
@@ -536,7 +539,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	IF(!chTag("q")) strcat(#line, "\"");
 	
 	//вывод на экран
-	if (stroka >= 0) && (stroka - 2 < lines_visible) && (line) && (!anchor)
+	if (stroka >= 0) && (stroka - 2 < lines.visible) && (line) && (!anchor)
 	{
 		WriteText(stolbec * 6 + left1, top1, 0x80, text_colors[text_color_index], #line, 0); //может тут рисовать белую строку?
 		IF (b_text)	{ $add ebx, 1<<16   $int 0x40 }
@@ -556,7 +559,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	{
 		if (!strcmp(#anchor, #options))
 		{
-			anchor_line_num=lines_first+stroka;
+			anchor_line_num=lines.first+stroka;
 		}
 	}
 
@@ -595,7 +598,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			_A_MARK:
 			if (!strcmp(#parametr, "href="))
 			{
-				if (stroka - 1 > lines_visible) || (stroka < -2) return;
+				if (stroka - 1 > lines.visible) || (stroka < -2) return;
 				if (link == 1) text_color_index--; //если какой-то долбоёб не закрыл тэг
 				link = 1;
 				blink++;
@@ -608,7 +611,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			{
 				if (!strcmp(#anchor, #options))
 				{
-					anchor_line_num=lines_first+stroka;
+					anchor_line_num=lines.first+stroka;
 				}
 			}
 			if (tagparam)
@@ -626,7 +629,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	/////////////////////////
 	if (!chTag("font"))
 	{
-		IF (stroka - 1 > lines_visible) return;
+		IF (stroka - 1 > lines.visible) return;
 		COL_MARK:
 		if (strcmp(#parametr, "color=") == 0) //&& (parametr[1] == '#')
 		{
@@ -689,7 +692,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		li_text = rez;
 		IF(rez == 0) return;
 		TextGoDown(left1, top1, width1);
-		IF(stroka > -1) && (stroka - 2 < lines_visible) DrawBar(li_tab * 5 * 6 + left1 - 5, top1 + 12, 2, 2, 0);
+		IF(stroka > -1) && (stroka - 2 < lines.visible) DrawBar(li_tab * 5 * 6 + left1 - 5, top1 + 12, 2, 2, 0);
 		return;
 	}
 	////////////////////////////
@@ -746,7 +749,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				top1=WB1.top;
 			}
 			
-			if (top1>WB1.top+WB1.height-h-15) //если часть изображения снизу     IF (stroka - 2 < lines_visible)
+			if (top1>WB1.top+WB1.height-h-15) //если часть изображения снизу     IF (stroka - 2 < lines.visible)
 			{
 				h=WB1.top+WB1.height-top1-15;
 			}	
@@ -775,20 +778,9 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		{
 			strcpy(#options, #options[find_symbol(#options, '=')]); //поиск в content=
 
-			IF (!strcmp(#options,"utf-8")) || (!strcmp(#options,"utf8"))
-			{
-				ReadHtml();
-				utf8rutodos(buf);
-			}
-			IF(!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))
-			{
-				ReadHtml();
-				koitodos(buf);
-			}
-			IF(!strcmp(#options, "dos")) || (!strcmp(#options, "cp-866"))
-			{
-				ReadHtml();
-			}
+			if (!strcmp(#options,"utf-8")) || (!strcmp(#options,"utf8"))		ReadHtml(_UTF);
+			if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))	ReadHtml(_KOI);
+			if (!strcmp(#options, "dos")) || (!strcmp(#options, "cp-866"))		ReadHtml(_DOS);
 		}
 		if (tagparam)
 		{
@@ -806,16 +798,16 @@ void TextGoDown(int left1, top1, width1)
 	IF(blq_text == 1) stolbec = 8;
 	ELSE stolbec = 0;
 	IF(li_text == 1) stolbec = li_tab * 5;
-	IF(stroka >= 0) && (stroka - 2 < lines_visible)  && (!anchor) DrawBar(left1 - 5, top1 + 10, width1 + 5, 10, bg_color);
+	IF(stroka >= 0) && (stroka - 2 < lines.visible)  && (!anchor) DrawBar(left1 - 5, top1 + 10, width1 + 5, 10, bg_color);
 }
 
 
 //скролл
 void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном месте
 {
-	scroll1.max_area = lines_all;
-	scroll1.cur_area = lines_visible;
-	scroll1.position = lines_first;
+	scroll1.max_area = lines.all;
+	scroll1.cur_area = lines.visible;
+	scroll1.position = lines.first;
 
 	scroll1.all_redraw=1;
 	scroll1.start_x=Form.width-28; //left + width - 15
