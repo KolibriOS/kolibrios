@@ -16,7 +16,7 @@ void GetIni(byte onload)
 	dword buff, fsize, tj;
 	//читаем файл
 	buff = malloc(1048576);
-	IF (onload==1) copystr(".ini", #program_path+strlen(#program_path)); //facepalm
+	IF (onload==1) copystr(".ini", #program_path+strlen(#program_path));
 	ReadFile(0, 1048576, buff, #program_path);
 	IF (EAX<>6) //если файла с настройками нет в папке с программой смотрим в папке по-умолчанию
 		ReadFile(0, 1048576, buff, "/sys/File managers/Eolite.ini");
@@ -63,7 +63,7 @@ void GetIni(byte onload)
 					IF (errornum<0) //если ошибочка вышла при запуске
 					{
 						//WriteDebug(#option);
-						Write_Debug_Error(errornum); 
+						Write_Error(errornum); 
 					}
 					return;
 				}
@@ -79,8 +79,7 @@ void GetIni(byte onload)
 	IF (file_path) errornum=RunProgram(#file_path,''); 
 	IF (errornum<0) //если ошибочка вышла при запуске
 	{
-		//WriteDebug(#file_path);
-		Write_Debug_Error(errornum); 
+		Write_Error(errornum); 
 	}
 }
 
@@ -89,39 +88,44 @@ void GetIni(byte onload)
 /// нужно чтобы просто возвращало текст ///
 ///////////////////////////////////////////
 
-void Write_Debug_Error(int error_number)
+void Write_Error(int error_number)
 {
-	char unknown_error[8];
-	
+	char error[256];
 	if (error_number<0) error_number=-1*error_number;
-	switch (error_number) //извесная ошибка - пишем какая и уходим
+	switch (error_number)
 	{
-		CASE 2:	RunProgram(#NOTIFY_PATH, "Eolite: error 2 - Function is not supported for the given file system");
-				return;				
-		CASE 3:	RunProgram(#NOTIFY_PATH, "Eolite: error 3 - Unknown file system");
-				return;
-		CASE 5: RunProgram(#NOTIFY_PATH, "Eolite: error 5 - File or folder not found");
-				return;
-		CASE 6:	RunProgram(#NOTIFY_PATH, "Eolite: error 6 - End of file, EOF");
-				return;
-		CASE 7:	RunProgram(#NOTIFY_PATH, "Eolite: error 7 - Pointer lies outside of application memory");
-				return;		
-		case 8:	RunProgram(#NOTIFY_PATH, "Eolite: error 8 - FAT table is destroyed");
-				return;		
-		case 9: RunProgram(#NOTIFY_PATH, "Eolite: error 9 - FAT table is destroyed");
-				return;
-		case 10:RunProgram(#NOTIFY_PATH, "Eolite: error 10 - Access denied");
-				RETURN;				
-		case 11:RunProgram(#NOTIFY_PATH, "Eolite: error 11 - Device error");
-				RETURN;
-		case 30:RunProgram(#NOTIFY_PATH, "Eolite: error 30 - Not enough memory");
-				RETURN;
-		case 31:RunProgram(#NOTIFY_PATH, "Eolite: error 31 - File is not executable");
-				RETURN;
-		case 32:RunProgram(#NOTIFY_PATH, "Eolite: error 32 - Too many processes");
-				RETURN;
-		default:copystr(IntToStr(error_number), #unknown_error);
-				copystr(" - Unknown error number O_o", #unknown_error+strlen(#unknown_error));
-				RunProgram(#NOTIFY_PATH, #unknown_error);
+		case 2:	copystr("Error #2 - Function isn't supported for this file system", #error);
+				break;				
+		case 3:	copystr("Error #3 - Unknown file system", #error);
+				break;
+		case 5: copystr("Error #5 - File or folder not found", #error);
+				break;
+		case 6:	copystr("Error #6 - End of file, EOF", #error);
+				break;
+		case 7:	copystr("Error #7 - Pointer lies outside of application memory", #error);
+				break;		
+		case 8:	copystr("Error #8 - FAT table is destroyed", #error);
+				break;		
+		case 9: copystr("Error #9 - FAT table is destroyed", #error);
+				break;
+		case 10:copystr("Error #10 - Access denied", #error);
+				break;				
+		case 11:copystr("Error #11 - Device error", #error);
+				break;
+		case 30:copystr("Error #30 - Not enough memory", #error);
+				break;
+		case 31:copystr("Error #31 - File is not executable", #error);
+				break;
+		case 32:copystr("Error #32 - Too many processes", #error);
+				break;
+		default:copystr(IntToStr(error_number), #error);
+				copystr(" - Unknown error number O_o", #error+strlen(#error));
 	}
+	if (curbtn>=0) Line_ReDraw(0xFF0000, curbtn);
+	Pause(5);
+	RunProgram(#NOTIFY_PATH, #error);
+	//DrawBar(192,onTop(0, BUTTON_HEIGHT+7),onLeft(27,192),BUTTON_HEIGHT,0xFF0000);
+	//WriteText(205,onTop(-5, BUTTON_HEIGHT+7),0x80,0xFFFFFF,#error,0);
+
+	
 }

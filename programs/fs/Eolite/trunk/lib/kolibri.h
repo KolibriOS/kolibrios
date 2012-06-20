@@ -33,7 +33,8 @@ char program_path[4096];
 
 
 
-struct mouse{
+struct mouse
+{
 	unsigned int x,y,lkm,pkm,hor,vert;
 	void get();
 };
@@ -76,7 +77,9 @@ void mouse::get()
 }
 
 //---------------------------------------------------------------------------
-struct proc_info{
+struct proc_info
+{
+	#define SelfInfo -1
 	dword	use_cpu;
 	word	pos_in_stack,num_slot,rezerv1;
 	char	name[11];
@@ -85,45 +88,44 @@ struct proc_info{
 	word	status_slot,rezerv3;
 	dword	work_left,work_top,work_width,work_height;
 	char	status_window;
-	void	GetInfo(dword ECX);
+	void	GetInfo( ECX);
 	byte    reserved[1024-71];
-#define SelfInfo -1
 };
 
-void proc_info::GetInfo(dword EBX, ECX)
+void proc_info::GetInfo( EBX, ECX)
 {
-	EAX = 9;
-	$int  0x40
+	$mov eax,9;
+	$int 0x40
 }
 
-inline fastcall int GetSlot(dword ECX)
+inline fastcall int GetSlot( ECX)
 {
-	EAX = 18;
-	EBX = 21;
+	$mov eax,18;
+	$mov ebx,21;
 	$int 0x40
 }
 
 inline fastcall int ActiveProcess()
 {
-	EAX = 18;
-	EBX = 7;
+	$mov eax,18;
+	$mov ebx,7;
 	$int 0x40
 }
 
 //-------------------------------------------------------------------------------
 
 inline fastcall dword WaitEvent(){
-	EAX = 10;              // wait here for event
+	$mov eax,10;
 	$int 0x40
 }
 
-inline fastcall void SetEventMask(dword EBX)
+inline fastcall void SetEventMask( EBX)
 {
 	EAX = 40;
 	$int 0x40
 }
 
-inline fastcall word GetKey(){ //Gluk fix
+inline fastcall word GetKey(){ //+Gluk fix
 		$push edx
 @getkey:
 		$mov  eax,2
@@ -152,7 +154,7 @@ inline fastcall void ExitProcess(){
 }
 
 inline fastcall void Pause(dword EBX){				
-	$mov eax, 5       //Пауза, в сотых долях секунды
+	$mov eax, 5
 	$int 0x40
 }
 
@@ -176,14 +178,14 @@ dword mainAreaColour,byte headerType,dword headerColour,EDI)
 	$int 0x40
 }
 
-inline fastcall void CreateThread(dword ECX,EDX)
+inline fastcall void CreateThread( ECX,EDX)
 {
 	EAX = 51;
 	EBX = 1;
 	$int 0x40
 }
 
-inline fastcall void DrawTitle(dword ECX){
+inline fastcall void DrawTitle( ECX){
 	EAX = 71;
 	EBX = 1;
 	$int 0x40;
@@ -204,14 +206,15 @@ inline fastcall dword GetScreenHeight()
 	$and eax,0x0000FFFF
 }
 
-inline fastcall void MoveSize(dword EBX,ECX,EDX,ESI){
-	EAX = 67;
+inline fastcall void MoveSize( EBX,ECX,EDX,ESI){
+	$mov eax,67;
 	$int 0x40
 }
 
 //------------------------------------------------------------------------------
 
-inline fastcall dword strlen(EDI){
+inline fastcall dword strlen( EDI)
+{
 	asm {
 	  xor ecx, ecx
 	  xor eax, eax
@@ -223,7 +226,7 @@ inline fastcall dword strlen(EDI){
 }
 
 
-inline fastcall copystr(dword ESI,EDI)
+inline fastcall copystr( ESI,EDI)
 {
 	$cld
 l1:
@@ -234,7 +237,7 @@ l1:
 }
 
 char buffer[11];
-inline fastcall dword IntToStr(dword ESI)
+inline fastcall dword IntToStr( ESI)
 {
      $mov     edi, #buffer
      $mov     ecx, 10
@@ -317,7 +320,7 @@ inline fastcall unsigned int find_symbol(ESI,BL)
 }
 
 
-inline fastcall ChangeCase(dword EDX)
+inline fastcall ChangeCase( EDX)
 {
 	AL=DSBYTE[EDX];
 	IF(AL>='a')&&(AL<='z')DSBYTE[EDX]=AL&0x5f;
@@ -334,7 +337,8 @@ inline fastcall ChangeCase(dword EDX)
 
 
 //------------------------------------------------------------------------------
-inline fastcall void PutPixel(dword EBX,ECX,EDX){
+inline fastcall void PutPixel( EBX,ECX,EDX)
+{
   EAX=1;
   $int 0x40
 }
@@ -351,7 +355,7 @@ void DefineButton(dword x,y,w,h,EDX,ESI)
 	$int 0x40
 }
 
-inline fastcall void DeleteButton(dword EDX)
+inline fastcall void DeleteButton( EDX)
 {
 	EAX = 8;
 	EDX += BT_DEL;
@@ -368,28 +372,26 @@ void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 
 void DrawBar(dword x,y,w,h,EDX)
 {
-	#speed
 	EAX = 13;
 	EBX = x<<16+w;
 	ECX = y<<16+h;
  	$int 0x40
-	#codesize
 }
 
 void DrawRegion_3D(dword x,y,width,height,color1,color2)
 {
-	DrawBar(x,y,width+1,1,color1); //полоса гор сверху
-	DrawBar(x,y+1,1,height-1,color1); //полоса слева
-	DrawBar(x+width,y+1,1,height,color2); //полоса справа
-	DrawBar(x,y+height,width,1,color2); //полоса гор снизу
+	DrawBar(x,y,width+1,1,color1);
+	DrawBar(x,y+1,1,height-1,color1);
+	DrawBar(x+width,y+1,1,height,color2);
+	DrawBar(x,y+height,width,1,color2);
 }
 
 void DrawFlatButton(dword x,y,width,height,id,color,text)
 {
 	DrawRegion_3D(x,y,width,height,0x94AECE,0x94AECE);
 	DrawRegion_3D(x+1,y+1,width-2,height-2,0xFFFFFF,0xC7C7C7);
-	DrawBar(x+2,y+2,width-3,height-3,color); //заливка
-	IF (id<>0)	DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF); //кнопка
+	DrawBar(x+2,y+2,width-3,height-3,color);
+	IF (id<>0)	DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF);
 	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
 }
 
@@ -412,7 +414,7 @@ void PutImage(dword EBX,w,h,x,y)
 }
 
 //------------------------------------------------------------------------------
-inline fastcall void WriteDebug(dword EDX)
+inline fastcall void debug( EDX)
 {
 	$mov eax, 63
 	$mov ebx, 1
@@ -430,7 +432,7 @@ done:
 	$int 0x40
 }
 
-inline fastcall void WriteFullDebug(dword ESI)
+inline fastcall void WriteFullDebug( ESI)
 {
 	WriteDebug("");
 	WriteDebug(ESI);

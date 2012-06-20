@@ -1,11 +1,16 @@
 //03.04.2012
 
+path_string disk_list[20];
+int disc_num;
+
 void GetSystemDiscs()
 {
 	char dev_name[10], sys_discs[10];
 	int i1, j1, dev_num, dev_disc_num;
 	dword devbuf;
 
+	disc_num=0;
+	
 	devbuf= malloc(3112); //буфер где-то на 10 девайсов в левой панели
 	ReadDir(10, devbuf, "/");
 	dev_num = EBX;
@@ -26,7 +31,6 @@ void GetSystemDiscs()
 			copystr(#sys_discs,#disk_list[disc_num].Item);
 			disc_num++;
 		}
-		
 	}
 }
 
@@ -55,6 +59,7 @@ void DrawSystemDiscs()
 		IF (dev_name[1]=='r')  { dev_icon=0; copystr("RAM disk ",#disc_name); }
 		IF (dev_name[1]=='c')  { dev_icon=1; copystr("CD-ROM ",#disc_name); }
 		IF (dev_name[1]=='f')  { dev_icon=2; copystr("Floppy disk ",#disc_name); }
+		IF (dev_name[1]=='t')  { dev_icon=4; copystr("Virtual disk ",#disc_name); }
 		IF (dev_name[1]=='h') || (dev_name[1]=='b') copystr("Hard disk ",#disc_name); 
 		copystr(#dev_name,#disc_name+strlen(#disc_name));
 		//

@@ -37,7 +37,7 @@ void about_dialog()
 				DefineAndDrawWindow(600,150,181,256,0x34,0x10EFEBEF,0,0,"About Eolite");
 				DrawBar(0,0,172,50,0x8494C4); //голубое сзади
 				PutPaletteImage(#logo,85,85,43,7,#logo_pal);
-				WriteText(46,100,0x90,0xBF40BF,"Eolite v1.22",0);
+				WriteText(46,100,0x90,0xBF40BF,"Eolite v1.25",0);
 					$add ebx, 1<<16
 					$int 0x40
 				WriteText(55,120,0x80,0,"Developers:",0); 
@@ -47,6 +47,8 @@ void about_dialog()
 				WriteText(12,170,0x80,0,"Visit",0);
 				DrawLink(48,170,23, "kolibri-os.narod.ru"); //ссылкa
 				DrawFlatButton(85,190,70,22,0,0xE4DFE1, "Close");
+				
+				//PutPaletteImage(3*16*15+#ficons,16,15,40,195,#ficons_pal);								
 	}
 }
 
