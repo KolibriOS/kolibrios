@@ -30,9 +30,10 @@ char program_path[4096];
 #define false		0
 //-------------------------------------------------------------------------
 
-struct mouse{
- dword x,y,lkm,pkm,hor,vert;
- void get();
+struct mouse
+{
+	dword x,y,lkm,pkm,hor,vert;
+	void get();
 };
 
 void mouse::get()
@@ -65,10 +66,12 @@ void mouse::get()
 }
 
 
-struct system_colors{
+struct system_colors
+{
 	dword frame,grab,grab_button,grab_button_text,grab_text,work,work_button,work_button_text,work_text,work_graph;
 	void get();
 };
+
 void system_colors::get()
 {
 	EAX = 48;
@@ -80,22 +83,25 @@ void system_colors::get()
 
 //------------------------------------------------------------------------------
 
-inline fastcall dword WaitEvent(){
+inline fastcall dword WaitEvent()
+{
 	$mov eax,10
 	$int 0x40
 }
 
-inline fastcall dword CheckEvent(){
+inline fastcall dword CheckEvent()
+{
 	$mov eax,11
 	$int 0x40
 }
 
-inline fastcall dword WaitEventTimeout(dword EBX){
+inline fastcall dword WaitEventTimeout( EBX)
+{
 	$mov eax,23
 	$int 0x40
 } 
  
-inline fastcall SetEventMask(dword EBX)
+inline fastcall SetEventMask( EBX)
 {
 	$mov eax,40
 	$int 0x40
@@ -109,7 +115,8 @@ inline fastcall ScancodesGeting(){
 }
 
 
-inline fastcall word GetKey(){ //Gluk fix
+inline fastcall word GetKey()  //+Gluk fix
+{
 		$push edx
 @getkey:
 		$mov  eax,2
@@ -127,21 +134,24 @@ inline fastcall word GetKey(){ //Gluk fix
 }
 
 
-inline fastcall Pause(dword EBX)
-{					//Пауза, в сотых долях секунды EBX = value
+inline fastcall Pause( EBX)
+{
 	$mov eax, 5
 	$int 0x40
 }
 
-//==================================================================
+//------------------------------------------------------------------------------
 
-inline fastcall word GetButtonID(){
+inline fastcall word GetButtonID()
+{
 	$mov eax,17
 	$int  0x40
 	$shr eax,8
 }
 
-struct proc_info{
+struct proc_info
+{
+	#define SelfInfo -1
 	dword	use_cpu;
 	word	pos_in_stack,num_slot,rezerv1;
 	char	name[11];
@@ -150,18 +160,17 @@ struct proc_info{
 	word	status_slot,rezerv3;
 	dword	work_left,work_top,work_width,work_height;
 	char	status_window;
-	void	GetInfo(dword ECX);
+	void	GetInfo( ECX);
 	byte    reserved[1024-71];
-#define SelfInfo -1
 };
 
-void GetProcessInfo(dword EBX, ECX)
+void GetProcessInfo( EBX, ECX)
 {
 	$mov eax,9;
 	$int  0x40
 }
 
-int GetProcessSlot(ECX) //ECX = process ID
+int GetProcessSlot( ECX) //ECX = process ID
 {
 	EAX = 18;
 	EBX = 21;
@@ -176,28 +185,30 @@ inline fastcall int ActiveProcess()
 }
 
 
-inline fastcall ExitProcess(){
+inline fastcall ExitProcess()
+{
 	$mov eax,-1;
 	$int 0x40
 }
 
-inline fastcall int KillProcess(dword ECX){
+inline fastcall int KillProcess( ECX)
+{
 	$mov eax,18;
 	$mov ebx,18;
 	$int 0x40
 }
 
-//==================================================================
+//------------------------------------------------------------------------------
 
 //eax =  ч√ъ ёшёЄхь√ (1=eng, 2=fi, 3=ger, 4=rus)
-inline fastcall int GetSystemLanguage(){
- EAX = 26;
- EBX = 5;
- $int 0x40
- RETURN EAX; 
+inline fastcall int GetSystemLanguage()
+{
+	EAX = 26;
+	EBX = 5;
+	$int 0x40
 }
 
-inline fastcall void DrawTitle(dword ECX)
+inline fastcall void DrawTitle( ECX)
 {
 	EAX = 71;
 	EBX = 1;
@@ -228,13 +239,13 @@ inline fastcall dword GetScreenWidth()
 	$and eax,0x0000FFFF
 }
 
-inline fastcall MoveSize(dword EBX,ECX,EDX,ESI)
+inline fastcall MoveSize( EBX,ECX,EDX,ESI)
 {
 	EAX = 67;
 	$int 0x40
 }
 
-inline fastcall dword LoadLibrary(dword ECX)
+inline fastcall dword LoadLibrary( ECX)
 {
 	$mov eax, 68 
 	$mov ebx, 19
@@ -242,32 +253,55 @@ inline fastcall dword LoadLibrary(dword ECX)
 }
 
 //------------------------------------------------------------------------------
-inline fastcall dword strlen(dword EDI){
+inline fastcall dword strlen( EDI)
+{
 	EAX=0;
 	ECX=-1;
 	$REPNE $SCASB
 	EAX-=2+ECX;
 }
 
-inline fastcall copystr(dword ESI,EDI)
+
+inline fastcall strcpy( EDI, ESI)
 {
 	$cld
-l1:
+l2:
 	$lodsb
 	$stosb
 	$test al,al
-	$jnz l1
+	$jnz l2
 }
 
-
-byte fastcall TestBit(EAX, CL)
+inline fastcall strcat( EDI, ESI)
 {
-	$shr eax,cl
-	$and eax,1
+  asm {
+    MOV EBX, EDI
+    XOR ECX, ECX
+    XOR EAX, EAX
+    DEC ECX
+    REPNE SCASB
+    DEC EDI
+    MOV EDX, EDI
+    MOV EDI, ESI
+    XOR ECX, ECX
+    XOR EAX, EAX
+    DEC ECX
+    REPNE SCASB
+    XOR ECX, 0FFFFFFFFH
+    MOV EDI, EDX
+    MOV EDX, ECX
+    MOV EAX, EDI
+    SHR ECX, 2
+    REP MOVSD
+    MOV ECX, EDX
+    AND ECX, 3
+    REP MOVSB
+    MOV EAX, EBX
+	}
 }
 
 char buffer[11]="";
-inline fastcall dword IntToStr(dword ESI)
+inline fastcall dword IntToStr( ESI)
 {
      $mov     edi, #buffer
      $mov     ecx, 10
@@ -310,7 +344,7 @@ inline fastcall dword StrToInt()
 }
 
 
-inline fastcall int strcmp(ESI, EDI)
+inline fastcall int strcmp( ESI, EDI)
 {
 	loop()
 	{
@@ -322,7 +356,7 @@ inline fastcall int strcmp(ESI, EDI)
 	}
 }
 
-inline fastcall unsigned int find_symbol(ESI,BL)
+inline fastcall unsigned int find_symbol( ESI,BL)
 {
 	int jj=0, last=-1;
 	do{
@@ -334,7 +368,7 @@ inline fastcall unsigned int find_symbol(ESI,BL)
 }
 
 
-inline fastcall dword upcase(dword ESI)
+inline fastcall dword upcase( ESI)
 {
 	do{
 		AL=DSBYTE[ESI];
@@ -343,7 +377,7 @@ inline fastcall dword upcase(dword ESI)
 	}while(AL!=0);
 }
 
-inline fastcall lowcase(ESI)
+inline fastcall lowcase( ESI)
 {
 	do{
 		$LODSB
@@ -354,6 +388,15 @@ inline fastcall lowcase(ESI)
 		}
 	}while(AL!=0);
 }
+
+byte fastcall TestBit( EAX, CL)
+{
+	$shr eax,cl
+	$and eax,1
+}
+
+//------------------------------------------------------------------------------
+
 
 
 void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,byte headerType,dword headerColour,EDI)
@@ -375,14 +418,14 @@ void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaC
 }
 
 
-inline fastcall int CreateThread(dword ECX,EDX)
+inline fastcall int CreateThread( ECX,EDX)
 {
 	EAX = 51;
 	EBX = 1;
 	$int 0x40
 }
 
-inline fastcall int GetSlot(dword ECX)
+inline fastcall int GetSlot( ECX)
 {
 	EAX = 18;
 	EBX = 21;
@@ -430,7 +473,8 @@ void PutPaletteImage(dword EBX,w,h,x,y,ESI,EDI)
 	$int 0x40
 } 
 
-inline fastcall void PutPixel(dword EBX,ECX,EDX){
+inline fastcall void PutPixel( EBX,ECX,EDX)
+{
   EAX=1;
   $int 0x40
 }
@@ -455,7 +499,7 @@ void DefineButton(dword x,y,w,h,EDX,ESI)
 	$int 0x40
 }
 
-inline fastcall void DeleteButton(dword EDX)
+inline fastcall void DeleteButton( EDX)
 {
 	EAX = 8;
 	EDX += BT_DEL;
@@ -500,7 +544,7 @@ void DrawFlatButton(dword x,y,width,height,id,color,text)
 
 //------------------------------------------------------------------------------
 
-inline fastcall void debug(dword EDX)
+inline fastcall void debug( EDX)
 {
 	$push ebx
 	$push ecx

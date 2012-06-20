@@ -17,7 +17,7 @@
 
 dword get_URL_part(byte len) {
 	char temp1[1000];
-	copystr(#URL, #temp1);
+	strcpy(#temp1, #URL);
 	temp1[len] = 0x00;
 	return #temp1;
 }
@@ -27,14 +27,14 @@ inline byte chTag(dword text) {return strcmp(#tag,text);}
 
 void GetURLfromPageLinks(int id)
 {
-	j = 0;
+	int j = 0;
 	for (i = 0; i <= id - 401; i++)
 	{
 		do j++;
 		while (page_links[j] <>'|');
 	}
 	page_links[j] = 0x00;
-	copystr(#page_links[find_symbol(#page_links, '|')], #URL);
+	strcpy(#URL, #page_links[find_symbol(#page_links, '|')]);
 }
 
 

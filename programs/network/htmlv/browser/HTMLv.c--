@@ -21,10 +21,10 @@ char URL[4096],
 	page_links[12000],
 	header[512];
 
-int max_kolvo_strok, //lines_visible
-	max_kolvo_stolbcov,
-	count, //lines_all
-	za_kadrom, //lines_first
+int lines_visible,
+	lines_all,
+	lines_first,
+	lines_column_max,
 	mouse_dd;
 
 edit_box edit1= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,248,#editURL,#mouse_dd,2,19,19};
@@ -42,7 +42,7 @@ void main()
 {
 	int btn;
 	byte key;
-	int scroll_size;
+	int half_scroll_size;
 	
 	mem_Init();
 	load_dll2(libio, #libio_init,1);
@@ -50,9 +50,9 @@ void main()
 	load_dll2(boxlib, #edit_box_draw,0);
 	load_dll2(#abox_lib, #boxlib_init,0);
 	
-	if (param) copystr(#param,#URL);
-		else copystr("/sys/index.htm",#URL);
-	copystr(#URL,#editURL);
+	if (param) strcpy(#URL, #param);
+		else strcpy(#URL, "/sys/index.htm");
+	strcpy(#editURL, #URL);
 	
 	OpenPage();
 
@@ -64,9 +64,9 @@ void main()
 		{
 			CASE evMouse:
 				/*scrollbar_v_mouse (#scroll1);      //конченый скролл притормажимает, идём "своим путём"
-				if (za_kadrom <> scroll1.position)
+				if (lines_first <> scroll1.position)
 				{
-					za_kadrom = scroll1.position;
+					lines_first = scroll1.position;
 					WB1.ParseHTML(buf, filesize);
 					//break;
 				};*/
@@ -85,33 +85,32 @@ void main()
 
 				IF (m.vert==65535) //прокрутка колёсиком
 				{
-					IF (za_kadrom==0) break;
-					IF (za_kadrom>3) za_kadrom-=2; ELSE za_kadrom=1;
+					IF (lines_first==0) break;
+					IF (lines_first>3) lines_first-=2; ELSE lines_first=1;
 					WB1.Scan(ID1);
 					break;
 				} 
 				IF (m.vert==1)
 				{
-					IF(max_kolvo_strok+za_kadrom+3>=count) WB1.Scan(181);
+					IF(lines_visible+lines_first+3>=lines_all) WB1.Scan(181);
 					ELSE	{
-						za_kadrom+=2;
+						lines_first+=2;
 						WB1.Scan(ID2);
 					}
 					break;
 				}
 				
-				IF (count<max_kolvo_strok) break;
-				scroll_size = WB1.height - 16 * max_kolvo_strok / count - 3;
+				IF (lines_all<lines_visible) break;
+				half_scroll_size = WB1.height - 16 * lines_visible / lines_all - 3 /2;
 				if (m.x>=WB1.width-14) && (m.x<=WB1.width+6)
 				&& (m.y>WB1.top+16) && (m.y<WB1.top+WB1.height-16)
-				&& (count>max_kolvo_strok) while (m.lkm)
+				&& (lines_all>lines_visible) while (m.lkm)
 				{
-					IF (scroll_size/2+WB1.top>m.y) || (m.y<0) || (m.y>4000) m.y=scroll_size/2+WB1.top; //если курсор над окном
-					btn=za_kadrom; //сохраняем старое количество
-					j= scroll_size/2;
-					za_kadrom = m.y -j -WB1.top * count / WB1.height;
-					IF (max_kolvo_strok+za_kadrom>count) za_kadrom=count-max_kolvo_strok;
-					IF (btn<>za_kadrom) WB1.ParseHTML(buf, filesize); //чтоб лишний раз не перерисовывать
+					IF (half_scroll_size/2+WB1.top>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size/2+WB1.top; //если курсор над окном
+					btn=lines_first; //сохраняем старое количество
+					lines_first = m.y -half_scroll_size -WB1.top * lines_all / WB1.height;
+					IF (lines_visible+lines_first>lines_all) lines_first=lines_all-lines_visible;
+					IF (btn<>lines_first) WB1.ParseHTML(buf, filesize); //чтоб лишний раз не перерисовывать
 					m.get();
 				}
 
@@ -147,10 +146,10 @@ void main()
 				{
 					if (GetProcessSlot(downloader_id)<>0) break;
 					downloader_id=0;
+					lines_first = lines_all = 0;
 					ReadHtml();
 					if (filesize) wintodos(buf);
 					Draw_Window();
-					//WB1.ShowPage(#URL);
 				}
 		}
 	}
@@ -159,16 +158,17 @@ void main()
 
 void Draw_Window()
 {
+	int j;
 	DefineAndDrawWindow(215,100,640,480,0x73,0x00E4DFE1,0,0,0);
 
 	GetProcessInfo(#Form, SelfInfo);
-	IF (Form.status_window>2) //если свернуто в заголовок, ничего не рисуем
+	if (Form.status_window>2) //если свернуто в заголовок, ничего не рисуем
 	{
 		DrawTitle(#header);
 		return;
 	}
-	IF (Form.height<120) MoveSize(OLD,OLD,OLD,120);
-	IF (Form.width<280) MoveSize(OLD,OLD,280,OLD);
+	if (Form.height<120) MoveSize(OLD,OLD,OLD,120);
+	if (Form.width<280) MoveSize(OLD,OLD,280,OLD);
 	
 	PutPaletteImage(#toolbar,200,42,0,0,8,#toolbar_pal);
 	if (GetProcessSlot(downloader_id)<>0) PutImage(#stop_btn,24,24,88,10);
@@ -176,7 +176,7 @@ void Draw_Window()
 	DrawBar(200,0,onLeft(200,9),43,0xE4DFE1); //закрашиваем фон под тулбаром
 	DrawBar(0,42,onLeft(5,4),1,0xE2DBDC); //выпуклость
 	DrawBar(0,43,onLeft(5,4),1,0xD2CED0); //выпуклость
-	FOR (j=0; j<5; j++) DefineButton(j*37+11, 7, 29, 29, 300+j+BT_HIDE, 0x00E4DFE1);
+	for (j=0; j<5; j++) DefineButton(j*37+11, 7, 29, 29, 300+j+BT_HIDE, 0x00E4DFE1);
 	PutImage(#URLgoto,40,19,onLeft(57,0),14);
 	DefineButton(onLeft(37,0),15, 18, 16, GOTOURL+BT_HIDE, 0xE4DFE1);
 	DefineButton(onLeft(56,0),15, 17, 16, SEARCHWEB+BT_HIDE, 0xE4DFE1);
@@ -187,8 +187,8 @@ void Draw_Window()
 	WB1.top=44;
 	WB1.width=Form.width-13;
 	WB1.height=onTop(43,5);
-	max_kolvo_stolbcov = WB1.width - 30 / 6;
-	max_kolvo_strok = WB1.height - 3 / 10 - 2;
+	lines_column_max = WB1.width - 30 / 6;
+	lines_visible = WB1.height - 3 / 10 - 2;
 
 	WB1.ShowPage(#URL);
 }

@@ -30,11 +30,11 @@ void UrlsHistory::AddUrl() //тут нужен вводимый элемент - для универсальности
 		history_current/=2;
 		for (i=0; i<history_current; i++;)
 		{
-			copystr(#history_list[MAX_HISTORY_NUM-i].Item, #history_list[i].Item);
+			strcpy(#history_list[i].Item, #history_list[MAX_HISTORY_NUM-i].Item);
 		}	
 	}
 	history_current++;
-	copystr(#URL,#history_list[history_current].Item);
+	strcpy(#history_list[history_current].Item, #URL);
 	history_num=history_current;
 }
 
@@ -44,7 +44,7 @@ byte UrlsHistory::GoBack()
 	if (history_current<=1) return 0;
 	
 	history_current--;
-	copystr(#history_list[history_current].Item,#URL);
+	strcpy(#URL, #history_list[history_current].Item);
 	 return 1;
 }
 
@@ -53,6 +53,6 @@ byte UrlsHistory::GoForward()
 {
 	if (history_current==history_num) return 0;
 	history_current++;
-	copystr(#history_list[history_current].Item,#URL);
+	strcpy(#URL, #history_list[history_current].Item);
 	return 1;
 }
