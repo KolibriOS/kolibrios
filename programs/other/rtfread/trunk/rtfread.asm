@@ -13,7 +13,7 @@ CHARW equ 6
 CHARH equ 11
 WINW  equ 600
 WINH  equ 450
-WIN_COLOR equ 0x33f0f0f0;0x3f0f0f0
+WIN_COLOR equ 0x73f0f0f0
 DEFCOLOR equ 0x303030
 ;RENDER equ PIX
 ;RENDER equ BGI
@@ -42,7 +42,7 @@ syms equ 12
 
 ;-------------------------------
 
-scroll_width_size       equ     15
+SCROLL_WIDTH_SIZE       equ     15
 AR_OFFSET               equ     10
 
 ;-------------------------------
@@ -529,6 +529,29 @@ draw_window:
 ;    mcall 0, <10,WINW>, <100,WINH>, WIN_COLOR,0x805080D0, 0x005080D0
 ;    mcall 4, <8,8>, 0x10DDEEFF, title, titlesize-title
     mcall 0, <10,WINW>, <100,WINH>, WIN_COLOR,0x80000000, window_title
+
+;---------------------------------------------
+    mcall 9, procinfo2, -1
+
+	mcall 48,4
+	mov [skin_height], eax
+
+	mov  ebx,0*65536-9
+    add  ebx, [procinfo2.box.width]
+
+	cmp  [is_scroll_bar_needed], 0
+	je  @f
+	  sub ebx, SCROLL_WIDTH_SIZE
+	  dec ebx
+	@@:
+	
+	mov  ecx, 19*65536-23
+    add  ecx, [procinfo2.box.height]
+	sub  ecx, [skin_height]
+	
+	mov  eax, 13
+	mov  edx, 0xf0f0f0
+	int 0x40
 ;---------------------------------------------
     cmp  [is_scroll_bar_needed],    0
      je  @f
@@ -544,9 +567,11 @@ draw_window:
         mov     [scroll_bar_data_vertical.all_redraw],eax
   @@:
 ;---------------------------------------------
-    mcall 47,0x30000,isymImplemented,<114,8>, 0x10DDEEFF
-    add  edx,36 shl 16
-    mcall ,,isymMax
+	;po-moumu eto govno mamonta
+	
+    ;mcall 47,0x30000,isymImplemented,<114,8>, 0x10DDEEFF
+    ;add  edx,36 shl 16
+    ;mcall ,,isymMax
     add  edx,40 shl 16
     mov  esi,0x104e00e7;0x10f27840
     cmp  dword[fileinfo.name],N_A
@@ -554,8 +579,7 @@ draw_window:
     mov  esi,0x10ff0000
   .noNA:
 ;    mcall 4,edx,esi,fileinfo.name,[fname_size]
-    mov  edi,prcinfo
-    mcall 9,edi,-1
+    mcall 9,prcinfo,-1
     and  [mode],not RTF_TOEOF
     mov  ebx,[edi+42]
     cmp  ebx,[wSave]
@@ -571,6 +595,7 @@ draw_window:
 ;---------------------------------------------
     call  Set_scroll_position
 
+;---------------------------------------------
     mov ebx, dword[prcinfo+0x3E]
     mcall     38, , 65536*18+18, 0x8b8b89
     inc ebx
@@ -587,7 +612,7 @@ draw_window:
         call    [menu_bar_draw]         
 ;---------------------------------------------
 
-    sub  dword[prcinfo+42],2*LMARGIN+scroll_width_size
+    sub  dword[prcinfo+42],2*LMARGIN+SCROLL_WIDTH_SIZE
     sub  dword[prcinfo+46],CHARH+25
     
  if GUTTER eq 1
@@ -722,7 +747,7 @@ Set_position:
 Set_scroll_position:
     mcall 9, procinfo2, -1
     mov eax, dword[procinfo2+0x3E]
-    sub eax, scroll_width_size
+    sub eax, SCROLL_WIDTH_SIZE
     mov word[scroll_bar_data_vertical.start_x], ax
 
     mov eax, dword[procinfo2+0x42]
@@ -742,10 +767,11 @@ end if
 ; интерфейс программы многоязычный
 ;  Вы можете задать язык в MACROS.INC (lang fix язык)
 
-window_title:           db      'RtfRead v1.034',0
+window_title:           db      'RtfRead v1.4',0
 is_scroll_bar_needed    dd      0x0
 window_width            dd      0x0
 window_height           dd      0x0
+skin_height             dd      0x0
 ;---------------------------------------------------------------------
 l_libs_start:
 
@@ -1013,13 +1039,13 @@ menu_text_area_3:
 align   4
 scroll_bar_data_vertical:
 .x:
-.size_x         dw scroll_width_size;+0
+.size_x         dw SCROLL_WIDTH_SIZE;+0
 .start_x        dw WINW-25  ;+2
 .y:
 .size_y         dw WINH-45  ;+4
 .start_y        dw 19   ;+6
-.btn_high       dd scroll_width_size    ;+8
-.type           dd 1    ;+12
+.btn_high       dd SCROLL_WIDTH_SIZE    ;+8
+.type           dd 0    ;+12
 .max_area       dd 300       ;+16
 .cur_area       dd 50   ;+20
 .position       dd 0    ;+24
