@@ -247,7 +247,7 @@ CMM_PROGRAMS:=\
  games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
  games/flood-it:GAMES/flood-it:$(PROGS)/games/flood-it/trunk/flood-it.c \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
- HTMLv:HTMLv:$(PROGS)/network/htmlv/browser/HTMLv.c-- \
+ HTMLv:HTMLv:$(PROGS)/network/htmlv/browser/HTMLv.c \
 # end of list
 
 # List of other files to be included in the image file.

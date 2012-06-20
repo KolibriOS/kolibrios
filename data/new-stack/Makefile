@@ -171,7 +171,7 @@ COPY_FILES:=\
 # except that there can be fourth field with parameters for a compiler.
 CMM_PROGRAMS:=\
  File|Managers/Eolite:File|Managers/EOLITE:$(PROGS)/fs/Eolite/trunk/Eolite.c-- \
- HTMLv:HTMLv:$(PROGS)/network/htmlv/browser/HTMLv.c-- \
+ HTMLv:HTMLv:$(PROGS)/network/htmlv/browser/HTMLv.c \
 #develop/c--:DEVELOP/C--:$(PROGS)/develop/c--/trunk/32.c-- \
 # end of list
 
