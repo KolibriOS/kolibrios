@@ -1,6 +1,6 @@
 ; макрос для системной библиотеки box_lib.obj
 ; элемент TextEditor для Kolibri OS
-; файл последний раз изменялся 19.06.2012 IgorA
+; файл последний раз изменялся 20.06.2012 IgorA
 ; на код применена GPL2 лицензия
 
 ;input:
@@ -849,31 +849,40 @@ endp
 ; edx = pointer to 'perv' visible symbol struct
 align 4
 ted_iterat_perv:
-  cmp ted_tim_undo,0
-  je .else
-  push ebx
-  @@:
-    call ted_get_text_perv_pos
-    cmp edx,ted_tex
-    je @f
-    call ted_symbol_not_vis
-    cmp bl,1
-    je @b
-    cmp byte[edx],10 ;пропуск символа с кодом 10
-    je @b
-  @@:
-  pop ebx
-  ret
-  .else:
-    call ted_get_text_perv_pos
-    cmp edx,ted_tex
-    je .endif
-    cmp dword [edx+14],0
-    jne .else
-    cmp byte[edx],10 ;пропуск символа с кодом 10
-    je .else
-  .endif:
-  ret
+	cmp ted_tim_undo,0
+	je .else
+	push ebx
+	@@:
+		mov edx,dword[edx+2]
+		cmp edx,0
+		je @f
+		imul edx,sizeof.symbol
+		add edx,ted_tex
+		call ted_symbol_not_vis
+		cmp bl,1
+		je @b
+		cmp byte[edx],10 ;пропуск символа с кодом 10
+		je @b
+	pop ebx
+	ret
+	@@:
+	mov edx,ted_tex ;начало файла
+	pop ebx
+	ret
+	.else:
+		mov edx,dword[edx+2]
+		cmp edx,0
+		je @f
+		imul edx,sizeof.symbol
+		add edx,ted_tex
+		cmp dword [edx+14],0
+		jne .else
+		cmp byte[edx],10 ;пропуск символа с кодом 10
+		je .else
+	ret
+	@@:
+	mov edx,ted_tex ;начало файла
+	ret
 
 
 ;input:
@@ -883,31 +892,42 @@ ted_iterat_perv:
 ; edx = pointer to 'next' visible symbol struct
 align 4
 ted_iterat_next:
-  cmp ted_tim_undo,0
-  je .else
-  push ebx
-  @@:
-    call ted_get_text_next_pos
-    cmp edx,ted_tex_1
-    jle @f
-    call ted_symbol_not_vis
-    cmp bl,1
-    je @b
-    cmp byte[edx],10 ;пропуск символа с кодом 10
-    je @b
-  @@:
-  pop ebx
-  ret
-  .else:
-    call ted_get_text_next_pos
-    cmp edx,ted_tex_1
-    jle .endif
-    cmp dword [edx+14],0
-    jne .else
-    cmp byte[edx],10 ;пропуск символа с кодом 10
-    je .else
-  .endif:
-  ret
+	cmp ted_tim_undo,0
+	je .else
+	push ebx
+	@@:
+		mov edx,dword[edx+6]
+		cmp edx,1
+		jle @f
+		imul edx,sizeof.symbol
+		add edx,ted_tex
+
+		call ted_symbol_not_vis
+		cmp bl,1
+		je @b
+		cmp byte[edx],10 ;пропуск символа с кодом 10
+		je @b
+	pop ebx
+	ret
+	@@:
+	mov edx,ted_tex_1 ;конец файла
+	pop ebx
+	ret
+	.else:
+		mov edx,dword[edx+6]
+		cmp edx,1
+		jle @f
+		imul edx,sizeof.symbol
+		add edx,ted_tex
+
+		cmp dword [edx+14],0
+		jne .else
+		cmp byte[edx],10 ;пропуск символа с кодом 10
+		je .else
+	ret
+	@@:
+	mov edx,ted_tex_1 ;конец файла
+	ret
 
 ;input:
 ; bl = symbol end of select
