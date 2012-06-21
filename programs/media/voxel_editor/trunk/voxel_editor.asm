@@ -17,7 +17,7 @@ include 'dll.inc'
 include 'vox_draw.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel editor 19.06.12',0 ;подпись окна
+caption db 'Voxel editor 21.06.12',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -932,6 +932,7 @@ push edi
 
 		inc eax
 		stdcall [buf2d_vox_obj_draw_3g], buf_r_img, buf_r_z, buf_vox, [open_file_vox], 0,0, 0, eax
+		stdcall [buf2d_vox_obj_draw_1g], buf_r_img, buf_r_z, [open_file_vox], 0,0, eax
 		bt dword[mode_light],0
 		jnc @f
 			stdcall [buf2d_vox_obj_draw_3g_shadows], buf_r_img, buf_r_z, buf_vox, 0,0, 0, eax, 3
@@ -1021,7 +1022,9 @@ draw_objects:
 		stdcall [buf2d_vox_obj_draw_3g], buf_0, buf_0z, buf_vox,\
 			[open_file_vox], ebx,ecx, 0, eax
 		stdcall [buf2d_vox_obj_draw_pl], buf_pl, [open_file_vox],\
-			OT_MAP_X,OT_MAP_Y,TILE_SIZE, [v_zoom], [n_plane], [sc.work_graph]
+			OT_MAP_X,OT_MAP_Y,TILE_SIZE, eax, [n_plane], [sc.work_graph]
+		stdcall [buf2d_vox_obj_draw_1g], buf_0, buf_0z,\
+			[open_file_vox], 0,0, eax
 		bt dword[mode_light],0
 		jnc .end_1
 			stdcall [buf2d_vox_obj_draw_3g_shadows], buf_0, buf_0z, buf_vox, ebx,ecx, 0, eax, 3
@@ -1327,6 +1330,7 @@ import_buf2d:
 	buf2d_vox_brush_delete dd sz_buf2d_vox_brush_delete
 	buf2d_vox_obj_get_img_w_3g dd sz_buf2d_vox_obj_get_img_w_3g
 	buf2d_vox_obj_get_img_h_3g dd sz_buf2d_vox_obj_get_img_h_3g
+	buf2d_vox_obj_draw_1g dd sz_buf2d_vox_obj_draw_1g
 	buf2d_vox_obj_draw_3g dd sz_buf2d_vox_obj_draw_3g
 	buf2d_vox_obj_draw_3g_scaled dd sz_buf2d_vox_obj_draw_3g_scaled
 	buf2d_vox_obj_draw_3g_shadows dd sz_buf2d_vox_obj_draw_3g_shadows
@@ -1363,6 +1367,7 @@ import_buf2d:
 	sz_buf2d_vox_brush_delete db 'buf2d_vox_brush_delete',0
 	sz_buf2d_vox_obj_get_img_w_3g db 'buf2d_vox_obj_get_img_w_3g',0
 	sz_buf2d_vox_obj_get_img_h_3g db 'buf2d_vox_obj_get_img_h_3g',0
+	sz_buf2d_vox_obj_draw_1g db 'buf2d_vox_obj_draw_1g',0
 	sz_buf2d_vox_obj_draw_3g db 'buf2d_vox_obj_draw_3g',0
 	sz_buf2d_vox_obj_draw_3g_scaled db 'buf2d_vox_obj_draw_3g_scaled',0
 	sz_buf2d_vox_obj_draw_3g_shadows db 'buf2d_vox_obj_draw_3g_shadows',0

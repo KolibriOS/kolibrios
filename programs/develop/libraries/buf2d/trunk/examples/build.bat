@@ -6,6 +6,7 @@ if not exist bin\font8x9.bmp @copy ..\..\..\..\..\fs\kfar\trunk\font8x9.bmp bin\
 @copy foto.jpg bin\foto.jpg
 @copy img0.png bin\img0.png
 @copy img1.png bin\img1.png
+if not exist bin\vaz2106.vox @copy ..\..\..\..\..\media\voxel_editor\trunk\vaz2106.vox bin\vaz2106.vox
 
 @fasm.exe -m 16384 e0_dr_lines.asm bin\e0_dr_lines.kex
 @fasm.exe -m 16384 e1_scaling.asm bin\e1_scaling.kex
@@ -13,6 +14,8 @@ if not exist bin\font8x9.bmp @copy ..\..\..\..\..\fs\kfar\trunk\font8x9.bmp bin\
 @fasm.exe -m 16384 e3_text.asm bin\e3_text.kex
 @fasm.exe -m 16384 e4_graf_ed.asm bin\e4_graf_ed.kex
 @fasm.exe -m 16384 e5_lines_sm.asm bin\e5_lines_sm.kex
+@fasm.exe -m 16384 e6_vox_1g.asm bin\e6_vox_1g.kex
+@fasm.exe -m 16384 e7_vox_3g.asm bin\e7_vox_3g.kex
 
 @kpack bin\e0_dr_lines.kex
 @kpack bin\e1_scaling.kex
@@ -20,4 +23,6 @@ if not exist bin\font8x9.bmp @copy ..\..\..\..\..\fs\kfar\trunk\font8x9.bmp bin\
 @kpack bin\e3_text.kex
 @kpack bin\e4_graf_ed.kex
 @kpack bin\e5_lines_sm.kex
+@kpack bin\e6_vox_1g.kex
+@kpack bin\e7_vox_3g.kex
 pause

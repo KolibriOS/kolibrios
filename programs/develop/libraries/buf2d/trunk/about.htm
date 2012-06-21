@@ -54,6 +54,7 @@ table { font-size: 15px; }
 <ul>
 <li><a href="#f_init">lib_init</a></li>
 <li><a href="#f_b_create">buf2d_create</a></li>
+<li><a href="#f_c_color">buf2d_crop_color</a></li>
 <li><a href="#f_v_brush_c">buf2d_vox_brush_create</a></li>
 </ul>
 </li>
@@ -70,7 +71,7 @@ table { font-size: 15px; }
  Есть функции рисования линий, кривых Безье, прямоугольников, окружностей.
  Также есть функции для рисований воксельной графики.</p>
 
-<p>Последнее обновление библиотеки 12.06.12.</p>
+<p>Последнее обновление библиотеки 21.06.12.</p>
 
 <h1><a name="format_buf">Форматы буферов</a></h1>
 <p>Поддерживается 3 формата буферов.
@@ -203,16 +204,16 @@ stdcall [buf2d_convert_text_matrix], buf_1</pre>
 <h4>buf2d_draw_text</h4>
 <p>Рисует текст в буфере, используя матрицу с текстом размером 1*256 символов. Пример:</p>
 <pre>stdcall [buf2d_draw_text], buf_0, buf_1,some_text,20,10,0x4040ff ;рисуем строку с текстом</pre>
-<p>где buf_0 - структура буфера в котором будет рисоваться текст;
-  buf_1 - структура буфера с текстовой матрицей в формате 8 бит, размером 1*256 символов;
-  some_text - текст, который будет выведен в буфер buf_0.</p>
+<p>где buf_0 - структура буфера в котором будет рисоваться текст;</p>
+<p>buf_1 - структура буфера с текстовой матрицей в формате 8 бит, размером 1*256 символов;</p>
+<p>some_text - текст, который будет выведен в буфер buf_0.</p>
 
-<h4>buf2d_crop_color</h4>
+<h4><a name="f_c_color">buf2d_crop_color</a></h4>
 <p>Обрезание буфера, по указанному цвету. Функция используется для уменьшения памяти, занимаемой буфером. Отрезаются крайние части буфера имеющие одинаковый цвет. Пример:</p>
 <pre>stdcall [buf2d_crop_color], buf_0,0xffffff,BUF2D_OPT_CROP_TOP+BUF2D_OPT_CROP_BOTTOM</pre>
-<p>где buf_0 - структура буфера который будет обрезан;
-  0xffffff - цвет по которому будет обрезаться буфер;
-  BUF2D_OPT_CROP_TOP и BUF2D_OPT_CROP_BOTTOM - константы, указывающие с каких сторон обрезать буфер.</p>
+<p>где buf_0 - структура буфера который будет обрезан;</p>
+<p>0xffffff - цвет по которому будет обрезаться буфер;</p>
+<p>BUF2D_OPT_CROP_TOP и BUF2D_OPT_CROP_BOTTOM - константы, указывающие с каких сторон обрезать буфер.</p>
 
 <h4>buf2d_offset_h</h4>
 <p>Сдвиг изображения в буфере по высоте вверх или вниз.</p>
@@ -220,11 +221,11 @@ stdcall [buf2d_convert_text_matrix], buf_1</pre>
 <h4>buf2d_flood_fill</h4>
 <p>Функция для рекурсивной заливки выбранным цветом. Имеется два варианта заливки. Пример:</p>
 <pre>stdcall [buf2d_flood_fill], buf_0, 100,200, 0, 0xff,0xff0000</pre>
-<p>где buf_0 - структура буфера;
-  100,200 - координаты точки, с которой начнется заливка;
-  0 - параметр, определяет алгоритм заливки (может быть 0 или 1);
-  0xff - цвет заливки;</p>
-  0xff0000 - зависит от значения 4-го параметра, 1) если 0 - цвет до которого будет заливаться область; 2) если 1 - цвет области которая будет заливатся;</p>
+<p>где buf_0 - структура буфера;</p>
+<p>100,200 - координаты точки, с которой начнется заливка;</p>
+<p>0 - параметр, определяет алгоритм заливки (может быть 0 или 1);</p>
+<p>0xff - цвет заливки;</p>
+<p>0xff0000 - зависит от значения 4-го параметра, 1) если 0 - цвет до которого будет заливаться область; 2) если 1 - цвет области которая будет заливатся;</p>
 
 <h4>buf2d_set_pixel</h4>
 <p>Функция ставит точку, принимает координаты и цвет.</p>
@@ -245,6 +246,9 @@ stdcall [buf2d_convert_text_matrix], buf_1</pre>
 
 <h4>buf2d_vox_brush_delete</h4>
 <p>Удаление воксельной кисти.</p>
+
+<h4>buf2d_vox_obj_draw_1g</h4>
+<p>Рисование воксельного объекта с 1-й гранью.</p>
 
 <h4>buf2d_vox_obj_get_img_w_3g</h4>
 <p>Возврашает ширину воксельного изображения с 3-мя гранями (которое рисуется функцией <b>buf2d_vox_obj_draw_3g</b>), принимает указатель на кисть и масштаб.</p>
@@ -269,13 +273,13 @@ stdcall [buf2d_convert_text_matrix], buf_1</pre>
 
 <h1><a name="const">Константы</a></h1>
 <h4>BUF2D_OPT_CROP_TOP equ 1</h4>
-<p>Константа для функции buf2d_crop_color, обозначает обрезку буфера сверху</p>
+<p>Константа для функции <a href="#f_c_color">buf2d_crop_color</a>, обозначает обрезку буфера сверху</p>
 <h4>BUF2D_OPT_CROP_LEFT equ 2</h4>
-<p>Константа для функции buf2d_crop_color, обозначает обрезку буфера слева</p>
+<p>Константа для функции <a href="#f_c_color">buf2d_crop_color</a>, обозначает обрезку буфера слева</p>
 <h4>BUF2D_OPT_CROP_BOTTOM equ 4</h4>
-<p>Константа для функции buf2d_crop_color, обозначает обрезку буфера снизу</p>
+<p>Константа для функции <a href="#f_c_color">buf2d_crop_color</a>, обозначает обрезку буфера снизу</p>
 <h4>BUF2D_OPT_CROP_RIGHT equ 8</h4>
-<p>Константа для функции buf2d_crop_color, обозначает обрезку буфера справа</p>
+<p>Константа для функции <a href="#f_c_color">buf2d_crop_color</a>, обозначает обрезку буфера справа</p>
 
 <h1><a name="tabl_e">Таблица экспорта</a></h1>
 <p>Пример таблицы экспорта, расчитанной на использование макроса <b>@use_library_mem</b>:</p>
@@ -312,6 +316,7 @@ import_buf2d_lib:
 	;воксельные функции:
 	buf2d_vox_brush_create dd sz_buf2d_vox_brush_create
 	buf2d_vox_brush_delete dd sz_buf2d_vox_brush_delete
+	buf2d_vox_obj_draw_1g dd sz_buf2d_vox_obj_draw_1g
 	buf2d_vox_obj_get_img_w_3g dd sz_buf2d_vox_obj_get_img_w_3g
 	buf2d_vox_obj_get_img_h_3g dd sz_buf2d_vox_obj_get_img_h_3g
 	buf2d_vox_obj_draw_3g dd sz_buf2d_vox_obj_draw_3g
@@ -352,6 +357,7 @@ import_buf2d_lib:
 	;воксельные функции:
 	sz_buf2d_vox_brush_create db 'buf2d_vox_brush_create',0
 	sz_buf2d_vox_brush_delete db 'buf2d_vox_brush_delete',0
+	sz_buf2d_vox_obj_draw_1g db 'buf2d_vox_obj_draw_1g',0
 	sz_buf2d_vox_obj_get_img_w_3g db 'buf2d_vox_obj_get_img_w_3g',0
 	sz_buf2d_vox_obj_get_img_h_3g db 'buf2d_vox_obj_get_img_h_3g',0
 	sz_buf2d_vox_obj_draw_3g db 'buf2d_vox_obj_draw_3g',0
