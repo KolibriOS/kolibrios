@@ -28,22 +28,20 @@
 # $(4) = name of program - without path and extension,
 define fasm_meta_rule
 $(1): $(2) Makefile.fasm .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
-	fasm -m 65536 "$$<" "$$@" -s .deps/$(4).fas
-	prepsrc .deps/$(4).fas /dev/null
-	prepsrc .deps/$(4).fas /dev/stdout | \
-	perl -n -e 's|\\|/|g;s| |\\ |g;push @a,$$$$1 if/^;include\\ \x27(.*?)\x27/;' \
-	-e 'END{$$$$a=join " \\\n ",@a;print q`$(1): `,"$$$$a\n$$$$a:\n"}' > .deps/$(4).Po
+	tmpfile=`mktemp --tmpdir build.XXXXXXXX` && \
+	(fasm -m 65536 "$$<" "$$@" -s $$$$tmpfile && \
+	fasmdep -e $$$$tmpfile > .deps/$(4).Po && \
+	rm $$$$tmpfile) || (rm $$$$tmpfile; false)
 	kpack --nologo "$$@"
 -include .deps/$(4).Po
 endef
 
 define fasm_nokpack_meta_rule
 $(1): $(2) Makefile.fasm .deps/.dir $$(call respace,$$(addsuffix .dir,$(3)))
-	fasm -m 65536 "$$<" "$$@" -s .deps/$(4).fas
-	prepsrc .deps/$(4).fas /dev/null
-	prepsrc .deps/$(4).fas /dev/stdout | \
-	perl -n -e 's|\\|/|g;s| |\\ |g;push @a,$$$$1 if/^;include\\ \x27(.*?)\x27/;' \
-	-e 'END{$$$$a=join " \\\n ",@a;print q`$(1): `,"$$$$a\n$$$$a:\n"}' > .deps/$(4).Po
+	tmpfile=`mktemp --tmpdir build.XXXXXXXX` && \
+	(fasm -m 65536 "$$<" "$$@" -s $$$$tmpfile && \
+	fasmdep -e $$$$tmpfile > .deps/$(4).Po && \
+	rm $$$$tmpfile) || (rm $$$$tmpfile; false)
 -include .deps/$(4).Po
 endef
 
@@ -54,10 +52,8 @@ $(foreach f,$(FASM_NOKPACK_PROGRAMS),$(eval $(call fasm_nokpack_meta_rule,$(fbin
 
 # Rule for the kernel differs: it uses kerpack instead of kpack.
 kernel.mnt: $(KERNEL)/kernel.asm Makefile.fasm .deps/.dir
-	fasm -m 65536 "$<" "$@" -s .deps/kernel.fas
-	prepsrc .deps/kernel.fas /dev/null
-	prepsrc .deps/kernel.fas /dev/stdout | \
-	perl -n -e 's|\\|/|g;s| |\\ |g;push @a,$$1 if/^;include\\ \x27(.*?)\x27/;' \
-	-e 'END{$$a=join " \\\n ",@a;print "$@: $$a\n$$a:\n"}' > .deps/kernel.Po
-	kerpack $@
+	tmpfile=`mktemp --tmpdir build.XXXXXXXX` && \
+	(fasm -m 65536 "$<" "$@" -s $$tmpfile && \
+	fasmdep -e $$tmpfile > .deps/kernel.Po && \
+	rm $$tmpfile) || (rm $$tmpfile; false)
 -include .deps/kernel.Po

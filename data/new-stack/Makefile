@@ -299,7 +299,7 @@ include Makefile.nasm
 include Makefile.copy
 
 # Special rules for copying sysfuncs.txt - it isn't directly included in the image.
-docpack: $(DOCDIR)SYSFUNCS.TXT $(wildcard $(DOCDIR)*)
+docpack: $(DOCDIR)SYSFUNCS.TXT
 $(DOCDIR)SYSFUNCS.TXT: $(TRUNKKERNEL)/docs/sysfuncs.txt
 	cp $(TRUNKKERNEL)/docs/sysfuncs.txt $(DOCDIR)SYSFUNCS.TXT
 
