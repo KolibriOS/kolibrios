@@ -227,6 +227,7 @@ COPY_FILES:=\
  develop/te_icon.png:DEVELOP/TE_ICON.PNG:$(PROGS)/other/t_edit/te_icon.png \
  develop/tl_nod_16.png:DEVELOP/TL_NOD_16.PNG:$(PROGS)/other/t_edit/tl_nod_16.png \
  develop/tl_sys_16.png:DEVELOP/TL_SYS_16.PNG:$(PROGS)/media/log_el/trunk/tl_sys_16.png \
+ develop/t_edit.ini:DEVELOP/T_EDIT.INI:$(PROGS)/other/t_edit/t_edit.ini \
  File|Managers/z_icons.png:File|Managers/Z_ICONS.PNG:$(PROGS)/fs/opendial/z_icons.png \
  File|Managers/kfm_keys.txt:File|Managers/KFM_KEYS.TXT:$(PROGS)/fs/kfm/trunk/docs/english/kfm_keys.txt \
  File|Managers/buttons.bmp:File|Managers/BUTTONS.BMP:$(PROGS)/fs/kfm/trunk/buttons.bmp \

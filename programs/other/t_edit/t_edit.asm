@@ -16,7 +16,7 @@ use32
 
 MAX_COLOR_WORD_LEN equ 40
 maxChars equ 100002 ;(...+2)
-BUF_SIZE equ 1000 ;buffer for copy|paste
+BUF_SIZE equ 4096 ;buffer for copy|paste
 maxSyntaxFileSize equ 410000
 
 include '../../proc32.inc'
@@ -167,6 +167,30 @@ mov ecx,ebx
   stdcall dword[tl_cur_beg],tree1 ;ставим курсор на начало списка
 .end_dir_init:
 
+;--- load ini file ---
+	copy_path ini_name,sys_path,file_name,0x0
+	;window startup pozition
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_l,ini_def_window_l
+	mov word[wnd_s_pos+2],ax
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_w,ini_def_window_w
+	mov word[wnd_s_pos],ax
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_t,ini_def_window_t
+	mov word[wnd_s_pos+6],ax
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_h,ini_def_window_h
+	mov word[wnd_s_pos+4],ax
+	;scrool type
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_scroll_type,ini_def_scroll_type
+	mov [wScr.type],eax
+	mov [hScr.type],eax
+	mov [ws_dir_lbox.type],eax
+	;symbol size
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_symbol_w,ini_def_symbol_w
+	mov dword[tedit0.rec.width],eax
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_symbol_h,ini_def_symbol_h
+	mov dword[tedit0.rec.height],eax
+	lea eax,[eax+eax*2]
+	mov dword[tedit0.rec.top],eax
+
 ;--- load color option file ---
 	mov ebx,dword[fn_col_option]
 	copy_path ebx,fn_syntax_dir,file_name_rez,0x0
@@ -181,6 +205,8 @@ mov ecx,ebx
 		mov [edit1.size],eax
 		call but_no_msg_OpenFile
 	@@:
+
+
 
 align 4
 red_win:
@@ -212,7 +238,7 @@ draw_window:
 	mov edx,[sc.work]
 	or  edx,0x73000000
 	mov edi,hed
-	mcall 0,(10 shl 16)+485,(10 shl 16)+320
+	mcall 0,dword[wnd_s_pos],dword[wnd_s_pos+4]
 
 	mcall 9,procinfo,-1
 	mov edi,tedit0 ;значение edi нужно для EvSize и ted_wnd_t
@@ -496,6 +522,8 @@ if lang eq ru
   err_message_import2 db 'Ошибка при импорте библиотеки ',39,'proc_lib.obj',39,0
   err_message_found_lib_3 db 'Не найдена библиотека ',39,'libimg.obj',39,0
   err_message_import_3 db 'Ошибка при импорте библиотеки ',39,'libimg.obj',39,0
+  err_message_found_lib_4 db 'Не найдена библиотека ',39,'libini.obj',39,0
+  err_message_import_4 db 'Ошибка при импорте библиотеки ',39,'libini.obj',39,0
 else
   head_f_i:
   head_f_l db 'System error',0
@@ -507,6 +535,8 @@ else
   err_message_import2 db 'Error on load import library ',39,'proc_lib.obj',39,0
   err_message_found_lib_3 db 'Sorry I cannot found library ',39,'libimg.obj',39,0
   err_message_import_3 db 'Error on load import library ',39,'libimg.obj',39,0
+  err_message_found_lib_4 db 'Sorry I cannot found library ',39,'libini.obj',39,0
+  err_message_import_4 db 'Error on load import library ',39,'libini.obj',39,0
 end if
 
 ;library structures
@@ -519,6 +549,8 @@ l_libs_start:
 		err_message_found_lib2, head_f_l, import_proclib, err_message_import2, head_f_i
 	lib3 l_libs lib_name_3, sys_path, file_name, system_dir_3,\
 		err_message_found_lib_3, head_f_l, import_libimg, err_message_import_3, head_f_i
+	lib4 l_libs lib_name_4, sys_path, file_name, system_dir_4,\
+		err_message_found_lib_4, head_f_l, import_libini, err_message_import_4, head_f_i
 load_lib_end:
 
 IncludeIGlobals

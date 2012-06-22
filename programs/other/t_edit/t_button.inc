@@ -17,8 +17,6 @@ struct symbol
 	td dd ?   ;+14 врем. удаления
 ends
 
-
-hed db 'TextEditor 1.06.12',0 ;подпись окна
 sc system_colors
 
 bmp_icon dd 0
@@ -112,15 +110,15 @@ ted_but_open_file:
 		stdcall [mb_create],msgbox_9,thread ;message: error run 'open file dialog'
 		jmp .ret_f
 	@@:
-  cmp [OpenDialog_data.status],1
+	cmp [OpenDialog_data.status],1
 	jne .ret_f
-	mov esi,[OpenDialog_data.openfile_path]
-	call strlen
-	mov [edit1.size],eax
-	mov [edit1.pos],eax
-	stdcall [edit_box_draw], edit1
-	stdcall [ted_open_file], tedit0,run_file_70,[edit1.text]
-	call ted_messages_after_open_file
+		mov esi,[OpenDialog_data.openfile_path]
+		call strlen
+		mov [edit1.size],eax
+		mov [edit1.pos],eax
+		stdcall [edit_box_draw], edit1
+		stdcall [ted_open_file], tedit0,run_file_70,[edit1.text]
+		call ted_messages_after_open_file
 	.ret_f:
 	popad
 	ret

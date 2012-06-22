@@ -2,6 +2,30 @@ fn_col_option dd def_col_file
 fn_syntax_dir db 'info/',0
 def_col_file db 'default.syn',0
 
+;значения задаваемые по умолчанию, без ini файла
+ini_def_window_t equ 10
+ini_def_window_l equ 10
+ini_def_window_w equ 485
+ini_def_window_h equ 320
+ini_def_symbol_w equ 7
+ini_def_symbol_h equ 10
+ini_def_scroll_type equ 0
+;описание параматров для ini файла
+ini_name db 't_edit.ini',0
+ini_sec_window db 'Window',0
+key_window_t db 't',0
+key_window_l db 'l',0
+key_window_w db 'w',0
+key_window_h db 'h',0
+key_symbol_w db 'symbol_w',0
+key_symbol_h db 'symbol_h',0
+key_scroll_type db 'scroll_type',0
+ini_sec_options db 'Options',0
+
+align 4
+wnd_s_pos: ;место для настроек стартовой позиции окна
+    rq 0
+
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'box_lib.obj',0
 
@@ -14,6 +38,10 @@ lib_name_2 db 'proc_lib.obj',0
 system_dir_3 db '/sys/lib/'
 lib_name_3 db 'libimg.obj',0
 
+system_dir_4 db '/sys/lib/'
+lib_name_4 db 'libini.obj',0
+
+
 ;---------------------------------------------------------------------
 align 4
 import_box_lib:
@@ -23,14 +51,6 @@ import_box_lib:
 	edit_box_key   dd aEdit_box_key
 	edit_box_mouse dd aEdit_box_mouse
 	;version_ed     dd aVersion_ed
-
-	;check_box_draw dd aCheck_box_draw
-	;check_box_mouse dd aCheck_box_mouse
-	;version_ch     dd aVersion_ch
-
-	;option_box_draw  dd aOption_box_draw
-	;option_box_mouse dd aOption_box_mouse
-	;version_op      dd aVersion_op
 
 	scrollbar_ver_draw  dd aScrollbar_ver_draw
 	scrollbar_ver_mouse dd aScrollbar_ver_mouse
@@ -61,7 +81,7 @@ import_box_lib:
 	tl_cur_beg dd sz_tl_cur_beg
 	tl_cur_next dd sz_tl_cur_next
 	tl_cur_perv dd sz_tl_cur_perv
-	tl_node_close_open dd sz_tl_node_close_open
+	;tl_node_close_open dd sz_tl_node_close_open
 	tl_node_lev_inc dd sz_tl_node_lev_inc
 	tl_node_lev_dec dd sz_tl_node_lev_dec
 
@@ -99,14 +119,6 @@ dd 0,0
 	aEdit_box_mouse db 'edit_box_mouse',0
 	;aVersion_ed    db 'version_ed',0
 
-	;aCheck_box_draw  db 'check_box_draw',0
-	;aCheck_box_mouse db 'check_box_mouse',0
-	;aVersion_ch     db 'version_ch',0
-
-	;aOption_box_draw  db 'option_box_draw',0
-	;aOption_box_mouse db 'option_box_mouse',0
-	;aVersion_op      db 'version_op',0
-
 	aScrollbar_ver_draw  db 'scrollbar_v_draw',0
 	aScrollbar_ver_mouse db 'scrollbar_v_mouse',0
 	aScrollbar_hor_draw  db 'scrollbar_h_draw',0
@@ -136,7 +148,7 @@ dd 0,0
 	sz_tl_cur_beg db 'tl_cur_beg',0
 	sz_tl_cur_next db 'tl_cur_next',0
 	sz_tl_cur_perv db 'tl_cur_perv',0
-	sz_tl_node_close_open db 'tl_node_close_open',0
+	;sz_tl_node_close_open db 'tl_node_close_open',0
 	sz_tl_node_lev_inc db 'tl_node_lev_inc',0
 	sz_tl_node_lev_dec db 'tl_node_lev_dec',0
 
@@ -187,49 +199,27 @@ dd 0,0
 align 4
 import_libimg:
 	dd alib_init1
-	;img_is_img  dd aimg_is_img
-	;img_info    dd aimg_info
-	;img_from_file dd aimg_from_file
-	;img_to_file dd aimg_to_file
-	;img_from_rgb dd aimg_from_rgb
-	;img_to_rgb  dd aimg_to_rgb
 	img_to_rgb2 dd aimg_to_rgb2
 	img_decode  dd aimg_decode
-	;img_encode  dd aimg_encode
-	;img_create  dd aimg_create
 	img_destroy dd aimg_destroy
-	;img_destroy_layer dd aimg_destroy_layer
-	;img_count   dd aimg_count
-	;img_lock_bits dd aimg_lock_bits
-	;img_unlock_bits dd aimg_unlock_bits
-	;img_flip    dd aimg_flip
-	;img_flip_layer dd aimg_flip_layer
-	;img_rotate  dd aimg_rotate
-	;img_rotate_layer dd aimg_rotate_layer
-	;img_draw    dd aimg_draw
 dd 0,0
 	alib_init1   db 'lib_init',0
-	;aimg_is_img  db 'img_is_img',0 ;определяет по данным, может ли библиотека сделать из них изображение
-	;aimg_info    db 'img_info',0
-	;aimg_from_file db 'img_from_file',0
-	;aimg_to_file db 'img_to_file',0
-	;aimg_from_rgb db 'img_from_rgb',0
-	;aimg_to_rgb  db 'img_to_rgb',0 ;преобразование изображения в данные RGB
 	aimg_to_rgb2 db 'img_to_rgb2',0
 	aimg_decode  db 'img_decode',0 ;автоматически определяет формат графических данных
-	;aimg_encode  db 'img_encode',0
-	;aimg_create  db 'img_create',0
 	aimg_destroy db 'img_destroy',0
-	;aimg_destroy_layer db 'img_destroy_layer',0
-	;aimg_count   db 'img_count',0
-	;aimg_lock_bits db 'img_lock_bits',0
-	;aimg_unlock_bits db 'img_unlock_bits',0
-	;aimg_flip    db 'img_flip',0
-	;aimg_flip_layer db 'img_flip_layer',0
-	;aimg_rotate  db 'img_rotate',0
-	;aimg_rotate_layer db 'img_rotate_layer',0
-	;aimg_draw    db 'img_draw',0
 
+align 4
+import_libini:
+	dd alib_init2
+	ini_get_str   dd aini_get_str
+	ini_get_int   dd aini_get_int
+	ini_get_color dd aini_get_color
+dd 0,0
+	alib_init2     db 'lib_init',0
+	aini_get_str   db 'ini_get_str',0
+	aini_get_int   db 'ini_get_int',0
+	aini_get_color db 'ini_get_color',0
+ 
 ;---------------------------------------------------------------------
 align 4
 wScr:
@@ -240,7 +230,7 @@ wScr:
 .size_y   dw 300 ; +4
 .start_y  dw  50 ; +6
 .btn_high dd  15 ; +8
-.type	  dd   0 ;+12
+.type	  dd ini_def_scroll_type ;+12
 .max_area dd 100 ;+16
 .cur_area dd  30 ;+20
 .position dd   0 ;+24
@@ -274,7 +264,7 @@ hScr:
 .size_y     dw 16 ;+4
 .start_y    dw 50 ;+6
 .btn_high   dd 15 ;+8
-.type	    dd 0  ;+12
+.type	    dd ini_def_scroll_type ;+12
 .max_area   dd 100 ;+16
 .cur_area   dd 30 ;+20
 .position   dd 0  ;+24
@@ -308,7 +298,7 @@ ws_dir_lbox: ;дочерний скроллинг для элемента ListBox
 .size_y     dw 30 ;+4
 .start_y    dw 70 ;+6
 .btn_high   dd 15 ;+8
-.type	    dd 0  ;+12
+.type	    dd ini_def_scroll_type ;+12
 .max_area   dd 100 ;+16
 .cur_area   dd 30 ;+20
 .position   dd 0  ;+24
@@ -438,7 +428,7 @@ ends
 align 4
 tedit0: ;структура текстового редактора
 	.wnd BOX 0,50,440,150 ;+ 0
-	.rec BOX 30,23,7,10   ;+16
+	.rec BOX 30,23,ini_def_symbol_w,ini_def_symbol_h ;+16
 	.drag_m db 0 ;+32 выделение от мыши
 	.drag_k db 0 ;+33 выделение от клавиатуры
 	.sel  TexSelect 0,0,0,0 ;+34 структура выделения
@@ -517,6 +507,8 @@ tree_file_struct:
 dir_mem rb 32+304*count_of_dir_list_files
 
 if lang eq ru
+
+hed db 'Текстовый редактор 22.06.12',0 ;подпись окна
 
 menu_text_area:
 db 'Файл',0
@@ -633,6 +625,8 @@ txtFormatCapt db 'Формат',0
 txtFormatApply db 'Применить',0
 
 else
+
+hed db 'Text editor 22.06.12',0
 
 menu_text_area:
 db 'File',0
