@@ -491,12 +491,8 @@ void DrawBar(dword x,y,w,h,EDX)
 void DefineButton(dword x,y,w,h,EDX,ESI)
 {
  	EAX = 8;
-	$push edx
-	EDX += BT_DEL; //вначале удаляем кнопу с эти ид, потом создаём
-	$int 0x40;
 	EBX = x<<16+w;
 	ECX = y<<16+h;
- 	$pop edx
 	$int 0x40
 }
 

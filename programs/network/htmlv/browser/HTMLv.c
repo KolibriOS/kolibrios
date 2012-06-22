@@ -6,14 +6,18 @@
 #include "..\lib\kolibri.h"
 #include "..\lib\encoding.h"
 #include "..\lib\file_system.h"
-#include "img\toolbar_icons.c"
-#include "img\URLgoto.txt";
 #include "..\lib\mem.h"
+#include "..\lib\dll.h"
+//библиотеки
 #include "..\lib\libio_lib.h"
 #include "..\lib\libimg_lib.h"
 #include "..\lib\edit_box_lib.h"
-#include "..\lib\dll.h"
 #include "..\lib\scroll_bar\scroll_lib.h"
+#include "..\lib\ttf_fonts.h"
+//картинки
+#include "img\toolbar_icons.c"
+#include "img\URLgoto.txt";
+
 
 //переменные
 char URL[4096],
@@ -48,6 +52,7 @@ void main()
 	load_dll2(libimg, #libimg_init,1);
 	load_dll2(boxlib, #edit_box_draw,0);
 	load_dll2(#abox_lib, #boxlib_init,0);
+	//load_dll2(libtruetype, #truetype,0);
 	
 	if (param) strcpy(#URL, #param);
 		else strcpy(#URL, "/sys/index.htm");
@@ -105,7 +110,7 @@ void main()
 				&& (m.y>WB1.top+16) && (m.y<WB1.top+WB1.height-16)
 				&& (lines.all>lines.visible) while (m.lkm)
 				{
-					IF (half_scroll_size/2+WB1.top>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size/2+WB1.top; //если курсор над окном
+					IF (half_scroll_size+WB1.top>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size+WB1.top; //если курсор над окном
 					btn=lines.first; //сохраняем старое количество
 					lines.first = m.y -half_scroll_size -WB1.top * lines.all / WB1.height;
 					IF (lines.visible+lines.first>lines.all) lines.first=lines.all-lines.visible;
@@ -174,7 +179,7 @@ void Draw_Window()
 	DrawBar(200,0,onLeft(200,9),43,0xE4DFE1); //закрашиваем фон под тулбаром
 	DrawBar(0,42,onLeft(5,4),1,0xE2DBDC); //выпуклость
 	DrawBar(0,43,onLeft(5,4),1,0xD2CED0); //выпуклость
-	for (j=0; j<5; j++) DefineButton(j*37+11, 7, 29, 29, 300+j+BT_HIDE, 0x00E4DFE1);
+	for (j=0; j<5; j++) DefineButton(j*37+11, 7, 29, 29, 300+j+BT_HIDE, 0xE4DFE1);
 	PutImage(#URLgoto,40,19,onLeft(57,0),14);
 	DefineButton(onLeft(37,0),15, 18, 16, GOTOURL+BT_HIDE, 0xE4DFE1);
 	DefineButton(onLeft(56,0),15, 17, 16, SEARCHWEB+BT_HIDE, 0xE4DFE1);
@@ -189,6 +194,9 @@ void Draw_Window()
 	lines.visible = WB1.height - 3 / 10 - 2;
 
 	WB1.ShowPage();
+	
+	DefineButton(scroll1.start_x+1, scroll1.start_y+1, 16, 16, ID1+BT_HIDE, 0xE4DFE1);
+	DefineButton(scroll1.start_x+1, scroll1.start_y+scroll1.size_y-18, 16, 16, ID2+BT_HIDE, 0xE4DFE1);
 }
  
 int onLeft(dword right,left) {return Form.width-right-left;}

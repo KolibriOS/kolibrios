@@ -9,7 +9,7 @@ int i;
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.94b";
+char version[]=" Text-based Browser 0.94c";
 
 
 struct TWebBrowser {
@@ -25,7 +25,8 @@ struct TWebBrowser {
 
 TWebBrowser WB1;
 
-byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text, link, ignor_text, li_tab, body_present;
+byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text,
+	link, ignor_text, li_tab, first_line_drawed;
 
 
 dword text_colors[30],
@@ -294,7 +295,7 @@ void TWebBrowser::ShowPage()
 
 void TWebBrowser::ParseHTML(dword bword, fsize){
 	word bukva[1];
-	int j;
+	int j, perenos_num;
 	byte ignor_param = 0;
 	char temp[768];
 	
@@ -304,30 +305,31 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 	for (j = 400; j < blink + 1; j++;) DeleteButton(j);
 	blink = 400;
 
-	b_text = i_text = u_text = s_text = pre_text = blq_text = body_present =
+	b_text = i_text = u_text = s_text = pre_text = blq_text = first_line_drawed =
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 0; //обнуляем теги
 	link_color = 0x0000FF;
 	bg_color = 0xFFFFFF;
 	line = '';
 	strcpy(#page_links,"|");
 	strcpy(#header,#version);
-	if (!strcmp(#URL + strlen(#URL) - 4, ".txt"))
-	{
-		DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку
-		pre_text = 1; //зачётное отображение текста 
-	}
+
+	if (!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1;
 	if (!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
-	for (bword = buf; buf + fsize > bword; bword++;) {
+	
+	debug("Start parsing");
+	
+	for ( ; buf+fsize > bword; bword++;) {//ESBYTE[bword]
 	  bukva = ESBYTE[bword];
 	  switch (bukva) {
 		case 0x0a:
-			IF(pre_text == 1) {
+			if (pre_text)
+			{
 				bukva = '';
 				temp = '';
 				goto NEXT_MARK;
 			}
 		case '\9':
-			if (pre_text == 1) //иначе идём на 0x0d	
+			if (pre_text) //иначе идём на 0x0d	
 			{
 				tab_len=strlen(#line)/8;
 				tab_len=tab_len*8;
@@ -344,10 +346,14 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 			{
 				bword++;
 				if (ESBYTE[bword] == '-') {
-					HH_: do {
+					HH_:
+					do
+					{
 						bword++;
-						IF(bword >= buf + fsize) break 1;
-					} while (ESBYTE[bword] <>'-');
+						if (bword >= buf + fsize) break 1;
+					}
+					while (ESBYTE[bword] <>'-');
+					
 					bword++;
 					if (ESBYTE[bword] <>'-') goto HH_;
 				}
@@ -420,25 +426,24 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 			break;
 		default:
 			DEFAULT_MARK:
-			IF(ignor_text) break;
-			IF(!pre_text) && (bukva == ' ') && (!strcmp(#line + strlen(#line) - 1, " ")) continue;
+			if (ignor_text) break;
+			if (!pre_text) && (bukva == ' ') && (line[strlen(#line)-1]==' ') break;
 			//
-			if (stolbec + strlen(#line) >lines.column_max)
+			if (stolbec + strlen(#line) > lines.column_max)
 			{
-				strcpy(#temp, #line + find_symbol(#line, ' ')); //перенос по словам
-				line[find_symbol(#line, ' ')] = 0x00;
+				perenos_num = find_symbol(#line, ' ');
+				strcpy(#temp, #line + perenos_num); //перенос по словам
+				line[perenos_num] = 0x00;
 			NEXT_MARK:
-				IF(stroka - 1 > lines.visible) && (lines.first <>0) break 1; //уходим...
+				if (stroka >= lines.visible) && (lines.first <>0) break 1; //уходим...
 				WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //вывод строки
 				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем следущую строку
 				strcpy(#line, #temp);
 			}
-			if (!pre_text) && (bukva == ' ') && (!stolbec) && (!line) CONTINUE;
+			if (!pre_text) && (bukva == ' ') && (!stolbec) && (!line) break;
 			strcat(#line, #bukva);
 	  }
 	}
-	if (strcmp(#URL + strlen(#URL) - 4, ".txt")<>0) && (!body_present)
-		DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку если какой-то рахит не создал тег боди
 
 	if (lines.visible * 10 + 25 <= height)
 		DrawBar(left, lines.visible * 10 + top + 25, width - 15, -lines.visible * 10 + height - 25, bg_color);
@@ -452,7 +457,8 @@ void TWebBrowser::ParseHTML(dword bword, fsize){
 		lines.first=anchor_line_num;
 		ParseHTML(buf, filesize);
 	}
-
+	
+	debug("End parsing");
 	DrawScroller(); //рисуем скролл
 }
 
@@ -541,7 +547,13 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	//вывод на экран
 	if (stroka >= 0) && (stroka - 2 < lines.visible) && (line) && (!anchor)
 	{
+		if (stroka==0) && (stolbec==0)
+		{
+			DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку
+			first_line_drawed=1;
+		}
 		WriteText(stolbec * 6 + left1, top1, 0x80, text_colors[text_color_index], #line, 0); //может тут рисовать белую строку?
+		//text_out stdcall (#line, -1, 16, text_colors[text_color_index], stolbec * 6 + left1, top1);
 		IF (b_text)	{ $add ebx, 1<<16   $int 0x40 }
 		IF (i_text) Skew(stolbec * 6 + left1, top1, strlen(#line)+1*6, 10); //наклонный текст
 		IF (s_text) DrawBar(stolbec * 6 + left1, top1 + 4, strlen(#line) * 6, 1, text_colors[text_color_index]); //зачёркнутый
@@ -585,9 +597,6 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			GOTO BODY_MARK;
 		}
 		
-		body_present = 1; //если калич не создал тег боди нужно извращаться
-
-		if (rez) DrawBar(WB1.left, WB1.top, WB1.width-15, 15, bg_color); //закрашиваем первую строку
 		return;
 	}
 	//////////////////////////
@@ -794,10 +803,15 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 void TextGoDown(int left1, top1, width1)
 {
+	if (!stroka) && (!stolbec) && (!first_line_drawed)
+	{
+		DrawBar(WB1.left, WB1.top, WB1.width-15, 15, bg_color); //закрашиваем первую строку
+		first_line_drawed=1;
+	}
 	stroka++;
-	IF(blq_text == 1) stolbec = 8;
+	if (blq_text) stolbec = 8;
 	ELSE stolbec = 0;
-	IF(li_text == 1) stolbec = li_tab * 5;
+	if (li_text) stolbec = li_tab * 5;
 	IF(stroka >= 0) && (stroka - 2 < lines.visible)  && (!anchor) DrawBar(left1 - 5, top1 + 10, width1 + 5, 10, bg_color);
 }
 
@@ -814,7 +828,4 @@ void TWebBrowser::DrawScroller() //не оптимальная отрисовка, но зато в одном мес
 	scroll1.size_y=WB1.height;
 
 	scrollbar_v_draw(#scroll1);
-
-	DefineButton(scroll1.start_x+1, scroll1.start_y+1, 16, 16, ID1+BT_HIDE, 0xE4DFE1);
-	DefineButton(scroll1.start_x+1, scroll1.start_y+scroll1.size_y-18, 16, 16, ID2+BT_HIDE, 0xE4DFE1);
 }
