@@ -1,73 +1,111 @@
+char *ext[]={
+"..",   17,
+"<DIR>",16,
+"txt", 1,
+"doc", 1,
+"rtf", 1,
+"odt", 1,
+"log", 1,
+"docx",1,
+"htm", 2,
+"html",2,
+"mht", 2,
+"ini", 3,
+"conf",3,
+"xlt", 4,
+"xls", 4,
+"ods", 4,
+"xlsx",4,
+"cmd", 5,
+"bat", 5,
+"sh",  5,
+"com", 5,
+"kex", 6,
+"exe", 7,
+"msi", 7,
+"sys", 8,
+"ocx", 8,
+"drv", 8,
+"so",  8,
+"inc", 9,
+"chr", 10,
+"mt",  10,
+"ttf", 10,
+"fon", 10,
+"asm", 11,
+"skn", 13,
+"djvu",15,
+"pdf", 15,
+"fb2", 15,
+"nes", 18,
+"smc", 18,
+"img", 21,
+"ima", 21,
+"dll", 22,
+"obj", 22,
+"iso", 24,
+"cue", 24,
+"nrg", 24,
+"mdf", 24,
+"gif", 19,
+"bmp", 19,
+"tga", 19,
+"pcx", 19,
+"png", 19,
+"jpg", 19,
+"xcf", 19,
+"ai",  19,
+"jpeg",19,
+"raw", 19,
+"psd", 19,
+"ico", 20,
+"cur", 20,
+"ani", 20,
+"vox", 20,
+"rar", 23,
+"zip", 23,
+"cab", 23,
+"tar", 23,
+"ajr", 23,
+"jar", 23,
+"7z",  23,
+"gz",  23,
+"mp3", 12,
+"wav", 12,
+"mid", 12,
+"midi",12,
+"ogg", 12,
+"wma", 12,
+"flac",12,
+"avi", 14,
+"flv", 14,
+"mpg", 14,
+"wmv", 14,
+"mov", 14,
+"mkv", 14,
+"mp4", 14,
+"vob", 14,
+0};
+
 
 #include "imgs\icons.txt"
-dword Put_icon(dword extension, yy)
-{ 
-	dword ftype="", fnum=0; //еши неизвесный файл 
 
-	IF (!strcmp(extension,"htm")) || (!strcmp(extension,"html")) ||
-	   (!strcmp(extension,"mht")) {fnum = 2; ftype="Web-page";}
-	IF (!strcmp(extension,"ini")) || (!strcmp(extension,"conf")) {fnum = 3; ftype="Config";}
-	IF (!strcmp(extension,"xlt")) || (!strcmp(extension,"xls")) ||
-		(!strcmp(extension,"ods")) || (!strcmp(extension,"xlsx")) {fnum = 4; ftype="Table";}
-	IF (!strcmp(extension,"cmd")) || (!strcmp(extension,"bat")) || (!strcmp(extension,"sh")) {fnum = 5; ftype="Script";}
-	IF (!strcmp(extension,"com")) {fnum = 5; ftype="DOS Exec";}
-	IF (!strcmp(extension,"kex")) {fnum = 6; ftype="Program";}
-	IF (!strcmp(extension,"exe")) || (!strcmp(extension,"msi")) {fnum = 7; ftype="Win32 Exec";}
-	IF (!strcmp(extension,"sys")) || (!strcmp(extension,"ocx")) ||
-       (!strcmp(extension,"drv")) || (!strcmp(extension,"so")) fnum = 8;
-	IF (!strcmp(extension,"inc"))  fnum = 9;
-	IF (!strcmp(extension,"chr")) || (!strcmp(extension,"mt")) ||
-	   (!strcmp(extension,"ttf")) || (!strcmp(extension,"fon")) {fnum = 10; ftype="Font";}
-	IF (!strcmp(extension,"asm")) {fnum = 11; ftype="Source";}
-	IF (!strcmp(extension,"skn")) {fnum = 13; ftype="Skin";}
-	IF (!strcmp(extension,"djvu")) || (!strcmp(extension,"pdf"))  || (!strcmp(extension,"fb2")) {fnum = 15; ftype="Book";}
-	IF (!strcmp(extension,"nes")) || (!strcmp(extension,"smc")) {fnum = 18; ftype="Cartridge";}
-	IF (!strcmp(extension,"img")) || (!strcmp(extension,"ima")) {fnum = 21; ftype="Image";}
-	IF (!strcmp(extension,"dll")) || (!strcmp(extension,"obj")) {fnum = 22; ftype="Library";}
-	IF (!strcmp(extension,"iso")) || (!strcmp(extension,"cue")) ||
-	   (!strcmp(extension,"nrg")) || (!strcmp(extension,"mdf")) {fnum = 24; ftype="Disc image";}
-	
-	//text
-	IF (!strcmp(extension,"txt")) || (!strcmp(extension,"doc")) ||
-	   (!strcmp(extension,"rtf")) || (!strcmp(extension,"odt")) ||
-	   (!strcmp(extension,"log")) || (!strcmp(extension,"docx")) {fnum = 1; ftype="Text";}
-	//изображения
-	IF (!strcmp(extension,"gif")) || (!strcmp(extension,"bmp")) ||
-	   (!strcmp(extension,"tga")) || (!strcmp(extension,"pcx")) ||
-	   (!strcmp(extension,"png")) || (!strcmp(extension,"jpg")) {fnum = 19; ftype="Image";}
-	IF (!strcmp(extension,"xcf")) || (!strcmp(extension,"ai")) ||
-	   (!strcmp(extension,"jpeg")) || (!strcmp(extension,"raw")) ||
-	   (!strcmp(extension,"psd")) {fnum = 19; ftype="Image";}
-	//пиктограммы
-	IF (!strcmp(extension,"ico")) {fnum = 20; ftype="Icon";}
-	IF (!strcmp(extension,"cur")) || (!strcmp(extension,"ani")) {fnum = 20; ftype="Cursor";}
-	//архивы
-	IF (!strcmp(extension,"rar")) || (!strcmp(extension,"zip")) ||
-	   (!strcmp(extension,"cab")) || (!strcmp(extension,"tar")) ||
-	   (!strcmp(extension,"ajr")) || (!strcmp(extension,"jar")) || 
-	   (!strcmp(extension,"7z")) ||(!strcmp(extension,"gz")) {fnum = 23; ftype="Archive";}
-	//audio
-	IF (!strcmp(extension,"mp3")) {fnum = 12; ftype="Music";}
-	IF (!strcmp(extension,"wav")) || (!strcmp(extension,"mid")) ||
-	   (!strcmp(extension,"midi")) || (!strcmp(extension,"ogg")) ||
-	   (!strcmp(extension,"wma"))  || (!strcmp(extension,"flac")) {fnum = 12; ftype="Audio";}
-	//video
-	IF (!strcmp(extension,"avi")) || (!strcmp(extension,"flv")) ||
-	   (!strcmp(extension,"mpg")) || (!strcmp(extension,"wmv")) ||
-	   (!strcmp(extension,"mov")) || (!strcmp(extension,"mkv")) ||
-	   (!strcmp(extension,"mp4")) || (!strcmp(extension,"vob")) {fnum = 14; ftype="Video";}	
-	//папки
-	IF (!strcmp(extension,"<DIR>"))	{ fnum=16;  WriteText(onLeft(145,0),yy+4,0x80,0,extension,0);}
-	IF (!strcmp(extension,"..")) fnum=17;
-	//
-	PutPaletteImage(fnum*16*15+#ficons,16,15,195,yy,#ficons_pal);
-	WriteText(onLeft(160,0),yy+4,0x80,0,ftype,0);
-	return fnum;
+
+void Put_icon(dword extension, yy, fairing_color)
+{ 
+	int icon_n=0, i;
+
+	for (i=0; ext[i]<>0; i+=2;)
+		if (!strcmp(extension, ext[i])) icon_n = ext[i+1];
+
+	PutPaletteImage(icon_n*16*15+#ficons,16,15,195,yy,#ficons_pal);
+	if (icon_n<>17) && (strlen(extension)<9) WriteText(-strlen(extension)*3+onLeft(168,0)+36,yy+4,0x80,0,extension,0);
+	if (fairing_color<>0xFFFfff) IconFairing(icon_n, yy, fairing_color); //закрашиваем иконку
 }
 
 
 
-void IconFairing(int filenum, y, color)
+void IconFairing(dword filenum, y, color)
 {
 	switch(filenum)
 	{

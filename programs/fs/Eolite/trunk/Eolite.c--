@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.25"
+#define title "Eolite File Manager v1.27"
 dword videlenie=0x94AECE; //цвет выделенного элемента из списка файлов
 //
 int  but_num,
@@ -494,50 +494,45 @@ void List_ReDraw()
 }
 
 
-//puticon+icon_fairing!!!
 void Line_ReDraw(dword color, filenum){
-	dword text_col=0, temp_int,
-	/* //это я пытался сделать вид крупными значками
-	dword text_col=0, temp_int, x,
-	max_x=onLeft(28,192)/BUTTON_HEIGHT,
-	y=filenum/max_x*BUTTON_HEIGHT+57; //положение текста по Y
-	temp_int=filenum/max_x;
-	temp_int=temp_int*max_x;
-	x=filenum-temp_int*BUTTON_HEIGHT+192;
-	*/
+	dword text_col=0, name_len,
 	y=filenum*BUTTON_HEIGHT+57; //положение текста по Y
 	IF (rename_active==1) ReName(false);
-	//да, я не спорю что изврат, но перерисовка зато маленькая
 	DefineButton(192,y,onLeft(28,192),BUTTON_HEIGHT,201+filenum+BT_HIDE+BT_NOFRAME,color); //кнопа
+	//да, я не спорю что изврат, но зато перерисовки не видно
 	DrawBar(192,y,3,BUTTON_HEIGHT,color); 
 	DrawBar(192+19,y,onLeft(46,192),BUTTON_HEIGHT,color); DrawBar(195,y+17,16,1,color);
 	if (BUTTON_HEIGHT>18) DrawBar(195,y+18,16,BUTTON_HEIGHT-18,color);
 	if (BUTTON_HEIGHT>15) DrawBar(195,y,16,BUTTON_HEIGHT-15,color); 
-	//
+
 	off=file_mas[filenum+za_kadrom]*304 + buf+72;
-	if (TestBit(ESDWORD[off-40],1)) || (TestBit(ESDWORD[off-40],2)) text_col=0xA6A6B7;
-		if (!TestBit(ESDWORD[off-40],4))
-		{
-			copystr(off,#temp);
-			temp_int = Put_icon(#temp+find_symbol(#temp,'.'), BUTTON_HEIGHT/2-7+y);
-			WriteText(7-strlen(ConvertSize(ESDWORD[off-8]))*6+onLeft(75,0),BUTTON_HEIGHT-6/2+y,0x80,0,ConvertSize(ESDWORD[off-8]),0); //size
-		}
-		ELSE
-			IF (!strcmp("..",off)) temp_int=Put_icon("..", BUTTON_HEIGHT/2-7+y);
-	ELSE
-		temp_int=Put_icon("<DIR>", BUTTON_HEIGHT/2-7+y);
+
+	if (!TestBit(ESDWORD[off-40], 4))
+	{	
+		copystr(off,#temp);
+		Put_icon(#temp+find_symbol(#temp,'.'), BUTTON_HEIGHT/2-7+y, color);
+		WriteText(7-strlen(ConvertSize(ESDWORD[off-8]))*6+onLeft(75,0),BUTTON_HEIGHT-6/2+y,0x80,0,ConvertSize(ESDWORD[off-8]),0); //size
+	}
+	else
+		if (!strcmp("..",off))
+			Put_icon("..", BUTTON_HEIGHT/2-7+y, color);
+		else
+			Put_icon("<DIR>", BUTTON_HEIGHT/2-7+y, color);
+
+	if (TestBit(ESDWORD[off-40],1)) || (TestBit(ESDWORD[off-40],2)) text_col=0xA6A6B7; //файл скрытый или системный?
+
 	if (color<>0xFFFfff)
 	{
 		isdir=TestBit(ESDWORD[off-40], 4);
-		IconFairing(temp_int, BUTTON_HEIGHT/2-7+y, color); //закрашиваем иконку
+		
 		copystr(off,#file_name);
 		copystr(#path,#file_path);
 		copystr(#file_name,#file_path+strlen(#file_path)); //полный путь к файлу
 		IF (text_col==0xA6A6B7) text_col=0xFFFFFF;
 	}
-	temp_int = onLeft(215,165)/6;
-	IF (strlen(off)<temp_int) temp_int = strlen(off);  //длинна названия файла
-		WriteText(215,BUTTON_HEIGHT-6/2+y,0,text_col,off,temp_int);  //имя файла
+	name_len = onLeft(215,165)/6;
+	IF (strlen(off)<name_len) name_len = strlen(off);  //длинна названия файла
+	WriteText(215,BUTTON_HEIGHT-6/2+y,0,text_col,off,name_len);  //имя файла
 	DrawBar(onLeft(168,0),y,1,BUTTON_HEIGHT,0xE4DFE1); //полоса серая вертикальная 1
 	DrawBar(onLeft(95,0),y,1,BUTTON_HEIGHT,0xE4DFE1); //полоса серая вертикальная 2
 }
@@ -545,14 +540,17 @@ void Line_ReDraw(dword color, filenum){
 
 void Open_Dir(dword temp_, redraw){
 	int errornum;
-	byte path_[4096],
+	char path_[4096],
 	somelen=strlen(temp_)-1;
+	
+	//debug("reading directory");
+	//debug(temp_);
 	if (redraw<>ONLY_SHOW)
 	{
 		copystr(temp_, #path_);
-		IF (somelen) path_[somelen]=0x00;
+		if (somelen) path_[somelen]=0x00;
 		
-		IF (buf) free(buf);
+		if (buf) free(buf);
     	buf = malloc(32);
 		errornum=ReadDir(0, buf, #path_);
 		if (errornum<>0) //ошибка при чтении папки
@@ -562,14 +560,15 @@ void Open_Dir(dword temp_, redraw){
 			Write_Error(errornum);
 			return;
 		}
-    		count = ESDWORD[buf+8];
-    		buf = realloc(count * 304 + 32, buf);
+    	count = ESDWORD[buf+8];
+    	buf = realloc(count * 304 + 32, buf);
 		ReadDir(count, buf, #path_);
 		IF (EBX>6897) && (EBX<>-1) EBX=6897; //1 на удачу ;)
 		count=EBX;
 	}
 	if (count<>-1)
 	{
+		//debug("successfully \n");
 		copystr(temp_,#edit_path);
 		KEdit();
 		HistoryPath(add_new_path);

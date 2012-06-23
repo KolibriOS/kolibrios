@@ -8,6 +8,26 @@
 
 char NOTIFY_PATH[7]="@notify";
 
+unsigned char *ERROR_TEXT[]={
+"Code #0 - No error",
+"Error #1 - Base or partition of a hard disk is not defined",
+"Error #2 - Function isn't supported for this file system",
+"Error #3 - Unknown file system",
+"Error #4 - Reserved, is never returned",
+"Error #5 - File or folder not found",
+"Error #6 - End of file, EOF",
+"Error #7 - Pointer lies outside of application memory",
+"Error #8 - FAT table is destroyed",
+"Error #9 - FAT table is destroyed",
+"Error #10 - Access denied",
+"Error #11 - Device error",
+"", "", "", "", "", "", "", "", "",
+"", "", "", "", "", "", "", "", "", 
+"Error #30 - Not enough memory",
+"Error #31 - File is not executable",
+"Error #32 - Too many processes",
+0}; 
+
 void GetIni(byte onload)
 {
 	byte section[32]='', parametr[32]='', option[256]='', InfType=0;
@@ -84,48 +104,22 @@ void GetIni(byte onload)
 }
 
 
-///////////////////////////////////////////
-/// нужно чтобы просто возвращало текст ///
-///////////////////////////////////////////
-
 void Write_Error(int error_number)
 {
 	char error[256];
+
 	if (error_number<0) error_number=-1*error_number;
-	switch (error_number)
-	{
-		case 2:	copystr("Error #2 - Function isn't supported for this file system", #error);
-				break;				
-		case 3:	copystr("Error #3 - Unknown file system", #error);
-				break;
-		case 5: copystr("Error #5 - File or folder not found", #error);
-				break;
-		case 6:	copystr("Error #6 - End of file, EOF", #error);
-				break;
-		case 7:	copystr("Error #7 - Pointer lies outside of application memory", #error);
-				break;		
-		case 8:	copystr("Error #8 - FAT table is destroyed", #error);
-				break;		
-		case 9: copystr("Error #9 - FAT table is destroyed", #error);
-				break;
-		case 10:copystr("Error #10 - Access denied", #error);
-				break;				
-		case 11:copystr("Error #11 - Device error", #error);
-				break;
-		case 30:copystr("Error #30 - Not enough memory", #error);
-				break;
-		case 31:copystr("Error #31 - File is not executable", #error);
-				break;
-		case 32:copystr("Error #32 - Too many processes", #error);
-				break;
-		default:copystr(IntToStr(error_number), #error);
-				copystr(" - Unknown error number O_o", #error+strlen(#error));
-	}
+	
+	if (error_number<33)
+		copystr(ERROR_TEXT[error_number], #error);
+	else
+		{
+			copystr(IntToStr(error_number), #error);
+			copystr(" - Unknown error number O_o", #error+strlen(#error));
+		}
 	if (curbtn>=0) Line_ReDraw(0xFF0000, curbtn);
 	Pause(5);
 	RunProgram(#NOTIFY_PATH, #error);
 	//DrawBar(192,onTop(0, BUTTON_HEIGHT+7),onLeft(27,192),BUTTON_HEIGHT,0xFF0000);
 	//WriteText(205,onTop(-5, BUTTON_HEIGHT+7),0x80,0xFFFFFF,#error,0);
-
-	
 }
