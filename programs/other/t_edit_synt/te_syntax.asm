@@ -10,7 +10,7 @@ use32
   dd sys_path
 
 MAX_COLOR_WORD_LEN equ 40
-BUF_SIZE equ 1000 ;buffer for copy|paste
+BUF_SIZE equ 4096 ;buffer for copy|paste
 maxSyntaxFileSize equ 310000
 CAPT_PATH_WIDTH equ 50 ;ширина подписи перед текстовым полем
 
@@ -26,24 +26,21 @@ include 'te_work.inc' ;text work functions
 
 align 4
 start:
-  mov eax,48
-  mov ebx,3
-  mov ecx,sc
-  mov edx,sizeof.system_colors
-  mcall
+	mcall 48,3,sc,sizeof.system_colors
 
-  mcall 68,11
-  or eax,eax
-  jz button.exit
+	mcall 68,11
+	or eax,eax
+	jz button.exit
 
-  mcall 40,0x27
+	mcall 66,1,1 ;scan code
+	mcall 40,0x27
 
 ;-------------------------------------------------
-  mov ecx,maxSyntaxFileSize
-  stdcall mem.Alloc,ecx
-  mov [options_file],eax
-  mov [options_file_end],eax
-  add [options_file_end],ecx
+	mov ecx,maxSyntaxFileSize
+	stdcall mem.Alloc,ecx
+	mov [options_file],eax
+	mov [options_file_end],eax
+	add [options_file_end],ecx
 
 
 load_libraries l_libs_start,load_lib_end
@@ -223,13 +220,69 @@ mouse:
 	stdcall [ted_mouse], tedit0
 	jmp still
 
+;output:
+; ah = symbol
+align 4
+proc KeyConvertToASCII, table:dword
+	push ebx
+	mov ebx,dword[table] ;convert scan to ascii
+	ror ax,8
+	xor ah,ah
+	add bx,ax
+	mov ah,byte[ebx]
+	pop ebx
+	ret
+endp
 
 align 4
 key:
+	mcall 66,3 ;66.3 получить состояние управляющих клавиш
+	xor esi,esi
+	mov ecx,1
+	test al,0x03 ;[Shift]
+	jz @f
+		mov cl,2
+		or esi,KM_SHIFT
+	@@:
+	test al,0x0c ;[Ctrl]
+	jz @f
+		or esi,KM_CTRL
+	@@:
+	test al,0x30 ;[Alt]
+	jz @f
+		mov cl,3
+		or esi,KM_ALT
+	@@:
+	test al,0x80 ;[NumLock]
+	jz @f
+		or esi,KM_NUMLOCK
+	@@:
+
+	mcall 26,2,,conv_tabl ;26.2 получить раскладку клавиатуры
 	mcall 2
 	stdcall [tl_key],tree1
-	stdcall [edit_box_key],edit1
-;;;stdcall [ted_key], tedit0, conv_tabl,esi
+
+	test word [edit1.flags],10b;ed_focus ; если не в фокусе, выходим
+	je @f
+		cmp ah,0x80 ;if key up
+		ja still
+		cmp ah,42 ;[Shift] (left)
+		je still
+		cmp ah,54 ;[Shift] (right)
+		je still
+		cmp ah,56 ;[Alt]
+		je still
+		cmp ah,29 ;[Ctrl]
+		je still
+		cmp ah,69 ;[Pause Break]
+		je still
+
+		stdcall KeyConvertToASCII, dword conv_tabl
+		stdcall [edit_box_key],edit1
+		jmp still
+	@@:
+
+	stdcall [ted_key], tedit0, conv_tabl,esi
 	jmp still
 
 align 4
@@ -312,7 +365,8 @@ get_wnd_in_focus:
 	;@@:
 	ret
 
-hed db 'TextEditor syntax file converter 06.09.11',0 ;подпись окна
+hed db 'TextEditor syntax file converter 23.06.12',0 ;подпись окна
+conv_tabl rb 128 ; таблица для конвертирования scan-кода в ascii-код
 
 txt122 db 'Загр. файл',0
 txt148 db 'Сохр. файл',0
