@@ -910,15 +910,15 @@ no_draw_s:
 	mcall	,<260,5>,0x3558ff,Lifes,
 	mcall	,<330,5>,0xf93500,Score,
 	mov	ecx,[number_level]
-;	inc	ecx	//leency
 	mcall	47,3*65536,,<225,5>,0x1ded00
 	xor	ecx,ecx
 	mov	cl,[LifesPlayer]
 	shr	ecx,2
 	mcall	,,,<295,5>,0x3558ff
+
 	xor	ecx,ecx
 	mov	cl,byte[score]
-	mcall	,,<365,5>,0xf93500
+	mcall	,,,<365,5>,0xf93500
 	jmp	maincycle
 ;----------------------------------------------------------
 ;-----------------end of main cycle------------------------
@@ -1142,7 +1142,7 @@ lab2:
 	ret
 ;----------------------------------------------------------
 you_won:
-	mcall	13,<1,640>,<20,400>,0xc6e9
+	mcall	13,<0,640>,<20,400>,0xc6e9
 	mcall	4,<255,190>,0xffffff,won1,29
 	mcall	,<255,200>,,won2,
 	mcall	,<255,210>,,won3,
