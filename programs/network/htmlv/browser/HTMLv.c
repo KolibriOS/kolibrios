@@ -58,6 +58,7 @@ void main()
 		else strcpy(#URL, "/sys/index.htm");
 	strcpy(#editURL, #URL);
 	
+	lines.column_max = 101;
 	WB1.OpenPage();
 
 	SetEventMask(0x27);
@@ -114,7 +115,7 @@ void main()
 					btn=lines.first; //сохраняем старое количество
 					lines.first = m.y -half_scroll_size -WB1.top * lines.all / WB1.height;
 					IF (lines.visible+lines.first>lines.all) lines.first=lines.all-lines.visible;
-					IF (btn<>lines.first) WB1.ParseHTML(buf, filesize); //чтоб лишний раз не перерисовывать
+					IF (btn<>lines.first) WB1.ParseHTML(buf); //чтоб лишний раз не перерисовывать
 					m.get();
 				}
 
