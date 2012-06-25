@@ -29,8 +29,8 @@ void menu_rmb()
 				mm.get();
 
 				GetProcessInfo(#MenuForm, SelfInfo);
-				id1=GetSlot(MenuForm.ID);
-				if (id1<>ActiveProcess()) ExitProcess();			
+				id1=GetProcessSlot(MenuForm.ID);
+				if (id1<>GetActiveProcess()) ExitProcess();			
 				
 				id1=mm.y/ITEM_HEIGHT;
 				if (id1<0) || (id1+1>items_num) || (mm.x<0) || (mm.x>ITEM_WIDTH) break;

@@ -4,6 +4,7 @@
 //home icon - rachel fu, GPL licence
 
 #include "..\lib\kolibri.h"
+#include "..\lib\strings.h"
 #include "..\lib\encoding.h"
 #include "..\lib\file_system.h"
 #include "..\lib\mem.h"
@@ -17,6 +18,8 @@
 //картинки
 #include "img\toolbar_icons.c"
 #include "img\URLgoto.txt";
+
+#define DEBUG_ON 0
 
 
 //переменные
@@ -76,8 +79,8 @@ void main()
 					//break;
 				};*/
 				
-				btn=GetSlot(Form.ID); 
-				IF (btn<>ActiveProcess()) break; //если окно не активно на события мыши не реагируем
+				btn=GetProcessSlot(Form.ID); 
+				IF (btn<>GetActiveProcess()) break; //если окно не активно на события мыши не реагируем
 
 				edit_box_mouse stdcall (#edit1);
 

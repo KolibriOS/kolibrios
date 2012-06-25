@@ -9,7 +9,7 @@ int i;
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.94d";
+char version[]=" Text-based Browser 0.94e";
 
 
 struct TWebBrowser {
@@ -39,7 +39,7 @@ int stroka,
 	stolbec,
 	tab_len;
 	
-char line[330],
+char line[500],
 	tag[100],
 	tagparam[10000],
 	parametr[1200],
@@ -318,7 +318,9 @@ void TWebBrowser::ParseHTML(dword bword){
 	if (!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1;
 	if (!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
 	
-	debug("Start parsing");
+	#ifdef DEBUG_ON
+		debug("Start parsing");
+	#endif
 	
 	for ( ; buf+filesize > bword; bword++;) {//ESBYTE[bword]
 	  bukva = ESBYTE[bword];
@@ -462,8 +464,10 @@ void TWebBrowser::ParseHTML(dword bword){
 		lines.first=anchor_line_num;
 		ParseHTML(buf);
 	}
-	
-	debug("End parsing");
+
+	#ifdef DEBUG_ON
+		debug("End parsing");
+	#endif
 	DrawScroller(); //рисуем скролл
 }
 
@@ -472,9 +476,9 @@ char oldtag[100];
 void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	dword hr_color;
 
-    dword image=0;
+    dword image;
     char temp[4096];
-    int w, h, img_lines_first=0;
+    int w, h, img_lines_first, line_length;
 
 	//проверяем тег открывается или закрывается
 	IF(tag[0] == '/') 
@@ -513,15 +517,17 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку
 			first_line_drawed=1;
 		}
+		line_length=strlen(#line)*6;
 		WriteText(stolbec * 6 + left1, top1, 0x80, text_colors[text_color_index], #line, 0); //может тут рисовать белую строку?
-		//text_out stdcall (#line, -1, 16, text_colors[text_color_index], stolbec * 6 + left1, top1);
+		//line_length =  get_length stdcall (#line,-1,16,line_length);
+		//text_out stdcall (#line, -1, 17, text_colors[text_color_index], stolbec * 6 + left1, top1-2);
 		IF (b_text)	{ $add ebx, 1<<16   $int 0x40 }
-		IF (i_text) Skew(stolbec * 6 + left1, top1, strlen(#line)+1*6, 10); //наклонный текст
-		IF (s_text) DrawBar(stolbec * 6 + left1, top1 + 4, strlen(#line) * 6, 1, text_colors[text_color_index]); //зачёркнутый
-		IF (u_text) DrawBar(stolbec * 6 + left1, top1 + 8, strlen(#line) * 6, 1, text_colors[text_color_index]); //подчёркнутый
+		IF (i_text) Skew(stolbec * 6 + left1, top1, line_length+6, 10); //наклонный текст
+		IF (s_text) DrawBar(stolbec * 6 + left1, top1 + 4, line_length, 1, text_colors[text_color_index]); //зачёркнутый
+		IF (u_text) DrawBar(stolbec * 6 + left1, top1 + 8, line_length, 1, text_colors[text_color_index]); //подчёркнутый
 		IF (link) {
-			DefineButton(stolbec * 6 + left1 - 2, top1, strlen(#line) * 6 + 3, 9, blink + BT_HIDE, 0xB5BFC9); //
-			DrawBar(stolbec * 6 + left1, top1 + 8, strlen(#line) * 6, 1, text_colors[text_color_index]);
+			DefineButton(stolbec * 6 + left1 - 2, top1, line_length + 3, 9, blink + BT_HIDE, 0xB5BFC9); //
+			DrawBar(stolbec * 6 + left1, top1 + 8, line_length, 1, text_colors[text_color_index]);
 		}
 	}
 

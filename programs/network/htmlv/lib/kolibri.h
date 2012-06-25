@@ -141,8 +141,6 @@ inline fastcall Pause( EBX)
 	$int 0x40
 }
 
-//------------------------------------------------------------------------------
-
 inline fastcall word GetButtonID()
 {
 	$mov eax,17
@@ -171,14 +169,14 @@ void GetProcessInfo( EBX, ECX)
 	$int  0x40
 }
 
-int GetProcessSlot( ECX) //ECX = process ID
+inline fastcall int GetProcessSlot( ECX)
 {
 	EAX = 18;
 	EBX = 21;
-	$int 0x40;	
+	$int 0x40
 }
 
-inline fastcall int ActiveProcess()
+inline fastcall int GetActiveProcess()
 {
 	EAX = 18;
 	EBX = 7;
@@ -209,13 +207,6 @@ inline fastcall int GetSystemLanguage()
 	$int 0x40
 }
 
-inline fastcall void DrawTitle( ECX)
-{
-	EAX = 71;
-	EBX = 1;
-	$int 0x40;
-}
-
 inline fastcall dword GetSkinWidth()
 {
 	$push ebx
@@ -225,7 +216,8 @@ inline fastcall dword GetSkinWidth()
 	$pop  ebx
 }
 
-inline fastcall void SetSystemSkin(ECX){
+inline fastcall void SetSystemSkin( ECX)
+{
 	EAX = 48;
 	EBX = 8;
 	$int 0x40
@@ -240,154 +232,11 @@ inline fastcall dword GetScreenWidth()
 	$and eax,0x0000FFFF
 }
 
-inline fastcall MoveSize( EBX,ECX,EDX,ESI)
-{
-	EAX = 67;
-	$int 0x40
-}
-
 inline fastcall dword LoadLibrary( ECX)
 {
 	$mov eax, 68 
 	$mov ebx, 19
 	$int  0x40
-}
-
-//------------------------------------------------------------------------------
-inline fastcall dword strlen( EDI)
-{
-	EAX=0;
-	ECX=-1;
-	$REPNE $SCASB
-	EAX-=2+ECX;
-}
-
-
-inline fastcall strcpy( EDI, ESI)
-{
-	$cld
-l2:
-	$lodsb
-	$stosb
-	$test al,al
-	$jnz l2
-}
-
-inline fastcall strcat( EDI, ESI)
-{
-  asm {
-    MOV EBX, EDI
-    XOR ECX, ECX
-    XOR EAX, EAX
-    DEC ECX
-    REPNE SCASB
-    DEC EDI
-    MOV EDX, EDI
-    MOV EDI, ESI
-    XOR ECX, ECX
-    XOR EAX, EAX
-    DEC ECX
-    REPNE SCASB
-    XOR ECX, 0FFFFFFFFH
-    MOV EDI, EDX
-    MOV EDX, ECX
-    MOV EAX, EDI
-    SHR ECX, 2
-    REP MOVSD
-    MOV ECX, EDX
-    AND ECX, 3
-    REP MOVSB
-    MOV EAX, EBX
-	}
-}
-
-char buffer[11]="";
-inline fastcall dword IntToStr( ESI)
-{
-     $mov     edi, #buffer
-     $mov     ecx, 10
-     $test     esi, esi
-     $jns     f1
-     $mov     al, '-'
-     $stosb
-     $neg     esi
-f1:
-     $mov     eax, esi
-     $push     -'0'
-f2:
-     $xor     edx, edx
-     $div     ecx
-     $push     edx
-     $test     eax, eax
-     $jnz     f2
-f3:
-     $pop     eax
-     $add     al, '0'
-     $stosb
-     $jnz     f3
-     $mov     eax, #buffer
-     $ret
-} 
-
-
-inline fastcall dword StrToInt()
-{
-	ESI=EDI=EAX;
-	IF(DSBYTE[ESI]=='-')ESI++;
-	EAX=0;
-	BH=AL;
-	do{
-		BL=DSBYTE[ESI]-'0';
-		EAX=EAX*10+EBX;
-		ESI++;
-	}while(DSBYTE[ESI]>0);
-	IF(DSBYTE[EDI]=='-') -EAX;
-}
-
-
-inline fastcall int strcmp( ESI, EDI)
-{
-	loop()
-	{
-		IF (DSBYTE[ESI]<DSBYTE[EDI]) RETURN -1;
-		IF (DSBYTE[ESI]>DSBYTE[EDI]) RETURN 1;
-		IF (DSBYTE[ESI]=='\0') RETURN 0;
-		ESI++;
-		EDI++;
-	}
-}
-
-inline fastcall unsigned int find_symbol( ESI,BL)
-{
-	int jj=0, last=-1;
-	do{
-		jj++;
-		$lodsb
-		IF(AL==BL) last=jj;
-	} while(AL!=0);
-	return last;
-}
-
-
-inline fastcall dword upcase( ESI)
-{
-	do{
-		AL=DSBYTE[ESI];
-		IF(AL>='a')IF(AL<='z')DSBYTE[ESI]=AL&0x5f;
- 		ESI++;
-	}while(AL!=0);
-}
-
-inline fastcall lowcase( ESI)
-{
-	do{
-		$LODSB
-		IF(AL>='A')&&(AL<='Z'){
-			AL+=0x20;
-			DSBYTE[ESI-1]=AL;
-			CONTINUE;
-		}
-	}while(AL!=0);
 }
 
 byte fastcall TestBit( EAX, CL)
@@ -396,9 +245,8 @@ byte fastcall TestBit( EAX, CL)
 	$and eax,1
 }
 
+
 //------------------------------------------------------------------------------
-
-
 
 void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,byte headerType,dword headerColour,EDI)
 {
@@ -418,6 +266,18 @@ void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaC
 	$int 0x40
 }
 
+inline fastcall MoveSize( EBX,ECX,EDX,ESI)
+{
+	EAX = 67;
+	$int 0x40
+}
+
+inline fastcall void DrawTitle( ECX)
+{
+	EAX = 71;
+	EBX = 1;
+	$int 0x40;
+}
 
 inline fastcall int CreateThread( ECX,EDX)
 {
@@ -425,21 +285,6 @@ inline fastcall int CreateThread( ECX,EDX)
 	EBX = 1;
 	$int 0x40
 }
-
-inline fastcall int GetSlot( ECX)
-{
-	EAX = 18;
-	EBX = 21;
-	$int 0x40
-}
-
-inline fastcall int GetActiveProcess()
-{
-	EAX = 18;
-	EBX = 7;
-	$int 0x40
-}
-
 
 void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 {
@@ -503,7 +348,10 @@ inline fastcall void DeleteButton( EDX)
 	$int 0x40;
 }
 
-:void DrawRegion(dword x,y,width,height,color1)
+
+//------------------------------------------------------------------------------
+
+void DrawRegion(dword x,y,width,height,color1)
 {
 	DrawBar(x,y,width,1,color1); //полоса гор сверху
 	DrawBar(x,y+height,width,1,color1); //полоса гор снизу
@@ -511,7 +359,7 @@ inline fastcall void DeleteButton( EDX)
 	DrawBar(x+width,y,1,height+1,color1); //полоса верху справа
 }
 
-:void DrawRegion_3D(dword x,y,width,height,color1,color2)
+void DrawRegion_3D(dword x,y,width,height,color1,color2)
 {
 	DrawBar(x,y,width+1,1,color1); //полоса гор сверху
 	DrawBar(x,y+1,1,height-1,color1); //полоса слева
@@ -525,12 +373,14 @@ void DrawFlatButton(dword x,y,width,height,id,color,text)
 	DrawRegion_3D(x+1,y+1,width-2,height-2,0xFFFFFF,0xC7C7C7);
 	DrawBar(x+2,y+2,width-3,height-3,color); //заливка
 	IF (id<>0)	DefineButton(x,y,width,height,id+BT_HIDE,0xEFEBEF); //кнопка
-	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
+	//WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
+	WriteText(width/2+x+1,height/2-3+y,0x80,0,text,0);
 }
 
-:void DrawCircle(int x, y, r)
+void DrawCircle(int x, y, r)
 {
-	int i; float px=0, py=r, ii = r * 3.1415926 * 2;
+	int i;
+	float px=0, py=r, ii = r * 3.1415926 * 2;
 	FOR (i = 0; i < ii; i++)
 	{
         PutPixel(px + x, y - py, 0);
