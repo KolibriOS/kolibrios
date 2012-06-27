@@ -219,8 +219,7 @@ kol_paint_image(0, 0, scrw, scrh, screen.bmp);
 void wnd_draw()
 {
 kol_paint_start();
-kol_wnd_define(280, 30, scrw+8, scrh+kol_skin_height()+4, 0x34888888);
-kol_wnd_caption(STR_TITLE);
+kol_wnd_define(280, 30, scrw+8, scrh+kol_skin_height()+4, 0x34888888, 0x34888888, STR_TITLE);
 screen_draw();
 kol_paint_end();
 }

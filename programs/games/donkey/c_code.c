@@ -241,8 +241,7 @@ kol_paint_image(0, 0, 320, 200, screen.bmp);
 void wnd_draw()
 {
 kol_paint_start();
-kol_wnd_define(280, 200, 328, 204+kol_skin_height(), 0x34888888);
-kol_wnd_caption(STR_DONKEY);
+kol_wnd_define(280, 200, 328, 204+kol_skin_height(), 0x34888888, 0x34888888, STR_DONKEY);
 screen_draw();
 kol_paint_end();
 }

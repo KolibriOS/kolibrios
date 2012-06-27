@@ -49,7 +49,7 @@ void	*data __attribute__((packed));
 
 void kol_exit();
 void kol_sleep(unsigned d);
-void kol_wnd_define(unsigned x, unsigned y, unsigned w, unsigned h, unsigned c);
+void kol_wnd_define(unsigned x, unsigned y, unsigned w, unsigned h, unsigned cs, unsigned b, char *t);
 void kol_wnd_move(unsigned x, unsigned y);
 void kol_wnd_caption(char *s);
 void kol_event_mask(unsigned e);
