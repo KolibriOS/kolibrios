@@ -73,7 +73,7 @@ static inline int user_free(void *mem)
     int  val;
     __asm__ __volatile__(
     "int $0x40"
-    :"=eax"(val)
+    :"=a"(val)
     :"a"(68),"b"(12),"c"(mem));
     return val;
 }

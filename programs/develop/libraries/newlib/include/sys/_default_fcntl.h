@@ -42,6 +42,15 @@ extern "C" {
 /*	O_NDELAY	_FNBIO 		set in include/fcntl.h */
 #define	O_NONBLOCK	_FNONBLOCK
 #define	O_NOCTTY	_FNOCTTY
+
+#define _FBINARY        0x10000
+#define _FTEXT          0x20000
+#define _FNOINHERIT 0x40000
+
+#define O_BINARY    _FBINARY
+#define O_TEXT      _FTEXT
+#define O_NOINHERIT _FNOINHERIT
+
 /* For machines which care - */
 #if defined (_WIN32) || defined (__CYGWIN__)
 #define _FBINARY        0x10000

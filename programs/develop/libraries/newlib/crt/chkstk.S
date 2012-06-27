@@ -1,11 +1,14 @@
 
 .global ___chkstk
+.global ___chkstk_ms
 .global __alloca
 
 .section .text
 
-#.def	___chkstk;	.scl	2;	.type	32;	.endef 
-#.def	__alloca;	.scl	2;	.type	32;	.endef 
+#.def	___chkstk;	.scl	2;	.type	32;	.endef
+#.def ___chkstk_ms;  .scl  2;  .type 32; .endef
+#.def __alloca; .scl  2;  .type 32; .endef
+
 ___chkstk:
 __alloca:
         pushl   %ecx            /* save temp */
@@ -29,3 +32,30 @@ __alloca:
         .ascii "Stack overflow"
 
 
+___chkstk_ms:
+       pushl  %ecx            /* save temp */
+       pushl  %eax
+       cmpl $0x1000, %eax     /* > 4k ?*/
+       leal 12(%esp), %ecx    /* point past return addr */
+       jb 2f
+
+1:
+       subl $0x1000, %ecx     /* yes, move pointer down 4k*/
+       cmpl %fs:4, %ecx       /* check low stack limit    */
+       jb 3f
+
+       orl $0x0, (%ecx)       /* probe there */
+       subl $0x1000, %eax     /* decrement count */
+       cmpl $0x1000, %eax
+       ja 1b                  /* and do it again */
+
+2:
+       subl %eax, %ecx
+       orl $0x0, (%ecx) /* less than 4k, just peek here */
+
+       popl %eax
+       popl %ecx
+       ret
+3:
+       int3                    #trap to debugger
+       .ascii "Stack overflow"
