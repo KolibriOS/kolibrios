@@ -3,8 +3,9 @@
 
 #include <kosSyst.h>
 #include <kosFile.h>
+#include <func.h>
 
-char sVersion[] = "Версия 0.1";
+char sVersion[] = "Версия 0.2";
 
 int status=0;
 
@@ -47,8 +48,6 @@ bool drawC = true;
 bool drawD = true;
 
 
-
-
 char * tempquestion;
 char * tempanswerA;
 char * tempanswerB;
@@ -62,10 +61,10 @@ int tempanswerClength=0;
 int tempanswerDlength=0;
 
 
-
-
-const char header[]="Кто хочет быть миллионером            для Kolibri OS";
+const char header[]="Кто хочет быть миллионером";
 void app_halt();
+
+
 
 char * filepathname; //╬яЁхфхы хь яєЄ№ ш шь  Їрщыр ё срчющ тюяЁюёют
 void getFilePathName(){
@@ -105,16 +104,10 @@ void loadquestion(){
 
 	int qcodee;
 
-
-
 	int skipsleft;
-
-
 	
 regenerate:
 	qcodee=(rtlRand()%questioncount)+1; 
-
-
    
 	Byte inputbyte[1]={0x00};
    
@@ -217,7 +210,7 @@ regenerate:
 	tempanswerD = new char[tempanswerDlength+1];
 
 
-
+ 
 	// ┬╥╬╨╬╔ ╧╨╬╒╬─: ╘╬╨╠╚╨╙┼╠ ┬ ╧└╠▀╥╚ ┬╬╧╨╬╤ ╚ ┬└╨╚└═╥█ ╬╥┬┼╥└
 	CKosFile basefile2(filepathname);
 	inputbyte[0]=0x00;
@@ -577,31 +570,28 @@ regenD:
 		}
 	}
 
-
-		
 	delete tempquestion;
 	delete tempanswerA;
 	delete tempanswerB;
 	delete tempanswerC;
 	delete tempanswerD;
-
-
-
-
-
-
-
-
-
-
 }
 
+
+
 void draw_window(void){ //╨шёєхь юъэю
+	sProcessInfo sPI;
+
 	kos_WindowRedrawStatus(1);
-	kos_DefineAndDrawWindow(10,10,620,200,0x34, 0xDDDDFF, 0,0, (Dword)header);
+	kos_DefineAndDrawWindow(10,10,619,179+kos_GetSkinHeight(),0x74, 0xDDDDFF, 0,0, (Dword)header);
+	kos_WindowRedrawStatus(2);
 	
+	kos_ProcessInfo( &sPI );
+	if (sPI.rawData[70]&0x04) return; //эшўхую эх фхырЄ№ хёыш юъэю ёїыюяэєЄю т чруюыютюъ
+
+
 	if (status==0){ //╠хэ■
-		kos_DrawBar(0,0,610,174,0xFFFFBB);
+		kos_DrawBar(0,0,610,175,0xFFFFBB);
                 kos_WriteTextToWindow (10,10,0x80,0x000000, "Кто хочет быть миллионером?", 3);
 		
 		kos_WriteTextToWindow (10,25,0x80,0x000000, sVersion, 3);
@@ -614,7 +604,7 @@ void draw_window(void){ //╨шёєхь юъэю
 	}
 	if (status==1){ //╚уЁр
 
-		kos_DrawBar(0,0,610,174,0xEEEEFF);
+		kos_DrawBar(0,0,610,175,0xEEEEFF);
 
 		kos_WriteTextToWindow (10,10,0x0,0x000000, question, questionlength-1);
 		
@@ -650,24 +640,24 @@ void draw_window(void){ //╨шёєхь юъэю
 	
 	}
 	if (status==2){ //╬ъэю "▌Єю - яЁртшы№э√щ юЄтхЄ"
-		kos_DrawBar(0,0,610,174,0xDDFFDD);
+		kos_DrawBar(0,0,610,175,0xDDFFDD);
                 kos_WriteTextToWindow (10,10,0x80,0x000000, "Да, это правильный ответ!", 0);
 		
                 kos_WriteTextToWindow (10,150,0x80,0x000000, "<ENTER> - продолжить", 0);
 	}
 	if (status==3){ //┬√ т√шуЁрыш ьшыышюэ, юфэръю ц!!!
-		kos_DrawBar(0,0,610,174,0x00FF00);
+		kos_DrawBar(0,0,610,175,0x00FF00);
                 kos_WriteTextToWindow (10,10,0x80,0x000000, "Вы выиграли миллион!!!", 0);
                 kos_WriteTextToWindow (10,150,0x80,0x000000, "<ESC> - выход", 0);
 	}
 	if (status==4){ //╟тюэюъ фЁєує
-		kos_DrawBar(0,0,610,174,0xAAFFFF);
+		kos_DrawBar(0,0,610,175,0xAAFFFF);
                 kos_WriteTextToWindow (10,10,0x80,0x000000, "Друг советует вам ответ", 0);
 		kos_WriteTextToWindow (165,10,0x80,0x000000, friendsAdvice, 0);
                 kos_WriteTextToWindow (10,150,0x80,0x000000, "<ENTER> - продолжить", 0);
 	}
 	if (status==5){ //╧юфёърчър чрыр
-		kos_DrawBar(0,0,610,174,0xAAFFFF);
+		kos_DrawBar(0,0,610,175,0xAAFFFF);
                 kos_WriteTextToWindow (10,10,0x80,0x000000, "Мнение аудитории распределилось так:", 0);
 		if (drawA==true){
                         kos_WriteTextToWindow (10,30,0x80,0x000000, "Ответ A:  ", 0);
@@ -698,13 +688,13 @@ void draw_window(void){ //╨шёєхь юъэю
 	}
 
 	if (status==6){ //┬√ чрсЁрыш фхэ№уш ;-)
-		kos_DrawBar(0,0,610,174,0xBBFFBB);
+		kos_DrawBar(0,0,610,175,0xBBFFBB);
                 kos_WriteTextToWindow (10,10,0x80,0x000000, "Вы забрали деньги и ушли. Ваш выигрыш составил:", 0);
 		kos_WriteTextToWindow (10,20,0x80,0x000000, summs[currentquestion-1], 0);
                 kos_WriteTextToWindow (10,150,0x80,0x000000, "<ESC> - выход", 0);
 	}
 	if (status==-1){ //┬√ ю°шсышё№ :-(
-		kos_DrawBar(0,0,610,174,0xFF8888);
+		kos_DrawBar(0,0,610,175,0xFF8888);
                 kos_WriteTextToWindow (10,10,0x80,0x000000, "К сожалению, вы ошиблись... Правильный ответ -", 0);
 		
 		switch (correctanswer){
@@ -736,8 +726,6 @@ void draw_window(void){ //╨шёєхь юъэю
 
         kos_WriteTextToWindow (10,150,0x80,0x000000, "<ESC> - выход", 0);
 	}
-
-	kos_WindowRedrawStatus(2);
 
 }
 
@@ -970,6 +958,7 @@ void call_zal(){ //╧юфёърчър чрыр
 
 void kos_Main(){
 	rtlSrand(kos_GetSystemClock() / 10000);
+	kos_InitHeap();
 	getFilePathName();
 	prepareFileData();
 	draw_window();
