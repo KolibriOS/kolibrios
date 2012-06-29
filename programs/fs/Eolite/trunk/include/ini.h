@@ -68,7 +68,7 @@ void GetIni(byte onload)
 			case 0x0a:
 			case 0x0d:
 				InfType=PARAM;
-				IF (!strcmp(#parametr,"SelectionColor")) videlenie=StrToCol(#option);
+				IF (!strcmp(#parametr,"SelectionColor")) selection_col=StrToCol(#option);
 				IF (!strcmp(#parametr,"LineHeight")) BUTTON_HEIGHT=StrToInt(#option);
 				IF (!strcmp(#parametr,"ShowDeviceName")) show_dev_name=StrToInt(#option);
 				

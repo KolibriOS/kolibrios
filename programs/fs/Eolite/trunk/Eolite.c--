@@ -20,14 +20,23 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.27"
-dword videlenie=0x94AECE; //цвет выделенного элемента из списка файлов
+#define title "Eolite File Manager v1.28"
+dword selection_col=0x94AECE; //цвет выделенного элемента из списка файлов
 //
+
+/*
+int  f_visible,
+     f_count,
+     f_first,
+     f_current;
+*/
+	 
 int  but_num,
      count,
      za_kadrom,
-     curbtn,
-     scroll_size;
+     curbtn;
+	 
+	 
 byte cut_active,
      rename_active,
      del_active;
@@ -41,6 +50,8 @@ char path[4096],
      file_name[4096],
      copy_file[4096],
      temp[4096];
+int scroll_size;
+
 
 
 int toolbar_buttons_x[6]={9,46,85,134,167,203};
@@ -74,31 +85,31 @@ word key, id;
 mouse m;
 int pressed_y;
 {
-	//
 	load_editbox_lib();
 	GetSystemDiscs();
 	GetIni(1);
 	
-	edit1.shift_color=videlenie;
-	edit2.shift_color=videlenie;
+	edit1.shift_color=selection_col;
+	edit2.shift_color=selection_col;
 	
-	HistoryPath(add_new_path);
-	IF (param[0]<>'') //был ли запуск с параметром
+	IF (param)
 	{
 		copystr(#param, #path);
 		IF (strcmp(#path+strlen(#path)-1,"/")<>0) copystr("/",#path+strlen(#path)); //если нет, + "/"
 	}
-	else copystr("/rd/1/", #path);
+	else
+		copystr("/rd/1/", #path);
+		
 	Open_Dir(#path,ONLY_OPEN);
 	loop()	switch(WaitEvent())
 	{
 		case evMouse:
-				IF (del_active==1) break;
+				IF (del_active) break;
 				
 				id=GetSlot(Form.ID); 
 				IF (id<>ActiveProcess()) break; //если окно не активно на события мыши не реагируем
 				
-				IF (rename_active==0) edit_box_mouse stdcall(#edit1); ELSE edit_box_mouse stdcall(#edit2);
+				IF (!rename_active) edit_box_mouse stdcall(#edit1); ELSE edit_box_mouse stdcall(#edit2);
 				
 				m.get();
 
@@ -162,17 +173,23 @@ int pressed_y;
 				break;  
 //Button pressed-----------------------------------------------------------------------------
 		case evButton:
-			IF (edit1.flags<>64) {edit1.flags=64; edit_box_draw stdcall(#edit1);} //сбрасываем выделение при нажатии на батон
 			id=GetButtonID();
 			IF (id==1) ExitProcess();
-			IF (del_active==1) {IF (id==301) || (id==302) Del_File(302-id); break;}
+
+			IF (del_active)
+			{
+				IF (id==301) || (id==302) Del_File(302-id);
+				break;
+			}
 			switch(id) 
 			{
 				case 21: //Back
 						GoBack();
 						break;
 				case 22: //Forward
-						HistoryPath(go_forward);
+						HistoryPath(GO_FORWARD);
+						za_kadrom=curbtn=0; //вверх списка
+						Open_Dir(#path,WITH_REDRAW);
 						break;
 				case 23: //up!
 						Dir_Up();
@@ -256,7 +273,7 @@ int pressed_y;
 //Key pressed-----------------------------------------------------------------------------
 		case evKey:
 			key = GetKey();
-			IF (del_active==1)
+			IF (del_active)
 			{
 				IF (key==013) Del_File(true);
 				IF (key==027) Del_File(false);
@@ -293,14 +310,16 @@ int pressed_y;
 							IF (Form.left==98) MoveSize(Form.left-20,Form.top-20,OLD,OLD);
 							RunProgram("/sys/File Managers/Eolite", #path);
 							break; 
-					case 024: //Ctrl+X cut
-					case 003: //Ctrl+C copy
+					case 024: //Ctrl+X
+					case 003: //Ctrl+C
 							CTRLC_MARK:
 							IF (isdir) break; //папки пока что копировать не умеем
 							copystr(#file_path,#copy_file); //вычисляем какой файл копировать
 							IF (key==24) cut_active=1; ELSE cut_active=0; 
 							break;
-					case 022: Paste(); break;//Ctrl+V paste
+					case 022: //Ctrl+V
+							Paste();
+							break;
 					case 027: //Esc
 							IF (rename_active==1) ReName(false);
 							break;
@@ -385,6 +404,7 @@ inline fastcall void draw_window()
 	IF (Form.status_window>2) return; //ничего не делать если окно схлопнуто в заголовок
 	  IF (Form.height<280) MoveSize(OLD,OLD,OLD,280);
 	  IF (Form.width<480) MoveSize(OLD,OLD,480,OLD);
+	  
 	//toolbar buttons
 	PutPaletteImage(#toolbar,246,39,0,0,#toolbar_pal);
 	FOR (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,0xE4DFE1);
@@ -412,7 +432,7 @@ inline fastcall void draw_window()
 	DrawBar(onLeft(27,0),57,1,onTop(22,57),0x94AECE); //линия слева от прокрутки 
 	DrawFlatButton(onLeft(27,0),40,16,16,0,0xE4DFE1,"\x18");		//прокрутка вверх
 	DrawFlatButton(onLeft(27,0),onTop(22,0),16,16,0,0xE4DFE1,"\x19");//прокрутка вниз
-	if (del_active==1) Del_Form();
+	if (del_active) Del_Form();
 }
 
 
@@ -432,7 +452,7 @@ void FileList_ReDraw(int curbtn_)
 		{
 			Line_ReDraw(0xFFFFFF, curbtn); //белая полоса
 			curbtn+=curbtn_;
-			Line_ReDraw(videlenie, curbtn); //выделение
+			Line_ReDraw(selection_col, curbtn); //выделение
 			return;
 		}
 		ELSE
@@ -450,7 +470,7 @@ void FileList_ReDraw(int curbtn_)
 		{
 			Line_ReDraw(0xFFFFFF, curbtn); //белая полоса
 			curbtn+=curbtn_;
-			Line_ReDraw(videlenie, curbtn); //выделение
+			Line_ReDraw(selection_col, curbtn); //выделение
 			return;
 		}
 		else
@@ -486,12 +506,47 @@ void List_ReDraw()
 	IF (count-za_kadrom<but_num) || (curbtn>but_num-1) //если мы в конце списка файлов развернём окно появяться пустяе белые кнопки
 	{ za_kadrom=count-but_num; curbtn=but_num-1; } //это если выделение после схлопывания окна за кадром
 	//
-	FOR (j=0; j<but_num; j++) IF (curbtn<>j) Line_ReDraw(0xFFFFFF, j); ELSE Line_ReDraw(videlenie, curbtn);
+	FOR (j=0; j<but_num; j++) IF (curbtn<>j) Line_ReDraw(0xFFFFFF, j); ELSE Line_ReDraw(selection_col, curbtn);
 		DrawBar(192,paint_x,onLeft(27,192),onTop(paint_x,6),0xFFFFFF); //заливка белым доконца
 		DrawBar(onLeft(168,0),paint_x,1,onTop(paint_x,6),0xE4DFE1); //полоса серая вертикальная 1
 		DrawBar(onLeft(95,0),paint_x,1,onTop(paint_x,6),0xE4DFE1); //полоса серая вертикальная 2
 	TVScroll();
 }
+
+/*#include "def_file.txt" 
+#define CELL_SIZE 58
+void List_ReDraw()
+{
+	int i,
+		po_gor, po_ver,
+		on_xx, name_len;
+	po_gor=onLeft(22,197)/CELL_SIZE;
+	po_ver=onTop(57,6)/CELL_SIZE;
+	for (j=0; j<po_ver; j++;) for (i=0; i<po_gor; i++;) 
+	{
+		if (j*po_gor+i+za_kadrom>=count)
+		{
+			DrawBar(i*CELL_SIZE+192,j*CELL_SIZE+57,CELL_SIZE,CELL_SIZE,0xFFFFFF);
+			continue;
+		}
+		DefineButton(i*CELL_SIZE+192,j*CELL_SIZE+57,CELL_SIZE,CELL_SIZE,j*po_gor+i+201+BT_HIDE,0xFFFFFF);
+		DrawBar(i*CELL_SIZE+192,j*CELL_SIZE+57,CELL_SIZE,CELL_SIZE,0xFFFFFF);
+
+		off=file_mas[j*po_gor+i+za_kadrom]*304 + buf+72;
+		name_len=strlen(off);
+		if (name_len>9) name_len=9;
+		on_xx=-name_len*3+29;
+		WriteText(i*CELL_SIZE+193+on_xx,j*CELL_SIZE+57+CELL_SIZE-16,0,0,off,name_len);
+		if (!TestBit(ESDWORD[off-40], 4))
+			PutImage(#file32,32,32,i*CELL_SIZE+197+9,j*CELL_SIZE+57+5);
+		else
+			PutImage(#folder32,32,32,i*CELL_SIZE+197+9,j*CELL_SIZE+57+5);
+
+	}
+	TVScroll();
+}*/
+
+//-------------------------------------------------------------------------------------
 
 
 void Line_ReDraw(dword color, filenum){
@@ -555,7 +610,7 @@ void Open_Dir(dword temp_, redraw){
 		errornum=ReadDir(0, buf, #path_);
 		if (errornum<>0) //ошибка при чтении папки
 		{
-			HistoryPath(add_new_path);
+			HistoryPath(ADD_NEW_PATH);
 			GoBack();
 			Write_Error(errornum);
 			return;
@@ -571,7 +626,7 @@ void Open_Dir(dword temp_, redraw){
 		//debug("successfully \n");
 		copystr(temp_,#edit_path);
 		KEdit();
-		HistoryPath(add_new_path);
+		HistoryPath(ADD_NEW_PATH);
 		IF (!strcmp(".",buf+72)) {memmov(buf,buf+304,count-1*304); count--;} //фильтруем элемент "."
 		FOR (j=0;j<but_num;j++) DeleteButton(201+j); //удаляем старые
 		but_num=onTop(6,57)/BUTTON_HEIGHT;                                                                                             
@@ -664,18 +719,18 @@ void Del_File(byte dodel)
 
 void Paste()
 {
-	char new_copy_path[4096]='';
+	char new_copy_path[4096];
 	int copy_rezult;
 	
 	IF (!copy_file) return; //отмена, еши ещё ничё не скопировали
 	copystr(#path,#new_copy_path);
 	copystr(#copy_file+find_symbol(#copy_file,'/'),#new_copy_path+strlen(#new_copy_path));
-	if (strcmp(#copy_file,#new_copy_path)==0) //если мы копируем и вставляем в одной и той же папке
-		{
-			copystr(#path,#new_copy_path);
-			copystr("new_",#new_copy_path+strlen(#new_copy_path));
-			copystr(#copy_file+find_symbol(#copy_file,'/'),#new_copy_path+strlen(#new_copy_path));
-		}
+	if (!strcmp(#copy_file,#new_copy_path)) //если мы копируем и вставляем в одной и той же папке
+	{
+		copystr(#path,#new_copy_path);
+		copystr("new_",#new_copy_path+strlen(#new_copy_path));
+		copystr(#copy_file+find_symbol(#copy_file,'/'),#new_copy_path+strlen(#new_copy_path));
+	}
 	copy_rezult=CopyFile(#copy_file,#new_copy_path);
 	IF (copy_rezult<>0) //ошибка
 	{
@@ -683,7 +738,7 @@ void Paste()
 		DrawFlatButton(Form.width/2-13,160,200,80,0,0xFFB6B5, "Error. You can't paste here.");
 		Pause(150);
 	}
-	IF (cut_active==1) //если мы выбрали вырезать
+	IF (cut_active) //если мы выбрали вырезать
 		{
 			copystr(#copy_file,#file_path);
 			Del_File(true);
@@ -708,7 +763,7 @@ void Tip(int y, dword caption, id, arrow)
 void ReName(byte rename)
 {
 	int del_file_rez;
-	char edit_name[256]='';
+	char edit_name[256];
 	rename_active=0;
 	edit2.flags=64;
 	DefineButton(192,curbtn*BUTTON_HEIGHT+57,onLeft(27,192),BUTTON_HEIGHT,curbtn+201+BT_HIDE+BT_NOFRAME,0xFFFFFF);
@@ -737,7 +792,7 @@ void ReName(byte rename)
 		}
 		SelectFile(#edit_name);
 	}
-	Line_ReDraw(videlenie,curbtn);
+	Line_ReDraw(selection_col,curbtn);
 }
 
 
@@ -774,11 +829,16 @@ void Actions()
 
 void Goto_edit_path()
 {
-	IF (strcmp(#path,#edit_path)==0) return; //проверка не в этой ли мы папке
+	IF (!strcmp(#path,#edit_path)) return; //проверка не в этой ли мы папке
  	IF (strcmp(#edit_path+strlen(#edit_path)-1,"/")<>0) copystr("/",#edit_path+strlen(#edit_path)); //если нет, + "/"
 	Open_Dir(#edit_path,ONLY_OPEN); //проверяем если файлы в папке, так мы узнаём существует ли она
-	IF (count<1) KEdit(); ELSE //просто очищаем полосу адреса
-		{za_kadrom=curbtn=0; copystr(#edit_path,#path);}//наверх списка
+	IF (count<1)  
+		KEdit(); //просто очищаем полосу адреса
+	ELSE
+	{
+		za_kadrom=curbtn=0; //наверх списка
+		copystr(#edit_path,#path);
+	}
 	Open_Dir(#path,1);
 }
 
@@ -788,7 +848,7 @@ void SelectFile(dword that_file)
    	Open_Dir(#path,ONLY_OPEN);
 	ChangeCase(that_file);
 	for (i=count-1; i>=0; i--;)
-		if (strcmp(file_mas[i]*304+buf+72,that_file)==0) break;
+		if (!strcmp(file_mas[i]*304+buf+72,that_file)) break;
 	FileList_ReDraw(i);
 	List_ReDraw();
 }
@@ -810,7 +870,7 @@ inline fastcall void GoBack()   //вначале удаляем текущий путь, а потом копируем
 {
 	char cur_folder[4096];
 	copystr(GetCurrentFolder(), #cur_folder);
-	HistoryPath(go_back); 
+	HistoryPath(GO_BACK); 
 	SelectFile(#cur_folder);
 }
 

@@ -1,13 +1,12 @@
 //06.04.2012
 
-#define MAX_HISTORY_NUM 40
-path_string history_list[MAX_HISTORY_NUM];
+path_string history_list[40];
 int history_num;
 int history_current;
 
-#define add_new_path 1
-#define go_back 2
-#define go_forward 3
+#define ADD_NEW_PATH 1
+#define GO_BACK      2
+#define GO_FORWARD   3
 
 dword GetCurrentFolder()
 {
@@ -20,10 +19,13 @@ dword GetCurrentFolder()
 
 void HistoryPath(byte action)
 {
-	if (action==add_new_path)
+	int MAX_HISTORY_NUM;
+	
+	if (action==ADD_NEW_PATH)
 	{
-		if (history_num>0) && (strcmp(#path,#history_list[history_current].Item)==0) return;
-			
+		if (history_num>0) && (!strcmp(#path,#history_list[history_current].Item)) return;
+		
+		MAX_HISTORY_NUM = sizeof(history_list)/sizeof(path_string);
 		if (history_current>=MAX_HISTORY_NUM-1)
 		{
 			history_current/=2;
@@ -37,18 +39,17 @@ void HistoryPath(byte action)
 		history_num=history_current;
 	}
 	
-	if (action==go_back)
+	if (action==GO_BACK)
 	{
 		if (history_current<=2) return;
 		history_current--;
 		copystr(#history_list[history_current].Item,#path);
 	}
 
-	if (action==go_forward)
+	if (action==GO_FORWARD)
 	{
 		if (history_current==history_num) return;
 		history_current++;
 		copystr(#history_list[history_current].Item,#path);
-		SelectFile("");
 	}	
 }
