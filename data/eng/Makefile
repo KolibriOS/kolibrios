@@ -131,6 +131,7 @@ FASM_PROGRAMS:=\
  drivers/ps2mouse.obj:DRIVERS/PS2MOUSE.OBJ:$(REPOSITORY)/drivers/mouse/ps2mouse4d/trunk/ps2mouse.asm \
  drivers/sb16.obj:DRIVERS/SB16.OBJ:$(KERNEL)/drivers/sb16/sb16.asm \
  drivers/sound.obj:DRIVERS/SOUND.OBJ:$(KERNEL)/drivers/sound.asm \
+ drivers/tmpdisk.obj:DRIVERS/TMPDISK.OBJ:$(KERNEL)/drivers/tmpdisk.asm \
  drivers/vt8235.obj:DRIVERS/VT8235.OBJ:$(KERNEL)/drivers/vt823x.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
