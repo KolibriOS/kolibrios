@@ -21,7 +21,7 @@
 ;   Compile with FASM for Menuet
 ;******************************************************************************
   BTN_HEIGHT  = 22
-  TXT_Y       = (BTN_HEIGHT)/2-5
+  TXT_Y       = (BTN_HEIGHT)/2-4
 
   PANEL_HEIGHT	= 20
   MENU_BOTTON_X_POS	= 10
