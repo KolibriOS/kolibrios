@@ -277,7 +277,8 @@ else
 end if
 
 mouse_dd dd 0
-edit1 edit_box 182, 59, 146, 0xffffff, 0xff, 0x80ff, 0, 0x8000, (string1_end-string1), string1, mouse_dd, 0
+edit1 edit_box 182, 59, 146, 0xffffff, 0xff, 0x80ff, 0, 0x8000, (string1_end-string1), string1 , mouse_dd, ed_focus+ed_always_focus
+
 editboxes_end:
 
 system_dir_0 db '/sys/lib/'
