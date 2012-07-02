@@ -4,12 +4,13 @@
 #define ITEM_WIDTH  138
 
 char *ITEMS_LIST[]={
-"View in Tinypad   F3",
-"View in TextEdit  F4",
-"-",
-"KOI-8         Ctrl+K",
-"UTF           Ctrl+U",
+"View in Tinypad   F3",52,
+"View in TextEdit  F4",53,
+"-",0,
+"KOI-8         Ctrl+K",11,
+"UTF           Ctrl+U",21,
 0}; 
+
 
 proc_info MenuForm;
 
@@ -19,7 +20,7 @@ void menu_rmb()
 
 	mouse mm;
 	int items_num, items_cur;
-	int id1, key;
+	int id1, key, i;
 	
 	SetEventMask(100111b); 
 	
@@ -43,7 +44,9 @@ void menu_rmb()
 				break;
 				
 		case evButton: 
-				ItemProcess(GetButtonID());
+				id1=GetButtonID()-10;
+				WB1.Scan(ITEMS_LIST[id1*2+1]);
+				ExitProcess();
 				break;
 				
 		case evKey:
@@ -61,19 +64,20 @@ void menu_rmb()
 				}
 				if (key==13)
 				{
-					ItemProcess(items_cur+10);
+					WB1.Scan(ITEMS_LIST[items_cur*2+1]);
+					ExitProcess();
 				}
 				break;
 				
 		case evReDraw:
-				for (items_num=0; ITEMS_LIST[items_num]<>0; items_num++;) {};
+				while (ITEMS_LIST[items_num*2]) items_num++;
 				DefineAndDrawWindow(Form.left+m.x,Form.top+m.y+GetSkinWidth()+3,ITEM_WIDTH,items_num*ITEM_HEIGHT+1,0x01,0x10FFFFFF,0,0,0);
 
 				DrawRegion(0,0,ITEM_WIDTH,items_num*ITEM_HEIGHT+1,0x777777); //ободок
 				_ITEMS_DRAW:
 				for (i=0; i<items_num; i++;)
 				{
-					if (!strcmp(ITEMS_LIST[i],"-"))
+					if (!strcmp(ITEMS_LIST[i*2],"-"))
 					{
 						DrawBar(1, i*ITEM_HEIGHT+1, ITEM_WIDTH-1, ITEM_HEIGHT, 0xFFFFFF);
 						DrawBar(1, i*ITEM_HEIGHT+1+9, ITEM_WIDTH-1, 1, 0x999999);
@@ -82,19 +86,9 @@ void menu_rmb()
 					DefineButton(0, i*ITEM_HEIGHT, ITEM_WIDTH, ITEM_HEIGHT, i+10+BT_HIDE, 0xFFFFFF);
 					if (i<>items_cur) EDX=0xFFFFFF; else EDX=0x94AECE;
 					DrawBar(1, i*ITEM_HEIGHT+1, ITEM_WIDTH-1, ITEM_HEIGHT, EDX);
-					WriteText(8,i*ITEM_HEIGHT+6,0x80,0x000000,ITEMS_LIST[i],0);
+					WriteText(8,i*ITEM_HEIGHT+6,0x80,0x000000,ITEMS_LIST[i*2],0);
 				}
 	}
-}
-
-void ItemProcess(int num_id)
-{
-	if (num_id==10) WB1.Scan(52);
-	if (num_id==11) WB1.Scan(53);
-	//-----------------------
-	if (num_id==13) WB1.Scan(11); //KOI
-	if (num_id==14) WB1.Scan(21); //UTF
-	ExitProcess();
 }
 
 

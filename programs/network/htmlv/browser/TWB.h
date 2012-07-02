@@ -9,7 +9,7 @@ int i;
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.94e";
+char version[]=" Text-based Browser 0.94u";
 
 
 struct TWebBrowser {
@@ -30,7 +30,7 @@ byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text,
 	link, ignor_text, li_tab, first_line_drawed;
 
 
-dword text_colors[30],
+dword text_colors[300],
 	text_color_index,
 	link_color,
 	bg_color;
@@ -38,15 +38,15 @@ dword text_colors[30],
 int stroka,
 	stolbec,
 	tab_len;
+
+char anchor[256];
+int anchor_line_num;
 	
 char line[500],
 	tag[100],
 	tagparam[10000],
 	parametr[1200],
 	options[1000];
-
-char anchor[256];
-int anchor_line_num;
 
 
 #include "include\history.h"
@@ -65,7 +65,7 @@ void TWebBrowser::Scan(int id)
 		//#1
 		if (URL[0] == '#')
 		{
-			strcpy(#anchor, #URL+find_symbol(#URL, '#'));
+			strcpy(#anchor, #URL+strrchr(#URL, '#'));
 			
 			strcpy(#URL, BrowserHistory.CurrentUrl());
 			
@@ -74,10 +74,10 @@ void TWebBrowser::Scan(int id)
 			return;
 		}
 		//liner.ru#1
-		if (find_symbol(#URL, '#')<>-1)
+		if (strrchr(#URL, '#')<>-1)
 		{
-			strcpy(#anchor, #URL+find_symbol(#URL, '#'));
-			URL[find_symbol(#URL, '#')-1] = 0x00; //заглушка
+			strcpy(#anchor, #URL+strrchr(#URL, '#'));
+			URL[strrchr(#URL, '#')-1] = 0x00; //заглушка
 		}
 
 		GetNewUrl();
@@ -197,15 +197,15 @@ void TWebBrowser::GetNewUrl(){
 		
 		_CUT_ST_LEVEL_MARK:
 		
-		if (editURL[find_symbol(#editURL, '/')-2]<>'/')  // если не http://pagename.ua <-- нахрена эта строка???
+		if (editURL[strrchr(#editURL, '/')-2]<>'/')  // если не http://pagename.ua <-- нахрена эта строка???
 		{
-			editURL[find_symbol(#editURL, '/')] = 0x00; //обрезаем её урл до последнего /
+			editURL[strrchr(#editURL, '/')] = 0x00; //обрезаем её урл до последнего /
 		}
 		
 		IF (!strcmp(get_URL_part(3),"../")) //на уровень вверх
 		{
 			strcpy(#URL,#URL+3);
-			editURL[find_symbol(#editURL, '/')-1] = 0x00; //обрезаем её урл до последнего /
+			editURL[strrchr(#editURL, '/')-1] = 0x00; //обрезаем её урл до последнего /
 			goto _CUT_ST_LEVEL_MARK;
 		}
 		
@@ -318,9 +318,7 @@ void TWebBrowser::ParseHTML(dword bword){
 	if (!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1;
 	if (!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
 	
-	#ifdef DEBUG_ON
-		debug("Start parsing");
-	#endif
+	debug("Start parsing");
 	
 	for ( ; buf+filesize > bword; bword++;) {//ESBYTE[bword]
 	  bukva = ESBYTE[bword];
@@ -438,7 +436,7 @@ void TWebBrowser::ParseHTML(dword bword){
 			//
 			if (stolbec + strlen(#line) > lines.column_max)
 			{
-				perenos_num = find_symbol(#line, ' ');
+				perenos_num = strrchr(#line, ' ');
 				strcpy(#temp, #line + perenos_num); //перенос по словам
 				line[perenos_num] = 0x00;
 			NEXT_MARK:
@@ -465,9 +463,7 @@ void TWebBrowser::ParseHTML(dword bword){
 		ParseHTML(buf);
 	}
 
-	#ifdef DEBUG_ON
-		debug("End parsing");
-	#endif
+	debug("End parsing");
 	DrawScroller(); //рисуем скролл
 }
 
@@ -568,14 +564,16 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	{
 		if (rez)
 		{
+			text_color_index++;
+			text_colors[text_color_index] = text_colors[text_color_index-1];
+
 			_A_MARK:
 			if (!strcmp(#parametr, "href="))
 			{
 				if (stroka - 1 > lines.visible) || (stroka < -2) return;
-				if (link == 1) text_color_index--; //если какой-то долбоёб не закрыл тэг
+				if (link) && (text_color_index > 0) text_color_index--; //если не закрыт тэг
 				link = 1;
 				blink++;
-				text_color_index++;
 				text_colors[text_color_index] = link_color;
 				strcat(#page_links, #options);
 				strcat(#page_links, "|");
@@ -602,18 +600,23 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	/////////////////////////
 	if (!chTag("font"))
 	{
-		IF (stroka - 1 > lines.visible) return;
-		COL_MARK:
-		if (strcmp(#parametr, "color=") == 0) //&& (parametr[1] == '#')
+		if (rez)
 		{
 			text_color_index++;
-			text_colors[text_color_index] = GetColor(#options);
+			text_colors[text_color_index] = text_colors[text_color_index-1];
+		
+			COL_MARK:
+			if (strcmp(#parametr, "color=") == 0) //&& (parametr[1] == '#')
+			{
+				text_colors[text_color_index] = GetColor(#options);
+			}
+			IF(tagparam) {
+				GetNextParam();
+				GOTO COL_MARK;
+			}
 		}
-		IF(tagparam) {
-			GetNextParam();
-			GOTO COL_MARK;
-		}
-		IF(!rez) && (text_color_index > 0) text_color_index--;
+		else
+			if (text_color_index > 0) text_color_index--;
 		return;
 	}
 	//////////////////////////
@@ -694,18 +697,18 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
 			{
 				strcpy(#temp, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
-				temp[find_symbol(#temp, '/')] = 0x00; //обрезаем её урл до последнего /
+				temp[strrchr(#temp, '/')] = 0x00; //обрезаем её урл до последнего /
 				strcat(#temp, #options);
 				image=load_image(#temp);
 				w=DSWORD[image+4];
 				h=DSWORD[image+8];
 			}
-  			if (!strcmp(#parametr,"alt="))
+  			/*if (!strcmp(#parametr,"alt="))
 			{
 				strcpy(#tag, "[Image: ");
 				strcat(#tag, #options);
 				strcat(#tag, "]");
-			}
+			}*/
 
 		IF(tagparam)
 		{
@@ -758,7 +761,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		META:
 		if (!strcmp(#parametr, "charset=")) || (!strcmp(#parametr, "content=")) || (!strcmp(#parametr, "encoding="))
 		{
-			strcpy(#options, #options[find_symbol(#options, '=')]); //поиск в content=
+			strcpy(#options, #options[strrchr(#options, '=')]); //поиск в content=
 
 			if (!strcmp(#options,"utf-8")) || (!strcmp(#options,"utf8"))		ReadHtml(_UTF);
 			if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))	ReadHtml(_KOI);

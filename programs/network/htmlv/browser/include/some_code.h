@@ -27,14 +27,14 @@ inline byte chTag(dword text) {return strcmp(#tag,text);}
 
 void GetURLfromPageLinks(int id)
 {
-	int j = 0;
+	int i, j = 0;
 	for (i = 0; i <= id - 401; i++)
 	{
 		do j++;
 		while (page_links[j] <>'|');
 	}
 	page_links[j] = 0x00;
-	strcpy(#URL, #page_links[find_symbol(#page_links, '|')]);
+	strcpy(#URL, #page_links[strrchr(#page_links, '|')]);
 }
 
 
@@ -49,14 +49,14 @@ inline void Skew(dword x,y,w,h)
 	dword italic_buf;
 	int tile_height=2, //будем выводить двухпиксельными полосками
 	shift=-2, //с двухпиксельным смещением
-	i;
+	i, skin_width;
 
 	italic_buf = mem_Alloc(w*h*3);
+ 	skin_width = GetSkinWidth();
+	CopyScreen(italic_buf, x+Form.left+2, y+Form.top+skin_width, w, h);
 
-	CopyScreen(italic_buf, x+Form.left+2, GetSkinWidth()+y+Form.top, w, h);
-
-	FOR (i=0;i*tile_height<h;i++){
+	FOR (i=0;i*tile_height<h;i++)
 		PutImage(w*3*tile_height*i+italic_buf,w,tile_height,x+shift-i+1,i*tile_height+y);
-	}
+	
 	mem_Free(italic_buf);
 }

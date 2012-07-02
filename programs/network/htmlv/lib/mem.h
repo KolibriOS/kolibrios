@@ -26,9 +26,15 @@ dword mem_Alloc(dword size)
 }
 
 //mem.ReAlloc
+inline fastcall dword mem_ReAllocR( ECX, EDX)
+{
+        $mov     eax, 68
+        $mov     ebx, 20
+        $int     0x40
+}
+
 stdcall dword mem_ReAlloc(dword mptr, size)
 {
-        //$push    ebx ecx edx
         $push    ebx
         $push    ecx
         $push    edx
@@ -41,7 +47,6 @@ stdcall dword mem_ReAlloc(dword mptr, size)
         $pop     edx
         $pop     ecx
         $pop     ebx
-        //$pop     edx ecx ebx
         return   EAX;
 }
 

@@ -2,7 +2,7 @@
 
 //library
 dword libimg = #alibimg;
-char alibimg[21] = "/sys/lib/libimg.obj\0"; //"libimg.obj\0";
+char alibimg[21] = "/sys/lib/libimg.obj\0";
 
 dword libimg_init = #alibimg_init;
 dword img_is_img  = #aimg_is_img;

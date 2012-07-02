@@ -317,10 +317,7 @@ dword GetColor(char* color_str)
 	ELSE
 		FOR (ii=0; color_names[ii]!=0; ii++)
 		{
-			IF(!strcmp(color_str, color_names[ii]))
-			{
-				return colors[ii];
-			}
+			IF(!strcmp(color_str, color_names[ii])) return colors[ii];
 		}
 	return text_colors[0];
 }

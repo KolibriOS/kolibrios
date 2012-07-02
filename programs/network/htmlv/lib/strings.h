@@ -1,15 +1,18 @@
 //------------------------------------------------------------------------------
+// strcmp( ESI, EDI)
 // strlen( EDI)
 // strcpy( EDI, ESI)
 // strcat( EDI, ESI)
+// strchr( ESI,BL)
+// strrchr( ESI,BL)
+// strstr( EBX, EDX)
+//
 // IntToStr( ESI)
 // StrToInt()
-// strcmp( ESI, EDI)
-// find_symbol( ESI,BL)
 // upcase( ESI)
 // lowcase( ESI)
-// strstr( EBX, EDX)
 //------------------------------------------------------------------------------
+
 
 inline fastcall unsigned int strlen( EDI)
 {
@@ -59,7 +62,7 @@ inline fastcall strcat( EDI, ESI)
 	}
 }
 
-char buffer[11]="";
+char buffer[11];
 inline fastcall dword IntToStr( ESI)
 {
      $mov     edi, #buffer
@@ -115,7 +118,18 @@ inline fastcall signed int strcmp( ESI, EDI)
 	}
 }
 
-inline fastcall unsigned int find_symbol( ESI,BL)
+inline fastcall unsigned int strchr( ESI,BL)
+{
+	int jj=0;
+	do{
+		jj++;
+		$lodsb
+		IF(AL==BL) return jj;
+	} while(AL!=0);
+}
+
+
+inline fastcall unsigned int strrchr( ESI,BL)
 {
 	int jj=0, last=-1;
 	do{
@@ -169,7 +183,7 @@ inline fastcall unsigned int strstr( EBX, EDX)
     sub ecx, esi
     jbe ls2
     mov edi, ebx
-    lea ebx, dsdword[ esi-1]
+    lea ebx, DSDWORD[ esi-1]
 ls1: mov esi, edx
     lodsb
     repne scasb
@@ -181,7 +195,7 @@ ls1: mov esi, edx
     pop edi
     mov ecx, eax
     jne ls1
-    lea eax, dsdword[ edi-1]
+    lea eax, DSDWORD[ edi-1]
     jmp short ls3
 ls2: xor eax, eax
 ls3:

@@ -148,6 +148,8 @@ inline fastcall word GetButtonID()
 	$shr eax,8
 }
 
+//----------------------------------------
+
 struct proc_info
 {
 	#define SelfInfo -1
@@ -169,6 +171,12 @@ void GetProcessInfo( EBX, ECX)
 	$int  0x40
 }
 
+inline fastcall int GetPointOwner( EBX, ECX) //ebx=m.x, ecx=m.y
+{
+	$mov eax,34
+	$int 0x40
+}
+
 inline fastcall int GetProcessSlot( ECX)
 {
 	EAX = 18;
@@ -183,6 +191,19 @@ inline fastcall int GetActiveProcess()
 	$int 0x40
 }
 
+inline fastcall int CreateThread( ECX,EDX)
+{
+	$mov eax,51
+	$mov ebx,1
+	$int 0x40
+}
+
+inline fastcall void SwitchToAnotherThread()
+{
+	$mov eax,68
+	$mov ebx,1
+	$int 0x40
+}
 
 inline fastcall ExitProcess()
 {
@@ -277,13 +298,6 @@ inline fastcall void DrawTitle( ECX)
 	EAX = 71;
 	EBX = 1;
 	$int 0x40;
-}
-
-inline fastcall int CreateThread( ECX,EDX)
-{
-	EAX = 51;
-	EBX = 1;
-	$int 0x40
 }
 
 void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)

@@ -12,12 +12,12 @@ void GetNextParam()
 
 	IF (kavichki)
 	{
-		i=find_symbol(#tagparam, kavichki);
+		i=strrchr(#tagparam, kavichki);
 		strcpy(#options, #tagparam + i);
 	}
 	ELSE
 	{
-		WHILE((i > 0) && (tagparam[i] <>'=')) i--; //i=find_symbol(#tagparam, '=')+1;
+		WHILE((i > 0) && (tagparam[i] <>'=')) i--; //i=strrchr(#tagparam, '=')+1;
 		i++;
 		
 		strcpy(#options, #tagparam + i); //копируем опцию
