@@ -9,7 +9,7 @@ int i;
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.94u";
+char version[]=" Text-based Browser 0.94z";
 
 
 struct TWebBrowser {
@@ -85,6 +85,7 @@ void TWebBrowser::Scan(int id)
 		if (!strcmp(#URL + strlen(#URL) - 4, ".gif")) || (!strcmp(#URL + strlen(#URL) - 4, ".png")) || (!strcmp(#URL + strlen(#URL) - 4, ".jpg"))
 		{
 			RunProgram("/sys/media/kiv", #URL);
+			strcpy(#editURL, BrowserHistory.CurrentUrl());
 			strcpy(#URL, BrowserHistory.CurrentUrl());
 			return;
 		}
@@ -320,14 +321,16 @@ void TWebBrowser::ParseHTML(dword bword){
 	
 	debug("Start parsing");
 	
-	for ( ; buf+filesize > bword; bword++;) {//ESBYTE[bword]
-	  bukva = ESBYTE[bword];
-	  switch (bukva) {
+	for ( ; buf+filesize > bword; bword++;)
+	{
+		bukva = ESBYTE[bword];
+		if (ignor_text) && (bukva<>'<') continue;
+		switch (bukva)
+		{
 		case 0x0a:
 			if (pre_text)
 			{
-				bukva = '';
-				temp = '';
+				bukva = temp = '';
 				goto NEXT_MARK;
 			}
 		case '\9':
@@ -364,11 +367,14 @@ void TWebBrowser::ParseHTML(dword bword){
 			{
 				bukva = ESBYTE[bword];
 				if (bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
-				if (!ignor_param) && (bukva <>' ') strcat(#tag, #bukva);
+				if (!ignor_param) && (bukva <>' ')
+				{
+					if (strlen(#tag)<sizeof(tag)) strcat(#tag, #bukva);
+				}
 				else
 				{
 					ignor_param = true;
-					strcat(#tagparam, #bukva);
+					if (!ignor_text) && (strlen(#tagparam)+1<sizeof(tagparam)) strcat(#tagparam, #bukva);
 				}
 				bword++;
 			}
@@ -401,7 +407,6 @@ void TWebBrowser::ParseHTML(dword bword){
 			break;
 			
 		case '&': //обработка тегов типа &nbsp;
-			if (ignor_text) break;
 			bword++;
 			tag='';
 			for (j=0;  (ESBYTE[bword] <>';') && (j < 7);     j++, bword++;)
@@ -431,7 +436,6 @@ void TWebBrowser::ParseHTML(dword bword){
 			break;
 		default:
 			DEFAULT_MARK:
-			if (ignor_text) break;
 			if (!pre_text) && (bukva == ' ') && (line[strlen(#line)-1]==' ') break;
 			//
 			if (stolbec + strlen(#line) > lines.column_max)
@@ -501,7 +505,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 	
-	IF (ignor_text == 1) return;
+	IF (ignor_text) return;
 
 	IF(!chTag("q")) strcat(#line, "\"");
 	
@@ -559,7 +563,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		
 		return;
 	}
-	//////////////////////////
+
 	if (!chTag("a"))
 	{
 		if (rez)
@@ -597,7 +601,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		}
 		return;
 	}
-	/////////////////////////
+
 	if (!chTag("font"))
 	{
 		if (rez)
@@ -619,7 +623,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			if (text_color_index > 0) text_color_index--;
 		return;
 	}
-	//////////////////////////
+
 	if(!chTag("tr")) || (!chTag("br")) {
 		TextGoDown(left1, top1, width1);
 		return;
@@ -634,7 +638,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		IF(rez) TextGoDown(left1, top1 + 10, width1);
 		return;
 	}
-	////////////////////////////
+
 	if (!chTag("h1")) || (!chTag("h2")) || (!chTag("h3")) || (!chTag("h4")) {
 		TextGoDown(left1, top1, width1);
 		IF(rez) TextGoDown(left1, top1 + 10, width1);

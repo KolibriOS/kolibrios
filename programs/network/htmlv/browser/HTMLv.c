@@ -13,20 +13,18 @@
 #include "..\lib\libio_lib.h"
 #include "..\lib\libimg_lib.h"
 #include "..\lib\edit_box_lib.h"
-#include "..\lib\scroll_bar\scroll_lib.h"
+#include "..\lib\scroll_lib.h"
 #include "..\lib\ttf_fonts.h"
 //картинки
 #include "img\toolbar_icons.c"
 #include "img\URLgoto.txt";
-
-#define DEBUG_ON 0
 
 
 //переменные
 char URL[4096],
 	editURL[4096],
 	page_links[12000],
-	header[512];
+	header[300];
 
 struct lines{
 	int visible, all, first, column_max;
@@ -88,6 +86,7 @@ void main()
 				
 				if (m.pkm) && (m.y>WB1.top) && (m.y<Form.height) && (filesize)
 				{
+					SwitchToAnotherThread();
 					CreateThread(#menu_rmb,#stak); 
 				}
 

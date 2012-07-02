@@ -10,17 +10,23 @@ void GetNextParam()
 		i--;
 	}
 
-	IF (kavichki)
+	if (kavichki)
 	{
 		i=strrchr(#tagparam, kavichki);
-		strcpy(#options, #tagparam + i);
+		if (i>sizeof(options))
+			strcpy(#options, #tagparam + sizeof(options));
+		else
+			strcpy(#options, #tagparam + i);
 	}
-	ELSE
+	else
 	{
 		WHILE((i > 0) && (tagparam[i] <>'=')) i--; //i=strrchr(#tagparam, '=')+1;
 		i++;
-		
-		strcpy(#options, #tagparam + i); //копируем опцию
+		if (i>sizeof(options))
+			strcpy(#options, #tagparam + sizeof(options));
+		else
+			strcpy(#options, #tagparam + i);
+
 		WHILE (options[0] == ' ') strcpy(#options, #options+1);
 	}
 	tagparam[i] = 0x00;
@@ -31,6 +37,10 @@ void GetNextParam()
 			tagparam[i + 1] = 0x00;
 	}
 
-	strcpy(#parametr, #tagparam + i + 1); //копируем параметр
+	if (i>sizeof(parametr))
+		strcpy(#parametr, #tagparam + sizeof(parametr));
+	else
+		strcpy(#parametr, #tagparam + i + 1);
+
 	tagparam[i] = 0x00;
 }
