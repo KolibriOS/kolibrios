@@ -1,28 +1,28 @@
-AA-FASM    -010-/SYS/DEVELOP/FASM             -                              *
+AA-KFM     -005-/SYS/FILE MANAGERS/KFM        -                              *
 AB-TINYPAD -009-/SYS/TINYPAD                  -                              *
-BA-EOLITE  -002-/SYS/File Managers/EOLITE     -                              *
+BA-EOLITE  -002-/SYS/FILE MANAGERS/EOLITE     -                              *
 CA-SHELL   -020-/SYS/SHELL                    -                              *
-BB-KFAR    -016-/SYS/File Managers/KFAR       -                              *
+BB-KFAR    -016-/SYS/FILE MANAGERS/KFAR       -                              *
 AC-RDSAVE  -017-/SYS/RDSAVE                   -                              *
 BC-CALC    -004-/SYS/CALC                     -                              *
-CB-KFM     -005-/SYS/File Managers/KFM        -                              *
-JA-HEXEDIT -010-/SYS/DEVELOP/HEED             -                              *
+CB-ANIMAGE -015-/SYS/MEDIA/ANIMAGE            -                              *
+JA-KPACK   -010-/SYS/KPACK                    -                              *
 IH-SNAKE   -003-/SYS/GAMES/SNAKE              -                              *
 JI-MINE    -014-/SYS/GAMES/MINE               -                              *
-II-TETRIS  -018-/SYS/GAMES/TETRIS             -                              *
+II-LIFE2   -013-/SYS/DEMOS/LIFE2              -                              *
 JH-MBLOCKS -011-/SYS/GAMES/MBLOCKS            -                              *
 HI-PONG    -012-/SYS/GAMES/PONG3              -                              *
 GI-15      -000-/SYS/GAMES/15                 -                              *
-HH-LIFE2   -013-/SYS/DEMOS/LIFE2              -                              *
-JB-ANIMAGE -015-/SYS/MEDIA/ANIMAGE            -                              *
+HH-CLICKS  -018-/SYS/GAMES/CLICKS             -                              *
+JB-DOCPACK -008-/SYS/DOCPACK                  -                              *
 IA-BOARD   -019-/SYS/DEVELOP/BOARD            -                              *
-JC-DOCPACK -008-/SYS/DOCPACK                  -                              *
+JC-HEXEDIT -022-/SYS/DEVELOP/HEED             -                              *
 HA-MTDBG   -006-/SYS/DEVELOP/MTDBG            -                              *
 AH-PIPES   -026-/SYS/GAMES/PIPES              -                              *
 AI-SUDOKU  -025-/SYS/GAMES/SUDOKU             -                              *
-BI-ARC-II  -012-/SYS/GAMES/ARCANII            -                              *
+BI-GOMOKU  -024-/SYS/GAMES/GOMOKU             -                              *
 BH-XONIX   -021-/SYS/GAMES/XONIX              -                              *
 GH-CHECKERS-001-/SYS/GAMES/CHECKERS           -                              *
 CI-KOSILKA -023-/SYS/GAMES/KOSILKA            -                              *
-CH-GOMOKU  -024-/SYS/GAMES/GOMOKU             -                              *
-IB-KPACK   -010-/RD/1/KPACK                   -                              *
+CH-FLOOD-IT-027-/SYS/GAMES/FLOOD-IT           -                              *
+IB-FASM    -010-/RD/1/DEVELOP/FASM            -                              *
