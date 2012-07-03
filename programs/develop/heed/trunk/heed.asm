@@ -2980,7 +2980,7 @@ scroll_bar_data_vertical:
 .size_y		dw 284	;+4
 .start_y	dw 19	;+6
 .btn_high	dd scroll_width_size	;+8
-.type		dd 1	;+12
+.type		dd 0	;+12
 .max_area	dd 300+20	;+16
 .cur_area	dd 50	;+20
 .position	dd 0	;+24
@@ -3014,7 +3014,7 @@ scroll_bar_data_horizontal:
 .size_y		dw scroll_width_size	;0	;+4
 .start_y	dw 300	;0	;+6
 .btn_high	dd scroll_width_size	;+8
-.type		dd 1	;+12
+.type		dd 0	;+12
 .max_area	dd 300	;+16
 .cur_area	dd 30	;+20
 .position	dd 1	;+24
