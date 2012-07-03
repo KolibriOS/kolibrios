@@ -56,4 +56,5 @@ kernel.mnt: $(KERNEL)/kernel.asm Makefile.fasm .deps/.dir
 	(fasm -m 65536 "$<" "$@" -s $$tmpfile && \
 	fasmdep -e $$tmpfile > .deps/kernel.Po && \
 	rm $$tmpfile) || (rm $$tmpfile; false)
+	kerpack "$@"
 -include .deps/kernel.Po
