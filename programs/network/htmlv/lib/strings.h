@@ -6,11 +6,11 @@
 // strchr( ESI,BL)
 // strrchr( ESI,BL)
 // strstr( EBX, EDX)
-//
-// IntToStr( ESI)
-// StrToInt()
-// upcase( ESI)
-// lowcase( ESI)
+// itoa( ESI)
+// atoi( EAX)
+// strupr( ESI)
+// strlwr( ESI)
+// strtok( ESI)
 //------------------------------------------------------------------------------
 
 
@@ -63,7 +63,7 @@ inline fastcall strcat( EDI, ESI)
 }
 
 char buffer[11];
-inline fastcall dword IntToStr( ESI)
+inline fastcall dword itoa( ESI)
 {
      $mov     edi, #buffer
      $mov     ecx, 10
@@ -91,9 +91,10 @@ f3:
 } 
 
 
-inline fastcall dword StrToInt()
+inline fastcall dword atoi( EDI)
 {
-	ESI=EDI=EAX;
+	//ESI=EDI=EAX;
+	ESI=EDI;
 	IF(DSBYTE[ESI]=='-')ESI++;
 	EAX=0;
 	BH=AL;
@@ -141,7 +142,7 @@ inline fastcall unsigned int strrchr( ESI,BL)
 }
 
 
-inline fastcall upcase( ESI)
+inline fastcall strupr( ESI)
 {
 	do{
 		AL=DSBYTE[ESI];
@@ -150,7 +151,7 @@ inline fastcall upcase( ESI)
 	}while(AL!=0);
 }
 
-inline fastcall lowcase( ESI)
+inline fastcall strlwr( ESI)
 {
 	do{
 		$LODSB
@@ -200,4 +201,44 @@ ls1: mov esi, edx
 ls2: xor eax, eax
 ls3:
   }
+}
+
+/* strtok( LPSTR dest, src, divs);
+src - указатель на исходную строку или результат предыдущего вызова
+dest - указатель на буфер, куда будет скопировано слово
+divs - указатель на строку, содержащую символы-разделители
+¬озвращает: 0, если слов больше нет
+         не 0, если слово скопировано в dest (передайте это значение
+               в качестве src дл€ последующего поиска) */
+
+dword fastcall strtok( EDX, ESI, EBX)
+{
+  asm {
+    XOR ECX, ECX
+    MOV EDI, EBX
+    XOR EAX, EAX
+    DEC ECX
+    REPNE SCASB
+    XOR ECX, 0FFFFFFFFH
+    DEC ECX
+    PUSH ECX
+L1: LODSB
+    OR AL, AL
+    JZ L4
+    MOV EDI, EBX
+    MOV ECX, SSDWORD[ ESP]
+    REPNE SCASB
+    JZ L1
+    DEC ESI
+L2: LODSB
+    MOV EDI, EBX
+    MOV ECX, SSDWORD[ ESP]
+    REPNE SCASB
+    JZ L3
+    MOV DSBYTE[ EDX], AL
+    INC EDX
+    JMP SHORT L2
+L3: MOV EAX, ESI
+L4: POP ECX
+  } DSBYTE[ EDX] = 0;
 }

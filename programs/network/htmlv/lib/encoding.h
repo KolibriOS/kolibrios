@@ -1,5 +1,5 @@
 
-void wintodos(dword ESI) 
+inline fastcall void wintodos( ESI) 
 {
    while (BL=ESBYTE[ESI])
    {
@@ -28,7 +28,7 @@ void wintodos(dword ESI)
 
 
 byte mas[66] = "î ¡æ¤¥ä£å¨©ª«¬­®¯ïàáâã¦¢ìë§èíéçêž€–„…”ƒ•ˆ‰Š‹ŒŽŸ‘’“†‚œ›‡˜™—š";
-void koitodos(dword EDI)
+inline fastcall void koitodos( EDI)
 {
 	WHILE (BL=ESBYTE[EDI])
 	{	
@@ -42,10 +42,9 @@ void koitodos(dword EDI)
 	}
 }
 
-
 //Asper, lev
 //uncomplete
-int utf8rutodos(dword ESI) //-
+inline fastcall void utf8rutodos( ESI)
 {
     EDI=ESI;
   while (BL=ESBYTE[ESI])
@@ -79,8 +78,6 @@ int utf8rutodos(dword ESI) //-
           }
         }
 
-        //0xC2 ñãðóïïèðîâàòü
-
         else IF (BL == 0xC2) //òàáëèöó ïåðåêîäèðîâîê?
           SWITCH(ESBYTE[ESI+1]) {
             case 0xAB: //"
@@ -108,25 +105,27 @@ int utf8rutodos(dword ESI) //-
                 ESI++;
                 BREAK;
               }
-            CASE 0xA9: // (c)
-            {
-              ESWORD[EDI] = 'c(';
-//              ESBYTE[EDI] = '(';
-//              ESBYTE[EDI+1] = 'c';
-              ESBYTE[EDI+2] = ')';
-              EDI+=2;
-              ESI++;
-              BREAK;
-            }
-            CASE 0xAE: // (r)
-            {
-              ESWORD[EDI] = 'r(';
-              ESBYTE[EDI+2] = ')';
-              EDI+=2;
-              ESI++;
-              break;
-            }
-          }
+			CASE 0xA9: // (c) --- âûëåò Î_î
+			{
+			  ESBYTE[EDI] = 'c';
+			  //ESBYTE[EDI] = '(';
+			  //ESBYTE[EDI+1] = 'c';
+			  //ESBYTE[EDI+2] = ')';
+			  //EDI+=2;
+			  ESI++;
+			  BREAK;
+			}
+			CASE 0xAE: // (r)
+			{
+			  ESBYTE[EDI] = 'r';
+			  //ESBYTE[EDI] = '(';
+			  //ESBYTE[EDI+1] = 'r';
+			  //ESBYTE[EDI+2] = ')';
+			  //EDI+=2;
+			  ESI++;
+			  BREAK;
+			} 
+     }
 
         ELSE IF (BL >= 0x90) && (BL <= 0xAF)
     {

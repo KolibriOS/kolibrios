@@ -5,11 +5,10 @@ dword
 	buf,
 	filesize,
 	blink;
-int i;
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.94z";
+char version[]=" Text-based Browser 0.95";
 
 
 struct TWebBrowser {
@@ -21,6 +20,7 @@ struct TWebBrowser {
 	void ShowPage();
 	void ParseHTML(dword);
 	void WhatTextStyle(int left1, top1, width1);
+	void DrawPage();
 	void DrawScroller();
 };
 
@@ -48,7 +48,6 @@ char line[500],
 	parametr[1200],
 	options[1000];
 
-
 #include "include\history.h"
 #include "include\colors.h"
 #include "include\unicode_tags.h"
@@ -58,7 +57,7 @@ char line[500],
 
 void TWebBrowser::Scan(int id)
 {
-	if (id > 399)
+	if (id >= 400)
 	{
 		GetURLfromPageLinks(id);
 		
@@ -247,6 +246,7 @@ void TWebBrowser::OpenPage()
 	KillProcess(downloader_id);
 	strcpy(#editURL, #URL);
 	BrowserHistory.AddUrl();
+	strcpy(#header, #version);
 	if (!strcmp(get_URL_part(5),"http:")))
 	{
 		KillProcess(downloader_id); //убиваем старый процесс
@@ -286,20 +286,21 @@ void TWebBrowser::ShowPage()
 			WriteText(left + 10, top + 18, 0x80, 0, "Page not found. May be, URL contains some errors.", 0);
 			if (!strcmp(get_URL_part(5),"http:"))) WriteText(left + 10, top + 32, 0x80, 0, "Or Internet unavilable for your configuration.", 0);
 		}
-		DrawTitle(#version); //?
-		return;
+		//return;
 	}
-	
-	ParseHTML(buf);
-	IF (!strcmp(#version, #header)) DrawTitle(#header);
+	else
+		ParseHTML(buf);
+
+	if (!header) strcpy(#header, #version);
+	if (!strcmp(#version, #header)) DrawTitle(#header);
 }
 
 
 
 void TWebBrowser::ParseHTML(dword bword){
-	word bukva[1];
+	word bukva[2];
 	int j, perenos_num;
-	byte ignor_param = 0;
+	byte ignor_param;
 	char temp[768];
 	
 	stroka = -lines.first;
@@ -314,7 +315,7 @@ void TWebBrowser::ParseHTML(dword bword){
 	bg_color = 0xFFFFFF;
 	line = '';
 	strcpy(#page_links,"|");
-	strcpy(#header,#version);
+	strcpy(#header, #version);
 
 	if (!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1;
 	if (!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
@@ -339,7 +340,7 @@ void TWebBrowser::ParseHTML(dword bword){
 				tab_len=strlen(#line)/8;
 				tab_len=tab_len*8;
 				tab_len=8+tab_len-strlen(#line);
-				for (i=0; i<tab_len; i++;) strcat(#line," ");
+				for (j=0; j<tab_len; j++;) strcat(#line," ");
 				break;
 			}		
 		case 0x0d:
@@ -347,15 +348,17 @@ void TWebBrowser::ParseHTML(dword bword){
 			goto DEFAULT_MARK;
 		case '<':
 			bword++; //промотаем символ <
+			tag = parametr = tagparam = ignor_param = 0;
 			if (ESBYTE[bword] == '!') //фильтрация внутри <!-- -->, дерзко
 			{
 				bword++;
-				if (ESBYTE[bword] == '-') {
-					HH_:
+				if (ESBYTE[bword] == '-')
+				{
+				HH_:
 					do
 					{
 						bword++;
-						if (bword >= buf + filesize) break 1;
+						if (buf + filesize <= bword) break 2;
 					}
 					while (ESBYTE[bword] <>'-');
 					
@@ -378,19 +381,18 @@ void TWebBrowser::ParseHTML(dword bword){
 				}
 				bword++;
 			}
-			lowcase(#tag);
-			lowcase(#tagparam);
+			strlwr(#tag);
+			strlwr(#tagparam);
 
-			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=''; //небольшой фикс для работы с XHTML-тегами типа br/
-			if (strlen(#tagparam) > 0) && (strlen(#tagparam) < 4000) GetNextParam();
-			//while (tagparam)
-			//{
-			//	GetNextParam();
-				WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //обработка тегов
-			//}
+			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=''; //for br/
+			if (tagparam) && (strlen(#tagparam) < 4000) GetNextParam();
 
-			line = tag = parametr = tagparam = ignor_param = 0; //всё обнуляем
-			
+			DrawPage();
+			line=0;
+
+			if (tag) WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //обработка тегов
+
+			tag = parametr = tagparam = ignor_param = '\0';
 			break;
 		case '=': //поддержка шайтанской кодировки страниц, сохранённых через ИЕ7
 			if (strcmp(#URL + strlen(#URL) - 4, ".mht")<>0) goto DEFAULT_MARK;
@@ -406,10 +408,10 @@ void TWebBrowser::ParseHTML(dword bword){
 			if (bukva) goto DEFAULT_MARK;
 			break;
 			
-		case '&': //обработка тегов типа &nbsp;
+		case '&': //&nbsp; and so on
 			bword++;
-			tag='';
-			for (j=0;  (ESBYTE[bword] <>';') && (j < 7);     j++, bword++;)
+			tag=0;
+			for (j=0; (ESBYTE[bword]<>';') && (j<7);   j++, bword++;)
 			{
 				bukva = ESBYTE[bword];
 				strcat(#tag, #bukva);
@@ -424,14 +426,15 @@ void TWebBrowser::ParseHTML(dword bword){
 				}
 			}
 			
-			rez = StrToInt(#tag + 1) - 1040;
+			rez = atoi(#tag + 1) - 1040;
 			if (tag[1] == '1') && (rez>=0) && (rez<=72) && (strlen(#tag) == 5)
-				{
-					bukva = unicode_chars[rez];
-					GOTO DEFAULT_MARK; //обрабатываем букву
-				}
+			{
+				bukva = unicode_chars[rez];
+				//GOTO DEFAULT_MARK; //обрабатываем букву лучше наверно strcat(#line, unicode_tags[j+1]); и break 1; 
+				strcat(#line, #bukva);
+				break; 
+			}
 			
-			//debug(#tag); //тэг не найден - выводим на доску отладки
 			strcat(#line,#tag); //выводим на экран необработанный тег, так браузеры зачем-то делают
 			break;
 		default:
@@ -445,13 +448,13 @@ void TWebBrowser::ParseHTML(dword bword){
 				line[perenos_num] = 0x00;
 			NEXT_MARK:
 				if (stroka >= lines.visible) && (lines.first <>0) break 1; //уходим...
-				WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //вывод строки
+				DrawPage();
 				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем следущую строку
 				strcpy(#line, #temp);
 			}
 			if (!pre_text) && (bukva == ' ') && (!stolbec) && (!line) break;
-			strcat(#line, #bukva);
-	  }
+			if (strlen(#line)<sizeof(line))	strcat(#line, #bukva);
+		}
 	}
 
 	if (lines.visible * 10 + 25 <= height)
@@ -459,16 +462,74 @@ void TWebBrowser::ParseHTML(dword bword){
 	if (stroka * 10 + 15 <= height)
 		DrawBar(left, stroka * 10 + top + 15, width - 15, -stroka * 10 + height - 15, bg_color); //закрашиваем всё до конца
 	if (lines.first == 0) lines.all = stroka;
-	
+	debug ("Pre end - anchor");
 	if (anchor)
 	{
+		//если посреди текста появится новый якорь - будет бесконечный цикл
 		anchor='';
 		lines.first=anchor_line_num;
 		ParseHTML(buf);
 	}
-
 	debug("End parsing");
-	DrawScroller(); //рисуем скролл
+
+	DrawScroller();
+}
+
+void TWebBrowser::DrawPage() //резать здесь!!1!
+{
+	int start_x, start_y, line_length;
+	char temp[sizeof(line)];
+	
+	if (!header) //&& (tag) 
+	{
+		if (strlen(#version)+strlen(#line)+2>sizeof(header))
+		{
+			//line = 123456789
+			//header = 1234
+			//line = 56789
+			debug("too long header");
+			strcpy(#temp, #line);
+			temp[sizeof(header)-strlen(#version)-2]=0;
+			strcpy(#header, #temp);
+			strcpy(#line, #line+strlen(#temp));
+		}
+		else
+		{
+			debug("normal header");
+			strcpy(#header, #line);
+			line=0;
+		}
+			
+		strcat(#header, " -");
+		strcat(#header, #version);
+		return;
+	}
+
+	if (stroka >= 0) && (stroka - 2 < lines.visible) && (line) && (!anchor)
+	{
+		if (!stroka) && (!stolbec)
+		{
+			DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку
+			first_line_drawed=1;
+		}
+		
+		start_x=stolbec * 6 + left+5;
+		start_y=stroka * 10 + top + 5;
+		line_length=strlen(#line)*6;
+		
+		WriteText(start_x, start_y, 0x80, text_colors[text_color_index], #line, 0);
+		//line_length =  get_length stdcall (#line,-1,16,line_length);
+		//text_out stdcall (#line, -1, 17, text_colors[text_color_index], start_x, start_y-2);
+		IF (b_text)	{ $add ebx, 1<<16   $int 0x40 }
+		IF (i_text) Skew(start_x, start_y, line_length+6, 10);
+		IF (s_text) DrawBar(start_x, start_y + 4, line_length, 1, text_colors[text_color_index]);
+		IF (u_text) DrawBar(start_x, start_y + 8, line_length, 1, text_colors[text_color_index]);
+		IF (link) {
+			DefineButton(start_x-2, start_y, line_length + 3, 9, blink + BT_HIDE, 0xB5BFC9);
+			DrawBar(start_x, start_y + 8, line_length, 1, text_colors[text_color_index]);
+		}
+		stolbec += strlen(#line);
+	}
 }
 
 
@@ -478,61 +539,44 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
     dword image;
     char temp[4096];
-    int w, h, img_lines_first, line_length;
+    int w=0, h=0, img_lines_first=0;
 
 	//проверяем тег открывается или закрывается
-	IF(tag[0] == '/') 
+	if (tag[0] == '/') 
 	{
 		rez = 0;
 		strcpy(#tag, #tag+1);
 	}
-	ELSE
+	else
 		rez = 1;
-
-	//
-	IF(!chTag("html")) {
+		
+	if (!chTag("html")) {
 		IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) IF (rez==0) ignor_text = 1; ELSE ignor_text = 0;
 		return;
 	}
-	IF(!chTag("script")) || (!chTag("style")) || (!chTag("binary")) ignor_text = rez;
 
-	if(!chTag("title")) && (!rez)
+	if (!chTag("script")) || (!chTag("style")) || (!chTag("binary")) ignor_text = rez;
+
+	if(!chTag("title"))
 	{
-		strcpy(#header, #line);
-		strcat(#header, " -");
-		strcat(#header, #version);
-		if (stroka==0) DrawTitle(#header);
+		if (rez)
+		{
+			header=0;
+		}
+		else //тег закрылся - вывели строку
+		{
+			if (stroka==0) DrawTitle(#header);
+		}
 		return;
 	}
-	
-	IF (ignor_text) return;
 
+	if (ignor_text) return;
+
+
+
+	
 	IF(!chTag("q")) strcat(#line, "\"");
-	
-	//вывод на экран
-	if (stroka >= 0) && (stroka - 2 < lines.visible) && (line) && (!anchor)
-	{
-		if (stroka==0) && (stolbec==0)
-		{
-			DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку
-			first_line_drawed=1;
-		}
-		line_length=strlen(#line)*6;
-		WriteText(stolbec * 6 + left1, top1, 0x80, text_colors[text_color_index], #line, 0); //может тут рисовать белую строку?
-		//line_length =  get_length stdcall (#line,-1,16,line_length);
-		//text_out stdcall (#line, -1, 17, text_colors[text_color_index], stolbec * 6 + left1, top1-2);
-		IF (b_text)	{ $add ebx, 1<<16   $int 0x40 }
-		IF (i_text) Skew(stolbec * 6 + left1, top1, line_length+6, 10); //наклонный текст
-		IF (s_text) DrawBar(stolbec * 6 + left1, top1 + 4, line_length, 1, text_colors[text_color_index]); //зачёркнутый
-		IF (u_text) DrawBar(stolbec * 6 + left1, top1 + 8, line_length, 1, text_colors[text_color_index]); //подчёркнутый
-		IF (link) {
-			DefineButton(stolbec * 6 + left1 - 2, top1, line_length + 3, 9, blink + BT_HIDE, 0xB5BFC9); //
-			DrawBar(stolbec * 6 + left1, top1 + 8, line_length, 1, text_colors[text_color_index]);
-		}
-	}
 
-	IF(!tag) return;
-	stolbec += strlen(#line);
 
 	if (anchor) && (!strcmp(#parametr, "id=")) //очень плохо!!! потому что если не последний тег, работать не будет
 	{
@@ -541,7 +585,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			anchor_line_num=lines.first+stroka;
 		}
 	}
-
+	
 	if (!chTag("body"))
 	{
 		BODY_MARK:
@@ -595,12 +639,13 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				GOTO _A_MARK;
 			}
 		}
-		ELSE {
+		else {
 			link = 0;
 			IF(text_color_index > 0) text_color_index--;
 		}
 		return;
 	}
+
 
 	if (!chTag("font"))
 	{
@@ -748,7 +793,8 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			h=WB1.top+WB1.height-top1-15;
 		}	
 
-		IF (h<=0) return;
+		if (h<=0) return;
+		if (anchor) return;
 		
 		img_draw stdcall (image,left1-5,top1+10,w, h,0,img_lines_first);
 		DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, bg_color);

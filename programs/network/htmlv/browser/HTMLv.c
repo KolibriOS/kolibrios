@@ -20,9 +20,9 @@
 #include "img\URLgoto.txt";
 
 
-//переменные
-char URL[4096],
-	editURL[4096],
+#define URL param
+
+char editURL[4096],
 	page_links[12000],
 	header[300];
 
@@ -34,7 +34,12 @@ int	mouse_dd;
 edit_box edit1= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,248,#editURL,#mouse_dd,2,19,19};
 scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1}; //details in scroll_lib.h--
 
+
 proc_info Form;
+#define WIN_W 640
+#define WIN_H 480
+
+
 dword stak[100]; //меню ПКМ 
 mouse m;
 
@@ -55,11 +60,14 @@ void main()
 	load_dll2(#abox_lib, #boxlib_init,0);
 	//load_dll2(libtruetype, #truetype,0);
 	
-	if (param) strcpy(#URL, #param);
-		else strcpy(#URL, "/sys/index.htm");
+	if (!URL) strcpy(#URL, "/sys/index.htm");
 	strcpy(#editURL, #URL);
 	
-	lines.column_max = 101;
+	Form.width=WIN_W;
+	Form.height=WIN_H;
+	
+	SetElementSizes();
+
 	WB1.OpenPage();
 
 	SetEventMask(0x27);
@@ -161,11 +169,21 @@ void main()
 	}
 }
 
+void SetElementSizes()
+{
+	edit1.width=Form.width-266;
+	WB1.top=44;
+	WB1.width=Form.width-13;
+	WB1.height=onTop(43,5);
+	lines.column_max = WB1.width - 30 / 6;
+	lines.visible = WB1.height - 3 / 10 - 2;
+}
+
 
 void Draw_Window()
 {
 	int j;
-	DefineAndDrawWindow(215,100,640,480,0x73,0x00E4DFE1,0,0,0);
+	DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,0x00E4DFE1,0,0,0);
 
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) //если свернуто в заголовок, ничего не рисуем
@@ -189,13 +207,7 @@ void Draw_Window()
 	DrawRegion(205,14,onLeft(58,205),18,0x94AECE); //ободок полосы адреса
 	DrawRegion(206,15,onLeft(59,205),16,0xE4ECF3);
 
-	edit1.width=Form.width-266;
-	WB1.top=44;
-	WB1.width=Form.width-13;
-	WB1.height=onTop(43,5);
-	lines.column_max = WB1.width - 30 / 6;
-	lines.visible = WB1.height - 3 / 10 - 2;
-
+	SetElementSizes();
 	WB1.ShowPage();
 	
 	DefineButton(scroll1.start_x+1, scroll1.start_y+1, 16, 16, ID1+BT_HIDE, 0xE4DFE1);
