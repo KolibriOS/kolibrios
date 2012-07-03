@@ -94,7 +94,7 @@ inline fastcall Pause(dword EBX)
 
 //------------------------------------------------------------------------------
 
-char buffer[11]="";
+char buffer[11];
 inline fastcall dword IntToStr(dword ESI)
 {
      $mov     edi, #buffer
@@ -223,7 +223,7 @@ void PutImage(dword EBX,w,h,x,y)
 	$int 0x40
 }
 
-inline fastcall dword WriteDebug(dword EDX)
+inline fastcall dword debug(dword EDX)
 {
 	$push ebx
 	$push ecx

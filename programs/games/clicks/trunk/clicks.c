@@ -6,7 +6,7 @@
 system_colors sc;
 
 //уровни сложности
-int DIFFICULTY_LEVEL;
+int DIFFICULTY_LEVEL=1; //по-умолчанию среднее поле
 char *BOARD_SIZES[]={ "S", "M", "L", 0 };
 int DIFFICULTY_LEV_PARAMS[]={ 9, 12, 16 };
 
@@ -37,7 +37,7 @@ void main()
 {   
 	int key, id;
 	
-	BLOCKS_NUM=DIFFICULTY_LEV_PARAMS[0]; //по-умолчанию самое маленькое поле
+	BLOCKS_NUM=DIFFICULTY_LEV_PARAMS[DIFFICULTY_LEVEL];
 	
 	new_game();
    
