@@ -508,7 +508,7 @@ dir_mem rb 32+304*count_of_dir_list_files
 
 if lang eq ru
 
-hed db 'Текстовый редактор 22.06.12',0 ;подпись окна
+hed db 'Текстовый редактор 05.07.12',0 ;подпись окна
 
 menu_text_area:
 db 'Файл',0
@@ -626,7 +626,7 @@ txtFormatApply db 'Применить',0
 
 else
 
-hed db 'Text editor 22.06.12',0
+hed db 'Text editor 05.07.12',0
 
 menu_text_area:
 db 'File',0

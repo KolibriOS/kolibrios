@@ -157,7 +157,7 @@ endp
 ; edi = pointer to tedit struct
 align 4
 ted_messages_after_open_file:
-	push ecx
+	push ecx edi
 	cmp eax,0
 	je @f
 	cmp eax,6
@@ -176,13 +176,14 @@ ted_messages_after_open_file:
 	cmp ebx,-1
 	je .ret_f
 		;if open file
+		mov edi,tedit0
 		mov ecx,ted_max_chars
 		sub ecx,2 ;ecx = максимальное число байт, для которых была выделена память
 		cmp ebx,ecx
 		jl .ret_f
 			stdcall [mb_create],msgbox_1,thread
 	.ret_f:
-	pop ecx
+	pop edi ecx
 	ret
 
 align 4
