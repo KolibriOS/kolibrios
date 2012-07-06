@@ -92,7 +92,6 @@ Color slider              /rd/1/demos/cslide
 Console example 1         /rd/1/develop/testcon2
 Console example 2         /rd/1/develop/test_gets
 Message Boxes example     /rd/1/demos/use_mb
-BGI Font demo             /rd/1/fonts/bgitest
 #10    **** SYSTEM ****
 Settings           >      /@11
 System sensors     >      /@12
