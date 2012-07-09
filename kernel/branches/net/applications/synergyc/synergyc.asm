@@ -33,7 +33,6 @@ BUFFERSIZE      equ 1024
 
 include '../macros.inc'
 purge mov,add,sub
-include '../debug-fdo.inc'
 include '../proc32.inc'
 include '../dll.inc'
 
@@ -373,8 +372,6 @@ import  console,                \
 import  libini,\
         ini.get_str,    'ini_get_str',\
         ini.get_int,    'ini_get_int'
-
-include_debug_strings
 
 align   4
 i_end:
