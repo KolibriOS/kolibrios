@@ -66,6 +66,8 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+format binary as "mnt"
+
 include 'macros.inc'
 include 'struct.inc'
 
@@ -2034,15 +2036,22 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         push    ecx
         cmp     ecx, 2
         jb      noprocessterminate
-        mov     edx, [TASK_COUNT]
-        cmp     ecx, edx
+
+        cmp     ecx, [TASK_COUNT]
         ja      noprocessterminate
-        mov     eax, [TASK_COUNT]
+
         shl     ecx, 5
+        mov     eax, [TASK_COUNT]
         mov     edx, [ecx+CURRENT_TASK+TASKDATA.pid]
-        add     ecx, CURRENT_TASK+TASKDATA.state
-        cmp     byte [ecx], 9
+
+        cmp     byte [ecx+CURRENT_TASK+TASKDATA.state], 9
         jz      noprocessterminate
+;--------------------------------------
+; terminate all network sockets it used
+        pusha
+        mov     eax, edx
+        call    SOCKET_process_end
+        popa
 ;--------------------------------------
         cmp     [_display.select_cursor], 0
         je      .restore_end
