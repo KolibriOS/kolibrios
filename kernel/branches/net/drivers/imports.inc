@@ -1,15 +1,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 macro kernel_export [name]{
 forward
   if used name
-	if DEBUG
-	display 'uses: ',`name,#13,#10
-	end if	 ;
+        if DEBUG
+        display 'uses: ',`name,#13,#10
+        end if
     extrn name
   end if
 }
@@ -17,78 +17,84 @@ forward
 
 
 kernel_export \
-	      RegService,\
-	      GetService,\
-	      ServiceHandler,\
-	      AttachIntHandler,\
-	      GetIntHandler,\
-	      FpuSave,\
-	      FpuRestore,\
-	      ReservePortArea,\
-	      Boot_Log,\
+              RegService,\
+              GetService,\
+              ServiceHandler,\
+              AttachIntHandler,\
+              GetIntHandler,\
+              FpuSave,\
+              FpuRestore,\
+              ReservePortArea,\
+              Boot_Log,\
 \
-	      PciApi,\
-	      PciRead32,\
-	      PciRead16,\
-	      PciRead8,\
-	      PciWrite8,\
-	      PciWrite16,\
-	      PciWrite32,\
+          MutexInit,\
+          MutexLock,\
+          MutexUnlock,\
 \
-	      AllocPage,\
-	      AllocPages,\
-	      FreePage,\
-	      MapPage,\
-	      MapSpace,\
-	      MapIoMem,\
-	      GetPgAddr,\
-	      CommitPages,\
-	      ReleasePages,\
+              PciApi,\
+              PciRead32,\
+              PciRead16,\
+              PciRead8,\
+              PciWrite8,\
+              PciWrite16,\
+              PciWrite32,\
 \
-	      AllocKernelSpace,\
-	      FreeKernelSpace,\
-	      KernelAlloc,\
-	      KernelFree,\
-	      UserAlloc,\
-	      UserFree,\
-	      Kmalloc,\
-	      Kfree,\
-	      CreateRingBuffer,\
+              AllocPage,\
+              AllocPages,\
+              FreePage,\
+              MapPage,\
+              MapSpace,\
+              MapIoMem,\
+              GetPgAddr,\
+              CommitPages,\
+              ReleasePages,\
 \
-	      GetPid,\
-	      CreateObject,\
-	      DestroyObject,\
-	      CreateEvent,\
-	      RaiseEvent,\
-	      WaitEvent,\
-	      DestroyEvent,\
-	      ClearEvent,\
+              AllocKernelSpace,\
+              FreeKernelSpace,\
+              KernelAlloc,\
+              KernelFree,\
+              UserAlloc,\
+              UserFree,\
+              Kmalloc,\
+              Kfree,\
+              CreateRingBuffer,\
 \
-	      LoadCursor,\
-	      SelectHwCursor,\
-	      SetHwCursor,\
-	      HwCursorRestore,\
-	      HwCursorCreate,\
+              GetPid,\
+              CreateObject,\
+              DestroyObject,\
+              CreateEvent,\
+              RaiseEvent,\
+              WaitEvent,\
+              DestroyEvent,\
+              ClearEvent,\
 \
-	      SysMsgBoardStr,\
-	      SysMsgBoardChar,\
-	      GetCurrentTask,\
-	      LoadFile,\
-	      SendEvent,\
-	      SetMouseData,\
-	      Sleep,\
-	      GetTimerTicks,\
+              LoadCursor,\
+              SelectHwCursor,\
+              SetHwCursor,\
+              HwCursorRestore,\
+              HwCursorCreate,\
 \
-	      strncat,\
-	      strncpy,\
-	      strncmp,\
-	      strnlen,\
-	      strchr,\
-	      strrchr,\
+              SysMsgBoardStr,\
+              SysMsgBoardChar,\
+              GetCurrentTask,\
+              LoadFile,\
+              SendEvent,\
+              SetMouseData,\
+              Sleep,\
+              GetTimerTicks,\
 \
-	      LFBAddress,\
+              strncat,\
+              strncpy,\
+              strncmp,\
+              strnlen,\
+              strchr,\
+              strrchr,\
 \
-	      NetRegDev,\
-	      NetUnRegDev,\
-	      NetPtrToNum,\
-	      EthReceiver
+              LFBAddress,\
+              GetDisplay,\
+              SetScreen,\
+\
+              NetRegDev,\
+              NetUnRegDev,\
+              NetPtrToNum,\
+              EthReceiver

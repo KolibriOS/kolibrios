@@ -510,7 +510,7 @@ probe:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 reset:
-        DEBUGF  2,"Resetting rtl8139: "
+        DEBUGF  2,"Resetting rtl8139\n"
 
 ; attach int handler
 
@@ -617,9 +617,9 @@ reset:
 
         mov     eax, [device.rx_buffer]
         mov     dword[eax], 0
-        DEBUGF  2,"RX buffer:%x\n", eax
+        DEBUGF  2,"RX buffer: %x\n", eax
         GetRealAddr
-        DEBUGF  2,"RX buffer:%X\n", eax
+        DEBUGF  2,"RX buffer: %x\n", eax
         set_io  REG_RBSTART
         out     dx , eax
 
