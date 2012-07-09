@@ -1,3 +1,5 @@
+format binary as ""
+
 use32
 ; standard header
         db      'MENUET01'      ; signature

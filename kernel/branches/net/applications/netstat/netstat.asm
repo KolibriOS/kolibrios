@@ -1,28 +1,34 @@
 ;
-; Netstat for KolibriOS v0.1  (still alpha version)
+; Netstat for KolibriOS v0.2
+;
+; 0.1 - 22 sept 2009 - initial release
+; 0.2 - 9 july 2012 - converted to new sysfunc numbers
 ;
 ; hidnplayr@gmail.com
 ;
+
+format binary as ""
 
 use32
 
     org     0x0
 
-    db	   'MENUET01'	     ; 8 byte id
-    dd	   0x01 	     ; header version
-    dd	   START	     ; start of code
-    dd	   I_END	     ; size of image
-    dd	   (I_END+0x100)     ; memory for app
-    dd	   (I_END+0x100)     ; esp
-    dd	   I_PARAM , 0x0     ; I_Param , I_Icon
+    db     'MENUET01'        ; 8 byte id
+    dd     0x01              ; header version
+    dd     START             ; start of code
+    dd     I_END             ; size of image
+    dd     (I_END+0x100)     ; memory for app
+    dd     (I_END+0x100)     ; esp
+    dd     I_PARAM , 0x0     ; I_Param , I_Icon
 
 __DEBUG__ equ 1
 __DEBUG_LEVEL__ equ 1
 
 include '..\macros.inc'
 include '..\debug-fdo.inc'
+include '..\network.inc'
 
-START:				       ; start of execution
+START:                                 ; start of execution
     ; TODO: check Parameters
 
     DEBUGF  1, 'Netstat application loaded!\n'
@@ -77,7 +83,7 @@ START:				       ; start of execution
     mov     edx, str_queue_out
     mcall
 
-    mov     ebx,1337 shl 16 + 4
+    mov     ebx, API_ETH + 4
     mov     bh, [device]
     mcall   76
     push    eax
@@ -110,7 +116,7 @@ START:				       ; start of execution
     mcall
 
 
-    mov     ebx, 0 shl 16 + 8
+    mov     ebx, API_IPv4 + 8
     mov     bh, [device]
     mcall   76
     push    eax
@@ -174,14 +180,14 @@ START:				       ; start of execution
 
   mainloop:
 
-    mcall   23,500		    ; wait for event with timeout    (0,5 s)
+    mcall   23,500                  ; wait for event with timeout    (0,5 s)
 
     cmp     eax, 1
-    je	    redraw
+    je      redraw
     cmp     eax, 2
-    je	    key
+    je      key
     cmp     eax, 3
-    je	    button
+    je      button
 
 
 
@@ -195,7 +201,7 @@ START:				       ; start of execution
     cmp     [mode], 101
     jne     not_101
 
-    mov     ebx, 1337 shl 16 + 0
+    mov     ebx, API_ETH
     mov     bh, [device]
    @@:
     push    ebx
@@ -206,8 +212,8 @@ START:				       ; start of execution
     cmp     bl, 3
     jle     @r
 
-    inc     bl	 ;5
-    inc     bl	 ;6
+    inc     bl   ;5
+    inc     bl   ;6
 
    @@:
     push    ebx
@@ -249,7 +255,7 @@ START:				       ; start of execution
     cmp     [mode], 102
     jne     not_102
 
-    mov     ebx, 0 shl 16
+    mov     ebx, API_IPv4
     mov     bh, [device]
     push    ebx
     mcall   76
@@ -281,7 +287,7 @@ START:				       ; start of execution
     cmp     [mode], 103
     jne     not_103
 
-    mov     ebx, 0x0608 shl 16 + 0
+    mov     ebx, API_ARP
     mov     bh, [device]
     push    ebx
     mcall   76
@@ -320,7 +326,7 @@ not_103:
     cmp     [mode], 104
     jne     not_104
 
-    mov     ebx, 1 shl 16 + 0
+    mov     ebx, API_ICMP
     mov     bh, [device]
     push    ebx
     mcall   76
@@ -351,7 +357,7 @@ not_104:
     cmp     [mode], 105
     jne     not_105
 
-    mov     ebx, 17 shl 16 + 0
+    mov     ebx, API_UDP
     mov     bh, [device]
     push    ebx
     mcall   76
@@ -382,7 +388,7 @@ not_105:
     cmp     [mode], 106
     jne     not_106
 
-    mov     ebx, 6 shl 16 + 0
+    mov     ebx, API_TCP
     mov     bh, [device]
     push    ebx
     mcall   76
@@ -417,102 +423,102 @@ not_106:
     jmp     mainloop
 
 
-  button:			  ; button
-    mcall   17			  ; get id
+  button:                         ; button
+    mcall   17                    ; get id
     cmp     ah, 1
-    je	    close
+    je      exit
     mov     [mode], ah
     jmp     redraw
 
-  close:
+  exit:
     mcall   -1
 
 
 
 draw_mac:
 
-	mov	eax, 47
-	mov	ebx, 0x00020100
-	mov	esi, 0x40000000
-	mov	edi, 0x00bcbcbc
+        mov     eax, 47
+        mov     ebx, 0x00020100
+        mov     esi, 0x40000000
+        mov     edi, 0x00bcbcbc
 
-	mov	cl, [esp+4]
-	mcall
+        mov     cl, [esp+4]
+        mcall
 
-	mov	cl, [esp+4+1]
-	add	edx, 15 shl 16
-	mcall
+        mov     cl, [esp+4+1]
+        add     edx, 15 shl 16
+        mcall
 
-	mov	cl, [esp+4+2]
-	add	edx, 15 shl 16
-	mcall
+        mov     cl, [esp+4+2]
+        add     edx, 15 shl 16
+        mcall
 
-	mov	cl, [esp+4+3]
-	add	edx, 15 shl 16
-	mcall
+        mov     cl, [esp+4+3]
+        add     edx, 15 shl 16
+        mcall
 
-	mov	cl, [esp+4+4]
-	add	edx, 15 shl 16
-	mcall
+        mov     cl, [esp+4+4]
+        add     edx, 15 shl 16
+        mcall
 
-	mov	cl, [esp+4+5]
-	add	edx, 15 shl 16
-	mcall
+        mov     cl, [esp+4+5]
+        add     edx, 15 shl 16
+        mcall
 
-	sub	edx, 5*15 shl 16
+        sub     edx, 5*15 shl 16
 
-	ret	6
+        ret     6
 
 
 draw_ip:
 
-	mov	eax, 47
-	mov	ebx, 0x00030000
-	mov	esi, 0x40000000
-	mov	edi, 0x00bcbcbc
+        mov     eax, 47
+        mov     ebx, 0x00030000
+        mov     esi, 0x40000000
+        mov     edi, 0x00bcbcbc
 
-	xor	ecx, ecx
+        xor     ecx, ecx
 
-	mov	cl, [esp+4]
-	mcall
+        mov     cl, [esp+4]
+        mcall
 
-	mov	cl, [esp+4+1]
-	add	edx, 30 shl 16
-	mcall
+        mov     cl, [esp+4+1]
+        add     edx, 30 shl 16
+        mcall
 
-	mov	cl, [esp+4+2]
-	add	edx, 30 shl 16
-	mcall
+        mov     cl, [esp+4+2]
+        add     edx, 30 shl 16
+        mcall
 
-	mov	cl, [esp+4+3]
-	add	edx, 30 shl 16
-	mcall
+        mov     cl, [esp+4+3]
+        add     edx, 30 shl 16
+        mcall
 
-	sub	edx, 3*30 shl 16
-	ret	4
+        sub     edx, 3*30 shl 16
+        ret     4
 
 
 ; DATA AREA
 
-name	db 'Netstat',0
-mode	db 101
-device	db 0
-modes	db 'Ethernet        IPv4        ARP         ICMP         UDP         TCP',0
+name    db 'Netstat', 0
+mode    db 101
+device  db 0
+modes   db 'Ethernet        IPv4        ARP         ICMP         UDP         TCP', 0
 
-str_packets_tx db 'Packets sent:',0
-str_packets_rx db 'Packets received:',0
-str_bytes_tx   db 'Bytes sent:',0
-str_bytes_rx   db 'Bytes received:',0
-str_MAC        db 'MAC address:',0
-str_queue_in   db 'IN-queue size:',0
-str_queue_out  db 'OUT-queue size:',0
-str_ip	       db 'IP address:',0
-str_dns        db 'DNS address:',0
-str_subnet     db 'Subnet mask:',0
-str_gateway    db 'Standard gateway:',0
-str_arp        db 'ARP entrys:',0
+str_packets_tx db 'Packets sent:', 0
+str_packets_rx db 'Packets received:', 0
+str_bytes_tx   db 'Bytes sent:', 0
+str_bytes_rx   db 'Bytes received:', 0
+str_MAC        db 'MAC address:', 0
+str_queue_in   db 'IN-queue size:', 0
+str_queue_out  db 'OUT-queue size:', 0
+str_ip         db 'IP address:', 0
+str_dns        db 'DNS address:', 0
+str_subnet     db 'Subnet mask:', 0
+str_gateway    db 'Standard gateway:', 0
+str_arp        db 'ARP entrys:', 0
 
-include_debug_strings	 ; ALWAYS present in data section
+include_debug_strings    ; ALWAYS present in data section
 
 I_PARAM rb 1024
 
