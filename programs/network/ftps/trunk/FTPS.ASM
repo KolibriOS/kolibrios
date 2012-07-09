@@ -20,7 +20,7 @@ use32
     dd      0x16FFF0                ; esp = 0x16FFF0
     dd      0, 0                    ; no params, no path
 
-include 'macros.inc'
+include '../../../macros.inc'
 ; Various states of client connection
 USER_NONE       equ 0   ; Awaiting a connection
 USER_CONNECTED  equ 1   ; User just connected, prompt given
