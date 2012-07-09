@@ -18,14 +18,14 @@
 
 format MS COFF
 
-        API_VERSION             equ 0x01000100
-        DRIVER_VERSION          equ 5
+        API_VERSION             =    0x01000100
+        DRIVER_VERSION          =    5
 
-        MAX_DEVICES             equ 16
+        MAX_DEVICES             =    16
 
-        DEBUG                   equ 1
-        __DEBUG__               equ 1
-        __DEBUG_LEVEL__         equ 1
+        DEBUG                   =    1
+        __DEBUG__               =    1
+        __DEBUG_LEVEL__         =    1
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -61,117 +61,117 @@ end virtual
 ;-------------------------------------------
 ; configuration registers
 ;-------------------------------------------
-CFCS    equ     4       ; configuration and status register
+CFCS    =        4       ; configuration and status register
 
-CSR0    equ     0x00     ; Bus mode
-CSR1    equ     0x08     ; Transmit Poll Command
-CSR2    equ     0x10     ; Receive Poll Command
-CSR3    equ     0x18     ; Receive list base address
-CSR4    equ     0x20     ; Transmit list base address
-CSR5    equ     0x28     ; Status
-CSR6    equ     0x30     ; Operation mode
-CSR7    equ     0x38     ; Interrupt enable
-CSR8    equ     0x40     ; Missed frames and overflow counter
-CSR9    equ     0x48     ; Boot ROM, serial ROM, and MII management
-CSR10   equ     0x50     ; Boot ROM programming address
-CSR11   equ     0x58     ; General-purpose timer
-CSR12   equ     0x60     ; General-purpose port
-CSR13   equ     0x68
-CSR14   equ     0x70
-CSR15   equ     0x78     ; Watchdog timer
+CSR0    =        0x00     ; Bus mode
+CSR1    =        0x08     ; Transmit Poll Command
+CSR2    =        0x10     ; Receive Poll Command
+CSR3    =        0x18     ; Receive list base address
+CSR4    =        0x20     ; Transmit list base address
+CSR5    =        0x28     ; Status
+CSR6    =        0x30     ; Operation mode
+CSR7    =        0x38     ; Interrupt enable
+CSR8    =        0x40     ; Missed frames and overflow counter
+CSR9    =        0x48     ; Boot ROM, serial ROM, and MII management
+CSR10   =        0x50     ; Boot ROM programming address
+CSR11   =        0x58     ; General-purpose timer
+CSR12   =        0x60     ; General-purpose port
+CSR13   =        0x68
+CSR14   =        0x70
+CSR15   =        0x78     ; Watchdog timer
 
 ;--------bits/commands of CSR0-------------------
-CSR0_RESET              equ     1b
+CSR0_RESET              =        1b
 
-CSR0_WIE                equ     1 SHL 24        ; Write and Invalidate Enable
-CSR0_RLE                equ     1 SHL 23        ; PCI Read Line Enable
-CSR0_RML                equ     1 SHL 21        ; PCI Read Multiple
+CSR0_WIE                =        1 SHL 24        ; Write and Invalidate Enable
+CSR0_RLE                =        1 SHL 23        ; PCI Read Line Enable
+CSR0_RML                =        1 SHL 21        ; PCI Read Multiple
 
-CSR0_CACHEALIGN_NONE    equ     00b SHL 14
-CSR0_CACHEALIGN_32      equ     01b SHL 14
-CSR0_CACHEALIGN_64      equ     10b SHL 14
-CSR0_CACHEALIGN_128     equ     11b SHL 14
+CSR0_CACHEALIGN_NONE    =        00b SHL 14
+CSR0_CACHEALIGN_32      =        01b SHL 14
+CSR0_CACHEALIGN_64      =        10b SHL 14
+CSR0_CACHEALIGN_128     =        11b SHL 14
 
 ; using values from linux driver.. :P
-CSR0_DEFAULT            equ     CSR0_WIE+CSR0_RLE+CSR0_RML+CSR0_CACHEALIGN_NONE ;32
+CSR0_DEFAULT            =        CSR0_WIE+CSR0_RLE+CSR0_RML+CSR0_CACHEALIGN_NONE ;32
 
 ;------- CSR5 -STATUS- bits --------------------------------
-CSR5_TI                 equ     1 SHL 0         ; Transmit interupt - frame transmition completed
-CSR5_TPS                equ     1 SHL 1         ; Transmit process stopped
-CSR5_TU                 equ     1 SHL 2         ; Transmit Buffer unavailable
-CSR5_TJT                equ     1 SHL 3         ; Transmit Jabber Timeout (transmitter had been excessively active)
-CSR5_UNF                equ     1 SHL 5         ; Transmit underflow - FIFO underflow
-CSR5_RI                 equ     1 SHL 6         ; Receive Interrupt
-CSR5_RU                 equ     1 SHL 7         ; Receive Buffer unavailable
-CSR5_RPS                equ     1 SHL 8         ; Receive Process stopped
-CSR5_RWT                equ     1 SHL 9         ; Receive Watchdow Timeout
-CSR5_ETI                equ     1 SHL 10        ; Early transmit Interrupt
-CSR5_GTE                equ     1 SHL 11        ; General Purpose Timer Expired
-CSR5_FBE                equ     1 SHL 13        ; Fatal bus error
-CSR5_ERI                equ     1 SHL 14        ; Early receive Interrupt
-CSR5_AIS                equ     1 SHL 15        ; Abnormal interrupt summary
-CSR5_NIS                equ     1 SHL 16        ; normal interrupt summary
-CSR5_RS_SH              equ     1 SHL 17        ; Receive process state  -shift
-CSR5_RS_MASK            equ     111b            ;                        -mask
-CSR5_TS_SH              equ     1 SHL 20        ; Transmit process state -shift
-CSR5_TS_MASK            equ     111b            ;                        -mask
-CSR5_EB_SH              equ     1 SHL 23        ; Error bits             -shift
-CSR5_EB_MASK            equ     111b            ; Error bits             -mask
+CSR5_TI                 =        1 SHL 0         ; Transmit interupt - frame transmition completed
+CSR5_TPS                =        1 SHL 1         ; Transmit process stopped
+CSR5_TU                 =        1 SHL 2         ; Transmit Buffer unavailable
+CSR5_TJT                =        1 SHL 3         ; Transmit Jabber Timeout (transmitter had been excessively active)
+CSR5_UNF                =        1 SHL 5         ; Transmit underflow - FIFO underflow
+CSR5_RI                 =        1 SHL 6         ; Receive Interrupt
+CSR5_RU                 =        1 SHL 7         ; Receive Buffer unavailable
+CSR5_RPS                =        1 SHL 8         ; Receive Process stopped
+CSR5_RWT                =        1 SHL 9         ; Receive Watchdow Timeout
+CSR5_ETI                =        1 SHL 10        ; Early transmit Interrupt
+CSR5_GTE                =        1 SHL 11        ; General Purpose Timer Expired
+CSR5_FBE                =        1 SHL 13        ; Fatal bus error
+CSR5_ERI                =        1 SHL 14        ; Early receive Interrupt
+CSR5_AIS                =        1 SHL 15        ; Abnormal interrupt summary
+CSR5_NIS                =        1 SHL 16        ; normal interrupt summary
+CSR5_RS_SH              =        1 SHL 17        ; Receive process state  -shift
+CSR5_RS_MASK            =        111b            ;                        -mask
+CSR5_TS_SH              =        1 SHL 20        ; Transmit process state -shift
+CSR5_TS_MASK            =        111b            ;                        -mask
+CSR5_EB_SH              =        1 SHL 23        ; Error bits             -shift
+CSR5_EB_MASK            =        111b            ; Error bits             -mask
 
 ;CSR5 TS values
-CSR5_TS_STOPPED                equ     000b
-CSR5_TS_RUNNING_FETCHING_DESC  equ     001b
-CSR5_TS_RUNNING_WAITING_TX     equ     010b
-CSR5_TS_RUNNING_READING_BUFF   equ     011b
-CSR5_TS_RUNNING_SETUP_PCKT     equ     101b
-CSR5_TS_SUSPENDED              equ     110b
-CSR5_TS_RUNNING_CLOSING_DESC   equ     111b
+CSR5_TS_STOPPED                =        000b
+CSR5_TS_RUNNING_FETCHING_DESC  =        001b
+CSR5_TS_RUNNING_WAITING_TX     =        010b
+CSR5_TS_RUNNING_READING_BUFF   =        011b
+CSR5_TS_RUNNING_SETUP_PCKT     =        101b
+CSR5_TS_SUSPENDED              =        110b
+CSR5_TS_RUNNING_CLOSING_DESC   =        111b
 
 ;------- CSR6 -OPERATION MODE- bits --------------------------------
-CSR6_HP                 equ     1 SHL 0         ; Hash/Perfect Receive Filtering mode
-CSR6_SR                 equ     1 SHL 1         ; Start/Stop receive
-CSR6_HO                 equ     1 SHL 2         ; Hash only Filtering mode
-CSR6_PB                 equ     1 SHL 3         ; Pass bad frames
-CSR6_IF                 equ     1 SHL 4         ; Inverse filtering
-CSR6_SB                 equ     1 SHL 5         ; Start/Stop backoff counter
-CSR6_PR                 equ     1 SHL 6         ; Promiscuos mode -default after reset
-CSR6_PM                 equ     1 SHL 7         ; Pass all multicast
-CSR6_F                  equ     1 SHL 9         ; Full Duplex mode
-CSR6_OM_SH              equ     1 SHL 10        ; Operating Mode -shift
-CSR6_OM_MASK            equ     11b             ;                -mask
-CSR6_FC                 equ     1 SHL 12        ; Force Collision Mode
-CSR6_ST                 equ     1 SHL 13        ; Start/Stop Transmission Command
-CSR6_TR_SH              equ     1 SHL 14        ; Threshold Control      -shift
-CSR6_TR_MASK            equ     11b             ;                        -mask
-CSR6_CA                 equ     1 SHL 17        ; Capture Effect Enable
-CSR6_PS                 equ     1 SHL 18        ; Port select SRL / MII/SYM
-CSR6_HBD                equ     1 SHL 19        ; Heartbeat Disable
-CSR6_SF                 equ     1 SHL 21        ; Store and Forward -transmit full packet only
-CSR6_TTM                equ     1 SHL 22        ; Transmit Threshold Mode -
-CSR6_PCS                equ     1 SHL 23        ; PCS active and MII/SYM port operates in symbol mode
-CSR6_SCR                equ     1 SHL 24        ; Scrambler Mode
-CSR6_MBO                equ     1 SHL 25        ; Must Be One
-CSR6_RA                 equ     1 SHL 30        ; Receive All
-CSR6_SC                 equ     1 SHL 31        ; Special Capture Effect Enable
+CSR6_HP                 =        1 SHL 0         ; Hash/Perfect Receive Filtering mode
+CSR6_SR                 =        1 SHL 1         ; Start/Stop receive
+CSR6_HO                 =        1 SHL 2         ; Hash only Filtering mode
+CSR6_PB                 =        1 SHL 3         ; Pass bad frames
+CSR6_IF                 =        1 SHL 4         ; Inverse filtering
+CSR6_SB                 =        1 SHL 5         ; Start/Stop backoff counter
+CSR6_PR                 =        1 SHL 6         ; Promiscuos mode -default after reset
+CSR6_PM                 =        1 SHL 7         ; Pass all multicast
+CSR6_F                  =        1 SHL 9         ; Full Duplex mode
+CSR6_OM_SH              =        1 SHL 10        ; Operating Mode -shift
+CSR6_OM_MASK            =        11b             ;                -mask
+CSR6_FC                 =        1 SHL 12        ; Force Collision Mode
+CSR6_ST                 =        1 SHL 13        ; Start/Stop Transmission Command
+CSR6_TR_SH              =        1 SHL 14        ; Threshold Control      -shift
+CSR6_TR_MASK            =        11b             ;                        -mask
+CSR6_CA                 =        1 SHL 17        ; Capture Effect Enable
+CSR6_PS                 =        1 SHL 18        ; Port select SRL / MII/SYM
+CSR6_HBD                =        1 SHL 19        ; Heartbeat Disable
+CSR6_SF                 =        1 SHL 21        ; Store and Forward -transmit full packet only
+CSR6_TTM                =        1 SHL 22        ; Transmit Threshold Mode -
+CSR6_PCS                =        1 SHL 23        ; PCS active and MII/SYM port operates in symbol mode
+CSR6_SCR                =        1 SHL 24        ; Scrambler Mode
+CSR6_MBO                =        1 SHL 25        ; Must Be One
+CSR6_RA                 =        1 SHL 30        ; Receive All
+CSR6_SC                 =        1 SHL 31        ; Special Capture Effect Enable
 
 
 ;------- CSR7 -INTERRUPT ENABLE- bits --------------------------------
-CSR7_TI                 equ     1 SHL 0         ; transmit Interrupt Enable (set with CSR7<16> & CSR5<0> )
-CSR7_TS                 equ     1 SHL 1         ; transmit Stopped Enable (set with CSR7<15> & CSR5<1> )
-CSR7_TU                 equ     1 SHL 2         ; transmit buffer underrun Enable (set with CSR7<16> & CSR5<2> )
-CSR7_TJ                 equ     1 SHL 3         ; transmit jabber timeout enable (set with CSR7<15> & CSR5<3> )
-CSR7_UN                 equ     1 SHL 5         ; underflow Interrupt enable (set with CSR7<15> & CSR5<5> )
-CSR7_RI                 equ     1 SHL 6         ; receive Interrupt enable (set with CSR7<16> & CSR5<5> )
-CSR7_RU                 equ     1 SHL 7         ; receive buffer unavailable enable (set with CSR7<15> & CSR5<7> )
-CSR7_RS                 equ     1 SHL 8         ; Receive stopped enable (set with CSR7<15> & CSR5<8> )
-CSR7_RW                 equ     1 SHL 9         ; receive watchdog timeout enable (set with CSR7<15> & CSR5<9> )
-CSR7_ETE                equ     1 SHL 10        ; Early transmit Interrupt enable (set with CSR7<15> & CSR5<10> )
-CSR7_GPT                equ     1 SHL 11        ; general purpose timer enable (set with CSR7<15> & CSR5<11> )
-CSR7_FBE                equ     1 SHL 13        ; Fatal bus error enable (set with CSR7<15> & CSR5<13> )
-CSR7_ERE                equ     1 SHL 14        ; Early receive enable (set with CSR7<16> & CSR5<14> )
-CSR7_AI                 equ     1 SHL 15        ; Abnormal Interrupt Summary Enable (enables CSR5<0,3,7,8,9,10,13>)
-CSR7_NI                 equ     1 SHL 16        ; Normal Interrup Enable (enables CSR5<0,2,6,11,14>)
-CSR7_DEFAULT            equ     CSR7_TI+CSR7_TS+CSR7_RI+CSR7_RS+CSR7_TU+CSR7_TJ+CSR7_UN+\
+CSR7_TI                 =        1 SHL 0         ; transmit Interrupt Enable (set with CSR7<16> & CSR5<0> )
+CSR7_TS                 =        1 SHL 1         ; transmit Stopped Enable (set with CSR7<15> & CSR5<1> )
+CSR7_TU                 =        1 SHL 2         ; transmit buffer underrun Enable (set with CSR7<16> & CSR5<2> )
+CSR7_TJ                 =        1 SHL 3         ; transmit jabber timeout enable (set with CSR7<15> & CSR5<3> )
+CSR7_UN                 =        1 SHL 5         ; underflow Interrupt enable (set with CSR7<15> & CSR5<5> )
+CSR7_RI                 =        1 SHL 6         ; receive Interrupt enable (set with CSR7<16> & CSR5<5> )
+CSR7_RU                 =        1 SHL 7         ; receive buffer unavailable enable (set with CSR7<15> & CSR5<7> )
+CSR7_RS                 =        1 SHL 8         ; Receive stopped enable (set with CSR7<15> & CSR5<8> )
+CSR7_RW                 =        1 SHL 9         ; receive watchdog timeout enable (set with CSR7<15> & CSR5<9> )
+CSR7_ETE                =        1 SHL 10        ; Early transmit Interrupt enable (set with CSR7<15> & CSR5<10> )
+CSR7_GPT                =        1 SHL 11        ; general purpose timer enable (set with CSR7<15> & CSR5<11> )
+CSR7_FBE                =        1 SHL 13        ; Fatal bus error enable (set with CSR7<15> & CSR5<13> )
+CSR7_ERE                =        1 SHL 14        ; Early receive enable (set with CSR7<16> & CSR5<14> )
+CSR7_AI                 =        1 SHL 15        ; Abnormal Interrupt Summary Enable (enables CSR5<0,3,7,8,9,10,13>)
+CSR7_NI                 =        1 SHL 16        ; Normal Interrup Enable (enables CSR5<0,2,6,11,14>)
+CSR7_DEFAULT            =        CSR7_TI+CSR7_TS+CSR7_RI+CSR7_RS+CSR7_TU+CSR7_TJ+CSR7_UN+\
                                         CSR7_RU+CSR7_RW+CSR7_FBE+CSR7_AI+CSR7_NI
 
 ;----------- descriptor structure ---------------------
@@ -189,83 +189,83 @@ virtual at 0
 end virtual
 
 ;common to Rx and Tx
-DES0_OWN        equ     1 SHL 31        ; if set, the NIC controls the descriptor, otherwise driver 'owns' the descriptors
+DES0_OWN        =        1 SHL 31        ; if set, the NIC controls the descriptor, otherwise driver 'owns' the descriptors
 
 ;receive
-RDES0_ZER       equ     1 SHL 0         ; must be 0 if legal length :D
-RDES0_CE        equ     1 SHL 1         ; CRC error, valid only on last desc (RDES0<8>=1)
-RDES0_DB        equ     1 SHL 2         ; dribbling bit - not multiple of 8 bits, valid only on last desc (RDES0<8>=1)
-RDES0_RE        equ     1 SHL 3         ; Report on MII error.. i dont realy know what this means :P
-RDES0_RW        equ     1 SHL 4         ; received watchdog timer expiration - must set CSR5<9>, valid only on last desc (RDES0<8>=1)
-RDES0_FT        equ     1 SHL 5         ; frame type: 0->IEEE802.0 (len<1500) 1-> ETHERNET frame (len>1500), valid only on last desc (RDES0<8>=1)
-RDES0_CS        equ     1 SHL 6         ; Collision seen, valid only on last desc (RDES0<8>=1)
-RDES0_TL        equ     1 SHL 7         ; Too long(>1518)-NOT AN ERROR, valid only on last desc (RDES0<8>=1)
-RDES0_LS        equ     1 SHL 8         ; Last descriptor of current frame
-RDES0_FS        equ     1 SHL 9         ; First descriptor of current frame
-RDES0_MF        equ     1 SHL 10        ; Multicast frame, valid only on last desc (RDES0<8>=1)
-RDES0_RF        equ     1 SHL 11        ; Runt frame, valid only on last desc (RDES0<8>=1) and id overflow
-RDES0_DT_SERIAL equ     00b SHL 12      ; Data type-Serial recv frame, valid only on last desc (RDES0<8>=1)
-RDES0_DT_INTERNAL equ   01b SHL 12      ; Data type-Internal loopback recv frame, valid only on last desc (RDES0<8>=1)
-RDES0_DT_EXTERNAL equ   11b SHL 12      ; Data type-External loopback recv frame, valid only on last desc (RDES0<8>=1)
-RDES0_DE        equ     1 SHL 14        ; Descriptor error - cant own a new desc and frame doesnt fit, valid only on last desc (RDES0<8>=1)
-RDES0_ES        equ     1 SHL 15        ; Error Summmary - bits 1+6+11+14, valid only on last desc (RDES0<8>=1)
-RDES0_FL_SH     equ     16              ; Field length shift, valid only on last desc (RDES0<8>=1)
-RDES0_FL_MASK   equ     11111111111111b ; Field length mask (+CRC), valid only on last desc (RDES0<8>=1)
-RDES0_FF        equ     1 SHL 30        ; Filtering fail-frame failed address recognition test(must CSR6<30>=1), valid only on last desc (RDES0<8>=1)
+RDES0_ZER       =        1 SHL 0         ; must be 0 if legal length :D
+RDES0_CE        =        1 SHL 1         ; CRC error, valid only on last desc (RDES0<8>=1)
+RDES0_DB        =        1 SHL 2         ; dribbling bit - not multiple of 8 bits, valid only on last desc (RDES0<8>=1)
+RDES0_RE        =        1 SHL 3         ; Report on MII error.. i dont realy know what this means :P
+RDES0_RW        =        1 SHL 4         ; received watchdog timer expiration - must set CSR5<9>, valid only on last desc (RDES0<8>=1)
+RDES0_FT        =        1 SHL 5         ; frame type: 0->IEEE802.0 (len<1500) 1-> ETHERNET frame (len>1500), valid only on last desc (RDES0<8>=1)
+RDES0_CS        =        1 SHL 6         ; Collision seen, valid only on last desc (RDES0<8>=1)
+RDES0_TL        =        1 SHL 7         ; Too long(>1518)-NOT AN ERROR, valid only on last desc (RDES0<8>=1)
+RDES0_LS        =        1 SHL 8         ; Last descriptor of current frame
+RDES0_FS        =        1 SHL 9         ; First descriptor of current frame
+RDES0_MF        =        1 SHL 10        ; Multicast frame, valid only on last desc (RDES0<8>=1)
+RDES0_RF        =        1 SHL 11        ; Runt frame, valid only on last desc (RDES0<8>=1) and id overflow
+RDES0_DT_SERIAL =        00b SHL 12      ; Data type-Serial recv frame, valid only on last desc (RDES0<8>=1)
+RDES0_DT_INTERNAL =      01b SHL 12      ; Data type-Internal loopback recv frame, valid only on last desc (RDES0<8>=1)
+RDES0_DT_EXTERNAL =      11b SHL 12      ; Data type-External loopback recv frame, valid only on last desc (RDES0<8>=1)
+RDES0_DE        =        1 SHL 14        ; Descriptor error - cant own a new desc and frame doesnt fit, valid only on last desc (RDES0<8>=1)
+RDES0_ES        =        1 SHL 15        ; Error Summmary - bits 1+6+11+14, valid only on last desc (RDES0<8>=1)
+RDES0_FL_SH     =        16              ; Field length shift, valid only on last desc (RDES0<8>=1)
+RDES0_FL_MASK   =        11111111111111b ; Field length mask (+CRC), valid only on last desc (RDES0<8>=1)
+RDES0_FF        =        1 SHL 30        ; Filtering fail-frame failed address recognition test(must CSR6<30>=1), valid only on last desc (RDES0<8>=1)
 
-RDES1_RBS1_MASK equ     11111111111b    ; firsd buffer size MASK
-RDES1_RBS2_SH   equ     1 SHL 11        ; second buffer size SHIFT
-RDES1_RBS2_MASK equ     11111111111b    ; second buffer size MASK
-RDES1_RCH       equ     1 SHL 24        ; Second address chained - second address (buffer) is next desc address
-RDES1_RER       equ     1 SHL 25        ; Receive End of Ring - final descriptor, NIC must return to first desc
+RDES1_RBS1_MASK =        11111111111b    ; firsd buffer size MASK
+RDES1_RBS2_SH   =        1 SHL 11        ; second buffer size SHIFT
+RDES1_RBS2_MASK =        11111111111b    ; second buffer size MASK
+RDES1_RCH       =        1 SHL 24        ; Second address chained - second address (buffer) is next desc address
+RDES1_RER       =        1 SHL 25        ; Receive End of Ring - final descriptor, NIC must return to first desc
 
 ;transmition
-TDES0_DE        equ     1 SHL 0         ; Deffered
-TDES0_UF        equ     1 SHL 1         ; Underflow error
-TDES0_LF        equ     1 SHL 2         ; Link fail report (only if CSR6<23>=1)
-TDES0_CC_SH     equ     3               ; Collision Count shift - no of collision before transmition
-TDES0_CC_MASK   equ     1111b           ; Collision Count mask
-TDES0_HF        equ     1 SHL 7         ; Heartbeat fail
-TDES0_EC        equ     1 SHL 8         ; Excessive Collisions - >16 collisions
-TDES0_LC        equ     1 SHL 9         ; Late collision
-TDES0_NC        equ     1 SHL 10        ; No carrier
-TDES0_LO        equ     1 SHL 11        ; Loss of carrier
-TDES0_TO        equ     1 SHL 14        ; Transmit Jabber Timeout
-TDES0_ES        equ     1 SHL 15        ; Error summary TDES0<1+8+9+10+11+14>=1
+TDES0_DE        =        1 SHL 0         ; Deffered
+TDES0_UF        =        1 SHL 1         ; Underflow error
+TDES0_LF        =        1 SHL 2         ; Link fail report (only if CSR6<23>=1)
+TDES0_CC_SH     =        3               ; Collision Count shift - no of collision before transmition
+TDES0_CC_MASK   =        1111b           ; Collision Count mask
+TDES0_HF        =        1 SHL 7         ; Heartbeat fail
+TDES0_EC        =        1 SHL 8         ; Excessive Collisions - >16 collisions
+TDES0_LC        =        1 SHL 9         ; Late collision
+TDES0_NC        =        1 SHL 10        ; No carrier
+TDES0_LO        =        1 SHL 11        ; Loss of carrier
+TDES0_TO        =        1 SHL 14        ; Transmit Jabber Timeout
+TDES0_ES        =        1 SHL 15        ; Error summary TDES0<1+8+9+10+11+14>=1
 
-TDES1_TBS1_MASK equ     11111111111b    ; Buffer 1 size mask
-TDES1_TBS2_SH   equ     11              ; Buffer 2 size shift
-TDES1_TBS2_MASK equ     11111111111b    ; Buffer 2 size mask
-TDES1_FT0       equ     1 SHL 22        ; Filtering type 0
-TDES1_DPD       equ     1 SHL 23        ; Disabled padding for packets <64bytes, no padding
-TDES1_TCH       equ     1 SHL 24        ; Second address chained - second buffer pointer is to next desc
-TDES1_TER       equ     1 SHL 25        ; Transmit end of ring - final descriptor
-TDES1_AC        equ     1 SHL 26        ; Add CRC disable -pretty obvious
-TDES1_SET       equ     1 SHL 27        ; Setup packet
-TDES1_FT1       equ     1 SHL 28        ; Filtering type 1
-TDES1_FS        equ     1 SHL 29        ; First segment - buffer is first segment of frame
-TDES1_LS        equ     1 SHL 30        ; Last segment
-TDES1_IC        equ     1 SHL 31        ; Interupt on completion (CSR5<0>=1) valid when TDES1<30>=1
+TDES1_TBS1_MASK =        11111111111b    ; Buffer 1 size mask
+TDES1_TBS2_SH   =        11              ; Buffer 2 size shift
+TDES1_TBS2_MASK =        11111111111b    ; Buffer 2 size mask
+TDES1_FT0       =        1 SHL 22        ; Filtering type 0
+TDES1_DPD       =        1 SHL 23        ; Disabled padding for packets <64bytes, no padding
+TDES1_TCH       =        1 SHL 24        ; Second address chained - second buffer pointer is to next desc
+TDES1_TER       =        1 SHL 25        ; Transmit end of ring - final descriptor
+TDES1_AC        =        1 SHL 26        ; Add CRC disable -pretty obvious
+TDES1_SET       =        1 SHL 27        ; Setup packet
+TDES1_FT1       =        1 SHL 28        ; Filtering type 1
+TDES1_FS        =        1 SHL 29        ; First segment - buffer is first segment of frame
+TDES1_LS        =        1 SHL 30        ; Last segment
+TDES1_IC        =        1 SHL 31        ; Interupt on completion (CSR5<0>=1) valid when TDES1<30>=1
 
-MAX_ETH_FRAME_SIZE      equ     1514
+MAX_ETH_FRAME_SIZE      =        1514
 
-RX_DES_COUNT            equ     4              ; no of RX descriptors, must be power of 2
-RX_BUFF_SIZE            equ     2048            ; size of buffer for each descriptor, must be multiple of 4 and <= 2048 TDES1_TBS1_MASK
-TX_DES_COUNT            equ     4              ; no of TX descriptors, must be power of 2
-TX_BUFF_SIZE            equ     2048            ; size of buffer for each descriptor, used for memory allocation only
+RX_DES_COUNT            =        4              ; no of RX descriptors, must be power of 2
+RX_BUFF_SIZE            =        2048            ; size of buffer for each descriptor, must be multiple of 4 and <= 2048 TDES1_TBS1_MASK
+TX_DES_COUNT            =        4              ; no of TX descriptors, must be power of 2
+TX_BUFF_SIZE            =        2048            ; size of buffer for each descriptor, used for memory allocation only
 
-RX_MEM_TOTAL_SIZE       equ     RX_DES_COUNT*(DES.size+RX_BUFF_SIZE)
-TX_MEM_TOTAL_SIZE       equ     TX_DES_COUNT*(DES.size+TX_BUFF_SIZE)
+RX_MEM_TOTAL_SIZE       =        RX_DES_COUNT*(DES.size+RX_BUFF_SIZE)
+TX_MEM_TOTAL_SIZE       =        TX_DES_COUNT*(DES.size+TX_BUFF_SIZE)
 
 ;=============================================================================
 ; serial ROM operations
 ;=============================================================================
-CSR9_SR                 equ     1 SHL 11        ; SROM Select
-CSR9_RD                 equ     1 SHL 14        ; ROM Read Operation
-CSR9_SROM_DO            equ     1 SHL 3         ; Data Out for SROM
-CSR9_SROM_DI            equ     1 SHL 2         ; Data In to SROM
-CSR9_SROM_CK            equ     1 SHL 1         ; clock for SROM
-CSR9_SROM_CS            equ     1 SHL 0         ; chip select.. always needed
+CSR9_SR                 =        1 SHL 11        ; SROM Select
+CSR9_RD                 =        1 SHL 14        ; ROM Read Operation
+CSR9_SROM_DO            =        1 SHL 3         ; Data Out for SROM
+CSR9_SROM_DI            =        1 SHL 2         ; Data In to SROM
+CSR9_SROM_CK            =        1 SHL 1         ; clock for SROM
+CSR9_SROM_CS            =        1 SHL 0         ; chip select.. always needed
 
 ; assume dx is CSR9
 macro SROM_Delay {
@@ -1487,12 +1487,12 @@ SROM_Read_Word:
 ; MDIO protocol.  It is just different enough from the EEPROM protocol
 ; to not share code.  The maxium data clock rate is 2.5 Mhz.
 
-MDIO_SHIFT_CLK          equ     0x10000
-MDIO_DATA_WRITE0        equ     0x00000
-MDIO_DATA_WRITE1        equ     0x20000
-MDIO_ENB                equ     0x00000         ; Ignore the 0x02000 databook setting.
-MDIO_ENB_IN             equ     0x40000
-MDIO_DATA_READ          equ     0x80000
+MDIO_SHIFT_CLK          =        0x10000
+MDIO_DATA_WRITE0        =        0x00000
+MDIO_DATA_WRITE1        =        0x20000
+MDIO_ENB                =        0x00000         ; Ignore the 0x02000 databook setting.
+MDIO_ENB_IN             =        0x40000
+MDIO_DATA_READ          =        0x80000
 
 ; MII transceiver control section.
 ; Read and write the MII registers using software-generated serial

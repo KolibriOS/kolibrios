@@ -18,14 +18,14 @@
 
 format MS COFF
 
-        API_VERSION             equ 0x01000100
-        DRIVER_VERSION          equ 5
+        API_VERSION             =   0x01000100
+        DRIVER_VERSION          =   5
 
-        MAX_DEVICES             equ 16
+        MAX_DEVICES             =   16
 
-        DEBUG                   equ 1
-        __DEBUG__               equ 1
-        __DEBUG_LEVEL__         equ 1
+        DEBUG                   =   1
+        __DEBUG__               =   1
+        __DEBUG_LEVEL__         =   1
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -62,92 +62,92 @@ public START
 public service_proc
 public version
 
-        P0_PSTART                 equ 0x01
-        P0_PSTOP                  equ 0x02
-        P0_BOUND                  equ 0x03
-        P0_TSR                    equ 0x04
-        P0_TPSR                   equ 0x04
-        P0_TBCR0                  equ 0x05
-        P0_TBCR1                  equ 0x06
-        P0_ISR                    equ 0x07
-        P0_RSAR0                  equ 0x08
-        P0_RSAR1                  equ 0x09
-        P0_RBCR0                  equ 0x0A
-        P0_RBCR1                  equ 0x0B
-        P0_RSR                    equ 0x0C
-        P0_RCR                    equ 0x0C
-        P0_TCR                    equ 0x0D
-        P0_DCR                    equ 0x0E
-        P0_IMR                    equ 0x0F
+        P0_PSTART                 =   0x01
+        P0_PSTOP                  =   0x02
+        P0_BOUND                  =   0x03
+        P0_TSR                    =   0x04
+        P0_TPSR                   =   0x04
+        P0_TBCR0                  =   0x05
+        P0_TBCR1                  =   0x06
+        P0_ISR                    =   0x07
+        P0_RSAR0                  =   0x08
+        P0_RSAR1                  =   0x09
+        P0_RBCR0                  =   0x0A
+        P0_RBCR1                  =   0x0B
+        P0_RSR                    =   0x0C
+        P0_RCR                    =   0x0C
+        P0_TCR                    =   0x0D
+        P0_DCR                    =   0x0E
+        P0_IMR                    =   0x0F
 
-        P1_PAR0                   equ 0x01
-        P1_PAR1                   equ 0x02
-        P1_PAR2                   equ 0x03
-        P1_PAR3                   equ 0x04
-        P1_PAR4                   equ 0x05
-        P1_PAR5                   equ 0x06
-        P1_CURR                   equ 0x07
-        P1_MAR0                   equ 0x08
+        P1_PAR0                   =   0x01
+        P1_PAR1                   =   0x02
+        P1_PAR2                   =   0x03
+        P1_PAR3                   =   0x04
+        P1_PAR4                   =   0x05
+        P1_PAR5                   =   0x06
+        P1_CURR                   =   0x07
+        P1_MAR0                   =   0x08
 
-        CMD_PS0                   equ 0x00        ;  Page 0 select
-        CMD_PS1                   equ 0x40        ;  Page 1 select
-        CMD_PS2                   equ 0x80        ;  Page 2 select
-        CMD_RD2                   equ 0x20        ;  Remote DMA control
-        CMD_RD1                   equ 0x10
-        CMD_RD0                   equ 0x08
-        CMD_TXP                   equ 0x04        ;  transmit packet
-        CMD_STA                   equ 0x02        ;  start
-        CMD_STP                   equ 0x01        ;  stop
+        CMD_PS0                   =   0x00        ;  Page 0 select
+        CMD_PS1                   =   0x40        ;  Page 1 select
+        CMD_PS2                   =   0x80        ;  Page 2 select
+        CMD_RD2                   =   0x20        ;  Remote DMA control
+        CMD_RD1                   =   0x10
+        CMD_RD0                   =   0x08
+        CMD_TXP                   =   0x04        ;  transmit packet
+        CMD_STA                   =   0x02        ;  start
+        CMD_STP                   =   0x01        ;  stop
 
-        RCR_MON                   equ 0x20        ;  monitor mode
+        RCR_MON                   =   0x20        ;  monitor mode
 
-        DCR_FT1                   equ 0x40
-        DCR_LS                    equ 0x08        ;  Loopback select
-        DCR_WTS                   equ 0x01        ;  Word transfer select
+        DCR_FT1                   =   0x40
+        DCR_LS                    =   0x08        ;  Loopback select
+        DCR_WTS                   =   0x01        ;  Word transfer select
 
-        ISR_PRX                   equ 0x01        ;  successful recv
-        ISR_PTX                   equ 0x02        ;  successful xmit
-        ISR_RXE                   equ 0x04        ;  receive error
-        ISR_TXE                   equ 0x08        ;  transmit error
-        ISR_OVW                   equ 0x10        ;  Overflow
-        ISR_CNT                   equ 0x20        ;  Counter overflow
-        ISR_RDC                   equ 0x40        ;  Remote DMA complete
-        ISR_RST                   equ 0x80        ;  reset
+        ISR_PRX                   =   0x01        ;  successful recv
+        ISR_PTX                   =   0x02        ;  successful xmit
+        ISR_RXE                   =   0x04        ;  receive error
+        ISR_TXE                   =   0x08        ;  transmit error
+        ISR_OVW                   =   0x10        ;  Overflow
+        ISR_CNT                   =   0x20        ;  Counter overflow
+        ISR_RDC                   =   0x40        ;  Remote DMA complete
+        ISR_RST                   =   0x80        ;  reset
 
-        IRQ_MASK                  equ ISR_PRX ; + ISR_PTX + ISR_TXE
+        IRQ_MASK                  =   ISR_PRX ; + ISR_PTX + ISR_TXE
 
-        RSTAT_PRX                 equ 0x01        ;  successful recv
-        RSTAT_CRC                 equ 0x02        ;  CRC error
-        RSTAT_FAE                 equ 0x04        ;  Frame alignment error
-        RSTAT_OVER                equ 0x08        ;  FIFO overrun
+        RSTAT_PRX                 =   0x01        ;  successful recv
+        RSTAT_CRC                 =   0x02        ;  CRC error
+        RSTAT_FAE                 =   0x04        ;  Frame alignment error
+        RSTAT_OVER                =   0x08        ;  FIFO overrun
 
-        TXBUF_SIZE                equ 6
-        RXBUF_END                 equ 32
-        PAGE_SIZE                 equ 256
+        TXBUF_SIZE                =   6
+        RXBUF_END                 =   32
+        PAGE_SIZE                 =   256
 
-        ETH_ALEN                  equ 6
-        ETH_HLEN                  equ 14
-        ETH_ZLEN                  equ 60
-        ETH_FRAME_LEN             equ 1514
+        ETH_ALEN                  =   6
+        ETH_HLEN                  =   14
+        ETH_ZLEN                  =   60
+        ETH_FRAME_LEN             =   1514
 
-        FLAG_PIO                  equ 0x01
-        FLAG_16BIT                equ 0x02
-        ASIC_PIO                  equ 0
+        FLAG_PIO                  =   0x01
+        FLAG_16BIT                =   0x02
+        ASIC_PIO                  =   0
 
-        VENDOR_NONE               equ 0
-        VENDOR_WD                 equ 1
-        VENDOR_NOVELL             equ 2
-        VENDOR_3COM               equ 3
+        VENDOR_NONE               =   0
+        VENDOR_WD                 =   1
+        VENDOR_NOVELL             =   2
+        VENDOR_3COM               =   3
 
-        NE_ASIC_OFFSET            equ 0x10
-        NE_RESET                  equ 0x0F        ; Used to reset card
-        NE_DATA                   equ 0x00        ; Used to read/write NIC mem
+        NE_ASIC_OFFSET            =   0x10
+        NE_RESET                  =   0x0F        ; Used to reset card
+        NE_DATA                   =   0x00        ; Used to read/write NIC mem
 
-        MEM_8192                  equ 32
-        MEM_16384                 equ 64
-        MEM_32768                 equ 128
+        MEM_8192                  =   32
+        MEM_16384                 =   64
+        MEM_32768                 =   128
 
-        ISA_MAX_ADDR              equ 0x400
+        ISA_MAX_ADDR              =   0x400
 
 
 

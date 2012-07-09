@@ -16,17 +16,17 @@
 
 format MS COFF
 
-        API_VERSION             equ 0x01000100
-        DRIVER_VERSION          equ 5
+        API_VERSION             =   0x01000100
+        DRIVER_VERSION          =   5
 
-        MAX_DEVICES             equ 16
+        MAX_DEVICES             =   16
 
-        DEBUG                   equ 1
-        __DEBUG__               equ 1
-        __DEBUG_LEVEL__         equ 1
+        DEBUG                   =   1
+        __DEBUG__               =   1
+        __DEBUG_LEVEL__         =   1
 
-        NUM_TX_DESC             equ 4
-        NUM_RX_DESC             equ 4
+        NUM_TX_DESC             =   4
+        NUM_RX_DESC             =   4
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -40,210 +40,210 @@ public version
 
 ; for different PHY
 
-    MysonPHY            equ 1
-    AhdocPHY            equ 2
-    SeeqPHY             equ 3
-    MarvellPHY          equ 4
-    Myson981            equ 5
-    LevelOnePHY         equ 6
-    OtherPHY            equ 10
+    MysonPHY            =   1
+    AhdocPHY            =   2
+    SeeqPHY             =   3
+    MarvellPHY          =   4
+    Myson981            =   5
+    LevelOnePHY         =   6
+    OtherPHY            =   10
 
 ; Offsets to the Command and Status Registers.
 
-    PAR0                equ 0x0        ; physical address 0-3
-    PAR1                equ 0x04       ; physical address 4-5
-    MAR0                equ 0x08       ; multicast address 0-3
-    MAR1                equ 0x0C       ; multicast address 4-7
-    FAR0                equ 0x10       ; flow-control address 0-3
-    FAR1                equ 0x14       ; flow-control address 4-5
-    TCRRCR              equ 0x18       ; receive & transmit configuration
-    BCR                 equ 0x1C       ; bus command
-    TXPDR               equ 0x20       ; transmit polling demand
-    RXPDR               equ 0x24       ; receive polling demand
-    RXCWP               equ 0x28       ; receive current word pointer
-    TXLBA               equ 0x2C       ; transmit list base address
-    RXLBA               equ 0x30       ; receive list base address
-    ISR                 equ 0x34       ; interrupt status
-    IMR                 equ 0x38       ; interrupt mask
-    FTH                 equ 0x3C       ; flow control high/low threshold
-    MANAGEMENT          equ 0x40       ; bootrom/eeprom and mii management
-    TALLY               equ 0x44       ; tally counters for crc and mpa
-    TSR                 equ 0x48       ; tally counter for transmit status
-    BMCRSR              equ 0x4c       ; basic mode control and status
-    PHYIDENTIFIER       equ 0x50       ; phy identifier
-    ANARANLPAR          equ 0x54       ; auto-negotiation advertisement and link partner ability
-    ANEROCR             equ 0x58       ; auto-negotiation expansion and pci conf.
-    BPREMRPSR           equ 0x5c       ; bypass & receive error mask and phy status
+    PAR0                =   0x0        ; physical address 0-3
+    PAR1                =   0x04       ; physical address 4-5
+    MAR0                =   0x08       ; multicast address 0-3
+    MAR1                =   0x0C       ; multicast address 4-7
+    FAR0                =   0x10       ; flow-control address 0-3
+    FAR1                =   0x14       ; flow-control address 4-5
+    TCRRCR              =   0x18       ; receive & transmit configuration
+    BCR                 =   0x1C       ; bus command
+    TXPDR               =   0x20       ; transmit polling demand
+    RXPDR               =   0x24       ; receive polling demand
+    RXCWP               =   0x28       ; receive current word pointer
+    TXLBA               =   0x2C       ; transmit list base address
+    RXLBA               =   0x30       ; receive list base address
+    ISR                 =   0x34       ; interrupt status
+    IMR                 =   0x38       ; interrupt mask
+    FTH                 =   0x3C       ; flow control high/low threshold
+    MANAGEMENT          =   0x40       ; bootrom/eeprom and mii management
+    TALLY               =   0x44       ; tally counters for crc and mpa
+    TSR                 =   0x48       ; tally counter for transmit status
+    BMCRSR              =   0x4c       ; basic mode control and status
+    PHYIDENTIFIER       =   0x50       ; phy identifier
+    ANARANLPAR          =   0x54       ; auto-negotiation advertisement and link partner ability
+    ANEROCR             =   0x58       ; auto-negotiation expansion and pci conf.
+    BPREMRPSR           =   0x5c       ; bypass & receive error mask and phy status
 
 ; Bits in the interrupt status/enable registers.
 
-    RFCON               equ 0x00020000 ; receive flow control xon packet
-    RFCOFF              equ 0x00010000 ; receive flow control xoff packet
-    LSCStatus           equ 0x00008000 ; link status change
-    ANCStatus           equ 0x00004000 ; autonegotiation completed
-    FBE                 equ 0x00002000 ; fatal bus error
-    FBEMask             equ 0x00001800 ; mask bit12-11
-    ParityErr           equ 0x00000000 ; parity error
-    TargetErr           equ 0x00001000 ; target abort
-    MasterErr           equ 0x00000800 ; master error
-    TUNF                equ 0x00000400 ; transmit underflow
-    ROVF                equ 0x00000200 ; receive overflow
-    ETI                 equ 0x00000100 ; transmit early int
-    ERI                 equ 0x00000080 ; receive early int
-    CNTOVF              equ 0x00000040 ; counter overflow
-    RBU                 equ 0x00000020 ; receive buffer unavailable
-    TBU                 equ 0x00000010 ; transmit buffer unavilable
-    TI                  equ 0x00000008 ; transmit interrupt
-    RI                  equ 0x00000004 ; receive interrupt
-    RxErr               equ 0x00000002 ; receive error
+    RFCON               =   0x00020000 ; receive flow control xon packet
+    RFCOFF              =   0x00010000 ; receive flow control xoff packet
+    LSCStatus           =   0x00008000 ; link status change
+    ANCStatus           =   0x00004000 ; autonegotiation completed
+    FBE                 =   0x00002000 ; fatal bus error
+    FBEMask             =   0x00001800 ; mask bit12-11
+    ParityErr           =   0x00000000 ; parity error
+    TargetErr           =   0x00001000 ; target abort
+    MasterErr           =   0x00000800 ; master error
+    TUNF                =   0x00000400 ; transmit underflow
+    ROVF                =   0x00000200 ; receive overflow
+    ETI                 =   0x00000100 ; transmit early int
+    ERI                 =   0x00000080 ; receive early int
+    CNTOVF              =   0x00000040 ; counter overflow
+    RBU                 =   0x00000020 ; receive buffer unavailable
+    TBU                 =   0x00000010 ; transmit buffer unavilable
+    TI                  =   0x00000008 ; transmit interrupt
+    RI                  =   0x00000004 ; receive interrupt
+    RxErr               =   0x00000002 ; receive error
 
 ; Bits in the NetworkConfig register.
 
-    RxModeMask          equ 0xe0
-    AcceptAllPhys       equ 0x80        ; promiscuous mode
-    AcceptBroadcast     equ 0x40        ; accept broadcast
-    AcceptMulticast     equ 0x20        ; accept mutlicast
-    AcceptRunt          equ 0x08        ; receive runt pkt
-    ALP                 equ 0x04        ; receive long pkt
-    AcceptErr           equ 0x02        ; receive error pkt
+    RxModeMask          =   0xe0
+    AcceptAllPhys       =   0x80        ; promiscuous mode
+    AcceptBroadcast     =   0x40        ; accept broadcast
+    AcceptMulticast     =   0x20        ; accept mutlicast
+    AcceptRunt          =   0x08        ; receive runt pkt
+    ALP                 =   0x04        ; receive long pkt
+    AcceptErr           =   0x02        ; receive error pkt
 
-    AcceptMyPhys        equ 0x00000000
-    RxEnable            equ 0x00000001
-    RxFlowCtrl          equ 0x00002000
-    TxEnable            equ 0x00040000
-    TxModeFDX           equ 0x00100000
-    TxThreshold         equ 0x00e00000
+    AcceptMyPhys        =   0x00000000
+    RxEnable            =   0x00000001
+    RxFlowCtrl          =   0x00002000
+    TxEnable            =   0x00040000
+    TxModeFDX           =   0x00100000
+    TxThreshold         =   0x00e00000
 
-    PS1000              equ 0x00010000
-    PS10                equ 0x00080000
-    FD                  equ 0x00100000
+    PS1000              =   0x00010000
+    PS10                =   0x00080000
+    FD                  =   0x00100000
 
 
 ; Bits in network_desc.status
 
-    RXOWN               equ 0x80000000 ; own bit
-    FLNGMASK            equ 0x0fff0000 ; frame length
-    FLNGShift           equ 16
-    MARSTATUS           equ 0x00004000 ; multicast address received
-    BARSTATUS           equ 0x00002000 ; broadcast address received
-    PHYSTATUS           equ 0x00001000 ; physical address received
-    RXFSD               equ 0x00000800 ; first descriptor
-    RXLSD               equ 0x00000400 ; last descriptor
-    ErrorSummary        equ 0x80       ; error summary
-    RUNT                equ 0x40       ; runt packet received
-    LONG                equ 0x20       ; long packet received
-    FAE                 equ 0x10       ; frame align error
-    CRC                 equ 0x08       ; crc error
-    RXER                equ 0x04       ; receive error
+    RXOWN               =   0x80000000 ; own bit
+    FLNGMASK            =   0x0fff0000 ; frame length
+    FLNGShift           =   16
+    MARSTATUS           =   0x00004000 ; multicast address received
+    BARSTATUS           =   0x00002000 ; broadcast address received
+    PHYSTATUS           =   0x00001000 ; physical address received
+    RXFSD               =   0x00000800 ; first descriptor
+    RXLSD               =   0x00000400 ; last descriptor
+    ErrorSummary        =   0x80       ; error summary
+    RUNT                =   0x40       ; runt packet received
+    LONG                =   0x20       ; long packet received
+    FAE                 =   0x10       ; frame align error
+    CRC                 =   0x08       ; crc error
+    RXER                =   0x04       ; receive error
 
 ; rx_desc_control_bits
 
-    RXIC                equ 0x00800000 ; interrupt control
-    RBSShift            equ 0
+    RXIC                =   0x00800000 ; interrupt control
+    RBSShift            =   0
 
 ; tx_desc_status_bits
 
-    TXOWN               equ 0x80000000 ; own bit
-    JABTO               equ 0x00004000 ; jabber timeout
-    CSL                 equ 0x00002000 ; carrier sense lost
-    LC                  equ 0x00001000 ; late collision
-    EC                  equ 0x00000800 ; excessive collision
-    UDF                 equ 0x00000400 ; fifo underflow
-    DFR                 equ 0x00000200 ; deferred
-    HF                  equ 0x00000100 ; heartbeat fail
-    NCRMask             equ 0x000000ff ; collision retry count
-    NCRShift            equ 0
+    TXOWN               =   0x80000000 ; own bit
+    JABTO               =   0x00004000 ; jabber timeout
+    CSL                 =   0x00002000 ; carrier sense lost
+    LC                  =   0x00001000 ; late collision
+    EC                  =   0x00000800 ; excessive collision
+    UDF                 =   0x00000400 ; fifo underflow
+    DFR                 =   0x00000200 ; deferred
+    HF                  =   0x00000100 ; heartbeat fail
+    NCRMask             =   0x000000ff ; collision retry count
+    NCRShift            =   0
 
 ; tx_desc_control_bits
 
-    TXIC                equ 0x80000000 ; interrupt control
-    ETIControl          equ 0x40000000 ; early transmit interrupt
-    TXLD                equ 0x20000000 ; last descriptor
-    TXFD                equ 0x10000000 ; first descriptor
-    CRCEnable           equ 0x08000000 ; crc control
-    PADEnable           equ 0x04000000 ; padding control
-    RetryTxLC           equ 0x02000000 ; retry late collision
-    PKTSMask            equ 0x3ff800   ; packet size bit21-11
-    PKTSShift           equ 11
-    TBSMask             equ 0x000007ff ; transmit buffer bit 10-0
-    TBSShift            equ 0
+    TXIC                =   0x80000000 ; interrupt control
+    ETIControl          =   0x40000000 ; early transmit interrupt
+    TXLD                =   0x20000000 ; last descriptor
+    TXFD                =   0x10000000 ; first descriptor
+    CRCEnable           =   0x08000000 ; crc control
+    PADEnable           =   0x04000000 ; padding control
+    RetryTxLC           =   0x02000000 ; retry late collision
+    PKTSMask            =   0x3ff800   ; packet size bit21-11
+    PKTSShift           =   11
+    TBSMask             =   0x000007ff ; transmit buffer bit 10-0
+    TBSShift            =   0
 
 ; BootROM/EEPROM/MII Management Register
 
-    MASK_MIIR_MII_READ  equ 0x00000000
-    MASK_MIIR_MII_WRITE equ 0x00000008
-    MASK_MIIR_MII_MDO   equ 0x00000004
-    MASK_MIIR_MII_MDI   equ 0x00000002
-    MASK_MIIR_MII_MDC   equ 0x00000001
+    MASK_MIIR_MII_READ  =   0x00000000
+    MASK_MIIR_MII_WRITE =   0x00000008
+    MASK_MIIR_MII_MDO   =   0x00000004
+    MASK_MIIR_MII_MDI   =   0x00000002
+    MASK_MIIR_MII_MDC   =   0x00000001
 
 ; ST+OP+PHYAD+REGAD+TA
 
-    OP_READ             equ 0x6000 ; ST:01+OP:10+PHYAD+REGAD+TA:Z0
-    OP_WRITE            equ 0x5002 ; ST:01+OP:01+PHYAD+REGAD+TA:10
+    OP_READ             =   0x6000 ; ST:01+OP:10+PHYAD+REGAD+TA:Z0
+    OP_WRITE            =   0x5002 ; ST:01+OP:01+PHYAD+REGAD+TA:10
 
 ; -------------------------------------------------------------------------
 ;      Constants for Myson PHY
 ; -------------------------------------------------------------------------
 
-    MysonPHYID          equ 0xd0000302
-    MysonPHYID0         equ 0x0302
-    StatusRegister      equ 18
-    SPEED100            equ 0x0400 ; bit10
-    FULLMODE            equ 0x0800 ; bit11
+    MysonPHYID          =   0xd0000302
+    MysonPHYID0         =   0x0302
+    StatusRegister      =   18
+    SPEED100            =   0x0400 ; bit10
+    FULLMODE            =   0x0800 ; bit11
 
 ; -------------------------------------------------------------------------
 ;      Constants for Seeq 80225 PHY
 ; -------------------------------------------------------------------------
 
-    SeeqPHYID0          equ 0x0016
-    MIIRegister18       equ 18
-    SPD_DET_100         equ 0x80
-    DPLX_DET_FULL       equ 0x40
+    SeeqPHYID0          =   0x0016
+    MIIRegister18       =   18
+    SPD_DET_100         =   0x80
+    DPLX_DET_FULL       =   0x40
 
 ; -------------------------------------------------------------------------
 ;      Constants for Ahdoc 101 PHY
 ; -------------------------------------------------------------------------
 
-    AhdocPHYID0         equ 0x0022
-    DiagnosticReg       equ 18
-    DPLX_FULL           equ 0x0800
-    Speed_100           equ 0x0400
+    AhdocPHYID0         =   0x0022
+    DiagnosticReg       =   18
+    DPLX_FULL           =   0x0800
+    Speed_100           =   0x0400
 
 ; --------------------------------------------------------------------------
 ;      Constants
 ; --------------------------------------------------------------------------
 
-    MarvellPHYID0       equ 0x0141
-    LevelOnePHYID0      equ 0x0013
+    MarvellPHYID0       =   0x0141
+    LevelOnePHYID0      =   0x0013
 
-    MII1000BaseTControlReg      equ 9
-    MII1000BaseTStatusReg       equ 10
-    SpecificReg         equ 17
+    MII1000BaseTControlReg      =   9
+    MII1000BaseTStatusReg       =   10
+    SpecificReg         =   17
 
 ; for 1000BaseT Control Register
 
-    PHYAbletoPerform1000FullDuplex equ 0x0200
-    PHYAbletoPerform1000HalfDuplex equ 0x0100
-    PHY1000AbilityMask             equ 0x300
+    PHYAbletoPerform1000FullDuplex =   0x0200
+    PHYAbletoPerform1000HalfDuplex =   0x0100
+    PHY1000AbilityMask             =   0x300
 
 ; for phy specific status register, marvell phy.
 
-    SpeedMask      equ 0x0c000
-    Speed_1000M    equ 0x08000
-    Speed_100M     equ 0x4000
-    Speed_10M      equ 0
-    Full_Duplex    equ 0x2000
+    SpeedMask      =   0x0c000
+    Speed_1000M    =   0x08000
+    Speed_100M     =   0x4000
+    Speed_10M      =   0
+    Full_Duplex    =   0x2000
 
 ; for phy specific status register, levelone phy
 
-    LXT1000_100M   equ 0x08000
-    LXT1000_1000M  equ 0x0c000
-    LXT1000_Full   equ 0x200
+    LXT1000_100M   =   0x08000
+    LXT1000_1000M  =   0x0c000
+    LXT1000_Full   =   0x200
 
 ; for PHY
 
-    LinkIsUp       equ 0x0004
-    LinkIsUp2      equ 0x00040000
+    LinkIsUp       =   0x0004
+    LinkIsUp2      =   0x00040000
 
 
 
@@ -564,13 +564,13 @@ probe:
         cmp     [device.dev_id], 0x0803
         je      .is_803
 
-;        int     phy, phy_idx equ 0;
+;        int     phy, phy_idx =   0;
 ;
-;        for (phy equ 1; phy < 32 && phy_idx < 1; phy++) {
-;            int mii_status equ mdio_read(nic, phy, 1);
+;        for (phy =   1; phy < 32 && phy_idx < 1; phy++) {
+;            int mii_status =   mdio_read(nic, phy, 1);
 ;
-;            if (mii_status !equ 0xffff && mii_status !equ 0x0000) {
-;                mtdx.phys[phy_idx] equ phy;
+;            if (mii_status !=   0xffff && mii_status !=   0x0000) {
+;                mtdx.phys[phy_idx] =   phy;
 ;
 ;                DBG ( "%s: MII PHY found at address %d, status "
 ;                      "0x%4.4x.\n", mtdx.nic_name, phy, mii_status );
@@ -578,26 +578,26 @@ probe:
 ;                {
 ;                    unsigned int data;
 ;
-;                    data equ mdio_read(nic, mtdx.phys[phy_idx], 2);
-;                    if (data equequ SeeqPHYID0)
-;                        mtdx.PHYType equ SeeqPHY;
-;                    else if (data equequ AhdocPHYID0)
-;                        mtdx.PHYType equ AhdocPHY;
-;                    else if (data equequ MarvellPHYID0)
-;                        mtdx.PHYType equ MarvellPHY;
-;                    else if (data equequ MysonPHYID0)
-;                        mtdx.PHYType equ Myson981;
-;                    else if (data equequ LevelOnePHYID0)
-;                        mtdx.PHYType equ LevelOnePHY;
+;                    data =   mdio_read(nic, mtdx.phys[phy_idx], 2);
+;                    if (data equ=   SeeqPHYID0)
+;                        mtdx.PHYType =   SeeqPHY;
+;                    else if (data equ=   AhdocPHYID0)
+;                        mtdx.PHYType =   AhdocPHY;
+;                    else if (data equ=   MarvellPHYID0)
+;                        mtdx.PHYType =   MarvellPHY;
+;                    else if (data equ=   MysonPHYID0)
+;                        mtdx.PHYType =   Myson981;
+;                    else if (data equ=   LevelOnePHYID0)
+;                        mtdx.PHYType =   LevelOnePHY;
 ;                    else
-;                        mtdx.PHYType equ OtherPHY;
+;                        mtdx.PHYType =   OtherPHY;
 ;                }
 ;                phy_idx++;
 ;            }
 ;        }
 ;
-;        mtdx.mii_cnt equ phy_idx;
-;        if (phy_idx equequ 0) {
+;        mtdx.mii_cnt =   phy_idx;
+;        if (phy_idx equ=   0) {
 ;            printf("%s: MII PHY not found -- this device may "
 ;                   "not operate correctly.\n", mtdx.nic_name);
 ;        }
@@ -847,9 +847,9 @@ getlinkstatus:
 
   .no_myson_phy:
 
-;        for (i equ 0; i < DelayTime; ++i) {
+;        for (i =   0; i < DelayTime; ++i) {
 ;            if (mdio_read(nic, mtdx.phys[0], MII_BMSR) & BMSR_LSTATUS) {
-;                mtdx.linkok equ 1;
+;                mtdx.linkok =   1;
 ;                return;
 ;            }
 ;            m80x_delay(100);
@@ -878,18 +878,18 @@ getlinktype:
         set_io  TCRRCR
         in      eax, dx
 
-        mov     [device.duplexmode], 1  ; 1 equ half duplex
+        mov     [device.duplexmode], 1  ; 1 =   half duplex
         test    eax, FD
         jne     @f
         DEBUGF  1,"full duplex\n"
-        inc     [device.duplexmode]     ; 2 equ full duplex
+        inc     [device.duplexmode]     ; 2 =   full duplex
        @@:
 
-        mov     [device.line_speed], 1  ; 1 equ 10M
+        mov     [device.line_speed], 1  ; 1 =   10M
         test    eax, PS10
         jne     @f
         DEBUGF  1,"100mbit\n"
-        inc     [device.line_speed]     ; 2 equ 100M
+        inc     [device.line_speed]     ; 2 =   100M
        @@:
 
         ret
@@ -898,88 +898,88 @@ getlinktype:
 
         DEBUGF  1,"no myson phy\n"
 
-;        if (mtdx.PHYType equequ SeeqPHY) { /* this PHY is SEEQ 80225 */
+;        if (mtdx.PHYType equ=   SeeqPHY) { /* this PHY is SEEQ 80225 */
 ;            unsigned int data;
 ;
-;            data equ mdio_read(dev, mtdx.phys[0], MIIRegister18);
+;            data =   mdio_read(dev, mtdx.phys[0], MIIRegister18);
 ;            if (data & SPD_DET_100)
-;                mtdx.line_speed equ 2; /* 100M */
+;                mtdx.line_speed =   2; /* 100M */
 ;            else
-;                mtdx.line_speed equ 1; /* 10M */
+;                mtdx.line_speed =   1; /* 10M */
 ;            if (data & DPLX_DET_FULL)
-;                mtdx.duplexmode equ 2; /* full duplex mode */
+;                mtdx.duplexmode =   2; /* full duplex mode */
 ;            else
-;                mtdx.duplexmode equ 1; /* half duplex mode */
-;        } else if (mtdx.PHYType equequ AhdocPHY) {
+;                mtdx.duplexmode =   1; /* half duplex mode */
+;        } else if (mtdx.PHYType equ=   AhdocPHY) {
 ;            unsigned int data;
 ;
-;            data equ mdio_read(dev, mtdx.phys[0], DiagnosticReg);
+;            data =   mdio_read(dev, mtdx.phys[0], DiagnosticReg);
 ;            if (data & Speed_100)
-;                mtdx.line_speed equ 2; /* 100M */
+;                mtdx.line_speed =   2; /* 100M */
 ;            else
-;                mtdx.line_speed equ 1; /* 10M */
+;                mtdx.line_speed =   1; /* 10M */
 ;            if (data & DPLX_FULL)
-;                mtdx.duplexmode equ 2; /* full duplex mode */
+;                mtdx.duplexmode =   2; /* full duplex mode */
 ;            else
-;                mtdx.duplexmode equ 1; /* half duplex mode */
+;                mtdx.duplexmode =   1; /* half duplex mode */
 ;        }
-;        else if (mtdx.PHYType equequ MarvellPHY) {
+;        else if (mtdx.PHYType equ=   MarvellPHY) {
 ;            unsigned int data;
 ;
-;            data equ mdio_read(dev, mtdx.phys[0], SpecificReg);
+;            data =   mdio_read(dev, mtdx.phys[0], SpecificReg);
 ;            if (data & Full_Duplex)
-;                mtdx.duplexmode equ 2; /* full duplex mode */
+;                mtdx.duplexmode =   2; /* full duplex mode */
 ;            else
-;                mtdx.duplexmode equ 1; /* half duplex mode */
-;            data &equ SpeedMask;
-;            if (data equequ Speed_1000M)
-;                mtdx.line_speed equ 3; /* 1000M */
-;            else if (data equequ Speed_100M)
-;                mtdx.line_speed equ 2; /* 100M */
+;                mtdx.duplexmode =   1; /* half duplex mode */
+;            data &=   SpeedMask;
+;            if (data equ=   Speed_1000M)
+;                mtdx.line_speed =   3; /* 1000M */
+;            else if (data equ=   Speed_100M)
+;                mtdx.line_speed =   2; /* 100M */
 ;            else
-;                mtdx.line_speed equ 1; /* 10M */
+;                mtdx.line_speed =   1; /* 10M */
 ;        }
-;        else if (mtdx.PHYType equequ Myson981) {
+;        else if (mtdx.PHYType equ=   Myson981) {
 ;            unsigned int data;
 ;
-;            data equ mdio_read(dev, mtdx.phys[0], StatusRegister);
+;            data =   mdio_read(dev, mtdx.phys[0], StatusRegister);
 ;
 ;            if (data & SPEED100)
-;                mtdx.line_speed equ 2;
+;                mtdx.line_speed =   2;
 ;            else
-;                mtdx.line_speed equ 1;
+;                mtdx.line_speed =   1;
 ;
 ;            if (data & FULLMODE)
-;                mtdx.duplexmode equ 2;
+;                mtdx.duplexmode =   2;
 ;            else
-;                mtdx.duplexmode equ 1;
+;                mtdx.duplexmode =   1;
 ;        }
-;        else if (mtdx.PHYType equequ LevelOnePHY) {
+;        else if (mtdx.PHYType equ=   LevelOnePHY) {
 ;            unsigned int data;
 ;
-;            data equ mdio_read(dev, mtdx.phys[0], SpecificReg);
+;            data =   mdio_read(dev, mtdx.phys[0], SpecificReg);
 ;            if (data & LXT1000_Full)
-;                mtdx.duplexmode equ 2; /* full duplex mode */
+;                mtdx.duplexmode =   2; /* full duplex mode */
 ;            else
-;                mtdx.duplexmode equ 1; /* half duplex mode */
-;            data &equ SpeedMask;
-;            if (data equequ LXT1000_1000M)
-;                mtdx.line_speed equ 3; /* 1000M */
-;            else if (data equequ LXT1000_100M)
-;                mtdx.line_speed equ 2; /* 100M */
+;                mtdx.duplexmode =   1; /* half duplex mode */
+;            data &=   SpeedMask;
+;            if (data equ=   LXT1000_1000M)
+;                mtdx.line_speed =   3; /* 1000M */
+;            else if (data equ=   LXT1000_100M)
+;                mtdx.line_speed =   2; /* 100M */
 ;            else
- ;               mtdx.line_speed equ 1; /* 10M */
+ ;               mtdx.line_speed =   1; /* 10M */
   ;      }
 
 ;        // chage crvalue
 ;        // mtdx.crvalue&equ(~PS10)&(~FD);
-;        mtdx.crvalue &equ (~PS10) & (~FD) & (~PS1000);
-;        if (mtdx.line_speed equequ 1)
-;            mtdx.crvalue |equ PS10;
-;        else if (mtdx.line_speed equequ 3)
-;            mtdx.crvalue |equ PS1000;
-;        if (mtdx.duplexmode equequ 2)
-;            mtdx.crvalue |equ FD;
+;        mtdx.crvalue &=   (~PS10) & (~FD) & (~PS1000);
+;        if (mtdx.line_speed equ=   1)
+;            mtdx.crvalue |=   PS10;
+;        else if (mtdx.line_speed equ=   3)
+;            mtdx.crvalue |=   PS1000;
+;        if (mtdx.duplexmode equ=   2)
+;            mtdx.crvalue |=   FD;
 ;
 
         ret

@@ -18,14 +18,14 @@
 
 format MS COFF
 
-        API_VERSION             equ 0x01000100
+        API_VERSION             =   0x01000100
 
-        DEBUG                   equ 1
-        __DEBUG__               equ 1
-        __DEBUG_LEVEL__         equ 1
+        DEBUG                   =   1
+        __DEBUG__               =   1
+        __DEBUG_LEVEL__         =   1
 
-        MAX_DEVICES equ 4
-        MAX_ETH_FRAME_SIZE equ 1514
+        MAX_DEVICES =   4
+        MAX_ETH_FRAME_SIZE =   1514
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -105,246 +105,246 @@ virtual at 0
  buf_head buf_head
 end virtual
 
-        PCNET_PORT_AUI                equ 0x00
-        PCNET_PORT_10BT               equ 0x01
-        PCNET_PORT_GPSI               equ 0x02
-        PCNET_PORT_MII                equ 0x03
-        PCNET_PORT_PORTSEL            equ 0x03
-        PCNET_PORT_ASEL               equ 0x04
-        PCNET_PORT_100                equ 0x40
-        PCNET_PORT_FD                 equ 0x80
+        PCNET_PORT_AUI                =   0x00
+        PCNET_PORT_10BT               =   0x01
+        PCNET_PORT_GPSI               =   0x02
+        PCNET_PORT_MII                =   0x03
+        PCNET_PORT_PORTSEL            =   0x03
+        PCNET_PORT_ASEL               =   0x04
+        PCNET_PORT_100                =   0x40
+        PCNET_PORT_FD                 =   0x80
 
-        PCNET_DMA_MASK                equ 0xffffffff
+        PCNET_DMA_MASK                =   0xffffffff
 
-        PCNET_LOG_TX_BUFFERS          equ 2
-        PCNET_LOG_RX_BUFFERS          equ 2
+        PCNET_LOG_TX_BUFFERS          =   2
+        PCNET_LOG_RX_BUFFERS          =   2
 
-        PCNET_TX_RING_SIZE            equ 4
-        PCNET_TX_RING_MOD_MASK        equ (PCNET_TX_RING_SIZE-1)
-        PCNET_TX_RING_LEN_BITS        equ (PCNET_LOG_TX_BUFFERS shl 12)
+        PCNET_TX_RING_SIZE            =   4
+        PCNET_TX_RING_MOD_MASK        =   (PCNET_TX_RING_SIZE-1)
+        PCNET_TX_RING_LEN_BITS        =   (PCNET_LOG_TX_BUFFERS shl 12)
 
-        PCNET_RX_RING_SIZE            equ 4
-        PCNET_RX_RING_MOD_MASK        equ (PCNET_RX_RING_SIZE-1)
-        PCNET_RX_RING_LEN_BITS        equ (PCNET_LOG_RX_BUFFERS shl 4)
+        PCNET_RX_RING_SIZE            =   4
+        PCNET_RX_RING_MOD_MASK        =   (PCNET_RX_RING_SIZE-1)
+        PCNET_RX_RING_LEN_BITS        =   (PCNET_LOG_RX_BUFFERS shl 4)
 
-        PCNET_PKT_BUF_SZ              equ 1544
-        PCNET_PKT_BUF_SZ_NEG          equ 0xf9f8
+        PCNET_PKT_BUF_SZ              =   1544
+        PCNET_PKT_BUF_SZ_NEG          =   0xf9f8
 
-        PCNET_WIO_RDP                 equ 0x10
-        PCNET_WIO_RAP                 equ 0x12
-        PCNET_WIO_RESET               equ 0x14
-        PCNET_WIO_BDP                 equ 0x16
-        PCNET_DWIO_RDP                equ 0x10
-        PCNET_DWIO_RAP                equ 0x14
-        PCNET_DWIO_RESET              equ 0x18
-        PCNET_DWIO_BDP                equ 0x1C
-        PCNET_TOTAL_SIZE              equ 0x20
+        PCNET_WIO_RDP                 =   0x10
+        PCNET_WIO_RAP                 =   0x12
+        PCNET_WIO_RESET               =   0x14
+        PCNET_WIO_BDP                 =   0x16
+        PCNET_DWIO_RDP                =   0x10
+        PCNET_DWIO_RAP                =   0x14
+        PCNET_DWIO_RESET              =   0x18
+        PCNET_DWIO_BDP                =   0x1C
+        PCNET_TOTAL_SIZE              =   0x20
 
 ; CSR registers
 
-        PCNET_CSR_CSR                 equ 0x00
-        PCNET_CSR_IAB0                equ 0x01
-        PCNET_CSR_IAB1                equ 0x02
-        PCNET_CSR_IMR                 equ 0x03
-        PCNET_CSR_TFEAT               equ 0x04
-        PCNET_CSR_EXTCTL1             equ 0x05
-        PCNET_CSR_DTBLLEN             equ 0x06
-        PCNET_CSR_EXTCTL2             equ 0x07
-        PCNET_CSR_MAR0                equ 0x08
-        PCNET_CSR_MAR1                equ 0x09
-        PCNET_CSR_MAR2                equ 0x0A
-        PCNET_CSR_MAR3                equ 0x0B
-        PCNET_CSR_PAR0                equ 0x0C
-        PCNET_CSR_PAR1                equ 0x0D
-        PCNET_CSR_PAR2                equ 0x0E
-        PCNET_CSR_MODE                equ 0x0F
-        PCNET_CSR_RXADDR0             equ 0x18
-        PCNET_CSR_RXADDR1             equ 0x19
-        PCNET_CSR_TXADDR0             equ 0x1E
-        PCNET_CSR_TXADDR1             equ 0x1F
-        PCNET_CSR_TXPOLL              equ 0x2F
-        PCNET_CSR_RXPOLL              equ 0x31
-        PCNET_CSR_RXRINGLEN           equ 0x4C
-        PCNET_CSR_TXRINGLEN           equ 0x4E
-        PCNET_CSR_DMACTL              equ 0x50
-        PCNET_CSR_BUSTIMER            equ 0x52
-        PCNET_CSR_MEMERRTIMEO         equ 0x64
-        PCNET_CSR_ONNOWMISC           equ 0x74
-        PCNET_CSR_ADVFEAT             equ 0x7A
-        PCNET_CSR_MACCFG              equ 0x7D
-        PCNET_CSR_CHIPID0             equ 0x58
-        PCNET_CSR_CHIPID1             equ 0x59
+        PCNET_CSR_CSR                 =   0x00
+        PCNET_CSR_IAB0                =   0x01
+        PCNET_CSR_IAB1                =   0x02
+        PCNET_CSR_IMR                 =   0x03
+        PCNET_CSR_TFEAT               =   0x04
+        PCNET_CSR_EXTCTL1             =   0x05
+        PCNET_CSR_DTBLLEN             =   0x06
+        PCNET_CSR_EXTCTL2             =   0x07
+        PCNET_CSR_MAR0                =   0x08
+        PCNET_CSR_MAR1                =   0x09
+        PCNET_CSR_MAR2                =   0x0A
+        PCNET_CSR_MAR3                =   0x0B
+        PCNET_CSR_PAR0                =   0x0C
+        PCNET_CSR_PAR1                =   0x0D
+        PCNET_CSR_PAR2                =   0x0E
+        PCNET_CSR_MODE                =   0x0F
+        PCNET_CSR_RXADDR0             =   0x18
+        PCNET_CSR_RXADDR1             =   0x19
+        PCNET_CSR_TXADDR0             =   0x1E
+        PCNET_CSR_TXADDR1             =   0x1F
+        PCNET_CSR_TXPOLL              =   0x2F
+        PCNET_CSR_RXPOLL              =   0x31
+        PCNET_CSR_RXRINGLEN           =   0x4C
+        PCNET_CSR_TXRINGLEN           =   0x4E
+        PCNET_CSR_DMACTL              =   0x50
+        PCNET_CSR_BUSTIMER            =   0x52
+        PCNET_CSR_MEMERRTIMEO         =   0x64
+        PCNET_CSR_ONNOWMISC           =   0x74
+        PCNET_CSR_ADVFEAT             =   0x7A
+        PCNET_CSR_MACCFG              =   0x7D
+        PCNET_CSR_CHIPID0             =   0x58
+        PCNET_CSR_CHIPID1             =   0x59
 
 ; Control and Status Register (CSR0)
 
-        PCNET_CSR_INIT                equ 1 shl 0
-        PCNET_CSR_START               equ 1 shl 1
-        PCNET_CSR_STOP                equ 1 shl 2
-        PCNET_CSR_TX                  equ 1 shl 3
-        PCNET_CSR_TXON                equ 1 shl 4
-        PCNET_CSR_RXON                equ 1 shl 5
-        PCNET_CSR_INTEN               equ 1 shl 6
-        PCNET_CSR_INTR                equ 1 shl 7
-        PCNET_CSR_IDONE               equ 1 shl 8
-        PCNET_CSR_TINT                equ 1 shl 9
-        PCNET_CSR_RINT                equ 1 shl 10
-        PCNET_CSR_MERR                equ 1 shl 11
-        PCNET_CSR_MISS                equ 1 shl 12
-        PCNET_CSR_CERR                equ 1 shl 13
+        PCNET_CSR_INIT                =   1 shl 0
+        PCNET_CSR_START               =   1 shl 1
+        PCNET_CSR_STOP                =   1 shl 2
+        PCNET_CSR_TX                  =   1 shl 3
+        PCNET_CSR_TXON                =   1 shl 4
+        PCNET_CSR_RXON                =   1 shl 5
+        PCNET_CSR_INTEN               =   1 shl 6
+        PCNET_CSR_INTR                =   1 shl 7
+        PCNET_CSR_IDONE               =   1 shl 8
+        PCNET_CSR_TINT                =   1 shl 9
+        PCNET_CSR_RINT                =   1 shl 10
+        PCNET_CSR_MERR                =   1 shl 11
+        PCNET_CSR_MISS                =   1 shl 12
+        PCNET_CSR_CERR                =   1 shl 13
 
 ; Interrupt masks and deferral control (CSR3)
 
-        PCNET_IMR_BSWAP               equ 0x0004
-        PCNET_IMR_ENMBA               equ 0x0008  ; enable modified backoff alg
-        PCNET_IMR_DXMT2PD             equ 0x0010
-        PCNET_IMR_LAPPEN              equ 0x0020  ; lookahead packet processing enb
-        PCNET_IMR_DXSUFLO             equ 0x0040  ; disable TX stop on underflow
-        PCNET_IMR_IDONE               equ 0x0100
-        PCNET_IMR_TINT                equ 0x0200
-        PCNET_IMR_RINT                equ 0x0400
-        PCNET_IMR_MERR                equ 0x0800
-        PCNET_IMR_MISS                equ 0x1000
+        PCNET_IMR_BSWAP               =   0x0004
+        PCNET_IMR_ENMBA               =   0x0008  ; enable modified backoff alg
+        PCNET_IMR_DXMT2PD             =   0x0010
+        PCNET_IMR_LAPPEN              =   0x0020  ; lookahead packet processing enb
+        PCNET_IMR_DXSUFLO             =   0x0040  ; disable TX stop on underflow
+        PCNET_IMR_IDONE               =   0x0100
+        PCNET_IMR_TINT                =   0x0200
+        PCNET_IMR_RINT                =   0x0400
+        PCNET_IMR_MERR                =   0x0800
+        PCNET_IMR_MISS                =   0x1000
 
-        PCNET_IMR                     equ PCNET_IMR_TINT+PCNET_IMR_RINT+PCNET_IMR_IDONE+PCNET_IMR_MERR+PCNET_IMR_MISS
+        PCNET_IMR                     =   PCNET_IMR_TINT+PCNET_IMR_RINT+PCNET_IMR_IDONE+PCNET_IMR_MERR+PCNET_IMR_MISS
 
 ; Test and features control (CSR4)
 
-        PCNET_TFEAT_TXSTRTMASK        equ 0x0004
-        PCNET_TFEAT_TXSTRT            equ 0x0008
-        PCNET_TFEAT_RXCCOFLOWM        equ 0x0010  ; Rx collision counter oflow
-        PCNET_TFEAT_RXCCOFLOW         equ 0x0020
-        PCNET_TFEAT_UINT              equ 0x0040
-        PCNET_TFEAT_UINTREQ           equ 0x0080
-        PCNET_TFEAT_MISSOFLOWM        equ 0x0100
-        PCNET_TFEAT_MISSOFLOW         equ 0x0200
-        PCNET_TFEAT_STRIP_FCS         equ 0x0400
-        PCNET_TFEAT_PAD_TX            equ 0x0800
-        PCNET_TFEAT_TXDPOLL           equ 0x1000
-        PCNET_TFEAT_DMAPLUS           equ 0x4000
+        PCNET_TFEAT_TXSTRTMASK        =   0x0004
+        PCNET_TFEAT_TXSTRT            =   0x0008
+        PCNET_TFEAT_RXCCOFLOWM        =   0x0010  ; Rx collision counter oflow
+        PCNET_TFEAT_RXCCOFLOW         =   0x0020
+        PCNET_TFEAT_UINT              =   0x0040
+        PCNET_TFEAT_UINTREQ           =   0x0080
+        PCNET_TFEAT_MISSOFLOWM        =   0x0100
+        PCNET_TFEAT_MISSOFLOW         =   0x0200
+        PCNET_TFEAT_STRIP_FCS         =   0x0400
+        PCNET_TFEAT_PAD_TX            =   0x0800
+        PCNET_TFEAT_TXDPOLL           =   0x1000
+        PCNET_TFEAT_DMAPLUS           =   0x4000
 
 ; Extended control and interrupt 1 (CSR5)
 
-        PCNET_EXTCTL1_SPND            equ 0x0001  ; suspend
-        PCNET_EXTCTL1_MPMODE          equ 0x0002  ; magic packet mode
-        PCNET_EXTCTL1_MPENB           equ 0x0004  ; magic packet enable
-        PCNET_EXTCTL1_MPINTEN         equ 0x0008  ; magic packet interrupt enable
-        PCNET_EXTCTL1_MPINT           equ 0x0010  ; magic packet interrupt
-        PCNET_EXTCTL1_MPPLBA          equ 0x0020  ; magic packet phys. logical bcast
-        PCNET_EXTCTL1_EXDEFEN         equ 0x0040  ; excessive deferral interrupt enb.
-        PCNET_EXTCTL1_EXDEF           equ 0x0080  ; excessive deferral interrupt
-        PCNET_EXTCTL1_SINTEN          equ 0x0400  ; system interrupt enable
-        PCNET_EXTCTL1_SINT            equ 0x0800  ; system interrupt
-        PCNET_EXTCTL1_LTINTEN         equ 0x4000  ; last TX interrupt enb
-        PCNET_EXTCTL1_TXOKINTD        equ 0x8000  ; TX OK interrupt disable
+        PCNET_EXTCTL1_SPND            =   0x0001  ; suspend
+        PCNET_EXTCTL1_MPMODE          =   0x0002  ; magic packet mode
+        PCNET_EXTCTL1_MPENB           =   0x0004  ; magic packet enable
+        PCNET_EXTCTL1_MPINTEN         =   0x0008  ; magic packet interrupt enable
+        PCNET_EXTCTL1_MPINT           =   0x0010  ; magic packet interrupt
+        PCNET_EXTCTL1_MPPLBA          =   0x0020  ; magic packet phys. logical bcast
+        PCNET_EXTCTL1_EXDEFEN         =   0x0040  ; excessive deferral interrupt enb.
+        PCNET_EXTCTL1_EXDEF           =   0x0080  ; excessive deferral interrupt
+        PCNET_EXTCTL1_SINTEN          =   0x0400  ; system interrupt enable
+        PCNET_EXTCTL1_SINT            =   0x0800  ; system interrupt
+        PCNET_EXTCTL1_LTINTEN         =   0x4000  ; last TX interrupt enb
+        PCNET_EXTCTL1_TXOKINTD        =   0x8000  ; TX OK interrupt disable
 
 ; RX/TX descriptor len (CSR6)
 
-        PCNET_DTBLLEN_RLEN            equ 0x0F00
-        PCNET_DTBLLEN_TLEN            equ 0xF000
+        PCNET_DTBLLEN_RLEN            =   0x0F00
+        PCNET_DTBLLEN_TLEN            =   0xF000
 
 ; Extended control and interrupt 2 (CSR7)
 
-        PCNET_EXTCTL2_MIIPDTINTE      equ 0x0001
-        PCNET_EXTCTL2_MIIPDTINT       equ 0x0002
-        PCNET_EXTCTL2_MCCIINTE        equ 0x0004
-        PCNET_EXTCTL2_MCCIINT         equ 0x0008
-        PCNET_EXTCTL2_MCCINTE         equ 0x0010
-        PCNET_EXTCTL2_MCCINT          equ 0x0020
-        PCNET_EXTCTL2_MAPINTE         equ 0x0040
-        PCNET_EXTCTL2_MAPINT          equ 0x0080
-        PCNET_EXTCTL2_MREINTE         equ 0x0100
-        PCNET_EXTCTL2_MREINT          equ 0x0200
-        PCNET_EXTCTL2_STINTE          equ 0x0400
-        PCNET_EXTCTL2_STINT           equ 0x0800
-        PCNET_EXTCTL2_RXDPOLL         equ 0x1000
-        PCNET_EXTCTL2_RDMD            equ 0x2000
-        PCNET_EXTCTL2_RXFRTG          equ 0x4000
-        PCNET_EXTCTL2_FASTSPNDE       equ 0x8000
+        PCNET_EXTCTL2_MIIPDTINTE      =   0x0001
+        PCNET_EXTCTL2_MIIPDTINT       =   0x0002
+        PCNET_EXTCTL2_MCCIINTE        =   0x0004
+        PCNET_EXTCTL2_MCCIINT         =   0x0008
+        PCNET_EXTCTL2_MCCINTE         =   0x0010
+        PCNET_EXTCTL2_MCCINT          =   0x0020
+        PCNET_EXTCTL2_MAPINTE         =   0x0040
+        PCNET_EXTCTL2_MAPINT          =   0x0080
+        PCNET_EXTCTL2_MREINTE         =   0x0100
+        PCNET_EXTCTL2_MREINT          =   0x0200
+        PCNET_EXTCTL2_STINTE          =   0x0400
+        PCNET_EXTCTL2_STINT           =   0x0800
+        PCNET_EXTCTL2_RXDPOLL         =   0x1000
+        PCNET_EXTCTL2_RDMD            =   0x2000
+        PCNET_EXTCTL2_RXFRTG          =   0x4000
+        PCNET_EXTCTL2_FASTSPNDE       =   0x8000
 
 ; Mode (CSR15)
 
-        PCNET_MODE_RXD                equ 0x0001  ; RX disable
-        PCNET_MODE_TXD                equ 0x0002  ; TX disable
-        PCNET_MODE_LOOP               equ 0x0004  ; loopback enable
-        PCNET_MODE_TXCRCD             equ 0x0008
-        PCNET_MODE_FORCECOLL          equ 0x0010
-        PCNET_MODE_RETRYD             equ 0x0020
-        PCNET_MODE_INTLOOP            equ 0x0040
-        PCNET_MODE_PORTSEL            equ 0x0180
-        PCNET_MODE_RXVPAD             equ 0x2000
-        PCNET_MODE_RXNOBROAD          equ 0x4000
-        PCNET_MODE_PROMISC            equ 0x8000
+        PCNET_MODE_RXD                =   0x0001  ; RX disable
+        PCNET_MODE_TXD                =   0x0002  ; TX disable
+        PCNET_MODE_LOOP               =   0x0004  ; loopback enable
+        PCNET_MODE_TXCRCD             =   0x0008
+        PCNET_MODE_FORCECOLL          =   0x0010
+        PCNET_MODE_RETRYD             =   0x0020
+        PCNET_MODE_INTLOOP            =   0x0040
+        PCNET_MODE_PORTSEL            =   0x0180
+        PCNET_MODE_RXVPAD             =   0x2000
+        PCNET_MODE_RXNOBROAD          =   0x4000
+        PCNET_MODE_PROMISC            =   0x8000
 
 ; BCR (Bus Control Registers)
 
-        PCNET_BCR_MMRA                equ 0x00    ; Master Mode Read Active
-        PCNET_BCR_MMW                 equ 0x01    ; Master Mode Write Active
-        PCNET_BCR_MISCCFG             equ 0x02
-        PCNET_BCR_LED0                equ 0x04
-        PCNET_BCR_LED1                equ 0x05
-        PCNET_BCR_LED2                equ 0x06
-        PCNET_BCR_LED3                equ 0x07
-        PCNET_BCR_DUPLEX              equ 0x09
-        PCNET_BCR_BUSCTL              equ 0x12
-        PCNET_BCR_EECTL               equ 0x13
-        PCNET_BCR_SSTYLE              equ 0x14
-        PCNET_BCR_PCILAT              equ 0x16
-        PCNET_BCR_PCISUBVENID         equ 0x17
-        PCNET_BCR_PCISUBSYSID         equ 0x18
-        PCNET_BCR_SRAMSIZE            equ 0x19
-        PCNET_BCR_SRAMBOUND           equ 0x1A
-        PCNET_BCR_SRAMCTL             equ 0x1B
-        PCNET_BCR_MIICTL              equ 0x20
-        PCNET_BCR_MIIADDR             equ 0x21
-        PCNET_BCR_MIIDATA             equ 0x22
-        PCNET_BCR_PCIVENID            equ 0x23
-        PCNET_BCR_PCIPCAP             equ 0x24
-        PCNET_BCR_DATA0               equ 0x25
-        PCNET_BCR_DATA1               equ 0x26
-        PCNET_BCR_DATA2               equ 0x27
-        PCNET_BCR_DATA3               equ 0x28
-        PCNET_BCR_DATA4               equ 0x29
-        PCNET_BCR_DATA5               equ 0x2A
-        PCNET_BCR_DATA6               equ 0x2B
-        PCNET_BCR_DATA7               equ 0x2C
-        PCNET_BCR_ONNOWPAT0           equ 0x2D
-        PCNET_BCR_ONNOWPAT1           equ 0x2E
-        PCNET_BCR_ONNOWPAT2           equ 0x2F
-        PCNET_BCR_PHYSEL              equ 0x31
+        PCNET_BCR_MMRA                =   0x00    ; Master Mode Read Active
+        PCNET_BCR_MMW                 =   0x01    ; Master Mode Write Active
+        PCNET_BCR_MISCCFG             =   0x02
+        PCNET_BCR_LED0                =   0x04
+        PCNET_BCR_LED1                =   0x05
+        PCNET_BCR_LED2                =   0x06
+        PCNET_BCR_LED3                =   0x07
+        PCNET_BCR_DUPLEX              =   0x09
+        PCNET_BCR_BUSCTL              =   0x12
+        PCNET_BCR_EECTL               =   0x13
+        PCNET_BCR_SSTYLE              =   0x14
+        PCNET_BCR_PCILAT              =   0x16
+        PCNET_BCR_PCISUBVENID         =   0x17
+        PCNET_BCR_PCISUBSYSID         =   0x18
+        PCNET_BCR_SRAMSIZE            =   0x19
+        PCNET_BCR_SRAMBOUND           =   0x1A
+        PCNET_BCR_SRAMCTL             =   0x1B
+        PCNET_BCR_MIICTL              =   0x20
+        PCNET_BCR_MIIADDR             =   0x21
+        PCNET_BCR_MIIDATA             =   0x22
+        PCNET_BCR_PCIVENID            =   0x23
+        PCNET_BCR_PCIPCAP             =   0x24
+        PCNET_BCR_DATA0               =   0x25
+        PCNET_BCR_DATA1               =   0x26
+        PCNET_BCR_DATA2               =   0x27
+        PCNET_BCR_DATA3               =   0x28
+        PCNET_BCR_DATA4               =   0x29
+        PCNET_BCR_DATA5               =   0x2A
+        PCNET_BCR_DATA6               =   0x2B
+        PCNET_BCR_DATA7               =   0x2C
+        PCNET_BCR_ONNOWPAT0           =   0x2D
+        PCNET_BCR_ONNOWPAT1           =   0x2E
+        PCNET_BCR_ONNOWPAT2           =   0x2F
+        PCNET_BCR_PHYSEL              =   0x31
 
 ; RX status register
 
-        PCNET_RXSTAT_BPE              equ 0x0080  ; bus parity error
-        PCNET_RXSTAT_ENP              equ 0x0100  ; end of packet
-        PCNET_RXSTAT_STP              equ 0x0200  ; start of packet
-        PCNET_RXSTAT_BUFF             equ 0x0400  ; buffer error
-        PCNET_RXSTAT_CRC              equ 0x0800  ; CRC error
-        PCNET_RXSTAT_OFLOW            equ 0x1000  ; rx overrun
-        PCNET_RXSTAT_FRAM             equ 0x2000  ; framing error
-        PCNET_RXSTAT_ERR              equ 0x4000  ; error summary
-        PCNET_RXSTAT_OWN              equ 0x8000
+        PCNET_RXSTAT_BPE              =   0x0080  ; bus parity error
+        PCNET_RXSTAT_ENP              =   0x0100  ; end of packet
+        PCNET_RXSTAT_STP              =   0x0200  ; start of packet
+        PCNET_RXSTAT_BUFF             =   0x0400  ; buffer error
+        PCNET_RXSTAT_CRC              =   0x0800  ; CRC error
+        PCNET_RXSTAT_OFLOW            =   0x1000  ; rx overrun
+        PCNET_RXSTAT_FRAM             =   0x2000  ; framing error
+        PCNET_RXSTAT_ERR              =   0x4000  ; error summary
+        PCNET_RXSTAT_OWN              =   0x8000
 
 ; TX status register
 
-        PCNET_TXSTAT_TRC              equ 0x0000000F      ; transmit retries
-        PCNET_TXSTAT_RTRY             equ 0x04000000      ; retry
-        PCNET_TXSTAT_LCAR             equ 0x08000000      ; lost carrier
-        PCNET_TXSTAT_LCOL             equ 0x10000000      ; late collision
-        PCNET_TXSTAT_EXDEF            equ 0x20000000      ; excessive deferrals
-        PCNET_TXSTAT_UFLOW            equ 0x40000000      ; transmit underrun
-        PCNET_TXSTAT_BUFF             equ 0x80000000      ; buffer error
+        PCNET_TXSTAT_TRC              =   0x0000000F      ; transmit retries
+        PCNET_TXSTAT_RTRY             =   0x04000000      ; retry
+        PCNET_TXSTAT_LCAR             =   0x08000000      ; lost carrier
+        PCNET_TXSTAT_LCOL             =   0x10000000      ; late collision
+        PCNET_TXSTAT_EXDEF            =   0x20000000      ; excessive deferrals
+        PCNET_TXSTAT_UFLOW            =   0x40000000      ; transmit underrun
+        PCNET_TXSTAT_BUFF             =   0x80000000      ; buffer error
 
-        PCNET_TXCTL_OWN               equ 0x80000000
-        PCNET_TXCTL_ERR               equ 0x40000000      ; error summary
-        PCNET_TXCTL_ADD_FCS           equ 0x20000000      ; add FCS to pkt
-        PCNET_TXCTL_MORE_LTINT        equ 0x10000000
-        PCNET_TXCTL_ONE               equ 0x08000000
-        PCNET_TXCTL_DEF               equ 0x04000000
-        PCNET_TXCTL_STP               equ 0x02000000
-        PCNET_TXCTL_ENP               equ 0x01000000
-        PCNET_TXCTL_BPE               equ 0x00800000
-        PCNET_TXCTL_MBO               equ 0x0000F000
-        PCNET_TXCTL_BUFSZ             equ 0x00000FFF
+        PCNET_TXCTL_OWN               =   0x80000000
+        PCNET_TXCTL_ERR               =   0x40000000      ; error summary
+        PCNET_TXCTL_ADD_FCS           =   0x20000000      ; add FCS to pkt
+        PCNET_TXCTL_MORE_LTINT        =   0x10000000
+        PCNET_TXCTL_ONE               =   0x08000000
+        PCNET_TXCTL_DEF               =   0x04000000
+        PCNET_TXCTL_STP               =   0x02000000
+        PCNET_TXCTL_ENP               =   0x01000000
+        PCNET_TXCTL_BPE               =   0x00800000
+        PCNET_TXCTL_MBO               =   0x0000F000
+        PCNET_TXCTL_BUFSZ             =   0x00000FFF
 
 
 

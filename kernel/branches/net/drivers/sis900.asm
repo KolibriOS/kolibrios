@@ -25,14 +25,14 @@
 
 format MS COFF
 
-        API_VERSION             equ 0x01000100
-        DRIVER_VERSION          equ 5
+        API_VERSION             =   0x01000100
+        DRIVER_VERSION          =   5
 
-        MAX_DEVICES             equ 16
+        MAX_DEVICES             =   16
 
-        DEBUG                   equ 1
-        __DEBUG__               equ 1
-        __DEBUG_LEVEL__         equ 1
+        DEBUG                   =   1
+        __DEBUG__               =   1
+        __DEBUG_LEVEL__         =   1
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -42,11 +42,11 @@ include 'netdrv.inc'
 public START
 public version
 
-NUM_RX_DESC             equ 4           ;* Number of RX descriptors *
-NUM_TX_DESC             equ 1           ;* Number of TX descriptors *
-RX_BUFF_SZ              equ 1520        ;* Buffer size for each Rx buffer *
-TX_BUFF_SZ              equ 1516        ;* Buffer size for each Tx buffer *
-MAX_ETH_FRAME_SIZE      equ 1516
+NUM_RX_DESC             =   4           ;* Number of RX descriptors *
+NUM_TX_DESC             =   1           ;* Number of TX descriptors *
+RX_BUFF_SZ              =   1520        ;* Buffer size for each Rx buffer *
+TX_BUFF_SZ              =   1516        ;* Buffer size for each Tx buffer *
+MAX_ETH_FRAME_SIZE      =   1516
 
 virtual at ebx
         device:
@@ -271,150 +271,150 @@ ret
 ;
 ;********************************************************************
 
-        ETH_ALEN        equ 6           ; Size of Ethernet address
-        ETH_HLEN        equ 14          ; Size of ethernet header
-        ETH_ZLEN        equ 60          ; Minimum packet length
-        DSIZE           equ 0x00000fff
-        CRC_SIZE        equ 4
-        RFADDR_shift    equ 16
+        ETH_ALEN        =   6           ; Size of Ethernet address
+        ETH_HLEN        =   14          ; Size of ethernet header
+        ETH_ZLEN        =   60          ; Minimum packet length
+        DSIZE           =   0x00000fff
+        CRC_SIZE        =   4
+        RFADDR_shift    =   16
 
 ; Symbolic offsets to registers.
-        cr              equ 0x0               ; Command Register
-        cfg             equ 0x4       ; Configuration Register
-        mear            equ 0x8       ; EEPROM Access Register
-        ptscr           equ 0xc       ; PCI Test Control Register
-        isr             equ 0x10      ; Interrupt Status Register
-        imr             equ 0x14      ; Interrupt Mask Register
-        ier             equ 0x18      ; Interrupt Enable Register
-        epar            equ 0x18      ; Enhanced PHY Access Register
-        txdp            equ 0x20      ; Transmit Descriptor Pointer Register
-        txcfg           equ 0x24      ; Transmit Configuration Register
-        rxdp            equ 0x30      ; Receive Descriptor Pointer Register
-        rxcfg           equ 0x34      ; Receive Configuration Register
-        flctrl          equ 0x38      ; Flow Control Register
-        rxlen           equ 0x3c      ; Receive Packet Length Register
-        rfcr            equ 0x48      ; Receive Filter Control Register
-        rfdr            equ 0x4C      ; Receive Filter Data Register
-        pmctrl          equ 0xB0      ; Power Management Control Register
-        pmer            equ 0xB4      ; Power Management Wake-up Event Register
+        cr              =   0x0               ; Command Register
+        cfg             =   0x4       ; Configuration Register
+        mear            =   0x8       ; EEPROM Access Register
+        ptscr           =   0xc       ; PCI Test Control Register
+        isr             =   0x10      ; Interrupt Status Register
+        imr             =   0x14      ; Interrupt Mask Register
+        ier             =   0x18      ; Interrupt Enable Register
+        epar            =   0x18      ; Enhanced PHY Access Register
+        txdp            =   0x20      ; Transmit Descriptor Pointer Register
+        txcfg           =   0x24      ; Transmit Configuration Register
+        rxdp            =   0x30      ; Receive Descriptor Pointer Register
+        rxcfg           =   0x34      ; Receive Configuration Register
+        flctrl          =   0x38      ; Flow Control Register
+        rxlen           =   0x3c      ; Receive Packet Length Register
+        rfcr            =   0x48      ; Receive Filter Control Register
+        rfdr            =   0x4C      ; Receive Filter Data Register
+        pmctrl          =   0xB0      ; Power Management Control Register
+        pmer            =   0xB4      ; Power Management Wake-up Event Register
 
 ; Command Register Bits
-        RELOAD          equ 0x00000400
-        ACCESSMODE      equ 0x00000200
-        RESET           equ 0x00000100
-        SWI             equ 0x00000080
-        RxRESET         equ 0x00000020
-        TxRESET         equ 0x00000010
-        RxDIS           equ 0x00000008
-        RxENA           equ 0x00000004
-        TxDIS           equ 0x00000002
-        TxENA           equ 0x00000001
+        RELOAD          =   0x00000400
+        ACCESSMODE      =   0x00000200
+        RESET           =   0x00000100
+        SWI             =   0x00000080
+        RxRESET         =   0x00000020
+        TxRESET         =   0x00000010
+        RxDIS           =   0x00000008
+        RxENA           =   0x00000004
+        TxDIS           =   0x00000002
+        TxENA           =   0x00000001
 
 ; Configuration Register Bits
-        DESCRFMT        equ 0x00000100 ; 7016 specific
-        REQALG          equ 0x00000080
-        SB              equ 0x00000040
-        POW             equ 0x00000020
-        EXD             equ 0x00000010
-        PESEL           equ 0x00000008
-        LPM             equ 0x00000004
-        BEM             equ 0x00000001
-        RND_CNT         equ 0x00000400
-        FAIR_BACKOFF    equ 0x00000200
-        EDB_MASTER_EN   equ 0x00002000
+        DESCRFMT        =   0x00000100 ; 7016 specific
+        REQALG          =   0x00000080
+        SB              =   0x00000040
+        POW             =   0x00000020
+        EXD             =   0x00000010
+        PESEL           =   0x00000008
+        LPM             =   0x00000004
+        BEM             =   0x00000001
+        RND_CNT         =   0x00000400
+        FAIR_BACKOFF    =   0x00000200
+        EDB_MASTER_EN   =   0x00002000
 
 ; Eeprom Access Reigster Bits
-        MDC             equ 0x00000040
-        MDDIR           equ 0x00000020
-        MDIO            equ 0x00000010  ; 7016 specific
-        EECS            equ 0x00000008
-        EECLK           equ 0x00000004
-        EEDO            equ 0x00000002
-        EEDI            equ 0x00000001
+        MDC             =   0x00000040
+        MDDIR           =   0x00000020
+        MDIO            =   0x00000010  ; 7016 specific
+        EECS            =   0x00000008
+        EECLK           =   0x00000004
+        EEDO            =   0x00000002
+        EEDI            =   0x00000001
 
 ; TX Configuration Register Bits
-        ATP             equ 0x10000000 ;Automatic Transmit Padding
-        MLB             equ 0x20000000 ;Mac Loopback Enable
-        HBI             equ 0x40000000 ;HeartBeat Ignore (Req for full-dup)
-        CSI             equ 0x80000000 ;CarrierSenseIgnore (Req for full-du
+        ATP             =   0x10000000 ;Automatic Transmit Padding
+        MLB             =   0x20000000 ;Mac Loopback Enable
+        HBI             =   0x40000000 ;HeartBeat Ignore (Req for full-dup)
+        CSI             =   0x80000000 ;CarrierSenseIgnore (Req for full-du
 
 ; RX Configuration Register Bits
-        AJAB            equ 0x08000000 ;
-        ATX             equ 0x10000000 ;Accept Transmit Packets
-        ARP             equ 0x40000000 ;accept runt packets (<64bytes)
-        AEP             equ 0x80000000 ;accept error packets
+        AJAB            =   0x08000000 ;
+        ATX             =   0x10000000 ;Accept Transmit Packets
+        ARP             =   0x40000000 ;accept runt packets (<64bytes)
+        AEP             =   0x80000000 ;accept error packets
 
 ; Interrupt Reigster Bits
-        WKEVT           equ 0x10000000
-        TxPAUSEEND      equ 0x08000000
-        TxPAUSE         equ 0x04000000
-        TxRCMP          equ 0x02000000
-        RxRCMP          equ 0x01000000
-        DPERR           equ 0x00800000
-        SSERR           equ 0x00400000
-        RMABT           equ 0x00200000
-        RTABT           equ 0x00100000
-        RxSOVR          equ 0x00010000
-        HIBERR          equ 0x00008000
-        SWINT           equ 0x00001000
-        MIBINT          equ 0x00000800
-        TxURN           equ 0x00000400
-        TxIDLE          equ 0x00000200
-        TxERR           equ 0x00000100
-        TxDESC          equ 0x00000080
-        TxOK            equ 0x00000040
-        RxORN           equ 0x00000020
-        RxIDLE          equ 0x00000010
-        RxEARLY         equ 0x00000008
-        RxERR           equ 0x00000004
-        RxDESC          equ 0x00000002
-        RxOK            equ 0x00000001
+        WKEVT           =   0x10000000
+        TxPAUSEEND      =   0x08000000
+        TxPAUSE         =   0x04000000
+        TxRCMP          =   0x02000000
+        RxRCMP          =   0x01000000
+        DPERR           =   0x00800000
+        SSERR           =   0x00400000
+        RMABT           =   0x00200000
+        RTABT           =   0x00100000
+        RxSOVR          =   0x00010000
+        HIBERR          =   0x00008000
+        SWINT           =   0x00001000
+        MIBINT          =   0x00000800
+        TxURN           =   0x00000400
+        TxIDLE          =   0x00000200
+        TxERR           =   0x00000100
+        TxDESC          =   0x00000080
+        TxOK            =   0x00000040
+        RxORN           =   0x00000020
+        RxIDLE          =   0x00000010
+        RxEARLY         =   0x00000008
+        RxERR           =   0x00000004
+        RxDESC          =   0x00000002
+        RxOK            =   0x00000001
 
 ; Interrupt Enable Register Bits
-        IE              equ RxOK + TxOK
+        IE              =   RxOK + TxOK
 
 ; Revision ID
-        SIS900B_900_REV         equ 0x03
-        SIS630A_900_REV         equ 0x80
-        SIS630E_900_REV         equ 0x81
-        SIS630S_900_REV         equ 0x82
-        SIS630EA1_900_REV       equ 0x83
-        SIS630ET_900_REV        equ 0x84
-        SIS635A_900_REV         equ 0x90
-        SIS900_960_REV          equ 0x91
+        SIS900B_900_REV         =   0x03
+        SIS630A_900_REV         =   0x80
+        SIS630E_900_REV         =   0x81
+        SIS630S_900_REV         =   0x82
+        SIS630EA1_900_REV       =   0x83
+        SIS630ET_900_REV        =   0x84
+        SIS635A_900_REV         =   0x90
+        SIS900_960_REV          =   0x91
 
 ; Receive Filter Control Register Bits
-        RFEN            equ 0x80000000
-        RFAAB           equ 0x40000000
-        RFAAM           equ 0x20000000
-        RFAAP           equ 0x10000000
-        RFPromiscuous   equ 0x70000000
+        RFEN            =   0x80000000
+        RFAAB           =   0x40000000
+        RFAAM           =   0x20000000
+        RFAAP           =   0x10000000
+        RFPromiscuous   =   0x70000000
 
 ; Reveive Filter Data Mask
-        RFDAT           equ 0x0000FFFF
+        RFDAT           =   0x0000FFFF
 
 ; Eeprom Address
-        EEPROMSignature equ 0x00
-        EEPROMVendorID  equ 0x02
-        EEPROMDeviceID  equ 0x03
-        EEPROMMACAddr   equ 0x08
-        EEPROMChecksum  equ 0x0b
+        EEPROMSignature =   0x00
+        EEPROMVendorID  =   0x02
+        EEPROMDeviceID  =   0x03
+        EEPROMMACAddr   =   0x08
+        EEPROMChecksum  =   0x0b
 
 ;The EEPROM commands include the alway-set leading bit.
-        EEread          equ 0x0180
-        EEwrite         equ 0x0140
-        EEerase         equ 0x01C0
-        EEwriteEnable   equ 0x0130
-        EEwriteDisable  equ 0x0100
-        EEeraseAll      equ 0x0120
-        EEwriteAll      equ 0x0110
-        EEaddrMask      equ 0x013F
-        EEcmdShift      equ 16
+        EEread          =   0x0180
+        EEwrite         =   0x0140
+        EEerase         =   0x01C0
+        EEwriteEnable   =   0x0130
+        EEwriteDisable  =   0x0100
+        EEeraseAll      =   0x0120
+        EEwriteAll      =   0x0110
+        EEaddrMask      =   0x013F
+        EEcmdShift      =   16
 
 ;For SiS962 or SiS963, request the eeprom software access
-        EEREQ           equ 0x00000400
-        EEDONE          equ 0x00000200
-        EEGNT           equ 0x00000100
+        EEREQ           =   0x00000400
+        EEDONE          =   0x00000200
+        EEGNT           =   0x00000100
 
 
 ;***************************************************************************

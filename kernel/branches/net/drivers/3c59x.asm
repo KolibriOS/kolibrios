@@ -82,16 +82,16 @@
 
 format MS COFF
 
-        API_VERSION             equ 0x01000100
-        DRIVER_VERSION          equ 5
+        API_VERSION             =   0x01000100
+        DRIVER_VERSION          =   5
 
-        MAX_DEVICES             equ 16
-        FORCE_FD                equ 0  ; forcing full duplex mode makes sense at some cards and link types
-        PROMISCIOUS             equ 0  ; enables promiscous mode
+        MAX_DEVICES             =   16
+        FORCE_FD                =   0  ; forcing full duplex mode makes sense at some cards and link types
+        PROMISCIOUS             =   0  ; enables promiscous mode
 
-        DEBUG                   equ 1
-        __DEBUG__               equ 1
-        __DEBUG_LEVEL__         equ 1
+        DEBUG                   =   1
+        __DEBUG__               =   1
+        __DEBUG_LEVEL__         =   1
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -133,207 +133,207 @@ virtual at 0
 end virtual
 
 ; Ethernet frame symbols
-        ETH_ALEN                equ 6
-        ETH_HLEN                equ (2*ETH_ALEN+2)
-        ETH_ZLEN                equ 60 ; 60 + 4bytes auto payload for
+        ETH_ALEN                =   6
+        ETH_HLEN                =   (2*ETH_ALEN+2)
+        ETH_ZLEN                =   60 ; 60 + 4bytes auto payload for
                                               ; mininmum 64bytes frame length
 ; Registers
-        REG_POWER_MGMT_CTRL     equ 0x7c
-        REG_UP_LIST_PTR         equ 0x38
-        REG_UP_PKT_STATUS       equ 0x30
-        REG_TX_FREE_THRESH      equ 0x2f
-        REG_DN_LIST_PTR         equ 0x24
-        REG_DMA_CTRL            equ 0x20
-        REG_TX_STATUS           equ 0x1b
-        REG_RX_STATUS           equ 0x18
-        REG_TX_DATA             equ 0x10
+        REG_POWER_MGMT_CTRL     =   0x7c
+        REG_UP_LIST_PTR         =   0x38
+        REG_UP_PKT_STATUS       =   0x30
+        REG_TX_FREE_THRESH      =   0x2f
+        REG_DN_LIST_PTR         =   0x24
+        REG_DMA_CTRL            =   0x20
+        REG_TX_STATUS           =   0x1b
+        REG_RX_STATUS           =   0x18
+        REG_TX_DATA             =   0x10
 
 ; Common window registers
-        REG_INT_STATUS          equ 0xe
-        REG_COMMAND             equ 0xe
+        REG_INT_STATUS          =   0xe
+        REG_COMMAND             =   0xe
 
 ; Register window 7
-        REG_MASTER_STATUS       equ 0xc
-        REG_POWER_MGMT_EVENT    equ 0xc
-        REG_MASTER_LEN          equ 0x6
-        REG_VLAN_ETHER_TYPE     equ 0x4
-        REG_VLAN_MASK           equ 0x0
-        REG_MASTER_ADDRESS      equ 0x0
+        REG_MASTER_STATUS       =   0xc
+        REG_POWER_MGMT_EVENT    =   0xc
+        REG_MASTER_LEN          =   0x6
+        REG_VLAN_ETHER_TYPE     =   0x4
+        REG_VLAN_MASK           =   0x0
+        REG_MASTER_ADDRESS      =   0x0
 
 ; Register window 6
-        REG_BYTES_XMITTED_OK    equ 0xc
-        REG_BYTES_RCVD_OK       equ 0xa
-        REG_UPPER_FRAMES_OK     equ 0x9
-        REG_FRAMES_DEFERRED     equ 0x8
-        REG_FRAMES_RCVD_OK      equ 0x7
-        REG_FRAMES_XMITTED_OK   equ 0x6
-        REG_RX_OVERRUNS         equ 0x5
-        REG_LATE_COLLISIONS     equ 0x4
-        REG_SINGLE_COLLISIONS   equ 0x3
-        REG_MULTIPLE_COLLISIONS equ 0x2
-        REG_SQE_ERRORS          equ 0x1
-        REG_CARRIER_LOST        equ 0x0
+        REG_BYTES_XMITTED_OK    =   0xc
+        REG_BYTES_RCVD_OK       =   0xa
+        REG_UPPER_FRAMES_OK     =   0x9
+        REG_FRAMES_DEFERRED     =   0x8
+        REG_FRAMES_RCVD_OK      =   0x7
+        REG_FRAMES_XMITTED_OK   =   0x6
+        REG_RX_OVERRUNS         =   0x5
+        REG_LATE_COLLISIONS     =   0x4
+        REG_SINGLE_COLLISIONS   =   0x3
+        REG_MULTIPLE_COLLISIONS =   0x2
+        REG_SQE_ERRORS          =   0x1
+        REG_CARRIER_LOST        =   0x0
 
 ; Register window 5
-        REG_INDICATION_ENABLE   equ 0xc
-        REG_INTERRUPT_ENABLE    equ 0xa
-        REG_TX_RECLAIM_THRESH   equ 0x9
-        REG_RX_FILTER           equ 0x8
-        REG_RX_EARLY_THRESH     equ 0x6
-        REG_TX_START_THRESH     equ 0x0
+        REG_INDICATION_ENABLE   =   0xc
+        REG_INTERRUPT_ENABLE    =   0xa
+        REG_TX_RECLAIM_THRESH   =   0x9
+        REG_RX_FILTER           =   0x8
+        REG_RX_EARLY_THRESH     =   0x6
+        REG_TX_START_THRESH     =   0x0
 
 ; Register window 4
-        REG_UPPER_BYTES_OK      equ 0xe
-        REG_BAD_SSD             equ 0xc
-        REG_MEDIA_STATUS        equ 0xa
-        REG_PHYSICAL_MGMT       equ 0x8
-        REG_NETWORK_DIAGNOSTIC  equ 0x6
-        REG_FIFO_DIAGNOSTIC     equ 0x4
-        REG_VCO_DIAGNOSTIC      equ 0x2 ; may not supported
+        REG_UPPER_BYTES_OK      =   0xe
+        REG_BAD_SSD             =   0xc
+        REG_MEDIA_STATUS        =   0xa
+        REG_PHYSICAL_MGMT       =   0x8
+        REG_NETWORK_DIAGNOSTIC  =   0x6
+        REG_FIFO_DIAGNOSTIC     =   0x4
+        REG_VCO_DIAGNOSTIC      =   0x2 ; may not supported
 
 ; Bits in register window 4
-        BIT_AUTOSELECT          equ 24
+        BIT_AUTOSELECT          =   24
 
 ; Register window 3
-        REG_TX_FREE             equ 0xc
-        REG_RX_FREE             equ 0xa
-        REG_MEDIA_OPTIONS       equ 0x8
-        REG_MAC_CONTROL         equ 0x6
-        REG_MAX_PKT_SIZE        equ 0x4
-        REG_INTERNAL_CONFIG     equ 0x0
+        REG_TX_FREE             =   0xc
+        REG_RX_FREE             =   0xa
+        REG_MEDIA_OPTIONS       =   0x8
+        REG_MAC_CONTROL         =   0x6
+        REG_MAX_PKT_SIZE        =   0x4
+        REG_INTERNAL_CONFIG     =   0x0
 
 ; Register window 2
-        REG_RESET_OPTIONS       equ 0xc
-        REG_STATION_MASK_HI     equ 0xa
-        REG_STATION_MASK_MID    equ 0x8
-        REG_STATION_MASK_LO     equ 0x6
-        REG_STATION_ADDRESS_HI  equ 0x4
-        REG_STATION_ADDRESS_MID equ 0x2
-        REG_STATION_ADDRESS_LO  equ 0x0
+        REG_RESET_OPTIONS       =   0xc
+        REG_STATION_MASK_HI     =   0xa
+        REG_STATION_MASK_MID    =   0x8
+        REG_STATION_MASK_LO     =   0x6
+        REG_STATION_ADDRESS_HI  =   0x4
+        REG_STATION_ADDRESS_MID =   0x2
+        REG_STATION_ADDRESS_LO  =   0x0
 
 ; Register window 1
-        REG_TRIGGER_BITS        equ 0xc
-        REG_SOS_BITS            equ 0xa
-        REG_WAKE_ON_TIMER       equ 0x8
-        REG_SMB_RXBYTES         equ 0x7
-        REG_SMB_DIAG            equ 0x5
-        REG_SMB_ARB             equ 0x4
-        REG_SMB_STATUS          equ 0x2
-        REG_SMB_ADDRESS         equ 0x1
-        REG_SMB_FIFO_DATA       equ 0x0
+        REG_TRIGGER_BITS        =   0xc
+        REG_SOS_BITS            =   0xa
+        REG_WAKE_ON_TIMER       =   0x8
+        REG_SMB_RXBYTES         =   0x7
+        REG_SMB_DIAG            =   0x5
+        REG_SMB_ARB             =   0x4
+        REG_SMB_STATUS          =   0x2
+        REG_SMB_ADDRESS         =   0x1
+        REG_SMB_FIFO_DATA       =   0x0
 
 ; Register window 0
-        REG_EEPROM_DATA         equ 0xc
-        REG_EEPROM_COMMAND      equ 0xa
-        REG_BIOS_ROM_DATA       equ 0x8
-        REG_BIOS_ROM_ADDR       equ 0x4
+        REG_EEPROM_DATA         =   0xc
+        REG_EEPROM_COMMAND      =   0xa
+        REG_BIOS_ROM_DATA       =   0x8
+        REG_BIOS_ROM_ADDR       =   0x4
 
 ; Physical management bits
-        BIT_MGMT_DIR            equ 2 ; drive with the data written in mgmtData
-        BIT_MGMT_DATA           equ 1 ; MII management data bit
-        BIT_MGMT_CLK            equ 0 ; MII management clock
+        BIT_MGMT_DIR            =   2 ; drive with the data written in mgmtData
+        BIT_MGMT_DATA           =   1 ; MII management data bit
+        BIT_MGMT_CLK            =   0 ; MII management clock
 
 ; MII commands
-        MII_CMD_MASK            equ (1111b shl 10)
-        MII_CMD_READ            equ (0110b shl 10)
-        MII_CMD_WRITE           equ (0101b shl 10)
+        MII_CMD_MASK            =   (1111b shl 10)
+        MII_CMD_READ            =   (0110b shl 10)
+        MII_CMD_WRITE           =   (0101b shl 10)
 
 ; MII registers
-        REG_MII_BMCR            equ 0 ; basic mode control register
-        REG_MII_BMSR            equ 1 ; basic mode status register
-        REG_MII_ANAR            equ 4 ; auto negotiation advertisement register
-        REG_MII_ANLPAR          equ 5 ; auto negotiation link partner ability register
-        REG_MII_ANER            equ 6 ; auto negotiation expansion register
+        REG_MII_BMCR            =   0 ; basic mode control register
+        REG_MII_BMSR            =   1 ; basic mode status register
+        REG_MII_ANAR            =   4 ; auto negotiation advertisement register
+        REG_MII_ANLPAR          =   5 ; auto negotiation link partner ability register
+        REG_MII_ANER            =   6 ; auto negotiation expansion register
 
 ; MII bits
-        BIT_MII_AUTONEG_COMPLETE     equ 5 ; auto-negotiation complete
-        BIT_MII_PREAMBLE_SUPPRESSION equ 6
+        BIT_MII_AUTONEG_COMPLETE     =   5 ; auto-negotiation complete
+        BIT_MII_PREAMBLE_SUPPRESSION =   6
 
 ; eeprom bits and commands
-        EEPROM_CMD_READ         equ 0x80
-        EEPROM_BIT_BUSY         equ 15
+        EEPROM_CMD_READ         =   0x80
+        EEPROM_BIT_BUSY         =   15
 
 ; eeprom registers
-        EEPROM_REG_OEM_NODE_ADDR equ 0xa
-        EEPROM_REG_CAPABILITIES  equ 0x10
+        EEPROM_REG_OEM_NODE_ADDR =   0xa
+        EEPROM_REG_CAPABILITIES  =   0x10
 
 ; Commands for command register
-        SELECT_REGISTER_WINDOW  equ (1 shl 11)
+        SELECT_REGISTER_WINDOW  =   (1 shl 11)
 
-        IS_VORTEX               equ 0x1
-        IS_BOOMERANG            equ 0x2
-        IS_CYCLONE              equ 0x4
-        IS_TORNADO              equ 0x8
-        EEPROM_8BIT             equ 0x10
-        HAS_PWR_CTRL            equ 0x20
-        HAS_MII                 equ 0x40
-        HAS_NWAY                equ 0x80
-        HAS_CB_FNS              equ 0x100
-        INVERT_MII_PWR          equ 0x200
-        INVERT_LED_PWR          equ 0x400
-        MAX_COLLISION_RESET     equ 0x800
-        EEPROM_OFFSET           equ 0x1000
-        HAS_HWCKSM              equ 0x2000
-        EXTRA_PREAMBLE          equ 0x4000
+        IS_VORTEX               =   0x1
+        IS_BOOMERANG            =   0x2
+        IS_CYCLONE              =   0x4
+        IS_TORNADO              =   0x8
+        EEPROM_8BIT             =   0x10
+        HAS_PWR_CTRL            =   0x20
+        HAS_MII                 =   0x40
+        HAS_NWAY                =   0x80
+        HAS_CB_FNS              =   0x100
+        INVERT_MII_PWR          =   0x200
+        INVERT_LED_PWR          =   0x400
+        MAX_COLLISION_RESET     =   0x800
+        EEPROM_OFFSET           =   0x1000
+        HAS_HWCKSM              =   0x2000
+        EXTRA_PREAMBLE          =   0x4000
 
 ; Status
-        IntLatch                equ 0x0001
-        HostError               equ 0x0002
-        TxComplete              equ 0x0004
-        TxAvailable             equ 0x0008
-        RxComplete              equ 0x0010
-        RxEarly                 equ 0x0020
-        IntReq                  equ 0x0040
-        StatsFull               equ 0x0080
-        DMADone                 equ 0x0100
-        DownComplete            equ 0x0200
-        UpComplete              equ 0x0400
-        DMAInProgress           equ 0x0800 ; 1 shl 11  (DMA controller is still busy)
-        CmdInProgress           equ 0x1000 ; 1 shl 12  (EL3_CMD is still busy)
+        IntLatch                =   0x0001
+        HostError               =   0x0002
+        TxComplete              =   0x0004
+        TxAvailable             =   0x0008
+        RxComplete              =   0x0010
+        RxEarly                 =   0x0020
+        IntReq                  =   0x0040
+        StatsFull               =   0x0080
+        DMADone                 =   0x0100
+        DownComplete            =   0x0200
+        UpComplete              =   0x0400
+        DMAInProgress           =   0x0800 ; 1 shl 11  (DMA controller is still busy)
+        CmdInProgress           =   0x1000 ; 1 shl 12  (EL3_CMD is still busy)
 
-        S_5_INTS                equ HostError + RxEarly + UpComplete + DownComplete ;+ TxComplete + RxComplete  + TxAvailable
+        S_5_INTS                =   HostError + RxEarly + UpComplete + DownComplete ;+ TxComplete + RxComplete  + TxAvailable
 
 ; Commands
-        TotalReset              equ 0 shl 11
-        SelectWindow            equ 1 shl 11
-        StartCoax               equ 2 shl 11
-        RxDisable               equ 3 shl 11
-        RxEnable                equ 4 shl 11
-        RxReset                 equ 5 shl 11
-        UpStall                 equ 6 shl 11
-        UpUnstall               equ (6 shl 11)+1
-        DownStall               equ (6 shl 11)+2
-        DownUnstall             equ (6 shl 11)+3
-        RxDiscard               equ 8 shl 11
-        TxEnable                equ 9 shl 11
-        TxDisable               equ 10 shl 11
-        TxReset                 equ 11 shl 11
-        FakeIntr                equ 12 shl 11
-        AckIntr                 equ 13 shl 11
-        SetIntrEnb              equ 14 shl 11
-        SetStatusEnb            equ 15 shl 11
-        SetRxFilter             equ 16 shl 11
-        SetRxThreshold          equ 17 shl 11
-        SetTxThreshold          equ 18 shl 11
-        SetTxStart              equ 19 shl 11
-        StartDMAUp              equ 20 shl 11
-        StartDMADown            equ (20 shl 11)+1
-        StatsEnable             equ 21 shl 11
-        StatsDisable            equ 22 shl 11
-        StopCoax                equ 23 shl 11
-        SetFilterBit            equ 25 shl 11
+        TotalReset              =   0 shl 11
+        SelectWindow            =   1 shl 11
+        StartCoax               =   2 shl 11
+        RxDisable               =   3 shl 11
+        RxEnable                =   4 shl 11
+        RxReset                 =   5 shl 11
+        UpStall                 =   6 shl 11
+        UpUnstall               =   (6 shl 11)+1
+        DownStall               =   (6 shl 11)+2
+        DownUnstall             =   (6 shl 11)+3
+        RxDiscard               =   8 shl 11
+        TxEnable                =   9 shl 11
+        TxDisable               =   10 shl 11
+        TxReset                 =   11 shl 11
+        FakeIntr                =   12 shl 11
+        AckIntr                 =   13 shl 11
+        SetIntrEnb              =   14 shl 11
+        SetStatusEnb            =   15 shl 11
+        SetRxFilter             =   16 shl 11
+        SetRxThreshold          =   17 shl 11
+        SetTxThreshold          =   18 shl 11
+        SetTxStart              =   19 shl 11
+        StartDMAUp              =   20 shl 11
+        StartDMADown            =   (20 shl 11)+1
+        StatsEnable             =   21 shl 11
+        StatsDisable            =   22 shl 11
+        StopCoax                =   23 shl 11
+        SetFilterBit            =   25 shl 11
 
 ; Rx mode bits
-        RxStation               equ 1
-        RxMulticast             equ 2
-        RxBroadcast             equ 4
-        RxProm                  equ 8
+        RxStation               =   1
+        RxMulticast             =   2
+        RxBroadcast             =   4
+        RxProm                  =   8
 
 ; RX/TX buffers sizes
-        MAX_ETH_PKT_SIZE        equ 1536   ; max packet size
-        NUM_RX_DESC             equ 4      ; a power of 2 number
-        NUM_TX_DESC             equ 4      ; a power of 2 number
-        MAX_ETH_FRAME_SIZE      equ 1520        ; size of ethernet frame + bytes alignment
+        MAX_ETH_PKT_SIZE        =   1536   ; max packet size
+        NUM_RX_DESC             =   4      ; a power of 2 number
+        NUM_TX_DESC             =   4      ; a power of 2 number
+        MAX_ETH_FRAME_SIZE      =   1520        ; size of ethernet frame + bytes alignment
 
 virtual at ebx
 

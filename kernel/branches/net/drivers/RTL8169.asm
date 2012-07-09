@@ -22,17 +22,17 @@
 
 format MS COFF
 
-        API_VERSION             equ 0x01000100
-        DRIVER_VERSION          equ 5
+        API_VERSION             =   0x01000100
+        DRIVER_VERSION          =   5
 
-        MAX_DEVICES             equ 16
+        MAX_DEVICES             =   16
 
-        DEBUG                   equ 1
-        __DEBUG__               equ 1
-        __DEBUG_LEVEL__         equ 1
+        DEBUG                   =   1
+        __DEBUG__               =   1
+        __DEBUG_LEVEL__         =   1
 
-        NUM_TX_DESC             equ 4
-        NUM_RX_DESC             equ 4
+        NUM_TX_DESC             =   4
+        NUM_RX_DESC             =   4
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -44,198 +44,198 @@ public service_proc
 public version
 
 
-        REG_MAC0               equ 0x0 ; Ethernet hardware address
-        REG_MAR0               equ 0x8 ; Multicast filter
-        REG_TxDescStartAddr    equ 0x20
-        REG_TxHDescStartAddr   equ 0x28
-        REG_FLASH              equ 0x30
-        REG_ERSR               equ 0x36
-        REG_ChipCmd            equ 0x37
-        REG_TxPoll             equ 0x38
-        REG_IntrMask           equ 0x3C
-        REG_IntrStatus         equ 0x3E
-        REG_TxConfig           equ 0x40
-        REG_RxConfig           equ 0x44
-        REG_RxMissed           equ 0x4C
-        REG_Cfg9346            equ 0x50
-        REG_Config0            equ 0x51
-        REG_Config1            equ 0x52
-        REG_Config2            equ 0x53
-        REG_Config3            equ 0x54
-        REG_Config4            equ 0x55
-        REG_Config5            equ 0x56
-        REG_MultiIntr          equ 0x5C
-        REG_PHYAR              equ 0x60
-        REG_TBICSR             equ 0x64
-        REG_TBI_ANAR           equ 0x68
-        REG_TBI_LPAR           equ 0x6A
-        REG_PHYstatus          equ 0x6C
-        REG_RxMaxSize          equ 0xDA
-        REG_CPlusCmd           equ 0xE0
-        REG_RxDescStartAddr    equ 0xE4
-        REG_ETThReg            equ 0xEC
-        REG_FuncEvent          equ 0xF0
-        REG_FuncEventMask      equ 0xF4
-        REG_FuncPresetState    equ 0xF8
-        REG_FuncForceEvent     equ 0xFC
+        REG_MAC0               =   0x0 ; Ethernet hardware address
+        REG_MAR0               =   0x8 ; Multicast filter
+        REG_TxDescStartAddr    =   0x20
+        REG_TxHDescStartAddr   =   0x28
+        REG_FLASH              =   0x30
+        REG_ERSR               =   0x36
+        REG_ChipCmd            =   0x37
+        REG_TxPoll             =   0x38
+        REG_IntrMask           =   0x3C
+        REG_IntrStatus         =   0x3E
+        REG_TxConfig           =   0x40
+        REG_RxConfig           =   0x44
+        REG_RxMissed           =   0x4C
+        REG_Cfg9346            =   0x50
+        REG_Config0            =   0x51
+        REG_Config1            =   0x52
+        REG_Config2            =   0x53
+        REG_Config3            =   0x54
+        REG_Config4            =   0x55
+        REG_Config5            =   0x56
+        REG_MultiIntr          =   0x5C
+        REG_PHYAR              =   0x60
+        REG_TBICSR             =   0x64
+        REG_TBI_ANAR           =   0x68
+        REG_TBI_LPAR           =   0x6A
+        REG_PHYstatus          =   0x6C
+        REG_RxMaxSize          =   0xDA
+        REG_CPlusCmd           =   0xE0
+        REG_RxDescStartAddr    =   0xE4
+        REG_ETThReg            =   0xEC
+        REG_FuncEvent          =   0xF0
+        REG_FuncEventMask      =   0xF4
+        REG_FuncPresetState    =   0xF8
+        REG_FuncForceEvent     =   0xFC
 
         ; InterruptStatusBits
-        ISB_SYSErr             equ 0x8000
-        ISB_PCSTimeout         equ 0x4000
-        ISB_SWInt              equ 0x0100
-        ISB_TxDescUnavail      equ 0x80
-        ISB_RxFIFOOver         equ 0x40
-        ISB_LinkChg            equ 0x20
-        ISB_RxOverflow         equ 0x10
-        ISB_TxErr              equ 0x08
-        ISB_TxOK               equ 0x04
-        ISB_RxErr              equ 0x02
-        ISB_RxOK               equ 0x01
+        ISB_SYSErr             =   0x8000
+        ISB_PCSTimeout         =   0x4000
+        ISB_SWInt              =   0x0100
+        ISB_TxDescUnavail      =   0x80
+        ISB_RxFIFOOver         =   0x40
+        ISB_LinkChg            =   0x20
+        ISB_RxOverflow         =   0x10
+        ISB_TxErr              =   0x08
+        ISB_TxOK               =   0x04
+        ISB_RxErr              =   0x02
+        ISB_RxOK               =   0x01
 
         ; RxStatusDesc
-        SD_RxRES               equ 0x00200000
-        SD_RxCRC               equ 0x00080000
-        SD_RxRUNT              equ 0x00100000
-        SD_RxRWT               equ 0x00400000
+        SD_RxRES               =   0x00200000
+        SD_RxCRC               =   0x00080000
+        SD_RxRUNT              =   0x00100000
+        SD_RxRWT               =   0x00400000
 
         ; ChipCmdBits
-        CMD_Reset              equ 0x10
-        CMD_RxEnb              equ 0x08
-        CMD_TxEnb              equ 0x04
-        CMD_RxBufEmpty         equ 0x01
+        CMD_Reset              =   0x10
+        CMD_RxEnb              =   0x08
+        CMD_TxEnb              =   0x04
+        CMD_RxBufEmpty         =   0x01
 
         ; Cfg9346Bits
-        CFG_9346_Lock          equ 0x00
-        CFG_9346_Unlock        equ 0xC0
+        CFG_9346_Lock          =   0x00
+        CFG_9346_Unlock        =   0xC0
 
         ; rx_mode_bits
-        RXM_AcceptErr          equ 0x20
-        RXM_AcceptRunt         equ 0x10
-        RXM_AcceptBroadcast    equ 0x08
-        RXM_AcceptMulticast    equ 0x04
-        RXM_AcceptMyPhys       equ 0x02
-        RXM_AcceptAllPhys      equ 0x01
+        RXM_AcceptErr          =   0x20
+        RXM_AcceptRunt         =   0x10
+        RXM_AcceptBroadcast    =   0x08
+        RXM_AcceptMulticast    =   0x04
+        RXM_AcceptMyPhys       =   0x02
+        RXM_AcceptAllPhys      =   0x01
 
         ; RxConfigBits
-        RXC_FIFOShift          equ 13
-        RXC_DMAShift           equ 8
+        RXC_FIFOShift          =   13
+        RXC_DMAShift           =   8
 
         ; TxConfigBits
-        TXC_InterFrameGapShift equ 24
-        TXC_DMAShift           equ 8    ; DMA burst value (0-7) is shift this many bits
+        TXC_InterFrameGapShift =   24
+        TXC_DMAShift           =   8    ; DMA burst value (0-7) is shift this many bits
 
         ; PHYstatus
-        PHYS_TBI_Enable        equ 0x80
-        PHYS_TxFlowCtrl        equ 0x40
-        PHYS_RxFlowCtrl        equ 0x20
-        PHYS_1000bpsF          equ 0x10
-        PHYS_100bps            equ 0x08
-        PHYS_10bps             equ 0x04
-        PHYS_LinkStatus        equ 0x02
-        PHYS_FullDup           equ 0x01
+        PHYS_TBI_Enable        =   0x80
+        PHYS_TxFlowCtrl        =   0x40
+        PHYS_RxFlowCtrl        =   0x20
+        PHYS_1000bpsF          =   0x10
+        PHYS_100bps            =   0x08
+        PHYS_10bps             =   0x04
+        PHYS_LinkStatus        =   0x02
+        PHYS_FullDup           =   0x01
 
         ; GIGABIT_PHY_registers
-        PHY_CTRL_REG           equ 0
-        PHY_STAT_REG           equ 1
-        PHY_AUTO_NEGO_REG      equ 4
-        PHY_1000_CTRL_REG      equ 9
+        PHY_CTRL_REG           =   0
+        PHY_STAT_REG           =   1
+        PHY_AUTO_NEGO_REG      =   4
+        PHY_1000_CTRL_REG      =   9
 
         ; GIGABIT_PHY_REG_BIT
-        PHY_Restart_Auto_Nego  equ 0x0200
-        PHY_Enable_Auto_Nego   equ 0x1000
+        PHY_Restart_Auto_Nego  =   0x0200
+        PHY_Enable_Auto_Nego   =   0x1000
 
         ; PHY_STAT_REG = 1;
-        PHY_Auto_Neco_Comp     equ 0x0020
+        PHY_Auto_Neco_Comp     =   0x0020
 
         ; PHY_AUTO_NEGO_REG = 4;
-        PHY_Cap_10_Half        equ 0x0020
-        PHY_Cap_10_Full        equ 0x0040
-        PHY_Cap_100_Half       equ 0x0080
-        PHY_Cap_100_Full       equ 0x0100
+        PHY_Cap_10_Half        =   0x0020
+        PHY_Cap_10_Full        =   0x0040
+        PHY_Cap_100_Half       =   0x0080
+        PHY_Cap_100_Full       =   0x0100
 
         ; PHY_1000_CTRL_REG = 9;
-        PHY_Cap_1000_Full      equ 0x0200
-        PHY_Cap_1000_Half      equ 0x0100
+        PHY_Cap_1000_Full      =   0x0200
+        PHY_Cap_1000_Half      =   0x0100
 
-        PHY_Cap_PAUSE          equ 0x0400
-        PHY_Cap_ASYM_PAUSE     equ 0x0800
+        PHY_Cap_PAUSE          =   0x0400
+        PHY_Cap_ASYM_PAUSE     =   0x0800
 
-        PHY_Cap_Null           equ 0x0
+        PHY_Cap_Null           =   0x0
 
         ; _MediaType
-        MT_10_Half             equ 0x01
-        MT_10_Full             equ 0x02
-        MT_100_Half            equ 0x04
-        MT_100_Full            equ 0x08
-        MT_1000_Full           equ 0x10
+        MT_10_Half             =   0x01
+        MT_10_Full             =   0x02
+        MT_100_Half            =   0x04
+        MT_100_Full            =   0x08
+        MT_1000_Full           =   0x10
 
         ; _TBICSRBit
-        TBI_LinkOK             equ 0x02000000
+        TBI_LinkOK             =   0x02000000
 
         ; _DescStatusBit
-        DSB_OWNbit             equ 0x80000000
-        DSB_EORbit             equ 0x40000000
-        DSB_FSbit              equ 0x20000000
-        DSB_LSbit              equ 0x10000000
+        DSB_OWNbit             =   0x80000000
+        DSB_EORbit             =   0x40000000
+        DSB_FSbit              =   0x20000000
+        DSB_LSbit              =   0x10000000
 
-        RX_BUF_SIZE             equ 1536    ; Rx Buffer size
+        RX_BUF_SIZE             =   1536    ; Rx Buffer size
 
 
-ETH_ALEN               equ 6
-ETH_HLEN               equ (2 * ETH_ALEN + 2)
-ETH_ZLEN               equ 60 ; 60 + 4bytes auto payload for
+ETH_ALEN               =   6
+ETH_HLEN               =   (2 * ETH_ALEN + 2)
+ETH_ZLEN               =   60 ; 60 + 4bytes auto payload for
                                       ; mininmum 64bytes frame length
 
 ; MAC address length
-MAC_ADDR_LEN        equ 6
+MAC_ADDR_LEN        =   6
 
 ; max supported gigabit ethernet frame size -- must be at least (dev->mtu+14+4)
-MAX_ETH_FRAME_SIZE  equ 1536
+MAX_ETH_FRAME_SIZE  =   1536
 
-TX_FIFO_THRESH      equ 256     ; In bytes
+TX_FIFO_THRESH      =   256     ; In bytes
 
-RX_FIFO_THRESH      equ 7       ; 7 means NO threshold, Rx buffer level before first PCI xfer
-RX_DMA_BURST        equ 7       ; Maximum PCI burst, '6' is 1024
-TX_DMA_BURST        equ 7       ; Maximum PCI burst, '6' is 1024
-ETTh                equ 0x3F    ; 0x3F means NO threshold
+RX_FIFO_THRESH      =   7       ; 7 means NO threshold, Rx buffer level before first PCI xfer
+RX_DMA_BURST        =   7       ; Maximum PCI burst, '6' is 1024
+TX_DMA_BURST        =   7       ; Maximum PCI burst, '6' is 1024
+ETTh                =   0x3F    ; 0x3F means NO threshold
 
-EarlyTxThld         equ 0x3F    ; 0x3F means NO early transmit
-RxPacketMaxSize     equ 0x0800  ; Maximum size supported is 16K-1
-InterFrameGap       equ 0x03    ; 3 means InterFrameGap = the shortest one
+EarlyTxThld         =   0x3F    ; 0x3F means NO early transmit
+RxPacketMaxSize     =   0x0800  ; Maximum size supported is 16K-1
+InterFrameGap       =   0x03    ; 3 means InterFrameGap = the shortest one
 
-HZ                  equ 1000
+HZ                  =   1000
 
-RTL_MIN_IO_SIZE     equ 0x80
-TX_TIMEOUT          equ (6*HZ)
+RTL_MIN_IO_SIZE     =   0x80
+TX_TIMEOUT          =   (6*HZ)
 
-TIMER_EXPIRE_TIME equ 100
+TIMER_EXPIRE_TIME =   100
 
-ETH_HDR_LEN         equ 14
-DEFAULT_MTU         equ 1500
-DEFAULT_RX_BUF_LEN  equ 1536
+ETH_HDR_LEN         =   14
+DEFAULT_MTU         =   1500
+DEFAULT_RX_BUF_LEN  =   1536
 
 
 ;#ifdef JUMBO_FRAME_SUPPORT
 ;#define MAX_JUMBO_FRAME_MTU    ( 10000 )
 ;#define MAX_RX_SKBDATA_SIZE    ( MAX_JUMBO_FRAME_MTU + ETH_HDR_LEN )
 ;#else
-MAX_RX_SKBDATA_SIZE equ 1600
+MAX_RX_SKBDATA_SIZE =   1600
 ;#endif                         //end #ifdef JUMBO_FRAME_SUPPORT
 
-MCFG_METHOD_01       equ 0x01
-MCFG_METHOD_02       equ 0x02
-MCFG_METHOD_03       equ 0x03
-MCFG_METHOD_04       equ 0x04
-MCFG_METHOD_05       equ 0x05
-MCFG_METHOD_11       equ 0x0b
-MCFG_METHOD_12       equ 0x0c
-MCFG_METHOD_13       equ 0x0d
-MCFG_METHOD_14       equ 0x0e
-MCFG_METHOD_15       equ 0x0f
+MCFG_METHOD_01       =   0x01
+MCFG_METHOD_02       =   0x02
+MCFG_METHOD_03       =   0x03
+MCFG_METHOD_04       =   0x04
+MCFG_METHOD_05       =   0x05
+MCFG_METHOD_11       =   0x0b
+MCFG_METHOD_12       =   0x0c
+MCFG_METHOD_13       =   0x0d
+MCFG_METHOD_14       =   0x0e
+MCFG_METHOD_15       =   0x0f
 
-PCFG_METHOD_1       equ 0x01    ; PHY Reg 0x03 bit0-3 == 0x0000
-PCFG_METHOD_2       equ 0x02    ; PHY Reg 0x03 bit0-3 == 0x0001
-PCFG_METHOD_3       equ 0x03    ; PHY Reg 0x03 bit0-3 == 0x0002
+PCFG_METHOD_1       =   0x01    ; PHY Reg 0x03 bit0-3 == 0x0000
+PCFG_METHOD_2       =   0x02    ; PHY Reg 0x03 bit0-3 == 0x0001
+PCFG_METHOD_3       =   0x03    ; PHY Reg 0x03 bit0-3 == 0x0002
 
 virtual at 0
   tx_desc:

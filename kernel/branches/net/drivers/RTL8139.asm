@@ -17,16 +17,16 @@
 
 format MS COFF
 
-        API_VERSION             equ 0x01000100
-        DRIVER_VERSION          equ 5
+        API_VERSION             =   0x01000100
+        DRIVER_VERSION          =   5
 
-        MAX_DEVICES             equ 16
+        MAX_DEVICES             =   16
 
-        RBLEN                   equ 3 ; Receive buffer size: 0==8K 1==16k 2==32k 3==64k
+        RBLEN                   =   3 ; Receive buffer size: 0==8K 1==16k 2==32k 3==64k
 
-        DEBUG                   equ 1
-        __DEBUG__               equ 1
-        __DEBUG_LEVEL__         equ 2
+        DEBUG                   =   1
+        __DEBUG__               =   1
+        __DEBUG_LEVEL__         =   2
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -37,94 +37,94 @@ public START
 public service_proc
 public version
 
-        REG_IDR0                equ 0x00
-        REG_MAR0                equ 0x08 ; multicast filter register 0
-        REG_MAR4                equ 0x0c ; multicast filter register 4
-        REG_TSD0                equ 0x10 ; transmit status of descriptor
-        REG_TSAD0               equ 0x20 ; transmit start address of descriptor
-        REG_RBSTART             equ 0x30 ; RxBuffer start address
-        REG_COMMAND             equ 0x37 ; command register
-        REG_CAPR                equ 0x38 ; current address of packet read (word) R/W
-        REG_IMR                 equ 0x3c ; interrupt mask register
-        REG_ISR                 equ 0x3e ; interrupt status register
-        REG_TXCONFIG            equ 0x40 ; transmit configuration register
-        REG_RXCONFIG            equ 0x44 ; receive configuration register 0
-        REG_MPC                 equ 0x4c ; missed packet counter
-        REG_9346CR              equ 0x50 ; serial eeprom 93C46 command register
-        REG_CONFIG1             equ 0x52 ; configuration register 1
-        REG_MSR                 equ 0x58
-        REG_CONFIG4             equ 0x5a ; configuration register 4
-        REG_HLTCLK              equ 0x5b ; undocumented halt clock register
-        REG_BMCR                equ 0x62 ; basic mode control register
-        REG_ANAR                equ 0x66 ; auto negotiation advertisement register
-        REG_9346CR_WE           equ 11b SHL 6
+        REG_IDR0                =   0x00
+        REG_MAR0                =   0x08 ; multicast filter register 0
+        REG_MAR4                =   0x0c ; multicast filter register 4
+        REG_TSD0                =   0x10 ; transmit status of descriptor
+        REG_TSAD0               =   0x20 ; transmit start address of descriptor
+        REG_RBSTART             =   0x30 ; RxBuffer start address
+        REG_COMMAND             =   0x37 ; command register
+        REG_CAPR                =   0x38 ; current address of packet read (word) R/W
+        REG_IMR                 =   0x3c ; interrupt mask register
+        REG_ISR                 =   0x3e ; interrupt status register
+        REG_TXCONFIG            =   0x40 ; transmit configuration register
+        REG_RXCONFIG            =   0x44 ; receive configuration register 0
+        REG_MPC                 =   0x4c ; missed packet counter
+        REG_9346CR              =   0x50 ; serial eeprom 93C46 command register
+        REG_CONFIG1             =   0x52 ; configuration register 1
+        REG_MSR                 =   0x58
+        REG_CONFIG4             =   0x5a ; configuration register 4
+        REG_HLTCLK              =   0x5b ; undocumented halt clock register
+        REG_BMCR                =   0x62 ; basic mode control register
+        REG_ANAR                =   0x66 ; auto negotiation advertisement register
+        REG_9346CR_WE           =   11b SHL 6
 
-        BIT_RUNT                equ 4 ; total packet length < 64 bytes
-        BIT_LONG                equ 3 ; total packet length > 4k
-        BIT_CRC                 equ 2 ; crc error occured
-        BIT_FAE                 equ 1 ; frame alignment error occured
-        BIT_ROK                 equ 0 ; received packet is ok
+        BIT_RUNT                =   4 ; total packet length < 64 bytes
+        BIT_LONG                =   3 ; total packet length > 4k
+        BIT_CRC                 =   2 ; crc error occured
+        BIT_FAE                 =   1 ; frame alignment error occured
+        BIT_ROK                 =   0 ; received packet is ok
 
-        BIT_RST                 equ 4 ; reset bit
-        BIT_RE                  equ 3 ; receiver enabled
-        BIT_TE                  equ 2 ; transmitter enabled
-        BUFE                    equ 1 ; rx buffer is empty, no packet stored
+        BIT_RST                 =   4 ; reset bit
+        BIT_RE                  =   3 ; receiver enabled
+        BIT_TE                  =   2 ; transmitter enabled
+        BUFE                    =   1 ; rx buffer is empty, no packet stored
 
-        BIT_ISR_TOK             equ 2 ; transmit ok
-        BIT_ISR_RER             equ 1 ; receive error interrupt
-        BIT_ISR_ROK             equ 0 ; receive ok
+        BIT_ISR_TOK             =   2 ; transmit ok
+        BIT_ISR_RER             =   1 ; receive error interrupt
+        BIT_ISR_ROK             =   0 ; receive ok
 
-        BIT_TX_MXDMA            equ 8 ; Max DMA burst size per Tx DMA burst
-        BIT_TXRR                equ 4 ; Tx Retry count 16+(TXRR*16)
+        BIT_TX_MXDMA            =   8 ; Max DMA burst size per Tx DMA burst
+        BIT_TXRR                =   4 ; Tx Retry count 16+(TXRR*16)
 
-        BIT_RXFTH               equ 13 ; Rx fifo threshold
-        BIT_RBLEN               equ 11 ; Ring buffer length indicator
-        BIT_RX_MXDMA            equ 8 ; Max DMA burst size per Rx DMA burst
-        BIT_NOWRAP              equ 7 ; transfered data wrapping
-        BIT_9356SEL             equ 6 ; eeprom selector 9346/9356
-        BIT_AER                 equ 5 ; accept error packets
-        BIT_AR                  equ 4 ; accept runt packets
-        BIT_AB                  equ 3 ; accept broadcast packets
-        BIT_AM                  equ 2 ; accept multicast packets
-        BIT_APM                 equ 1 ; accept physical match packets
-        BIT_AAP                 equ 0 ; accept all packets
+        BIT_RXFTH               =   13 ; Rx fifo threshold
+        BIT_RBLEN               =   11 ; Ring buffer length indicator
+        BIT_RX_MXDMA            =   8 ; Max DMA burst size per Rx DMA burst
+        BIT_NOWRAP              =   7 ; transfered data wrapping
+        BIT_9356SEL             =   6 ; eeprom selector 9346/9356
+        BIT_AER                 =   5 ; accept error packets
+        BIT_AR                  =   4 ; accept runt packets
+        BIT_AB                  =   3 ; accept broadcast packets
+        BIT_AM                  =   2 ; accept multicast packets
+        BIT_APM                 =   1 ; accept physical match packets
+        BIT_AAP                 =   0 ; accept all packets
 
-        BIT_93C46_EEM1          equ 7 ; RTL8139 eeprom operating mode1
-        BIT_93C46_EEM0          equ 6 ; RTL8139 eeprom operating mode0
-        BIT_93C46_EECS          equ 3 ; chip select
-        BIT_93C46_EESK          equ 2 ; serial data clock
-        BIT_93C46_EEDI          equ 1 ; serial data input
-        BIT_93C46_EEDO          equ 0 ; serial data output
+        BIT_93C46_EEM1          =   7 ; RTL8139 eeprom operating mode1
+        BIT_93C46_EEM0          =   6 ; RTL8139 eeprom operating mode0
+        BIT_93C46_EECS          =   3 ; chip select
+        BIT_93C46_EESK          =   2 ; serial data clock
+        BIT_93C46_EEDI          =   1 ; serial data input
+        BIT_93C46_EEDO          =   0 ; serial data output
 
-        BIT_LWACT               equ 4 ; see REG_CONFIG1
-        BIT_SLEEP               equ 1 ; sleep bit at older chips
-        BIT_PWRDWN              equ 0 ; power down bit at older chips
-        BIT_PMEn                equ 0 ; power management enabled
+        BIT_LWACT               =   4 ; see REG_CONFIG1
+        BIT_SLEEP               =   1 ; sleep bit at older chips
+        BIT_PWRDWN              =   0 ; power down bit at older chips
+        BIT_PMEn                =   0 ; power management enabled
 
-        BIT_LWPTN               equ 2 ; see REG_CONFIG4
+        BIT_LWPTN               =   2 ; see REG_CONFIG4
 
-        BIT_ERTXTH              equ 16 ; early TX threshold
-        BIT_TOK                 equ 15 ; transmit ok
-        BIT_OWN                 equ 13 ; tx DMA operation is completed
+        BIT_ERTXTH              =   16 ; early TX threshold
+        BIT_TOK                 =   15 ; transmit ok
+        BIT_OWN                 =   13 ; tx DMA operation is completed
 
-        BIT_ANE                 equ 12 ; auto negotiation enable
+        BIT_ANE                 =   12 ; auto negotiation enable
 
-        BIT_TXFD                equ 8 ; 100base-T full duplex
-        BIT_TX                  equ 7 ; 100base-T
-        BIT_10FD                equ 6 ; 10base-T full duplex
-        BIT_10                  equ 5 ; 10base-T
-        BIT_SELECTOR            equ 0 ; binary encoded selector CSMA/CD=00001
+        BIT_TXFD                =   8 ; 100base-T full duplex
+        BIT_TX                  =   7 ; 100base-T
+        BIT_10FD                =   6 ; 10base-T full duplex
+        BIT_10                  =   5 ; 10base-T
+        BIT_SELECTOR            =   0 ; binary encoded selector CSMA/CD=00001
 
-        BIT_IFG1                equ 25
-        BIT_IFG0                equ 24
+        BIT_IFG1                =   25
+        BIT_IFG0                =   24
 
-        TXRR                    equ 8 ; total retries = 16+(TXRR*16)
-        TX_MXDMA                equ 6 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=2048
-        ERTXTH                  equ 8 ; in unit of 32 bytes e.g:(8*32)=256
-        RX_MXDMA                equ 7 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=unlimited
-        RXFTH                   equ 7 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=no threshold
+        TXRR                    =   8 ; total retries = 16+(TXRR*16)
+        TX_MXDMA                =   6 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=2048
+        ERTXTH                  =   8 ; in unit of 32 bytes e.g:(8*32)=256
+        RX_MXDMA                =   7 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=unlimited
+        RXFTH                   =   7 ; 0=16 1=32 2=64 3=128 4=256 5=512 6=1024 7=no threshold
 
-        RX_CONFIG               equ (RBLEN shl BIT_RBLEN) or \
+        RX_CONFIG               =   (RBLEN shl BIT_RBLEN) or \
                                     (RX_MXDMA shl BIT_RX_MXDMA) or \
                                     (1 shl BIT_NOWRAP) or \
                                     (RXFTH shl BIT_RXFTH) or\
@@ -134,49 +134,49 @@ public version
                                     (1 shl BIT_AR) or \                 ; Accept Runt packets (smaller then 64 bytes)
                                     (1 shl BIT_AM)                      ; Accept multicast packets
 
-        RX_BUFFER_SIZE          equ (8192 shl RBLEN);+16
-        MAX_ETH_FRAME_SIZE      equ 1516 ; exactly 1514 wthout CRC
-        NUM_TX_DESC             equ 4
+        RX_BUFFER_SIZE          =   (8192 shl RBLEN);+16
+        MAX_ETH_FRAME_SIZE      =   1516 ; exactly 1514 wthout CRC
+        NUM_TX_DESC             =   4
 
-        EE_93C46_REG_ETH_ID     equ 7 ; MAC offset
-        EE_93C46_READ_CMD       equ (6 shl 6) ; 110b + 6bit address
-        EE_93C56_READ_CMD       equ (6 shl 8) ; 110b + 8bit address
-        EE_93C46_CMD_LENGTH     equ 9  ; start bit + cmd + 6bit address
-        EE_93C56_CMD_LENGTH     equ 11 ; start bit + cmd + 8bit ddress
+        EE_93C46_REG_ETH_ID     =   7 ; MAC offset
+        EE_93C46_READ_CMD       =   (6 shl 6) ; 110b + 6bit address
+        EE_93C56_READ_CMD       =   (6 shl 8) ; 110b + 8bit address
+        EE_93C46_CMD_LENGTH     =   9  ; start bit + cmd + 6bit address
+        EE_93C56_CMD_LENGTH     =   11 ; start bit + cmd + 8bit ddress
 
-        VER_RTL8139             equ 1100000b
-        VER_RTL8139A            equ 1110000b
-        VER_RTL8139AG           equ 1110100b
-        VER_RTL8139B            equ 1111000b
-        VER_RTL8130             equ VER_RTL8139B
-        VER_RTL8139C            equ 1110100b
-        VER_RTL8100             equ 1111010b
-        VER_RTL8100B            equ 1110101b
-        VER_RTL8139D            equ VER_RTL8100B
-        VER_RTL8139CP           equ 1110110b
-        VER_RTL8101             equ 1110111b
+        VER_RTL8139             =   1100000b
+        VER_RTL8139A            =   1110000b
+        VER_RTL8139AG           =   1110100b
+        VER_RTL8139B            =   1111000b
+        VER_RTL8130             =   VER_RTL8139B
+        VER_RTL8139C            =   1110100b
+        VER_RTL8100             =   1111010b
+        VER_RTL8100B            =   1110101b
+        VER_RTL8139D            =   VER_RTL8100B
+        VER_RTL8139CP           =   1110110b
+        VER_RTL8101             =   1110111b
 
-        IDX_RTL8139             equ 0
-        IDX_RTL8139A            equ 1
-        IDX_RTL8139B            equ 2
-        IDX_RTL8139C            equ 3
-        IDX_RTL8100             equ 4
-        IDX_RTL8139D            equ 5
-        IDX_RTL8139D            equ 6
-        IDX_RTL8101             equ 7
+        IDX_RTL8139             =   0
+        IDX_RTL8139A            =   1
+        IDX_RTL8139B            =   2
+        IDX_RTL8139C            =   3
+        IDX_RTL8100             =   4
+        IDX_RTL8139D            =   5
+        IDX_RTL8139D            =   6
+        IDX_RTL8101             =   7
 
-        ISR_SERR                equ 1 SHL 15
-        ISR_TIMEOUT             equ 1 SHL 14
-        ISR_LENCHG              equ 1 SHL 13
-        ISR_FIFOOVW             equ 1 SHL 6
-        ISR_PUN                 equ 1 SHL 5
-        ISR_RXOVW               equ 1 SHL 4
-        ISR_TER                 equ 1 SHL 3
-        ISR_TOK                 equ 1 SHL 2
-        ISR_RER                 equ 1 SHL 1
-        ISR_ROK                 equ 1 SHL 0
+        ISR_SERR                =   1 SHL 15
+        ISR_TIMEOUT             =   1 SHL 14
+        ISR_LENCHG              =   1 SHL 13
+        ISR_FIFOOVW             =   1 SHL 6
+        ISR_PUN                 =   1 SHL 5
+        ISR_RXOVW               =   1 SHL 4
+        ISR_TER                 =   1 SHL 3
+        ISR_TOK                 =   1 SHL 2
+        ISR_RER                 =   1 SHL 1
+        ISR_ROK                 =   1 SHL 0
 
-        INTERRUPT_MASK          equ ISR_ROK or \
+        INTERRUPT_MASK          =   ISR_ROK or \
                                     ISR_RXOVW or \
                                     ISR_PUN or \
                                     ISR_FIFOOVW or \
@@ -184,14 +184,14 @@ public version
                                     ISR_TOK or \
                                     ISR_TER
 
-        TSR_OWN                 equ 1 SHL 13
-        TSR_TUN                 equ 1 SHL 14
-        TSR_TOK                 equ 1 SHL 15
+        TSR_OWN                 =   1 SHL 13
+        TSR_TUN                 =   1 SHL 14
+        TSR_TOK                 =   1 SHL 15
 
-        TSR_CDH                 equ 1 SHL 28
-        TSR_OWC                 equ 1 SHL 29
-        TSR_TABT                equ 1 SHL 30
-        TSR_CRS                 equ 1 SHL 31
+        TSR_CDH                 =   1 SHL 28
+        TSR_OWC                 =   1 SHL 29
+        TSR_TABT                =   1 SHL 30
+        TSR_CRS                 =   1 SHL 31
 
 
 virtual at ebx

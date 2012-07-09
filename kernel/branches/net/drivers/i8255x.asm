@@ -19,14 +19,14 @@
 
 format MS COFF
 
-        API_VERSION             equ 0x01000100
-        DRIVER_VERSION          equ 5
+        API_VERSION             =   0x01000100
+        DRIVER_VERSION          =   5
 
-        MAX_DEVICES             equ 16
+        MAX_DEVICES             =   16
 
-        DEBUG                   equ 1
-        __DEBUG__               equ 1
-        __DEBUG_LEVEL__         equ 1
+        DEBUG                   =   1
+        __DEBUG__               =   1
+        __DEBUG_LEVEL__         =   1
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -109,46 +109,46 @@ end virtual
 
 ; Serial EEPROM
 
-EE_SK           equ 1 shl 16   ; serial clock
-EE_CS           equ 1 shl 17   ; chip select
-EE_DI           equ 1 shl 18   ; data in
-EE_DO           equ 1 shl 19   ; data out
+EE_SK           =   1 shl 16   ; serial clock
+EE_CS           =   1 shl 17   ; chip select
+EE_DI           =   1 shl 18   ; data in
+EE_DO           =   1 shl 19   ; data out
 
-EE_READ         equ 110b
-EE_WRITE        equ 101b
-EE_ERASE        equ 111b
+EE_READ         =   110b
+EE_WRITE        =   101b
+EE_ERASE        =   111b
 
 ; The SCB accepts the following controls for the Tx and Rx units:
 
-CU_START        equ 0x0010
-CU_RESUME       equ 0x0020
-CU_STATSADDR    equ 0x0040
-CU_SHOWSTATS    equ 0x0050   ; Dump statistics counters.
-CU_CMD_BASE     equ 0x0060   ; Base address to add to add CU commands.
-CU_DUMPSTATS    equ 0x0070   ; Dump then reset stats counters.
+CU_START        =   0x0010
+CU_RESUME       =   0x0020
+CU_STATSADDR    =   0x0040
+CU_SHOWSTATS    =   0x0050   ; Dump statistics counters.
+CU_CMD_BASE     =   0x0060   ; Base address to add to add CU commands.
+CU_DUMPSTATS    =   0x0070   ; Dump then reset stats counters.
 
-RX_START        equ 0x0001
-RX_RESUME       equ 0x0002
-RX_ABORT        equ 0x0004
-RX_ADDR_LOAD    equ 0x0006
-RX_RESUMENR     equ 0x0007
-INT_MASK        equ 0x0100
-DRVR_INT        equ 0x0200   ; Driver generated interrupt
+RX_START        =   0x0001
+RX_RESUME       =   0x0002
+RX_ABORT        =   0x0004
+RX_ADDR_LOAD    =   0x0006
+RX_RESUMENR     =   0x0007
+INT_MASK        =   0x0100
+DRVR_INT        =   0x0200   ; Driver generated interrupt
 
-CmdIASetup      equ 0x0001
-CmdConfigure    equ 0x0002
-CmdTx           equ 0x0004 ;;;;
-CmdTxFlex       equ 0x0008 ;;;
-Cmdsuspend      equ 0x4000
+CmdIASetup      =   0x0001
+CmdConfigure    =   0x0002
+CmdTx           =   0x0004 ;;;;
+CmdTxFlex       =   0x0008 ;;;
+Cmdsuspend      =   0x4000
 
 
-reg_scb_status  equ 0
-reg_scb_cmd     equ 2
-reg_scb_ptr     equ 4
-reg_port        equ 8
-reg_eeprom_ctrl equ 12
-reg_eeprom      equ 14
-reg_mdi_ctrl    equ 16
+reg_scb_status  =   0
+reg_scb_cmd     =   2
+reg_scb_ptr     =   4
+reg_port        =   8
+reg_eeprom_ctrl =   12
+reg_eeprom      =   14
+reg_mdi_ctrl    =   16
 
 
 macro delay {
