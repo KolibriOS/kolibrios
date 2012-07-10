@@ -21,10 +21,19 @@ key_symbol_w db 'symbol_w',0
 key_symbol_h db 'symbol_h',0
 key_scroll_type db 'scroll_type',0
 ini_sec_options db 'Options',0
+key_synt_file:
+	db 'syntax_'
+	.numb: db '0',0
+key_synt_ext:
+	db 'ext_'
+	.numb: db '0',0
+ini_def_synt_f db 0
 
 align 4
-wnd_s_pos: ;место для настроек стартовой позиции окна
-    rq 0
+max_synt_auto_open equ 10
+synt_auto_open:
+	rb 64*max_synt_auto_open
+	db 0
 
 system_dir_0 db '/sys/lib/'
 lib_name_0 db 'box_lib.obj',0
@@ -488,7 +497,6 @@ tedit0: ;структура текстового редактора
 ;------------------------------------------------------------------------------
 
 conv_tabl rb 128 ; таблица для конвертирования scan-кода в ascii-код
-buf db BUF_SIZE dup(0)
 
 el_focus dd 0
 mouse_dd dd 0
@@ -504,11 +512,9 @@ tree_file_struct:
   db 0
   dd file_name ;sys_path
 
-dir_mem rb 32+304*count_of_dir_list_files
-
 if lang eq ru
 
-hed db 'Текстовый редактор 05.07.12',0 ;подпись окна
+hed db 'Текстовый редактор 10.07.12',0 ;подпись окна
 
 menu_text_area:
 db 'Файл',0
@@ -626,7 +632,7 @@ txtFormatApply db 'Применить',0
 
 else
 
-hed db 'Text editor 05.07.12',0
+hed db 'Text editor 10.07.12',0
 
 menu_text_area:
 db 'File',0

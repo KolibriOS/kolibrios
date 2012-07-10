@@ -27,7 +27,8 @@ run_file_70 FileInfoBlock
 ; al = код ошибки
 align 4
 ted_on_init_synt_err:
-	mov byte[msgbox_3.err],al
+	mov byte[msgbox_3.err],'0'
+	add byte[msgbox_3.err],al
 	stdcall [mb_create],msgbox_3,thread ;message: Can-t open color options file!
 	ret
 
@@ -117,8 +118,39 @@ ted_but_open_file:
 		mov [edit1.size],eax
 		mov [edit1.pos],eax
 		stdcall [edit_box_draw], edit1
+
+		;ищем есть ли файл подсветки для открываемого текстового файла
+		mov edx,[edit1.text]
+		add edx,eax
+		.f_beg:
+		cmp byte[edx],'.'
+		je .found
+			dec edx
+			cmp edx,[edit1.text]
+			jg .f_beg
+		.found:
+		inc edx ;edx - указатель на расширение открытого файла
+
+		mov ebx,synt_auto_open
+		.cycle_0:
+			add ebx,32
+			stdcall strcmp,ebx,edx ;сравниваем расширение открытого файла со значениями открытыми с ini файла
+			test eax,eax
+			jz .ok
+			add ebx,32
+			cmp byte[ebx],0
+			jne .cycle_0
+		jmp .end_0
+		.ok: ;открытие файла подсветки в зависимости от найденного расширения
+			sub ebx,32
+			;mov ecx,ebx
+			;mcall 71,1
+			call open_unpac_synt_file
+		.end_0:
+
 		stdcall [ted_open_file], tedit0,run_file_70,[edit1.text]
 		call ted_messages_after_open_file
+
 	.ret_f:
 	popad
 	ret
@@ -154,7 +186,6 @@ endp
 ;input:
 ; eax = код ошибки
 ; ebx = колличество прочитанных байт
-; edi = pointer to tedit struct
 align 4
 ted_messages_after_open_file:
 	push ecx edi
@@ -202,9 +233,6 @@ proc ted_but_open_syntax uses eax ebx ecx edi, edit:dword
 		stdcall dword[tl_node_get_data], tree1
 		pop dword[fn_col_option]
 		mov ebx,dword[fn_col_option]
-		copy_path ebx,fn_syntax_dir,file_name_rez,0x0
-		copy_path file_name_rez,sys_path,file_name,0x0
-
 		call open_unpac_synt_file
 		cmp ebx,-1
 		je @f
@@ -216,11 +244,27 @@ proc ted_but_open_syntax uses eax ebx ecx edi, edit:dword
 endp
 
 ;открытие и распаковка файла подсветки синтаксиса
+;input:
+; ebx - указатель на имя открываемого файла синтаксиса (без пути и папки info)
 ;output:
 ; ebx - число прочитанных байт из файла
+; ecx - разрушается
 align 4
 open_unpac_synt_file:
 push eax edi esi
+	mov edi,last_open_synt_file
+	stdcall strcmp,ebx,edi ;сравниваем имя подключенного файла с подключенным ранее файлом
+	test eax,eax
+	jz @f
+
+	;копируем имя подключенного файла (для избежания повторных подключений)
+	mov esi,ebx
+	mov ecx,32
+	cld
+	rep movsb
+
+	copy_path ebx,fn_syntax_dir,file_name_rez,0
+	copy_path file_name_rez,sys_path,file_name,0
 	mov edi, tedit0
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0

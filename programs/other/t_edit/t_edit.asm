@@ -168,7 +168,7 @@ mov ecx,ebx
 .end_dir_init:
 
 ;--- load ini file ---
-	copy_path ini_name,sys_path,file_name,0x0
+	copy_path ini_name,sys_path,file_name,0
 	;window startup pozition
 	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_l,ini_def_window_l
 	mov word[wnd_s_pos+2],ax
@@ -190,11 +190,27 @@ mov ecx,ebx
 	mov dword[tedit0.rec.height],eax
 	lea eax,[eax+eax*2]
 	mov dword[tedit0.rec.top],eax
+	;файловые расширения
+	xor edx,edx
+	mov ebx,synt_auto_open
+	@@:
+		;берем имя файла
+		stdcall dword[ini_get_str],file_name,ini_sec_options,key_synt_file,ebx,32,ini_def_synt_f
+		cmp byte[ebx],0
+		je @f
+		inc byte[key_synt_file.numb]
+		add ebx,32
+		;берем расширения
+		stdcall dword[ini_get_str],file_name,ini_sec_options,key_synt_ext,ebx,32,ini_def_synt_f
+		inc byte[key_synt_ext.numb]
+		add ebx,32
+		inc edx
+		cmp edx,max_synt_auto_open
+		jl @b
+	@@:
 
 ;--- load color option file ---
 	mov ebx,dword[fn_col_option]
-	copy_path ebx,fn_syntax_dir,file_name_rez,0x0
-	copy_path file_name_rez,sys_path,file_name,0x0
 	call open_unpac_synt_file
 
 ;--- get cmd line ---
@@ -509,7 +525,6 @@ edit1 edit_box 250, 220, 5, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 4090, open
 edit2 edit_box TED_PANEL_WIDTH-1, 0, 20, 0xffffff, 0xff80, 0xff0000, 0xff, 0x4080, 300, buf_find, mouse_dd, 0
 
 unpac_mem dd 0
-buf_find db 302 dup(0)
 
 if lang eq ru
   head_f_i:
@@ -555,6 +570,12 @@ load_lib_end:
 
 IncludeIGlobals
 i_end:
+	dir_mem rb 32+304*count_of_dir_list_files
+	wnd_s_pos: ;место для настроек стартовой позиции окна
+		rq 1
+	last_open_synt_file rb 32 ;имя последнего подключенного файла синтаксиса
+	buf rb BUF_SIZE ;буфер для копирования и вставки
+	buf_find rb 302 ;буфер для поиска текста
 IncludeUGlobals
 	rb 1024
 	align 16
