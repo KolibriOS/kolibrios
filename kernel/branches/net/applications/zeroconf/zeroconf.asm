@@ -297,10 +297,6 @@ read_data:                                              ; we have data - this wi
 
         DEBUGF  1,"->%d bytes received\n", eax
 
-        push    eax
-        mcall   75, 1, [socketNum]                     ; exit the socket
-        pop     eax
-
         cmp     eax, -1
         je      error
 
@@ -449,7 +445,8 @@ pr_exit:
 
 
 apipa:
-    stdcall mem.Free, [dhcpMsg]
+        mcall   close, [socketNum]
+        stdcall mem.Free, [dhcpMsg]
 
 link_local:
     call random
