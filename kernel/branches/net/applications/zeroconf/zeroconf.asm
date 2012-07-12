@@ -262,7 +262,7 @@ buildRequest:                               ; Creates a DHCP request packet.
         mov     eax, [dhcpLease]
         mov     [edx+240+5], eax
         mov     [edx+240+9], word 0x0432        ; option requested IP address
-        mov     eax, [dhcpClientIP]
+        mov     eax, [dhcp.ip]
         mov     [edx+240+11], eax
         mov     [edx+240+15], word 0x0437       ; option request list
         mov     [edx+240+17], dword 0x0f060301
@@ -333,6 +333,11 @@ request:
         cmp     [dhcpMsgType], byte 0x05        ; Was the response an ACK? It should be
         jne     apipa                           ; NO - so we do zeroconf
 
+        mcall 76, API_IPv4 + 3, [dhcp.ip]       ; ip
+        mcall 76, API_IPv4 + 5, [dhcp.dns]      ; dns
+        mcall 76, API_IPv4 + 7, [dhcp.subnet]   ; subnet
+        mcall 76, API_IPv4 + 9, [dhcp.gateway]  ; gateway
+
         jmp     exit
 
 ;***************************************************************************
@@ -352,12 +357,9 @@ parseResponse:
     DEBUGF  1,"Data received, parsing response\n"
     mov     edx, [dhcpMsg]
 
-    pusha
-    mcall 76, API_IPv4 + 3, [edx+16]
-    mov     eax,[edx]
-    mov     [dhcpClientIP],eax
+    push    dword [edx+16]
+    pop     [dhcp.ip]
     DEBUGF  1,"Client: %u.%u.%u.%u\n",[edx+16]:1,[edx+17]:1,[edx+18]:1,[edx+19]:1
-    popa
 
     add     edx, 240                        ; Point to first option
     xor     ecx, ecx
@@ -374,6 +376,9 @@ pr001:
 
     mov     al, [edx+2]
     mov     [dhcpMsgType], al
+
+    DEBUGF  1,"DHCP Msg type: %u\n", al
+
     add     edx, 3
     jmp     pr001                           ; Get next option
 
@@ -406,22 +411,18 @@ pr001:
     cmp     al, dhcp_subnet_mask
     jne     @f
 
-    pusha
-    mcall 76, API_IPv4 + 7, [edx]
+    push    dword [edx]
+    pop     [dhcp.subnet]
     DEBUGF  1,"Subnet: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
-    popa
-
     jmp     next_option
 
 @@:
     cmp     al, dhcp_router
     jne     @f
 
-    pusha
-    mcall 76, API_IPv4 + 9, [edx]
+    push    dword [edx]
+    pop     [dhcp.gateway]
     DEBUGF  1,"Gateway: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
-    popa
-
     jmp     next_option
 
 
@@ -429,11 +430,9 @@ pr001:
     cmp     al, dhcp_domain_server
     jne     next_option
 
-    pusha
-    mcall 76, API_IPv4 + 5, [edx]
+    push    dword [edx]
+    pop     [dhcp.dns]
     DEBUGF  1,"DNS: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
-    popa
-
     jmp     next_option
 
 pr_exit:
@@ -568,10 +567,16 @@ IM_END:
 
 inibuf          rb 16
 
-dhcpClientIP    dd  ?
 dhcpMsgType     db  ?
 dhcpLease       dd  ?
 dhcpServerIP    dd  ?
+
+dhcp:
+.ip             dd  ?
+.subnet         dd  ?
+.dns            dd  ?
+.gateway        dd  ?
+
 
 dhcpMsgLen      dd  ?
 socketNum       dd  ?
