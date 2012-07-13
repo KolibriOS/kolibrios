@@ -18,7 +18,7 @@
   dd     0x0         ; зарезервировано
 
 
-include 'macros.inc' ; 
+include "..\..\..\macros.inc"
 
 ;---------------------------------------------------------------------
 ;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
@@ -59,8 +59,7 @@ red:                    ; перерисовать окно
     cmp     ah, 1
     jne     still        ;   return if button id != 1
 
-    or      eax, -1               ;   exit application
-    mcall
+    call exit
 
   key:                              ; key event handler
     mov     al, 2                 ;   get key code
@@ -79,9 +78,7 @@ draw_window:
 
 mcall 12, 1                    ; функция 12: сообщить ОС об отрисовке окна
                                    
-mov eax,14 ;получим ширину экрана
-mov ebx, 4
-mcall
+mcall 14, 4 ;получим ширину экрана
 shr eax, 16
 and eax,0x0000FFFF
 sub eax,300 ;отнимем от нее 300
@@ -126,10 +123,10 @@ jmp drawy ;рисуем новую точку
 fin: ;дорисовали
 
 mcall 4, <3, 12>, 0x80000000, I_PARAM, 0 ;тень за текстом
-mcall 4, <5, 12>, 0x80000000, I_PARAM, 0 ;
-mcall 4, <4, 11>, 0x80000000, I_PARAM, 0 ;
-mcall 4, <4, 13>, 0x80000000, I_PARAM, 0 ;
- mcall 4, <4, 12>, 0x80EFEFEF, I_PARAM, 0 ;текст
+mcall  , <5, 12>
+mcall  , <4, 11>
+mcall  , <4, 13>
+mcall  , <4, 12>, 0x80EFEFEF ;текст
 
 
     mcall 12, 2                    ; конец рисования
