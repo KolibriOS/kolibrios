@@ -1711,29 +1711,28 @@ SOCKET_check_owner:
 ; This function will check if the process had any open sockets
 ; And update them accordingly
 ;
-; IN:  eax = pid
+; IN:  edx = pid
 ; OUT: /
 ;
 ;------------------------------------------------------
 align 4
 SOCKET_process_end:
 
-        DEBUGF  1,"SOCKET_process_end: %x\n", eax
+        DEBUGF  1,"SOCKET_process_end: %x\n", edx
 
         push    ebx
         mov     ebx, net_sockets
 
   .next_socket:
-
         mov     ebx, [ebx + SOCKET.NextPtr]
   .test_socket:
         test    ebx, ebx
         jz      .done
 
-        cmp     [ebx + SOCKET.PID], eax
+        cmp     [ebx + SOCKET.PID], edx
         jne     .next_socket
 
-        DEBUGF  1,"closing socket %x", eax, ebx
+        DEBUGF  1,"closing socket %x", edx, ebx
 
         mov     [ebx + SOCKET.PID], 0
 
@@ -1748,7 +1747,6 @@ SOCKET_process_end:
         jmp     .test_socket
 
   .tcp:
-
         push    [ebx + SOCKET.NextPtr]
         mov     eax, ebx
         call    TCP_close
