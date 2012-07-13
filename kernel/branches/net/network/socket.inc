@@ -1749,7 +1749,7 @@ SOCKET_process_end:
   .tcp:
         push    [ebx + SOCKET.NextPtr]
         mov     eax, ebx
-        call    TCP_close
+        call    TCP_disconnect
         pop     ebx
         jmp     .test_socket
 

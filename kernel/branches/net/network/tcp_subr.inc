@@ -179,23 +179,97 @@ TCP_drop:
 align 4
 TCP_close:
 
-        DEBUGF  1,"TCP_close\n"
+        DEBUGF  1,"TCP_close: %x\n", eax
 
 ;;; TODO: update RTT and mean deviation
 ;;; TODO: update slow start threshold
 ;;; TODO: release connection resources
 
         call    SOCKET_is_disconnected
+        call    SOCKET_free
 
         ret
 
 
 
+;-------------------------
+;
+; TCP_disconnect
+;
+;  IN:  eax = socket ptr
+;  OUT: eax = socket ptr
+;
+;-------------------------
+align 4
+TCP_disconnect:
+
+        DEBUGF  1,"TCP_disconnect\n"
+
+        cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
+        jb      TCP_close
+
+
+; TODO: implement LINGER ?
+
+        call    SOCKET_is_disconnecting
+        call    TCP_usrclosed
+        call    TCP_output
+
+        ret
 
 
 
+;-------------------------
+;
+; TCP_usrclose
+;
+;  IN:  eax = socket ptr
+;
+;-------------------------
+align 4
+TCP_usrclosed:
+
+        push    ebx
+        mov     ebx, [eax + TCP_SOCKET.t_state]
+        mov     ebx, dword [.switch + ebx*4]
+        jmp     ebx
+
+  .switch:
+
+        dd      .close                  ; TCPS_CLOSED
+        dd      .close                  ; TCPS_LISTEN
+        dd      .close                  ; TCPS_SYN_SENT
+        dd      .wait1                  ; TCPS_SYN_RECEIVED
+        dd      .wait1                  ; TCPS_ESTABLISHED
+        dd      .last_ack               ; TCPS_CLOSE_WAIT
+        dd      .ret                    ; TCPS_FIN_WAIT_1
+        dd      .ret                    ; TCPS_CLOSING
+        dd      .ret                    ; TCPS_LAST_ACK
+        dd      .disc                   ; TCPS_FIN_WAIT_2
+        dd      .disc                   ; TCPS_TIMED_WAIT
 
 
+  .close:
+        pop     ebx
+        mov     [eax + TCP_SOCKET.t_state], TCPS_CLOSED
+        call    TCP_close
+        ret
+
+  .wait1:
+        pop     ebx
+        mov     [eax + TCP_SOCKET.t_state], TCPS_FIN_WAIT_1
+        ret
+
+  .last_ack:
+        pop     ebx
+        mov     [eax + TCP_SOCKET.t_state], TCPS_LAST_ACK
+        ret
+
+  .disc:
+        call    SOCKET_is_disconnected
+  .ret:
+        pop     ebx
+        ret
 
 
 ;-------------------------
