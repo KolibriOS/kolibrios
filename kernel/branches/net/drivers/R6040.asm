@@ -792,6 +792,12 @@ transmit:
         and     [device.cur_tx], TX_RING_SIZE - 1
         xor     eax, eax
 
+; Update stats
+        inc     [device.packets_tx]
+        mov     eax, [esp+8]
+        add     dword [device.bytes_tx], eax
+        adc     dword [device.bytes_tx + 4], 0
+
         ret     8
 
   .wait_to_send:
@@ -896,6 +902,11 @@ int_handler:
         movzx   ecx, [edx + x_head.len]
         and     ecx, 0xFFF
         sub     ecx, 4                  ; Do not count the CRC
+
+; Update stats
+        add     dword [device.bytes_rx], ecx
+        adc     dword [device.bytes_rx + 4], 0
+        inc     dword [device.packets_rx]
 
         ; Push packet size and pointer, kernel will need it..
 
