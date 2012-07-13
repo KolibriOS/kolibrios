@@ -1,4 +1,3 @@
-
 #include "func.h"
 #include "parser.h"
 #include "kolibri.h"
@@ -45,7 +44,7 @@ Dword point_count = 0;
 double x1,y1,x2,y2;
 char *funct = NULL;
 
-char edit_path[256];
+char edit_path[1024];
 //Dword editbox_y = WND_H - 16, editbox_w = WND_W - 70;
 edit_box mybox = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,99,(dword)&edit_path,0};
 
@@ -377,7 +376,6 @@ int load_points3()
 	kosBDVK bdvk;
 	int filePointer = 0;
 
-	Dword count;
 	int i,j,k;
 	double d;
 	Dword filesize, num_number;
@@ -553,14 +551,12 @@ double fu(double x)
 
 void draw_window(void)
 {
-	char str[80];
-	int i;
-	double xx0=0.0, yy0=0.0, xx,yy;
+	double xx0=0.0, yy0=0.0;
 	sProcessInfo info;
 	Dword wi, he;
 	void *p;
 
-	for (i = 0; i < 1024; i++)
+	for (int i = 0; i < 1024; i++)
 		info.rawData[i] = 0;
 	kos_ProcessInfo(&info, 0xFFFFFFFF);
 
@@ -576,12 +572,11 @@ void draw_window(void)
 	mybox.top = he - 45;
 	mybox.width = wi - mybox.left - 80;
 
-	// start redraw
 	kos_WindowRedrawStatus(1);
-	kos_DefineAndDrawWindow(10,40,WND_W,WND_H,
-		0x33,0xFFFFFF,0,0,(Dword)full_head);
+	kos_DefineAndDrawWindow(10,40,WND_W,WND_H, 0x33,0xFFFFFF,0,0,(Dword)full_head);
+	kos_WindowRedrawStatus(2);
 
-	rtlDebugOutString("entering draw_window\n");
+	if (info.rawData[70]&0x04) return; //ничего не делать если окно схлопнуто в заголовок
 
 	if (point_count == 0 && funct == NULL)
 	{
@@ -602,8 +597,6 @@ void draw_window(void)
 	kos_DefineButton(wi - 70, mybox.top, 50, 12, 5, 0xc0c0c0);
 	kos_WriteTextToWindow(wi - 58, mybox.top + 4, 0, 0, (char*)str_editfile, strlen(str_editfile));
 
-	// end redraw
-	kos_WindowRedrawStatus(2);
 }
 
 void kos_Main()
@@ -677,10 +670,8 @@ void kos_Main()
 			kos_GetButtonID(button);
 			if (button == 1)
 				kos_ExitApp();
-			else if (button == 5)
-			{
+			if (button == 5)
 				LaunchTinypad();
-			}
 		}
 	}
 }
