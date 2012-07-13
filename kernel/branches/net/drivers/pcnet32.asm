@@ -996,6 +996,12 @@ transmit:
         and     [device.cur_tx], 3
         DEBUGF  2," - Packet Sent! "
 
+; Update stats
+        inc     [device.packets_tx]
+        mov     eax, [esp+8]
+        add     dword [device.bytes_tx], eax
+        adc     dword [device.bytes_tx + 4], 0
+
 .finish:
         DEBUGF  2," - Done!\n"
         stdcall KernelFree, [esp+4]
@@ -1093,6 +1099,11 @@ int_handler:
         pop     ecx
         test    eax, eax                        ; Test if we allocated succesfully
         jz      .abort                          ;
+
+; Update stats
+        add     dword [device.bytes_rx], ecx
+        adc     dword [device.bytes_rx + 4], 0
+        inc     dword [device.packets_rx]
 
         push    ebx
         push    .receiver_test_loop             ;
