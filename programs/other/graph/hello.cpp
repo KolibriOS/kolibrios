@@ -46,7 +46,8 @@ char *funct = NULL;
 
 char edit_path[1024];
 //Dword editbox_y = WND_H - 16, editbox_w = WND_W - 70;
-edit_box mybox = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,99,(dword)&edit_path,0};
+edit_box mybox = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,512,(dword)&edit_path, 64}; 
+
 
 char *full_head;
 
@@ -610,6 +611,7 @@ void kos_Main()
 		rtlDebugOutString("launched with params");
 		rtlDebugOutString((char*)params);
 		strcpy(edit_path, params);
+		mybox.size=mybox.pos=strlen(edit_path);
 		//rtlDebugOutString((char*)edit_path);
 		load_points3();
 	}
