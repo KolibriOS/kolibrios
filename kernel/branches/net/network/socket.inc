@@ -1732,7 +1732,7 @@ SOCKET_process_end:
         cmp     [ebx + SOCKET.PID], edx
         jne     .next_socket
 
-        DEBUGF  1,"closing socket %x", edx, ebx
+        DEBUGF  1,"killing socket %x\n", ebx
 
         mov     [ebx + SOCKET.PID], 0
 
