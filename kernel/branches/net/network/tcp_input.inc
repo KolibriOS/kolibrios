@@ -966,7 +966,7 @@ align 4
 
         mov     eax, [ebx + TCP_SOCKET.SND_WND]
         cmp     eax, [ebx + TCP_SOCKET.SND_CWND]
-        cmovg   eax, [ebx + TCP_SOCKET.SND_CWND]
+        cmova   eax, [ebx + TCP_SOCKET.SND_CWND]
         shr     eax, 1
         push    edx
         xor     edx, edx
@@ -1108,7 +1108,7 @@ align 4
         pop     ecx
 
         cmp     esi, eax
-        cmovg   esi, eax
+        cmova   esi, eax
         mov     [ebx + TCP_SOCKET.SND_CWND], esi
 
 

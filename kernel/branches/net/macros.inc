@@ -117,3 +117,83 @@ macro list_del entry
         mov     [ecx+list_fd], edx
 }
 
+
+
+if __CPU_type eq p5             ; CMOVcc isnt supported on the P5
+
+cmove   fix     cmovz
+macro cmovz reg1, reg2 {
+
+local   .jumpaddr
+
+        jnz     .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+cmovne  fix     cmovnz
+macro cmovnz reg1, reg2 {
+
+local   .jumpaddr
+
+        jz      .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+macro cmovg reg1, reg2 {
+
+local   .jumpaddr
+
+        jle     .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+macro cmovl reg1, reg2 {
+
+local   .jumpaddr
+
+        jge     .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+macro cmova reg1, reg2 {
+
+local   .jumpaddr
+
+        jbe     .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+macro cmovb reg1, reg2 {
+
+local   .jumpaddr
+
+        jae     .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+macro cmovae reg1, reg2 {
+
+local   .jumpaddr
+
+        jb     .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+macro cmovbe reg1, reg2 {
+
+local   .jumpaddr
+
+        ja     .jumpaddr
+        mov     reg1, reg2
+       .jumpaddr:
+}
+
+end if
+

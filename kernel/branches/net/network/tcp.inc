@@ -134,7 +134,7 @@ include 'tcp_output.inc'
 ;
 ; TCP_API
 ;
-; This function is called by system function 75
+; This function is called by system function 76
 ;
 ; IN:  subfunction number in bl
 ;      device number in bh
