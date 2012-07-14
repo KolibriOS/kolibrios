@@ -127,7 +127,7 @@ FASM_PROGRAMS:=\
  media/midamp:MEDIA/MIDAMP:$(PROGS)/media/midamp/trunk/midamp.asm \
  media/startmus:MEDIA/STARTMUS:$(PROGS)/media/startmus/trunk/STARTMUS.ASM \
  network/arpcfg:NETWORK/ARPCFG:$(NETPROGS)/arpcfg/arpcfg.asm \
- network/icmp:NETWORK/ICMP:$(NETPROGS)/icmp/icmp.asm \
+ network/ping:NETWORK/PING:$(NETPROGS)/icmp/ping.asm \
  network/netcfg:NETWORK/NETCFG:$(NETPROGS)/netcfg/netcfg.asm \
  network/netstat:NETWORK/NETSTAT:$(NETPROGS)/netstat/netstat.asm \
  network/nslookup:NETWORK/NSLOOKUP:$(NETPROGS)/nslookup/nslookup.asm \
