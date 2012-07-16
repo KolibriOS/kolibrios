@@ -15,8 +15,8 @@
 #define _UTF  3
                       
 
-dword get_URL_part(byte len) {
-	char temp1[1000];
+dword get_URL_part(int len) {
+	char temp1[sizeof(URL)];
 	strcpy(#temp1, #URL);
 	temp1[len] = 0x00;
 	return #temp1;
@@ -49,11 +49,11 @@ inline void Skew(dword x,y,w,h)
 	dword italic_buf;
 	int tile_height=2, //будем выводить двухпиксельными полосками
 	shift=-2, //с двухпиксельным смещением
-	i, skin_width;
+	i, skin_height;
 
 	italic_buf = mem_Alloc(w*h*3);
- 	skin_width = GetSkinWidth();
-	CopyScreen(italic_buf, x+Form.left+2, y+Form.top+skin_width, w, h);
+ 	skin_height = GetSkinHeight();
+	CopyScreen(italic_buf, x+Form.left+2, y+Form.top+skin_height, w, h);
 
 	FOR (i=0;i*tile_height<h;i++)
 		PutImage(w*3*tile_height*i+italic_buf,w,tile_height,x+shift-i+1,i*tile_height+y);

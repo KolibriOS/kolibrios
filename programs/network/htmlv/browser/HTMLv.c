@@ -22,7 +22,7 @@
 
 #define URL param
 
-char editURL[4096],
+char editURL[sizeof(URL)],
 	page_links[12000],
 	header[300];
 
@@ -31,7 +31,7 @@ struct lines{
 };
 
 int	mouse_dd;
-edit_box edit1= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,248,#editURL,#mouse_dd,2,19,19};
+edit_box edit1= {250,207,16,0xffffff,0x94AECE,0xffffff,0xffffff,0,sizeof(editURL),#editURL,#mouse_dd,2,19,19};
 scroll_bar scroll1 = { 18,200,398, 44,18,0,115,15,0,0xeeeeee,0xD2CED0,0x555555,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1}; //details in scroll_lib.h--
 
 
@@ -183,7 +183,7 @@ void SetElementSizes()
 void Draw_Window()
 {
 	int j;
-	DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,0x00E4DFE1,0,0,0);
+	DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,0x00E4DFE1,0);
 
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) //если свернуто в заголовок, ничего не рисуем
@@ -215,7 +215,7 @@ void Draw_Window()
 }
  
 int onLeft(dword right,left) {return Form.width-right-left;}
-int onTop(dword down,up) {return Form.height-GetSkinWidth()-down-up;}
+int onTop(dword down,up) {return Form.height-GetSkinHeight()-down-up;}
 
 
 stop:

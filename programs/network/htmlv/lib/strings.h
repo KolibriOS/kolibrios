@@ -13,6 +13,71 @@
 // strtok( ESI)
 //------------------------------------------------------------------------------
 
+inline fastcall signed int strcmp( ESI, EDI)
+{
+	loop()
+	{
+		IF (DSBYTE[ESI]<DSBYTE[EDI]) RETURN -1;
+		IF (DSBYTE[ESI]>DSBYTE[EDI]) RETURN 1;
+		IF (DSBYTE[ESI]=='\0') RETURN 0;
+		ESI++;
+		EDI++;
+	}
+}
+
+
+inline fastcall signed int strncmp( ESI, EDI, ECX)
+{
+  asm {
+    MOV EBX, EDI
+    XOR EAX, EAX
+    MOV EDX, ECX
+    OR ECX, ECX
+    JE L1
+    REPNE SCASB
+    SUB EDX, ECX
+    MOV ECX, EDX
+    MOV EDI, EBX
+    XOR EBX, EBX
+    REPE CMPSB
+    MOV AL, DSBYTE[ ESI-1]
+    MOV BL, DSBYTE[ EDI-1]
+    SUB EAX, EBX
+L1:
+  }
+}
+
+/*
+
+inline fastcall signed int strcmpi( ESI,EDI)
+uses EBX
+{
+	do{
+		$lodsb
+		IF(AL>='a')&&(AL<='z')AL-=0x20;
+		BL=DSBYTE[(E)DI];
+		IF(BL>='a')&&(BL<='z')BL-=0x20;
+		AL-=BL;
+		IF(!ZEROFLAG)BREAK;
+		(E)DI++;
+	}while(BL!=0);
+}
+
+inline char STRNCMPI((E)SI,(E)DI,(E)CX)
+{
+	(E)AX=0;
+	LOOPNZ((E)CX){
+		$lodsb
+		IF(AL>='a')&&(AL<='z')AL-=0x20;
+		AH=DSBYTE[EDI];
+		IF(AH>='a')&&(AH<='z')AH-=0x20;
+		EDI++;
+		IF(AL==0)||(AH==0)||(AL!=AH)BREAK;
+	}
+	AL=AL-AH;
+}*/
+
+
 
 inline fastcall unsigned int strlen( EDI)
 {
@@ -107,18 +172,6 @@ inline fastcall dword atoi( EDI)
 }
 
 
-inline fastcall signed int strcmp( ESI, EDI)
-{
-	loop()
-	{
-		IF (DSBYTE[ESI]<DSBYTE[EDI]) RETURN -1;
-		IF (DSBYTE[ESI]>DSBYTE[EDI]) RETURN 1;
-		IF (DSBYTE[ESI]=='\0') RETURN 0;
-		ESI++;
-		EDI++;
-	}
-}
-
 inline fastcall unsigned int strchr( ESI,BL)
 {
 	int jj=0;
@@ -203,6 +256,21 @@ ls3:
   }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* strtok( LPSTR dest, src, divs);
 src - указатель на исходную строку или результат предыдущего вызова
 dest - указатель на буфер, куда будет скопировано слово
@@ -242,3 +310,13 @@ L3: MOV EAX, ESI
 L4: POP ECX
   } DSBYTE[ EDX] = 0;
 }
+
+#define strncpy strcpyn
+#define strnmov strmovn
+#define stricmp strcmpi
+#define strcmpn strncmp
+#define strncmpi strcmpni
+#define stricmpn strcmpni
+#define strnicmp strcmpni
+#define strincmp strcmpni
+#define strcmpin strcmpni

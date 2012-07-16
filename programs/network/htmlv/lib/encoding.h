@@ -10,17 +10,17 @@ inline fastcall void wintodos( ESI)
         }
         ELSE
         {
-	IF (BL==178) ESBYTE[ESI] = 73;  //I
-	IF (BL==179) ESBYTE[ESI] = 105; //i
-	IF (BL==175) ESBYTE[ESI] = 244; //J
-    IF (BL==191) ESBYTE[ESI] = 245; //j
-	IF (BL==170) ESBYTE[ESI] = 242; //E
-	IF (BL==186) ESBYTE[ESI] = 243; //e
-    IF (BL==168) ESBYTE[ESI] = 240; //ð
-    IF (BL==184) ESBYTE[ESI] = 'e'; //e
-	IF (BL==180) ESBYTE[ESI] = 254; //ã
-    IF ((BL==147) || (BL==148) || (BL==171) || (BL==187)) ESBYTE[ESI] = 34;
-    IF ((BL==150) || (BL==151)) ESBYTE[ESI] = 45;
+			IF (BL==178) ESBYTE[ESI] = 73;  //I
+			IF (BL==179) ESBYTE[ESI] = 105; //i
+			IF (BL==175) ESBYTE[ESI] = 244; //J
+			IF (BL==191) ESBYTE[ESI] = 245; //j
+			IF (BL==170) ESBYTE[ESI] = 242; //E
+			IF (BL==186) ESBYTE[ESI] = 243; //e
+			IF (BL==168) ESBYTE[ESI] = 240; //ð
+			IF (BL==184) ESBYTE[ESI] = 'e'; //e
+			IF (BL==180) ESBYTE[ESI] = 254; //ã
+			IF ((BL==147) || (BL==148) || (BL==171) || (BL==187)) ESBYTE[ESI] = 34;
+			IF ((BL==150) || (BL==151)) ESBYTE[ESI] = 45;
         }
         ESI++;
    }
@@ -172,14 +172,7 @@ dword Hex2Symb(char* htmlcolor)
   AL=symbol;
 }
 
-/*int hex2char(char c)
-{
-  if (c <=9)
-    return (c+48);
-
-  return (c - 10 + 'a');
-}
-
+/*
 int hex2char(dword c)
 {
   if (c <=9)

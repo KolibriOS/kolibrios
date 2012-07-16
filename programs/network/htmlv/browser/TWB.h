@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.95";
+char version[]=" Text-based Browser 0.96b";
 
 
 struct TWebBrowser {
@@ -46,7 +46,7 @@ char line[500],
 	tag[100],
 	tagparam[10000],
 	parametr[1200],
-	options[1000];
+	options[4096];
 
 #include "include\history.h"
 #include "include\colors.h"
@@ -78,12 +78,20 @@ void TWebBrowser::Scan(int id)
 			strcpy(#anchor, #URL+strrchr(#URL, '#'));
 			URL[strrchr(#URL, '#')-1] = 0x00; //заглушка
 		}
-
+		
 		GetNewUrl();
 		
 		if (!strcmp(#URL + strlen(#URL) - 4, ".gif")) || (!strcmp(#URL + strlen(#URL) - 4, ".png")) || (!strcmp(#URL + strlen(#URL) - 4, ".jpg"))
 		{
+			//if (strstr(#URL,"http:")) 
 			RunProgram("/sys/media/kiv", #URL);
+			strcpy(#editURL, BrowserHistory.CurrentUrl());
+			strcpy(#URL, BrowserHistory.CurrentUrl());
+			return;
+		}
+		if (!strcmpn(#URL,"mailto:", 7))
+		{
+			RunProgram("@notify", #URL);
 			strcpy(#editURL, BrowserHistory.CurrentUrl());
 			strcpy(#URL, BrowserHistory.CurrentUrl());
 			return;
@@ -103,6 +111,13 @@ void TWebBrowser::Scan(int id)
 			break;
 		case 021: //Ctrl+U
 			ReadHtml(_UTF);
+			break;
+		case 004: //Ctrl+D
+			ReadHtml(_DOS);
+			break;
+		case 001:
+			if (!pre_text) pre_text=2;
+				else pre_text=0;
 			break;
 		case BACK:
 			if (!BrowserHistory.GoBack()) return;
@@ -186,18 +201,23 @@ void TWebBrowser::Scan(int id)
 }
 
 
+char *ABSOLUTE_LINKS[]={ "http:", "mailto:", "ftp:", "/sys/", "/rd/", "/fd/", "/bd/", "/hd/", "/cd/", "/tmp/", 0};
 
+//dword TWebBrowser::GetNewUrl(dword CUR_URL, NEW_URL){
 void TWebBrowser::GetNewUrl(){
-	IF (!strcmp(get_URL_part(2),"./")) strcpy(#URL, #URL+2); //игнорим :)
+	int i;
 	
-	if (URL[0] <> '/')
-	&& (strcmp(get_URL_part(5),"http:")<>0)	&& (strcmp(get_URL_part(5),"mailt")<>0)	&& (strcmp(get_URL_part(5),"ftp:/")<>0) 
-	{
-		strcpy(#editURL, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
+	for (i=0; ABSOLUTE_LINKS[i]; i++)
+		if (!strcmpn(#URL, ABSOLUTE_LINKS[i], strlen(ABSOLUTE_LINKS[i]))) return;
 		
-		_CUT_ST_LEVEL_MARK:
+	IF (!strcmpn(#URL,"./", 2)) strcpy(#URL, #URL+2); //игнорим :)
+	if (URL[0] == '/') strcpy(#URL, #URL+1);
+
+	strcpy(#editURL, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
 		
-		if (editURL[strrchr(#editURL, '/')-2]<>'/')  // если не http://pagename.ua <-- нахрена эта строка???
+	_CUT_ST_LEVEL_MARK:
+		
+		if (editURL[strrchr(#editURL, '/')-2]<>'/')  // если не http://
 		{
 			editURL[strrchr(#editURL, '/')] = 0x00; //обрезаем её урл до последнего /
 		}
@@ -210,9 +230,9 @@ void TWebBrowser::GetNewUrl(){
 		}
 		
 		if (editURL[strlen(#editURL)-1]<>'/') strcat(#editURL, "/"); 
+		
 		strcat(#editURL, #URL); //клеим новый адрес
 		strcpy(#URL, #editURL);
-	}
 }
 
 
@@ -247,6 +267,7 @@ void TWebBrowser::OpenPage()
 	strcpy(#editURL, #URL);
 	BrowserHistory.AddUrl();
 	strcpy(#header, #version);
+	pre_text =0;
 	if (!strcmp(get_URL_part(5),"http:")))
 	{
 		KillProcess(downloader_id); //убиваем старый процесс
@@ -266,7 +287,7 @@ void TWebBrowser::OpenPage()
 		Draw_Window();
 		return;
 	}
-	lines.first = lines.all = 0;
+	lines.first = lines.all =0;
 	ReadHtml(_WIN);
 	WB1.ShowPage();
 }
@@ -275,6 +296,7 @@ void TWebBrowser::OpenPage()
 void TWebBrowser::ShowPage()
 {
 	edit1.size = edit1.pos = strlen(#editURL);
+	edit1.offset=0;
 	edit_box_draw stdcall(#edit1); //рисуем строку адреса
 	
 	if (!filesize)
@@ -309,7 +331,7 @@ void TWebBrowser::ParseHTML(dword bword){
 	for (j = 400; j < blink + 1; j++;) DeleteButton(j);
 	blink = 400;
 
-	b_text = i_text = u_text = s_text = pre_text = blq_text = first_line_drawed =
+	b_text = i_text = u_text = s_text = blq_text = first_line_drawed =
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 0; //обнуляем теги
 	link_color = 0x0000FF;
 	bg_color = 0xFFFFFF;
@@ -317,10 +339,12 @@ void TWebBrowser::ParseHTML(dword bword){
 	strcpy(#page_links,"|");
 	strcpy(#header, #version);
 
-	if (!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1;
-	if (!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
-	
-	debug("Start parsing");
+	if (pre_text<>2)
+	{
+		pre_text=0;
+		if (!strcmp(#URL + strlen(#URL) - 4, ".txt")) pre_text = 1;
+		if (!strcmp(#URL + strlen(#URL) - 4, ".mht")) ignor_text = 1;
+	}
 	
 	for ( ; buf+filesize > bword; bword++;)
 	{
@@ -462,7 +486,6 @@ void TWebBrowser::ParseHTML(dword bword){
 	if (stroka * 10 + 15 <= height)
 		DrawBar(left, stroka * 10 + top + 15, width - 15, -stroka * 10 + height - 15, bg_color); //закрашиваем всё до конца
 	if (lines.first == 0) lines.all = stroka;
-	debug ("Pre end - anchor");
 	if (anchor)
 	{
 		//если посреди текста появится новый якорь - будет бесконечный цикл
@@ -470,7 +493,6 @@ void TWebBrowser::ParseHTML(dword bword){
 		lines.first=anchor_line_num;
 		ParseHTML(buf);
 	}
-	debug("End parsing");
 
 	DrawScroller();
 }
@@ -487,7 +509,6 @@ void TWebBrowser::DrawPage() //резать здесь!!1!
 			//line = 123456789
 			//header = 1234
 			//line = 56789
-			debug("too long header");
 			strcpy(#temp, #line);
 			temp[sizeof(header)-strlen(#version)-2]=0;
 			strcpy(#header, #temp);
@@ -495,7 +516,6 @@ void TWebBrowser::DrawPage() //резать здесь!!1!
 		}
 		else
 		{
-			debug("normal header");
 			strcpy(#header, #line);
 			line=0;
 		}
@@ -612,14 +632,17 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	{
 		if (rez)
 		{
-			text_color_index++;
-			text_colors[text_color_index] = text_colors[text_color_index-1];
+			 
+			if (link) IF(text_color_index > 0) text_color_index--; //если предыдущий тег а не был закрыт
 
 			_A_MARK:
 			if (!strcmp(#parametr, "href="))
 			{
 				if (stroka - 1 > lines.visible) || (stroka < -2) return;
-				if (link) && (text_color_index > 0) text_color_index--; //если не закрыт тэг
+				
+				text_color_index++;
+				text_colors[text_color_index] = text_colors[text_color_index-1];
+				
 				link = 1;
 				blink++;
 				text_colors[text_color_index] = link_color;
@@ -745,6 +768,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		IMG_TAG:
 			if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
 			{
+				if (!strcmpn(#URL, "http:", 5)) || (!strcmpn(#options, "http:", 5)) return;
 				strcpy(#temp, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
 				temp[strrchr(#temp, '/')] = 0x00; //обрезаем её урл до последнего /
 				strcat(#temp, #options);

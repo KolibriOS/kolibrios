@@ -33,7 +33,7 @@ char program_path[4096];
 
 struct mouse
 {
-	dword x,y,lkm,pkm,hor,vert;
+	int x,y,lkm,pkm,hor,vert;
 	void get();
 };
 
@@ -165,7 +165,7 @@ struct proc_info
 	byte    reserved[1024-71];
 };
 
-void GetProcessInfo( EBX, ECX)
+inline fastcall void GetProcessInfo( EBX, ECX)
 {
 	$mov eax,9;
 	$int  0x40
@@ -205,16 +205,27 @@ inline fastcall void SwitchToAnotherThread()
 	$int 0x40
 }
 
-inline fastcall ExitProcess()
-{
-	$mov eax,-1;
-	$int 0x40
-}
-
 inline fastcall int KillProcess( ECX)
 {
 	$mov eax,18;
 	$mov ebx,18;
+	$int 0x40
+}
+
+inline fastcall int ExitSystem( ECX)
+{
+	#define TURN_OFF 2
+	#define REBOOT 3
+	#define KERNEL 4
+	
+	$mov eax, 18
+	$mov ebx, 9
+	$int 0x40
+}
+
+inline fastcall ExitProcess()
+{
+	$mov eax,-1;
 	$int 0x40
 }
 
@@ -228,7 +239,7 @@ inline fastcall int GetSystemLanguage()
 	$int 0x40
 }
 
-inline fastcall dword GetSkinWidth()
+inline fastcall dword GetSkinHeight()
 {
 	$push ebx
 	$mov  eax,48
@@ -244,12 +255,17 @@ inline fastcall void SetSystemSkin( ECX)
 	$int 0x40
 }
 
-inline fastcall dword GetScreenWidth()
+inline fastcall int GetScreenWidth()
 {
-	EAX = 14;
-	EBX = 4;
+	$mov eax, 14
 	$int 0x40
 	$shr eax, 16
+}
+
+inline fastcall int GetScreenHeight()
+{
+	$mov eax, 14
+	$int 0x40
 	$and eax,0x0000FFFF
 }
 
@@ -260,7 +276,7 @@ inline fastcall dword LoadLibrary( ECX)
 	$int  0x40
 }
 
-byte fastcall TestBit( EAX, CL)
+inline fastcall int TestBit( EAX, CL)
 {
 	$shr eax,cl
 	$and eax,1
@@ -269,17 +285,16 @@ byte fastcall TestBit( EAX, CL)
 
 //------------------------------------------------------------------------------
 
-void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,byte headerType,dword headerColour,EDI)
+void DefineAndDrawWindow(dword x,y, sizeX,sizeY, byte WindowType,dword WindowAreaColor, EDI)
 {
 	EAX = 12;              // function 12:tell os about windowdraw
 	EBX = 1;
 	$int 0x40
 	
+	EAX = 0;
 	EBX = x << 16 + sizeX;
 	ECX = y << 16 + sizeY;
-	EDX = mainAreaType << 24 | mainAreaColour;
-	ESI = headerType << 24 | headerColour;
-	$xor eax,eax
+	EDX = WindowType << 24 | WindowAreaColor;
 	$int 0x40
 
 	EAX = 12;              // function 12:tell os about windowdraw
@@ -289,7 +304,7 @@ void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaC
 
 inline fastcall MoveSize( EBX,ECX,EDX,ESI)
 {
-	EAX = 67;
+	$mov eax, 67
 	$int 0x40
 }
 
@@ -314,6 +329,13 @@ void CopyScreen(dword EBX, x, y, sizeX, sizeY)
   ECX = sizeX << 16 + sizeY;
   EDX = x << 16 + y;
   $int  0x40;
+}
+
+dword GetPixelColor(dword x, x_size, y)
+{
+	$mov eax, 35
+	EBX= y*x_size+x;
+	$int 0x40
 }
 
 void PutImage(dword EBX,w,h,x,y)
@@ -365,7 +387,7 @@ inline fastcall void DeleteButton( EDX)
 
 //------------------------------------------------------------------------------
 
-void DrawRegion(dword x,y,width,height,color1)
+:void DrawRegion(dword x,y,width,height,color1)
 {
 	DrawBar(x,y,width,1,color1); //полоса гор сверху
 	DrawBar(x,y+height,width,1,color1); //полоса гор снизу
@@ -373,7 +395,7 @@ void DrawRegion(dword x,y,width,height,color1)
 	DrawBar(x+width,y,1,height+1,color1); //полоса верху справа
 }
 
-void DrawRegion_3D(dword x,y,width,height,color1,color2)
+:void DrawRegion_3D(dword x,y,width,height,color1,color2)
 {
 	DrawBar(x,y,width+1,1,color1); //полоса гор сверху
 	DrawBar(x,y+1,1,height-1,color1); //полоса слева
@@ -381,7 +403,7 @@ void DrawRegion_3D(dword x,y,width,height,color1,color2)
 	DrawBar(x,y+height,width,1,color2); //полоса гор снизу
 }
 
-void DrawFlatButton(dword x,y,width,height,id,color,text)
+:void DrawFlatButton(dword x,y,width,height,id,color,text)
 {
 	DrawRegion_3D(x,y,width,height,0x94AECE,0x94AECE);
 	DrawRegion_3D(x+1,y+1,width-2,height-2,0xFFFFFF,0xC7C7C7);
@@ -391,7 +413,7 @@ void DrawFlatButton(dword x,y,width,height,id,color,text)
 	WriteText(width/2+x+1,height/2-3+y,0x80,0,text,0);
 }
 
-void DrawCircle(int x, y, r)
+:void DrawCircle(int x, y, r)
 {
 	int i;
 	float px=0, py=r, ii = r * 3.1415926 * 2;
