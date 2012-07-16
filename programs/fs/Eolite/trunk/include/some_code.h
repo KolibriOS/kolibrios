@@ -1,7 +1,7 @@
 //Leency - 2012
 
 dword onLeft(dword right,left) {EAX=Form.width-right-left;}
-dword onTop(dword down,up) {EAX=Form.height-GetSkinWidth()-down-up;}
+dword onTop(dword down,up) {EAX=Form.height-GetSkinHeight()-down-up;}
 
 
 void ShowMessage(dword message)

@@ -85,6 +85,7 @@ char *ext[]={
 "mkv", 14,
 "mp4", 14,
 "vob", 14,
+"grf", 25,
 0};
 
 
@@ -96,7 +97,11 @@ void Put_icon(dword extension, yy, fairing_color)
 	int icon_n=0, i;
 
 	for (i=0; ext[i]<>0; i+=2;)
-		if (!strcmp(extension, ext[i])) icon_n = ext[i+1];
+		if (!strcmp(extension, ext[i]))
+		{
+			icon_n = ext[i+1];
+			break;
+		}
 
 	PutPaletteImage(icon_n*16*15+#ficons,16,15,195,yy,#ficons_pal);
 	if (icon_n<>17) && (strlen(extension)<9) WriteText(-strlen(extension)*3+onLeft(168,0)+36,yy+4,0x80,0,extension,0);

@@ -20,9 +20,9 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.28"
-dword selection_col=0x94AECE; //цвет выделенного элемента из списка файлов
-//
+#define title "Eolite File Manager v1.31"
+dword selection_col=0x94AECE;
+
 
 /*
 int  f_visible,
@@ -187,9 +187,11 @@ int pressed_y;
 						GoBack();
 						break;
 				case 22: //Forward
-						HistoryPath(GO_FORWARD);
-						za_kadrom=curbtn=0; //вверх списка
-						Open_Dir(#path,WITH_REDRAW);
+						if (HistoryPath(GO_FORWARD))
+						{
+							za_kadrom=curbtn=0; //вверх списка
+							Open_Dir(#path,WITH_REDRAW);
+						}
 						break;
 				case 23: //up!
 						Dir_Up();
@@ -398,8 +400,10 @@ int pressed_y;
 
 inline fastcall void draw_window()
 {	
-	if (GetScreenHeight()<480) DefineAndDrawWindow(20,0,582,GetScreenHeight()-30,0x73,0x10E4DFE1,0,0,title); else
-	DefineAndDrawWindow(98,90,582,482,0x73,0x10E4DFE1,0,0,title);
+	if (GetScreenHeight()<480)
+		DefineAndDrawWindow(20,0,582,GetScreenHeight()-30,0x73,0xE4DFE1,title);
+	else
+		DefineAndDrawWindow(98,90,582,482,0x73,0xE4DFE1,title);
 	Form.GetInfo(#Form, SelfInfo);
 	IF (Form.status_window>2) return; //ничего не делать если окно схлопнуто в заголовок
 	  IF (Form.height<280) MoveSize(OLD,OLD,OLD,280);
@@ -439,6 +443,7 @@ inline fastcall void draw_window()
 void KEdit()
 {
 	edit1.size=edit1.pos=strlen(#edit_path);
+	edit1.offset=0;
 	edit_box_draw  stdcall (#edit1);
 }
 
@@ -565,7 +570,7 @@ void Line_ReDraw(dword color, filenum){
 	if (!TestBit(ESDWORD[off-40], 4))
 	{	
 		copystr(off,#temp);
-		Put_icon(#temp+find_symbol(#temp,'.'), BUTTON_HEIGHT/2-7+y, color);
+		Put_icon(#temp+strchr(#temp,'.'), BUTTON_HEIGHT/2-7+y, color);
 		WriteText(7-strlen(ConvertSize(ESDWORD[off-8]))*6+onLeft(75,0),BUTTON_HEIGHT-6/2+y,0x80,0,ConvertSize(ESDWORD[off-8]),0); //size
 	}
 	else
@@ -653,7 +658,7 @@ inline Sorting()
 	}
 	FOR (j=count-1, off=count-1*304+buf+32; j>=0; j--, off-=304;)  //папки вверх, файлы вниз
 	{
-		ChangeCase(off+40);
+		TitleCase(off+40);
 		if (TestBit(ESDWORD[off],4)) //папка?
 		{
 			file_mas[k]=j;
@@ -724,12 +729,12 @@ void Paste()
 	
 	IF (!copy_file) return; //отмена, еши ещё ничё не скопировали
 	copystr(#path,#new_copy_path);
-	copystr(#copy_file+find_symbol(#copy_file,'/'),#new_copy_path+strlen(#new_copy_path));
+	copystr(#copy_file+strchr(#copy_file,'/'),#new_copy_path+strlen(#new_copy_path));
 	if (!strcmp(#copy_file,#new_copy_path)) //если мы копируем и вставляем в одной и той же папке
 	{
 		copystr(#path,#new_copy_path);
 		copystr("new_",#new_copy_path+strlen(#new_copy_path));
-		copystr(#copy_file+find_symbol(#copy_file,'/'),#new_copy_path+strlen(#new_copy_path));
+		copystr(#copy_file+strchr(#copy_file,'/'),#new_copy_path+strlen(#new_copy_path));
 	}
 	copy_rezult=CopyFile(#copy_file,#new_copy_path);
 	IF (copy_rezult<>0) //ошибка
@@ -745,7 +750,7 @@ void Paste()
 			copy_file='';
 			cut_active=0;
 		}
-	SelectFile(#new_copy_path+find_symbol(#new_copy_path,'/'));
+	SelectFile(#new_copy_path+strchr(#new_copy_path,'/'));
 }
 
 
@@ -799,29 +804,33 @@ void ReName(byte rename)
 void Actions()
 {
 	int actions_y=disc_num*16;
+	
 	DrawBar(17,actions_y+75,160,15,0x00699C); //синий прямоугольник - под девайсами
 	DrawBar(17,show_actions*51+actions_y+108,160,onTop(show_actions*51+actions_y+108,6),0x00699C); //синее в конце
-	if (show_actions==1)
+
+	DeleteButton(80);
+	DeleteButton(81);
+	DeleteButton(82);
+	
+	if (!show_actions)
+		Tip(actions_y+90, "Actions", 77, "\x18");
+	else
 	{
 		Tip(actions_y+90, "Actions", 77, "\x19"); //заголовок
 		DrawBar(17,actions_y+108,160,51,0xFFFFFF); //белое
 		PutImage(#factions,16,44,21,actions_y+113); //иконки
 		//rename file 
 		DefineButton(17,actions_y+108,159,16,80+BT_HIDE,0xE4DFE1);
-		WriteText(42,actions_y+113,0x80,0,"Rename file <F2>",0);
+		WriteText(42,actions_y+113,0x80,0,"Rename file",0);
+		WriteText(150,actions_y+113,0x80,0x999999,"[F2]",0);
 		//delete file
 		DefineButton(17,actions_y+125,159,16,81+BT_HIDE,0xE4DFE1);
-		WriteText(42,actions_y+130,0x80,0,"Delete file <Del>",0);
+		WriteText(42,actions_y+130,0x80,0,"Delete file",0);
+		WriteText(144,actions_y+130,0x80,0x999999,"[Del]",0);
 		//create folder
 		DefineButton(17,actions_y+142,159,16,82+BT_HIDE,0xE4DFE1);
-		WriteText(42,actions_y+147,0x80,0,"Create folder <F6>",0);
-	}
-	else
-	{
-		DeleteButton(80);
-		DeleteButton(81);
-		DeleteButton(82);
-		Tip(actions_y+90, "Actions", 77, "\x18");
+		WriteText(42,actions_y+147,0x80,0,"Create folder",0);
+		WriteText(150,actions_y+147,0x80,0x999999,"[F6]",0);
 	}
 }
 
@@ -846,7 +855,7 @@ void SelectFile(dword that_file)
 {
 	za_kadrom=curbtn=0; //вверх списка
    	Open_Dir(#path,ONLY_OPEN);
-	ChangeCase(that_file);
+	TitleCase(that_file);
 	for (i=count-1; i>=0; i--;)
 		if (!strcmp(file_mas[i]*304+buf+72,that_file)) break;
 	FileList_ReDraw(i);
@@ -870,8 +879,8 @@ inline fastcall void GoBack()   //вначале удаляем текущий путь, а потом копируем
 {
 	char cur_folder[4096];
 	copystr(GetCurrentFolder(), #cur_folder);
-	HistoryPath(GO_BACK); 
-	SelectFile(#cur_folder);
+	if (HistoryPath(GO_BACK))
+		SelectFile(#cur_folder);
 }
 
 

@@ -2,8 +2,9 @@
 
 #include "imgs\logo.txt"
 
-#define BROWSER_PATH	"/sys/htmlv"
-#define BROWSER_LINK	"http://kolibri-os.narod.ru"
+#define EDITOR_PATH     "/sys/tinypad"
+#define BROWSER_PATH    "/sys/htmlv"
+#define BROWSER_LINK    "http://kolibri-os.narod.ru"
 
 
 void about_dialog()
@@ -27,6 +28,7 @@ void about_dialog()
 				id=GetButtonID();
 				IF (id==1) ExitProcess();
 				IF (id==23) RunProgram(BROWSER_PATH, BROWSER_LINK);
+				IF (id==33) RunProgram(EDITOR_PATH, #program_path);
 				break;
 				
 		case evKey:
@@ -34,10 +36,10 @@ void about_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(600,150,181,256,0x34,0x10EFEBEF,0,0,"About Eolite");
+				DefineAndDrawWindow(600,150,181,256,0x34,0x10EFEBEF,"About Eolite");
 				DrawBar(0,0,172,50,0x8494C4); //голубое сзади
 				PutPaletteImage(#logo,85,85,43,7,#logo_pal);
-				WriteText(46,100,0x90,0xBF40BF,"Eolite v1.28",0);
+				WriteText(46,100,0x90,0xBF40BF,"Eolite v1.31",0);
 					$add ebx, 1<<16
 					$int 0x40
 				WriteText(55,120,0x80,0,"Developers:",0); 
@@ -48,7 +50,8 @@ void about_dialog()
 				DrawLink(48,170,23, "kolibri-os.narod.ru"); //ссылкa
 				DrawFlatButton(85,190,70,22,0,0xE4DFE1, "Close");
 				
-				//PutPaletteImage(3*16*15+#ficons,16,15,40,195,#ficons_pal);								
+				DefineButton(20-1,195-1, 16+1,15+1, 33+BT_HIDE, 0);
+				PutPaletteImage(8*16*15+#ficons,16,15,20,195,#ficons_pal);								
 	}
 }
 

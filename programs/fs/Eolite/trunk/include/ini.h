@@ -78,7 +78,7 @@ void GetIni(byte onload)
 					disc_num++;
 				}*/
 				
-				IF (parametr) && (!strcmp(#file_name+find_symbol(#file_name,'.'),#parametr)) {
+				IF (parametr) && (!strcmp(#file_name+strchr(#file_name,'.'),#parametr)) {
 					errornum=RunProgram(#option,#file_path);
 					IF (errornum<0) //если ошибочка вышла при запуске
 					{

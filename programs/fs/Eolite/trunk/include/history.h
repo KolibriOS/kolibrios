@@ -13,11 +13,11 @@ dword GetCurrentFolder()
 	char cur_fol[4096];
 	copystr(#path,#cur_fol);
 	cur_fol[strlen(#cur_fol)-1]=0x00; //обрезаем последний /
-	copystr(#cur_fol+find_symbol(#cur_fol,'/'),#cur_fol);
+	copystr(#cur_fol+strchr(#cur_fol,'/'),#cur_fol);
 	return #cur_fol;
 }
 
-void HistoryPath(byte action)
+int HistoryPath(byte action)
 {
 	int MAX_HISTORY_NUM;
 	
@@ -41,15 +41,17 @@ void HistoryPath(byte action)
 	
 	if (action==GO_BACK)
 	{
-		if (history_current<=2) return;
+		if (history_current<=2) return 0;
 		history_current--;
 		copystr(#history_list[history_current].Item,#path);
+		return 1;
 	}
 
 	if (action==GO_FORWARD)
 	{
-		if (history_current==history_num) return;
+		if (history_current==history_num) return 0;
 		history_current++;
 		copystr(#history_list[history_current].Item,#path);
+		return 1;
 	}	
 }

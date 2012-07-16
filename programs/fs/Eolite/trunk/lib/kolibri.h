@@ -153,14 +153,13 @@ inline fastcall void ExitProcess(){
 	$int 0x40
 }
 
-inline fastcall void Pause(dword EBX){				
+inline fastcall void Pause( EBX){				
 	$mov eax, 5
 	$int 0x40
 }
 
 //------------------------------------------------------------------------------
-void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,
-dword mainAreaColour,byte headerType,dword headerColour,EDI)
+void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType, dword mainAreaColour, EDI)
 {
 	EAX = 12;              // function 12:tell os about windowdraw
 	EBX = 1;
@@ -169,7 +168,6 @@ dword mainAreaColour,byte headerType,dword headerColour,EDI)
 	EBX = x << 16 + sizeX;
 	ECX = y << 16 + sizeY;
 	EDX = mainAreaType << 24 | mainAreaColour;
-	ESI = headerType << 24 | headerColour;
 	$xor eax,eax
 	$int 0x40
 
@@ -191,18 +189,19 @@ inline fastcall void DrawTitle( ECX){
 	$int 0x40;
 }
 
-inline fastcall dword GetSkinWidth(){
-	EAX = 48;
-	EBX = 4;
+inline fastcall dword GetSkinHeight()
+{
+	$push ebx
+	$mov  eax,48
+	$mov  ebx,4
 	$int 0x40
+	$pop  ebx
 }
 
 inline fastcall dword GetScreenHeight()
 {
 	EAX = 14;
-	EBX = 4;
 	$int 0x40
-	//$shr eax, 16
 	$and eax,0x0000FFFF
 }
 
@@ -308,7 +307,29 @@ inline fastcall int strcmp(ESI, EDI)
 }
 
 
-inline fastcall unsigned int find_symbol(ESI,BL)
+inline fastcall signed int strncmp( ESI, EDI, ECX)
+{
+  asm {
+    MOV EBX, EDI
+    XOR EAX, EAX
+    MOV EDX, ECX
+    OR ECX, ECX
+    JE L1
+    REPNE SCASB
+    SUB EDX, ECX
+    MOV ECX, EDX
+    MOV EDI, EBX
+    XOR EBX, EBX
+    REPE CMPSB
+    MOV AL, DSBYTE[ ESI-1]
+    MOV BL, DSBYTE[ EDI-1]
+    SUB EAX, EBX
+L1:
+  }
+}
+
+
+inline fastcall unsigned int strchr(ESI,BL)
 {
 	int jj=0, last=-1;
 	do{
@@ -320,7 +341,7 @@ inline fastcall unsigned int find_symbol(ESI,BL)
 }
 
 
-inline fastcall ChangeCase( EDX)
+inline fastcall TitleCase( EDX)
 {
 	AL=DSBYTE[EDX];
 	IF(AL>='a')&&(AL<='z')DSBYTE[EDX]=AL&0x5f;
@@ -416,6 +437,9 @@ void PutImage(dword EBX,w,h,x,y)
 //------------------------------------------------------------------------------
 inline fastcall void debug( EDX)
 {
+	$push eax
+	$push ebx
+	$push ecx
 	$mov eax, 63
 	$mov ebx, 1
 next_char:
@@ -430,24 +454,7 @@ done:
 	$int 0x40
 	$mov cl, 10
 	$int 0x40
-}
-
-inline fastcall void WriteFullDebug( ESI)
-{
-	WriteDebug("");
-	WriteDebug(ESI);
-	
-	WriteDebug("Number of files:");
-	WriteDebug(IntToStr(count)); 
-	
-	WriteDebug("but_num:");
-	WriteDebug(IntToStr(but_num));
-	
-	WriteDebug("curbtn");
-	WriteDebug(IntToStr(curbtn));
-	
-	WriteDebug("ra_kadrom:");
-	WriteDebug(IntToStr(za_kadrom));
-	
-	Pause(200);
+	$pop eax
+	$pop ebx
+	$pop ecx
 }
