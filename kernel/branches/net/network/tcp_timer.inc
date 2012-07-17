@@ -19,33 +19,33 @@ $Revision$
 ;----------------------
 ; 160 ms timer
 ;----------------------
-macro	TCP_timer_160ms {
+macro   TCP_timer_160ms {
 
-local	.loop
-local	.exit
+local   .loop
+local   .exit
 
-	mov	ebx, net_sockets
+        mov     ebx, net_sockets
   .loop:
-	mov	ebx, [ebx + SOCKET.NextPtr]
-	or	ebx, ebx
-	jz	.exit
+        mov     ebx, [ebx + SOCKET.NextPtr]
+        or      ebx, ebx
+        jz      .exit
 
-	cmp	[ebx + SOCKET.Domain], AF_INET4
-	jne	.loop
+        cmp     [ebx + SOCKET.Domain], AF_INET4
+        jne     .loop
 
-	cmp	[ebx + SOCKET.Protocol], IP_PROTO_TCP
-	jne	.loop
+        cmp     [ebx + SOCKET.Protocol], IP_PROTO_TCP
+        jne     .loop
 
-	test	[ebx + TCP_SOCKET.t_flags], TF_DELACK
-	jz	.loop
-	and	[ebx + TCP_SOCKET.t_flags], not (TF_DELACK)
+        test    [ebx + TCP_SOCKET.t_flags], TF_DELACK
+        jz      .loop
+        and     [ebx + TCP_SOCKET.t_flags], not (TF_DELACK)
 
-	push	ebx
-	mov	cl, TH_ACK
-	call	TCP_respond_socket
-	pop	ebx
+        push    ebx
+        mov     cl, TH_ACK
+        call    TCP_respond_socket
+        pop     ebx
 
-	jmp	.loop
+        jmp     .loop
 
   .exit:
 
@@ -55,63 +55,63 @@ local	.exit
 ;----------------------
 ; 640 ms timer
 ;----------------------
-macro	TCP_timer_640ms {
+macro   TCP_timer_640ms {
 
-local	.loop
-local	.exit
+local   .loop
+local   .exit
 
 ; Update TCP sequence number
 
-	add	[TCP_sequence_num], 64000
+        add     [TCP_sequence_num], 64000
 
 ; scan through all the active TCP sockets, decrementing ALL timers
 ; timers do not have the chance to wrap because the keepalive timer will kill the socket when it expires
 
-	mov	eax, net_sockets
+        mov     eax, net_sockets
   .loop:
-	mov	eax, [eax + SOCKET.NextPtr]
+        mov     eax, [eax + SOCKET.NextPtr]
   .check_only:
-	or	eax, eax
-	jz	.exit
+        or      eax, eax
+        jz      .exit
 
-	cmp	[eax + SOCKET.Domain], AF_INET4
-	jne	.loop
+        cmp     [eax + SOCKET.Domain], AF_INET4
+        jne     .loop
 
-	cmp	[eax + SOCKET.Protocol], IP_PROTO_TCP
-	jne	.loop
+        cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
+        jne     .loop
 
-	inc	[eax + TCP_SOCKET.t_idle]
-	dec	[eax + TCP_SOCKET.timer_retransmission]
-	jnz	.check_more2
+        inc     [eax + TCP_SOCKET.t_idle]
+        dec     [eax + TCP_SOCKET.timer_retransmission]
+        jnz     .check_more2
 
-	DEBUGF	1,"socket %x: Retransmission timer expired\n", eax
+        DEBUGF  1,"socket %x: Retransmission timer expired\n", eax
 
-	push	eax
-	call	TCP_output
-	pop	eax
+        push    eax
+        call    TCP_output
+        pop     eax
 
   .check_more2:
-	dec	[eax + TCP_SOCKET.timer_keepalive]
-	jnz	.check_more3
+        dec     [eax + TCP_SOCKET.timer_keepalive]
+        jnz     .check_more3
 
-	DEBUGF	1,"socket %x: Keepalive expired\n", eax
+        DEBUGF  1,"socket %x: Keepalive expired\n", eax
 
-	call	TCP_close
-	jmp	.loop
+        call    TCP_disconnect
+        jmp     .loop
 
   .check_more3:
-	dec	[eax + TCP_SOCKET.timer_timed_wait]
-	jnz	.check_more5
+        dec     [eax + TCP_SOCKET.timer_timed_wait]
+        jnz     .check_more5
 
-	DEBUGF	1,"socket %x: 2MSL timer expired\n", eax
+        DEBUGF  1,"socket %x: 2MSL timer expired\n", eax
 
   .check_more5:
-	dec	[eax + TCP_SOCKET.timer_persist]
-	jnz	.loop
+        dec     [eax + TCP_SOCKET.timer_persist]
+        jnz     .loop
 
-	DEBUGF	1,"socket %x: persist timer expired\n", eax
+        DEBUGF  1,"socket %x: persist timer expired\n", eax
 
-	jmp	.loop
+        jmp     .loop
   .exit:
 
 }
@@ -122,17 +122,17 @@ local	.exit
 
 TCP_cancel_timers:
 
-	push	eax edi
+        push    eax edi
 
-	lea	edi, [eax + TCP_SOCKET.timer_retransmission]
-	xor	eax, eax
-	stosd
-	stosd
-	stosd
-	stosd
-	stosd
+        lea     edi, [eax + TCP_SOCKET.timer_retransmission]
+        xor     eax, eax
+        stosd
+        stosd
+        stosd
+        stosd
+        stosd
 
-	pop	edi eax
+        pop     edi eax
 
 
-	ret
+        ret
