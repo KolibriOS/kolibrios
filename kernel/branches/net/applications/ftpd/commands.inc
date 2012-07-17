@@ -1074,6 +1074,8 @@ cmdTYPE:
         je      .telnet
         cmp     al, 'C'
         je      .asacc
+        cmp     al, 0x20
+        jb      .non_print
 
         jmp     parse_cmd.error
 
