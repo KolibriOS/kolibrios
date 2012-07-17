@@ -282,6 +282,7 @@ ARP_input:
 ; ARP_output_request
 ;
 ; IN:  ip in eax
+;      device in edi
 ; OUT: /
 ;
 ;---------------------------------------------------------------------------
@@ -290,7 +291,6 @@ ARP_output_request:
 
         DEBUGF 1,"Create ARP Packet\n"
 
-        call    IPv4_dest_to_dev
         push    eax                             ; DestIP
         pushd   [IP_LIST+edi]                   ; SenderIP
 
@@ -441,9 +441,11 @@ ARP_del_entry:
 ;  This function translates an IP address to a MAC address
 ;
 ;  IN:  eax = IPv4 address
+;       edi = device number
 ;  OUT: eax = -1 on error, -2 means request send
 ;      else, ax = first two bytes of mac (high 16 bits of eax will be 0)
 ;       ebx = last four bytes of mac
+;       edi = unchanged
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -457,27 +459,9 @@ ARP_IP_to_MAC:
         cmp     eax, 0xffffffff
         je      .broadcast
 
-; if ((Remote IP & subnet_mask) == (local IP & subnet_mask ))
-; destination is on same subnet
-; else, destination is remote and must use a gateway
-
-        call    IPv4_dest_to_dev
-        mov     ebx, [IP_LIST + edi]
-        and     ebx, [SUBNET_LIST + edi]
-
-        mov     ecx, eax
-        and     ecx, [SUBNET_LIST + edi]
-
-        cmp     ecx, ebx
-        je      .local
-
-        mov     eax, [GATEWAY_LIST + edi]
-        DEBUGF  1,"requested IP is not on subnet, using default gateway\n"
-
 ;--------------------------------
 ; Try to find the IP in ARP_table
 
-  .local:
         mov     ecx, [NumARP]
         test    ecx, ecx
         jz      .not_in_list
@@ -494,7 +478,7 @@ ARP_IP_to_MAC:
 ;--------------------
 ; Send an ARP request
 
-        push    eax                     ; save IP for ARP_output_request
+        push    eax edi                    ; save IP for ARP_output_request
 
 ; Now create the ARP entry
         pushw   ARP_REQUEST_TTL         ; TTL
@@ -510,7 +494,7 @@ ARP_IP_to_MAC:
         je      .full
 
 ; And send a request
-        pop     eax
+        pop     edi eax
         call    ARP_output_request      ; IP in eax
 ;; TODO: check if driver could transmit packet
 
@@ -523,7 +507,7 @@ ARP_IP_to_MAC:
         jne     .invalid
 
         movzx   eax, word [esi + ARP_entry.MAC]
-        mov     ebx, dword[esi + ARP_entry.MAC+2]
+        mov     ebx, dword[esi + ARP_entry.MAC + 2]
         ret
 
   .invalid:
@@ -532,7 +516,7 @@ ARP_IP_to_MAC:
 
   .full:
         DEBUGF  1,"ARP table is full!\n"
-        pop     eax
+        add     esp, 8
         mov     eax, -1
         ret
 

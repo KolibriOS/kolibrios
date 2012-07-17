@@ -29,6 +29,7 @@ struct  SOCKET
         Type                    dd ? ; RAW/STREAM/DGRAP
         Protocol                dd ? ; ICMP/IPv4/ARP/TCP/UDP
         errorcode               dd ?
+        device                  dd ?
 
         options                 dd ?
         state                   dd ?
@@ -925,7 +926,7 @@ SOCKET_get_opt:
 ;
 ;  IN:  ecx = socket number
 ;       edx = pointer to the options:
-;               dd      level, optname, optval, optlen
+;               dd      level, optname, optlen, optval
 ;  OUT: -1 on error
 ;
 ;-----------------------------------------------------------------
@@ -937,8 +938,36 @@ SOCKET_set_opt:
         call    SOCKET_num_to_ptr
         jz      s_error
 
+        cmp     dword [edx], SOL_SOCKET
+        jne     s_error
 
+        cmp     dword [edx+4], SO_BINDTODEVICE
+        je      .bind
 
+        jmp     s_error
+
+  .bind:
+        cmp     dword [edx+8], 0
+        je      .unbind
+
+        movzx   edx, byte [edx + 9]
+        cmp     edx, MAX_NET_DEVICES
+        ja      s_error
+
+        mov     edx, [NET_DRV_LIST + 4*edx]
+        test    edx, edx
+        jz      s_error
+        mov     [eax + SOCKET.device], edx
+
+        DEBUGF  1,"Bound socket %x to device %x\n",eax, edx
+
+        mov     dword [esp+32], 0       ; success!
+        ret
+
+  .unbind:
+        mov     [eax + SOCKET.device], 0
+
+        mov     dword [esp+32], 0       ; success!
         ret
 
 

@@ -556,9 +556,9 @@ IPv4_find_fragment_slot:
 ; IPv4_output
 ;
 ; IN: eax = dest ip
-;     ebx = source ip
+;     ebx = output device ptr/0 for automatic choice
 ;     ecx = data length
-;     dx  = fragment id
+;     edx = source ip
 ;     di  = TTL shl 8 + protocol
 ;
 ; OUT: eax = pointer to buffer start
@@ -576,38 +576,36 @@ IPv4_output:
         cmp     ecx, 65500              ; Max IPv4 packet size
         ja      .too_large
 
-        push    ecx eax ebx dx di
+        push    ecx eax edx di
 
+        call    IPv4_dest_to_dev        ; outputs device number in edi, dest ip in eax
         call    ARP_IP_to_MAC
-
         test    eax, 0xffff0000         ; error bits
         jnz     .arp_error
-
-        push    ebx     ; push the mac
+        push    ebx                     ; push the mac onto the stack
         push    ax
 
-        call    IPv4_dest_to_dev
-        inc     [IP_PACKETS_TX+edi]
-        mov     ebx, [NET_DRV_LIST+edi]
+        inc     [IP_PACKETS_TX + edi]   ; update stats
+
+        mov     ebx, [NET_DRV_LIST + edi]
         lea     eax, [ebx + ETH_DEVICE.mac]
         mov     edx, esp
-        mov     ecx, [esp + 18]
+        mov     ecx, [esp + 10 + 6]
         add     ecx, sizeof.IPv4_header
-        mov     di , ETHER_IPv4
+        mov     di, ETHER_IPv4
         call    ETH_output
         jz      .eth_error
+        add     esp, 6                  ; pop the mac out of the stack
 
-        add     esp, 6  ; pop the mac
-
+        xchg    cl, ch                                  ; internet byte order
         mov     [edi + IPv4_header.VersionAndIHL], 0x45 ; IPv4, normal length (no Optional header)
         mov     [edi + IPv4_header.TypeOfService], 0    ; nothing special, just plain ip packet
         mov     [edi + IPv4_header.TotalLength], cx
-        rol     [edi + IPv4_header.TotalLength], 8      ; internet byte order
-        mov     [edi + IPv4_header.FlagsAndFragmentOffset], 0x0000
-        mov     [edi + IPv4_header.HeaderChecksum], 0
+        mov     [edi + IPv4_header.Identification], 0   ; fragment id: FIXME
+        mov     [edi + IPv4_header.FlagsAndFragmentOffset], 0
         pop     word [edi + IPv4_header.TimeToLive]     ; ttl shl 8 + protocol
 ;               [edi + IPv4_header.Protocol]
-        popw    [edi + IPv4_header.Identification]      ; fragment id
+        mov     [edi + IPv4_header.HeaderChecksum], 0
         popd    [edi + IPv4_header.SourceAddress]
         popd    [edi + IPv4_header.DestinationAddress]
 
@@ -620,19 +618,19 @@ IPv4_output:
 
   .eth_error:
         DEBUGF  1,"IPv4_output: ethernet error\n"
-        add     esp, 3*4+2*2+6
-        sub     edi, edi
+        add     esp, 3*4+2+6
+        xor     edi, edi
         ret
 
   .arp_error:
         DEBUGF  1,"IPv4_output: ARP error (0x%x)\n", eax
-        add     esp, 4+4+4+2+2
-        sub     edi, edi
+        add     esp, 3*4+2
+        xor     edi, edi
         ret
 
   .too_large:
         DEBUGF  1,"IPv4_output: error: Packet too large!\n"
-        sub     edi, edi
+        xor     edi, edi
         ret
 
 
@@ -661,22 +659,20 @@ IPv4_output_raw:
         sub     esp, 8
         push    esi eax
 
+        call    IPv4_dest_to_dev
         call    ARP_IP_to_MAC
 
         test    eax, 0xffff0000         ; error bits
         jnz     .arp_error
 
-  .continue:
-
-        push    ebx     ; push the mac
+        push    ebx                     ; push the mac
         push    ax
 
-        call    IPv4_dest_to_dev
-        inc     [IP_PACKETS_TX+edi]
-        mov     ebx, [NET_DRV_LIST+edi]
+        inc     [IP_PACKETS_TX + edi]
+        mov     ebx, [NET_DRV_LIST + edi]
         lea     eax, [ebx + ETH_DEVICE.mac]
         mov     edx, esp
-        mov     ecx, [esp + 6+4]
+        mov     ecx, [esp + 6 + 4]
         add     ecx, sizeof.IPv4_header
         mov     di, ETHER_IPv4
         call    ETH_output
@@ -851,24 +847,23 @@ IPv4_fragment:
 ;
 ; IPv4_dest_to_dev
 ;
-; IN:  eax = Destination IP
-; OUT: edi = device id * 4
+; IN:   eax = Destination IP
+; OUT:  edi = device id * 4
+;       eax = ip of gateway if nescessary, unchanged otherwise
 ;
 ;---------------------------------------------------------------------------
 align 4
 IPv4_dest_to_dev:
 
         cmp     eax, 0xffffffff
-        je      .invalid
+        je      .broadcast
 
         xor     edi, edi
         mov     ecx, MAX_IP
-
   .loop:
         mov     ebx, [IP_LIST+edi]
         and     ebx, [SUBNET_LIST+edi]
         jz      .next
-
         mov     edx, eax
         and     edx, [SUBNET_LIST+edi]
 
@@ -880,11 +875,15 @@ IPv4_dest_to_dev:
         jnz     .loop
 
   .invalid:
-        xor     edi, edi                        ; if none found, use device 0 as default device
+        xor     edi, edi                        ; if none found, use device 0 as default
+        mov     eax, [GATEWAY_LIST]
 
   .found_it:
         DEBUGF  1,"IPv4_dest_to_dev: %u\n", edi
+        ret
 
+  .broadcast:
+        xor     edi, edi
         ret
 
 

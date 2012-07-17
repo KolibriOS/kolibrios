@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  STACK.INC                                                      ;;
@@ -70,6 +70,10 @@ SO_OOBINLINE            = 1 shl 5
 SO_REUSEADDR            = 1 shl 6
 SO_REUSEPORT            = 1 shl 7
 SO_USELOOPBACK          = 1 shl 8
+SO_BINDTODEVICE         = 1 shl 9
+
+; Socket level
+SOL_SOCKET              = 0
 
 
 ; Socket States

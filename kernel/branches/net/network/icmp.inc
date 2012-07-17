@@ -284,7 +284,6 @@ ICMP_input:
 ;      ecx = data length
 ;      dh  = type
 ;      dl  = code
-;      high 16 bits of edx = fragment id (for IP header)
 ;      esi = data offset
 ;      edi = identifier shl 16 + sequence number
 ;
@@ -294,42 +293,36 @@ ICMP_output:
 
         DEBUGF  1,"Creating ICMP Packet\n"
 
-        push    esi edi edx
+        push    esi edi dx
 
-        mov     ebx, [eax + IP_SOCKET.LocalIP]
+        mov     edx, [eax + IP_SOCKET.LocalIP]
         mov     eax, [eax + IP_SOCKET.RemoteIP]
         add     ecx, sizeof.ICMP_header
-        mov     di , IP_PROTO_ICMP SHL 8 + 128  ; TTL
-        shr     edx, 16
-
+        mov     di, IP_PROTO_ICMP SHL 8 + 128           ; TTL
         call    IPv4_output
         jz      .exit
 
         DEBUGF  1,"full icmp packet size: %u\n", edx
 
-        pop     eax
-        mov     word [edi + ICMP_header.Type], ax       ; Write both type and code bytes at once
-        pop     eax
-        mov     [edi + ICMP_header.SequenceNumber], ax
-        shr     eax, 16
-        mov     [edi + ICMP_header.Identifier], ax
+        pop     word [edi + ICMP_header.Type]           ; Write both type and code bytes at once
+        pop     dword [edi + ICMP_header.Identifier]    ; identifier and sequence number
         mov     [edi + ICMP_header.Checksum], 0
 
-        push    eax ebx ecx edx
+        push    ebx ecx edx
         mov     esi, edi
         xor     edx, edx
         call    checksum_1
         call    checksum_2
         mov     [edi + ICMP_header.Checksum], dx
-        pop     edx ecx ebx eax esi
+        pop     edx ecx ebx esi
 
         sub     ecx, sizeof.ICMP_header
         add     edi, sizeof.ICMP_header
         push    cx
-        shr     cx , 2
+        shr     cx, 2
         rep     movsd
         pop     cx
-        and     cx , 3
+        and     cx, 3
         rep     movsb
 
         sub     edi, edx                                ;;; TODO: find a better way to remember start of packet
@@ -339,7 +332,7 @@ ICMP_output:
         ret
   .exit:
         DEBUGF  1,"Creating ICMP Packet failed\n"
-        add     esp, 3*4
+        add     esp,2*4+2
         ret
 
 
@@ -362,8 +355,7 @@ ICMP_output_raw:
         push    edx
 
         mov     di, IP_PROTO_ICMP SHL 8 + 128  ; TTL
-        shr     edx, 16
-        mov     ebx, [eax + IP_SOCKET.LocalIP]
+        mov     edx, [eax + IP_SOCKET.LocalIP]
         mov     eax, [eax + IP_SOCKET.RemoteIP]
         call    IPv4_output
         jz      .exit

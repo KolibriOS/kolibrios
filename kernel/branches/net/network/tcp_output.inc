@@ -421,7 +421,8 @@ TCP_output:
 
         mov     ecx, esi
 
-        mov     ebx, [eax + IP_SOCKET.LocalIP]  ; source ip
+        mov     ebx, [eax + SOCKET.device]
+        mov     edx, [eax + IP_SOCKET.LocalIP]  ; source ip
         mov     eax, [eax + IP_SOCKET.RemoteIP] ; dest ip
         mov     di, IP_PROTO_TCP shl 8 + 128
         call    IPv4_output

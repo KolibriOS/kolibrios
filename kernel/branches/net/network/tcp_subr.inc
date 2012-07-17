@@ -330,9 +330,9 @@ TCP_respond_socket:
 
         push    cx ebx
         mov     eax, [ebx + IP_SOCKET.RemoteIP]
-        mov     ebx, [ebx + IP_SOCKET.LocalIP]
+        mov     edx, [ebx + IP_SOCKET.LocalIP]
         mov     ecx, sizeof.TCP_header
-        mov     di , IP_PROTO_TCP shl 8 + 128
+        mov     di, IP_PROTO_TCP shl 8 + 128
         call    IPv4_output
         test    edi, edi
         jz      .error

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  UDP.INC                                                        ;;
@@ -242,18 +242,15 @@ UDP_output:
         DEBUGF  1,"local port: %u\n", dx
         rol     dx, 8
 
-        mov     ebx, [eax + IP_SOCKET.LocalIP]
-        mov     eax, [eax + IP_SOCKET.RemoteIP]
-
-        mov     di, IP_PROTO_UDP shl 8 + 128
         sub     esp, 8                                          ; Data ptr and data size will be placed here
-        add     ecx, sizeof.UDP_header
-
-;;; TODO: fragment id
         push    edx esi
+        mov     ebx, [eax + SOCKET.device]
+        mov     edx, [eax + IP_SOCKET.LocalIP]
+        mov     eax, [eax + IP_SOCKET.RemoteIP]
+        mov     di, IP_PROTO_UDP shl 8 + 128
+        add     ecx, sizeof.UDP_header
         call    IPv4_output
         jz      .fail
-
         mov     [esp + 8], eax                                  ; pointer to buffer start
         mov     [esp + 8 + 4], edx                              ; buffer size
 
