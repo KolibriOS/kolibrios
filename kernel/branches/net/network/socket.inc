@@ -605,6 +605,7 @@ SOCKET_listen:
         mov     [eax + SOCKET.backlog], dx
         or      [eax + SOCKET.options], SO_ACCEPTCON
         mov     [eax + TCP_SOCKET.t_state], TCPS_LISTEN
+        mov     [eax + TCP_SOCKET.timer_keepalive], 0           ; disable keepalive timer
 
         push    eax
         init_queue (eax + SOCKET_QUEUE_LOCATION)                ; Set up sockets queue
