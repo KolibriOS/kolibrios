@@ -17,7 +17,7 @@ include 'dll.inc'
 include 'vox_draw.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel editor 21.06.12',0 ;подпись окна
+caption db 'Voxel editor 17.07.12',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -37,8 +37,30 @@ IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
 IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*14
 image_data_toolbar dd 0
 
-max_open_file_size equ 64*1024 ;64 Kb
-
+;значения задаваемые по умолчанию, без ini файла
+ini_def_window_t equ 10
+ini_def_window_l equ 10
+ini_def_window_w equ 550
+ini_def_window_h equ 415
+ini_def_buf_w equ 198 ;=192+6
+ini_def_buf_h equ 231 ;=224+7
+ini_def_s_zoom equ 5
+ini_def_t_size equ 10
+ini_def_color_b equ 0xffffff
+;описание параматров для ini файла
+ini_name db 'vox_editor.ini',0
+ini_sec_window db 'Window',0
+key_window_t db 't',0
+key_window_l db 'l',0
+key_window_w db 'w',0
+key_window_h db 'h',0
+key_buf_w db 'buf_w',0
+key_buf_h db 'buf_h',0
+ini_sec_options db 'Options',0
+key_s_zoom db 's_zoom',0
+key_t_size db 'tile_size',0
+key_f_size db 'file_size',0
+key_col_b db 'c_background',0
 
 macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	;path - может быть переменной или строковым параметром
@@ -81,7 +103,6 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 
 OT_MAP_X  equ  0
 OT_MAP_Y  equ  0
-TILE_SIZE equ 10 ;размер квадратика на плоскости с сечением
 OT_CAPT_X_COLOR equ  5 ;отступ для подписи цвета
 OT_CAPT_Y_COLOR equ 30
 
@@ -98,6 +119,51 @@ start:
 	mcall 40,0x27
 	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
 
+;--- load ini file ---
+	copy_path ini_name,sys_path,file_name,0
+	;window startup pozition
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_l,ini_def_window_l
+	mov word[wnd_s_pos+2],ax
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_w,ini_def_window_w
+	mov word[wnd_s_pos],ax
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_t,ini_def_window_t
+	mov word[wnd_s_pos+6],ax
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_window_h,ini_def_window_h
+	mov word[wnd_s_pos+4],ax
+	;image buffer size
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_buf_w,ini_def_buf_w
+	mov [buf_0.w],eax
+	mov [buf_0z.w],eax
+	add ax,15
+	mov [buf_pl.l],ax ;отступ для правого окна
+	stdcall dword[ini_get_int],file_name,ini_sec_window,key_buf_h,ini_def_buf_h
+	mov [buf_0.h],eax
+	mov [buf_0z.h],eax
+	;цвет фона
+	stdcall dword[ini_get_color],file_name,ini_sec_window,key_col_b,ini_def_color_b
+	mov [buf_0.color],eax
+	mov [buf_pl.color],eax
+
+	;мастаб, после которого будет увеличение
+	stdcall dword[ini_get_int],file_name,ini_sec_options,key_s_zoom,ini_def_s_zoom
+	mov [scaled_zoom],eax
+	;размер квадратика на плоскости сечения
+	stdcall dword[ini_get_int],file_name,ini_sec_options,key_t_size,ini_def_t_size
+	mov [tile_size],eax
+
+	stdcall dword[ini_get_int],file_name,ini_sec_options,key_f_size,64
+	shl eax,10
+	mov [max_open_file_size],eax
+
+	mov ecx,[scaled_zoom]
+	xor eax,eax
+	inc eax
+	shl eax,cl
+	imul eax,[tile_size]
+	mov [buf_pl.w],eax
+	add eax,[tile_size]
+	mov [buf_pl.h],eax
+
 	stdcall [buf2d_create], buf_0 ;создание буфера изображения
 	stdcall [buf2d_create], buf_0z ;создание буфера глубины
 	stdcall [buf2d_create], buf_pl ;создание буфера для сечения
@@ -106,7 +172,7 @@ start:
 
 	load_image_file fn_toolbar, image_data_toolbar,IMAGE_TOOLBAR_SIZE
 
-	stdcall mem.Alloc,max_open_file_size
+	stdcall mem.Alloc,[max_open_file_size]
 	mov dword[open_file_vox],eax
 
 	call but_new_file
@@ -199,7 +265,7 @@ mouse:
 		jl .end_f
 			sub eax,edx
 			xor edx,edx
-			mov ecx,TILE_SIZE ;H
+			mov ecx,[tile_size] ;H
 			div ecx
 		movzx edx,word[buf_pl.l]
 		add edx,OT_MAP_X
@@ -214,7 +280,7 @@ mouse:
 				sub ebx,edx
 				mov eax,ebx
 				xor edx,edx
-				mov ecx,TILE_SIZE ;W
+				mov ecx,[tile_size] ;W
 				div ecx
 				mov [n_plane],eax
 				jmp .end_1
@@ -223,7 +289,7 @@ mouse:
 			sub ebx,edx
 			mov eax,ebx
 			xor edx,edx
-			mov ecx,TILE_SIZE ;W
+			mov ecx,[tile_size] ;W
 			div ecx
 			mov [v_cur_x],eax ;X-coord
 
@@ -334,13 +400,10 @@ pushad
 	mcall 12,1
 
 	; *** рисование главного окна (выполняется 1 раз при запуске) ***
-	xor eax,eax
-	mov ebx,(20 shl 16)+550
-	mov ecx,(20 shl 16)+415
 	mov edx,[sc.work]
 	or  edx,(3 shl 24)+0x30000000
 	mov edi,caption
-	int 0x40
+	mcall 0,dword[wnd_s_pos],dword[wnd_s_pos+4]
 
 	; *** создание кнопок на панель ***
 	mov eax,8
@@ -627,7 +690,7 @@ but_open_file:
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
-	mov dword[run_file_70.Count], max_open_file_size
+	m2m dword[run_file_70.Count], dword[max_open_file_size]
 	m2m [run_file_70.Buffer], [open_file_vox]
 	mov byte[run_file_70+20], 0
 	mov dword[run_file_70.FileName], openfile_path
@@ -636,8 +699,8 @@ but_open_file:
 	cmp ebx,0xffffffff
 	je .end_open_file
 
-	add ebx,[open_file_vox]
-	mov byte[ebx],0 ;на случай если ранее был открыт файл большего размера чистим конец буфера с файлом
+	;add ebx,[open_file_vox]
+	;mov byte[ebx],0 ;на случай если ранее был открыт файл большего размера чистим конец буфера с файлом
 	mcall 71,1,openfile_path
 
 	;---
@@ -982,6 +1045,8 @@ cam_x dd 0
 cam_y dd 0
 cam_z dd 0
 scaled_zoom dd 5 ;масштаб после которого начинается рисование части изображения
+tile_size dd ? ;размер квадратика на плоскости с сечением
+max_open_file_size dd ?
 
 txt_zoom db 'Масштаб:',0
 txt_cur_x db 'x:',0
@@ -1022,7 +1087,7 @@ draw_objects:
 		stdcall [buf2d_vox_obj_draw_3g], buf_0, buf_0z, buf_vox,\
 			[open_file_vox], ebx,ecx, 0, eax
 		stdcall [buf2d_vox_obj_draw_pl], buf_pl, [open_file_vox],\
-			OT_MAP_X,OT_MAP_Y,TILE_SIZE, eax, [n_plane], [sc.work_graph]
+			OT_MAP_X,OT_MAP_Y,[tile_size], eax, [n_plane], [sc.work_graph]
 		stdcall [buf2d_vox_obj_draw_1g], buf_0, buf_0z,\
 			[open_file_vox], 0,0, eax
 		bt dword[mode_light],0
@@ -1036,7 +1101,7 @@ draw_objects:
 		stdcall [buf2d_vox_obj_draw_3g_scaled], buf_0, buf_0z, buf_vox,\
 			[open_file_vox], 0,0, 0, [scaled_zoom], [cam_x],[cam_y],[cam_z],eax, [sc.work_graph] ;scroll -> 2^eax
 		stdcall [buf2d_vox_obj_draw_pl_scaled], buf_pl, [open_file_vox],\
-			OT_MAP_X,OT_MAP_Y,TILE_SIZE, [scaled_zoom], [n_plane], [sc.work_graph],[cam_x],[cam_y],[cam_z],eax
+			OT_MAP_X,OT_MAP_Y,[tile_size], [scaled_zoom], [n_plane], [sc.work_graph],[cam_x],[cam_y],[cam_z],eax
 		bt dword[mode_light],0
 		jnc .end_2
 			stdcall [buf2d_vox_obj_draw_3g_shadows], buf_0, buf_0z, buf_vox, 0,0, 0, [scaled_zoom], 3
@@ -1066,7 +1131,7 @@ pushad
 	mov eax,[v_cur_x]
 	cmp eax,edx
 	jge .end_f ;курсор за пределами поля
-	mov edi,TILE_SIZE
+	mov edi,[tile_size]
 	imul eax,edi
 	add eax,OT_MAP_X
 	mov ebx,edx
@@ -1090,7 +1155,7 @@ pushad
 	mov ecx,OT_MAP_X
 	add edi,ecx
 	stdcall [buf2d_line], buf_pl, ecx,ebx, eax,ebx,[sc.work_graph]
-	add eax,TILE_SIZE
+	add eax,[tile_size]
 	inc eax
 	cmp eax,edi
 	jge @f ;если курсор на краю поля
@@ -1235,6 +1300,11 @@ lib_name_2 db 'buf2d.obj',0
 err_msg_found_lib_2 db 'Не найдена библиотека ',39,'buf2d.obj',39,0
 err_msg_import_2 db 'Ошибка при импорте библиотеки ',39,'buf2d',39,0
 
+system_dir_3 db '/sys/lib/'
+lib_name_3 db 'libini.obj',0
+err_msg_found_lib_3 db 'Не найдена библиотека ',39,'libini.obj',39,0
+err_msg_import_3 db 'Ошибка при импорте библиотеки ',39,'libini',39,0
+
 l_libs_start:
 	lib0 l_libs lib_name_0, sys_path, file_name, system_dir_0,\
 		err_message_found_lib_0, head_f_l, proclib_import,err_message_import_0, head_f_i
@@ -1242,6 +1312,8 @@ l_libs_start:
 		err_message_found_lib_1, head_f_l, import_libimg, err_message_import_1, head_f_i
 	lib_2 l_libs lib_name_2, sys_path, library_path, system_dir_2,\
 		err_msg_found_lib_2,head_f_l,import_buf2d,err_msg_import_2,head_f_i
+	lib_3 l_libs lib_name_3, sys_path, library_path, system_dir_3,\
+		err_msg_found_lib_3,head_f_l,import_libini,err_msg_import_3,head_f_i
 l_libs_end:
 
 align 4
@@ -1374,6 +1446,18 @@ import_buf2d:
 	sz_buf2d_vox_obj_draw_pl db 'buf2d_vox_obj_draw_pl',0
 	sz_buf2d_vox_obj_draw_pl_scaled db 'buf2d_vox_obj_draw_pl_scaled',0
 
+align 4
+import_libini:
+	dd alib_init2
+	ini_get_str   dd aini_get_str
+	ini_get_int   dd aini_get_int
+	ini_get_color dd aini_get_color
+dd 0,0
+	alib_init2     db 'lib_init',0
+	aini_get_str   db 'ini_get_str',0
+	aini_get_int   db 'ini_get_int',0
+	aini_get_color db 'ini_get_color',0
+
 mouse_dd dd 0x0
 sc system_colors 
 
@@ -1432,17 +1516,18 @@ dd 0,0,1,1,0,0,\
 align 4
 buf_vox:
 	db 6,7,4,3 ;w,h,h_osn,n
-	rb BUF_STRUCT_SIZE*(2+1)
-
+	rb BUF_STRUCT_SIZE*(3+1)
 
 i_end:
-	rb 2048
+	wnd_s_pos: ;место для настроек стартовой позиции окна
+		rq 0
+	rb 4096 ;2048
 stacktop:
 	sys_path rb 1024
 	file_name:
 		rb 1024 ;4096 
 	library_path rb 1024
-	plugin_path rb 4096
-	openfile_path rb 4096
+	plugin_path rb 1024 ;4096
+	openfile_path rb 1024 ;4096
 	filename_area rb 256
 mem:
