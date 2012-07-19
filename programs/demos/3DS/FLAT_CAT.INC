@@ -370,6 +370,8 @@ flat_line_z:
      jecxz	.draw_last
    .ddraw:
      cmp	ebx,dword[esi]
+   ;  cmovl      [edi],eax
+    ; cmovl      [esi],ebx
      jge	@f
      stosd
      dec	edi

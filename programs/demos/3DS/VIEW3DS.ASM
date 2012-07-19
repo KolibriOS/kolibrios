@@ -1,5 +1,5 @@
 
-; application : View3ds ver. 0.061 - tiny .3ds files viewer.
+; application : View3ds ver. 0.062 - tiny .3ds files viewer.
 ; compiler    : FASM
 ; system      : KolibriOS
 ; author      : Macgub aka Maciej Guba
@@ -35,7 +35,7 @@ NON   =   0				     ;     -/  \-
 MMX   =   1
 SSE   =   2
 SSE2  =   3
-Ext   =   SSE2		    ;Ext={ NON | MMX | SSE | SSE2 }
+Ext   =   SSE2		 ;Ext={ NON | MMX | SSE | SSE2 }
 
 ; 0 for short names (Menuet-compatible), 1 for long names (Kolibri features)
 USE_LFN = 1
@@ -665,6 +665,8 @@ end if
     int  40h
 
 
+   ; addsubps xmm0,xmm0
+
 
    jmp	   still
 
@@ -676,6 +678,7 @@ include "FLAT_CAT.INC"
 include "TEX_CAT.INC"
 include "BUMP_CAT.INC"
 include "3DMATH.INC"
+include "GRD_LINE.INC"
 include "GRD3.INC"
 include "FLAT3.INC"
 include "BUMP3.INC"
@@ -685,6 +688,7 @@ include "GRD_CAT.INC"
 include "BUMP_TEX.INC"
 include "GRD_TEX.INC"
 include "TWO_TEX.INC"
+
 
 
 alloc_buffer_mem:
@@ -1585,6 +1589,7 @@ ret
 
 draw_triangles:
 	mov esi,[triangles_ptr]
+	mov [edges_counter],0
     .again_dts:
 	mov ebp,[points_translated_ptr]
       if Ext=NON
@@ -1690,6 +1695,8 @@ draw_triangles:
 	je	.bump_tex
 	cmp	[dr_flag],10
 	je	.cubic_env_mapping
+	cmp	[dr_flag],11
+	je	.draw_smooth_line
 				      ; ****************
 	mov	esi,point_index3      ; do Gouraud shading
 	mov	ecx,3
@@ -2379,9 +2386,151 @@ draw_triangles:
 
 	call bump_tex_triangle_z
 
+	jmp	.end_draw
+
+      .draw_smooth_line:
+	mov	esi,point_index3
+	mov	ecx,3
+      .again_line_param:
+	movzx	eax,word[esi]
+	shl	eax,2
+	lea	eax,[eax*3]
+	add	eax,[points_normals_rot_ptr]
+	; texture ;x=(rotated point normal -> x * 255)+255
+	fld	dword[eax]	 ; x cooficient of normal vector
+	fimul	[correct_tex]
+	fiadd	[correct_tex]
+	fistp	word[esp-2]
+	; texture y=(rotated point normal -> y * 255)+255
+	fld	dword[eax+4]	  ; y cooficient
+	fimul	[correct_tex]
+	fiadd	[correct_tex]
+	fistp	word[esp-4]
+
+	movzx	 eax,word[esp-4]
+	movzx	 ebx,word[esp-2]
+	shl	 eax,TEX_SHIFT
+	add	 eax,ebx
+	lea	 eax,[eax*3+color_map]
+	mov	 eax,dword[eax]
+	lea	 ebx,[ecx-1]
+	shl	 ebx,2
+	mov	 [ebx+col1],eax
+
+	sub	 esi,2
+	dec	 ecx
+	jnz	 .again_line_param
+
+	mov	eax,[edges_ptr]
+	add	eax,[edges_counter]
+	mov	bl,[eax]
+	test	bl,00000001b
+	jz	@f
+	mov	edi,screen
+	mov	esi,[Zbuffer_ptr]
+
+	mov	eax,[col1]
+	movzx	bx,al
+	push	bx		  ; b
+	movzx	bx,ah
+	push	bx
+	rol	eax,16
+	xor	ah,ah
+	push	ax
+	push	[zz1]
+	push	[yy1]
+	push	[xx1]
+
+	mov	eax,[col2]
+	movzx	bx,al
+	push	bx		  ; b
+	movzx	bx,ah
+	push	bx
+	rol	eax,16
+	xor	ah,ah
+	push	ax
+	push	[zz2]
+	push	[yy2]
+	push	[xx2]
+
+	call	smooth_line
+     @@:
+	mov	eax,[edges_ptr]
+	add	eax,[edges_counter]
+	mov	bl,[eax]
+	test	bl,00000010b
+	jz	@f
+
+	mov	edi,screen
+	mov	esi,[Zbuffer_ptr]
+
+	mov	eax,[col1]
+	movzx	bx,al
+	push	bx		  ; b
+	movzx	bx,ah
+	push	bx
+	rol	eax,16
+	xor	ah,ah
+	push	ax
+	push	[zz1]
+	push	[yy1]
+	push	[xx1]
+
+	mov	eax,[col3]
+	movzx	bx,al
+	push	bx		  ; b
+	movzx	bx,ah
+	push	bx
+	rol	eax,16
+	xor	ah,ah
+	push	ax
+	push	[zz3]
+	push	[yy3]
+	push	[xx3]
+
+	call	smooth_line
+      @@:
+
+	mov	eax,[edges_ptr]
+	add	eax,[edges_counter]
+	mov	bl,[eax]
+	test	bl,00000100b
+	jz	@f
+
+	mov	edi,screen
+	mov	esi,[Zbuffer_ptr]
+
+	mov	eax,[col3]
+	movzx	bx,al
+	push	bx		  ; b
+	movzx	bx,ah
+	push	bx
+	rol	eax,16
+	xor	ah,ah
+	push	ax
+	push	[zz3]
+	push	[yy3]
+	push	[xx3]
+
+	mov	eax,[col2]
+	movzx	bx,al
+	push	bx		  ; b
+	movzx	bx,ah
+	push	bx
+	rol	eax,16
+	xor	ah,ah
+	push	ax
+	push	[zz2]
+	push	[yy2]
+	push	[xx2]
+
+	call	smooth_line
+      @@:
+
       .end_draw:
 	pop	esi
 	add	esi,6
+	inc	[edges_counter]
 	cmp	dword[esi],-1
 	jne	.again_dts
 ret
@@ -2419,6 +2568,7 @@ read_from_file:
 	mov	[EndFile],eax	 ;
 
 	add	esi,6
+	mov	eax,[edges_ptr]
       @@:
 	cmp	[esi],word 3D3Dh
 	je	@f
@@ -2503,6 +2653,9 @@ read_from_file:
 	add	word[edi-6],bp
 	add	word[edi-4],bp
 	add	word[edi-2],bp
+	mov	dl,byte[esi]
+	mov	[eax],dl
+	inc	eax
 	add	esi,2
 	dec	ecx
 	jnz	@b
@@ -2620,6 +2773,7 @@ alloc_mem_for_tp:
     @@:
 	mov	ebx,20
     .alloc:
+
 	movzx	ecx, [triangles_count_var]
 	inc	ecx
 	lea	ecx, [ecx*3]
@@ -2627,6 +2781,14 @@ alloc_mem_for_tp:
 	mov	edx,[triangles_ptr]
 	int	0x40		       ;  -> allocate memory to triangles
 	mov	[triangles_ptr], eax   ;  -> eax = pointer to allocated mem
+
+	mov	eax, 68
+	movzx	ecx, [triangles_count_var]
+	inc	ecx
+	mov	edx,[edges_ptr]
+	int	0x40		       ;  -> allocate memory to edges
+	mov	[edges_ptr], eax   ;  -> eax = pointer to allocated mem
+
 
 ;        mov     eax, 68
 ;        mov     ebx, 12

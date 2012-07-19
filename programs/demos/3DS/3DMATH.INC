@@ -304,6 +304,7 @@ else
 ;       ecx - number of points(normals)
 ;align 32
     movups   xmm4,[ebx]
+ ;   lddqu    xmm4,[ebx]   ; I tried sse3 :D
     movups   xmm5,[ebx+12]
     movups   xmm6,[ebx+24]
 ;align 32

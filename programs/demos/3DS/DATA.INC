@@ -41,7 +41,7 @@
 
 	       db 3
 	       db 'shd. model'
-	       db 11
+	       db 12
  dr_flag       db 0
 	       dd shd_f
 
@@ -214,6 +214,7 @@ flags:		   ; flags description
     db '2tex'
     db 'btex'
     db 'cenv'
+    db 'grdl'
  spd_f:
     db 'idle'
     db 'full'
@@ -298,7 +299,7 @@ base_vector:
       if Ext=SSE2
 	db   ' (SSE2)'
       end if
-	db   ' 0.061',0
+	db   ' 0.062',0
     labellen:
 	STRdata db '-1        '
 
@@ -401,7 +402,11 @@ align 8
 	xx3	dw	?;+56
 	yy3	dw	?
 	zz3	dw	?      ; xx1 + 16
-	scale	dd	?		  ; help scale variable
+	col1	dd	?
+	col2	dd	?
+	col3	dd	?
+	scale	dd	? ; help scale variable
+	edges_counter dd ?
    ;==
 	triangles_count_var	dw ?
 	points_count_var	dw ?
@@ -415,6 +420,7 @@ align 8
 	points_translated_ptr	dd ?
 	screen_ptr		dd ?
 	Zbuffer_ptr		dd ?
+	edges_ptr		dd ?
 
    ;===
 
@@ -492,6 +498,9 @@ align 16
 	tex_points	rb	points_count * 4  ; bump_map  and texture coords
 				; each point word x, word y
 align 16
+if Ext >= SSE2
+	sse_repository	rb	1024
+end if
   ;      SourceFile:             ; source file temporally in screen area
   ;      workarea        dd      ?
 

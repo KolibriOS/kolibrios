@@ -837,7 +837,7 @@ end if
 	mov	ebx,.x2
 	sub	ebx,.x1
 
-if  0 ;Ext >= SSE
+if  Ext >= SSE
 
        sub	 esp,16
        cvtsi2ss  xmm3,ebx	     ;rcps
@@ -954,7 +954,7 @@ if Ext>=MMX
 	movq	mm2,.dby
 	movq	mm3,.dey
 end if
-
+;align 16
      .draw:
     ; if TEX = SHIFTING   ;bump drawing only in shifting mode
 	mov	esi,.czbuff	 ; .czbuff current address in buffer
