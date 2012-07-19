@@ -815,7 +815,7 @@ align 4
         test    [edx + TCP_header.Flags], TH_RST
         jz      .rst_skip
 
-        DEBUGF  1,"Got an RST flag"
+        DEBUGF  1,"Got an RST flag\n"
 
         mov     eax, [ebx + TCP_SOCKET.t_state]
         shl     eax, 2
@@ -835,21 +835,21 @@ align 4
         dd      .rst_close      ;TCPS_TIMED_WAIT
 
   .econnrefused:
-        DEBUGF  1,"Connection refused"
+        DEBUGF  1,"Connection refused\n"
 
         mov     [ebx + SOCKET.errorcode], ECONNREFUSED
         jmp     .close
 
   .econnreset:
-        DEBUGF  1,"Connection reset"
+        DEBUGF  1,"Connection reset\n"
 
         mov     [ebx + SOCKET.errorcode], ECONNRESET
 
-    .close:
-        DEBUGF  1,"Closing connection"
+  .close:
+        DEBUGF  1,"Closing connection\n"
 
         mov     [ebx + TCP_SOCKET.t_state], TCPS_CLOSED
-        ;;; TODO: update stats
+        ;;; TODO: update stats (tcp drops)
         mov     eax, ebx
         call    TCP_close
         jmp     .drop
@@ -1200,7 +1200,7 @@ align 4
 
 
         mov     eax, ebx
-        call    TCP_close
+        call    TCP_disconnect
         jmp     .drop
 
 

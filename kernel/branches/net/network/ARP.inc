@@ -511,6 +511,7 @@ ARP_IP_to_MAC:
         ret
 
   .invalid:
+        DEBUGF  1,"ARP entry has no valid mapping!\n"
         mov     eax, -1
         ret
 

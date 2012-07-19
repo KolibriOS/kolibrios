@@ -183,10 +183,8 @@ TCP_close:
 
 ;;; TODO: update RTT and mean deviation
 ;;; TODO: update slow start threshold
-;;; TODO: release connection resources
 
         call    SOCKET_is_disconnected
-        call    SOCKET_free
 
         ret
 

@@ -1525,8 +1525,6 @@ SOCKET_free:
         call    mutex_lock
         popa
 
-        DEBUGF  1, "SOCKET_free: freeing socket..\n"
-
         cmp     [eax + SOCKET.Domain], AF_INET4
         jnz     .no_tcp
 
