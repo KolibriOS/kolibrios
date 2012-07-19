@@ -17,7 +17,7 @@ include 'dll.inc'
 include 'vox_draw.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel editor 17.07.12',0 ;подпись окна
+caption db 'Voxel editor 19.07.12',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -34,7 +34,7 @@ image_data dd 0 ;указатель на временную память. для нужен преобразования изображ
 
 fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
-IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*14
+IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*21
 image_data_toolbar dd 0
 
 ;значения задаваемые по умолчанию, без ini файла
@@ -105,6 +105,7 @@ OT_MAP_X  equ  0
 OT_MAP_Y  equ  0
 OT_CAPT_X_COLOR equ  5 ;отступ для подписи цвета
 OT_CAPT_Y_COLOR equ 30
+PEN_MODE_SELECT_COLOR equ 2 ;режим выбора цвета
 
 align 4
 start:
@@ -221,7 +222,7 @@ mouse:
 		shr ebx,16
 		and eax,0xffff
 
-		cmp dword[v_pen_mode],2 ;select color
+		cmp dword[v_pen_mode],PEN_MODE_SELECT_COLOR
 		jne .end_2
 			stdcall get_buf_color, buf_0
 			stdcall get_buf_color, buf_pl
@@ -300,7 +301,7 @@ mouse:
 				mov eax,[v_cur_x]
 				mov ebx,[n_plane]
 				mov edx,[v_cur_y]
-		
+
 				mov ecx,[v_zoom]
 				cmp ecx,[scaled_zoom]
 				jle .no_c_coord_0
@@ -452,6 +453,27 @@ pushad
 	add ebx,25 shl 16
 	mov edx,16
 	int 0x40
+	add ebx,25 shl 16
+	mov edx,17
+	int 0x40
+	add ebx,25 shl 16
+	mov edx,18
+	int 0x40
+	add ebx,25 shl 16
+	mov edx,19
+	int 0x40
+	add ebx,25 shl 16
+	mov edx,20
+	int 0x40
+	add ebx,25 shl 16
+	mov edx,21
+	int 0x40
+	add ebx,25 shl 16
+	mov edx,22
+	int 0x40
+	add ebx,25 shl 16
+	mov edx,23
+	int 0x40
 
 	; *** рисование иконок на кнопках ***
 	mov eax,7
@@ -468,37 +490,58 @@ pushad
 	int 0x40
 
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(30 shl 16) ;
+	add edx,(30 shl 16) ;увелич. масштаб
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;
+	add edx,(25 shl 16) ;уменьш. масштаб
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;
+	add edx,(25 shl 16) ;поворот 1
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;
+	add edx,(25 shl 16) ;поворот 2
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;
+	add edx,(25 shl 16) ;сдвиг плоскости +
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;
+	add edx,(25 shl 16) ;сдвиг плоскости -
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;
+	add edx,(25 shl 16) ;инструмент карандаш
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;
+	add edx,(25 shl 16) ;инструмент кисть
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;
+	add edx,(25 shl 16) ;инструмент затирачка
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;
+	add edx,(25 shl 16) ;выбор цвета
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
-	add edx,(25 shl 16) ;
+	add edx,(25 shl 16) ;освещение
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;рендер 2*2
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;создать кисть
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;нарисовать кисть
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;ширина кисти -1
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;ширина кисти +1
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;высота кисти -1
+	int 0x40
+	add ebx,IMAGE_TOOLBAR_ICON_SIZE
+	add edx,(25 shl 16) ;высота кисти +1
 	int 0x40
 
 	; *** рисование буферов ***
@@ -511,46 +554,65 @@ popad
 
 align 4
 draw_pok:
-	mov eax,4 ;рисование текста
-	mov ebx,(365 shl 16)+5
-	mov ecx,[sc.work_text]
-	or  ecx,0x80000000 ;or (1 shl 30)
-	mov edx,txt_zoom
-	;mov edi,[sc.work]
-	int 0x40
-	add bx,9
-	mov edx,txt_cur_x
-	int 0x40
-	add bx,9
-	mov edx,txt_cur_y
-	int 0x40
-	add bx,9
-	mov edx,txt_n_plane
-	int 0x40
-
 	mov eax,47
 	mov ecx,[v_zoom]
 	mov ebx,(3 shl 16)+(1 shl 31)
-	mov edx,((365+6*9) shl 16)+5
+	mov edx,((350+6*9) shl 16)+OT_CAPT_Y_COLOR+2
 	mov esi,[sc.work_button_text]
 	or  esi,(1 shl 30)
 	mov edi,[sc.work_button]
 	int 0x40 ;масштаб
-	mov ecx,[v_cur_x]
-	add edx,9
-	int 0x40 ;курсор x
-	mov ecx,[v_cur_y]
-	add edx,9
-	int 0x40 ;курсор y
 	mov ecx,[n_plane]
-	add edx,9
+	add edx,115 shl 16 ;9
 	int 0x40 ;номер сечения
+
+	;обновление параметров курсора
+	mov dword[txt_curor.size],0
+	mov eax,dword[v_cur_x]
+	mov edi,txt_curor.size
+	call convert_int_to_str
+	stdcall str_cat, edi,txt_mull
+	mov eax,dword[v_cur_y]
+	mov edi,txt_buf
+	call convert_int_to_str
+	stdcall str_cat, txt_curor.size,edi
+	stdcall str_cat, txt_curor.size,txt_space ;завершающий пробел
+
+	;обновление параметров кисти
+	mov dword[txt_brush.size],0
+	mov eax,dword[brush_w]
+	mov edi,txt_brush.size
+	call convert_int_to_str
+	stdcall str_cat, edi,txt_mull
+	mov eax,dword[brush_h]
+	mov edi,txt_buf
+	call convert_int_to_str
+	stdcall str_cat, txt_brush.size,edi
+	stdcall str_cat, txt_brush.size,txt_space ;завершающий пробел
 
 	mov eax,4 ;рисование текста
 	mov ebx,(OT_CAPT_X_COLOR shl 16)+OT_CAPT_Y_COLOR+2
 	mov ecx,[sc.work_text]
 	or  ecx,0x80000000 ;or (1 shl 30)
 	mov edx,txt_color
+	int 0x40
+
+	mov edx,txt_curor
+	add ebx,115 shl 16
+	or  ecx,(1 shl 30)
+	mov edi,[sc.work]
+	int 0x40
+
+	mov edx,txt_brush
+	add ebx,115 shl 16
+	int 0x40
+
+	mov edx,txt_zoom
+	add ebx,115 shl 16
+	int 0x40
+
+	mov edx,txt_n_plane
+	add ebx,115 shl 16
 	int 0x40
 
 	call on_change_color
@@ -623,24 +685,52 @@ button:
 	@@:
 	cmp ah,12
 	jne @f
-		call but_7
+		call but_mode_pen
 	@@:
 	cmp ah,13
 	jne @f
-		call but_8
+		call but_mode_brush
 	@@:
 	cmp ah,14
 	jne @f
-		mov dword[v_pen_mode],2 ;select color
-		call draw_palete
+		call but_mode_clear
 	@@:
 	cmp ah,15
 	jne @f
-		call but_light
+		mov dword[v_pen_mode],PEN_MODE_SELECT_COLOR
+		call draw_palete
 	@@:
 	cmp ah,16
 	jne @f
+		call but_light
+	@@:
+	cmp ah,17
+	jne @f
 		call but_rend_2_2
+	@@:
+	cmp ah,18
+	jne @f
+		call but_brush_copy
+	@@:
+	cmp ah,19
+	jne @f
+		call but_brush_draw
+	@@:
+	cmp ah,20
+	jne @f
+		call but_bru_w_m
+	@@:
+	cmp ah,21
+	jne @f
+		call but_bru_w_p
+	@@:
+	cmp ah,22
+	jne @f
+		call but_bru_h_m
+	@@:
+	cmp ah,23
+	jne @f
+		call but_bru_h_p
 	@@:
 	cmp ah,1
 	jne still
@@ -907,11 +997,11 @@ pop ecx eax
 	ret
 
 align 4
-but_7:
+but_mode_pen:
 	push eax
 	mov eax,dword[v_pen_mode]
-	mov dword[v_pen_mode],1 ;draw
-	cmp eax,2
+	mov dword[v_pen_mode],1 ;pen
+	cmp eax,PEN_MODE_SELECT_COLOR
 	jne @f
 		call draw_objects
 	@@:
@@ -919,11 +1009,23 @@ but_7:
 	ret
 
 align 4
-but_8:
+but_mode_brush:
+	push eax
+	mov eax,dword[v_pen_mode]
+	mov dword[v_pen_mode],3 ;brush
+	cmp eax,PEN_MODE_SELECT_COLOR
+	jne @f
+		call draw_objects
+	@@:
+	pop eax
+	ret
+
+align 4
+but_mode_clear:
 	push eax
 	mov eax,dword[v_pen_mode]
 	mov dword[v_pen_mode],0 ;clear
-	cmp eax,2
+	cmp eax,PEN_MODE_SELECT_COLOR
 	jne @f
 		call draw_objects
 	@@:
@@ -1027,6 +1129,172 @@ pop edi
 	stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
 	ret
 
+;уменьшаем ширину кисти
+align 4
+but_bru_w_m:
+	cmp dword[brush_w],1
+	jle @f
+		dec dword[brush_w]
+		pushad
+		call draw_pok
+		call draw_vox_cursor
+		stdcall [buf2d_draw], buf_pl ;обновляем буфер на экране
+		popad
+	@@:
+	ret
+;увеличиваем ширину кисти
+align 4
+but_bru_w_p:
+	cmp dword[brush_w],32
+	jge @f
+		inc dword[brush_w]
+		pushad
+		call draw_pok
+		call draw_vox_cursor
+		stdcall [buf2d_draw], buf_pl ;обновляем буфер на экране
+		popad
+	@@:
+	ret
+;уменьшаем высоту кисти
+align 4
+but_bru_h_m:
+	cmp dword[brush_h],1
+	jle @f
+		dec dword[brush_h]
+		pushad
+		call draw_pok
+		call draw_vox_cursor
+		stdcall [buf2d_draw], buf_pl ;обновляем буфер на экране
+		popad
+	@@:
+	ret
+;увеличиваем высоту кисти
+align 4
+but_bru_h_p:
+	cmp dword[brush_h],32
+	jge @f
+		inc dword[brush_h]
+		pushad
+		call draw_pok
+		call draw_vox_cursor
+		stdcall [buf2d_draw], buf_pl ;обновляем буфер на экране
+		popad
+	@@:
+	ret
+
+align 4
+but_brush_copy:
+	cmp dword[v_pen_mode],3
+	jne .end_f
+pushad
+	mov eax,[v_cur_x]
+	mov ebx,[n_plane]
+	mov edx,[v_cur_y]
+		
+	mov ecx,[v_zoom]
+	cmp ecx,[scaled_zoom]
+	jle @f
+		;преобразование координат, с учетом увеличения
+		;sub ecx,[scaled_zoom] ;в ecx прирост масштаба (ecx>0)
+		mov ecx,[scaled_zoom]
+
+		mov edi,[cam_x]
+		shl edi,cl
+		add eax,edi
+		mov edi,[cam_y]
+		shl edi,cl
+		add ebx,edi
+		mov edi,[cam_z]
+		shl edi,cl
+		add edx,edi
+	@@:
+
+	cld
+	mov edi,brush_data
+	mov esi,edx
+	sub esi,[brush_h]
+	.cycle_0:
+	mov ecx,[brush_w]
+	@@:
+		push eax
+		stdcall buf2d_vox_obj_node_get_color, [open_file_vox], eax,ebx,edx, [v_zoom]
+		cmp eax,[v_color]
+		jne .end_0
+			mov eax,1 shl 30
+		.end_0:
+		mov dword[edi],eax ;color
+		pop eax
+		inc eax
+		add edi,4
+		loop @b
+	dec edx
+	sub eax,[brush_w]
+	cmp edx,esi
+	jg .cycle_0
+
+	call draw_objects
+popad
+	.end_f:
+	ret
+
+align 4
+but_brush_draw:
+	cmp dword[v_pen_mode],3
+	jne .end_f
+pushad
+	mov eax,[v_cur_x]
+	mov ebx,[n_plane]
+	mov edx,[v_cur_y]
+		
+	mov ecx,[v_zoom]
+	cmp ecx,[scaled_zoom]
+	jle @f
+		;преобразование координат, с учетом увеличения
+		;sub ecx,[scaled_zoom] ;в ecx прирост масштаба (ecx>0)
+		mov ecx,[scaled_zoom]
+
+		mov edi,[cam_x]
+		shl edi,cl
+		add eax,edi
+		mov edi,[cam_y]
+		shl edi,cl
+		add ebx,edi
+		mov edi,[cam_z]
+		shl edi,cl
+		add edx,edi
+	@@:
+
+	cld
+	mov edi,brush_data
+	mov esi,edx
+	sub esi,[brush_h]
+	.cycle_0:
+	mov ecx,[brush_w]
+	@@:
+		bt dword[edi],31 ;бит прозрачности
+		jc .end_2
+		bt dword[edi],30 ;бит текущего цвета
+		jnc .end_0
+			push dword[v_color]
+			jmp .end_1
+		.end_0:
+			push dword[edi]
+		.end_1:
+		stdcall buf2d_vox_obj_create_node, [open_file_vox], eax,ebx,edx, [v_zoom] ;, color
+		.end_2:
+		inc eax
+		add edi,4
+		loop @b
+	dec edx
+	sub eax,[brush_w]
+	cmp edx,esi
+	jg .cycle_0
+
+	call draw_objects
+popad
+	.end_f:
+	ret
+
 align 4
 draw_palete:
 	stdcall [buf2d_clear], buf_0, [buf_0.color] ;чистим буфер
@@ -1034,6 +1302,7 @@ draw_palete:
 	stdcall [buf2d_draw], buf_0 ;обновляем буфер на экране
 	ret
 
+align 4
 v_zoom dd 3 ;текущий масштаб
 v_cur_x dd 0 ;координата курсора x
 v_cur_y dd 0 ;координата курсора y (но ось в объекте z)
@@ -1047,12 +1316,25 @@ cam_z dd 0
 scaled_zoom dd 5 ;масштаб после которого начинается рисование части изображения
 tile_size dd ? ;размер квадратика на плоскости с сечением
 max_open_file_size dd ?
+brush_w dd 5 ;ширина кисти
+brush_h dd 5 ;высота кисти
+brush_data dd 1 shl 31,1 shl 30,1 shl 30,1 shl 30,1 shl 31
+dd 1 shl 30,1 shl 30,1 shl 30,1 shl 30,1 shl 30
+dd 1 shl 30,1 shl 30,1 shl 30,1 shl 30,1 shl 30
+dd 1 shl 30,1 shl 30,1 shl 30,1 shl 30,1 shl 30
+dd 1 shl 31,1 shl 30,1 shl 30,1 shl 30,1 shl 31
+rd 999 ;32*32-25
 
 txt_zoom db 'Масштаб:',0
-txt_cur_x db 'x:',0
-txt_cur_y db 'y:',0
+txt_curor: db 'Курсор: '
+.size: rb 10
 txt_n_plane db 'Сечение:',0
 txt_color db 'Цвет:',0
+txt_brush: db 'Кисть: '
+.size: rb 10
+txt_mull db '*',0
+txt_space db ' ',0
+txt_buf rb 16
 
 align 4
 draw_objects:
@@ -1060,7 +1342,7 @@ draw_objects:
 	stdcall [buf2d_clear], buf_0z, 0 ;чистим буфер
 	stdcall [buf2d_clear], buf_pl, [buf_pl.color] ;чистим буфер
 
-	cmp dword[v_pen_mode],2
+	cmp dword[v_pen_mode],PEN_MODE_SELECT_COLOR
 	jne @f
 		call draw_palete
 		jmp .end_f
@@ -1146,6 +1428,9 @@ pushad
 	dec ebx
 	add edi,2
 
+	cmp dword[v_pen_mode],3
+	je .brush
+
 	;горизонтальные линии
 	sub eax,2
 	mov ecx,edi
@@ -1162,6 +1447,18 @@ pushad
 		dec edi
 		stdcall [buf2d_line], buf_pl, eax,ebx, edi,ebx,[sc.work_graph]
 	@@:
+	jmp .end_f
+
+	;рамка для кисти
+	.brush:
+	dec eax
+	mov ecx,[brush_w]
+	imul ecx,[tile_size]
+	;mov edi,eax
+	mov edi,ecx
+	mov esi,[brush_h]
+	imul esi,[tile_size]
+	stdcall [buf2d_rect_by_size], buf_pl, eax,ebx, edi,esi,[sc.work_graph]
 
 	.end_f:
 popad
@@ -1241,6 +1538,67 @@ proc conv_str_to_int, buf:dword
 	ret
 endp
 end if
+
+;input:
+; eax = value
+; edi = string buffer
+;output:
+align 4
+convert_int_to_str:
+	pushad
+		mov dword[edi+1],0
+		mov word[edi+5],0
+		call .str
+	popad
+	ret
+
+align 4
+.str:
+	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
+    ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
+	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
+	jb @f
+		xor edx,edx  ;очистить edx
+		div ecx      ;разделить - остаток в edx
+		push edx     ;положить в стек
+		;dec edi             ;смещение необходимое для записи с конца строки
+		call .str ;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
+		pop eax
+	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
+	or al,0x30  ;данная команда короче  чем две выше
+	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
+	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+
+align 4
+proc str_cat, str1:dword, str2:dword
+	push eax ecx edi esi
+	mov esi,dword[str2]
+	stdcall str_len,esi
+	mov ecx,eax
+	inc ecx
+	mov edi,dword[str1]
+	stdcall str_len,edi
+	add edi,eax
+	cld
+	repne movsb
+	pop esi edi ecx eax
+	ret
+endp
+
+;output:
+; eax = strlen
+align 4
+proc str_len, str1:dword
+	mov eax,[str1]
+	@@:
+		cmp byte[eax],0
+		je @f
+		inc eax
+		jmp @b
+	@@:
+	sub eax,[str1]
+	ret
+endp
 
 ;данные для диалога открытия файлов
 align 4

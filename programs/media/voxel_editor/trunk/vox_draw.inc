@@ -321,6 +321,60 @@ popad
 	ret
 endp
 
+; взять цвет вокселя в 2 этапа:
+; 1) ищем место в структуре дерева, где есть узел (если ветвь не существует, выходим из функции)
+; 2) берем цвет вокселя
+;output:
+; eax - цвет вокселя
+align 4
+proc buf2d_vox_obj_node_get_color, v_obj:dword,coord_x:dword,coord_y:dword,\
+coord_z:dword,k_scale:dword
+push ebx ecx edi esi
+locals
+	p_node dd 0 ;родительский узел
+endl
+	mov edi,[v_obj]
+	add edi,vox_offs_data
+	mov esi,[k_scale]
+	cmp esi,1
+	jl .end_2
+	; *** (1) ***
+	.found:
+	stdcall vox_obj_get_node_position, [v_obj],[coord_x],[coord_y],[coord_z],esi
+	movzx bx,byte[edi+3]
+	mov [p_node],edi
+	add edi,4
+	cmp eax,0
+	je .end_1
+	mov ecx,eax
+	cld
+	@@: ;цикл для пропуска предыдущих поддеревьев в узле
+		bt bx,0 ;проверяем есть ли дочерние узлы
+		jnc .end_0
+			xor eax,eax
+			stdcall vox_obj_rec0 ;в eax вычисляется число дочерних узлов, в данной ветви
+		.end_0:
+		shr bx,1
+		loop @b
+	.end_1:
+	bt bx,0
+	jnc .end_2 ;если поддерева не существует
+	dec esi
+	cmp esi,0
+	jg .found
+
+	; *** (2) ***
+	;get
+		mov eax,dword[edi]
+		and eax,0xffffff
+		jmp .end_3
+	.end_2:
+		mov eax,1 shl 31
+	.end_3:
+pop esi edi ecx ebx
+	ret
+endp
+
 ; сдвигает узлы для добавления новых узлов
 ;input:
 ; p_insert - позиция для вставки
