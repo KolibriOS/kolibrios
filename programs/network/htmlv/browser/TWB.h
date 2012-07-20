@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.96b";
+char version[]=" Text-based Browser 0.96d";
 
 
 struct TWebBrowser {
