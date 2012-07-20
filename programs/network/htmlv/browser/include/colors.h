@@ -156,9 +156,9 @@ dword StrToCol(char* htmlcolor)
 		textlen=0;
 	char ch=0x00;
 
-	if (ESBYTE[htmlcolor]<>'#') return;
+	if (ESBYTE[htmlcolor]<>'#') return text_colors[0];
 
-	textlen= strlen(htmlcolor);
+	textlen = strlen(htmlcolor);
 
 	if (textlen==7) || (textlen==4)
 	{
