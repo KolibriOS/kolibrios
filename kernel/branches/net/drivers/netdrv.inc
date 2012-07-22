@@ -12,19 +12,18 @@ include 'bus/pci.inc'
 
 ; Kernel variables
 
-        PAGESIZE                equ 4096
-        PG_SW                   equ 0x003
+        PAGESIZE        = 4096
+        PG_SW           = 0x003
 
 
 ; network driver types
 
-        NET_TYPE_ETH            equ 1
-        NET_TYPE_SLIP           equ 2
+        NET_TYPE_ETH    = 1
+        NET_TYPE_SLIP   = 2
 
 
         LAST_IO = 0
-
-macro set_io addr {
+macro   set_io addr {
 
         if      addr = 0
         mov     edx, [device.io_addr]
@@ -36,7 +35,7 @@ macro set_io addr {
         LAST_IO = addr
 }
 
-macro allocate_and_clear dest, size, err {
+macro   allocate_and_clear dest, size, err {
 
 ; We need to allocate at least 8 pages, if we want a continuous memory in ram
         push    edx
@@ -68,13 +67,13 @@ macro allocate_and_clear dest, size, err {
 
 }
 
-struc IOCTL {
-      .handle           dd ?
-      .io_code          dd ?
-      .input            dd ?
-      .inp_size         dd ?
-      .output           dd ?
-      .out_size         dd ?
+struc   IOCTL {
+        .handle         dd ?
+        .io_code        dd ?
+        .input          dd ?
+        .inp_size       dd ?
+        .output         dd ?
+        .out_size       dd ?
 }
 
 virtual at edx
@@ -91,7 +90,7 @@ null_op:
 end if
 
 
-macro GetRealAddr {             ; input and output is eax
+macro   GetRealAddr {             ; input and output is eax
 
         push    ax
         call    GetPgAddr
@@ -102,7 +101,7 @@ macro GetRealAddr {             ; input and output is eax
 
 }
 
-macro NET_DEVICE {
+macro   NET_DEVICE {
 
         .type           dd ?    ; Type field
         .mtu            dd ?    ; Maximal Transmission Unit
@@ -121,8 +120,8 @@ macro NET_DEVICE {
 }
 
 
-macro ETH_DEVICE {
-      NET_DEVICE
+macro   ETH_DEVICE {
+        NET_DEVICE
 
         .set_mode       dd ?
         .get_mode       dd ?
@@ -138,7 +137,7 @@ macro ETH_DEVICE {
 
 
 
-macro SLIP_DEVICE {
+macro   SLIP_DEVICE {
         NET_DEVICE
 
         .set_mode       dd ?
