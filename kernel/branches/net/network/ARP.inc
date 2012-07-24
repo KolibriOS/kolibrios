@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ARP.INC                                                        ;;
@@ -349,7 +349,7 @@ ARP_output_request:
 align 4
 ARP_add_entry:
 
-        DEBUGF 1,"ARP add entry: "
+        DEBUGF 1,"ARP_add_entry: "
 
         mov     ecx, [NumARP]
         test    ecx, ecx                ; first entry?
@@ -392,14 +392,14 @@ ARP_add_entry:
         lea     esi, [edi - sizeof.ARP_entry]
         inc     [NumARP]
         pop     eax
-        DEBUGF 1,"New entry created: %u\n", eax
+        DEBUGF 1,"entry %u created\n", eax
 
   .exit:
-        DEBUGF 1,"Exiting\n"
+        DEBUGF 1,"exiting\n"
         ret
 
   .error:
-        DEBUGF 1,"error! \n"
+        DEBUGF 1,"error!\n"
         mov     eax, -1
         ret
 
@@ -415,7 +415,7 @@ ARP_add_entry:
 align 4
 ARP_del_entry:
 
-        DEBUGF 1,"ARP del entry %x, total entrys: %u\n", esi, [NumARP]
+        DEBUGF 1,"ARP_del_entry %x, total entrys: %u\n", esi, [NumARP]
 
         mov     ecx, ARP_table + (ARP_TABLE_SIZE - 1) * sizeof.ARP_entry
         sub     ecx, esi
@@ -426,7 +426,7 @@ ARP_del_entry:
         rep     movsw
 
         dec     [NumARP]
-        DEBUGF 1,"ARP entry deleted\n"
+        DEBUGF 1,"ARP_del_entry: done!\n"
 
         ret
 
@@ -473,7 +473,7 @@ ARP_IP_to_MAC:
         loop    .scan_loop
 
   .not_in_list:
-        DEBUGF 1,"IP not found on list, preparing for ARP request\n"
+        DEBUGF 1,"ARP_IP_to_MAC: preparing for ARP request\n"
 
 ;--------------------
 ; Send an ARP request
@@ -502,7 +502,7 @@ ARP_IP_to_MAC:
         ret
 
   .found_it:
-        DEBUGF  1,"found IP in ARPTable\n"
+        DEBUGF  1,"ARP_IP_to_MAC: found IP\n"
         cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING
         jne     .invalid
 
@@ -511,12 +511,12 @@ ARP_IP_to_MAC:
         ret
 
   .invalid:
-        DEBUGF  1,"ARP entry has no valid mapping!\n"
+        DEBUGF  1,"ARP_IP_to_MAC: entry has no valid mapping!\n"
         mov     eax, -1
         ret
 
   .full:
-        DEBUGF  1,"ARP table is full!\n"
+        DEBUGF  1,"ARP_IP_to_MAC: table is full!\n"
         add     esp, 8
         mov     eax, -1
         ret

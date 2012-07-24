@@ -26,6 +26,10 @@ $Revision$
 ;
 ;-----------------------------------------------------------------
 align 4
+TCP_sendalot:
+        DEBUGF 1,"TCP_sendalot\n"
+        pop     eax
+;align 4
 TCP_output:
 
         DEBUGF 1,"TCP_output, socket: %x\n", eax
@@ -122,7 +126,6 @@ TCP_output:
 ; pull SND_NXT back to (closed) window, We will enter persist state below.
         push    [eax + TCP_SOCKET.SND_UNA]
         pop     [eax + TCP_SOCKET.SND_NXT]
-
        @@:
 
 ; If window didn't close completely, just wait for an ACK
@@ -136,9 +139,8 @@ TCP_output:
         jbe     @f
 
         mov     esi, [eax + TCP_SOCKET.t_maxseg]
-
-;;; sendalot = 1
-
+        push    eax
+        push    dword TCP_sendalot
        @@:
 
 ;--------------------------------------------
@@ -167,7 +169,7 @@ TCP_output:
         jz      .len_zero
 
         cmp     esi, [eax + TCP_SOCKET.t_maxseg]
-        je      .send
+        je      TCP_send
 
         test    [eax + TCP_SOCKET.t_flags], TF_NODELAY
         jnz     @f
@@ -175,19 +177,19 @@ TCP_output:
        @@:
         add     ebx, esi
         cmp     ebx, [eax + STREAM_SOCKET.snd.size]
-        jae     .send
+        jae     TCP_send
 
         test    [eax + TCP_SOCKET.t_force], -1  ;;;
-        jnz     .send
+        jnz     TCP_send
 
         mov     ebx, [eax + TCP_SOCKET.max_sndwnd]
         shr     ebx, 1
         cmp     esi, ebx
-        jae     .send
+        jae     TCP_send
 
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]
         cmp     ebx, [eax + TCP_SOCKET.SND_MAX]
-        jb      .send
+        jb      TCP_send
 
   .len_zero:
 
@@ -210,10 +212,10 @@ TCP_output:
         ; (with TCP_max_win shl rcv_scale as the maximum)
 
         cmp     ebx, [eax + TCP_SOCKET.t_maxseg]
-        jae     .send
+        jae     TCP_send
 
-  ;;;      cmp     ebx, [eax + ]                        ;;; TODO: check receive buffer high water mark
-    ;;;    jae     .send
+        cmp     ebx, 8192       ;[eax + TCP_SOCKET.]    ;;; FIXME: check with receive buffer high water mark
+        jae     TCP_send
 
   .no_window:
 
@@ -221,14 +223,14 @@ TCP_output:
 ; Should a segment be sent? (174)
 
         test    [eax + TCP_SOCKET.t_flags], TF_ACKNOW   ; we need to ACK
-        jnz     .send
+        jnz     TCP_send
 
         test    dl, TH_SYN + TH_RST                     ; we need to send a SYN or RST
-        jnz     .send
+        jnz     TCP_send
 
         mov     ebx, [eax + TCP_SOCKET.SND_UP]          ; when urgent pointer is beyond start of send bufer
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
-        ja      .send
+        ja      TCP_send
 
         test    dl, TH_FIN
         jz      .enter_persist  ; no reason to send, enter persist state
@@ -236,11 +238,11 @@ TCP_output:
 ; FIN was set, only send if not already sent, or on retransmit
 
         test    [eax + TCP_SOCKET.t_flags], TF_SENTFIN
-        jnz     .send
+        jnz     TCP_send
 
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
-        je      .send
+        je      TCP_send
 
 ;--------------------
 ; Enter persist state (191)
@@ -289,10 +291,10 @@ TCP_output:
 ;  dl = flags
 ;
 ;-----------------------------------------------
+align 4
+TCP_send:
 
-  .send:
-
-        DEBUGF  1,"Preparing to send a segment socket: %x length: %u flags: %x\n", eax, esi, dl
+        DEBUGF  1,"TCP_send socket=%x length=%u flags=%x\n", eax, esi, dl
 
         mov     edi, sizeof.TCP_header  ; edi will contain headersize
 
@@ -362,13 +364,6 @@ TCP_output:
 
         ; <Add additional options here>
 
-
-
-
-
-
-
-
   .options_done:
 
 ; eax = socket ptr
@@ -384,8 +379,8 @@ TCP_output:
         jbe     .no_overflow
 
         mov     esi, [eax + TCP_SOCKET.t_maxseg]
-
-;;; sendalot = 1
+;;        push    eax
+;;        push    dword TCP_sendalot
 
   .no_overflow:
 
@@ -395,12 +390,12 @@ TCP_output:
 
         pushw   0       ;        .UrgentPointer          dw ?
         pushw   0       ;        .Checksum               dw ?
-        pushw   0x00a0  ;        .Window                 dw ?    ;;;;;;; FIXME
+        pushw   0x00a0  ;        .Window                 dw ?    ;;;;;;; FIXME (370)
         shl     edi, 2  ;        .DataOffset             db ?  only 4 left-most bits
         shl     dx, 8
         or      dx, di  ;        .Flags                  db ?
         pushw   dx
-        shr     edi, 2  ;        .DataOffset             db ? ;;;;
+        shr     edi, 2  ;        .DataOffset             db ?
 
         push    [eax + TCP_SOCKET.RCV_NXT]      ;        .AckNumber              dd ?
         ntohd   [esp]
@@ -456,13 +451,15 @@ TCP_output:
 ; ecx = buffer size
 ; edi = ptr to buffer
 
-        mov     eax, [esp+4]                    ; get socket ptr
-
+        mov     eax, [esp + 4]                  ; get socket ptr
         add     [eax + TCP_SOCKET.SND_NXT], ecx ; update sequence number
 
-        add     eax, STREAM_SOCKET.snd
         push    edx
+        test    ecx, ecx
+        jz      .nodata
+        add     eax, STREAM_SOCKET.snd
         call    SOCKET_ring_read
+  .nodata:
         pop     esi                             ; begin of data
         pop     ecx                             ; full packet size
         pop     eax                             ; socket ptr
@@ -544,5 +541,8 @@ TCP_output:
 
         DEBUGF 1,"TCP_output: IP error\n"
         ret
+
+
+
 
 

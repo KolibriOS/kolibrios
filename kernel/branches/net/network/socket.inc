@@ -3,7 +3,9 @@
 ;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;    Written by hidnplayr@kolibrios.org,                          ;;
+;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;                                                                 ;;
+;;   Written by hidnplayr@kolibrios.org,                           ;;
 ;;     and Clevermouse.                                            ;;
 ;;                                                                 ;;
 ;;       Based on code by mike.dld                                 ;;
@@ -1181,7 +1183,7 @@ SOCKET_ring_create:
         mov     [esi + RING_BUFFER.write_ptr], eax
         mov     [esi + RING_BUFFER.read_ptr], eax
         mov     [esi + RING_BUFFER.size], 0
-        add     eax,  SOCKET_MAXDATA
+        add     eax, SOCKET_MAXDATA
         mov     [esi + RING_BUFFER.end_ptr], eax
         mov     eax, esi
         pop     esi
@@ -1307,10 +1309,14 @@ SOCKET_ring_read:
 
   .less_data:
         mov     ecx, [eax + RING_BUFFER.size]
-;        test    ecx, ecx
-;        jz      .no_data_at_all
+        cmp     ecx, 0
+        jb      .error
         jmp     .copy
 
+  .error:
+        DEBUGF  1,"SOCKET_ring_read: ringbuff=%x error!", eax
+        xor     ecx, ecx
+        ret
 
 ;-----------------------------------------------------------------
 ;
@@ -1330,7 +1336,7 @@ SOCKET_ring_free:
         DEBUGF  1,"SOCKET_ring_free: %u bytes from ring %x\n", ecx, eax
 
         sub     [eax + RING_BUFFER.size], ecx
-        jb      .sumthinwong
+        jb      .error
         add     [eax + RING_BUFFER.read_ptr], ecx
 
         mov     edx, [eax + RING_BUFFER.end_ptr]
@@ -1340,7 +1346,8 @@ SOCKET_ring_free:
        @@:
         ret
 
-  .sumthinwong:                ; we could free all available bytes, but that would be stupid, i guess..
+  .error:       ; we could free all available bytes, but that would be stupid, i guess..
+        DEBUGF  1,"SOCKET_ring_free: buffer=%x error!\n", eax
         add     [eax + RING_BUFFER.size], ecx
         xor     ecx, ecx
         ret

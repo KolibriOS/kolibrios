@@ -1055,7 +1055,7 @@ align 4
         ;;; TODO: update stats
 
 
-        DEBUGF  1,"We have an acceptable ACK of %x bytes\n", esi
+        DEBUGF  1,"We have an acceptable ACK of %x bytes\n", edi
 
 
 
