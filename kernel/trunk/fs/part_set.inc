@@ -72,7 +72,6 @@ ext2_data:
     .block_size                     dd ?
     .count_block_in_block           dd ?
     .blocks_per_group               dd ?
-    .inodes_per_group               dd ?
     .global_desc_table              dd ?
     .root_inode                     dd ?        ; pointer to root inode in memory
     .inode_size                     dd ?
