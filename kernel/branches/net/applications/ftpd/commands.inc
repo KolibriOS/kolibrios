@@ -279,6 +279,54 @@ nextpasvport:
         ret
 
 
+align 4
+open_datasock:
+
+        cmp     [ebp + thread_data.mode], MODE_PASSIVE_OK
+        je      .start
+
+; If we are in active mode, it's time to open a data socket..
+        cmp     [ebp + thread_data.mode], MODE_ACTIVE
+        jne     .not_active
+        mov     ecx, [ebp + thread_data.datasocketnum]
+        lea     edx, [ebp + thread_data.datasock]
+        mov     esi, sizeof.thread_data.datasock
+        mcall   connect
+        cmp     eax, -1
+        jne     .start
+
+  .socketerror:
+        add     esp, 4
+        jmp     socketerror
+
+; If we are still in passive_wait, it's time we accept an incomming call..
+  .not_active:
+        cmp     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
+        jne     .socketerror
+
+  .try_now:
+        mov     ecx, [ebp + thread_data.passivesocknum]
+        lea     edx, [ebp + thread_data.datasock]
+        mov     esi, sizeof.thread_data.datasock
+        mcall   accept
+        cmp     eax, -1
+        jne     .pasv_ok
+        mov     [ebp + thread_data.mode], MODE_PASSIVE_FAILED                   ; assume that we will fail
+        mcall   23, 200
+        mcall   accept
+        cmp     eax, -1
+        je      .socketerror
+  .pasv_ok:
+        mov     [ebp + thread_data.datasocketnum], eax
+        mov     [ebp + thread_data.mode], MODE_PASSIVE_OK
+        mcall   close   ; [ebp + thread_data.passivesocknum]
+        mov     [ebp + thread_data.passivesocknum], -1
+        invoke  con_write_asciiz, str_datasock
+
+  .start:
+        ret
+
+
 ;------------------------------------------------
 ; "ABOR"
 ;
@@ -425,44 +473,8 @@ cmdLIST:
         test    [ebp + thread_data.permissions], PERMISSION_EXEC
         jz      permission_denied
 
-        cmp     [ebp + thread_data.mode], MODE_PASSIVE_OK
-        je      .start
+        call    open_datasock
 
-; If we are in active mode, it's time to open a data socket..
-        cmp     [ebp + thread_data.mode], MODE_ACTIVE
-        jne     .not_active
-        mov     ecx, [ebp + thread_data.datasocketnum]
-        lea     edx, [ebp + thread_data.datasock]
-        mov     esi, sizeof.thread_data.datasock
-        mcall   connect
-        cmp     eax, -1
-        je      socketerror
-        jmp     .start
-
-; If we are still in passive_wait, it's time we accept an incomming call..
-  .not_active:
-        cmp     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
-        jne     socketerror
-  .try_now:
-        mov     ecx, [ebp + thread_data.passivesocknum]
-        lea     edx, [ebp + thread_data.datasock]
-        mov     esi, sizeof.thread_data.datasock
-        mcall   accept
-        cmp     eax, -1
-        jne     .pasv_ok
-        mov     [ebp + thread_data.mode], MODE_PASSIVE_FAILED                   ; assume that we will fail
-        mcall   23, 200
-        mcall   accept
-        cmp     eax, -1
-        je      socketerror
-  .pasv_ok:
-        mov     [ebp + thread_data.datasocketnum], eax
-        mov     [ebp + thread_data.mode], MODE_PASSIVE_OK
-        mcall   close   ; [ebp + thread_data.passivesocknum]
-        mov     [ebp + thread_data.passivesocknum], -1
-        invoke  con_write_asciiz, str_datasock
-
-  .start:
 ; Create fpath from home_dir and work_dir
         call    create_path
 
@@ -687,10 +699,10 @@ cmdPASS:
 align 4
 cmdPASV:
 
-        cmp     [ebp + thread_data.passivesocknum], -1
-        je      @f
-        mcall   close, [ebp + thread_data.passivesocknum]       ; if there is still a socket open, close it
-       @@:
+;        cmp     [ebp + thread_data.passivesocknum], -1
+;        je      @f
+;        mcall   close, [ebp + thread_data.passivesocknum]       ; if there is still a socket open, close it
+;       @@:
 
 ; Open a new TCP socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
@@ -886,49 +898,11 @@ cmdRETR:
         sub     ecx, 5
         jb      .cannot_open
 
-        cmp     [ebp + thread_data.mode], MODE_PASSIVE_OK
-        je      .start
+        call    open_datasock
 
-; If we are in active mode, it's time to open a data socket..
-        cmp     [ebp + thread_data.mode], MODE_ACTIVE
-        jne     .not_active
-        mov     ecx, [ebp + thread_data.datasocketnum]
-        lea     edx, [ebp + thread_data.datasock]
-        mov     esi, sizeof.thread_data.datasock
-        mcall   connect
-        cmp     eax, -1
-        je      socketerror
-        jmp     .start
-
-; If we are still in passive_wait, it's time we accept an incomming call..
-  .not_active:
-        cmp     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
-        jne     socketerror
-        mov     [ebp + thread_data.mode], MODE_PASSIVE_FAILED                   ; assume that we will fail
-  .try_now:
-        mov     ecx, [ebp + thread_data.passivesocknum]
-        lea     edx, [ebp + thread_data.datasock]
-        mov     esi, sizeof.thread_data.datasock
-        mcall   accept
-        cmp     eax, -1
-        jne     .pasv_ok
-        mcall   23, 200
-        mcall   accept
-        cmp     eax, -1
-        je      socketerror
-  .pasv_ok:
-        mov     [ebp + thread_data.datasocketnum], eax
-        mov     [ebp + thread_data.mode], MODE_PASSIVE_OK
-        mcall   close   ; [ebp + thread_data.passivesocknum]
-        mov     [ebp + thread_data.passivesocknum], -1
-        invoke  con_write_asciiz, str_datasock
-
-  .start:
         call    create_path
         dec     edi
-        add     esi, 5
-
-        lea     esi, [ebp + thread_data.buffer]                         ; FIXME
+        lea     esi, [ebp + thread_data.buffer + 5]
         mov     ecx, 1024
   .loop:
         lodsb
@@ -961,6 +935,8 @@ cmdRETR:
         cmp     eax, -1
         je      .cannot_open                                    ; FIXME: this is not the correct error
 
+        invoke  con_write_asciiz, str2
+
         push    eax ebx
         mov     esi, eax
         mov     ecx, [ebp + thread_data.datasocketnum]
@@ -978,6 +954,8 @@ cmdRETR:
         je      .read_more
 
         invoke  file.close, ebx
+
+        invoke  con_write_asciiz, str2b
 
         mov     [ebp + thread_data.mode], MODE_NOTREADY
         mcall   close, [ebp + thread_data.datasocketnum]

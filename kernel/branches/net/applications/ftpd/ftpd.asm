@@ -1,20 +1,26 @@
-;
-; Kolibrios FTP Daemon
-;
-; hidnplayr@gmail.com
-;
-; GPLv2
-;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2010-2012. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  ftpd.asm - FTP Daemon for KolibriOS                            ;;
+;;                                                                 ;;
+;;  Written by hidnplayr@kolibrios.org                             ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 DEBUG                   = 0             ; if set to one, program will run in a single thread
 
 BUFFERSIZE              = 8192
 
 ; using multiple's of 4
-STATE_CONNECTED         = 4*0
-STATE_LOGIN             = 4*1
-STATE_LOGIN_FAIL        = 4*2           ; When an invalid username was given
-STATE_ACTIVE            = 4*3
+STATE_CONNECTED         = 0*4
+STATE_LOGIN             = 1*4
+STATE_LOGIN_FAIL        = 2*4           ; When an invalid username was given
+STATE_ACTIVE            = 3*4
 
 TYPE_UNDEF              = 0
 
