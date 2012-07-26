@@ -116,7 +116,7 @@ macro   UDP_checksum    IP1, IP2  { ; esi = ptr to udp packet, ecx = packet size
 align 4
 UDP_input:
 
-        DEBUGF  1,"UDP_input, size:%u\n", ecx
+        DEBUGF  1,"UDP_input: size=%u\n", ecx
 
         ; First validate, checksum
 
@@ -129,7 +129,7 @@ UDP_input:
         jnz     .checksum_mismatch
 
   .no_checksum:
-        DEBUGF  1,"UDP Checksum is correct\n"
+        DEBUGF  1,"UDP_input: checksum ok\n"
 
         ; Convert port numbers to intel format
 
@@ -160,7 +160,7 @@ UDP_input:
         cmp     [eax + UDP_SOCKET.LocalPort], dx
         jne     .next_socket
 
-        DEBUGF  1,"using socket: %x\n", eax
+        DEBUGF  1,"UDP_input: socket=%x\n", eax
 
         ;;; TODO: when packet is processed, check more sockets!
 
@@ -184,8 +184,8 @@ UDP_input:
         popa
 
   .updatesock:
-        inc     [UDP_PACKETS_RX]
-        DEBUGF  1,"Found valid UDP packet for socket %x\n", eax
+        inc     [UDP_PACKETS_RX]        ; Fixme: correct interface?
+
         movzx   ecx, [esi + UDP_header.Length]
         sub     ecx, sizeof.UDP_header
         add     esi, sizeof.UDP_header
@@ -198,7 +198,7 @@ UDP_input:
         call    mutex_lock
         popa
 
-        DEBUGF  1,"Changing remote port to: %u\n", cx
+        DEBUGF  1,"UDP_input: new remote port=%u\n", cx
         mov     [eax + UDP_SOCKET.RemotePort], cx
         inc     [eax + UDP_SOCKET.firstpacket]
 
@@ -206,13 +206,12 @@ UDP_input:
 
 
   .checksum_mismatch:
-
-        DEBUGF  2,"UDP_Handler - checksum mismatch\n"
+        DEBUGF  2,"UDP_input: checksum mismatch\n"
 
   .dump:
         call    kernel_free
         add     esp, 4 ; pop (balance stack)
-        DEBUGF  2,"UDP_Handler - dumping\n"
+        DEBUGF  2,"UDP_input: dumping\n"
 
         ret
 
@@ -232,14 +231,14 @@ UDP_input:
 align 4
 UDP_output:
 
-        DEBUGF  1,"UDP_output: socket:%x, bytes: %u, data ptr: %x\n", eax, ecx, esi
+        DEBUGF  1,"UDP_output: socket=%x bytes=%u data_ptr=%x\n", eax, ecx, esi
 
         mov     dx, [eax + UDP_SOCKET.RemotePort]
-        DEBUGF  1,"UDP_output: remote port: %u, ", dx
+        DEBUGF  1,"UDP_output: remote port=%u, ", dx
         rol     dx, 8
         rol     edx, 16
         mov     dx, [eax + UDP_SOCKET.LocalPort]
-        DEBUGF  1,"local port: %u\n", dx
+        DEBUGF  1,"local port=%u\n", dx
         rol     dx, 8
 
         sub     esp, 8                                          ; Data ptr and data size will be placed here
@@ -277,8 +276,7 @@ UDP_output:
 
         inc     [UDP_PACKETS_TX]                                ; FIXME: correct device?
 
-        DEBUGF  1,"UDP_output: sending to device %x\n", ebx
-
+        DEBUGF  1,"UDP_output: sending with device %x\n", ebx
         call    [ebx + NET_DEVICE.transmit]
         ret
 

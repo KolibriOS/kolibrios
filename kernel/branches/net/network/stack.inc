@@ -346,7 +346,7 @@ NET_add_device:
 align 4
 NET_set_default:
 
-        DEBUGF  1,"NET_set_default %x\n", eax
+        DEBUGF  1,"NET_set_default: device=%x\n", eax
 
         cmp     eax, MAX_NET_DEVICES
         jae     .error
@@ -356,12 +356,12 @@ NET_set_default:
 
         mov     [NET_DEFAULT], eax
 
-        DEBUGF  1,"Device number %u is now default!\n", eax
+        DEBUGF  1,"NET_set_default: succes\n"
         ret
 
   .error:
         or      eax, -1
-        DEBUGF  2,"Setting default network device failed\n"
+        DEBUGF  1,"NET_set_default: failed\n"
         ret
 
 
@@ -371,7 +371,7 @@ NET_set_default:
 ;
 ;  This function is called by etwork drivers,
 ;  to unregister network devices from the kernel
-;                                                                                                                                d
+;
 ;  IN:  Pointer to device structure in ebx
 ;  OUT: eax: -1 on error
 ;
@@ -664,7 +664,6 @@ sys_network:                    ; FIXME: make default device easily accessible
         jmp     .return
 
   .doesnt_exist:
-        DEBUGF  1,"sys_network: invalid device/function specified!\n"
         mov     eax, -1
 
   .return:
@@ -717,7 +716,6 @@ sys_protocols:
         add     esp, 4                           ; if we reached here, no function was called, so we need to balance stack
 
   .doesnt_exist:
-        DEBUGF  1,"sys_protocols: protocol %u doesnt exist on device %u!\n", ax, bh
         mov     eax, -1
 
   .return:

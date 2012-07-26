@@ -140,7 +140,7 @@ TCP_pull_out_of_band:
 align 4
 TCP_drop:
 
-        DEBUGF  1,"TCP_drop\n"
+        DEBUGF  1,"TCP_drop: %x\n", eax
 
         cmp     [eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED
         jb      .no_syn_received
@@ -201,7 +201,7 @@ TCP_close:
 align 4
 TCP_disconnect:
 
-        DEBUGF  1,"TCP_disconnect socket=%x\n", eax
+        DEBUGF  1,"TCP_disconnect: %x\n", eax
 
         cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
         jb      TCP_close
@@ -227,7 +227,7 @@ TCP_disconnect:
 align 4
 TCP_usrclosed:
 
-        DEBUGF  1,"TCP_usrclosed socket=%x\n", eax
+        DEBUGF  1,"TCP_usrclosed: %x\n", eax
 
         push    ebx
         mov     ebx, [eax + TCP_SOCKET.t_state]
@@ -287,7 +287,7 @@ TCP_outflags:
         mov     edx, [eax + TCP_SOCKET.t_state]
         movzx   edx, byte [edx + .flaglist]
 
-        DEBUGF  1,"TCP_outflags, socket: %x, flags: %x\n", eax, dl
+        DEBUGF  1,"TCP_outflags: socket=%x flags=%x\n", eax, dl
 
         ret
 
@@ -323,7 +323,7 @@ TCP_outflags:
 align 4
 TCP_respond_socket:
 
-        DEBUGF  1,"TCP_respond_socket\n"
+        DEBUGF  1,"TCP_respond_socket: socket=%x flags=%x\n", ebx, cl
 
 ;---------------------
 ; Create the IP packet
@@ -382,8 +382,8 @@ TCP_respond_socket:
         ret
 
   .error:
-        DEBUGF  1,"TCP_respond failed\n"
-        add     esp, 2+4
+        DEBUGF  1,"TCP_respond_socket: failed\n"
+        add     esp, 2 + 4
 
         ret
 
@@ -404,7 +404,7 @@ TCP_respond_socket:
 align 4
 TCP_respond_segment:
 
-        DEBUGF  1,"TCP_respond_segment\n"
+        DEBUGF  1,"TCP_respond_segment: frame=%x flags=%c\n", edx, cl
 
 ;---------------------
 ; Create the IP packet
@@ -461,7 +461,7 @@ TCP_respond_segment:
         ret
 
   .error:
-        DEBUGF  1,"TCP_respond failed\n"
+        DEBUGF  1,"TCP_respond_segment: failed\n"
         add     esp, 2+4
 
         ret

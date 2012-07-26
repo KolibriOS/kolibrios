@@ -163,7 +163,6 @@ local   .exit
 align 4
 ARP_input:
 
-        DEBUGF  1,"ARP_input - start\n"
         cmp     ecx, sizeof.ARP_header
         jb      .exit
 
@@ -173,9 +172,9 @@ ARP_input:
         cmp     [edx + ARP_header.Opcode], ARP_REP_OPCODE
         jne     .maybe_request
 
-        DEBUGF  1,"ARP_input - it's a reply packet from %u.%u.%u.%u\n",\
-        [edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP+1]:1,\
-        [edx + ARP_header.SenderIP+2]:1, [edx + ARP_header.SenderIP+3]:1
+        DEBUGF  1,"ARP_input: got reply packet from %u.%u.%u.%u\n",\
+        [edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP + 1]:1,\
+        [edx + ARP_header.SenderIP + 2]:1, [edx + ARP_header.SenderIP + 3]:1
 
         mov     ecx, [NumARP]
         test    ecx, ecx
@@ -194,20 +193,20 @@ ARP_input:
         jmp     .exit
 
   .gotit:
-        DEBUGF  1,"ARP_input - found matching entry\n"
+        DEBUGF  1,"ARP_input: found matching entry\n"
 
         cmp     [esi + ARP_entry.TTL], ARP_STATIC_ENTRY         ; if it is a static entry, dont touch it
         je      .exit
 
-        DEBUGF  1,"ARP_input - updating entry\n"
+        DEBUGF  1,"ARP_input: updating entry\n"
 
         mov     [esi + ARP_entry.Status], ARP_VALID_MAPPING
         mov     [esi + ARP_entry.TTL], ARP_ENTRY_TTL
 
         mov     eax, dword [edx + ARP_header.SenderMAC]
-        mov     dword [esi+ARP_entry.MAC], eax
+        mov     dword [esi + ARP_entry.MAC], eax
         mov     cx, word [edx + ARP_header.SenderMAC + 4]
-        mov     word [esi+ARP_entry.MAC+4], cx
+        mov     word [esi + ARP_entry.MAC + 4], cx
 
         jmp     .exit
 
@@ -222,10 +221,10 @@ ARP_input:
         call    NET_ptr_to_num
         cmp     edi, -1
         jz      .exit
-        DEBUGF  1,"ARP Request packet through device: %u\n", edi
-        inc     [ARP_PACKETS_RX+4*edi]
+        DEBUGF  1,"ARP_input: got request packet through device: %u\n", edi
+        inc     [ARP_PACKETS_RX + 4*edi]
 
-        mov     eax, [IP_LIST+4*edi]
+        mov     eax, [IP_LIST + 4*edi]
         cmp     eax, [edx + ARP_header.TargetIP]                ; Is it looking for my IP address?
         jne     .exit
 
@@ -264,7 +263,7 @@ ARP_input:
 ;        mov     ax , ETHER_ARP                                 ; It's already there, I'm sure of it!
 ;        stosw
 
-        DEBUGF  1,"ARP_input - Sending reply \n"
+        DEBUGF  1,"ARP_input: Sending reply\n"
 
         call    [ebx + NET_DEVICE.transmit]
         ret
@@ -273,7 +272,7 @@ ARP_input:
         call    kernel_free
         add     esp, 4                                          ; pop (balance stack)
 
-        DEBUGF  1,"ARP_input - exiting\n"
+        DEBUGF  1,"ARP_input: exiting\n"
         ret
 
 
@@ -289,12 +288,13 @@ ARP_input:
 align 4
 ARP_output_request:
 
-        DEBUGF 1,"Create ARP Packet\n"
-
         push    eax                             ; DestIP
-        pushd   [IP_LIST+edi]                   ; SenderIP
+        pushd   [IP_LIST + edi]                 ; SenderIP
 
-        mov     ebx, [NET_DRV_LIST+edi]         ; device ptr
+        DEBUGF  1,"ARP_output_request: ip=%u.%u.%u.%u\n",\
+        [esp]:1, [esp + 1]:1, [esp + 2]:1, [esp + 3]:1
+
+        mov     ebx, [NET_DRV_LIST + edi]       ; device ptr
 
         lea     eax, [ebx + ETH_DEVICE.mac]     ; local device mac
         mov     edx, ETH_BROADCAST              ; broadcast mac
@@ -325,15 +325,15 @@ ARP_output_request:
         pop     eax                             ; DestIP
         stosd                                   ;
 
-        DEBUGF 1,"ARP Packet for device %x created successfully\n", ebx
+        DEBUGF  1,"ARP_output_request: device=%x\n", ebx
 
         push    edx ecx
         call    [ebx + NET_DEVICE.transmit]
         ret
 
   .exit:
-        add     esp, 4+4
-        DEBUGF  1,"Create ARP Packet - failed\n"
+        add     esp, 4 + 4
+        DEBUGF  1,"ARP_output_request: failed\n"
         sub     eax, eax
         ret
 
@@ -349,7 +349,7 @@ ARP_output_request:
 align 4
 ARP_add_entry:
 
-        DEBUGF 1,"ARP_add_entry: "
+        DEBUGF  1,"ARP_add_entry: "
 
         mov     ecx, [NumARP]
         test    ecx, ecx                ; first entry?
@@ -392,14 +392,12 @@ ARP_add_entry:
         lea     esi, [edi - sizeof.ARP_entry]
         inc     [NumARP]
         pop     eax
-        DEBUGF 1,"entry %u created\n", eax
+        DEBUGF  1,"entry=%u\n", eax
 
-  .exit:
-        DEBUGF 1,"exiting\n"
         ret
 
   .error:
-        DEBUGF 1,"error!\n"
+        DEBUGF  1,"failed\n"
         mov     eax, -1
         ret
 
@@ -415,7 +413,7 @@ ARP_add_entry:
 align 4
 ARP_del_entry:
 
-        DEBUGF 1,"ARP_del_entry %x, total entrys: %u\n", esi, [NumARP]
+        DEBUGF 1,"ARP_del_entry: entry=%u entrys=%u\n", esi, [NumARP]
 
         mov     ecx, ARP_table + (ARP_TABLE_SIZE - 1) * sizeof.ARP_entry
         sub     ecx, esi
@@ -426,7 +424,7 @@ ARP_del_entry:
         rep     movsw
 
         dec     [NumARP]
-        DEBUGF 1,"ARP_del_entry: done!\n"
+        DEBUGF 1,"ARP_del_entry: success\n"
 
         ret
 

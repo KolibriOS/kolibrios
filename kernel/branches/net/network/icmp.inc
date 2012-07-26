@@ -142,7 +142,7 @@ macro ICMP_init {
 align 4
 ICMP_input:
 
-        DEBUGF  1,"ICMP_input - start\n"
+        DEBUGF  1,"ICMP_input:\n"
 
 ; First, check the checksum (altough some implementations ignore it)
 
@@ -163,15 +163,15 @@ ICMP_input:
 ; We well re-use the packet so we can create the response as fast as possible
 ; Notice: this only works on pure ethernet
 
-        DEBUGF  1,"ICMP_input - echo request\n"
+        DEBUGF  1,"got echo request\n"
         mov     [edx + ICMP_header.Type], ICMP_ECHOREPLY        ; Change Packet type to reply
 
 ; Update stats (and validate device ptr)
         call    NET_ptr_to_num
         cmp     edi,-1
         je      .dump
-        inc     [ICMP_PACKETS_RX+4*edi]
-        inc     [ICMP_PACKETS_TX+4*edi]
+        inc     [ICMP_PACKETS_RX + 4*edi]
+        inc     [ICMP_PACKETS_TX + 4*edi]
 
 ; exchange dest and source address in IP header
 ; exchange dest and source MAC in ETH header
@@ -252,7 +252,7 @@ ICMP_input:
 ;        je      .dump
 ;        inc     [ICMP_PACKETS_RX+edi]
 
-        DEBUGF 1,"Found valid ICMP packet for socket %x\n", eax
+        DEBUGF 1,"socket=%x\n", eax
 
         pusha
         lea     ecx, [eax + SOCKET.mutex]
@@ -264,10 +264,10 @@ ICMP_input:
 
 
   .checksum_mismatch:
-        DEBUGF  1,"ICMP_Handler - checksum mismatch\n"
+        DEBUGF  1,"checksum mismatch\n"
 
   .dump:
-        DEBUGF  1,"ICMP_Handler - dumping\n"
+        DEBUGF  1,"ICMP_input: dumping\n"
 
         call    kernel_free
         add     esp, 4 ; pop (balance stack)
@@ -332,7 +332,7 @@ ICMP_output:
         ret
   .exit:
         DEBUGF  1,"Creating ICMP Packet failed\n"
-        add     esp,2*4+2
+        add     esp, 2*4 + 2
         ret
 
 

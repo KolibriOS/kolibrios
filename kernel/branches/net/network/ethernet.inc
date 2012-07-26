@@ -63,7 +63,7 @@ ETH_input:
         mov     eax, [esp]
         mov     ecx, [esp+4]
 
-        DEBUGF  1,"ETH_input - size: %u\n", ecx
+        DEBUGF  1,"ETH_input: size=%u\n", ecx
         cmp     ecx, ETH_FRAME_MINIMUM
         jb      .dump
         sub     ecx, sizeof.ETH_header
@@ -86,10 +86,10 @@ ETH_input:
 ;        cmp     ax, ETHER_PPP_SESSION
 ;        je      PPPoE_session_input
 
-        DEBUGF  2,"Unknown ethernet packet type %x\n", ax
+        DEBUGF  2,"ETH_input: Unknown packet type=%x\n", ax
 
   .dump:
-        DEBUGF  2,"ETH_input - dumping\n"
+        DEBUGF  2,"ETH_input: dumping\n"
         call    kernel_free
         add     esp, 4
         ret
@@ -114,7 +114,7 @@ ETH_input:
 align 4
 ETH_output:
 
-        DEBUGF  1,"ETH_output: size=%u device:%x\n", ecx, ebx
+        DEBUGF  1,"ETH_output: size=%u device=%x\n", ecx, ebx
 
         cmp     ecx, [ebx + NET_DEVICE.mtu]
         ja      .exit
@@ -144,7 +144,7 @@ ETH_output:
         cmp     edx, ETH_FRAME_MINIMUM
         jbe     .adjust_size
   .done:
-        DEBUGF  1,"ETH_output: done: %x total size: %u\n", eax, edx
+        DEBUGF  1,"ETH_output: ptr=%x size=%u\n", eax, edx
         ret
 
   .adjust_size:
@@ -153,7 +153,7 @@ ETH_output:
         jmp     .done
 
   .out_of_ram:
-        DEBUGF  2,"ETH_output: Out of ram space!!\n"
+        DEBUGF  2,"ETH_output: Out of ram!\n"
         add     esp, 4+4+2+4
         sub     edi, edi
         ret
@@ -203,7 +203,6 @@ ETH_api:
   .number = ($ - .table) / 4 - 1
 
   .error:
-        DEBUGF  2,"Device is not ethernet type\n"
         or      eax, -1
         ret
 

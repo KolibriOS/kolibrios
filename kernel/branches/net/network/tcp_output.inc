@@ -28,7 +28,15 @@ $Revision$
 align 4
 TCP_output:
 
-        DEBUGF 1,"TCP_output, socket: %x\n", eax
+        DEBUGF 1,"TCP_output: socket=%x\n", eax
+
+        pushf
+        cli
+
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
 
 ; We'll detect the length of the data to be transmitted, and flags to be used
 ; If there is some data, or any critical controls to send (SYN / RST), then transmit
@@ -255,7 +263,7 @@ TCP_output:
         cmp     [eax + TCP_SOCKET.timer_persist], 0     ; Persist timer already expired?
         jne     @f
 
-        DEBUGF  1,"Entering persist state\n"
+        DEBUGF  1,"TCP_output: Entering persist state\n"
 
         mov     [eax + TCP_SOCKET.t_rxtshift], 0
         TCP_set_persist eax
@@ -264,12 +272,13 @@ TCP_output:
 ;----------------------------
 ; No reason to send a segment (219)
 
-        DEBUGF  1,"No reason to send a segment\n"
+        DEBUGF  1,"TCP_output: No reason to send a segment\n"
 
         pusha
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
         popa
+        popf
 
         ret
 
@@ -293,7 +302,7 @@ TCP_output:
 align 4
 TCP_send:
 
-        DEBUGF  1,"TCP_send socket=%x length=%u flags=%x\n", eax, esi, dl
+        DEBUGF  1,"TCP_send: socket=%x length=%u flags=%x\n", eax, esi, dl
 
         push    eax                     ; save socket ptr
         mov     edi, sizeof.TCP_header  ; edi will contain headersize
@@ -501,15 +510,13 @@ TCP_send:
 ;--------------------
 ; Create the checksum
 
-        DEBUGF  1,"checksum: ptr=%x size=%u\n", esi, ecx
-
         TCP_checksum (eax + IP_SOCKET.LocalIP), (eax + IP_SOCKET.RemoteIP)
         mov     [esi + TCP_header.Checksum], dx
 
 ;----------------
 ; Send the packet
 
-        DEBUGF  1,"Sending TCP Packet to device %x\n", ebx
+        DEBUGF  1,"TCP_send: Sending with device %x\n", ebx
         call    [ebx + NET_DEVICE.transmit]
         jnz     .send_error
         pop     eax
@@ -529,7 +536,8 @@ TCP_send:
 ; unlock socket
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
-        DEBUGF 1,"TCP_output: success!\n"
+        popf
+        DEBUGF 1,"TCP_send: success!\n"
 
         xor     eax, eax
         ret
@@ -545,7 +553,8 @@ TCP_send:
 ; unlock socket
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
-        DEBUGF 1,"TCP_output: IP error\n"
+        popf
+        DEBUGF 1,"TCP_send: IP error\n"
 
         or      eax, -1
         ret
@@ -555,7 +564,8 @@ TCP_send:
 ; unlock socket
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
-        DEBUGF 1,"TCP_output: sending failed\n"
+        popf
+        DEBUGF 1,"TCP_send: sending failed\n"
 
         or      eax, -2
         ret

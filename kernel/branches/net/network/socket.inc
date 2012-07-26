@@ -132,7 +132,7 @@ struct  TCP_SOCKET              IP_SOCKET
 
 ; extra
 
-        sendalot                db ?
+        sendalot                db ? ; also used as 'need output'
 
 ends
 
@@ -272,7 +272,7 @@ s_error:
 align 4
 SOCKET_open:
 
-        DEBUGF  1,"SOCKET_open: domain: %u, type: %u protocol: %x\n", ecx, edx, esi
+        DEBUGF  1,"SOCKET_open: domain=%u type=%u protocol=%x\n", ecx, edx, esi
 
         push    ecx edx esi
         call    SOCKET_alloc
@@ -361,7 +361,7 @@ align 4
 align 4
 SOCKET_bind:
 
-        DEBUGF  1,"socket_bind: socknum: %u sockaddr: %x, length: %u\n", ecx, edx, esi
+        DEBUGF  1,"SOCKET_bind: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -384,8 +384,6 @@ SOCKET_bind:
         ret
 
   .af_inet4:
-
-        DEBUGF  1,"af_inet4\n"
 
         cmp     esi, 6
         jb      s_error
@@ -413,7 +411,7 @@ SOCKET_bind:
         call    SOCKET_check_port
         jz      s_error                         ; ZF is set by socket_check_port, on error
 
-        DEBUGF  1,"local ip: %u.%u.%u.%u\n",\
+        DEBUGF  1,"SOCKET_bind: local ip=%u.%u.%u.%u\n",\
         [eax + IP_SOCKET.LocalIP + 0]:1,[eax + IP_SOCKET.LocalIP + 1]:1,\
         [eax + IP_SOCKET.LocalIP + 2]:1,[eax + IP_SOCKET.LocalIP + 3]:1
 
@@ -436,7 +434,7 @@ SOCKET_bind:
 align 4
 SOCKET_connect:
 
-        DEBUGF  1,"SOCKET_connect: socknum: %u sockaddr: %x, length: %u\n", ecx, edx, esi
+        DEBUGF  1,"SOCKET_connect: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -583,7 +581,7 @@ align 4
 align 4
 SOCKET_listen:
 
-        DEBUGF  1,"SOCKET_listen: socknum: %u backlog: %u\n", ecx, edx
+        DEBUGF  1,"SOCKET_listen: socknum=%u backlog=%u\n", ecx, edx
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -635,7 +633,7 @@ SOCKET_listen:
 align 4
 SOCKET_accept:
 
-        DEBUGF  1,"SOCKET_accept: socknum: %u sockaddr: %x, length: %u\n", ecx, edx, esi
+        DEBUGF  1,"SOCKET_accept: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -674,7 +672,7 @@ SOCKET_accept:
 align 4
 SOCKET_close:
 
-        DEBUGF  1,"SOCKET_close: socknum: %u\n", ecx
+        DEBUGF  1,"SOCKET_close: %u\n", ecx
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -701,6 +699,7 @@ SOCKET_close:
         jb      .free
 
         call    TCP_usrclosed
+        call    TCP_output      ;;;; Fixme: is this nescessary??
         mov     dword [esp+32], 0
 
         ret
@@ -726,7 +725,7 @@ SOCKET_close:
 align 4
 SOCKET_receive:
 
-        DEBUGF  1,"SOCKET_receive: socknum: %u bufaddr: %x, buflength: %u, flags: %x, ", ecx, edx, esi, edi
+        DEBUGF  1,"SOCKET_receive: socknum=%u bufaddr=%x buflength=%u flags=%x\n", ecx, edx, esi, edi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -745,14 +744,14 @@ SOCKET_receive_dgram:
         get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, s_error       ; destroys esi and ecx
 
         mov     ecx, [esi + socket_queue_entry.data_size]
-        DEBUGF  1,"Got %u bytes of data\n", ecx
+        DEBUGF  1,"SOCKET_receive: %u bytes data\n", ecx
 
         cmp     ecx, ebx
         ja      .too_small
 
         push    [esi + socket_queue_entry.buf_ptr]              ; save the buffer addr so we can clear it later
         mov     esi, [esi + socket_queue_entry.data_ptr]
-        DEBUGF  1,"Source buffer: %x, real addr: %x\n", [esp], esi
+        DEBUGF  1,"SOCKET_receive: Source buffer=%x real addr=%x\n", [esp], esi
         mov     [esp+32+4], ecx                                 ; return number of bytes copied
 
 ; copy the data
@@ -774,7 +773,7 @@ SOCKET_receive_dgram:
 
   .too_small:
 
-        DEBUGF  1,"Buffer too small...\n"
+        DEBUGF  1,"SOCKET_receive: Buffer too small\n"
         jmp     s_error
 
 align 4
@@ -808,7 +807,7 @@ SOCKET_receive_tcp:
 align 4
 SOCKET_send:
 
-        DEBUGF  1,"SOCKET_send: socknum: %u data ptr: %x, length: %u, flags: %x, ", ecx, edx, esi, edi
+        DEBUGF  1,"SOCKET_send: socknum=%u data ptr=%x length=%u flags=%x\n", ecx, edx, esi, edi
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -850,7 +849,7 @@ SOCKET_send_tcp:
 align 4
 SOCKET_send_ip:
 
-        DEBUGF  1,"type: IP\n"
+        DEBUGF  1,"SOCKET_send: IPv4\n"
 
         mov     [esp+32], ecx
         call    IPv4_output_raw
@@ -966,7 +965,7 @@ SOCKET_set_opt:
         jz      s_error
         mov     [eax + SOCKET.device], edx
 
-        DEBUGF  1,"Bound socket %x to device %x\n",eax, edx
+        DEBUGF  1,"SOCKET_set_opt: Bound socket %x to device %x\n",eax, edx
 
         mov     dword [esp+32], 0       ; success!
         ret
@@ -993,7 +992,7 @@ SOCKET_set_opt:
 align 4
 SOCKET_debug:
 
-        DEBUGF  1,"socket_debug\n"
+        DEBUGF  1,"SOCKET_debug\n"
 
         call    SOCKET_num_to_ptr
         jz      s_error
@@ -1084,7 +1083,7 @@ SOCKET_find_port:
 align 4
 SOCKET_check_port:
 
-        DEBUGF  1,"SOCKET_check_port\n"
+        DEBUGF  1,"SOCKET_check_port: "
 
         mov     ecx, [eax + SOCKET.Protocol]
         mov     edx, [eax + IP_SOCKET.LocalIP]
@@ -1108,6 +1107,7 @@ SOCKET_check_port:
         ret
 
   .port_ok:
+        DEBUGF  1,"local port %u is free\n", bx
         mov     [eax + UDP_SOCKET.LocalPort], bx
         or      bx, bx                                  ; set the zero-flag
 
@@ -1636,7 +1636,7 @@ SOCKET_fork:
 align 4
 SOCKET_num_to_ptr:
 
-        DEBUGF  1,"SOCKET_num_to_ptr: %u ", ecx
+        DEBUGF  1,"SOCKET_num_to_ptr: num=%u ", ecx
 
         mov     eax, net_sockets
 
@@ -1649,8 +1649,11 @@ SOCKET_num_to_ptr:
 
         test    eax, eax
 
-        DEBUGF  1,"(%x)\n", eax
+        DEBUGF  1,"ptr=%x\n", eax
+        ret
+
   .error:
+        DEBUGF  1,"not found\n", eax
         ret
 
 
@@ -1668,16 +1671,18 @@ SOCKET_num_to_ptr:
 align 4
 SOCKET_ptr_to_num:
 
-        DEBUGF  1,"SOCKET_ptr_to_num: %x ", eax
+        DEBUGF  1,"SOCKET_ptr_to_num: ptr=%x ", eax
 
         call    SOCKET_check
         jz      .error
 
         mov     eax, [eax + SOCKET.Number]
 
-        DEBUGF  1,"(%u)\n", eax
+        DEBUGF  1,"num=%u\n", eax
+        ret
 
   .error:
+        DEBUGF  1,"not found\n", eax
         ret
 
 
@@ -1771,7 +1776,7 @@ SOCKET_process_end:
         cmp     [ebx + SOCKET.PID], edx
         jne     .next_socket
 
-        DEBUGF  1,"killing socket %x\n", ebx
+        DEBUGF  1,"SOCKET_process_end: killing socket %x\n", ebx
 
         mov     [ebx + SOCKET.PID], 0
 
@@ -1812,6 +1817,7 @@ SOCKET_process_end:
 align 4
 SOCKET_is_connecting:
 
+        DEBUGF  1,"SOCKET_is_connecting: %x\n", eax
 
         and     [eax + SOCKET.options], not (SS_ISCONNECTED + SS_ISDISCONNECTING + SS_ISCONFIRMING)
         or      [eax + SOCKET.options], SS_ISCONNECTING
@@ -1832,6 +1838,7 @@ SOCKET_is_connecting:
 align 4
 SOCKET_is_connected:
 
+        DEBUGF  1,"SOCKET_is_connected: %x\n", eax
 
         and     [eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISDISCONNECTING + SS_ISCONFIRMING)
         or      [eax + SOCKET.options], SS_ISCONNECTED
@@ -1853,6 +1860,8 @@ SOCKET_is_connected:
 align 4
 SOCKET_is_disconnecting:
 
+        DEBUGF  1,"SOCKET_is_disconnecting: %x\n", eax
+
         and     [eax + SOCKET.options], not (SS_ISCONNECTING)
         or      [eax + SOCKET.options], SS_ISDISCONNECTING + SS_CANTRCVMORE + SS_CANTSENDMORE
 
@@ -1872,6 +1881,8 @@ SOCKET_is_disconnecting:
 align 4
 SOCKET_is_disconnected:
 
+        DEBUGF  1,"SOCKET_is_disconnected: %x\n", eax
+
         and     [eax + SOCKET.options], not (SS_ISCONNECTING + SS_ISCONNECTED + SS_ISDISCONNECTING)
         or      [eax + SOCKET.options], SS_CANTRCVMORE + SS_CANTSENDMORE
 
@@ -1890,6 +1901,8 @@ SOCKET_is_disconnected:
 align 4
 SOCKET_cant_recv_more:
 
+        DEBUGF  1,"SOCKET_cant_recv_more: %x\n", eax
+
         or      [eax + SOCKET.options], SS_CANTRCVMORE
 
         ret
@@ -1907,6 +1920,8 @@ SOCKET_cant_recv_more:
 
 align 4
 SOCKET_cant_send_more:
+
+        DEBUGF  1,"SOCKET_cant_send_more: %x\n", eax
 
         or      [eax + SOCKET.options], SS_CANTSENDMORE
 
