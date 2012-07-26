@@ -133,6 +133,8 @@ TCP_input:
   .found_socket:                                        ; ebx now contains the socketpointer
         DEBUGF  1,"Socket ptr: %x\n", ebx
 
+; update stats
+        inc     [TCP_segments_rx]                       ; FIXME: correct interface?
 
 ;----------------------------
 ; Check if socket isnt closed
@@ -1055,7 +1057,7 @@ align 4
         ;;; TODO: update stats
 
 
-        DEBUGF  1,"We have an acceptable ACK of %x bytes\n", edi
+        DEBUGF  1,"We have an acceptable ACK of %u bytes\n", edi
 
 
 

@@ -26,14 +26,9 @@ $Revision$
 ;
 ;-----------------------------------------------------------------
 align 4
-TCP_sendalot:
-        DEBUGF 1,"TCP_sendalot\n"
-        pop     eax
-;align 4
 TCP_output:
 
         DEBUGF 1,"TCP_output, socket: %x\n", eax
-
 
 ; We'll detect the length of the data to be transmitted, and flags to be used
 ; If there is some data, or any critical controls to send (SYN / RST), then transmit
@@ -55,6 +50,8 @@ TCP_output:
 
   .not_idle:
   .again:
+        mov     [eax + TCP_SOCKET.sendalot], 0
+
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]         ; calculate offset (71)
         sub     ebx, [eax + TCP_SOCKET.SND_UNA]         ;
 
@@ -82,7 +79,7 @@ TCP_output:
         cmp     ebx, [eax + STREAM_SOCKET.snd.size]
         jae     @f
 
-        and     dl, not (TH_FIN)          ; clear the FIN flag    ??? how can it be set before?
+        and     dl, not (TH_FIN)
 
        @@:
         inc     ecx
@@ -139,8 +136,7 @@ TCP_output:
         jbe     @f
 
         mov     esi, [eax + TCP_SOCKET.t_maxseg]
-        push    eax
-        push    dword TCP_sendalot
+        inc     [eax + TCP_SOCKET.sendalot]
        @@:
 
 ;--------------------------------------------
@@ -149,9 +145,8 @@ TCP_output:
         mov     edi, [eax + TCP_SOCKET.SND_NXT]
         add     edi, esi
         sub     edi, [eax + TCP_SOCKET.SND_UNA]
-        sub     edi, [eax + STREAM_SOCKET.snd.size]
-        jns     @f
-
+        cmp     edi, [eax + STREAM_SOCKET.snd.size]
+        jae     @f
         and     dl, not (TH_FIN)
 
        @@:
@@ -171,13 +166,17 @@ TCP_output:
         cmp     esi, [eax + TCP_SOCKET.t_maxseg]
         je      TCP_send
 
-        test    [eax + TCP_SOCKET.t_flags], TF_NODELAY
-        jnz     @f
-        ; TODO: if not 'idle', skip to next codeblock
-       @@:
-        add     ebx, esi
+        add     ebx, esi                                ; offset + length
         cmp     ebx, [eax + STREAM_SOCKET.snd.size]
-        jae     TCP_send
+        jb      @f
+
+        test    [eax + TCP_SOCKET.t_flags], TF_NODELAY
+        jnz     TCP_send
+
+        mov     ebx, [eax + TCP_SOCKET.SND_MAX]
+        cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
+        je      TCP_send
+       @@:
 
         test    [eax + TCP_SOCKET.t_force], -1  ;;;
         jnz     TCP_send
@@ -238,7 +237,7 @@ TCP_output:
 ; FIN was set, only send if not already sent, or on retransmit
 
         test    [eax + TCP_SOCKET.t_flags], TF_SENTFIN
-        jnz     TCP_send
+        jz      TCP_send
 
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
@@ -296,10 +295,8 @@ TCP_send:
 
         DEBUGF  1,"TCP_send socket=%x length=%u flags=%x\n", eax, esi, dl
 
+        push    eax                     ; save socket ptr
         mov     edi, sizeof.TCP_header  ; edi will contain headersize
-
-        sub     esp, 8                  ; create some space on stack
-        push    eax                     ; save socket pointer
 
 ;------------------------------------
 ; Send options with first SYN segment
@@ -379,9 +376,7 @@ TCP_send:
         jbe     .no_overflow
 
         mov     esi, [eax + TCP_SOCKET.t_maxseg]
-;;        push    eax
-;;        push    dword TCP_sendalot
-
+        inc     [eax + TCP_SOCKET.sendalot]
   .no_overflow:
 
 ;-----------------------------------------------------------------
@@ -409,7 +404,7 @@ TCP_send:
         push    [eax + TCP_SOCKET.LocalPort]    ;        .SourcePort             dw ?
         ntohw   [esp]
 
-        push    edi             ; header size
+        push    edi                     ; header size
 
 ;---------------------
 ; Create the IP packet
@@ -427,17 +422,17 @@ TCP_send:
 ; Move TCP header from stack to TCP packet
 
         push    ecx
-        mov     ecx, [esp+4]
-        lea     esi, [esp+4+4]
-        shr     ecx, 2
+        mov     ecx, [esp + 4]
+        lea     esi, [esp + 8]
+        shr     ecx, 2                  ; count is in bytes, we will work with dwords
         rep     movsd
-        pop     ecx             ; full TCP packet size
+        pop     ecx                     ; full TCP packet size
 
-        pop     esi             ; headersize
-        add     esp, esi
+        pop     esi                     ; headersize
+        add     esp, esi                ; remove it from stack
 
-        mov     [esp + 4], eax          ; packet ptr
-        mov     [esp + 4+4], edx        ; packet size
+        push    edx                     ; packet size for send proc
+        push    eax                     ; packet ptr for send proc
 
         mov     edx, edi                ; begin of data
         sub     edx, esi                ; begin of packet (edi = begin of data)
@@ -451,7 +446,7 @@ TCP_send:
 ; ecx = buffer size
 ; edi = ptr to buffer
 
-        mov     eax, [esp + 4]                  ; get socket ptr
+        mov     eax, [esp + 12]                 ; get socket ptr
         add     [eax + TCP_SOCKET.SND_NXT], ecx ; update sequence number
 
         push    edx
@@ -462,7 +457,8 @@ TCP_send:
   .nodata:
         pop     esi                             ; begin of data
         pop     ecx                             ; full packet size
-        pop     eax                             ; socket ptr
+        mov     eax, [esp + 8]
+
 
 ;----------------------------------
 ; update sequence number and timers  (400)
@@ -496,10 +492,9 @@ TCP_send:
         mov     [eax + TCP_SOCKET.timer_retransmission], dx
 
         cmp     [eax + TCP_SOCKET.timer_persist], 0
-        jne     @f
+        jne     .retransmit_set
         mov     [eax + TCP_SOCKET.timer_persist], 0
         mov     [eax + TCP_SOCKET.t_rxtshift], 0
-       @@:
 
   .retransmit_set:
 
@@ -511,18 +506,32 @@ TCP_send:
         TCP_checksum (eax + IP_SOCKET.LocalIP), (eax + IP_SOCKET.RemoteIP)
         mov     [esi + TCP_header.Checksum], dx
 
-; unlock socket
-
-        pusha
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_unlock
-        popa
-
 ;----------------
 ; Send the packet
 
         DEBUGF  1,"Sending TCP Packet to device %x\n", ebx
         call    [ebx + NET_DEVICE.transmit]
+        jnz     .send_error
+        pop     eax
+
+        inc     [TCP_segments_tx]       ; FIXME: correct interface?
+
+;;; TODO: (485)
+
+        push    [eax + TCP_SOCKET.RCV_NXT]
+        pop     [eax + TCP_SOCKET.last_ack_sent]
+
+        and     [eax + TCP_SOCKET.t_flags], not (TF_ACKNOW + TF_DELACK)
+
+        cmp     [eax + TCP_SOCKET.sendalot], 0
+        jne     TCP_output.again
+
+; unlock socket
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+        DEBUGF 1,"TCP_output: success!\n"
+
+        xor     eax, eax
         ret
 
 
@@ -530,17 +539,27 @@ TCP_send:
         pop     ecx
         add     esp, ecx
         pop     eax
-        add     esp, 8
 
         mov     [eax + TCP_SOCKET.timer_retransmission], TCP_time_re_min
 
-        pusha
+; unlock socket
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
-        popa
-
         DEBUGF 1,"TCP_output: IP error\n"
+
+        or      eax, -1
         ret
+
+  .send_error:
+        pop     eax
+; unlock socket
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+        DEBUGF 1,"TCP_output: sending failed\n"
+
+        or      eax, -2
+        ret
+
 
 
 

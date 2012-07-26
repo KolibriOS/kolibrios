@@ -201,7 +201,7 @@ TCP_close:
 align 4
 TCP_disconnect:
 
-        DEBUGF  1,"TCP_disconnect\n"
+        DEBUGF  1,"TCP_disconnect socket=%x\n", eax
 
         cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
         jb      TCP_close
@@ -226,6 +226,8 @@ TCP_disconnect:
 ;-------------------------
 align 4
 TCP_usrclosed:
+
+        DEBUGF  1,"TCP_usrclosed socket=%x\n", eax
 
         push    ebx
         mov     ebx, [eax + TCP_SOCKET.t_state]
@@ -297,9 +299,9 @@ TCP_outflags:
         db      TH_SYN + TH_ACK         ; TCPS_SYN_RECEIVED
         db               TH_ACK         ; TCPS_ESTABLISHED
         db               TH_ACK         ; TCPS_CLOSE_WAIT
-        db      TH_SYN + TH_ACK         ; TCPS_FIN_WAIT_1
-        db      TH_SYN + TH_ACK         ; TCPS_CLOSING
-        db      TH_SYN + TH_ACK         ; TCPS_LAST_ACK
+        db      TH_FIN + TH_ACK         ; TCPS_FIN_WAIT_1
+        db      TH_FIN + TH_ACK         ; TCPS_CLOSING
+        db      TH_FIN + TH_ACK         ; TCPS_LAST_ACK
         db               TH_ACK         ; TCPS_FIN_WAIT_2
         db               TH_ACK         ; TCPS_TIMED_WAIT
 

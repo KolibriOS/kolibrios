@@ -235,7 +235,7 @@ UDP_output:
         DEBUGF  1,"UDP_output: socket:%x, bytes: %u, data ptr: %x\n", eax, ecx, esi
 
         mov     dx, [eax + UDP_SOCKET.RemotePort]
-        DEBUGF  1,"remote port: %u\n", dx
+        DEBUGF  1,"UDP_output: remote port: %u, ", dx
         rol     dx, 8
         rol     edx, 16
         mov     dx, [eax + UDP_SOCKET.LocalPort]
@@ -273,11 +273,11 @@ UDP_output:
 ; Checksum
         mov     esi, edi
         mov     [edi + UDP_header.Checksum], 0
-        UDP_checksum (edi-4), (edi-8)                           ; TODO: fix this, IPv4 packet could have options..
+        UDP_checksum (edi-4), (edi-8)                           ; FIXME: IPv4 packet could have options..
 
-        inc     [UDP_PACKETS_TX]
+        inc     [UDP_PACKETS_TX]                                ; FIXME: correct device?
 
-        DEBUGF  1,"Sending UDP Packet to device %x\n", ebx
+        DEBUGF  1,"UDP_output: sending to device %x\n", ebx
 
         call    [ebx + NET_DEVICE.transmit]
         ret

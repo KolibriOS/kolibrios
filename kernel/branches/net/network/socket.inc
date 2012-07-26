@@ -68,7 +68,7 @@ struct  TCP_SOCKET              IP_SOCKET
 ; send sequence
         SND_UNA                 dd ? ; sequence number of unack'ed sent Packets
         SND_NXT                 dd ? ; next send sequence number to use
-        SND_UP                  dd ?
+        SND_UP                  dd ? ; urgent pointer
         SND_WL1                 dd ? ; window minus one
         SND_WL2                 dd ? ;
         ISS                     dd ? ; initial send sequence number
@@ -77,7 +77,7 @@ struct  TCP_SOCKET              IP_SOCKET
 ; receive sequence
         RCV_WND                 dw ? ; receive window
         RCV_NXT                 dd ? ; next receive sequence number to use
-        RCV_UP                  dd ?
+        RCV_UP                  dd ? ; urgent pointer
         IRS                     dd ? ; initial receive sequence number
 
 ;---------------------
@@ -129,6 +129,10 @@ struct  TCP_SOCKET              IP_SOCKET
         timer_persist           dw ?
         timer_keepalive         dw ? ; keepalive/syn timeout
         timer_timed_wait        dw ? ; also used as 2msl timer
+
+; extra
+
+        sendalot                db ?
 
 ends
 
@@ -696,7 +700,7 @@ SOCKET_close:
         cmp     [eax + TCP_SOCKET.t_state], TCPS_SYN_RECEIVED    ; state must be LISTEN, SYN_SENT or CLOSED
         jb      .free
 
-        call    TCP_drop
+        call    TCP_usrclosed
         mov     dword [esp+32], 0
 
         ret
