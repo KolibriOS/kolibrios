@@ -1315,7 +1315,7 @@ SOCKET_ring_read:
         ret
 
   .no_data_at_all:
-        DEBUGF  1,"SOCKET_ring_read_tcp: no data at all!\n", eax
+        DEBUGF  1,"SOCKET_ring_read: no data at all!\n"
         ret
 
   .less_data:
