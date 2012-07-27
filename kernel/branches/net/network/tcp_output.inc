@@ -456,11 +456,13 @@ TCP_send:
 ; edi = ptr to buffer
 
         mov     eax, [esp + 12]                 ; get socket ptr
-        add     [eax + TCP_SOCKET.SND_NXT], ecx ; update sequence number
 
         push    edx
         test    ecx, ecx
         jz      .nodata
+        mov     edx, [eax + TCP_SOCKET.SND_NXT]
+        add     [eax + TCP_SOCKET.SND_NXT], ecx ; update sequence number
+        sub     edx, [eax + TCP_SOCKET.SND_UNA]
         add     eax, STREAM_SOCKET.snd
         call    SOCKET_ring_read
   .nodata:

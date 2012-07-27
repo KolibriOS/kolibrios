@@ -784,6 +784,7 @@ SOCKET_receive_tcp:
         mov     ecx, esi
         mov     edi, edx
         add     eax, STREAM_SOCKET.rcv
+        xor     edx, edx
         call    SOCKET_ring_read
         call    SOCKET_ring_free
 
@@ -1272,26 +1273,30 @@ SOCKET_ring_write:
 ;
 ; SOCKET_ring_read
 ;
-; reads the data, BUT DOES NOT CLEAR IT FROM MEMORY YET
-;
-;  IN:  eax = ptr to ring struct
-;       ecx = buffer size
+;  IN:  eax = ring struct ptr
+;       ecx = bytes to read
+;       edx = offset
 ;       edi = ptr to buffer
 ;
-;  OUT: ecx = number of bytes read
+;  OUT: ecx = number of bytes read (0 on error)
 ;
 ;-----------------------------------------------------------------
 align 4
 SOCKET_ring_read:
 
-        DEBUGF  1,"SOCKET_ring_read: ringbuff=%x ptr=%x size=%u\n", eax, edi, ecx
+        DEBUGF  1,"SOCKET_ring_read: ringbuff=%x ptr=%x size=%u offset=%x\n", eax, edi, ecx, edx
 
-        cmp     ecx, [eax + RING_BUFFER.size]
+        mov     esi, [eax + RING_BUFFER.read_ptr]
+        add     esi, edx                                        ; esi = start_ptr + offset
+
+        neg     edx
+        add     edx, [eax + RING_BUFFER.size]                   ; edx = snd.size - offset
+        jle     .no_data_at_all
+
+        cmp     ecx, edx
         ja      .less_data
 
   .copy:
-        mov     esi, [eax + RING_BUFFER.read_ptr]
-
         DEBUGF  2,"SOCKET_ring_read: %u bytes from %x to %x\n", ecx, esi, edi
         push    ecx
         shr     ecx, 1
@@ -1307,20 +1312,16 @@ SOCKET_ring_read:
         rep     movsd
   .nd:
         pop     ecx
+        ret
 
   .no_data_at_all:
+        DEBUGF  1,"SOCKET_ring_read_tcp: no data at all!\n", eax
         ret
 
   .less_data:
-        mov     ecx, [eax + RING_BUFFER.size]
-        cmp     ecx, 0
-        jb      .error
+        mov     ecx, edx
         jmp     .copy
 
-  .error:
-        DEBUGF  1,"SOCKET_ring_read: ringbuff=%x error!", eax
-        xor     ecx, ecx
-        ret
 
 ;-----------------------------------------------------------------
 ;
