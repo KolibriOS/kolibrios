@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.96d";
+char version[]=" Text-based Browser 0.97";
 
 
 struct TWebBrowser {
@@ -205,10 +205,13 @@ char *ABSOLUTE_LINKS[]={ "http:", "mailto:", "ftp:", "/sys/", "/rd/", "/fd/", "/
 
 //dword TWebBrowser::GetNewUrl(dword CUR_URL, NEW_URL){
 void TWebBrowser::GetNewUrl(){
-	int i;
+	int i, len;
 	
 	for (i=0; ABSOLUTE_LINKS[i]; i++)
-		if (!strcmpn(#URL, ABSOLUTE_LINKS[i], strlen(ABSOLUTE_LINKS[i]))) return;
+	{
+		len=strlen(ABSOLUTE_LINKS[i]);
+		if (!strcmpn(#URL, ABSOLUTE_LINKS[i], len)) return;
+	}
 		
 	IF (!strcmpn(#URL,"./", 2)) strcpy(#URL, #URL+2); //игнорим :)
 	if (URL[0] == '/') strcpy(#URL, #URL+1);
@@ -768,8 +771,9 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		IMG_TAG:
 			if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
 			{
-				if (!strcmpn(#URL, "http:", 5)) || (!strcmpn(#options, "http:", 5)) return;
-				strcpy(#temp, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
+				if (downloader_id!=0) strcpy(#temp, #history_list[history_current-1].Item);
+					else strcpy(#temp, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
+				if (!strcmpn(#temp, "http:", 5)) || (!strcmpn(#options, "http:", 5)) return;
 				temp[strrchr(#temp, '/')] = 0x00; //обрезаем её урл до последнего /
 				strcat(#temp, #options);
 				image=load_image(#temp);

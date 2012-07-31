@@ -52,6 +52,7 @@ void main()
 	int btn;
 	byte key;
 	int half_scroll_size;
+	int scroll_used=0;
 	
 	mem_Init();
 	load_dll2(libio, #libio_init,1);
@@ -60,7 +61,7 @@ void main()
 	load_dll2(#abox_lib, #boxlib_init,0);
 	//load_dll2(libtruetype, #truetype,0);
 	
-	if (!URL) strcpy(#URL, "/sys/index.htm");
+	if (!URL) strcpy(#URL, "/sys/home.htm");
 	strcpy(#editURL, #URL);
 	
 	Form.width=WIN_W;
@@ -115,18 +116,19 @@ void main()
 					break;
 				}
 				
-				IF (lines.all<lines.visible) break;
-				half_scroll_size = WB1.height - 16 * lines.visible / lines.all - 3 /2;
-				if (m.x>=WB1.width-14) && (m.x<=WB1.width+6)
-				&& (m.y>WB1.top+16) && (m.y<WB1.top+WB1.height-16)
-				&& (lines.all>lines.visible) while (m.lkm)
+				if (!m.lkm) scroll_used=0;
+				if (m.x>=WB1.width-14) && (m.x<=WB1.width+6) && (m.y>WB1.top+16)
+				&& (m.y<WB1.top+WB1.height-16) && (lines.all>lines.visible) && (m.lkm)
+					scroll_used=1;
+				
+				if (scroll_used)
 				{
+					half_scroll_size = WB1.height - 16 * lines.visible / lines.all - 3 /2;
 					IF (half_scroll_size+WB1.top>m.y) || (m.y<0) || (m.y>4000) m.y=half_scroll_size+WB1.top; //если курсор над окном
 					btn=lines.first; //сохраняем старое количество
 					lines.first = m.y -half_scroll_size -WB1.top * lines.all / WB1.height;
-					IF (lines.visible+lines.first>lines.all) lines.first=lines.all-lines.visible;
-					IF (btn<>lines.first) WB1.ParseHTML(buf); //чтоб лишний раз не перерисовывать
-					m.get();
+					if (lines.visible+lines.first>lines.all) lines.first=lines.all-lines.visible;
+					if (btn<>lines.first) WB1.ParseHTML(buf); //чтоб лишний раз не перерисовывать
 				}
 
 				break;
