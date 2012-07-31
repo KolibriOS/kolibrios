@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.31"
+#define title "Eolite File Manager v1.32"
 dword selection_col=0x94AECE;
 
 
@@ -83,7 +83,7 @@ dword buf, off; //для текста и буфера
 void main() 
 word key, id; 
 mouse m;
-int pressed_y;
+int pressed_y, scroll_used=0;
 {
 	load_editbox_lib();
 	GetSystemDiscs();
@@ -159,7 +159,10 @@ int pressed_y;
 					List_ReDraw();
 				}
 				//скролл
-				if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>56) && && (m.y<65000) while (m.lkm)
+				if (!m.lkm) scroll_used=0;
+				if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>56) && (m.y<Form.height) && (m.lkm) scroll_used=1;
+				
+				if (scroll_used)
 				{
 					IF (scroll_size/2+57>m.y) || (m.y<0) || (m.y>4000) m.y=scroll_size/2+57; //если курсор над окном
 					id=za_kadrom; //сохраняем старое количество
@@ -168,7 +171,6 @@ int pressed_y;
 					za_kadrom /= onTop(22,57);
 					IF (but_num+za_kadrom>count) za_kadrom=count-but_num;
 					IF (id<>za_kadrom) List_ReDraw(); //чтоб лишний раз не перерисовывать
-					m.get();
 				}
 				break;  
 //Button pressed-----------------------------------------------------------------------------
