@@ -1,15 +1,23 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
-;;                                                              ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;; simple AGP driver for KolibriOS                                 ;;
+;;                                                                 ;;
+;;    Written by hidnplayr@kolibrios.org                           ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 format MS COFF
 
-DEBUG           equ 1
-API_VERSION     equ 1
+DEBUG                   equ 1
+FAST_WRITE              equ 0
+SIDE_BAND_ADDRESSING    equ 0
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -31,11 +39,13 @@ public START
 public service_proc
 public version
 
-DRV_ENTRY    equ 1
-DRV_EXIT     equ -1
+DRV_ENTRY       equ 1
+DRV_EXIT        equ -1
 
 SRV_GETVERSION  equ 0
 SRV_DETECT      equ 1
+
+API_VERSION     equ 1
 
 section '.flat' code readable align 16
 
@@ -110,17 +120,12 @@ proc detect
         call    PciApi          ; get last bus
         cmp     eax, -1
         je      .error
-
         mov     [last_bus], eax
 
   .next_bus:
         and     [devfn], 0
   .next_dev:
-        stdcall PciRead16, [bus], [devfn], dword 0x08   ; read class/subclass
-        test    eax, eax
-        jz      .next
-        cmp     eax, -1
-        je      .next
+        stdcall PciRead16, [bus], [devfn], dword 0x0a   ; read class/subclass
 
         cmp     ax, 0x0302      ; display controller - 3d controller
         je      .found
@@ -137,13 +142,26 @@ proc detect
         mov     [bus], eax
         cmp     eax, [last_bus]
         jna     .next_bus
+
+  .error:
+     if DEBUG
+        mov     esi, msgFail
+        call    SysMsgBoardStr
+     end if
+
         xor     eax, eax
+        inc     eax
         ret
 
   .found:
         stdcall PciRead8, [bus], [devfn], dword 0x06    ; read prog IF
         test    al, 1 shl 4                             ; got capabilities list?
         jnz     .got_capabilities_list
+
+        ; TODO: Do it the old way: detect device and check with a list of known capabilities
+        ; stupid pre PCI 2.2 board....
+
+        jmp     .next
 
   .got_capabilities_list:
         stdcall PciRead8, [bus], [devfn], dword 0x34    ; read capabilities offset
@@ -157,10 +175,7 @@ proc detect
         movzx   esi, ah                                 ; pointer to next capability
         test    esi, esi
         jnz     .read_capability
-  .error:
-        xor     eax, eax
-        inc     eax
-        ret
+        jmp     .next
 
   .got_agp:
         shl     eax, 16
@@ -183,57 +198,73 @@ proc detect
         jz      .error
 
   .001b:
-        mov     [speed], 001b
+        mov     [cmd], 001b
         jmp     .agp_go
 
   .010b:
-        mov     [speed], 010b
+        mov     [cmd], 010b
         jmp     .agp_go
 
   .100b:
-        mov     [speed], 100b
+        mov     [cmd], 100b
         jmp     .agp_go
 
   .agp_3:
         stdcall PciRead32, [bus], [devfn], esi          ; read AGP status
         test    al, 1 shl 3
         jz      .agp_2
-        and     al, 11b
-        mov     [speed], al
-        cmp     al, 11b
+        mov     [cmd], eax
+        and     [cmd], 11b
+        cmp     [cmd], 11b
         jne     .agp_go
-        mov     [speed], 10b
+        mov     [cmd], 10b
 
   .agp_go:
+
+if FAST_WRITE
+        test    ax, 1 shl 4
+        jz      @f
+        or      [cmd], 1 shl 4
+  @@:
+end if
+if SIDE_BAND_ADDRESSING
+        test    ax, 1 shl 9
+        jz      @f
+        or      [cmd], 1 shl 9
+  @@:
+end if
         add     esi, 4
-        stdcall PciRead32, [bus], [devfn], esi          ; read AGP cmd
-        and     al, not 111b                            ; set max speed
-        or      al, [speed]
+        mov     eax, [cmd]
         or      eax, 1 shl 8                            ; enable AGP
         stdcall PciWrite32, [bus], [devfn], esi, eax    ; write AGP cmd
+
+     if DEBUG
+        mov     esi, msgOK
+        call    SysMsgBoardStr
+     end if
 
         ret
 
 endp
 
 
-;all initialized data place here
+; initialized data
 
 align 4
 version         dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
 my_service      db 'AGP', 0                             ; max 16 chars include zero
 
-msgInit         db 'detect hardware...', 13, 10, 0
-msgPCI          db 'PCI acces not supported', 13, 10, 0
+msgInit         db 'Searching AGP device...', 13, 10, 0
 msgFail         db 'device not found', 13, 10, 0
+msgOK           db 'AGP device enabled', 13, 10, 0
 
 section '.data' data readable writable align 16
 
-;all uninitialized data place here
+; uninitialized data
 
 revision        db ?
-speed           db ?
+cmd             dd ?
 bus             dd ?
 devfn           dd ?
 
