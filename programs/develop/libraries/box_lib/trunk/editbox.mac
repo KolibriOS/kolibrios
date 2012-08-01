@@ -2,14 +2,6 @@
 ;Basic macros for use editbox                             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-macro init_editbox
-{
-pushad
-	mcall
-
-popad
-}
-
 
 macro use_editbox_draw
 {
@@ -376,6 +368,7 @@ pushad
 	dec ecx
 	mov ed_size,ecx ;ставим новый размер строки
 	mov ed_pos,ecx ;ставим курсор в конец новой строки
+	and word ed_flags,ed_shift_cl ;снимаем выделение если оно было
 	mov edi,ed_text
 	repne movsb ;копирование текстовой строки text в edit_box
 	mov byte[edi],0 ;ставим ascii 0 в конце строки
