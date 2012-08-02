@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.33"
+#define title "Eolite File Manager v1.34"
 dword selection_col = 0x94AECE;
 dword lpanel_col = 0x00699C;
 

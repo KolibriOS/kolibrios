@@ -35,11 +35,12 @@ void GetIni(byte onload)
 	int errornum;
 	dword buff, fsize, tj;
 	//читаем файл
-	buff = malloc(1048576);
+	free(buff);
+	buff = malloc(12000);
 	IF (onload==1) copystr(".ini", #program_path+strlen(#program_path));
-	ReadFile(0, 1048576, buff, #program_path);
+	ReadFile(0, 12000, buff, #program_path);
 	IF (EAX<>6) //если файла с настройками нет в папке с программой смотрим в папке по-умолчанию
-		ReadFile(0, 1048576, buff, "/sys/File managers/Eolite.ini");
+		ReadFile(0, 12000, buff, "/sys/File managers/Eolite.ini");
 	IF (EAX<>6) //если файла с настройками тупо нет печалька
 	{
 		IF (onload==1) RunProgram(#NOTIFY_PATH, "Eolite.ini not found. Defaults will be used.");
