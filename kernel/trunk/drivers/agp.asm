@@ -16,8 +16,7 @@
 format MS COFF
 
 DEBUG                   equ 1
-FAST_WRITE              equ 0
-SIDE_BAND_ADDRESSING    equ 0
+FAST_WRITE              equ 0           ; may cause problems with some motherboards
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -150,10 +149,8 @@ proc detect
         jna     .next_bus
 
   .error:
-     if DEBUG
         mov     esi, msgFail
         call    SysMsgBoardStr
-     end if
 
         xor     eax, eax
         inc     eax
@@ -237,6 +234,7 @@ proc detect
         stdcall PciRead32, [bus], [devfn], edi          ; read AGP status
         test    al, 1 shl 3
         jz      .agp_2m
+
         test    eax, 10b
         jnz     .8x
         mov     [cmd], 01b
@@ -259,26 +257,21 @@ if FAST_WRITE
         call    SysMsgBoardStr
   @@:
 end if
-if SIDE_BAND_ADDRESSING
-        test    ax, 1 shl 9
+
+        test    ax, 1 shl 9     ; Side band addressing
         jz      @f
         or      [cmd], 1 shl 9
         mov     esi, msgside
         call    SysMsgBoardStr
   @@:
-end if
-        add     edi, 4
-        mov     eax, [cmd]
-        stdcall PciWrite32, [bus], [devfn], edi, eax    ; write AGP cmd
 
+        add     edi, 4
         mov     eax, [cmd]
         or      eax, 1 shl 8                            ; enable AGP
         stdcall PciWrite32, [bus], [devfn], edi, eax    ; write AGP cmd
 
-     if DEBUG
         mov     esi, msgOK
         call    SysMsgBoardStr
-     end if
 
         ret
 
