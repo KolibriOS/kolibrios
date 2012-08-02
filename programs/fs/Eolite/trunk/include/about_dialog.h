@@ -39,7 +39,7 @@ void about_dialog()
 				DefineAndDrawWindow(600,150,181,256,0x34,0x10EFEBEF,"About Eolite");
 				DrawBar(0,0,172,50,0x8494C4); //голубое сзади
 				PutPaletteImage(#logo,85,85,43,7,#logo_pal);
-				WriteText(46,100,0x90,0xBF40BF,"Eolite v1.32",0);
+				WriteText(46,100,0x90,0xBF40BF,"Eolite v1.33",0);
 					$add ebx, 1<<16
 					$int 0x40
 				WriteText(55,120,0x80,0,"Developers:",0); 

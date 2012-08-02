@@ -11,6 +11,7 @@ char *ext[]={
 "html",2,
 "mht", 2,
 "ini", 3,
+"js",  3,
 "conf",3,
 "xlt", 4,
 "xls", 4,

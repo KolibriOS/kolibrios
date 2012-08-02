@@ -12,9 +12,6 @@ Put box_lib.obj into "/sys/lib/" directory.
 Put Eolite.ini into programs directory or in "/sys/File Managers/".
 Eolite can be opened from anywhere.
 
-==Known bugs==
-1.
-
 
 ==Authors==
 Leency - programming and design.

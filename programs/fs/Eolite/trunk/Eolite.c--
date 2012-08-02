@@ -20,8 +20,9 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.32"
-dword selection_col=0x94AECE;
+#define title "Eolite File Manager v1.33"
+dword selection_col = 0x94AECE;
+dword lpanel_col = 0x00699C;
 
 
 /*
@@ -83,7 +84,7 @@ dword buf, off; //для текста и буфера
 void main() 
 word key, id; 
 mouse m;
-int pressed_y, scroll_used=0;
+int scroll_used=0;
 {
 	load_editbox_lib();
 	GetSystemDiscs();
@@ -92,10 +93,10 @@ int pressed_y, scroll_used=0;
 	edit1.shift_color=selection_col;
 	edit2.shift_color=selection_col;
 	
-	IF (param)
+	if (param)
 	{
 		copystr(#param, #path);
-		IF (strcmp(#path+strlen(#path)-1,"/")<>0) copystr("/",#path+strlen(#path)); //если нет, + "/"
+		if (strcmp(#path+strlen(#path)-1,"/")<>0) copystr("/",#path+strlen(#path)); //если нет, + "/"
 	}
 	else
 		copystr("/rd/1/", #path);
@@ -175,105 +176,106 @@ int pressed_y, scroll_used=0;
 				break;  
 //Button pressed-----------------------------------------------------------------------------
 		case evButton:
-			id=GetButtonID();
-			IF (id==1) ExitProcess();
+				id=GetButtonID();
+				IF (id==1) ExitProcess();
 
-			IF (del_active)
-			{
-				IF (id==301) || (id==302) Del_File(302-id);
-				break;
-			}
-			switch(id) 
-			{
-				case 21: //Back
-						GoBack();
-						break;
-				case 22: //Forward
-						if (HistoryPath(GO_FORWARD))
-						{
-							za_kadrom=curbtn=0; //вверх списка
+				IF (del_active)
+				{
+					IF (id==301) || (id==302) Del_File(302-id);
+					break;
+				}
+				switch(id) 
+				{
+					case 21: //Back
+							GoBack();
+							break;
+					case 22: //Forward
+							if (HistoryPath(GO_FORWARD))
+							{
+								za_kadrom=curbtn=0; //вверх списка
+								Open_Dir(#path,WITH_REDRAW);
+							}
+							break;
+					case 23: //up!
+							Dir_Up();
+							break;
+					case 24: //cut
+							key=24; 
+					case 25: //copy
+							goto CTRLC_MARK;
+					case 26: //paste
+							Paste();
+							break;
+					case 27: //goto edit_path
+							Goto_edit_path();
+							break; 
+					case 31...33: //sort
+							IF(sort_num==1) DrawBar(onLeft(192,168)/2+210,45,6,9,0xE4DFE1);
+							IF(sort_num==2) DrawBar(onLeft(115,0),45,6,9,0xE4DFE1);
+							IF(sort_num==3) DrawBar(onLeft(44,0),45,6,9,0xE4DFE1);
+							sort_num=id-30;
+							Open_Dir(#path,1);
+							break; 
+					case 30: //about
+							CreateThread(#about_dialog,#stak); 
+							break;
+					case 77:
+							IF (show_actions==1) show_actions=0; ELSE show_actions=1;
+							Actions();
+							break;
+					case 78:
+							IF (show_dev_name==1) show_dev_name=0; ELSE show_dev_name=1;
+							GetSystemDiscs();
 							Open_Dir(#path,WITH_REDRAW);
-						}
-						break;
-				case 23: //up!
-						Dir_Up();
-						break;
-				case 24: //cut
-						key=24; 
-				case 25: //copy
-						goto CTRLC_MARK;
-				case 26: //paste
-						Paste();
-						break;
-				case 27: //goto edit_path
-						Goto_edit_path();
-						break; 
-				case 31...33: //sort
-						IF(sort_num==1) DrawBar(onLeft(192,168)/2+210,45,6,9,0xE4DFE1);
-						IF(sort_num==2) DrawBar(onLeft(115,0),45,6,9,0xE4DFE1);
-						IF(sort_num==3) DrawBar(onLeft(44,0),45,6,9,0xE4DFE1);
-						sort_num=id-30;
-						Open_Dir(#path,1);
-						break; 
-				case 30: //about
-						CreateThread(#about_dialog,#stak); 
-						break;
-				case 77:
-						IF (show_actions==1) show_actions=0; ELSE show_actions=1;
-						Actions();
-						break;
-				case 78:
-						IF (show_dev_name==1) show_dev_name=0; ELSE show_dev_name=1;
-						GetSystemDiscs();
-						Open_Dir(#path,WITH_REDRAW);
-						DrawSystemDiscs();
-						Actions();
-						break;
-				case 80: //rename
-						goto REN_MARK; 
-				case 81: //Delete file
-						Del_Form();
-						break;
-				case 82: //create folder
+							DrawSystemDiscs();
+							Actions();
+							break;
+					case 80: //rename
+							goto REN_MARK; 
+					case 81: //Delete file
+							Del_Form();
+							break;
+					case 82: //create folder
 						NEW_FOLDER_MARK:
-						copystr(#path, #temp);
-						copystr("New folder", #temp+strlen(#temp));
-						CreateFolder(#temp);
-						IF (EAX==0){
-							SelectFile("New folder");
-							goto REN_MARK;
-						}
-						ELSE
-						{
-							Write_Error(EAX);
-							ShowMessage("Folder can not be created.");
-						}
-						break;
-				case 100...120:
+							copystr(#path, #temp);
+							copystr("New folder", #temp+strlen(#temp));
+							CreateFolder(#temp);
+							IF (EAX==0){
+								SelectFile("New folder");
+								goto REN_MARK;
+							}
+							ELSE
+							{
+								Write_Error(EAX);
+								ShowMessage("Folder can not be created.");
+							}
+							break;
+					case 100...120:
 						DEVICE_MARK:
-						DrawRegion_3D(17,id-100*16+74,159,16, 0, 0); //выделение
-						copystr(#disk_list[id-100].Item, #path);
-						za_kadrom=curbtn=0;
-						Open_Dir(#path,1);
-						Pause(5);
-						DrawRegion_3D(17,id-100*16+74,159,16, 0xFFFFFF, 0xFFFFFF);
-						break;
-				default:
-						if (id<200) break; //кнопки из списка файлов
-						if (curbtn!=id-201) {FileList_ReDraw(id-201-curbtn); break;}
-						else OPEN_MARK:
-						if (!isdir) GetIni(0); else
-						if (strcmp(#file_name,"..")==0) Dir_Up();
-						else
-						{
+							DrawRegion_3D(17,id-100*16+74,159,16, 0, 0); //выделение
+							copystr(#disk_list[id-100].Item, #path);
+							za_kadrom=curbtn=0;
+							Open_Dir(#path,1);
+							Pause(5);
+							DrawRegion_3D(17,id-100*16+74,159,16, 0xFFFFFF, 0xFFFFFF);
+							break;
+					default:
+							if (id<200) break; //кнопки из списка файлов
+							if (curbtn!=id-201)	{FileList_ReDraw(id-201-curbtn); break;}
+							else
+						OPEN_MARK:
+							if (!isdir) GetIni(0); else
+							if (!strcmp(#file_name,"..")) Dir_Up();
+							else
+							{
 						OPEN_DEV:
-								copystr(#file_path, #path);
-								IF (strcmp(#path+strlen(#path)-1,"/")<>0) copystr("/",#path+strlen(#path)); //если нет, + "/"
-								za_kadrom=curbtn=0;
-								Open_Dir(#path,1);
-						}
-			}
-			break;
+									copystr(#file_path, #path);
+									IF (strcmp(#path+strlen(#path)-1,"/")<>0) copystr("/",#path+strlen(#path)); //если нет, + "/"
+									za_kadrom=curbtn=0;
+									Open_Dir(#path,1);
+							}
+				}
+				break;
 //Key pressed-----------------------------------------------------------------------------
 		case evKey:
 			key = GetKey();
@@ -498,8 +500,6 @@ void FileList_ReDraw(int curbtn_)
 				curbtn=but_num-1;
 			}
 			List_ReDraw();
-			
-			//WriteFullDebug("");
 		}
 	}
 }
@@ -512,7 +512,7 @@ void List_ReDraw()
 	int paint_x=but_num*BUTTON_HEIGHT+57;
 	IF (count-za_kadrom<but_num) || (curbtn>but_num-1) //если мы в конце списка файлов развернём окно появяться пустяе белые кнопки
 	{ za_kadrom=count-but_num; curbtn=but_num-1; } //это если выделение после схлопывания окна за кадром
-	//
+
 	FOR (j=0; j<but_num; j++) IF (curbtn<>j) Line_ReDraw(0xFFFFFF, j); ELSE Line_ReDraw(selection_col, curbtn);
 		DrawBar(192,paint_x,onLeft(27,192),onTop(paint_x,6),0xFFFFFF); //заливка белым доконца
 		DrawBar(onLeft(168,0),paint_x,1,onTop(paint_x,6),0xE4DFE1); //полоса серая вертикальная 1
@@ -553,8 +553,6 @@ void List_ReDraw()
 	TVScroll();
 }*/
 
-//-------------------------------------------------------------------------------------
-
 
 void Line_ReDraw(dword color, filenum){
 	dword text_col=0, name_len,
@@ -569,7 +567,7 @@ void Line_ReDraw(dword color, filenum){
 
 	off=file_mas[filenum+za_kadrom]*304 + buf+72;
 
-	if (!TestBit(ESDWORD[off-40], 4))
+	if (!TestBit(ESDWORD[off-40], 4)) //это ФАЙЛ или папка?
 	{	
 		copystr(off,#temp);
 		Put_icon(#temp+strchr(#temp,'.'), BUTTON_HEIGHT/2-7+y, color);
@@ -807,8 +805,8 @@ void Actions()
 {
 	int actions_y=disc_num*16;
 	
-	DrawBar(17,actions_y+75,160,15,0x00699C); //синий прямоугольник - под девайсами
-	DrawBar(17,show_actions*51+actions_y+108,160,onTop(show_actions*51+actions_y+108,6),0x00699C); //синее в конце
+	DrawBar(17,actions_y+75,160,15,lpanel_col); //синий прямоугольник - под девайсами
+	DrawBar(17,show_actions*51+actions_y+108,160,onTop(show_actions*51+actions_y+108,6),lpanel_col); //синее в конце
 
 	DeleteButton(80);
 	DeleteButton(81);
