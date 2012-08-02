@@ -114,6 +114,9 @@ proc detect
             last_bus dd ?
            endl
 
+        mov     esi, msgSearch
+        call    SysMsgBoardStr
+
         xor     eax, eax
         mov     [bus], eax
         inc     eax
@@ -126,6 +129,9 @@ proc detect
         and     [devfn], 0
   .next_dev:
         stdcall PciRead16, [bus], [devfn], dword 0x0a   ; read class/subclass
+
+        cmp     ax, 0x0300      ; display controller - vga compatable controller
+        je      .found
 
         cmp     ax, 0x0302      ; display controller - 3d controller
         je      .found
@@ -166,28 +172,32 @@ proc detect
   .got_capabilities_list:
         stdcall PciRead8, [bus], [devfn], dword 0x34    ; read capabilities offset
         and     eax, 11111100b                          ; always dword aligned
-        mov     esi, eax
+        mov     edi, eax
 
   .read_capability:
-        stdcall PciRead32, [bus], [devfn], esi          ; read capability
+        stdcall PciRead32, [bus], [devfn], edi          ; read capability
         cmp     al, 0x02                                ; AGP
         je      .got_agp
-        movzx   esi, ah                                 ; pointer to next capability
-        test    esi, esi
+        movzx   edi, ah                                 ; pointer to next capability
+        test    edi, edi
         jnz     .read_capability
         jmp     .next
 
   .got_agp:
-        shl     eax, 16
+        shr     eax, 16
         mov     [revision], al                          ; high nibble = major revision
                                                         ; low nibble = minor revision
-        add     esi, 4
+        add     edi, 4
         and     al, 0xf0
         cmp     al, 0x30
         je      .agp_3
 
   .agp_2:
-        stdcall PciRead32, [bus], [devfn], esi          ; read AGP status
+        mov     esi, msgAGP2
+        call    SysMsgBoardStr
+
+        stdcall PciRead32, [bus], [devfn], edi          ; read AGP status
+  .agp_2_:
         test    al, 100b
         jnz     .100b
 
@@ -199,25 +209,45 @@ proc detect
 
   .001b:
         mov     [cmd], 001b
+        mov     esi, msg1
+        call    SysMsgBoardStr
         jmp     .agp_go
 
   .010b:
         mov     [cmd], 010b
+        mov     esi, msg2
+        call    SysMsgBoardStr
         jmp     .agp_go
 
   .100b:
         mov     [cmd], 100b
+        mov     esi, msg4
+        call    SysMsgBoardStr
         jmp     .agp_go
 
+  .agp_2m:
+        mov     esi, msgAGP2m
+        call    SysMsgBoardStr
+        jmp     .agp_2_
+
   .agp_3:
-        stdcall PciRead32, [bus], [devfn], esi          ; read AGP status
+        mov     esi, msgAGP3
+        call    SysMsgBoardStr
+
+        stdcall PciRead32, [bus], [devfn], edi          ; read AGP status
         test    al, 1 shl 3
-        jz      .agp_2
-        mov     [cmd], eax
-        and     [cmd], 11b
-        cmp     [cmd], 11b
-        jne     .agp_go
+        jz      .agp_2m
+        test    eax, 10b
+        jnz     .8x
+        mov     [cmd], 01b
+        mov     esi, msg4
+        call    SysMsgBoardStr
+        jmp     .agp_go
+
+  .8x:
         mov     [cmd], 10b
+        mov     esi, msg8
+        call    SysMsgBoardStr
 
   .agp_go:
 
@@ -225,18 +255,25 @@ if FAST_WRITE
         test    ax, 1 shl 4
         jz      @f
         or      [cmd], 1 shl 4
+        mov     esi, msgfast
+        call    SysMsgBoardStr
   @@:
 end if
 if SIDE_BAND_ADDRESSING
         test    ax, 1 shl 9
         jz      @f
         or      [cmd], 1 shl 9
+        mov     esi, msgside
+        call    SysMsgBoardStr
   @@:
 end if
-        add     esi, 4
+        add     edi, 4
+        mov     eax, [cmd]
+        stdcall PciWrite32, [bus], [devfn], edi, eax    ; write AGP cmd
+
         mov     eax, [cmd]
         or      eax, 1 shl 8                            ; enable AGP
-        stdcall PciWrite32, [bus], [devfn], esi, eax    ; write AGP cmd
+        stdcall PciWrite32, [bus], [devfn], edi, eax    ; write AGP cmd
 
      if DEBUG
         mov     esi, msgOK
@@ -255,9 +292,19 @@ version         dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
 my_service      db 'AGP', 0                             ; max 16 chars include zero
 
-msgInit         db 'Searching AGP device...', 13, 10, 0
+msgInit         db 'AGP driver loaded.', 13, 10, 0
+msgSearch       db 'Searching for AGP card...', 13, 10, 0
 msgFail         db 'device not found', 13, 10, 0
 msgOK           db 'AGP device enabled', 13, 10, 0
+msgAGP2         db 'AGP2 device found', 13, 10, 0
+msgAGP3         db 'AGP3 device found', 13, 10, 0
+msgAGP2m        db 'Running in AGP2 mode', 13, 10, 0
+msg8            db '8x speed', 13, 10, 0
+msg4            db '4x speed', 13, 10, 0
+msg2            db '2x speed', 13, 10, 0
+msg1            db '1x speed', 13, 10, 0
+msgfast         db 'Fast Write', 13, 10, 0
+msgside         db 'Side band addressing', 13, 10, 0
 
 section '.data' data readable writable align 16
 
