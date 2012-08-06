@@ -28,7 +28,6 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
         mov     [mem.realloc], ecx
         mov     [dll.load], edx
         mov     [DNSrequestID], 1
-        stdcall edx, @IMPORT
         xor     eax, eax
         ret
 
@@ -1283,16 +1282,6 @@ export  \
         getaddrinfo_process     , 'getaddrinfo_process' , \
         getaddrinfo_abort       , 'getaddrinfo_abort'   , \
         freeaddrinfo            , 'freeaddrinfo'
-
-; import from libini
-align 4
-@IMPORT:
-
-library libini, 'libini.obj'
-import  libini, \
-        ini.get_str, 'ini_get_str',     \
-        ini.get_int, 'ini_get_int'
-
 
 section '.data' data readable writable align 16
 ; uninitialized data
