@@ -22,8 +22,6 @@ use32
 type_ethernet equ 1
 
 include '../macros.inc'
-include 'proc32.inc'
-include 'struct.inc'
 
 START:
         ; first, check boot parameters
@@ -31,10 +29,9 @@ START:
         cmp     byte[param], 0
         je      .noparams
 
-        mcall 40, 0
+        mcall   40, 0
 
-
-        push    .launch_zeroconf_exit
+        push    .exit
         cmp     byte[param], 'A'        ; A for All
         je      Get_PCI_Info
 
@@ -43,14 +40,14 @@ START:
 
         ret
 
-.launch_zeroconf_exit:
-        mcall   70, zeroconf
+  .exit:
         mcall   -1
 
-.noparams:
+  .noparams:
         call draw_window
 
-still:  mcall   10                      ; wait here for event
+still:
+        mcall   10                      ; wait here for event
         dec     eax                     ; redraw request ?
         jz      red
         dec     eax                     ; key in buffer ?
@@ -185,13 +182,11 @@ draw_window:
         mcall   , 33 shl 16 + 62, , btn_reset
         mcall   , 36 shl 16 + 82, , btn_stop
 
-;        mcall   , 140 shl 16 + 62, 1 shl 31 + 0x00000000 , devicename
-
         jmp     .done
 
-.nonefound:
+  .nonefound:
         mcall   4, 20 shl 16 + 30, 1 shl 31 + 0x00ff0000 , nonefound
-.done:
+  .done:
         mcall   12, 2                   ; end of draw
         ret
 
@@ -249,19 +244,33 @@ Start_Enum:
         mov     cl , 0x3c                ; Register to read (Get IRQ)
 @@:     mcall   62                      ; Read it
         mov     [PCI_IRQ], al           ; Save it
-;
-;        inc     byte [total]            ; one more device found
 
-        cmp     byte [PCI_Class],2
+;        cmp     byte [PCI_Class], 0     ; device from before class codes
+;        je      @f
+
+        cmp     byte [PCI_Class], 2     ; network controller
         jne     nextDev
+;       @@:
 
         cmp     byte[param], 0
         jne     load_and_start
 
+        mov     cl, 0x0e
+        mcall   62
+        
+        push    eax
         call    Print_New_Device        ; print device info to screen
+        pop     eax
+        test    al, al
+        js      nextDev
+        
+        test    byte [V_Dev], 7
+        jnz     nextDev
+        
+        or      byte [V_Dev], 7
 
 nextDev:
-        add     byte [V_Dev], 8         ; lower 3 bits are the function number
+        inc     [V_Dev]                 ; lower 3 bits are the function number
 
         jnz     Start_Enum              ; jump until we reach zero
         mov     byte [V_Dev], 0         ; reset device number
@@ -481,32 +490,20 @@ Form:   dw 800 ; window width (no more, special for 800x600)
         dw 220 ; window height
         dw 100 ; window y start
 
-title   db 'Network Driver Control Center', 0
+title           db 'Network Driver Control Center', 0
 
-caption db 'Vendor Device Bus  Dev  Rev  IRQ   Company                                         Description         DRIVER',0
-nonefound db 'No compatible devices were found!',0
-btn_start db 'Start device',0
-btn_reset db 'Reset device',0
-btn_stop db 'Stop device',0
-lbl_none db 'none',0
-load_error db 'Could not load driver!',0
-
-devicename     db 'test'
-rb 64
-                db 0
+caption         db 'Vendor Device Bus  Dev  Rev  IRQ   Company                                         Description         DRIVER',0
+nonefound       db 'No compatible devices were found!',0
+btn_start       db 'Start device',0
+btn_reset       db 'Reset device',0
+btn_stop        db 'Stop device',0
+lbl_none        db 'none',0
+load_error      db 'Could not load driver!',0
 
 hardwareinfo:
    .type        db 1 ; pci
    .pci_bus     db ?
    .pci_dev     db ?
-
-zeroconf:
-        dd 7    ; launch app
-        dd 0    ; no flags
-        dd 0    ; no parameters
-        dd 0    ; reserved
-        dd 0    ; reserved
-        db "/sys/network/zeroconf", 0
 
 
 IM_END:
