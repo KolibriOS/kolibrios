@@ -114,11 +114,20 @@ macro   make_bus_master bus, dev {
         movzx   ecx, bus
         movzx   edx, dev
         stdcall PciRead32, ecx ,edx, PCI_REG_COMMAND
-
-        or      al, PCI_BIT_MASTER ;or PCI_BIT_PIO
-;        and     al, not PCI_BIT_MMIO
+        or      al, PCI_BIT_MASTER
         stdcall PciWrite32, ecx, edx, PCI_REG_COMMAND, eax
 
-;; TODO: try to switch to PIO, and check if PIO works or not..
+}
+
+macro   adjust_latency bus, dev, min {
+
+        movzx   ecx, bus
+        movzx   edx, dev
+        stdcall PciRead8, ecx ,edx, PCI_REG_LATENCY
+        cmp     al, min
+        ja      @f
+        mov     al, min
+        stdcall PciWrite8, ecx, edx, PCI_REG_LATENCY, eax
+  @@:
 
 }
