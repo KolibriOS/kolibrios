@@ -25,6 +25,12 @@
 
 format MS COFF
 
+        NUM_RX_DESC             =   4           ;* Number of RX descriptors *
+        NUM_TX_DESC             =   1           ;* Number of TX descriptors *
+        RX_BUFF_SZ              =   1520        ;* Buffer size for each Rx buffer *
+        TX_BUFF_SZ              =   1516        ;* Buffer size for each Tx buffer *
+        MAX_ETH_FRAME_SIZE      =   1516
+
         API_VERSION             =   0x01000100
         DRIVER_VERSION          =   5
 
@@ -41,12 +47,6 @@ include 'netdrv.inc'
 
 public START
 public version
-
-NUM_RX_DESC             =   4           ;* Number of RX descriptors *
-NUM_TX_DESC             =   1           ;* Number of TX descriptors *
-RX_BUFF_SZ              =   1520        ;* Buffer size for each Rx buffer *
-TX_BUFF_SZ              =   1516        ;* Buffer size for each Tx buffer *
-MAX_ETH_FRAME_SIZE      =   1516
 
 virtual at ebx
         device:
@@ -147,10 +147,10 @@ service_proc:
         jz      .firstdevice
 
 ;        mov     eax, [IOCTL.input]                      ; get the pci bus and device numbers
-        mov     ax , [eax+1]                            ;
+        mov     ax, [eax+1]                            ;
   .nextdevice:
         mov     ebx, [esi]
-        cmp     ax , word [device.pci_bus]              ; compare with pci and device num in device list (notice the usage of word instead of byte)
+        cmp     ax, word [device.pci_bus]               ; compare with pci and device num in device list (notice the usage of word instead of byte)
         je      .find_devicenum                         ; Device is already loaded, let's find it's device number
         add     esi, 4
         loop    .nextdevice
@@ -164,9 +164,9 @@ service_proc:
         allocate_and_clear ebx, device.size, .fail
 ; 4i. Save PCI coordinates
         mov     eax, [IOCTL.input]
-        mov     cl , [eax+1]
+        mov     cl, [eax+1]
         mov     [device.pci_bus], cl
-        mov     cl , [eax+2]
+        mov     cl, [eax+2]
         mov     [device.pci_dev], cl
 ; 4j. Fill in the direct call addresses into the struct.
 ; Note that get_MAC pointer is filled in initialization by probe.
@@ -221,7 +221,6 @@ service_proc:
 
   .err:
         stdcall KernelFree, ebx
-
 
   .fail:
         xor     eax, eax
@@ -422,6 +421,7 @@ ret
 ;***************************************************************************
 align 4
 probe:
+        DEBUGF  1, "Probe\n"
 
         movzx   eax, [device.pci_bus]
         movzx   edx, [device.pci_dev]
@@ -452,9 +452,9 @@ probe:
 
 ; Find Get Mac Function
   .ok:
-        mov     eax, [esi+4]            ; Get pointer to "get MAC" function
+        mov     eax, [esi + 4]          ; Get pointer to "get MAC" function
         mov     [device.get_MAC], eax
-        mov     eax, [esi+8]            ; Get pointer to special initialization fn
+        mov     eax, [esi + 8]          ; Get pointer to special initialization fn
         mov     [device.special_func], eax
 
 ; Get MAC
@@ -462,7 +462,7 @@ probe:
 
 ; Call special initialization fn if requested
 
-        cmp     [device.special_func],0
+        cmp     [device.special_func], 0
         je      @f
         call    [device.special_func]
        @@:
@@ -490,14 +490,16 @@ probe:
 ;***************************************************************************
 align 4
 init:
+        DEBUGF  1, "Init\n"
 
-        call reset
-        call init_rxfilter
-        call init_txd
-        call init_rxd
-        call set_rx_mode
-        call set_tx_mode
-        ;call check_mode
+        call    reset
+        jnz     .ret
+        call    init_rxfilter
+        call    init_txd
+        call    init_rxd
+        call    set_rx_mode
+        call    set_tx_mode
+        ;call    check_mode
 
 ; enable interrupts on packet receive
 
@@ -515,6 +517,7 @@ init:
 
         mov     [device.mtu], 1514
 
+  .ret:
         ret
 
 ;***************************************************************************
@@ -526,6 +529,8 @@ init:
 ;***************************************************************************
 align 4
 reset:
+        DEBUGF  1, "reset\n"
+
         movzx   eax, [device.irq_line]
         stdcall AttachIntHandler, eax, int_handler, 0
 
@@ -560,8 +565,8 @@ reset:
         dec     ecx
         jz      .error
         in      eax, dx                         ; move interrup status to eax
-        cmp     eax, 0x03000000
-        jne     .loop
+        test    eax, 0x03000000    ; CHECKME
+        jz      .loop
 
 ;------------------------------------------------------
 ; Set Configuration Register depending on Card Revision
@@ -598,6 +603,7 @@ reset:
 ;***************************************************************************
 align 4
 init_rxfilter:
+        DEBUGF  1, "Init RxFilter\n"
 
 ;------------------------------------
 ; Get Receive Filter Control Register
@@ -649,22 +655,23 @@ RXINT_Mac_Write:        ; high word of eax tells card which mac byte to write
 ;***************************************************************************
 align 4
 init_txd:
+        DEBUGF  1, "Init TxD\n"
 
 ;-------------------------
 ; initialize TX descriptor
 
         mov     dword [device.txd], 0           ; put link to next descriptor in link field
-        mov     dword [device.txd+4], 0         ; clear status field
-        mov     dword [device.txd+8], 0         ; ptr to buffer
+        mov     dword [device.txd + 4], 0       ; clear status field
+        mov     dword [device.txd + 8], 0       ; ptr to buffer
 
 ;----------------------------------
 ; load Transmit Descriptor Register
 
         set_io  0
-        set_io  txdp                    ; TX Descriptor Pointer
+        set_io  txdp                            ; TX Descriptor Pointer
         lea     eax, [device.txd]
         GetRealAddr
-        out     dx, eax                             ; move the pointer
+        out     dx, eax                         ; move the pointer
 
         ret
 
@@ -677,29 +684,33 @@ init_txd:
 ;***************************************************************************
 align 4
 init_rxd:
+        DEBUGF  1, "Init RxD\n"
 
 ; init RX descriptors
         mov     ecx, NUM_RX_DESC
         lea     esi, [device.rxd]
 
   .loop:
-        lea     eax, [esi + 16]
+        lea     eax, [esi + 16]                 ; next ptr
         GetRealAddr
-        mov     dword [esi+0], eax
-        mov     dword [esi+4], RX_BUFF_SZ
+        mov     dword [esi], eax
+        mov     dword [esi + 4], RX_BUFF_SZ     ; size
 
+        push    ecx
         stdcall KernelAlloc, RX_BUFF_SZ
+        pop     ecx
         test    eax, eax
         jz      .fail
-        mov     dword [esi+12], eax
+        mov     dword [esi + 12], eax           ; address
         GetRealAddr
-        mov     dword [esi+8], eax
+        mov     dword [esi + 8], eax            ; real address
         add     esi, 16
-        loop    .loop
+        dec     ecx
+        jnz     .loop
 
         lea     eax, [device.rxd]
         GetRealAddr
-        mov     dword [esi - 16], eax   ; correct last descriptor link ptr
+        mov     dword [esi - 16], eax           ; correct last descriptor link ptr
 
 ; And output ptr to first desc, to device
 
@@ -734,6 +745,7 @@ init_rxd:
 ;***************************************************************************
 align 4
 set_tx_mode:
+        DEBUGF  1, "set TX mode\n"
 
         set_io  0
         set_io  cr
@@ -776,6 +788,7 @@ set_tx_mode:
 ;***************************************************************************
 align 4
 set_rx_mode:
+        DEBUGF  1, "set RX mode\n"
 
 ;----------------------------------------------
 ; update Multicast Hash Table in Receive Filter
@@ -824,7 +837,7 @@ set_rx_mode:
         ; (Req for full-duplex and PMD Loopback)
         ; Max DMA Burst
         ; RX Drain Threshold, 8X8 bytes or 64bytes
-        out      dx, eax
+        out     dx, eax
 
         ret
 
@@ -846,6 +859,7 @@ set_rx_mode:
 ;***************************************************************************
 align 4
 SIS960_get_mac_addr:
+        DEBUGF  1, "SIS960 - get mac: "
 
 ;-------------------------------
 ; Send Request for eeprom access
@@ -919,6 +933,7 @@ SIS960_get_mac_addr:
 ;***************************************************************************
 align 4
 SIS900_get_mac_addr:
+        DEBUGF  1, "SIS900 - get mac: "
 
 ;------------------------------------
 ; check to see if we have sane EEPROM
@@ -967,6 +982,8 @@ SIS900_get_mac_addr:
 align 4
 Get_Mac_SIS635_900_REV:
 
+        DEBUGF  1, "SIS635 - get mac: "
+
         set_io  0
         set_io  rfcr
         in      eax, dx
@@ -1011,6 +1028,8 @@ Get_Mac_SIS635_900_REV:
 ;        mov     eax, edi
 ;        or      eax, RFEN
 ;        out     dx, eax
+
+        DEBUGF  2,"%x-%x-%x-%x-%x-%x\n",[device.mac]:2,[device.mac+1]:2,[device.mac+2]:2,[device.mac+3]:2,[device.mac+4]:2,[device.mac+5]:2
 
         xor     eax, eax
         ret
@@ -1122,6 +1141,8 @@ write_mac:
 ;***************************************************************************
 align 4
 int_handler:
+        DEBUGF  1, "Int!\n"
+
 ; find pointer of device which made IRQ occur
         mov     esi, device_list
         mov     ecx, [devices]
@@ -1276,7 +1297,7 @@ transmit:
 ; update stats
         inc     [device.packets_tx]
         add     dword [device.bytes_tx], ecx
-        adc     dword [device.bytes_tx+4], 0
+        adc     dword [device.bytes_tx + 4], 0
 
   .finish:
         xor     eax, eax
@@ -1295,14 +1316,14 @@ align 4                                         ; Place all initialised data her
 devices         dd 0
 
 specific_table:
-;    dd SIS630A_900_REV,Get_Mac_SIS630A_900_REV,0
-;    dd SIS630E_900_REV,Get_Mac_SIS630E_900_REV,0
-    dd SIS630S_900_REV,Get_Mac_SIS635_900_REV,0
-    dd SIS630EA1_900_REV,Get_Mac_SIS635_900_REV,0
-    dd SIS630ET_900_REV,Get_Mac_SIS635_900_REV,0;SIS630ET_900_REV_SpecialFN
-    dd SIS635A_900_REV,Get_Mac_SIS635_900_REV,0
-    dd SIS900_960_REV,SIS960_get_mac_addr,0
-    dd SIS900B_900_REV,SIS900_get_mac_addr,0
+;    dd SIS630A_900_REV, Get_Mac_SIS630A_900_REV, 0
+;    dd SIS630E_900_REV, Get_Mac_SIS630E_900_REV, 0
+    dd SIS630S_900_REV, Get_Mac_SIS635_900_REV, 0
+    dd SIS630EA1_900_REV, Get_Mac_SIS635_900_REV, 0
+    dd SIS630ET_900_REV, Get_Mac_SIS635_900_REV, 0 ;SIS630ET_900_REV_SpecialFN
+    dd SIS635A_900_REV, Get_Mac_SIS635_900_REV, 0
+    dd SIS900_960_REV, SIS960_get_mac_addr, 0
+    dd SIS900B_900_REV, SIS900_get_mac_addr, 0
     dd 0                                        ; end of list
 
 version         dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
