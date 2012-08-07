@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                    ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.       ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.       ;;
 ;; Distributed under terms of the GNU General Public License          ;;
 ;;                                                                    ;;
 ;;  Ethernet driver for KolibriOS                                     ;;
@@ -99,7 +99,7 @@ START:
         jne     .exit
         stdcall RegService, my_service, service_proc
         ret     4
-.exit:
+  .exit:
         xor     eax, eax
         ret     4
 
@@ -123,7 +123,7 @@ service_proc:
 ; 3c. Return success.
         xor     eax, eax
         ret     4
-@@:
+  @@:
         dec     eax     ; check for SRV_HOOK
         jnz     .fail
 ; 4. This is SRV_HOOK request, input defines the device to hook, no output.
@@ -160,14 +160,8 @@ service_proc:
         cmp     [devices], MAX_DEVICES
         jge     .fail
 ; 4g. Allocate memory for device descriptor and receive+transmit buffers.
-        stdcall KernelAlloc, device.size
-        test    eax, eax
-        jz      .fail
 ; 4h. Zero the structure.
-        mov     edi, eax
-        mov     ecx, (device.size + 3) shr 2
-        xor     eax, eax
-        rep     stosd
+        allocate_and_clear ebx, device.size, .fail
 ; 4i. Save PCI coordinates
         mov     eax, [IOCTL.input]
         mov     cl , [eax+1]
