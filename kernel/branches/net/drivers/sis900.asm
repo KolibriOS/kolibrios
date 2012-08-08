@@ -1065,9 +1065,11 @@ int_handler:
         DEBUGF  1,"IRQ! status=%x\n", ax
 
         test    ax, RxOK
-        jz      .no_rx
+        jz      .no_rx_
 
         push    ax
+
+  .rx_loop:
 
 ;-----------
 ; Get Status
@@ -1078,12 +1080,10 @@ int_handler:
 ;-------------------------------------------
 ; Check RX_Status to see if packet is waiting
         test    ecx, 0x80000000
-        jnz     .is_packet
-        ret
+        jz      .no_rx
 
 ;----------------------------------------------
 ; There is a packet waiting check it for errors
-  .is_packet:
         test    ecx, 0x67C0000                  ; see if there are any errors
         jnz     .error_status
 
@@ -1119,12 +1119,21 @@ int_handler:
         mov     dword [ecx + 8], eax
         mov     dword [ecx + 4], RX_BUFF_SZ
 
-        inc     [device.cur_rx]                          ; get next descriptor
-        and     [device.cur_rx], NUM_RX_DESC-1           ; only 4 descriptors 0-3
+        inc     [device.cur_rx]                         ; get next descriptor
+        and     [device.cur_rx], NUM_RX_DESC-1          ; only 4 descriptors 0-3
+
+        jmp     .rx_loop
+
+  .no_rx:
+        set_io  0
+        set_io  cr
+        in      eax, dx
+        or      eax, RxENA                              ; Re-Enable the Receive state machine
+        out     dx, eax
 
         pop     ax
 
-  .no_rx:
+  .no_rx_:
         test    ax, TxOK
         jz      .no_tx
 
