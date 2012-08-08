@@ -166,6 +166,11 @@ ICMP_input:
         DEBUGF  1,"got echo request\n"
         mov     [edx + ICMP_header.Type], ICMP_ECHOREPLY        ; Change Packet type to reply
 
+        mov     esi, [esp]                                      ; Start of buffer
+
+        cmp     dword[edi + 4], 1 shl 24 + 127
+        je      .loopback
+
 ; Update stats (and validate device ptr)
         call    NET_ptr_to_num
         cmp     edi,-1
@@ -175,7 +180,6 @@ ICMP_input:
 
 ; exchange dest and source address in IP header
 ; exchange dest and source MAC in ETH header
-        mov     esi, [esp]                                      ; Start of buffer
         push    dword [esi + ETH_header.DstMAC]
         push    dword [esi + ETH_header.SrcMAC]
         pop     dword [esi + ETH_header.DstMAC]
@@ -184,8 +188,10 @@ ICMP_input:
         push    word [esi + ETH_header.SrcMAC + 4]
         pop     word [esi + ETH_header.DstMAC + 4]
         pop     word [esi + ETH_header.SrcMAC + 4]
+        add     esi, sizeof.ETH_header-2
 
-        add     esi, sizeof.ETH_header
+  .loopback:
+        add     esi, 2
         push    [esi + IPv4_header.SourceAddress]
         push    [esi + IPv4_header.DestinationAddress]
         pop     [esi + IPv4_header.SourceAddress]

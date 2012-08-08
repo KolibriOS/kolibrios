@@ -96,6 +96,7 @@ SS_MORETOCOME           = 0x400
 SOCKET_MAXDATA          = 4096*32     ; must be 4096*(power of 2) where 'power of 2' is at least 8
 
 ; Network driver types
+NET_TYPE_LOOPBACK       = 0
 NET_TYPE_ETH            = 1
 NET_TYPE_SLIP           = 2
 
@@ -165,6 +166,7 @@ macro ntohw reg {
 
 include "queue.inc"
 
+include "loopback.inc"
 include "ethernet.inc"
 
 ;include "PPPoE.inc"

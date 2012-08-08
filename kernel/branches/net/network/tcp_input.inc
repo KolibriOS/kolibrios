@@ -489,12 +489,10 @@ align 4
         push    [edx + TCP_header.SequenceNumber]
         pop     [ebx + TCP_SOCKET.IRS]
 
-        push    [TCP_sequence_num]                      ;;;;;
+        mov     eax, [TCP_sequence_num]
         add     [TCP_sequence_num], 64000 / 2
-        pop     [ebx + TCP_SOCKET.ISS]
-
-        push    [ebx + TCP_SOCKET.ISS]
-        pop     [ebx + TCP_SOCKET.SND_NXT]
+        mov     [ebx + TCP_SOCKET.ISS], eax
+        mov     [ebx + TCP_SOCKET.SND_NXT], eax
 
         TCP_sendseqinit ebx
         TCP_rcvseqinit ebx

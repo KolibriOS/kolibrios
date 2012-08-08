@@ -578,6 +578,9 @@ IPv4_output:
 
         push    ecx eax edx di
 
+        cmp     eax, 1 shl 24 + 127
+        je      .loopback
+
         call    IPv4_dest_to_dev        ; outputs device number in edi, dest ip in eax
         call    ARP_IP_to_MAC
         test    eax, 0xffff0000         ; error bits
@@ -597,6 +600,7 @@ IPv4_output:
         jz      .eth_error
         add     esp, 6                  ; pop the mac out of the stack
 
+  .continue:
         xchg    cl, ch                                  ; internet byte order
         mov     [edi + IPv4_header.VersionAndIHL], 0x45 ; IPv4, normal length (no Optional header)
         mov     [edi + IPv4_header.TypeOfService], 0    ; nothing special, just plain ip packet
@@ -633,6 +637,12 @@ IPv4_output:
         xor     edi, edi
         ret
 
+  .loopback:
+        mov     dword [esp + 2], eax
+        add     ecx, sizeof.IPv4_header
+        mov     di, ETHER_IPv4
+        call    LOOP_output
+        jmp     .continue
 
 
 
