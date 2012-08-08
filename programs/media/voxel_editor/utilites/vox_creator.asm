@@ -16,7 +16,7 @@ include '../trunk/mem.inc'
 include '../trunk/dll.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel creator 1.08.12',0 ;подпись окна
+caption db 'Voxel creator 8.08.12',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -44,6 +44,10 @@ vox_offs_data equ 12
 run_file_70 FileInfoBlock
 image_data dd 0 ;указатель на временную память. для нужен преобразования изображения
 vox_obj_size dd 0 ;размер воксельного объекта (для ускорения вставки)
+txt_space db ' ',0
+txt_pref db ' б ',0,' Кб',0,' Мб',0,' Гб',0 ;приставки: кило, мега, гига
+txt_f_size: db 'Размер: '
+.size: rb 16
 
 fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
@@ -217,6 +221,7 @@ timer_funct:
 
 	stdcall [buf2d_draw], buf_npl
 	inc dword[n_plane] ;перемещаем плоскость сечения
+	call draw_pok
 	.end_f:
 	popad
 	jmp still
@@ -499,6 +504,7 @@ pushad
 	int 0x40
 
 	call draw_buffers
+	call draw_pok
 
 	mcall 12,2
 popad
@@ -511,6 +517,34 @@ draw_buffers:
 	stdcall [buf2d_draw], buf_i0
 	stdcall [buf2d_draw], buf_i1
 	stdcall [buf2d_draw], buf_i2
+	ret
+
+align 4
+draw_pok:
+	;обновление подписи размера файла
+	mov edi,txt_f_size.size
+	mov dword[edi],0
+	mov eax,dword[vox_obj_size]
+	mov ebx,txt_pref
+	.cycle:
+		cmp eax,1024
+		jl @f
+		shr eax,10
+		add ebx,4
+		jmp .cycle
+	@@:
+	call convert_int_to_str
+	stdcall str_cat, edi,ebx
+	stdcall str_cat, edi,txt_space ;завершающий пробел
+
+	mov eax,4 ;рисование текста
+	mov ebx,(275 shl 16)+7
+	mov ecx,[sc.work_text]
+	or  ecx,0x80000000 or (1 shl 30)
+	mov edx,txt_f_size
+	mov edi,[sc.work] ;цвет фона окна
+	int 0x40
+
 	ret
 
 align 4
@@ -1293,6 +1327,35 @@ proc conv_str_to_int, buf:dword
 	ret
 endp
 
+align 4
+proc str_cat uses eax ecx edi esi, str1:dword, str2:dword
+	mov esi,dword[str2]
+	stdcall str_len,esi
+	mov ecx,eax
+	inc ecx
+	mov edi,dword[str1]
+	stdcall str_len,edi
+	add edi,eax
+	cld
+	repne movsb
+	ret
+endp
+
+;output:
+; eax = strlen
+align 4
+proc str_len, str1:dword
+	mov eax,[str1]
+	@@:
+		cmp byte[eax],0
+		je @f
+		inc eax
+		jmp @b
+	@@:
+	sub eax,[str1]
+	ret
+endp
+
 msgbox_0:
 	db 1,0
 	db 'Внимание',0
@@ -1646,15 +1709,16 @@ buf_vox:
 
 
 
-;этот код не мой, он преобразует число в строку
 ;input:
 ; eax = value
 ; edi = string buffer
 ;output:
 align 4
-tl_convert_to_str:
+convert_int_to_str:
 	pushad
+		cld
 		mov dword[edi+1],0
+		mov word[edi+5],0
 		call .str
 	popad
 	ret
@@ -1677,9 +1741,9 @@ align 4
 	ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 i_end:
-		rb 1024
+		rb 2048
 	thread:
-		rb 1024
+		rb 2048
 stacktop:
 	sys_path rb 1024
 	file_name:
