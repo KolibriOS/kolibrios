@@ -574,6 +574,7 @@ reset:
         out     dx, eax
 
         mov     [device.cur_tx], 0              ; Set current tx descriptor to 0
+        mov     [device.last_tx], 0
 
         DEBUGF  1, "Initialising RX Descriptors\n"
 
@@ -991,8 +992,8 @@ transmit:
         shl     ecx, 4                  ; *16
         lea     ecx, [device.txd + ecx]
 
-;; TODO: check if desc is empty (for example: check for eax, 0x6200000  at [ecx+4]
-;;; or: count number of available descriptors
+        test    dword [ecx + 4], 0x80000000     ; card owns descriptor ?
+        jnz     .error
 
         mov     eax, [esp + 4]
         mov     dword [ecx + 12], eax
@@ -1121,13 +1122,6 @@ int_handler:
         inc     [device.cur_rx]                          ; get next descriptor
         and     [device.cur_rx], NUM_RX_DESC-1           ; only 4 descriptors 0-3
 
-; Enable Receiver    CHECKME
-;        set_io  0
-;        set_io  cr              ; Command Register offset
-;        in      eax, dx         ; Get current Command Register
-;        or      eax, RxENA      ; Enable Receiver
-;        out     dx, eax
-
         pop     ax
 
   .no_rx:
@@ -1136,8 +1130,24 @@ int_handler:
 
         DEBUGF  1, "TX ok!\n"
 
-        ;;; TODO: free all unused buffers
-     ;;   stdcall   KernelFree, eax
+  .tx_loop:
+        movzx   ecx, [device.last_tx]
+        shl     ecx, 4                  ; *16
+        lea     ecx, [device.txd + ecx]
+
+        test    dword [ecx + 4], 0x80000000   ; card owns descr
+        jnz     .no_tx
+        cmp     dword [ecx + 12], 0
+        je      .no_tx
+
+        DEBUGF  1, "Freeing packet = %x\n", [ecx + 12]:8
+        push    dword [ecx + 12]
+        mov     dword [ecx + 12], 0
+        call    KernelFree
+
+        inc     [device.last_tx]
+        and     [device.last_tx], NUM_TX_DESC-1
+        jmp     .tx_loop
 
   .no_tx:
 
