@@ -305,7 +305,7 @@ macro   WRITE_GMII_REG  RegAddr, value {
         end if
         out     dx, eax
 
-        call    PHY_WAIT
+        call    PHY_WAIT_WRITE
 }
 
 macro   READ_GMII_REG  RegAddr {
@@ -316,7 +316,7 @@ local   .error, .done
         mov     eax, RegAddr shl 16
         out     dx, eax
 
-        call    PHY_WAIT
+        call    PHY_WAIT_READ
         jz      .error
 
         in      eax, dx
@@ -329,7 +329,25 @@ local   .error, .done
 }
 
 align 4
-PHY_WAIT:       ; io addr must already be set to REG_PHYAR
+PHY_WAIT_READ:       ; io addr must already be set to REG_PHYAR
+
+        udelay  1        ;;;1000
+
+        push    ecx
+        mov     ecx, 2000
+        ; Check if the RTL8169 has completed writing/reading to the specified MII register
+    @@:
+        in      eax, dx
+        test    eax, 0x80000000
+        jnz     .exit
+        udelay  1        ;;;100
+        loop    @b
+  .exit:
+        pop     ecx
+        ret
+
+align 4
+PHY_WAIT_WRITE:       ; io addr must already be set to REG_PHYAR
 
         udelay  1        ;;;1000
 
