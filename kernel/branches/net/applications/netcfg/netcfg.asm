@@ -160,8 +160,6 @@ draw_window:
         mcall   12, 1                   ; start of draw
         mcall   0, dword [Form], dword [Form + 4], 0x13ffffff, 0x805080d0, title
 
-        mcall   8, 136 shl 16 + 100, 35 shl 16 + 18, 4, 0x00007f00       ; SLIP
-
         call    Get_PCI_Info            ; get pci version and last bus, scan for and draw each pci device
 
         cmp     edx, 20 shl 16 + 110
