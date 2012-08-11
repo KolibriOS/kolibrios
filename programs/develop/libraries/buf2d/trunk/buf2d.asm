@@ -249,7 +249,7 @@ proc draw_pixel_transp, t_prop:dword, m_prop:dword
 		mov byte[transp_32+3],al ;прозрачность рисуемой точки
 		mov esi,dword transp_32 ;указатель на цвет рисуемой точки
 
-		call combine_colors
+		call combine_colors_0
 	pop esi edi edx ebx eax
 	@@:
 	ret
@@ -1754,6 +1754,13 @@ proc buf_img_wdiv2, buf_struc:dword
 		imul ecx,eax
 		stdcall img_rgb24_wdiv2, buf2d_data,ecx
 	.end_draw_24:
+	cmp buf2d_bits,32
+	jne .end_draw_32
+		mov eax,buf2d_w
+		mov ecx,buf2d_h
+		imul ecx,eax
+		stdcall img_rgb32_wdiv2, buf2d_data,ecx
+	.end_draw_32:
 	popad
 	ret
 endp
@@ -1763,7 +1770,6 @@ endp
 ;size - count img pixels (size img data / 3(rgb) )
 align 4
 proc img_rgb24_wdiv2 data_rgb:dword, size:dword
-  ;push eax ebx ecx edx
   mov eax,dword[data_rgb]
   mov ecx,dword[size] ;ecx = size
   lea ecx,[ecx+ecx*2]
@@ -1800,8 +1806,43 @@ proc img_rgb24_wdiv2 data_rgb:dword, size:dword
 		add eax,3
 		add ebx,6
 		loop @b
-  ;pop edx ecx ebx eax
   ret
+endp
+
+;input:
+;data_rgb - pointer to rgb data
+;size - count img pixels (size img data / 3(rgb) )
+align 4
+proc img_rgb32_wdiv2 data_rgb:dword, size:dword
+	mov eax,dword[data_rgb]
+
+	mov eax,dword[data_rgb]
+	mov ebx,eax
+	add ebx,4
+	mov ecx,dword[size] ;ecx = size
+	shr ecx,1
+	@@: ;смешивание цветов пикселей
+		call combine_colors_1
+		mov [eax],edx
+		add eax,8 ;=2*4
+		add ebx,8
+		loop @b
+
+	mov eax,dword[data_rgb]
+	add eax,4
+	mov ebx,eax
+	add ebx,4
+	mov ecx,dword[size] ;ecx = size
+	shr ecx,1
+	dec ecx ;лишний пиксель
+	@@: ;поджатие пикселей
+		mov edx,dword[ebx]
+		mov dword[eax],edx
+
+		add eax,4
+		add ebx,8
+		loop @b
+	ret
 endp
 
 align 4
@@ -1815,6 +1856,14 @@ proc buf_img_hdiv2, buf_struc:dword
 		imul ecx,eax
 		stdcall img_rgb24_hdiv2, buf2d_data,ecx,eax
 	.end_draw_24:
+	cmp buf2d_bits,32
+	jne .end_draw_32
+		mov eax,buf2d_w
+		mov ecx,buf2d_h
+		imul ecx,eax
+		shl eax,2
+		stdcall img_rgb32_hdiv2, buf2d_data,ecx,eax
+	.end_draw_32:
 	popad
 	ret
 endp
@@ -1825,7 +1874,6 @@ endp
 ;size_w - width img in pixels
 align 4
 proc img_rgb24_hdiv2, data_rgb:dword, size:dword, size_w:dword
-  ;pushad
 
   mov eax,dword[data_rgb] ;eax =
   mov ecx,dword[size]	  ;ecx = size
@@ -1837,8 +1885,8 @@ proc img_rgb24_hdiv2, data_rgb:dword, size:dword, size_w:dword
     loop @b
 
   mov eax,dword[data_rgb] ;eax =
-  mov edi,dword[size_w]
-  lea esi,[edi+edi*2] ;esi = width*3(rgb)
+  mov esi,dword[size_w]
+  lea esi,[esi+esi*2] ;esi = width*3(rgb)
   mov ebx,esi
   add ebx,eax
   mov ecx,dword[size]  ;ecx = size
@@ -1864,8 +1912,8 @@ proc img_rgb24_hdiv2, data_rgb:dword, size:dword, size_w:dword
 
   mov eax,dword[data_rgb] ;eax =
   add eax,esi ;esi = width*3(rgb)
-  mov ebx,esi
-  add ebx,eax
+  mov ebx,eax
+  add ebx,esi
   mov ecx,dword[size] ;ecx = size
   shr ecx,1
   sub ecx,dword[size_w] ;лишняя строка пикселей
@@ -1886,8 +1934,162 @@ proc img_rgb24_hdiv2, data_rgb:dword, size:dword, size_w:dword
     .old_line_2:
     loop @b
 
-  ;popad
   ret
+endp
+
+;input:
+;data_rgb - pointer to rgb data
+;size - count img pixels (size img data / 3(rgb) )
+;size_w_b - width img in bytes
+align 4
+proc img_rgb32_hdiv2, data_rgb:dword, size:dword, size_w_b:dword
+
+	mov eax,dword[data_rgb] ;eax =
+	mov ebx,dword[size_w_b]
+	add ebx,eax
+	mov ecx,dword[size]  ;ecx = size
+	shr ecx,1
+	xor edi,edi
+	@@: ;смешивание цветов пикселей
+		call combine_colors_1
+		mov dword[eax],edx
+
+		add eax,4
+		add ebx,4
+		add edi,4
+		cmp edi,dword[size_w_b]
+		jl .old_line
+			add eax,dword[size_w_b]
+			add ebx,dword[size_w_b]
+			xor edi,edi
+		.old_line:
+		loop @b
+
+
+	mov eax,dword[data_rgb] ;eax =
+	mov ebx,dword[size_w_b]
+	add eax,ebx
+	add ebx,eax
+	mov ecx,dword[size] ;ecx = size
+	shl ecx,1
+	sub ecx,dword[size_w_b] ;лишняя строка пикселей
+	shr ecx,2
+	xor edi,edi
+	@@: ;поджатие пикселей
+		mov edx,dword[ebx] ;копируем цвет нижнего пикселя
+		mov dword[eax],edx
+
+		add eax,4
+		add ebx,4
+		add edi,4
+		cmp edi,dword[size_w_b]
+		jl .old_line_2
+			add ebx,dword[size_w_b]
+			xor edi,edi
+		.old_line_2:
+		loop @b
+
+	ret
+endp
+
+;input:
+; eax - указатель на 32-битный цвет
+; ebx - указатель на 32-битный цвет
+;output:
+; edx - 32-битный цвет смешанный с учетом прозрачности
+;destroy:
+; esi
+align 4
+proc combine_colors_1 uses ecx edi
+locals
+	c_blye dd ?
+	c_green dd ?
+	c_red dd ?
+endl		
+	movzx edi,byte[eax+3]
+	cmp edi,255
+	je .c0z
+	movzx esi,byte[ebx+3]
+	cmp esi,255
+	je .c1z
+
+	;переворачиваем значения прозрачностей
+	neg edi
+	inc edi
+	add edi,255
+	neg esi
+	inc esi
+	add esi,255
+
+	movzx ecx,byte[eax]
+	imul ecx,edi
+	mov [c_blye],ecx
+	movzx ecx,byte[ebx]
+	imul ecx,esi
+	add [c_blye],ecx
+
+	movzx ecx,byte[eax+1]
+	imul ecx,edi
+	mov [c_green],ecx
+	movzx ecx,byte[ebx+1]
+	imul ecx,esi
+	add [c_green],ecx
+
+	movzx ecx,byte[eax+2]
+	imul ecx,edi
+	mov [c_red],ecx
+	movzx ecx,byte[ebx+2]
+	imul ecx,esi
+	add [c_red],ecx
+
+push eax ebx
+	xor ebx,ebx
+	mov eax,[c_red]
+	xor edx,edx
+	mov ecx,edi
+	add ecx,esi
+	div ecx
+	mov bl,al
+	shl ebx,16
+	mov eax,[c_green]
+	xor edx,edx
+	div ecx
+	mov bh,al
+	mov eax,[c_blye]
+	xor edx,edx
+	div ecx
+	mov bl,al
+
+	shr ecx,1
+	;переворачиваем значения прозрачности
+	neg ecx
+	inc ecx
+	add ecx,255
+
+	shl ecx,24
+	add ebx,ecx
+	mov edx,ebx
+pop ebx eax
+
+	jmp .end_f
+	.c0z: ;если цвет в eax прозрачный
+		mov edx,dword[ebx]
+		movzx edi,byte[ebx+3]
+		jmp @f
+	.c1z: ;если цвет в ebx прозрачный
+		mov edx,dword[eax]
+	@@:
+		add edi,255 ;делаем цвет на половину прозрачным
+		shr edi,1
+		cmp edi,255
+		jl @f
+			mov edi,255 ;максимальная прозрачность не более 255
+		@@:
+		shl edi,24
+		and edx,0xffffff ;снимаем старую прозрачность
+		add edx,edi
+	.end_f:
+	ret
 endp
 
 ;преобразование буфера из 24-битного в 8-битный
@@ -2185,7 +2387,7 @@ endp
 ;output:
 ; [edi] = combine color
 align 4
-combine_colors:
+combine_colors_0:
 	push ax bx cx dx
 	mov bx,0x00ff ;---get transparent---
 	movzx cx,byte[esi+3] ;pro
@@ -2293,7 +2495,7 @@ proc buf_bit_blt_transp, buf_destination:dword, coord_x:dword, coord_y:dword, bu
 	.copy_0: ;простое копирование
 		mov ecx,eax
 		@@:
-			call combine_colors
+			call combine_colors_0
 			add edi,3
 			add esi,4
 			loop @b
@@ -2305,7 +2507,7 @@ proc buf_bit_blt_transp, buf_destination:dword, coord_x:dword, coord_y:dword, bu
 	.copy_1: ;не простое копирование (картинка вылазит за правую сторону)
 		mov ecx,eax
 		@@:
-			call combine_colors
+			call combine_colors_0
 			add edi,3
 			add esi,4
 			loop @b
