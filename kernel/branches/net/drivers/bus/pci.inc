@@ -50,40 +50,44 @@ macro   find_io bus, dev, io {
         jz      .inc
 
         and     eax, PCI_BASE_ADDRESS_IO_MASK
-        mov     io , eax
         jmp     .got
 
   .inc:
         add     esi, 4
         cmp     esi, PCI_BASE_ADDRESS_5
-        jle     .check
+        jbe     .check
+        xor     eax, eax
 
   .got:
+        mov     io, eax
 
 }
 
 
-macro   find_mmio32 bus, dev, mmio32 {
+macro   find_mmio32 bus, dev, io {
 
-        local   .check, .got
+        local   .check, .inc, .got
 
-        xor     eax, eax
         mov     esi, PCI_BASE_ADDRESS_0
-        movzx   ecx, bus
-        movzx   edx, dev
   .check:
-        stdcall PciRead32, ecx ,edx ,esi
+        stdcall PciRead32, bus, dev, esi
 
-        test    eax, not PCI_BASE_ADDRESS_IO_MASK
-        jz      .got
+        test    eax, PCI_BASE_ADDRESS_SPACE_IO  ; mmio address?
+        jnz     .inc
 
+        test    eax, 100b       ; 64 bit?
+        jnz     .inc
+        and     eax, not 1111b
+        jmp     .got
+
+  .inc:
         add     esi, 4
         cmp     esi, PCI_BASE_ADDRESS_5
-        jle     .check
-
+        jbe     .check
         xor     eax, eax
+
   .got:
-        mov     mmio32, eax
+        mov     io, eax
 
 }
 
