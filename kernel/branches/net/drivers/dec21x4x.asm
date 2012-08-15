@@ -320,7 +320,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF  2,"Loading dec21x4x driver\n"
+        DEBUGF  2,"Loading %s driver\n", my_service
         stdcall RegService, my_service, service_proc
         ret
 
@@ -530,16 +530,16 @@ probe:
 
         DEBUGF  1,"Vendor id: 0x%x\n", ax
 
-        cmp     ax , 0x1011
+        cmp     ax, 0x1011
         jne     .notfound
         shr     eax, 16
 
         DEBUGF  1,"Vendor ok!, device id: 0x%x\n", ax                 ; TODO: use another method to detect chip!
 
-        cmp     ax , 0x0009
+        cmp     ax, 0x0009
         je      .supported_device
 
-        cmp     ax , 0x0019
+        cmp     ax, 0x0019
         je      .supported_device2
 
   .notfound:
@@ -637,11 +637,11 @@ reset:
         push    edx                    ;;
   .loop_rx_des:
         add     edx, DES.size
-        mov     [edi+DES.DES0], DES0_OWN                        ; hardware owns buffer
-        mov     [edi+DES.DES1], 1984+RDES1_RCH                  ; only size of first buffer, chained buffers
-        mov     [edi+DES.DES2], esi                             ; hw buffer address
-        mov     [edi+DES.DES3], edx                             ; pointer to next descriptor
-        mov     [edi+DES.realaddr], eax                         ; virtual buffer address
+        mov     [edi + DES.DES0], DES0_OWN              ; hardware owns buffer
+        mov     [edi + DES.DES1], 1984 + RDES1_RCH      ; only size of first buffer, chained buffers
+        mov     [edi + DES.DES2], esi                   ; hw buffer address
+        mov     [edi + DES.DES3], edx                   ; pointer to next descriptor
+        mov     [edi + DES.realaddr], eax               ; virtual buffer address
 
         DEBUGF  1,"RX desc %u, buff addr: %x, next desc: %x, real buff addr: %x, real descr addr: %x \n", ecx, esi, edx, eax, edi
 
@@ -653,9 +653,9 @@ reset:
 
 ; set last descriptor as LAST
         sub     edi, DES.size
-        or      [edi+DES.DES1], RDES1_RER       ; EndOfRing
-        pop     edx                     ;;
-        mov     [edi+DES.DES3], edx     ;;
+        or      [edi + DES.DES1], RDES1_RER     ; EndOfRing
+        pop     edx
+        mov     [edi + DES.DES3], edx
 
 ;---------------------
 ; Setup TX descriptors
@@ -671,14 +671,14 @@ reset:
         mov     edi, [device.tx_p_des]
         mov     ecx, TX_DES_COUNT
 
-        push    edx                    ;;
+        push    edx
   .loop_tx_des:
         add     edx, DES.size
-        mov     [edi+DES.DES0], 0               ; owned by driver
-        mov     [edi+DES.DES1], TDES1_TCH       ; chained method
-        mov     [edi+DES.DES2], esi             ; pointer to buffer
-        mov     [edi+DES.DES3], edx             ; pointer to next descr
-        mov     [edi+DES.realaddr], eax
+        mov     [edi + DES.DES0], 0             ; owned by driver
+        mov     [edi + DES.DES1], TDES1_TCH     ; chained method
+        mov     [edi + DES.DES2], esi           ; pointer to buffer
+        mov     [edi + DES.DES3], edx           ; pointer to next descr
+        mov     [edi + DES.realaddr], eax
 
         DEBUGF  1,"TX desc %u, buff addr: %x, next desc: %x, real buff addr: %x, real descr addr: %x \n", ecx, esi, edx, eax, edi
 
@@ -690,9 +690,9 @@ reset:
         
 ; set last descriptor as LAST
         sub     edi, DES.size
-        or      [edi+DES.DES1], TDES1_TER       ; EndOfRing
-        pop     edx                            ;;;
-        mov     [edi+DES.DES3], edx            ;;;
+        or      [edi + DES.DES1], TDES1_TER     ; EndOfRing
+        pop     edx
+        mov     [edi + DES.DES3], edx
 
 ;------------------
 ; Reset descriptors
@@ -864,13 +864,13 @@ Send_Setup_Packet:
 
 ; setup descriptor
         DEBUGF  1,"setting up descriptor\n"
-        mov     [edi+DES.DES1], TDES1_IC+TDES1_SET+TDES1_TCH+192        ; size must be EXACTLY 192 bytes
-        mov     [edi+DES.DES0], DES0_OWN
+        mov     [edi + DES.DES1], TDES1_IC + TDES1_SET + TDES1_TCH + 192        ; size must be EXACTLY 192 bytes
+        mov     [edi + DES.DES0], DES0_OWN
 
-        DEBUGF  1,"TDES0: %x\n", [edi+DES.DES0]:8
-        DEBUGF  1,"TDES1: %x\n", [edi+DES.DES1]:8
-        DEBUGF  1,"TDES2: %x\n", [edi+DES.DES2]:8
-        DEBUGF  1,"TDES3: %x\n", [edi+DES.DES3]:8
+        DEBUGF  1,"TDES0: %x\n", [edi + DES.DES0]:8
+        DEBUGF  1,"TDES1: %x\n", [edi + DES.DES1]:8
+        DEBUGF  1,"TDES2: %x\n", [edi + DES.DES2]:8
+        DEBUGF  1,"TDES3: %x\n", [edi + DES.DES3]:8
 
 ; go to next descriptor
         inc     [device.tx_wr_des]
