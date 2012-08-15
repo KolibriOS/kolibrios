@@ -111,14 +111,14 @@ struct  TCP_SOCKET              IP_SOCKET
 
 
 ;---------
-; RFC 1323                           ; the order of next 4 elements may not change
+; RFC 1323                              ; the order of next 4 elements may not change
 
         SND_SCALE               db ?
         RCV_SCALE               db ?
         requested_s_scale       db ?
         request_r_scale         db ?
 
-        ts_recent               dd ?
+        ts_recent               dd ?    ; a copy of the most-recent valid timestamp from the other end
         ts_recent_age           dd ?
         last_ack_sent           dd ?
 
@@ -133,6 +133,7 @@ struct  TCP_SOCKET              IP_SOCKET
 ; extra
 
         sendalot                db ? ; also used as 'need output'
+        ts_ecr                  dd ? ; timestamp echo reply
 
 ends
 

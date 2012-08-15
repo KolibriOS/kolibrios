@@ -29,8 +29,8 @@ ends
 
 align 4
 uglobal
-        UDP_PACKETS_TX          rd  MAX_IP
-        UDP_PACKETS_RX          rd  MAX_IP
+        UDP_PACKETS_TX          rd  MAX_NET_DEVICES
+        UDP_PACKETS_RX          rd  MAX_NET_DEVICES
 endg
 
 
@@ -45,7 +45,7 @@ macro   UDP_init {
 
         xor     eax, eax
         mov     edi, UDP_PACKETS_TX
-        mov     ecx, 2*MAX_IP
+        mov     ecx, 2*MAX_NET_DEVICES
         rep     stosd
 }
 

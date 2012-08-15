@@ -100,8 +100,8 @@ ends
 
 align 4
 uglobal
-        ICMP_PACKETS_TX         rd MAX_IP
-        ICMP_PACKETS_RX         rd MAX_IP
+        ICMP_PACKETS_TX         rd MAX_NET_DEVICES
+        ICMP_PACKETS_RX         rd MAX_NET_DEVICES
 endg
 
 
@@ -116,7 +116,7 @@ macro ICMP_init {
 
         xor     eax, eax
         mov     edi, ICMP_PACKETS_TX
-        mov     ecx, 2*MAX_IP
+        mov     ecx, 2*MAX_NET_DEVICES
         rep     stosd
 
 }

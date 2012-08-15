@@ -19,8 +19,6 @@
 $Revision$
 
 MAX_FRAGMENTS                   = 64
-MAX_IP                          = MAX_NET_DEVICES
-IP_MAX_INTERFACES               = MAX_IP
 
 struct  IPv4_header
 
@@ -60,14 +58,14 @@ ends
 align 4
 uglobal
 
-        IP_LIST         rd MAX_IP
-        SUBNET_LIST     rd MAX_IP
-        DNS_LIST        rd MAX_IP
-        GATEWAY_LIST    rd MAX_IP
-        BROADCAST_LIST  rd MAX_IP
+        IP_LIST         rd MAX_NET_DEVICES
+        SUBNET_LIST     rd MAX_NET_DEVICES
+        DNS_LIST        rd MAX_NET_DEVICES
+        GATEWAY_LIST    rd MAX_NET_DEVICES
+        BROADCAST_LIST  rd MAX_NET_DEVICES
 
-        IP_PACKETS_TX   rd MAX_IP
-        IP_PACKETS_RX   rd MAX_IP
+        IP_PACKETS_TX   rd MAX_NET_DEVICES
+        IP_PACKETS_RX   rd MAX_NET_DEVICES
 
         FRAGMENT_LIST   rb MAX_FRAGMENTS * sizeof.FRAGMENT_slot
 endg
@@ -84,7 +82,7 @@ macro   IPv4_init {
 
         xor     eax, eax
         mov     edi, IP_LIST
-        mov     ecx, 7*MAX_IP + (sizeof.FRAGMENT_slot*MAX_FRAGMENTS)/4
+        mov     ecx, 7*MAX_NET_DEVICES + (sizeof.FRAGMENT_slot*MAX_FRAGMENTS)/4
         rep     stosd
 
 }
@@ -317,12 +315,12 @@ IPv4_input:                                                     ; TODO: add IPv4
 
   .has_fragments:
         movzx   eax, [edx + IPv4_header.FlagsAndFragmentOffset]
-        xchg    al , ah
-        shl     ax , 3
+        xchg    al, ah
+        shl     ax, 3
 
         DEBUGF  1,"IPv4_input: fragmented packet offset=%u id=%x\n", ax, [edx + IPv4_header.Identification]:4
 
-        test    ax , ax                                         ; Is this the first packet of the fragment?
+        test    ax, ax                                          ; Is this the first packet of the fragment?
         jz      .is_first_fragment
 
 
@@ -375,7 +373,7 @@ IPv4_input:                                                     ; TODO: add IPv4
 
   .found_free_slot:                                             ; We found a free slot, let's fill in the FRAGMENT_slot structure
         mov     [esi + FRAGMENT_slot.ttl], 15                   ; RFC recommends 15 secs as ttl
-        mov     ax , [edx + IPv4_header.Identification]
+        mov     ax, [edx + IPv4_header.Identification]
         mov     [esi + FRAGMENT_slot.id], ax
         mov     eax,[edx + IPv4_header.SourceAddress]
         mov     [esi + FRAGMENT_slot.SrcIP], eax
@@ -431,16 +429,16 @@ IPv4_input:                                                     ; TODO: add IPv4
         mov     [esi + FRAGMENT_entry.Owner], ebx
 
         mov     cx, [edx + IPv4_header.TotalLength]                            ; Note: This time we dont substract Header length
-        xchg    cl , ch
+        xchg    cl, ch
         DEBUGF  1,"IPv4_input: Packet size=%u\n", cx
-        add     ax , cx
+        add     ax, cx
         DEBUGF  1,"IPv4_input: Total Received data size=%u\n", eax
 
         push    eax
-        mov     ax , [edx + IPv4_header.FlagsAndFragmentOffset]
-        xchg    al , ah
-        shl     ax , 3
-        add     cx , ax
+        mov     ax, [edx + IPv4_header.FlagsAndFragmentOffset]
+        xchg    al, ah
+        shl     ax, 3
+        add     cx, ax
         pop     eax
         DEBUGF  1,"IPv4_input: Total Fragment size=%u\n", ecx
 
@@ -455,18 +453,18 @@ IPv4_input:                                                     ; TODO: add IPv4
         mov     edx, [esp+4]                                                            ; Get pointer to first fragment entry back in edx
 
   .rebuild_packet_loop:
-        movzx   ecx, [edx + sizeof.FRAGMENT_entry + IPv4_header.FlagsAndFragmentOffset]   ; Calculate the fragment offset
-        xchg    cl , ch                                                                 ;  intel byte order
-        shl     cx , 3                                                                  ;   multiply by 8 and clear first 3 bits
+        movzx   ecx, [edx + sizeof.FRAGMENT_entry + IPv4_header.FlagsAndFragmentOffset] ; Calculate the fragment offset
+        xchg    cl, ch                                                                  ;  intel byte order
+        shl     cx, 3                                                                   ;   multiply by 8 and clear first 3 bits
         DEBUGF  1,"IPv4_input: Fragment offset=%u\n", cx
 
         lea     edi, [eax + ecx]                                                        ; Notice that edi will be equal to eax for first fragment
-        movzx   ebx, [edx + sizeof.FRAGMENT_entry + IPv4_header.VersionAndIHL]            ; Find header size (in ebx) of fragment
-        and     bx , 0x000F                                                             ;
-        shl     bx , 2                                                                  ;
+        movzx   ebx, [edx + sizeof.FRAGMENT_entry + IPv4_header.VersionAndIHL]          ; Find header size (in ebx) of fragment
+        and     bx, 0x000F                                                              ;
+        shl     bx, 2                                                                   ;
 
-        lea     esi, [edx + sizeof.FRAGMENT_entry]                                        ; Set esi to the correct begin of fragment
-        movzx   ecx, [edx + sizeof.FRAGMENT_entry + IPv4_header.TotalLength]              ; Calculate total length of fragment
+        lea     esi, [edx + sizeof.FRAGMENT_entry]                                      ; Set esi to the correct begin of fragment
+        movzx   ecx, [edx + sizeof.FRAGMENT_entry + IPv4_header.TotalLength]            ; Calculate total length of fragment
         xchg    cl, ch                                                                  ;  intel byte order
 
         cmp     edi, eax                                                                ; Is this packet the first fragment ?
@@ -527,7 +525,7 @@ IPv4_find_fragment_slot:
 ;;; TODO: the RFC says we should check protocol number too
 
         push    eax ebx ecx edx
-        mov     ax , [edx + IPv4_header.Identification]
+        mov     ax, [edx + IPv4_header.Identification]
         mov     ecx, MAX_FRAGMENTS
         mov     esi, FRAGMENT_LIST
         mov     ebx, [edx + IPv4_header.SourceAddress]
@@ -542,10 +540,8 @@ IPv4_find_fragment_slot:
   .try_next:
         add     esi, sizeof.FRAGMENT_slot
         loop    .find_slot
-;        pop     edx ebx
-        or      esi, -1
-;        ret
 
+        or      esi, -1
   .found_slot:
         pop     edx ecx ebx eax
         ret
@@ -869,7 +865,7 @@ IPv4_dest_to_dev:
         je      .broadcast
 
         xor     edi, edi
-        mov     ecx, MAX_IP
+        mov     ecx, MAX_NET_DEVICES
   .loop:
         mov     ebx, [IP_LIST+edi]
         and     ebx, [SUBNET_LIST+edi]

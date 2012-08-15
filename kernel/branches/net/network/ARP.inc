@@ -60,7 +60,7 @@ uglobal
 
         NumARP          dd ?
 
-        ARP_table       rb ARP_TABLE_SIZE * sizeof.ARP_entry
+        ARP_table       rb ARP_TABLE_SIZE * sizeof.ARP_entry    ; TODO: separate ARP table and stats per interface
 
         ARP_PACKETS_TX  rd MAX_NET_DEVICES
         ARP_PACKETS_RX  rd MAX_NET_DEVICES

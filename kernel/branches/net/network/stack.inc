@@ -118,6 +118,8 @@ API_TCP                 = 4
 API_ARP                 = 5
 API_PPPOE               = 6
 
+HWACC_TCP_IPv4          = 1 shl 0
+
 struct  NET_DEVICE
 
         type            dd ?    ; Type field

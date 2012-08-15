@@ -96,10 +96,10 @@ ends
 
 align 4
 uglobal
-        TCP_segments_tx         rd IP_MAX_INTERFACES
-        TCP_segments_rx         rd IP_MAX_INTERFACES
-        TCP_bytes_rx            rq IP_MAX_INTERFACES
-        TCP_bytes_tx            rq IP_MAX_INTERFACES
+        TCP_segments_tx         rd MAX_NET_DEVICES
+        TCP_segments_rx         rd MAX_NET_DEVICES
+        TCP_bytes_rx            rq MAX_NET_DEVICES
+        TCP_bytes_tx            rq MAX_NET_DEVICES
         TCP_sequence_num        dd ?
 endg
 
@@ -115,7 +115,7 @@ macro   TCP_init {
 
         xor     eax, eax
         mov     edi, TCP_segments_tx
-        mov     ecx, (6*IP_MAX_INTERFACES)
+        mov     ecx, (6*MAX_NET_DEVICES)
         rep     stosd
 
         pseudo_random   eax
