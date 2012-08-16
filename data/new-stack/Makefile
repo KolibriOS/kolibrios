@@ -146,6 +146,7 @@ FASM_PROGRAMS:=\
  drivers/rtl8139.obj:DRIVERS/RTL8139.OBJ:$(KERNEL)/drivers/RTL8139.asm \
  drivers/rtl8169.obj:DRIVERS/RTL8169.OBJ:$(KERNEL)/drivers/RTL8169.asm \
  drivers/sis900.obj:DRIVERS/SIS900.OBJ:$(KERNEL)/drivers/sis900.asm \
+ drivers/i8254x.obj:DRIVERS/I8254X.OBJ:$(KERNEL)/drivers/i8254x.asm \
 # end of list
 
 # The list of files which should be copied from somewhere.
