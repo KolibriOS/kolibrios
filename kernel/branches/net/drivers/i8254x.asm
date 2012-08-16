@@ -260,6 +260,9 @@ virtual at ebx
         .pci_dev        dd ?
         .irq_line       db ?
 
+        .cur_tx         dd ?
+        .last_tx        dd ?
+
                         rb 0x100 - (($ - device) and 0xff)
         .rx_desc        rd 256/8
 
@@ -409,6 +412,8 @@ proc service_proc stdcall, ioctl:dword
         mov     [device_list+4*eax], ebx                                ; (IRQ handler uses this list to find device)
         inc     [devices]                                               ;
 
+        call    start_i8254x
+
         mov     [device.type], NET_TYPE_ETH
         call    NetRegDev
 
@@ -493,7 +498,7 @@ probe:
   @@:
 
 
-reset:
+reset_dontstart:
         DEBUGF  1,"Reset\n"
 
         mov     esi, [device.mmio_addr]
@@ -549,6 +554,11 @@ reset:
         mov     dword [esi + REG_TIPG], 0x0060200A      ; IPGT 10, IPGR1 8, IPGR2 6
 
         xor     eax, eax
+        ret
+
+start_i8254x:
+
+        xor     eax, eax
         mov     [esi + REG_RDTR], eax                   ; Clear the Receive Delay Timer Register
         mov     [esi + REG_RADV], eax                   ; Clear the Receive Interrupt Absolute Delay Timer
         mov     [esi + REG_RSRPD], eax                  ; Clear the Receive Small Packet Detect Interrupt
@@ -559,6 +569,13 @@ reset:
         mov     [device.mtu], 1514
 
         xor     eax, eax
+        ret
+
+align 4
+reset:
+        call    reset_dontstart
+        call    start_i8254x
+
         ret
 
 
@@ -625,6 +642,7 @@ transmit:
         jg      .fail
         cmp     dword [esp + 8], 60
         jl      .fail
+
 
 ; Program the descriptor (use legacy mode)
         lea     edi, [device.tx_desc]                   ; Transmit Descriptor Base Address
@@ -694,10 +712,16 @@ int_handler:
         push    eax
         push    .retaddr
 
-        movzx   ecx, word [device.rx_desc + 8]          ; Get the packet length
+; Get last descriptor addr
+        lea     esi, [device.rx_desc]
+
+        cmp     byte [esi + 12], 0                      ; Check status field
+        je      .retaddr
+
+        movzx   ecx, word [esi + 8]                     ; Get the packet length
         DEBUGF  2,"got %u bytes\n", ecx
         push    ecx
-        push    [device.rx_desc + 16]                   ; Get packet pointer
+        push    dword [esi + 16]                        ; Get packet pointer
 
 ; Update stats
         add     dword [device.bytes_rx], ecx
@@ -706,9 +730,9 @@ int_handler:
 
 ; allocate new descriptor
         stdcall KernelAlloc, 48*1024
-        mov     dword [device.rx_desc + 16], eax
+        mov     dword [esi + 16], eax
         GetRealAddr
-        mov     dword [device.rx_desc], eax
+        mov     dword [esi], eax
 
 ; reset descriptor status
         mov     esi, [device.mmio_addr]
@@ -738,7 +762,10 @@ int_handler:
         jz      .no_tx
 
         DEBUGF  2,"Transmit done\n"
-        ; TODO: clear up used buffers
+
+        lea     edi, [device.tx_desc]                   ; Transmit Descriptor Base Address
+        push    dword [edi + 16]                        ; Store the data location (for driver)
+        call    KernelFree
 
   .no_tx:
   .fail:
@@ -754,7 +781,7 @@ align 4
 
 devices         dd 0
 version         dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
-my_service      db 'I8254X',0                    ; max 16 chars include zero
+my_service      db 'I8254X',0                   ; max 16 chars include zero
 
 include_debug_strings                           ; All data wich FDO uses will be included here
 
