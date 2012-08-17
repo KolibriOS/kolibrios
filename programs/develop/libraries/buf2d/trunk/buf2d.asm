@@ -1747,21 +1747,67 @@ align 4
 proc buf_img_wdiv2, buf_struc:dword
 	pushad
 	mov edi,dword[buf_struc]
+	cmp buf2d_bits,8
+	jne @f
+		mov eax,buf2d_w
+		mov ecx,buf2d_h
+		imul ecx,eax
+		stdcall img_8b_wdiv2, buf2d_data,ecx
+	@@:
 	cmp buf2d_bits,24
-	jne .end_draw_24
+	jne @f
 		mov eax,buf2d_w
 		mov ecx,buf2d_h
 		imul ecx,eax
 		stdcall img_rgb24_wdiv2, buf2d_data,ecx
-	.end_draw_24:
+	@@:
 	cmp buf2d_bits,32
-	jne .end_draw_32
+	jne @f
 		mov eax,buf2d_w
 		mov ecx,buf2d_h
 		imul ecx,eax
-		stdcall img_rgb32_wdiv2, buf2d_data,ecx
-	.end_draw_32:
+		stdcall img_rgba32_wdiv2, buf2d_data,ecx
+	@@:
 	popad
+	ret
+endp
+
+;input:
+;data_8b - pointer to rgb data
+;size - count img pixels (size img data / 3(rgb) )
+align 4
+proc img_8b_wdiv2 data_8b:dword, size:dword
+	mov eax,dword[data_8b]
+	mov ecx,dword[size] ;ecx = size
+	cld
+	@@: ;затемнение цвета пикселей
+		shr byte[eax],1
+		inc eax
+		loop @b
+
+	mov eax,dword[data_8b]
+	mov ecx,dword[size] ;ecx = size
+	shr ecx,1
+	@@: ;сложение цветов пикселей
+		mov bl,byte[eax+1] ;копируем цвет соседнего пикселя
+		add byte[eax],bl
+		add eax,2
+		loop @b
+
+	mov eax,dword[data_8b]
+	inc eax
+	mov ebx,eax
+	inc ebx
+	mov ecx,dword[size] ;ecx = size
+	shr ecx,1
+	dec ecx ;лишний пиксель
+	@@: ;поджатие пикселей
+		mov dl,byte[ebx]
+		mov byte[eax],dl
+
+		inc eax
+		add ebx,2
+		loop @b
 	ret
 endp
 
@@ -1810,13 +1856,13 @@ proc img_rgb24_wdiv2 data_rgb:dword, size:dword
 endp
 
 ;input:
-;data_rgb - pointer to rgb data
-;size - count img pixels (size img data / 3(rgb) )
+;data_rgba - pointer to rgba data
+;size - count img pixels (size img data / 4(rgba) )
 align 4
-proc img_rgb32_wdiv2 data_rgb:dword, size:dword
-	mov eax,dword[data_rgb]
+proc img_rgba32_wdiv2 data_rgba:dword, size:dword
+	mov eax,dword[data_rgba]
 
-	mov eax,dword[data_rgb]
+	mov eax,dword[data_rgba]
 	mov ebx,eax
 	add ebx,4
 	mov ecx,dword[size] ;ecx = size
@@ -1828,7 +1874,7 @@ proc img_rgb32_wdiv2 data_rgb:dword, size:dword
 		add ebx,8
 		loop @b
 
-	mov eax,dword[data_rgb]
+	mov eax,dword[data_rgba]
 	add eax,4
 	mov ebx,eax
 	add ebx,4
@@ -1849,22 +1895,92 @@ align 4
 proc buf_img_hdiv2, buf_struc:dword
 	pushad
 	mov edi,dword[buf_struc]
+	cmp buf2d_bits,8
+	jne @f
+		mov eax,buf2d_w
+		mov ecx,buf2d_h
+		imul ecx,eax
+		stdcall img_8b_hdiv2, buf2d_data,ecx,eax
+	@@:
 	cmp buf2d_bits,24
-	jne .end_draw_24
+	jne @f
 		mov eax,buf2d_w
 		mov ecx,buf2d_h
 		imul ecx,eax
 		stdcall img_rgb24_hdiv2, buf2d_data,ecx,eax
-	.end_draw_24:
+	@@:
 	cmp buf2d_bits,32
-	jne .end_draw_32
+	jne @f
 		mov eax,buf2d_w
 		mov ecx,buf2d_h
 		imul ecx,eax
 		shl eax,2
-		stdcall img_rgb32_hdiv2, buf2d_data,ecx,eax
-	.end_draw_32:
+		stdcall img_rgba32_hdiv2, buf2d_data,ecx,eax
+	@@:
 	popad
+	ret
+endp
+
+;input:
+;data_8b - pointer to 8 bit data
+;size - count img pixels (size img data)
+;size_w - width img in pixels
+align 4
+proc img_8b_hdiv2, data_8b:dword, size:dword, size_w:dword
+
+	mov eax,dword[data_8b] ;eax =
+	mov ecx,dword[size]
+	cld
+	@@: ;затемнение цвета пикселей
+		shr byte[eax],1
+		inc eax
+		loop @b
+
+	mov eax,dword[data_8b] ;eax =
+	mov esi,dword[size_w]
+	mov ebx,esi
+	add ebx,eax
+	mov ecx,dword[size]  ;ecx = size
+	shr ecx,1
+	xor edi,edi
+	@@: ;сложение цветов пикселей
+		mov dl,byte[ebx] ;копируем цвет нижнего пикселя
+		add byte[eax],dl
+
+		inc eax
+		inc ebx
+		inc edi
+		cmp edi,dword[size_w]
+		jl .old_line
+			add eax,esi
+			add ebx,esi
+			xor edi,edi
+		.old_line:
+		loop @b
+
+
+	mov eax,dword[data_8b] ;eax =
+	add eax,esi ;esi = width*3(rgb)
+	mov ebx,eax
+	add ebx,esi
+	mov ecx,dword[size] ;ecx = size
+	shr ecx,1
+	sub ecx,dword[size_w] ;лишняя строка пикселей
+	xor edi,edi
+	@@: ;поджатие пикселей
+		mov dl,byte[ebx] ;копируем цвет нижнего пикселя
+		mov byte[eax],dl
+
+		inc eax
+		inc ebx
+		inc edi
+		cmp edi,dword[size_w]
+		jl .old_line_2
+			add ebx,esi
+			xor edi,edi
+		.old_line_2:
+		loop @b
+
 	ret
 endp
 
@@ -1938,13 +2054,13 @@ proc img_rgb24_hdiv2, data_rgb:dword, size:dword, size_w:dword
 endp
 
 ;input:
-;data_rgb - pointer to rgb data
-;size - count img pixels (size img data / 3(rgb) )
+;data_rgba - pointer to rgba data
+;size - count img pixels (size img data / 4(rgba) )
 ;size_w_b - width img in bytes
 align 4
-proc img_rgb32_hdiv2, data_rgb:dword, size:dword, size_w_b:dword
+proc img_rgba32_hdiv2, data_rgba:dword, size:dword, size_w_b:dword
 
-	mov eax,dword[data_rgb] ;eax =
+	mov eax,dword[data_rgba] ;eax =
 	mov ebx,dword[size_w_b]
 	add ebx,eax
 	mov ecx,dword[size]  ;ecx = size
@@ -1966,7 +2082,7 @@ proc img_rgb32_hdiv2, data_rgb:dword, size:dword, size_w_b:dword
 		loop @b
 
 
-	mov eax,dword[data_rgb] ;eax =
+	mov eax,dword[data_rgba] ;eax =
 	mov ebx,dword[size_w_b]
 	add eax,ebx
 	add ebx,eax
@@ -2012,6 +2128,8 @@ endl
 	movzx esi,byte[ebx+3]
 	cmp esi,255
 	je .c1z
+	cmp edi,esi
+	je .c0_c1
 
 	;переворачиваем значения прозрачностей
 	neg edi
@@ -2072,6 +2190,17 @@ push eax ebx
 pop ebx eax
 
 	jmp .end_f
+	.c0_c1: ;если прозрачности обоих цветов совпадают
+		mov edx,dword[eax]
+		shr edx,1
+		and edx,011111110111111101111111b
+		mov esi,dword[ebx]
+		shr esi,1
+		and esi,011111110111111101111111b
+		add edx,esi
+		ror edi,8 ;перемещаем значение прозрачности в старший байт edi
+		or edx,edi
+		jmp .end_f
 	.c0z: ;если цвет в eax прозрачный
 		mov edx,dword[ebx]
 		movzx edi,byte[ebx+3]
@@ -2423,7 +2552,7 @@ combine_colors_0:
 align 4
 proc buf_bit_blt_transp, buf_destination:dword, coord_x:dword, coord_y:dword, buf_source:dword
 	locals
-		right_bytes dd ?
+		lost_bytes dd ?
 	endl
 	pushad
 
@@ -2476,21 +2605,48 @@ proc buf_bit_blt_transp, buf_destination:dword, coord_x:dword, coord_y:dword, bu
 		sub ebx,eax
 		mov edi,ecx ;edi указатель на данные буфера, куда будет производится копирование
 
-	mov [right_bytes],0
+	mov dword[lost_bytes],0
 	mov ecx,[coord_x]
+	cmp ecx,0
+	jge @f
+		neg ecx
+		;inc ecx
+		cmp eax,ecx ;eax - ширина копируемой картинки
+		jle .copy_end ;если копируемое изображение находится полностью за левой границей буфера (coord_x<0 и |coord_x|>buf_source.w)
+		shl ecx,2
+		mov [lost_bytes],ecx
+		add esi,ecx
+		shr ecx,2
+		sub eax,ecx ;укорачиваем копируемую строку
+		add ebx,ecx ;удлинняем строку для сдвига главной картинки буфера
+		lea ecx,[ecx+ecx*2]
+		add edi,ecx ;edi указатель на данные буфера, куда будет производится копирование
+		xor ecx,ecx
+	@@:
 	cmp ecx,ebx
-	jl @f
+	jle @f
 		sub ecx,ebx
 		sub eax,ecx ;укорачиваем копируемую строку
 		add ebx,ecx ;удлинняем строку для сдвига главной картинки буфера
-		shl ecx,2 ;ecx - число байт в 1-й строке картинки, которые вылазят за правую сторону
-		mov [right_bytes],ecx
+		shl ecx,2 ;ecx - число пикселей в 1-й строке картинки, которые вылазят за правую сторону
+		add [lost_bytes],ecx
 	@@:
+
+;	mov [right_bytes],0
+;	mov ecx,[coord_x]
+;	cmp ecx,ebx
+;	jl @f
+;		sub ecx,ebx
+;		sub eax,ecx ;укорачиваем копируемую строку
+;		add ebx,ecx ;удлинняем строку для сдвига главной картинки буфера
+;		shl ecx,2 ;ecx - число байт в 1-й строке картинки, которые вылазят за правую сторону
+;		mov [right_bytes],ecx
+;	@@:
 
 	lea ebx,[ebx+ebx*2] ;колличество байт в 1-й строке буфера минус число байт в 1-й строке копируемой картинки
 
 	cld
-	cmp [right_bytes],0
+	cmp [lost_bytes],0
 	jg .copy_1
 	.copy_0: ;простое копирование
 		mov ecx,eax
@@ -2512,7 +2668,7 @@ proc buf_bit_blt_transp, buf_destination:dword, coord_x:dword, coord_y:dword, bu
 			add esi,4
 			loop @b
 		add edi,ebx
-		add esi,[right_bytes] ;добавляем байты, которые вылазят за правую границу
+		add esi,[lost_bytes] ;добавляем байты, которые вылазят за правую границу
 		dec edx
 		cmp edx,0
 		jg .copy_1
@@ -2632,7 +2788,7 @@ proc buf_bit_blt_alpha, buf_destination:dword, coord_x:dword, coord_y:dword, buf
 		;inc ecx
 		cmp eax,ecx ;eax - ширина копируемой картинки
 		jle .copy_end ;если копируемое изображение находится полностью за левой границей буфера (coord_x<0 и |coord_x|>buf_source.w)
-		add [lost_bytes],ecx
+		mov [lost_bytes],ecx
 		sub eax,ecx ;укорачиваем копируемую строку
 		add ebx,ecx ;удлинняем строку для сдвига главной картинки буфера
 		add esi,ecx
