@@ -41,7 +41,9 @@ macro   find_io bus, dev, io {
         movzx   ecx, bus
         movzx   edx, dev
   .check:
+        push    ecx edx
         stdcall PciRead32, ecx ,edx ,esi
+        pop     edx ecx
 
         test    eax, PCI_BASE_ADDRESS_IO_MASK
         jz      .inc
