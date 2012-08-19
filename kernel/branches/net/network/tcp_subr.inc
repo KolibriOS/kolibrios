@@ -82,7 +82,7 @@ macro   TCP_rcvseqinit ptr {
 
 
 
-macro TCP_init_socket socket {
+macro   TCP_init_socket socket {
 
         mov     [socket + TCP_SOCKET.t_maxseg], TCP_mss_default
         mov     [socket + TCP_SOCKET.t_flags], 0                ; we could also request scale and timestamp
@@ -487,3 +487,13 @@ macro TCP_set_persist socket {
 ;        tp->t_rxtshift++;
 
 }
+
+; eax = rtt
+; ebx = socket ptr
+
+align 4
+TCP_xmit_timer:
+
+;TODO: update srtt and rttvar
+
+ret
