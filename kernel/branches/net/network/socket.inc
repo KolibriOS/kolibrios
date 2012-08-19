@@ -299,6 +299,13 @@ SOCKET_open:
         je      .raw
 
   .no_inet4:
+        cmp     ecx, AF_PPP
+        jne     .no_ppp
+
+        cmp     esi, PPP_PROTO_ETHERNET
+        je      .pppoe
+
+  .no_ppp:
         ret
 
 align 4
@@ -347,6 +354,15 @@ align 4
         mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
         ret
 
+align 4
+  .pppoe:
+        push    eax
+        init_queue (eax + SOCKET_QUEUE_LOCATION)        ; Set up data receiving queue
+        pop     eax
+
+        mov     [eax + SOCKET.snd_proc], SOCKET_send_pppoe
+        mov     [eax + SOCKET.rcv_proc], SOCKET_receive_dgram
+        ret
 
 
 ;-----------------------------------------------------------------
@@ -872,6 +888,21 @@ SOCKET_send_icmp:
         ret
 
 
+align 4
+SOCKET_send_pppoe:
+
+        DEBUGF  1,"SOCKET_send: PPPoE\n"
+
+        mov     [esp+32], ecx
+        mov     ebx, [eax + SOCKET.device]
+
+        mov     ecx, esi
+        call    PPPoE_discovery_output
+        cmp     eax, -1
+        je      s_error
+        ret
+
+
 
 
 ;-----------------------------------------------------------------
@@ -1126,7 +1157,6 @@ SOCKET_check_port:
 ; Note: the mutex should already be set !
 ;
 ;  IN:  eax = socket ptr
-;       ebx = pointer to device struct
 ;       ecx = data size
 ;       esi = ptr to data
 ;       [esp] = ptr to buf

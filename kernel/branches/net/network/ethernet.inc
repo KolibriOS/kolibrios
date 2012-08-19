@@ -80,11 +80,11 @@ ETH_input:
 ;        cmp     ax, ETHER_IPv6
 ;        je      IPv6_input
 
-;        cmp     ax, ETHER_PPP_DISCOVERY
-;        je      PPPoE_discovery_input
+        cmp     ax, ETHER_PPP_DISCOVERY
+        je      PPPoE_discovery_input
 
-;        cmp     ax, ETHER_PPP_SESSION
-;        je      PPPoE_session_input
+        cmp     ax, ETHER_PPP_SESSION
+        je      PPPoE_session_input
 
         DEBUGF  2,"ETH_input: Unknown packet type=%x\n", ax
 

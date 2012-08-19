@@ -43,17 +43,24 @@ ETHER_IPv6              = 0xDD86
 ETHER_PPP_DISCOVERY     = 0x6388
 ETHER_PPP_SESSION       = 0x6488
 
+; PPP protocol numbers
+PPP_IPv4                = 0x2100
+
 ;Protocol family
 AF_UNSPEC               = 0
 AF_UNIX                 = 1
 AF_INET4                = 2
 AF_INET6                = 10
+AF_PPP                  = 777
 
 ; Internet protocol numbers
 IP_PROTO_IP             = 0
 IP_PROTO_ICMP           = 1
 IP_PROTO_TCP            = 6
 IP_PROTO_UDP            = 17
+
+; PPP protocol number
+PPP_PROTO_ETHERNET      = 666
 
 ; Socket types
 SOCK_STREAM             = 1
@@ -171,7 +178,7 @@ include "queue.inc"
 include "loopback.inc"
 include "ethernet.inc"
 
-;include "PPPoE.inc"
+include "PPPoE.inc"
 
 include "ARP.inc"
 include "IPv4.inc"
@@ -714,8 +721,8 @@ sys_protocols:
         cmp     ax, API_ARP
         je      ARP_api
 
-;        cmp     ax, API_PPPOE
-;        je      PPPoE_api
+        cmp     ax, API_PPPOE
+        je      PPPoE_api
 
         add     esp, 4                           ; if we reached here, no function was called, so we need to balance stack
 
