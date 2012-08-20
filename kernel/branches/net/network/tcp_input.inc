@@ -130,11 +130,8 @@ TCP_input:
 ; Lock the socket
 
         pusha
-        pushf
-        cli
         lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_lock
-        popf
         popa
 
         DEBUGF  1,"TCP_input: socket locked\n"

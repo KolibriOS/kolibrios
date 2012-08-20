@@ -30,9 +30,6 @@ TCP_output:
 
         DEBUGF 1,"TCP_output: socket=%x\n", eax
 
-        pushf
-        cli
-
         pusha
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_lock
@@ -278,7 +275,6 @@ TCP_output:
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
         popa
-        popf
 
         ret
 
@@ -538,7 +534,7 @@ TCP_send:
 ; unlock socket
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
-        popf
+
         DEBUGF 1,"TCP_send: success!\n"
 
         xor     eax, eax
@@ -555,7 +551,7 @@ TCP_send:
 ; unlock socket
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
-        popf
+
         DEBUGF 1,"TCP_send: IP error\n"
 
         or      eax, -1
@@ -566,7 +562,7 @@ TCP_send:
 ; unlock socket
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock
-        popf
+
         DEBUGF 1,"TCP_send: sending failed\n"
 
         or      eax, -2
