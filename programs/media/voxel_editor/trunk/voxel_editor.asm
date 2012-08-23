@@ -17,7 +17,7 @@ include 'dll.inc'
 include 'vox_draw.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Voxel editor 19.07.12',0 ;подпись окна
+caption db 'Voxel editor 23.08.12',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -36,6 +36,8 @@ fn_toolbar db 'toolbar.png',0
 IMAGE_TOOLBAR_ICON_SIZE equ 16*16*3
 IMAGE_TOOLBAR_SIZE equ IMAGE_TOOLBAR_ICON_SIZE*21
 image_data_toolbar dd 0
+cursors_count equ 4
+IMAGE_CURSORS_SIZE equ 4096*cursors_count ;размер картинки с курсорами
 
 ;значения задаваемые по умолчанию, без ini файла
 ini_def_window_t equ 10
@@ -105,6 +107,8 @@ OT_MAP_X  equ  0
 OT_MAP_Y  equ  0
 OT_CAPT_X_COLOR equ  5 ;отступ для подписи цвета
 OT_CAPT_Y_COLOR equ 30
+PEN_MODE_NONE equ -1
+PEN_MODE_CLEAR equ 0 ;режим стирания
 PEN_MODE_SELECT_COLOR equ 2 ;режим выбора цвета
 
 align 4
@@ -165,6 +169,19 @@ start:
 	add eax,[tile_size]
 	mov [buf_pl.h],eax
 
+	;*** загрузка курсоров
+	load_image_file 'cursors_gr.png',image_data_toolbar,IMAGE_CURSORS_SIZE
+	stdcall [buf2d_create_f_img], buf_curs_8,[image_data_toolbar] ;создаем буфер
+	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
+
+	load_image_file 'cursors.png',image_data_toolbar, IMAGE_CURSORS_SIZE
+	stdcall [buf2d_create_f_img], buf_curs,[image_data_toolbar] ;создаем буфер
+	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
+
+	stdcall [buf2d_conv_24_to_8], buf_curs_8,1 ;делаем буфер прозрачности 8бит
+	stdcall [buf2d_conv_24_to_32],buf_curs,buf_curs_8 ;делаем буфер rgba 32бит
+
+
 	stdcall [buf2d_create], buf_0 ;создание буфера изображения
 	stdcall [buf2d_create], buf_0z ;создание буфера глубины
 	stdcall [buf2d_create], buf_pl ;создание буфера для сечения
@@ -177,6 +194,9 @@ start:
 	mov dword[open_file_vox],eax
 
 	call but_new_file
+
+	;первоначальная установка курсора
+	stdcall set_pen_mode,1,0,((9 shl 8)+9) shl 16 ;pen
 
 align 4
 red_win:
@@ -294,7 +314,7 @@ mouse:
 			div ecx
 			mov [v_cur_x],eax ;X-coord
 
-			cmp dword[v_pen_mode],0
+			cmp dword[v_pen_mode],PEN_MODE_CLEAR
 			jl .end_1
 			cmp dword[v_pen_mode],1
 			jg .end_1
@@ -697,7 +717,7 @@ button:
 	@@:
 	cmp ah,15
 	jne @f
-		mov dword[v_pen_mode],PEN_MODE_SELECT_COLOR
+		stdcall set_pen_mode,PEN_MODE_SELECT_COLOR,3,((9 shl 8)+9) shl 16
 		call draw_palete
 	@@:
 	cmp ah,16
@@ -743,6 +763,8 @@ button:
 		stdcall [buf2d_delete],buf_r_z
 	@@:
 	stdcall [buf2d_vox_brush_delete], buf_vox
+	stdcall [buf2d_delete],buf_curs
+	stdcall [buf2d_delete],buf_curs_8
 	stdcall mem.Free,[image_data_toolbar]
 	stdcall mem.Free,[open_file_vox]
 	mcall -1
@@ -1000,7 +1022,7 @@ align 4
 but_mode_pen:
 	push eax
 	mov eax,dword[v_pen_mode]
-	mov dword[v_pen_mode],1 ;pen
+	stdcall set_pen_mode,1,0,((9 shl 8)+9) shl 16 ;pen
 	cmp eax,PEN_MODE_SELECT_COLOR
 	jne @f
 		call draw_objects
@@ -1012,7 +1034,7 @@ align 4
 but_mode_brush:
 	push eax
 	mov eax,dword[v_pen_mode]
-	mov dword[v_pen_mode],3 ;brush
+	stdcall set_pen_mode,3,1,((9 shl 8)+9) shl 16 ;brush
 	cmp eax,PEN_MODE_SELECT_COLOR
 	jne @f
 		call draw_objects
@@ -1024,7 +1046,7 @@ align 4
 but_mode_clear:
 	push eax
 	mov eax,dword[v_pen_mode]
-	mov dword[v_pen_mode],0 ;clear
+	stdcall set_pen_mode,PEN_MODE_CLEAR,2,((15 shl 8)+9) shl 16
 	cmp eax,PEN_MODE_SELECT_COLOR
 	jne @f
 		call draw_objects
@@ -1308,7 +1330,7 @@ v_cur_x dd 0 ;координата курсора x
 v_cur_y dd 0 ;координата курсора y (но ось в объекте z)
 n_plane dd 0 ;плоскость сечения
 v_color dd 0xff ;цвет карандаша
-v_pen_mode dd 1 ;режим: 0-стирания, 1-рисования
+v_pen_mode dd PEN_MODE_NONE ;режим работы курсора (см. константы PEN_MODE_...)
 mode_light dd 1 ;режим освещения
 cam_x dd 0
 cam_y dd 0
@@ -1463,6 +1485,28 @@ pushad
 	.end_f:
 popad
 	ret
+
+;hot_p - координаты горячей точки курсора, смещенные на бит 16 ((cx shl 8) + cy) shl 16
+align 4
+proc set_pen_mode uses eax ebx ecx edx, mode:dword, icon:dword, hot_p:dword
+	mov eax,[mode]
+	cmp [v_pen_mode],eax
+	je @f
+		mov [v_pen_mode],eax
+		mov edx,[hot_p]
+		mov dx,2 ;LOAD_INDIRECT
+		mov ecx,[icon]
+		shl ecx,12 ;умножаем на 4 кб
+		add ecx,[buf_curs.data]
+		mcall 37,4
+
+		cmp eax,0
+		je @f
+			mov [cursor_pointer],eax
+			mcall 37,5,[cursor_pointer]
+	@@:
+	ret
+endp
 
 if 0
 ;input:
@@ -1859,6 +1903,28 @@ buf_r_img:
 align 4
 buf_r_z:
 	rb BUF_STRUCT_SIZE
+
+align 4
+cursor_pointer dd 0 ;указатель на данные для курсора
+
+buf_curs: ;буфер с курсорами
+.data: dd 0 ;указатель на буфер изображения
+	dw 0 ;+4 left
+	dw 0 ;+6 top
+	dd 32 ;+8 w
+	dd 32*cursors_count ;+12 h
+	dd 0 ;+16 color
+	db 24 ;+20 bit in pixel
+
+align 4
+buf_curs_8: ;буфер с прозрачностью для курсоров
+.data: dd 0 ;указатель на буфер изображения
+	dw 0 ;+4 left
+	dw 0 ;+6 top
+	dd 32 ;+8 w
+	dd 32*cursors_count ;+12 h
+	dd 0 ;+16 color
+	db 24 ;+20 bit in pixel
 
 ;данные для создания минимального единичного вокселя
 align 4
