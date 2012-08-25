@@ -1025,32 +1025,35 @@ transmit:
 align 4
 int_handler:
 
-;       DEBUGF  1,"IRQ %x ",eax:2                   ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
+        DEBUGF  1,"\n%s int\n", my_service
 
 ; find pointer of device wich made IRQ occur
 
-        mov     esi, device_list
         mov     ecx, [devices]
         test    ecx, ecx
-        jz      .abort
+        jz      .nothing
+        mov     esi, device_list
   .nextdevice:
-        mov     ebx, dword [esi]
-        mov     edx, [device.io_addr]     ; get IRQ reason
+        mov     ebx, [esi]
 
+        mov     edx, [device.io_addr]     ; get IRQ reason
         push    ecx
         xor     ecx, ecx ; CSR0
         call    [device.access_read_csr]
         pop     ecx
-
-        test    al , al
+        test    al, al
         js      .got_it
-
+  .continue:
         add     esi, 4
-        loop    .nextdevice
-
+        dec     ecx
+        jnz     .nextdevice
+  .nothing:
         ret                                         ; If no device was found, abort (The irq was probably for a device, not registered to this driver
 
   .got_it:
+
+        DEBUGF  1,"Device: %x Status: %x ", ebx, eax:2
+
 ;-------------------------------------------------------
 ; Possible reasons:
 ; initialization done - ignore

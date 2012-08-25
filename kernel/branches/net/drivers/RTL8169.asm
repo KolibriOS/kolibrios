@@ -1113,33 +1113,32 @@ transmit:
 align 4
 int_handler:
 
-        DEBUGF  1,"IRQ %x ",eax:2
+        DEBUGF  1,"\n%s int\n", my_service
 
 ; find pointer of device wich made IRQ occur
 
         mov     ecx, [devices]
         test    ecx, ecx
-        jz      .fail
+        jz      .nothing
         mov     esi, device_list
   .nextdevice:
-        mov     ebx, dword [esi]
+        mov     ebx, [esi]
 
         set_io  0
         set_io  REG_IntrStatus
         in      ax, dx
-
         test    ax, ax
         jnz     .got_it
-
   .continue:
         add     esi, 4
         dec     ecx
         jnz     .nextdevice
-
+  .nothing:
         ret                                             ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 
   .got_it:
-        DEBUGF  1,"IntrStatus = 0x%x\n",ax
+
+        DEBUGF  1,"Device: %x Status: %x ", ebx, ax
 
         cmp     ax, 0xFFFF      ; if so, hardware is no longer present
         je      .fail

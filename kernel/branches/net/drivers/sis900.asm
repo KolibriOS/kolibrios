@@ -1042,27 +1042,36 @@ transmit:
 ; between multiple descriptors you will lose part of the packet
 ;
 ;***************************************************************************
+
 align 4
 int_handler:
 
+        DEBUGF  1,"\n%s int\n", my_service
+
 ; find pointer of device which made IRQ occur
-        mov     esi, device_list
+
         mov     ecx, [devices]
         test    ecx, ecx
         jz      .nothing
+        mov     esi, device_list
   .nextdevice:
         mov     ebx, [esi]
+
         set_io  0
         set_io  isr
         in      eax, dx                 ; note that this clears all interrupts
         test    ax, IE
         jnz     .got_it
-        loop    .nextdevice
+  .continue:
+        add     esi, 4
+        dec     ecx
+        jnz     .nextdevice
   .nothing:
         ret
+
   .got_it:
 
-        DEBUGF  1,"IRQ! status=%x\n", ax
+        DEBUGF  1,"Device: %x Status: %x ", ebx, ax
 
         test    ax, RxOK
         jz      .no_rx_

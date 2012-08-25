@@ -1099,35 +1099,33 @@ write_mac:
 align 4
 int_handler:
 
-        DEBUGF  1,"\nIRQ %x\n",eax:2                       ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
+        DEBUGF  1,"\n%s int\n", my_service
 
 ; find pointer of device wich made IRQ occur
 
         mov     ecx, [devices]
         test    ecx, ecx
-        jz      .fail
+        jz      .nothing
         mov     esi, device_list
   .nextdevice:
-        mov     ebx, dword [esi]
+        mov     ebx, [esi]
 
         set_io  0
         set_io  ISR
         in      eax, dx
-        out     dx , eax                                ; send it back to ACK
- ;       and     eax,  ; int mask
+        out     dx, eax                                 ; send it back to ACK
         test    eax, eax
         jnz     .got_it
-
   .continue:
         add     esi, 4
         dec     ecx
         jnz     .nextdevice
-
+  .nothing:
         ret                                             ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 
   .got_it:
 
-        DEBUGF  1,"Status=%x\n", eax
+        DEBUGF  1,"Device: %x Status: %x ", ebx, ax
 
         test    ax, RI  ; receive interrupt
         jz      .no_rx

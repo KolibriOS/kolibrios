@@ -682,29 +682,35 @@ transmit:
 ;; Interrupt handler ;;
 ;;                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
+
 align 4
 int_handler:
-        DEBUGF  2,"\nIRQ %x\n", eax:2   ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
 
+        DEBUGF  1,"\n%s int\n", my_service
 ;-------------------------------------------
 ; Find pointer of device wich made IRQ occur
 
-        mov     esi, device_list
         mov     ecx, [devices]
         test    ecx, ecx
-        jz      .fail
+        jz      .nothing
+        mov     esi, device_list
   .nextdevice:
-        mov     ebx, dword [esi]
+        mov     ebx, [esi]
 
         mov     edi, [device.mmio_addr]
-        test    edi, edi
-        jz      .nextdevice
-
-;--------------------
-; Get interrupt cause
-
         mov     eax, [edi + REG_ICR]
-        DEBUGF  2,"interrupt cause=%x\n", eax
+        test    eax, eax
+        jnz     .got_it
+  .continue:
+        add     esi, 4
+        dec     ecx
+        jnz     .nextdevice
+  .nothing:
+        ret
+
+  .got_it:
+
+        DEBUGF  1,"Device: %x Status: %x ", ebx, eax
 
 ;---------
 ; RX done?

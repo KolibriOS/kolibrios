@@ -2658,39 +2658,34 @@ int_vortex:
 align 4
 int_boomerang:
 
-        DEBUGF  1,"\nIRQ %x Boomerang\n",eax:2
+        DEBUGF  1,"\nBoomerang int\n"
 
 ; find pointer of device wich made IRQ occur
 
-        mov     esi, BOOMERANG_LIST
         mov     ecx, [BOOMERANG_DEVICES]
-
         test    ecx, ecx
-        jz      .fail
+        jz      .nothing
+        mov     esi, BOOMERANG_LIST
   .nextdevice:
-        mov     ebx, dword[esi]
+        mov     ebx, [esi]
 
         set_io  0
         set_io  REG_INT_STATUS
         in      ax, dx
-        test    ax, IntLatch
+        test    ax, ax
         jnz     .got_it
-
+  .continue:
         add     esi, 4
-
-        test    ax , ax
-        jnz     .got_it
         dec     ecx
         jnz     .nextdevice
-
-  .fail:
-        DEBUGF  1,"Failed!\n"
+  .nothing:
         ret
 
-.got_it:
+  .got_it:
 
-        DEBUGF  1,"Device: %x Status: %x ", ebx, eax
+        DEBUGF  1,"Device: %x Status: %x ", ebx, ax
         push    ax
+
 ; disable all INTS
 
         set_io  REG_COMMAND

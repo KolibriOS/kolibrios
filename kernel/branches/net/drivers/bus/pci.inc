@@ -13,17 +13,25 @@
 
         PCI_HEADER_TYPE                 = 0x0e          ; 8 bit
         PCI_BASE_ADDRESS_0              = 0x10          ; 32 bit
+        PCI_BASE_ADDRESS_1              = 0x14          ; 32 bits
+        PCI_BASE_ADDRESS_2              = 0x18          ; 32 bits
+        PCI_BASE_ADDRESS_3              = 0x1c          ; 32 bits
+        PCI_BASE_ADDRESS_4              = 0x20          ; 32 bits
         PCI_BASE_ADDRESS_5              = 0x24          ; 32 bits
         PCI_BASE_ADDRESS_SPACE_IO       = 0x01
-        PCI_VENDOR_ID                   = 0x00          ; 16 bit
         PCI_BASE_ADDRESS_IO_MASK        = 0xFFFFFFFC
+        PCI_BASE_ADDRESS_MEM_MASK       = 0xFFFFFFF0
 
 ; PCI programming
 
+        PCI_VENDOR_ID                   = 0x00          ; 16 bit
+        PCI_DEVICE_ID                   = 0x02          ; 16 bits
         PCI_REG_COMMAND                 = 0x4           ; command register
         PCI_REG_STATUS                  = 0x6           ; status register
+        PCI_REVISION_ID                 = 0x08          ; 8 bits
         PCI_REG_LATENCY                 = 0xd           ; latency timer register
         PCI_REG_CAP_PTR                 = 0x34          ; capabilities pointer
+        PCI_REG_IRQ                     = 0x3c
         PCI_REG_CAPABILITY_ID           = 0x0           ; capapility ID in pm register block
         PCI_REG_PM_STATUS               = 0x4           ; power management status register
         PCI_REG_PM_CTRL                 = 0x4           ; power management control register
@@ -90,7 +98,6 @@ macro   find_mmio32 bus, dev, io {
 
   .got:
         mov     io, eax
-
 }
 
 macro   find_irq bus, dev, irq {
@@ -98,7 +105,7 @@ macro   find_irq bus, dev, irq {
         push    eax edx ecx
         movzx   ecx, bus
         movzx   edx, dev
-        stdcall PciRead8, ecx ,edx ,0x3c                                ; 0x3c is the offset where irq can be found
+        stdcall PciRead8, ecx, edx, PCI_REG_IRQ
         mov     irq, al
         pop     ecx edx eax
 

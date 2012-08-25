@@ -14,6 +14,7 @@ include 'bus/pci.inc'
 
         PAGESIZE        = 4096
         PG_SW           = 0x003
+        PG_NOCACHE      = 0x018
 
 
 ; network driver types

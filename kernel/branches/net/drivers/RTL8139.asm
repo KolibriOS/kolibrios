@@ -739,43 +739,41 @@ transmit:
 ;; Interrupt handler ;;
 ;;                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
+
 align 4
 int_handler:
 
-        DEBUGF  1,"\nIRQ %x\n", eax:2                   ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
+        DEBUGF  1,"\n%s int\n", my_service
 
 ; find pointer of device wich made IRQ occur
 
-        mov     esi, device_list
         mov     ecx, [devices]
         test    ecx, ecx
-        jz      .fail
-.nextdevice:
-        mov     ebx, dword [esi]
+        jz      .nothing
+        mov     esi, device_list
+  .nextdevice:
+        mov     ebx, [esi]
 
         set_io  0
         set_io  REG_ISR
-        in      ax , dx
-        out     dx , ax                             ; send it back to ACK
-
-        add     esi, 4
-
-        test    ax , ax
+        in      ax, dx
+        out     dx, ax                              ; send it back to ACK
+        test    ax, ax
         jnz     .got_it
-
+  .continue:
+        add     esi, 4
         dec     ecx
         jnz     .nextdevice
-
+  .nothing:
         ret                                         ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 
   .got_it:
 
-; looks like we've found it!
-
-; Lets found out why the irq occured then..
+        DEBUGF  1,"Device: %x Status: %x ", ebx, ax
 
 ;----------------------------------------------------
 ; Received packet ok?
+
         test    ax, ISR_ROK
         jz      @f
         push    ax

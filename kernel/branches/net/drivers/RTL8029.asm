@@ -735,34 +735,42 @@ transmit:
 ; Interrupt handler
 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 align 4
 int_handler:
 
-        DEBUGF  2,"IRQ %x ",eax:2
+        DEBUGF  1,"\n%s int\n", my_service
 
 ; find pointer of device wich made INT occur
-        mov     esi, device_list
+
         mov     ecx, [devices]
-.nextdevice:
+        test    ecx, ecx
+        jz      .nothing
+        mov     esi, device_list
+  .nextdevice:
         mov     ebx, [esi]
 
         set_io  0
         set_io  P0_ISR
         in      al, dx
-
-        DEBUGF  2,"isr %x ",eax:2
-
-        test    al, ISR_PRX    ; packet received ok ?
-        jnz     .rx
-
+        test    al, al
+        jnz     .got_it
+  .continue:
         add     esi, 4
-
-        loop    .nextdevice
+        dec     ecx
+        jnz     .nextdevice
+  .nothing:
         ret
 
+  .got_it:
+
+        DEBUGF  1,"Device: %x Status: %x ", ebx, eax:2
+
+        test    al, ISR_PRX    ; packet received ok ?
+        jz      .no_rx
 
 ; looks like we've found a device wich received a packet..
-.rx:
+
         stdcall KernelAlloc, ETH_FRAME_LEN  ; size doesnt really matter as packet size is smaller then kernel's page size
         test    eax, eax
         jz      .fail_2
@@ -937,7 +945,10 @@ int_handler:
         add     esp, 14+8
 .fail_2:
         DEBUGF  2,"done\n"
-ret
+
+  .no_rx:
+
+        ret
 
 
 
