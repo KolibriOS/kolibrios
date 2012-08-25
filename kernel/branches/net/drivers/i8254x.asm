@@ -351,11 +351,14 @@ proc service_proc stdcall, ioctl:dword
         jz      .firstdevice
 
 ;        mov     eax, [IOCTL.input]                      ; get the pci bus and device numbers
-        mov     ax , [eax+1]                            ;
+        mov     ax, [eax+1]                             ;
   .nextdevice:
         mov     ebx, [esi]
-        cmp     ax , word [device.pci_bus]              ; compare with pci and device num in device list (notice the usage of word instead of byte)
+        cmp     al, byte [device.pci_bus]
+        jne     .next
+        cmp     ah, byte [device.pci_dev]
         je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+  .next:
         add     esi, 4
         loop    .nextdevice
 
