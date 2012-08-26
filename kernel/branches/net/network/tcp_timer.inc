@@ -43,6 +43,9 @@ local   .exit
         push    ebx
         mov     cl, TH_ACK
         call    TCP_respond_socket
+;        and     [ebx + TCP_SOCKET.t_flags], TF_ACKNOW   ;;
+;        mov     eax, ebx                                ;;
+;        call    TCP_output                              ;;
         pop     ebx
 
         jmp     .loop
@@ -96,7 +99,9 @@ local   .exit
 
         DEBUGF  1,"socket %x: Keepalive expired\n", eax
 
+        push    eax
         call    TCP_disconnect
+        pop     eax
         jmp     .loop
 
   .check_more3:
