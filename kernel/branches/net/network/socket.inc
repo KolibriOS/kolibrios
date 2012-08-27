@@ -556,7 +556,7 @@ align 4
         call    SOCKET_ring_create
 
         pusha
-        lea     ecx, [eax + SOCKET.mutex]
+        lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
         popa
 
