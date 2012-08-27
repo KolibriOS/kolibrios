@@ -75,7 +75,7 @@ struct  TCP_SOCKET              IP_SOCKET
         SND_WND                 dd ? ; send window
 
 ; receive sequence
-        RCV_WND                 dw ? ; receive window
+        RCV_WND                 dw ? ; receive window                           ; FIXME: better use a dword?
         RCV_NXT                 dd ? ; next receive sequence number to use
         RCV_UP                  dd ? ; urgent pointer
         IRS                     dd ? ; initial receive sequence number
@@ -132,8 +132,9 @@ struct  TCP_SOCKET              IP_SOCKET
 
 ; extra
 
-        sendalot                db ? ; also used as 'need output'
         ts_ecr                  dd ? ; timestamp echo reply
+        ts_val                  dd ?
+        temp_bits               db ?
 
 ends
 

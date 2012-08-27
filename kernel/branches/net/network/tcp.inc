@@ -67,6 +67,7 @@ TCP_time_keep_idle      = 4608        ; idle time before 1st probe (2h)
 TCP_time_keep_interval  = 118         ; between probes when no response (75,52s)
 TCP_time_rtt_default    = 5           ; default Round Trip Time (3,2s)
 TCP_time_srtt_default   = 0           ;
+TCP_time_max_idle       = 8*TCP_time_keep_interval      ; FIXME
 
 ; timer constants
 TCP_max_rxtshift        = 12          ; max retransmissions waiting for ACK
@@ -79,6 +80,20 @@ TCP_max_win             = 65535
 TCP_re_xmit_thresh      = 3
 
 TCP_mss_default         = 1480        ; default max segment size
+
+; smoothed round trip time and estimated variance are stored as fixed point numbers,
+; shifted by the value below.
+; With these scales, srtt has 3 bits to the right of the binary point, and thus an "alpha"
+; of .875. rttvar has 2 bits to the right and thus "alpha" of 0.75
+TCP_RTT_SHIFT           = 3
+TCP_RTTVAR_SHIFT        = 2
+
+; bits used by tcp_input and tcp_output
+TCP_BIT_NEEDOUTPUT      = 1 shl 0
+TCP_BIT_TIMESTAMP       = 1 shl 1
+TCP_BIT_DROPSOCKET      = 1 shl 2
+
+TCP_BIT_SENDALOT        = 1 shl 0
 
 struct  TCP_header
 

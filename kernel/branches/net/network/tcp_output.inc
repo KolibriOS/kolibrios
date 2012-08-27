@@ -55,7 +55,7 @@ TCP_output:
 
   .not_idle:
   .again:
-        mov     [eax + TCP_SOCKET.sendalot], 0
+        mov     [eax + TCP_SOCKET.temp_bits], 0
 
         mov     ebx, [eax + TCP_SOCKET.SND_NXT]         ; calculate offset (71)
         sub     ebx, [eax + TCP_SOCKET.SND_UNA]         ;
@@ -141,7 +141,7 @@ TCP_output:
         jbe     @f
 
         mov     esi, [eax + TCP_SOCKET.t_maxseg]
-        inc     [eax + TCP_SOCKET.sendalot]
+        or      [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
        @@:
 
 ;--------------------------------------------
@@ -301,6 +301,7 @@ TCP_send:
         DEBUGF  1,"TCP_send: socket=%x length=%u flags=%x\n", eax, esi, dl
 
         push    eax                     ; save socket ptr
+        push    esi                     ; and data length too
         mov     edi, sizeof.TCP_header  ; edi will contain headersize
 
 ;------------------------------------
@@ -381,7 +382,7 @@ TCP_send:
         jbe     .no_overflow
 
         mov     esi, [eax + TCP_SOCKET.t_maxseg]
-        inc     [eax + TCP_SOCKET.sendalot]
+        or      [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
   .no_overflow:
 
 ;-----------------------------------------------------------------
@@ -451,48 +452,54 @@ TCP_send:
 ; ecx = buffer size
 ; edi = ptr to buffer
 
-        mov     eax, [esp + 12]                 ; get socket ptr
+        mov     eax, [esp + 16]                 ; get socket ptr
 
         push    edx
+        push    [eax + TCP_SOCKET.SND_NXT]      ; we'll need this for timing the transmission
         test    ecx, ecx
         jz      .nodata
         mov     edx, [eax + TCP_SOCKET.SND_NXT]
-        add     [eax + TCP_SOCKET.SND_NXT], ecx ; update sequence number
-        sub     edx, [eax + TCP_SOCKET.SND_UNA]
+        add     [eax + TCP_SOCKET.SND_NXT], ecx ; update sequence number <<< CHECKME
+        sub     edx, [eax + TCP_SOCKET.SND_UNA] ; offset
         add     eax, STREAM_SOCKET.snd
         call    SOCKET_ring_read
   .nodata:
+        pop     edi
         pop     esi                             ; begin of data
         pop     ecx                             ; full packet size
         mov     eax, [esp + 8]
 
-
 ;----------------------------------
-; update sequence number and timers  (400)
+; initialize retransmit timer (400)
 
-        test    [esi + TCP_header.Flags], TH_SYN + TH_FIN
+;TODO: check t_force and persist
+
+        test    [esi + TCP_header.Flags], TH_SYN + TH_FIN       ; syn and fin take a sequence number
         jz      @f
-        inc     [eax + TCP_SOCKET.SND_NXT]      ; syn and fin take a sequence number
+        inc     [eax + TCP_SOCKET.SND_NXT]
         test    [esi + TCP_header.Flags], TH_FIN
         jz      @f
-        or      [eax + TCP_SOCKET.t_flags], TF_SENTFIN  ; if we sent a fin, set the sentfin flag
+        or      [eax + TCP_SOCKET.t_flags], TF_SENTFIN          ; if we sent a fin, set the sentfin flag
        @@:
 
         mov     edx, [eax + TCP_SOCKET.SND_NXT]
-        cmp     edx, [eax + TCP_SOCKET.SND_MAX]
+        cmp     edx, [eax + TCP_SOCKET.SND_MAX]                 ; is this a retransmission?
         jbe     @f
-        mov     [eax + TCP_SOCKET.SND_MAX], edx
+        mov     [eax + TCP_SOCKET.SND_MAX], edx                 ; [eax + TCP_SOCKET.SND_NXT] from before we updated it
 
-        ;;;; TODO: time transmission (420)
-
+        cmp     [eax + TCP_SOCKET.t_rtt], 0                     ; are we currently timing anything?
+        je      @f
+        mov     [eax + TCP_SOCKET.t_rtt], 1                     ; nope, start transmission timer
+        mov     [eax + TCP_SOCKET.t_rtseq], edi
+;TODO: update stats
        @@:
 
 ; set retransmission timer if not already set, and not doing an ACK or keepalive probe
 
-        cmp     [eax + TCP_SOCKET.timer_retransmission], 1000 ;;;; FIXME
-        jb      .retransmit_set
+        cmp     [eax + TCP_SOCKET.timer_retransmission], 0 ;;;; FIXME
+        ja      .retransmit_set
 
-        cmp     edx, [eax + TCP_SOCKET.SND_UNA]         ; edx = [eax + TCP_SOCKET.SND_NXT]
+        cmp     edx, [eax + TCP_SOCKET.SND_UNA]                 ; edx is still [eax + TCP_SOCKET.SND_NXT]
         je      .retransmit_set
 
         mov     edx, [eax + TCP_SOCKET.t_rxtcur]
@@ -517,19 +524,33 @@ TCP_send:
         DEBUGF  1,"TCP_send: Sending with device %x\n", ebx
         call    [ebx + NET_DEVICE.transmit]
         jnz     .send_error
+
+;---------------
+; Ok, data sent!
+
+        pop     ecx
         pop     eax
 
         inc     [TCP_segments_tx]       ; FIXME: correct interface?
 
-;;; TODO: (485)
+; update advertised receive window
+        test    ecx, ecx
+        jz      @f
+        add     ecx, [eax + TCP_SOCKET.RCV_NXT]
+        cmp     ecx, [eax + TCP_SOCKET.RCV_ADV]
+        jbe     @f
+        mov     [eax + TCP_SOCKET.RCV_ADV], ecx
+       @@:
 
+; update last ack sent
         push    [eax + TCP_SOCKET.RCV_NXT]
         pop     [eax + TCP_SOCKET.last_ack_sent]
 
+; and flags
         and     [eax + TCP_SOCKET.t_flags], not (TF_ACKNOW + TF_DELACK)
 
-        cmp     [eax + TCP_SOCKET.sendalot], 0
-        jne     TCP_output.again
+        test    [eax + TCP_SOCKET.temp_bits], TCP_BIT_SENDALOT
+        jnz     TCP_output.again
 
 ; unlock socket
         lea     ecx, [eax + SOCKET.mutex]
@@ -544,6 +565,7 @@ TCP_send:
   .ip_error:
         pop     ecx
         add     esp, ecx
+        add     esp, 4
         pop     eax
 
         mov     [eax + TCP_SOCKET.timer_retransmission], TCP_time_re_min
@@ -558,7 +580,9 @@ TCP_send:
         ret
 
   .send_error:
+        add     esp, 4
         pop     eax
+
 ; unlock socket
         lea     ecx, [eax + SOCKET.mutex]
         call    mutex_unlock

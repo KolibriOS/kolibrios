@@ -470,23 +470,35 @@ TCP_respond_segment:
 
 macro TCP_set_persist socket {
 
-;int t = ((tp->t_srtt >> 2) + tp->t_rttvar) >> 1;
-;int tt;
-;
-;tp->t_flags &= ~TF_PREVVALID;
-;
+; First, check if retransmit timer is not set, retransmit and persist are mutually exclusive
+
+;        cmp     [socket + TCP_socket.timer_retransmission]
+
+; calculate RTO
+
+;        mov     ecx, [socket + TCP_socket.t_srtt]
+;        shr     ecx, 2
+;        add     ecx, [socket + TCP_socket.t_rttvar]
+;        shr     ecx, 1
+
+;        and     [socket + TCP_socket.t_flags], not TF_PREVVALID
+
 ;if (tcp_timer_active(tp, TT_REXMT))
 ;        panic("tcp_setpersist: retransmit pending");
-;
-;; Start/restart persistance timer.
-;
+
+; Start/restart persistance timer.
+
 ;TCPT_RANGESET(tt, t * tcp_backoff[tp->t_rxtshift], TCPTV_PERSMIN, TCPTV_PERSMAX);
 ;tcp_timer_activate(tp, TT_PERSIST, tt);
-;
-;if (tp->t_rxtshift < TCP_MAXRXTSHIFT)
-;        tp->t_rxtshift++;
+
+;        cmp     [socket + TCP_socket.t_rxtshift], TCP_MAXRXTSHIFT
+;        jae     @f
+;        inc     [socket + TCP_socket.t_rxtshift]
+;      @@:
 
 }
+
+
 
 ; eax = rtt
 ; ebx = socket ptr
@@ -494,6 +506,61 @@ macro TCP_set_persist socket {
 align 4
 TCP_xmit_timer:
 
-;TODO: update srtt and rttvar
+;TODO: update stats
 
-ret
+        cmp     [ebx + TCP_SOCKET.t_rtt], 0
+        je      .no_rtt_yet
+
+; srtt is stored as a fixed point with 3 bits after the binary point.
+; The following magic is equivalent of the smoothing algorithm in rfc793 with an alpha of .875
+; (srtt = rtt/8 + srtt*7/8 in fixed point)
+; Adjust rtt to origin 0.
+
+        push    ecx
+        mov     ecx, [ebx + TCP_SOCKET.t_srtt]
+        shr     ecx, TCP_RTT_SHIFT
+        sub     eax, ecx
+        dec     eax
+        pop     ecx
+
+        add     [ebx + TCP_SOCKET.t_srtt], eax
+        ja      @f
+        mov     [ebx + TCP_SOCKET.t_srtt], 1
+  @@:
+
+; We accumulate a smoothed rtt variance (actually, a smoothed mean difference),
+; then set the retransmit timer to smoothed rtt + 4 times the smoothed variance.
+; rttvar is stored as fixed point with 2 bits after the binary point.
+; The following is equivalent to rfc793 smoothing with an alpha of .75
+; (rttvar = rttvar*3/4 + delta/4) (delta = eax)
+
+; get abs(eax)
+        push    edx
+        cdq
+        xor     eax, edx
+        sub     eax, edx
+
+        mov     edx, [ebx + TCP_SOCKET.t_rttvar]
+        shr     edx, TCP_RTTVAR_SHIFT
+        sub     eax, edx
+        pop     edx
+
+        add     [ebx + TCP_SOCKET.t_rttvar], eax
+        ja      @f
+        mov     [ebx + TCP_SOCKET.t_rttvar], 1
+  @@:
+        ret
+
+
+  .no_rtt_yet:
+
+        push    ecx
+        mov     ecx, eax
+        shl     ecx, TCP_RTT_SHIFT
+        mov     [ebx + TCP_SOCKET.t_srtt], ecx
+
+        shl     eax, TCP_RTTVAR_SHIFT - 1
+        mov     [ebx + TCP_SOCKET.t_rttvar], eax
+        pop     ecx
+
+        ret
