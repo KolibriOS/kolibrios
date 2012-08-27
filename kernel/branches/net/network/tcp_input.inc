@@ -34,11 +34,14 @@ $Revision$
 align 4
 TCP_input:
 
+        pushfd
+        cli
+
         DEBUGF  1,"TCP_input: size=%u\n", ecx
 
 ; First, record the current time
         mov     eax, [timer_ticks]      ; in 1/100 seconds
-        mov     [esp+4], eax
+        mov     [esp+8], eax
 
 ; then, re-calculate the checksum (if not already done by hw)
 ;        test    [ebx + NET_DEVICE.hwacc], HWACC_TCP_IPv4_IN
@@ -214,7 +217,6 @@ TCP_input:
         movzx   eax, word[esi+2]
         rol     ax, 8
         DEBUGF  1,"TCP_input: Maxseg=%u\n", ax
-
         mov     [ebx + TCP_SOCKET.t_maxseg], eax
 
        @@:
@@ -330,7 +332,7 @@ TCP_input:
 
         test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
         jz      .no_timestamp_rtt
-        mov     eax, [esp + 4]                         ; timestamp when this segment was received
+        mov     eax, [esp + 4+4]                         ; timestamp when this segment was received
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
         inc     eax
         call    TCP_xmit_timer
@@ -417,15 +419,18 @@ TCP_input:
 
 ; Calculate receive window size
 
+        push    edx
         mov     eax, SOCKETBUFFSIZE
         sub     eax, [ebx + STREAM_SOCKET.rcv.size]
         mov     edx, [ebx + TCP_SOCKET.RCV_ADV]
         sub     edx, [ebx + TCP_SOCKET.RCV_NXT]
         cmp     eax, edx
-        ja      @f
+        jg      @f
         mov     eax, edx
        @@:
+        DEBUGF  1,"Receive window size=%d\n", ax
         mov     [ebx + TCP_SOCKET.RCV_WND], ax
+        pop     edx
 
 ; If listen or Syn sent, go to that specific code right away
 
@@ -462,14 +467,14 @@ TCP_input:
 
         mov     eax, [ebx + TCP_SOCKET.RCV_NXT]
         sub     eax, [edx + TCP_header.SequenceNumber]
-        jbe     .no_duplicate
+        jle     .no_duplicate
 
         DEBUGF  1,"TCP_input: %u bytes duplicate data!\n", eax
 
         test    [edx + TCP_header.Flags], TH_SYN
         jz      .no_dup_syn
 
-; remove duplicate syn
+        DEBUGF  1,"TCP_input: got duplicate syn\n"
 
         and     [edx + TCP_header.Flags], not (TH_SYN)
         inc     [edx + TCP_header.SequenceNumber]
@@ -511,7 +516,7 @@ TCP_input:
         sub     ecx, eax
 
         sub     [edx + TCP_header.UrgentPointer], ax
-        ja      @f
+        jg      @f
         and     [edx + TCP_header.Flags], not (TH_URG)
         mov     [edx + TCP_header.UrgentPointer], 0
        @@:
@@ -540,11 +545,13 @@ TCP_input:
         add     eax, ecx
         sub     eax, [ebx + TCP_SOCKET.RCV_NXT]
         sub     ax, [ebx + TCP_SOCKET.RCV_WND]          ; eax now holds the number of bytes to drop
-        jbe     .no_excess_data
+        jle     .no_excess_data
+
+        DEBUGF  1,"%d bytes beyond right edge of window\n", eax
 
 ;;; TODO: update stats
         cmp     eax, ecx
-        jb      .dont_drop_all
+        jl      .dont_drop_all
 ; If a new connection request is received while in TIME_WAIT, drop the old connection and start over,
 ; if the sequence numbers are above the previous ones
 
@@ -552,9 +559,9 @@ TCP_input:
         jz      .no_new_request
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_TIMED_WAIT
         jne     .no_new_request
-        mov     edx, [ebx + TCP_SOCKET.RCV_NXT]
-        cmp     edx, [edx + TCP_header.SequenceNumber]
-        add     edx, 64000      ; TCP_ISSINCR
+;        mov     edx, [ebx + TCP_SOCKET.RCV_NXT]
+;        cmp     edx, [edx + TCP_header.SequenceNumber]
+;        add     edx, 64000      ; TCP_ISSINCR   FIXME
         mov     eax, ebx
         call    TCP_close
         jmp     .findpcb        ; FIXME: skip code for unscaling window, ...
@@ -595,7 +602,7 @@ TCP_input:
         sub     eax, ecx
         jae     .no_timestamp
 
-        mov     eax, [esp + 4]                                  ; tcp_now
+        mov     eax, [esp + 4+4]                                  ; tcp_now
         mov     [ebx + TCP_SOCKET.ts_recent_age], eax
         mov     eax, [ebx + TCP_SOCKET.ts_val]
         mov     [ebx + TCP_SOCKET.ts_recent], eax
@@ -844,7 +851,7 @@ TCP_input:
 
         test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
         jne     .timestamp_not_present
-        mov     eax, [esp+4]
+        mov     eax, [esp+4+4]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
         inc     eax
         call    TCP_xmit_timer
@@ -1457,8 +1464,10 @@ align 4
   .dumpit:
         DEBUGF  1,"TCP_input: dumping\n"
 
+        popf
         call    kernel_free
         add     esp, 4
+
         ret
 
 
@@ -1502,8 +1511,10 @@ align 4
   .drop_no_socket:
         DEBUGF  1,"TCP_input: Drop (no socket)\n"
 
+        popf
         call    kernel_free
         add     esp, 4
+
         ret
 
   .drop_with_reset_no_socket:
