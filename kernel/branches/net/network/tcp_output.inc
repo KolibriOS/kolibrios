@@ -518,6 +518,10 @@ TCP_send:
         TCP_checksum (eax + IP_SOCKET.LocalIP), (eax + IP_SOCKET.RemoteIP)
         mov     [esi + TCP_header.Checksum], dx
 
+; unlock socket
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+
 ;----------------
 ; Send the packet
 
@@ -532,6 +536,10 @@ TCP_send:
         pop     eax
 
         inc     [TCP_segments_tx]       ; FIXME: correct interface?
+
+; unlock socket
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
 
 ; update advertised receive window
         test    ecx, ecx
@@ -580,12 +588,7 @@ TCP_send:
         ret
 
   .send_error:
-        add     esp, 4
-        pop     eax
-
-; unlock socket
-        lea     ecx, [eax + SOCKET.mutex]
-        call    mutex_unlock
+        add     esp, 8
 
         DEBUGF 1,"TCP_send: sending failed\n"
 
