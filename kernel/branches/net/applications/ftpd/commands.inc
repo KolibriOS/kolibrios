@@ -483,7 +483,7 @@ cmdLIST:
         invoke  con_write_asciiz, str_newline
 
 ; Start the search
-        invoke  file.find.first, ebx, str_mask, FA_READONLY+FA_FOLDER+FA_NORMAL+FA_ARCHIVED
+        invoke  file.find.first, ebx, str_mask, FA_READONLY+FA_FOLDER+FA_ARCHIVED;+FA_NORMAL
         test    eax, eax
         jz      .nosuchdir
 
@@ -570,7 +570,7 @@ cmdLIST:
         stosw
 
         test    [ebp + thread_data.permissions], ABORT          ; Did we receive ABOR command from client?
-;;;        jnz     .abort                                         ; TODO
+        jnz     abort_transfer
 
 ; check next file
         invoke  file.find.next, ebx
