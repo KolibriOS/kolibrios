@@ -467,7 +467,7 @@ TCP_send:
         pop     edi
         pop     esi                             ; begin of data
         pop     ecx                             ; full packet size
-        mov     eax, [esp + 8]
+        mov     eax, [esp + 12]                 ; socket ptr
 
 ;----------------------------------
 ; initialize retransmit timer (400)
