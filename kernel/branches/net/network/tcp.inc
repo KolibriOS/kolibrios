@@ -54,6 +54,8 @@ TCP_OPT_EOL             = 0           ; End of option list.
 TCP_OPT_NOP             = 1           ; No-Operation.
 TCP_OPT_MAXSEG          = 2           ; Maximum Segment Size.
 TCP_OPT_WINDOW          = 3           ; window scale
+TCP_OPT_SACK_PERMIT     = 4           ; Selective Acknowledgement
+TCP_OPT_SACK            = 5
 TCP_OPT_TIMESTAMP       = 8
 
 ; Fundamental timer values

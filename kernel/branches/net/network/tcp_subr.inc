@@ -85,7 +85,7 @@ macro   TCP_rcvseqinit ptr {
 macro   TCP_init_socket socket {
 
         mov     [socket + TCP_SOCKET.t_maxseg], TCP_mss_default
-        mov     [socket + TCP_SOCKET.t_flags], 0                ; we could also request scale and timestamp
+        mov     [socket + TCP_SOCKET.t_flags], TF_REQ_SCALE or TF_REQ_TSTMP
 
         mov     [socket + TCP_SOCKET.t_srtt], TCP_time_srtt_default
         mov     [socket + TCP_SOCKET.t_rttvar], TCP_time_rtt_default * 4

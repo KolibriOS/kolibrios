@@ -897,7 +897,6 @@ SOCKET_send_pppoe:
         mov     [esp+32], ecx
         mov     ebx, [eax + SOCKET.device]
 
-        mov     ecx, esi
         call    PPPoE_discovery_output
         cmp     eax, -1
         je      s_error
