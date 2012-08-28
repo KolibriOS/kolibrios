@@ -506,6 +506,8 @@ macro TCP_set_persist socket {
 align 4
 TCP_xmit_timer:
 
+        DEBUGF  1,"TCP_xmit_timer: socket=%x rtt=%d0ms\n", ebx, eax
+
 ;TODO: update stats
 
         cmp     [ebx + TCP_SOCKET.t_rtt], 0

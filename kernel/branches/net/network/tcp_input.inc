@@ -590,7 +590,7 @@ TCP_input:
   .no_excess_data:
 
 ;-----------------
-; Record timestamp (737-746) TODO
+; Record timestamp (737-746)
 
 ; If last ACK falls within this segments sequence numbers, record its timestamp
         test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
@@ -605,7 +605,9 @@ TCP_input:
         sub     eax, ecx
         jae     .no_timestamp
 
-        mov     eax, [esp + 4+4]                                  ; tcp_now
+        DEBUGF  1,"Recording timestamp\n"
+
+        mov     eax, [esp + 4+4]                                ; tcp_now
         mov     [ebx + TCP_SOCKET.ts_recent_age], eax
         mov     eax, [ebx + TCP_SOCKET.ts_val]
         mov     [ebx + TCP_SOCKET.ts_recent], eax
@@ -736,7 +738,7 @@ TCP_input:
 
         DEBUGF  1,"TCP_input: Processing duplicate ACK\n"
 
-; If we have outstanidn data, other than a window probe, this is a completely duplicate ACK
+; If we have outstanding data, other than a window probe, this is a completely duplicate ACK
 ; (window info didnt change) The ACK is the biggest we've seen and we've seen exactly our rexmt threshold of them,
 ; assume a packet has been dropped and retransmit it. Kludge snd_nxt & the congestion window so we send only this one packet.
 
@@ -853,7 +855,7 @@ TCP_input:
 ; If we have a timestamp, update smoothed RTT
 
         test    [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
-        jne     .timestamp_not_present
+        jz      .timestamp_not_present
         mov     eax, [esp+4+4]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
         inc     eax
