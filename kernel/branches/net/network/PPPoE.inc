@@ -86,13 +86,16 @@ PPPoE_discovery_input:
 ;
 ; Send discovery packet
 ;
-; ebx (ecx in app) = device
-; ecx (edx in app) = size packet
-; edx (esi in app) = pointer to packet
+; IN: eax = socket pointer
+;     ecx = number of bytes to send
+;     esi = pointer to data
 ;
 ;--------------------------------------
+
 align 4
 PPPoE_discovery_output:
+
+        DEBUGF  2,"PPPoE_discovery_output: socket=%x buffer=%x size=%d\n", eax, esi, ecx
 
 ; RFC2516: An entire PADI packet (including the PPPoE header) MUST NOT
 ; exceed 1484 octets.
@@ -100,6 +103,8 @@ PPPoE_discovery_output:
         ja      .bad
 
 ; Check that device exists and is ethernet device
+        mov     ebx, [eax + SOCKET.device]
+
         cmp     ebx, MAX_NET_DEVICES
         ja      .bad
 
@@ -110,15 +115,25 @@ PPPoE_discovery_output:
         cmp     [ebx + NET_DEVICE.type], NET_TYPE_ETH
         jne     .bad
 
+        DEBUGF  2,"PPPoE_discovery_output: device=%x\n", ebx
+
 ; Create packet.
+        push    ecx esi
         stdcall kernel_alloc, 1500
+        pop     esi ecx
         test    eax, eax
         jz      .bad
 
-        push    ecx eax
-
+        mov     edx, ecx
         mov     edi, eax
         rep     movsb
+
+        cmp     edx, 60         ; Min ETH size
+        ja      @f
+        mov     edx, 60
+       @@:
+
+        push    edx eax         ; size and packet ptr for driver send proc
 
 ; Overwrite source MAC and protocol type
         lea     edi, [eax + ETH_header.SrcMAC]
