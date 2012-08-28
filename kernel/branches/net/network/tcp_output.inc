@@ -340,23 +340,24 @@ TCP_send:
         DEBUGF  1,"TCP_send: added maxseg option\n"
 
         test    [eax + TCP_SOCKET.t_flags], TF_REQ_SCALE
-        jz      .no_syn
+        jz      .no_scale
 
         test    dl, TH_ACK
-        jnz     .scale_opt
+        jz      .scale_opt
 
         test    [eax + TCP_SOCKET.t_flags], TF_RCVD_SCALE
-        jz      .no_syn
+        jz      .no_scale
 
   .scale_opt:
-        movzx   ecx, byte [eax + TCP_SOCKET.request_r_scale]
-        or      ecx, TCP_OPT_WINDOW shl 24 + 4 shl 16 + TCP_OPT_NOP shl 8
-        bswap   ecx
-        pushd   ecx
+        mov     cl, [eax + TCP_SOCKET.request_r_scale]
+        mov     ch, TCP_OPT_NOP
+        pushw   cx
+        pushw   TCP_OPT_WINDOW + 3 shl 8
         add     di, 4
 
         DEBUGF  1,"TCP_send: added scale option\n"
 
+  .no_scale:
   .no_syn:
 
 ;------------------------------------
