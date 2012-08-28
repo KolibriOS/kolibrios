@@ -251,6 +251,27 @@ TCP_input:
         pop     [ebx + TCP_SOCKET.ts_ecr]
         or      [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
 
+        ; Since we have a timestamp, lets do the paws test right away!
+
+        test    [edx + TCP_header.Flags], TH_RST
+        jnz     .no_paws
+
+        mov     eax, [ebx + TCP_SOCKET.ts_recent]
+        test    eax, eax
+        jz      .no_paws
+        cmp     eax, [ebx + TCP_SOCKET.ts_val]
+        jge     .no_paws
+
+        DEBUGF  1,"TCP_input: PAWS: detected an old segment\n"
+
+        mov     eax, [esp+4+4]                          ; tcp_now
+        sub     eax, [ebx + TCP_SOCKET.ts_recent_age]
+        cmp     eax, TCP_PAWS_IDLE
+        jle     .dropafterack                           ; TODO: update stats
+
+        mov     [ebx + TCP_SOCKET.ts_recent], 0         ; timestamp was invalid, fix it.
+  .no_paws:
+
         add     esi, 10
         jmp     .opt_loop
 
@@ -441,24 +462,6 @@ TCP_input:
         je      .SYN_SENT
 
         DEBUGF  1,"TCP_input: state is not listen or syn_sent\n"
-
-;--------------------------------------------
-; Protection Against Wrapped Sequence Numbers
-
-; First, check if timestamp is present
-
-;;;; TODO 602
-
-; Then, check if at least some bytes of data are within window
-
-;;;; TODO
-
-
-
-
-
-
-
 
 ;----------------------------
 ; trim any data not in window
