@@ -95,6 +95,8 @@ TCP_BIT_DROPSOCKET      = 1 shl 2
 
 TCP_BIT_SENDALOT        = 1 shl 0
 
+TCP_PAWS_IDLE           = 24*24*60*60*100       ; 24 days, in 1/100 seconds
+
 struct  TCP_header
 
         SourcePort              dw ?

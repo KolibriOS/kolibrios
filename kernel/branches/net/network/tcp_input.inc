@@ -267,7 +267,7 @@ TCP_input:
         mov     eax, [esp+4+4]                          ; tcp_now
         sub     eax, [ebx + TCP_SOCKET.ts_recent_age]
         cmp     eax, TCP_PAWS_IDLE
-        jle     .dropafterack                           ; TODO: update stats
+        jle     .drop_after_ack                         ; TODO: update stats
 
         mov     [ebx + TCP_SOCKET.ts_recent], 0         ; timestamp was invalid, fix it.
   .no_paws:
