@@ -159,7 +159,35 @@ TCP_input:
 ; Are we accepting incoming connections?
 
         test    [ebx + SOCKET.options], SO_ACCEPTCON
-        jnz     .accept_connection
+        jz      .no_accept
+
+        DEBUGF  1,"TCP_input: Accepting new connection\n"
+
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+
+        push    ecx edx esi edi         ;;;
+        call    SOCKET_fork
+        pop     edi esi edx ecx
+
+        test    eax, eax
+        jz      .drop_no_socket
+
+        mov     ebx, eax
+
+        mov     [ebx + TCP_SOCKET.temp_bits], TCP_BIT_DROPSOCKET        ;;; FIXME: should we take over bits from previous socket?
+
+        push    dword [edi + 4]                         ; Ipv4 destination addres
+        pop     [ebx + IP_SOCKET.LocalIP]
+
+        push    [edx + TCP_header.DestinationPort]
+        pop     [ebx + TCP_SOCKET.LocalPort]
+
+        mov     [ebx + TCP_SOCKET.t_state], TCPS_LISTEN
+  .no_accept:
+
 
 ;-------------------------------------
 ; Reset idle timer and keepalive timer
@@ -170,85 +198,108 @@ TCP_input:
 ;--------------------
 ; Process TCP options
 
-        movzx   eax, [edx + TCP_header.DataOffset]
-        cmp     eax, sizeof.TCP_header                  ; Does header contain any options?
+		push	ecx
+
+        movzx   ecx, [edx + TCP_header.DataOffset]
+        cmp     ecx, sizeof.TCP_header                  ; Does header contain any options?
         je      .no_options
 
         DEBUGF  1,"TCP_input: Segment has options\n"
 
-        cmp     [ebx + TCP_SOCKET.t_state], TCPS_LISTEN ; no options when in listen state
-        jz      .not_uni_xfer                           ; also no header prediction
+;;; FIXME: for LISTEN, options should be called after we determined route, we need it for MSS
+;;;        cmp     [ebx + TCP_SOCKET.t_state], TCPS_LISTEN ; no options when in listen state
+;;;        jz      .not_uni_xfer                           ; also no header prediction
 
-        add     eax, edx
+        add     ecx, edx
         lea     esi, [edx + sizeof.TCP_header]
 
   .opt_loop:
-        cmp     esi, eax                        ; are we scanning outside of header?
+        cmp     esi, ecx                        ; are we scanning outside of header?
         jae     .no_options
-
-        cmp     byte [esi], TCP_OPT_EOL         ; end of option list?
-        jz      .no_options
-
-        cmp     byte [esi], TCP_OPT_NOP         ; nop ?
-        jz      .opt_nop
-
-        cmp     byte [esi], TCP_OPT_MAXSEG
+        lodsb
+        cmp     al, TCP_OPT_EOL                 ; end of option list?
+        je      .no_options
+        cmp     al, TCP_OPT_NOP
+        je      .opt_loop
+        cmp     al, TCP_OPT_MAXSEG
         je      .opt_maxseg
-
-        cmp     byte [esi], TCP_OPT_WINDOW
+        cmp     al, TCP_OPT_WINDOW
         je      .opt_window
-
-        cmp     byte [esi], TCP_OPT_TIMESTAMP
+        cmp     al, TCP_OPT_SACK_PERMIT
+        je      .opt_sack_permit
+;        cmp     al, TCP_OPT_SACK
+;        je      .opt_sack
+        cmp     al, TCP_OPT_TIMESTAMP
         je      .opt_timestamp
-
+        DEBUGF  1,"TCP_input: unknown option:%u\n", al
         jmp     .no_options                     ; If we reach here, some unknown options were received, skip them all!
 
-  .opt_nop:
-        inc     esi
-        jmp     .opt_loop
-
   .opt_maxseg:
-        cmp     byte [esi+1], 4
+        lodsb
+        cmp     al, 4
         jne     .no_options                     ; error occured, ignore all options!
 
         test    [edx + TCP_header.Flags], TH_SYN
         jz      @f
 
-        movzx   eax, word[esi+2]
+        lodsw
         rol     ax, 8
         DEBUGF  1,"TCP_input: Maxseg=%u\n", ax
         mov     [ebx + TCP_SOCKET.t_maxseg], eax
-
        @@:
-        add     esi, 4
         jmp     .opt_loop
 
 
   .opt_window:
-        cmp     byte [esi+1], 3
+        lodsb
+        cmp     al, 3
         jne     .no_options
 
         test    [edx + TCP_header.Flags], TH_SYN
         jz      @f
 
-        DEBUGF  1,"TCP_input: Got window option\n"
+        DEBUGF  1,"TCP_input: Got window scale option\n"
+        or      [ebx + TCP_SOCKET.t_flags], TF_RCVD_SCALE
 
-        ;;;;;
+        lodsb
+        mov     [ebx + TCP_SOCKET.SND_SCALE], al
+        ;;;;; TODO
+
        @@:
-        add     esi, 3
+        jmp     .opt_loop
+
+
+  .opt_sack_permit:
+        lodsb
+        cmp     al, 2
+        jne     .no_options
+
+        test    [edx + TCP_header.Flags], TH_SYN
+        jz      @f
+
+        DEBUGF  1,"TCP_input: Selective Acknowledgement permitted\n"
+        or      [ebx + TCP_SOCKET.t_flags], TF_SACK_PERMIT
+
+       @@:
         jmp     .opt_loop
 
 
   .opt_timestamp:
-        cmp     byte [esi+1], 10                ; length must be 10
+        lodsb
+        cmp     al, 10                          ; length must be 10
         jne     .no_options
 
         DEBUGF  1,"TCP_input: Got timestamp option\n"
 
-        push    dword [esi + 2]                 ; timestamp
-        pop     [ebx + TCP_SOCKET.ts_val]
-        push    dword [esi + 6]                 ; timestamp echo reply
-        pop     [ebx + TCP_SOCKET.ts_ecr]
+        test    [edx + TCP_header.Flags], TH_SYN
+        jz      @f
+        or      [ebx + TCP_SOCKET.t_flags], TF_RCVD_TSTMP
+       @@:
+
+        lodsd
+        mov     [ebx + TCP_SOCKET.ts_val], eax
+        lodsd                                   ; timestamp echo reply
+        mov     [ebx + TCP_SOCKET.ts_ecr], eax
         or      [ebx + TCP_SOCKET.temp_bits], TCP_BIT_TIMESTAMP
 
         ; Since we have a timestamp, lets do the paws test right away!
@@ -264,18 +315,18 @@ TCP_input:
 
         DEBUGF  1,"TCP_input: PAWS: detected an old segment\n"
 
-        mov     eax, [esp+4+4]                          ; tcp_now
+        mov     eax, [esp+4+4+4]                        ; tcp_now
         sub     eax, [ebx + TCP_SOCKET.ts_recent_age]
         cmp     eax, TCP_PAWS_IDLE
         jle     .drop_after_ack                         ; TODO: update stats
 
         mov     [ebx + TCP_SOCKET.ts_recent], 0         ; timestamp was invalid, fix it.
   .no_paws:
-
-        add     esi, 10
         jmp     .opt_loop
 
   .no_options:
+
+        pop     ecx
 
 ;-----------------------------------------------------------------------
 ; Time to do some header prediction (Original Principle by Van Jacobson)
@@ -1038,37 +1089,8 @@ TCP_input:
 
 
 
-;-------------
-; Passive Open
 
-align 4
 
-  .accept_connection:
-
-        DEBUGF  1,"TCP_input: Accepting new connection\n"
-
-        pusha
-        lea     ecx, [ebx + SOCKET.mutex]
-        call    mutex_unlock
-        popa
-
-        push    ecx edx esi edi         ;;;
-        call    SOCKET_fork
-        pop     edi esi edx ecx
-
-        test    eax, eax
-        jz      .drop
-
-        mov     [eax + TCP_SOCKET.temp_bits], TCP_BIT_DROPSOCKET        ;;; FIXME: should we take over bits from previous socket?
-
-        push    dword [edi + 4]                         ; Ipv4 destination addres
-        pop     [eax + IP_SOCKET.LocalIP]
-
-        push    [edx + TCP_header.DestinationPort]
-        pop     [eax + TCP_SOCKET.LocalPort]
-
-        mov     [eax + TCP_SOCKET.t_state], TCPS_LISTEN
-        mov     ebx, eax
 
   .LISTEN:
 
@@ -1262,17 +1284,13 @@ align 4
         ja      .no_window_update
        @@:
 
-        mov     eax, [ebx + TCP_SOCKET.SND_WL2]
-        cmp     eax, [edx + TCP_header.AckNumber]
-        jne     .no_window_update
-
         mov     eax, dword [edx + TCP_header.Window]
         cmp     eax, [ebx + TCP_SOCKET.SND_WND]
         jbe     .no_window_update
 
   .update_window:
 
-;;; TODO: Keep track of pure window updates
+;;; TODO: update stats (Keep track of pure window updates)
 
         mov     eax, dword [edx + TCP_header.Window]
         cmp     eax, [ebx + TCP_SOCKET.max_sndwnd]
@@ -1292,12 +1310,6 @@ align 4
         or      [ebx + TCP_SOCKET.temp_bits], TCP_BIT_NEEDOUTPUT
 
   .no_window_update:
-
-
-
-
-
-
 
 ;-----------------
 ; process URG flag
@@ -1464,6 +1476,7 @@ align 4
         DEBUGF  1,"TCP_input: ACK now!\n"
 
   .need_output:
+        DEBUGF  1,"TCP_input: need output\n"
         call    TCP_output
 
   .dumpit:
