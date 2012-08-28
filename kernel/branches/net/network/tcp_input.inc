@@ -198,7 +198,7 @@ TCP_input:
 ;--------------------
 ; Process TCP options
 
-		push	ecx
+                push    ecx
 
         movzx   ecx, [edx + TCP_header.DataOffset]
         cmp     ecx, sizeof.TCP_header                  ; Does header contain any options?
@@ -943,7 +943,7 @@ TCP_input:
         jne     .no_restart
 
         mov     eax, [ebx + TCP_SOCKET.t_rxtcur]
-        mov     [ebx + TCP_SOCKET.timer_retransmission], ax
+        mov     [ebx + TCP_SOCKET.timer_retransmission], eax
 
   .no_restart:
 

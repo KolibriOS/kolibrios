@@ -16,6 +16,11 @@
 
 $Revision$
 
+align 4
+iglobal
+        TCP_backoff     db 0,1,2,3,4,5,6,6,6,6,6,6,6
+endg
+
 macro   TCP_checksum IP1, IP2 {
 
 ;-------------
@@ -467,36 +472,63 @@ TCP_respond_segment:
         ret
 
 
+macro   TCPT_RANGESET   timer, value, min, max {
 
-macro TCP_set_persist socket {
+local   .min
+local   .max
+local   .done
+
+        cmp     value, min
+        jb      .min
+        cmp     value, max
+        ja      .max
+
+        mov     timer, value
+        jmp     .done
+
+  .min:
+        mov     timer, value
+        jmp     .done
+
+  .max:
+        mov     timer, value
+        jmp     .done
+
+  .done:
+}
+
+
+align 4
+TCP_set_persist:
 
 ; First, check if retransmit timer is not set, retransmit and persist are mutually exclusive
 
-;        cmp     [socket + TCP_socket.timer_retransmission]
+        cmp     [eax + TCP_SOCKET.timer_retransmission], 0
+        jg      @f
 
 ; calculate RTO
 
-;        mov     ecx, [socket + TCP_socket.t_srtt]
-;        shr     ecx, 2
-;        add     ecx, [socket + TCP_socket.t_rttvar]
-;        shr     ecx, 1
+        push    ebx
+        mov     ebx, [eax + TCP_SOCKET.t_srtt]
+        shr     ebx, 2
+        add     ebx, [eax + TCP_SOCKET.t_rttvar]
+        shr     ebx, 1
 
-;        and     [socket + TCP_socket.t_flags], not TF_PREVVALID
-
-;if (tcp_timer_active(tp, TT_REXMT))
-;        panic("tcp_setpersist: retransmit pending");
+        mov     cl, [eax + TCP_SOCKET.t_rxtshift]
+        shl     ebx, cl
 
 ; Start/restart persistance timer.
 
-;TCPT_RANGESET(tt, t * tcp_backoff[tp->t_rxtshift], TCPTV_PERSMIN, TCPTV_PERSMAX);
-;tcp_timer_activate(tp, TT_PERSIST, tt);
+        TCPT_RANGESET   [eax + TCP_SOCKET.timer_persist], ebx, TCP_time_pers_min, TCP_time_pers_max
 
-;        cmp     [socket + TCP_socket.t_rxtshift], TCP_MAXRXTSHIFT
-;        jae     @f
-;        inc     [socket + TCP_socket.t_rxtshift]
-;      @@:
+        pop     ebx
 
-}
+        cmp     [eax + TCP_SOCKET.t_rxtshift], TCP_max_rxtshift
+        jae     @f
+        inc     [eax + TCP_SOCKET.t_rxtshift]
+      @@:
+
+        ret
 
 
 

@@ -116,6 +116,13 @@ local   .exit
 
         DEBUGF  1,"socket %x: persist timer expired\n", eax
 
+        call    TCP_set_persist
+        mov     [eax + TCP_SOCKET.t_force], 1
+        push    eax
+        call    TCP_output
+        pop     eax
+        mov     [eax + TCP_SOCKET.t_force], 0
+
         jmp     .loop
   .exit:
 

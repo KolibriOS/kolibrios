@@ -277,7 +277,7 @@ TCP_output:
         DEBUGF  1,"TCP_output: Entering persist state\n"
 
         mov     [eax + TCP_SOCKET.t_rxtshift], 0
-        TCP_set_persist eax
+        call    TCP_set_persist
        @@:
 
 ;----------------------------
@@ -523,7 +523,7 @@ TCP_send:
         je      .retransmit_set
 
         mov     edx, [eax + TCP_SOCKET.t_rxtcur]
-        mov     [eax + TCP_SOCKET.timer_retransmission], dx
+        mov     [eax + TCP_SOCKET.timer_retransmission], edx
 
         cmp     [eax + TCP_SOCKET.timer_persist], 0
         jne     .retransmit_set

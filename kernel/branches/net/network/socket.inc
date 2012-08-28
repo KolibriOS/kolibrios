@@ -55,7 +55,8 @@ struct  TCP_SOCKET              IP_SOCKET
         RemotePort              dw ?
 
         t_state                 dd ? ; TCB state
-        t_rxtshift              dd ?
+        t_rxtshift              db ?
+                                rb 3 ; align
         t_rxtcur                dd ?
         t_dupacks               dd ?
         t_maxseg                dd ?
@@ -125,10 +126,10 @@ struct  TCP_SOCKET              IP_SOCKET
 
 ;-------
 ; Timers
-        timer_retransmission    dw ? ; rexmt
-        timer_persist           dw ?
-        timer_keepalive         dw ? ; keepalive/syn timeout
-        timer_timed_wait        dw ? ; also used as 2msl timer
+        timer_retransmission    dd ? ; rexmt
+        timer_persist           dd ?
+        timer_keepalive         dd ? ; keepalive/syn timeout
+        timer_timed_wait        dd ? ; also used as 2msl timer
 
 ; extra
 
