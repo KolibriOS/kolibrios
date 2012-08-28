@@ -261,7 +261,8 @@ Start_Enum:
         pop     eax
         test    al, al
         js      nextDev
-        
+
+nextdev2:
         test    byte [V_Dev], 7
         jnz     nextDev
         
@@ -307,7 +308,7 @@ load_and_start:
 
        .next:
         cmp     byte[param], 'A'
-        je      nextDev
+        je      nextdev2
         jmp     exit
 
 
