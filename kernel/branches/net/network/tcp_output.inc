@@ -44,7 +44,7 @@ TCP_output:
 
         mov     ebx, [eax + TCP_SOCKET.SND_MAX]
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
-        jne     .not_idle
+        jbe     .not_idle
 
         mov     ebx, [eax + TCP_SOCKET.t_idle]
         cmp     ebx, [eax + TCP_SOCKET.t_rxtcur]
@@ -78,8 +78,8 @@ TCP_output:
 ; Otherwise, if window is small but nonzero, and timer expired,
 ; we will send what we can and go to transmit state
 
-        test    [eax + TCP_SOCKET.t_force], -1
-        jz      .no_force
+        cmp     [eax + TCP_SOCKET.t_force], 0
+        je      .no_force
 
         test    ecx, ecx
         jnz     .no_zero_window
@@ -203,31 +203,42 @@ TCP_output:
 ;----------------------------------------
 ; Check if a window update should be sent (154)
 
+        DEBUGF  1,"TCP_output: window=%d\n", ecx
+
+; Compare available window to amount of window known to peer (as advertised window less next expected input)
+; If the difference is at least two max size segments, or at least 50% of the maximum possible window,
+; Then we want to send a window update to the peer.
+
         test    ecx, ecx
         jz      .no_window
 
         push    ecx
         mov     cl, [eax + TCP_SOCKET.RCV_SCALE]
-        inc     cl                                      ; we want it *2
         mov     ebx, TCP_max_win
         shl     ebx, cl
         pop     ecx
         cmp     ebx, ecx
-        cmovb   ebx, ecx
+        jb      @f
+        mov     ebx, ecx
+       @@:
+        sub     ebx, [eax + TCP_SOCKET.RCV_ADV]
+        add     ebx, [eax + TCP_SOCKET.RCV_NXT]
 
-        ; now ebx is TWICE the amount we can increase the window
-        ; (with TCP_max_win shl rcv_scale as the maximum)
+        mov     edi, [eax + TCP_SOCKET.t_maxseg]
+        shl     edi, 1
 
-        cmp     ebx, [eax + TCP_SOCKET.t_maxseg]
-        jae     TCP_send
+;        cmp     ebx, edi
+;        jae     TCP_send
 
-        cmp     ebx, 8192       ;[eax + TCP_SOCKET.]    ;;; FIXME: check with receive buffer high water mark
-        jae     TCP_send
+;        cmp     ebx, [eax + TCP_SOCKET.]    ;;; TODO: check with receive buffer high water mark
+;        jae     TCP_send
 
   .no_window:
 
 ;--------------------------
 ; Should a segment be sent? (174)
+
+        DEBUGF  1,"TCP_output: 174\n"
 
         test    [eax + TCP_SOCKET.t_flags], TF_ACKNOW   ; we need to ACK
         jnz     TCP_send
@@ -320,11 +331,13 @@ TCP_send:
         test    [eax + TCP_SOCKET.t_flags], TF_NOOPT
         jnz     .options_done
 
-        mov     ecx, 1460                              ;;;; FIXME
+        mov     ecx, 1460                              ;;;; FIXME: use routing blablabla to determine MSS
         or      ecx, TCP_OPT_MAXSEG shl 24 + 4 shl 16
         bswap   ecx
         push    ecx
         add     di, 4
+
+        DEBUGF  1,"TCP_send: added maxseg option\n"
 
         test    [eax + TCP_SOCKET.t_flags], TF_REQ_SCALE
         jz      .no_syn
@@ -341,6 +354,8 @@ TCP_send:
         bswap   ecx
         pushd   ecx
         add     di, 4
+
+        DEBUGF  1,"TCP_send: added scale option\n"
 
   .no_syn:
 
@@ -360,12 +375,12 @@ TCP_send:
         jz      .no_timestamp
 
   .timestamp:
-        mov     ebx, [timer_ticks]
-        bswap   ebx
-        push    ebx
-        pushw   0
-        pushd   TCP_OPT_TIMESTAMP + 10 shl 8 + TCP_OPT_NOP shl 16 + TCP_OPT_NOP shl 24
-        add     di, 10
+        pushd   0
+        pushd   [timer_ticks]
+        pushd   TCP_OPT_NOP + TCP_OPT_NOP shl 8 + TCP_OPT_TIMESTAMP shl 16 + 10 shl 24
+        add     di, 12
+
+        DEBUGF  1,"TCP_send: added timestamp\n"
 
   .no_timestamp:
 
