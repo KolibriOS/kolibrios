@@ -122,12 +122,17 @@ version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
 include "boot/preboot.inc"
 
 include "boot/booteng.inc"     ; english system boot messages
+diff16 "bootcode start: ",0,$
 
 include "boot/bootcode.inc"    ; 16 bit system boot code
+
+diff16 "pci16    start: ",0,$
 include "bus/pci/pci16.inc"
+
+diff16 "biosdisk start: ",0,$
 include "detect/biosdisk.inc"
 
-diff16 "end of code16  ",0,$
+diff16 "end of code16 : ",0,$
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                      ;;
@@ -135,7 +140,7 @@ diff16 "end of code16  ",0,$
 ;;                                                                      ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
+switch_32:
 ; CR0 Flags - Protected mode and Paging
 
 	mov ecx, CR0_PE
@@ -191,7 +196,8 @@ tmp_gdt:
 	dw     11011111b *256 +10010010b
 	db     0x00
 
-diff16 "end of tmp_gdt ",0,$
+diff10 "32bit enter sz :",switch_32,$
+diff16 "data16   start :",0,$
 
 include "data16.inc"
 

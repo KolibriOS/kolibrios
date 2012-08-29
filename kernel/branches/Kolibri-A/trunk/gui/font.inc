@@ -146,6 +146,7 @@ align 4
 
 	xor	ebp, ebp	; font#
 	mov	[font_check_routine], ebp
+;        inc     ebp
 
 	test	ecx, ecx
 	js	.checked
@@ -187,13 +188,13 @@ font_check_routine  dd ?
 
 
 align 8
-sdsh_data:
+nsvf_data:
 
 diff16 "sdsh_data      : ",0,$
 
 include 'fonts/sd_data.asm'
 
-sdsh_code:
+nsvf_code:
 
 ; eax   =       if (bit[31])
 ;                               then lower 31 bits points to the user-selected font
@@ -221,24 +222,25 @@ nsvf_draw_char:
 ; eax = left side X
 ; ebx = bottom Y
 ; edi = colour 0x0RRGGBB
-; ebp = font@
+; ebp = font#
 ; ecx = ascii, zero-extended to 32bits
 	push	ecx
 	push	edx
 	push	ebp
-	shl	ebp, 4
-	add	ebp, sdsh_data.info
+	shl	ebp, 5
+	add	ebp, nsvf_info
 	call   ch_checkscreen
 	jb	       .exit
 	call   ch_checkwin
 	jc	       .exit
 	mov	edx, [ebp + 4]		    ; chartable addr
 	mov	cx, word[edx + ecx*2]	    ; tick info
+	and   cx, 0xFFE7		  ; bits 3,4 used for width control
 	mov	edx, ecx
 	and	ecx, 7			    ; cl = number of ticks
 	jz	.blank
 	shr	edx, 4			    ; offset in the chartable
-	add	edx, sdsh_data.chars	    ; edx -> the char's ticklist
+	add	edx, [ebp + 12] 	    ; edx -> the char's ticklist
 .next_tick:
 	call	parse_tick
 	add	edx, 2
@@ -287,7 +289,7 @@ diff16 "parse_tick     : ",0,$
 
 .gptick.1:
 	;  1-byte tickgroups .v1-v4:
-	lea	esi, [sdsh_data.v1+edx]
+	lea	esi, [nsvf.v1+edx]
 	inc	dh		  ; dh = 1 vertex
 	sub	dl, 2			; .v1 : 2 ticks only (#38, 39)
 	jae	.gptick.1v2v4
@@ -307,7 +309,7 @@ diff16 "parse_tick     : ",0,$
 	cmp	dl, 112
 	jae	.gptick.3
 	sub	dl, 80
-	lea	esi, [sdsh_data.v5 + edx*2]
+	lea	esi, [nsvf.v5 + edx*2]
 	mov	dh, 5
 	shr	dl, 3
 	jmp	.gptick.done
@@ -317,7 +319,7 @@ diff16 "parse_tick     : ",0,$
 	cmp	dl, 128
 	jae	.gptick.4
 	sub	dl, 112
-	lea	esi, [sdsh_data.v9 + edx*2 + edx]
+	lea	esi, [nsvf.v9 + edx*2 + edx]
 	mov	dh, 9
 	shr	dl, 2
 	jmp	.gptick.done
@@ -327,7 +329,7 @@ diff16 "parse_tick     : ",0,$
 	cmp	dl, 128 		; fix this when needed
 	jae	.exit			; not implemented yet!
 	sub	dl, 128
-	lea	esi, [sdsh_data.v13 + edx*4]
+	lea	esi, [nsvf.v13 + edx*4]
 	mov	dh, 13
 	shr	dl, 2
 
@@ -348,16 +350,16 @@ diff16 "parse_tick     : ",0,$
 @@:	dec	dl
 	jz	.cstick.2
 .cstick.3:
-	mov	esi, sdsh_data.cs3	; 12pix-ring
+	mov	esi, nsvf_data.cs3	; 12pix-ring
 	mov	dl, 10
 	jmp	.draw
 .cstick.2:
 	mov	dl, 7			; 9-pix filled square
 .cstick.1:
-	mov	esi, sdsh_data.cs2	; the square tickfield
+	mov	esi, nsvf_data.cs2	; the square tickfield
 	jmp	.draw
 .cstick.0:
-	mov	esi, sdsh_data.cs0	; 4pix-square
+	mov	esi, nsvf_data.cs0	; 4pix-square
 	mov	dl, 2
 	jmp	.draw
 
@@ -374,7 +376,7 @@ diff16 "parse_tick     : ",0,$
 	call	ch_putpixel
 	jmp	.exit
 .ritick.1:
-	mov	esi, sdsh_data.ri1  ; 8pix-ring
+	mov	esi, nsvf_data.ri1  ; 8pix-ring
 	mov	dl, 6
 	jmp	.draw
 
@@ -390,7 +392,7 @@ diff16 "parse_tick     : ",0,$
 	sub	dl, 2		    ; num_vertice = num_points - 2
 	and	cl, 0x18	    ; two (lower) rotation bits
 	shr	cl, 3
-	mov	esi, sdsh_data.blank
+	mov	esi, nsvf_data.blank
 
 .draw:
 ; cl = rot; dl = numvert; dh = orig.xy
@@ -584,4 +586,4 @@ diff16 "ch_putpix      : ",0,$
      ret
 
 
-diff10 "new font  code size",sdsh_code,$
+diff10 "new font  code size",nsvf_code,$
