@@ -37,7 +37,7 @@ TCP_input:
         pushfd
         cli
 
-        DEBUGF  1,"TCP_input: size=%u\n", ecx
+        DEBUGF  1,"TCP_input: size=%u time=%d\n", ecx, [timer_ticks]
 
 ; First, record the current time
         mov     eax, [timer_ticks]      ; in 1/100 seconds
@@ -500,8 +500,8 @@ TCP_input:
         jg      @f
         mov     eax, edx
        @@:
-        DEBUGF  1,"Receive window size=%d\n", ax
-        mov     [ebx + TCP_SOCKET.RCV_WND], ax
+        DEBUGF  1,"Receive window size=%d\n", eax
+        mov     [ebx + TCP_SOCKET.RCV_WND], eax
         pop     edx
 
 ; If listen or Syn sent, go to that specific code right away
@@ -598,7 +598,7 @@ TCP_input:
         mov     eax, [edx + TCP_header.SequenceNumber]
         add     eax, ecx
         sub     eax, [ebx + TCP_SOCKET.RCV_NXT]
-        sub     ax, [ebx + TCP_SOCKET.RCV_WND]          ; eax now holds the number of bytes to drop
+        sub     eax, [ebx + TCP_SOCKET.RCV_WND]         ; eax now holds the number of bytes to drop
         jle     .no_excess_data
 
         DEBUGF  1,"%d bytes beyond right edge of window\n", eax
@@ -636,9 +636,22 @@ TCP_input:
   .dont_drop_all:
 ;;; TODO: update stats
 ;;; TODO: 733
+
         sub     ecx, eax
         and     [ebx + TCP_SOCKET.t_flags], not (TH_PUSH or TH_FIN)
   .no_excess_data:
+
+;--------------------- FIXME -------------------
+
+        pusha
+        movzx   esi, [edx + TCP_header.DataOffset]
+        add     esi, edx
+        lea     eax, [ebx + STREAM_SOCKET.rcv]
+        call    SOCKET_ring_write                       ; Add the data to the socket buffer
+        add     [ebx + TCP_SOCKET.RCV_NXT], ecx         ; Update sequence number with number of bytes we have copied
+        popa
+
+;--------------------- FIXME --------------------
 
 ;-----------------
 ; Record timestamp (737-746)
@@ -1324,8 +1337,6 @@ align 4
         je      .not_urgent
 
 ; Ignore bogus urgent offsets
-
-        ;;; 1040-1050
 
         movzx   eax, [edx + TCP_header.UrgentPointer]
         add     eax, [ebx + STREAM_SOCKET.rcv.size]

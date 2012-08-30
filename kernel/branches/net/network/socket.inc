@@ -76,7 +76,7 @@ struct  TCP_SOCKET              IP_SOCKET
         SND_WND                 dd ? ; send window
 
 ; receive sequence
-        RCV_WND                 dw ? ; receive window                           ; FIXME: better use a dword?
+        RCV_WND                 dd ? ; receive window
         RCV_NXT                 dd ? ; next receive sequence number to use
         RCV_UP                  dd ? ; urgent pointer
         IRS                     dd ? ; initial receive sequence number
