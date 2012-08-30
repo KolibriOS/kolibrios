@@ -45,6 +45,7 @@ ETHER_PPP_SESSION       = 0x6488
 
 ; PPP protocol numbers
 PPP_IPv4                = 0x2100
+PPP_LCP                 = 0x21c0
 
 ;Protocol family
 AF_UNSPEC               = 0

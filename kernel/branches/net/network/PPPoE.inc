@@ -15,22 +15,36 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 struct  PPPoE_frame
-
         VersionAndType  db ?
         Code            db ?
         SessionID       dw ?
         Length          dw ?            ; Length of payload, does NOT include the length PPPoE header.
         Payload         rb 0
-
 ends
 
+struct  LCP_frame
+        Code            db ?
+        Identifier      db ?
+        Length          dw ?
+        Data            rb 0
+ends
 
 uglobal
-
         PPPoE_SID       dw ?
         PPPoE_MAC       dp ?
-
 endg
+
+LCP_config_request      = 1
+LCP_config_ack          = 2
+LCP_config_nak          = 3
+LCP_config_reject       = 4
+LCP_terminate_request   = 5
+LCP_terminate_ack       = 6
+LCP_code_reject         = 7
+LCP_protocol_reject     = 8
+LCP_echo_request        = 9
+LCP_echo_reply          = 10
+LCP_discard_request     = 11
 
 
 ;-----------------------------------------------------------------
@@ -206,6 +220,9 @@ PPPoE_session_input:
         cmp     ax, PPP_IPv4
         je      IPv4_input
 
+        cmp     ax, PPP_LCP
+        je      LCP_input
+
         DEBUGF  2,"PPPoE_input: Unknown protocol=%x\n", ax
 
   .dump:
@@ -274,8 +291,58 @@ PPPoE_output:
 
 
 
+
+;-----------------------------------------------------------------
+;
+; LCP_input:
+;
+;  IN:  Pointer to buffer in [esp]
+;       size of buffer in [esp+4]
+;       pointer to device struct in ebx
+;       pointer to LCP header in edx
+;       size of LCP packet in ecx
+;  OUT: /
+;
+;-----------------------------------------------------------------
+align 4
+LCP_input:
+
+        DEBUGF  1,"LCP_input\n"
+
+        cmp     [edx + LCP_frame.Code], LCP_echo_request
+        je      .echo
+
+        jmp     .dump
+
+  .echo:
+        mov     [edx + LCP_frame.Code], LCP_echo_reply
+        mov     esi, [esp]
+
+        push    dword [esi + ETH_header.DstMAC]
+        push    dword [esi + ETH_header.SrcMAC]
+        pop     dword [esi + ETH_header.DstMAC]
+        pop     dword [esi + ETH_header.SrcMAC]
+        push    word [esi + ETH_header.DstMAC + 4]
+        push    word [esi + ETH_header.SrcMAC + 4]
+        pop     word [esi + ETH_header.DstMAC + 4]
+        pop     word [esi + ETH_header.SrcMAC + 4]
+
+        call    [ebx + NET_DEVICE.transmit]
+        ret
+
+  .dump:
+        DEBUGF  2,"LCP_input: dumping\n"
+        call    kernel_free
+        add     esp, 4
+        ret
+
+
+
+
 align 4
 PPPoE_start_connection:
+
+        DEBUGF  2,"PPPoE_start_connection: %x\n", cx
 
         cmp     [PPPoE_SID], 0
         jne     .fail
@@ -294,6 +361,8 @@ PPPoE_start_connection:
 
 align 4
 PPPoE_stop_connection:
+
+        DEBUGF  2,"PPPoE_stop_connection\n"
 
         xor     eax, eax
         mov     [PPPoE_SID], ax
