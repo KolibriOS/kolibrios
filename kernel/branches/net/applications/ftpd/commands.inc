@@ -652,8 +652,8 @@ cmdPASS:
         jnz     .incorrect
         cmp     dword [edi], -1                                 ; no key, section or file found.. fail!
         je      .incorrect
-;;;        cmp     byte [edi], 0                                   ; zero password? ok!
-;;;        je      .ok
+        cmp     byte [edi], 0                                   ; zero password? ok!
+        je      .ok
 
         add     esi, 5
         sub     ecx, 5
@@ -904,6 +904,9 @@ cmdRETR:
         dec     edi
         lea     esi, [ebp + thread_data.buffer + 5]
         mov     ecx, 1024
+        cmp     byte [esi], '/'
+        jne     .loop
+        inc     esi
   .loop:
         lodsb
         cmp     al, 0x20
