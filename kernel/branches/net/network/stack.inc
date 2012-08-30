@@ -221,7 +221,7 @@ stack_init:
         mov     ecx, (MAX_NET_DEVICES + 2)
         rep     stosd
 
-;        PPPOE_init
+        PPPoE_init
 
         IPv4_init
 ;        IPv6_init
@@ -590,7 +590,7 @@ checksum_2:
 
 ;----------------------------------------------------------------
 ;
-;  System function to work with network devices (73)
+;  System function to work with network devices (76)
 ;
 ;----------------------------------------------------------------
 align 4

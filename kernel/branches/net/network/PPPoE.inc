@@ -35,6 +35,20 @@ endg
 
 ;-----------------------------------------------------------------
 ;
+; IPv4_init
+;
+;  This function resets all IP variables
+;
+;-----------------------------------------------------------------
+macro   PPPoE_init {
+
+        call    PPPoE_stop_connection
+
+}
+
+
+;-----------------------------------------------------------------
+;
 ; PPPoE discovery input
 ;
 ; Handler of received Ethernet packet with type = Discovery
@@ -235,15 +249,17 @@ PPPoE_output:
         call    ETH_output
         jz      .eth_error
 
+        sub     ecx, PPPoE_frame.Payload
         mov     [edi + PPPoE_frame.VersionAndType], 0x11
         mov     [edi + PPPoE_frame.Code], 0
         popw    [edi + PPPoE_frame.SessionID]
         xchg    cl, ch
         mov     [edi + PPPoE_frame.Length], cx
         xchg    cl, ch
+
         pop     word [edi + PPPoE_frame.Payload]
 
-        sub     ecx, PPPoE_frame.Payload + 2
+        sub     ecx, 2
         add     edi, PPPoE_frame.Payload + 2
 
         DEBUGF  1,"PPPoE_output: success!\n"
@@ -262,7 +278,7 @@ align 4
 PPPoE_start_connection:
 
         cmp     [PPPoE_SID], 0
-        je      .fail
+        jne     .fail
 
         mov     [PPPoE_SID], cx
         mov     dword [PPPoE_MAC], edx

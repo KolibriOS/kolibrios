@@ -39,7 +39,20 @@ PPPoE_PADR      = 0x19  ; .. Request
 PPPoE_PADS      = 0x65  ; .. Session-confirmation
 PPPoE_PADT      = 0xa7  ; .. Terminate
 
-struct  PPPoE_frame
+TAG_EOL         = 0x0000
+TAG_SERVICE_NAME= 0x0101
+TAG_AC_NAME     = 0x0201
+TAG_HOST_UNIQ   = 0x0301
+TAG_AC_COOKIE   = 0x0401
+
+struct  ETH_frame
+        DestMac         dp ?
+        SrcMac          dp ?
+        Type            dw ?
+ends
+
+
+struct  PPPoE_frame     ETH_frame
         VersionAndType  db ?
         Code            db ?
         SessionID       dw ?
@@ -73,9 +86,9 @@ main:
 
         mcall   socket, 777, 3, 666
         mov     [socketnum], eax
-        mcall   send, [socketnum], PADI, 14 + 6 + 4, 0
+        mcall   send, [socketnum], PADI, PADI.length, 0
 
-  .recv:
+mainloop:
         mcall   10
 
         call    [con_get_flags]
@@ -83,65 +96,65 @@ main:
         jnz     close_conn
 
         mcall   recv, [socketnum], buffer, 4096
-        cmp     eax, 20
-        jb      .recv
+        cmp     eax, sizeof.PPPoE_frame
+        jb      mainloop
 
-        cmp     [buffer + 14 + PPPoE_frame.Code], PPPoE_PADO
-        je      .pado
+        cmp     [buffer + PPPoE_frame.Code], PPPoE_PADO
+        je      pado
 
-        cmp     [buffer + 14 + PPPoE_frame.Code], PPPoE_PADS
-        je      .pads
+        cmp     [buffer + PPPoE_frame.Code], PPPoE_PADS
+        je      pads
 
-        cmp     [buffer + 14 + PPPoE_frame.Code], PPPoE_PADT
-        je      .padt
+        cmp     [buffer + PPPoE_frame.Code], PPPoE_PADT
+        je      padt
 
-        jmp     .recv
+        jmp     mainloop
 
-  .pado:
+pado:
 
         push    str2
         call    [con_write_asciiz]
 
-        lea     esi, [buffer + 6]               ; source mac -> dest mac
-        lea     edi, [buffer]
-        movsb
+        lea     esi, [buffer + ETH_frame.SrcMac]                ; source mac -> dest mac
+        lea     edi, [buffer + ETH_frame.DestMac]
+        movsw
         movsd
 
-        mov     byte [buffer + 15], PPPoE_PADR  ; change packet type to PADR
+        mov     byte [buffer + PPPoE_frame.Code], PPPoE_PADR    ; change packet type to PADR
 
-        mov     al, byte [buffer + 19]          ; get packet size
-        mov     ah, byte [buffer + 18]
+        mov     al, byte [buffer + PPPoE_frame.Length + 1]      ; get packet size
+        mov     ah, byte [buffer + PPPoE_frame.Length + 0]
         movzx   esi, ax
-        add     esi, 20
+        add     esi, sizeof.PPPoE_frame
 
         mcall   send, [socketnum], buffer, , 0  ; now send it!
 
-        jmp     .recv
+        jmp     mainloop
 
 
-  .pads:
+pads:
 
         push    str3
         call    [con_write_asciiz]
 
-        mov     edx, dword [buffer + 6]         ; copy the MAC address
-        mov     si, word [buffer + 6 +4]
+        mov     edx, dword [buffer + ETH_frame.SrcMac]                ; source mac -> dest mac
+        mov      si, word [buffer + ETH_frame.SrcMac + 4]
         mov     dword [PADT.mac], edx
         mov     word [PADT.mac + 4], si
 
-        mov     cx, word [buffer + 6 + 2]       ; and Session ID
+        mov     cx, word [buffer + PPPoE_frame.SessionID]       ; and Session ID
         mov     [PADT.sid], cx
 
-        mcall   75, API_PPPOE + 0               ; Start PPPoE session
+        mcall   76, API_PPPOE + 0               ; Start PPPoE session
 
-        jmp     .recv
+        jmp     mainloop
 
-  .padt:
+padt:
 
         push    str4
         call    [con_write_asciiz]
 
-        mcall   75, API_PPPOE + 1
+        mcall   76, API_PPPOE + 1
 
 exit:
         mcall   close, [socketnum]
@@ -169,10 +182,18 @@ PADI:
         db      0x11
         db      PPPoE_PADI
         dw      0               ; session ID
-        dw      4 shl 8
+        dw      20 shl 8
 
-        dw      0x0101          ; service name tag with zero length
+        dw      TAG_SERVICE_NAME
         dw      0x0000
+
+        dw      TAG_HOST_UNIQ
+        dw      0x0c00          ; 12 bytes long
+        dd      0xdead          ; some random id
+        dd      0xbeef
+        dd      0x1337
+
+        .length = $ - PADI
 
 PADT:
 
