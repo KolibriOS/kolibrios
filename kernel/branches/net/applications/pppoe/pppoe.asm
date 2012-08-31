@@ -32,6 +32,14 @@ include '../dll.inc'
 include '../network.inc'
 include '../struct.inc'
 
+; Ethernet protocol numbers
+ETHER_PPP_DISCOVERY     = 0x6388
+ETHER_PPP_SESSION       = 0x6488
+
+; PPP protocol numbers
+PPP_IPv4                = 0x2100
+PPP_LCP                 = 0x21c0
+
 ; PPP Active Discovery...
 PPPoE_PADI      = 0x09  ; .. Initiation
 PPPoE_PADO      = 0x07  ; .. Offer
@@ -45,12 +53,23 @@ TAG_AC_NAME     = 0x0201
 TAG_HOST_UNIQ   = 0x0301
 TAG_AC_COOKIE   = 0x0401
 
+LCP_config_request      = 1
+LCP_config_ack          = 2
+LCP_config_nak          = 3
+LCP_config_reject       = 4
+LCP_terminate_request   = 5
+LCP_terminate_ack       = 6
+LCP_code_reject         = 7
+LCP_protocol_reject     = 8
+LCP_echo_request        = 9
+LCP_echo_reply          = 10
+LCP_discard_request     = 11
+
 struct  ETH_frame
         DestMac         dp ?
         SrcMac          dp ?
         Type            dw ?
 ends
-
 
 struct  PPPoE_frame     ETH_frame
         VersionAndType  db ?
@@ -58,6 +77,17 @@ struct  PPPoE_frame     ETH_frame
         SessionID       dw ?
         Length          dw ?            ; Length of payload, does NOT include the length PPPoE header.
         Payload         rb 0
+ends
+
+struct  PPP_frame       PPPoE_frame
+        Protocol        dw ?
+ends
+
+struct  LCP_frame       PPP_frame
+        LCP_Code        db ?
+        LCP_Identifier  db ?
+        LCP_Length      dw ?
+        LCP_Data        rb 0
 ends
 
 ; entry point
@@ -98,6 +128,12 @@ mainloop:
         mcall   recv, [socketnum], buffer, 4096
         cmp     eax, sizeof.PPPoE_frame
         jb      mainloop
+
+        cmp     word [buffer + ETH_frame.Type], ETHER_PPP_SESSION
+        je      LCP_input
+
+        cmp     word [buffer + ETH_frame.Type], ETHER_PPP_DISCOVERY
+        jne     mainloop
 
         cmp     [buffer + PPPoE_frame.Code], PPPoE_PADO
         je      pado
@@ -166,6 +202,35 @@ close_conn:
         mcall   send, [socketnum], PADT, 14 + 6, 0
         jmp     exit
 
+
+LCP_input:
+
+        cmp     word [buffer + PPP_frame.Protocol], PPP_LCP
+        jne     mainloop
+
+        cmp     [buffer + LCP_frame.LCP_Code], LCP_echo_request
+        je      .echo
+
+  .dump:
+        jmp     mainloop
+
+  .echo:
+        mov     [buffer + LCP_frame.LCP_Code], LCP_echo_reply
+
+        push    dword [buffer + ETH_frame.DestMac]
+        push    dword [buffer + ETH_frame.SrcMac]
+        pop     dword [buffer + ETH_frame.DestMac]
+        pop     dword [buffer + ETH_frame.SrcMac]
+        push    word [buffer + ETH_frame.DestMac + 4]
+        push    word [buffer + ETH_frame.SrcMac + 4]
+        pop     word [buffer + ETH_frame.DestMac + 4]
+        pop     word [buffer + ETH_frame.SrcMac + 4]
+
+        mov     esi, eax
+        mcall   send, [socketnum], buffer, , 0  ; now send it!
+
+        jmp     mainloop
+
 ; data
 title   db      'PPPoE',0
 str1    db      'Sending PADI',13,10,0
@@ -228,6 +293,7 @@ import  console,        \
 i_end:
 
 socketnum       dd ?
+sid             dw ?
 buffer          rb 4096
                 rb 4096    ; stack
 mem:
