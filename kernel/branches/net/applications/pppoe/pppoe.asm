@@ -162,8 +162,7 @@ pado:
         mov     ah, byte [buffer + PPPoE_frame.Length + 0]
         movzx   esi, ax
         add     esi, sizeof.PPPoE_frame
-
-        mcall   send, [socketnum], buffer, , 0  ; now send it!
+        mcall   send, [socketnum], buffer, , 0                  ; now send it!
 
         jmp     mainloop
 
@@ -173,7 +172,7 @@ pads:
         push    str3
         call    [con_write_asciiz]
 
-        mov     edx, dword [buffer + ETH_frame.SrcMac]                ; source mac -> dest mac
+        mov     edx, dword [buffer + ETH_frame.SrcMac]          ; source mac -> dest mac
         mov      si, word [buffer + ETH_frame.SrcMac + 4]
         mov     dword [PADT.mac], edx
         mov     word [PADT.mac + 4], si
@@ -190,7 +189,7 @@ padt:
         push    str4
         call    [con_write_asciiz]
 
-        mcall   76, API_PPPOE + 1
+        mcall   76, API_PPPOE + 1               ; Stop PPPoE session
 
 exit:
         mcall   close, [socketnum]
@@ -199,7 +198,7 @@ exit:
 
 close_conn:
 
-        mcall   send, [socketnum], PADT, 14 + 6, 0
+        mcall   send, [socketnum], PADT, PADT.length, 0
         jmp     exit
 
 
@@ -217,17 +216,13 @@ LCP_input:
   .echo:
         mov     [buffer + LCP_frame.LCP_Code], LCP_echo_reply
 
-        push    dword [buffer + ETH_frame.DestMac]
-        push    dword [buffer + ETH_frame.SrcMac]
-        pop     dword [buffer + ETH_frame.DestMac]
-        pop     dword [buffer + ETH_frame.SrcMac]
-        push    word [buffer + ETH_frame.DestMac + 4]
-        push    word [buffer + ETH_frame.SrcMac + 4]
-        pop     word [buffer + ETH_frame.DestMac + 4]
-        pop     word [buffer + ETH_frame.SrcMac + 4]
+        lea     esi, [buffer + ETH_frame.SrcMac]        ; source mac -> dest mac
+        lea     edi, [buffer + ETH_frame.DestMac]
+        movsw
+        movsd
 
         mov     esi, eax
-        mcall   send, [socketnum], buffer, , 0  ; now send it!
+        mcall   send, [socketnum], buffer, , 0          ; now send it back!
 
         jmp     mainloop
 
@@ -240,21 +235,22 @@ str4    db      'Got PADT - connection terminated by Access Concentrator',13,10,
 
 
 PADI:
-        dp      -1              ; dest mac
-        dp      0               ; source mac (overwritten by kernel)
-        dw      0               ; type       (overwritten by kernel)
+        dp      0xffffffffffff          ; dest mac: broadcast
+        dp      0                       ; source mac (overwritten by kernel)
+        dw      ETHER_PPP_DISCOVERY     ; type
 
-        db      0x11
-        db      PPPoE_PADI
-        dw      0               ; session ID
-        dw      20 shl 8
+        db      0x11                    ; Version and Type
+        db      PPPoE_PADI              ; Code
+        dw      0                       ; session ID
+        dw      20 shl 8                ; Payload Length
 
-        dw      TAG_SERVICE_NAME
-        dw      0x0000
+        dw      TAG_SERVICE_NAME        ; tag
+        dw      0x0000                  ; length
 
-        dw      TAG_HOST_UNIQ
-        dw      0x0c00          ; 12 bytes long
-        dd      0xdead          ; some random id
+        dw      TAG_HOST_UNIQ           ; tag
+        dw      0x0c00                  ; length = 12 bytes
+
+        dd      0xdead                  ; some random id
         dd      0xbeef
         dd      0x1337
 
@@ -262,14 +258,16 @@ PADI:
 
 PADT:
 
-  .mac  dp      0
-        dp      0
-        dw      0
+  .mac  dp      0                       ; Dest mac, to be filled in
+        dp      0                       ; source mac (overwritten by kernel)
+        dw      ETHER_PPP_DISCOVERY     ; Type
 
-        db      0x11
-        db      PPPoE_PADT
-  .sid  dw      0
-        dw      0
+        db      0x11                    ; Version and Type
+        db      PPPoE_PADT              ; Code: terminate connection
+  .sid  dw      0                       ; session id, to be filled in
+        dw      0                       ; PAyload length = 0
+
+        .length = $ - PADT
 
 
 ; import
@@ -293,7 +291,7 @@ import  console,        \
 i_end:
 
 socketnum       dd ?
-sid             dw ?
+
 buffer          rb 4096
                 rb 4096    ; stack
 mem:
