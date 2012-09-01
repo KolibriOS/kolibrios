@@ -203,9 +203,10 @@ PPPoE_session_input:
         cmp     ax, PPP_IPv4
         je      IPv4_input
 
-        cmp     ax, PPP_LCP
-        je      PPPoE_discovery_input   ; Send LCP packets to the PPP dialer
+;        cmp     ax, PPP_IPv6
+;        je      IPv6_input
 
+        jmp     PPPoE_discovery_input   ; Send LCP,CHAP,CBCP,... packets to the PPP dialer
         DEBUGF  2,"PPPoE_input: Unknown protocol=%x\n", ax
 
   .dump:
