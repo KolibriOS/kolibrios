@@ -37,8 +37,12 @@ ETHER_PPP_DISCOVERY     = 0x6388
 ETHER_PPP_SESSION       = 0x6488
 
 ; PPP protocol numbers
-PPP_IPv4                = 0x2100
-PPP_LCP                 = 0x21c0
+PPP_LCP                 = 0x21c0        ; Link Configure Protocol
+PPP_CBCP                = 0x29c0        ; CallBack Control Protocol
+PPP_PAP                 = 0x23c0        ; Password Authenication Protocol packet
+PPP_CHAP                = 0x23c2        ; Challenge Handshake Authentication Protocol
+PPP_IPCP                = 0x2180        ; Internet Protocol Configure Protocol (maybe this should be in kernel?)
+PPP_CCP                 = 0xfd80        ; Compression Configure Protocol
 
 ; PPP Active Discovery...
 PPPoE_PADI      = 0x09  ; .. Initiation
@@ -130,7 +134,7 @@ mainloop:
         jb      mainloop
 
         cmp     word [buffer + ETH_frame.Type], ETHER_PPP_SESSION
-        je      LCP_input
+        je      SESSION_input
 
         cmp     word [buffer + ETH_frame.Type], ETHER_PPP_DISCOVERY
         jne     mainloop
@@ -202,10 +206,35 @@ close_conn:
         jmp     exit
 
 
+SESSION_input:
+
+        mov     ax, word[buffer + PPP_frame.Protocol]
+
+        cmp     ax, PPP_LCP
+        je      LCP_input
+
+        cmp     ax, PPP_CBCP
+        je      CBCP_input
+
+        cmp     ax, PPP_PAP
+        je      PAP_input
+
+        cmp     ax, PPP_CHAP
+        je      CHAP_input
+
+        cmp     ax, PPP_IPCP
+        je      IPCP_input
+
+        cmp     ax, PPP_CCP
+        je      CCP_input
+
+        jmp     mainloop
+
+
+
 LCP_input:
 
-        cmp     word [buffer + PPP_frame.Protocol], PPP_LCP
-        jne     mainloop
+        stdcall con_write_asciiz, str_lcp
 
         cmp     [buffer + LCP_frame.LCP_Code], LCP_echo_request
         je      .echo
@@ -226,12 +255,48 @@ LCP_input:
 
         jmp     mainloop
 
+CBCP_input:
+
+        stdcall con_write_asciiz, str_cbcp
+
+        jmp     mainloop
+
+PAP_input:
+
+        stdcall con_write_asciiz, str_pap
+
+        jmp     mainloop
+
+CHAP_input:
+
+        stdcall con_write_asciiz, str_chap
+
+        jmp     mainloop
+
+IPCP_input:
+
+        stdcall con_write_asciiz, str_ipcp
+
+        jmp     mainloop
+
+CCP_input:
+
+        stdcall con_write_asciiz, str_ccp
+
+        jmp     mainloop
+
 ; data
 title   db      'PPPoE',0
 str1    db      'Sending PADI',13,10,0
 str2    db      'Got PADO',13,10,'Sending PADR',13,10,0
 str3    db      'Got PADS',13,10,'starting PPPoE session',13,10,0
 str4    db      'Got PADT - connection terminated by Access Concentrator',13,10,0
+str_lcp db      'Got LCP packet',13,10,0
+str_cbcp db     'got CBCP packet',13,10,0
+str_pap db      'got PAP packet',13,10,0
+str_chap db     'got CHAP packet',13,10,0
+str_ipcp db     'got IPCP packet',13,10,0
+str_ccp db      'got CCP packet',13,10,0
 
 
 PADI:
