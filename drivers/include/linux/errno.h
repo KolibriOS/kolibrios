@@ -111,4 +111,6 @@
 
 #define ERFKILL		132	/* Operation not possible due to RF-kill */
 
+#define ENOTSUPP        524     /* Operation is not supported */
+
 #endif

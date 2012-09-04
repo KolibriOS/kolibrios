@@ -37,6 +37,9 @@ u32_t  IMPORT  GetTimerTicks(void)__asm__("GetTimerTicks");
 
 addr_t STDCALL AllocPage(void)__asm__("AllocPage");
 addr_t STDCALL AllocPages(count_t count)__asm__("AllocPages");
+void   IMPORT  __attribute__((regparm(1)))
+               FreePage(addr_t page)__asm__("FreePage");
+
 
 void* STDCALL CreateRingBuffer(size_t size, u32_t map)__asm__("CreateRingBuffer");
 
@@ -50,6 +53,9 @@ void  FASTCALL MutexUnlock(struct mutex*)__asm__("MutexUnlock");
 
 addr_t IMPORT  GetStackBase(void)__asm__("GetStackBase");
 u32_t  IMPORT  GetPid(void)__asm__("GetPid");
+
+u32 STDCALL TimerHs(u32 delay, u32 interval,
+                    void *fn, void *data)asm("TimerHs");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -84,7 +90,6 @@ u32_t STDCALL PciWrite32(u32_t bus, u32_t devfn, u32_t reg,u32_t val)__asm__("Pc
 
 #define pciWriteLong(tag, reg, val) \
         PciWrite32(PCI_BUS_FROM_TAG(tag),PCI_DFN_FROM_TAG(tag),(reg),(val))
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -121,6 +126,14 @@ static inline void WaitEvent(evhandle_t evh)
 {
      __asm__ __volatile__ (
      "call *__imp__WaitEvent"
+     ::"a"(evh.handle),"b"(evh.euid));
+     __asm__ __volatile__ ("":::"ebx","ecx","edx","esi","edi");
+};
+
+static inline void DestroyEvent(evhandle_t evh)
+{
+     __asm__ __volatile__ (
+     "call *__imp__DestroyEvent"
      ::"a"(evh.handle),"b"(evh.euid));
      __asm__ __volatile__ ("":::"ebx","ecx","edx","esi","edi");
 };
@@ -175,7 +188,7 @@ static inline u32_t GetPgAddr(void *mem)
 
      __asm__ __volatile__ (
      "call *__imp__GetPgAddr \n\t"
-     :"=eax" (retval)
+     :"=a" (retval)
      :"a" (mem) );
      return retval;
 };
@@ -216,7 +229,7 @@ static inline void usleep(u32_t delay)
 static inline void udelay(u32_t delay)
 {
     if(!delay) delay++;
-    delay*= 500;
+    delay*= 100;
 
     while(delay--)
     {
@@ -298,7 +311,7 @@ static inline u32_t GetService(const char *name)
     (
      "pushl %%eax \n\t"
      "call *__imp__GetService"
-     :"=eax" (handle)
+     :"=a" (handle)
      :"a" (name)
      :"ebx","ecx","edx","esi", "edi"
   );
@@ -417,7 +430,7 @@ int drm_order(unsigned long size);
 
 static inline void __iomem *ioremap(uint32_t offset, size_t size)
 {
-    return (void __iomem*) MapIoMem(offset, size, 3);
+    return (void __iomem*) MapIoMem(offset, size, PG_SW|PG_NOCACHE);
 }
 
 static inline void iounmap(void *addr)

@@ -13,6 +13,10 @@
 #include <linux/compiler.h>
 #include <linux/bitops.h>
 
+#include <linux/typecheck.h>
+
+#define __init
+
 #define USHRT_MAX	((u16)(~0U))
 #define SHRT_MAX	((s16)(USHRT_MAX>>1))
 #define SHRT_MIN	((s16)(-SHRT_MAX - 1))
@@ -30,6 +34,16 @@
 #define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
 #define PTR_ALIGN(p, a)     ((typeof(p))ALIGN((unsigned long)(p), (a)))
 #define IS_ALIGNED(x, a)        (((x) & ((typeof(x))(a) - 1)) == 0)
+
+#define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
+
+#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+#define DIV_ROUND_CLOSEST(x, divisor)(                  \
+{                                                       \
+         typeof(divisor) __divisor = divisor;            \
+         (((x) + ((__divisor) / 2)) / (__divisor));      \
+}                                                       \
+)
 
 /**
  * upper_32_bits - return bits 32-63 of a number
@@ -219,6 +233,119 @@ static inline void *dev_get_drvdata(struct device *dev)
         (typecheck(unsigned long, a) && \
         typecheck(unsigned long, b) && \
         ((long)(b) - (long)(a) < 0))
+
+struct tvec_base;
+
+struct timer_list {
+         struct list_head entry;
+         unsigned long expires;
+
+         void (*function)(unsigned long);
+         unsigned long data;
+
+//         struct tvec_base *base;
+};
+
+struct timespec {
+    long tv_sec;                 /* seconds */
+    long tv_nsec;                /* nanoseconds */
+};
+
+
+#define build_mmio_read(name, size, type, reg, barrier)     \
+static inline type name(const volatile void __iomem *addr)  \
+{ type ret; asm volatile("mov" size " %1,%0":reg (ret)      \
+:"m" (*(volatile type __force *)addr) barrier); return ret; }
+
+#define build_mmio_write(name, size, type, reg, barrier) \
+static inline void name(type val, volatile void __iomem *addr) \
+{ asm volatile("mov" size " %0,%1": :reg (val), \
+"m" (*(volatile type __force *)addr) barrier); }
+
+build_mmio_read(readb, "b", unsigned char, "=q", :"memory")
+build_mmio_read(readw, "w", unsigned short, "=r", :"memory")
+build_mmio_read(readl, "l", unsigned int, "=r", :"memory")
+
+build_mmio_read(__readb, "b", unsigned char, "=q", )
+build_mmio_read(__readw, "w", unsigned short, "=r", )
+build_mmio_read(__readl, "l", unsigned int, "=r", )
+
+build_mmio_write(writeb, "b", unsigned char, "q", :"memory")
+build_mmio_write(writew, "w", unsigned short, "r", :"memory")
+build_mmio_write(writel, "l", unsigned int, "r", :"memory")
+
+build_mmio_write(__writeb, "b", unsigned char, "q", )
+build_mmio_write(__writew, "w", unsigned short, "r", )
+build_mmio_write(__writel, "l", unsigned int, "r", )
+
+#define readb_relaxed(a) __readb(a)
+#define readw_relaxed(a) __readw(a)
+#define readl_relaxed(a) __readl(a)
+#define __raw_readb __readb
+#define __raw_readw __readw
+#define __raw_readl __readl
+
+#define __raw_writeb __writeb
+#define __raw_writew __writew
+#define __raw_writel __writel
+
+static inline __u64 readq(const volatile void __iomem *addr)
+{
+        const volatile u32 __iomem *p = addr;
+        u32 low, high;
+
+        low = readl(p);
+        high = readl(p + 1);
+
+        return low + ((u64)high << 32);
+}
+
+static inline void writeq(__u64 val, volatile void __iomem *addr)
+{
+        writel(val, addr);
+        writel(val >> 32, addr+4);
+}
+
+
+#define mmiowb() barrier()
+
+#define dev_err(dev, format, arg...)            \
+        printk("Error %s " format, __func__ , ## arg)
+
+#define dev_warn(dev, format, arg...)            \
+        printk("Warning %s " format, __func__ , ## arg)
+
+#define dev_info(dev, format, arg...)       \
+        printk("Info %s " format , __func__, ## arg)
+
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+
+
+struct scatterlist {
+    unsigned long   page_link;
+    unsigned int    offset;
+    unsigned int    length;
+    dma_addr_t      dma_address;
+    unsigned int    dma_length;
+};
+
+struct page
+{
+    unsigned int addr;
+};
+
+
+struct vm_fault {
+    unsigned int flags;             /* FAULT_FLAG_xxx flags */
+    pgoff_t pgoff;                  /* Logical page offset based on vma */
+    void __user *virtual_address;   /* Faulting virtual address */
+
+    struct page *page;              /* ->fault handlers should return a
+                                     * page here, unless VM_FAULT_NOPAGE
+                                     * is set (which is also implied by
+                                     * VM_FAULT_ERROR).
+                                     */
+};
 
 
 #endif
