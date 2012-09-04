@@ -1,4 +1,4 @@
-# General rule for naming: variables with CAPITALIZED names hold settings,
+﻿# General rule for naming: variables with CAPITALIZED names hold settings,
 # you can - and are expected - to modify it; variables with lowercase names
 # are intermediate variables and macroses not to be modified unless you
 # know what you're doing.
@@ -300,8 +300,6 @@ MKISOFS_EXTRA:=\
  dosbox/=$(PROGS)/emulator/DosBox/dosbox \
  dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
  dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
- /=drivers/atikms \
- /=drivers/atikms.dll \
  /=distr_data/autorun.inf \
  /=distr_data/KolibriOS_icon.ico \
  /=distr_data/readme.txt \
