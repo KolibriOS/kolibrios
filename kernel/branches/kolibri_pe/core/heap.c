@@ -1,4 +1,6 @@
 
+#define ALLOC_FAST
+
 #include <types.h>
 #include <core.h>
 #include <spinlock.h>
@@ -294,10 +296,10 @@ addr_t  __fastcall mem_alloc(size_t size, u32_t flags)
     map = (mmap_t*)PA2KA(frame_alloc( (sizeof(mmap_t) +
                            sizeof(addr_t) * pages) >> PAGE_WIDTH));
 
-    map->size = size;
-
     if ( map )
     {
+    map->size = size;
+
         order = size >> HF_WIDTH;
 
         if( order )
@@ -313,7 +315,6 @@ addr_t  __fastcall mem_alloc(size_t size, u32_t flags)
 
         if( frame )
         {
-            addr_t  page = 0;
             addr_t  mem;
 
             z_heap.free_count -= (1 << order);
@@ -342,36 +343,37 @@ addr_t  __fastcall mem_alloc(size_t size, u32_t flags)
 
             if( flags & PG_MAP )
             {
+                addr_t  page_frame;
 
-#ifdef  ALLOC_IMM
+#ifdef  ALLOC_FAST
 
                 while( pages )
                 {
                     u32_t   order;
-                    addr_t  page_frame;
 
-                    asm volatile ("bsr %0, %1":"=&r"(order):"r"(tmp):"cc");
-                    asm volatile ("btr %0, %1" :"=r"(tmp):"r"(order):"cc");
+                    asm volatile ("bsrl %1, %0":"=&r"(order):"r"(pages):"cc");
+                    asm volatile ("btrl %1, %0" :"=&r"(pages):"r"(order):"cc");
 
-                    page_frame = frame_alloc(1 << order) | (flags & 0xFFF);
+                    page_frame = frame_alloc(1 << order) | (flags & 0xFFF);    /* FIXME check */
 
                     for(i = 0; i < 1 << order; i++)
                     {
-                        *pte++  = 0; //page;
-                        *mpte++ = page;
+                        *pte++  = 0;
+                        *mpte++ = page_frame;
 
                         asm volatile ( "invlpg (%0)" ::"r" (mem) );
                         mem+=  4096;
+                        page_frame+= 4096;
                     };
                 }
 #else
 
-                page = PG_DEMAND | (flags & 0xFFF);
+                page_frame = PG_DEMAND | (flags & 0xFFF);
 
                 while(pages--)
                 {
                     *pte++  = 0;
-                    *mpte++ = page;
+                    *mpte++ = page_frame;
                     asm volatile ( "invlpg (%0)" ::"r" (mem) );
                     mem+=  4096;
                 };
@@ -381,7 +383,7 @@ addr_t  __fastcall mem_alloc(size_t size, u32_t flags)
             {
                 while(pages--)
                 {
-                    *pte++  = 0; //page;
+                    *pte++  = 0;
                     *mpte++ = 0;
 
                     asm volatile ( "invlpg (%0)" ::"r" (mem) );
@@ -389,7 +391,6 @@ addr_t  __fastcall mem_alloc(size_t size, u32_t flags)
                 };
             }
 
-#endif
             DBG("%s %x size %d order %d\n", __FUNCTION__, heap, size, order);
 
             return heap;

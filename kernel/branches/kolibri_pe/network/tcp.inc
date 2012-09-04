@@ -1,13 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  TCP.INC                                                     ;;
 ;;                                                              ;;
 ;;  TCP Processes for Menuet OS  TCP/IP stack                   ;;
-;;                                                              ;;
-;;  Version 0.6  4th July 2004                                  ;;
 ;;                                                              ;;
 ;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net            ;;
 ;;                                                              ;;
@@ -118,14 +116,14 @@ proc tcp_tcb_handler stdcall uses ebx
 
 	cmp	[ebx + SOCKET.NextPtr], 0
 	je	.exit
-	DEBUGF	1, "K : sockets:\n"
+	;DEBUGF	1, "K : sockets:\n"
 
   .next_socket:
 	mov	ebx, [ebx + SOCKET.NextPtr]
 	or	ebx, ebx
 	jz	.exit
 
-	DEBUGF	1, "K :   %x: %x-%x-%x-%u\n", ebx, [ebx + SOCKET.LocalPort]:4, [ebx + SOCKET.RemoteIP], [ebx + SOCKET.RemotePort]:4, [ebx + SOCKET.TCBState]
+	;DEBUGF	1, "K :   %x-%x: %x-%x-%x-%u\n", [ebx + SOCKET.PID]:2, [ebx + SOCKET.Number]:2, [ebx + SOCKET.LocalPort]:4, [ebx + SOCKET.RemoteIP], [ebx + SOCKET.RemotePort]:4, [ebx + SOCKET.TCBState]
 
 	cmp	[ebx + SOCKET.TCBTimer], 0
 	jne	.decrement_tcb
@@ -177,7 +175,6 @@ proc tcp_tx_handler stdcall
   .next_resendq:
     cmp     ecx, NUMRESENDENTRIES
 	je	.exit		    ; None left
-	;cmp     [esi], byte 0xFF                                    ; XTODO: 0xff -> 0
 	cmp	dword[esi + 4], 0
 	jne	@f		     ; found one
     inc     ecx
@@ -192,7 +189,6 @@ proc tcp_tx_handler stdcall
 	jmp	.next_resendq	    ; Timer not zero, so move on
 
     @@:
-	;mov     bl, 0xff                                             ; XTODO: bl -> ebx, 0xff -> 0
 	xor	ebx, ebx
     ; restart timer, and decrement retries
     ; After the first resend, back of on next, by a factor of 5
@@ -201,7 +197,6 @@ proc tcp_tx_handler stdcall
 	jnz	@f
 
     ; retries now 0, so delete from queue
-	;xchg     [esi], bl                                          ; XTODO: bl -> ebx
 	xchg	 [esi + 4], ebx
 
     @@: ; resend packet
@@ -213,10 +208,8 @@ proc tcp_tx_handler stdcall
 	jne	.tth004z
 
     ; TODO - try again in 10ms.
-	;cmp     bl, 0xff                                            ; XTODO: 0xff -> 0
 	test	ebx, ebx
 	jnz	@f
-	;mov     [esi], bl                                            ; XTODO: bl -> ebx
 	mov	[esi + 4], ebx
 
     @@: ; Mark it to expire in 10ms - 1 tick
@@ -316,9 +309,6 @@ proc tcp_rx stdcall uses ebx
 	or	ebx, ebx
 	jz	.next_socket.1.exit
 
-	cmp	[ebx + SOCKET.Status], SOCK_OPEN
-	jne	.next_socket.1
-
 ;        DEBUGF  1, "K : tcp_rx - 1.dport: %x - %x\n", [edx + 20 + TCP_PACKET.DestinationPort]:4, [ebx + SOCKET.LocalPort]:4
 
 	mov	ax, [edx + 20 + TCP_PACKET.DestinationPort]  ; get the dest. port from the TCP hdr
@@ -355,9 +345,6 @@ proc tcp_rx stdcall uses ebx
 	or	ebx, ebx
 	jz	.next_socket.2.exit
 
-	cmp	[ebx + SOCKET.Status], SOCK_OPEN
-	jne	.next_socket.2
-
 ;        DEBUGF  1, "K : tcp_rx - 2.dport: %x - %x\n", [edx + 20 + TCP_PACKET.DestinationPort]:4, [ebx + SOCKET.LocalPort]:4
 
 	mov	ax, [edx + 20 + TCP_PACKET.DestinationPort]  ; get the dest. port from the TCP hdr
@@ -393,9 +380,6 @@ proc tcp_rx stdcall uses ebx
 	or	ebx, ebx
 	jz	.next_socket.3.exit
 
-	cmp	[ebx + SOCKET.Status], SOCK_OPEN
-	jne	.next_socket.3
-
 ;        DEBUGF  1, "K : tcp_rx - 3.dport: %x - %x\n", [edx + 20 + TCP_PACKET.DestinationPort]:4, [ebx + SOCKET.LocalPort]:4
 
 	mov	ax, [edx + 20 + TCP_PACKET.DestinationPort]  ; get destination port from the TCP hdr
@@ -421,16 +405,7 @@ proc tcp_rx stdcall uses ebx
 
 	DEBUGF	1, "K : tcp_rx - dumped\n"
 	DEBUGF	1, "K :   --------: %x-%x-%x (flags: %x)\n", [edx + 20 + TCP_PACKET.DestinationPort]:4, [edx + IP_PACKET.SourceAddress], [edx + 20 + TCP_PACKET.SourcePort]:4, [edx + 20 + TCP_PACKET.Flags]:2
-;       mov     ebx, net_sockets
-;
-; .next_socket.4:
-;       mov     ebx, [ebx + SOCKET.NextPtr]
-;       or      ebx, ebx
-;       jz      .next_socket.4.exit
-;       DEBUGF  1, "K :   %x: %x-%x-%x-%u\n", ebx, [ebx + SOCKET.LocalPort]:4, [ebx + SOCKET.RemoteIP], [ebx + SOCKET.RemotePort]:4, [ebx + SOCKET.TCBState]
-;       jne     .next_socket.4
-;
-; .next_socket.4.exit:
+
 	inc	[dumped_rx_count]
 	jmp	.exit
 
@@ -661,7 +636,6 @@ proc tcpStateMachine stdcall, sockAddr:DWORD
   .next_resendq:
     cmp     ecx, NUMRESENDENTRIES
 	je	.call_handler	  ; None left
-	;cmp     [esi], al                                       ; XTODO: al -> eax
 	cmp	[esi + 4], eax
 	je	@f		  ; found one
     inc     ecx
@@ -702,7 +676,6 @@ proc tcpStateMachine stdcall, sockAddr:DWORD
 	add	esi, 8
 	jmp	.next_resendq
 
-    ;@@: mov     byte[esi], 0xff                                 ; XTODO: 0xff -> 0
     @@: mov	dword[esi + 4], 0
     inc     ecx
 	add	esi, 8
@@ -711,7 +684,7 @@ proc tcpStateMachine stdcall, sockAddr:DWORD
   .call_handler:
 	popad
 
-	; Call handler for given TCB state
+    ; Call handler for given TCB state
 
 	mov	eax, [ebx + SOCKET.TCBState]
 	cmp	eax, TCB_LISTEN
@@ -852,16 +825,16 @@ proc stateTCB_SYN_RECEIVED stdcall, sockAddr:DWORD
     ; For now, if the packet is an ACK, process it,
     ; If not, ignore it
 
-	test	[edx + 20 + TCP_PACKET.Flags], TH_RST		;xxx
-	jz	.check_ack					;xxx
+	test	[edx + 20 + TCP_PACKET.Flags], TH_RST
+	jz	.check_ack
 
 	push	[ebx + SOCKET.OrigRemotePort] [ebx + SOCKET.OrigRemoteIP]
 	pop	[ebx + SOCKET.RemoteIP] [ebx + SOCKET.RemotePort]
 
-	mov	[ebx + SOCKET.TCBState], TCB_LISTEN		;xxx
-	jmp	.exit						;xxx
+	mov	[ebx + SOCKET.TCBState], TCB_LISTEN
+	jmp	.exit
 
-  .check_ack:							;xxx
+  .check_ack:
     ; Look at control flags - expecting an ACK
 	test	[edx + 20 + TCP_PACKET.Flags], TH_ACK
 	jz	.exit
@@ -878,10 +851,8 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
     ; OR both...
 
     ; Did we receive a FIN or RST?
-;xxx    test    [edx + 20 + TCP_PACKET.Flags], TH_FIN + TH_RST
-;xxx    jz      .check_ack
-	test	[edx + 20 + TCP_PACKET.Flags], TH_FIN		;xxx
-	jz	.check_ack					;xxx
+	test	[edx + 20 + TCP_PACKET.Flags], TH_FIN
+	jz	.check_ack
 
     ; It was a fin or reset.
 
@@ -897,14 +868,12 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
   .next_resendq:
     cmp     ecx, NUMRESENDENTRIES
 	je	.last_resendq	    ; None left
-	;cmp     [esi], al                                              ; XTODO: al -> eax
 	cmp	[esi + 4], eax
 	je	@f		    ; found one
 	inc	ecx
 	add	esi, 8
 	jmp	.next_resendq
 
-    ;@@: mov     byte[esi], 0xff                                         ; XTODO: 0xff -> 0
     @@: mov	dword[esi + 4], 0
     inc     ecx
 	add	esi, 8
@@ -912,13 +881,6 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 
   .last_resendq:
 	popad
-
-;xxx    ; was it a reset?
-;xxx    test    [edx + 20 + TCP_PACKET.Flags], TH_RST
-;xxx    jz      @f
-
-;xxx    mov     [ebx + SOCKET.TCBState], TCB_CLOSED
-;xxx    jmp     .exit
 
     @@: ; Send an ACK to that fin, and enter closewait state
 
@@ -966,7 +928,7 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	movzx	ecx, [edx + IP_PACKET.TotalLength]
 	xchg	cl, ch
     sub     ecx, 40                    ; Discard 40 bytes of header
-	jnz	.data			   ; Read data, if any
+	ja	.data			   ; Read data, if any
 
     ; If we had received a fin, we need to ACK it.
 	cmp	[ebx + SOCKET.TCBState], TCB_CLOSE_WAIT
@@ -974,14 +936,19 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	jmp	.exit
 
   .data:
-    push    ecx
+	push	ebx
+	add	ebx, SOCKET.lock
+	call	wait_mutex
+	pop	ebx
 
-	add	[ebx + SOCKET.rxDataCount], ecx      ; increment the count of bytes in buffer
+	push	ecx
+	push	[ebx + SOCKET.PID]	; get socket owner PID
+	mov	eax, [ebx + SOCKET.rxDataCount]
+	add	eax, ecx
+	cmp	eax, SOCKETBUFFSIZE - SOCKETHEADERSIZE
+	ja	.overflow
 
-	mov	eax, [ebx + SOCKET.PID]       ; get socket owner PID
-    push    eax
-
-	mov	eax, [ebx + SOCKET.rxDataCount]      ; get # of bytes already in buffer
+	mov	[ebx + SOCKET.rxDataCount], eax      ; increment the count of bytes in buffer
 
     ; point to the location to store the data
 	lea	edi, [ebx + eax + SOCKETHEADERSIZE]
@@ -992,6 +959,7 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 
     cld
     rep     movsb          ; copy the data across
+	mov	[ebx + SOCKET.lock], 0	; release mutex
 
     ; flag an event to the application
     pop     eax
@@ -1046,11 +1014,17 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 
   .exit:
     ret
+  .overflow:
+	; no place in buffer
+	; so simply restore stack and exit
+	pop	eax ecx
+	mov	[ebx + SOCKET.lock], 0
+	ret
 endp
 
 
 proc stateTCB_FIN_WAIT_1 stdcall, sockAddr:DWORD
-	; We can either receive an ACK of a fin, or a fin
+    ; We can either receive an ACK of a fin, or a fin
 	mov	al, [edx + 20 + TCP_PACKET.Flags]
 	and	al, TH_FIN + TH_ACK
 
@@ -1167,11 +1141,6 @@ proc stateTCB_LAST_ACK stdcall, sockAddr:DWORD
 
     ; delete the socket
 	stdcall net_socket_free, ebx
-;        mov     edi, ebx
-;        xor     eax, eax
-;        mov     ecx, SOCKETHEADERSIZE
-;        cld
-;        rep     stosb
 
   .exit:
     ret

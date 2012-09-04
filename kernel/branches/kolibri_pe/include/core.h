@@ -1,7 +1,8 @@
 
-#define OS_BASE     0xE0000000
-#define IMAGE_BASE  0xE0100000
-#define LOAD_BASE   0x00100000
+
+#define OS_BASE         0xE0000000
+#define IMAGE_BASE      0xE0100000
+#define LOAD_BASE       0x00100000
 
 
 #define page_tabs       0xDD800000
@@ -64,13 +65,13 @@ extern void panic_printf(char *fmt, ...) __attribute__((noreturn));
 
 static inline eflags_t safe_cli(void)
 {
-  eflags_t tmp;
+    eflags_t tmp;
 	asm volatile (
     "pushfl\n\t"
     "popl %0\n\t"
-		"cli\n"
+    "cli\n"
     : "=r" (tmp));
-  return tmp;
+    return tmp;
 }
 
 static inline void safe_sti(eflags_t efl)
@@ -83,20 +84,20 @@ static inline void safe_sti(eflags_t efl)
 
 static inline index_t fnzb(u32_t arg)
 {
-  count_t n;
+    count_t n;
     asm volatile (
     "xorl %0, %0 \n\t"
-                "bsr %1, %0"
+    "bsr %1, %0"
     :"=&r"(n) :"r"(arg) );
 	return n;
 }
 
 static inline index_t _bsf(u32_t arg)
 {
-  count_t n;
+    count_t n;
     asm volatile (
     "xorl %0, %0 \n\t"
-                "bsf %1, %0"
+    "bsf %1, %0"
     :"=&r" (n) :"r"(arg));
 	return n;
 }
@@ -211,25 +212,25 @@ typedef struct __attribute__ ((packed))
     {
         struct                          /* window event    */
         {
-            u32_t   win;                /* window handle   */
-            u32_t   val1;
-            u32_t   val2;
-            u16_t   x;                  /* cursor x        */
-            u16_t   y;                  /* cursor y        */
-            u32_t   unused;
+            u32_t  win;                 /* window handle   */
+            u32_t  val1;
+            u32_t  val2;
+            u16_t  x;                   /* cursor x        */
+            u16_t  y;                   /* cursor y        */
+            u32_t  unused;
         };
 
         struct                          /* realtime io     */
         {
-            u32_t   sender;             /* service handler */
-            u32_t   stream;             /* io stream id, if present  */
-            addr_t  offset;
-            size_t  size;
+            u32_t  sender;              /* service handler */
+            u32_t  stream;              /* io stream id, if present  */
+            addr_t offset;
+            size_t size;
         };
 
         struct                          /* ipc event       */
         {
-            u32_t   sender;
+            u32_t  sender;
             u32_t   io_code;
             addr_t *input;
             size_t  inp_size;

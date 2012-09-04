@@ -20,6 +20,7 @@ format MS COFF
 ;; Sergey Semyonov (Serge)
 ;; Johnny_B
 ;; SPraid (simba)
+;; Hidnplayr
 ;;
 ;; Data in this file was originally part of MenuetOS project which is
 ;; distributed under the terms of GNU GPL. It is modified and redistributed as
@@ -246,6 +247,8 @@ extrn _bx_from_load
 
 extrn _sys_app_entry
 
+public _set_screen
+
 extrn _i40
 
 extrn test_cpu
@@ -255,7 +258,10 @@ extrn cpu_sign
 extrn cpu_info
 extrn cpu_caps:dword
 
-
+extrn stb_create_window
+extrn stb_show_window
+extrn stb_get_event
+extrn stb_def_window_proc
 
 section '.flat' code readable align 4096
 
@@ -339,9 +345,9 @@ init_apm:
 align 16
 system_init:
 
-           mov [pg_data.pg_mutex], 0
+        mov [pg_data.pg_mutex], 0
 
-           call init_apm
+        call init_apm
 
 ; SAVE REAL MODE VARIABLES
         mov   ax, [OS_BASE + 0x9031]
@@ -414,8 +420,9 @@ no_mode_0x12:
            call @mem_alloc@8
            mov [_display_data], eax
 
-           mov ecx, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
+           mov ecx, 4096 + (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
                     (unpack.lc+unpack.lp)))*4
+
            mov edx, PG_SW
            call @mem_alloc@8
            mov [unpack.p], eax
@@ -570,80 +577,80 @@ include 'detect/disks.inc'
 
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
-	mov   esi,boot_windefs
-	call  boot_log
-	call  setwindowdefaults
+        mov   esi,boot_windefs
+        call  boot_log
+        call  setwindowdefaults
 
 ; SET BACKGROUND DEFAULTS
 
-	mov   esi,boot_bgr
-	call  boot_log
-	call  init_background
-	call  calculatebackground
+        mov   esi,boot_bgr
+        call  boot_log
+        call  init_background
+        call  calculatebackground
 
 ; RESERVE SYSTEM IRQ'S JA PORT'S
 
-	mov   esi,boot_resirqports
-	call  boot_log
-	call  reserve_irqs_ports
+        mov   esi,boot_resirqports
+        call  boot_log
+        call  reserve_irqs_ports
 
 ; SET PORTS FOR IRQ HANDLERS
 
-	mov  esi,boot_setrports
-	call boot_log
+        mov  esi,boot_setrports
+        call boot_log
 	;call setirqreadports
 
 ; SETUP OS TASK
 
-	mov  esi,boot_setostask
-	call boot_log
+        mov  esi,boot_setostask
+        call boot_log
 
-	xor  eax, eax
-	mov  dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
-	mov  dword [SLOT_BASE+APPDATA.fpu_handler], eax
-	mov  dword [SLOT_BASE+APPDATA.sse_handler], eax
+        xor  eax, eax
+        mov  dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
+        mov  dword [SLOT_BASE+APPDATA.fpu_handler], eax
+        mov  dword [SLOT_BASE+APPDATA.sse_handler], eax
 
 ; name for OS/IDLE process
 
-	mov dword [SLOT_BASE+256+APPDATA.app_name],   dword 'OS/I'
-	mov dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
+        mov dword [SLOT_BASE+256+APPDATA.app_name],   dword 'OS/I'
+        mov dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
         mov edi,  __os_stack-8192+512
-	mov dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
-	add edi, 0x2000-512
-	mov dword [SLOT_BASE+256+APPDATA.fpu_state], edi
-	mov dword [SLOT_BASE+256+APPDATA.saved_esp0], edi ; just for case
-	mov dword [SLOT_BASE+256+APPDATA.io_map],\
-		  (tss._io_map_0-OS_BASE+PG_MAP)
-	mov dword [SLOT_BASE+256+APPDATA.io_map+4],\
-		  (tss._io_map_1-OS_BASE+PG_MAP)
+        mov dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
+        add edi, 0x2000-512
+        mov dword [SLOT_BASE+256+APPDATA.fpu_state], edi
+        mov dword [SLOT_BASE+256+APPDATA.saved_esp0], edi ; just for case
+        mov dword [SLOT_BASE+256+APPDATA.io_map],\
+              (tss._io_map_0-OS_BASE+PG_MAP)
+        mov dword [SLOT_BASE+256+APPDATA.io_map+4],\
+              (tss._io_map_1-OS_BASE+PG_MAP)
 
-	mov esi, fpu_data
-	mov ecx, 512/4
-	cld
-	rep movsd
+        mov esi, fpu_data
+        mov ecx, 512/4
+        cld
+        rep movsd
 
         mov dword [SLOT_BASE+256+APPDATA.fpu_handler], eax
-	mov dword [SLOT_BASE+256+APPDATA.sse_handler], eax
+        mov dword [SLOT_BASE+256+APPDATA.sse_handler], eax
 
-	mov ebx, SLOT_BASE+256+APP_OBJ_OFFSET
-	mov  dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
-	mov  dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
+        mov ebx, SLOT_BASE+256+APP_OBJ_OFFSET
+        mov  dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
+        mov  dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
 
-	mov  dword [SLOT_BASE+256+APPDATA.cur_dir], sysdir_path
+        mov  dword [SLOT_BASE+256+APPDATA.cur_dir], sysdir_path
 
-	; task list
-	mov  [CURRENT_TASK],dword 1
-	mov  [TASK_COUNT],dword 1
-	mov  [current_slot], SLOT_BASE+256
-	mov  [TASK_BASE],dword TASK_DATA
-	mov  [TASK_DATA+TASKDATA.wnd_number], 1 ; on screen number
-	mov  [TASK_DATA+TASKDATA.pid], 1	; process id number
-	mov  [TASK_DATA+TASKDATA.mem_start], 0	; process base address
+        ; task list
+        mov  [CURRENT_TASK],dword 1
+        mov  [TASK_COUNT],dword 1
+        mov  [current_slot], SLOT_BASE+256
+        mov  [TASK_BASE],dword TASK_DATA
+        mov  [TASK_DATA+TASKDATA.wnd_number], 1 ; on screen number
+        mov  [TASK_DATA+TASKDATA.pid], 1    ; process id number
+        mov  [TASK_DATA+TASKDATA.mem_start], 0  ; process base address
 
         call init_cursors
         mov eax, [def_cursor]
-	mov [SLOT_BASE+APPDATA.cursor],eax
-	mov [SLOT_BASE+APPDATA.cursor+256],eax
+        mov [SLOT_BASE+APPDATA.cursor],eax
+        mov [SLOT_BASE+APPDATA.cursor+256],eax
 
       ;  mov ecx, szAtiHW
       ;  call @load_pe_driver@4
@@ -799,6 +806,7 @@ first_app_found:
 	setnz	[dma_hdd]
 	mov [timer_ticks_enable],1		; for cd driver
 
+;xchg bx, bx
 	sti
 	call change_task
 

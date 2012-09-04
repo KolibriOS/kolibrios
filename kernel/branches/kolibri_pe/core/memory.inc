@@ -265,6 +265,7 @@ proc new_mem_resize stdcall, new_size:dword
            pop edi
            pop esi
 @@:
+
            call _alloc_page
            test eax, eax
            jz .exit

@@ -1,13 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ETHERNET.INC                                                   ;;
 ;;                                                                 ;;
 ;;  Ethernet network layer for Menuet OS                           ;;
-;;                                                                 ;;
-;;  Version 0.4  22 September 2003                                 ;;
 ;;                                                                 ;;
 ;;  This file contains the following:                              ;;
 ;;      PCI bus scanning for valid devices                         ;;
@@ -353,9 +351,9 @@ endp
 ;      All registers may be destroyed
 ;
 ;***************************************************************************
-uglobal
-  ether_IP_handler_cnt dd ?
-endg
+;uglobal
+;  ether_IP_handler_cnt dd ?
+;endg
 ether_IP_handler:
     mov     eax, EMPTY_QUEUE
     call    dequeue

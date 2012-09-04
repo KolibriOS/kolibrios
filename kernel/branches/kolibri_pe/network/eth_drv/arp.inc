@@ -1,13 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  ARP.INC                                                     ;;
 ;;                                                              ;;
 ;;  Address Resolution Protocol                                 ;;
-;;                                                              ;;
-;;  Last revision: 10.11.2006                                   ;;
 ;;                                                              ;;
 ;;  This file contains the following:                           ;;
 ;;   arp_table_manager - Manages an ARPTable                    ;;

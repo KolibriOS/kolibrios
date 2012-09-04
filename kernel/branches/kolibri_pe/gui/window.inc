@@ -22,7 +22,7 @@ get_rolledup_height: ; edi = window draw_data pointer
 	mov	al,[edi+WDATA.fl_wstyle]
 	and	al,0x0F
 	cmp	al,0x03
-	jne	@f
+	jb	@f
 	mov	eax,[_skinh]
 	add	eax,3
 	ret
@@ -61,78 +61,78 @@ setwindowdefaults:
 ;       частей окон вызвать setscreen
 align 4
 calculatescreen:
-	pushad
-	pushfd
-	cli
+        pushad
+        pushfd
+        cli
 
-	push	edx ecx ebx eax
+        push    edx ecx ebx eax
 
-	mov	esi, 1
-	call	setscreen
+        mov esi, 1
+        call    setscreen
 
-	mov	ebp, [TASK_COUNT]	 ; number of processes
-	cmp	ebp, 1
-	jbe	.finish
+        mov ebp, [TASK_COUNT]    ; number of processes
+        cmp ebp, 1
+        jbe .finish
 align 4
 .new_wnd:
-	movzx	edi, word [WIN_POS + esi * 2]
-	shl	edi, 5
+        movzx   edi, word [WIN_POS + esi * 2]
+        shl edi, 5
 
-	cmp	[CURRENT_TASK+edi+TASKDATA.state], byte 9
-	je	.not_wnd
+        cmp [CURRENT_TASK+edi+TASKDATA.state], byte 9
+        je  .not_wnd
 
-	add	edi, window_data
-	test	[edi+WDATA.fl_wstate], WSTATE_MINIMIZED
-	jnz	.not_wnd
+        add edi, window_data
+        test    [edi+WDATA.fl_wstate], WSTATE_MINIMIZED
+        jnz .not_wnd
 
-	mov	eax,[edi+WDATA.box.left]
-	cmp	eax, [esp+RECT.right]
-	ja	.out_of_bounds
-	mov	ebx,[edi+WDATA.box.top]
-	cmp	ebx, [esp+RECT.bottom]
-	ja	.out_of_bounds
-	mov	ecx,[edi+WDATA.box.width]
-	add	ecx, eax
-	cmp	ecx, [esp+RECT.left]
-	jb	.out_of_bounds
-	mov	edx,[edi+WDATA.box.height]
-	add	edx, ebx
-	cmp	edx, [esp+RECT.top]
-	jb	.out_of_bounds
+        mov eax,[edi+WDATA.box.left]
+        cmp eax, [esp+RECT.right]
+        ja  .out_of_bounds
+        mov ebx,[edi+WDATA.box.top]
+        cmp ebx, [esp+RECT.bottom]
+        ja  .out_of_bounds
+        mov ecx,[edi+WDATA.box.width]
+        add ecx, eax
+        cmp ecx, [esp+RECT.left]
+        jb  .out_of_bounds
+        mov edx,[edi+WDATA.box.height]
+        add edx, ebx
+        cmp edx, [esp+RECT.top]
+        jb  .out_of_bounds
 
-    cmp     eax, [esp+RECT.left]
-	jae	@f
-	mov	eax, [esp+RECT.left]
+        cmp     eax, [esp+RECT.left]
+        jae @f
+        mov eax, [esp+RECT.left]
 @@:
-    cmp     ebx, [esp+RECT.top]
-	jae	@f
-	mov	ebx, [esp+RECT.top]
+        cmp     ebx, [esp+RECT.top]
+        jae @f
+        mov ebx, [esp+RECT.top]
 @@:
-    cmp     ecx, [esp+RECT.right]
-	jbe	@f
-	mov	ecx, [esp+RECT.right]
+        cmp     ecx, [esp+RECT.right]
+        jbe @f
+        mov ecx, [esp+RECT.right]
 @@:
-    cmp     edx, [esp+RECT.bottom]
-	jbe	@f
-	mov	edx, [esp+RECT.bottom]
+        cmp     edx, [esp+RECT.bottom]
+        jbe @f
+        mov edx, [esp+RECT.bottom]
 @@:
 
-	push	esi
-	movzx	esi, word [WIN_POS + esi * 2]
-	call	setscreen
-	pop	esi
+        push    esi
+        movzx   esi, word [WIN_POS + esi * 2]
+        call    setscreen
+        pop esi
 
 .not_wnd:
 .out_of_bounds:
-	inc	esi
-	dec	ebp
-	jnz	.new_wnd
+        inc esi
+        dec ebp
+        jnz .new_wnd
 .finish:
 
-    pop     eax ebx ecx edx
+        pop     eax ebx ecx edx
 
-	popfd
-	popad
+        popfd
+        popad
         ret
 
 
@@ -173,40 +173,40 @@ pushad
 	jne   .free_form
 
 	; get x&y size
-	sub   ecx, eax
-	sub   edx, ebx
-	inc   ecx
-	inc   edx
+        sub   ecx, eax
+        sub   edx, ebx
+        inc   ecx
+        inc   edx
 
 	; get WinMap start
         mov   edi, [Screen_Max_X] ; screen_sx
-	inc   edi
-	imul  edi, ebx
-	add   edi, eax
+        inc   edi
+        imul  edi, ebx
+        add   edi, eax
         add   edi, [_display_data]
 
 .new_y:
-	push  ecx ; sx
-	push  edx
+        push  ecx ; sx
+        push  edx
 
-	mov   edx, esi
+        mov   edx, esi
 	align 4
 .new_x:
-	mov   byte [edi], dl
-	inc   edi
-	dec   ecx
-	jnz   .new_x
+        mov   byte [edi], dl
+        inc   edi
+        dec   ecx
+        jnz   .new_x
 
-	pop   edx
-	pop   ecx
+        pop   edx
+        pop   ecx
         add   edi, [Screen_Max_X]
-	inc   edi
-	sub   edi, ecx
-	dec   edx
-	jnz   .new_y
+        inc   edi
+        sub   edi, ecx
+        dec   edx
+        jnz   .new_y
 .ret:
- popad
- ret
+        popad
+        ret
   .read_byte:
    ;eax - address
    ;esi - slot
@@ -557,7 +557,6 @@ endg
 
 
 
-
 check_window_position:
 
     pushad			     ; window inside screen ?
@@ -862,7 +861,6 @@ dw3l:
 	jnz   noinside2
 	call  [drawbar]
 noinside2:
-
 	popad
 
 	ret
@@ -1130,12 +1128,10 @@ restore_minimized_window:
 	ret
 
 
-iglobal
-  window_moving   db 'K : Window - move/resize',13,10,0
-  window_moved	  db 'K : Window - done',13,10,0
-endg
-
-bPressedMouseXY_W db 0x0
+;iglobal
+;  window_moving   db 'K : Window - move/resize',13,10,0
+;  window_moved	  db 'K : Window - done',13,10,0
+;endg
 
 ; check window touch
 align 4
@@ -1164,44 +1160,74 @@ checkwindows:
 	popad
 	ret
 .mouse_buttons_pressed:
+;..................................... start 2/4 : modified by vhanla .................
+uglobal
+	bPressedMouseXY_W db 0x0
+endg
+;..................................... end 2/4 : modified by vhanla ...................
 	mov   esi,[TASK_COUNT]
 	inc   esi
 
 ;..................................... start 3/4 : modified by vhanla .................
-	cmp [bPressedMouseXY_W],0
-	jnz @f
-	mov [bPressedMouseXY_W],1
-@@:
+	cmp [bPressedMouseXY_W],1
+	ja  @f
+	inc [bPressedMouseXY_W]
+	jnc @f
+	;mov ax,[MOUSE_X]
+	;mov [mx],ax
+	;mov ax,[MOUSE_Y]
+	;mov [my],ax
+	mov eax,dword[MOUSE_X]
+	mov dword[mx],eax
+      @@:
 ;..................................... end 3/4 : modified by vhanla ...................
 
-    movzx  eax,word [MOUSE_Y]
-    movzx  ebx,word [MOUSE_X]
-    mov ecx, [Screen_Max_X]
-    add ebx, [_display_data]
-    inc ecx
-    mul ecx
-    movzx edi, byte [ebx+eax]
+      cwloop:
+	cmp   esi,2
+	jb   .exit
 
-cwloop:
-
-    movzx esi, word [WIN_STACK + edi * 2]
-
+	dec   esi
+	movzx edi, word [WIN_POS + esi * 2] ; ebx
 	shl   edi, 5
 	add   edi, window_data
+;        mov   edi, ebx
+    mov   ecx, [edi + WDATA.box.left]
+    mov   edx, [edi + WDATA.box.top]
 
-    movzx  eax,word [MOUSE_X]
-    movzx  ebx,word [MOUSE_Y]
+	mov   eax,ecx
+	mov   ebx,edx
+	test	[edi+WDATA.fl_wstate],WSTATE_MINIMIZED
+	jnz	cwloop
+
+;..................................... start 4/4 : modified by vhanla .................
+       movzx  eax, word [mx]; movzx eax,word[MOUSE_X]
+       movzx  ebx, word [my]; movzx ebx,word[MOUSE_Y]
+;..................................... endt 4/4 : modified by vhanla ..................
+	cmp   ecx, eax
+	jae   cwloop
+	cmp   edx, ebx
+	jae   cwloop
+    add   ecx, [edi + WDATA.box.width]
+    add   edx, [edi + WDATA.box.height]
+	cmp   eax, ecx
+	jae   cwloop
+	cmp   ebx, edx
+	jae   cwloop
 
 	pushad
-	mov   eax, esi
+    mov   eax, esi
 	mov   ebx, [TASK_COUNT]
 	cmp   eax, ebx	    ; is this window active?
 	jz    .move_resize_window
+
+	cmp   [bPressedMouseXY_W], 1
+	ja    .exit_popa
 
 	; eax = position in windowing stack
 	; redraw must ?
 	lea   esi, [WIN_POS + esi * 2]
 	call  waredraw
+.exit_popa:
 	add   esp, 32
 
 .exit:
@@ -1252,10 +1278,10 @@ cwloop:
 
      .continue:
 
-	push  esi
-	mov   esi, window_moving
-	call  sys_msg_board_str
-	pop   esi
+;	push  esi
+;	mov   esi, window_moving
+;	call  sys_msg_board_str
+;	pop   esi
 
 	mov   ecx, [timer_ticks]     ; double-click ?
 	mov   edx, ecx
@@ -1311,6 +1337,7 @@ cwloop:
 	call  drawwindowframes
 
 	mov   [reposition],0
+	mov   [MOUSE_DOWN],byte 1   ; no reaction to mouse up/down
 
 	; move window
 
@@ -1320,6 +1347,7 @@ newchm:
 
 	call  checkVga_N13
 
+	mov   [MOUSE_BACKGROUND],byte 0
 
 	call  [draw_pointer]
 
@@ -1328,7 +1356,7 @@ newchm:
 	popad
 
 	mov   esi,[WIN_TEMP_XY]
-    cmp   esi, dword [MOUSE_X]
+	cmp   esi,[MOUSE_X]
 	je    cwb
 
 	mov   cx,[MOUSE_X]
@@ -1409,7 +1437,7 @@ newchm:
 	mov   [reposition],1
 
 	popad
-norepos_size:
+      norepos_size:
 
 	pop   bx
 	pop   ax
@@ -1608,8 +1636,8 @@ waitre2:
 
 retwm:
 
-	mov    esi,window_moved
-	call   sys_msg_board_str
+;	mov    esi,window_moved
+;	call   sys_msg_board_str
 
 	popad
 
@@ -1617,9 +1645,9 @@ retwm:
 
 
 uglobal
-  add_window_data	     dd  0
+  add_window_data            dd  0
   do_resize_from_corner      db  0x0
-  reposition		     db  0x0
+  reposition                 db  0x0
   latest_window_touch	     dd  0x0
   latest_window_touch_delta  dd  0x0
 
@@ -1745,3 +1773,405 @@ rsw_no_scale:
      ret
 
 
+;ebx x
+;eax y
+;ecx width
+;edx height
+;esi slot
+
+align 4
+_set_screen:
+        push edx
+        add   ebx, [_display_data]
+        mul   [_screen_width]
+        lea   ebx, [eax+ebx]
+
+        mov eax, esi
+        mov ah, al
+        mov esi, eax
+        shl eax, 16
+        or eax, esi
+
+        pop edx
+        mov esi, ecx
+.row:
+
+        mov edi, ebx
+        add ebx, [_screen_width]
+
+        mov ecx, esi
+
+        dec edx
+        js .done
+.16:
+        cmp ecx, 16
+        jb .8
+
+        mov [edi],   eax
+        mov [edi+4], eax
+        mov [edi+8], eax
+        mov [edi+12], eax
+        add edi, 16
+        sub ecx, 16
+        jmp .16
+.8:
+        shr ecx, 2
+        rep stosd
+        mov ecx, esi
+        and ecx, 3
+        rep stosb
+        jmp .row
+.done:
+        ret
+
+;[esp+4]    ebp
+;[esp+8]    x
+;[esp+12]   y
+;[esp+16]   w
+;[esp+20]   h
+;[esp+24]   color
+
+;ebx      disp data
+;edx      dest
+
+public _int_draw_bar
+align 4
+_int_draw_bar:
+
+        lea ecx, [esp+4]
+        call lock_cursor
+
+        sub esp, 4
+        mov [esp], ebp
+
+        mov ebx, [esp+8]
+        mov eax, [esp+12]
+        mul [_screen_width]
+        add ebx, [_display_data]
+        lea ebx, [eax+ebx]
+
+        mov edi, [esp+8]
+        mov eax, [esp+12]
+        mul [BytesPerScanLine]
+
+        cmp byte [ScreenBPP], 24
+        je  .24
+
+        lea ecx, [LFB_BASE+eax+edi*4]
+
+        mov eax, [esp+24]
+        mov edx, [CURRENT_TASK]
+.row32:
+        mov edi, ecx
+        mov esi, ebx
+
+        add ecx, [BytesPerScanLine]
+        add ebx, [_screen_width]
+
+        dec dword [esp+20]
+        js .done
+
+        mov ebp, [esp+16]
+
+align 16
+.draw32:
+        cmp dl, byte [esi]
+        jne @f
+
+        stosd
+@@:
+        inc esi
+        dec ebp
+        jnz .draw32
+        jmp .row32
+.done:
+        call unlock_cursor
+
+        mov ebp, [esp]
+        add esp, 4
+        ret
+
+.24:
+        lea ecx, [LFB_BASE+edi*3]
+        add ecx, eax
+
+        mov eax, [esp+24]
+        mov edx, eax
+        shr edx, 8
+        mov dl, [CURRENT_TASK]
+.row24:
+        mov edi, ecx
+        mov esi, ebx
+
+        add ecx, [BytesPerScanLine]
+        add ebx, [_screen_width]
+
+        dec dword [esp+20]
+        js .done
+
+        mov ebp, [esp+16]
+
+align 16
+.draw24:
+        cmp dl, byte [esi]
+        jne @f
+
+        mov [edi], ax
+        mov [edi+2], dh
+@@:
+        add edi, 3
+        inc esi
+        dec ebp
+        jnz .draw24
+        jmp .row24
+
+
+
+;[esp+4]    x
+;[esp+8]    y
+;[esp+12]   w
+;[esp+16]   color
+
+;esi      disp data
+;edi      dest
+
+
+public _int_hline
+align 4
+_int_hline:
+
+           mov esi, [esp+4]
+           mov eax, [esp+8]
+           mov ecx, [esp+12]
+
+           mul [_screen_width]
+           add esi, [_display_data]
+           add esi, eax
+
+           mov edi, [esp+4]
+           mov eax, [esp+8]
+           mul [BytesPerScanLine]
+
+           cmp byte [ScreenBPP], 24
+           je  .24
+
+           lea edi, [LFB_BASE+eax+edi*4]
+
+           mov eax, [esp+16]
+
+.32_kernel:
+           mov edx, [CURRENT_TASK]
+
+align 16
+.draw32:
+           cmp dl, byte [esi]
+           jne @f
+
+           stosd
+@@:
+           inc esi
+           dec ecx
+           jnz .draw32
+
+           ret
+.24:
+           lea edi, [LFB_BASE+edi*3]
+           add edi, eax
+
+           mov eax, [esp+16]
+
+.24_kernel:
+           mov edx, eax
+           shr edx, 8
+           mov dl, [CURRENT_TASK]
+
+align 16
+.draw24:
+           cmp dl, byte [esi]
+           jne @f
+
+           mov [edi], ax
+           mov [edi+2], dh
+@@:
+           add edi, 3
+           inc esi
+           dec ecx
+           jnz .draw24
+
+           ret
+
+
+;[esp+4]    x
+;[esp+8]    y
+;[esp+12]   h
+;[esp+16]   color
+
+;esi      disp data
+;edi      dest
+
+public _int_vline
+align 4
+_int_vline:
+
+           mov esi, [esp+4]
+           mov eax, [esp+8]
+           mov ecx, [esp+12]
+
+           mul [_screen_width]
+           add esi, [_display_data]
+           add esi, eax
+
+           mov edi, [esp+4]
+           mov eax, [esp+8]
+           mul [BytesPerScanLine]
+
+           cmp byte [ScreenBPP], 24
+           je  .24
+
+           lea edi, [LFB_BASE+eax+edi*4]
+
+           mov eax, [esp+16]
+
+.32_kernel:
+           mov edx, [CURRENT_TASK]
+
+align 16
+.draw32:
+           cmp dl, byte [esi]
+           jne @f
+
+           mov [edi], eax
+@@:
+           add esi, [_screen_width]
+           add edi, [BytesPerScanLine]
+           dec ecx
+           jnz .draw32
+
+           ret
+.24:
+           lea edi, [LFB_BASE+edi*3]
+           add edi, eax
+
+           mov eax, [esp+16]
+
+.24_kernel:
+           mov edx, eax
+           shr edx, 8
+           mov dl, [CURRENT_TASK]
+
+align 16
+.draw24:
+           cmp dl, byte [esi]
+           jne @f
+
+           mov [edi], ax
+           mov [edi+2], dh
+@@:
+           add esi, [_screen_width]
+           add edi, [BytesPerScanLine]
+           dec ecx
+           jnz .draw24
+
+           ret
+
+;[esp]      dst
+;[esp+4]    mask
+
+;[esp+12]   x
+;[esp+16]   y
+;[esp+20]   w
+;[esp+24]   h
+;[esp+32]   color
+
+public _int_rectangle
+align 4
+_int_rectangle:
+
+.dst       equ (esp)
+.mask      equ (esp+4)
+
+.x         equ (esp+12)
+.y         equ (esp+16)
+.w         equ (esp+20)
+.h         equ (esp+24)
+.color     equ (esp+28)
+
+           sub esp, 8
+
+           mov esi, [.x]
+           mov eax, [.y]
+           mul [_screen_width]
+           add esi, [_display_data]
+           add esi, eax
+           mov [.mask], esi
+
+           mov edi, [.x]
+           mov eax, [.y]
+           mul [BytesPerScanLine]
+
+           cmp byte [ScreenBPP], 24
+           je  .24
+
+           lea edi, [LFB_BASE+eax+edi*4]
+
+           mov [.dst],  edi
+
+           mov ecx, [.w]
+           mov eax, [.color]
+           call _int_hline.32_kernel
+
+           sub edi, 4
+           dec esi
+
+           mov ecx, [.h]
+           call _int_vline.32_kernel
+
+           mov edi, [.dst]
+           mov esi, [.mask]
+           mov ecx, [.h]
+           call _int_vline.32_kernel
+
+           mov ecx, [.w]
+           sub esi, [_screen_width]
+           sub edi, [BytesPerScanLine]
+           call _int_hline.32_kernel
+
+           add esp, 8
+           ret
+.24:
+           lea edi, [LFB_BASE+edi*3]
+           add edi, eax
+
+           mov [.dst],  edi
+
+           mov ecx, [.w]
+           mov eax, [.color]
+           call _int_hline.24_kernel
+
+           sub edi, 3
+           dec esi
+
+           mov ecx, [.h]
+           call _int_vline.24_kernel
+
+           mov edi, [.dst]
+           mov esi, [.mask]
+           mov ecx, [.h]
+           call _int_vline.24_kernel
+
+           mov ecx, [.w]
+           sub esi, [_screen_width]
+           sub edi, [BytesPerScanLine]
+           call _int_hline.24_kernel
+
+restore   .dst
+restore   .mask
+
+restore   .x
+restore   .y
+restore   .w
+restore   .h
+restore   .color
+
+           add esp, 8
+           ret

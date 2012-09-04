@@ -217,14 +217,14 @@ calc_vmodes_table:
 ;        cmp     [es:mi.BitsPerPixel], 24
 ;        jb      @f
 
-        cmp     [es:mi.BitsPerPixel],16
-        jne     .l0
-        cmp     [es:mi.GreenMaskSize],5
-        jne     .l0
-        mov     [es:mi.BitsPerPixel],15
+;        cmp     [es:mi.BitsPerPixel],16
+;        jne     .l0
+;        cmp     [es:mi.GreenMaskSize],5
+;        jne     .l0
+;        mov     [es:mi.BitsPerPixel],15
 
 
-  .l0:
+.l0:
         cmp     [es:mi.XRes],640
         jb      @f
         cmp     [es:mi.YRes],480
@@ -243,10 +243,10 @@ calc_vmodes_table:
         jb      .lp1
 
         or      cx,0x4000  ; use LFB
-  .lp1: mov     [es:bx+6],cx               ; +6 : mode number
+.lp1:	mov     [es:bx+6],cx               ; +6 : mode number
         movzx   ax,byte [es:mi.BitsPerPixel]
         mov     word [es:bx+8],ax               ; +8 : bits per pixel
-        add     bx,size_of_step
+        add     bx,size_of_step                 ; size of record 
 
     @@:
         add     si,2
@@ -413,9 +413,17 @@ check_first_parm:
         mov     ax,modes_table
 @@:
 
-        mov     word[home_cursor],ax
-        push    word [preboot_graph]
-        pop     word [cursor_pos]
+        mov     word [home_cursor],ax
+        mov	si,[preboot_graph]
+        mov     word [cursor_pos],si
+
+        push    word [es:si]
+        pop     word [x_save]
+        push    word [es:si+2]
+        pop     word [y_save]
+        push    word [es:si+6]
+        pop     word [number_vm]
+
         ret
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .loops:
@@ -432,7 +440,9 @@ check_first_parm:
         je      .exit
         jmp     .loops
 .ok:    xor     ax,ax        
-.exit:  ret
+	ret
+.exit:  or	ax,-1
+	ret
 
 
 ;-----------------------------------------------------------------------------
@@ -531,14 +541,15 @@ draw_vmodes_table:
         mov     bp,long_v_table               ;show rows
 .@@_next_bit:
 ;clear cursor
-        mov     word[ds:_r1+21],'  '
-        mov     word[ds:_r1+50],'  '
+	mov	ax,'  '
+        mov     word[ds:_r1+21],ax
+        mov     word[ds:_r1+50],ax
 
-        mov     word[ds:_r2+21],'  '
-        mov     word[ds:_r2+45],'  '
+        mov     word[ds:_r2+21],ax
+        mov     word[ds:_r2+45],ax
 
-        mov     word[ds:_rs+21],'  '
-        mov     word[ds:_rs+46],'  '
+        mov     word[ds:_rs+21],ax
+        mov     word[ds:_rs+46],ax
 ; draw string
         cmp     word [es:si+6],0x12
         je      .show_0x12
@@ -649,7 +660,7 @@ clear_vmodes_table:
         rep     stosw
         mov     cx,70
         add     di,20
-        dec     bp               ; уменьшить DX,
+        dec     bp
         jns        .loop_start       
         pop     es
         popa

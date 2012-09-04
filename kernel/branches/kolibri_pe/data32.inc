@@ -63,6 +63,7 @@ keymap_alt:
   boot_setostask    db	 'Setting OS task',0
   boot_allirqs	    db	 'Unmasking all IRQs',0
   boot_tsc	    db	 'Reading TSC',0
+  boot_cpufreq      db   'CPU frequency is ','    ',' MHz',0
   boot_pal_ega	    db	 'Setting EGA/CGA 320x200 palette',0
   boot_pal_vga	    db	 'Setting VGA 640x480 palette',0
   boot_failed	    db	 'Failed to start first app',0
@@ -71,8 +72,8 @@ keymap_alt:
 ;  boot_tasking      db   'All set - press ESC to start',0
 ;end if
 
-new_process_loading db 'K : New Process - loading',13,10,0
-new_process_running db 'K : New Process - done',13,10,0
+;new_process_loading db 'K : New Process - loading',13,10,0
+;new_process_running db 'K : New Process - done',13,10,0
 start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
 
 msg_unresolved db 'unresolved ',0
@@ -80,7 +81,10 @@ msg_module     db 'in module ',0
 msg_version    db 'incompatible driver version',13,10,0
 msg_www        db 'please visit www.kolibrios.org',13,10,0
 msg_CR	       db  13,10,0
+aSis           db 'SIS',0
 
+intel_str      db "GenuineIntel",0
+AMD_str        db "AuthenticAMD",0
 
 ;szSound        db 'SOUND',0
 ;szInfinity     db 'INFINITY',0
@@ -92,6 +96,8 @@ szAtiHW         db '/rd/1/drivers/ati2d.drv',0
 
 szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
+sz_EXPORTS     db '_EXPORTS',0
+
 szIMPORTS      db 'IMPORTS',0
 
 read_firstapp  db '/sys/'
@@ -107,7 +113,13 @@ vrr_m	       db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'
 
 
-                     ;supported videomodes
+align 4
+
+shmem_list:
+ .bk           dd shmem_list
+ .fd           dd shmem_list
+
+; supported videomodes
 mode_1280_1024_32:
   dw 1280,1024,32,60
 mode_1280_1024_24:
@@ -128,13 +140,6 @@ mode_640_480_16:
   dw 640,480,16,60
 mode_320_240_8:
   dw 320,240,8,60
-
-
-;bx_from_load:     dw 'r1'  ; структура для хранения параметров- откуда гашрузились, берется ниже из bx ; {SPraid}[13.03.2007]
-;                           ; a,b,c,d - винчестеры, r - рам диск
-;                           ; # диска... символ, а не байт. '1', а не 1
-
-
 
 ; mike.dld {
 db 0
@@ -513,6 +518,11 @@ hdpos             rd 1    ; for boot 0x1
 fat32part         rd 1    ; for boot 0x1
 cdpos             rd 1
 
+;CPUID information
+cpu_vendor        rd 3
+cpu_sign          rd 1
+cpu_info          rd 1
+cpu_caps          rd 4
 
 
 pg_data           PG_DATA

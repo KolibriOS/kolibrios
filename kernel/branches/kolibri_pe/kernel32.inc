@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;; KERNEL32.INC                                                 ;;
@@ -84,12 +84,12 @@ struc TASKDATA
 {
   .event_mask  dd ?
   .pid	       dd ?
-	       dw ?
+               dw ?
   .state       db ?
                db ?
-	       dw ?
+               dw ?
   .wnd_number  db ?
-	       db ?
+               db ?
   .mem_start   dd ?
   .counter_sum dd ?
   .counter_add dd ?
@@ -101,11 +101,11 @@ end virtual
 
 ; structures definition
 struc WDATA {
-  .box		   BOX
+  .box             BOX
   .cl_workarea	   dd ?
   .cl_titlebar	   dd ?
   .cl_frames	   dd ?
-  .reserved	   db ?
+  .reserved        db ?
   .fl_wstate	   db ?
   .fl_wdrawn	   db ?
   .fl_redraw	   db ?
@@ -117,8 +117,8 @@ label WDATA.fl_wstyle byte at 0x13
 
 struc APPDATA
 {
-  .app_name	   db 11  dup(?)
-		   db 5   dup(?)
+  .app_name        db 11  dup(?)
+                   db 5   dup(?)
 
   .fpu_state       dd ?            ;+16
   .ev_count        dd ?            ;+20
@@ -147,12 +147,12 @@ struc APPDATA
   .mem_size        dd ?            ;+140
   .saved_box	   BOX
   .ipc_start	   dd ?
-  .ipc_size	   dd ?
+  .ipc_size        dd ?
   .event_mask	   dd ?
   .debugger_slot   dd ?
-		   dd ?
+                   dd ?
   .keyboard_mode   db ?
-		   db 3   dup(?)
+                   db 3   dup(?)
   .dir_table	   dd ?
   .dbg_event_mem   dd ?
   .dbg_regs:

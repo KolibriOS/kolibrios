@@ -300,7 +300,7 @@ addr_t alloc_page(void)
         list_remove(&slab->link);
         list_prepend(&slab->link, &page_cache.full_slabs);
         page_cache.partial_count--;
-        DBG("%s insert empty page slab\n");
+        DBG("%s insert empty page slab\n", __FUNCTION__);
     };
     spinlock_unlock(&page_cache.lock);
 
@@ -396,9 +396,9 @@ size_t __fastcall frame_free(addr_t addr)
              (slab->avail >= 4))
         {
             slab->state = 1;
-     //       list_remove(&slab->link);
-     //       list_prepend(&slab->link, &page_cache.partial_slabs);
-     //       page_cache.partial_count++;
+            list_remove(&slab->link);
+            list_prepend(&slab->link, &page_cache.partial_slabs);
+            page_cache.partial_count++;
 
             DBG("%s: insert partial page slab\n", __FUNCTION__);
         }
@@ -439,4 +439,7 @@ count_t get_free_mem()
 {
    return z_core.free_count;
 }
+
+
+
 

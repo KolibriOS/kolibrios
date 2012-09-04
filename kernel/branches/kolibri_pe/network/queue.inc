@@ -1,14 +1,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;                                                              ;;
 ;;  QUEUE.INC                                                   ;;
 ;;                                                              ;;
 ;;  Buffer queue management for Menuet OS TCP/IP Stack          ;;
-;;                                                              ;;
-;;  Version 0.3  29 August 2002                                 ;;
 ;;                                                              ;;
 ;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net            ;;
 ;;                                                              ;;
@@ -43,9 +41,9 @@ $Revision$
 ;       all other registers preserved
 ;        This always works, so no error returned
 ;***************************************************************************
-uglobal
-  freeBuff_cnt dd ?
-endg
+;uglobal
+;  freeBuff_cnt dd ?
+;endg
 freeBuff:
 ;        inc     [freeBuff_cnt]
 ;        DEBUGF  1, "K : freeBuff (%u)\n", [freeBuff_cnt]
@@ -106,9 +104,9 @@ qs_exit:
 ;       all other registers preserved
 ;        This always works, so no error returned
 ;***************************************************************************
-uglobal
-  queue_cnt dd ?
-endg
+;uglobal
+;  queue_cnt dd ?
+;endg
 queue:
 ;        inc     [queue_cnt]
 ;        DEBUGF  1, "K : queue (%u)\n", [queue_cnt]
@@ -161,9 +159,9 @@ qu_exit:
 ;       all other registers preserved
 ;
 ;***************************************************************************
-uglobal
-  dequeue_cnt dd ?
-endg
+;uglobal
+;  dequeue_cnt dd ?
+;endg
 dequeue:
     push    ebx
     shl     eax, 1

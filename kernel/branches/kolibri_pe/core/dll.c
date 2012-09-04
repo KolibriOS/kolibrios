@@ -235,12 +235,14 @@ int __stdcall pe_app_param(char *path, void *raw, addr_t ex_pg_dir,
 
 int sys_exec(char *path, char *cmdline, u32_t flags)
 {
+
     PIMAGE_DOS_HEADER     dos;
     PIMAGE_NT_HEADERS32   nt;
 
     size_t   img_size;
     count_t  img_pages;
     count_t  img_tabs;
+
     addr_t        ex_pg_dir;
     addr_t        ex_stack_page;
     addr_t        ex_pl0_stack;
@@ -588,6 +590,7 @@ bool link_pe(addr_t img_base)
             exp_dll = find_dll(&core_dll.link, libname);
             if(exp_dll == NULL)
             {
+
             exp_dll = find_dll(&current_slot->dll_list, libname);
                 if(exp_dll == NULL)
             {

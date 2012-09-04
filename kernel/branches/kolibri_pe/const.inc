@@ -187,57 +187,22 @@ end virtual
 
 TSS_SIZE  equ (128+8192)
 
-HEAP_BASE           equ 0x80000000
+page_tabs           equ 0xFF800000
+;app_page_tabs       equ 0xDD800000
 
-HEAP_MIN_SIZE       equ 0x01000000
+;shared_tabs         equ 0xDDC00000
 
-page_tabs           equ 0xDD800000
-app_page_tabs       equ 0xDD800000
-
-shared_tabs         equ 0xDDC00000
-
-heap_tabs           equ (page_tabs+ (HEAP_BASE shr 10))
-kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))
-master_tab          equ (page_tabs+ (page_tabs shr 10))
-
-LFB_BASE            equ 0xDE000000
-SHADOWFB            equ 0   ;0xDE800000
-
-TEXT_BASE           equ 0xDFC00000
+;heap_tabs           equ (page_tabs+ (HEAP_BASE shr 9))
+kernel_tabs         equ page_tabs)
+master_tab          equ (page_tabs+ (page_tabs shr 9))
 
 _16BIT_BASE         equ 0x00010000
 LOAD_BASE           equ 0x00100000
-OS_BASE             equ 0xE0000000
-IMAGE_BASE          equ (OS_BASE+LOAD_BASE)
-
-BOOT_VAR            equ OS_BASE
-
-SB16Buffer          equ (OS_BASE+0x10000)
-
-TASK_COUNT          equ (CURRENT_TASK+0x04)
-TASK_BASE           equ (CURRENT_TASK+0x10)
-TASK_DATA           equ (CURRENT_TASK+0x20)
-TASK_EVENT          equ (CURRENT_TASK+0x20)
-
-FDD_BUFF            equ (OS_BASE+0x000D000)
-
-VGABasePtr          equ (OS_BASE+0x00A0000)
-
-IRQ_SAVE            equ (OS_BASE+0x0190000)
-
-stack_data_start    equ (OS_BASE+0x01A0000)
-eth_data_start      equ (OS_BASE+0x01A0000)
-stack_data          equ (OS_BASE+0x01A4000)
-stack_data_end      equ (OS_BASE+0x01Bffff)
-resendQ             equ (OS_BASE+0x01C0000)
-
-virtual at              (OS_BASE+0x01C8F80)
-  tss  TSS
-end virtual
+IMAGE_BASE          equ LOAD_BASE
 
 LAST_PAGE           equ 0x01CB000
 
-twdw                equ (CURRENT_TASK-window_data)
+NCPU                equ 8
 
 RING0_STACK_SIZE    equ (0x2000 - 512)    ;512 байт для контекста FPU
 
@@ -386,6 +351,40 @@ virtual at 0
 end virtual
 
 
+struc SMEM
+{
+    .bk         dd ?
+    .fd         dd ?    ;+4
+    .base       dd ?    ;+8
+    .size       dd ?    ;+12
+    .access     dd ?    ;+16
+    .refcount   dd ?    ;+20
+    .name       rb 32   ;+24
+    .sizeof:
+}
+
+struc SMAP
+{
+   .magic       dd ?   ; SMAP
+   .destroy     dd ?   ;internal destructor
+   .fd          dd ?   ;next object in list
+   .bk          dd ?   ;prev object in list
+   .pid         dd ?   ;owner id
+
+   .base        dd ?   ;mapped base
+   .parent      dd ?   ;SMEM
+   .sizeof:
+}
+
+virtual at 0
+  SMEM SMEM
+end virtual
+
+virtual at 0
+  SMAP SMAP
+end virtual
+
+
 struc HEAP_DATA
 {
    .mutex         rd 1
@@ -438,13 +437,13 @@ virtual at 0
 end virtual
 
 struc MEM_STATE
-{  .mutex             rd 1
-   .smallmap          rd 1
-   .treemap           rd 1
-   .topsize           rd 1
-   .top               rd 1
-   .smallbins         rd 4*32
-   .treebins          rd 32
+{  .mutex            rd 1
+   .smallmap         rd 1
+   .treemap          rd 1
+   .topsize          rd 1
+   .top              rd 1
+   .smallbins        rd 4*32
+   .treebins         rd 32
 }
 
 struc PG_DATA

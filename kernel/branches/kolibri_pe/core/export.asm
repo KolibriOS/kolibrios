@@ -17,13 +17,13 @@
         .ascii " -export:CreateRingBuffer"     # stdcall
         .ascii " -export:CommitPages"          # eax, ebx, ecx     FIXME
         .ascii " -export:UnmapPages"           # eax, ecx          FIXME
+
         .ascii " -export:CreateObject"         # eax, ebx          FIXME
         .ascii " -export:DestroyObject"        # eax
 
         .ascii " -export:RegService"           # stdcall
         .ascii " -export:SysMsgBoardStr"       #
         .ascii " -export:SetScreen"            #
-
 
         .ascii " -export:PciApi"               #
         .ascii " -export:PciRead8"             # stdcall
@@ -38,6 +38,10 @@
         .ascii " -export:HwCursorRestore"      #
         .ascii " -export:HwCursorCreate"       #
 
+        .ascii " -export:create_window"        # cdecl
+        .ascii " -export:show_window"          # cdecl
+        .ascii " -export:get_event"            # cdecl
+        .ascii " -export:def_window_proc"      # cdecl
 
 
 

@@ -11,26 +11,27 @@ typedef struct
 
 typedef struct
 {
-  link_t buddy_link;        /**< link to the next free block inside one  order */
+  link_t  buddy_link;         /**< link to the next free block inside one  order */
   u16_t   refcount;           /**< tracking of shared frames  */
   u16_t   buddy_order;        /**< buddy system block order */
-  void *parent;             /**< If allocated by slab, this points there */
+  void   *parent;             /**< If allocated by slab, this points there */
 } frame_t;
+
 
 typedef struct
 {
-  SPINLOCK_DECLARE(lock);   /**< this lock protects everything below */
-  pfn_t base;               /**< frame_no of the first frame in the frames array */
-  count_t count;            /**< Size of zone */
+  SPINLOCK_DECLARE(lock);     /**< this lock protects everything below */
+  pfn_t    base;              /**< frame_no of the first frame in the frames array */
+  count_t  count;             /**< Size of zone */
 
-  frame_t *frames;          /**< array of frame_t structures in this zone */
-  count_t free_count;       /**< number of free frame_t structures */
-  count_t busy_count;       /**< number of busy frame_t structures */
+  frame_t *frames;            /**< array of frame_t structures in this zone */
+  count_t  free_count;        /**< number of free frame_t structures */
+  count_t  busy_count;        /**< number of busy frame_t structures */
 
-  u32_t max_order;
-  link_t order[21];
+  u32_t    max_order;
+  link_t   order[21];
 
-	int flags;
+  int      flags;
 } zone_t;
 
 
@@ -45,13 +46,12 @@ typedef struct
 }md_t;
 
 
-#define PG_MAP        1
-#define PG_WRITE      2
-#define PG_USER       4
+#define PG_MAP          1
+#define PG_WRITE        2
+#define PG_USER         4
 
-#define PG_SW         3
-#define PG_UW         7
-
+#define PG_SW           3
+#define PG_UW           7
 
 
 #define PAGE_SIZE    4096
@@ -63,8 +63,8 @@ typedef struct
 
 static inline count_t SIZE2FRAMES(size_t size)
 {
-	if (!size)
-		return 0;
+    if (!size)
+        return 0;
   return (count_t) ((size - 1) >> PAGE_WIDTH) + 1;
 }
 

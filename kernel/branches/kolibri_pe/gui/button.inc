@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -589,7 +589,7 @@ checkbuttons:
 iglobal
     mx dw 0x0 ; keeps the x mouse's position when it was clicked
     my dw 0x0 ; keeps the y mouse's position when it was clicked
-    bPressedMouseXY_B db 0x0
+    bPressedMouseXY_B   db 0x0
     btn_down_determ     db 0x0        ; << // Alver 22.06.2008// <<
 endg
 

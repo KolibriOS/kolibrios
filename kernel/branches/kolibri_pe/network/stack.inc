@@ -1,13 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  STACK.INC                                                   ;;
 ;;                                                              ;;
 ;;  TCP/IP stack for Menuet OS                                  ;;
-;;                                                              ;;
-;;  Version 0.7  4th July 2004                                  ;;
 ;;                                                              ;;
 ;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net            ;;
 ;;                                                              ;;
@@ -46,7 +44,7 @@ endg
 
 ; socket buffers
 SOCKETBUFFSIZE	   equ	      4096  ; state + config + buffer.
-SOCKETHEADERSIZE   equ	      76+8+8  ; thus 4096 - SOCKETHEADERSIZE bytes data
+SOCKETHEADERSIZE   equ	      SOCKET.rxData ; thus 4096 - SOCKETHEADERSIZE bytes data
 
 ;NUM_SOCKETS        equ        16    ; Number of open sockets supported. Was 20
 

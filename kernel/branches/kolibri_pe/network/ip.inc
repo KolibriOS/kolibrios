@@ -223,7 +223,7 @@ local buffer_number dd ?
 	jmp	.dump.x
 
   .dump.4:
-	DEBUGF	1, "K : ip_rx - dumped (ihl: %u)\n", [ebx + IP_PACKET.TimeToLive]
+	DEBUGF	1, "K : ip_rx - dumped (ttl: %u)\n", [ebx + IP_PACKET.TimeToLive]
 	jmp	.dump.x
 
   .dump.5:

@@ -8,7 +8,7 @@ API_VERSION	equ 0  ;debug
 OS_BASE         equ 0xE0000000
 ;PROC_BASE   equ (OS_BASE+0x080000)
 SB16Buffer      equ (OS_BASE+0x10000)
-DMAPage 	equ ((SB16Buffer-OS_BASE) shr 16)
+DMAPage     equ ((SB16Buffer-OS_BASE) shr 16)
 
 SB16Buffer0	equ SB16Buffer
 SB16Buffer1	equ (SB16Buffer+16384)
@@ -20,7 +20,7 @@ sb_dma_num	equ 5 ;default values for SB16, may be overrided by autodetect
 
 small_buffer	equ 32768
 full_buffer	equ 65536
-sb_buffer_size	equ full_buffer
+sb_buffer_size	equ small_buffer  ; FIX ring buffer overlapped events issue;  full_buffer
 
 __supported_buffer_sizes fix <small_buffer, full_buffer>
 

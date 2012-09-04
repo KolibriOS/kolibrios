@@ -198,8 +198,8 @@ extern dll_t core_dll;
 
 bool validate_pe(void *raw, size_t raw_size, bool is_exec);
 
-dll_t * find_dll(link_t *list, const char *name);
 
+dll_t * find_dll(link_t *list, const char *name);
 
 addr_t __fastcall load_image(const char *path);
 

@@ -27,40 +27,40 @@ static slab_cache_t * slab_cache_alloc();
  */
 static slab_t * slab_space_alloc(slab_cache_t *cache, int flags)
 {
-  void *data;
-  slab_t *slab;
-  size_t fsize;
-  unsigned int i;
-  u32_t p;
+    void *data;
+    slab_t *slab;
+    size_t fsize;
+    unsigned int i;
+    u32_t p;
 
     DBG("%s order %d\n", __FUNCTION__, cache->order);
 
     data = (void*)PA2KA(frame_alloc(1 << cache->order));
-  if (!data) {
-    return NULL;
-  }
-  slab = (slab_t*)slab_create();
-  if (!slab) {
+    if (!data) {
+        return NULL;
+    }
+    slab = (slab_t*)slab_create();
+    if (!slab) {
         frame_free(KA2PA(data));
-      return NULL;
-  }
+        return NULL;
+    }
 
   /* Fill in slab structures */
-  for (i = 0; i < ((u32_t) 1 << cache->order); i++)
-    frame_set_parent(ADDR2PFN(KA2PA(data)) + i, slab);
+    for (i = 0; i < ((u32_t) 1 << cache->order); i++)
+        frame_set_parent(ADDR2PFN(KA2PA(data)) + i, slab);
 
-  slab->start = data;
-  slab->available = cache->objects;
-  slab->nextavail = (void*)data;
-  slab->cache = cache;
+    slab->start = data;
+    slab->available = cache->objects;
+    slab->nextavail = (void*)data;
+    slab->cache = cache;
 
-  for (i = 0, p = (u32_t)slab->start; i < cache->objects; i++)
-  {
-    *(addr_t *)p = p+cache->size;
-    p = p+cache->size;
-  };
-  atomic_inc(&cache->allocated_slabs);
-  return slab;
+    for (i = 0, p = (u32_t)slab->start; i < cache->objects; i++)
+    {
+        *(addr_t *)p = p+cache->size;
+        p = p+cache->size;
+    };
+    atomic_inc(&cache->allocated_slabs);
+    return slab;
 }
 
 /**
@@ -178,7 +178,7 @@ _slab_cache_create(slab_cache_t *cache,
        int (*destructor)(void *obj),
        int flags)
 {
-  int pages;
+    int pages;
  // ipl_t ipl;
 
 //  memsetb((uintptr_t)cache, sizeof(*cache), 0);
@@ -188,15 +188,15 @@ _slab_cache_create(slab_cache_t *cache,
 //    align = sizeof(unative_t);
 //  size = ALIGN_UP(size, align);
 
-  cache->size = size;
+    cache->size = size;
 
 //  cache->constructor = constructor;
 //  cache->destructor = destructor;
-  cache->flags = flags;
+    cache->flags = flags;
 
-  list_initialize(&cache->full_slabs);
-  list_initialize(&cache->partial_slabs);
-  list_initialize(&cache->magazines);
+    list_initialize(&cache->full_slabs);
+    list_initialize(&cache->partial_slabs);
+    list_initialize(&cache->magazines);
 //  spinlock_initialize(&cache->slablock, "slab_lock");
 //  spinlock_initialize(&cache->maglock, "slab_maglock");
 //  if (! (cache->flags & SLAB_CACHE_NOMAGAZINE))
@@ -205,23 +205,23 @@ _slab_cache_create(slab_cache_t *cache,
   /* Compute slab sizes, object counts in slabs etc. */
 
   /* Minimum slab order */
-  pages = SIZE2FRAMES(cache->size);
+    pages = SIZE2FRAMES(cache->size);
   /* We need the 2^order >= pages */
-  if (pages <= 1)
-    cache->order = 0;
-  else
-    cache->order = fnzb(pages-1)+1;
+    if (pages <= 1)
+        cache->order = 0;
+    else
+        cache->order = fnzb(pages-1)+1;
 
-  while (badness(cache) > SLAB_MAX_BADNESS(cache)) {
-    cache->order += 1;
-  }
-  cache->objects = comp_objects(cache);
+    while (badness(cache) > SLAB_MAX_BADNESS(cache)) {
+        cache->order += 1;
+    }
+    cache->objects = comp_objects(cache);
 
   /* Add cache to cache list */
 //  ipl = interrupts_disable();
 //  spinlock_lock(&slab_cache_lock);
 
-  list_append(&cache->link, &slab_cache_list);
+    list_append(&cache->link, &slab_cache_list);
 
 //  spinlock_unlock(&slab_cache_lock);
 //  interrupts_restore(ipl);
@@ -240,7 +240,9 @@ slab_cache_t * slab_cache_create(
     DBG("%s\n", __FUNCTION__);
 
 	cache = (slab_cache_t*)slab_cache_alloc();
-  _slab_cache_create(cache, size, align, constructor, destructor, flags);
+
+    _slab_cache_create(cache, size, align, constructor, destructor, flags);
+
 	return cache;
 }
 
@@ -331,9 +333,9 @@ void __fastcall slab_free(slab_cache_t *cache, void *obj)
 
 static slab_t *slab_create()
 {
-  slab_t *slab;
-  void *obj;
-  u32_t p;
+    slab_t *slab;
+    void *obj;
+    u32_t p;
 
     DBG("%s\n", __FUNCTION__);
 
@@ -390,9 +392,9 @@ static slab_t *slab_create()
 
 static slab_cache_t * slab_cache_alloc()
 {
-  slab_t *slab;
-  void *obj;
-  u32_t *p;
+    slab_t *slab;
+    void *obj;
+    u32_t *p;
 
     DBG("%s\n", __FUNCTION__);
 
@@ -401,62 +403,62 @@ static slab_cache_t * slab_cache_alloc()
 //    spinlock_unlock(&cache->slablock);
 //    slab = slab_create();
 
-    void *data;
-    unsigned int i;
+        void *data;
+        unsigned int i;
 
         data = (void*)(PA2KA(alloc_page()));
-    if (!data) {
-      return NULL;
-    }
+        if (!data) {
+            return NULL;
+        }
 
-    slab = (slab_t*)((u32_t)data + PAGE_SIZE - sizeof(slab_t));
+        slab = (slab_t*)((u32_t)data + PAGE_SIZE - sizeof(slab_t));
 
     /* Fill in slab structures */
-    frame_set_parent(ADDR2PFN(KA2PA(data)), slab);
+        frame_set_parent(ADDR2PFN(KA2PA(data)), slab);
 
-    slab->start = data;
-    slab->available = slab_cache_cache.objects;
-    slab->nextavail = (void*)data;
-    slab->cache = &slab_cache_cache;
+        slab->start = data;
+        slab->available = slab_cache_cache.objects;
+        slab->nextavail = (void*)data;
+        slab->cache = &slab_cache_cache;
 
-    for (i = 0,p = (u32_t*)slab->start;i < slab_cache_cache.objects; i++)
-    {
-      *p = (u32_t)p+slab_cache_cache.size;
-      p = (u32_t*)((u32_t)p+slab_cache_cache.size);
-    };
+        for (i = 0,p = (u32_t*)slab->start;i < slab_cache_cache.objects; i++)
+        {
+            *p = (u32_t)p+slab_cache_cache.size;
+            p = (u32_t*)((u32_t)p+slab_cache_cache.size);
+        };
 
 
-    atomic_inc(&slab_cache_cache.allocated_slabs);
+        atomic_inc(&slab_cache_cache.allocated_slabs);
 //    spinlock_lock(&cache->slablock);
     }
     else {
-    slab = list_get_instance(slab_cache_cache.partial_slabs.next, slab_t, link);
-    list_remove(&slab->link);
-  }
-  obj = slab->nextavail;
-  slab->nextavail = *((void**)obj);
-  slab->available--;
+        slab = list_get_instance(slab_cache_cache.partial_slabs.next, slab_t, link);
+        list_remove(&slab->link);
+    }
+    obj = slab->nextavail;
+    slab->nextavail = *((void**)obj);
+    slab->available--;
 
-  if (!slab->available)
-    list_prepend(&slab->link, &slab_cache_cache.full_slabs);
-  else
-    list_prepend(&slab->link, &slab_cache_cache.partial_slabs);
+    if (!slab->available)
+        list_prepend(&slab->link, &slab_cache_cache.full_slabs);
+    else
+        list_prepend(&slab->link, &slab_cache_cache.partial_slabs);
 
 //  spinlock_unlock(&cache->slablock);
 
-  return (slab_cache_t*)obj;
+    return (slab_cache_t*)obj;
 }
 
 void slab_cache_init(void)
 {
     DBG("%s\n", __FUNCTION__);
 
-  _slab_cache_create(&slab_cache_cache, sizeof(slab_cache_t),
+    _slab_cache_create(&slab_cache_cache, sizeof(slab_cache_t),
                      sizeof(void *), NULL, NULL,
                      SLAB_CACHE_NOMAGAZINE | SLAB_CACHE_SLINSIDE);
 
 	/* Initialize external slab cache */
-  slab_cache = slab_cache_create(sizeof(slab_t),
+    slab_cache = slab_cache_create(sizeof(slab_t),
 					      0, NULL, NULL,SLAB_CACHE_MAGDEFERRED);
 };
 

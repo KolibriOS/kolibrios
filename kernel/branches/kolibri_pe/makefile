@@ -40,6 +40,7 @@ PE_SRC:=			\
 		dll.c		\
 		spinlock.c	\
 		thread.c		\
+		win.c	                \
 		syscall.asm		\
 		boot/boot.asm	\
 		boot/start.asm

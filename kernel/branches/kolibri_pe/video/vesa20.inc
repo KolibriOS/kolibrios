@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  VESA20.INC                                                  ;;
@@ -239,6 +239,8 @@ end if
 ;     inc     ebp
      cmp     [putimg.ebp], putimage_get1bpp
      jz      .correct
+     cmp     [putimg.ebp], putimage_get2bpp
+     jz      .correct
      cmp     [putimg.ebp], putimage_get4bpp
      jnz     @f
 .correct:
@@ -282,6 +284,8 @@ end if
      add     ebp, [putimg.winmap_newline] ;[Screen_Max_X]
 ;     inc     ebp
      cmp     [putimg.ebp], putimage_get1bpp
+     jz      .correct
+     cmp     [putimg.ebp], putimage_get2bpp
      jz      .correct
      cmp     [putimg.ebp], putimage_get4bpp
      jnz     @f

@@ -764,17 +764,17 @@ i1:
 ;    ja    err
     sub    al,48
     shl    cx,1
-    jc    err
+    jc    error
     mov    bx,cx
     shl    cx,1
-    jc    err
+    jc    error
     shl    cx,1
-    jc    err
+    jc    error
     add    cx,bx
-    jc    err
+    jc    error
     cbw
     add    cx,ax
-    jc    err
+    jc    error
 i3:
     inc    edi
     jmp    i1
@@ -789,7 +789,7 @@ i4:
     pop    bx
     ret
 
-err:
+error:
     stc
     jmp    i4
 

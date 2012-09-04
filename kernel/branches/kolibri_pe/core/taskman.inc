@@ -119,7 +119,7 @@ proc mnt_exec stdcall file_base:dword, file_size:dword, \
              filename      rb 1024
 
              save_cr3      dd ?
-             slot      dd ?
+             slot          dd ?
              slot_base     dd ?
 
                           ;app header data
@@ -141,6 +141,7 @@ proc mnt_exec stdcall file_base:dword, file_size:dword, \
 @@:
            cmp edi, ecx
            jae .bigfilename
+
            lodsb
            stosb
            test al, al
@@ -172,7 +173,7 @@ proc mnt_exec stdcall file_base:dword, file_size:dword, \
            test eax, eax
            jz .err_hdr
 
-           DEBUGF 1,"%s",new_process_loading
+         ;  DEBUGF 1,"%s",new_process_loading
 
            lea ebx, [application_table_status]
            call wait_mutex
@@ -226,8 +227,8 @@ proc mnt_exec stdcall file_base:dword, file_size:dword, \
            mov   [ebx+APPDATA.mem_size],ecx
 
            mov edi, [file_size]
-         ;  add edi, 4095
-         ;  and edi, not 4095
+           add edi, 4095
+           and edi, not 4095
            sub ecx, edi
            jna @F
 
@@ -261,6 +262,7 @@ proc mnt_exec stdcall file_base:dword, file_size:dword, \
            pop ebx
            mov eax, -ERROR_FILE_NOT_FOUND
            ret
+
 .failed:
            mov eax, [save_cr3]
            call set_cr3
@@ -278,6 +280,7 @@ proc mnt_exec stdcall file_base:dword, file_size:dword, \
            mov eax, ecx
            ret
 endp
+
 
 align 4
 proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack:dword
@@ -417,7 +420,7 @@ proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack:dword
            lea ecx, [ebx+REG_EDI]
            mov edx,   [ex_stack]
 
-           mov [ebx+REG_ENTRY],   dword  _sys_app_entry
+           mov [ebx+REG_ENTRY],   dword _sys_app_entry
            mov [ebx+REG_RESTART], dword _pe_restart
            mov [ebx+REG_RAW], eax
            mov [ebx+REG_CSTACK], ecx
@@ -439,7 +442,7 @@ proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack:dword
            pop esi
            pop ebx
 
-	   ret
+           ret
 endp
 
 align 4
@@ -447,7 +450,6 @@ _pe_restart:
            add esp, 12
            popad
            iretd
-
 
 align 4
 proc get_new_process_place
@@ -674,9 +676,10 @@ align 4
            add esp, 16
            ret
 
+
+
 align 4
 set_cr3:
-
            mov ebx, [current_slot]
            mov [ebx+APPDATA.dir_table], eax
            mov cr3, eax
@@ -1045,9 +1048,8 @@ proc new_sys_threads
            mov [app_eip], ebx
            mov [app_esp], ecx
 
-           ;mov    esi,new_process_loading
-           ;call   sys_msg_board_str
-           DEBUGF 1,"%s",new_process_loading
+          ;DEBUGF 1,"%s",new_process_loading
+
 .wait_lock:
            cmp [application_table_status],0
            je .get_lock
@@ -1101,9 +1103,7 @@ proc new_sys_threads
            stdcall set_app_params ,[slot],eax,dword 0,\
                          dword 0,dword 0
 
-           ;mov    esi,new_process_running
-           ;call   sys_msg_board_str     ;output information about succefull startup
-           DEBUGF 1,"%s",new_process_running
+          ; DEBUGF 1,"%s",new_process_running
 
            mov    [application_table_status],0 ;unlock application_table_status mutex
            mov    eax,[process_number]  ;set result
@@ -1207,7 +1207,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov edx,[params]
            mov edx,[edx]       ;app_cmdline
            test edx,edx
-           jz @f           ;application doesn't need parameters
+           jz @f               ;application doesn't need parameters
 
            mov     eax, edx
            add     eax, 256
@@ -1225,7 +1225,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov edx,[params]
            mov edx, [edx+4]    ;app_path
            test edx,edx
-           jz @F           ;application don't need path of file
+           jz @F               ;application don't need path of file
            mov     eax, edx
            add     eax, 1024
            jc      @f
@@ -1274,13 +1274,13 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [ebx+REG_ECX], eax
            mov [ebx+REG_EAX], eax
 
-           mov eax, [esi+0x08]       ;app_eip
-           mov [ebx+REG_EIP],  eax   ;app_entry
+           mov eax, [esi+0x08]                 ;app_eip
+           mov [ebx+REG_EIP],  eax             ;app_entry
            mov [ebx+REG_CS], dword sel_app_code
-               mov [ebx+REG_EFLAGS], dword EFL_IOPL3+EFL_IF
+           mov [ebx+REG_EFLAGS], dword EFL_IOPL3+EFL_IF
 
-           mov eax, [esi+0x0C]       ;app_esp
-           mov [ebx+REG_APP_ESP], eax    ;app_stack
+           mov eax, [esi+0x0C]                 ;app_esp
+           mov [ebx+REG_APP_ESP], eax          ;app_stack
            mov [ebx+REG_SS], dword sel_app_data
 
            lea ecx, [ebx+REG_RET]

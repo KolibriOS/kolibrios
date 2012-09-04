@@ -1,18 +1,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
-;;                                                              ;;
-;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;                                                              ;;
 ;;  UDP.INC                                                     ;;
 ;;                                                              ;;
 ;;  UDP Processes for Menuet OS  TCP/IP stack                   ;;
-;;                                                              ;;
-;;  Version 0.3  29 August 2002                                 ;;
 ;;                                                              ;;
 ;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net            ;;
 ;;                                                              ;;
@@ -102,7 +96,7 @@ proc udp_rx stdcall
 	je	@f
 
 	mov	eax, [edx + IP_PACKET.SourceAddress]	; get the Source address from the IP packet
-	cmp	[ebx + SOCKET.RemoteIP], ebx
+	cmp	[ebx + SOCKET.RemoteIP], eax
 	jne	.exit		   ; Quit if the source IP is not valid
 
     @@: ; OK - we have a valid UDP packet for this socket.

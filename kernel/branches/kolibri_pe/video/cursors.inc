@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -489,7 +489,6 @@ proc init_cursors
            cmp ebx, 32
            jne @F
 
-
            mov dword [select_hw_cursor], select_cursor
            mov dword [set_hw_cursor], cursor_32
            mov dword [hw_restore], restore_32
@@ -642,7 +641,6 @@ proc cursor_24 stdcall, hcursor:dword, x:dword, y:dword
            lodsd
            test eax, 0xFF000000
            jz @F
-
            mov [edi], ax
            shr eax, 16
            mov [edi+2], al
@@ -655,6 +653,7 @@ proc cursor_24 stdcall, hcursor:dword, x:dword, y:dword
            jnz .row
            ret
 endp
+
 
 align 4
 proc cursor_32 stdcall, hcursor:dword, x:dword, y:dword
@@ -755,6 +754,7 @@ proc cursor_32 stdcall, hcursor:dword, x:dword, y:dword
            jnz .row
            ret
 endp
+
 
 align 4
 def_arrow:

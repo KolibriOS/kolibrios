@@ -180,7 +180,7 @@ e7:                        ;#NM exception handler
 
 iglobal
   fpu_owner dd 0
- endg
+endg
 
 reg_eip       equ ebp+4
 reg_cs        equ ebp+8

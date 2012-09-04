@@ -80,3 +80,33 @@ slab_cache_t * slab_cache_create(
 void* __fastcall slab_alloc(slab_cache_t *cache, int flags);
 void  __fastcall slab_free(slab_cache_t *cache, void *obj);
 
+
+typedef struct
+{
+    int left;
+    int top;
+    int right;
+    int bottom;
+}rect_t;
+
+typedef struct
+{
+    link_t    link;
+    rect_t    wrect;
+    rect_t    crect;
+    rect_t    hrect;
+
+    color_t   clr_workarea;
+    color_t   clr_titlebar;
+    color_t   clr_frames;
+
+    u32_t     style;
+    u32_t     state;
+
+    int       slot;
+
+    link_t    queue;
+    u32_t     qflags;
+
+    char     *caption;
+}window_t;

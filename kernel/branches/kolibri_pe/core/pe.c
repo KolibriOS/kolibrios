@@ -135,11 +135,11 @@ addr_t __fastcall load_image(const char *path)
     };
 
     if( ! validate_pe(raw, raw_size, false) )
-	{
+    {
         DBG("invalid pe file %s\n", path);
         mem_free(raw);
-            return NULL;
-	}
+        return NULL;
+    }
 
     dos = (PIMAGE_DOS_HEADER)raw;
     nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
@@ -207,7 +207,6 @@ void create_image(addr_t img_base, addr_t raw, bool force_clear)
     u32_t  sec_align;
     int    i;
 
-
 /* assumed that image is valid */
 
     dos = (PIMAGE_DOS_HEADER)raw;
@@ -233,11 +232,11 @@ void create_image(addr_t img_base, addr_t raw, bool force_clear)
 
         if(force_clear)
         {
-        sec_size = (img_sec->Misc.VirtualSize + sec_align -1) & -sec_align;
+            sec_size = (img_sec->Misc.VirtualSize + sec_align -1) & -sec_align;
 
-        if(sec_size > img_sec->SizeOfRawData)
-            sec_clear(dest_ptr + img_sec->SizeOfRawData,
-                      sec_size - img_sec->SizeOfRawData);
+            if(sec_size > img_sec->SizeOfRawData)
+                sec_clear(dest_ptr + img_sec->SizeOfRawData,
+                          sec_size - img_sec->SizeOfRawData);
         };
         img_sec++;
     };
@@ -313,8 +312,6 @@ bool link_image(addr_t img_base)
 
         imp = MakePtr(PIMAGE_IMPORT_DESCRIPTOR, img_base,
                       nt->OptionalHeader.DataDirectory[1].VirtualAddress);
-
-
 
         while ( 1 )
         {
@@ -420,7 +417,7 @@ bool link_image(addr_t img_base)
 
     if ( !warn )
         return true;
-        else
+    else
         return false;
 }
 

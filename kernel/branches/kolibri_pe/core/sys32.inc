@@ -291,22 +291,13 @@ ready_for_next_irq_1:
      ret
 
 irqD:
-     save_ring3_context
-     mov   ax, sel_app_data
-     mov   ds, ax
-     mov   es, ax
-
-     mov   dx,0xf0
+        push  eax
      mov   al,0
-     out   dx,al
-
-     mov   dx,0xa0
+        out   0xf0,al
      mov   al,0x20
-     out   dx,al
-     mov   dx,0x20
-     out   dx,al
-
-     restore_ring3_context
+        out   0xa0,al
+        out   0x20,al
+        pop   eax
 
      iret
 
@@ -459,7 +450,6 @@ terminate: ; terminate application
 @@:
 	   ;mov    esi,process_terminating
 	   ;call   sys_msg_board_str
-	   DEBUGF 1,"%s",process_terminating
 @@:
 	   cli
 	   cmp	 [application_table_status],0
@@ -603,11 +593,13 @@ term9:
 
     xor   eax, eax
     mov   [window_data+esi+WDATA.box.left],eax
+
     mov   [window_data+esi+WDATA.box.width],eax
     mov   [window_data+esi+WDATA.box.top],eax
     mov   [window_data+esi+WDATA.box.height],eax
     mov   [window_data+esi+WDATA.cl_workarea],eax
     mov   [window_data+esi+WDATA.cl_titlebar],eax
+
     mov   [window_data+esi+WDATA.cl_frames],eax
     mov   dword [window_data+esi+WDATA.reserved],eax ; clear all flags: wstate, redraw, wdrawn
     lea   edi, [esi+draw_data]
@@ -814,7 +806,6 @@ term9:
     mov   [application_table_status],0
     ;mov   esi,process_terminated
     ;call  sys_msg_board_str
-    DEBUGF 1,"%s",process_terminated
     add esp, 4
     ret
 restore .slot

@@ -230,7 +230,6 @@ core_init:
            mov eax, cr3
            mov cr3, eax
 
-
            jmp  system_init
 
 if 0

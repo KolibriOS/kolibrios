@@ -23,7 +23,6 @@ HEAP_TOP  equ 0x7FC00000
 align 4
 _init_user_heap:
 init_heap:
-
            mov ebx,[current_slot]
            mov eax, [ebx+APPDATA.heap_top]
            test eax, eax
@@ -46,6 +45,7 @@ init_heap:
            sub eax, 4096
            or ecx, FREE_BLOCK
            mov [page_tabs+edx], ecx
+
            ret
 
 align 4
