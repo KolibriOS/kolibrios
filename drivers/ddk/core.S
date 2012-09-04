@@ -2,8 +2,9 @@
     .file   "export.s"
     .intel_syntax
 
-    .text
+.text
 
+    .global _AllocKernelSpace
     .global _AllocPage
     .global _AllocPages
 
@@ -14,9 +15,11 @@
     .global _CreateRingBuffer
 
     .global _Delay
+    .global _DestroyEvent
     .global _DestroyObject
 
     .global _FreeKernelSpace
+    .global _FreePage
 
     .global _GetDisplay
     .global _GetEvent
@@ -25,6 +28,7 @@
     .global _GetService
     .global _GetTimerTicks
     .global _GetStackBase
+    .global _GetWindowRect
 
     .global _KernelAlloc
     .global _KernelFree
@@ -53,11 +57,14 @@
     .global _SetScreen
     .global _SysMsgBoardStr
 
+    .global _TimerHs
+
     .global _UserAlloc
 
     .global _WaitEvent
 
 
+    .def  _AllocKernelSpace;  .scl  2;  .type 32; .endef
     .def  _AllocPage;         .scl  2;  .type 32; .endef
     .def  _AllocPages;        .scl  2;  .type 32; .endef
 
@@ -68,9 +75,11 @@
     .def  _CreateRingBuffer;  .scl  2;  .type 32; .endef
 
     .def  _Delay;             .scl  2;  .type 32; .endef
+    .def  _DestroyEvent;      .scl  2;  .type 32; .endef
     .def  _DestroyObject;     .scl  2;  .type 32; .endef
 
     .def  _FreeKernelSpace;   .scl  2;  .type 32; .endef
+    .def  _FreePage;          .scl  2;  .type 32; .endef
 
     .def  _GetDisplay;        .scl  2;  .type 32; .endef
     .def  _GetEvent;          .scl  2;  .type 32; .endef
@@ -79,6 +88,7 @@
     .def  _GetService;        .scl  2;  .type 32; .endef
     .def  _GetTimerTicks;     .scl  2;  .type 32; .endef
     .def  _GetStackBase;      .scl  2;  .type 32; .endef
+    .def  _GetWindowRect;     .scl  2;  .type 32; .endef
 
     .def  _KernelAlloc;       .scl  2;  .type 32; .endef
     .def  _KernelFree;        .scl  2;  .type 32; .endef
@@ -106,12 +116,14 @@
     .def  _SetKeyboardData;   .scl  2;  .type 32; .endef
     .def  _SysMsgBoardStr;    .scl  2;  .type 32; .endef
 
+    .def  _TimerHs;           .scl  2;  .type 32; .endef
+
     .def  _UserAlloc;         .scl  2;  .type 32; .endef
 
     .def  _WaitEvent;         .scl  2;  .type 32; .endef
 
 
-
+_AllocKernelSpace:
 _AllocPage:
 _AllocPages:
 
@@ -123,9 +135,11 @@ _CreateRingBuffer:
 
 _Delay:
 
+_DestroyEvent:
 _DestroyObject:
 
 _FreeKernelSpace:
+_FreePage:
 
 _GetDisplay:
 _GetEvent:
@@ -134,6 +148,7 @@ _GetPgAddr:
 _GetService:
 _GetTimerTicks:
 _GetStackBase:
+_GetWindowRect:
 
 _KernelAlloc:
 _KernelFree:
@@ -161,12 +176,16 @@ _SetKeyboardData:
 _SetScreen:
 _SysMsgBoardStr:
 
+_TimerHs:
+
 _UserAlloc:
 _WaitEvent:
 
         ret
 
-    .section .drectve
+.section .drectve
+
+        .ascii " -export:AllocKernelSpace"     # stdcall
 
         .ascii " -export:AllocPage"            # gcc ABI
         .ascii " -export:AllocPages"           # gcc ABI
@@ -180,9 +199,11 @@ _WaitEvent:
 
         .ascii " -export:Delay"                # stdcall
 
+        .ascii " -export:DestroyEvent"
         .ascii " -export:DestroyObject"
 
         .ascii " -export:FreeKernelSpace"      # stdcall
+        .ascii " -export:FreePage"             #
 
         .ascii " -export:GetDisplay"           # stdcall
         .ascii " -export:GetEvent"             #
@@ -191,6 +212,7 @@ _WaitEvent:
         .ascii " -export:GetService"           # stdcall
         .ascii " -export:GetTimerTicks"        #
         .ascii " -export:GetStackBase"         #
+        .ascii " -export:GetWindowRect"        # fastcall
 
 
         .ascii " -export:KernelAlloc"          # stdcall
@@ -219,6 +241,8 @@ _WaitEvent:
 
         .ascii " -export:SetScreen"            # stdcall
         .ascii " -export:SysMsgBoardStr"       # stdcall
+
+        .ascii " -export:TimerHs"              # stdcall
 
         .ascii " -export:UserAlloc"            # stdcall
 

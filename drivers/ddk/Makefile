@@ -24,6 +24,7 @@ NAME_SRCS:=  				\
            	io/write.c		\
 		linux/idr.c		\
 		linux/firmware.c	\
+		linux/kref.c		\
 		linux/list_sort.c	\
 		linux/dmapool.c		\
 		linux/ctype.c		\
