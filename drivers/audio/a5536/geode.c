@@ -8,7 +8,8 @@
 
 #include "geode.h"
 
-#define DBG(format,...) dbgprintf(format,##__VA_ARGS__)
+//#define DBG(format,...) dbgprintf(format,##__VA_ARGS__)
+#define DBG(format,...)
 
 #define  BM0_IRQ            0x04
 #define  BM1_IRQ            0x08
