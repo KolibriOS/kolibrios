@@ -146,8 +146,10 @@ align 4
 
 	xor	ebp, ebp	; font#
 	mov	[font_check_routine], ebp
-;        inc     ebp
-
+      test  ecx, 0x10000000
+      jz    @f
+      inc   ebp
+@@:
 	test	ecx, ecx
 	js	.checked
 	inc	[font_check_routine];  .check_esi
@@ -227,7 +229,7 @@ nsvf_draw_char:
 	push	ecx
 	push	edx
 	push	ebp
-	shl	ebp, 5
+	shl	ebp, 4           ; font header = 16 bytes
 	add	ebp, nsvf_info
 	call   ch_checkscreen
 	jb	       .exit
@@ -366,6 +368,8 @@ diff16 "parse_tick     : ",0,$
 .ritick:
 	test	dl, 1
 	jnz	.ritick.1
+	test	dl, 8
+	jnz	.ritick.2
 .ritick.0:
 	movzx	ecx, dh 	    ; y
 	and	cl, 0x0F
@@ -378,6 +382,10 @@ diff16 "parse_tick     : ",0,$
 .ritick.1:
 	mov	esi, nsvf_data.ri1  ; 8pix-ring
 	mov	dl, 6
+	jmp	.draw
+.ritick.2:
+	mov	esi, nsvf_data.ri2  ; 16pix-ring
+	mov	dl, 14
 	jmp	.draw
 
 .lntick.short:

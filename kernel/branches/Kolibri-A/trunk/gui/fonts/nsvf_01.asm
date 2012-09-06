@@ -620,7 +620,7 @@ diff16 "font01.chars: ",0,$
 .ch_162:   ; ve
 .ch_111:   ; o
 .ch_174:   ; o
-    cstick	1, 6, 0, 3
+    ritick	2, 8, 2
     gptick	3, 2, 44
     ritick	2, 7, 0
 .ch_163:   ; ge

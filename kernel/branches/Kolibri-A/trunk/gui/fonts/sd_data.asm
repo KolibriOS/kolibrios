@@ -10,7 +10,7 @@ macro gptick	origin, r, tick
 {    dw  (origin mod 32) shl 11 + (r mod 8) shl 8 + (tick mod 256) }
 
 macro ritick	x, y, tick
-{    dw  (x mod 16) shl 12 + (y mod 16) shl 8 + (tick mod 2) }
+{    dw  (x mod 16) shl 12 + (y mod 16) shl 8 + (tick and 2) shl 3 + (tick mod 2) }
 
 macro cstick	x, y, r, tick
 {    dw  (x mod 16) shl 12 + (y mod 16) shl 8 + 0xD8 + (r mod 2) shl 2 + (tick mod 4) }
@@ -43,7 +43,8 @@ align 4
 .cs2	    db	11001100b,  111100b
 .cs3	    db	00010100b,  01000101b,	0001b
 .cs0	    db	1111b		   ; 4-pix square
-.ri1	    db	01010101b, 0101b   ; 8-pix ring (rot-invariant)
+.ri1	    db	01010101b, 0101b       ; rot-invariants: 8-pix ring 
+.ri2	    db	01000100b, 01000100b, 01000100b, 000100b   ; 16-pix ring 
 
 align 16
 nsvf_info:
@@ -58,12 +59,13 @@ nsvf_info:
 
 
 ;align 16
-;;    System font #1: 7x10
-;.fnt1.x     db  7           ; X-width
-;.fnt1.y     db  9           ; Y-heigth
-;.fnt1.rs    dw  0           ; reserved
-;.fnt1.tab   dd  .table1
-;.fnt1.org   dd  .origs1
+;    System font #1: 7x10
+.fnt1.x     db  7           ; X-width
+.fnt1.y     db  10          ; Y-heigth
+.fnt1.rs    dw  0           ; reserved
+.fnt1.tab   dd  nsvf01.table
+.fnt1.org   dd  nsvf01.origs
+.fnt1.chr   dd  nsvf01.chars
 
 
 align 4
