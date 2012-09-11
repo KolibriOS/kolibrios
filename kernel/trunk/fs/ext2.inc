@@ -20,6 +20,7 @@ EXT2_UNDEL_DIR_INO   = 6
 ;флаги, указываемый в inode файла
 EXT2_S_IFREG         = 0x8000
 EXT2_S_IFDIR         = 0x4000
+EXT2_S_IFMT          = 0xF000 ;маска для типа файла
 
 ;флаги, указываемые в linked list родительской папки
 EXT2_FT_REG_FILE     = 1     ;это файл, запись в родительском каталоге
@@ -854,8 +855,10 @@ ext2_HdRead:
         ret
 
     @@:
-        test    [ebp + EXT2_INODE_STRUC.i_mode], EXT2_S_IFREG
-        jz      .this_is_nofile
+        mov     ax, [ebp + EXT2_INODE_STRUC.i_mode]
+        and     ax, EXT2_S_IFMT     ;оставляем только тип inode в ax
+        cmp     ax, EXT2_S_IFREG
+        jne     .this_is_nofile
 
         mov     edi, edx            ; edi = pointer to return mem
 
