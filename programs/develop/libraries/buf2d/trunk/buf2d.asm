@@ -1072,6 +1072,249 @@ proc buf_resize, buf_struc:dword, new_w:dword, new_h:dword
 endp
 
 align 4
+rot_table: ;таблица для указания на подфункции для поворотов
+	dd buf_rotate.8b90,buf_rotate.24b90,buf_rotate.32b90,\
+	buf_rotate.8b180,buf_rotate.24b180,buf_rotate.32b180
+
+;поворот изображения на 90 или 180 градусов
+align 4
+proc buf_rotate, buf_struc:dword, angle:dword
+locals
+	n_data dd ?
+	dec_h dd ? ;число байт, для уменьшения координаты y
+endl
+	pushad
+	mov edi,[buf_struc]
+	mov ebx,buf2d_w
+	mov ecx,buf2d_h
+
+	lea eax,[rot_table]
+	cmp dword[angle],90 ;проверка угла поворота
+	je .beg_0
+	cmp dword[angle],180
+	jne @f
+		add eax,12
+		jmp .beg_0
+	@@:
+	jmp .end_f
+	.beg_0: ;проверка битности буфера
+	cmp buf2d_bits,8
+	jne @f
+		jmp dword[eax]
+	@@:
+	cmp buf2d_bits,24
+	jne @f
+		add eax,4
+		jmp dword[eax]
+	@@:
+	cmp buf2d_bits,32
+	jne @f
+		add eax,8
+		jmp dword[eax]
+	@@:
+	jmp .end_f
+
+	.8b90: ;поворот 8 битного буфера на 90 градусов
+		mov edx,ecx ;edx - buf_h
+		imul ecx,ebx
+		invoke mem.alloc,ecx ;выделяем временную память
+		cmp eax,0
+		je .end_f
+		mov [n_data],eax
+		mov [dec_h],ecx
+		inc dword[dec_h]
+
+		;copy buf --> mem
+		mov edi,[buf_struc]
+		mov esi,buf2d_data
+		mov edi,eax ;[n_data]
+		dec edx ;коректируем edx на 1 байт, для компенсации сдвига в movsb
+		add edi,edx
+		xor eax,eax
+		cld
+		.cycle_0:
+			movsb
+			add edi,edx
+			inc eax
+			cmp eax,ebx
+			jl @f
+				xor eax,eax
+				sub edi,[dec_h]
+			@@:
+			loop .cycle_0
+
+		;change buf_w <---> buf_h
+		mov esi,[n_data]
+		mov edi,[buf_struc]
+		mov edi,buf2d_data
+		mov ecx,ebx
+		inc edx ;исправляем скоректированный edx
+		imul ecx,edx
+		;copy buf <-- mem
+		;cld
+		rep movsb
+		invoke mem.free,[n_data]
+		jmp .change_w_h
+	.24b90: ;поворот 24 битного буфера на 90 градусов
+		mov esi,ecx
+		imul esi,ebx
+		lea ecx,[ecx+ecx*2]
+		mov edx,ecx ;edx - buf_h * 3
+		imul ecx,ebx
+		invoke mem.alloc,ecx ;выделяем временную память
+		cmp eax,0
+		je .end_f
+		mov [n_data],eax
+		mov [dec_h],ecx
+		add dword[dec_h],3
+
+		;copy buf --> mem
+		
+		mov edi,[buf_struc]
+		mov ecx,esi
+		mov esi,buf2d_data
+		mov edi,eax ;[n_data]
+		sub edx,3 ;коректируем edx на 3 байта, для компенсации сдвига
+		add edi,edx
+		xor eax,eax
+		cld
+		.cycle_1:
+			movsw
+			movsb
+			add edi,edx
+			inc eax
+			cmp eax,ebx
+			jl @f
+				xor eax,eax
+				sub edi,[dec_h]
+			@@:
+			loop .cycle_1
+
+		;copy buf <-- mem
+		mov esi,[n_data]
+		mov edi,[buf_struc]
+		mov edi,buf2d_data
+		mov ecx,ebx
+		add edx,3 ;исправляем скоректированный edx
+		imul ecx,edx
+		;cld
+		rep movsb
+		invoke mem.free,[n_data]
+		jmp .change_w_h
+	.32b90: ;поворот 32 битного буфера на 90 градусов
+		shl ecx,2
+		mov edx,ecx ;edx - buf_h * 4
+		imul ecx,ebx
+		invoke mem.alloc,ecx ;выделяем временную память
+		cmp eax,0
+		je .end_f
+		mov [n_data],eax
+		mov [dec_h],ecx
+		add dword[dec_h],4
+
+		;copy buf --> mem
+		mov edi,[buf_struc]
+		shr ecx,2
+		mov esi,buf2d_data
+		mov edi,eax ;[n_data]
+		sub edx,4 ;коректируем edx на 4 байта, для компенсации сдвига в movsd
+		add edi,edx
+		xor eax,eax
+		cld
+		.cycle_2:
+			movsd
+			add edi,edx
+			inc eax
+			cmp eax,ebx
+			jl @f
+				xor eax,eax
+				sub edi,[dec_h]
+			@@:
+			loop .cycle_2
+
+		;copy buf <-- mem
+		mov esi,[n_data]
+		mov edi,[buf_struc]
+		mov edi,buf2d_data
+		mov ecx,ebx
+		add edx,4 ;исправляем скоректированный edx
+		imul ecx,edx
+		shr ecx,2
+		;cld
+		rep movsd
+		invoke mem.free,[n_data]
+		;jmp .change_w_h
+	.change_w_h: ;change buf_w <---> buf_h
+		mov edi,[buf_struc]
+		mov eax,buf2d_w
+		mov ebx,buf2d_h
+		mov buf2d_h,eax
+		mov buf2d_w,ebx
+		jmp .end_f
+	.8b180: ;поворот 8 битного буфера на 180 градусов
+		mov edi,buf2d_data
+		mov esi,edi
+		imul ecx,ebx
+		add esi,ecx
+		dec esi
+		shr ecx,1 ;ecx - число пикселей буфера : 2
+		std
+		@@:
+			lodsb
+			mov ah,byte[edi]
+			mov byte[esi+1],ah
+			mov byte[edi],al
+			inc edi
+			loop @b
+			jmp .end_f
+	.24b180: ;поворот 24 битного буфера на 180 градусов
+		mov esi,buf2d_data
+		mov edi,esi
+		imul ecx,ebx
+		mov eax,ecx
+		lea ecx,[ecx+ecx*2]
+		add edi,ecx
+		sub edi,3
+		shr eax,1
+		mov ecx,eax ;ecx - число пикселей буфера : 2
+		cld
+		@@:
+			lodsw
+			mov edx,eax
+			lodsb
+			mov bx,word[edi]
+			mov word[esi-3],bx
+			mov bl,byte[edi+2]
+			mov byte[esi-1],bl
+			mov byte[edi+2],al
+			mov word[edi],dx
+			sub edi,3
+			loop @b
+			jmp .end_f
+	.32b180: ;поворот 32 битного буфера на 180 градусов
+		mov edi,buf2d_data
+		mov esi,edi
+		imul ecx,ebx
+		shl ecx,2
+		add esi,ecx
+		sub esi,4
+		shr ecx,3 ;ecx - число пикселей буфера : 2
+		std
+		@@:
+			lodsd
+			mov ebx,dword[edi]
+			mov dword[esi+4],ebx
+			mov dword[edi],eax
+			add edi,4
+			loop @b
+		;jmp .end_f
+
+	.end_f:
+	popad
+	ret
+endp
+
+align 4
 proc buf_line_brs, buf_struc:dword, coord_x0:dword, coord_y0:dword, coord_x1:dword, coord_y1:dword, color:dword
 locals
 	loc_1 dd ?
@@ -3238,30 +3481,52 @@ proc vox_create_next_brush uses eax ebx ecx edx edi, buf_v1:dword, buf_v2:dword,
 	;ecx - ширина исходного вокселя : 2
 	;ebx - высота исходного вокселя (без основания)
 	;edx - высота основания исходного вокселя
-	stdcall vox_add, [buf_v2], [buf_v1], ecx,0,0
-	stdcall vox_add, [buf_v2], [buf_v1], ecx,ebx,0
-
 	mov eax,[h]
-	stdcall vox_add, [buf_v2], [buf_v1], 0,eax,eax
-	push eax ;stdcall ...
-	add eax,ebx
-	stdcall vox_add, [buf_v2], [buf_v1], 0,eax ;,...
-	sub eax,ebx
+	cmp eax,0
+	je @f
+		stdcall vox_add, [buf_v2], [buf_v1], ecx,0,0
+		stdcall vox_add, [buf_v2], [buf_v1], ecx,ebx,0
 
-	shl ecx,1
-	;ecx - ширина исходного вокселя
-	mov eax,[h]
-	stdcall vox_add, [buf_v2], [buf_v1], ecx,eax,eax
-	push eax ;stdcall ...,[h]
-	add eax,ebx
-	stdcall vox_add, [buf_v2], [buf_v1], ecx,eax;,[h]
-	;sub eax,ebx
-	shr ecx,1
+		stdcall vox_add, [buf_v2], [buf_v1], 0,eax,eax
+		push eax ;stdcall ...
+		add eax,ebx
+		stdcall vox_add, [buf_v2], [buf_v1], 0,eax ;,...
+		sub eax,ebx
+		shl ecx,1
 
-	;ecx - ширина исходного вокселя : 2
-	stdcall vox_add, [buf_v2], [buf_v1], ecx,edx,edx
-	add ebx,edx
-	stdcall vox_add, [buf_v2], [buf_v1], ecx,ebx,edx
+		;ecx - ширина исходного вокселя
+		stdcall vox_add, [buf_v2], [buf_v1], ecx,eax,eax
+		push eax ;stdcall ...,[h]
+		add eax,ebx
+		stdcall vox_add, [buf_v2], [buf_v1], ecx,eax;,[h]
+		;sub eax,ebx
+		shr ecx,1
+
+		;ecx - ширина исходного вокселя : 2
+		stdcall vox_add, [buf_v2], [buf_v1], ecx,edx,edx
+		add ebx,edx
+		stdcall vox_add, [buf_v2], [buf_v1], ecx,ebx,edx
+
+		jmp .end_0
+	@@:
+		;если h = 0, тогда получаем кисть на 2 грани
+		;в таком случае для получения глубины берем ширину / 2
+		mov eax,ecx
+		;2 левых вокселя
+		stdcall vox_add, [buf_v2], [buf_v1], 0,0,eax
+		stdcall vox_add, [buf_v2], [buf_v1], 0,ebx,eax
+		shl eax,1
+		;2 центральных передних вокселя (задние центральные не выводим)
+		stdcall vox_add, [buf_v2], [buf_v1], ecx,0,eax
+		stdcall vox_add, [buf_v2], [buf_v1], ecx,ebx,eax
+		shr eax,1
+		shl ecx,1
+		;2 правых вокселя
+		stdcall vox_add, [buf_v2], [buf_v1], ecx,0,eax
+		stdcall vox_add, [buf_v2], [buf_v1], ecx,ebx,eax
+
+	.end_0:
+
 
 	ret
 endp
@@ -3666,14 +3931,23 @@ proc vox_go_in_node, buf_i:dword, buf_z:dword, h_br:dword, v_obj:dword
 			;mov eax,(h-h_osn/2)
 			mov ebx,[h_br]
 			movzx eax,byte[ebx+1]
-			movzx ebx,byte[ebx+2]
-			shr ebx,1
-			sub eax,ebx
+			cmp byte[ebx+2],0
+			je @f
+				;если кисть с 3-мя гранями
+				movzx ebx,byte[ebx+2]
+				shr ebx,1
+				sub eax,ebx
+				jmp .end_0
+			@@:
+				;если кисть с 2-мя гранями
+				movzx ebx,byte[ebx]
+				shr ebx,1
+			.end_0:
 		cmp ecx,1
-		jl .end_c1
+		jl @f
 			shl eax,cl
 			shl ebx,cl
-		.end_c1:
+		@@:
 		add esi,ebx
 		pop ebx
 		add edx,eax ;коректировка высоты под воксель нижнего уровня
@@ -3823,22 +4097,32 @@ endl
 	pop ecx ebx
 
 	cmp ecx,1
-	jl .no_scale ;во избежание зацикливания
+	jl @f ;во избежание зацикливания
 		shl eax,cl
 		shl dword[osn_w_2],cl
 		shl dword[vox_h],cl
-	.no_scale:
+	@@:
 
 ;	add esi,eax ;меняем глубину для буфера z (компенсация для координаты y)
 	bt word[edi],0 ;test voxel coord x
 	jnc @f
 		add ebx,[osn_w_2]
+		cmp eax,0
+		jne .end_0
+			add esi,[osn_w_2] ;меняем глубину для буфера z
+			jmp @f
+		.end_0:
 		add edx,eax
 		add esi,eax ;меняем глубину для буфера z
 	@@:
 	bt word[edi],1 ;test voxel coord y
 	jnc @f
 		add ebx,[osn_w_2]
+		cmp eax,0
+		jne .end_1
+			sub esi,[osn_w_2] ;меняем глубину для буфера z
+			jmp @f
+		.end_1:
 		sub edx,eax
 		sub esi,eax ;меняем глубину для буфера z
 	@@:
@@ -4456,6 +4740,7 @@ EXPORTS:
 	dd sz_buf2d_draw, buf_draw_buf
 	dd sz_buf2d_delete, buf_delete
 	dd sz_buf2d_resize, buf_resize
+	dd sz_buf2d_rotate, buf_rotate
 	dd sz_buf2d_line, buf_line_brs
 	dd sz_buf2d_line_sm, buf_line_brs_sm
 	dd sz_buf2d_rect_by_size, buf_rect_by_size
@@ -4494,6 +4779,7 @@ EXPORTS:
 	sz_buf2d_draw db 'buf2d_draw',0
 	sz_buf2d_delete db 'buf2d_delete',0
 	sz_buf2d_resize db 'buf2d_resize',0
+	sz_buf2d_rotate db 'buf2d_rotate',0
 	sz_buf2d_line db 'buf2d_line',0 ;рисование линии
 	sz_buf2d_line_sm db 'buf2d_line_sm',0 ;рисование сглаженной линии
 	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0 ;рисование рамки прямоугольника, 2-я координата задана по размеру

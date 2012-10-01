@@ -55,6 +55,10 @@ table { font-size: 15px; }
 <li><a href="#f_init">lib_init</a></li>
 <li><a href="#f_b_create">buf2d_create</a></li>
 <li><a href="#f_b_create_f">buf2d_create_f_img</a></li>
+<li><a href="#f_b_clear">buf2d_clear</a></li>
+<li><a href="#f_b_draw">buf2d_draw</a></li>
+<li><a href="#f_b_delete">buf2d_delete</a></li>
+<li><a href="#f_b_rotate">buf2d_rotate</a></li>
 <li><a href="#f_b_hdiv2">buf2d_img_hdiv2</a></li>
 <li><a href="#f_b_wdiv2">buf2d_img_wdiv2</a></li>
 <li><a href="#f_c_color">buf2d_crop_color</a></li>
@@ -74,7 +78,7 @@ table { font-size: 15px; }
  Есть функции рисования линий, кривых Безье, прямоугольников, окружностей.
  Также есть функции для рисований воксельной графики.</p>
 
-<p>Последнее обновление библиотеки 11.08.12.</p>
+<p>Последнее обновление библиотеки 01.10.12.</p>
 
 <h1><a name="format_buf">Форматы буферов</a></h1>
 <p>Поддерживается 3 формата буферов.
@@ -114,18 +118,23 @@ buf_0:
 <h4><a name="f_b_create_f">buf2d_create_f_img</a></h4>
 <p>Создает буфер на основе изображения в формате <b>rgb</b>.</p>
 
-<h4>buf2d_clear</h4>
+<h4><a name="f_b_clear">buf2d_clear</a></h4>
 <p>Чистит буфер указаным цветом. Пример:</p>
 <pre>buf2d_color equ dword[edi+16] ;цвет фона буфера
 mov edi,buf_0
 stdcall [buf2d_clear], edi, buf2d_color ;очищаем экран фоновым цветом</pre>
 <p>где buf_0 - структура буфера.</p>
 
-<h4>buf2d_draw</h4>
+<h4><a name="f_b_draw">buf2d_draw</a></h4>
 <p>Рисует буфер на экране (работает через системную ф. 7). Рисуются только буфера с глубиной цвета 24 бита.</p>
 
-<h4>buf2d_delete</h4>
+<h4><a name="f_b_delete">buf2d_delete</a></h4>
 <p>Освобождает память занятую изображением буфера.</p>
+
+<h4><a name="f_b_rotate">buf2d_rotate</a></h4>
+<p>Поворачивает буфер на 90 или 180 градусов. Пример:</p>
+<pre>stdcall [buf2d_rotate], buf_0, 90</pre>
+<p>где buf_0 - структура буфера (может быть 8, 24 или 32 битным); 90 - угол поворота.</p>
 
 <h4>buf2d_resize</h4>
 <p>Изменяет размеры буфера. Пока поддерживаются буфера с глубиной цвета 24 бита. Пример:</p>
@@ -294,6 +303,7 @@ import_buf2d_lib:
 	buf2d_clear dd sz_buf2d_clear
 	buf2d_draw dd sz_buf2d_draw
 	buf2d_delete dd sz_buf2d_delete
+	buf2d_rotate dd sz_buf2d_rotate
 	buf2d_resize dd sz_buf2d_resize
 	buf2d_line dd sz_buf2d_line
 	buf2d_line_sm dd sz_buf2d_line_sm
@@ -335,6 +345,7 @@ import_buf2d_lib:
 	sz_buf2d_clear db 'buf2d_clear',0
 	sz_buf2d_draw db 'buf2d_draw',0
 	sz_buf2d_delete db 'buf2d_delete',0
+	sz_buf2d_rotate db 'buf2d_rotate',0
 	sz_buf2d_resize db 'buf2d_resize',0
 	sz_buf2d_line db 'buf2d_line',0
 	sz_buf2d_line_sm db 'buf2d_line_sm',0
@@ -392,5 +403,6 @@ import_buf2d_lib:
 <p>11.05.12 - добавлена функция для взятия цвета точки buf2d_get_pixel, доработки в buf2d_set_pixel.</p>
 <p>12.06.12 - добавлены функции для рисования воксельной графики.</p>
 <p>11.08.12 - функции для сжатия изображений buf2d_img_hdiv2 и buf2d_img_wdiv2 работают с 32 битными буферами.</p>
+<p>01.10.12 - добавлена функция поворота изображений на 90 и 180 градусов buf2d_rotate.</p>
 </body>
 </html>
