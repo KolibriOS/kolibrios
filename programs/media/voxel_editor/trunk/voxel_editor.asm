@@ -694,15 +694,15 @@ button:
 	@@:
 	cmp ah,6
 	jne @f
-		call but_zoom_p
+		call but_camera_3g_2g
 	@@:
 	cmp ah,7
 	jne @f
-		call but_zoom_m
+		call but_zoom_p
 	@@:
 	cmp ah,8
 	jne @f
-		call but_camera_3g_2g
+		call but_zoom_m
 	@@:
 	cmp ah,9
 	jne @f
