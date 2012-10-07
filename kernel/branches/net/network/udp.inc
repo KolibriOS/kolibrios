@@ -274,10 +274,13 @@ UDP_output:
         mov     [edi + UDP_header.Checksum], 0
         UDP_checksum (edi-4), (edi-8)                           ; FIXME: IPv4 packet could have options..
 
-        inc     [UDP_PACKETS_TX]                                ; FIXME: correct device?
-
         DEBUGF  1,"UDP_output: sending with device %x\n", ebx
         call    [ebx + NET_DEVICE.transmit]
+        test    eax, eax
+        jnz     @f
+        inc     [UDP_PACKETS_TX]                                ; FIXME: correct device?
+       @@:
+
         ret
 
   .fail:
