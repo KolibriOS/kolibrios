@@ -939,7 +939,7 @@ int_handler:
         out     dx, al
 
         add     esp, 14
-        jmp     EthReceiver     ; send it to the kernel
+        jmp     Eth_input
 
 .fail:
         add     esp, 14+8

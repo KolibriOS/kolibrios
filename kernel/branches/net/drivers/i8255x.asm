@@ -53,7 +53,7 @@ virtual at ebx
 
         .ee_bus_width   dd ?
 
-        rb 5+8 ;;;; align
+                        rb 0x100 - (($ - device) and 0xff)
 
         rxfd:
         .status         dw ?
@@ -64,7 +64,7 @@ virtual at ebx
         .size           dw ?
         .packet         dd ?
 
-        rb 12 ;;;;
+                        rb 0x100 - (($ - device) and 0xff)
 
         txfd:
         .status         dw ?
@@ -77,11 +77,15 @@ virtual at ebx
         .tx_buf_addr1   dd ?
         .tx_buf_size1   dd ?
 
+                        rb 0x100 - (($ - device) and 0xff)
+
         confcmd:
         .status:        dw ?
         .command:       dw ?
         .link:          dd ?
         .data           rb 64
+
+                        rb 0x100 - (($ - device) and 0xff)
 
         lstats:
         tx_good_frames          dd ?
@@ -102,17 +106,17 @@ virtual at ebx
         rx_colls_errs           dd ?
         rx_runt_errs            dd ?
 
-        device_size = $ - device
+        sizeof.device_struct = $ - device
 
 end virtual
 
 
 ; Serial EEPROM
 
-EE_SK           =   1 shl 16   ; serial clock
-EE_CS           =   1 shl 17   ; chip select
-EE_DI           =   1 shl 18   ; data in
-EE_DO           =   1 shl 19   ; data out
+EE_SK           =   1 shl 0   ; serial clock
+EE_CS           =   1 shl 1   ; chip select
+EE_DI           =   1 shl 2   ; data in
+EE_DO           =   1 shl 3   ; data out
 
 EE_READ         =   110b
 EE_WRITE        =   101b
@@ -182,7 +186,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF 1,"Loading i8255x driver\n"
+        DEBUGF 1,"Loading %s driver\n", my_service
         stdcall RegService, my_service, service_proc
         ret
 
@@ -252,20 +256,15 @@ proc service_proc stdcall, ioctl:dword
 ; This device doesnt have its own eth_device structure yet, lets create one
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
-        jge     .fail
+        jae     .fail
 
-        push    edx
-        stdcall KernelAlloc, device_size
-        pop     edx
-        test    eax, eax
-        jz      .fail
-        mov     ebx, eax                                ; ebx is always used as a pointer to the structure (in driver, but also in kernel code)
+        allocate_and_clear ebx, sizeof.device_struct, .fail      ; Allocate the buffer for device structure
 
 ; Fill in the direct call addresses into the struct
 
         mov     [device.reset], reset
         mov     [device.transmit], transmit
-;        mov     [device.get_MAC], read_mac
+        mov     [device.get_MAC], read_mac
         mov     [device.set_MAC], MAC_write
         mov     [device.unload], unload
         mov     [device.name], my_service
@@ -273,9 +272,9 @@ proc service_proc stdcall, ioctl:dword
 ; save the pci bus and device numbers
 
         mov     eax, [IOCTL.input]
-        mov     cl , [eax+1]
+        mov     cl, [eax+1]
         mov     [device.pci_bus], cl
-        mov     cl , [eax+2]
+        mov     cl, [eax+2]
         mov     [device.pci_dev], cl
 
 ; Now, it's time to find the base io addres of the PCI device
@@ -660,34 +659,33 @@ transmit:
 align 4
 int_handler:
 
-        DEBUGF  1,"IRQ %x ",eax:2                   ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
+        DEBUGF  1,"\n%s int\n", my_service
 
 ; find pointer of device wich made IRQ occur
 
-        mov     esi, device_list
         mov     ecx, [devices]
         test    ecx, ecx
-        jz      .fail
-.nextdevice:
-        mov     ebx, dword [esi]
+        jz      .nothing
+        mov     esi, device_list
+  .nextdevice:
+        mov     ebx, [esi]
 
         set_io  0
-  ;;      set_io  REG_ISR
-   ;;     in      ax , dx
-    ;;    out     dx , ax                             ; send it back to ACK
-
-        add     esi, 4
-
-        test    ax , ax
+        set_io  REG_ISR
+        in      ax, dx
+        out     dx, ax                              ; send it back to ACK
+        test    ax, ax
         jnz     .got_it
-
+  .continue:
+        add     esi, 4
         dec     ecx
         jnz     .nextdevice
-
+  .nothing:
         ret                                         ; If no device was found, abort (The irq was probably for a device, not registered to this driver)
 
   .got_it:
 
+        DEBUGF  1,"Device: %x Status: %x ", ebx, ax
 
        ;;; receive
 
@@ -730,7 +728,7 @@ int_handler:
         rep     movsd
   .nd:
 
-        jmp     EthReceiver                         ; Send it to kernel
+        jmp     Eth_input
 
   .nodata:
   .fail:
@@ -899,39 +897,26 @@ ee_get_width:
         set_io  0
         set_io  reg_eeprom
 
-        mov     esi, EE_READ shl 28
+        mov     si, EE_READ shl 12
         xor     ecx, ecx
-
   .loop:
-        mov     eax, EE_CS
-        out     dx , eax
+        mov     ax, EE_CS
+        out     dx, ax
         delay
 
-        or      eax, EE_SK
-        out     dx , eax
+        or      ax, EE_SK
+        out     dx, ax
         delay
 
         inc     ecx
 
-        in      eax, dx
-        test    eax, EE_DO
+        in      ax, dx
+        test    ax, EE_DO
         jnz     .loop
 
         mov     [device.ee_bus_width], ecx
+        DEBUGF  1,"ee width=%u\n", ecx
 
-;------------------------------
-; Now read the data from eeprom
-
-        mov     ecx, 16
-  .loop2:
-        mov     eax, EE_CS + EE_SK
-        out     dx , eax
-        delay
-
-        mov     eax, EE_CS
-        out     dx , eax
-        delay
-        loop    .loop2
 
 ;-----------------------
 ; de-activate the eeprom
@@ -1000,12 +985,27 @@ mdio_write:
 
         ret
 
+read_mac:
+
+        ret
+
 
 
 align 4
 MAC_read_eeprom:
 
-;;;;
+        mov     esi, 0
+        call    ee_read
+
+        mov     esi, 1
+        call    ee_read
+
+        mov     esi, 14
+        call    ee_read
+
+        mov     esi, 5
+        call    ee_read
+
 
         ret
 

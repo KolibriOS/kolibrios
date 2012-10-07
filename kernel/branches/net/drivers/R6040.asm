@@ -929,7 +929,7 @@ int_handler:
 
         ; At last, send packet to kernel
 
-        jmp     EthReceiver
+        jmp     Eth_input
 
 
   .no_RX:

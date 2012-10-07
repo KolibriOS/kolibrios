@@ -1128,7 +1128,7 @@ int_handler:
         inc     [device.cur_rx]           ; update descriptor
         and     [device.cur_rx], 3        ;
 
-        jmp     EthReceiver                     ; Send the copied packet to kernel
+        jmp     Eth_input
 
   .abort:
 

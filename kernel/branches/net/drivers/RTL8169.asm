@@ -1209,7 +1209,7 @@ int_handler:
         inc     [tpc.cur_rx]
         and     [tpc.cur_rx], NUM_RX_DESC - 1
 
-        jmp     EthReceiver
+        jmp     Eth_input
   .rx_return:
 
         pop     ax

@@ -664,9 +664,9 @@ transmit:
         [eax+13]:2,[eax+12]:2
 
         cmp     dword [esp+8], MAX_ETH_FRAME_SIZE
-        jg      .fail
+        ja      .fail
         cmp     dword [esp+8], 60
-        jl      .fail
+        jb      .fail
 
 ; check if we own the current discriptor
         set_io  0
@@ -710,7 +710,7 @@ transmit:
         DEBUGF  1,"Waiting for timeout\n"
 
         push    edx
-        mov     esi, 300
+        mov     esi, 30
         stdcall Sleep
         pop     edx
 
@@ -831,7 +831,7 @@ int_handler:
         rep     movsd
   .nd:
 
-        jmp     EthReceiver                         ; Send it to kernel
+        jmp     Eth_input                           ; Send it to kernel
 
   .abort:
         pop     eax ebx

@@ -506,6 +506,16 @@ reset_dontstart:
 
         mov     esi, [device.mmio_addr]
 
+        or      dword [esi + REG_CTRL], CTRL_RST        ; reset device
+  .loop:
+        push    esi
+        xor     esi, esi
+        inc     esi
+        call    Sleep
+        pop     esi
+        test    dword [esi + REG_CTRL], CTRL_RST
+        jnz     .loop
+
         mov     dword [esi + REG_IMC], 0xffffffff       ; Disable all interrupt causes
         mov     eax, dword [esi + REG_ICR]              ; Clear any pending interrupts
         mov     dword [esi + REG_ITR], 0                ; Disable interrupt throttling logic
@@ -566,7 +576,7 @@ start_i8254x:
         mov     [esi + REG_RADV], eax                   ; Clear the Receive Interrupt Absolute Delay Timer
         mov     [esi + REG_RSRPD], eax                  ; Clear the Receive Small Packet Detect Interrupt
         or      eax, 1 shl 0 + 1 shl 7                  ; TXDW + RXT0
-        mov     eax, -1 ;;;; hack!
+        mov     eax, 1+4+16 ;;;; hack!
         mov     [esi + REG_IMS], eax                    ; Enable interrupt types
 
         mov     [device.mtu], 1514
@@ -748,7 +758,7 @@ int_handler:
         mov     dword [esi + REG_RDH], 0x00000000       ; Receive Descriptor Head
         mov     dword [esi + REG_RDT], 0x00000001       ; Receive Descriptor Tail
 
-        jmp     EthReceiver
+        jmp     Eth_input
   .retaddr:
         pop     eax
 

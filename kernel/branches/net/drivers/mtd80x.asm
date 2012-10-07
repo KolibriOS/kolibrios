@@ -1157,7 +1157,7 @@ int_handler:
 
         push    [esi + mtd_desc.skbuff]
 
-        jmp     EthReceiver
+        jmp     Eth_input
 
   .rx_complete:
         mov     esi, [device.cur_rx]

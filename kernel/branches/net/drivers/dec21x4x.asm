@@ -1176,7 +1176,7 @@ int_handler:
   .nw:
         rep     movsd
 
-        jmp     EthReceiver
+        jmp     Eth_input
 
     .continue_rx:
         pop     edi

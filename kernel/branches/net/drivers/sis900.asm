@@ -1112,7 +1112,7 @@ int_handler:
         push    ecx                             ; packet size
         pushd   [device.rxd + eax + 12]         ; packet ptr
         DEBUGF  1, "Packet received OK\n"
-        jmp     EthReceiver
+        jmp     Eth_input
   .return:
         pop     ebx
 

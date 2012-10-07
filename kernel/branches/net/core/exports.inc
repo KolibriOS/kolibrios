@@ -95,7 +95,8 @@ iglobal
   szNetRegDev         db 'NetRegDev',0
   szNetUnRegDev       db 'NetUnRegDev',0
   szNetPtrToNum       db 'NetPtrToNum',0
-  szEthReceiver       db 'EthReceiver',0
+  szEth_input         db 'EthReceiver',0        ; To be removed !
+  szEth_input         db 'Eth_input',0
   szIPv4_input        db 'IPv4_input',0
 
 
@@ -183,7 +184,7 @@ kernel_export:
   dd szNetRegDev       , NET_add_device
   dd szNetUnRegDev     , NET_remove_device
   dd szNetPtrToNum     , NET_ptr_to_num
-  dd szEthReceiver     , ETH_input
+  dd szEth_input       , ETH_input
   dd szIPv4_input      , IPv4_input
 
 exp_lfb:

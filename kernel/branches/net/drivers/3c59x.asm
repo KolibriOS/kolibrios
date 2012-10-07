@@ -132,11 +132,6 @@ virtual at 0
   upd UPD
 end virtual
 
-; Ethernet frame symbols
-        ETH_ALEN                =   6
-        ETH_HLEN                =   (2*ETH_ALEN+2)
-        ETH_ZLEN                =   60 ; 60 + 4bytes auto payload for
-                                              ; mininmum 64bytes frame length
 ; Registers
         REG_POWER_MGMT_CTRL     =   0x7c
         REG_UP_LIST_PTR         =   0x38
@@ -594,7 +589,7 @@ probe:
 
         DEBUGF  1,"Vendor id: 0x%x\n", ax
 
-        cmp     ax , 0x10B7
+        cmp     ax, 0x10B7
         jne     .notfound
         shr     eax, 16
 
@@ -603,10 +598,9 @@ probe:
 ; get chip version
         mov     ecx, HW_VERSIONS_SIZE/4-1
   .loop:
-        cmp     ax , [hw_versions+ecx*4]
+        cmp     ax, [hw_versions+ecx*4]
         jz      .found
         loop    .loop
-        DEBUGF  1,"ecx: %u\n", ecx
   .notfound:
         DEBUGF  1,"Device id not found in list!\n"
         or      eax, -1
@@ -2598,7 +2592,7 @@ int_vortex:
         jnz     .dma_loop
 
 ; registrate the received packet to kernel
-        jmp     EthReceiver
+        jmp     Eth_input
 
 ; discard the top frame received
   .discard_frame:
@@ -2896,80 +2890,43 @@ strtbl hw_str, \
 
 align 4
 hw_versions:
-dw 0x5900, IS_VORTEX
-; 3c590 Vortex 10Mbps
-dw 0x5920, IS_VORTEX
-; 3c592 EISA 10Mbps Demon/Vortex
-dw 0x5970, IS_VORTEX
-; 3c597 EISA Fast Demon/Vortex
-dw 0x5950, IS_VORTEX
-; 3c595 Vortex 100baseTx
-dw 0x5951, IS_VORTEX
-; 3c595 Vortex 100baseT4
-dw 0x5952, IS_VORTEX
-; 3c595 Vortex 100base-MII
-dw 0x9000, IS_BOOMERANG
-; 3c900 Boomerang 10baseT
-dw 0x9001, IS_BOOMERANG
-; 3c900 Boomerang 10Mbps Combo
-dw 0x9004, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM
-; 3c900 Cyclone 10Mbps TPO
-dw 0x9005, IS_CYCLONE or HAS_HWCKSM
-; 3c900 Cyclone 10Mbps Combo
-dw 0x9006, IS_CYCLONE or HAS_HWCKSM
-; 3c900 Cyclone 10Mbps TPC
-dw 0x900A, IS_CYCLONE or HAS_HWCKSM
-; 3c900B-FL Cyclone 10base-FL
-dw 0x9050, IS_BOOMERANG or HAS_MII
-; 3c905 Boomerang 100baseTx
-dw 0x9051, IS_BOOMERANG or HAS_MII
-; 3c905 Boomerang 100baseT4
-dw 0x9055, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM or EXTRA_PREAMBLE
-; 3c905B Cyclone 100baseTx
-dw 0x9058, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM
-; 3c905B Cyclone 10/100/BNC
-dw 0x905A, IS_CYCLONE or HAS_HWCKSM
-; 3c905B-FX Cyclone 100baseFx
-dw 0x9200, IS_TORNADO or HAS_NWAY or HAS_HWCKSM
-; 3c905C Tornado
-dw 0x9800, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM
-; 3c980 Cyclone
-dw 0x9805, IS_TORNADO or HAS_NWAY or HAS_HWCKSM
-; 3c982 Dual Port Server Cyclone
-dw 0x7646, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM
-; 3cSOHO100-TX Hurricane
-dw 0x5055, IS_CYCLONE or EEPROM_8BIT or HAS_HWCKSM
-; 3c555 Laptop Hurricane
-dw 0x6055, IS_TORNADO or HAS_NWAY or EEPROM_8BIT or HAS_CB_FNS or INVERT_MII_PWR or HAS_HWCKSM
-; 3c556 Laptop Tornado
-dw 0x6056, IS_TORNADO or HAS_NWAY or EEPROM_OFFSET or HAS_CB_FNS or INVERT_MII_PWR or HAS_HWCKSM
-; 3c556B Laptop Hurricane
-dw 0x5b57, IS_BOOMERANG or HAS_MII or EEPROM_8BIT
-; 3c575 [Megahertz] 10/100 LAN CardBus
-dw 0x5057, IS_BOOMERANG or HAS_MII or EEPROM_8BIT
-; 3c575 Boomerang CardBus
-dw 0x5157, IS_CYCLONE or HAS_NWAY or HAS_CB_FNS or EEPROM_8BIT or INVERT_LED_PWR or HAS_HWCKSM
-; 3CCFE575BT Cyclone CardBus
-dw 0x5257, IS_TORNADO or HAS_NWAY or HAS_CB_FNS or EEPROM_8BIT or INVERT_MII_PWR or MAX_COLLISION_RESET or HAS_HWCKSM
-; 3CCFE575CT Tornado CardBus
-dw 0x6560, IS_CYCLONE or HAS_NWAY or HAS_CB_FNS or EEPROM_8BIT or INVERT_MII_PWR or INVERT_LED_PWR or HAS_HWCKSM
-; 3CCFE656 Cyclone CardBus
-dw 0x6562, IS_CYCLONE or HAS_NWAY or HAS_CB_FNS or EEPROM_8BIT or INVERT_MII_PWR or INVERT_LED_PWR or HAS_HWCKSM
-; 3CCFEM656B Cyclone+Winmodem CardBus
-dw 0x6564, IS_TORNADO or HAS_NWAY or HAS_CB_FNS or EEPROM_8BIT or INVERT_MII_PWR or MAX_COLLISION_RESET or HAS_HWCKSM
-; 3CXFEM656C Tornado+Winmodem CardBus
-dw 0x4500, IS_TORNADO or HAS_NWAY or HAS_HWCKSM
-; 3c450 HomePNA Tornado
-dw 0x9201, IS_TORNADO or HAS_NWAY or HAS_HWCKSM
-; 3c920 Tornado
-dw 0x1201, IS_TORNADO or HAS_HWCKSM or HAS_NWAY
-; 3c982 Hydra Dual Port A
-dw 0x1202, IS_TORNADO or HAS_HWCKSM or HAS_NWAY
-; 3c982 Hydra Dual Port B
-dw 0x9056, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM or EXTRA_PREAMBLE
-; 3c905B-T4
-dw 0x9210, IS_TORNADO or HAS_NWAY or HAS_HWCKSM
-; 3c920B-EMB-WNM Tornado
+dw 0x5900, IS_VORTEX                                                                                                            ; 3c590 Vortex 10Mbps
+dw 0x5920, IS_VORTEX                                                                                                            ; 3c592 EISA 10Mbps Demon/Vortex
+dw 0x5970, IS_VORTEX                                                                                                            ; 3c597 EISA Fast Demon/Vortex
+dw 0x5950, IS_VORTEX                                                                                                            ; 3c595 Vortex 100baseTx
+dw 0x5951, IS_VORTEX                                                                                                            ; 3c595 Vortex 100baseT4
+dw 0x5952, IS_VORTEX                                                                                                            ; 3c595 Vortex 100base-MII
+dw 0x9000, IS_BOOMERANG                                                                                                         ; 3c900 Boomerang 10baseT
+dw 0x9001, IS_BOOMERANG                                                                                                         ; 3c900 Boomerang 10Mbps Combo
+dw 0x9004, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM                                                                                 ; 3c900 Cyclone 10Mbps TPO
+dw 0x9005, IS_CYCLONE or HAS_HWCKSM                                                                                             ; 3c900 Cyclone 10Mbps Combo
+dw 0x9006, IS_CYCLONE or HAS_HWCKSM                                                                                             ; 3c900 Cyclone 10Mbps TPC
+dw 0x900A, IS_CYCLONE or HAS_HWCKSM                                                                                             ; 3c900B-FL Cyclone 10base-FL
+dw 0x9050, IS_BOOMERANG or HAS_MII                                                                                              ; 3c905 Boomerang 100baseTx
+dw 0x9051, IS_BOOMERANG or HAS_MII                                                                                              ; 3c905 Boomerang 100baseT4
+dw 0x9055, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM or EXTRA_PREAMBLE                                                               ; 3c905B Cyclone 100baseTx
+dw 0x9058, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM                                                                                 ; 3c905B Cyclone 10/100/BNC
+dw 0x905A, IS_CYCLONE or HAS_HWCKSM                                                                                             ; 3c905B-FX Cyclone 100baseFx
+dw 0x9200, IS_TORNADO or HAS_NWAY or HAS_HWCKSM                                                                                 ; 3c905C Tornado
+dw 0x9800, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM                                                                                 ; 3c980 Cyclone
+dw 0x9805, IS_TORNADO or HAS_NWAY or HAS_HWCKSM                                                                                 ; 3c982 Dual Port Server Cyclone
+dw 0x7646, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM                                                                                 ; 3cSOHO100-TX Hurricane
+dw 0x5055, IS_CYCLONE or EEPROM_8BIT or HAS_HWCKSM                                                                              ; 3c555 Laptop Hurricane
+dw 0x6055, IS_TORNADO or HAS_NWAY or EEPROM_8BIT or HAS_CB_FNS or INVERT_MII_PWR or HAS_HWCKSM                                  ; 3c556 Laptop Tornado
+dw 0x6056, IS_TORNADO or HAS_NWAY or EEPROM_OFFSET or HAS_CB_FNS or INVERT_MII_PWR or HAS_HWCKSM                                ; 3c556B Laptop Hurricane
+dw 0x5b57, IS_BOOMERANG or HAS_MII or EEPROM_8BIT                                                                               ; 3c575 [Megahertz] 10/100 LAN CardBus
+dw 0x5057, IS_BOOMERANG or HAS_MII or EEPROM_8BIT                                                                               ; 3c575 Boomerang CardBus
+dw 0x5157, IS_CYCLONE or HAS_NWAY or HAS_CB_FNS or EEPROM_8BIT or INVERT_LED_PWR or HAS_HWCKSM                                  ; 3CCFE575BT Cyclone CardBus
+dw 0x5257, IS_TORNADO or HAS_NWAY or HAS_CB_FNS or EEPROM_8BIT or INVERT_MII_PWR or MAX_COLLISION_RESET or HAS_HWCKSM           ; 3CCFE575CT Tornado CardBus
+dw 0x6560, IS_CYCLONE or HAS_NWAY or HAS_CB_FNS or EEPROM_8BIT or INVERT_MII_PWR or INVERT_LED_PWR or HAS_HWCKSM                ; 3CCFE656 Cyclone CardBus
+dw 0x6562, IS_CYCLONE or HAS_NWAY or HAS_CB_FNS or EEPROM_8BIT or INVERT_MII_PWR or INVERT_LED_PWR or HAS_HWCKSM                ; 3CCFEM656B Cyclone+Winmodem CardBus
+dw 0x6564, IS_TORNADO or HAS_NWAY or HAS_CB_FNS or EEPROM_8BIT or INVERT_MII_PWR or MAX_COLLISION_RESET or HAS_HWCKSM           ; 3CXFEM656C Tornado+Winmodem CardBus
+dw 0x4500, IS_TORNADO or HAS_NWAY or HAS_HWCKSM                                                                                 ; 3c450 HomePNA Tornado
+dw 0x9201, IS_TORNADO or HAS_NWAY or HAS_HWCKSM                                                                                 ; 3c920 Tornado
+dw 0x1201, IS_TORNADO or HAS_HWCKSM or HAS_NWAY                                                                                 ; 3c982 Hydra Dual Port A
+dw 0x1202, IS_TORNADO or HAS_HWCKSM or HAS_NWAY                                                                                 ; 3c982 Hydra Dual Port B
+dw 0x9056, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM or EXTRA_PREAMBLE                                                               ; 3c905B-T4
+dw 0x9210, IS_TORNADO or HAS_NWAY or HAS_HWCKSM                                                                                 ; 3c920B-EMB-WNM Tornado
 HW_VERSIONS_SIZE = $ - hw_versions
 
 include_debug_strings                           ; All data wich FDO uses will be included here
