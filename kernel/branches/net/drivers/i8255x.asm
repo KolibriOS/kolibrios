@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;; i8255x (Intel eepro 100) driver for KolibriOS                   ;;
@@ -671,7 +671,7 @@ int_handler:
         mov     ebx, [esi]
 
         set_io  0
-        set_io  REG_ISR
+        set_io  reg_scb_status
         in      ax, dx
         out     dx, ax                              ; send it back to ACK
         test    ax, ax
