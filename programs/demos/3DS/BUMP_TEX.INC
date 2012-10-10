@@ -1559,18 +1559,18 @@ end if
 	push	dword .tx1	;         .ctx
 	push	dword .ty1	;         .cty
 	push	edi	  ;         .c_scr
-;if Ext = SSE2
-;        mov    eax,TEXTURE_SIZE
-;        movd   xmm1,eax
-;        shufps xmm1,xmm1,0
-;        push   dword  TEX_X
-;        push   dword  -TEX_X
-;        push   dword  1
-;        push   dword  -1
-;        movups xmm2,[esp]
-;        movd   xmm3,.bmap
-;        shufps xmm3,xmm3,0
-;end if
+if Ext = SSE2
+	mov    eax,TEXTURE_SIZE
+	movd   xmm1,eax
+	shufps xmm1,xmm1,0
+	push   dword  TEX_X
+	push   dword  -TEX_X
+	push   dword  1
+	push   dword  -1
+	movups xmm2,[esp]
+	movd   xmm3,.bmap
+	shufps xmm3,xmm3,0
+end if
 
 if Ext>=MMX
 	movq	mm7,.cty
@@ -1602,58 +1602,65 @@ end if
 	shl	eax,TEX_SHIFT
 	add	esi,eax 	;-  ; esi - current bump map index
 
-;if Ext = SSE2
-;
-;        movd    xmm0,esi
-;        shufps  xmm0,xmm0,0
-;        paddd   xmm0,xmm2
-;        pand    xmm0,xmm1
-;        paddd   xmm0,xmm3
-;
-;        movd    ebx,xmm0
-;        movzx   eax,byte[ebx]
+if Ext = SSE2
+
+	movd	xmm0,esi
+	shufps	xmm0,xmm0,0
+	paddd	xmm0,xmm2
+	pand	xmm0,xmm1
+	paddd	xmm0,xmm3
+
+	movd	ebx,xmm0
+	movzx	eax,byte[ebx]
 ;
 ;        shufps  xmm0,xmm0,11100001b
-;        movd    ebx,xmm0
-;        movzx   ebx,byte[ebx]
-;        sub     eax,ebx
+	psrldq	xmm0,4
+	movd	ebx,xmm0
+	movzx	ebx,byte[ebx]
+	sub	eax,ebx
 ;
 ;        shufps  xmm0,xmm0,11111110b
-;        movd    ebx,xmm0
-;        movzx   edx, byte [ebx]
+	psrldq	xmm0,4
+	movd	ebx,xmm0
+	movzx	edx, byte [ebx]
 ;
 ;        shufps  xmm0,xmm0,11111111b
-;        movd    ebx,xmm0
-;        movzx   ebx, byte [ebx]
-;        sub     edx,ebx
+	psrldq	xmm0,4
+	movd	ebx,xmm0
+	movzx	ebx, byte [ebx]
+	sub	edx,ebx
 ;
-;else
-	mov	ebx,esi
-	dec	ebx
+else
+;        mov     ebx,esi
+;        dec     ebx
+	lea	ebx,[esi-1]
 	and	ebx,TEXTURE_SIZE
 	add	ebx,.bmap
 	movzx	eax,byte [ebx]
 
-	mov	ebx,esi
-	inc	ebx
+;        mov     ebx,esi
+;        inc     ebx
+	lea	ebx,[esi+1]
 	and	ebx,TEXTURE_SIZE
 	add	ebx,.bmap
 	movzx	ebx,byte [ebx]
 	sub	eax,ebx
 
-	mov	ebx,esi
-	sub	ebx,TEX_X
+;        mov     ebx,esi
+;        sub     ebx,TEX_X
+	lea	ebx,[esi-TEX_X]
 	and	ebx,TEXTURE_SIZE
 	add	ebx,.bmap
 	movzx	edx,byte [ebx]
 
-	mov	ebx,esi
-	add	ebx,TEX_X
+;        mov     ebx,esi
+;        add     ebx,TEX_X
+	lea	ebx,[esi+TEX_X]
 	and	ebx,TEXTURE_SIZE
 	add	ebx,.bmap
 	movzx	ebx,byte [ebx]
 	sub	edx,ebx
-;end if
+end if
 
      ;  eax - horizontal sub    modificated x coord
      ;  edx - vertical   sub    modificated y coord

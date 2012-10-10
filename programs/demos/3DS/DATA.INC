@@ -30,6 +30,9 @@
 	angle_x       dw 0
 	angle_y       dw 0
 	angle_z       dw 0
+	sin_amplitude dd 50
+	sin_frq       dd 0.7
+	sin_delta     dd 0.07	 ; wave frequency granularity
 
 
 	menu:
@@ -125,7 +128,7 @@ fire_flag      db 0
 
 	       db 17
 	       db 'move      '
-	       db 2
+	       db 3
 move_flag      db 0
 	       dd move_f
 
@@ -164,6 +167,12 @@ inc_bright_flag   db 0 ;1
 		  db 6
 dec_bright_flag   db 0 ;1
 		  dd blur_f
+
+		  db 24
+		  db 'wav effect'
+		  db 2
+sinus_flag	  db 0
+		  dd onoff_f
 
 ;                  db 24
 ;                  db 'max       '
@@ -251,6 +260,7 @@ bumps_d_f:  db ' 1  '
  move_f:
     db 'obj '
     db 'camr'
+    db 'wave'
 ;    db 'lght'
  bumps_f:
     db 'rand'

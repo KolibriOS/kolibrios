@@ -1,5 +1,5 @@
 
-; application : View3ds ver. 0.062 - tiny .3ds files viewer.
+; application : View3ds ver. 0.063 - tiny .3ds files viewer.
 ; compiler    : FASM
 ; system      : KolibriOS
 ; author      : Macgub aka Maciej Guba
@@ -265,16 +265,19 @@ still:
 			       ;
 	cmp	ah,30
 	jne	.next
-	cmp	[move_flag],1
-	je	@f
+	cmp	[move_flag],0
+	jne	@f
 ;        cmp     [move_flag],2
 ;        je      .set_light1
 	sub	[vect_y],10
 	jmp	.next
       @@:
+	cmp	[move_flag],1
+	jne	@f
 	sub	[yobs],10   ;  observator = camera position
 	jmp	.next
-
+      @@:
+	sub	[sin_amplitude],10
 ;--------------------------------------------------
 ;      .set_light1:          ;  r -
 ;        movzx   ebx,[light_no_flag]  ; * 22
@@ -296,7 +299,6 @@ still:
 	jne	.next1
 	cmp	[move_flag],1
 	je	@f
-
 	add	[vect_z],10
 	jmp	.next1
       @@:
@@ -304,23 +306,37 @@ still:
      .next1:
 	cmp	ah,33
 	jne	.next2
-	cmp	[move_flag],1
-	je	@f
-
+	cmp	[move_flag],0
+	jne	@f
 	sub	[vect_x],10
 	jmp	.next2
       @@:
+	cmp	[move_flag],1
+	jne	@f
 	sub	[xobs],10	  ;  observator = camera position
+	jmp	.next2
+      @@:
+	fninit
+	fld	[sin_frq]
+	fsub	[sin_delta]
+	fstp	[sin_frq]
       .next2:
 	cmp	ah,32
 	jne	.next3
-	cmp	[move_flag],1
-	je	@f
-
+	cmp	[move_flag],0
+	jne	@f
 	add	[vect_x],10
 	jmp	.next3
       @@:
+	cmp	[move_flag],1
+	jne	@f
 	add	[xobs],10	  ;  observator = camera position
+	jmp	.next3
+      @@:
+	fninit
+	fld	[sin_frq]      ; change wave effect frequency
+	fadd	[sin_delta]
+	fstp	[sin_frq]
       .next3:
 	cmp	ah,34
 	jne	.next4
@@ -334,14 +350,18 @@ still:
       .next4:
 	cmp	ah,35
 	jne	.next5
-	cmp	[move_flag],1
-	je	@f
-
+	cmp	[move_flag],0
+	jne	 @f
       ;  call    add_vector
 	add	[vect_y],10
 	jmp	.next5
       @@:
+	cmp	[move_flag],1
+	jne	@f
 	add	[yobs],10	  ;  observator = camera position
+	jmp	.next5
+      @@:
+	add	[sin_amplitude],10
       .next5:
 
 
@@ -435,6 +455,10 @@ still:
       @@:
 	call	draw_triangles	; draw all triangles from the list
       .blurrr:
+	cmp  [sinus_flag],0
+	je   @f
+	call do_sinus
+      @@:
 	cmp	[fire_flag],0
 	jne	@f
 	cmp	[blur_flag],0
@@ -629,7 +653,7 @@ if Ext >= SSE
 end if
 .no_min:
 end if
-;========================commented=====================================
+
     RDTSC
     sub eax,[esp]
     sub eax,41
@@ -648,7 +672,7 @@ end if
     mov     eax,7	    ; put image
     mov     ebx,screen
     mov     ecx,SIZE_X shl 16 + SIZE_Y
-    mov     edx,5 shl 16 + 23
+    mov     edx,5 shl 16 + 25
     int     0x40
 
 	mov  eax,13
@@ -2789,6 +2813,14 @@ alloc_mem_for_tp:
 	int	0x40		       ;  -> allocate memory to edges
 	mov	[edges_ptr], eax   ;  -> eax = pointer to allocated mem
 
+	mov	eax,-1			     ; fill edges list
+	movzx	ecx,[triangles_count_var]    ; importand if object generated
+	shr	ecx,2
+	inc	ecx
+	mov	edi,[edges_ptr]
+	cld
+	rep	stosd
+
 
 ;        mov     eax, 68
 ;        mov     ebx, 12
@@ -2978,7 +3010,7 @@ ret
 	mov	ebx,100*65536;+SIZE_X;+80+30 ; [x start] *65536 + [x size]
 	mov	ecx,100*65536;+SIZE_Y;+30    ; [y start] *65536 + [y size]
 	mov	bx,[size_x]
-	add	bx,114
+	add	bx,115
 	mov	cx,[size_y]
 	add	cx,30
 	mov	edx,0x14000000	; color of work area RRGGBB,8->color gl

@@ -61,23 +61,23 @@ elseif Ext=MMX
      movq	 [.cz],mm0
      movq	 [.cg],mm1
 elseif Ext >= SSE2
-     movups	 xmm1,[.cz]
+;     movups      xmm1,[.cz]
      paddd	 xmm1,xmm0
-     movups	 [.cz],xmm1
+;     movups      [.cz],xmm1
 end if
 }
 macro .draw_pixel
 {
     mov 	[esi],ebx	       ; actualize Z buffer
-;if Ext=SSE2
-;    movups      xmm2,[.cb]
-   ; shufps      xmm1,xmm1,11000110b
-   ; pand        xmm1,[.mask]
-;    psrld       xmm2,ROUND
-;    packssdw    xmm2,xmm2
-;    packuswb    xmm2,xmm2
-;    movss       [edi],xmm2
-;else
+if Ext=SSE2
+    movaps	xmm7,xmm1 ;[.cb] ;;xmm1
+    shufps	xmm7,xmm7,00111001b
+    psrld	xmm7,ROUND
+    packssdw	xmm7,xmm7
+    packuswb	xmm7,xmm7
+    pand	xmm7,xmm6 ;[.mask]
+    movd	[edi],xmm7
+else
 
     mov 	eax,[.cb]
     sar 	eax,ROUND
@@ -90,7 +90,7 @@ macro .draw_pixel
     mov 	edx,[.cr]
     sar 	edx,ROUND
     mov 	[edi+2],dl
-;end if
+end if
 ;    shl         ebx,16
 ;    or          eax,ebx
 ;    mov         [edi],eax
@@ -208,8 +208,15 @@ end if
     movsx	ebx,word[.z1]
     shl 	ebx,ROUND
     mov 	[.cz],ebx
+if Ext = SSE2
+    movups	xmm1,[.cz]
+end if
 .hdraw:
+if Ext = SSE2
+    movd	ebx,xmm1
+else
     mov 	ebx,[.cz]
+end if
     cmp 	[esi],ebx
     jle 	.skip
 
@@ -267,8 +274,16 @@ end if
     movsx	ebx,word[.z1]
     shl 	ebx,ROUND
     mov 	[.cz],ebx
+if Ext = SSE2
+    movups	xmm1,[.cz]
+end if
+
 .v_draw:
+if Ext = SSE2
+    movd	ebx,xmm1
+else
     mov 	ebx,[.cz]
+end if
     cmp 	[esi],ebx
     jle 	@f
 
@@ -331,7 +346,11 @@ end if
     shl 	ebx,ROUND
     mov 	[.cz],ebx
 .d45_draw:
+if Ext = SSE2
+    movd	ebx,xmm1
+else
     mov 	ebx,[.cz]
+end if
     cmp 	[esi],ebx
     jle 	@f
 
@@ -400,6 +419,9 @@ end if
     movsx	ebx,word[.z1]
     shl 	ebx,ROUND
     mov 	[.cz],ebx
+if Ext = SSE2
+    movups	xmm1,[.cz]
+end if
     movsx	ebx,word[.x1]
     shl 	ebx,ROUND
     mov 	[.ccoord],ebx	 ; .ccoord -> x coordinate
@@ -412,7 +434,11 @@ end if
     add 	edi,ebx
     add 	esi,ebx
     add 	esi,eax
+if Ext = SSE2
+    movd	ebx,xmm1
+else
     mov 	ebx,[.cz]
+end if
     cmp 	[esi],ebx
     jle 	@f
 
@@ -480,6 +506,9 @@ end if
     movsx	ebx,word[.z1]
     shl 	ebx,ROUND
     mov 	[.cz],ebx
+if Ext = SSE2
+    movups	xmm1,[.cz]
+end if
     movsx	ebx,word[.y1]
     shl 	ebx,ROUND
     mov 	[.ccoord],ebx	 ; .ccoord -> y coordinate
@@ -495,7 +524,11 @@ end if
     lea 	eax,[eax*3]
     add 	esi,eax
     add 	edi,eax
+if Ext = SSE2
+    movd	ebx,xmm1
+else
     mov 	ebx,[.cz]
+end if
     cmp 	[esi],ebx
     jle 	@f
 
@@ -553,12 +586,12 @@ if Ext=MMX | Ext = SSE
     movq	mm3,[.dg]
 else if Ext >= SSE2
     movups	xmm0,[.dz]
+    movups	xmm6,[.mask]
 end if
 ret
-;align 16
-;.mask:
-;           dq 0xffffffffffffffff
-;           dq 0xffffffff00000000
+.mask:
+	   dq 0xffffffff00ffffff
+	   dq 0xffffffffffffffff
 
 
 

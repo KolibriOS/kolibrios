@@ -1,3 +1,104 @@
+do_sinus:
+   .x	   equ	[ebp-8]
+   .y	   equ	[ebp-12]
+   .new_y  equ	[ebp-16]
+   .temp   equ	[ebp-20]
+   push    ebp
+   mov	   ebp,esp
+   sub	   esp,64
+   mov	   dword .x,0
+   mov	   dword .y,0
+   mov	   esi,[screen_ptr]
+   mov	   edi,[Zbuffer_ptr]
+   push    edi
+   ;  clear Zbuffer temporally used as image buffer
+   mov	   ecx,SIZE_X*SIZE_Y
+   xor	   eax,eax
+   cld
+   rep	   stosd
+   pop	   edi
+;   movzx   eax,[sinus_flag]
+;   mov     edx,10
+;   mul     edx
+;   mov     [sin_amplitude],eax
+;   mov     [sin_frq],eax
+   fninit
+;if Ext = SSE2
+;   movups  xmm1,[const0123]   ; xmm1 - init values
+;   mov     eax,0x000000ff
+;   movd    xmm2,eax
+;   shufps  xmm2,xmm2,0        ; xmm2 - mask value
+;   mov     eax,4
+;   movd    xmm3,eax
+;   shufps  xmm3,xmm3,0
+ .again:
+if  0
+   fild    dword .x
+   fidiv   [sin_frq]
+   fsin
+   fimul   [sin_amplitude]
+   fiadd   dword .y
+   fistp   dword .new_y
+else
+   fild    dword .x
+   fmul    [sin_frq]
+   fistp   dword .temp
+   mov	   eax, .temp
+;   mov     bx, [angle_x]
+;   add     bx, [angle_y]
+;   movzx   ebx,bx
+;   shr     ebx,1       ; change phase
+;   add     eax,ebx
+
+
+   and	   eax, 0x000000ff
+
+;   cdq
+ ;  mul     [sin_frq]
+;   and      eax,0x000000ff
+;   and     ax,0x00ff
+;   cwde
+
+   fld	   dword [sin_tab+eax*4]
+   fimul   dword [sin_amplitude]
+   fiadd   dword .y
+   fistp   dword .new_y
+end if
+   mov	   eax,.new_y
+   or	   eax,eax
+   jl	   .skip
+   cmp	   eax,SIZE_Y
+   jg	   .skip
+;   mov     edx,SIZE_X
+;   mul     edx
+   shl	   eax,9
+   add	   eax,dword .x
+   lea	   ebx,[eax*3]
+   mov	   eax,[esi]
+   mov	   [edi+ebx],eax
+ .skip:
+   add	   esi,3
+   inc	   dword .x
+   cmp	   dword .x,SIZE_X
+   jl	   .again
+   mov	   dword .x,0
+   inc	   dword .y
+   cmp	   dword .y,SIZE_Y
+   jl	   .again
+
+   ; copy from temporary buffer -> Zbuffer to screen
+   mov	   esi,[Zbuffer_ptr]
+   mov	   edi,[screen_ptr]
+   mov	   ecx,SIZE_X*SIZE_Y*3/4
+   cld
+   rep	   movsd
+
+
+   mov	   esp,ebp
+   pop	   ebp
+ret
+
+
 draw_dots:
    mov	   esi,[points_translated_ptr]
    movzx   ecx,[points_count_var]
