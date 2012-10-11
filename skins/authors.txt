@@ -57,7 +57,6 @@ plum			Aqwas
 Rednex			Rock_maniak_forever
 RoboTech		Rock_maniak_forever
 Russia			Mario79
-Russia_2		Rock_maniak_forever
 Sad_grey		Aqwas
 SashSkinPack_1_1	Sash
 sea			Aqwas
