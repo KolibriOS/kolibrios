@@ -34,6 +34,7 @@ uglobal
   ctrl_alt_del  db 0
 
   kb_lights     db 0
+  old_kb_lights db 0
 
 align 4
         hotkey_scancodes        rd      256     ; we have 256 scancodes
@@ -112,6 +113,83 @@ set_keyboard_data:
         call    send_scancode
         pop     ebp edi esi ebx
         ret
+;---------------------------------------------------------------------
+struct KEYBOARD
+next           dd      ?
+prev           dd      ?
+functions      dd      ?
+userdata       dd      ?
+ends
+struct KBDFUNC
+strucsize      dd      ?
+close          dd      ?
+setlights      dd      ?
+ends
+
+iglobal
+keyboards:
+        dd      keyboards
+        dd      keyboards
+endg
+uglobal
+keyboard_list_mutex     MUTEX
+endg
+
+register_keyboard:
+        push    ebx
+        push    sizeof.KEYBOARD
+        pop     eax
+        call    malloc
+        test    eax, eax
+        jz      .nothing
+        mov     ecx, [esp+4+4]
+        mov     [eax+KEYBOARD.functions], ecx
+        mov     ecx, [esp+8+4]
+        mov     [eax+KEYBOARD.userdata], ecx
+        xchg    eax, ebx
+        mov     ecx, keyboard_list_mutex
+        call    mutex_lock
+        mov     ecx, keyboards
+        mov     edx, [ecx+KEYBOARD.prev]
+        mov     [ebx+KEYBOARD.next], ecx
+        mov     [ebx+KEYBOARD.prev], edx
+        mov     [edx+KEYBOARD.next], ebx
+        mov     [ecx+KEYBOARD.prev], ebx
+        mov     ecx, [ebx+KEYBOARD.functions]
+        cmp     [ecx+KBDFUNC.strucsize], KBDFUNC.setlights
+        jbe     .unlock
+        mov     ecx, [ecx+KBDFUNC.setlights]
+        test    ecx, ecx
+        jz      .unlock
+        stdcall ecx, [ebx+KEYBOARD.userdata], dword [kb_lights]
+.unlock:
+        mov     ecx, keyboard_list_mutex
+        call    mutex_unlock
+        xchg    eax, ebx
+.nothing:
+        pop     ebx
+        ret     8
+
+delete_keyboard:
+        push    ebx
+        mov     ebx, [esp+4+4]
+        mov     ecx, keyboard_list_mutex
+        call    mutex_lock
+        mov     eax, [ebx+KEYBOARD.next]
+        mov     edx, [ebx+KEYBOARD.prev]
+        mov     [eax+KEYBOARD.prev], edx
+        mov     [edx+KEYBOARD.next], eax
+        call    mutex_unlock
+        mov     ecx, [ebx+KEYBOARD.functions]
+        cmp     [ecx+KBDFUNC.strucsize], KBDFUNC.close
+        jbe     .nothing
+        mov     ecx, [ecx+KBDFUNC.close]
+        test    ecx, ecx
+        jz      .nothing
+        stdcall ecx, [ebx+KEYBOARD.userdata]
+.nothing:
+        pop     ebx
+        ret     4
 ;---------------------------------------------------------------------
 align 4
 irq1:
@@ -281,8 +359,11 @@ send_scancode:
         
         xor     [kb_state], eax
         xor     [kb_lights], bl
+        push    ecx
         call    set_lights
+        pop     ecx
 .writekey:
+        pushad
 ; test for system hotkeys
         movzx   eax, ch
         cmp     bh, 1
@@ -335,9 +416,16 @@ send_scancode:
         mov     [edi+4], ax
         mov     eax, [kb_state]
         mov     [edi+6], ax
+
+        cmp     [PID_lock_input], dword 0
+        je      .nohotkey
+
+        popad
         jmp     .exit.irq1
 ;--------------------------------------
 .nohotkey:
+        popad
+
         cmp     [keyboard_mode], 0; return from keymap
         jne     .scancode
         
@@ -384,10 +472,43 @@ send_scancode:
         ret
 ;---------------------------------------------------------------------
 set_lights:
+        push    ebx esi
+        mov     ecx, keyboard_list_mutex
+        call    mutex_lock
+        mov     esi, keyboards
+.loop:
+        mov     esi, [esi+KEYBOARD.next]
+        cmp     esi, keyboards
+        jz      .done
+        mov     eax, [esi+KEYBOARD.functions]
+        cmp     dword [eax], KBDFUNC.setlights
+        jbe     .loop
+        mov     eax, [eax+KBDFUNC.setlights]
+        test    eax, eax
+        jz      .loop
+        stdcall eax, [esi+KEYBOARD.userdata], dword [kb_lights]
+        jmp     .loop
+.done:
+        mov     ecx, keyboard_list_mutex
+        call    mutex_unlock
+        pop     esi ebx
+        ret
+
+ps2_set_lights:
         mov     al, 0xED
         call    kb_write
-        mov     al, [kb_lights]
+        mov     al, [esp+8]
         call    kb_write
+        ret     8
+
+;// mike.dld ]
+check_lights_state:
+        mov     al, [kb_lights]
+        cmp     al, [old_kb_lights]
+        jz      .nothing
+        mov     [old_kb_lights], al
+        call    set_lights
+.nothing:
         ret
 ;---------------------------------------------------------------------
 numlock_map:

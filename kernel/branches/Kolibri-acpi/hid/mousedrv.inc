@@ -26,14 +26,14 @@ uglobal
 align 4
   mousecount  dd  0x0
   mousedata   dd  0x0
-Y_UNDER_subtraction_CUR_hot_y:
-        dd 0
-X_UNDER_subtraction_CUR_hot_x:
-        dd 0
 Y_UNDER_sub_CUR_hot_y_add_curh:
-        dd 0
+        dw 0
+Y_UNDER_subtraction_CUR_hot_y:
+        dw 0
 X_UNDER_sub_CUR_hot_x_add_curh:
-        dd 0
+        dw 0
+X_UNDER_subtraction_CUR_hot_x:
+        dw 0
 endg
 
 iglobal
@@ -447,15 +447,15 @@ redrawmouse:
 
         mov     ax, [Y_UNDER]
         sub     eax, [esi+CURSOR.hot_y]
-        mov     [Y_UNDER_subtraction_CUR_hot_y], eax
+        mov     [Y_UNDER_subtraction_CUR_hot_y], ax
         add     eax, [cur.h]
-        mov     [Y_UNDER_sub_CUR_hot_y_add_curh], eax
+        mov     [Y_UNDER_sub_CUR_hot_y_add_curh], ax
 
         mov     ax, [X_UNDER]
         sub     eax, [esi+CURSOR.hot_x]
-        mov     [X_UNDER_subtraction_CUR_hot_x], eax
+        mov     [X_UNDER_subtraction_CUR_hot_x], ax
         add     eax, [cur.w]
-        mov     [X_UNDER_sub_CUR_hot_x_add_curh], eax
+        mov     [X_UNDER_sub_CUR_hot_x_add_curh], ax
 ;--------------------------------------
 align 4
 @@:

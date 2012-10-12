@@ -348,11 +348,18 @@ align 4
         cmp     [edi+inp_size], 12
         jne     .fail
 
-        mov     eax, [ebx]
-        mov     ebx, [ebx+4]
+        mov     eax, [ebx+4]
+        mov     ebx, [ebx+8]
+
+        pushfd
+        cli
         mov     dword [edx+STREAM.time_base], eax
         mov     dword [edx+STREAM.time_base+4], ebx
         xor     eax, eax
+        mov     dword [edx+STREAM.time_stamp], eax
+        mov     dword [edx+STREAM.time_stamp+4], eax
+        popfd
+
         ret
 
 align 4

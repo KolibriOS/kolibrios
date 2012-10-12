@@ -402,6 +402,12 @@ high_code:
         mov     ecx, disk_list_mutex
         call    mutex_init
 
+        mov     ecx, keyboard_list_mutex
+        call    mutex_init
+
+        mov     ecx, unpack_mutex
+        call    mutex_init
+
 ; SAVE REAL MODE VARIABLES
         mov     ax, [BOOT_VAR + BOOT_IDE_BASE_ADDR]
         mov     [IDEContrRegsBaseAddr], ax
@@ -447,11 +453,13 @@ high_code:
 
         movzx   eax, word [BOOT_VAR+BOOT_X_RES]; X max
         mov     [_display.width], eax
+        mov     [display_width_standard], eax
         dec     eax
         mov     [Screen_Max_X], eax
         mov     [screen_workarea.right], eax
         movzx   eax, word [BOOT_VAR+BOOT_Y_RES]; Y max
         mov     [_display.height], eax
+        mov     [display_height_standard], eax
         dec     eax
         mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
@@ -473,6 +481,10 @@ high_code:
         mov     [_WinMapSize], eax
 
         call    calculate_fast_getting_offset_for_WinMapAddress
+; for Qemu or non standart video cards
+; Unfortunately [BytesPerScanLine] does not always 
+;                             equal to [_display.width] * [ScreenBPP] / 8
+        call    calculate_fast_getting_offset_for_LFB
 
         mov     esi, BOOT_VAR+0x9080
         movzx   ecx, byte [esi-1]
@@ -506,6 +518,10 @@ v20ga24:
         mov     [PUTPIXEL], dword VGA_putpixel
         mov     [GETPIXEL], dword Vesa20_getpixel32
 no_mode_0x12:
+
+        mov     [MOUSE_PICTURE], dword mousepointer
+        mov     [_display.check_mouse], check_mouse_area_for_putpixel
+        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
 
 ; -------- Fast System Call init ----------
 ; Intel SYSENTER/SYSEXIT (AMD CPU support it too)
@@ -592,7 +608,7 @@ no_mode_0x12:
         mov     ax, tss0
         ltr     ax
 
-        mov     [LFBSize], 0x800000
+        mov     [LFBSize], 0xC00000
         call    init_LFB
         call    init_fpu
         call    init_malloc
@@ -670,16 +686,26 @@ no_mode_0x12:
         rep stosd
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
-
+        mov     esi, boot_initirq
+        call    boot_log
         call    init_irqs
+
+        mov     esi, boot_picinit
+        call    boot_log
         call    PIC_init
 
+        mov     esi, boot_v86machine
+        call    boot_log
 ; Initialize system V86 machine
         call    init_sys_v86
 
+        mov     esi, boot_inittimer
+        call    boot_log
 ; Initialize system timer (IRQ0)
         call    PIT_init
 
+        mov     esi, boot_initapic
+        call    boot_log
 ; Try to Initialize APIC
         call    APIC_init
 
@@ -697,6 +723,8 @@ no_mode_0x12:
         stdcall enable_irq, 14
         stdcall enable_irq, 15
 
+        mov     esi, boot_enablint_ide
+        call    boot_log
 ; Enable interrupts in IDE controller
         mov     al, 0
         mov     dx, 0x3F6
@@ -705,9 +733,25 @@ no_mode_0x12:
         out     dx, al
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
-include 'detect/disks.inc'
+;        mov     esi, boot_detectdisks
+;        call    boot_log
+;include 'detect/disks.inc'
+        mov     esi, boot_detectfloppy
+        call    boot_log
+include 'detect/dev_fd.inc'
+        mov     esi, boot_detecthdcd
+        call    boot_log
+include 'detect/dev_hdcd.inc'
+        mov     esi, boot_getcache
+        call    boot_log
+include 'detect/getcache.inc'
+        mov     esi, boot_detectpart
+        call    boot_log
+include 'detect/sear_par.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+        mov     esi, boot_init_sys
+        call    boot_log
         call    Parser_params
 
 if ~ defined extended_primary_loader
@@ -727,6 +771,9 @@ if 0
         mov     ax, [OS_BASE+0x10000+bx_from_load]
         cmp     ax, 'r1'; if using not ram disk, then load librares and parameters {SPraid.simba}
         je      no_lib_load
+
+        mov     esi, boot_loadlibs
+        call    boot_log
 ; LOADING LIBRARES
         stdcall dll.Load, @IMPORT           ; loading librares for kernel (.obj files)
         call    load_file_parse_table       ; prepare file parse table
@@ -734,24 +781,13 @@ if 0
 no_lib_load:
 end if
 
-; LOAD FONTS I and II
-
-        stdcall read_file, char, FONT_I, 0, 2304
-        stdcall read_file, char2, FONT_II, 0, 2560
-
-        mov     [MOUSE_PICTURE], dword mousepointer
-        mov     [_display.check_mouse], check_mouse_area_for_putpixel
-        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
-
-        mov     esi, boot_fonts
-        call    boot_log
-
 ; Display APIC status
         mov     esi, boot_APIC_found
         cmp     [irq_mode], IRQ_APIC
         je      @f
         mov     esi, boot_APIC_nfound
 @@:
+        call    boot_log
 
 ; PRINT AMOUNT OF MEMORY
         mov     esi, boot_memdetect
@@ -774,10 +810,10 @@ end if
 
 ; BUILD SCHEDULER
 
-        call    build_scheduler; sys32.inc
+;        call    build_scheduler; sys32.inc
 
-        mov     esi, boot_devices
-        call    boot_log
+;        mov     esi, boot_devices
+;        call    boot_log
 
         mov     [pci_access_enabled], 1
 
@@ -978,6 +1014,8 @@ first_app_found:
 ; SET KEYBOARD PARAMETERS
         mov     al, 0xf6       ; reset keyboard, scan enabled
         call    kb_write
+        test    ah, ah
+        jnz     .no_keyboard
 
         ; wait until 8042 is ready
         xor     ecx, ecx
@@ -986,6 +1024,15 @@ first_app_found:
         and     al, 00000010b
         loopnz  @b
 
+iglobal
+align 4
+ps2_keyboard_functions:
+        dd      .end - $
+        dd      0       ; no close
+        dd      ps2_set_lights
+.end:
+endg
+        stdcall register_keyboard, ps2_keyboard_functions, 0
        ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
        ; call  kb_write
        ; call  kb_read
@@ -1003,6 +1050,7 @@ first_app_found:
         call    set_lights
      ;// mike.dld ]
         stdcall attach_int_handler, 1, irq1, 0
+.no_keyboard:
 
 ; SET MOUSE
 
@@ -1053,6 +1101,7 @@ if defined debug_com_base
 
 
 end if
+
         mov     eax, [cpu_count]
         test    eax, eax
         jnz     @F
@@ -1125,6 +1174,7 @@ osloop:
         call    checkidle
         call    check_fdd_motor_status
         call    check_ATAPI_device_event
+        call    check_lights_state
         call    check_timers
         jmp     osloop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2025,6 +2075,8 @@ sys_end:
 ;------------------------------------------------------------------------------
 align 4
 restore_default_cursor_before_killing:
+        pushfd
+        cli
         mov     eax, [def_cursor]
         mov     [ecx+APPDATA.cursor], eax
 
@@ -2048,6 +2100,7 @@ restore_default_cursor_before_killing:
         mov     [current_cursor], esi
 @@:
         mov     [redrawmouse_unconditional], 1
+        popfd
 ;        call    [draw_pointer]
         call    __sys_draw_pointer
         ret
@@ -2078,6 +2131,8 @@ sys_system_table:
         dd      sysfn_meminfo           ; 20 = get extended memory info
         dd      sysfn_pid_to_slot       ; 21 = get slot number for pid
         dd      sysfn_min_rest_window   ; 22 = minimize and restore any window
+        dd      sysfn_min_windows       ; 23 = minimize all windows
+        dd      sysfn_set_screen_sizes  ; 24 = set screen sizes for Vesa
 sysfn_num = ($ - sys_system_table)/4
 endg
 ;------------------------------------------------------------------------------
@@ -2108,13 +2163,13 @@ sysfn_shutdown:          ; 18.9 = system shutdown
   endg
 ;------------------------------------------------------------------------------
 sysfn_terminate:        ; 18.2 = TERMINATE
+        push    ecx
         cmp     ecx, 2
         jb      noprocessterminate
         mov     edx, [TASK_COUNT]
         cmp     ecx, edx
         ja      noprocessterminate
         mov     eax, [TASK_COUNT]
-        push    ecx
         shl     ecx, 5
         mov     edx, [ecx+CURRENT_TASK+TASKDATA.pid]
         add     ecx, CURRENT_TASK+TASKDATA.state
@@ -2135,7 +2190,6 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 @@:
         popa
 .restore_end:
-        add     esp, 4
 ;--------------------------------------
      ;call MEM_Heap_Lock      ;guarantee that process isn't working with heap
         mov     [ecx], byte 3; clear possible i40's
@@ -2144,8 +2198,9 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         cmp     edx, [application_table_status]; clear app table stat
         jne     noatsc
         and     [application_table_status], 0
-   noatsc:
-   noprocessterminate:
+noatsc:
+noprocessterminate:
+        add     esp, 4
         ret
 ;------------------------------------------------------------------------------
 sysfn_terminate2:
@@ -2383,20 +2438,19 @@ sysfn_getfreemem:
         shl     eax, 2
         mov     [esp+32], eax
         ret
-
+;------------------------------------------------------------------------------
 sysfn_getallmem:
         mov     eax, [MEM_AMOUNT]
         shr     eax, 10
         mov     [esp+32], eax
         ret
-
-; // Alver, 2007-22-08 // {
+;------------------------------------------------------------------------------
 sysfn_pid_to_slot:
         mov     eax, ecx
         call    pid_to_slot
         mov     [esp+32], eax
         ret
-
+;------------------------------------------------------------------------------
 sysfn_min_rest_window:
         pushad
         mov     eax, edx ; ebx - operating
@@ -2427,14 +2481,52 @@ sysfn_min_rest_window:
         dec     eax
         mov     [esp+32], eax
         ret
-; } \\ Alver, 2007-22-08 \\
+;------------------------------------------------------------------------------
+sysfn_min_windows:
+        call    minimize_all_window
+        mov     [esp+32], eax
+        call    change_task
+        ret
+;------------------------------------------------------------------------------
+sysfn_set_screen_sizes:
+        cmp     [SCR_MODE], word 0x13
+        jbe     .exit
 
+        cmp     [_display.select_cursor], select_cursor
+        jne     .exit
+
+        cmp     ecx, [display_width_standard]
+        ja      .exit
+
+        cmp     edx, [display_height_standard]
+        ja      .exit
+
+        pushfd
+        cli
+        mov     eax, ecx
+        mov     ecx, [BytesPerScanLine]
+        mov     [_display.width], eax
+        dec     eax
+        mov     [_display.height], edx
+        dec     edx
+; eax - new Screen_Max_X
+; edx - new Screen_Max_Y
+        mov     [do_not_touch_winmap], 1
+        call    set_screen
+        mov     [do_not_touch_winmap], 0
+        popfd
+        call    change_task
+.exit:
+        ret
+;------------------------------------------------------------------------------
 uglobal
-;// mike.dld, 2006-29-01 [
 screen_workarea RECT
-;// mike.dld, 2006-29-01 ]
+display_width_standard dd 0
+display_height_standard dd 0
+do_not_touch_winmap db 0
 window_minimize db 0
 sound_flag      db 0
+
 endg
 
 UID_NONE=0
@@ -2448,49 +2540,61 @@ version_inf:
   dd __REV__
 version_end:
 endg
-
+;------------------------------------------------------------------------------
+align 4
 sys_cachetodiskette:
         cmp     ebx, 1
         jne     .no_floppy_a_save
         mov     [flp_number], 1
         jmp     .save_image_on_floppy
+;--------------------------------------
+align 4
 .no_floppy_a_save:
         cmp     ebx, 2
         jne     .no_floppy_b_save
         mov     [flp_number], 2
+;--------------------------------------
+align 4
 .save_image_on_floppy:
         call    save_image
         mov     [esp + 32], dword 0
         cmp     [FDC_Status], 0
         je      .yes_floppy_save
+;--------------------------------------
+align 4
 .no_floppy_b_save:
         mov     [esp + 32], dword 1
+;--------------------------------------
+align 4
 .yes_floppy_save:
         ret
-
+;------------------------------------------------------------------------------
 uglobal
 ;  bgrchanged  dd  0x0
 align 4
 bgrlockpid dd 0
 bgrlock db 0
 endg
-
+;------------------------------------------------------------------------------
+align 4
 sys_background:
-
         cmp     ebx, 1                     ; BACKGROUND SIZE
         jnz     nosb1
         test    ecx, ecx
-;    cmp   ecx,0
         jz      sbgrr
+
         test    edx, edx
-;    cmp   edx,0
         jz      sbgrr
+;--------------------------------------
+align 4
 @@:
 ;;Maxis use atomic bts for mutexes  4.4.2009
         bts     dword [bgrlock], 0
         jnc     @f
         call    change_task
         jmp     @b
+;--------------------------------------
+align 4
 @@:
         mov     [BgrDataWidth], ecx
         mov     [BgrDataHeight], edx
@@ -2502,6 +2606,8 @@ sys_background:
         cmp     eax, static_background_data
         jz      @f
         stdcall kernel_free, eax
+;--------------------------------------
+align 4
 @@:
 ; calculate RAW size
         xor     eax, eax
@@ -2509,10 +2615,14 @@ sys_background:
         cmp     [BgrDataWidth], eax
         jae     @f
         mov     [BgrDataWidth], eax
+;--------------------------------------
+align 4
 @@:
         cmp     [BgrDataHeight], eax
         jae     @f
         mov     [BgrDataHeight], eax
+;--------------------------------------
+align 4
 @@:
         mov     eax, [BgrDataWidth]
         imul    eax, [BgrDataHeight]
@@ -2530,6 +2640,8 @@ sys_background:
         jz      .memfailed
         mov     [img_background], eax
         jmp     .exit
+;--------------------------------------
+align 4
 .memfailed:
 ; revert to static monotone data
         mov     [img_background], static_background_data
@@ -2538,15 +2650,18 @@ sys_background:
         mov     [BgrDataWidth], eax
         mov     [BgrDataHeight], eax
         mov     [mem_BACKGROUND], 4
+;--------------------------------------
+align 4
 .exit:
         popad
         mov     [bgrlock], 0
-
-  sbgrr:
+;--------------------------------------
+align 4
+sbgrr:
         ret
-
+;------------------------------------------------------------------------------
+align 4
 nosb1:
-
         cmp     ebx, 2                     ; SET PIXEL
         jnz     nosb2
 
@@ -2555,6 +2670,8 @@ nosb1:
         jz      @f
         cmp     eax, static_background_data
         jz      .ret
+;--------------------------------------
+align 4
 @@:
         mov     ebx, [mem_BACKGROUND]
         add     ebx, 4095
@@ -2568,34 +2685,39 @@ nosb1:
         and     edx, 0x00FFFFFF;255*256*256+255*256+255
         add     edx, ebx
         mov     [eax+ecx], edx
+;--------------------------------------
+align 4
 .ret:
         ret
+;------------------------------------------------------------------------------
+align 4
 nosb2:
-
         cmp     ebx, 3                     ; DRAW BACKGROUND
         jnz     nosb3
+;--------------------------------------
+align 4
 draw_background_temp:
-;    cmp   [bgrchanged],1 ;0
-;    je    nosb31
-;draw_background_temp:
-;    mov   [bgrchanged],1 ;0
         mov     [background_defined], 1
-        mov     byte[BACKGROUND_CHANGED], 1
         call    force_redraw_background
-   nosb31:
+;--------------------------------------
+align 4
+nosb31:
         ret
-  nosb3:
-
+;------------------------------------------------------------------------------
+align 4
+nosb3:
         cmp     ebx, 4                     ; TILED / STRETCHED
         jnz     nosb4
         cmp     ecx, [BgrDrawMode]
         je      nosb41
         mov     [BgrDrawMode], ecx
-;    mov   [bgrchanged],1
-   nosb41:
+;--------------------------------------
+align 4
+nosb41:
         ret
-  nosb4:
-
+;------------------------------------------------------------------------------
+align 4
+nosb4:
         cmp     ebx, 5                     ; BLOCK MOVE TO BGR
         jnz     nosb5
         cmp     [img_background], static_background_data
@@ -2604,25 +2726,34 @@ draw_background_temp:
         jnz     .fin
         cmp     esi, 4
         ja      .fin
-  @@:
+;--------------------------------------
+align 4
+@@:
   ; bughere
         mov     eax, ecx
         mov     ebx, edx
         add     ebx, [img_background];IMG_BACKGROUND
         mov     ecx, esi
         call    memmove
-  .fin:
+;--------------------------------------
+align 4
+.fin:
         ret
-  nosb5:
-
+;------------------------------------------------------------------------------
+align 4
+nosb5:
         cmp     ebx, 6
         jnz     nosb6
+;--------------------------------------
+align 4
 ;;Maxis use atomic bts for mutex 4.4.2009
 @@:
         bts     dword [bgrlock], 0
         jnc     @f
         call    change_task
         jmp     @b
+;--------------------------------------
+align 4
 @@:
         mov     eax, [CURRENT_TASK]
         mov     [bgrlockpid], eax
@@ -2640,11 +2771,15 @@ draw_background_temp:
         mov     ecx, [mem_BACKGROUND]
         add     ecx, 0xFFF
         shr     ecx, 12
+;--------------------------------------
+align 4
 .z:
         mov     eax, [page_tabs+ebx*4]
         test    al, 1
         jz      @f
         call    free_page
+;--------------------------------------
+align 4
 @@:
         mov     eax, [page_tabs+esi*4]
         or      al, PG_UW
@@ -2656,9 +2791,13 @@ draw_background_temp:
         inc     esi
         loop    .z
         ret
+;--------------------------------------
+align 4
 .nomem:
         and     [bgrlockpid], 0
         mov     [bgrlock], 0
+;------------------------------------------------------------------------------
+align 4
 nosb6:
         cmp     ebx, 7
         jnz     nosb7
@@ -2677,6 +2816,8 @@ nosb6:
         push    eax
         shr     ecx, 12
         dec     ecx
+;--------------------------------------
+align 4
 @@:
         and     dword [page_tabs+eax*4], 0
         mov     edx, eax
@@ -2693,13 +2834,77 @@ nosb6:
         and     [bgrlockpid], 0
         mov     [bgrlock], 0
         ret
+;--------------------------------------
+align 4
 .err:
         and     dword [esp+32], 0
         ret
-
+;------------------------------------------------------------------------------
+align 4
 nosb7:
-        ret
+        cmp     ebx, 8
+        jnz     nosb8
 
+        mov     eax, [BG_Rect_X_left_right]
+        mov     [esp + 32], eax ; eax = [left]*65536 + [right]
+        mov     eax, [BG_Rect_Y_top_bottom]
+        mov     [esp + 20], eax ; ebx = [top]*65536 + [bottom]
+        ret
+;------------------------------------------------------------------------------
+align 4
+nosb8:
+        cmp     ebx, 9
+        jnz     nosb9
+; ecx = [left]*65536 + [right]
+; edx = [top]*65536 + [bottom]
+        mov     eax, [Screen_Max_X]
+        mov     ebx, [Screen_Max_Y]
+; check [right]
+        cmp     cx, ax
+        ja      .exit
+; check [left]
+        ror     ecx, 16
+        cmp     cx, ax
+        ja      .exit
+; check [bottom]
+        cmp     dx, bx
+        ja      .exit
+; check [top]
+        ror     edx, 16
+        cmp     dx, bx
+        ja      .exit
+
+        movzx   eax, cx  ; [left]
+        movzx   ebx, dx  ; [top]
+
+        shr     ecx, 16 ; [right]
+        shr     edx, 16 ; [bottom]
+
+        mov     [background_defined], 1
+
+        mov     [draw_data+32 + RECT.left], eax
+        mov     [draw_data+32 + RECT.top], ebx
+
+        mov     [draw_data+32 + RECT.right], ecx
+        mov     [draw_data+32 + RECT.bottom], edx
+
+        inc     byte[REDRAW_BACKGROUND]
+;--------------------------------------
+align 4
+.exit:
+        ret
+;------------------------------------------------------------------------------
+align 4
+nosb9:
+        ret
+;------------------------------------------------------------------------------
+align 4
+uglobal
+  BG_Rect_X_left_right  dd   0x0
+  BG_Rect_Y_top_bottom  dd   0x0
+endg
+;------------------------------------------------------------------------------
+align 4
 force_redraw_background:
         and     [draw_data+32 + RECT.left], 0
         and     [draw_data+32 + RECT.top], 0
@@ -2711,9 +2916,8 @@ force_redraw_background:
         pop     ebx eax
         inc     byte[REDRAW_BACKGROUND]
         ret
-
+;------------------------------------------------------------------------------
 align 4
-
 sys_getbackground:
 ;    cmp   eax,1                                  ; SIZE
         dec     ebx
@@ -2723,7 +2927,8 @@ sys_getbackground:
         mov     ax, [BgrDataHeight]
         mov     [esp+32], eax
         ret
-
+;------------------------------------------------------------------------------
+align 4
 nogb1:
 ;    cmp   eax,2                                  ; PIXEL
         dec     ebx
@@ -2734,6 +2939,8 @@ nogb1:
         jz      @f
         cmp     eax, static_background_data
         jz      .ret
+;--------------------------------------
+align 4
 @@:
         mov     ebx, [mem_BACKGROUND]
         add     ebx, 4095
@@ -2746,21 +2953,26 @@ nogb1:
 
         and     eax, 0xFFFFFF
         mov     [esp+32], eax
+;--------------------------------------
+align 4
 .ret:
         ret
-  nogb2:
+;------------------------------------------------------------------------------
+align 4
+nogb2:
 
 ;    cmp   eax,4                                  ; TILED / STRETCHED
         dec     ebx
         dec     ebx
         jnz     nogb4
         mov     eax, [BgrDrawMode]
-  nogb4:
+;--------------------------------------
+align 4
+nogb4:
         mov     [esp+32], eax
         ret
-
+;------------------------------------------------------------------------------
 align 4
-
 sys_getkey:
         mov     [esp + 32], dword 1
         ; test main buffer
@@ -2782,12 +2994,18 @@ sys_getkey:
         mov     ebx, KEY_BUFF
         call    memmove
         pop     eax
+;--------------------------------------
+align 4
 .ret_eax:
         mov     [esp + 32], eax
         ret
+;--------------------------------------
+align 4
 .finish:
 ; test hotkeys buffer
         mov     ecx, hotkey_buffer
+;--------------------------------------
+align 4
 @@:
         cmp     [ecx], ebx
         jz      .found
@@ -2795,6 +3013,8 @@ sys_getkey:
         cmp     ecx, hotkey_buffer + 120 * 8
         jb      @b
         ret
+;--------------------------------------
+align 4
 .found:
         mov     ax, [ecx + 6]
         shl     eax, 16
@@ -2803,11 +3023,9 @@ sys_getkey:
         and     dword [ecx + 4], 0
         and     dword [ecx], 0
         jmp     .ret_eax
-
+;------------------------------------------------------------------------------
 align 4
-
 sys_getbutton:
-
         mov     ebx, [CURRENT_TASK]                         ; TOP OF WINDOW STACK
         mov     [esp + 32], dword 1
         movzx   ecx, word [WIN_STACK + ebx * 2]
@@ -2821,12 +3039,12 @@ sys_getbutton:
         and     al, 0xFE                                    ; delete left button bit
         mov     [BTN_COUNT], byte 0
         mov     [esp + 32], eax
+;--------------------------------------
+align 4
 .exit:
         ret
-
-
+;------------------------------------------------------------------------------
 align 4
-
 sys_cpuusage:
 
 ;  RETURN:
@@ -3203,12 +3421,9 @@ endg
 uglobal
 background_defined    db    0    ; diamond, 11.04.2006
 endg
-
+;-----------------------------------------------------------------------------
 align 4
-; check misc
-
 checkmisc:
-
         cmp     [ctrl_alt_del], 1
         jne     nocpustart
 
@@ -3216,7 +3431,8 @@ checkmisc:
         call    fs_execute_from_sysdir
 
         mov     [ctrl_alt_del], 0
-
+;--------------------------------------
+align 4
 nocpustart:
         cmp     [mouse_active], 1
         jne     mouse_not_active
@@ -3232,7 +3448,7 @@ nocpustart:
 
         movzx   eax, word [MOUSE_X]
         movzx   edx, word [MOUSE_Y]
-
+;--------------------------------------
 align 4
 .set_mouse_event:
         add     edi, 256
@@ -3242,7 +3458,8 @@ align 4
 
         cmp     edi, [esp]                      ; skip if filtration active
         jne     .skip
-
+;--------------------------------------
+align 4
 .pos_filter:
         test    [ebx+TASKDATA.event_mask], 0x40000000
         jz      .set
@@ -3260,50 +3477,69 @@ align 4
         add     esi, [ebx-twdw+WDATA.box.height]
         cmp     edx, esi
         ja      .skip
+;--------------------------------------
+align 4
 .set:
-        or      [edi+SLOT_BASE+APPDATA.event_mask], 100000b
+        or      [edi+SLOT_BASE+APPDATA.event_mask], 100000b  ; set event 6
+;--------------------------------------
+align 4
 .skip:
         loop    .set_mouse_event
 
         pop     eax
-
+;--------------------------------------
+align 4
 mouse_not_active:
-        cmp     byte[BACKGROUND_CHANGED], 0
-        jz      no_set_bgr_event
-        xor     edi, edi
-        mov     ecx, [TASK_COUNT]
-set_bgr_event:
-        add     edi, 256
-        or      [edi+SLOT_BASE+APPDATA.event_mask], 16
-        loop    set_bgr_event
-        mov     byte[BACKGROUND_CHANGED], 0
-no_set_bgr_event:
         cmp     byte[REDRAW_BACKGROUND], 0         ; background update ?
         jz      nobackgr
+
         cmp     [background_defined], 0
         jz      nobackgr
-;    mov   [draw_data+32 + RECT.left],dword 0
-;    mov   [draw_data+32 + RECT.top],dword 0
-;    mov   eax,[Screen_Max_X]
-;    mov   ebx,[Screen_Max_Y]
-;    mov   [draw_data+32 + RECT.right],eax
-;    mov   [draw_data+32 + RECT.bottom],ebx
+;--------------------------------------
+align 4
 @@:
+        push    eax
+        mov     eax, [draw_data+32 + RECT.left]
+        shl     eax, 16
+        add     eax, [draw_data+32 + RECT.right]
+        mov     [BG_Rect_X_left_right], eax ; [left]*65536 + [right]
+
+        mov     eax, [draw_data+32 + RECT.top]
+        shl     eax, 16
+        add     eax, [draw_data+32 + RECT.bottom]
+        mov     [BG_Rect_Y_top_bottom], eax ; [top]*65536 + [bottom]
+        pop     eax
+
         call    drawbackground
-        xor     eax, eax
-        xchg    al, [REDRAW_BACKGROUND]
-        test    al, al                             ; got new update request?
+;        DEBUGF  1, "K : drawbackground\n"
+;        DEBUGF  1, "K : backg x %x\n",[BG_Rect_X_left_right]
+;        DEBUGF  1, "K : backg y %x\n",[BG_Rect_Y_top_bottom]
+;--------- set event 5 start ----------
+        push    ecx edi
+        xor     edi, edi
+        mov     ecx, [TASK_COUNT]
+;--------------------------------------
+align 4
+set_bgr_event:
+        add     edi, 256
+        or      [edi+SLOT_BASE+APPDATA.event_mask], 10000b  ; set event 5
+        loop    set_bgr_event
+        pop     edi ecx
+; call change_task - because the application must have time to call f.15.8
+        call    change_task
+;--------- set event 5 stop -----------
+        dec     byte[REDRAW_BACKGROUND]    ; got new update request?
         jnz     @b
+
         mov     [draw_data+32 + RECT.left], eax
         mov     [draw_data+32 + RECT.top], eax
         mov     [draw_data+32 + RECT.right], eax
         mov     [draw_data+32 + RECT.bottom], eax
         mov     [MOUSE_BACKGROUND], byte 0
-
+;--------------------------------------
+align 4
 nobackgr:
-
-    ; system shutdown request
-
+; system shutdown request
         cmp     [SYS_SHUTDOWN], byte 0
         je      noshutdown
 
@@ -3315,28 +3551,31 @@ nobackgr:
         lea     ecx, [edx-1]
         mov     edx, OS_BASE+0x3040
         jecxz   @f
+;--------------------------------------
+align 4
 markz:
         mov     [edx+TASKDATA.state], byte 3
         add     edx, 0x20
         loop    markz
+;--------------------------------------
+align 4
 @@:
-
-  no_mark_system_shutdown:
-
+no_mark_system_shutdown:
         dec     byte [SYS_SHUTDOWN]
         je      system_shutdown
-
+;--------------------------------------
+align 4
 noshutdown:
-
-
         mov     eax, [TASK_COUNT]           ; termination
         mov     ebx, TASK_DATA+TASKDATA.state
         mov     esi, 1
-
+;--------------------------------------
+align 4
 newct:
         mov     cl, [ebx]
         cmp     cl, byte 3
         jz      terminate
+
         cmp     cl, byte 4
         jz      terminate
 
@@ -3345,11 +3584,9 @@ newct:
         dec     eax
         jnz     newct
         ret
-
-; redraw screen
-
+;-----------------------------------------------------------------------------
+align 4
 redrawscreen:
-
 ; eax , if process window_data base is eax, do not set flag/limits
 
         pushad
@@ -3360,8 +3597,9 @@ redrawscreen:
 
          ;mov   ecx,0               ; redraw flags for apps
         xor     ecx, ecx
-       newdw2:
-
+;--------------------------------------
+align 4
+newdw2:
         inc     ecx
         push    ecx
 
@@ -3406,45 +3644,58 @@ redrawscreen:
         mov     eax, [draw_limits.left]  ; eax = area x start     ecx = window x end
         cmp     ecx, eax
         jb      ricino
-
-        bgli:
-
+;--------------------------------------
+align 4
+bgli:
         cmp     dword[esp], 1
         jnz     .az
-;         cmp   byte[BACKGROUND_CHANGED], 0
-;         jnz   newdw8
+
         cmp     byte[REDRAW_BACKGROUND], 0
         jz      .az
+
         mov     dl, 0
         lea     eax, [edi+draw_data-window_data]
         mov     ebx, [draw_limits.left]
         cmp     ebx, [eax+RECT.left]
         jae     @f
+
         mov     [eax+RECT.left], ebx
         mov     dl, 1
-        @@:
+;--------------------------------------
+align 4
+@@:
         mov     ebx, [draw_limits.top]
         cmp     ebx, [eax+RECT.top]
         jae     @f
+
         mov     [eax+RECT.top], ebx
         mov     dl, 1
-        @@:
+;--------------------------------------
+align 4
+@@:
         mov     ebx, [draw_limits.right]
         cmp     ebx, [eax+RECT.right]
         jbe     @f
+
         mov     [eax+RECT.right], ebx
         mov     dl, 1
-        @@:
+;--------------------------------------
+align 4
+@@:
         mov     ebx, [draw_limits.bottom]
         cmp     ebx, [eax+RECT.bottom]
         jbe     @f
+
         mov     [eax+RECT.bottom], ebx
         mov     dl, 1
-        @@:
+;--------------------------------------
+align 4
+@@:
         add     byte[REDRAW_BACKGROUND], dl
         jmp     newdw8
-        .az:
-
+;--------------------------------------
+align 4
+.az:
         mov     eax, edi
         add     eax, draw_data-window_data
 
@@ -3462,16 +3713,16 @@ redrawscreen:
         cmp     dword [esp], 1
         jne     nobgrd
         inc     byte[REDRAW_BACKGROUND]
-
-       newdw8:
-       nobgrd:
+;--------------------------------------
+align 4
+newdw8:
+nobgrd:
 
         mov     [eax + WDATA.fl_redraw], byte 1  ; mark as redraw
-
-       ricino:
-
-       not_this_task:
-
+;--------------------------------------
+align 4
+ricino:
+not_this_task:
         pop     ecx
 
         cmp     ecx, [TASK_COUNT]
@@ -3479,11 +3730,10 @@ redrawscreen:
 
         pop     eax
         popad
-
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 calculatebackground:   ; background
-
         mov     edi, [_WinMapAddress]              ; set os to use all pixels
         mov     eax, 0x01010101
         mov     ecx, [_WinMapSize]
@@ -3491,19 +3741,14 @@ calculatebackground:   ; background
         rep stosd
 
         mov     byte[REDRAW_BACKGROUND], 0            ; do not draw background!
-        mov     byte[BACKGROUND_CHANGED], 0
-
         ret
-
+;-----------------------------------------------------------------------------
 uglobal
   imax    dd 0x0
 endg
-
-
-
+;-----------------------------------------------------------------------------
+align 4
 delay_ms:     ; delay in 1/1000 sec
-
-
         push    eax
         push    ecx
 
@@ -3517,8 +3762,9 @@ delay_ms:     ; delay in 1/1000 sec
         and     al, 0x10
         mov     ah, al
         cld
-
- cnt1:
+;--------------------------------------
+align 4
+cnt1:
         in      al, 0x61
         and     al, 0x10
         cmp     al, ah
@@ -3529,9 +3775,8 @@ delay_ms:     ; delay in 1/1000 sec
 
         pop     ecx
         pop     eax
-
         ret
-
+;-----------------------------------------------------------------------------
 align 4
 set_app_param:
         mov     edi, [TASK_BASE]
@@ -3542,17 +3787,17 @@ set_app_param:
         xchg    eax, [edi + TASKDATA.event_mask] ; set new event mask
         mov     [esp+32], eax                    ; return old mask value
         ret
-
-
-
+;-----------------------------------------------------------------------------
+align 4
 delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
         push    ecx
         push    edx
 
         mov     edx, [timer_ticks]
-
-      newtic:
+;--------------------------------------
+align 4
+newtic:
         mov     ecx, [timer_ticks]
         sub     ecx, edx
         cmp     ecx, ebx
@@ -3561,16 +3806,15 @@ delay_hs:     ; delay in 1/100 secs
         call    change_task
 
         jmp     newtic
-
-      zerodelay:
+;--------------------------------------
+align 4
+zerodelay:
         pop     edx
         pop     ecx
-
         ret
-
+;-----------------------------------------------------------------------------
 align 16        ;very often call this subrutine
 memmove:       ; memory move in bytes
-
 ; eax = from
 ; ebx = to
 ; ecx = no of bytes
@@ -3591,15 +3835,19 @@ memmove:       ; memory move in bytes
         pop     ecx
         and     ecx, 11b
         jz      .finish
-  @@:
+;--------------------------------------
+align 4
+@@:
         rep movsb
-
-  .finish:
+;--------------------------------------
+align 4
+.finish:
         pop     ecx edi esi
-  .ret:
+;--------------------------------------
+align 4
+.ret:
         ret
-
-
+;-----------------------------------------------------------------------------
 ; <diamond> Sysfunction 34, read_floppy_file, is obsolete. Use 58 or 70 function instead.
 ;align 4
 ;
@@ -3938,6 +4186,14 @@ align 4
 ;--------------------------------------
 align 4
 @@:
+        cmp     esi, 9
+        jnz     @f
+        mov     ebp, putimage_get9bpp
+        mov     esi, putimage_init9bpp
+        jmp     sys_putimage_bpp
+;--------------------------------------
+align 4
+@@:
         cmp     esi, 15
         jnz     @f
         mov     ebp, putimage_get15bpp
@@ -3998,6 +4254,7 @@ align 4
 putimage_init24bpp:
         lea     eax, [eax*3]
 putimage_init8bpp:
+putimage_init9bpp:
         ret
 ;-----------------------------------------------------------------------------
 align 16
@@ -4016,6 +4273,14 @@ putimage_get8bpp:
         mov     eax, [edx+eax*4]
         pop     edx
         inc     esi
+        ret     4
+;-----------------------------------------------------------------------------
+align 16
+putimage_get9bpp:
+        lodsb
+        mov     ah, al
+        shl     eax, 8
+        mov     al, ah
         ret     4
 ;-----------------------------------------------------------------------------
 align 4
@@ -4444,17 +4709,17 @@ f66call:
            dd sys_process_def.1   ; 1 = set keyboard mode
            dd sys_process_def.2   ; 2 = get keyboard mode
            dd sys_process_def.3   ; 3 = get keyboard ctrl, alt, shift
-           dd sys_process_def.4
-           dd sys_process_def.5
+           dd sys_process_def.4   ; 4 = set system-wide hotkey
+           dd sys_process_def.5   ; 5 = delete installed hotkey
+           dd sys_process_def.6   ; 6 = disable input, work only hotkeys
+           dd sys_process_def.7   ; 7 = enable input, opposition to f.66.6
 endg
-
-
-
-
+;-----------------------------------------------------------------------------
+align 4
 sys_process_def:
         dec     ebx
-        cmp     ebx, 5
-        jae     .not_support    ;if >=6 then or eax,-1
+        cmp     ebx, 7
+        jae     .not_support    ;if >=8 then or eax,-1
 
         mov     edi, [CURRENT_TASK]
         jmp     dword [f66call+ebx*4]
@@ -4462,33 +4727,28 @@ sys_process_def:
 .not_support:
         or      eax, -1
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .1:
         shl     edi, 8
         mov     [edi+SLOT_BASE + APPDATA.keyboard_mode], cl
 
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .2:                             ; 2 = get keyboard mode
         shl     edi, 8
         movzx   eax, byte [SLOT_BASE+edi + APPDATA.keyboard_mode]
         mov     [esp+32], eax
         ret
-;     xor   eax,eax
-;     movzx eax,byte [shift]
-;     movzx ebx,byte [ctrl]
-;     shl   ebx,2
-;     add   eax,ebx
-;     movzx ebx,byte [alt]
-;     shl   ebx,3
-;     add   eax,ebx
+;-----------------------------------------------------------------------------
+align 4
 .3:                             ;3 = get keyboard ctrl, alt, shift
- ;// mike.dld [
         mov     eax, [kb_state]
- ;// mike.dld ]
         mov     [esp+32], eax
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .4:
         mov     eax, hotkey_list
 @@:
@@ -4513,7 +4773,8 @@ sys_process_def:
 @@:
         and     dword [esp+32], 0
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .5:
         movzx   ebx, cl
         lea     ebx, [hotkey_scancodes+ebx*4]
@@ -4547,8 +4808,45 @@ sys_process_def:
         mov     [eax], edx
         mov     [esp+32], edx
         ret
+;-----------------------------------------------------------------------------
+align 4
+.6:
+        pushfd
+        cli
+        mov     eax, [PID_lock_input]
+        test    eax, eax
+        jnz     @f
+; get current PID
+        mov     eax, [CURRENT_TASK]
+        shl     eax, 5
+        mov     eax, [eax+CURRENT_TASK+TASKDATA.pid]
+; set current PID for lock input
+        mov     [PID_lock_input], eax
+@@:
+        popfd
+        ret
+;-----------------------------------------------------------------------------
+align 4
+.7:
+        mov     eax, [PID_lock_input]
+        test    eax, eax
+        jz      @f
+; get current PID
+        mov     ebx, [CURRENT_TASK]
+        shl     ebx, 5
+        mov     ebx, [ebx+CURRENT_TASK+TASKDATA.pid]
+; compare current lock input with current PID
+        cmp     ebx, eax
+        jne     @f
 
-
+        xor     eax, eax
+        mov     [PID_lock_input], eax
+@@:
+        ret
+;-----------------------------------------------------------------------------
+uglobal
+  PID_lock_input dd 0x0
+endg
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 61 sys function.                                                ;;
 ;; in eax=61,ebx in [1..3]                                         ;;
@@ -4624,6 +4922,8 @@ syscall_writetext:                      ; WriteText
         pop     esi
         add     ebx, ebp
         mov     eax, edi
+        test    ecx, 0x08000000  ; redirect the output to the user area
+        jnz     dtext
         xor     edi, edi
         jmp     dtext
 
@@ -4736,9 +5036,28 @@ syscall_cdaudio:                        ; CD
         call    .free
 ;        pop     eax
         ret
-
+;-----------------------------------------------------------------------------
 align 4
-
+syscall_getpixel_WinMap:                       ; GetPixel WinMap
+        cmp     ebx, [Screen_Max_X]
+        jbe     @f
+        cmp     ecx, [Screen_Max_Y]
+        jbe     @f
+        xor     eax, eax
+        jmp     .store
+;--------------------------------------
+align 4
+@@:
+        mov     eax, [d_width_calc_area + ecx*4]
+        add     eax, [_WinMapAddress]
+        movzx   eax, byte[eax+ebx]        ; get value for current point
+;--------------------------------------
+align 4
+.store:
+        mov     [esp + 32], eax
+        ret
+;-----------------------------------------------------------------------------
+align 4
 syscall_getpixel:                       ; GetPixel
         mov     ecx, [Screen_Max_X]
         inc     ecx
@@ -4751,9 +5070,8 @@ syscall_getpixel:                       ; GetPixel
         call    dword [GETPIXEL]; eax - x, ebx - y
         mov     [esp + 32], ecx
         ret
-
+;-----------------------------------------------------------------------------
 align 4
-
 syscall_getarea:
 ;eax = 36
 ;ebx = pointer to bufer for img BBGGRRBBGGRR...
@@ -4789,9 +5107,12 @@ syscall_getarea:
         add     ebp, edi
 
         add     ebx, edx
-
+;--------------------------------------
+align 4
 .start_y:
         push    ecx edx
+;--------------------------------------
+align 4
 .start_x:
         push    eax ebx ecx
         add     eax, ecx
@@ -4813,9 +5134,89 @@ syscall_getarea:
         jnz     .start_y
         popad
         ret
-
+;-----------------------------------------------------------------------------
 align 4
+syscall_putarea_backgr:
+;eax = 25
+;ebx = pointer to bufer for img BBGGRRBBGGRR...
+;ecx = [size x]*65536 + [size y]
+;edx = [start x]*65536 + [start y]
+        pushad
+        mov     edi, ebx
+        mov     eax, edx
+        shr     eax, 16
+        mov     ebx, edx
+        and     ebx, 0xffff
+        dec     eax
+        dec     ebx
+; eax - x, ebx - y
+        mov     edx, ecx
+        shr     ecx, 16
+        and     edx, 0xffff
+        mov     esi, ecx
+; ecx - size x, edx - size y
+        mov     ebp, edx
+        dec     ebp
+        shl     ebp, 2
 
+        imul    ebp, esi
+
+        mov     esi, ecx
+        dec     esi
+        shl     esi, 2
+
+        add     ebp, esi
+        add     ebp, edi
+
+        add     ebx, edx
+;--------------------------------------
+align 4
+.start_y:
+        push    ecx edx
+;--------------------------------------
+align 4
+.start_x:
+        push    eax ecx
+        add     eax, ecx
+
+        mov     ecx, [ebp]
+        rol     ecx, 8
+        test    cl, cl        ; transparensy = 0
+        jz      .no_put
+
+        xor     cl, cl
+        ror     ecx, 8
+
+        pushad
+        mov     edx, [d_width_calc_area + ebx*4]
+        add     edx, [_WinMapAddress]
+        movzx   edx, byte [eax+edx]
+        cmp     dl, byte 1
+        jne     @f
+
+        call    dword [PUTPIXEL]; eax - x, ebx - y
+;--------------------------------------
+align 4
+@@:
+        popad
+;--------------------------------------
+align 4
+.no_put:
+        pop     ecx eax
+
+        sub     ebp, 4
+        dec     ecx
+        jnz     .start_x
+
+        pop     edx ecx
+        dec     ebx
+        dec     edx
+        jnz     .start_y
+
+        popad
+        ret
+;-----------------------------------------------------------------------------
+align 4
 syscall_drawline:                       ; DrawLine
 
         mov     edi, [TASK_BASE]
@@ -4885,22 +5286,6 @@ socket:                                 ; Socket interface
         mov     [esp+24], ebx
         ret
 
-align 4
-
-read_from_hd:                           ; Read from hd - fn not in use
-
-        mov     edi, [TASK_BASE]
-        add     edi, TASKDATA.mem_start
-        add     eax, [edi]
-        add     ecx, [edi]
-        add     edx, [edi]
-        call    file_read
-
-        mov     [esp+36], eax
-        mov     [esp+24], ebx
-
-        ret
-
 paleholder:
         ret
 ;------------------------------------------------------------------------------
@@ -4920,7 +5305,26 @@ calculate_fast_getting_offset_for_WinMapAddress:
         ret
 ;------------------------------------------------------------------------------
 align 4
+calculate_fast_getting_offset_for_LFB:
+; calculate data area for fast getting offset to LFB
+        xor     eax, eax
+        mov     ecx, [_display.height]
+        inc     ecx
+        mov     edi, BPSLine_calc_area
+        cld
+@@:
+        stosd
+        add     eax, [BytesPerScanLine]
+        dec     ecx
+        jnz     @r
+        ret
+;------------------------------------------------------------------------------
+align 4
 set_screen:
+; in:
+; eax - new Screen_Max_X
+; ecx - new BytesPerScanLine
+; edx - new Screen_Max_Y
         cmp     eax, [Screen_Max_X]
         jne     .set
 
@@ -4944,6 +5348,9 @@ set_screen:
 
         pushad
 
+        cmp     [do_not_touch_winmap], 1
+        je      @f
+
         stdcall kernel_free, [_WinMapAddress]
 
         mov     eax, [_display.width]
@@ -4954,9 +5361,18 @@ set_screen:
         mov     [_WinMapAddress], eax
         test    eax, eax
         jz      .epic_fail
+; store for f.18.24
+        mov     eax, [_display.width]
+        mov     [display_width_standard], eax
 
+        mov     eax, [_display.height]
+        mov     [display_height_standard], eax
+@@:
         call    calculate_fast_getting_offset_for_WinMapAddress
-
+; for Qemu or non standart video cards
+; Unfortunately [BytesPerScanLine] does not always
+;                             equal to [_display.width] * [ScreenBPP] / 8
+        call    calculate_fast_getting_offset_for_LFB
         popad
 
         call    repos_windows

@@ -72,6 +72,7 @@ proc fs_execute
          slot_base     dd ?
          file_base     dd ?
          file_size     dd ?
+         handle        dd ? ;temp. for default cursor handle for curr. thread
                       ;app header data
          hdr_cmdline   dd ? ;0x00
          hdr_path      dd ? ;0x04
@@ -83,6 +84,15 @@ proc fs_execute
 
         pushad
 
+        cmp     [SCR_MODE], word 0x13
+        jbe     @f
+        pushad
+        stdcall set_cursor, [def_cursor_clock]
+        mov     [handle], eax
+        mov     [redrawmouse_unconditional], 1
+        call    __sys_draw_pointer
+        popad
+@@:
         mov     [flags], edx
 
 ; [ebp]  pointer to filename
@@ -113,7 +123,8 @@ proc fs_execute
 .bigfilename:
         popad
         mov     eax, -ERROR_FILE_NOT_FOUND
-        ret
+
+        jmp     .final
 
 .namecopied:
 
@@ -127,6 +138,7 @@ proc fs_execute
 @@:
         lea     eax, [filename]
         stdcall load_file, eax
+
         mov     esi, -ERROR_FILE_NOT_FOUND
         test    eax, eax
         jz      .err_file
@@ -175,7 +187,7 @@ proc fs_execute
         jnz     @F
         lea     esi, [filename]
 @@:
-        mov     ecx, 8; 8 chars for name
+        mov     ecx, 11 ; 11 chars for name! 8 - is old value!
         mov     edi, [slot_base]
 .copy_process_name_loop:
         lodsb
@@ -237,7 +249,9 @@ end if
         xor     ebx, ebx
         mov     [application_table_status], ebx;unlock application_table_status mutex
         mov     eax, [process_number];set result
-        ret
+
+        jmp     .final
+
 .failed:
         mov     eax, [save_cr3]
         call    set_cr3
@@ -248,6 +262,15 @@ end if
         xor     eax, eax
         mov     [application_table_status], eax
         mov     eax, esi
+.final:
+        cmp     [SCR_MODE], word 0x13
+        jbe     @f
+        pushad
+        stdcall set_cursor, [handle]
+        mov     [redrawmouse_unconditional], 1
+        call    __sys_draw_pointer
+        popad
+@@:
         ret
 endp
 

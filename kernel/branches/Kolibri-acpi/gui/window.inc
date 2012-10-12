@@ -1026,6 +1026,55 @@ align 4
 ;------------------------------------------------------------------------------
 align 4
 ;------------------------------------------------------------------------------
+minimize_all_window:
+        push    ebx ecx edx esi edi
+        pushfd
+        cli
+        xor     edx, edx
+        mov     eax, 2  ; we do not minimize the kernel thread N1
+        mov     ebx, [TASK_COUNT]
+;--------------------------------------
+align 4
+.loop:
+        movzx   edi, word[WIN_POS + eax * 2]
+        shl     edi, 5
+; it is a unused slot?
+        cmp     dword [edi+CURRENT_TASK+TASKDATA.state], 9
+        je      @f
+; it is a hidden thread?
+        lea     esi, [edi*8+SLOT_BASE+APPDATA.app_name]
+        cmp     [esi], byte '@'
+        je      @f
+; is it already minimized?
+        test    [edi + window_data+WDATA.fl_wstate], WSTATE_MINIMIZED
+        jnz     @f
+; no it's not, let's do that
+        or      [edi + window_data+WDATA.fl_wstate], WSTATE_MINIMIZED
+        inc     edx
+;--------------------------------------
+align 4
+@@:
+        inc     eax
+        cmp     eax, ebx
+        jbe     .loop
+; If nothing has changed
+        test    edx, edx
+        jz      @f
+
+        push    edx
+        call    syscall_display_settings._.calculate_whole_screen
+        call    syscall_display_settings._.redraw_whole_screen
+        pop     edx
+;--------------------------------------
+align 4
+@@:
+        mov     eax, edx
+        popfd
+        pop     edi esi edx ecx ebx
+        ret
+;------------------------------------------------------------------------------
+align 4
+;------------------------------------------------------------------------------
 minimize_window: ;/////////////////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;> eax = window number on screen
@@ -1047,6 +1096,13 @@ minimize_window: ;/////////////////////////////////////////////////////////////
 
         ; no it's not, let's do that
         or      [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
+; If the window width is 0, then the action is not needed.
+        cmp     [edi + WDATA.box.width], dword 0
+        je      @f
+; If the window height is 0, then the action is not needed.
+        cmp     [edi + WDATA.box.height], dword 0
+        je      @f
+
         mov     eax, [edi + WDATA.box.left]
         mov     [draw_limits.left], eax
         mov     ecx, eax
@@ -1057,11 +1113,20 @@ minimize_window: ;/////////////////////////////////////////////////////////////
         mov     edx, ebx
         add     edx, [edi + WDATA.box.height]
         mov     [draw_limits.bottom], edx
-        call    calculatescreen
-        xor     esi, esi
-        xor     eax, eax
-        call    redrawscreen
 
+;        DEBUGF  1, "K : minimize_window\n"
+;        DEBUGF  1, "K : dl_left %x\n",[draw_limits.left]
+;        DEBUGF  1, "K : dl_right %x\n",[draw_limits.right]
+;        DEBUGF  1, "K : dl_top %x\n",[draw_limits.top]
+;        DEBUGF  1, "K : dl_bottom %x\n",[draw_limits.bottom]
+        call    calculatescreen
+;        xor     esi, esi
+;        xor     eax, eax
+        mov     eax, edi
+        call    redrawscreen
+;--------------------------------------
+align 4
+@@:
         pop     esi edx ecx ebx eax
 ;--------------------------------------
 align 4
@@ -1266,16 +1331,16 @@ align 4
 ;------------------------------------------------------------------------------
 align 4
 ;------------------------------------------------------------------------------
-sys_window_start_moving_handler: ;/////////////////////////////////////////////
+;sys_window_start_moving_handler: ;/////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? <description>
 ;------------------------------------------------------------------------------
 ;> eax = old (original) window box
 ;> esi = process slot
 ;------------------------------------------------------------------------------
-        mov     edi, eax
-        call    window._.draw_negative_box
-        ret
+;        mov     edi, eax
+;        call    window._.draw_negative_box
+;        ret
 ;------------------------------------------------------------------------------
 align 4
 ;------------------------------------------------------------------------------
@@ -1287,8 +1352,8 @@ sys_window_end_moving_handler: ;///////////////////////////////////////////////
 ;> ebx = new (final) window box
 ;> esi = process slot
 ;------------------------------------------------------------------------------
-        mov     edi, ebx
-        call    window._.end_moving__box
+;        mov     edi, ebx
+;        call    window._.end_moving__box
 
         mov     edi, esi
         shl     edi, 5
@@ -1351,45 +1416,17 @@ window._.invalidate_screen: ;//////////////////////////////////////////////////
 
         ; TODO: do we really need `draw_limits`?
         ; Yes, they are used by background drawing code.
-        mov     ecx, [eax + BOX.left]
-        mov     edx, [ebx + BOX.left]
-        cmp     ecx, edx
-        jle     @f
-        mov     ecx, edx
-;--------------------------------------
-align 4
-@@:
+
+; we need only to restore the background windows at the old place!
+        mov     ecx, [ebx + BOX.left]
         mov     [draw_limits.left], ecx
-        mov     ecx, [eax + BOX.left]
-        add     ecx, [eax + BOX.width]
-        add     edx, [ebx + BOX.width]
-        cmp     ecx, edx
-        jae     @f
-        mov     ecx, edx
-;--------------------------------------
-align 4
-@@:
+        add     ecx, [ebx + BOX.width]
         mov     [draw_limits.right], ecx
-        mov     ecx, [eax + BOX.top]
-        mov     edx, [ebx + BOX.top]
-        cmp     ecx, edx
-        jle     @f
-        mov     ecx, edx
-;--------------------------------------
-align 4
-@@:
+        mov     ecx, [ebx + BOX.top]
         mov     [draw_limits.top], ecx
-        mov     ecx, [eax + BOX.top]
-        add     ecx, [eax + BOX.height]
-        add     edx, [ebx + BOX.height]
-        cmp     ecx, edx
-        jae     @f
-        mov     ecx, edx
-;--------------------------------------
-align 4
-@@:
+        add     ecx, [ebx + BOX.height]
         mov     [draw_limits.bottom], ecx
-        ; recalculate screen buffer at old position
+; recalculate screen buffer at old position
         push    ebx
         mov     edx, [eax + BOX.height]
         mov     ecx, [eax + BOX.width]
@@ -1399,7 +1436,7 @@ align 4
         add     edx, ebx
         call    calculatescreen
         pop     eax
-        ; recalculate screen buffer at new position
+; recalculate screen buffer at new position
         mov     edx, [eax + BOX.height]
         mov     ecx, [eax + BOX.width]
         mov     ebx, [eax + BOX.top]
@@ -1578,7 +1615,10 @@ window._.sys_set_window: ;/////////////////////////////////////////////////////
         test    [edi + WDATA.fl_wdrawn], 1
         jnz     .set_client_box
         or      [edi + WDATA.fl_wdrawn], 1
-
+; After first draw_window we need redraw mouse necessarily!
+; Otherwise the user can see cursor specified by f.37.5 from another window.
+; He will be really unhappy! He is terrible in rage - usually he throws stones!
+        mov     [redrawmouse_unconditional], 1
         ; NOTE: commented out since doesn't provide necessary functionality
         ;       anyway, to be reworked
 ;       mov     eax, [timer_ticks] ; [0xfdf0]
@@ -2344,17 +2384,17 @@ align 4
         pop     esi ebx eax
         ret
 ;------------------------------------------------------------------------------
-align 4
+;align 4
 ;------------------------------------------------------------------------------
-window._.end_moving__box: ;//////////////////////////////////////////////////
+;window._.end_moving__box: ;//////////////////////////////////////////////////
 ;------------------------------------------------------------------------------
 ;? Draw positive box
 ;------------------------------------------------------------------------------
 ;> edi = pointer to BOX struct
 ;------------------------------------------------------------------------------
-        push    eax ebx esi
-        xor     esi, esi
-        jmp     window._.draw_negative_box.1
+;        push    eax ebx esi
+;        xor     esi, esi
+;        jmp     window._.draw_negative_box.1
 ;------------------------------------------------------------------------------
 align 4
 ;------------------------------------------------------------------------------

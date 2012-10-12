@@ -202,6 +202,7 @@ purge .dy1
 
 align 4
 blit_32:
+        xchg bx, bx
         push    ebp
         push    edi
         push    esi
@@ -270,9 +271,10 @@ blit_32:
 
         mov     edi, ebp
 
-        imul    edi, [_display.pitch]
+;        imul    edi, [_display.pitch]
+        mov     edi, [BPSLine_calc_area+edi*4]
 ;        imul    ebp, [_display.width]
-        mov     ebp, [d_width_calc_area + ebp*4]
+        mov     ebp, [d_width_calc_area+ebp*4]
 
         add     ebp, ebx
         add     ebp, [_WinMapAddress]
@@ -298,7 +300,13 @@ blit_32:
 
         lea     edi, [edi+ebx*4]
 
+        mov     ebx, 1
+        test    [esp+72], dword 0x10
+        jnz     @F
+
         mov     ebx, [CURRENT_TASK]
+@@:
+
 align 4
 .outer32:
         xor     ecx, ecx
@@ -365,7 +373,12 @@ align 4
 .core_24:
         lea     ebx, [ebx+ebx*2]
         lea     edi, [LFB_BASE+edi+ebx]
+        mov     ebx, 1
+        test    [esp+72], dword 0x10
+        jnz     @F
+
         mov     ebx, [CURRENT_TASK]
+@@:
 
 align 4
 .outer24:

@@ -80,6 +80,9 @@ kernel_export \
               LoadFile,\
               SendEvent,\
               SetMouseData,\
+              SetKeyboardData,\
+              RegKeyboard,\
+              DelKeyboard,\
               Sleep,\
               GetTimerTicks,\
 \
@@ -92,4 +95,8 @@ kernel_export \
 \
               LFBAddress,\
               GetDisplay,\
-              SetScreen
+              SetScreen,\
+\
+              DiskAdd,\
+              DiskMediaChanged,\
+              DiskDel

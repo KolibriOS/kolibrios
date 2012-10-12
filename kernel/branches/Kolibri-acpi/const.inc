@@ -189,7 +189,6 @@ TASK_BASE           equ (OS_BASE+0x0003010)
 TASK_DATA           equ (OS_BASE+0x0003020)
 TASK_EVENT          equ (OS_BASE+0x0003020)
 
-d_width_calc_area   equ (OS_BASE+0x0005000)
 mouseunder          equ (OS_BASE+0x0006900)
 CDDataBuf           equ (OS_BASE+0x0007000)
 FLOPPY_BUFF         equ (OS_BASE+0x0008000)
@@ -256,16 +255,13 @@ SYS_SHUTDOWN        equ (OS_BASE+0x000FF00)
 TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
 
 REDRAW_BACKGROUND   equ (OS_BASE+0x000FFF0)
-BACKGROUND_CHANGED  equ (OS_BASE+0x000FFF1)
+
 BANK_RW             equ (OS_BASE+0x000FFF2)
 MOUSE_BACKGROUND    equ (OS_BASE+0x000FFF4)
 DONT_DRAW_MOUSE     equ (OS_BASE+0x000FFF5)
 DONT_SWITCH         equ (OS_BASE+0x000FFFF)
 
 TMP_STACK_TOP       equ 0x006CC00
-
-FONT_II             equ (OS_BASE+0x006DC00)
-FONT_I              equ (OS_BASE+0x006E600)
 
 sys_pgdir           equ (OS_BASE+0x006F000)
 
@@ -290,7 +286,11 @@ BgrAuxTable         equ (OS_BASE+0x0298000)
 SB16Buffer          equ (OS_BASE+0x02A0000)
 SB16_Status         equ (OS_BASE+0x02B0000)
 
-BUTTON_INFO         equ (OS_BASE+0x02C0000)
+BUTTON_INFO         equ (OS_BASE+0x02B3FEE)
+
+BPSLine_calc_area   equ (OS_BASE+0x02C4000)
+d_width_calc_area   equ (OS_BASE+0x02CA000)
+
 RESERVED_PORTS      equ (OS_BASE+0x02D0000)
 BOOT_VAR            equ (OS_BASE+0x02E0000)
 

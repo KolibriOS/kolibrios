@@ -194,16 +194,22 @@ Remarks:
 Parameters:
   * eax = 4 - function number
   * ebx = [coordinate on axis x]*65536 + [coordinate on axis y]
-  * ecx = 0xX0RRGGBB, where
+  * ecx = 0xXYRRGGBB, where
     * RR, GG, BB specify text color
     * X=ABnn (bits):
     * nn specifies the used font: 0=system monospaced,
       1=system font of variable width
     * A=0 - output esi characters, A=1 - output ASCIIZ-string
     * B=1 - fill background with the color edi
+    * Y = Cnnn
+      * C=1 redirect the output to the user area, specified in edi
+      * nnn - not used in the current, must be 0 (zero) 
   * edx = pointer to the beginning of the string
   * esi = for A=0 length of the string, must not exceed 255;
           for A=1 is ignored
+  * edi = color to fill background, if B=1
+  * edi = pointer to user area, for redirect, if C=1
+  
 Returned value:
   * function does not return value
 Remarks:
@@ -211,6 +217,12 @@ Remarks:
     second - from char2.mt.
   * Both fonts have height 9 pixels, width of the monospaced font
     is equal to 6 pixels.
+  * C=1, pixel depth = 32 bits, user area is as follows:
+    dword Xsize
+    dword Ysize
+    rest of the area = Xsize * Y size * 4
+  * You can not use B = 1 and C = 1, at the same time. Since in both
+    cases, the register edi is used for different purposes.
 
 ======================================================================
 ========================= Function 5 - delay. ========================
@@ -325,7 +337,7 @@ Returned value:
       position ecx
     * +8: word: reserved
     * +10 = +0xA: 11 bytes: name of the process
-      (name of corresponding executable file in the format 8+3)
+      (name of the started file - executable file without extension)
     * +21 = +0x15: byte: reserved, this byte is not changed
     * +22 = +0x16: dword: address of the process in memory
     * +26 = +0x1A: dword: size of used memory - 1
@@ -599,6 +611,39 @@ Parameters:
   * ecx = pointer to mapped data
 Returned value:
   * eax = 1 - success, 0 - error
+
+======================================================================
+===================== Function 15, subfunction 8 =====================
+============= Get coordinates of last draw the background ============
+======================================================================
+Parameters:
+  * eax = 15 - function number
+  * ebx = 8 - subfunction number
+Returned value:
+  * eax = [left]*65536 + [right]
+  * ebx = [top]*65536 + [bottom]
+Remarks:
+  * (left,top) are coordinates of the left upper corner,
+    (right,bottom) are coordinates of the right lower one.
+  * For receiving more reliable information, call the function
+    immediately after the event:
+             5 = kernel finished redrawing of the desktop background
+
+======================================================================
+===================== Function 15, subfunction 9 =====================
+============= Redraws a rectangular part of the background ===========
+======================================================================
+Parameters:
+  * eax = 15 - function number
+  * ebx = 9 - subfunction number
+  * ecx = [left]*65536 + [right]
+  * edx = [top]*65536 + [bottom]
+Returned value:
+  * function does not return value
+Remarks:
+  * (left,top) are coordinates of the left upper corner,
+    (right,bottom) are coordinates of the right lower one.
+  * If parameters are set incorrectly then background is not redrawn.
 
 ======================================================================
 =============== Function 16 - save ramdisk on a floppy. ==============
@@ -1064,6 +1109,36 @@ Remarks:
     subfunction 3 (which requires slot number).
 
 ======================================================================
+======== Function 18, subfunction 23 - minimize all windows. ==========
+======================================================================
+Parameters:
+  * eax = 18 - function number
+  * ebx = 23 - subfunction number
+Returned value:
+  * eax = 0 - all windows have been minimized before a function call
+  * eax = N - number of windows minimized from function
+Remarks:
+  * Window of special thread (name begin to symbol @) is not minimize.
+
+======================================================================
+======= Function 18, subfunction 24 - set limits of screen. ==========
+======================================================================
+Parameters:
+  * eax = 18 - function number
+  * ebx = 24 - subfunction number
+  * ecx = new X size
+  * edx = new Y size
+Returned value:
+  * function does not return value
+Remarks:
+  * The function does not change the physical size of the video mode.
+    It is designed for non-standard displays which display the image
+    partially.
+  * The sizes specified in the function should not exceed the sizes
+    of the current video mode, otherwise the function will not change
+    anything.
+
+======================================================================
 ==================== Function 20 - MIDI interface. ===================
 ======================================================================
 
@@ -1493,6 +1568,26 @@ Remarks:
   * An example of usage of the function is the application CD_tray.
 
 ======================================================================
+======= Function 25 - put image area on the background layer. ========
+======================================================================
+Paramters:
+  * eax = 25 - function number
+  * ebx = pointer to the previously allocated memory area,
+        where placed the source images in a format BBGGRRTTBBGGRRTT...
+  * ecx = [size on axis x]*65536 + [size on axis y]
+  * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
+Returned value:
+  * function does not return value
+Remarks:
+  * Coordinates of the image are coordinates of the upper left corner
+    of the image relative to the screen.
+  * Size of the image in bytes is 4*xsize*ysize
+  * TT - byte pointer of transparency, at current version:
+         1 to FF - opaque, 0 - transparent.
+  * The function places the image directly to LFB. It is not for
+    background image f.15. Options f.15 to f.25 does not make sense.
+
+======================================================================
 ======== Function 26, subfunction 1 - get MPU MIDI base port. ========
 ======================================================================
 Parameters:
@@ -1681,6 +1776,19 @@ Remarks:
   * At process/thread creation the current folder will be inherited
     from the parent.
 
+======================================================================
+========= Function 34 - who owner the pixel on the screen. ===========
+======================================================================
+Parameters:
+  * eax = 34 - function number
+  * ebx = x-coordinate (relative to the display)
+  * ecx = y-coordinate (relative to the display)
+
+Returned value:
+  * eax = 0x000000XX - owner of pixel the slot window N
+    If incorrect values ebx and ecx then function returns 0
+  * The function takes the value from the area [_WinMapAddress]
+  
 ======================================================================
 ======= Function 35 - read the color of a pixel on the screen. =======
 ======================================================================
@@ -3221,7 +3329,7 @@ Parameters:
   * ebx = pointer to the image
   * ecx = [size on axis x]*65536 + [size on axis y]
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
-  * esi = number of bits per pixel, must be 1,2,4,8,15,16,24 or 32
+  * esi = number of bits per pixel, must be 1,2,4,8,9,15,16,24 or 32;
   * edi = pointer to palette (2 to the power esi colors 0x00RRGGBB);
           ignored when esi > 8
   * ebp = offset of next row data relative to previous row data
@@ -3242,6 +3350,9 @@ Remarks:
     corresponds to first pixel.
   * Format of image with 8 bits per pixel: each byte of image is
     index in the palette.
+  * Format of image with 9 bits per pixel: array of one byte values;
+    each byte (8 bit) represents the intensity of gray for one pixel;
+    this format is equal to 8bpp without palette.
   * Format of image with 15 bits per pixel: the color of each pixel
     is coded as (bit representation) 0RRRRRGGGGGBBBBB - 5 bits per
     each color.
@@ -3339,6 +3450,26 @@ Remarks:
   * The call to this subfunction does not affect other applications.
     If other application has defined the same combination, it will
     still receive notices.
+
+--------------- Subfunction 6 - block the normal input. --------------
+Parameters:
+  * eax = 66 - function number
+  * ebx = 6 - subfunction number
+Returned value:
+  * function does not return value
+Remarks:
+  * Blocking the normal keyboard input for installed hotkeys
+  * To emulate a mouse via the keyboard, the application MOUSEMUL
+
+------------ Subfunction 7 - unlock the normal input. ----------------
+Parameters:
+  * eax = 66 - function number
+  * ebx = 7 - subfunction number
+Returned value:
+  * function does not return value
+Remarks:
+  * Unlocking the results of the f. 66.6
+  * To emulate a mouse via the keyboard, the application MOUSEMUL
 
 ======================================================================
 ========= Function 67 - change position/sizes of the window. =========
@@ -3594,6 +3725,21 @@ Remarks:
   * If ecx=0, the function frees memory block at edx and returns 0.
   * The contents of the block are unchanged up to the shorter of
     the new and old sizes.
+
+======================================================================
+=========== Function 68, subfunction 21 - load driver PE. ============
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 21 - subfunction number
+  * ecx = pointer to ASCIIZ-string with driver name
+  * edx = pointer to command line
+Returned value:
+  * eax = 0 - failed
+  * otherwise eax = driver handle
+Remarks:
+  * If the driver was not loaded yet, it is loaded;
+    if the driver was loaded yet, nothing happens.
 
 ======================================================================
 ======== Function 68, subfunction 22 - open named memory area. =======
@@ -4430,9 +4576,7 @@ Codes of events:
     are read out by function 17)
   * 4 = reserved (in current implementation never comes even after
     unmasking by function 40)
-  * 5 = the desktop background is redrawed (is reset automatically
-    after redraw, so if in redraw time program does not wait and
-    does not check events, it will not remark this event)
+  * 5 = kernel finished redrawing of the desktop background
   * 6 = mouse event (something happened - button pressing or moving;
     is reset at reading)
   * 7 = IPC event (see function 60 -
