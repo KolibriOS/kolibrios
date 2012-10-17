@@ -3,66 +3,67 @@
 ; A.Jerdev <artem@jerdev.co.uk>
 ; Copyright (C) KolibriOS Team, 2011-12
 ;
-; non-scalable vectorized font #01
+; non-scalable vectorized font #02
 
-nsvf01:
+nsvf02:
 
 align 4
 .origs:
 	    db	0x00	; zero
-	    db	0x02	; 1     s/7X
-	    db	0x05	; 2     6W~§
-	    db	0x06	; 3     ^*S
-	    db	0x08	; 4     \
-	    db	0x32	; 5     0(adqceku{
-	    db	0x42	; 6
-	    db	0x43	; 7
-	    db	0x07	; 8     &>?23
-	    db	0x18	; 9     )9D
-	    db	0x44	; 10    *8B
-	    db	0x03	; 11    $
-	    db	0x46	; 12    vJVg
-	    db	0x35	; 13    5}
-	    db	0x15	; 14    4
-	    db	0x45	; 15    9e
-	    db	0x16	; 16    abphin›
-	    db	0x13	; 17    f
-	    db	0x48	; 18    Y
-	    db	0x22	; 19    j&
-	    db	0x36	; 20    mt
-	    db	0x25	; 21    r
-	    db	0x12	; 22    wæ
-	    db	0x26	; 23    {
-	    db	0x24	; 24    }êî
-	    db	0x28	; 25
-	    db	0x14	; 26    ‹ëìï
-	    db	0x34	; 27    ç
-	    db	0x38	; 28
-	    db	0x41	; 29
-	    db	0x30	; 30
-	    db	0x37	; 31    J
+	    db	0x39	; 1     
+	    db	0x14	; 2     
+	    db	0x54	; 3    
+	    db	0x5C	; 4     
+	    db	0x12  	; 5     
+	    db	0x1A	; 6
+	    db	0x77	; 7
+	    db	0x49	; 8     
+	    db	0x00	; 9     
+	    db	0x00	; 10  
+	    db	0x00	; 11  
+	    db	0x00	; 12   
+	    db	0x00	; 13  
+	    db	0x00	; 14  
+	    db	0x00	; 15  
+	    db	0x00	; 16  
+	    db	0x00	; 17  
+	    db	0x00	; 18  
+	    db	0x00	; 19  
+	    db	0x00	; 20  
+	    db	0x00	; 21 
+	    db	0x00	; 22  
+	    db	0x00	; 23   
+	    db	0x00	; 24   
+	    db	0x00	; 25
+	    db	0x00	; 26   
+	    db	0x00	; 27   
+	    db	0x00	; 28
+	    db	0x00	; 29
+	    db	0x00	; 30
+	    db	0x00	; 31   
 
 align 4
 .table:
 
-diff16 "font01.table: ",0,$
+diff16 "font02.table: ",0,$
 
    times 33 dw 0
-	char_entry  .ch_33, 3, 2	    ; #33 !
-	char_entry  .ch_34, 2, 2	    ; #34 "
-	dw (.ch_35 -.chars)*16 + 4	    ; #35 #
-	dw (.ch_36 -.chars)*16 + 3	    ; #36 $
-	dw (.ch_37 -.chars)*16 + 3	    ; #37 %
+	char_entry  .ch_33, 4, 4   ; #33 !
+	char_entry  .ch_34, 4, 2   ; #34 "
+	char_entry  .ch_35, 0, 4   ; #35 #
+	char_entry  .ch_36, 0, 4   ; #36 $
+	char_entry  .ch_37, 0, 3   ; #37 %
+
 	dw (.ch_38 -.chars)*16 + 4	    ; #38 &
-	char_entry  .ch_39, 3, 2	    ; #39 '
-      dw (.ch_40 -.chars)*16 + 1	    ; #40 (
+	char_entry  .ch_39, 5, 1   ; #39 '
+    dw (.ch_40 -.chars)*16 + 1	    ; #40 (
 	dw (.ch_41 -.chars)*16 + 1	    ; #41 )
-	dw (.ch_42 -.chars)*16 + 3	    ; #42 *
+	char_entry  .ch_42, 1, 3   ; #42 *
 	dw (.ch_43 -.chars)*16 + 2	    ; #43 +
 	dw (.ch_44 -.chars)*16 + 2	    ; #44 ,
 	dw (.ch_45 -.chars)*16 + 1	    ; #45 -
 	dw (.ch_46 -.chars)*16 + 1	    ; #46 .
-	dw (.ch_47 -.chars)*16 + 1	    ; #47 /
+	char_entry  .ch_47, 2, 1   ; #47 /
 	dw (.ch_48 -.chars)*16 + 2	    ; #48 0
 	dw (.ch_49 -.chars)*16 + 2	    ; #49 1
 	dw (.ch_50 -.chars)*16 + 3	    ; #50 2
@@ -98,6 +99,7 @@ diff16 "font01.table: ",0,$
 	dw (.ch_80 -.chars)*16 + 2	    ; #80 P
 	dw (.ch_81 -.chars)*16 + 3	    ; #81 Q
 	dw (.ch_82 -.chars)*16 + 3	    ; #82 R
+	char_entry  .ch_83, 0, 2   ; #83 S
 	dw (.ch_83 -.chars)*16 + 3	    ; #83 S
 	dw (.ch_84 -.chars)*16 + 2	    ; #84 T
 	dw (.ch_85 -.chars)*16 + 3	    ; #85 U
@@ -260,31 +262,42 @@ diff10 "check font01 table size: ", .table, $
 ; ----------------------------------------------------
 align 4
 
-diff16 "font01.chars: ",0,$
+diff16 "font02.chars: ",0,$
 
 .chars:
     dw	0
 .ch_33:    ; !
-    ritick	3, 2, 0
-    lntick	3, 5, 2, 6
+    lntick	3, 3, 0, 3
+    lntick	4, 2, 2, 3
+    lntick	4, 7, 2, 6
+    gptick  1, 2, 91
 .ch_34:    ; "
+    lntick	3,12, 2, 3
 .ch_39:    ; '
-    lntick	4, 8, 2, 3
-    lntick	2, 8, 2, 3
-    lntick	3, 9, 2, 2
+    gptick	4, 2, 57
+.ch_35:    ; #
+    gptick	2, 2, 112
+    gptick	3, 2, 112
+    lntick	0, 7, 0, 8
+    lntick	1,11, 0, 8
 
 .ch_36:    ; $
-    lntick	2, 1, 2, 7
-.ch_115:   ; s
-    gptick	7, 3, 90
-    lntick	0, 2, 0, 4
+    lntick	3, 2, 2, 14
+    lntick	5, 2, 2, 14
+.ch_83:   ; S
+    gptick  8, 0, 125 
+    gptick  1, 4, 118 
+    lntick	0, 3, 3
+
 .ch_37:    ; %
-    cstick	0, 8, 0, 0
-    lntick	0, 3, 1, 5
-    cstick	3, 3, 0, 0
+.ch_47:    ; /
+    gptick	5, 2, 124
+    ritick	1,14, 1
+    ritick	6, 6, 1
+
 .ch_38:    ; &
     gptick	8, 6, 84
-    gptick     19, 4, 44
+    gptick 19, 4, 44
     gptick	4, 0, 44
     ritick	3, 3, 0
 .ch_40:    ; (
@@ -292,18 +305,15 @@ diff16 "font01.chars: ",0,$
 .ch_41:    ; )
     gptick	9, 7, 80
 .ch_42:    ; *
-    gptick	3, 7, 39
-    gptick     10, 3, 39
-    lntick	2, 3, 2, 5
+    gptick	7, 4, 71
+    gptick  6, 0, 71
+    lntick	4, 5, 2, 8
 .ch_43:    ; +
     lntick	2, 2, 2, 5
 .ch_45:    ; -
-.ch_35:    ; #
 .ch_61:    ; =
     lntick	0, 4, 0, 5
     lntick	0, 6, 0, 5
-    lntick	1, 3, 2, 5
-    lntick	3, 3, 2, 5
 .ch_58:    ; :
 .ch_59:    ; ;
     cstick	1, 7, 0, 0
@@ -311,7 +321,6 @@ diff16 "font01.chars: ",0,$
 .ch_44:    ; ,
     cstick	1, 3, 0, 0
     ritick	1, 1, 0
-.ch_47:    ; /
 .ch_55:    ; 7
     gptick	1, 2, 81
     lntick	0, 8, 0, 4
@@ -621,7 +630,7 @@ diff16 "font01.chars: ",0,$
 .ch_162:   ; ve
 .ch_111:   ; o
 .ch_174:   ; o
-    ritick	2, 8, 2
+    cstick	1, 6, 0, 3
     gptick	3, 2, 44
     ritick	2, 7, 0
 .ch_163:   ; ge
