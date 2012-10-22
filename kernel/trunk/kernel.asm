@@ -538,7 +538,7 @@ no_mode_0x12:
         mov     ax, tss0
         ltr     ax
 
-        mov     [LFBSize], 0x800000
+        mov     [LFBSize], 0xC00000
         call    init_LFB
         call    init_fpu
         call    init_malloc
@@ -5128,7 +5128,7 @@ align 4
 align 4
 .no_put:
         pop     ecx eax
-        
+
         sub     ebp, 4
         dec     ecx
         jnz     .start_x
@@ -5295,7 +5295,7 @@ set_screen:
 @@:
         call    calculate_fast_getting_offset_for_WinMapAddress
 ; for Qemu or non standart video cards
-; Unfortunately [BytesPerScanLine] does not always 
+; Unfortunately [BytesPerScanLine] does not always
 ;                             equal to [_display.width] * [ScreenBPP] / 8
         call    calculate_fast_getting_offset_for_LFB
         popad
