@@ -40,6 +40,7 @@ struct tiff_extra
 	palette_size			rd	1	; in colors, not samples
 	extra_samples			rd	1	; pointer to array of SHORTs
 	extra_samples_number		rd	1
+	predictor			rd	1	; SHORT
 ends
 
 

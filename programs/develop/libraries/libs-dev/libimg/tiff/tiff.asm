@@ -175,8 +175,18 @@ endl
 	mov	[decompress], tiff._.decompress.packbits
 	jmp	.decompressor_defined
     @@:
+	cmp	[ebx + tiff_extra.compression], TIFF.COMPRESSION.LZW
+	jne	@f
+	mov	[decompress], tiff._.decompress.lzw
+	jmp	.decompressor_defined
+    @@:
+	cmp	[ebx + tiff_extra.compression], TIFF.COMPRESSION.CCITT1D
+	jne	@f
 	mov	[decompress], tiff._.decompress.ccitt1d
 	jmp	.decompressor_defined
+    @@:
+
+	mov	[decompress], 0
 	jmp	.quit
   .decompressor_defined:
 
@@ -341,9 +351,9 @@ endl
 
 
   .decoded:
-  .check1:
+  .post.rgb_bgr:
 	cmp	[ebx + tiff_extra.samples_per_pixel], 3
-	jne	.check2
+	jne	.post.rgba_bgra
 	mov	eax, [retvalue]
 	mov	esi, [eax + Image.Data]
 	mov	edi, [eax + Image.Data]
@@ -356,26 +366,66 @@ endl
 	add	edi, 2
 	dec	ecx
 	jnz	@b
-	jmp	.pop_quit
-  .check2:
+
+  .post.rgba_bgra:
+	cmp	[ebx + tiff_extra.samples_per_pixel], 4
+	jne	.post.bpp8a_to_bpp8g
+	mov	eax, [retvalue]
+	mov	esi, [eax + Image.Data]
+	mov	edi, [eax + Image.Data]
+	mov	ecx, [eax + Image.Width]
+	imul	ecx, [eax + Image.Height]
+    @@:
+	lodsw
+	movsb
+	mov	byte[esi - 1], al
+	add	edi, 3
+	add	esi, 1
+	dec	ecx
+	jnz	@b
+
+  .post.bpp8a_to_bpp8g:
+	mov	eax, [retvalue]
+	cmp	[eax + Image.Type], Image.bpp8a
+	jne	.post.predictor
 	mov	ebx, [retvalue]
-	cmp	[ebx + Image.Type], Image.bpp8a
-	jne	.pop_quit
 	stdcall	tiff._.pack_8a, ebx
 	mov	[ebx + Image.Type], Image.bpp8g
-;	mov	eax, [ebx + Image.Width]
-;	imul	eax, [ebx + Image.Height]
-;	mov	ecx, eax
-;	add	ecx, [ebx + Image.Data]
-;	mov	[ebx + Image.Palette], ecx
-;	add	eax, 256*4
-;	stdcall	[mem.realloc], [ebx + Image.Data], eax
-;	mov	edi, [ebx + Image.Palette]
-;	mov	eax, 0xff000000
-;    @@:
-;	stosd
-;	add	eax, 0x00010101
-;	jnc	@b
+
+  .post.predictor:
+	cmp	[ebx + tiff_extra.predictor], 2		; Horizontal differencing
+	jne	.post.end
+	push	ebx
+	mov	edi, [ebx + tiff_extra.samples_per_pixel]
+	mov	edx, edi
+	mov	ebx, [retvalue]
+  .post.predictor.plane:
+	mov	esi, [ebx + Image.Data]
+	sub	esi, 1
+	add	esi, edx
+	mov	ecx, [ebx + Image.Height]
+  .post.predictor.line:
+	push	ecx
+	mov	ecx, [ebx + Image.Width]
+	sub	ecx, 1
+	mov	ah, byte[esi]
+	add	esi, edi
+    @@:
+	mov	al, byte[esi]
+	add	al, ah
+	mov	byte[esi], al
+	add	esi, edi
+	shl	eax, 8
+	dec	ecx
+	jnz	@b
+	pop	ecx
+	dec	ecx
+	jnz	.post.predictor.line
+	dec	edx
+	jnz	.post.predictor.plane
+	pop	ebx
+
+  .post.end:
 
   .pop_quit:
 	pop	esi
@@ -401,7 +451,7 @@ proc tiff._.parse_IFDE _data, _endianness
 	add	edx, 8
 	dec	ecx
 	jnz	.tag
-  .tag_default:						; unknown/unsupported/uninteresting/unimportant
+  .tag_default:						; unknown/unsupported/unimportant
 	lodsw
 	lodsd
 	lodsd
@@ -563,6 +613,17 @@ proc tiff._.parse_IFDE _data, _endianness
 	lodsd_
 	add	eax, [_data]
 	mov	[ebx + tiff_extra.strip_byte_counts], eax
+	jmp	.quit
+
+  .tag_13d:						; Predictor
+	cmp	ax, TIFF.IFDE_TYPE.SHORT
+	jne	@f
+	lodsd
+	xor	eax, eax
+	lodsw_
+	mov	[ebx + tiff_extra.predictor], eax
+	lodsw
+    @@:
 	jmp	.quit
 
   .tag_140:						; ColorMap
@@ -767,6 +828,237 @@ endl
 endp
 
 
+proc tiff._.decompress.lzw _image
+locals
+	cur_shift		rd 1	; 9 -- 12
+	shift_counter		rd 1	; how many shifts of current length remained
+	bits_left		rd 1	; in current byte ( pointed to by [esi] )
+	table			rd 1
+	table_size		rd 1	; the number of entries
+	old_code		rd 1
+	next_table_entry	rd 1	; where to place new entry
+endl
+	push	ebx ecx edx esi
+
+	mov	[table], 0
+	mov	[bits_left], 8
+	mov	[cur_shift], 9
+
+  .begin:
+
+ ; .getnextcode:
+	xor	eax, eax
+	mov	edx, [cur_shift]
+
+	lodsb
+	mov	ecx, [bits_left]
+	mov	ch, cl
+	neg	cl
+	add	cl, 8
+	shl	al, cl
+	mov	cl, ch
+	shl	eax, cl
+	sub	edx, [bits_left]
+	; second_byte
+	cmp	edx, 8
+	je	.enough_zero
+	jb	.enough_nonzero
+	sub	edx, 8
+	lodsb
+	shl	eax, 8
+	jmp	.third_byte
+  .enough_zero:
+	mov	[bits_left], 8
+	lodsb
+	jmp	.code_done
+  .enough_nonzero:
+	mov	al, byte[esi]
+	neg	edx
+	add	edx, 8
+	mov	ecx, edx
+	mov	[bits_left], edx
+	shr	eax, cl
+	jmp	.code_done
+  .third_byte:
+	mov	al, byte[esi]
+	neg	edx
+	add	edx, 8
+	mov	ecx, edx
+	mov	[bits_left], edx
+	shr	eax, cl
+  .code_done:
+
+
+	mov	ebx, eax
+	cmp	ebx, 0x101	; end of information
+	je	.quit
+	cmp	ebx, 0x100	; clear code
+	jne	.no_clear_code
+
+	cmp	[table], 0
+	jne	@f
+	invoke	mem.alloc, 256 + 63488	; 256 + (2^8 + 2^9 + 2^10 + 2^11 + 2^12)*(4+4)
+	test	eax, eax
+	jz	.quit
+	mov	[table], eax
+    @@:
+	mov	eax, [table]
+	mov	[next_table_entry], eax
+	add	[next_table_entry], 256 + (256*8) + 2*8
+	mov	[cur_shift], 9
+	mov	[shift_counter], 256-3	; clear code, end of information, why -3?
+	mov	[table_size], 257
+
+	push	edi
+	mov	ecx, 256
+	mov	edi, [table]
+	mov	ebx, edi
+	add	edi, 256
+	mov	eax, 0
+    @@:
+	mov	byte[ebx], al
+	mov	[edi], ebx
+	add	edi, 4
+	add	ebx, 1
+	add	eax, 1
+	mov	[edi], dword 1
+	add	edi, 4
+	dec	ecx
+	jnz	@b
+	pop	edi
+;  .getnextcode:
+	xor	eax, eax
+	mov	edx, [cur_shift]
+
+	lodsb
+	mov	ecx, [bits_left]
+	mov	ch, cl
+	neg	cl
+	add	cl, 8
+	shl	al, cl
+	mov	cl, ch
+	shl	eax, cl
+	sub	edx, [bits_left]
+	; second_byte
+	cmp	edx, 8
+	je	.enough_zero2
+	jb	.enough_nonzero2
+	sub	edx, 8
+	lodsb
+	shl	eax, 8
+	jmp	.third_byte2
+  .enough_zero2:
+	mov	[bits_left], 8
+	lodsb
+	jmp	.code_done2
+  .enough_nonzero2:
+	mov	al, byte[esi]
+	neg	edx
+	add	edx, 8
+	mov	ecx, edx
+	mov	[bits_left], edx
+	shr	eax, cl
+	jmp	.code_done2
+  .third_byte2:
+	mov	al, byte[esi]
+	neg	edx
+	add	edx, 8
+	mov	ecx, edx
+	mov	[bits_left], edx
+	shr	eax, cl
+  .code_done2:
+
+
+	mov	[old_code], eax
+	cmp	eax, 0x101	; end of information
+	je	.quit
+
+	push	esi
+	mov	esi, [table]
+	lea	esi, [esi + eax*8 + 256]
+	mov	ecx, dword[esi+4]
+
+	mov	edx, [next_table_entry]
+	mov	[edx], edi
+	lea	eax, [ecx + 1]
+	mov	[edx + 4], eax
+	add	[next_table_entry], 8
+
+	mov	esi, [esi]
+	rep	movsb
+	pop	esi
+	jmp	.begin
+  .no_clear_code:
+	cmp	eax, [table_size]
+	ja	.not_in_table
+	mov	[old_code], eax
+	push	esi
+	mov	esi, [table]
+	lea	esi, [esi + eax*8 + 256]
+	mov	ecx, dword[esi + 4]
+
+	mov	edx, [next_table_entry]
+	mov	[edx], edi
+	lea	eax, [ecx + 1]
+	mov	[edx + 4], eax
+	add	[next_table_entry], 8
+	add	[table_size], 1
+
+	mov	esi, [esi]
+	rep	movsb
+	pop	esi
+
+	dec	[shift_counter]
+	jnz	@f
+	mov	ecx, [cur_shift]
+	add	[cur_shift], 1
+	mov	edx, 1
+	shl	edx, cl
+	mov	[shift_counter], edx
+    @@:
+	jmp	.begin
+
+  .not_in_table:
+	xchg	eax, [old_code]
+	push	esi
+	mov	esi, [table]
+	lea	esi, [esi + eax*8 + 256]
+	mov	ecx, dword[esi+4]
+
+	mov	edx, [next_table_entry]
+	mov	[edx], edi
+	lea	eax, [ecx + 2]
+	mov	[edx + 4], eax
+	add	[next_table_entry], 8
+	add	[table_size], 1
+
+	mov	esi, [esi]
+	mov	al, [esi]
+	rep	movsb
+	mov	byte[edi], al
+	add	edi, 1
+	pop	esi
+
+	dec	[shift_counter]
+	jnz	@f
+	mov	ecx, [cur_shift]
+	add	[cur_shift], 1
+	mov	edx, 1
+	shl	edx, cl
+	mov	[shift_counter], edx
+    @@:
+	jmp	.begin
+
+  .quit:
+	cmp	[table], 0
+	je	@f
+	invoke	mem.free, [table]
+    @@:
+	pop	esi edx ecx ebx
+	ret
+endp
+
+
 proc	tiff._.write_run _width_left, _current_tree
 
 	push	ebx
@@ -890,6 +1182,7 @@ tiff.IFDE_tag_table.begin:
   .tag_115:		dd	0x0115,	tiff._.parse_IFDE.tag_115		; samples per pixel
   .tag_116:		dd	0x0116,	tiff._.parse_IFDE.tag_116		; rows per strip
   .tag_117:		dd	0x0117,	tiff._.parse_IFDE.tag_117		; strip byte counts
+  .tag_13d:		dd	0x013d,	tiff._.parse_IFDE.tag_13d		; predictor
   .tag_140:		dd	0x0140,	tiff._.parse_IFDE.tag_140		; color map
   .tag_152:		dd	0x0152,	tiff._.parse_IFDE.tag_152		; extra samples
 tiff.IFDE_tag_table.end:
