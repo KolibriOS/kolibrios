@@ -228,6 +228,26 @@ macro   SOCKET_init {
 
 ;-----------------------------------------------------------------
 ;
+; SOCKET_block
+;
+;-----------------------------------------------------------------
+macro   SOCKET_block socket, loop, done {
+
+        test    [socket + SOCKET.options], SO_BLOCK     ; Is this a blocking socket?
+        jz      done                                    ; No, return immediately
+
+        push    esi
+        mov     esi, 5                                  ; yes, wait for event
+        call    delay_ms
+        pop     esi
+
+        jmp     loop
+
+}
+
+
+;-----------------------------------------------------------------
+;
 ; Socket API (function 74)
 ;
 ;-----------------------------------------------------------------
@@ -564,6 +584,8 @@ align 4
         mov     eax, ebx
         call    TCP_output
 
+;;; TODO: wait for successfull connection if blocking socket
+
         mov     dword [esp+32], 0
         ret
 
@@ -666,7 +688,10 @@ SOCKET_accept:
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
         jne     s_error
 
-        get_from_queue (eax + SOCKET_QUEUE_LOCATION), MAX_backlog, 4, s_error
+  .loop:
+        get_from_queue (eax + SOCKET_QUEUE_LOCATION), MAX_backlog, 4, .block
+
+; Ok, we got a socket ptr
         mov     eax, [esi]
 
 ; Change PID to that of the current process
@@ -674,11 +699,15 @@ SOCKET_accept:
         mov     ebx, [ebx + TASKDATA.pid]
         mov     [eax + SOCKET.PID], ebx
 
+; Convert it to a socket number
         call    SOCKET_ptr_to_num
         jz      s_error
+; and return it to caller
         mov     [esp+32], eax
         ret
 
+  .block:
+        SOCKET_block    eax, .loop, s_error
 
 ;-----------------------------------------------------------------
 ;
@@ -719,6 +748,8 @@ SOCKET_close:
 
         call    TCP_usrclosed
         call    TCP_output      ;;;; Fixme: is this nescessary??
+
+;;; TODO: wait for successfull termination if blocking socket
         mov     dword [esp+32], 0
 
         ret
@@ -760,7 +791,8 @@ SOCKET_receive_dgram:
         mov     ebx, esi
         mov     edi, edx                                        ; addr to buffer
 
-        get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, s_error       ; destroys esi and ecx
+  .loop:
+        get_from_queue (eax + SOCKET_QUEUE_LOCATION), SOCKET_QUEUE_SIZE, sizeof.socket_queue_entry, .block      ; destroys esi and ecx
 
         mov     ecx, [esi + socket_queue_entry.data_size]
         DEBUGF  1,"SOCKET_receive: %u bytes data\n", ecx
@@ -795,6 +827,10 @@ SOCKET_receive_dgram:
         DEBUGF  1,"SOCKET_receive: Buffer too small\n"
         jmp     s_error
 
+  .block:
+        SOCKET_block    eax, .loop, s_error
+
+
 align 4
 SOCKET_receive_tcp:
 
@@ -802,14 +838,19 @@ SOCKET_receive_tcp:
 
         mov     ecx, esi
         mov     edi, edx
-        add     eax, STREAM_SOCKET.rcv
         xor     edx, edx
+        add     eax, STREAM_SOCKET.rcv
+  .loop:                            ;;;; FIXME: ecx!
         call    SOCKET_ring_read
+        test    ecx, ecx
+        jz      .block
         call    SOCKET_ring_free
 
         mov     [esp+32], ecx                                   ; return number of bytes copied
-
         ret
+
+  .block:
+        SOCKET_block    (eax - STREAM_SOCKET.rcv), .loop, s_error
 
 
 ;-----------------------------------------------------------------
@@ -1308,9 +1349,13 @@ SOCKET_ring_write:
 ;  IN:  eax = ring struct ptr
 ;       ecx = bytes to read
 ;       edx = offset
-;       edi = ptr to buffer
+;       edi = ptr to buffer start
 ;
-;  OUT: ecx = number of bytes read (0 on error)
+;  OUT: eax = unchanged
+;       ecx = number of bytes read (0 on error)
+;       edx = destroyed
+;       esi = destroyed
+;       edi = ptr to buffer end
 ;
 ;-----------------------------------------------------------------
 align 4
