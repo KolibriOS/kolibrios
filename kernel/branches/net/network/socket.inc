@@ -1348,6 +1348,7 @@ SOCKET_ring_read:
 
   .no_data_at_all:
         DEBUGF  1,"SOCKET_ring_read: no data at all!\n"
+        xor     ecx, ecx
         ret
 
   .less_data:
