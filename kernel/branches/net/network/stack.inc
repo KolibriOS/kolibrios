@@ -34,7 +34,9 @@ endg
 MAX_NET_DEVICES         = 16
 
 MIN_EPHEMERAL_PORT      = 49152
+MIN_EPHEMERAL_PORT_N    = 0x00C0        ; same in Network byte order (FIXME)
 MAX_EPHEMERAL_PORT      = 61000
+MAX_EPHEMERAL_PORT_N    = 0x48EE        ; same in Network byte order (FIXME)
 
 ; Ethernet protocol numbers
 ETHER_ARP               = 0x0608

@@ -131,10 +131,8 @@ UDP_input:
   .no_checksum:
         DEBUGF  1,"UDP_input: checksum ok\n"
 
-        ; Convert port numbers to intel format
+        ; Convert length to little endian
 
-        rol     [esi + UDP_header.DestinationPort], 8
-        rol     [esi + UDP_header.SourcePort], 8
         rol     [esi + UDP_header.Length], 8
 
         ; Look for a socket where
@@ -198,7 +196,7 @@ UDP_input:
         call    mutex_lock
         popa
 
-        DEBUGF  1,"UDP_input: new remote port=%u\n", cx
+        DEBUGF  1,"UDP_input: new remote port=%x\n", cx ; FIXME: find a way to print big endian values with debugf
         mov     [eax + UDP_SOCKET.RemotePort], cx
         inc     [eax + UDP_SOCKET.firstpacket]
 
@@ -234,12 +232,10 @@ UDP_output:
         DEBUGF  1,"UDP_output: socket=%x bytes=%u data_ptr=%x\n", eax, ecx, esi
 
         mov     dx, [eax + UDP_SOCKET.RemotePort]
-        DEBUGF  1,"UDP_output: remote port=%u, ", dx
-        rol     dx, 8
+        DEBUGF  1,"UDP_output: remote port=%x, ", dx    ; FIXME: find a way to print big endian values with debugf
         rol     edx, 16
         mov     dx, [eax + UDP_SOCKET.LocalPort]
-        DEBUGF  1,"local port=%u\n", dx
-        rol     dx, 8
+        DEBUGF  1,"local port=%x\n", dx
 
         sub     esp, 8                                          ; Data ptr and data size will be placed here
         push    edx esi

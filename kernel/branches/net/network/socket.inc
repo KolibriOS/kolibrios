@@ -44,15 +44,15 @@ ends
 
 struct  IP_SOCKET               SOCKET
 
-        LocalIP                 rd 4
-        RemoteIP                rd 4
+        LocalIP                 rd 4 ; network byte order
+        RemoteIP                rd 4 ; network byte order
 
 ends
 
 struct  TCP_SOCKET              IP_SOCKET
 
-        LocalPort               dw ?
-        RemotePort              dw ?
+        LocalPort               dw ? ; network byte order
+        RemotePort              dw ? ; network byte order
 
         t_state                 dd ? ; TCB state
         t_rxtshift              db ?
@@ -141,8 +141,8 @@ ends
 
 struct  UDP_SOCKET              IP_SOCKET
 
-        LocalPort               dw ?
-        RemotePort              dw ?
+        LocalPort               dw ? ; network byte order
+        RemotePort              dw ? ; network byte order
         firstpacket             db ?
 
 ends
@@ -213,6 +213,7 @@ macro   SOCKET_init {
         jb      @r
         cmp     ax, MAX_EPHEMERAL_PORT
         ja      @r
+        xchg    al, ah
         mov     [last_UDP_port], ax
 
        @@:
@@ -221,6 +222,7 @@ macro   SOCKET_init {
         jb      @r
         cmp     ax, MAX_EPHEMERAL_PORT
         ja      @r
+        xchg    al, ah
         mov     [last_TCP_port], ax
 
 }
@@ -446,7 +448,7 @@ SOCKET_bind:
        @@:
         mov     [eax + IP_SOCKET.LocalIP], ebx
 
-        mov     bx, [edx + 2]                   ; Now fill in the port if it's still available
+        mov     bx, [edx + 2]                   ; Now fill in the local port if it's still available
         call    SOCKET_check_port
         jz      s_error                         ; ZF is set by socket_check_port, on error
 
@@ -1106,11 +1108,6 @@ SOCKET_find_port:
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
         je      .tcp
 
-        jmp     .error
-
-  .done:
-        mov     [eax + UDP_SOCKET.LocalPort], bx
-  .error:
         pop     ecx esi ebx
         ret
 
@@ -1118,26 +1115,30 @@ SOCKET_find_port:
         mov     bx, [last_UDP_port]
         call    .findit
         mov     [last_UDP_port], bx
-        jmp     .done
+
+        pop     ecx esi ebx
+        ret
 
   .tcp:
         mov     bx, [last_TCP_port]
         call    .findit
         mov     [last_TCP_port], bx
-        jmp     .done
+
+        pop     ecx esi ebx
+        ret
 
 
   .restart:
-        mov     bx, MIN_EPHEMERAL_PORT
+        mov     bx, MIN_EPHEMERAL_PORT_N
   .findit:
-        inc     bx
+        cmp     bx, MAX_EPHEMERAL_PORT_N
+        je      .restart
 
-        cmp     bx, MAX_EPHEMERAL_PORT
-        jz      .restart
+        add     bh, 1
+        adc     bl, 0
 
         call    SOCKET_check_port
         jz      .findit
-
         ret
 
 
@@ -1150,9 +1151,9 @@ SOCKET_find_port:
 ; If the proposed port number is unused, it is filled in in the socket structure
 ;
 ;  IN:  eax = socket ptr (to find out if its a TCP/UDP socket)
-;        bx = proposed socket number
+;        bx = proposed socket number (network byte order)
 ;
-;  OUT:  ZF = cleared on error
+;  OUT:  ZF = set on error
 ;
 ;-----------------------------------------------------------------
 align 4
@@ -1182,10 +1183,9 @@ SOCKET_check_port:
         ret
 
   .port_ok:
-        DEBUGF  1,"local port %u is free\n", bx
+        DEBUGF  1,"local port %x is free\n", bx         ; FIXME: find a way to print big endian values with debugf
         mov     [eax + UDP_SOCKET.LocalPort], bx
-        or      bx, bx                                  ; set the zero-flag
-
+        or      bx, bx                                  ; clear the zero-flag
         ret
 
 

@@ -76,8 +76,6 @@ TCP_input:
 
         ntohw   [edx + TCP_header.Window]
         ntohw   [edx + TCP_header.UrgentPointer]
-        ntohw   [edx + TCP_header.SourcePort]
-        ntohw   [edx + TCP_header.DestinationPort]
 
 ;------------------------
 ; Find the socket pointer

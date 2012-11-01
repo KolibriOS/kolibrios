@@ -689,7 +689,7 @@ lock    xadd    [DNSrequestID], eax     ; atomically increment ID, get old value
         push    0
         push    0       ; sin_zero
         push    esi     ; sin_addr
-        push    AF_INET4 + (53 shl 16)
+        push    AF_INET4 + (53 shl 24)
                         ; sin_family and sin_port in network byte order
 ; 8c. Connect.
         mcall   75, 4, , esp, sizeof.sockaddr_in
@@ -1204,7 +1204,7 @@ getaddrinfo._.generate_data:                                                 ;;
 ; Just copy port from input __gai_reqdata to output addrinfo.
         push    edx
         mov     edx, [ebx+__gai_reqdata.service]
-        xchg    dl, dh  ; convert to network byte order
+        xchg    dl, dh  ; convert to network byte order     ;;;;; CHECKME
         mov     [edi+sizeof.addrinfo+sockaddr_in.sin_port], dx
         pop     edx
         ret

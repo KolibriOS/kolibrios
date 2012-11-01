@@ -126,8 +126,10 @@ start:
         mov     [serverip], ebx
 
         invoke  ini.get_int, path, str_ftpd, str_port, 21
+        xchg    al, ah
         mov     [sockaddr1.port], ax
 
+        xchg    al, ah
         invoke  con_printf, str1, eax
         add     esp, 8
 
@@ -378,7 +380,7 @@ str_end         db 'end', 0
 
 sockaddr1:
                 dw AF_INET4
-  .port         dw 21
+  .port         dw 0
   .ip           dd 0
                 rb 10
   .length       = $ - sockaddr1

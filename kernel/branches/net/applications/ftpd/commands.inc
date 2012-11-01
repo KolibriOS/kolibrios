@@ -763,11 +763,11 @@ cmdPASV:
         mov     al, ','
         stosb
 ; port
-        movzx   eax, byte [ebp + thread_data.datasock.sin_port + 1]
+        movzx   eax, byte [ebp + thread_data.datasock.sin_port]
         call    dword_to_ascii
         mov     al, ','
         stosb
-        movzx   eax, byte [ebp + thread_data.datasock.sin_port]
+        movzx   eax, byte [ebp + thread_data.datasock.sin_port+1]
         call    dword_to_ascii
 ; ')', 13, 10, 0
         mov     eax, ')' + 0x000a0d00
@@ -843,13 +843,10 @@ cmdPORT:
 ; Now the same with portnumber
         inc     esi
         call    ascii_to_byte
-        mov     bh, al
+        mov     byte[ebp + thread_data.datasock.sin_port], al
         inc     esi
         call    ascii_to_byte
-        mov     bl, al
-
-; Save it in datasock too
-        mov     [ebp + thread_data.datasock.sin_port], bx
+        mov     byte[ebp + thread_data.datasock.sin_port+1], al
 
 ; We will open the socket, but do not connect yet!
         mov     [ebp + thread_data.datasock.sin_family], AF_INET4

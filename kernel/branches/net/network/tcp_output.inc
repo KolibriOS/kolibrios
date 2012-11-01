@@ -425,10 +425,7 @@ TCP_send:
         ntohd   [esp]
 
         push    [eax + TCP_SOCKET.RemotePort]   ;        .DestinationPort        dw ?
-        ntohw   [esp]
-
         push    [eax + TCP_SOCKET.LocalPort]    ;        .SourcePort             dw ?
-        ntohw   [esp]
 
         push    edi                     ; header size
 

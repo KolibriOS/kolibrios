@@ -548,7 +548,7 @@ str_type db 'type',0
 sockaddr1:
 
         dw AF_INET4
-        dw 68           ; local port
+        dw 68 shl 8     ; local port
         dd 0            ; local IP
 
         rb 10
@@ -557,7 +557,7 @@ sockaddr1:
 sockaddr2:
 
         dw AF_INET4
-        dw 67           ; destination port
+        dw 67 shl 8     ; destination port
         dd -1           ; destination IP
 
         rb 10

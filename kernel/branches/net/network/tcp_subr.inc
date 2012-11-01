@@ -348,10 +348,8 @@ TCP_respond_socket:
 ; Fill in the TCP header by using the socket ptr
 
         mov     ax, [esi + TCP_SOCKET.LocalPort]
-        rol     ax, 8
         stosw
         mov     ax, [esi + TCP_SOCKET.RemotePort]
-        rol     ax, 8
         stosw
         mov     eax, [esi + TCP_SOCKET.SND_NXT]
         bswap   eax
@@ -429,10 +427,8 @@ TCP_respond_segment:
 ; Fill in the TCP header by using a received segment
 
         mov     ax, [esi + TCP_header.DestinationPort]
-        rol     ax, 8
         stosw
         mov     ax, [esi + TCP_header.SourcePort]
-        rol     ax, 8
         stosw
         mov     eax, [esi + TCP_header.AckNumber]
         bswap   eax

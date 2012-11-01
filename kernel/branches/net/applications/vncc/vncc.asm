@@ -238,7 +238,7 @@ pointerevent       db 5       ; pointerevent
 
 sockaddr1:
         dw AF_INET4
-.port   dw 5900
+.port   dw 0x0c17       ; 5900
 .ip     dd 0
         rb 10
 

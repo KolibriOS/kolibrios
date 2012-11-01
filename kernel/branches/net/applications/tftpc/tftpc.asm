@@ -141,27 +141,27 @@ key:
 align 4
 draw_window:
         mcall   12,1
-        mcall   0,(50*65536+400),(30*65536+180),0x34AABBCC,0x085080DD,str_title
+        mcall   0, (50*65536+400), (30*65536+180), 0x34AABBCC, 0x085080DD, str_title
 
-        mcall   4,35*65536+10,0x80000000, str_server
+        mcall   4, 35*65536+10, 0x80000000, str_server
 
-        mov     ebx,5*65536+ 30
+        mov     ebx, 5*65536+30
         mov     edx, str_source
         mcall
 
-        mov     ebx,11*65536+ 50
+        mov     ebx, 11*65536+50
         mov     edx, str_destination
         mcall
 
-        mov     ebx,47*65536+72
+        mov     ebx, 47*65536+72
         mov     edx, str_mode
         mcall
 
-        mov     ebx,160*65536+72
+        mov     ebx, 160*65536+72
         mov     edx, str_method
         mcall
 
-        mov     ebx,270*65536+72
+        mov     ebx, 270*65536+72
         mov     edx, str_blocksize
         mcall
 
@@ -451,7 +451,7 @@ done           dd 0
 
 sockaddr:
         dw AF_INET4
-        dw 69
+        dw 0x4500       ; 69
 IP      db 192,168,1,115
 sockaddr_len = $ - sockaddr
 

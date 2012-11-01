@@ -375,7 +375,7 @@ IPv4_input:                                                     ; TODO: add IPv4
         mov     [esi + FRAGMENT_slot.ttl], 15                   ; RFC recommends 15 secs as ttl
         mov     ax, [edx + IPv4_header.Identification]
         mov     [esi + FRAGMENT_slot.id], ax
-        mov     eax,[edx + IPv4_header.SourceAddress]
+        mov     eax, [edx + IPv4_header.SourceAddress]
         mov     [esi + FRAGMENT_slot.SrcIP], eax
         mov     eax, [edx + IPv4_header.DestinationAddress]
         mov     [esi + FRAGMENT_slot.DstIP], eax

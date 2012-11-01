@@ -29,7 +29,9 @@ use32
 __DEBUG__           equ 1                   ; enable/disable
 __DEBUG_LEVEL__     equ 1                   ; 1 = all, 2 = errors
 
+
 BUFFERSIZE      equ 1024
+DEFAULTPORT     equ 24800
 
 include '../macros.inc'
 purge mov,add,sub
@@ -79,7 +81,8 @@ start:
         test    eax, eax
         jnz     error
 
-        invoke  ini.get_int, path, str_remote, str_port, 24800
+        invoke  ini.get_int, path, str_remote, str_port, DEFAULTPORT
+        xchg    al, ah
         mov     [sockaddr1.port], ax
 
         push    str1
@@ -337,7 +340,7 @@ mousestate      dd 0
 
 sockaddr1:
         dw AF_INET4
-.port   dw 24800
+.port   dw 0
 .ip     dd 192 + 168 shl 8 + 1 shl 16 + 115 shl 24
         rb 10
 

@@ -135,7 +135,7 @@ hello   db      'Hello world!',0
 
 sockaddr1:
         dw AF_INET4
-.port   dw 23
+.port   dw 0x1700       ; 23
 .ip     dd 0
         rb 10
 .length = $ - sockaddr1
