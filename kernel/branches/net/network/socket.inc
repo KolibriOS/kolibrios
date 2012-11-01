@@ -1027,6 +1027,9 @@ SOCKET_set_opt:
         cmp     dword [edx+4], SO_BINDTODEVICE
         je      .bind
 
+        cmp     dword [edx+4], SO_BLOCK
+        je      .block
+
         jmp     s_error
 
   .bind:
@@ -1052,6 +1055,23 @@ SOCKET_set_opt:
 
         mov     dword [esp+32], 0       ; success!
         ret
+
+  .block:
+        cmp     dword [edx+8], 0
+        je      .unblock
+
+        or      [eax + SOCKET.options], SO_BLOCK
+
+        mov     dword [esp+32], 0       ; success!
+        ret
+
+  .unblock:
+        and     [eax + SOCKET.options], not SO_BLOCK
+
+        mov     dword [esp+32], 0       ; success!
+        ret
+
+
 
 
 
