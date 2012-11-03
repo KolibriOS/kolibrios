@@ -842,10 +842,10 @@ SOCKET_receive_tcp:
         mov     edi, edx
         xor     edx, edx
         add     eax, STREAM_SOCKET.rcv
-  .loop:                            ;;;; FIXME: ecx!
+  .loop:
+        cmp     [eax + RING_BUFFER.size], 0
+        je      .block
         call    SOCKET_ring_read
-        test    ecx, ecx
-        jz      .block
         call    SOCKET_ring_free
 
         mov     [esp+32], ecx                                   ; return number of bytes copied
