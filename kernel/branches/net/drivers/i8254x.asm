@@ -728,7 +728,7 @@ int_handler:
         test    eax, ICR_RXDMT0
         jz      .no_rx
 
-        push    eax
+        push    eax ebx
         push    .retaddr
 
 ; Get last descriptor addr
@@ -760,7 +760,7 @@ int_handler:
 
         jmp     Eth_input
   .retaddr:
-        pop     eax
+        pop     ebx eax
 
   .no_rx:
 
