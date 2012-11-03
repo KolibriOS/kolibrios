@@ -27,20 +27,17 @@
 #include <linux/slab.h>
 #include <linux/fb.h>
 
-#include "drmP.h"
-#include "drm.h"
-#include "drm_crtc.h"
-#include "drm_crtc_helper.h"
-#include "radeon_drm.h"
+#include <drm/drmP.h>
+#include <drm/drm_crtc.h>
+#include <drm/drm_crtc_helper.h>
+#include <drm/radeon_drm.h>
 #include "radeon.h"
 
-#include "drm_fb_helper.h"
+#include <drm/drm_fb_helper.h>
 
-#include <drm_mm.h>
-#include "radeon_object.h"
 
-int radeonfb_create_object(struct radeon_fbdev *rfbdev,
-                     struct drm_mode_fb_cmd *mode_cmd,
+int radeonfb_create_pinned_object(struct radeon_fbdev *rfbdev,
+                     struct drm_mode_fb_cmd2 *mode_cmd,
                      struct drm_gem_object **gobj_p);
 
 /* object hierarchy -
@@ -55,7 +52,7 @@ struct radeon_fbdev {
 };
 
 static struct fb_ops radeonfb_ops = {
-//   .owner = THIS_MODULE,
+	.owner = THIS_MODULE,
 	.fb_check_var = drm_fb_helper_check_var,
 	.fb_set_par = drm_fb_helper_set_par,
 //	.fb_fillrect = cfb_fillrect,
@@ -98,7 +95,7 @@ static int radeonfb_create(struct radeon_fbdev *rfbdev,
 	struct radeon_device *rdev = rfbdev->rdev;
 	struct fb_info *info;
 	struct drm_framebuffer *fb = NULL;
-	struct drm_mode_fb_cmd mode_cmd;
+	struct drm_mode_fb_cmd2 mode_cmd;
 	struct drm_gem_object *gobj = NULL;
 	struct radeon_bo *rbo = NULL;
 	struct device *device = &rdev->pdev->dev;
@@ -114,22 +111,32 @@ static int radeonfb_create(struct radeon_fbdev *rfbdev,
 	if ((sizes->surface_bpp == 24) && ASIC_IS_AVIVO(rdev))
 		sizes->surface_bpp = 32;
 
-	mode_cmd.bpp = sizes->surface_bpp;
-	mode_cmd.depth = sizes->surface_depth;
+	mode_cmd.pixel_format = drm_mode_legacy_fb_format(sizes->surface_bpp,
+							  sizes->surface_depth);
 
-    ret = radeonfb_create_object(rfbdev, &mode_cmd, &gobj);
+	ret = radeonfb_create_pinned_object(rfbdev, &mode_cmd, &gobj);
+	if (ret) {
+		DRM_ERROR("failed to create fbcon object %d\n", ret);
+		return ret;
+	}
+
 	rbo = gem_to_radeon_bo(gobj);
 
 	/* okay we have an object now allocate the framebuffer */
 	info = framebuffer_alloc(0, device);
 	if (info == NULL) {
+        dbgprintf("framebuffer_alloc\n");
 		ret = -ENOMEM;
 		goto out_unref;
 	}
 
 	info->par = rfbdev;
 
-	radeon_framebuffer_init(rdev->ddev, &rfbdev->rfb, &mode_cmd, gobj);
+	ret = radeon_framebuffer_init(rdev->ddev, &rfbdev->rfb, &mode_cmd, gobj);
+	if (ret) {
+		DRM_ERROR("failed to initalise framebuffer %d\n", ret);
+		goto out_unref;
+	}
 
 	fb = &rfbdev->rfb.base;
 
@@ -141,7 +148,7 @@ static int radeonfb_create(struct radeon_fbdev *rfbdev,
 
 	strcpy(info->fix.id, "radeondrmfb");
 
-	drm_fb_helper_fill_fix(info, fb->pitch, fb->depth);
+	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->depth);
 
 	info->flags = FBINFO_DEFAULT | FBINFO_CAN_FORCE_OUTPUT;
 	info->fbops = &radeonfb_ops;
@@ -163,21 +170,17 @@ static int radeonfb_create(struct radeon_fbdev *rfbdev,
 	info->apertures->ranges[0].base = rdev->ddev->mode_config.fb_base;
 	info->apertures->ranges[0].size = rdev->mc.aper_size;
 
-//   info->pixmap.size = 64*1024;
-//   info->pixmap.buf_align = 8;
-//   info->pixmap.access_align = 32;
-//   info->pixmap.flags = FB_PIXMAP_SYSTEM;
-//   info->pixmap.scan_align = 1;
+	/* Use default scratch pixmap (info->pixmap.flags = FB_PIXMAP_SYSTEM) */
 
-	if (info->screen_base == NULL) {
-		ret = -ENOSPC;
-		goto out_unref;
-	}
+//   if (info->screen_base == NULL) {
+//       ret = -ENOSPC;
+//       goto out_unref;
+//   }
 	DRM_INFO("fb mappable at 0x%lX\n",  info->fix.smem_start);
 	DRM_INFO("vram apper at 0x%lX\n",  (unsigned long)rdev->mc.aper_base);
 	DRM_INFO("size %lu\n", (unsigned long)radeon_bo_size(rbo));
 	DRM_INFO("fb depth is %d\n", fb->depth);
-	DRM_INFO("   pitch is %d\n", fb->pitch);
+	DRM_INFO("   pitch is %d\n", fb->pitches[0]);
 
 
     LEAVE();

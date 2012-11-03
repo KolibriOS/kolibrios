@@ -23,38 +23,41 @@
  * Authors: Dave Airlie
  *          Alex Deucher
  */
-#include "drmP.h"
-#include "radeon_drm.h"
+#include <linux/export.h>
+
+#include <drm/drmP.h>
+#include <drm/drm_edid.h>
+#include <drm/radeon_drm.h>
 #include "radeon.h"
 #include "atom.h"
+
+extern int radeon_atom_hw_i2c_xfer(struct i2c_adapter *i2c_adap,
+				   struct i2c_msg *msgs, int num);
+extern u32 radeon_atom_hw_i2c_func(struct i2c_adapter *adap);
 
 /**
  * radeon_ddc_probe
  *
  */
-bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool requires_extended_probe)
+bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
 {
 	u8 out = 0x0;
 	u8 buf[8];
 	int ret;
 	struct i2c_msg msgs[] = {
 		{
-			.addr = 0x50,
+			.addr = DDC_ADDR,
 			.flags = 0,
 			.len = 1,
 			.buf = &out,
 		},
 		{
-			.addr = 0x50,
+			.addr = DDC_ADDR,
 			.flags = I2C_M_RD,
-			.len = 1,
+			.len = 8,
 			.buf = buf,
 		}
 	};
-
-	/* Read 8 bytes from i2c for extended probe of EDID header */
-	if (requires_extended_probe)
-		msgs[1].len = 8;
 
 	/* on hw with routers, select right port */
 	if (radeon_connector->router.ddc_valid)
@@ -64,7 +67,6 @@ bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool requires_e
 	if (ret != 2)
 		/* Couldn't find an accessible DDC on this connector */
 		return false;
-	if (requires_extended_probe) {
 		/* Probe also for valid EDID header
 		 * EDID header starts with:
 		 * 0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00.
@@ -75,14 +77,14 @@ bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool requires_e
 			 * connector */
 			return false;
 		}
-	}
 		return true;
 }
 
 /* bit banging i2c */
 
-static void radeon_i2c_do_lock(struct radeon_i2c_chan *i2c, int lock_state)
+static int pre_xfer(struct i2c_adapter *i2c_adap)
 {
+	struct radeon_i2c_chan *i2c = i2c_get_adapdata(i2c_adap);
 	struct radeon_device *rdev = i2c->dev->dev_private;
 	struct radeon_i2c_bus_rec *rec = &i2c->rec;
 	uint32_t temp;
@@ -137,19 +139,30 @@ static void radeon_i2c_do_lock(struct radeon_i2c_chan *i2c, int lock_state)
 	WREG32(rec->en_data_reg, temp);
 
 	/* mask the gpio pins for software use */
-	temp = RREG32(rec->mask_clk_reg);
-	if (lock_state)
-		temp |= rec->mask_clk_mask;
-	else
-		temp &= ~rec->mask_clk_mask;
+	temp = RREG32(rec->mask_clk_reg) | rec->mask_clk_mask;
 	WREG32(rec->mask_clk_reg, temp);
 	temp = RREG32(rec->mask_clk_reg);
 
+	temp = RREG32(rec->mask_data_reg) | rec->mask_data_mask;
+	WREG32(rec->mask_data_reg, temp);
 	temp = RREG32(rec->mask_data_reg);
-	if (lock_state)
-		temp |= rec->mask_data_mask;
-	else
-		temp &= ~rec->mask_data_mask;
+
+	return 0;
+}
+
+static void post_xfer(struct i2c_adapter *i2c_adap)
+{
+	struct radeon_i2c_chan *i2c = i2c_get_adapdata(i2c_adap);
+	struct radeon_device *rdev = i2c->dev->dev_private;
+	struct radeon_i2c_bus_rec *rec = &i2c->rec;
+	uint32_t temp;
+
+	/* unmask the gpio pins for software use */
+	temp = RREG32(rec->mask_clk_reg) & ~rec->mask_clk_mask;
+	WREG32(rec->mask_clk_reg, temp);
+	temp = RREG32(rec->mask_clk_reg);
+
+	temp = RREG32(rec->mask_data_reg) & ~rec->mask_data_mask;
 	WREG32(rec->mask_data_reg, temp);
 	temp = RREG32(rec->mask_data_reg);
 }
@@ -207,22 +220,6 @@ static void set_data(void *i2c_priv, int data)
 	val = RREG32(rec->en_data_reg) & ~rec->en_data_mask;
 	val |= data ? 0 : rec->en_data_mask;
 	WREG32(rec->en_data_reg, val);
-}
-
-static int pre_xfer(struct i2c_adapter *i2c_adap)
-{
-	struct radeon_i2c_chan *i2c = i2c_get_adapdata(i2c_adap);
-
-	radeon_i2c_do_lock(i2c, 1);
-
-	return 0;
-}
-
-static void post_xfer(struct i2c_adapter *i2c_adap)
-{
-	struct radeon_i2c_chan *i2c = i2c_get_adapdata(i2c_adap);
-
-	radeon_i2c_do_lock(i2c, 0);
 }
 
 /* hw i2c */
@@ -890,6 +887,11 @@ static const struct i2c_algorithm radeon_i2c_algo = {
 	.functionality = radeon_hw_i2c_func,
 };
 
+static const struct i2c_algorithm radeon_atom_i2c_algo = {
+	.master_xfer = radeon_atom_hw_i2c_xfer,
+	.functionality = radeon_atom_hw_i2c_func,
+};
+
 struct radeon_i2c_chan *radeon_i2c_create(struct drm_device *dev,
 		struct radeon_i2c_bus_rec *rec,
 		const char *name)
@@ -898,12 +900,17 @@ struct radeon_i2c_chan *radeon_i2c_create(struct drm_device *dev,
 	struct radeon_i2c_chan *i2c;
 	int ret;
 
+	/* don't add the mm_i2c bus unless hw_i2c is enabled */
+	if (rec->mm_i2c && (radeon_hw_i2c == 0))
+		return NULL;
+
 	i2c = kzalloc(sizeof(struct radeon_i2c_chan), GFP_KERNEL);
 	if (i2c == NULL)
 		return NULL;
 
 	i2c->rec = *rec;
-//   i2c->adapter.owner = THIS_MODULE;
+	i2c->adapter.owner = THIS_MODULE;
+	i2c->adapter.class = I2C_CLASS_DDC;
 	i2c->dev = dev;
 	i2c_set_adapdata(&i2c->adapter, i2c);
 	if (rec->mm_i2c ||
@@ -915,11 +922,23 @@ struct radeon_i2c_chan *radeon_i2c_create(struct drm_device *dev,
 		snprintf(i2c->adapter.name, sizeof(i2c->adapter.name),
 			 "Radeon i2c hw bus %s", name);
 		i2c->adapter.algo = &radeon_i2c_algo;
-//        ret = i2c_add_adapter(&i2c->adapter);
-//        if (ret) {
-//           DRM_ERROR("Failed to register hw i2c %s\n", name);
-//           goto out_free;
-//       }
+//		ret = i2c_add_adapter(&i2c->adapter);
+//		if (ret) {
+//			DRM_ERROR("Failed to register hw i2c %s\n", name);
+//			goto out_free;
+//		}
+	} else if (rec->hw_capable &&
+		   radeon_hw_i2c &&
+		   ASIC_IS_DCE3(rdev)) {
+		/* hw i2c using atom */
+		snprintf(i2c->adapter.name, sizeof(i2c->adapter.name),
+			 "Radeon i2c hw bus %s", name);
+		i2c->adapter.algo = &radeon_atom_i2c_algo;
+//		ret = i2c_add_adapter(&i2c->adapter);
+//		if (ret) {
+//			DRM_ERROR("Failed to register hw i2c %s\n", name);
+//			goto out_free;
+//		}
 	} else {
 		/* set the radeon bit adapter */
 		snprintf(i2c->adapter.name, sizeof(i2c->adapter.name),
@@ -931,10 +950,8 @@ struct radeon_i2c_chan *radeon_i2c_create(struct drm_device *dev,
 		i2c->algo.bit.setscl = set_clock;
 		i2c->algo.bit.getsda = get_data;
 		i2c->algo.bit.getscl = get_clock;
-		i2c->algo.bit.udelay = 20;
-	/* vesa says 2.2 ms is enough, 1 jiffy doesn't seem to always
-	 * make this, 2 jiffies is a lot more reliable */
-		i2c->algo.bit.timeout = 2;
+		i2c->algo.bit.udelay = 10;
+		i2c->algo.bit.timeout = usecs_to_jiffies(2200);	/* from VESA */
 		i2c->algo.bit.data = i2c;
 		ret = i2c_bit_add_bus(&i2c->adapter);
 	if (ret) {
@@ -962,7 +979,7 @@ struct radeon_i2c_chan *radeon_i2c_create_dp(struct drm_device *dev,
 		return NULL;
 
 	i2c->rec = *rec;
-//   i2c->adapter.owner = THIS_MODULE;
+	i2c->adapter.owner = THIS_MODULE;
 	i2c->adapter.class = I2C_CLASS_DDC;
 	i2c->dev = dev;
 	snprintf(i2c->adapter.name, sizeof(i2c->adapter.name),

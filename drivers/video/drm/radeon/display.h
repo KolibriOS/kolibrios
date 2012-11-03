@@ -51,6 +51,10 @@ struct tag_display
     void      (__stdcall *move_cursor)(cursor_t *cursor, int x, int y);
     void      (__stdcall *restore_cursor)(int x, int y);
     void      (*disable_mouse)(void);
+    u32  mask_seqno;
+    u32  check_mouse;
+    u32  check_m_pixel;
+
 };
 
 extern display_t *rdisplay;

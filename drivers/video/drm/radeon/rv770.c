@@ -28,10 +28,10 @@
 #include <linux/firmware.h>
 //#include <linux/platform_device.h>
 #include <linux/slab.h>
-#include "drmP.h"
+#include <drm/drmP.h>
 #include "radeon.h"
 #include "radeon_asic.h"
-#include "radeon_drm.h"
+#include <drm/radeon_drm.h>
 #include "rv770d.h"
 #include "atom.h"
 #include "avivod.h"
@@ -47,12 +47,12 @@ static void rv770_pcie_gen2_enable(struct radeon_device *rdev);
 /*
  * GART
  */
-int rv770_pcie_gart_enable(struct radeon_device *rdev)
+static int rv770_pcie_gart_enable(struct radeon_device *rdev)
 {
 	u32 tmp;
 	int r, i;
 
-	if (rdev->gart.table.vram.robj == NULL) {
+	if (rdev->gart.robj == NULL) {
 		dev_err(rdev->dev, "No VRAM object for PCIE GART.\n");
 		return -EINVAL;
 	}
@@ -74,6 +74,8 @@ int rv770_pcie_gart_enable(struct radeon_device *rdev)
 	WREG32(MC_VM_MD_L1_TLB0_CNTL, tmp);
 	WREG32(MC_VM_MD_L1_TLB1_CNTL, tmp);
 	WREG32(MC_VM_MD_L1_TLB2_CNTL, tmp);
+	if (rdev->family == CHIP_RV740)
+		WREG32(MC_VM_MD_L1_TLB3_CNTL, tmp);
 	WREG32(MC_VM_MB_L1_TLB0_CNTL, tmp);
 	WREG32(MC_VM_MB_L1_TLB1_CNTL, tmp);
 	WREG32(MC_VM_MB_L1_TLB2_CNTL, tmp);
@@ -89,14 +91,17 @@ int rv770_pcie_gart_enable(struct radeon_device *rdev)
 		WREG32(VM_CONTEXT0_CNTL + (i * 4), 0);
 
 	r600_pcie_gart_tlb_flush(rdev);
+	DRM_INFO("PCIE GART of %uM enabled (table at 0x%016llX).\n",
+		 (unsigned)(rdev->mc.gtt_size >> 20),
+		 (unsigned long long)rdev->gart.table_addr);
 	rdev->gart.ready = true;
 	return 0;
 }
 
-void rv770_pcie_gart_disable(struct radeon_device *rdev)
+static void rv770_pcie_gart_disable(struct radeon_device *rdev)
 {
 	u32 tmp;
-	int i, r;
+	int i;
 
 	/* Disable all tables */
 	for (i = 0; i < 7; i++)
@@ -116,17 +121,10 @@ void rv770_pcie_gart_disable(struct radeon_device *rdev)
 	WREG32(MC_VM_MB_L1_TLB1_CNTL, tmp);
 	WREG32(MC_VM_MB_L1_TLB2_CNTL, tmp);
 	WREG32(MC_VM_MB_L1_TLB3_CNTL, tmp);
-	if (rdev->gart.table.vram.robj) {
-		r = radeon_bo_reserve(rdev->gart.table.vram.robj, false);
-		if (likely(r == 0)) {
-			radeon_bo_kunmap(rdev->gart.table.vram.robj);
-			radeon_bo_unpin(rdev->gart.table.vram.robj);
-			radeon_bo_unreserve(rdev->gart.table.vram.robj);
-		}
-	}
+	radeon_gart_table_vram_unpin(rdev);
 }
 
-void rv770_pcie_gart_fini(struct radeon_device *rdev)
+static void rv770_pcie_gart_fini(struct radeon_device *rdev)
 {
 	radeon_gart_fini(rdev);
 	rv770_pcie_gart_disable(rdev);
@@ -134,7 +132,7 @@ void rv770_pcie_gart_fini(struct radeon_device *rdev)
 }
 
 
-void rv770_agp_enable(struct radeon_device *rdev)
+static void rv770_agp_enable(struct radeon_device *rdev)
 {
 	u32 tmp;
 	int i;
@@ -207,7 +205,7 @@ static void rv770_mc_program(struct radeon_device *rdev)
 		WREG32(MC_VM_SYSTEM_APERTURE_HIGH_ADDR,
 			rdev->mc.vram_end >> 12);
 	}
-	WREG32(MC_VM_SYSTEM_APERTURE_DEFAULT_ADDR, 0);
+	WREG32(MC_VM_SYSTEM_APERTURE_DEFAULT_ADDR, rdev->vram_scratch.gpu_addr >> 12);
 	tmp = ((rdev->mc.vram_end >> 24) & 0xFFFF) << 16;
 	tmp |= ((rdev->mc.vram_start >> 24) & 0xFFFF);
 	WREG32(MC_VM_FB_LOCATION, tmp);
@@ -285,229 +283,6 @@ static int rv770_cp_load_microcode(struct radeon_device *rdev)
 /*
  * Core functions
  */
-static u32 r700_get_tile_pipe_to_backend_map(struct radeon_device *rdev,
-					     u32 num_tile_pipes,
-						u32 num_backends,
-						u32 backend_disable_mask)
-{
-	u32 backend_map = 0;
-	u32 enabled_backends_mask;
-	u32 enabled_backends_count;
-	u32 cur_pipe;
-	u32 swizzle_pipe[R7XX_MAX_PIPES];
-	u32 cur_backend;
-	u32 i;
-	bool force_no_swizzle;
-
-	if (num_tile_pipes > R7XX_MAX_PIPES)
-		num_tile_pipes = R7XX_MAX_PIPES;
-	if (num_tile_pipes < 1)
-		num_tile_pipes = 1;
-	if (num_backends > R7XX_MAX_BACKENDS)
-		num_backends = R7XX_MAX_BACKENDS;
-	if (num_backends < 1)
-		num_backends = 1;
-
-	enabled_backends_mask = 0;
-	enabled_backends_count = 0;
-	for (i = 0; i < R7XX_MAX_BACKENDS; ++i) {
-		if (((backend_disable_mask >> i) & 1) == 0) {
-			enabled_backends_mask |= (1 << i);
-			++enabled_backends_count;
-		}
-		if (enabled_backends_count == num_backends)
-			break;
-	}
-
-	if (enabled_backends_count == 0) {
-		enabled_backends_mask = 1;
-		enabled_backends_count = 1;
-	}
-
-	if (enabled_backends_count != num_backends)
-		num_backends = enabled_backends_count;
-
-	switch (rdev->family) {
-	case CHIP_RV770:
-	case CHIP_RV730:
-		force_no_swizzle = false;
-		break;
-	case CHIP_RV710:
-	case CHIP_RV740:
-	default:
-		force_no_swizzle = true;
-		break;
-	}
-
-	memset((uint8_t *)&swizzle_pipe[0], 0, sizeof(u32) * R7XX_MAX_PIPES);
-	switch (num_tile_pipes) {
-	case 1:
-		swizzle_pipe[0] = 0;
-		break;
-	case 2:
-		swizzle_pipe[0] = 0;
-		swizzle_pipe[1] = 1;
-		break;
-	case 3:
-		if (force_no_swizzle) {
-			swizzle_pipe[0] = 0;
-			swizzle_pipe[1] = 1;
-			swizzle_pipe[2] = 2;
-		} else {
-		swizzle_pipe[0] = 0;
-		swizzle_pipe[1] = 2;
-		swizzle_pipe[2] = 1;
-		}
-		break;
-	case 4:
-		if (force_no_swizzle) {
-			swizzle_pipe[0] = 0;
-			swizzle_pipe[1] = 1;
-			swizzle_pipe[2] = 2;
-			swizzle_pipe[3] = 3;
-		} else {
-		swizzle_pipe[0] = 0;
-		swizzle_pipe[1] = 2;
-		swizzle_pipe[2] = 3;
-		swizzle_pipe[3] = 1;
-		}
-		break;
-	case 5:
-		if (force_no_swizzle) {
-			swizzle_pipe[0] = 0;
-			swizzle_pipe[1] = 1;
-			swizzle_pipe[2] = 2;
-			swizzle_pipe[3] = 3;
-			swizzle_pipe[4] = 4;
-		} else {
-		swizzle_pipe[0] = 0;
-		swizzle_pipe[1] = 2;
-		swizzle_pipe[2] = 4;
-		swizzle_pipe[3] = 1;
-		swizzle_pipe[4] = 3;
-		}
-		break;
-	case 6:
-		if (force_no_swizzle) {
-			swizzle_pipe[0] = 0;
-			swizzle_pipe[1] = 1;
-			swizzle_pipe[2] = 2;
-			swizzle_pipe[3] = 3;
-			swizzle_pipe[4] = 4;
-			swizzle_pipe[5] = 5;
-		} else {
-		swizzle_pipe[0] = 0;
-		swizzle_pipe[1] = 2;
-		swizzle_pipe[2] = 4;
-		swizzle_pipe[3] = 5;
-		swizzle_pipe[4] = 3;
-		swizzle_pipe[5] = 1;
-		}
-		break;
-	case 7:
-		if (force_no_swizzle) {
-			swizzle_pipe[0] = 0;
-			swizzle_pipe[1] = 1;
-			swizzle_pipe[2] = 2;
-			swizzle_pipe[3] = 3;
-			swizzle_pipe[4] = 4;
-			swizzle_pipe[5] = 5;
-			swizzle_pipe[6] = 6;
-		} else {
-		swizzle_pipe[0] = 0;
-		swizzle_pipe[1] = 2;
-		swizzle_pipe[2] = 4;
-		swizzle_pipe[3] = 6;
-		swizzle_pipe[4] = 3;
-		swizzle_pipe[5] = 1;
-		swizzle_pipe[6] = 5;
-		}
-		break;
-	case 8:
-		if (force_no_swizzle) {
-			swizzle_pipe[0] = 0;
-			swizzle_pipe[1] = 1;
-			swizzle_pipe[2] = 2;
-			swizzle_pipe[3] = 3;
-			swizzle_pipe[4] = 4;
-			swizzle_pipe[5] = 5;
-			swizzle_pipe[6] = 6;
-			swizzle_pipe[7] = 7;
-		} else {
-		swizzle_pipe[0] = 0;
-		swizzle_pipe[1] = 2;
-		swizzle_pipe[2] = 4;
-		swizzle_pipe[3] = 6;
-		swizzle_pipe[4] = 3;
-		swizzle_pipe[5] = 1;
-		swizzle_pipe[6] = 7;
-		swizzle_pipe[7] = 5;
-		}
-		break;
-	}
-
-	cur_backend = 0;
-	for (cur_pipe = 0; cur_pipe < num_tile_pipes; ++cur_pipe) {
-		while (((1 << cur_backend) & enabled_backends_mask) == 0)
-			cur_backend = (cur_backend + 1) % R7XX_MAX_BACKENDS;
-
-		backend_map |= (u32)(((cur_backend & 3) << (swizzle_pipe[cur_pipe] * 2)));
-
-		cur_backend = (cur_backend + 1) % R7XX_MAX_BACKENDS;
-	}
-
-	return backend_map;
-}
-
-static void rv770_program_channel_remap(struct radeon_device *rdev)
-{
-	u32 tcp_chan_steer, mc_shared_chremap, tmp;
-	bool force_no_swizzle;
-
-	switch (rdev->family) {
-	case CHIP_RV770:
-	case CHIP_RV730:
-		force_no_swizzle = false;
-		break;
-	case CHIP_RV710:
-	case CHIP_RV740:
-	default:
-		force_no_swizzle = true;
-		break;
-	}
-
-	tmp = RREG32(MC_SHARED_CHMAP);
-	switch ((tmp & NOOFCHAN_MASK) >> NOOFCHAN_SHIFT) {
-	case 0:
-	case 1:
-	default:
-		/* default mapping */
-		mc_shared_chremap = 0x00fac688;
-		break;
-	case 2:
-	case 3:
-		if (force_no_swizzle)
-			mc_shared_chremap = 0x00fac688;
-		else
-			mc_shared_chremap = 0x00bbc298;
-		break;
-	}
-
-	if (rdev->family == CHIP_RV740)
-		tcp_chan_steer = 0x00ef2a60;
-	else
-		tcp_chan_steer = 0x00fac688;
-
-	/* RV770 CE has special chremap setup */
-	if (rdev->pdev->device == 0x944e) {
-		tcp_chan_steer = 0x00b08b08;
-		mc_shared_chremap = 0x00b08b08;
-	}
-
-	WREG32(TCP_CHAN_STEER, tcp_chan_steer);
-	WREG32(MC_SHARED_CHREMAP, mc_shared_chremap);
-}
-
 static void rv770_gpu_init(struct radeon_device *rdev)
 {
 	int i, j, num_qd_pipes;
@@ -523,14 +298,17 @@ static void rv770_gpu_init(struct radeon_device *rdev)
 	u32 sq_thread_resource_mgmt;
 	u32 hdp_host_path_cntl;
 	u32 sq_dyn_gpr_size_simd_ab_0;
-	u32 backend_map;
 	u32 gb_tiling_config = 0;
 	u32 cc_rb_backend_disable = 0;
 	u32 cc_gc_shader_pipe_config = 0;
 	u32 mc_arb_ramcfg;
-	u32 db_debug4;
+	u32 db_debug4, tmp;
+	u32 inactive_pipes, shader_pipe_config;
+	u32 disabled_rb_mask;
+	unsigned active_number;
 
 	/* setup chip specs */
+	rdev->config.rv770.tiling_group_size = 256;
 	switch (rdev->family) {
 	case CHIP_RV770:
 		rdev->config.rv770.max_pipes = 4;
@@ -641,33 +419,70 @@ static void rv770_gpu_init(struct radeon_device *rdev)
 	/* setup tiling, simd, pipe config */
 	mc_arb_ramcfg = RREG32(MC_ARB_RAMCFG);
 
+	shader_pipe_config = RREG32(CC_GC_SHADER_PIPE_CONFIG);
+	inactive_pipes = (shader_pipe_config & INACTIVE_QD_PIPES_MASK) >> INACTIVE_QD_PIPES_SHIFT;
+	for (i = 0, tmp = 1, active_number = 0; i < R7XX_MAX_PIPES; i++) {
+		if (!(inactive_pipes & tmp)) {
+			active_number++;
+		}
+		tmp <<= 1;
+	}
+	if (active_number == 1) {
+		WREG32(SPI_CONFIG_CNTL, DISABLE_INTERP_1);
+	} else {
+		WREG32(SPI_CONFIG_CNTL, 0);
+	}
+
+	cc_rb_backend_disable = RREG32(CC_RB_BACKEND_DISABLE) & 0x00ff0000;
+	tmp = R7XX_MAX_BACKENDS - r600_count_pipe_bits(cc_rb_backend_disable >> 16);
+	if (tmp < rdev->config.rv770.max_backends) {
+		rdev->config.rv770.max_backends = tmp;
+	}
+
+	cc_gc_shader_pipe_config = RREG32(CC_GC_SHADER_PIPE_CONFIG) & 0xffffff00;
+	tmp = R7XX_MAX_PIPES - r600_count_pipe_bits((cc_gc_shader_pipe_config >> 8) & R7XX_MAX_PIPES_MASK);
+	if (tmp < rdev->config.rv770.max_pipes) {
+		rdev->config.rv770.max_pipes = tmp;
+	}
+	tmp = R7XX_MAX_SIMDS - r600_count_pipe_bits((cc_gc_shader_pipe_config >> 16) & R7XX_MAX_SIMDS_MASK);
+	if (tmp < rdev->config.rv770.max_simds) {
+		rdev->config.rv770.max_simds = tmp;
+	}
+
 	switch (rdev->config.rv770.max_tile_pipes) {
 	case 1:
 	default:
-		gb_tiling_config |= PIPE_TILING(0);
+		gb_tiling_config = PIPE_TILING(0);
 		break;
 	case 2:
-		gb_tiling_config |= PIPE_TILING(1);
+		gb_tiling_config = PIPE_TILING(1);
 		break;
 	case 4:
-		gb_tiling_config |= PIPE_TILING(2);
+		gb_tiling_config = PIPE_TILING(2);
 		break;
 	case 8:
-		gb_tiling_config |= PIPE_TILING(3);
+		gb_tiling_config = PIPE_TILING(3);
 		break;
 	}
 	rdev->config.rv770.tiling_npipes = rdev->config.rv770.max_tile_pipes;
 
+	disabled_rb_mask = (RREG32(CC_RB_BACKEND_DISABLE) >> 16) & R7XX_MAX_BACKENDS_MASK;
+	tmp = (gb_tiling_config & PIPE_TILING__MASK) >> PIPE_TILING__SHIFT;
+	tmp = r6xx_remap_render_backend(rdev, tmp, rdev->config.rv770.max_backends,
+					R7XX_MAX_BACKENDS, disabled_rb_mask);
+	gb_tiling_config |= tmp << 16;
+	rdev->config.rv770.backend_map = tmp;
+
 	if (rdev->family == CHIP_RV770)
 		gb_tiling_config |= BANK_TILING(1);
+	else {
+		if ((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT)
+			gb_tiling_config |= BANK_TILING(1);
 	else
-		gb_tiling_config |= BANK_TILING((mc_arb_ramcfg & NOOFBANK_MASK) >> NOOFBANK_SHIFT);
+			gb_tiling_config |= BANK_TILING(0);
+	}
 	rdev->config.rv770.tiling_nbanks = 4 << ((gb_tiling_config >> 4) & 0x3);
 	gb_tiling_config |= GROUP_SIZE((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT);
-	if ((mc_arb_ramcfg & BURSTLENGTH_MASK) >> BURSTLENGTH_SHIFT)
-		rdev->config.rv770.tiling_group_size = 512;
-	else
-	rdev->config.rv770.tiling_group_size = 256;
 	if (((mc_arb_ramcfg & NOOFROWS_MASK) >> NOOFROWS_SHIFT) > 3) {
 		gb_tiling_config |= ROW_TILING(3);
 		gb_tiling_config |= SAMPLE_SPLIT(3);
@@ -679,49 +494,19 @@ static void rv770_gpu_init(struct radeon_device *rdev)
 	}
 
 	gb_tiling_config |= BANK_SWAPS(1);
-
-	cc_rb_backend_disable = RREG32(CC_RB_BACKEND_DISABLE) & 0x00ff0000;
-	cc_rb_backend_disable |=
-		BACKEND_DISABLE((R7XX_MAX_BACKENDS_MASK << rdev->config.rv770.max_backends) & R7XX_MAX_BACKENDS_MASK);
-
-	cc_gc_shader_pipe_config = RREG32(CC_GC_SHADER_PIPE_CONFIG) & 0xffffff00;
-	cc_gc_shader_pipe_config |=
-		INACTIVE_QD_PIPES((R7XX_MAX_PIPES_MASK << rdev->config.rv770.max_pipes) & R7XX_MAX_PIPES_MASK);
-	cc_gc_shader_pipe_config |=
-		INACTIVE_SIMDS((R7XX_MAX_SIMDS_MASK << rdev->config.rv770.max_simds) & R7XX_MAX_SIMDS_MASK);
-
-	if (rdev->family == CHIP_RV740)
-		backend_map = 0x28;
-	else
-		backend_map = r700_get_tile_pipe_to_backend_map(rdev,
-								rdev->config.rv770.max_tile_pipes,
-								(R7XX_MAX_BACKENDS -
-								 r600_count_pipe_bits((cc_rb_backend_disable &
-										       R7XX_MAX_BACKENDS_MASK) >> 16)),
-								(cc_rb_backend_disable >> 16));
-
 	rdev->config.rv770.tile_config = gb_tiling_config;
-	rdev->config.rv770.backend_map = backend_map;
-	gb_tiling_config |= BACKEND_MAP(backend_map);
 
 	WREG32(GB_TILING_CONFIG, gb_tiling_config);
 	WREG32(DCP_TILING_CONFIG, (gb_tiling_config & 0xffff));
 	WREG32(HDP_TILING_CONFIG, (gb_tiling_config & 0xffff));
-
-	rv770_program_channel_remap(rdev);
-
-	WREG32(CC_RB_BACKEND_DISABLE,      cc_rb_backend_disable);
-	WREG32(CC_GC_SHADER_PIPE_CONFIG,   cc_gc_shader_pipe_config);
-	WREG32(GC_USER_SHADER_PIPE_CONFIG, cc_gc_shader_pipe_config);
-	WREG32(CC_SYS_RB_BACKEND_DISABLE,  cc_rb_backend_disable);
 
 	WREG32(CGTS_SYS_TCC_DISABLE, 0);
 	WREG32(CGTS_TCC_DISABLE, 0);
 	WREG32(CGTS_USER_SYS_TCC_DISABLE, 0);
 	WREG32(CGTS_USER_TCC_DISABLE, 0);
 
-	num_qd_pipes =
-		R7XX_MAX_PIPES - r600_count_pipe_bits((cc_gc_shader_pipe_config & INACTIVE_QD_PIPES_MASK) >> 8);
+
+	num_qd_pipes = R7XX_MAX_PIPES - r600_count_pipe_bits((cc_gc_shader_pipe_config & INACTIVE_QD_PIPES_MASK) >> 8);
 	WREG32(VGT_OUT_DEALLOC_CNTL, (num_qd_pipes * 4) & DEALLOC_DIST_MASK);
 	WREG32(VGT_VERTEX_REUSE_BLOCK_CNTL, ((num_qd_pipes * 4) - 2) & VTX_REUSE_DEPTH_MASK);
 
@@ -748,6 +533,9 @@ static void rv770_gpu_init(struct radeon_device *rdev)
 					  GS_FLUSH_CTL(4) |
 					  ACK_FLUSH_CTL(3) |
 					  SYNC_FLUSH_CTL));
+
+	if (rdev->family != CHIP_RV770)
+		WREG32(SMX_SAR_CTL0, 0x00003f3f);
 
 	db_debug3 = RREG32(DB_DEBUG3);
 	db_debug3 &= ~DB_CLK_OFF_DELAY(0x1f);
@@ -781,8 +569,6 @@ static void rv770_gpu_init(struct radeon_device *rdev)
 	WREG32(PA_SC_MULTI_CHIP_CNTL, 0);
 
 	WREG32(VGT_NUM_INSTANCES, 1);
-
-	WREG32(SPI_CONFIG_CNTL, GPR_WRITE_PRIORITY(0));
 
 	WREG32(SPI_CONFIG_CNTL_1, VTX_DONE_DELAY(4));
 
@@ -927,55 +713,7 @@ static void rv770_gpu_init(struct radeon_device *rdev)
 
 	WREG32(PA_CL_ENHANCE, (CLIP_VTX_REORDER_ENA |
 					  NUM_CLIP_SEQ(3)));
-
-}
-
-static int rv770_vram_scratch_init(struct radeon_device *rdev)
-{
-	int r;
-	u64 gpu_addr;
-
-	if (rdev->vram_scratch.robj == NULL) {
-		r = radeon_bo_create(rdev, RADEON_GPU_PAGE_SIZE,
-				     PAGE_SIZE, true, RADEON_GEM_DOMAIN_VRAM,
-				     &rdev->vram_scratch.robj);
-		if (r) {
-			return r;
-		}
-	}
-
-	r = radeon_bo_reserve(rdev->vram_scratch.robj, false);
-	if (unlikely(r != 0))
-		return r;
-	r = radeon_bo_pin(rdev->vram_scratch.robj,
-			  RADEON_GEM_DOMAIN_VRAM, &gpu_addr);
-	if (r) {
-		radeon_bo_unreserve(rdev->vram_scratch.robj);
-		return r;
-	}
-	r = radeon_bo_kmap(rdev->vram_scratch.robj,
-				(void **)&rdev->vram_scratch.ptr);
-	if (r)
-		radeon_bo_unpin(rdev->vram_scratch.robj);
-	radeon_bo_unreserve(rdev->vram_scratch.robj);
-
-	return r;
-}
-
-static void rv770_vram_scratch_fini(struct radeon_device *rdev)
-{
-	int r;
-
-	if (rdev->vram_scratch.robj == NULL) {
-		return;
-	}
-	r = radeon_bo_reserve(rdev->vram_scratch.robj, false);
-	if (likely(r == 0)) {
-		radeon_bo_kunmap(rdev->vram_scratch.robj);
-		radeon_bo_unpin(rdev->vram_scratch.robj);
-		radeon_bo_unreserve(rdev->vram_scratch.robj);
-	}
-	radeon_bo_unref(&rdev->vram_scratch.robj);
+	WREG32(VC_ENHANCE, 0);
 }
 
 void r700_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
@@ -990,7 +728,7 @@ void r700_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
 	}
 	if (rdev->flags & RADEON_IS_AGP) {
 		size_bf = mc->gtt_start;
-		size_af = 0xFFFFFFFF - mc->gtt_end + 1;
+		size_af = 0xFFFFFFFF - mc->gtt_end;
 		if (size_bf > size_af) {
 			if (mc->mc_vram_size > size_bf) {
 				dev_warn(rdev->dev, "limiting VRAM\n");
@@ -1004,7 +742,7 @@ void r700_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
 				mc->real_vram_size = size_af;
 				mc->mc_vram_size = size_af;
 			}
-			mc->vram_start = mc->gtt_end;
+			mc->vram_start = mc->gtt_end + 1;
 		}
 		mc->vram_end = mc->vram_start + mc->mc_vram_size - 1;
 		dev_info(rdev->dev, "VRAM: %lluM 0x%08llX - 0x%08llX (%lluM used)\n",
@@ -1017,7 +755,7 @@ void r700_vram_gtt_location(struct radeon_device *rdev, struct radeon_mc *mc)
 	}
 }
 
-int rv770_mc_init(struct radeon_device *rdev)
+static int rv770_mc_init(struct radeon_device *rdev)
 {
 	u32 tmp;
 	int chansize, numchan;
@@ -1064,6 +802,7 @@ int rv770_mc_init(struct radeon_device *rdev)
 
 static int rv770_startup(struct radeon_device *rdev)
 {
+	struct radeon_ring *ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
 	int r;
 
 	/* enable pcie gen2 link */
@@ -1077,6 +816,10 @@ static int rv770_startup(struct radeon_device *rdev)
 		}
 	}
 
+	r = r600_vram_scratch_init(rdev);
+	if (r)
+		return r;
+
 	rv770_mc_program(rdev);
 	if (rdev->flags & RADEON_IS_AGP) {
 		rv770_agp_enable(rdev);
@@ -1085,23 +828,21 @@ static int rv770_startup(struct radeon_device *rdev)
 		if (r)
 			return r;
 	}
-	r = rv770_vram_scratch_init(rdev);
-	if (r)
-		return r;
+
 	rv770_gpu_init(rdev);
 	r = r600_blit_init(rdev);
 	if (r) {
-//		r600_blit_fini(rdev);
-		rdev->asic->copy = NULL;
+		r600_blit_fini(rdev);
+		rdev->asic->copy.copy = NULL;
 		dev_warn(rdev->dev, "failed blitter (%d) falling back to memcpy\n", r);
 	}
 
-    r = r600_video_init(rdev);
-    if (r) {
+//    r = r600_video_init(rdev);
+//    if (r) {
 //      r600_video_fini(rdev);
 //        rdev->asic->copy = NULL;
-        dev_warn(rdev->dev, "failed video blitter (%d) falling back to memcpy\n", r);
-    }
+//        dev_warn(rdev->dev, "failed video blitter (%d) falling back to memcpy\n", r);
+//    }
 
 	/* allocate wb buffer */
 	r = radeon_wb_init(rdev);
@@ -1117,7 +858,9 @@ static int rv770_startup(struct radeon_device *rdev)
 	}
 	r600_irq_set(rdev);
 
-	r = radeon_ring_init(rdev, rdev->cp.ring_size);
+	r = radeon_ring_init(rdev, ring, ring->ring_size, RADEON_WB_CP_RPTR_OFFSET,
+			     R600_CP_RB_RPTR, R600_CP_RB_WPTR,
+			     0, 0xfffff, RADEON_CP_PACKET2);
 	if (r)
 		return r;
 	r = rv770_cp_load_microcode(rdev);
@@ -1126,6 +869,13 @@ static int rv770_startup(struct radeon_device *rdev)
 	r = r600_cp_resume(rdev);
 	if (r)
 		return r;
+
+	r = radeon_ib_pool_init(rdev);
+	if (r) {
+		dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
+		return r;
+	}
+
 
 	return 0;
 }
@@ -1146,10 +896,6 @@ int rv770_init(struct radeon_device *rdev)
 {
 	int r;
 
-	/* This don't do much */
-	r = radeon_gem_init(rdev);
-	if (r)
-		return r;
 	/* Read BIOS */
 	if (!radeon_get_bios(rdev)) {
 		if (ASIC_IS_AVIVO(rdev))
@@ -1200,8 +946,8 @@ int rv770_init(struct radeon_device *rdev)
 	if (r)
 		return r;
 
-	rdev->cp.ring_obj = NULL;
-	r600_ring_init(rdev, 1024 * 1024);
+	rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ring_obj = NULL;
+	r600_ring_init(rdev, &rdev->ring[RADEON_RING_TYPE_GFX_INDEX], 1024 * 1024);
 
 	rdev->ih.ring_obj = NULL;
 	r600_ih_ring_init(rdev, 64 * 1024);
@@ -1217,19 +963,6 @@ int rv770_init(struct radeon_device *rdev)
 		rv770_pcie_gart_fini(rdev);
         rdev->accel_working = false;
 	}
-	if (rdev->accel_working) {
-		r = radeon_ib_pool_init(rdev);
-		if (r) {
-			dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
-			rdev->accel_working = false;
-		} else {
-			r = r600_ib_test(rdev);
-			if (r) {
-				dev_err(rdev->dev, "IB test failed (%d).\n", r);
-				rdev->accel_working = false;
-			}
-		}
-	}
 
 	return 0;
 }
@@ -1238,6 +971,8 @@ static void rv770_pcie_gen2_enable(struct radeon_device *rdev)
 {
 	u32 link_width_cntl, lanes, speed_cntl, tmp;
 	u16 link_cntl2;
+	u32 mask;
+	int ret;
 
 	if (radeon_pcie_gen2 == 0)
 		return;
@@ -1251,6 +986,15 @@ static void rv770_pcie_gen2_enable(struct radeon_device *rdev)
 	/* x2 cards have a special sequence */
 	if (ASIC_IS_X2(rdev))
 		return;
+
+	ret = drm_pcie_get_speed_cap_mask(rdev->ddev, &mask);
+	if (ret != 0)
+		return;
+
+	if (!(mask & DRM_PCIE_SPEED_50))
+		return;
+
+	DRM_INFO("enabling PCIE gen 2 link speeds, disable with radeon.pcie_gen2=0\n");
 
 	/* advertise upconfig capability */
 	link_width_cntl = RREG32_PCIE_P(PCIE_LC_LINK_WIDTH_CNTL);

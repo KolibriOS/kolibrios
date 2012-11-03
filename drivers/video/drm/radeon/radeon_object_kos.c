@@ -122,9 +122,11 @@ void ttm_bo_unreserve(struct ttm_buffer_object *bo)
     bo->reserved.counter = 1;
 }
 
+struct sg_table;
+
 int radeon_bo_create(struct radeon_device *rdev,
-		     unsigned long size, int byte_align, bool kernel, u32 domain,
-                struct radeon_bo **bo_ptr)
+                unsigned long size, int byte_align, bool kernel, u32 domain,
+                struct sg_table *sg, struct radeon_bo **bo_ptr)
 {
 	struct radeon_bo *bo;
     enum ttm_bo_type type;
@@ -218,7 +220,7 @@ int radeon_bo_pin(struct radeon_bo *bo, u32 domain, u64 *gpu_addr)
         pagelist =  &((u32_t*)page_tabs)[(u32_t)bo->kptr >> 12];
         dbgprintf("pagelist %x\n", pagelist);
         radeon_gart_bind(bo->rdev, bo->tbo.offset,
-                         bo->tbo.vm_node->size,  pagelist);
+                         bo->tbo.vm_node->size,  pagelist, NULL);
         bo->tbo.offset += (u64)bo->rdev->mc.gtt_start;
     }
     else

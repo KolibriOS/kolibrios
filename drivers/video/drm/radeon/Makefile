@@ -42,23 +42,24 @@ HFILES:=     		$(DRV_INCLUDES)/linux/types.h		\
 
 NAME_SRC=							\
 			pci.c					\
-			$(DRM_TOPDIR)/drm_mm.c			\
-			$(DRM_TOPDIR)/drm_irq.c			\
-			$(DRM_TOPDIR)/drm_edid.c		\
-			$(DRM_TOPDIR)/drm_modes.c		\
 			$(DRM_TOPDIR)/drm_crtc.c		\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
-			$(DRM_TOPDIR)/drm_fb_helper.c		\
 			$(DRM_TOPDIR)/drm_dp_i2c_helper.c	\
+			$(DRM_TOPDIR)/drm_edid.c		\
+			$(DRM_TOPDIR)/drm_fb_helper.c		\
+			$(DRM_TOPDIR)/drm_irq.c			\
+			$(DRM_TOPDIR)/drm_mm.c			\
+			$(DRM_TOPDIR)/drm_modes.c		\
+			$(DRM_TOPDIR)/drm_pci.c			\
+			$(DRM_TOPDIR)/drm_stub.c		\
 			$(DRM_TOPDIR)/i2c/i2c-core.c		\
 			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
-			tracker/bitmap.c			\
 			r700_vs.c				\
-			r600_video.c				\
 			radeon_device.c				\
 			evergreen.c				\
 			evergreen_blit_shaders.c		\
 			evergreen_blit_kms.c			\
+			evergreen_hdmi.c			\
 			cayman_blit_shaders.c			\
 			radeon_clocks.c				\
 			atom.c					\
@@ -72,6 +73,8 @@ NAME_SRC=							\
 			radeon_connectors.c			\
 			atombios_crtc.c				\
 			atombios_dp.c				\
+			atombios_encoders.c			\
+			atombios_i2c.c				\
 			radeon_encoders.c			\
 			radeon_fence.c				\
 			radeon_gem.c				\
@@ -84,6 +87,8 @@ NAME_SRC=							\
 			radeon_gart.c				\
 			radeon_ring.c				\
 			radeon_object_kos.c			\
+			radeon_sa.c				\
+			radeon_semaphore.c			\
 			radeon_pm.c				\
 			r100.c					\
 			r200.c					\
@@ -92,7 +97,6 @@ NAME_SRC=							\
 			rv515.c					\
 			r520.c					\
 			r600.c					\
-			r600_audio.c				\
 			r600_blit_kms.c				\
 			r600_blit_shaders.c			\
 			r600_hdmi.c				\
@@ -104,6 +108,8 @@ NAME_SRC=							\
 			rdisplay.c				\
 			rdisplay_kms.c				\
 			cmdline.c				\
+			si.c					\
+			si_blit_shaders.c			\
 			fwblob.asm
 
 FW_BINS=							\

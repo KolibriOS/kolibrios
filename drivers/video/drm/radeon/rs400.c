@@ -77,7 +77,7 @@ int rs400_gart_init(struct radeon_device *rdev)
 {
 	int r;
 
-	if (rdev->gart.table.ram.ptr) {
+	if (rdev->gart.ptr) {
 		WARN(1, "RS400 GART already initialized\n");
 		return 0;
 	}
@@ -182,6 +182,9 @@ int rs400_gart_enable(struct radeon_device *rdev)
 	/* Enable gart */
 	WREG32_MC(RS480_AGP_ADDRESS_SPACE_SIZE, (RS480_GART_EN | size_reg));
 	rs400_gart_tlb_flush(rdev);
+	DRM_INFO("PCIE GART of %uM enabled (table at 0x%016llX).\n",
+		 (unsigned)(rdev->mc.gtt_size >> 20),
+		 (unsigned long long)rdev->gart.table_addr);
 	rdev->gart.ready = true;
 	return 0;
 }
@@ -209,6 +212,7 @@ void rs400_gart_fini(struct radeon_device *rdev)
 int rs400_gart_set_page(struct radeon_device *rdev, int i, uint64_t addr)
 {
 	uint32_t entry;
+	u32 *gtt = rdev->gart.ptr;
 
 	if (i < 0 || i > rdev->gart.num_gpu_pages) {
 		return -EINVAL;
@@ -218,7 +222,7 @@ int rs400_gart_set_page(struct radeon_device *rdev, int i, uint64_t addr)
 		((upper_32_bits(addr) & 0xff) << 4) |
 		RS400_PTE_WRITEABLE | RS400_PTE_READABLE;
 	entry = cpu_to_le32(entry);
-	rdev->gart.table.ram.ptr[i] = entry;
+	gtt[i] = entry;
 	return 0;
 }
 
@@ -238,7 +242,7 @@ int rs400_mc_wait_for_idle(struct radeon_device *rdev)
 	return -1;
 }
 
-void rs400_gpu_init(struct radeon_device *rdev)
+static void rs400_gpu_init(struct radeon_device *rdev)
 {
 	/* FIXME: is this correct ? */
 	r420_pipes_init(rdev);
@@ -248,7 +252,7 @@ void rs400_gpu_init(struct radeon_device *rdev)
 	}
 }
 
-void rs400_mc_init(struct radeon_device *rdev)
+static void rs400_mc_init(struct radeon_device *rdev)
 {
 	u64 base;
 
@@ -366,7 +370,7 @@ static int rs400_debugfs_pcie_gart_info_init(struct radeon_device *rdev)
 #endif
 }
 
-void rs400_mc_program(struct radeon_device *rdev)
+static void rs400_mc_program(struct radeon_device *rdev)
 {
 	struct r100_mc_save save;
 
@@ -415,11 +419,13 @@ static int rs400_startup(struct radeon_device *rdev)
 		dev_err(rdev->dev, "failed initializing CP (%d).\n", r);
        return r;
    }
-	r = r100_ib_init(rdev);
+
+	r = radeon_ib_pool_init(rdev);
 	if (r) {
-		dev_err(rdev->dev, "failed initializing IB (%d).\n", r);
+		dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
 		return r;
 	}
+
 	return 0;
 }
 
@@ -482,6 +488,7 @@ int rs400_init(struct radeon_device *rdev)
 	if (r)
 		return r;
 	r300_set_reg_safe(rdev);
+
 	rdev->accel_working = true;
 	r = rs400_startup(rdev);
 	if (r) {

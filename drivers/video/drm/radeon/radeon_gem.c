@@ -25,14 +25,14 @@
  *          Alex Deucher
  *          Jerome Glisse
  */
-#include "drmP.h"
-#include "drm.h"
-#include "radeon_drm.h"
+#include <drm/drmP.h>
+#include <drm/radeon_drm.h>
 #include "radeon.h"
 
 int radeon_gem_object_init(struct drm_gem_object *obj)
 {
-	/* we do nothings here */
+	BUG();
+
 	return 0;
 }
 
@@ -46,11 +46,12 @@ void radeon_gem_object_free(struct drm_gem_object *gobj)
 }
 
 int radeon_gem_object_create(struct radeon_device *rdev, int size,
-                 int alignment, int initial_domain,
-                 bool discardable, bool kernel,
-				struct drm_gem_object **obj)
+                int alignment, int initial_domain,
+                bool discardable, bool kernel,
+                struct drm_gem_object **obj)
 {
     struct radeon_bo *robj;
+	unsigned long max_size;
 	int r;
 
 	*obj = NULL;
@@ -58,11 +59,26 @@ int radeon_gem_object_create(struct radeon_device *rdev, int size,
 	if (alignment < PAGE_SIZE) {
 		alignment = PAGE_SIZE;
 	}
-	r = radeon_bo_create(rdev, size, alignment, kernel, initial_domain, &robj);
+
+	/* maximun bo size is the minimun btw visible vram and gtt size */
+	max_size = min(rdev->mc.visible_vram_size, rdev->mc.gtt_size);
+	if (size > max_size) {
+		printk(KERN_WARNING "%s:%d alloc size %dMb bigger than %ldMb limit\n",
+		       __func__, __LINE__, size >> 20, max_size >> 20);
+		return -ENOMEM;
+	}
+
+retry:
+	r = radeon_bo_create(rdev, size, alignment, kernel, initial_domain, NULL, &robj);
 	if (r) {
-		if (r != -ERESTARTSYS)
+		if (r != -ERESTARTSYS) {
+			if (initial_domain == RADEON_GEM_DOMAIN_VRAM) {
+				initial_domain |= RADEON_GEM_DOMAIN_GTT;
+				goto retry;
+			}
 			DRM_ERROR("Failed to allocate GEM object (%d, %d, %u, %d)\n",
 				  size, initial_domain, alignment, r);
+		}
         return r;
 	}
 	*obj = &robj->gem_base;
@@ -116,7 +132,7 @@ int radeon_gem_set_domain(struct drm_gem_object *gobj,
 	}
 	if (!domain) {
 		/* Do nothings */
-		printk(KERN_WARNING "Set domain withou domain !\n");
+		printk(KERN_WARNING "Set domain without domain !\n");
 		return 0;
 	}
 	if (domain == RADEON_GEM_DOMAIN_CPU) {
@@ -151,6 +167,7 @@ int radeon_gem_info_ioctl(struct drm_device *dev, void *data,
 	struct radeon_device *rdev = dev->dev_private;
 	struct drm_radeon_gem_info *args = data;
 	struct ttm_mem_type_manager *man;
+	unsigned i;
 
 	man = &rdev->mman.bdev.man[TTM_PL_VRAM];
 
@@ -159,8 +176,9 @@ int radeon_gem_info_ioctl(struct drm_device *dev, void *data,
 	if (rdev->stollen_vga_memory)
 		args->vram_visible -= radeon_bo_size(rdev->stollen_vga_memory);
 	args->vram_visible -= radeon_fbdev_total_size(rdev);
-	args->gart_size = rdev->mc.gtt_size - rdev->cp.ring_size - 4096 -
-		RADEON_IB_POOL_SIZE*64*1024;
+	args->gart_size = rdev->mc.gtt_size - 4096 - RADEON_IB_POOL_SIZE*64*1024;
+	for(i = 0; i < RADEON_NUM_RINGS; ++i)
+		args->gart_size -= rdev->ring[i].ring_size;
 	return 0;
 }
 
@@ -189,21 +207,27 @@ int radeon_gem_create_ioctl(struct drm_device *dev, void *data,
 	uint32_t handle;
 	int r;
 
+	down_read(&rdev->exclusive_lock);
 	/* create a gem object to contain this object in */
 	args->size = roundup(args->size, PAGE_SIZE);
 	r = radeon_gem_object_create(rdev, args->size, args->alignment,
 				     args->initial_domain, false,
 					false, &gobj);
 	if (r) {
+		up_read(&rdev->exclusive_lock);
+		r = radeon_gem_handle_lockup(rdev, r);
 		return r;
 	}
 	r = drm_gem_handle_create(filp, gobj, &handle);
 	/* drop reference from allocate - handle holds it now */
 	drm_gem_object_unreference_unlocked(gobj);
 	if (r) {
+		up_read(&rdev->exclusive_lock);
+		r = radeon_gem_handle_lockup(rdev, r);
 		return r;
 	}
 	args->handle = handle;
+	up_read(&rdev->exclusive_lock);
 	return 0;
 }
 
@@ -212,6 +236,7 @@ int radeon_gem_set_domain_ioctl(struct drm_device *dev, void *data,
 {
 	/* transition the BO to a domain -
 	 * just validate the BO into a certain domain */
+	struct radeon_device *rdev = dev->dev_private;
 	struct drm_radeon_gem_set_domain *args = data;
 	struct drm_gem_object *gobj;
 	struct radeon_bo *robj;
@@ -219,10 +244,12 @@ int radeon_gem_set_domain_ioctl(struct drm_device *dev, void *data,
 
 	/* for now if someone requests domain CPU -
 	 * just make sure the buffer is finished with */
+	down_read(&rdev->exclusive_lock);
 
 	/* just do a BO wait for now */
 	gobj = drm_gem_object_lookup(dev, filp, args->handle);
 	if (gobj == NULL) {
+		up_read(&rdev->exclusive_lock);
 		return -ENOENT;
 	}
 	robj = gem_to_radeon_bo(gobj);
@@ -230,6 +257,8 @@ int radeon_gem_set_domain_ioctl(struct drm_device *dev, void *data,
 	r = radeon_gem_set_domain(gobj, args->read_domains, args->write_domain);
 
 	drm_gem_object_unreference_unlocked(gobj);
+	up_read(&rdev->exclusive_lock);
+	r = radeon_gem_handle_lockup(robj->rdev, r);
 	return r;
 }
 
@@ -261,6 +290,7 @@ int radeon_gem_mmap_ioctl(struct drm_device *dev, void *data,
 int radeon_gem_busy_ioctl(struct drm_device *dev, void *data,
 			  struct drm_file *filp)
 {
+	struct radeon_device *rdev = dev->dev_private;
 	struct drm_radeon_gem_busy *args = data;
 	struct drm_gem_object *gobj;
 	struct radeon_bo *robj;
@@ -286,12 +316,14 @@ int radeon_gem_busy_ioctl(struct drm_device *dev, void *data,
 		break;
 	}
 	drm_gem_object_unreference_unlocked(gobj);
+	r = radeon_gem_handle_lockup(rdev, r);
 	return r;
 }
 
 int radeon_gem_wait_idle_ioctl(struct drm_device *dev, void *data,
 			      struct drm_file *filp)
 {
+	struct radeon_device *rdev = dev->dev_private;
 	struct drm_radeon_gem_wait_idle *args = data;
 	struct drm_gem_object *gobj;
 	struct radeon_bo *robj;
@@ -304,9 +336,10 @@ int radeon_gem_wait_idle_ioctl(struct drm_device *dev, void *data,
 	robj = gem_to_radeon_bo(gobj);
 	r = radeon_bo_wait(robj, NULL, false);
 	/* callback hw specific functions if any */
-	if (robj->rdev->asic->ioctl_wait_idle)
-		robj->rdev->asic->ioctl_wait_idle(robj->rdev, robj);
+	if (rdev->asic->ioctl_wait_idle)
+		robj->rdev->asic->ioctl_wait_idle(rdev, robj);
 	drm_gem_object_unreference_unlocked(gobj);
+	r = radeon_gem_handle_lockup(rdev, r);
 	return r;
 }
 

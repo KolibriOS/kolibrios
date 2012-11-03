@@ -206,11 +206,6 @@ static void radeon_legacy_rmx_mode_set(struct drm_crtc *crtc,
 	WREG32(RADEON_FP_CRTC_V_TOTAL_DISP, fp_crtc_v_total_disp);
 }
 
-void radeon_restore_common_regs(struct drm_device *dev)
-{
-	/* don't need this yet */
-}
-
 static void radeon_pll_wait_for_read_update_complete(struct drm_device *dev)
 {
 	struct radeon_device *rdev = dev->dev_private;
@@ -295,7 +290,7 @@ static uint8_t radeon_compute_pll_gain(uint16_t ref_freq, uint16_t ref_div,
 		return 1;
 }
 
-void radeon_crtc_dpms(struct drm_crtc *crtc, int mode)
+static void radeon_crtc_dpms(struct drm_crtc *crtc, int mode)
 {
 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
 	struct drm_device *dev = crtc->dev;
@@ -419,6 +414,7 @@ int radeon_crtc_do_set_base(struct drm_crtc *crtc,
 	r = radeon_bo_reserve(rbo, false);
 	if (unlikely(r != 0))
 		return r;
+	/* Only 27 bit offset for legacy CRTC */
 	r = radeon_bo_pin(rbo, RADEON_GEM_DOMAIN_VRAM, &base);
 	if (unlikely(r != 0)) {
 		radeon_bo_unreserve(rbo);
@@ -437,7 +433,7 @@ int radeon_crtc_do_set_base(struct drm_crtc *crtc,
 
 	crtc_offset_cntl = 0;
 
-	pitch_pixels = target_fb->pitch / (target_fb->bits_per_pixel / 8);
+	pitch_pixels = target_fb->pitches[0] / (target_fb->bits_per_pixel / 8);
 	crtc_pitch  = (((pitch_pixels * target_fb->bits_per_pixel) +
 			((target_fb->bits_per_pixel * 8) - 1)) /
 		       (target_fb->bits_per_pixel * 8));
@@ -988,15 +984,9 @@ static void radeon_set_pll(struct drm_crtc *crtc, struct drm_display_mode *mode)
 }
 
 static bool radeon_crtc_mode_fixup(struct drm_crtc *crtc,
-				   struct drm_display_mode *mode,
+				   const struct drm_display_mode *mode,
 				   struct drm_display_mode *adjusted_mode)
 {
-	struct drm_device *dev = crtc->dev;
-	struct radeon_device *rdev = dev->dev_private;
-
-	/* adjust pm to upcoming mode change */
-	radeon_pm_compute_clocks(rdev);
-
 	if (!radeon_crtc_scaling_mode_fixup(crtc, mode, adjusted_mode))
 		return false;
 	return true;
@@ -1029,9 +1019,11 @@ static int radeon_crtc_mode_set(struct drm_crtc *crtc,
 
 static void radeon_crtc_prepare(struct drm_crtc *crtc)
 {
+	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
 	struct drm_device *dev = crtc->dev;
 	struct drm_crtc *crtci;
 
+	radeon_crtc->in_mode_set = true;
 	/*
 	* The hardware wedges sometimes if you reconfigure one CRTC
 	* whilst another is running (see fdo bug #24611).
@@ -1042,6 +1034,7 @@ static void radeon_crtc_prepare(struct drm_crtc *crtc)
 
 static void radeon_crtc_commit(struct drm_crtc *crtc)
 {
+	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
 	struct drm_device *dev = crtc->dev;
 	struct drm_crtc *crtci;
 
@@ -1052,6 +1045,7 @@ static void radeon_crtc_commit(struct drm_crtc *crtc)
 		if (crtci->enabled)
 			radeon_crtc_dpms(crtci, DRM_MODE_DPMS_ON);
 	}
+	radeon_crtc->in_mode_set = false;
 }
 
 static const struct drm_crtc_helper_funcs legacy_helper_funcs = {

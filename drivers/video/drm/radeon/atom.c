@@ -277,7 +277,12 @@ static uint32_t atom_get_src_int(atom_exec_context *ctx, uint8_t attr,
 	case ATOM_ARG_FB:
 		idx = U8(*ptr);
 		(*ptr)++;
-		val = gctx->scratch[((gctx->fb_base + idx) / 4)];
+		if ((gctx->fb_base + (idx * 4)) > gctx->scratch_size_bytes) {
+			DRM_ERROR("ATOM: fb read beyond scratch region: %d vs. %d\n",
+				  gctx->fb_base + (idx * 4), gctx->scratch_size_bytes);
+			val = 0;
+		} else
+			val = gctx->scratch[(gctx->fb_base / 4) + idx];
 		if (print)
 			DEBUG("FB[0x%02X]", idx);
 		break;
@@ -531,7 +536,11 @@ static void atom_put_dst(atom_exec_context *ctx, int arg, uint8_t attr,
 	case ATOM_ARG_FB:
 		idx = U8(*ptr);
 		(*ptr)++;
-		gctx->scratch[((gctx->fb_base + idx) / 4)] = val;
+		if ((gctx->fb_base + (idx * 4)) > gctx->scratch_size_bytes) {
+			DRM_ERROR("ATOM: fb write beyond scratch region: %d vs. %d\n",
+				  gctx->fb_base + (idx * 4), gctx->scratch_size_bytes);
+		} else
+			gctx->scratch[(gctx->fb_base / 4) + idx] = val;
 		DEBUG("FB[0x%02X]", idx);
 		break;
 	case ATOM_ARG_PLL:
@@ -714,8 +723,25 @@ static void atom_op_jump(atom_exec_context *ctx, int *ptr, int arg)
 	if (arg != ATOM_COND_ALWAYS)
 		SDEBUG("   taken: %s\n", execute ? "yes" : "no");
 	SDEBUG("   target: 0x%04X\n", target);
-	if (execute)
+	if (execute) {
+		if (ctx->last_jump == (ctx->start + target)) {
+			cjiffies = GetTimerTicks();
+			if (time_after(cjiffies, ctx->last_jump_jiffies)) {
+				cjiffies -= ctx->last_jump_jiffies;
+				if ((jiffies_to_msecs(cjiffies) > 5000)) {
+					DRM_ERROR("atombios stuck in loop for more than 5secs aborting\n");
+					ctx->abort = true;
+				}
+			} else {
+				/* jiffies wrap around we will just wait a little longer */
+				ctx->last_jump_jiffies = GetTimerTicks();
+			}
+		} else {
+			ctx->last_jump = ctx->start + target;
+			ctx->last_jump_jiffies = GetTimerTicks();
+		}
 		*ptr = ctx->start + target;
+	}
 }
 
 static void atom_op_mask(atom_exec_context *ctx, int *ptr, int arg)
@@ -1278,8 +1304,11 @@ struct atom_context *atom_parse(struct card_info *card, void *bios)
 
 int atom_asic_init(struct atom_context *ctx)
 {
+	struct radeon_device *rdev = ctx->card->dev->dev_private;
 	int hwi = CU16(ctx->data_table + ATOM_DATA_FWI_PTR);
 	uint32_t ps[16];
+	int ret;
+
 	memset(ps, 0, 64);
 
 	ps[0] = cpu_to_le32(CU32(hwi + ATOM_FWI_DEFSCLK_PTR));
@@ -1289,7 +1318,17 @@ int atom_asic_init(struct atom_context *ctx)
 
 	if (!CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_INIT))
 		return 1;
-	return atom_execute_table(ctx, ATOM_CMD_INIT, ps);
+	ret = atom_execute_table(ctx, ATOM_CMD_INIT, ps);
+	if (ret)
+		return ret;
+
+	memset(ps, 0, 64);
+
+	if (rdev->family < CHIP_R600) {
+		if (CU16(ctx->cmd_table + 4 + 2 * ATOM_CMD_SPDFANCNTL))
+			atom_execute_table(ctx, ATOM_CMD_SPDFANCNTL, ps);
+	}
+	return ret;
 }
 
 void atom_destroy(struct atom_context *ctx)
@@ -1353,11 +1392,13 @@ int atom_allocate_fb_scratch(struct atom_context *ctx)
 
 	usage_bytes = firmware_usage->asFirmwareVramReserveInfo[0].usFirmwareUseInKb * 1024;
 	}
+	ctx->scratch_size_bytes = 0;
 	if (usage_bytes == 0)
 		usage_bytes = 20 * 1024;
 	/* allocate some scratch memory */
 	ctx->scratch = kzalloc(usage_bytes, GFP_KERNEL);
 	if (!ctx->scratch)
 		return -ENOMEM;
+	ctx->scratch_size_bytes = usage_bytes;
 	return 0;
 }

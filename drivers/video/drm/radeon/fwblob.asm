@@ -119,7 +119,7 @@ ___start_builtin_fw:
         dd (SUMO2ME_END - SUMO2ME_START)
 
 
-macro ni_code [arg]
+macro NI_code [arg]
 {
         dd FIRMWARE_#arg#_ME
         dd arg#ME_START
@@ -135,7 +135,7 @@ macro ni_code [arg]
 
 }
 
-ni_code BARTS, TURKS, CAICOS, CAYMAN
+NI_code BARTS, TURKS, CAICOS, CAYMAN
 
         dd FIRMWARE_RV610_PFP
         dd RV610PFP_START
@@ -235,6 +235,31 @@ ni_code BARTS, TURKS, CAICOS, CAYMAN
         dd SUMORLC_START
         dd (SUMORLC_END - SUMORLC_START)
 
+macro SI_code [arg]
+{
+        dd FIRMWARE_#arg#_PFP
+        dd arg#_PFP_START
+        dd (arg#_PFP_END - arg#_PFP_START)
+
+        dd FIRMWARE_#arg#_ME
+        dd arg#_ME_START
+        dd (arg#_ME_END - arg#_ME_START)
+
+        dd FIRMWARE_#arg#_CE
+        dd arg#_CE_START
+        dd (arg#_CE_END - arg#_CE_START)
+
+        dd FIRMWARE_#arg#_MC
+        dd arg#_MC_START
+        dd (arg#_MC_END - arg#_MC_START)
+
+        dd FIRMWARE_#arg#_RLC
+        dd arg#_RLC_START
+        dd (arg#_RLC_END - arg#_RLC_START)
+
+}
+
+SI_code TAHITI, PITCAIRN, VERDE
 
 ___end_builtin_fw:
 
@@ -315,6 +340,47 @@ FIRMWARE_TURKS_MC       db 'radeon/TURKS_mc.bin',0
 FIRMWARE_CAICOS_MC      db 'radeon/CAICOS_mc.bin',0
 FIRMWARE_CAYMAN_MC      db 'radeon/CAYMAN_mc.bin',0
 
+macro SI_firmware [arg]
+{
+
+forward
+
+FIRMWARE_#arg#_PFP      db 'radeon/',`arg,'_pfp.bin',0
+FIRMWARE_#arg#_ME       db 'radeon/',`arg,'_me.bin',0
+FIRMWARE_#arg#_CE       db 'radeon/',`arg,'_ce.bin',0
+FIRMWARE_#arg#_MC       db 'radeon/',`arg,'_mc.bin',0
+FIRMWARE_#arg#_RLC      db 'radeon/',`arg,'_rlc.bin',0
+
+forward
+
+align 16
+arg#_PFP_START:
+        file "firmware/"#`arg#"_pfp.bin"
+arg#_PFP_END:
+
+align 16
+arg#_ME_START:
+        file "firmware/"#`arg#"_me.bin"
+arg#_ME_END:
+
+align 16
+arg#_CE_START:
+        file "firmware/"#`arg#"_ce.bin"
+arg#_CE_END:
+
+align 16
+arg#_MC_START:
+        file "firmware/"#`arg#"_mc.bin"
+arg#_MC_END:
+
+align 16
+arg#_RLC_START:
+        file "firmware/"#`arg#"_rlc.bin"
+arg#_RLC_END:
+
+}
+
+SI_firmware TAHITI,PITCAIRN,VERDE
 
 align 16
 R100CP_START:
@@ -627,3 +693,5 @@ align 16
 CAYMANMC_START:
         file 'firmware/CAYMAN_mc.bin'
 CAYMANMC_END:
+
+

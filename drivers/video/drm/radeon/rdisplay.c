@@ -33,7 +33,7 @@ int init_cursor(cursor_t *cursor)
     rdev = (struct radeon_device *)rdisplay->ddev->dev_private;
 
     r = radeon_bo_create(rdev, CURSOR_WIDTH*CURSOR_HEIGHT*4,
-                     PAGE_SIZE, false, RADEON_GEM_DOMAIN_VRAM, &cursor->robj);
+                     PAGE_SIZE, false, RADEON_GEM_DOMAIN_VRAM, NULL, &cursor->robj);
 
     if (unlikely(r != 0))
         return r;
@@ -293,4 +293,35 @@ void framebuffer_release(struct fb_info *info)
     kfree(info);
 }
 
+
+/* 23 bits of float fractional data */
+#define I2F_FRAC_BITS  23
+#define I2F_MASK ((1 << I2F_FRAC_BITS) - 1)
+
+/*
+ * Converts unsigned integer into 32-bit IEEE floating point representation.
+ * Will be exact from 0 to 2^24.  Above that, we round towards zero
+ * as the fractional bits will not fit in a float.  (It would be better to
+ * round towards even as the fpu does, but that is slower.)
+ */
+__pure uint32_t int2float(uint32_t x)
+{
+    uint32_t msb, exponent, fraction;
+
+    /* Zero is special */
+    if (!x) return 0;
+
+    /* Get location of the most significant bit */
+    msb = __fls(x);
+
+    /*
+     * Use a rotate instead of a shift because that works both leftwards
+     * and rightwards due to the mod(32) behaviour.  This means we don't
+     * need to check to see if we are above 2^24 or not.
+     */
+    fraction = ror32(x, (msb - I2F_FRAC_BITS) & 0x1f) & I2F_MASK;
+    exponent = (127 + msb) << I2F_FRAC_BITS;
+
+    return fraction + exponent;
+}
 

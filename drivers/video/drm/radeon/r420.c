@@ -27,7 +27,7 @@
  */
 #include <linux/seq_file.h>
 #include <linux/slab.h>
-#include "drmP.h"
+#include <drm/drmP.h>
 #include "radeon_reg.h"
 #include "radeon.h"
 #include "radeon_asic.h"
@@ -160,6 +160,8 @@ static void r420_clock_resume(struct radeon_device *rdev)
 
 static void r420_cp_errata_init(struct radeon_device *rdev)
 {
+	struct radeon_ring *ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
+
 	/* RV410 and R420 can lock up if CP DMA to host memory happens
 	 * while the 2D engine is busy.
 	 *
@@ -167,22 +169,24 @@ static void r420_cp_errata_init(struct radeon_device *rdev)
 	 * of the CP init, apparently.
 	 */
 	radeon_scratch_get(rdev, &rdev->config.r300.resync_scratch);
-	radeon_ring_lock(rdev, 8);
-	radeon_ring_write(rdev, PACKET0(R300_CP_RESYNC_ADDR, 1));
-	radeon_ring_write(rdev, rdev->config.r300.resync_scratch);
-	radeon_ring_write(rdev, 0xDEADBEEF);
-	radeon_ring_unlock_commit(rdev);
+	radeon_ring_lock(rdev, ring, 8);
+	radeon_ring_write(ring, PACKET0(R300_CP_RESYNC_ADDR, 1));
+	radeon_ring_write(ring, rdev->config.r300.resync_scratch);
+	radeon_ring_write(ring, 0xDEADBEEF);
+	radeon_ring_unlock_commit(rdev, ring);
 }
 
 static void r420_cp_errata_fini(struct radeon_device *rdev)
 {
+	struct radeon_ring *ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
+
 	/* Catch the RESYNC we dispatched all the way back,
 	 * at the very beginning of the CP init.
 	 */
-	radeon_ring_lock(rdev, 8);
-	radeon_ring_write(rdev, PACKET0(R300_RB3D_DSTCACHE_CTLSTAT, 0));
-	radeon_ring_write(rdev, R300_RB3D_DC_FINISH);
-	radeon_ring_unlock_commit(rdev);
+	radeon_ring_lock(rdev, ring, 8);
+	radeon_ring_write(ring, PACKET0(R300_RB3D_DSTCACHE_CTLSTAT, 0));
+	radeon_ring_write(ring, R300_RB3D_DC_FINISH);
+	radeon_ring_unlock_commit(rdev, ring);
 	radeon_scratch_free(rdev, rdev->config.r300.resync_scratch);
 }
 
@@ -225,41 +229,18 @@ static int r420_startup(struct radeon_device *rdev)
 		return r;
 	}
 	r420_cp_errata_init(rdev);
-	r = r100_ib_init(rdev);
+
+	r = radeon_ib_pool_init(rdev);
 	if (r) {
-		dev_err(rdev->dev, "failed initializing IB (%d).\n", r);
+		dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
 		return r;
 	}
+
 	return 0;
 }
 
-int r420_resume(struct radeon_device *rdev)
-{
-	/* Make sur GART are not working */
-	if (rdev->flags & RADEON_IS_PCIE)
-		rv370_pcie_gart_disable(rdev);
-	if (rdev->flags & RADEON_IS_PCI)
-		r100_pci_gart_disable(rdev);
-	/* Resume clock before doing reset */
-	r420_clock_resume(rdev);
-	/* Reset gpu before posting otherwise ATOM will enter infinite loop */
-	if (radeon_asic_reset(rdev)) {
-		dev_warn(rdev->dev, "GPU reset failed ! (0xE40=0x%08X, 0x7C0=0x%08X)\n",
-			RREG32(R_000E40_RBBM_STATUS),
-			RREG32(R_0007C0_CP_STAT));
-	}
-	/* check if cards are posted or not */
-	if (rdev->is_atom_bios) {
-		atom_asic_init(rdev->mode_info.atom_context);
-	} else {
-		radeon_combios_asic_init(rdev->ddev);
-	}
-	/* Resume clock after posting */
-	r420_clock_resume(rdev);
-	/* Initialize surface registers */
-	radeon_surface_init(rdev);
-	return r420_startup(rdev);
-}
+
+
 
 
 
@@ -341,6 +322,7 @@ int r420_init(struct radeon_device *rdev)
 			return r;
 	}
 	r420_set_reg_safe(rdev);
+
 	rdev->accel_working = true;
 	r = r420_startup(rdev);
 	if (r) {

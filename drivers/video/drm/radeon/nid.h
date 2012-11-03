@@ -41,7 +41,13 @@
 #define CAYMAN_MAX_TCC               16
 #define CAYMAN_MAX_TCC_MASK          0xFF
 
+#define CAYMAN_GB_ADDR_CONFIG_GOLDEN       0x02011003
+#define ARUBA_GB_ADDR_CONFIG_GOLDEN        0x12010001
+
 #define DMIF_ADDR_CONFIG  				0xBD4
+#define	SRBM_GFX_CNTL				        0x0E44
+#define		RINGID(x)					(((x) & 0x3) << 0)
+#define		VMID(x)						(((x) & 0x7) << 0)
 #define	SRBM_STATUS				        0x0E50
 
 #define VM_CONTEXT0_REQUEST_RESPONSE			0x1470
@@ -103,6 +109,7 @@
 #define		SYSTEM_ACCESS_MODE_NOT_IN_SYS			(3 << 3)
 #define		SYSTEM_APERTURE_UNMAPPED_ACCESS_PASS_THRU	(0 << 5)
 #define		ENABLE_ADVANCED_DRIVER_MODEL			(1 << 6)
+#define	FUS_MC_VM_FB_OFFSET				0x2068
 
 #define MC_SHARED_BLACKOUT_CNTL           		0x20ac
 #define	MC_ARB_RAMCFG					0x2760
@@ -143,6 +150,8 @@
 #define	GC_USER_SYS_RB_BACKEND_DISABLE			0x3F8C
 #define	CGTS_SYS_TCC_DISABLE				0x3F90
 #define	CGTS_USER_SYS_TCC_DISABLE			0x3F94
+
+#define RLC_GFX_INDEX           			0x3FC4
 
 #define	CONFIG_MEMSIZE					0x5428
 
@@ -208,6 +217,12 @@
 #define		SOFT_RESET_VGT					(1 << 14)
 #define		SOFT_RESET_IA					(1 << 15)
 
+#define GRBM_GFX_INDEX          			0x802C
+#define		INSTANCE_INDEX(x)			((x) << 0)
+#define		SE_INDEX(x)     			((x) << 16)
+#define		INSTANCE_BROADCAST_WRITES      		(1 << 30)
+#define		SE_BROADCAST_WRITES      		(1 << 31)
+
 #define	SCRATCH_REG0					0x8500
 #define	SCRATCH_REG1					0x8504
 #define	SCRATCH_REG2					0x8508
@@ -219,6 +234,12 @@
 #define	SCRATCH_UMSK					0x8540
 #define	SCRATCH_ADDR					0x8544
 #define	CP_SEM_WAIT_TIMER				0x85BC
+#define	CP_SEM_INCOMPLETE_TIMER_CNTL			0x85C8
+#define	CP_COHER_CNTL2					0x85E8
+#define	CP_STALLED_STAT1			0x8674
+#define	CP_STALLED_STAT2			0x8678
+#define	CP_BUSY_STAT				0x867C
+#define	CP_STAT						0x8680
 #define CP_ME_CNTL					0x86D8
 #define		CP_ME_HALT					(1 << 28)
 #define		CP_PFP_HALT					(1 << 26)
@@ -394,6 +415,12 @@
 #define	CP_RB0_RPTR_ADDR				0xC10C
 #define	CP_RB0_RPTR_ADDR_HI				0xC110
 #define	CP_RB0_WPTR					0xC114
+
+#define CP_INT_CNTL                                     0xC124
+#       define CNTX_BUSY_INT_ENABLE                     (1 << 19)
+#       define CNTX_EMPTY_INT_ENABLE                    (1 << 20)
+#       define TIME_STAMP_INT_ENABLE                    (1 << 26)
+
 #define	CP_RB1_BASE					0xC180
 #define	CP_RB1_CNTL					0xC184
 #define	CP_RB1_RPTR_ADDR				0xC188
@@ -410,6 +437,10 @@
 #define	CP_ME_RAM_WADDR					0xC15C
 #define	CP_ME_RAM_DATA					0xC160
 #define	CP_DEBUG					0xC1FC
+
+#define VGT_EVENT_INITIATOR                             0x28a90
+#       define CACHE_FLUSH_AND_INV_EVENT_TS                     (0x14 << 0)
+#       define CACHE_FLUSH_AND_INV_EVENT                        (0x16 << 0)
 
 /*
  * PM4
@@ -445,6 +476,7 @@
 #define	PACKET3_DISPATCH_DIRECT				0x15
 #define	PACKET3_DISPATCH_INDIRECT			0x16
 #define	PACKET3_INDIRECT_BUFFER_END			0x17
+#define	PACKET3_MODE_CONTROL				0x18
 #define	PACKET3_SET_PREDICATION				0x20
 #define	PACKET3_REG_RMW					0x21
 #define	PACKET3_COND_EXEC				0x22
@@ -470,6 +502,7 @@
 #define	PACKET3_MPEG_INDEX				0x3A
 #define	PACKET3_WAIT_REG_MEM				0x3C
 #define	PACKET3_MEM_WRITE				0x3D
+#define	PACKET3_PFP_SYNC_ME				0x42
 #define	PACKET3_SURFACE_SYNC				0x43
 #              define PACKET3_CB0_DEST_BASE_ENA    (1 << 6)
 #              define PACKET3_CB1_DEST_BASE_ENA    (1 << 7)
@@ -494,7 +527,27 @@
 #define		PACKET3_ME_INITIALIZE_DEVICE_ID(x) ((x) << 16)
 #define	PACKET3_COND_WRITE				0x45
 #define	PACKET3_EVENT_WRITE				0x46
+#define		EVENT_TYPE(x)                           ((x) << 0)
+#define		EVENT_INDEX(x)                          ((x) << 8)
+                /* 0 - any non-TS event
+		 * 1 - ZPASS_DONE
+		 * 2 - SAMPLE_PIPELINESTAT
+		 * 3 - SAMPLE_STREAMOUTSTAT*
+		 * 4 - *S_PARTIAL_FLUSH
+		 * 5 - TS events
+		 */
 #define	PACKET3_EVENT_WRITE_EOP				0x47
+#define		DATA_SEL(x)                             ((x) << 29)
+                /* 0 - discard
+		 * 1 - send low 32bit data
+		 * 2 - send 64bit data
+		 * 3 - send 64bit counter value
+		 */
+#define		INT_SEL(x)                              ((x) << 24)
+                /* 0 - none
+		 * 1 - interrupt only (DATA_SEL = 0)
+		 * 2 - interrupt when data write is confirmed
+		 */
 #define	PACKET3_EVENT_WRITE_EOS				0x48
 #define	PACKET3_PREAMBLE_CNTL				0x4A
 #              define PACKET3_PREAMBLE_BEGIN_CLEAR_STATE     (2 << 28)
@@ -533,6 +586,7 @@
 #define	PACKET3_SET_CONTEXT_REG_INDIRECT		0x73
 #define	PACKET3_SET_RESOURCE_INDIRECT			0x74
 #define	PACKET3_SET_APPEND_CNT			        0x75
+#define	PACKET3_ME_WRITE				0x7A
 
 #endif
 

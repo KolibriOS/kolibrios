@@ -709,7 +709,7 @@ int r600_video_blit(uint64_t src_offset, int  x, int y,
 
     mutex_lock(&rdev->r600_video.mutex);
     rdev->r600_video.vb_ib = NULL;
-    r = r600_video_prepare_copy(rdev, h*pitch);
+    r = r600_video_prepare_copy(rdev, w*4);
     if (r) {
 //       if (rdev->r600_blit.vb_ib)
 //           radeon_ib_free(rdev, &rdev->r600_blit.vb_ib);
