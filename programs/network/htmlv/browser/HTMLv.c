@@ -56,11 +56,11 @@ void main()
 	int scroll_used=0;
 	
 	mem_Init();
-	if (load_dll2(libio, #libio_init,1)!=0) debug("Не удалось подключить библиотеку libio."w);
-	if (load_dll2(libimg, #libimg_init,1)!=0) debug("Не удалось подключить библиотеку libimg."w);
-	if (load_dll2(boxlib, #edit_box_draw,0)!=0) debug("Не удалось подключить библиотеку boxlib."w);
+	if (load_dll2(libio, #libio_init,1)!=0) debug("Не удалось подключить библиотеку libio"w);
+	if (load_dll2(libimg, #libimg_init,1)!=0) debug("Не удалось подключить библиотеку libimg"w);
+	if (load_dll2(boxlib, #edit_box_draw,0)!=0) debug("Не удалось подключить библиотеку boxlib"w);
 	load_dll2(#abox_lib, #boxlib_init,0);
-	if (load_dll2(libtruetype, #truetype,0)!=0) debug("Не удалось подключить библиотеку TrueType."w);
+	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Не удалось подключить библиотеку TrueType"w); use_truetype = 2;}
 	
 	if (!URL) strcpy(#URL, "/sys/home.htm");
 	strcpy(#editURL, #URL);

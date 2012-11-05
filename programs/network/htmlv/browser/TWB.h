@@ -120,6 +120,12 @@ void TWebBrowser::Scan(int id)
 				else pre_text=0;
 			break;
 		case 005: //truetype
+			if (use_truetype == 2) 
+			{
+				debug("Ќе удалось подключить библиотеку TrueType");
+				debug("/rd/1/lib/truetype.obj не обнаружен или имеет неправильный формат");
+				return;
+			}
 			if (use_truetype == 1) use_truetype=0; else use_truetype=1;
 			break;
 		case BACK:
