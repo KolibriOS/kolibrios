@@ -16,7 +16,7 @@ end if
 include		'hwm_wb.inc'
 include		'hwm_it87.inc'
 include		'hwm_uguru.inc'
-;include	'hwm_via686.inc'
+;include	'hwm_hudson.inc'
 
 uglobal
 	hwm_enable:
@@ -52,14 +52,18 @@ hwm_chip_name	dd	hwm_unk
 ; HWMGetParam - список, процедур получения параметров
 ; оба эти списка должны соответствовать друг другу по
 ; по порядку процедур
-HWMProbe:	dd	wb_init
+HWMProbe:	
+        dd	wb_init
 		dd	it87_init
 		dd	uGuru_init
+;        dd  hudson_init
 		dd	0		; <- конец списка
 		
-HWMGetParam:	dd	wb_getparam
+HWMGetParam:	
+        dd	wb_getparam
 		dd	it87_getparam
 		dd	uGuru_getparam
+;        dd  hudson_getparam
 		
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 hwm_init:
