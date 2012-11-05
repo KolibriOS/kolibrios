@@ -5,11 +5,12 @@
 
 char *ITEMS_LIST[]={
 "View in Tinypad   F3",52,
-"View in TextEdit  F4",53,
+"WIN               F5",REFRESH,
+"DOS           Ctrl+D",04,
 "KOI-8         Ctrl+K",11,
 "UTF           Ctrl+U",21,
-"DOS           Ctrl+D",04,
 "Line breaks ON"      ,01,
+"TrueType fonts"      ,05,
 0}; 
 
 
@@ -88,6 +89,7 @@ void menu_rmb()
 					DrawBar(1, i*ITEM_HEIGHT+1, ITEM_WIDTH-1, ITEM_HEIGHT, EDX);
 					WriteText(8,i*ITEM_HEIGHT+6,0x80,0x000000,ITEMS_LIST[i*2],0);
 					if (ITEMS_LIST[i*2+1]==1) && (pre_text==2) DrawBar(ITEM_WIDTH-18, i*ITEM_HEIGHT+8, 4, 4, 0x444444);
+					if (ITEMS_LIST[i*2+1]==5) && (use_truetype==1) DrawBar(ITEM_WIDTH-18, i*ITEM_HEIGHT+8, 4, 4, 0x444444);
 				}
 	}
 }

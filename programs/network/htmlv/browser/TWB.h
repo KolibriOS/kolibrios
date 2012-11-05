@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.97";
+char version[]=" Text-based Browser 0.97.5";
 
 
 struct TWebBrowser {
@@ -119,6 +119,9 @@ void TWebBrowser::Scan(int id)
 			if (!pre_text) pre_text=2;
 				else pre_text=0;
 			break;
+		case 005: //truetype
+			if (use_truetype == 1) use_truetype=0; else use_truetype=1;
+			break;
 		case BACK:
 			if (!BrowserHistory.GoBack()) return;
 			OpenPage();
@@ -129,9 +132,6 @@ void TWebBrowser::Scan(int id)
 			return;
 		case 052:  //Нажата F3
 			if (strcmp(get_URL_part(5),"http:")<>0) RunProgram("/rd/1/tinypad", #URL); else RunProgram("/rd/1/tinypad", #download_path);
-			return;
-		case 053:  //Нажата F4
-			if (strcmp(get_URL_part(5),"http:")<>0) RunProgram("/rd/1/develop/t_edit", #URL); else RunProgram("/rd/1/develop/t_edit", #download_path);
 			return;
 		case 054: //F5
 			IF(edit1.flags == 66) break;
@@ -180,22 +180,22 @@ void TWebBrowser::Scan(int id)
 			IF(lines.first == lines.all - lines.visible) return;
 			lines.first += lines.visible + 2;
 			IF(lines.visible + lines.first > lines.all) lines.first = lines.all - lines.visible;
-			BREAK;
+			break;
 		case 184: //PgUp
-			IF(lines.first == 0) RETURN;
+			IF(lines.first == 0) return;
 			lines.first -= lines.visible - 2;
 			IF(lines.first < 0) lines.first = 0;
-			BREAK;
+			break;
 		case 180: //home
-			IF(lines.first == 0) RETURN;
+			IF(lines.first == 0) return;
 			lines.first = 0;
-			BREAK; 
+			break; 
 		case 181: //end
-			IF (lines.first == lines.all - lines.visible) RETURN;
+			IF (lines.first == lines.all - lines.visible) return;
 			lines.first = lines.all - lines.visible;
-			BREAK; 
+			break; 
 		default:
-			RETURN;
+			return;
 	}
 	ParseHTML(buf);
 }
@@ -539,11 +539,18 @@ void TWebBrowser::DrawPage() //резать здесь!!1!
 		start_x=stolbec * 6 + left+5;
 		start_y=stroka * 10 + top + 5;
 		line_length=strlen(#line)*6;
-		
-		WriteText(start_x, start_y, 0x80, text_colors[text_color_index], #line, 0);
-		//line_length =  get_length stdcall (#line,-1,16,line_length);
-		//text_out stdcall (#line, -1, 17, text_colors[text_color_index], start_x, start_y-2);
-		IF (b_text)	{ $add ebx, 1<<16   $int 0x40 }
+
+		if (use_truetype == 1)
+		{
+			//line_length =  get_length stdcall (#line,-1,16,line_length);
+			text_out stdcall (#line, -1, 17, text_colors[text_color_index], start_x, start_y-3);
+			Pause(10);
+		}
+		else
+		{
+			WriteText(start_x, start_y, 0x80, text_colors[text_color_index], #line, 0);
+			IF (b_text)	{ $add ebx, 1<<16   $int 0x40 }
+		}
 		IF (i_text) Skew(start_x, start_y, line_length+6, 10);
 		IF (s_text) DrawBar(start_x, start_y + 4, line_length, 1, text_colors[text_color_index]);
 		IF (u_text) DrawBar(start_x, start_y + 8, line_length, 1, text_colors[text_color_index]);
