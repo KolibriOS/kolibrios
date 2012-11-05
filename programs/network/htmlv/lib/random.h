@@ -21,9 +21,11 @@
 
 dword generator;  // random number generator - для генерации случайных чисел
 
-:int random(int max)
+inline fastcall int random( ECX)
 // get pseudo-random number - получить псевдослучайное число
 {
+  $push ebx
+ 
   $rdtsc        // eax & edx
   $xor eax,edx
   $not eax
@@ -35,11 +37,12 @@ dword generator;  // random number generator - для генерации случайных чисел
   generator = EBX;
   
   EAX += EBX;
-  EAX = EAX % max;
-  return EAX;
+  EAX = EAX % ECX;
+  
+  $pop ebx  
 }
 
-:randomize()
+inline fastcall randomize()
 // initialize random number generator - инициализировать генератор случайных чисел
 {
   asm

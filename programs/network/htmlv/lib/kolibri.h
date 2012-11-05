@@ -115,7 +115,6 @@ inline fastcall ScancodesGeting(){
 	$int 0x40
 }
 
-
 inline fastcall word GetKey()  //+Gluk fix
 {
 		$push edx
@@ -212,12 +211,11 @@ inline fastcall int KillProcess( ECX)
 	$int 0x40
 }
 
+#define TURN_OFF 2
+#define REBOOT 3
+#define KERNEL 4
 inline fastcall int ExitSystem( ECX)
 {
-	#define TURN_OFF 2
-	#define REBOOT 3
-	#define KERNEL 4
-	
 	$mov eax, 18
 	$mov ebx, 9
 	$int 0x40
@@ -282,6 +280,12 @@ inline fastcall int TestBit( EAX, CL)
 	$and eax,1
 }
 
+inline fastcall int PlaySpeaker( ESI)
+{
+	$mov eax, 55
+	$mov ebx, 55
+	$int 0x40
+}
 
 //------------------------------------------------------------------------------
 
@@ -320,6 +324,15 @@ void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 	EAX = 4;
 	EBX = x<<16+y;
 	ECX = fontType<<24+color;
+	$int 0x40;
+}
+
+void WriteNumber(dword x,y,byte fontType, dword color, count, ECX)
+{
+	EAX = 47;
+	EBX = count<<16;
+	EDX = x<<16+y;
+	ESI = fontType<<24+color;
 	$int 0x40;
 }
 

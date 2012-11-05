@@ -10,6 +10,7 @@
 // atoi( EAX)
 // strupr( ESI)
 // strlwr( ESI)
+// strttl( EDX)
 // strtok( ESI)
 //------------------------------------------------------------------------------
 
@@ -46,6 +47,8 @@ inline fastcall signed int strncmp( ESI, EDI, ECX)
 L1:
   }
 }
+
+
 
 /*
 
@@ -215,6 +218,22 @@ inline fastcall strlwr( ESI)
 		}
 	}while(AL!=0);
 }
+
+inline fastcall strttl( EDX)
+{
+	AL=DSBYTE[EDX];
+	IF(AL>='a')&&(AL<='z')DSBYTE[EDX]=AL&0x5f;
+	IF (AL>=160) && (AL<=175) DSBYTE[EDX] = AL - 32;	//à-ï
+	IF (AL>=224) && (AL<=239) DSBYTE[EDX] = AL - 80;	//à-ï
+	do{
+		EDX++;
+		AL=DSBYTE[EDX];
+		IF(AL>='A')&&(AL<='Z'){DSBYTE[EDX]=AL|0x20; CONTINUE;}
+		IF(AL>='€')&&(AL<='')DSBYTE[EDX]=AL|0x20; // -¯
+		IF (AL>=144) && (AL<=159) DSBYTE[EDX] = AL + 80;	//à-ï
+	}while(AL!=0);
+}
+
 
 
 inline fastcall unsigned int strstr( EBX, EDX)
