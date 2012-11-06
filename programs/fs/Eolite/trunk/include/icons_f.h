@@ -44,6 +44,7 @@ char *ext[]={
 "ima", 21,
 "dll", 22,
 "obj", 22,
+"dict",22,
 "iso", 24,
 "cue", 24,
 "nrg", 24,
