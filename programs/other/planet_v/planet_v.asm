@@ -14,8 +14,7 @@ use32
 
 include '../../proc32.inc'
 include '../../macros.inc'
-include 'mem.inc'
-include 'dll.inc'
+include '../../dll.inc'
 
 include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'

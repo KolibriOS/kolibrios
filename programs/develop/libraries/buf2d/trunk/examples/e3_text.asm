@@ -10,8 +10,7 @@ use32
 include '../../../../../macros.inc'
 include '../../../../../proc32.inc'
 include '../../../../../develop/libraries/box_lib/load_lib.mac'
-include 'mem.inc'
-include 'dll.inc'
+include '../../../../../dll.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 

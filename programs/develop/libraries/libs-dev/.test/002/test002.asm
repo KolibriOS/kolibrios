@@ -11,7 +11,7 @@ TRUE  = 1
 
 include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
-include '../dll.inc'
+include '../../../../../dll.inc'
 
 include '../../libio/libio.inc'
 include '../../libimg/libimg.inc'
@@ -136,55 +136,6 @@ draw_window:
 
 	invoke	gfx.close, [ctx]
 	ret
-
-;-----------------------------------------------------------------------------
-proc mem.Alloc, size ;////////////////////////////////////////////////////////
-;-----------------------------------------------------------------------------
-	push	ebx ecx
-	mov	ecx, [size]
-	add	ecx, 4
-	mcall	68, 12
-	add	ecx, -4
-	mov	[eax], ecx
-	add	eax, 4
-	pop	ecx ebx
-	ret
-endp
-
-;-----------------------------------------------------------------------------
-proc mem.ReAlloc, mptr, size ;////////////////////////////////////////////////
-;-----------------------------------------------------------------------------
-	push	ebx ecx edx
-	mov	ecx, [size]
-	or	ecx, ecx
-	jz	@f
-	add	ecx, 4
-    @@: mov	edx, [mptr]
-	or	edx, edx
-	jz	@f
-	add	edx, -4
-    @@: mcall	68, 20
-	or	eax, eax
-	jz	@f
-	add	ecx, -4
-	mov	[eax], ecx
-	add	eax, 4
-    @@: pop	edx ecx ebx
-	ret
-endp
-
-;-----------------------------------------------------------------------------
-proc mem.Free, mptr ;/////////////////////////////////////////////////////////
-;-----------------------------------------------------------------------------
-	push	ebx ecx
-	mov	ecx, [mptr]
-	or	ecx, ecx
-	jz	@f
-	add	ecx, -4
-    @@: mcall	68, 13
-	pop	ecx ebx
-	ret
-endp
 
 ;-----------------------------------------------------------------------------
 

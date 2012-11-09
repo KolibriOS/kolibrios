@@ -24,7 +24,7 @@ include 'string.inc'
 include 'macros.inc'
 include 'editbox_ex.mac'
 include 'load_lib.mac'
-include 'dll.inc'
+include '../../../dll.inc'
 
 include 'debug.inc'
 DEBUG	 equ 0;1

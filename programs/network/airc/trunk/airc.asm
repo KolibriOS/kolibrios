@@ -31,7 +31,7 @@ use32
 include "../../../macros.inc"
 include "../../../proc32.inc"
 include "../../../develop/libraries/network/network.inc"
-include "dll.inc"
+include "../../../dll.inc"
 ;include "fdo.inc"
 include "eth.inc"
 include "lang.inc"

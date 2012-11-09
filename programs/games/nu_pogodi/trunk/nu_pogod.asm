@@ -13,8 +13,7 @@ include '../../../macros.inc'
 include '../../../proc32.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac' ;макросы для задания элементов box_lib
-include 'mem.inc'
-include 'dll.inc'
+include '../../../dll.inc'
 
 @use_library_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 

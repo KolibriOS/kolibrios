@@ -46,7 +46,7 @@ include '../../../macros.inc'
 include 'ETH.INC'
 include 'debug-fdo.inc'
 include 'dhcp.inc'
-include 'dll.inc'
+include '../../../dll.inc'
 
 START:					    ; start of execution
 

@@ -473,7 +473,7 @@ include	'win_bcgr.inc'
 include	'win_sort.inc'
 include	'win_opti.inc'
 include	'libini.inc'
-include	'dll.inc'
+include	'../../../dll.inc'
 include	'data.inc'
 ;---------------------------------------------------------------------
 IM_END:

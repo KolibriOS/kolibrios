@@ -17,7 +17,7 @@ TRUE  = 1
 include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
 include '../../libio/libio.inc'
-include '../dll.inc'
+include '../../../../../dll.inc'
 
 yy dd 20
 
@@ -274,70 +274,6 @@ draw_window:
 
 _f_path db '/rd/1/lib',0
 _f_mask db '*ini*',0
-
-;-----------------------------------------------------------------------------
-proc mem.Alloc size ;/////////////////////////////////////////////////////////
-;-----------------------------------------------------------------------------
-	push	ebx ecx
-	mov	eax,[size]
-	lea	ecx,[eax+4+4095]
-	and	ecx,not 4095
-	mcall	68,12
-	add	ecx,-4
-	mov	[eax],ecx
-	add	eax,4
-	pop	ecx ebx
-	ret
-endp
-
-;-----------------------------------------------------------------------------
-proc mem.ReAlloc mptr,size;///////////////////////////////////////////////////
-;-----------------------------------------------------------------------------
-	push	ebx ecx esi edi eax
-	mov	eax,[mptr]
-	mov	ebx,[size]
-	or	eax,eax
-	jz	@f
-	lea	ecx,[ebx+4+4095]
-	and	ecx,not 4095
-	add	ecx,-4
-	cmp	ecx,[eax-4]
-	je	.exit
-    @@: mov	eax,ebx
-	call	mem.Alloc
-	xchg	eax,[esp]
-	or	eax,eax
-	jz	.exit
-	mov	esi,eax
-	xchg	eax,[esp]
-	mov	edi,eax
-	mov	ecx,[esi-4]
-	cmp	ecx,[edi-4]
-	jbe	@f
-	mov	ecx,[edi-4]
-    @@: add	ecx,3
-	shr	ecx,2
-	cld
-	rep	movsd
-	xchg	eax,[esp]
-	call	mem.Free
-  .exit:
-	pop	eax edi esi ecx ebx
-	ret
-endp
-
-;-----------------------------------------------------------------------------
-proc mem.Free mptr ;//////////////////////////////////////////////////////////
-;-----------------------------------------------------------------------------
-	mov	eax,[mptr]
-	or	eax,eax
-	jz	@f
-	push	ebx ecx
-	lea	ecx,[eax-4]
-	mcall	68,13
-	pop	ecx ebx
-    @@: ret
-endp
 
 ;---------------------------------------------------------------------
 ;---  ƒ¿ÕÕ€≈ œ–Œ√–¿ÃÃ€  ----------------------------------------------

@@ -607,7 +607,7 @@ include 'tp-tabctl.asm'
 include 'tp-editor.asm'
 include 'tp-recode.asm'
 
-include 'external/dll.inc'
+include '../../../dll.inc'
 
 ;-----------------------------------------------------------------------------
 section @DATA ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

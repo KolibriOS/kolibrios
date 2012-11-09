@@ -46,8 +46,7 @@ define BUFF_SIZE 1024
 include 'proc32.inc'
 include 'macros.inc'
 include 'libio.inc'
-include 'mem.inc'
-include 'dll.inc'
+include '../../../dll.inc'
 
 purge mov
 
