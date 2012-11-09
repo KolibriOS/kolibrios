@@ -9,8 +9,7 @@ use32
 
 include '../../../proc32.inc'
 include '../../../macros.inc'
-include '../../../system/launch/trunk/mem.inc'
-include '../../../develop/libraries/libs-dev/.test/dll.inc'
+include '../../../dll.inc'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include '../../../system/board/trunk/debug.inc'
 
