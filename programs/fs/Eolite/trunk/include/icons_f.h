@@ -22,6 +22,7 @@ char *ext[]={
 "sh",  5,
 "com", 5,
 "kex", 6,
+"lua", 6,
 "exe", 7,
 "msi", 7,
 "sys", 8,

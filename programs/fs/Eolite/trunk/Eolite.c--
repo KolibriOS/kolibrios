@@ -632,7 +632,7 @@ void Open_Dir(dword temp_, redraw){
 		copystr(temp_,#edit_path);
 		KEdit();
 		HistoryPath(ADD_NEW_PATH);
-		IF (!strcmp(".",buf+72)) {memmov(buf,buf+304,count-1*304); count--;} //фильтруем элемент "."
+		IF (!strcmp(".",buf+72)) {count--; memmov(buf,buf+304,count*304);} //фильтруем элемент "."
 		FOR (j=0;j<but_num;j++) DeleteButton(201+j); //удаляем старые
 		but_num=onTop(6,57)/BUTTON_HEIGHT;                                                                                             
 		IF (count<but_num) but_num=count;
