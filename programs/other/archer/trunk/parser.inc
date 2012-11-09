@@ -469,9 +469,9 @@ UKeys:
     mov  byte[esi],al
     mov  ecx,1
     push dword[ebx]
-    pop  [CRC32]
+    pop  [_CRC32_]
     call UCRC
-    push [CRC32]
+    push [_CRC32_]
     pop  dword[ebx]
     mov  eax,[ebx]
     and  eax,0xff
@@ -482,9 +482,9 @@ UKeys:
     shr  eax,24
     mov  byte[esi],al
     push dword[ebx+8]
-    pop  [CRC32]
+    pop  [_CRC32_]
     call UCRC
-    push [CRC32]
+    push [_CRC32_]
     pop  dword[ebx+8]
     popa
     ret

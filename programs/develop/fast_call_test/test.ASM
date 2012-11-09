@@ -15,7 +15,7 @@ org	0x0
 	dd     0x0, 0x0
 
 include 'macros.inc'
-include 'debug.inc'
+include '../../debug.inc'
 
 START:	print	'Please wait'
 	; קונוח בûסענûי גûחמג (SYSENTER)

@@ -25,9 +25,9 @@ macro icall lbl
   dd	 stack_end		  ; esp
   dd	 0x0 , 0x0		 ; I_Param , I_Icon
 lang fix ru
-include "MACROS.INC"
+include "macros.inc"
 purge mov
-;include "DEBUG.INC"
+;include "../../../debug.inc"
 COLOR_ORDER equ MENUETOS
 
 include 'gif_lite.inc'

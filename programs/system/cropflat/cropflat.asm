@@ -43,7 +43,7 @@
 	dd 0x0
 
 include '../../macros.inc'
-;include 'debug.inc'
+;include '../../debug.inc'
 ;------------------------------------------------------------------------------
 START:
 	mcall	14

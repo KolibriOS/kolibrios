@@ -6,15 +6,15 @@
 
 
 include "lang.inc"
-include "MACROS.INC"
+include "macros.inc"
 ;purge mov
 ;include "ASCL9/ascl.inc"
-;include "debug.inc"
+;include "../../../debug.inc"
 include "editbox.inc"
 
 MEOS_APP_START
 
-;include "debug.inc"
+;include "../../../debug.inc"
 include "2000.inc"
 include "comp.inc"
 ;include "fsio.inc"

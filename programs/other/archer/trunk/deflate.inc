@@ -562,14 +562,14 @@ makeCRC:
 UCRC:
 ; in:  esi - data to calculate CRC
 ;      ecx - its length
-;      [CRC32] - previous CRC32
-; out: [CRC32]- partial CRC32 (no pre- & post-conditioning!)
+;      [_CRC32_] - previous CRC32
+; out: [_CRC32_]- partial CRC32 (no pre- & post-conditioning!)
     pusha
     cmp  dword[CRC32table+4],0x77073096
     je   .tbl_rdy
     call makeCRC
   .tbl_rdy:
-    mov  eax,[CRC32]
+    mov  eax,[_CRC32_]
     not  eax
   .m1:
     movzx ebx,al
@@ -579,7 +579,7 @@ UCRC:
     inc  esi
     loop .m1
     not  eax
-    mov  [CRC32],eax
+    mov  [_CRC32_],eax
     popa
     ret
 

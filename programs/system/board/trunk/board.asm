@@ -19,7 +19,7 @@ include 'lang.inc'
    dd	  mem			; esp
    dd	  filename , 0x0	  ; I_Param , I_Icon
 include '../../../macros.inc'
-include 'debug.inc'
+include '../../../debug.inc'
 purge newline
 MAXSTRINGS = 16
 TMP = 80*(MAXSTRINGS+1)

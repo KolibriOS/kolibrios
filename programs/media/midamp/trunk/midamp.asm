@@ -73,7 +73,7 @@ include	'../../../develop/libraries/box_lib/load_lib.mac'
 
 lang fix en
 ;purge mov
-include 'debug.inc'
+include '../../../debug.inc'
 ;include 'dlg.inc'
 include 'playlist.inc'
 include 'gif_lite.inc'

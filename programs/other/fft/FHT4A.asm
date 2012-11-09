@@ -24,7 +24,7 @@ use32
 	       dd     0x0 , 0x0 	      ; I_Param , I_Icon
 
 include '../../macros.inc'
-include '../debug.inc'
+include '../../debug.inc'
 include 'fht4code.asm'
 
 

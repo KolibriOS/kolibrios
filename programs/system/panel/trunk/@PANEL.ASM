@@ -63,7 +63,7 @@
 include 'lang.inc'
 include '../../../macros.inc'
 include '../../../proc32.inc'
-;include 'debug.inc'
+;include '../../../debug.inc'
 include 'MOI.INC'	;раскладки клавиатуры
 include '../../../develop/libraries/box_lib/load_lib.mac'
         @use_library    ;use load lib macros

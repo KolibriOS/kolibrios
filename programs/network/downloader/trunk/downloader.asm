@@ -49,7 +49,7 @@ include	'../../../proc32.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include	'dll.inc'
-include	'debug.inc'
+include	'../../../debug.inc'
 
 URLMAXLEN	equ 256	; maximum length of url string
 

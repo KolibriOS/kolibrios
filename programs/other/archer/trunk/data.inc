@@ -121,7 +121,7 @@ arc_base dd ?
 outp  dd ?
 unp_size  dd ?
 CRC_check dd ?
-CRC32 dd ?
+_CRC32_ dd ?
 CRC32table rd 256
 Adler32 dd ?
 child dd ?

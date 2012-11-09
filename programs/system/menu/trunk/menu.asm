@@ -41,7 +41,7 @@
 ;------------------------------------------------------------------------------
 include "lang.inc"
 include "..\..\..\macros.inc"
-;include "DEBUG.INC"             ; debug macros
+;include "../../../debug.inc"             ; debug macros
 ;------------------------------------------------------------------------------
 align 4
 conversion_ASCII_to_HEX:

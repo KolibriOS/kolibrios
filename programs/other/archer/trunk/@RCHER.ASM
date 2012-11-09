@@ -79,7 +79,7 @@ end if
 ;{
     include "..\..\..\macros.inc"
 ;    purge mov
-    include "..\..\debug.inc"
+    include "..\..\..\debug.inc"
     include 'dump.inc'
 ;}
 end if
@@ -158,7 +158,7 @@ again:
     Newline
     xor  eax,eax
 ;    and  [Flags],STAY_MODE
-    and  [CRC32],eax
+    and  [_CRC32_],eax
     and  [IDATsize],eax
     mov  [Adler32],1
     call OpenFile
@@ -282,7 +282,7 @@ again:
     push esi ecx
     call UCRC
     Msg  11
-    mov  eax,[CRC32]
+    mov  eax,[_CRC32_]
     mov  edx,36
     cmp  eax,[CRC_check]
     je   .crcok

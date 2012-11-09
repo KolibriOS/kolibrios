@@ -82,7 +82,7 @@ ICON_STRIP equ '/rd/1/iconstrp.png'
 include 'lang.inc'
 include '../../../macros.inc'
 include '../../../develop/libraries/box_lib/load_lib.mac'
-;include 'debug.inc'
+;include '../../../debug.inc'
 ;------------------------------------------------------------------------------
         @use_library    ;use load lib macros
 ;------------------------------------------------------------------------------
