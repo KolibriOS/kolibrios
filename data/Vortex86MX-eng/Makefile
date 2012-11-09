@@ -242,7 +242,7 @@ CMM_PROGRAMS:=\
 # Each item is of the form <local name>:<name inside image>.
 # Spaces should be represented as |.
 OTHER_FILES:=autorun.dat:AUTORUN.DAT \
- background.gif:background.gif default.skn:DEFAULT.SKN \
+ background.png:background.png default.skn:DEFAULT.SKN \
  e80:E80 graph:GRAPH hdread:HDREAD \
  icons.dat:ICONS.DAT iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
