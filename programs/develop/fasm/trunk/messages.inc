@@ -48,5 +48,5 @@ _section_not_aligned_enough db 'section is not aligned enough',0
 _setting_already_specified db 'setting already specified',0
 _data_already_defined db 'data already defined',0
 _too_many_repeats db 'too many repeats',0
-_invoked_error db 'error directive invoked in source file',0
+_invoked_error db 'error directive encountered in source file',0
 _assertion_failed db 'assertion failed',0
