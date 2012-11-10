@@ -26,13 +26,6 @@ dword mem_Alloc(dword size)
 }
 
 //mem.ReAlloc
-inline fastcall dword mem_ReAllocR( ECX, EDX)
-{
-        $mov     eax, 68
-        $mov     ebx, 20
-        $int     0x40
-}
-
 stdcall dword mem_ReAlloc(dword mptr, size)
 {
         $push    ebx
@@ -72,30 +65,30 @@ void mem_Free(dword mptr)
 inline fastcall mem_Move( EDI, ESI, ECX)
 {
   asm {
-    mov eax, ecx
-    cmp edi, esi
-    jg l1
-    je l2
-    sar ecx, 2
-    js l2
-    rep movsd
-    mov ecx, eax
-    and ecx, 3
-    rep movsb
-    jmp short l2
-l1: lea esi, dsdword[ esi+ecx-4]
-    lea edi, dsdword[ edi+ecx-4]
-    sar ecx, 2
-    js l2
-    std
-    rep movsd
-    mov ecx, eax
-    and ecx, 3
-    add esi, 3
-    add edi, 3
-    rep movsb
-    cld
-l2:
+    MOV EAX, ECX
+    CMP EDI, ESI
+    JG L1
+    JE L2
+    SAR ECX, 2
+    JS L2
+    REP MOVSD
+    MOV ECX, EAX
+    AND ECX, 3
+    REP MOVSB
+    JMP SHORT L2
+L1: LEA ESI, DSDWORD[ ESI+ECX-4]
+    LEA EDI, DSDWORD[ EDI+ECX-4]
+    SAR ECX, 2
+    JS L2
+    STD
+    REP MOVSD
+    MOV ECX, EAX
+    AND ECX, 3
+    ADD ESI, 3
+    ADD EDI, 3
+    REP MOVSB
+    CLD
+L2:
   }
 }
 

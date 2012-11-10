@@ -203,6 +203,8 @@ inline fastcall strupr( ESI)
 	do{
 		AL=DSBYTE[ESI];
 		IF(AL>='a')IF(AL<='z')DSBYTE[ESI]=AL&0x5f;
+		IF (AL>=160) && (AL<=175) DSBYTE[ESI] = AL - 32;	//а-п
+		IF (AL>=224) && (AL<=239) DSBYTE[ESI] = AL - 80;	//а-п
  		ESI++;
 	}while(AL!=0);
 }
@@ -236,42 +238,42 @@ inline fastcall strttl( EDX)
 
 
 
-inline fastcall unsigned int strstr( EBX, EDX)
+inline fastcall dword strstr( EBX, EDX)
 {
   asm {
-    mov edi, edx
-    xor ecx, ecx
-    xor eax, eax
-    dec ecx
-    repne scasb
-    not ecx
-    dec ecx
-    je ls2
-    mov esi, ecx
-    xor ecx, ecx
-    mov edi, ebx
-    dec ecx
-    repne scasb
-    not ecx
-    sub ecx, esi
-    jbe ls2
-    mov edi, ebx
-    lea ebx, DSDWORD[ esi-1]
-ls1: mov esi, edx
-    lodsb
-    repne scasb
-    jne ls2
-    mov eax, ecx
-    push edi
-    mov ecx, ebx
-    repe cmpsb
-    pop edi
-    mov ecx, eax
-    jne ls1
-    lea eax, DSDWORD[ edi-1]
-    jmp short ls3
-ls2: xor eax, eax
-ls3:
+    MOV EDI, EDX
+    XOR ECX, ECX
+    XOR EAX, EAX
+    DEC ECX
+    REPNE SCASB
+    NOT ECX
+    DEC ECX
+    JE LS2
+    MOV ESI, ECX
+    XOR ECX, ECX
+    MOV EDI, EBX
+    DEC ECX
+    REPNE SCASB
+    NOT ECX
+    SUB ECX, ESI
+    JBE LS2
+    MOV EDI, EBX
+    LEA EBX, DSDWORD[ ESI-1]
+LS1: MOV ESI, EDX
+    LODSB
+    REPNE SCASB
+    JNE LS2
+    MOV EAX, ECX
+    PUSH EDI
+    MOV ECX, EBX
+    REPE CMPSB
+    POP EDI
+    MOV ECX, EAX
+    JNE LS1
+    LEA EAX, DSDWORD[ EDI-1]
+    JMP SHORT LS3
+LS2: XOR EAX, EAX
+LS3:
   }
 }
 
@@ -298,7 +300,7 @@ divs - указатель на строку, содержащую символы-разделители
          не 0, если слово скопировано в dest (передайте это значение
                в качестве src для последующего поиска) */
 
-dword fastcall strtok( EDX, ESI, EBX)
+inline fastcall dword strtok( EDX, ESI, EBX)
 {
   asm {
     XOR ECX, ECX

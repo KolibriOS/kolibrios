@@ -46,7 +46,7 @@ f70 run_file_70;
 //    Создание папки     //
 ///////////////////////////
 f70 create_dir_70;
-:int CreateFolder(dword new_folder_path)
+:int CreateDir(dword new_folder_path)
 {
 	create_dir_70.func = 9;
 	create_dir_70.param1 = 
@@ -186,4 +186,18 @@ void ReadAttributes(dword read_buffer, file_path)
 	$mov eax,70
 	$mov ebx,#read_file_70.func
 	$int 0x40
+}
+
+inline fastcall void SetCurDir( ECX)
+{
+    $mov eax,30
+    $mov ebx,1
+    $int 0x40
+}
+
+inline fastcall void GetCurDir( ECX, EDX)
+{
+    $mov eax,30
+    $mov ebx,2
+    $int 0x40
 }

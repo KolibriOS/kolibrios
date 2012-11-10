@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.97.5";
+char version[]=" Text-based Browser 0.97.6";
 
 
 struct TWebBrowser {
@@ -122,8 +122,7 @@ void TWebBrowser::Scan(int id)
 		case 005: //truetype
 			if (use_truetype == 2) 
 			{
-				debug("Не удалось подключить библиотеку TrueType");
-				debug("/rd/1/lib/truetype.obj не обнаружен или имеет неправильный формат");
+				RunProgram("@notify", "Library does not exists /rd/1/lib/truetype.obj"w);
 				return;
 			}
 			if (use_truetype == 1) use_truetype=0; else use_truetype=1;
@@ -550,7 +549,6 @@ void TWebBrowser::DrawPage() //резать здесь!!1!
 		{
 			//line_length =  get_length stdcall (#line,-1,16,line_length);
 			text_out stdcall (#line, -1, 17, text_colors[text_color_index], start_x, start_y-3);
-			Pause(10);
 		}
 		else
 		{
@@ -780,7 +778,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 	if (!chTag("img"))
 	{
-		//if (GetFileInfo(#libimg)<>0) return;  //если библиотеки нет
+		if (GetFileInfo(libimg)<>0) return;  //если библиотеки нет
 		IMG_TAG:
 			if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
 			{
@@ -806,21 +804,13 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			GOTO IMG_TAG;
 		}
 		
-		if (!image)
-		{
-			//debug(#tag);
-			return;
-		}
-
+		if (!image) return;
+		
 		if (w>width1) w=width1;
-	
+		
 		if (stroka==0) DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку
-		
 		stroka+=h/10;
-		
-		if (top1+h<WB1.top) || (top1>WB1.top+WB1.height-10) //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
-			return;
-
+		if (top1+h<WB1.top) || (top1>WB1.top+WB1.height-10) return; //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
 		if (top1<WB1.top) //если часть изображения сверху
 		{
 			DrawBar(left, top, width-15, 10, bg_color); //закрашиваем первую строку
@@ -828,22 +818,16 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			h=h-img_lines_first;
 			top1=WB1.top;
 		}
-		
-		if (top1>WB1.top+WB1.height-h-15) //если часть изображения снизу     IF (stroka - 2 < lines.visible)
+		if (top1>WB1.top+WB1.height-h-15) //если часть изображения снизу
 		{
 			h=WB1.top+WB1.height-top1-15;
 		}	
-
 		if (h<=0) return;
 		if (anchor) return;
 		
 		img_draw stdcall (image,left1-5,top1+10,w, h,0,img_lines_first);
 		DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, bg_color);
-		IF (link)
-		{
-			DefineButton(left1 - 5, top1+10, w, h, blink + BT_HIDE, 0xB5BFC9);
-		}
-
+		IF (link) DefineButton(left1 - 5, top1+10, w, h, blink + BT_HIDE, 0xB5BFC9);
 		return;
 	}
 

@@ -47,6 +47,35 @@ mouse m;
 #include "TWB.h"
 #include "include\menu_rmb.h"
 
+/*void tre()
+{
+	char *font_picture;
+	char text[12];
+	int width=600;
+	int height=40;
+	char palette[256*4];
+	int x;
+
+
+	strcpy(#text, "hello world\0");
+
+	get_width stdcall (#text, -1, height);
+	width=EAX;
+
+	font_picture=mem_Alloc(width*height);
+	truetype stdcall (#text, -1, font_picture,  width, height);
+
+	for (x=0;x<256;x++) {
+	palette[x*4]=255-x;
+	palette[x*4+1]=255-x;
+	palette[x*4+2]=255-x;
+	palette[x*4+3]=0;
+	}
+
+	PutPaletteImage(font_picture,width,height,0,0,8,#palette);
+	mem_Free(font_picture);
+};*/
+
 
 void main()
 {
@@ -58,7 +87,7 @@ void main()
 	mem_Init();
 	if (load_dll2(libio, #libio_init,1)!=0) debug("Не удалось подключить библиотеку libio"w);
 	if (load_dll2(libimg, #libimg_init,1)!=0) debug("Не удалось подключить библиотеку libimg"w);
-	if (load_dll2(boxlib, #edit_box_draw,0)!=0) debug("Не удалось подключить библиотеку boxlib"w);
+	if (load_dll2(boxlib, #edit_box_draw,0)!=0) {RunProgram("@notify", "System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
 	load_dll2(#abox_lib, #boxlib_init,0);
 	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Не удалось подключить библиотеку TrueType"w); use_truetype = 2;}
 	

@@ -306,6 +306,15 @@ void DefineAndDrawWindow(dword x,y, sizeX,sizeY, byte WindowType,dword WindowAre
 	$int 0x40
 }
 
+inline fastcall DeleteAllButtons()
+{
+	EAX = 12;              // function 12:tell os about windowdraw
+	EBX = 1;
+	$int 0x40
+	EBX = 2;
+	$int 0x40
+}
+
 inline fastcall MoveSize( EBX,ECX,EDX,ESI)
 {
 	$mov eax, 67
