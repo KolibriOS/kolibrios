@@ -47,35 +47,52 @@ mouse m;
 #include "TWB.h"
 #include "include\menu_rmb.h"
 
-/*void tre()
+void tre()
 {
 	char *font_picture;
-	char text[12];
+	char text[20];
 	int width=600;
-	int height=40;
-	char palette[256*4];
+	int height=20;
+//	char palette[256*4];
 	int x;
-
-
+	debug("fuck this shit\n");
+	//init_font(#fontinfo);
+	debug("fuck this shit!\n");
+	
 	strcpy(#text, "hello world\0");
-
-	get_width stdcall (#text, -1, height);
+	
+	text_out stdcall (#text, #fontlol, 17, 0x0, 10, 10);
+	
+	strcpy(#text, "fuck this shit!\0");
+	
+	text_out stdcall (#text, #fontlol, 27, 0x0, 10, 30);
+	
+	
+	strcpy(#text, "alarm!\0");
+	
+	text_out stdcall (#text, #fontlol, 47, 0x00FF0000, 10, 70);
+	/*
+	strcpy(#text, "hello world\0");
+	
+	debug("get width\n");
+	get_width stdcall (#text, #fontinfo, height);
 	width=EAX;
-
+	for (x=0;x<20;x++)  {
+	init_font(#fontinfo);
+	debug("yaya\n");
 	font_picture=mem_Alloc(width*height);
-	truetype stdcall (#text, -1, font_picture,  width, height);
+	text[1]=30+x;
+	truetype stdcall (#text, #fontinfo, font_picture,  width, height);
 
-	for (x=0;x<256;x++) {
-	palette[x*4]=255-x;
-	palette[x*4+1]=255-x;
-	palette[x*4+2]=255-x;
-	palette[x*4+3]=0;
-	}
+	debug("blyad'!\n");
 
-	PutPaletteImage(font_picture,width,height,0,0,8,#palette);
-	mem_Free(font_picture);
-};*/
 
+	
+	PutPaletteImage(font_picture,width,height,0,20*x,8,#palette);
+	mem_Free(font_picture); }*/
+}
+
+char fontlol[64];
 
 void main()
 {
@@ -90,6 +107,8 @@ void main()
 	if (load_dll2(boxlib, #edit_box_draw,0)!=0) {RunProgram("@notify", "System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
 	load_dll2(#abox_lib, #boxlib_init,0);
 	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Не удалось подключить библиотеку TrueType"w); use_truetype = 2;}
+	
+	init_font(#fontlol);
 	
 	if (!URL) strcpy(#URL, "/sys/home.htm");
 	strcpy(#editURL, #URL);
@@ -241,7 +260,7 @@ void Draw_Window()
 
 	SetElementSizes();
 	WB1.ShowPage();
-	
+	//tre();
 	DefineButton(scroll1.start_x+1, scroll1.start_y+1, 16, 16, ID1+BT_HIDE, 0xE4DFE1);
 	DefineButton(scroll1.start_x+1, scroll1.start_y+scroll1.size_y-18, 16, 16, ID2+BT_HIDE, 0xE4DFE1);
 }

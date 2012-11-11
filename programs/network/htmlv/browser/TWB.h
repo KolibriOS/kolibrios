@@ -548,7 +548,7 @@ void TWebBrowser::DrawPage() //резать здесь!!1!
 		if (use_truetype == 1)
 		{
 			//line_length =  get_length stdcall (#line,-1,16,line_length);
-			text_out stdcall (#line, -1, 17, text_colors[text_color_index], start_x, start_y-3);
+			text_out stdcall (#line, #fontlol, 17, text_colors[text_color_index], start_x, start_y-3);
 		}
 		else
 		{
