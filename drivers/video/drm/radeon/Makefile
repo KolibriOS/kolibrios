@@ -3,7 +3,7 @@
 CC = gcc
 LD = ld
 AS = as
-FASM = e:/fasm/fasm.exe
+FASM = fasm.exe
 
 DEFINES	 = -D__KERNEL__ -DCONFIG_X86_32 
 

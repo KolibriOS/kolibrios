@@ -35,6 +35,8 @@
 
     .global _MapIoMem
 
+    .global _MapPage
+
     .global _MutexInit
     .global _MutexLock
     .global _MutexUnlock
@@ -95,6 +97,8 @@
 
     .def  _MapIoMem;          .scl  2;  .type 32; .endef
 
+    .def  _MapPage;           .scl  2;  .type 32; .endef
+
     .def  _MutexInit;         .scl  2;  .type 32; .endef
     .def  _MutexLock;         .scl  2;  .type 32; .endef
     .def  _MutexUnlock;       .scl  2;  .type 32; .endef
@@ -154,6 +158,8 @@ _KernelAlloc:
 _KernelFree:
 
 _MapIoMem:
+
+_MapPage:
 
 _MutexInit:
 _MutexLock:
@@ -219,6 +225,7 @@ _WaitEvent:
         .ascii " -export:KernelFree"           # stdcall
 
         .ascii " -export:MapIoMem"             # stdcall
+        .ascii " -export:MapPage"              # stdcall
 
         .ascii " -export:MutexInit"            # fastcall
         .ascii " -export:MutexLock"            # fastcall

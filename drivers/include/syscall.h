@@ -39,6 +39,7 @@ addr_t STDCALL AllocPage(void)__asm__("AllocPage");
 addr_t STDCALL AllocPages(count_t count)__asm__("AllocPages");
 void   IMPORT  __attribute__((regparm(1)))
                FreePage(addr_t page)__asm__("FreePage");
+void   STDCALL MapPage(void *vaddr, addr_t paddr, u32_t flags)__asm__("MapPage");
 
 
 void* STDCALL CreateRingBuffer(size_t size, u32_t map)__asm__("CreateRingBuffer");
@@ -90,6 +91,48 @@ u32_t STDCALL PciWrite32(u32_t bus, u32_t devfn, u32_t reg,u32_t val)__asm__("Pc
 
 #define pciWriteLong(tag, reg, val) \
         PciWrite32(PCI_BUS_FROM_TAG(tag),PCI_DFN_FROM_TAG(tag),(reg),(val))
+
+static inline int pci_read_config_byte(struct pci_dev *dev, int where,
+                    u8 *val)
+{
+    *val = PciRead8(dev->busnr, dev->devfn, where);
+    return 1;
+}
+
+static inline int pci_read_config_word(struct pci_dev *dev, int where,
+                    u16 *val)
+{
+    *val = PciRead16(dev->busnr, dev->devfn, where);
+    return 1;
+}
+
+static inline int pci_read_config_dword(struct pci_dev *dev, int where,
+                    u32 *val)
+{
+    *val = PciRead32(dev->busnr, dev->devfn, where);
+    return 1;
+}
+
+static inline int pci_write_config_byte(struct pci_dev *dev, int where,
+                    u8 val)
+{
+    PciWrite8(dev->busnr, dev->devfn, where, val);
+    return 1;
+}
+
+static inline int pci_write_config_word(struct pci_dev *dev, int where,
+                    u16 val)
+{
+    PciWrite16(dev->busnr, dev->devfn, where, val);
+    return 1;
+}
+
+static inline int pci_write_config_dword(struct pci_dev *dev, int where,
+                    u32 val)
+{
+    PciWrite32(dev->busnr, dev->devfn, where, val);
+    return 1;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -446,5 +489,38 @@ static inline void __SysMsgBoardStr(char *text)
 };
 
 #define rmb()   asm volatile("lfence":::"memory")
+
+static inline void *vzalloc(unsigned long size)
+{
+    void *mem;
+
+    mem = KernelAlloc(size);
+    if(mem)
+        memset(mem, 0, size);
+
+   return mem;
+};
+
+static inline void vfree(void *addr)
+{
+    KernelFree(addr);
+}
+
+static inline int power_supply_is_system_supplied(void) { return -1; }
+
+#define RWSEM_UNLOCKED_VALUE            0x00000000
+#define RWSEM_ACTIVE_BIAS               0x00000001
+#define RWSEM_ACTIVE_MASK               0x0000ffff
+#define RWSEM_WAITING_BIAS              (-0x00010000)
+#define RWSEM_ACTIVE_READ_BIAS          RWSEM_ACTIVE_BIAS
+#define RWSEM_ACTIVE_WRITE_BIAS         (RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS)
+
+
+static void init_rwsem(struct rw_semaphore *sem)
+{
+    sem->count = RWSEM_UNLOCKED_VALUE;
+    spin_lock_init(&sem->wait_lock);
+    INIT_LIST_HEAD(&sem->wait_list);
+}
 
 #endif

@@ -62,6 +62,9 @@ struct tag_display
     void      (__stdcall *restore_cursor)(int x, int y);
     void      (*disable_mouse)(void);
     u32  mask_seqno;
+    u32  check_mouse;
+    u32  check_m_pixel;
+
 };
 
 
@@ -83,6 +86,132 @@ void __stdcall restore_cursor(int x, int y)
 void disable_mouse(void)
 {};
 
+static char *manufacturer_name(unsigned char *x)
+{
+    static char name[4];
+
+    name[0] = ((x[0] & 0x7C) >> 2) + '@';
+    name[1] = ((x[0] & 0x03) << 3) + ((x[1] & 0xE0) >> 5) + '@';
+    name[2] = (x[1] & 0x1F) + '@';
+    name[3] = 0;
+
+    return name;
+}
+
+bool set_mode(struct drm_device *dev, struct drm_connector *connector,
+              videomode_t *reqmode, bool strict)
+{
+    drm_i915_private_t      *dev_priv   = dev->dev_private;
+    struct drm_fb_helper    *fb_helper  = &dev_priv->fbdev->helper;
+
+    struct drm_mode_config  *config     = &dev->mode_config;
+    struct drm_display_mode *mode       = NULL, *tmpmode;
+    struct drm_framebuffer  *fb         = NULL;
+    struct drm_crtc         *crtc;
+    struct drm_encoder      *encoder;
+    struct drm_mode_set     set;
+    char *con_name;
+    char *enc_name;
+    unsigned hdisplay, vdisplay;
+    int ret;
+
+    mutex_lock(&dev->mode_config.mutex);
+
+    list_for_each_entry(tmpmode, &connector->modes, head)
+    {
+        if( (drm_mode_width(tmpmode)    == reqmode->width)  &&
+            (drm_mode_height(tmpmode)   == reqmode->height) &&
+            (drm_mode_vrefresh(tmpmode) == reqmode->freq) )
+        {
+            mode = tmpmode;
+            goto do_set;
+        }
+    };
+
+    if( (mode == NULL) && (strict == false) )
+    {
+        list_for_each_entry(tmpmode, &connector->modes, head)
+        {
+            if( (drm_mode_width(tmpmode)  == reqmode->width)  &&
+                (drm_mode_height(tmpmode) == reqmode->height) )
+            {
+                mode = tmpmode;
+                goto do_set;
+            }
+        };
+    };
+
+    printf("%s failed\n", __FUNCTION__);
+
+    return -1;
+
+do_set:
+
+
+    encoder = connector->encoder;
+    crtc = encoder->crtc;
+
+    con_name = drm_get_connector_name(connector);
+    enc_name = drm_get_encoder_name(encoder);
+
+    DRM_DEBUG_KMS("set mode %d %d: crtc %d connector %s encoder %s\n",
+              reqmode->width, reqmode->height, crtc->base.id,
+              con_name, enc_name);
+
+    drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
+
+    hdisplay = mode->hdisplay;
+    vdisplay = mode->vdisplay;
+
+    if (crtc->invert_dimensions)
+        swap(hdisplay, vdisplay);
+
+    fb = fb_helper->fb;
+
+    fb->width  = reqmode->width;
+    fb->height = reqmode->height;
+    fb->pitches[0]  = ALIGN(reqmode->width * 4, 64);
+    fb->pitches[1]  = ALIGN(reqmode->width * 4, 64);
+    fb->pitches[2]  = ALIGN(reqmode->width * 4, 64);
+    fb->pitches[3]  = ALIGN(reqmode->width * 4, 64);
+
+    fb->bits_per_pixel = 32;
+    fb->depth = 24;
+
+    crtc->fb = fb;
+    crtc->enabled = true;
+    os_display->crtc = crtc;
+
+    set.crtc = crtc;
+    set.x = 0;
+    set.y = 0;
+    set.mode = mode;
+    set.connectors = &connector;
+    set.num_connectors = 1;
+    set.fb = fb;
+    ret = crtc->funcs->set_config(&set);
+    mutex_unlock(&dev->mode_config.mutex);
+
+    if ( !ret )
+    {
+        os_display->width    = fb->width;
+        os_display->height   = fb->height;
+        os_display->pitch    = fb->pitches[0];
+        os_display->vrefresh = drm_mode_vrefresh(mode);
+
+        sysSetScreen(fb->width, fb->height, fb->pitches[0]);
+
+        dbgprintf("new mode %d x %d pitch %d\n",
+                       fb->width, fb->height, fb->pitches[0]);
+    }
+    else
+        DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
+                   fb->width, fb->height, crtc);
+
+
+    return ret;
+}
+
 static int count_connector_modes(struct drm_connector* connector)
 {
     struct drm_display_mode  *mode;
@@ -95,6 +224,47 @@ static int count_connector_modes(struct drm_connector* connector)
     return count;
 };
 
+static struct drm_connector* get_def_connector(struct drm_device *dev)
+{
+    struct drm_connector  *connector;
+    struct drm_connector_helper_funcs *connector_funcs;
+
+    struct drm_connector  *def_connector = NULL;
+
+    list_for_each_entry(connector, &dev->mode_config.connector_list, head)
+    {
+        struct drm_encoder  *encoder;
+        struct drm_crtc     *crtc;
+
+        if( connector->status != connector_status_connected)
+            continue;
+
+        connector_funcs = connector->helper_private;
+        encoder = connector_funcs->best_encoder(connector);
+        if( encoder == NULL)
+            continue;
+
+        connector->encoder = encoder;
+
+        crtc = encoder->crtc;
+
+        dbgprintf("CONNECTOR %x ID:  %d status %d encoder %x\n crtc %x",
+                   connector, connector->base.id,
+                   connector->status, connector->encoder,
+                   crtc);
+
+//        if (crtc == NULL)
+//            continue;
+
+        def_connector = connector;
+
+        break;
+    };
+
+    return def_connector;
+};
+
+
 int init_display_kms(struct drm_device *dev)
 {
     struct drm_connector    *connector;
@@ -106,7 +276,7 @@ int init_display_kms(struct drm_device *dev)
     cursor_t  *cursor;
     u32_t      ifl;
 
-    ENTER();
+//    ENTER();
 
     list_for_each_entry(connector, &dev->mode_config.connector_list, head)
     {
@@ -122,13 +292,13 @@ int init_display_kms(struct drm_device *dev)
             continue;
         }
         connector->encoder = encoder;
+        crtc = encoder->crtc;
 
-        dbgprintf("CONNECTOR %x ID:  %d status %d encoder %x\n crtc %x\n",
+        dbgprintf("CONNECTOR %x ID:%d status:%d ENCODER %x CRTC %x ID:%d\n",
                connector, connector->base.id,
                connector->status, connector->encoder,
-               encoder->crtc);
+               crtc, crtc->base.id );
 
-        crtc = encoder->crtc;
         break;
     };
 
@@ -165,7 +335,6 @@ int init_display_kms(struct drm_device *dev)
     DRM_DEBUG_KMS("[Select CRTC:%d]\n", crtc->base.id);
 
     os_display = GetDisplay();
-
     os_display->ddev = dev;
     os_display->connector = connector;
     os_display->crtc = crtc;
@@ -201,6 +370,8 @@ int init_display_kms(struct drm_device *dev)
 #define BLT_WRITE_ALPHA     (1<<21)
 #define BLT_WRITE_RGB       (1<<20)
 
+#if 0
+
 #if 1
     {
 
@@ -209,9 +380,9 @@ int init_display_kms(struct drm_device *dev)
         struct intel_ring_buffer *ring;
 
         obj = i915_gem_alloc_object(dev, 4096);
-        i915_gem_object_pin(obj, 4096, true);
+        i915_gem_object_pin(obj, 4096, true, true);
 
-        cmd_buffer = MapIoMem((addr_t)obj->pages[0], 4096, PG_SW|PG_NOCACHE);
+        cmd_buffer = MapIoMem((addr_t)obj->pages.page[0], 4096, PG_SW|PG_NOCACHE);
         cmd_offset = obj->gtt_offset;
     };
 #endif
@@ -227,122 +398,21 @@ int init_display_kms(struct drm_device *dev)
     };
 
     sna_init();
+#endif
 
-    LEAVE();
+//    LEAVE();
 
     return 0;
 };
-
-
-bool set_mode(struct drm_device *dev, struct drm_connector *connector,
-              videomode_t *reqmode, bool strict)
-{
-    struct drm_display_mode  *mode = NULL, *tmpmode;
-    drm_i915_private_t *dev_priv = dev->dev_private;
-    struct drm_fb_helper *fb_helper = &dev_priv->fbdev->helper;
-
-    bool ret = false;
-
-    ENTER();
-
-    dbgprintf("width %d height %d vrefresh %d\n",
-               reqmode->width, reqmode->height, reqmode->freq);
-
-    list_for_each_entry(tmpmode, &connector->modes, head)
-    {
-        if( (drm_mode_width(tmpmode)    == reqmode->width)  &&
-            (drm_mode_height(tmpmode)   == reqmode->height) &&
-            (drm_mode_vrefresh(tmpmode) == reqmode->freq) )
-        {
-            mode = tmpmode;
-            goto do_set;
-        }
-    };
-
-    if( (mode == NULL) && (strict == false) )
-    {
-        list_for_each_entry(tmpmode, &connector->modes, head)
-        {
-            if( (drm_mode_width(tmpmode)  == reqmode->width)  &&
-                (drm_mode_height(tmpmode) == reqmode->height) )
-            {
-                mode = tmpmode;
-                goto do_set;
-            }
-        };
-    };
-
-do_set:
-
-    if( mode != NULL )
-    {
-        struct drm_framebuffer   *fb;
-        struct drm_encoder       *encoder;
-        struct drm_crtc          *crtc;
-
-        char *con_name;
-        char *enc_name;
-
-        encoder = connector->encoder;
-        crtc = encoder->crtc;
-
-        con_name = drm_get_connector_name(connector);
-        enc_name = drm_get_encoder_name(encoder);
-
-        dbgprintf("set mode %d %d connector %s encoder %s\n",
-                   reqmode->width, reqmode->height, con_name, enc_name);
-
-        fb = fb_helper->fb;
-
-        fb->width  = reqmode->width;
-        fb->height = reqmode->height;
-        fb->pitches[0]  = ALIGN(reqmode->width * 4, 64);
-        fb->pitches[1]  = ALIGN(reqmode->width * 4, 64);
-        fb->pitches[2]  = ALIGN(reqmode->width * 4, 64);
-        fb->pitches[3]  = ALIGN(reqmode->width * 4, 64);
-
-        fb->bits_per_pixel = 32;
-        fb->depth == 24;
-
-        crtc->fb = fb;
-        crtc->enabled = true;
-        os_display->crtc = crtc;
-
-        ret = drm_crtc_helper_set_mode(crtc, mode, 0, 0, fb);
-
-//        select_cursor_kms(rdisplay->cursor);
-//        radeon_show_cursor_kms(crtc);
-
-        if (ret == true)
-        {
-            os_display->width    = fb->width;
-            os_display->height   = fb->height;
-            os_display->pitch    = fb->pitches[0];
-            os_display->vrefresh = drm_mode_vrefresh(mode);
-
-            sysSetScreen(fb->width, fb->height, fb->pitches[0]);
-
-            dbgprintf("new mode %d x %d pitch %d\n",
-                       fb->width, fb->height, fb->pitches[0]);
-        }
-        else
-            DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
-                       fb->width, fb->height, crtc);
-    }
-
-    LEAVE();
-    return ret;
-};
-
 
 
 int get_videomodes(videomode_t *mode, int *count)
 {
     int err = -1;
 
-    ENTER();
+//    ENTER();
 
-    dbgprintf("mode %x count %d\n", mode, *count);
+//    dbgprintf("mode %x count %d\n", mode, *count);
 
     if( *count == 0 )
     {
@@ -373,7 +443,7 @@ int get_videomodes(videomode_t *mode, int *count)
         *count = i;
         err = 0;
     };
-    LEAVE();
+//    LEAVE();
     return err;
 };
 
@@ -381,10 +451,10 @@ int set_user_mode(videomode_t *mode)
 {
     int err = -1;
 
-    ENTER();
+//    ENTER();
 
-    dbgprintf("width %d height %d vrefresh %d\n",
-               mode->width, mode->height, mode->freq);
+//    dbgprintf("width %d height %d vrefresh %d\n",
+//               mode->width, mode->height, mode->freq);
 
     if( (mode->width  != 0)  &&
         (mode->height != 0)  &&
@@ -397,7 +467,7 @@ int set_user_mode(videomode_t *mode)
             err = 0;
     };
 
-    LEAVE();
+//    LEAVE();
     return err;
 };
 
@@ -421,7 +491,7 @@ int init_cursor(cursor_t *cursor)
     int       i,j;
     int       ret;
 
-    ENTER();
+//    ENTER();
 
     if (dev_priv->info->cursor_needs_physical)
     {
@@ -436,7 +506,7 @@ int init_cursor(cursor_t *cursor)
         if (unlikely(obj == NULL))
             return -ENOMEM;
 
-        ret = i915_gem_object_pin(obj, CURSOR_WIDTH*CURSOR_HEIGHT*4, true);
+        ret = i915_gem_object_pin(obj, CURSOR_WIDTH*CURSOR_HEIGHT*4, true, true);
         if (ret) {
             drm_gem_object_unreference(&obj->base);
             return ret;
@@ -445,7 +515,7 @@ int init_cursor(cursor_t *cursor)
 /* You don't need to worry about fragmentation issues.
  * GTT space is continuous. I guarantee it.                           */
 
-        bits = (u32*)MapIoMem(get_bus_addr() + obj->gtt_offset,
+        bits = (u32*)MapIoMem(dev_priv->mm.gtt->gma_bus_addr + obj->gtt_offset,
                     CURSOR_WIDTH*CURSOR_HEIGHT*4, PG_SW);
 
         if (unlikely(bits == NULL))
@@ -476,7 +546,7 @@ int init_cursor(cursor_t *cursor)
     cursor->data = bits;
 
     cursor->header.destroy = destroy_cursor;
-    LEAVE();
+//    LEAVE();
 
     return 0;
 }
@@ -587,6 +657,7 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     return old;
 };
 
+#if 0
 
 #define XY_SRC_COPY_BLT_CMD     ((2<<29)|(0x53<<22)|6)
 
@@ -1060,7 +1131,7 @@ int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
     {
         u8* src_offset;
         u8* dst_offset;
-        u32 slot = *((u8*)CURRENT_TASK);
+        u32 slot;
         u32 ifl;
 
         ret = gem_object_lock(mask_bitmap->obj);
@@ -1070,11 +1141,14 @@ int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
             return ret;
         };
 
-        printf("width %d height %d\n", winrc.right, winrc.bottom);
+//        printf("width %d height %d\n", winrc.right, winrc.bottom);
 
         mask_bitmap->width  = winrc.right;
         mask_bitmap->height = winrc.bottom;
         mask_bitmap->pitch =  ALIGN(w,64);
+
+        slot = *((u8*)CURRENT_TASK);
+//        slot = 0x01;
 
         slot|= (slot<<8)|(slot<<16)|(slot<<24);
 
@@ -1083,7 +1157,7 @@ int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
         "movd       %[slot],   %%xmm6    \n"
         "punpckldq  %%xmm6, %%xmm6            \n"
         "punpcklqdq %%xmm6, %%xmm6            \n"
-        :: [slot]  "g" (slot)
+        :: [slot]  "m" (slot)
         :"xmm6");
 
         src_offset = mask_bitmap->uaddr;
@@ -1252,7 +1326,7 @@ struct context *get_context()
     return context_map[slot];
 }
 
-
+#endif
 
 
 
@@ -1373,7 +1447,29 @@ err:
     return NULL;
 }
 
+#define NSEC_PER_SEC    1000000000L
 
+void getrawmonotonic(struct timespec *ts)
+{
+    u32 tmp = GetTimerTicks();
+
+    ts->tv_sec  = tmp/100;
+    ts->tv_nsec = (tmp - ts->tv_sec*100)*10000000;
+}
+
+void set_normalized_timespec(struct timespec *ts, time_t sec, long nsec)
+{
+        while (nsec >= NSEC_PER_SEC) {
+                nsec -= NSEC_PER_SEC;
+                ++sec;
+        }
+        while (nsec < 0) {
+                nsec += NSEC_PER_SEC;
+                --sec;
+        }
+        ts->tv_sec = sec;
+        ts->tv_nsec = nsec;
+}
 
 
 

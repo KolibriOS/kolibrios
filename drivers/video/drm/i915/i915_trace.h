@@ -5,7 +5,7 @@
 #include <linux/types.h>
 //#include <linux/tracepoint.h>
 
-#define WARN_ON(x)
+//#define WARN_ON(x)
 
 #define trace_i915_gem_object_create(x)
 #define trace_i915_gem_object_destroy(x)
@@ -19,5 +19,6 @@
 #define trace_i915_gem_request_wait_begin(a, b)
 #define trace_i915_gem_request_wait_end(a, b)
 #define trace_i915_gem_request_complete(a, b)
+#define trace_intel_gpu_freq_change(a)
 
 #endif

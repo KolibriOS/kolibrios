@@ -1,9 +1,8 @@
-#include "drmP.h"
-#include "drm.h"
-#include "i915_drm.h"
+#include <drm/drmP.h>
+#include <drm.h>
+#include <drm/i915_drm.h>
 #include "i915_drv.h"
-#include "intel_drv.h"
-
+//#include "intel_drv.h"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -52,8 +51,8 @@ u32_t drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
-//        strcpy(log, "/RD/1/DRIVERS/i915.log");
-        strcpy(log, "/HD1/2/i915.log");
+        strcpy(log, "/RD/1/DRIVERS/i915.log");
+//        strcpy(log, "/BD1/2/i915.log");
 
         if(!dbg_open(log))
         {
@@ -61,7 +60,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("i915 blitter preview\n cmdline: %s\n", cmdline);
+    dbgprintf("i915 preview #08\n cmdline: %s\n", cmdline);
 
     cpu_detect();
     dbgprintf("\ncache line size %d\n", x86_clflush_size);
@@ -73,7 +72,6 @@ u32_t drvEntry(int action, char *cmdline)
     if(err)
     {
         dbgprintf("Epic Fail :(/n");
-
     };
 
     err = RegService("DISPLAY", display_handler);
@@ -129,8 +127,8 @@ int _stdcall display_handler(ioctl_t *io)
             break;
 
         case SRV_ENUM_MODES:
-            dbgprintf("SRV_ENUM_MODES inp %x inp_size %x out_size %x\n",
-                       inp, io->inp_size, io->out_size );
+//            dbgprintf("SRV_ENUM_MODES inp %x inp_size %x out_size %x\n",
+//                       inp, io->inp_size, io->out_size );
             check_output(4);
 //            check_input(*outp * sizeof(videomode_t));
             if( i915_modeset)
@@ -138,13 +136,13 @@ int _stdcall display_handler(ioctl_t *io)
             break;
 
         case SRV_SET_MODE:
-            dbgprintf("SRV_SET_MODE inp %x inp_size %x\n",
-                       inp, io->inp_size);
+//            dbgprintf("SRV_SET_MODE inp %x inp_size %x\n",
+//                       inp, io->inp_size);
             check_input(sizeof(videomode_t));
             if( i915_modeset )
                 retval = set_user_mode((videomode_t*)inp);
             break;
-
+#if 0
         case SRV_GET_CAPS:
             retval = get_driver_caps((hwcaps_t*)inp);
             break;
@@ -168,6 +166,8 @@ int _stdcall display_handler(ioctl_t *io)
 
             retval = 0;
             break;
+#endif
+
     };
 
     return retval;

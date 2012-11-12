@@ -344,4 +344,10 @@ extern int _atomic_dec_and_lock(atomic_t *atomic, spinlock_t *lock);
 # include <linux/spinlock_api_up.h>
 #endif
 
+struct rw_semaphore {
+    signed long             count;
+    spinlock_t              wait_lock;
+    struct list_head        wait_list;
+};
+
 #endif /* __LINUX_SPINLOCK_H */

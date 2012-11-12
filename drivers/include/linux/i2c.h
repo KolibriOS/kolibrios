@@ -17,12 +17,12 @@
 
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
-    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.		     */
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+    MA 02110-1301 USA.							     */
 /* ------------------------------------------------------------------------- */
 
 /* With some changes from Kyösti Mälkki <kmalkki@cc.hut.fi> and
    Frodo Looijaard <frodol@dds.nl> */
-
 #ifndef _LINUX_I2C_H
 #define _LINUX_I2C_H
 
@@ -32,6 +32,8 @@
 #include <linux/i2c-id.h>
 #include <linux/mod_devicetable.h>
 
+extern struct bus_type i2c_bus_type;
+extern struct device_type i2c_adapter_type;
 
 /* --- General options ------------------------------------------------	*/
 
@@ -70,7 +72,7 @@ extern int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
  * The driver.owner field should be set to the module owner of this driver.
  * The driver.name field should be set to the name of this driver.
  *
- * For automatic device detection, both @detect and @address_data must
+ * For automatic device detection, both @detect and @address_list must
  * be defined. @class should also be set, otherwise only devices forced
  * with module parameters will be created. The detect function must
  * fill at least the name field of the i2c_board_info structure it is
@@ -271,6 +273,8 @@ void i2c_unlock_adapter(struct i2c_adapter *);
 #define I2C_CLIENT_TEN	0x10		/* we have a ten bit chip address */
 					/* Must equal I2C_M_TEN below */
 #define I2C_CLIENT_WAKE	0x80		/* for board_info; true iff can wake */
+#define I2C_CLIENT_SCCB	0x9000		/* Use Omnivision SCCB protocol */
+					/* Must match I2C_M_STOP|IGNORE_NAK */
 
 /* i2c adapter classes (bitmask) */
 #define I2C_CLASS_HWMON		(1<<0)	/* lm_sensors, ... */

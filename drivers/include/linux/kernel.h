@@ -29,6 +29,7 @@
 #define LLONG_MAX   ((long long)(~0ULL>>1))
 #define LLONG_MIN   (-LLONG_MAX - 1)
 #define ULLONG_MAX  (~0ULL)
+#define SIZE_MAX	(~(size_t)0)
 
 #define ALIGN(x,a)      __ALIGN_MASK(x,(typeof(x))(a)-1)
 #define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
@@ -306,6 +307,9 @@ static inline void writeq(__u64 val, volatile void __iomem *addr)
         writel(val >> 32, addr+4);
 }
 
+#define swap(a, b) \
+        do { typeof(a) __tmp = (a); (a) = (b); (b) = __tmp; } while (0)
+
 
 #define mmiowb() barrier()
 
@@ -329,6 +333,34 @@ struct scatterlist {
     unsigned int    dma_length;
 };
 
+struct sg_table {
+    struct scatterlist *sgl;        /* the list */
+    unsigned int nents;             /* number of mapped entries */
+    unsigned int orig_nents;        /* original size of list */
+};
+
+#define SG_MAX_SINGLE_ALLOC             (4096 / sizeof(struct scatterlist))
+
+struct scatterlist *sg_next(struct scatterlist *sg);
+
+#define sg_dma_address(sg)      ((sg)->dma_address)
+#define sg_dma_len(sg)         ((sg)->length)
+
+#define sg_is_chain(sg)         ((sg)->page_link & 0x01)
+#define sg_is_last(sg)          ((sg)->page_link & 0x02)
+#define sg_chain_ptr(sg)        \
+        ((struct scatterlist *) ((sg)->page_link & ~0x03))
+
+static inline addr_t sg_page(struct scatterlist *sg)
+{
+    return (addr_t)((sg)->page_link & ~0x3);
+}
+
+#define for_each_sg(sglist, sg, nr, __i)        \
+        for (__i = 0, sg = (sglist); __i < (nr); __i++, sg = sg_next(sg))
+
+
+
 struct page
 {
     unsigned int addr;
@@ -347,6 +379,10 @@ struct vm_fault {
                                      */
 };
 
+struct pagelist {
+    dma_addr_t    *page;
+    unsigned int   nents;
+};
 
 #endif
 

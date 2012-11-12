@@ -36,6 +36,40 @@ do {                                                                    \
 } while (0)
 
 
+
+
+#define wait_event_timeout(wq, condition, timeout)          \
+({                                                          \
+    long __ret = timeout;                                   \
+do{                                                         \
+    wait_queue_t __wait = {                                 \
+        .task_list = LIST_HEAD_INIT(__wait.task_list),      \
+        .evnt      = CreateEvent(NULL, MANUAL_DESTROY),     \
+    };                                                      \
+    u32  flags;                                             \
+                                                            \
+    spin_lock_irqsave(&wq.lock, flags);                     \
+    if (list_empty(&__wait.task_list))                      \
+        __add_wait_queue(&wq, &__wait);                     \
+    spin_unlock_irqrestore(&wq.lock, flags);                \
+                                                            \
+    for(;;){                                                \
+        if (condition)                                      \
+            break;                                          \
+        WaitEvent(__wait.evnt);                             \
+    };                                                      \
+    if (!list_empty_careful(&__wait.task_list)) {           \
+        spin_lock_irqsave(&wq.lock, flags);                 \
+        list_del_init(&__wait.task_list);                   \
+        spin_unlock_irqrestore(&wq.lock, flags);            \
+    };                                                      \
+    DestroyEvent(__wait.evnt);                              \
+} while (0);                                                \
+    __ret;                                                  \
+})
+
+
+
 #define wait_event(wq, condition)                           \
 do{                                                         \
     wait_queue_t __wait = {                                 \
@@ -61,6 +95,8 @@ do{                                                         \
     };                                                      \
     DestroyEvent(__wait.evnt);                              \
 } while (0)
+
+
 
 
 static inline
@@ -127,9 +163,12 @@ struct delayed_work {
     struct work_struct work;
 };
 
-
 struct workqueue_struct *alloc_workqueue_key(const char *fmt,
                            unsigned int flags, int max_active);
+
+
+#define alloc_ordered_workqueue(fmt, flags, args...)            \
+        alloc_workqueue(fmt, WQ_UNBOUND | (flags), 1, ##args)
 
 int queue_delayed_work(struct workqueue_struct *wq,
                         struct delayed_work *dwork, unsigned long delay);
@@ -139,6 +178,13 @@ int queue_delayed_work(struct workqueue_struct *wq,
         INIT_LIST_HEAD(&(_work)->work.entry);   \
         (_work)->work.func = _func;             \
     } while (0)
+
+
+struct completion {
+    unsigned int done;
+    wait_queue_head_t wait;
+};
+
 
 #endif
 

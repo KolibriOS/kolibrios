@@ -24,6 +24,7 @@
 #include <linux/kernel.h>
 #include <errno-base.h>
 #include <linux/ioport.h>
+#include <linux/export.h>
 
 #include <asm/div64.h>
 

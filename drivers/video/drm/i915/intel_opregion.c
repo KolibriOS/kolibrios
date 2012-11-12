@@ -25,12 +25,16 @@
  *
  */
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 //#include <linux/acpi.h>
 //#include <linux/acpi_io.h>
 //#include <acpi/video.h>
 #include <linux/errno.h>
-#include "drmP.h"
-#include "i915_drm.h"
+
+
+#include <drm/drmP.h>
+#include <drm/i915_drm.h>
 #include "i915_drv.h"
 #include "intel_drv.h"
 
@@ -148,19 +152,13 @@ struct opregion_asle {
 #ifdef CONFIG_ACPI
 #endif
 
-static inline int pci_read_config_dword(struct pci_dev *dev, int where,
-                    u32 *val)
-{
-    *val = PciRead32(dev->busnr, dev->devfn, where);
-    return 1;
-}
-
 int intel_opregion_setup(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	struct intel_opregion *opregion = &dev_priv->opregion;
-	void *base;
+	void __iomem *base;
 	u32 asls, mboxes;
+	char buf[sizeof(OPREGION_SIGNATURE)];
 	int err = 0;
 
 	pci_read_config_dword(dev->pdev, PCI_ASLS, &asls);
@@ -174,7 +172,9 @@ int intel_opregion_setup(struct drm_device *dev)
 	if (!base)
 		return -ENOMEM;
 
-	if (memcmp(base, OPREGION_SIGNATURE, 16)) {
+	memcpy(buf, base, sizeof(buf));
+
+	if (memcmp(buf, OPREGION_SIGNATURE, 16)) {
 		DRM_DEBUG_DRIVER("opregion signature mismatch\n");
 		err = -EINVAL;
 		goto err_out;
@@ -184,7 +184,7 @@ int intel_opregion_setup(struct drm_device *dev)
 
 	opregion->lid_state = base + ACPI_CLID;
 
-	mboxes = opregion->header->mboxes;
+	mboxes = ioread32(&opregion->header->mboxes);
 	if (mboxes & MBOX_ACPI) {
 		DRM_DEBUG_DRIVER("Public ACPI methods supported\n");
 		opregion->acpi = base + OPREGION_ACPI_OFFSET;

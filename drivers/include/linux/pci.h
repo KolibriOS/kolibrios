@@ -13,11 +13,10 @@
  *	PCI to PCI Bridge Specification
  *	PCI System Design Guide
  */
-
 #ifndef LINUX_PCI_H
 #define LINUX_PCI_H
 
-#include <types.h>
+#include <linux/types.h>
 #include <list.h>
 #include <linux/pci_regs.h>	/* The pci register defines */
 #include <ioport.h>
@@ -276,6 +275,20 @@ typedef int __bitwise pci_power_t;
 #define PCI_D3cold	((pci_power_t __force) 4)
 #define PCI_UNKNOWN	((pci_power_t __force) 5)
 #define PCI_POWER_ERROR	((pci_power_t __force) -1)
+
+/* Remember to update this when the list above changes! */
+extern const char *pci_power_names[];
+
+static inline const char *pci_power_name(pci_power_t state)
+{
+	return pci_power_names[1 + (int) state];
+}
+
+#define PCI_PM_D2_DELAY		200
+#define PCI_PM_D3_WAIT		10
+#define PCI_PM_D3COLD_WAIT	100
+#define PCI_PM_BUS_WAIT		50
+
 /** The pci_channel state describes connectivity between the CPU and
  *  the pci device.  If some PCI bus between here and the pci device
  *  has crashed or locked up, this info is reflected here.
@@ -346,9 +359,10 @@ struct pci_dev {
 	u8		revision;	/* PCI revision, low byte of class word */
 	u8		hdr_type;	/* PCI header type (`multi' flag masked out) */
 	u8		pcie_cap;	/* PCI-E capability offset */
-	u8		pcie_type;	/* PCI-E device/port type */
+	u8		pcie_mpss:3;	/* PCI-E Max Payload Size Supported */
 	u8		rom_base_reg;	/* which config register controls the ROM */
 	u8		pin;  		/* which interrupt pin this device uses */
+	u16		pcie_flags_reg;	/* cached PCI-E Capabilities Register */
 
  //   struct pci_driver *driver;  /* which driver has allocated this device */
     uint64_t     dma_mask;   /* Mask of the bits of bus address this
@@ -367,14 +381,25 @@ struct pci_dev {
     unsigned int    pme_support:5;  /* Bitmask of states from which PME#
                        can be generated */
 	unsigned int	pme_interrupt:1;
+	unsigned int	pme_poll:1;	/* Poll device's PME status bit */
     unsigned int    d1_support:1;   /* Low power state D1 is supported */
     unsigned int    d2_support:1;   /* Low power state D2 is supported */
-    unsigned int    no_d1d2:1;  /* Only allow D0 and D3 */
+	unsigned int	no_d1d2:1;	/* D1 and D2 are forbidden */
+	unsigned int	no_d3cold:1;	/* D3cold is forbidden */
+	unsigned int	d3cold_allowed:1;	/* D3cold is allowed by user */
 	unsigned int	mmio_always_on:1;	/* disallow turning off io/mem
 						   decoding during bar sizing */
 	unsigned int	wakeup_prepared:1;
+	unsigned int	runtime_d3cold:1;	/* whether go through runtime
+						   D3cold, not set for devices
+						   powered on/off by the
+						   corresponding bridge */
 	unsigned int	d3_delay;	/* D3->D0 transition time in ms */
+	unsigned int	d3cold_delay;	/* D3cold->D0 transition time in ms */
 
+#ifdef CONFIG_PCIEASPM
+	struct pcie_link_state	*link_state;	/* ASPM link state. */
+#endif
 
 	pci_channel_state_t error_state;	/* current connectivity state */
     struct  device  dev;        /* Generic device interface */
@@ -387,7 +412,6 @@ struct pci_dev {
      */
     unsigned int    irq;
     struct resource resource[DEVICE_COUNT_RESOURCE]; /* I/O and memory regions + expansion ROMs */
-	resource_size_t	fw_addr[DEVICE_COUNT_RESOURCE]; /* FW-assigned addr */
 
     /* These fields are used by common fixups */
     unsigned int    transparent:1;  /* Transparent PCI bridge */
@@ -396,7 +420,7 @@ struct pci_dev {
     unsigned int    is_added:1;
     unsigned int    is_busmaster:1; /* device is busmaster */
     unsigned int    no_msi:1;   /* device may not use msi */
-    unsigned int    block_ucfg_access:1;    /* userspace config space access is blocked */
+	unsigned int	block_cfg_access:1;	/* config space access is blocked */
     unsigned int    broken_parity_status:1; /* Device generates false positive parity */
     unsigned int    irq_reroute_variant:2;  /* device needs IRQ rerouting variant */
     unsigned int    msi_enabled:1;
@@ -411,15 +435,15 @@ struct pci_dev {
     unsigned int    is_virtfn:1;
 	unsigned int	reset_fn:1;
 	unsigned int    is_hotplug_bridge:1;
-//    pci_dev_flags_t dev_flags;
-//    atomic_t    enable_cnt;   /* pci_enable_device has been called */
+	unsigned int    __aer_firmware_first_valid:1;
+	unsigned int	__aer_firmware_first:1;
+	unsigned int	broken_intx_masking:1;
+	unsigned int	io_window_1k:1;	/* Intel P2P bridge 1K I/O windows */
+//	pci_dev_flags_t dev_flags;
+	atomic_t	enable_cnt;	/* pci_enable_device has been called */
 
-//    u32     saved_config_space[16]; /* config space saved at suspend time */
-//    struct hlist_head saved_cap_space;
-//    struct bin_attribute *rom_attr; /* attribute descriptor for sysfs ROM entry */
-//    int rom_attr_enabled;       /* has display of the rom attribute been enabled? */
-//    struct bin_attribute *res_attr[DEVICE_COUNT_RESOURCE]; /* sysfs file for resources */
-//    struct bin_attribute *res_attr_wc[DEVICE_COUNT_RESOURCE]; /* sysfs file for WC mapping of resources */
+
+
 };
 
 #define pci_resource_start(dev, bar)    ((dev)->resource[(bar)].start)
@@ -443,6 +467,7 @@ struct pci_bus {
     struct list_head slots;     /* list of slots on this bus */
     struct resource *resource[PCI_BRIDGE_RESOURCE_NUM];
     struct list_head resources; /* address space routed to this bus */
+	struct resource busn_res;	/* bus numbers routed to this bus */
 
     struct pci_ops  *ops;       /* configuration access functions */
     void        *sysdata;   /* hook for sys-specific extension */
@@ -450,8 +475,6 @@ struct pci_bus {
 
     unsigned char   number;     /* bus number */
     unsigned char   primary;    /* number of primary bridge */
-    unsigned char   secondary;  /* number of secondary bridge */
-    unsigned char   subordinate;    /* max number of subordinate buses */
     unsigned char   max_bus_speed;  /* enum pci_bus_speed */
     unsigned char   cur_bus_speed;  /* enum pci_bus_speed */
 
@@ -570,6 +593,16 @@ static inline bool pci_is_pcie(struct pci_dev *dev)
 {
     return !!pci_pcie_cap(dev);
 }
+
+/**
+ * pci_pcie_type - get the PCIe device/port type
+ * @dev: PCI device
+ */
+static inline int pci_pcie_type(const struct pci_dev *dev)
+{
+	return (dev->pcie_flags_reg & PCI_EXP_FLAGS_TYPE) >> 4;
+}
+
 
 static inline int pci_iov_init(struct pci_dev *dev)
 {

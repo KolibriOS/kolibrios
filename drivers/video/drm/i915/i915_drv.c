@@ -28,9 +28,8 @@
  */
 
 //#include <linux/device.h>
-#include "drmP.h"
-#include "drm.h"
-#include "i915_drm.h"
+#include <drm/drmP.h>
+#include <drm/i915_drm.h>
 #include "i915_drv.h"
 #include "intel_drv.h"
 
@@ -41,6 +40,8 @@
 #include <errno-base.h>
 #include <linux/pci.h>
 
+#include <drm/drm_crtc_helper.h>
+
 #include <syscall.h>
 
 #define __read_mostly
@@ -49,19 +50,78 @@ int init_display_kms(struct drm_device *dev);
 
 struct drm_device *main_device;
 
+static int i915_modeset __read_mostly = 1;
+MODULE_PARM_DESC(modeset,
+		"Use kernel modesetting [KMS] (0=DRM_I915_KMS from .config, "
+		"1=on, -1=force vga console preference [default])");
+
+
 int i915_panel_ignore_lid __read_mostly         =  0;
+MODULE_PARM_DESC(panel_ignore_lid,
+		"Override lid status (0=autodetect [default], 1=lid open, "
+		"-1=lid closed)");
 
 unsigned int i915_powersave  __read_mostly      =  0;
+MODULE_PARM_DESC(powersave,
+		"Enable powersavings, fbc, downclocking, etc. (default: true)");
 
-unsigned int i915_enable_rc6 __read_mostly      = -1;
+int i915_semaphores __read_mostly = -1;
 
-unsigned int i915_enable_fbc __read_mostly      =  0;
+MODULE_PARM_DESC(semaphores,
+		"Use semaphores for inter-ring sync (default: -1 (use per-chip defaults))");
+
+int i915_enable_rc6 __read_mostly      = 0;
+MODULE_PARM_DESC(i915_enable_rc6,
+		"Enable power-saving render C-state 6. "
+		"Different stages can be selected via bitmask values "
+		"(0 = disable; 1 = enable rc6; 2 = enable deep rc6; 4 = enable deepest rc6). "
+		"For example, 3 would enable rc6 and deep rc6, and 7 would enable everything. "
+		"default: -1 (use per-chip default)");
+
+int i915_enable_fbc __read_mostly      =  0;
+MODULE_PARM_DESC(i915_enable_fbc,
+		"Enable frame buffer compression for power savings "
+		"(default: -1 (use per-chip default))");
 
 unsigned int i915_lvds_downclock  __read_mostly =  0;
+MODULE_PARM_DESC(lvds_downclock,
+		"Use panel (LVDS/eDP) downclocking for power savings "
+		"(default: false)");
 
-unsigned int i915_panel_use_ssc __read_mostly   =  1;
+int i915_lvds_channel_mode __read_mostly;
+MODULE_PARM_DESC(lvds_channel_mode,
+		 "Specify LVDS channel mode "
+		 "(0=probe BIOS [default], 1=single-channel, 2=dual-channel)");
+
+int i915_panel_use_ssc __read_mostly = -1;
+MODULE_PARM_DESC(lvds_use_ssc,
+		"Use Spread Spectrum Clock with panels [LVDS/eDP] "
+		"(default: auto from VBT)");
 
 int i915_vbt_sdvo_panel_type __read_mostly      = -1;
+MODULE_PARM_DESC(vbt_sdvo_panel_type,
+		"Override/Ignore selection of SDVO panel mode in the VBT "
+		"(-2=ignore, -1=auto [default], index in VBT BIOS table)");
+
+static bool i915_try_reset __read_mostly = true;
+MODULE_PARM_DESC(reset, "Attempt GPU resets (default: true)");
+
+bool i915_enable_hangcheck __read_mostly = false;
+MODULE_PARM_DESC(enable_hangcheck,
+		"Periodically check GPU activity for detecting hangs. "
+		"WARNING: Disabling this can cause system wide hangs. "
+		"(default: true)");
+
+int i915_enable_ppgtt __read_mostly = false;
+MODULE_PARM_DESC(i915_enable_ppgtt,
+		"Enable PPGTT (default: true)");
+
+unsigned int i915_preliminary_hw_support __read_mostly = true;
+MODULE_PARM_DESC(preliminary_hw_support,
+		"Enable preliminary hardware support. "
+		"Enable Haswell and ValleyView Support. "
+		"(default: false)");
+
 
 #define PCI_VENDOR_ID_INTEL        0x8086
 
@@ -137,7 +197,7 @@ static const struct intel_device_info intel_pineview_info = {
 
 static const struct intel_device_info intel_ironlake_d_info = {
 	.gen = 5,
-	.need_gfx_hws = 1, .has_pipe_cxsr = 1, .has_hotplug = 1,
+	.need_gfx_hws = 1, .has_hotplug = 1,
 	.has_bsd_ring = 1,
 };
 
@@ -153,6 +213,8 @@ static const struct intel_device_info intel_sandybridge_d_info = {
 	.need_gfx_hws = 1, .has_hotplug = 1,
     .has_bsd_ring = 1,
     .has_blt_ring = 1,
+	.has_llc = 1,
+	.has_force_wake = 1,
 };
 
 static const struct intel_device_info intel_sandybridge_m_info = {
@@ -161,6 +223,8 @@ static const struct intel_device_info intel_sandybridge_m_info = {
     .has_fbc      = 1,
     .has_bsd_ring = 1,
     .has_blt_ring = 1,
+	.has_llc = 1,
+	.has_force_wake = 1,
 };
 
 static const struct intel_device_info intel_ivybridge_d_info = {
@@ -168,6 +232,8 @@ static const struct intel_device_info intel_ivybridge_d_info = {
 	.need_gfx_hws = 1, .has_hotplug = 1,
 	.has_bsd_ring = 1,
 	.has_blt_ring = 1,
+	.has_llc = 1,
+	.has_force_wake = 1,
 };
 
 static const struct intel_device_info intel_ivybridge_m_info = {
@@ -176,6 +242,44 @@ static const struct intel_device_info intel_ivybridge_m_info = {
 	.has_fbc = 0,	/* FBC is not enabled on Ivybridge mobile yet */
 	.has_bsd_ring = 1,
 	.has_blt_ring = 1,
+	.has_llc = 1,
+	.has_force_wake = 1,
+};
+
+static const struct intel_device_info intel_valleyview_m_info = {
+	.gen = 7, .is_mobile = 1,
+	.need_gfx_hws = 1, .has_hotplug = 1,
+	.has_fbc = 0,
+	.has_bsd_ring = 1,
+	.has_blt_ring = 1,
+	.is_valleyview = 1,
+};
+
+static const struct intel_device_info intel_valleyview_d_info = {
+	.gen = 7,
+	.need_gfx_hws = 1, .has_hotplug = 1,
+	.has_fbc = 0,
+	.has_bsd_ring = 1,
+	.has_blt_ring = 1,
+	.is_valleyview = 1,
+};
+
+static const struct intel_device_info intel_haswell_d_info = {
+	.is_haswell = 1, .gen = 7,
+	.need_gfx_hws = 1, .has_hotplug = 1,
+	.has_bsd_ring = 1,
+	.has_blt_ring = 1,
+	.has_llc = 1,
+	.has_force_wake = 1,
+};
+
+static const struct intel_device_info intel_haswell_m_info = {
+	.is_haswell = 1, .gen = 7, .is_mobile = 1,
+	.need_gfx_hws = 1, .has_hotplug = 1,
+	.has_bsd_ring = 1,
+	.has_blt_ring = 1,
+	.has_llc = 1,
+	.has_force_wake = 1,
 };
 
 static const struct pci_device_id pciidlist[] = {       /* aka */
@@ -217,6 +321,46 @@ static const struct pci_device_id pciidlist[] = {       /* aka */
 	INTEL_VGA_DEVICE(0x0152, &intel_ivybridge_d_info), /* GT1 desktop */
 	INTEL_VGA_DEVICE(0x0162, &intel_ivybridge_d_info), /* GT2 desktop */
 	INTEL_VGA_DEVICE(0x015a, &intel_ivybridge_d_info), /* GT1 server */
+	INTEL_VGA_DEVICE(0x016a, &intel_ivybridge_d_info), /* GT2 server */
+	INTEL_VGA_DEVICE(0x0402, &intel_haswell_d_info), /* GT1 desktop */
+	INTEL_VGA_DEVICE(0x0412, &intel_haswell_d_info), /* GT2 desktop */
+	INTEL_VGA_DEVICE(0x0422, &intel_haswell_d_info), /* GT2 desktop */
+	INTEL_VGA_DEVICE(0x040a, &intel_haswell_d_info), /* GT1 server */
+	INTEL_VGA_DEVICE(0x041a, &intel_haswell_d_info), /* GT2 server */
+	INTEL_VGA_DEVICE(0x042a, &intel_haswell_d_info), /* GT2 server */
+	INTEL_VGA_DEVICE(0x0406, &intel_haswell_m_info), /* GT1 mobile */
+	INTEL_VGA_DEVICE(0x0416, &intel_haswell_m_info), /* GT2 mobile */
+	INTEL_VGA_DEVICE(0x0426, &intel_haswell_m_info), /* GT2 mobile */
+	INTEL_VGA_DEVICE(0x0C02, &intel_haswell_d_info), /* SDV GT1 desktop */
+	INTEL_VGA_DEVICE(0x0C12, &intel_haswell_d_info), /* SDV GT2 desktop */
+	INTEL_VGA_DEVICE(0x0C22, &intel_haswell_d_info), /* SDV GT2 desktop */
+	INTEL_VGA_DEVICE(0x0C0A, &intel_haswell_d_info), /* SDV GT1 server */
+	INTEL_VGA_DEVICE(0x0C1A, &intel_haswell_d_info), /* SDV GT2 server */
+	INTEL_VGA_DEVICE(0x0C2A, &intel_haswell_d_info), /* SDV GT2 server */
+	INTEL_VGA_DEVICE(0x0C06, &intel_haswell_m_info), /* SDV GT1 mobile */
+	INTEL_VGA_DEVICE(0x0C16, &intel_haswell_m_info), /* SDV GT2 mobile */
+	INTEL_VGA_DEVICE(0x0C26, &intel_haswell_m_info), /* SDV GT2 mobile */
+	INTEL_VGA_DEVICE(0x0A02, &intel_haswell_d_info), /* ULT GT1 desktop */
+	INTEL_VGA_DEVICE(0x0A12, &intel_haswell_d_info), /* ULT GT2 desktop */
+	INTEL_VGA_DEVICE(0x0A22, &intel_haswell_d_info), /* ULT GT2 desktop */
+	INTEL_VGA_DEVICE(0x0A0A, &intel_haswell_d_info), /* ULT GT1 server */
+	INTEL_VGA_DEVICE(0x0A1A, &intel_haswell_d_info), /* ULT GT2 server */
+	INTEL_VGA_DEVICE(0x0A2A, &intel_haswell_d_info), /* ULT GT2 server */
+	INTEL_VGA_DEVICE(0x0A06, &intel_haswell_m_info), /* ULT GT1 mobile */
+	INTEL_VGA_DEVICE(0x0A16, &intel_haswell_m_info), /* ULT GT2 mobile */
+	INTEL_VGA_DEVICE(0x0A26, &intel_haswell_m_info), /* ULT GT2 mobile */
+	INTEL_VGA_DEVICE(0x0D12, &intel_haswell_d_info), /* CRW GT1 desktop */
+	INTEL_VGA_DEVICE(0x0D22, &intel_haswell_d_info), /* CRW GT2 desktop */
+	INTEL_VGA_DEVICE(0x0D32, &intel_haswell_d_info), /* CRW GT2 desktop */
+	INTEL_VGA_DEVICE(0x0D1A, &intel_haswell_d_info), /* CRW GT1 server */
+	INTEL_VGA_DEVICE(0x0D2A, &intel_haswell_d_info), /* CRW GT2 server */
+	INTEL_VGA_DEVICE(0x0D3A, &intel_haswell_d_info), /* CRW GT2 server */
+	INTEL_VGA_DEVICE(0x0D16, &intel_haswell_m_info), /* CRW GT1 mobile */
+	INTEL_VGA_DEVICE(0x0D26, &intel_haswell_m_info), /* CRW GT2 mobile */
+	INTEL_VGA_DEVICE(0x0D36, &intel_haswell_m_info), /* CRW GT2 mobile */
+	INTEL_VGA_DEVICE(0x0f30, &intel_valleyview_m_info),
+	INTEL_VGA_DEVICE(0x0157, &intel_valleyview_m_info),
+	INTEL_VGA_DEVICE(0x0155, &intel_valleyview_d_info),
     {0, 0, 0}
 };
 
@@ -224,6 +368,7 @@ static const struct pci_device_id pciidlist[] = {       /* aka */
 #define INTEL_PCH_IBX_DEVICE_ID_TYPE    0x3b00
 #define INTEL_PCH_CPT_DEVICE_ID_TYPE    0x1c00
 #define INTEL_PCH_PPT_DEVICE_ID_TYPE    0x1e00
+#define INTEL_PCH_LPT_DEVICE_ID_TYPE	0x8c00
 
 void intel_detect_pch(struct drm_device *dev)
 {
@@ -244,105 +389,42 @@ void intel_detect_pch(struct drm_device *dev)
 
             if (id == INTEL_PCH_IBX_DEVICE_ID_TYPE) {
                 dev_priv->pch_type = PCH_IBX;
+				dev_priv->num_pch_pll = 2;
                 DRM_DEBUG_KMS("Found Ibex Peak PCH\n");
             } else if (id == INTEL_PCH_CPT_DEVICE_ID_TYPE) {
                 dev_priv->pch_type = PCH_CPT;
+				dev_priv->num_pch_pll = 2;
                 DRM_DEBUG_KMS("Found CougarPoint PCH\n");
             } else if (id == INTEL_PCH_PPT_DEVICE_ID_TYPE) {
                 /* PantherPoint is CPT compatible */
                 dev_priv->pch_type = PCH_CPT;
+				dev_priv->num_pch_pll = 2;
                 DRM_DEBUG_KMS("Found PatherPoint PCH\n");
+			} else if (id == INTEL_PCH_LPT_DEVICE_ID_TYPE) {
+				dev_priv->pch_type = PCH_LPT;
+				dev_priv->num_pch_pll = 0;
+				DRM_DEBUG_KMS("Found LynxPoint PCH\n");
             }
+			BUG_ON(dev_priv->num_pch_pll > I915_NUM_PLLS);
         }
     }
 }
 
-void __gen6_gt_force_wake_get(struct drm_i915_private *dev_priv)
+bool i915_semaphore_is_enabled(struct drm_device *dev)
 {
-    int count;
+	if (INTEL_INFO(dev)->gen < 6)
+		return 0;
 
-    count = 0;
-    while (count++ < 50 && (I915_READ_NOTRACE(FORCEWAKE_ACK) & 1))
-        udelay(10);
+	if (i915_semaphores >= 0)
+		return i915_semaphores;
 
-    I915_WRITE_NOTRACE(FORCEWAKE, 1);
-    POSTING_READ(FORCEWAKE);
+#ifdef CONFIG_INTEL_IOMMU
+	/* Enable semaphores on SNB when IO remapping is off */
+	if (INTEL_INFO(dev)->gen == 6 && intel_iommu_gfx_mapped)
+		return false;
+#endif
 
-    count = 0;
-    while (count++ < 50 && (I915_READ_NOTRACE(FORCEWAKE_ACK) & 1) == 0)
-        udelay(10);
-}
-
-void __gen6_gt_force_wake_mt_get(struct drm_i915_private *dev_priv)
-{
-	int count;
-
-	count = 0;
-	while (count++ < 50 && (I915_READ_NOTRACE(FORCEWAKE_MT_ACK) & 1))
-		udelay(10);
-
-	I915_WRITE_NOTRACE(FORCEWAKE_MT, (1<<16) | 1);
-	POSTING_READ(FORCEWAKE_MT);
-
-	count = 0;
-	while (count++ < 50 && (I915_READ_NOTRACE(FORCEWAKE_MT_ACK) & 1) == 0)
-		udelay(10);
-}
-
-/*
- * Generally this is called implicitly by the register read function. However,
- * if some sequence requires the GT to not power down then this function should
- * be called at the beginning of the sequence followed by a call to
- * gen6_gt_force_wake_put() at the end of the sequence.
- */
-void gen6_gt_force_wake_get(struct drm_i915_private *dev_priv)
-{
-	unsigned long irqflags;
-
-	spin_lock_irqsave(&dev_priv->gt_lock, irqflags);
-	if (dev_priv->forcewake_count++ == 0)
-		dev_priv->display.force_wake_get(dev_priv);
-	spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags);
-}
-
-void __gen6_gt_force_wake_put(struct drm_i915_private *dev_priv)
-{
-    I915_WRITE_NOTRACE(FORCEWAKE, 0);
-    POSTING_READ(FORCEWAKE);
-}
-
-void __gen6_gt_force_wake_mt_put(struct drm_i915_private *dev_priv)
-{
-	I915_WRITE_NOTRACE(FORCEWAKE_MT, (1<<16) | 0);
-	POSTING_READ(FORCEWAKE_MT);
-}
-
-/*
- * see gen6_gt_force_wake_get()
- */
-void gen6_gt_force_wake_put(struct drm_i915_private *dev_priv)
-{
-	unsigned long irqflags;
-
-	spin_lock_irqsave(&dev_priv->gt_lock, irqflags);
-	if (--dev_priv->forcewake_count == 0)
-		dev_priv->display.force_wake_put(dev_priv);
-	spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags);
-}
-
-void __gen6_gt_wait_for_fifo(struct drm_i915_private *dev_priv)
-{
-	if (dev_priv->gt_fifo_count < GT_FIFO_NUM_RESERVED_ENTRIES) {
-        int loop = 500;
-        u32 fifo = I915_READ_NOTRACE(GT_FIFO_FREE_ENTRIES);
-        while (fifo <= GT_FIFO_NUM_RESERVED_ENTRIES && loop--) {
-            udelay(10);
-            fifo = I915_READ_NOTRACE(GT_FIFO_FREE_ENTRIES);
-        }
-//        WARN_ON(loop < 0 && fifo <= GT_FIFO_NUM_RESERVED_ENTRIES);
-        dev_priv->gt_fifo_count = fifo;
-    }
-    dev_priv->gt_fifo_count--;
+	return 1;
 }
 
 
@@ -357,22 +439,31 @@ int i915_init(void)
     const struct pci_device_id  *ent;
     int  err;
 
-    if( init_agp() != 0)
-    {
-        DRM_ERROR("drm/i915 can't work without intel_agp module!\n");
-        return 0;
-    };
-
     ent = find_pci_device(&device, pciidlist);
-
     if( unlikely(ent == NULL) )
     {
         dbgprintf("device not found\n");
         return 0;
     };
 
+    struct intel_device_info *intel_info =
+        (struct intel_device_info *) ent->driver_data;
+
+    if (intel_info->is_haswell || intel_info->is_valleyview)
+        if(!i915_preliminary_hw_support) {
+            DRM_ERROR("Preliminary hardware support disabled\n");
+            return -ENODEV;
+        }
+
     dbgprintf("device %x:%x\n", device.pci_dev.vendor,
                                 device.pci_dev.device);
+
+    if (intel_info->gen != 3) {
+
+    } else if (init_agp() != 0) {
+        DRM_ERROR("drm/i915 can't work without intel_agp module!\n");
+        return -ENODEV;
+    }
 
     err = drm_get_dev(&device.pci_dev, ent);
 
@@ -394,7 +485,7 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
  //   if (ret)
  //       goto err_g1;
 
- //   pci_set_master(pdev);
+    pci_set_master(pdev);
 
  //   if ((ret = drm_fill_in_dev(dev, pdev, ent, driver))) {
  //       printk(KERN_ERR "DRM: Fill_in_dev failed.\n");
@@ -443,6 +534,89 @@ err_g4:
     return ret;
 }
 
+/* We give fast paths for the really cool registers */
+#define NEEDS_FORCE_WAKE(dev_priv, reg) \
+	((HAS_FORCE_WAKE((dev_priv)->dev)) && \
+	 ((reg) < 0x40000) &&            \
+	 ((reg) != FORCEWAKE))
+
+static bool IS_DISPLAYREG(u32 reg)
+{
+	/*
+	 * This should make it easier to transition modules over to the
+	 * new register block scheme, since we can do it incrementally.
+	 */
+	if (reg >= VLV_DISPLAY_BASE)
+		return false;
+
+	if (reg >= RENDER_RING_BASE &&
+	    reg < RENDER_RING_BASE + 0xff)
+		return false;
+	if (reg >= GEN6_BSD_RING_BASE &&
+	    reg < GEN6_BSD_RING_BASE + 0xff)
+		return false;
+	if (reg >= BLT_RING_BASE &&
+	    reg < BLT_RING_BASE + 0xff)
+		return false;
+
+	if (reg == PGTBL_ER)
+		return false;
+
+	if (reg >= IPEIR_I965 &&
+	    reg < HWSTAM)
+		return false;
+
+	if (reg == MI_MODE)
+		return false;
+
+	if (reg == GFX_MODE_GEN7)
+		return false;
+
+	if (reg == RENDER_HWS_PGA_GEN7 ||
+	    reg == BSD_HWS_PGA_GEN7 ||
+	    reg == BLT_HWS_PGA_GEN7)
+		return false;
+
+	if (reg == GEN6_BSD_SLEEP_PSMI_CONTROL ||
+	    reg == GEN6_BSD_RNCID)
+		return false;
+
+	if (reg == GEN6_BLITTER_ECOSKPD)
+		return false;
+
+	if (reg >= 0x4000c &&
+	    reg <= 0x4002c)
+		return false;
+
+	if (reg >= 0x4f000 &&
+	    reg <= 0x4f08f)
+		return false;
+
+	if (reg >= 0x4f100 &&
+	    reg <= 0x4f11f)
+		return false;
+
+	if (reg >= VLV_MASTER_IER &&
+	    reg <= GEN6_PMIER)
+		return false;
+
+	if (reg >= FENCE_REG_SANDYBRIDGE_0 &&
+	    reg < (FENCE_REG_SANDYBRIDGE_0 + (16*8)))
+		return false;
+
+	if (reg >= VLV_IIR_RW &&
+	    reg <= VLV_ISR)
+		return false;
+
+	if (reg == FORCEWAKE_VLV ||
+	    reg == FORCEWAKE_ACK_VLV)
+		return false;
+
+	if (reg == GEN6_GDRST)
+		return false;
+
+	return true;
+}
 
 #define __i915_read(x, y) \
 u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
@@ -451,11 +625,13 @@ u##x i915_read##x(struct drm_i915_private *dev_priv, u32 reg) { \
 		unsigned long irqflags; \
 		spin_lock_irqsave(&dev_priv->gt_lock, irqflags); \
 		if (dev_priv->forcewake_count == 0) \
-			dev_priv->display.force_wake_get(dev_priv); \
+			dev_priv->gt.force_wake_get(dev_priv); \
 		val = read##y(dev_priv->regs + reg); \
 		if (dev_priv->forcewake_count == 0) \
-			dev_priv->display.force_wake_put(dev_priv); \
+			dev_priv->gt.force_wake_put(dev_priv); \
 		spin_unlock_irqrestore(&dev_priv->gt_lock, irqflags); \
+	} else if (IS_VALLEYVIEW(dev_priv->dev) && IS_DISPLAYREG(reg)) { \
+		val = read##y(dev_priv->regs + reg + 0x180000);		\
 	} else { \
 		val = read##y(dev_priv->regs + reg); \
 	} \

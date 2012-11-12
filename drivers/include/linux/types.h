@@ -24,7 +24,8 @@ typedef __kernel_fd_set		fd_set;
 typedef __kernel_dev_t		dev_t;
 typedef __kernel_ino_t		ino_t;
 typedef __kernel_mode_t		mode_t;
-typedef __kernel_nlink_t	nlink_t;
+typedef unsigned short		umode_t;
+typedef __u32			nlink_t;
 typedef __kernel_off_t		off_t;
 typedef __kernel_pid_t		pid_t;
 typedef __kernel_daddr_t	daddr_t;
@@ -252,8 +253,6 @@ typedef unsigned long long   u64_t;
 typedef unsigned int         addr_t;
 typedef unsigned int         count_t;
 
-# define WARN(condition, format...)
-
 
 #define false                0
 #define true                 1
@@ -266,14 +265,6 @@ typedef unsigned int         count_t;
 
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 
-
-
-#define DRM_NAME    "drm"     /**< Name in kernel, /dev, and /proc */
-
-#define DRM_INFO(fmt, arg...)  dbgprintf("DRM: "fmt , ##arg)
-
-#define DRM_ERROR(fmt, arg...) \
-    printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* " fmt , __func__ , ##arg)
 
 #define BUILD_BUG_ON_ZERO(e) (sizeof(char[1 - 2 * !!(e)]) - 1)
 
@@ -345,23 +336,6 @@ struct drm_file;
 #define PAGE_MASK       (~(PAGE_SIZE-1))
 
 
-#define do_div(n, base)                     \
-({                              \
-    unsigned long __upper, __low, __high, __mod, __base;    \
-    __base = (base);                    \
-    asm("":"=a" (__low), "=d" (__high) : "A" (n));      \
-    __upper = __high;                   \
-    if (__high) {                       \
-        __upper = __high % (__base);            \
-        __high = __high / (__base);         \
-    }                           \
-    asm("divl %2":"=a" (__low), "=d" (__mod)        \
-        : "rm" (__base), "0" (__low), "1" (__upper));   \
-    asm("":"=A" (n) : "a" (__low), "d" (__high));       \
-    __mod;                          \
-})
-
-
 
 #define ENTER()   dbgprintf("enter %s\n",__FUNCTION__)
 #define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
@@ -374,5 +348,10 @@ struct timeval
 
 
 #define PCI_DEVICE_ID_ATI_RADEON_QY 0x5159
+
+#ifndef __read_mostly
+#define __read_mostly
+#endif
+
 
 #endif /* _LINUX_TYPES_H */

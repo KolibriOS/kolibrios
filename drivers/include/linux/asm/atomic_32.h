@@ -266,7 +266,7 @@ typedef struct {
 	u64 __aligned(8) counter;
 } atomic64_t;
 
-#define ATOMIC64_INIT(val)	{ (val) }
+
 
 extern u64 atomic64_cmpxchg(atomic64_t *ptr, u64 old_val, u64 new_val);
 
@@ -278,7 +278,21 @@ extern u64 atomic64_cmpxchg(atomic64_t *ptr, u64 old_val, u64 new_val);
  * Atomically xchgs the value of @ptr to @new_val and returns
  * the old value.
  */
-extern u64 atomic64_xchg(atomic64_t *ptr, u64 new_val);
+static inline long long atomic64_xchg(atomic64_t *v, long long n)
+{
+    long long o;
+    unsigned high = (unsigned)(n >> 32);
+    unsigned low = (unsigned)n;
+
+    asm volatile(
+    "1:                 \n\t"
+    "cmpxchg8b (%%esi)  \n\t"
+    "jnz 1b             \n\t"
+    :"=&A" (o)
+    :"S" (v), "b" (low), "c" (high)
+    : "memory", "cc");
+    return o;
+}
 
 /**
  * atomic64_set - set atomic64 variable
@@ -287,7 +301,20 @@ extern u64 atomic64_xchg(atomic64_t *ptr, u64 new_val);
  *
  * Atomically sets the value of @ptr to @new_val.
  */
-extern void atomic64_set(atomic64_t *ptr, u64 new_val);
+
+static inline void atomic64_set(atomic64_t *v, long long i)
+{
+    unsigned high = (unsigned)(i >> 32);
+    unsigned low = (unsigned)i;
+    asm volatile (
+    "1:                 \n\t"
+    "cmpxchg8b (%%esi)  \n\t"
+    "jnz 1b             \n\t"
+    :
+    :"S" (v), "b" (low), "c" (high)
+    : "eax", "edx", "memory", "cc");
+}
+
 
 /**
  * atomic64_read - read atomic64 variable
@@ -317,7 +344,6 @@ static inline u64 atomic64_read(atomic64_t *ptr)
 	return res;
 }
 
-extern u64 atomic64_read(atomic64_t *ptr);
 
 /**
  * atomic64_add_return - add and return

@@ -129,7 +129,7 @@ static inline void alternatives_smp_switch(int smp) {}
  * use this macro(s) if you need more than one output parameter
  * in alternative_io
  */
-#define ASM_OUTPUT2(a, b) a, b
+#define ASM_OUTPUT2(a) a
 
 struct paravirt_patch_site;
 #ifdef CONFIG_PARAVIRT

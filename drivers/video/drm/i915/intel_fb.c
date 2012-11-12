@@ -36,12 +36,11 @@
 //#include <linux/init.h>
 //#include <linux/vga_switcheroo.h>
 
-#include "drmP.h"
-#include "drm.h"
-#include "drm_crtc.h"
-#include "drm_fb_helper.h"
+#include <drm/drmP.h>
+#include <drm/drm_crtc.h>
+#include <drm/drm_fb_helper.h>
 #include "intel_drv.h"
-#include "i915_drm.h"
+#include <drm/i915_drm.h>
 #include "i915_drv.h"
 
 
@@ -73,7 +72,7 @@ struct fb_info *framebuffer_alloc(size_t size, struct device *dev)
 
 
 static struct fb_ops intelfb_ops = {
-//   .owner = THIS_MODULE,
+	.owner = THIS_MODULE,
 	.fb_check_var = drm_fb_helper_check_var,
 	.fb_set_par = drm_fb_helper_set_par,
 //   .fb_fillrect = cfb_fillrect,
@@ -93,7 +92,7 @@ static int intelfb_create(struct intel_fbdev *ifbdev,
 	struct drm_i915_private *dev_priv = dev->dev_private;
 	struct fb_info *info;
 	struct drm_framebuffer *fb;
-	struct drm_mode_fb_cmd2 mode_cmd;
+	struct drm_mode_fb_cmd2 mode_cmd = {};
 	struct drm_i915_gem_object *obj;
 	struct device *device = &dev->pdev->dev;
 	int size, ret;
@@ -183,12 +182,15 @@ static int intelfb_create(struct intel_fbdev *ifbdev,
 	info->fix.smem_start = dev->mode_config.fb_base + obj->gtt_offset;
 	info->fix.smem_len = size;
 
+	info->screen_base = 0xFE000000;
 	info->screen_size = size;
 
 //	memset(info->screen_base, 0, size);
 
 	drm_fb_helper_fill_fix(info, fb->pitches[0], fb->depth);
 	drm_fb_helper_fill_var(info, &ifbdev->helper, sizes->fb_width, sizes->fb_height);
+
+	/* Use default scratch pixmap (info->pixmap.flags = FB_PIXMAP_SYSTEM) */
 
 	DRM_DEBUG_KMS("allocated %dx%d fb: 0x%08x, bo %p\n",
 		      fb->width, fb->height,
@@ -197,6 +199,7 @@ static int intelfb_create(struct intel_fbdev *ifbdev,
 
 	mutex_unlock(&dev->struct_mutex);
 //   vga_switcheroo_client_fb_set(dev->pdev, info);
+
 	return 0;
 
 out_unpin:

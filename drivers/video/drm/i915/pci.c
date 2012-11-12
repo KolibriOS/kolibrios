@@ -677,19 +677,6 @@ pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
     region->end = res->end;
 }
 
-static inline int pci_read_config_dword(struct pci_dev *dev, int where,
-                    u32 *val)
-{
-    *val = PciRead32(dev->busnr, dev->devfn, where);
-    return 1;
-}
-
-static inline int pci_write_config_dword(struct pci_dev *dev, int where,
-                    u32 val)
-{
-    PciWrite32(dev->busnr, dev->devfn, where, val);
-    return 1;
-}
 
 int pci_enable_rom(struct pci_dev *pdev)
 {
@@ -843,4 +830,51 @@ void pci_unmap_rom(struct pci_dev *pdev, void __iomem *rom)
     if (!(res->flags & (IORESOURCE_ROM_ENABLE | IORESOURCE_ROM_SHADOW)))
             pci_disable_rom(pdev);
 }
+
+#if 0
+void pcibios_set_master(struct pci_dev *dev)
+{
+    u8 lat;
+
+    /* The latency timer doesn't apply to PCIe (either Type 0 or Type 1) */
+    if (pci_is_pcie(dev))
+            return;
+
+    pci_read_config_byte(dev, PCI_LATENCY_TIMER, &lat);
+    if (lat < 16)
+            lat = (64 <= pcibios_max_latency) ? 64 : pcibios_max_latency;
+    else if (lat > pcibios_max_latency)
+            lat = pcibios_max_latency;
+    else
+            return;
+    dev_printk(KERN_DEBUG, &dev->dev, "setting latency timer to %d\n", lat);
+    pci_write_config_byte(dev, PCI_LATENCY_TIMER, lat);
+}
+#endif
+
+
+static void __pci_set_master(struct pci_dev *dev, bool enable)
+{
+    u16 old_cmd, cmd;
+
+    pci_read_config_word(dev, PCI_COMMAND, &old_cmd);
+    if (enable)
+            cmd = old_cmd | PCI_COMMAND_MASTER;
+    else
+            cmd = old_cmd & ~PCI_COMMAND_MASTER;
+    if (cmd != old_cmd) {
+            dbgprintf("%s bus mastering\n",
+                    enable ? "enabling" : "disabling");
+            pci_write_config_word(dev, PCI_COMMAND, cmd);
+    }
+    dev->is_busmaster = enable;
+}
+
+void pci_set_master(struct pci_dev *dev)
+{
+    __pci_set_master(dev, true);
+//    pcibios_set_master(dev);
+}
+
+
 

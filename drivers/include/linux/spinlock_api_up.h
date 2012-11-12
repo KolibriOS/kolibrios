@@ -31,7 +31,7 @@
   do { local_bh_disable(); __LOCK(lock); } while (0)
 
 #define __LOCK_IRQ(lock) \
-  do { local_irq_disable(); __LOCK(lock); } while (0)
+  do { asm volatile ("cli \n"); __LOCK(lock); } while (0)
 
 #define __LOCK_IRQSAVE(lock, flags) \
   do {                              \
@@ -51,7 +51,7 @@
 	  __release(lock); (void)(lock); } while (0)
 
 #define __UNLOCK_IRQ(lock) \
-  do { local_irq_enable(); __UNLOCK(lock); } while (0)
+  do { asm volatile ("sti \n"); __UNLOCK(lock); } while (0)
 
 #define __UNLOCK_IRQRESTORE(lock, flags)    \
   do {                                      \

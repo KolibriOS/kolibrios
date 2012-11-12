@@ -25,9 +25,8 @@
  *
  */
 #include <drm/drm_dp_helper.h>
-#include "drmP.h"
-#include "drm.h"
-#include "i915_drm.h"
+#include <drm/drmP.h>
+#include <drm/i915_drm.h>
 #include "i915_drv.h"
 #include "intel_bios.h"
 
@@ -173,6 +172,28 @@ get_lvds_dvo_timing(const struct bdb_lvds_lfp_data *lvds_lfp_data,
 	return (struct lvds_dvo_timing *)(entry + dvo_timing_offset);
 }
 
+/* get lvds_fp_timing entry
+ * this function may return NULL if the corresponding entry is invalid
+ */
+static const struct lvds_fp_timing *
+get_lvds_fp_timing(const struct bdb_header *bdb,
+		   const struct bdb_lvds_lfp_data *data,
+		   const struct bdb_lvds_lfp_data_ptrs *ptrs,
+		   int index)
+{
+	size_t data_ofs = (const u8 *)data - (const u8 *)bdb;
+	u16 data_size = ((const u16 *)data)[-1]; /* stored in header */
+	size_t ofs;
+
+	if (index >= ARRAY_SIZE(ptrs->ptr))
+		return NULL;
+	ofs = ptrs->ptr[index].fp_timing_offset;
+	if (ofs < data_ofs ||
+	    ofs + sizeof(struct lvds_fp_timing) > data_ofs + data_size)
+		return NULL;
+	return (const struct lvds_fp_timing *)((const u8 *)bdb + ofs);
+}
+
 /* Try to find integrated panel data */
 static void
 parse_lfp_panel_data(struct drm_i915_private *dev_priv,
@@ -182,6 +203,7 @@ parse_lfp_panel_data(struct drm_i915_private *dev_priv,
 	const struct bdb_lvds_lfp_data *lvds_lfp_data;
 	const struct bdb_lvds_lfp_data_ptrs *lvds_lfp_data_ptrs;
 	const struct lvds_dvo_timing *panel_dvo_timing;
+	const struct lvds_fp_timing *fp_timing;
 	struct drm_display_mode *panel_fixed_mode;
 	int i, downclock;
 
@@ -243,6 +265,19 @@ parse_lfp_panel_data(struct drm_i915_private *dev_priv,
 			      "Normal Clock %dKHz, downclock %dKHz\n",
 			      panel_fixed_mode->clock, 10*downclock);
 	}
+
+	fp_timing = get_lvds_fp_timing(bdb, lvds_lfp_data,
+				       lvds_lfp_data_ptrs,
+				       lvds_options->panel_type);
+	if (fp_timing) {
+		/* check the resolution, just to be sure */
+		if (fp_timing->x_res == panel_fixed_mode->hdisplay &&
+		    fp_timing->y_res == panel_fixed_mode->vdisplay) {
+			dev_priv->bios_lvds_val = fp_timing->lvds_reg_val;
+			DRM_DEBUG_KMS("VBT initial LVDS value %x\n",
+				      dev_priv->bios_lvds_val);
+		}
+	}
 }
 
 /* Try to find sdvo panel data */
@@ -255,6 +290,11 @@ parse_sdvo_panel_data(struct drm_i915_private *dev_priv,
 	int index;
 
 	index = i915_vbt_sdvo_panel_type;
+	if (index == -2) {
+		DRM_DEBUG_KMS("Ignore SDVO panel mode from BIOS VBT tables.\n");
+		return;
+	}
+
 	if (index == -1) {
 		struct bdb_sdvo_lvds_options *sdvo_lvds_options;
 
@@ -331,7 +371,7 @@ parse_general_definitions(struct drm_i915_private *dev_priv,
 		if (block_size >= sizeof(*general)) {
 			int bus_pin = general->crt_ddc_gmbus_pin;
 			DRM_DEBUG_KMS("crt_ddc_bus_pin: %d\n", bus_pin);
-			if (bus_pin >= 1 && bus_pin <= 6)
+			if (intel_gmbus_is_port_valid(bus_pin))
 				dev_priv->crt_ddc_pin = bus_pin;
 		} else {
 			DRM_DEBUG_KMS("BDB_GD too small (%d). Invalid.\n",
@@ -572,7 +612,7 @@ parse_device_mapping(struct drm_i915_private *dev_priv,
 		DRM_DEBUG_KMS("no child dev is parsed from VBT\n");
 		return;
 	}
-	dev_priv->child_dev = kzalloc(sizeof(*p_child) * count, GFP_KERNEL);
+	dev_priv->child_dev = kcalloc(count, sizeof(*p_child), GFP_KERNEL);
 	if (!dev_priv->child_dev) {
 		DRM_DEBUG_KMS("No memory space for child device\n");
 		return;
@@ -630,7 +670,7 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
  *
  * Returns 0 on success, nonzero on failure.
  */
-bool
+int
 intel_parse_bios(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
@@ -669,7 +709,7 @@ intel_parse_bios(struct drm_device *dev)
 		}
 
 		if (!vbt) {
-			DRM_ERROR("VBT signature missing\n");
+			DRM_DEBUG_DRIVER("VBT signature missing\n");
 			pci_unmap_rom(pdev, bios);
 			return -1;
 		}

@@ -351,7 +351,7 @@ static int radeon_fence_wait_seq(struct radeon_device *rdev, u64 target_seq,
 
 				/* change last activity so nobody else think there is a lockup */
 				for (i = 0; i < RADEON_NUM_RINGS; ++i) {
-					rdev->fence_drv[i].last_activity = jiffies;
+                    rdev->fence_drv[i].last_activity = GetTimerTicks();
 				}
 
 				/* mark the ring as not ready any more */
@@ -811,7 +811,7 @@ static void radeon_fence_driver_init_ring(struct radeon_device *rdev, int ring)
 	for (i = 0; i < RADEON_NUM_RINGS; ++i)
 		rdev->fence_drv[ring].sync_seq[i] = 0;
 	atomic64_set(&rdev->fence_drv[ring].last_seq, 0);
-	rdev->fence_drv[ring].last_activity = jiffies;
+    rdev->fence_drv[ring].last_activity = GetTimerTicks();
 	rdev->fence_drv[ring].initialized = false;
 }
 

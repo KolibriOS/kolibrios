@@ -33,7 +33,7 @@
 #ifndef __RADEON_DRM_H__
 #define __RADEON_DRM_H__
 
-#include "drm.h"
+#include <drm/drm.h>
 
 /* WARNING: If you change any of these defines, make sure to change the
  * defines in the X server file (radeon_sarea.h)
@@ -509,6 +509,7 @@ typedef struct {
 #define DRM_RADEON_GEM_SET_TILING	0x28
 #define DRM_RADEON_GEM_GET_TILING	0x29
 #define DRM_RADEON_GEM_BUSY		0x2a
+#define DRM_RADEON_GEM_VA		0x2b
 
 #define DRM_IOCTL_RADEON_CP_INIT    DRM_IOW( DRM_COMMAND_BASE + DRM_RADEON_CP_INIT, drm_radeon_init_t)
 #define DRM_IOCTL_RADEON_CP_START   DRM_IO(  DRM_COMMAND_BASE + DRM_RADEON_CP_START)
@@ -807,9 +808,19 @@ struct drm_radeon_gem_create {
 #define RADEON_TILING_MICRO       0x2
 #define RADEON_TILING_SWAP_16BIT  0x4
 #define RADEON_TILING_SWAP_32BIT  0x8
-#define RADEON_TILING_SURFACE     0x10 /* this object requires a surface
-					* when mapped - i.e. front buffer */
+/* this object requires a surface when mapped - i.e. front buffer */
+#define RADEON_TILING_SURFACE				0x10
 #define RADEON_TILING_MICRO_SQUARE 0x20
+#define RADEON_TILING_EG_BANKW_SHIFT			8
+#define RADEON_TILING_EG_BANKW_MASK			0xf
+#define RADEON_TILING_EG_BANKH_SHIFT			12
+#define RADEON_TILING_EG_BANKH_MASK			0xf
+#define RADEON_TILING_EG_MACRO_TILE_ASPECT_SHIFT	16
+#define RADEON_TILING_EG_MACRO_TILE_ASPECT_MASK		0xf
+#define RADEON_TILING_EG_TILE_SPLIT_SHIFT		24
+#define RADEON_TILING_EG_TILE_SPLIT_MASK		0xf
+#define RADEON_TILING_EG_STENCIL_TILE_SPLIT_SHIFT	28
+#define RADEON_TILING_EG_STENCIL_TILE_SPLIT_MASK	0xf
 
 struct drm_radeon_gem_set_tiling {
 	uint32_t	handle;
@@ -897,6 +908,7 @@ struct drm_radeon_gem_va {
 #define RADEON_CHUNK_ID_RELOCS	0x01
 #define RADEON_CHUNK_ID_IB	0x02
 #define RADEON_CHUNK_ID_FLAGS	0x03
+#define RADEON_CHUNK_ID_CONST_IB	0x04
 
 /* The first dword of RADEON_CHUNK_ID_FLAGS is a uint32 of these flags: */
 #define RADEON_CS_KEEP_TILING_FLAGS 0x01
@@ -914,7 +926,6 @@ struct drm_radeon_cs_chunk {
 };
 
 /* drm_radeon_cs_reloc.flags */
-#define RADEON_RELOC_DONT_SYNC		0x01
 
 struct drm_radeon_cs_reloc {
 	uint32_t		handle;
@@ -951,6 +962,10 @@ struct drm_radeon_cs {
 #define RADEON_INFO_VA_START		0x0e
 /* maximum size of ib using the virtual memory cs */
 #define RADEON_INFO_IB_VM_MAX_SIZE	0x0f
+/* max pipes - needed for compute shaders */
+#define RADEON_INFO_MAX_PIPES		0x10
+/* timestamp for GL_ARB_timer_query (OpenGL), returns the current GPU clock */
+#define RADEON_INFO_TIMESTAMP		0x11
 
 struct drm_radeon_info {
 	uint32_t		request;

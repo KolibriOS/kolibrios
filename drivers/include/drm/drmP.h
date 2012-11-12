@@ -36,15 +36,22 @@
 #define _DRM_P_H_
 
 #ifdef __KERNEL__
+#ifdef __alpha__
+/* add include of current.h so that "current" is defined
+ * before static inline funcs in wait.h. Doing this so we
+ * can build the DRM (part of PI DRI). 4/21/2000 S + B */
+#include <asm/current.h>
+#endif				/* __alpha__ */
 
 #include <syscall.h>
 
-#include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/export.h>
 #include <linux/errno.h>
 #include <linux/kref.h>
 #include <linux/spinlock.h>
 #include <linux/wait.h>
+#include <linux/bug.h>
 
 //#include <linux/miscdevice.h>
 //#include <linux/fs.h>
@@ -72,24 +79,14 @@
 #define __OS_HAS_AGP (defined(CONFIG_AGP) || (defined(CONFIG_AGP_MODULE) && defined(MODULE)))
 #define __OS_HAS_MTRR (defined(CONFIG_MTRR))
 
-
-
-
-#include <drm_edid.h>
-#include <drm_crtc.h>
-
+struct module;
 
 struct drm_file;
 struct drm_device;
 
-//#include "drm_os_linux.h"
-#include "drm_hashtab.h"
-#include "drm_mm.h"
-
-#define DRM_UT_CORE 		0x01
-#define DRM_UT_DRIVER		0x02
-#define DRM_UT_KMS          0x04
-#define DRM_UT_MODE         0x08
+//#include <drm/drm_os_linux.h>
+#include <drm/drm_hashtab.h>
+#include <drm/drm_mm.h>
 
 #define KHZ2PICOS(a) (1000000000UL/(a))
 
@@ -99,44 +96,50 @@ struct drm_device;
 #define DRM_SCANOUTPOS_ACCURATE     (1 << 2)
 
 
-extern void drm_ut_debug_printk(unsigned int request_level,
+
+#define DRM_UT_CORE 		0x01
+#define DRM_UT_DRIVER		0x02
+#define DRM_UT_KMS          0x04
+#define DRM_UT_PRIME		0x08
+/*
+ * Three debug levels are defined.
+ * drm_core, drm_driver, drm_kms
+ * drm_core level can be used in the generic drm code. For example:
+ * 	drm_ioctl, drm_mm, drm_memory
+ * The macro definition of DRM_DEBUG is used.
+ * 	DRM_DEBUG(fmt, args...)
+ * 	The debug info by using the DRM_DEBUG can be obtained by adding
+ * 	the boot option of "drm.debug=1".
+ *
+ * drm_driver level can be used in the specific drm driver. It is used
+ * to add the debug info related with the drm driver. For example:
+ * i915_drv, i915_dma, i915_gem, radeon_drv,
+ * 	The macro definition of DRM_DEBUG_DRIVER can be used.
+ * 	DRM_DEBUG_DRIVER(fmt, args...)
+ * 	The debug info by using the DRM_DEBUG_DRIVER can be obtained by
+ * 	adding the boot option of "drm.debug=0x02"
+ *
+ * drm_kms level can be used in the KMS code related with specific drm driver.
+ * It is used to add the debug info related with KMS mode. For example:
+ * the connector/crtc ,
+ * 	The macro definition of DRM_DEBUG_KMS can be used.
+ * 	DRM_DEBUG_KMS(fmt, args...)
+ * 	The debug info by using the DRM_DEBUG_KMS can be obtained by
+ * 	adding the boot option of "drm.debug=0x04"
+ *
+ * If we add the boot option of "drm.debug=0x06", we can get the debug info by
+ * using the DRM_DEBUG_KMS and DRM_DEBUG_DRIVER.
+ * If we add the boot option of "drm.debug=0x05", we can get the debug info by
+ * using the DRM_DEBUG_KMS and DRM_DEBUG.
+ */
+
+extern __printf(4, 5)
+void drm_ut_debug_printk(unsigned int request_level,
 				const char *prefix,
 				const char *function_name,
 				const char *format, ...);
-
-#define DRM_DEBUG_MODE(prefix, fmt, args...)    \
-    do {                                        \
-        dbgprintf("drm debug: %s" fmt,          \
-                     __func__, ##args);         \
-    } while (0)
-
-#define DRM_DEBUG(fmt, args...)                                 \
-    do {                                                        \
-        printk("[" DRM_NAME ":%s] " fmt , __func__ , ##args);   \
-    } while(0)
-
-#define DRM_DEBUG_KMS(fmt, args...)                             \
-    do {                                                        \
-        printk("[" DRM_NAME ":%s] " fmt , __func__ , ##args);   \
-    } while(0)
-
-#define DRM_DEBUG_DRIVER(fmt, args...)                          \
-    do {                                                        \
-        printk("[" DRM_NAME ":%s] " fmt , __func__ , ##args);   \
-    } while (0)
-
-#define DRM_LOG_KMS(fmt, args...)      \
-    do {                               \
-        printk("[" DRM_NAME "]" fmt, ##args);     \
-    } while (0)
-
-static inline int drm_sysfs_connector_add(struct drm_connector *connector)
-{ return 0; };
-
-static inline void drm_sysfs_connector_remove(struct drm_connector *connector)
-{ };
-
-#if 0
+extern __printf(2, 3)
+int drm_err(const char *func, const char *format, ...);
 
 /***********************************************************************/
 /** \name DRM template customization defaults */
@@ -157,6 +160,7 @@ static inline void drm_sysfs_connector_remove(struct drm_connector *connector)
 #define DRIVER_IRQ_VBL2    0x800
 #define DRIVER_GEM         0x1000
 #define DRIVER_MODESET     0x2000
+#define DRIVER_PRIME       0x4000
 
 #define DRIVER_BUS_PCI 0x1
 #define DRIVER_BUS_PLATFORM 0x2
@@ -193,21 +197,11 @@ static inline void drm_sysfs_connector_remove(struct drm_connector *connector)
  * \param fmt printf() like format string.
  * \param arg arguments
  */
-#define DRM_ERROR(fmt, arg...) \
-	printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* " fmt , __func__ , ##arg)
+#define DRM_ERROR(fmt, ...)				\
+	drm_err(__func__, fmt, ##__VA_ARGS__)
 
-/**
- * Memory error output.
- *
- * \param area memory area where the error occurred.
- * \param fmt printf() like format string.
- * \param arg arguments
- */
-#define DRM_MEM_ERROR(area, fmt, arg...) \
-	printk(KERN_ERR "[" DRM_NAME ":%s:%s] *ERROR* " fmt , __func__, \
-	       drm_mem_stats[area].name , ##arg)
-
-#define DRM_INFO(fmt, arg...)  printk(KERN_INFO "[" DRM_NAME "] " fmt , ##arg)
+#define DRM_INFO(fmt, ...)				\
+	printk(KERN_INFO "[" DRM_NAME "] " fmt, ##__VA_ARGS__)
 
 /**
  * Debug output.
@@ -216,45 +210,43 @@ static inline void drm_sysfs_connector_remove(struct drm_connector *connector)
  * \param arg arguments
  */
 #if DRM_DEBUG_CODE
-#define DRM_DEBUG(fmt, args...)						\
-	do {								\
-		drm_ut_debug_printk(DRM_UT_CORE, DRM_NAME, 		\
-					__func__, fmt, ##args);		\
+#define DRM_DEBUG(fmt, ...)                                 \
+    do {                                                    \
+    printk(KERN_INFO "[" DRM_NAME "] " fmt, ##__VA_ARGS__);  \
 	} while (0)
 
-#define DRM_DEBUG_DRIVER(fmt, args...)					\
-	do {								\
-		drm_ut_debug_printk(DRM_UT_DRIVER, DRM_NAME,		\
-					__func__, fmt, ##args);		\
+#define DRM_DEBUG_DRIVER(fmt, ...)                          \
+    do {                                                    \
+    printk(KERN_INFO "[" DRM_NAME "] " fmt, ##__VA_ARGS__);  \
 	} while (0)
-#define DRM_DEBUG_KMS(fmt, args...)				\
+#define DRM_DEBUG_KMS(fmt, ...)              \
 	do {								\
-		drm_ut_debug_printk(DRM_UT_KMS, DRM_NAME, 		\
-					 __func__, fmt, ##args);	\
+    printk(KERN_INFO "[" DRM_NAME "] " fmt, ##__VA_ARGS__);  \
 	} while (0)
-#define DRM_LOG(fmt, args...)						\
+#define DRM_DEBUG_PRIME(fmt, ...)                    \
 	do {								\
-		drm_ut_debug_printk(DRM_UT_CORE, NULL,			\
-					NULL, fmt, ##args);		\
+    printk(KERN_INFO "[" DRM_NAME "] " fmt, ##__VA_ARGS__);  \
 	} while (0)
-#define DRM_LOG_KMS(fmt, args...)					\
+#define DRM_LOG(fmt, ...)                        \
 	do {								\
-		drm_ut_debug_printk(DRM_UT_KMS, NULL,			\
-					NULL, fmt, ##args);		\
+    printk(KERN_INFO "[" DRM_NAME "] " fmt, ##__VA_ARGS__);  \
 	} while (0)
-#define DRM_LOG_MODE(fmt, args...)					\
+#define DRM_LOG_KMS(fmt, ...)                    \
 	do {								\
-		drm_ut_debug_printk(DRM_UT_MODE, NULL,			\
-					NULL, fmt, ##args);		\
+    printk(KERN_INFO "[" DRM_NAME "] " fmt, ##__VA_ARGS__);  \
 	} while (0)
-#define DRM_LOG_DRIVER(fmt, args...)					\
+#define DRM_LOG_MODE(fmt, ...)                   \
 	do {								\
-		drm_ut_debug_printk(DRM_UT_DRIVER, NULL,		\
-					NULL, fmt, ##args);		\
+    printk(KERN_INFO "[" DRM_NAME "] " fmt, ##__VA_ARGS__);  \
+	} while (0)
+#define DRM_LOG_DRIVER(fmt, ...)                 \
+	do {								\
+    printk(KERN_INFO "[" DRM_NAME "] " fmt, ##__VA_ARGS__);  \
 	} while (0)
 #else
 #define DRM_DEBUG_DRIVER(fmt, args...) do { } while (0)
 #define DRM_DEBUG_KMS(fmt, args...)	do { } while (0)
+#define DRM_DEBUG_PRIME(fmt, args...)	do { } while (0)
 #define DRM_DEBUG(fmt, arg...)		 do { } while (0)
 #define DRM_LOG(fmt, arg...)		do { } while (0)
 #define DRM_LOG_KMS(fmt, args...) do { } while (0)
@@ -293,6 +285,7 @@ do {										\
 	}									\
 } while (0)
 
+#if 0
 /**
  * Ioctl function type.
  *
@@ -357,7 +350,6 @@ struct drm_buf {
 	struct drm_buf *next;	       /**< Kernel-only: used for free list */
 	__volatile__ int waiting;      /**< On kernel DMA queue */
 	__volatile__ int pending;      /**< On hardware DMA queue */
-	wait_queue_head_t dma_wait;    /**< Processes waiting */
 	struct drm_file *file_priv;    /**< Private of holding file descr */
 	int context;		       /**< Kernel queue for this buffer */
 	int while_locked;	       /**< Dispatch this buffer while locked */
@@ -429,11 +421,17 @@ struct drm_pending_event {
 	void (*destroy)(struct drm_pending_event *event);
 };
 
+/* initial implementaton using a linked list - todo hashtab */
+struct drm_prime_file_private {
+	struct list_head head;
+	struct mutex lock;
+};
+
 /** File private data */
 struct drm_file {
 	int authenticated;
-	pid_t pid;
-	uid_t uid;
+	struct pid *pid;
+	kuid_t uid;
 	drm_magic_t magic;
 	unsigned long ioctl_count;
 	struct list_head lhead;
@@ -456,6 +454,8 @@ struct drm_file {
 	wait_queue_head_t event_wait;
 	struct list_head event_list;
 	int event_space;
+
+	struct drm_prime_file_private prime;
 };
 
 /** Wait queue */
@@ -677,7 +677,7 @@ struct drm_gem_object {
 	void *driver_private;
 };
 
-#include "drm_crtc.h"
+#include <drm/drm_crtc.h>
 
 /* per-master structure */
 struct drm_master {
@@ -758,11 +758,11 @@ struct drm_driver {
 	 * @dev: DRM device
 	 * @crtc: counter to fetch
 	 *
-	 * Driver callback for fetching a raw hardware vblank counter
-	 * for @crtc.  If a device doesn't have a hardware counter, the
-	 * driver can simply return the value of drm_vblank_count and
-	 * make the enable_vblank() and disable_vblank() hooks into no-ops,
-	 * leaving interrupts enabled at all times.
+	 * Driver callback for fetching a raw hardware vblank counter for @crtc.
+	 * If a device doesn't have a hardware counter, the driver can simply
+	 * return the value of drm_vblank_count. The DRM core will account for
+	 * missed vblank events while interrupts where disabled based on system
+	 * timestamps.
 	 *
 	 * Wraparound handling and loss of events due to modesetting is dealt
 	 * with in the DRM core code.
@@ -879,12 +879,6 @@ struct drm_driver {
 	void (*irq_preinstall) (struct drm_device *dev);
 	int (*irq_postinstall) (struct drm_device *dev);
 	void (*irq_uninstall) (struct drm_device *dev);
-	void (*reclaim_buffers) (struct drm_device *dev,
-				 struct drm_file * file_priv);
-	void (*reclaim_buffers_locked) (struct drm_device *dev,
-					struct drm_file *file_priv);
-	void (*reclaim_buffers_idlelocked) (struct drm_device *dev,
-					    struct drm_file *file_priv);
 	void (*set_version) (struct drm_device *dev,
 			     struct drm_set_version *sv);
 
@@ -915,6 +909,20 @@ struct drm_driver {
 	int (*gem_open_object) (struct drm_gem_object *, struct drm_file *);
 	void (*gem_close_object) (struct drm_gem_object *, struct drm_file *);
 
+	/* prime: */
+	/* export handle -> fd (see drm_gem_prime_handle_to_fd() helper) */
+	int (*prime_handle_to_fd)(struct drm_device *dev, struct drm_file *file_priv,
+				uint32_t handle, uint32_t flags, int *prime_fd);
+	/* import fd -> handle (see drm_gem_prime_fd_to_handle() helper) */
+	int (*prime_fd_to_handle)(struct drm_device *dev, struct drm_file *file_priv,
+				int prime_fd, uint32_t *handle);
+	/* export GEM -> dmabuf */
+	struct dma_buf * (*gem_prime_export)(struct drm_device *dev,
+				struct drm_gem_object *obj, int flags);
+	/* import dmabuf -> GEM */
+	struct drm_gem_object * (*gem_prime_import)(struct drm_device *dev,
+				struct dma_buf *dma_buf);
+
 	/* vga arb irq handler */
 	void (*vgaarb_irq)(struct drm_device *dev, bool state);
 
@@ -930,7 +938,7 @@ struct drm_driver {
 			    uint32_t handle);
 
 	/* Driver private ops for this object */
-	struct vm_operations_struct *gem_vm_ops;
+	const struct vm_operations_struct *gem_vm_ops;
 
 	int major;
 	int minor;
@@ -1092,12 +1100,8 @@ struct drm_device {
 
 	/*@} */
 
-	/** \name DMA queues (contexts) */
+	/** \name DMA support */
 	/*@{ */
-	int queue_count;		/**< Number of active DMA queues */
-	int queue_reserved;		  /**< Number of reserved DMA queues */
-	int queue_slots;		/**< Actual length of queuelist */
-//   struct drm_queue **queuelist;   /**< Vector of pointers to DMA queues */
 //   struct drm_device_dma *dma;     /**< Optional pointer for DMA support */
 	/*@} */
 
@@ -1182,6 +1186,8 @@ struct drm_device {
 	struct idr object_name_idr;
 	/*@} */
 	int switch_power_state;
+
+	atomic_t unplugged; /* device has been unplugged or gone away */
 };
 
 #define DRM_SWITCH_POWER_ON 0
@@ -1272,17 +1278,12 @@ extern int drm_release(struct inode *inode, struct file *filp);
 				/* Mapping support (drm_vm.h) */
 extern int drm_mmap(struct file *filp, struct vm_area_struct *vma);
 extern int drm_mmap_locked(struct file *filp, struct vm_area_struct *vma);
-extern void drm_vm_open_locked(struct vm_area_struct *vma);
-extern void drm_vm_close_locked(struct vm_area_struct *vma);
+extern void drm_vm_open_locked(struct drm_device *dev, struct vm_area_struct *vma);
+extern void drm_vm_close_locked(struct drm_device *dev, struct vm_area_struct *vma);
 extern unsigned int drm_poll(struct file *filp, struct poll_table_struct *wait);
 
 				/* Memory management support (drm_memory.h) */
-#include "drm_memory.h"
-extern void drm_mem_init(void);
-extern int drm_mem_info(char *buf, char **start, off_t offset,
-			int request, int *eof, void *data);
-extern void *drm_realloc(void *oldpt, size_t oldsize, size_t size, int area);
-
+#include <drm/drm_memory.h>
 extern void drm_free_agp(DRM_AGP_MEM * handle, int pages);
 extern int drm_bind_agp(DRM_AGP_MEM * handle, unsigned int start);
 extern DRM_AGP_MEM *drm_agp_bind_pages(struct drm_device *dev,
@@ -1346,6 +1347,8 @@ extern int drm_remove_magic(struct drm_master *master, drm_magic_t magic);
 
 /* Cache management (drm_cache.c) */
 void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
+void drm_clflush_sg(struct sg_table *st);
+void drm_clflush_virt_range(char *addr, unsigned long length);
 
 				/* Locking IOCTL support (drm_lock.h) */
 extern int drm_lock(struct drm_device *dev, void *data,
@@ -1397,12 +1400,8 @@ extern void drm_core_reclaim_buffers(struct drm_device *dev,
 				/* IRQ support (drm_irq.h) */
 extern int drm_control(struct drm_device *dev, void *data,
 		       struct drm_file *file_priv);
-extern irqreturn_t drm_irq_handler(DRM_IRQ_ARGS);
 extern int drm_irq_install(struct drm_device *dev);
 extern int drm_irq_uninstall(struct drm_device *dev);
-extern void drm_driver_irq_preinstall(struct drm_device *dev);
-extern void drm_driver_irq_postinstall(struct drm_device *dev);
-extern void drm_driver_irq_uninstall(struct drm_device *dev);
 
 extern int drm_vblank_init(struct drm_device *dev, int num_crtcs);
 extern int drm_wait_vblank(struct drm_device *dev, void *data,
@@ -1478,8 +1477,12 @@ extern void drm_master_put(struct drm_master **master);
 
 extern void drm_put_dev(struct drm_device *dev);
 extern int drm_put_minor(struct drm_minor **minor);
+extern void drm_unplug_dev(struct drm_device *dev);
+#endif
+
 extern unsigned int drm_debug;
 
+#if 0
 extern unsigned int drm_vblank_offdelay;
 extern unsigned int drm_timestamp_precision;
 
@@ -1510,7 +1513,6 @@ extern int drm_debugfs_cleanup(struct drm_minor *minor);
 				/* Info file support */
 extern int drm_name_info(struct seq_file *m, void *data);
 extern int drm_vm_info(struct seq_file *m, void *data);
-extern int drm_queues_info(struct seq_file *m, void *data);
 extern int drm_bufs_info(struct seq_file *m, void *data);
 extern int drm_vblank_info(struct seq_file *m, void *data);
 extern int drm_clients_info(struct seq_file *m, void* data);
@@ -1533,12 +1535,14 @@ extern int drm_ati_pcigart_init(struct drm_device *dev,
 				struct drm_ati_pcigart_info * gart_info);
 extern int drm_ati_pcigart_cleanup(struct drm_device *dev,
 				   struct drm_ati_pcigart_info * gart_info);
+#endif
 
 extern drm_dma_handle_t *drm_pci_alloc(struct drm_device *dev, size_t size,
 				       size_t align);
 extern void __drm_pci_free(struct drm_device *dev, drm_dma_handle_t * dmah);
 extern void drm_pci_free(struct drm_device *dev, drm_dma_handle_t * dmah);
 
+#if 0
 			       /* sysfs support (drm_sysfs.c) */
 struct drm_sysfs_class;
 extern struct class *drm_sysfs_create(struct module *owner, char *name);
@@ -1680,6 +1684,7 @@ static __inline__ void drm_core_dropmap(struct drm_local_map *map)
 }
 
 
+
 static __inline__ void *drm_calloc_large(size_t nmemb, size_t size)
 {
 	if (size * nmemb <= PAGE_SIZE)
@@ -1702,6 +1707,11 @@ static __inline void drm_free_large(void *ptr)
 
 #endif
 
+#define DRM_PCIE_SPEED_25 1
+#define DRM_PCIE_SPEED_50 2
+#define DRM_PCIE_SPEED_80 4
+
+extern int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *speed_mask);
 
 static __inline__ int drm_device_is_agp(struct drm_device *dev)
 {
@@ -1713,4 +1723,8 @@ static __inline__ int drm_device_is_pcie(struct drm_device *dev)
     return pci_find_capability(dev->pdev, PCI_CAP_ID_EXP);
 }
 #endif				/* __KERNEL__ */
+
+#define drm_sysfs_connector_add(connector)
+#define drm_sysfs_connector_remove(connector)
+
 #endif

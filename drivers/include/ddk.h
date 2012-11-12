@@ -4,7 +4,10 @@
 #define __DDK_H__
 
 #include <kernel.h>
+#include <linux/errno.h>
+#include <linux/spinlock.h>
 #include <mutex.h>
+#include <linux/pci.h>
 
 
 #define OS_BASE             0x80000000
@@ -56,7 +59,24 @@ int   ddk_init(struct ddk_params *params);
 u32_t drvEntry(int, char *)__asm__("_drvEntry");
 
 
+#define __WARN()      dbgprintf(__FILE__, __LINE__)
 
+#ifndef WARN_ON
+#define WARN_ON(condition) ({                                           \
+        int __ret_warn_on = !!(condition);                              \
+        if (unlikely(__ret_warn_on))                                    \
+                __WARN();                                               \
+        unlikely(__ret_warn_on);                                        \
+})
+#endif
+
+
+static inline void *kmalloc_array(size_t n, size_t size, gfp_t flags)
+{
+//    if (size != 0 && n > SIZE_MAX / size)
+//        return NULL;
+    return kmalloc(n * size, flags);
+}
 
 
 #endif      /*    DDK_H    */

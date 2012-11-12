@@ -15,6 +15,8 @@
 #include <linux/compiler.h>
 #include <asm/alternative.h>
 
+#define BIT_64(n)			(U64_C(1) << (n))
+
 /*
  * These have to be done with inline assembly: that way the bit-setting
  * is guaranteed to be atomic. All bit operations return 0 if the bit
@@ -262,6 +264,13 @@ static inline int test_and_clear_bit(int nr, volatile unsigned long *addr)
  * This operation is non-atomic and can be reordered.
  * If two examples of this operation race, one can appear to succeed
  * but actually fail.  You must protect multiple accesses with a lock.
+ *
+ * Note: the operation is performed atomically with respect to
+ * the local CPU, but not other CPUs. Portable code should not
+ * rely on this behaviour.
+ * KVM relies on this behaviour on x86 for modifying memory that is also
+ * accessed from a hypervisor on the same CPU if running in a VM: don't change
+ * this without also updating arch/x86/kernel/kvm.c
  */
 static inline int __test_and_clear_bit(int nr, volatile unsigned long *addr)
 {
@@ -309,7 +318,7 @@ static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
 static __always_inline int constant_test_bit(unsigned int nr, const volatile unsigned long *addr)
 {
 	return ((1UL << (nr % BITS_PER_LONG)) &
-		(((unsigned long *)addr)[nr / BITS_PER_LONG])) != 0;
+		(addr[nr / BITS_PER_LONG])) != 0;
 }
 
 static inline int variable_test_bit(int nr, volatile const unsigned long *addr)
@@ -346,7 +355,7 @@ static int test_bit(int nr, const volatile unsigned long *addr);
  */
 static inline unsigned long __ffs(unsigned long word)
 {
-	asm("bsf %1,%0"
+	asm("rep; bsf %1,%0"
 		: "=r" (word)
 		: "rm" (word));
 	return word;
@@ -360,7 +369,7 @@ static inline unsigned long __ffs(unsigned long word)
  */
 static inline unsigned long ffz(unsigned long word)
 {
-	asm("bsf %1,%0"
+	asm("rep; bsf %1,%0"
 		: "=r" (word)
 		: "r" (~word));
 	return word;
@@ -380,6 +389,8 @@ static inline unsigned long __fls(unsigned long word)
 	return word;
 }
 
+#undef ADDR
+
 #ifdef __KERNEL__
 /**
  * ffs - find first set bit in word
@@ -398,7 +409,7 @@ static inline int ffs(int x)
 #ifdef CONFIG_X86_CMOV
 	asm("bsfl %1,%0\n\t"
 	    "cmovzl %2,%0"
-	    : "=r" (r) : "rm" (x), "r" (-1));
+	    : "=&r" (r) : "rm" (x), "r" (-1));
 #else
 	asm("bsfl %1,%0\n\t"
 	    "jnz 1f\n\t"

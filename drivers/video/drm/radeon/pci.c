@@ -676,34 +676,6 @@ pcibios_resource_to_bus(struct pci_dev *dev, struct pci_bus_region *region,
     region->end = res->end;
 }
 
-static inline int pci_read_config_dword(struct pci_dev *dev, int where,
-                    u32 *val)
-{
-    *val = PciRead32(dev->busnr, dev->devfn, where);
-    return 1;
-}
-
-static inline int pci_write_config_dword(struct pci_dev *dev, int where,
-                    u32 val)
-{
-    PciWrite32(dev->busnr, dev->devfn, where, val);
-    return 1;
-}
-
-static inline int pci_read_config_word(struct pci_dev *dev, int where,
-                    u16 *val)
-{
-    *val = PciRead16(dev->busnr, dev->devfn, where);
-    return 1;
-}
-
-static inline int pci_write_config_word(struct pci_dev *dev, int where,
-                    u16 val)
-{
-    PciWrite16(dev->busnr, dev->devfn, where, val);
-    return 1;
-}
-
 
 int pci_enable_rom(struct pci_dev *pdev)
 {

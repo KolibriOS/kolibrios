@@ -1452,13 +1452,6 @@ u32_t drvEntry(int action, char *cmdline)
     return err;
 };
 
-void drm_vblank_post_modeset(struct drm_device *dev, int crtc)
-{};
-
-void drm_vblank_pre_modeset(struct drm_device *dev, int crtc)
-{};
-
-
 #define PCI_CLASS_REVISION      0x08
 #define PCI_CLASS_DISPLAY_VGA   0x0300
 

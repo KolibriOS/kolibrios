@@ -71,16 +71,10 @@
 /* a value TUSEC for TICK_USEC (can be set bij adjtimex)		*/
 #define TICK_USEC_TO_NSEC(TUSEC) (SH_DIV (TUSEC * USER_HZ * 1000, ACTHZ, 8))
 
-#define jiffies   GetTimerTicks()
-
-#if (BITS_PER_LONG < 64)
-u64 get_jiffies_64(void);
-#else
 static inline u64 get_jiffies_64(void)
 {
-	return (u64)jiffies;
+    return (u64)GetTimerTicks();
 }
-#endif
 
 /*
  *	These inlines deal with timer wrapping correctly. You are
@@ -295,7 +289,13 @@ extern void jiffies_to_timespec(const unsigned long jiffies,
 extern unsigned long timeval_to_jiffies(const struct timeval *value);
 extern void jiffies_to_timeval(const unsigned long jiffies,
 			       struct timeval *value);
+
 extern clock_t jiffies_to_clock_t(unsigned long x);
+static inline clock_t jiffies_delta_to_clock_t(long delta)
+{
+	return jiffies_to_clock_t(max(0L, delta));
+}
+
 extern unsigned long clock_t_to_jiffies(unsigned long x);
 extern u64 jiffies_64_to_clock_t(u64 x);
 extern u64 nsec_to_clock_t(u64 x);

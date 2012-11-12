@@ -37,7 +37,7 @@ enum chipset_type {
        SUPPORTED,
 };
 
-
+struct agp_memory;
 
 #define PFX "agpgart: "
 

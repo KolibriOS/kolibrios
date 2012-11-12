@@ -41,7 +41,7 @@ static int radeon_benchmark_do_move(struct radeon_device *rdev, unsigned size,
 	struct radeon_fence *fence = NULL;
 	int i, r;
 
-	start_jiffies = jiffies;
+    start_jiffies = GetTimerTicks();
 	for (i = 0; i < n; i++) {
 		switch (flag) {
 		case RADEON_BENCHMARK_COPY_DMA:

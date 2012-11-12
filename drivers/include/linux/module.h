@@ -11,14 +11,13 @@
 #include <linux/kernel.h>
 
 
-#define EXPORT_SYMBOL(x)
 
 #define MODULE_FIRMWARE(x)
+#define MODULE_AUTHOR(x);
+#define MODULE_DESCRIPTION(x);
+#define MODULE_LICENSE(x);
 
-
-#define MODULE_AUTHOR(x)
-#define MODULE_DESCRIPTION(x)
-#define MODULE_LICENSE(x)
+#define MODULE_PARM_DESC(_parm, desc)
 
 struct module {};
 

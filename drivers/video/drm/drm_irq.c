@@ -33,7 +33,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "drmP.h"
+#include <drm/drmP.h>
 #include <asm/div64.h>
 //#include "drm_trace.h"
 
@@ -41,6 +41,7 @@
 #include <linux/slab.h>
 
 //#include <linux/vgaarb.h>
+#include <linux/export.h>
 
 /* Access macro for slots in vblank timestamp ringbuffer. */
 #define vblanktimestamp(dev, crtc, count) ( \
@@ -134,3 +135,52 @@ void drm_calc_timestamping_constants(struct drm_crtc *crtc)
 		  (int) linedur_ns, (int) pixeldur_ns);
 }
 
+
+/**
+ * drm_vblank_pre_modeset - account for vblanks across mode sets
+ * @dev: DRM device
+ * @crtc: CRTC in question
+ *
+ * Account for vblank events across mode setting events, which will likely
+ * reset the hardware frame counter.
+ */
+void drm_vblank_pre_modeset(struct drm_device *dev, int crtc)
+{
+#if 0
+    /* vblank is not initialized (IRQ not installed ?) */
+    if (!dev->num_crtcs)
+        return;
+    /*
+     * To avoid all the problems that might happen if interrupts
+     * were enabled/disabled around or between these calls, we just
+     * have the kernel take a reference on the CRTC (just once though
+     * to avoid corrupting the count if multiple, mismatch calls occur),
+     * so that interrupts remain enabled in the interim.
+     */
+    if (!dev->vblank_inmodeset[crtc]) {
+        dev->vblank_inmodeset[crtc] = 0x1;
+        if (drm_vblank_get(dev, crtc) == 0)
+            dev->vblank_inmodeset[crtc] |= 0x2;
+    }
+#endif
+}
+EXPORT_SYMBOL(drm_vblank_pre_modeset);
+
+void drm_vblank_post_modeset(struct drm_device *dev, int crtc)
+{
+#if 0
+    unsigned long irqflags;
+
+    if (dev->vblank_inmodeset[crtc]) {
+        spin_lock_irqsave(&dev->vbl_lock, irqflags);
+        dev->vblank_disable_allowed = 1;
+        spin_unlock_irqrestore(&dev->vbl_lock, irqflags);
+
+        if (dev->vblank_inmodeset[crtc] & 0x2)
+            drm_vblank_put(dev, crtc);
+
+        dev->vblank_inmodeset[crtc] = 0;
+    }
+#endif
+}
+EXPORT_SYMBOL(drm_vblank_post_modeset);
