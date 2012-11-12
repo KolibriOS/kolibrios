@@ -31,6 +31,7 @@ char program_path[4096];
 #define true		1
 #define false		0
 
+#define NULL		0
 
 
 struct mouse

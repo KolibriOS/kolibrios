@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.34"
+#define title "Eolite File Manager v1.35"
 dword selection_col = 0x94AECE;
 dword lpanel_col = 0x00699C;
 
@@ -31,7 +31,7 @@ int  f_visible,
      f_first,
      f_current;
 */
-	 
+
 int  but_num,
      count,
      za_kadrom,
@@ -82,10 +82,11 @@ dword buf, off; //для текста и буфера
 #include "include\history.h"
 
 void main() 
-word key, id; 
-mouse m;
-int scroll_used=0;
 {
+	word key, id; 
+	mouse m;
+	int scroll_used;
+
 	load_editbox_lib();
 	GetSystemDiscs();
 	GetIni(1);
@@ -160,7 +161,7 @@ int scroll_used=0;
 					List_ReDraw();
 				}
 				//скролл
-				if (!m.lkm) scroll_used=0;
+				if (!m.lkm) scroll_used=NULL;
 				if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>56) && (m.y<Form.height) && (m.lkm) scroll_used=1;
 				
 				if (scroll_used)
@@ -192,7 +193,7 @@ int scroll_used=0;
 					case 22: //Forward
 							if (HistoryPath(GO_FORWARD))
 							{
-								za_kadrom=curbtn=0; //вверх списка
+								za_kadrom=curbtn=NULL; //вверх списка
 								Open_Dir(#path,WITH_REDRAW);
 							}
 							break;
@@ -240,7 +241,7 @@ int scroll_used=0;
 							copystr(#path, #temp);
 							copystr("New folder", #temp+strlen(#temp));
 							CreateFolder(#temp);
-							IF (EAX==0){
+							IF (!EAX){
 								SelectFile("New folder");
 								goto REN_MARK;
 							}
@@ -279,6 +280,7 @@ int scroll_used=0;
 //Key pressed-----------------------------------------------------------------------------
 		case evKey:
 			key = GetKey();
+			if (Form.status_window>2) break;
 			IF (del_active)
 			{
 				IF (key==013) Del_File(true);
@@ -409,14 +411,14 @@ inline fastcall void draw_window()
 	else
 		DefineAndDrawWindow(98,90,582,482,0x73,0xE4DFE1,title);
 	Form.GetInfo(#Form, SelfInfo);
-	IF (Form.status_window>2) return; //ничего не делать если окно схлопнуто в заголовок
-	  IF (Form.height<280) MoveSize(OLD,OLD,OLD,280);
-	  IF (Form.width<480) MoveSize(OLD,OLD,480,OLD);
+	if (Form.status_window>2) return; //ничего не делать если окно схлопнуто в заголовок
+	if (Form.height<280) MoveSize(OLD,OLD,OLD,280);
+	if (Form.width<480) MoveSize(OLD,OLD,480,OLD);
 	  
 	//toolbar buttons
 	PutPaletteImage(#toolbar,246,39,0,0,#toolbar_pal);
-	FOR (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,0xE4DFE1);
-	FOR (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,0xE4DFE1);
+	for (j=0; j<3; j++) DefineButton(toolbar_buttons_x[j]+2,5+2,31-5,29-5,21+j+BT_HIDE,0xE4DFE1);
+	for (j=3; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,0xE4DFE1);
 	//полоса адреса
 	edit1.width=Form.width-314;
 	DrawBar(246,0,onLeft(246,60),12,0xE4DFE1); //фон над полосой адреса
