@@ -2518,7 +2518,7 @@ static struct drm_device *irq_device;
 
 void irq_handler_kms()
 {
-//    printf("%s\n",__FUNCTION__);
+    printf("%s\n",__FUNCTION__);
     ironlake_irq_handler(irq_device);
 }
 

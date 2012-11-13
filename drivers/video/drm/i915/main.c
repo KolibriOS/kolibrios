@@ -13,6 +13,8 @@
 
 #include "bitmap.h"
 
+extern struct drm_device *main_device;
+
 void cpu_detect();
 
 void parse_cmdline(char *cmdline, char *log);
@@ -142,14 +144,14 @@ int _stdcall display_handler(ioctl_t *io)
             if( i915_modeset )
                 retval = set_user_mode((videomode_t*)inp);
             break;
-#if 0
+
         case SRV_GET_CAPS:
             retval = get_driver_caps((hwcaps_t*)inp);
             break;
 
         case SRV_CREATE_SURFACE:
 //            check_input(8);
-            retval = create_surface((struct io_call_10*)inp);
+            retval = create_surface(main_device, (struct io_call_10*)inp);
             break;
 
         case SRV_LOCK_SURFACE:
@@ -157,16 +159,15 @@ int _stdcall display_handler(ioctl_t *io)
             break;
 
         case SRV_BLIT_VIDEO:
-//            blit_video( inp[0], inp[1], inp[2],
-//                    inp[3], inp[4], inp[5], inp[6]);
+            blit_video( inp[0], inp[1], inp[2],
+                        inp[3], inp[4], inp[5], inp[6]);
 
-            blit_tex( inp[0], inp[1], inp[2],
-                    inp[3], inp[4], inp[5], inp[6]);
+//            blit_tex( inp[0], inp[1], inp[2],
+//                    inp[3], inp[4], inp[5], inp[6]);
 
 
             retval = 0;
             break;
-#endif
 
     };
 

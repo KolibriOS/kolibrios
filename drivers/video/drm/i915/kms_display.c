@@ -15,6 +15,7 @@
 
 #include <syscall.h>
 
+#include "hmm.h"
 #include "bitmap.h"
 
 extern struct drm_device *main_device;
@@ -275,6 +276,7 @@ int init_display_kms(struct drm_device *dev)
 
     cursor_t  *cursor;
     u32_t      ifl;
+    int        err;
 
 //    ENTER();
 
@@ -366,30 +368,7 @@ int init_display_kms(struct drm_device *dev)
     };
     safe_sti(ifl);
 
-#define XY_COLOR_BLT        ((2<<29)|(0x50<<22)|(0x4))
-#define BLT_WRITE_ALPHA     (1<<21)
-#define BLT_WRITE_RGB       (1<<20)
-
-#if 0
-
-#if 1
-    {
-
-        drm_i915_private_t *dev_priv = dev->dev_private;
-        struct drm_i915_gem_object *obj;
-        struct intel_ring_buffer *ring;
-
-        obj = i915_gem_alloc_object(dev, 4096);
-        i915_gem_object_pin(obj, 4096, true, true);
-
-        cmd_buffer = MapIoMem((addr_t)obj->pages.page[0], 4096, PG_SW|PG_NOCACHE);
-        cmd_offset = obj->gtt_offset;
-    };
-#endif
-
     main_device = dev;
-
-    int err;
 
     err = init_bitmaps();
     if( !err )
@@ -397,8 +376,6 @@ int init_display_kms(struct drm_device *dev)
         printf("Initialize bitmap manager\n");
     };
 
-    sna_init();
-#endif
 
 //    LEAVE();
 
@@ -657,9 +634,11 @@ cursor_t* __stdcall select_cursor_kms(cursor_t *cursor)
     return old;
 };
 
-#if 0
 
-#define XY_SRC_COPY_BLT_CMD     ((2<<29)|(0x53<<22)|6)
+
+
+
+extern struct hmm bm_mm;
 
 
 typedef struct
@@ -686,11 +665,49 @@ static u32_t get_display_map()
     return *(u32_t*)addr;
 }
 
+#define XY_COLOR_BLT                ((2<<29)|(0x50<<22)|(0x4))
+#define XY_SRC_COPY_BLT_CMD         ((2<<29)|(0x53<<22)|6)
 #define XY_SRC_COPY_CHROMA_CMD     ((2<<29)|(0x73<<22)|8)
 #define ROP_COPY_SRC               0xCC
 #define FORMAT8888                 3
 
+#define BLT_WRITE_ALPHA             (1<<21)
+#define BLT_WRITE_RGB               (1<<20)
+
+
+
 typedef int v4si __attribute__ ((vector_size (16)));
+
+
+static void
+i915_gem_execbuffer_retire_commands(struct drm_device *dev,
+                    struct intel_ring_buffer *ring)
+{
+    struct drm_i915_gem_request *request;
+    u32 invalidate;
+    u32 req;
+    /*
+     * Ensure that the commands in the batch buffer are
+     * finished before the interrupt fires.
+     *
+     * The sampler always gets flushed on i965 (sigh).
+     */
+    invalidate = I915_GEM_DOMAIN_COMMAND;
+    if (INTEL_INFO(dev)->gen >= 4)
+        invalidate |= I915_GEM_DOMAIN_SAMPLER;
+    if (ring->flush(ring, invalidate, 0)) {
+        i915_gem_next_request_seqno(ring);
+        return;
+    }
+
+    /* Add a breadcrumb for the completion of the batch buffer */
+    if (request == NULL || i915_add_request(ring, NULL, &req)) {
+        i915_gem_next_request_seqno(ring);
+    }
+}
+
+
+
 
 
 int blit_video(u32 hbitmap, int  dst_x, int dst_y,
@@ -698,6 +715,7 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
 {
     drm_i915_private_t *dev_priv = main_device->dev_private;
     struct intel_ring_buffer *ring;
+    struct context *context;
 
     bitmap_t  *bitmap;
     rect_t     winrc;
@@ -714,11 +732,14 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
     if(unlikely(hbitmap==0))
         return -1;
 
-    bitmap = (bitmap_t*)hman_get_data(&bm_man, hbitmap);
+    bitmap = (bitmap_t*)hmm_get_data(&bm_mm, hbitmap);
 
     if(unlikely(bitmap==NULL))
         return -1;
 
+    context = get_context(main_device);
+    if(unlikely(context == NULL))
+        return -1;
 
     GetWindowRect(&winrc);
 
@@ -860,12 +881,12 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
     }
 #endif
 
-    if((cmd_buffer & 0xFC0)==0xFC0)
-        cmd_buffer&= 0xFFFFF000;
+    if((context->cmd_buffer & 0xFC0)==0xFC0)
+        context->cmd_buffer&= 0xFFFFF000;
 
-    b = (u32_t*)ALIGN(cmd_buffer,16);
+    b = (u32_t*)ALIGN(context->cmd_buffer,16);
 
-    offset = cmd_offset + ((u32_t)b & 0xFFF);
+    offset = context->cmd_offset + ((u32_t)b & 0xFFF);
 
     cmd = XY_SRC_COPY_CHROMA_CMD | BLT_WRITE_RGB | BLT_WRITE_ALPHA;
     cmd |= 3 << 17;
@@ -890,29 +911,26 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
     if( n & 1)
         b[n++] = MI_NOOP;
 
-    i915_gem_object_set_to_gtt_domain(bitmap->obj, false);
+    context->cmd_buffer+= n*4;
+
+//    i915_gem_object_set_to_gtt_domain(bitmap->obj, false);
 
     if (HAS_BLT(main_device))
     {
         int ret;
 
         ring = &dev_priv->ring[BCS];
-        ring->dispatch_execbuffer(ring, cmd_offset, n*4);
+//        printf("dispatch...  ");
+        ring->dispatch_execbuffer(ring, offset, n*4);
+//        printf("done\n");
 
-        ret = intel_ring_begin(ring, 4);
-        if (ret)
-            return ret;
-
-        intel_ring_emit(ring, MI_FLUSH_DW);
-        intel_ring_emit(ring, 0);
-        intel_ring_emit(ring, 0);
-        intel_ring_emit(ring, MI_NOOP);
-        intel_ring_advance(ring);
+        i915_gem_execbuffer_retire_commands(main_device, ring);
+//        printf("retire\n");
     }
     else
     {
         ring = &dev_priv->ring[RCS];
-        ring->dispatch_execbuffer(ring, cmd_offset, n*4);
+        ring->dispatch_execbuffer(ring, offset, n*4);
         ring->flush(ring, 0, I915_GEM_DOMAIN_RENDER);
     };
 
@@ -925,6 +943,9 @@ fail:
 };
 
 
+#if 0
+
+    i915_gem_execbuffer_retire_commands(dev, ring);
 /* For display hotplug interrupt */
 static void
 ironlake_enable_display_irq(drm_i915_private_t *dev_priv, u32 mask)
@@ -1082,8 +1103,6 @@ int sna_blit_tex(bitmap_t *dst_bitmap, int dst_x, int dst_y,
                   int w, int h, bitmap_t *src_bitmap, int src_x, int src_y,
                   bitmap_t *mask_bitmap);
 
-int create_context();
-struct context *get_context();
 
 int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
              int src_x, int src_y, u32 w, u32 h)
@@ -1256,75 +1275,6 @@ int blit_tex(u32 hbitmap, int  dst_x, int dst_y,
 //    asm volatile ("int3");
 };
 
-
-struct context *context_map[256];
-
-void __attribute__((regparm(1))) destroy_context(struct context *context)
-{
-    printf("destroy context %x\n", context);
-
-    context_map[context->slot] = NULL;
-    __DestroyObject(context);
-};
-
-
-int create_context()
-{
-    struct context *context;
-
-    bitmap_t  *mask;
-    int        slot;
-
-    struct io_call_10 io_10;
-    int    ret;
-
-    slot = *((u8*)CURRENT_TASK);
-
-    if(context_map[slot] != NULL)
-        return 0;
-
-    context = CreateObject(GetPid(), sizeof(*context));
-//    printf("context %x\n", coontext);
-    if( context == NULL)
-        goto err1;
-    context->header.destroy = destroy_context;
-
-    dbgprintf("Create mask surface\n");
-
-    io_10.width  = os_display->width/4;     /* need bitmap format here */
-    io_10.height = os_display->height+1;
-    io_10.max_width  = os_display->width/4;
-    io_10.max_height = os_display->height+1;
-
-    ret = create_surface(&io_10);
-    if(ret)
-        goto err2;
-
-    mask= (bitmap_t*)hman_get_data(&bm_man, io_10.handle);
-    if(unlikely(mask == NULL)) /* something really terrible happend */
-        goto err2;
-    dbgprintf("done\n");
-
-    context->mask  = mask;
-    context->seqno = os_display->mask_seqno-1;
-    context->slot  = slot;
-
-    context_map[slot] = context;
-    return 0;
-
-err2:
-    __DestroyObject(context);
-err1:
-    return -1;
-};
-
-struct context *get_context()
-{
-
-    int slot = *((u8*)CURRENT_TASK);
-
-    return context_map[slot];
-}
 
 #endif
 

@@ -2,26 +2,6 @@
 typedef struct tag_object  kobj_t;
 typedef struct tag_display display_t;
 
-struct hman
-{
-    u32  *table;
-    u32   next;
-    u32   avail;
-    u32   count;
-};
-
-extern struct hman bm_man;
-
-int init_hman(struct hman *man, u32 count);
-u32  alloc_handle(struct hman *man);
-int free_handle(struct hman *man, u32 handle);
-
-#define hman_get_data(man, handle)                  \
-        ((man)->table[(handle)-1])
-
-#define hman_set_data(man, handle, val)             \
-        ((man)->table[(handle)-1]) = (u32)(val)
-
 
 struct tag_object
 {
@@ -46,6 +26,8 @@ typedef struct
     u32     height;
     u32     max_width;
     u32     max_height;
+    u32     page_count;
+    u32     max_count;
 
     u32     format;
     struct drm_i915_gem_object *obj;
@@ -94,19 +76,25 @@ typedef struct
 #define HW_TEX_BLIT         (1<<1)      /* stretch blit             */
 #define HW_VID_BLIT         (1<<2)      /* planar and packed video  */
                                         /*  3 - 63 reserved         */
-
 struct context
 {
     kobj_t   header;
 
+    struct drm_i915_gem_object *obj;
+    u32       cmd_buffer;
+    u32       cmd_offset;
+
     bitmap_t *mask;
     u32       seqno;
     int       slot;
+
 };
 
 int get_driver_caps(hwcaps_t *caps);
-int create_surface(struct io_call_10 *pbitmap);
+int create_surface(struct drm_device *dev, struct io_call_10 *pbitmap);
 int lock_surface(struct io_call_12 *pbitmap);
+
+struct context *get_context(struct drm_device *dev);
 
 int init_bitmaps();
 

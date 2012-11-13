@@ -1,26 +1,29 @@
 
-#include <drmP.h>
-#include <drm.h>
-#include "i915_drm.h"
+#include <drm/drmP.h>
+#include <drm/i915_drm.h>
 #include "i915_drv.h"
 #include "intel_drv.h"
+#include "hmm.h"
 #include "bitmap.h"
 
-#define memmove __builtin_memmove
-
-int gem_object_lock(struct drm_i915_gem_object *obj);
-
-#define DRIVER_CAPS_0   HW_BIT_BLIT | HW_TEX_BLIT;
+#define DRIVER_CAPS_0   HW_BIT_BLIT;
 #define DRIVER_CAPS_1   0
+
+struct context *context_map[256];
+
+struct hmm bm_mm;
 
 extern struct drm_device *main_device;
 
-struct hman bm_man;
+
 
 void __attribute__((regparm(1))) destroy_bitmap(bitmap_t *bitmap)
 {
+    dma_addr_t *pages = bitmap->obj->allocated_pages;;
+    int i;
+
     printf("destroy bitmap %d\n", bitmap->handle);
-    free_handle(&bm_man, bitmap->handle);
+    free_handle(&bm_mm, bitmap->handle);
     bitmap->handle = 0;
     bitmap->obj->base.read_domains = I915_GEM_DOMAIN_GTT;
     bitmap->obj->base.write_domain = I915_GEM_DOMAIN_CPU;
@@ -29,20 +32,86 @@ void __attribute__((regparm(1))) destroy_bitmap(bitmap_t *bitmap)
     drm_gem_object_unreference(&bitmap->obj->base);
     mutex_unlock(&main_device->struct_mutex);
 
+    if(pages != NULL)
+    {
+        for (i = 0; i < bitmap->page_count; i++)
+            FreePage(pages[i]);
+
+        free(pages);
+    };
+    UserFree(bitmap->uaddr);
     __DestroyObject(bitmap);
 };
 
-int init_bitmaps()
+
+static int bitmap_get_pages_gtt(struct drm_i915_gem_object *obj)
 {
-    int ret;
+    int page_count;
 
-    ret = init_hman(&bm_man, 1024);
+    /* Get the list of pages out of our struct file.  They'll be pinned
+     * at this point until we release them.
+     */
+    page_count = obj->base.size / PAGE_SIZE;
+    BUG_ON(obj->allocated_pages == NULL);
+    BUG_ON(obj->pages.page != NULL);
 
-    return ret;
+    obj->pages.page = obj->allocated_pages;
+    obj->pages.nents = page_count;
+
+
+//   if (obj->tiling_mode != I915_TILING_NONE)
+//       i915_gem_object_do_bit_17_swizzle(obj);
+
+    return 0;
+}
+
+static void bitmap_put_pages_gtt(struct drm_i915_gem_object *obj)
+{
+    int ret, i;
+
+    BUG_ON(obj->madv == __I915_MADV_PURGED);
+
+    ret = i915_gem_object_set_to_cpu_domain(obj, true);
+    if (ret) {
+        /* In the event of a disaster, abandon all caches and
+         * hope for the best.
+         */
+        WARN_ON(ret != -EIO);
+        i915_gem_clflush_object(obj);
+        obj->base.read_domains = obj->base.write_domain = I915_GEM_DOMAIN_CPU;
+    }
+
+    if (obj->madv == I915_MADV_DONTNEED)
+        obj->dirty = 0;
+
+    obj->dirty = 0;
+}
+
+static const struct drm_i915_gem_object_ops bitmap_object_ops = {
+    .get_pages = bitmap_get_pages_gtt,
+    .put_pages = bitmap_put_pages_gtt,
 };
 
 
-int create_surface(struct io_call_10 *pbitmap)
+
+#if 0
+struct  io_call_10         /*     SRV_CREATE_SURFACE    */
+{
+    u32     handle;       // ignored
+    void   *data;         // ignored
+
+    u32     width;
+    u32     height;
+    u32     pitch;        // ignored
+
+    u32     max_width;
+    u32     max_height;
+    u32     format;       // reserved mbz
+};
+
+#endif
+
+int create_surface(struct drm_device *dev, struct io_call_10 *pbitmap)
 {
     struct drm_i915_gem_object *obj;
 
@@ -53,6 +122,10 @@ int create_surface(struct io_call_10 *pbitmap)
     u32         size,  max_size;
     u32         pitch, max_pitch;
     void       *uaddr;
+    dma_addr_t *pages;
+    u32         page_count;
+
+    int         i;
 
     int   ret;
 
@@ -62,10 +135,10 @@ int create_surface(struct io_call_10 *pbitmap)
     width  = pbitmap->width;
     height = pbitmap->height;
 
-/*
-    if((width==0)||(height==0)||(width>4096)||(height>4096))
+    if((width == 0)||(height == 0)||(width > 4096)||(height > 4096))
         goto err1;
 
+/*
     if( ((pbitmap->max_width !=0 ) &&
          (pbitmap->max_width < width)) ||
          (pbitmap->max_width > 4096) )
@@ -83,7 +156,7 @@ int create_surface(struct io_call_10 *pbitmap)
     max_width  = (pbitmap->max_width ==0) ? width  : pbitmap->max_width;
     max_height = (pbitmap->max_height==0) ? height : pbitmap->max_height;
 
-    handle = alloc_handle(&bm_man);
+    handle = alloc_handle(&bm_mm);
 //    printf("%s %d\n",__FUNCTION__, handle);
 
     if(handle == 0)
@@ -92,54 +165,63 @@ int create_surface(struct io_call_10 *pbitmap)
     bitmap = CreateObject(GetPid(), sizeof(*bitmap));
 //    printf("bitmap %x\n", bitmap);
     if( bitmap == NULL)
-        goto err1;
+        goto err2;
 
     bitmap->handle = handle;
     bitmap->header.destroy = destroy_bitmap;
     bitmap->obj    = NULL;
 
-
-    hman_set_data(&bm_man, handle, bitmap);
+    hmm_set_data(&bm_mm, handle, bitmap);
 
     pitch = ALIGN(width*4,64);
-
     size =  roundup(pitch*height, PAGE_SIZE);
 
 //    printf("pitch %d size %d\n", pitch, size);
 
-    obj = i915_gem_alloc_object(main_device, size);
-    if (obj == NULL)
-        goto err2;
-
-    ret = i915_gem_object_pin(obj, 4096, true);
-    if (ret)
-        goto err3;
-
     max_pitch = ALIGN(max_width*4,64);
     max_size =  roundup(max_pitch*max_height, PAGE_SIZE);
 
+//    printf("max_pitch %d max_size %d\n", max_pitch, max_size);
+
     uaddr = UserAlloc(max_size);
     if( uaddr == NULL)
-        goto err4;
+        goto err3;
     else
     {
-        u32_t *src, *dst;
-        u32 count, max_count;
+        u32           max_count;
+        dma_addr_t    page;
+        char *vaddr = uaddr;
 
-#define page_tabs  0xFDC00000      /* really dirty hack */
+        page_count = size/PAGE_SIZE;
+        max_count = max_size/PAGE_SIZE;
 
-        src =  (u32_t*)obj->pages;
-        dst =  &((u32_t*)page_tabs)[(u32_t)uaddr >> 12];
-        count = size/4096;
-        max_count = max_size/4096 - count;
+        pages = kzalloc(max_count*sizeof(dma_addr_t), 0);
+        if( pages == NULL)
+            goto err4;
 
-        while(count--)
+        for(i = 0; i < page_count; i++, vaddr+= PAGE_SIZE)
         {
-            *dst++ = (0xFFFFF000 & *src++) | 0x207 ; // map as shared page
+            page = AllocPage();
+            if ( page == 0 )
+                goto err4;
+            pages[i] = page;
+
+            MapPage(vaddr, page, 0x207);        //map as shared page
         };
-        while(max_count--)
-            *dst++ = 0;                              // cleanup unused space
-    }
+        bitmap->page_count = page_count;
+        bitmap->max_count  = max_count;
+    };
+
+    obj = i915_gem_alloc_object(dev, size);
+    if (obj == NULL)
+        goto err4;
+
+    obj->ops = &bitmap_object_ops;
+    obj->allocated_pages = pages;
+
+    ret = i915_gem_object_pin(obj, PAGE_SIZE, true,true);
+    if (ret)
+        goto err5;
 
     obj->mapped = uaddr ;
 
@@ -166,16 +248,23 @@ int create_surface(struct io_call_10 *pbitmap)
 
     return 0;
 
-err4:
-    i915_gem_object_unpin(obj);
-err3:
+err5:
+    mutex_lock(&dev->struct_mutex);
     drm_gem_object_unreference(&obj->base);
-err2:
-    free_handle(&bm_man, handle);
+    mutex_unlock(&dev->struct_mutex);
+
+err4:
+    while (i--)
+        FreePage(pages[i]);
+    free(pages);
+    UserFree(uaddr);
+
+err3:
     __DestroyObject(bitmap);
+err2:
+    free_handle(&bm_mm, handle);
 err1:
     return -1;
-
 };
 
 
@@ -183,20 +272,19 @@ int lock_surface(struct io_call_12 *pbitmap)
 {
     int ret;
 
-    drm_i915_private_t *dev_priv = main_device->dev_private;
-
     bitmap_t  *bitmap;
 
     if(unlikely(pbitmap->handle == 0))
         return -1;
 
-    bitmap = (bitmap_t*)hman_get_data(&bm_man, pbitmap->handle);
+    bitmap = (bitmap_t*)hmm_get_data(&bm_mm, pbitmap->handle);
 
     if(unlikely(bitmap==NULL))
         return -1;
 
-    ret = gem_object_lock(bitmap->obj);
-    if(ret !=0 )
+    ret = i915_gem_object_set_to_cpu_domain(bitmap->obj, true);
+
+    if(ret != 0 )
     {
         pbitmap->data  = NULL;
         pbitmap->pitch = 0;
@@ -212,120 +300,22 @@ int lock_surface(struct io_call_12 *pbitmap)
 };
 
 
-int init_hman(struct hman *man, u32 count)
+
+
+int init_bitmaps()
 {
-    u32* data;
+    int ret;
 
-    data = malloc(count*sizeof(u32*));
-    if(data)
-    {
-        int i;
-
-        for(i=0;i < count-1;)
-            data[i] = ++i;
-        data[i] = 0;
-
-        man->table = data;
-        man->next  = 0;
-        man->avail = count;
-        man->count = count;
-
-        return 0;
-    };
-    return -ENOMEM;
-};
-
-u32  alloc_handle(struct hman *man)
-{
-    u32 handle = 0;
-
-    if(man->avail)
-    {
-        handle = man->next;
-        man->next = man->table[handle];
-        man->avail--;
-        handle++;
-    }
-    return handle;
-};
-
-int free_handle(struct hman *man, u32 handle)
-{
-    int ret = -1;
-
-    handle--;
-
-    if(handle < man->count)
-    {
-        man->table[handle] = man->next;
-        man->next = handle;
-        man->avail++;
-        ret = 0;
-    };
+    ret = init_hmm(&bm_mm, 1024);
 
     return ret;
 };
 
 
-void *drm_intel_bo_map(struct drm_i915_gem_object *obj, int write_enable)
-{
-    u8 *kaddr;
-
-    kaddr = AllocKernelSpace(obj->base.size);
-    if( kaddr != NULL)
-    {
-        u32_t *src = (u32_t*)obj->pages;
-        u32_t *dst = &((u32_t*)page_tabs)[(u32_t)kaddr >> 12];
-
-        u32 count  = obj->base.size/4096;
-
-        while(count--)
-        {
-            *dst++ = (0xFFFFF000 & *src++) | 0x003 ;
-        };
-        return kaddr;
-    };
-    return NULL;
-}
-
-void destroy_gem_object(uint32_t handle)
-{
-    struct drm_i915_gem_object *obj = (void*)handle;
-    drm_gem_object_unreference(&obj->base);
-
-};
-
-
-void write_gem_object(uint32_t handle, u32 offset, u32 size, u8* src)
-{
-    struct drm_i915_gem_object *obj = (void*)handle;
-    u8    *dst;
-    int    ret;
-
-    ret = i915_gem_object_pin(obj, 4096, true);
-    if (ret)
-        return;
-
-    dst = drm_intel_bo_map(obj, true);
-    if( dst != NULL )
-    {
-        memmove(dst+offset, src, size);
-        FreeKernelSpace(dst);
-    };
-};
-
-u32 get_buffer_offset(uint32_t handle)
-{
-    struct drm_i915_gem_object *obj = (void*)handle;
-
-    return obj->gtt_offset;
-};
-
 
 int get_driver_caps(hwcaps_t *caps)
 {
     int ret = 0;
-    ENTER();
 
     switch(caps->idx)
     {
@@ -344,4 +334,57 @@ int get_driver_caps(hwcaps_t *caps)
     caps->idx = 1;
     return ret;
 }
+
+
+void __attribute__((regparm(1))) destroy_context(struct context *context)
+{
+    printf("destroy context %x\n", context);
+
+    context_map[context->slot] = NULL;
+
+    mutex_lock(&main_device->struct_mutex);
+    drm_gem_object_unreference(&context->obj->base);
+    mutex_unlock(&main_device->struct_mutex);
+
+    __DestroyObject(context);
+};
+
+
+#define CURRENT_TASK             (0x80003000)
+
+struct context *get_context(struct drm_device *dev)
+{
+    struct context *context;
+    struct io_call_10 io_10;
+    int    slot = *((u8*)CURRENT_TASK);
+    int    ret;
+
+    context = context_map[slot];
+
+    if( context != NULL)
+        return context;
+
+    context = CreateObject(GetPid(), sizeof(*context));
+    printf("context %x\n", context);
+    if( context != NULL)
+    {
+        drm_i915_private_t *dev_priv = dev->dev_private;
+        struct drm_i915_gem_object *obj;
+
+        obj = i915_gem_alloc_object(dev, 4096);
+        i915_gem_object_pin(obj, 4096, true, true);
+
+        context->obj = obj;
+        context->cmd_buffer = MapIoMem((addr_t)obj->pages.page[0], 4096, PG_SW|PG_NOCACHE);
+        context->cmd_offset = obj->gtt_offset;
+
+        context->header.destroy = destroy_context;
+        context->mask  = NULL;
+        context->seqno = 0;
+        context->slot  = slot;
+
+        context_map[slot] = context;
+    };
+    return context;
+};
 

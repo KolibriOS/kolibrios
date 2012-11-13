@@ -1012,6 +1012,7 @@ struct drm_i915_gem_object {
 	unsigned int has_global_gtt_mapping:1;
 	unsigned int has_dma_mapping:1;
 
+    dma_addr_t *allocated_pages;
     struct pagelist pages;
 	int pages_pin_count;
 
