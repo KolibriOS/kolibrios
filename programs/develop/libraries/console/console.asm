@@ -2102,12 +2102,27 @@ con.draw_window:
 @@:
         xor     eax, eax
         int     0x40
+        ;Leency{
+        mov     eax,9
+        mov     ebx,process_info_buffer
+        mov     ecx,-1
+        int     0x40
+        mov     eax,[ebx+70]
+        mov     [window_status],eax
+		test    [window_status],100b   ; window is rolled up
+        jnz     .exit
+        test    [window_status],10b    ; window is minimized to panel
+        jnz     .exit
+        ;}Leency - I'm in diamond code... 
         call    con.draw_image
+
+.exit:
         push    12
         pop     eax
         push    2
         pop     ebx
         int     0x40
+		
         ret
 
 con.draw_image:
@@ -2269,6 +2284,33 @@ con.def_scr_width   dd    80
 con.def_scr_height  dd    300
 con.def_wnd_x       dd    200
 con.def_wnd_y       dd    50
+
+
+struc process_info
+{
+  cpu_usage               dd ?  ; +0
+  window_stack_position   dw ?  ; +4
+  window_stack_value      dw ?  ; +6
+                          dw ?  ; +8
+  process_name            rb 12 ; +10
+  memory_start            dd ?  ; +22
+  used_memory             dd ?  ; +26
+  PID                     dd ?  ; +30
+  box.x                   dd ?  ; +34
+  box.y                   dd ?  ; +38
+  box.width               dd ?  ; +42
+  box.height              dd ?  ; +46
+  slot_state              dw ?  ; +50
+                          dw ?  ; +52
+  client_box.x            dd ?  ; +54
+  client_box.y            dd ?  ; +58
+  client_box.width        dd ?  ; +62
+  client_box.height       dd ?  ; +66
+  wnd_state               db ?  ; +70
+  rb (1024-71)
+}
+process_info_buffer process_info
+window_status		rd 1
 
 con.vscroll_pt      dd    -1
 
