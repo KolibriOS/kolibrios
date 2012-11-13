@@ -1,5 +1,5 @@
 ;;================================================================================================;;
-;;//// libimg.asm //// (c) mike.dld, 2007-2008, (c) diamond, 2009 ////////////////////////////////;;
+;;//// libimg.asm //// (c) mike.dld, 2007-2008, (c) diamond, 2009, (c) dunkaist, 2011-2012 ///////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -25,10 +25,11 @@ public @EXPORT as 'EXPORTS'
 include '../../../../struct.inc'
 include '../../../../proc32.inc'
 include '../../../../macros.inc'
+include '../../../../config.inc'
+;include '../../../../debug.inc'
 purge section,mov,add,sub
 
 include 'libimg.inc'
-;include '../../../../system/board/trunk/debug.inc'
 
 section '.flat' code readable align 16
 
@@ -44,6 +45,10 @@ include 'xcf/xcf.asm'
 include 'tiff/tiff.asm'
 include 'pnm/pnm.asm'
 include 'wbmp/wbmp.asm'
+
+include 'scale.asm'
+;include 'convert.asm'
+;include 'transform.asm'
 
 ;;================================================================================================;;
 proc lib_init ;///////////////////////////////////////////////////////////////////////////////////;;
@@ -2200,6 +2205,7 @@ export                                      \
     img.rotate       , 'img_rotate'       , \
     img.rotate.layer , 'img_rotate_layer' , \
     img.draw         , 'img_draw'         , \
+    img.scale        , 'img_scale'        , \
     img.formats_table, 'img_formats_table'
 
 ; import from deflate unpacker

@@ -1,5 +1,5 @@
 ;;================================================================================================;;
-;;//// libimg.inc //// (c) mike.dld, 2007-2008, (c) diamond, 2009 ////////////////////////////////;;
+;;//// libimg.inc //// (c) mike.dld, 2007-2008, (c) diamond, 2009, (c) dunkaist, 2011-2012 ///////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -32,18 +32,40 @@ LIBIMG_FORMAT_ID_PNM	= 11
 LIBIMG_FORMAT_ID_WBMP	= 12
 LIBIMG_FORMAT_ID_Z80	= 13
 
+; scale type
+LIBIMG_SCALE_TYPE_STRETCH	= 0
+LIBIMG_SCALE_TYPE_FIT_RECT	= 1
+LIBIMG_SCALE_TYPE_FIT_WIDTH	= 2
+LIBIMG_SCALE_TYPE_FIT_HEIGHT	= 3
+LIBIMG_SCALE_TYPE_FIT_MAX	= 4
+;LIBIMG_SCALE_TYPE_TILE		= 5
+
+; scale algorithm
+;LIBIMG_SCALE_ALG_DEFAULT	= 0
+LIBIMG_SCALE_ALG_INTEGER	= 1
+LIBIMG_SCALE_ALG_BILINEAR	= 2
+;LIBIMG_SCALE_ALG_BICUBIC	= 3
+;LIBIMG_SCALE_ALG_LANCZOS	= 4
+
 ; error codes
-LIBIMG_ERROR_OUT_OF_MEMORY = 1
-LIBIMG_ERROR_FORMAT        = 2
-LIBIMG_ERROR_CONDITIONS    = 3
-LIBIMG_ERROR_BIT_DEPTH     = 4
-LIBIMG_ERROR_ENCODER       = 5
+LIBIMG_ERROR_OUT_OF_MEMORY	= 1
+LIBIMG_ERROR_FORMAT		= 2
+LIBIMG_ERROR_CONDITIONS		= 3
+LIBIMG_ERROR_BIT_DEPTH		= 4
+LIBIMG_ERROR_ENCODER		= 5
+LIBIMG_ERROR_SRC_TYPE		= 6
+LIBIMG_ERROR_SCALE_TYPE		= 7
+LIBIMG_ERROR_SCALE_ALG		= 8
+LIBIMG_ERROR_NOT_INPLEMENTED	= 9
 
 ; encode flags (byte 0x02 of _common option)
-LIBIMG_ENCODE_STRICT_SPECIFIC  = 0x01
-LIBIMG_ENCODE_STRICT_BIT_DEPTH = 0x02
-LIBIMG_ENCODE_DELETE_ALPHA     = 0x08
-LIBIMG_ENCODE_FLUSH_ALPHA      = 0x10
+LIBIMG_ENCODE_STRICT_SPECIFIC	= 0x01
+LIBIMG_ENCODE_STRICT_BIT_DEPTH	= 0x02
+LIBIMG_ENCODE_DELETE_ALPHA	= 0x08
+LIBIMG_ENCODE_FLUSH_ALPHA	= 0x10
+
+; convert flags
+LIBIMG_CONVERT_IN_PLACE		= 0x01	; do not create new image, store result in _src
 
 struct FormatsTableEntry
   Format_id	dd ?
@@ -78,6 +100,7 @@ Image.bpp1  = 6
 Image.bpp8g = 7  ; grayscale
 Image.bpp8a = 8  ; grayscale with alpha channel; application layer only!!! kernel doesn't handle this image type, libimg can only create and destroy such images
 ;Image.bpp4  = 9
+;Image.bpp2  = 10
 
 ; bits in Image.Flags
 Image.IsAnimated = 1
