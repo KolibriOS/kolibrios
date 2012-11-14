@@ -16,19 +16,18 @@ struct hmm bm_mm;
 extern struct drm_device *main_device;
 
 
-
 void __attribute__((regparm(1))) destroy_bitmap(bitmap_t *bitmap)
 {
-    dma_addr_t *pages = bitmap->obj->allocated_pages;;
+    dma_addr_t *pages = bitmap->obj->allocated_pages;
     int i;
 
-    printf("destroy bitmap %d\n", bitmap->handle);
     free_handle(&bm_mm, bitmap->handle);
     bitmap->handle = 0;
     bitmap->obj->base.read_domains = I915_GEM_DOMAIN_GTT;
     bitmap->obj->base.write_domain = I915_GEM_DOMAIN_CPU;
 
     mutex_lock(&main_device->struct_mutex);
+
     drm_gem_object_unreference(&bitmap->obj->base);
     mutex_unlock(&main_device->struct_mutex);
 
@@ -36,6 +35,8 @@ void __attribute__((regparm(1))) destroy_bitmap(bitmap_t *bitmap)
     {
         for (i = 0; i < bitmap->page_count; i++)
             FreePage(pages[i]);
+
+        DRM_DEBUG("%s freec %d pages\n", __FUNCTION__, bitmap->page_count);
 
         free(pages);
     };
@@ -212,6 +213,8 @@ int create_surface(struct drm_device *dev, struct io_call_10 *pbitmap)
         bitmap->max_count  = max_count;
     };
 
+    DRM_DEBUG("%s alloc %d pages\n", __FUNCTION__, page_count);
+
     obj = i915_gem_alloc_object(dev, size);
     if (obj == NULL)
         goto err4;
@@ -243,7 +246,7 @@ int create_surface(struct drm_device *dev, struct io_call_10 *pbitmap)
     pbitmap->pitch  = pitch;
 
 
-    printf("%s handle: %d pitch: %d gpu_addr: %x user_addr: %x\n",
+    DRM_DEBUG("%s handle: %d pitch: %d gpu_addr: %x user_addr: %x\n",
             __FUNCTION__, handle, pitch, obj->gtt_offset, uaddr);
 
     return 0;
@@ -282,7 +285,9 @@ int lock_surface(struct io_call_12 *pbitmap)
     if(unlikely(bitmap==NULL))
         return -1;
 
+    mutex_lock(&main_device->struct_mutex);
     ret = i915_gem_object_set_to_cpu_domain(bitmap->obj, true);
+    mutex_unlock(&main_device->struct_mutex);
 
     if(ret != 0 )
     {
@@ -338,7 +343,7 @@ int get_driver_caps(hwcaps_t *caps)
 
 void __attribute__((regparm(1))) destroy_context(struct context *context)
 {
-    printf("destroy context %x\n", context);
+    DRM_DEBUG("destroy context %x\n", context);
 
     context_map[context->slot] = NULL;
 
@@ -365,7 +370,7 @@ struct context *get_context(struct drm_device *dev)
         return context;
 
     context = CreateObject(GetPid(), sizeof(*context));
-    printf("context %x\n", context);
+
     if( context != NULL)
     {
         drm_i915_private_t *dev_priv = dev->dev_private;

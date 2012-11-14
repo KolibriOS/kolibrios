@@ -431,12 +431,9 @@ static int intel_gtt_init(void)
     u32 gtt_map_size;
     int ret;
 
-    ENTER();
-
     ret = intel_private.driver->setup();
     if (ret != 0)
     {
-        LEAVE();
         return ret;
     };
 
@@ -493,8 +490,6 @@ static int intel_gtt_init(void)
 				      &gma_addr);
 
 	intel_private.base.gma_bus_addr = (gma_addr & PCI_BASE_ADDRESS_MEM_MASK);
-
-    LEAVE();
 
     return 0;
 }

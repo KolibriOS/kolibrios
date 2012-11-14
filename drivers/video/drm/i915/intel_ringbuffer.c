@@ -1178,8 +1178,6 @@ static int intel_wrap_ring_buffer(struct intel_ring_buffer *ring)
 	uint32_t __iomem *virt;
 	int rem = ring->size - ring->tail;
 
-    ENTER();
-
 	if (ring->space < rem) {
 		int ret = intel_wait_ring_buffer(ring, rem);
 		if (ret)
@@ -1194,8 +1192,7 @@ static int intel_wrap_ring_buffer(struct intel_ring_buffer *ring)
 	ring->tail = 0;
 	ring->space = ring_space(ring);
 
-    LEAVE();
-	return 0;
+    return 0;
 }
 
 static int intel_ring_wait_seqno(struct intel_ring_buffer *ring, u32 seqno)

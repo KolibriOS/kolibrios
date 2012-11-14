@@ -2518,7 +2518,6 @@ static struct drm_device *irq_device;
 
 void irq_handler_kms()
 {
-    printf("%s\n",__FUNCTION__);
     ironlake_irq_handler(irq_device);
 }
 
@@ -2526,8 +2525,6 @@ int drm_irq_install(struct drm_device *dev)
 {
     int irq_line;
     int ret = 0;
-
-    ENTER();
 
     mutex_lock(&dev->struct_mutex);
 
@@ -2574,10 +2571,7 @@ int drm_irq_install(struct drm_device *dev)
 
     PciWrite16(dev->pdev->busnr, dev->pdev->devfn, 4, cmd);
 
-    dbgprintf("PCI_CMD: %04x\n", cmd);
-
-    DRM_INFO("i915: irq initialized.\n");
-    LEAVE();
+    DRM_DEBUG("i915: irq initialized.\n");
     return ret;
 }
 

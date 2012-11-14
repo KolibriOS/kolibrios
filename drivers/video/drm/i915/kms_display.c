@@ -142,7 +142,7 @@ bool set_mode(struct drm_device *dev, struct drm_connector *connector,
         };
     };
 
-    printf("%s failed\n", __FUNCTION__);
+    DRM_ERROR("%s failed\n", __FUNCTION__);
 
     return -1;
 
@@ -202,7 +202,7 @@ do_set:
 
         sysSetScreen(fb->width, fb->height, fb->pitches[0]);
 
-        dbgprintf("new mode %d x %d pitch %d\n",
+        DRM_DEBUG_KMS("new mode %d x %d pitch %d\n",
                        fb->width, fb->height, fb->pitches[0]);
     }
     else
@@ -249,7 +249,7 @@ static struct drm_connector* get_def_connector(struct drm_device *dev)
 
         crtc = encoder->crtc;
 
-        dbgprintf("CONNECTOR %x ID:  %d status %d encoder %x\n crtc %x",
+        DRM_DEBUG_KMS("CONNECTOR %x ID:  %d status %d encoder %x\n crtc %x",
                    connector, connector->base.id,
                    connector->status, connector->encoder,
                    crtc);
@@ -278,8 +278,6 @@ int init_display_kms(struct drm_device *dev)
     u32_t      ifl;
     int        err;
 
-//    ENTER();
-
     list_for_each_entry(connector, &dev->mode_config.connector_list, head)
     {
         if( connector->status != connector_status_connected)
@@ -289,14 +287,14 @@ int init_display_kms(struct drm_device *dev)
         encoder = connector_funcs->best_encoder(connector);
         if( encoder == NULL)
         {
-            dbgprintf("CONNECTOR %x ID: %d no active encoders\n",
+            DRM_DEBUG_KMS("CONNECTOR %x ID: %d no active encoders\n",
                       connector, connector->base.id);
             continue;
         }
         connector->encoder = encoder;
         crtc = encoder->crtc;
 
-        dbgprintf("CONNECTOR %x ID:%d status:%d ENCODER %x CRTC %x ID:%d\n",
+        DRM_DEBUG_KMS("CONNECTOR %x ID:%d status:%d ENCODER %x CRTC %x ID:%d\n",
                connector, connector->base.id,
                connector->status, connector->encoder,
                crtc, crtc->base.id );
@@ -306,7 +304,7 @@ int init_display_kms(struct drm_device *dev)
 
     if(connector == NULL)
     {
-        dbgprintf("No active connectors!\n");
+        DRM_ERROR("No active connectors!\n");
         return -1;
     };
 
@@ -329,7 +327,7 @@ int init_display_kms(struct drm_device *dev)
 
     if(crtc == NULL)
     {
-        dbgprintf("No CRTC for encoder %d\n", encoder->base.id);
+        DRM_ERROR("No CRTC for encoder %d\n", encoder->base.id);
         return -1;
     };
 
@@ -371,13 +369,6 @@ int init_display_kms(struct drm_device *dev)
     main_device = dev;
 
     err = init_bitmaps();
-    if( !err )
-    {
-        printf("Initialize bitmap manager\n");
-    };
-
-
-//    LEAVE();
 
     return 0;
 };
@@ -386,8 +377,6 @@ int init_display_kms(struct drm_device *dev)
 int get_videomodes(videomode_t *mode, int *count)
 {
     int err = -1;
-
-//    ENTER();
 
 //    dbgprintf("mode %x count %d\n", mode, *count);
 
@@ -420,15 +409,12 @@ int get_videomodes(videomode_t *mode, int *count)
         *count = i;
         err = 0;
     };
-//    LEAVE();
     return err;
 };
 
 int set_user_mode(videomode_t *mode)
 {
     int err = -1;
-
-//    ENTER();
 
 //    dbgprintf("width %d height %d vrefresh %d\n",
 //               mode->width, mode->height, mode->freq);
@@ -444,17 +430,19 @@ int set_user_mode(videomode_t *mode)
             err = 0;
     };
 
-//    LEAVE();
     return err;
 };
 
 void __attribute__((regparm(1))) destroy_cursor(cursor_t *cursor)
 {
-/*  FIXME    synchronization */
-
     list_del(&cursor->list);
-//    radeon_bo_unpin(cursor->robj);
-//    KernelFree(cursor->data);
+
+    i915_gem_object_unpin(cursor->cobj);
+
+    mutex_lock(&main_device->struct_mutex);
+    drm_gem_object_unreference(&cursor->cobj->base);
+    mutex_unlock(&main_device->struct_mutex);
+
     __DestroyObject(cursor);
 };
 
@@ -464,11 +452,10 @@ int init_cursor(cursor_t *cursor)
     struct drm_i915_gem_object *obj;
     uint32_t *bits;
     uint32_t *src;
+    void     *mapped;
 
     int       i,j;
     int       ret;
-
-//    ENTER();
 
     if (dev_priv->info->cursor_needs_physical)
     {
@@ -492,7 +479,7 @@ int init_cursor(cursor_t *cursor)
 /* You don't need to worry about fragmentation issues.
  * GTT space is continuous. I guarantee it.                           */
 
-        bits = (u32*)MapIoMem(dev_priv->mm.gtt->gma_bus_addr + obj->gtt_offset,
+        mapped = bits = (u32*)MapIoMem(dev_priv->mm.gtt->gma_bus_addr + obj->gtt_offset,
                     CURSOR_WIDTH*CURSOR_HEIGHT*4, PG_SW);
 
         if (unlikely(bits == NULL))
@@ -516,6 +503,8 @@ int init_cursor(cursor_t *cursor)
     for(i = 0; i < CURSOR_WIDTH*(CURSOR_HEIGHT-32); i++)
         *bits++ = 0;
 
+    FreeKernelSpace(mapped);
+
 // release old cursor
 
     KernelFree(cursor->data);
@@ -523,7 +512,6 @@ int init_cursor(cursor_t *cursor)
     cursor->data = bits;
 
     cursor->header.destroy = destroy_cursor;
-//    LEAVE();
 
     return 0;
 }
@@ -679,36 +667,18 @@ static u32_t get_display_map()
 typedef int v4si __attribute__ ((vector_size (16)));
 
 
+
 static void
 i915_gem_execbuffer_retire_commands(struct drm_device *dev,
+                    struct drm_file *file,
                     struct intel_ring_buffer *ring)
 {
-    struct drm_i915_gem_request *request;
-    u32 invalidate;
-    u32 req;
-    /*
-     * Ensure that the commands in the batch buffer are
-     * finished before the interrupt fires.
-     *
-     * The sampler always gets flushed on i965 (sigh).
-     */
-    invalidate = I915_GEM_DOMAIN_COMMAND;
-    if (INTEL_INFO(dev)->gen >= 4)
-        invalidate |= I915_GEM_DOMAIN_SAMPLER;
-    if (ring->flush(ring, invalidate, 0)) {
-        i915_gem_next_request_seqno(ring);
-        return;
-    }
+    /* Unconditionally force add_request to emit a full flush. */
+    ring->gpu_caches_dirty = true;
 
     /* Add a breadcrumb for the completion of the batch buffer */
-    if (request == NULL || i915_add_request(ring, NULL, &req)) {
-        i915_gem_next_request_seqno(ring);
-    }
+    (void)i915_add_request(ring, file, NULL);
 }
-
-
-
-
 
 int blit_video(u32 hbitmap, int  dst_x, int dst_y,
                int src_x, int src_y, u32 w, u32 h)
@@ -728,6 +698,7 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
     u32_t      offset;
     u8         slot;
     int      n=0;
+    int        ret;
 
     if(unlikely(hbitmap==0))
         return -1;
@@ -746,7 +717,7 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
     dst_clip.xmin   = 0;
     dst_clip.ymin   = 0;
     dst_clip.xmax   = winrc.right-winrc.left-1;
-    dst_clip.ymax   = winrc.bottom -winrc.top -1;
+    dst_clip.ymax   = winrc.bottom -winrc.top-1;
 
     src_clip.xmin   = 0;
     src_clip.ymin   = 0;
@@ -913,18 +884,56 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
 
     context->cmd_buffer+= n*4;
 
-//    i915_gem_object_set_to_gtt_domain(bitmap->obj, false);
+    context->obj->base.pending_read_domains |= I915_GEM_DOMAIN_COMMAND;
+
+
+    mutex_lock(&main_device->struct_mutex);
+
+    i915_gem_object_set_to_gtt_domain(bitmap->obj, false);
 
     if (HAS_BLT(main_device))
     {
-        int ret;
+        u32 seqno;
+        int i;
 
         ring = &dev_priv->ring[BCS];
 //        printf("dispatch...  ");
-        ring->dispatch_execbuffer(ring, offset, n*4);
+
+        i915_gem_object_sync(bitmap->obj, ring);
+        intel_ring_invalidate_all_caches(ring);
+
+        seqno = i915_gem_next_request_seqno(ring);
+//        printf("seqno = %d\n", seqno);
+
+        for (i = 0; i < ARRAY_SIZE(ring->sync_seqno); i++) {
+            if (seqno < ring->sync_seqno[i]) {
+            /* The GPU can not handle its semaphore value wrapping,
+             * so every billion or so execbuffers, we need to stall
+             * the GPU in order to reset the counters.
+             */
+                DRM_DEBUG("wrap seqno\n");
+
+                ret = i915_gpu_idle(main_device);
+                if (ret)
+                    goto fail;
+                i915_gem_retire_requests(main_device);
+
+                BUG_ON(ring->sync_seqno[i]);
+            }
+        }
+
+        ret = ring->dispatch_execbuffer(ring, offset, n*4);
+        if (ret)
+            goto fail;
 //        printf("done\n");
 
-        i915_gem_execbuffer_retire_commands(main_device, ring);
+        bitmap->obj->base.read_domains = bitmap->obj->base.pending_read_domains;
+        bitmap->obj->base.write_domain = bitmap->obj->base.pending_write_domain;
+        bitmap->obj->fenced_gpu_access = bitmap->obj->pending_fenced_gpu_access;
+
+        i915_gem_object_move_to_active(bitmap->obj, ring, seqno);
+
+        i915_gem_execbuffer_retire_commands(main_device, NULL, ring);
 //        printf("retire\n");
     }
     else
@@ -934,12 +943,12 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
         ring->flush(ring, 0, I915_GEM_DOMAIN_RENDER);
     };
 
-    bitmap->obj->base.read_domains = I915_GEM_DOMAIN_CPU;
-    bitmap->obj->base.write_domain = I915_GEM_DOMAIN_CPU;
+//    bitmap->obj->base.read_domains = I915_GEM_DOMAIN_CPU;
+//    bitmap->obj->base.write_domain = I915_GEM_DOMAIN_CPU;
 
-    return 0;
+    mutex_unlock(&main_device->struct_mutex);
 fail:
-    return -1;
+    return ret;
 };
 
 
@@ -1317,7 +1326,6 @@ int __queue_work(struct workqueue_struct *wq,
                          struct work_struct *work)
 {
     unsigned long flags;
-//    ENTER();
 
 //    dbgprintf("wq: %x, work: %x\n",
 //               wq, work );
@@ -1336,13 +1344,11 @@ int __queue_work(struct workqueue_struct *wq,
 //    dbgprintf("wq: %x head %x, next %x\n",
 //               wq, &wq->worklist, wq->worklist.next);
 
-//    LEAVE();
     return 1;
 };
 
 void __stdcall delayed_work_timer_fn(unsigned long __data)
 {
-//    ENTER();
     struct delayed_work *dwork = (struct delayed_work *)__data;
     struct workqueue_struct *wq = dwork->work.data;
 
@@ -1350,7 +1356,6 @@ void __stdcall delayed_work_timer_fn(unsigned long __data)
 //               wq, &dwork->work );
 
     __queue_work(wq, &dwork->work);
-//    LEAVE();
 }
 
 
@@ -1368,7 +1373,6 @@ int queue_delayed_work(struct workqueue_struct *wq,
                         struct delayed_work *dwork, unsigned long delay)
 {
     u32  flags;
-//    ENTER();
 
 //    dbgprintf("wq: %x, work: %x\n",
 //               wq, &dwork->work );

@@ -240,8 +240,6 @@ int intel_fbdev_init(struct drm_device *dev)
 	drm_i915_private_t *dev_priv = dev->dev_private;
 	int ret;
 
-    ENTER();
-
 	ifbdev = kzalloc(sizeof(struct intel_fbdev), GFP_KERNEL);
 	if (!ifbdev)
 		return -ENOMEM;
@@ -260,8 +258,7 @@ int intel_fbdev_init(struct drm_device *dev)
 	drm_fb_helper_single_add_all_connectors(&ifbdev->helper);
 	drm_fb_helper_initial_config(&ifbdev->helper, 32);
 
-    LEAVE();
-	return 0;
+    return 0;
 }
 
 

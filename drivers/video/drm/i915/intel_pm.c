@@ -1104,23 +1104,12 @@ static bool g4x_compute_wm0(struct drm_device *dev,
 			    int *cursor_wm)
 {
 	struct drm_crtc *crtc;
-
 	int htotal, hdisplay, clock, pixel_size;
 	int line_time_us, line_count;
 	int entries, tlb_miss;
 
-//    ENTER();
-
-//    dbgprintf("plane %d display %x cursor %x \n", plane, display, cursor);
-//    dbgprintf("plane_wm %x cursor_wm %x \n", plane_wm, cursor_wm);
-
 	crtc = intel_get_crtc_for_plane(dev, plane);
     struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
-
-//    dbgprintf("CRTC %d\n, fb %x, enabled %d\n",
-//               crtc->base.id, crtc->fb, crtc->enabled );
-
-
 
     if (crtc->fb == NULL || !crtc->enabled || !intel_crtc->active) {
 		*cursor_wm = cursor->guard_size;
@@ -1133,8 +1122,6 @@ static bool g4x_compute_wm0(struct drm_device *dev,
 	clock = crtc->mode.clock;
 	pixel_size = crtc->fb->bits_per_pixel / 8;
 
-//    dbgprintf("mark 1\n");
-
 	/* Use the small buffer method to calculate plane watermark */
 	entries = ((clock * pixel_size / 1000) * display_latency_ns) / 1000;
 	tlb_miss = display->fifo_size*display->cacheline_size - hdisplay * 8;
@@ -1145,36 +1132,17 @@ static bool g4x_compute_wm0(struct drm_device *dev,
 	if (*plane_wm > (int)display->max_wm)
 		*plane_wm = display->max_wm;
 
-//    dbgprintf("clock %d line_time_us %d\n",clock, line_time_us );
-
 	/* Use the large buffer method to calculate cursor watermark */
 	line_time_us = ((htotal * 1000) / clock);
 	line_count = (cursor_latency_ns / line_time_us + 1000) / 1000;
-
 	entries = line_count * 64 * pixel_size;
-
-//    dbgprintf("mark 3\n");
-
-//    dbgprintf("fifo size %d line size %d\n",
-//               cursor->fifo_size, cursor->cacheline_size);
-
 	tlb_miss = cursor->fifo_size*cursor->cacheline_size - hdisplay * 8;
-
 	if (tlb_miss > 0)
 		entries += tlb_miss;
-
-//    dbgprintf("mark 4\n");
-
 	entries = DIV_ROUND_UP(entries, cursor->cacheline_size);
-
-//    dbgprintf("entries %d \n",entries);
-
 	*cursor_wm = entries + cursor->guard_size;
-
 	if (*cursor_wm > (int)cursor->max_wm)
 		*cursor_wm = (int)cursor->max_wm;
-
-//    LEAVE();
 
 	return true;
 }
@@ -1940,7 +1908,6 @@ static void sandybridge_update_wm(struct drm_device *dev)
 		   (fbc_wm << WM1_LP_FBC_SHIFT) |
 		   (plane_wm << WM1_LP_SR_SHIFT) |
 		   cursor_wm);
-
 }
 
 static void
@@ -2163,7 +2130,6 @@ void intel_update_watermarks(struct drm_device *dev)
 
 	if (dev_priv->display.update_wm)
 		dev_priv->display.update_wm(dev);
-
 }
 
 void intel_update_linetime_watermarks(struct drm_device *dev,

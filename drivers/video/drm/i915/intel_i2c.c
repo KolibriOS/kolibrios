@@ -34,7 +34,6 @@
 #include <drm/i915_drm.h>
 #include "i915_drv.h"
 
-
 struct gmbus_port {
 	const char *name;
 	int reg;

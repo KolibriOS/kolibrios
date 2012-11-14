@@ -455,7 +455,7 @@ int i915_init(void)
             return -ENODEV;
         }
 
-    dbgprintf("device %x:%x\n", device.pci_dev.vendor,
+    DRM_INFO("device %x:%x\n", device.pci_dev.vendor,
                                 device.pci_dev.device);
 
     if (intel_info->gen != 3) {
@@ -474,8 +474,6 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
     struct drm_device *dev;
     int ret;
-
-    ENTER();
 
     dev = kzalloc(sizeof(*dev), 0);
     if (!dev)
@@ -515,8 +513,6 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     if (ret)
         goto err_g4;
 
-    LEAVE();
-
     return 0;
 
 err_g4:
@@ -528,8 +524,6 @@ err_g4:
 //    pci_disable_device(pdev);
 //err_g1:
     free(dev);
-
-    LEAVE();
 
     return ret;
 }

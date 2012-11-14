@@ -1409,6 +1409,7 @@ i915_gem_object_put_pages_gtt(struct drm_i915_gem_object *obj)
     for (i = 0; i < obj->pages.nents; i++)
         FreePage(obj->pages.page[i]);
 
+    DRM_DEBUG_KMS("%s free %d pages\n", __FUNCTION__, obj->pages.nents);
 	obj->dirty = 0;
 	kfree(obj->pages.page);
 }
@@ -1465,7 +1466,7 @@ i915_gem_object_get_pages_gtt(struct drm_i915_gem_object *obj)
 
         obj->pages.page[i] = page;
     };
-
+    DRM_DEBUG_KMS("%s alloc %d pages\n", __FUNCTION__, page_count);
     obj->pages.nents = page_count;
 
 
@@ -1835,8 +1836,6 @@ i915_gem_retire_work_handler(struct work_struct *work)
 	bool idle;
 	int i;
 
-//    ENTER();
-
 	dev_priv = container_of(work, drm_i915_private_t,
 				mm.retire_work.work);
 	dev = dev_priv->dev;
@@ -1844,7 +1843,6 @@ i915_gem_retire_work_handler(struct work_struct *work)
 	/* Come back later if the device is busy... */
 	if (!mutex_trylock(&dev->struct_mutex)) {
         queue_delayed_work(dev_priv->wq, &dev_priv->mm.retire_work, HZ);
-//        LEAVE();
 		return;
 	}
 
@@ -1867,7 +1865,6 @@ i915_gem_retire_work_handler(struct work_struct *work)
 		intel_mark_idle(dev);
 
 	mutex_unlock(&dev->struct_mutex);
-//    LEAVE();
 }
 
 /**

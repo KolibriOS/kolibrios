@@ -1821,7 +1821,6 @@ static void intel_disable_pipe(struct drm_i915_private *dev_priv,
 
 	I915_WRITE(reg, val & ~PIPECONF_ENABLE);
 	intel_wait_for_pipe_off(dev_priv->dev, pipe);
-
 }
 
 /*
@@ -2216,7 +2215,6 @@ intel_pipe_set_base(struct drm_crtc *crtc, int x, int y,
 		intel_unpin_fb_obj(to_intel_framebuffer(fb)->obj);
 		mutex_unlock(&dev->struct_mutex);
 		DRM_ERROR("failed to update base address\n");
-        LEAVE();
 		return ret;
 	}
 
@@ -3357,7 +3355,6 @@ static void ironlake_crtc_disable(struct drm_crtc *crtc)
     mutex_lock(&dev->struct_mutex);
     intel_update_fbc(dev);
     mutex_unlock(&dev->struct_mutex);
-
 }
 
 static void ironlake_crtc_off(struct drm_crtc *crtc)
@@ -7486,7 +7483,7 @@ static void intel_crtc_init(struct drm_device *dev, int pipe)
 
 	drm_crtc_helper_add(&intel_crtc->base, &intel_helper_funcs);
 
-    dbgprintf("CRTC %d mode %x FB %x enable %d\n",
+    DRM_DEBUG_KMS("CRTC %d mode %x FB %x enable %d\n",
             intel_crtc->base.base.id, intel_crtc->base.mode,
             intel_crtc->base.fb, intel_crtc->base.enabled);
 

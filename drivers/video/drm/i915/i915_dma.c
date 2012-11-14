@@ -1297,8 +1297,6 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 	int ret = 0, mmio_bar, mmio_size;
 	uint32_t aperture_size;
 
-	ENTER();
-
 	info = (struct intel_device_info *) flags;
 
 #if 0
@@ -1384,16 +1382,8 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 	aperture_size = dev_priv->mm.gtt->gtt_mappable_entries << PAGE_SHIFT;
 	dev_priv->mm.gtt_base_addr = dev_priv->mm.gtt->gma_bus_addr;
 
-    dbgprintf("gtt_base_addr %x aperture_size %d\n",
+    DRM_INFO("gtt_base_addr %x aperture_size %d\n",
                dev_priv->mm.gtt_base_addr, aperture_size );
-
-//   dev_priv->mm.gtt_mapping =
-//       io_mapping_create_wc(dev_priv->mm.gtt_base_addr,
-//                    aperture_size);
-//   if (dev_priv->mm.gtt_mapping == NULL) {
-//       ret = -EIO;
-//        goto out_rmmap;
-//    }
 
 //	i915_mtrr_setup(dev_priv, dev_priv->mm.gtt_base_addr,
 //			aperture_size);
@@ -1488,8 +1478,6 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
 
 	if (IS_GEN5(dev))
 		intel_gpu_ips_init(dev_priv);
-
-    LEAVE();
 
     return 0;
 
