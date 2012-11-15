@@ -1986,6 +1986,54 @@ proc buf_get_pixel uses ebx ecx edi, buf_struc:dword, coord_x:dword, coord_y:dwo
 	ret
 endp
 
+;отразить по вертикали (верх и низ меняются местами)
+align 4
+proc buf_flip_v, buf_struc:dword
+locals
+    line_pix dd ? ;кол. пикселей в линии буфера
+    line_2byte dd ? ;кол. байт в линии буфера * 2
+endl
+	pushad
+	mov edi,[buf_struc]
+    cmp buf2d_bits,24
+    jne .end_24
+        mov edx,buf2d_w
+        mov [line_pix],edx
+        mov ebx,buf2d_h
+        lea edx,[edx+edx*2]
+        mov esi,edx
+        imul esi,ebx
+        sub esi,edx
+        add esi,buf2d_data ;указатель на нижнюю линию
+        shr ebx,1 ;кол. линейных циклов
+        shl edx,1
+        mov [line_2byte],edx
+        mov edi,buf2d_data
+        xchg edi,esi
+        cld
+        .flip_24:
+        cmp ebx,0
+        jle .end_24
+        mov ecx,[line_pix]
+        @@:
+            lodsw
+            mov dx,word[edi]
+            mov word[esi-2],dx
+            mov [edi],ax
+            lodsb
+            mov ah,byte[edi+2]
+            mov byte[esi-1],ah
+            mov [edi+2],al
+            add edi,3
+            loop @b
+        sub edi,[line_2byte]
+        dec ebx
+        jmp .flip_24
+    .end_24:
+    popad
+    ret
+endp
+
 align 4
 proc buf_img_wdiv2, buf_struc:dword
 	pushad
@@ -2134,6 +2182,8 @@ proc img_rgba32_wdiv2 data_rgba:dword, size:dword
 	ret
 endp
 
+;description:
+; сжатие изображения по высоте (высота буфера не меняется)
 align 4
 proc buf_img_hdiv2, buf_struc:dword
 	pushad
@@ -2144,6 +2194,7 @@ proc buf_img_hdiv2, buf_struc:dword
 		mov ecx,buf2d_h
 		imul ecx,eax
 		stdcall img_8b_hdiv2, buf2d_data,ecx,eax
+		jmp .end_f ;edi портится в функции, потому использование buf2d_bits опасно
 	@@:
 	cmp buf2d_bits,24
 	jne @f
@@ -2151,6 +2202,7 @@ proc buf_img_hdiv2, buf_struc:dword
 		mov ecx,buf2d_h
 		imul ecx,eax
 		stdcall img_rgb24_hdiv2, buf2d_data,ecx,eax
+		jmp .end_f
 	@@:
 	cmp buf2d_bits,32
 	jne @f
@@ -2159,7 +2211,9 @@ proc buf_img_hdiv2, buf_struc:dword
 		imul ecx,eax
 		shl eax,2
 		stdcall img_rgba32_hdiv2, buf2d_data,ecx,eax
+		;jmp .end_f
 	@@:
+	.end_f:
 	popad
 	ret
 endp
@@ -4761,6 +4815,7 @@ EXPORTS:
 	dd sz_buf2d_flood_fill, buf_flood_fill
 	dd sz_buf2d_set_pixel, buf_set_pixel
 	dd sz_buf2d_get_pixel, buf_get_pixel
+	dd sz_buf2d_flip_v, buf_flip_v
 	dd sz_buf2d_vox_brush_create, vox_brush_create
 	dd sz_buf2d_vox_brush_delete, vox_brush_delete
 	dd sz_buf2d_vox_obj_get_img_w_3g, buf_vox_obj_get_img_w_3g
@@ -4800,6 +4855,7 @@ EXPORTS:
 	sz_buf2d_flood_fill db 'buf2d_flood_fill',0
 	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
 	sz_buf2d_get_pixel db 'buf2d_get_pixel',0
+	sz_buf2d_flip_v db 'buf2d_flip_v',0
 	sz_buf2d_vox_brush_create db 'buf2d_vox_brush_create',0
 	sz_buf2d_vox_brush_delete db 'buf2d_vox_brush_delete',0
 	sz_buf2d_vox_obj_get_img_w_3g db 'buf2d_vox_obj_get_img_w_3g',0
