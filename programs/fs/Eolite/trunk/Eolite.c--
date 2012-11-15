@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.35"
+#define title "Eolite File Manager v1.36"
 dword selection_col = 0x94AECE;
 dword lpanel_col = 0x00699C;
 
@@ -224,8 +224,9 @@ void main()
 							IF (show_actions==1) show_actions=0; ELSE show_actions=1;
 							Actions();
 							break;
-					case 78:
-							IF (show_dev_name==1) show_dev_name=0; ELSE show_dev_name=1;
+					case 78: //rescan devices
+							Tip(56, "Devices", 78, "-");
+							Pause(10);
 							GetSystemDiscs();
 							Open_Dir(#path,WITH_REDRAW);
 							DrawSystemDiscs();
@@ -521,39 +522,6 @@ void List_ReDraw()
 		DrawBar(onLeft(95,0),paint_x,1,onTop(paint_x,6),0xE4DFE1); //полоса серая вертикальная 2
 	TVScroll();
 }
-
-/*#include "def_file.txt" 
-#define CELL_SIZE 58
-void List_ReDraw()
-{
-	int i,
-		po_gor, po_ver,
-		on_xx, name_len;
-	po_gor=onLeft(22,197)/CELL_SIZE;
-	po_ver=onTop(57,6)/CELL_SIZE;
-	for (j=0; j<po_ver; j++;) for (i=0; i<po_gor; i++;) 
-	{
-		if (j*po_gor+i+za_kadrom>=count)
-		{
-			DrawBar(i*CELL_SIZE+192,j*CELL_SIZE+57,CELL_SIZE,CELL_SIZE,0xFFFFFF);
-			continue;
-		}
-		DefineButton(i*CELL_SIZE+192,j*CELL_SIZE+57,CELL_SIZE,CELL_SIZE,j*po_gor+i+201+BT_HIDE,0xFFFFFF);
-		DrawBar(i*CELL_SIZE+192,j*CELL_SIZE+57,CELL_SIZE,CELL_SIZE,0xFFFFFF);
-
-		off=file_mas[j*po_gor+i+za_kadrom]*304 + buf+72;
-		name_len=strlen(off);
-		if (name_len>9) name_len=9;
-		on_xx=-name_len*3+29;
-		WriteText(i*CELL_SIZE+193+on_xx,j*CELL_SIZE+57+CELL_SIZE-16,0,0,off,name_len);
-		if (!TestBit(ESDWORD[off-40], 4))
-			PutImage(#file32,32,32,i*CELL_SIZE+197+9,j*CELL_SIZE+57+5);
-		else
-			PutImage(#folder32,32,32,i*CELL_SIZE+197+9,j*CELL_SIZE+57+5);
-
-	}
-	TVScroll();
-}*/
 
 
 void Line_ReDraw(dword color, filenum){

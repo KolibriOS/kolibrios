@@ -28,8 +28,8 @@ struct BDVK{
 ////////////////////////////
 //     Создать файл     //
 ////////////////////////////
-/*f70 create_file_70;
-void CreateFile(dword file_size, read_buffer, file_path)
+f70 create_file_70;
+int CreateFile(dword file_size, read_buffer, file_path)
 {    
 	create_file_70.func = 2;
 	create_file_70.param1 = 0;
@@ -41,13 +41,13 @@ void CreateFile(dword file_size, read_buffer, file_path)
 	$mov eax,70
 	$mov ebx,#create_file_70.func
 	$int 0x40
-} */
+}
 
 ////////////////////////////
 //     Прочитать файл     //
 ////////////////////////////
 f70 read_file_70;
-void ReadFile(dword pos, file_size, read_buffer, file_path)
+int ReadFile(dword pos, file_size, read_buffer, file_path)
 {    
 	read_file_70.func = 0;
 	read_file_70.param1 = pos;
