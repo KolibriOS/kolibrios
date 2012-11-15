@@ -36,7 +36,13 @@
 #define PTR_ALIGN(p, a)     ((typeof(p))ALIGN((unsigned long)(p), (a)))
 #define IS_ALIGNED(x, a)        (((x) & ((typeof(x))(a) - 1)) == 0)
 
-#define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
+/* The `const' in roundup() prevents gcc-3.3 from calling __divdi3 */
+#define roundup(x, y) (                                 \
+{                                                       \
+        const typeof(y) __y = y;                        \
+        (((x) + (__y - 1)) / __y) * __y;                \
+}                                                       \
+)
 
 #define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
 #define DIV_ROUND_CLOSEST(x, divisor)(                  \

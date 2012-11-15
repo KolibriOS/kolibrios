@@ -716,8 +716,8 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
 
     dst_clip.xmin   = 0;
     dst_clip.ymin   = 0;
-    dst_clip.xmax   = winrc.right-winrc.left-1;
-    dst_clip.ymax   = winrc.bottom -winrc.top-1;
+    dst_clip.xmax   = winrc.right-winrc.left;
+    dst_clip.ymax   = winrc.bottom -winrc.top;
 
     src_clip.xmin   = 0;
     src_clip.ymin   = 0;
@@ -869,7 +869,7 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
     b[n++] = cmd;
     b[n++] = br13;
     b[n++] = (dst_y << 16) | dst_x;                   // left, top
-    b[n++] = ((dst_y+height-1)<< 16)|(dst_x+width-1); // bottom, right
+    b[n++] = ((dst_y+height)<< 16)|(dst_x+width); // bottom, right
     b[n++] = 0;                          // destination
     b[n++] = (src_y << 16) | src_x;      // source left & top
     b[n++] = bitmap->pitch;              // source pitch

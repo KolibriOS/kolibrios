@@ -36,7 +36,7 @@ void __attribute__((regparm(1))) destroy_bitmap(bitmap_t *bitmap)
         for (i = 0; i < bitmap->page_count; i++)
             FreePage(pages[i]);
 
-        DRM_DEBUG("%s freec %d pages\n", __FUNCTION__, bitmap->page_count);
+        DRM_DEBUG("%s release %d pages\n", __FUNCTION__, bitmap->page_count);
 
         free(pages);
     };
@@ -52,6 +52,7 @@ static int bitmap_get_pages_gtt(struct drm_i915_gem_object *obj)
     /* Get the list of pages out of our struct file.  They'll be pinned
      * at this point until we release them.
      */
+
     page_count = obj->base.size / PAGE_SIZE;
     BUG_ON(obj->allocated_pages == NULL);
     BUG_ON(obj->pages.page != NULL);
@@ -305,6 +306,105 @@ int lock_surface(struct io_call_12 *pbitmap)
 };
 
 
+int resize_surface(struct io_call_14 *pbitmap)
+{
+    bitmap_t  *bitmap;
+    dma_addr_t page, *pages;
+    u32        size, page_count;
+    u32        width, height;
+    u32        pitch;
+    int        i;
+    int        ret = 0;
+
+
+    if(unlikely(pbitmap->handle == 0))
+        return -1;
+
+    bitmap = (bitmap_t*)hmm_get_data(&bm_mm, pbitmap->handle);
+
+    if(unlikely(bitmap==NULL))
+        return -1;
+
+    if( pbitmap->new_width > bitmap->max_width ||
+        pbitmap->new_height > bitmap->max_height)
+        return -1;
+
+    width  = pbitmap->new_width;
+    height = pbitmap->new_height;
+
+    pitch = ALIGN(width*4,64);
+    size =  roundup(pitch * height, PAGE_SIZE);
+    page_count = size/PAGE_SIZE;
+
+    DRM_DEBUG("new width %d height %d pitch %d size %d\n",
+            width, height, pitch, size);
+
+    if( page_count == bitmap->page_count )
+    {
+        bitmap->width  = width;
+        bitmap->height = height;
+        bitmap->pitch  = pitch;
+    }
+    else if(page_count > bitmap->page_count)
+    {
+        char *vaddr = bitmap->uaddr + PAGE_SIZE * bitmap->page_count;
+
+        pages = bitmap->obj->allocated_pages;
+
+        DRM_DEBUG("old pages %d new_pages %d vaddr %x\n",
+                bitmap->page_count, page_count, vaddr);
+
+        for(i = bitmap->page_count; i < page_count; i++, vaddr+= PAGE_SIZE)
+        {
+            page = AllocPage();
+            if ( page == 0 )
+                goto err4;
+            pages[i] = page;
+            MapPage(vaddr, page, 0x207);        //map as shared page
+        };
+
+        DRM_DEBUG("%s alloc %d pages\n", __FUNCTION__,
+                  page_count - bitmap->page_count);
+
+//        mutex_lock(&main_device->struct_mutex);
+
+        i915_gem_object_unpin(bitmap->obj);
+        i915_gem_object_unbind(bitmap->obj);
+        bitmap->obj->base.size = size;
+        bitmap->obj->pages.nents = page_count;
+
+        ret = i915_gem_object_pin(bitmap->obj, PAGE_SIZE, true,true);
+        if (ret)
+            goto err4;
+//        mutex_unlock(&main_device->struct_mutex);
+
+        bitmap->page_count = page_count;
+        bitmap->width  = width;
+        bitmap->height = height;
+        bitmap->pitch  = pitch;
+        bitmap->gaddr  = bitmap->obj->gtt_offset;
+    };
+
+    if(ret != 0 )
+    {
+        pbitmap->data  = NULL;
+        pbitmap->pitch = 0;
+
+        dbgprintf("%s fail\n", __FUNCTION__);
+        return ret;
+    };
+
+    pbitmap->data  = bitmap->uaddr;
+    pbitmap->pitch = bitmap->pitch;
+
+    return 0;
+
+err4:
+    while (i-- > bitmap->page_count)
+        FreePage(pages[i]);
+
+    return -1;
+};
 
 
 int init_bitmaps()

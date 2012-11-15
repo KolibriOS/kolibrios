@@ -89,9 +89,9 @@ typedef unsigned int flag_t;           /* The type of various bit flag sets */
 #define NO_SEGMENT_TRAVERSAL    1
 #define MALLOC_ALIGNMENT        ((size_t)8U)
 #define CHUNK_OVERHEAD          (SIZE_T_SIZE)
-#define DEFAULT_GRANULARITY     ((size_t)64U * (size_t)1024U)
-#define DEFAULT_MMAP_THRESHOLD  ((size_t)256U * (size_t)1024U)
-#define DEFAULT_TRIM_THRESHOLD  ((size_t)512U * (size_t)1024U)
+#define DEFAULT_GRANULARITY     ((size_t)128U * (size_t)1024U)
+#define DEFAULT_MMAP_THRESHOLD  ((size_t)512U * (size_t)1024U)
+#define DEFAULT_TRIM_THRESHOLD  ((size_t)1024U * (size_t)1024U)
 
 /* The bit mask value corresponding to MALLOC_ALIGNMENT */
 #define CHUNK_ALIGN_MASK    (MALLOC_ALIGNMENT - SIZE_T_ONE)
@@ -835,6 +835,7 @@ static int has_segment_link(mstate m, msegmentptr ss)
 static inline void* os_mmap(size_t size)
 {
   void* ptr = KernelAlloc(size);
+  printf("%s %x %d bytes\n",__FUNCTION__, ptr, size);
   return (ptr != 0)? ptr: MFAIL;
 }
 
@@ -1109,6 +1110,8 @@ static void* sys_alloc(mstate m, size_t nb)
     flag_t mmap_flag = 0;
 
     ensure_initialization();
+
+    printf("%s %d bytes\n", __FUNCTION__, nb);
 
   /* Directly map large chunks, but only if already initialized */
     if (use_mmap(m) && nb >= mparams.mmap_threshold && m->topsize != 0)

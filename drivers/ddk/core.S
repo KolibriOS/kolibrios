@@ -62,6 +62,7 @@
     .global _TimerHs
 
     .global _UserAlloc
+    .global _UserFree
 
     .global _WaitEvent
 
@@ -123,6 +124,7 @@
     .def  _TimerHs;           .scl  2;  .type 32; .endef
 
     .def  _UserAlloc;         .scl  2;  .type 32; .endef
+    .def  _UserFree;          .scl  2;  .type 32; .endef
 
     .def  _WaitEvent;         .scl  2;  .type 32; .endef
 
@@ -185,6 +187,7 @@ _SysMsgBoardStr:
 _TimerHs:
 
 _UserAlloc:
+_UserFree:
 _WaitEvent:
 
         ret
@@ -252,6 +255,7 @@ _WaitEvent:
         .ascii " -export:TimerHs"              # stdcall
 
         .ascii " -export:UserAlloc"            # stdcall
+        .ascii " -export:UserFree"             # stdcall
 
         .ascii " -export:WaitEvent"            # stdcall
 

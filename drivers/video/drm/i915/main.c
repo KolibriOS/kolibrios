@@ -100,6 +100,8 @@ u32_t drvEntry(int action, char *cmdline)
 #define SRV_DESTROY_SURFACE     11
 #define SRV_LOCK_SURFACE        12
 #define SRV_UNLOCK_SURFACE      13
+#define SRV_RESIZE_SURFACE      14
+
 
 #define SRV_BLIT_VIDEO          20
 
@@ -156,6 +158,10 @@ int _stdcall display_handler(ioctl_t *io)
 
         case SRV_LOCK_SURFACE:
             retval = lock_surface((struct io_call_12*)inp);
+            break;
+
+        case SRV_RESIZE_SURFACE:
+            retval = resize_surface((struct io_call_14*)inp);
             break;
 
         case SRV_BLIT_VIDEO:

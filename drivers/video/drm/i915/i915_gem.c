@@ -1409,7 +1409,7 @@ i915_gem_object_put_pages_gtt(struct drm_i915_gem_object *obj)
     for (i = 0; i < obj->pages.nents; i++)
         FreePage(obj->pages.page[i]);
 
-    DRM_DEBUG_KMS("%s free %d pages\n", __FUNCTION__, obj->pages.nents);
+    DRM_DEBUG_KMS("%s release %d pages\n", __FUNCTION__, obj->pages.nents);
 	obj->dirty = 0;
 	kfree(obj->pages.page);
 }
@@ -1418,6 +1418,9 @@ static int
 i915_gem_object_put_pages(struct drm_i915_gem_object *obj)
 {
 	const struct drm_i915_gem_object_ops *ops = obj->ops;
+
+//    printf("page %x pin count %d\n",
+//           obj->pages.page, obj->pages_pin_count );
 
 	if (obj->pages.page == NULL)
 		return 0;
