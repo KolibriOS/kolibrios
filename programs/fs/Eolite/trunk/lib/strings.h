@@ -83,7 +83,7 @@ dword StrToCol(char* htmlcolor)
   return color;
 }
 
-inline fastcall int strcmp(ESI, EDI)
+inline fastcall signed char strcmp(ESI, EDI)
 {
 	loop()
 	{
@@ -94,7 +94,6 @@ inline fastcall int strcmp(ESI, EDI)
 		EDI++;
 	}
 }
-
 
 
 

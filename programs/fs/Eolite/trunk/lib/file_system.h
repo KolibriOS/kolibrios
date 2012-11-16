@@ -175,4 +175,7 @@ inline fastcall int CopyFile(dword EBX,ECX)
 
 }
 
-
+void notify(dword notify_param)
+{
+	RunProgram("@notify", notify_param);
+}

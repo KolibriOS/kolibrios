@@ -42,9 +42,6 @@ void DrawSystemDiscs()
 	char disc_name[100];
 	int i, dev_icon;
 	
-	DrawBar(2,41,190,15,lpanel_col);		      //синий прямоугольник - сверху
-	DrawBar(2,56,15,onTop(21,41),lpanel_col);	  //синий прямоугольник - слева       
-	DrawBar(177,56,15,onTop(21,41),lpanel_col); //синий прямоугольник - справа
 	//список дисков
 	Tip(56, "Devices", 78, "=");
 	for (i=0;i<disc_num;i++)

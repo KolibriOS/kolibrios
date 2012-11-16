@@ -6,8 +6,6 @@
 #define PARAM	2
 #define OPTION	3
 
-#define NOTIFY_PATH "@notify";
-
 unsigned char *ERROR_TEXT[]={
 "Code #0 - No error",
 "Error #1 - Base or partition of a hard disk is not defined",
@@ -43,7 +41,7 @@ void GetIni(byte onload)
 		ReadFile(0, 12000, buff, "/sys/File managers/Eolite.ini");
 	IF (EAX<>6) //если файла с настройками тупо нет печалька
 	{
-		IF (onload==1) RunProgram(NOTIFY_PATH, "Eolite.ini not found. Defaults will be used.");
+		IF (onload==1) notify("Eolite.ini not found. Defaults will be used.");
 		IF (onload==0) goto RUN_AS_PROGRAM;
 	}
 	fsize=EBX;
@@ -120,7 +118,7 @@ void Write_Error(int error_number)
 		}
 	if (curbtn>=0) Line_ReDraw(0xFF0000, curbtn);
 	Pause(5);
-	RunProgram(NOTIFY_PATH, #error);
+	notify(#error);
 	//DrawBar(192,onTop(0, BUTTON_HEIGHT+7),onLeft(27,192),BUTTON_HEIGHT,0xFF0000);
 	//WriteText(205,onTop(-5, BUTTON_HEIGHT+7),0x80,0xFFFFFF,#error,0);
 }

@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.36"
+#define title "Eolite File Manager v1.38"
 dword selection_col = 0x94AECE;
 dword lpanel_col = 0x00699C;
 
@@ -407,13 +407,15 @@ void main()
 
 inline fastcall void draw_window()
 {	
+	int min_size_y = disc_num*16+195;
+	
 	if (GetScreenHeight()<480)
 		DefineAndDrawWindow(20,0,582,GetScreenHeight()-30,0x73,0xE4DFE1,title);
 	else
 		DefineAndDrawWindow(98,90,582,482,0x73,0xE4DFE1,title);
 	Form.GetInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return; //ничего не делать если окно схлопнуто в заголовок
-	if (Form.height<280) MoveSize(OLD,OLD,OLD,280);
+	if (Form.height<min_size_y) MoveSize(OLD,OLD,OLD,min_size_y);
 	if (Form.width<480) MoveSize(OLD,OLD,480,OLD);
 	  
 	//toolbar buttons
@@ -775,9 +777,6 @@ void Actions()
 {
 	int actions_y=disc_num*16;
 	
-	DrawBar(17,actions_y+75,160,15,lpanel_col); //синий прямоугольник - под девайсами
-	DrawBar(17,show_actions*51+actions_y+108,160,onTop(show_actions*51+actions_y+108,6),lpanel_col); //синее в конце
-
 	DeleteButton(80);
 	DeleteButton(81);
 	DeleteButton(82);
@@ -801,6 +800,25 @@ void Actions()
 		DefineButton(17,actions_y+142,159,16,82+BT_HIDE,0xE4DFE1);
 		WriteText(42,actions_y+147,0x80,0,"Create folder",0);
 		WriteText(150,actions_y+147,0x80,0x999999,"[F6]",0);
+	}
+	LeftPanel();
+}
+
+
+void LeftPanel()
+{
+	int actions_y=disc_num*16;
+	int start_y = show_actions*51+actions_y+108;
+	DrawBar(2,41,190,15,lpanel_col);		      //синий прямоугольник - над девайсами
+	DrawBar(17,actions_y+75,160,15,lpanel_col); //синий прямоугольник - под девайсами
+	DrawBar(2,56,15,actions_y+103,lpanel_col);	          //синий прямоугольник - слева       
+	DrawBar(177,56,15,actions_y+103,lpanel_col);            //синий прямоугольник - справа
+	if (onTop(start_y, 6) < 268)
+		PutPaletteImage(#blue_hl, 190, onTop(start_y, 6), 2, start_y, #blue_hl_pal);
+	else
+	{
+		DrawBar(2,start_y,190,onTop(start_y,6+268),lpanel_col);
+		PutPaletteImage(#blue_hl, 190, 268, 2, onTop(268,6), #blue_hl_pal);
 	}
 }
 
