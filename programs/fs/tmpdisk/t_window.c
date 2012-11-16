@@ -17,7 +17,7 @@
 	0};
 #endif
 
-dword icons[14*56] = FROM "icons.raw";
+unsigned char icons[14*56] = FROM "icons.raw";
 
 struct path_string {
 unsigned char Item[256];
