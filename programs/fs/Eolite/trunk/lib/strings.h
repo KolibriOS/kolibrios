@@ -49,7 +49,7 @@ f3:
      $stosb
      $jnz     f3
      $mov     eax, #buffer
-     $ret
+     //$ret
 }
 
 inline fastcall dword StrToInt()
@@ -79,8 +79,7 @@ dword StrToCol(char* htmlcolor)
     IF ((ch>='a') && (ch<='f')) ch -= 'a'-10;
     color = color*0x10 + ch;
   }
-  
-  return color;
+   return color;
 }
 
 inline fastcall signed char strcmp(ESI, EDI)
@@ -97,7 +96,7 @@ inline fastcall signed char strcmp(ESI, EDI)
 
 
 
-inline fastcall unsigned int strchr(ESI,BL)
+inline fastcall signed int strchr(ESI,BL)
 {
 	int jj=0, last=-1;
 	do{

@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.38"
+#define title "Eolite File Manager v1.4"
 dword selection_col = 0x94AECE;
 dword lpanel_col = 0x00699C;
 
@@ -56,6 +56,7 @@ int scroll_size;
 
 
 int toolbar_buttons_x[6]={9,46,85,134,167,203};
+char tmp_disk_del_param[]="d0";
 
 dword file_mas[6898];
 int j, i, mouse_dd;
@@ -229,8 +230,7 @@ void main()
 							Pause(10);
 							GetSystemDiscs();
 							Open_Dir(#path,WITH_REDRAW);
-							DrawSystemDiscs();
-							Actions();
+							DrawLeftPanel();
 							break;
 					case 80: //rename
 							goto REN_MARK; 
@@ -260,6 +260,14 @@ void main()
 							Open_Dir(#path,1);
 							Pause(5);
 							DrawRegion_3D(17,id-100*16+74,159,16, 0xFFFFFF, 0xFFFFFF);
+							break;
+					case 130...160:
+							tmp_disk_del_param[1]=disk_list[id-130].Item[4];
+							RunProgram("/sys/tmpdisk", #tmp_disk_del_param);
+							Pause(10);
+							GetSystemDiscs();
+							Open_Dir(#path,WITH_REDRAW);
+							DrawLeftPanel();
 							break;
 					default:
 							if (id<200) break; //кнопки из списка файлов
@@ -433,8 +441,7 @@ inline fastcall void draw_window()
 	//прямоугольники внутри
 	DrawRegion_3D(1,40,Form.width-12,onTop(46,0),0x94AECE,0x94AECE); //синий ободок
 	DrawRegion_3D(0,39,Form.width-10,onTop(44,0),0xE4DFE1,0xE4DFE1); //фон
-	DrawSystemDiscs();
-	Actions();
+	DrawLeftPanel();
 	//SortButtons
 	DrawFlatButton(192,40,onLeft(192,168),16,31,0xE4DFE1,"File");
 	DrawFlatButton(onLeft(168,0),40,73,16,32,0xE4DFE1,"Type");
@@ -593,7 +600,7 @@ void Open_Dir(dword temp_, redraw){
 			return;
 		}
     	count = ESDWORD[buf+8];
-    	buf = realloc(count * 304 + 32, buf);
+    	buf = realloc(count * 304 + 32, buf); //почему 32?
 		ReadDir(count, buf, #path_);
 		IF (EBX>6897) && (EBX<>-1) EBX=6897; //1 на удачу ;)
 		count=EBX;
@@ -726,17 +733,6 @@ void Paste()
 }
 
 
-void Tip(int y, dword caption, id, arrow)
-{
-	DrawBar(17,y,160,17,0xE4DFE1); //серое сверху
-	WriteText(25,y+5,0x80,0,caption,0);
-	IF (id<>0) DefineButton(159,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0xE4DFE1); //кнопа для стрелки
-	WriteText(165,y+5,0x80,0,arrow,0); //стрелка вниз
-	DrawBar(17,y+17,160,1,0x94AECE);		//подчёркивание
-}
-
-
-
 void ReName(byte rename)
 {
 	int del_file_rez;
@@ -770,56 +766,6 @@ void ReName(byte rename)
 		SelectFile(#edit_name);
 	}
 	Line_ReDraw(selection_col,curbtn);
-}
-
-
-void Actions()
-{
-	int actions_y=disc_num*16;
-	
-	DeleteButton(80);
-	DeleteButton(81);
-	DeleteButton(82);
-	
-	if (!show_actions)
-		Tip(actions_y+90, "Actions", 77, "\x18");
-	else
-	{
-		Tip(actions_y+90, "Actions", 77, "\x19"); //заголовок
-		DrawBar(17,actions_y+108,160,51,0xFFFFFF); //белое
-		PutImage(#factions,16,44,21,actions_y+113); //иконки
-		//rename file 
-		DefineButton(17,actions_y+108,159,16,80+BT_HIDE,0xE4DFE1);
-		WriteText(42,actions_y+113,0x80,0,"Rename file",0);
-		WriteText(150,actions_y+113,0x80,0x999999,"[F2]",0);
-		//delete file
-		DefineButton(17,actions_y+125,159,16,81+BT_HIDE,0xE4DFE1);
-		WriteText(42,actions_y+130,0x80,0,"Delete file",0);
-		WriteText(144,actions_y+130,0x80,0x999999,"[Del]",0);
-		//create folder
-		DefineButton(17,actions_y+142,159,16,82+BT_HIDE,0xE4DFE1);
-		WriteText(42,actions_y+147,0x80,0,"Create folder",0);
-		WriteText(150,actions_y+147,0x80,0x999999,"[F6]",0);
-	}
-	LeftPanel();
-}
-
-
-void LeftPanel()
-{
-	int actions_y=disc_num*16;
-	int start_y = show_actions*51+actions_y+108;
-	DrawBar(2,41,190,15,lpanel_col);		      //синий прямоугольник - над девайсами
-	DrawBar(17,actions_y+75,160,15,lpanel_col); //синий прямоугольник - под девайсами
-	DrawBar(2,56,15,actions_y+103,lpanel_col);	          //синий прямоугольник - слева       
-	DrawBar(177,56,15,actions_y+103,lpanel_col);            //синий прямоугольник - справа
-	if (onTop(start_y, 6) < 268)
-		PutPaletteImage(#blue_hl, 190, onTop(start_y, 6), 2, start_y, #blue_hl_pal);
-	else
-	{
-		DrawBar(2,start_y,190,onTop(start_y,6+268),lpanel_col);
-		PutPaletteImage(#blue_hl, 190, 268, 2, onTop(268,6), #blue_hl_pal);
-	}
 }
 
 

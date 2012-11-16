@@ -1,4 +1,13 @@
-//03.04.2012
+void Tip(int y, dword caption, id, arrow)
+{
+	DrawBar(17,y,160,1,0xEFEDEE);
+	DrawBar(17,y+1,160,16,0xE4DFE1); //серое сверху
+	WriteText(25,y+5,0x80,0,caption,0);
+	IF (id<>0) DefineButton(159,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0xE4DFE1); //кнопа для стрелки
+	WriteText(165,y+5,0x80,0,arrow,0); //стрелка вниз
+	DrawBar(17,y+17,160,1,0x94AECE);		//подчёркивание
+}
+
 
 path_string disk_list[20];
 int disc_num;
@@ -42,6 +51,7 @@ void DrawSystemDiscs()
 	char disc_name[100];
 	int i, dev_icon;
 	
+	for (i=0; i<20; i++) DeleteButton(i);
 	//список дисков
 	Tip(56, "Devices", 78, "=");
 	for (i=0;i<disc_num;i++)
@@ -73,11 +83,9 @@ void DrawSystemDiscs()
 				dev_icon=4;
 				strcpy(#disc_name, "RAM disk ");
 				
-				//temp[0]=dev_name[4]; //ахуеть система
-				//temp[1]=NULL;
-				//DefineButton(17+143,i*16+74,16,16,StrToInt(#temp)+130+BT_HIDE+BT_NOFRAME,0xFFFFFF);
-				//WriteText(45+121,i*16+79,0x80,0xAC0000,"-",0);
-				//WriteText(45+121,i*16+79+1,0x80,0xAC0000,"-",0);
+				DefineButton(17+143,i*16+74,16,16,i+130+BT_HIDE+BT_NOFRAME,0xFFFFFF);
+				WriteText(45+121,i*16+79,0x80,0xD63535,"-",0);
+				WriteText(45+121,i*16+79+1,0x80,0xBC2424,"-",0);
 				break;
 			default:
 				dev_icon=3; //по-умолчанию устройство выглядит как жестяк но это неправильно
@@ -89,3 +97,62 @@ void DrawSystemDiscs()
 		PutImage(dev_icon*14*13*3+#devices,14,13,21,i*16+76);
 	}
 }
+
+
+void Actions()
+{
+	int actions_y=disc_num*16;
+	
+	DeleteButton(80);
+	DeleteButton(81);
+	DeleteButton(82);
+	
+	if (!show_actions)
+		Tip(actions_y+90, "Actions", 77, "\x18");
+	else
+	{
+		Tip(actions_y+90, "Actions", 77, "\x19"); //заголовок
+		DrawBar(17,actions_y+108,160,51,0xFFFFFF); //белое
+		PutImage(#factions,16,44,21,actions_y+113); //иконки
+		//rename file 
+		DefineButton(17,actions_y+108,159,16,80+BT_HIDE,0xE4DFE1);
+		WriteText(42,actions_y+113,0x80,0,"Rename file",0);
+		WriteText(150,actions_y+113,0x80,0x999999,"[F2]",0);
+		//delete file
+		DefineButton(17,actions_y+125,159,16,81+BT_HIDE,0xE4DFE1);
+		WriteText(42,actions_y+130,0x80,0,"Delete file",0);
+		WriteText(144,actions_y+130,0x80,0x999999,"[Del]",0);
+		//create folder
+		DefineButton(17,actions_y+142,159,16,82+BT_HIDE,0xE4DFE1);
+		WriteText(42,actions_y+147,0x80,0,"Create folder",0);
+		WriteText(150,actions_y+147,0x80,0x999999,"[F6]",0);
+	}
+}
+
+
+void LeftPanelBackground()
+{
+	int actions_y=disc_num*16;
+	int start_y = show_actions*51+actions_y+108;
+	DrawBar(2,41,190,15,lpanel_col);		      //синий прямоугольник - над девайсами
+	DrawBar(17,actions_y+75,160,15,lpanel_col); //синий прямоугольник - под девайсами
+	DrawBar(2,56,15,actions_y+103,lpanel_col);	          //синий прямоугольник - слева       
+	DrawBar(177,56,15,actions_y+103,lpanel_col);            //синий прямоугольник - справа
+	if (onTop(start_y, 6) < 268)
+		PutPaletteImage(#blue_hl, 190, onTop(start_y, 6), 2, start_y, #blue_hl_pal);
+	else
+	{
+		DrawBar(2,start_y,190,onTop(start_y,6+268),lpanel_col);
+		PutPaletteImage(#blue_hl, 190, 268, 2, onTop(268,6), #blue_hl_pal);
+		if (onTop(268,6)>300) PutPaletteImage(#blue_hl, 190, 87, 2, start_y+100, #blue_hl_pal);
+	}
+}
+
+
+void DrawLeftPanel()
+{
+	DrawSystemDiscs();
+	Actions();
+	LeftPanelBackground();
+}
+
