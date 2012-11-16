@@ -9,7 +9,6 @@
 
 void about_dialog()
 {   
-	byte p;
 	mouse mm;
 	byte id, letitclose=0;
 	SetEventMask(100111b); 
