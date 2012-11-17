@@ -1914,19 +1914,19 @@ endp
 
 align 4
 img.formats_table:
-  .bmp  dd LIBIMG_FORMAT_ID_BMP,  img.is.bmp,  img.decode.bmp,     img.encode.bmp, 1 + (1 SHL Image.bpp24) + (1 SHL Image.bpp32)
-  .ico  dd LIBIMG_FORMAT_ID_ICO,  img.is.ico,  img.decode.ico_cur, img.encode.ico, 0
-  .cur  dd LIBIMG_FORMAT_ID_CUR,  img.is.cur,  img.decode.ico_cur, img.encode.cur, 0
-  .gif  dd LIBIMG_FORMAT_ID_GIF,  img.is.gif,  img.decode.gif,     img.encode.gif, 0
-  .png  dd LIBIMG_FORMAT_ID_PNG,  img.is.png,  img.decode.png,     img.encode.png, 0
-  .jpg  dd LIBIMG_FORMAT_ID_JPEG, img.is.jpg,  img.decode.jpg,     img.encode.jpg, 0
-  .tga  dd LIBIMG_FORMAT_ID_TGA,  img.is.tga,  img.decode.tga,     img.encode.tga, 0
-  .pcx  dd LIBIMG_FORMAT_ID_PCX,  img.is.pcx,  img.decode.pcx,     img.encode.pcx, 0
-  .xcf  dd LIBIMG_FORMAT_ID_XCF,  img.is.xcf,  img.decode.xcf,     img.encode.xcf, 0
-  .tiff dd LIBIMG_FORMAT_ID_TIFF, img.is.tiff, img.decode.tiff,    img.encode.tiff,0
-  .pnm  dd LIBIMG_FORMAT_ID_PNM,  img.is.pnm,  img.decode.pnm,     img.encode.pnm, 1 + (1 SHL Image.bpp1) + (1 SHL Image.bpp8g) + (1 SHL Image.bpp24)
-  .wbmp dd LIBIMG_FORMAT_ID_WBMP, img.is.wbmp, img.decode.wbmp,    img.encode.wbmp,0
-  .z80  dd LIBIMG_FORMAT_ID_Z80,  img.is.z80,  img.decode.z80,     img.encode.z80, 0 ;this must be the last entry as there are no signatures in z80 screens at all
+  .bmp  dd LIBIMG_FORMAT_BMP,  img.is.bmp,  img.decode.bmp,     img.encode.bmp, 1 + (1 SHL Image.bpp24) + (1 SHL Image.bpp32)
+  .ico  dd LIBIMG_FORMAT_ICO,  img.is.ico,  img.decode.ico_cur, img.encode.ico, 0
+  .cur  dd LIBIMG_FORMAT_CUR,  img.is.cur,  img.decode.ico_cur, img.encode.cur, 0
+  .gif  dd LIBIMG_FORMAT_GIF,  img.is.gif,  img.decode.gif,     img.encode.gif, 0
+  .png  dd LIBIMG_FORMAT_PNG,  img.is.png,  img.decode.png,     img.encode.png, 0
+  .jpg  dd LIBIMG_FORMAT_JPEG, img.is.jpg,  img.decode.jpg,     img.encode.jpg, 0
+  .tga  dd LIBIMG_FORMAT_TGA,  img.is.tga,  img.decode.tga,     img.encode.tga, 0
+  .pcx  dd LIBIMG_FORMAT_PCX,  img.is.pcx,  img.decode.pcx,     img.encode.pcx, 0
+  .xcf  dd LIBIMG_FORMAT_XCF,  img.is.xcf,  img.decode.xcf,     img.encode.xcf, 0
+  .tiff dd LIBIMG_FORMAT_TIFF, img.is.tiff, img.decode.tiff,    img.encode.tiff,0
+  .pnm  dd LIBIMG_FORMAT_PNM,  img.is.pnm,  img.decode.pnm,     img.encode.pnm, 1 + (1 SHL Image.bpp1) + (1 SHL Image.bpp8g) + (1 SHL Image.bpp24)
+  .wbmp dd LIBIMG_FORMAT_WBMP, img.is.wbmp, img.decode.wbmp,    img.encode.wbmp,0
+  .z80  dd LIBIMG_FORMAT_Z80,  img.is.z80,  img.decode.z80,     img.encode.z80, 0 ;this must be the last entry as there are no signatures in z80 screens at all
         dd 0
 
 ;;================================================================================================;;

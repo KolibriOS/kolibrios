@@ -18,7 +18,7 @@
 ;;================================================================================================;;
 
 ;;================================================================================================;;
-proc img.scale _src, _crop_x, _crop_y, _crop_width, _crop_height, _dst, _scale_type, _scale_alg, _param1, _param2 ;;
+proc img.scale _src, _crop_x, _crop_y, _crop_width, _crop_height, _dst, _scale, _inter, _param1, _param2 ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? scale _image                                                                                   ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -28,10 +28,10 @@ proc img.scale _src, _crop_x, _crop_y, _crop_width, _crop_height, _dst, _scale_t
 ;> [_crop_width]  = width of cropping rect                                                        ;;
 ;> [_crop_height] = height of cropping rect                                                       ;;
 ;> [_dst]         = pointer to resulting image / 0                                                ;;
-;> [_scale_type]  = how to change width and height. see libimg.inc                                ;;
-;> [_scale_alg]   = algorithm to use. see libimg.inc                                              ;;
-;> [_param1]      = the first argument passed to _scale_alg algorithm                             ;;
-;> [_param2]      = the second argument passed to _scale_alg algorithm                            ;;
+;> [_scale]       = how to change width and height. see libimg.inc                                ;;
+;> [_inter]       = interpolation algorithm                                                       ;;
+;> [_param1]      = see libimg.inc                                                                ;;
+;> [_param2]      = see libimg.inc                                                                ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 0 / pointer to scaled image                                                              ;;
 ;< ecx = error code / undefined                                                                   ;;
@@ -45,11 +45,11 @@ locals
 	src_width_bytes		rd 1
 	src_height_pixels	rd 1
 
-	scl_width_pixels	rd 1
-	scl_width_pixels_inv	rd 1
-	scl_height_pixels	rd 1
-	scl_height_pixels_inv	rd 1
-	scl_width_bytes		rd 1
+	dst_width_pixels	rd 1
+	dst_width_pixels_inv	rd 1
+	dst_height_pixels	rd 1
+	dst_height_pixels_inv	rd 1
+	dst_width_bytes		rd 1
 	bytes_per_pixel		rd 1
 
 	crop_width_pixels_m1	rd 1
@@ -89,7 +89,7 @@ endl
 	jne	@f
 	mov	[bytes_per_pixel], 3
 	lea	ecx, [ecx*3]
-	lea	edx, [ecx*3]
+	lea	edx, [edx*3]
 	jmp	.lab1
     @@:
 	cmp	eax, Image.bpp8g
@@ -104,27 +104,121 @@ endl
 	add	[src_data], edx
 
 
-	mov	eax, [_scale_alg]
-	cmp	eax, LIBIMG_SCALE_ALG_INTEGER
-	je	.integer
-	cmp	eax, LIBIMG_SCALE_ALG_BILINEAR
-	je	.bilinear
-	mov	ecx, LIBIMG_ERROR_SCALE_ALG
+	mov	eax, [_scale]
+	cmp	eax, LIBIMG_SCALE_INTEGER
+	je	.scale_type.integer
+	cmp	eax, LIBIMG_SCALE_TILE
+	je	.scale_type.tile
+	cmp	eax, LIBIMG_SCALE_FIT_RECT
+	je	.scale_type.fit_rect
+	cmp	eax, LIBIMG_SCALE_FIT_WIDTH
+	je	.scale_type.fit_width
+	cmp	eax, LIBIMG_SCALE_FIT_HEIGHT
+	je	.scale_type.fit_height
+	cmp	eax, LIBIMG_SCALE_FIT_MAX
+	je	.scale_type.fit_max
+	cmp	eax, LIBIMG_SCALE_STRETCH
+	je	.scale_type.stretch
+	mov	ecx, LIBIMG_ERROR_SCALE
 	jmp	.error
+
+  .scale_type.integer:
+	jmp	.integer
+  .scale_type.tile:
+	jmp	.tile
+  .scale_type.fit_rect:
+	mov	eax, [_param1]
+	shl	eax, 16
+	add	eax, 0x00008000
+	xor	edx, edx
+	div	[src_width_pixels]
+	mov	ebx, eax
+	mov	eax, [_param2]
+	shl	eax, 16
+	add	eax, 0x00008000
+	xor	edx, edx
+	div	[src_height_pixels]
+	mov	ecx, eax
+	cmp	ebx, ecx
+	jb	@f
+	mov	ebx, ecx
+    @@:
+	jmp	.scale_type.fit_common
+  .scale_type.fit_max:
+	mov	eax, [_param1]
+	shl	eax, 16
+	add	eax, 0x00008000
+	xor	edx, edx
+	div	[src_width_pixels]
+	mov	ebx, eax
+	mov	eax, [_param2]
+	shl	eax, 16
+	add	eax, 0x00008000
+	xor	edx, edx
+	div	[src_height_pixels]
+	mov	ecx, eax
+	cmp	ebx, ecx
+	ja	@f
+	mov	ebx, ecx
+    @@:
+	jmp	.scale_type.fit_common
+  .scale_type.fit_width:
+	mov	eax, [_param1]
+	shl	eax, 16
+	add	eax, 0x00008000
+	xor	edx, edx
+	div	[src_width_pixels]
+	mov	ebx, eax
+	jmp	.scale_type.fit_common
+  .scale_type.fit_height:
+	mov	eax, [_param2]
+	shl	eax, 16
+	add	eax, 0x00008000
+	xor	edx, edx
+	div	[src_height_pixels]
+	mov	ebx, eax
+	jmp	.scale_type.fit_common
+  .scale_type.fit_common:
+	mov	eax, [src_width_pixels]
+	mul	ebx
+	shr	eax, 16
+	mov	[dst_width_pixels], eax
+	imul	eax, [bytes_per_pixel]
+	mov	[dst_width_bytes], eax
+	mov	eax, [src_height_pixels]
+	mul	ebx
+	shr	eax, 16
+	mov	[dst_height_pixels], eax
+	jmp	.define_inter
+  .scale_type.stretch:
+	mov	eax, [_param1]
+	mov	[dst_width_pixels], eax
+	imul	eax, [bytes_per_pixel]
+	mov	[dst_width_bytes], eax
+	mov	ecx, [_param2]
+	mov	[dst_height_pixels], ecx
+	jmp	.define_inter
+  .define_inter:
+	mov	eax, [_inter]
+	cmp	eax, LIBIMG_INTER_BILINEAR
+	je	.bilinear
+	mov	ecx, LIBIMG_ERROR_INTER
+	jmp	.error
+
 
   .integer:
 	mov	eax, [_param1]
 	mov	ecx, [_crop_width]
 	imul	ecx, eax
-	mov	[scl_width_pixels], ecx
+	mov	[dst_width_pixels], ecx
 	mov	edx, [_crop_height]
 	imul	edx, eax
-	mov	[scl_height_pixels], edx
+	mov	[dst_height_pixels], edx
 
 	mov	eax, [_dst]
 	test	eax, eax
 	jnz	@f
-	stdcall	img.create, [scl_width_pixels], [scl_height_pixels], [src_type]
+	stdcall	img.create, [dst_width_pixels], [dst_height_pixels], [src_type]
 	test	eax, eax
 	jz	.error
 	mov	[_dst], eax
@@ -144,8 +238,8 @@ endl
 	jmp	.error
 
   .integer.bpp8g:
-	push	[scl_width_pixels]
-	pop	[scl_width_bytes]
+	push	[dst_width_pixels]
+	pop	[dst_width_bytes]
 	mov	ecx, [_param1]
 ;	cmp	ecx, 1
 ;	je	.error
@@ -163,10 +257,10 @@ endl
 	jnz	@b
 	push	esi
 	mov	esi, edi
-	sub	esi, [scl_width_bytes]
+	sub	esi, [dst_width_bytes]
 	mov	ecx, edx
 	dec	ecx
-	imul	ecx, [scl_width_bytes]
+	imul	ecx, [dst_width_bytes]
 	mov	eax, ecx
 	shr	ecx, 2
 	and	eax, 0x00000003
@@ -184,9 +278,9 @@ endl
 	jmp	.quit
 
   .integer.bpp24:
-	mov	eax, [scl_width_pixels]
+	mov	eax, [dst_width_pixels]
 	lea	eax, [eax*3]
-	mov	[scl_width_bytes], eax
+	mov	[dst_width_bytes], eax
 	mov	ecx, [_param1]
 ;	cmp	ecx, 1
 ;	je	.error
@@ -211,10 +305,10 @@ endl
 	jnz	@b
 	push	esi
 	mov	esi, edi
-	sub	esi, [scl_width_bytes]
+	sub	esi, [dst_width_bytes]
 	mov	ecx, edx
 	dec	ecx
-	imul	ecx, [scl_width_bytes]
+	imul	ecx, [dst_width_bytes]
 	mov	eax, ecx
 	shr	ecx, 2
 	and	eax, 0x00000003
@@ -233,9 +327,9 @@ endl
 	jmp	.quit
 
   .integer.bpp32:
-	mov	eax, [scl_width_pixels]
+	mov	eax, [dst_width_pixels]
 	shl	eax, 2
-	mov	[scl_width_bytes], eax
+	mov	[dst_width_bytes], eax
 	mov	ecx, [_param1]
 ;	cmp	ecx, 1
 ;	je	.error
@@ -253,10 +347,10 @@ endl
 	jnz	@b
 	push	esi
 	mov	esi, edi
-	sub	esi, [scl_width_bytes]
+	sub	esi, [dst_width_bytes]
 	mov	ecx, edx
 	dec	ecx
-	imul	ecx, [scl_width_bytes]
+	imul	ecx, [dst_width_bytes]
 	shr	ecx, 2
 	rep	movsd
 	pop	esi
@@ -271,98 +365,73 @@ endl
 	jmp	.quit
 
 
-  .bilinear:
-	mov	eax, [_scale_type]
-	cmp	eax, LIBIMG_SCALE_TYPE_FIT_RECT
-	je	.bilinear.fit_rect
-	cmp	eax, LIBIMG_SCALE_TYPE_FIT_WIDTH
-	je	.bilinear.fit_width
-	cmp	eax, LIBIMG_SCALE_TYPE_FIT_HEIGHT
-	je	.bilinear.fit_height
-	cmp	eax, LIBIMG_SCALE_TYPE_FIT_MAX
-	je	.bilinear.fit_max
-	cmp	eax, LIBIMG_SCALE_TYPE_STRETCH
-	je	.bilinear.stretch
-	mov	ecx, LIBIMG_ERROR_SCALE_TYPE
-	jmp	.error
-  .bilinear.fit_rect:
+  .tile:
 	mov	eax, [_param1]
-	shl	eax, 16
-	add	eax, 0x00008000
-	xor	edx, edx
-	div	[src_width_pixels]
-	mov	ebx, eax
-	mov	eax, [_param2]
-	shl	eax, 16
-	add	eax, 0x00008000
-	xor	edx, edx
-	div	[src_height_pixels]
-	mov	ecx, eax
-	cmp	ebx, ecx
-	jb	@f
-	mov	ebx, ecx
-    @@:
-	jmp	.bilinear.fit_common
-  .bilinear.fit_max:
-	mov	eax, [_param1]
-	shl	eax, 16
-	add	eax, 0x00008000
-	xor	edx, edx
-	div	[src_width_pixels]
-	mov	ebx, eax
-	mov	eax, [_param2]
-	shl	eax, 16
-	add	eax, 0x00008000
-	xor	edx, edx
-	div	[src_height_pixels]
-	mov	ecx, eax
-	cmp	ebx, ecx
-	ja	@f
-	mov	ebx, ecx
-    @@:
-	jmp	.bilinear.fit_common
-  .bilinear.fit_width:
-	mov	eax, [_param1]
-	shl	eax, 16
-	add	eax, 0x00008000
-	xor	edx, edx
-	div	[src_width_pixels]
-	mov	ebx, eax
-	jmp	.bilinear.fit_common
-  .bilinear.fit_height:
-	mov	eax, [_param2]
-	shl	eax, 16
-	add	eax, 0x00008000
-	xor	edx, edx
-	div	[src_height_pixels]
-	mov	ebx, eax
-	jmp	.bilinear.fit_common
-  .bilinear.fit_common:
-	mov	eax, [src_width_pixels]
-	mul	ebx
-	shr	eax, 16
-	mov	[scl_width_pixels], eax
+	mov	[dst_width_pixels], eax
 	imul	eax, [bytes_per_pixel]
-	mov	[scl_width_bytes], eax
-	mov	eax, [src_height_pixels]
-	mul	ebx
-	shr	eax, 16
-	mov	[scl_height_pixels], eax
-	jmp	.bilinear.common
-  .bilinear.stretch:
-	mov	eax, [_param1]
-	mov	[scl_width_pixels], eax
-	imul	eax, [bytes_per_pixel]
-	mov	[scl_width_bytes], eax
-	mov	ecx, [_param2]
-	mov	[scl_height_pixels], ecx
-	jmp	.bilinear.common
+	mov	[dst_width_bytes], eax
+	mov	eax, [_param2]
+	mov	[dst_height_pixels], eax
 
-  .bilinear.common:
 	mov	eax, [_dst]
 	test	eax, eax
 	jnz	@f
-	stdcall	img.create, [scl_width_pixels], [scl_height_pixels], [src_type]
+	stdcall	img.create, [dst_width_pixels], [dst_height_pixels], [src_type]
+	test	eax, eax
+	jz	.error
+	mov	[_dst], eax
+    @@:
+	mov	edi, [eax + Image.Data]
+	mov	[dst_data], edi
+
+	mov	esi, [src_data]
+	mov	eax, [_crop_height]
+	cmp	eax, [dst_height_pixels]
+	jna	@f
+	mov	eax, [dst_height_pixels]
+    @@:
+	push	eax
+	mov	ecx, [_crop_width]
+	cmp	ecx, [dst_width_pixels]
+	jna	@f
+	mov	ecx, [dst_width_pixels]
+    @@:
+	imul	ecx, [bytes_per_pixel]
+	mov	edx, ecx
+    @@:
+	mov	ecx, edx
+	rep	movsb
+
+	push	esi
+	mov	esi, edi
+	sub	esi, edx
+	mov	ecx, [dst_width_bytes]
+	sub	ecx, edx
+	rep	movsb
+	pop	esi
+
+	mov	ecx, [src_width_bytes]
+	sub	ecx, edx
+	add	esi, ecx
+	dec	eax
+	jnz	@b
+
+	pop	eax
+	mov	esi, [dst_data]
+	mov	ecx, [dst_height_pixels]
+	sub	ecx, eax
+	imul	ecx, [dst_width_bytes]
+	rep	movsb
+
+	mov	eax, [_dst]
+	jmp	.quit
+
+
+  .bilinear:
+	mov	eax, [_dst]
+	test	eax, eax
+	jnz	@f
+	stdcall	img.create, [dst_width_pixels], [dst_height_pixels], [src_type]
 	test	eax, eax
 	jz	.error
 	mov	[_dst], eax
@@ -379,12 +448,12 @@ endl
 
 	mov	eax, 0xffffffff
 	xor	edx, edx
-	div	[scl_width_pixels]
-	mov	[scl_width_pixels_inv], eax
+	div	[dst_width_pixels]
+	mov	[dst_width_pixels_inv], eax
 	mov	eax, 0xffffffff
 	xor	edx, edx
-	div	[scl_height_pixels]
-	mov	[scl_height_pixels_inv], eax
+	div	[dst_height_pixels]
+	mov	[dst_height_pixels_inv], eax
 
 	mov	eax, [src_type]
 	cmp	eax, Image.bpp8g
@@ -405,7 +474,7 @@ endl
 	mov	[dst_x], 0
 	imul	eax, [crop_height_pixels_m1]
 	xor	edx, edx
-	div	[scl_height_pixels]
+	div	[dst_height_pixels]
 	mov	[rem_y], edx
 	imul	eax, [src_width_bytes]
 	add	esi, eax
@@ -417,7 +486,7 @@ endl
 
 	imul	eax, [crop_width_pixels_m1]
 	xor	edx, edx
-	div	[scl_width_pixels]
+	div	[dst_width_pixels]
 	add	esi, eax
 
 	mov	ax, word[esi]
@@ -432,12 +501,12 @@ endl
 	imul	edx, esi
 	imul	ecx, esi
 	neg	esi
-	add	esi, [scl_width_pixels]
+	add	esi, [dst_width_pixels]
 	imul	eax, esi
 	imul	ebx, esi
 	add	eax, edx
 	add	ebx, ecx
-	mov	esi, [scl_width_pixels_inv]
+	mov	esi, [dst_width_pixels_inv]
 	mul	esi
 	mov	ecx, edx
 	mov	eax, ebx
@@ -447,21 +516,21 @@ endl
 	mov	edx, [rem_y]
 	imul	eax, edx
 	neg	edx
-	add	edx, [scl_height_pixels]
+	add	edx, [dst_height_pixels]
 	imul	ecx, edx
 	add	eax, ecx
-	mul	[scl_height_pixels_inv]
+	mul	[dst_height_pixels_inv]
 	mov	byte[edi], dl
 	add	edi, 1
 
 	add	[dst_x], 1
 	mov	eax, [dst_x]
-	cmp	eax, [scl_width_pixels]
+	cmp	eax, [dst_width_pixels]
 	jne	.bilinear.bpp8g.pixel
 
 	add	[dst_y], 1
 	mov	eax, [dst_y]
-	cmp	eax, [scl_height_pixels]
+	cmp	eax, [dst_height_pixels]
 	jne	.bilinear.bpp8g.line
 
 	mov	eax, [_dst]
@@ -477,7 +546,7 @@ endl
 	mov	[dst_x], 0
 	imul	eax, [crop_height_pixels_m1]
 	xor	edx, edx
-	div	[scl_height_pixels]
+	div	[dst_height_pixels]
 	mov	[rem_y], edx
 	imul	eax, [src_width_bytes]
 	add	esi, eax
@@ -489,7 +558,7 @@ endl
 
 	imul	eax, [crop_width_pixels_m1]
 	xor	edx, edx
-	div	[scl_width_pixels]
+	div	[dst_width_pixels]
 	lea	eax, [eax*3]
 	add	esi, eax
 
@@ -514,12 +583,12 @@ repeat 3
 	imul	edx, esi
 	imul	ecx, esi
 	neg	esi
-	add	esi, [scl_width_pixels]
+	add	esi, [dst_width_pixels]
 	imul	eax, esi
 	imul	ebx, esi
 	add	eax, edx
 	add	ebx, ecx
-	mov	esi, [scl_width_pixels_inv]
+	mov	esi, [dst_width_pixels_inv]
 	mul	esi
 	mov	ecx, edx
 	mov	eax, ebx
@@ -529,22 +598,22 @@ repeat 3
 	mov	edx, [rem_y]
 	imul	eax, edx
 	neg	edx
-	add	edx, [scl_height_pixels]
+	add	edx, [dst_height_pixels]
 	imul	ecx, edx
 	add	eax, ecx
-	mul	[scl_height_pixels_inv]
+	mul	[dst_height_pixels_inv]
 	mov	byte[edi], dl
 	add	edi, 1
 end repeat
 
 	add	[dst_x], 1
 	mov	eax, [dst_x]
-	cmp	eax, [scl_width_pixels]
+	cmp	eax, [dst_width_pixels]
 	jne	.bilinear.bpp24.pixel
 
 	add	[dst_y], 1
 	mov	eax, [dst_y]
-	cmp	eax, [scl_height_pixels]
+	cmp	eax, [dst_height_pixels]
 	jne	.bilinear.bpp24.line
 
 	mov	eax, [_dst]
@@ -559,7 +628,7 @@ end repeat
 	mov	[dst_x], 0
 	imul	eax, [crop_height_pixels_m1]
 	xor	edx, edx
-	div	[scl_height_pixels]
+	div	[dst_height_pixels]
 	mov	[rem_y], edx
 	imul	eax, [src_width_bytes]
 	add	esi, eax
@@ -571,7 +640,7 @@ end repeat
 
 	imul	eax, [crop_width_pixels_m1]
 	xor	edx, edx
-	div	[scl_width_pixels]
+	div	[dst_width_pixels]
 	shl	eax, 2
 	add	esi, eax
 
@@ -596,12 +665,12 @@ repeat 4
 	imul	edx, esi
 	imul	ecx, esi
 	neg	esi
-	add	esi, [scl_width_pixels]
+	add	esi, [dst_width_pixels]
 	imul	eax, esi
 	imul	ebx, esi
 	add	eax, edx
 	add	ebx, ecx
-	mov	esi, [scl_width_pixels_inv]
+	mov	esi, [dst_width_pixels_inv]
 	mul	esi
 	mov	ecx, edx
 	mov	eax, ebx
@@ -611,22 +680,22 @@ repeat 4
 	mov	edx, [rem_y]
 	imul	eax, edx
 	neg	edx
-	add	edx, [scl_height_pixels]
+	add	edx, [dst_height_pixels]
 	imul	ecx, edx
 	add	eax, ecx
-	mul	[scl_height_pixels_inv]
+	mul	[dst_height_pixels_inv]
 	mov	byte[edi], dl
 	add	edi, 1
 end repeat
 
 	add	[dst_x], 1
 	mov	eax, [dst_x]
-	cmp	eax, [scl_width_pixels]
+	cmp	eax, [dst_width_pixels]
 	jne	.bilinear.bpp32.pixel
 
 	add	[dst_y], 1
 	mov	eax, [dst_y]
-	cmp	eax, [scl_height_pixels]
+	cmp	eax, [dst_height_pixels]
 	jne	.bilinear.bpp32.line
 
 	mov	eax, [_dst]

@@ -110,18 +110,12 @@ proc	draw_image
 	inc	edx
 
 	mov	ebx, [image_initial]
-;	invoke	img.scale, ebx, 1, 2, 5, 5, 0, LIBIMG_SCALE_TYPE_STRETCH, LIBIMG_SCALE_ALG_BILINEAR, edx, ecx
-;	invoke	img.scale, ebx, 1, 2, 5, 5, 0, LIBIMG_SCALE_TYPE_STRETCH, LIBIMG_SCALE_ALG_INTEGER, 3, 3
-	invoke	img.scale, ebx, 0, 0, [ebx + Image.Width], [ebx + Image.Height], 0, LIBIMG_SCALE_TYPE_STRETCH, LIBIMG_SCALE_ALG_BILINEAR, edx, ecx
+;	invoke	img.scale, ebx, 0, 0, [ebx + Image.Width], [ebx + Image.Height], 0, LIBIMG_SCALE_INTEGER, LIBIMG_INTER_NONE,     5, 5
+;	invoke	img.scale, ebx, 1, 2,                   5,                    5, 0, LIBIMG_SCALE_TILE,    LIBIMG_INTER_NONE,     edx, ecx
+;	invoke	img.scale, ebx, 0, 0, [ebx + Image.Width], [ebx + Image.Height], 0, LIBIMG_SCALE_TILE,    LIBIMG_INTER_NONE,     edx, ecx
+;	invoke	img.scale, ebx, 1, 2,                   5,                    5, 0, LIBIMG_SCALE_STRETCH, LIBIMG_INTER_BILINEAR, edx, ecx
+	invoke	img.scale, ebx, 0, 0, [ebx + Image.Width], [ebx + Image.Height], 0, LIBIMG_SCALE_STRETCH, LIBIMG_INTER_BILINEAR, edx, ecx
 
-; proc img.scale _src, _crop_x, _crop_y, _crop_width, _crop_height, _dst, _scale_type, _scale_alg, _param1, _param2
-; see libimg.inc for available scale types and algorithms
-; LIBIMG_SCALE_ALG_BILINEAR: _param1, _param2 -- width and height of rectangle to fit _src image to
-; LIBIMG_SCALE_ALG_INTEGER:  _param1 -- scale factor (i.e. 3 means scaling 7x7 to 21x21); _param2 ignored
-; LIBIMG_SCALE_TYPE_*: just try and see, they are common STRETCH, FIT_BY_WIDTH etc.
-; returns pointer to a scaled image
-
-;	invoke	img.scale, ebx, 0, 0, [ebx + Image.Width], [ebx + Image.Height], 0, LIBIMG_SCALE_TYPE_STRETCH, LIBIMG_SCALE_ALG_INTEGER, 3, 3
 	test	eax, eax
 	jz	exit
 	mov	[image_scaled], eax
@@ -134,17 +128,18 @@ endp
 ;-----------------------------------------------------------------------------
 
 window_title	db 'img.scale example',0
-
-input_file	db '/hd0/1/gray_5x7.tiff',0
-;input_file	db '/hd0/1/grayscale_123x123.tiff',0
-;input_file	db '/hd0/1/grayscale_357x357.tiff',0
-;input_file	db '/hd0/1/grayscale_620x620.tiff',0
-;input_file	db '/hd0/1/rgb_220.jpg',0
-;input_file	db '/hd0/1/rgba_217.tiff',0
-;input_file	db '/hd0/1/rgb_7x9.tiff',0
-;input_file	db '/hd0/1/rgba_7x9.tiff',0
-;input_file	db '/hd0/1/gray_7x9.tiff',0
-;input_file	db '/hd0/1/rgb_70x90.png',0
+input_file:
+;	db '/hd0/1/gray_5x7.tiff',0
+	db '/hd0/1/rgb_lzw_le_2x2.tiff',0
+;	db '/hd0/1/grayscale_123x123.tiff',0
+;	db '/hd0/1/grayscale_357x357.tiff',0
+;	db '/hd0/1/grayscale_620x620.tiff',0
+;	db '/hd0/1/rgb_220.jpg',0
+;	db '/hd0/1/rgba_217.tiff',0
+;	db '/hd0/1/rgb_7x9.tiff',0
+;	db '/hd0/1/rgba_7x9.tiff',0
+;	db '/hd0/1/gray_7x9.tiff',0
+;	db '/hd0/1/rgb_70x90.png',0
 ;-----------------------------------------------------------------------------
 
 align 4

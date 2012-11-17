@@ -395,6 +395,8 @@ endl
   .post.predictor:
 	cmp	[ebx + tiff_extra.predictor], 2		; Horizontal differencing
 	jne	.post.end
+	cmp	[ebx + tiff_extra.image_width], 1
+	je	.post.end
 	push	ebx
 	mov	edi, [ebx + tiff_extra.samples_per_pixel]
 	mov	edx, edi
