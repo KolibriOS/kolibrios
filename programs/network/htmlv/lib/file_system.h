@@ -201,3 +201,8 @@ inline fastcall void GetCurDir( ECX, EDX)
     $mov ebx,2
     $int 0x40
 }
+
+void notify(dword notify_param)
+{
+	RunProgram("@notify", notify_param);
+}

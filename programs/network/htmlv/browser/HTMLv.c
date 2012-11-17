@@ -106,9 +106,8 @@ void main()
 	if (load_dll2(libimg, #libimg_init,1)!=0) debug("Не удалось подключить библиотеку libimg"w);
 	if (load_dll2(boxlib, #edit_box_draw,0)!=0) {RunProgram("@notify", "System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
 	load_dll2(#abox_lib, #boxlib_init,0);
-	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Не удалось подключить библиотеку TrueType"w); use_truetype = 2;}
-	
-	init_font(#fontlol);
+	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Не удалось подключить библиотеку TrueType"w); use_truetype = 2; }
+	else init_font(#fontlol);
 	
 	if (!URL) strcpy(#URL, "/sys/home.htm");
 	strcpy(#editURL, #URL);

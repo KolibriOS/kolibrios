@@ -24,6 +24,8 @@ char program_path[4096];
 #define true      1
 #define false     0
 
+#define NULL      0
+
 //Button options
 #define BT_DEL      0x80000000
 #define BT_HIDE     0x40000000
@@ -148,6 +150,30 @@ inline fastcall word GetButtonID()
 }
 
 //----------------------------------------
+
+inline fastcall dword GetFreeRAM()
+{
+	$mov eax, 18
+	$mov ebx, 16
+	$int 0x40
+	//return eax = размер свободной пам€ти в килобайтах
+}
+
+inline fastcall dword LoadDriver( ECX) //ECX - им€ драйвера
+{
+	$mov eax, 68
+	$mov ebx, 16
+	$int 0x40
+	//return 0 - неудача, иначе eax = хэндл драйвера 
+}
+
+inline fastcall dword RuleDriver( ECX) //указатель на управл€ющую структуру
+{
+	$mov eax, 68
+	$mov ebx, 17
+	$int 0x40
+	//return eax = определ€етс€ драйвером
+}
 
 struct proc_info
 {
@@ -361,6 +387,14 @@ dword GetPixelColor(dword x, x_size, y)
 }
 
 void PutImage(dword EBX,w,h,x,y)
+{
+	EAX = 7;
+	ECX = w<<16+h;
+	EDX = x<<16+y;
+	$int 0x40
+}
+
+void _PutImage(dword x,y, w,h, EBX)
 {
 	EAX = 7;
 	ECX = w<<16+h;

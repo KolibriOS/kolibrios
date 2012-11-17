@@ -9,7 +9,7 @@
 // itoa( ESI)
 // atoi( EAX)
 // strupr( ESI)
-// strlwr( ESI)
+// strlwr( ESI) ----- возможно не поддерживает кириллицу
 // strttl( EDX)
 // strtok( ESI)
 //------------------------------------------------------------------------------
@@ -130,38 +130,42 @@ inline fastcall strcat( EDI, ESI)
 	}
 }
 
-char buffer[11];
-inline fastcall dword itoa( ESI)
+dword itoa( ESI)
 {
-     $mov     edi, #buffer
-     $mov     ecx, 10
-     $test     esi, esi
-     $jns     f1
-     $mov     al, '-'
-     $stosb
-     $neg     esi
-f1:
-     $mov     eax, esi
-     $push     -'0'
+	unsigned char buffer[11];
+	EDI = #buffer;
+	ECX = 10;
+	if (ESI < 0)
+	{
+		 $mov     al, '-'
+		 $stosb
+		 $neg     esi
+	}
+
+	$mov     eax, esi
+	$push    -'0'
 f2:
-     $xor     edx, edx
-     $div     ecx
-     $push     edx
-     $test     eax, eax
-     $jnz     f2
+	$xor     edx, edx
+	$div     ecx
+	$push    edx
+	$test    eax, eax
+	$jnz     f2
 f3:
-     $pop     eax
-     $add     al, '0'
-     $stosb
-     $jnz     f3
-     $mov     eax, #buffer
-     $ret
+	$pop     eax
+	$add     al, '0'
+	$stosb
+	$jnz     f3
+	
+	$mov     al, '\0'
+	$stosb
+	 
+     return #buffer;
 } 
+
 
 
 inline fastcall dword atoi( EDI)
 {
-	//ESI=EDI=EAX;
 	ESI=EDI;
 	IF(DSBYTE[ESI]=='-')ESI++;
 	EAX=0;
@@ -175,7 +179,7 @@ inline fastcall dword atoi( EDI)
 }
 
 
-inline fastcall unsigned int strchr( ESI,BL)
+inline fastcall signed int strchr( ESI,BL)
 {
 	int jj=0;
 	do{
@@ -183,10 +187,11 @@ inline fastcall unsigned int strchr( ESI,BL)
 		$lodsb
 		IF(AL==BL) return jj;
 	} while(AL!=0);
+	return 0;
 }
 
 
-inline fastcall unsigned int strrchr( ESI,BL)
+inline fastcall signed int strrchr( ESI,BL)
 {
 	int jj=0, last=-1;
 	do{
@@ -276,18 +281,6 @@ LS2: XOR EAX, EAX
 LS3:
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
