@@ -42,6 +42,14 @@
 
 #define DRM_IRQ_ARGS            void *arg
 
+static struct drm_driver {
+    irqreturn_t(*irq_handler) (DRM_IRQ_ARGS);
+    void (*irq_preinstall) (struct drm_device *dev);
+    int (*irq_postinstall) (struct drm_device *dev);
+}drm_driver;
+
+static struct drm_driver *driver = &drm_driver;
+
 #define DRM_WAKEUP( queue ) wake_up( queue )
 #define DRM_INIT_WAITQUEUE( queue ) init_waitqueue_head( queue )
 
@@ -2134,8 +2142,8 @@ static irqreturn_t i915_irq_handler(DRM_IRQ_ARGS)
 			int plane = pipe;
 			if (IS_MOBILE(dev))
 				plane = !plane;
-			if (pipe_stats[pipe] & PIPE_VBLANK_INTERRUPT_STATUS &&
-			    drm_handle_vblank(dev, pipe)) {
+            if (pipe_stats[pipe] & PIPE_VBLANK_INTERRUPT_STATUS /* &&
+                drm_handle_vblank(dev, pipe) */) {
 				if (iir & flip[plane]) {
 //					intel_prepare_page_flip(dev, plane);
 //					intel_finish_page_flip(dev, pipe);
@@ -2378,11 +2386,11 @@ static irqreturn_t i965_irq_handler(DRM_IRQ_ARGS)
 //			intel_prepare_page_flip(dev, 1);
 
 		for_each_pipe(pipe) {
-			if (pipe_stats[pipe] & PIPE_START_VBLANK_INTERRUPT_STATUS &&
-			    drm_handle_vblank(dev, pipe)) {
+//           if (pipe_stats[pipe] & PIPE_START_VBLANK_INTERRUPT_STATUS &&
+//               drm_handle_vblank(dev, pipe)) {
 //				i915_pageflip_stall_check(dev, pipe);
 //				intel_finish_page_flip(dev, pipe);
-			}
+//           }
 
 			if (pipe_stats[pipe] & PIPE_LEGACY_BLC_EVENT_STATUS)
 				blc_event = true;
@@ -2441,90 +2449,47 @@ static void i965_irq_uninstall(struct drm_device * dev)
 void intel_irq_init(struct drm_device *dev)
 {
 	struct drm_i915_private *dev_priv = dev->dev_private;
-#if 0
-//	INIT_WORK(&dev_priv->hotplug_work, i915_hotplug_work_func);
-//	INIT_WORK(&dev_priv->error_work, i915_error_work_func);
-//	INIT_WORK(&dev_priv->rps.work, gen6_pm_rps_work);
-//	INIT_WORK(&dev_priv->parity_error_work, ivybridge_parity_work);
-
-	dev->driver->get_vblank_counter = i915_get_vblank_counter;
-	dev->max_vblank_count = 0xffffff; /* only 24 bits of frame count */
-	if (IS_G4X(dev) || INTEL_INFO(dev)->gen >= 5) {
-		dev->max_vblank_count = 0xffffffff; /* full 32 bit counter */
-		dev->driver->get_vblank_counter = gm45_get_vblank_counter;
-	}
-
-//	if (drm_core_check_feature(dev, DRIVER_MODESET))
-		dev->driver->get_vblank_timestamp = i915_get_vblank_timestamp;
-//	else
-//		dev->driver->get_vblank_timestamp = NULL;
-	dev->driver->get_scanout_position = i915_get_crtc_scanoutpos;
 
 	if (IS_VALLEYVIEW(dev)) {
-		dev->driver->irq_handler = valleyview_irq_handler;
-		dev->driver->irq_preinstall = valleyview_irq_preinstall;
-		dev->driver->irq_postinstall = valleyview_irq_postinstall;
-		dev->driver->irq_uninstall = valleyview_irq_uninstall;
-		dev->driver->enable_vblank = valleyview_enable_vblank;
-		dev->driver->disable_vblank = valleyview_disable_vblank;
+        driver->irq_handler = valleyview_irq_handler;
+        driver->irq_preinstall = valleyview_irq_preinstall;
+        driver->irq_postinstall = valleyview_irq_postinstall;
 	} else if (IS_IVYBRIDGE(dev)) {
 		/* Share pre & uninstall handlers with ILK/SNB */
-		dev->driver->irq_handler = ivybridge_irq_handler;
-		dev->driver->irq_preinstall = ironlake_irq_preinstall;
-		dev->driver->irq_postinstall = ivybridge_irq_postinstall;
-		dev->driver->irq_uninstall = ironlake_irq_uninstall;
-		dev->driver->enable_vblank = ivybridge_enable_vblank;
-		dev->driver->disable_vblank = ivybridge_disable_vblank;
+        driver->irq_handler = ivybridge_irq_handler;
+        driver->irq_preinstall = ironlake_irq_preinstall;
+        driver->irq_postinstall = ivybridge_irq_postinstall;
 	} else if (IS_HASWELL(dev)) {
 		/* Share interrupts handling with IVB */
-		dev->driver->irq_handler = ivybridge_irq_handler;
-		dev->driver->irq_preinstall = ironlake_irq_preinstall;
-		dev->driver->irq_postinstall = ivybridge_irq_postinstall;
-		dev->driver->irq_uninstall = ironlake_irq_uninstall;
-		dev->driver->enable_vblank = ivybridge_enable_vblank;
-		dev->driver->disable_vblank = ivybridge_disable_vblank;
+        driver->irq_handler = ivybridge_irq_handler;
+        driver->irq_preinstall = ironlake_irq_preinstall;
+        driver->irq_postinstall = ivybridge_irq_postinstall;
 	} else if (HAS_PCH_SPLIT(dev)) {
-		dev->driver->irq_handler = ironlake_irq_handler;
-		dev->driver->irq_preinstall = ironlake_irq_preinstall;
-		dev->driver->irq_postinstall = ironlake_irq_postinstall;
-		dev->driver->irq_uninstall = ironlake_irq_uninstall;
-		dev->driver->enable_vblank = ironlake_enable_vblank;
-		dev->driver->disable_vblank = ironlake_disable_vblank;
+        driver->irq_handler = ironlake_irq_handler;
+        driver->irq_preinstall = ironlake_irq_preinstall;
+        driver->irq_postinstall = ironlake_irq_postinstall;
 	} else {
 		if (INTEL_INFO(dev)->gen == 2) {
-			dev->driver->irq_preinstall = i8xx_irq_preinstall;
-			dev->driver->irq_postinstall = i8xx_irq_postinstall;
-			dev->driver->irq_handler = i8xx_irq_handler;
-			dev->driver->irq_uninstall = i8xx_irq_uninstall;
 		} else if (INTEL_INFO(dev)->gen == 3) {
-			dev->driver->irq_preinstall = i915_irq_preinstall;
-			dev->driver->irq_postinstall = i915_irq_postinstall;
-			dev->driver->irq_uninstall = i915_irq_uninstall;
-			dev->driver->irq_handler = i915_irq_handler;
+            driver->irq_handler = i915_irq_handler;
+            driver->irq_preinstall = i915_irq_preinstall;
+            driver->irq_postinstall = i915_irq_postinstall;
 		} else {
-			dev->driver->irq_preinstall = i965_irq_preinstall;
-			dev->driver->irq_postinstall = i965_irq_postinstall;
-			dev->driver->irq_uninstall = i965_irq_uninstall;
-			dev->driver->irq_handler = i965_irq_handler;
+            driver->irq_handler = i965_irq_handler;
+            driver->irq_preinstall = i965_irq_preinstall;
+            driver->irq_postinstall = i965_irq_postinstall;
 		}
-		dev->driver->enable_vblank = i915_enable_vblank;
-		dev->driver->disable_vblank = i915_disable_vblank;
 	}
-#endif
 }
 
-
-static struct drm_device *irq_device;
-
-void irq_handler_kms()
-{
-    ironlake_irq_handler(irq_device);
-}
 
 int drm_irq_install(struct drm_device *dev)
 {
+    unsigned long sh_flags = 0;
     int irq_line;
     int ret = 0;
+
+    char *irqname;
 
     mutex_lock(&dev->struct_mutex);
 
@@ -2541,39 +2506,28 @@ int drm_irq_install(struct drm_device *dev)
     dev->irq_enabled = 1;
     mutex_unlock(&dev->struct_mutex);
 
-    irq_device = dev;
     irq_line   = drm_dev_to_irq(dev);
 
     DRM_DEBUG("irq=%d\n", drm_dev_to_irq(dev));
 
-    ironlake_irq_preinstall(dev);
+    /* Before installing handler */
+    if (driver->irq_preinstall)
+            driver->irq_preinstall(dev);
 
-    ret = AttachIntHandler(irq_line, irq_handler_kms, 2);
-    if (ret == 0) {
-        mutex_lock(&dev->struct_mutex);
-        dev->irq_enabled = 0;
-        mutex_unlock(&dev->struct_mutex);
-        return ret;
+    ret = AttachIntHandler(irq_line, driver->irq_handler, (u32)dev);
+
+    /* After installing handler */
+    if (driver->irq_postinstall)
+            ret = driver->irq_postinstall(dev);
+
+    if (ret < 0) {
+            DRM_ERROR(__FUNCTION__);
     }
 
-    ret = ironlake_irq_postinstall(dev);
-
-//    if (ret < 0) {
-//        mutex_lock(&dev->struct_mutex);
-//        dev->irq_enabled = 0;
-//        mutex_unlock(&dev->struct_mutex);
-//        free_irq(drm_dev_to_irq(dev), dev);
-//    }
-
     u16_t cmd = PciRead16(dev->pdev->busnr, dev->pdev->devfn, 4);
-
     cmd&= ~(1<<10);
-
     PciWrite16(dev->pdev->busnr, dev->pdev->devfn, 4, cmd);
 
-    DRM_DEBUG("i915: irq initialized.\n");
     return ret;
 }
-
-
 

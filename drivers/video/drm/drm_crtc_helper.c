@@ -353,8 +353,6 @@ bool drm_crtc_helper_set_mode(struct drm_crtc *crtc,
 	struct drm_encoder *encoder;
 	bool ret = true;
 
-    ENTER();
-
 	crtc->enabled = drm_helper_crtc_in_use(crtc);
 	if (!crtc->enabled)
 		return true;
@@ -468,8 +466,6 @@ done:
 		crtc->x = saved_x;
 		crtc->y = saved_y;
 	}
-
-    LEAVE();
 
 	return ret;
 }

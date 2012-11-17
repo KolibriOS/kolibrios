@@ -27,7 +27,6 @@ void __attribute__((regparm(1))) destroy_bitmap(bitmap_t *bitmap)
     bitmap->obj->base.write_domain = I915_GEM_DOMAIN_CPU;
 
     mutex_lock(&main_device->struct_mutex);
-
     drm_gem_object_unreference(&bitmap->obj->base);
     mutex_unlock(&main_device->struct_mutex);
 
@@ -210,6 +209,11 @@ int create_surface(struct drm_device *dev, struct io_call_10 *pbitmap)
 
             MapPage(vaddr, page, 0x207);        //map as shared page
         };
+        for(;i < max_count; i++, vaddr+= PAGE_SIZE)
+        {
+            MapPage(vaddr, 0, 0);        //map as shared page
+        };
+
         bitmap->page_count = page_count;
         bitmap->max_count  = max_count;
     };
@@ -339,13 +343,7 @@ int resize_surface(struct io_call_14 *pbitmap)
     DRM_DEBUG("new width %d height %d pitch %d size %d\n",
             width, height, pitch, size);
 
-    if( page_count == bitmap->page_count )
-    {
-        bitmap->width  = width;
-        bitmap->height = height;
-        bitmap->pitch  = pitch;
-    }
-    else if(page_count > bitmap->page_count)
+    if(page_count > bitmap->page_count)
     {
         char *vaddr = bitmap->uaddr + PAGE_SIZE * bitmap->page_count;
 
@@ -366,8 +364,6 @@ int resize_surface(struct io_call_14 *pbitmap)
         DRM_DEBUG("%s alloc %d pages\n", __FUNCTION__,
                   page_count - bitmap->page_count);
 
-//        mutex_lock(&main_device->struct_mutex);
-
         i915_gem_object_unpin(bitmap->obj);
         i915_gem_object_unbind(bitmap->obj);
         bitmap->obj->base.size = size;
@@ -376,23 +372,48 @@ int resize_surface(struct io_call_14 *pbitmap)
         ret = i915_gem_object_pin(bitmap->obj, PAGE_SIZE, true,true);
         if (ret)
             goto err4;
-//        mutex_unlock(&main_device->struct_mutex);
 
         bitmap->page_count = page_count;
-        bitmap->width  = width;
-        bitmap->height = height;
-        bitmap->pitch  = pitch;
+        bitmap->gaddr  = bitmap->obj->gtt_offset;
+    }
+    else if(page_count < bitmap->page_count)
+    {
+        char *vaddr = bitmap->uaddr + PAGE_SIZE * page_count;
+
+        i915_gem_object_unpin(bitmap->obj);
+        i915_gem_object_unbind(bitmap->obj);
+
+        pages = bitmap->obj->allocated_pages;
+
+        DRM_DEBUG("old pages %d new_pages %d vaddr %x\n",
+                bitmap->page_count, page_count, vaddr);
+
+        for(i = page_count; i < bitmap->page_count; i++, vaddr+= PAGE_SIZE)
+        {
+            MapPage(vaddr, 0, 0);        //unmap
+
+            FreePage(pages[i]);
+            pages[i] = 0;
+    };
+
+        DRM_DEBUG("%s release %d pages\n", __FUNCTION__,
+                  bitmap->page_count - page_count);
+
+        bitmap->obj->base.size = size;
+        bitmap->obj->pages.nents = page_count;
+
+        ret = i915_gem_object_pin(bitmap->obj, PAGE_SIZE, true,true);
+        if (ret)
+            goto err3;
+
+        bitmap->page_count = page_count;
         bitmap->gaddr  = bitmap->obj->gtt_offset;
     };
 
-    if(ret != 0 )
-    {
-        pbitmap->data  = NULL;
-        pbitmap->pitch = 0;
+    bitmap->width  = width;
+    bitmap->height = height;
+    bitmap->pitch  = pitch;
 
-        dbgprintf("%s fail\n", __FUNCTION__);
-        return ret;
-    };
 
     pbitmap->data  = bitmap->uaddr;
     pbitmap->pitch = bitmap->pitch;
@@ -403,6 +424,7 @@ err4:
     while (i-- > bitmap->page_count)
         FreePage(pages[i]);
 
+err3:
     return -1;
 };
 
@@ -446,6 +468,8 @@ void __attribute__((regparm(1))) destroy_context(struct context *context)
     DRM_DEBUG("destroy context %x\n", context);
 
     context_map[context->slot] = NULL;
+
+    FreeKernelSpace(context->cmd_buffer);
 
     mutex_lock(&main_device->struct_mutex);
     drm_gem_object_unreference(&context->obj->base);
