@@ -51,7 +51,7 @@ void DrawSystemDiscs()
 	char disc_name[100];
 	int i, dev_icon;
 	
-	for (i=0; i<20; i++) DeleteButton(i);
+	for (i=0; i<20; i++) DeleteButton(100+i);
 	//список дисков
 	Tip(56, "Devices", 78, "=");
 	for (i=0;i<disc_num;i++)
@@ -144,7 +144,6 @@ void LeftPanelBackground()
 	{
 		DrawBar(2,start_y,190,onTop(start_y,6+268),lpanel_col);
 		PutPaletteImage(#blue_hl, 190, 268, 2, onTop(268,6), #blue_hl_pal);
-		if (onTop(268,6)>300) PutPaletteImage(#blue_hl, 190, 87, 2, start_y+100, #blue_hl_pal);
 	}
 }
 

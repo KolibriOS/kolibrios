@@ -20,19 +20,19 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.4"
+#define title "Eolite File Manager v1.41"
 dword selection_col = 0x94AECE;
 dword lpanel_col = 0x00699C;
 
 
 /*
-int  f_visible,
+int  
      f_count,
      f_first,
      f_current;
 */
 
-int  but_num,
+int  f_visible,
      count,
      za_kadrom,
      curbtn;
@@ -42,15 +42,16 @@ byte cut_active,
      rename_active,
      del_active;
 byte show_actions=1,
-     show_dev_name=1,
+	 show_dev_name=1,
      sort_num=2,
      isdir;
-char path[4096],
-     edit_path[4096],
-     file_path[4096],
-     file_name[4096],
-     copy_file[4096],
-     temp[4096];
+unsigned char
+	path[4096],
+	edit_path[4096],
+	file_path[4096],
+	file_name[4096],
+	copy_file[4096],
+	temp[4096];
 int scroll_size;
 
 
@@ -79,7 +80,7 @@ dword buf, off; //для текста и буфера
 #include "include\sorting.h"
 #include "include\icons_f.h"
 #include "include\ini.h"
-#include "include\devices.h"
+#include "include\left_panel.h"
 #include "include\history.h"
 
 void main() 
@@ -132,7 +133,7 @@ void main()
 				if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>onTop(22,0)+1) && (m.y<onTop(22,0)+16)
 				{
 					IF (m.lkm==1) DrawRegion_3D(onLeft(26,0),onTop(21,0),14,14,0xC7C7C7,0xFFFFFF);
-					while (m.lkm==1) && (za_kadrom<count-but_num)
+					while (m.lkm==1) && (za_kadrom<count-f_visible)
 					{
 						Pause(10);
 						za_kadrom++;
@@ -146,18 +147,18 @@ void main()
 				IF (m.vert==65535) && (za_kadrom>0)
 				{
 					if (za_kadrom>0) za_kadrom--;
-					if (curbtn<but_num-1) curbtn++;
+					if (curbtn<f_visible-1) curbtn++;
 					List_ReDraw();
 					if (za_kadrom>0) za_kadrom--;
-					if (curbtn<but_num-1) curbtn++;
+					if (curbtn<f_visible-1) curbtn++;
 					List_ReDraw();
 				}
-				IF (m.vert==1) && (za_kadrom<count-but_num)
+				IF (m.vert==1) && (za_kadrom<count-f_visible)
 				{
-					if (za_kadrom<count-but_num) za_kadrom++;
+					if (za_kadrom<count-f_visible) za_kadrom++;
 					if (curbtn>0) curbtn--;
 					List_ReDraw();
-					if (za_kadrom<count-but_num) za_kadrom++;
+					if (za_kadrom<count-f_visible) za_kadrom++;
 					if (curbtn>0) curbtn--;
 					List_ReDraw();
 				}
@@ -172,7 +173,7 @@ void main()
 					j= scroll_size/2;
 					za_kadrom = m.y -j -57 * count;
 					za_kadrom /= onTop(22,57);
-					IF (but_num+za_kadrom>count) za_kadrom=count-but_num;
+					IF (f_visible+za_kadrom>count) za_kadrom=count-f_visible;
 					IF (id<>za_kadrom) List_ReDraw(); //чтоб лишний раз не перерисовывать
 				}
 				break;  
@@ -360,15 +361,15 @@ void main()
 							List_ReDraw();
 							break;
 					case 181: //end
-							za_kadrom=count-but_num;
-							curbtn=but_num-1;
+							za_kadrom=count-f_visible;
+							curbtn=f_visible-1;
 							List_ReDraw();
 							break;
 					case 183: //Page Down
-							FileList_ReDraw(but_num-1);
+							FileList_ReDraw(f_visible-1);
 							break;
 					case 184: //Page Up
-							FileList_ReDraw(-but_num+1);
+							FileList_ReDraw(-f_visible+1);
 							break;
 					case 051: //Нажата F2
 							REN_MARK:
@@ -486,8 +487,8 @@ void FileList_ReDraw(int curbtn_)
 	}
 	else  //вниз
 	{
-		IF (za_kadrom==count-but_num) && (curbtn==but_num-1) return;
-		IF (but_num-curbtn>curbtn_)
+		IF (za_kadrom==count-f_visible) && (curbtn==f_visible-1) return;
+		IF (f_visible-curbtn>curbtn_)
 		{
 			Line_ReDraw(0xFFFFFF, curbtn); //белая полоса
 			curbtn+=curbtn_;
@@ -498,18 +499,18 @@ void FileList_ReDraw(int curbtn_)
 		{
 			IF(za_kadrom+curbtn+curbtn_>=count)
 			{
-				za_kadrom=count-but_num;
+				za_kadrom=count-f_visible;
 				curbtn=curbtn_-za_kadrom+curbtn;
 				}
 			ELSE
 			{
-				za_kadrom+=curbtn_+curbtn-but_num+1;
-				curbtn=but_num-1;
+				za_kadrom+=curbtn_+curbtn-f_visible+1;
+				curbtn=f_visible-1;
 			}
 			
-			IF (curbtn<0) || (curbtn>but_num)
+			IF (curbtn<0) || (curbtn>f_visible)
 			{
-				curbtn=but_num-1;
+				curbtn=f_visible-1;
 			}
 			List_ReDraw();
 		}
@@ -521,11 +522,11 @@ void FileList_ReDraw(int curbtn_)
 
 void List_ReDraw()
 {
-	int paint_x=but_num*BUTTON_HEIGHT+57;
-	IF (count-za_kadrom<but_num) || (curbtn>but_num-1) //если мы в конце списка файлов развернём окно появяться пустяе белые кнопки
-	{ za_kadrom=count-but_num; curbtn=but_num-1; } //это если выделение после схлопывания окна за кадром
+	int paint_x=f_visible*BUTTON_HEIGHT+57;
+	IF (count-za_kadrom<f_visible) || (curbtn>f_visible-1) //если мы в конце списка файлов развернём окно появяться пустяе белые кнопки
+	{ za_kadrom=count-f_visible; curbtn=f_visible-1; } //это если выделение после схлопывания окна за кадром
 
-	FOR (j=0; j<but_num; j++) IF (curbtn<>j) Line_ReDraw(0xFFFFFF, j); ELSE Line_ReDraw(selection_col, curbtn);
+	FOR (j=0; j<f_visible; j++) IF (curbtn<>j) Line_ReDraw(0xFFFFFF, j); ELSE Line_ReDraw(selection_col, curbtn);
 		DrawBar(192,paint_x,onLeft(27,192),onTop(paint_x,6),0xFFFFFF); //заливка белым доконца
 		DrawBar(onLeft(168,0),paint_x,1,onTop(paint_x,6),0xE4DFE1); //полоса серая вертикальная 1
 		DrawBar(onLeft(95,0),paint_x,1,onTop(paint_x,6),0xE4DFE1); //полоса серая вертикальная 2
@@ -612,9 +613,9 @@ void Open_Dir(dword temp_, redraw){
 		KEdit();
 		HistoryPath(ADD_NEW_PATH);
 		IF (!strcmp(".",buf+72)) {count--; memmov(buf,buf+304,count*304);} //фильтруем элемент "."
-		FOR (j=0;j<but_num;j++) DeleteButton(201+j); //удаляем старые
-		but_num=onTop(6,57)/BUTTON_HEIGHT;                                                                                             
-		IF (count<but_num) but_num=count;
+		FOR (j=0;j<f_visible;j++) DeleteButton(201+j); //удаляем старые
+		f_visible=onTop(6,57)/BUTTON_HEIGHT;                                                                                             
+		IF (count<f_visible) f_visible=count;
 		//стрелочка сортировки
 		IF (sort_num==1) WriteText(Form.width+60/2,45,0x80,0x4E78AC,"\x19",0);
 		IF (sort_num==2) WriteText(Form.width-115,45,0x80,0x4E78AC,"\x19",0);
@@ -622,7 +623,7 @@ void Open_Dir(dword temp_, redraw){
 		IF (redraw<>ONLY_SHOW) Sorting(); //для больших папок при репеинте окна
 		IF (redraw<>ONLY_OPEN) List_ReDraw();
 	}
-	IF (count==-1) && (redraw<>ONLY_OPEN) {but_num=count=0; List_ReDraw();}
+	IF (count==-1) && (redraw<>ONLY_OPEN) {f_visible=count=0; List_ReDraw();}
 }
 
 
