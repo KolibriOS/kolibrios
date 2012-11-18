@@ -75,8 +75,8 @@ START:
 	dec	ecx
 	jnz	@b
 
-	stdcall	[img.encode], [image_to_rgb2], (LIBIMG_FORMAT_ID_PNM), 0
-;	stdcall	[img.encode], [image_initial], (LIBIMG_FORMAT_ID_PNM), 0
+	stdcall	[img.encode], [image_to_rgb2], (LIBIMG_FORMAT_PNM), 0
+;	stdcall	[img.encode], [image_initial], (LIBIMG_FORMAT_PNM), 0
 	test	eax, eax
 	jz	exit
 	mov	[encoded_file], eax

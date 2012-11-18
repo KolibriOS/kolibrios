@@ -1,5 +1,5 @@
 ;;================================================================================================;;
-;;//// tga.inc //// (c) Nable, 2007-2008 /////////////////////////////////////////////////////////;;
+;;//// tga.inc //// (c) Nable, 2007-2008, (c) dunkaist, 2012 /////////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -17,19 +17,28 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 
-struct tga.FileHeader
-  CommentLength	db ?
-  ColormapType	db ?
-  SubType		db ?
-  DontKnow1		dw ?
-  ColormapSize	dw ?
-  ColormapBpp	db ?
-  DontKnow2		dd ?
-  Width			dw ?
-  Height		dw ?
-  BitPerPixel	db ?
-  DontKnow3		db ?
+struct tga_colormap_spec
+    first_entry_index   dw ?
+    colormap_length     dw ?
+    entry_size          db ?
 ends
 
-tga.flags.top_down_row_order equ 32 ;bit5
-tga.flags.interlace_type equ 192;bits6/7
+struct tga_image_spec
+    x_origin        dw ?
+    y_origin        dw ?
+    width           dw ?
+    height          dw ?
+    depth           db ?
+    descriptor      db ?
+ends
+
+struct tga_header
+    id_length       db ?
+    colormap_type   db ?
+    image_type      db ?
+    colormap_spec   tga_colormap_spec
+    image_spec      tga_image_spec
+ends
+
+TGA_START_TOP   = 0x20
+TGA_START_RIGHT = 0x10

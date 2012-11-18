@@ -67,7 +67,7 @@ LIBIMG_ENCODE_DELETE_ALPHA	= 0x08
 LIBIMG_ENCODE_FLUSH_ALPHA	= 0x10
 
 ; convert flags
-LIBIMG_CONVERT_IN_PLACE		= 0x01	; do not create new image, store result in _src
+; TBD
 
 struct FormatsTableEntry
   Format_id	dd ?

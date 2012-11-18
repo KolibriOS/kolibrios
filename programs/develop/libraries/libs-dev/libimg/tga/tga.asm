@@ -1,5 +1,5 @@
 ;;================================================================================================;;
-;;//// tga.asm //// (c) Nable, 2007-2008 /////////////////////////////////////////////////////////;;
+;;//// tga.asm //// (c) Nable, 2007-2008, (c) dunkaist, 2012 /////////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -19,6 +19,8 @@
 ;;                                                                                                ;;
 ;; References:                                                                                    ;;
 ;;   1. Hiview 1.2 by Mohammad A. REZAEI                                                          ;;
+;;   2. Truevision TGA FILE FORMAT SPECIFICATION Version 2.0                                      ;;
+;;      Technical Manual Version 2.2 January, 1991                                                ;;
 ;;                                                                                                ;;
 ;;================================================================================================;;
 
@@ -34,46 +36,49 @@ proc img.is.tga _data, _length ;////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = false / true                                                                             ;;
 ;;================================================================================================;;
-	push ebx
+	push	ebx
 	cmp	[_length], 18
 	jbe	.nope
-	mov	eax, [_data]
-	mov	ebx,[eax+1] ;bl=cmatype,bh=subtype
-	cmp	bl,1		;cmatype is in [0..1]
+	mov	ebx, [_data]
+	mov	eax, dword[ebx + tga_header.colormap_type]
+	cmp	al, 1
 	ja	.nope
-	cmp	bh,11		;subtype is in [1..3] (non-rle) or in [9..11] (rle)
+	cmp	ah, 11
 	ja	.nope
-	cmp	bh,9
+	cmp	ah, 9
 	jae	.cont1
-	cmp	bh,3
+	cmp	ah, 3
 	ja	.nope
-.cont1: 			;continue testing
-	mov	ebx,[eax+16] ;bl=bpp, bh=flags //image descriptor
-	test ebx,111b	;bpp must be 8, 15, 16, 24 or 32
+  .cont1:
+	mov	eax, dword[ebx + tga_header.image_spec.depth]
+	test	eax, 111b	; bpp must be 8, 15, 16, 24 or 32
 	jnz	.maybe15
-	shr	bl,3
-	cmp	bl,4
+	shr	al, 3
+	cmp	al, 4
 	ja	.nope
 	jmp	.cont2
-.maybe15:
-	cmp	bl,15
+  .maybe15:
+	cmp	al, 15
 	jne	.nope
-.cont2: 			;continue testing
-	test bh,tga.flags.interlace_type ;deinterlacing is not supported yet
-	jnz	.nope
-	cmp	byte[eax+7],24	;test palette bpp - only 24 and 32 are supported
+  .cont2: 			; continue testing
+	movzx	eax, byte[ebx + tga_header.colormap_spec.entry_size]	; palette bpp
+	cmp	eax, 0
 	je	.yep
-	cmp	byte[eax+7],32	;test palette bpp - only 24 and 32 are supported
+	cmp	eax, 16
 	je	.yep
-.nope:
+	cmp	eax, 24
+	je	.yep
+	cmp	eax, 32
+	je	.yep
+  .nope:
 	xor	eax, eax
-	pop ebx
+	pop	ebx
 	ret
 
-.yep:
+  .yep:
 	xor	eax, eax
 	inc	eax
-	pop ebx
+	pop	ebx
 	ret
 endp
 
@@ -88,131 +93,167 @@ proc img.decode.tga _data, _length, _options ;//////////////////////////////////
 ;< eax = 0 (error) or pointer to image                                                            ;;
 ;;================================================================================================;;
 locals
-  IMGwidth		dd ?
-  IMGheight		dd ?
-  IMGbpp		dd ?
-  DupPixelCount dd ?
-  TgaBlockCount dd ?
+	width		dd ?
+	height		dd ?
+	bytes_per_pixel	dd ?
+	retvalue	dd ?
 endl
-	pushad
-	cld						;paranoia
-	and	[DupPixelCount],0	;prepare variables
-	and	[TgaBlockCount],0	;prepare variables
-	mov	eax,[_data]
-	movzx esi,byte[eax]
-	lea	esi,[esi+eax+18]	;skip comment and header
-	mov	ebx,[eax+12]
-	movzx ecx,bx		       ;ecx=width
-	shr	ebx,16				;ebx=height
-	mov	[IMGwidth],ecx
-	mov	[IMGheight],ebx
-	movzx edx,byte[eax+16]
-	cmp	edx,16
-	jnz	@f
-	dec	edx					;16bpp tga images are really 15bpp ARGB
-@@:
-	sub	edx, 16 - Image.bpp16	; 15 -> Image.bpp15, 16 -> Image.bpp16
-	mov	[IMGbpp],edx
-	stdcall img.create,ecx,ebx,edx
-	mov	[esp+28],eax		;save return value
-	test eax,eax			;failed to allocate?
-	jz	.locret 			;then exit
-	cmp	edx,8
+	push	ebx esi edi
+	mov	ebx, [_data]
+	movzx	esi, byte[ebx]
+	lea	esi, [esi + ebx + sizeof.tga_header]	; skip comment and header
+	mov	edx, dword[ebx + tga_header.image_spec.width]
+	movzx	ecx, dx			; ecx = width
+	shr	edx, 16			; edx = height
+	mov	[width], ecx
+	mov	[height], edx
+	movzx	eax, byte[ebx + tga_header.image_spec.depth]
+	add	eax, 7
+	shr	eax, 3
+	mov	[bytes_per_pixel], eax
+	movzx	eax, byte[ebx + tga_header.image_spec.depth]
+
+	cmp	eax, 8
+	jne	@f
+	mov	eax, Image.bpp8i
+	jmp	.type_defined
+    @@:
+	cmp	eax, 15
+	jne	@f
+	mov	eax, Image.bpp15
+	jmp	.type_defined
+    @@:
+	cmp	eax, 16
+	jne	@f
+	mov	eax, Image.bpp15	; 16bpp tga images are really 15bpp ARGB
+	jmp	.type_defined
+    @@:
+	cmp	eax, 24
+	jne	@f
+	mov	eax, Image.bpp24
+	jmp	.type_defined
+    @@:
+	cmp	eax, 32
+	jne	@f
+	mov	eax, Image.bpp32
+	jmp	.type_defined
+    @@:
+  .type_defined:
+	stdcall	img.create, ecx, edx, eax
+	mov	[retvalue], eax
+	test	eax, eax		; failed to allocate?
+	jz	.done			; then exit
+	mov	ebx, eax
+	cmp	dword[ebx + Image.Type], Image.bpp8i
 	jne	.palette_parsed
-	mov edi,[eax+Image.Palette]
-	mov	ecx,[_data]
-	cmp	byte[ecx+2],3		;we also have grayscale subtype
-	jz	.write_grayscale_palette ;that don't hold palette in file
-	cmp	byte[ecx+2],11
+	mov	edi, [ebx + Image.Palette]
+	mov	ecx, [_data]
+	cmp	byte[ecx + tga_header.image_type], 3	; we also have grayscale subtype
+	jz	.write_grayscale_palette		; that don't hold palette in file
+	cmp	byte[ecx + tga_header.image_type], 11
 	jz	.write_grayscale_palette
-	mov dh,[ecx+7]			;size of colormap entries in bits
-	movzx ecx,word[ecx+5]	;number of colormap entries
-	cmp	dh,24
-	jz	.skip_24bpp_palette	;test if colormap entries are 24bpp
-	rep	movsd				;else they are 32 bpp
+	movzx	eax, byte[ecx + tga_header.colormap_spec.entry_size]	; size of colormap entries in bits
+	movzx	ecx, word[ecx + tga_header.colormap_spec.colormap_length]	; number of colormap entries
+	cmp	eax, 24
+	je	.24bpp_palette
+	cmp	eax, 16
+	je	.16bpp_palette
+	rep	movsd			; else they are 32 bpp
 	jmp	.palette_parsed
-.write_grayscale_palette:
-	push eax
-	mov	ecx,0x100
-	xor	eax,eax
-@@:
+  .write_grayscale_palette:
+	mov	ecx, 0x100
+	xor	eax, eax
+    @@:
 	stosd
-	add	eax,0x010101
-	loop @b
-	pop	eax
+	add	eax, 0x010101
+	loop	@b
 	jmp	.palette_parsed
-.skip_24bpp_palette:
-	push eax
-@@:
+  .16bpp_palette:			; FIXME: code copypasted from img.do_rgb, should use img.convert
+	push	ebx edx ebp
+    @@:
+	movzx	eax, word[esi]
+	mov	ebx, eax
+	add	esi, 2
+	and	eax, (0x1F) or (0x1F shl 10)
+	and	ebx, 0x1F shl 5
+	lea	edx, [eax + eax]
+	shr	al, 2
+	mov	ebp, ebx
+	shr	ebx, 2
+	shr	ah, 4
+	shl	dl, 2
+	shr	ebp, 7
+	add	eax, edx
+	add	ebx, ebp
+	mov	[edi], al
+	mov	[edi + 1], bl
+	mov	[edi + 2], ah
+	add	edi, 4
+	loop	@b
+	pop	ebp edx ebx
+	jmp	.palette_parsed
+
+  .24bpp_palette:
+    @@:
 	lodsd
-	dec esi
-	and	eax,0xFFFFFF
-;	bswap eax
-;	shr	eax,8
+	dec	esi
+	and	eax, 0xffffff
 	stosd
-	loop @b
-	pop	eax
-.palette_parsed:
-	mov	edi,[eax+Image.Data]
-	imul ebx,[IMGwidth]		;ebx=width*height
-
-	mov	edx,[IMGbpp]
-	add	edx,7
-	shr	edx,3				;edx=bytes per pixel
-	mov	dh,dl				;dh=dl=bytes per pixel
-
-	mov	eax,[_data]
-	cmp	byte[eax+2],9
-	jb	.not_an_rle
-.tga_read_rle_pixel:
-    cmp  [DupPixelCount],0	;Duplicate previously read pixel?
-    jg	 .duplicate_previously_read_pixel
-    dec  [TgaBlockCount]	;Decrement pixels remaining in block
-    jns  .read_non_rle_pixel
-    xor  eax,eax
-    lodsb
-    test al,al				;Start of duplicate-pixel block?
-    jns  .2
-    and  al,0x7f
-    mov  [DupPixelCount],eax ;Number of duplications after this one
-    and  [TgaBlockCount],0	;Then read new block header
-    jmp  .read_non_rle_pixel
-.2:
-    mov  dword[TgaBlockCount],eax
-.read_non_rle_pixel:
-    xor  eax,eax
-    mov  dl,dh
-@@:
-    shl  eax,8
-    lodsb
-    dec  dl
-    jnz  @b
-    cmp  dh,3
-    jne  .put_pixel
-    bswap eax
-    shr  eax,8
-	jmp	.put_pixel
-.duplicate_previously_read_pixel:
-    dec  [DupPixelCount]
-.put_pixel:
-	mov	dl,dh
-	push eax
-@@:
-    stosb
-    shr eax,8
-    dec dl
-    jnz @b
-	pop	eax
-	dec	ebx
-	jnz	.tga_read_rle_pixel
-	jmp	.locret
-.not_an_rle:
-	movzx edx,dl			;dh contains bpp too (for decoding needs)
-	imul edx,ebx
-	mov	ecx,edx
-	rep	movsb				;just copy the image
-.locret:	
-	popad
+	loop	@b
+  .palette_parsed:
+	mov	edi, [ebx + Image.Data]
+	mov	ebx, [width]
+	imul	ebx, [height]
+	mov	edx, [bytes_per_pixel]
+	mov	eax, [_data]
+	test	byte[eax + tga_header.image_type], 0x08
+	jz	.uncompressed
+  .next_rle_packet:
+	xor	eax, eax
+	lodsb
+	btr	ax, 7			; Run-length packet?
+	jnc	.raw_packet
+	add	eax, 1
+	sub	ebx, eax
+    @@:
+	mov	ecx, edx
+	rep	movsb
+	sub	esi, edx
+	sub	eax, 1
+	jnz	@b
+	add	esi, edx
+	test	ebx, ebx
+	jnz	.next_rle_packet
+	jmp	.done
+  .raw_packet:
+	mov	ecx, eax
+	add	ecx, 1
+	sub	ebx, ecx
+	imul	ecx, edx
+	rep	movsb
+	test	ebx, ebx
+	jnz	.next_rle_packet
+  .uncompressed:
+	imul	edx, ebx
+	mov	ecx, edx
+	rep	movsb
+  .done:
+	xor	ebx, ebx
+	mov	esi, [_data]
+	test	byte[esi + tga_header.image_spec.descriptor], TGA_START_TOP
+	jnz	@f
+	or	ebx, FLIP_VERTICAL
+    @@:
+	test	byte[esi + tga_header.image_spec.descriptor], TGA_START_RIGHT
+	jz	@f
+	or	ebx, FLIP_HORIZONTAL
+    @@:
+	test	ebx, ebx
+	jz	@f
+	stdcall	img.flip, [retvalue], ebx
+    @@:
+	pop	edi esi ebx
+	mov	eax, [retvalue]
 	ret
 endp
 
@@ -230,7 +271,6 @@ proc img.encode.tga _img, _p_length, _options ;/////////////////////////////////
 	ret
 endp
 
-
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
@@ -246,5 +286,3 @@ endp
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
-
-;

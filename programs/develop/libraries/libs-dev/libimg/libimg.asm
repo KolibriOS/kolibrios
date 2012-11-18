@@ -47,7 +47,7 @@ include 'pnm/pnm.asm'
 include 'wbmp/wbmp.asm'
 
 include 'scale.asm'
-;include 'convert.asm'
+include 'convert.asm'
 ;include 'transform.asm'
 
 ;;================================================================================================;;
@@ -1929,6 +1929,18 @@ img.formats_table:
   .z80  dd LIBIMG_FORMAT_Z80,  img.is.z80,  img.decode.z80,     img.encode.z80, 0 ;this must be the last entry as there are no signatures in z80 screens at all
         dd 0
 
+align 4
+img.types_table:	; entries order must correspond to type defnitions in libimg.inc
+         dd 0	; there is no Image.bpp* = 0
+  .bpp8i dd (1 SHL Image.bpp24)
+  .bpp24 dd (1 SHL Image.bpp24) OR (1 SHL Image.bpp8g)
+  .bpp32 dd (1 SHL Image.bpp24)
+  .bpp15 dd (1 SHL Image.bpp24)
+  .bpp16 dd (1 SHL Image.bpp24)
+  .bpp1  dd (1 SHL Image.bpp24)
+  .bpp8g dd (1 SHL Image.bpp24) OR (1 SHL Image.bpp1 )
+  .bpp8a dd (1 SHL Image.bpp24)
+
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
@@ -2206,6 +2218,7 @@ export                                      \
     img.rotate.layer , 'img_rotate_layer' , \
     img.draw         , 'img_draw'         , \
     img.scale        , 'img_scale'        , \
+    img.convert      , 'img_convert'      , \
     img.formats_table, 'img_formats_table'
 
 ; import from deflate unpacker
