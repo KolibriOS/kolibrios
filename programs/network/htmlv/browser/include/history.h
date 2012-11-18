@@ -46,7 +46,7 @@ byte UrlsHistory::GoBack()
 	
 	history_current--;
 	strcpy(#URL, #history_list[history_current].Item);
-	 return 1;
+	return 1;
 }
 
 

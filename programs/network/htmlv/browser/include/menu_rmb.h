@@ -7,7 +7,7 @@ char *ITEMS_LIST[]={
 "View in Tinypad   F3",52,
 "WIN               F5",REFRESH,
 "DOS           Ctrl+D",04,
-"KOI-8         Ctrl+K",11,
+"KOI           Ctrl+K",11,
 "UTF           Ctrl+U",21,
 "Line breaks ON"      ,01,
 "TrueType fonts"      ,05,
@@ -78,10 +78,9 @@ void menu_rmb()
 				
 		case evReDraw:
 				while (ITEMS_LIST[items_num*2]) items_num++;
-				DefineAndDrawWindow(Form.left+m.x,Form.top+m.y+GetSkinHeight()+3,ITEM_WIDTH,items_num*ITEM_HEIGHT+1,0x01,0x10FFFFFF,0);
-				DefineButton(0, 0, ITEM_WIDTH, ITEM_HEIGHT, 10+BT_HIDE+BT_NOFRAME, 0); //hack
+				DefineAndDrawWindow(Form.left+m.x,Form.top+m.y+GetSkinHeight()+3,ITEM_WIDTH,items_num*ITEM_HEIGHT+1,0x01,0x10FFFFFF,0,0x01fffFFF);
 
-				DrawRegion(0,0,ITEM_WIDTH,items_num*ITEM_HEIGHT+1,0x777777); //ободок
+				DrawRectangle(0,0,ITEM_WIDTH,items_num*ITEM_HEIGHT+1,0x777777); //ободок
 				_ITEMS_DRAW:
 				for (i=0; i<items_num; i++;)
 				{
@@ -91,6 +90,7 @@ void menu_rmb()
 					if (ITEMS_LIST[i*2+1]==1) && (pre_text==2) DrawBar(ITEM_WIDTH-18, i*ITEM_HEIGHT+8, 4, 4, 0x444444);
 					if (ITEMS_LIST[i*2+1]==5) && (use_truetype==1) DrawBar(ITEM_WIDTH-18, i*ITEM_HEIGHT+8, 4, 4, 0x444444);
 				}
+				DrawBar(33, cur_encoding+1*ITEM_HEIGHT+8, 4, 4, 0x444444); //показывает выбраную кодировку
 	}
 }
 

@@ -71,7 +71,8 @@ void mouse::get()
 
 struct system_colors
 {
-	dword frame,grab,grab_button,grab_button_text,grab_text,work,work_button,work_button_text,work_text,work_graph;
+	dword frame,grab,grab_button,grab_button_text,grab_text,
+	      work,work_button,work_button_text,work_text,work_graph;
 	void get();
 };
 
@@ -263,7 +264,7 @@ inline fastcall int GetSystemLanguage()
 	$int 0x40
 }
 
-inline fastcall dword GetSkinHeight()
+inline fastcall GetSkinHeight()
 {
 	$push ebx
 	$mov  eax,48
@@ -313,9 +314,30 @@ inline fastcall int PlaySpeaker( ESI)
 	$int 0x40
 }
 
+inline fastcall void debug( EDX)
+{
+	$push ebx
+	$push ecx
+	$mov eax, 63
+	$mov ebx, 1
+next_char:
+	$mov ecx, DSDWORD[edx]
+	$or	 cl, cl
+	$jz  done
+	$int 0x40
+	$inc edx
+	$jmp next_char
+done:
+	$mov cl, 13
+	$int 0x40
+	$mov cl, 10
+	$int 0x40
+	$pop ecx
+	$pop ebx
+}
 //------------------------------------------------------------------------------
 
-void DefineAndDrawWindow(dword x,y, sizeX,sizeY, byte WindowType,dword WindowAreaColor, EDI)
+void DefineAndDrawWindow(dword x,y, sizeX,sizeY, byte WindowType,dword WindowAreaColor, EDI, ESI)
 {
 	EAX = 12;              // function 12:tell os about windowdraw
 	EBX = 1;
@@ -438,69 +460,4 @@ inline fastcall void DeleteButton( EDX)
 	EAX = 8;
 	EDX += BT_DEL;
 	$int 0x40;
-}
-
-
-//------------------------------------------------------------------------------
-
-:void DrawRegion(dword x,y,width,height,color1)
-{
-	DrawBar(x,y,width,1,color1); //полоса гор сверху
-	DrawBar(x,y+height,width,1,color1); //полоса гор снизу
-	DrawBar(x,y,1,height,color1); //полоса верху слева
-	DrawBar(x+width,y,1,height+1,color1); //полоса верху справа
-}
-
-:void DrawRegion_3D(dword x,y,width,height,color1,color2)
-{
-	DrawBar(x,y,width+1,1,color1); //полоса гор сверху
-	DrawBar(x,y+1,1,height-1,color1); //полоса слева
-	DrawBar(x+width,y+1,1,height,color2); //полоса справа
-	DrawBar(x,y+height,width,1,color2); //полоса гор снизу
-}
-
-:void DrawFlatButton(dword x,y,width,height,id,color,text)
-{
-	DrawRegion_3D(x,y,width,height,0x94AECE,0x94AECE);
-	DrawRegion_3D(x+1,y+1,width-2,height-2,0xFFFFFF,0xC7C7C7);
-	DrawBar(x+2,y+2,width-3,height-3,color); //заливка
-	IF (id<>0)	DefineButton(x,y,width,height,id+BT_HIDE,0xEFEBEF); //кнопка
-	//WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
-	WriteText(width/2+x+1,height/2-3+y,0x80,0,text,0);
-}
-
-:void DrawCircle(int x, y, r)
-{
-	int i;
-	float px=0, py=r, ii = r * 3.1415926 * 2;
-	FOR (i = 0; i < ii; i++)
-	{
-        PutPixel(px + x, y - py, 0);
-        px = py / r + px;
-        py = -px / r + py;
-	}
-}
-
-//------------------------------------------------------------------------------
-
-inline fastcall void debug( EDX)
-{
-	$push ebx
-	$push ecx
-	$mov eax, 63
-	$mov ebx, 1
-next_char:
-	$mov ecx, DSDWORD[edx]
-	$or	 cl, cl
-	$jz  done
-	$int 0x40
-	$inc edx
-	$jmp next_char
-done:
-	$mov cl, 13
-	$int 0x40
-	$mov cl, 10
-	$int 0x40
-	$pop ecx
-	$pop ebx
 }

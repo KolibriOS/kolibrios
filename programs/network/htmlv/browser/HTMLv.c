@@ -5,11 +5,12 @@
 
 #include "..\lib\kolibri.h"
 #include "..\lib\strings.h"
+#include "..\lib\figures.h"
 #include "..\lib\encoding.h"
 #include "..\lib\file_system.h"
 #include "..\lib\mem.h"
 #include "..\lib\dll.h"
-//библиотеки
+//библиотеки .obj
 #include "..\lib\libio_lib.h"
 #include "..\lib\libimg_lib.h"
 #include "..\lib\edit_box_lib.h"
@@ -47,6 +48,7 @@ mouse m;
 #include "TWB.h"
 #include "include\menu_rmb.h"
 
+
 void tre()
 {
 	char *font_picture;
@@ -55,22 +57,10 @@ void tre()
 	int height=20;
 //	char palette[256*4];
 	int x;
-	debug("fuck this shit\n");
-	//init_font(#fontinfo);
-	debug("fuck this shit!\n");
 	
-	strcpy(#text, "hello world\0");
-	
-	text_out stdcall (#text, #fontlol, 17, 0x0, 10, 10);
-	
-	strcpy(#text, "fuck this shit!\0");
-	
-	text_out stdcall (#text, #fontlol, 27, 0x0, 10, 30);
-	
-	
-	strcpy(#text, "alarm!\0");
-	
-	text_out stdcall (#text, #fontlol, 47, 0x00FF0000, 10, 70);
+	text_out stdcall ("hello world\0",#fontlol, 17, 0x0, 10, 10);
+	text_out stdcall ("heyeyey!\0",#fontlol, 27, 0x0, 10, 30);
+	text_out stdcall ("alarm!\0", #fontlol, 47, 0x00FF0000, 10, 70);
 	/*
 	strcpy(#text, "hello world\0");
 	
@@ -233,7 +223,7 @@ void SetElementSizes()
 void Draw_Window()
 {
 	int j;
-	DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,0x00E4DFE1,0);
+	DefineAndDrawWindow(215,100,WIN_W,WIN_H,0x73,0x00E4DFE1,0,0);
 
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) //если свернуто в заголовок, ничего не рисуем
@@ -254,8 +244,8 @@ void Draw_Window()
 	PutImage(#URLgoto,40,19,onLeft(57,0),14);
 	DefineButton(onLeft(37,0),15, 18, 16, GOTOURL+BT_HIDE, 0xE4DFE1);
 	DefineButton(onLeft(56,0),15, 17, 16, SEARCHWEB+BT_HIDE, 0xE4DFE1);
-	DrawRegion(205,14,onLeft(58,205),18,0x94AECE); //ободок полосы адреса
-	DrawRegion(206,15,onLeft(59,205),16,0xE4ECF3);
+	DrawRectangle(205,14,onLeft(58,205),18,0x94AECE); //ободок полосы адреса
+	DrawRectangle(206,15,onLeft(59,205),16,0xE4ECF3);
 
 	SetElementSizes();
 	WB1.ShowPage();

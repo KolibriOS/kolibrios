@@ -193,7 +193,7 @@ inline fastcall signed int strchr( ESI,BL)
 
 inline fastcall signed int strrchr( ESI,BL)
 {
-	int jj=0, last=-1;
+	int jj=0, last=0;
 	do{
 		jj++;
 		$lodsb

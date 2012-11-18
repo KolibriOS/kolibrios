@@ -1,4 +1,4 @@
-//Є­®ЇЄЁ
+//кнопки
 #define BACK        300
 #define FORWARD     301
 #define REFRESH     302

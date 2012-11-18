@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.97.6";
+char version[]=" Text-based Browser 0.97.7";
 
 
 struct TWebBrowser {
@@ -27,7 +27,7 @@ struct TWebBrowser {
 TWebBrowser WB1;
 
 byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text,
-	link, ignor_text, li_tab, first_line_drawed;
+	link, ignor_text, li_tab, first_line_drawed, cur_encoding;
 
 
 dword text_colors[300],
@@ -262,6 +262,7 @@ void TWebBrowser::ReadHtml(byte encoding)
 	else
 		ReadFile(0, filesize, buf, #URL);
 		
+	cur_encoding = encoding;
 	if (encoding==_WIN) wintodos(buf);
 	if (encoding==_UTF) utf8rutodos(buf);
 	if (encoding==_KOI) koitodos(buf);
@@ -282,7 +283,7 @@ void TWebBrowser::OpenPage()
 		DeleteFile(#download_path);
 		IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
 		downloader_id = RunProgram("/sys/network/downloader", #URL);
-		//это гениально и это пиздец!!!
+		//Browser Hack v2.0
 		Pause(60);
 		if (GetProcessSlot(downloader_id)<>0)
 		{
@@ -376,56 +377,9 @@ void TWebBrowser::ParseHTML(dword bword){
 				break;
 			}		
 		case 0x0d:
+			debug("0x0d");
 			bukva = ' ';
 			goto DEFAULT_MARK;
-		case '<':
-			bword++; //промотаем символ <
-			tag = parametr = tagparam = ignor_param = 0;
-			if (ESBYTE[bword] == '!') //фильтрация внутри <!-- -->, дерзко
-			{
-				bword++;
-				if (ESBYTE[bword] == '-')
-				{
-				HH_:
-					do
-					{
-						bword++;
-						if (buf + filesize <= bword) break 2;
-					}
-					while (ESBYTE[bword] <>'-');
-					
-					bword++;
-					if (ESBYTE[bword] <>'-') goto HH_;
-				}
-			}
-			while (ESBYTE[bword] <>'>') && (bword < buf + filesize) //получаем тег и его параметры
-			{
-				bukva = ESBYTE[bword];
-				if (bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
-				if (!ignor_param) && (bukva <>' ')
-				{
-					if (strlen(#tag)<sizeof(tag)) strcat(#tag, #bukva);
-				}
-				else
-				{
-					ignor_param = true;
-					if (!ignor_text) && (strlen(#tagparam)+1<sizeof(tagparam)) strcat(#tagparam, #bukva);
-				}
-				bword++;
-			}
-			strlwr(#tag);
-			strlwr(#tagparam);
-
-			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=''; //for br/
-			if (tagparam) && (strlen(#tagparam) < 4000) GetNextParam();
-
-			DrawPage();
-			line=0;
-
-			if (tag) WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //обработка тегов
-
-			tag = parametr = tagparam = ignor_param = '\0';
-			break;
 		case '=': //поддержка шайтанской кодировки страниц, сохранённых через ИЕ7
 			if (strcmp(#URL + strlen(#URL) - 4, ".mht")<>0) goto DEFAULT_MARK;
 
@@ -469,9 +423,57 @@ void TWebBrowser::ParseHTML(dword bword){
 			
 			strcat(#line,#tag); //выводим на экран необработанный тег, так браузеры зачем-то делают
 			break;
+		case '<':
+			bword++; //промотаем символ <
+			tag = parametr = tagparam = ignor_param = NULL;
+			if (ESBYTE[bword] == '!') //фильтрация внутри <!-- -->, дерзко
+			{
+				bword++;
+				if (ESBYTE[bword] == '-')
+				{
+				HH_:
+					do
+					{
+						bword++;
+						if (buf + filesize <= bword) break 2;
+					}
+					while (ESBYTE[bword] <>'-');
+					
+					bword++;
+					if (ESBYTE[bword] <>'-') goto HH_;
+				}
+			}
+			while (ESBYTE[bword] <>'>') && (bword < buf + filesize) //получаем тег и его параметры
+			{
+				bukva = ESBYTE[bword];
+				if (bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
+				if (!ignor_param) && (bukva <>' ')
+				{
+					if (strlen(#tag)<sizeof(tag)) strcat(#tag, #bukva);
+				}
+				else
+				{
+					ignor_param = true;
+					if (!ignor_text) && (strlen(#tagparam)+1<sizeof(tagparam)) strcat(#tagparam, #bukva);
+				}
+				bword++;
+			}
+			strlwr(#tag);
+			strlwr(#tagparam);
+
+			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=NULL; //for br/
+			if (tagparam) && (strlen(#tagparam) < 4000) GetNextParam();
+
+			DrawPage();
+			line=NULL;
+
+			if (tag) WhatTextStyle(left + 5, stroka * 10 + top + 5, width - 20); //обработка тегов
+
+			tag = parametr = tagparam = ignor_param = NULL;
+			break;
 		default:
 			DEFAULT_MARK:
-			if (!pre_text) && (bukva == ' ') && (line[strlen(#line)-1]==' ') break;
+			if (!pre_text) && (bukva == ' ') && (line[strlen(#line)-1]==' ') break; //убрать 2 пробела подряд
 			//
 			if (stolbec + strlen(#line) > lines.column_max)
 			{
@@ -514,9 +516,6 @@ void TWebBrowser::DrawPage() //резать здесь!!1!
 	{
 		if (strlen(#version)+strlen(#line)+2>sizeof(header))
 		{
-			//line = 123456789
-			//header = 1234
-			//line = 56789
 			strcpy(#temp, #line);
 			temp[sizeof(header)-strlen(#version)-2]=0;
 			strcpy(#header, #temp);
@@ -532,7 +531,7 @@ void TWebBrowser::DrawPage() //резать здесь!!1!
 		strcat(#header, #version);
 		return;
 	}
-
+	
 	if (stroka >= 0) && (stroka - 2 < lines.visible) && (line) && (!anchor)
 	{
 		if (!stroka) && (!stolbec)
@@ -572,7 +571,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	dword hr_color;
 
     dword image;
-    char temp[4096];
+    char temp[4096], alt[4096];
     int w=0, h=0, img_lines_first=0;
 
 	//проверяем тег открывается или закрывается
@@ -782,21 +781,23 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		IMG_TAG:
 			if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
 			{
-				if (downloader_id!=0) strcpy(#temp, #history_list[history_current-1].Item);
+				if (downloader_id) strcpy(#temp, #history_list[history_current-1].Item);
 					else strcpy(#temp, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
-				if (!strcmpn(#temp, "http:", 5)) || (!strcmpn(#options, "http:", 5)) return;
-				temp[strrchr(#temp, '/')] = 0x00; //обрезаем её урл до последнего /
-				strcat(#temp, #options);
-				image=load_image(#temp);
-				w=DSWORD[image+4];
-				h=DSWORD[image+8];
+				if (strcmpn(#temp, "http:", 5)!=0) || (strcmpn(#options, "http:", 5)!=0)
+				{
+					temp[strrchr(#temp, '/')] = 0x00; //обрезаем её урл до последнего /
+					strcat(#temp, #options);
+					image=load_image(#temp);
+					w=DSWORD[image+4];
+					h=DSWORD[image+8];
+				}
 			}
-  			/*if (!strcmp(#parametr,"alt="))
+  			if (!strcmp(#parametr,"alt="))
 			{
-				strcpy(#tag, "[Image: ");
-				strcat(#tag, #options);
-				strcat(#tag, "]");
-			}*/
+				strcpy(#alt, "[");
+				strcat(#alt, #options);
+				strcat(#alt, "]");
+			}
 
 		IF(tagparam)
 		{
@@ -804,7 +805,11 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			GOTO IMG_TAG;
 		}
 		
-		if (!image) return;
+		if (!image) 
+		{
+			if (alt) && (link) strcat(#line, #alt);
+			return;
+		}
 		
 		if (w>width1) w=width1;
 		
@@ -838,9 +843,9 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		{
 			strcpy(#options, #options[strrchr(#options, '=')]); //поиск в content=
 
-			if (!strcmp(#options,"utf-8")) || (!strcmp(#options,"utf8"))		ReadHtml(_UTF);
-			if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))	ReadHtml(_KOI);
-			if (!strcmp(#options, "dos")) || (!strcmp(#options, "cp-866"))		ReadHtml(_DOS);
+			if (!strcmp(#options,"utf-8"))   || (!strcmp(#options,"utf8"))      ReadHtml(_UTF);
+			if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))   ReadHtml(_KOI);
+			if (!strcmp(#options, "dos"))    || (!strcmp(#options, "cp-866"))   ReadHtml(_DOS);
 		}
 		if (tagparam)
 		{
