@@ -1,4 +1,4 @@
-..\C--\c-- HTMLv.c
+..\C--\c-- HTMLv.c /lst
 del HTMLv
 rename HTMLv.com HTMLv
 rem ..\C--\kpack HTMLv

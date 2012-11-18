@@ -377,7 +377,6 @@ void TWebBrowser::ParseHTML(dword bword){
 				break;
 			}		
 		case 0x0d:
-			debug("0x0d");
 			bukva = ' ';
 			goto DEFAULT_MARK;
 		case '=': //поддержка шайтанской кодировки страниц, сохранённых через ИЕ7
@@ -473,24 +472,29 @@ void TWebBrowser::ParseHTML(dword bword){
 			break;
 		default:
 			DEFAULT_MARK:
-			if (!pre_text) && (bukva == ' ') && (line[strlen(#line)-1]==' ') break; //убрать 2 пробела подряд
-			//
+			if (!pre_text) && (bukva == ' ')
+			{
+				if (line[strlen(#line)-1]==' ') break; //убрать 2 пробела подряд
+				if (!stolbec) && (!line) break; //строка не может начинаться с пробела
+			}
+			if (strlen(#line)<sizeof(line))	strcat(#line, #bukva);
+
 			if (stolbec + strlen(#line) > lines.column_max)
 			{
+			NEXT_MARK:
 				perenos_num = strrchr(#line, ' ');
+				if (!perenos_num) && (strlen(#line)>lines.column_max) perenos_num=lines.column_max;
 				strcpy(#temp, #line + perenos_num); //перенос по словам
 				line[perenos_num] = 0x00;
-			NEXT_MARK:
 				if (stroka >= lines.visible) && (lines.first <>0) break 1; //уходим...
 				DrawPage();
 				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем следущую строку
 				strcpy(#line, #temp);
 			}
-			if (!pre_text) && (bukva == ' ') && (!stolbec) && (!line) break;
-			if (strlen(#line)<sizeof(line))	strcat(#line, #bukva);
 		}
 	}
 
+	DrawPage(); //рисует последнюю строку, потом это надо убрать, оптимизировав код
 	if (lines.visible * 10 + 25 <= height)
 		DrawBar(left, lines.visible * 10 + top + 25, width - 15, -lines.visible * 10 + height - 25, bg_color);
 	if (stroka * 10 + 15 <= height)

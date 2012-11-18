@@ -99,7 +99,8 @@ void main()
 	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Не удалось подключить библиотеку TrueType"w); use_truetype = 2; }
 	else init_font(#fontlol);
 	
-	if (!URL) strcpy(#URL, "/sys/home.htm");
+	// if (!URL) strcpy(#URL, "/sys/home.htm");
+	if (!URL) strcpy(#URL, "/sys/ololo.txt");
 	strcpy(#editURL, #URL);
 	
 	Form.width=WIN_W;
