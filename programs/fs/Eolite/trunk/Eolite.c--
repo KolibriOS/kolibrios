@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.41"
+#define title "Eolite File Manager v1.43"
 dword selection_col = 0x94AECE;
 dword lpanel_col = 0x00699C;
 
@@ -383,10 +383,10 @@ void main()
 							rename_active=1;
 							break;
 					case 052: //Нажата F3
-							IF (isdir==false) RunProgram("/sys/tinypad", #file_path);
+							IF (!isdir) RunProgram("/sys/tinypad", #file_path);
 							break;
 					case 053: //Нажата F4
-							IF (isdir==false) RunProgram("/sys/develop/heed", #file_path);
+							IF (!isdir) RunProgram("/sys/develop/heed", #file_path);
 							break;
 					case 054: //F5
 							Open_Dir(#path,1);
@@ -398,16 +398,14 @@ void main()
 							for (i=curbtn+za_kadrom+1; i<count; i++)
 							{
 								copystr(file_mas[i]*304+buf+72,#temp);
-								AL=DSBYTE[#temp]; 
-								IF(AL>='A')&&(AL<='Z')DSBYTE[#temp]=AL|0x20;
-								IF (temp[0]==key)
+								IF (temp[0]==key) || (temp[0]==key-32)
 								{
 									FileList_ReDraw(i-curbtn-za_kadrom);
 									break;
 								}
 							}
 			}                         
-			BREAK;
+			break;
 		case evReDraw:
 			draw_window();
 	}
@@ -583,12 +581,10 @@ void Open_Dir(dword temp_, redraw){
 	char path_[4096],
 	somelen=strlen(temp_)-1;
 	
-	//debug("reading directory");
-	//debug(temp_);
 	if (redraw<>ONLY_SHOW)
 	{
 		copystr(temp_, #path_);
-		if (somelen) path_[somelen]=0x00;
+		if (somelen) path_[somelen]=NULL;
 		
 		if (buf) free(buf);
     	buf = malloc(32);
@@ -656,7 +652,7 @@ inline Sorting()
 	IF (sort_num==2) Sort_by_Type(k,count-1);
 	IF (sort_num==3) Sort_by_Size(k,count-1);
 	//если папка ".." не первая, ставим её туда
-	IF (k>0) && (strcmp(file_mas[0]*304+buf+72,"..")<>0) FOR(k=k-1; k>0; k--;) IF (!strcmp(file_mas[k]*304+buf+72,"..")) file_mas[k]><file_mas[0];
+	IF (k>0) && (strcmp(file_mas[0]*304+buf+72,"..")<>0) FOR(k--; k>0; k--;) IF (!strcmp(file_mas[k]*304+buf+72,"..")) file_mas[k]><file_mas[0];
 }
 
 
@@ -693,8 +689,8 @@ void Del_File(byte dodel)
 		IF (del_file_rez<>0)
 		{
 			Write_Error(del_file_rez);
-			IF (isdir==true) ShowMessage("Error. Folder isn't empty.");
-			IF (isdir==false) ShowMessage("Error. Filesystem read-only.");
+			IF ( isdir) ShowMessage("Error. Folder isn't empty.");
+			IF (!isdir) ShowMessage("Error. Filesystem read-only.");
 		}
  	}
 	del_active=0;
@@ -727,8 +723,8 @@ void Paste()
 		{
 			copystr(#copy_file,#file_path);
 			Del_File(true);
-			copy_file='';
-			cut_active=0;
+			copy_file=NULL;
+			cut_active=false;
 		}
 	SelectFile(#new_copy_path+strchr(#new_copy_path,'/'));
 }
@@ -801,10 +797,11 @@ void SelectFile(dword that_file)
 void Dir_Up()
 {
 	char cur_folder[4096];
-	if (!strcmp(#path,"/")) return;
+	if (path[1]==NULL) return;
 	i=strlen(#path)-1;
 	path[i]=0x00;
-	do i--; while (path[i]<>'/'); copystr(#path+i+1,#cur_folder); 
+	do i--; while (path[i]<>'/');
+	copystr(#path+i+1,#cur_folder); 
 	path[i+1]=0x00;
 	SelectFile(#cur_folder);
 }

@@ -134,13 +134,32 @@ int DeleleFile(dword del_file_path)
 }  
 
 ///////////////////////////
+//   Параметры файла    //
+///////////////////////////
+/*f70 getinfo_file_70;
+BDVK getinfo_file_info;
+:dword GetFileInfo(dword file_path)
+{    
+    getinfo_file_70.func = 5;
+    getinfo_file_70.param1 = 
+    getinfo_file_70.param2 = 
+    getinfo_file_70.param3 = 0;
+    getinfo_file_70.param4 = #getinfo_file_info;
+    getinfo_file_70.rezerv = 0;
+    getinfo_file_70.name = file_path;
+    $mov eax,70
+    $mov ebx,#getinfo_file_70.func
+    $int 0x40 
+}*/
+
+///////////////////////////
 //   Скопировать файл    //
 ///////////////////////////
 f70	CopyFile_f;
 inline fastcall int CopyFile(dword EBX,ECX)
 {
 	BDVK CopyFile_atr;
-	dword s=EBX, d=ECX, cBufer=0;
+	dword s=EBX, d=ECX, cBufer=0, rezult;
 	CopyFile_f.func = 5;
 	CopyFile_f.param1 = 0;
 	CopyFile_f.param2 = 0;
@@ -155,23 +174,11 @@ inline fastcall int CopyFile(dword EBX,ECX)
 	if (!EAX)
 	{	
 		cBufer = malloc(2*CopyFile_atr.sizelo);	
-		ReadFile(dword 0, CopyFile_atr.sizelo, cBufer, s);
-	
-		IF (!EAX)
-		{
-			CopyFile_f.func = 2;
-			CopyFile_f.param1 = 0;
-			CopyFile_f.param2 = 0;
-			CopyFile_f.param3 = CopyFile_atr.sizelo;
-			CopyFile_f.param4 = cBufer;
-			CopyFile_f.rezerv = 0;
-			CopyFile_f.name = d;
-			$mov eax, 70
-			$mov ebx, #CopyFile_f
-			$int 0x40
-		}
+		if (!ReadFile(0, CopyFile_atr.sizelo, cBufer, s))
+			rezult = CreateFile(CopyFile_atr.sizelo, cBufer, d);
+		free(cBufer);
 	}
-	return EAX;
+	return rezult;
 
 }
 
