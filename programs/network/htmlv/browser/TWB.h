@@ -463,6 +463,18 @@ void TWebBrowser::ParseHTML(dword bword){
 			if (tag[strlen(#tag)-1]=='/') tag[strlen(#tag)-1]=NULL; //for br/
 			if (tagparam) && (strlen(#tagparam) < 4000) GetNextParam();
 
+			if (stolbec + strlen(#line) > lines.column_max)
+			{
+				perenos_num = strrchr(#line, ' ');
+				if (!perenos_num) && (strlen(#line)>lines.column_max) perenos_num=lines.column_max;
+				strcpy(#temp, #line + perenos_num); //перенос по словам
+				line[perenos_num] = 0x00;
+				if (stroka >= lines.visible) && (lines.first <>0) break 1; //уходим...
+				DrawPage();
+				strcpy(#line, #temp);
+				
+				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем следущую строку
+			}
 			DrawPage();
 			line=NULL;
 
@@ -488,8 +500,9 @@ void TWebBrowser::ParseHTML(dword bword){
 				line[perenos_num] = 0x00;
 				if (stroka >= lines.visible) && (lines.first <>0) break 1; //уходим...
 				DrawPage();
-				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем следущую строку
 				strcpy(#line, #temp);
+				
+				TextGoDown(left + 5, stroka * 10 + top + 5, width - 20); //закрашиваем следущую строку
 			}
 		}
 	}
