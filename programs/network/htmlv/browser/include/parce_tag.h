@@ -1,7 +1,9 @@
-void GetNextParam()
+unsigned int GetNextParam()
 {
 	byte	kavichki = false;
 	int		i = strlen(#tagparam) - 1;
+	
+	if (!tagparam) return 0;
 	
 	WHILE((i > 0) && ((tagparam[i] == '"') || (tagparam[i] == ' ') || (tagparam[i] == '\'') || (tagparam[i] == '/')))
 	{
@@ -43,4 +45,6 @@ void GetNextParam()
 		strcpy(#parametr, #tagparam + i + 1);
 
 	tagparam[i] = 0x00;
+	
+	return 1;
 }

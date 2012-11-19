@@ -281,7 +281,7 @@ void TWebBrowser::OpenPage()
 	{
 		KillProcess(downloader_id); //убиваем старый процесс
 		DeleteFile(#download_path);
-		IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]='';
+		IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]=NULL;
 		downloader_id = RunProgram("/sys/network/downloader", #URL);
 		//Browser Hack v2.0
 		Pause(60);
@@ -344,7 +344,7 @@ void TWebBrowser::ParseHTML(dword bword){
 	li_text = link = ignor_text = text_color_index = text_colors[0] = li_tab = 0; //обнуляем теги
 	link_color = 0x0000FF;
 	bg_color = 0xFFFFFF;
-	line = '';
+	line = NULL;
 	strcpy(#page_links,"|");
 	strcpy(#header, #version);
 
@@ -364,7 +364,7 @@ void TWebBrowser::ParseHTML(dword bword){
 		case 0x0a:
 			if (pre_text)
 			{
-				bukva = temp = '';
+				bukva = temp = NULL;
 				goto NEXT_MARK;
 			}
 		case '\9':
@@ -402,25 +402,8 @@ void TWebBrowser::ParseHTML(dword bword){
 				strcat(#tag, #bukva);
 			}
 			
-			for (j=0; unicode_tags[j]!=0; j+=2;) 
-			{
-				if (!strcmp(#tag, unicode_tags[j]))
-				{
-					strcat(#line, unicode_tags[j+1]);
-					break 1;
-				}
-			}
-			
-			rez = atoi(#tag + 1) - 1040;
-			if (tag[1] == '1') && (rez>=0) && (rez<=72) && (strlen(#tag) == 5)
-			{
-				bukva = unicode_chars[rez];
-				//GOTO DEFAULT_MARK; //обрабатываем букву лучше наверно strcat(#line, unicode_tags[j+1]); и break 1; 
-				strcat(#line, #bukva);
-				break; 
-			}
-			
-			strcat(#line,#tag); //выводим на экран необработанный тег, так браузеры зачем-то делают
+			bukva = GetUnicodeSymbol();
+			if (bukva) goto DEFAULT_MARK;
 			break;
 		case '<':
 			bword++; //промотаем символ <
@@ -516,7 +499,7 @@ void TWebBrowser::ParseHTML(dword bword){
 	if (anchor)
 	{
 		//если посреди текста появится новый якорь - будет бесконечный цикл
-		anchor='';
+		anchor=NULL;
 		lines.first=anchor_line_num;
 		ParseHTML(buf);
 	}
@@ -594,13 +577,13 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	//проверяем тег открывается или закрывается
 	if (tag[0] == '/') 
 	{
-		rez = 0;
-		strcpy(#tag, #tag+1);
+		 rez = 0;
+		 strcpy(#tag, #tag+1);
 	}
-	else
-		rez = 1;
+	else rez = 1;
 		
-	if (!chTag("html")) {
+	if (!chTag("html"))
+	{
 		IF(!strcmp(#URL + strlen(#URL) - 4, ".mht")) IF (rez==0) ignor_text = 1; ELSE ignor_text = 0;
 		return;
 	}
@@ -609,14 +592,8 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 	if(!chTag("title"))
 	{
-		if (rez)
-		{
-			header=0;
-		}
-		else //тег закрылся - вывели строку
-		{
-			if (stroka==0) DrawTitle(#header);
-		}
+		if (rez) header=NULL;
+		else if (!stroka) DrawTitle(#header); //тег закрылся - вывели строку
 		return;
 	}
 
@@ -630,30 +607,16 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 	if (anchor) && (!strcmp(#parametr, "id=")) //очень плохо!!! потому что если не последний тег, работать не будет
 	{
-		if (!strcmp(#anchor, #options))
-		{
-			anchor_line_num=lines.first+stroka;
-		}
+		if (!strcmp(#anchor, #options))	anchor_line_num=lines.first+stroka;
 	}
 	
 	if (!chTag("body"))
 	{
-		BODY_MARK:
-		
-		if (!strcmp(#parametr, "link="))
-			link_color = GetColor(#options);
-		
-		if (!strcmp(#parametr, "text="))
-			text_colors[0]=GetColor(#options);
-		
-		if (!strcmp(#parametr, "bgcolor="))
-			bg_color=GetColor(#options);
-		
-		IF(tagparam)
-		{
-			GetNextParam();
-			GOTO BODY_MARK;
-		}
+		do{
+			if (!strcmp(#parametr, "link=")) link_color = GetColor(#options);
+			if (!strcmp(#parametr, "text=")) text_colors[0]=GetColor(#options);
+			if (!strcmp(#parametr, "bgcolor=")) bg_color=GetColor(#options);
+		} while(GetNextParam());
 		
 		return;
 	}
@@ -662,35 +625,30 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	{
 		if (rez)
 		{
-			 
 			if (link) IF(text_color_index > 0) text_color_index--; //если предыдущий тег а не был закрыт
 
-			_A_MARK:
-			if (!strcmp(#parametr, "href="))
-			{
-				if (stroka - 1 > lines.visible) || (stroka < -2) return;
-				
-				text_color_index++;
-				text_colors[text_color_index] = text_colors[text_color_index-1];
-				
-				link = 1;
-				blink++;
-				text_colors[text_color_index] = link_color;
-				strcat(#page_links, #options);
-				strcat(#page_links, "|");
-			}
-			if (anchor) && (!strcmp(#parametr, "name="))
-			{
-				if (!strcmp(#anchor, #options))
+			do{
+				if (!strcmp(#parametr, "href="))
 				{
-					anchor_line_num=lines.first+stroka;
+					if (stroka - 1 > lines.visible) || (stroka < -2) return;
+					
+					text_color_index++;
+					text_colors[text_color_index] = text_colors[text_color_index-1];
+					
+					link = 1;
+					blink++;
+					text_colors[text_color_index] = link_color;
+					strcat(#page_links, #options);
+					strcat(#page_links, "|");
 				}
-			}
-			if (tagparam)
-			{
-				GetNextParam();
-				GOTO _A_MARK;
-			}
+				if (anchor) && (!strcmp(#parametr, "name="))
+				{
+					if (!strcmp(#anchor, #options))
+					{
+						anchor_line_num=lines.first+stroka;
+					}
+				}
+			} while(GetNextParam());
 		}
 		else {
 			link = 0;
@@ -707,15 +665,12 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			text_color_index++;
 			text_colors[text_color_index] = text_colors[text_color_index-1];
 		
-			COL_MARK:
-			if (strcmp(#parametr, "color=") == 0) //&& (parametr[1] == '#')
-			{
-				text_colors[text_color_index] = GetColor(#options);
-			}
-			IF(tagparam) {
-				GetNextParam();
-				GOTO COL_MARK;
-			}
+			do{
+				if (strcmp(#parametr, "color=") == 0) //&& (parametr[1] == '#')
+				{
+					text_colors[text_color_index] = GetColor(#options);
+				}
+			} while(GetNextParam());
 		}
 		else
 			if (text_color_index > 0) text_color_index--;
@@ -745,7 +700,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 	else
-		oldtag='';
+		oldtag=NULL;
 		
 	if (!chTag("b")) || (!chTag("strong")) || (!chTag("big")) {
 		b_text = rez;
@@ -795,7 +750,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	if (!chTag("img"))
 	{
 		if (GetFileInfo(libimg)<>0) return;  //если библиотеки нет
-		IMG_TAG:
+		do{
 			if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
 			{
 				if (downloader_id) strcpy(#temp, #history_list[history_current-1].Item);
@@ -816,11 +771,7 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 				strcat(#alt, "]");
 			}
 
-		IF(tagparam)
-		{
-			GetNextParam();
-			GOTO IMG_TAG;
-		}
+		} while(GetNextParam());
 		
 		if (!image) 
 		{
@@ -855,20 +806,16 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 
 	if (!chTag("meta")) || (!chTag("?xml"))
 	{
-		META:
-		if (!strcmp(#parametr, "charset=")) || (!strcmp(#parametr, "content=")) || (!strcmp(#parametr, "encoding="))
-		{
-			strcpy(#options, #options[strrchr(#options, '=')]); //поиск в content=
+		do{
+			if (!strcmp(#parametr, "charset=")) || (!strcmp(#parametr, "content=")) || (!strcmp(#parametr, "encoding="))
+			{
+				strcpy(#options, #options[strrchr(#options, '=')]); //поиск в content=
 
-			if (!strcmp(#options,"utf-8"))   || (!strcmp(#options,"utf8"))      ReadHtml(_UTF);
-			if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))   ReadHtml(_KOI);
-			if (!strcmp(#options, "dos"))    || (!strcmp(#options, "cp-866"))   ReadHtml(_DOS);
-		}
-		if (tagparam)
-		{
-			GetNextParam();
-			goto META;
-		}
+				if (!strcmp(#options,"utf-8"))   || (!strcmp(#options,"utf8"))      ReadHtml(_UTF);
+				if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))   ReadHtml(_KOI);
+				if (!strcmp(#options, "dos"))    || (!strcmp(#options, "cp-866"))   ReadHtml(_DOS);
+			}
+		} while(GetNextParam());
 		return;
 	}
 }

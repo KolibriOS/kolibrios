@@ -30,11 +30,15 @@ void GetURLfromPageLinks(int id)
 	int i, j = 0;
 	for (i = 0; i <= id - 401; i++)
 	{
-		do j++;
+		do
+		{
+			j++;
+			if (j>=strlen(#page_links)) return; //не самое удачное решение
+		}
 		while (page_links[j] <>'|');
 	}
 	page_links[j] = 0x00;
-	strcpy(#URL, #page_links[strrchr(#page_links, '|')]);
+	strcpy(#URL, #page_links+strrchr(#page_links, '|'));
 }
 
 

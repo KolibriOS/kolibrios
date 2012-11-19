@@ -1,8 +1,3 @@
-
-
-byte unicode_chars[] = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ ¡¢£¤¥¦§¨©ª«¬­®¯àáâãäåæçèéêëìíîïðñh£\243i\105\244\0";
-
-
 char *unicode_tags[]={
 "nbsp",  " ",
 "#38",   " ",
@@ -66,3 +61,29 @@ char *unicode_tags[]={
 "percnt","%",
 
 0}; 
+
+
+byte unicode_chars[] = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ ¡¢£¤¥¦§¨©ª«¬­®¯àáâãäåæçèéêëìíîïðñh£\243i\105\244\0";
+
+unsigned char GetUnicodeSymbol()
+{
+	int j;
+	
+	for (j=0; unicode_tags[j]!=0; j+=2;) 
+	{
+		if (!strcmp(#tag, unicode_tags[j]))
+		{
+			strcat(#line, unicode_tags[j+1]);
+			return NULL;
+		}
+	}
+	
+	rez = atoi(#tag + 1) - 1040;
+	if (tag[1] == '1') && (rez>=0) && (rez<=72) && (strlen(#tag) == 5)
+	{
+		return unicode_chars[rez];
+	}
+	
+	strcat(#line,#tag); //âûâîäèì íà ýêðàí íåîáðàáîòàííûé òåã, òàê áðàóçåðû çà÷åì-òî äåëàþò
+	return NULL;
+}
