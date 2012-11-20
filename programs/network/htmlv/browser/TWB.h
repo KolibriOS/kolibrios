@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.97.7";
+char version[]=" Text-based Browser 0.98";
 
 
 struct TWebBrowser {
@@ -119,6 +119,9 @@ void TWebBrowser::Scan(int id)
 			if (!pre_text) pre_text=2;
 				else pre_text=0;
 			break;
+		case 002: //free img cache
+			FreeImgCache();
+			break;			
 		case 005: //truetype
 			if (use_truetype == 2) 
 			{
@@ -425,7 +428,7 @@ void TWebBrowser::ParseHTML(dword bword){
 					if (ESBYTE[bword] <>'-') goto HH_;
 				}
 			}
-			while (ESBYTE[bword] <>'>') && (bword < buf + filesize) //получаем тег и его параметры
+			while (ESBYTE[bword] !='>') && (bword < buf + filesize) //получаем тег и его параметры
 			{
 				bukva = ESBYTE[bword];
 				if (bukva == '\9') || (bukva == '\x0a') || (bukva == '\x0d') bukva = ' ';
@@ -496,14 +499,12 @@ void TWebBrowser::ParseHTML(dword bword){
 	if (stroka * 10 + 15 <= height)
 		DrawBar(left, stroka * 10 + top + 15, width - 15, -stroka * 10 + height - 15, bg_color); //закрашиваем всё до конца
 	if (lines.first == 0) lines.all = stroka;
-	if (anchor)
+	if (anchor) //если посреди текста появится новый якорь - будет бесконечный цикл
 	{
-		//если посреди текста появится новый якорь - будет бесконечный цикл
 		anchor=NULL;
 		lines.first=anchor_line_num;
 		ParseHTML(buf);
 	}
-
 	DrawScroller();
 }
 
@@ -526,7 +527,6 @@ void TWebBrowser::DrawPage() //резать здесь!!1!
 			strcpy(#header, #line);
 			line=0;
 		}
-			
 		strcat(#header, " -");
 		strcat(#header, #version);
 		return;
@@ -570,10 +570,6 @@ char oldtag[100];
 void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	dword hr_color;
 
-    dword image;
-    char temp[4096], alt[4096];
-    int w=0, h=0, img_lines_first=0;
-
 	//проверяем тег открывается или закрывается
 	if (tag[0] == '/') 
 	{
@@ -600,10 +596,8 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	if (ignor_text) return;
 
 
-
 	
 	IF(!chTag("q")) strcat(#line, "\"");
-
 
 	if (anchor) && (!strcmp(#parametr, "id=")) //очень плохо!!! потому что если не последний тег, работать не будет
 	{
@@ -617,7 +611,6 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			if (!strcmp(#parametr, "text=")) text_colors[0]=GetColor(#options);
 			if (!strcmp(#parametr, "bgcolor=")) bg_color=GetColor(#options);
 		} while(GetNextParam());
-		
 		return;
 	}
 
@@ -657,7 +650,6 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		return;
 	}
 
-
 	if (!chTag("font"))
 	{
 		if (rez)
@@ -676,7 +668,6 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 			if (text_color_index > 0) text_color_index--;
 		return;
 	}
-
 	if(!chTag("tr")) || (!chTag("br")) {
 		TextGoDown(left1, top1, width1);
 		return;
@@ -691,7 +682,6 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		IF(rez) TextGoDown(left1, top1 + 10, width1);
 		return;
 	}
-
 	if (!chTag("h1")) || (!chTag("h2")) || (!chTag("h3")) || (!chTag("h4")) {
 		TextGoDown(left1, top1, width1);
 		IF(rez) TextGoDown(left1, top1 + 10, width1);
@@ -706,12 +696,10 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		b_text = rez;
 		return;
 	}
-	////////////////////////////
 	if(!chTag("i")) || (!chTag("em")) || (!chTag("subtitle")) {
 		i_text = rez;
 		return;
 	}	
-	////////////////////////////
 	if (!chTag("dt"))
 	{
 		li_text = rez;
@@ -719,7 +707,6 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		TextGoDown(left1, top1, width1);
 		return;
 	}
-	/////////////////////////////
 	if(!chTag("li")) || (!chTag("dt")) //надо сделать вложенные списки
 	{
 		li_text = rez;
@@ -728,89 +715,36 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 		IF(stroka > -1) && (stroka - 2 < lines.visible) DrawBar(li_tab * 5 * 6 + left1 - 5, top1 + 12, 2, 2, 0);
 		return;
 	}
-	////////////////////////////
-	IF(!chTag("u")) || (!chTag("ins")) u_text = rez;
-	IF(!chTag("s")) || (!chTag("strike")) || (!chTag("del")) s_text = rez;
-	IF(!chTag("ul")) || (!chTag("ol")) IF(!rez) {
+	if (!chTag("u")) || (!chTag("ins")) u_text = rez;
+	if (!chTag("s")) || (!chTag("strike")) || (!chTag("del")) s_text = rez;
+	if (!chTag("ul")) || (!chTag("ol")) IF(!rez)
+	{
 		li_text = rez;
 		li_tab--;
 		TextGoDown(left1, top1, width1);
 	} ELSE li_tab++;
-	IF(!chTag("dd")) stolbec += 5;
-	IF(!chTag("blockquote")) blq_text = rez;
-	IF(!chTag("pre")) pre_text = rez; 
-	IF(!chTag("hr")) {
+	if (!chTag("dd")) stolbec += 5;
+	if (!chTag("blockquote")) blq_text = rez;
+	if (!chTag("pre")) pre_text = rez; 
+	if (!chTag("hr"))
+	{
 		TextGoDown(left1, top1, width1);
 		TextGoDown(left1, top1 + 10, width1);
 		IF(strcmp(#parametr, "color=") == 0) hr_color = GetColor(#options);
 		ELSE hr_color = 0x999999;
 		IF(stroka > 0) DrawBar(left1, top1 + 14, width1 - 8, 1, hr_color);
 	}
-
 	if (!chTag("img"))
 	{
-		if (GetFileInfo(libimg)<>0) return;  //если библиотеки нет
-		do{
-			if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
-			{
-				if (downloader_id) strcpy(#temp, #history_list[history_current-1].Item);
-					else strcpy(#temp, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
-				if (strcmpn(#temp, "http:", 5)!=0) || (strcmpn(#options, "http:", 5)!=0)
-				{
-					temp[strrchr(#temp, '/')] = 0x00; //обрезаем её урл до последнего /
-					strcat(#temp, #options);
-					image=load_image(#temp);
-					w=DSWORD[image+4];
-					h=DSWORD[image+8];
-				}
-			}
-  			if (!strcmp(#parametr,"alt="))
-			{
-				strcpy(#alt, "[");
-				strcat(#alt, #options);
-				strcat(#alt, "]");
-			}
-
-		} while(GetNextParam());
-		
-		if (!image) 
-		{
-			if (alt) && (link) strcat(#line, #alt);
-			return;
-		}
-		
-		if (w>width1) w=width1;
-		
-		if (stroka==0) DrawBar(left, top, width-15, 15, bg_color); //закрашиваем первую строку
-		stroka+=h/10;
-		if (top1+h<WB1.top) || (top1>WB1.top+WB1.height-10) return; //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
-		if (top1<WB1.top) //если часть изображения сверху
-		{
-			DrawBar(left, top, width-15, 10, bg_color); //закрашиваем первую строку
-			img_lines_first=WB1.top-top1;
-			h=h-img_lines_first;
-			top1=WB1.top;
-		}
-		if (top1>WB1.top+WB1.height-h-15) //если часть изображения снизу
-		{
-			h=WB1.top+WB1.height-top1-15;
-		}	
-		if (h<=0) return;
-		if (anchor) return;
-		
-		img_draw stdcall (image,left1-5,top1+10,w, h,0,img_lines_first);
-		DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, bg_color);
-		IF (link) DefineButton(left1 - 5, top1+10, w, h, blink + BT_HIDE, 0xB5BFC9);
+		Images( left1, top1, width1);
 		return;
 	}
-
 	if (!chTag("meta")) || (!chTag("?xml"))
 	{
 		do{
 			if (!strcmp(#parametr, "charset=")) || (!strcmp(#parametr, "content=")) || (!strcmp(#parametr, "encoding="))
 			{
 				strcpy(#options, #options[strrchr(#options, '=')]); //поиск в content=
-
 				if (!strcmp(#options,"utf-8"))   || (!strcmp(#options,"utf8"))      ReadHtml(_UTF);
 				if (!strcmp(#options, "koi8-r")) || (!strcmp(#options, "koi8-u"))   ReadHtml(_KOI);
 				if (!strcmp(#options, "dos"))    || (!strcmp(#options, "cp-866"))   ReadHtml(_DOS);
@@ -833,6 +767,105 @@ void TextGoDown(int left1, top1, width1)
 	ELSE stolbec = 0;
 	if (li_text) stolbec = li_tab * 5;
 	IF(stroka >= 0) && (stroka - 2 < lines.visible)  && (!anchor) DrawBar(left1 - 5, top1 + 10, width1 + 5, 10, bg_color);
+}
+
+
+struct s_image
+{
+	dword *image;
+	char path[4096];
+};
+s_image pics[100]; //pics = mem_Alloc( 100*sizeof(s_image) );
+int num_of_pics;
+
+int GetOrSetPicNum(dword i_path)
+{
+	int i;
+	for (i=0; i<num_of_pics; i++)
+	{
+		if (!strcmp(#pics[i].path, i_path)) return i;
+	}
+	num_of_pics++;
+	return num_of_pics;
+}
+
+void FreeImgCache()
+{
+	int i;
+	for (i=0; i<=num_of_pics; i++)
+	{
+		mem_Free(pics[num_of_pics].image);
+		pics[num_of_pics].path=NULL;
+	}
+	num_of_pics=0;
+}
+
+
+void Images(int left1, top1, width1)
+{
+	dword image;
+    char img_path[4096], alt[4096];
+    int w=0, h=0, img_lines_first=0, cur_pic=0;
+	
+	if (GetFileInfo(libimg)<>0) return;  //если библиотеки нет
+		do{
+			if (!strcmp(#parametr,"src="))   //надо объединить с GetNewUrl()
+			{
+				if (downloader_id) strcpy(#img_path, #history_list[history_current-1].Item);
+					else strcpy(#img_path, BrowserHistory.CurrentUrl()); //достаём адрес текущей страницы
+				
+				if (strcmpn(#img_path, "http:", 5)!=0) || (strcmpn(#options, "http:", 5)!=0)
+				{
+					img_path[strrchr(#img_path, '/')] = 0x00; //обрезаем её урл до последнего /
+					strcat(#img_path, #options);
+					
+					cur_pic=GetOrSetPicNum(#img_path);
+					if (!pics[cur_pic].path)
+					{
+						pics[cur_pic].image=load_image(#img_path);
+						strcpy(#pics[cur_pic].path, #img_path);
+					}
+				}
+			}
+  			if (!strcmp(#parametr,"alt="))
+			{
+				strcpy(#alt, "[");
+				strcat(#alt, #options);
+				strcat(#alt, "]");
+			}
+
+		} while(GetNextParam());
+		
+		if (!pics[cur_pic].image) 
+		{
+			if (alt) && (link) strcat(#line, #alt);
+			return;
+		}
+		
+		w=DSWORD[pics[cur_pic].image+4];
+		h=DSWORD[pics[cur_pic].image+8];
+		if (w>width1) w=width1;
+		
+		if (stroka==0) DrawBar(WB1.left, WB1.top, WB1.width-15, 15, bg_color); //закрашиваем первую строку
+		stroka+=h/10;
+		if (top1+h<WB1.top) || (top1>WB1.top+WB1.height-10) return; //если ВСЁ изображение ушло ВЕРХ или ВНИЗ
+		if (top1<WB1.top) //если часть изображения сверху
+		{
+			DrawBar(WB1.left, WB1.top, WB1.width-15, 10, bg_color); //закрашиваем первую строку
+			img_lines_first=WB1.top-top1;
+			h=h-img_lines_first;
+			top1=WB1.top;
+		}
+		if (top1>WB1.top+WB1.height-h-15) //если часть изображения снизу
+		{
+			h=WB1.top+WB1.height-top1-15;
+		}	
+		if (h<=0) return;
+		if (anchor) return;
+		
+		img_draw stdcall (pics[cur_pic].image,left1-5,top1+10,w, h,0,img_lines_first);
+		DrawBar(left1+w - 5, top1 + 10, width1-w + 5, h, bg_color);
+		IF (link) DefineButton(left1 - 5, top1+10, w, h, blink + BT_HIDE, 0xB5BFC9);
 }
 
 

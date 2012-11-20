@@ -10,6 +10,7 @@ char *ITEMS_LIST[]={
 "KOI           Ctrl+K",11,
 "UTF           Ctrl+U",21,
 "Line breaks ON"      ,01,
+"Free image cache"    ,02,
 "TrueType fonts"      ,05,
 0}; 
 
@@ -19,13 +20,12 @@ proc_info MenuForm;
 	
 void menu_rmb()
 {
-
 	mouse mm;
 	int items_num, items_cur;
 	int id1, key, i;
 	
 	SetEventMask(100111b); 
-	
+
 	loop() switch(WaitEvent())
 	{
 	case evMouse:
@@ -47,7 +47,6 @@ void menu_rmb()
 					items_cur=id1;
 					goto _ITEMS_DRAW;
 				}
-				
 				break;
 				
 		case evButton: 
