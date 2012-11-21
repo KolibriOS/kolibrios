@@ -224,7 +224,7 @@ void main()
 							break;
 					case 77:
 							IF (show_actions==1) show_actions=0; ELSE show_actions=1;
-							Actions();
+							DrawLeftPanel();
 							break;
 					case 78: //rescan devices
 							Tip(56, "Devices", 78, "-");
