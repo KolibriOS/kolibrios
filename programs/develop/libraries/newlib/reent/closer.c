@@ -65,11 +65,13 @@ _DEFUN(_close_r, (ptr, fd),
 
     fh = (__file_handle*) __getOSHandle( fd );
 
-    _free_r(ptr, fh->name);
-    _free_r(ptr, fh);
-
-    __freePOSIXHandle( fd );
-    __SetIOMode_nogrow( fd, 0 );
+    if( fd > STDERR_FILENO )
+    {
+        _free_r(ptr, fh->name);
+        _free_r(ptr, fh);
+        __freePOSIXHandle( fd );
+        __SetIOMode_nogrow( fd, 0 );
+    }
 
     return 0;
 }

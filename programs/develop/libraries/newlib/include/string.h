@@ -9,6 +9,7 @@
 
 #include "_ansi.h"
 #include <sys/reent.h>
+#include <sys/cdefs.h>
 
 #define __need_size_t
 #include <stddef.h>
@@ -62,11 +63,25 @@ char 	*_EXFUN(stpcpy,(char *, const char *));
 char 	*_EXFUN(stpncpy,(char *, const char *, size_t));
 int	 _EXFUN(strcasecmp,(const char *, const char *));
 char	*_EXFUN(strcasestr,(const char *, const char *));
+char 	*_EXFUN(strchrnul,(const char *, int));
 char 	*_EXFUN(strdup,(const char *));
 char 	*_EXFUN(_strdup_r,(struct _reent *, const char *));
 char 	*_EXFUN(strndup,(const char *, size_t));
 char 	*_EXFUN(_strndup_r,(struct _reent *, const char *, size_t));
+/* There are two common strerror_r variants.  If you request
+   _GNU_SOURCE, you get the GNU version; otherwise you get the POSIX
+   version.  POSIX requires that #undef strerror_r will still let you
+   invoke the underlying function, but that requires gcc support.  */
+#ifdef _GNU_SOURCE
 char 	*_EXFUN(strerror_r,(int, char *, size_t));
+#else
+# ifdef __GNUC__
+int      _EXFUN(strerror_r,(int, char *, size_t)) __asm__ (__ASMNAME ("__xpg_strerror_r"));
+# else
+int      _EXFUN(__xpg_strerror_r,(int, char *, size_t));
+#  define strerror_r __xpg_strerror_r
+# endif
+#endif
 size_t	 _EXFUN(strlcat,(char *, const char *, size_t));
 size_t	 _EXFUN(strlcpy,(char *, const char *, size_t));
 int	 _EXFUN(strncasecmp,(const char *, const char *, size_t));
@@ -74,12 +89,29 @@ size_t	 _EXFUN(strnlen,(const char *, size_t));
 char 	*_EXFUN(strsep,(char **, const char *));
 char	*_EXFUN(strlwr,(char *));
 char	*_EXFUN(strupr,(char *));
-#ifdef __CYGWIN__
 #ifndef DEFS_H	/* Kludge to work around problem compiling in gdb */
 char  *_EXFUN(strsignal, (int __signo));
 #endif
+#ifdef __CYGWIN__
 int     _EXFUN(strtosigno, (const char *__name));
 #endif
+
+/* Recursive version of strerror.  */
+char *	_EXFUN(_strerror_r, (struct _reent *, int, int, int *));
+
+#if defined _GNU_SOURCE && defined __GNUC__
+#define strdupa(__s) \
+	(__extension__ ({const char *__in = (__s); \
+			 size_t __len = strlen (__in) + 1; \
+			 char * __out = (char *) __builtin_alloca (__len); \
+			 (char *) memcpy (__out, __in, __len);}))
+#define strndupa(__s, __n) \
+	(__extension__ ({const char *__in = (__s); \
+			 size_t __len = strnlen (__in, (__n)) + 1; \
+			 char *__out = (char *) __builtin_alloca (__len); \
+			 __out[__len-1] = '\0'; \
+			 (char *) memcpy (__out, __in, __len-1);}))
+#endif /* _GNU_SOURCE && __GNUC__ */
 
 /* These function names are used on Windows and perhaps other systems.  */
 #ifndef strcmpi

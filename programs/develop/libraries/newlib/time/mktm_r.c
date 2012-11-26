@@ -182,7 +182,7 @@ _DEFUN (_mktm_r, (tim_p, res, is_gmtime),
 		{
 		  res->tm_mon = 11;
 		  res->tm_year -= 1;
-		  res->tm_yday = 365 + isleap(res->tm_year);
+		  res->tm_yday = 364 + isleap(res->tm_year + 1900);
 		}
 	      res->tm_mday = ip[res->tm_mon];
 	    }
@@ -216,10 +216,13 @@ _DEFUN (__tzcalc_limits, (year),
   
   for (i = 0; i < 2; ++i)
     {
-      if (tz->__tzrule[i].ch == 'J')
+	if (tz->__tzrule[i].ch == 'J') {
+        /* The Julian day n (1 <= n <= 365). */
 	days = year_days + tz->__tzrule[i].d + 
 		(isleap(year) && tz->__tzrule[i].d >= 60);
-      else if (tz->__tzrule[i].ch == 'D')
+        /* Convert to yday */
+        --days;
+	} else if (tz->__tzrule[i].ch == 'D')
 	days = year_days + tz->__tzrule[i].d;
       else
 	{
@@ -254,4 +257,3 @@ _DEFUN (__tzcalc_limits, (year),
 
   return 1;
 }
-

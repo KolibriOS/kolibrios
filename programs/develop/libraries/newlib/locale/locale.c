@@ -90,16 +90,15 @@ Cygwin additionally supports locales from the file
 (<<"">> is also accepted; if given, the settings are read from the
 corresponding LC_* environment variables and $LANG according to POSIX rules.
 
-This implementation also supports a single modifier, <<"cjknarrow">>.
-Any other modifier is ignored.  <<"cjknarrow">>, in conjunction with one
-of the language specifiers <<"ja">>, <<"ko">>, and <<"zh">> specifies
-how the functions <<wcwidth>> and <<wcswidth>> handle characters from
-the "CJK Ambiguous Width" character class described in
-http://www.unicode.org/unicode/reports/tr11/.  Usually these characters
-have a width of 1, unless you specify one of the aforementioned
-languages, in which case these characters have a width of 2.  By
-specifying the <<"cjknarrow">> modifier, these characters will have a
-width of one in the languages <<"ja">>, <<"ko">>, and <<"zh">> as well.
+This implementation also supports the modifier <<"cjknarrow">>, which
+affects how the functions <<wcwidth>> and <<wcswidth>> handle characters
+from the "CJK Ambiguous Width" category of characters described at
+http://www.unicode.org/reports/tr11/#Ambiguous. These characters have a width
+of 1 for singlebyte charsets and a width of 2 for multibyte charsets
+other than UTF-8. For UTF-8, their width depends on the language specifier:
+it is 2 for <<"zh">> (Chinese), <<"ja">> (Japanese), and <<"ko">> (Korean),
+and 1 for everything else. Specifying <<"cjknarrow">> forces a width of 1,
+independent of charset and language.
 
 If you use <<NULL>> as the <[locale]> argument, <<setlocale>> returns a
 pointer to the string representing the current locale.  The acceptable
@@ -183,6 +182,7 @@ No supporting OS subroutines are required.
 #include "lmonetary.h"
 #include "lnumeric.h"
 #include "lctype.h"
+#include "timelocal.h"
 #include "../stdlib/local.h"
 
 #define _LC_LAST      7
@@ -236,7 +236,11 @@ char __default_locale[ENCODING_LEN + 1] = DEFAULT_LOCALE;
 static char current_categories[_LC_LAST][ENCODING_LEN + 1] = {
     "C",
     "C",
+#ifdef __CYGWIN__ /* Cygwin starts with LC_CTYPE set to "C.UTF-8". */
+    "C.UTF-8",
+#else
     "C",
+#endif
     "C",
     "C",
     "C",
@@ -256,13 +260,12 @@ static const char *__get_locale_env(struct _reent *, int);
 
 #endif /* _MB_CAPABLE */
 
-#if 0 /*def __CYGWIN__  TODO: temporarily(?) disable C == UTF-8 */
+#ifdef __CYGWIN__
 static char lc_ctype_charset[ENCODING_LEN + 1] = "UTF-8";
-static char lc_message_charset[ENCODING_LEN + 1] = "UTF-8";
 #else
 static char lc_ctype_charset[ENCODING_LEN + 1] = "ASCII";
-static char lc_message_charset[ENCODING_LEN + 1] = "ASCII";
 #endif
+static char lc_message_charset[ENCODING_LEN + 1] = "ASCII";
 static int lc_ctype_cjk_lang = 0;
 
 char *
@@ -433,7 +436,7 @@ currentlocale()
 #ifdef _MB_CAPABLE
 #ifdef __CYGWIN__
 extern void __set_charset_from_locale (const char *locale, char *charset);
-extern int __set_locale_from_locale_alias (const char *, char *);
+extern char *__set_locale_from_locale_alias (const char *, char *);
 extern int __collate_load_locale (const char *, void *, const char *);
 #endif /* __CYGWIN__ */
 
@@ -453,7 +456,7 @@ loadlocale(struct _reent *p, int category)
   char *locale = NULL;
   char charset[ENCODING_LEN + 1];
   unsigned long val;
-  char *end, *c;
+  char *end, *c = NULL;
   int mbc_max;
   int (*l_wctomb) (struct _reent *, char *, wchar_t, const char *, mbstate_t *);
   int (*l_mbtowc) (struct _reent *, wchar_t *, const char *, size_t,
@@ -496,11 +499,7 @@ restart:
   if (!strcmp (locale, "POSIX"))
     strcpy (locale, "C");
   if (!strcmp (locale, "C"))				/* Default "C" locale */
-#if 0 /*def __CYGWIN__  TODO: temporarily(?) disable C == UTF-8 */
-    strcpy (charset, "UTF-8");
-#else
     strcpy (charset, "ASCII");
-#endif
   else if (locale[0] == 'C'
 	   && (locale[1] == '-'		/* Old newlib style */
 	       || locale[1] == '.'))	/* Extension for the C locale to allow
@@ -508,7 +507,16 @@ restart:
 					   sticking to the C locale in terms
 					   of sort order, etc.  Proposed in
 					   the Debian project. */
-    strcpy (charset, locale + 2);
+    {
+      char *chp;
+
+      c = locale + 2;
+      strcpy (charset, c);
+      if ((chp = strchr (charset, '@')))
+        /* Strip off modifier */
+        *chp = '\0';
+      c += strlen (charset);
+    }
   else							/* POSIX style */
     {
       c = locale;
@@ -559,7 +567,8 @@ restart:
       else
 	/* Invalid string */
       	FAIL;
-      if (c[0] == '@')
+    }
+  if (c && c[0] == '@')
 	{
 	  /* Modifier */
 	  /* Only one modifier is recognized right now.  "cjknarrow" is used
@@ -568,7 +577,6 @@ restart:
 	  if (!strcmp (c + 1, "cjknarrow"))
 	    cjknarrow = 1;
 	}
-    }
   /* We only support this subset of charsets. */
   switch (charset[0])
     {
@@ -845,16 +853,18 @@ restart:
       __wctomb = l_wctomb;
       __mbtowc = l_mbtowc;
       __set_ctype (charset);
-      /* Check for the language part of the locale specifier.  In case
-         of "ja", "ko", or "zh", assume the use of CJK fonts, unless the
-	 "@cjknarrow" modifier has been specifed.
-	 The result is stored in lc_ctype_cjk_lang and tested in wcwidth()
-	 to figure out the width to return (1 or 2) for the "CJK Ambiguous
-	 Width" category of characters. */
+      /* Determine the width for the "CJK Ambiguous Width" category of
+         characters. This is used in wcwidth(). Assume single width for
+         single-byte charsets, and double width for multi-byte charsets
+         other than UTF-8. For UTF-8, use double width for the East Asian
+         languages ("ja", "ko", "zh"), and single width for everything else.
+         Single width can also be forced with the "@cjknarrow" modifier. */
       lc_ctype_cjk_lang = !cjknarrow
-			  && ((strncmp (locale, "ja", 2) == 0
+			  && mbc_max > 1
+			  && (charset[0] != 'U'
+			      || strncmp (locale, "ja", 2) == 0
 			      || strncmp (locale, "ko", 2) == 0
-			      || strncmp (locale, "zh", 2) == 0));
+			      || strncmp (locale, "zh", 2) == 0);
 #ifdef __HAVE_LOCALE_INFO__
       ret = __ctype_load_locale (locale, (void *) l_wctomb, charset, mbc_max);
 #endif /* __HAVE_LOCALE_INFO__ */
@@ -942,7 +952,7 @@ char *
 _DEFUN_VOID(__locale_msgcharset)
 {
 #ifdef __HAVE_LOCALE_INFO__
-  return __get_current_messages_locale ()->codeset;
+  return (char *) __get_current_messages_locale ()->codeset;
 #else
   return lc_message_charset;
 #endif
@@ -962,21 +972,21 @@ _DEFUN(_localeconv_r, (data),
   if (__nlocale_changed)
     {
       struct lc_numeric_T *n = __get_current_numeric_locale ();
-      lconv.decimal_point = n->decimal_point;
-      lconv.thousands_sep = n->thousands_sep;
-      lconv.grouping = n->grouping;
+      lconv.decimal_point = (char *) n->decimal_point;
+      lconv.thousands_sep = (char *) n->thousands_sep;
+      lconv.grouping = (char *) n->grouping;
       __nlocale_changed = 0;
     }
   if (__mlocale_changed)
     {
       struct lc_monetary_T *m = __get_current_monetary_locale ();
-      lconv.int_curr_symbol = m->int_curr_symbol;
-      lconv.currency_symbol = m->currency_symbol;
-      lconv.mon_decimal_point = m->mon_decimal_point;
-      lconv.mon_thousands_sep = m->mon_thousands_sep;
-      lconv.mon_grouping = m->mon_grouping;
-      lconv.positive_sign = m->positive_sign;
-      lconv.negative_sign = m->negative_sign;
+      lconv.int_curr_symbol = (char *) m->int_curr_symbol;
+      lconv.currency_symbol = (char *) m->currency_symbol;
+      lconv.mon_decimal_point = (char *) m->mon_decimal_point;
+      lconv.mon_thousands_sep = (char *) m->mon_thousands_sep;
+      lconv.mon_grouping = (char *) m->mon_grouping;
+      lconv.positive_sign = (char *) m->positive_sign;
+      lconv.negative_sign = (char *) m->negative_sign;
       lconv.int_frac_digits = m->int_frac_digits[0];
       lconv.frac_digits = m->frac_digits[0];
       lconv.p_cs_precedes = m->p_cs_precedes[0];

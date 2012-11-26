@@ -15,6 +15,8 @@ INDEX
 ANSI_SYNOPSIS
 	#include <string.h>
 	char *strerror(int <[errnum]>);
+	char *_strerror_r(struct _reent <[ptr]>, int <[errnum]>,
+			  int <[internal]>, int *<[error]>);
 
 TRAD_SYNOPSIS
 	#include <string.h>
@@ -31,6 +33,9 @@ This implementation of <<strerror>> prints out the following strings
 for each of the values defined in `<<errno.h>>':
 
 o+
+o 0
+Success
+
 o E2BIG
 Arg list too long
 
@@ -288,6 +293,8 @@ Strings pipe error
 
 o-
 
+<<_strerror_r>> is a reentrant version of the above.
+
 RETURNS
 This function returns a pointer to a string.  Your application must
 not modify that string.
@@ -296,22 +303,45 @@ PORTABILITY
 ANSI C requires <<strerror>>, but does not specify the strings used
 for each error number.
 
-Although this implementation of <<strerror>> is reentrant, ANSI C
-declares that subsequent calls to <<strerror>> may overwrite the
-result string; therefore portable code cannot depend on the reentrancy
-of this subroutine.
+Although this implementation of <<strerror>> is reentrant (depending
+on <<_user_strerror>>), ANSI C declares that subsequent calls to
+<<strerror>> may overwrite the result string; therefore portable
+code cannot depend on the reentrancy of this subroutine.
+
+Although this implementation of <<strerror>> guarantees a non-null
+result with a NUL-terminator, some implementations return <<NULL>>
+on failure.  Although POSIX allows <<strerror>> to set <<errno>>
+to EINVAL on failure, this implementation does not do so (unless
+you provide <<_user_strerror>>).
+
+POSIX recommends that unknown <[errnum]> result in a message
+including that value, however it is not a requirement and this
+implementation does not provide that information (unless you
+provide <<_user_strerror>>).
 
 This implementation of <<strerror>> provides for user-defined
 extensibility.  <<errno.h>> defines <[__ELASTERROR]>, which can be
 used as a base for user-defined error values.  If the user supplies a
 routine named <<_user_strerror>>, and <[errnum]> passed to
 <<strerror>> does not match any of the supported values,
-<<_user_strerror>> is called with <[errnum]> as its argument.
-
-<<_user_strerror>> takes one argument of type <[int]>, and returns a
-character pointer.  If <[errnum]> is unknown to <<_user_strerror>>,
-<<_user_strerror>> returns <[NULL]>.  The default <<_user_strerror>>
-returns <[NULL]> for all input values.
+<<_user_strerror>> is called with three arguments.  The first is of
+type <[int]>, and is the <[errnum]> value unknown to <<strerror>>.
+The second is of type <[int]>, and matches the <[internal]> argument
+of <<_strerror_r>>; this should be zero if called from <<strerror>>
+and non-zero if called from any other function; <<_user_strerror>> can
+use this information to satisfy the POSIX rule that no other
+standardized function can overwrite a static buffer reused by
+<<strerror>>.  The third is of type <[int *]>, and matches the
+<[error]> argument of <<_strerror_r>>; if a non-zero value is stored
+into that location (usually <[EINVAL]>), then <<strerror>> will set
+<<errno>> to that value, and the XPG variant of <<strerror_r>> will
+return that value instead of zero or <[ERANGE]>.  <<_user_strerror>>
+returns a <[char *]> value; returning <[NULL]> implies that the user
+function did not choose to handle <[errnum]>.  The default
+<<_user_strerror>> returns <[NULL]> for all input values.  Note that
+<<_user_sterror>> must be thread-safe, and only denote errors via the
+third argument rather than modifying <<errno>>, if <<strerror>> and
+<<strerror_r>> are are to comply with POSIX.
 
 <<strerror>> requires no supporting OS subroutines.
 
@@ -323,14 +353,20 @@ QUICKREF
 #include <string.h>
 
 char *
-_DEFUN (strerror, (errnum),
-	int errnum)
+_DEFUN (_strerror_r, (ptr, errnum, internal, errptr),
+	struct _reent *ptr _AND
+	int errnum _AND
+	int internal _AND
+	int *errptr)
 {
   char *error;
-  extern char *_user_strerror _PARAMS ((int));
+  extern char *_user_strerror _PARAMS ((int, int, int *));
 
   switch (errnum)
     {
+    case 0:
+      error = "Success";
+      break;
 /* go32 defines EPERM as EACCES */
 #if defined (EPERM) && (!defined (EACCES) || (EPERM != EACCES))
     case EPERM:
@@ -784,10 +820,19 @@ _DEFUN (strerror, (errnum),
         break;
 #endif
     default:
-      if ((error = _user_strerror (errnum)) == 0)
+      if (!errptr)
+        errptr = &ptr->_errno;
+      if ((error = _user_strerror (errnum, internal, errptr)) == 0)
 	error = "";
       break;
     }
 
   return error;
+}
+
+char *
+_DEFUN(strerror, (int),
+       int errnum)
+{
+  return _strerror_r (_REENT, errnum, 0, NULL);
 }

@@ -94,7 +94,7 @@ __crt_startup (void)
     struct   app_hdr *header;
 
 
-    init_reent();
+    init_global_reent();
 
   /*
    * Initialize floating point unit.

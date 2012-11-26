@@ -107,7 +107,7 @@ _DEFUN(validate_structure, (tim_p),
         }
     }
 
-  if (tim_p->tm_mon > 11)
+  if (tim_p->tm_mon < 0 || tim_p->tm_mon > 11)
     {
       res = div (tim_p->tm_mon, 12);
       tim_p->tm_year += res.quot;
@@ -159,7 +159,7 @@ _DEFUN(mktime, (tim_p),
 {
   time_t tim = 0;
   long days = 0;
-  int year, isdst, tm_isdst;
+  int year, isdst=0;
   __tzinfo_type *tz = __gettzinfo ();
 
   /* validate structure */
@@ -178,39 +178,35 @@ _DEFUN(mktime, (tim_p),
   /* compute day of the year */
   tim_p->tm_yday = days;
 
-  if (tim_p->tm_year > 10000
-      || tim_p->tm_year < -10000)
-    {
+  if (tim_p->tm_year > 10000 || tim_p->tm_year < -10000)
       return (time_t) -1;
-    }
 
   /* compute days in other years */
-  if (tim_p->tm_year > 70)
+  if ((year = tim_p->tm_year) > 70)
     {
       for (year = 70; year < tim_p->tm_year; year++)
 	days += _DAYS_IN_YEAR (year);
     }
-  else if (tim_p->tm_year < 70)
+  else if (year < 70)
     {
       for (year = 69; year > tim_p->tm_year; year--)
 	days -= _DAYS_IN_YEAR (year);
       days -= _DAYS_IN_YEAR (year);
     }
 
-  /* compute day of the week */
-  if ((tim_p->tm_wday = (days + 4) % 7) < 0)
-    tim_p->tm_wday += 7;
-
   /* compute total seconds */
   tim += (days * _SEC_IN_DAY);
 
+  TZ_LOCK;
+
+  if (_daylight)
+    {
+      int tm_isdst;
+      int y = tim_p->tm_year + YEAR_BASE;
   /* Convert user positive into 1 */
   tm_isdst = tim_p->tm_isdst > 0  ?  1 : tim_p->tm_isdst;
   isdst = tm_isdst;
 
-  if (_daylight)
-    {
-      int y = tim_p->tm_year + YEAR_BASE;
       if (y == tz->__tzyear || __tzcalc_limits (y))
 	{
 	  /* calculate start of dst in dst local time and 
@@ -244,8 +240,29 @@ _DEFUN(mktime, (tim_p),
 		  if (!isdst)
 		    diff = -diff;
 		  tim_p->tm_sec += diff;
-		  validate_structure (tim_p);
 		  tim += diff;  /* we also need to correct our current time calculation */
+		  int mday = tim_p->tm_mday;
+		  validate_structure (tim_p);
+		  mday = tim_p->tm_mday - mday;
+		  /* roll over occurred */
+		  if (mday) {
+		    /* compensate for month roll overs */
+		    if (mday > 1)
+			  mday = -1;
+		    else if (mday < -1)
+			  mday = 1;
+		    /* update days for wday calculation */
+		    days += mday;
+		    /* handle yday */
+		    if ((tim_p->tm_yday += mday) < 0) {
+			  --year;
+			  tim_p->tm_yday = _DAYS_IN_YEAR(year) - 1;
+		    } else {
+			  mday = _DAYS_IN_YEAR(year);
+			  if (tim_p->tm_yday > (mday - 1))
+				tim_p->tm_yday -= mday;
+		    }
+		  }
 		}
 	    }
 	}
@@ -257,8 +274,14 @@ _DEFUN(mktime, (tim_p),
   else /* otherwise assume std time */
     tim += (time_t) tz->__tzrule[0].offset;
 
+  TZ_UNLOCK;
+
   /* reset isdst flag to what we have calculated */
   tim_p->tm_isdst = isdst;
 
+  /* compute day of the week */
+  if ((tim_p->tm_wday = (days + 4) % 7) < 0)
+    tim_p->tm_wday += 7;
+	
   return tim;
 }
