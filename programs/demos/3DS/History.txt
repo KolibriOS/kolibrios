@@ -1,3 +1,18 @@
+View3ds 0.064 - X 2012
+1. Bug fixes.
+
+-----------------------------------------------------------------------------------
+
+View3ds 0.063 - X 2012
+1. Postprocessing effect - wave. Ability to change amplitude and frequency.
+
+-----------------------------------------------------------------------------------
+
+View3ds 0.062 - VII 2012.
+1. Counter fix by Mario.
+2. New drawing model - smooth shaded lines (edges only view) by me.
+-----------------------------------------------------------------------------------
+
 View3ds 0.061 - Nov 2011.
 1. Two new buttons to increase and decrease brightness.
 -----------------------------------------------------------------------------------

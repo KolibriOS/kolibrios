@@ -1,5 +1,5 @@
 
-; application : View3ds ver. 0.063 - tiny .3ds files viewer.
+; application : View3ds ver. 0.064 - tiny .3ds files viewer.
 ; compiler    : FASM
 ; system      : KolibriOS
 ; author      : Macgub aka Maciej Guba
@@ -682,7 +682,7 @@ end if
     int  40h
 	
     mov  eax,4			   ; function 4 : write text to window
-    mov  ebx,530*65536+510 	   ; [x start] *65536 + [y start]
+    mov  ebx,530*65536+510	   ; [x start] *65536 + [y start]
     mov  ecx,0x00888888
     mov  edx,STRdata		   ; pointer to text beginning
     mov  esi,10 		   ; text length
@@ -2445,11 +2445,11 @@ draw_triangles:
 	dec	 ecx
 	jnz	 .again_line_param
 
-	mov	eax,[edges_ptr]
-	add	eax,[edges_counter]
-	mov	bl,[eax]
-	test	bl,00000001b
-	jz	@f
+;        mov     eax,[edges_ptr]         ;   this not works correctly
+;        add     eax,[edges_counter]     ;   I mean chosing overlapped  edges.
+;        mov     bl,[eax]                ;
+;        test    bl,00000001b            ;
+;        jz      @f                      ;
 	mov	edi,screen
 	mov	esi,[Zbuffer_ptr]
 
@@ -2479,11 +2479,11 @@ draw_triangles:
 
 	call	smooth_line
      @@:
-	mov	eax,[edges_ptr]
-	add	eax,[edges_counter]
-	mov	bl,[eax]
-	test	bl,00000010b
-	jz	@f
+;        mov     eax,[edges_ptr]       ;  this not works correctly
+;        add     eax,[edges_counter]
+;        mov     bl,[eax]
+;        test    bl,00000010b
+;        jz      @f
 
 	mov	edi,screen
 	mov	esi,[Zbuffer_ptr]
@@ -2515,11 +2515,11 @@ draw_triangles:
 	call	smooth_line
       @@:
 
-	mov	eax,[edges_ptr]
-	add	eax,[edges_counter]
-	mov	bl,[eax]
-	test	bl,00000100b
-	jz	@f
+;        mov     eax,[edges_ptr]        ;  this not works correctly
+;        add     eax,[edges_counter]    ;
+;        mov     bl,[eax]               ;
+;        test    bl,00000100b           ;
+;        jz      @f                     ;
 
 	mov	edi,screen
 	mov	esi,[Zbuffer_ptr]
@@ -2566,128 +2566,6 @@ fill_Z_buffer:
 	mov	edi,[Zbuffer_ptr]
 	mov	ecx,SIZE_X*SIZE_Y
 	rep	stosd
-ret
-
-read_from_file:
-	fninit
-	mov	edi,[triangles_ptr]
-	xor	ebx,ebx
-	xor	ebp,ebp
-	mov	[points_count_var],0
-	mov	[triangles_count_var],0
-   if USE_LFN = 0
-	mov	esi,SourceFile
-   else
-	mov	esi,[fptr]
-   end if
-	cmp	[esi],word 4D4Dh
-	jne	.exit ;Must be legal .3DS file
-;        cmp     dword[esi+2],EndFile-SourceFile
-;        jne     .exit ;This must tell the length
-	mov	eax,dword[esi+2]
-  ;      cmp     eax,[fsize]
-  ;      jne     .exit
-
-	add	eax,esi
-	mov	[EndFile],eax	 ;
-
-	add	esi,6
-	mov	eax,[edges_ptr]
-      @@:
-	cmp	[esi],word 3D3Dh
-	je	@f
-	add	esi,[esi+2]
-	jmp	@b
-      @@:
-	add	esi,6
-      .find4k:
-	cmp	[esi],word 4000h
-	je	@f
-	add	esi,[esi+2]
-	cmp	esi,[EndFile]
-	jc	.find4k
-	jmp	.exit
-      @@:
-	add	esi,6
-      @@:
-	cmp	[esi],byte 0
-	je	@f
-	inc	esi
-	jmp	@b
-      @@:
-	inc	esi
-      @@:
-	cmp	[esi],word 4100h
-	je	@f
-	add	esi,[esi+2]
-	jmp	@b
-      @@:
-	add	esi,6
-      @@:
-	cmp	[esi],word 4110h
-	je	@f
-	add	esi,[esi+2]
-	jmp	@b
-      @@:
-	movzx	ecx,word[esi+6]
-	add	[points_count_var],cx
-
-	mov	edx,ecx
-	add	esi,8
-     @@:
-	push	edi
-	mov	edi,[points_ptr]
-	push	dword[esi+4]
-	pop	dword[edi+ebx*2+0]
-	push	dword[esi+8]
-	pop	dword[edi+ebx*2+4]
-	push	dword[esi+0]
-	pop	dword[edi+ebx*2+8]
-	pop	edi
-;        fld     dword[esi+4]
-;        fstp    dword[real_points+ebx*2+0]  ; x
-;        fld     dword[esi+8]
-;        fstp   dword[real_points+ebx*2+4]  ; y
-;        fld     dword[esi+0]
-;        fstp   dword[real_points+ebx*2+8]  ; z
-
-	add	ebx,6
-	add	esi,12
-	dec	ecx
-	jnz	@b
-      @@:
-  ;      mov     dword[points+ebx],-1
-	push	edi
-	mov	edi,[points_ptr]
-	mov	dword[edi+ebx*2],-1	   ; end mark (not always in use)
-	pop	edi
-      @@:
-	cmp	[esi],word 4120h
-	je	@f
-	add	esi,[esi+2]
-	jmp	@b
-      @@:
-	movzx	ecx,word[esi+6]
-	add	[triangles_count_var],cx
-	add	esi,8
-	;mov     edi,triangles
-      @@:
-	movsd
-	movsw
-	add	word[edi-6],bp
-	add	word[edi-4],bp
-	add	word[edi-2],bp
-	mov	dl,byte[esi]
-	mov	[eax],dl
-	inc	eax
-	add	esi,2
-	dec	ecx
-	jnz	@b
-	add	ebp,edx
-	jmp	.find4k
-	mov	eax,-1 ;<---mark if OK
-      .exit:
-	mov	dword[edi],-1
 ret
 
 read_tp_variables:	      ; read [triangles_count_var] and  [points_count_var]
@@ -2787,6 +2665,124 @@ read_tp_variables:	      ; read [triangles_count_var] and  [points_count_var]
       .exit:
 ret
 
+read_from_file:
+	fninit
+	mov	edi,[triangles_ptr]
+	xor	ebx,ebx
+	xor	ebp,ebp
+	mov	[points_count_var],0
+	mov	[triangles_count_var],0
+   if USE_LFN = 0
+	mov	esi,SourceFile
+   else
+	mov	esi,[fptr]
+   end if
+	cmp	[esi],word 4D4Dh
+	jne	.exit ;Must be legal .3DS file
+;        cmp     dword[esi+2],EndFile-SourceFile
+;        jne     .exit ;This must tell the length
+	mov	eax,dword[esi+2]
+  ;      cmp     eax,[fsize]
+  ;      jne     .exit
+
+	add	eax,esi
+	mov	[EndFile],eax	 ;
+
+	add	esi,6
+      @@:
+	cmp	[esi],word 3D3Dh
+	je	@f
+	add	esi,[esi+2]
+	jmp	@b
+      @@:
+	add	esi,6
+      .find4k:
+	cmp	[esi],word 4000h
+	je	@f
+	add	esi,[esi+2]
+	cmp	esi,[EndFile]
+	jc	.find4k
+	jmp	.exit
+      @@:
+	add	esi,6
+      @@:
+	cmp	[esi],byte 0
+	je	@f
+	inc	esi
+	jmp	@b
+      @@:
+	inc	esi
+      @@:
+	cmp	[esi],word 4100h
+	je	@f
+	add	esi,[esi+2]
+	jmp	@b
+      @@:
+	add	esi,6
+      @@:
+	cmp	[esi],word 4110h
+	je	@f
+	add	esi,[esi+2]
+	jmp	@b
+      @@:
+	movzx	ecx,word[esi+6]
+	add	[points_count_var],cx
+
+	mov	edx,ecx
+	add	esi,8
+     @@:
+	push	edi
+	mov	edi,[points_ptr]
+	push	dword[esi+4]
+	pop	dword[edi+ebx*2+0]
+	push	dword[esi+8]
+	pop	dword[edi+ebx*2+4]
+	push	dword[esi+0]
+	pop	dword[edi+ebx*2+8]
+	pop	edi
+;        fld     dword[esi+4]
+;        fstp    dword[real_points+ebx*2+0]  ; x
+;        fld     dword[esi+8]
+;        fstp   dword[real_points+ebx*2+4]  ; y
+;        fld     dword[esi+0]
+;        fstp   dword[real_points+ebx*2+8]  ; z
+
+	add	ebx,6
+	add	esi,12
+	dec	ecx
+	jnz	@b
+      @@:
+  ;      mov     dword[points+ebx],-1
+	push	edi
+	mov	edi,[points_ptr]
+	mov	dword[edi+ebx*2],-1	   ; end mark (not always in use)
+	pop	edi
+      @@:
+	cmp	[esi],word 4120h
+	je	@f
+	add	esi,[esi+2]
+	jmp	@b
+      @@:
+	movzx	ecx,word[esi+6]
+	add	[triangles_count_var],cx
+	add	esi,8
+	;mov     edi,triangles
+      @@:
+	movsd
+	movsw
+	add	word[edi-6],bp
+	add	word[edi-4],bp
+	add	word[edi-2],bp
+	add	esi,2
+	dec	ecx
+	jnz	@b
+	add	ebp,edx
+	jmp	.find4k
+	mov	eax,-1 ;<---mark if OK
+      .exit:
+	mov	dword[edi],-1
+ret
+
 if USE_LFN
 alloc_mem_for_tp:
 	mov	eax, 68
@@ -2806,20 +2802,20 @@ alloc_mem_for_tp:
 	int	0x40		       ;  -> allocate memory to triangles
 	mov	[triangles_ptr], eax   ;  -> eax = pointer to allocated mem
 
-	mov	eax, 68
-	movzx	ecx, [triangles_count_var]
-	inc	ecx
-	mov	edx,[edges_ptr]
-	int	0x40		       ;  -> allocate memory to edges
-	mov	[edges_ptr], eax   ;  -> eax = pointer to allocated mem
+;        mov     eax, 68
+;        movzx   ecx, [triangles_count_var]
+;        inc     ecx
+;        mov     edx,[edges_ptr]
+;        int     0x40                   ;  -> allocate memory to edges
+;        mov     [edges_ptr], eax   ;  -> eax = pointer to allocated mem
 
-	mov	eax,-1			     ; fill edges list
-	movzx	ecx,[triangles_count_var]    ; importand if object generated
-	shr	ecx,2
-	inc	ecx
-	mov	edi,[edges_ptr]
-	cld
-	rep	stosd
+;        mov     eax,-1                       ; fill edges list
+;        movzx   ecx,[triangles_count_var]    ; importand if object generated
+;        shr     ecx,2
+;        inc     ecx
+;        mov     edi,[edges_ptr]
+;        cld
+;        rep     stosd
 
 
 ;        mov     eax, 68

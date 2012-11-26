@@ -309,7 +309,7 @@ base_vector:
       if Ext=SSE2
 	db   ' (SSE2)'
       end if
-	db   ' 0.062',0
+	db   ' 0.064',0
     labellen:
 	STRdata db '-1        '
 
@@ -430,7 +430,7 @@ align 8
 	points_translated_ptr	dd ?
 	screen_ptr		dd ?
 	Zbuffer_ptr		dd ?
-	edges_ptr		dd ?
+     ;   edges_ptr               dd ?
 
    ;===
 
