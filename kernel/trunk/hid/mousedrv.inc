@@ -124,6 +124,18 @@ save_draw_mouse:
         cmp     esi, [current_cursor]
         je      .draw
 
+        mov     eax, [TASK_COUNT]
+        movzx   eax, word [WIN_POS+eax*2]
+        shl     eax, 8
+
+        cmp     eax, edx
+        je      @F
+
+        mov     esi, [def_cursor]
+        cmp     esi, [current_cursor]
+        je      .draw
+
+@@:
         push    esi
         call    [_display.select_cursor]
         mov     [current_cursor], esi

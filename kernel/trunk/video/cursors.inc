@@ -447,16 +447,11 @@ endp
 ;------------------------------------------------------------------------------
 align 4
 proc delete_cursor stdcall, hcursor:dword
-           locals
-             hsrv       dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
+
+;        DEBUGF 1,'K : delete_cursor %x\n', [hcursor]
 
         mov     esi, [hcursor]
+
         cmp     [esi+CURSOR.magic], 'CURS'
         jne     .fail
 
