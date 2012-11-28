@@ -39,10 +39,10 @@ struct render
     uint32_t   layout;
     bitmap_t   bitmap[4];
     bitmap_t  *last_bitmap;
-    
+
     uint32_t   ctx_format;
     int        target;
-    
+
     window_t   *win;
     enum{
       EMPTY, INIT }state;
@@ -52,13 +52,25 @@ struct render
 };
 
 enum player_state
-{  CLOSED=0,PLAY_INIT,
-   STOP, PAUSE, PLAY, REWIND,
-   PAUSE_2_PLAY, REWIND_2_PLAY
+{
+    CLOSED = 0,
+    PREPARE,
+    STOP,
+    PAUSE,
+    PLAY,
+    REWIND,
+    PLAY_2_STOP,
+    PLAY_2_PAUSE,
+    PAUSE_2_PLAY,
+    REWIND_2_PLAY,
 };
 
-#define ID_PLAY      100
-#define ID_PROGRESS  101
+#define ID_PLAY             100
+#define ID_STOP             101
+#define ID_PROGRESS         102
+#define ID_VOL_LEVEL        103
+#define ID_VOL_CTRL         104
+
 typedef struct
 {
     volatile uint32_t   lock;
@@ -112,6 +124,7 @@ void render_draw_client(render_t *render);
 
 int init_audio(int format);
 int audio_thread(void *param);
+void set_audio_volume(int left, int right);
 
 int init_video(AVCodecContext *ctx);
 int video_thread(void *param);
@@ -178,4 +191,4 @@ int resize_bitmap(bitmap_t *bitmap);
 int blit_bitmap(bitmap_t *bitmap, int dst_x, int dst_y,
                 int w, int h);
 
-
+int init_fontlib();

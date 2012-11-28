@@ -74,6 +74,7 @@ extern "C"
 #define SND_SETTIMEBASE    18
 #define SND_GETTIMESTAMP   19
 
+#define SND_RESET_ALL      3
 
 #define PLAY_SYNC     0x80000000
 

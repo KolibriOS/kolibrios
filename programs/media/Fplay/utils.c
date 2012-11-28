@@ -46,8 +46,8 @@ int put_packet(queue_t *q, AVPacket *pkt)
     AVPacketList *q_pkt;
 
     /* duplicate the packet */
-    if (av_dup_packet(pkt) < 0)
-        return -1;
+//    if (av_dup_packet(pkt) < 0)
+//        return -1;
 
     q_pkt = av_malloc(sizeof(AVPacketList));
     if (!q_pkt)

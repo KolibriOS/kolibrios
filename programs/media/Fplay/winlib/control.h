@@ -54,19 +54,7 @@ typedef struct timer
 
 typedef struct
 {
-    link_t       link;
-    link_t       child;
-
-    handler_t   *handler;
-    ctrl_t      *parent;
-
-    ctx_t       *ctx;
-    uint32_t     id;
-    uint32_t     style;
-
-    rect_t       rc;
-    int          w;
-    int          h;
+    ctrl_t  ctrl;
 
     uint32_t     state;
     ostimer_t    timer;
@@ -87,6 +75,30 @@ typedef struct
     float   current;
     int     pos;
 }progress_t;
+
+typedef struct
+{
+    ctrl_t  ctrl;
+    int     min;
+    int     max;
+    int     current;
+    int     pos;
+    int     vol;
+    int     visible;
+    void    *img_level;    
+}level_t;
+
+typedef struct
+{
+    ctrl_t  ctrl;
+    int     min;
+    int     max;
+    int     current;
+    int     pos;
+    int     mode;
+    void    *img_slider;
+    void    *img_vol_slider;
+}slider_t;
 
 typedef struct
 {
@@ -148,17 +160,18 @@ typedef struct
 #define  MSG_COMMAND       0x030
 #define  MSG_TIMER         0x031
 
-
 #define  LBN_DBLCLK        0x100
 #define  LBOX_READDIR      0x100
 #define  LBOX_GETFILENAME  0x101
 
-#define ID_CLOSE              1
-#define ID_MINIMIZE           2
+#define  PRG_PROGRESS      0x102
 
-#define ID_SCROLLER_UP       10
-#define ID_SCROLLER_DOWN     11
-#define ID_SCROLLER_THUMB    12
+#define  ID_CLOSE              1
+#define  ID_MINIMIZE           2
+
+#define  ID_SCROLLER_UP       10
+#define  ID_SCROLLER_DOWN     11
+#define  ID_SCROLLER_THUMB    12
 
 #define  send_message( ctrl, msg, arg1, arg2)              \
                 (ctrl)->handler( (ctrl_t*)(ctrl),          \

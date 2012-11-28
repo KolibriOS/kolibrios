@@ -264,6 +264,18 @@ uint32_t  set_cursor(uint32_t  cursor)
     return old;
 }
 
+static inline
+int destroy_cursor(uint32_t cursor)
+{
+    int ret;
+    __asm__ __volatile__(
+    "int $0x40"
+    :"=a"(ret)
+    :"a"(37), "b"(6), "c"(cursor)
+    :"memory");
+    return ret;
+};
+
 static inline void get_proc_info(char *info)
 {
     __asm__ __volatile__(
@@ -279,7 +291,7 @@ void* user_realloc(void *mem, size_t size)
     __asm__ __volatile__(
     "int $0x40"
     :"=a"(val)
-    :"a"(68),"b"(12),"c"(size),"d"(mem)
+    :"a"(68),"b"(20),"c"(size),"d"(mem)
     :"memory");
 
     return val;

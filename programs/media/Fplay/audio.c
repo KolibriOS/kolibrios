@@ -14,8 +14,13 @@
 astream_t astream;
 
 extern uint8_t *decoder_buffer;
+int resampler_size;
+volatile int sound_level_0;
+volatile int sound_level_1;
 
-extern volatile enum player_state player_state;
+volatile enum player_state player_state;
+volatile enum player_state decoder_state;
+volatile enum player_state sound_state;
 
 extern volatile uint32_t driver_lock;
 
@@ -46,7 +51,7 @@ int init_audio(int format)
 
     mutex_unlock(&driver_lock);
 
-    printf("sound version 0x%x\n", version);
+//    printf("sound version 0x%x\n", version);
 
     if( (SOUND_VERSION>(version&0xFFFF)) ||
         (SOUND_VERSION<(version >> 16)))
@@ -65,6 +70,11 @@ exit_whith_error:
 
     printf(errstr);
     return 0;
+};
+
+void set_audio_volume(int left, int right)
+{
+    SetVolume(hBuff, left, right);
 };
 
 static uint64_t samples_lost;
@@ -89,7 +99,7 @@ int decode_audio(AVCodecContext  *ctx, queue_t *qa)
     int         data_size=0;
 
     if( astream.count > AVCODEC_MAX_AUDIO_FRAME_SIZE*7)
-        return 1;
+        return -1;
 
     if( get_packet(qa, &pkt) == 0 )
         return 0;
@@ -111,9 +121,9 @@ int decode_audio(AVCodecContext  *ctx, queue_t *qa)
 //            {
 //                if (pkt.pts != AV_NOPTS_VALUE)
 //                    audio_base = get_audio_base() * pkt.pts;
-//                printf("audio base %f\n", audio_base);                
+//                printf("audio base %f\n", audio_base);
 //            };
-            
+
             pkt_tmp.data += len;
             pkt_tmp.size -= len;
 
@@ -161,8 +171,16 @@ static void sync_audio(SNDBUF hbuff, int buffsize)
 
         mutex_lock(&astream.lock);
         {
+            if(astream.count < buffsize)
+            {
+                memset(astream.buffer+astream.count,
+                       0, buffsize-astream.count);
+                astream.count = buffsize;
+            };
+
             SetBuffer(hbuff, astream.buffer, offset, buffsize);
             samples_written+= buffsize/4;
+
             astream.count -= buffsize;
             if(astream.count)
                 memcpy(astream.buffer, astream.buffer+buffsize, astream.count);
@@ -173,7 +191,6 @@ static void sync_audio(SNDBUF hbuff, int buffsize)
 #endif
 
 };
-
 
 int audio_thread(void *param)
 {
@@ -192,7 +209,7 @@ int audio_thread(void *param)
         goto exit_whith_error;
     };
 
-    SetVolume(hBuff,-1000,-1000);
+    SetVolume(hBuff,-1875,-1875);
 
     if((err = GetBufferSize(hBuff, &buffsize)) != 0)
     {
@@ -200,23 +217,9 @@ int audio_thread(void *param)
         goto exit_whith_error;
     };
 
-    buffsize = buffsize/2;
+    resampler_size = buffsize = buffsize/2;
 
     samples = buffsize/4;
-
-    while( (astream.count < buffsize*2) &&
-               (player_state != CLOSED) )
-        yield();
-
-    mutex_lock(&astream.lock);
-    {
-        SetBuffer(hBuff, astream.buffer, 0, buffsize);
-        samples_written+= buffsize/4;
-        astream.count -= buffsize;
-        if(astream.count)
-            memcpy(astream.buffer, astream.buffer+buffsize, astream.count);
-        mutex_unlock(&astream.lock);
-    };
 
     while( player_state != CLOSED)
     {
@@ -224,115 +227,120 @@ int audio_thread(void *param)
         double    event_stamp, wait_stamp;
         int       too_late = 0;
 
-        if((player_state == PAUSE) ||
-           (player_state == PLAY_INIT) )
+        switch(sound_state)
         {
-            if( active )
-            {
-                StopBuffer(hBuff);
-                active = 0;
-            };
-            delay(1);
-            continue;
-        }
-        else if(player_state == REWIND)
-        {
-            if( active )
-            {
-                StopBuffer(hBuff);
-                active = 0;
-            };
-            mutex_lock(&astream.lock);
-            astream.count = 0;
-            mutex_unlock(&astream.lock);
-            delay(1);
-            continue;
-        }
-        else if(player_state == PAUSE_2_PLAY)
-        {
-//            SetTimeBase(hBuff, audio_base);
-            GetTimeStamp(hBuff, &last_time_stamp);
-//            printf("last_time_stamp %f\n", last_time_stamp);
-            
-            if((err = PlayBuffer(hBuff, 0)) !=0 )
-            {
-                errstr = "Cannot play buffer\n\r";
-                goto exit_whith_error;
-            };
-            active = 1;
-            sync_audio(hBuff, buffsize);
-            player_state = PLAY;
-            printf("render: set audio latency to %f\n", audio_delta);
-        }
-        else if(player_state == REWIND_2_PLAY)
-        {
-            while( (astream.count < buffsize*2) &&
-                   (player_state != CLOSED) )
-            yield();
+            case PREPARE:
 
-            SetTimeBase(hBuff, audio_base);
-            GetTimeStamp(hBuff, &last_time_stamp);
-            printf("last audio time stamp %f\n", last_time_stamp);
-            
-            if((err = PlayBuffer(hBuff, 0)) !=0 )
-            {
-                errstr = "Cannot play buffer\n\r";
-                goto exit_whith_error;
-            };
-            active = 1;
-            sync_audio(hBuff, buffsize);
-            player_state = PLAY;
-            printf("render: set audio latency to %f\n", audio_delta);
-        };
+                mutex_lock(&astream.lock);
+                    if(astream.count < buffsize*2)
+                    {
+                        memset(astream.buffer+astream.count,
+                               0, buffsize*2-astream.count);
+                        astream.count = buffsize*2;
+                    };
 
-        GetNotify(&evnt);
+                    SetBuffer(hBuff, astream.buffer, 0, buffsize*2);
+                    astream.count -= buffsize*2;
+                    if(astream.count)
+                        memcpy(astream.buffer, astream.buffer+buffsize*2, astream.count);
+                mutex_unlock(&astream.lock);
 
-        if(evnt.code != 0xFF000001)
-        {
-            printf("invalid event code %d\n\r", evnt.code);
-            continue;
-        }
+                SetTimeBase(hBuff, audio_base);
 
-        if(evnt.stream != hBuff)
-        {
-            printf("invalid stream %x hBuff= %x\n\r",
-                    evnt.stream, hBuff);
-            continue;
-        };
+            case PAUSE_2_PLAY:
+                GetTimeStamp(hBuff, &last_time_stamp);
+//                printf("last audio time stamp %f\n", last_time_stamp);
 
-        GetTimeStamp(hBuff, &event_stamp);
+                if((err = PlayBuffer(hBuff, 0)) !=0 )
+                {
+                    errstr = "Cannot play buffer\n\r";
+                    goto exit_whith_error;
+                };
+                active = 1;
+                sync_audio(hBuff, buffsize);
+                sound_state = PLAY;
+//                printf("render: set audio latency to %f\n", audio_delta);
 
-        offset = evnt.offset;
+                /* breaktrough */
 
-        while( (astream.count < buffsize) &&
-               (player_state != CLOSED) )
-        {
-            yield();
-            GetTimeStamp(hBuff, &wait_stamp);
-            if( (wait_stamp - event_stamp) >
-                 samples*1500/sample_rate )
-            {
-                samples_lost+= samples;
-                audio_delta = (double)samples_lost*1000/sample_rate;
-//                printf("audio delta %f\n", audio_delta);
-                too_late = 1;
+            case PLAY:
+                GetNotify(&evnt);
+
+                if(evnt.code != 0xFF000001)
+                {
+                    printf("invalid event code %d\n\r", evnt.code);
+                    continue;
+                }
+
+                if(evnt.stream != hBuff)
+                {
+                    printf("invalid stream %x hBuff= %x\n\r",
+                            evnt.stream, hBuff);
+                    continue;
+                };
+
+                offset = evnt.offset;
+
+                mutex_lock(&astream.lock);
+                if(astream.count < buffsize)
+                {
+                    memset(astream.buffer+astream.count,
+                           0, buffsize-astream.count);
+                    astream.count = buffsize;
+                };
+
+                SetBuffer(hBuff, astream.buffer, offset, buffsize);
+
+                {
+                    double  val = 0;
+                    int16_t *src = (int16_t*)astream.buffer;
+                    int samples = buffsize/2;
+                    int i;
+
+                    for(i = 0, val = 0; i < samples/2; i++, src++)
+                        if(val < abs(*src))
+                            val= abs(*src); // * *src;
+
+                    sound_level_0 = val; //sqrt(val / (samples/2));
+
+                    for(i = 0, val = 0; i < samples/2; i++, src++)
+                        if(val < abs(*src))
+                            val= abs(*src); // * *src;
+
+                    sound_level_1 = val; //sqrt(val / (samples/2));
+
+ //                   printf("%d\n", sound_level);
+                };
+
+                samples_written+= buffsize/4;
+
+                astream.count -= buffsize;
+                if(astream.count)
+                    memcpy(astream.buffer, astream.buffer+buffsize, astream.count);
+                mutex_unlock(&astream.lock);
                 break;
-            }
-        };
 
-        if((too_late == 1) || (player_state == CLOSED))
-        {
-            too_late = 0;
-            continue;
-        };
+            case PLAY_2_STOP:
+                if( active )
+                {
+                    ResetBuffer(hBuff, SND_RESET_ALL);
+                    audio_base = -1.0;
+                    active = 0;
+                }
+                sound_state = STOP;
+                break;
 
-        mutex_lock(&astream.lock);
-        SetBuffer(hBuff, astream.buffer, offset, buffsize);
-        samples_written+= buffsize/4;
-        astream.count -= buffsize;
-        if(astream.count)
-            memcpy(astream.buffer, astream.buffer+buffsize, astream.count);
-        mutex_unlock(&astream.lock);
+            case PLAY_2_PAUSE:
+                if( active )
+                {
+                    StopBuffer(hBuff);
+                };
+                sound_state = PAUSE;
+
+            case PAUSE:
+            case STOP:
+                delay(1);
+        };
     }
 
     StopBuffer(hBuff);

@@ -8,8 +8,7 @@
 #include "../winlib/winlib.h"
 #include "sound.h"
 #include "fplay.h"
-
-#define CAPTION_HEIGHT      24
+#include <math.h>
 
 extern int res_pause_btn[];
 extern int res_pause_btn_pressed[];
@@ -18,6 +17,8 @@ extern int res_play_btn[];
 extern int res_play_btn_pressed[];
 
 extern int64_t stream_duration;
+extern volatile int sound_level_0;
+extern volatile int sound_level_1;
 
 typedef struct
 {
@@ -27,6 +28,7 @@ typedef struct
 }vframe_t;
 
 vframe_t           frames[4];
+volatile int      frames_count = 0;
 
 struct SwsContext *cvt_ctx = NULL;
 
@@ -50,10 +52,11 @@ void flush_video()
     int i;
 
     for(i = 0; i < 4; i++)
-    {    
+    {
         frames[i].pts    = 0;
         frames[i].ready  = 0;
     };
+    frames_count = 0;
     vfx    = 0;
     dfx    = 0;
 };
@@ -65,16 +68,12 @@ int init_video(AVCodecContext *ctx)
     width = ctx->width;
     height = ctx->height;
 
-
-    printf("w = %d  h = %d\n\r", width, height);
+    printf("w = %d  h = %d\n\r", ctx->width, ctx->height);
 
 //    __asm__ __volatile__("int3");
 
     main_render = create_render(ctx->width, ctx->height,
                            ctx->pix_fmt, HW_BIT_BLIT|HW_TEX_BLIT);
-//    render = create_render(ctx->width, ctx->height,
-//                           ctx->pix_fmt, 0);
-//
     if( main_render == NULL)
     {
         printf("Cannot create render\n\r");
@@ -121,11 +120,12 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
     double current_clock;
 
     if(frames[dfx].ready != 0 )
-        return 1;
+        return -1;
 
     if( get_packet(qv, &pkt) == 0 )
         return 0;
 
+/*
     current_clock = -90.0 + get_master_clock();
 
     if( pkt.dts == AV_NOPTS_VALUE &&
@@ -135,10 +135,10 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
         pts= pkt.dts;
     else
         pts= 0;
-        
-  
-    pts *= av_q2d(video_time_base)*1000.0;
 
+
+    pts *= av_q2d(video_time_base)*1000.0;
+*/
     if( 1 /*pts > current_clock*/)
     {
         frameFinished = 0;
@@ -181,6 +181,7 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
 
             dfx++;
             dfx&= 3;
+            frames_count++;
         };
     };
     av_free_packet(&pkt);
@@ -189,9 +190,34 @@ int decode_video(AVCodecContext  *ctx, queue_t *qv)
 }
 
 extern volatile enum player_state player_state;
+extern volatile enum player_state decoder_state;
+extern volatile enum player_state sound_state;
+
 //rect_t     win_rect;
 
 extern int64_t rewind_pos;
+
+static void player_stop()
+{
+    window_t  *win;
+
+    win = main_render->win;
+
+    rewind_pos = 0;
+
+    win->panel.play_btn->img_default    = res_play_btn;
+    win->panel.play_btn->img_hilite     = res_play_btn;
+    win->panel.play_btn->img_pressed    = res_play_btn_pressed;
+    win->panel.prg->current             = rewind_pos;
+
+    send_message(&win->panel.ctrl, MSG_PAINT, 0, 0);
+    player_state = STOP;
+    decoder_state = PLAY_2_STOP;
+    sound_state = PLAY_2_STOP;
+    render_draw_client(main_render);
+//    printf("stop player\n");
+
+};
 
 int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 {
@@ -211,13 +237,15 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
             break;
 
         case MSG_LBTNDOWN:
+
             if(player_state == PAUSE)
             {
                 win->panel.play_btn->img_default = res_pause_btn;
                 win->panel.play_btn->img_hilite  = res_pause_btn;
                 win->panel.play_btn->img_pressed = res_pause_btn_pressed;
-                send_message(win->panel.play_btn, MSG_PAINT, 0, 0);
-                player_state = PAUSE_2_PLAY;
+                send_message(&win->panel.play_btn->ctrl, MSG_PAINT, 0, 0);
+                player_state = PLAY;
+                sound_state  = PAUSE_2_PLAY;
 
             }
             else if(player_state == PLAY)
@@ -225,8 +253,9 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                 win->panel.play_btn->img_default = res_play_btn;
                 win->panel.play_btn->img_hilite  = res_play_btn;
                 win->panel.play_btn->img_pressed = res_play_btn_pressed;
-                send_message(win->panel.play_btn, MSG_PAINT, 0, 0);
+                send_message(&win->panel.play_btn->ctrl, MSG_PAINT, 0, 0);
                 player_state = PAUSE;
+                sound_state  = PLAY_2_PAUSE;
             }
             break;
 
@@ -239,7 +268,8 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                         win->panel.play_btn->img_default  = res_pause_btn;
                         win->panel.play_btn->img_hilite   = res_pause_btn;
                         win->panel.play_btn->img_pressed = res_pause_btn_pressed;
-                        player_state = PAUSE_2_PLAY;
+                        player_state = PLAY;
+                        sound_state = PAUSE_2_PLAY;
                     }
                     else if(player_state == PLAY)
                     {
@@ -247,24 +277,66 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                         win->panel.play_btn->img_hilite  = res_play_btn;
                         win->panel.play_btn->img_pressed  = res_play_btn_pressed;
                         player_state = PAUSE;
+                        sound_state  = PLAY_2_PAUSE;
+                    }
+                    else if(player_state == STOP)
+                    {
+                        win->panel.play_btn->img_default  = res_pause_btn;
+                        win->panel.play_btn->img_hilite   = res_pause_btn;
+                        win->panel.play_btn->img_pressed = res_pause_btn_pressed;
+                        rewind_pos = 0;
+                        send_message(&win->panel.ctrl, MSG_PAINT, 0, 0);
+                        player_state = PLAY;
+                        decoder_state = PREPARE;
                     }
                     break;
 
-                case 101:  //ID_PROGRESS:
+                case ID_STOP:
+                    player_stop();
+                    break;
+
+                case ID_PROGRESS:
                     if(player_state != REWIND)
                     {
                         progress_t *prg = (progress_t*)arg2;
-                    
-                        rewind_pos = (int64_t)prg->pos *
-                              (prg->max - prg->min)/prg->ctrl.w;
-                              
-//                        printf("progress action %f\n", (double)rewind_pos);
-                        player_state = REWIND;
-                        main_render->win->panel.prg->current = rewind_pos;
-                        send_message(&main_render->win->panel.ctrl, MSG_PAINT, 0, 0);
+
+                        rewind_pos = (prg->max - prg->min)*prg->pos/prg->ctrl.w;
+
+//                        printf("progress action pos: %d time: %f\n", prg->pos, (double)rewind_pos);
+                        player_state  = REWIND;
+                        decoder_state = REWIND;
+                        sound_state   = PLAY_2_STOP;
+                        if(rewind_pos < prg->current)
+                        {
+                            prg->current  = rewind_pos;
+                            rewind_pos = -rewind_pos;
+                        }
+                        else
+                            prg->current  = rewind_pos;
+
+                        win->panel.play_btn->img_default  = res_pause_btn;
+                        win->panel.play_btn->img_hilite   = res_pause_btn;
+                        win->panel.play_btn->img_pressed  = res_pause_btn_pressed;
+                        send_message(&prg->ctrl, MSG_PAINT, 0, 0);
                     };
                     break;
-                      
+
+                case ID_VOL_CTRL:
+                {
+                    slider_t *sld = (slider_t*)arg2;
+                    int      peak;
+                    int      level;
+
+                    peak = sld->min + sld->pos * (sld->max - sld->min)/(96);
+//                    level = (log2(peak+16384)*10000.0)/15 - 10000;
+                    level =  peak;
+
+//                    printf("level %d\n", level);
+                    set_audio_volume(level, level);
+                    send_message(&sld->ctrl, MSG_PAINT, 0, 0);
+                    win->panel.lvl->vol = level;
+                }
+
                 default:
                     break;
             }
@@ -280,8 +352,11 @@ int MainWindowProc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 
 void render_time(render_t *render)
 {
-    double ctime;            /*    milliseconds    */
-    double fdelay;           /*    milliseconds    */
+    progress_t  *prg = main_render->win->panel.prg;
+    level_t     *lvl = main_render->win->panel.lvl;
+
+    double      ctime;            /*    milliseconds    */
+    double      fdelay;           /*    milliseconds    */
 
 //again:
 
@@ -290,11 +365,22 @@ void render_time(render_t *render)
         render->win->win_command = WIN_CLOSED;
         return;
     }
+    else if(player_state == REWIND)
+    {
+        yield();
+        return;
+    }
+    else if (decoder_state == STOP && frames_count  == 0 &&
+              player_state  != STOP)
+    {
+        player_stop();
+    }
     else if(player_state != PLAY)
     {
         yield();
         return;
     };
+
 
 #ifdef VERSION_A
     if(frames[vfx].ready == 1 )
@@ -324,8 +410,16 @@ void render_time(render_t *render)
 //                    sys_time*10, frames[vfx].pts, ctime, fdelay);
 
         main_render->draw(main_render, &frames[vfx].picture);
-        main_render->win->panel.prg->current = frames[vfx].pts*1000;
-        send_message(&render->win->panel.prg->ctrl, MSG_PAINT, 0, 0);
+        prg->current = frames[vfx].pts*1000;
+//        printf("current %f\n", prg->current);
+        lvl->current = vfx & 1 ? sound_level_1 : sound_level_0;
+
+        send_message(&prg->ctrl, PRG_PROGRESS, 0, 0);
+
+        if(main_render->win->panel.layout)
+            send_message(&lvl->ctrl, MSG_PAINT, 0, 0);
+
+        frames_count--;
         frames[vfx].ready = 0;
         vfx++;
         vfx&= 3;
@@ -396,8 +490,6 @@ void render_time(render_t *render)
 }
 
 
-
-
 extern char *movie_file;
 
 int video_thread(void *param)
@@ -407,7 +499,7 @@ int video_thread(void *param)
     init_winlib();
 
     MainWindow = create_window(movie_file,0,
-                               10,10,width,height+29+55,MainWindowProc);
+                               10,10,width,height+CAPTION_HEIGHT+PANEL_HEIGHT,MainWindowProc);
 
     MainWindow->panel.prg->max = stream_duration;
 //    printf("MainWindow %x\n", MainWindow);
@@ -417,11 +509,12 @@ int video_thread(void *param)
     show_window(MainWindow, NORMAL);
 
     render_draw_client(main_render);
-    player_state = PAUSE_2_PLAY;
+    player_state = PLAY;
 
     run_render(MainWindow, main_render);
 
-//    printf("exit thread\n");
+    fini_winlib();
+
     player_state = CLOSED;
     return 0;
 };
@@ -472,6 +565,8 @@ int render_set_size(render_t *render, int width, int height)
     render->rcvideo.t = 0;
     render->rcvideo.r = width;
     render->rcvideo.b = height;
+
+//    printf("render width %d height %d\n",width, height);
 
     if( render->win_height > height )
     {
@@ -561,9 +656,12 @@ void render_adjust_size(render_t *render, window_t *win)
     uint32_t s, sw, sh;
     uint8_t  state;
 
-
     right  = win->w;
-    bottom = win->h-CAPTION_HEIGHT-55;
+    bottom = win->h-CAPTION_HEIGHT-PANEL_HEIGHT;
+
+ //   printf("window width %d height %d\n",
+ //                   right, bottom);
+
     render->win_state  = win->win_state;
 
     if(render->win_state == MINIMIZED)
@@ -579,25 +677,19 @@ void render_adjust_size(render_t *render, window_t *win)
     new_w = bottom*render->ctx_width/render->ctx_height;
     new_h = right*render->ctx_height/render->ctx_width;
 
-//    printf("new_w %d new_h %d\n", new_w, new_h);
-
-    s  = right * bottom;
-    sw = right * new_h;
-    sh = bottom * new_w;
-
-    if( abs(s-sw) > abs(s-sh))
-        new_h = bottom;
-    else
-        new_w = right;
-
-    if(new_w < 64)
+    if(new_w > right)
     {
-        new_w = 64;
-        new_h = 64*render->ctx_height/render->ctx_width;
+        new_w = right;
+        new_h = right*render->ctx_height/render->ctx_width;
+    };
+    if(new_h > bottom)
+    {
+        new_h = bottom;
+        new_w = bottom*render->ctx_width/render->ctx_height;
     };
 
     render->win_width  = win->w;
-    render->win_height = win->h-CAPTION_HEIGHT-55;
+    render->win_height = win->h-CAPTION_HEIGHT-PANEL_HEIGHT;
     render_set_size(render, new_w, new_h);
 };
 
@@ -620,8 +712,8 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
     }
     else
     {
-        dst_width  = render->win_width;
-        dst_height = render->win_height;
+        dst_width  = render->rcvideo.r;
+        dst_height = render->rcvideo.b;
     };
 
     cvt_ctx = sws_getCachedContext(cvt_ctx,
@@ -639,7 +731,7 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
     ret = lock_bitmap(bitmap);
     if( ret != 0)
     {
-        printf("Cannot lock the bitmap!\n");
+        printf("Cannot lock bitmap!\n");
         return ;
     }
 
@@ -661,12 +753,13 @@ void draw_hw_picture(render_t *render, AVPicture *picture)
     blit_bitmap(bitmap, render->rcvideo.l,
                  CAPTION_HEIGHT+render->rcvideo.t,
                  render->rcvideo.r, render->rcvideo.b);
+
     render->last_bitmap = bitmap;
 //    printf("blit_bitmap\n");
 
 
-    render->target++;
-    render->target&= 3;
+//    render->target++;
+//    render->target&= 3;
 }
 
 void draw_sw_picture(render_t *render, AVPicture *picture)
@@ -715,13 +808,17 @@ void render_draw_client(render_t *render)
        render->win_state == ROLLED)
         return;
 
-    if((player_state == PAUSE) ||
-       (player_state == PLAY_INIT) )
+    if(player_state == PAUSE)
     {
          if(frames[vfx].ready == 1 )
             main_render->draw(main_render, &frames[vfx].picture);
          else
             draw_bar(0, CAPTION_HEIGHT, render->win_width,
+                 render->rcvideo.b, 0);
+    }
+    else if( player_state == STOP )
+    {
+        draw_bar(0, CAPTION_HEIGHT, render->win_width,
                  render->rcvideo.b, 0);
     };
 

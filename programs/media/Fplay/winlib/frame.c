@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include "winlib.h"
 
-#define CAPTION_HEIGHT      29
 #define CAPTION_CORNER_W    8
 #define FRAME_WIDTH         7
 
@@ -271,8 +270,8 @@ int frame_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                     w = nrc.r - nrc.l;
                     h = nrc.b - nrc.t;
 
-                    if(w < 150)
-                        w = 150;
+                    if(w <310)
+                        w = 310;
                     if(h < 120)
                         h = 120;
 

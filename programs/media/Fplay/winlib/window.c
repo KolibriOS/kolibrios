@@ -16,6 +16,9 @@ uint32_t cursor_we;
 uint32_t cursor_nwse;
 uint32_t cursor_nesw;
 
+int win_font;
+
+
 static pos_t    old_pos;
 
 ctrl_t  *mouse_capture = NULL;
@@ -514,8 +517,25 @@ int init_resources()
     cursor_we   = load_cursor(res_cursor_we, LOAD_FROM_MEM);
     cursor_nwse = load_cursor(res_cursor_nwse, LOAD_FROM_MEM);
     cursor_nesw = load_cursor(res_cursor_nesw, LOAD_FROM_MEM);
+
+    win_font =  init_fontlib();
+
     return 1;
 }
+
+int  fini_winlib()
+{
+    int ret;
+
+    ret =  destroy_cursor(cursor_nesw);
+    ret |= destroy_cursor(cursor_nwse);
+    ret |= destroy_cursor(cursor_we);
+    ret |= destroy_cursor(cursor_ns);
+
+    return ret;
+};
+
+
 
 void  init_winlib(void)
 {
@@ -569,7 +589,7 @@ void Blit(void *bitmap, int dst_x, int dst_y,
 
     __asm__ __volatile__(
     "int $0x40"
-    ::"a"(73),"b"(0),"c"(&bc.dstx));
+    ::"a"(73),"b"(0x20),"c"(&bc.dstx));
 
 };
 

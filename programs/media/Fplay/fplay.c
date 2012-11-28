@@ -15,7 +15,9 @@
 #include "sound.h"
 #include "fplay.h"
 
-volatile enum player_state player_state;
+volatile enum player_state player_state  = STOP;
+volatile enum player_state decoder_state = PREPARE;
+volatile enum player_state sound_state   = STOP;
 
 uint32_t win_width, win_height;
 
@@ -33,6 +35,8 @@ int             audioStream;
 int             have_sound = 0;
 
 uint8_t     *decoder_buffer;
+extern int resampler_size;
+
 extern int sample_rate;
 char *movie_file;
 
@@ -58,7 +62,7 @@ int main( int argc, char *argv[])
 {
     int i;
 
-    if(argc < 2) {
+     if(argc < 2) {
         printf("Please provide a movie file\n");
         return -1;
     }
@@ -66,7 +70,7 @@ int main( int argc, char *argv[])
     movie_file = argv[1];
     /* register all codecs, demux and protocols */
 
-//    av_log_set_level(AV_LOG_INFO);
+    av_log_set_level(AV_LOG_FATAL);
 
     avcodec_register_all();
     avdevice_register_all();
@@ -93,7 +97,7 @@ int main( int argc, char *argv[])
 
 //    stream_duration = 1000.0 * pFormatCtx->duration * av_q2d(AV_TIME_BASE_Q);
     stream_duration = pFormatCtx->duration;
-    
+
     printf("duration %f\n", (double)stream_duration);
    // Find the first video stream
     videoStream=-1;
@@ -112,7 +116,7 @@ int main( int argc, char *argv[])
 //                              pFormatCtx->streams[i]->duration *
 //                              av_q2d(pFormatCtx->streams[i]->time_base);
                stream_duration = pFormatCtx->streams[i]->duration;
-                              
+
         }
         if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO &&
             audioStream < 0)
@@ -133,9 +137,7 @@ int main( int argc, char *argv[])
         return -1; // Didn't find a video stream
     }
 
-    player_state = PLAY_INIT;
-
- //   __asm__ __volatile__("int3");
+  //   __asm__ __volatile__("int3");
 
     // Get a pointer to the codec context for the video stream
     pCodecCtx=pFormatCtx->streams[videoStream]->codec;
@@ -232,153 +234,177 @@ int main( int argc, char *argv[])
 }
 
 
+static int load_frame()
+{
+    AVPacket  packet;
+    int err;
+
+    err = av_read_frame(pFormatCtx, &packet);
+    if( err == 0)
+    {
+        if(packet.stream_index==videoStream)
+            put_packet(&q_video, &packet);
+        else if( (packet.stream_index == audioStream) &&
+                  (have_sound != 0) )
+        {
+            put_packet(&q_audio, &packet);
+            if(audio_base == -1.0)
+            {
+                if (packet.pts != AV_NOPTS_VALUE)
+                    audio_base = get_audio_base() * packet.pts;
+//                    printf("audio base %f\n", audio_base);
+            };
+        }
+        else av_free_packet(&packet);
+    }
+    else if (err != AVERROR_EOF)
+        printf("av_read_frame: error %x\n", err);
+
+    return err;
+}
+
+
+
 static int fill_queue()
 {
-    int eof = 0;
+    int err = 0;
     AVPacket  packet;
-
-    while( !eof)
-    {
-        int err;
 
 //        __asm__ __volatile__("int3");
 
-        if(q_video.size+q_audio.size < 2*1024*1024)
-        {
-            err = av_read_frame(pFormatCtx, &packet);
-            if( err < 0)
-            {
-                eof = 1;
-                if (err != AVERROR_EOF)
-                    printf("av_read_frame: error %x\n", err);
-                break;
-            }
-            if(packet.stream_index==videoStream)
-            {
-                put_packet(&q_video, &packet);
-            }
-            else if( (packet.stream_index == audioStream) &&
-                 (have_sound != 0) )
-            {
-                put_packet(&q_audio, &packet);
-                if(audio_base == -1.0)
-                {
-                    if (packet.dts != AV_NOPTS_VALUE)
-                        audio_base = get_audio_base() * packet.dts;
-//                    printf("audio base %f\n", audio_base);
-                };
-            }
-            else
-            {
-                av_free_packet(&packet);
-            };
-        }
-        else break;
-    };
+    while( (q_video.size+q_audio.size < 2*1024*1024) &&
+            !err )
+        err = load_frame();
 
-    return eof;
+    return err;
 
 };
 
+
+static void flush_all()
+{
+    AVPacket  packet;
+
+    avcodec_flush_buffers(pCodecCtx);
+    avcodec_flush_buffers(aCodecCtx);
+    while( get_packet(&q_video, &packet) != 0)
+        av_free_packet(&packet);
+
+    while( get_packet(&q_audio, &packet)!= 0)
+        av_free_packet(&packet);
+
+    flush_video();
+
+    astream.count = 0;
+};
 
 void decoder()
 {
     int       eof;
     AVPacket  packet;
     int       ret;
+    int64_t   min_pos, max_pos;
 
-    eof = fill_queue();
-
-    while( player_state != CLOSED && !eof)
+    while( player_state != CLOSED )
     {
         int err;
 
 //        __asm__ __volatile__("int3");
 
-        if( player_state == PAUSE )
+        switch(decoder_state)
         {
-            delay(1);
-            continue;
-        };
+            case PREPARE:
+                eof = fill_queue();
 
-        if( player_state == REWIND )
-        {
- //           int64_t timestamp = 0;
- //           int stream_index = av_find_default_stream_index(pFormatCtx);
+                do
+                {
+                    if( (q_video.size+q_audio.size < 4*1024*1024) &&
+                        (eof == 0) )
+                    {
+                        eof = load_frame();
+                    }
+                    decode_video(pCodecCtx, &q_video);
+                    ret = decode_audio(aCodecCtx, &q_audio);
+                }while(astream.count < resampler_size*2 &&
+                       ret == 1);
 
- //           __asm__ __volatile__("int3");
+                sound_state   = PREPARE;
+                decoder_state = PLAY;
+                player_state  = PLAY;
 
-            if (pFormatCtx->start_time != AV_NOPTS_VALUE)
-                rewind_pos += pFormatCtx->start_time;
+            case PLAY:
+                if( (q_video.size+q_audio.size < 4*1024*1024) &&
+                    (eof == 0) )
+                {
+                    eof = load_frame();
+                    if(eof) printf("eof\n");
+                }
+                ret = decode_video(pCodecCtx, &q_video);
+                ret|= decode_audio(aCodecCtx, &q_audio);
 
-            printf("rewind %8"PRId64"\n", rewind_pos);
-            
-            ret = avformat_seek_file(pFormatCtx, -1, INT64_MIN,
-                                     rewind_pos, INT64_MAX, 0);
-//            ret = avformat_seek_file(pFormatCtx, -1, 0,
-//                                 0, INT64_MAX, 0);
+                if( eof && !ret)
+                {
+                    decoder_state = STOP;
+//                    printf("stop decoder\n");
+                };
+
+            case STOP:
+                delay(1);
+                break;
+
+            case PLAY_2_STOP:
+                while(sound_state != STOP)
+                    delay(1);
+
+                flush_all();
+
+                if (pFormatCtx->start_time != AV_NOPTS_VALUE)
+                    rewind_pos = pFormatCtx->start_time;
+                else
+                    rewind_pos = 0;
+
+                ret = avformat_seek_file(pFormatCtx, -1, INT64_MIN,
+                                         rewind_pos, INT64_MAX, 0);
+
+                decoder_state = STOP;
+                break;
+
+            case REWIND:
+                while(sound_state != STOP)
+                    yield();
+
+                flush_all();
+                int opts = 0;
+                if(rewind_pos < 0)
+                {
+                    rewind_pos = -rewind_pos;
+                    opts = AVSEEK_FLAG_BACKWARD;
+                };
+
+                if (pFormatCtx->start_time != AV_NOPTS_VALUE)
+                    rewind_pos += pFormatCtx->start_time;
+
+//                printf("rewind %8"PRId64"\n", rewind_pos);
+                min_pos = rewind_pos - 1000000;
+                max_pos = rewind_pos + 1000000;
+
+                ret = avformat_seek_file(pFormatCtx, -1, INT64_MIN,
+                                         rewind_pos, INT64_MAX, 0);
+
+//                ret = avformat_seek_file(pFormatCtx, -1, min_pos,
+//                                         rewind_pos, max_pos, opts);
 //            __asm__ __volatile__("int3");
 
-            if (ret < 0)
-            {
-                printf("could not seek to position %f\n",
-                        (double)rewind_pos / AV_TIME_BASE);
-            }
-            else
-            {
-                avcodec_flush_buffers(pCodecCtx);
-                avcodec_flush_buffers(aCodecCtx);
+                if (ret < 0)
+                {
+                    printf("could not seek to position %f\n",
+                            (double)rewind_pos / AV_TIME_BASE);
+                }
 
-                while( get_packet(&q_video, &packet) != 0)
-                    av_free_packet(&packet);
-
-                while( get_packet(&q_audio, &packet)!= 0)
-                    av_free_packet(&packet);
-                audio_base = -1.0;
-
-  //              __asm__ __volatile__("int3");
-
-                eof = fill_queue();
-            };
-            yield();
-
-            flush_video();
-
-            player_state = REWIND_2_PLAY;
-            printf("restart\n");
-            continue;
-        };
-
-        if(q_video.size+q_audio.size < 4*1024*1024)
-        {
-            err = av_read_frame(pFormatCtx, &packet);
-            if( err < 0)
-            {
-                eof = 1;
-                if (err != AVERROR_EOF)
-                    printf("av_read_frame: error %x\n", err);
-                continue;
-            }
-            if(packet.stream_index==videoStream)
-            {
-                put_packet(&q_video, &packet);
-            }
-            else if( (packet.stream_index == audioStream) &&
-                 (have_sound != 0) )
-            {
-                put_packet(&q_audio, &packet);
-            }
-            else
-            {
-                av_free_packet(&packet);
-            };
-            decode_video(pCodecCtx, &q_video);
-            decode_audio(aCodecCtx, &q_audio);
-            continue;
-        };
-        decode_video(pCodecCtx, &q_video);
-        decode_audio(aCodecCtx, &q_audio);
-        delay(1);
+//                printf("restart\n");
+                decoder_state = PREPARE;
+                break;
+        }
     };
 
     ret = 1;

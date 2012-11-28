@@ -3,6 +3,9 @@
 
 #include "control.h"
 
+#define CAPTION_HEIGHT      24
+#define PANEL_HEIGHT        55
+
 typedef struct
 {
     link_t      link;
@@ -31,6 +34,7 @@ typedef struct
 {
     ctrl_t     ctrl;
     ctx_t      ctx;
+    char      *text;
     ctrl_t    *child_over;
     button_t  *close_btn;
     button_t  *minimize_btn;
@@ -43,8 +47,12 @@ typedef struct
     ctx_t       ctx;
     rect_t      draw;
     ctrl_t     *child_over;
+    int         layout;
     progress_t *prg;
+    level_t    *lvl;
+    slider_t   *sld;
     button_t   *play_btn;
+    button_t   *stop_btn;
 }panel_t;
 
 typedef struct
@@ -108,12 +116,13 @@ int def_window_proc(ctrl_t  *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2);
 void frame_run(window_t *win);
 
 button_t *create_button(char *caption, int id, int x, int y,
-                            int w, int h, ctrl_t *parent);
-progress_t *create_progress(char *caption, int id, int x, int y,
                         int w, int h, ctrl_t *parent);
-
+progress_t *create_progress(char *caption, int id, int x, int y,
+                            int w, int h, ctrl_t *parent);
+level_t    *create_level(char *caption, int id, int x, int y,
+                         int w, int h, ctrl_t *parent);
 scroller_t *create_scroller(uint32_t style, int id, int x, int y,
-                                int w, int h, ctrl_t *parent);
+                            int w, int h, ctrl_t *parent);
 
 //static uint32_t update_timers(uint32_t realtime);
 

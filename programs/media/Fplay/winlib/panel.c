@@ -4,11 +4,14 @@
 #include <stdio.h>
 #include "winlib.h"
 
-#define PANEL_HEIGHT        55
-#define PANEL_CORNER_W      16
+#define PANEL_CORNER_W       8
 #define FRAME_WIDTH          7
 
-#define ID_PLAY           100
+#define ID_PLAY             100
+#define ID_STOP             101
+#define ID_PROGRESS         102
+#define ID_VOL_LEVEL        103
+#define ID_VOL_CTRL         104
 
 extern uint32_t main_cursor;
 
@@ -22,6 +25,9 @@ extern int res_play_btn_pressed[];
 extern int res_pause_btn[];
 extern int res_pause_btn_pressed[];
 
+extern int res_stop_btn[];
+extern int res_stop_btn_pressed[];
+
 //extern int res_minimize_btn[];
 //extern int res_minimize_btn_hl[];
 //extern int res_minimize_btn_pressed[];
@@ -34,6 +40,8 @@ int init_panel(window_t *win)
 {
     button_t     *btn;
     progress_t   *prg;
+    level_t      *lvl;
+    slider_t     *sld;
 
     panel_t *panel = &win->panel;
     ctx_t   *ctx = &panel->ctx;
@@ -43,6 +51,8 @@ int init_panel(window_t *win)
 
     panel->ctrl.handler = panel_proc;
     panel->ctrl.parent  = (ctrl_t*)win;
+
+    panel->layout = 0;
 
     ctx->pixmap = user_alloc(1920*PANEL_HEIGHT*4);
     if(!ctx->pixmap)
@@ -63,8 +73,22 @@ int init_panel(window_t *win)
     btn->img_hilite  = res_pause_btn;
     btn->img_pressed = res_pause_btn_pressed;
 
-    prg = create_progress(NULL,101,0,4,0,8,&panel->ctrl);
+    btn = create_button(NULL, ID_STOP,0,19,24,24,&panel->ctrl);
+    panel->stop_btn = btn;
+
+    btn->img_default = res_stop_btn;
+    btn->img_hilite  = res_stop_btn;
+    btn->img_pressed = res_stop_btn_pressed;
+
+    prg = create_progress(NULL,ID_PROGRESS,0,4,0,10,&panel->ctrl);
     panel->prg = prg;
+
+    lvl = create_level(NULL, ID_VOL_LEVEL, 0, 20, 96, 10, &panel->ctrl);
+    lvl->vol = -1875;
+    panel->lvl = lvl;
+
+    sld = create_slider(NULL, ID_VOL_CTRL, 0, 20, 96+12, 12, &panel->ctrl);
+    panel->sld = sld;
 
 //    btn = create_button(NULL, ID_MINIMIZE,0,5,16,18,(ctrl_t*)cpt);
 //    cpt->minimize_btn = btn;
@@ -73,9 +97,58 @@ int init_panel(window_t *win)
 //    btn->img_hilite  = res_minimize_btn_hl;
 //    btn->img_pressed = res_minimize_btn_pressed;
 
+
+
     update_panel_size(win);
 
     return 1;
+};
+
+
+static void panel_update_layout(panel_t *panel)
+{
+    progress_t *prg = panel->prg;
+    level_t    *lvl = panel->lvl;
+
+    if(panel->layout == 0)
+    {
+        prg->ctrl.rc.l = panel->ctrl.rc.l;
+        prg->ctrl.rc.t = panel->ctrl.rc.t+7;
+        prg->ctrl.rc.r = panel->ctrl.rc.r;
+        prg->ctrl.rc.b = prg->ctrl.rc.t + prg->ctrl.h;
+        prg->ctrl.w    = prg->ctrl.rc.r - prg->ctrl.rc.l;
+
+        lvl->ctrl.rc.l = panel->ctrl.rc.l;
+        lvl->ctrl.rc.t = panel->ctrl.rc.t+7;
+        lvl->ctrl.rc.r = panel->lvl->ctrl.rc.l + panel->lvl->ctrl.w;
+        lvl->ctrl.rc.b = panel->lvl->ctrl.rc.t + panel->lvl->ctrl.h;
+    }
+    else
+    {
+        lvl->ctrl.rc.l = panel->ctrl.rc.l;
+        lvl->ctrl.rc.t = panel->ctrl.rc.t+7;
+        lvl->ctrl.rc.r = lvl->ctrl.rc.l + lvl->ctrl.w;
+        lvl->ctrl.rc.b = lvl->ctrl.rc.t + lvl->ctrl.h;
+
+        prg->ctrl.rc.l = lvl->ctrl.rc.r;
+        prg->ctrl.rc.t = panel->ctrl.rc.t+7;
+        prg->ctrl.rc.r = panel->ctrl.rc.r;
+        prg->ctrl.rc.b = prg->ctrl.rc.t + prg->ctrl.h;
+        prg->ctrl.w    = prg->ctrl.rc.r - prg->ctrl.rc.l;
+    };
+};
+
+void panel_set_layout(panel_t *panel, int layout)
+{
+    panel->layout = layout;
+    panel->lvl->visible = layout;
+
+    panel_update_layout(panel);
+
+    send_message(&panel->prg->ctrl, MSG_PAINT, 0, 0);
+
+    if(layout)
+        send_message(&panel->lvl->ctrl, MSG_PAINT, 0, 0);
 };
 
 void update_panel_size(window_t *win)
@@ -115,25 +188,22 @@ void update_panel_size(window_t *win)
     panel->ctrl.h       = PANEL_HEIGHT;
     win->client.b       = win->h-PANEL_HEIGHT;
 
-    panel->play_btn->rc.l = win->w/2 - 16;
-    panel->play_btn->rc.t = panel->ctrl.rc.t+19;
-    panel->play_btn->rc.r = panel->play_btn->rc.l + panel->play_btn->w;
-    panel->play_btn->rc.b = panel->play_btn->rc.t + panel->play_btn->h;
+    panel->play_btn->ctrl.rc.l = win->w/2 - 16;
+    panel->play_btn->ctrl.rc.t = panel->ctrl.rc.t+19;
+    panel->play_btn->ctrl.rc.r = panel->play_btn->ctrl.rc.l + panel->play_btn->ctrl.w;
+    panel->play_btn->ctrl.rc.b = panel->play_btn->ctrl.rc.t + panel->play_btn->ctrl.h;
 
-    panel->prg->ctrl.rc.l = 8;
-    panel->prg->ctrl.rc.t = panel->ctrl.rc.t+7;
-    panel->prg->ctrl.rc.r = panel->ctrl.rc.r-8;
-    panel->prg->ctrl.rc.b = panel->prg->ctrl.rc.t+8;
-    panel->prg->ctrl.w = panel->prg->ctrl.rc.r -
-                        panel->prg->ctrl.rc.l;
+    panel->stop_btn->ctrl.rc.l = win->w/2 - 44;
+    panel->stop_btn->ctrl.rc.t = panel->ctrl.rc.t+23;
+    panel->stop_btn->ctrl.rc.r = panel->stop_btn->ctrl.rc.l + panel->stop_btn->ctrl.w;
+    panel->stop_btn->ctrl.rc.b = panel->stop_btn->ctrl.rc.t + panel->stop_btn->ctrl.h;
 
-    panel->prg->ctrl.h = panel->prg->ctrl.rc.b -
-                         panel->prg->ctrl.rc.t;
+    panel->sld->ctrl.rc.l = panel->ctrl.rc.l;
+    panel->sld->ctrl.rc.t = panel->ctrl.rc.t+28;
+    panel->sld->ctrl.rc.r = panel->sld->ctrl.rc.l + panel->sld->ctrl.w;
+    panel->sld->ctrl.rc.b = panel->sld->ctrl.rc.t + panel->sld->ctrl.h;
 
-//    cpt->minimize_btn->rc.l = win->w - 25 - 16 - 5;
-//    cpt->minimize_btn->rc.r = cpt->minimize_btn->rc.l +
-//                           cpt->minimize_btn->w;
-
+    panel_update_layout(panel);
 };
 
 
@@ -234,7 +304,9 @@ int panel_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
             switch((short)arg1)
             {
                 case ID_PLAY:
-                case 101: 
+                case ID_STOP:
+                case ID_PROGRESS:
+                case ID_VOL_CTRL:
                     win = get_parent_window(ctrl);
                     send_message(win, msg, arg1, arg2);
                     break;

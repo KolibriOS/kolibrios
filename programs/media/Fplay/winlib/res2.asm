@@ -25,14 +25,26 @@ public _res_play_btn_pressed
 public _res_pause_btn
 public _res_pause_btn_pressed
 
+public _res_stop_btn
+public _res_stop_btn_pressed
+
 
 public _res_cursor_ns
 public _res_cursor_we
 public _res_cursor_nwse
 public _res_cursor_nesw
 
-section '.rdata' data readable align 16
+;public _res_logo
 
+public _res_level
+public _res_slider
+public _res_vol_slider
+
+public _res_progress_bar
+public _res_prg_level
+
+
+section '.rdata' data readable align 16
 
 _res_caption_left:  file 'cptleft.raw'
 _res_caption_right: file 'cptright.raw'
@@ -54,6 +66,9 @@ _res_play_btn_pressed:  file 'playbp.raw'
 _res_pause_btn:         file 'pausebtn.raw'
 _res_pause_btn_pressed: file 'pausebp.raw'
 
+_res_stop_btn:         file 'stopbtn.raw'
+_res_stop_btn_pressed: file 'stopbtnp.raw'
+
 
 _res_minimize_btn:         file 'minbn.raw'
 _res_minimize_btn_hl:      file 'minbhl.raw'
@@ -63,3 +78,12 @@ _res_cursor_ns:     file 'size_ns.cur'
 _res_cursor_we:     file 'size_we.cur'
 _res_cursor_nwse:   file 'size_nwse.cur'
 _res_cursor_nesw:   file 'size_nesw.cur'
+
+;_res_logo:          file 'logo.raw'
+
+_res_level:         file 'vol_level.raw'
+_res_vol_slider:    file 'vol_slider.raw'
+_res_slider:        file 'slider.raw'
+
+_res_progress_bar:  file 'pbar.raw'
+_res_prg_level:     file 'prg_level.raw'

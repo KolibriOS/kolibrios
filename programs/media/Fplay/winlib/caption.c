@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include "winlib.h"
 
-#define CAPTION_HEIGHT      24
 #define CAPTION_CORNER_W    8
 
 extern int res_caption_left[];
@@ -19,6 +18,8 @@ extern int res_close_btn_pressed[];
 extern int res_minimize_btn[];
 extern int res_minimize_btn_hl[];
 extern int res_minimize_btn_pressed[];
+
+extern uint32_t main_cursor;
 
 void update_caption_size(window_t *win);
 
@@ -37,6 +38,8 @@ int init_caption(window_t *win)
 
     cpt->ctrl.handler = caption_proc;
     cpt->ctrl.parent  = (ctrl_t*)win;
+
+    cpt->text = win->caption_txt;
 
     ctx->pixmap = user_alloc(1920*CAPTION_HEIGHT*4);
     if(!ctx->pixmap)
@@ -102,16 +105,26 @@ void update_caption_size(window_t *win)
     cpt->ctrl.h       = CAPTION_HEIGHT;
     win->client.t     = CAPTION_HEIGHT;
 
-    cpt->close_btn->rc.l = win->w - 25;
-    cpt->close_btn->rc.r = cpt->close_btn->rc.l +
-                           cpt->close_btn->w;
+    cpt->close_btn->ctrl.rc.l = win->w - 25;
+    cpt->close_btn->ctrl.rc.r = cpt->close_btn->ctrl.rc.l +
+                           cpt->close_btn->ctrl.w;
 
-    cpt->minimize_btn->rc.l = win->w - 25 - 16 - 5;
-    cpt->minimize_btn->rc.r = cpt->minimize_btn->rc.l +
-                           cpt->minimize_btn->w;
+    cpt->minimize_btn->ctrl.rc.l = win->w - 25 - 16 - 5;
+    cpt->minimize_btn->ctrl.rc.r = cpt->minimize_btn->ctrl.rc.l +
+                           cpt->minimize_btn->ctrl.w;
 
 };
 
+typedef struct
+{
+    uint32_t    width;
+    uint32_t    height;
+    uint32_t    pitch;
+    uint32_t    handle;
+    uint8_t    *data;
+}bitmap_t;
+
+extern int win_font;
 
 void draw_caption(caption_t *cpt)
 {
@@ -157,6 +170,13 @@ void draw_caption(caption_t *cpt)
         src+= CAPTION_CORNER_W;
     };
 
+    bitmap_t bitmap;
+
+    bitmap.data  = cpt->ctx.pixmap;
+    bitmap.pitch = cpt->ctx.stride;
+
+    draw_text(&bitmap, win_font, cpt->text, 8, 18, 0xFFFFFFFF);
+
     ctrl_t *child;
     child  = (ctrl_t*)cpt->ctrl.child.next;
 
@@ -193,18 +213,19 @@ int caption_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
                     send_message(child, msg, 0, arg2);
                 else
                     send_message(win->child_over, MSG_MOUSELEAVE, 0, arg2);
-            }
-            else if( child )
-                send_message(child, MSG_MOUSEENTER, 0, arg2);
+            };
 
             win->child_over = child;
             if( child )
+            {
+                send_message(child, MSG_MOUSEENTER, 0, arg2);
                 send_message(child,msg,0,arg2);
- //           else if(main_cursor != 0)
- //           {
- //               set_cursor(0);
- //               main_cursor = 0;
- //           }
+            }
+            else if(main_cursor != 0)
+            {
+                set_cursor(0);
+                main_cursor = 0;
+            }
             break;
 
 
