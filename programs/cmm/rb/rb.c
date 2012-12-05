@@ -1,21 +1,34 @@
-//@RB - v0.5
+//@RB - v0.6
 
 #include "..\lib\kolibri.h" 
 #include "..\lib\figures.h"
 #include "..\lib\file_system.h"
 
+#include "lang.h--" 
 
-#define ITEM_HEIGHT 18
-#define ITEM_WIDTH  138
-
-char *ITEMS_LIST[]={
-"Сменить тему окон   "w, "/sys/SKINSEL",       0,
-"Выбрать цвет фона   "w, "/sys/media/palitra", 0,
-"Управление иконками "w, "/sys/ICON",          0,
-"Настройка устройств "w, "/sys/SETUP",         0,
-"Обновить стол       "w, "/sys/REFRSCRN",      0,
-"Процессы            "w, "/sys/CPU",           0,
-0};
+#ifdef LANG_RUS
+	#define ITEM_HEIGHT 18
+	#define ITEM_WIDTH  138
+	char *ITEMS_LIST[]={
+	"‘¬Ґ­Ёвм вҐ¬г ®Є®­   ", "/sys/SKINSEL",       0,
+	"‚лЎа вм жўҐв д®­    ", "/sys/media/palitra", 0,
+	"“Їа ў«Ґ­ЁҐ ЁЄ®­Є ¬Ё ", "/sys/ICON",          0,
+	"Ќ бва®©Є  гбва®©бвў ", "/sys/SETUP",         0,
+	"ЋЎ­®ўЁвм бв®«       ", "/sys/REFRSCRN",      0,
+	"Џа®жҐббл            ", "/sys/CPU",           0,
+	0};
+#else
+	#define ITEM_HEIGHT 18
+	#define ITEM_WIDTH  122
+	char *ITEMS_LIST[]={
+	"Window skin         ", "/sys/SKINSEL",       0,
+	"Background          ", "/sys/media/palitra", 0,
+	"Icon manager        ", "/sys/ICON",          0,
+	"Device setup        ", "/sys/SETUP",         0,
+	"Refresh desktop     ", "/sys/REFRSCRN",      0,
+	"Processes           ", "/sys/CPU",           0,
+	0};
+#endif
 
 dword stak[100];
 
@@ -66,7 +79,7 @@ void window()
 					//feel clicking
 					DrawBar(1, items_cur*ITEM_HEIGHT+2, ITEM_WIDTH-1, ITEM_HEIGHT-2, sc.work_graph);
 					WriteText(8,items_cur*ITEM_HEIGHT+6,0x80,sc.work_button_text,ITEMS_LIST[items_cur*3],0);
-					Pause(4);
+					pause(4);
 					
 					ItemProcess(items_cur);
 				}
