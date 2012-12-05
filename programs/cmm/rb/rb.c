@@ -4,7 +4,9 @@
 #include "..\lib\figures.h"
 #include "..\lib\file_system.h"
 
-#include "lang.h--" 
+#ifndef AUTOBUILD
+#include "lang.h--"
+#endif
 
 #ifdef LANG_RUS
 	#define ITEM_HEIGHT 18
