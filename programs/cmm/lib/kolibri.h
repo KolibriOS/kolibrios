@@ -137,7 +137,7 @@ inline fastcall word GetKey()  //+Gluk fix
 }
 
 
-inline fastcall Pause( EBX)
+inline fastcall pause( EBX)
 {
 	$mov eax, 5
 	$int 0x40

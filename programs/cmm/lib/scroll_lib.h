@@ -1,20 +1,20 @@
 //lev
 //:dword boxlib = #abox_lib;
-:char abox_lib[]="/sys/lib/box_lib.obj";
+char abox_lib[]="/sys/lib/box_lib.obj";
 
-:char aboxlib_init[]  = "lib_init";
-:char aScrollbar_v_draw	= "scrollbar_v_draw";
-:char aScrollbar_v_mouse	= "scrollbar_v_mouse";
-:char aScrollbar_h_draw	= "scrollbar_h_draw";
-:char aScrollbar_h_mouse	= "scrollbar_h_mouse";
-:char aVersion_scrollbar	= "version_scrollbar";
+char aboxlib_init[]       = "lib_init";
+char aScrollbar_v_draw[]  = "scrollbar_v_draw";
+char aScrollbar_v_mouse[] = "scrollbar_v_mouse";
+char aScrollbar_h_draw[]  = "scrollbar_h_draw";
+char aScrollbar_h_mouse[] = "scrollbar_h_mouse";
+char aVersion_scrollbar[] = "version_scrollbar";
 
-dword boxlib_init = #aboxlib_init;
-dword scrollbar_v_draw	= #aScrollbar_v_draw;
-dword scrollbar_v_mouse	= #aScrollbar_v_mouse;
-dword scrollbar_h_draw	= #aScrollbar_h_draw;
-dword scrollbar_h_mouse	= #aScrollbar_h_mouse;
-:dword version_scrollbar	= #aVersion_scrollbar;
+dword boxlib_init       = #aboxlib_init;
+dword scrollbar_v_draw  = #aScrollbar_v_draw;
+dword scrollbar_v_mouse = #aScrollbar_v_mouse;
+dword scrollbar_h_draw  = #aScrollbar_h_draw;
+dword scrollbar_h_mouse = #aScrollbar_h_mouse;
+dword version_scrollbar = #aVersion_scrollbar;
 
 dword  sc_am__ = 0x0;
 dword  sc_bm__ = 0x0;

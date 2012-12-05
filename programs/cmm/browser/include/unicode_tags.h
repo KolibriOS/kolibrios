@@ -78,10 +78,10 @@ unsigned char GetUnicodeSymbol()
 		}
 	}
 	
-	rez = atoi(#tag + 1) - 1040;
-	if (tag[1] == '1') && (rez>=0) && (rez<=72) && (strlen(#tag) == 5)
+	j = atoi(#tag + 1) - 1040;
+	if (tag[1] == '1') && (j>=0) && (j<=72) && (strlen(#tag) == 5)
 	{
-		return unicode_chars[rez];
+		return unicode_chars[j];
 	}
 	
 	strcat(#line,#tag); //выводим на экран необработанный тег, так браузеры зачем-то делают

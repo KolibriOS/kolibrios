@@ -2,8 +2,8 @@
 dword boxlib = #aEdit_box_lib; //Asper
 char aEdit_box_lib[22]="/sys/lib/box_lib.obj\0"; //Asper
 
-dword edit_box_draw = #aEdit_box_draw;
-dword edit_box_key  = #aEdit_box_key;
+dword edit_box_draw  = #aEdit_box_draw;
+dword edit_box_key   = #aEdit_box_key;
 dword edit_box_mouse = #aEdit_box_mouse;
 dword version_ed     = #aVersion_ed;
 
