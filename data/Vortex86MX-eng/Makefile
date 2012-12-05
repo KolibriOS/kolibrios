@@ -233,7 +233,7 @@ CMM_PROGRAMS:=\
  games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
  games/flood-it:GAMES/flood-it:$(PROGS)/games/flood-it/trunk/flood-it.c \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
- HTMLv:HTMLv:$(PROGS)/network/htmlv/browser/HTMLv.c \
+ HTMLv:HTMLv:$(PROGS)/cmm/htmlv/browser/HTMLv.c \
 #develop/c--:DEVELOP/C--:$(PROGS)/develop/c--/trunk/32.c-- \
 # end of list
 
