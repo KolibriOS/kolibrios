@@ -43,9 +43,7 @@ export DOCDIR
 FASM_PROGRAMS:=\
  @clip:@CLIP:$(PROGS)/system/clip/trunk/@clip.ASM \
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
- @notify:@NOTIFY:$(PROGS)/system/notify/trunk/@notify.asm \
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
- @rb:@RB:$(PROGS)/system/rb/trunk/@RB.ASM \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm\
  refrscrn:REFRSCRN:$(PROGS)/system/refrscrn/refrscrn.asm \
  asciivju:ASCIIVJU:$(PROGS)/develop/asciivju/trunk/asciivju.asm \
@@ -175,6 +173,8 @@ COPY_FILES:=\
 CMM_PROGRAMS:=\
  File|Managers/Eolite:File|Managers/EOLITE:$(PROGS)/fs/Eolite/trunk/Eolite.c-- \
  HTMLv:HTMLv:$(PROGS)/cmm/browser/HTMLv.c \
+ @notify:@notify:$(PROGS)/cmm/notify/notify.c \
+ @rb:@rb:$(PROGS)/cmm/rb/rb.c \
 #develop/c--:DEVELOP/C--:$(PROGS)/develop/c--/trunk/32.c-- \
 # end of list
 

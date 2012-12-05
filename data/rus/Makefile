@@ -44,9 +44,7 @@ export DOCDIR
 FASM_PROGRAMS:=\
  @clip:@CLIP:$(PROGS)/system/clip/trunk/@clip.ASM \
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
- @notify:@NOTIFY:$(PROGS)/system/notify/trunk/@notify.asm \
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
- @rb:@RB:$(PROGS)/system/rb/trunk/@RB.ASM \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm \
  refrscrn:REFRSCRN:$(PROGS)/system/refrscrn/refrscrn.asm \
  asciivju:ASCIIVJU:$(PROGS)/develop/asciivju/trunk/asciivju.asm \
@@ -250,6 +248,8 @@ CMM_PROGRAMS:=\
  games/flood-it:GAMES/flood-it:$(PROGS)/games/flood-it/trunk/flood-it.c \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
  HTMLv:HTMLv:$(PROGS)/cmm/browser/HTMLv.c \
+ @notify:@notify:$(PROGS)/cmm/notify/notify.c \
+ @rb:@rb:$(PROGS)/cmm/rb/rb.c \
 # end of list
 
 # List of other files to be included in the image file.
