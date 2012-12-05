@@ -147,7 +147,7 @@ void TWebBrowser::Scan(int id)
 			if (GetProcessSlot(downloader_id)<>0)
 			{
 				KillProcess(downloader_id);
-				Pause(20);
+				pause(20);
 				Draw_Window();
 				return;
 			}
