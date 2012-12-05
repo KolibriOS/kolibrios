@@ -287,7 +287,7 @@ void TWebBrowser::OpenPage()
 		IF (URL[strlen(#URL)-1]=='/') URL[strlen(#URL)-1]=NULL;
 		downloader_id = RunProgram("/sys/network/downloader", #URL);
 		//Browser Hack v2.0
-		Pause(60);
+		pause(60);
 		if (GetProcessSlot(downloader_id)<>0)
 		{
 			debug("Browser Hack v2.0: Killing downloader and trying to run it one more!");
