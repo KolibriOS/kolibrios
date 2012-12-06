@@ -6,7 +6,7 @@ LEVNUM equ 500
  YFOFS equ 55
  MSGXO equ 32
 GAMES_ALL equ 12
-WNDCOLOR equ 0x03c0c0c0;0x03f6f6f6;
+WNDCOLOR equ 0x13c0c0c0;0x13f6f6f6;
 MINCS equ 40
 MAXCS equ 80
 macro icall lbl
@@ -299,32 +299,32 @@ draw_window:
     mov   ecx,[fy]
     imul  ecx,[Ces]
     add   ecx,10 shl 16+YFOFS+30
-    mcall 0,,,WNDCOLOR
+	mov edx, WNDCOLOR 
+	mov edi, header
+    mcall 0
     
-	push	edx
-	mcall	4,<8,8>,0x10ffffff,header,header.size
-	pop	esi
+	mov esi, edx
 	and	esi,0xffffff
-	mcall	9,prc_info,-1
+	mcall 9,prc_info,-1
 	pop	ebx
     
 	mov	eax,[prc_info+70] ;status of window
 	test	eax,100b
 	jne	.end
     
-    add   ebx,XFOFS shl 16+XFOFS*2
+    add   ebx,XFOFS shl 16
 
     mcall 8,,<25,12>,2
 
-    mcall 8,<XFOFS,11>,<40,12>,3
-    add   ebx,14 shl 16
+    mcall 8,<XFOFS,10>,<40,12>,3
+    add   ebx,13 shl 16
     inc   edx
     mcall
 
     mov   ecx,ebp
     mov   edx,game_names+4
     call  get_mstr
-    mcall ,<XFOFS+2,28>,0x8000
+    mcall 4,<XFOFS+2,28>,0x8000
     imul  esi,6
     add   esi,3
     shl   esi,16
@@ -754,7 +754,6 @@ STRIP2 = STRIP-2
 	ret
 
 OR_strip:
-;file 'orient2.gif'
 file 'orientg2.gif'
 	rd 2
 	gif_unp dd 0
@@ -788,12 +787,7 @@ levels	      dd TM_level,SMZ_level,TILT_level,TILT2_level,FH_level,LP_level,\
 help_msg      dd TM_help,SMZ_help,TILT_help,TILT2_help,FH_help,LP_help,WG_help,\
 	 BB_help,MAR_help,CSTEP_help,OR_help,NLT_help,CZ_help
 
-if lang eq ru
-  header db 'Mega Maze'
-else
-  header db 'Mega Maze'
-end if
-   .size = $ - header
+header db 'Mega Maze', 0
 
 next_msg db '< >'
 
