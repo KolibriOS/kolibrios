@@ -142,7 +142,7 @@ void TWebBrowser::Scan(int id)
 			if (strcmp(get_URL_part(5),"http:")<>0) RunProgram("/rd/1/tinypad", #URL); else RunProgram("/rd/1/tinypad", #download_path);
 			return;
 		case 054: //F5
-			IF(edit1.flags == 66) break;
+			IF(edit1.flags & 0b10) break;
 		case REFRESH:
 			if (GetProcessSlot(downloader_id)<>0)
 			{

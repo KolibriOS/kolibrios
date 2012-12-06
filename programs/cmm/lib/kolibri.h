@@ -335,6 +335,13 @@ done:
 	$pop ecx
 	$pop ebx
 }
+
+inline fastcall void debugch( ECX)
+{
+	$mov eax,63
+	$mov ebx,1
+	$int 0x40
+}
 //------------------------------------------------------------------------------
 
 void DefineAndDrawWindow(dword x,y, sizeX,sizeY, byte WindowType,dword WindowAreaColor, EDI, ESI)

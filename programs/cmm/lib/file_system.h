@@ -165,7 +165,7 @@ BDVK getinfo_file_info;
 	{
 		mem_Init();
 		cBufer = mem_Alloc(CopyFile_atr.sizelo);	
-		if (! ReadFile(dword 0, CopyFile_atr.sizelo, cBufer, copy_from))
+		if (! ReadFile(0, CopyFile_atr.sizelo, cBufer, copy_from))
 			if (! WriteFile(CopyFile_atr.sizelo, cBufer, copy_in)) return 1;
 	}
 	

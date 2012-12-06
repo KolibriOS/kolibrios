@@ -84,7 +84,7 @@ void Main_Window()
 				param[0]='d';
 				param[1]=disk_list[selected].Item[3];
 				Console_Work();
-				Pause(15);
+				pause(15);
 				GetDisks();
 				DrawTmpDisks();
 			}
@@ -213,7 +213,7 @@ void AddDisk()
 	}
 	param[1]=i+48;
 	Console_Work();
-	Pause(5);
+	pause(5);
 	GetDisks();
 	DrawTmpDisks();
 }

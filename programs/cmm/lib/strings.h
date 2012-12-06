@@ -130,6 +130,18 @@ inline fastcall strcat( EDI, ESI)
 	}
 }
 
+/*void strcat(char *to, char *from) //тоже работает
+{
+	while(*to) to++;
+	while(*from)
+	{
+		*to = *from;
+		to++;
+		from++;
+	}
+	*to = '\0';
+}*/
+
 dword itoa( ESI)
 {
 	unsigned char buffer[11];
