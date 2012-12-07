@@ -181,8 +181,33 @@ edit_box.draw_text:
         mov     ecx,ed_text_color
         add     ebx,4
         add     edx,ed_text
+		test    word ed_flags,ed_pass
+		jz      @f
+		call    edit_box.draw_password
+		jmp     .end_f
+@@:
         mcall
+.end_f:
 ret
+
+txt_pass db '*',0
+
+proc edit_box.draw_password
+locals
+	s_len dw ? ;длина выводимого текста
+endl
+	mov [s_len],si
+	xor esi,esi
+	inc esi
+	lea edx,[txt_pass]
+@@:
+	mcall
+	add ebx,6 shl 16 ;добавляем стандартную ширину символа
+	dec word[s_len]
+	cmp word[s_len],0
+	jg @b
+ret
+endp
 ;----------------------------------------------------------
 ;--- процедура прорисовки фона ----------------------------
 ;входные данные
