@@ -26,9 +26,9 @@ SDO_INT  equ 1 shl SDO_IDX  ;Asper: Output stream interrupt (must be power of 2)
 SDO_OFS  equ 0x80+(SDO_IDX*0x20) ;Asper: Output stream offset
 ;Asper+ ]
 
-include 'proc32.inc'
-include 'imports.inc'
-include 'codec_h.inc'
+include 'PROC32.INC'
+include 'IMPORTS.INC'
+include 'CODEC_H.INC'
 
 
 CURRENT_API	equ   0x0100	  ;1.00
@@ -2617,7 +2617,7 @@ hexletters   db '0123456789ABCDEF'
 hex_buff     db 8 dup(0),13,10,0,0
 
 
-include "codec.inc"
+include "CODEC.INC"
 include "hda_generic.inc"
 
 align 4
