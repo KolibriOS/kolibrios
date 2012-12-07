@@ -71,7 +71,6 @@ FASM_PROGRAMS:=\
  mykey:MYKEY:$(PROGS)/system/MyKey/trunk/MyKey.asm \
  pcidev:PCIDEV:$(PROGS)/system/pcidev/trunk/PCIDEV.ASM \
  period:PERIOD:$(PROGS)/other/period/trunk/period.asm \
- pic4:PIC4:$(PROGS)/media/pic4/trunk/pic4.asm \
  rdsave:RDSAVE:$(PROGS)/system/rdsave/trunk/rdsave.asm \
  rtfread:RTFREAD:$(PROGS)/other/rtfread/trunk/rtfread.asm \
  run:RUN:$(PROGS)/system/run/trunk/run.asm \
@@ -171,6 +170,7 @@ FASM_PROGRAMS:=\
  media/kiv:MEDIA/KIV:$(PROGS)/media/kiv/trunk/kiv.asm \
  media/listplay:MEDIA/LISTPLAY:$(PROGS)/media/listplay/trunk/listplay.asm \
  media/midamp:MEDIA/MIDAMP:$(PROGS)/media/midamp/trunk/midamp.asm \
+ media/palitra:MEDIA/PALITRA:$(PROGS)/media/palitra/trunk/palitra.asm \
  media/startmus:MEDIA/STARTMUS:$(PROGS)/media/startmus/trunk/STARTMUS.ASM \
  network/airc:NETWORK/AIRC:$(PROGS)/network/airc/trunk/airc.asm \
  network/arpstat:NETWORK/ARPSTAT:$(PROGS)/network/arpstat/trunk/arpstat.asm \
