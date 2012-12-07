@@ -125,6 +125,7 @@ FASM_PROGRAMS:=\
  drivers/emu10k1x.obj:DRIVERS/EMU10K1X.OBJ:$(KERNEL)/drivers/emu10k1x.asm \
  drivers/fm801.obj:DRIVERS/FM801.OBJ:$(KERNEL)/drivers/fm801.asm \
  drivers/infinity.obj:DRIVERS/INFINITY.OBJ:$(KERNEL)/drivers/infinity.asm \
+ drivers/intel_hda.obj:DRIVERS/intel_hda.obj:$(REPOSITORY)/drivers/audio/intel_hda/intel_hda.asm \
  drivers/ps2mouse.obj:DRIVERS/PS2MOUSE.OBJ:$(REPOSITORY)/drivers/mouse/ps2mouse4d/trunk/ps2mouse.asm \
  drivers/sb16.obj:DRIVERS/SB16.OBJ:$(KERNEL)/drivers/sb16/sb16.asm \
  drivers/sound.obj:DRIVERS/SOUND.OBJ:$(KERNEL)/drivers/sound.asm \
@@ -262,7 +263,6 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  games/xonix:GAMES/XONIX games/megamaze:GAMES/MEGAMAZE \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
- drivers/intel_hda.obj:DRIVERS/intel_hda.obj \
  media/ac97snd:MEDIA/AC97SND \
  network/jmail:NETWORK/JMAIL network/zeroconf.ini:NETWORK/ZEROCONF.INI \
 #end of list
