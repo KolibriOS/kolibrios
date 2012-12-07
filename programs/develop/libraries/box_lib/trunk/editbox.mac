@@ -196,6 +196,8 @@ proc edit_box.draw_password
 locals
 	s_len dw ? ;длина выводимого текста
 endl
+	cmp esi,1
+	jl .end_f ;если строка пустая
 	mov [s_len],si
 	xor esi,esi
 	inc esi
@@ -206,6 +208,7 @@ endl
 	dec word[s_len]
 	cmp word[s_len],0
 	jg @b
+.end_f:
 ret
 endp
 ;----------------------------------------------------------
