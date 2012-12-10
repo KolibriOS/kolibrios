@@ -49,7 +49,6 @@ PheniX                    /rd/1/games/phenix
 Змейка                    /rd/1/games/snake
 #4    **** DEMOS ****
 Трёхмерные         >      /@5
-Огонь                     /rd/1/demos/fire
 Кружок                    /rd/1/demos/circle
 Фрактал Мандельброта      /rd/1/demos/tinyfrac
 Цвета                     /rd/1/demos/colorref
@@ -64,7 +63,6 @@ TranTest                  /rd/1/demos/trantest
 UnvWater                  /rd/1/demos/unvwater
 #5    **** 3D demos ****
 Скринсейвер               /rd/1/3d/crownscr
-3D-Куб                    /rd/1/3d/3dcube2
 3D-Лабиринт               /rd/1/3d/free3d04
 Сердце                    /rd/1/3d/3dsheart
 Просмотрщик 3DS           /rd/1/3d/view3ds
@@ -75,6 +73,7 @@ FlatWave                  /rd/1/3d/flatwav
 #6    **** GRAPHICS ****
 Просмотр изображений      /rd/1/media/kiv
 Редактор Animage          /rd/1/media/animage
+Палитра                   /rd/1/media/palitra
 #7    **** AUDIO ****
 Midi-плеер                /rd/1/media/midamp
 CD-плейер                 /rd/1/media/cdp
@@ -104,7 +103,7 @@ Color Slider              /rd/1/demos/cslide
 Доска отладки             /rd/1/develop/board
 #11   **** SETUP ****
 Устройства                /rd/1/setup
-Генератор фона            /rd/1/pic4
+Установить фон            /rd/1/palitra
 Стиль окон                /rd/1/desktop
 Менеджер иконок           /rd/1/icon
 MyKey                     /rd/1/mykey
@@ -117,7 +116,7 @@ GHOST Monitor             /rd/1/gmon
 K. Bus disconnected       /rd/1/kbd
 HDD информер              /rd/1/hdd_info
 Чтение HDD                /rd/1/hdread
-#13   **** FM ****
+#13   **** File Managers ****
 KFAR                      /rd/1/File Managers/kfar
 KFM                       /rd/1/File Managers/kfm
 Eolite                    /rd/1/File Managers/Eolite

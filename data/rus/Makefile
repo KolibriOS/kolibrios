@@ -79,11 +79,9 @@ FASM_PROGRAMS:=\
  test:TEST:$(PROGS)/system/test/trunk/test.asm \
  tinypad:TINYPAD:$(PROGS)/develop/tinypad/trunk/tinypad.asm \
  zkey:ZKEY:$(PROGS)/system/zkey/trunk/ZKEY.ASM \
- 3d/3dcube2:3D/3DCUBE2:$(PROGS)/demos/3dcube2/trunk/3DCUBE2.ASM \
  3d/3dsheart:3D/3DSHEART:$(PROGS)/demos/3dsheart/trunk/3dsheart.asm \
  3d/3dwav:3D/3DWAV:$(PROGS)/demos/3dwav/trunk/3dwav.asm \
  3d/crownscr:3D/CROWNSCR:$(PROGS)/demos/crownscr/trunk/crownscr.asm  \
- 3d/flatwav:3D/FLATWAV:$(PROGS)/demos/flatwav/trunk/FLATWAV.ASM \
  3d/free3d04:3D/FREE3D04:$(PROGS)/demos/free3d04/trunk/free3d04.asm \
  3d/view3ds:3D/VIEW3DS:$(PROGS)/demos/3DS/VIEW3DS.ASM \
  demos/bcdclk:DEMOS/BCDCLK:$(PROGS)/demos/bcdclk/trunk/bcdclk.asm \
@@ -91,7 +89,6 @@ FASM_PROGRAMS:=\
  demos/colorref:DEMOS/COLORREF:$(PROGS)/demos/colorref/trunk/colorref.asm \
  demos/cslide:DEMOS/CSLIDE:$(PROGS)/demos/cslide/trunk/cslide.asm \
  demos/eyes:DEMOS/EYES:$(PROGS)/demos/eyes/trunk/eyes.asm \
- demos/fire:DEMOS/FIRE:$(PROGS)/demos/fire/trunk/fire.asm \
  demos/firework:DEMOS/FIREWORK:$(PROGS)/demos/firework/trunk/firework.asm \
  demos/movback:DEMOS/MOVBACK:$(PROGS)/demos/movback/trunk/movback.asm \
  demos/plasma:DEMOS/PLASMA:$(PROGS)/demos/plasma/trunk/plasma.asm \
@@ -270,7 +267,6 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  shell:SHELL table:TABLE vmode:VMODE \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
  demos/ak47.lif:DEMOS/AK47.LIF \
- demos/barge.lif:DEMOS/BARGE.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
  demos/use_mb:DEMOS/USE_MB \
  File|Managers/eolite.ini:File|Managers/EOLITE.INI \
