@@ -270,7 +270,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
 
 # Extra targets for LiveCD image in the syntax of mkisofs
 MKISOFS_EXTRA:=\
- emu/e80/e80=E80 \
+ emu/e80/e80=e80 \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox \
  emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
  emu/dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
