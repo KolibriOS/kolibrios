@@ -264,7 +264,7 @@ CMM_PROGRAMS:=\
 # Spaces should be represented as |.
 OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  background.png:background.png default.skn:DEFAULT.SKN \
- e80:E80 graph:GRAPH hdread:HDREAD \
+ graph:GRAPH hdread:HDREAD \
  icons.dat:ICONS.DAT iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
@@ -297,9 +297,10 @@ include Makefile.skins
 
 # Extra targets for LiveCD image in the syntax of mkisofs
 MKISOFS_EXTRA:=\
- dosbox/=$(PROGS)/emulator/DosBox/dosbox \
- dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
- dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
+ emu/e80/e80=E80 \
+ emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox \
+ emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
+ emu/dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
  /=distr_data/autorun.inf \
  /=distr_data/KolibriOS_icon.ico \
  /=distr_data/readme.txt \
