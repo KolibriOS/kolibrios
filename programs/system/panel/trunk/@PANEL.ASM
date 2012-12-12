@@ -683,7 +683,7 @@ end if
 align 4
 @@:
 	sub	eax,[height]
-	lea	edx,[eax-1]
+	mov	edx, eax
 ;--------------------------------------
 align 4
 .selected:
