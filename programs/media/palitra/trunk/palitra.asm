@@ -28,6 +28,9 @@
 ;;       - Добавлено изменение фона рабочего стола градиентной заливкой.                             |
 ;;       - Косметические правки.                                                                     |
 ;;       - Небольшая деоптимизация.                                                                  |
+;; 0.6.0 - Добавлена возможность запуска с параметрами                                               |
+;;       - Добавлен режим H (hidden) производит замену фона рабочего стола градиентной заливкой.     |
+;;       - Большая деоптимизация.                                                                    |
 ;.....................................................................................................
 ;; All rights reserved.                                                                              |
 ;;                                                                                                   |
@@ -66,16 +69,44 @@
   dd	 I_END
   dd	 0x100000
   dd	 0x1000
-  dd	 0x0
+  dd	 params
   dd	 0x0
 
   include '..\..\..\macros.inc'
-  WIN_W      equ 295                      ; ширина окна
-  WIN_H      equ 195                      ; высота окна
-  WIN_X      equ 250                      ; координата х окна
-  WIN_Y      equ 190                      ; координата у окна
+
+  WIN_W  equ 295            ; ширина окна
+  WIN_H  equ 195            ; высота окна
+  WIN_X  equ 250            ; координата х окна
+  WIN_Y  equ 190            ; координата у окна
 
 START:
+; обработка параметров командной строки
+    mov  edi,params         ; указатель на строку
+    call str_len            ; получаем длину строки
+    cmp  eax,0              ; стравниваем длину с нулём
+    je   red                ; если параметров нет то уходим
+    call    _read_params    ; иначе читаем параметры цвета (очень криво)
+    xor  eax,eax            ; зануляем регистр
+    mov  al,byte [params]   ; читаем параметр мода
+    cmp  al,'N'             ; сравниваем с normal mode
+    jne _no_normalmode      ; если нет то уходим на проверку дальше
+    mov  [runmode],1        ; если да то устанавливаем его
+    jmp  red                ; идём на отрисовку
+  _no_normalmode:           ; если не normal mode то
+    cmp  al,'H'             ; возможно hidden mode
+    jne _no_hiddenmode      ; если не он то уходим дальше
+    mov  [runmode],2        ; если он то устанавливаем что это он (нах?)
+    call set_background     ; меняем фон
+    jmp  bexit              ; и закрываем прогу
+  _no_hiddenmode:           ; если не hidden mode
+    cmp  al,'D'             ; возможно это color dialog mode
+    jne _no_dialogmode      ; если всё таки не он то уходим
+    mov  [runmode],3        ; иначе указываем что это таки он
+    jmp  red                ; и уходим на выполнение
+  _no_dialogmode:           ; если это ни один из заявленых модов
+    mov  [runmode],1        ; то сбрасываем на дефолт
+    jmp  red                ; и рисуем
+
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
 ; ОСНОВНОЙ ЦИКЛ ПРОГРАММЫ - ОБРАБОТКА СОБЫТИЙ                                                        |
@@ -197,12 +228,26 @@ draw_main:
     int     0x40                          ; Прерывание
     mov     ecx,eax                       ; Запоминаем высоту скина
 
+    mov     edi,[runmode]
+    cmp     edi,2
+    jne     no_hiddenmode
+    mov     edi,hidden
+    jmp     set_title
+  no_hiddenmode:
+    cmp     edi,3
+    jne     no_dialogmode
+    mov     edi,hidden
+    jmp     set_title
+  no_dialogmode:
+    mov     edi,title                     ; Заголовок окна
+  set_title:
+
     xor     eax,eax                       ; Очищаем eax (mov eax,0) (Функция 0)
     mov     ebx,WIN_X shl 16+WIN_W        ; [координата по оси x]*65536 + [размер по оси x]
     add     ecx,WIN_Y shl 16+WIN_H        ; Высота скина + [координата по y]*65536 + [размер по y] (168 для версии 0.2)
     mov     edx,[sc.work]                 ; Видимо стиль окна по дефолту
     or      edx,0x34000000                ; Или окно со скином фиксированных размеров
-    mov     edi,title                     ; Заголовок окна
+    
     int     0x40                          ; Прерывание
 
 
@@ -237,7 +282,6 @@ draw_main:
 
     call    draw_bottom_panel
     call    draw_left_panel
-
 
     mov     eax,12                        ; функция 12: означает, что будет рисоваться окно
     mov     ebx,2                         ; 2 - конец рисования
@@ -827,6 +871,68 @@ draw_value:
     ret                                   ; Возвращаем управление
 ;end_draw_value
 
+  _read_params:
+
+      mov al,[params+2]
+      mov [params_c+0],al
+
+      mov al,[params+3]
+      mov [params_c+1],al
+
+      mov al,[params+4]
+      mov [params_c+2],al
+
+      mov al,[params+5]
+      mov [params_c+3],al
+
+      mov al,[params+6]
+      mov [params_c+4],al
+
+      mov al,[params+7]
+      mov [params_c+5],al
+
+      mov al,[params+8]
+      mov [params_c+6],al
+
+      mov al,[params+9]
+      mov [params_c+7],al
+
+      mov   esi,params_c
+      mov   ecx,16
+      call  ascii2int
+      mov   [color],eax
+
+      mov al,[params+11]
+      mov [params_c+0],al
+
+      mov al,[params+12]
+      mov [params_c+1],al
+
+      mov al,[params+13]
+      mov [params_c+2],al
+
+      mov al,[params+14]
+      mov [params_c+3],al
+
+      mov al,[params+15]
+      mov [params_c+4],al
+
+      mov al,[params+16]
+      mov [params_c+5],al
+
+      mov al,[params+17]
+      mov [params_c+6],al
+
+      mov al,[params+18]
+      mov [params_c+7],al
+
+      mov   esi,params_c
+      mov   ecx,16
+      call  ascii2int
+      mov   [color2],eax
+
+      ret
+
 hex_digit:
     ;.................................................................................................
     ; Преобразование в ASCII (вне зависимости от системы счисления)
@@ -873,6 +979,50 @@ int2ascii:
     mov     esi,eax
     ret                                   ; и возвращаем управление
 ;end_int2ascii
+
+char2byte:
+    sub al,'0'
+    cmp al,10
+    jb  done
+    add al,'0'
+    and al,0x5f
+    sub al,'A'-10
+    and al,0x0f
+    done:
+    ret
+;end_char2byte
+
+ascii2int:
+    ;.................................................................................................
+    ; Преобразование строки в число
+    ;.................................................................................................
+    ; esi - указатель на нультерминированную строку
+    ; ecx - основание системы счисления
+    ; Возвращает eax - число
+    push esi
+    xor eax,eax
+    xor ebx,ebx
+    cmp byte [esi],'-'
+    jnz .next
+    inc esi
+    .next:
+    lodsb
+    or al,al
+    jz .done
+    call char2byte
+    imul ebx,ecx
+    add ebx,eax
+    jmp .next
+    .done:
+    xchg ebx,eax
+    pop esi
+    cmp byte [esi],'-'
+    jz .negate
+    ret
+    .negate:
+    neg eax
+    ret
+;end_ascii2int
 
 get_spectr:
     ;.................................................................................................
@@ -928,25 +1078,35 @@ str_len:
 
 	ret
 ;end_str_len
+
+    ;.................................................................................................
+    ; возвращает указатель на первое вхождение Chr ВL (вход->EDI string ; выход->EAX offset)
+    ;.................................................................................................
+;strscan:
+;    push ecx ; длина строки
+;    push ebx ; указатель на символ (bl)
+;    push esi ; пригодится
+;    push edi ; указатель на строку  
+;    mov esi, edi
+;    mov al,bl
+;    repne scasb
+;    sub edi, esi
+;    mov eax, edi
+;    dec eax
+;    pop edi
+;    pop esi
+;    pop ebx
+;    pop ecx
+;    ret
+;end;
+
+
+
+
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
 ; БЛОК ПЕРЕМЕННЫХ И КОНСТАНТ                                                                         |
 ;----------------------------------------------------------------------------------------------------/
-
-struct map_colors
-    c1         db 0
-    c2         db 0
-    c3         db 0
-    c4         db 0
-    c5         db 0
-    c6         db 0
-    c7         db 0
-    c8         db 0
-    c9         db 0
-    c10        db 0
-    c11        db 0
-    c12        db 0
-ends
 
     cm          db 12 dup(0)
     color       dd 00000000h              ; хранит значение выбранного цвета
@@ -956,7 +1116,8 @@ ends
     mouse_f     dd 0                      ; хранит данные о том какая кнопка мыши была нажата
     desctop_w   dd 0                      ; хранит ширину экрана
     sc          system_colors             ; хранит структуру системных цветов скина
-    title       db 'Palitra v0.5',0       ; хранит имя программы
+    title       db 'Palitra v0.6',0       ; хранит имя программы
+    hidden      db 'Hidden',0
     hex         db '#',0                  ; для вывода решётки как текста
     cname       db 'RGBAx'                ; хранит разряды цветов (red,green,blue) x-метка конца
     cred        db 0                      ; храним красный спекрт
@@ -968,6 +1129,9 @@ ends
     bground     db 'BACKGROUND',0         ; имя кнопки - 14
     pnext       dd 0                      ; счетчик переключения палитры
     renmode     dd 0                      ; режим отрисовки (1-цветовая схема,2-пипетка,3-круговая)
+    runmode     dd 1                      ; режим запуска (1-normal, 2-hidden, 3-colordialog)
+    params      db 20 dup(0)              ; приём параметров
+    params_c    db 9  dup(0)              ; приёмник для цвета
 I_END:
 
 
