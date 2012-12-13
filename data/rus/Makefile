@@ -154,6 +154,7 @@ FASM_PROGRAMS:=\
  games/tetris:GAMES/TETRIS:$(PROGS)/games/tetris/trunk/tetris.asm \
  lib/archiver.obj:LIB/ARCHIVER.OBJ:$(PROGS)/fs/kfar/trunk/kfar_arc/kfar_arc.asm \
  lib/box_lib.obj:LIB/BOX_LIB.OBJ:$(PROGS)/develop/libraries/box_lib/trunk/box_lib.asm \
+ lib/buf2d.obj:LIB/BUF2D.OBJ:$(PROGS)/develop/libraries/buf2d/trunk/buf2d.asm \
  lib/console.obj:LIB/CONSOLE.OBJ:$(PROGS)/develop/libraries/console/console.asm \
  lib/libgfx.obj:LIB/LIBGFX.OBJ:$(PROGS)/develop/libraries/libs-dev/libgfx/libgfx.asm \
  lib/libimg.obj:LIB/LIBIMG.OBJ:$(PROGS)/develop/libraries/libs-dev/libimg/libimg.asm \
@@ -266,7 +267,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  panel.ini:PANEL.INI pipetka:PIPETKA setup.dat:SETUP.DAT \
  shell:SHELL table:TABLE vmode:VMODE \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
- demos/ak47.lif:DEMOS/AK47.LIF \
+ demos/ak47.lif:DEMOS/AK47.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
  demos/use_mb:DEMOS/USE_MB \
  File|Managers/eolite.ini:File|Managers/EOLITE.INI \

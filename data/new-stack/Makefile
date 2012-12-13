@@ -110,6 +110,7 @@ FASM_PROGRAMS:=\
  develop/info/win_const.syn:DEVELOP/INFO/WIN_CONST.SYN:$(PROGS)/other/t_edit/info/win_const_syn.asm \
  lib/archiver.obj:LIB/ARCHIVER.OBJ:$(PROGS)/fs/kfar/trunk/kfar_arc/kfar_arc.asm \
  lib/box_lib.obj:LIB/BOX_LIB.OBJ:$(PROGS)/develop/libraries/box_lib/trunk/box_lib.asm \
+ lib/buf2d.obj:LIB/BUF2D.OBJ:$(PROGS)/develop/libraries/buf2d/trunk/buf2d.asm \
  lib/console.obj:LIB/CONSOLE.OBJ:$(PROGS)/develop/libraries/console/console.asm \
  lib/libgfx.obj:LIB/LIBGFX.OBJ:$(PROGS)/develop/libraries/libs-dev/libgfx/libgfx.asm \
  lib/libimg.obj:LIB/LIBIMG.OBJ:$(PROGS)/develop/libraries/libs-dev/libimg/libimg.asm \
