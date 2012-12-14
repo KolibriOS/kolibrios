@@ -16,6 +16,7 @@ if not exist bin\vaz2106.vox @copy ..\..\..\..\..\media\voxel_editor\trunk\vaz21
 @fasm.exe -m 16384 e5_lines_sm.asm bin\e5_lines_sm.kex
 @fasm.exe -m 16384 e6_vox_1g.asm bin\e6_vox_1g.kex
 @fasm.exe -m 16384 e7_vox_3g.asm bin\e7_vox_3g.kex
+@fasm.exe -m 16384 e8_filters.asm bin\e8_filters.kex
 
 @kpack bin\e0_dr_lines.kex
 @kpack bin\e1_scaling.kex
@@ -25,4 +26,5 @@ if not exist bin\vaz2106.vox @copy ..\..\..\..\..\media\voxel_editor\trunk\vaz21
 @kpack bin\e5_lines_sm.kex
 @kpack bin\e6_vox_1g.kex
 @kpack bin\e7_vox_3g.kex
+@kpack bin\e8_filters.kex
 pause

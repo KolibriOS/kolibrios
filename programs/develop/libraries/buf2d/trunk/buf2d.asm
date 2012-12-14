@@ -3451,6 +3451,296 @@ proc buf_curve_bezier, buffer:dword, coord_p0:dword,coord_p1:dword,coord_p2:dwor
 	ret
 endp
 
+;фильтер
+align 4
+proc buf_filter_dither, buffer:dword, algor:dword
+	pushad
+	mov edi,[buffer]
+	cmp buf2d_bits,24
+	jne .error
+		mov edx,buf2d_w
+		mov esi,buf2d_h
+		mov edi,buf2d_data
+;edi - pointer to 24bit bitmap
+;edx - x size
+;esi - y size
+		lea   edx,[edx*3]
+		imul  esi,edx
+
+		;определяем какой алгоритм использовать
+		cmp dword[algor],0
+		jne @f
+			call dither_0
+			jmp .dither_end
+		@@:
+		cmp dword[algor],1
+		jne @f
+			call dither_1
+			jmp .dither_end
+		@@:
+		call dither_2
+		jmp .dither_end
+	.error:
+		stdcall print_err,sz_buf2d_filter_dither,txt_err_n24b
+	.dither_end:
+	popad
+	ret
+endp
+
+align 16
+dither_0: ; Sierra Filter Lite algoritm
+newp_0:   ; Dithering cycle
+	xor   ebx,ebx ; At first threshold
+	movzx ecx,byte[edi]
+	cmp   cl,255
+	je    newp_0.next
+	test  cl,cl
+	jz    newp_0.next
+	jns   @f
+	dec   ebx
+	sub   ecx,255
+@@:
+	mov   [edi],bl               ; putpixel
+
+	sar   ecx,1                  ; error/2
+	;adc   ecx,0                  ; round to integer
+
+	movzx eax,byte[edi+3]        ; pixel (x+1;y)
+	add   eax,ecx                ; add error/2 to (x+1;y)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok
+@@:
+	cmp   eax,255
+	jle   .ok
+	or    al,255
+.ok:
+	mov   [edi+3],al             ; putpixel
+
+	sar   ecx,1                  ; error/4
+	adc   ecx,0                  ; round to integer
+
+	movzx eax,byte[edi+edx-3]    ; pixel (x-1;y+1)
+	add   eax,ecx                ; add error/4 to (x-1;y+1)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok1
+@@:
+	cmp   eax,255
+	jle   .ok1
+	or    al,255
+.ok1:
+	mov   [edi+edx-3],al         ; putpixel
+
+	movzx eax,byte[edi+edx]      ; pixel (x;y+1)
+	add   eax,ecx                ; add error/4 to (x;y+1)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok2
+@@:
+	cmp   eax,255
+	jle   .ok2
+	or    al,255
+.ok2:
+	mov   [edi+edx],al           ; putpixel
+
+.next:
+	inc   edi
+	dec   esi
+	jnz   newp_0
+	ret
+
+align 16
+dither_1: ; Floyd-Steinberg algoritm
+newp_1:   ; Dithering cycle
+	xor   ebx,ebx ; At first threshold
+	movzx ecx,byte[edi]
+	cmp   cl,255
+	je    newp_1.next
+	test  cl,cl
+	jz    newp_1.next
+	jns   @f
+	dec   ebx
+	sub   ecx,255
+@@:
+	mov   [edi],bl               ; putpixel
+
+	sar   ecx,4                  ; error/16
+	adc   ecx,0                  ; round to integer
+	mov   ebx,ecx
+
+	movzx eax,byte[edi+edx+3]    ; pixel (x+1;y+1)
+	add   eax,ecx                ; add error/16 to (x+1;y+1)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok
+@@:
+	cmp   eax,255
+	jle   .ok
+	or    al,255
+.ok:
+	mov   [edi+edx+3],al         ;putpixel
+
+	imul  ecx,3
+	movzx eax,byte[edi+edx-3]    ; pixel (x-1;y+1)
+	add   eax,ecx                ; add 3*error/16 to (x-1;y+1)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok1
+@@:
+	cmp   eax,255
+	jle   .ok1
+	or    al,255
+.ok1:
+	mov   [edi+edx-3],al         ;putpixel
+
+	mov   ecx,ebx
+	imul  ecx,5
+	movzx eax,byte[edi+edx]      ; pixel (x;y+1)
+	add   eax,ecx                ; add 5*error/16 to (x;y+1)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok2
+@@:
+	cmp   eax,255
+	jle   .ok2
+	or    al,255
+.ok2:
+	mov   [edi+edx],al           ;putpixel
+
+	mov   ecx,ebx
+	imul  ecx,7
+	movzx eax,byte[edi+3]        ; pixel (x+1;y)
+	add   eax,ecx                ; add 7*error/16 to (x+1;y)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok3
+@@:
+	cmp   eax,255
+	jle   .ok3
+	or    al,255
+.ok3:
+	mov   [edi+3],al             ;putpixel
+
+.next:
+	inc  edi
+	dec  esi
+	jnz  newp_1
+	ret
+
+align 16
+dither_2: ; Burkers algoritm
+newp_2:   ; Dithering cycle
+	xor   ebx,ebx ; At first threshold
+	movsx ecx,byte[edi]
+	cmp   cl,255
+	je    newp_2.next
+	test  cl,cl
+	jz    newp_2.next
+	jns   @f
+	dec   ebx
+@@:
+	mov   [edi],bl               ; putpixel
+
+	sar   ecx,2                  ; error/4
+	adc   ecx,0                  ; round to integer
+
+	movzx eax,byte[edi+3]        ; pixel (x+1;y)
+	add   eax,ecx                ; add error/4 to (x+1;y)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok
+@@:
+	cmp   eax,255
+	jle   .ok
+	or    al,255
+.ok:
+	mov   [edi+3],al             ; putpixel
+
+	movzx eax,byte[edi+edx]      ; pixel (x;y+1)
+	add   eax,ecx                ; add error/4 to (x;y+1)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok1
+@@:
+	cmp   eax,255
+	jle   .ok1
+	or    al,255
+.ok1:
+	mov   [edi+edx],al           ; putpixel
+
+	sar   ecx,1                  ; error/8
+	adc   ecx,0                  ; round to integer
+
+	movzx eax,byte[edi+6]        ; pixel (x+2;y)
+	add   eax,ecx                ; add error/8 to (x+2;y)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok2
+@@:
+	cmp   eax,255
+	jle   .ok2
+	or    al,255
+.ok2:
+	mov   [edi+6],al             ; putpixel
+
+	movzx eax,byte[edi+edx-3]    ; pixel (x-1;y+1)
+	add   eax,ecx                ; add error/8 to (x-1;y+1)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok3
+@@:
+	cmp   eax,255
+	jle   .ok3
+	or    al,255
+.ok3:
+	mov   [edi+edx-3],al         ; putpixel
+
+	movzx eax,byte[edi+edx+3]    ; pixel (x+1;y+1)
+	add   eax,ecx                ; add error/8 to (x+1;y+1)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok4
+@@:
+	cmp   eax,255
+	jle   .ok4
+	or    al,255
+.ok4:
+	mov   [edi+edx+3],al         ; putpixel
+
+	sar   ecx,1                  ; error/16
+	;adc   ecx,0                  ; round to integer
+
+	movzx eax,byte[edi+edx-6]    ; pixel (x-2;y+1)
+	add   eax,ecx                ; add error/16 to (x-2;y+1)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok5
+@@:
+	cmp   eax,255
+	jle   .ok5
+	or    al,255
+.ok5:
+	mov   [edi+edx-6],al         ; putpixel
+
+	movzx eax,byte[edi+edx+6]    ; pixel (x+2;y+1)
+	add   eax,ecx                ; add error/16 to (x+2;y+1)
+	jge   @f                     ; check_overflow
+	xor   eax,eax
+	jmp   .ok6
+@@:
+	cmp   eax,255
+	jle   .ok6
+	or    al,255
+.ok6:
+	mov   [edi+edx+6],al         ; putpixel
+
+.next:
+	inc   edi
+	dec   esi
+	jnz   newp_2
+	ret
+
 
 
 ;*** функции для работы с воксельной графикой ***
@@ -4816,6 +5106,7 @@ EXPORTS:
 	dd sz_buf2d_set_pixel, buf_set_pixel
 	dd sz_buf2d_get_pixel, buf_get_pixel
 	dd sz_buf2d_flip_v, buf_flip_v
+	dd sz_buf2d_filter_dither, buf_filter_dither
 	dd sz_buf2d_vox_brush_create, vox_brush_create
 	dd sz_buf2d_vox_brush_delete, vox_brush_delete
 	dd sz_buf2d_vox_obj_get_img_w_3g, buf_vox_obj_get_img_w_3g
@@ -4856,6 +5147,7 @@ EXPORTS:
 	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
 	sz_buf2d_get_pixel db 'buf2d_get_pixel',0
 	sz_buf2d_flip_v db 'buf2d_flip_v',0
+	sz_buf2d_filter_dither db 'buf2d_filter_dither',0
 	sz_buf2d_vox_brush_create db 'buf2d_vox_brush_create',0
 	sz_buf2d_vox_brush_delete db 'buf2d_vox_brush_delete',0
 	sz_buf2d_vox_obj_get_img_w_3g db 'buf2d_vox_obj_get_img_w_3g',0

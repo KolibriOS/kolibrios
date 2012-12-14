@@ -63,6 +63,7 @@ table { font-size: 15px; }
 <li><a href="#f_b_wdiv2">buf2d_img_wdiv2</a></li>
 <li><a href="#f_c_color">buf2d_crop_color</a></li>
 <li><a href="#f_flip_v">buf2d_flip_v</a></li>
+<li><a href="#f_filter_d">buf2d_filter_dither</a></li>
 
 <li><a href="#f_v_brush_c">buf2d_vox_brush_create</a></li>
 </ul>
@@ -260,6 +261,12 @@ stdcall [buf2d_convert_text_matrix], buf_1</pre>
 <pre>stdcall buf2d_flip_v, buf_0</pre>
 <p>где buf_0 - структура 24-х битного буфера.</p>
 
+<h4><a name="f_filter_d">buf2d_filter_dither</a></h4>
+<p>Фильтр, который преобразует изображение из 24 битного буфера в 8-ми цветное. Разрядность буфера не меняется. Пример:</p>
+<pre>stdcall [buf2d_filter_dither], buf_0, 0</pre>
+<p>где buf_0 - структура 24-х битного буфера.</p>
+<p>0 - алгоритм (возможные значения: 0 - Sierra Lite, 1 - Floyd-Steinberg, 2 - Burkers).</p>
+
 <h4><a name="f_v_brush_c">buf2d_vox_brush_create</a></h4>
 <p>Создание воксельной кисти. Пример:</p>
 <pre>stdcall [buf2d_vox_brush_create], buf_vox, vox_6_7_z
@@ -353,6 +360,7 @@ import_buf2d_lib:
 	buf2d_set_pixel dd sz_buf2d_set_pixel
 	buf2d_get_pixel dd sz_buf2d_get_pixel
 	buf2d_flip_v dd sz_buf2d_flip_v
+	buf2d_filter_dither dd sz_buf2d_filter_dither
 
 	;воксельные функции:
 	buf2d_vox_brush_create dd sz_buf2d_vox_brush_create
@@ -396,6 +404,7 @@ import_buf2d_lib:
 	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
 	sz_buf2d_get_pixel db 'buf2d_get_pixel',0
 	sz_buf2d_flip_v db 'buf2d_flip_v',0
+	sz_buf2d_filter_dither db 'buf2d_filter_dither',0
 
 	;воксельные функции:
 	sz_buf2d_vox_brush_create db 'buf2d_vox_brush_create',0
@@ -434,5 +443,6 @@ import_buf2d_lib:
 <p>11.08.12 - функции для сжатия изображений buf2d_img_hdiv2 и buf2d_img_wdiv2 работают с 32 битными буферами.</p>
 <p>01.10.12 - добавлена функция поворота изображений на 90 и 180 градусов buf2d_rotate.</p>
 <p>15.11.12 - добавлена функция отражения 24 битных изображений по вертикали buf_flip_v, исправления в функции buf2d_img_hdiv2.</p>
+<p>14.12.12 - добавлена функция наложения фильтра buf2d_filter_dither.</p>
 </body>
 </html>
