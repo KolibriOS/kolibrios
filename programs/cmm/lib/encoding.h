@@ -171,12 +171,3 @@ dword Hex2Symb(char* htmlcolor)
   wintodos(#symbol);
   AL=symbol;
 }
-
-/*
-int hex2char(dword c)
-{
-  if (c <=9)
-    return (c+48);
-
-  return (c - 10 + 'a');
-}*/

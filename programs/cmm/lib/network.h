@@ -34,32 +34,12 @@ itoa(addr&0xFF) — это 10
 
 dword GetIPfromAdress(dword addr)
 {
-	dword lpointer;
+	dword lpointer, IPa;
 	getaddrinfo stdcall (addr, 0, 0, #lpointer);
-	if (EAX!=0) return 0; //если ошибка
-	return DSDWORD[DSDWORD[lpointer+24]+4];
+	if (EAX!=0) IPa = 0; else IPa = DSDWORD[DSDWORD[lpointer+24]+4];
+	freeaddrinfo stdcall (lpointer);
+	return IPa;
 }
-
-/*dword GetIPfromAdressASM(dword addr)
-{
-	dword lpointer;
-
-	ESP=#lpointer;
-	$push   esp     // lpointer
-	$push   esp     // fourth parameter
-	$push   0       // third parameter
-	$push   0       // second parameter
-	EAX = addr;
-	$push   eax     // first parameter
-	$call   getaddrinfo
-	if (EAX!=0) return 0; //ошибка
-	$pop    esi
-	$mov    ebx, DSDWORD[lpointer+24]
-	$mov    eax, DSDWORD[EBX+4]
-	
-	return EAX;
-}*/
-
 
 /*
 //Convert the string from standard IPv4 dotted notation to integer IP addr.
