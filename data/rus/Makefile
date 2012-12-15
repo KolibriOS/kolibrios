@@ -247,6 +247,7 @@ CMM_PROGRAMS:=\
  games/flood-it:GAMES/flood-it:$(PROGS)/games/flood-it/trunk/flood-it.c \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
  HTMLv:HTMLv:$(PROGS)/cmm/browser/HTMLv.c \
+ tmpdisk:tmpdisk:$(PROGS)/cmm/tmpdisk/tmpdisk.c \
  @notify:@notify:$(PROGS)/cmm/notify/notify.c \
  @rb:@rb:$(PROGS)/cmm/rb/rb.c \
 # end of list
