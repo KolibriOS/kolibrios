@@ -2,7 +2,9 @@
 #include "..\lib\strings.h" 
 #include "..\lib\file_system.h"
 
-#include "lang.h"
+#ifndef AUTOBUILD
+#include "lang.h--"
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////             область данных                 ////////////////////
