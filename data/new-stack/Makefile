@@ -174,6 +174,7 @@ COPY_FILES:=\
 CMM_PROGRAMS:=\
  File|Managers/Eolite:File|Managers/EOLITE:$(PROGS)/fs/Eolite/trunk/Eolite.c-- \
  HTMLv:HTMLv:$(PROGS)/cmm/browser/HTMLv.c \
+ tmpdisk:tmpdisk:$(PROGS)/cmm/tmpdisk/tmpdisk.c \
  @notify:@notify:$(PROGS)/cmm/notify/notify.c \
  @rb:@rb:$(PROGS)/cmm/rb/rb.c \
 #develop/c--:DEVELOP/C--:$(PROGS)/develop/c--/trunk/32.c-- \

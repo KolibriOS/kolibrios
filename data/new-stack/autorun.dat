@@ -15,4 +15,5 @@
 /RD/1/DEVELOP/BOARD   ""          1    # Load DEBUG board
 /RD/1/NETWORK/NETCFG  A 	  1    #
 /RD/1/NETWORK/ZEROCONF ""         1000    # Network configuration
+/RD/1/TMPDISK          A1          1    # Add virtual RAM disk /tmp1/1
 ### Hello, ASM World! ###
