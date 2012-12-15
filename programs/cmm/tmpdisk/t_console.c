@@ -58,9 +58,7 @@ void Console_Work()
 				add_disk.DiskSize = GetFreeRAM() / 5;
 				debug("disk size is not specified");
 				strcpy(#size_t, "10% from free RAM will be used, new DiskSize: ");
-				driver_rezult=itoa(add_disk.DiskSize/2048);
-				strcat(#size_t, driver_rezult);
-				//strcat(#size_t, itoa(add_disk.DiskSize/2048));
+				strcat(#size_t, itoa(add_disk.DiskSize/2048));
 				strcat(#size_t, " MB");
 				debug(#size_t);
 			}				

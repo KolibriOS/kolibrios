@@ -219,6 +219,13 @@ inline fastcall int GetActiveProcess()
 	$int 0x40
 }
 
+inline fastcall void ActivateWindow( ECX)
+{
+	EAX = 18;
+	EBX = 3;
+	$int 0x40
+}
+
 inline fastcall int CreateThread( ECX,EDX)
 {
 	$mov eax,51

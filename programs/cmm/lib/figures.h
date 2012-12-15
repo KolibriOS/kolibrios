@@ -57,3 +57,23 @@ void CheckBox(dword x,y,w,h, bt_id, text, graph_color, text_color, is_checked)
 		DrawBar(x+2, y+2, w-3, h-3, 0xffffff);
 	} 
 }
+
+void DrawProgressBar(dword st_x, st_y, st_w, st_h, col_fon, col_border, col_fill, col_text, progress_percent, status_text)
+{
+	int progress_w = progress_percent * st_w / 100 - 3;
+	static int fill_old;
+	    
+	if (!progress_percent) {DrawBar(st_x,st_y, st_x + st_y + fill_old + 15,st_h+1, col_fon);  return;}
+	
+	DrawRectangle(st_x, st_y, st_w,st_h, col_border);
+	DrawRectangle3D(st_x+1, st_y+1, st_w-2,st_h-2, 0xFFFfff, 0xFFFfff);
+	if (progress_percent) DrawBar(st_x+2, st_y+2, progress_w, st_h-3, col_fill);
+	if (progress_percent<100) DrawBar(st_x+2+progress_w, st_y+2, st_w-progress_w-3, st_h-3, 0xFFFfff);
+	
+	if (status_text)
+	{
+		DrawBar(st_x+st_w+15, st_h/2-4+st_y, fill_old, 9, col_fon);
+		WriteText(st_x+st_w+15, st_h/2-4+st_y, 0x80, col_text, status_text);
+		fill_old = strlen(status_text) * 6;
+	}
+}

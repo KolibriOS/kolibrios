@@ -114,6 +114,8 @@ inline fastcall strcat( EDI, ESI)
 dword itoa( ESI)
 {
 	unsigned char buffer[11];
+	$pusha
+
 	EDI = #buffer;
 	ECX = 10;
 	if (ESI < 0)
@@ -139,8 +141,9 @@ F3:
 	
 	$mov     al, '\0'
 	$stosb
-	 
-     return #buffer;
+	
+	$popa 
+    return #buffer;
 } 
 
 
