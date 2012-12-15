@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.43"
+#define title "Eolite File Manager v1.45"
 dword selection_col = 0x94AECE;
 dword lpanel_col = 0x00699C;
 
@@ -56,8 +56,8 @@ int scroll_size;
 
 
 
-int toolbar_buttons_x[6]={9,46,85,134,167,203};
-char tmp_disk_del_param[]="d0";
+int toolbar_buttons_x[7]={9,46,85,134,167,203};
+char tmp_disk_del_param[3]="d0\0";
 
 dword file_mas[6898];
 int j, i, mouse_dd;
@@ -111,7 +111,7 @@ void main()
 				IF (del_active) break;
 				
 				id=GetSlot(Form.ID); 
-				IF (id<>ActiveProcess()) break; //если окно не активно на события мыши не реагируем
+				IF (id<>GetActiveProcess()) break; //если окно не активно на события мыши не реагируем
 				
 				IF (!rename_active) edit_box_mouse stdcall(#edit1); ELSE edit_box_mouse stdcall(#edit2);
 				

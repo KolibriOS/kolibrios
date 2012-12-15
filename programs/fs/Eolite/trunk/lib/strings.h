@@ -17,11 +17,11 @@ inline fastcall dword strlen( EDI)
 inline fastcall copystr( ESI,EDI)
 {
 	$cld
-l1:
+L1:
 	$lodsb
 	$stosb
 	$test al,al
-	$jnz l1
+	$jnz L1
 }
 
 char buffer[11];
@@ -30,26 +30,25 @@ inline fastcall dword IntToStr( ESI)
      $mov     edi, #buffer
      $mov     ecx, 10
      $test     esi, esi
-     $jns     f1
+     $jns     F1
      $mov     al, '-'
      $stosb
      $neg     esi
-f1:
+F1:
      $mov     eax, esi
      $push     -'0'
-f2:
+F2:
      $xor     edx, edx
      $div     ecx
      $push     edx
      $test     eax, eax
-     $jnz     f2
-f3:
+     $jnz     F2
+F3:
      $pop     eax
      $add     al, '0'
      $stosb
-     $jnz     f3
+     $jnz     F3
      $mov     eax, #buffer
-     //$ret
 }
 
 inline fastcall dword StrToInt()
@@ -128,11 +127,11 @@ inline fastcall TitleCase( EDX)
 inline fastcall strcpy( EDI, ESI)
 {
 	$cld
-l2:
+L2:
 	$lodsb
 	$stosb
 	$test al,al
-	$jnz l2
+	$jnz L2
 }
 
 

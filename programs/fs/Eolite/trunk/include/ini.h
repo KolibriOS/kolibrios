@@ -29,16 +29,20 @@ unsigned char *ERROR_TEXT[]={
 void GetIni(byte onload)
 {
 	byte section[32]='', parametr[32]='', option[256]='', InfType=0;
-	word bukva[1];
+	char bukva[2];
 	int errornum;
-	dword buff, fsize, tj;
+	dword fsize, tj;
+	static dword buff;
 	//читаем файл
-	free(buff);
-	buff = malloc(12000);
-	IF (onload==1) copystr(".ini", #program_path+strlen(#program_path));
+	IF (onload==1)
+	{
+		free(buff);
+		buff = malloc(12000);
+		copystr(".ini", #program_path+strlen(#program_path));
+	}
+
 	ReadFile(0, 12000, buff, #program_path);
-	IF (EAX<>6) //если файла с настройками нет в папке с программой смотрим в папке по-умолчанию
-		ReadFile(0, 12000, buff, "/sys/File managers/Eolite.ini");
+	IF (EAX<>6) ReadFile(0, 12000, buff, "/sys/File managers/Eolite.ini");
 	IF (EAX<>6) //если файла с настройками тупо нет печалька
 	{
 		IF (onload==1) notify("Eolite.ini not found. Defaults will be used.");

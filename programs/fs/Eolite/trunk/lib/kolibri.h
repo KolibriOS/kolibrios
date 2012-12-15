@@ -107,10 +107,17 @@ inline fastcall int GetSlot( ECX)
 	$int 0x40
 }
 
-inline fastcall int ActiveProcess()
+inline fastcall int GetActiveProcess()
 {
 	$mov eax,18;
 	$mov ebx,7;
+	$int 0x40
+}
+
+inline fastcall void ActivateWindow( ECX)
+{
+	EAX = 18;
+	EBX = 3;
 	$int 0x40
 }
 
@@ -129,17 +136,17 @@ inline fastcall void SetEventMask( EBX)
 
 inline fastcall word GetKey(){ //+Gluk fix
 		$push edx
-@getkey:
+GETKEY:
 		$mov  eax,2
 		$int  0x40
 		$cmp eax,1
-		$jne getkeyi
+		$jne GETKEYI
 		$mov ah,dh
-		$jmp getkeyii //jz?
-@getkeyi:
+		$jmp GETKEYII //jz?
+GETKEYI:
 		$mov dh,ah
-		$jmp getkey
-@getkeyii:
+		$jmp GETKEY
+GETKEYII:
 		$pop edx
 		EAX = EAX >> 8;		 
 }
@@ -205,6 +212,13 @@ inline fastcall dword GetScreenHeight()
 	EAX = 14;
 	$int 0x40
 	$and eax,0x0000FFFF
+}
+
+inline fastcall dword GetScreenWidth()
+{
+	$mov eax, 14
+	$int 0x40
+	$shr eax, 16
 }
 
 inline fastcall void MoveSize( EBX,ECX,EDX,ESI){
@@ -294,14 +308,14 @@ inline fastcall void debug( EDX)
 {
 	$mov eax, 63
 	$mov ebx, 1
-next_char:
+NEXT_CHAR:
 	$mov ecx, DSDWORD[edx]
 	$or	 cl, cl
-	$jz  done
+	$jz  DONE
 	$int 0x40
 	$inc edx
-	$jmp next_char
-done:
+	$jmp NEXT_CHAR
+DONE:
 	$mov cl, 13
 	$int 0x40
 	$mov cl, 10
