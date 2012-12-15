@@ -16,10 +16,10 @@ void DrawRectangle3D(dword x,y,width,height,color1,color2)
 	DrawBar(x,y+height,width,1,color2);
 }
 
-void DrawCaptButton(dword x,y,width,height,id,color_b, color_t,text,text_len)
+void DrawCaptButton(dword x,y,width,height,id,color_b, color_t,text)
 {
 	DefineButton(x,y,width,height,id,color_b);
-	WriteText(-text_len*6+width/2+x+1,height/2-3+y,0x80,color_t,text);
+	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,color_t,text);
 }
 
 void DrawCircle(int x, y, r)

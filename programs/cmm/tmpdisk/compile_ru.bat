@@ -1,5 +1,5 @@
 del lang.h
-echo #define LANG_RUS 1 >lang.h
+echo #define LANG_RUS 1 >lang.h--
 
 ..\C--\C-- tmpdisk.c /lst
 del tmpdisk
