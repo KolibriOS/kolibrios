@@ -722,7 +722,7 @@ endl
         inc     esi
         call    libini._.str_to_int
         test    eax, eax
-        jz      .fx
+        jnz     .fx
         mov     esi, edi
 .no_fx:
 ; name not found, that must be usual key
