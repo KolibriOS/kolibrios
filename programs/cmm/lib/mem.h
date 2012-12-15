@@ -1,5 +1,5 @@
-//mem.Init
-dword mem_Init()
+
+dword mem_init()
 {
         $push    ebx
         $mov     eax, 68
@@ -10,8 +10,7 @@ dword mem_Init()
         return  EAX;
 }
 
-//mem.Alloc
-dword mem_Alloc(dword size)
+dword malloc(dword size)
 {
         $push    ebx
         $push    ecx
@@ -25,8 +24,7 @@ dword mem_Alloc(dword size)
         return  EAX;
 }
 
-//mem.ReAlloc
-stdcall dword mem_ReAlloc(dword mptr, size)
+stdcall dword realloc(dword mptr, size)
 {
         $push    ebx
         $push    ecx
@@ -43,8 +41,7 @@ stdcall dword mem_ReAlloc(dword mptr, size)
         return   EAX;
 }
 
-//mem.Free
-void mem_Free(dword mptr)
+dword free(dword mptr)
 {
         $push    eax
         $push    ebx
@@ -59,10 +56,10 @@ void mem_Free(dword mptr)
         $pop     ecx
         $pop     ebx
         $pop     eax
+        return 0;
 }
 
-//stdcall dword ??
-inline fastcall mem_Move( EDI, ESI, ECX)
+inline fastcall memmov( EDI, ESI, ECX)
 {
   asm {
     MOV EAX, ECX
@@ -92,6 +89,10 @@ L2:
   }
 }
 
+#define mem_Alloc malloc
+#define mem_ReAlloc realloc
+#define mem_Free free
+#define mem_Init mem_init
 
 /*:void fastcall memsetz( EDI, ECX)
 {
@@ -106,7 +107,7 @@ L2:
   }
 }
 
-:void fastcall memset( EDI, ECX, AL)
+:void fastcall memset( EDI, ECX, AL) //copy AL to EDI of ECX num (void *dest, size_t, char c )
 {
   asm {
     MOV AH, AL

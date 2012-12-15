@@ -35,7 +35,7 @@ char program_path[4096];
 
 struct mouse
 {
-	int x,y,lkm,pkm,hor,vert;
+	signed int x,y,lkm,pkm,hor,vert;
 	void get();
 };
 
@@ -121,17 +121,17 @@ inline fastcall ScancodesGeting(){
 inline fastcall word GetKey()  //+Gluk fix
 {
 		$push edx
-@getkey:
+GETKEY:
 		$mov  eax,2
 		$int  0x40
 		$cmp eax,1
-		$jne getkeyi
+		$jne GETKEYI
 		$mov ah,dh
-		$jmp getkeyii //jz?
-@getkeyi:
+		$jmp GETKEYII //jz?
+GETKEYI:
 		$mov dh,ah
-		$jmp getkey
-@getkeyii:
+		$jmp GETKEY
+GETKEYII:
 		$pop edx
 		$shr eax,8
 }
@@ -187,14 +187,16 @@ struct proc_info
 	word	status_slot,rezerv3;
 	dword	work_left,work_top,work_width,work_height;
 	char	status_window;
-	void	GetInfo( ECX);
-	byte    reserved[1024-71];
+	dword   cwidth,cheight;
+	byte    reserved[1024-71-8];
 };
 
 inline fastcall void GetProcessInfo( EBX, ECX)
 {
 	$mov eax,9;
 	$int  0x40
+	DSDWORD[EBX+71] = DSDWORD[EBX+42] - 9; //set cwidth
+	DSDWORD[EBX+75] = DSDWORD[EBX+46] - GetSkinHeight() - 4; //set cheight
 }
 
 inline fastcall int GetPointOwner( EBX, ECX) //ebx=m.x, ecx=m.y
@@ -320,14 +322,14 @@ inline fastcall void debug( EDX)
 	$push ecx
 	$mov eax, 63
 	$mov ebx, 1
-next_char:
+NEXT_CHAR:
 	$mov ecx, DSDWORD[edx]
 	$or	 cl, cl
-	$jz  done
+	$jz  DONE
 	$int 0x40
 	$inc edx
-	$jmp next_char
-done:
+	$jmp NEXT_CHAR
+DONE:
 	$mov cl, 13
 	$int 0x40
 	$mov cl, 10
@@ -361,15 +363,6 @@ void DefineAndDrawWindow(dword x,y, sizeX,sizeY, byte WindowType,dword WindowAre
 	$int 0x40
 }
 
-inline fastcall DeleteAllButtons()
-{
-	EAX = 12;              // function 12:tell os about windowdraw
-	EBX = 1;
-	$int 0x40
-	EBX = 2;
-	$int 0x40
-}
-
 inline fastcall MoveSize( EBX,ECX,EDX,ESI)
 {
 	$mov eax, 67
@@ -383,11 +376,22 @@ inline fastcall void DrawTitle( ECX)
 	$int 0x40;
 }
 
-void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
+void WriteTextB(dword x,y,byte fontType, dword color, EDX)
 {
 	EAX = 4;
 	EBX = x<<16+y;
 	ECX = fontType<<24+color;
+	$int 0x40;
+	$add ebx, 1<<16
+	$int 0x40
+}
+
+void WriteText(dword x,y,byte fontType, dword color, EDX)
+{
+	EAX = 4;
+	EBX = x<<16+y;
+	ECX = fontType<<24+color;
+	$xor esi, esi
 	$int 0x40;
 }
 
@@ -448,6 +452,7 @@ inline fastcall void PutPixel( EBX,ECX,EDX)
 
 void DrawBar(dword x,y,w,h,EDX)
 {
+	if (h<=0) || (h>65000) return; //bad boy :)
 	EAX = 13;
 	EBX = x<<16+w;
 	ECX = y<<16+h;
@@ -456,7 +461,19 @@ void DrawBar(dword x,y,w,h,EDX)
 
 void DefineButton(dword x,y,w,h,EDX,ESI)
 {
- 	EAX = 8;
+	EAX = 8;
+	$push edx
+	EDX += BT_DEL;
+	$int 0x40;
+	$pop edx
+	EBX = x<<16+w;
+	ECX = y<<16+h;
+	$int 0x40
+}
+
+void UnsafeDefineButton(dword x,y,w,h,EDX,ESI)
+{
+	EAX = 8;
 	EBX = x<<16+w;
 	ECX = y<<16+h;
 	$int 0x40

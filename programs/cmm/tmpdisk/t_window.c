@@ -178,9 +178,9 @@ void DrawTmpDisks()
 	DrawBar(0,31, Form.width-9,Form.height-GetSkinHeight()-5-30, 0xFFFFFF);
 	if (disk_num==0)
 	{
-		WriteText(17,45,    0x90, 0x777777, INTRO_TEXT_1, 0);
-		WriteText(17,45+15, 0x90, 0x777777, INTRO_TEXT_2, 0);
-		WriteText(17,45+42, 0x90, 0x777777, INTRO_TEXT_3, 0);
+		WriteText(17,45,    0x90, 0x777777, INTRO_TEXT_1);
+		WriteText(17,45+15, 0x90, 0x777777, INTRO_TEXT_2);
+		WriteText(17,45+42, 0x90, 0x777777, INTRO_TEXT_3);
 		return;
 	};
 	if (selected>=disk_num) selected=disk_num-1; //восстанавливает выделение - хорошая фича
@@ -188,7 +188,7 @@ void DrawTmpDisks()
 	for (i=0; i<disk_num; i++)
 	{
 		DefineButton(disk_pos_x[i], disk_pos_y[i], 60, 20, 20+i, 0xFFFfff);
-		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+6, 0x90, 0, #disk_list[i].Item, 0);
+		WriteText(disk_pos_x[i]+25,disk_pos_y[i]+6, 0x90, 0, #disk_list[i].Item);
 		_PutImage(disk_pos_x[i]+5,disk_pos_y[i]+4, 14,14, 3*14*14*3+#icons);
 		if (selected==i) DrawRectangle(disk_pos_x[i], disk_pos_y[i], 60-1, 20-1, 0x00459A);
 	}
@@ -235,7 +235,7 @@ void Draw_Window()
 	{
 		DefineButton(x,5, strlen(but_text[i])*6+28,19, 10+i, sc.work_button);
 		_PutImage(x+3,8,  14,14,   i*14*14*3+#icons);
-		WriteText(x+22,11, 0x80, sc.work_button_text, but_text[i], 0);
+		WriteText(x+22,11, 0x80, sc.work_button_text, but_text[i]);
 		x+=strlen(but_text[i])*6+37; 
 	}
 	

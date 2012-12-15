@@ -85,7 +85,7 @@ void menu_rmb()
 				{
 					if (i<>items_cur) EDX=0xFFFFFF; else EDX=0x94AECE;
 					DrawBar(1, i*ITEM_HEIGHT+1, ITEM_WIDTH-1, ITEM_HEIGHT, EDX);
-					WriteText(8,i*ITEM_HEIGHT+6,0x80,0x000000,ITEMS_LIST[i*2],0);
+					WriteText(8,i*ITEM_HEIGHT+6,0x80,0x000000,ITEMS_LIST[i*2]);
 					if (ITEMS_LIST[i*2+1]==1) && (pre_text==2) DrawBar(ITEM_WIDTH-18, i*ITEM_HEIGHT+8, 4, 4, 0x444444);
 					if (ITEMS_LIST[i*2+1]==5) && (use_truetype==1) DrawBar(ITEM_WIDTH-18, i*ITEM_HEIGHT+8, 4, 4, 0x444444);
 				}

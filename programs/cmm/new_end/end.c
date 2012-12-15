@@ -43,7 +43,7 @@ void main()
 {   
 	int key;
 	
-	Pause(10);
+	pause(10);
 	
 	WIN_SIZE_X=GetScreenWidth()+1;
 	WIN_SIZE_Y=GetScreenHeight()+1;
@@ -119,7 +119,7 @@ void draw_main_area()
 	for (i=0; i<4; i++)
 	{
 		DefineButton(PANEL_X+33, i*23 + PANEL_Y+NIGHT_PALEL_HEIGHT+16, 190,19, BUTTONS_CAPTIONS[i*2+1],sc.work_button);
-		WriteText(PANEL_X+59, i*23 + PANEL_Y+NIGHT_PALEL_HEIGHT+22, 0x80,sc.work_button_text, BUTTONS_CAPTIONS[i*2], 0);
+		WriteText(PANEL_X+59, i*23 + PANEL_Y+NIGHT_PALEL_HEIGHT+22, 0x80,sc.work_button_text, BUTTONS_CAPTIONS[i*2]);
 	}
 		
 	draw_stars();

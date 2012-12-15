@@ -1,3 +1,5 @@
+//#include "strings.h"
+
 void DrawRectangle(dword x,y,width,height,color1)
 {
 	DrawBar(x,y,width,1,color1);

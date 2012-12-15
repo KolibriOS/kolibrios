@@ -1,8 +1,9 @@
 //HTML Viewer in C--
 //Copyright 2007-2012 by Veliant & Leency
-//Asper, lev, Lrz, Barsuk, Nable.
+//Asper, lev, Lrz, Barsuk, Nable...
 //home icon - rachel fu, GPL licence
 
+//libraries
 #include "..\lib\kolibri.h"
 #include "..\lib\strings.h"
 #include "..\lib\figures.h"
@@ -10,13 +11,12 @@
 #include "..\lib\file_system.h"
 #include "..\lib\mem.h"
 #include "..\lib\dll.h"
-//библиотеки .obj
-#include "..\lib\libio_lib.h"
-#include "..\lib\libimg_lib.h"
-#include "..\lib\edit_box_lib.h"
-#include "..\lib\scroll_lib.h"
-#include "..\lib\truetype.h"
-//картинки
+//*.obj libraries
+#include "..\lib\lib.obj\box_lib.h"
+#include "..\lib\lib.obj\libio_lib.h"
+#include "..\lib\lib.obj\libimg_lib.h"
+#include "..\lib\lib.obj\truetype.h"
+//images
 #include "img\toolbar_icons.c"
 #include "img\URLgoto.txt";
 
@@ -92,11 +92,10 @@ void main()
 	int scroll_used=0;
 	
 	mem_Init();
-	if (load_dll2(libio, #libio_init,1)!=0) debug("Не удалось подключить библиотеку libio"w);
-	if (load_dll2(libimg, #libimg_init,1)!=0) debug("Не удалось подключить библиотеку libimg"w);
-	if (load_dll2(boxlib, #edit_box_draw,0)!=0) {RunProgram("@notify", "System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
-	load_dll2(#abox_lib, #boxlib_init,0);
-	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Не удалось подключить библиотеку TrueType"w); use_truetype = 2; }
+	if (load_dll2(boxlib, #box_lib_init,0)!=0) {notify("System Error: library doesn't exists /rd/1/lib/box_lib.obj"); ExitProcess();}
+	if (load_dll2(libio, #libio_init,1)!=0) debug("Error: library doesn't exists - libio"w);
+	if (load_dll2(libimg, #libimg_init,1)!=0) debug("Error: library doesn't exists - libimg"w);
+	if (load_dll2(libtruetype, #truetype,0)!=0) {debug("Error: library doesn't exists - TrueType"w); use_truetype = 2; }
 	else init_font(#fontlol);
 	
 	if (!URL) strcpy(#URL, "/sys/home.htm");

@@ -1,6 +1,7 @@
 //@RB - v0.6
 
 #include "..\lib\kolibri.h" 
+#include "..\lib\strings.h"
 #include "..\lib\figures.h"
 #include "..\lib\file_system.h"
 
@@ -80,7 +81,7 @@ void window()
 				{
 					//feel clicking
 					DrawBar(1, items_cur*ITEM_HEIGHT+2, ITEM_WIDTH-1, ITEM_HEIGHT-2, sc.work_graph);
-					WriteText(8,items_cur*ITEM_HEIGHT+6,0x80,sc.work_button_text,ITEMS_LIST[items_cur*3],0);
+					WriteText(8,items_cur*ITEM_HEIGHT+6,0x80,sc.work_button_text,ITEMS_LIST[items_cur*3]);
 					pause(4);
 					
 					ItemProcess(items_cur);
@@ -129,12 +130,12 @@ void window()
 						DrawBar(1, i*ITEM_HEIGHT+1, ITEM_WIDTH-1, 1, sc.work_graph);
 						DrawBar(1, i+1*ITEM_HEIGHT, ITEM_WIDTH-1, 1, 0xFFFfff);
 						DrawBar(1, i*ITEM_HEIGHT+2, ITEM_WIDTH-1, ITEM_HEIGHT-2, sc.work_button);
-						WriteText(8,i*ITEM_HEIGHT+6,0x80,sc.work_button_text,ITEMS_LIST[i*3],0);
+						WriteText(8,i*ITEM_HEIGHT+6,0x80,sc.work_button_text,ITEMS_LIST[i*3]);
 					}
 					else
 					{
 						DrawBar(1, i*ITEM_HEIGHT+1, ITEM_WIDTH-1, ITEM_HEIGHT, sc.work);
-						WriteText(8,i*ITEM_HEIGHT+6,0x80,sc.work_text,ITEMS_LIST[i*3],0);
+						WriteText(8,i*ITEM_HEIGHT+6,0x80,sc.work_text,ITEMS_LIST[i*3]);
 					}
 				}
 	}

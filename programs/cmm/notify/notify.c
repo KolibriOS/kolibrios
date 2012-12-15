@@ -20,7 +20,7 @@ void main()
 	if (!param)
 	{
 		if (GetSystemLanguage()==4)
-			strcpy(#param, "Эта программа показывает уведомления."w);
+			strcpy(#param, "ќв  Їа®Ја ¬¬  Ї®Є §лў Ґв гўҐ¤®¬«Ґ­Ёп.");
 		else
 			strcpy(#param, "This program shows notices. Open it with params.");
 	}
@@ -51,16 +51,16 @@ void main()
 			DefineAndDrawWindow(SCREEN_SIZE_X-WIN_SIZE_X,WIN_Y,WIN_SIZE_X, WIN_SIZE_Y, 0x01, 0, 0, 0x01fffFFF);
 			DefineButton(0,0, WIN_SIZE_X, WIN_SIZE_Y, 1+BT_HIDE+BT_NOFRAME, 0);
 			draw_grid();
-			WriteText(TEXT_X-1,TEXT_Y, 0x80, 0,#param,0); //тень
-			WriteText(TEXT_X+1,TEXT_Y, 0x80, 0,#param,0);
-			WriteText(TEXT_X,TEXT_Y-1, 0x80, 0,#param,0);
-			WriteText(TEXT_X,TEXT_Y+1, 0x80, 0,#param,0);
-			WriteText(TEXT_X-1,TEXT_Y-1, 0x80, 0,#param,0);
-			WriteText(TEXT_X+1,TEXT_Y+1, 0x80, 0,#param,0);
-			WriteText(TEXT_X-1,TEXT_Y+1, 0x80, 0,#param,0);
-			WriteText(TEXT_X+1,TEXT_Y-1, 0x80, 0,#param,0);
+			WriteText(TEXT_X-1,TEXT_Y, 0x80, 0,#param); //тень
+			WriteText(TEXT_X+1,TEXT_Y, 0x80, 0,#param);
+			WriteText(TEXT_X,TEXT_Y-1, 0x80, 0,#param);
+			WriteText(TEXT_X,TEXT_Y+1, 0x80, 0,#param);
+			WriteText(TEXT_X-1,TEXT_Y-1, 0x80, 0,#param);
+			WriteText(TEXT_X+1,TEXT_Y+1, 0x80, 0,#param);
+			WriteText(TEXT_X-1,TEXT_Y+1, 0x80, 0,#param);
+			WriteText(TEXT_X+1,TEXT_Y-1, 0x80, 0,#param);
 			
-			WriteText(TEXT_X,TEXT_Y, 0x80, 0xFFFfff,#param,0);
+			WriteText(TEXT_X,TEXT_Y, 0x80, 0xFFFfff,#param);
 			break;
 		default:
 			ExitProcess();

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 // strcmp( ESI, EDI)
 // strlen( EDI)
-// strcpy( EDI, ESI)
+// strcpy( EDI, ESI) --- 0 if ==
 // strcat( EDI, ESI)
 // strchr( ESI,BL)
 // strrchr( ESI,BL)
@@ -9,9 +9,11 @@
 // itoa( ESI)
 // atoi( EAX)
 // strupr( ESI)
-// strlwr( ESI) ----- возможно не поддерживает кириллицу
+// strlwr( ESI) --- kyrillic symbols may not work
 // strttl( EDX)
 // strtok( ESI)
+// strcpyb(dword searchin, copyin, startstr, endstr) --- copy string between strings
+//chrnum(dword searchin, char symbol) --- count of symbol in string
 //------------------------------------------------------------------------------
 
 inline fastcall signed int strcmp( ESI, EDI)
@@ -49,39 +51,6 @@ L1:
 }
 
 
-
-/*
-
-inline fastcall signed int strcmpi( ESI,EDI)
-uses EBX
-{
-	do{
-		$lodsb
-		IF(AL>='a')&&(AL<='z')AL-=0x20;
-		BL=DSBYTE[(E)DI];
-		IF(BL>='a')&&(BL<='z')BL-=0x20;
-		AL-=BL;
-		IF(!ZEROFLAG)BREAK;
-		(E)DI++;
-	}while(BL!=0);
-}
-
-inline char STRNCMPI((E)SI,(E)DI,(E)CX)
-{
-	(E)AX=0;
-	LOOPNZ((E)CX){
-		$lodsb
-		IF(AL>='a')&&(AL<='z')AL-=0x20;
-		AH=DSBYTE[EDI];
-		IF(AH>='a')&&(AH<='z')AH-=0x20;
-		EDI++;
-		IF(AL==0)||(AH==0)||(AL!=AH)BREAK;
-	}
-	AL=AL-AH;
-}*/
-
-
-
 inline fastcall unsigned int strlen( EDI)
 {
 	$xor eax, eax
@@ -94,11 +63,11 @@ inline fastcall unsigned int strlen( EDI)
 inline fastcall strcpy( EDI, ESI)
 {
 	$cld
-l2:
+L2:
 	$lodsb
 	$stosb
 	$test al,al
-	$jnz l2
+	$jnz L2
 }
 
 
@@ -156,17 +125,17 @@ dword itoa( ESI)
 
 	$mov     eax, esi
 	$push    -'0'
-f2:
+F2:
 	$xor     edx, edx
 	$div     ecx
 	$push    edx
 	$test    eax, eax
-	$jnz     f2
-f3:
+	$jnz     F2
+F3:
 	$pop     eax
 	$add     al, '0'
 	$stosb
-	$jnz     f3
+	$jnz     F3
 	
 	$mov     al, '\0'
 	$stosb
@@ -186,7 +155,7 @@ inline fastcall dword atoi( EDI)
 		BL=DSBYTE[ESI]-'0';
 		EAX=EAX*10+EBX;
 		ESI++;
-	}while(DSBYTE[ESI]>0);
+	}while(DSBYTE[ESI]>='0');
 	IF(DSBYTE[EDI]=='-') -EAX;
 }
 
@@ -292,6 +261,34 @@ LS1: MOV ESI, EDX
 LS2: XOR EAX, EAX
 LS3:
   }
+}
+
+//
+void strcpyb(dword searchin, copyin, startstr, endstr)
+{
+	dword startp, endp;
+	startp = strstr(searchin, startstr) + strlen(startstr);
+	endp = strstr(startp, endstr);
+	if (startp==endp) return;
+	do
+	{ 
+		DSBYTE[copyin] = DSBYTE[startp];
+		copyin++;
+		startp++;
+	}
+	while (startp<endp);
+	DSBYTE[copyin] = '\0';
+}
+
+int chrnum(dword searchin, char symbol)
+{
+	int num = 0;
+	while(DSBYTE[searchin])
+	{ 
+		if (DSBYTE[searchin] == symbol)	num++;
+		searchin++;
+	}
+	return num;
 }
 
 

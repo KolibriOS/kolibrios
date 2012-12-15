@@ -1,4 +1,4 @@
-//Network library
+//convert text characters
 
 dword iconv_lib = #a_iconv_lib;
 char a_iconv_lib[19]="/sys/lib/iconv.obj\0";
@@ -29,7 +29,7 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 	cd = EAX;
 	if (cd!=0)
 	{
-		debug("iconv: semething is wrong with stdcall iconv()");
+		debug("iconv: something is wrong with stdcall iconv()");
 		debug(itoa(cd));
 		debug("in_len");
 		debug(itoa(in_len));

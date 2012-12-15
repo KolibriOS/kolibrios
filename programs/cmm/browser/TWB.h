@@ -314,11 +314,11 @@ void TWebBrowser::ShowPage()
 	if (!filesize)
 	{
 		DrawBar(left, top, width+4, height, 0xFFFFFF); //закрашиваем всё донизу
-		if (GetProcessSlot(downloader_id)<>0) WriteText(left + 10, top + 18, 0x80, 0, "Loading...", 0);
+		if (GetProcessSlot(downloader_id)<>0) WriteText(left + 10, top + 18, 0x80, 0, "Loading...");
 		else
 		{
-			WriteText(left + 10, top + 18, 0x80, 0, "Page not found. May be, URL contains some errors.", 0);
-			if (!strcmp(get_URL_part(5),"http:"))) WriteText(left + 10, top + 32, 0x80, 0, "Or Internet unavilable for your configuration.", 0);
+			WriteText(left + 10, top + 18, 0x80, 0, "Page not found. May be, URL contains some errors.");
+			if (!strcmp(get_URL_part(5),"http:"))) WriteText(left + 10, top + 32, 0x80, 0, "Or Internet unavilable for your configuration.");
 		}
 		//return;
 	}
@@ -551,14 +551,14 @@ void TWebBrowser::DrawPage() //резать здесь!!1!
 		}
 		else
 		{
-			WriteText(start_x, start_y, 0x80, text_colors[text_color_index], #line, 0);
+			WriteText(start_x, start_y, 0x80, text_colors[text_color_index], #line);
 			IF (b_text)	{ $add ebx, 1<<16   $int 0x40 }
 		}
 		IF (i_text) Skew(start_x, start_y, line_length+6, 10);
 		IF (s_text) DrawBar(start_x, start_y + 4, line_length, 1, text_colors[text_color_index]);
 		IF (u_text) DrawBar(start_x, start_y + 8, line_length, 1, text_colors[text_color_index]);
 		IF (link) {
-			DefineButton(start_x-2, start_y, line_length + 3, 9, blink + BT_HIDE, 0xB5BFC9);
+			UnsafeDefineButton(start_x-2, start_y, line_length + 3, 9, blink + BT_HIDE, 0xB5BFC9);
 			DrawBar(start_x, start_y + 8, line_length, 1, text_colors[text_color_index]);
 		}
 		stolbec += strlen(#line);
