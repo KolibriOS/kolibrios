@@ -498,12 +498,8 @@ parse_edp(struct drm_i915_private *dev_priv, struct bdb_header *bdb)
 
 	edp = find_section(bdb, BDB_EDP);
 	if (!edp) {
-		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support) {
-			DRM_DEBUG_KMS("No eDP BDB found but eDP panel "
-				      "supported, assume %dbpp panel color "
-				      "depth.\n",
-				      dev_priv->edp.bpp);
-		}
+		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support)
+			DRM_DEBUG_KMS("No eDP BDB found but eDP panel supported.\n");
 		return;
 	}
 
@@ -656,10 +652,8 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
 	dev_priv->lvds_use_ssc = 1;
 	dev_priv->lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
-
-	/* eDP data */
-	dev_priv->edp.bpp = 18;
 }
+
 
 /**
  * intel_parse_bios - find VBT and initialize settings from the BIOS

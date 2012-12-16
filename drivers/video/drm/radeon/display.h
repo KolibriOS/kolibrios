@@ -1,15 +1,5 @@
 
-typedef struct tag_object  kobj_t;
 typedef struct tag_display display_t;
-
-struct tag_object
-{
-    uint32_t   magic;
-    void      *destroy;
-    kobj_t    *fd;
-    kobj_t    *bk;
-    uint32_t   pid;
-};
 
 typedef struct
 {

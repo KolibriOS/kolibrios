@@ -118,6 +118,9 @@ struct usb_device_id {
 	__u8		bInterfaceSubClass;
 	__u8		bInterfaceProtocol;
 
+	/* Used for vendor-specific interface matches */
+	__u8		bInterfaceNumber;
+
 	/* not matched against */
 	kernel_ulong_t	driver_info;
 };

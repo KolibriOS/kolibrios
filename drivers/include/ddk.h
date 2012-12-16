@@ -19,6 +19,7 @@
 
 #define ENTER()   dbgprintf("enter %s\n",__FUNCTION__)
 #define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
+#define FAIL()    dbgprintf("fail %s\n",__FUNCTION__)
 
 typedef struct
 {

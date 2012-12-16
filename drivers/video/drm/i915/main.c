@@ -21,7 +21,7 @@ void parse_cmdline(char *cmdline, char *log);
 int _stdcall display_handler(ioctl_t *io);
 int init_agp(void);
 
-int blit_video(u32 hbitmap, int  dst_x, int dst_y,
+int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
                int src_x, int src_y, u32 w, u32 h);
 
 int blit_textured(u32 hbitmap, int  dst_x, int dst_y,
@@ -101,9 +101,9 @@ u32_t drvEntry(int action, char *cmdline)
 #define SRV_LOCK_SURFACE        12
 #define SRV_UNLOCK_SURFACE      13
 #define SRV_RESIZE_SURFACE      14
-
-
-#define SRV_BLIT_VIDEO          20
+#define SRV_BLIT_BITMAP         15
+#define SRV_BLIT_TEXTURE        16
+#define SRV_BLIT_VIDEO          17
 
 #define check_input(size) \
     if( unlikely((inp==NULL)||(io->inp_size != (size))) )   \
@@ -164,8 +164,8 @@ int _stdcall display_handler(ioctl_t *io)
             retval = resize_surface((struct io_call_14*)inp);
             break;
 
-        case SRV_BLIT_VIDEO:
-            blit_video( inp[0], inp[1], inp[2],
+        case SRV_BLIT_BITMAP:
+            srv_blit_bitmap( inp[0], inp[1], inp[2],
                         inp[3], inp[4], inp[5], inp[6]);
 
 //            blit_tex( inp[0], inp[1], inp[2],

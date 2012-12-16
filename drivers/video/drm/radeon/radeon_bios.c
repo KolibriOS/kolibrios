@@ -198,7 +198,7 @@ static bool radeon_atrm_get_bios(struct radeon_device *rdev)
 	return true;
 }
 #else
-static bool radeon_atrm_get_bios(struct radeon_device *rdev)
+static inline bool radeon_atrm_get_bios(struct radeon_device *rdev)
 {
     return false;
 }

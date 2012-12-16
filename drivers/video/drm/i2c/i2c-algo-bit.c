@@ -111,7 +111,7 @@ static int sclhi(struct i2c_algo_bit_data *adap)
 				break;
            return -ETIMEDOUT;
 		}
-		udelay(1);
+		asm volatile("rep; nop" ::: "memory");
     }
 done:
 	udelay(adap->udelay);

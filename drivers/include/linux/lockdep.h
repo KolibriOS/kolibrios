@@ -386,6 +386,8 @@ struct lock_class_key { };
 
 #define lockdep_assert_held(l)			do { } while (0)
 
+#define lockdep_recursing(tsk)			(0)
+
 #endif /* !LOCKDEP */
 
 #ifdef CONFIG_LOCK_STAT

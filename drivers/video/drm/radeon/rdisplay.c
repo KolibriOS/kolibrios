@@ -5,6 +5,7 @@
 #include "radeon_drm.h"
 #include "radeon.h"
 #include "radeon_object.h"
+#include "bitmap.h"
 #include "display.h"
 
 #include "r100d.h"
@@ -255,6 +256,8 @@ bool init_display(struct radeon_device *rdev, videomode_t *usermode)
         radeon_show_cursor();
     };
     safe_sti(ifl);
+
+    init_bitmaps();
 
     LEAVE();
 

@@ -391,6 +391,7 @@ int r100_irq_process(struct radeon_device *rdev)
 	uint32_t status, msi_rearm;
 	bool queue_hotplug = false;
 
+
 	status = r100_irq_ack(rdev);
 	if (!status) {
 		return IRQ_NONE;
@@ -3576,6 +3577,12 @@ static int r100_startup(struct radeon_device *rdev)
 	if (r)
 		return r;
 
+	r = radeon_fence_driver_start_ring(rdev, RADEON_RING_TYPE_GFX_INDEX);
+	if (r) {
+		dev_err(rdev->dev, "failed initializing CP fences (%d).\n", r);
+		return r;
+	}
+
 	/* Enable IRQ */
 	r100_irq_set(rdev);
 	rdev->config.r100.hdp_cntl = RREG32(RADEON_HOST_PATH_CNTL);
@@ -3591,6 +3598,7 @@ static int r100_startup(struct radeon_device *rdev)
 		dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
 		return r;
 	}
+
 	return 0;
 }
 

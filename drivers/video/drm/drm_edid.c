@@ -184,7 +184,9 @@ bool drm_edid_block_valid(u8 *raw_edid, int block, bool print_bad_edid)
 	for (i = 0; i < EDID_LENGTH; i++)
 		csum += raw_edid[i];
 	if (csum) {
+		if (print_bad_edid) {
 		DRM_ERROR("EDID checksum is invalid, remainder is %d\n", csum);
+		}
 
 		/* allow CEA to slide through, switches mangle this */
 		if (raw_edid[0] != 0x02)
@@ -210,7 +212,7 @@ bool drm_edid_block_valid(u8 *raw_edid, int block, bool print_bad_edid)
 	return 1;
 
 bad:
-	if (raw_edid) {
+	if (raw_edid && print_bad_edid) {
 		printk(KERN_ERR "Raw EDID:\n");
 //		print_hex_dump_bytes(KERN_ERR, DUMP_PREFIX_NONE, raw_edid, EDID_LENGTH);
 	}

@@ -33,7 +33,10 @@
 #include "radeon_reg.h"
 #include "radeon.h"
 #include "atom.h"
+
+#include "bitmap.h"
 #include "display.h"
+
 
 #include <drm/drm_pciids.h>
 
@@ -62,6 +65,8 @@ int irq_override = 0;
 
 
 extern display_t *rdisplay;
+struct drm_device *main_drm_device;
+
 
 void parse_cmdline(char *cmdline, videomode_t *mode, char *log, int *kms);
 int init_display(struct radeon_device *rdev, videomode_t *mode);
@@ -1242,6 +1247,8 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     if (ret)
         goto err_g4;
 
+    main_drm_device = dev;
+
     if( radeon_modeset )
         init_display_kms(dev->dev_private, &usermode);
     else
@@ -1317,15 +1324,25 @@ static struct pci_device_id pciidlist[] = {
 };
 
 
-#define API_VERSION     0x01000100
+#define CURRENT_API     0x0200      /*      2.00     */
+#define COMPATIBLE_API  0x0100      /*      1.00     */
+
+#define API_VERSION     (COMPATIBLE_API << 16) | CURRENT_API
 
 #define SRV_GETVERSION      0
 #define SRV_ENUM_MODES      1
 #define SRV_SET_MODE        2
+#define SRV_GET_CAPS            3
 
-#define SRV_CREATE_VIDEO    9
-#define SRV_BLIT_VIDEO     10
-#define SRV_CREATE_BITMAP  11
+#define SRV_CREATE_SURFACE      10
+#define SRV_DESTROY_SURFACE     11
+#define SRV_LOCK_SURFACE        12
+#define SRV_UNLOCK_SURFACE      13
+#define SRV_RESIZE_SURFACE      14
+#define SRV_BLIT_BITMAP         15
+#define SRV_BLIT_TEXTURE        16
+#define SRV_BLIT_VIDEO          17
+
 
 
 int r600_video_blit(uint64_t src_offset, int  x, int y,
@@ -1372,22 +1389,22 @@ int _stdcall display_handler(ioctl_t *io)
                 retval = set_user_mode((videomode_t*)inp);
             break;
 
-        case SRV_CREATE_VIDEO:
-//            retval = r600_create_video(inp[0], inp[1], outp);
+        case SRV_GET_CAPS:
+            retval = get_driver_caps((hwcaps_t*)inp);
             break;
 
-        case SRV_BLIT_VIDEO:
-//            r600_video_blit( ((uint64_t*)inp)[0], inp[2], inp[3],
-//                    inp[4], inp[5], inp[6]);
-
-            retval = 0;
+        case SRV_CREATE_SURFACE:
+//            check_input(8);
+            retval = create_surface(main_drm_device, (struct io_call_10*)inp);
             break;
 
-        case SRV_CREATE_BITMAP:
-            check_input(8);
-            check_output(4);
-//            retval = create_bitmap(outp, inp[0], inp[1]);
+        case SRV_LOCK_SURFACE:
+            retval = lock_surface((struct io_call_12*)inp);
             break;
+
+        case SRV_BLIT_BITMAP:
+            srv_blit_bitmap( inp[0], inp[1], inp[2],
+                        inp[3], inp[4], inp[5], inp[6]);
 
     };
 

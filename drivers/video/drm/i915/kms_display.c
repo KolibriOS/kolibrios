@@ -680,7 +680,7 @@ i915_gem_execbuffer_retire_commands(struct drm_device *dev,
     (void)i915_add_request(ring, file, NULL);
 }
 
-int blit_video(u32 hbitmap, int  dst_x, int dst_y,
+int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
                int src_x, int src_y, u32 w, u32 h)
 {
     drm_i915_private_t *dev_priv = main_device->dev_private;
@@ -713,6 +713,18 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
         return -1;
 
     GetWindowRect(&winrc);
+    {
+        static warn_count;
+
+        if(warn_count < 1)
+        {
+            printf("left %d top %d right %d bottom %d\n",
+                    winrc.left, winrc.top, winrc.right, winrc.bottom);
+            printf("bitmap width %d height %d\n", w, h);
+            warn_count++;
+        };
+    };
+
 
     dst_clip.xmin   = 0;
     dst_clip.ymin   = 0;
@@ -851,6 +863,18 @@ int blit_video(u32 hbitmap, int  dst_x, int dst_y,
       safe_sti(ifl);
     }
 #endif
+
+    {
+        static warn_count;
+
+        if(warn_count < 1)
+        {
+            printf("blit width %d height %d\n",
+                    width, height);
+            warn_count++;
+        };
+    };
+
 
     if((context->cmd_buffer & 0xFC0)==0xFC0)
         context->cmd_buffer&= 0xFFFFF000;

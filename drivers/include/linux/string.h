@@ -1,11 +1,6 @@
 #ifndef _LINUX_STRING_H_
 #define _LINUX_STRING_H_
 
-/* We don't want strings.h stuff being used by user stuff by accident */
-
-#ifndef __KERNEL__
-#include <string.h>
-#else
 
 #include <linux/compiler.h>	/* for inline */
 #include <linux/types.h>	/* for size_t */
@@ -144,5 +139,7 @@ static inline bool strstarts(const char *str, const char *prefix)
 {
 	return strncmp(str, prefix, strlen(prefix)) == 0;
 }
-#endif
+
+extern size_t memweight(const void *ptr, size_t bytes);
+
 #endif /* _LINUX_STRING_H_ */

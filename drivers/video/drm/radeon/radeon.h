@@ -370,6 +370,7 @@ struct radeon_bo {
 	/* Constant after initialization */
 	struct radeon_device		*rdev;
 	struct drm_gem_object		gem_base;
+
     u32                          domain;
 	int vmapping_count;
 };

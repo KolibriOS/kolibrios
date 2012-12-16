@@ -5,8 +5,10 @@
 #include "radeon_drm.h"
 #include "radeon.h"
 #include "radeon_object.h"
-#include "display.h"
 #include "drm_fb_helper.h"
+#include "hmm.h"
+#include "bitmap.h"
+#include "display.h"
 
 struct radeon_fbdev {
     struct drm_fb_helper        helper;
@@ -528,6 +530,8 @@ bool init_display_kms(struct radeon_device *rdev, videomode_t *usermode)
     };
     safe_sti(ifl);
 
+    init_bitmaps();
+
     LEAVE();
 
     return retval;
@@ -672,4 +676,213 @@ int radeonfb_create_pinned_object(struct radeon_fbdev *rfbdev,
     return 0;
 }
 
+
+typedef struct
+{
+    int left;
+    int top;
+    int right;
+    int bottom;
+}rect_t;
+
+extern struct hmm bm_mm;
+struct drm_device *main_drm_device;
+
+void  FASTCALL GetWindowRect(rect_t *rc)__asm__("GetWindowRect");
+
+#define CURRENT_TASK             (0x80003000)
+
+static u32_t get_display_map()
+{
+    u32_t   addr;
+
+    addr = (u32_t)rdisplay;
+    addr+= sizeof(display_t);            /*  shoot me  */
+    return *(u32_t*)addr;
+}
+
+#include "clip.inc"
+#include "r100d.h"
+
+# define PACKET3_BITBLT            0x92
+
+
+int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
+               int src_x, int src_y, u32 w, u32 h)
+{
+    struct context *context;
+
+    bitmap_t  *bitmap;
+    rect_t     winrc;
+    clip_t     dst_clip;
+    clip_t     src_clip;
+    u32_t      width;
+    u32_t      height;
+
+    u32_t      br13, cmd, slot_mask, *b;
+    u32_t      offset;
+    u8         slot;
+    int        n=0;
+    int        ret;
+
+    if(unlikely(hbitmap==0))
+        return -1;
+
+    bitmap = (bitmap_t*)hmm_get_data(&bm_mm, hbitmap);
+
+    if(unlikely(bitmap==NULL))
+        return -1;
+
+    context = get_context(main_drm_device);
+    if(unlikely(context == NULL))
+        return -1;
+
+    GetWindowRect(&winrc);
+    {
+        static warn_count;
+
+        if(warn_count < 1)
+        {
+            printf("left %d top %d right %d bottom %d\n",
+                    winrc.left, winrc.top, winrc.right, winrc.bottom);
+            printf("bitmap width %d height %d\n", w, h);
+            warn_count++;
+        };
+    };
+
+
+    dst_clip.xmin   = 0;
+    dst_clip.ymin   = 0;
+    dst_clip.xmax   = winrc.right-winrc.left;
+    dst_clip.ymax   = winrc.bottom -winrc.top;
+
+    src_clip.xmin   = 0;
+    src_clip.ymin   = 0;
+    src_clip.xmax   = bitmap->width  - 1;
+    src_clip.ymax   = bitmap->height - 1;
+
+    width  = w;
+    height = h;
+
+    if( blit_clip(&dst_clip, &dst_x, &dst_y,
+                  &src_clip, &src_x, &src_y,
+                  &width, &height) )
+        return 0;
+
+    dst_x+= winrc.left;
+    dst_y+= winrc.top;
+
+    slot = *((u8*)CURRENT_TASK);
+
+    slot_mask = (u32_t)slot<<24;
+
+    {
+#if 1
+#else
+        u8* src_offset;
+        u8* dst_offset;
+        u32 ifl;
+
+        src_offset = (u8*)(src_y*bitmap->pitch + src_x*4);
+        src_offset += (u32)bitmap->uaddr;
+
+        dst_offset = (u8*)(dst_y*rdisplay->width + dst_x);
+        dst_offset+= get_display_map();
+
+        u32_t tmp_h = height;
+
+      ifl = safe_cli();
+        while( tmp_h--)
+        {
+            u32_t tmp_w = width;
+
+            u8* tmp_src = src_offset;
+            u8* tmp_dst = dst_offset;
+
+            src_offset+= bitmap->pitch;
+            dst_offset+= rdisplay->width;
+
+            while( tmp_w--)
+            {
+                *(tmp_src+3) = (*tmp_dst==slot)?0xFF:0x00;
+                tmp_src+=4;
+                tmp_dst++;
+            };
+        };
+      safe_sti(ifl);
+#endif
+    }
+
+    {
+        static warn_count;
+
+        if(warn_count < 1)
+        {
+            printf("blit width %d height %d\n",
+                    width, height);
+            warn_count++;
+        };
+    };
+
+
+//    if((context->cmd_buffer & 0xFC0)==0xFC0)
+//        context->cmd_buffer&= 0xFFFFF000;
+
+//    b = (u32_t*)ALIGN(context->cmd_buffer,64);
+
+//    offset = context->cmd_offset + ((u32_t)b & 0xFFF);
+
+
+//    context->cmd_buffer+= n*4;
+
+    struct radeon_device *rdev = main_drm_device->dev_private;
+    struct radeon_ib *ib = &context->ib;
+
+    ib->ptr[0] = PACKET3(PACKET3_BITBLT, 8);
+    ib->ptr[1] =  RADEON_GMC_SRC_PITCH_OFFSET_CNTL |
+                  RADEON_GMC_DST_PITCH_OFFSET_CNTL |
+                  RADEON_GMC_SRC_CLIPPING |
+                  RADEON_GMC_DST_CLIPPING |
+                  RADEON_GMC_BRUSH_NONE |
+                  (RADEON_COLOR_FORMAT_ARGB8888 << 8) |
+                  RADEON_GMC_SRC_DATATYPE_COLOR |
+                  RADEON_ROP3_S |
+                  RADEON_DP_SRC_SOURCE_MEMORY |
+                  RADEON_GMC_CLR_CMP_CNTL_DIS |
+                  RADEON_GMC_WR_MSK_DIS;
+
+    ib->ptr[2] = ((bitmap->pitch/64) << 22) | (bitmap->gaddr >> 10);
+    ib->ptr[3] = ((rdisplay->pitch/64) << 22) | (rdev->mc.vram_start >> 10);
+    ib->ptr[4] = (0x1fff) | (0x1fff << 16);
+    ib->ptr[5] = 0;
+    ib->ptr[6] = (0x1fff) | (0x1fff << 16);
+
+    ib->ptr[7] = (src_x << 16) | src_y;
+    ib->ptr[8] = (dst_x << 16) | dst_y;
+    ib->ptr[9] = (width << 16) | height;
+
+    ib->ptr[10] = PACKET2(0);
+    ib->ptr[11] = PACKET2(0);
+    ib->ptr[12] = PACKET2(0);
+    ib->ptr[13] = PACKET2(0);
+    ib->ptr[14] = PACKET2(0);
+    ib->ptr[15] = PACKET2(0);
+
+    ib->length_dw = 16;
+
+    ret = radeon_ib_schedule(rdev, ib, NULL);
+    if (ret) {
+        DRM_ERROR("radeon: failed to schedule ib (%d).\n", ret);
+        goto fail;
+    }
+
+    ret = radeon_fence_wait(ib->fence, false);
+    if (ret) {
+        DRM_ERROR("radeon: fence wait failed (%d).\n", ret);
+        goto fail;
+    }
+
+fail:
+    return ret;
+};
 

@@ -54,6 +54,8 @@ NAME_SRC=							\
 			$(DRM_TOPDIR)/drm_stub.c		\
 			$(DRM_TOPDIR)/i2c/i2c-core.c		\
 			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
+			bitmap.c				\
+			hmm.c					\
 			r700_vs.c				\
 			radeon_device.c				\
 			evergreen.c				\
