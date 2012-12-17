@@ -1,7 +1,8 @@
 void Tip(int y, dword caption, id, arrow)
 {
+	int i;
 	DrawBar(17,y,160,1,0xEFEDEE);
-	DrawBar(17,y+1,160,16,0xE4DFE1); //серое сверху
+	DrawFilledBar(17, y+1, 160, 16);
 	WriteText(25,y+5,0x80,0,caption,0);
 	IF (id<>0) DefineButton(159,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0xE4DFE1); //кнопа для стрелки
 	WriteText(165,y+5,0x80,0,arrow,0); //стрелка вниз
@@ -134,15 +135,15 @@ void LeftPanelBackground()
 {
 	int actions_y=disc_num*16;
 	int start_y = show_actions*51+actions_y+108;
-	DrawBar(2,41,190,15,lpanel_col);		      //синий прямоугольник - над девайсами
-	DrawBar(17,actions_y+75,160,15,lpanel_col); //синий прямоугольник - под девайсами
-	DrawBar(2,56,15,actions_y+103,lpanel_col);	          //синий прямоугольник - слева       
-	DrawBar(177,56,15,actions_y+103,lpanel_col);            //синий прямоугольник - справа
+	DrawBar(2,41,190,15,col_lpanel);		      //синий прямоугольник - над девайсами
+	DrawBar(17,actions_y+75,160,15,col_lpanel); //синий прямоугольник - под девайсами
+	DrawBar(2,56,15,actions_y+103,col_lpanel);	          //синий прямоугольник - слева       
+	DrawBar(177,56,15,actions_y+103,col_lpanel);            //синий прямоугольник - справа
 	if (onTop(start_y, 6) < 268)
 		PutPaletteImage(#blue_hl, 190, onTop(start_y, 6), 2, start_y, #blue_hl_pal);
 	else
 	{
-		DrawBar(2,start_y,190,onTop(start_y,6+268),lpanel_col);
+		DrawBar(2,start_y,190,onTop(start_y,6+268),col_lpanel);
 		PutPaletteImage(#blue_hl, 190, 268, 2, onTop(268,6), #blue_hl_pal);
 	}
 }

@@ -1,7 +1,5 @@
 //Leency - 2012
 
-#include "imgs\logo.txt"
-
 #define EDITOR_PATH     "/sys/tinypad"
 #define BROWSER_PATH    "/sys/htmlv"
 #define BROWSER_LINK    "http://kolibri-os.narod.ru"
@@ -35,10 +33,10 @@ void about_dialog()
 				break;
 				
 		case evReDraw:
-				DefineAndDrawWindow(600,150,181,256,0x34,0x10EFEBEF,"About Eolite");
+				DefineAndDrawWindow(600,150,181,232+GetSkinHeight(),0x34,col_work,"About Eolite");
 				DrawBar(0,0,172,50,0x8494C4); //голубое сзади
 				PutPaletteImage(#logo,85,85,43,7,#logo_pal);
-				WriteText(46,100,0x90,0xBF40BF,"Eolite v1.45",0);
+				WriteText(46,100,0x90,0xBF40BF,"Eolite v1.50",0);
 				$add ebx, 1<<16
 				$int 0x40
 				WriteText(55,120,0x80,0,"Developers:",0); 
@@ -50,7 +48,8 @@ void about_dialog()
 				DrawFlatButton(85,190,70,22,0,0xE4DFE1, "Close");
 				
 				DefineButton(20-1,195-1, 16+1,15+1, 33+BT_HIDE, 0);
-				PutPaletteImage(8*16*15+#ficons,16,15,20,195,#ficons_pal);								
+				PutPaletteImage(8*16*15+#ficons,16,15,20,195,#ficons_pal);	
+				DrawFilledBar(0, 216, 172, 12);							
 	}
 }
 

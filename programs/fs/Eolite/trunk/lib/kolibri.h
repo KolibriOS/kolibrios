@@ -90,14 +90,16 @@ struct proc_info
 	word	status_slot,rezerv3;
 	dword	work_left,work_top,work_width,work_height;
 	char	status_window;
-	void	GetInfo( ECX);
-	byte    reserved[1024-71];
+	dword   cwidth,cheight;
+	byte    reserved[1024-71-8];
 };
 
-void proc_info::GetInfo( EBX, ECX)
+inline fastcall void GetProcessInfo( EBX, ECX)
 {
 	$mov eax,9;
-	$int 0x40
+	$int  0x40
+	DSDWORD[EBX+71] = DSDWORD[EBX+42] - 9; //set cwidth
+	DSDWORD[EBX+75] = DSDWORD[EBX+46] - GetSkinHeight() - 4; //set cheight
 }
 
 inline fastcall int GetSlot( ECX)
@@ -262,6 +264,7 @@ void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 
 void DrawBar(dword x,y,w,h,EDX)
 {
+	if (h<0) || (h>8000) return;
 	EAX = 13;
 	EBX = x<<16+w;
 	ECX = y<<16+h;
@@ -274,15 +277,6 @@ void DrawRegion_3D(dword x,y,width,height,color1,color2)
 	DrawBar(x,y+1,1,height-1,color1);
 	DrawBar(x+width,y+1,1,height,color2);
 	DrawBar(x,y+height,width,1,color2);
-}
-
-void DrawFlatButton(dword x,y,width,height,id,color,text)
-{
-	DrawRegion_3D(x,y,width,height,0x94AECE,0x94AECE);
-	DrawRegion_3D(x+1,y+1,width-2,height-2,0xFFFFFF,0xC7C7C7);
-	DrawBar(x+2,y+2,width-3,height-3,color);
-	IF (id<>0)	DefineButton(x+1,y+1,width-2,height-2,id+BT_HIDE,0xEFEBEF);
-	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
 }
 
 void PutPaletteImage(dword EBX,w,h,x,y, EDI)
