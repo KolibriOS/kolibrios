@@ -341,10 +341,9 @@ free:
 ; insert_chunk(p,psize);
 
         mov     eax, esi
-        pop     esi
         mov     ecx, edi
-        pop     edi
-        jmp     insert_chunk
+        call    insert_chunk
+        jmp     .fail2
 .unl_large:
 
 ; unlink_large_chunk((tchunkptr)next);
@@ -364,10 +363,9 @@ free:
 ; insert_chunk(p,psize);
 
         mov     eax, esi
-        pop     esi
         mov     ecx, edi
-        pop     edi
-        jmp     insert_chunk
+        call    insert_chunk
+        jmp     .fail2
 .fix_next:
 
 ; (p+psize)->prev_foot = psize;
@@ -386,10 +384,9 @@ free:
 ; insert_chunk(p,psize);
 
         mov     eax, esi
-        pop     esi
         mov     ecx, edi
-        pop     edi
-        jmp     insert_chunk
+        call    insert_chunk
+        jmp     .fail2
 
 ; param
 ;  ecx = chunk
@@ -418,15 +415,11 @@ insert_chunk:
         mov     [esi+8], edx           ;P->fd = F
         mov     [esi+12], eax          ;P->bk = B
         pop     esi
-        mov     ecx, mst.mutex
-        call    mutex_unlock
         ret
 .large:
         mov     ebx, eax
         call    insert_large_chunk
         pop     esi
-        mov     ecx, mst.mutex
-        call    mutex_unlock
         ret
 
 
