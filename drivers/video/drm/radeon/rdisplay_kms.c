@@ -705,7 +705,10 @@ static u32_t get_display_map()
 #include "r100d.h"
 
 # define PACKET3_BITBLT            0x92
-
+# define PACKET3_TRANS_BITBLT           0x9C
+# define R5XX_SRC_CMP_EQ_COLOR      (4 <<  0)
+# define R5XX_SRC_CMP_NEQ_COLOR     (5 <<  0)
+# define R5XX_CLR_CMP_SRC_SOURCE    (1 << 24)
 
 int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
                int src_x, int src_y, u32 w, u32 h)
@@ -777,10 +780,12 @@ int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
     slot_mask = (u32_t)slot<<24;
 
     {
-#if 1
+#if 0
 #else
         u8* src_offset;
         u8* dst_offset;
+        u32 color;
+
         u32 ifl;
 
         src_offset = (u8*)(src_y*bitmap->pitch + src_x*4);
@@ -794,9 +799,9 @@ int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
       ifl = safe_cli();
         while( tmp_h--)
         {
-            u32_t tmp_w = width;
+            u32 tmp_w = width;
 
-            u8* tmp_src = src_offset;
+            u32* tmp_src = src_offset;
             u8* tmp_dst = dst_offset;
 
             src_offset+= bitmap->pitch;
@@ -804,8 +809,15 @@ int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
 
             while( tmp_w--)
             {
-                *(tmp_src+3) = (*tmp_dst==slot)?0xFF:0x00;
-                tmp_src+=4;
+                color = *tmp_src;
+
+                if(*tmp_dst == slot)
+                    color |= 0xFF000000;
+                else
+                    color = 0x00;
+
+                *tmp_src = color;
+                tmp_src++;
                 tmp_dst++;
             };
         };
@@ -838,8 +850,10 @@ int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
     struct radeon_device *rdev = main_drm_device->dev_private;
     struct radeon_ib *ib = &context->ib;
 
-    ib->ptr[0] = PACKET3(PACKET3_BITBLT, 8);
-    ib->ptr[1] =  RADEON_GMC_SRC_PITCH_OFFSET_CNTL |
+    ib->ptr[0] = PACKET0(0x15cc, 0);
+    ib->ptr[1] = 0xFFFFFFFF;
+    ib->ptr[2] = PACKET3(PACKET3_TRANS_BITBLT, 11);
+    ib->ptr[3] =  RADEON_GMC_SRC_PITCH_OFFSET_CNTL |
                   RADEON_GMC_DST_PITCH_OFFSET_CNTL |
                   RADEON_GMC_SRC_CLIPPING |
                   RADEON_GMC_DST_CLIPPING |
@@ -848,24 +862,22 @@ int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
                   RADEON_GMC_SRC_DATATYPE_COLOR |
                   RADEON_ROP3_S |
                   RADEON_DP_SRC_SOURCE_MEMORY |
-                  RADEON_GMC_CLR_CMP_CNTL_DIS |
                   RADEON_GMC_WR_MSK_DIS;
 
-    ib->ptr[2] = ((bitmap->pitch/64) << 22) | (bitmap->gaddr >> 10);
-    ib->ptr[3] = ((rdisplay->pitch/64) << 22) | (rdev->mc.vram_start >> 10);
-    ib->ptr[4] = (0x1fff) | (0x1fff << 16);
-    ib->ptr[5] = 0;
+    ib->ptr[4] = ((bitmap->pitch/64) << 22) | (bitmap->gaddr >> 10);
+    ib->ptr[5] = ((rdisplay->pitch/64) << 22) | (rdev->mc.vram_start >> 10);
     ib->ptr[6] = (0x1fff) | (0x1fff << 16);
+    ib->ptr[7] = 0;
+    ib->ptr[8] = (0x1fff) | (0x1fff << 16);
 
-    ib->ptr[7] = (src_x << 16) | src_y;
-    ib->ptr[8] = (dst_x << 16) | dst_y;
-    ib->ptr[9] = (width << 16) | height;
+    ib->ptr[9] = R5XX_CLR_CMP_SRC_SOURCE | R5XX_SRC_CMP_EQ_COLOR;
+    ib->ptr[10] = 0x00000000;
+    ib->ptr[11] = 0xFFFFFFFF;
 
-    ib->ptr[10] = PACKET2(0);
-    ib->ptr[11] = PACKET2(0);
-    ib->ptr[12] = PACKET2(0);
-    ib->ptr[13] = PACKET2(0);
-    ib->ptr[14] = PACKET2(0);
+    ib->ptr[12] = (src_x << 16) | src_y;
+    ib->ptr[13] = (dst_x << 16) | dst_y;
+    ib->ptr[14] = (width << 16) | height;
+
     ib->ptr[15] = PACKET2(0);
 
     ib->length_dw = 16;
