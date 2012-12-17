@@ -167,7 +167,7 @@ void main()
 			}
 			//скролл
 			if (!m.lkm) && (scroll_used) { scroll_used=NULL; TVScroll(); }
-			if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>56) && (m.y<Form.height) && (m.lkm) {scroll_used=1;TVScroll();}
+			if (m.x>=Form.width-26) && (m.x<=Form.width-6) && (m.y>56) && (m.y<Form.height) && (m.lkm) && (!scroll_used) {scroll_used=1;TVScroll();}
 			
 			if (scroll_used)
 			{
