@@ -43,7 +43,6 @@ export DOCDIR
 FASM_PROGRAMS:=\
  @clip:@CLIP:$(PROGS)/system/clip/trunk/@clip.ASM \
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
- @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm\
  refrscrn:REFRSCRN:$(PROGS)/system/refrscrn/refrscrn.asm \
  asciivju:ASCIIVJU:$(PROGS)/develop/asciivju/trunk/asciivju.asm \
@@ -185,6 +184,7 @@ CMM_PROGRAMS:=\
 # Each item is of the form <local name>:<name inside image>.
 # Spaces should be represented as |.
 OTHER_FILES:=autorun.dat:AUTORUN.DAT \
+ @panel:@PANEL \
  background.png:background.png default.skn:DEFAULT.SKN \
  icons.dat:ICONS.DAT iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
