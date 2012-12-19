@@ -16,14 +16,18 @@ char aIconv[6]       = "iconv\0";
 dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 {
 	dword cd, in_len, out_len, new_buf;	
-	debug (from_chs);
-	debug (to_chs);
 
 	iconv_open stdcall (from_chs, to_chs); //CP866, CP1251, CP1252, KOI8-RU, UTF-8, ISO8859-5
-	if (EAX==-1) { debug("iconv: wrong charset,\nuse only CP866, CP1251, CP1252, KOI8-RU, UTF-8, ISO8859-5"); return 0; }
+	if (EAX==-1)
+	{
+		debug (from_chs);
+		debug (to_chs);
+		debug("iconv: wrong charset,\nuse only CP866, CP1251, CP1252, KOI8-RU, UTF-8, ISO8859-5");
+		return 0; 
+	}
 	cd = EAX;
 
-	in_len = out_len = strlen(conv_buf);
+	in_len = out_len = strlen(conv_buf)+1;
 	new_buf = mem_Alloc(in_len);
 	iconv stdcall (cd, #conv_buf, #in_len, #new_buf, #out_len);
 	cd = EAX;
@@ -36,6 +40,9 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 		debug("out_len");
 		debug(itoa(out_len));
 		new_buf = 0;
+		return 0;
 	}
-	return new_buf;
+	strcpy(conv_buf, new_buf);
+	free(new_buf);
+	return conv_buf;
 }

@@ -15,19 +15,13 @@ unsigned int GetNextParam()
 	if (kavichki)
 	{
 		i=strrchr(#tagparam, kavichki);
-		if (i>sizeof(options))
-			strcpy(#options, #tagparam + sizeof(options));
-		else
-			strcpy(#options, #tagparam + i);
+		strlcpy(#options, #tagparam + i, sizeof(options));
 	}
 	else
 	{
 		WHILE((i > 0) && (tagparam[i] <>'=')) i--; //i=strrchr(#tagparam, '=')+1;
 		i++;
-		if (i>sizeof(options))
-			strcpy(#options, #tagparam + sizeof(options));
-		else
-			strcpy(#options, #tagparam + i);
+		strlcpy(#options, #tagparam + i, sizeof(options));
 
 		WHILE (options[0] == ' ') strcpy(#options, #options+1);
 	}
@@ -38,13 +32,7 @@ unsigned int GetNextParam()
 		IF (tagparam[i] == '=') //дерзкая заглушка
 			tagparam[i + 1] = 0x00;
 	}
-
-	if (i>sizeof(parametr))
-		strcpy(#parametr, #tagparam + sizeof(parametr));
-	else
-		strcpy(#parametr, #tagparam + i + 1);
-
+	strlcpy(#parametr, #tagparam + i + 1, sizeof(parametr));
 	tagparam[i] = 0x00;
-	
 	return 1;
 }

@@ -325,6 +325,7 @@ inline fastcall int PlaySpeaker( ESI)
 
 inline fastcall void debug( EDX)
 {
+	$push eax
 	$push ebx
 	$push ecx
 	$mov eax, 63
@@ -343,13 +344,18 @@ DONE:
 	$int 0x40
 	$pop ecx
 	$pop ebx
+	$pop eax
 }
 
 inline fastcall void debugch( ECX)
 {
+	$push eax
+	$push ebx
 	$mov eax,63
 	$mov ebx,1
 	$int 0x40
+	$pop ebx
+	$pop eax
 }
 //------------------------------------------------------------------------------
 

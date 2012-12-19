@@ -24,10 +24,10 @@ struct TWebBrowser {
 	void DrawScroller();
 };
 
-TWebBrowser WB1;
-
 byte rez, b_text, i_text, u_text, s_text, pre_text, blq_text, li_text,
-	link, ignor_text, li_tab, first_line_drawed, cur_encoding;
+link, ignor_text, li_tab, first_line_drawed, cur_encoding;
+	
+TWebBrowser WB1;
 
 
 dword text_colors[300],
@@ -310,7 +310,7 @@ void TWebBrowser::ShowPage()
 	edit1.size = edit1.pos = strlen(#editURL);
 	edit1.offset=0;
 	edit_box_draw stdcall(#edit1); //рисуем строку адреса
-	
+
 	if (!filesize)
 	{
 		DrawBar(left, top, width+4, height, 0xFFFFFF); //закрашиваем всё донизу

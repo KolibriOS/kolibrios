@@ -13,7 +13,7 @@
 // strttl( EDX)
 // strtok( ESI)
 // strcpyb(dword searchin, copyin, startstr, endstr) --- copy string between strings
-//chrnum(dword searchin, char symbol) --- count of symbol in string
+// strnumb(dword searchin, startstr, endstr) --- get number between strings
 //------------------------------------------------------------------------------
 
 inline fastcall signed int strcmp( ESI, EDI)
@@ -71,6 +71,21 @@ L2:
 }
 
 
+inline fastcall int strlcpy(dword ESI, EDI, EBX)
+{
+	EDX=0;
+	do {
+		DSBYTE[ESI]=DSBYTE[EDI];
+		ESI++;
+		EDI++;
+		EDX++;
+		if (EDX==EBX) { DSBYTE[ESI]='\0'; return -1;}
+	} while(DSBYTE[EDI-1]!='\0');
+	return 0;
+}
+
+
+
 inline fastcall strcat( EDI, ESI)
 {
   asm {
@@ -98,6 +113,119 @@ inline fastcall strcat( EDI, ESI)
     mov eax, ebx
 	}
 }
+
+
+inline fastcall signed int strchr( ESI,BL)
+{
+	int jj=0;
+	do{
+		jj++;
+		$lodsb
+		IF(AL==BL) return jj;
+	} while(AL!=0);
+	return 0;
+}
+
+
+inline fastcall signed int strrchr( ESI,BL)
+{
+	int jj=0, last=0;
+	do{
+		jj++;
+		$lodsb
+		IF(AL==BL) last=jj;
+	} while(AL!=0);
+	return last;
+}
+
+
+int chrnum(dword searchin, char symbol)
+{
+	int num = 0;
+	while(DSBYTE[searchin])
+	{ 
+		if (DSBYTE[searchin] == symbol)	num++;
+		searchin++;
+	}
+	return num;
+}
+
+
+inline fastcall dword strstr( EBX, EDX)
+{
+  asm {
+    MOV EDI, EDX
+    XOR ECX, ECX
+    XOR EAX, EAX
+    DEC ECX
+    REPNE SCASB
+    NOT ECX
+    DEC ECX
+    JE LS2
+    MOV ESI, ECX
+    XOR ECX, ECX
+    MOV EDI, EBX
+    DEC ECX
+    REPNE SCASB
+    NOT ECX
+    SUB ECX, ESI
+    JBE LS2
+    MOV EDI, EBX
+    LEA EBX, DSDWORD[ ESI-1]
+LS1: MOV ESI, EDX
+    LODSB
+    REPNE SCASB
+    JNE LS2
+    MOV EAX, ECX
+    PUSH EDI
+    MOV ECX, EBX
+    REPE CMPSB
+    POP EDI
+    MOV ECX, EAX
+    JNE LS1
+    LEA EAX, DSDWORD[ EDI-1]
+    JMP SHORT LS3
+LS2: XOR EAX, EAX
+LS3:
+  }
+}
+
+
+dword strstri(dword searchin, usestr_s)
+{
+	dword usestr_e = usestr_s;
+	char si, ue;
+
+	while(DSBYTE[searchin])
+	{ 
+		si = DSBYTE[searchin];
+		ue = DSBYTE[usestr_e];
+		if (si>='A') && (si<='Z') si +=32;
+		if (ue>='A') && (ue<='Z') ue +=32;
+		if (si == ue) usestr_e++; else usestr_e = usestr_s;
+		searchin++;
+		if (DSBYTE[usestr_e]=='\0') return searchin;
+	}
+	return 0;
+}
+
+
+void strcpyb(dword searchin, copyin, startstr, endstr)
+{
+	dword startp, endp;
+	startp = strstr(searchin, startstr) + strlen(startstr);
+	endp = strstr(startp, endstr);
+	if (startp==endp) return;
+	do
+	{ 
+		DSBYTE[copyin] = DSBYTE[startp];
+		copyin++;
+		startp++;
+	}
+	while (startp<endp);
+	DSBYTE[copyin] = '\0';
+}
+
 
 /*void strcat(char *to, char *from) //тоже работает
 {
@@ -141,50 +269,33 @@ F3:
 	
 	$mov     al, '\0'
 	$stosb
-	
-	$popa 
+
+	$popa
     return #buffer;
 } 
 
 
-
 inline fastcall dword atoi( EDI)
 {
+	$push ebx
+	$push esi
 	ESI=EDI;
-	IF(DSBYTE[ESI]=='-')ESI++;
+	while (DSBYTE[ESI]==' ') ESI++;
+	if (DSBYTE[ESI]=='-') ESI++;
 	EAX=0;
-	BH=AL;
-	do{
-		BL=DSBYTE[ESI]-'0';
-		EAX=EAX*10+EBX;
+	while (DSBYTE[ESI]>='0') && (DSBYTE[ESI]<='9')
+	{
+		$xor ebx, ebx
+		EBX = DSBYTE[ESI]-'0';
+		EAX *= 10;
+		EAX += EBX;
 		ESI++;
-	}while(DSBYTE[ESI]>='0');
-	IF(DSBYTE[EDI]=='-') -EAX;
+	} 
+	IF (DSBYTE[EDI]=='-') -EAX;
+	$pop esi
+	$pop ebx
 }
 
-
-inline fastcall signed int strchr( ESI,BL)
-{
-	int jj=0;
-	do{
-		jj++;
-		$lodsb
-		IF(AL==BL) return jj;
-	} while(AL!=0);
-	return 0;
-}
-
-
-inline fastcall signed int strrchr( ESI,BL)
-{
-	int jj=0, last=0;
-	do{
-		jj++;
-		$lodsb
-		IF(AL==BL) last=jj;
-	} while(AL!=0);
-	return last;
-}
 
 
 inline fastcall strupr( ESI)
@@ -225,77 +336,12 @@ inline fastcall strttl( EDX)
 	}while(AL!=0);
 }
 
-
-
-inline fastcall dword strstr( EBX, EDX)
+void debugi(dword d_int)
 {
-  asm {
-    MOV EDI, EDX
-    XOR ECX, ECX
-    XOR EAX, EAX
-    DEC ECX
-    REPNE SCASB
-    NOT ECX
-    DEC ECX
-    JE LS2
-    MOV ESI, ECX
-    XOR ECX, ECX
-    MOV EDI, EBX
-    DEC ECX
-    REPNE SCASB
-    NOT ECX
-    SUB ECX, ESI
-    JBE LS2
-    MOV EDI, EBX
-    LEA EBX, DSDWORD[ ESI-1]
-LS1: MOV ESI, EDX
-    LODSB
-    REPNE SCASB
-    JNE LS2
-    MOV EAX, ECX
-    PUSH EDI
-    MOV ECX, EBX
-    REPE CMPSB
-    POP EDI
-    MOV ECX, EAX
-    JNE LS1
-    LEA EAX, DSDWORD[ EDI-1]
-    JMP SHORT LS3
-LS2: XOR EAX, EAX
-LS3:
-  }
+	char tmpch[11];
+	strcpy(#tmpch, itoa(d_int));
+	debug(#tmpch);
 }
-
-//
-void strcpyb(dword searchin, copyin, startstr, endstr)
-{
-	dword startp, endp;
-	startp = strstr(searchin, startstr) + strlen(startstr);
-	endp = strstr(startp, endstr);
-	if (startp==endp) return;
-	do
-	{ 
-		DSBYTE[copyin] = DSBYTE[startp];
-		copyin++;
-		startp++;
-	}
-	while (startp<endp);
-	DSBYTE[copyin] = '\0';
-}
-
-int chrnum(dword searchin, char symbol)
-{
-	int num = 0;
-	while(DSBYTE[searchin])
-	{ 
-		if (DSBYTE[searchin] == symbol)	num++;
-		searchin++;
-	}
-	return num;
-}
-
-
-
 
 /* strtok( LPSTR dest, src, divs);
 src - указатель на исходную строку или результат предыдущего вызова

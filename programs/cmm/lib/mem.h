@@ -89,6 +89,8 @@ L2:
   }
 }
 
+
+
 #define mem_Alloc malloc
 #define mem_ReAlloc realloc
 #define mem_Free free
@@ -120,18 +122,6 @@ L2:
     MOV ECX, EDX
     AND ECX, 3
     REP STOSB
-  }
-}
-
-:void fastcall memcpy( EDI, ESI, ECX)
-{
-  asm {
-    MOV EDX, ECX
-    SHR ECX, 2
-    REP MOVSD
-    MOV ECX, EDX
-    AND ECX, 3
-    REP MOVSB
   }
 }
 
