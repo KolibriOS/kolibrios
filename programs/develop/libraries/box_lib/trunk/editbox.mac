@@ -54,7 +54,20 @@ pushad
 ;----------------------------------------------------------
 ;--- проверяем, что нажато --------------------------------
 ;----------------------------------------------------------
-use_key_process  backspace,delete,left,right,home,end,insert
+        cmp     ah,8
+        jz      edit_box_key.backspace
+        cmp     ah,0xb6
+        jz      edit_box_key.delete
+        cmp     ah,176
+        jz      edit_box_key.left
+        cmp     ah,179
+        jz      edit_box_key.right
+        cmp     ah,180
+        jz      edit_box_key.home
+        cmp     ah,181
+        jz      edit_box_key.end
+        cmp     ah,185  ;insert
+        jz      edit_box_key.insert
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Заглушка на обработку клавиш вверх и вниз т.е. при обнаружении этих кодов происходит выход из обработчика
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -756,45 +769,6 @@ pusha   ;сохраним все регистры
         or      word ed_flags,ed_shift   ;установим флаг
 @@:edit_ex
 }
-;макрос клавиш на которые происходит реакция
-macro use_key_process backspace,delete,left,right,home,end,insert
-{
-if backspace eq
-else
-        cmp     ah,8
-        jz      edit_box_key.backspace
-end if
-if delete eq
-else
-        cmp     ah,0xb6
-        jz      edit_box_key.delete
-end if
-if left eq
-else
-        cmp     ah,176
-        jz      edit_box_key.left
-end if
-if right eq
-else
-        cmp     ah,179
-        jz      edit_box_key.right
-end if
-if home eq
-else
-        cmp     ah,180
-        jz      edit_box_key.home
-end if
-if home eq
-else
-        cmp     ah,181
-        jz      edit_box_key.end
-end if
-if insert eq
-else
-        cmp     ah,185  ;insert
-        jz      edit_box_key.insert
-end if
-}
 
 macro use_key_no_process  up,down,esc,enter,tab,numl,capsl,scrolll
 {
@@ -874,9 +848,8 @@ macro are_key_shift_press
         popa
         call    edit_box_key.del_char
 ;;;;
-        mov     eax,dword ed_shift_pos
         mov     ebx,ed_size
-        sub     ebx,eax
+        sub     ebx,dword ed_shift_pos
         mov     ed_size,ebx
         pop     eax
 @@:

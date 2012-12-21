@@ -512,11 +512,17 @@ proc file.close _filed ;////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
+        cmp eax,32
+        jb .exit_error
         mov     eax, [_filed]
         mov     [eax + InternalFileInfo.Mode], 0
         mov     [eax + InternalFileInfo.FileName], 0
         invoke  mem.free, eax
         xor     eax, eax
+        jmp @f
+        .exit_error:
+        or      eax, -1
+        @@:
         ret
 endp
 
