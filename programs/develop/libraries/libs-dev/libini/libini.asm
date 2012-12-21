@@ -104,7 +104,7 @@ endl
         mov     [f.buf], eax
         invoke  file.open, [_f_name], O_READ
         cmp     eax, 32
-        jb      .exit_error
+        jb      .exit_file_error
         mov     [f.fh], eax
         invoke  mem.alloc, ini.MEM_SIZE
         or      eax, eax
@@ -162,6 +162,7 @@ endl
   .exit_error:
         invoke  file.close, [f.fh]
         invoke  mem.free, [f.buf]
+  .exit_file_error:
         invoke  mem.free, [sec_buf]
   .exit_error.2:
         or      eax, -1
@@ -209,7 +210,7 @@ endl
         mov     [f.buf], eax
         invoke  file.open, [_f_name], O_READ
         cmp     eax, 32
-        jb      .exit_error
+        jb      .exit_file_error
         mov     [f.fh], eax
         invoke  mem.alloc, ini.MEM_SIZE
         or      eax, eax
@@ -262,6 +263,7 @@ endl
   .exit_error:
         invoke  file.close, [f.fh]
         invoke  mem.free, [f.buf]
+  .exit_file_error:
         invoke  mem.free, [val_buf]
   .exit_error.2:
         invoke  mem.free, [key_buf]
@@ -298,7 +300,7 @@ endl
         mov     [f.buf], eax
         invoke  file.open, [_f_name], O_READ
         cmp     eax, 32
-        jb      .exit_error
+        jb      .exit_file_error
         mov     [f.fh], eax
         invoke  mem.alloc, ini.MEM_SIZE
         or      eax, eax
@@ -324,6 +326,7 @@ endl
   .exit_error:
         invoke  file.close, [f.fh]
         invoke  mem.free, [f.buf]
+  .exit_file_error:
         mov     edi, [_buffer]
         mov     esi, [_def_val]
         xor     al, al
@@ -364,7 +367,7 @@ endl
         mov     [f.buf], eax
         invoke  file.open, [_f_name], O_READ + O_WRITE + O_CREATE
         cmp     eax, 32
-        jb      .exit_error
+        jb      .exit_file_error
         mov     [f.fh], eax
         invoke  mem.alloc, ini.MEM_SIZE
         or      eax, eax
@@ -392,6 +395,7 @@ endl
         invoke  file.seek, [f.fh], eax, SEEK_SET
         invoke  file.write, [f.fh], [_buffer], [_buf_len]
 
+        invoke  file.close, [f.fh]
         pop     edi esi ebx
         xor     eax, eax
         ret
@@ -437,6 +441,8 @@ endl
         jmp     .create_key.ex
 
   .exit_error:
+        invoke  file.close, [f.fh]
+  .exit_file_error:
         pop     edi esi ebx
         or      eax, -1
         ret
@@ -466,7 +472,7 @@ endl
         mov     [f.buf], eax
         invoke  file.open, [_f_name], O_READ
         cmp     eax, 32
-        jb      .exit_error
+        jb      .exit_file_error
         mov     [f.fh], eax
         invoke  mem.alloc, ini.MEM_SIZE
         or      eax, eax
@@ -514,6 +520,7 @@ endl
 
   .exit_error:
         invoke  file.close, [f.fh]
+  .exit_file_error:
         invoke  mem.free, [f.buf]
         mov     eax, [_def_val]
         pop     edi esi ebx edx
