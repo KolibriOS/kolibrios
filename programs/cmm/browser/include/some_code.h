@@ -6,6 +6,8 @@
 #define NEWTAB      304
 #define GOTOURL     305
 #define SEARCHWEB   306
+#define INPUT_CH    307
+#define INPUT_BT    308
 #define ID1         178
 #define ID2         177
 

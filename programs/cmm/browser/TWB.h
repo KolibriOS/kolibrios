@@ -8,7 +8,7 @@ dword
 
 char download_path[]="/rd/1/.download";
 char search_path[]="http://nigma.ru/index.php?s=";
-char version[]=" Text-based Browser 0.98";
+char version[]=" Text-based Browser 0.98.2";
 
 
 struct TWebBrowser {
@@ -730,9 +730,30 @@ void TWebBrowser::WhatTextStyle(int left1, top1, width1) {
 	{
 		TextGoDown(left1, top1, width1);
 		TextGoDown(left1, top1 + 10, width1);
+		if (anchor) return;
 		IF(strcmp(#parametr, "color=") == 0) hr_color = GetColor(#options);
 		ELSE hr_color = 0x999999;
 		IF(stroka > 0) DrawBar(left1, top1 + 14, width1 - 8, 1, hr_color);
+	}
+	if (!chTag("input"))
+	{
+		do{
+			if (!strcmp(#parametr, "type=")) if ((!strcmp(#options, "radio")) || (!strcmp(#options, "checkbox")))
+			{
+				if (!anchor) && (stroka > 0) CheckBox(stolbec*6 + left1,top1-2,10,10, 0, "\0", 0x888888, text_colors[text_color_index], 0);
+				stolbec+=2;
+			}
+			if (!strcmp(#parametr, "type=")) if ((!strcmp(#options, "text")) || (!strcmp(#options, "password")))
+			{
+				if (!anchor) && (stroka > 0) CheckBox(stolbec*6 + left1,top1-2,90,10, 0, "\0", 0x555555, 0, 0);
+				stolbec+=16;
+			}
+			if (!strcmp(#parametr, "type=")) if ((!strcmp(#options, "button")) || (!strcmp(#options, "file")) || (!strcmp(#options, "submit")))
+			{
+				if (!anchor) && (stroka > 0) DrawCaptButton(stolbec*6 + left1,top1-2,60,10, 0, 0xCCCccc, 0, "Button");
+				stolbec+=21;
+			}
+		} while(GetNextParam());
 	}
 	if (!chTag("img"))
 	{
@@ -794,8 +815,8 @@ void FreeImgCache()
 	int i;
 	for (i=0; i<=num_of_pics; i++)
 	{
-		mem_Free(pics[num_of_pics].image);
-		pics[num_of_pics].path=NULL;
+		img_destroy stdcall (pics[num_of_pics].image);
+		pics[num_of_pics].path = NULL;
 	}
 	num_of_pics=0;
 }
@@ -816,7 +837,7 @@ void Images(int left1, top1, width1)
 				
 				if (strcmpn(#img_path, "http:", 5)!=0) || (strcmpn(#options, "http:", 5)!=0)
 				{
-					img_path[strrchr(#img_path, '/')] = 0x00; //обрезаем её урл до последнего /
+					img_path[strrchr(#img_path, '/')] = '\0'; //обрезаем её урл до последнего /
 					strcat(#img_path, #options);
 					
 					cur_pic=GetOrSetPicNum(#img_path);
