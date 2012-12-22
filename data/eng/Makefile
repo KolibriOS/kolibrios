@@ -285,6 +285,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  games/checkers:GAMES/CHECKERS \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/xonix:GAMES/XONIX games/megamaze:GAMES/MEGAMAZE \
+ games/kosilka:GAMES/KOSILKA \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
  media/ac97snd:MEDIA/AC97SND \

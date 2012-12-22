@@ -280,6 +280,7 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  games/megamaze:GAMES/MEGAMAZE games/padenie:GAMES/PADENIE \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/whowtbam:GAMES/WHOWTBAM games/xonix:GAMES/XONIX \
+ games/kosilka:GAMES/KOSILKA \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
  media/ac97snd:MEDIA/AC97SND \
