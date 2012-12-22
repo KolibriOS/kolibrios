@@ -199,7 +199,7 @@ void __declspec(noinline) kos_DisplayNumberToWindow(
    bool valueIsPointer = false
    );
 // функция 48.4 получить высоту скина
-Dword kos_GetSkinWidth();
+Dword kos_GetSkinHeight();
 // функция 58 доступ к файловой системе
 Dword __fastcall kos_FileSystemAccess( kosFileInfo *fileInfo );
 // функция 63

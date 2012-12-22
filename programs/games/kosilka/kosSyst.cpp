@@ -760,7 +760,7 @@ void kos_DisplayNumberToWindow(
 }
 
 
-Dword kos_GetSkinWidth()
+Dword kos_GetSkinHeight()
 {
 	__asm{
 		mov eax, 48
