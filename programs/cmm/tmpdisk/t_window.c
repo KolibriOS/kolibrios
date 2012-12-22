@@ -5,17 +5,17 @@
 
 #ifdef LANG_RUS
 	unsigned char *but_text[]={
-	"ƒобавить диск [F2]"w,
-	"”далить диск [Del]"w,
-	"ƒобавить [Ctrl+Enter]"w,
+	"ДЃ°†Ґ®вм §®б™ [F2]",
+	"У§†Ђ®вм §®б™ [Del]",
+	"ДЃ°†Ґ®вм [Ctrl+Enter]",
 	0};
 	
-	?define INTRO_TEXT_1 "«десь будет отображатьс€ список"w
-	?define INTRO_TEXT_2 "виртуальных дисков в системе."w
-	?define INTRO_TEXT_3 "ѕопробуйте добавить один..."w
+	?define INTRO_TEXT_1 "З§•бм °г§•в ЃвЃ°а†¶†вмбп бѓ®бЃ™"
+	?define INTRO_TEXT_2 "Ґ®авг†Ђм≠ле §®б™ЃҐ Ґ б®бв•ђ•."
+	?define INTRO_TEXT_3 "ПЃѓаЃ°г©в• §Ѓ°†Ґ®вм Ѓ§®≠..."
 
-	?define NOTIFY_TEXT_NO_DISK    "ƒл€ начала добавьте хот€ бы один диск"w
-	?define NOTIFY_TEXT_DISK_LIMIT "ƒостигнут предел количества виртуальных дисков"w
+	?define NOTIFY_TEXT_NO_DISK    "ДЂп ≠†з†Ђ† §Ѓ°†Ґмв• еЃвп °л Ѓ§®≠ §®б™"
+	?define NOTIFY_TEXT_DISK_LIMIT "ДЃбв®£≠гв ѓа•§•Ђ ™ЃЂ®з•бвҐ† Ґ®авг†Ђм≠ле §®б™ЃҐ"
 	
 #else
 	unsigned char *but_text[]={
@@ -225,7 +225,7 @@ void Draw_Window()
 	sc.get();
 	DefineAndDrawWindow(170,150,314,250,0x74,sc.work,"Virtual Disk Manager 0.4",0);
 	GetProcessInfo(#Form, SelfInfo);
-	if (Form.status_window>2) return; //если свернуто в заголовок, ничего не рисуем
+	if (Form.status_window>2) return;
 	
 	//рисуем панель
 	DrawBar(0,0,  Form.width-9,30, sc.work);
@@ -239,9 +239,7 @@ void Draw_Window()
 		x+=strlen(but_text[i])*6+37; 
 	}
 	
-	//получаем список доступных дисков
 	GetDisks();
-	//выводим доступные диски
 	DrawTmpDisks();
 	//AddPanel();
 }
