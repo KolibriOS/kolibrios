@@ -277,7 +277,6 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  File|Managers/kfm.ini:File|Managers/KFM.INI \
  games/appdata.dat:GAMES/APPDATA.DAT games/ataka:GAMES/ATAKA \
  games/basekurs.kla:GAMES/BASEKURS.KLA games/checkers:GAMES/CHECKERS \
- games/kosilka:GAMES/KOSILKA games/kosskin.gfx:GAMES/KOSSKIN.GFX \
  games/megamaze:GAMES/MEGAMAZE games/padenie:GAMES/PADENIE \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/whowtbam:GAMES/WHOWTBAM games/xonix:GAMES/XONIX \

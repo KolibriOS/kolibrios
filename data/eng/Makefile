@@ -283,7 +283,6 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  File|Managers/kfar.ini:File|Managers/KFAR.INI \
  File|Managers/kfm.ini:File|Managers/KFM.INI \
  games/checkers:GAMES/CHECKERS \
- games/kosilka:GAMES/KOSILKA games/kosskin.gfx:GAMES/KOSSKIN.GFX \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/xonix:GAMES/XONIX games/megamaze:GAMES/MEGAMAZE \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
