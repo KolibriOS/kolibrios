@@ -99,7 +99,7 @@ void interlevelpause(){ //Пауза между уровнями
 	static int yellow_pal[] = {0xA8A93D,0xBEBF4C,0xD6D856,0xDFE15A,0xECEE5B,
 						    0xECEE5B,0xDFE15A,0xD6D856,0xBEBF4C,0xA8A93D};
 		for (int iic=0;iic<240;iic++){
-			kos_WaitForEvent(); //Pause()?
+			kos_WaitForEvent(1); //Pause()?
 			kos_GetKey(tempCode);
 
 			kos_DrawBar(iic*2,0,2,480,yellow_pal[tmpa]);
