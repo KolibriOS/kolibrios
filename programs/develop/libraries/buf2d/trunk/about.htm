@@ -265,7 +265,7 @@ stdcall [buf2d_convert_text_matrix], buf_1</pre>
 <p>Фильтр, который преобразует изображение из 24 битного буфера в 8-ми цветное. Разрядность буфера не меняется. Пример:</p>
 <pre>stdcall [buf2d_filter_dither], buf_0, 0</pre>
 <p>где buf_0 - структура 24-х битного буфера.</p>
-<p>0 - алгоритм (возможные значения: 0 - Sierra Lite, 1 - Floyd-Steinberg, 2 - Burkers).</p>
+<p>0 - алгоритм (возможные значения: 0 - Sierra Lite, 1 - Floyd-Steinberg, 2 - Burkers, 3 - Heavyiron_mod, 4 - Atkinson).</p>
 
 <h4><a name="f_v_brush_c">buf2d_vox_brush_create</a></h4>
 <p>Создание воксельной кисти. Пример:</p>
@@ -444,5 +444,6 @@ import_buf2d_lib:
 <p>01.10.12 - добавлена функция поворота изображений на 90 и 180 градусов buf2d_rotate.</p>
 <p>15.11.12 - добавлена функция отражения 24 битных изображений по вертикали buf_flip_v, исправления в функции buf2d_img_hdiv2.</p>
 <p>14.12.12 - добавлена функция наложения фильтра buf2d_filter_dither.</p>
+<p>24.12.12 - добавлены 2 новых алгоритма в функцию наложения фильтра buf2d_filter_dither.</p>
 </body>
 </html>

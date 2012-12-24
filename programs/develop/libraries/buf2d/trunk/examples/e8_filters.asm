@@ -101,8 +101,8 @@ start:
 	stdcall [buf2d_create_f_img], buf_2,[image_data_rgb] ;создаем буфер
 	stdcall mem.Free,[image_data_rgb] ;освобождаем память
 
-	stdcall [buf2d_filter_dither], buf_1,0
-	stdcall [buf2d_filter_dither], buf_2,2
+	stdcall [buf2d_filter_dither], buf_1,2
+	stdcall [buf2d_filter_dither], buf_2,3
 
 align 4
 red_win:
