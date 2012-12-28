@@ -44,9 +44,7 @@ export DOCDIR
 FASM_PROGRAMS:=\
  @clip:@CLIP:$(PROGS)/system/clip/trunk/@clip.ASM \
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
- @notify:@NOTIFY:$(PROGS)/system/notify/trunk/@notify.asm \
  @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
- @rb:@RB:$(PROGS)/system/rb/trunk/@RB.ASM \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm\
  refrscrn:REFRSCRN:$(PROGS)/system/refrscrn/refrscrn.asm \
  asciivju:ASCIIVJU:$(PROGS)/develop/asciivju/trunk/asciivju.asm \
@@ -72,7 +70,6 @@ FASM_PROGRAMS:=\
  madmouse:MADMOUSE:$(PROGS)/other/madmouse/madmouse.asm \
  mykey:MYKEY:$(PROGS)/system/MyKey/trunk/MyKey.asm \
  pcidev:PCIDEV:$(PROGS)/system/pcidev/trunk/PCIDEV.ASM \
- pic4:PIC4:$(PROGS)/media/pic4/trunk/pic4.asm \
  rdsave:RDSAVE:$(PROGS)/system/rdsave/trunk/rdsave.asm \
  rtfread:RTFREAD:$(PROGS)/other/rtfread/trunk/rtfread.asm \
  run:RUN:$(PROGS)/system/run/trunk/run.asm \
@@ -81,11 +78,9 @@ FASM_PROGRAMS:=\
  test:TEST:$(PROGS)/system/test/trunk/test.asm \
  tinypad:TINYPAD:$(PROGS)/develop/tinypad/trunk/tinypad.asm \
  zkey:ZKEY:$(PROGS)/system/zkey/trunk/ZKEY.ASM \
- 3d/3dcube2:3D/3DCUBE2:$(PROGS)/demos/3dcube2/trunk/3DCUBE2.ASM \
  3d/3dsheart:3D/3DSHEART:$(PROGS)/demos/3dsheart/trunk/3dsheart.asm \
  3d/3dwav:3D/3DWAV:$(PROGS)/demos/3dwav/trunk/3dwav.asm \
  3d/crownscr:3D/CROWNSCR:$(PROGS)/demos/crownscr/trunk/crownscr.asm  \
- 3d/flatwav:3D/FLATWAV:$(PROGS)/demos/flatwav/trunk/FLATWAV.ASM \
  3d/free3d04:3D/FREE3D04:$(PROGS)/demos/free3d04/trunk/free3d04.asm \
  3d/view3ds:3D/VIEW3DS:$(PROGS)/demos/3DS/VIEW3DS.ASM \
  demos/bcdclk:DEMOS/BCDCLK:$(PROGS)/demos/bcdclk/trunk/bcdclk.asm \
@@ -93,7 +88,6 @@ FASM_PROGRAMS:=\
  demos/colorref:DEMOS/COLORREF:$(PROGS)/demos/colorref/trunk/colorref.asm \
  demos/cslide:DEMOS/CSLIDE:$(PROGS)/demos/cslide/trunk/cslide.asm \
  demos/eyes:DEMOS/EYES:$(PROGS)/demos/eyes/trunk/eyes.asm \
- demos/fire:DEMOS/FIRE:$(PROGS)/demos/fire/trunk/fire.asm \
  demos/firework:DEMOS/FIREWORK:$(PROGS)/demos/firework/trunk/firework.asm \
  demos/movback:DEMOS/MOVBACK:$(PROGS)/demos/movback/trunk/movback.asm \
  demos/plasma:DEMOS/PLASMA:$(PROGS)/demos/plasma/trunk/plasma.asm \
@@ -128,6 +122,7 @@ FASM_PROGRAMS:=\
  drivers/emu10k1x.obj:DRIVERS/EMU10K1X.OBJ:$(KERNEL)/drivers/emu10k1x.asm \
  drivers/fm801.obj:DRIVERS/FM801.OBJ:$(KERNEL)/drivers/fm801.asm \
  drivers/infinity.obj:DRIVERS/INFINITY.OBJ:$(KERNEL)/drivers/infinity.asm \
+ drivers/intel_hda.obj:DRIVERS/intel_hda.obj:$(REPOSITORY)/drivers/audio/intel_hda/intel_hda.asm \
  drivers/ps2mouse.obj:DRIVERS/PS2MOUSE.OBJ:$(REPOSITORY)/drivers/mouse/ps2mouse4d/trunk/ps2mouse.asm \
  drivers/sb16.obj:DRIVERS/SB16.OBJ:$(KERNEL)/drivers/sb16/sb16.asm \
  drivers/sound.obj:DRIVERS/SOUND.OBJ:$(KERNEL)/drivers/sound.asm \
@@ -159,6 +154,7 @@ FASM_PROGRAMS:=\
  games/tetris:GAMES/TETRIS:$(PROGS)/games/tetris/trunk/tetris.asm \
  lib/archiver.obj:LIB/ARCHIVER.OBJ:$(PROGS)/fs/kfar/trunk/kfar_arc/kfar_arc.asm \
  lib/box_lib.obj:LIB/BOX_LIB.OBJ:$(PROGS)/develop/libraries/box_lib/trunk/box_lib.asm \
+ lib/buf2d.obj:LIB/BUF2D.OBJ:$(PROGS)/develop/libraries/buf2d/trunk/buf2d.asm \
  lib/console.obj:LIB/CONSOLE.OBJ:$(PROGS)/develop/libraries/console/console.asm \
  lib/libgfx.obj:LIB/LIBGFX.OBJ:$(PROGS)/develop/libraries/libs-dev/libgfx/libgfx.asm \
  lib/libimg.obj:LIB/LIBIMG.OBJ:$(PROGS)/develop/libraries/libs-dev/libimg/libimg.asm \
@@ -172,6 +168,7 @@ FASM_PROGRAMS:=\
  media/kiv:MEDIA/KIV:$(PROGS)/media/kiv/trunk/kiv.asm \
  media/listplay:MEDIA/LISTPLAY:$(PROGS)/media/listplay/trunk/listplay.asm \
  media/midamp:MEDIA/MIDAMP:$(PROGS)/media/midamp/trunk/midamp.asm \
+ media/palitra:MEDIA/PALITRA:$(PROGS)/media/palitra/trunk/palitra.asm \
  media/startmus:MEDIA/STARTMUS:$(PROGS)/media/startmus/trunk/STARTMUS.ASM \
  network/airc:NETWORK/AIRC:$(PROGS)/network/airc/trunk/airc.asm \
  network/arpstat:NETWORK/ARPSTAT:$(PROGS)/network/arpstat/trunk/arpstat.asm \
@@ -256,7 +253,10 @@ CMM_PROGRAMS:=\
  games/FindNumbers:GAMES/FindNumbers:$(PROGS)/games/FindNumbers/trunk/FindNumbers.c-- \
  games/flood-it:GAMES/flood-it:$(PROGS)/games/flood-it/trunk/flood-it.c \
  games/mine:GAMES/MINE:$(PROGS)/games/mine/trunk/mine.c--:/MEOS \
- HTMLv:HTMLv:$(PROGS)/network/htmlv/browser/HTMLv.c \
+ HTMLv:HTMLv:$(PROGS)/cmm/browser/HTMLv.c \
+ tmpdisk:tmpdisk:$(PROGS)/cmm/tmpdisk/tmpdisk.c \
+ @notify:@notify:$(PROGS)/cmm/notify/notify.c \
+ @rb:@rb:$(PROGS)/cmm/rb/rb.c \
 #develop/c--:DEVELOP/C--:$(PROGS)/develop/c--/trunk/32.c-- \
 # end of list
 
@@ -265,8 +265,8 @@ CMM_PROGRAMS:=\
 # Each item is of the form <local name>:<name inside image>.
 # Spaces should be represented as |.
 OTHER_FILES:=autorun.dat:AUTORUN.DAT \
- background.png:background.png default.skn:DEFAULT.SKN \
- e80:E80 graph:GRAPH hdread:HDREAD \
+ default.skn:DEFAULT.SKN \
+ graph:GRAPH hdread:HDREAD \
  icons.dat:ICONS.DAT iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
  kuzkina.mid:KUZKINA.MID lang.inc:LANG.INC lang.ini:LANG.INI \
@@ -276,7 +276,6 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  vmode:VMODE 3d/3dsheart:3D/3DSHEART \
  3d/cubeline:3D/CUBELINE 3d/gears:3D/GEARS 3d/house.3ds:3D/HOUSE.3DS \
  demos/ak47.lif:DEMOS/AK47.LIF \
- demos/barge.lif:DEMOS/BARGE.LIF demos/life2:DEMOS/LIFE2 \
  demos/relay.lif:DEMOS/RELAY.LIF demos/rpento.lif:DEMOS/RPENTO.LIF \
  demos/use_mb:DEMOS/USE_MB \
  File|Managers/eolite.ini:File|Managers/EOLITE.INI \
@@ -284,16 +283,14 @@ OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  File|Managers/kfar.ini:File|Managers/KFAR.INI \
  File|Managers/kfm.ini:File|Managers/KFM.INI \
  games/checkers:GAMES/CHECKERS \
- games/kosilka:GAMES/KOSILKA games/kosskin.gfx:GAMES/KOSSKIN.GFX \
  games/reversi:GAMES/REVERSI games/rforces:GAMES/RFORCES \
  games/xonix:GAMES/XONIX games/megamaze:GAMES/MEGAMAZE \
+ games/kosilka:GAMES/KOSILKA \
  lib/msgbox.obj:LIB/MSGBOX.OBJ \
  lib/pixlib.obj:LIB/PIXLIB.OBJ lib/sort.obj:LIB/SORT.OBJ \
- drivers/intel_hda.obj:DRIVERS/intel_hda.obj \
  media/ac97snd:MEDIA/AC97SND \
  network/jmail:NETWORK/JMAIL network/zeroconf.ini:NETWORK/ZEROCONF.INI \
 #end of list
-#3d/logio.bmp:3D/LOGIO.BMP 3d/cubetext:3D/CUBETEXT
 
 # Generate skins list understandable by gnu make
 Makefile.skins: $(REPOSITORY)/skins/authors.txt $(REPOSITORY)/data/generate_makefile_skins.sh
@@ -302,9 +299,10 @@ include Makefile.skins
 
 # Extra targets for LiveCD image in the syntax of mkisofs
 MKISOFS_EXTRA:=\
- dosbox/=$(PROGS)/emulator/DosBox/dosbox \
- dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
- dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
+ emu/e80/e80=e80 \
+ emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox \
+ emu/dosbox/=$(PROGS)/emulator/DosBox/dosbox.conf \
+ emu/dosbox/=$(PROGS)/emulator/DosBox/readme.txt \
  /=distr_data/autorun.inf \
  /=distr_data/KolibriOS_icon.ico \
  /=distr_data/readme.txt \

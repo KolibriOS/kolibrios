@@ -14,7 +14,6 @@ Spegni                    /rd/1/end
 #1    **** GAMES ****
 Giochi di logica   >      /@2
 Arcade             >      /@3
-Emulatori                 /rd/1/e80
 Memory                    /rd/1/games/mblocks
 FreeCell                  /rd/1/games/freecell
 Pipes                     /rd/1/games/pipes
@@ -46,7 +45,6 @@ Phenix                    /rd/1/games/phenix
 Snake                     /rd/1/games/snake
 #4    **** DEMOS ****
 3D                 >      /@5
-Fuoco                     /rd/1/demos/fire
 Cerchio                   /rd/1/demos/circle
 Frattale                  /rd/1/demos/tinyfrac
 Demo Colori               /rd/1/demos/colorref
@@ -61,18 +59,16 @@ Fuochi d'artificio        /rd/1/demos/firework
 UnvWater                  /rd/1/demos/unvwater
 #5  **** 3D demos ****
 ScreenSaver               /rd/1/3d/crownscr
-Cubo 3D                   /rd/1/3d/3dcube2
 Labirinto 3D              /rd/1/3d/free3d04
 Cuore 3D                  /rd/1/3d/3dsheart
 View3DS                   /rd/1/3d/view3ds
 CubeLine                  /rd/1/3d/cubeline
-3D-textured cube 2        /rd/1/3d/cubetext
 Gears                     /rd/1/3d/gears
-FlatWave                  /rd/1/3d/flatwav
 3D-waved area             /rd/1/3d/3dwav
 #6   **** GRAPHICS ****
 Visualizzatore Immagini   /rd/1/media/kiv
 Animage                   /rd/1/media/animage
+Palitra                   /rd/1/media/palitra
 #7   **** AUDIO ****
 MidAMP                    /rd/1/media/midamp
 CD player                 /rd/1/media/cdp
