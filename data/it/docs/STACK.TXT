@@ -1,0 +1,387 @@
+Cosaè implementato
+==================
+
+Le seguenti feature sono presenti nel codice stack TCP/IP:
+
+  IP layer.
+  ICMP.
+  TCP layer.
+  UDP layer.
+  local loopback.
+  Realtek 8029 PCI ethernet interface.
+  Realtek 8139 PCI ethernet interface.
+  Intel i8255x PCI ethernet interface.
+  Dynamic ARP table.
+  PPP dialer
+
+E sono implementate le seguenti applicazioni:
+
+  Server HTTP
+  Telnet
+  Client POP
+  DNS Name resolver
+  Server MP3
+  Client TFTP
+  Client IRC
+
+Vi sono inoltre applicazioni sperimentali, per los terming di musica e
+per la comunicazione via socket, in fase di sviluppo vi è anche un
+browser web.
+
+
+Cosa non è implementato
+=======================
+
+Il layer IP non processa le opzioni dello header.
+Il layer IP non supporta il routing.
+Non è supportata la 'Packet fragmentation'.
+
+
+Come configurare Kolibri per il PPP
+===================================
+
+Vedi ppp.txt
+
+
+Come configurare Kolibri per l'Ethernet
+=======================================
+
+Inanzitutto è necessario possedere una scheda ethernet supportata e
+installata, o presente sulla scheda madre. Se non si è certi del tipo di
+hardware, si può provare a configurare lo stack. Se l'hardware è
+supportato allora verrà notificato e configurato correttamente.
+
+Setting Up the ARP Table
+------------------------
+
+Kolibri's ARP table is dynamically created and maintained; You can see what
+hosts Kolibri has communicated with by running the ARPSTAT application.
+
+Enabling Ethernet
+-----------------
+
+Boot Kolibri, then select STACKCFG from the NET menu.
+Press the 'Read' Button, then select 'Packet Driver'.
+Press 'Change' next to the IP address, and enter the IP address you want
+to use. Make sure it is on the same sub-net as the LAN to which you are
+connected.
+Press 'Apply' to action the changes.
+Close the program.
+
+
+The stack is now running, which you can test by pinging Kolibri from a
+remote host.
+
+
+The simplest way to connect two PC's together is using a 'Null Modem'
+Ethernet cable. These simply cross certain wires over. They can be
+purchased from PC stores, but are simple to make. Details can be found
+on the web. Look on google for 'ethernet cross over cable' or similar.
+
+
+How to use TCP/IP locally, with no Network
+==========================================
+
+Kolibri supports a form of local loopback that means applications on the
+same PC can communicate with each other via sockets as though they
+were on separate hosts. To connect to an application on the same machine,
+specify the local IP address as the destination address. You do not even
+need to configure the stack for ethernet; local loopback will work without
+any network hardware. It's great for development and testing.
+
+
+Application Programming Interface
+=================================
+
+The developer can access the stack through interrupt 0x40, function 53.
+The file TFTPC.ASM gives a good example of how to use the programming
+interface ( at least, for UDP), but as network communication is complex
+I'll give an overview.
+
+
+Sockets
+=======
+
+Applications connect to each other and pass information between themselves
+through a mechanism called a 'socket'. Sockets are end-points for
+communication; You need one at each application to communicate.
+
+Using sockets is a little like using files on an OS; You open them, read
+and write to them, then close them. The only thing that makes life slightly
+more complicated is that unlike with a file, you have something intelligent
+at the other end ( which for example may not want to close when you do! )
+
+Lets deal with the terminology before we go any further.
+
+socket      A unique identifier used by the application for communication.
+local port  A number that identifies this application on the local host.
+            Ports are a way to allow multiple applications to communicate
+            with other hosts without the data becoming mixed up. ( The
+            technical term is 'multiplex' ). Port numbers are 16 bit.
+remote port A number that identifies the application on the remote host
+            to which we are communicating with. To the remote host, this is
+            it's 'local port'. Port numbers are 16 bit.
+IP Address  A 32 bit number that identifies the remote host PC that we are
+            communicating with.
+Passive     Refers to the mode by which a socket is opened; When opening in
+            passive mode, the local PC is awaiting an incoming connection.
+Active      Refers to the mode by which a socket is opened; When opening in
+            active mode, the local PC will attempt to connect to a remote
+            PC.
+
+When you connect to a socket on a remote PC, you need to specify more than
+just the IP address, otherwise the remote stack will not know to which
+application it should send your data. You must fully qualify the address,
+which means you specify the IP address and the port number. This would be
+written like this
+
+192.168.1.10:80   ; Connect to port 80 on the machine 192.168.1.10
+
+Port numbers are important. Some are 'well known' and provide access to
+common applications. For example port 80 is used by HTTP servers; That
+way I can connect to a webserver on a host without having to find out
+what port number the application is listening on.
+
+This brings me to the way in which you open a socket; As I said earlier,
+there are two modes, Passive and Active. A webserver would open a passive
+socket, as it is waiting for incoming connection requests. A web browser
+would open an active socket because it is attempting to connect to a
+specified remote host.
+
+
+Access to programming interface
+===============================
+The developer accesses the stack functions through interrupt 0x40,
+function 53. Some functions may be accessed through function 52, but these
+are mainly for stack configuration.
+Here is a summary of the functions that you may use and the parameter
+definitions.
+
+
+Get Local IP Address
+--------------------
+eax = 52
+ebx = 1
+
+IP address returned in eax ( in internet byte order )
+
+
+Write to stack input queue
+--------------------------
+eax = 52
+ebx = 6
+edx = number of bytes to write
+esi = pointer to data ( in application space )
+
+On return, eax holds 0 for OK, or 0xFFFFFFFF for error.
+This interface is for slow network drivers only ( PPP, SLIP )
+
+
+Read data from network output queue
+-----------------------------------
+eax = 52
+ebx = 8
+esi = pointer to data ( in application space )
+
+On return, eax holds number of bytes transferred.
+This interface is for slow network drivers only ( PPP, SLIP )
+
+
+Open a UDP socket
+-----------------
+eax = 53
+ebx = 0
+ecx = local port
+edx = remote port
+esi = remote ip address ( in internet byte order )
+
+The socket number allocated is returned in eax.
+A return value of 0xFFFFFFFF means no socket could be opened.
+
+
+Open a TCP socket
+-----------------
+eax = 53
+ebx = 5
+ecx = local port
+edx = remote port
+esi = remote ip address ( in internet byte order )
+edi = mode : SOCKET_PASSIVE or SOCKET_ACTIVE  ( defined in stack.inc )
+
+The socket number allocated is returned in eax.
+A return value of 0xFFFFFFFF means no socket could be opened.
+
+
+Close a socket (UDP Only )
+--------------------------
+eax = 53
+ebx = 1
+ecx = socket number
+
+On return, eax holds 0 for OK, or 0xFFFFFFFF for error.
+
+
+Close a socket (TCP Only )
+--------------------------
+eax = 53
+ebx = 8
+ecx = socket number
+
+On return, eax holds 0 for OK, or 0xFFFFFFFF for error.
+
+
+Poll socket
+-----------
+eax = 53
+ebx = 2
+ecx = socket number
+
+On return, eax holds the number of bytes in the receive buffer.
+
+
+Read socket data
+----------------
+eax = 53
+ebx = 3
+ecx = socket number
+
+On return, eax holds the number of bytes remaining, bl holds a data byte.
+
+
+Write to socket ( UDP only )
+----------------------------
+eax = 53
+ebx = 4
+ecx = socket number
+edx = number of bytes to write
+esi = pointer to data ( in application space )
+
+On return, eax holds 0 for OK, or 0xFFFFFFFF for error.
+
+
+Return socket status ( TCP only )
+---------------------------------
+eax = 53
+ebx = 6
+ecx = socket number
+
+On return, eax holds the sockets TCP status.
+This function can be used to determine when a socket has actually connected
+to another socket - data cannot be written to a socket until the connection
+is established (TCB_ESTABLISHED). The states a socket can be in are defined
+in stack.inc as TCB_
+
+
+Write to socket ( TCP only )
+----------------------------
+eax = 53
+ebx = 7
+ecx = socket number
+edx = number of bytes to write
+esi = pointer to data ( in application space )
+
+On return, eax holds 0 for OK, or 0xFFFFFFFF for error.
+
+
+Check port number
+-----------------
+eax = 53
+ebx = 9
+ecx = port number
+
+This function is used to determine if a port number
+is in use by any sockets as a local port number. Local
+port numbers are normally unique.
+
+On return, eax is 1 for port number not in use, 0 otherwise.
+
+
+Opening a TCP socket in Kolibri
+===============================
+
+There are two ways to open a socket - Passive or Active.
+
+In a Passive connection your application 'listens' for incoming
+requests from remote applications. Typically this will be done when
+you are implementing a server application that allows any other
+application to connect to it. You would specify a 'known' local
+port number, such as 80 for a web server. You would leave the
+remote IP and remote port number as 0, which indicates any
+remote application may connect.
+
+Once the socket has been opened you would wait for an incoming
+connection before doing anything. This can be by either checking
+the socket status for TCB_ESTABLISHED, or waiting for data in the
+receive buffer.
+
+In an Active connection, you are making a connection to a specified
+remote port. The remote IP and remote port parameters must be filled
+in with non-zero values ( otherwise, what are you connecting to? ).
+You also specify a unique local port number so the remote application
+can uniquely identify you - after all, there may be several applications
+on your machine connected to the same remote host. See below for finding
+a unique port number.
+
+
+How to find an unused local port number
+=======================================
+
+Typically when you are creating an active connection to a remote
+socket you will want to choose a unique local port number. Local
+port numbers normally start from 1000; The following code may
+be used to obtain an unused port number prior to making the
+open socket call.
+
+    mov     ecx, 1000        ; local port starting at 1000
+
+getlp:
+    inc     ecx
+    push    ecx
+    mov     eax, 53
+    mov     ebx, 9
+    int     0x40
+    pop     ecx
+    cmp     eax, 0            ; is this local port in use?
+    jz      getlp            ; yes - so try next
+
+    ; ecx contains a free local port number
+
+
+
+Writing data to a socket
+========================
+
+There are two functions available depending on whether the socket
+was opened for TCP or UDP protocol; The call parameters are the
+same however. When the socket is being opened for TCP, use the
+status function to poll for a connection - data cannot be written
+to a socket until another socket has connected to it, and the
+state of the socket is TCB_ESTABLISHED.
+
+When you write data, the call results in a single IP packet being
+created and transmitted. Thus the user application is responsible for
+the size of transmitted packets. Keep the packet sizes under 768 bytes.
+If you are writing a terminal program like telnet, you may want to send
+a packet for each keystroke ( inefficient ) or use a timer to send data
+periodically ( say, every second ).
+
+
+Reading data from a socket
+==========================
+
+There is one function to read data from a sockets receive buffer. This
+function retrieves one byte at a time. You can use the poll function to
+test the receive buffer for data.
+
+
+Closing a socket
+================
+
+Simply call the appropriate function - there is one for TCP, and another
+for UDP. When closing a TCP socket, don't forget that the other end
+may continue to send data, so the socket may remain active for a
+few seconds after your call.
+
+
+If you have any questions or have suggestions for improving this
+document please contact me at mikeh@oceanfree.net.

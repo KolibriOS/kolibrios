@@ -1,0 +1,238 @@
+Introduzione.
+
+mtdbg è un debugger per il sistema operativo KolibriOS. Questo documento
+descrive come utilizzare tale programma. Per eventuali domande conviene
+scrivere sul forum (in russo, ma esiste anche una sezione inglese)
+ -- board.kolibrios.org.
+
+Descrizione generica.
+
+mtdbg è in grado di fare il debug di un solo programma alla volta, se non
+viene caricato nessun programma, il debug viene disabilitato.
+
+Il programma è a linea di comando, e accetta in input comandi da tastiera
+La linea di comando è posizionata in basso, e accetta in input tasti
+Backspace,Delete,Home,End,frecce sinistra/destra.
+I comandi non sono case-sensitive e il delimitatore è un numero arbitrario
+non nullo di spazi.
+
+Per chiudere il debugger è sufficiente usare il comando "quit" senza
+nessun argomento, altrimenti da interfaccia cliccando sul pulsante di
+chiusura come per le altre applicazioni.
+
+Quando il debugger viene avviato senza argomenti, non viene caricato
+nessun programma. Se invece viene avviato con degli argomenti, mtdbg
+cercherà di caricare il programma indicato come primo argomento e con
+eventuali parametri per il programma passati come argomenti successivi.
+
+È possibile caricare un qualsiasi programma in un secondo
+momento con il comando
+load <percorso all'eseguibile> [<parametri>]
+ad esempio:
+load /rd/1/example
+LOAD   /rd/1/aclock w200 h200
+  LoaD  /hd0/1/menuetos/dosbox/dosbox
+negli esempi, mtdbg caricherà il programma passato come primo argomenti,
+un eventuale secondo argomento è il parametro da passare al programma
+che si vuole caricare.
+Il comando "load" restituisce in output nel "messages window", poco più
+in alto della linea di comando, se il programma è stato caricato con
+successo o meno. In caso di errore, verra mostrata la causa.
+L'errore più comune è del tipo, "file not found", probabilmente perché
+si è digitato in modo errato il percorso o il nome del programma da
+caricare.
+
+Il debugger è in grado di caricare file con simboli relativi al
+programma  di cui si vuole effetuare il debug.
+Si tratta di file di testo, dei quali ogni riga inizia con
+0x<hex_value_of_addr> <name>
+(righe che non iniziano in questo modo vengono ignorate). Tali file si
+possono creare a mano o tramite fasm. È possibile caricare questi file
+esplicitamente con il comando
+load-symbols <percorso al file>
+Inoltre, quando viene eseguito il comando "load", mtdbg controllerà
+la presenza di un file contenente simboli relativi al programma e di
+estensione .dbg (nel primo esempio controlla la presenza  del file
+/rd/1/example.dbg). Se tale file esiste, questo viene caricato
+automaticamente and if such file exists, e verrà notificato tramite il
+messaggio "Symbols loaded", se il caricamento viene eseguito con
+successo.
+
+Può succedere che un programma che si vuole caricare è stato
+compresso. La compressione funziona, in linea generale, nel
+seguente modo: il file di input viene compresso (da qualche
+programma apposito), successivamente viene aggiunto un pezzo di codice
+che all'avvio del programma effettua una decompressione in memoria.
+Se un programma è stato compresso, il suo codice non è visibile al
+debugger, e deve venir prima decompresso.
+mtdbg è in grado di determinare la maggior parte di compressori
+(mxp,mxp_lzo,mxp_nrv,mtappack) e in questi casi suggerisce in automatico
+di effettuare la decompressione per vedere il codice del programma.
+È sufficiente pigiare 'y' e enter per accettare l'opzione, altrimenti
+rifiutarla. Se non viene riconosciuto il metodo di compressione, è
+sempre possibile usare il comando unpack (senza argomenti).
+Tale comando è da usare solamente se si è sicuro che il programma sia
+compresso e che non sia già stato decompresso dal debugger.
+[A partire da Kolibri 0.6.5.0, questo paragrafo non è più attuale poiché
+è possibile comprimere le applicazioni con kpack e il decompressore è
+implementato a livello kernel, in modo da rendere il debug trasparente]
+
+Un programma caricato può essere terminato tramite il comando
+"terminate" senza argomenti. Il comando "detach", senza parametri
+aggiuntivi "stacca" il programma dal debugger, nel senso che questo
+continuerà la sua normale esecuzione senza il debugger, come se questo
+non vi fosse mai stato.
+Dato uno di questi due comandi, l'attività di debug viene terminata.
+
+È possibile ricaricare il programma precedente con il comando "reload",
+senza parametri. Se nel frattempo è stato caricato un altro programma,
+questo viene terminato e viene ricaricato il programma precedente con
+gli argomenti passati precedentemente, come se fossero stati dati i
+comandi
+terminate
+load <vecchio programma> <vecchi parametri>
+Il vantaggio di reload sta nel fatto di essere più immediato e che viene
+mantenuto l'indirizzo di memoria, mentre con il comando load questo
+viene spostato all'indirizzo 0. (vedi sotto)
+
+Il comando "help", oppure "h", è sempre disponibile.
+Tutti i comandi sono divisi in gruppi
+"help" senza argomenti mostra l'elenco dei comandi disponibili
+"help" con il nome di un gruppo mostra i comandi relativi al gruppo
+"help" con il nome di un comando mostra informazioni sull'uso di tale
+       comando
+esempi:
+help
+help control
+h LoaD
+
+La finestra del debugger è composta dai seguenti elementi enumerati
+dall'alto al basso:
+- status string. Se è stato caricato un programma, mostra il suo nome e
+                 stato ("Running/Paused"), altrimenti "No program
+                 loaded".
+- registers window - Mostra valori di caratteri generico, valori di
+                     registro e stato delle singole flag:
+                     CF,PF,AF,ZF,SF,DF,OF: se una flag viene rimossa,
+                     allora è contrassegnata da lettere minuscole, se
+                     creata allora da lettere maiuscole. I valori di
+                     registro che vengono modificati sono contrassegnati
+                     in verde.
+- data window (dump window) - mostra la porzione di memoria contenente
+                              il programma caricato
+- code window (disassembler window) - mostra il codice del programma come
+                                      "disassembled instructions"
+- messages window
+- command line window
+
+Nella "Dump window" è possibile osservare i dati a partire da ogni
+indirizzo, usare il comando
+d <espressione>
+Il comando "d", senza parametri mostra la "dump window".
+In modo analogo funziona il seguente comando per la "code window"
+u <espressione>
+oppure "u".
+Esempi:
+d esi - mostra i dati all'indirizzo esi (e.g. utile prima di eseguire
+        una istruzione rep movsb)
+d esp - mostra lo stack
+u eip - disassembla le istruzioni a partire dall'attuale indirizzo
+
+Le espressioni in mtdbg possono includere
+- costanti esadecimali
+- nomi generici dei registri degli indirizzi (8 32-bits, 8 16-bits e
+  8 8-bits) e registri eip; valori di 16- e 8-bits sono riempiti nel
+  registro di 0 fino a raggiungere i 32 bit.
+- quattro operatori aritmetici +,-,*,/ (con le priorità standard) e le
+  parentesi
+- [se sono stati caricati i simboli del programma] nomi, caricati dal
+  file dbg
+Tutti i calcoli sono effettuati modulo 2^32.
+Esempi di espressioni:
+eax
+eip+2
+ecx-esi-1F
+al+AH*bl
+ax + 2* bH*(eip+a73)
+3*esi*di/EAX
+Il comando
+? <espressione>
+calcola il valore della espressione passata come argomento.
+
+I valori del registro caricato nel programma può essere modificato con
+il comando "r" in uno dei seguenti modi (sono equivalenti)
+r <registro> <espressione>
+r <registro>=<espressione>
+
+Supponendo che sia stato caricato un programma con successo per il
+debug, subito dopo il programma verrà sospeso e non più eseguito.
+Premendo Ctrl+F7 (oppure dalla linea di comando "s") è possibile far
+effettuare una azione al programma, dopodiché questo verrà sospeso
+immediatamente, e il debugger mostrerà i nuovi valori nel registro e in
+memoria.
+la chiamata di sistema "int 40h" è considerata una azione.
+Premendo Ctrl+F8 (oppure dalla linea di comando "p") permette di
+eseguire il programma, e chiamate a procedure esterne, cicli e altre
+strutture di controllo oppure operazioni con prefisso rep/repz/repnz
+verranno interpretate come una singola azione.
+Solitamente si chiede di eseguire azioni singole su sezioni di
+programmi, ad esempio per tenere traccia dei valori in memoria e nel
+registro.
+Il comando
+g <espressione>
+riprende l'esecuzione del programma e attende che il controllo vada a
+eip=indirizzo dato, e in quel momento sospende il programma.
+Se il comando "g" viene dato senza argomenti, viene semplicemente
+ripresa l'esecuzione del programma.
+
+Per sospendere l'esecuzione del programma è sufficiente usare il comando
+"stop", senza parametri o argomenti.
+
+In una situazione standard il programma viene eseguito normalmente,
+quando sono soddisfatte alcune condizioni, il programma viene sospeso e
+invia un segnale al debugger. Tali condizioni sono chiamate
+"breakpoints" o "breaks".
+L'utilizzo principale dei breakpoints è quello di interrompere
+l'esecuzione del programma in determinati punti. I breakpoint si
+impostano con il comando
+bp <espressione>
+Si noti che se è presente un solo breakpoint, allora è più conveniente
+usare il comando "g" con parametri.
+
+Vi sono altri tipi di breakpoint che permettono di accedera ad una data
+area di memoria. Il numero massimo di breakpoint di questo tipo sono 4,
+causa limitazioni hardware.
+bpm <espressione> - interrompe ad ogni accesso ad ogni byte ad un
+                    indirizzo dato
+bpm w <espressione> - interrompe alla scrittura di ogni byte ad un
+                      indirizzo dato
+bpmb,bpmw,bpmd <espressione> - interrompe all'accesso di ogni byte, o
+                               dword all'indirizzo dato. bpm e bpmb sono
+                               sinonimi. Quando viene usato bpmw o bpmd,
+                               gli indirizzi devono essere del tipo
+                               corrispondenti al tipo di dato, quindi
+                               per i word è dispari, per i dword è
+                               divisibile per 4.
+bpmb,bpmw,bpmd w <espressione> - simile al break in scrittura.
+
+Per vedere la lista dei breakpoints impostati, usare il comando "bl",
+per ottenere informazioni su un particolare breakpoint, usare il
+comando "bl <numero>".
+È possibile rimuovere i breakpoint con il comando "bc <numero>", oppure
+disabilitati momentaneamente con il comando "bd <numero>" e riabilitati
+con "be <numero>"
+
+Note.
+1. Quando si effettua il debug di un proprio programma, è possibile
+   mettere nel codice istruzione int3. Queste istruzioni creano delle
+   eccezioni durante la normale esecuzione, che porta alla terminazione
+   del programma, ma durante l'attività di debug permette di non dover
+   pensare agli indirizzi di memoria da usare nei comandi g e bp.
+2. La notazione standard per l'output e input è quella esadecimale.
+3. Quando il programma viene eseguito, la finestra del registro e dei
+   dati mostrano delle informazioni prima dell'avvio. Non si possono
+   impostare i valori di registro in questo mode. Tuttavia il
+   comando "d" in questo modo mostra informazioni che erano vere nel
+   momento in cui si è immesso il comando.
+
+						diamond

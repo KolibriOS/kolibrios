@@ -1,0 +1,111 @@
+È possibile impostare alcune configurazioni all'interno di KolibriOS.
+Questo file funge da guida e descrive come personalizzare il sistema.
+
+Per modificare le impostazione è necessario modificare i file nella memoria
+RAM. Se si sta eseguendo KolibriOS da floppy, allora è possibile modificare
+i file direttamente da floppy. Se invece si sta usando una immagine kolibri.img
+del disco floppy, allora è possibile usare un programma in grado di modificare
+i file su immagini del disco, oppure salvare le modifiche direttamente da
+KolibriOS con l'applicazione rdsave, oppure durante lo spegnimento del sistema.
+
+Tra parentesi vengono riportati i nomi degli eseguibili dei singoli programmi.
+
+1. Sfondo del desktop. //testare i tre metodi
+   a) Modificare nel file autorun.dat (si tratta di un file di testo)
+   il parametro "\T__background.jpg" con il nome del nuovo file immagine
+   (può essere un file jpg, bmp, gif o png). Una volta che è stato impostato
+   come nuovo sfondo è possibile eliminare il file background.jpg
+
+   b) Modificare all'interno del file autorun.dat la voce
+   "/RD/1/KIV \S__background.jpg" in "/rd/1/PIC4". È possibile
+   eliminare il file  background.jpg e il nuovo sfondo sara una texture.
+
+   Per i programmatori:
+    È possibile cambiare texture e colori all'interno del file pic4.asm
+    * per modificare la texture: modificare il valore della variabile
+      usearray (stringa 585) da ptarray a ptarray2, ptarray3, ... o
+      ptarray9
+    * per cambiare colore: nella procedura check_parameters cercare la
+      stringa con il commento appropriato (stringa 127) e aggiungere a
+      0x40000 1 o 2.
+    Dopo le modifiche ricompilare pic4 con fasm e comprimerlo con kpack,
+    infine inserire il file in RAM.
+
+   c) I due metodi descritti precedentemente permettevano di modificare lo
+   sfondo a lungo termine (fino alla prossima reinstallazzione). È
+   possibile modificare lo sfondo durante l'esecuzione di KolibriOS fino
+   al prossimo riavvio con i programma Visualizzatore Immagini (kiv),
+   Gestore icone (icon), generatore di sfondi (pic4) oppure il programma
+   frattale (tinyfrac).
+
+2. Configurare il menu di sistema.
+   Le voci relative al menu sono salvate nel file di testo menu.dat. È
+   possibile modificare tale file con un editor di testo qualsiasi. Se
+   si sta usando il programma TINYPAD di KolibriOS allora è necessario
+   disabilitare la voce "optimal fill on saving" dal menu opzioni.
+
+3. Configurare i programmi in avvio automatico.
+   La lista dei programmi caricati durante l'avvio del sistema è salvata
+   nel file di testo autorun.dat. È possibile modificare tale lista con
+   un editor di testo qualsiasi.
+
+4. Icone sul desktop.
+   La lista delle icone sul dekstop è salvata nel file di testo icons.dat,
+   per modificare tale file è consigliato usare il programma icon manager.
+   Le immagini delle icone sono salvate nel file iconstrp.gif, per
+   modificarlo è necessario usare un editor grafico.
+
+
+5. Colori e temi.
+   È possibile visualizzare e modificare l'interfaccia (skin) dinamicamente
+   con l'applicazione "Colori e temi" (desktop). È possibile rendere
+   permanenti i cambiamenti modificando o sostituendo il file default.skn,
+   dal quale viene caricato durante l'avvio il tema. È possibile trovare
+   temi alternativi nella cartella skins. Altrimenti è possibile creare
+   temi propri, per i dettagli è consigliato vedere i sorgenti presenti
+   nella cartella skins.
+
+6. Suono. //non trovo sis7012
+   I driver sound.obj, sono compatibili con le schede audio Intel ICH,
+   ICH0, ICH2, ICH3, ICH4, ICH5, ICH6, ICH7 e NVidia NForce, NForce 2,
+   NForce 3, NForce 4.
+   Se si ha una scheda audio compatibile con SB16, allora è necessario
+   rimuovere il file sound.obj dal ram Disk e rinominare il file sb16.obj
+   dalla cartella 'drivers' in sound.obj.
+   Se si ha una scheda audio sis7012, è necessario rinominare il file sis.obj
+   dalla cartella radice del floppy, e copiarlo nella cartella driver nella ram,
+   sostituendo il vecchio file.
+   Il driver fm801.obj serve per le schede audio ForceMedia FM801, il
+   driver vt8235.obj per i chipset VIA e i driver emu10k1x.obj per gli
+   audioprocessori EMU10K1X. La loro inizializzazione è analoga quella del
+   file sis7012, è necessario copiarli nella cartella drivers, rinominadoli
+   in sis.obj e rimuovendo il vecchio file.
+
+7. Bus Disconnect.
+   La applicazione KBD (Kolibri Bus Disconnect), permette di disconnettere
+   il bus del processore per abbassare la sua temperatura. Un effetto
+   collaterale è del rumore nei codec AC97. L'applicazione può essere
+   caricata automaticamente all'avvio del sistema, in tal caso è necessario
+   aggiungere la voce
+"/RD/1/KBD             BOOT       20    # Enable Bus Disconnect for AMD K7 processors".
+   al file autorun.dat
+
+8. Impostazioni Network.
+   le impostazioni iniziali sono lette durante l'avvio del sistema dal file
+   /rd/1/network/zeroconf.ini.
+   È possibile impostare il rivelamento automatico con DHCP ("type=zeroconf")
+   oppure impostare un indirizzo IP fissato ("type=static").
+
+9. Configurazione video per schede video ATI.
+   I driver per le schede video ATI possono impostare la risoluzione dello
+   schermo e il parametro di refresh durante l'avvio del sistema, se
+   supportate. La lista completa dei modelli supportati è ottenibile dal
+   programma VMODE, è inoltre possibile impostare manualmente i parametri
+   desiderati.
+   Per impostare i parametri durante l'avvio è necessario passare tramite
+   il file AUTORUN.DAT l'argomento -m<larghezza>x<altezza>x<refresh> al
+   driver ATIKMS, ad esempio
+/RD/1/DRIVERS/ATIKMS -m1024x768x60 -1
+   Attenzione al fatto che il formato autorun.dat non accetta spazi,
+   quindi non è possibile inserire ulteriori argomenti.
+   Si può inoltre disabilitare la possibilità di modificare i parametri durante l'avvio passando l'opzione -n. I driver supportano comunque il cursore hardware. Per disabilitare completamente il driver è sufficiente rimuovere la relativa voce dal file autorun.dat.

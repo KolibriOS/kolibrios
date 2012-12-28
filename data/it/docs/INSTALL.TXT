@@ -1,0 +1,113 @@
+Requisiti minimi di sistema per Kolibri 0.7.x.0:
+* CPU: Pentium, AMD 5x86 oppure Cyrix 5x86 senza MMX con frequenza 100 MHz
+* RAM: 8 Mb
+* Scheda video: supporting VGA (640*480*16 mode) or Vesa
+* Tastiera: AT
+* Mouse: COM or PS/2
+
+Il sistema può essere avviato da uno dei seguenti dispositivi
+- Floppy 3.5
+- IDE HDD LBA
+- CD/DVD
+- Chiave USB
+
+I. Installazione su floppy
+  1) Inserire un floppy non danneggiato nel computer.
+  2) Scriverci sopra il file kolibri.img con un metodo qualsiasi a
+     disposizione, ad esempio:
+    a) (se si sta usando KolibriOS) usando il programma rdsave e
+       selezionando il floppy su cui salvare il contenuto
+    b) (per DOS e Windows) è possibile eseguire il file install.bat
+    c) con programmi come WinImage o analoghi (ad esempio DiskExplorer)
+    d) (per GNU/Linux) marcare come eseguibile lo script install.sh ed
+       eseguirlo
+Ora è possibile far partire il computer da floppy (è necessario riavviare
+il computer e settare nel BIOS la voce relativa all'avvio da floppy)
+
+II. Installazione su disco fisico.
+Esistono diversi bootloader da poter usare, tra cui anche il bootloader
+GRUB dei sistemi GNU/Linux, e tutti dovrebbero essere ing rado di far
+partire il file kolibri.img
+Se si ha gia installato una vecchia versione di Kolibri, allora è
+sufficiente sostituire il file kolibri.img
+Se invece si sta eseguendo kolibri da Cd live, allora esso non contiene
+il file kolibri.img. Con il programma rdsave è possibile crearlo, basta
+indicare su quale partizione salvare il file. Poiché KolibriOS deve
+essere in grado di scrivere sulla partizione, serve che questa sia di
+tipo FAT
+1) Il loader mtldr (scritto da Diamond) - funziona con
+   DOS/Win95/98/NT/2k/XP/Vista, e partizioni del tipo FAT32 and NTFS, e
+   può essere installato su qualsiasi cartella del disco.
+   Per usarlo basta eseguire il file HD_load\mtldr_install.exe e
+   selezionare il file kolibri.img
+   Co questo metodo è possibile installare anche più file immagine di
+   Kolibri.
+2) Anche il loader MeOSLoad (scritto da Trans, migliorato da Mario79)
+   funziona con DOS/Win95/98, su partizioni di tipo FAT32. Si trova,
+   insieme alla relativa documentazione, nella cartella HD_load\MeOSLoad.
+3) Esiste un programma, 9x2klbr (scritto da Diamond) in grado di avviare
+   Kolibri direttamente da Windows 95/98/Me, il programma funziona con
+   le partizioni FAT32 e NTFS.
+4) È possibile usare il bootloader GRUB per caricare Kolibri. È
+   necessario usare il file 'memdisk', come descritto da derPENGUIN sul
+   forum (http://meos32.7.forumer.com/viewtopic.php?t=110).
+   Il metodo suggerito (descritto da Alver) è stato testato con
+   grub-0.97-19mdv2007.0.
+   1. Kolibri può scrivere solamente sui filesystem di tipo FAT, se
+      quindi il file immagine non si trova su una partizione di questo
+      tipo, non sarà in grado di salvare eventuali impostazioni.
+   2. Questo metodo richiede il file 'memdisk' dal pacchetto 'syslinux'
+      (http://syslinux.zytor.com).
+   3. È sufficiente posizionare il file 'memdisk' nella cartella '/boot'
+      oppure nella stessa partizione usata da KolibriOS.
+   4. Aggiungere al file 'menu.lst' ('grub.conf') le seguenti righe di
+      configurazione:
+
+      title KolibriOS
+      kernel (hd[Hard disk number],[partition number])[path]/memdisk
+      initrd (hd[Hard disk number],[partition number])[path]/kolibri.img
+
+      (NOTA: La numerazione delle partizioni di GRUB parte da 0.)
+      Esempio:
+      title KolibriOS
+      kernel (hd0,0)/boot/memdisk
+      initrd (hd0,3)/kolibri/kolibri.img
+
+      La prima variante era:
+
+      label KolibriOS
+      root (hd[numero disco fisso],[numero partizione])
+      kernel [percorso]/memdisk
+      initrd [percorso]/kolibri.img
+
+      In questo caso 'memdisk' e 'kolibri.img' devono essere sulla
+      stessa partizione.
+
+      Esempio:
+      label KolibriOS
+      root (hd0,0)
+      kernel /boot/memdisk
+      initrd /boot/kolibri.img
+      Con questa variante, descritta nel forum, KolibriOS è posizionato
+      nella cartella di boot di GN/Linux, quindi non si trova su una
+      partizione FAT32 e non sarà in grado di salvare eventuali modifiche.
+
+5) I comandi descritti precedentemente potrebbero non funzionare con
+   GRUB2, (testato da Apocalypse_dn), in tal caso sostituire "linux16" e
+   "initrd16" a "kernel" and "initrd" (suggerito da vkos).
+
+III. Installazione su chiave USB.
+Nella cartella HD_load\USB_Boot è possibile trovare un loader che
+permette di installare KolibriOS su chiave USB. Se la chiave USB non è
+formattata in FAT32 usare il contenuto della cartella HD_load\USB_Boot_old.
+
+
+IV. Installazione su CD/DVD.
+Esiste una versione speciale di KolibriOS, che contiene, oltra al contenuto presente sul file immagine per i floppy, alcuni programmi pesanti (per gli standard di KolibriOS):
+l'emulatore DosBox, i giochi "Fixed Rate Pig" e "sokoban".
+È possibile creare un CD live partendo dal file kolibri.img, aggiungendo
+tutto quello che si desidera. Successivamente basta un programma per
+scrivere su CD/DVD per avere un CD Live.
+//non chiaro
+The appropriate actions are determined by used CD/DVD write program
+(focus on words such as "boot floppy emulation").

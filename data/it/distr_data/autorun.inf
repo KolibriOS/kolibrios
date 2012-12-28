@@ -1,0 +1,3 @@
+[AutoRun]
+icon=KolibriOS_icon.ico
+shellexecute=readme.txt

@@ -1,0 +1,104 @@
+Scorciatoie da tastiera per il programma KFar.
+
+Per i pannelli:
+ frecce, Home, End - muove il cursore sul pannello attivo
+ Tab - cambia pannello attivo
+ Enter - entra nella cartella oppure esegue il programma selezionato
+ F3 - visualizza file selezionato
+ F5 - copia elementi selezionati nell'altro pannello
+ Shift+F5 - copia elementi selezionati nello stesso pannello
+	(ovviamente è necessario specificare un altro nome per i file)
+ F7 - crea cartella
+ F8 - cancella gli elementi selezionati
+ F10 - esce
+ Alt+F1/Alt+F2 - cambia pannello
+ Alt+F9 - ingrandisce finestra oppure rimpicciolisce alla dimensione
+          iniziale
+ Ctrl+F3 - ordina file e cartelle del pannello attivo per nome
+ Ctrl+F4 - ordina file e cartelle del pannello attivo per estensione
+ Ctrl+F5 - ordina file e cartelle del pannello attivo per data
+           dell'ultima modifica
+ Ctrl+F6 - ordina file e cartelle del pannello attivo per dimensione
+ Ctrl+F7 - non ordina, visualizza nell'ordine in cui si trovano sul
+         - disco                        ingr
+ Ctrl+F8 - ordina file e cartelle del pannello attivo per data di
+         - creazione
+ Ctrl+F9 - ordina file e cartelle del pannello attivo per data di ultimo
+         - accesso
+ F12 - visualizza screen menu
+ Ctrl+R - aggiorna il pannello attivo
+ Menu - Mostra il context menu per i file selezionati
+ LeftCtrl+1/2/3/4 - cambia modalità pannello (brief/medium/full/wide)
+ RightCtrl+0..9 - va nella cartelle specificata nella sezione
+                 [FolderShortcuts] del file ini relativo a Shortcut0..9
+ Insert - (de)selezione elemento corrente
+ Grey[+] - Selezione file e cartelle filtrati
+ Grey[-] - Selezione file e cartelle non filtrati
+    I filtri sono del tipo "*.asm,*.inc|template.asm" (seleziona tutti i
+    file con estensione asm e inc, esclusi quelli chiamati template.asm).
+    il filtro "*.*" seleziona tutti i file che contengono il carattere
+    ".", quindi tutti quelli che hanno una estensione, per selezionare
+    tutti i file usare "*".
+    Il parametro "|" serve per escludere alcuni elementi, mentre ',' o
+    ';' servono a concatenare più criteri.
+ Grey[*] - Inverte selezione
+ Alt+<lettera o cifra> - posiziona il cursore sul file che inizia per la
+     lettera o cifra digitata.
+     Mostra inoltre una finestra nella quale è possibile scrivere una
+     successione di caratteri alfanumerici per effettuare una ricerca
+     più precisa. Le combinazioni Ctrl+Enter/Shift+Ctrl+Enter servono
+     per spostarsi tra gli elementi inclusi nei risultati di ricerca.
+
+Per il visualizzatore:
+ Esc = F3 = F10 = Numpad5 - esci
+ Down - linea successiva
+ PgDn - pagina successiva
+ Up - linea precedente
+ PgUp - pagina precedente
+ Home - Vai a inizio file
+ End - Vai a fine file
+ Left - carattere a destra
+ Right - carattere a sinistra
+ Ctrl+Left - nella modalità testo 20 caratteri a sinistra;
+             nella modalità  Hex 1 byte a sinistra
+ Ctrl+Right - nella modalità testo 20 caratteri a destra;
+              nella modalità  Hex 1 byte a destra
+ Ctrl+Shift+Left - Vai alla prima riga su schermo
+ Ctrl+Shift+Right - Vai alla prima riga su schermo
+ F2 - toggle line wrap
+ F4 - cambia tra  modalità testo e hex
+ F8 - cambia tra codifica cp866 (DOS) e cp1251 (Win)
+ Shift+F8 - encoding tables menu
+ F12 - mostra il menu
+ F7 - cerca una stringa a partire dalla attuale posizione
+     (the string and settings are set in the following dialog)
+ Shift+F7 - continua la ricerca precedente
+           (use the string and settings from last search by F7)
+ Alt+F9 - ingrandisce finestra oppure rimpicciolisce alla dimensione
+          iniziale
+
+Per l'editor:
+ Esc = F10 - Esci; se il file è stato modificato chiede se salvare le
+             modifiche
+ Shift+F10 - Salva ed esci
+ F2 - Salva il file
+ Down - muovi il cursore in basso di una riga
+ PgDn - muovi il cursore in basso di una pagina
+ Up - muovi il cursore in alto di una riga
+ PgUp - muovi il cursore in alto di una pagina
+ Left - muovi il cursore di una posizione a sinistra
+ Right - muovi il cursore di una posizione a destra
+ Home - muovi il cursore all'inizio dell riga corrente
+ End - muovi il cursore alla fine della riga attuale
+ Backspace - cancella il simbolo che precede il cursore
+ Del - cancella il simbolo sotto il cursore
+ Ins - Cambia tra modalità inserici e sostituisci quando si immettono simboli
+ F12 - mostra il menu
+ Alt+F9 - ingrandisce finestra oppure rimpicciolisce alla dimensione
+          iniziale
+ F7 - cerca una stringa a partire da dove è posizionato il cursore
+     (la stringa da cercare e altri parametri sono da mettere nella finistra che appare)
+ Shift+F7 - continua a cercare
+
+						diamond
+						mailto:diamondz@land.ru

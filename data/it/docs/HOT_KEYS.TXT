@@ -1,0 +1,16 @@
+Le seguenti scorciatoie di tasiera sono valide in tutto il sistema
+1) Ctrl + Alt + Del          avvia il gestore dei processi mostranod i consumi del sistema
+start of the application CPU (the manager of processes), is a sole combination maintained on a level of a kernel, all rest "hot" key is realized at the expense of the application @PANEL.
+2) Ctrl + Shift              cambia lingua della tastiera
+3) Win                       Apre il MENU
+4) Alt + Ctrl + F12          Fa partire l'applicazione END- start of the application END.
+5) Alt + F4                  Termina l'applicazione in uso
+6) Alt + Tab                 Permette di passare da una applicazione aperta all'altra
+7) Alt + Shift + Tab         Permette di passare da una applicazione aperta all'altra in ordine inverso
+8) Alt + Shift + NumLock     Fa partire l'applicazione MOUSEMUL, che permette di emulare il mouse con il numpad, when NumLock è attivato
+9) Alt + 1...7               Permette di selezionare una specifica linga per la tastiera
+10) Win + D                  minimizza/ripristina tutte le finestre in uso
+11) Win + R                  Inizializza l'applicazione Esegui
+12) Alt + Ctrl + ArrowLeft   Permette di scorrere le applicazioni nella taskbar
+13) Alt + Ctrl + ArrowRight  Permette di scorrere le applicazioni nella taskbar in ordine inverso
+14) PrintScreen              Esegue l'applicazione SCRSHOOT. Permette di effettuare uno screenshoot e di salvare l'immagine come file bmp.

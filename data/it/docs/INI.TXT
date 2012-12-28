@@ -1,0 +1,25 @@
+I file ini sono file di testo dal seguente tipo di contenuto
+
+[Nome prima sezione]
+Key1=value1
+Key2=value2
+;commento
+[Nome seconda sezione]
+Key3=value3
+
+Tutte le righe che iniziano con ';' sono considerate dei commenti e ignorate, servono per migliorare la leggibilità
+
+Le scorciatoie da tastiera sono descritte nel seguente modo:
+u  numero qualsiasi di modificatori Ctrl/Alt/Shift/LCtrl/LAlt/LShift/RCtrl/RAlt/RShift,
+seguiti da una carattere alfanumerico o uno dei seguenti simboli su tastiera:
+F1 - F12
+Home; End; PgUp; PgDn; Ins, equivalentemente, Insert; Del, equivalentemente, Delete;
+Tab; Plus; Esc; Enter; Backspace; Space;
+Left (left arrow); Right (right arrow); Up (up arrow); Down (down arrow).
+Le scorciatoie sono case sensitive, e possono essere scritte senza il simbolo +
+per il concatenamento, ad esempio:
+Ctrl+Alt+Backspace
+RCtrl+RShift
+ShiftA
+f10
+shiftalt5
