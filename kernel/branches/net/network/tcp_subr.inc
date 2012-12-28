@@ -3,7 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;  Part of the TCP/IP network stack for KolibriOS                 ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;
@@ -319,14 +319,14 @@ TCP_outflags:
 ;
 ; The fast way to send an ACK/RST/keepalive segment
 ;
-; TCP_respond_socket:
+; TCP_respond
 ;
 ;  IN:  ebx = socket ptr
 ;        cl = flags
 ;
 ;--------------------------------------
 align 4
-TCP_respond_socket:
+TCP_respond:
 
         DEBUGF  1,"TCP_respond_socket: socket=%x flags=%x\n", ebx, cl
 

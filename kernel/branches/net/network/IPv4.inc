@@ -5,7 +5,7 @@
 ;;                                                                 ;;
 ;;  IPv4.INC                                                       ;;
 ;;                                                                 ;;
-;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;  Part of the TCP/IP network stack for KolibriOS                 ;;
 ;;                                                                 ;;
 ;;  Based on the work of [Johnny_B] and [smb]                      ;;
 ;;                                                                 ;;

@@ -1,9 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2011. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;  Part of the TCP/IP network stack for KolibriOS                 ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;
@@ -42,7 +42,7 @@ local   .exit
 
         push    ebx
         mov     cl, TH_ACK
-        call    TCP_respond_socket
+        call    TCP_respond
 ;        and     [ebx + TCP_SOCKET.t_flags], TF_ACKNOW   ;;
 ;        mov     eax, ebx                                ;;
 ;        call    TCP_output                              ;;
@@ -99,10 +99,28 @@ local   .exit
 
         DEBUGF  1,"socket %x: Keepalive expired\n", eax
 
+        cmp     [eax + TCP_SOCKET.state], TCPS_ESTABLISHED
+        ja      .dont_kill
+
         push    eax
         call    TCP_disconnect
         pop     eax
         jmp     .loop
+
+  .dont_kill:
+        test    [eax + SOCKET.options], SO_KEEPALIVE
+        jz      .reset_keepalive
+
+        push    eax
+        mov     ebx, eax
+        xor     cl, cl
+        call    TCP_respond     ; send keepalive
+        pop     eax
+        mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval
+        jmp     .check_more3
+
+  .reset_keepalive:
+        mov     [eax + TCP_SOCKET.timer_keepalive], TCP_time_keep_idle
 
   .check_more3:
         dec     [eax + TCP_SOCKET.timer_timed_wait]

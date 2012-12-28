@@ -3,7 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;  Part of the TCP/IP network stack for KolibriOS                 ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;

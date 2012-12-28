@@ -3,7 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;  Part of the TCP/IP network stack for KolibriOS                 ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org,                           ;;
 ;;     and Clevermouse.                                            ;;
@@ -238,10 +238,11 @@ macro   SOCKET_block socket, loop, done {
         test    [socket + SOCKET.options], SO_BLOCK     ; Is this a blocking socket?
         jz      done                                    ; No, return immediately
 
-        push    esi
-        mov     esi, 5                                  ; yes, wait for event
-        call    delay_ms
-        pop     esi
+        pusha
+        mov     eax, EVENT_NETWORK
+        mov     ebx, 1337                   ; UID: ????
+        call    wait_event
+        popa
 
         jmp     loop
 
@@ -1199,7 +1200,7 @@ SOCKET_check_port:
         cmp     [esi + UDP_SOCKET.LocalPort], bx
         jne     .next_socket
 
-        DEBUGF  1,"local port %u already in use\n", bx
+        DEBUGF  1,"local port %x already in use\n", bx  ; FIXME: find a way to print big endian values with debugf
         ret
 
   .port_ok:

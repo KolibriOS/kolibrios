@@ -3,7 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;  Part of the TCP/IP network stack for KolibriOS                 ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;
@@ -191,7 +191,7 @@ TCP_input:
 ; Reset idle timer and keepalive timer
 
         mov     [ebx + TCP_SOCKET.t_idle], 0
-        mov     [ebx + TCP_SOCKET.timer_keepalive], TCP_time_keep_interval
+        mov     [ebx + TCP_SOCKET.timer_keepalive], TCP_time_keep_idle
 
 ;--------------------
 ; Process TCP options
@@ -1501,7 +1501,7 @@ align 4
   .respond_ack:
         push    ebx
         mov     cl, TH_RST
-        call    TCP_respond_socket
+        call    TCP_respond
         pop     ebx
         jmp     .destroy_new_socket
 
@@ -1509,7 +1509,7 @@ align 4
   .respond_syn:
         push    ebx
         mov     cl, TH_RST + TH_ACK
-        call    TCP_respond_socket
+        call    TCP_respond
         pop     ebx
         jmp     .destroy_new_socket
 

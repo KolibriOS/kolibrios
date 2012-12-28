@@ -3,7 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;  Part of the TCP/IP network stack for KolibriOS                 ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
 ;;                                                                 ;;
@@ -64,7 +64,7 @@ TCP_time_re_min         = 2           ; min retransmission (1,28s)
 TCP_time_re_max         = 100         ; max retransmission (64s)
 TCP_time_pers_min       = 8           ; min persist (5,12s)
 TCP_time_pers_max       = 94          ; max persist (60,16s)
-TCP_time_keep_init      = 118         ; connectione stablishment (75,52s)
+TCP_time_keep_init      = 118         ; connection establishment (75,52s)
 TCP_time_keep_idle      = 4608        ; idle time before 1st probe (2h)
 TCP_time_keep_interval  = 118         ; between probes when no response (75,52s)
 TCP_time_rtt_default    = 5           ; default Round Trip Time (3,2s)
