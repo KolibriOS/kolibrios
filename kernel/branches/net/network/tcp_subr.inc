@@ -594,3 +594,20 @@ TCP_xmit_timer:
         pop     ecx
 
         ret
+
+
+
+
+; eax = max segment size
+; ebx = socket ptr
+align 4
+TCP_mss:
+
+        cmp     eax, 1420                               ; FIXME
+        jbe     @f
+        mov     eax, 1420
+  @@:
+        mov     [ebx + TCP_SOCKET.t_maxseg], eax
+
+
+        ret

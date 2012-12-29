@@ -720,8 +720,9 @@ cmdPASV:
 
   .next_port:                                                   ; TODO: break the endless loop
         call    nextpasvport
-        pushw   [pasv_port]
-        popw    [ebp + thread_data.datasock.sin_port]
+        mov     ax, [pasv_port]
+        xchg    al, ah
+        mov     [ebp + thread_data.datasock.sin_port], ax
 
         mcall   bind
         cmp     eax, -1

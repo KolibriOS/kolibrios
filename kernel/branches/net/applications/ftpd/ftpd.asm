@@ -51,6 +51,9 @@ ABORT                   = 1 shl 31
 format binary as ""
 
 use32
+
+        org     0x0
+
         db      'MENUET01'      ; signature
         dd      1               ; header version
         dd      start           ; entry point
@@ -119,6 +122,7 @@ start:
         invoke  con_start, 1
         invoke  con_init, -1, -1, -1, -1, title
 
+; get settings from ini
         invoke  ini.get_str, path, str_ftpd, str_ip, ini_buf, 16, 0
         mov     esi, ini_buf
         mov     cl, '.'
@@ -133,6 +137,7 @@ start:
         invoke  con_printf, str1, eax
         add     esp, 8
 
+; open listening socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         je      sock_err

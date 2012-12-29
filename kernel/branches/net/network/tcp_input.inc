@@ -243,7 +243,7 @@ TCP_input:
         lodsw
         rol     ax, 8
         DEBUGF  1,"TCP_input: Maxseg=%u\n", ax
-        mov     [ebx + TCP_SOCKET.t_maxseg], eax
+        call    TCP_mss
        @@:
         jmp     .opt_loop
 
