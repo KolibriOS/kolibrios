@@ -154,7 +154,13 @@ exc_c:                          ; исключения (все, кроме 7-го - #NM)
         sti
 ; not debuggee => say error and terminate
         call    show_error_parameters ;; only ONE using, inline ???
-       ;mov     edx, [TASK_BASE]
+
+; kill open sockets
+        pusha
+        mov     edx, [edx + TASKDATA.pid]
+        call    SOCKET_process_end
+        popa
+
         mov     [edx + TASKDATA.state], byte 4 ; terminate
         jmp     change_task     ; stack - here it does not matter at all, SEE: core/shed.inc
 .debug:
