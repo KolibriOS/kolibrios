@@ -81,6 +81,8 @@ TCP_output:
         cmp     [eax + TCP_SOCKET.t_force], 0
         je      .no_force
 
+        DEBUGF 1,"TCP_output: forcing data out\n"
+
         test    ecx, ecx
         jnz     .no_zero_window
 

@@ -1092,13 +1092,33 @@ SOCKET_debug:
 
         DEBUGF  1,"SOCKET_debug\n"
 
+        mov     edi, edx
+
+        test    ecx, ecx
+        jz      .returnall
+
         call    SOCKET_num_to_ptr
         jz      s_error
 
         mov     esi, eax
-        mov     edi, edx
         mov     ecx, SOCKETBUFFSIZE/4
         rep     movsd
+
+        mov     dword [esp+32], 0
+        ret
+
+  .returnall:
+        mov     ebx, net_sockets
+  .next_socket:
+        mov     ebx, [ebx + SOCKET.NextPtr]
+        test    ebx, ebx
+        jz      .done
+        mov     eax, [ebx + SOCKET.Number]
+        stosd
+        jmp     .next_socket
+  .done:
+        xor     eax, eax
+        stosd
 
         mov     dword [esp+32], 0
         ret

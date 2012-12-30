@@ -595,7 +595,7 @@ checksum_2:
 
 ;----------------------------------------------------------------
 ;
-;  System function to work with network devices (76)
+;  System function to work with network devices (75)
 ;
 ;----------------------------------------------------------------
 align 4

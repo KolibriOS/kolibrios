@@ -145,6 +145,7 @@ macro   TCP_init {
 
 include 'tcp_timer.inc'
 include 'tcp_subr.inc'
+include 'tcp_usreq.inc'
 include 'tcp_input.inc'
 include 'tcp_output.inc'
 
