@@ -182,7 +182,6 @@ ARP_input:
 
         mov     eax, [edx + ARP_header.SenderIP]
         mov     esi, ARP_table
-
   .loop:
         cmp     [esi + ARP_entry.IP], eax
         je      .gotit
@@ -190,6 +189,7 @@ ARP_input:
         dec     ecx
         jnz     .loop
 
+        DEBUGF  1,"ARP_input: no matching entry found\n"
         jmp     .exit
 
   .gotit:
@@ -352,15 +352,14 @@ ARP_add_entry:
         DEBUGF  1,"ARP_add_entry: "
 
         mov     ecx, [NumARP]
-        test    ecx, ecx                ; first entry?
-        jz      .add
         cmp     ecx, ARP_TABLE_SIZE     ; list full ?
         jae     .error
 
         mov     eax, dword [esi + ARP_entry.MAC]
-        mov     bx , word [esi + ARP_entry.MAC + 4]
-        mov     edi, ARP_table
+        mov     bx, word [esi + ARP_entry.MAC + 4]
 
+        xor     ecx, ecx
+        mov     edi, ARP_table
   .loop:
         cmp     dword [edi + ARP_entry.MAC], eax        ; Check for duplicate MAC's
         jne     .maybe_next                             ;
@@ -368,30 +367,23 @@ ARP_add_entry:
         jne     .maybe_next                             ;
 
         cmp     [edi + ARP_entry.TTL], ARP_STATIC_ENTRY
-        jne     .notstatic
+        jne     .add
         cmp     [esi + ARP_entry.TTL], ARP_STATIC_ENTRY
         jne     .error
-  .notstatic:
-
-        neg     ecx
-        add     ecx, [NumARP]
-        jmp     .add
 
   .maybe_next:
-        add     esi, sizeof.ARP_entry
-        loop    .loop
+        add     edi, sizeof.ARP_entry
+        inc     ecx
+        cmp     ecx, ARP_TABLE_SIZE
+        jae     .error
+        jmp     .loop
 
-        mov     ecx, [NumARP]
   .add:
-        push    ecx
-        imul    ecx, sizeof.ARP_entry
-        lea     edi, [ecx + ARP_table]
+        mov     eax, ecx
+
         mov     ecx, sizeof.ARP_entry/2
         rep     movsw
-
-        lea     esi, [edi - sizeof.ARP_entry]
         inc     [NumARP]
-        pop     eax
         DEBUGF  1,"entry=%u\n", eax
 
         ret

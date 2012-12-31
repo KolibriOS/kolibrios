@@ -1090,7 +1090,7 @@ SOCKET_set_opt:
 align 4
 SOCKET_debug:
 
-        DEBUGF  1,"SOCKET_debug\n"
+;        DEBUGF  1,"SOCKET_debug\n"
 
         mov     edi, edx
 
