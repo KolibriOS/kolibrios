@@ -345,42 +345,37 @@ ARP_output_request:
 ; IN:  esi = ptr to entry (can easily be made on the stack)
 ; OUT: eax = entry #, -1 on error
 ;
-;-----------------------------------------------------------------   ; TODO: use a mutex
+;-----------------------------------------------------------------      ; TODO: use a mutex
 align 4
 ARP_add_entry:
 
         DEBUGF  1,"ARP_add_entry: "
 
         mov     ecx, [NumARP]
-        cmp     ecx, ARP_TABLE_SIZE     ; list full ?
+        cmp     ecx, ARP_TABLE_SIZE                                     ; list full ?
         jae     .error
 
-        mov     eax, dword [esi + ARP_entry.MAC]
-        mov     bx, word [esi + ARP_entry.MAC + 4]
-
-        xor     ecx, ecx
+        xor     eax, eax
         mov     edi, ARP_table
+        mov     ecx, [esi + ARP_entry.IP]
   .loop:
-        cmp     dword [edi + ARP_entry.MAC], eax        ; Check for duplicate MAC's
-        jne     .maybe_next                             ;
-        cmp     word [edi + ARP_entry.MAC + 4], bx      ;
-        jne     .maybe_next                             ;
+        cmp     [edi + ARP_entry.Status], ARP_NO_ENTRY                  ; is this slot empty?
+        je      .add
 
-        cmp     [edi + ARP_entry.TTL], ARP_STATIC_ENTRY
+        cmp     [edi + ARP_entry.IP], ecx                               ; if not, check if it doesnt collide
+        jne     .maybe_next
+
+        cmp     [edi + ARP_entry.TTL], ARP_STATIC_ENTRY                 ; ok, its the same IP, update it if not static
         jne     .add
-        cmp     [esi + ARP_entry.TTL], ARP_STATIC_ENTRY
-        jne     .error
 
-  .maybe_next:
+  .maybe_next:                                                          ; try the next slot
         add     edi, sizeof.ARP_entry
-        inc     ecx
-        cmp     ecx, ARP_TABLE_SIZE
+        inc     eax
+        cmp     eax, ARP_TABLE_SIZE
         jae     .error
         jmp     .loop
 
   .add:
-        mov     eax, ecx
-
         mov     ecx, sizeof.ARP_entry/2
         rep     movsw
         inc     [NumARP]
@@ -405,15 +400,21 @@ ARP_add_entry:
 align 4
 ARP_del_entry:
 
-        DEBUGF 1,"ARP_del_entry: entry=%u entrys=%u\n", esi, [NumARP]
+        DEBUGF 1,"ARP_del_entry: entry=%x entrys=%u\n", esi, [NumARP]
+        DEBUGF 1,"ARP_del_entry: IP=%u.%u.%u.%u\n", \
+        [esi + ARP_entry.IP]:1, [esi + ARP_entry.IP + 1]:1, [esi + ARP_entry.IP + 2]:1, [esi + ARP_entry.IP + 3]:1
 
         mov     ecx, ARP_table + (ARP_TABLE_SIZE - 1) * sizeof.ARP_entry
         sub     ecx, esi
         shr     ecx, 1
 
         mov     edi, esi
-        lea     esi, [edi + sizeof.ARP_entry]
+        add     esi, sizeof.ARP_entry
         rep     movsw
+
+        xor     eax, eax
+        mov     ecx, sizeof.ARP_entry/2
+        rep     stosw
 
         dec     [NumARP]
         DEBUGF 1,"ARP_del_entry: success\n"
