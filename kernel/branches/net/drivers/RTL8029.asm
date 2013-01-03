@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  RTL8029/ne2000 driver for KolibriOS                            ;;
@@ -18,14 +18,14 @@
 
 format MS COFF
 
-        API_VERSION             =   0x01000100
-        DRIVER_VERSION          =   5
+        API_VERSION             = 0x01000100
+        DRIVER_VERSION          = 5
 
-        MAX_DEVICES             =   16
+        MAX_DEVICES             = 16
 
-        DEBUG                   =   1
-        __DEBUG__               =   1
-        __DEBUG_LEVEL__         =   1
+        DEBUG                   = 1
+        __DEBUG__               = 1
+        __DEBUG_LEVEL__         = 1
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -38,20 +38,19 @@ virtual at ebx
 
         ETH_DEVICE
 
-        .io_addr          dd ?
-        .irq_line         db ?
-        .pci_bus          db ?
-        .pci_dev          db ?
+        .io_addr        dd ?
+        .irq_line       db ?
+        .pci_bus        db ?
+        .pci_dev        db ?
 
-        .flags            db ?
-        .vendor           db ?
-        .asic_base        dw ?
-        .memsize          db ?
-        .rx_start         db ?
-        .tx_start         db ?
-        .bmem             dd ?
-        .rmem             dd ?
-        .romdata          rb 16
+        .flags          db ?
+        .vendor         db ?
+
+        .memsize        db ?
+        .rx_start       db ?
+        .tx_start       db ?
+        .bmem           dd ?
+        .rmem           dd ?
 
         .size = $ - device
 
@@ -62,92 +61,97 @@ public START
 public service_proc
 public version
 
-        P0_PSTART                 =   0x01
-        P0_PSTOP                  =   0x02
-        P0_BOUND                  =   0x03
-        P0_TSR                    =   0x04
-        P0_TPSR                   =   0x04
-        P0_TBCR0                  =   0x05
-        P0_TBCR1                  =   0x06
-        P0_ISR                    =   0x07
-        P0_RSAR0                  =   0x08
-        P0_RSAR1                  =   0x09
-        P0_RBCR0                  =   0x0A
-        P0_RBCR1                  =   0x0B
-        P0_RSR                    =   0x0C
-        P0_RCR                    =   0x0C
-        P0_TCR                    =   0x0D
-        P0_DCR                    =   0x0E
-        P0_IMR                    =   0x0F
+        P0_COMMAND              = 0x00
+        P0_PSTART               = 0x01
+        P0_PSTOP                = 0x02
+        P0_BOUND                = 0x03
+        P0_TSR                  = 0x04
+        P0_TPSR                 = 0x04
+        P0_TBCR0                = 0x05
+        P0_TBCR1                = 0x06
+        P0_ISR                  = 0x07
+        P0_RSAR0                = 0x08
+        P0_RSAR1                = 0x09
+        P0_RBCR0                = 0x0A
+        P0_RBCR1                = 0x0B
+        P0_RSR                  = 0x0C
+        P0_RCR                  = 0x0C
+        P0_TCR                  = 0x0D
+        P0_DCR                  = 0x0E
+        P0_IMR                  = 0x0F
 
-        P1_PAR0                   =   0x01
-        P1_PAR1                   =   0x02
-        P1_PAR2                   =   0x03
-        P1_PAR3                   =   0x04
-        P1_PAR4                   =   0x05
-        P1_PAR5                   =   0x06
-        P1_CURR                   =   0x07
-        P1_MAR0                   =   0x08
+        P1_COMMAND              = 0x00
+        P1_PAR0                 = 0x01
+        P1_PAR1                 = 0x02
+        P1_PAR2                 = 0x03
+        P1_PAR3                 = 0x04
+        P1_PAR4                 = 0x05
+        P1_PAR5                 = 0x06
+        P1_CURR                 = 0x07
+        P1_MAR0                 = 0x08
 
-        CMD_PS0                   =   0x00        ;  Page 0 select
-        CMD_PS1                   =   0x40        ;  Page 1 select
-        CMD_PS2                   =   0x80        ;  Page 2 select
-        CMD_RD2                   =   0x20        ;  Remote DMA control
-        CMD_RD1                   =   0x10
-        CMD_RD0                   =   0x08
-        CMD_TXP                   =   0x04        ;  transmit packet
-        CMD_STA                   =   0x02        ;  start
-        CMD_STP                   =   0x01        ;  stop
+        CMD_PS0                 = 0x00          ; Page 0 select
+        CMD_PS1                 = 0x40          ; Page 1 select
+        CMD_PS2                 = 0x80          ; Page 2 select
+        CMD_RD2                 = 0x20          ; Remote DMA control
+        CMD_RD1                 = 0x10
+        CMD_RD0                 = 0x08
+        CMD_TXP                 = 0x04          ; transmit packet
+        CMD_STA                 = 0x02          ; start
+        CMD_STP                 = 0x01          ; stop
 
-        RCR_MON                   =   0x20        ;  monitor mode
+        CMD_RDMA_READ           = 001b shl 3
+        CMD_RDMA_WRITE          = 010b shl 3
+        CMD_RDMA_SEND_PACKET    = 011b shl 3
+        CMD_RDMA_ABORT          = 100b shl 3    ; really is 1xx, Abort/Complete Remote DMA
+;        RDMA_MASK               = 111b shl 3    ; internal, mask
 
-        DCR_FT1                   =   0x40
-        DCR_LS                    =   0x08        ;  Loopback select
-        DCR_WTS                   =   0x01        ;  Word transfer select
+        RCR_MON                 = 0x20          ; monitor mode
 
-        ISR_PRX                   =   0x01        ;  successful recv
-        ISR_PTX                   =   0x02        ;  successful xmit
-        ISR_RXE                   =   0x04        ;  receive error
-        ISR_TXE                   =   0x08        ;  transmit error
-        ISR_OVW                   =   0x10        ;  Overflow
-        ISR_CNT                   =   0x20        ;  Counter overflow
-        ISR_RDC                   =   0x40        ;  Remote DMA complete
-        ISR_RST                   =   0x80        ;  reset
+        DCR_FT1                 = 0x40
+        DCR_LS                  = 0x08          ; Loopback select
+        DCR_WTS                 = 0x01          ; Word transfer select
 
-        IRQ_MASK                  =   ISR_PRX ; + ISR_PTX + ISR_TXE
+        ISR_PRX                 = 0x01          ; successful recv
+        ISR_PTX                 = 0x02          ; successful xmit
+        ISR_RXE                 = 0x04          ; receive error
+        ISR_TXE                 = 0x08          ; transmit error
+        ISR_OVW                 = 0x10          ; Overflow
+        ISR_CNT                 = 0x20          ; Counter overflow
+        ISR_RDC                 = 0x40          ; Remote DMA complete
+        ISR_RST                 = 0x80          ; reset
 
-        RSTAT_PRX                 =   0x01        ;  successful recv
-        RSTAT_CRC                 =   0x02        ;  CRC error
-        RSTAT_FAE                 =   0x04        ;  Frame alignment error
-        RSTAT_OVER                =   0x08        ;  FIFO overrun
+        IRQ_MASK                = ISR_PRX ;+ ISR_PTX ;+ ISR_RDC + ISR_PTX + ISR_TXE
 
-        TXBUF_SIZE                =   6
-        RXBUF_END                 =   32
-        PAGE_SIZE                 =   256
+        RSTAT_PRX               = 1 shl 0       ; successful recv
+        RSTAT_CRC               = 1 shl 1       ; CRC error
+        RSTAT_FAE               = 1 shl 2       ; Frame alignment error
+        RSTAT_OVER              = 1 shl 3       ; FIFO overrun
 
-        ETH_ALEN                  =   6
-        ETH_HLEN                  =   14
-        ETH_ZLEN                  =   60
-        ETH_FRAME_LEN             =   1514
+        TXBUF_SIZE              = 6
+        RXBUF_END               = 32
+        PAGE_SIZE               = 256
 
-        FLAG_PIO                  =   0x01
-        FLAG_16BIT                =   0x02
-        ASIC_PIO                  =   0
+        ETH_ZLEN                = 60
+        ETH_FRAME_LEN           = 1514
 
-        VENDOR_NONE               =   0
-        VENDOR_WD                 =   1
-        VENDOR_NOVELL             =   2
-        VENDOR_3COM               =   3
+        FLAG_PIO                = 1 shl 0
+        FLAG_16BIT              = 1 shl 1
 
-        NE_ASIC_OFFSET            =   0x10
-        NE_RESET                  =   0x0F        ; Used to reset card
-        NE_DATA                   =   0x00        ; Used to read/write NIC mem
+        VENDOR_NONE             = 0
+        VENDOR_WD               = 1
+        VENDOR_NOVELL           = 2
+        VENDOR_3COM             = 3
 
-        MEM_8192                  =   32
-        MEM_16384                 =   64
-        MEM_32768                 =   128
+        NE_ASIC                 = 0x10
+        NE_RESET                = 0x0F          ; Used to reset card
+        NE_DATA                 = 0x00          ; Used to read/write NIC mem
 
-        ISA_MAX_ADDR              =   0x400
+        MEM_8k                  = 32
+        MEM_16k                 = 64
+        MEM_32k                 = 128
+
+        ISA_MAX_ADDR            = 0x400
 
 
 
@@ -165,7 +169,7 @@ proc START stdcall, state:dword
         cmp     [state], 1
         jne     .exit
   .entry:
-        DEBUGF 2,"Registering rtl8029 service \n"
+        DEBUGF  2,"Registering %s driver\n", my_service
         stdcall RegService, my_service, service_proc
         ret
   .fail:
@@ -231,10 +235,10 @@ proc service_proc stdcall, ioctl:dword
         test    ecx, ecx
         jz      .firstdevice_pci
 
-        mov     ax , [eax+1]                            ; get the pci bus and device numbers
+        mov     ax, [eax+1]                             ; get the pci bus and device numbers
   .nextdevice:
         mov     ebx, [esi]
-        cmp     ax , word [device.pci_bus]              ; compare with pci and device num in device list (notice the usage of word instead of byte)
+        cmp     ax, word [device.pci_bus]               ; compare with pci and device num in device list (notice the usage of word instead of byte)
         je      .find_devicenum                         ; Device is already loaded, let's find it's device number
         add     esi, 4
         loop    .nextdevice
@@ -243,9 +247,9 @@ proc service_proc stdcall, ioctl:dword
         call    create_new_struct
 
         mov     eax, [IOCTL.input]
-        mov     cl , [eax+1]
+        mov     cl, [eax+1]
         mov     [device.pci_bus], cl
-        mov     cl , [eax+2]
+        mov     cl, [eax+2]
         mov     [device.pci_dev], cl
 
 ; Now, it's time to find the base io addres of the PCI device
@@ -264,13 +268,13 @@ proc service_proc stdcall, ioctl:dword
         mov     ecx, [devices]
         test    ecx, ecx
         jz      .firstdevice_isa
-        mov     al , [eax+3]
+        mov     al, [eax+3]
         movzx   edi, word [eax+1]
   .nextdevice_isa:
         mov     ebx, [esi]
         cmp     edi, [device.io_addr]
         jne     .maybenext
-        cmp     al , [device.irq_line]
+        cmp     al, [device.irq_line]
         je      find_device_num
   .maybenext:
         add     esi, 4
@@ -282,7 +286,7 @@ proc service_proc stdcall, ioctl:dword
         call    create_new_struct
 
         mov     eax, [IOCTL.input]
-        movzx   ecx , word [eax+1]
+        movzx   ecx, word [eax+1]
         mov     [device.io_addr], ecx
         mov     cl, [eax+3]
         mov     [device.irq_line], cl
@@ -337,7 +341,7 @@ endp
 create_new_struct:
 
         cmp     [devices], MAX_DEVICES
-        jge     .fail
+        jae     .fail
 
         allocate_and_clear ebx, device.size, .fail      ; Allocate the buffer for device structure
 
@@ -351,7 +355,7 @@ create_new_struct:
         ret
 
   .fail:
-        add     esp, 4          ; return to caller of 'hook'
+        add     esp, 4                                  ; return to caller of 'hook'
         or      eax, -1
         ret
 
@@ -388,64 +392,60 @@ unload:   ; TODO
 probe:
         mov     [device.vendor], VENDOR_NONE
         mov     [device.bmem], 0
-        mov     eax,[device.io_addr]
-        add     eax, NE_ASIC_OFFSET
-        mov     [device.asic_base], ax
 
         DEBUGF  2,"Trying 16-bit mode\n"
 
-        or      [device.flags], FLAG_16BIT or FLAG_PIO
-        mov     [device.memsize], MEM_32768
+        mov     [device.flags], FLAG_16BIT + FLAG_PIO
+        mov     [device.memsize], MEM_32k
         mov     [device.tx_start], 64
         mov     [device.rx_start], TXBUF_SIZE + 64
 
         set_io  0
         set_io  P0_DCR
-        mov     al, DCR_WTS + DCR_FT1 + DCR_LS
+        mov     al, DCR_WTS + DCR_FT1 + DCR_LS  ; word transfer select +
         out     dx, al
 
         set_io  P0_PSTART
-        mov     al, MEM_16384
+        mov     al, MEM_16k
         out     dx, al
 
         set_io  P0_PSTOP
-        mov     al, MEM_32768
+        mov     al, MEM_32k
         out     dx, al
 
-        mov     esi, test_data
+        mov     esi, my_service
         mov     di, 16384
         mov     cx, 14
-        call    eth_pio_write
+        call    PIO_write
 
         mov     si, 16384
         mov     cx, 14
-        lea     edi, [device.romdata]
-        call    eth_pio_read
+        sub     esp, 16
+        mov     edi, esp
+        call    PIO_read
 
-        lea     esi, [device.romdata]
-        mov     edi, test_data
+        mov     esi, esp
+        add     esp, 16
+        mov     edi, my_service
         mov     ecx, 13
+        repe    cmpsb
+        je      ep_set_vendor
 
-     repz    cmpsb
-     jz      ep_set_vendor
-
-
+        DEBUGF  2,"16-bit mode failed\n"
         DEBUGF  2,"Trying 8-bit mode\n"
 
         mov     [device.flags], FLAG_PIO
-        mov     [device.memsize], MEM_16384
+        mov     [device.memsize], MEM_16k
         mov     [device.tx_start], 32
         mov     [device.rx_start], TXBUF_SIZE + 32
 
-        mov     dx, [device.asic_base]
-        add     dx, NE_RESET
-
+        set_io  NE_ASIC + NE_RESET
         in      al, dx
         out     dx, al
 
         in      al, 0x84
 
-        set_io  0
+        set_io  P0_COMMAND
         mov     al, CMD_RD2 + CMD_STP
         out     dx, al
 
@@ -458,29 +458,30 @@ probe:
         out     dx, al
 
         set_io  P0_PSTART
-        mov     al, MEM_8192
+        mov     al, MEM_8k
         out     dx, al
 
         set_io  P0_PSTOP
-        mov     al, MEM_16384
+        mov     al, MEM_16k
         out     dx, al
 
-        mov     esi, test_data
+        mov     esi, my_service
         mov     di, 8192
         mov     cx, 14
-        call    eth_pio_write
+        call    PIO_write
 
         mov     si, 8192
         mov     cx, 14
-        lea     edi, [device.romdata]
-        call    eth_pio_read
+        sub     esp, 16
+        mov     edi, esp
+        call    PIO_read
 
-        mov     esi, test_data
-        lea     edi, [device.romdata]
+        mov     esi, my_service
+        mov     edi, esp
+        add     esp, 16
         mov     ecx, 13
-
-    repz      cmpsb
-    jz        ep_set_vendor
+        repe    cmpsb
+        je      ep_set_vendor
 
         DEBUGF  2,"This is not a valid ne2000 device!\n"
         or      eax, -1
@@ -489,14 +490,19 @@ probe:
 
 ep_set_vendor:
 
+        DEBUGF  2,"Mode ok\n"
+
         cmp     [device.io_addr], ISA_MAX_ADDR
-        jbe     ep_001
+        jbe     .isa
 
         DEBUGF  2,"Card is using PCI bus\n"
 
-;        or      [flags], FLAG_16BIT
+        mov     [device.vendor], VENDOR_NOVELL  ;;; FIXME
+        jmp     ep_check_have_vendor
 
-ep_001:
+  .isa:
+        DEBUGF  2,"Card is using ISA bus\n"
+
         mov     [device.vendor], VENDOR_NOVELL
 
 ep_check_have_vendor:
@@ -504,25 +510,13 @@ ep_check_have_vendor:
 
         mov     al, [device.vendor]
         cmp     al, VENDOR_NONE
-;        je      rtl8029_exit
+;        je      exit
 
         cmp     al, VENDOR_3COM
         je      reset
 
         mov     eax, [device.bmem]
         mov     [device.rmem], eax
-
-        call    read_mac
-
-        push    .hack
-        sub     esp, 6
-        mov     edi, esp
-        lea     esi, [device.mac]
-        movsd
-        movsw
-        jmp     write_mac
-       .hack:
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -535,118 +529,116 @@ reset:
 
 ; attach int handler
         movzx   eax, [device.irq_line]
-        DEBUGF  1,"Attaching int handler to irq %x\n",eax:1
+        DEBUGF  1,"Attaching int handler to irq %x\n", eax:1
         stdcall AttachIntHandler, eax, int_handler, dword 0
 
-; Stop mode
-
+; Stop card + DMA
         set_io  0
-        mov     al, CMD_PS0 + CMD_RD2 + CMD_STP
+;        set_io  P0_COMMAND
+        mov     al, CMD_PS0 + CMD_RDMA_ABORT + CMD_STP
         out     dx, al
 
+; initialize DCR
         set_io  P0_DCR
+        mov     al, DCR_FT1 + DCR_LS
         test    [device.flags], FLAG_16BIT
-        jz      nsr_001
-
-        mov     al, 0x49
-        jmp     nsr_002
-
-nsr_001:
-        mov     al, 0x48
-
-nsr_002:
+        jz      @f
+        or      al, DCR_WTS                     ; word transfer select
+      @@:
         out     dx, al
 
 ; clear remote bytes count
-        set_io  0
-
-        xor     al, al
-
         set_io  P0_RBCR0
+        xor     al, al
         out     dx, al
 
         set_io  P0_RBCR1
         out     dx, al
 
-
-; initialize Receive configuration register
+; initialize Receive configuration register (until all init is done)
         set_io  P0_RCR
         mov     al, 0x20        ; monitor mode
         out     dx, al
 
-
-; transmit configuration register
+; transmit configuration register to monitor mode (until all ini is done)
         set_io  P0_TCR
         mov     al, 2           ; internal loopback
         out     dx, al
 
+; clear interupt status
+        set_io  P0_ISR
+        mov     al, 0xff
+        out     dx, al
 
-; transmit page stuff
+; clear IRQ mask                        ;;;;; CHECKME ;;;;;
+        set_io  P0_IMR
+        xor     al, al
+        out     dx, al
+
+; set transmit pointer
         set_io  P0_TPSR
         mov     al, [device.tx_start]
         out     dx, al
 
-; set receive control register ;;;;
-        set_io  P0_RCR
-        mov     al, 4           ; accept broadcast
-        out     dx, al
-
-; pagestart
+; set pagestart pointer
         set_io  P0_PSTART
         mov     al, [device.rx_start]
         out     dx, al
 
-; pagestop
+; set pagestop pointer
         set_io  P0_PSTOP
         mov     al, [device.memsize]
         out     dx, al
 
-; page boundary
+; set boundary pointer
         set_io  P0_BOUND
         mov     al, [device.memsize]
         dec     al
         out     dx, al
 
-
-;;clear IRQ mask
-;        set_io  P0_IMR
-;        xor     al, al
-;        out     dx, al
-
-        set_io  0
-        mov     al, CMD_PS1 + CMD_RD2 + CMD_STP ; page 1, stop mode
+; set curr pointer
+        set_io  P0_COMMAND
+        mov     al, CMD_PS1 ;+ CMD_RD2 + CMD_STP ; page 1, stop mode
         out     dx, al
 
         set_io  P1_CURR
         mov     al, [device.rx_start]
         out     dx, al
 
-        set_io  0
-        mov     al, CMD_PS0 + CMD_RD2 + CMD_STA ; go to page 0
+        set_io  P0_COMMAND
+        mov     al, CMD_PS0 ;+ CMD_RD2 + CMD_STA ; go to page 0, start mode
         out     dx, al
 
-; Read MAC address
+; Read MAC address and set it to registers
         call    read_mac
-
-; clear interupt status
-        set_io  0
-        set_io  P0_ISR
-        mov     al, 0xff
-        out     dx, al
+        push    .macret
+        sub     esp, 6
+        lea     esi, [device.mac]
+        mov     edi, esp
+        movsd
+        movsw
+        jmp     write_mac
+  .macret:
 
 ; set IRQ mask
+        set_io  0
         set_io  P0_IMR
         mov     al, IRQ_MASK
         out     dx, al
 
-;; start mode
-;        set_io  0
-;        mov     al, CMD_STA
-;        out     dx, al
+; start mode
+        set_io  P0_COMMAND
+        mov     al, CMD_STA
+        out     dx, al
 
 ; clear transmit control register
         set_io  P0_TCR
-        mov     al, 0           ; no loopback
+        xor     al, al                  ; no loopback
+        out     dx, al
+
+; set receive control register ;;;;
+        set_io  P0_RCR
+        mov     al, 4                   ; accept broadcast
         out     dx, al
 
 ; clear packet/byte counters
@@ -656,7 +648,7 @@ nsr_002:
         rep     stosd
 
 ; Set the mtu, kernel will be able to send now
-        mov     [device.mtu], 1514
+        mov     [device.mtu], ETH_FRAME_LEN
 
 ; Indicate that we have successfully reset the card
         xor     eax, eax
@@ -678,20 +670,22 @@ transmit:
         mov     esi, [esp + 4]
         mov     ecx, [esp + 8]
         DEBUGF  2,"Transmitting packet, buffer:%x, size:%u\n",esi, ecx
-        DEBUGF  2,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",[esi+0]:2,[esi+1]:2,[esi+2]:2,[esi+3]:2,[esi+4]:2,[esi+5]:2,[esi+6]:2,[esi+7]:2,[esi+8]:2,[esi+9]:2,[esi+10]:2,[esi+11]:2,[esi+13]:2,[esi+12]:2
+        DEBUGF  2,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
+        [esi+0]:2,[esi+1]:2,[esi+2]:2,[esi+3]:2,[esi+4]:2,[esi+5]:2,[esi+6]:2,[esi+7]:2,[esi+8]:2,[esi+9]:2,[esi+10]:2,[esi+11]:2,[esi+13]:2,[esi+12]:2
 
         cmp     ecx, ETH_FRAME_LEN
         jg      .err ; packet is too long
-        cmp     ecx, 60
+        cmp     ecx, ETH_ZLEN
         jl      .err ; packet is too short
 
         movzx   edi, [device.tx_start]
         shl     edi, 8
         push    cx
-        call    eth_pio_write
+        call    PIO_write
         pop     cx
 
         set_io  0
+;        set_io  P0_COMMAND
         mov     al, CMD_PS0 + CMD_RD2 + CMD_STA
         out     dx, al
 
@@ -707,7 +701,7 @@ transmit:
         mov     al, ch
         out     dx, al
 
-        set_io  0
+        set_io  P0_COMMAND
         mov     al, CMD_PS0 + CMD_TXP + CMD_RD2 + CMD_STA
         out     dx, al
 
@@ -724,6 +718,8 @@ transmit:
         ret     8
 
 .err:
+        DEBUGF  2," - Error!\n"
+
         or      eax, -1
         stdcall KernelFree, [esp+4]
         ret     8
@@ -751,6 +747,10 @@ int_handler:
         mov     ebx, [esi]
 
         set_io  0
+;        set_io  P0_COMMAND
+        mov     al, CMD_PS0
+        out     dx, al
+
         set_io  P0_ISR
         in      al, dx
         test    al, al
@@ -764,189 +764,165 @@ int_handler:
 
   .got_it:
 
-        DEBUGF  1,"Device: %x Status: %x ", ebx, eax:2
+        DEBUGF  1,"Device=%x status=%x\n", ebx, eax:2
 
-        test    al, ISR_PRX    ; packet received ok ?
+        test    al, ISR_PRX     ; packet received ok ?
         jz      .no_rx
 
-; looks like we've found a device wich received a packet..
+        test    [device.flags], FLAG_PIO
+        jz      .no_rx          ; FIXME: Only PIO mode supported for now
 
-        stdcall KernelAlloc, ETH_FRAME_LEN  ; size doesnt really matter as packet size is smaller then kernel's page size
+;
+
+        pushd   .no_rx
+
+; allocate a buffer
+
+        stdcall KernelAlloc, ETH_FRAME_LEN
         test    eax, eax
         jz      .fail_2
+        pushd   0
+        push    eax
 
-;--------------------------------------
-; allocate memory for temp variables in stack
+; read offset for current packet from device
 
-        sub     esp, 14+8
-
-        eth_type        equ esp
-        pkthdr          equ esp + 2
-        pktoff          equ esp + 6
-        eth_rx_data_ptr equ esp + 8
-        eth_tmp_len     equ esp + 12
-
-; These will be used by eth_receiver when the packet gets there
-
-        pointer         equ esp + 14
-        size            equ esp + 18
-
-;-------------------------------------
-
-        mov     [pointer], eax
-        mov     [eth_rx_data_ptr], eax
-
-        set_io  P0_BOUND
+        set_io  0
+        set_io  P0_BOUND        ; boundary ptr is offset to next packet we need to read.
         in      al, dx
         inc     al
 
         cmp     al, [device.memsize]
-        jb      .nsp_001
-
+        jb      @f
         mov     al, [device.rx_start]
-
-.nsp_001:
+       @@:
         mov     ch, al
 
-        set_io  0
+        set_io  P0_COMMAND
         mov     al, CMD_PS1
         out     dx, al
 
         set_io  P1_CURR
-        in      al, dx               ; get current page
+        in      al, dx          ; get current page in cl
         mov     cl, al
 
-        set_io  0
+        set_io  P1_COMMAND
         mov     al, CMD_PS0
         out     dx, al
 
         cmp     cl, [device.memsize]
-        jb      .nsp_002
-
+        jb      @f
         mov     cl, [device.rx_start]
+       @@:
 
-.nsp_002:
         cmp     cl, ch
         je      .fail
 
-        xor     ax, ax
-        mov     ah, ch
+        movzx   esi, ch                         ; we are using 256 byte pages
+        shl     esi, 8                          ; esi now holds the offset for current packet
 
-        mov     [pktoff], ax
+; Get packet header in eax
 
-        mov     al, [device.flags]
-        test    al, FLAG_PIO
-        jz      .nsp_003
-
-        mov     si, word [pktoff]
-        lea     edi, [pkthdr]
+        sub     esp, 4                          ; reserve 4 bytes on stack to put packet header in
+        mov     edi, esp
         mov     cx, 4
-        call    eth_pio_read
-        jmp     .nsp_004
+        call    PIO_read
 
-.nsp_003:
-        mov     edi, [device.rmem]
-        movzx   eax, word [pktoff]
-        add     edi, eax
-        mov     eax, [edi]
-        mov     [pkthdr], eax
+        mov     ecx, [esp]                      ; ecx now contains packet header
 
-.nsp_004:
-        add     word[pktoff] , 4
+; check if packet is ok
+
+        test    ecx, RSTAT_PRX
+        jz      .fail_3
+
+; calculate packet length in ecx
+
+        shr     ecx, 16
+        sub     ecx, 4                          ; CRC doesnt count as data byte
+        mov     [esp + 4 + 4], ecx
+
+; check if packet size is ok
+
+        cmp     ecx, ETH_ZLEN
+        jb      .fail_3
+        cmp     ecx, ETH_FRAME_LEN
+        ja      .fail_3
+
+; update stats
+
+        DEBUGF  2,"Received %u bytes\n", ecx
+
+        add     dword[device.bytes_rx], ecx
+        adc     dword[device.bytes_rx + 4], 0
+        inc     [device.packets_rx]
+
+; update read and write pointers
+
+        add     esi, 4
+        mov     edi, [esp + 4]
+
+; now check if we can read all data at once (if we cross the end boundary, we need to wrap back to the beginning)
 
         xor     eax, eax
-        mov     ax , [pkthdr + 2]
-        sub     ax , 4
-
-        DEBUGF  2,"Received %u bytes\n",eax
-
-        add     dword [device.bytes_rx], eax  ; Update stats
-        adc     dword [device.bytes_rx + 4], 0
-        inc     dword [device.packets_rx]     ;
-
-        mov     [eth_tmp_len], ax
-        mov     dword[size], eax
-
-        cmp     ax, ETH_ZLEN
-        jb      .fail
-
-        cmp     ax , ETH_FRAME_LEN
-        ja      .fail
-
-        mov     al , [pkthdr]
-        test    al , RSTAT_PRX
-        jz      .fail
-
-   ; Right, we can now get the data
-
-        movzx   esi, [device.memsize]
-        sub     si , [pktoff]
-
-        cmp     [eth_tmp_len], si
-        jbe     .nsp_005
+        mov     ah, [device.memsize]
+        sub     eax, esi
+        cmp     ecx, eax                ; eax = number of bytes till end of buffer, ecx = bytes we need to read
+        jbe     .no_wrap
 
         DEBUGF  2,"WRAP!\n"
 
-        mov     al , [device.flags]
-        test    al , FLAG_PIO
-        jz      .nsp_006
+; Read first part
 
-        push    esi
-        mov     cx , si
-        mov     si , [pktoff+4]
-        mov     edi, [eth_rx_data_ptr+4]
-        call    eth_pio_read
-        pop     esi
-        jmp     .nsp_007
+        sub     ecx, eax
+        push    ecx
+        mov     ecx, eax
 
-.nsp_006:
-        DEBUGF  2,"PIO mode not supported by HW!\n"
-   ; Not implemented, as we are using PIO mode on this card
+        call    PIO_read                ; Read the data
 
-.nsp_007:
-        xor     al, al
-        mov     ah, [device.rx_start]
-        mov     [pktoff], ax
+; update pointers
 
-        add     [eth_rx_data_ptr], esi
-        sub     [eth_tmp_len], si
+        add     edi, ecx
+        pop     ecx
 
-.nsp_005:
-        test    [device.flags], FLAG_PIO
-        jz      .nsp_008
+        movzx   esi, [device.rx_start]
+        shl     esi, 8
 
-        movzx   esi, word [pktoff]
-        movzx   ecx, word [eth_tmp_len]
-        mov     edi, [eth_rx_data_ptr]
-        call    eth_pio_read
-        jmp     .nsp_009
+; now read second part (or only part)
 
-.nsp_008:
-        DEBUGF  2,"PIO mode not supported by HW!\n"
-   ; Not implemented, as we are using PIO mode on this card
+  .no_wrap:
+        call    PIO_read                ; Read the data
 
-.nsp_009:
-        mov     al, [pkthdr+1]
+; update boundary pointer
+
+        pop     eax
+        mov     al, ah
         cmp     al, [device.rx_start]
-        jne     .nsp_010
-
+        jne     @f
         mov     al, [device.memsize]
+       @@:
 
-.nsp_010:
         set_io  0
         set_io  P0_BOUND
         dec     al
         out     dx, al
 
-        add     esp, 14
+; now send the data to the kernel
+
         jmp     Eth_input
 
-.fail:
-        add     esp, 14+8
-.fail_2:
-        DEBUGF  2,"done\n"
+  .fail_3:
+        add     esp, 4
+  .fail:
+        add     esp, 8
+  .fail_2:
+
 
   .no_rx:
+        DEBUGF  2,"done\n"
+
+        set_io  0
+        set_io  P0_ISR
+        mov     al, 0xff
+        out     dx, al
 
         ret
 
@@ -963,7 +939,7 @@ int_handler:
 align 4
 write_mac:      ; in: mac on stack (6 bytes)
 
-        DEBUGF  1,"Writing MAC: "
+        DEBUGF  1,"Writing MAC\n"
 
         set_io  0
         mov     al, CMD_PS1; + CMD_RD2 + CMD_STP
@@ -990,35 +966,18 @@ write_mac:      ; in: mac on stack (6 bytes)
 
 read_mac:
 
-        DEBUGF  1,"Reading MAC: "
+        DEBUGF  1,"Reading MAC\n"
 
-;        set_io  0
-;        mov     al, CMD_PS1; + CMD_RD2 + CMD_STP ; select page 1
-;        out     dx, al
-;
-;        set_io  P1_PAR0
-;        lea     edi, [mac]
-;
-;        mov     cx, 6
-; .loop:
-;        in      al, dx
-;        stosb
-;        inc     dx
-;        loopw   .loop
-;
-;        set_io  0
-;        mov     al, CMD_PS0; + CMD_RD2 + CMD_STA  ; set page back to 0
-;        out     dx, al
-
-        mov     si, 0
+        xor     esi, esi
         mov     cx, 16
-        lea     edi, [device.romdata]
-        call    eth_pio_read
+        sub     esp, 16
+        mov     edi, esp
+        call    PIO_read
 
-        lea     esi, [device.romdata]
+        mov     esi, esp
+        add     esp, 16
         lea     edi, [device.mac]
         mov     ecx, 6
-
   .loop:
         movsb
         test    [device.flags], FLAG_16BIT
@@ -1027,14 +986,15 @@ read_mac:
   .8bit:
         loop    .loop
 
-        DEBUGF  1,"%x-%x-%x-%x-%x-%x\n",[edi-6]:2,[edi-5]:2,[edi-4]:2,[edi-3]:2,[edi-2]:2,[edi-1]:2
+        DEBUGF  1,"MAC=%x-%x-%x-%x-%x-%x\n",\
+        [device.mac]:2,[device.mac+1]:2,[device.mac+2]:2,[device.mac+3]:2,[device.mac+4]:2,[device.mac+5]:2
 
         ret
 
 
 ;***************************************************************************
-;   Function
-;      eth_pio_read
+;
+;   PIO_read
 ;
 ;   Description
 ;       Read a frame from the ethernet card via Programmed I/O
@@ -1042,79 +1002,87 @@ read_mac:
 ;      cnt in cx
 ;       dst in edi
 ;***************************************************************************
-eth_pio_read:
+PIO_read:
 
-        DEBUGF  1,"Eth PIO Read from %x to %x, %u bytes ",si,edi,cx
+        DEBUGF  1,"PIO Read from %x to %x, %u bytes ", si, edi, cx
 
+; start DMA
         set_io  0
+;        set_io  P0_COMMAND
         mov     al, CMD_RD2 + CMD_STA
         out     dx, al
 
-        mov     al, cl
+; set length of data we're interested in
         set_io  P0_RBCR0
+        mov     al, cl
         out     dx, al
 
-        mov     al, ch
         set_io  P0_RBCR1
+        mov     al, ch
         out     dx, al
 
-        mov     ax, si
+; set offset of what we want to read
         set_io  P0_RSAR0
+        mov     ax, si
         out     dx, al
-        shr     ax, 8
+
         set_io  P0_RSAR1
+        shr     ax, 8
         out     dx, al
 
+; start DMA read
+        set_io  P0_COMMAND
         mov     al, CMD_RD0 + CMD_STA
-        set_io  0
         out     dx, al
 
-        mov     dx, [device.asic_base]
+        set_io  NE_ASIC
 
         test    [device.flags], FLAG_16BIT
-        jz      epr_003
+        jz      .8bits
 
-        DEBUGF  1,"in 16-bits mode"
+        DEBUGF  1,"(16-bit mode)\n"
 
         shr     cx, 1   ; note that if the number was odd, carry flag will be set
-        pushf           ; save the flags for later
+        pushf
 
-epr_002:
+  .16bits:
         in      ax, dx
         stosw
-        loopw   epr_002
+        loopw   .16bits
 
         inc     cx
         popf
-        jnc     epr_004
+        jnc     .done
+        jmp     .8bits_
 
-epr_003:
+  .8bits:
+        DEBUGF  1,"(8-bit mode)\n"
+
+  .8bits_:
         in      al, dx
         stosb
-        loopw   epr_003
+        loopw   .8bits_
 
 
-epr_004:
-        set_io  0
-        set_io  P0_ISR
-
-epr_005:                                ; Wait for Remote DMA Complete
-        in      al, dx
-        test    al, ISR_RDC
-        jz      epr_005
+  .done:
+;        set_io  0
+;        set_io  P0_ISR
+;
+;  .dmawait:                             ; Wait for Remote DMA Complete
+;        in      al, dx
+;        test    al, ISR_RDC
+;        jz      .dmawait
 ;        and     al, not ISR_RDC
-        out     dx, al                  ; clear the bit
+;        out     dx, al                  ; clear the bit
 
-
-        DEBUGF  1,"\n"
         ret
 
 
 
 
 ;***************************************************************************
-;   Function
-;      eth_pio_write
+;
+;   PIO_write
 ;
 ;   Description
 ;       writes a frame to the ethernet card via Programmed I/O
@@ -1122,11 +1090,12 @@ epr_005:                                ; Wait for Remote DMA Complete
 ;      cnt in cx
 ;       src in esi
 ;***************************************************************************
-eth_pio_write:
+PIO_write:
 
-        DEBUGF  1,"Eth PIO Write from %x to %x, %u bytes ",esi,di,cx
+        DEBUGF  1,"Eth PIO Write from %x to %x, %u bytes ", esi, di, cx
 
         set_io  0
+;        set_io  P0_COMMAND
         mov     al, CMD_RD2 + CMD_STA
         out     dx, al
 
@@ -1149,46 +1118,48 @@ eth_pio_write:
         set_io  P0_RSAR1
         out     dx, al
 
-        set_io  0
+        set_io  P0_COMMAND
         mov     al, CMD_RD1 + CMD_STA
         out     dx, al
 
-        mov     dx, [device.asic_base]
+        set_io  NE_ASIC
         test    [device.flags], FLAG_16BIT
-        jz      epw_003
+        jz      .8_bit
 
-        DEBUGF  1,"in 16-bits mode"
+        DEBUGF  1,"(16-bit mode)\n"
 
         shr     cx, 1   ; note that if the number was odd, carry flag will be set
         pushf           ; save the flags for later
 
-epw_002:
+  .16bit:
         lodsw
         out     dx, ax
-        loopw   epw_002
+        loopw   .16bit
 
         popf
-        jnc     epw_004
+        jnc     .done
         inc     cx
+        jmp     .8_bit_
 
-epw_003:
+  .8_bit:
+
+        DEBUGF  1,"(8-bit mode)\n"
+
+  .8_bit_:
         lodsb
         out     dx, al
-        loopw   epw_003
+        loopw   .8_bit_
 
-epw_004:
-        set_io  0
-        set_io  P0_ISR
-
-epw_005:                                ; Wait for Remote DMA Complete
-        in      al, dx
-        test    al, ISR_RDC
-        jz      epw_005
+  .done:
+;        set_io  0
+;        set_io  P0_ISR
+;  .dmawait:                             ; Wait for Remote DMA Complete
+;        in      al, dx
+;        test    al, ISR_RDC
+;        jz      .dmawait
 ;        and     al, not ISR_RDC
-        out     dx, al                  ; clear the bit
+;        out     dx, al                  ; clear the bit
 
-
-        DEBUGF  1,"\n"
         ret
 
 
@@ -1205,8 +1176,6 @@ device_2        db 'Realtek 8019',0
 device_3        db 'Realtek 8019AS',0
 device_4        db 'ne2000',0
 device_5        db 'DP8390',0
-
-test_data       db 'NE*000 memory',0
 
 include_debug_strings
 
