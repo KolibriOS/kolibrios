@@ -7,8 +7,8 @@ byte   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
 dword  start_addr   = #main;
 dword  final_addr   = #stop+32;
-dword  alloc_mem    = 0x000b0000;
-dword  x86esp_reg   = 0x000b0000;
+dword  alloc_mem    = 0x000f0000;
+dword  x86esp_reg   = 0x000f0000;
 dword  I_Param      = #param;
 dword  I_Path       = #program_path;
 
