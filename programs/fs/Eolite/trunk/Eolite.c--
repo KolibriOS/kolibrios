@@ -592,7 +592,7 @@ void Open_Dir(dword temp_, redraw){
 		if (somelen) path_[somelen]=NULL;
 		
 		if (buf) free(buf);
-    	buf = malloc(512);
+    	buf = malloc(32);
 		errornum=ReadDir(0, buf, #path_);
 		if (errornum<>0) //ошибка при чтении папки
 		{
@@ -602,10 +602,9 @@ void Open_Dir(dword temp_, redraw){
 			return;
 		}
     	count = ESDWORD[buf+8];
-    	buf = realloc(count * 304 + 512, buf); //почему 32?
+    	buf = realloc(count * 304 + 32, buf); //почему 32?
 		ReadDir(count, buf, #path_);
 		count=EBX;
-		if (count>sizeof(file_mas)) count=sizeof(file_mas);
 	}
 	if (count<>-1)
 	{
@@ -633,7 +632,7 @@ inline Sorting()
 {
 	dword k=0, l=1;
 
-	if (!strcmp(#path,"/")) //|| (count > 5000) //не сортировать папки и не менять регистр в "/"
+	if (!strcmp(#path,"/")) || (count > 5000) //не сортировать папки и не менять регистр в "/"
 	{
 		FOR(k=1;k<count;k++;) file_mas[k]=k;
 		return;
@@ -659,10 +658,8 @@ inline Sorting()
 	IF (sort_num==1) Sort_by_Name(k,count-1);
 	IF (sort_num==2) Sort_by_Type(k,count-1);
 	IF (sort_num==3) Sort_by_Size(k,count-1);
-	if (strcmp(file_mas[0]*304+buf+72,"..")<>0) //если папка ".." не первая, ставим её туда
-	{
-		FOR(k--; k>0; k--;) { IF (!strcmp(file_mas[k]*304+buf+72,"..")) file_mas[k]><file_mas[0]; }
-	}
+	//если папка ".." не первая, ставим её туда
+	IF (k>0) && (strcmp(file_mas[0]*304+buf+72,"..")<>0) FOR(k--; k>0; k--;) IF (!strcmp(file_mas[k]*304+buf+72,"..")) file_mas[k]><file_mas[0];
 }
 
 
