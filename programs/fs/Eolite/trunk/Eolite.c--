@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-dword title[] = "Eolite File Manager v1.51";
+#define title "Eolite File Manager v1.5"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -62,8 +62,7 @@ int scroll_size;
 int toolbar_buttons_x[7]={9,46,85,134,167,203};
 char tmp_disk_del_param[3]="d0\0";
 
-dword file_mas[65535];
-
+dword file_mas[6898];
 int j, i, mouse_dd;
 int scroll_used;
 
@@ -421,9 +420,9 @@ inline fastcall void draw_window()
 	int min_size_y = disc_num*16+195;
 	
 	if (GetScreenHeight()<480)
-		DefineAndDrawWindow(20,0,582,GetScreenHeight()-30,0x73,col_work,#title);
+		DefineAndDrawWindow(20,0,582,GetScreenHeight()-30,0x73,col_work,title);
 	else
-		DefineAndDrawWindow(98,90,582,482,0x73,col_work,#title);
+		DefineAndDrawWindow(98,90,582,482,0x73,col_work,title);
 	GetProcessInfo(#Form, SelfInfo);
 	if (Form.status_window>2) return;
 	if (Form.height<min_size_y) MoveSize(OLD,OLD,OLD,min_size_y);
@@ -582,7 +581,7 @@ void Line_ReDraw(dword color, filenum){
 
 
 void Open_Dir(dword temp_, redraw){
-	int errornum;
+	int errornum, max_count;
 	char path_[4096],
 	somelen=strlen(temp_)-1;
 	
@@ -605,6 +604,9 @@ void Open_Dir(dword temp_, redraw){
     	buf = realloc(count * 304 + 32, buf); //почему 32?
 		ReadDir(count, buf, #path_);
 		count=EBX;
+		max_count = sizeof(file_mas)/sizeof(dword)-1;
+		if (count>max_count) count=max_count; //1 на удачу ;)
+		
 	}
 	if (count<>-1)
 	{
@@ -631,13 +633,11 @@ void Open_Dir(dword temp_, redraw){
 inline Sorting()
 {
 	dword k=0, l=1;
-
-	if (!strcmp(#path,"/")) || (count > 5000) //не сортировать папки и не менять регистр в "/"
+	if (!strcmp(#path,"/")) || (count>3000) //не сортировать папки и не менять регистр в "/"
 	{
 		FOR(k=1;k<count;k++;) file_mas[k]=k;
 		return;
 	}
-	
 	FOR (j=count-1, off=count-1*304+buf+32; j>=0; j--, off-=304;)  //папки вверх, файлы вниз
 	{
 		TitleCase(off+40);
@@ -652,11 +652,10 @@ inline Sorting()
 			l++;
 		}
 	}
-	
 	//Собственно сортировка: вначале папки, потом файлы
 	Sort_by_Name(0,k-1);
 	IF (sort_num==1) Sort_by_Name(k,count-1);
-	IF (sort_num==2) Sort_by_Type(k,count-1);
+	IF (sort_num==2) if (count<2000) Sort_by_Type(k,count-1); else Sort_by_Name(k,count-1); //костыли...
 	IF (sort_num==3) Sort_by_Size(k,count-1);
 	//если папка ".." не первая, ставим её туда
 	IF (k>0) && (strcmp(file_mas[0]*304+buf+72,"..")<>0) FOR(k--; k>0; k--;) IF (!strcmp(file_mas[k]*304+buf+72,"..")) file_mas[k]><file_mas[0];
