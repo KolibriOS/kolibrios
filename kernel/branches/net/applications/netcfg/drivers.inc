@@ -186,4 +186,12 @@ dd  0x11078086             ; 82544EI
 dd  0x11128086             ; 82544GC
 dd  0x0
 
+db  'RHINE', 0                  ; VIA Rhine
+dd  0x30431106
+dd  0x61001106
+dd  0x30651106
+dd  0x31061106
+dd  0x30531106
+dd  0x0
+
 dd  0x0 ; driverlist end
