@@ -20,7 +20,7 @@ int BUTTON_HEIGHT=18;
 #define ONLY_OPEN	2
 
 //переменные
-#define title "Eolite File Manager v1.5"
+#define title "Eolite File Manager v1.55"
 dword col_work    = 0xE4DFE1;
 dword col_border  = 0x819FC5;
 dword col_padding = 0xC8C9C9;
@@ -376,6 +376,7 @@ void main()
 							break;
 					case 051: //Нажата F2
 							REN_MARK:
+							if (!count) break;
 							DeleteButton(curbtn+201); //это чтоб можно было выделять мышью
 							edit2.flags=66; //делаем компонент активным
 							edit2.width=onLeft(24,217);
@@ -633,7 +634,8 @@ void Open_Dir(dword temp_, redraw){
 inline Sorting()
 {
 	dword k=0, l=1;
-	if (!strcmp(#path,"/")) || (count>3000) //не сортировать папки и не менять регистр в "/"
+	int i;
+	if (!strcmp(#path,"/")) //не сортировать папки и не менять регистр в "/"
 	{
 		FOR(k=1;k<count;k++;) file_mas[k]=k;
 		return;
@@ -655,7 +657,7 @@ inline Sorting()
 	//Собственно сортировка: вначале папки, потом файлы
 	Sort_by_Name(0,k-1);
 	IF (sort_num==1) Sort_by_Name(k,count-1);
-	IF (sort_num==2) if (count<2000) Sort_by_Type(k,count-1); else Sort_by_Name(k,count-1); //костыли...
+	IF (sort_num==2) Sort_by_Type(k,count-1);
 	IF (sort_num==3) Sort_by_Size(k,count-1);
 	//если папка ".." не первая, ставим её туда
 	IF (k>0) && (strcmp(file_mas[0]*304+buf+72,"..")<>0) FOR(k--; k>0; k--;) IF (!strcmp(file_mas[k]*304+buf+72,"..")) file_mas[k]><file_mas[0];
@@ -666,6 +668,7 @@ void Del_Form()
 {
 	int dform_x=Form.width/2-13;
 	//типа окно
+	if (!count) return;
 	FOR (i=5;i<11;i++) DeleteButton(201+i); //удаляем кнопки под формой
 	DrawFlatButton(dform_x,160,200,80,0,col_work, ""); //форма
 	WriteText(dform_x+19,175,0x80,0,"Do you really want to delete",0);

@@ -21,33 +21,30 @@ void Sort_by_Name(int a, b)   // для первого вызова: a = 0, b = <элементов в мас
 	Sort_by_Name(isn, b);
 }
 
- 
-void Sort_by_Type(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
-{                                        
-	int jst, ist=a;
-	int n;
-	unsigned char filename1[256], filename2[256];
-	unsigned char ext1[256], ext2[256];
 	
+void Sort_by_Type(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
+{               
+	dword filename1, filename2, ext1, ext2;
+	int n, isn = a;
 	IF (a >= b) return;
-	for (jst = a; jst <= b; jst++)
+	for (j = a; j <= b; j++)
 	{
-		ext1[0]=ext2[0]=filename1[0]=filename2[0]=NULL;
-		copystr(file_mas[jst]*304 + buf+72, #filename1);
-		copystr(file_mas[b]*304 + buf+72, #filename2);
-		n=strlen(#filename1)-1;
-		WHILE (filename1[n]<>'.') && (n>0) n--;
-		IF (n) copystr(#filename1+n+1, #ext1);
-		n=strlen(#filename2)-1;
-		WHILE (filename2[n]<>'.') && (n>0) n--;
-		IF (n) copystr(#filename2+n+1, #ext2);
+		filename1 = file_mas[j]*304 + buf+72;
+		filename2 = file_mas[b]*304 + buf+72;
 
-		n=strcmp(#ext1, #ext2);
-		IF (n<0) { file_mas[ist] >< file_mas[jst];   ist++;} 
-		IF (n==0) && (strcmp(#filename1, #filename2)<=0) { file_mas[ist] >< file_mas[jst];   ist++;}
+		n=strlen(filename1)-1;
+		WHILE (n>0) && (ESBYTE[filename1+n]<>'.') n--;
+		IF (n) ext1 = filename1+n+1; else ext1=0;
+		n=strlen(filename2)-1;
+		WHILE (n>0) && (ESBYTE[filename2+n]<>'.') n--;
+		IF (n) ext2 = filename2+n+1; else ext2=0;
+
+		n=strcmp(ext1, ext2);
+		IF (n<0) { file_mas[isn] >< file_mas[j];   isn++;} 
+		IF (n==0) && (strcmp(filename1, filename2)<=0) { file_mas[isn] >< file_mas[j];   isn++;}
 	}
-	Sort_by_Type(a, ist-2);
-	Sort_by_Type(ist, b);
+	Sort_by_Type(a, isn-2);
+	Sort_by_Type(isn, b);
 }
 
 
