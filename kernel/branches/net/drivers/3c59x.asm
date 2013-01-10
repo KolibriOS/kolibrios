@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  3Com network driver for KolibriOS                           ;;
@@ -374,7 +374,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF 1,"Loading 3com network driver\n"
+        DEBUGF 1,"Loading %s driver\n", my_service
         stdcall RegService, my_service, service_proc
         ret
 
@@ -408,7 +408,7 @@ proc service_proc stdcall, ioctl:dword
         jne     @F
 
         cmp     [IOCTL.out_size], 4
-        jl      .fail
+        jb      .fail
         mov     eax, [IOCTL.output]
         mov     [eax], dword API_VERSION
 
@@ -421,7 +421,7 @@ proc service_proc stdcall, ioctl:dword
         jne     .fail
 
         cmp     [IOCTL.inp_size], 3               ; Data input must be at least 3 bytes
-        jl      .fail
+        jb      .fail
 
         mov     eax, [IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
@@ -465,7 +465,7 @@ proc service_proc stdcall, ioctl:dword
         mov     ecx, [BOOMERANG_DEVICES]
         add     ecx, [VORTEX_DEVICES]
         cmp     ecx, MAX_DEVICES                        ; First check if the driver can handle one more card
-        jge     .fail
+        jae     .fail
 
         allocate_and_clear ebx, device.size, .fail      ; Allocate the buffer for device structure
 
@@ -2270,7 +2270,7 @@ boomerang_transmit:
         [eax+13]:2,[eax+12]:2
 
         cmp     dword [esp+8], MAX_ETH_FRAME_SIZE
-        jg      .fail
+        ja      .fail
 
         call    check_tx_status
 
@@ -2280,7 +2280,7 @@ boomerang_transmit:
         add     esi, dpd.size
         lea     ecx, [device.dpd_buffer + (NUM_TX_DESC)*dpd.size]
         cmp     esi, ecx
-        jl      @f
+        jb      @f
         lea     esi, [device.dpd_buffer]        ; Wrap if needed
        @@:
         DEBUGF  1,"Found a free DPD: %x\n", esi
@@ -2740,7 +2740,7 @@ int_boomerang:
         add     esi, upd.size
         lea     ecx, [device.upd_buffer+(NUM_RX_DESC)*upd.size]
         cmp     esi, ecx
-        jl      @f
+        jb      @f
         lea     esi, [device.upd_buffer]
        @@:
         mov     [device.curr_upd], esi

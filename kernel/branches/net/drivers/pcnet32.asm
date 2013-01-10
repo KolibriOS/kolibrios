@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                  ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.     ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.     ;;
 ;; Distributed under terms of the GNU General Public License        ;;
 ;;                                                                  ;;
 ;;  PCnet driver for KolibriOS                                      ;;
@@ -14,7 +14,7 @@
 ;;                                                                  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; $Revision$
+ $Revision$
 
 format MS COFF
 
@@ -365,7 +365,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF 1,"Loading PCnet driver\n"
+        DEBUGF 1,"Loading %s driver\n", my_service
         stdcall RegService, my_service, service_proc
         ret
 
@@ -396,7 +396,7 @@ proc service_proc stdcall, ioctl:dword
         jne     @F
 
         cmp     [IOCTL.out_size], 4
-        jl      .fail
+        jb      .fail
         mov     eax, [IOCTL.output]
         mov     [eax], dword API_VERSION
 
@@ -409,7 +409,7 @@ proc service_proc stdcall, ioctl:dword
         jne     .fail
 
         cmp     [IOCTL.inp_size], 3               ; Data input must be at least 3 bytes
-        jl      .fail
+        jb      .fail
 
         mov     eax, [IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
@@ -435,7 +435,7 @@ proc service_proc stdcall, ioctl:dword
 
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
-        jge     .fail
+        jae     .fail
 
         allocate_and_clear ebx, device_size, .fail
 
@@ -955,9 +955,9 @@ transmit:
         [eax+13]:2,[eax+12]:2
 
         cmp     dword [esp+8], 1514
-        jg      .nospace                        ; packet is too long
+        ja      .nospace                        ; packet is too long
         cmp     dword [esp+8], 60
-        jl      .nospace                        ; packet is too short
+        jb      .nospace                        ; packet is too short
 
 ; check descriptor
         movzx   eax, [device.cur_tx]
@@ -1161,7 +1161,7 @@ write_mac:      ; in: mac pushed onto stack (as 3 words)
         DEBUGF  1,"."
         inc     ecx
         cmp     ecx, PCNET_CSR_PAR2
-        jl      @r
+        jb      @r
 
         DEBUGF  1,"\n"
 
@@ -1185,7 +1185,7 @@ read_mac:
         push    ax
         DEBUGF  1,"."
         cmp     edx, [device.io_addr]
-        jg      @r
+        ja      @r
 
         DEBUGF  1," %x-%x-%x-%x-%x-%x\n",[esp+0]:2,[esp+1]:2,[esp+2]:2,[esp+3]:2,[esp+4]:2,[esp+5]:2
 

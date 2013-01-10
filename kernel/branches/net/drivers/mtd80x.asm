@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  MTD80x driver for KolibriOS                                    ;;
@@ -325,7 +325,7 @@ proc START stdcall, state:dword
 
   .entry:
 
-        DEBUGF  2,"Loading mtd80x driver\n"
+        DEBUGF  2,"Loading %s driver\n", my_service
         stdcall RegService, my_service, service_proc
         ret
 
@@ -356,7 +356,7 @@ proc service_proc stdcall, ioctl:dword
         jne     @F
 
         cmp     [IOCTL.out_size], 4
-        jl      .fail
+        jb      .fail
         mov     eax, [IOCTL.output]
         mov     [eax], dword API_VERSION
 
@@ -369,7 +369,7 @@ proc service_proc stdcall, ioctl:dword
         jne     .fail
 
         cmp     [IOCTL.inp_size], 3                     ; Data input must be at least 3 bytes
-        jl      .fail
+        jb      .fail
 
         mov     eax, [IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
@@ -395,7 +395,7 @@ proc service_proc stdcall, ioctl:dword
 ; This device doesnt have its own eth_device structure yet, lets create one
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
-        jge     .fail
+        jae     .fail
 
         allocate_and_clear ebx, device_size, .fail
 

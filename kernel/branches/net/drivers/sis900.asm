@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                    ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.       ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.       ;;
 ;; Distributed under terms of the GNU General Public License          ;;
 ;;                                                                    ;;
 ;;  Ethernet driver for KolibriOS                                     ;;
@@ -271,7 +271,7 @@ service_proc:
 ; 3. This is SRV_GETVERSION request, no input, 4 bytes output, API_VERSION.
 ; 3a. Output size must be at least 4 bytes.
         cmp     [IOCTL.out_size], 4
-        jl      .fail
+        jb      .fail
 ; 3b. Write result to the output buffer.
         mov     eax, [IOCTL.output]
         mov     [eax], dword API_VERSION
@@ -285,7 +285,7 @@ service_proc:
 ; 4a. The driver works only with PCI devices,
 ;       so input must be at least 3 bytes long.
         cmp     [IOCTL.inp_size], 3
-        jl      .fail
+        jb      .fail
 ; 4b. First byte of input is bus type, 1 stands for PCI.
         mov     eax, [IOCTL.input]
         cmp     byte [eax], 1
@@ -313,7 +313,7 @@ service_proc:
   .firstdevice:
 ; 4f. Check that we have place for new device.
         cmp     [devices], MAX_DEVICES
-        jge     .fail
+        jae     .fail
 ; 4g. Allocate memory for device descriptor and receive+transmit buffers.
 ; 4h. Zero the structure.
         allocate_and_clear ebx, device.size, .fail

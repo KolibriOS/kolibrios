@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  i8254x driver for KolibriOS                                    ;;
@@ -166,7 +166,7 @@ MDIC_E                  = 0x40000000 ; Error
 ICR_TXDW                = 0x00000001 ; TX Desc Written back
 ICR_TXQE                = 0x00000002 ; TX Queue Empty
 ICR_LSC                 = 0x00000004 ; Link Status Change
-ICR_RXSEQ               = 0x00000008 ; RX S=  ence Error
+ICR_RXSEQ               = 0x00000008 ; RX Sence Error
 ICR_RXDMT0              = 0x00000010 ; RX Desc min threshold reached
 ICR_RXO                 = 0x00000040 ; RX Overrun
 ICR_RXT0                = 0x00000080 ; RX Timer Interrupt
@@ -324,7 +324,7 @@ proc service_proc stdcall, ioctl:dword
         jne     @F
 
         cmp     [IOCTL.out_size], 4
-        jl      .fail
+        jb      .fail
         mov     eax, [IOCTL.output]
         mov     [eax], dword API_VERSION
 
@@ -337,7 +337,7 @@ proc service_proc stdcall, ioctl:dword
         jne     .fail
 
         cmp     [IOCTL.inp_size], 3                     ; Data input must be at least 3 bytes
-        jl      .fail
+        jb      .fail
 
         mov     eax, [IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
@@ -366,7 +366,7 @@ proc service_proc stdcall, ioctl:dword
 ; This device doesnt have its own eth_device structure yet, lets create one
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
-        jge     .fail
+        jae     .fail
 
         allocate_and_clear ebx, sizeof.device_struct, .fail      ; Allocate the buffer for device structure
 
@@ -569,6 +569,10 @@ reset_dontstart:
         xor     eax, eax
         ret
 
+align 4
+reset:
+        call    reset_dontstart
+
 start_i8254x:
 
         xor     eax, eax
@@ -584,12 +588,6 @@ start_i8254x:
         xor     eax, eax
         ret
 
-align 4
-reset:
-        call    reset_dontstart
-        call    start_i8254x
-
-        ret
 
 
 
@@ -652,9 +650,9 @@ transmit:
         [eax+13]:2,[eax+12]:2
 
         cmp     dword [esp + 8], 1514
-        jg      .fail
+        ja      .fail
         cmp     dword [esp + 8], 60
-        jl      .fail
+        jb      .fail
 
 
 ; Program the descriptor (use legacy mode)

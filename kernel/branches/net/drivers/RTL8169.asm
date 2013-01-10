@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  RTL8169 driver for KolibriOS                                   ;;
@@ -8,9 +8,7 @@
 ;;  Copyright 2007 mike.dld,                                       ;;
 ;;   mike.dld@gmail.com                                            ;;
 ;;                                                                 ;;
-;;  Version 0.1  11 February 2007                                  ;;
-;;  Version 0.2  3 August 2010 - port to net branch by hidnplayr   ;;
-;;  Version 0.3  31 Januari 2011 - bugfixes by hidnplayr           ;;
+;; port to net branch by hidnplayr                                 ;;
 ;;                                                                 ;;
 ;;  References:                                                    ;;
 ;;    r8169.c - linux driver (etherboot project)                   ;;
@@ -414,7 +412,7 @@ proc service_proc stdcall, ioctl:dword
         jne     @F
 
         cmp     [IOCTL.out_size], 4
-        jl      .fail
+        jb      .fail
         mov     eax, [IOCTL.output]
         mov     [eax], dword API_VERSION
 
@@ -427,7 +425,7 @@ proc service_proc stdcall, ioctl:dword
         jne     .fail
 
         cmp     [IOCTL.inp_size], 3                     ; Data input must be at least 3 bytes
-        jl      .fail
+        jb      .fail
 
         mov     eax, [IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
@@ -453,7 +451,7 @@ proc service_proc stdcall, ioctl:dword
 ; This device doesnt have its own eth_device structure yet, lets create one
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
-        jge     .fail
+        jae     .fail
 
         allocate_and_clear ebx, device_size, .fail      ; Allocate memory to put the device structure in
 

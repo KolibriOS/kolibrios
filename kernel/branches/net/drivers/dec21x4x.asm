@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  DEC 21x4x driver for KolibriOS                                 ;;
@@ -351,7 +351,7 @@ proc service_proc stdcall, ioctl:dword
         jne     @F
 
         cmp     [IOCTL.out_size], 4
-        jl      .fail
+        jb      .fail
         mov     eax, [IOCTL.output]
         mov     [eax], dword API_VERSION
 
@@ -364,7 +364,7 @@ proc service_proc stdcall, ioctl:dword
         jne     .fail
 
         cmp     [IOCTL.inp_size], 3                     ; Data input must be at least 3 bytes
-        jl      .fail
+        jb      .fail
 
         mov     eax, [IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
@@ -390,7 +390,7 @@ proc service_proc stdcall, ioctl:dword
 ; This device doesnt have its own eth_device structure yet, lets create one
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
-        jge     .fail
+        jae     .fail
 
         push    edx
         stdcall KernelAlloc, dword device.size          ; Allocate the buffer for eth_device structure
@@ -1085,7 +1085,7 @@ int_handler:
         ; inc free desc
         inc     [device.tx_free_des]
         cmp     [device.tx_free_des], TX_DES_COUNT
-        jle     @f
+        jbe     @f
         mov     [device.tx_free_des], TX_DES_COUNT
        @@:
 
@@ -1239,7 +1239,7 @@ read_mac_eeprom:
         stosw
         inc     esi
         cmp     esi, 26/2
-        jl      .loop
+        jb      .loop
 
         DEBUGF  2,"%x-%x-%x-%x-%x-%x\n",[edi-6]:2,[edi-5]:2,[edi-4]:2,[edi-3]:2,[edi-2]:2,[edi-1]:2
 
@@ -1297,7 +1297,7 @@ SROM_GetWidth:  ; should be 6 or 8 according to some manuals (returns in ecx)
         
         inc     ecx
         cmp     ecx, 12
-        jle     .loop2
+        jbe     .loop2
   .end_loop2:
         
         DEBUGF 1,"Srom width=%u\n", ecx

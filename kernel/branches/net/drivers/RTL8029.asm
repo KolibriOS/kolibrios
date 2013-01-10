@@ -198,7 +198,7 @@ proc service_proc stdcall, ioctl:dword
         jne     @F     ;---------------
 
         cmp     [IOCTL.out_size], 4
-        jl      .fail
+        jb      .fail
         mov     eax, [IOCTL.output]
         mov     [eax], dword API_VERSION
 
@@ -215,12 +215,12 @@ proc service_proc stdcall, ioctl:dword
         mov     eax, [IOCTL.input]
 
         cmp     [IOCTL.inp_size], 3
-        jl      .fail
+        jb      .fail
         cmp     byte [eax], 1
         je      .pci
 
         cmp     [IOCTL.inp_size], 4
-        jl      .fail
+        jb      .fail
         cmp     byte [eax], 0
         je      .isa
 
@@ -674,9 +674,9 @@ transmit:
         [esi+0]:2,[esi+1]:2,[esi+2]:2,[esi+3]:2,[esi+4]:2,[esi+5]:2,[esi+6]:2,[esi+7]:2,[esi+8]:2,[esi+9]:2,[esi+10]:2,[esi+11]:2,[esi+13]:2,[esi+12]:2
 
         cmp     ecx, ETH_FRAME_LEN
-        jg      .err ; packet is too long
+        ja      .err ; packet is too long
         cmp     ecx, ETH_ZLEN
-        jl      .err ; packet is too short
+        jb      .err ; packet is too short
 
         movzx   edi, [device.tx_start]
         shl     edi, 8
@@ -1171,11 +1171,11 @@ devices         dd 0
 version         dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
 my_service      db 'RTL8029/ne2000',0  ;max 16 chars include zero
 
-device_1        db 'Realtek 8029',0
-device_2        db 'Realtek 8019',0
-device_3        db 'Realtek 8019AS',0
-device_4        db 'ne2000',0
-device_5        db 'DP8390',0
+;device_1        db 'Realtek 8029',0
+;device_2        db 'Realtek 8019',0
+;device_3        db 'Realtek 8019AS',0
+;device_4        db 'ne2000',0
+;device_5        db 'DP8390',0
 
 include_debug_strings
 
