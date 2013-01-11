@@ -964,12 +964,16 @@ IPv4_api:
 
   .write_ip:
         mov     [IP_LIST + eax], ecx
+        mov     edi, eax                        ; device number, we'll need it for ARP
 
         ; pre-calculate the local broadcast address
         mov     ebx, [SUBNET_LIST + eax]
         not     ebx
-        or      ecx, ebx
-        mov     [BROADCAST_LIST + eax], ecx
+        or      ebx, ecx
+        mov     [BROADCAST_LIST + eax], ebx
+
+        mov     eax, ecx
+        call    ARP_output_request              ; now send a gratuitous ARP
 
         xor     eax, eax
         ret

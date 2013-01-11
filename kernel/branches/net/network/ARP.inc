@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ARP.INC                                                        ;;
@@ -157,17 +157,22 @@ local   .exit
 ;       size of buffer in [esp+4]
 ;       packet size (without ethernet header) in ecx
 ;       packet ptr in edx
+;       device ptr in ebx
 ;  OUT: /
 ;
 ;-----------------------------------------------------------------
 align 4
 ARP_input:
 
+        call    NET_ptr_to_num
+        cmp     edi, -1
+        jz      .exit
+
         cmp     ecx, sizeof.ARP_header
         jb      .exit
 
 ;---------------------
-; Handle Reply packets
+; Handle reply packets
 
         cmp     [edx + ARP_header.Opcode], ARP_REP_OPCODE
         jne     .maybe_request
@@ -176,11 +181,15 @@ ARP_input:
         [edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP + 1]:1,\
         [edx + ARP_header.SenderIP + 2]:1, [edx + ARP_header.SenderIP + 3]:1
 
+        inc     [ARP_PACKETS_RX + 4*edi]
+
         mov     ecx, [NumARP]
         test    ecx, ecx
         jz      .exit
 
         mov     eax, [edx + ARP_header.SenderIP]
+        cmp     eax, [IP_LIST + 4*edi]                  ; check for IP collision
+        je      .collision
         mov     esi, ARP_table
   .loop:
         cmp     [esi + ARP_entry.IP], eax
@@ -210,17 +219,18 @@ ARP_input:
 
         jmp     .exit
 
+  .collision:
+        DEBUGF  1,"ARP_input: IP address conflict detected!\n"
+
+        jmp     .exit
 
 ;-----------------------
-; Handle Request packets
+; Handle request packets
 
   .maybe_request:
         cmp     [edx + ARP_header.Opcode], ARP_REQ_OPCODE
         jne     .exit
 
-        call    NET_ptr_to_num
-        cmp     edi, -1
-        jz      .exit
         DEBUGF  1,"ARP_input: got request packet through device: %u\n", edi
         inc     [ARP_PACKETS_RX + 4*edi]
 
@@ -290,6 +300,7 @@ ARP_output_request:
 
         push    eax                             ; DestIP
         pushd   [IP_LIST + edi]                 ; SenderIP
+        inc     [ARP_PACKETS_TX + edi]          ; assume we will succeed
 
         DEBUGF  1,"ARP_output_request: ip=%u.%u.%u.%u\n",\
         [esp]:1, [esp + 1]:1, [esp + 2]:1, [esp + 3]:1
@@ -469,7 +480,7 @@ ARP_IP_to_MAC:
 ;--------------------
 ; Send an ARP request
 
-        push    eax edi                    ; save IP for ARP_output_request
+        push    eax edi                 ; save IP for ARP_output_request
 
 ; Now create the ARP entry
         pushw   ARP_REQUEST_TTL         ; TTL
