@@ -191,6 +191,9 @@ TCP_close:
 
         call    SOCKET_is_disconnected
 
+        mov     ecx, [eax + SOCKET.Number]
+        call    SOCKET_close
+
         ret
 
 
