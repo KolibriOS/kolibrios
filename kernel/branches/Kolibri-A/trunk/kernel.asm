@@ -335,27 +335,27 @@ high_code:
 ; -----------------------------------------
 	mov	al, [BOOT_VAR+0x901F]		; DMA access
 	mov	[allow_dma_access], al
-	mov	eax, 32 			; bpp
+	mov	eax, 32 			; << bpp
 	mov	[ScreenBPP],al
 	mov	[_display.bpp], eax
 
 	mov	[_display.vrefresh], 60
 	mov	[_display.disable_mouse],  __sys_disable_mouse
 
-	movzx	eax,word [BOOT_VAR+0x900A]  ; X max
+	mov	eax, 1024			; << X max
 	mov	[_display.width], eax
 	dec	eax
 	mov	[Screen_Max_X],eax
 	mov	[screen_workarea.right],eax
-	movzx	eax,word [BOOT_VAR+0x900C]	  ; Y max
+	mov	eax,768 			; << Y max
 	mov	[_display.height], eax
 	dec	eax
 	mov	[Screen_Max_Y],eax
 	mov	[screen_workarea.bottom],eax
-	movzx	eax,word [BOOT_VAR+0x9008]	  ; screen mode
+	mov	eax, 0x7055			; << screen mode
 	mov	[SCR_MODE],eax
 
-	movzx	eax, word[BOOT_VAR+0x9001]	  ; for other modes
+	mov	eax, 4096			; << may be different!
 	mov	[BytesPerScanLine],ax
 	mov	[_display.pitch], eax
 
@@ -373,16 +373,9 @@ high_code:
 ; GRAPHICS ADDRESSES
 
 	and	byte [BOOT_VAR+0x901e],0x0
-	mov	eax,[BOOT_VAR+0x9018]
+	mov	eax, [BOOT_VAR+0x9018]
 	mov	[LFBAddress],eax
 
-	cmp	[SCR_MODE],word 0100000000000000b
-	jge	setvesa20
-	mov	eax, 0xDEADBEEF
-	hlt
-;        ===  EGA, VGA & Vesa 1.2 modes not supported ===
-setvesa20:
-v20ga32:
 	mov	[PUTPIXEL],dword __sys_putpixel
 	mov	[GETPIXEL],dword get_pixel
 

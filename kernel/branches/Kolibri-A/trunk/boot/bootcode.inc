@@ -174,6 +174,7 @@ cpugood:
 
 ; --------------- APM ---------------------
 	and	word [es:0x9044], 0	; ver = 0.0 (APM not found)
+ if 0
 	mov	ax, 0x5300
 	xor	bx, bx
 	int	0x15
@@ -196,6 +197,7 @@ cpugood:
 	mov	[es:0x9054], dx
 
 apm_end:
+end if
 
 ;CHECK current of code
 	cmp	[cfgmanager.loader_block], -1
@@ -208,9 +210,9 @@ apm_end:
 
 noloaderblock:
 ; DISPLAY VESA INFORMATION
-	 call	 print_vesa_info
-	 call	 calc_vmodes_table
-	 call	 check_first_parm  ;check and enable cursor_pos
+;         call    print_vesa_info
+;         call    calc_vmodes_table
+;         call    check_first_parm  ;check and enable cursor_pos
 
 ; \begin{diamond}[30.11.2005]
 cfgmanager:
@@ -264,7 +266,7 @@ cfgmanager:
 
 ; ASK GRAPHICS MODE
 
-	call	set_vmode
+;       call    set_vmode
 
 ; GRAPHICS ACCELERATION
 ; force yes
@@ -293,12 +295,17 @@ cfgmanager:
 	xor	ax, ax
 	mov	es, ax
 
-	mov	bx, [es:0x9008] 	; vga & 320x200
-	mov	ax, 0x4f02		; Vesa
+;        mov     bx, [es:0x9008]         ; vga & 320x200
+	mov	ax, 0xA000		; AtomBIOS Fn00
+	mov	cx, 0x550A		; 1024x768, 32bpp, ARGB8888
 setgr:
 	int	0x10
 	test	ah, ah
 	jnz	$
+	mov	ax, 0xA006		; AtomBIOS Fn06
+	int	0x10
+	mov	[es:0x9018], ebx	; LFB
+
 gmok2:
 	push	ds
 	pop	es

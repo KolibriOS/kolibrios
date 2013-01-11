@@ -24,7 +24,7 @@ dw  ((x mod 16) shl 12 + (y mod 16) shl 8 + (r mod 4) shl 3 + ((len-8) mod 8) + 
 end if
 }
 
-macro char_entry 	charpos, wdbits, numticks
+macro char_entry	charpos, wdbits, numticks
 {
 	dw (charpos - .chars)*16 + (wdbits mod 4)*8 + (numticks mod 8)
 }
@@ -35,7 +35,7 @@ macro char_entry 	charpos, wdbits, numticks
 .numfonts   db	2		; number of system fonts
 .numsptks   db	32		; number of special ticks
 .numticks   dw	?		; total number of ticks
-.ticktble   dd	nsvf.tick_table	; general table
+.ticktble   dd	nsvf.tick_table ; general table
 
 align 4
 ;   ---- special tickfields ----
@@ -43,8 +43,8 @@ align 4
 .cs2	    db	11001100b,  111100b
 .cs3	    db	00010100b,  01000101b,	0001b
 .cs0	    db	1111b		   ; 4-pix square
-.ri1	    db	01010101b, 0101b       ; rot-invariants: 8-pix ring 
-.ri2	    db	01000100b, 01000100b, 01000100b, 000100b   ; 16-pix ring 
+.ri1	    db	01010101b, 0101b       ; rot-invariants: 8-pix ring
+.ri2	    db	01000100b, 01000100b, 01000100b, 000100b   ; 16-pix ring
 
 align 16
 nsvf_info:
@@ -53,19 +53,19 @@ nsvf_info:
 .fnt0.x     db	5	    ; + 0: X-width
 .fnt0.y     db	9	    ; + 1: Y-heigth
 .fnt0.rs    dw	0	    ; + 2: reserved
-.fnt0.tab   dd	nsvf00.table      ; + 4
-.fnt0.org   dd	nsvf00.origs      ; + 8
-.fnt0.chr   dd    nsvf00.chars      ; +12
+.fnt0.tab   dd	nsvf00.table	  ; + 4
+.fnt0.org   dd	nsvf00.origs	  ; + 8
+.fnt0.chr   dd	  nsvf00.chars	    ; +12
 
 
 ;align 16
 ;    System font #1: 7x10
-.fnt1.x     db  7           ; X-width
-.fnt1.y     db  10          ; Y-heigth
-.fnt1.rs    dw  0           ; reserved
-.fnt1.tab   dd  nsvf01.table
-.fnt1.org   dd  nsvf01.origs
-.fnt1.chr   dd  nsvf01.chars
+.fnt1.x     db	7	    ; X-width
+.fnt1.y     db	10	    ; Y-heigth
+.fnt1.rs    dw	0	    ; reserved
+.fnt1.tab   dd	nsvf01.table
+.fnt1.org   dd	nsvf01.origs
+.fnt1.chr   dd	nsvf01.chars
 
 
 align 4
@@ -76,33 +76,33 @@ nsvf:
 .tick_table:
 	    db	0, 0, 0, 0, 0, 0	;32..37 (reserved)
 .v1:
-                    ; 38    39
+		    ; 38    39
 	    db	01b	    ; XX    XX
 	    db	11b	    ;   X    X
 .v2:
-                      ;      40    41     42    43    44   45
-	    db	0100b     ;40    XXX    XXX   XX    XX    XX   XX
-	    db	1100b     ;41       X     X     X     XX    X    X
-	    db	0001b     ;42                    X          X   X
-	    db	1001b     ;43
-	    db	0101b     ;44
-	    db	1101b     ;45?
+		      ;      40    41     42    43    44   45
+	    db	0100b	  ;40    XXX    XXX   XX    XX    XX   XX
+	    db	1100b	  ;41       X     X     X     XX    X    X
+	    db	0001b	  ;42                    X          X   X
+	    db	1001b	  ;43
+	    db	0101b	  ;44
+	    db	1101b	  ;45?
 	    db	0	    ;46
 	    db	0	    ;47
 .v3:
-			      ;             48   49   50    51    52    53   54   
-	    db	010100b     ;48    XXX   XX   XX    XX   XXXX   XX   XXX  
-	    db	000011b     ;49       X   X     X     X     X    X     X    
-	    db	010001b     ;50       X   X      X    X         X      X    
-	    db	000101b     ;51           X      X    X        X           
+			      ;             48   49   50    51    52    53   54
+	    db	010100b     ;48    XXX   XX   XX    XX   XXXX   XX   XXX
+	    db	000011b     ;49       X   X     X     X     X    X     X
+	    db	010001b     ;50       X   X      X    X         X      X
+	    db	000101b     ;51           X      X    X        X
 	    db	110000b     ;52
 	    db	000111b     ;53     55    56    57
 	    db	001100b     ;54     XX    XX    XXX
 	    db	010101b     ;55       X     X    XX
 	    db	011101b     ;56       X   XX
 	    db	111100b     ;57      X
-          db      0  		;58
-          db      0           ;59
+	  db	  0		;58
+	  db	  0	      ;59
 	    db	0, 0, 0, 0	;60..63
 .v4:
 			      ;            64   65   66    67     68    69     70
@@ -115,13 +115,13 @@ nsvf:
 	    db	10100000b   ;70:
 	    db	01010101b   ;71:   71
 	    db	00000000b   ;72:   XX
-        db  00000000b   ;73:     X
-        db  00000000b   ;74:     X
-        db  00000000b   ;75:   XX
+	db  00000000b	;73:     X
+	db  00000000b	;74:     X
+	db  00000000b	;75:   XX
 	    db	00000000b   ;76:
-        db  00000000b   ;77:
-        db  00000000b   ;78:
-        db  00000000b   ;79:
+	db  00000000b	;77:
+	db  00000000b	;78:
+	db  00000000b	;79:
 
 
 .v5:
@@ -154,14 +154,14 @@ nsvf:
 	    db	0, 0, 0, 0, 0, 0	;106..108
 	    db	0, 0, 0, 0, 0, 0	;109..111
 
-.v9:                                           112
+.v9:
 	    db	00100100b, 00100100b, 00b   ;112:  XXX
-	    db	0, 0, 0                     ;113:     XXXX
-	    db	0, 0, 0                     ;114:         XXX
+	    db	0, 0, 0 		    ;113:     XXXX
+	    db	0, 0, 0 		    ;114:         XXX
 	    db	0, 0, 0 		;115:
 .v10:
-	    db	00010100b, 01010000b, 0100b	;116: 
-	    db	01010100b, 01010001b, 0100b	;117: 
+	    db	00010100b, 01010000b, 0100b	;116:
+	    db	01010100b, 01010001b, 0100b	;117:
 	    db	01010001b, 00000100b, 0100b ;118:
 	    db	0, 0, 0 			;119:
 .v11:
@@ -170,10 +170,10 @@ nsvf:
 	    db	0, 0, 0 			;122:
 	    db	0, 0, 0 			;123:
 .v12:
-	    db	10011001b, 10011001b, 10011001b ;124: 
-	    db	01000100b, 01000100b, 01000000b ;125: 
-	    db	00000000b, 00000000b, 00000000b ;126:  
-	    db	00000000b, 00000000b, 00000000b	;127:
+	    db	10011001b, 10011001b, 10011001b ;124:
+	    db	01000100b, 01000100b, 01000000b ;125:
+	    db	00000000b, 00000000b, 00000000b ;126:
+	    db	00000000b, 00000000b, 00000000b ;127:
 .v13:
 	; WARNING: 13-16 vertex fields not implemented yet!
 
