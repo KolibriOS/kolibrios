@@ -766,6 +766,8 @@ int_handler:
 
         DEBUGF  1,"Device=%x status=%x\n", ebx, eax:2
 
+        push    ebx
+
         test    al, ISR_PRX     ; packet received ok ?
         jz      .no_rx
 
@@ -917,6 +919,7 @@ int_handler:
 
 
   .no_rx:
+        pop     ebx
         DEBUGF  2,"done\n"
 
         set_io  0
