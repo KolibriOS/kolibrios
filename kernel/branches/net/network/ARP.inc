@@ -164,12 +164,28 @@ local   .exit
 align 4
 ARP_input:
 
+;-----------------------------------------
+; Check validity and print some debug info
+
+        cmp     ecx, sizeof.ARP_header
+        jb      .exit
+
         call    NET_ptr_to_num
         cmp     edi, -1
         jz      .exit
 
-        cmp     ecx, sizeof.ARP_header
-        jb      .exit
+        inc     [ARP_PACKETS_RX + 4*edi]        ; update stats
+
+        DEBUGF  1,"ARP_input: got packet from %u.%u.%u.%u through device %u\n",\
+        [edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP + 1]:1,\
+        [edx + ARP_header.SenderIP + 2]:1, [edx + ARP_header.SenderIP + 3]:1, edi
+
+;------------------------------
+; First, check for IP collision
+
+        mov     eax, [edx + ARP_header.SenderIP]
+        cmp     eax, [IP_LIST + 4*edi]
+        je      .collision
 
 ;---------------------
 ; Handle reply packets
@@ -177,19 +193,12 @@ ARP_input:
         cmp     [edx + ARP_header.Opcode], ARP_REP_OPCODE
         jne     .maybe_request
 
-        DEBUGF  1,"ARP_input: got reply packet from %u.%u.%u.%u\n",\
-        [edx + ARP_header.SenderIP]:1, [edx + ARP_header.SenderIP + 1]:1,\
-        [edx + ARP_header.SenderIP + 2]:1, [edx + ARP_header.SenderIP + 3]:1
-
-        inc     [ARP_PACKETS_RX + 4*edi]
+        DEBUGF  1,"ARP_input: It's a reply\n"
 
         mov     ecx, [NumARP]
         test    ecx, ecx
         jz      .exit
 
-        mov     eax, [edx + ARP_header.SenderIP]
-        cmp     eax, [IP_LIST + 4*edi]                  ; check for IP collision
-        je      .collision
         mov     esi, ARP_table
   .loop:
         cmp     [esi + ARP_entry.IP], eax
@@ -219,11 +228,6 @@ ARP_input:
 
         jmp     .exit
 
-  .collision:
-        DEBUGF  1,"ARP_input: IP address conflict detected!\n"
-
-        jmp     .exit
-
 ;-----------------------
 ; Handle request packets
 
@@ -231,8 +235,7 @@ ARP_input:
         cmp     [edx + ARP_header.Opcode], ARP_REQ_OPCODE
         jne     .exit
 
-        DEBUGF  1,"ARP_input: got request packet through device: %u\n", edi
-        inc     [ARP_PACKETS_RX + 4*edi]
+        DEBUGF  1,"ARP_input: its a request\n"
 
         mov     eax, [IP_LIST + 4*edi]
         cmp     eax, [edx + ARP_header.TargetIP]                ; Is it looking for my IP address?
@@ -277,6 +280,9 @@ ARP_input:
 
         call    [ebx + NET_DEVICE.transmit]
         ret
+
+  .collision:
+        DEBUGF  1,"ARP_input: IP address conflict detected!\n"
 
   .exit:
         call    kernel_free
