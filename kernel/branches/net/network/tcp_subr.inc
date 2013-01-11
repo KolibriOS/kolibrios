@@ -190,9 +190,7 @@ TCP_close:
 ;;; TODO: update slow start threshold
 
         call    SOCKET_is_disconnected
-
-        mov     ecx, [eax + SOCKET.Number]
-        call    SOCKET_close
+        call    SOCKET_free
 
         ret
 
