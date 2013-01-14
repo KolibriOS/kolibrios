@@ -13,6 +13,7 @@
 
 $Revision$
 
+boot_dev  db	  0  ; 0=floppy, 1=hd
 
 ;==========================================================================
 ;
@@ -87,7 +88,7 @@ FirstDataSector dw	0			; begin of data
 ;
 ;=========================================================================
 
-include 'bootvesa.inc'		       ;Include source for boot vesa
+diff16 "start_of_code: ",0,$
 
 start_of_code:
 	cld
@@ -172,7 +173,7 @@ cpugood:
 .nopci:
 ; \end{Mario79}
 
-; --------------- APM ---------------------
+; --------------- APM - removed--------------------
 	and	word [es:0x9044], 0	; ver = 0.0 (APM not found)
  if 0
 	mov	ax, 0x5300
