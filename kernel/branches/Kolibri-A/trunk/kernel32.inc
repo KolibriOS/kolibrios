@@ -219,7 +219,7 @@ include "fs/ext2.inc"	  ; read / write for ext2 filesystem
 
 ; sound
 
-include "sound/playnote.inc"	; player Note for Speaker PC
+;include "sound/playnote.inc"	; player Note for Speaker PC
 ;include "sound/FHT.inc"        ; fast Fourier transform routines
 
 ; display

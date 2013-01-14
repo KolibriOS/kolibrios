@@ -18,9 +18,9 @@ align 4
 	    db	0x1A	; 6
 	    db	0x77	; 7
 	    db	0x49	; 8     
-	    db	0x00	; 9     
-	    db	0x00	; 10  
-	    db	0x00	; 11  
+	    db	0x62	; 9     
+	    db	0x2E	; 10  
+	    db	0x1D	; 11  
 	    db	0x00	; 12   
 	    db	0x00	; 13  
 	    db	0x00	; 14  
@@ -48,36 +48,36 @@ align 4
 diff16 "font02.table: ",0,$
 
    times 33 dw 0
-	char_entry  .ch_33, 4, 4   ; #33 !
-	char_entry  .ch_34, 4, 2   ; #34 "
+	char_entry  .ch_33, 2, 4   ; #33 !
+	char_entry  .ch_34, 2, 2   ; #34 "
 	char_entry  .ch_35, 0, 4   ; #35 #
 	char_entry  .ch_36, 0, 4   ; #36 $
 	char_entry  .ch_37, 0, 3   ; #37 %
 
 	dw (.ch_38 -.chars)*16 + 4	    ; #38 &
-	char_entry  .ch_39, 5, 1   ; #39 '
-    dw (.ch_40 -.chars)*16 + 1	    ; #40 (
-	dw (.ch_41 -.chars)*16 + 1	    ; #41 )
+	char_entry  .ch_39, 2, 1   ; #39 '
+	char_entry  .ch_40, 2, 1   ; #40 (
+	char_entry  .ch_41, 2, 1   ; #41 )
 	char_entry  .ch_42, 1, 3   ; #42 *
-	dw (.ch_43 -.chars)*16 + 2	    ; #43 +
-	dw (.ch_44 -.chars)*16 + 2	    ; #44 ,
-	dw (.ch_45 -.chars)*16 + 1	    ; #45 -
-	dw (.ch_46 -.chars)*16 + 1	    ; #46 .
-	char_entry  .ch_47, 2, 1   ; #47 /
-	dw (.ch_48 -.chars)*16 + 2	    ; #48 0
-	dw (.ch_49 -.chars)*16 + 2	    ; #49 1
-	dw (.ch_50 -.chars)*16 + 3	    ; #50 2
-	dw (.ch_51 -.chars)*16 + 3	    ; #51 3
+	char_entry  .ch_43, 1, 2   ; #43 +
+	char_entry  .ch_44, 2, 2   ; #44 ,
+	char_entry  .ch_45, 1, 1   ; #45 -
+	char_entry  .ch_46, 2, 2   ; #46 .
+	char_entry  .ch_47, 1, 1   ; #47 /
+	char_entry  .ch_48, 1, 2   ; #48 0
+	char_entry  .ch_49, 2, 3   ; #49 1
+	char_entry  .ch_50, 1, 3   ; #50 2
+	char_entry  .ch_51, 1, 2   ; #51 3
 	dw (.ch_52 -.chars)*16 + 3	    ; #52 4
 	dw (.ch_53 -.chars)*16 + 2	    ; #53 5
 	dw (.ch_54 -.chars)*16 + 2	    ; #54 6
 	dw (.ch_55 -.chars)*16 + 2	    ; #55 7
 	dw (.ch_56 -.chars)*16 + 2	    ; #56 8
 	dw (.ch_57 -.chars)*16 + 2	    ; #57 9
-	dw (.ch_58 -.chars)*16 + 2	    ; #58 :
-	dw (.ch_59 -.chars)*16 + 3	    ; #59 ;
+	char_entry  .ch_58, 4, 2   ; #58 :
+	char_entry  .ch_59, 4, 4   ; #59 ;
 	dw (.ch_60 -.chars)*16 + 1	    ; #60 <
-	dw (.ch_61 -.chars)*16 + 2	    ; #61 =
+	char_entry  .ch_61, 0, 2   ; #61 =
 	dw (.ch_62 -.chars)*16 + 1	    ; #62 >
 	dw (.ch_63 -.chars)*16 + 3	    ; #63 ?
 	dw (.ch_64 -.chars)*16 + 2	    ; #64 @
@@ -89,6 +89,7 @@ diff16 "font02.table: ",0,$
 	dw (.ch_70 -.chars)*16 + 3	    ; #70 F
 	dw (.ch_71 -.chars)*16 + 2	    ; #71 G
 	dw (.ch_72 -.chars)*16 + 3	    ; #72 H
+	char_entry  .ch_73, 4, 3   ; #73 I
 	dw (.ch_73 -.chars)*16 + 3	    ; #73 I
 	dw (.ch_74 -.chars)*16 + 2	    ; #74 J
 	dw (.ch_75 -.chars)*16 + 3	    ; #75 K
@@ -100,7 +101,6 @@ diff16 "font02.table: ",0,$
 	dw (.ch_81 -.chars)*16 + 3	    ; #81 Q
 	dw (.ch_82 -.chars)*16 + 3	    ; #82 R
 	char_entry  .ch_83, 0, 2   ; #83 S
-	dw (.ch_83 -.chars)*16 + 3	    ; #83 S
 	dw (.ch_84 -.chars)*16 + 2	    ; #84 T
 	dw (.ch_85 -.chars)*16 + 3	    ; #85 U
 	dw (.ch_86 -.chars)*16 + 3	    ; #86 V
@@ -152,8 +152,8 @@ diff16 "font02.table: ",0,$
 	dw (.ch_131-.chars)*16 + 2	    ; #131
 	dw (.ch_132-.chars)*16 + 6	    ; #132
 	dw (.ch_133-.chars)*16 + 4	    ; #133 E
-	dw (.ch_134-.chars)*16 + 3	    ; #134
-	dw (.ch_135-.chars)*16 + 3	    ; #135
+	dw (.ch_134-.chars)*16 + 3	    ; #134 Zhe
+	char_entry  .ch_135, 0, 4   ; #135 'Ze'
 	dw (.ch_136-.chars)*16 + 3	    ; #136
 	dw (.ch_137-.chars)*16 + 4	    ; #137
 	dw (.ch_138-.chars)*16 + 3	    ; #138 K
@@ -267,6 +267,7 @@ diff16 "font02.chars: ",0,$
 .chars:
     dw	0
 .ch_33:    ; !
+.ch_46:    ; .
     lntick	3, 3, 0, 3
     lntick	4, 2, 2, 3
     lntick	4, 7, 2, 6
@@ -281,13 +282,17 @@ diff16 "font02.chars: ",0,$
     lntick	0, 7, 0, 8
     lntick	1,11, 0, 8
 
+.ch_135:   ; 'Ze'
+    lntick	0,12, 0, 2
+.ch_51:    ; 3
+    gptick 11, 3, 106
 .ch_36:    ; $
-    lntick	3, 2, 2, 14
-    lntick	5, 2, 2, 14
-.ch_83:   ; S
+.ch_83:    ; S
     gptick  8, 0, 125 
     gptick  1, 4, 118 
     lntick	0, 3, 3
+    lntick	3, 2, 2, 14
+    lntick	5, 2, 2, 14
 
 .ch_37:    ; %
 .ch_47:    ; /
@@ -300,52 +305,63 @@ diff16 "font02.chars: ",0,$
     gptick 19, 4, 44
     gptick	4, 0, 44
     ritick	3, 3, 0
+
 .ch_40:    ; (
-    gptick	5, 3, 80
+    gptick	9, 3, 121
 .ch_41:    ; )
-    gptick	9, 7, 80
+    gptick 10, 7, 121
+
 .ch_42:    ; *
     gptick	7, 4, 71
     gptick  6, 0, 71
-    lntick	4, 5, 2, 8
 .ch_43:    ; +
-    lntick	2, 2, 2, 5
+    lntick	4, 5, 2, 7
 .ch_45:    ; -
+    lntick	1, 8, 0, 7
 .ch_61:    ; =
-    lntick	0, 4, 0, 5
-    lntick	0, 6, 0, 5
-.ch_58:    ; :
+    lntick	1, 9, 0, 7
+    lntick	1, 6, 0, 7
+
 .ch_59:    ; ;
-    cstick	1, 7, 0, 0
-.ch_46:    ; .
+    lntick	5, 9, 2, 2
+.ch_58:    ; :
+    cstick	3,10, 0, 0
 .ch_44:    ; ,
-    cstick	1, 3, 0, 0
-    ritick	1, 1, 0
+    cstick	3, 4, 0, 0
+    gptick	3, 6, 48
+
+.ch_48:    ; 0
+    gptick  7, 6, 122
+    gptick  6, 2, 122
+
 .ch_55:    ; 7
     gptick	1, 2, 81
     lntick	0, 8, 0, 4
 .ch_64:    ; @
     cstick	2, 6, 0, 1
-.ch_48:    ; 0
+
 .ch_79:    ; O
 .ch_142:   ;
 .ch_81:    ; Q
     gptick	5, 4, 116
     lntick	4, 3, 2, 5
     lntick	3, 1, 0, 2
+
 .ch_49:    ; 1
+    lntick	2,10, 1, 2
+.ch_73:    ; I
+    lntick	4, 4, 2, 11
+    lntick	2, 3, 0, 5
+    lntick	2,14, 0, 5
+
 .ch_124:   ; |
-    lntick	2, 2, 2, 7
-    ritick	1, 6, 0
+
 .ch_50:    ; 2
-    lntick	0, 2, 0, 5
-    lntick	1, 3, 1, 3
-.ch_51:    ; 3
-    gptick	8, 1, 64
-    gptick     10, 6, 65
-.ch_83:    ; S
-    lntick	1, 5, 0, 3
-    gptick	3, 2, 55
+    gptick 11, 1, 106
+    lntick	1, 5, 1, 5
+    gptick 12, 6, 99 
+
+
 .ch_53:    ; 5
     gptick     10, 6, 65
     gptick     13, 4, 104
@@ -407,10 +423,6 @@ diff16 "font02.chars: ",0,$
     lntick	1, 5, 0, 3
     lntick	0, 2, 2, 7
     lntick	4, 2, 2, 7
-.ch_73:    ; I
-    lntick	1, 8, 0, 3
-    lntick	2, 3, 2, 5
-    lntick	1, 2, 0, 3
 .ch_74:    ; J
     gptick     31, 6, 88
     lntick	2, 8, 0, 3
@@ -610,8 +622,6 @@ diff16 "font02.chars: ",0,$
     gptick     14, 0, 89
     lntick	1, 3, 2, 6
     ritick	0, 8, 0
-.ch_135:   ; ZE
-    ritick	3, 5, 0
 .ch_157:   ; AE
     gptick	8, 1, 64
     gptick     10, 6, 65

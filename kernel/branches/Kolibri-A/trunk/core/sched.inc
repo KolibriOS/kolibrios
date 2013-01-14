@@ -20,7 +20,7 @@ irq0:
         mov     es, ax
         inc     [timer_ticks]
         mov     eax, [timer_ticks]
-        call    playNote       ; <<<--- Speaker driver
+;        call    playNote       ; <<<--- Speaker driver
         sub     eax,[next_usage_update]
         cmp     eax,100
         jb      .nocounter
@@ -43,21 +43,6 @@ change_task:
         pushfd
         cli
         pushad
-if 0
-; \begin{Mario79} ; <- must be refractoried, if used...
-        cmp     [dma_task_switched], 1
-        jne     .find_next_task
-        mov     [dma_task_switched], 0
-        mov     ebx, [dma_process]
-        cmp     [CURRENT_TASK], ebx
-        je      .return
-        mov     edi, [dma_slot_ptr]
-        mov     [CURRENT_TASK], ebx
-        mov     [TASK_BASE], edi
-        jmp     @f
-.find_next_task:
-; \end{Mario79}
-end if
         call    find_next_task
         jz      .return  ; the same task -> skip switch
   @@:   mov     byte[DONT_SWITCH], 1

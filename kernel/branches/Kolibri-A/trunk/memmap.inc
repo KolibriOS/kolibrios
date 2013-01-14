@@ -267,9 +267,7 @@
 ; 0x805FF000 -> 5FFF80   TSS
 ; 0x80600000 -> 601FFF   i/o maps
 
-; 0x80800000 ->       kernel heap
-; 0x80FFFFFF          heap min limit
-; 0xEFFFFFFF          heap max limit
+; 0x80800000 ->827FFFFF  kernel heap
 
 ; 0xF0000000 -> 0xF1FFFFFF  PCI-express extended config space
 ; 0xFD000000 -> 0xFD3FFFFF  static system buffer 4Mb

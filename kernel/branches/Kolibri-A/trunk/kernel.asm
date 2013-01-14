@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -87,7 +87,6 @@ pci_data_sel   equ  (pci_data_32-gdts)
 ;;   Included files:
 ;;
 ;;   Kernel16.inc
-;;    - Booteng.inc   English text for bootup
 ;;    - Bootcode.inc  Hardware setup
 ;;    - Pci16.inc     PCI functions
 ;;
@@ -116,14 +115,12 @@ use16
 		  org	0x0
 		  jmp	start_of_code
 
-version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
+version db    'Kolibri-A   version 0.1.0.0      ',13,10,13,10,0
 
-;include "boot/bootstr.inc"     ; language-independent boot messages
+diff16 "preboot start: ",0,$
 include "boot/preboot.inc"
 
-include "boot/booteng.inc"     ; english system boot messages
 diff16 "bootcode start: ",0,$
-
 include "boot/bootcode.inc"    ; 16 bit system boot code
 
 diff16 "pci16    start: ",0,$
@@ -251,6 +248,8 @@ end if
 
 	   lgdt [gdts]
 	   jmp pword os_code:high_code
+
+diff16 "32-bit init size ",B32,$
 
 align 4
 bios32_entry	dd ?
@@ -478,7 +477,7 @@ high_code:
 	   stdcall kernel_alloc, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
 				 (unpack.lc+unpack.lp)))*4
 
-	   mov	[unpack.p], eax
+	   mov	[unpack.p], eax     ; unpacker.inc
 
 	   call init_events
 	   mov	eax, srv.fd-SRV_FD_OFFSET

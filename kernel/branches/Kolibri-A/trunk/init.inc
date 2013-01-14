@@ -121,7 +121,7 @@ init_mem:
 	   dec ecx
 	   jnz .map_kernel_tabs
 
-; map pagetables to linear space
+; map pagetables to linear space!
 	   mov dword [sys_pgdir-OS_BASE+(page_tabs shr 20)], sys_pgdir+PG_SW-OS_BASE
 
 	   mov edi, (sys_pgdir-OS_BASE)
@@ -149,7 +149,7 @@ init_page_map:
 
 	   mov edi, sys_pgmap-OS_BASE
 	   mov ebx, ecx
-	   shr ecx, 5
+	   shr ecx, 5       ; 32 pagebits per dw
 	   xor eax, eax
 	   rep stosd
 

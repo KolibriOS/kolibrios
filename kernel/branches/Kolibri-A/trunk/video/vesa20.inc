@@ -445,7 +445,7 @@ align 4
 .invert_force:
      mov     ecx, [ebx+eax*4]
      xor     ecx, 0x00FFFFFF
-     or      ecx, 0x01000000		; keep bit[24] high !
+     bts     ecx, 24		; keep bit[24] high !
 align 4
 .putpixel:
      mov     [ebx+eax*4], ecx
@@ -956,6 +956,7 @@ bgr_cur_line	rd	1920	; maximum width of screen
 bgr_next_line	rd	1920
 endg
 
+
 smooth_line:
 	mov	al, [esi+2]
 	shl	eax, 16
@@ -1019,6 +1020,28 @@ align 4
 overlapping_of_points_ptr	dd	overlapping_of_points
 endg
 
+align 16
+overlapping_of_points_mmx:
+	movd	mm0, eax
+	movd	mm4, eax
+	movd	mm1, ebx
+	pxor	mm2, mm2
+	punpcklbw mm0, mm2
+	punpcklbw mm1, mm2
+	psubw	mm1, mm0
+	movd	mm3, ecx
+	psrld	mm3, 24
+	packuswb mm3, mm3
+	packuswb mm3, mm3
+	pmullw	mm1, mm3
+	psrlw	mm1, 8
+	packuswb mm1, mm2
+	paddb	mm4, mm1
+	movd	eax, mm4
+	ret
+
+
+
 init_background:
 	mov	edi, BgrAuxTable
 	xor	edx, edx
@@ -1040,25 +1063,7 @@ init_background:
 @@:
 	ret
 
-align 16
-overlapping_of_points_mmx:
-	movd	mm0, eax
-	movd	mm4, eax
-	movd	mm1, ebx
-	pxor	mm2, mm2
-	punpcklbw mm0, mm2
-	punpcklbw mm1, mm2
-	psubw	mm1, mm0
-	movd	mm3, ecx
-	psrld	mm3, 24
-	packuswb mm3, mm3
-	packuswb mm3, mm3
-	pmullw	mm1, mm3
-	psrlw	mm1, 8
-	packuswb mm1, mm2
-	paddb	mm4, mm1
-	movd	eax, mm4
-	ret
+
 ;diff16 "VESA2 code end ",0,$
 diff10 "VESA2 code size",get_pixel,$
 

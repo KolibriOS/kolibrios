@@ -106,9 +106,9 @@ diff16 "sdsh_data.table0: ",0,$
 	dw (.ch0_88 -.chars)*16 + 2	    ; #88 X
 	dw (.ch0_89 -.chars)*16 + 2	    ; #88 Y
 	dw (.ch0_90 -.chars)*16 + 3	    ; #90 Z
-	dw (.ch0_91 -.chars)*16 + 3	    ; #91 [
+	dw (.ch0_91 -.chars)*16 + 1	    ; #91 [
 	dw (.ch0_92 -.chars)*16 + 1	    ; #92 \
-	dw (.ch0_93 -.chars)*16 + 3	    ; #93 ]
+	dw (.ch0_93 -.chars)*16 + 1	    ; #93 ]
 	dw (.ch0_94 -.chars)*16 + 1	    ; #94 ^
 	dw (.ch0_95 -.chars)*16 + 1	    ; #95 _
 	dw (.ch0_96 -.chars)*16 + 1	    ; #96 `
@@ -442,11 +442,9 @@ diff16 "sdsh_data.chars: ",0,$
 .ch0_92:    ; \
     gptick	4, 6, 84
 .ch0_91:    ; [
-    lntick	1, 3, 2, 5
+    gptick 19, 4, 99
 .ch0_93:    ; ]
-    lntick	1, 2, 0, 3
-    lntick	1, 8, 0, 3
-    lntick	3, 3, 2, 5
+    gptick	9, 0, 99
 .ch0_65:    ; A
 .ch0_128:   ;
     lntick	0, 2, 2, 4
