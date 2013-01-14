@@ -135,7 +135,7 @@ end virtual
         push    esp
         push    edx
         push    [.sector_lo+12]
-        mov     ecx, [.cache]
+        mov     ecx, [.cache+16]
         mov     eax, edi
         shl     eax, 9
         add     eax, [ecx+DISKCACHE.data]
@@ -317,7 +317,7 @@ end virtual
 
 .yes_in_cache_write:
 
-        mov     dword [esi+4], 2        ; write - differs from hd
+        mov     dword [esi+8], 2        ; write - differs from hd
 
         shl     edi, 9
         mov     ecx, [.cache]
@@ -373,11 +373,12 @@ find_empty_slot64:
 ; This function is intended to replace the old 'write_cache' function.
 proc write_cache64 uses ecx edx esi edi, disk:dword
 locals
-cache_chain_started     dd      ?
+cache_chain_started     dd      0
 cache_chain_size        dd      ?
 cache_chain_pos         dd      ?
 cache_chain_ptr         dd      ?
 endl
+saved_esi_pos = 16+12 ; size of local variables + size of registers before esi
 ; If there is no cache for this disk, nothing to do.
         cmp     [esi+DISKCACHE.pointer], 0
         jz      .flush
@@ -465,7 +466,7 @@ endl
 .write_cache_chain:
         pusha
         mov     edi, [cache_chain_pos]
-        mov     ecx, [ebp-12]
+        mov     ecx, [ebp-saved_esi_pos]
         shl     edi, 9
         add     edi, [ecx+DISKCACHE.data]
         mov     ecx, [cache_chain_size]
@@ -549,7 +550,7 @@ disk_init_cache:
 
         mov     eax, [esi+DISK.SysCache.data_size]
         push    ebx
-        call    calculate_for_hd
+        call    calculate_for_hd64
         pop     ebx
         add     eax, [esi+DISK.SysCache.pointer]
         mov     [esi+DISK.SysCache.data], eax
@@ -564,7 +565,7 @@ disk_init_cache:
 
         mov     eax, [esi+DISK.AppCache.data_size]
         push    ebx
-        call    calculate_for_hd
+        call    calculate_for_hd64
         pop     ebx
         add     eax, [esi+DISK.AppCache.pointer]
         mov     [esi+DISK.AppCache.data], eax
@@ -589,6 +590,22 @@ disk_init_cache:
         mov     [esi+DISK.AppCache.pointer], eax
         mov     al, 1
         ret
+
+calculate_for_hd64:
+        push    eax
+        mov     ebx, eax
+        shr     eax, 9
+        lea     eax, [eax*3]
+        shl     eax, 2
+        sub     ebx, eax
+        shr     ebx, 9
+        mov     ecx, ebx
+        shl     ebx, 9
+        pop     eax
+        sub     eax, ebx
+        dec     ecx
+        ret
+
 
 ; This internal function is called from disk_media_dereference to free the
 ; allocated cache, if there is one.
