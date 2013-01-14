@@ -606,8 +606,12 @@ update_mem_size:
 
 align 4
 get_pg_addr:
+        sub     eax, OS_BASE
+        cmp     eax, 0x400000
+        jb      @f
         shr     eax, 12
-        mov     eax, [page_tabs+eax*4]
+        mov     eax, [page_tabs+(eax+(OS_BASE shr 12))*4]
+@@:
         and     eax, 0xFFFFF000
         ret
 
