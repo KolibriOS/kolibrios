@@ -488,7 +488,9 @@ copy_file_worker2:
         popf
         jmp     .ret
 .copyfailed:
+        pop     eax
         pop     ecx
+        push    eax
         test    ecx, ecx
         jnz     @f
         mov     eax, [source_hModule]
@@ -848,8 +850,7 @@ copy_file:
 .cancel.ret:
         xor     eax, eax
         inc     eax
-        popad
-        ret
+        jmp     .done
 
 delete_last_name_from_end:
         lodsb
