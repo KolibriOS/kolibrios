@@ -96,7 +96,7 @@ FASM_PROGRAMS:=\
  drivers/sb16.obj:DRIVERS/SB16.OBJ:$(TRUNKKERNEL)/drivers/sb16/sb16.asm \
  drivers/sound.obj:DRIVERS/SOUND.OBJ:$(TRUNKKERNEL)/drivers/sound.asm \
  drivers/intelac97.obj:DRIVERS/INTELAC97.OBJ:$(TRUNKKERNEL)/drivers/intelac97.asm \
- drivers/vt8235.obj:DRIVERS/VT8235.OBJ:$(TRUNKKERNEL)/drivers/vt823x.asm \
+ drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(TRUNKKERNEL)/drivers/vt823x.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \

@@ -129,7 +129,7 @@ FASM_PROGRAMS:=\
  drivers/sound.obj:DRIVERS/SOUND.OBJ:$(KERNEL)/drivers/sound.asm \
  drivers/intelac97.obj:DRIVERS/INTELAC97.OBJ:$(KERNEL)/drivers/intelac97.asm \
  drivers/tmpdisk.obj:DRIVERS/TMPDISK.OBJ:$(KERNEL)/drivers/tmpdisk.asm \
- drivers/vt8235.obj:DRIVERS/VT8235.OBJ:$(KERNEL)/drivers/vt823x.asm \
+ drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(KERNEL)/drivers/vt823x.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \
