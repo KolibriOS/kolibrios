@@ -45,7 +45,7 @@ VID_INTEL	  equ 0x8086
 VID_NVIDIA	  equ 0x10DE
 VID_ATI 	  equ 0x1002
 VID_AMD 	  equ 0x1022
-VID_VIA 	  equ 0x1006
+VID_VIA 	  equ 0x1106
 VID_SIS 	  equ 0x1039
 VID_ULI 	  equ 0x10B9
 VID_CREATIVE	  equ 0x1102
