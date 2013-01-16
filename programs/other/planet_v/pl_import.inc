@@ -7,6 +7,7 @@ boxlib_import:
   edit_box_mouse dd aEdit_box_mouse
 ;  version_ed     dd aVersion_ed
 
+  init_checkbox   dd aInit_checkbox
   check_box_draw  dd aCheck_box_draw
   check_box_mouse dd aCheck_box_mouse
 ;  version_ch      dd aVersion_ch
@@ -53,8 +54,9 @@ boxlib_import:
   aEdit_box_mouse db 'edit_box_mouse',0
 ;  aVersion_ed     db 'version_ed',0
 
-  aCheck_box_draw  db 'check_box_draw',0
-  aCheck_box_mouse db 'check_box_mouse',0
+  aInit_checkbox   db 'init_checkbox2',0
+  aCheck_box_draw  db 'check_box_draw2',0
+  aCheck_box_mouse db 'check_box_mouse2',0
 ;  aVersion_ch      db 'version_ch',0
 
 ;  aOption_box_draw db 'option_box_draw',0

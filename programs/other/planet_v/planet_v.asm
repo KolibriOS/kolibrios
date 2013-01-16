@@ -157,12 +157,13 @@ start:
     m2m dword[tree2.data_img],dword[tree_nod_icon]
   @@:
 
-  mcall 40,0x27
+  mcall 40,0x27 ;маска системных событий
+  init_checkboxes2 ch1,checkboxes_end
 
   mcall 48,3,sc,sizeof.system_colors
   ;установка системных цветов
   edit_boxes_set_sys_color edit1,editboxes_end,sc
-  check_boxes_set_sys_color ch1,checkboxes_end,sc
+  check_boxes_set_sys_color2 ch1,checkboxes_end,sc
 
   mov byte[file_name],0
 
@@ -877,12 +878,12 @@ fun_opn_dlg: ;функция для вызова OpenFile диалога
   txt142 db 'Выбор метки',0
 
 ; check_boxes
-ch1 check_box 5,  5, 6, 12, 0xffffd0, 0x800000, 0, ch_text1, 12,ch_flag_en
-ch2 check_box 5, 20, 6, 12, 0xffffd0, 0x800000, 0, ch_text2, 11,ch_flag_en
+ch1 check_box2 (5 shl 16)+12,  (5 shl 16)+12, 6, 0xffffd0, 0x800000, 0, ch_text1, ch_flag_en
+ch2 check_box2 (5 shl 16)+12, (20 shl 16)+12, 6, 0xffffd0, 0x800000, 0, ch_text2, ch_flag_en
 checkboxes_end:
 
-ch_text1 db 'брать сверху'
-ch_text2 db 'брать снизу'
+ch_text1 db 'брать сверху',0
+ch_text2 db 'брать снизу',0
 
 edit1 edit_box 190, 215,  10, 0xd0ffff, 0xff, 0x80ff, 0, 0xa000, 4090, openfile_path, mouse_dd, 0
 edit2 edit_box 100, 370, 240, 0xd0ffff, 0xff, 0x80ff, 0, 0xa000,  30, ed_buffer.2, mouse_dd, 0
@@ -1028,7 +1029,7 @@ align 4
   ret	      ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 
-hed db 'Planet viewer 24.08.10',0 ;подпись окна
+hed db 'Planet viewer 16.01.13',0 ;подпись окна
 
 sc system_colors  ;системные цвета
 mouse_dd dd 0 ;нужно для Shift-а в editbox

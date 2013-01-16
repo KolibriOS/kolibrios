@@ -638,8 +638,7 @@ proc load_tile, tile:dword
 ;  cmp tile_err_f,6
 ;  je @f
     mov tile_drobn,0
-    mov eax,ch2 ;проверяем опцию 'брать снизу'
-    bt dword[eax+32],1 ;ch_flags equ [edi+32] ;флаги
+    bt dword[ch2.flags],1 ;проверяем опцию 'брать снизу'
     jae .opt_drobn_false
 
     ;если файл не найден, попадаем сюда
@@ -724,8 +723,7 @@ proc load_tile, tile:dword
   .opt_drobn_false:
 
 
-  mov eax,ch1 ;проверяем опцию 'брать сверху'
-  bt dword[eax+32],1 ;ch_flags equ [edi+32] ;флаги
+  bt dword[ch1.flags],1 ;проверяем опцию 'брать сверху'
   jae @f
   cmp tile_drobn,FRACT_TILE_ALL ;если собрана вся картинка, то сверху уже не берем
   je @f
