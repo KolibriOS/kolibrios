@@ -104,58 +104,19 @@ macro edit_boxes_set_sys_color start,end,color_table
         add     edi,ed_struc_size
         loop    @b
 }
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Basic macros for use CheckBox                            ;
+;Last change 17.01.2013                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ch_struc_size=36
-ch_flag_en=10b ;элемент выбран
-
-ch_left  equ [edi]         ;координата начала рисования по х
-ch_top   equ [edi+2]       ;координата начала рисования по у
-ch_text_margin equ [edi+4] ;=4 расстояние от прямоугольника чек бокса до надписи 
-ch_size  equ [edi+8]       ;12 размер квадрата чек бокса 
+ch_text_margin equ [edi+8] ;=4 расстояние от прямоугольника чек бокса до надписи 
 ch_color equ [edi+12]      ;цвет внутри checkbox
 ch_border_color equ [edi+16] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
 ch_text_color   equ [edi+20] ;[edi+4]  ;цвет текста
 ch_text_ptr     equ [edi+24] ;указатель на начало текстовой строки 
-ch_text_length  equ [edi+28]
-ch_flags equ [edi+32]      ;флаги 
+ch_flags equ [edi+28]      ;флаги 
 
-struc check_box left,top,ch_text_margin,ch_size,color,border_color,text_color,text,ch_text_length,flags
-{        ;структура параметров для чек бокса
-.left: dw left      ;+0 положение по х
-.top:  dw top       ;+2 положение по у
-.ch_text_margin:  dd ch_text_margin ;расстояние от прямоугольника чек бокса до надписи
-.ch_size: dd ch_size ;размер квадрата чек бокса, для примера 12
-.color:   dd color   ;цвет внутри чекбокса
-.border_color: dd border_color ;цвет рамки
-.text_color:   dd text_color   ;цвет надписи
-.text: dd text                 ;адрес в коде программы где расположен текст
-.ch_text_length: dd ch_text_length ;длинна строки с символами
-.flags: dd flags+0   ; флаги        
-}
-
-macro check_boxes_set_sys_color start,end,color_table
-{
-    mov     edi,start
-    mov     ecx,((end-start)/ch_struc_size)
-    mov     esi,color_table
-@@:
-;    push    dword [esi+20] ;цвет рабочей области окна
-;    pop     dword ch_color
-    push    dword [esi+32] ;цвет текста в рабочей области окна
-    pop     dword ch_text_color
-    push    dword [esi+36] ;цвет графики в окне (разделительные линии и т.п.)
-    pop     dword ch_border_color
-    add     edi,ch_struc_size
-    loop    @b
-}
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Basic macros for use CheckBox                            ;
-;Last change 12.10.2010					  ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ch_struc_size=36		;размер структуры
 ch_flag_en=10b 			;флаг установленного чек бокса.
 ch_flag_top=0x0			;флаг расположения текста вверху т.е. 3-й бит
@@ -186,39 +147,60 @@ struc check_box2 left_s,top_s,ch_text_margin,color,border_color,text_color,text,
 }
 
 ;Макрос проверки щелчка мышки над группой checkboxes.
-macro init_checkboxes2 start,end
+macro init_checkboxes2 start,end_cb
 {
+if start+ch_struc_size eq end_cb
+	;когда один элемент
+	push    start			;указатель на checkbox
+	call	[init_checkbox]	;настройка checkbox'а
+else
+	;когда несколько элементов
 	mov     ebp,start
-	mov     ecx,((end-start)/ch_struc_size)
+	mov     ecx,((end_cb-start)/ch_struc_size)
 @@:
 	push    ebp			;указатель на первый checkbox
-	call	[init_checkbox]	;макрос проверки мышки над checkbox'ом
+	call	[init_checkbox]	;настройка checkbox'ов
 	add     ebp,ch_struc_size
 	loop    @b
+end if
 }
 
 ;Макрос проверки мышки группы checkboxes.
-macro checkboxes_mouse2 start,end
+macro checkboxes_mouse2 start,end_cb
 {
+if start+ch_struc_size eq end_cb
+	;когда один элемент
+	push    start			;указатель на checkbox
+	call	[check_box_mouse]	;макрос проверки мышки над checkbox'ом
+else
+	;когда несколько элементов
 	mov     ebp,start
-	mov     ecx,((end-start)/ch_struc_size)
+	mov     ecx,((end_cb-start)/ch_struc_size)
 @@:
 	push    ebp			;указатель на первый checkbox
-	call	[check_box_mouse]	;нарисовать checkbox
+	call	[check_box_mouse]	;макрос проверки мышки над checkbox'ами
 	add     ebp,ch_struc_size
 	loop    @b
+end if
 }
 
 ;Макрос отрисовки группы checkboxes.
-macro checkboxes_draw2 start,end
+macro checkboxes_draw2 start,end_cb
 {
+if start+ch_struc_size eq end_cb
+	;когда один элемент
+	push    start			;указатель на checkbox
+	call	[check_box_draw]	;нарисовать checkbox
+else
+	;когда несколько элементов
 	mov     ebp,start
-	mov     ecx,((end-start)/ch_struc_size)
+	mov     ecx,((end_cb-start)/ch_struc_size)
 @@:
 	push    ebp			;указатель на первый checkbox
-	call	[check_box_draw]	;нарисовать checkbox
+	call	[check_box_draw]	;нарисовать checkbox'ы
 	add     ebp,ch_struc_size
 	loop    @b
+end if
 }
 
 macro check_boxes_set_sys_color2 start,end,color_table

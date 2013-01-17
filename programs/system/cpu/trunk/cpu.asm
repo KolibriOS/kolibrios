@@ -80,9 +80,10 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
 ;winypos=ycoord*65536+ysize    
 	mov	[winypos],eax
 ;------------------------------------------------------------------------------	
+	init_checkboxes2 check1,check1_end
 	mcall	48,3,sc,40
 	edit_boxes_set_sys_color edit1,edit1_end,sc		;set color
-	check_boxes_set_sys_color check1,check1_end,sc	;set color
+	check_boxes_set_sys_color2 check1,check1_end,sc	;set color
 ;------------------------------------------------------------------------------
 align 4	  
 ;main loop when process name isn't edited.    
@@ -105,14 +106,14 @@ still:
 	push	dword edit1
 	call	[edit_box_mouse]
 	
-	push	dword[check1+32]
+	push	dword[check1.flags]
 	
 	push	dword check1
 	call	[check_box_mouse]
 	
 	pop	eax
 	
-	cmp	eax, dword[check1+32]
+	cmp	eax, dword[check1.flags]
 	jz	still_end
 	
 	push	dword check1
@@ -605,6 +606,7 @@ edit_box_key		dd aEdit_box_key
 edit_box_mouse		dd aEdit_box_mouse
 ;version_ed		dd aVersion_ed
 
+init_checkbox		dd aInit_checkbox
 check_box_draw		dd aCheck_box_draw
 check_box_mouse		dd aCheck_box_mouse
 ;version_ch		dd aVersion_ch
@@ -621,8 +623,9 @@ aEdit_box_key		db 'edit_box_key',0
 aEdit_box_mouse		db 'edit_box_mouse',0
 ;aVersion_ed		db 'version_ed',0
 
-aCheck_box_draw		db 'check_box_draw',0
-aCheck_box_mouse	db 'check_box_mouse',0
+aInit_checkbox		db 'init_checkbox2',0
+aCheck_box_draw		db 'check_box_draw2',0
+aCheck_box_mouse	db 'check_box_mouse2',0
 ;aVersion_ch		db 'version_ch',0
 
 ;aOption_box_draw	db 'option_box_draw',0
@@ -630,7 +633,7 @@ aCheck_box_mouse	db 'check_box_mouse',0
 ;aVersion_op		db 'version_op',0
 ;------------------------------------------------------------------------------
 align 4	
-check1 check_box 10,383,6,11,0x80AABBCC,0,0,check_text,check_t_e,0;ch_flag_en
+check1 check_box2 (10 shl 16)+11,(383 shl 16)+11,6, 0x80AABBCC,0,0,check_text, ch_flag_bottom ;ch_flag_en
 check1_end:
 edit1 edit_box 350,95,381,0xffffff,0x6f9480,0,0xAABBCC,0,start_application_c,\
    start_application,mouse_dd,ed_focus,start_application_e,start_application_e
@@ -656,8 +659,7 @@ tbts:	db 'SEITE ZURUECK     SEITE VOR                        REBOOT SYSTEM'
 tbte:
 tbts_3	db 'START'
 tbte_2:
-check_text	db '@ on/off'
-check_t_e=$-check_text
+check_text	db '@ on/off',0
 title	db 'Prozesse  - Ctrl/Alt/Del',0
 ;--------------------------------------
 else if lang eq et
@@ -670,8 +672,7 @@ tbts:	db 'EELMINE LEHT   JƒRGMINE LEHT                     REBOODI S‹STEEM'
 tbte:
 tbts_3	db 'START'
 tbte_2:
-check_text	db '@ on/off'
-check_t_e=$-check_text
+check_text	db '@ on/off',0
 title	db 'Protsessid - Ctrl/Alt/Del'
 ;--------------------------------------
 else if lang eq ru
@@ -684,8 +685,7 @@ tbts:	db 'èêÖÑ.ëíê        ëãÖÑ.ëíê                          èÖêÖáÄÉêìáäÄ'
 tbte:
 tbts_3	db 'áÄèìëä'
 tbte_2:
-check_text	db '@ ¢™´/¢Î™´'
-check_t_e=$-check_text
+check_text	db '@ ¢™´/¢Î™´',0
 title	db 'Ñ®·Ø•‚Á•‡ Ø‡ÆÊ•··Æ¢ - Ctrl/Alt/Del',0
 ;--------------------------------------
 else
@@ -698,8 +698,7 @@ tbts:	db 'PREV PAGE       NEXT PAGE                         REBOOT SYSTEM'
 tbte:
 tbts_3	db ' RUN'
 tbte_2:
-check_text	db '@ on/off'
-check_t_e=$-check_text
+check_text	db '@ on/off',0
 title	db 'Process manager - Ctrl/Alt/Del',0
 
 end if

@@ -61,8 +61,9 @@ load_libraries l_libs_start,load_lib_end
 	cmp eax,-1
 	je exit
 
-	push	check1
-	call	[init_checkbox]
+	init_checkboxes2 check1,check1_end
+	;push	check1
+	;call	[init_checkbox]
 
 	call	clear_messages
 ; set default path = /RD/1/
@@ -201,9 +202,8 @@ button:
 	dec	eax
 	jnz	nopack
 
-	mov	eax,[check1+32]
-	test	eax,10b
-	jnz	@f
+	bt dword[check1.flags],1
+	jc	@f
 
 	call	pack
 	jmp	still
