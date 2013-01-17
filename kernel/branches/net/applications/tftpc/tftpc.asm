@@ -467,9 +467,10 @@ import  box_lib                                 ,\
         edit_box_key     ,'edit_box_key'        ,\
         edit_box_mouse   ,'edit_box_mouse'      ,\
         version_ed       ,'version_ed'          ,\
-        check_box_draw   ,'check_box_draw'      ,\
-        check_box_mouse  ,'check_box_mouse'     ,\
-        version_ch       ,'version_ch'          ,\
+        init_checkbox    ,'init_checkbox2'      ,\
+        check_box_draw   ,'check_box_draw2'     ,\
+        check_box_mouse  ,'check_box_mouse2'    ,\
+        version_ch       ,'version_ch2'         ,\
         option_box_draw  ,'option_box_draw'     ,\
         option_box_mouse ,'option_box_mouse'    ,\
         version_op       ,'version_op'
