@@ -135,6 +135,7 @@ FASM_PROGRAMS:=\
  network/telnet:NETWORK/TELNET:$(NETPROGS)/telnet/telnet.asm \
  network/zeroconf:NETWORK/ZEROCONF:$(NETPROGS)/zeroconf/zeroconf.asm \
  network/ftpd:NETWORK/FTPD:$(NETPROGS)/ftpd/ftpd.asm \
+ network/tftpc:NETWORK/TFTPC:$(NETPROGS)/tftpc/tftpc.asm \
  lib/network.obj:LIB/NETWORK.OBJ:$(NETPROGS)/libraries/network/network.asm \
  drivers/3c59x.obj:DRIVERS/3C59X.OBJ:$(KERNEL)/drivers/3c59x.asm \
  drivers/dec21x4x.obj:DRIVERS/DEC21X4X.OBJ:$(KERNEL)/drivers/dec21x4x.asm \
