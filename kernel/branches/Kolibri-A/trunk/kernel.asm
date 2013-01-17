@@ -88,7 +88,6 @@ pci_data_sel   equ  (pci_data_32-gdts)
 ;;
 ;;   Kernel16.inc
 ;;    - Bootcode.inc  Hardware setup
-;;    - Pci16.inc     PCI functions
 ;;
 ;;   Kernel32.inc
 ;;    - Sys32.inc     Process management
@@ -117,14 +116,8 @@ use16
 
 version db    'Kolibri-A   version 0.1.0.0      ',13,10,13,10,0
 
-diff16 "preboot start: ",0,$
-include "boot/preboot.inc"
-
 diff16 "bootcode start: ",0,$
 include "boot/bootcode.inc"    ; 16 bit system boot code
-
-diff16 "pci16    start: ",0,$
-include "bus/pci/pci16.inc"
 
 diff16 "biosdisk start: ",0,$
 include "detect/biosdisk.inc"
