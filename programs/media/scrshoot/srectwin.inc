@@ -8,7 +8,7 @@ set_rect_window:
 .red:
         edit_boxes_set_sys_color rect_input,rect_input_end,sc
         labels_set_sys_color rect_input_labels,rect_input_labels_end,sc
-    ;;;    check_boxes_set_sys_color riw_check_boxes,riw_check_boxes_end,sc
+        check_boxes_set_sys_color2 riw_check_boxes,riw_check_boxes_end,sc
         call    .draw_window
 .still:
         wait_event .red,.key,.button,.mouse
@@ -369,13 +369,12 @@ rect_input_labels_text:
 .height db 'Высота:',0
 
 riw_check_boxes:
-use_rect_active_window check_box 10,85,5,11,cl_white,0,0,\
-riw_check_boxes_text.1,\
-riw_check_boxes_text.2-riw_check_boxes_text.1
+use_rect_active_window check_box2 (10 shl 16)+10,(85 shl 16) +10,5,cl_white,0,0,\
+riw_check_boxes_text.1, ch_flag_bottom
 riw_check_boxes_end:
 
 riw_check_boxes_text:
-.1 db 'Использовать область активного окна'
-.2 db ''
+db 'Использовать область активного окна',0
+
 
 riw_grab_text db 'Координаты и размеры области:',0
