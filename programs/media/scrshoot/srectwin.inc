@@ -370,7 +370,7 @@ rect_input_labels_text:
 
 riw_check_boxes:
 use_rect_active_window check_box2 (10 shl 16)+10,(85 shl 16) +10,5,cl_white,0,0,\
-riw_check_boxes_text.1, ch_flag_bottom
+riw_check_boxes_text, ch_flag_bottom
 riw_check_boxes_end:
 
 riw_check_boxes_text:
