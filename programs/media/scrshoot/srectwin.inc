@@ -8,7 +8,7 @@ set_rect_window:
 .red:
         edit_boxes_set_sys_color rect_input,rect_input_end,sc
         labels_set_sys_color rect_input_labels,rect_input_labels_end,sc
-        check_boxes_set_sys_color riw_check_boxes,riw_check_boxes_end,sc
+    ;;;    check_boxes_set_sys_color riw_check_boxes,riw_check_boxes_end,sc
         call    .draw_window
 .still:
         wait_event .red,.key,.button,.mouse
