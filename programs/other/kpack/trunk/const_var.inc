@@ -81,6 +81,7 @@ edit_box_key		dd aEdit_box_key
 edit_box_mouse		dd aEdit_box_mouse
 ;version_ed		dd aVersion_ed
 
+init_checkbox		dd aInit_checkbox
 check_box_draw		dd aCheck_box_draw
 check_box_mouse		dd aCheck_box_mouse
 ;version_ch		dd aVersion_ch
@@ -107,8 +108,9 @@ aEdit_box_key		db 'edit_box_key',0
 aEdit_box_mouse		db 'edit_box_mouse',0
 ;aVersion_ed		db 'version_ed',0
 
-aCheck_box_draw		db 'check_box_draw',0
-aCheck_box_mouse	db 'check_box_mouse',0
+aInit_checkbox		db 'init_checkbox2',0
+aCheck_box_draw		db 'check_box_draw2',0
+aCheck_box_mouse	db 'check_box_mouse2',0
 ;aVersion_ch		db 'version_ch',0
 
 ;aOption_box_draw	db 'option_box_draw',0
@@ -202,7 +204,7 @@ editboxes_end:
 mouse_dd dd 0
 ;---------------------------------------------------------------------
 
-check1 check_box 353,39,4,10,0x80FFFFFF,0,0,check_text,6
+check1 check_box2 (353 shl 16)+10,  (39 shl 16)+10, 4, 0x80FFFFFF, 0, 0, check_text, ch_flag_bottom
 check1_end:
 
 check_text db 'Kernel',0

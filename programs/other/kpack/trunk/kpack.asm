@@ -61,6 +61,9 @@ load_libraries l_libs_start,load_lib_end
 	cmp eax,-1
 	je exit
 
+	push	check1
+	call	[init_checkbox]
+
 	call	clear_messages
 ; set default path = /RD/1/
 	mov	esi,defpath
@@ -425,7 +428,7 @@ draw_window:
 	mcall	48,3,color_table,40
 ;--------------------------------------
 edit_boxes_set_sys_color edit1,editboxes_end,color_table
-check_boxes_set_sys_color check1,check1_end,color_table
+check_boxes_set_sys_color2 check1,check1_end,color_table
 ;--------------------------------------
 ; define window
 	xor	eax,eax
