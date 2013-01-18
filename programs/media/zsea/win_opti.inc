@@ -24,9 +24,9 @@ thread7:				; start of bgrd thread
 	mov	[slide_show_delay_old],eax
 	mov	eax,[arrows_offset]
 	mov	[arrows_offset_old],eax
-	mov	eax,[check1+32]
+	mov	eax,[check1.flags]
 	mov	[show_file_name_old],eax
-	mov	eax,[check2+32]
+	mov	eax,[check2.flags]
 	mov	[filtering_flag_old],eax
 	xor	eax,eax
 	mov	[option_pointer],eax
@@ -53,11 +53,11 @@ thread7:				; start of bgrd thread
 	jmp	.still
 ;---------------------------------------------------------------------
 .mouse:
-	mov	ebx,[check1+32]
+	mov	ebx,[check1.flags]
 	and	ebx,10b
 	push	dword check1
 	call	[check_box_mouse]
-	mov	eax,[check1+32]
+	mov	eax,[check1.flags]
 	and	eax,10b
 	cmp	ebx,eax
 	je	@f	;.still
@@ -68,11 +68,11 @@ thread7:				; start of bgrd thread
 	jmp	.still
 ;---------------------------------------------------------------------
 @@:
-	mov	ebx,[check2+32]
+	mov	ebx,[check2.flags]
 	and	ebx,10b
 	push	dword check2
 	call	[check_box_mouse]
-	mov	eax,[check2+32]
+	mov	eax,[check2.flags]
 	and	eax,10b
 	cmp	ebx,eax
 	je	.still
@@ -144,13 +144,13 @@ thread7:				; start of bgrd thread
 	mov	eax,[arrows_offset_old]
 	mov	[arrows_offset],eax
 	mov	eax,[show_file_name_old]
-	mov	[check1+32],eax
+	mov	[check1.flags],eax
 	mov	eax,[filtering_flag_old]
-	mov	[check2+32],eax
+	mov	[check2.flags],eax
 	jmp	.close_all
 ;---------------------------------------------------------------------
 .close_1:
-	mov	eax,[check2+32]
+	mov	eax,[check2.flags]
 	test	eax,10b
 	jz	@f
 	
@@ -240,27 +240,27 @@ thread7:				; start of bgrd thread
 	jmp	.still
 ;---------------------------------------------------------------------
 .space_check1:
-	test	[check1+32],dword 10b
+	test	[check1.flags],dword 10b
 	jnz	@f
 	
-	or	[check1+32],dword 10b
+	or	[check1.flags],dword 10b
 	jmp	.space_check1_1
 ;---------------------------------------------------------------------
 @@:
-	xor	[check1+32],dword 10b
+	xor	[check1.flags],dword 10b
 .space_check1_1:
 	call	.draw_all_options_values
 	jmp	.still
 ;---------------------------------------------------------------------
 .space_check2:
-	test	[check2+32],dword 10b
+	test	[check2.flags],dword 10b
 	jnz	@f
 	
-	or	[check2+32],dword 10b
+	or	[check2.flags],dword 10b
 	jmp	.space_check2_1
 ;---------------------------------------------------------------------
 @@:
-	xor	[check2+32],dword 10b
+	xor	[check2.flags],dword 10b
 .space_check2_1:
 	call	.draw_all_options_values
 	jmp	.still

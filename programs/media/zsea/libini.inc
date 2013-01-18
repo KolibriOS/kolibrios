@@ -44,7 +44,7 @@ Get_ini:
 	mov     eax,1
 @@:
 	shl     eax,1
-	mov		[check1+32],eax
+	mov		[check1.flags],eax
 	invoke	ini_get_int,plugin_pach,aVariables,aFilteringFlag,0
 	cmp     eax,0
 	jb      .error_aFilteringFlag
@@ -55,7 +55,7 @@ Get_ini:
 @@:
 	mov		[filtering_flag],eax
 	shl     eax,1
-	mov		[check2+32],eax
+	mov		[check2.flags],eax
 	
 ;	get convert plugins names
 	invoke ini_get_str,plugin_pach,aConvertPlugins,aCP0,plugin_0_name,127,ConvertPlugins_no_key
@@ -84,10 +84,10 @@ Set_ini:
 	invoke	ini_set_int,plugin_pach,aVariables,aSortMode,[sort_type]
 	invoke	ini_set_int,plugin_pach,aVariables,aArrowsOffset,[arrows_offset]
 	invoke	ini_set_int,plugin_pach,aVariables,aSlideShowDelay,[slide_show_delay]
-	mov  eax,[check1+32]
+	mov  eax,[check1.flags]
 	shr  eax,1
-	mov  [check1+32],eax
-	invoke	ini_set_int,plugin_pach,aVariables,aShowFileName,[check1+32]
+	mov  [check1.flags],eax
+	invoke	ini_set_int,plugin_pach,aVariables,aShowFileName,[check1.flags]
 	invoke	ini_set_int,plugin_pach,aVariables,aFilteringFlag,[filtering_flag]	
 	ret
 ;---------------------------------------------------------------------

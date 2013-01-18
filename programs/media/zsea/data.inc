@@ -742,6 +742,7 @@ edit_box_key    dd      aEdit_box_key
 edit_box_mouse  dd      aEdit_box_mouse
 ;version_ed      dd      aVersion_ed
 
+init_checkbox   dd      aInit_checkbox
 check_box_draw  dd      aCheck_box_draw
 check_box_mouse dd      aCheck_box_mouse
 ;version_ch      dd      aVersion_ch
@@ -780,9 +781,10 @@ aEdit_box_key   db 'edit_box_key',0
 aEdit_box_mouse db 'edit_box_mouse',0
 ;aVersion_ed     db 'version_ed',0
 
-aCheck_box_draw  db 'check_box_draw',0
-aCheck_box_mouse db 'check_box_mouse',0
-;aVersion_ch      db 'version_ch',0
+aInit_checkbox   db 'init_checkbox2',0
+aCheck_box_draw  db 'check_box_draw2',0
+aCheck_box_mouse db 'check_box_mouse2',0
+;aVersion_ch      db 'version_ch2',0
 
 aOption_box_draw  db 'option_box_draw',0
 aOption_box_mouse db 'option_box_mouse',0
@@ -952,15 +954,15 @@ option_group2_old dd 0
 
 option_boxes_sort       dd sort0, sort2, sort4, sort6,0
 ;---------------------------------------------------------------------
-check1 check_box 120,50,6,12,0xFFFFFF,0,0xffffff,check_text1,14,0  ;ch_flag_en
+check1 check_box2 (120 shl 16)+12,(50 shl 16)+12,6,0xFFFFFF,0,0xffffff,check_text1,ch_flag_middle  ;ch_flag_en
 
-check_text1 db 'Show file name'
+check_text1 db 'Show file name',0
 
 show_file_name_old dd 0
 ;---------------------------------------------------------------------
-check2 check_box 120,70,6,12,0xFFFFFF,0,0xffffff,check_text2,14,0  ;ch_flag_en
+check2 check_box2 (120 shl 16)+12,(70 shl 16)+12,6,0xFFFFFF,0,0xffffff,check_text2,ch_flag_middle  ;ch_flag_en
 
-check_text2 db 'Bilinear filtering'
+check_text2 db 'Bilinear filtering',0
 
 filtering_flag	dd 0
 filtering_flag_old	dd 0

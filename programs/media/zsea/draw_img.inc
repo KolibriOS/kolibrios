@@ -320,7 +320,7 @@
 	ret
 ;****************************************************************************	
 draw_file_name_to_work_area:
-	mov  eax,[check1+32]
+	mov  eax,[check1.flags]
 	test  eax,10b
 	jz  @f
 	mov  ebx,[file_name_length]

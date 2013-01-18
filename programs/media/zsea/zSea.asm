@@ -85,6 +85,11 @@ START:				; start of execution
 
 	call	load_plugins
 
+	;init_checkboxes2 check1,...
+	push	check1
+	call	[init_checkbox]
+	push	check2
+	call	[init_checkbox]
 
 	call	load_buttons
 
@@ -473,7 +478,7 @@ include	'win_bcgr.inc'
 include	'win_sort.inc'
 include	'win_opti.inc'
 include	'libini.inc'
-include	'../../../dll.inc'
+include	'../../dll.inc'
 include	'data.inc'
 ;---------------------------------------------------------------------
 IM_END:
