@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2010. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ETHERNET.INC                                                   ;;
@@ -77,8 +77,8 @@ ETH_input:
         cmp     ax, ETHER_ARP
         je      ARP_input
 
-;        cmp     ax, ETHER_IPv6
-;        je      IPv6_input
+        cmp     ax, ETHER_IPv6
+        je      IPv6_input
 
         cmp     ax, ETHER_PPP_DISCOVERY
         je      PPPoE_discovery_input

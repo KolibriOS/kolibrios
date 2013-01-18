@@ -129,6 +129,7 @@ API_UDP                 = 3
 API_TCP                 = 4
 API_ARP                 = 5
 API_PPPOE               = 6
+API_IPv6                = 7
 
 HWACC_TCP_IPv4          = 1 shl 0
 
@@ -187,7 +188,7 @@ include "PPPoE.inc"
 
 include "ARP.inc"
 include "IPv4.inc"
-;include "IPv6.inc"
+include "IPv6.inc"
 
 include "icmp.inc"
 include "udp.inc"
@@ -728,6 +729,9 @@ sys_protocols:
 
         cmp     ax, API_PPPOE
         je      PPPoE_api
+
+        cmp     ax, API_IPv6
+        je      IPv6_api
 
         add     esp, 4                           ; if we reached here, no function was called, so we need to balance stack
 
