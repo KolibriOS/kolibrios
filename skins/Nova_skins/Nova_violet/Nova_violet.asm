@@ -23,12 +23,12 @@ SKIN_BITMAPS \
   base active   = bmp_base,\
   base inactive = bmp_base1
 
-BITMAP bmp_left ,'active/left.bmp'               ; skin bitmaps
-BITMAP bmp_oper ,'active/oper.bmp'
-BITMAP bmp_base ,'active/base.bmp'
-BITMAP bmp_left1,'inactive/left.bmp'
-BITMAP bmp_oper1,'inactive/oper.bmp'
-BITMAP bmp_base1,'inactive/base.bmp'
+BITMAP bmp_left ,'Active/left.bmp'               ; skin bitmaps
+BITMAP bmp_oper ,'Active/oper.bmp'
+BITMAP bmp_base ,'Active/base.bmp'
+BITMAP bmp_left1,'Inactive/left.bmp'
+BITMAP bmp_oper1,'Inactive/oper.bmp'
+BITMAP bmp_base1,'Inactive/base.bmp'
 
 ;================================;
 ; Created by Rock_maniak_forever ;
