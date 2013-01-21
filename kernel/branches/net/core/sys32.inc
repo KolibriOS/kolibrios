@@ -431,6 +431,17 @@ term9:
         add     eax, 16
         cmp     eax, hotkey_list+256*16
         jb      .loop
+; get process PID
+        mov     eax, esi
+        shl     eax, 5
+        mov     eax, [eax+CURRENT_TASK+TASKDATA.pid]
+; compare current lock input with process PID
+        cmp     eax, [PID_lock_input]
+        jne     @f
+
+        xor     eax, eax
+        mov     [PID_lock_input], eax
+@@:
 ; remove hotkeys in buffer
         mov     eax, hotkey_buffer
 .loop2:
@@ -683,24 +694,22 @@ term9:
         ret
 restore .slot
 
-iglobal
-if lang eq ru
-  boot_sched_1    db   'Создание GDT TSS указателя',0
-  boot_sched_2    db   'Создание IDT таблицы',0
-else
-  boot_sched_1    db   'Building gdt tss pointer',0
-  boot_sched_2    db   'Building IDT table',0
-end if
-endg
+;iglobal
+;if lang eq ru
+;  boot_sched_1    db   'Создание GDT TSS указателя',0
+;  boot_sched_2    db   'Создание IDT таблицы',0
+;else
+;  boot_sched_1    db   'Building gdt tss pointer',0
+;  boot_sched_2    db   'Building IDT table',0
+;end if
+;endg
 
 
-build_scheduler:
+;build_scheduler:
+;        mov     esi, boot_sched_1
+;        call    boot_log
+;        call   build_process_gdt_tss_pointer
 
-        mov     esi, boot_sched_1
-        call    boot_log
-  ;      call   build_process_gdt_tss_pointer
-
-  ;      mov    esi,boot_sched_2
-  ;      call   boot_log
-
-        ret
+;        mov    esi,boot_sched_2
+;        call   boot_log
+;        ret

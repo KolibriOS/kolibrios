@@ -810,15 +810,7 @@ proc load_driver stdcall, driver_name:dword
         jnz     .ok
 
         stdcall kernel_free, [img_base]
-        cmp     dword [file_name+13], 'SOUN'
-        jnz     @f
-        cmp     dword [file_name+17], 'D.ob'
-        jnz     @f
-        cmp     word [file_name+21], 'j'
-        jnz     @f
-        mov     esi, aHDA
-        jmp     .redo
-@@:
+
         xor     eax, eax
         ret
 .ok:

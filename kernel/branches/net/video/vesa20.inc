@@ -406,29 +406,38 @@ align 4
         jne     .skip
 ;--------------------------------------
         push    ecx
-        mov     ecx, [putimg.real_sy_and_abs_cy + 4]
+;--------------------------------------
+align 4
+.sh:
+        neg     ecx
+        add     ecx, [putimg.real_sx_and_abs_cx + 4]
+;--------------------------------------
+; check for X
+        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
+        jae     .no_mouse_area
+
+        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      .no_mouse_area
+
+        shl     ecx, 16
+
+        add     ecx, [putimg.real_sy_and_abs_cy + 4]
         sub     ecx, edi
 ;--------------------------------------
 ; check for Y
-        cmp     cx, [Y_UNDER_subtraction_CUR_hot_y]
-        jb      .no_mouse_area
-
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     .no_mouse_area
 
-        rol     ecx, 16
-        add     ecx, [putimg.real_sx_and_abs_cx + 4]
-        sub     ecx, [esp]
-;--------------------------------------
-; check for X
-        cmp     cx, [X_UNDER_subtraction_CUR_hot_x]
+        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
         jb      .no_mouse_area
-
-        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
-        jae     .no_mouse_area
 ;--------------------------------------
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel_new.1
+        cmp     ecx, -1   ;SHIT HAPPENS?
+        jne     .no_mouse_area
+
+        mov     ecx, [esp]
+        jmp     .sh
 ;--------------------------------------
 align 4
 .no_mouse_area:
@@ -608,29 +617,38 @@ align 4
         jne     .skip
 ;--------------------------------------
         push    ecx
-        mov     ecx, [putimg.real_sy_and_abs_cy + 4]
+;--------------------------------------
+align 4
+.sh:
+        neg     ecx
+        add     ecx, [putimg.real_sx_and_abs_cx + 4]
+;--------------------------------------
+; check for X
+        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
+        jae     .no_mouse_area
+
+        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      .no_mouse_area
+
+        shl     ecx, 16
+
+        add     ecx, [putimg.real_sy_and_abs_cy + 4]
         sub     ecx, edi
 ;--------------------------------------
 ; check for Y
-        cmp     cx, [Y_UNDER_subtraction_CUR_hot_y]
-        jb      .no_mouse_area
-
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     .no_mouse_area
 
-        rol     ecx, 16
-        add     ecx, [putimg.real_sx_and_abs_cx + 4]
-        sub     ecx, [esp]
-;--------------------------------------
-; check for X
-        cmp     cx, [X_UNDER_subtraction_CUR_hot_x]
+        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
         jb      .no_mouse_area
-
-        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
-        jae     .no_mouse_area
 ;--------------------------------------
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel_new.1
+        cmp     ecx, -1   ;SHIT HAPPENS?
+        jne     .no_mouse_area
+
+        mov     ecx, [esp]
+        jmp     .sh
 ;--------------------------------------
 align 4
 .no_mouse_area:
@@ -767,20 +785,22 @@ Vesa20_putpixel24_new:
         jnz     @f
 ;--------------------------------------
 ; check for Y
-        cmp     cx, [Y_UNDER_subtraction_CUR_hot_y]
-        jb      @f
-
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     @f
+
+        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      @f
 
         rol     ecx, 16
 ;--------------------------------------
 ; check for X
-        cmp     cx, [X_UNDER_subtraction_CUR_hot_x]
-        jb      @f
-
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
         jae     @f
+
+        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      @f
+
+        ror     ecx, 16
 
         call    check_mouse_area_for_putpixel_new.1
 ;--------------------------------------
@@ -841,20 +861,22 @@ Vesa20_putpixel32_new:
         jnz     @f
 ;--------------------------------------
 ; check for Y
-        cmp     cx, [Y_UNDER_subtraction_CUR_hot_y]
-        jb      @f
-
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     @f
+
+        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      @f
 
         rol     ecx, 16
 ;--------------------------------------
 ; check for X
-        cmp     cx, [X_UNDER_subtraction_CUR_hot_x]
-        jb      @f
-
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
         jae     @f
+
+        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      @f
+
+        ror     ecx, 16
 
         call    check_mouse_area_for_putpixel_new.1
 ;--------------------------------------
@@ -1372,22 +1394,24 @@ align 4
         sub     ecx, esi
 ;--------------------------------------
 ; check for Y
-        cmp     cx, [Y_UNDER_subtraction_CUR_hot_y]
-        jb      .no_mouse_area
-
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     .no_mouse_area
+
+        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      .no_mouse_area
 
         rol     ecx, 16
         add     ecx, [drbar.real_sx_and_abs_cx]
         sub     ecx, edi
 ;--------------------------------------
 ; check for X
-        cmp     cx, [X_UNDER_subtraction_CUR_hot_x]
-        jb      .no_mouse_area
-
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
         jae     .no_mouse_area
+
+        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      .no_mouse_area
+
+        ror     ecx, 16
 ;--------------------------------------
 ; check mouse area for putpixel
         push    eax
@@ -1557,22 +1581,24 @@ align 4
         sub     ecx, esi
 ;--------------------------------------
 ; check for Y
-        cmp     cx, [Y_UNDER_subtraction_CUR_hot_y]
-        jb      .no_mouse_area
-
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     .no_mouse_area
+
+        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      .no_mouse_area
 
         rol     ecx, 16
         add     ecx, [drbar.real_sx_and_abs_cx]
         sub     ecx, edi
 ;--------------------------------------
 ; check for X
-        cmp     cx, [X_UNDER_subtraction_CUR_hot_x]
-        jb      .no_mouse_area
-
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
         jae     .no_mouse_area
+
+        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      .no_mouse_area
+
+        ror     ecx, 16
 ;--------------------------------------
 ; check mouse area for putpixel
         push    eax

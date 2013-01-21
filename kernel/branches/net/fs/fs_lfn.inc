@@ -7,6 +7,19 @@
 
 $Revision $
 
+ERROR_SUCCESS        = 0
+ERROR_DISK_BASE      = 1
+ERROR_UNSUPPORTED_FS = 2
+ERROR_UNKNOWN_FS     = 3
+ERROR_PARTITION      = 4
+ERROR_FILE_NOT_FOUND = 5
+ERROR_END_OF_FILE    = 6
+ERROR_MEMORY_POINTER = 7
+ERROR_DISK_FULL      = 8
+ERROR_FAT_TABLE      = 9 ;deprecated
+ERROR_FS_FAIL        = 9
+ERROR_ACCESS_DENIED  = 10
+ERROR_DEVICE         = 11
 
 image_of_eax EQU esp+32
 image_of_ebx EQU esp+20

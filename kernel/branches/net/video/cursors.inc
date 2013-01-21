@@ -447,16 +447,11 @@ endp
 ;------------------------------------------------------------------------------
 align 4
 proc delete_cursor stdcall, hcursor:dword
-           locals
-             hsrv       dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
+
+;        DEBUGF 1,'K : delete_cursor %x\n', [hcursor]
 
         mov     esi, [hcursor]
+
         cmp     [esi+CURSOR.magic], 'CURS'
         jne     .fail
 
@@ -642,6 +637,8 @@ align 4
         sub     edi, [y]
         inc     ebx
         inc     edi
+        sub     ebx, [_dx]
+        sub     edi, [_dy]
 
         mov     [cur.w], ebx
         mov     [cur.h], edi
@@ -758,6 +755,8 @@ align 4
         sub     edi, [y]
         inc     ebx
         inc     edi
+        sub     ebx, [_dx]
+        sub     edi, [_dy]
 
         mov     [cur.w], ebx
         mov     [cur.h], edi
@@ -835,10 +834,10 @@ check_mouse_area_for_getpixel_new:
 ;--------------------------------------
         push    eax ebx
 ; offset X
-        mov     ecx, [X_UNDER_subtraction_CUR_hot_x]
+        movzx   ecx, word [X_UNDER_subtraction_CUR_hot_x]
         sub     eax, ecx        ; x1
 ; offset Y
-        mov     ecx, [Y_UNDER_subtraction_CUR_hot_y]
+        movzx   ecx, word [Y_UNDER_subtraction_CUR_hot_y]
         sub     ebx, ecx        ; y1
 ;--------------------------------------
 ; ebx = offset y
@@ -874,41 +873,49 @@ check_mouse_area_for_putpixel_new:
 ; eax = new color
 ;--------------------------------------
 ; check for Y
-        cmp     cx, [Y_UNDER_subtraction_CUR_hot_y]
-        jb      .no_mouse_area
-
         cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
         jae     .no_mouse_area
+
+        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      .no_mouse_area
 
         rol     ecx, 16
 ;--------------------------------------
 ; check for X
-        cmp     cx, [X_UNDER_subtraction_CUR_hot_x]
-        jb      .no_mouse_area
-
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
         jae     .no_mouse_area
+
+        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
+        jb      .no_mouse_area
+
+        ror     ecx, 16
 ;--------------------------------------
 align 4
 .1:
         push    eax
-; offset X
-        mov     ax, [X_UNDER_subtraction_CUR_hot_x]
-        sub     cx, ax        ; x1
-        ror     ecx, 16
-; offset Y
-        mov     ax, [Y_UNDER_subtraction_CUR_hot_y]
-        sub     cx, ax        ; y1
 ;--------------------------------------
 ; ecx = (offset x) shl 16 + (offset y)
         push    ebx
         mov     ebx, ecx
         shr     ebx, 16        ; x
         and     ecx, 0xffff    ; y
+
+        cmp     ecx, [cur.h]
+        jae     @f
+
+        cmp     ebx, [cur.w]
+        jb      .ok
+;--------------------------------------
+align 4
+@@:
+;        DEBUGF  1, "K : SHIT HAPPENS: %x %x \n", ecx,ebx
+        pop     ebx
+        jmp     .sh   ; SORRY! SHIT HAPPENS!
+;--------------------------------------
+align 4
+.ok:
 ; ecx = offset y
 ; ebx = offset x
-        mov     eax, [esp + 4]
-
         push    ebx ecx
         imul    ecx, [cur.w]    ;y
         add     ecx, ebx
@@ -944,8 +951,12 @@ align 4
         test    eax, 0xFF000000
         jz      @f
 
-        pop     ecx
+        add     esp, 4
         ret
+;--------------------------------------
+align 4
+.sh:
+        mov     ecx, -1
 ;--------------------------------------
 align 4
 @@:

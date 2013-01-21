@@ -49,11 +49,23 @@ keymap_alt:
 
 
 if lang eq ru
-  boot_fonts        db   'Шрифты загружены',0
+  boot_initirq      db   'Инициализация IRQ',0
+  boot_picinit      db   'Инициализация PIC',0
+  boot_v86machine   db   'Инициализация системы V86 машины',0
+  boot_inittimer    db   'Инициализация системного таймера (IRQ0)',0
+  boot_initapic     db   'Попытка инициализации APIC',0
+  boot_enableirq    db   'Включить прерывания 2, 6, 13, 14, 15',0
+  boot_enablint_ide db   'Разрешение прерываний в контроллере IDE',0
+  boot_detectfloppy db   'Поиск floppy дисководов',0
+  boot_detecthdcd   db   'Поиск жестких дисков и ATAPI приводов',0
+  boot_getcache     db   'Получение памяти для кэша',0
+  boot_detectpart   db   'Поиск разделов на дисковых устройствах',0
+  boot_init_sys     db   'Инициализация системного каталога /sys',0
+  boot_loadlibs     db   'Загрузка библиотек (.obj)',0
   boot_memdetect    db   'Количество оперативной памяти','     ',' Мб',0
   boot_tss          db   'Установка TSSs',0
   boot_cpuid        db   'Чтение CPUIDs',0
-  boot_devices      db   'Поиск устройств',0
+;  boot_devices      db   'Поиск устройств',0
   boot_timer        db   'Установка таймера',0
   boot_irqs         db   'Переопределение IRQ',0
   boot_setmouse     db   'Установка мыши',0
@@ -69,15 +81,30 @@ if lang eq ru
   boot_pal_vga      db   'Установка VGA 640x480 палитры',0
   boot_failed       db   'Загрузка первого приложения не удалась',0
   boot_mtrr         db   'Установка MTRR',0
+  
+  boot_APIC_found   db   'APIC включен', 0
+  boot_APIC_nfound  db   'APIC не найден', 0
 if preboot_blogesc
   boot_tasking      db   'Все готово для запуска, нажмитре ESC для старта',0
 end if
 else
-  boot_fonts        db   'Fonts loaded',0
+  boot_initirq      db   'Initialize IRQ',0
+  boot_picinit      db   'Initialize PIC',0
+  boot_v86machine   db   'Initialize system V86 machine',0
+  boot_inittimer    db   'Initialize system timer (IRQ0)',0
+  boot_initapic     db   'Try to initialize APIC',0
+  boot_enableirq    db   'Enable interrupts 2, 6, 13, 14, 15',0
+  boot_enablint_ide db   'Enable interrupts in IDE controller',0
+  boot_detectfloppy db   'Search floppy drives',0
+  boot_detecthdcd   db   'Search hard drives and ATAPI drives',0
+  boot_getcache     db   'Get memory for cache',0
+  boot_detectpart   db   'Search partitions on disk devices',0
+  boot_init_sys     db   'Initialize system directory /sys',0
+  boot_loadlibs     db   'Loading librares (.obj)',0
   boot_memdetect    db   'Determining amount of memory',0
   boot_tss          db   'Setting TSSs',0
   boot_cpuid        db   'Reading CPUIDs',0
-  boot_devices      db   'Detecting devices',0
+;  boot_devices      db   'Detecting devices',0
   boot_setmouse     db   'Setting mouse',0
   boot_windefs      db   'Setting window defaults',0
   boot_bgr          db   'Calculating background',0
@@ -90,13 +117,13 @@ else
   boot_pal_vga      db   'Setting VGA 640x480 palette',0
   boot_failed       db   'Failed to start first app',0
   boot_mtrr         db   'Setting MTRR',0
+  
+  boot_APIC_found   db   'APIC enabled', 0
+  boot_APIC_nfound  db   'APIC not found', 0
 if preboot_blogesc
   boot_tasking      db   'All set - press ESC to start',0
 end if
 end if
-
-  boot_APIC_found   db   'APIC enabled', 0
-  boot_APIC_nfound  db   'APIC not found', 0
 
 ;new_process_loading db 'K : New Process - loading',13,10,0
 ;new_process_running db 'K : New Process - done',13,10,0
@@ -107,13 +134,10 @@ msg_module     db 'in module ',0
 msg_version    db 'incompatible driver version',13,10,0
 msg_www        db 'please visit www.kolibrios.org',13,10,0
 msg_CR         db  13,10,0
-aHDA           db 'INTEL_HDA',0
 
 intel_str      db "GenuineIntel",0
 AMD_str        db "AuthenticAMD",0
 
-;szSound        db 'SOUND',0
-;szInfinity     db 'INFINITY',0
 szHwMouse       db 'ATI2D',0
 szPS2MDriver    db 'PS2MOUSE',0
 ;szCOM_MDriver   db 'COM_MOUSE',0
@@ -134,9 +158,6 @@ ud_user_message db 'Ошибка: неподдерживаемая инструкция процессора',0
 else
 ud_user_message db 'Error: unsupported processor instruction',0
 end if
-
-char    db '/sys/FONTS/CHAR.MT',0
-char2   db '/sys/FONTS/CHAR2.MT',0
 
 bootpath       db  '/KOLIBRI    '
 bootpath2      db  0

@@ -300,6 +300,7 @@ __exports:
           malloc,                'Kmalloc',            \
           free,                  'Kfree',              \
           map_io_mem,            'MapIoMem',           \      ; stdcall
+          map_page,              'MapPage',            \      ; stdcall
           get_pg_addr,           'GetPgAddr',          \      ; eax
 \
           mutex_init,            'MutexInit',          \      ; gcc fastcall

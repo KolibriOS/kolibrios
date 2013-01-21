@@ -14,8 +14,8 @@ ends
 
 
 struct  BLITTER
-        dc              BLITTER_BLOCK
-        sc              BLITTER_BLOCK
+        dc              RECT
+        sc              RECT
         dst_x           dd ?            ;  32
         dst_y           dd ?            ;  36
         src_x           dd ?            ;  40
@@ -28,145 +28,84 @@ struct  BLITTER
 ends
 
 
-align 4
-
-__L1OutCode:
-        push    ebx
-        mov     ebx, 8
-        cmp     edx, [eax]
-        jl      .L2
-        xor     ebx, ebx
-        cmp     edx, [eax+8]
-        setg    bl
-        sal     ebx, 2
-.L2:
-        cmp     ecx, [eax+4]
-        jge     .L3
-        or      ebx, 1
-        jmp     .L4
-
-.L3:
-        cmp     ecx, [eax+12]
-        jle     .L4
-        or      ebx, 2
-.L4:
-        mov     eax, ebx
-        pop     ebx
-        ret
 
 align 4
 block_clip:
-        push    ebp
-        push    edi
-        push    esi
+;esi= clip RECT ptr
+;edi= RECT ptr
+;return code:
+;eax= 0 - draw, 1 - don't draw
+
         push    ebx
-        sub     esp, 4
 
-        mov     ebx, eax
-        mov     [esp], edx
-        mov     ebp, ecx
-        mov     ecx, [ecx]
-        mov     edx, [edx]
-        call    __L1OutCode
+        mov     eax, [edi+RECT.left]
+        mov     ebx, [edi+RECT.right]
+        mov     ecx, [esi+RECT.left]    ;clip.left
+        mov     edx, [esi+RECT.right]   ;clip.right
 
-        mov     esi, eax
-        mov     edx, [esp+28]
-        mov     ecx, [edx]
-.L21:
-        mov     eax, [esp+24]
-        mov     edx, [eax]
-        mov     eax, ebx
-        call    __L1OutCode
+        cmp     eax, edx                ;left >= clip.right
+        jge     .fail
 
-        mov     edi, eax
-.L20:
-        mov     eax, edi
-        and     eax, esi
-        jne     .L9
-        cmp     esi, edi
-        je      .L9
-        test    esi, esi
-        jne     .L10
-        test    edi, 1
-        je      .L11
-        mov     eax, [ebx+4]
-        jmp     .L25
-.L11:
-        test    edi, 2
-        je      .L13
-        mov     eax, [ebx+12]
-.L25:
-        mov     edx, [esp+28]
-        jmp     .L22
-.L13:
-        test    edi, 4
-        je      .L14
-        mov     eax, [ebx+8]
-        jmp     .L26
-.L14:
-        and     edi, 8
-        je      .L12
-        mov     eax, [ebx]
-.L26:
-        mov     edx, [esp+24]
-.L22:
-        mov     [edx], eax
-.L12:
-        mov     eax, [esp+28]
-        mov     ecx, [eax]
-        jmp     .L21
-.L10:
-        test    esi, 1
-        je      .L16
-        mov     eax, [ebx+4]
-        jmp     .L23
-.L16:
-        test    esi, 2
-        je      .L18
-        mov     eax, [ebx+12]
-.L23:
-        mov     [ebp+0], eax
-        jmp     .L17
-.L18:
-        test    esi, 4
-        je      .L19
-        mov     eax, [ebx+8]
-        jmp     .L24
-.L19:
-        and     esi, 8
-        je      .L17
-        mov     eax, [ebx]
-.L24:
-        mov     edx, [esp]
-        mov     [edx], eax
-.L17:
-        mov     ecx, [ebp+0]
-        mov     eax, [esp]
-        mov     edx, [eax]
-        mov     eax, ebx
-        call    __L1OutCode
-        mov     esi, eax
-        jmp     .L20
-.L9:
-        add     esp, 4
+        cmp     ebx, ecx                ;right < clip.left
+        jl      .fail
+
+        cmp     eax, ecx                ;left >= clip.left
+        jae     @F
+
+        mov     eax, ecx
+@@:
+        mov     [edi+RECT.left], eax
+
+        cmp     ebx, edx                ;right <= clip.right
+        jle     @f
+        mov     ebx, edx
+@@:
+        mov     [edi+RECT.right], ebx
+
+        mov     eax, [edi+RECT.top]
+        mov     ebx, [edi+RECT.bottom]
+        mov     ecx, [esi+RECT.top]     ;clip.top
+        mov     edx, [esi+RECT.bottom]  ;clip.bottom
+
+        cmp     eax, edx                ;top >= clip.bottom
+        jge     .fail
+
+        cmp     ebx, ecx                ;bottom < clip.top
+        jl      .fail
+
+        cmp     eax, ecx                ;top >= clip.top
+        jae     @F
+
+        mov     eax, ecx
+@@:
+        mov     [edi+RECT.top], eax
+
+        cmp     ebx, edx                ;bottom <= clip.bottom
+        jle     @f
+        mov     ebx, edx
+@@:
+        mov     [edi+RECT.bottom], ebx
         pop     ebx
-        pop     esi
-        pop     edi
-        pop     ebp
+        xor     eax, eax
         ret
+.fail:
+        pop     ebx
+        mov     eax, 1
+        ret
+
 
 align 4
 blit_clip:
 
-.sx0   equ 36
-.sy0   equ 32
-.sx1   equ 28
-.sy1   equ 24
+.sx0   equ 8
+.sy0   equ 12
+.sx1   equ 16
+.sy1   equ 20
 
-.dx0   equ 20
-.dy0   equ 16
-.dx1   equ 12
-.dy1   equ 8
+.dx0   equ 24
+.dy0   equ 28
+.dx1   equ 32
+.dy1   equ 36
 
 
         push    edi
@@ -180,25 +119,17 @@ blit_clip:
         mov     eax, [ecx+BLITTER.src_y]
         mov     [esp+.sy0], eax
         add     edx, [ecx+BLITTER.w]
-        dec     edx
-        mov     [esp+.sx1], edx
         add     eax, [ecx+BLITTER.h]
-        dec     eax
+        mov     [esp+.sx1], edx
         mov     [esp+.sy1], eax
 
-        lea     ecx, [esp+.sy0]
-        lea     edx, [esp+.sx0]
-        lea     eax, [ebx+BLITTER.sc]
-        lea     esi, [esp+.sy1]
+        lea     edi, [esp+.sx0]
+        lea     esi, [ebx+BLITTER.sc]
 
-        mov     [esp+4], esi
-        lea     esi, [esp+.sx1]
-        mov     [esp], esi
         call    block_clip
-
-        mov     esi, 1
         test    eax, eax
-        jne     .L28
+        mov     esi, 1
+        jnz     .done
 
         mov     edi, [esp+.sx0]
         mov     edx, [ebx+BLITTER.dst_x]
@@ -211,6 +142,7 @@ blit_clip:
         add     eax, ecx
         sub     eax, [ebx+BLITTER.src_y]
         mov     [esp+.dy0], eax
+
         sub     edx, edi
         add     edx, [esp+.sx1]
         mov     [esp+.dx1], edx
@@ -219,26 +151,20 @@ blit_clip:
         add     eax, [esp+.sy1]
         mov     [esp+.dy1], eax
 
-        lea     ecx, [esp+.dy0]
-        lea     edx, [esp+.dx0]
-        lea     eax, [esp+.dy1]
-        mov     [esp+4], eax
-        lea     eax, [esp+.dx1]
-        mov     [esp], eax
-        mov     eax, ebx
+        lea     edi, [esp+.dx0]
+        lea     esi, [ebx+BLITTER.dc]
         call    block_clip
         test    eax, eax
-        jne     .L28
+        mov     esi, 1
+        jnz     .done
 
         mov     edx, [esp+.dx0]
         mov     eax, [esp+.dx1]
-        inc     eax
         sub     eax, edx
         mov     [ebx+BLITTER.w], eax
 
         mov     eax, [esp+.dy0]
         mov     ecx, [esp+.dy1]
-        inc     ecx
         sub     ecx, eax
         mov     [ebx+BLITTER.h], ecx
 
@@ -254,7 +180,7 @@ blit_clip:
         mov     [ebx+BLITTER.dst_x], edx
         mov     [ebx+BLITTER.dst_y], eax
         xor     esi, esi
-.L28:
+.done:
         mov     eax, esi
         add     esp, 40
         pop     ebx
@@ -274,10 +200,7 @@ purge .dy1
 
         ret
 
-
-
 align 4
-
 blit_32:
         push    ebp
         push    edi
@@ -288,22 +211,24 @@ blit_32:
         mov     eax, [TASK_BASE]
         mov     ebx, [eax-twdw + WDATA.box.width]
         mov     edx, [eax-twdw + WDATA.box.height]
+        inc     ebx
+        inc     edx
 
         xor     eax, eax
 
-        mov     [esp+BLITTER.dc.xmin], eax
-        mov     [esp+BLITTER.dc.ymin], eax
-        mov     [esp+BLITTER.dc.xmax], ebx
-        mov     [esp+BLITTER.dc.ymax], edx
+        mov     [esp+BLITTER.dc.left], eax
+        mov     [esp+BLITTER.dc.top], eax
+        mov     [esp+BLITTER.dc.right], ebx
+        mov     [esp+BLITTER.dc.bottom], edx
 
-        mov     [esp+BLITTER.sc.xmin], eax
-        mov     [esp+BLITTER.sc.ymin], eax
+        mov     [esp+BLITTER.sc.left], eax
+        mov     [esp+BLITTER.sc.top], eax
         mov     eax, [ecx+24]
-        dec     eax
-        mov     [esp+BLITTER.sc.xmax], eax
+
+        mov     [esp+BLITTER.sc.right], eax
         mov     eax, [ecx+28]
-        dec     eax
-        mov     [esp+BLITTER.sc.ymax], eax
+
+        mov     [esp+BLITTER.sc.bottom], eax
 
         mov     eax, [ecx]
         mov     [esp+BLITTER.dst_x], eax
@@ -429,7 +354,7 @@ align 4
 
 .done:
 ;        call    [draw_pointer]
-        call    __sys_draw_pointer
+;        call    __sys_draw_pointer
 .L57:
         add     esp, 72
         pop     ebx

@@ -169,10 +169,6 @@ endg
 
   fs_info:                      ;start of code - Mihasik
         push    eax
-        cmp     [eax+21], byte 'h'
-        je      fs_info_h
-        cmp     [eax+21], byte 'H'
-        je      fs_info_h
         cmp     [eax+21], byte 'r'
         je      fs_info_r
         cmp     [eax+21], byte 'R'
@@ -189,9 +185,6 @@ endg
         mov     ebx, 2847       ;total clusters
         mov     edx, 512        ;cluster size
         xor     eax, eax        ;always 0
-        jmp     fs_info1
-  fs_info_h:                    ;if harddisk
-        call    get_hd_info
   fs_info1:
         pop     edi
         mov     [esp+36], eax
@@ -436,32 +429,6 @@ hd_err_return:
         and     [hd1_status], 0
         jmp     file_system_return
 @@:
-
-        cmp     dword [esp+20], 0; READ
-        jne     fs_noharddisk_read
-
-        mov     eax, [esp+0]    ; /fname
-        lea     edi, [eax+12]
-        mov     byte [eax], 0   ; path to asciiz
-        inc     eax             ; filename start
-
-        mov     ebx, [esp+12]   ; count to read
-        mov     ecx, [esp+8]    ; buffer
-        mov     edx, [esp+4]
-        add     edx, 12*2       ; dir start
-        sub     edi, edx        ; path length
-        mov     esi, [esp+16]   ; blocks to read
-
-        call    file_read
-
-        mov     edi, [esp+0]
-        mov     byte [edi], '/'
-
-        call    free_hd_channel
-        and     [hd1_status], 0
-        jmp     file_system_return
-
-  fs_noharddisk_read:
 
         call    free_hd_channel
         and     [hd1_status], 0

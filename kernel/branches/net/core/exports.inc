@@ -72,6 +72,9 @@ iglobal
   szLoadFile          db 'LoadFile',0
   szSendEvent         db 'SendEvent',0
   szSetMouseData      db 'SetMouseData',0
+  szSetKeyboardData   db 'SetKeyboardData',0
+  szRegKeyboard       db 'RegKeyboard',0
+  szDelKeyboard       db 'DelKeyboard',0
   szSleep             db 'Sleep',0
   szGetTimerTicks     db 'GetTimerTicks',0
 
@@ -161,6 +164,9 @@ kernel_export:
   dd szLoadFile        , load_file             ;retval eax, ebx
   dd szSendEvent       , send_event            ;see EVENT.inc for specification
   dd szSetMouseData    , set_mouse_data        ;stdcall
+  dd szSetKeyboardData , set_keyboard_data
+  dd szRegKeyboard     , register_keyboard
+  dd szDelKeyboard     , delete_keyboard
   dd szSleep           , delay_ms
   dd szGetTimerTicks   , get_timer_ticks
 

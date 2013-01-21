@@ -334,6 +334,9 @@ high_code:
         mov     ecx, disk_list_mutex
         call    mutex_init
 
+        mov     ecx, keyboard_list_mutex
+        call    mutex_init
+
         mov     ecx, unpack_mutex
         call    mutex_init
 
@@ -382,11 +385,13 @@ high_code:
 
         movzx   eax, word [BOOT_VAR+BOOT_X_RES]; X max
         mov     [_display.width], eax
+        mov     [display_width_standard], eax
         dec     eax
         mov     [Screen_Max_X], eax
         mov     [screen_workarea.right], eax
         movzx   eax, word [BOOT_VAR+BOOT_Y_RES]; Y max
         mov     [_display.height], eax
+        mov     [display_height_standard], eax
         dec     eax
         mov     [Screen_Max_Y], eax
         mov     [screen_workarea.bottom], eax
@@ -445,6 +450,10 @@ v20ga24:
         mov     [PUTPIXEL], dword VGA_putpixel
         mov     [GETPIXEL], dword Vesa20_getpixel32
 no_mode_0x12:
+
+        mov     [MOUSE_PICTURE], dword mousepointer
+        mov     [_display.check_mouse], check_mouse_area_for_putpixel
+        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
 
 ; -------- Fast System Call init ----------
 ; Intel SYSENTER/SYSEXIT (AMD CPU support it too)
@@ -531,7 +540,7 @@ no_mode_0x12:
         mov     ax, tss0
         ltr     ax
 
-        mov     [LFBSize], 0x800000
+        mov     [LFBSize], 0xC00000
         call    init_LFB
         call    init_fpu
         call    init_malloc
@@ -602,19 +611,31 @@ no_mode_0x12:
         mov     [SLOT_BASE + 256 + APPDATA.dir_table], sys_pgdir - OS_BASE
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
-
+        mov     esi, boot_initirq
+        call    boot_log
         call    init_irqs
+
+        mov     esi, boot_picinit
+        call    boot_log
         call    PIC_init
 
+        mov     esi, boot_v86machine
+        call    boot_log
 ; Initialize system V86 machine
         call    init_sys_v86
 
+        mov     esi, boot_inittimer
+        call    boot_log
 ; Initialize system timer (IRQ0)
         call    PIT_init
 
+        mov     esi, boot_initapic
+        call    boot_log
 ; Try to Initialize APIC
         call    APIC_init
 
+        mov     esi, boot_enableirq
+        call    boot_log
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
         call    unmask_timer
@@ -624,6 +645,8 @@ no_mode_0x12:
         stdcall enable_irq, 14
         stdcall enable_irq, 15
 
+        mov     esi, boot_enablint_ide
+        call    boot_log
 ; Enable interrupts in IDE controller
         mov     al, 0
         mov     dx, 0x3F6
@@ -632,9 +655,25 @@ no_mode_0x12:
         out     dx, al
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
-include 'detect/disks.inc'
+;        mov     esi, boot_detectdisks
+;        call    boot_log
+;include 'detect/disks.inc'
+        mov     esi, boot_detectfloppy
+        call    boot_log
+include 'detect/dev_fd.inc'
+        mov     esi, boot_detecthdcd
+        call    boot_log
+include 'detect/dev_hdcd.inc'
+        mov     esi, boot_getcache
+        call    boot_log
+include 'detect/getcache.inc'
+        mov     esi, boot_detectpart
+        call    boot_log
+include 'detect/sear_par.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+        mov     esi, boot_init_sys
+        call    boot_log
         call    Parser_params
 
 if ~ defined extended_primary_loader
@@ -654,6 +693,9 @@ if 0
         mov     ax, [OS_BASE+0x10000+bx_from_load]
         cmp     ax, 'r1'; if using not ram disk, then load librares and parameters {SPraid.simba}
         je      no_lib_load
+
+        mov     esi, boot_loadlibs
+        call    boot_log
 ; LOADING LIBRARES
         stdcall dll.Load, @IMPORT           ; loading librares for kernel (.obj files)
         call    load_file_parse_table       ; prepare file parse table
@@ -661,24 +703,13 @@ if 0
 no_lib_load:
 end if
 
-; LOAD FONTS I and II
-
-        stdcall read_file, char, FONT_I, 0, 2304
-        stdcall read_file, char2, FONT_II, 0, 2560
-
-        mov     [MOUSE_PICTURE], dword mousepointer
-        mov     [_display.check_mouse], check_mouse_area_for_putpixel
-        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
-
-        mov     esi, boot_fonts
-        call    boot_log
-
 ; Display APIC status
         mov     esi, boot_APIC_found
         cmp     [irq_mode], IRQ_APIC
         je      @f
         mov     esi, boot_APIC_nfound
 @@:
+        call    boot_log
 
 ; PRINT AMOUNT OF MEMORY
         mov     esi, boot_memdetect
@@ -701,10 +732,10 @@ end if
 
 ; BUILD SCHEDULER
 
-        call    build_scheduler; sys32.inc
+;        call    build_scheduler; sys32.inc
 
-        mov     esi, boot_devices
-        call    boot_log
+;        mov     esi, boot_devices
+;        call    boot_log
 
         mov     [pci_access_enabled], 1
 
@@ -901,6 +932,8 @@ first_app_found:
 ; SET KEYBOARD PARAMETERS
         mov     al, 0xf6       ; reset keyboard, scan enabled
         call    kb_write
+        test    ah, ah
+        jnz     .no_keyboard
 
         ; wait until 8042 is ready
         xor     ecx, ecx
@@ -909,6 +942,15 @@ first_app_found:
         and     al, 00000010b
         loopnz  @b
 
+iglobal
+align 4
+ps2_keyboard_functions:
+        dd      .end - $
+        dd      0       ; no close
+        dd      ps2_set_lights
+.end:
+endg
+        stdcall register_keyboard, ps2_keyboard_functions, 0
        ; mov   al, 0xED       ; Keyboard LEDs - only for testing!
        ; call  kb_write
        ; call  kb_read
@@ -926,6 +968,7 @@ first_app_found:
         call    set_lights
      ;// mike.dld ]
         stdcall attach_int_handler, 1, irq1, 0
+.no_keyboard:
 
 ; SET MOUSE
 
@@ -1047,6 +1090,7 @@ osloop:
         call    checkidle
         call    check_fdd_motor_status
         call    check_ATAPI_device_event
+        call    check_lights_state
         call    check_timers
         jmp     osloop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2010,6 +2054,8 @@ sys_system_table:
         dd      sysfn_meminfo           ; 20 = get extended memory info
         dd      sysfn_pid_to_slot       ; 21 = get slot number for pid
         dd      sysfn_min_rest_window   ; 22 = minimize and restore any window
+        dd      sysfn_min_windows       ; 23 = minimize all windows
+        dd      sysfn_set_screen_sizes  ; 24 = set screen sizes for Vesa
 sysfn_num = ($ - sys_system_table)/4
 endg
 ;------------------------------------------------------------------------------
@@ -2083,8 +2129,6 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         jne     noatsc
         and     [application_table_status], 0
 noatsc:
-; for guarantee the updating data
-        call    change_task
 noprocessterminate:
         add     esp, 4
         ret
@@ -2324,20 +2368,19 @@ sysfn_getfreemem:
         shl     eax, 2
         mov     [esp+32], eax
         ret
-
+;------------------------------------------------------------------------------
 sysfn_getallmem:
         mov     eax, [MEM_AMOUNT]
         shr     eax, 10
         mov     [esp+32], eax
         ret
-
-; // Alver, 2007-22-08 // {
+;------------------------------------------------------------------------------
 sysfn_pid_to_slot:
         mov     eax, ecx
         call    pid_to_slot
         mov     [esp+32], eax
         ret
-
+;------------------------------------------------------------------------------
 sysfn_min_rest_window:
         pushad
         mov     eax, edx ; ebx - operating
@@ -2368,14 +2411,52 @@ sysfn_min_rest_window:
         dec     eax
         mov     [esp+32], eax
         ret
-; } \\ Alver, 2007-22-08 \\
+;------------------------------------------------------------------------------
+sysfn_min_windows:
+        call    minimize_all_window
+        mov     [esp+32], eax
+        call    change_task
+        ret
+;------------------------------------------------------------------------------
+sysfn_set_screen_sizes:
+        cmp     [SCR_MODE], word 0x13
+        jbe     .exit
 
+        cmp     [_display.select_cursor], select_cursor
+        jne     .exit
+
+        cmp     ecx, [display_width_standard]
+        ja      .exit
+
+        cmp     edx, [display_height_standard]
+        ja      .exit
+
+        pushfd
+        cli
+        mov     eax, ecx
+        mov     ecx, [BytesPerScanLine]
+        mov     [_display.width], eax
+        dec     eax
+        mov     [_display.height], edx
+        dec     edx
+; eax - new Screen_Max_X
+; edx - new Screen_Max_Y
+        mov     [do_not_touch_winmap], 1
+        call    set_screen
+        mov     [do_not_touch_winmap], 0
+        popfd
+        call    change_task
+.exit:
+        ret
+;------------------------------------------------------------------------------
 uglobal
-;// mike.dld, 2006-29-01 [
 screen_workarea RECT
-;// mike.dld, 2006-29-01 ]
+display_width_standard dd 0
+display_height_standard dd 0
+do_not_touch_winmap db 0
 window_minimize db 0
 sound_flag      db 0
+
 endg
 
 UID_NONE=0
@@ -2430,10 +2511,9 @@ sys_background:
         cmp     ebx, 1                     ; BACKGROUND SIZE
         jnz     nosb1
         test    ecx, ecx
-;    cmp   ecx,0
         jz      sbgrr
+
         test    edx, edx
-;    cmp   edx,0
         jz      sbgrr
 ;--------------------------------------
 align 4
@@ -2703,6 +2783,49 @@ nosb7:
 ;------------------------------------------------------------------------------
 align 4
 nosb8:
+        cmp     ebx, 9
+        jnz     nosb9
+; ecx = [left]*65536 + [right]
+; edx = [top]*65536 + [bottom]
+        mov     eax, [Screen_Max_X]
+        mov     ebx, [Screen_Max_Y]
+; check [right]
+        cmp     cx, ax
+        ja      .exit
+; check [left]
+        ror     ecx, 16
+        cmp     cx, ax
+        ja      .exit
+; check [bottom]
+        cmp     dx, bx
+        ja      .exit
+; check [top]
+        ror     edx, 16
+        cmp     dx, bx
+        ja      .exit
+
+        movzx   eax, cx  ; [left]
+        movzx   ebx, dx  ; [top]
+
+        shr     ecx, 16 ; [right]
+        shr     edx, 16 ; [bottom]
+
+        mov     [background_defined], 1
+
+        mov     [draw_data+32 + RECT.left], eax
+        mov     [draw_data+32 + RECT.top], ebx
+
+        mov     [draw_data+32 + RECT.right], ecx
+        mov     [draw_data+32 + RECT.bottom], edx
+
+        inc     byte[REDRAW_BACKGROUND]
+;--------------------------------------
+align 4
+.exit:
+        ret
+;------------------------------------------------------------------------------
+align 4
+nosb9:
         ret
 ;------------------------------------------------------------------------------
 align 4
@@ -3297,9 +3420,7 @@ align 4
 ;--------------------------------------
 align 4
 mouse_not_active:
-        xor     eax, eax
-        xchg    al, [REDRAW_BACKGROUND]
-        test    al, al      ; background update ?
+        cmp     byte[REDRAW_BACKGROUND], 0         ; background update ?
         jz      nobackgr
 
         cmp     [background_defined], 0
@@ -3320,6 +3441,9 @@ align 4
         pop     eax
 
         call    drawbackground
+;        DEBUGF  1, "K : drawbackground\n"
+;        DEBUGF  1, "K : backg x %x\n",[BG_Rect_X_left_right]
+;        DEBUGF  1, "K : backg y %x\n",[BG_Rect_Y_top_bottom]
 ;--------- set event 5 start ----------
         push    ecx edi
         xor     edi, edi
@@ -3334,9 +3458,7 @@ set_bgr_event:
 ; call change_task - because the application must have time to call f.15.8
         call    change_task
 ;--------- set event 5 stop -----------
-        xor     eax, eax
-        xchg    al, [REDRAW_BACKGROUND]
-        test    al, al                             ; got new update request?
+        dec     byte[REDRAW_BACKGROUND]    ; got new update request?
         jnz     @b
 
         mov     [draw_data+32 + RECT.left], eax
@@ -3994,6 +4116,14 @@ align 4
 ;--------------------------------------
 align 4
 @@:
+        cmp     esi, 9
+        jnz     @f
+        mov     ebp, putimage_get9bpp
+        mov     esi, putimage_init9bpp
+        jmp     sys_putimage_bpp
+;--------------------------------------
+align 4
+@@:
         cmp     esi, 15
         jnz     @f
         mov     ebp, putimage_get15bpp
@@ -4054,6 +4184,7 @@ align 4
 putimage_init24bpp:
         lea     eax, [eax*3]
 putimage_init8bpp:
+putimage_init9bpp:
         ret
 ;-----------------------------------------------------------------------------
 align 16
@@ -4072,6 +4203,14 @@ putimage_get8bpp:
         mov     eax, [edx+eax*4]
         pop     edx
         inc     esi
+        ret     4
+;-----------------------------------------------------------------------------
+align 16
+putimage_get9bpp:
+        lodsb
+        mov     ah, al
+        shl     eax, 8
+        mov     al, ah
         ret     4
 ;-----------------------------------------------------------------------------
 align 4
@@ -4500,17 +4639,17 @@ f66call:
            dd sys_process_def.1   ; 1 = set keyboard mode
            dd sys_process_def.2   ; 2 = get keyboard mode
            dd sys_process_def.3   ; 3 = get keyboard ctrl, alt, shift
-           dd sys_process_def.4
-           dd sys_process_def.5
+           dd sys_process_def.4   ; 4 = set system-wide hotkey
+           dd sys_process_def.5   ; 5 = delete installed hotkey
+           dd sys_process_def.6   ; 6 = disable input, work only hotkeys
+           dd sys_process_def.7   ; 7 = enable input, opposition to f.66.6
 endg
-
-
-
-
+;-----------------------------------------------------------------------------
+align 4
 sys_process_def:
         dec     ebx
-        cmp     ebx, 5
-        jae     .not_support    ;if >=6 then or eax,-1
+        cmp     ebx, 7
+        jae     .not_support    ;if >=8 then or eax,-1
 
         mov     edi, [CURRENT_TASK]
         jmp     dword [f66call+ebx*4]
@@ -4518,33 +4657,28 @@ sys_process_def:
 .not_support:
         or      eax, -1
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .1:
         shl     edi, 8
         mov     [edi+SLOT_BASE + APPDATA.keyboard_mode], cl
 
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .2:                             ; 2 = get keyboard mode
         shl     edi, 8
         movzx   eax, byte [SLOT_BASE+edi + APPDATA.keyboard_mode]
         mov     [esp+32], eax
         ret
-;     xor   eax,eax
-;     movzx eax,byte [shift]
-;     movzx ebx,byte [ctrl]
-;     shl   ebx,2
-;     add   eax,ebx
-;     movzx ebx,byte [alt]
-;     shl   ebx,3
-;     add   eax,ebx
+;-----------------------------------------------------------------------------
+align 4
 .3:                             ;3 = get keyboard ctrl, alt, shift
- ;// mike.dld [
         mov     eax, [kb_state]
- ;// mike.dld ]
         mov     [esp+32], eax
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .4:
         mov     eax, hotkey_list
 @@:
@@ -4569,7 +4703,8 @@ sys_process_def:
 @@:
         and     dword [esp+32], 0
         ret
-
+;-----------------------------------------------------------------------------
+align 4
 .5:
         movzx   ebx, cl
         lea     ebx, [hotkey_scancodes+ebx*4]
@@ -4603,8 +4738,45 @@ sys_process_def:
         mov     [eax], edx
         mov     [esp+32], edx
         ret
+;-----------------------------------------------------------------------------
+align 4
+.6:
+        pushfd
+        cli
+        mov     eax, [PID_lock_input]
+        test    eax, eax
+        jnz     @f
+; get current PID
+        mov     eax, [CURRENT_TASK]
+        shl     eax, 5
+        mov     eax, [eax+CURRENT_TASK+TASKDATA.pid]
+; set current PID for lock input
+        mov     [PID_lock_input], eax
+@@:
+        popfd
+        ret
+;-----------------------------------------------------------------------------
+align 4
+.7:
+        mov     eax, [PID_lock_input]
+        test    eax, eax
+        jz      @f
+; get current PID
+        mov     ebx, [CURRENT_TASK]
+        shl     ebx, 5
+        mov     ebx, [ebx+CURRENT_TASK+TASKDATA.pid]
+; compare current lock input with current PID
+        cmp     ebx, eax
+        jne     @f
 
-
+        xor     eax, eax
+        mov     [PID_lock_input], eax
+@@:
+        ret
+;-----------------------------------------------------------------------------
+uglobal
+  PID_lock_input dd 0x0
+endg
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 61 sys function.                                                ;;
 ;; in eax=61,ebx in [1..3]                                         ;;
@@ -4961,7 +5133,7 @@ align 4
 align 4
 .no_put:
         pop     ecx eax
-        
+
         sub     ebp, 4
         dec     ecx
         jnz     .start_x
@@ -5020,22 +5192,6 @@ syscall_threads:                        ; CreateThreads
         mov     [esp+32], eax
         ret
 
-align 4
-
-read_from_hd:                           ; Read from hd - fn not in use
-
-        mov     edi, [TASK_BASE]
-        add     edi, TASKDATA.mem_start
-        add     eax, [edi]
-        add     ecx, [edi]
-        add     edx, [edi]
-        call    file_read
-
-        mov     [esp+36], eax
-        mov     [esp+24], ebx
-
-        ret
-
 paleholder:
         ret
 ;------------------------------------------------------------------------------
@@ -5071,6 +5227,10 @@ calculate_fast_getting_offset_for_LFB:
 ;------------------------------------------------------------------------------
 align 4
 set_screen:
+; in:
+; eax - new Screen_Max_X
+; ecx - new BytesPerScanLine
+; edx - new Screen_Max_Y
         cmp     eax, [Screen_Max_X]
         jne     .set
 
@@ -5094,6 +5254,9 @@ set_screen:
 
         pushad
 
+        cmp     [do_not_touch_winmap], 1
+        je      @f
+
         stdcall kernel_free, [_WinMapAddress]
 
         mov     eax, [_display.width]
@@ -5104,9 +5267,18 @@ set_screen:
         mov     [_WinMapAddress], eax
         test    eax, eax
         jz      .epic_fail
+; store for f.18.24
+        mov     eax, [_display.width]
+        mov     [display_width_standard], eax
 
+        mov     eax, [_display.height]
+        mov     [display_height_standard], eax
+@@:
         call    calculate_fast_getting_offset_for_WinMapAddress
-
+; for Qemu or non standart video cards
+; Unfortunately [BytesPerScanLine] does not always
+;                             equal to [_display.width] * [ScreenBPP] / 8
+        call    calculate_fast_getting_offset_for_LFB
         popad
 
         call    repos_windows

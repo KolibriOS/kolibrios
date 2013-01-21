@@ -18,9 +18,11 @@ fs_read32_sys:
 ; this request should be processed by hd_read.
         cmp     [ebp+PARTITION.Disk], 'old'
         jnz     @f
+        add     eax, dword [ebp+PARTITION.FirstSector]
         mov     [hdd_appl_data], 0
         call    hd_read
         mov     [hdd_appl_data], 1      ; restore to default state
+        mov     eax, [hd_error]
         ret
 @@:
 ; In the normal case, save ecx, set ecx to SysCache and let the common part
@@ -41,8 +43,11 @@ fs_read32_app:
 ; this request should be processed by hd_read.
         cmp     [ebp+PARTITION.Disk], 'old'
         jnz     @f
+        add     eax, dword [ebp+PARTITION.FirstSector]
         mov     [hdd_appl_data], 1
-        jmp     hd_read
+        call    hd_read
+        mov     eax, [hd_error]
+        ret
 @@:
 ; In the normal case, save ecx, set ecx to AppCache and let the common part
 ; do its work.
@@ -63,7 +68,7 @@ fs_read32_common:
         ret
 @@:
 ; 2. Get the absolute sector on the disk.
-        push    edx
+        push    edx esi
         xor     edx, edx
         add     eax, dword [ebp+PARTITION.FirstSector]
         adc     edx, dword [ebp+PARTITION.FirstSector+4]
@@ -75,15 +80,16 @@ fs_read32_common:
         push    edx     ; startsector
         push    eax     ; startsector
         push    ebx     ; buffer
+        mov     esi, [ebp+PARTITION.Disk]
         mov     al, DISKFUNC.read
         call    disk_call_driver
         pop     ecx
-        pop     edx
+        pop     esi edx
         pop     ecx
         ret
 .scancache:
 ; 4. Scan the cache.
-        push    esi edi ecx ; scan cache
+        push    edi ecx ; scan cache
         push    edx eax
 virtual at esp
 .sector_lo      dd      ?
@@ -129,7 +135,7 @@ end virtual
         push    esp
         push    edx
         push    [.sector_lo+12]
-        mov     ecx, [.cache]
+        mov     ecx, [.cache+16]
         mov     eax, edi
         shl     eax, 9
         add     eax, [ecx+DISKCACHE.data]
@@ -183,9 +189,11 @@ fs_write32_sys:
 ; this request should be processed by hd_write.
         cmp     [ebp+PARTITION.Disk], 'old'
         jnz     @f
+        add     eax, dword [ebp+PARTITION.FirstSector]
         mov     [hdd_appl_data], 0
         call    hd_write
         mov     [hdd_appl_data], 1      ; restore to default state
+        mov     eax, [hd_error]
         ret
 @@:
 ; In the normal case, save ecx, set ecx to SysCache and let the common part
@@ -206,8 +214,11 @@ fs_write32_app:
 ; this request should be processed by hd_write.
         cmp     [ebp+PARTITION.Disk], 'old'
         jnz     @f
+        add     eax, dword [ebp+PARTITION.FirstSector]
         mov     [hdd_appl_data], 1
-        jmp     hd_write
+        call    hd_write
+        mov     eax, [hd_error]
+        ret
 @@:
 ; In the normal case, save ecx, set ecx to AppCache and let the common part
 ; do its work.
@@ -227,7 +238,7 @@ fs_write32_common:
         pop     ecx
         ret
 @@:
-        push    edx
+        push    edx esi
 ; 2. Get the absolute sector on the disk.
         xor     edx, edx
         add     eax, dword [ebp+PARTITION.FirstSector]
@@ -240,15 +251,16 @@ fs_write32_common:
         push    edx     ; startsector
         push    eax     ; startsector
         push    ebx     ; buffer
+        mov     esi, [ebp+PARTITION.Disk]
         mov     al, DISKFUNC.write
         call    disk_call_driver
         pop     ecx
-        pop     edx
+        pop     esi edx
         pop     ecx
         ret
 .scancache:
 ; 4. Scan the cache.
-        push    esi edi ecx ; scan cache
+        push    edi ecx ; scan cache
         push    edx eax
 virtual at esp
 .sector_lo      dd      ?
@@ -305,7 +317,7 @@ end virtual
 
 .yes_in_cache_write:
 
-        mov     dword [esi+4], 2        ; write - differs from hd
+        mov     dword [esi+8], 2        ; write - differs from hd
 
         shl     edi, 9
         mov     ecx, [.cache]
@@ -348,7 +360,7 @@ find_empty_slot64:
         jb      .found_slot             ; it's empty or read
         dec     ecx
         jnz     .search_for_empty
-        call    write_cache64           ; no empty slots found, write all
+        stdcall write_cache64, [ebp+PARTITION.Disk] ; no empty slots found, write all
         test    eax, eax
         jne     .found_slot_access_denied
         jmp     .search_again           ; and start again
@@ -359,13 +371,14 @@ find_empty_slot64:
         ret
 
 ; This function is intended to replace the old 'write_cache' function.
-proc write_cache64 uses ecx edx esi edi
+proc write_cache64 uses ecx edx esi edi, disk:dword
 locals
-cache_chain_started     dd      ?
+cache_chain_started     dd      0
 cache_chain_size        dd      ?
 cache_chain_pos         dd      ?
 cache_chain_ptr         dd      ?
 endl
+saved_esi_pos = 16+12 ; size of local variables + size of registers before esi
 ; If there is no cache for this disk, nothing to do.
         cmp     [esi+DISKCACHE.pointer], 0
         jz      .flush
@@ -432,8 +445,7 @@ endl
         test    eax, eax
         jnz     .nothing
 .flush:
-        mov     esi, [ebp]
-        mov     esi, [esi+PARTITION.Disk]
+        mov     esi, [disk]
         mov     al, DISKFUNC.flush
         call    disk_call_driver
 .nothing:
@@ -454,7 +466,7 @@ endl
 .write_cache_chain:
         pusha
         mov     edi, [cache_chain_pos]
-        mov     ecx, [ebp-12]
+        mov     ecx, [ebp-saved_esi_pos]
         shl     edi, 9
         add     edi, [ecx+DISKCACHE.data]
         mov     ecx, [cache_chain_size]
@@ -538,7 +550,7 @@ disk_init_cache:
 
         mov     eax, [esi+DISK.SysCache.data_size]
         push    ebx
-        call    calculate_for_hd
+        call    calculate_for_hd64
         pop     ebx
         add     eax, [esi+DISK.SysCache.pointer]
         mov     [esi+DISK.SysCache.data], eax
@@ -553,7 +565,7 @@ disk_init_cache:
 
         mov     eax, [esi+DISK.AppCache.data_size]
         push    ebx
-        call    calculate_for_hd
+        call    calculate_for_hd64
         pop     ebx
         add     eax, [esi+DISK.AppCache.pointer]
         mov     [esi+DISK.AppCache.data], eax
@@ -579,6 +591,22 @@ disk_init_cache:
         mov     al, 1
         ret
 
+calculate_for_hd64:
+        push    eax
+        mov     ebx, eax
+        shr     eax, 9
+        lea     eax, [eax*3]
+        shl     eax, 2
+        sub     ebx, eax
+        shr     ebx, 9
+        mov     ecx, ebx
+        shl     ebx, 9
+        pop     eax
+        sub     eax, ebx
+        dec     ecx
+        ret
+
+
 ; This internal function is called from disk_media_dereference to free the
 ; allocated cache, if there is one.
 ; esi = pointer to DISK structure
@@ -589,4 +617,27 @@ disk_free_cache:
         jz      .nothing
         stdcall kernel_free, eax
 .nothing:
+        ret
+
+; This function flushes all modified data from both caches for the given DISK.
+; esi = pointer to DISK
+disk_sync:
+; Compatibility hack: if PARTITION.Disk is 'old', there is no DISK structure,
+; this request should be processed by write_cache.
+        cmp     esi, 'old'
+        jnz     @f
+        mov     [hdd_appl_data], 0
+        call    write_cache
+        mov     [hdd_appl_data], 1
+        jmp     write_cache
+@@:
+; The algorithm is straightforward.
+        push    esi
+        push    esi     ; for second write_cache64
+        push    esi     ; for first write_cache64
+        add     esi, DISK.SysCache
+        call    write_cache64
+        add     esi, DISK.AppCache - DISK.SysCache
+        call    write_cache64
+        pop     esi
         ret

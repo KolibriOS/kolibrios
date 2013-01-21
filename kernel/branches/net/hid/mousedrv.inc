@@ -26,14 +26,14 @@ uglobal
 align 4
   mousecount  dd  0x0
   mousedata   dd  0x0
-Y_UNDER_subtraction_CUR_hot_y:
-        dd 0
-X_UNDER_subtraction_CUR_hot_x:
-        dd 0
 Y_UNDER_sub_CUR_hot_y_add_curh:
-        dd 0
+        dw 0
+Y_UNDER_subtraction_CUR_hot_y:
+        dw 0
 X_UNDER_sub_CUR_hot_x_add_curh:
-        dd 0
+        dw 0
+X_UNDER_subtraction_CUR_hot_x:
+        dw 0
 endg
 
 iglobal
@@ -124,6 +124,18 @@ save_draw_mouse:
         cmp     esi, [current_cursor]
         je      .draw
 
+        mov     eax, [TASK_COUNT]
+        movzx   eax, word [WIN_POS+eax*2]
+        shl     eax, 8
+
+        cmp     eax, edx
+        je      @F
+
+        mov     esi, [def_cursor]
+        cmp     esi, [current_cursor]
+        je      .draw
+
+@@:
         push    esi
         call    [_display.select_cursor]
         mov     [current_cursor], esi
@@ -447,15 +459,15 @@ redrawmouse:
 
         mov     ax, [Y_UNDER]
         sub     eax, [esi+CURSOR.hot_y]
-        mov     [Y_UNDER_subtraction_CUR_hot_y], eax
+        mov     [Y_UNDER_subtraction_CUR_hot_y], ax
         add     eax, [cur.h]
-        mov     [Y_UNDER_sub_CUR_hot_y_add_curh], eax
+        mov     [Y_UNDER_sub_CUR_hot_y_add_curh], ax
 
         mov     ax, [X_UNDER]
         sub     eax, [esi+CURSOR.hot_x]
-        mov     [X_UNDER_subtraction_CUR_hot_x], eax
+        mov     [X_UNDER_subtraction_CUR_hot_x], ax
         add     eax, [cur.w]
-        mov     [X_UNDER_sub_CUR_hot_x_add_curh], eax
+        mov     [X_UNDER_sub_CUR_hot_x_add_curh], ax
 ;--------------------------------------
 align 4
 @@:

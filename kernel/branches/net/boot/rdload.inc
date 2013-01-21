@@ -86,16 +86,25 @@ $Revision $
         jz   image_present
         ret
     image_present:
-        mov   [image_retrieved],1
+        mov     [image_retrieved], 1
         ret
 
+iglobal
+align 4
+read_image_fsinfo:
+        dd      0               ; function: read
+        dq      0               ; offset: zero
+        dd      1474560/512     ; size
+        dd      RAMDISK         ; buffer
+        db      0
+        dd      hdsysimage+OS_BASE+0x10000
+endg
+
 read_image:
-        mov   eax, hdsysimage+OS_BASE+0x10000
-        mov   ebx, 1474560/512
-        mov   ecx, RAMDISK
-        mov   esi, 0
-        mov   edi, 12
-        call  file_read
+        mov     ebx, read_image_fsinfo
+        pushad
+        call    file_system_lfn
+        popad
         ret
 
 image_retrieved  db 0
