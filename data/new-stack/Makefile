@@ -41,6 +41,7 @@ export DOCDIR
 # Spaces separate items, so spaces in names should be
 # represented as '|'.
 FASM_PROGRAMS:=\
+ @panel:@PANEL:$(PROGS)/system/panel/trunk/@PANEL.ASM \
  @clip:@CLIP:$(PROGS)/system/clip/trunk/@clip.ASM \
  @menu:@MENU:$(PROGS)/system/menu/trunk/menu.asm \
  @ss:@SS:$(PROGS)/system/ss/trunk/@ss.asm\
@@ -97,6 +98,7 @@ FASM_PROGRAMS:=\
  drivers/sound.obj:DRIVERS/SOUND.OBJ:$(TRUNKKERNEL)/drivers/sound.asm \
  drivers/intelac97.obj:DRIVERS/INTELAC97.OBJ:$(TRUNKKERNEL)/drivers/intelac97.asm \
  drivers/vt823x.obj:DRIVERS/VT823X.OBJ:$(TRUNKKERNEL)/drivers/vt823x.asm \
+ drivers/tmpdisk.obj:DRIVERS/TMPDISK.OBJ:$(KERNEL)/drivers/tmpdisk.asm \
  File|Managers/kfar:File|Managers/KFAR:$(PROGS)/fs/kfar/trunk/kfar.asm \
  File|Managers/kfm:File|Managers/KFM:$(PROGS)/fs/kfm/trunk/kfm.asm \
  File|Managers/opendial:File|Managers/OPENDIAL:$(PROGS)/fs/opendial/opendial.asm \
@@ -187,7 +189,6 @@ CMM_PROGRAMS:=\
 # Each item is of the form <local name>:<name inside image>.
 # Spaces should be represented as |.
 OTHER_FILES:=autorun.dat:AUTORUN.DAT \
- @panel:@PANEL \
  background.png:background.png default.skn:DEFAULT.SKN \
  icons.dat:ICONS.DAT iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
