@@ -133,7 +133,7 @@ use16
                   org   0x0
         jmp     start_of_code
 
-version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
+version db    'Kolibri OS network branch        ',13,10,13,10,0
 
 include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
