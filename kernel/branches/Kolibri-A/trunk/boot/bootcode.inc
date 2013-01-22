@@ -39,7 +39,7 @@ start_of_code:
 
 
 cpugood:
-        xor     ax, ax
+	xor	ax, ax
 	push	ax
 	popf
 	sti
@@ -49,35 +49,28 @@ cpugood:
 
 	push	ax
 	pop	es
-	mov	[es:0x9031], ax
-
-; --------------- APM - removed--------------------
-	and	word [es:0x9044], 0	; ver = 0.0 (APM not found)
 
 cfgmanager:
 
 
 ; DMA ACCESS TO HD
 
-	mov	al, 1
-	mov	[es:0x901F], al
+;        mov     al, 1
 
 ; GRAPHICS ACCELERATION
 ; force yes
-	mov	[es:0x901C], al
+;        mov     [es:0x901C], al
 
 
 ; VRR_M USE
 
-	mov	[es:0x9030], byte 2
-	mov	[es:0x901E], al
+;        mov     [es:0x9030], byte 2
 
 ; BOOT DEVICE
 
 	xor	ax, ax
 	mov	[boot_dev], al
-	mov	es, ax
-
+;        mov     es, ax
 
 ; SET GRAPHICS
 
