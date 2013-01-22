@@ -1026,6 +1026,7 @@ int radeon_device_init(struct radeon_device *rdev,
 
     /* Registers mapping */
     /* TODO: block userspace mapping of io register */
+	spin_lock_init(&rdev->mmio_idx_lock);
     rdev->rmmio_base = pci_resource_start(rdev->pdev, 2);
     rdev->rmmio_size = pci_resource_len(rdev->pdev, 2);
 	rdev->rmmio = ioremap(rdev->rmmio_base, rdev->rmmio_size);
@@ -1050,6 +1051,10 @@ int radeon_device_init(struct radeon_device *rdev,
 	r = radeon_init(rdev);
 	if (r)
         return r;
+
+//   r = radeon_ib_ring_tests(rdev);
+//   if (r)
+//       DRM_ERROR("ib ring test failed (%d).\n", r);
 
 	if (rdev->flags & RADEON_IS_AGP && !rdev->accel_working) {
 		/* Acceleration not working on AGP card try again
@@ -1126,15 +1131,15 @@ retry:
             ring_data[i] = NULL;
         }
 
-        r = radeon_ib_ring_tests(rdev);
-        if (r) {
-            dev_err(rdev->dev, "ib ring test failed (%d).\n", r);
-            if (saved) {
-                saved = false;
-                radeon_suspend(rdev);
-                goto retry;
-            }
-        }
+//        r = radeon_ib_ring_tests(rdev);
+//        if (r) {
+//            dev_err(rdev->dev, "ib ring test failed (%d).\n", r);
+//            if (saved) {
+//                saved = false;
+//                radeon_suspend(rdev);
+//                goto retry;
+//            }
+//        }
     } else {
         for (i = 0; i < RADEON_NUM_RINGS; ++i) {
             kfree(ring_data[i]);
@@ -1150,7 +1155,6 @@ retry:
 //    up_write(&rdev->exclusive_lock);
     return r;
 }
-
 
 
 /*
@@ -1434,7 +1438,7 @@ u32_t drvEntry(int action, char *cmdline)
 
     if(!dbg_open(log))
     {
-        strcpy(log, "/RD/1/DRIVERS/atikms.log");
+        strcpy(log, "/TMP1/1/atikms.log");
 
         if(!dbg_open(log))
         {
@@ -1442,7 +1446,7 @@ u32_t drvEntry(int action, char *cmdline)
             return 0;
         };
     }
-    dbgprintf("Radeon RC12 preview 1 cmdline %s\n", cmdline);
+    dbgprintf("Radeon RC13 cmdline %s\n", cmdline);
 
     enum_pci_devices();
 
@@ -1491,3 +1495,13 @@ int pci_scan_filter(u32_t id, u32_t busnr, u32_t devfn)
     }
     return ret;
 }
+
+unsigned int hweight32(unsigned int w)
+{
+    unsigned int res = w - ((w >> 1) & 0x55555555);
+    res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
+    res = (res + (res >> 4)) & 0x0F0F0F0F;
+    res = res + (res >> 8);
+    return (res + (res >> 16)) & 0x000000FF;
+}
+

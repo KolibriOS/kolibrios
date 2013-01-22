@@ -5,7 +5,7 @@
 
 struct agp_bridge_data;
 
-const struct intel_gtt {
+struct intel_gtt {
 	/* Size of memory reserved for graphics by the BIOS */
 	unsigned int stolen_size;
 	/* Total number of gtt entries. */

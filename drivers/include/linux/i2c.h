@@ -408,4 +408,7 @@ union i2c_smbus_data {
 #define I2C_SMBUS_BLOCK_PROC_CALL   7		/* SMBus 2.0 */
 #define I2C_SMBUS_I2C_BLOCK_DATA    8
 
+#define i2c_add_adapter(x)      0
+#define i2c_del_adapter(x)
+
 #endif /* _LINUX_I2C_H */

@@ -44,7 +44,7 @@ NAME_SRC=							\
 			pci.c					\
 			$(DRM_TOPDIR)/drm_crtc.c		\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
-			$(DRM_TOPDIR)/drm_dp_i2c_helper.c	\
+			$(DRM_TOPDIR)/drm_dp_helper.c		\
 			$(DRM_TOPDIR)/drm_edid.c		\
 			$(DRM_TOPDIR)/drm_fb_helper.c		\
 			$(DRM_TOPDIR)/drm_irq.c			\

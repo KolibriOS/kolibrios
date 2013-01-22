@@ -1,6 +1,8 @@
 #ifndef _LINUX_WAIT_H
 #define _LINUX_WAIT_H
 
+#include <syscall.h>
+
 typedef struct __wait_queue wait_queue_t;
 typedef struct __wait_queue_head wait_queue_head_t;
 
@@ -68,6 +70,8 @@ do{                                                         \
     __ret;                                                  \
 })
 
+#define wait_event_interruptible_timeout(wq, condition, timeout)    \
+        wait_event_timeout(wq, condition, timeout)
 
 
 #define wait_event(wq, condition)                           \

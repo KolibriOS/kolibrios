@@ -448,10 +448,15 @@ int radeon_ddc_get_modes(struct radeon_connector *radeon_connector)
 	if (radeon_connector->router.ddc_valid)
 		radeon_router_select_ddc_port(radeon_connector);
 
-	if ((radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_DisplayPort) ||
-	    (radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_eDP) ||
-	    (radeon_connector_encoder_get_dp_bridge_encoder_id(&radeon_connector->base) !=
-	     ENCODER_OBJECT_ID_NONE)) {
+	if (radeon_connector_encoder_get_dp_bridge_encoder_id(&radeon_connector->base) !=
+	    ENCODER_OBJECT_ID_NONE) {
+		struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
+
+		if (dig->dp_i2c_bus)
+			radeon_connector->edid = drm_get_edid(&radeon_connector->base,
+							      &dig->dp_i2c_bus->adapter);
+	} else if ((radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_DisplayPort) ||
+		   (radeon_connector->base.connector_type == DRM_MODE_CONNECTOR_eDP)) {
 		struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
 
 		if ((dig->dp_sink_type == CONNECTOR_OBJECT_ID_DISPLAYPORT ||
@@ -1038,6 +1043,8 @@ int radeon_modeset_init(struct radeon_device *rdev)
 	int i;
 	int ret;
 
+    ENTER();
+
 	drm_mode_config_init(rdev->ddev);
 	rdev->mode_info.mode_config_initialized = true;
 
@@ -1067,6 +1074,8 @@ int radeon_modeset_init(struct radeon_device *rdev)
 	/* init i2c buses */
 	radeon_i2c_init(rdev);
 
+    dbgprintf("i2c init\n");
+
 	/* check combios for a valid hardcoded EDID - Sun servers */
 	if (!rdev->is_atom_bios) {
 		/* check for hardcoded EDID in BIOS */
@@ -1077,6 +1086,8 @@ int radeon_modeset_init(struct radeon_device *rdev)
 	for (i = 0; i < rdev->num_crtc; i++) {
 		radeon_crtc_init(rdev->ddev, i);
 	}
+
+    dbgprintf("crtc init\n");
 
 	/* okay we should have all the bios connectors */
 	ret = radeon_setup_enc_conn(rdev->ddev);
@@ -1101,6 +1112,8 @@ int radeon_modeset_init(struct radeon_device *rdev)
 
 	radeon_fbdev_init(rdev);
 //   drm_kms_helper_poll_init(rdev->ddev);
+
+    LEAVE();
 
 	return 0;
 }

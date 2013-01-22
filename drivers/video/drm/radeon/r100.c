@@ -391,7 +391,6 @@ int r100_irq_process(struct radeon_device *rdev)
 	uint32_t status, msi_rearm;
 	bool queue_hotplug = false;
 
-
 	status = r100_irq_ack(rdev);
 	if (!status) {
 		return IRQ_NONE;
@@ -804,7 +803,16 @@ int r100_cp_init(struct radeon_device *rdev, unsigned ring_size)
 		return r;
 	}
 	ring->ready = true;
-//	radeon_ttm_set_active_vram_size(rdev, rdev->mc.real_vram_size);
+	radeon_ttm_set_active_vram_size(rdev, rdev->mc.real_vram_size);
+
+	if (!ring->rptr_save_reg /* not resuming from suspend */
+	    && radeon_ring_supports_scratch_reg(rdev, ring)) {
+		r = radeon_scratch_get(rdev, &ring->rptr_save_reg);
+		if (r) {
+			DRM_ERROR("failed to get scratch reg for rptr save (%d).\n", r);
+			ring->rptr_save_reg = 0;
+		}
+	}
 	return 0;
 }
 
@@ -815,6 +823,7 @@ void r100_cp_fini(struct radeon_device *rdev)
 	}
 	/* Disable ring */
 	r100_cp_disable(rdev);
+	radeon_scratch_free(rdev, rdev->ring[RADEON_RING_TYPE_GFX_INDEX].rptr_save_reg);
 	radeon_ring_fini(rdev, &rdev->ring[RADEON_RING_TYPE_GFX_INDEX]);
 	DRM_INFO("radeon: cp finalized\n");
 }
@@ -822,7 +831,7 @@ void r100_cp_fini(struct radeon_device *rdev)
 void r100_cp_disable(struct radeon_device *rdev)
 {
 	/* Disable ring */
-//	radeon_ttm_set_active_vram_size(rdev, rdev->mc.visible_vram_size);
+	radeon_ttm_set_active_vram_size(rdev, rdev->mc.visible_vram_size);
 	rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ready = false;
 	WREG32(RADEON_CP_CSQ_MODE, 0);
 	WREG32(RADEON_CP_CSQ_CNTL, 0);
@@ -3708,23 +3717,36 @@ int r100_init(struct radeon_device *rdev)
 	return 0;
 }
 
-uint32_t r100_mm_rreg(struct radeon_device *rdev, uint32_t reg)
+uint32_t r100_mm_rreg(struct radeon_device *rdev, uint32_t reg,
+		      bool always_indirect)
 {
-	if (reg < rdev->rmmio_size)
+	if (reg < rdev->rmmio_size && !always_indirect)
 		return readl(((void __iomem *)rdev->rmmio) + reg);
 	else {
+		unsigned long flags;
+		uint32_t ret;
+
+		spin_lock_irqsave(&rdev->mmio_idx_lock, flags);
 		writel(reg, ((void __iomem *)rdev->rmmio) + RADEON_MM_INDEX);
-		return readl(((void __iomem *)rdev->rmmio) + RADEON_MM_DATA);
+		ret = readl(((void __iomem *)rdev->rmmio) + RADEON_MM_DATA);
+		spin_unlock_irqrestore(&rdev->mmio_idx_lock, flags);
+
+		return ret;
 	}
 }
 
-void r100_mm_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v)
+void r100_mm_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v,
+		  bool always_indirect)
 {
-	if (reg < rdev->rmmio_size)
+	if (reg < rdev->rmmio_size && !always_indirect)
 		writel(v, ((void __iomem *)rdev->rmmio) + reg);
 	else {
+		unsigned long flags;
+
+		spin_lock_irqsave(&rdev->mmio_idx_lock, flags);
 		writel(reg, ((void __iomem *)rdev->rmmio) + RADEON_MM_INDEX);
 		writel(v, ((void __iomem *)rdev->rmmio) + RADEON_MM_DATA);
+		spin_unlock_irqrestore(&rdev->mmio_idx_lock, flags);
 	}
 }
 

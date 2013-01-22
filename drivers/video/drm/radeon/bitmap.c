@@ -190,7 +190,7 @@ int create_surface(struct drm_device *dev, struct io_call_10 *pbitmap)
     bitmap->page_count = size/PAGE_SIZE;
     bitmap->max_count  =  max_size/PAGE_SIZE;
 
-    DRM_DEBUG("%s alloc %d pages\n", __FUNCTION__, page_count);
+//    DRM_DEBUG("%s alloc %d pages\n", __FUNCTION__, page_count);
 
     bitmap->handle = handle;
     bitmap->uaddr  = uaddr;

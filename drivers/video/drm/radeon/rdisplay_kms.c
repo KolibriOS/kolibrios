@@ -894,6 +894,8 @@ int srv_blit_bitmap(u32 hbitmap, int  dst_x, int dst_y,
         goto fail;
     }
 
+    radeon_fence_unref(&ib->fence);
+
 fail:
     return ret;
 };

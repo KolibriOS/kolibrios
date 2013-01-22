@@ -39,7 +39,7 @@ extern u32 radeon_atom_hw_i2c_func(struct i2c_adapter *adap);
  * radeon_ddc_probe
  *
  */
-bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
+bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool use_aux)
 {
 	u8 out = 0x0;
 	u8 buf[8];
@@ -63,7 +63,13 @@ bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
 	if (radeon_connector->router.ddc_valid)
 		radeon_router_select_ddc_port(radeon_connector);
 
+	if (use_aux) {
+		struct radeon_connector_atom_dig *dig = radeon_connector->con_priv;
+		ret = i2c_transfer(&dig->dp_i2c_bus->adapter, msgs, 2);
+	} else {
 	ret = i2c_transfer(&radeon_connector->ddc_bus->adapter, msgs, 2);
+	}
+
 	if (ret != 2)
 		/* Couldn't find an accessible DDC on this connector */
 		return false;
@@ -922,11 +928,11 @@ struct radeon_i2c_chan *radeon_i2c_create(struct drm_device *dev,
 		snprintf(i2c->adapter.name, sizeof(i2c->adapter.name),
 			 "Radeon i2c hw bus %s", name);
 		i2c->adapter.algo = &radeon_i2c_algo;
-//		ret = i2c_add_adapter(&i2c->adapter);
-//		if (ret) {
-//			DRM_ERROR("Failed to register hw i2c %s\n", name);
-//			goto out_free;
-//		}
+		ret = i2c_add_adapter(&i2c->adapter);
+		if (ret) {
+			DRM_ERROR("Failed to register hw i2c %s\n", name);
+			goto out_free;
+		}
 	} else if (rec->hw_capable &&
 		   radeon_hw_i2c &&
 		   ASIC_IS_DCE3(rdev)) {
@@ -934,11 +940,11 @@ struct radeon_i2c_chan *radeon_i2c_create(struct drm_device *dev,
 		snprintf(i2c->adapter.name, sizeof(i2c->adapter.name),
 			 "Radeon i2c hw bus %s", name);
 		i2c->adapter.algo = &radeon_atom_i2c_algo;
-//		ret = i2c_add_adapter(&i2c->adapter);
-//		if (ret) {
-//			DRM_ERROR("Failed to register hw i2c %s\n", name);
-//			goto out_free;
-//		}
+		ret = i2c_add_adapter(&i2c->adapter);
+		if (ret) {
+			DRM_ERROR("Failed to register hw i2c %s\n", name);
+			goto out_free;
+		}
 	} else {
 		/* set the radeon bit adapter */
 		snprintf(i2c->adapter.name, sizeof(i2c->adapter.name),
@@ -1005,7 +1011,7 @@ void radeon_i2c_destroy(struct radeon_i2c_chan *i2c)
 {
 	if (!i2c)
 		return;
-//   i2c_del_adapter(&i2c->adapter);
+	i2c_del_adapter(&i2c->adapter);
 	kfree(i2c);
 }
 
