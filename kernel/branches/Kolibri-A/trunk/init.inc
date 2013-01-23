@@ -18,15 +18,25 @@ preinit_mem:
 
 ; clear [CLEAN_ZONE..HEAP_BASE]
 	   xor	 eax,eax
-	   mov	 edi,CLEAN_ZONE 		; 0x280000 = ramdisk FAT ?
-	   mov	 ecx,(HEAP_BASE-OS_BASE-CLEAN_ZONE) / 4
-	   cld
-	   rep	 stosd
+	 movd	   xmm0, eax	  ; load 128-bit Zero
 
-; clear [0x40000..0x90000]
+	   mov	 edi,CLEAN_ZONE 		; 0x280000 = ramdisk FAT ?
+;          mov   ecx,(HEAP_BASE-OS_BASE-CLEAN_ZONE) / 16
+	   cld
+.1:
+	   movups    [edi],xmm0
+	   add	     edi, 16
+	   cmp	     edi, (HEAP_BASE-OS_BASE)
+	   jb	     .1
+
+
+; clear [0x50000..0x90000]
 	   mov	 edi,0x50000			; 0x50000 is somewhere inside kernel code?
-	   mov	 ecx,(0x90000-0x50000)/4
-	   rep	 stosd
+.2:
+	   movups    [edi],xmm0
+	   add	     edi, 16
+	   cmp	     edi, 0x90000
+	   jb	     .2
 
 ; clear undefined kernel globals
 	   mov	 edi, endofcode-OS_BASE
@@ -149,7 +159,7 @@ init_page_map:
 
 	   mov edi, sys_pgmap-OS_BASE
 	   mov ebx, ecx
-	   shr ecx, 5       ; 32 pagebits per dw
+	   shr ecx, 5	    ; 32 pagebits per dw
 	   xor eax, eax
 	   rep stosd
 
