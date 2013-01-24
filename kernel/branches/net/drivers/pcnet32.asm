@@ -984,6 +984,7 @@ transmit:
         mov     [eax + buf_head.status], 0x8300
 
 ; trigger an immediate send
+        mov     edx, [device.io_addr]
         xor     ecx, ecx         ; CSR0
         call    [device.access_read_csr]
         or      eax, PCNET_CSR_TX
