@@ -3,7 +3,7 @@
 ;; Copyright (C) KolibriOS team 2004-2013. All rights reserved.     ;;
 ;; Distributed under terms of the GNU General Public License        ;;
 ;;                                                                  ;;
-;;  PCnet driver for KolibriOS                                      ;;
+;;  AMD PCnet driver for KolibriOS                                  ;;
 ;;                                                                  ;;
 ;;  By hidnplayr & clevermouse                                      ;;
 ;;                                                                  ;;
@@ -16,24 +16,266 @@
 
 format MS COFF
 
-        API_VERSION             =   0x01000100
+        API_VERSION             = 0x01000100
 
-        DEBUG                   =   1
-        __DEBUG__               =   1
-        __DEBUG_LEVEL__         =   1
+        DEBUG                   = 1
+        __DEBUG__               = 1
+        __DEBUG_LEVEL__         = 1
 
-        MAX_DEVICES =   4
-        MAX_ETH_FRAME_SIZE =   1514
+        MAX_DEVICES             = 4
+        MAX_ETH_FRAME_SIZE      = 1514
+
+        TX_RING_SIZE            = 4
+        RX_RING_SIZE            = 4
 
 include 'proc32.inc'
 include 'imports.inc'
 include 'fdo.inc'
 include 'netdrv.inc'
 
-
 public START
 public service_proc
 public version
+
+
+        PORT_AUI                = 0x00
+        PORT_10BT               = 0x01
+        PORT_GPSI               = 0x02
+        PORT_MII                = 0x03
+        PORT_PORTSEL            = 0x03
+        PORT_ASEL               = 0x04
+        PORT_100                = 0x40
+        PORT_FD                 = 0x80
+
+        DMA_MASK                = 0xffffffff
+
+        LOG_TX_BUFFERS          = 2             ; FIXME
+        LOG_RX_BUFFERS          = 2
+
+        TX_RING_MOD_MASK        = (TX_RING_SIZE-1)
+        TX_RING_LEN_BITS        = (LOG_TX_BUFFERS shl 12)
+
+        RX_RING_MOD_MASK        = (RX_RING_SIZE-1)
+        RX_RING_LEN_BITS        = (LOG_RX_BUFFERS shl 4)
+
+        PKT_BUF_SZ              = 1544
+
+        WIO_RDP                 = 0x10
+        WIO_RAP                 = 0x12
+        WIO_RESET               = 0x14
+        WIO_BDP                 = 0x16
+
+        DWIO_RDP                = 0x10
+        DWIO_RAP                = 0x14
+        DWIO_RESET              = 0x18
+        DWIO_BDP                = 0x1C
+
+; CSR registers
+
+        CSR_CSR                 = 0x00
+        CSR_IAB0                = 0x01
+        CSR_IAB1                = 0x02
+        CSR_IMR                 = 0x03
+        CSR_TFEAT               = 0x04
+        CSR_EXTCTL1             = 0x05
+        CSR_DTBLLEN             = 0x06
+        CSR_EXTCTL2             = 0x07
+        CSR_MAR0                = 0x08
+        CSR_MAR1                = 0x09
+        CSR_MAR2                = 0x0A
+        CSR_MAR3                = 0x0B
+        CSR_PAR0                = 0x0C
+        CSR_PAR1                = 0x0D
+        CSR_PAR2                = 0x0E
+        CSR_MODE                = 0x0F
+        CSR_RXADDR0             = 0x18
+        CSR_RXADDR1             = 0x19
+        CSR_TXADDR0             = 0x1E
+        CSR_TXADDR1             = 0x1F
+        CSR_TXPOLL              = 0x2F
+        CSR_RXPOLL              = 0x31
+        CSR_RXRINGLEN           = 0x4C
+        CSR_TXRINGLEN           = 0x4E
+        CSR_DMACTL              = 0x50
+        CSR_BUSTIMER            = 0x52
+        CSR_MEMERRTIMEO         = 0x64
+        CSR_ONNOWMISC           = 0x74
+        CSR_ADVFEAT             = 0x7A
+        CSR_MACCFG              = 0x7D
+        CSR_CHIPID0             = 0x58
+        CSR_CHIPID1             = 0x59
+
+; Control and Status Register (CSR0)
+
+        CSR_INIT                = 1 shl 0
+        CSR_START               = 1 shl 1
+        CSR_STOP                = 1 shl 2
+        CSR_TX                  = 1 shl 3
+        CSR_TXON                = 1 shl 4
+        CSR_RXON                = 1 shl 5
+        CSR_INTEN               = 1 shl 6
+        CSR_INTR                = 1 shl 7
+        CSR_IDONE               = 1 shl 8
+        CSR_TINT                = 1 shl 9
+        CSR_RINT                = 1 shl 10
+        CSR_MERR                = 1 shl 11
+        CSR_MISS                = 1 shl 12
+        CSR_CERR                = 1 shl 13
+
+; Interrupt masks and deferral control (CSR3)
+
+        IMR_BSWAP               = 0x0004
+        IMR_ENMBA               = 0x0008  ; enable modified backoff alg
+        IMR_DXMT2PD             = 0x0010
+        IMR_LAPPEN              = 0x0020  ; lookahead packet processing enb
+        IMR_DXSUFLO             = 0x0040  ; disable TX stop on underflow
+        IMR_IDONE               = 0x0100
+        IMR_TINT                = 0x0200
+        IMR_RINT                = 0x0400
+        IMR_MERR                = 0x0800
+        IMR_MISS                = 0x1000
+
+        IMR                     = IMR_IDONE ; IMR_TINT + IMR_RINT + IMR_MERR + IMR_MISS ;+ IMR_IDONE
+
+; Test and features control (CSR4)
+
+        TFEAT_TXSTRTMASK        = 0x0004
+        TFEAT_TXSTRT            = 0x0008
+        TFEAT_RXCCOFLOWM        = 0x0010  ; Rx collision counter oflow
+        TFEAT_RXCCOFLOW         = 0x0020
+        TFEAT_UINT              = 0x0040
+        TFEAT_UINTREQ           = 0x0080
+        TFEAT_MISSOFLOWM        = 0x0100
+        TFEAT_MISSOFLOW         = 0x0200
+        TFEAT_STRIP_FCS         = 0x0400
+        TFEAT_PAD_TX            = 0x0800
+        TFEAT_TXDPOLL           = 0x1000
+        TFEAT_DMAPLUS           = 0x4000
+
+; Extended control and interrupt 1 (CSR5)
+
+        EXTCTL1_SPND            = 0x0001  ; suspend
+        EXTCTL1_MPMODE          = 0x0002  ; magic packet mode
+        EXTCTL1_MPENB           = 0x0004  ; magic packet enable
+        EXTCTL1_MPINTEN         = 0x0008  ; magic packet interrupt enable
+        EXTCTL1_MPINT           = 0x0010  ; magic packet interrupt
+        EXTCTL1_MPPLBA          = 0x0020  ; magic packet phys. logical bcast
+        EXTCTL1_EXDEFEN         = 0x0040  ; excessive deferral interrupt enb.
+        EXTCTL1_EXDEF           = 0x0080  ; excessive deferral interrupt
+        EXTCTL1_SINTEN          = 0x0400  ; system interrupt enable
+        EXTCTL1_SINT            = 0x0800  ; system interrupt
+        EXTCTL1_LTINTEN         = 0x4000  ; last TX interrupt enb
+        EXTCTL1_TXOKINTD        = 0x8000  ; TX OK interrupt disable
+
+; RX/TX descriptor len (CSR6)
+
+        DTBLLEN_RLEN            = 0x0F00
+        DTBLLEN_TLEN            = 0xF000
+
+; Extended control and interrupt 2 (CSR7)
+
+        EXTCTL2_MIIPDTINTE      = 0x0001
+        EXTCTL2_MIIPDTINT       = 0x0002
+        EXTCTL2_MCCIINTE        = 0x0004
+        EXTCTL2_MCCIINT         = 0x0008
+        EXTCTL2_MCCINTE         = 0x0010
+        EXTCTL2_MCCINT          = 0x0020
+        EXTCTL2_MAPINTE         = 0x0040
+        EXTCTL2_MAPINT          = 0x0080
+        EXTCTL2_MREINTE         = 0x0100
+        EXTCTL2_MREINT          = 0x0200
+        EXTCTL2_STINTE          = 0x0400
+        EXTCTL2_STINT           = 0x0800
+        EXTCTL2_RXDPOLL         = 0x1000
+        EXTCTL2_RDMD            = 0x2000
+        EXTCTL2_RXFRTG          = 0x4000
+        EXTCTL2_FASTSPNDE       = 0x8000
+
+; Mode (CSR15)
+
+        MODE_RXD                = 0x0001  ; RX disable
+        MODE_TXD                = 0x0002  ; TX disable
+        MODE_LOOP               = 0x0004  ; loopback enable
+        MODE_TXCRCD             = 0x0008
+        MODE_FORCECOLL          = 0x0010
+        MODE_RETRYD             = 0x0020
+        MODE_INTLOOP            = 0x0040
+        MODE_PORTSEL            = 0x0180
+        MODE_RXVPAD             = 0x2000
+        MODE_RXNOBROAD          = 0x4000
+        MODE_PROMISC            = 0x8000
+
+; BCR (Bus Control Registers)
+
+        BCR_MMRA                = 0x00    ; Master Mode Read Active
+        BCR_MMW                 = 0x01    ; Master Mode Write Active
+        BCR_MISCCFG             = 0x02
+        BCR_LED0                = 0x04
+        BCR_LED1                = 0x05
+        BCR_LED2                = 0x06
+        BCR_LED3                = 0x07
+        BCR_DUPLEX              = 0x09
+        BCR_BUSCTL              = 0x12
+        BCR_EECTL               = 0x13
+        BCR_SSTYLE              = 0x14
+        BCR_PCILAT              = 0x16
+        BCR_PCISUBVENID         = 0x17
+        BCR_PCISUBSYSID         = 0x18
+        BCR_SRAMSIZE            = 0x19
+        BCR_SRAMBOUND           = 0x1A
+        BCR_SRAMCTL             = 0x1B
+        BCR_MIICTL              = 0x20
+        BCR_MIIADDR             = 0x21
+        BCR_MIIDATA             = 0x22
+        BCR_PCIVENID            = 0x23
+        BCR_PCIPCAP             = 0x24
+        BCR_DATA0               = 0x25
+        BCR_DATA1               = 0x26
+        BCR_DATA2               = 0x27
+        BCR_DATA3               = 0x28
+        BCR_DATA4               = 0x29
+        BCR_DATA5               = 0x2A
+        BCR_DATA6               = 0x2B
+        BCR_DATA7               = 0x2C
+        BCR_ONNOWPAT0           = 0x2D
+        BCR_ONNOWPAT1           = 0x2E
+        BCR_ONNOWPAT2           = 0x2F
+        BCR_PHYSEL              = 0x31
+
+; RX status register
+
+        RXSTAT_BPE              = 0x0080        ; bus parity error
+        RXSTAT_ENP              = 0x0100        ; end of packet
+        RXSTAT_STP              = 0x0200        ; start of packet
+        RXSTAT_BUFF             = 0x0400        ; buffer error
+        RXSTAT_CRC              = 0x0800        ; CRC error
+        RXSTAT_OFLOW            = 0x1000        ; rx overrun
+        RXSTAT_FRAM             = 0x2000        ; framing error
+        RXSTAT_ERR              = 0x4000        ; error summary
+        RXSTAT_OWN              = 0x8000
+
+; TX status register
+
+        TXSTAT_TRC              = 0x0000000F    ; transmit retries
+        TXSTAT_RTRY             = 0x04000000    ; retry
+        TXSTAT_LCAR             = 0x08000000    ; lost carrier
+        TXSTAT_LCOL             = 0x10000000    ; late collision
+        TXSTAT_EXDEF            = 0x20000000    ; excessive deferrals
+        TXSTAT_UFLOW            = 0x40000000    ; transmit underrun
+        TXSTAT_BUFF             = 0x80000000    ; buffer error
+
+        TXCTL_OWN               = 0x8000
+        TXCTL_ERR               = 0x4000        ; error summary
+        TXCTL_ADD_FCS           = 0x2000        ; add FCS to pkt
+        TXCTL_MORE_LTINT        = 0x1000
+        TXCTL_ONE               = 0x0800
+        TXCTL_DEF               = 0x0400
+        TXCTL_STP               = 0x0200
+        TXCTL_ENP               = 0x0100
+        TXCTL_BPE               = 0x0080
+
+        TXCTL_MBO               = 0x0000F000
+        TXCTL_BUFSZ             = 0x00000FFF
 
 
 virtual at ebx
@@ -44,305 +286,65 @@ virtual at ebx
 
 ; device specific
 
-      .private:
-      .mode_            dw ?
-      .tlen_rlen        dw ?
-      .phys_addr        dp ?
-      .reserved         dw ?
-      .filter           dq ?
-      .rx_ring_phys     dd ?
-      .tx_ring_phys     dd ?
+                        rb 0x100-(($ - device) and 0xff)        ;        align 256
+        .private:
+        .mode_          dw ?
+        .tlen_rlen      dw ?
+        .phys_addr      dp ?
+        .reserved       dw ?
+        .filter         dq ?
+        .rx_ring_phys   dd ?
+        .tx_ring_phys   dd ?
 
-      .cur_rx           db ?
-      .cur_tx           db ?
-      .dirty_rx         dd ?
-      .dirty_tx         dd ?
-      .tx_full          db ?
-      .options          dd ?
-      .full_duplex      db ?
-      .chip_version     dd ?
-      .mii              db ?
-      .ltint            db ?
-      .dxsuflo          db ?
-      .fset             db ?
-      .fdx              db ?
+                        rb 0x100-(($ - device) and 0xff)        ;        align 256
+        .rx_ring        rb RX_RING_SIZE * descriptor.size
 
-      .rx_buffer        dd ?
-      .tx_buffer        dd ?
+                        rb 0x100-(($ - device) and 0xff)        ;        align 256
+        .tx_ring        rb TX_RING_SIZE * descriptor.size
 
-      .io_addr          dd ?
-      .irq_line         db ?
-      .pci_bus          db ?
-      .pci_dev          db ?
+        .cur_rx         db ?
+        .cur_tx         db ?
+        .last_tx        db ?
+        .options        dd ?
+        .full_duplex    db ?
+        .chip_version   dw ?
+        .mii            db ?
+        .ltint          db ?
+        .dxsuflo        db ?
+        .fset           db ?
+        .fdx            db ?
 
+        .io_addr        dd ?
+        .irq_line       db ?
+        .pci_bus        db ?
+        .pci_dev        db ?
 
-      .access_read_csr          dd ?
-      .access_write_csr         dd ?
-      .access_read_bcr          dd ?
-      .access_write_bcr         dd ?
-      .access_read_rap          dd ?
-      .access_write_rap         dd ?
-      .access_reset             dd ?
+        .read_csr       dd ?
+        .write_csr      dd ?
+        .read_bcr       dd ?
+        .write_bcr      dd ?
+        .read_rap       dd ?
+        .write_rap      dd ?
+        .sw_reset       dd ?
 
-      device_size       = $ - device
+        device_size     = $ - device
 
 end virtual
 
-struc buf_head {
+struc   descriptor {
         .base           dd ?
         .length         dw ?
         .status         dw ?
         .msg_length     dw ?
         .misc           dw ?
-        .reserved       dd ?
+        .virtual        dd ?
 
         .size:
 }
 
 virtual at 0
- buf_head buf_head
+ descriptor descriptor
 end virtual
-
-        PCNET_PORT_AUI                =   0x00
-        PCNET_PORT_10BT               =   0x01
-        PCNET_PORT_GPSI               =   0x02
-        PCNET_PORT_MII                =   0x03
-        PCNET_PORT_PORTSEL            =   0x03
-        PCNET_PORT_ASEL               =   0x04
-        PCNET_PORT_100                =   0x40
-        PCNET_PORT_FD                 =   0x80
-
-        PCNET_DMA_MASK                =   0xffffffff
-
-        PCNET_LOG_TX_BUFFERS          =   2
-        PCNET_LOG_RX_BUFFERS          =   2
-
-        PCNET_TX_RING_SIZE            =   4
-        PCNET_TX_RING_MOD_MASK        =   (PCNET_TX_RING_SIZE-1)
-        PCNET_TX_RING_LEN_BITS        =   (PCNET_LOG_TX_BUFFERS shl 12)
-
-        PCNET_RX_RING_SIZE            =   4
-        PCNET_RX_RING_MOD_MASK        =   (PCNET_RX_RING_SIZE-1)
-        PCNET_RX_RING_LEN_BITS        =   (PCNET_LOG_RX_BUFFERS shl 4)
-
-        PCNET_PKT_BUF_SZ              =   1544
-        PCNET_PKT_BUF_SZ_NEG          =   0xf9f8
-
-        PCNET_WIO_RDP                 =   0x10
-        PCNET_WIO_RAP                 =   0x12
-        PCNET_WIO_RESET               =   0x14
-        PCNET_WIO_BDP                 =   0x16
-        PCNET_DWIO_RDP                =   0x10
-        PCNET_DWIO_RAP                =   0x14
-        PCNET_DWIO_RESET              =   0x18
-        PCNET_DWIO_BDP                =   0x1C
-        PCNET_TOTAL_SIZE              =   0x20
-
-; CSR registers
-
-        PCNET_CSR_CSR                 =   0x00
-        PCNET_CSR_IAB0                =   0x01
-        PCNET_CSR_IAB1                =   0x02
-        PCNET_CSR_IMR                 =   0x03
-        PCNET_CSR_TFEAT               =   0x04
-        PCNET_CSR_EXTCTL1             =   0x05
-        PCNET_CSR_DTBLLEN             =   0x06
-        PCNET_CSR_EXTCTL2             =   0x07
-        PCNET_CSR_MAR0                =   0x08
-        PCNET_CSR_MAR1                =   0x09
-        PCNET_CSR_MAR2                =   0x0A
-        PCNET_CSR_MAR3                =   0x0B
-        PCNET_CSR_PAR0                =   0x0C
-        PCNET_CSR_PAR1                =   0x0D
-        PCNET_CSR_PAR2                =   0x0E
-        PCNET_CSR_MODE                =   0x0F
-        PCNET_CSR_RXADDR0             =   0x18
-        PCNET_CSR_RXADDR1             =   0x19
-        PCNET_CSR_TXADDR0             =   0x1E
-        PCNET_CSR_TXADDR1             =   0x1F
-        PCNET_CSR_TXPOLL              =   0x2F
-        PCNET_CSR_RXPOLL              =   0x31
-        PCNET_CSR_RXRINGLEN           =   0x4C
-        PCNET_CSR_TXRINGLEN           =   0x4E
-        PCNET_CSR_DMACTL              =   0x50
-        PCNET_CSR_BUSTIMER            =   0x52
-        PCNET_CSR_MEMERRTIMEO         =   0x64
-        PCNET_CSR_ONNOWMISC           =   0x74
-        PCNET_CSR_ADVFEAT             =   0x7A
-        PCNET_CSR_MACCFG              =   0x7D
-        PCNET_CSR_CHIPID0             =   0x58
-        PCNET_CSR_CHIPID1             =   0x59
-
-; Control and Status Register (CSR0)
-
-        PCNET_CSR_INIT                =   1 shl 0
-        PCNET_CSR_START               =   1 shl 1
-        PCNET_CSR_STOP                =   1 shl 2
-        PCNET_CSR_TX                  =   1 shl 3
-        PCNET_CSR_TXON                =   1 shl 4
-        PCNET_CSR_RXON                =   1 shl 5
-        PCNET_CSR_INTEN               =   1 shl 6
-        PCNET_CSR_INTR                =   1 shl 7
-        PCNET_CSR_IDONE               =   1 shl 8
-        PCNET_CSR_TINT                =   1 shl 9
-        PCNET_CSR_RINT                =   1 shl 10
-        PCNET_CSR_MERR                =   1 shl 11
-        PCNET_CSR_MISS                =   1 shl 12
-        PCNET_CSR_CERR                =   1 shl 13
-
-; Interrupt masks and deferral control (CSR3)
-
-        PCNET_IMR_BSWAP               =   0x0004
-        PCNET_IMR_ENMBA               =   0x0008  ; enable modified backoff alg
-        PCNET_IMR_DXMT2PD             =   0x0010
-        PCNET_IMR_LAPPEN              =   0x0020  ; lookahead packet processing enb
-        PCNET_IMR_DXSUFLO             =   0x0040  ; disable TX stop on underflow
-        PCNET_IMR_IDONE               =   0x0100
-        PCNET_IMR_TINT                =   0x0200
-        PCNET_IMR_RINT                =   0x0400
-        PCNET_IMR_MERR                =   0x0800
-        PCNET_IMR_MISS                =   0x1000
-
-        PCNET_IMR                     =   PCNET_IMR_TINT+PCNET_IMR_RINT+PCNET_IMR_IDONE+PCNET_IMR_MERR+PCNET_IMR_MISS
-
-; Test and features control (CSR4)
-
-        PCNET_TFEAT_TXSTRTMASK        =   0x0004
-        PCNET_TFEAT_TXSTRT            =   0x0008
-        PCNET_TFEAT_RXCCOFLOWM        =   0x0010  ; Rx collision counter oflow
-        PCNET_TFEAT_RXCCOFLOW         =   0x0020
-        PCNET_TFEAT_UINT              =   0x0040
-        PCNET_TFEAT_UINTREQ           =   0x0080
-        PCNET_TFEAT_MISSOFLOWM        =   0x0100
-        PCNET_TFEAT_MISSOFLOW         =   0x0200
-        PCNET_TFEAT_STRIP_FCS         =   0x0400
-        PCNET_TFEAT_PAD_TX            =   0x0800
-        PCNET_TFEAT_TXDPOLL           =   0x1000
-        PCNET_TFEAT_DMAPLUS           =   0x4000
-
-; Extended control and interrupt 1 (CSR5)
-
-        PCNET_EXTCTL1_SPND            =   0x0001  ; suspend
-        PCNET_EXTCTL1_MPMODE          =   0x0002  ; magic packet mode
-        PCNET_EXTCTL1_MPENB           =   0x0004  ; magic packet enable
-        PCNET_EXTCTL1_MPINTEN         =   0x0008  ; magic packet interrupt enable
-        PCNET_EXTCTL1_MPINT           =   0x0010  ; magic packet interrupt
-        PCNET_EXTCTL1_MPPLBA          =   0x0020  ; magic packet phys. logical bcast
-        PCNET_EXTCTL1_EXDEFEN         =   0x0040  ; excessive deferral interrupt enb.
-        PCNET_EXTCTL1_EXDEF           =   0x0080  ; excessive deferral interrupt
-        PCNET_EXTCTL1_SINTEN          =   0x0400  ; system interrupt enable
-        PCNET_EXTCTL1_SINT            =   0x0800  ; system interrupt
-        PCNET_EXTCTL1_LTINTEN         =   0x4000  ; last TX interrupt enb
-        PCNET_EXTCTL1_TXOKINTD        =   0x8000  ; TX OK interrupt disable
-
-; RX/TX descriptor len (CSR6)
-
-        PCNET_DTBLLEN_RLEN            =   0x0F00
-        PCNET_DTBLLEN_TLEN            =   0xF000
-
-; Extended control and interrupt 2 (CSR7)
-
-        PCNET_EXTCTL2_MIIPDTINTE      =   0x0001
-        PCNET_EXTCTL2_MIIPDTINT       =   0x0002
-        PCNET_EXTCTL2_MCCIINTE        =   0x0004
-        PCNET_EXTCTL2_MCCIINT         =   0x0008
-        PCNET_EXTCTL2_MCCINTE         =   0x0010
-        PCNET_EXTCTL2_MCCINT          =   0x0020
-        PCNET_EXTCTL2_MAPINTE         =   0x0040
-        PCNET_EXTCTL2_MAPINT          =   0x0080
-        PCNET_EXTCTL2_MREINTE         =   0x0100
-        PCNET_EXTCTL2_MREINT          =   0x0200
-        PCNET_EXTCTL2_STINTE          =   0x0400
-        PCNET_EXTCTL2_STINT           =   0x0800
-        PCNET_EXTCTL2_RXDPOLL         =   0x1000
-        PCNET_EXTCTL2_RDMD            =   0x2000
-        PCNET_EXTCTL2_RXFRTG          =   0x4000
-        PCNET_EXTCTL2_FASTSPNDE       =   0x8000
-
-; Mode (CSR15)
-
-        PCNET_MODE_RXD                =   0x0001  ; RX disable
-        PCNET_MODE_TXD                =   0x0002  ; TX disable
-        PCNET_MODE_LOOP               =   0x0004  ; loopback enable
-        PCNET_MODE_TXCRCD             =   0x0008
-        PCNET_MODE_FORCECOLL          =   0x0010
-        PCNET_MODE_RETRYD             =   0x0020
-        PCNET_MODE_INTLOOP            =   0x0040
-        PCNET_MODE_PORTSEL            =   0x0180
-        PCNET_MODE_RXVPAD             =   0x2000
-        PCNET_MODE_RXNOBROAD          =   0x4000
-        PCNET_MODE_PROMISC            =   0x8000
-
-; BCR (Bus Control Registers)
-
-        PCNET_BCR_MMRA                =   0x00    ; Master Mode Read Active
-        PCNET_BCR_MMW                 =   0x01    ; Master Mode Write Active
-        PCNET_BCR_MISCCFG             =   0x02
-        PCNET_BCR_LED0                =   0x04
-        PCNET_BCR_LED1                =   0x05
-        PCNET_BCR_LED2                =   0x06
-        PCNET_BCR_LED3                =   0x07
-        PCNET_BCR_DUPLEX              =   0x09
-        PCNET_BCR_BUSCTL              =   0x12
-        PCNET_BCR_EECTL               =   0x13
-        PCNET_BCR_SSTYLE              =   0x14
-        PCNET_BCR_PCILAT              =   0x16
-        PCNET_BCR_PCISUBVENID         =   0x17
-        PCNET_BCR_PCISUBSYSID         =   0x18
-        PCNET_BCR_SRAMSIZE            =   0x19
-        PCNET_BCR_SRAMBOUND           =   0x1A
-        PCNET_BCR_SRAMCTL             =   0x1B
-        PCNET_BCR_MIICTL              =   0x20
-        PCNET_BCR_MIIADDR             =   0x21
-        PCNET_BCR_MIIDATA             =   0x22
-        PCNET_BCR_PCIVENID            =   0x23
-        PCNET_BCR_PCIPCAP             =   0x24
-        PCNET_BCR_DATA0               =   0x25
-        PCNET_BCR_DATA1               =   0x26
-        PCNET_BCR_DATA2               =   0x27
-        PCNET_BCR_DATA3               =   0x28
-        PCNET_BCR_DATA4               =   0x29
-        PCNET_BCR_DATA5               =   0x2A
-        PCNET_BCR_DATA6               =   0x2B
-        PCNET_BCR_DATA7               =   0x2C
-        PCNET_BCR_ONNOWPAT0           =   0x2D
-        PCNET_BCR_ONNOWPAT1           =   0x2E
-        PCNET_BCR_ONNOWPAT2           =   0x2F
-        PCNET_BCR_PHYSEL              =   0x31
-
-; RX status register
-
-        PCNET_RXSTAT_BPE              =   0x0080  ; bus parity error
-        PCNET_RXSTAT_ENP              =   0x0100  ; end of packet
-        PCNET_RXSTAT_STP              =   0x0200  ; start of packet
-        PCNET_RXSTAT_BUFF             =   0x0400  ; buffer error
-        PCNET_RXSTAT_CRC              =   0x0800  ; CRC error
-        PCNET_RXSTAT_OFLOW            =   0x1000  ; rx overrun
-        PCNET_RXSTAT_FRAM             =   0x2000  ; framing error
-        PCNET_RXSTAT_ERR              =   0x4000  ; error summary
-        PCNET_RXSTAT_OWN              =   0x8000
-
-; TX status register
-
-        PCNET_TXSTAT_TRC              =   0x0000000F      ; transmit retries
-        PCNET_TXSTAT_RTRY             =   0x04000000      ; retry
-        PCNET_TXSTAT_LCAR             =   0x08000000      ; lost carrier
-        PCNET_TXSTAT_LCOL             =   0x10000000      ; late collision
-        PCNET_TXSTAT_EXDEF            =   0x20000000      ; excessive deferrals
-        PCNET_TXSTAT_UFLOW            =   0x40000000      ; transmit underrun
-        PCNET_TXSTAT_BUFF             =   0x80000000      ; buffer error
-
-        PCNET_TXCTL_OWN               =   0x80000000
-        PCNET_TXCTL_ERR               =   0x40000000      ; error summary
-        PCNET_TXCTL_ADD_FCS           =   0x20000000      ; add FCS to pkt
-        PCNET_TXCTL_MORE_LTINT        =   0x10000000
-        PCNET_TXCTL_ONE               =   0x08000000
-        PCNET_TXCTL_DEF               =   0x04000000
-        PCNET_TXCTL_STP               =   0x02000000
-        PCNET_TXCTL_ENP               =   0x01000000
-        PCNET_TXCTL_BPE               =   0x00800000
-        PCNET_TXCTL_MBO               =   0x0000F000
-        PCNET_TXCTL_BUFSZ             =   0x00000FFF
 
 
 
@@ -406,7 +408,7 @@ proc service_proc stdcall, ioctl:dword
         cmp     eax, 1 ;SRV_HOOK
         jne     .fail
 
-        cmp     [IOCTL.inp_size], 3               ; Data input must be at least 3 bytes
+        cmp     [IOCTL.inp_size], 3                     ; Data input must be at least 3 bytes
         jb      .fail
 
         mov     eax, [IOCTL.input]
@@ -449,9 +451,9 @@ proc service_proc stdcall, ioctl:dword
 ; save the pci bus and device numbers
 
         mov     eax, [IOCTL.input]
-        mov     cl , [eax+1]
+        mov     cl, [eax+1]
         mov     [device.pci_bus], cl
-        mov     cl , [eax+2]
+        mov     cl, [eax+2]
         mov     [device.pci_dev], cl
 
 ; Now, it's time to find the base io addres of the PCI device
@@ -465,18 +467,15 @@ proc service_proc stdcall, ioctl:dword
         DEBUGF  1,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
         [device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
 
-        allocate_and_clear [device.tx_buffer], PCNET_RX_RING_SIZE * (PCNET_PKT_BUF_SZ + buf_head.size), .err
-        allocate_and_clear [device.rx_buffer], PCNET_TX_RING_SIZE * (PCNET_PKT_BUF_SZ + buf_head.size), .err
-
 ; Ok, the eth_device structure is ready, let's probe the device
 ; Because initialization fires IRQ, IRQ handler must be aware of this device
-        mov     eax, [devices]                                        ; Add the device structure to our device list
-        mov     [device_list+4*eax], ebx                                 ; (IRQ handler uses this list to find device)
-        inc     [devices]                                             ;
+        mov     eax, [devices]                                          ; Add the device structure to our device list
+        mov     [device_list+4*eax], ebx                                ; (IRQ handler uses this list to find device)
+        inc     [devices]                                               ;
 
         call    probe                                                   ; this function will output in eax
         test    eax, eax
-        jnz     .destroy                                                        ; If an error occured, exit
+        jnz     .destroy                                                ; If an error occured, exit
 
         mov     [device.type], NET_TYPE_ETH
         call    NetRegDev
@@ -503,8 +502,6 @@ proc service_proc stdcall, ioctl:dword
         dec     [devices]
   .err:
         DEBUGF  1,"Error, removing all data !\n"
-        stdcall KernelFree, [device.rx_buffer]
-        stdcall KernelFree, [device.tx_buffer]
         stdcall KernelFree, ebx
 
   .fail:
@@ -544,6 +541,7 @@ ret
 
 align 4
 probe:
+
         mov     edx, [device.io_addr]
 
         call    wio_reset
@@ -554,14 +552,14 @@ probe:
         jne     .try_dwio
 
         ; Try Word I/O
-        mov     ax , 88
-        add     edx, PCNET_WIO_RAP
-        out     dx , ax
+        mov     ax, 88
+        add     edx, WIO_RAP
+        out     dx, ax
         nop
         nop
-        in      ax , dx
-        sub     edx, PCNET_WIO_RAP
-        cmp     ax , 88
+        in      ax, dx
+        sub     edx, WIO_RAP
+        cmp     ax, 88
         jne     .try_dwio
 
         call    switch_to_wio
@@ -577,13 +575,13 @@ probe:
         jne     .no_dev
 
         ; Try Dword I/O
-        add     edx, PCNET_DWIO_RAP
+        add     edx, DWIO_RAP
         mov     eax, 88
-        out     dx , eax
+        out     dx, eax
         nop
         nop
         in      eax, dx
-        sub     edx, PCNET_DWIO_RAP
+        sub     edx, DWIO_RAP
         and     eax, 0xffff
         cmp     eax, 88
         jne     .no_dev
@@ -596,51 +594,48 @@ probe:
         DEBUGF 1,"PCnet device not found!\n"
         mov     eax, 1
         ret
+
   .L1:
+        mov     ecx, CSR_CHIPID0
+        call    [device.read_csr]
 
-        mov     ecx, PCNET_CSR_CHIPID0
-        call    [device.access_read_csr]
         mov     esi, eax
+        shr     esi, 12
 
-        mov     ecx, PCNET_CSR_CHIPID1
-        call    [device.access_read_csr]
-        shl     eax, 16
-        or      eax, esi
-
-        mov     ecx, eax
-        and     ecx, 0xfff
-        cmp     ecx, 3
+        and     ax, 0xfff
+        cmp     ax, 3
         jne     .no_dev
 
-        shr     eax, 12
-        and     eax, 0xffff
-        mov     [device.chip_version], eax
+        mov     ecx, CSR_CHIPID1
+        call    [device.read_csr]
+        shl     eax, 4
+        or      eax, esi
+        mov     [device.chip_version], ax
 
-        DEBUGF 1,"chip version ok\n"
         mov     [device.fdx], 0
         mov     [device.mii], 0
         mov     [device.fset], 0
         mov     [device.dxsuflo], 0
         mov     [device.ltint], 0
 
-        cmp     eax, 0x2420
+        cmp     ax, 0x2420
         je      .L2
-        cmp     eax, 0x2430
+        cmp     ax, 0x2430
         je      .L2
 
         mov     [device.fdx], 1
 
-        cmp     eax, 0x2621
+        cmp     ax, 0x2621
         je      .L4
-        cmp     eax, 0x2623
+        cmp     ax, 0x2623
         je      .L5
-        cmp     eax, 0x2624
+        cmp     ax, 0x2624
         je      .L6
-        cmp     eax, 0x2625
+        cmp     ax, 0x2625
         je      .L7
-        cmp     eax, 0x2626
+        cmp     ax, 0x2626
         je      .L8
-        cmp     eax, 0x2627
+        cmp     ax, 0x2627
         je      .L9
 
         DEBUGF 1,"Invalid chip rev\n"
@@ -673,30 +668,30 @@ probe:
   .L8:
         mov     [device.name], device_l8
 ;        mov     [device.fdx], 1
-        mov     ecx, PCNET_CSR_RXPOLL
-        call    dword [device.access_read_bcr]
-        call    dword [device.access_write_bcr]
+        mov     ecx, CSR_RXPOLL
+        call    dword [device.read_bcr]
+        call    dword [device.write_bcr]
         jmp     .L10
   .L9:
         mov     [device.name], device_l9
 ;        mov     [device.fdx], 1
         mov     [device.mii], 1
   .L10:
-        DEBUGF 1,"device name: %s\n",[device.name]
+        DEBUGF 1,"device name: %s\n", [device.name]
 
         cmp     [device.fset], 1
         jne     .L11
-        mov     ecx, PCNET_BCR_BUSCTL
-        call    [device.access_read_bcr]
+        mov     ecx, BCR_BUSCTL
+        call    [device.read_bcr]
         or      eax, 0x800
-        call    [device.access_write_bcr]
+        call    [device.write_bcr]
 
-        mov     ecx, PCNET_CSR_DMACTL
-        call    [device.access_read_csr]
+        mov     ecx, CSR_DMACTL
+        call    [device.read_csr]
 ;        and     eax, 0xc00
 ;        or      eax, 0xc00
         mov     eax, 0xc00
-        call    [device.access_write_csr]
+        call    [device.write_csr]
 
         mov     [device.dxsuflo],1
         mov     [device.ltint],1
@@ -704,17 +699,12 @@ probe:
 
         make_bus_master [device.pci_bus], [device.pci_dev]
 
-        mov     eax, PCNET_PORT_ASEL
-        mov     [device.options], eax
-        mov     [device.mode_], word 0x0003
-        mov     [device.tlen_rlen], word (PCNET_TX_RING_LEN_BITS or PCNET_RX_RING_LEN_BITS)
+        mov     [device.options], PORT_ASEL
+        mov     [device.mode_], MODE_RXD + MODE_TXD     ; disable receive and transmit
+        mov     [device.tlen_rlen], (TX_RING_LEN_BITS or RX_RING_LEN_BITS)
 
         mov     dword [device.filter], 0
         mov     dword [device.filter+4], 0
-
-        mov     eax, PCNET_IMR
-        mov     ecx, PCNET_CSR_IMR                      ; Write interrupt mask
-        call    [device.access_write_csr]
 
 align 4
 reset:
@@ -722,7 +712,7 @@ reset:
 ; attach int handler
 
         movzx   eax, [device.irq_line]
-        DEBUGF  1,"Attaching int handler to irq %x\n",eax:1
+        DEBUGF  1,"Attaching int handler to irq %x\n", eax:1
         stdcall AttachIntHandler, eax, int_handler, dword 0
         test    eax, eax
         jnz     @f
@@ -732,97 +722,96 @@ reset:
   @@:
 
         mov     edx, [device.io_addr]
-        call    [device.access_reset]
+
+        call    [device.sw_reset]
 
         ; Switch pcnet32 to 32bit mode
-        mov     ecx, PCNET_BCR_SSTYLE
+        mov     ecx, BCR_SSTYLE
         mov     eax, 2
-        call    [device.access_write_bcr]
+        call    [device.write_bcr]
 
         ; set/reset autoselect bit
-        mov     ecx, PCNET_BCR_MISCCFG
-        call    [device.access_read_bcr]
-        and     eax,not 2
-        test    [device.options], PCNET_PORT_ASEL
-        jz      .L1
+        mov     ecx, BCR_MISCCFG
+        call    [device.read_bcr]
+        and     eax, not 2
+        test    [device.options], PORT_ASEL
+        jz      @f
         or      eax, 2
-  .L1:
-        call    [device.access_write_bcr]
-
+  @@:
+        call    [device.write_bcr]
 
         ; Handle full duplex setting
         cmp     byte [device.full_duplex], 0
-        je      .L2
-        mov     ecx, PCNET_BCR_DUPLEX
-        call    [device.access_read_bcr]
+        je      .duplex_ok
+        mov     ecx, BCR_DUPLEX
+        call    [device.read_bcr]
         and     eax, not 3
-        test    [device.options], PCNET_PORT_FD
-        jz      .L3
+        test    [device.options], PORT_FD
+        jz      @f
         or      eax, 1
-        cmp     [device.options], PCNET_PORT_FD or PCNET_PORT_AUI
-        jne     .L4
+        cmp     [device.options], PORT_FD or PORT_AUI
+        jne     .set_duplex
         or      eax, 2
-        jmp     .L4
-  .L3:
-        test    [device.options], PCNET_PORT_ASEL
-        jz      .L4
+        jmp     .set_duplex
+  @@:
+        test    [device.options], PORT_ASEL
+        jz      .set_duplex
         cmp     [device.chip_version], 0x2627
-        jne     .L4
+        jne     .set_duplex
         or      eax, 3
-  .L4:
-        mov     ecx, PCNET_BCR_DUPLEX
-        call    [device.access_write_bcr]
-  .L2:
-
+  .set_duplex:
+        mov     ecx, BCR_DUPLEX
+        call    [device.write_bcr]
+  .duplex_ok:
 
         ; set/reset GPSI bit in test register
         mov     ecx, 124
-        call    [device.access_read_csr]
+        call    [device.read_csr]
         mov     ecx, [device.options]
-        and     ecx, PCNET_PORT_PORTSEL
-        cmp     ecx, PCNET_PORT_GPSI
-        jne     .L5
+        and     ecx, PORT_PORTSEL
+        cmp     ecx, PORT_GPSI
+        jne     @f
         or      eax, 0x10
-  .L5:
-        call    [device.access_write_csr]
+  @@:
+        call    [device.write_csr]
         cmp     [device.mii], 0
         je      .L6
-        test    [device.options], PCNET_PORT_ASEL
+        test    [device.options], PORT_ASEL
         jnz     .L6
-        mov     ecx, PCNET_BCR_MIICTL
-        call    [device.access_read_bcr]
-        and     eax,not 0x38
-        test    [device.options], PCNET_PORT_FD
-        jz      .L7
+        mov     ecx, BCR_MIICTL
+        call    [device.read_bcr]
+        and     eax, not 0x38
+        test    [device.options], PORT_FD
+        jz      @f
         or      eax, 0x10
-  .L7:
-        test    [device.options], PCNET_PORT_100
-        jz      .L8
+  @@:
+        test    [device.options], PORT_100
+        jz      @f
         or      eax, 0x08
-  .L8:
-        call    [device.access_write_bcr]
+  @@:
+        call    [device.write_bcr]
         jmp     .L9
-.L6:
-        test    [device.options], PCNET_PORT_ASEL
+  .L6:
+        test    [device.options], PORT_ASEL
         jz      .L9
-        mov     ecx, PCNET_BCR_MIICTL
+        mov     ecx, BCR_MIICTL
         DEBUGF 1,"ASEL, enable auto-negotiation\n"
-        call    [device.access_read_bcr]
+        call    [device.read_bcr]
         and     eax, not 0x98
         or      eax, 0x20
-        call    [device.access_write_bcr]
-.L9:
-        cmp     [device.ltint],0
-        je      .L10
-        mov     ecx,5
-        call    [device.access_read_csr]
-        or      eax,(1 shl 14)
-        call    [device.access_write_csr]
-.L10:
-        mov     eax,[device.options]
-        and     eax,PCNET_PORT_PORTSEL
-        shl     eax,7
-        mov     [device.mode_],ax
+        call    [device.write_bcr]
+  .L9:
+        cmp     [device.ltint], 0
+        je      @f
+        mov     ecx, 5
+        call    [device.read_csr]
+        or      eax, (1 shl 14)
+        call    [device.write_csr]
+  @@:
+        mov     eax, [device.options]
+        and     eax, PORT_PORTSEL
+        shl     eax, 7
+        mov     [device.mode_], ax
         mov     dword [device.filter], -1
         mov     dword [device.filter+4], -1
 
@@ -835,59 +824,54 @@ reset:
 
         call    init_ring
 
+        mov     edx, [device.io_addr]   ; init ring destroys edx
+
         lea     eax, [device.private]
         GetRealAddr
-
         push    eax
         and     eax, 0xffff
         mov     ecx, 1
-        call    [device.access_write_csr]
+        call    [device.write_csr]
         pop     eax
-        shr     eax,16
-        mov     ecx,2
-        call    [device.access_write_csr]
+        shr     eax, 16
+        mov     ecx, 2
+        call    [device.write_csr]
 
-        mov     ecx,4
-        mov     eax,0x0915
-        call    [device.access_write_csr]
+        mov     ecx, 4
+        mov     eax, 0x0915
+        call    [device.write_csr]
 
-        mov     ecx,0
-        mov     eax,1
-        call    [device.access_write_csr]
+; Set the interrupt mask
+        mov     ecx, CSR_IMR
+        mov     eax, IMR
+        call    [device.write_csr]
 
-        mov     [device.tx_full],0
-        mov     [device.cur_rx],0
-        mov     [device.cur_tx],0
-        mov     [device.dirty_rx],0
-        mov     [device.dirty_tx],0
-
-        mov     ecx,100
-.L11:
-        push    ecx
-        xor     ecx,ecx
-        call    [device.access_read_csr]
-        pop     ecx
-        test    ax,0x100
-        jnz     .L12
-        loop    .L11
-.L12:
-
-        DEBUGF 1,"hardware reset\n"
+; Initialise the device
         xor     ecx, ecx
-        mov     eax, 0x0002
-        call    [device.access_write_csr]
+        mov     eax, CSR_INIT
+        call    [device.write_csr]
 
-        xor     ecx, ecx
-        call    [device.access_read_csr]
+        mov     esi, 100
+;        xor     ecx, ecx
+  @@:
+        call    [device.read_csr]
+        test    ax, CSR_IDONE
+        jnz     @f
 
+        dec     esi
+        jnz     @r
+        DEBUGF 1,"Initialize timeout!\n"
+  @@:
+
+; Start the device and enable interrupts
         xor     ecx, ecx
-        mov     eax, PCNET_CSR_INTEN or PCNET_CSR_START
-        call    [device.access_write_csr]
+        mov     eax, CSR_START + CSR_INTEN
+        call    [device.write_csr]
 
 ; Set the mtu, kernel will be able to send now
         mov     [device.mtu], 1514
 
-        DEBUGF 1,"PCNET reset complete\n"
+        DEBUGF 1,"reset complete\n"
         xor     eax, eax
         ret
 
@@ -895,38 +879,43 @@ reset:
 align 4
 init_ring:
 
-        mov     ecx, PCNET_RX_RING_SIZE
-        mov     edi, [device.rx_buffer]
+        DEBUGF 1,"init ring\n"
+
+        lea     edi, [device.rx_ring]
         mov     eax, edi
         GetRealAddr
         mov     [device.rx_ring_phys], eax
-        add     eax, PCNET_RX_RING_SIZE * buf_head.size
+        mov     ecx, RX_RING_SIZE
   .rx_init:
-        mov     [edi + buf_head.base], eax
-        mov     [edi + buf_head.length], PCNET_PKT_BUF_SZ_NEG
-        mov     [edi + buf_head.status], 0x8000
-        and     dword [edi + buf_head.msg_length], 0
-        and     dword [edi + buf_head.reserved], 0
-        add     eax, PCNET_PKT_BUF_SZ
-        add     edi, buf_head.size
-        loop    .rx_init
+        push    ecx
+        stdcall KernelAlloc, PKT_BUF_SZ
+        pop     ecx
+        mov     [edi + descriptor.virtual], eax
+        GetRealAddr
+        mov     [edi + descriptor.base], eax
+        mov     [edi + descriptor.length], - PKT_BUF_SZ
+        mov     [edi + descriptor.status], RXSTAT_OWN
+        mov     dword [edi + descriptor.msg_length], 0    ; also clears misc field
+        add     edi, descriptor.size
+        dec     ecx
+        jnz     .rx_init
 
-        mov     ecx, PCNET_TX_RING_SIZE
-        mov     edi, [device.tx_buffer]
+        lea     edi, [device.tx_ring]
         mov     eax, edi
         GetRealAddr
         mov     [device.tx_ring_phys], eax
-        add     eax, PCNET_TX_RING_SIZE * buf_head.size
+        mov     ecx, TX_RING_SIZE
   .tx_init:
-        mov     [edi + buf_head.base], eax
-        and     dword [edi + buf_head.length], 0
-        and     dword [edi + buf_head.msg_length], 0
-        and     dword [edi + buf_head.reserved], 0
-        add     eax, PCNET_PKT_BUF_SZ
-        add     edi, buf_head.size
-        loop    .tx_init
+        mov     [edi + descriptor.status], 0
+        add     edi, descriptor.size
+        dec     ecx
+        jnz     .tx_init
 
-        mov     [device.tlen_rlen], (PCNET_TX_RING_LEN_BITS or PCNET_RX_RING_LEN_BITS)
+        mov     [device.tlen_rlen], (TX_RING_LEN_BITS or RX_RING_LEN_BITS)
+
+        mov     [device.cur_tx], 0
+        mov     [device.last_tx], 0
+        mov     [device.cur_rx], 0
 
         ret
 
@@ -945,7 +934,7 @@ init_ring:
 
 align 4
 transmit:
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n",[esp+4],[esp+8]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
         mov     eax, [esp+4]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
@@ -958,41 +947,35 @@ transmit:
         jb      .nospace                        ; packet is too short
 
 ; check descriptor
+        lea     edi, [device.tx_ring]
         movzx   eax, [device.cur_tx]
-        imul    edi, eax, PCNET_PKT_BUF_SZ
         shl     eax, 4
-        add     eax, [device.tx_buffer]
-        add     edi, [device.tx_buffer]
-        add     edi, PCNET_TX_RING_SIZE * buf_head.size
+        add     edi, eax
 
-        test    byte [eax + buf_head.status + 1], 80h
+        test    [edi + descriptor.status], TXCTL_OWN
         jnz     .nospace
-; descriptor is free, copy data
-        mov     esi, [esp+4]
-        mov     ecx, [esp+8]
-        mov     edx, ecx
-        shr     ecx, 2
-        and     edx, 3
-        rep     movsd
-        mov     ecx, edx
-        rep     movsb
+; descriptor is free, use it
+        mov     eax, [esp+4]
+        mov     [edi + descriptor.virtual], eax
+        GetRealAddr
+        mov     [edi + descriptor.base], eax
 ; set length
-        mov     ecx, [esp+8]
-        neg     ecx
-        mov     [eax + buf_head.length], cx
+        mov     eax, [esp+8]
+        neg     eax
+        mov     [edi + descriptor.length], ax
 ; put to transfer queue
-        mov     [eax + buf_head.status], 0x8300
+        mov     [edi + descriptor.status], TXCTL_OWN + TXCTL_STP + TXCTL_ENP
 
 ; trigger an immediate send
         mov     edx, [device.io_addr]
-        xor     ecx, ecx         ; CSR0
-        call    [device.access_read_csr]
-        or      eax, PCNET_CSR_TX
-        call    [device.access_write_csr]
+        xor     ecx, ecx                        ; CSR0
+        call    [device.read_csr]
+        or      eax, CSR_TX
+        call    [device.write_csr]
 
 ; get next descriptor 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, ...
         inc     [device.cur_tx]
-        and     [device.cur_tx], 3
+        and     [device.cur_tx], TX_RING_SIZE - 1
         DEBUGF  2," - Packet Sent! "
 
 ; Update stats
@@ -1001,13 +984,12 @@ transmit:
         add     dword [device.bytes_tx], eax
         adc     dword [device.bytes_tx + 4], 0
 
-.finish:
+  .finish:
         DEBUGF  2," - Done!\n"
-        stdcall KernelFree, [esp+4]
         xor     eax, eax
         ret     8
 
-.nospace:
+  .nospace:
         DEBUGF  1, 'ERROR: no free transmit descriptors\n'
         stdcall KernelFree, [esp+4]
         or      eax, -1
@@ -1035,103 +1017,107 @@ int_handler:
   .nextdevice:
         mov     ebx, [esi]
 
-        mov     edx, [device.io_addr]     ; get IRQ reason
+        mov     edx, [device.io_addr]
         push    ecx
-        xor     ecx, ecx ; CSR0
-        call    [device.access_read_csr]
+        xor     ecx, ecx                        ; CSR0
+        call    [device.read_csr]               ; get IRQ reason
+        call    [device.write_csr]              ; write it back to ACK
         pop     ecx
-        test    al, al
-        js      .got_it
+        test    ax, ax
+        jnz     .got_it
   .continue:
         add     esi, 4
         dec     ecx
         jnz     .nextdevice
   .nothing:
-        ret                                         ; If no device was found, abort (The irq was probably for a device, not registered to this driver
+        ret                                     ; If no device was found, abort (The int was probably for a device, not registered to this driver)
 
   .got_it:
+        DEBUGF  1,"Device: %x status: %x\n", ebx, eax:2
 
-        DEBUGF  1,"Device: %x Status: %x ", ebx, eax:2
-
-;-------------------------------------------------------
-; Possible reasons:
-; initialization done - ignore
-; transmit done - ignore
-; packet received - handle
-; Clear ALL IRQ reasons.
-; N.B. One who wants to handle more than one reason must be ready
-; to two or more reasons in one IRQ.
-        xor     ecx, ecx
-        call    [device.access_write_csr]
-; Received packet ok?
-
-        test    ax, PCNET_CSR_RINT
-        jz      @f
+        push    ax
+        test    ax, CSR_RINT
+        jz      .not_receive
 
         push    ebx
-.receiver_test_loop:
+  .rx_loop:
         pop     ebx
         movzx   eax, [device.cur_rx]
-;        and     eax, PCNET_RX_RING_MOD_MASK
-        mov     edi, eax
+        shl     eax, 4
+        lea     edi, [device.rx_ring]
+        add     edi, eax                        ; edi now points to current rx ring entry
 
-        imul    esi, eax, PCNET_PKT_BUF_SZ      ;
-        add     esi, [device.rx_buffer]         ; esi now points to rx buffer
-        add     esi, PCNET_RX_RING_SIZE * buf_head.size
+        mov     ax, [edi + descriptor.status]
+        DEBUGF  1,"RX packet status: %x\n", eax:4
 
-        shl     edi, 4                          ; desc * 16 (16 is size of one ring entry)
-        add     edi, [device.rx_buffer]     ; edi now points to current rx ring entry
+        test    ax, RXSTAT_OWN                  ; If this bit is set, the controller OWN's the packet, if not, we do
+        jnz     .not_receive
 
-        mov     cx , [edi + buf_head.status]
+        test    ax, RXSTAT_ENP
+        jz      .not_receive
 
-        test    cx , PCNET_RXSTAT_OWN           ; If this bit is set, the controller OWN's the packet, if not, we do
-        jnz     .abort
+        test    ax, RXSTAT_STP
+        jz      .not_receive
 
-        test    cx , PCNET_RXSTAT_ENP
-        jz      .abort
+        movzx   ecx, [edi + descriptor.msg_length]      ; get packet length in ecx
+        sub     ecx, 4                                  ;
 
-        test    cx , PCNET_RXSTAT_STP
-        jz      .abort
+; Set pointers for ETH_input
+        push    ebx
 
-        movzx   ecx, [edi + buf_head.msg_length]        ; get packet length in ecx
-        sub     ecx, 4                          ;
-
-        push    ecx
-        stdcall KernelAlloc, ecx                ; Allocate a buffer to put packet into
-        pop     ecx
-        test    eax, eax                        ; Test if we allocated succesfully
-        jz      .abort                          ;
+        push    .rx_loop                                ; return address
+        push    ecx                                     ; packet size
+        push    [edi + descriptor.virtual]              ; packet address
 
 ; Update stats
         add     dword [device.bytes_rx], ecx
         adc     dword [device.bytes_rx + 4], 0
-        inc     dword [device.packets_rx]
+        inc     [device.packets_rx]
 
-        push    ebx
-        push    .receiver_test_loop             ;
-        push    ecx                             ; for eth_receiver
-        push    eax                             ;
+; now allocate a new buffer
+        stdcall KernelAlloc, PKT_BUF_SZ                 ; Allocate a buffer for the next packet
+        mov     [edi + descriptor.virtual], eax         ; set virtual address
+        GetRealAddr
+        mov     [edi + descriptor.base], eax            ; and real address
 
-        xchg    edi, eax
-        push    ecx
-        shr     ecx, 2
-        cld
-        rep     movsd
-        pop     ecx
-        and     ecx, 3
-        rep     movsb
+;        mov     word [edi + descriptor.length], - PKT_BUF_SZ
+        mov     [edi + descriptor.status], RXSTAT_OWN   ; give it back to PCnet controller
 
-;       mov     word [eax + buf_head.length], PCNET_PKT_BUF_SZ_NEG
-        mov     word [eax + buf_head.status], PCNET_RXSTAT_OWN      ; Set OWN bit back to 1 (controller may write to tx-buffer again now)
-
-        inc     [device.cur_rx]           ; update descriptor
-        and     [device.cur_rx], 3        ;
+        inc     [device.cur_rx]                         ; set next receive descriptor
+        and     [device.cur_rx], RX_RING_SIZE - 1
 
         jmp     Eth_input
 
-  .abort:
+  .not_receive:
+        pop     ax
 
-  @@:
+        test    ax, CSR_TINT
+        jz      .not_transmit
+
+  .tx_loop:
+        lea     edi, [device.tx_ring]
+        movzx   eax, [device.last_tx]
+        shl     eax, 4
+        add     edi, eax
+
+        test    [edi + descriptor.status], TXCTL_OWN
+        jnz     .not_transmit
+
+        mov     eax, [edi + descriptor.virtual]
+        test    eax, eax
+        jz      .not_transmit
+
+        mov     [edi + descriptor.virtual], 0
+
+        DEBUGF  1,"Removing packet %x from memory\n", eax
+
+        stdcall KernelFree, eax
+
+        inc     [device.last_tx]
+        and     [device.last_tx], TX_RING_SIZE - 1
+        jmp     .tx_loop
+
+  .not_transmit:
 
         ret
 
@@ -1153,13 +1139,13 @@ write_mac:      ; in: mac pushed onto stack (as 3 words)
         add     dx, 2
         xor     eax, eax
 
-        mov     ecx, PCNET_CSR_PAR0
+        mov     ecx, CSR_PAR0
        @@:
         pop     ax
-        call    [device.access_write_csr]
+        call    [device.write_csr]
         DEBUGF  1,"."
         inc     ecx
-        cmp     ecx, PCNET_CSR_PAR2
+        cmp     ecx, CSR_PAR2
         jb      @r
 
         DEBUGF  1,"\n"
@@ -1203,13 +1189,13 @@ switch_to_wio:
 
         DEBUGF  1,"Switching to 16-bit mode\n"
 
-        mov     [device.access_read_csr], wio_read_csr
-        mov     [device.access_write_csr], wio_write_csr
-        mov     [device.access_read_bcr], wio_read_bcr
-        mov     [device.access_write_bcr], wio_write_bcr
-        mov     [device.access_read_rap], wio_read_rap
-        mov     [device.access_write_rap], wio_write_rap
-        mov     [device.access_reset], wio_reset
+        mov     [device.read_csr], wio_read_csr
+        mov     [device.write_csr], wio_write_csr
+        mov     [device.read_bcr], wio_read_bcr
+        mov     [device.write_bcr], wio_write_bcr
+        mov     [device.read_rap], wio_read_rap
+        mov     [device.write_rap], wio_write_rap
+        mov     [device.sw_reset], wio_reset
 
         ret
 
@@ -1218,13 +1204,13 @@ switch_to_dwio:
 
         DEBUGF  1,"Switching to 32-bit mode\n"
 
-        mov     [device.access_read_csr], dwio_read_csr
-        mov     [device.access_write_csr], dwio_write_csr
-        mov     [device.access_read_bcr], dwio_read_bcr
-        mov     [device.access_write_bcr], dwio_write_bcr
-        mov     [device.access_read_rap], dwio_read_rap
-        mov     [device.access_write_rap], dwio_write_rap
-        mov     [device.access_reset], dwio_reset
+        mov     [device.read_csr], dwio_read_csr
+        mov     [device.write_csr], dwio_write_csr
+        mov     [device.read_bcr], dwio_read_bcr
+        mov     [device.write_bcr], dwio_write_bcr
+        mov     [device.read_rap], dwio_read_rap
+        mov     [device.write_rap], dwio_write_rap
+        mov     [device.sw_reset], dwio_reset
 
         ret
 
@@ -1235,13 +1221,13 @@ switch_to_dwio:
 align 4
 wio_read_csr:
 
-        add     edx, PCNET_WIO_RAP
-        mov     ax , cx
-        out     dx , ax
-        add     edx, PCNET_WIO_RDP - PCNET_WIO_RAP
-        in      ax , dx
+        add     edx, WIO_RAP
+        mov     ax, cx
+        out     dx, ax
+        add     edx, WIO_RDP - WIO_RAP
+        in      ax, dx
         and     eax, 0xffff
-        sub     edx, PCNET_WIO_RDP
+        sub     edx, WIO_RDP
 
         ret
 
@@ -1251,13 +1237,13 @@ wio_read_csr:
 align 4
 wio_write_csr:
 
-        add     edx, PCNET_WIO_RAP
+        add     edx, WIO_RAP
         xchg    eax, ecx
-        out     dx , ax
+        out     dx, ax
         xchg    eax, ecx
-        add     edx, PCNET_WIO_RDP - PCNET_WIO_RAP
-        out     dx , ax
-        sub     edx, PCNET_WIO_RDP
+        add     edx, WIO_RDP - WIO_RAP
+        out     dx, ax
+        sub     edx, WIO_RDP
 
         ret
 
@@ -1268,13 +1254,13 @@ wio_write_csr:
 align 4
 wio_read_bcr:
 
-        add     edx, PCNET_WIO_RAP
-        mov     ax , cx
-        out     dx , ax
-        add     edx, PCNET_WIO_BDP - PCNET_WIO_RAP
-        in      ax , dx
+        add     edx, WIO_RAP
+        mov     ax, cx
+        out     dx, ax
+        add     edx, WIO_BDP - WIO_RAP
+        in      ax, dx
         and     eax, 0xffff
-        sub     edx, PCNET_WIO_BDP
+        sub     edx, WIO_BDP
 
         ret
 
@@ -1284,23 +1270,23 @@ wio_read_bcr:
 align 4
 wio_write_bcr:
 
-        add     edx, PCNET_WIO_RAP
+        add     edx, WIO_RAP
         xchg    eax, ecx
-        out     dx , ax
+        out     dx, ax
         xchg    eax, ecx
-        add     edx, PCNET_WIO_BDP - PCNET_WIO_RAP
-        out     dx , ax
-        sub     edx, PCNET_WIO_BDP
+        add     edx, WIO_BDP - WIO_RAP
+        out     dx, ax
+        sub     edx, WIO_BDP
 
         ret
 
 align 4
 wio_read_rap:
 
-        add     edx, PCNET_WIO_RAP
-        in      ax , dx
+        add     edx, WIO_RAP
+        in      ax, dx
         and     eax, 0xffff
-        sub     edx, PCNET_WIO_RAP
+        sub     edx, WIO_RAP
 
         ret
 
@@ -1308,9 +1294,9 @@ wio_read_rap:
 align 4
 wio_write_rap:
 
-        add     edx, PCNET_WIO_RAP
-        out     dx , ax
-        sub     edx, PCNET_WIO_RAP
+        add     edx, WIO_RAP
+        out     dx, ax
+        sub     edx, WIO_RAP
 
         ret
 
@@ -1318,10 +1304,10 @@ align 4
 wio_reset:
 
         push    eax
-        add     edx, PCNET_WIO_RESET
-        in      ax , dx
+        add     edx, WIO_RESET
+        in      ax, dx
         pop     eax
-        sub     edx, PCNET_WIO_RESET
+        sub     edx, WIO_RESET
 
         ret
 
@@ -1333,13 +1319,13 @@ wio_reset:
 align 4
 dwio_read_csr:
 
-        add     edx, PCNET_DWIO_RAP
+        add     edx, DWIO_RAP
         mov     eax, ecx
-        out     dx , eax
-        add     edx, PCNET_DWIO_RDP - PCNET_DWIO_RAP
+        out     dx, eax
+        add     edx, DWIO_RDP - DWIO_RAP
         in      eax, dx
         and     eax, 0xffff
-        sub     edx, PCNET_DWIO_RDP
+        sub     edx, DWIO_RDP
 
         ret
 
@@ -1349,13 +1335,13 @@ dwio_read_csr:
 align 4
 dwio_write_csr:
 
-        add     edx, PCNET_DWIO_RAP
+        add     edx, DWIO_RAP
         xchg    eax, ecx
-        out     dx , eax
-        add     edx, PCNET_DWIO_RDP - PCNET_DWIO_RAP
+        out     dx, eax
+        add     edx, DWIO_RDP - DWIO_RAP
         xchg    eax, ecx
-        out     dx , eax
-        sub     edx, PCNET_DWIO_RDP
+        out     dx, eax
+        sub     edx, DWIO_RDP
 
         ret
 
@@ -1365,13 +1351,13 @@ dwio_write_csr:
 align 4
 dwio_read_bcr:
 
-        add     edx, PCNET_DWIO_RAP
+        add     edx, DWIO_RAP
         mov     eax, ecx
-        out     dx , eax
-        add     edx, PCNET_DWIO_BDP - PCNET_DWIO_RAP
+        out     dx, eax
+        add     edx, DWIO_BDP - DWIO_RAP
         in      eax, dx
         and     eax, 0xffff
-        sub     edx, PCNET_DWIO_BDP
+        sub     edx, DWIO_BDP
 
         ret
 
@@ -1381,23 +1367,23 @@ dwio_read_bcr:
 align 4
 dwio_write_bcr:
 
-        add     edx, PCNET_DWIO_RAP
+        add     edx, DWIO_RAP
         xchg    eax, ecx
-        out     dx , eax
-        add     edx, PCNET_DWIO_BDP - PCNET_DWIO_RAP
+        out     dx, eax
+        add     edx, DWIO_BDP - DWIO_RAP
         xchg    eax, ecx
-        out     dx , eax
-        sub     edx, PCNET_DWIO_BDP
+        out     dx, eax
+        sub     edx, DWIO_BDP
 
         ret
 
 align 4
 dwio_read_rap:
 
-        add     edx, PCNET_DWIO_RAP
+        add     edx, DWIO_RAP
         in      eax, dx
         and     eax, 0xffff
-        sub     edx, PCNET_DWIO_RAP
+        sub     edx, DWIO_RAP
 
         ret
 
@@ -1406,9 +1392,9 @@ dwio_read_rap:
 align 4
 dwio_write_rap:
 
-        add     edx, PCNET_DWIO_RAP
-        out     dx , eax
-        sub     edx, PCNET_DWIO_RAP
+        add     edx, DWIO_RAP
+        out     dx, eax
+        sub     edx, DWIO_RAP
 
         ret
 
@@ -1416,10 +1402,10 @@ align 4
 dwio_reset:
 
         push    eax
-        add     edx, PCNET_DWIO_RESET
+        add     edx, DWIO_RESET
         in      eax, dx
         pop     eax
-        sub     edx, PCNET_DWIO_RESET
+        sub     edx, DWIO_RESET
 
         ret
 
@@ -1442,25 +1428,25 @@ device_l8     db "PCnet/Home 79C978",0
 device_l9     db "PCnet/FAST III 79C975",0
 
 options_mapping:
-dd PCNET_PORT_ASEL                                      ;  0 Auto-select
-dd PCNET_PORT_AUI                                       ;  1 BNC/AUI
-dd PCNET_PORT_AUI                                       ;  2 AUI/BNC
-dd PCNET_PORT_ASEL                                      ;  3 not supported
-dd PCNET_PORT_10BT or PCNET_PORT_FD                     ;  4 10baseT-FD
-dd PCNET_PORT_ASEL                                      ;  5 not supported
-dd PCNET_PORT_ASEL                                      ;  6 not supported
-dd PCNET_PORT_ASEL                                      ;  7 not supported
-dd PCNET_PORT_ASEL                                      ;  8 not supported
-dd PCNET_PORT_MII                                       ;  9 MII 10baseT
-dd PCNET_PORT_MII or PCNET_PORT_FD                      ; 10 MII 10baseT-FD
-dd PCNET_PORT_MII                                       ; 11 MII (autosel)
-dd PCNET_PORT_10BT                                      ; 12 10BaseT
-dd PCNET_PORT_MII or PCNET_PORT_100                     ; 13 MII 100BaseTx
-dd PCNET_PORT_MII or PCNET_PORT_100 or PCNET_PORT_FD    ; 14 MII 100BaseTx-FD
-dd PCNET_PORT_ASEL                                      ; 15 not supported
+dd PORT_ASEL                            ; 0 Auto-select
+dd PORT_AUI                             ; 1 BNC/AUI
+dd PORT_AUI                             ; 2 AUI/BNC
+dd PORT_ASEL                            ; 3 not supported
+dd PORT_10BT or PORT_FD                 ; 4 10baseT-FD
+dd PORT_ASEL                            ; 5 not supported
+dd PORT_ASEL                            ; 6 not supported
+dd PORT_ASEL                            ; 7 not supported
+dd PORT_ASEL                            ; 8 not supported
+dd PORT_MII                             ; 9 MII 10baseT
+dd PORT_MII or PORT_FD                  ; 10 MII 10baseT-FD
+dd PORT_MII                             ; 11 MII (autosel)
+dd PORT_10BT                            ; 12 10BaseT
+dd PORT_MII or PORT_100                 ; 13 MII 100BaseTx
+dd PORT_MII or PORT_100 or PORT_FD      ; 14 MII 100BaseTx-FD
+dd PORT_ASEL                            ; 15 not supported
 
 include_debug_strings                                   ; All data wich FDO uses will be included here
 
 section '.data' data readable writable align 16         ; place all uninitialized data place here
 
-device_list rd MAX_DEVICES                                 ; This list contains all pointers to device structures the driver is handling
+device_list rd MAX_DEVICES                              ; This list contains all pointers to device structures the driver is handling
