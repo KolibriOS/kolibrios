@@ -126,7 +126,9 @@ macro   make_bus_master bus, dev {
 
         movzx   ecx, bus
         movzx   edx, dev
+        push    ecx edx
         stdcall PciRead32, ecx ,edx, PCI_REG_COMMAND
+        pop     edx ecx
         or      al, PCI_BIT_MASTER
         stdcall PciWrite32, ecx, edx, PCI_REG_COMMAND, eax
 
@@ -136,7 +138,9 @@ macro   adjust_latency bus, dev, min {
 
         movzx   ecx, bus
         movzx   edx, dev
+        push    ecx edx
         stdcall PciRead8, ecx ,edx, PCI_REG_LATENCY
+        pop     edx ecx
         cmp     al, min
         ja      @f
         mov     al, min
