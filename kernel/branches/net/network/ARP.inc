@@ -64,6 +64,7 @@ uglobal
 
         ARP_PACKETS_TX  rd MAX_NET_DEVICES
         ARP_PACKETS_RX  rd MAX_NET_DEVICES
+        ARP_CONFLICTS   rd MAX_NET_DEVICES
 
 
 endg
@@ -83,7 +84,7 @@ macro ARP_init {
         mov     [NumARP], eax
 
         mov     edi, ARP_PACKETS_TX
-        mov     ecx, 2*MAX_NET_DEVICES
+        mov     ecx, 3*MAX_NET_DEVICES
         rep     stosd
 
 }
@@ -282,6 +283,7 @@ ARP_input:
         ret
 
   .collision:
+        inc     [ARP_CONFLICTS + 4*edi]
         DEBUGF  1,"ARP_input: IP address conflict detected!\n"
 
   .exit:
@@ -566,6 +568,8 @@ ARP_api:
         dd      .read           ; 3
         dd      .write          ; 4
         dd      .remove         ; 5
+        dd      .send_announce  ; 6
+        dd      .conflicts      ; 7
   .number = ($ - .table) / 4 - 1
 
   .error:
@@ -578,6 +582,10 @@ ARP_api:
 
   .packets_rx:
         mov     eax, [ARP_PACKETS_RX + eax]
+        ret
+
+  .conflicts:
+        mov     eax, [ARP_CONFLICTS + eax]
         ret
 
   .entries:
@@ -600,7 +608,7 @@ ARP_api:
 
   .write:
         ; esi = pointer to buffer
-        call    ARP_add_entry        ;out: eax = entry number, -1 on error
+        call    ARP_add_entry           ; out: eax = entry number, -1 on error
         ret
 
   .remove:
@@ -610,5 +618,11 @@ ARP_api:
         imul    ecx, sizeof.ARP_entry
         lea     esi, [ARP_table + ecx]
         call    ARP_del_entry
+        ret
+
+  .send_announce:
+        mov     edi, eax
+        mov     eax, [IP_LIST + eax]
+        call    ARP_output_request      ; now send a gratuitous ARP
         ret
 

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2012. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2013. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  netstat.asm - Network Status Tool for KolibriOS                ;;
@@ -10,18 +10,13 @@
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
 ;;                                                                 ;;
-;;                                                                 ;;
-;; 0.1 - 22 sept 2009 - initial release                            ;;
-;; 0.2 - 9 july 2012 - converted to new sysfunc numbers            ;;
-;; 0.3 - 13 july 2012 - work with multiple network interfaces      ;;
-;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 format binary as ""
 
 use32
 
-        org     0x0
+        org    0x0
 
         db     'MENUET01'        ; 8 byte id
         dd     0x01              ; header version
@@ -35,11 +30,11 @@ include '..\macros.inc'
 include '..\network.inc'
 
 START:
-        mcall   40, 101b
+        mcall   40, EVM_REDRAW + EVM_BUTTON
 
 redraw:
         mcall   12, 1
-        mcall   0, 100 shl 16 + 600, 100 shl 16 + 240, 0x34bcbcbc , , name      ; draw window
+        mcall   0, 100 shl 16 + 600, 100 shl 16 + 240, 0x34bcbcbc, , name       ; draw window
 
         call    draw_interfaces
 
@@ -167,6 +162,9 @@ redraw:
         add     ebx, 18
         mov     edx, str_arp
         mcall
+        add     ebx, 18
+        mov     edx, str_conflicts
+        mcall
 
         jmp     end_of_draw
 
@@ -184,221 +182,239 @@ end_of_draw:
 
 draw_stats:
 
-    cmp     [mode], 101
-    jne     not_101
+        cmp     [mode], 101
+        jne     not_101
 
-    mov     ebx, API_ETH
-    mov     bh, [device]
+        mov     ebx, API_ETH
+        mov     bh, [device]
   @@:
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
-    cmp     bl, 3
-    jle     @r
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
+        inc     bl
+        cmp     bl, 3
+        jbe     @r
 
-    inc     bl   ;5
-    inc     bl   ;6
+        inc     bl   ;5
+        inc     bl   ;6
 
   @@:
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
-    cmp     bl, 7
-    jle     @r
+        push    ebx
+        mcall   76
+        pop     ebx
 
-    mov     eax, 47
-    mov     ebx, 0x000a0000
-    mov     esi, 0x40000000
-    mov     edi, 0x00bcbcbc
-    mov     edx, 135 shl 16 + 75 + 6*18
-    pop     ecx
-    mcall
-    sub     edx, 18
-    pop     ecx
-    mcall
-    sub     edx, 2*18
-    pop     ecx
-    mcall
-    sub     edx, 18
-    pop     ecx
-    mcall
-    sub     edx, 18
-    pop     ecx
-    mcall
-    sub     edx, 18
-    pop     ecx
-    mcall
+        push    eax
+        inc     bl
+        cmp     bl, 7
+        jbe     @r
 
-    jmp     mainloop
+        mov     ebx, 0x000a0000
+        pop     ecx
+        mov     edx, 135 shl 16 + 75 + 6*18
+        mov     esi, 0x40000000
+        mov     edi, 0x00bcbcbc
+        mcall   47
 
+        sub     edx, 18
+        pop     ecx
+        mcall
 
- not_101:
+        sub     edx, 2*18
+        pop     ecx
+        mcall
 
-    cmp     [mode], 102
-    jne     not_102
+        sub     edx, 18
+        pop     ecx
+        mcall
 
-    mov     ebx, API_IPv4
-    mov     bh, [device]
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
+        sub     edx, 18
+        pop     ecx
+        mcall
 
-    mov     eax, 47
-    mov     ebx, 0x000a0000
-    mov     esi, 0x40000000
-    mov     edi, 0x00bcbcbc
-    mov     edx, 135 shl 16 + 75 + 18
-    pop     ecx
-    mcall
-    sub     edx, 18
-    pop     ecx
-    mcall
+        sub     edx, 18
+        pop     ecx
+        mcall
 
-    jmp     mainloop
+        jmp     mainloop
 
 
- not_102:
+not_101:
 
-    cmp     [mode], 103
-    jne     not_103
+        cmp     [mode], 102
+        jne     not_102
 
-    mov     ebx, API_ARP
-    mov     bh, [device]
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
+        mov     ebx, API_IPv4
+        mov     bh, [device]
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
 
-    mov     eax, 47
-    mov     ebx, 0x000a0000
-    mov     esi, 0x40000000
-    mov     edi, 0x00bcbcbc
-    mov     edx, 135 shl 16 + 75 + 2*18
-    pop     ecx
-    mcall
-    sub     edx, 18
-    pop     ecx
-    mcall
-    sub     edx, 18
-    pop     ecx
-    mcall
+        inc     bl
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
 
-    jmp     mainloop
+
+        mov     ebx, 0x000a0000
+        pop     ecx
+        mov     edx, 135 shl 16 + 75 + 18
+        mov     esi, 0x40000000
+        mov     edi, 0x00bcbcbc
+        mcall   47
+
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+        jmp     mainloop
+
+
+not_102:
+
+        cmp     [mode], 103
+        jne     not_103
+
+        mov     ebx, API_ARP
+        mov     bh, [device]
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
+
+        inc     bl
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
+
+        inc     bl
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
+
+        mov     bl, 7
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
+
+        mov     ebx, 0x000a0000
+        pop     ecx
+        mov     edx, 135 shl 16 + 75 + 3*18
+        mov     esi, 0x40000000
+        mov     edi, 0x00bcbcbc
+        mcall   47
+
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+        jmp     mainloop
 
 not_103:
 
-    cmp     [mode], 104
-    jne     not_104
+        cmp     [mode], 104
+        jne     not_104
 
-    mov     ebx, API_ICMP
-    mov     bh, [device]
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
+        mov     ebx, API_ICMP
+        mov     bh, [device]
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
 
-    mov     eax, 47
-    mov     ebx, 0x000a0000
-    mov     esi, 0x40000000
-    mov     edi, 0x00bcbcbc
-    mov     edx, 135 shl 16 + 75 + 18
-    pop     ecx
-    mcall
-    sub     edx, 18
-    pop     ecx
-    mcall
+        inc     bl
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
 
-    jmp     mainloop
+        mov     ebx, 0x000a0000
+        pop     ecx
+        mov     edx, 135 shl 16 + 75 + 18
+        mov     esi, 0x40000000
+        mov     edi, 0x00bcbcbc
+        mcall   47
+
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+        jmp     mainloop
 
 not_104:
 
-    cmp     [mode], 105
-    jne     not_105
+        cmp     [mode], 105
+        jne     not_105
 
-    mov     ebx, API_UDP
-    mov     bh, [device]
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
+        mov     ebx, API_UDP
+        mov     bh, [device]
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
 
-    mov     eax, 47
-    mov     ebx, 0x000a0000
-    mov     esi, 0x40000000
-    mov     edi, 0x00bcbcbc
-    mov     edx, 135 shl 16 + 75 + 18
-    pop     ecx
-    mcall
-    sub     edx, 18
-    pop     ecx
-    mcall
+        inc     bl
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
 
-    jmp     mainloop
+        mov     ebx, 0x000a0000
+        pop     ecx
+        mov     edx, 135 shl 16 + 75 + 18
+        mov     esi, 0x40000000
+        mov     edi, 0x00bcbcbc
+        mcall   47
+
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+        jmp     mainloop
 
 not_105:
 
-    cmp     [mode], 106
-    jne     not_106
+        cmp     [mode], 106
+        jne     not_106
 
-    mov     ebx, API_TCP
-    mov     bh, [device]
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
-    push    ebx
-    mcall   76
-    pop     ebx
-    push    eax
-    inc     bl
+        mov     ebx, API_TCP
+        mov     bh, [device]
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
 
-    mov     eax, 47
-    mov     ebx, 0x000a0000
-    mov     esi, 0x40000000
-    mov     edi, 0x00bcbcbc
-    mov     edx, 135 shl 16 + 75 + 18
-    pop     ecx
-    mcall
-    sub     edx, 18
-    pop     ecx
-    mcall
+        inc     bl
+        push    ebx
+        mcall   76
+        pop     ebx
+        push    eax
 
-    jmp     mainloop
+        mov     ebx, 0x000a0000
+        pop     ecx
+        mov     edx, 135 shl 16 + 75 + 18
+        mov     esi, 0x40000000
+        mov     edi, 0x00bcbcbc
+        mcall   47
+
+        sub     edx, 18
+        pop     ecx
+        mcall
+
+        jmp     mainloop
 
 not_106:
 
@@ -568,6 +584,7 @@ str_dns         db 'DNS address:', 0
 str_subnet      db 'Subnet mask:', 0
 str_gateway     db 'Standard gateway:', 0
 str_arp         db 'ARP entrys:', 0
+str_conflicts   db 'ARP conflicts:', 0
 str_unknown     db 'unknown', 0
 
 namebuf         rb 64
