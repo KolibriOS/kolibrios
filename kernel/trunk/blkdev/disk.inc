@@ -459,7 +459,9 @@ disk_dereference:
         stdcall disk_call_driver
 ; 3b. Free the structure.
         xchg    eax, esi
+        push    ebx
         call    free
+        pop     ebx
 ; 4. Return.
 .nothing:
         ret
