@@ -363,6 +363,7 @@ ARP_output_request:
 ;
 ; IN:  esi = ptr to entry (can easily be made on the stack)
 ; OUT: eax = entry #, -1 on error
+;      edi = ptr to newly created entry
 ;
 ;-----------------------------------------------------------------      ; TODO: use a mutex
 align 4
@@ -398,6 +399,7 @@ ARP_add_entry:
         mov     ecx, sizeof.ARP_entry/2
         rep     movsw
         inc     [NumARP]
+        sub     edi, sizeof.ARP_entry
         DEBUGF  1,"entry=%u\n", eax
 
         ret
@@ -498,36 +500,42 @@ ARP_IP_to_MAC:
         pushd   eax                     ; ip
         mov     esi, esp
         call    ARP_add_entry
-        add     esp, sizeof.ARP_entry
+        add     esp, sizeof.ARP_entry   ; clear the entry from stack
 
-        cmp     eax, -1
+        cmp     eax, -1                 ; did ARP_add_entry fail?
         je      .full
 
-; And send a request
-        pop     edi eax
-        call    ARP_output_request      ; IP in eax
-;; TODO: check if driver could transmit packet
+        mov     esi, edi
+        pop     edi eax                 ; IP in eax, device number in edi, for ARP_output_request
 
-        mov     eax, -2                 ; request send
-        ret
+        push    esi edi
+        call    ARP_output_request      ; And send a request
+        pop     edi esi
 
+;-----------------------------------------------
+; At this point, we got an ARP entry in the list
   .found_it:
-        DEBUGF  1,"ARP_IP_to_MAC: found IP\n"
-        cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING
-        jne     .invalid
+        cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING             ; Does it have a MAC assigned?
+        je      .valid
+        cmp     [esi + ARP_entry.Status], ARP_AWAITING_RESPONSE         ; Are we waiting for reply from remote end?
+        jne     .give_up
+        push    esi
+        mov     esi, 10                 ; wait 10 ms
+        call    delay_ms
+        pop     esi
+        jmp     .found_it               ; now check again
 
-        movzx   eax, word [esi + ARP_entry.MAC]
+  .valid:
+        DEBUGF  1,"ARP_IP_to_MAC: found MAC\n"
+        movzx   eax, word[esi + ARP_entry.MAC]
         mov     ebx, dword[esi + ARP_entry.MAC + 2]
-        ret
-
-  .invalid:
-        DEBUGF  1,"ARP_IP_to_MAC: entry has no valid mapping!\n"
-        mov     eax, -1
         ret
 
   .full:
         DEBUGF  1,"ARP_IP_to_MAC: table is full!\n"
         add     esp, 8
+  .give_up:
+        DEBUGF  1,"ARP_IP_to_MAC: entry has no valid mapping!\n"
         mov     eax, -1
         ret
 
