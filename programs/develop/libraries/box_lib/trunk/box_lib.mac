@@ -11,11 +11,11 @@ ed_blur_border_color    equ [edi+24]    ;цвет не активного компонента
 ed_text_color   equ [edi+28]            ;цвет текста
 ed_max          equ [edi+32]                    ;кол-во символов которые можно максимально ввести
 ed_text         equ [edi+36]                    ;указатель на буфер
-ed_mouse_variable 	equ [edi+40]	; указатель на переменную для бокса/группы 
+ed_mouse_variable       equ [edi+40]    ; указатель на переменную для бокса/группы 
 ed_flags        equ [edi+44]            ;флаги
-bp_flags	equ [ebp+44]		;в некоторых процедурах edi используется, взамен указатель храниться в ebp
+bp_flags        equ [ebp+44]            ;в некоторых процедурах edi используется, взамен указатель храниться в ebp
 ed_size equ [edi+48]                    ;кол-во символов
-bp_size equ [ebp+48]			;кол-во симвполов, для адресации испльзуется ebpб edi занят
+bp_size equ [ebp+48]                    ;кол-во симвполов, для адресации испльзуется ebpб edi занят
 ed_pos  equ [edi+52]                    ;позиция курсора
 ed_offset       equ [edi+56]            ;смещение
 cl_curs_x       equ [edi+60]            ;предыдущее координата курсора по х
@@ -83,8 +83,8 @@ macro edit_boxes_set_sys_color start,end,color_table
 @@:
         mov     eax,dword [esi+36] ;цвет графики в окне (разделительные линии и т.п.)
         mov     ebx,dword [esi+20] ;цвет рабочей области окна
-        push	dword eax
-	pop     dword ed_focus_border_color
+        push    dword eax
+        pop     dword ed_focus_border_color
         shr     bh,1
         shr     bl,1
         shr     ah,1
@@ -97,10 +97,10 @@ macro edit_boxes_set_sys_color start,end,color_table
         shr     al,1
         add     al,bl
         ror     eax,16
-	mov	dword ed_blur_border_color,eax
-	mov	dword shift_color,eax
-	push 	dword [esi+32] ;цвет текста в рабочей области окна
-	pop 	dword ed_text_color
+        mov     dword ed_blur_border_color,eax
+        mov     dword shift_color,eax
+        push    dword [esi+32] ;цвет текста в рабочей области окна
+        pop     dword ed_text_color
         add     edi,ed_struc_size
         loop    @b
 }
@@ -117,51 +117,51 @@ ch_text_color   equ [edi+20] ;[edi+4]  ;цвет текста
 ch_text_ptr     equ [edi+24] ;указатель на начало текстовой строки 
 ch_flags equ [edi+28]      ;флаги 
 
-ch_struc_size=36		;размер структуры
-ch_flag_en=10b 			;флаг установленного чек бокса.
-ch_flag_top=0x0			;флаг расположения текста вверху т.е. 3-й бит
-ch_flag_middle=100b		;флаг расположения текста в центре т.е. 4-й бит.
-ch_flag_bottom=1000b		;флаг расположения текста в низу т.е. по умолчанию принимается значение внизу т.е. отсуствие 3-го и 4-го бита
+ch_struc_size=36                ;размер структуры
+ch_flag_en=10b                  ;флаг установленного чек бокса.
+ch_flag_top=0x0                 ;флаг расположения текста вверху т.е. 3-й бит
+ch_flag_middle=100b             ;флаг расположения текста в центре т.е. 4-й бит.
+ch_flag_bottom=1000b            ;флаг расположения текста в низу т.е. по умолчанию принимается значение внизу т.е. отсуствие 3-го и 4-го бита
 
-2ch_left_s	equ [ebp]	;кордината начала рисования по х
-2ch_top_s	equ [ebp+4]	;координата начала рисования по у
-2ch_text_margin equ [ebp+8] 	;=4 расстояние от прямоугольника чек бокса до надписи 
-2ch_color 	equ [ebp+12]	;цвет внутри checkbox
-2ch_border_color	equ [ebp+16] 	; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
-2ch_text_color	equ [ebp+20] 	;[edi+4]  ;цвет текста
-2ch_text_ptr	equ [ebp+24] 	;указатель на начало текстовой строки 
-2ch_flags	equ [ebp+28]	;флаги
-2ch_sz_str	equ [ebp+32]	;длинна строки, вычисляется при инициализации компонента
+2ch_left_s      equ [ebp]       ;кордината начала рисования по х
+2ch_top_s       equ [ebp+4]     ;координата начала рисования по у
+2ch_text_margin equ [ebp+8]     ;=4 расстояние от прямоугольника чек бокса до надписи 
+2ch_color       equ [ebp+12]    ;цвет внутри checkbox
+2ch_border_color        equ [ebp+16]    ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
+2ch_text_color  equ [ebp+20]    ;[edi+4]  ;цвет текста
+2ch_text_ptr    equ [ebp+24]    ;указатель на начало текстовой строки 
+2ch_flags       equ [ebp+28]    ;флаги
+2ch_sz_str      equ [ebp+32]    ;длинна строки, вычисляется при инициализации компонента
 
 struc check_box2 left_s,top_s,ch_text_margin,color,border_color,text_color,text,flags
-{				;структура параметров для чек бокса
-.left_s: 	dd left_s	;+0 положение по х dw + размер dw
-.top_s:  	dd top_s	;+4 положение по у dw + размер dw
+{                               ;структура параметров для чек бокса
+.left_s:        dd left_s       ;+0 положение по х dw + размер dw
+.top_s:         dd top_s        ;+4 положение по у dw + размер dw
 .ch_text_margin: dd ch_text_margin ;расстояние от прямоугольника чек бокса до надписи
-.color:   	dd color	;цвет внутри чекбокса
-.border_color: 	dd border_color	;цвет рамки
-.text_color:	dd text_color	;цвет надписи
-.text: 		dd text		;адрес в коде программы где расположен текст
-.flags:		dd flags+0	;флаги
-.size_of_str:	dd 0x0		;длинна строки, вычисляется при инициализации компонента
+.color:         dd color        ;цвет внутри чекбокса
+.border_color:  dd border_color ;цвет рамки
+.text_color:    dd text_color   ;цвет надписи
+.text:          dd text         ;адрес в коде программы где расположен текст
+.flags:         dd flags+0      ;флаги
+.size_of_str:   dd 0x0          ;длинна строки, вычисляется при инициализации компонента
 }
 
 ;Макрос проверки щелчка мышки над группой checkboxes.
 macro init_checkboxes2 start,end_cb
 {
 if start+ch_struc_size eq end_cb
-	;когда один элемент
-	push    start			;указатель на checkbox
-	call	[init_checkbox]	;настройка checkbox'а
+        ;когда один элемент
+        push    start                   ;указатель на checkbox
+        call    [init_checkbox] ;настройка checkbox'а
 else
-	;когда несколько элементов
-	mov     ebp,start
-	mov     ecx,((end_cb-start)/ch_struc_size)
+        ;когда несколько элементов
+        mov     ebp,start
+        mov     ecx,((end_cb-start)/ch_struc_size)
 @@:
-	push    ebp			;указатель на первый checkbox
-	call	[init_checkbox]	;настройка checkbox'ов
-	add     ebp,ch_struc_size
-	loop    @b
+        push    ebp                     ;указатель на первый checkbox
+        call    [init_checkbox] ;настройка checkbox'ов
+        add     ebp,ch_struc_size
+        loop    @b
 end if
 }
 
@@ -169,18 +169,18 @@ end if
 macro checkboxes_mouse2 start,end_cb
 {
 if start+ch_struc_size eq end_cb
-	;когда один элемент
-	push    start			;указатель на checkbox
-	call	[check_box_mouse]	;макрос проверки мышки над checkbox'ом
+        ;когда один элемент
+        push    start                   ;указатель на checkbox
+        call    [check_box_mouse]       ;макрос проверки мышки над checkbox'ом
 else
-	;когда несколько элементов
-	mov     ebp,start
-	mov     ecx,((end_cb-start)/ch_struc_size)
+        ;когда несколько элементов
+        mov     ebp,start
+        mov     ecx,((end_cb-start)/ch_struc_size)
 @@:
-	push    ebp			;указатель на первый checkbox
-	call	[check_box_mouse]	;макрос проверки мышки над checkbox'ами
-	add     ebp,ch_struc_size
-	loop    @b
+        push    ebp                     ;указатель на первый checkbox
+        call    [check_box_mouse]       ;макрос проверки мышки над checkbox'ами
+        add     ebp,ch_struc_size
+        loop    @b
 end if
 }
 
@@ -188,34 +188,34 @@ end if
 macro checkboxes_draw2 start,end_cb
 {
 if start+ch_struc_size eq end_cb
-	;когда один элемент
-	push    start			;указатель на checkbox
-	call	[check_box_draw]	;нарисовать checkbox
+        ;когда один элемент
+        push    start                   ;указатель на checkbox
+        call    [check_box_draw]        ;нарисовать checkbox
 else
-	;когда несколько элементов
-	mov     ebp,start
-	mov     ecx,((end_cb-start)/ch_struc_size)
+        ;когда несколько элементов
+        mov     ebp,start
+        mov     ecx,((end_cb-start)/ch_struc_size)
 @@:
-	push    ebp			;указатель на первый checkbox
-	call	[check_box_draw]	;нарисовать checkbox'ы
-	add     ebp,ch_struc_size
-	loop    @b
+        push    ebp                     ;указатель на первый checkbox
+        call    [check_box_draw]        ;нарисовать checkbox'ы
+        add     ebp,ch_struc_size
+        loop    @b
 end if
 }
 
 macro check_boxes_set_sys_color2 start,end,color_table
 {
-	mov     ebp,start
-	mov     ecx,((end-start)/ch_struc_size)
-	mov     esi,color_table
+        mov     ebp,start
+        mov     ecx,((end-start)/ch_struc_size)
+        mov     esi,color_table
 @@:
-	push    dword [esi+32] 		;цвет текста в рабочей области окна
-	or	dword [esp],0x80000000	;необходимо для вывода ASCIIZ строк
-	pop     dword 2ch_text_color
-	push    dword [esi+36] 		;цвет графики в окне (разделительные линии и т.п.)
-	pop     dword 2ch_border_color
-	add     ebp,ch_struc_size
-	loop    @b
+        push    dword [esi+32]          ;цвет текста в рабочей области окна
+        or      dword [esp],0x80000000  ;необходимо для вывода ASCIIZ строк
+        pop     dword 2ch_text_color
+        push    dword [esi+36]          ;цвет графики в окне (разделительные линии и т.п.)
+        pop     dword 2ch_border_color
+        add     ebp,ch_struc_size
+        loop    @b
 }
 
 
@@ -257,20 +257,20 @@ op_flags equ [edi+36]       ;флаги
 
 macro option_boxes_set_sys_color color_table,group
 {
-	mov	ecx,group
-        mov	esi,color_table
-        mov	edi,[ecx]
-        mov	eax,[esi+24] ;цвет кнопки в рабочей области окна
-        mov	ebx,[esi+28] ;цвет текста на кнопке
+        mov     ecx,group
+        mov     esi,color_table
+        mov     edi,[ecx]
+        mov     eax,[esi+24] ;цвет кнопки в рабочей области окна
+        mov     ebx,[esi+28] ;цвет текста на кнопке
 @@:
-	mov	op_border_color,eax
-	mov	op_color,ebx
-	push	dword [esi+32] ;цвет текста в рабочей области окна
-	pop	dword op_text_color
+        mov     op_border_color,eax
+        mov     op_color,ebx
+        push    dword [esi+32] ;цвет текста в рабочей области окна
+        pop     dword op_text_color
         add     ecx,4
         mov     edi,[ecx]
-	cmp	edi,0
-        jne	@b
+        cmp     edi,0
+        jne     @b
 }
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Basic macros for use TreeList                            ;
@@ -279,27 +279,27 @@ macro option_boxes_set_sys_color color_table,group
 struc tree_list info_size,info_max_count,style, img_cx,img_cy,\
     col_bkg,col_zag,col_txt, box_l,box_t,box_w,box_h, capt_cy,info_capt_offs,\
     info_capt_len,el_focus, p_scrol,on_press {
-  .data_info	dd 0
-  .info_size	dw info_size
+  .data_info    dd 0
+  .info_size    dw info_size
   .info_max_count dd info_max_count
-  .style	    dd style
-  .data_nodes	dd 0
-  .data_img	 dd 0
-  .img_cx	   dw img_cx
-  .img_cy	   dw img_cy
-  .data_img_sys	 dd 0
-  .ch_tim		  dd 0
-  .ls_tim		  dd 0
-  .tim_undo	 dd 0
-  .cur_pos	  dd 0
-  .col_bkg	  dd col_bkg
-  .col_zag	  dd col_zag
-  .col_txt	  dd col_txt
+  .style            dd style
+  .data_nodes   dd 0
+  .data_img      dd 0
+  .img_cx          dw img_cx
+  .img_cy          dw img_cy
+  .data_img_sys  dd 0
+  .ch_tim                 dd 0
+  .ls_tim                 dd 0
+  .tim_undo      dd 0
+  .cur_pos        dd 0
+  .col_bkg        dd col_bkg
+  .col_zag        dd col_zag
+  .col_txt        dd col_txt
   .box_left   dd box_l
   .box_top    dd box_t
   .box_width  dd box_w
   .box_height dd box_h
-  .capt_cy	   dw capt_cy
+  .capt_cy         dw capt_cy
   .info_capt_offs dw info_capt_offs
   .info_capt_len dw info_capt_len
   .el_focus dd el_focus
@@ -334,8 +334,8 @@ tl_el_focus   equ dword[edi+80] ;указатель на структуру элемента в фокусе
 tl_p_scrol    equ dword[edi+84] ;указатель на структуру скроллинга
 tl_on_press   equ dword[edi+96] ;указатель на функцию, которая вызывается при нажатии Enter
 
-;data_info	 dd ? ;+ 0 указатель на основные даные
-;ls_tim		dd ? ;+34 время последнего сохранения
+;data_info       dd ? ;+ 0 указатель на основные даные
+;ls_tim         dd ? ;+34 время последнего сохранения
 ;on_activate dd ? ;+92 указатель на функцию при активировании узла
 
 ;константы стиля
@@ -454,3 +454,35 @@ sb_offs_redraw   equ 40
 sb_offs_delta2   equ 46
 sb_offs_all_redraw equ 80
 ;------------------------------------------------------------------------------
+
+
+struc scrollbar xsize, xpos, ysize, ypos, btn_height, max, cur, pos, bgcol, frcol, linecol, ar_offset
+{
+.x_size         dw xsize
+.x_pos          dw xpos
+.y_size         dw ysize
+.y_pos          dw ypos
+.btn_height     dd btn_height
+.type           dd ?
+.max_area       dd max
+.cur_area       dd cur
+.position       dd pos
+.bg_color       dd bgcol
+.front_color    dd frcol
+.line_color     dd linecol
+.redraw         dd ?
+.delta          dw ?
+.delta2         dw ?
+.r_size_x       dw ?
+.r_start_x      dw ?
+.r_size_y       dw ?
+.r_start_y      dw ?
+.m_pos          dd ?
+.m_pos_2        dd ?
+.m_keys         dd ?
+.run_size       dd ?
+.position2      dd ?
+.work_size      dd ?
+.all_redraw     dd ?
+.ar_offset      dd ar_offset
+}
