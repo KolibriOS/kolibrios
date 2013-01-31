@@ -389,7 +389,7 @@ proc service_proc stdcall, ioctl:dword
 
 ; Now, it's time to find the base mmio addres of the PCI device
 
-        find_mmio32 [device.pci_bus], [device.pci_dev], [device.mmio_addr]
+        PCI_find_mmio32
 
 ; Create virtual mapping of the physical memory
 
@@ -401,7 +401,7 @@ proc service_proc stdcall, ioctl:dword
 
 ; We've found the mmio address, find IRQ now
 
-        find_irq byte [device.pci_bus], byte [device.pci_dev], [device.irq_line]
+        PCI_find_irq
 
         DEBUGF  1,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
         [device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.mmio_addr]:8
@@ -484,7 +484,7 @@ probe:
 
         DEBUGF  1,"Probe\n"
 
-        make_bus_master byte [device.pci_bus], byte [device.pci_dev]
+        PCI_make_bus_master
 
         ; TODO: validate the device
 

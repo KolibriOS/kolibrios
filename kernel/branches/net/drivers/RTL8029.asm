@@ -40,8 +40,8 @@ virtual at ebx
 
         .io_addr        dd ?
         .irq_line       db ?
-        .pci_bus        db ?
-        .pci_dev        db ?
+        .pci_bus        dd ?
+        .pci_dev        dd ?
 
         .flags          db ?
         .vendor         db ?
@@ -238,8 +238,11 @@ proc service_proc stdcall, ioctl:dword
         mov     ax, [eax+1]                             ; get the pci bus and device numbers
   .nextdevice:
         mov     ebx, [esi]
-        cmp     ax, word [device.pci_bus]               ; compare with pci and device num in device list (notice the usage of word instead of byte)
+        cmp     al, byte[device.pci_bus]
+        jne     @f
+        cmp     ah, byte[device.pci_dev]
         je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+       @@:
         add     esi, 4
         loop    .nextdevice
 
@@ -247,18 +250,18 @@ proc service_proc stdcall, ioctl:dword
         call    create_new_struct
 
         mov     eax, [IOCTL.input]
-        mov     cl, [eax+1]
-        mov     [device.pci_bus], cl
-        mov     cl, [eax+2]
-        mov     [device.pci_dev], cl
+        movzx   ecx, byte[eax+1]
+        mov     [device.pci_bus], ecx
+        movzx   ecx, byte[eax+2]
+        mov     [device.pci_dev], ecx
 
 ; Now, it's time to find the base io addres of the PCI device
 
-        find_io [device.pci_bus], [device.pci_dev], [device.io_addr]
+        PCI_find_io
 
 ; We've found the io address, find IRQ now
 
-        find_irq [device.pci_bus], [device.pci_dev], [device.irq_line]
+        PCI_find_irq
 
         jmp     .hook
 

@@ -57,9 +57,10 @@ virtual at ebx
         .rx_crt_des       dd ?  ; Rx current descriptor
 
         .io_addr          dd ?
-        .pci_bus          db ?
-        .pci_dev          db ?
+        .pci_bus          dd ?
+        .pci_dev          dd ?
         .irq_line         db ?
+		rb 3 ; alignment
 
         .size = $ - device
 
@@ -384,8 +385,11 @@ proc service_proc stdcall, ioctl:dword
         mov     ax , [eax+1]                            ;
   .nextdevice:
         mov     ebx, [esi]
-        cmp     ax , word [device.pci_bus]              ; compare with pci and device num in device list (notice the usage of word instead of byte)
+        cmp     al, byte[device.pci_bus]
+        jne     @f
+        cmp     ah, byte[device.pci_dev]
         je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+       @@:
         add     esi, 4
         loop    .nextdevice
 
@@ -414,18 +418,18 @@ proc service_proc stdcall, ioctl:dword
 ; save the pci bus and device numbers
 
         mov     eax, [IOCTL.input]
-        mov     cl, [eax+1]
-        mov     [device.pci_bus], cl
-        mov     cl, [eax+2]
-        mov     [device.pci_dev], cl
+        movzx   ecx, byte[eax+1]
+        mov     [device.pci_bus], ecx
+        movzx   ecx, byte[eax+2]
+        mov     [device.pci_dev], ecx
 
 ; Now, it's time to find the base io addres of the PCI device
 
-        find_io [device.pci_bus], [device.pci_dev], [device.io_addr]
+        PCI_find_io
 
 ; We've found the io address, find IRQ now
 
-        find_irq [device.pci_bus], [device.pci_dev], [device.irq_line]
+        PCI_find_irq
 
         DEBUGF  2,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
         [device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:8
@@ -525,11 +529,9 @@ probe:
 
         DEBUGF  2,"Probing dec21x4x device: "
 
-        make_bus_master [device.pci_bus], [device.pci_dev]
+        PCI_make_bus_master
 
-        movzx   eax, [device.pci_bus]
-        movzx   ecx, [device.pci_dev]
-        stdcall PciRead32, eax ,ecx ,0                                ; get device/vendor id
+        stdcall PciRead32, [device.pci_bus], [device.pci_dev], 0                                ; get device/vendor id
         DEBUGF  1,"Vendor id: 0x%x\n", ax
 
         cmp     ax, 0x1011
@@ -552,10 +554,8 @@ probe:
 
         ; wake up the 21143
 
-        movzx   ecx, [device.pci_bus]
-        movzx   edx, [device.pci_dev]
         xor     eax, eax
-        stdcall PciWrite32, ecx, edx, 0x40, eax
+        stdcall PciWrite32, [device.pci_bus], [device.pci_dev], 0x40, eax
 
 
   .supported_device:

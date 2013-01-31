@@ -213,14 +213,15 @@ virtual at ebx
         ETH_DEVICE
 
         .io_addr        dd ?
-        .pci_bus        db ?
-        .pci_dev        db ?
+        .pci_bus        dd ?
+        .pci_dev        dd ?
         .irq_line       db ?
         .cur_rx         db ?
         .cur_tx         db ?
         .last_tx        db ?
         .pci_revision   db ?
         .table_entries  db ?
+        rb 2    ; alignment
 
         .txd            rd (4 * NUM_TX_DESC)
         .rxd            rd (4 * NUM_RX_DESC)
@@ -305,8 +306,11 @@ service_proc:
         mov     ax, [eax+1]                            ;
   .nextdevice:
         mov     ebx, [esi]
-        cmp     ax, word [device.pci_bus]               ; compare with pci and device num in device list (notice the usage of word instead of byte)
+        cmp     al, byte[device.pci_bus]
+        jne     @f
+        cmp     ah, byte[device.pci_dev]
         je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+       @@:
         add     esi, 4
         loop    .nextdevice
 ; 4e. This device doesn't have its own eth_device structure yet, let's create one
@@ -319,10 +323,10 @@ service_proc:
         allocate_and_clear ebx, device.size, .fail
 ; 4i. Save PCI coordinates
         mov     eax, [IOCTL.input]
-        mov     cl, [eax+1]
-        mov     [device.pci_bus], cl
-        mov     cl, [eax+2]
-        mov     [device.pci_dev], cl
+        movzx   ecx, byte[eax+1]
+        mov     [device.pci_bus], ecx
+        movzx   ecx, byte[eax+2]
+        mov     [device.pci_dev], ecx
 ; 4j. Fill in the direct call addresses into the struct.
 ; Note that get_MAC pointer is filled in initialization by probe.
         mov     [device.reset], reset
@@ -335,10 +339,10 @@ service_proc:
 ; TODO: implement check if bus and dev exist on this machine
 
 ; Now, it's time to find the base io addres of the PCI device
-        find_io [device.pci_bus], [device.pci_dev], [device.io_addr]
+        PCI_find_io
 
 ; We've found the io address, find IRQ now
-        find_irq [device.pci_bus], [device.pci_dev], [device.irq_line]
+        PCI_find_irq
 
 ; 4m. Add new device to the list (required for int_handler).
         mov     eax, [devices]
@@ -414,17 +418,14 @@ probe:
         DEBUGF  1, "Probe\n"
 
 ; wake up device   CHECKME
-        movzx   eax, [device.pci_bus]
-        movzx   edx, [device.pci_dev]
-        stdcall PciWrite8, eax, edx, 0x40, 0
+        stdcall PciWrite8, [device.pci_bus], [device.pci_dev], 0x40, 0
 
-        make_bus_master [device.pci_bus], [device.pci_dev]
-        adjust_latency [device.pci_bus], [device.pci_dev], 64
+        PCI_make_bus_master
+
+        PCI_adjust_latency 64
 
 ; Get Card Revision
-        movzx   eax, [device.pci_bus]
-        movzx   edx, [device.pci_dev]
-        stdcall PciRead8, eax, edx, 0x08
+        stdcall PciRead8, [device.pci_bus], [device.pci_dev], 0x08
         mov     [device.pci_revision], al       ; save the revision for later use
 
 ; Look up through the specific_table

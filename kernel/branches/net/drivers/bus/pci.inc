@@ -40,18 +40,14 @@
         PCI_BIT_MASTER                  = 4             ; bit2: device acts as a PCI master
 
 
-macro   find_io bus, dev, io {
+macro   PCI_find_io {
 
         local   .check, .inc, .got
 
         xor     eax, eax
         mov     esi, PCI_BASE_ADDRESS_0
-        movzx   ecx, bus
-        movzx   edx, dev
   .check:
-        push    ecx edx
-        stdcall PciRead32, ecx ,edx ,esi
-        pop     edx ecx
+        stdcall PciRead32, [device.pci_bus], [device.pci_dev], esi
 
         test    eax, PCI_BASE_ADDRESS_IO_MASK
         jz      .inc
@@ -69,18 +65,18 @@ macro   find_io bus, dev, io {
         xor     eax, eax
 
   .got:
-        mov     io, eax
+        mov     [device.io_addr], eax
 
 }
 
 
-macro   find_mmio32 bus, dev, io {
+macro   PCI_find_mmio32 {
 
         local   .check, .inc, .got
 
         mov     esi, PCI_BASE_ADDRESS_0
   .check:
-        stdcall PciRead32, bus, dev, esi
+        stdcall PciRead32, [device.pci_bus], [device.pci_dev], esi
 
         test    eax, PCI_BASE_ADDRESS_SPACE_IO  ; mmio address?
         jnz     .inc
@@ -97,54 +93,40 @@ macro   find_mmio32 bus, dev, io {
         xor     eax, eax
 
   .got:
-        mov     io, eax
+        mov     [device.mmio_addr], eax
 }
 
-macro   find_irq bus, dev, irq {
+macro   PCI_find_irq {
 
-        push    eax edx ecx
-        movzx   ecx, bus
-        movzx   edx, dev
-        stdcall PciRead8, ecx, edx, PCI_REG_IRQ
-        mov     irq, al
-        pop     ecx edx eax
+        stdcall PciRead8, [device.pci_bus], [device.pci_dev], PCI_REG_IRQ
+        mov     [device.irq_line], al
 
 }
 
-macro   find_rev bus, dev, rev {
+macro   PCI_find_rev {
 
-        push    eax edx ecx
-        movzx   ecx, bus
-        movzx   edx, dev
-        stdcall PciRead8, ecx ,edx ,0x8
-        mov     rev, al
-        pop     ecx edx eax
+        stdcall PciRead8, [device.pci_bus], [device.pci_dev], PCI_REVISION_ID
+        mov     [device.revision], al
 
 }
 
-macro   make_bus_master bus, dev {
+macro   PCI_make_bus_master bus, dev {
 
-        movzx   ecx, bus
-        movzx   edx, dev
-        push    ecx edx
-        stdcall PciRead32, ecx ,edx, PCI_REG_COMMAND
-        pop     edx ecx
+        stdcall PciRead32, [device.pci_bus], [device.pci_dev], PCI_REG_COMMAND
         or      al, PCI_BIT_MASTER
-        stdcall PciWrite32, ecx, edx, PCI_REG_COMMAND, eax
+        stdcall PciWrite32, [device.pci_bus], [device.pci_dev], PCI_REG_COMMAND, eax
 
 }
 
-macro   adjust_latency bus, dev, min {
+macro   PCI_adjust_latency min {
 
-        movzx   ecx, bus
-        movzx   edx, dev
-        push    ecx edx
-        stdcall PciRead8, ecx ,edx, PCI_REG_LATENCY
-        pop     edx ecx
+        local   .not
+
+        stdcall PciRead8, [device.pci_bus], [device.pci_dev], PCI_REG_LATENCY
         cmp     al, min
-        ja      @f
+        ja      .not
         mov     al, min
-        stdcall PciWrite8, ecx, edx, PCI_REG_LATENCY, eax
-  @@:
+        stdcall PciWrite8, [device.pci_bus], [device.pci_dev], PCI_REG_LATENCY, eax
+  .not:
 
 }
