@@ -261,7 +261,7 @@ CMM_PROGRAMS:=\
 # yogev_ezra: Removed '3dsheart' to free some space on RAMDISK. This demo has 90% in common with VIEW3DS 
 OTHER_FILES:=autorun.dat:AUTORUN.DAT \
  default.skn:DEFAULT.SKN \
- example.asm:$(PROGS)/develop/examples/example/trunk/example.asm \
+ example.asm:$(REPOSITORY)/programs/develop/examples/example/trunk/example.asm \
  graph:GRAPH hdread:HDREAD \
  icons.dat:ICONS.DAT iconstrp.png:ICONSTRP.PNG index_htm:INDEX.HTM \
  kernel.mnt:KERNEL.MNT kerpack:KERPACK keymap.key:KEYMAP.KEY \
