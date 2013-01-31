@@ -236,7 +236,7 @@ COPY_FILES:=\
  media/kiv.ini:MEDIA/KIV.INI:$(PROGS)/media/kiv/trunk/kiv.ini \
  .shell:.shell:$(PROGS)/system/shell/bin/rus/.shell \
  mykey.ini:MYKEY.INI:$(PROGS)/system/MyKey/trunk/mykey.ini \
- example.asm:$(PROGS)/develop/examples/example/trunk/example.asm \
+ example.asm:EXAMPLE.ASM:$(PROGS)/develop/examples/example/trunk/example.asm \
 # end of list
 
 # The list of all C-- programs with one main C-- file.
