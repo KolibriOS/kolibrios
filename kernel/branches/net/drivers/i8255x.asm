@@ -10,8 +10,10 @@
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
 ;;                                                                 ;;
+;; Some parts of this driver are based on the code of eepro100.c   ;;
+;;  from linux.                                                    ;;
 ;;                                                                 ;;
-;; Good read about how to program this family of devices:          ;;
+;; Intel's programming manual for i8255x:                          ;;
 ;; http://www.intel.com/design/network/manuals/8255x_opensdm.htm   ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -19,14 +21,14 @@
 
 format MS COFF
 
-        API_VERSION             =   0x01000100
-        DRIVER_VERSION          =   5
+        API_VERSION             = 0x01000100
+        DRIVER_VERSION          = 5
 
-        MAX_DEVICES             =   16
+        MAX_DEVICES             = 16
 
-        DEBUG                   =   1
-        __DEBUG__               =   1
-        __DEBUG_LEVEL__         =   1
+        DEBUG                   = 1
+        __DEBUG__               = 1
+        __DEBUG_LEVEL__         = 1
 
 include 'proc32.inc'
 include 'imports.inc'
@@ -44,25 +46,13 @@ virtual at ebx
         ETH_DEVICE
 
         .io_addr        dd ?
-        .pci_bus        db ?
-        .pci_dev        db ?
+        .pci_bus        dd ?
+        .pci_dev        dd ?
         .irq_line       db ?
 
-        .rx_buffer      dd ?
-        .tx_buffer      dd ?
+        .rx_desc        dd ?
 
-        .ee_bus_width   dd ?
-
-                        rb 0x100 - (($ - device) and 0xff)
-
-        rxfd:
-        .status         dw ?
-        .command        dw ?
-        .link           dd ?
-        .rx_buf_addr    dd ?
-        .count          dw ?
-        .size           dw ?
-        .packet         dd ?
+        .ee_bus_width   db ?
 
                         rb 0x100 - (($ - device) and 0xff)
 
@@ -72,17 +62,16 @@ virtual at ebx
         .link           dd ?
         .tx_desc_addr   dd ?
         .count          dd ?
+
         .tx_buf_addr0   dd ?
         .tx_buf_size0   dd ?
-        .tx_buf_addr1   dd ?
-        .tx_buf_size1   dd ?
 
                         rb 0x100 - (($ - device) and 0xff)
 
         confcmd:
-        .status:        dw ?
-        .command:       dw ?
-        .link:          dd ?
+        .status         dw ?
+        .command        dw ?
+        .link           dd ?
         .data           rb 64
 
                         rb 0x100 - (($ - device) and 0xff)
@@ -106,67 +95,84 @@ virtual at ebx
         rx_colls_errs           dd ?
         rx_runt_errs            dd ?
 
+        last_tx_buffer          dd ?    ;;; fixme
+
         sizeof.device_struct = $ - device
+
+end virtual
+
+
+virtual at 0
+
+        rxfd:
+        .status         dw ?
+        .command        dw ?
+        .link           dd ?
+        .rx_buf_addr    dd ?
+        .count          dw ?
+        .size           dw ?
+        .packet:
 
 end virtual
 
 
 ; Serial EEPROM
 
-EE_SK           =   1 shl 0   ; serial clock
-EE_CS           =   1 shl 1   ; chip select
-EE_DI           =   1 shl 2   ; data in
-EE_DO           =   1 shl 3   ; data out
+EE_SK           = 1 shl 0      ; serial clock
+EE_CS           = 1 shl 1      ; chip select
+EE_DI           = 1 shl 2      ; data in
+EE_DO           = 1 shl 3      ; data out
+EE_MASK         = EE_SK + EE_CS + EE_DI + EE_DO
 
-EE_READ         =   110b
-EE_WRITE        =   101b
-EE_ERASE        =   111b
+; opcodes, first bit is start bit and must be 1
+EE_READ         = 110b
+EE_WRITE        = 101b
+EE_ERASE        = 111b
 
 ; The SCB accepts the following controls for the Tx and Rx units:
 
-CU_START        =   0x0010
-CU_RESUME       =   0x0020
-CU_STATSADDR    =   0x0040
-CU_SHOWSTATS    =   0x0050   ; Dump statistics counters.
-CU_CMD_BASE     =   0x0060   ; Base address to add to add CU commands.
-CU_DUMPSTATS    =   0x0070   ; Dump then reset stats counters.
+CU_START        = 0x0010
+CU_RESUME       = 0x0020
+CU_STATSADDR    = 0x0040
+CU_SHOWSTATS    = 0x0050        ; Dump statistics counters.
+CU_CMD_BASE     = 0x0060        ; Base address to add CU commands.
+CU_DUMPSTATS    = 0x0070        ; Dump then reset stats counters.
 
-RX_START        =   0x0001
-RX_RESUME       =   0x0002
-RX_ABORT        =   0x0004
-RX_ADDR_LOAD    =   0x0006
-RX_RESUMENR     =   0x0007
-INT_MASK        =   0x0100
-DRVR_INT        =   0x0200   ; Driver generated interrupt
+RX_START        = 0x0001
+RX_RESUME       = 0x0002
+RX_ABORT        = 0x0004
+RX_ADDR_LOAD    = 0x0006
+RX_RESUMENR     = 0x0007
+INT_MASK        = 0x0100
+DRVR_INT        = 0x0200        ; Driver generated interrupt
 
-CmdIASetup      =   0x0001
-CmdConfigure    =   0x0002
-CmdTx           =   0x0004 ;;;;
-CmdTxFlex       =   0x0008 ;;;
-Cmdsuspend      =   0x4000
+CmdIASetup      = 0x0001
+CmdConfigure    = 0x0002
+CmdTx           = 0x0004
+CmdTxFlex       = 0x0008
+Cmdsuspend      = 0x4000
 
 
-reg_scb_status  =   0
-reg_scb_cmd     =   2
-reg_scb_ptr     =   4
-reg_port        =   8
-reg_eeprom_ctrl =   12
-reg_eeprom      =   14
-reg_mdi_ctrl    =   16
+reg_scb_status  = 0
+reg_scb_cmd     = 2
+reg_scb_ptr     = 4
+reg_port        = 8
+reg_eeprom      = 14
+reg_mdi_ctrl    = 16
 
 
 macro delay {
         push    eax
-        in      eax, dx
-        in      eax, dx
-        in      eax, dx
-        in      eax, dx
-        in      eax, dx
-        in      eax, dx
-        in      eax, dx
-        in      eax, dx
-        in      eax, dx
-        in      eax, dx
+        in      ax, dx
+        in      ax, dx
+        in      ax, dx
+        in      ax, dx
+        in      ax, dx
+        in      ax, dx
+        in      ax, dx
+        in      ax, dx
+        in      ax, dx
+        in      ax, dx
         pop     eax
 }
 
@@ -247,8 +253,11 @@ proc service_proc stdcall, ioctl:dword
         mov     ax , [eax+1]                            ;
   .nextdevice:
         mov     ebx, [esi]
-        cmp     ax , word [device.pci_bus]              ; compare with pci and device num in device list (notice the usage of word instead of byte)
+        cmp     al, byte[device.pci_bus]
+        jne     @f
+        cmp     ah, byte[device.pci_dev]
         je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+       @@:
         add     esi, 4
         loop    .nextdevice
 
@@ -272,26 +281,26 @@ proc service_proc stdcall, ioctl:dword
 ; save the pci bus and device numbers
 
         mov     eax, [IOCTL.input]
-        mov     cl, [eax+1]
-        mov     [device.pci_bus], cl
-        mov     cl, [eax+2]
-        mov     [device.pci_dev], cl
+        movzx   ecx, byte[eax+1]
+        mov     [device.pci_bus], ecx
+        movzx   ecx, byte[eax+2]
+        mov     [device.pci_dev], ecx
 
 ; Now, it's time to find the base io addres of the PCI device
 
-        find_io [device.pci_bus], [device.pci_dev], [device.io_addr]
+        PCI_find_io
 
 ; We've found the io address, find IRQ now
 
-        find_irq [device.pci_bus], [device.pci_dev], [device.irq_line]
+        PCI_find_irq
 
         DEBUGF  2,"Hooking into device, dev:%x, bus:%x, irq:%x, addr:%x\n",\
         [device.pci_dev]:1,[device.pci_bus]:1,[device.irq_line]:1,[device.io_addr]:4
 
-        allocate_and_clear [device.rx_buffer], (4096), .err
-        allocate_and_clear [device.tx_buffer], (4096), .err
-
 ; Ok, the eth_device structure is ready, let's probe the device
+
+        pushf
+        cli                     ; disable ints until initialisation is done
 
         call    probe                                                   ; this function will output in eax
         test    eax, eax
@@ -301,6 +310,7 @@ proc service_proc stdcall, ioctl:dword
         mov     [device_list+4*eax], ebx                                ; (IRQ handler uses this list to find device)
         inc     [devices]                                               ;
 
+        popf
 
         mov     [device.type], NET_TYPE_ETH
         call    NetRegDev
@@ -323,8 +333,6 @@ proc service_proc stdcall, ioctl:dword
 ; If an error occured, remove all allocated data and exit (returning -1 in eax)
 
   .err:
-        stdcall KernelFree, [device.rx_buffer]
-        stdcall KernelFree, [device.tx_buffer]
         stdcall KernelFree, ebx
 
   .fail:
@@ -370,14 +378,12 @@ probe:
 
         DEBUGF  1,"Probing i8255x\n"
 
-        make_bus_master [device.pci_bus], [device.pci_dev]
+        PCI_make_bus_master
 
 ;---------------------------
 ; First, identify the device
 
-        movzx   ecx, [device.pci_bus]
-        movzx   edx, [device.pci_dev]
-        stdcall PciRead32, ecx ,edx ,0                                ; get device/vendor id
+        stdcall PciRead32, [device.pci_bus], [device.pci_dev], PCI_VENDOR_ID                                ; get device/vendor id
 
         DEBUGF  1,"Vendor_id=0x%x\n", ax
 
@@ -416,6 +422,18 @@ probe:
 align 4
 reset:
 
+        movzx   eax, [device.irq_line]
+        DEBUGF  1,"Attaching int handler to irq %x\n", eax:1
+        stdcall AttachIntHandler, eax, int_handler, dword 0
+        test    eax, eax
+        jnz     @f
+        DEBUGF  1,"\nCould not attach int handler!\n"
+;        or      eax, -1
+;        ret
+  @@:
+
+        DEBUGF  1,"Resetting %s\n", my_service
+
 ;---------------
 ; reset the card
 
@@ -432,6 +450,7 @@ reset:
 
         lea     eax, [lstats]
         GetRealAddr
+        set_io  0
         set_io  reg_scb_ptr
         out     dx, eax
 
@@ -441,70 +460,36 @@ reset:
         call    cmd_wait
 
 ;-----------------
-; Set CU base to 0
+; setup RX
 
+        set_io  reg_scb_ptr
         xor     eax, eax
-        set_io  reg_scb_ptr
         out     dx, eax
 
+        set_io  reg_scb_cmd
         mov     ax, INT_MASK + RX_ADDR_LOAD
-        set_io  reg_scb_cmd
         out     dx, ax
         call    cmd_wait
 
-;---------------------
-; build rxfd structure
+;-----------------------------
+; Create RX and TX descriptors
 
-        mov     ax, 0x0001
-        mov     [rxfd.status], ax
-        mov     ax, 0x0000
-        mov     [rxfd.command], ax
+        call    create_ring
 
-        lea     eax, [rxfd.status]
-        GetRealAddr
-        mov     [rxfd.link], eax
+; RX start
 
-        lea     eax, [device.rx_buffer]
-        GetRealAddr
-        mov     [rxfd.rx_buf_addr], eax
-
-        xor     ax, ax
-        mov     [rxfd.count], ax
-
-        mov     ax, 1528
-        mov     [rxfd.size], ax
-
-;-------------------------------
-; Set ptr to first command block
-
+        set_io  0
         set_io  reg_scb_ptr
-        lea     eax, [rxfd]
+        mov     eax, [device.rx_desc]
         GetRealAddr
         out     dx, eax
 
-        set_io  reg_scb_cmd
         mov     ax, INT_MASK + RX_START
+        set_io  reg_scb_cmd
         out     dx, ax
         call    cmd_wait
 
-;-------------------
-; start the receiver
-
-        mov     [rxfd.status], 0
-        mov     [rxfd.command], 0xc000
-
-        set_io  reg_scb_ptr
-        lea     eax, [rxfd]
-        GetRealAddr
-        out     dx, eax
-
-        set_io  reg_scb_cmd
-        mov     ax, INT_MASK + RX_START
-        out     dx, ax
-        call    cmd_wait
-
-;-----------------
-; set CU base to 0
+; Set-up TX
 
         set_io  reg_scb_ptr
         xor     eax, eax
@@ -515,10 +500,25 @@ reset:
         out     dx, ax
         call    cmd_wait
 
-;--------------------
-; Set TX Base address
+;  --------------------
 
-; First, set up confcmd values
+        mov     [confcmd.command], CmdConfigure + Cmdsuspend
+        mov     [confcmd.status], 0
+        lea     eax, [txfd]
+        GetRealAddr
+        mov     [confcmd.link], eax
+
+        mov     esi, confcmd_data
+        lea     edi, [confcmd.data]
+        mov     ecx, 22
+        rep     movsb
+
+        mov     byte[confcmd.data + 1], 0x88  ; fifo of 8 each
+        mov     byte[confcmd.data + 4], 0
+        mov     byte[confcmd.data + 5], 0x80
+        mov     byte[confcmd.data + 15], 0x48
+        mov     byte[confcmd.data + 19], 0x80
+        mov     byte[confcmd.data + 21], 0x05
 
         mov     [txfd.command], CmdIASetup
         mov     [txfd.status], 0
@@ -526,46 +526,74 @@ reset:
         GetRealAddr
         mov     [txfd.link], eax
 
-        mov     word [confcmd.command], Cmdsuspend + CmdConfigure
-        mov     word [confcmd.status], 0
+;;; copy in our MAC
+
+        lea     edi, [txfd.tx_desc_addr]
+        lea     esi, [device.mac]
+        movsd
+        movsw
+
+        set_io  reg_scb_ptr
         lea     eax, [txfd]
         GetRealAddr
-        mov     [confcmd.link], eax
-
-        mov     byte [confcmd.data + 1], 0x88  ; fifo of 8 each
-        mov     byte [confcmd.data + 4], 0
-        mov     byte [confcmd.data + 5], 0x80
-        mov     byte [confcmd.data + 15], 0x48
-        mov     byte [confcmd.data + 19], 0x80
-        mov     byte [confcmd.data + 21], 0x05
-
-
-; CU start
-
-;        lea     eax, [txfd]
-;        GetRealAddr
-        set_io  0
-        set_io  reg_scb_ptr
         out     dx, eax
 
-        mov     ax, INT_MASK + CU_START
+; Start CU & enable ints
+
         set_io  reg_scb_cmd
+        mov     ax, CU_START
         out     dx, ax
         call    cmd_wait
 
-; wait for thing to start
+;-----------------------
+; build txfd structure (again!)
 
-;  drp004:
-;
-;        cmp     [txfd.status], 0
-;        jz      drp004
+        lea     eax, [txfd]
+        GetRealAddr
+        mov     [txfd.link], eax
+        mov     [txfd.count], 0x02208000
+        lea     eax, [txfd.tx_buf_addr0]
+        GetRealAddr
+        mov     [txfd.tx_desc_addr], eax
 
 ; Indicate that we have successfully reset the card
 
+        DEBUGF  1,"Resetting %s complete\n", my_service
 
-;;; enable interrupts
+        mov     [device.mtu], 1514
+        xor     eax, eax        ; indicate that we have successfully reset the card
 
-        xor     eax, eax
+        ret
+
+
+align 4
+create_ring:
+
+        DEBUGF  1,"Creating ring\n"
+
+;---------------------
+; build rxfd structure
+
+        stdcall KernelAlloc, 2000
+        mov     [device.rx_desc], eax
+        mov     esi, eax
+        GetRealAddr
+        mov     [esi + rxfd.status], 0x0000
+        mov     [esi + rxfd.command], 0x0000
+        mov     [esi + rxfd.link], eax
+        mov     [esi + rxfd.count], 0
+        mov     [esi + rxfd.size], 1528
+
+;-----------------------
+; build txfd structure
+
+        lea     eax, [txfd]
+        GetRealAddr
+        mov     [txfd.link], eax
+        mov     [txfd.count], 0x02208000
+        lea     eax, [txfd.tx_buf_addr0]
+        GetRealAddr
+        mov     [txfd.tx_desc_addr], eax
 
         ret
 
@@ -586,62 +614,61 @@ reset:
 align 4
 transmit:
 
-        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n",[esp+4],[esp+8]
+        DEBUGF  1,"Transmitting packet, buffer:%x, size:%u\n", [esp+4], [esp+8]
         mov     eax, [esp+4]
         DEBUGF  1,"To: %x-%x-%x-%x-%x-%x From: %x-%x-%x-%x-%x-%x Type:%x%x\n",\
         [eax+00]:2,[eax+01]:2,[eax+02]:2,[eax+03]:2,[eax+04]:2,[eax+05]:2,\
         [eax+06]:2,[eax+07]:2,[eax+08]:2,[eax+09]:2,[eax+10]:2,[eax+11]:2,\
         [eax+13]:2,[eax+12]:2
 
-        cmp     dword [esp+8], 1500
+        cmp     dword [esp+8], 1514
         ja      .error                          ; packet is too long
         cmp     dword [esp+8], 60
         jb      .error                          ; packet is too short
 
-        set_io  0
-        in      ax, dx
-        and     ax, 0xfc00
-        out     dx, ax
-
-        mov     [txfd.status], 0
-        mov     [txfd.command], Cmdsuspend + CmdTx + CmdTxFlex
-        lea     eax, [txfd]
-        GetRealAddr
-        mov     [txfd.link], eax
-        mov     [txfd.count], 0x02208000
-        lea     eax, [txfd.tx_buf_addr0]
-        GetRealAddr
-        mov     [txfd.tx_desc_addr], eax
-
+        ;;; TODO: check if current descriptor is in use
+        ; fill in buffer address and size
         mov     eax, [esp+4]
+        mov     [last_tx_buffer], eax   ;;; FIXME
+        GetRealAddr
         mov     [txfd.tx_buf_addr0], eax
         mov     eax, [esp+8]
         mov     [txfd.tx_buf_size0], eax
 
-        ; Copy the buffer address and size in
-        mov     [txfd.tx_buf_addr1], 0
-        mov     [txfd.tx_buf_size1], 0
+        mov     [txfd.status], 0
+        mov     [txfd.command], Cmdsuspend + CmdTx + CmdTxFlex + 1 shl 15 ;;; EL bit
 
+ ;       mov     [txfd.count], 0x02208000   ;;;;;;;;;;;
+
+        ; Inform device of the new/updated transmit descriptor
         lea     eax, [txfd]
         GetRealAddr
+        set_io  0
         set_io  reg_scb_ptr
         out     dx, eax
 
-        mov     ax, INT_MASK + CU_START
+        ; Start the transmit
+        mov     ax, CU_START
         set_io  reg_scb_cmd
         out     dx, ax
-
         call    cmd_wait
 
-        in      ax, dx
+;        set_io  0               ;; why?
+;        in      ax, dx          ;;
+;
+;  @@:
+;        cmp     [txfd.status], 0  ; wait for completion? dont seems a good idea to me..
+;        je      @r
+;
+;        set_io  0               ;; why?
+;        in      ax, dx          ;;
 
-  .I8t_001:
-        cmp     [txfd.status], 0
-        je      .I8t_001
+; Update stats
+        inc     [device.packets_tx]
+        mov     eax, [esp + 8]
+        add     dword [device.bytes_tx], eax
+        adc     dword [device.bytes_tx + 4], 0
 
-        in      ax, dx
-
-  .finish:
         xor     eax, eax
         ret     8
 
@@ -670,7 +697,7 @@ int_handler:
   .nextdevice:
         mov     ebx, [esi]
 
-        set_io  0
+;        set_io  0              ; reg_scb_status = 0
         set_io  reg_scb_status
         in      ax, dx
         out     dx, ax                              ; send it back to ACK
@@ -685,52 +712,82 @@ int_handler:
 
   .got_it:
 
-        DEBUGF  1,"Device: %x Status: %x ", ebx, ax
+        DEBUGF  1,"Device: %x Status: %x\n", ebx, ax
 
-       ;;; receive
+        test    ax, 1 shl 14    ; did we receive a frame?
+        jz      .no_rx
 
-        cmp     [rxfd.status], 0
+        push    ax
+
+        DEBUGF  1,"Receiving\n"
+
+        push    ebx
+  .rx_loop:
+        pop     ebx
+
+        mov     esi, [device.rx_desc]
+        cmp     [esi + rxfd.status], 0        ; we could also check bits C and OK (bit 15 and 13)
         je      .nodata
 
-        mov     [rxfd.status], 0
-        mov     [rxfd.command], 0xc000
+        DEBUGF  1,"rxfd status=0x%x\n", [esi + rxfd.status]:4
 
-        set_io  reg_scb_ptr
-        lea     eax, [rxfd.status]
+        movzx   ecx, [esi + rxfd.count]
+        and     ecx, 0x3fff
+
+        push    ebx
+        push    .rx_loop
+        push    ecx
+        add     esi, rxfd.packet
+        push    esi
+
+; Update stats
+        add     dword [device.bytes_rx], ecx
+        adc     dword [device.bytes_rx + 4], 0
+        inc     dword [device.packets_rx]
+
+; allocate new descriptor
+
+        stdcall KernelAlloc, 2000
+        mov     [device.rx_desc], eax
+        mov     esi, eax
         GetRealAddr
+        mov     [esi + rxfd.status], 0x0000
+        mov     [esi + rxfd.command], 0xc000    ; End of list + Suspend
+        mov     [esi + rxfd.link], eax
+        mov     [esi + rxfd.count], 0
+        mov     [esi + rxfd.size], 1528
+
+; restart RX
+
+        set_io  0
+        set_io  reg_scb_ptr
+;        lea     eax, [device.rx_desc]
+;        GetRealAddr
         out     dx, eax
 
         set_io  reg_scb_cmd
-        mov     ax, INT_MASK + RX_START
+        mov     ax, RX_START
         out     dx, ax
-
         call    cmd_wait
 
-        movzx   ecx, [rxfd.count]
-        and     ecx, 0x3fff
-
-        stdcall KernelAlloc, ecx        ; Allocate a buffer to put packet into
-        push    ecx
-        push    eax
-
-        lea     esi, [device.rx_buffer]
-
-  .copy:
-        shr     ecx, 1
-        jnc     .nb
-        movsb
-  .nb:
-        shr     ecx, 1
-        jnc     .nw
-        movsw
-  .nw:
-        jz      .nd
-        rep     movsd
-  .nd:
+; And give packet to kernel
 
         jmp     Eth_input
 
   .nodata:
+        DEBUGF  1, "no more data\n"
+        pop     ax
+
+  .no_rx:
+
+; Cleanup after TX
+
+        cmp     [last_tx_buffer], 0
+        je      .done
+        stdcall KernelFree, [last_tx_buffer]
+        mov     [last_tx_buffer], 0
+
+  .done:
   .fail:
 
         ret
@@ -755,6 +812,8 @@ cmd_wait:
 align 4
 ee_read:        ; esi = address to read
 
+        DEBUGF  1,"Eeprom read from 0x%x", esi
+
         set_io  0
         set_io  reg_eeprom
 
@@ -762,28 +821,32 @@ ee_read:        ; esi = address to read
 ; Prepend start bit + read opcode to the address field
 ; and shift it to the very left bits of esi
 
-        mov     ecx, 32
-        sub     ecx, [device.ee_bus_width]
+        mov     cl, 29
+        sub     cl, [device.ee_bus_width]
         shl     esi, cl
-        or      esi, EE_READ shl 28
+        or      esi, EE_READ shl 29
 
-        mov     ecx, [device.ee_bus_width]
+        movzx   ecx, [device.ee_bus_width]
         add     ecx, 3
+
+        mov     al, EE_CS
+        out     dx, al
+        delay
 
 ;-----------------------
 ; Write this to the chip
 
   .loop:
-        mov     eax, EE_CS
+        mov     al, EE_CS + EE_SK
         shl     esi, 1
         jnc     @f
-        or      eax, EE_DI
+        or      al, EE_DI
        @@:
-        out     dx , eax
+        out     dx, al
         delay
 
-        or      eax, EE_SK
-        out     dx , eax
+        and     al, not EE_SK
+        out     dx, al
         delay
 
         loop    .loop
@@ -795,19 +858,19 @@ ee_read:        ; esi = address to read
         mov     ecx, 16
 
   .loop2:
-        mov     eax, EE_CS + EE_SK
-        out     dx , eax
+        shl     esi, 1
+        mov     al, EE_CS + EE_SK
+        out     dx, al
         delay
 
-        in      eax, dx
-        test    eax, EE_DO
+        in      al, dx
+        test    al, EE_DO
         jz      @f
         inc     esi
        @@:
-        shl     esi, 1
 
-        mov     eax, EE_CS
-        out     dx , eax
+        mov     al, EE_CS
+        out     dx, al
         delay
 
         loop    .loop2
@@ -815,17 +878,19 @@ ee_read:        ; esi = address to read
 ;-----------------------
 ; de-activate the eeprom
 
-        xor     eax, eax
-        out     dx, eax
+        xor     ax, ax
+        out     dx, ax
 
 
-        DEBUGF  1,"data=%x\n", esi
+        DEBUGF  1,"=0x%x\n", esi:4
         ret
 
 
 
 align 4
 ee_write:       ; esi = address to write to, di = data
+
+        DEBUGF  1,"Eeprom write 0x%x to 0x%x\n", di, esi
 
         set_io  0
         set_io  reg_eeprom
@@ -834,28 +899,31 @@ ee_write:       ; esi = address to write to, di = data
 ; Prepend start bit + write opcode to the address field
 ; and shift it to the very left bits of esi
 
-        mov     ecx, 32
-        sub     ecx, [device.ee_bus_width]
+        mov     cl, 29
+        sub     cl, [device.ee_bus_width]
         shl     esi, cl
-        or      esi, EE_WRITE shl 28
+        or      esi, EE_WRITE shl 29
 
-        mov     ecx, [device.ee_bus_width]
+        movzx   ecx, [device.ee_bus_width]
         add     ecx, 3
+
+        mov     al, EE_CS       ; enable chip
+        out     dx, al
 
 ;-----------------------
 ; Write this to the chip
 
   .loop:
-        mov     eax, EE_CS
+        mov     al, EE_CS + EE_SK
         shl     esi, 1
         jnc     @f
-        or      eax, EE_DI
+        or      al, EE_DI
        @@:
-        out     dx , eax
+        out     dx, al
         delay
 
-        or      eax, EE_SK
-        out     dx , eax
+        and     al, not EE_SK
+        out     dx, al
         delay
 
         loop    .loop
@@ -866,16 +934,16 @@ ee_write:       ; esi = address to write to, di = data
         mov     ecx, 16
 
   .loop2:
-        mov     eax, EE_CS
-        shl     di , 1
+        mov     al, EE_CS + EE_SK
+        shl     di, 1
         jnc     @f
-        or      eax, EE_DI
+        or      al, EE_DI
        @@:
-        out     dx , eax
+        out     dx, al
         delay
 
-        or      eax, EE_SK
-        out     dx , eax
+        and     al, not EE_SK
+        out     dx, al
         delay
 
         loop    .loop2
@@ -883,8 +951,8 @@ ee_write:       ; esi = address to write to, di = data
 ;-----------------------
 ; de-activate the eeprom
 
-        xor     eax, eax
-        out     dx, eax
+        xor     al, al
+        out     dx, al
 
 
         ret
@@ -894,28 +962,47 @@ ee_write:       ; esi = address to write to, di = data
 align 4
 ee_get_width:
 
+;        DEBUGF  1,"Eeprom get width\n"
+
         set_io  0
         set_io  reg_eeprom
 
-        mov     si, EE_READ shl 12
-        xor     ecx, ecx
-  .loop:
-        mov     ax, EE_CS
-        out     dx, ax
+        mov     al, EE_CS      ; activate eeprom
+        out     dx, al
         delay
 
-        or      ax, EE_SK
-        out     dx, ax
+        mov     si, EE_READ shl 13
+        xor     ecx, ecx
+  .loop:
+        mov     al, EE_CS + EE_SK
+        shl     si, 1
+        jnc     @f
+        or      al, EE_DI
+       @@:
+        out     dx, al
+        delay
+
+        and     al, not EE_SK
+        out     dx, al
         delay
 
         inc     ecx
 
-        in      ax, dx
-        test    ax, EE_DO
+        cmp     ecx, 15
+        jae     .give_up
+
+        in      al, dx
+        test    al, EE_DO
         jnz     .loop
 
-        mov     [device.ee_bus_width], ecx
-        DEBUGF  1,"ee width=%u\n", ecx
+  .give_up:
+        xor     al, al
+        out     dx, al          ; de-activate eeprom
+
+        sub     cl, 3           ; dont count the opcode bits
+
+        mov     [device.ee_bus_width], cl
+        DEBUGF  1,"Eeprom width=%u bit\n", ecx
 
 
 ;-----------------------
@@ -935,6 +1022,8 @@ ee_get_width:
 
 align 4
 mdio_read:
+
+        DEBUGF  1,"MDIO read\n"
 
         shl     ecx, 21                 ; PHY addr
         shl     edx, 16                 ; PHY reg addr
@@ -963,6 +1052,8 @@ mdio_read:
 
 align 4
 mdio_write:
+
+        DEBUGF  1,"MDIO write\n"
 
         and     eax, 0xffff
 
@@ -996,15 +1087,15 @@ MAC_read_eeprom:
 
         mov     esi, 0
         call    ee_read
+        mov     word[device.mac], si
 
         mov     esi, 1
         call    ee_read
+        mov     word[device.mac+2], si
 
-        mov     esi, 14
+        mov     esi, 2
         call    ee_read
-
-        mov     esi, 5
-        call    ee_read
+        mov     word[device.mac+4], si
 
 
         ret
@@ -1024,10 +1115,14 @@ MAC_write:
 
 align 4                                         ; Place all initialised data here
 
-devices       dd 0                              ; number of currently running devices
-version       dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
-my_service    db 'i8255x',0                     ; max 16 chars include zero
-devicename    db 'Intel Etherexpress pro/100',0
+devices         dd 0                              ; number of currently running devices
+version         dd (DRIVER_VERSION shl 16) or (API_VERSION and 0xFFFF)
+my_service      db 'i8255x', 0                    ; max 16 chars include zero
+devicename      db 'Intel Etherexpress pro/100', 0
+
+confcmd_data    db 22, 0x08, 0, 0, 0, 0x80, 0x32, 0x03, 1
+                db 0, 0x2e, 0, 0x60, 0, 0xf2, 0x48, 0, 0x40, 0xf2
+                db 0x80, 0x3f, 0x05                                     ; 22 bytes total
 
 
 device_id_list:
