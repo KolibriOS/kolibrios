@@ -41,7 +41,7 @@ server_parser:
         ret
 
   .got_cmd:
-        jmp     dword[edi+4]
+        jmp     dword[edi]
 
 
 server_commands:
@@ -146,8 +146,8 @@ cmd_notice:
         inc     esi
         cmp     byte [esi], 0
         je      .fail
-        cmp     byte [esi], 10  ; newline
-        je      server_parser.parse
+;        cmp     byte [esi], 10  ; newline
+;        je      server_parser.parse
         cmp     byte [esi], ' '
         jne     .loop
 
