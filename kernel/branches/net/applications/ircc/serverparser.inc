@@ -41,7 +41,7 @@ server_parser:
         ret
 
   .got_cmd:
-        jmp     dword[edi]
+        jmp     dword[edi] 
 
 
 server_commands:
@@ -194,6 +194,8 @@ cmd_ping:
 
 
 cmd_privmsg:
+
+        add     esi, 8  ; skip 'PRIVMSG '
 
 ; Check if it was destined for me privately
         mov     edi, servercommand+1
@@ -490,6 +492,8 @@ cmd_join:
         mov     [ebx + window.data_ptr], eax
         mov     [ebx + window.type], WINDOWTYPE_CHANNEL
         mov     [ebx + window.flags], 0
+
+        add     esi, 5  ; skip 'JOIN '  ; FIXME: perhaps scan for spaces instead?
         call    window_set_name
 
         mov     [window_open], ebx
